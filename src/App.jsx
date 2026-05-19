@@ -180,12 +180,12 @@ function seed() {
     securityLog: [],// {id,cid,type,ts,detail,read}
     playerProfiles: [
       {id:"r01",name:"Lasse",by:2020,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r02",name:"Lucas",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r03",name:"Jonas",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"Könnte spielerisch auch in die E",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r04",name:"Maximilian",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r05",name:"Carlos E.",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r06",name:"Emilio",by:2020,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r07",name:"Elias H.",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r08",name:"Levi",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r09",name:"Lian",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r10",name:"Maxim K.",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"Spielt bereits F3",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r11",name:"Saleh",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r12",name:"Beni",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r13",name:"Zipadin",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r14",name:"Lukas M.",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"Spielt bereits F3",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r15",name:"Finn",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"Spielt bereits F3",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r16",name:"Johann",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"Spielt bereits F3",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r17",name:"Karl",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r18",name:"Barghash",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r19",name:"Mohammad T.",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r20",name:"Ahmad M.",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r21",name:"Tilo",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r22",name:"Amjed",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r23",name:"Jan",by:2018,gender:"m",mainTid:"sus_f2",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F2 25/26",lastTeamId:"sus_f2",seasonId:"s2526"},{id:"r24",name:"Carlos B.",by:2018,gender:"m",mainTid:"sus_f2",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F2 25/26",lastTeamId:"sus_f2",seasonId:"s2526"},{id:"r25",name:"Jud",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r26",name:"Abdul Rashid",by:2019,gender:"m",mainTid:"sus_f1",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"Spielt bereits F1",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F1 25/26",lastTeamId:"sus_f1",seasonId:"s2526"},{id:"r27",name:"Ahmad B.",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r28",name:"Tian",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r29",name:"Luis",by:2018,gender:"m",mainTid:"sus_f2",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F2 25/26",lastTeamId:"sus_f2",seasonId:"s2526"},{id:"r30",name:"Lukas Kr.",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"Spielt bereits F3",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r31",name:"Henri",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r32",name:"Yehor",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r33",name:"Elias O.",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r34",name:"Maxim R.",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r35",name:"Phil-Lamar",by:2018,gender:"m",mainTid:"",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"—",lastTeamId:"",seasonId:"s2526"},{id:"r36",name:"Edwin",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r37",name:"Lennart",by:2018,gender:"m",mainTid:"sus_f2",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F2 25/26",lastTeamId:"sus_f2",seasonId:"s2526"},{id:"r38",name:"Abdulla",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r39",name:"Kabher",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r40",name:"Maxim vE.",by:2018,gender:"m",mainTid:"sus_f2",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F2 25/26",lastTeamId:"sus_f2",seasonId:"s2526"},{id:"r41",name:"Leonard",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r42",name:"Timur",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r43",name:"Paulina",by:2017,gender:"w",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r44",name:"Tilda",by:2017,gender:"w",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r45",name:"Xenia",by:2016,gender:"w",mainTid:"sus_f2",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F2 25/26",lastTeamId:"sus_f2",seasonId:"s2526"},{id:"r46",name:"Anne",by:2018,gender:"w",mainTid:"sus_f2",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F2 25/26",lastTeamId:"sus_f2",seasonId:"s2526"},],clubs: [
-      { id:"sus",slug:"sus-kalkar",name:"SuS Kalkar",short:"SuS",em:"⚽",logo:null,pri:"#16a34a",sec:"#052e16",adm:"admin123",pub:true,dir:true },{ id:"bvw",slug:"bv-wissel",name:"BV Sturm Wissel",short:"BVW",em:"🦅",logo:null,pri:"#1d4ed8",sec:"#1e1b4b",adm:"wissel123",pub:true,dir:true },],teams: [
+      { id:"sus",slug:"sus-kalkar",name:"SuS Kalkar",short:"SuS",em:"*",logo:null,pri:"#16a34a",sec:"#052e16",adm:"admin123",pub:true,dir:true },{ id:"bvw",slug:"bv-wissel",name:"BV Sturm Wissel",short:"BVW",em:"*",logo:null,pri:"#1d4ed8",sec:"#1e1b4b",adm:"wissel123",pub:true,dir:true },],teams: [
       { id:"sus_bam",cid:"sus",name:"Bambinis",icon:"*",col:"#f59e0b",pub:true,pwd:"bam",cat:"Bambinis",years:"2019/20/21" },{ id:"sus_g",cid:"sus",name:"G-Jugend",icon:"Ball",col:"#16a34a",pub:true,pwd:"g1",cat:"G-Jugend",years:"2017/18/19" },{ id:"sus_f1",cid:"sus",name:"F-Jugend 1",icon:"Pokal",col:"#2563eb",pub:false,pwd:"f1",cat:"F-Jugend",years:"2015/16/17" },{ id:"sus_f2",cid:"sus",name:"F-Jugend 2",icon:"Pokal",col:"#1d4ed8",pub:false,pwd:"f2",cat:"F-Jugend",years:"2015/16/17" },{ id:"sus_f3",cid:"sus",name:"F-Jugend 3",icon:"Pokal",col:"#1e40af",pub:false,pwd:"f3",cat:"F-Jugend",years:"2015/16/17" },{ id:"sus_e",cid:"sus",name:"E-Jugend",icon:"*",col:"#7c3aed",pub:true,pwd:"e1",cat:"E-Jugend",years:"2013/14/15" },{ id:"bvw_g",cid:"bvw",name:"G-Jugend",icon:"*",col:"#1d4ed8",pub:true,cat:"G-Jugend",years:"2017/18/19" },{ id:"bvw_f",cid:"bvw",name:"F-Jugend",icon:"*",col:"#dc2626",pub:true },],trainers: [
       { id:"tr1",cid:"sus",name:"Marcel",role:"Trainer",tids:["sus_f1"],pw:"marcel123",phone:"",email:"",adm:false },{ id:"tr2",cid:"sus",name:"Daniel",role:"Co-Trainer",tids:["sus_f1"],pw:"daniel123",phone:"",email:"",adm:false },{ id:"tr3",cid:"sus",name:"Dennis",role:"Trainer",tids:["sus_f2"],pw:"dennis123",phone:"",email:"",adm:false },{ id:"tr4",cid:"sus",name:"Mario",role:"Co-Trainer",tids:["sus_f2"],pw:"mario123",phone:"",email:"",adm:false },{ id:"tr5",cid:"sus",name:"David",role:"Trainer",tids:["sus_f3","sus_g"],pw:"david123",phone:"",email:"",adm:false },{ id:"tr6",cid:"sus",name:"Thorsten",role:"Co-Trainer",tids:["sus_f3"],pw:"thorsten123",phone:"",email:"",adm:false },{ id:"tr7",cid:"sus",name:"Sarah",role:"Trainer",tids:["sus_bam"],pw:"sarah123",phone:"",email:"",adm:false },{ id:"tr8",cid:"sus",name:"Klaus",role:"Trainer",tids:["sus_e"],pw:"klaus123",phone:"",email:"",adm:false },{ id:"tr9",cid:"bvw",name:"Tom",role:"Trainer",tids:["bvw_g","bvw_f"],pw:"tom123",phone:"",email:"",adm:false },],players: {
       sus_bam: ["Lena M.","Tom K.","Max S.","Sophie W.","Finn B.","Mia L.","Luis P.","Emma R.","Theo J.","Clara N."],sus_g:   ["Jonas H.","Anna T.","Noah G.","Clara F.","Ben M.","Lea S.","Felix K.","Sarah B.","Tim W.","Nina D.","Elias R.","Maja L."],sus_f1:  ["Paul R.","Julia S.","Leon K.","Marie H.","Jan B.","Lisa W.","Mark T.","Laura P.","Nico V.","Hanna G."],sus_f2:  ["Kai S.","Mia B.","Tom F.","Lara K.","Max W.","Nina H.","Ben R.","Sara L.","Joel T.","Zoe M."],sus_f3:  ["Luca D.","Emma P.","Finn S.","Clara B.","Jonas K.","Leah W.","Moritz R.","Alina T.","Noah F.","Ida V."],sus_e:   ["Erik Z.","Jana M.","Sven L.","Petra W.","Lars K.","Mona T."],bvw_g:   ["Finn R.","Hanna G.","Lars K.","Mona T.","Sven L.","Jana M.","Erik S.","Petra W."],bvw_f:   ["Max B.","Lara K.","Tim S.","Julia M.","Nico H.","Eva R."],},events: [
       { id:"e1",cid:"sus",tid:"sus_g",type:"training",title:"Training G-Jugend",date:addD(t,-14),time:"17:00",loc:"Sportplatz Nord",pt:"attendance",votes:{},li:[],fi:[],sc:[],note:"",open:false },{ id:"e2",cid:"sus",tid:"sus_g",type:"training",title:"Training G-Jugend",date:addD(t,-7),time:"17:00",loc:"Sportplatz Nord",pt:"attendance",votes:{"Jonas H.":"yes","Anna T.":"yes","Noah G.":"no","Clara F.":"yes","Ben M.":"yes","Lea S.":"no"},li:[],fi:[],sc:[],note:"",open:false },{ id:"e3",cid:"sus",tid:"sus_g",type:"training",title:"Training G-Jugend",date:t,time:"17:00",loc:"Sportplatz Nord",pt:"attendance",votes:{},li:[],fi:[],sc:[],note:"",open:false },{ id:"e4",cid:"sus",tid:"sus_g",type:"heimspiel",title:"Heimspiel vs. VfL Xanten",date:addD(t,4),time:"10:00",loc:"Hauptplatz",pt:"list",votes:{},li:[{id:"li1",txt:"Wasser",max:null},{id:"li2",txt:"Apfelschorle",max:null},{id:"li3",txt:"Trinkpäckchen",max:null},{id:"li4",txt:"Muffins",max:3},{id:"li5",txt:"Waffeln",max:2},{id:"li6",txt:"Kuchen",max:null},{id:"li7",txt:"Obst",max:null}],fi:[],sc:[],note:"Bitte 30 Minuten früher da sein!",open:false },{ id:"e5",cid:"sus",tid:"sus_g",type:"turnier",title:"Stadtturnier Kalkar 2026",date:addD(t,11),time:"09:00",loc:"Hauptplatz",pt:"attendance",votes:{},li:[],note:"Jahresabschlussturnier mit 8 Teams. Bitte Trikot mitbringen!",open:true,fi:[{id:"f1",name:"Feld 1",col:"#16a34a"},{id:"f2",name:"Feld 2",col:"#2563eb"},{id:"f3",name:"Feld 3",col:"#dc2626"}],sc:[
-          {id:"s1",fid:"f1",time:"09:00",a:"SuS Kalkar 1",b:"VfL Xanten",ref:"David Müller"},{id:"s2",fid:"f2",time:"09:00",a:"SuS Kalkar 2",b:"BV Sturm Wissel",ref:"Sarah Koch"},{id:"s3",fid:"f3",time:"09:00",a:"FC Kleve",b:"SV Bedburg",ref:"Klaus Weber"},{id:"s4",fid:"f1",time:"09:25",a:"VfL Xanten",b:"BV Sturm Wissel",ref:"Tom Schneider"},{id:"s5",fid:"f2",time:"09:25",a:"SuS Kalkar 1",b:"FC Kleve",ref:"David Müller"},{id:"s6",fid:"f3",time:"09:25",a:"SuS Kalkar 2",b:"SV Bedburg",ref:"Sarah Koch"},]},{ id:"e6",cid:"sus",tid:"sus_g",type:"training",title:"Training G-Jugend",date:addD(t,18),time:"17:00",loc:"Sportplatz Nord",pt:"attendance",votes:{},li:[],fi:[],sc:[],note:"",open:false },{ id:"e7",cid:"sus",tid:"sus_g",type:"auswarts",title:"Auswärtsspiel SV Bedburg",date:addD(t,25),time:"11:00",loc:"SV Bedburg Platz",pt:"carpool",votes:{},li:[],fi:[],sc:[],note:"Treffpunkt: 10:15 Uhr Sportplatz Nord",open:false,carpoolNeeds:{},carpoolOffers:{} },{ id:"e8",cid:"sus",tid:"sus_bam",type:"training",title:"Training Bambinis",date:t,time:"16:00",loc:"Nebenplatz",pt:"attendance",votes:{},li:[],fi:[],sc:[],note:"",open:false },{ id:"e9",cid:"sus",tid:"sus_bam",type:"event",title:"Bambini-Fest 🎉",date:addD(t,8),time:"14:00",loc:"Vereinsheim",pt:"attendance",votes:{},li:[],fi:[],sc:[],note:"Eltern sind herzlich eingeladen!",open:false },{ id:"e10",cid:"sus",tid:"sus_e",type:"training",title:"Training E-Jugend",date:t,time:"15:30",loc:"Nebenplatz 2",pt:"attendance",votes:{},li:[],fi:[],sc:[],note:"",open:false },{ id:"e11",cid:"sus",tid:"sus_f1",type:"freundschaft",title:"Freundschaftsspiel",date:addD(t,6),time:"10:00",loc:"Hauptplatz",pt:"attendance",votes:{},li:[],fi:[],sc:[],note:"",open:false },{ id:"e12",cid:"bvw",tid:"bvw_g",type:"training",title:"Training G-Jugend BVW",date:t,time:"17:30",loc:"BVW Platz",pt:"attendance",votes:{},li:[],fi:[],sc:[],note:"",open:false },{ id:"e13",cid:"bvw",tid:"bvw_f",type:"heimspiel",title:"Heimspiel F-Jugend",date:addD(t,5),time:"09:00",loc:"BVW Hauptplatz",pt:"attendance",votes:{},li:[],fi:[],sc:[],note:"",open:false },],messages: [],pollTemplates: [
+          {id:"s1",fid:"f1",time:"09:00",a:"SuS Kalkar 1",b:"VfL Xanten",ref:"David Müller"},{id:"s2",fid:"f2",time:"09:00",a:"SuS Kalkar 2",b:"BV Sturm Wissel",ref:"Sarah Koch"},{id:"s3",fid:"f3",time:"09:00",a:"FC Kleve",b:"SV Bedburg",ref:"Klaus Weber"},{id:"s4",fid:"f1",time:"09:25",a:"VfL Xanten",b:"BV Sturm Wissel",ref:"Tom Schneider"},{id:"s5",fid:"f2",time:"09:25",a:"SuS Kalkar 1",b:"FC Kleve",ref:"David Müller"},{id:"s6",fid:"f3",time:"09:25",a:"SuS Kalkar 2",b:"SV Bedburg",ref:"Sarah Koch"},]},{ id:"e6",cid:"sus",tid:"sus_g",type:"training",title:"Training G-Jugend",date:addD(t,18),time:"17:00",loc:"Sportplatz Nord",pt:"attendance",votes:{},li:[],fi:[],sc:[],note:"",open:false },{ id:"e7",cid:"sus",tid:"sus_g",type:"auswarts",title:"Auswärtsspiel SV Bedburg",date:addD(t,25),time:"11:00",loc:"SV Bedburg Platz",pt:"carpool",votes:{},li:[],fi:[],sc:[],note:"Treffpunkt: 10:15 Uhr Sportplatz Nord",open:false,carpoolNeeds:{},carpoolOffers:{} },{ id:"e8",cid:"sus",tid:"sus_bam",type:"training",title:"Training Bambinis",date:t,time:"16:00",loc:"Nebenplatz",pt:"attendance",votes:{},li:[],fi:[],sc:[],note:"",open:false },{ id:"e9",cid:"sus",tid:"sus_bam",type:"event",title:"Bambini-Fest *",date:addD(t,8),time:"14:00",loc:"Vereinsheim",pt:"attendance",votes:{},li:[],fi:[],sc:[],note:"Eltern sind herzlich eingeladen!",open:false },{ id:"e10",cid:"sus",tid:"sus_e",type:"training",title:"Training E-Jugend",date:t,time:"15:30",loc:"Nebenplatz 2",pt:"attendance",votes:{},li:[],fi:[],sc:[],note:"",open:false },{ id:"e11",cid:"sus",tid:"sus_f1",type:"freundschaft",title:"Freundschaftsspiel",date:addD(t,6),time:"10:00",loc:"Hauptplatz",pt:"attendance",votes:{},li:[],fi:[],sc:[],note:"",open:false },{ id:"e12",cid:"bvw",tid:"bvw_g",type:"training",title:"Training G-Jugend BVW",date:t,time:"17:30",loc:"BVW Platz",pt:"attendance",votes:{},li:[],fi:[],sc:[],note:"",open:false },{ id:"e13",cid:"bvw",tid:"bvw_f",type:"heimspiel",title:"Heimspiel F-Jugend",date:addD(t,5),time:"09:00",loc:"BVW Hauptplatz",pt:"attendance",votes:{},li:[],fi:[],sc:[],note:"",open:false },],messages: [],pollTemplates: [
       { id:"pt1",cid:"sus",name:"Verpflegung Heimspiel",icon:"*",items:[{id:"i1",txt:"Wasser",max:null},{id:"i2",txt:"Apfelschorle",max:null},{id:"i3",txt:"Trinkpäckchen",max:null},{id:"i4",txt:"Muffins",max:3},{id:"i5",txt:"Waffeln",max:2},{id:"i6",txt:"Kuchen",max:null},{id:"i7",txt:"Obst",max:null}] },{ id:"pt2",cid:"sus",name:"Helfer Turnier",icon:"*",items:[{id:"i1",txt:"Aufbau helfen",max:2},{id:"i2",txt:"Abbau helfen",max:2},{id:"i3",txt:"Schiedsrichter",max:1},{id:"i4",txt:"Getränkestand",max:2}] },{ id:"pt3",cid:"sus",name:"Auswärtsspiel Verpflegung",icon:"Bus",items:[{id:"i1",txt:"Brötchen",max:null},{id:"i2",txt:"Obst",max:null},{id:"i3",txt:"Wasser",max:null},{id:"i4",txt:"Saft",max:null}] },],};
 }
 
@@ -212,7 +212,7 @@ button:active:not(:disabled){transform:scale(.95)}
 
 const TH = cl => {
   const p = cl?.pri||"#16a34a";
-  return { p,s:cl?.sec||"#052e16",ct:contrast(p),li:mix(p,85),logo:cl?.logo||null,em:cl?.em||"⚽" };
+  return { p,s:cl?.sec||"#052e16",ct:contrast(p),li:mix(p,85),logo:cl?.logo||null,em:cl?.em||"*" };
 };
 
 function Logo({cl,sz=48,sx={}}) {
@@ -484,7 +484,7 @@ function SetupWizard({ onDone,onBack }) {
               {SPORTS.map(s=>(
                 <button key={s.id} onClick={()=>u({sport:s.id})}
                   style={{padding:"11px 12px",borderRadius:12,border:`2px solid ${f.sport===s.id?s.col:"rgba(255,255,255,.1)"}`,background:f.sport===s.id?s.col+"22":"rgba(255,255,255,.05)",color:f.sport===s.id?"#fff":"rgba(255,255,255,.5)",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",textAlign:"left",transition:"all .15s"}}>
-                  {f.sport===s.id&&"✓ "}{s.label}
+                  {f.sport===s.id&&"* "}{s.label}
                 </button>
               ))}
             </div>
@@ -759,7 +759,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
             return (
               <div key={c} className="up" onClick={()=>{setCat(c);if(trs.length===1){setSel(trs[0].id);setPw("");setStep("pwd");}else setStep("trainer");}}
                 style={{background:"rgba(255,255,255,.09)",border:"1.5px solid rgba(255,255,255,.13)",borderRadius:20,padding:"16px 20px",cursor:"pointer",marginBottom:12,animationDelay:`${i*.06}s`,display:"flex",alignItems:"center",gap:14}}>
-                <div style={{width:46,height:46,borderRadius:14,background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{icons[0]||"⚽"}</div>
+                <div style={{width:46,height:46,borderRadius:14,background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{icons[0]||"*"}</div>
                 <div style={{flex:1}}>
                   <div style={{color:"#fff",fontWeight:900,fontSize:18}}>{c}</div>
                   <div style={{color:"rgba(255,255,255,.5)",fontSize:12,marginTop:2}}>{trs.length} Trainer</div>
@@ -830,7 +830,7 @@ function AdminLogin({cl,onLogin,onBack}) {
           <div style={{textAlign:"center",marginBottom:22}}><Logo cl={cl} sz={68} sx={{margin:"0 auto 12px"}}/><h2 style={{fontSize:22,fontWeight:900,color:"#0f172a",margin:"0 0 4px"}}>Vereinsadmin</h2><p style={{color:"#94a3b8",fontSize:13}}>{cl.name}</p></div>
           <Inp label="Admin-Passwort" type="password" val={pw} set={setPw} ph="Passwort…" af cl={cl}/>
           {err&&<div style={{background:"#fef2f2",borderRadius:12,padding:"10px 14px",fontSize:14,fontWeight:700,color:"#dc2626",marginTop:10}}>❌ Falsches Passwort</div>}
-          <div style={{height:14}}/><Btn full ch="Als Admin einloggen" onClick={go} icon="🛡️" v="drk"/>
+          <div style={{height:14}}/><Btn full ch="Als Admin einloggen" onClick={go} icon="**" v="drk"/>
           <p style={{textAlign:"center",fontSize:11,color:"#94a3b8",marginTop:12}}>Demo: <code style={{background:"#f1f5f9",padding:"2px 5px",borderRadius:5}}>admin123</code> / <code style={{background:"#f1f5f9",padding:"2px 5px",borderRadius:5}}>wissel123</code></p>
         </div>
       </div>
@@ -869,7 +869,7 @@ function HelperLogin({cl,helpers,onLogin,onBack}) {
                 <Inp label="Persönlicher Helfer-Code" type="password" val={code} set={v=>{setCode(v);setErr(false);}} ph="Code vom Trainer erhalten…" af cl={cl}/>
                 {err&&<div style={{background:"#fef2f2",borderRadius:12,padding:"10px 14px",fontSize:14,fontWeight:700,color:"#dc2626",marginTop:10}}>❌ Ungültiger Code</div>}
                 <div style={{height:14}}/>
-                <Btn full ch="Als Helfer einloggen" onClick={go} dis={!code.trim()} icon="🙋" cl={cl}/>
+                <Btn full ch="Als Helfer einloggen" onClick={go} dis={!code.trim()} icon="*" cl={cl}/>
               </>
           }
         </div>
@@ -921,7 +921,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
         return (
           <div key={c} className="up" onClick={()=>{setCat(c);if(tms.length===1){setTid(tms[0].id);setPwd("");setStep("pwd");}else setStep("team");}}
             style={{background:"rgba(255,255,255,.09)",border:"1.5px solid rgba(255,255,255,.13)",borderRadius:20,padding:"16px 20px",cursor:"pointer",marginBottom:12,animationDelay:`${i*.06}s`,display:"flex",alignItems:"center",gap:14}}>
-            <div style={{width:46,height:46,borderRadius:14,background:(tms[0]?.col||"#16a34a")+"33",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{tms[0]?.icon||"⚽"}</div>
+            <div style={{width:46,height:46,borderRadius:14,background:(tms[0]?.col||"#16a34a")+"33",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{tms[0]?.icon||"*"}</div>
             <div style={{flex:1}}>
               <div style={{color:"#fff",fontWeight:900,fontSize:18}}>{c}</div>
               {tms.length>1&&<div style={{color:"rgba(255,255,255,.5)",fontSize:12,marginTop:2}}>{tms.length} Mannschaften</div>}
@@ -1079,7 +1079,7 @@ function PollList({ev,user,onVote}) {
               <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:5}}>
                 <div style={{width:22,height:22,borderRadius:7,background:sel?"#16a34a":"#fff",border:`2px solid ${sel?"#16a34a":"#cbd5e1"}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all .15s"}}>{sel&&<span style={{color:"#fff",fontSize:13,fontWeight:900,lineHeight:1}}>✓</span>}</div>
                 <span style={{flex:1,fontWeight:sel?800:600,fontSize:15,color:sel?"#15803d":"#334155"}}>{item.txt}</span>
-                {item.max&&<Tag c={full&&!sel?"#dc2626":"#64748b"} bg={full&&!sel?"#fee2e2":"#f1f5f9"} ch={full&&!sel?"Voll 🚫":`max ${item.max}`}/>}
+                {item.max&&<Tag c={full&&!sel?"#dc2626":"#64748b"} bg={full&&!sel?"#fee2e2":"#f1f5f9"} ch={full&&!sel?"Voll *":`max ${item.max}`}/>}
                 {vts.length>0&&<div style={{display:"flex",alignItems:"center",gap:3}}><div style={{display:"flex"}}>{vts.slice(0,3).map((v,i)=><div key={v} style={{marginLeft:i?-6:0,zIndex:3-i}}><Av name={v} sz={20}/></div>)}</div><span style={{fontSize:12,fontWeight:800,color:"#475569",marginLeft:3}}>{tk}</span></div>}
               </div>
               <div style={{height:4,borderRadius:99,background:"#e2e8f0",overflow:"hidden"}}><div style={{height:"100%",borderRadius:99,background:sel?"#16a34a":full?"#fca5a5":"#94a3b8",width:`${(tk/mxPct)*100}%`,transition:"width .4s ease"}}/></div>
@@ -1143,8 +1143,8 @@ function playerFitsTeam(player,team) {
 }
 function fitLabel(fitType) {
   if (fitType === "normal")     return null; // no label needed
-  if (fitType === "pullup")     return {text:"⬆️ Hochgeholt",col:"#d97706",bg:"#fef3c7"};
-  if (fitType === "girlpullup") return {text:"⬆️ Hochgeholt (W)",col:"#7c3aed",bg:"#ede9fe"};
+  if (fitType === "pullup")     return {text:"⬆* Hochgeholt",col:"#d97706",bg:"#fef3c7"};
+  if (fitType === "girlpullup") return {text:"⬆* Hochgeholt (W)",col:"#7c3aed",bg:"#ede9fe"};
   return null;
 }
 
@@ -1206,7 +1206,7 @@ function StrengthsInput({ strengths,customStrengths,onChange,tp }) {
           return (
             <button key={s} onClick={()=>toggleBase(s)}
               style={{padding:"6px 12px",borderRadius:99,border:`1.5px solid ${sel?tp:"#e2e8f0"}`,background:sel?tp+"15":"#fff",color:sel?tp:"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",transition:"all .14s"}}>
-              {sel?"✓ ":""}{s}
+              {sel?"* ":""}{s}
             </button>
           );
         })}
@@ -1280,7 +1280,7 @@ function FriendsInput({ label,sub,ids,allPlayers,current,onChange,color }) {
                 <Av name={pl.name} sz={28}/>
                 <div style={{flex:1}}>
                   <div style={{fontWeight:700,fontSize:13,color:"#0f172a"}}>{pl.name}</div>
-                  <div style={{fontSize:11,color:"#64748b"}}>Jg. {pl.by} · {pl.gender==="w"?"👧":"👦"}</div>
+                  <div style={{fontSize:11,color:"#64748b"}}>Jg. {pl.by} · {pl.gender==="w"?"*":"*"}</div>
                 </div>
                 <span style={{fontSize:16,color}}>＋</span>
               </button>
@@ -1325,7 +1325,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,onSave,onClose,t 
               <div style={{color:"#fff",fontWeight:900,fontSize:19}}>{p.name||"Neuer Spieler"}</div>
               <div style={{color:"rgba(255,255,255,.6)",fontSize:13,marginTop:2}}>
                 {p.by&&`Jg. ${p.by}`}{p.position&&` · ${p.position}`}
-                {p.name && totalGames > 0 && ` · ⚽ ${totalGames} Spiele`}
+                {p.name && totalGames > 0 && ` · * ${totalGames} Spiele`}
               </div>
             </div>
             <button onClick={onClose} style={{width:36,height:36,borderRadius:11,background:"rgba(255,255,255,.15)",border:"none",color:"rgba(255,255,255,.8)",fontSize:18,cursor:"pointer"}}>✕</button>
@@ -1335,11 +1335,11 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,onSave,onClose,t 
         <div style={{padding:"18px 20px 48px",display:"flex",flexDirection:"column",gap:16}}>
 
           {}
-          <Section title="👤 Stammdaten">
+          <Section title="* Stammdaten">
             <Inp label="Name" val={p.name} set={v=>up({name:v})} ph="Vorname Nachname" cl={{pri:t.p}}/>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
               <Inp label="Geburtsjahr" val={String(p.by||"")} set={v=>up({by:parseInt(v)||p.by})} type="number" ph="z.B. 2014" cl={{pri:t.p}}/>
-              <Sel label="Geschlecht" val={p.gender||"m"} set={v=>up({gender:v})} opts={[["m","👦 Männlich"],["w","👧 Weiblich"]]}/>
+              <Sel label="Geschlecht" val={p.gender||"m"} set={v=>up({gender:v})} opts={[["m","* Männlich"],["w","* Weiblich"]]}/>
             </div>
             {p.by && (
               <div style={{background:"#f0fdf4",borderRadius:10,padding:"9px 13px",fontSize:12,color:"#15803d",fontWeight:600}}>
@@ -1350,7 +1350,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,onSave,onClose,t 
           </Section>
 
           {}
-          <Section title="⚽ Mannschaften">
+          <Section title="* Mannschaften">
             <Sel label="Hauptmannschaft" val={p.mainTid||""} set={v=>up({mainTid:v})}
               opts={[["","– keine –"],...allTeams.map(tm=>[tm.id,tm.icon+" "+tm.name])]}/>
             <div>
@@ -1370,7 +1370,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,onSave,onClose,t 
                       </div>
                       {sel && tmStats && (tmStats.games > 0 || tmStats.training > 0) && (
                         <div style={{fontSize:11,color:"#16a34a",fontWeight:700}}>
-                          {tmStats.games > 0 && `⚽${tmStats.games} `}{tmStats.training > 0 && `🏃${tmStats.training}`}
+                          {tmStats.games > 0 && `*${tmStats.games} `}{tmStats.training > 0 && `*${tmStats.training}`}
                         </div>
                       )}
                       {sel && <Tag c="#16a34a" bg="#dcfce7" ch="Optional" sm/>}
@@ -1382,7 +1382,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,onSave,onClose,t 
           </Section>
 
           {}
-          <Section title="📋 Spielerprofil (nur Trainer)">
+          <Section title="* Spielerprofil (nur Trainer)">
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
               <Sel label="Position" val={p.position||""} set={v=>up({position:v})} opts={[["","– wählen –"],...POSITIONS_LIST.map(x=>[x,x])]}/>
               <Sel label="Starker Fuß" val={p.foot||""} set={v=>up({foot:v})} opts={[["","– wählen –"],...FOOT_LIST.map(x=>[x,x])]}/>
@@ -1408,9 +1408,9 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,onSave,onClose,t 
           </Section>
 
           {}
-          <Section title="📊 Statistiken">
+          <Section title="* Statistiken">
             <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:9,marginBottom:12}}>
-              {[["goals","⚽","Tore"],["assists","🎯","Vorlagen"],["yellowCards","🟨","Gelb"],["redCards","🟥","Rot"]].map(([k,ic,l])=>(
+              {[["goals","*","Tore"],["assists","*","Vorlagen"],["yellowCards","*","Gelb"],["redCards","*","Rot"]].map(([k,ic,l])=>(
                 <div key={k}>
                   <div style={{fontSize:10,fontWeight:800,color:"#64748b",marginBottom:6,textAlign:"center"}}>{ic} {l}</div>
                   <div style={{display:"flex",alignItems:"center",gap:4,justifyContent:"center"}}>
@@ -1462,7 +1462,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,onSave,onClose,t 
           </Section>
 
           {}
-          <Section title="👕 Trikot">
+          <Section title="* Trikot">
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
               <div>
                 <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.5}}>NUMMER</div>
@@ -1495,7 +1495,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,onSave,onClose,t 
           </Section>
 
           {}
-          <Section title="🔒 Trainer-Notizen (intern)">
+          <Section title="* Trainer-Notizen (intern)">
             {}
             <div>
               <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.5}}>LETZTE SAISON GESPIELT IN</div>
@@ -1512,9 +1512,9 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,onSave,onClose,t 
                 const lastIdx=TEAM_HIERARCHY.indexOf(p.lastTeamId);
                 const curIdx=TEAM_HIERARCHY.indexOf(p.mainTid);
                 const hint = lastIdx<0 ? null :
-                  curIdx>lastIdx ? "⬆️ Aufstieg gegenüber letzter Saison" :
-                  curIdx===lastIdx ? "↔️ Gleiches Niveau wie letzte Saison" :
-                  "⬇️ Abstieg gegenüber letzter Saison — nur in Einzelfällen";
+                  curIdx>lastIdx ? "⬆* Aufstieg gegenüber letzter Saison" :
+                  curIdx===lastIdx ? "↔* Gleiches Niveau wie letzte Saison" :
+                  "⬇* Abstieg gegenüber letzter Saison — nur in Einzelfällen";
                 const hintCol = curIdx>lastIdx?"#16a34a":curIdx===lastIdx?"#2563eb":"#dc2626";
                 return hint ? <div style={{background:hintCol+"10",borderRadius:9,padding:"7px 11px",fontSize:12,fontWeight:600,color:hintCol,marginBottom:8,border:`1px solid ${hintCol}25`}}>{hint}</div> : null;
               })()}
@@ -1546,9 +1546,9 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,onSave,onClose,t 
           </Section>
 
           {}
-          <Section title="🤝 Freundschaften & Zusammenspiel">
+          <Section title="* Freundschaften & Zusammenspiel">
             <FriendsInput
-              label="👫 Ist befreundet mit"
+              label="* Ist befreundet mit"
               sub="Wenn möglich im selben Team"
               ids={p.friends||[]}
               allPlayers={allPlayers}
@@ -1557,7 +1557,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,onSave,onClose,t 
               color="#2563eb"
             />
             <FriendsInput
-              label="⚠️ Muss zwingend zusammenspielen"
+              label="** Muss zwingend zusammenspielen"
               sub="Eltern-Wunsch / besondere Situation"
               ids={p.mustWith||[]}
               allPlayers={allPlayers}
@@ -1595,13 +1595,13 @@ function PlayerCard({ player: pl,onEdit,onDel,isMain,allTeams,allEvents }) {
           </div>
           <div style={{fontSize:12,color:"#64748b",marginTop:2,display:"flex",gap:6,flexWrap:"wrap"}}>
             {pl.by && <span>Jg. {pl.by}</span>}
-            <span>{pl.gender==="w"?"👧":"👦"}</span>
+            <span>{pl.gender==="w"?"*":"*"}</span>
             {pl.position && <span>· {pl.position}</span>}
             {!isMain && <Tag c="#d97706" bg="#fef3c7" ch="Aushilfe" sm/>}
           </div>
         </div>
         <div style={{display:"flex",gap:5,flexShrink:0,alignItems:"center"}}>
-          {totalGames > 0 && <Tag c="#16a34a" bg="#dcfce7" ch={`⚽${totalGames}`} sm/>}
+          {totalGames > 0 && <Tag c="#16a34a" bg="#dcfce7" ch={`*${totalGames}`} sm/>}
           {(pl.rating||0) > 0 && <span style={{fontSize:14}}>{"⭐".repeat(Math.min(pl.rating,5))}</span>}
         </div>
         <div style={{display:"flex",gap:5,flexShrink:0}}>
@@ -1640,8 +1640,8 @@ function PlayerCard({ player: pl,onEdit,onDel,isMain,allTeams,allEvents }) {
                   <div key={tm.id} style={{display:"flex",alignItems:"center",gap:8,background:"#f8fafc",borderRadius:9,padding:"6px 10px"}}>
                     <span style={{fontSize:14}}>{tm.icon}</span>
                     <span style={{fontSize:12,fontWeight:600,flex:1,color:"#334155"}}>{tm.name}{tm.id!==pl.mainTid?" (Aushilfe)":""}</span>
-                    {s.games>0&&<Tag c="#16a34a" bg="#dcfce7" ch={`⚽ ${s.games}`} sm/>}
-                    {s.training>0&&<Tag c="#2563eb" bg="#eff6ff" ch={`🏃 ${s.training}`} sm/>}
+                    {s.games>0&&<Tag c="#16a34a" bg="#dcfce7" ch={`* ${s.games}`} sm/>}
+                    {s.training>0&&<Tag c="#2563eb" bg="#eff6ff" ch={`* ${s.training}`} sm/>}
                   </div>
                 );
               })}
@@ -1765,7 +1765,7 @@ function PoolView({ allPlayers,myTeams,allTeams,defaultScopeTids,cid,onAssign,on
       {}
       <div style={{overflowX:"auto",display:"flex",gap:6,marginBottom:12,scrollbarWidth:"none"}}>
         {[
-          {id:"all",label:`Alle (${allPlayers.length})`},{id:"unassigned",label:`📦 Offen (${unassigned})`,urgent:unassigned>0},...scopeTeams.map(tm=>({id:tm.id,label:`${tm.name} (${countForTeam(tm.id)})`,col:tm.col}))
+          {id:"all",label:`Alle (${allPlayers.length})`},{id:"unassigned",label:`* Offen (${unassigned})`,urgent:unassigned>0},...scopeTeams.map(tm=>({id:tm.id,label:`${tm.name} (${countForTeam(tm.id)})`,col:tm.col}))
         ].map(f=>(
           <button key={f.id} onClick={()=>setFilter(f.id)}
             style={{padding:"7px 13px",borderRadius:99,border:`2px solid ${filter===f.id?(f.col||t.p):"#e2e8f0"}`,background:filter===f.id?(f.col||t.p)+(f.col?"18":""):"#fff",color:filter===f.id?(f.col||t.p):"#475569",fontWeight:700,fontSize:12,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit",flexShrink:0}}>
@@ -1838,7 +1838,7 @@ function PlayerAssignRow({ player: pl,teams,allTeams,t,onAssign,onOptToggle }) {
                 <div style={{flex:1}}>
                   <div style={{color:"#fff",fontWeight:900,fontSize:20}}>{pl.name}</div>
                   <div style={{color:"rgba(255,255,255,.7)",fontSize:13,marginTop:3}}>
-                    Jg. {pl.by} · {pl.gender==="w"?"👧 Mädchen":"👦 Junge"}
+                    Jg. {pl.by} · {pl.gender==="w"?"* Mädchen":"* Junge"}
                     {pl.gender==="w"&&<span style={{marginLeft:6,fontSize:11,background:"rgba(255,255,255,.2)",borderRadius:5,padding:"1px 7px"}}>+2J Mädchen-Regel</span>}
                   </div>
                   {pl.position&&<div style={{color:"rgba(255,255,255,.6)",fontSize:12,marginTop:2}}>⚽ {pl.position}{pl.foot?` · ${pl.foot}`:""}</div>}
@@ -1900,7 +1900,7 @@ function PlayerAssignRow({ player: pl,teams,allTeams,t,onAssign,onOptToggle }) {
               {}
               {((pl.goals||0)+(pl.assists||0)+(pl.yellowCards||0)+(pl.redCards||0))>0&&(
                 <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:9}}>
-                  {[["⚽",pl.goals||0,"Tore"],["🎯",pl.assists||0,"Vorlagen"],["🟨",pl.yellowCards||0,"Gelb"],["🟥",pl.redCards||0,"Rot"]].map(([ic,v,l])=>(
+                  {[["*",pl.goals||0,"Tore"],["*",pl.assists||0,"Vorlagen"],["*",pl.yellowCards||0,"Gelb"],["*",pl.redCards||0,"Rot"]].map(([ic,v,l])=>(
                     <div key={l} style={{background:"#f8fafc",borderRadius:11,padding:"10px 5px",textAlign:"center",border:"1px solid #e2e8f0"}}>
                       <div style={{fontSize:18}}>{ic}</div>
                       <div style={{fontWeight:900,fontSize:18,color:"#334155"}}>{v}</div>
@@ -1964,7 +1964,7 @@ function PlayerAssignRow({ player: pl,teams,allTeams,t,onAssign,onOptToggle }) {
           </div>
           <div style={{fontSize:12,color:"#64748b",marginTop:2,display:"flex",gap:7,flexWrap:"wrap"}}>
             <span>Jg. {pl.by}</span>
-            <span>{pl.gender==="w"?"👧 Mädchen":"👦 Junge"}</span>
+            <span>{pl.gender==="w"?"* Mädchen":"* Junge"}</span>
             {pl.gender==="w"&&<span style={{color:"#7c3aed",fontSize:11,fontWeight:600}}>+2J</span>}
           </div>
           <div style={{marginTop:3,display:"flex",gap:4,flexWrap:"wrap"}}>
@@ -1973,7 +1973,7 @@ function PlayerAssignRow({ player: pl,teams,allTeams,t,onAssign,onOptToggle }) {
               const lbl=fitLabel(ft);
               return (
                 <span key={tm.id} style={{fontSize:10,fontWeight:700,color:lbl?lbl.col:tm.col,background:lbl?lbl.bg:tm.col+"15",borderRadius:5,padding:"1px 6px",display:"inline-flex",alignItems:"center",gap:3}}>
-                  {lbl&&"⬆️"}{tm.name}
+                  {lbl&&"⬆*"}{tm.name}
                 </span>
               );
             })}
@@ -2022,7 +2022,7 @@ function PlayerAssignRow({ player: pl,teams,allTeams,t,onAssign,onOptToggle }) {
               return (
                 <button key={tm.id} onClick={()=>onOptToggle(tm.id,!isOpt)}
                   style={{display:"flex",alignItems:"center",gap:5,padding:"6px 12px",borderRadius:9,border:`2px solid ${isOpt?tm.col:"#e2e8f0"}`,background:isOpt?tm.col+"15":"#f8fafc",color:isOpt?tm.col:"#94a3b8",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",transition:"all .13s"}}>
-                  {isOpt?"✓ ":""}{tm.name}
+                  {isOpt?"* ":""}{tm.name}
                 </button>
               );
             })}
@@ -2056,14 +2056,14 @@ function PlayersTab({ data,myTids,save,fire,cl }) {
     const next   = exists ? allPlayers.map(x=>x.id===p.id?p:x) : [...allPlayers,p];
     save({...data,playerProfiles:next});
     setEditP(null); setShowNew(false);
-    fire("Spielerprofil gespeichert ✓");
+    fire("Spielerprofil gespeichert *");
   };
   const delPlayer = id => { save({...data,playerProfiles:allPlayers.filter(p=>p.id!==id)}); fire("Spieler entfernt"); };
 
   const assignPlayer = (playerId,toTid) => {
     const next = allPlayers.map(p => p.id===playerId ? {...p,mainTid:toTid} : p);
     save({...data,playerProfiles:next});
-    fire(toTid ? "Spieler zugewiesen ✓" : "Spieler in Pool verschoben");
+    fire(toTid ? "Spieler zugewiesen *" : "Spieler in Pool verschoben");
   };
 
   const q = search.toLowerCase();
@@ -2092,7 +2092,7 @@ function PlayersTab({ data,myTids,save,fire,cl }) {
       )}
       {}
       <div style={{display:"flex",gap:8,marginBottom:14}}>
-        {[["list","📋 Kaderliste"],["pool","⚡ Zuteilung"]].map(([v,l])=>(
+        {[["list","* Kaderliste"],["pool","* Zuteilung"]].map(([v,l])=>(
           <button key={v} onClick={()=>setView(v)}
             style={{flex:1,padding:"10px",borderRadius:12,border:`2px solid ${view===v?t.p:"#e2e8f0"}`,background:view===v?t.p:"#fff",color:view===v?"#fff":"#475569",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",transition:"all .15s"}}>
             {l}
@@ -2218,7 +2218,7 @@ function BrandingTab({cl,onSave}) {
           <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.6,textTransform:"uppercase",marginBottom:8}}>Vereinslogo</div>
           <div style={{display:"flex",alignItems:"center",gap:14}}>
             <div style={{width:70,height:70,borderRadius:18,overflow:"hidden",border:"2px solid #e2e8f0",background:"#f8fafc",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-              {c.logo?<img src={c.logo} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span style={{fontSize:34}}>{c.em||"⚽"}</span>}
+              {c.logo?<img src={c.logo} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span style={{fontSize:34}}>{c.em||"*"}</span>}
             </div>
             <div style={{flex:1,display:"flex",flexDirection:"column",gap:7}}>
               <input ref={ref} type="file" accept="image
@@ -2232,7 +2232,7 @@ function TemplateForm({initial,onSave,onCancel,cl,title}) {
   const dragIdx=useRef(null);
   const dragOverIdx=useRef(null);
 
-  const QUICK_EMOJIS=["📋","🥤","🍕","🚌","🙋","🏆","🎉","🥗","🍰","⚽","🎯","🛒"];
+  const QUICK_EMOJIS=["*","Getraenk","Pizza","Bus","Helfer","Pokal","Fest","Salat","Kuchen","Ball","Ziel","Einkauf"];
 
   const addItem=()=>{
     if(!f._txt.trim())return;
@@ -2281,7 +2281,7 @@ function TemplateForm({initial,onSave,onCancel,cl,title}) {
       <div style={{marginBottom:16}}>
         <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5}}>AUSWAHLMODUS</div>
         <div style={{display:"flex",gap:8}}>
-          {[["single","☝️ Einfachauswahl","Nur eine Option wählbar"],["multi","✌️ Mehrfachauswahl","Mehrere Optionen wählbar"]].map(([k,label,sub])=>(
+          {[["single","** Einfachauswahl","Nur eine Option wählbar"],["multi","** Mehrfachauswahl","Mehrere Optionen wählbar"]].map(([k,label,sub])=>(
             <div key={k} onClick={()=>u({selType:k})}
               style={{flex:1,borderRadius:14,border:`2px solid ${(f.selType||"multi")===k?t.p:"#e2e8f0"}`,background:(f.selType||"multi")===k?t.p+"10":"#fff",padding:"12px 10px",cursor:"pointer",textAlign:"center",transition:"all .15s"}}>
               <div style={{fontSize:22,marginBottom:4}}>{label.split(" ")[0]}</div>
@@ -2335,7 +2335,7 @@ function TemplateForm({initial,onSave,onCancel,cl,title}) {
         </div>
       </div>
 
-      <Btn full ch={`💾 Vorlage speichern (${f.items.length} Option${f.items.length!==1?"en":""})`}
+      <Btn full ch={`* Vorlage speichern (${f.items.length} Option${f.items.length!==1?"en":""})`}
         onClick={()=>canSave&&onSave(f)} dis={!canSave} cl={cl}/>
       {!canSave&&f.name.trim()&&f.items.length===0&&(
         <p style={{textAlign:"center",fontSize:12,color:"#f59e0b",marginTop:8}}>⚠️ Mindestens eine Option hinzufügen</p>
@@ -2401,11 +2401,11 @@ function TemplatesTab({data,cid,save,fire,cl}) {
 
   const doSaveNew=f=>{
     save({...data,pollTemplates:[...(data.pollTemplates||[]),{id:uid(),cid,name:f.name.trim(),icon:f.icon,items:f.items}]});
-    setMode(null);fire("Vorlage erstellt ✓");
+    setMode(null);fire("Vorlage erstellt *");
   };
   const doUpdate=f=>{
     save({...data,pollTemplates:(data.pollTemplates||[]).map(x=>x.id===mode?{...x,name:f.name.trim(),icon:f.icon,items:f.items}:x)});
-    setMode(null);fire("Vorlage gespeichert ✓");
+    setMode(null);fire("Vorlage gespeichert *");
   };
   const doDel=id=>{
     save({...data,pollTemplates:(data.pollTemplates||[]).filter(x=>x.id!==id)});
@@ -2434,7 +2434,7 @@ function TemplatesTab({data,cid,save,fire,cl}) {
 
       {}
       {mode&&mode!=="new"&&editTpl&&(
-        <TemplateForm title={`✏️ "${editTpl.name}" bearbeiten`}
+        <TemplateForm title={`** "${editTpl.name}" bearbeiten`}
           initial={{name:editTpl.name,icon:editTpl.icon,items:[...editTpl.items],_txt:"",_max:""}}
           onSave={doUpdate} onCancel={()=>setMode(null)} cl={cl}/>
       )}
@@ -2526,7 +2526,7 @@ function SeriesWizard({f,u,t}) {
       </div>
       {mode!=="none"&&<div onClick={e=>e.stopPropagation()} style={{borderTop:`1px solid ${t.p}25`,padding:"16px"}}>
         <div style={{display:"flex",gap:8,marginBottom:16}}>
-          {[["weekly","📅 Wöchentlich"],["custom","📌 Feste Daten"]].map(([m,l])=>(
+          {[["weekly","* Wöchentlich"],["custom","* Feste Daten"]].map(([m,l])=>(
             <button key={m} onClick={()=>u({recMode:m,recDays:[],recDates:[]})}
               style={{flex:1,padding:"10px 8px",borderRadius:12,border:`2px solid ${mode===m?t.p:"#e2e8f0"}`,background:mode===m?t.p:"#fff",color:mode===m?"#fff":"#475569",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",transition:"all .15s"}}>
               {l}
@@ -2669,7 +2669,7 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
           {f.pt==="list"&&<div>
             {}
             <div style={{display:"flex",gap:8,marginBottom:14}}>
-              {[["multi","✌️","Mehrfachauswahl","Mehrere wählbar"],["single","☝️","Einfachauswahl","Nur eine wählbar"]].map(([k,em,label,sub])=>(
+              {[["multi","**","Mehrfachauswahl","Mehrere wählbar"],["single","**","Einfachauswahl","Nur eine wählbar"]].map(([k,em,label,sub])=>(
                 <div key={k} onClick={()=>u({selType:k})}
                   style={{flex:1,borderRadius:13,border:`2px solid ${(f.selType||"multi")===k?t.p:"#e2e8f0"}`,background:(f.selType||"multi")===k?t.p+"10":"#fff",padding:"10px 8px",cursor:"pointer",textAlign:"center",transition:"all .15s"}}>
                   <div style={{fontSize:20,marginBottom:2}}>{em}</div>
@@ -2726,7 +2726,7 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
         {step===5&&<div className="in">
           <div style={{background:"#0f172a",borderRadius:17,padding:"18px"}}>
             <p style={{color:"rgba(255,255,255,.45)",fontSize:11,fontWeight:800,marginBottom:13,letterSpacing:.5}}>ZUSAMMENFASSUNG</p>
-            {[[" Mannschaft",teamsSel?.icon+" "+teamsSel?.name],["Art",ET[f.type]?.icon+" "+ET[f.type]?.label],["Titel",f.title],["Uhrzeit",f.time||"—"],f.loc&&["Ort","📍 "+f.loc],f.note&&["Notiz","📢 "+f.note.slice(0,50)],["Umfrage",f.pt==="att"?"✅ Anwesenheit":f.pt==="carpool"?"🚗 Fahrtgemeinschaft":`📋 Liste (${(f.li||[]).length} Opt.)`],["Termine",f.recMode==="weekly"?`🔁 Wöchentlich · ${f.recDays?.length||0} Tage`:f.recMode==="custom"?`📌 ${f.recDates?.length||0} Daten`:"1 Termin · "+fmtD(f.date)],f.open&&["Sichtbarkeit","🤝 Offen für andere Vereine"]].filter(Boolean).map(([k,v])=>(
+            {[[" Mannschaft",teamsSel?.icon+" "+teamsSel?.name],["Art",ET[f.type]?.icon+" "+ET[f.type]?.label],["Titel",f.title],["Uhrzeit",f.time||"—"],f.loc&&["Ort","* "+f.loc],f.note&&["Notiz","* "+f.note.slice(0,50)],["Umfrage",f.pt==="att"?"* Anwesenheit":f.pt==="carpool"?"* Fahrtgemeinschaft":`* Liste (${(f.li||[]).length} Opt.)`],["Termine",f.recMode==="weekly"?`* Wöchentlich · ${f.recDays?.length||0} Tage`:f.recMode==="custom"?`* ${f.recDates?.length||0} Daten`:"1 Termin · "+fmtD(f.date)],f.open&&["Sichtbarkeit","* Offen für andere Vereine"]].filter(Boolean).map(([k,v])=>(
               <div key={k} style={{display:"flex",gap:10,marginBottom:9}}>
                 <span style={{color:"rgba(255,255,255,.4)",fontSize:12,fontWeight:700,minWidth:90}}>{k}</span>
                 <span style={{color:"#fff",fontSize:13,fontWeight:700,flex:1}}>{v}</span>
@@ -2734,14 +2734,14 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
             ))}
           </div>
           {!isEdit&&<div style={{marginTop:14}}>
-            <Sw on={f.open} tog={()=>u({open:!f.open})} pri={t.p} label="🤝 Offen für andere Vereine" sub="Eltern ohne Login können abstimmen"/>
+            <Sw on={f.open} tog={()=>u({open:!f.open})} pri={t.p} label="* Offen für andere Vereine" sub="Eltern ohne Login können abstimmen"/>
           </div>}
         </div>}
       </div>
       {}
       <div style={{padding:"12px 16px",background:"#fff",borderTop:"1px solid #f1f5f9",display:"flex",gap:10,position:"sticky",bottom:0}}>
         {step>1?<Btn ch="← Zurück" onClick={()=>setStep(s=>s-1)} v="gst" sx={{flex:1}}/>:<Btn ch="Abbrechen" onClick={onClose} v="gst" sx={{flex:1}}/>}
-        {step<STEPS?<Btn ch="Weiter →" onClick={()=>setStep(s=>s+1)} dis={!ok()} cl={cl} sx={{flex:2}}/>:<Btn ch={isEdit?"Speichern":f.recMode==="weekly"?"Serie erstellen":f.recMode==="custom"?`${(f.recDates||[]).length} Termine erstellen`:"Termin erstellen"} onClick={finish} icon="✅" cl={cl} sx={{flex:2}}/>}
+        {step<STEPS?<Btn ch="Weiter →" onClick={()=>setStep(s=>s+1)} dis={!ok()} cl={cl} sx={{flex:2}}/>:<Btn ch={isEdit?"Speichern":f.recMode==="weekly"?"Serie erstellen":f.recMode==="custom"?`${(f.recDates||[]).length} Termine erstellen`:"Termin erstellen"} onClick={finish} icon="*" cl={cl} sx={{flex:2}}/>}
       </div>
     </div>
   );
@@ -2765,7 +2765,7 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
     const rec={...f,id:editH||uid(),cid,createdAt:editH?f.createdAt:new Date().toISOString()};
     const next=editH?allHelpers.map(x=>x.id===editH?rec:x):[...allHelpers,rec];
     save({...data,helpers:[...(data.helpers||[]).filter(h=>h.cid!==cid),...next]});
-    setShowForm(false);fire(editH?"Helfer aktualisiert ✓":"Helfer angelegt ✓");
+    setShowForm(false);fire(editH?"Helfer aktualisiert *":"Helfer angelegt *");
   };
   const del=id=>{save({...data,helpers:(data.helpers||[]).filter(h=>h.id!==id)});fire("Helfer entfernt");};
   const toggle=id=>{
@@ -2854,7 +2854,7 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
             </div>
 
             <div style={{display:"flex",gap:9}}>
-              <Btn full ch="Speichern" onClick={save2} dis={!f.name.trim()} cl={cl} icon="💾"/>
+              <Btn full ch="Speichern" onClick={save2} dis={!f.name.trim()} cl={cl} icon="*"/>
               <Btn ch="Abbrechen" onClick={()=>setShowForm(false)} v="gst"/>
             </div>
           </div>
@@ -2869,7 +2869,7 @@ function ChatTab({data,cid,myTids,session,save,fire,cl}) {
   const allTeams=data.teams.filter(tm=>tm.cid===cid);
   const isHelper=session.role==="helper";
   const scopes=[
-    {id:"club_"+cid,label:"🏟 Gesamter Verein",sub:"Alle Teams"},...myTids.map(tid=>{const tm=allTeams.find(x=>x.id===tid);return{id:"team_"+tid,label:tm?.icon+" "+(tm?.name||tid),sub:tm?.cat||""};})
+    {id:"club_"+cid,label:"* Gesamter Verein",sub:"Alle Teams"},...myTids.map(tid=>{const tm=allTeams.find(x=>x.id===tid);return{id:"team_"+tid,label:tm?.icon+" "+(tm?.name||tid),sub:tm?.cat||""};})
   ];
 
   const [selScope,setSelScope]=useState(scopes[0]?.id||"");
@@ -2972,7 +2972,7 @@ function JerseysTab({ data,myTids,save,fire,cl }) {
   const setStatus = (playerId,status) => {
     const next = allPlayers.map(p => p.id===playerId ? {...p,jerseyStatus:status} : p);
     save({...data,playerProfiles:next});
-    fire("Status gespeichert ✓");
+    fire("Status gespeichert *");
   };
 
   const statusFor = sid => JERSEY_STATUS.find(s=>s.id===sid)||JERSEY_STATUS[5];
@@ -2996,7 +2996,7 @@ function JerseysTab({ data,myTids,save,fire,cl }) {
 
       {}
       <div style={{display:"flex",gap:8,marginBottom:16}}>
-        {[["overview","📋 Übersicht"],["collect","🔄 Einsammeln"]].map(([m,l])=>(
+        {[["overview","* Übersicht"],["collect","* Einsammeln"]].map(([m,l])=>(
           <button key={m} onClick={()=>setMode(m)}
             style={{flex:1,padding:"10px",borderRadius:12,border:`2px solid ${mode===m?t.p:"#e2e8f0"}`,background:mode===m?t.p:"#fff",color:mode===m?"#fff":"#475569",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",transition:"all .15s"}}>
             {l}
@@ -3215,7 +3215,7 @@ function ShareBanner({ cl,session,trigger,onDismiss }) {
             </button>
             <button onClick={doShare}
               style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"12px",borderRadius:13,border:"1.5px solid #e2e8f0",background:"#fff",color:"#334155",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
-              {copied?"✓ Kopiert!":"Link kopieren"}
+              {copied?"* Kopiert!":"Link kopieren"}
             </button>
           </div>
           {}
@@ -3377,7 +3377,7 @@ function SeasonModal({ data,save,fire,cl,myTids,onClose }) {
       ...p,id: uid(),seasonId: toId,lastTeam:   (allTeams.find(tm=>tm.id===p.mainTid)?.name||"") + " " + (seasons.find(s=>s.id===fromId)?.label||""),lastTeamId: p.mainTid,mainTid:"",optTids: [],jerseyNr:"",jerseyStatus:"none",recommend:"",goals:0,assists:0,yellowCards:0,redCards:0,}));
 
     save({ ...data,playerProfiles: [...allPlayers,...copied] });
-    fire(`✅ ${copied.length} Spieler in Saison ${seasons.find(s=>s.id===toId)?.label||toId} kopiert`);
+    fire(`* ${copied.length} Spieler in Saison ${seasons.find(s=>s.id===toId)?.label||toId} kopiert`);
     onClose();
   };
 
@@ -3402,7 +3402,7 @@ function SeasonModal({ data,save,fire,cl,myTids,onClose }) {
 
           {}
           <div style={{display:"flex",gap:8,marginBottom:18,background:"#f0f4f8",borderRadius:11,padding:3}}>
-            {[["seasons","📋 Saisons"],["copy","📦 Spieler kopieren"]].map(([k,l])=>(
+            {[["seasons","* Saisons"],["copy","* Spieler kopieren"]].map(([k,l])=>(
               <button key={k} onClick={()=>setTab(k)}
                 style={{flex:1,padding:"9px",borderRadius:9,border:"none",background:tab===k?"#fff":"none",color:tab===k?"#0f172a":"#94a3b8",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",boxShadow:tab===k?"0 2px 8px rgba(0,0,0,.07)":"none"}}>
                 {l}
@@ -3441,7 +3441,7 @@ function SeasonModal({ data,save,fire,cl,myTids,onClose }) {
                 <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:7,letterSpacing:.5}}>IN SAISON</div>
                 {planningSeasons.length===0 ? (
                   <div style={{background:"#fff7ed",borderRadius:11,padding:"12px 14px",border:"1.5px solid #fed7aa",fontSize:13,color:"#c2410c"}}>
-                    ⚠️ Keine Planungs-Saison vorhanden. Erstelle zuerst eine neue Saison im Tab "📋 Saisons".
+                    ⚠️ Keine Planungs-Saison vorhanden. Erstelle zuerst eine neue Saison im Tab "* Saisons".
                   </div>
                 ) : (
                   <select value={copyTo} onChange={e=>setCopyTo(e.target.value)}
@@ -3513,7 +3513,7 @@ function FieldGraphic({ field,bookings,date,onBook,myName,t }) {
             return (
               <div key={i} style={{background:col||"rgba(255,255,255,.18)",borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:col?"#fff":"rgba(255,255,255,.5)",minHeight:32,border:"1px solid rgba(255,255,255,.15)",cursor:!bk?"pointer":"default",transition:"background .15s"}}
                 onClick={()=>!bk&&onBook&&onBook(field,i)}>
-                {bk?bk.teamName?.split(" ")[0]?.slice(0,6)||"⚽":""}
+                {bk?bk.teamName?.split(" ")[0]?.slice(0,6)||"*":""}
               </div>
             );
           })}
@@ -3553,7 +3553,7 @@ function BookingModal({ field,cellStart,date,data,save,fire,cl,myTids,session,on
       id: uid(),fieldId: field.id,date,cellStart,cells: f.cells,teamId: f.teamId,teamName: tm?.name||"",booker: session.name||"Trainer",timeFrom: f.timeFrom,timeTo: f.timeTo,note: f.note,cid: field.cid,};
     const next = [...(data.bookings||[]),booking];
     save({...data,bookings:next});
-    fire("Platz gebucht ✓");
+    fire("Platz gebucht *");
     onClose();
   };
 
@@ -3742,7 +3742,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
 
   if(wizard||editEv) return <Wizard teams={local.teams.filter(x=>myTids.includes(x.id))} cl={myClub} editEv={editEv}
     onTemplates={(local.pollTemplates||[]).filter(t=>t.cid===cid)}
-    onSaveTemplate={tpl=>{save({...local,pollTemplates:[...(local.pollTemplates||[]),tpl]});fire("Vorlage gespeichert ✓");}}
+    onSaveTemplate={tpl=>{save({...local,pollTemplates:[...(local.pollTemplates||[]),tpl]});fire("Vorlage gespeichert *");}}
     onSave={evs=>{
     if(editEv){
       const {_editSeries,...saved}=evs[0];
@@ -3752,14 +3752,14 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           if(e.sid===editEv.sid&&e.date>=editEv.date) return{...e,title,time,loc,note,pt,li};
           return e;
         })});
-        fire("Serie ab hier aktualisiert ✓");
+        fire("Serie ab hier aktualisiert *");
       } else {
         save({...local,events:local.events.map(e=>e.id===saved.id?saved:e)});
-        fire("Termin aktualisiert ✓");
+        fire("Termin aktualisiert *");
       }
     } else {
       save({...local,events:[...local.events,...evs]});
-      fire(`${evs.length>1?evs.length+" Termine":"Termin"} erstellt ✓`);
+      fire(`${evs.length>1?evs.length+" Termine":"Termin"} erstellt *`);
     }
     setWizard(false);setEditEv(null);
   }} onClose={()=>{setWizard(false);setEditEv(null);}}/>;
@@ -3769,7 +3769,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
 
   return (
     <div style={{minHeight:"100dvh",background:"#f0f4f8",paddingBottom:52}}>
-      <ClubHeader cl={myClub} sub={`${isAdmin?"🛡️ Admin":isHelper?"🙋 Helfer":"🏋️"} ${session.name||"Admin"}`}
+      <ClubHeader cl={myClub} sub={`${isAdmin?"** Admin":isHelper?"* Helfer":"**"} ${session.name||"Admin"}`}
         right={
           <div style={{display:"flex",gap:7,alignItems:"center"}}>
             <LangSwitcher lang={lang} setLang={setLang}/>
@@ -3792,7 +3792,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       {showSeasonModal&&<SeasonModal data={local} save={d=>{save(d);}} fire={fire} cl={myClub} myTids={myTids} onClose={()=>setShowSeasonModal(false)}/>}
       {}
       <div style={{background:`linear-gradient(90deg,${t.p},${mix(t.p,-20)})`,display:"grid",gridTemplateColumns:"repeat(3,1fr)"}}>
-        {[[up.length,"Termine","📅"],[myTids.length,"Teams","👥"],[myEvs.reduce((s,e)=>s+Object.keys(e.votes).length,0),"Stimmen","🗳️"]].map(([v,l,em])=>(
+        {[[up.length,"Termine","*"],[myTids.length,"Teams","*"],[myEvs.reduce((s,e)=>s+Object.keys(e.votes).length,0),"Stimmen","**"]].map(([v,l,em])=>(
           <div key={l} style={{padding:"11px 0",textAlign:"center",borderRight:"1px solid rgba(255,255,255,.18)"}}>
             <div style={{fontSize:16}}>{em}</div><div style={{color:"#fff",fontWeight:900,fontSize:20,lineHeight:1}}>{v}</div><div style={{color:"rgba(255,255,255,.6)",fontSize:11}}>{l}</div>
           </div>
@@ -3825,7 +3825,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             </div>
             <div style={{width:32,height:32,borderRadius:10,background:"rgba(0,0,0,.15)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:18,fontWeight:700,flexShrink:0}}>›</div>
           </div>
-          {up.length>0&&<><Divider label={`📅 KOMMENDE (${up.length})`}/>{up.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("🔗 Einladungslink: ?club="+myClub.slug+"&join="+ev.id)}/>)}</>}
+          {up.length>0&&<><Divider label={`* KOMMENDE (${up.length})`}/>{up.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)}/>)}</>}
           {up.length===0&&<div style={{textAlign:"center",padding:"30px",background:"#fff",borderRadius:18,border:"1.5px dashed #e2e8f0",color:"#94a3b8"}}><Logo cl={myClub} sz={50} sx={{margin:"0 auto 12px"}}/><p style={{fontWeight:800,fontSize:15}}>Noch keine Termine</p><p style={{fontSize:13,marginTop:3}}>Klicke oben auf „Neuen Termin anlegen"</p></div>}
           {past.length>0&&<><Divider label={`VERGANGENE (${past.length})`} light/><div style={{opacity:.72}}>{past.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{}} onCopyLink={()=>{}}/>)}</div></>}
         </>}
@@ -3838,7 +3838,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         {tab==="chat"       &&<ChatTab data={local} cid={cid} myTids={myTids} session={session} save={save} fire={fire} cl={myClub}/>}
         {tab==="teams"      &&isAdmin&&<TeamsTab data={local} cid={cid} save={save} fire={fire}/>}
         {tab==="trainers"   &&isAdmin&&<TrainersTab data={local} cid={cid} save={save} fire={fire}/>}
-        {tab==="branding"   &&isAdmin&&<BrandingTab cl={myClub} onSave={c=>{save({...local,clubs:local.clubs.map(x=>x.id===c.id?c:x)});fire("Design gespeichert ✓");}}/>}
+        {tab==="branding"   &&isAdmin&&<BrandingTab cl={myClub} onSave={c=>{save({...local,clubs:local.clubs.map(x=>x.id===c.id?c:x)});fire("Design gespeichert *");}}/>}
         {tab==="visibility" &&isAdmin&&<VisibilityTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
         {tab==="settings"   &&isAdmin&&<SettingsTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
       </div>
@@ -3849,7 +3849,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           onSetDeadline={deadline=>{
             save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,deadline}:e)});
             setViewEv(prev=>({...prev,deadline}));
-            fire("Frist gesetzt ✓");
+            fire("Frist gesetzt *");
           }}
         />
         <div style={{height:14}}/><Btn full ch="Schließen" v="gst" onClick={()=>setViewEv(null)}/>
@@ -3862,17 +3862,17 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           {local.events.find(e=>e.id===delConf)?.sid&&<p style={{fontSize:13,color:"#b45309",marginTop:6}}>⚠️ Dieser Termin ist Teil einer Terminserie.</p>}
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:9}}>
-          <Btn v="red" full ch="Nur diesen Termin löschen" icon="🗑️" onClick={()=>{
+          <Btn v="red" full ch="Nur diesen Termin löschen" icon="**" onClick={()=>{
             save({...local,events:local.events.filter(e=>e.id!==delConf)});
             setDelConf(null);setDelConfVal(null);fire("Termin gelöscht");
           }}/>
           {local.events.find(e=>e.id===delConf)?.sid&&<>
-            <Btn v="red" full ch="Diesen + alle zukünftigen löschen" icon="🗑️" onClick={()=>{
+            <Btn v="red" full ch="Diesen + alle zukünftigen löschen" icon="**" onClick={()=>{
               const ev=local.events.find(e=>e.id===delConf);
               save({...local,events:local.events.filter(e=>!(e.sid===ev.sid&&e.date>=ev.date))});
               setDelConf(null);setDelConfVal(null);fire("Serientermine gelöscht");
             }}/>
-            <Btn v="red" full ch="Gesamte Serie löschen" icon="🗑️" onClick={()=>{
+            <Btn v="red" full ch="Gesamte Serie löschen" icon="**" onClick={()=>{
               const ev=local.events.find(e=>e.id===delConf);
               save({...local,events:local.events.filter(e=>e.sid!==ev.sid)});
               setDelConf(null);setDelConfVal(null);fire("Gesamte Serie gelöscht");
@@ -3889,10 +3889,10 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           {editConf.sid&&<p style={{fontSize:13,color:"#b45309",marginTop:6}}>⚠️ Dieser Termin ist Teil einer Serie.</p>}
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:9}}>
-          <Btn full ch="Nur diesen Termin bearbeiten" icon="✏️" cl={myClub} onClick={()=>{
+          <Btn full ch="Nur diesen Termin bearbeiten" icon="**" cl={myClub} onClick={()=>{
             setEditEv(editConf);setEditConf(null);
           }}/>
-          {editConf.sid&&<Btn full ch="Diesen + alle zukünftigen bearbeiten" icon="✏️" cl={myClub} onClick={()=>{
+          {editConf.sid&&<Btn full ch="Diesen + alle zukünftigen bearbeiten" icon="**" cl={myClub} onClick={()=>{
             setEditEv({...editConf,_editSeries:"future"});setEditConf(null);
           }}/>}
           <Btn v="gst" full ch="Abbrechen" onClick={()=>setEditConf(null)}/>
@@ -3970,7 +3970,7 @@ function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline}) {
             <div style={{fontWeight:700,fontSize:13,color:"#334155"}}>⏰ Abstimmungs-Frist</div>
             {dlLabel
               ? <div style={{fontSize:12,marginTop:3,fontWeight:600,color:dlPassed?"#dc2626":"#16a34a"}}>
-                  {dlPassed?"🔴 Abgelaufen:":"🟢 Bis:"} {dlLabel}
+                  {dlPassed?"* Abgelaufen:":"* Bis:"} {dlLabel}
                   {lateVoters.length>0&&<span style={{color:"#d97706",marginLeft:6}}>· {lateVoters.length} zu spät</span>}
                 </div>
               : <div style={{fontSize:12,color:"#94a3b8",marginTop:2}}>Keine Frist gesetzt</div>
@@ -3978,7 +3978,7 @@ function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline}) {
           </div>
           <button onClick={()=>setShowDL(s=>!s)}
             style={{padding:"6px 12px",borderRadius:9,border:`1.5px solid ${p}`,background:p+"15",color:p,fontWeight:700,fontSize:12,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit"}}>
-            {dlLabel?"✏️ Ändern":"+ Frist setzen"}
+            {dlLabel?"** Ändern":"+ Frist setzen"}
           </button>
         </div>
         {showDeadlineForm&&(
@@ -4024,7 +4024,7 @@ function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline}) {
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:6}}>
                   {late&&<span style={{fontSize:11,fontWeight:700,color:"#d97706",background:"#fef3c7",borderRadius:6,padding:"2px 7px"}}>⏰ Zu spät</span>}
-                  <span style={{fontSize:14,fontWeight:700,color:val==="yes"?"#16a34a":"#dc2626"}}>{val==="yes"?"✅ Dabei":"❌ Nicht dabei"}</span>
+                  <span style={{fontSize:14,fontWeight:700,color:val==="yes"?"#16a34a":"#dc2626"}}>{val==="yes"?"* Dabei":"* Nicht dabei"}</span>
                 </div>
               </div>
             );
@@ -4065,19 +4065,19 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink}) {
       <div style={{padding:"12px 14px",display:"flex",gap:10,alignItems:"center"}}>\
         <div style={{width:42,height:42,borderRadius:13,background:eT.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{eT.icon}</div>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}><span style={{fontWeight:800,fontSize:14,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ev.title}</span>{tF&&<Tag c={p} bg={p+"20"} ch="Heute"/>}{ev.open&&<Tag c="#7c3aed" bg="#ede9fe" ch="🤝 Offen"/>}{ev.sid&&<Tag c="#94a3b8" bg="#f1f5f9" ch="🔁 Serie"/>}</div>
-          <div style={{fontSize:12,color:"#64748b",marginTop:3}}>{fmtDShort(ev.date)}{ev.time?" · "+ev.time:""}{ev.loc?" · 📍"+ev.loc:""}</div>
-          {vc>0&&<div style={{display:"flex",gap:5,marginTop:4,flexWrap:"wrap"}}>{ev.pt==="att"?<><Tag c="#16a34a" ch={`✅ ${yes}`}/><Tag c="#dc2626" bg="#fee2e2" ch={`❌ ${no}`}/></>:<Tag c="#2563eb" ch={`📋 ${vc} Einträge`}/>}</div>}
+          <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}><span style={{fontWeight:800,fontSize:14,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ev.title}</span>{tF&&<Tag c={p} bg={p+"20"} ch="Heute"/>}{ev.open&&<Tag c="#7c3aed" bg="#ede9fe" ch="* Offen"/>}{ev.sid&&<Tag c="#94a3b8" bg="#f1f5f9" ch="* Serie"/>}</div>
+          <div style={{fontSize:12,color:"#64748b",marginTop:3}}>{fmtDShort(ev.date)}{ev.time?" · "+ev.time:""}{ev.loc?" · *"+ev.loc:""}</div>
+          {vc>0&&<div style={{display:"flex",gap:5,marginTop:4,flexWrap:"wrap"}}>{ev.pt==="att"?<><Tag c="#16a34a" ch={`* ${yes}`}/><Tag c="#dc2626" bg="#fee2e2" ch={`* ${no}`}/></>:<Tag c="#2563eb" ch={`* ${vc} Einträge`}/>}</div>}
           {ev.deadline&&<div style={{marginTop:4}}><span style={{fontSize:11,fontWeight:700,color:dlPassed?"#dc2626":"#d97706",background:dlPassed?"#fee2e2":"#fef3c7",borderRadius:6,padding:"2px 8px"}}>⏰ {dlPassed?"Frist abgelaufen":"Frist: "}{!dlPassed&&ev.deadline.date}</span></div>}
         </div>
       </div>
       {}
       <div style={{display:"flex",gap:6,padding:"8px 12px 10px",borderTop:"1px solid #f1f5f9",flexWrap:"wrap"}}>
-        <BtnSm onClick={onView}  icon="👁" label="Ansehen"   bg="#f1f5f9" col="#475569"/>
-        <BtnSm onClick={onEdit}  icon="✏️" label="Bearbeiten" bg="#f0fdf4" col="#16a34a"/>
-        <BtnSm onClick={onReset} icon="🔄" label="Zurücksetzen" bg="#fff7ed" col="#d97706"/>
-        {ev.open&&<BtnSm onClick={onCopyLink} icon="🔗" label="Link kopieren" bg="#ede9fe" col="#7c3aed"/>}
-        <BtnSm onClick={onDel}   icon="🗑" label="Löschen"   bg="#fee2e2" col="#dc2626"/>
+        <BtnSm onClick={onView}  icon="*" label="Ansehen"   bg="#f1f5f9" col="#475569"/>
+        <BtnSm onClick={onEdit}  icon="**" label="Bearbeiten" bg="#f0fdf4" col="#16a34a"/>
+        <BtnSm onClick={onReset} icon="*" label="Zurücksetzen" bg="#fff7ed" col="#d97706"/>
+        {ev.open&&<BtnSm onClick={onCopyLink} icon="*" label="Link kopieren" bg="#ede9fe" col="#7c3aed"/>}
+        <BtnSm onClick={onDel}   icon="*" label="Löschen"   bg="#fee2e2" col="#dc2626"/>
       </div>
     </div>
   );
@@ -4287,9 +4287,9 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
         <div style={{flex:1,minWidth:0}}>
           <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
             <span style={{fontWeight:900,fontSize:17,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ev.title}</span>
-            {isToday&&<Tag c={p} bg={p+"20"} ch="🟢 Heute"/>}
-            {ev.open&&<Tag c="#7c3aed" bg="#ede9fe" ch="🤝 Offen"/>}
-            {ev.sid&&<Tag c="#94a3b8" bg="#f1f5f9" ch="🔁" sm/>}
+            {isToday&&<Tag c={p} bg={p+"20"} ch="* Heute"/>}
+            {ev.open&&<Tag c="#7c3aed" bg="#ede9fe" ch="* Offen"/>}
+            {ev.sid&&<Tag c="#94a3b8" bg="#f1f5f9" ch="*" sm/>}
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8,marginTop:4,flexWrap:"wrap"}}>
             <span style={{fontSize:13,color:"#64748b",fontWeight:600}}>{fmtD(ev.date)}{ev.time?" · "+ev.time:""}</span>
@@ -4359,7 +4359,7 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
     compressImage(dataUrl,async compressed=>{
       try{ await window.storage?.set(photoKey,compressed,true); }catch{}
       setPhoto(compressed);
-      fire("Profilbild gespeichert 📷");
+      fire("Profilbild gespeichert *");
       setShowProfile(false);
     });
   };
@@ -4378,7 +4378,7 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
       else nv[user]=val;
       return{...e,votes:nv};
     })};
-    onSave(next);fire("Gespeichert ✓");
+    onSave(next);fire("Gespeichert *");
   };
 
   return (
@@ -4529,9 +4529,9 @@ function AppInner({lang,setLang}) {
       {saveStatus&&(
         <div style={{position:"fixed",bottom:20,right:16,zIndex:999,display:"flex",alignItems:"center",gap:7,background:saveStatus==="saved"?"#052e16":saveStatus==="saving"?"#0f172a":"#451a03",borderRadius:99,padding:"8px 14px",boxShadow:"0 4px 20px rgba(0,0,0,.3)",border:`1px solid ${saveStatus==="saved"?"#16a34a":saveStatus==="saving"?"#334155":"#d97706"}`,fontSize:12,fontWeight:700,color:saveStatus==="saved"?"#86efac":saveStatus==="saving"?"#94a3b8":"#fbbf24"}}>
           {saveStatus==="saving"&&<div style={{width:12,height:12,border:"2px solid rgba(255,255,255,.2)",borderTopColor:"#94a3b8",borderRadius:"50%",animation:"spin .7s linear infinite"}}/>}
-          {saveStatus==="saved"&&"✅ Supabase gespeichert"}
+          {saveStatus==="saved"&&"* Supabase gespeichert"}
           {saveStatus==="saving"&&"Speichert…"}
-          {saveStatus==="local"&&"💾 Lokal gespeichert"}
+          {saveStatus==="local"&&"* Lokal gespeichert"}
         </div>
       )}
 
