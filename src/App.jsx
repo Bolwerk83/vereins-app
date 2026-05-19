@@ -87,7 +87,7 @@ function SupabaseSetup({ onDone,onSkip }) {
     <div style={{minHeight:"100dvh",background:"linear-gradient(135deg,#0f172a,#1e3a5f)",display:"flex",alignItems:"center",justifyContent:"center",padding:22}}>
       <div style={{width:"100%",maxWidth:440}}>
         <div style={{textAlign:"center",marginBottom:28}}>
-          <div style={{fontSize:52,marginBottom:10}}>🗄️</div>
+          <div style={{fontSize:52,marginBottom:10}}></div>
           <h1 style={{color:"#fff",fontSize:24,fontWeight:900,margin:"0 0 6px"}}>Datenbank verbinden</h1>
           <p style={{color:"rgba(255,255,255,.5)",fontSize:14}}>Verbinde Supabase für permanente Datenspeicherung</p>
         </div>
@@ -95,7 +95,7 @@ function SupabaseSetup({ onDone,onSkip }) {
         <div style={{background:"rgba(255,255,255,.05)",borderRadius:20,padding:"24px",border:"1px solid rgba(255,255,255,.1)",marginBottom:16}}>
           {}
           <div style={{background:"rgba(255,255,255,.05)",borderRadius:12,padding:"14px",marginBottom:20,fontSize:12,color:"rgba(255,255,255,.6)",lineHeight:1.8}}>
-            <div style={{fontWeight:800,color:"rgba(255,255,255,.8)",marginBottom:6,fontSize:13}}>📋 Einrichtung (2 Min):</div>
+            <div style={{fontWeight:800,color:"rgba(255,255,255,.8)",marginBottom:6,fontSize:13}}> Einrichtung (2 Min):</div>
             <div>1. <a href="https://supabase.com" target="_blank" style={{color:"#38bdf8"}}>supabase.com</a> → kostenlosen Account erstellen</div>
             <div>2. "New project" → Frankfurt → Passwort setzen</div>
             <div>3. SQL Editor → folgendes ausführen:</div>
@@ -124,14 +124,14 @@ function SupabaseSetup({ onDone,onSkip }) {
             </div>
           </div>
 
-          {status==="testing"&&<div style={{marginTop:12,textAlign:"center",color:"#94a3b8",fontSize:13}}>🔄 Verbindung wird getestet…</div>}
-          {status==="ok"&&<div style={{marginTop:12,background:"#052e16",border:"1.5px solid #16a34a",borderRadius:10,padding:"10px 14px",color:"#86efac",fontSize:13,fontWeight:700}}>✅ Verbindung erfolgreich! App wird geladen…</div>}
-          {status==="fail"&&<div style={{marginTop:12,background:"#450a0a",border:"1.5px solid #dc2626",borderRadius:10,padding:"10px 14px",color:"#fca5a5",fontSize:13,fontWeight:700}}>❌ Verbindung fehlgeschlagen. URL und Key prüfen.</div>}
+          {status==="testing"&&<div style={{marginTop:12,textAlign:"center",color:"#94a3b8",fontSize:13}}> Verbindung wird getestet…</div>}
+          {status==="ok"&&<div style={{marginTop:12,background:"#052e16",border:"1.5px solid #16a34a",borderRadius:10,padding:"10px 14px",color:"#86efac",fontSize:13,fontWeight:700}}> Verbindung erfolgreich! App wird geladen…</div>}
+          {status==="fail"&&<div style={{marginTop:12,background:"#450a0a",border:"1.5px solid #dc2626",borderRadius:10,padding:"10px 14px",color:"#fca5a5",fontSize:13,fontWeight:700}}> Verbindung fehlgeschlagen. URL und Key prüfen.</div>}
 
           <div style={{display:"flex",gap:9,marginTop:16}}>
             <button onClick={test} disabled={!url.trim()||!key.trim()||status==="testing"}
               style={{flex:2,padding:"13px",borderRadius:13,border:"none",background:url.trim()&&key.trim()?"#2563eb":"rgba(255,255,255,.1)",color:url.trim()&&key.trim()?"#fff":"rgba(255,255,255,.3)",fontWeight:800,fontSize:15,cursor:url.trim()&&key.trim()?"pointer":"default",fontFamily:"inherit",transition:"all .2s"}}>
-              🔌 Verbinden & testen
+               Verbinden & testen
             </button>
             <button onClick={onSkip}
               style={{flex:1,padding:"13px",borderRadius:13,border:"1px solid rgba(255,255,255,.15)",background:"transparent",color:"rgba(255,255,255,.4)",fontWeight:600,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
@@ -145,7 +145,7 @@ function SupabaseSetup({ onDone,onSkip }) {
 
         {getConfig()&&(
           <div style={{background:"rgba(22,163,74,.15)",borderRadius:12,padding:"11px 14px",border:"1px solid rgba(22,163,74,.3)",fontSize:12,color:"#86efac",textAlign:"center"}}>
-            ✅ Bereits verbunden mit {getConfig()?.url?.replace("https://","").split(".")[0]}
+             Bereits verbunden mit {getConfig()?.url?.replace("https://","").split(".")[0]}
             <button onClick={()=>{setConfig(null);window.location.reload();}} style={{marginLeft:10,background:"none",border:"none",color:"#f87171",cursor:"pointer",fontSize:11,fontFamily:"inherit"}}>Trennen</button>
           </div>
         )}
@@ -807,10 +807,10 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
             onKeyDown={e=>{if(e.key==="Enter")go();}}
             placeholder="Passwort…" autoFocus
             style={{width:"100%",padding:"13px 16px",fontSize:16,background:"rgba(255,255,255,.12)",border:`2px solid ${err?"#ff6b6b":pw?"rgba(255,255,255,.4)":"rgba(255,255,255,.2)"}`,borderRadius:13,outline:"none",color:"#fff",marginBottom:10}}/>
-          {err&&<div style={{background:"rgba(255,107,107,.15)",borderRadius:10,padding:"9px 13px",fontSize:13,fontWeight:700,color:"#ff9999",marginBottom:10,textAlign:"center"}}>❌ Falsches Passwort</div>}
+          {err&&<div style={{background:"rgba(255,107,107,.15)",borderRadius:10,padding:"9px 13px",fontSize:13,fontWeight:700,color:"#ff9999",marginBottom:10,textAlign:"center"}}> Falsches Passwort</div>}
           <button onClick={go} disabled={!pw.trim()}
             style={{width:"100%",padding:"13px",fontSize:15,fontWeight:800,background:pw.trim()?cl.pri:"rgba(255,255,255,.15)",color:pw.trim()?"#fff":"rgba(255,255,255,.4)",border:"none",borderRadius:13,cursor:pw.trim()?"pointer":"not-allowed",transition:"all .18s"}}>
-            🔓 Einloggen
+             Einloggen
           </button>
         </div>
       </div>
@@ -829,7 +829,7 @@ function AdminLogin({cl,onLogin,onBack}) {
         <div style={{background:"#fff",borderRadius:24,padding:"34px 26px",boxShadow:"0 24px 80px rgba(0,0,0,.4)"}}>
           <div style={{textAlign:"center",marginBottom:22}}><Logo cl={cl} sz={68} sx={{margin:"0 auto 12px"}}/><h2 style={{fontSize:22,fontWeight:900,color:"#0f172a",margin:"0 0 4px"}}>Vereinsadmin</h2><p style={{color:"#94a3b8",fontSize:13}}>{cl.name}</p></div>
           <Inp label="Admin-Passwort" type="password" val={pw} set={setPw} ph="Passwort…" af cl={cl}/>
-          {err&&<div style={{background:"#fef2f2",borderRadius:12,padding:"10px 14px",fontSize:14,fontWeight:700,color:"#dc2626",marginTop:10}}>❌ Falsches Passwort</div>}
+          {err&&<div style={{background:"#fef2f2",borderRadius:12,padding:"10px 14px",fontSize:14,fontWeight:700,color:"#dc2626",marginTop:10}}> Falsches Passwort</div>}
           <div style={{height:14}}/><Btn full ch="Als Admin einloggen" onClick={go} icon="**" v="drk"/>
           <p style={{textAlign:"center",fontSize:11,color:"#94a3b8",marginTop:12}}>Demo: <code style={{background:"#f1f5f9",padding:"2px 5px",borderRadius:5}}>admin123</code> / <code style={{background:"#f1f5f9",padding:"2px 5px",borderRadius:5}}>wissel123</code></p>
         </div>
@@ -854,12 +854,12 @@ function HelperLogin({cl,helpers,onLogin,onBack}) {
         <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:26}}>← Zurück</button>
         <div style={{background:"#fff",borderRadius:24,padding:"34px 26px",boxShadow:"0 24px 80px rgba(0,0,0,.3)"}}>
           <div style={{textAlign:"center",marginBottom:22}}>
-            <div style={{fontSize:52,marginBottom:8}}>🙋</div>
+            <div style={{fontSize:52,marginBottom:8}}></div>
             <h2 style={{fontSize:22,fontWeight:900,color:"#0f172a",margin:"0 0 4px"}}>Helfer-Zugang</h2>
             <p style={{color:"#94a3b8",fontSize:13}}>{cl.name}</p>
           </div>
           <div style={{background:"#fffbeb",borderRadius:12,padding:"11px 14px",marginBottom:16,border:"1.5px solid #fde68a",fontSize:12,color:"#92400e",lineHeight:1.6}}>
-            ⚠️ Zugriff auf Spielpläne und Turnier-Übersichten. Keine internen Trainer-Notizen.
+             Zugriff auf Spielpläne und Turnier-Übersichten. Keine internen Trainer-Notizen.
           </div>
           {clHelpers.length===0
             ? <div style={{background:"#fee2e2",borderRadius:12,padding:"11px 14px",marginBottom:14,fontSize:13,color:"#dc2626",fontWeight:600,textAlign:"center"}}>
@@ -867,7 +867,7 @@ function HelperLogin({cl,helpers,onLogin,onBack}) {
               </div>
             : <>
                 <Inp label="Persönlicher Helfer-Code" type="password" val={code} set={v=>{setCode(v);setErr(false);}} ph="Code vom Trainer erhalten…" af cl={cl}/>
-                {err&&<div style={{background:"#fef2f2",borderRadius:12,padding:"10px 14px",fontSize:14,fontWeight:700,color:"#dc2626",marginTop:10}}>❌ Ungültiger Code</div>}
+                {err&&<div style={{background:"#fef2f2",borderRadius:12,padding:"10px 14px",fontSize:14,fontWeight:700,color:"#dc2626",marginTop:10}}> Ungültiger Code</div>}
                 <div style={{height:14}}/>
                 <Btn full ch="Als Helfer einloggen" onClick={go} dis={!code.trim()} icon="*" cl={cl}/>
               </>
@@ -959,14 +959,14 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
             onKeyDown={e=>{if(e.key==="Enter"){if(pwd===ct?.pwd){const assigned=(playerProfiles||[]).some(p=>p.mainTid===ct.id);if(assigned)setStep("name");else setStep("locked");}else{setPwdErr(true);setTimeout(()=>setPwdErr(false),1800);}}}}
             placeholder="Passwort…" autoFocus
             style={{width:"100%",padding:"13px 16px",fontSize:16,background:"rgba(255,255,255,.12)",border:`2px solid ${pwdErr?"#ff6b6b":pwd?"rgba(255,255,255,.4)":"rgba(255,255,255,.2)"}`,borderRadius:13,outline:"none",color:"#fff",marginBottom:10}}/>
-          {pwdErr&&<div style={{background:"rgba(255,107,107,.15)",borderRadius:10,padding:"9px 13px",fontSize:13,fontWeight:700,color:"#ff9999",marginBottom:10,textAlign:"center"}}>❌ Falsches Passwort</div>}
+          {pwdErr&&<div style={{background:"rgba(255,107,107,.15)",borderRadius:10,padding:"9px 13px",fontSize:13,fontWeight:700,color:"#ff9999",marginBottom:10,textAlign:"center"}}> Falsches Passwort</div>}
           <button onClick={()=>{if(pwd===ct?.pwd){
             const assigned=(playerProfiles||[]).some(p=>p.mainTid===ct.id);
             if(assigned) setStep("name");
             else setStep("locked"); // team not yet released
           }else{setPwdErr(true);setTimeout(()=>setPwdErr(false),1800);}}} disabled={!pwd.trim()}
             style={{width:"100%",padding:"13px",fontSize:15,fontWeight:800,background:pwd.trim()?cl.pri:"rgba(255,255,255,.15)",color:pwd.trim()?"#fff":"rgba(255,255,255,.4)",border:"none",borderRadius:13,cursor:pwd.trim()?"pointer":"not-allowed",transition:"all .18s"}}>
-            🔓 Team öffnen
+             Team öffnen
           </button>
           <div style={{marginTop:12,textAlign:"center",fontSize:11,color:"rgba(255,255,255,.3)"}}>Demo: {ct?.pwd}</div>
         </div>
@@ -978,7 +978,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
       <style>{CSS}</style>
       <button onClick={()=>setStep("pwd")} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}>← Zurück</button>
       <div className="up" style={{textAlign:"center",maxWidth:340}}>
-        <div style={{fontSize:64,marginBottom:16}}>🔒</div>
+        <div style={{fontSize:64,marginBottom:16}}></div>
         <h2 style={{color:"#fff",fontSize:22,fontWeight:900,margin:"0 0 12px"}}>{ct?.name}</h2>
         <div style={{background:"rgba(255,255,255,.1)",borderRadius:18,padding:"24px 22px",border:"1px solid rgba(255,255,255,.15)"}}>
           <p style={{color:"#fff",fontSize:16,fontWeight:700,marginBottom:8}}>Kader noch nicht veröffentlicht</p>
@@ -1002,7 +1002,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
         <div style={{display:"flex",alignItems:"center",gap:12}}><Logo cl={cl} sz={40}/><div><div style={{color:"rgba(255,255,255,.6)",fontSize:12,fontWeight:700}}>{ct?.icon} {ct?.name}</div><div style={{color:"#fff",fontSize:20,fontWeight:900}}>Wer bist du?</div></div></div>
       </div>
       <div style={{padding:"12px 14px 0",background:"#f0f4f8",position:"sticky",top:0,zIndex:10}}>
-        <div style={{position:"relative"}}><span style={{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",fontSize:16}}>🔍</span><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Suchen…" style={{width:"100%",padding:"12px 16px 12px 42px",fontSize:15,border:"2px solid #e2e8f0",borderRadius:14,outline:"none",background:"#fff"}}/></div>
+        <div style={{position:"relative"}}><span style={{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",fontSize:16}}></span><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Suchen…" style={{width:"100%",padding:"12px 16px 12px 42px",fontSize:15,border:"2px solid #e2e8f0",borderRadius:14,outline:"none",background:"#fff"}}/></div>
       </div>
       <div style={{flex:1,overflowY:"auto",padding:"10px 14px",display:"flex",flexDirection:"column",gap:8}}>
         {list.map((p,i)=>(
@@ -1011,7 +1011,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
             <Av name={p} sz={40}/><span style={{fontWeight:700,fontSize:16,color:"#0f172a",flex:1}}>{p}</span><span style={{color:"#94a3b8",fontSize:20}}>›</span>
           </div>
         ))}
-        {list.length===0&&<div style={{textAlign:"center",padding:"32px",color:"#94a3b8"}}><div style={{fontSize:36,marginBottom:8}}>🔍</div><p style={{fontWeight:700}}>Niemanden gefunden</p></div>}
+        {list.length===0&&<div style={{textAlign:"center",padding:"32px",color:"#94a3b8"}}><div style={{fontSize:36,marginBottom:8}}></div><p style={{fontWeight:700}}>Niemanden gefunden</p></div>}
       </div>
       <div style={{padding:"12px 14px 36px",background:"#fff",borderTop:"1px solid #e2e8f0"}}>
         <p style={{fontSize:11,fontWeight:800,color:"#94a3b8",marginBottom:8}}>NICHT IN DER LISTE?</p>
@@ -1019,7 +1019,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
           style={{width:"100%",padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",marginBottom:8}}/>
         {q.trim().length>1&&<button onClick={()=>onDone(tid,q.trim())}
           style={{width:"100%",padding:"11px",borderRadius:12,border:"none",background:cl.pri,color:contrast(cl.pri),fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
-          ✓ Als „{q.trim()}" einloggen
+           Als „{q.trim()}" einloggen
         </button>}
       </div>
     </div>
@@ -1034,7 +1034,7 @@ function PollAttend({ev,user,onVote,cl}) {
   const dlPassed=ev.deadline&&(now()>ev.deadline.date||(now()===ev.deadline.date));
   return (
     <div style={{display:"flex",flexDirection:"column",gap:10}}>
-      {ev.note&&<div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:12,padding:"10px 13px",fontSize:13,color:"#92400e",fontWeight:500}}>📢 {ev.note}</div>}
+      {ev.note&&<div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:12,padding:"10px 13px",fontSize:13,color:"#92400e",fontWeight:500}}> {ev.note}</div>}
       {ev.deadline&&<div style={{background:dlPassed?"#fee2e2":"#fffbeb",border:`1.5px solid ${dlPassed?"#fca5a5":"#fde68a"}`,borderRadius:12,padding:"9px 13px",fontSize:13,fontWeight:700,color:dlPassed?"#dc2626":"#d97706"}}>⏰ {dlPassed?"Frist abgelaufen — Abstimmung wird trotzdem gezählt":"Abstimmungs-Frist: "+ev.deadline.date+(ev.deadline.time?" "+ev.deadline.time+" Uhr":"")}</div>}
       {[{id:"yes",label:"Mein Kind ist dabei",color:p,bg:mix(p,86),voters:yes},{id:"no",label:"Leider nicht dabei",color:"#dc2626",bg:"#fee2e2",voters:no}].map(o=>{
         const sel=uv===o.id; const pct=tot>0?(o.voters.length/tot)*100:0;
@@ -1068,8 +1068,8 @@ function PollList({ev,user,onVote}) {
   const uniq=[...new Set(Object.entries(ev.votes).filter(([,v])=>Array.isArray(v)&&v.length>0).map(([n])=>n))];
   return (
     <div>
-      {ev.note&&<div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:12,padding:"10px 13px",fontSize:13,color:"#92400e",fontWeight:500,marginBottom:12}}>📢 {ev.note}</div>}
-      <p style={{fontSize:13,color:"#64748b",fontWeight:600,marginBottom:10}}>✅ Mehrfachauswahl möglich — tippe zum Auswählen</p>
+      {ev.note&&<div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:12,padding:"10px 13px",fontSize:13,color:"#92400e",fontWeight:500,marginBottom:12}}> {ev.note}</div>}
+      <p style={{fontSize:13,color:"#64748b",fontWeight:600,marginBottom:10}}> Mehrfachauswahl möglich — tippe zum Auswählen</p>
       <div style={{display:"flex",flexDirection:"column",gap:8}}>
         {(ev.li||[]).map(item=>{
           const sel=uv.includes(item.id); const tk=totFor(item.id); const mn=sel?1:0; const full=item.max&&(tk-mn)>=item.max; const vts=vFor(item.id);
@@ -1077,7 +1077,7 @@ function PollList({ev,user,onVote}) {
             <div key={item.id} onClick={()=>!full&&tog(item.id)}
               style={{borderRadius:14,border:`2px solid ${sel?"#16a34a":full?"#fca5a5":"#e2e8f0"}`,background:sel?"#dcfce7":full&&!sel?"#fff5f5":"#fafafa",padding:"12px 14px",cursor:full&&!sel?"not-allowed":"pointer",opacity:full&&!sel?.55:1,transition:"all .15s"}}>
               <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:5}}>
-                <div style={{width:22,height:22,borderRadius:7,background:sel?"#16a34a":"#fff",border:`2px solid ${sel?"#16a34a":"#cbd5e1"}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all .15s"}}>{sel&&<span style={{color:"#fff",fontSize:13,fontWeight:900,lineHeight:1}}>✓</span>}</div>
+                <div style={{width:22,height:22,borderRadius:7,background:sel?"#16a34a":"#fff",border:`2px solid ${sel?"#16a34a":"#cbd5e1"}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all .15s"}}>{sel&&<span style={{color:"#fff",fontSize:13,fontWeight:900,lineHeight:1}}></span>}</div>
                 <span style={{flex:1,fontWeight:sel?800:600,fontSize:15,color:sel?"#15803d":"#334155"}}>{item.txt}</span>
                 {item.max&&<Tag c={full&&!sel?"#dc2626":"#64748b"} bg={full&&!sel?"#fee2e2":"#f1f5f9"} ch={full&&!sel?"Voll *":`max ${item.max}`}/>}
                 {vts.length>0&&<div style={{display:"flex",alignItems:"center",gap:3}}><div style={{display:"flex"}}>{vts.slice(0,3).map((v,i)=><div key={v} style={{marginLeft:i?-6:0,zIndex:3-i}}><Av name={v} sz={20}/></div>)}</div><span style={{fontSize:12,fontWeight:800,color:"#475569",marginLeft:3}}>{tk}</span></div>}
@@ -1217,7 +1217,7 @@ function StrengthsInput({ strengths,customStrengths,onChange,tp }) {
           {allCustom.map(s => (
             <span key={s} style={{display:"inline-flex",alignItems:"center",gap:5,background:tp+"15",color:tp,borderRadius:99,padding:"5px 11px",fontSize:12,fontWeight:700,border:`1.5px solid ${tp}40`}}>
               ⭐ {s}
-              <button onClick={()=>removeCustom(s)} style={{background:"none",border:"none",color:tp,cursor:"pointer",fontSize:13,lineHeight:1,padding:0,opacity:.7}}>✕</button>
+              <button onClick={()=>removeCustom(s)} style={{background:"none",border:"none",color:tp,cursor:"pointer",fontSize:13,lineHeight:1,padding:0,opacity:.7}}></button>
             </span>
           ))}
         </div>
@@ -1259,7 +1259,7 @@ function FriendsInput({ label,sub,ids,allPlayers,current,onChange,color }) {
             <div key={pl.id} style={{display:"flex",alignItems:"center",gap:6,background:color+"15",borderRadius:99,padding:"5px 10px",border:`1.5px solid ${color}40`}}>
               <Av name={pl.name} sz={22}/>
               <span style={{fontSize:12,fontWeight:700,color}}>{pl.name}</span>
-              <button onClick={()=>toggle(pl.id)} style={{background:"none",border:"none",color,cursor:"pointer",fontSize:14,padding:0,lineHeight:1,opacity:.7}}>✕</button>
+              <button onClick={()=>toggle(pl.id)} style={{background:"none",border:"none",color,cursor:"pointer",fontSize:14,padding:0,lineHeight:1,opacity:.7}}></button>
             </div>
           ))}
         </div>
@@ -1328,7 +1328,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,onSave,onClose,t 
                 {p.name && totalGames > 0 && ` · * ${totalGames} Spiele`}
               </div>
             </div>
-            <button onClick={onClose} style={{width:36,height:36,borderRadius:11,background:"rgba(255,255,255,.15)",border:"none",color:"rgba(255,255,255,.8)",fontSize:18,cursor:"pointer"}}>✕</button>
+            <button onClick={onClose} style={{width:36,height:36,borderRadius:11,background:"rgba(255,255,255,.15)",border:"none",color:"rgba(255,255,255,.8)",fontSize:18,cursor:"pointer"}}></button>
           </div>
         </div>
 
@@ -1343,7 +1343,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,onSave,onClose,t 
             </div>
             {p.by && (
               <div style={{background:"#f0fdf4",borderRadius:10,padding:"9px 13px",fontSize:12,color:"#15803d",fontWeight:600}}>
-                ✅ Passt altersmäßig in: {eligibleCats(p.by,p.gender||"m").join(",")||"Keine Kategorie"}
+                 Passt altersmäßig in: {eligibleCats(p.by,p.gender||"m").join(",")||"Keine Kategorie"}
                 {p.gender==="w"&&<span style={{color:"#d97706",marginLeft:5}}>· Mädchen +2 Jahre berücksichtigt</span>}
               </div>
             )}
@@ -1528,9 +1528,9 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,onSave,onClose,t 
                       <span style={{fontSize:20}}>{icon}</span>
                       <div style={{flex:1,textAlign:"left"}}>
                         <div style={{fontWeight:700,fontSize:14,color:(p.recommend===rec)?col:"#334155"}}>{rec}</div>
-                        {isDowngrade&&<div style={{fontSize:11,color:"#dc2626",marginTop:1}}>⚠️ Nur in begründeten Einzelfällen</div>}
+                        {isDowngrade&&<div style={{fontSize:11,color:"#dc2626",marginTop:1}}> Nur in begründeten Einzelfällen</div>}
                       </div>
-                      {p.recommend===rec&&<span style={{fontSize:16}}>✓</span>}
+                      {p.recommend===rec&&<span style={{fontSize:16}}></span>}
                     </button>
                   );
                 })}
@@ -1569,7 +1569,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,onSave,onClose,t 
 
           <button onClick={()=>onSave(p)}
             style={{width:"100%",padding:"14px",borderRadius:15,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:16,cursor:"pointer",fontFamily:"inherit",boxShadow:`0 4px 18px ${t.p}44`}}>
-            💾 Spielerprofil speichern
+             Spielerprofil speichern
           </button>
         </div>
       </div>
@@ -1605,8 +1605,8 @@ function PlayerCard({ player: pl,onEdit,onDel,isMain,allTeams,allEvents }) {
           {(pl.rating||0) > 0 && <span style={{fontSize:14}}>{"⭐".repeat(Math.min(pl.rating,5))}</span>}
         </div>
         <div style={{display:"flex",gap:5,flexShrink:0}}>
-          <button onClick={e=>{e.stopPropagation();onEdit();}} style={{width:30,height:30,borderRadius:9,background:"#eff6ff",border:"none",color:"#2563eb",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>✏️</button>
-          {onDel&&<button onClick={e=>{e.stopPropagation();onDel();}} style={{width:30,height:30,borderRadius:9,background:"#fee2e2",border:"none",color:"#dc2626",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>✕</button>}
+          <button onClick={e=>{e.stopPropagation();onEdit();}} style={{width:30,height:30,borderRadius:9,background:"#eff6ff",border:"none",color:"#2563eb",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}></button>
+          {onDel&&<button onClick={e=>{e.stopPropagation();onDel();}} style={{width:30,height:30,borderRadius:9,background:"#fee2e2",border:"none",color:"#dc2626",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}></button>}
         </div>
       </div>
       {exp && (
@@ -1627,7 +1627,7 @@ function PlayerCard({ player: pl,onEdit,onDel,isMain,allTeams,allEvents }) {
           )}
           {pl.lastTeam&&pl.lastTeam!=="—"&&(
             <div style={{marginTop:6,fontSize:12,color:"#64748b",fontWeight:600}}>
-              📅 Letzte Saison: <span style={{color:"#334155"}}>{pl.lastTeam}</span>
+               Letzte Saison: <span style={{color:"#334155"}}>{pl.lastTeam}</span>
             </div>
           )}
           {}
@@ -1684,7 +1684,7 @@ function PoolView({ allPlayers,myTeams,allTeams,defaultScopeTids,cid,onAssign,on
       <div style={{background:"#fff",borderRadius:14,border:"1.5px solid #e2e8f0",marginBottom:14,overflow:"hidden"}}>
         <button onClick={()=>setShowScope(s=>!s)}
           style={{width:"100%",padding:"12px 16px",border:"none",background:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:10,fontFamily:"inherit"}}>
-          <span style={{fontSize:16}}>🎯</span>
+          <span style={{fontSize:16}}></span>
           <div style={{flex:1,textAlign:"left"}}>
             <div style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>Zuteilung für</div>
             <div style={{fontSize:12,color:"#64748b",marginTop:1}}>
@@ -1715,7 +1715,7 @@ function PoolView({ allPlayers,myTeams,allTeams,defaultScopeTids,cid,onAssign,on
                       return (
                         <button key={tm.id} onClick={()=>toggleScope(tm.id)}
                           style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",borderRadius:11,border:`2px solid ${on?tm.col:"#e2e8f0"}`,background:on?tm.col:"#fff",color:on?"#fff":"#475569",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",transition:"all .15s"}}>
-                          {on&&<span>✓</span>}
+                          {on&&<span></span>}
                           {tm.name}
                           {isMine&&<span style={{fontSize:10,fontWeight:800,background:on?"rgba(255,255,255,.25)":"rgba(0,0,0,.08)",borderRadius:4,padding:"1px 5px"}}>{on?"Mein Team":"Mein"}</span>}
                           <span style={{fontSize:11,fontWeight:800,background:on?"rgba(255,255,255,.2)":tm.col+"15",color:on?"#fff":tm.col,borderRadius:5,padding:"1px 6px"}}>
@@ -1757,7 +1757,7 @@ function PoolView({ allPlayers,myTeams,allTeams,defaultScopeTids,cid,onAssign,on
           ))}
           <div style={{background:"#fef3c7",borderRadius:12,padding:"10px 8px",textAlign:"center",border:"2px solid #fde68a"}}>
             <div style={{fontWeight:900,fontSize:22,color:"#d97706",lineHeight:1}}>{unassigned}</div>
-            <div style={{fontSize:11,fontWeight:700,color:"#d97706",marginTop:3,opacity:.8}}>📦 Offen</div>
+            <div style={{fontSize:11,fontWeight:700,color:"#d97706",marginTop:3,opacity:.8}}> Offen</div>
           </div>
         </div>
       )}
@@ -1776,7 +1776,7 @@ function PoolView({ allPlayers,myTeams,allTeams,defaultScopeTids,cid,onAssign,on
 
       {}
       <div style={{position:"relative",marginBottom:12}}>
-        <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontSize:15,pointerEvents:"none"}}>🔍</span>
+        <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontSize:15,pointerEvents:"none"}}></span>
         <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Spieler suchen…"
           style={{width:"100%",padding:"10px 13px 10px 38px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",background:"#fff"}}/>
       </div>
@@ -1784,7 +1784,7 @@ function PoolView({ allPlayers,myTeams,allTeams,defaultScopeTids,cid,onAssign,on
       {}
       {scopeTeams.length===0&&(
         <div style={{textAlign:"center",padding:"28px",background:"#f8fafc",borderRadius:14,border:"1.5px dashed #e2e8f0",color:"#94a3b8"}}>
-          <div style={{fontSize:32,marginBottom:8}}>🎯</div>
+          <div style={{fontSize:32,marginBottom:8}}></div>
           <p style={{fontWeight:700}}>Keine Mannschaft ausgewählt</p>
           <p style={{fontSize:13,marginTop:4}}>Wähle oben mindestens eine Mannschaft für die Zuteilung</p>
         </div>
@@ -1801,7 +1801,7 @@ function PoolView({ allPlayers,myTeams,allTeams,defaultScopeTids,cid,onAssign,on
           ))}
           {filtered.length===0&&(
             <div style={{textAlign:"center",padding:"28px",color:"#94a3b8"}}>
-              <div style={{fontSize:32,marginBottom:8}}>🔍</div>
+              <div style={{fontSize:32,marginBottom:8}}></div>
               <p style={{fontWeight:700}}>Keine Spieler gefunden</p>
             </div>
           )}
@@ -1841,9 +1841,9 @@ function PlayerAssignRow({ player: pl,teams,allTeams,t,onAssign,onOptToggle }) {
                     Jg. {pl.by} · {pl.gender==="w"?"* Mädchen":"* Junge"}
                     {pl.gender==="w"&&<span style={{marginLeft:6,fontSize:11,background:"rgba(255,255,255,.2)",borderRadius:5,padding:"1px 7px"}}>+2J Mädchen-Regel</span>}
                   </div>
-                  {pl.position&&<div style={{color:"rgba(255,255,255,.6)",fontSize:12,marginTop:2}}>⚽ {pl.position}{pl.foot?` · ${pl.foot}`:""}</div>}
+                  {pl.position&&<div style={{color:"rgba(255,255,255,.6)",fontSize:12,marginTop:2}}> {pl.position}{pl.foot?` · ${pl.foot}`:""}</div>}
                 </div>
-                <button onClick={()=>setShowProfile(false)} style={{width:34,height:34,borderRadius:11,background:"rgba(255,255,255,.15)",border:"none",color:"rgba(255,255,255,.8)",fontSize:18,cursor:"pointer"}}>✕</button>
+                <button onClick={()=>setShowProfile(false)} style={{width:34,height:34,borderRadius:11,background:"rgba(255,255,255,.15)",border:"none",color:"rgba(255,255,255,.8)",fontSize:18,cursor:"pointer"}}></button>
               </div>
               {}
               {(pl.rating||0)>0&&<div style={{marginTop:10,display:"flex",gap:2}}>
@@ -1856,7 +1856,7 @@ function PlayerAssignRow({ player: pl,teams,allTeams,t,onAssign,onOptToggle }) {
 
               {}
               <div style={{background:"#f8fafc",borderRadius:13,padding:"13px 15px",border:"1.5px solid #e2e8f0"}}>
-                <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:9,letterSpacing:.5}}>✅ ALTERSMÄSSIG PASSENDE TEAMS</div>
+                <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:9,letterSpacing:.5}}> ALTERSMÄSSIG PASSENDE TEAMS</div>
                 <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
                   {allTeams.filter(tm=>playerFitsTeam(pl,tm)).map(tm=>{
                     const ft=playerFitType(pl,tm);
@@ -1877,7 +1877,7 @@ function PlayerAssignRow({ player: pl,teams,allTeams,t,onAssign,onOptToggle }) {
                 {}
                 {allTeams.filter(tm=>playerFitType(pl,tm)==="pullup"||playerFitType(pl,tm)==="girlpullup").length>0&&(
                   <div style={{marginTop:10,background:"#fffbeb",borderRadius:9,padding:"9px 12px",border:"1px solid #fde68a",fontSize:12,color:"#92400e",lineHeight:1.6}}>
-                    ⬆️ <strong>Hochholen möglich:</strong> Jungen max. 2 Kategorien · Mädchen max. 4 Kategorien über dem normalen Altersband
+                    ⬆ <strong>Hochholen möglich:</strong> Jungen max. 2 Kategorien · Mädchen max. 4 Kategorien über dem normalen Altersband
                   </div>
                 )}
               </div>
@@ -1885,7 +1885,7 @@ function PlayerAssignRow({ player: pl,teams,allTeams,t,onAssign,onOptToggle }) {
               {}
               {((pl.strengths||[]).length>0||(pl.customStrengths||[]).length>0)&&(
                 <div>
-                  <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5}}>💪 STÄRKEN</div>
+                  <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5}}> STÄRKEN</div>
                   <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
                     {(pl.strengths||[]).map(s=>(
                       <span key={s} style={{fontSize:12,fontWeight:700,color:"#2563eb",background:"#eff6ff",borderRadius:7,padding:"4px 10px",border:"1px solid #bfdbfe"}}>{s}</span>
@@ -1913,7 +1913,7 @@ function PlayerAssignRow({ player: pl,teams,allTeams,t,onAssign,onOptToggle }) {
               {}
               {pl.notes&&(
                 <div style={{background:"#fffbeb",borderRadius:12,padding:"12px 14px",border:"1.5px solid #fde68a"}}>
-                  <div style={{fontSize:11,fontWeight:800,color:"#92400e",marginBottom:6,letterSpacing:.5}}>🔒 TRAINER-NOTIZEN</div>
+                  <div style={{fontSize:11,fontWeight:800,color:"#92400e",marginBottom:6,letterSpacing:.5}}> TRAINER-NOTIZEN</div>
                   <p style={{fontSize:13,color:"#92400e",lineHeight:1.6,margin:0}}>{pl.notes}</p>
                 </div>
               )}
@@ -1924,19 +1924,19 @@ function PlayerAssignRow({ player: pl,teams,allTeams,t,onAssign,onOptToggle }) {
                   <div>
                     <div style={{fontSize:11,fontWeight:800,color:"#64748b"}}>EMPFEHLUNG NÄCHSTE SAISON</div>
                     <div style={{fontWeight:800,fontSize:15,color:"#0f172a",marginTop:2}}>{pl.recommend}</div>
-                    {pl.lastTeam&&pl.lastTeam!=="—"&&<div style={{fontSize:11,color:"#64748b",marginTop:2}}>📅 Letzte Saison: {pl.lastTeam}</div>}
+                    {pl.lastTeam&&pl.lastTeam!=="—"&&<div style={{fontSize:11,color:"#64748b",marginTop:2}}> Letzte Saison: {pl.lastTeam}</div>}
                   </div>
                 </div>
               )}
 
               {}
               <div style={{borderTop:"1px solid #f1f5f9",paddingTop:14}}>
-                <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:9,letterSpacing:.5}}>⚡ DIREKT ZUWEISEN</div>
+                <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:9,letterSpacing:.5}}> DIREKT ZUWEISEN</div>
                 <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
                   {mainTeam&&(
                     <button onClick={()=>{onAssign("");setShowProfile(false);}}
                       style={{display:"flex",alignItems:"center",gap:6,padding:"9px 15px",borderRadius:11,border:"none",background:mainTeam.col,color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
-                      {mainTeam.name} ✕ entfernen
+                      {mainTeam.name}  entfernen
                     </button>
                   )}
                   {scopeElig.filter(tm=>tm.id!==pl.mainTid).map(tm=>(
@@ -1960,7 +1960,7 @@ function PlayerAssignRow({ player: pl,teams,allTeams,t,onAssign,onOptToggle }) {
         <div style={{flex:1}}>
           <div style={{fontWeight:800,fontSize:15,color:"#0f172a",display:"flex",alignItems:"center",gap:6}}>
             {pl.name}
-            <span style={{fontSize:11,color:"#94a3b8",fontWeight:500}}>ℹ️ Profil</span>
+            <span style={{fontSize:11,color:"#94a3b8",fontWeight:500}}>ℹ Profil</span>
           </div>
           <div style={{fontSize:12,color:"#64748b",marginTop:2,display:"flex",gap:7,flexWrap:"wrap"}}>
             <span>Jg. {pl.by}</span>
@@ -1992,7 +1992,7 @@ function PlayerAssignRow({ player: pl,teams,allTeams,t,onAssign,onOptToggle }) {
           {mainTeam && scopeElig.some(tm=>tm.id===pl.mainTid) && (
             <button onClick={()=>onAssign("")}
               style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",borderRadius:10,border:"none",background:mainTeam.col,color:"#fff",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit",boxShadow:`0 2px 8px ${mainTeam.col}44`}}>
-              {mainTeam.name} ✕
+              {mainTeam.name} 
             </button>
           )}
           {scopeElig.filter(tm=>tm.id!==pl.mainTid).map(tm=>{
@@ -2078,7 +2078,7 @@ function PlayersTab({ data,myTids,save,fire,cl }) {
       {hasUnassigned && (
         <div onClick={()=>setView("pool")}
           style={{background:"#fff7ed",border:"2px solid #fed7aa",borderRadius:14,padding:"12px 16px",marginBottom:12,cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
-          <span style={{fontSize:24}}>⚠️</span>
+          <span style={{fontSize:24}}></span>
           <div style={{flex:1}}>
             <div style={{fontWeight:800,fontSize:14,color:"#c2410c"}}>
               {allPlayers.filter(p=>!p.mainTid).length} Spieler noch nicht zugeteilt
@@ -2140,7 +2140,7 @@ function PlayersTab({ data,myTids,save,fire,cl }) {
           {}
           <div style={{display:"flex",gap:8,marginBottom:14}}>
             <div style={{flex:1,position:"relative"}}>
-              <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontSize:15,pointerEvents:"none"}}>🔍</span>
+              <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontSize:15,pointerEvents:"none"}}></span>
               <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Spieler suchen…"
                 style={{width:"100%",padding:"10px 13px 10px 38px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",background:"#fff"}}/>
             </div>
@@ -2158,7 +2158,7 @@ function PlayersTab({ data,myTids,save,fire,cl }) {
 
           {mainPlayers.length===0 && (
             <div style={{textAlign:"center",padding:"28px",background:"#f8fafc",borderRadius:16,border:"1.5px dashed #e2e8f0",marginBottom:12}}>
-              <div style={{fontSize:36,marginBottom:8}}>👥</div>
+              <div style={{fontSize:36,marginBottom:8}}></div>
               <p style={{fontWeight:700,color:"#334155"}}>Noch keine Spieler im Hauptkader</p>
               <p style={{fontSize:13,color:"#94a3b8",marginTop:4}}>+ Spieler oder wechsle zur Zuteilungs-Ansicht</p>
             </div>
@@ -2213,7 +2213,7 @@ function BrandingTab({cl,onSave}) {
   return (
     <div>
       <div style={{background:"#fff",borderRadius:18,padding:"18px",border:"1.5px solid #e2e8f0"}}>
-        <h3 style={{fontWeight:900,fontSize:16,color:"#0f172a",marginBottom:16}}>🎨 Vereins-Design</h3>
+        <h3 style={{fontWeight:900,fontSize:16,color:"#0f172a",marginBottom:16}}> Vereins-Design</h3>
         <div style={{marginBottom:18}}>
           <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.6,textTransform:"uppercase",marginBottom:8}}>Vereinslogo</div>
           <div style={{display:"flex",alignItems:"center",gap:14}}>
@@ -2296,7 +2296,7 @@ function TemplateForm({initial,onSave,onCancel,cl,title}) {
       <div style={{marginBottom:16}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
           <span style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5}}>OPTIONEN ({f.items.length})</span>
-          {f.items.length>1&&<span style={{fontSize:11,color:"#94a3b8"}}>☰ Drag zum Sortieren</span>}
+          {f.items.length>1&&<span style={{fontSize:11,color:"#94a3b8"}}> Drag zum Sortieren</span>}
         </div>
         {f.items.length>0&&(
           <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:12}}>
@@ -2314,7 +2314,7 @@ function TemplateForm({initial,onSave,onCancel,cl,title}) {
 
         {}
         <div style={{background:`${t.p}08`,borderRadius:14,padding:"14px",border:`2px dashed ${t.p}35`}}>
-          <div style={{fontSize:12,fontWeight:700,color:t.p,marginBottom:10}}>➕ Option hinzufügen</div>
+          <div style={{fontSize:12,fontWeight:700,color:t.p,marginBottom:10}}> Option hinzufügen</div>
           <div style={{display:"flex",gap:8,marginBottom:10}}>
             <input ref={txtRef} value={f._txt} onChange={e=>u({_txt:e.target.value})}
               onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();addItem();}}}
@@ -2338,7 +2338,7 @@ function TemplateForm({initial,onSave,onCancel,cl,title}) {
       <Btn full ch={`* Vorlage speichern (${f.items.length} Option${f.items.length!==1?"en":""})`}
         onClick={()=>canSave&&onSave(f)} dis={!canSave} cl={cl}/>
       {!canSave&&f.name.trim()&&f.items.length===0&&(
-        <p style={{textAlign:"center",fontSize:12,color:"#f59e0b",marginTop:8}}>⚠️ Mindestens eine Option hinzufügen</p>
+        <p style={{textAlign:"center",fontSize:12,color:"#f59e0b",marginTop:8}}> Mindestens eine Option hinzufügen</p>
       )}
     </div>
   );
@@ -2364,7 +2364,7 @@ function ItemRow({item,idx,tp,onDragStart,onDragEnter,onDragEnd,onChange,onRemov
       <div style={{display:"flex",gap:7}}>
         <button onClick={commit}
           style={{flex:1,padding:"8px",borderRadius:9,border:"none",background:tp,color:contrast(tp),fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
-          ✓ Speichern
+           Speichern
         </button>
         <button onClick={()=>{setTxt(item.txt);setMax(item.max!=null?String(item.max):"");setEditing(false);}}
           style={{padding:"8px 14px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:600,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
@@ -2385,9 +2385,9 @@ function ItemRow({item,idx,tp,onDragStart,onDragEnter,onDragEnd,onChange,onRemov
       {item.max&&<span style={{fontSize:11,fontWeight:700,color:"#d97706",background:"#fef3c7",borderRadius:6,padding:"3px 8px",whiteSpace:"nowrap"}}>max {item.max}×</span>}
       {}
       <button onClick={()=>setEditing(true)}
-        style={{width:30,height:30,borderRadius:8,background:"#eff6ff",border:"none",color:"#2563eb",fontSize:13,cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>✏️</button>
+        style={{width:30,height:30,borderRadius:8,background:"#eff6ff",border:"none",color:"#2563eb",fontSize:13,cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}></button>
       <button onClick={onRemove}
-        style={{width:30,height:30,borderRadius:8,background:"#fee2e2",border:"none",color:"#dc2626",fontSize:14,fontWeight:800,cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+        style={{width:30,height:30,borderRadius:8,background:"#fee2e2",border:"none",color:"#dc2626",fontSize:14,fontWeight:800,cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}></button>
     </div>
   );
 }
@@ -2418,7 +2418,7 @@ function TemplatesTab({data,cid,save,fire,cl}) {
       {!mode&&(
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
           <div>
-            <p style={{fontWeight:800,fontSize:16,color:"#0f172a"}}>📁 Umfrage-Vorlagen</p>
+            <p style={{fontWeight:800,fontSize:16,color:"#0f172a"}}> Umfrage-Vorlagen</p>
             <p style={{fontSize:12,color:"#64748b",marginTop:2}}>Beim Termin anlegen mit einem Klick laden</p>
           </div>
           <button onClick={()=>setMode("new")} style={{display:"flex",alignItems:"center",gap:7,padding:"10px 18px",borderRadius:12,border:"none",background:t.p,color:contrast(t.p),fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",boxShadow:`0 3px 12px ${t.p}55`}}>
@@ -2442,7 +2442,7 @@ function TemplatesTab({data,cid,save,fire,cl}) {
       {}
       {delId&&(
         <div style={{background:"#fff7f7",borderRadius:16,padding:"16px",border:"1.5px solid #fecaca",marginBottom:14}} className="in">
-          <p style={{fontWeight:700,fontSize:14,color:"#dc2626",marginBottom:12}}>🗑 Vorlage wirklich löschen?</p>
+          <p style={{fontWeight:700,fontSize:14,color:"#dc2626",marginBottom:12}}> Vorlage wirklich löschen?</p>
           <div style={{display:"flex",gap:9}}>
             <button onClick={()=>doDel(delId)} style={{flex:1,padding:"11px",borderRadius:12,border:"none",background:"#dc2626",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Ja,löschen</button>
             <button onClick={()=>setDelId(null)} style={{flex:1,padding:"11px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
@@ -2453,7 +2453,7 @@ function TemplatesTab({data,cid,save,fire,cl}) {
       {}
       {templates.length===0&&!mode&&(
         <div style={{textAlign:"center",padding:"48px 20px",background:"#f8fafc",borderRadius:20,border:"1.5px dashed #e2e8f0"}}>
-          <div style={{fontSize:52,marginBottom:14}}>📁</div>
+          <div style={{fontSize:52,marginBottom:14}}></div>
           <p style={{fontWeight:800,fontSize:17,color:"#334155"}}>Noch keine Vorlagen</p>
           <p style={{color:"#94a3b8",fontSize:13,marginTop:8,lineHeight:1.6}}>Erstelle Vorlagen für häufig genutzte Umfragen.<br/>Beim nächsten Termin lädst du sie mit einem Klick.</p>
           <button onClick={()=>setMode("new")} style={{marginTop:16,padding:"12px 24px",borderRadius:13,border:"none",background:t.p,color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>+ Erste Vorlage erstellen</button>
@@ -2474,11 +2474,11 @@ function TemplatesTab({data,cid,save,fire,cl}) {
               <div style={{display:"flex",gap:7}}>
                 <button onClick={()=>setMode(tpl.id)}
                   style={{padding:"7px 13px",borderRadius:10,border:`1.5px solid ${t.p}`,background:t.p+"12",color:t.p,fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
-                  ✏️ Bearbeiten
+                   Bearbeiten
                 </button>
                 <button onClick={()=>setDelId(tpl.id)}
                   style={{padding:"7px 11px",borderRadius:10,border:"1.5px solid #fecaca",background:"#fff7f7",color:"#dc2626",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
-                  🗑
+                  
                 </button>
               </div>
             </div>
@@ -2515,7 +2515,7 @@ function SeriesWizard({f,u,t}) {
     <div style={{borderRadius:18,border:`2px solid ${mode!=="none"?t.p:"#e2e8f0"}`,background:mode!=="none"?mix(t.p,92):"#fff",overflow:"hidden",transition:"all .2s"}}>
       <div onClick={()=>u({recMode:mode==="none"?"weekly":"none",recDays:[],recUntil:"",recStart:now(),recDates:[]})}
         style={{padding:"14px 16px",cursor:"pointer",display:"flex",alignItems:"center",gap:12}}>
-        <div style={{width:46,height:46,borderRadius:14,background:mode!=="none"?t.p+"22":"#f1f5f9",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>🔁</div>
+        <div style={{width:46,height:46,borderRadius:14,background:mode!=="none"?t.p+"22":"#f1f5f9",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}></div>
         <div style={{flex:1}}>
           <div style={{fontWeight:800,fontSize:16,color:mode!=="none"?t.p:"#334155"}}>Serientermine</div>
           <div style={{fontSize:13,color:"#64748b",marginTop:1}}>{mode==="none"?"Einzel-Termin":mode==="weekly"?`Wöchentlich · ${dates.length} Termine`:mode==="custom"?`Eigene Daten · ${dates.length} Termine`:""}</div>
@@ -2558,13 +2558,13 @@ function SeriesWizard({f,u,t}) {
             </div>
           </div>
           {dates.length>0&&<div style={{background:"#fff",borderRadius:13,padding:"12px 14px",border:`1.5px solid ${t.p}30`}}>
-            <div style={{fontSize:12,fontWeight:800,color:t.p,marginBottom:8}}>📅 {dates.length} TERMINE</div>
+            <div style={{fontSize:12,fontWeight:800,color:t.p,marginBottom:8}}> {dates.length} TERMINE</div>
             <div style={{display:"flex",flexWrap:"wrap",gap:5,maxHeight:90,overflowY:"auto"}}>
               {dates.map(d=><span key={d} style={{fontSize:11,fontWeight:700,background:t.p+"15",color:t.p,borderRadius:6,padding:"3px 8px"}}>{fmtS(d)}</span>)}
             </div>
           </div>}
-          {(f.recDays||[]).length===0&&<p style={{fontSize:12,color:"#f59e0b",fontWeight:600,marginTop:8}}>⚠️ Mindestens einen Wochentag wählen</p>}
-          {(f.recDays||[]).length>0&&!f.recUntil&&<p style={{fontSize:12,color:"#f59e0b",fontWeight:600,marginTop:8}}>⚠️ Enddatum wählen</p>}
+          {(f.recDays||[]).length===0&&<p style={{fontSize:12,color:"#f59e0b",fontWeight:600,marginTop:8}}> Mindestens einen Wochentag wählen</p>}
+          {(f.recDays||[]).length>0&&!f.recUntil&&<p style={{fontSize:12,color:"#f59e0b",fontWeight:600,marginTop:8}}> Enddatum wählen</p>}
         </>}
         {mode==="custom"&&<>
           <div style={{marginBottom:12}}>
@@ -2583,11 +2583,11 @@ function SeriesWizard({f,u,t}) {
               {(f.recDates||[]).map(d=>(
                 <div key={d} style={{display:"flex",alignItems:"center",gap:5,background:t.p+"15",borderRadius:9,padding:"5px 10px",border:`1px solid ${t.p}30`}}>
                   <span style={{fontSize:12,fontWeight:700,color:t.p}}>{fmtS(d)}</span>
-                  <button onClick={()=>u({recDates:(f.recDates||[]).filter(x=>x!==d)})} style={{background:"none",border:"none",color:t.p,cursor:"pointer",fontSize:13,padding:0,opacity:.7}}>✕</button>
+                  <button onClick={()=>u({recDates:(f.recDates||[]).filter(x=>x!==d)})} style={{background:"none",border:"none",color:t.p,cursor:"pointer",fontSize:13,padding:0,opacity:.7}}></button>
                 </div>
               ))}
             </div>
-            <div style={{background:"#fff",borderRadius:12,padding:"10px 14px",border:`1.5px solid ${t.p}30`,fontSize:12,fontWeight:700,color:t.p}}>📌 {(f.recDates||[]).length} Termine gewählt</div>
+            <div style={{background:"#fff",borderRadius:12,padding:"10px 14px",border:`1.5px solid ${t.p}30`,fontSize:12,fontWeight:700,color:t.p}}> {(f.recDates||[]).length} Termine gewählt</div>
           </>:<p style={{fontSize:12,color:"#94a3b8",textAlign:"center",padding:"10px"}}>Noch keine Daten ausgewählt</p>}
         </>}
       </div>}
@@ -2620,7 +2620,7 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
     <div style={{minHeight:"100dvh",background:"#f0f4f8",display:"flex",flexDirection:"column"}}>
       <div style={{background:`linear-gradient(135deg,${t.s},${t.p}aa)`,padding:"16px 18px 20px"}}>
         <div style={{display:"flex",alignItems:"center",gap:11,marginBottom:14}}>
-          <button onClick={onClose} style={{width:34,height:34,borderRadius:11,background:"rgba(255,255,255,.15)",border:"none",color:"rgba(255,255,255,.8)",fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+          <button onClick={onClose} style={{width:34,height:34,borderRadius:11,background:"rgba(255,255,255,.15)",border:"none",color:"rgba(255,255,255,.8)",fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}></button>
           <div style={{flex:1}}><div style={{color:"rgba(255,255,255,.55)",fontSize:11,fontWeight:700}}>SCHRITT {step} / {STEPS} · {SL[step-1].toUpperCase()}</div><div style={{color:"#fff",fontWeight:900,fontSize:18,marginTop:2}}>{isEdit?"Termin bearbeiten":"Neuer Termin"}</div></div>
         </div>
         <div style={{height:4,borderRadius:99,background:"rgba(255,255,255,.2)"}}><div style={{height:"100%",borderRadius:99,background:"rgba(255,255,255,.9)",width:`${(step/STEPS)*100}%`,transition:"width .3s ease"}}/></div>
@@ -2680,7 +2680,7 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
             </div>
             {}
             {onTemplates.length>0&&<div style={{marginBottom:14}}>
-              <p style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:8}}>📁 VORLAGE LADEN</p>
+              <p style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:8}}> VORLAGE LADEN</p>
               <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
                 {onTemplates.map(tpl=>(
                   <button key={tpl.id} onClick={()=>u({li:tpl.items.map(it=>({...it,id:uid()})),selType:tpl.selType||"multi"})}
@@ -2697,7 +2697,7 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
                   <span style={{fontSize:12,color:t.p,fontWeight:700,minWidth:18}}>{i+1}.</span>
                   <span style={{flex:1,fontWeight:600,fontSize:14,color:"#334155"}}>{item.txt}</span>
                   {item.max&&<Tag c="#d97706" bg="#fef3c7" ch={`max ${item.max}`} sm/>}
-                  <button onClick={()=>u({li:f.li.filter((_,j)=>j!==i)})} style={{width:26,height:26,borderRadius:7,background:"#fee2e2",border:"none",color:"#dc2626",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:800}}>✕</button>
+                  <button onClick={()=>u({li:f.li.filter((_,j)=>j!==i)})} style={{width:26,height:26,borderRadius:7,background:"#fee2e2",border:"none",color:"#dc2626",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:800}}></button>
                 </div>
               ))}
             </div>
@@ -2719,7 +2719,7 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
                   style={{width:60,padding:"7px 10px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",textAlign:"center"}}/>
               </div>
             </div>
-            {onSaveTemplate&&f.li?.length>0&&<button onClick={()=>{const name=prompt("Name der Vorlage?");if(name)onSaveTemplate({id:uid(),name,icon:"Liste",selType:f.selType||"multi",items:f.li});}} style={{marginTop:10,width:"100%",padding:"10px",borderRadius:11,border:`1.5px dashed ${t.p}`,background:"transparent",color:t.p,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>💾 Als Vorlage speichern</button>}
+            {onSaveTemplate&&f.li?.length>0&&<button onClick={()=>{const name=prompt("Name der Vorlage?");if(name)onSaveTemplate({id:uid(),name,icon:"Liste",selType:f.selType||"multi",items:f.li});}} style={{marginTop:10,width:"100%",padding:"10px",borderRadius:11,border:`1.5px dashed ${t.p}`,background:"transparent",color:t.p,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}> Als Vorlage speichern</button>}
           </div>}
         </div>}
         {}
@@ -2776,12 +2776,12 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
   return (
     <div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-        <div><p style={{fontWeight:900,fontSize:16,color:"#0f172a"}}>🙋 Helfer-Accounts</p><p style={{fontSize:12,color:"#64748b",marginTop:2}}>{allHelpers.length} angelegt · {allHelpers.filter(h=>h.active!==false).length} aktiv</p></div>
+        <div><p style={{fontWeight:900,fontSize:16,color:"#0f172a"}}> Helfer-Accounts</p><p style={{fontSize:12,color:"#64748b",marginTop:2}}>{allHelpers.length} angelegt · {allHelpers.filter(h=>h.active!==false).length} aktiv</p></div>
         <button onClick={openNew} style={{padding:"9px 16px",borderRadius:11,border:"none",background:t.p,color:contrast(t.p),fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",boxShadow:`0 3px 10px ${t.p}44`}}>+ Neuer Helfer</button>
       </div>
 
       {allHelpers.length===0&&<div style={{textAlign:"center",padding:"32px",background:"#f8fafc",borderRadius:16,border:"1.5px dashed #e2e8f0"}}>
-        <div style={{fontSize:36,marginBottom:8}}>🙋</div>
+        <div style={{fontSize:36,marginBottom:8}}></div>
         <p style={{fontWeight:700,color:"#334155"}}>Noch keine Helfer angelegt</p>
         <p style={{fontSize:13,color:"#94a3b8",marginTop:4}}>Erstelle personalisierte Zugänge mit eigenem Code</p>
       </div>}
@@ -2790,7 +2790,7 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
         {allHelpers.map(h=>(
           <div key={h.id} style={{background:"#fff",borderRadius:15,border:`1.5px solid ${h.active!==false?"#e2e8f0":"#fecaca"}`,overflow:"hidden"}}>
             <div style={{padding:"12px 14px",display:"flex",alignItems:"center",gap:11}}>
-              <div style={{width:44,height:44,borderRadius:13,background:h.active!==false?"#f0fdf4":"#fee2e2",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>🙋</div>
+              <div style={{width:44,height:44,borderRadius:13,background:h.active!==false?"#f0fdf4":"#fee2e2",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}></div>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontWeight:800,fontSize:15,color:"#0f172a"}}>{h.name}</div>
                 {h.childName&&<div style={{fontSize:12,color:"#64748b",marginTop:1}}>Kind: {h.childName}</div>}
@@ -2801,8 +2801,8 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
               </div>
               <div style={{display:"flex",gap:5}}>
                 <button onClick={()=>toggle(h.id)} style={{width:30,height:30,borderRadius:8,background:h.active!==false?"#fee2e2":"#dcfce7",border:"none",color:h.active!==false?"#dc2626":"#16a34a",cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>{h.active!==false?"⏸":"▶"}</button>
-                <button onClick={()=>openEdit(h)} style={{width:30,height:30,borderRadius:8,background:"#eff6ff",border:"none",color:"#2563eb",cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center"}}>✏️</button>
-                <button onClick={()=>del(h.id)} style={{width:30,height:30,borderRadius:8,background:"#fee2e2",border:"none",color:"#dc2626",cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+                <button onClick={()=>openEdit(h)} style={{width:30,height:30,borderRadius:8,background:"#eff6ff",border:"none",color:"#2563eb",cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center"}}></button>
+                <button onClick={()=>del(h.id)} style={{width:30,height:30,borderRadius:8,background:"#fee2e2",border:"none",color:"#dc2626",cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center"}}></button>
               </div>
             </div>
             {h.notes&&<div style={{padding:"0 14px 11px",fontSize:12,color:"#64748b",fontStyle:"italic"}}>{h.notes}</div>}
@@ -2828,7 +2828,7 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
               <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6}}>LOGIN-CODE (persönlich & geheim)</div>
               <div style={{display:"flex",alignItems:"center",gap:10}}>
                 <span style={{fontWeight:900,fontSize:22,color:"#2563eb",fontFamily:"monospace",flex:1}}>{f.code}</span>
-                <button onClick={()=>u({code:genCode()})} style={{padding:"6px 12px",borderRadius:9,border:"1.5px solid #bfdbfe",background:"#fff",color:"#2563eb",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>🔄 Neu generieren</button>
+                <button onClick={()=>u({code:genCode()})} style={{padding:"6px 12px",borderRadius:9,border:"1.5px solid #bfdbfe",background:"#fff",color:"#2563eb",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}> Neu generieren</button>
               </div>
               <p style={{fontSize:11,color:"#64748b",marginTop:6}}>Gib diesen Code dem Helfer. Er kann sich damit einloggen.</p>
             </div>
@@ -2912,7 +2912,7 @@ function ChatTab({data,cid,myTids,session,save,fire,cl}) {
       {}
       <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:10,paddingBottom:12}}>
         {msgs.length===0&&<div style={{textAlign:"center",padding:"32px",color:"#94a3b8"}}>
-          <div style={{fontSize:36,marginBottom:8}}>💬</div>
+          <div style={{fontSize:36,marginBottom:8}}></div>
           <p style={{fontWeight:700}}>Noch keine Nachrichten</p>
           <p style={{fontSize:13,marginTop:4}}>Schreib die erste Nachricht!</p>
         </div>}
@@ -2946,7 +2946,7 @@ function ChatTab({data,cid,myTids,session,save,fire,cl}) {
           style={{flex:1,padding:"10px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",background:"#fff"}}/>
         <button onClick={send} disabled={!text.trim()}
           style={{width:44,height:44,borderRadius:11,border:"none",background:text.trim()?t.p:"#e2e8f0",color:text.trim()?contrast(t.p):"#94a3b8",fontSize:18,cursor:text.trim()?"pointer":"default",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"}}>
-          ➤
+          
         </button>
       </div>
     </div>
@@ -3021,9 +3021,9 @@ function JerseysTab({ data,myTids,save,fire,cl }) {
           {}
           {teamPlayers.length===0
             ? <div style={{textAlign:"center",padding:"32px",background:"#f8fafc",borderRadius:14,border:"1.5px dashed #e2e8f0"}}>
-                <div style={{fontSize:36,marginBottom:8}}>👕</div>
+                <div style={{fontSize:36,marginBottom:8}}></div>
                 <p style={{fontWeight:700,color:"#334155"}}>Noch keine Trikotnummern vergeben</p>
-                <p style={{fontSize:13,color:"#94a3b8",marginTop:4}}>Im Spielerprofil → 👕 Trikot eintragen</p>
+                <p style={{fontSize:13,color:"#94a3b8",marginTop:4}}>Im Spielerprofil →  Trikot eintragen</p>
               </div>
             : <div style={{display:"flex",flexDirection:"column",gap:7}}>
                 {teamPlayers.map(pl => {
@@ -3057,13 +3057,13 @@ function JerseysTab({ data,myTids,save,fire,cl }) {
       {mode==="collect" && (
         <>
           <div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:13,padding:"12px 15px",marginBottom:14}}>
-            <p style={{fontWeight:700,fontSize:14,color:"#92400e",marginBottom:3}}>🔄 Trikots einsammeln</p>
+            <p style={{fontWeight:700,fontSize:14,color:"#92400e",marginBottom:3}}> Trikots einsammeln</p>
             <p style={{fontSize:12,color:"#b45309"}}>Tippe auf den Status des Spielers — z.B. ob das Trikot schon da ist oder noch fehlt.</p>
           </div>
 
           {}
           <div style={{position:"relative",marginBottom:12}}>
-            <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontSize:15,pointerEvents:"none"}}>🔍</span>
+            <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontSize:15,pointerEvents:"none"}}></span>
             <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Spieler suchen…"
               style={{width:"100%",padding:"10px 13px 10px 38px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",background:"#fff"}}/>
           </div>
@@ -3118,7 +3118,7 @@ function JerseysTab({ data,myTids,save,fire,cl }) {
             }
             {allWithJersey.filter(p=>p.name.toLowerCase().includes(q)).length===0&&(
               <div style={{textAlign:"center",padding:"28px",color:"#94a3b8"}}>
-                <div style={{fontSize:32,marginBottom:8}}>👕</div>
+                <div style={{fontSize:32,marginBottom:8}}></div>
                 <p style={{fontWeight:700}}>Keine Trikots eingetragen</p>
               </div>
             )}
@@ -3189,10 +3189,10 @@ function ShareBanner({ cl,session,trigger,onDismiss }) {
     <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:990,padding:"0 0 env(safe-area-inset-bottom)",animation:"slideUp .35s ease"}}>
       <div style={{background:"#fff",borderRadius:"20px 20px 0 0",boxShadow:"0 -8px 40px rgba(0,0,0,.15)",border:"1px solid #e2e8f0",padding:"20px 20px 32px",maxWidth:520,margin:"0 auto"}}>
         {}
-        <button onClick={onDismiss} style={{position:"absolute",top:14,right:16,width:28,height:28,borderRadius:"50%",background:"#f1f5f9",border:"none",fontSize:14,cursor:"pointer",color:"#64748b"}}>✕</button>
+        <button onClick={onDismiss} style={{position:"absolute",top:14,right:16,width:28,height:28,borderRadius:"50%",background:"#f1f5f9",border:"none",fontSize:14,cursor:"pointer",color:"#64748b"}}></button>
 
         <div style={{display:"flex",alignItems:"flex-start",gap:12,marginBottom:14}}>
-          <div style={{width:44,height:44,borderRadius:13,background:t.p+"15",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>🎉</div>
+          <div style={{width:44,height:44,borderRadius:13,background:t.p+"15",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}></div>
           <div>
             <div style={{fontWeight:800,fontSize:16,color:"#0f172a",marginBottom:3}}>
               {shared ? "Danke fürs Teilen!" : "Anderen Trainern helfen?"}
@@ -3211,7 +3211,7 @@ function ShareBanner({ cl,session,trigger,onDismiss }) {
           <div style={{display:"flex",gap:9,marginBottom:10}}>
             <button onClick={shareWhatsApp}
               style={{flex:2,display:"flex",alignItems:"center",justifyContent:"center",gap:8,padding:"12px",borderRadius:13,border:"none",background:"#25D366",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
-              <span style={{fontSize:18}}>💬</span> WhatsApp
+              <span style={{fontSize:18}}></span> WhatsApp
             </button>
             <button onClick={doShare}
               style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"12px",borderRadius:13,border:"1.5px solid #e2e8f0",background:"#fff",color:"#334155",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
@@ -3396,8 +3396,8 @@ function SeasonModal({ data,save,fire,cl,myTids,onClose }) {
         <div style={{display:"flex",justifyContent:"center",padding:"12px 0 4px"}}><div style={{width:44,height:4,borderRadius:99,background:"#e2e8f0"}}/></div>
         <div style={{padding:"8px 20px 48px"}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
-            <h2 style={{fontWeight:900,fontSize:20,color:"#0f172a",margin:0}}>🗓️ Saisonplanung</h2>
-            <button onClick={onClose} style={{width:34,height:34,borderRadius:11,background:"#f1f5f9",border:"none",fontSize:17,cursor:"pointer"}}>✕</button>
+            <h2 style={{fontWeight:900,fontSize:20,color:"#0f172a",margin:0}}> Saisonplanung</h2>
+            <button onClick={onClose} style={{width:34,height:34,borderRadius:11,background:"#f1f5f9",border:"none",fontSize:17,cursor:"pointer"}}></button>
           </div>
 
           {}
@@ -3423,7 +3423,7 @@ function SeasonModal({ data,save,fire,cl,myTids,onClose }) {
           {tab==="copy"&&(
             <div style={{display:"flex",flexDirection:"column",gap:14}}>
               <div style={{background:"#eff6ff",borderRadius:13,padding:"13px 15px",border:"1.5px solid #bfdbfe",fontSize:13,color:"#1d4ed8",lineHeight:1.6}}>
-                📋 <strong>Spieler in neue Saison kopieren</strong><br/>
+                 <strong>Spieler in neue Saison kopieren</strong><br/>
                 Alle Spieler werden übernommen. Ihr letztes Team wird automatisch als "Letzte Saison" eingetragen. Trikotnummern,Statistiken und Zuteilungen werden zurückgesetzt — so kannst du neu einteilen.
               </div>
 
@@ -3441,7 +3441,7 @@ function SeasonModal({ data,save,fire,cl,myTids,onClose }) {
                 <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:7,letterSpacing:.5}}>IN SAISON</div>
                 {planningSeasons.length===0 ? (
                   <div style={{background:"#fff7ed",borderRadius:11,padding:"12px 14px",border:"1.5px solid #fed7aa",fontSize:13,color:"#c2410c"}}>
-                    ⚠️ Keine Planungs-Saison vorhanden. Erstelle zuerst eine neue Saison im Tab "* Saisons".
+                     Keine Planungs-Saison vorhanden. Erstelle zuerst eine neue Saison im Tab "* Saisons".
                   </div>
                 ) : (
                   <select value={copyTo} onChange={e=>setCopyTo(e.target.value)}
@@ -3464,7 +3464,7 @@ function SeasonModal({ data,save,fire,cl,myTids,onClose }) {
               <button onClick={()=>copyFrom&&copyTo&&copyToSeason(copyFrom,copyTo)}
                 disabled={!copyFrom||!copyTo}
                 style={{width:"100%",padding:"14px",borderRadius:14,border:"none",background:copyFrom&&copyTo?t.p:"#e2e8f0",color:copyFrom&&copyTo?"#fff":"#94a3b8",fontWeight:800,fontSize:15,cursor:copyFrom&&copyTo?"pointer":"default",fontFamily:"inherit"}}>
-                📦 Spieler jetzt kopieren
+                 Spieler jetzt kopieren
               </button>
             </div>
           )}
@@ -3564,7 +3564,7 @@ function BookingModal({ field,cellStart,date,data,save,fire,cl,myTids,session,on
         <div style={{padding:"8px 20px 44px",display:"flex",flexDirection:"column",gap:14}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <div><div style={{fontWeight:900,fontSize:18,color:"#0f172a"}}>Platz buchen</div><div style={{fontSize:13,color:"#64748b"}}>{field.name} · {date}</div></div>
-            <button onClick={onClose} style={{width:34,height:34,borderRadius:11,background:"#f1f5f9",border:"none",fontSize:17,cursor:"pointer"}}>✕</button>
+            <button onClick={onClose} style={{width:34,height:34,borderRadius:11,background:"#f1f5f9",border:"none",fontSize:17,cursor:"pointer"}}></button>
           </div>
           {}
           <div>
@@ -3671,7 +3671,7 @@ function FieldsTab({ data,myTids,session,save,fire,cl }) {
 
       {}
       {fields.length===0&&<div style={{textAlign:"center",padding:"32px",background:"#f8fafc",borderRadius:14,border:"1.5px dashed #e2e8f0"}}>
-        <div style={{fontSize:36,marginBottom:8}}>🏟</div>
+        <div style={{fontSize:36,marginBottom:8}}></div>
         <p style={{fontWeight:700,color:"#334155"}}>Keine Plätze konfiguriert</p>
         <p style={{fontSize:13,color:"#94a3b8",marginTop:4}}>Plätze werden vom Admin angelegt</p>
       </div>}
@@ -3680,7 +3680,7 @@ function FieldsTab({ data,myTids,session,save,fire,cl }) {
         <div key={field.id} style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",marginBottom:14,overflow:"hidden"}}>
           {}
           <div style={{padding:"12px 16px",borderBottom:"1px solid #f1f5f9",display:"flex",alignItems:"center",gap:10}}>
-            <div style={{width:36,height:36,borderRadius:10,background:"#16a34a22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>🏟</div>
+            <div style={{width:36,height:36,borderRadius:10,background:"#16a34a22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}></div>
             <div style={{flex:1}}>
               <div style={{fontWeight:800,fontSize:15,color:"#0f172a"}}>{field.name}</div>
               <div style={{fontSize:12,color:"#64748b"}}>{field.surface} · {dayBookings(field.id).length} Buchung{dayBookings(field.id).length!==1?"en":""}</div>
@@ -3711,7 +3711,7 @@ function FieldsTab({ data,myTids,session,save,fire,cl }) {
                     <div style={{fontWeight:700,fontSize:13}}>{b.teamName||b.booker}</div>
                     <div style={{fontSize:11,color:"#64748b"}}>{b.timeFrom}–{b.timeTo} · {sizeLbl}{b.note?" · "+b.note:""}</div>
                   </div>
-                  <button onClick={()=>cancelBooking(b.id)} style={{width:26,height:26,borderRadius:7,background:"#fee2e2",border:"none",color:"#dc2626",cursor:"pointer",fontSize:13,fontWeight:800}}>✕</button>
+                  <button onClick={()=>cancelBooking(b.id)} style={{width:26,height:26,borderRadius:7,background:"#fee2e2",border:"none",color:"#dc2626",cursor:"pointer",fontSize:13,fontWeight:800}}></button>
                 </div>
               );
             })}
@@ -3782,7 +3782,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
                 <button onClick={()=>setShowSeasonModal(true)}
                   style={{display:"flex",alignItems:"center",gap:5,background:"rgba(255,255,255,.12)",border:hasPlan?"1.5px solid rgba(255,255,255,.5)":"none",borderRadius:11,padding:"6px 11px",color:"rgba(255,255,255,.85)",fontSize:12,fontWeight:700,cursor:"pointer",position:"relative"}}>
                   {hasPlan&&<span style={{position:"absolute",top:-3,right:-3,width:8,height:8,borderRadius:"50%",background:"#fbbf24",border:"1.5px solid #fff"}}/>}
-                  🗓️ {curSeason?.label||"Saison"}
+                   {curSeason?.label||"Saison"}
                 </button>
               );
             })()}
@@ -3807,7 +3807,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           {}
           {(local.seasons||[]).some(s=>s.status==="planning")&&(
             <div onClick={()=>setShowSeasonModal(true)} style={{background:"#eff6ff",border:"1.5px solid #bfdbfe",borderRadius:13,padding:"11px 16px",marginBottom:14,cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
-              <span style={{fontSize:20}}>📋</span>
+              <span style={{fontSize:20}}></span>
               <div style={{flex:1}}>
                 <div style={{fontWeight:800,fontSize:13,color:"#1d4ed8"}}>
                   Saison {(local.seasons||[]).find(s=>s.status==="planning")?.label} in Planung
@@ -3859,7 +3859,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       {delConf&&<Drawer onClose={()=>setDelConf(null)} title="Termin löschen?">
         <div style={{background:"#fff5f5",borderRadius:14,padding:"14px",marginBottom:16,border:"1.5px solid #fecaca"}}>
           <p style={{fontSize:14,color:"#7f1d1d",fontWeight:600}}>„{delConfVal}"</p>
-          {local.events.find(e=>e.id===delConf)?.sid&&<p style={{fontSize:13,color:"#b45309",marginTop:6}}>⚠️ Dieser Termin ist Teil einer Terminserie.</p>}
+          {local.events.find(e=>e.id===delConf)?.sid&&<p style={{fontSize:13,color:"#b45309",marginTop:6}}> Dieser Termin ist Teil einer Terminserie.</p>}
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:9}}>
           <Btn v="red" full ch="Nur diesen Termin löschen" icon="**" onClick={()=>{
@@ -3886,7 +3886,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       {editConf&&<Drawer onClose={()=>setEditConf(null)} title="Was bearbeiten?">
         <div style={{background:"#fffbeb",borderRadius:14,padding:"14px",marginBottom:16,border:"1.5px solid #fde68a"}}>
           <p style={{fontSize:14,color:"#92400e",fontWeight:600}}>„{editConf.title}"</p>
-          {editConf.sid&&<p style={{fontSize:13,color:"#b45309",marginTop:6}}>⚠️ Dieser Termin ist Teil einer Serie.</p>}
+          {editConf.sid&&<p style={{fontSize:13,color:"#b45309",marginTop:6}}> Dieser Termin ist Teil einer Serie.</p>}
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:9}}>
           <Btn full ch="Nur diesen Termin bearbeiten" icon="**" cl={myClub} onClick={()=>{
@@ -3991,7 +3991,7 @@ function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline}) {
               <button onClick={()=>{onSetDeadline({date:dlDate,time:dlTime});setShowDL(false);}}
                 disabled={!dlDate}
                 style={{flex:1,padding:"10px",borderRadius:10,border:"none",background:dlDate?p:"#e2e8f0",color:dlDate?"#fff":"#94a3b8",fontWeight:700,fontSize:13,cursor:dlDate?"pointer":"default",fontFamily:"inherit"}}>
-                💾 Speichern
+                 Speichern
               </button>
               {dlLabel&&<button onClick={()=>{onSetDeadline(null);setShowDL(false);}}
                 style={{padding:"10px 14px",borderRadius:10,border:"1.5px solid #fecaca",background:"#fff7f7",color:"#dc2626",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
@@ -4095,7 +4095,7 @@ function LegalModal({onAccept,onDecline}) {
         <div style={{display:"flex",justifyContent:"center",padding:"12px 0 4px"}}><div style={{width:44,height:4,borderRadius:99,background:"#e2e8f0"}}/></div>
         <div style={{padding:"4px 22px 44px"}}>
           <div style={{textAlign:"center",marginBottom:18}}>
-            <div style={{fontSize:44,marginBottom:8}}>⚠️</div>
+            <div style={{fontSize:44,marginBottom:8}}></div>
             <h2 style={{fontWeight:900,fontSize:20,color:"#0f172a",marginBottom:4}}>Hinweis vor dem Upload</h2>
             <p style={{fontSize:13,color:"#64748b"}}>Bitte lies diesen Hinweis sorgfältig durch</p>
           </div>
@@ -4103,12 +4103,12 @@ function LegalModal({onAccept,onDecline}) {
           <div style={{background:"#fff7ed",borderRadius:14,padding:"16px",border:"1.5px solid #fed7aa",marginBottom:14}}>
             <p style={{fontSize:13,fontWeight:800,color:"#c2410c",marginBottom:10}}>Datenschutz & Eigenverantwortung</p>
             <div style={{fontSize:13,color:"#9a3412",lineHeight:1.75,display:"flex",flexDirection:"column",gap:7}}>
-              <p>📸 Das Profilbild wird <strong>auf eigene Gefahr</strong> hochgeladen und gespeichert.</p>
-              <p>🏠 Diese App wird von einem ehrenamtlichen Vereinsadmin betrieben — es handelt sich <strong>nicht um einen kommerziellen Dienst</strong>.</p>
-              <p>⚖️ Der Vereinsadmin sowie der Betreiber dieser App übernehmen <strong>keinerlei Haftung</strong> für Verlust,Diebstahl,Missbrauch oder unbefugten Zugriff auf hochgeladene Bilder oder gespeicherte Daten.</p>
-              <p>🗑️ Du kannst dein Bild jederzeit selbst entfernen. Eine vollständige Löschung aus allen Systemen kann <strong>nicht garantiert</strong> werden.</p>
-              <p>👶 Lade <strong>keine Bilder von Minderjährigen</strong> hoch,es sei denn,du bist erziehungsberechtigt und hast ausdrücklich zugestimmt.</p>
-              <p>✅ Mit dem Upload bestätigst du,dass du <strong>auf eigenes Risiko</strong> handelst und alle Bedingungen akzeptierst.</p>
+              <p> Das Profilbild wird <strong>auf eigene Gefahr</strong> hochgeladen und gespeichert.</p>
+              <p> Diese App wird von einem ehrenamtlichen Vereinsadmin betrieben — es handelt sich <strong>nicht um einen kommerziellen Dienst</strong>.</p>
+              <p> Der Vereinsadmin sowie der Betreiber dieser App übernehmen <strong>keinerlei Haftung</strong> für Verlust,Diebstahl,Missbrauch oder unbefugten Zugriff auf hochgeladene Bilder oder gespeicherte Daten.</p>
+              <p> Du kannst dein Bild jederzeit selbst entfernen. Eine vollständige Löschung aus allen Systemen kann <strong>nicht garantiert</strong> werden.</p>
+              <p> Lade <strong>keine Bilder von Minderjährigen</strong> hoch,es sei denn,du bist erziehungsberechtigt und hast ausdrücklich zugestimmt.</p>
+              <p> Mit dem Upload bestätigst du,dass du <strong>auf eigenes Risiko</strong> handelst und alle Bedingungen akzeptierst.</p>
             </div>
           </div>
 
@@ -4119,7 +4119,7 @@ function LegalModal({onAccept,onDecline}) {
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
             <button onClick={onAccept}
               style={{width:"100%",padding:"14px",borderRadius:14,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 4px 14px rgba(22,163,74,.35)"}}>
-              ✅ Verstanden — Bild hochladen
+               Verstanden — Bild hochladen
             </button>
             <button onClick={onDecline}
               style={{width:"100%",padding:"13px",borderRadius:14,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
@@ -4281,7 +4281,7 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
   const yesN=Object.values(ev.votes).filter(v=>(typeof v==="object"?v.val:v)==="yes").length;
   return (
     <div style={{background:"#fff",borderRadius:20,boxShadow:expanded?"0 8px 32px rgba(0,0,0,.11)":"0 2px 10px rgba(0,0,0,.05)",border:`2px solid ${expanded?p:status?.urgent?"#fde68a":"#e2e8f0"}`,overflow:"hidden",transition:"all .2s",opacity:isPast&&!expanded?.7:1}}>
-      {status?.urgent&&!expanded&&!isPast&&<div style={{background:"#fffbeb",borderBottom:"1px solid #fde68a",padding:"6px 17px",display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:13}}>⚠️</span><span style={{fontSize:12,fontWeight:700,color:"#d97706"}}>Deine Antwort fehlt noch!</span></div>}
+      {status?.urgent&&!expanded&&!isPast&&<div style={{background:"#fffbeb",borderBottom:"1px solid #fde68a",padding:"6px 17px",display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:13}}></span><span style={{fontSize:12,fontWeight:700,color:"#d97706"}}>Deine Antwort fehlt noch!</span></div>}
       <div onClick={onToggle} style={{padding:"14px 17px",cursor:"pointer",display:"flex",alignItems:"center",gap:12}}>
         <div style={{width:48,height:48,borderRadius:15,background:eT.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{eT.icon}</div>
         <div style={{flex:1,minWidth:0}}>
@@ -4293,7 +4293,7 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8,marginTop:4,flexWrap:"wrap"}}>
             <span style={{fontSize:13,color:"#64748b",fontWeight:600}}>{fmtD(ev.date)}{ev.time?" · "+ev.time:""}</span>
-            {ev.loc&&<span style={{fontSize:12,color:"#94a3b8"}}>📍 {ev.loc}</span>}
+            {ev.loc&&<span style={{fontSize:12,color:"#94a3b8"}}> {ev.loc}</span>}
           </div>
           {status&&<div style={{marginTop:6,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
             <span style={{display:"inline-flex",alignItems:"center",gap:4,background:status.bg,color:status.color,borderRadius:8,padding:"3px 9px",fontSize:12,fontWeight:700}}>{status.icon} {status.label}</span>
@@ -4403,7 +4403,7 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:800,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(8px)"}} onClick={()=>setShowProfile(false)}>
           <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,padding:"12px 22px 48px",animation:"down .24s ease"}}>
             <div style={{display:"flex",justifyContent:"center",marginBottom:16}}><div style={{width:44,height:4,borderRadius:99,background:"#e2e8f0"}}/></div>
-            <h3 style={{fontWeight:900,fontSize:18,color:"#0f172a",marginBottom:20,textAlign:"center"}}>👤 Mein Profil</h3>
+            <h3 style={{fontWeight:900,fontSize:18,color:"#0f172a",marginBottom:20,textAlign:"center"}}> Mein Profil</h3>
             <div style={{display:"flex",justifyContent:"center",marginBottom:18}}>
               <PhotoUploader photo={photo} name={user} onSave={savePhoto} onRemove={removePhoto} t={t}/>
             </div>
@@ -4412,11 +4412,11 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
               <span style={{fontSize:12}}>{myTeam?.name}</span>
             </div>
             <div style={{background:"#fffbeb",borderRadius:11,padding:"10px 13px",marginBottom:16,fontSize:12,color:"#92400e",lineHeight:1.6}}>
-              🔒 <strong>Datenschutz:</strong> Dein Profilbild wird verschlüsselt auf dem Server gespeichert und ist nur für dich sichtbar. Du kannst es jederzeit löschen.
+               <strong>Datenschutz:</strong> Dein Profilbild wird verschlüsselt auf dem Server gespeichert und ist nur für dich sichtbar. Du kannst es jederzeit löschen.
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:9}}>
               <button onClick={()=>setShowProfile(false)} style={{width:"100%",padding:"13px",borderRadius:13,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Schließen</button>
-              <button onClick={()=>{setShowProfile(false);onLogout();}} style={{width:"100%",padding:"13px",borderRadius:13,border:"none",background:"#fee2e2",color:"#dc2626",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>🚪 Team wechseln / Abmelden</button>
+              <button onClick={()=>{setShowProfile(false);onLogout();}} style={{width:"100%",padding:"13px",borderRadius:13,border:"none",background:"#fee2e2",color:"#dc2626",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}> Team wechseln / Abmelden</button>
             </div>
           </div>
         </div>
@@ -4512,7 +4512,7 @@ function AppInner({lang,setLang}) {
     <div style={{minHeight:"100dvh",display:"flex",alignItems:"center",justifyContent:"center",background:"#0f172a"}}>
       <style>{CSS}</style>
       <div style={{textAlign:"center"}}>
-        <div style={{fontSize:60,animation:"pulse 1.5s ease infinite",marginBottom:14}}>🏆</div>
+        <div style={{fontSize:60,animation:"pulse 1.5s ease infinite",marginBottom:14}}></div>
         <p style={{color:"#86efac",fontWeight:800,fontSize:17}}>Vereins-App lädt…</p>
         {!getConfig()&&<p style={{color:"rgba(255,255,255,.3)",fontSize:12,marginTop:8}}>Lokaler Speicher aktiv</p>}
       </div>
@@ -4539,7 +4539,7 @@ function AppInner({lang,setLang}) {
       {(screen==="dir"||screen==="role")&&(
         <button onClick={()=>setShowSetup(true)}
           style={{position:"fixed",bottom:20,left:16,zIndex:998,display:"flex",alignItems:"center",gap:6,background:getConfig()?"#052e16":"#0f172a",border:`1px solid ${getConfig()?"#16a34a":"rgba(255,255,255,.15)"}`,borderRadius:99,padding:"8px 14px",fontSize:12,fontWeight:700,color:getConfig()?"#86efac":"rgba(255,255,255,.4)",cursor:"pointer",fontFamily:"inherit"}}>
-          🗄️ {getConfig()?"DB verbunden":"Datenbank einrichten"}
+           {getConfig()?"DB verbunden":"Datenbank einrichten"}
         </button>
       )}
 
