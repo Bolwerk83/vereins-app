@@ -7,17 +7,33 @@
     <meta name="apple-mobile-web-app-capable" content="yes"/>
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
     <meta name="apple-mobile-web-app-title" content="Vereins-App"/>
+    <meta name="description" content="Termine, Mannschaften und Kommunikation für deinen Verein"/>
+    <!-- Open Graph für WhatsApp/Social Sharing -->
+    <meta property="og:title" content="Vereins-App"/>
+    <meta property="og:description" content="Termine, Mannschaften und Kommunikation für deinen Verein"/>
+    <meta property="og:type" content="website"/>
+    <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json"/>
+    <!-- Apple Touch Icons -->
     <link rel="apple-touch-icon" href="/icon-192.png"/>
     <title>Vereins-App</title>
-    <style>* { -webkit-tap-highlight-color: transparent; } body { margin: 0; overscroll-behavior: none; } #root { min-height: 100dvh; }</style>
+    <style>
+      * { -webkit-tap-highlight-color: transparent; }
+      body { margin: 0; overscroll-behavior: none; }
+      #root { min-height: 100dvh; }
+    </style>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
     <script>
+      // Register Service Worker
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js'));
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('SW registered'))
+            .catch(err => console.log('SW failed:', err));
+        });
       }
     </script>
   </body>
