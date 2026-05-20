@@ -6,7 +6,7 @@ const useLang  = () => useContext(LangCtx);
 
 const T = {
   de: {
-    back:"<- Zurueck",cancel: "Abbrechen",save: "Speichern",delete: "Loeschen",logout:"Logout",close: "Schliessen",loading: "Laedt...",yes: "Ja",no: "Nein",search:"Suchen...",edit: "Bearbeiten",confirm: "Bestaetigen",next: "Weiter ->",chooseClub:"Welche Mannschaft ist dein Kind?",chooseAge: "In welcher Altersklasse spielt dein Kind?",chooseTeam:"Welche Mannschaft?",whichTrainer: "Welcher Trainer bist du?",forWhichAge:"Fuer welche Jugend bist du Trainer?",loginCode: "Helfer-Code",enterPassword:"Passwort eingeben",wrongPassword: "Falsches Passwort",helperLogin:"Helfer-Zugang",helperHint: "Zugriff auf Spielplaene und Turnier-Uebersichten.",whoAreYou:"Wer bist du?",notInList: "Nicht in der Liste?",loginAs:"Einloggen als",teamOpen: "Team oeffnen",roleParent:"Elternteil",roleParentSub: "Termine sehen & abstimmen",roleHelper:"Helfer",roleHelperSub: "Turnier & Spieltag unterstuetzen",roleTrainer:"Trainer",roleTrainerSub: "Termine meiner Mannschaft",roleAdmin:"Vereinsadmin",roleAdminSub: "Alle Rechte & Einstellungen",tabEvents:"Termine",tabPlayers: "Spieler",tabTemplates: "Vorlagen",tabHelpers:"Helfer",tabJerseys: "Trikots",tabFields: "Platz",tabInbox:"Posteingang",tabChat: "Chat",tabTeams: "Mannschaften",tabTrainers:"Trainer",tabBranding: "Design",tabSettings: "Einstellungen",tabVisibility:"Sichtbarkeit",newEvent:"Neuen Termin anlegen",noEvents: "Noch keine Termine",noEventsHint:"Klicke oben auf "Neuen Termin anlegen\"",upcomingEvents:"Anstehende Termine",pastEvents: "Vergangene Termine",showPast:"Vergangene anzeigen",hidePast: "Vergangene ausblenden",attending:"Ich bin dabei",notAttending: "Nicht dabei",maybe: "Vielleicht",unassigned:"Nicht zugeteilt",open: "Offen",assigned: "Zugeteilt",mainTeam:"Hauptmannschaft",canHelpIn: "Kann aushelfen in",assignTo:"Zu Team zuweisen",recommendation: "Empfehlung naechste Saison",lastSeason:"Letzte Saison gespielt in",notes: "Notizen",jerseyNumber:"Trikotnummer",jerseySize: "Trikotgroesse",jerseyStatus:"Trikot Status",strengths: "Staerken",statistics: "Statistiken",goals:"Tore",assists:"Vorlagen",yellowCards:"Gelb",redCards:"Rot",rating:"Bewertung",position: "Position",foot: "Fuss",male:"Junge",female: "Maedchen",birthYear: "Jahrgang",newSeason:"Neue Saison planen",seasonPlanning: "Saisonplanung",activeSeason:"Aktive Saison",planningStatus: "Planung",archivedStatus: "Archiviert",inbox:"Posteingang",security: "Sicherheit",allOk: "Alles in Ordnung",noRequests:"Keine Anfragen",block: "Blockieren",markRead: "Gelesen",contactClub:"Kontaktieren",sendRequest: "Anfrage senden",requestSent: "Anfrage gesendet!",demoView:"Demo ansehen",createClub: "Verein anlegen",searchClub:"Verein suchen...",allSports: "Alle",onlyWithConsent:"Nur Vereine die zugestimmt haben werden angezeigt",bookField:"Platz buchen",fieldBooking: "Platzbuchung",booked: "Gebucht",free:"Frei",cancelBooking: "Buchung stornieren",writeMessage:"Nachricht schreiben...",send: "Senden",wholeClub:"Gesamter Verein",noMessages: "Noch keine Nachrichten",},en: {
+    back:"<- Zurueck",cancel: "Abbrechen",save: "Speichern",delete: "Loeschen",logout:"Logout",close: "Schliessen",loading: "Laedt...",yes: "Ja",no: "Nein",search:"Suchen...",edit: "Bearbeiten",confirm: "Bestaetigen",next: "Weiter ->",chooseClub:"Welche Mannschaft ist dein Kind?",chooseAge: "In welcher Altersklasse spielt dein Kind?",chooseTeam:"Welche Mannschaft?",whichTrainer: "Welcher Trainer bist du?",forWhichAge:"Fuer welche Jugend bist du Trainer?",loginCode: "Helfer-Code",enterPassword:"Passwort eingeben",wrongPassword: "Falsches Passwort",helperLogin:"Helfer-Zugang",helperHint: "Zugriff auf Spielplaene und Turnier-Uebersichten.",whoAreYou:"Wer bist du?",notInList: "Nicht in der Liste?",loginAs:"Einloggen als",teamOpen: "Team oeffnen",roleParent:"Elternteil",roleParentSub: "Termine sehen & abstimmen",roleHelper:"Helfer",roleHelperSub: "Turnier & Spieltag unterstuetzen",roleTrainer:"Trainer",roleTrainerSub: "Termine meiner Mannschaft",roleAdmin:"Vereinsadmin",roleAdminSub: "Alle Rechte & Einstellungen",tabEvents:"Termine",tabPlayers: "Spieler",tabTemplates: "Vorlagen",tabHelpers:"Helfer",tabJerseys: "Trikots",tabFields: "Platz",tabInbox:"Posteingang",tabChat: "Chat",tabTeams: "Mannschaften",tabTrainers:"Trainer",tabBranding: "Design",tabSettings: "Einstellungen",tabVisibility:"Sichtbarkeit",newEvent:"Neuen Termin anlegen",noEvents: "Noch keine Termine",noEventsHint:"Klicke oben auf \"Neuen Termin anlegen\"",upcomingEvents:"Anstehende Termine",pastEvents: "Vergangene Termine",showPast:"Vergangene anzeigen",hidePast: "Vergangene ausblenden",attending:"Ich bin dabei",notAttending: "Nicht dabei",maybe: "Vielleicht",unassigned:"Nicht zugeteilt",open: "Offen",assigned: "Zugeteilt",mainTeam:"Hauptmannschaft",canHelpIn: "Kann aushelfen in",assignTo:"Zu Team zuweisen",recommendation: "Empfehlung naechste Saison",lastSeason:"Letzte Saison gespielt in",notes: "Notizen",jerseyNumber:"Trikotnummer",jerseySize: "Trikotgroesse",jerseyStatus:"Trikot Status",strengths: "Staerken",statistics: "Statistiken",goals:"Tore",assists:"Vorlagen",yellowCards:"Gelb",redCards:"Rot",rating:"Bewertung",position: "Position",foot: "Fuss",male:"Junge",female: "Maedchen",birthYear: "Jahrgang",newSeason:"Neue Saison planen",seasonPlanning: "Saisonplanung",activeSeason:"Aktive Saison",planningStatus: "Planung",archivedStatus: "Archiviert",inbox:"Posteingang",security: "Sicherheit",allOk: "Alles in Ordnung",noRequests:"Keine Anfragen",block: "Blockieren",markRead: "Gelesen",contactClub:"Kontaktieren",sendRequest: "Anfrage senden",requestSent: "Anfrage gesendet!",demoView:"Demo ansehen",createClub: "Verein anlegen",searchClub:"Verein suchen...",allSports: "Alle",onlyWithConsent:"Nur Vereine die zugestimmt haben werden angezeigt",bookField:"Platz buchen",fieldBooking: "Platzbuchung",booked: "Gebucht",free:"Frei",cancelBooking: "Buchung stornieren",writeMessage:"Nachricht schreiben...",send: "Senden",wholeClub:"Gesamter Verein",noMessages: "Noch keine Nachrichten",},en: {
     back:"<- Back",cancel: "Cancel",save: "Save",delete: "Delete",logout:"Logout",close: "Close",loading: "Loading...",yes: "Yes",no: "No",search:"Search...",edit: "Edit",confirm: "Confirm",next: "Next ->",chooseClub:"Which team is your child in?",chooseAge: "Which age group does your child play in?",chooseTeam:"Which team?",whichTrainer: "Which trainer are you?",forWhichAge:"Which age group do you coach?",loginCode: "Helper code",enterPassword:"Enter password",wrongPassword: "Wrong password",helperLogin:"Helper access",helperHint: "Access to schedules and tournament overviews.",whoAreYou:"Who are you?",notInList: "Not in the list?",loginAs:"Log in as",teamOpen: "Open team",roleParent:"Parent",roleParentSub: "View events & vote",roleHelper:"Helper",roleHelperSub: "Support match days & tournaments",roleTrainer:"Coach",roleTrainerSub: "My team's events",roleAdmin:"Club admin",roleAdminSub: "All rights & settings",tabEvents:"Events",tabPlayers: "Players",tabTemplates: "Templates",tabHelpers:"Helpers",tabJerseys: "Jerseys",tabFields: "Pitch",tabInbox:"Inbox",tabChat: "Chat",tabTeams: "Teams",tabTrainers:"Coaches",tabBranding: "Design",tabSettings: "Settings",tabVisibility:"Visibility",newEvent:"Create new event",noEvents: "No events yet",noEventsHint:"Click above to create a new event",upcomingEvents:"Upcoming events",pastEvents: "Past events",showPast:"Show past",hidePast: "Hide past",attending:"I'm coming",notAttending: "Not coming",maybe: "Maybe",unassigned:"Unassigned",open: "Open",assigned: "Assigned",mainTeam:"Main team",canHelpIn: "Can assist in",assignTo:"Assign to team",recommendation: "Recommendation next season",lastSeason:"Last season played in",notes: "Notes",jerseyNumber:"Jersey number",jerseySize: "Jersey size",jerseyStatus:"Jersey status",strengths: "Strengths",statistics: "Statistics",goals:"Goals",assists:"Assists",yellowCards:"Yellow",redCards:"Red",rating:"Rating",position: "Position",foot: "Foot",male:"Boy",female: "Girl",birthYear: "Birth year",newSeason:"Plan new season",seasonPlanning: "Season planning",activeSeason:"Active season",planningStatus: "Planning",archivedStatus: "Archived",inbox:"Inbox",security: "Security",allOk: "All clear",noRequests:"No requests",block: "Block",markRead: "Mark read",contactClub:"Contact",sendRequest: "Send request",requestSent: "Request sent!",demoView:"View demo",createClub: "Create club",searchClub:"Search club...",allSports: "All",onlyWithConsent:"Only clubs that have given consent are shown",bookField:"Book pitch",fieldBooking: "Pitch booking",booked: "Booked",free:"Free",cancelBooking: "Cancel booking",writeMessage:"Write a message...",send: "Send",wholeClub:"Whole club",noMessages: "No messages yet",},nl: {
     back:"<- Terug",cancel: "Annuleren",save: "Opslaan",delete: "Verwijderen",logout:"Uitloggen",close: "Sluiten",loading: "Laden...",yes: "Ja",no: "Nee",search:"Zoeken...",edit: "Bewerken",confirm: "Bevestigen",next: "Verder ->",chooseClub:"In welk team zit je kind?",chooseAge: "In welke leeftijdsklasse speelt je kind?",chooseTeam:"Welk team?",whichTrainer: "Welke trainer ben jij?",forWhichAge:"Voor welke jeugd ben je trainer?",loginCode: "Helper-code",enterPassword:"Wachtwoord invoeren",wrongPassword: "Verkeerd wachtwoord",helperLogin:"Helper-toegang",helperHint: "Toegang tot schema's en toernooi-overzichten.",whoAreYou:"Wie ben jij?",notInList: "Niet in de lijst?",loginAs:"Inloggen als",teamOpen: "Team openen",roleParent:"Ouder",roleParentSub: "Afspraken zien & stemmen",roleHelper:"Helper",roleHelperSub: "Wedstrijddag & toernooi ondersteunen",roleTrainer:"Trainer",roleTrainerSub: "Afspraken van mijn team",roleAdmin:"Clubbeheerder",roleAdminSub: "Alle rechten & instellingen",tabEvents:"Afspraken",tabPlayers: "Spelers",tabTemplates: "Sjablonen",tabHelpers:"Helpers",tabJerseys: "Shirts",tabFields: "Veld",tabInbox:"Postvak",tabChat: "Chat",tabTeams: "Teams",tabTrainers:"Trainers",tabBranding: "Ontwerp",tabSettings: "Instellingen",tabVisibility:"Zichtbaarheid",newEvent:"Nieuwe afspraak aanmaken",noEvents: "Nog geen afspraken",noEventsHint:"Klik hierboven om een nieuwe afspraak aan te maken",upcomingEvents:"Aankomende afspraken",pastEvents: "Voorbije afspraken",showPast:"Voorbije tonen",hidePast: "Voorbije verbergen",attending:"Ik ben erbij",notAttending: "Niet aanwezig",maybe: "Misschien",unassigned:"Niet toegewezen",open: "Open",assigned: "Toegewezen",mainTeam:"Hoofdteam",canHelpIn: "Kan invallen in",assignTo:"Toewijzen aan team",recommendation: "Aanbeveling volgend seizoen",lastSeason:"Vorig seizoen gespeeld in",notes: "Notities",jerseyNumber:"Shirtnummer",jerseySize: "Shirtmaat",jerseyStatus:"Shirtstatus",strengths: "Kwaliteiten",statistics: "Statistieken",goals:"Doelpunten",assists:"Assists",yellowCards:"Geel",redCards:"Rood",rating:"Beoordeling",position: "Positie",foot: "Voet",male:"Jongen",female: "Meisje",birthYear: "Geboortejaar",newSeason:"Nieuw seizoen plannen",seasonPlanning: "Seizoensplanning",activeSeason:"Actief seizoen",planningStatus: "Planning",archivedStatus: "Gearchiveerd",inbox:"Postvak",security: "Beveiliging",allOk: "Alles in orde",noRequests:"Geen verzoeken",block: "Blokkeren",markRead: "Gelezen",contactClub:"Contact",sendRequest: "Verzoek sturen",requestSent: "Verzoek verstuurd!",demoView:"Demo bekijken",createClub: "Club aanmaken",searchClub:"Club zoeken...",allSports: "Alles",onlyWithConsent:"Alleen clubs die toestemming hebben gegeven worden getoond",bookField:"Veld boeken",fieldBooking: "Veldboeking",booked: "Geboekt",free:"Vrij",cancelBooking: "Boeking annuleren",writeMessage:"Schrijf een bericht...",send: "Versturen",wholeClub:"Hele club",noMessages: "Nog geen berichten",},};
 function useT() {
@@ -687,7 +687,7 @@ function RolePicker({cl,onRole,onBack}) {
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s} 0%,${t.p}66 100%)`}}>
       <style>{CSS}</style>
       <div style={{padding:"50px 22px 0",maxWidth:440,margin:"0 auto"}}>
-        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:32}}><- Zurueck</button>
+        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:32}}>{"<- Zurueck"}</button>
         <div className="up" style={{display:"flex",flexDirection:"column",alignItems:"center",marginBottom:40}}>
           <Logo cl={cl} sz={80}/>
           <h1 style={{color:"#fff",fontSize:26,fontWeight:900,letterSpacing:-.5,margin:"14px 0 6px",textAlign:"center"}}>{cl.name}</h1>
@@ -739,7 +739,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
       <style>{CSS}</style>
       <div style={{padding:"48px 20px 0",maxWidth:460,margin:"0 auto"}}>
         <button onClick={step==="cat"?onBack:step==="trainer"?()=>setStep("cat"):()=>{setStep("trainer");setPw("");setErr(false);}}
-          style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:28}}><- Zurueck</button>
+          style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:28}}>{"<- Zurueck"}</button>
         {children}
       </div>
     </div>
@@ -795,7 +795,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
   return (
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s},${t.p}66)`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,position:"relative"}}>
       <style>{CSS}</style>
-      <button onClick={()=>{setStep(trainersInCat.length>1?"trainer":"cat");setPw("");setErr(false);}} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}><- Zurueck</button>
+      <button onClick={()=>{setStep(trainersInCat.length>1?"trainer":"cat");setPw("");setErr(false);}} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}>{"<- Zurueck"}</button>
       <div className="up" style={{width:"100%",maxWidth:370}}>
         <div style={{textAlign:"center",marginBottom:28}}>
           <Av name={selTr?.name||"?"} sz={72} sx={{margin:"0 auto 14px"}}/>
@@ -825,7 +825,7 @@ function AdminLogin({cl,onLogin,onBack}) {
     <div style={{minHeight:"100dvh",background:`linear-gradient(135deg,${t.s},${t.p}66)`,display:"flex",alignItems:"center",justifyContent:"center",padding:22}}>
       <style>{CSS}</style>
       <div className="up" style={{width:"100%",maxWidth:390}}>
-        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:26}}><- Zurueck</button>
+        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:26}}>{"<- Zurueck"}</button>
         <div style={{background:"#fff",borderRadius:24,padding:"34px 26px",boxShadow:"0 24px 80px rgba(0,0,0,.4)"}}>
           <div style={{textAlign:"center",marginBottom:22}}><Logo cl={cl} sz={68} sx={{margin:"0 auto 12px"}}/><h2 style={{fontSize:22,fontWeight:900,color:"#0f172a",margin:"0 0 4px"}}>Vereinsadmin</h2><p style={{color:"#94a3b8",fontSize:13}}>{cl.name}</p></div>
           <Inp label="Admin-Passwort" type="password" val={pw} set={setPw} ph="Passwort..." af cl={cl}/>
@@ -851,7 +851,7 @@ function HelperLogin({cl,helpers,onLogin,onBack}) {
     <div style={{minHeight:"100dvh",background:`linear-gradient(135deg,${t.s},${t.p}66)`,display:"flex",alignItems:"center",justifyContent:"center",padding:22}}>
       <style>{CSS}</style>
       <div className="up" style={{width:"100%",maxWidth:390}}>
-        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:26}}><- Zurueck</button>
+        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:26}}>{"<- Zurueck"}</button>
         <div style={{background:"#fff",borderRadius:24,padding:"34px 26px",boxShadow:"0 24px 80px rgba(0,0,0,.3)"}}>
           <div style={{textAlign:"center",marginBottom:22}}>
             <div style={{fontSize:52,marginBottom:8}}></div>
@@ -904,7 +904,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s} 0%,${t.p}66 100%)`}}>
       <style>{CSS}</style>
       <div style={{padding:"48px 20px 0",maxWidth:460,margin:"0 auto"}}>
-        <button onClick={goBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:28}}><- Zurueck</button>
+        <button onClick={goBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:28}}>{"<- Zurueck"}</button>
         <div className="up" style={{display:"flex",flexDirection:"column",alignItems:"center",marginBottom:32}}>
           <Logo cl={cl} sz={64}/>
           <h2 style={{color:"#fff",fontSize:24,fontWeight:900,margin:"12px 0 4px",textAlign:"center"}}>{title}</h2>
@@ -947,7 +947,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
   if(step==="pwd") return (
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s},${t.p}66)`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,position:"relative"}}>
       <style>{CSS}</style>
-      <button onClick={goBack} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}><- Zurueck</button>
+      <button onClick={goBack} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}>{"<- Zurueck"}</button>
       <div className="up" style={{width:"100%",maxWidth:370}}>
         <div style={{textAlign:"center",marginBottom:28}}>
           <div style={{width:72,height:72,borderRadius:22,background:ct?.col+"33",border:`1.5px solid ${ct?.col}66`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:38,margin:"0 auto 14px"}}>{ct?.icon}</div>
@@ -976,7 +976,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
   if(step==="locked") return (
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s},${t.p}66)`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
       <style>{CSS}</style>
-      <button onClick={()=>setStep("pwd")} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}><- Zurueck</button>
+      <button onClick={()=>setStep("pwd")} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}>{"<- Zurueck"}</button>
       <div className="up" style={{textAlign:"center",maxWidth:340}}>
         <div style={{fontSize:64,marginBottom:16}}></div>
         <h2 style={{color:"#fff",fontSize:22,fontWeight:900,margin:"0 0 12px"}}>{ct?.name}</h2>
@@ -990,7 +990,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
           </div>
         </div>
         <button onClick={()=>setStep("pwd")} style={{marginTop:20,padding:"12px 28px",borderRadius:13,border:"1.5px solid rgba(255,255,255,.3)",background:"transparent",color:"rgba(255,255,255,.7)",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
-          <- Zurueck zum Login
+          {"<- Zurueck zum Login"}
         </button>
       </div>
     </div>
@@ -998,7 +998,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
   return (
     <div style={{minHeight:"100dvh",background:"#f0f4f8",display:"flex",flexDirection:"column"}}>
       <div style={{background:`linear-gradient(135deg,${t.s},${t.p}99)`,padding:"16px 18px 22px"}}>
-        <button onClick={goBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:14}}><- Zurueck</button>
+        <button onClick={goBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:14}}>{"<- Zurueck"}</button>
         <div style={{display:"flex",alignItems:"center",gap:12}}><Logo cl={cl} sz={40}/><div><div style={{color:"rgba(255,255,255,.6)",fontSize:12,fontWeight:700}}>{ct?.icon} {ct?.name}</div><div style={{color:"#fff",fontSize:20,fontWeight:900}}>Wer bist du?</div></div></div>
       </div>
       <div style={{padding:"12px 14px 0",background:"#f0f4f8",position:"sticky",top:0,zIndex:10}}>
@@ -2221,7 +2221,27 @@ function BrandingTab({cl,onSave}) {
               {c.logo?<img src={c.logo} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span style={{fontSize:34}}>{c.em||"*"}</span>}
             </div>
             <div style={{flex:1,display:"flex",flexDirection:"column",gap:7}}>
-              <input ref={ref} type="file" accept="image
+              <input ref={ref} type="file" accept="image/*" onChange={up} style={{display:"none"}}/>
+              <Btn ch={c.logo?"Logo aendern":"Logo hochladen"} sm cl={c} onClick={()=>ref.current?.click()}/>
+              {c.logo&&<Btn ch="Logo entfernen" v="dng" sm onClick={()=>setC(p=>({...p,logo:null}))}/>}
+            </div>
+          </div>
+        </div>
+        <div style={{marginBottom:18}}>
+          <Inp label="Symbol (Emoji)" val={c.em||""} set={v=>setC(p=>({...p,em:v}))} ph="z.B. ein Emoji" cl={c} note="Wird angezeigt, wenn kein Logo gesetzt ist."/>
+        </div>
+        <div style={{marginBottom:18}}>
+          <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.6,textTransform:"uppercase",marginBottom:8}}>Vereinsfarbe</div>
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            <input type="color" value={c.pri||"#16a34a"} onChange={e=>setC(p=>({...p,pri:e.target.value}))} style={{width:52,height:40,padding:0,border:"1.5px solid #e2e8f0",borderRadius:10,background:"#fff",cursor:"pointer"}}/>
+            <div style={{flex:1,fontSize:14,fontWeight:700,color:"#0f172a"}}>{c.pri||"#16a34a"}</div>
+          </div>
+        </div>
+        <Btn ch="Design speichern" full cl={c} onClick={()=>onSave(c)}/>
+      </div>
+    </div>
+  );
+}
 
 function TemplateForm({initial,onSave,onCancel,cl,title}) {
   const t=TH(cl);
@@ -3260,6 +3280,7 @@ function useShareTrigger(data,session,myTids) {
   return { trigger,dismiss };
 }
 
+const LEAVE_REASONS = [
   {id:"left",icon:"Tuer",label:"Verein verlassen"},{id:"injury",icon:"Krank",label:"Verletzt / Pause"},{id:"retired",icon:"Ende",label:"Karriereende"},{id:"nolust",icon:"Pause",label:"Keine Lust / Auszeit"},{id:"moved",icon:"Weg",label:"Weggezogen"},{id:"other",icon:"?",label:"Sonstiges"},];
 const AGE_GROUPS = [
   {id:"bambinis",label:"Bambinis",icon:"B",ageRange:"U5-U6"},{id:"g",label:"G-Jugend",icon:"G",ageRange:"U7"},{id:"f",label:"F-Jugend",icon:"F",ageRange:"U8-U9"},{id:"e",label:"E-Jugend",icon:"E",ageRange:"U10-U11"},{id:"d",label:"D-Jugend",icon:"D",ageRange:"U12-U13"},{id:"c",label:"C-Jugend",icon:"C",ageRange:"U14-U15"},{id:"b",label:"B-Jugend",icon:"B2",ageRange:"U16-U17"},{id:"a",label:"A-Jugend",icon:"A",ageRange:"U18-U19"},{id:"seniors",label:"Senioren",icon:"S",ageRange:"Aktive"},{id:"altherren",label:"Alt-Herren",icon:"AH",ageRange:"Ue32"},{id:"frauen",label:"Frauen",icon:"FR",ageRange:"Aktive"},];
@@ -3654,7 +3675,7 @@ function FieldsTab({ data,myTids,session,save,fire,cl }) {
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
           <div style={{fontWeight:800,fontSize:16,color:"#0f172a"}}>Platzbelegung</div>
           <div style={{display:"flex",gap:6}}>
-            <button onClick={()=>{const d=new Date(selDate+"T12:00:00");d.setDate(d.getDate()-1);setSelDate(d.toISOString().slice(0,10));}} style={{width:32,height:32,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",cursor:"pointer",fontSize:18}}><</button>
+            <button onClick={()=>{const d=new Date(selDate+"T12:00:00");d.setDate(d.getDate()-1);setSelDate(d.toISOString().slice(0,10));}} style={{width:32,height:32,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",cursor:"pointer",fontSize:18}}>{"<"}</button>
             <input type="date" value={selDate} onChange={e=>setSelDate(e.target.value)} style={{padding:"6px 10px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",fontFamily:"inherit"}}/>
             <button onClick={()=>{const d=new Date(selDate+"T12:00:00");d.setDate(d.getDate()+1);setSelDate(d.toISOString().slice(0,10));}} style={{width:32,height:32,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",cursor:"pointer",fontSize:18}}>></button>
           </div>
@@ -4153,7 +4174,18 @@ function PhotoUploader({photo,name,onSave,onRemove,t}) {
   return (
     <>
       {showLegal && <LegalModal onAccept={accept} onDecline={decline}/>}
-      <input ref={fileRef} type="file" accept="image
+      <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} style={{display:"none"}}/>
+      <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:12}}>
+        <AvPhoto name={name} photo={photo} sz={96}/>
+        <div style={{display:"flex",gap:8}}>
+          <Btn ch={photo?"Foto aendern":"Foto hochladen"} sm onClick={()=>fileRef.current?.click()}/>
+          {photo&&<Btn ch="Entfernen" v="dng" sm onClick={onRemove}/>}
+        </div>
+      </div>
+    </>
+  );
+}
+
 function CarpoolWizard({ev,user,onSave,onClose,cl}) {
   return <div style={{padding:16,textAlign:"center",color:"#64748b"}}><p>Fahrgemeinschaft-Funktion in Entwicklung.</p><button onClick={onClose} style={{marginTop:12,padding:"10px 20px",borderRadius:10,border:"none",background:TH(cl).p,color:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Schliessen</button></div>;
 }
