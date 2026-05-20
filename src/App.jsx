@@ -3202,6 +3202,49 @@ function AdBanner({ slot="auto",style={} }) {
   );
 }
 
+// ============================================================
+//  Affiliate / Partner-Links
+//  Die Provision aus Kaeufen ueber diese Links geht an den
+//  App-Betreiber. Trage hier deine echten Affiliate-Links ein
+//  (z. B. Amazon PartnerNet: ...&tag=DEIN-TAG-21).
+//  enabled:false blendet den Bereich komplett aus.
+// ============================================================
+const AFFILIATE = {
+  enabled: true,
+  title: "Partner-Shop",
+  note: "Einkaeufe ueber diese Links unterstuetzen die Vereins-App.",
+  links: [
+    { label:"Fussball-Ausruestung",  desc:"Schuhe, Baelle, Schienbeinschoner", url:"https://www.amazon.de/s?k=fussball+ausruestung&tag=DEIN-AFFILIATE-TAG" },
+    { label:"Trainingsmaterial",     desc:"Huetchen, Leibchen, Mini-Tore",      url:"https://www.amazon.de/s?k=fussball+trainingsmaterial&tag=DEIN-AFFILIATE-TAG" },
+    { label:"Teamsport & Fanartikel",desc:"Trikots, Taschen, Vereinsbedarf",    url:"https://www.amazon.de/s?k=teamsport&tag=DEIN-AFFILIATE-TAG" },
+  ],
+};
+
+function AffiliateCard({ style={} }) {
+  if(!AFFILIATE.enabled || !AFFILIATE.links?.length) return null;
+  return (
+    <div style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",padding:"14px 16px",...style}}>
+      <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:AFFILIATE.note?4:10}}>
+        <div style={{fontWeight:900,fontSize:15,color:"#0f172a"}}>{AFFILIATE.title}</div>
+        <div style={{fontSize:10,fontWeight:700,color:"#94a3b8",textTransform:"uppercase",letterSpacing:.5}}>Anzeige</div>
+      </div>
+      {AFFILIATE.note&&<div style={{fontSize:12,color:"#94a3b8",marginBottom:10}}>{AFFILIATE.note}</div>}
+      <div style={{display:"flex",flexDirection:"column",gap:7}}>
+        {AFFILIATE.links.map((l,i)=>(
+          <a key={i} href={l.url} target="_blank" rel="sponsored noopener noreferrer"
+            style={{display:"flex",alignItems:"center",gap:10,textDecoration:"none",background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:11,padding:"10px 12px"}}>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontWeight:700,fontSize:14,color:"#0f172a"}}>{l.label}</div>
+              {l.desc&&<div style={{fontSize:12,color:"#94a3b8",marginTop:1}}>{l.desc}</div>}
+            </div>
+            <span style={{color:"#94a3b8",fontSize:18,flexShrink:0}}>{"›"}</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const APP_URL = "https://vereinsapp.de"; // Deine Domain hier eintragen
 
 function ShareBanner({ cl,session,trigger,onDismiss }) {
@@ -4495,9 +4538,9 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
           </button>
           {showPast&&past.map(ev=><div key={ev.id} style={{marginBottom:10}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user"/></div>)}
         </>}
+        <AffiliateCard style={{marginTop:18}}/>
       </div>
       <Toast msg={toast}/>
-      {shareTrigger&&<ShareBanner cl={myClub} session={session} trigger={shareTrigger} onDismiss={()=>dismissShare(shareTrigger)}/>}
     </div>
   );
 }
