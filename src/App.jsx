@@ -1,4 +1,5 @@
 import { useState,useEffect,useCallback,useRef,useMemo,createContext,useContext } from "react";
+import { createClient } from "@supabase/supabase-js";
 
 const LANG_KEY = "vereinsapp_lang";
 const LangCtx  = createContext("de");
@@ -32,33 +33,66 @@ const SS  = "vereinsapp_v12_session";
 const CFG = "vereinsapp_config";
 const getConfig = () => { try { return JSON.parse(localStorage.getItem(CFG)||"null"); } catch { return null; } };
 const setConfig = c => { try { localStorage.setItem(CFG,JSON.stringify(c)); } catch {} };
+// ── Secure Supabase backend: anonymous auth + club code + RLS ──
+let _client=null,_clientKey=null,_accessOk=false;
+function getClient() {
+  const c=getConfig();
+  if(!c?.url||!c?.key) return null;
+  const ck=c.url+"|"+c.key;
+  if(_client&&_clientKey===ck) return _client;
+  _client=createClient(c.url,c.key,{auth:{persistSession:true,autoRefreshToken:true,storageKey:"vereinsapp_auth"}});
+  _clientKey=ck;
+  return _client;
+}
+async function ensureAuth(client) {
+  const { data:{ session } } = await client.auth.getSession();
+  if(session) return;
+  const { error } = await client.auth.signInAnonymously();
+  if(error) throw error;
+}
+async function isMember(client) {
+  const { data:{ session } } = await client.auth.getSession();
+  if(!session?.user) return false;
+  const { data } = await client.from("app_members").select("user_id").eq("user_id",session.user.id).maybeSingle();
+  return !!data;
+}
+// Connect, sign in anonymously, redeem the club code if not yet a member.
+async function connectAndJoin() {
+  const client=getClient();
+  if(!client) return { ok:false,reason:"config" };
+  try { await ensureAuth(client); } catch { return { ok:false,reason:"connect" }; }
+  if(await isMember(client)) { _accessOk=true; return { ok:true }; }
+  const { data,error } = await client.rpc("redeem_code",{ p_code:(getConfig()?.code||"").trim() });
+  if(error) return { ok:false,reason:"schema" };
+  if(data!==true) return { ok:false,reason:"code" };
+  _accessOk=true;
+  return { ok:true };
+}
+async function ensureAccess() {
+  if(_accessOk) return true;
+  return (await connectAndJoin()).ok;
+}
 const sb = {
-  _url: () => getConfig()?.url,_key: () => getConfig()?.key,_hdr: () => ({ "Content-Type":"application/json","apikey": sb._key(),"Authorization":"Bearer "+sb._key() }),get: async () => {
-    const url = sb._url();
-    if (!url || !sb._key()) return localGet();
+  configured: () => { const c=getConfig(); return !!(c?.url&&c?.key); },
+  get: async () => {
+    const client=getClient();
+    if(!client) return localGet();
     try {
-      const r = await fetch(`${url}/rest/v1/app_data?key=eq.${SK}&select=value`,{ headers: sb._hdr() });
-      if (!r.ok) return localGet();
-      const rows = await r.json();
-      return rows[0]?.value || null;
+      if(!(await ensureAccess())) return localGet();
+      const { data,error } = await client.from("app_data").select("value").eq("key",SK).maybeSingle();
+      if(error) return localGet();
+      return data?.value ?? null;
     } catch { return localGet(); }
-  },set: async d => {
-    localSet(d); // always save locally too
-    const url = sb._url();
-    if (!url || !sb._key()) return;
+  },
+  set: async d => {
+    localSet(d); // offline cache
+    const client=getClient();
+    if(!client) return;
     try {
-      await fetch(`${url}/rest/v1/app_data`,{
-        method:"POST",headers: { ...sb._hdr(),"Prefer":"resolution=merge-duplicates" },body: JSON.stringify({ key: SK,value: d,updated_at: new Date().toISOString() })
-      });
+      if(!(await ensureAccess())) return;
+      await client.from("app_data").upsert({ key:SK,value:d,updated_at:new Date().toISOString() });
     } catch {}
-  },test: async (url,key) => {
-    try {
-      const r = await fetch(`${url}/rest/v1/app_data?limit=1`,{
-        headers: { "apikey": key,"Authorization":"Bearer "+key }
-      });
-      return r.ok || r.status === 406; // 406 = table empty,still connected
-    } catch { return false; }
-  }
+  },
 };
 const localGet = () => { try { const v=localStorage.getItem(SK); return v?JSON.parse(v):null; } catch { return null; } };
 const localSet = d => { try { localStorage.setItem(SK,JSON.stringify(d)); } catch {} };
@@ -67,71 +101,67 @@ const sess = {
   get: () => { try { return JSON.parse(sessionStorage.getItem(SS)||"null"); } catch { return null; } },set: d  => { try { sessionStorage.setItem(SS,JSON.stringify(d)); } catch {} },del: () => { try { sessionStorage.removeItem(SS); } catch {} },};
 
 function SupabaseSetup({ onDone,onSkip }) {
-  const [url,setUrl]       = useState(getConfig()?.url||"");
-  const [key,setKey]       = useState(getConfig()?.key||"");
-  const [status,setStatus] = useState(null); // null | "testing" | "ok" | "fail"
+  const [url,setUrl]   = useState(getConfig()?.url||"");
+  const [key,setKey]   = useState(getConfig()?.key||"");
+  const [code,setCode] = useState(getConfig()?.code||"");
+  const [status,setStatus] = useState(null); // null|testing|ok|connect|schema|code
 
+  const ready = !!(url.trim()&&key.trim()&&code.trim());
   const test = async () => {
     setStatus("testing");
-    const ok = await sb.test(url.trim(),key.trim());
-    if (ok) {
-      setConfig({ url: url.trim(),key: key.trim() });
-      setStatus("ok");
-      setTimeout(onDone,900);
-    } else {
-      setStatus("fail");
-    }
+    setConfig({ url:url.trim(),key:key.trim(),code:code.trim() });
+    const res = await connectAndJoin();
+    if (res.ok) { setStatus("ok"); setTimeout(onDone,900); }
+    else { setConfig(null); setStatus(res.reason); }
   };
+  const ERR = {
+    connect:"Verbindung fehlgeschlagen. Pruefe URL und Key - und ob in Supabase 'Anonymous sign-ins' aktiviert ist.",
+    schema:"Datenbank noch nicht eingerichtet. Fuehre supabase/schema.sql im SQL-Editor aus.",
+    code:"Vereinscode falsch (Gross-/Kleinschreibung beachten).",
+  };
+  const iSt = bad => ({width:"100%",padding:"12px 14px",fontSize:14,background:"rgba(255,255,255,.08)",border:`1.5px solid ${bad?"#f87171":"rgba(255,255,255,.15)"}`,borderRadius:11,outline:"none",color:"#fff",fontFamily:"inherit"});
+  const lSt = {fontSize:11,fontWeight:800,color:"rgba(255,255,255,.5)",marginBottom:5,letterSpacing:.5};
 
   return (
     <div style={{minHeight:"100dvh",background:"linear-gradient(135deg,#0f172a,#1e3a5f)",display:"flex",alignItems:"center",justifyContent:"center",padding:22}}>
       <div style={{width:"100%",maxWidth:440}}>
-        <div style={{textAlign:"center",marginBottom:28}}>
-          <div style={{fontSize:52,marginBottom:10}}></div>
-          <h1 style={{color:"#fff",fontSize:24,fontWeight:900,margin:"0 0 6px"}}>Datenbank verbinden</h1>
-          <p style={{color:"rgba(255,255,255,.5)",fontSize:14}}>Verbinde Supabase fuer permanente Datenspeicherung</p>
+        <div style={{textAlign:"center",marginBottom:24}}>
+          <h1 style={{color:"#fff",fontSize:24,fontWeight:900,margin:"0 0 6px"}}>Sichere Datenbank verbinden</h1>
+          <p style={{color:"rgba(255,255,255,.5)",fontSize:14}}>Verschluesselt gespeichert, nur mit Vereinscode zugaenglich</p>
         </div>
 
-        <div style={{background:"rgba(255,255,255,.05)",borderRadius:20,padding:"24px",border:"1px solid rgba(255,255,255,.1)",marginBottom:16}}>
-          {}
-          <div style={{background:"rgba(255,255,255,.05)",borderRadius:12,padding:"14px",marginBottom:20,fontSize:12,color:"rgba(255,255,255,.6)",lineHeight:1.8}}>
-            <div style={{fontWeight:800,color:"rgba(255,255,255,.8)",marginBottom:6,fontSize:13}}> Einrichtung (2 Min):</div>
-            <div>1. <a href="https://supabase.com" target="_blank" style={{color:"#38bdf8"}}>supabase.com</a> -> kostenlosen Account erstellen</div>
-            <div>2. "New project" -> Frankfurt -> Passwort setzen</div>
-            <div>3. SQL Editor -> folgendes ausfuehren:</div>
-            <div style={{background:"rgba(0,0,0,.4)",borderRadius:8,padding:"10px",margin:"8px 0",fontFamily:"monospace",fontSize:11,color:"#86efac",lineHeight:1.6}}>
-              CREATE TABLE app_data (<br/>
-              &nbsp;&nbsp;key TEXT PRIMARY KEY,<br/>
-              &nbsp;&nbsp;value JSONB,<br/>
-              &nbsp;&nbsp;updated_at TIMESTAMPTZ DEFAULT NOW()<br/>
-              );<br/>
-              ALTER TABLE app_data ENABLE ROW LEVEL SECURITY;<br/>
-              CREATE POLICY "Public" ON app_data FOR ALL USING (true) WITH CHECK (true);
-            </div>
-            <div>4. Settings -> API -> URL + anon key kopieren</div>
+        <div style={{background:"rgba(255,255,255,.05)",borderRadius:20,padding:"24px",border:"1px solid rgba(255,255,255,.1)",marginBottom:14}}>
+          <div style={{background:"rgba(255,255,255,.05)",borderRadius:12,padding:"14px",marginBottom:18,fontSize:12,color:"rgba(255,255,255,.6)",lineHeight:1.85}}>
+            <div style={{fontWeight:800,color:"rgba(255,255,255,.8)",marginBottom:6,fontSize:13}}>Einrichtung (einmalig):</div>
+            <div>1. Kostenloses Projekt auf <a href="https://supabase.com" target="_blank" rel="noreferrer" style={{color:"#38bdf8"}}>supabase.com</a> anlegen</div>
+            <div>2. SQL-Editor: <span style={{color:"#86efac"}}>supabase/schema.sql</span> ausfuehren &amp; Vereinscode setzen</div>
+            <div>3. Authentication {">"} Sign In / Up: <b style={{color:"rgba(255,255,255,.8)"}}>Anonymous sign-ins</b> aktivieren</div>
+            <div>4. Settings {">"} API: Project URL + anon key kopieren</div>
           </div>
 
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
             <div>
-              <div style={{fontSize:11,fontWeight:800,color:"rgba(255,255,255,.5)",marginBottom:5,letterSpacing:.5}}>SUPABASE PROJECT URL</div>
-              <input value={url} onChange={e=>setUrl(e.target.value)} placeholder="https://xxxxx.supabase.co"
-                style={{width:"100%",padding:"12px 14px",fontSize:14,background:"rgba(255,255,255,.08)",border:`1.5px solid ${status==="fail"?"#f87171":"rgba(255,255,255,.15)"}`,borderRadius:11,outline:"none",color:"#fff"}}/>
+              <div style={lSt}>SUPABASE PROJECT URL</div>
+              <input value={url} onChange={e=>setUrl(e.target.value)} placeholder="https://xxxxx.supabase.co" style={iSt(status==="connect")}/>
             </div>
             <div>
-              <div style={{fontSize:11,fontWeight:800,color:"rgba(255,255,255,.5)",marginBottom:5,letterSpacing:.5}}>ANON PUBLIC KEY</div>
-              <input value={key} onChange={e=>setKey(e.target.value)} placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                style={{width:"100%",padding:"12px 14px",fontSize:14,background:"rgba(255,255,255,.08)",border:`1.5px solid ${status==="fail"?"#f87171":"rgba(255,255,255,.15)"}`,borderRadius:11,outline:"none",color:"#fff"}}/>
+              <div style={lSt}>ANON PUBLIC KEY</div>
+              <input value={key} onChange={e=>setKey(e.target.value)} placeholder="eyJhbGciOiJIUzI1NiIs..." style={iSt(status==="connect")}/>
+            </div>
+            <div>
+              <div style={lSt}>VEREINSCODE</div>
+              <input value={code} onChange={e=>setCode(e.target.value)} placeholder="Geheimer Code deines Vereins" style={iSt(status==="code")}/>
             </div>
           </div>
 
-          {status==="testing"&&<div style={{marginTop:12,textAlign:"center",color:"#94a3b8",fontSize:13}}> Verbindung wird getestet...</div>}
-          {status==="ok"&&<div style={{marginTop:12,background:"#052e16",border:"1.5px solid #16a34a",borderRadius:10,padding:"10px 14px",color:"#86efac",fontSize:13,fontWeight:700}}> Verbindung erfolgreich! App wird geladen...</div>}
-          {status==="fail"&&<div style={{marginTop:12,background:"#450a0a",border:"1.5px solid #dc2626",borderRadius:10,padding:"10px 14px",color:"#fca5a5",fontSize:13,fontWeight:700}}> Verbindung fehlgeschlagen. URL und Key pruefen.</div>}
+          {status==="testing"&&<div style={{marginTop:12,textAlign:"center",color:"#94a3b8",fontSize:13}}>Verbindung wird geprueft...</div>}
+          {status==="ok"&&<div style={{marginTop:12,background:"#052e16",border:"1.5px solid #16a34a",borderRadius:10,padding:"10px 14px",color:"#86efac",fontSize:13,fontWeight:700}}>Verbunden! App wird geladen...</div>}
+          {ERR[status]&&<div style={{marginTop:12,background:"#450a0a",border:"1.5px solid #dc2626",borderRadius:10,padding:"10px 14px",color:"#fca5a5",fontSize:13,fontWeight:600,lineHeight:1.5}}>{ERR[status]}</div>}
 
           <div style={{display:"flex",gap:9,marginTop:16}}>
-            <button onClick={test} disabled={!url.trim()||!key.trim()||status==="testing"}
-              style={{flex:2,padding:"13px",borderRadius:13,border:"none",background:url.trim()&&key.trim()?"#2563eb":"rgba(255,255,255,.1)",color:url.trim()&&key.trim()?"#fff":"rgba(255,255,255,.3)",fontWeight:800,fontSize:15,cursor:url.trim()&&key.trim()?"pointer":"default",fontFamily:"inherit",transition:"all .2s"}}>
-               Verbinden & testen
+            <button onClick={test} disabled={!ready||status==="testing"}
+              style={{flex:2,padding:"13px",borderRadius:13,border:"none",background:ready?"#2563eb":"rgba(255,255,255,.1)",color:ready?"#fff":"rgba(255,255,255,.3)",fontWeight:800,fontSize:15,cursor:ready?"pointer":"default",fontFamily:"inherit",transition:"all .2s"}}>
+              Verbinden &amp; testen
             </button>
             <button onClick={onSkip}
               style={{flex:1,padding:"13px",borderRadius:13,border:"1px solid rgba(255,255,255,.15)",background:"transparent",color:"rgba(255,255,255,.4)",fontWeight:600,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
@@ -139,14 +169,13 @@ function SupabaseSetup({ onDone,onSkip }) {
             </button>
           </div>
           <p style={{textAlign:"center",fontSize:11,color:"rgba(255,255,255,.25)",marginTop:10}}>
-            Ohne Verbindung werden Daten im Browser-Speicher gesichert (gehen beim Loeschen des Browsers verloren)
+            Ohne Verbindung werden Daten nur lokal im Browser gespeichert.
           </p>
         </div>
 
         {getConfig()&&(
-          <div style={{background:"rgba(22,163,74,.15)",borderRadius:12,padding:"11px 14px",border:"1px solid rgba(22,163,74,.3)",fontSize:12,color:"#86efac",textAlign:"center"}}>
-             Bereits verbunden mit {getConfig()?.url?.replace("https://","").split(".")[0]}
-            <button onClick={()=>{setConfig(null);window.location.reload();}} style={{marginLeft:10,background:"none",border:"none",color:"#f87171",cursor:"pointer",fontSize:11,fontFamily:"inherit"}}>Trennen</button>
+          <div style={{textAlign:"center"}}>
+            <button onClick={()=>{setConfig(null);window.location.reload();}} style={{background:"none",border:"none",color:"rgba(248,113,113,.85)",cursor:"pointer",fontSize:12,fontFamily:"inherit"}}>Verbindung trennen</button>
           </div>
         )}
       </div>
@@ -701,7 +730,7 @@ function RolePicker({cl,onRole,onBack}) {
             <div style={{display:"flex",alignItems:"center",gap:14}}>
               <div style={{width:48,height:48,borderRadius:15,background:"rgba(255,255,255,.12)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{x.icon}</div>
               <div style={{flex:1}}><div style={{color:"#fff",fontWeight:900,fontSize:17}}>{x.title}</div><div style={{color:"rgba(255,255,255,.5)",fontSize:13,marginTop:2}}>{x.sub}</div></div>
-              <div style={{color:"rgba(255,255,255,.3)",fontSize:22}}>></div>
+              <div style={{color:"rgba(255,255,255,.3)",fontSize:22}}>&gt;</div>
             </div>
           </div>
         ))}
@@ -764,7 +793,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
                   <div style={{color:"#fff",fontWeight:900,fontSize:18}}>{c}</div>
                   <div style={{color:"rgba(255,255,255,.5)",fontSize:12,marginTop:2}}>{trs.length} Trainer</div>
                 </div>
-                <span style={{color:"rgba(255,255,255,.3)",fontSize:22}}>></span>
+                <span style={{color:"rgba(255,255,255,.3)",fontSize:22}}>&gt;</span>
               </div>
             );
           })
@@ -787,7 +816,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
               {(tr.tids||[]).map(tid=>teams?.find(x=>x.id===tid)?.name).filter(Boolean).join(",")}
             </div>
           </div>
-          <span style={{color:"rgba(255,255,255,.3)",fontSize:22}}>></span>
+          <span style={{color:"rgba(255,255,255,.3)",fontSize:22}}>&gt;</span>
         </div>
       ))}
     </GradWrap>
@@ -926,7 +955,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
               <div style={{color:"#fff",fontWeight:900,fontSize:18}}>{c}</div>
               {tms.length>1&&<div style={{color:"rgba(255,255,255,.5)",fontSize:12,marginTop:2}}>{tms.length} Mannschaften</div>}
             </div>
-            <span style={{color:"rgba(255,255,255,.3)",fontSize:22}}>></span>
+            <span style={{color:"rgba(255,255,255,.3)",fontSize:22}}>&gt;</span>
           </div>
         );
       })}
@@ -939,7 +968,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
           style={{background:"rgba(255,255,255,.09)",border:"1.5px solid rgba(255,255,255,.13)",borderRadius:20,padding:"16px 20px",cursor:"pointer",marginBottom:12,animationDelay:`${i*.06}s`,display:"flex",alignItems:"center",gap:14}}>
           <div style={{width:46,height:46,borderRadius:14,background:tm.col+"33",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{tm.icon}</div>
           <span style={{color:"#fff",fontWeight:900,fontSize:18}}>{tm.name}</span>
-          <span style={{marginLeft:"auto",color:"rgba(255,255,255,.3)",fontSize:22}}>></span>
+          <span style={{marginLeft:"auto",color:"rgba(255,255,255,.3)",fontSize:22}}>&gt;</span>
         </div>
       ))}
     </GradWrap>
@@ -1008,7 +1037,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
         {list.map((p,i)=>(
           <div key={p} className="up" onClick={()=>onDone(tid,p)}
             style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:16,padding:"13px 16px",cursor:"pointer",display:"flex",alignItems:"center",gap:12,animationDelay:`${i*.03}s`}}>
-            <Av name={p} sz={40}/><span style={{fontWeight:700,fontSize:16,color:"#0f172a",flex:1}}>{p}</span><span style={{color:"#94a3b8",fontSize:20}}>></span>
+            <Av name={p} sz={40}/><span style={{fontWeight:700,fontSize:16,color:"#0f172a",flex:1}}>{p}</span><span style={{color:"#94a3b8",fontSize:20}}>&gt;</span>
           </div>
         ))}
         {list.length===0&&<div style={{textAlign:"center",padding:"32px",color:"#94a3b8"}}><div style={{fontSize:36,marginBottom:8}}></div><p style={{fontWeight:700}}>Niemanden gefunden</p></div>}
@@ -1942,7 +1971,7 @@ function PlayerAssignRow({ player: pl,teams,allTeams,t,onAssign,onOptToggle }) {
                   {scopeElig.filter(tm=>tm.id!==pl.mainTid).map(tm=>(
                     <button key={tm.id} onClick={()=>{onAssign(tm.id);setShowProfile(false);}}
                       style={{display:"flex",alignItems:"center",gap:6,padding:"9px 15px",borderRadius:11,border:`2px solid ${tm.col}`,background:tm.col+"12",color:tm.col,fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",transition:"all .14s"}}>
-                      -> {tm.name}
+                      -&gt; {tm.name}
                     </button>
                   ))}
                 </div>
@@ -2084,10 +2113,10 @@ function PlayersTab({ data,myTids,save,fire,cl }) {
               {allPlayers.filter(p=>!p.mainTid).length} Spieler noch nicht zugeteilt
             </div>
             <div style={{fontSize:12,color:"#9a3412",marginTop:2}}>
-              Eltern koennen sich erst anmelden wenn alle Spieler zugeteilt sind -> Zuteilung oeffnen
+              Eltern koennen sich erst anmelden wenn alle Spieler zugeteilt sind -&gt; Zuteilung oeffnen
             </div>
           </div>
-          <span style={{color:"#d97706",fontSize:18}}>></span>
+          <span style={{color:"#d97706",fontSize:18}}>&gt;</span>
         </div>
       )}
       {}
@@ -3043,7 +3072,7 @@ function JerseysTab({ data,myTids,save,fire,cl }) {
             ? <div style={{textAlign:"center",padding:"32px",background:"#f8fafc",borderRadius:14,border:"1.5px dashed #e2e8f0"}}>
                 <div style={{fontSize:36,marginBottom:8}}></div>
                 <p style={{fontWeight:700,color:"#334155"}}>Noch keine Trikotnummern vergeben</p>
-                <p style={{fontSize:13,color:"#94a3b8",marginTop:4}}>Im Spielerprofil ->  Trikot eintragen</p>
+                <p style={{fontSize:13,color:"#94a3b8",marginTop:4}}>Im Spielerprofil -&gt;  Trikot eintragen</p>
               </div>
             : <div style={{display:"flex",flexDirection:"column",gap:7}}>
                 {teamPlayers.map(pl => {
@@ -3677,7 +3706,7 @@ function FieldsTab({ data,myTids,session,save,fire,cl }) {
           <div style={{display:"flex",gap:6}}>
             <button onClick={()=>{const d=new Date(selDate+"T12:00:00");d.setDate(d.getDate()-1);setSelDate(d.toISOString().slice(0,10));}} style={{width:32,height:32,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",cursor:"pointer",fontSize:18}}>{"<"}</button>
             <input type="date" value={selDate} onChange={e=>setSelDate(e.target.value)} style={{padding:"6px 10px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",fontFamily:"inherit"}}/>
-            <button onClick={()=>{const d=new Date(selDate+"T12:00:00");d.setDate(d.getDate()+1);setSelDate(d.toISOString().slice(0,10));}} style={{width:32,height:32,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",cursor:"pointer",fontSize:18}}>></button>
+            <button onClick={()=>{const d=new Date(selDate+"T12:00:00");d.setDate(d.getDate()+1);setSelDate(d.toISOString().slice(0,10));}} style={{width:32,height:32,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",cursor:"pointer",fontSize:18}}>&gt;</button>
           </div>
         </div>
         {}
@@ -3833,7 +3862,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
                 <div style={{fontWeight:800,fontSize:13,color:"#1d4ed8"}}>
                   Saison {(local.seasons||[]).find(s=>s.status==="planning")?.label} in Planung
                 </div>
-                <div style={{fontSize:12,color:"#3b82f6",marginTop:1}}>Spieler zuteilen und Saison aktivieren -></div>
+                <div style={{fontSize:12,color:"#3b82f6",marginTop:1}}>Spieler zuteilen und Saison aktivieren -&gt;</div>
               </div>
             </div>
           )}
@@ -3844,7 +3873,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               <div style={{color:"#fff",fontWeight:900,fontSize:18,letterSpacing:"-.3px",textShadow:"0 1px 3px rgba(0,0,0,.25)"}}>Neuen Termin anlegen</div>
               <div style={{color:"rgba(255,255,255,.9)",fontSize:13,marginTop:3,fontWeight:500}}>Schritt-fuer-Schritt Assistent</div>
             </div>
-            <div style={{width:32,height:32,borderRadius:10,background:"rgba(0,0,0,.15)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:18,fontWeight:700,flexShrink:0}}>></div>
+            <div style={{width:32,height:32,borderRadius:10,background:"rgba(0,0,0,.15)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:18,fontWeight:700,flexShrink:0}}>&gt;</div>
           </div>
           {up.length>0&&<><Divider label={`* KOMMENDE (${up.length})`}/>{up.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurueckgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)}/>)}</>}
           {up.length===0&&<div style={{textAlign:"center",padding:"30px",background:"#fff",borderRadius:18,border:"1.5px dashed #e2e8f0",color:"#94a3b8"}}><Logo cl={myClub} sz={50} sx={{margin:"0 auto 12px"}}/><p style={{fontWeight:800,fontSize:15}}>Noch keine Termine</p><p style={{fontSize:13,marginTop:3}}>Klicke oben auf "Neuen Termin anlegen"</p></div>}
@@ -4488,12 +4517,14 @@ function AppInner({lang,setLang}) {
   const [cid,setCid]      = useState(null);
   const [session,setSess] = useState(null);
   const [showSetup,setShowSetup] = useState(false);
+  const [needsSetup,setNeedsSetup] = useState(false);
   const [saveStatus,setSaveStatus] = useState(null); // null | "saving" | "saved" | "local"
   const syncRef  = useRef(null);
   const saveTimer= useRef(null);
 
   useEffect(()=>{
     (async()=>{
+      if(sb.configured() && !(await ensureAccess())){ setNeedsSetup(true); return; }
       let d=null;
       try { d = await sb.get(); if(d?._v < 10) d=null; } catch {}
       if(!d) { d=seed(); try { await sb.set(d); } catch {} }
@@ -4530,11 +4561,21 @@ function AppInner({lang,setLang}) {
   };
   const logout=()=>{ sess.del(); setSess(null); setScr(cid?"role":"dir"); };
 
+  if(needsSetup) return (
+    <>
+      <style>{CSS}</style>
+      <SupabaseSetup
+        onDone={()=>window.location.reload()}
+        onSkip={()=>{ setConfig(null); window.location.reload(); }}
+      />
+    </>
+  );
+
   if(showSetup) return (
     <>
       <style>{CSS}</style>
       <SupabaseSetup
-        onDone={()=>setShowSetup(false)}
+        onDone={()=>window.location.reload()}
         onSkip={()=>setShowSetup(false)}
       />
     </>
