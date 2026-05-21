@@ -1,5 +1,5 @@
 const CACHE = 'vereins-v1';
-const ASSETS = ['/', '/index.html'];
+const ASSETS = ['./', './index.html'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
@@ -32,10 +32,10 @@ self.addEventListener('push', e => {
   e.waitUntil(
     self.registration.showNotification(data.title || 'Vereins-App', {
       body: data.body || 'Neue Benachrichtigung',
-      icon: '/icon-192.png',
-      badge: '/icon-192.png',
+      icon: './icon-192.png',
+      badge: './icon-192.png',
       tag: data.tag || 'vereins',
-      data: { url: data.url || '/' },
+      data: { url: data.url || './' },
       actions: data.actions || []
     })
   );
@@ -43,7 +43,7 @@ self.addEventListener('push', e => {
 
 self.addEventListener('notificationclick', e => {
   e.notification.close();
-  e.waitUntil(clients.openWindow(e.notification.data?.url || '/'));
+  e.waitUntil(clients.openWindow(e.notification.data?.url || './'));
 });
 
 // Background sync for offline saves
