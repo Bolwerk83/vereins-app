@@ -1,5 +1,4 @@
 import { useState,useEffect,useCallback,useRef,useMemo,createContext,useContext } from "react";
-import { createClient } from "@supabase/supabase-js";
 
 const LANG_KEY = "vereinsapp_lang";
 const LangCtx  = createContext("de");
@@ -7,7 +6,7 @@ const useLang  = () => useContext(LangCtx);
 
 const T = {
   de: {
-    back:"<- Zurueck",cancel: "Abbrechen",save: "Speichern",delete: "Loeschen",logout:"Logout",close: "Schliessen",loading: "Laedt...",yes: "Ja",no: "Nein",search:"Suchen...",edit: "Bearbeiten",confirm: "Bestaetigen",next: "Weiter ->",chooseClub:"Welche Mannschaft ist dein Kind?",chooseAge: "In welcher Altersklasse spielt dein Kind?",chooseTeam:"Welche Mannschaft?",whichTrainer: "Welcher Trainer bist du?",forWhichAge:"Fuer welche Jugend bist du Trainer?",loginCode: "Helfer-Code",enterPassword:"Passwort eingeben",wrongPassword: "Falsches Passwort",helperLogin:"Helfer-Zugang",helperHint: "Zugriff auf Spielplaene und Turnier-Uebersichten.",whoAreYou:"Wer bist du?",notInList: "Nicht in der Liste?",loginAs:"Einloggen als",teamOpen: "Team oeffnen",roleParent:"Elternteil",roleParentSub: "Termine sehen & abstimmen",roleHelper:"Helfer",roleHelperSub: "Turnier & Spieltag unterstuetzen",roleTrainer:"Trainer",roleTrainerSub: "Termine meiner Mannschaft",roleAdmin:"Vereinsadmin",roleAdminSub: "Alle Rechte & Einstellungen",tabEvents:"Termine",tabPlayers: "Spieler",tabTemplates: "Vorlagen",tabHelpers:"Helfer",tabJerseys: "Trikots",tabFields: "Platz",tabInbox:"Posteingang",tabChat: "Chat",tabTeams: "Mannschaften",tabTrainers:"Trainer",tabBranding: "Design",tabSettings: "Einstellungen",tabVisibility:"Sichtbarkeit",newEvent:"Neuen Termin anlegen",noEvents: "Noch keine Termine",noEventsHint:"Klicke oben auf \"Neuen Termin anlegen\"",upcomingEvents:"Anstehende Termine",pastEvents: "Vergangene Termine",showPast:"Vergangene anzeigen",hidePast: "Vergangene ausblenden",attending:"Ich bin dabei",notAttending: "Nicht dabei",maybe: "Vielleicht",unassigned:"Nicht zugeteilt",open: "Offen",assigned: "Zugeteilt",mainTeam:"Hauptmannschaft",canHelpIn: "Kann aushelfen in",assignTo:"Zu Team zuweisen",recommendation: "Empfehlung naechste Saison",lastSeason:"Letzte Saison gespielt in",notes: "Notizen",jerseyNumber:"Trikotnummer",jerseySize: "Trikotgroesse",jerseyStatus:"Trikot Status",strengths: "Staerken",statistics: "Statistiken",goals:"Tore",assists:"Vorlagen",yellowCards:"Gelb",redCards:"Rot",rating:"Bewertung",position: "Position",foot: "Fuss",male:"Junge",female: "Maedchen",birthYear: "Jahrgang",newSeason:"Neue Saison planen",seasonPlanning: "Saisonplanung",activeSeason:"Aktive Saison",planningStatus: "Planung",archivedStatus: "Archiviert",inbox:"Posteingang",security: "Sicherheit",allOk: "Alles in Ordnung",noRequests:"Keine Anfragen",block: "Blockieren",markRead: "Gelesen",contactClub:"Kontaktieren",sendRequest: "Anfrage senden",requestSent: "Anfrage gesendet!",demoView:"Demo ansehen",createClub: "Verein anlegen",searchClub:"Verein suchen...",allSports: "Alle",onlyWithConsent:"Nur Vereine die zugestimmt haben werden angezeigt",bookField:"Platz buchen",fieldBooking: "Platzbuchung",booked: "Gebucht",free:"Frei",cancelBooking: "Buchung stornieren",writeMessage:"Nachricht schreiben...",send: "Senden",wholeClub:"Gesamter Verein",noMessages: "Noch keine Nachrichten",},en: {
+    back:"<- Zurueck",cancel: "Abbrechen",save: "Speichern",delete: "Loeschen",logout:"Logout",close: "Schliessen",loading: "Laedt...",yes: "Ja",no: "Nein",search:"Suchen...",edit: "Bearbeiten",confirm: "Bestaetigen",next: "Weiter ->",chooseClub:"Welche Mannschaft ist dein Kind?",chooseAge: "In welcher Altersklasse spielt dein Kind?",chooseTeam:"Welche Mannschaft?",whichTrainer: "Welcher Trainer bist du?",forWhichAge:"Fuer welche Jugend bist du Trainer?",loginCode: "Helfer-Code",enterPassword:"Passwort eingeben",wrongPassword: "Falsches Passwort",helperLogin:"Helfer-Zugang",helperHint: "Zugriff auf Spielplaene und Turnier-Uebersichten.",whoAreYou:"Wer bist du?",notInList: "Nicht in der Liste?",loginAs:"Einloggen als",teamOpen: "Team oeffnen",roleParent:"Elternteil",roleParentSub: "Termine sehen & abstimmen",roleHelper:"Helfer",roleHelperSub: "Turnier & Spieltag unterstuetzen",roleTrainer:"Trainer",roleTrainerSub: "Termine meiner Mannschaft",roleAdmin:"Vereinsadmin",roleAdminSub: "Alle Rechte & Einstellungen",tabEvents:"Termine",tabPlayers: "Spieler",tabTemplates: "Vorlagen",tabHelpers:"Helfer",tabJerseys: "Trikots",tabFields: "Platz",tabInbox:"Posteingang",tabChat: "Chat",tabTeams: "Mannschaften",tabTrainers:"Trainer",tabBranding: "Design",tabSettings: "Einstellungen",tabVisibility:"Sichtbarkeit",newEvent:"Neuen Termin anlegen",noEvents: "Noch keine Termine",noEventsHint:"Klicke oben auf "Neuen Termin anlegen\"",upcomingEvents:"Anstehende Termine",pastEvents: "Vergangene Termine",showPast:"Vergangene anzeigen",hidePast: "Vergangene ausblenden",attending:"Ich bin dabei",notAttending: "Nicht dabei",maybe: "Vielleicht",unassigned:"Nicht zugeteilt",open: "Offen",assigned: "Zugeteilt",mainTeam:"Hauptmannschaft",canHelpIn: "Kann aushelfen in",assignTo:"Zu Team zuweisen",recommendation: "Empfehlung naechste Saison",lastSeason:"Letzte Saison gespielt in",notes: "Notizen",jerseyNumber:"Trikotnummer",jerseySize: "Trikotgroesse",jerseyStatus:"Trikot Status",strengths: "Staerken",statistics: "Statistiken",goals:"Tore",assists:"Vorlagen",yellowCards:"Gelb",redCards:"Rot",rating:"Bewertung",position: "Position",foot: "Fuss",male:"Junge",female: "Maedchen",birthYear: "Jahrgang",newSeason:"Neue Saison planen",seasonPlanning: "Saisonplanung",activeSeason:"Aktive Saison",planningStatus: "Planung",archivedStatus: "Archiviert",inbox:"Posteingang",security: "Sicherheit",allOk: "Alles in Ordnung",noRequests:"Keine Anfragen",block: "Blockieren",markRead: "Gelesen",contactClub:"Kontaktieren",sendRequest: "Anfrage senden",requestSent: "Anfrage gesendet!",demoView:"Demo ansehen",createClub: "Verein anlegen",searchClub:"Verein suchen...",allSports: "Alle",onlyWithConsent:"Nur Vereine die zugestimmt haben werden angezeigt",bookField:"Platz buchen",fieldBooking: "Platzbuchung",booked: "Gebucht",free:"Frei",cancelBooking: "Buchung stornieren",writeMessage:"Nachricht schreiben...",send: "Senden",wholeClub:"Gesamter Verein",noMessages: "Noch keine Nachrichten",},en: {
     back:"<- Back",cancel: "Cancel",save: "Save",delete: "Delete",logout:"Logout",close: "Close",loading: "Loading...",yes: "Yes",no: "No",search:"Search...",edit: "Edit",confirm: "Confirm",next: "Next ->",chooseClub:"Which team is your child in?",chooseAge: "Which age group does your child play in?",chooseTeam:"Which team?",whichTrainer: "Which trainer are you?",forWhichAge:"Which age group do you coach?",loginCode: "Helper code",enterPassword:"Enter password",wrongPassword: "Wrong password",helperLogin:"Helper access",helperHint: "Access to schedules and tournament overviews.",whoAreYou:"Who are you?",notInList: "Not in the list?",loginAs:"Log in as",teamOpen: "Open team",roleParent:"Parent",roleParentSub: "View events & vote",roleHelper:"Helper",roleHelperSub: "Support match days & tournaments",roleTrainer:"Coach",roleTrainerSub: "My team's events",roleAdmin:"Club admin",roleAdminSub: "All rights & settings",tabEvents:"Events",tabPlayers: "Players",tabTemplates: "Templates",tabHelpers:"Helpers",tabJerseys: "Jerseys",tabFields: "Pitch",tabInbox:"Inbox",tabChat: "Chat",tabTeams: "Teams",tabTrainers:"Coaches",tabBranding: "Design",tabSettings: "Settings",tabVisibility:"Visibility",newEvent:"Create new event",noEvents: "No events yet",noEventsHint:"Click above to create a new event",upcomingEvents:"Upcoming events",pastEvents: "Past events",showPast:"Show past",hidePast: "Hide past",attending:"I'm coming",notAttending: "Not coming",maybe: "Maybe",unassigned:"Unassigned",open: "Open",assigned: "Assigned",mainTeam:"Main team",canHelpIn: "Can assist in",assignTo:"Assign to team",recommendation: "Recommendation next season",lastSeason:"Last season played in",notes: "Notes",jerseyNumber:"Jersey number",jerseySize: "Jersey size",jerseyStatus:"Jersey status",strengths: "Strengths",statistics: "Statistics",goals:"Goals",assists:"Assists",yellowCards:"Yellow",redCards:"Red",rating:"Rating",position: "Position",foot: "Foot",male:"Boy",female: "Girl",birthYear: "Birth year",newSeason:"Plan new season",seasonPlanning: "Season planning",activeSeason:"Active season",planningStatus: "Planning",archivedStatus: "Archived",inbox:"Inbox",security: "Security",allOk: "All clear",noRequests:"No requests",block: "Block",markRead: "Mark read",contactClub:"Contact",sendRequest: "Send request",requestSent: "Request sent!",demoView:"View demo",createClub: "Create club",searchClub:"Search club...",allSports: "All",onlyWithConsent:"Only clubs that have given consent are shown",bookField:"Book pitch",fieldBooking: "Pitch booking",booked: "Booked",free:"Free",cancelBooking: "Cancel booking",writeMessage:"Write a message...",send: "Send",wholeClub:"Whole club",noMessages: "No messages yet",},nl: {
     back:"<- Terug",cancel: "Annuleren",save: "Opslaan",delete: "Verwijderen",logout:"Uitloggen",close: "Sluiten",loading: "Laden...",yes: "Ja",no: "Nee",search:"Zoeken...",edit: "Bewerken",confirm: "Bevestigen",next: "Verder ->",chooseClub:"In welk team zit je kind?",chooseAge: "In welke leeftijdsklasse speelt je kind?",chooseTeam:"Welk team?",whichTrainer: "Welke trainer ben jij?",forWhichAge:"Voor welke jeugd ben je trainer?",loginCode: "Helper-code",enterPassword:"Wachtwoord invoeren",wrongPassword: "Verkeerd wachtwoord",helperLogin:"Helper-toegang",helperHint: "Toegang tot schema's en toernooi-overzichten.",whoAreYou:"Wie ben jij?",notInList: "Niet in de lijst?",loginAs:"Inloggen als",teamOpen: "Team openen",roleParent:"Ouder",roleParentSub: "Afspraken zien & stemmen",roleHelper:"Helper",roleHelperSub: "Wedstrijddag & toernooi ondersteunen",roleTrainer:"Trainer",roleTrainerSub: "Afspraken van mijn team",roleAdmin:"Clubbeheerder",roleAdminSub: "Alle rechten & instellingen",tabEvents:"Afspraken",tabPlayers: "Spelers",tabTemplates: "Sjablonen",tabHelpers:"Helpers",tabJerseys: "Shirts",tabFields: "Veld",tabInbox:"Postvak",tabChat: "Chat",tabTeams: "Teams",tabTrainers:"Trainers",tabBranding: "Ontwerp",tabSettings: "Instellingen",tabVisibility:"Zichtbaarheid",newEvent:"Nieuwe afspraak aanmaken",noEvents: "Nog geen afspraken",noEventsHint:"Klik hierboven om een nieuwe afspraak aan te maken",upcomingEvents:"Aankomende afspraken",pastEvents: "Voorbije afspraken",showPast:"Voorbije tonen",hidePast: "Voorbije verbergen",attending:"Ik ben erbij",notAttending: "Niet aanwezig",maybe: "Misschien",unassigned:"Niet toegewezen",open: "Open",assigned: "Toegewezen",mainTeam:"Hoofdteam",canHelpIn: "Kan invallen in",assignTo:"Toewijzen aan team",recommendation: "Aanbeveling volgend seizoen",lastSeason:"Vorig seizoen gespeeld in",notes: "Notities",jerseyNumber:"Shirtnummer",jerseySize: "Shirtmaat",jerseyStatus:"Shirtstatus",strengths: "Kwaliteiten",statistics: "Statistieken",goals:"Doelpunten",assists:"Assists",yellowCards:"Geel",redCards:"Rood",rating:"Beoordeling",position: "Positie",foot: "Voet",male:"Jongen",female: "Meisje",birthYear: "Geboortejaar",newSeason:"Nieuw seizoen plannen",seasonPlanning: "Seizoensplanning",activeSeason:"Actief seizoen",planningStatus: "Planning",archivedStatus: "Gearchiveerd",inbox:"Postvak",security: "Beveiliging",allOk: "Alles in orde",noRequests:"Geen verzoeken",block: "Blokkeren",markRead: "Gelezen",contactClub:"Contact",sendRequest: "Verzoek sturen",requestSent: "Verzoek verstuurd!",demoView:"Demo bekijken",createClub: "Club aanmaken",searchClub:"Club zoeken...",allSports: "Alles",onlyWithConsent:"Alleen clubs die toestemming hebben gegeven worden getoond",bookField:"Veld boeken",fieldBooking: "Veldboeking",booked: "Geboekt",free:"Vrij",cancelBooking: "Boeking annuleren",writeMessage:"Schrijf een bericht...",send: "Versturen",wholeClub:"Hele club",noMessages: "Nog geen berichten",},};
 function useT() {
@@ -33,66 +32,33 @@ const SS  = "vereinsapp_v12_session";
 const CFG = "vereinsapp_config";
 const getConfig = () => { try { return JSON.parse(localStorage.getItem(CFG)||"null"); } catch { return null; } };
 const setConfig = c => { try { localStorage.setItem(CFG,JSON.stringify(c)); } catch {} };
-// ── Secure Supabase backend: anonymous auth + club code + RLS ──
-let _client=null,_clientKey=null,_accessOk=false;
-function getClient() {
-  const c=getConfig();
-  if(!c?.url||!c?.key) return null;
-  const ck=c.url+"|"+c.key;
-  if(_client&&_clientKey===ck) return _client;
-  _client=createClient(c.url,c.key,{auth:{persistSession:true,autoRefreshToken:true,storageKey:"vereinsapp_auth"}});
-  _clientKey=ck;
-  return _client;
-}
-async function ensureAuth(client) {
-  const { data:{ session } } = await client.auth.getSession();
-  if(session) return;
-  const { error } = await client.auth.signInAnonymously();
-  if(error) throw error;
-}
-async function isMember(client) {
-  const { data:{ session } } = await client.auth.getSession();
-  if(!session?.user) return false;
-  const { data } = await client.from("app_members").select("user_id").eq("user_id",session.user.id).maybeSingle();
-  return !!data;
-}
-// Connect, sign in anonymously, redeem the club code if not yet a member.
-async function connectAndJoin() {
-  const client=getClient();
-  if(!client) return { ok:false,reason:"config" };
-  try { await ensureAuth(client); } catch { return { ok:false,reason:"connect" }; }
-  if(await isMember(client)) { _accessOk=true; return { ok:true }; }
-  const { data,error } = await client.rpc("redeem_code",{ p_code:(getConfig()?.code||"").trim() });
-  if(error) return { ok:false,reason:"schema" };
-  if(data!==true) return { ok:false,reason:"code" };
-  _accessOk=true;
-  return { ok:true };
-}
-async function ensureAccess() {
-  if(_accessOk) return true;
-  return (await connectAndJoin()).ok;
-}
 const sb = {
-  configured: () => { const c=getConfig(); return !!(c?.url&&c?.key); },
-  get: async () => {
-    const client=getClient();
-    if(!client) return localGet();
+  _url: () => getConfig()?.url,_key: () => getConfig()?.key,_hdr: () => ({ "Content-Type":"application/json","apikey": sb._key(),"Authorization":"Bearer "+sb._key() }),get: async () => {
+    const url = sb._url();
+    if (!url || !sb._key()) return localGet();
     try {
-      if(!(await ensureAccess())) return localGet();
-      const { data,error } = await client.from("app_data").select("value").eq("key",SK).maybeSingle();
-      if(error) return localGet();
-      return data?.value ?? null;
+      const r = await fetch(`${url}/rest/v1/app_data?key=eq.${SK}&select=value`,{ headers: sb._hdr() });
+      if (!r.ok) return localGet();
+      const rows = await r.json();
+      return rows[0]?.value || null;
     } catch { return localGet(); }
-  },
-  set: async d => {
-    localSet(d); // offline cache
-    const client=getClient();
-    if(!client) return;
+  },set: async d => {
+    localSet(d); // always save locally too
+    const url = sb._url();
+    if (!url || !sb._key()) return;
     try {
-      if(!(await ensureAccess())) return;
-      await client.from("app_data").upsert({ key:SK,value:d,updated_at:new Date().toISOString() });
+      await fetch(`${url}/rest/v1/app_data`,{
+        method:"POST",headers: { ...sb._hdr(),"Prefer":"resolution=merge-duplicates" },body: JSON.stringify({ key: SK,value: d,updated_at: new Date().toISOString() })
+      });
     } catch {}
-  },
+  },test: async (url,key) => {
+    try {
+      const r = await fetch(`${url}/rest/v1/app_data?limit=1`,{
+        headers: { "apikey": key,"Authorization":"Bearer "+key }
+      });
+      return r.ok || r.status === 406; // 406 = table empty,still connected
+    } catch { return false; }
+  }
 };
 const localGet = () => { try { const v=localStorage.getItem(SK); return v?JSON.parse(v):null; } catch { return null; } };
 const localSet = d => { try { localStorage.setItem(SK,JSON.stringify(d)); } catch {} };
@@ -101,67 +67,71 @@ const sess = {
   get: () => { try { return JSON.parse(sessionStorage.getItem(SS)||"null"); } catch { return null; } },set: d  => { try { sessionStorage.setItem(SS,JSON.stringify(d)); } catch {} },del: () => { try { sessionStorage.removeItem(SS); } catch {} },};
 
 function SupabaseSetup({ onDone,onSkip }) {
-  const [url,setUrl]   = useState(getConfig()?.url||"");
-  const [key,setKey]   = useState(getConfig()?.key||"");
-  const [code,setCode] = useState(getConfig()?.code||"");
-  const [status,setStatus] = useState(null); // null|testing|ok|connect|schema|code
+  const [url,setUrl]       = useState(getConfig()?.url||"");
+  const [key,setKey]       = useState(getConfig()?.key||"");
+  const [status,setStatus] = useState(null); // null | "testing" | "ok" | "fail"
 
-  const ready = !!(url.trim()&&key.trim()&&code.trim());
   const test = async () => {
     setStatus("testing");
-    setConfig({ url:url.trim(),key:key.trim(),code:code.trim() });
-    const res = await connectAndJoin();
-    if (res.ok) { setStatus("ok"); setTimeout(onDone,900); }
-    else { setConfig(null); setStatus(res.reason); }
+    const ok = await sb.test(url.trim(),key.trim());
+    if (ok) {
+      setConfig({ url: url.trim(),key: key.trim() });
+      setStatus("ok");
+      setTimeout(onDone,900);
+    } else {
+      setStatus("fail");
+    }
   };
-  const ERR = {
-    connect:"Verbindung fehlgeschlagen. Pruefe URL und Key - und ob in Supabase 'Anonymous sign-ins' aktiviert ist.",
-    schema:"Datenbank noch nicht eingerichtet. Fuehre supabase/schema.sql im SQL-Editor aus.",
-    code:"Vereinscode falsch (Gross-/Kleinschreibung beachten).",
-  };
-  const iSt = bad => ({width:"100%",padding:"12px 14px",fontSize:14,background:"rgba(255,255,255,.08)",border:`1.5px solid ${bad?"#f87171":"rgba(255,255,255,.15)"}`,borderRadius:11,outline:"none",color:"#fff",fontFamily:"inherit"});
-  const lSt = {fontSize:11,fontWeight:800,color:"rgba(255,255,255,.5)",marginBottom:5,letterSpacing:.5};
 
   return (
     <div style={{minHeight:"100dvh",background:"linear-gradient(135deg,#0f172a,#1e3a5f)",display:"flex",alignItems:"center",justifyContent:"center",padding:22}}>
       <div style={{width:"100%",maxWidth:440}}>
-        <div style={{textAlign:"center",marginBottom:24}}>
-          <h1 style={{color:"#fff",fontSize:24,fontWeight:900,margin:"0 0 6px"}}>Sichere Datenbank verbinden</h1>
-          <p style={{color:"rgba(255,255,255,.5)",fontSize:14}}>Verschluesselt gespeichert, nur mit Vereinscode zugaenglich</p>
+        <div style={{textAlign:"center",marginBottom:28}}>
+          <div style={{fontSize:52,marginBottom:10}}></div>
+          <h1 style={{color:"#fff",fontSize:24,fontWeight:900,margin:"0 0 6px"}}>Datenbank verbinden</h1>
+          <p style={{color:"rgba(255,255,255,.5)",fontSize:14}}>Verbinde Supabase fuer permanente Datenspeicherung</p>
         </div>
 
-        <div style={{background:"rgba(255,255,255,.05)",borderRadius:20,padding:"24px",border:"1px solid rgba(255,255,255,.1)",marginBottom:14}}>
-          <div style={{background:"rgba(255,255,255,.05)",borderRadius:12,padding:"14px",marginBottom:18,fontSize:12,color:"rgba(255,255,255,.6)",lineHeight:1.85}}>
-            <div style={{fontWeight:800,color:"rgba(255,255,255,.8)",marginBottom:6,fontSize:13}}>Einrichtung (einmalig):</div>
-            <div>1. Kostenloses Projekt auf <a href="https://supabase.com" target="_blank" rel="noreferrer" style={{color:"#38bdf8"}}>supabase.com</a> anlegen</div>
-            <div>2. SQL-Editor: <span style={{color:"#86efac"}}>supabase/schema.sql</span> ausfuehren &amp; Vereinscode setzen</div>
-            <div>3. Authentication {">"} Sign In / Up: <b style={{color:"rgba(255,255,255,.8)"}}>Anonymous sign-ins</b> aktivieren</div>
-            <div>4. Settings {">"} API: Project URL + anon key kopieren</div>
+        <div style={{background:"rgba(255,255,255,.05)",borderRadius:20,padding:"24px",border:"1px solid rgba(255,255,255,.1)",marginBottom:16}}>
+          {}
+          <div style={{background:"rgba(255,255,255,.05)",borderRadius:12,padding:"14px",marginBottom:20,fontSize:12,color:"rgba(255,255,255,.6)",lineHeight:1.8}}>
+            <div style={{fontWeight:800,color:"rgba(255,255,255,.8)",marginBottom:6,fontSize:13}}> Einrichtung (2 Min):</div>
+            <div>1. <a href="https://supabase.com" target="_blank" style={{color:"#38bdf8"}}>supabase.com</a> -> kostenlosen Account erstellen</div>
+            <div>2. "New project" -> Frankfurt -> Passwort setzen</div>
+            <div>3. SQL Editor -> folgendes ausfuehren:</div>
+            <div style={{background:"rgba(0,0,0,.4)",borderRadius:8,padding:"10px",margin:"8px 0",fontFamily:"monospace",fontSize:11,color:"#86efac",lineHeight:1.6}}>
+              CREATE TABLE app_data (<br/>
+              &nbsp;&nbsp;key TEXT PRIMARY KEY,<br/>
+              &nbsp;&nbsp;value JSONB,<br/>
+              &nbsp;&nbsp;updated_at TIMESTAMPTZ DEFAULT NOW()<br/>
+              );<br/>
+              ALTER TABLE app_data ENABLE ROW LEVEL SECURITY;<br/>
+              CREATE POLICY "Public" ON app_data FOR ALL USING (true) WITH CHECK (true);
+            </div>
+            <div>4. Settings -> API -> URL + anon key kopieren</div>
           </div>
 
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
             <div>
-              <div style={lSt}>SUPABASE PROJECT URL</div>
-              <input value={url} onChange={e=>setUrl(e.target.value)} placeholder="https://xxxxx.supabase.co" style={iSt(status==="connect")}/>
+              <div style={{fontSize:11,fontWeight:800,color:"rgba(255,255,255,.5)",marginBottom:5,letterSpacing:.5}}>SUPABASE PROJECT URL</div>
+              <input value={url} onChange={e=>setUrl(e.target.value)} placeholder="https://xxxxx.supabase.co"
+                style={{width:"100%",padding:"12px 14px",fontSize:14,background:"rgba(255,255,255,.08)",border:`1.5px solid ${status==="fail"?"#f87171":"rgba(255,255,255,.15)"}`,borderRadius:11,outline:"none",color:"#fff"}}/>
             </div>
             <div>
-              <div style={lSt}>ANON PUBLIC KEY</div>
-              <input value={key} onChange={e=>setKey(e.target.value)} placeholder="eyJhbGciOiJIUzI1NiIs..." style={iSt(status==="connect")}/>
-            </div>
-            <div>
-              <div style={lSt}>VEREINSCODE</div>
-              <input value={code} onChange={e=>setCode(e.target.value)} placeholder="Geheimer Code deines Vereins" style={iSt(status==="code")}/>
+              <div style={{fontSize:11,fontWeight:800,color:"rgba(255,255,255,.5)",marginBottom:5,letterSpacing:.5}}>ANON PUBLIC KEY</div>
+              <input value={key} onChange={e=>setKey(e.target.value)} placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                style={{width:"100%",padding:"12px 14px",fontSize:14,background:"rgba(255,255,255,.08)",border:`1.5px solid ${status==="fail"?"#f87171":"rgba(255,255,255,.15)"}`,borderRadius:11,outline:"none",color:"#fff"}}/>
             </div>
           </div>
 
-          {status==="testing"&&<div style={{marginTop:12,textAlign:"center",color:"#94a3b8",fontSize:13}}>Verbindung wird geprueft...</div>}
-          {status==="ok"&&<div style={{marginTop:12,background:"#052e16",border:"1.5px solid #16a34a",borderRadius:10,padding:"10px 14px",color:"#86efac",fontSize:13,fontWeight:700}}>Verbunden! App wird geladen...</div>}
-          {ERR[status]&&<div style={{marginTop:12,background:"#450a0a",border:"1.5px solid #dc2626",borderRadius:10,padding:"10px 14px",color:"#fca5a5",fontSize:13,fontWeight:600,lineHeight:1.5}}>{ERR[status]}</div>}
+          {status==="testing"&&<div style={{marginTop:12,textAlign:"center",color:"#94a3b8",fontSize:13}}> Verbindung wird getestet...</div>}
+          {status==="ok"&&<div style={{marginTop:12,background:"#052e16",border:"1.5px solid #16a34a",borderRadius:10,padding:"10px 14px",color:"#86efac",fontSize:13,fontWeight:700}}> Verbindung erfolgreich! App wird geladen...</div>}
+          {status==="fail"&&<div style={{marginTop:12,background:"#450a0a",border:"1.5px solid #dc2626",borderRadius:10,padding:"10px 14px",color:"#fca5a5",fontSize:13,fontWeight:700}}> Verbindung fehlgeschlagen. URL und Key pruefen.</div>}
 
           <div style={{display:"flex",gap:9,marginTop:16}}>
-            <button onClick={test} disabled={!ready||status==="testing"}
-              style={{flex:2,padding:"13px",borderRadius:13,border:"none",background:ready?"#2563eb":"rgba(255,255,255,.1)",color:ready?"#fff":"rgba(255,255,255,.3)",fontWeight:800,fontSize:15,cursor:ready?"pointer":"default",fontFamily:"inherit",transition:"all .2s"}}>
-              Verbinden &amp; testen
+            <button onClick={test} disabled={!url.trim()||!key.trim()||status==="testing"}
+              style={{flex:2,padding:"13px",borderRadius:13,border:"none",background:url.trim()&&key.trim()?"#2563eb":"rgba(255,255,255,.1)",color:url.trim()&&key.trim()?"#fff":"rgba(255,255,255,.3)",fontWeight:800,fontSize:15,cursor:url.trim()&&key.trim()?"pointer":"default",fontFamily:"inherit",transition:"all .2s"}}>
+               Verbinden & testen
             </button>
             <button onClick={onSkip}
               style={{flex:1,padding:"13px",borderRadius:13,border:"1px solid rgba(255,255,255,.15)",background:"transparent",color:"rgba(255,255,255,.4)",fontWeight:600,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
@@ -169,13 +139,14 @@ function SupabaseSetup({ onDone,onSkip }) {
             </button>
           </div>
           <p style={{textAlign:"center",fontSize:11,color:"rgba(255,255,255,.25)",marginTop:10}}>
-            Ohne Verbindung werden Daten nur lokal im Browser gespeichert.
+            Ohne Verbindung werden Daten im Browser-Speicher gesichert (gehen beim Loeschen des Browsers verloren)
           </p>
         </div>
 
         {getConfig()&&(
-          <div style={{textAlign:"center"}}>
-            <button onClick={()=>{setConfig(null);window.location.reload();}} style={{background:"none",border:"none",color:"rgba(248,113,113,.85)",cursor:"pointer",fontSize:12,fontFamily:"inherit"}}>Verbindung trennen</button>
+          <div style={{background:"rgba(22,163,74,.15)",borderRadius:12,padding:"11px 14px",border:"1px solid rgba(22,163,74,.3)",fontSize:12,color:"#86efac",textAlign:"center"}}>
+             Bereits verbunden mit {getConfig()?.url?.replace("https://","").split(".")[0]}
+            <button onClick={()=>{setConfig(null);window.location.reload();}} style={{marginLeft:10,background:"none",border:"none",color:"#f87171",cursor:"pointer",fontSize:11,fontFamily:"inherit"}}>Trennen</button>
           </div>
         )}
       </div>
@@ -207,16 +178,25 @@ function seed() {
     ],activeSeason:"s2526",fields: [
       { id:"f_main",cid:"sus",name:"Hauptplatz",surface:"Rasen",segments:4 },{ id:"f_neben",cid:"sus",name:"Nebenplatz",surface:"Rasen",segments:4 },{ id:"f_kunst",cid:"sus",name:"Kunstrasenplatz",surface:"Kunstrasen",segments:4 },],bookings: [],contactRequests: [],// {id,cid,fromName,fromEmail,msg,ts,read,blocked,ip}
     securityLog: [],// {id,cid,type,ts,detail,read}
-    playerProfiles: [
-      {id:"r01",name:"Lasse",by:2020,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r02",name:"Lucas",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r03",name:"Jonas",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"Koennte spielerisch auch in die E",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r04",name:"Maximilian",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r05",name:"Carlos E.",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r06",name:"Emilio",by:2020,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r07",name:"Elias H.",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r08",name:"Levi",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r09",name:"Lian",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r10",name:"Maxim K.",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"Spielt bereits F3",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r11",name:"Saleh",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r12",name:"Beni",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r13",name:"Zipadin",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r14",name:"Lukas M.",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"Spielt bereits F3",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r15",name:"Finn",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"Spielt bereits F3",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r16",name:"Johann",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"Spielt bereits F3",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r17",name:"Karl",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r18",name:"Barghash",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r19",name:"Mohammad T.",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r20",name:"Ahmad M.",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r21",name:"Tilo",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r22",name:"Amjed",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r23",name:"Jan",by:2018,gender:"m",mainTid:"sus_f2",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F2 25/26",lastTeamId:"sus_f2",seasonId:"s2526"},{id:"r24",name:"Carlos B.",by:2018,gender:"m",mainTid:"sus_f2",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F2 25/26",lastTeamId:"sus_f2",seasonId:"s2526"},{id:"r25",name:"Jud",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r26",name:"Abdul Rashid",by:2019,gender:"m",mainTid:"sus_f1",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"Spielt bereits F1",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F1 25/26",lastTeamId:"sus_f1",seasonId:"s2526"},{id:"r27",name:"Ahmad B.",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r28",name:"Tian",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r29",name:"Luis",by:2018,gender:"m",mainTid:"sus_f2",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F2 25/26",lastTeamId:"sus_f2",seasonId:"s2526"},{id:"r30",name:"Lukas Kr.",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"Spielt bereits F3",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r31",name:"Henri",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r32",name:"Yehor",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r33",name:"Elias O.",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r34",name:"Maxim R.",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r35",name:"Phil-Lamar",by:2018,gender:"m",mainTid:"",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"-",lastTeamId:"",seasonId:"s2526"},{id:"r36",name:"Edwin",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r37",name:"Lennart",by:2018,gender:"m",mainTid:"sus_f2",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F2 25/26",lastTeamId:"sus_f2",seasonId:"s2526"},{id:"r38",name:"Abdulla",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r39",name:"Kabher",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r40",name:"Maxim vE.",by:2018,gender:"m",mainTid:"sus_f2",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F2 25/26",lastTeamId:"sus_f2",seasonId:"s2526"},{id:"r41",name:"Leonard",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r42",name:"Timur",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r43",name:"Paulina",by:2017,gender:"w",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r44",name:"Tilda",by:2017,gender:"w",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r45",name:"Xenia",by:2016,gender:"w",mainTid:"sus_f2",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F2 25/26",lastTeamId:"sus_f2",seasonId:"s2526"},{id:"r46",name:"Anne",by:2018,gender:"w",mainTid:"sus_f2",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F2 25/26",lastTeamId:"sus_f2",seasonId:"s2526"},],clubs: [
-      { id:"sus",slug:"sus-kalkar",name:"SuS Kalkar",short:"SuS",em:"*",logo:null,pri:"#16a34a",sec:"#052e16",adm:"admin123",pub:true,dir:true },{ id:"bvw",slug:"bv-wissel",name:"BV Sturm Wissel",short:"BVW",em:"*",logo:null,pri:"#1d4ed8",sec:"#1e1b4b",adm:"wissel123",pub:true,dir:true },],teams: [
-      { id:"sus_bam",cid:"sus",name:"Bambinis",icon:"*",col:"#f59e0b",pub:true,pwd:"bam",cat:"Bambinis",years:"2019/20/21" },{ id:"sus_g",cid:"sus",name:"G-Jugend",icon:"Ball",col:"#16a34a",pub:true,pwd:"g1",cat:"G-Jugend",years:"2017/18/19" },{ id:"sus_f1",cid:"sus",name:"F-Jugend 1",icon:"Pokal",col:"#2563eb",pub:false,pwd:"f1",cat:"F-Jugend",years:"2015/16/17" },{ id:"sus_f2",cid:"sus",name:"F-Jugend 2",icon:"Pokal",col:"#1d4ed8",pub:false,pwd:"f2",cat:"F-Jugend",years:"2015/16/17" },{ id:"sus_f3",cid:"sus",name:"F-Jugend 3",icon:"Pokal",col:"#1e40af",pub:false,pwd:"f3",cat:"F-Jugend",years:"2015/16/17" },{ id:"sus_e",cid:"sus",name:"E-Jugend",icon:"*",col:"#7c3aed",pub:true,pwd:"e1",cat:"E-Jugend",years:"2013/14/15" },{ id:"bvw_g",cid:"bvw",name:"G-Jugend",icon:"*",col:"#1d4ed8",pub:true,cat:"G-Jugend",years:"2017/18/19" },{ id:"bvw_f",cid:"bvw",name:"F-Jugend",icon:"*",col:"#dc2626",pub:true },],trainers: [
-      { id:"tr1",cid:"sus",name:"Marcel",role:"Trainer",tids:["sus_f1"],pw:"marcel123",phone:"",email:"",adm:false },{ id:"tr2",cid:"sus",name:"Daniel",role:"Co-Trainer",tids:["sus_f1"],pw:"daniel123",phone:"",email:"",adm:false },{ id:"tr3",cid:"sus",name:"Dennis",role:"Trainer",tids:["sus_f2"],pw:"dennis123",phone:"",email:"",adm:false },{ id:"tr4",cid:"sus",name:"Mario",role:"Co-Trainer",tids:["sus_f2"],pw:"mario123",phone:"",email:"",adm:false },{ id:"tr5",cid:"sus",name:"David",role:"Trainer",tids:["sus_f3","sus_g"],pw:"david123",phone:"",email:"",adm:false },{ id:"tr6",cid:"sus",name:"Thorsten",role:"Co-Trainer",tids:["sus_f3"],pw:"thorsten123",phone:"",email:"",adm:false },{ id:"tr7",cid:"sus",name:"Sarah",role:"Trainer",tids:["sus_bam"],pw:"sarah123",phone:"",email:"",adm:false },{ id:"tr8",cid:"sus",name:"Klaus",role:"Trainer",tids:["sus_e"],pw:"klaus123",phone:"",email:"",adm:false },{ id:"tr9",cid:"bvw",name:"Tom",role:"Trainer",tids:["bvw_g","bvw_f"],pw:"tom123",phone:"",email:"",adm:false },],players: {
-      sus_bam: ["Lena M.","Tom K.","Max S.","Sophie W.","Finn B.","Mia L.","Luis P.","Emma R.","Theo J.","Clara N."],sus_g:   ["Jonas H.","Anna T.","Noah G.","Clara F.","Ben M.","Lea S.","Felix K.","Sarah B.","Tim W.","Nina D.","Elias R.","Maja L."],sus_f1:  ["Paul R.","Julia S.","Leon K.","Marie H.","Jan B.","Lisa W.","Mark T.","Laura P.","Nico V.","Hanna G."],sus_f2:  ["Kai S.","Mia B.","Tom F.","Lara K.","Max W.","Nina H.","Ben R.","Sara L.","Joel T.","Zoe M."],sus_f3:  ["Luca D.","Emma P.","Finn S.","Clara B.","Jonas K.","Leah W.","Moritz R.","Alina T.","Noah F.","Ida V."],sus_e:   ["Erik Z.","Jana M.","Sven L.","Petra W.","Lars K.","Mona T."],bvw_g:   ["Finn R.","Hanna G.","Lars K.","Mona T.","Sven L.","Jana M.","Erik S.","Petra W."],bvw_f:   ["Max B.","Lara K.","Tim S.","Julia M.","Nico H.","Eva R."],},events: [
-      { id:"e1",cid:"sus",tid:"sus_g",type:"training",title:"Training G-Jugend",date:addD(t,-14),time:"17:00",loc:"Sportplatz Nord",pt:"attendance",votes:{},li:[],fi:[],sc:[],note:"",open:false },{ id:"e2",cid:"sus",tid:"sus_g",type:"training",title:"Training G-Jugend",date:addD(t,-7),time:"17:00",loc:"Sportplatz Nord",pt:"attendance",votes:{"Jonas H.":"yes","Anna T.":"yes","Noah G.":"no","Clara F.":"yes","Ben M.":"yes","Lea S.":"no"},li:[],fi:[],sc:[],note:"",open:false },{ id:"e3",cid:"sus",tid:"sus_g",type:"training",title:"Training G-Jugend",date:t,time:"17:00",loc:"Sportplatz Nord",pt:"attendance",votes:{},li:[],fi:[],sc:[],note:"",open:false },{ id:"e4",cid:"sus",tid:"sus_g",type:"heimspiel",title:"Heimspiel vs. VfL Xanten",date:addD(t,4),time:"10:00",loc:"Hauptplatz",pt:"list",votes:{},li:[{id:"li1",txt:"Wasser",max:null},{id:"li2",txt:"Apfelschorle",max:null},{id:"li3",txt:"Trinkpaeckchen",max:null},{id:"li4",txt:"Muffins",max:3},{id:"li5",txt:"Waffeln",max:2},{id:"li6",txt:"Kuchen",max:null},{id:"li7",txt:"Obst",max:null}],fi:[],sc:[],note:"Bitte 30 Minuten frueher da sein!",open:false },{ id:"e5",cid:"sus",tid:"sus_g",type:"turnier",title:"Stadtturnier Kalkar 2026",date:addD(t,11),time:"09:00",loc:"Hauptplatz",pt:"attendance",votes:{},li:[],note:"Jahresabschlussturnier mit 8 Teams. Bitte Trikot mitbringen!",open:true,fi:[{id:"f1",name:"Feld 1",col:"#16a34a"},{id:"f2",name:"Feld 2",col:"#2563eb"},{id:"f3",name:"Feld 3",col:"#dc2626"}],sc:[
-          {id:"s1",fid:"f1",time:"09:00",a:"SuS Kalkar 1",b:"VfL Xanten",ref:"David Mueller"},{id:"s2",fid:"f2",time:"09:00",a:"SuS Kalkar 2",b:"BV Sturm Wissel",ref:"Sarah Koch"},{id:"s3",fid:"f3",time:"09:00",a:"FC Kleve",b:"SV Bedburg",ref:"Klaus Weber"},{id:"s4",fid:"f1",time:"09:25",a:"VfL Xanten",b:"BV Sturm Wissel",ref:"Tom Schneider"},{id:"s5",fid:"f2",time:"09:25",a:"SuS Kalkar 1",b:"FC Kleve",ref:"David Mueller"},{id:"s6",fid:"f3",time:"09:25",a:"SuS Kalkar 2",b:"SV Bedburg",ref:"Sarah Koch"},]},{ id:"e6",cid:"sus",tid:"sus_g",type:"training",title:"Training G-Jugend",date:addD(t,18),time:"17:00",loc:"Sportplatz Nord",pt:"attendance",votes:{},li:[],fi:[],sc:[],note:"",open:false },{ id:"e7",cid:"sus",tid:"sus_g",type:"auswarts",title:"Auswaertsspiel SV Bedburg",date:addD(t,25),time:"11:00",loc:"SV Bedburg Platz",pt:"carpool",votes:{},li:[],fi:[],sc:[],note:"Treffpunkt: 10:15 Uhr Sportplatz Nord",open:false,carpoolNeeds:{},carpoolOffers:{} },{ id:"e8",cid:"sus",tid:"sus_bam",type:"training",title:"Training Bambinis",date:t,time:"16:00",loc:"Nebenplatz",pt:"attendance",votes:{},li:[],fi:[],sc:[],note:"",open:false },{ id:"e9",cid:"sus",tid:"sus_bam",type:"event",title:"Bambini-Fest *",date:addD(t,8),time:"14:00",loc:"Vereinsheim",pt:"attendance",votes:{},li:[],fi:[],sc:[],note:"Eltern sind herzlich eingeladen!",open:false },{ id:"e10",cid:"sus",tid:"sus_e",type:"training",title:"Training E-Jugend",date:t,time:"15:30",loc:"Nebenplatz 2",pt:"attendance",votes:{},li:[],fi:[],sc:[],note:"",open:false },{ id:"e11",cid:"sus",tid:"sus_f1",type:"freundschaft",title:"Freundschaftsspiel",date:addD(t,6),time:"10:00",loc:"Hauptplatz",pt:"attendance",votes:{},li:[],fi:[],sc:[],note:"",open:false },{ id:"e12",cid:"bvw",tid:"bvw_g",type:"training",title:"Training G-Jugend BVW",date:t,time:"17:30",loc:"BVW Platz",pt:"attendance",votes:{},li:[],fi:[],sc:[],note:"",open:false },{ id:"e13",cid:"bvw",tid:"bvw_f",type:"heimspiel",title:"Heimspiel F-Jugend",date:addD(t,5),time:"09:00",loc:"BVW Hauptplatz",pt:"attendance",votes:{},li:[],fi:[],sc:[],note:"",open:false },],messages: [],pollTemplates: [
-      { id:"pt1",cid:"sus",name:"Verpflegung Heimspiel",icon:"*",items:[{id:"i1",txt:"Wasser",max:null},{id:"i2",txt:"Apfelschorle",max:null},{id:"i3",txt:"Trinkpaeckchen",max:null},{id:"i4",txt:"Muffins",max:3},{id:"i5",txt:"Waffeln",max:2},{id:"i6",txt:"Kuchen",max:null},{id:"i7",txt:"Obst",max:null}] },{ id:"pt2",cid:"sus",name:"Helfer Turnier",icon:"*",items:[{id:"i1",txt:"Aufbau helfen",max:2},{id:"i2",txt:"Abbau helfen",max:2},{id:"i3",txt:"Schiedsrichter",max:1},{id:"i4",txt:"Getraenkestand",max:2}] },{ id:"pt3",cid:"sus",name:"Auswaertsspiel Verpflegung",icon:"Bus",items:[{id:"i1",txt:"Broetchen",max:null},{id:"i2",txt:"Obst",max:null},{id:"i3",txt:"Wasser",max:null},{id:"i4",txt:"Saft",max:null}] },],};
-}
+    playerProfiles: [],
+    clubs: [
+      { id:"demo",slug:"demo-verein",name:"Demo Verein",short:"Demo",em:"*",logo:null,pri:"#16a34a",sec:"#052e16",adm:"admin",pub:false,dir:false,sport:"fussball" },
+    ],
+    teams: [
+      { id:"demo_g",cid:"demo",name:"G-Jugend",icon:"G",col:"#16a34a",pub:true,pwd:"g1",cat:"G-Jugend",years:"2018/19" },
+      { id:"demo_f",cid:"demo",name:"F-Jugend",icon:"F",col:"#2563eb",pub:true,pwd:"f1",cat:"F-Jugend",years:"2016/17" },
+    ],
+    trainers: [
+      { id:"dt1",cid:"demo",name:"Trainer A",role:"Trainer",tids:["demo_g"],pw:"trainer1",phone:"",email:"",adm:false },
+      { id:"dt2",cid:"demo",name:"Trainer B",role:"Trainer",tids:["demo_f"],pw:"trainer2",phone:"",email:"",adm:false },
+    ],
+    players: {},
+    events: [],
+    messages: [],
+    pollTemplates: [
+      { id:"pt1",cid:"demo",name:"Heimspiel Verpflegung",icon:"*",items:[{id:"i1",txt:"Wasser",max:null},{id:"i2",txt:"Apfelschorle",max:null},{id:"i3",txt:"Muffins",max:3},{id:"i4",txt:"Obst",max:null}] },
+      { id:"pt2",cid:"demo",name:"Helfer gesucht",icon:"*",items:[{id:"i1",txt:"Aufbau",max:2},{id:"i2",txt:"Abbau",max:2},{id:"i3",txt:"Schiedsrichter",max:1}] },
+    ],
 
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
@@ -480,7 +460,7 @@ function SetupWizard({ onDone,onBack }) {
   const finish = () => {
     const cid = "c_"+uid();
     const newClub = {
-      id:cid,slug:f.name.toLowerCase().replace(/\s+/g,"-"),name:f.name.trim(),short:f.short.trim()||f.name.slice(0,4).toUpperCase(),em:"*",logo:null,pri:selSport.col,sec:"#0f172a",adm:f.adm,pub:true,dir:true,sport:f.sport,createdAt:new Date().toISOString(),};
+      id:cid,slug:f.name.toLowerCase().replace(/\s+/g,"-"),name:f.name.trim(),short:f.short.trim()||f.name.slice(0,4).toUpperCase(),em:"*",logo:null,pri:selSport.col,sec:"#0f172a",adm:hashPw(f.adm),pub:true,dir:true,sport:f.sport,createdAt:new Date().toISOString(),};
     onDone(newClub);
   };
 
@@ -500,7 +480,7 @@ function SetupWizard({ onDone,onBack }) {
           {step===1&&<>
             <h2 style={{color:"#fff",fontWeight:900,fontSize:20,margin:"0 0 6px"}}>Wie heisst dein Verein?</h2>
             <p style={{color:"rgba(255,255,255,.4)",fontSize:13,margin:"0 0 18px"}}>Schritt 1 von 3</p>
-            <input value={f.name} onChange={e=>u({name:e.target.value})} placeholder="z.B. SuS Kalkar 1920"
+            <input value={f.name} onChange={e=>u({name:e.target.value})} placeholder="z.B. SC Musterstadt 1920"
               style={{width:"100%",padding:"13px 15px",fontSize:16,background:"rgba(255,255,255,.1)",border:`1.5px solid ${f.name?"rgba(255,255,255,.4)":"rgba(255,255,255,.15)"}`,borderRadius:13,outline:"none",color:"#fff",marginBottom:10,boxSizing:"border-box"}}/>
             <input value={f.short} onChange={e=>u({short:e.target.value})} placeholder="Kuerzel (optional,z.B. SuS)"
               style={{width:"100%",padding:"11px 15px",fontSize:14,background:"rgba(255,255,255,.08)",border:"1.5px solid rgba(255,255,255,.1)",borderRadius:13,outline:"none",color:"#fff",marginBottom:16,boxSizing:"border-box"}}/>
@@ -716,7 +696,7 @@ function RolePicker({cl,onRole,onBack}) {
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s} 0%,${t.p}66 100%)`}}>
       <style>{CSS}</style>
       <div style={{padding:"50px 22px 0",maxWidth:440,margin:"0 auto"}}>
-        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:32}}>{"<- Zurueck"}</button>
+        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:32}}><- Zurueck</button>
         <div className="up" style={{display:"flex",flexDirection:"column",alignItems:"center",marginBottom:40}}>
           <Logo cl={cl} sz={80}/>
           <h1 style={{color:"#fff",fontSize:26,fontWeight:900,letterSpacing:-.5,margin:"14px 0 6px",textAlign:"center"}}>{cl.name}</h1>
@@ -730,7 +710,7 @@ function RolePicker({cl,onRole,onBack}) {
             <div style={{display:"flex",alignItems:"center",gap:14}}>
               <div style={{width:48,height:48,borderRadius:15,background:"rgba(255,255,255,.12)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{x.icon}</div>
               <div style={{flex:1}}><div style={{color:"#fff",fontWeight:900,fontSize:17}}>{x.title}</div><div style={{color:"rgba(255,255,255,.5)",fontSize:13,marginTop:2}}>{x.sub}</div></div>
-              <div style={{color:"rgba(255,255,255,.3)",fontSize:22}}>&gt;</div>
+              <div style={{color:"rgba(255,255,255,.3)",fontSize:22}}>></div>
             </div>
           </div>
         ))}
@@ -768,7 +748,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
       <style>{CSS}</style>
       <div style={{padding:"48px 20px 0",maxWidth:460,margin:"0 auto"}}>
         <button onClick={step==="cat"?onBack:step==="trainer"?()=>setStep("cat"):()=>{setStep("trainer");setPw("");setErr(false);}}
-          style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:28}}>{"<- Zurueck"}</button>
+          style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:28}}><- Zurueck</button>
         {children}
       </div>
     </div>
@@ -793,7 +773,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
                   <div style={{color:"#fff",fontWeight:900,fontSize:18}}>{c}</div>
                   <div style={{color:"rgba(255,255,255,.5)",fontSize:12,marginTop:2}}>{trs.length} Trainer</div>
                 </div>
-                <span style={{color:"rgba(255,255,255,.3)",fontSize:22}}>&gt;</span>
+                <span style={{color:"rgba(255,255,255,.3)",fontSize:22}}>></span>
               </div>
             );
           })
@@ -816,7 +796,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
               {(tr.tids||[]).map(tid=>teams?.find(x=>x.id===tid)?.name).filter(Boolean).join(",")}
             </div>
           </div>
-          <span style={{color:"rgba(255,255,255,.3)",fontSize:22}}>&gt;</span>
+          <span style={{color:"rgba(255,255,255,.3)",fontSize:22}}>></span>
         </div>
       ))}
     </GradWrap>
@@ -824,7 +804,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
   return (
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s},${t.p}66)`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,position:"relative"}}>
       <style>{CSS}</style>
-      <button onClick={()=>{setStep(trainersInCat.length>1?"trainer":"cat");setPw("");setErr(false);}} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}>{"<- Zurueck"}</button>
+      <button onClick={()=>{setStep(trainersInCat.length>1?"trainer":"cat");setPw("");setErr(false);}} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}><- Zurueck</button>
       <div className="up" style={{width:"100%",maxWidth:370}}>
         <div style={{textAlign:"center",marginBottom:28}}>
           <Av name={selTr?.name||"?"} sz={72} sx={{margin:"0 auto 14px"}}/>
@@ -837,6 +817,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
             placeholder="Passwort..." autoFocus
             style={{width:"100%",padding:"13px 16px",fontSize:16,background:"rgba(255,255,255,.12)",border:`2px solid ${err?"#ff6b6b":pw?"rgba(255,255,255,.4)":"rgba(255,255,255,.2)"}`,borderRadius:13,outline:"none",color:"#fff",marginBottom:10}}/>
           {err&&<div style={{background:"rgba(255,107,107,.15)",borderRadius:10,padding:"9px 13px",fontSize:13,fontWeight:700,color:"#ff9999",marginBottom:10,textAlign:"center"}}> Falsches Passwort</div>}
+          {cl.id==="demo"&&<div style={{background:"rgba(255,255,255,.08)",borderRadius:10,padding:"8px 12px",marginBottom:10,fontSize:11,color:"rgba(255,255,255,.6)"}}>Demo: Trainer A = trainer1 | Trainer B = trainer2</div>}
           <button onClick={go} disabled={!pw.trim()}
             style={{width:"100%",padding:"13px",fontSize:15,fontWeight:800,background:pw.trim()?cl.pri:"rgba(255,255,255,.15)",color:pw.trim()?"#fff":"rgba(255,255,255,.4)",border:"none",borderRadius:13,cursor:pw.trim()?"pointer":"not-allowed",transition:"all .18s"}}>
              Einloggen
@@ -854,13 +835,14 @@ function AdminLogin({cl,onLogin,onBack}) {
     <div style={{minHeight:"100dvh",background:`linear-gradient(135deg,${t.s},${t.p}66)`,display:"flex",alignItems:"center",justifyContent:"center",padding:22}}>
       <style>{CSS}</style>
       <div className="up" style={{width:"100%",maxWidth:390}}>
-        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:26}}>{"<- Zurueck"}</button>
+        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:26}}><- Zurueck</button>
         <div style={{background:"#fff",borderRadius:24,padding:"34px 26px",boxShadow:"0 24px 80px rgba(0,0,0,.4)"}}>
           <div style={{textAlign:"center",marginBottom:22}}><Logo cl={cl} sz={68} sx={{margin:"0 auto 12px"}}/><h2 style={{fontSize:22,fontWeight:900,color:"#0f172a",margin:"0 0 4px"}}>Vereinsadmin</h2><p style={{color:"#94a3b8",fontSize:13}}>{cl.name}</p></div>
           <Inp label="Admin-Passwort" type="password" val={pw} set={setPw} ph="Passwort..." af cl={cl}/>
+          {cl.id==="demo"&&<div style={{background:"#f0fdf4",borderRadius:10,padding:"9px 13px",marginTop:8,fontSize:12,color:"#166534",border:"1px solid #bbf7d0"}}>Demo-Zugangsdaten: Passwort <strong>admin</strong></div>}
           {err&&<div style={{background:"#fef2f2",borderRadius:12,padding:"10px 14px",fontSize:14,fontWeight:700,color:"#dc2626",marginTop:10}}> Falsches Passwort</div>}
           <div style={{height:14}}/><Btn full ch="Als Admin einloggen" onClick={go} icon="**" v="drk"/>
-          <p style={{textAlign:"center",fontSize:11,color:"#94a3b8",marginTop:12}}>Demo: <code style={{background:"#f1f5f9",padding:"2px 5px",borderRadius:5}}>admin123</code> / <code style={{background:"#f1f5f9",padding:"2px 5px",borderRadius:5}}>wissel123</code></p>
+          
         </div>
       </div>
     </div>
@@ -880,7 +862,7 @@ function HelperLogin({cl,helpers,onLogin,onBack}) {
     <div style={{minHeight:"100dvh",background:`linear-gradient(135deg,${t.s},${t.p}66)`,display:"flex",alignItems:"center",justifyContent:"center",padding:22}}>
       <style>{CSS}</style>
       <div className="up" style={{width:"100%",maxWidth:390}}>
-        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:26}}>{"<- Zurueck"}</button>
+        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:26}}><- Zurueck</button>
         <div style={{background:"#fff",borderRadius:24,padding:"34px 26px",boxShadow:"0 24px 80px rgba(0,0,0,.3)"}}>
           <div style={{textAlign:"center",marginBottom:22}}>
             <div style={{fontSize:52,marginBottom:8}}></div>
@@ -933,7 +915,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s} 0%,${t.p}66 100%)`}}>
       <style>{CSS}</style>
       <div style={{padding:"48px 20px 0",maxWidth:460,margin:"0 auto"}}>
-        <button onClick={goBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:28}}>{"<- Zurueck"}</button>
+        <button onClick={goBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:28}}><- Zurueck</button>
         <div className="up" style={{display:"flex",flexDirection:"column",alignItems:"center",marginBottom:32}}>
           <Logo cl={cl} sz={64}/>
           <h2 style={{color:"#fff",fontSize:24,fontWeight:900,margin:"12px 0 4px",textAlign:"center"}}>{title}</h2>
@@ -955,7 +937,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
               <div style={{color:"#fff",fontWeight:900,fontSize:18}}>{c}</div>
               {tms.length>1&&<div style={{color:"rgba(255,255,255,.5)",fontSize:12,marginTop:2}}>{tms.length} Mannschaften</div>}
             </div>
-            <span style={{color:"rgba(255,255,255,.3)",fontSize:22}}>&gt;</span>
+            <span style={{color:"rgba(255,255,255,.3)",fontSize:22}}>></span>
           </div>
         );
       })}
@@ -968,7 +950,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
           style={{background:"rgba(255,255,255,.09)",border:"1.5px solid rgba(255,255,255,.13)",borderRadius:20,padding:"16px 20px",cursor:"pointer",marginBottom:12,animationDelay:`${i*.06}s`,display:"flex",alignItems:"center",gap:14}}>
           <div style={{width:46,height:46,borderRadius:14,background:tm.col+"33",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{tm.icon}</div>
           <span style={{color:"#fff",fontWeight:900,fontSize:18}}>{tm.name}</span>
-          <span style={{marginLeft:"auto",color:"rgba(255,255,255,.3)",fontSize:22}}>&gt;</span>
+          <span style={{marginLeft:"auto",color:"rgba(255,255,255,.3)",fontSize:22}}>></span>
         </div>
       ))}
     </GradWrap>
@@ -976,7 +958,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
   if(step==="pwd") return (
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s},${t.p}66)`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,position:"relative"}}>
       <style>{CSS}</style>
-      <button onClick={goBack} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}>{"<- Zurueck"}</button>
+      <button onClick={goBack} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}><- Zurueck</button>
       <div className="up" style={{width:"100%",maxWidth:370}}>
         <div style={{textAlign:"center",marginBottom:28}}>
           <div style={{width:72,height:72,borderRadius:22,background:ct?.col+"33",border:`1.5px solid ${ct?.col}66`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:38,margin:"0 auto 14px"}}>{ct?.icon}</div>
@@ -985,11 +967,12 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
         </div>
         <div style={{background:"rgba(255,255,255,.1)",backdropFilter:"blur(16px)",borderRadius:22,padding:"24px 22px",border:"1px solid rgba(255,255,255,.15)"}}>
           <input type="password" value={pwd} onChange={e=>{setPwd(e.target.value);setPwdErr(false);}}
-            onKeyDown={e=>{if(e.key==="Enter"){if(pwd===ct?.pwd){const assigned=(playerProfiles||[]).some(p=>p.mainTid===ct.id);if(assigned)setStep("name");else setStep("locked");}else{setPwdErr(true);setTimeout(()=>setPwdErr(false),1800);}}}}
+            onKeyDown={e=>{if(e.key==="Enter"){if(checkPw(pwd,ct?.pwd||"")){const assigned=(playerProfiles||[]).some(p=>p.mainTid===ct.id);if(assigned)setStep("name");else setStep("locked");}else{setPwdErr(true);setTimeout(()=>setPwdErr(false),1800);}}}}
             placeholder="Passwort..." autoFocus
             style={{width:"100%",padding:"13px 16px",fontSize:16,background:"rgba(255,255,255,.12)",border:`2px solid ${pwdErr?"#ff6b6b":pwd?"rgba(255,255,255,.4)":"rgba(255,255,255,.2)"}`,borderRadius:13,outline:"none",color:"#fff",marginBottom:10}}/>
           {pwdErr&&<div style={{background:"rgba(255,107,107,.15)",borderRadius:10,padding:"9px 13px",fontSize:13,fontWeight:700,color:"#ff9999",marginBottom:10,textAlign:"center"}}> Falsches Passwort</div>}
-          <button onClick={()=>{if(pwd===ct?.pwd){
+          {cl.id==="demo"&&<div style={{background:"rgba(255,255,255,.1)",borderRadius:10,padding:"8px 12px",marginBottom:10,fontSize:11,color:"rgba(255,255,255,.6)"}}>Demo: G-Jugend = g1 | F-Jugend = f1</div>}
+          <button onClick={()=>{if(checkPw(pwd,ct?.pwd||"")){
             const assigned=(playerProfiles||[]).some(p=>p.mainTid===ct.id);
             if(assigned) setStep("name");
             else setStep("locked"); // team not yet released
@@ -997,7 +980,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
             style={{width:"100%",padding:"13px",fontSize:15,fontWeight:800,background:pwd.trim()?cl.pri:"rgba(255,255,255,.15)",color:pwd.trim()?"#fff":"rgba(255,255,255,.4)",border:"none",borderRadius:13,cursor:pwd.trim()?"pointer":"not-allowed",transition:"all .18s"}}>
              Team oeffnen
           </button>
-          <div style={{marginTop:12,textAlign:"center",fontSize:11,color:"rgba(255,255,255,.3)"}}>Demo: {ct?.pwd}</div>
+          
         </div>
       </div>
     </div>
@@ -1005,7 +988,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
   if(step==="locked") return (
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s},${t.p}66)`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
       <style>{CSS}</style>
-      <button onClick={()=>setStep("pwd")} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}>{"<- Zurueck"}</button>
+      <button onClick={()=>setStep("pwd")} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}><- Zurueck</button>
       <div className="up" style={{textAlign:"center",maxWidth:340}}>
         <div style={{fontSize:64,marginBottom:16}}></div>
         <h2 style={{color:"#fff",fontSize:22,fontWeight:900,margin:"0 0 12px"}}>{ct?.name}</h2>
@@ -1019,7 +1002,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
           </div>
         </div>
         <button onClick={()=>setStep("pwd")} style={{marginTop:20,padding:"12px 28px",borderRadius:13,border:"1.5px solid rgba(255,255,255,.3)",background:"transparent",color:"rgba(255,255,255,.7)",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
-          {"<- Zurueck zum Login"}
+          <- Zurueck zum Login
         </button>
       </div>
     </div>
@@ -1027,7 +1010,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
   return (
     <div style={{minHeight:"100dvh",background:"#f0f4f8",display:"flex",flexDirection:"column"}}>
       <div style={{background:`linear-gradient(135deg,${t.s},${t.p}99)`,padding:"16px 18px 22px"}}>
-        <button onClick={goBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:14}}>{"<- Zurueck"}</button>
+        <button onClick={goBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:14}}><- Zurueck</button>
         <div style={{display:"flex",alignItems:"center",gap:12}}><Logo cl={cl} sz={40}/><div><div style={{color:"rgba(255,255,255,.6)",fontSize:12,fontWeight:700}}>{ct?.icon} {ct?.name}</div><div style={{color:"#fff",fontSize:20,fontWeight:900}}>Wer bist du?</div></div></div>
       </div>
       <div style={{padding:"12px 14px 0",background:"#f0f4f8",position:"sticky",top:0,zIndex:10}}>
@@ -1037,7 +1020,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
         {list.map((p,i)=>(
           <div key={p} className="up" onClick={()=>onDone(tid,p)}
             style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:16,padding:"13px 16px",cursor:"pointer",display:"flex",alignItems:"center",gap:12,animationDelay:`${i*.03}s`}}>
-            <Av name={p} sz={40}/><span style={{fontWeight:700,fontSize:16,color:"#0f172a",flex:1}}>{p}</span><span style={{color:"#94a3b8",fontSize:20}}>&gt;</span>
+            <Av name={p} sz={40}/><span style={{fontWeight:700,fontSize:16,color:"#0f172a",flex:1}}>{p}</span><span style={{color:"#94a3b8",fontSize:20}}>></span>
           </div>
         ))}
         {list.length===0&&<div style={{textAlign:"center",padding:"32px",color:"#94a3b8"}}><div style={{fontSize:36,marginBottom:8}}></div><p style={{fontWeight:700}}>Niemanden gefunden</p></div>}
@@ -1124,7 +1107,7 @@ function PollList({ev,user,onVote}) {
 const POSITIONS_LIST = ["Torwart","Innenverteidiger","Aussenverteidiger","Def. Mittelfeld","Zentrales Mittelfeld","Off. Mittelfeld","Linker Fluegel","Rechter Fluegel","Stuermer","Universalspieler"];
 const FOOT_LIST      = ["Rechts","Links","Beidfuessig"];
 const RECOMMEND_LIST = ["Aufsteigen","Verbleiben","Absteigen","Pause empfohlen","Beobachten"];
-const TEAM_HIERARCHY = ["sus_f3","sus_f2","sus_f1","sus_e","sus_d","sus_c","sus_b","sus_a"];
+const TEAM_HIERARCHY = [];
 function getRecommendColor(rec) {
   if(rec==="Aufsteigen") return {col:"#16a34a",bg:"#dcfce7",icon:"*"};
   if(rec==="Verbleiben") return {col:"#2563eb",bg:"#eff6ff",icon:"*"};
@@ -1631,7 +1614,7 @@ function PlayerCard({ player: pl,onEdit,onDel,isMain,allTeams,allEvents }) {
         </div>
         <div style={{display:"flex",gap:5,flexShrink:0,alignItems:"center"}}>
           {totalGames > 0 && <Tag c="#16a34a" bg="#dcfce7" ch={`*${totalGames}`} sm/>}
-          {(pl.rating||0) > 0 && <span style={{fontSize:14}}>{"".repeat(Math.min(pl.rating,5))}</span>}
+          {(pl.rating||0) > 0 && <span style={{fontSize:14}}>{"*".repeat(Math.min(pl.rating||0,5))}</span>}
         </div>
         <div style={{display:"flex",gap:5,flexShrink:0}}>
           <button onClick={e=>{e.stopPropagation();onEdit();}} style={{width:30,height:30,borderRadius:9,background:"#eff6ff",border:"none",color:"#2563eb",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}></button>
@@ -1971,7 +1954,7 @@ function PlayerAssignRow({ player: pl,teams,allTeams,t,onAssign,onOptToggle }) {
                   {scopeElig.filter(tm=>tm.id!==pl.mainTid).map(tm=>(
                     <button key={tm.id} onClick={()=>{onAssign(tm.id);setShowProfile(false);}}
                       style={{display:"flex",alignItems:"center",gap:6,padding:"9px 15px",borderRadius:11,border:`2px solid ${tm.col}`,background:tm.col+"12",color:tm.col,fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",transition:"all .14s"}}>
-                      -&gt; {tm.name}
+                      -> {tm.name}
                     </button>
                   ))}
                 </div>
@@ -2113,10 +2096,10 @@ function PlayersTab({ data,myTids,save,fire,cl }) {
               {allPlayers.filter(p=>!p.mainTid).length} Spieler noch nicht zugeteilt
             </div>
             <div style={{fontSize:12,color:"#9a3412",marginTop:2}}>
-              Eltern koennen sich erst anmelden wenn alle Spieler zugeteilt sind -&gt; Zuteilung oeffnen
+              Eltern koennen sich erst anmelden wenn alle Spieler zugeteilt sind -> Zuteilung oeffnen
             </div>
           </div>
-          <span style={{color:"#d97706",fontSize:18}}>&gt;</span>
+          <span style={{color:"#d97706",fontSize:18}}>></span>
         </div>
       )}
       {}
@@ -2250,27 +2233,7 @@ function BrandingTab({cl,onSave}) {
               {c.logo?<img src={c.logo} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span style={{fontSize:34}}>{c.em||"*"}</span>}
             </div>
             <div style={{flex:1,display:"flex",flexDirection:"column",gap:7}}>
-              <input ref={ref} type="file" accept="image/*" onChange={up} style={{display:"none"}}/>
-              <Btn ch={c.logo?"Logo aendern":"Logo hochladen"} sm cl={c} onClick={()=>ref.current?.click()}/>
-              {c.logo&&<Btn ch="Logo entfernen" v="dng" sm onClick={()=>setC(p=>({...p,logo:null}))}/>}
-            </div>
-          </div>
-        </div>
-        <div style={{marginBottom:18}}>
-          <Inp label="Symbol (Emoji)" val={c.em||""} set={v=>setC(p=>({...p,em:v}))} ph="z.B. ein Emoji" cl={c} note="Wird angezeigt, wenn kein Logo gesetzt ist."/>
-        </div>
-        <div style={{marginBottom:18}}>
-          <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.6,textTransform:"uppercase",marginBottom:8}}>Vereinsfarbe</div>
-          <div style={{display:"flex",alignItems:"center",gap:12}}>
-            <input type="color" value={c.pri||"#16a34a"} onChange={e=>setC(p=>({...p,pri:e.target.value}))} style={{width:52,height:40,padding:0,border:"1.5px solid #e2e8f0",borderRadius:10,background:"#fff",cursor:"pointer"}}/>
-            <div style={{flex:1,fontSize:14,fontWeight:700,color:"#0f172a"}}>{c.pri||"#16a34a"}</div>
-          </div>
-        </div>
-        <Btn ch="Design speichern" full cl={c} onClick={()=>onSave(c)}/>
-      </div>
-    </div>
-  );
-}
+              <input ref={ref} type="file" accept="image
 
 function TemplateForm({initial,onSave,onCancel,cl,title}) {
   const t=TH(cl);
@@ -2575,7 +2538,7 @@ function SeriesWizard({f,u,t}) {
       </div>
       {mode!=="none"&&<div onClick={e=>e.stopPropagation()} style={{borderTop:`1px solid ${t.p}25`,padding:"16px"}}>
         <div style={{display:"flex",gap:8,marginBottom:16}}>
-          {[["weekly","* Woechentlich"],["custom","* Feste Daten"]].map(([m,l])=>(
+          {[["weekly","Woechentlich"],["custom","Feste Daten"]].map(([m,l])=>(
             <button key={m} onClick={()=>u({recMode:m,recDays:[],recDates:[]})}
               style={{flex:1,padding:"10px 8px",borderRadius:12,border:`2px solid ${mode===m?t.p:"#e2e8f0"}`,background:mode===m?t.p:"#fff",color:mode===m?"#fff":"#475569",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",transition:"all .15s"}}>
               {l}
@@ -3072,7 +3035,7 @@ function JerseysTab({ data,myTids,save,fire,cl }) {
             ? <div style={{textAlign:"center",padding:"32px",background:"#f8fafc",borderRadius:14,border:"1.5px dashed #e2e8f0"}}>
                 <div style={{fontSize:36,marginBottom:8}}></div>
                 <p style={{fontWeight:700,color:"#334155"}}>Noch keine Trikotnummern vergeben</p>
-                <p style={{fontSize:13,color:"#94a3b8",marginTop:4}}>Im Spielerprofil -&gt;  Trikot eintragen</p>
+                <p style={{fontSize:13,color:"#94a3b8",marginTop:4}}>Im Spielerprofil ->  Trikot eintragen</p>
               </div>
             : <div style={{display:"flex",flexDirection:"column",gap:7}}>
                 {teamPlayers.map(pl => {
@@ -3202,49 +3165,6 @@ function AdBanner({ slot="auto",style={} }) {
   );
 }
 
-// ============================================================
-//  Affiliate / Partner-Links
-//  Die Provision aus Kaeufen ueber diese Links geht an den
-//  App-Betreiber. Trage hier deine echten Affiliate-Links ein
-//  (z. B. Amazon PartnerNet: ...&tag=DEIN-TAG-21).
-//  enabled:false blendet den Bereich komplett aus.
-// ============================================================
-const AFFILIATE = {
-  enabled: true,
-  title: "Partner-Shop",
-  note: "Einkaeufe ueber diese Links unterstuetzen die Vereins-App.",
-  links: [
-    { label:"Fussball-Ausruestung",  desc:"Schuhe, Baelle, Schienbeinschoner", url:"https://www.amazon.de/s?k=fussball+ausruestung&tag=DEIN-AFFILIATE-TAG" },
-    { label:"Trainingsmaterial",     desc:"Huetchen, Leibchen, Mini-Tore",      url:"https://www.amazon.de/s?k=fussball+trainingsmaterial&tag=DEIN-AFFILIATE-TAG" },
-    { label:"Teamsport & Fanartikel",desc:"Trikots, Taschen, Vereinsbedarf",    url:"https://www.amazon.de/s?k=teamsport&tag=DEIN-AFFILIATE-TAG" },
-  ],
-};
-
-function AffiliateCard({ style={} }) {
-  if(!AFFILIATE.enabled || !AFFILIATE.links?.length) return null;
-  return (
-    <div style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",padding:"14px 16px",...style}}>
-      <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:AFFILIATE.note?4:10}}>
-        <div style={{fontWeight:900,fontSize:15,color:"#0f172a"}}>{AFFILIATE.title}</div>
-        <div style={{fontSize:10,fontWeight:700,color:"#94a3b8",textTransform:"uppercase",letterSpacing:.5}}>Anzeige</div>
-      </div>
-      {AFFILIATE.note&&<div style={{fontSize:12,color:"#94a3b8",marginBottom:10}}>{AFFILIATE.note}</div>}
-      <div style={{display:"flex",flexDirection:"column",gap:7}}>
-        {AFFILIATE.links.map((l,i)=>(
-          <a key={i} href={l.url} target="_blank" rel="sponsored noopener noreferrer"
-            style={{display:"flex",alignItems:"center",gap:10,textDecoration:"none",background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:11,padding:"10px 12px"}}>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{fontWeight:700,fontSize:14,color:"#0f172a"}}>{l.label}</div>
-              {l.desc&&<div style={{fontSize:12,color:"#94a3b8",marginTop:1}}>{l.desc}</div>}
-            </div>
-            <span style={{color:"#94a3b8",fontSize:18,flexShrink:0}}>{"›"}</span>
-          </a>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 const APP_URL = "https://vereinsapp.de"; // Deine Domain hier eintragen
 
 function ShareBanner({ cl,session,trigger,onDismiss }) {
@@ -3352,7 +3272,6 @@ function useShareTrigger(data,session,myTids) {
   return { trigger,dismiss };
 }
 
-const LEAVE_REASONS = [
   {id:"left",icon:"Tuer",label:"Verein verlassen"},{id:"injury",icon:"Krank",label:"Verletzt / Pause"},{id:"retired",icon:"Ende",label:"Karriereende"},{id:"nolust",icon:"Pause",label:"Keine Lust / Auszeit"},{id:"moved",icon:"Weg",label:"Weggezogen"},{id:"other",icon:"?",label:"Sonstiges"},];
 const AGE_GROUPS = [
   {id:"bambinis",label:"Bambinis",icon:"B",ageRange:"U5-U6"},{id:"g",label:"G-Jugend",icon:"G",ageRange:"U7"},{id:"f",label:"F-Jugend",icon:"F",ageRange:"U8-U9"},{id:"e",label:"E-Jugend",icon:"E",ageRange:"U10-U11"},{id:"d",label:"D-Jugend",icon:"D",ageRange:"U12-U13"},{id:"c",label:"C-Jugend",icon:"C",ageRange:"U14-U15"},{id:"b",label:"B-Jugend",icon:"B2",ageRange:"U16-U17"},{id:"a",label:"A-Jugend",icon:"A",ageRange:"U18-U19"},{id:"seniors",label:"Senioren",icon:"S",ageRange:"Aktive"},{id:"altherren",label:"Alt-Herren",icon:"AH",ageRange:"Ue32"},{id:"frauen",label:"Frauen",icon:"FR",ageRange:"Aktive"},];
@@ -3747,9 +3666,9 @@ function FieldsTab({ data,myTids,session,save,fire,cl }) {
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
           <div style={{fontWeight:800,fontSize:16,color:"#0f172a"}}>Platzbelegung</div>
           <div style={{display:"flex",gap:6}}>
-            <button onClick={()=>{const d=new Date(selDate+"T12:00:00");d.setDate(d.getDate()-1);setSelDate(d.toISOString().slice(0,10));}} style={{width:32,height:32,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",cursor:"pointer",fontSize:18}}>{"<"}</button>
+            <button onClick={()=>{const d=new Date(selDate+"T12:00:00");d.setDate(d.getDate()-1);setSelDate(d.toISOString().slice(0,10));}} style={{width:32,height:32,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",cursor:"pointer",fontSize:18}}><</button>
             <input type="date" value={selDate} onChange={e=>setSelDate(e.target.value)} style={{padding:"6px 10px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",fontFamily:"inherit"}}/>
-            <button onClick={()=>{const d=new Date(selDate+"T12:00:00");d.setDate(d.getDate()+1);setSelDate(d.toISOString().slice(0,10));}} style={{width:32,height:32,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",cursor:"pointer",fontSize:18}}>&gt;</button>
+            <button onClick={()=>{const d=new Date(selDate+"T12:00:00");d.setDate(d.getDate()+1);setSelDate(d.toISOString().slice(0,10));}} style={{width:32,height:32,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",cursor:"pointer",fontSize:18}}>></button>
           </div>
         </div>
         {}
@@ -3851,7 +3770,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         fire("Termin aktualisiert *");
       }
     } else {
-      save({...local,events:[...local.events,...evs]});
+      save({...local,events:[...(local.events||[]),...evs]});
       fire(`${evs.length>1?evs.length+" Termine":"Termin"} erstellt *`);
     }
     setWizard(false);setEditEv(null);
@@ -3905,7 +3824,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
                 <div style={{fontWeight:800,fontSize:13,color:"#1d4ed8"}}>
                   Saison {(local.seasons||[]).find(s=>s.status==="planning")?.label} in Planung
                 </div>
-                <div style={{fontSize:12,color:"#3b82f6",marginTop:1}}>Spieler zuteilen und Saison aktivieren -&gt;</div>
+                <div style={{fontSize:12,color:"#3b82f6",marginTop:1}}>Spieler zuteilen und Saison aktivieren -></div>
               </div>
             </div>
           )}
@@ -3916,9 +3835,9 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               <div style={{color:"#fff",fontWeight:900,fontSize:18,letterSpacing:"-.3px",textShadow:"0 1px 3px rgba(0,0,0,.25)"}}>Neuen Termin anlegen</div>
               <div style={{color:"rgba(255,255,255,.9)",fontSize:13,marginTop:3,fontWeight:500}}>Schritt-fuer-Schritt Assistent</div>
             </div>
-            <div style={{width:32,height:32,borderRadius:10,background:"rgba(0,0,0,.15)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:18,fontWeight:700,flexShrink:0}}>&gt;</div>
+            <div style={{width:32,height:32,borderRadius:10,background:"rgba(0,0,0,.15)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:18,fontWeight:700,flexShrink:0}}>></div>
           </div>
-          {up.length>0&&<><Divider label={`* KOMMENDE (${up.length})`}/>{up.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurueckgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)}/>)}</>}
+          {up.length>0&&<><Divider label={`KOMMENDE (${up.length})`}/>{up.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurueckgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)}/>)}</>}
           {up.length===0&&<div style={{textAlign:"center",padding:"30px",background:"#fff",borderRadius:18,border:"1.5px dashed #e2e8f0",color:"#94a3b8"}}><Logo cl={myClub} sz={50} sx={{margin:"0 auto 12px"}}/><p style={{fontWeight:800,fontSize:15}}>Noch keine Termine</p><p style={{fontSize:13,marginTop:3}}>Klicke oben auf "Neuen Termin anlegen"</p></div>}
           {past.length>0&&<><Divider label={`VERGANGENE (${past.length})`} light/><div style={{opacity:.72}}>{past.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{}} onCopyLink={()=>{}}/>)}</div></>}
         </>}
@@ -4246,18 +4165,7 @@ function PhotoUploader({photo,name,onSave,onRemove,t}) {
   return (
     <>
       {showLegal && <LegalModal onAccept={accept} onDecline={decline}/>}
-      <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} style={{display:"none"}}/>
-      <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:12}}>
-        <AvPhoto name={name} photo={photo} sz={96}/>
-        <div style={{display:"flex",gap:8}}>
-          <Btn ch={photo?"Foto aendern":"Foto hochladen"} sm onClick={()=>fileRef.current?.click()}/>
-          {photo&&<Btn ch="Entfernen" v="dng" sm onClick={onRemove}/>}
-        </div>
-      </div>
-    </>
-  );
-}
-
+      <input ref={fileRef} type="file" accept="image
 function CarpoolWizard({ev,user,onSave,onClose,cl}) {
   return <div style={{padding:16,textAlign:"center",color:"#64748b"}}><p>Fahrgemeinschaft-Funktion in Entwicklung.</p><button onClick={onClose} style={{marginTop:12,padding:"10px 20px",borderRadius:10,border:"none",background:TH(cl).p,color:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Schliessen</button></div>;
 }
@@ -4538,9 +4446,9 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
           </button>
           {showPast&&past.map(ev=><div key={ev.id} style={{marginBottom:10}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user"/></div>)}
         </>}
-        <AffiliateCard style={{marginTop:18}}/>
       </div>
       <Toast msg={toast}/>
+      {shareTrigger&&<ShareBanner cl={myClub} session={session} trigger={shareTrigger} onDismiss={()=>dismissShare(shareTrigger)}/>}
     </div>
   );
 }
@@ -4560,14 +4468,12 @@ function AppInner({lang,setLang}) {
   const [cid,setCid]      = useState(null);
   const [session,setSess] = useState(null);
   const [showSetup,setShowSetup] = useState(false);
-  const [needsSetup,setNeedsSetup] = useState(false);
   const [saveStatus,setSaveStatus] = useState(null); // null | "saving" | "saved" | "local"
   const syncRef  = useRef(null);
   const saveTimer= useRef(null);
 
   useEffect(()=>{
     (async()=>{
-      if(sb.configured() && !(await ensureAccess())){ setNeedsSetup(true); return; }
       let d=null;
       try { d = await sb.get(); if(d?._v < 10) d=null; } catch {}
       if(!d) { d=seed(); try { await sb.set(d); } catch {} }
@@ -4604,21 +4510,11 @@ function AppInner({lang,setLang}) {
   };
   const logout=()=>{ sess.del(); setSess(null); setScr(cid?"role":"dir"); };
 
-  if(needsSetup) return (
-    <>
-      <style>{CSS}</style>
-      <SupabaseSetup
-        onDone={()=>window.location.reload()}
-        onSkip={()=>{ setConfig(null); window.location.reload(); }}
-      />
-    </>
-  );
-
   if(showSetup) return (
     <>
       <style>{CSS}</style>
       <SupabaseSetup
-        onDone={()=>window.location.reload()}
+        onDone={()=>setShowSetup(false)}
         onSkip={()=>setShowSetup(false)}
       />
     </>
