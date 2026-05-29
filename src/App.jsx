@@ -5420,9 +5420,9 @@ function SetupWizard({ onDone,onBack }) {
           {step===1&&<>
             <h2 style={{color:"#fff",fontWeight:900,fontSize:20,margin:"0 0 6px"}}>Wie heisst dein Verein?</h2>
             <p style={{color:"rgba(255,255,255,.4)",fontSize:13,margin:"0 0 18px"}}>Schritt 1 von 3</p>
-            <input value={f.name} onChange={e=>u({name:e.target.value})} placeholder="z.B. SC Musterstadt 1920"
+            <input value={f.name} onChange={e=>u({name:e.target.value})} placeholder="z.B. FC Blauweiss 1920"
               style={{width:"100%",padding:"13px 15px",fontSize:16,background:"rgba(255,255,255,.1)",border:`1.5px solid ${f.name?"rgba(255,255,255,.4)":"rgba(255,255,255,.15)"}`,borderRadius:13,outline:"none",color:"#fff",marginBottom:10,boxSizing:"border-box"}}/>
-            <input value={f.short} onChange={e=>u({short:e.target.value})} placeholder="Kuerzel (optional, z.B. SCM)"
+            <input value={f.short} onChange={e=>u({short:e.target.value})} placeholder="Kuerzel (optional, z.B. FCA)"
               style={{width:"100%",padding:"11px 15px",fontSize:14,background:"rgba(255,255,255,.08)",border:"1.5px solid rgba(255,255,255,.1)",borderRadius:13,outline:"none",color:"#fff",marginBottom:16,boxSizing:"border-box"}}/>
           </>}
 
