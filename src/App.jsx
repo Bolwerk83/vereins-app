@@ -59,7 +59,7 @@ function LangSwitcher({ lang,setLang }) {
   );
 }
 
-const SK  = "vereinsapp_v12";
+const SK  = "vereinsapp_v14";
 const SS  = "vereinsapp_v12_session";
 const CFG = "vereinsapp_config";
 const getConfig = () => { try { return JSON.parse(localStorage.getItem(CFG)||"null"); } catch { return null; } };
@@ -229,7 +229,7 @@ const ET = {
 
 function seed() {
   return {
-    _v: 13,
+    _v: 14,
     helpers: [], chats: [], messages: [], events: [], bookings: [],
     contactRequests: [], securityLog: [], playerProfiles: [],
     seasons: [{ id:"s2526", label:"2025/2026", status:"active" }],
@@ -239,27 +239,27 @@ function seed() {
     pollTemplates: [],
     clubs: [
       { id:"demo", slug:"demo-verein", name:"Demo Verein", short:"Demo", em:"D",
-        logo:null, pri:"#16a34a", sec:"#052e16", adm:"admin",
+        logo:null, pri:"#16a34a", sec:"#052e16", adm:"h586034f",
         pub:false, dir:false, sport:"fussball",
         createdAt:"2025-01-01T00:00:00.000Z" }
     ],
     teams: [
       { id:"demo_g", cid:"demo", name:"G-Jugend", icon:"G", col:"#16a34a",
-        pub:true, pwd:"g1", cat:"G-Jugend", years:"2018/19" },
+        pub:true, pwd:"hcaa", cat:"G-Jugend", years:"2018/19" },
       { id:"demo_f1", cid:"demo", name:"F-Jugend 1", icon:"F", col:"#2563eb",
-        pub:true, pwd:"f1", cat:"F-Jugend", years:"2016/17" },
+        pub:true, pwd:"hc8b", cat:"F-Jugend", years:"2016/17" },
       { id:"demo_e", cid:"demo", name:"E-Jugend", icon:"E", col:"#7c3aed",
-        pub:true, pwd:"e1", cat:"E-Jugend", years:"2014/15" },
+        pub:true, pwd:"hc6c", cat:"E-Jugend", years:"2014/15" },
       { id:"demo_sen", cid:"demo", name:"Senioren", icon:"S", col:"#d97706",
-        pub:true, pwd:"sen1", cat:"Senioren", years:"" },
+        pub:true, pwd:"h35cf55", cat:"Senioren", years:"" },
       { id:"demo_ah", cid:"demo", name:"Alt-Herren", icon:"AH", col:"#64748b",
-        pub:true, pwd:"ah1", cat:"Alt-Herren", years:"" }
+        pub:true, pwd:"h178ea", cat:"Alt-Herren", years:"" }
     ],
     trainers: [
       { id:"dt1", cid:"demo", name:"Trainer A", role:"Trainer",
-        tids:["demo_g","demo_f1"], pw:"trainer1", phone:"", email:"" },
+        tids:["demo_g","demo_f1"], pw:"h4c0ffa1c", phone:"", email:"" },
       { id:"dt2", cid:"demo", name:"Trainer B", role:"Trainer",
-        tids:["demo_e","demo_sen"], pw:"trainer2", phone:"", email:"" }
+        tids:["demo_e","demo_sen"], pw:"h4c0ffa1d", phone:"", email:"" }
     ]
   };
 }
@@ -1759,7 +1759,7 @@ function MultiProfileSelector({ data, cl, onSelect }) {
 const FONT_SIZES = { small: "13px", normal: "15px", large: "18px" };
 const getFontSize = () => {
   try {
-    const cl = JSON.parse(localStorage.getItem("vereinsapp_v12")||"{}");
+    const cl = JSON.parse(localStorage.getItem("vereinsapp_v14")||"{}");
     const clubs = cl.clubs||[];
     for(const c of clubs) {
       if(c.settings?.fontSize) return FONT_SIZES[c.settings.fontSize]||"15px";
@@ -2430,7 +2430,8 @@ function BottomNav({ tab, setTab, isAdmin, isHelper, unread, cl }) {
         { id:"fieldsadmin", label:"Plaetze",               icon:"P" },
         { id:"branding",    label:"Design",                icon:"D" },
         { id:"inbox",       label:"Posteingang",           icon:"I" },
-        { id:"security",    label:"Sicherheitslog",        icon:"!" },
+        { id:"security",    label:"Sicherheitslog",         icon:"!" },
+        { id:"access",      label:"Zugaenge & Passwoerter",  icon:"PW" },
         { id:"settings",    label:"Einstellungen",         icon:"+" },
       ],
     },
@@ -4098,6 +4099,1127 @@ function TemplateDetail({ tpl, onBack, onUse, cl }) {
 }
 
 
+
+function ResetDataButton({ fire }) {
+  const [confirm, setConfirm] = useState(false);
+  const doReset = () => {
+    // Clear all app data from localStorage
+    Object.keys(localStorage)
+      .filter(k => k.startsWith("vereinsapp_"))
+      .forEach(k => localStorage.removeItem(k));
+    fire("Alle lokalen Daten zurueckgesetzt - Seite wird neu geladen...");
+    setTimeout(() => window.location.reload(), 1500);
+  };
+  if(!confirm) return (
+    <button onClick={()=>setConfirm(true)}
+      style={{padding:"10px 16px",borderRadius:11,border:"1.5px solid #e2e8f0",
+        background:"#fff",color:"#dc2626",fontWeight:700,fontSize:13,
+        cursor:"pointer",fontFamily:"inherit",width:"100%"}}>
+      Lokale Testdaten loeschen
+    </button>
+  );
+  return (
+    <div style={{background:"#fef2f2",borderRadius:13,padding:"14px",border:"1.5px solid #fca5a5"}}>
+      <p style={{fontSize:13,color:"#dc2626",fontWeight:700,margin:"0 0 10px"}}>
+        Wirklich alle lokalen Daten loeschen? Das betrifft nur diesen Browser.
+      </p>
+      <div style={{display:"flex",gap:9}}>
+        <button onClick={()=>setConfirm(false)}
+          style={{flex:1,padding:"10px",borderRadius:10,border:"1.5px solid #e2e8f0",
+            background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+          Abbrechen
+        </button>
+        <button onClick={doReset}
+          style={{flex:1,padding:"10px",borderRadius:10,border:"none",
+            background:"#dc2626",color:"#fff",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
+          Ja, loeschen
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
+/* =================================================================
+   PASSWORT-VERWALTUNG (nur Admin)
+   - Alle Zugaenge des Vereins auf einen Blick
+   - Passwort setzen, zuruecksetzen, sperren
+   - Kein Klartext gespeichert
+================================================================= */
+function AccessManagerTab({ data, cid, save, fire, cl }) {
+  const t = TH(cl);
+  const teams    = (data.teams   ||[]).filter(x=>x.cid===cid);
+  const trainers = (data.trainers||[]).filter(x=>x.cid===cid);
+  const helpers  = (data.helpers ||[]).filter(x=>x.cid===cid);
+  const club     = (data.clubs   ||[]).find(x=>x.id===cid)||{};
+
+  const [editing, setEditing] = useState(null); // {type, id, name}
+  const [newPw, setNewPw]     = useState("");
+  const [newPw2, setNewPw2]   = useState("");
+  const [err, setErr]         = useState("");
+  const [saved, setSaved]     = useState("");
+
+  const openEdit = (type, id, name) => {
+    setEditing({type, id, name});
+    setNewPw(""); setNewPw2(""); setErr(""); setSaved("");
+  };
+
+  const doSave = () => {
+    if(newPw.length < 4) { setErr("Mindestens 4 Zeichen"); return; }
+    if(newPw !== newPw2) { setErr("Passwoerter stimmen nicht ueberein"); return; }
+    const hash = hashPw(newPw);
+    let nextData = {...data};
+
+    if(editing.type === "team") {
+      nextData.teams = (data.teams||[]).map(tm=>
+        tm.id===editing.id ? {...tm, pwd:hash} : tm
+      );
+    } else if(editing.type === "trainer") {
+      nextData.trainers = (data.trainers||[]).map(tr=>
+        tr.id===editing.id ? {...tr, pw:hash} : tr
+      );
+    } else if(editing.type === "admin") {
+      nextData.clubs = (data.clubs||[]).map(cl=>
+        cl.id===cid ? {...cl, adm:hash} : cl
+      );
+    } else if(editing.type === "helper") {
+      nextData.helpers = (data.helpers||[]).map(h=>
+        h.id===editing.id ? {...h, code:hash} : h
+      );
+    }
+    // Audit log
+    const entry = {
+      id:uid(), cid, type:"pw_change",
+      detail:`Admin aenderte Passwort fuer: ${editing.name} (${editing.type})`,
+      ts:new Date().toISOString(), role:"admin", name:"Admin",
+      device:getDeviceInfo(), deviceId:getDeviceId(),
+    };
+    nextData.securityLog = [...(data.securityLog||[]), entry];
+    save(nextData);
+    setSaved("Gespeichert"); setErr("");
+    setTimeout(()=>{ setEditing(null); setSaved(""); }, 1200);
+    fire(`Passwort geaendert: ${editing.name}`);
+  };
+
+  const doLock = (type, id, name, isLocked) => {
+    let nextData = {...data};
+    if(type==="team") {
+      nextData.teams = (data.teams||[]).map(tm=>
+        tm.id===id ? {...tm, locked:!isLocked} : tm
+      );
+    } else if(type==="trainer") {
+      nextData.trainers = (data.trainers||[]).map(tr=>
+        tr.id===id ? {...tr, locked:!isLocked} : tr
+      );
+    }
+    const action = isLocked ? "entsperrt" : "gesperrt";
+    const entry = {
+      id:uid(), cid, type:"admin_action",
+      detail:`Admin ${action} Zugang: ${name}`,
+      ts:new Date().toISOString(), role:"admin", name:"Admin",
+      device:getDeviceInfo(), deviceId:getDeviceId(),
+    };
+    nextData.securityLog = [...(data.securityLog||[]), entry];
+    save(nextData);
+    fire(`Zugang ${action}: ${name}`);
+  };
+
+  const AccessRow = ({type, id, name, isLocked, badge}) => (
+    <div style={{
+      display:"flex", alignItems:"center", gap:10,
+      padding:"11px 14px",
+      background: isLocked ? "#fef2f2" : "#fff",
+      borderRadius:12,
+      border:`1.5px solid ${isLocked?"#fca5a5":"#e2e8f0"}`,
+      marginBottom:8,
+      opacity: isLocked ? .7 : 1,
+    }}>
+      <div style={{
+        width:36, height:36, borderRadius:10,
+        background: isLocked ? "#fee2e2" : t.p+"15",
+        display:"flex", alignItems:"center", justifyContent:"center",
+        fontWeight:900, fontSize:12,
+        color: isLocked ? "#dc2626" : t.p,
+        flexShrink:0,
+      }}>
+        {badge}
+      </div>
+      <div style={{flex:1, minWidth:0}}>
+        <div style={{fontWeight:700, fontSize:14, color:"#0f172a",
+          display:"flex", alignItems:"center", gap:6}}>
+          {name}
+          {isLocked && (
+            <span style={{background:"#fee2e2", color:"#dc2626",
+              borderRadius:99, padding:"1px 7px", fontSize:10, fontWeight:800}}>
+              GESPERRT
+            </span>
+          )}
+        </div>
+        <div style={{fontSize:11, color:"#94a3b8", marginTop:1}}>
+          Passwort: 
+        </div>
+      </div>
+      <div style={{display:"flex", gap:6, flexShrink:0}}>
+        <button onClick={()=>openEdit(type, id, name)}
+          style={{padding:"6px 12px", borderRadius:9, border:"none",
+            background:t.p+"15", color:t.p,
+            fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"inherit"}}>
+          Aendern
+        </button>
+        <button onClick={()=>doLock(type, id, name, isLocked)}
+          style={{padding:"6px 10px", borderRadius:9,
+            border:`1.5px solid ${isLocked?"#16a34a":"#e2e8f0"}`,
+            background: isLocked ? "#f0fdf4" : "#f8fafc",
+            color: isLocked ? "#16a34a" : "#dc2626",
+            fontWeight:700, fontSize:11, cursor:"pointer", fontFamily:"inherit"}}>
+          {isLocked ? "Entsperren" : "Sperren"}
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div>
+      {/* Passwort-Aenderungs-Modal */}
+      {editing && (
+        <div style={{position:"fixed", inset:0, background:"rgba(0,0,0,.6)",
+          zIndex:900, display:"flex", alignItems:"center",
+          justifyContent:"center", padding:20, backdropFilter:"blur(6px)"}}>
+          <div style={{background:"#fff", borderRadius:20,
+            padding:"24px", width:"100%", maxWidth:380}}>
+            <h3 style={{fontWeight:900, fontSize:17, marginBottom:4}}>
+              Passwort setzen
+            </h3>
+            <p style={{fontSize:13, color:"#64748b", marginBottom:16, lineHeight:1.5}}>
+              Neues Passwort fuer: <strong>{editing.name}</strong>
+            </p>
+            <div style={{display:"flex", flexDirection:"column", gap:10}}>
+              <input
+                type="password"
+                value={newPw}
+                onChange={e=>{ setNewPw(e.target.value); setErr(""); }}
+                placeholder="Neues Passwort (mind. 4 Zeichen)"
+                autoFocus
+                style={{padding:"12px 14px", fontSize:16,
+                  border:`1.5px solid ${err?"#fca5a5":"#e2e8f0"}`,
+                  borderRadius:12, outline:"none"}}
+              />
+              <input
+                type="password"
+                value={newPw2}
+                onChange={e=>{ setNewPw2(e.target.value); setErr(""); }}
+                placeholder="Passwort wiederholen"
+                style={{padding:"12px 14px", fontSize:16,
+                  border:`1.5px solid ${err?"#fca5a5":"#e2e8f0"}`,
+                  borderRadius:12, outline:"none"}}
+              />
+              {err && (
+                <div style={{background:"#fef2f2", borderRadius:10,
+                  padding:"9px 13px", fontSize:13, color:"#dc2626", fontWeight:600}}>
+                  {err}
+                </div>
+              )}
+              {saved && (
+                <div style={{background:"#f0fdf4", borderRadius:10,
+                  padding:"9px 13px", fontSize:13, color:"#16a34a", fontWeight:700}}>
+                  {saved}
+                </div>
+              )}
+            </div>
+            <div style={{background:"#eff6ff", borderRadius:11,
+              padding:"10px 13px", marginTop:12, fontSize:12,
+              color:"#1d4ed8", lineHeight:1.6}}>
+              Das Passwort wird als sicherer Hash gespeichert.
+              Der Klartext ist danach nicht mehr einsehbar.
+            </div>
+            <div style={{display:"flex", gap:9, marginTop:14}}>
+              <button onClick={()=>setEditing(null)}
+                style={{flex:1, padding:"12px", borderRadius:12,
+                  border:"1.5px solid #e2e8f0", background:"#fff",
+                  fontWeight:700, cursor:"pointer", fontFamily:"inherit"}}>
+                Abbrechen
+              </button>
+              <button
+                onClick={doSave}
+                disabled={!newPw.trim() || !newPw2.trim()}
+                style={{flex:2, padding:"12px", borderRadius:12, border:"none",
+                  background:newPw.trim()&&newPw2.trim() ? t.p : "#e2e8f0",
+                  color:newPw.trim()&&newPw2.trim() ? "#fff" : "#94a3b8",
+                  fontWeight:800, cursor:"pointer", fontFamily:"inherit"}}>
+                Speichern
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Admin-Passwort */}
+      <div style={{marginBottom:14}}>
+        <div style={{fontSize:11, fontWeight:800, color:"#64748b",
+          marginBottom:8, letterSpacing:.5}}>
+          ADMIN-ZUGANG
+        </div>
+        <AccessRow type="admin" id={cid} name="Vereinsadmin"
+          isLocked={false} badge="A"/>
+      </div>
+
+      {/* Team-Passwrter */}
+      {teams.length > 0 && (
+        <div style={{marginBottom:14}}>
+          <div style={{fontSize:11, fontWeight:800, color:"#64748b",
+            marginBottom:8, letterSpacing:.5}}>
+            ELTERN-ZUGAENGE ({teams.length} Mannschaften)
+          </div>
+          {teams.map(tm=>(
+            <AccessRow key={tm.id} type="team" id={tm.id}
+              name={tm.name} isLocked={!!tm.locked}
+              badge={tm.icon||tm.name?.slice(0,2)}/>
+          ))}
+        </div>
+      )}
+
+      {/* Trainer-Passwrter */}
+      {trainers.length > 0 && (
+        <div style={{marginBottom:14}}>
+          <div style={{fontSize:11, fontWeight:800, color:"#64748b",
+            marginBottom:8, letterSpacing:.5}}>
+            TRAINER-ZUGAENGE ({trainers.length})
+          </div>
+          {trainers.map(tr=>(
+            <AccessRow key={tr.id} type="trainer" id={tr.id}
+              name={tr.name} isLocked={!!tr.locked}
+              badge="T"/>
+          ))}
+        </div>
+      )}
+
+      {/* Helfer-Codes */}
+      {helpers.length > 0 && (
+        <div style={{marginBottom:14}}>
+          <div style={{fontSize:11, fontWeight:800, color:"#64748b",
+            marginBottom:8, letterSpacing:.5}}>
+            HELFER-CODES ({helpers.length})
+          </div>
+          {helpers.map(h=>(
+            <AccessRow key={h.id} type="helper" id={h.id}
+              name={h.name} isLocked={!!h.locked}
+              badge="H"/>
+          ))}
+        </div>
+      )}
+
+      {teams.length===0 && trainers.length===0 && (
+        <div style={{textAlign:"center", padding:"32px",
+          background:"#f8fafc", borderRadius:14,
+          border:"1.5px dashed #e2e8f0"}}>
+          <p style={{fontWeight:700, color:"#334155", margin:"0 0 4px"}}>
+            Noch keine Zugaenge
+          </p>
+          <p style={{fontSize:13, color:"#94a3b8", margin:0, lineHeight:1.5}}>
+            Lege zuerst Teams und Trainer an.
+            Hier kannst du dann alle Zugaenge verwalten.
+          </p>
+        </div>
+      )}
+
+      {/* Sicherheitshinweis */}
+      <div style={{background:"#f0fdf4", borderRadius:13,
+        padding:"12px 14px", border:"1.5px solid #bbf7d0",
+        fontSize:12, color:"#166534", lineHeight:1.6}}>
+        Alle Passwoerter werden als kryptografischer Hash gespeichert.
+        Kein Klartext ist in der Datenbank hinterlegt.
+        Passwortaenderungen werden im Sicherheitsprotokoll erfasst.
+      </div>
+    </div>
+  );
+}
+
+
+
+/* =================================================================
+   PASSWORT VERGESSEN - KOMPLETTES SYSTEM
+================================================================= */
+
+// Temporaeren Reset-Code generieren (6 Stellen, 15 Min gueltig)
+const generateResetCode = () => {
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  const expires = Date.now() + 15 * 60 * 1000;
+  const key = "va_reset_" + code;
+  localStorage.setItem(key, JSON.stringify({ code, expires }));
+  return code;
+};
+
+const verifyResetCode = (inputCode, clubId) => {
+  const key = "va_reset_" + inputCode;
+  try {
+    const stored = JSON.parse(localStorage.getItem(key) || "null");
+    if (!stored) return false;
+    if (Date.now() > stored.expires) {
+      localStorage.removeItem(key);
+      return false;
+    }
+    localStorage.removeItem(key);
+    return true;
+  } catch { return false; }
+};
+
+/* -----------------------------------------------------------------
+   FALL A: Admin Passwort Vergessen
+----------------------------------------------------------------- */
+function AdminForgotPassword({ cl, onBack, onReset }) {
+  const [step, setStep]   = useState("email"); // email | code | newpw
+  const [email, setEmail] = useState("");
+  const [code, setCode]   = useState("");
+  const [genCode, setGenCode] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [newPw2, setNewPw2] = useState("");
+  const [err, setErr]     = useState("");
+  const t = TH(cl);
+
+  const sendCode = () => {
+    const adminEmail = cl.adminEmail || "";
+    if (!adminEmail) {
+      setErr("Keine E-Mail-Adresse hinterlegt. Bitte Admin direkt kontaktieren.");
+      return;
+    }
+    if (email.toLowerCase().trim() !== adminEmail.toLowerCase().trim()) {
+      setErr("Diese E-Mail-Adresse stimmt nicht mit der gespeicherten ueberein.");
+      return;
+    }
+    const c = generateResetCode();
+    setGenCode(c);
+    // Oeffne E-Mail-App mit vorbereiteter Mail
+    const subject = encodeURIComponent("Vereins-App: Dein Reset-Code");
+    const body = encodeURIComponent(
+      "Dein Reset-Code fuer die Vereins-App:\n\n" +
+      "CODE: " + c + "\n\n" +
+      "Dieser Code ist 15 Minuten gueltig.\n" +
+      "Gib ihn in der App ein um dein Passwort zu aendern.\n\n" +
+      "Falls du diesen Code nicht angefordert hast, ignoriere diese Mail."
+    );
+    window.open(`mailto:${adminEmail}?subject=${subject}&body=${body}`);
+    setStep("code");
+    setErr("");
+  };
+
+  const checkCode = () => {
+    if (verifyResetCode(code.trim(), cl.id)) {
+      setStep("newpw");
+      setErr("");
+    } else {
+      setErr("Code ungueltig oder abgelaufen. Bitte neu anfordern.");
+    }
+  };
+
+  const doReset = () => {
+    if (newPw.length < 4) { setErr("Mindestens 4 Zeichen"); return; }
+    if (newPw !== newPw2)  { setErr("Passwoerter stimmen nicht ueberein"); return; }
+    onReset(hashPw(newPw));
+  };
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:900,
+      display:"flex",alignItems:"center",justifyContent:"center",padding:20,
+      backdropFilter:"blur(8px)"}}>
+      <div style={{background:"#fff",borderRadius:20,padding:"24px",
+        width:"100%",maxWidth:380}}>
+
+        <button onClick={onBack}
+          style={{background:"none",border:"none",color:"#64748b",fontSize:13,
+            cursor:"pointer",fontFamily:"inherit",marginBottom:12,padding:0,
+            fontWeight:700}}>
+          {"<-"} Zurueck
+        </button>
+
+        {step==="email"&&<>
+          <h3 style={{fontWeight:900,fontSize:18,marginBottom:6}}>Passwort vergessen</h3>
+          <p style={{fontSize:13,color:"#64748b",marginBottom:16,lineHeight:1.6}}>
+            Gib deine Admin-E-Mail-Adresse ein. Wir senden dir einen Code
+            zum Zuruecksetzen des Passwortes.
+          </p>
+          <input value={email} onChange={e=>{setEmail(e.target.value);setErr("");}}
+            type="email" placeholder="Deine E-Mail-Adresse"
+            style={{width:"100%",padding:"12px 14px",fontSize:16,
+              border:`1.5px solid ${err?"#fca5a5":"#e2e8f0"}`,
+              borderRadius:12,outline:"none",marginBottom:err?10:14,
+              boxSizing:"border-box"}}/>
+          {err&&<div style={{background:"#fef2f2",borderRadius:10,padding:"9px 12px",
+            fontSize:13,color:"#dc2626",marginBottom:12,lineHeight:1.5}}>{err}</div>}
+          <button onClick={sendCode} disabled={!email.trim()}
+            style={{width:"100%",padding:"13px",borderRadius:13,border:"none",
+              background:email.trim()?t.p:"#e2e8f0",
+              color:email.trim()?"#fff":"#94a3b8",
+              fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
+            Reset-Code senden
+          </button>
+        </>}
+
+        {step==="code"&&<>
+          <h3 style={{fontWeight:900,fontSize:18,marginBottom:6}}>Code eingeben</h3>
+          <div style={{background:"#f0fdf4",borderRadius:12,padding:"12px 14px",
+            marginBottom:16,fontSize:13,color:"#166534",lineHeight:1.6}}>
+            Deine E-Mail-App hat sich geoeffnet mit einer vorbereiteten Mail.
+            Sende sie ab und trage dann den 6-stelligen Code hier ein.
+          </div>
+          <input value={code} onChange={e=>{setCode(e.target.value);setErr("");}}
+            placeholder="6-stelliger Code" maxLength={6}
+            style={{width:"100%",padding:"14px",fontSize:22,fontWeight:900,
+              textAlign:"center",letterSpacing:6,
+              border:`1.5px solid ${err?"#fca5a5":"#e2e8f0"}`,
+              borderRadius:12,outline:"none",marginBottom:err?10:14,
+              boxSizing:"border-box"}}/>
+          {err&&<div style={{background:"#fef2f2",borderRadius:10,padding:"9px 12px",
+            fontSize:13,color:"#dc2626",marginBottom:12}}>{err}</div>}
+          <div style={{display:"flex",gap:9}}>
+            <button onClick={()=>setStep("email")}
+              style={{flex:1,padding:"12px",borderRadius:12,
+                border:"1.5px solid #e2e8f0",background:"#fff",
+                fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+              Neu senden
+            </button>
+            <button onClick={checkCode} disabled={code.length!==6}
+              style={{flex:2,padding:"12px",borderRadius:12,border:"none",
+                background:code.length===6?t.p:"#e2e8f0",
+                color:code.length===6?"#fff":"#94a3b8",
+                fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
+              Bestaetigen
+            </button>
+          </div>
+        </>}
+
+        {step==="newpw"&&<>
+          <h3 style={{fontWeight:900,fontSize:18,marginBottom:6}}>Neues Passwort</h3>
+          <p style={{fontSize:13,color:"#64748b",marginBottom:16}}>
+            Code bestaetigt. Vergib jetzt dein neues Passwort.
+          </p>
+          <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:14}}>
+            <input type="password" value={newPw}
+              onChange={e=>{setNewPw(e.target.value);setErr("");}}
+              placeholder="Neues Passwort (mind. 4 Zeichen)"
+              style={{padding:"12px 14px",fontSize:16,
+                border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none"}}/>
+            <input type="password" value={newPw2}
+              onChange={e=>{setNewPw2(e.target.value);setErr("");}}
+              placeholder="Passwort wiederholen"
+              style={{padding:"12px 14px",fontSize:16,
+                border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none"}}/>
+            {err&&<div style={{background:"#fef2f2",borderRadius:10,padding:"9px 12px",
+              fontSize:13,color:"#dc2626"}}>{err}</div>}
+          </div>
+          <button onClick={doReset} disabled={!newPw.trim()||!newPw2.trim()}
+            style={{width:"100%",padding:"13px",borderRadius:13,border:"none",
+              background:newPw.trim()&&newPw2.trim()?t.p:"#e2e8f0",
+              color:newPw.trim()&&newPw2.trim()?"#fff":"#94a3b8",
+              fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
+            Passwort speichern
+          </button>
+        </>}
+      </div>
+    </div>
+  );
+}
+
+/* -----------------------------------------------------------------
+   FALL B+C: Trainer / Eltern Passwort Vergessen
+   Zeigt Kontaktwege zum Admin / Trainer
+----------------------------------------------------------------- */
+function ForgotPasswordHelp({ cl, teams, trainers, forRole, teamId, onBack }) {
+  const t = TH(cl);
+
+  // Fuer Eltern: Trainer des Teams finden
+  const myTrainers = forRole==="user"
+    ? (trainers||[]).filter(tr=>(tr.tids||[]).includes(teamId))
+    : [];
+  // Fuer Trainer: Admin kontaktieren
+  const adminEmail = cl.adminEmail || "";
+
+  const openWA = (phone) => {
+    const clean = phone.replace(/[^0-9+]/g,"");
+    const msg = encodeURIComponent(
+      "Hallo, ich habe mein Passwort fuer die Vereins-App vergessen. " +
+      "Koennt ihr mir bitte ein neues setzen? Verein: " + cl.name
+    );
+    window.open(`https://wa.me/${clean}?text=${msg}`);
+  };
+
+  const openMail = (email, name) => {
+    const sub = encodeURIComponent("Vereins-App: Passwort vergessen");
+    const body = encodeURIComponent(
+      "Hallo " + name + ",\n\n" +
+      "ich habe mein Passwort fuer die Vereins-App vergessen.\n" +
+      "Koennt ihr mir bitte ein neues Passwort setzen?\n\n" +
+      "Vielen Dank!"
+    );
+    window.open(`mailto:${email}?subject=${sub}&body=${body}`);
+  };
+
+  const ContactCard = ({name, phone, email, prefContact, trainerId}) => {
+    const localPhone = ConsentStore.getContact(
+      (trainers||[]).find(tr=>tr.name===name)?.id || ""
+    );
+    const actualPhone = localPhone || phone || "";
+    return (
+      <div style={{background:"#fff",borderRadius:14,padding:"14px 16px",
+        border:"1.5px solid #e2e8f0",marginBottom:9}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+          <Av name={name} sz={40}/>
+          <div>
+            <div style={{fontWeight:700,fontSize:15,color:"#0f172a"}}>{name}</div>
+            <div style={{fontSize:12,color:"#64748b"}}>
+              {forRole==="trainer"?"Vereinsadmin":"Trainer"}
+            </div>
+          </div>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {actualPhone&&(
+            <button onClick={()=>openWA(actualPhone)}
+              style={{padding:"11px 16px",borderRadius:11,border:"none",
+                background:"#f0fdf4",color:"#166534",fontWeight:700,fontSize:13,
+                cursor:"pointer",fontFamily:"inherit",textAlign:"left",
+                display:"flex",alignItems:"center",gap:10}}>
+              <div style={{width:32,height:32,borderRadius:9,background:"#25D366",
+                display:"flex",alignItems:"center",justifyContent:"center",
+                fontWeight:900,fontSize:14,color:"#fff",flexShrink:0}}>W</div>
+              WhatsApp schreiben
+            </button>
+          )}
+          {email&&(
+            <button onClick={()=>openMail(email,name)}
+              style={{padding:"11px 16px",borderRadius:11,border:"none",
+                background:"#eff6ff",color:"#1d4ed8",fontWeight:700,fontSize:13,
+                cursor:"pointer",fontFamily:"inherit",textAlign:"left",
+                display:"flex",alignItems:"center",gap:10}}>
+              <div style={{width:32,height:32,borderRadius:9,background:"#2563eb",
+                display:"flex",alignItems:"center",justifyContent:"center",
+                fontWeight:900,fontSize:14,color:"#fff",flexShrink:0}}>@</div>
+              E-Mail schreiben
+            </button>
+          )}
+          {!actualPhone&&!email&&(
+            <div style={{padding:"11px 14px",borderRadius:11,background:"#f8fafc",
+              border:"1.5px solid #e2e8f0",fontSize:13,color:"#64748b",lineHeight:1.5}}>
+              Beim naechsten Training ansprechen oder
+              direkt im Verein nachfragen.
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:900,
+      display:"flex",alignItems:"flex-end",justifyContent:"center",
+      backdropFilter:"blur(8px)"}}>
+      <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",
+        maxWidth:520,padding:"20px 22px 44px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
+          <button onClick={onBack}
+            style={{width:34,height:34,borderRadius:10,background:"#f1f5f9",
+              border:"none",cursor:"pointer",fontWeight:700,fontSize:16}}>
+            {"<"}
+          </button>
+          <h3 style={{fontWeight:900,fontSize:18,margin:0}}>Passwort vergessen?</h3>
+        </div>
+
+        <div style={{background:"#fef3c7",borderRadius:13,padding:"12px 14px",
+          marginBottom:16,fontSize:13,color:"#92400e",lineHeight:1.6,
+          border:"1.5px solid #fde68a"}}>
+          {forRole==="trainer"
+            ? "Bitte den Vereinsadmin kontaktieren um dein Passwort zuruecksetzen zu lassen."
+            : "Bitte deinen Trainer kontaktieren um das Team-Passwort zu erfragen."
+          }
+        </div>
+
+        {forRole==="trainer"&&adminEmail&&(
+          <ContactCard name="Vereinsadmin" email={adminEmail}/>
+        )}
+        {forRole==="trainer"&&!adminEmail&&(
+          <div style={{background:"#f8fafc",borderRadius:13,padding:"14px 16px",
+            border:"1.5px solid #e2e8f0",fontSize:13,color:"#64748b",
+            lineHeight:1.6,marginBottom:12}}>
+            Kein Kontaktweg hinterlegt. Bitte deinen Admin direkt ansprechen
+            oder eine neue Team-Einladung anfordern.
+          </div>
+        )}
+
+        {forRole==="user"&&myTrainers.length>0&&myTrainers.map(tr=>(
+          <ContactCard key={tr.id} name={tr.name}
+            email={tr.email||""}
+            phone={""}
+            prefContact={tr.prefContact}/>
+        ))}
+        {forRole==="user"&&myTrainers.length===0&&(
+          <div style={{background:"#f8fafc",borderRadius:13,padding:"14px 16px",
+            border:"1.5px solid #e2e8f0",fontSize:13,color:"#64748b",lineHeight:1.6}}>
+            Kein Trainer gefunden. Bitte beim naechsten Training nach dem
+            Zugangs-Code fragen.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* -----------------------------------------------------------------
+   E-MAIL EINRICHTEN (im SetupWizard + Einstellungen)
+----------------------------------------------------------------- */
+function AdminEmailSetup({ cl, data, save, fire, onClose }) {
+  const t = TH(cl);
+  const [email, setEmail]   = useState(cl.adminEmail||"");
+  const [email2, setEmail2] = useState(cl.adminEmail||"");
+  const [err, setErr]       = useState("");
+
+  const doSave = () => {
+    if(!email.trim()||!email.includes("@")) { setErr("Bitte gueltige E-Mail eingeben"); return; }
+    if(email.trim() !== email2.trim()) { setErr("E-Mail-Adressen stimmen nicht ueberein"); return; }
+    save({...data, clubs:(data.clubs||[]).map(x=>
+      x.id===cl.id ? {...x, adminEmail:email.trim().toLowerCase()} : x
+    )});
+    fire("E-Mail gespeichert");
+    onClose&&onClose();
+  };
+
+  return (
+    <div style={{background:"#f8fafc",borderRadius:16,padding:"16px",
+      border:"1.5px solid #e2e8f0",marginBottom:14}}>
+      <div style={{fontWeight:800,fontSize:14,color:"#0f172a",marginBottom:4}}>
+        Admin E-Mail-Adresse
+      </div>
+      <div style={{fontSize:12,color:"#64748b",marginBottom:12,lineHeight:1.6}}>
+        Benoetigt fuer Passwort-Reset und App-Benachrichtigungen.
+        Wird nicht oeffentlich angezeigt.
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:9}}>
+        <input value={email} onChange={e=>{setEmail(e.target.value);setErr("");}}
+          type="email" placeholder="admin@beispiel.de"
+          style={{padding:"11px 14px",fontSize:16,
+            border:`1.5px solid ${err?"#fca5a5":email?"#16a34a":"#e2e8f0"}`,
+            borderRadius:11,outline:"none"}}/>
+        <input value={email2} onChange={e=>{setEmail2(e.target.value);setErr("");}}
+          type="email" placeholder="E-Mail wiederholen"
+          style={{padding:"11px 14px",fontSize:16,
+            border:`1.5px solid ${err?"#fca5a5":"#e2e8f0"}`,
+            borderRadius:11,outline:"none"}}/>
+        {err&&<div style={{background:"#fef2f2",borderRadius:10,padding:"9px 12px",
+          fontSize:13,color:"#dc2626"}}>{err}</div>}
+        {cl.adminEmail&&(
+          <div style={{fontSize:12,color:"#16a34a",fontWeight:600}}>
+            Aktuell: {cl.adminEmail.slice(0,3)}***{cl.adminEmail.slice(cl.adminEmail.indexOf("@"))}
+          </div>
+        )}
+      </div>
+      <button onClick={doSave} disabled={!email.trim()}
+        style={{width:"100%",padding:"12px",borderRadius:12,border:"none",
+          background:email.trim()?t.p:"#e2e8f0",
+          color:email.trim()?"#fff":"#94a3b8",
+          fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit",
+          marginTop:12}}>
+        Speichern
+      </button>
+    </div>
+  );
+}
+
+
+
+/* =================================================================
+   TRAINER KONTAKTWEGE EINSTELLUNGEN
+   Trainer gibt an wie man ihn erreichen kann
+================================================================= */
+function TrainerContactSettings({ trainer, onSave, onClose, cl }) {
+  const t = TH(cl);
+  const localPhone = ConsentStore.getContact(trainer.id)||"";
+  const [phone, setPhone]     = useState(localPhone);
+  const [pref, setPref]       = useState(trainer.prefContact||"whatsapp");
+  const [showPhone, setShowPhone] = useState(false);
+
+  const PREF_OPTIONS = [
+    { id:"whatsapp", label:"WhatsApp",        icon:"W", col:"#25D366", sub:"Schnellste Option" },
+    { id:"phone",    label:"Telefon",         icon:"T", col:"#2563eb", sub:"Direkter Anruf" },
+    { id:"email",    label:"E-Mail",          icon:"@", col:"#7c3aed", sub:"Nicht zeitkritisch" },
+    { id:"training", label:"Beim Training",   icon:"F", col:"#d97706", sub:"Persoenlich" },
+  ];
+
+  const save = () => {
+    // Nummer nur lokal speichern - nie in DB
+    if(phone.trim()) ConsentStore.setContact(trainer.id, phone.trim());
+    else ConsentStore.clearContact(trainer.id);
+    onSave({...trainer, prefContact:pref});
+    onClose();
+  };
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:910,
+      display:"flex",alignItems:"flex-end",justifyContent:"center",
+      backdropFilter:"blur(6px)"}}>
+      <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",
+        maxWidth:520,padding:"22px 22px 44px"}}>
+        <h3 style={{fontWeight:900,fontSize:17,marginBottom:4}}>Kontakteinstellungen</h3>
+        <p style={{fontSize:13,color:"#64748b",marginBottom:16,lineHeight:1.5}}>
+          Wie sollen Eltern und Spieler dich bei Bedarf erreichen?
+        </p>
+
+        {/* Bevorzugter Kontaktweg */}
+        <div style={{fontSize:11,fontWeight:800,color:"#64748b",
+          marginBottom:8,letterSpacing:.5}}>BEVORZUGTER KONTAKTWEG</div>
+        <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:16}}>
+          {PREF_OPTIONS.map(opt=>(
+            <button key={opt.id} onClick={()=>setPref(opt.id)}
+              style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",
+                borderRadius:13,border:`2px solid ${pref===opt.id?opt.col:"#e2e8f0"}`,
+                background:pref===opt.id?opt.col+"12":"#fff",
+                cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
+              <div style={{width:40,height:40,borderRadius:11,
+                background:pref===opt.id?opt.col:"#f1f5f9",
+                display:"flex",alignItems:"center",justifyContent:"center",
+                fontWeight:900,fontSize:17,
+                color:pref===opt.id?"#fff":"#64748b",flexShrink:0}}>
+                {opt.icon}
+              </div>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:700,fontSize:14,
+                  color:pref===opt.id?opt.col:"#0f172a"}}>{opt.label}</div>
+                <div style={{fontSize:12,color:"#94a3b8"}}>{opt.sub}</div>
+              </div>
+              <div style={{width:20,height:20,borderRadius:"50%",flexShrink:0,
+                border:`${pref===opt.id?"6px":"2px"} solid ${pref===opt.id?opt.col:"#cbd5e1"}`,
+                transition:"all .15s"}}/>
+            </button>
+          ))}
+        </div>
+
+        {/* Telefonnummer - nur lokal */}
+        {(pref==="whatsapp"||pref==="phone")&&(
+          <div style={{marginBottom:14}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#64748b",
+              marginBottom:8,letterSpacing:.5}}>
+              HANDYNUMMER (nur lokal gespeichert)
+            </div>
+            <div style={{background:"#eff6ff",borderRadius:11,padding:"10px 13px",
+              marginBottom:10,fontSize:12,color:"#1d4ed8",lineHeight:1.5}}>
+              Die Nummer wird NUR auf DIESEM Geraet gespeichert.
+              Sie wird nicht in die Cloud uebertragen.
+            </div>
+            <div style={{position:"relative"}}>
+              <input
+                type={showPhone?"tel":"password"}
+                value={phone}
+                onChange={e=>setPhone(e.target.value)}
+                placeholder="+49 151 12345678"
+                style={{width:"100%",padding:"12px 44px 12px 14px",fontSize:16,
+                  border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",
+                  boxSizing:"border-box"}}
+              />
+              <button onClick={()=>setShowPhone(s=>!s)}
+                style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",
+                  background:"none",border:"none",cursor:"pointer",
+                  color:"#64748b",fontSize:12,fontWeight:700}}>
+                {showPhone?"Verbergen":"Anzeigen"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div style={{display:"flex",gap:9}}>
+          <button onClick={onClose}
+            style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",
+              background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+            Abbrechen
+          </button>
+          <button onClick={save}
+            style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:t.p,
+              color:"#fff",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
+            Speichern
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* =================================================================
+   SMARTER KONTAKT-BUTTON
+   Zeigt den besten Weg basierend auf Trainer-Einstellungen
+   und generiert bei Bedarf Gruppen-Setup-Anleitung
+================================================================= */
+function SmartContactButton({ trainer, message, style={} }) {
+  const pref    = trainer.prefContact||"training";
+  const phone   = ConsentStore.getContact(trainer.id)||"";
+  const email   = trainer.email||"";
+  const [showOpts, setShowOpts] = useState(false);
+
+  const openWA = (msg) => {
+    const clean = phone.replace(/[^0-9+]/g,"");
+    if(!clean) { setShowOpts(true); return; }
+    window.open(`https://wa.me/${clean}?text=${encodeURIComponent(msg||message||"")}`);
+  };
+
+  const openMail = (msg) => {
+    if(!email) { setShowOpts(true); return; }
+    const sub = encodeURIComponent("Vereins-App");
+    window.open(`mailto:${email}?subject=${sub}&body=${encodeURIComponent(msg||message||"")}`);
+  };
+
+  const openCall = () => {
+    if(!phone) { setShowOpts(true); return; }
+    window.open(`tel:${phone.replace(/[^0-9+]/g,"")}`);
+  };
+
+  const primary = {
+    whatsapp: { label:"WhatsApp", icon:"W", col:"#25D366", action:openWA },
+    phone:    { label:"Anrufen",  icon:"T", col:"#2563eb", action:openCall },
+    email:    { label:"E-Mail",   icon:"@", col:"#7c3aed", action:openMail },
+    training: { label:"Beim Training fragen", icon:"F", col:"#d97706", action:()=>setShowOpts(true) },
+  }[pref] || { label:"Kontaktieren", icon:"K", col:"#64748b", action:()=>setShowOpts(true) };
+
+  return (
+    <>
+      <button onClick={()=>primary.action(message)}
+        style={{display:"flex",alignItems:"center",gap:8,padding:"10px 16px",
+          borderRadius:11,border:"none",background:primary.col,
+          color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer",
+          fontFamily:"inherit",...style}}>
+        <span style={{fontWeight:900,fontSize:16}}>{primary.icon}</span>
+        {primary.label}
+      </button>
+
+      {showOpts&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",zIndex:920,
+          display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+          <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",
+            maxWidth:420,padding:"20px 20px 44px"}}>
+            <div style={{fontWeight:900,fontSize:17,marginBottom:4}}>
+              {trainer.name} kontaktieren
+            </div>
+            <p style={{fontSize:13,color:"#64748b",marginBottom:16}}>
+              Waehle einen Kontaktweg:
+            </p>
+            {phone&&<button onClick={()=>{openWA(message);setShowOpts(false);}}
+              style={{width:"100%",padding:"13px",borderRadius:12,border:"none",
+                background:"#f0fdf4",color:"#166534",fontWeight:700,fontSize:14,
+                cursor:"pointer",fontFamily:"inherit",marginBottom:9,
+                display:"flex",alignItems:"center",gap:10}}>
+              <span style={{width:36,height:36,borderRadius:10,background:"#25D366",
+                display:"flex",alignItems:"center",justifyContent:"center",
+                color:"#fff",fontWeight:900,fontSize:18,flexShrink:0}}>W</span>
+              WhatsApp schreiben
+            </button>}
+            {phone&&<button onClick={()=>{openCall();setShowOpts(false);}}
+              style={{width:"100%",padding:"13px",borderRadius:12,border:"none",
+                background:"#eff6ff",color:"#1d4ed8",fontWeight:700,fontSize:14,
+                cursor:"pointer",fontFamily:"inherit",marginBottom:9,
+                display:"flex",alignItems:"center",gap:10}}>
+              <span style={{width:36,height:36,borderRadius:10,background:"#2563eb",
+                display:"flex",alignItems:"center",justifyContent:"center",
+                color:"#fff",fontWeight:900,fontSize:18,flexShrink:0}}>T</span>
+              Anrufen
+            </button>}
+            {email&&<button onClick={()=>{openMail(message);setShowOpts(false);}}
+              style={{width:"100%",padding:"13px",borderRadius:12,border:"none",
+                background:"#faf5ff",color:"#6d28d9",fontWeight:700,fontSize:14,
+                cursor:"pointer",fontFamily:"inherit",marginBottom:9,
+                display:"flex",alignItems:"center",gap:10}}>
+              <span style={{width:36,height:36,borderRadius:10,background:"#7c3aed",
+                display:"flex",alignItems:"center",justifyContent:"center",
+                color:"#fff",fontWeight:900,fontSize:18,flexShrink:0}}>@</span>
+              E-Mail schreiben
+            </button>}
+            {!phone&&!email&&<div style={{background:"#f8fafc",borderRadius:12,
+              padding:"14px",fontSize:13,color:"#64748b",lineHeight:1.6,marginBottom:9}}>
+              Kein Kontaktweg hinterlegt. Bitte beim naechsten Training ansprechen.
+            </div>}
+            <button onClick={()=>setShowOpts(false)}
+              style={{width:"100%",padding:"11px",border:"none",background:"none",
+                color:"#94a3b8",fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+              Schliessen
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+/* =================================================================
+   GRUPPEN-SETUP ASSISTENT
+   Da WhatsApp keine automatischen Gruppen erlaubt,
+   fuehren wir den Nutzer durch die manuelle Erstellung
+================================================================= */
+function GroupSetupHelper({ trainers, targetPerson, context, onClose }) {
+  const [step, setStep] = useState(1); // 1=phones | 2=instructions | 3=done
+  const [copied, setCopied] = useState(false);
+
+  // Sammle alle WA-Nummern der Trainer
+  const trainerNumbers = trainers
+    .map(tr=>({ name:tr.name, phone:ConsentStore.getContact(tr.id)||"" }))
+    .filter(x=>x.phone);
+
+  const allNumbers = trainerNumbers.map(x=>x.phone).join(", ");
+
+  const copy = (text) => {
+    navigator.clipboard?.writeText(text);
+    setCopied(true);
+    setTimeout(()=>setCopied(false),2000);
+  };
+
+  const groupName = `Vereins-App: ${context||"Kontakt"}`;
+  const introMsg =
+    `Hallo! Ich moechte euch kurz zusammenbringen.\n` +
+    `${targetPerson?" Bitte "+targetPerson+" zur Gruppe hinzufuegen.":""}\n` +
+    `Thema: ${context||"Passwort vergessen / Hilfe"}`;
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:930,
+      display:"flex",alignItems:"flex-end",justifyContent:"center",
+      backdropFilter:"blur(8px)"}}>
+      <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",
+        maxWidth:520,padding:"22px 22px 44px",maxHeight:"85dvh",overflowY:"auto"}}>
+
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
+          <div style={{width:44,height:44,borderRadius:13,background:"#f0fdf4",
+            display:"flex",alignItems:"center",justifyContent:"center",
+            fontWeight:900,fontSize:22,color:"#25D366",flexShrink:0}}>W</div>
+          <div>
+            <div style={{fontWeight:900,fontSize:17}}>WhatsApp Gruppe einrichten</div>
+            <div style={{fontSize:12,color:"#64748b"}}>
+              In {4-step} Schritten fertig
+            </div>
+          </div>
+        </div>
+
+        {/* Warum nicht automatisch */}
+        <div style={{background:"#fef3c7",borderRadius:12,padding:"11px 14px",
+          marginBottom:16,fontSize:12,color:"#92400e",lineHeight:1.6,
+          border:"1px solid #fde68a"}}>
+          WhatsApp erlaubt es aus Datenschutzgruenden keiner App,
+          automatisch Gruppen zu erstellen. Aber mit dieser Anleitung
+          geht es in 30 Sekunden manuell.
+        </div>
+
+        {step===1&&(
+          <>
+            <div style={{fontSize:11,fontWeight:800,color:"#64748b",
+              marginBottom:10,letterSpacing:.5}}>
+              SCHRITT 1: NUMMERN KOPIEREN
+            </div>
+            {trainerNumbers.length===0&&(
+              <div style={{background:"#fef2f2",borderRadius:12,padding:"12px",
+                fontSize:13,color:"#dc2626",marginBottom:12}}>
+                Keine Trainer-Nummern hinterlegt. Bitte zuerst Trainer ihre
+                Nummern in den Kontakteinstellungen eintragen lassen.
+              </div>
+            )}
+            {trainerNumbers.map(tr=>(
+              <div key={tr.name} style={{display:"flex",alignItems:"center",gap:10,
+                background:"#f8fafc",borderRadius:11,padding:"10px 13px",
+                marginBottom:7,border:"1px solid #e2e8f0"}}>
+                <Av name={tr.name} sz={32}/>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:700,fontSize:13}}>{tr.name}</div>
+                  <div style={{fontSize:11,color:"#94a3b8"}}>
+                    {"*".repeat(6)+tr.phone.slice(-4)}
+                  </div>
+                </div>
+              </div>
+            ))}
+            {trainerNumbers.length>0&&(
+              <button onClick={()=>{ copy(allNumbers); setTimeout(()=>setStep(2),500); }}
+                style={{width:"100%",padding:"13px",borderRadius:13,border:"none",
+                  background:copied?"#16a34a":"#25D366",color:"#fff",fontWeight:800,
+                  fontSize:14,cursor:"pointer",fontFamily:"inherit",marginTop:8}}>
+                {copied?"Kopiert!":"Alle Nummern kopieren"}
+              </button>
+            )}
+          </>
+        )}
+
+        {step===2&&(
+          <>
+            <div style={{fontSize:11,fontWeight:800,color:"#64748b",
+              marginBottom:10,letterSpacing:.5}}>
+              SCHRITT 2: GRUPPE ERSTELLEN
+            </div>
+            {[
+              "WhatsApp oeffnen",
+              "Oben rechts auf das Chat-Symbol tippen",
+              'Auf "Neue Gruppe" tippen',
+              "Nummern aus Zwischenablage einfuegen ODER Trainer aus Kontakten waehlen",
+              targetPerson&&`Auch ${targetPerson} zur Gruppe hinzufuegen`,
+              `Gruppenname: "${groupName}"`,
+            ].filter(Boolean).map((s,i)=>(
+              <div key={i} style={{display:"flex",alignItems:"flex-start",gap:10,
+                marginBottom:10,padding:"10px 13px",background:"#f8fafc",
+                borderRadius:11,border:"1px solid #e2e8f0"}}>
+                <div style={{width:26,height:26,borderRadius:8,background:"#25D366",
+                  display:"flex",alignItems:"center",justifyContent:"center",
+                  color:"#fff",fontWeight:900,fontSize:13,flexShrink:0}}>
+                  {i+1}
+                </div>
+                <div style={{fontSize:13,color:"#334155",lineHeight:1.5,paddingTop:3}}>
+                  {s}
+                </div>
+              </div>
+            ))}
+            <button onClick={()=>setStep(3)}
+              style={{width:"100%",padding:"13px",borderRadius:13,border:"none",
+                background:"#25D366",color:"#fff",fontWeight:800,
+                fontSize:14,cursor:"pointer",fontFamily:"inherit",marginTop:8}}>
+              Gruppe erstellt - Weiter
+            </button>
+          </>
+        )}
+
+        {step===3&&(
+          <>
+            <div style={{fontSize:11,fontWeight:800,color:"#64748b",
+              marginBottom:10,letterSpacing:.5}}>
+              SCHRITT 3: ERSTE NACHRICHT SENDEN
+            </div>
+            <div style={{background:"#f8fafc",borderRadius:13,padding:"13px 15px",
+              border:"1px solid #e2e8f0",marginBottom:12,
+              fontSize:13,color:"#334155",lineHeight:1.7,fontStyle:"italic"}}>
+              "{introMsg}"
+            </div>
+            <button onClick={()=>copy(introMsg)}
+              style={{width:"100%",padding:"12px",borderRadius:12,
+                border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,
+                fontSize:13,cursor:"pointer",fontFamily:"inherit",marginBottom:9}}>
+              {copied?"Kopiert!":"Nachricht kopieren"}
+            </button>
+            <button onClick={onClose}
+              style={{width:"100%",padding:"13px",borderRadius:13,border:"none",
+                background:"#16a34a",color:"#fff",fontWeight:800,
+                fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
+              Fertig!
+            </button>
+          </>
+        )}
+
+        {step<3&&(
+          <div style={{display:"flex",gap:9,marginTop:14}}>
+            <button onClick={onClose}
+              style={{flex:1,padding:"11px",borderRadius:11,
+                border:"1.5px solid #e2e8f0",background:"#fff",
+                fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+              Abbrechen
+            </button>
+            {step===1&&trainerNumbers.length>0&&(
+              <button onClick={()=>setStep(2)}
+                style={{flex:2,padding:"11px",borderRadius:11,border:"none",
+                  background:"#25D366",color:"#fff",fontWeight:700,
+                  cursor:"pointer",fontFamily:"inherit"}}>
+                Weiter ohne Kopieren
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
 function SetupWizard({ onDone,onBack }) {
   const [step,setStep] = useState(1);
   const [f,setF] = useState({
@@ -4111,7 +5233,7 @@ function SetupWizard({ onDone,onBack }) {
   const finish = () => {
     const cid = "c_"+uid();
     const newClub = {
-      id:cid,slug:f.name.toLowerCase().replace(/\s+/g,"-"),name:f.name.trim(),short:f.short.trim()||f.name.slice(0,4).toUpperCase(),em:"*",logo:null,pri:selSport.col,sec:"#0f172a",adm:hashPw(f.adm),pub:true,dir:true,sport:f.sport,createdAt:new Date().toISOString(),};
+      id:cid,slug:f.name.toLowerCase().replace(/\s+/g,"-"),name:f.name.trim(),short:f.short.trim()||f.name.slice(0,4).toUpperCase(),em:"*",logo:null,pri:selSport.col,sec:"#0f172a",adm:hashPw(f.adm),adminEmail:(f.email||"").toLowerCase().trim(),pub:true,dir:true,sport:f.sport,createdAt:new Date().toISOString(),};
     onDone(newClub);
   };
 
@@ -4376,6 +5498,7 @@ function RolePicker({cl,onRole,onBack}) {
 
 function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
   const t=TH(cl);
+  const [showForgotTr,setShowForgotTr]=useState(false);
   const [step,setStep]=useState("cat");  // cat -> trainer -> pwd
   const [cat,setCat]=useState(null);
   const [sel,setSel]=useState(null);
@@ -4394,7 +5517,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
   const selTr=trainers.find(x=>x.id===sel);
 
   const go=()=>{
-    if(selTr&&pw===selTr.pw){onLogin({...selTr,role:"trainer"});}
+    if(selTr&&!selTr.locked&&checkPw(pw,selTr.pw||"")){onLogin({...selTr,role:"trainer"});}
     else{setErr(true);setTimeout(()=>setErr(false),1800);}
   };
 
@@ -4472,7 +5595,15 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
             placeholder="Passwort..." autoFocus
             style={{width:"100%",padding:"13px 16px",fontSize:16,background:"rgba(255,255,255,.12)",border:`2px solid ${err?"#ff6b6b":pw?"rgba(255,255,255,.4)":"rgba(255,255,255,.2)"}`,borderRadius:13,outline:"none",color:"#fff",marginBottom:10}}/>
           {err&&<FriendlyError type="wrongPassword"/>}
-          {cl.id==="demo"&&<div style={{background:"rgba(255,255,255,.08)",borderRadius:10,padding:"8px 12px",marginBottom:10,fontSize:11,color:"rgba(255,255,255,.6)"}}>Demo: Trainer A = trainer1 | Trainer B = trainer2</div>}
+          {cl.id==="demo"&&<div style={{background:"rgba(255,255,255,.08)",borderRadius:10,padding:"8px 12px",marginBottom:10,fontSize:11,color:"rgba(255,255,255,.6)"}}>Demo: Trainer A = trainer1 | Trainer B = trainer2</div>
+          <button onClick={()=>setShowForgotTr(true)}
+            style={{background:"none",border:"none",color:"rgba(255,255,255,.4)",
+              fontSize:12,cursor:"pointer",fontFamily:"inherit",
+              textDecoration:"underline",padding:0}}>
+            Passwort vergessen?
+          </button>
+          {showForgotTr&&<ForgotPasswordHelp cl={cl} trainers={trainers}
+            forRole="trainer" onBack={()=>setShowForgotTr(false)}/>}}
           <button onClick={go} disabled={!pw.trim()}
             style={{width:"100%",padding:"13px",fontSize:15,fontWeight:800,background:pw.trim()?cl.pri:"rgba(255,255,255,.15)",color:pw.trim()?"#fff":"rgba(255,255,255,.4)",border:"none",borderRadius:13,cursor:pw.trim()?"pointer":"not-allowed",transition:"all .18s"}}>
              Einloggen
@@ -4485,7 +5616,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
 
 function AdminLogin({cl,onLogin,onBack}) {
   const t=TH(cl); const [pw,setPw]=useState(""); const [err,setErr]=useState(false);
-  const go=()=>{ if(pw===cl.adm){onLogin({id:"admin",role:"admin",cid:cl.id,name:"Vereinsadmin"});}else{setErr(true);setTimeout(()=>setErr(false),1800);} };
+  const go=()=>{ if(checkPw(pw,cl.adm||"")){onLogin({id:"admin",role:"admin",cid:cl.id,name:"Vereinsadmin"});}else{setErr(true);setTimeout(()=>setErr(false),1800);} };
   return (
     <div style={{minHeight:"100dvh",background:`linear-gradient(135deg,${t.s},${t.p}66)`,display:"flex",alignItems:"center",justifyContent:"center",padding:22}}>
       <style>{CSS}</style>
@@ -4495,7 +5626,14 @@ function AdminLogin({cl,onLogin,onBack}) {
           <div style={{textAlign:"center",marginBottom:22}}><Logo cl={cl} sz={68} sx={{margin:"0 auto 12px"}}/><h2 style={{fontSize:22,fontWeight:900,color:"#0f172a",margin:"0 0 4px"}}>Vereinsadmin</h2><p style={{color:"#94a3b8",fontSize:13}}>{cl.name}</p></div>
           <Inp label="Admin-Passwort" type="password" val={pw} set={setPw} ph="Passwort..." af cl={cl}/>
           {cl.id==="demo"&&<div style={{background:"#f0fdf4",borderRadius:10,padding:"9px 13px",marginTop:8,fontSize:12,color:"#166534",border:"1px solid #bbf7d0"}}>Demo-Zugangsdaten: Passwort <strong>admin</strong></div>}
+          {showForgot&&<AdminForgotPassword cl={cl} onBack={()=>setShowForgot(false)} onReset={newHash=>{onLogin({id:"admin",role:"admin",cid:cl.id,name:"Vereinsadmin"});}}/>}
           {err&&<FriendlyError type="wrongPassword" onClose={()=>setErr(false)}/>}
+          <button onClick={()=>setShowForgot(true)}
+            style={{background:"none",border:"none",color:"rgba(255,255,255,.5)",
+              fontSize:12,cursor:"pointer",fontFamily:"inherit",
+              textDecoration:"underline",marginTop:4,padding:0}}>
+            Passwort vergessen?
+          </button>
           <div style={{height:14}}/><Btn full ch="Als Admin einloggen" onClick={go} icon="**" v="drk"/>
           
         </div>
@@ -4551,6 +5689,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
   const [tid,setTid]=useState(null);
   const [q,setQ]=useState("");
   const [pwd,setPwd]=useState(""); const [pwdErr,setPwdErr]=useState(false);
+  const [showForgotParent,setShowForgotParent]=useState(false);
   const ct=teams.find(x=>x.id===tid);
   const cats=[...new Set(teams.map(tm=>tm.cat||tm.name))];
   const teamsInCat=cat?teams.filter(tm=>(tm.cat||tm.name)===cat):[];
@@ -4622,12 +5761,21 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
         </div>
         <div style={{background:"rgba(255,255,255,.1)",backdropFilter:"blur(16px)",borderRadius:22,padding:"24px 22px",border:"1px solid rgba(255,255,255,.15)"}}>
           <input type="password" value={pwd} onChange={e=>{setPwd(e.target.value);setPwdErr(false);}}
-            onKeyDown={e=>{if(e.key==="Enter"){if(checkPw(pwd,ct?.pwd||"")){const assigned=(playerProfiles||[]).some(p=>p.mainTid===ct.id);if(assigned)setStep("name");else setStep("locked");}else{setPwdErr(true);setTimeout(()=>setPwdErr(false),1800);}}}}
+            onKeyDown={e=>{if(e.key==="Enter"){if(ct?.locked){setPwdErr(true);}else if(checkPw(pwd,ct?.pwd||"")){const assigned=(playerProfiles||[]).some(p=>p.mainTid===ct.id);if(assigned)setStep("name");else setStep("locked");}else{setPwdErr(true);setTimeout(()=>setPwdErr(false),1800);}}}}
             placeholder="Passwort..." autoFocus
             style={{width:"100%",padding:"13px 16px",fontSize:16,background:"rgba(255,255,255,.12)",border:`2px solid ${pwdErr?"#ff6b6b":pwd?"rgba(255,255,255,.4)":"rgba(255,255,255,.2)"}`,borderRadius:13,outline:"none",color:"#fff",marginBottom:10}}/>
           {pwdErr&&<FriendlyError type="wrongPassword"/>}
+          {showForgotParent&&<ForgotPasswordHelp cl={cl} trainers={trainers}
+            forRole="user" teamId={ct?.id}
+            onBack={()=>setShowForgotParent(false)}/>}
           {cl.id==="demo"&&<div style={{background:"rgba(255,255,255,.1)",borderRadius:10,padding:"8px 12px",marginBottom:10,fontSize:11,color:"rgba(255,255,255,.6)"}}>Demo: G-Jugend = g1 | F-Jugend = f1</div>}
-          <button onClick={()=>{if(checkPw(pwd,ct?.pwd||"")){
+          <button onClick={()=>setShowForgotParent(true)}
+            style={{background:"none",border:"none",color:"rgba(255,255,255,.4)",
+              fontSize:12,cursor:"pointer",fontFamily:"inherit",
+              textDecoration:"underline",marginTop:4,padding:0}}>
+            Passwort vergessen?
+          </button>
+          <button onClick={()=>{if(ct?.locked){setPwdErr(true);}else if(checkPw(pwd,ct?.pwd||"")){
             const assigned=(playerProfiles||[]).some(p=>p.mainTid===ct.id);
             if(assigned) setStep("name");
             else setStep("locked"); // team not yet released
@@ -7456,7 +8604,10 @@ function TrainerCard({ tr, data, onEdit, onDelete }) {
           </div>
         </div>
         <div style={{display:"flex",gap:6}}>
-          {onEdit&&<button onClick={onEdit} style={{width:30,height:30,borderRadius:9,background:"#eff6ff",border:"none",color:"#2563eb",cursor:"pointer",fontSize:13,fontWeight:700}}>E</button>}
+          {onContact&&<button onClick={onContact}
+          style={{width:30,height:30,borderRadius:9,background:"#f0fdf4",
+            border:"none",color:"#16a34a",cursor:"pointer",fontSize:13,fontWeight:700}}>K</button>}
+        {onEdit&&<button onClick={onEdit} style={{width:30,height:30,borderRadius:9,background:"#eff6ff",border:"none",color:"#2563eb",cursor:"pointer",fontSize:13,fontWeight:700}}>E</button>}
           {onDelete&&<button onClick={onDelete} style={{width:30,height:30,borderRadius:9,background:"#fee2e2",border:"none",color:"#dc2626",cursor:"pointer",fontSize:13,fontWeight:700}}>X</button>}
         </div>
       </div>
@@ -7503,6 +8654,8 @@ function TrainersTab({data,cid,save,fire}) {
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
         <div><p style={{fontWeight:900,fontSize:16,color:"#0f172a",margin:0}}>Trainer</p><p style={{fontSize:12,color:"#64748b",marginTop:2,margin:0}}>{myTrs.length} gesamt</p></div>
         <div style={{display:"flex",gap:8}}>
+          <button onClick={()=>setShowGroupHelper(true)}
+            style={{padding:"9px 12px",borderRadius:11,border:"1.5px solid #25D366",background:"#f0fdf4",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit",color:"#166534"}}>WA Gruppe</button>
           <button onClick={()=>setShowBroadcast(true)} style={{padding:"9px 14px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",color:"#475569"}}>Rundschreiben</button>
           <button onClick={openNew} style={{padding:"9px 16px",borderRadius:11,border:"none",background:"#16a34a",color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>+ Neuer Trainer</button>
         </div>
@@ -7513,7 +8666,7 @@ function TrainersTab({data,cid,save,fire}) {
           <p style={{fontSize:13,color:"#94a3b8",margin:0}}>Trainer koennen hier angelegt und Teams zugewiesen werden.</p>
         </div>
       )}
-      {myTrs.map(tr=><TrainerCard key={tr.id} tr={tr} data={data} onEdit={()=>openEdit(tr)} onDelete={()=>del(tr.id)}/>)}
+      {myTrs.map(tr=><TrainerCard key={tr.id} tr={tr} data={data} onContact={()=>setContactSetupFor(tr)} onEdit={()=>openEdit(tr)} onDelete={()=>del(tr.id)}/>)}
       {showForm&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:800,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
           <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"90dvh",overflowY:"auto",padding:"20px 22px 48px"}}>
@@ -9053,6 +10206,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         {tab==="visibility" &&isAdmin&&<VisibilityTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
         {tab==="settings"   &&isAdmin&&<SettingsTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
         {tab==="security"   &&isAdmin&&<SecurityTab data={local} cid={cid} save={save}/>}
+        {tab==="access"     &&isAdmin&&<AccessManagerTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
         {tab==="team"       &&<TeamHub data={local} myTids={myTids} save={save} fire={fire} cl={myClub} session={session}/>}
       </div>
 
