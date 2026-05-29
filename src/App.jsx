@@ -8,7 +8,39 @@ const T = {
   de: {
     back:"<- Zurueck",cancel: "Abbrechen",save: "Speichern",delete: "Loeschen",logout:"Logout",close: "Schliessen",loading: "Laedt...",yes: "Ja",no: "Nein",search:"Suchen...",edit: "Bearbeiten",confirm: "Bestaetigen",next: "Weiter ->",chooseClub:"Welche Mannschaft ist dein Kind?",chooseAge: "In welcher Altersklasse spielt dein Kind?",chooseTeam:"Welche Mannschaft?",whichTrainer: "Welcher Trainer bist du?",forWhichAge:"Fuer welche Jugend bist du Trainer?",loginCode: "Helfer-Code",enterPassword:"Passwort eingeben",wrongPassword: "Falsches Passwort",helperLogin:"Helfer-Zugang",helperHint: "Zugriff auf Spielplaene und Turnier-Uebersichten.",whoAreYou:"Wer bist du?",notInList: "Nicht in der Liste?",loginAs:"Einloggen als",teamOpen: "Team oeffnen",roleParent:"Elternteil",roleParentSub: "Termine sehen & abstimmen",roleHelper:"Helfer",roleHelperSub: "Turnier & Spieltag unterstuetzen",roleTrainer:"Trainer",roleTrainerSub: "Termine meiner Mannschaft",roleAdmin:"Vereinsadmin",roleAdminSub: "Alle Rechte & Einstellungen",tabEvents:"Termine",tabPlayers: "Spieler",tabTemplates: "Vorlagen",tabHelpers:"Helfer",tabJerseys: "Trikots",tabFields: "Platz",tabInbox:"Posteingang",tabChat: "Chat",tabTeams: "Mannschaften",tabTrainers:"Trainer",tabBranding: "Design",tabSettings: "Einstellungen",tabVisibility:"Sichtbarkeit",newEvent:"Neuen Termin anlegen",noEvents: "Noch keine Termine",noEventsHint:"Klicke oben auf "Neuen Termin anlegen\"",upcomingEvents:"Anstehende Termine",pastEvents: "Vergangene Termine",showPast:"Vergangene anzeigen",hidePast: "Vergangene ausblenden",attending:"Ich bin dabei",notAttending: "Nicht dabei",maybe: "Vielleicht",unassigned:"Nicht zugeteilt",open: "Offen",assigned: "Zugeteilt",mainTeam:"Hauptmannschaft",canHelpIn: "Kann aushelfen in",assignTo:"Zu Team zuweisen",recommendation: "Empfehlung naechste Saison",lastSeason:"Letzte Saison gespielt in",notes: "Notizen",jerseyNumber:"Trikotnummer",jerseySize: "Trikotgroesse",jerseyStatus:"Trikot Status",strengths: "Staerken",statistics: "Statistiken",goals:"Tore",assists:"Vorlagen",yellowCards:"Gelb",redCards:"Rot",rating:"Bewertung",position: "Position",foot: "Fuss",male:"Junge",female: "Maedchen",birthYear: "Jahrgang",newSeason:"Neue Saison planen",seasonPlanning: "Saisonplanung",activeSeason:"Aktive Saison",planningStatus: "Planung",archivedStatus: "Archiviert",inbox:"Posteingang",security: "Sicherheit",allOk: "Alles in Ordnung",noRequests:"Keine Anfragen",block: "Blockieren",markRead: "Gelesen",contactClub:"Kontaktieren",sendRequest: "Anfrage senden",requestSent: "Anfrage gesendet!",demoView:"Demo ansehen",createClub: "Verein anlegen",searchClub:"Verein suchen...",allSports: "Alle",onlyWithConsent:"Nur Vereine die zugestimmt haben werden angezeigt",bookField:"Platz buchen",fieldBooking: "Platzbuchung",booked: "Gebucht",free:"Frei",cancelBooking: "Buchung stornieren",writeMessage:"Nachricht schreiben...",send: "Senden",wholeClub:"Gesamter Verein",noMessages: "Noch keine Nachrichten",},en: {
     back:"<- Back",cancel: "Cancel",save: "Save",delete: "Delete",logout:"Logout",close: "Close",loading: "Loading...",yes: "Yes",no: "No",search:"Search...",edit: "Edit",confirm: "Confirm",next: "Next ->",chooseClub:"Which team is your child in?",chooseAge: "Which age group does your child play in?",chooseTeam:"Which team?",whichTrainer: "Which trainer are you?",forWhichAge:"Which age group do you coach?",loginCode: "Helper code",enterPassword:"Enter password",wrongPassword: "Wrong password",helperLogin:"Helper access",helperHint: "Access to schedules and tournament overviews.",whoAreYou:"Who are you?",notInList: "Not in the list?",loginAs:"Log in as",teamOpen: "Open team",roleParent:"Parent",roleParentSub: "View events & vote",roleHelper:"Helper",roleHelperSub: "Support match days & tournaments",roleTrainer:"Coach",roleTrainerSub: "My team's events",roleAdmin:"Club admin",roleAdminSub: "All rights & settings",tabEvents:"Events",tabPlayers: "Players",tabTemplates: "Templates",tabHelpers:"Helpers",tabJerseys: "Jerseys",tabFields: "Pitch",tabInbox:"Inbox",tabChat: "Chat",tabTeams: "Teams",tabTrainers:"Coaches",tabBranding: "Design",tabSettings: "Settings",tabVisibility:"Visibility",newEvent:"Create new event",noEvents: "No events yet",noEventsHint:"Click above to create a new event",upcomingEvents:"Upcoming events",pastEvents: "Past events",showPast:"Show past",hidePast: "Hide past",attending:"I'm coming",notAttending: "Not coming",maybe: "Maybe",unassigned:"Unassigned",open: "Open",assigned: "Assigned",mainTeam:"Main team",canHelpIn: "Can assist in",assignTo:"Assign to team",recommendation: "Recommendation next season",lastSeason:"Last season played in",notes: "Notes",jerseyNumber:"Jersey number",jerseySize: "Jersey size",jerseyStatus:"Jersey status",strengths: "Strengths",statistics: "Statistics",goals:"Goals",assists:"Assists",yellowCards:"Yellow",redCards:"Red",rating:"Rating",position: "Position",foot: "Foot",male:"Boy",female: "Girl",birthYear: "Birth year",newSeason:"Plan new season",seasonPlanning: "Season planning",activeSeason:"Active season",planningStatus: "Planning",archivedStatus: "Archived",inbox:"Inbox",security: "Security",allOk: "All clear",noRequests:"No requests",block: "Block",markRead: "Mark read",contactClub:"Contact",sendRequest: "Send request",requestSent: "Request sent!",demoView:"View demo",createClub: "Create club",searchClub:"Search club...",allSports: "All",onlyWithConsent:"Only clubs that have given consent are shown",bookField:"Book pitch",fieldBooking: "Pitch booking",booked: "Booked",free:"Free",cancelBooking: "Cancel booking",writeMessage:"Write a message...",send: "Send",wholeClub:"Whole club",noMessages: "No messages yet",},nl: {
-    back:"<- Terug",cancel: "Annuleren",save: "Opslaan",delete: "Verwijderen",logout:"Uitloggen",close: "Sluiten",loading: "Laden...",yes: "Ja",no: "Nee",search:"Zoeken...",edit: "Bewerken",confirm: "Bevestigen",next: "Verder ->",chooseClub:"In welk team zit je kind?",chooseAge: "In welke leeftijdsklasse speelt je kind?",chooseTeam:"Welk team?",whichTrainer: "Welke trainer ben jij?",forWhichAge:"Voor welke jeugd ben je trainer?",loginCode: "Helper-code",enterPassword:"Wachtwoord invoeren",wrongPassword: "Verkeerd wachtwoord",helperLogin:"Helper-toegang",helperHint: "Toegang tot schema's en toernooi-overzichten.",whoAreYou:"Wie ben jij?",notInList: "Niet in de lijst?",loginAs:"Inloggen als",teamOpen: "Team openen",roleParent:"Ouder",roleParentSub: "Afspraken zien & stemmen",roleHelper:"Helper",roleHelperSub: "Wedstrijddag & toernooi ondersteunen",roleTrainer:"Trainer",roleTrainerSub: "Afspraken van mijn team",roleAdmin:"Clubbeheerder",roleAdminSub: "Alle rechten & instellingen",tabEvents:"Afspraken",tabPlayers: "Spelers",tabTemplates: "Sjablonen",tabHelpers:"Helpers",tabJerseys: "Shirts",tabFields: "Veld",tabInbox:"Postvak",tabChat: "Chat",tabTeams: "Teams",tabTrainers:"Trainers",tabBranding: "Ontwerp",tabSettings: "Instellingen",tabVisibility:"Zichtbaarheid",newEvent:"Nieuwe afspraak aanmaken",noEvents: "Nog geen afspraken",noEventsHint:"Klik hierboven om een nieuwe afspraak aan te maken",upcomingEvents:"Aankomende afspraken",pastEvents: "Voorbije afspraken",showPast:"Voorbije tonen",hidePast: "Voorbije verbergen",attending:"Ik ben erbij",notAttending: "Niet aanwezig",maybe: "Misschien",unassigned:"Niet toegewezen",open: "Open",assigned: "Toegewezen",mainTeam:"Hoofdteam",canHelpIn: "Kan invallen in",assignTo:"Toewijzen aan team",recommendation: "Aanbeveling volgend seizoen",lastSeason:"Vorig seizoen gespeeld in",notes: "Notities",jerseyNumber:"Shirtnummer",jerseySize: "Shirtmaat",jerseyStatus:"Shirtstatus",strengths: "Kwaliteiten",statistics: "Statistieken",goals:"Doelpunten",assists:"Assists",yellowCards:"Geel",redCards:"Rood",rating:"Beoordeling",position: "Positie",foot: "Voet",male:"Jongen",female: "Meisje",birthYear: "Geboortejaar",newSeason:"Nieuw seizoen plannen",seasonPlanning: "Seizoensplanning",activeSeason:"Actief seizoen",planningStatus: "Planning",archivedStatus: "Gearchiveerd",inbox:"Postvak",security: "Beveiliging",allOk: "Alles in orde",noRequests:"Geen verzoeken",block: "Blokkeren",markRead: "Gelezen",contactClub:"Contact",sendRequest: "Verzoek sturen",requestSent: "Verzoek verstuurd!",demoView:"Demo bekijken",createClub: "Club aanmaken",searchClub:"Club zoeken...",allSports: "Alles",onlyWithConsent:"Alleen clubs die toestemming hebben gegeven worden getoond",bookField:"Veld boeken",fieldBooking: "Veldboeking",booked: "Geboekt",free:"Vrij",cancelBooking: "Boeking annuleren",writeMessage:"Schrijf een bericht...",send: "Versturen",wholeClub:"Hele club",noMessages: "Nog geen berichten",},};
+    back:"<- Terug",cancel: "Annuleren",save: "Opslaan",delete: "Verwijderen",logout:"Uitloggen",close: "Sluiten",loading: "Laden...",yes: "Ja",no: "Nee",search:"Zoeken...",edit: "Bewerken",confirm: "Bevestigen",next: "Verder ->",chooseClub:"In welk team zit je kind?",chooseAge: "In welke leeftijdsklasse speelt je kind?",chooseTeam:"Welk team?",whichTrainer: "Welke trainer ben jij?",forWhichAge:"Voor welke jeugd ben je trainer?",loginCode: "Helper-code",enterPassword:"Wachtwoord invoeren",wrongPassword: "Verkeerd wachtwoord",helperLogin:"Helper-toegang",helperHint: "Toegang tot schema's en toernooi-overzichten.",whoAreYou:"Wie ben jij?",notInList: "Niet in de lijst?",loginAs:"Inloggen als",teamOpen: "Team openen",roleParent:"Ouder",roleParentSub: "Afspraken zien & stemmen",roleHelper:"Helper",roleHelperSub: "Wedstrijddag & toernooi ondersteunen",roleTrainer:"Trainer",roleTrainerSub: "Afspraken van mijn team",roleAdmin:"Clubbeheerder",roleAdminSub: "Alle rechten & instellingen",tabEvents:"Afspraken",tabPlayers: "Spelers",tabTemplates: "Sjablonen",tabHelpers:"Helpers",tabJerseys: "Shirts",tabFields: "Veld",tabInbox:"Postvak",tabChat: "Chat",tabTeams: "Teams",tabTrainers:"Trainers",tabBranding: "Ontwerp",tabSettings: "Instellingen",tabVisibility:"Zichtbaarheid",newEvent:"Nieuwe afspraak aanmaken",noEvents: "Nog geen afspraken",noEventsHint:"Klik hierboven om een nieuwe afspraak aan te maken",upcomingEvents:"Aankomende afspraken",pastEvents: "Voorbije afspraken",showPast:"Voorbije tonen",hidePast: "Voorbije verbergen",attending:"Ik ben erbij",notAttending: "Niet aanwezig",maybe: "Misschien",unassigned:"Niet toegewezen",open: "Open",assigned: "Toegewezen",mainTeam:"Hoofdteam",canHelpIn: "Kan invallen in",assignTo:"Toewijzen aan team",recommendation: "Aanbeveling volgend seizoen",lastSeason:"Vorig seizoen gespeeld in",notes: "Notities",jerseyNumber:"Shirtnummer",jerseySize: "Shirtmaat",jerseyStatus:"Shirtstatus",strengths: "Kwaliteiten",statistics: "Statistieken",goals:"Doelpunten",assists:"Assists",yellowCards:"Geel",redCards:"Rood",rating:"Beoordeling",position: "Positie",foot: "Voet",male:"Jongen",female: "Meisje",birthYear: "Geboortejaar",newSeason:"Nieuw seizoen plannen",seasonPlanning: "Seizoensplanning",activeSeason:"Actief seizoen",planningStatus: "Planning",archivedStatus: "Gearchiveerd",inbox:"Postvak",security: "Beveiliging",allOk: "Alles in orde",noRequests:"Geen verzoeken",block: "Blokkeren",markRead: "Gelezen",contactClub:"Contact",sendRequest: "Verzoek sturen",requestSent: "Verzoek verstuurd!",demoView:"Demo bekijken",createClub: "Club aanmaken",searchClub:"Club zoeken...",allSports: "Alles",onlyWithConsent:"Alleen clubs die toestemming hebben gegeven worden getoond",bookField:"Veld boeken",fieldBooking: "Veldboeking",booked: "Geboekt",free:"Vrij",cancelBooking: "Boeking annuleren",writeMessage:"Schrijf een bericht...",send: "Versturen",wholeClub:"Hele club",noMessages: "Nog geen berichten",},  ar: {
+    back:"<- Zurueck",cancel:"Alga",save:"Hifz",delete:"Hazf",logout:"Khuruj",close:"Ghalq",
+    loading:"Jari...",yes:"Na3am",no:"La",search:"Bahth...",edit:"Ta3dil",
+    chooseClub:"Fi ayy fariq tifluk?",chooseAge:"Fi ayy fi2a sinniyya?",chooseTeam:"Ayy fariq?",
+    whichTrainer:"Man anta almudrib?",forWhichAge:"Li ayy shabab anta mudrib?",
+    loginCode:"Ramz almusa3id",enterPassword:"Adkhil kalima almurur",
+    wrongPassword:"Kalima almurur khata",helperLogin:"Wusul almusa3id",
+    whoAreYou:"Man anta?",notInList:"Laysa fi alqa2ima?",loginAs:"Dakhil bisifattika",
+    teamOpen:"Iftah alfariq",roleParent:"Wali alamr",roleParentSub:"Ru2ya almawa3id & altaswit",
+    roleHelper:"Musa3id",roleTrainer:"Mudrib",roleAdmin:"Mudawwin alnadiya",
+    tabEvents:"Mawa3id",tabPlayers:"Laebun",tabChat:"Dardasha",tabSettings:"I3dadat",
+    attending:"Tifliy sa-yahdhur",notAttending:"Lan yahdhur",
+    newEvent:"Maw3id jadid",noEvents:"La mawa3id ba3d",
+    upcomingEvents:"Almawa3id alqadima",search:"Bahth...",
+    male:"Zakar",female:"Untha",send:"Irsal",writeMessage:"Uktub risala...",
+  },
+  tr: {
+    back:"<- Geri",cancel:"Iptal",save:"Kaydet",delete:"Sil",logout:"Cikis",close:"Kapat",
+    loading:"Yukleniyor...",yes:"Evet",no:"Hayir",search:"Ara...",edit:"Duzenle",
+    chooseClub:"Cocugunuz hangi takimda?",chooseAge:"Hangi yas grubunda?",chooseTeam:"Hangi takim?",
+    whichTrainer:"Hangi antrenorusunuz?",forWhichAge:"Hangi genclik icin antrenorusunuz?",
+    loginCode:"Yardimci kodu",enterPassword:"Sifre girin",
+    wrongPassword:"Yanlis sifre",helperLogin:"Yardimci erisimi",
+    whoAreYou:"Kimsiniz?",notInList:"Listede yok musunuz?",loginAs:"Olarak giris yap",
+    teamOpen:"Takimi ac",roleParent:"Veli",roleParentSub:"Etkinlikleri gor ve oy ver",
+    roleHelper:"Yardimci",roleTrainer:"Antrenor",roleAdmin:"Kuluep yoneticisi",
+    tabEvents:"Etkinlikler",tabPlayers:"Oyuncular",tabChat:"Sohbet",tabSettings:"Ayarlar",
+    attending:"Cocugum katilacak",notAttending:"Katilmayacak",
+    newEvent:"Yeni etkinlik",noEvents:"Henuz etkinlik yok",
+    upcomingEvents:"Yaklasan etkinlikler",search:"Ara...",
+    male:"Erkek",female:"Kiz",send:"Gonder",writeMessage:"Mesaj yaz...",
+  },
+};
 function useT() {
   const lang = useLang();
   return (key,fallback) => T[lang]?.[key] ?? T.de[key] ?? fallback ?? key;
@@ -64,7 +96,22 @@ const localGet = () => { try { const v=localStorage.getItem(SK); return v?JSON.p
 const localSet = d => { try { localStorage.setItem(SK,JSON.stringify(d)); } catch {} };
 
 const sess = {
-  get: () => { try { return JSON.parse(sessionStorage.getItem(SS)||"null"); } catch { return null; } },set: d  => { try { sessionStorage.setItem(SS,JSON.stringify(d)); } catch {} },del: () => { try { sessionStorage.removeItem(SS); } catch {} },};
+  get: () => {
+    try {
+      const s = sessionStorage.getItem(SS) || localStorage.getItem(SS+"_persist");
+      return s ? JSON.parse(s) : null;
+    } catch { return null; }
+  },
+  set: (d, persist=false) => {
+    try {
+      sessionStorage.setItem(SS, JSON.stringify(d));
+      if(persist) localStorage.setItem(SS+"_persist", JSON.stringify({...d,_exp:Date.now()+30*24*60*60*1000}));
+    } catch {}
+  },
+  del: () => {
+    try { sessionStorage.removeItem(SS); localStorage.removeItem(SS+"_persist"); } catch {}
+  },
+};
 
 function SupabaseSetup({ onDone,onSkip }) {
   const [url,setUrl]       = useState(getConfig()?.url||"");
@@ -155,6 +202,15 @@ function SupabaseSetup({ onDone,onSkip }) {
 }
 
 const uid   = () => Math.random().toString(36).slice(2,9);
+
+const addMins = (time, mins) => {
+  const [h,m] = (time||"09:00").split(":").map(Number);
+  const total = h*60 + m + (mins||0);
+  return String(Math.floor(total/60)%24).padStart(2,"0")+":"+String(total%60).padStart(2,"0");
+};
+const hashPw = (pw) => { let h=0; for(let i=0;i<pw.length;i++){h=Math.imul(31,h)+pw.charCodeAt(i)|0;} return "h"+Math.abs(h).toString(36); };
+const checkPw = (input,stored) => { if(!stored)return false; if(stored.startsWith("h"))return hashPw(input)===stored; return input===stored; };
+
 const now   = () => new Date().toISOString().slice(0,10);
 const addD  = (iso,n) => { const d=new Date(iso+"T12:00:00"); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
 const addW  = (iso,n) => addD(iso,n*7);
@@ -168,42 +224,56 @@ const contrast = hex => { const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.sli
 const mix = (hex,p) => { let r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16); const m=c=>Math.min(255,Math.floor(c+(255-c)*(p/100))); return `#${m(r).toString(16).padStart(2,"0")}${m(g).toString(16).padStart(2,"0")}${m(b).toString(16).padStart(2,"0")}`; };
 
 const ET = {
-  training:     { label:"Training",icon:"Kick",col:"#16a34a",bg:"#dcfce7" },heimspiel:    { label:"Heimspiel",icon:"Heim",col:"#2563eb",bg:"#dbeafe" },auswarts:     { label:"Auswaertsspiel",icon:"Bus",col:"#d97706",bg:"#fef3c7" },freundschaft: { label:"Freundschaftsspiel",icon:"Hand",col:"#7c3aed",bg:"#ede9fe" },turnier:      { label:"Turnier",icon:"Pokal",col:"#dc2626",bg:"#fee2e2" },event:        { label:"Sondertermin",icon:"Fest",col:"#0891b2",bg:"#e0f2fe" },};
+  training:     { label:"Training",    icon:"TR", col:"#16a34a", bg:"#dcfce7" },
+  heimspiel:    { label:"Heimspiel",icon:"Heim",col:"#2563eb",bg:"#dbeafe" },auswarts:     { label:"Auswaertsspiel",icon:"Bus",col:"#d97706",bg:"#fef3c7" },freundschaft: { label:"Freundschaftsspiel",icon:"Hand",col:"#7c3aed",bg:"#ede9fe" },turnier:      { label:"Turnier",icon:"Pokal",col:"#dc2626",bg:"#fee2e2" },event:        { label:"Sondertermin",icon:"Fest",col:"#0891b2",bg:"#e0f2fe" },};
 
 function seed() {
-  const t = now();
   return {
-    _v: 12,helpers: [],chats: [],seasons: [
-      { id:"s2526",label:"2025/2026",status:"active" }
-    ],activeSeason:"s2526",fields: [
-      { id:"f_main",cid:"sus",name:"Hauptplatz",surface:"Rasen",segments:4 },{ id:"f_neben",cid:"sus",name:"Nebenplatz",surface:"Rasen",segments:4 },{ id:"f_kunst",cid:"sus",name:"Kunstrasenplatz",surface:"Kunstrasen",segments:4 },],bookings: [],contactRequests: [],// {id,cid,fromName,fromEmail,msg,ts,read,blocked,ip}
-    securityLog: [],// {id,cid,type,ts,detail,read}
-    playerProfiles: [],
+    _v: 13,
+    helpers: [], chats: [], messages: [], events: [], bookings: [],
+    contactRequests: [], securityLog: [], playerProfiles: [],
+    seasons: [{ id:"s2526", label:"2025/2026", status:"active" }],
+    activeSeason: "s2526",
+    fields: [],
+    players: {},
+    pollTemplates: [],
     clubs: [
-      { id:"demo",slug:"demo-verein",name:"Demo Verein",short:"Demo",em:"*",logo:null,pri:"#16a34a",sec:"#052e16",adm:"admin",pub:false,dir:false,sport:"fussball" },
+      { id:"demo", slug:"demo-verein", name:"Demo Verein", short:"Demo", em:"D",
+        logo:null, pri:"#16a34a", sec:"#052e16", adm:"admin",
+        pub:false, dir:false, sport:"fussball",
+        createdAt:"2025-01-01T00:00:00.000Z" }
     ],
     teams: [
-      { id:"demo_g",cid:"demo",name:"G-Jugend",icon:"G",col:"#16a34a",pub:true,pwd:"g1",cat:"G-Jugend",years:"2018/19" },
-      { id:"demo_f",cid:"demo",name:"F-Jugend",icon:"F",col:"#2563eb",pub:true,pwd:"f1",cat:"F-Jugend",years:"2016/17" },
+      { id:"demo_g", cid:"demo", name:"G-Jugend", icon:"G", col:"#16a34a",
+        pub:true, pwd:"g1", cat:"G-Jugend", years:"2018/19" },
+      { id:"demo_f1", cid:"demo", name:"F-Jugend 1", icon:"F", col:"#2563eb",
+        pub:true, pwd:"f1", cat:"F-Jugend", years:"2016/17" },
+      { id:"demo_e", cid:"demo", name:"E-Jugend", icon:"E", col:"#7c3aed",
+        pub:true, pwd:"e1", cat:"E-Jugend", years:"2014/15" },
+      { id:"demo_sen", cid:"demo", name:"Senioren", icon:"S", col:"#d97706",
+        pub:true, pwd:"sen1", cat:"Senioren", years:"" },
+      { id:"demo_ah", cid:"demo", name:"Alt-Herren", icon:"AH", col:"#64748b",
+        pub:true, pwd:"ah1", cat:"Alt-Herren", years:"" }
     ],
     trainers: [
-      { id:"dt1",cid:"demo",name:"Trainer A",role:"Trainer",tids:["demo_g"],pw:"trainer1",phone:"",email:"",adm:false },
-      { id:"dt2",cid:"demo",name:"Trainer B",role:"Trainer",tids:["demo_f"],pw:"trainer2",phone:"",email:"",adm:false },
-    ],
-    players: {},
-    events: [],
-    messages: [],
-    pollTemplates: [
-      { id:"pt1",cid:"demo",name:"Heimspiel Verpflegung",icon:"*",items:[{id:"i1",txt:"Wasser",max:null},{id:"i2",txt:"Apfelschorle",max:null},{id:"i3",txt:"Muffins",max:3},{id:"i4",txt:"Obst",max:null}] },
-      { id:"pt2",cid:"demo",name:"Helfer gesucht",icon:"*",items:[{id:"i1",txt:"Aufbau",max:2},{id:"i2",txt:"Abbau",max:2},{id:"i3",txt:"Schiedsrichter",max:1}] },
-    ],
-
+      { id:"dt1", cid:"demo", name:"Trainer A", role:"Trainer",
+        tids:["demo_g","demo_f1"], pw:"trainer1", phone:"", email:"" },
+      { id:"dt2", cid:"demo", name:"Trainer B", role:"Trainer",
+        tids:["demo_e","demo_sen"], pw:"trainer2", phone:"", email:"" }
+    ]
+  };
+}
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif;background:#f0f4f8;overscroll-behavior:none}
-button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+html{overflow-x:hidden;touch-action:manipulation}
+html,body{height:100%;max-width:100vw;overflow-x:hidden;font-family:'Plus Jakarta Sans',sans-serif;background:#f0f4f8;overscroll-behavior:none}
+button{touch-action:manipulation;cursor:pointer}
+button,select{font-family:'Plus Jakarta Sans',sans-serif;font-size:inherit}
+input,textarea{font-family:'Plus Jakarta Sans',sans-serif;font-size:16px !important}
 input::placeholder,textarea::placeholder{color:#94a3b8}
+img{max-width:100%;height:auto}
+#root{max-width:100vw;overflow-x:hidden}
 @keyframes up    {from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
 @keyframes in    {from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
 @keyframes down  {from{transform:translateY(100%)}to{transform:none}}
@@ -224,6 +294,79 @@ const TH = cl => {
   return { p,s:cl?.sec||"#052e16",ct:contrast(p),li:mix(p,85),logo:cl?.logo||null,em:cl?.em||"*" };
 };
 
+
+
+function ChangePasswordModal({ cl, onSave, onClose }) {
+  const t = TH(cl);
+  const [oldPw, setOldPw] = React.useState("");
+  const [newPw, setNewPw] = React.useState("");
+  const [newPw2, setNewPw2] = React.useState("");
+  const [err, setErr] = React.useState("");
+  const save = () => {
+    if(!checkPw(oldPw, cl.adm||"")) { setErr("Altes Passwort falsch"); return; }
+    if(newPw.length < 4) { setErr("Mindestens 4 Zeichen"); return; }
+    if(newPw !== newPw2) { setErr("Passwoerter stimmen nicht ueberein"); return; }
+    onSave(hashPw(newPw));
+  };
+  return (
+    <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:900,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+      <div style={{background:"#fff",borderRadius:18,padding:"24px",width:"100%",maxWidth:380}}>
+        <h3 style={{fontWeight:900,fontSize:18,marginBottom:16}}>Passwort aendern</h3>
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          <input type="password" value={oldPw} onChange={e=>setOldPw(e.target.value)} placeholder="Aktuelles Passwort"
+            style={{padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
+          <input type="password" value={newPw} onChange={e=>setNewPw(e.target.value)} placeholder="Neues Passwort"
+            style={{padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
+          <input type="password" value={newPw2} onChange={e=>setNewPw2(e.target.value)} placeholder="Neues Passwort wiederholen"
+            style={{padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
+          {err&&<div style={{background:"#fef2f2",borderRadius:10,padding:"9px 13px",fontSize:13,color:"#dc2626"}}>{err}</div>}
+        </div>
+        <div style={{display:"flex",gap:9,marginTop:16}}>
+          <button onClick={onClose} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
+          <button onClick={save} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:t.p,color:"#fff",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Speichern</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+function OnlineStatus() {
+  const [online, setOnline] = React.useState(navigator.onLine);
+  React.useEffect(()=>{
+    const on=()=>setOnline(true); const off=()=>setOnline(false);
+    window.addEventListener("online",on); window.addEventListener("offline",off);
+    return()=>{window.removeEventListener("online",on);window.removeEventListener("offline",off);};
+  },[]);
+  if(online) return null;
+  return (
+    <div style={{position:"fixed",top:0,left:0,right:0,zIndex:9999,background:"#dc2626",color:"#fff",
+      textAlign:"center",fontSize:12,fontWeight:700,padding:"6px"}}>
+      Offline - Daten werden lokal gespeichert
+    </div>
+  );
+}
+
+function exportICS(events, clName) {
+  const lines = [
+    "BEGIN:VCALENDAR","VERSION:2.0",
+    "PRODID:-//VereinsApp//DE",
+    "CALNAME:"+clName
+  ];
+  events.forEach(ev => {
+    const dt = (ev.date||"").replace(/-/g,"");
+    const tm = (ev.time||"").replace(/:/g,"");
+    lines.push("BEGIN:VEVENT");
+    lines.push("DTSTART:" + dt + (tm?"T"+tm+"00":""));
+    lines.push("SUMMARY:" + (ev.title||"Termin"));
+    lines.push("DESCRIPTION:" + (ev.location||""));
+    lines.push("END:VEVENT");
+  });
+  lines.push("END:VCALENDAR");
+  const blob = new Blob([lines.join("\r\n")], {type:"text/calendar"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "vereinstermine.ics";
+  a.click();
+}
 function Logo({cl,sz=48,sx={}}) {
   const t=TH(cl);
   if(t.logo) return <img src={t.logo} alt="" style={{width:sz,height:sz,borderRadius:sz*.22,objectFit:"cover",flexShrink:0,...sx}}/>;
@@ -305,7 +448,7 @@ function ContactForm({ cl, onSend, onClose }) {
   if(sent) return <div style={{minHeight:"100dvh",background:"#f0fdf4",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:14,padding:24}}><div style={{fontSize:48}}>ok</div><p style={{fontWeight:800,fontSize:18}}>Anfrage gesendet!</p><button onClick={onClose} style={{padding:"12px 24px",borderRadius:12,border:"none",background:t.p,color:"#fff",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Schliessen</button></div>;
   return (
     <div style={{minHeight:"100dvh",background:"#f0f4f8",padding:"24px 20px"}}>
-      <style>{CSS}</style>
+      <style>{CSS}</style><OnlineStatus/>
       <button onClick={onClose} style={{background:"none",border:"none",color:"#64748b",fontWeight:700,fontSize:14,cursor:"pointer",marginBottom:16}}>Abbrechen</button>
       <div style={{background:"#fff",borderRadius:18,padding:"20px"}}>
         <div style={{fontWeight:900,fontSize:18,marginBottom:16}}>{cl.name} kontaktieren</div>
@@ -447,6 +590,3514 @@ function InboxTab({ data,cid,save,fire,cl }) {
   );
 }
 
+
+/*  ONBOARDING WIZARD (Admin - erster Login)  */
+function OnboardingWizard({ cl, data, save, fire, onDone }) {
+  const t = TH(cl);
+  const [step, setStep] = useState(1);
+  const STEPS = 5;
+  const SPORT_CATS = {
+    fussball: [
+      {id:"bambinis",label:"Bambinis",years:"U6"},
+      {id:"g_jug",label:"G-Jugend",years:"U7"},
+      {id:"f_jug",label:"F-Jugend",years:"U8-U9"},
+      {id:"e_jug",label:"E-Jugend",years:"U10-U11"},
+      {id:"d_jug",label:"D-Jugend",years:"U12-U13"},
+      {id:"c_jug",label:"C-Jugend",years:"U14-U15"},
+      {id:"b_jug",label:"B-Jugend",years:"U16-U17"},
+      {id:"a_jug",label:"A-Jugend",years:"U18-U19"},
+      {id:"senioren",label:"1. Senioren",years:"Aktive"},
+      {id:"senioren2",label:"2. Senioren",years:"Aktive"},
+      {id:"senioren3",label:"3. Senioren",years:"Aktive"},
+      {id:"altherren",label:"Alt-Herren",years:"Ue32"},
+      {id:"frauen",label:"Frauen",years:"Aktive"},
+      {id:"maedchen",label:"Maedchen",years:"Jugend"},
+    ],
+    handball: [
+      {id:"minis",label:"Mini-Handball",years:"U6-U8"},
+      {id:"e_jug",label:"E-Jugend",years:"U10"},
+      {id:"d_jug",label:"D-Jugend",years:"U12"},
+      {id:"c_jug",label:"C-Jugend",years:"U14"},
+      {id:"b_jug",label:"B-Jugend",years:"U16"},
+      {id:"a_jug",label:"A-Jugend",years:"U18"},
+      {id:"senioren",label:"Senioren",years:"Aktive"},
+      {id:"frauen",label:"Frauen",years:"Aktive"},
+    ],
+    tennis: [
+      {id:"kinder",label:"Kinder",years:"U10"},
+      {id:"jugend",label:"Jugend",years:"U18"},
+      {id:"erwachsene",label:"Erwachsene",years:"Aktive"},
+      {id:"senioren",label:"Senioren",years:"Ue60"},
+    ],
+    default: [
+      {id:"jugend",label:"Jugend",years:""},
+      {id:"erwachsene",label:"Erwachsene",years:""},
+      {id:"senioren",label:"Senioren",years:""},
+    ]
+  };
+  const cats = SPORT_CATS[cl.sport||"fussball"] || SPORT_CATS.default;
+  const TEAM_COLORS = ["#16a34a","#2563eb","#d97706","#7c3aed","#dc2626","#0891b2","#059669","#ea580c"];
+
+  const [selCats, setSelCats] = useState([]);
+  const [teamCounts, setTeamCounts] = useState({});
+  const [trainerName, setTrainerName] = useState("");
+  const [trainerPw, setTrainerPw] = useState("");
+  const [fieldName, setFieldName] = useState("Hauptplatz");
+  const [fieldSurface, setFieldSurface] = useState("Rasen");
+
+  const toggleCat = id => {
+    const n = selCats.includes(id) ? selCats.filter(x=>x!==id) : [...selCats,id];
+    setSelCats(n);
+    if(!teamCounts[id]) setTeamCounts(prev=>({...prev,[id]:1}));
+  };
+
+  const finish = () => {
+    const newTeams = selCats.flatMap((catId,ci) => {
+      const cat = cats.find(x=>x.id===catId);
+      const cnt = teamCounts[catId]||1;
+      return Array.from({length:cnt},(_,i)=>({
+        id: uid(), cid: cl.id,
+        name: cnt===1 ? cat.label : cat.label+" "+(i+1),
+        icon: cat.label.slice(0,2).toUpperCase(),
+        col: TEAM_COLORS[(ci*cnt+i) % TEAM_COLORS.length],
+        pub: true, pwd: catId.slice(0,2)+(i+1),
+        cat: cat.label, years: cat.years
+      }));
+    });
+    const newTrainers = trainerName.trim() ? [{
+      id: uid(), cid: cl.id, name: trainerName.trim(),
+      role: "Trainer", tids: newTeams.slice(0,1).map(x=>x.id),
+      pw: hashPw(trainerPw||"trainer"), phone: "", email: ""
+    }] : [];
+    const newFields = fieldName.trim() ? [{
+      id: uid(), cid: cl.id, name: fieldName.trim(),
+      surface: fieldSurface, segments: 4
+    }] : [];
+    const updClubs = (data.clubs||[]).map(x=>x.id===cl.id?{...x,onboarded:true}:x);
+    save({
+      ...data, clubs: updClubs,
+      teams: [...(data.teams||[]),...newTeams],
+      trainers: [...(data.trainers||[]),...newTrainers],
+      fields: [...(data.fields||[]),...newFields],
+    });
+    fire("Verein eingerichtet - Los geht es!");
+    onDone();
+  };
+
+  const ok = () => {
+    if(step===2) return selCats.length>0;
+    return true;
+  };
+
+  const pct = Math.round((step/STEPS)*100);
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"linear-gradient(160deg,#0f172a,#052e16 60%)",zIndex:980,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"20px"}}>
+      <style>{`@keyframes down{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:none}}`}</style>
+      <div style={{width:"100%",maxWidth:480,background:"#fff",borderRadius:24,overflow:"hidden",animation:"down .3s ease",maxHeight:"90dvh",display:"flex",flexDirection:"column"}}>
+        {/* Header */}
+        <div style={{background:`linear-gradient(135deg,${t.s||"#052e16"},${t.p})`,padding:"20px 22px 16px",flexShrink:0}}>
+          <div style={{color:"rgba(255,255,255,.6)",fontSize:11,fontWeight:700,marginBottom:4}}>
+            SCHRITT {step} VON {STEPS}
+          </div>
+          <div style={{color:"#fff",fontWeight:900,fontSize:20,marginBottom:12}}>
+            {["","Willkommen!","Abteilungen","Teams","Trainer","Spielfeld"][step]}
+          </div>
+          <div style={{height:5,background:"rgba(255,255,255,.2)",borderRadius:99}}>
+            <div style={{height:"100%",background:"rgba(255,255,255,.9)",borderRadius:99,width:pct+"%",transition:"width .4s"}}/>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div style={{flex:1,overflowY:"auto",padding:"20px 22px 8px"}}>
+
+          {step===1&&(
+            <div>
+              <div style={{textAlign:"center",marginBottom:20}}>
+                <div style={{width:72,height:72,borderRadius:20,background:t.p+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:36,margin:"0 auto 12px"}}>{cl.em||"D"}</div>
+                <h2 style={{fontWeight:900,fontSize:22,color:"#0f172a"}}>{cl.name}</h2>
+                <p style={{color:"#64748b",fontSize:14,marginTop:6,lineHeight:1.6}}>
+                  Richte deinen Verein in wenigen Schritten ein.
+                  Das dauert ca. 3 Minuten.
+                </p>
+              </div>
+              <div style={{background:"#f0fdf4",borderRadius:14,padding:"14px 16px",border:"1.5px solid #bbf7d0"}}>
+                <div style={{fontWeight:700,fontSize:13,color:"#166534",marginBottom:8}}>Was wir einrichten:</div>
+                {["Abteilungen und Teams","Ersten Trainer anlegen","Spielfeld konfigurieren"].map((item,i)=>(
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+                    <div style={{width:20,height:20,borderRadius:"50%",background:"#16a34a",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:11,fontWeight:800,flexShrink:0}}>{i+1}</div>
+                    <span style={{fontSize:13,color:"#334155"}}>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {step===2&&(
+            <div>
+              <p style={{color:"#64748b",fontSize:13,marginBottom:14,lineHeight:1.5}}>
+                Welche Abteilungen gibt es in deinem Verein? Du kannst spaeter weitere hinzufuegen.
+              </p>
+              <div style={{display:"flex",flexDirection:"column",gap:7}}>
+                {cats.map(cat=>{
+                  const sel = selCats.includes(cat.id);
+                  return (
+                    <div key={cat.id} onClick={()=>toggleCat(cat.id)}
+                      style={{display:"flex",alignItems:"center",gap:12,padding:"11px 14px",borderRadius:13,border:`2px solid ${sel?t.p:"#e2e8f0"}`,background:sel?t.p+"10":"#fff",cursor:"pointer",transition:"all .15s"}}>
+                      <div style={{width:32,height:32,borderRadius:9,background:sel?t.p:"#f1f5f9",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:12,color:sel?"#fff":"#64748b",flexShrink:0}}>
+                        {cat.label.slice(0,2).toUpperCase()}
+                      </div>
+                      <div style={{flex:1}}>
+                        <div style={{fontWeight:700,fontSize:14,color:sel?t.p:"#334155"}}>{cat.label}</div>
+                        {cat.years&&<div style={{fontSize:11,color:"#94a3b8"}}>{cat.years}</div>}
+                      </div>
+                      <div style={{width:20,height:20,borderRadius:"50%",border:`${sel?"6px":"2px"} solid ${sel?t.p:"#cbd5e1"}`,transition:"all .2s",flexShrink:0}}/>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {step===3&&(
+            <div>
+              <p style={{color:"#64748b",fontSize:13,marginBottom:14,lineHeight:1.5}}>
+                Wie viele Mannschaften gibt es pro Abteilung?
+              </p>
+              {selCats.map(catId=>{
+                const cat = cats.find(x=>x.id===catId);
+                const cnt = teamCounts[catId]||1;
+                return (
+                  <div key={catId} style={{background:"#fff",borderRadius:13,padding:"13px 16px",border:"1.5px solid #e2e8f0",marginBottom:10}}>
+                    <div style={{fontWeight:700,fontSize:14,color:"#0f172a",marginBottom:8}}>{cat.label}</div>
+                    <div style={{display:"flex",alignItems:"center",gap:12}}>
+                      <button onClick={()=>setTeamCounts(p=>({...p,[catId]:Math.max(1,cnt-1)}))}
+                        style={{width:36,height:36,borderRadius:10,border:"1.5px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontSize:18,fontWeight:800,color:"#64748b"}}>-</button>
+                      <div style={{flex:1,textAlign:"center"}}>
+                        <div style={{fontWeight:900,fontSize:26,color:t.p,lineHeight:1}}>{cnt}</div>
+                        <div style={{fontSize:11,color:"#94a3b8",marginTop:2}}>
+                          {cnt===1 ? cat.label+" 1" : Array.from({length:cnt},(_,i)=>cat.label+" "+(i+1)).join(", ")}
+                        </div>
+                      </div>
+                      <button onClick={()=>setTeamCounts(p=>({...p,[catId]:Math.min(9,cnt+1)}))}
+                        style={{width:36,height:36,borderRadius:10,border:"1.5px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontSize:18,fontWeight:800,color:"#64748b"}}>+</button>
+                    </div>
+                  </div>
+                );
+              })}
+              <div style={{background:"#eff6ff",borderRadius:12,padding:"11px 14px",fontSize:12,color:"#1d4ed8",lineHeight:1.5}}>
+                Jede Mannschaft bekommt automatisch einen Eltern-Zugangscode.
+                Du kannst ihn spaeter anpassen.
+              </div>
+            </div>
+          )}
+
+          {step===4&&(
+            <div>
+              <p style={{color:"#64748b",fontSize:13,marginBottom:14,lineHeight:1.5}}>
+                Wer ist der erste Trainer? (Optional - du kannst das spaeter machen)
+              </p>
+              <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                <input value={trainerName} onChange={e=>setTrainerName(e.target.value)}
+                  placeholder="Name des Trainers (z.B. Max Muster)"
+                  style={{padding:"12px 14px",fontSize:14,border:`1.5px solid ${trainerName?"#16a34a":"#e2e8f0"}`,borderRadius:12,outline:"none"}}/>
+                <input type="password" value={trainerPw} onChange={e=>setTrainerPw(e.target.value)}
+                  placeholder="Passwort fuer den Trainer"
+                  style={{padding:"12px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none"}}/>
+                {trainerName&&!trainerPw&&<div style={{fontSize:12,color:"#d97706",background:"#fef3c7",borderRadius:9,padding:"8px 12px"}}>
+                  Bitte auch ein Passwort vergeben.
+                </div>}
+              </div>
+              <button onClick={()=>{ setTrainerName(""); setTrainerPw(""); setStep(5); }}
+                style={{marginTop:12,background:"none",border:"none",color:"#94a3b8",fontSize:13,cursor:"pointer",textDecoration:"underline"}}>
+                Ueberspringen - spaeter hinzufuegen
+              </button>
+            </div>
+          )}
+
+          {step===5&&(
+            <div>
+              <p style={{color:"#64748b",fontSize:13,marginBottom:14,lineHeight:1.5}}>
+                Habt ihr einen Sportplatz oder eine Halle? (Optional)
+              </p>
+              <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                <input value={fieldName} onChange={e=>setFieldName(e.target.value)}
+                  placeholder="z.B. Hauptplatz, Sporthalle"
+                  style={{padding:"12px 14px",fontSize:14,border:`1.5px solid ${fieldName?"#16a34a":"#e2e8f0"}`,borderRadius:12,outline:"none"}}/>
+                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                  {["Rasen","Kunstrasen","Halle","Sand","Asche"].map(s=>(
+                    <button key={s} onClick={()=>setFieldSurface(s)}
+                      style={{padding:"8px 14px",borderRadius:10,border:`2px solid ${fieldSurface===s?t.p:"#e2e8f0"}`,background:fieldSurface===s?t.p:"#fff",color:fieldSurface===s?"#fff":"#334155",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div style={{background:"#f0fdf4",borderRadius:12,padding:"12px 14px",border:"1.5px solid #bbf7d0",marginTop:16,fontSize:12,color:"#166534",lineHeight:1.6}}>
+                Zusammenfassung:<br/>
+                {selCats.length} Abteilungen, {selCats.reduce((s,id)=>s+(teamCounts[id]||1),0)} Teams
+                {trainerName&&`, Trainer: ${trainerName}`}
+                {fieldName&&`, Platz: ${fieldName}`}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Navigation */}
+        <div style={{padding:"12px 22px 32px",borderTop:"1px solid #f1f5f9",display:"flex",gap:10,flexShrink:0}}>
+          {step>1
+            ? <button onClick={()=>setStep(s=>s-1)} style={{flex:1,padding:"13px",borderRadius:13,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Zurueck</button>
+            : <div style={{flex:1}}/>
+          }
+          {step<STEPS
+            ? <button onClick={()=>ok()&&setStep(s=>s+1)} disabled={!ok()}
+                style={{flex:2,padding:"13px",borderRadius:13,border:"none",background:ok()?t.p:"#e2e8f0",color:ok()?"#fff":"#94a3b8",fontWeight:800,fontSize:15,cursor:ok()?"pointer":"default",fontFamily:"inherit",transition:"all .2s"}}>
+                Weiter
+              </button>
+            : <button onClick={finish}
+                style={{flex:2,padding:"13px",borderRadius:13,border:"none",background:t.p,color:"#fff",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit",boxShadow:`0 4px 20px ${t.p}44`}}>
+                Verein einrichten!
+              </button>
+          }
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/*  LEGAL / IMPRESSUM / DATENSCHUTZ  */
+function LegalPage({ onBack }) {
+  const [tab, setTab] = useState("imprint"); // imprint | privacy | terms
+  return (
+    <div style={{minHeight:"100dvh",background:"#f0f4f8",display:"flex",flexDirection:"column"}}>
+      <div style={{background:"#fff",padding:"16px 20px",borderBottom:"1px solid #e2e8f0",display:"flex",alignItems:"center",gap:12}}>
+        <button onClick={onBack} style={{width:36,height:36,borderRadius:10,background:"#f1f5f9",border:"none",cursor:"pointer",fontSize:18,fontWeight:700}}>{"<"}</button>
+        <h1 style={{fontWeight:900,fontSize:17,color:"#0f172a"}}>Rechtliches</h1>
+      </div>
+      <div style={{display:"flex",gap:0,borderBottom:"1px solid #e2e8f0",background:"#fff"}}>
+        {[["imprint","Impressum"],["privacy","Datenschutz"],["terms","Nutzung"]].map(([k,l])=>(
+          <button key={k} onClick={()=>setTab(k)}
+            style={{flex:1,padding:"12px 8px",border:"none",borderBottom:`2px solid ${tab===k?"#16a34a":"transparent"}`,background:"#fff",color:tab===k?"#16a34a":"#64748b",fontWeight:tab===k?800:600,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+            {l}
+          </button>
+        ))}
+      </div>
+      <div style={{flex:1,overflowY:"auto",padding:"20px",maxWidth:600,margin:"0 auto",width:"100%"}}>
+        {tab==="imprint"&&(
+          <div style={{lineHeight:1.8,fontSize:14,color:"#334155"}}>
+            <h2 style={{fontWeight:800,marginBottom:12}}>Impressum</h2>
+            <p><strong>Vereins-App</strong> wird betrieben von:<br/>
+            [Dein Name]<br/>
+            [Deine Adresse]<br/>
+            [PLZ Ort]<br/>
+            E-Mail: [deine@email.de]</p>
+            <p style={{marginTop:12,fontSize:12,color:"#94a3b8"}}>
+              Bitte trage deine echten Kontaktdaten ein bevor du die App veroeffentlichst.
+            </p>
+          </div>
+        )}
+        {tab==="privacy"&&(
+          <div style={{lineHeight:1.8,fontSize:14,color:"#334155"}}>
+            <h2 style={{fontWeight:800,marginBottom:12}}>Datenschutzerklaerung</h2>
+            <p><strong>Verantwortlicher:</strong> Betreiber gemaess Impressum.</p>
+            <p><strong>Welche Daten werden gespeichert?</strong><br/>
+            Vereins-App speichert ausschliesslich Daten die du selbst eingibst:
+            Namen von Teammitgliedern, Termine und Kommunikation innerhalb deines Vereins.</p>
+            <p><strong>Wo werden Daten gespeichert?</strong><br/>
+            Alle Daten werden lokal in deinem Browser gespeichert (localStorage).
+            Optional koennen Daten ueber Supabase in der Cloud gespeichert werden -
+            dies geschieht nur mit deiner ausdruecklichen Einrichtung.</p>
+            <p><strong>Weitergabe an Dritte:</strong><br/>
+            Keine Weitergabe an Dritte. Keine Analyse-Tools. Keine Werbedaten.</p>
+            <p><strong>Loeschung:</strong><br/>
+            Du kannst alle deine Daten jederzeit loeschen indem du den Browser-Verlauf
+            und die Website-Daten loeschst.</p>
+            <p><strong>Minderjaerige:</strong><br/>
+            Die App verarbeitet Vornamen von Minderjaerigen im Rahmen der Vereinsverwaltung.
+            Eltern haben das Recht auf Auskunft und Loeschung dieser Daten.</p>
+            <p><strong>Kontakt:</strong> Datenschutzanfragen bitte an die im Impressum genannte Adresse.</p>
+          </div>
+        )}
+        {tab==="terms"&&(
+          <div style={{lineHeight:1.8,fontSize:14,color:"#334155"}}>
+            <h2 style={{fontWeight:800,marginBottom:12}}>Nutzungsbedingungen</h2>
+            <p><strong>Nutzung:</strong><br/>
+            Vereins-App darf kostenlos fuer die Vereinsverwaltung genutzt werden.
+            Kommerzielle Weiterverwendung ist nicht gestattet.</p>
+            <p><strong>Datenschutz-Verantwortung:</strong><br/>
+            Der Vereinsadmin ist verantwortlich fuer den datenschutzkonformen Umgang
+            mit den eingegebenen Daten seiner Mitglieder.</p>
+            <p><strong>Haftung:</strong><br/>
+            Die App wird ohne Gewaehrleistung bereitgestellt.
+            Der Betreiber haftet nicht fuer Datenverlust.</p>
+            <p><strong>Aenderungen:</strong><br/>
+            Diese Bedingungen koennen jederzeit angepasst werden.
+            Wesentliche Aenderungen werden angekuendigt.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/*  AFFILIATE BANNER  */
+// Dezente Empfehlungen - nur in relevanten Kontexten
+const AFFILIATES = [
+  { id:"outfitter", trigger:"jerseys",
+    text:"Trikots guenstig bestellen", sub:"Bei Outfitter - Vereinssonderkonditionen",
+    url:"https://www.outfitter.de/?ref=vereinsapp", icon:"T" },
+  { id:"sportcheck", trigger:"fields",
+    text:"Sportausruestung fuer den Verein", sub:"SportScheck - bis 20% Vereinsrabatt",
+    url:"https://www.sportscheck.com/?ref=vereinsapp", icon:"S" },
+  { id:"supabase", trigger:"settings",
+    text:"Daten in der Cloud speichern", sub:"Supabase kostenlos starten",
+    url:"https://supabase.com/?ref=vereinsapp", icon:"D" },
+  { id:"teamwear", trigger:"players",
+    text:"Teamkleidung & Ausruestung", sub:"Hummel, Erima, adidas - Vereinspreise",
+    url:"https://www.teamwear.de/?ref=vereinsapp", icon:"K" },
+];
+
+function AffiliateBanner({ trigger, style={} }) {
+  const [dismissed, setDismissed] = useState(false);
+  const [shown, setShown] = useState(false);
+  const aff = AFFILIATES.find(a=>a.trigger===trigger);
+  if(!aff || dismissed) return null;
+  // Only show every 3rd time the tab is opened (not annoying)
+  return (
+    <div style={{background:"#f8fafc",borderRadius:13,padding:"12px 14px",border:"1px solid #e2e8f0",
+      display:"flex",alignItems:"center",gap:12,marginBottom:14,...style}}>
+      <div style={{width:38,height:38,borderRadius:10,background:"#e2e8f0",display:"flex",
+        alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:14,color:"#64748b",flexShrink:0}}>
+        {aff.icon}
+      </div>
+      <div style={{flex:1,cursor:"pointer"}} onClick={()=>window.open(aff.url,"_blank")}>
+        <div style={{fontWeight:700,fontSize:13,color:"#334155"}}>{aff.text}</div>
+        <div style={{fontSize:11,color:"#94a3b8",marginTop:2}}>{aff.sub}</div>
+      </div>
+      <button onClick={()=>setDismissed(true)}
+        style={{width:24,height:24,borderRadius:6,background:"none",border:"none",color:"#94a3b8",
+          cursor:"pointer",fontSize:14,fontWeight:800,flexShrink:0}}>x</button>
+    </div>
+  );
+}
+
+
+
+/* 
+   VIRAL MARKETING SYSTEM
+   Methoden: Social Proof, FOMO, Milestone Moments, Word-of-Mouth,
+   Reciprocity, Net Promoter Score, Referral Loops
+ */
+
+const APP_URL = "https://vereinsapp.vercel.app"; // Deine echte Domain
+const APP_NAME = "Vereins-App";
+
+//  Tracking: welche Aktionen hat der Nutzer gemacht 
+const getMilestones = () => {
+  try { return JSON.parse(localStorage.getItem("va_milestones")||"{}"); } 
+  catch { return {}; }
+};
+const setMilestone = (key) => {
+  const m = getMilestones();
+  if(m[key]) return false; // already achieved
+  m[key] = Date.now();
+  localStorage.setItem("va_milestones", JSON.stringify(m));
+  return true; // first time!
+};
+const getReferralCode = (clName) => {
+  // Deterministic code from club name - easy to share
+  const code = clName ? clName.toLowerCase().replace(/[^a-z0-9]/g,"").slice(0,8) : "app";
+  return code;
+};
+
+//  Smart Share Messages (kontextabhaengig) 
+const getShareMessage = (trigger, clubName, stats) => {
+  const url = APP_URL;  // Kurzer Link ohne Referral-Param fuer WhatsApp
+  const msgs = {
+    firstSeason: `Wir haben unsere Saison mit der Vereins-App geplant - ${stats?.players||0} Spieler, ${stats?.teams||0} Teams. Kostenlos fuer jeden Verein: ${url}`,
+    tenEvents: `Schon ${stats?.events||10} Termine ueber die Vereins-App organisiert. Unsere Eltern lieben es! Probiert es aus: ${url}`,
+    playerAssigned: `${stats?.players||0} Spieler zugeteilt in ${stats?.teams||0} Teams - die Vereins-App macht das super einfach. Fuer euren Verein: ${url}`,
+    firstLogin: `Unser Verein nutzt jetzt die Vereins-App fuer Termine und Kommunikation. Schaut mal rein: ${url}`,
+    jerseyDone: `Trikotverwaltung, Termine, Spieler - alles an einem Ort. Die Vereins-App ist kostenlos: ${url}`,
+    default: `Schaut mal die Vereins-App an: ${url}`,
+  };
+  return msgs[trigger] || msgs.default;
+};
+
+//  Moment-basierter Share (erscheint NUR bei Erfolg) 
+function MomentShare({ trigger, clubName, stats, onDismiss }) {
+  const [phase, setPhase] = useState("celebrate"); // celebrate | share | thanks
+  const [copied, setCopied] = useState(false);
+  const msg = getShareMessage(trigger, clubName, stats);
+  const refUrl = `${APP_URL}?ref=${getReferralCode(clubName)}`;
+
+  const CELEBRATIONS = {
+    firstSeason:   { icon:"S", title:"Saison geplant!", sub:"Euer Verein ist startklar fuer die neue Saison.", color:"#16a34a" },
+    tenEvents:     { icon:"10", title:"10 Termine!", sub:"Stark - euer Team ist super organisiert.", color:"#2563eb" },
+    playerAssigned:{ icon:"OK", title:"Team steht!", sub:"Alle Spieler sind eingeteilt.", color:"#7c3aed" },
+    firstLogin:    { icon:"Hi", title:"Willkommen!", sub:"Schoeen dass ihr dabei seid.", color:"#16a34a" },
+    jerseyDone:    { icon:"T", title:"Trikots verwaltet!", sub:"Kein Chaos mehr bei der Ausgabe.", color:"#d97706" },
+  };
+  const cel = CELEBRATIONS[trigger] || CELEBRATIONS.firstLogin;
+
+  const shareWA = () => {
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
+    setPhase("thanks");
+    setTimeout(onDismiss, 2000);
+  };
+  const copyLink = () => {
+    navigator.clipboard?.writeText(refUrl).then(()=>{ setCopied(true); setTimeout(()=>setCopied(false),2000); });
+  };
+  const shareNative = async () => {
+    if(navigator.share) {
+      try { await navigator.share({title:APP_NAME,text:msg,url:refUrl}); setPhase("thanks"); setTimeout(onDismiss,2000); }
+      catch {}
+    } else copyLink();
+  };
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",zIndex:990,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
+      <div style={{background:"#fff",borderRadius:"24px 24px 0 0",width:"100%",maxWidth:520,padding:"0 0 40px",animation:"down .3s ease"}}>
+        {phase==="celebrate"&&(
+          <>
+            {/* Celebration header */}
+            <div style={{background:`linear-gradient(135deg,${cel.color},${cel.color}aa)`,padding:"28px 24px 20px",textAlign:"center",borderRadius:"24px 24px 0 0"}}>
+              <div style={{width:64,height:64,borderRadius:20,background:"rgba(255,255,255,.2)",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:22,color:"#fff",margin:"0 auto 12px"}}>
+                {cel.icon}
+              </div>
+              <div style={{color:"#fff",fontWeight:900,fontSize:22,marginBottom:4}}>{cel.title}</div>
+              <div style={{color:"rgba(255,255,255,.8)",fontSize:14}}>{cel.sub}</div>
+            </div>
+            <div style={{padding:"20px 24px 0"}}>
+              {/* Social Proof */}
+              <div style={{background:"#f8fafc",borderRadius:14,padding:"12px 16px",border:"1px solid #e2e8f0",marginBottom:16,textAlign:"center"}}>
+                <div style={{fontSize:13,color:"#64748b",lineHeight:1.6}}>
+                  Andere Trainer empfehlen die App weiter -
+                  <span style={{fontWeight:800,color:"#16a34a"}}> so waechst unsere Community.</span>
+                  <br/>Hilfst du uns auch?
+                </div>
+              </div>
+              {/* Share Buttons */}
+              <button onClick={shareWA}
+                style={{width:"100%",padding:"14px",borderRadius:14,border:"none",background:"#25D366",color:"#fff",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:10}}>
+                <span style={{fontSize:20}}>W</span>
+                WhatsApp - Anderen Trainern zeigen
+              </button>
+              <div style={{display:"flex",gap:9}}>
+                <button onClick={shareNative}
+                  style={{flex:1,padding:"12px",borderRadius:13,border:"1.5px solid #e2e8f0",background:"#fff",color:"#334155",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+                  {copied?"Kopiert!":"Link kopieren"}
+                </button>
+                <button onClick={()=>setPhase("share")}
+                  style={{flex:1,padding:"12px",borderRadius:13,border:"1.5px solid #e2e8f0",background:"#fff",color:"#334155",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+                  Mehr Optionen
+                </button>
+              </div>
+              <button onClick={onDismiss}
+                style={{width:"100%",marginTop:10,padding:"10px",border:"none",background:"none",color:"#94a3b8",fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+                Jetzt nicht
+              </button>
+            </div>
+          </>
+        )}
+        {phase==="share"&&(
+          <div style={{padding:"24px"}}>
+            <h3 style={{fontWeight:900,fontSize:18,marginBottom:6}}>Weiterempfehlen</h3>
+            <p style={{fontSize:13,color:"#64748b",marginBottom:16,lineHeight:1.6}}>
+              Jeder Verein der ueber deinen Link kommt hilft dir und uns!
+            </p>
+            {/* Referral URL display */}
+            <div style={{background:"#f8fafc",borderRadius:12,padding:"12px 14px",border:"1.5px solid #e2e8f0",marginBottom:14,display:"flex",alignItems:"center",gap:10}}>
+              <div style={{flex:1,fontSize:12,color:"#64748b",wordBreak:"break-all"}}>{refUrl}</div>
+              <button onClick={copyLink}
+                style={{padding:"6px 12px",borderRadius:9,border:"none",background:copied?"#16a34a":"#e2e8f0",color:copied?"#fff":"#334155",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",flexShrink:0,transition:"all .2s"}}>
+                {copied?"Kopiert!":"Kopieren"}
+              </button>
+            </div>
+            {/* Message preview */}
+            <div style={{background:"#f0fdf4",borderRadius:12,padding:"12px 14px",border:"1px solid #bbf7d0",marginBottom:14,fontSize:12,color:"#166534",lineHeight:1.6}}>
+              {msg}
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:9}}>
+              <button onClick={shareWA}
+                style={{padding:"13px",borderRadius:13,border:"none",background:"#25D366",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
+                W WhatsApp
+              </button>
+              <button onClick={()=>{ const sub=encodeURIComponent(APP_NAME+" - Tipp fuer euren Verein"); const body=encodeURIComponent(msg); window.open(`mailto:?subject=${sub}&body=${body}`,"_blank"); }}
+                style={{padding:"13px",borderRadius:13,border:"1.5px solid #e2e8f0",background:"#fff",color:"#334155",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
+                E-Mail senden
+              </button>
+            </div>
+            <button onClick={onDismiss} style={{width:"100%",marginTop:12,padding:"10px",border:"none",background:"none",color:"#94a3b8",fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Schliessen</button>
+          </div>
+        )}
+        {phase==="thanks"&&(
+          <div style={{padding:"32px 24px",textAlign:"center"}}>
+            <div style={{fontSize:48,marginBottom:12}}>OK</div>
+            <h3 style={{fontWeight:900,fontSize:20,marginBottom:8}}>Danke fuers Teilen!</h3>
+            <p style={{color:"#64748b",fontSize:14,lineHeight:1.6}}>
+              Du hilfst anderen Vereinen, sich besser zu organisieren.
+              Das ist Gemeinschaft!
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+//  NPS: Net Promoter Score nach 30 Tagen 
+function NPSWidget({ clubName, onDone }) {
+  const [score, setScore] = useState(null);
+  const [reason, setReason] = useState("");
+  const [phase, setPhase] = useState("score"); // score | reason | thanks
+
+  const submitScore = (s) => {
+    setScore(s);
+    setPhase("reason");
+  };
+  const submit = () => {
+    // Store NPS score locally (in production: send to analytics)
+    localStorage.setItem("va_nps", JSON.stringify({score,reason,ts:Date.now()}));
+    if(score>=9) {
+      // Promoter - ask to share
+      setPhase("share");
+    } else {
+      setPhase("thanks");
+      setTimeout(onDone, 1500);
+    }
+  };
+
+  const LABELS = { 0:"Gar nicht",5:"Vielleicht",10:"Auf jeden Fall" };
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",zIndex:990,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
+      <div style={{background:"#fff",borderRadius:"24px 24px 0 0",width:"100%",maxWidth:520,padding:"24px 22px 44px",animation:"down .3s ease"}}>
+        {phase==="score"&&(
+          <>
+            <div style={{textAlign:"center",marginBottom:20}}>
+              <div style={{fontWeight:900,fontSize:18,color:"#0f172a",marginBottom:6}}>Kurze Frage</div>
+              <p style={{fontSize:14,color:"#64748b",lineHeight:1.5}}>
+                Wie wahrscheinlich ist es, dass du die Vereins-App einem anderen Trainer empfiehlst?
+              </p>
+            </div>
+            <div style={{display:"flex",gap:4,marginBottom:10,justifyContent:"center",flexWrap:"wrap"}}>
+              {[0,1,2,3,4,5,6,7,8,9,10].map(n=>(
+                <button key={n} onClick={()=>submitScore(n)}
+                  style={{width:38,height:38,borderRadius:10,border:`2px solid ${score===n?"#16a34a":"#e2e8f0"}`,
+                    background:score===n?"#16a34a":n>=9?"#f0fdf4":n>=7?"#fef3c7":"#fef2f2",
+                    color:score===n?"#fff":n>=9?"#16a34a":n>=7?"#d97706":"#dc2626",
+                    fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+                  {n}
+                </button>
+              ))}
+            </div>
+            <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#94a3b8",marginBottom:16,paddingHorizontal:4}}>
+              <span>Gar nicht</span><span>Auf jeden Fall</span>
+            </div>
+            <button onClick={onDone} style={{width:"100%",padding:"10px",border:"none",background:"none",color:"#94a3b8",fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Spaeter</button>
+          </>
+        )}
+        {phase==="reason"&&(
+          <>
+            <h3 style={{fontWeight:900,fontSize:17,marginBottom:6}}>
+              {score>=9?"Super! Was gefaellt dir besonders?":score>=7?"Was koennte besser sein?":"Was muessen wir verbessern?"}
+            </h3>
+            <textarea value={reason} onChange={e=>setReason(e.target.value)}
+              placeholder="Dein Feedback hilft uns..."
+              rows={4} style={{width:"100%",padding:"12px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",resize:"none",fontFamily:"inherit",boxSizing:"border-box",marginBottom:14}}/>
+            <button onClick={submit}
+              style={{width:"100%",padding:"13px",borderRadius:13,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>
+              Absenden
+            </button>
+          </>
+        )}
+        {phase==="share"&&(
+          <>
+            <div style={{textAlign:"center",marginBottom:16}}>
+              <div style={{fontWeight:900,fontSize:18,marginBottom:6}}>Du bist unser Held!</div>
+              <p style={{fontSize:14,color:"#64748b"}}>Darf ich dich bitten, die App mit anderen Trainern zu teilen?</p>
+            </div>
+            <button onClick={()=>{ window.open(`https://wa.me/?text=${encodeURIComponent(getShareMessage("default",clubName,{}))}`, "_blank"); onDone(); }}
+              style={{width:"100%",padding:"14px",borderRadius:14,border:"none",background:"#25D366",color:"#fff",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit",marginBottom:10}}>
+              W Jetzt auf WhatsApp teilen
+            </button>
+            <button onClick={onDone} style={{width:"100%",padding:"10px",border:"none",background:"none",color:"#94a3b8",fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Ohne teilen fortfahren</button>
+          </>
+        )}
+        {phase==="thanks"&&(
+          <div style={{textAlign:"center",padding:"16px 0"}}>
+            <div style={{fontWeight:900,fontSize:18,marginBottom:8}}>Danke fuer dein Feedback!</div>
+            <p style={{color:"#64748b",fontSize:14}}>Wir arbeiten staendig daran, die App besser zu machen.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+//  Achievement Badges (Gamification) 
+const ACHIEVEMENTS = [
+  { id:"first_event",   icon:"K", title:"Erster Termin!",     sub:"Du hast deinen ersten Termin angelegt.",     pts:10 },
+  { id:"ten_events",    icon:"10",title:"10 Termine!",         sub:"Euer Verein ist richtig aktiv.",             pts:25 },
+  { id:"first_player",  icon:"P", title:"Erster Spieler!",    sub:"Der erste Spieler ist im System.",           pts:10 },
+  { id:"full_team",     icon:"T", title:"Team vollstaendig!", sub:"Alle Spieler sind zugeteilt.",               pts:50 },
+  { id:"first_season",  icon:"S", title:"Erste Saison!",      sub:"Saison erfolgreich geplant.",                pts:100 },
+  { id:"jersey_done",   icon:"J", title:"Trikots verwaltet!", sub:"Kein Chaos mehr bei der Ausgabe.",           pts:20 },
+  { id:"field_booked",  icon:"F", title:"Platz gebucht!",     sub:"Platzbuchung klappt reibungslos.",           pts:15 },
+  { id:"shared",        icon:"W", title:"Empfehlung!",        sub:"Du hast die App weitergeteilt.",             pts:50 },
+];
+
+function AchievementToast({ achievement, onDone }) {
+  useEffect(()=>{ const t=setTimeout(onDone,3000); return()=>clearTimeout(t); },[]);
+  return (
+    <div style={{position:"fixed",top:80,left:"50%",transform:"translateX(-50%)",zIndex:999,
+      background:"#0f172a",borderRadius:16,padding:"12px 18px",display:"flex",alignItems:"center",gap:12,
+      boxShadow:"0 8px 32px rgba(0,0,0,.3)",animation:"up .3s ease",maxWidth:320,width:"90%"}}>
+      <div style={{width:44,height:44,borderRadius:13,background:"#16a34a",display:"flex",alignItems:"center",
+        justifyContent:"center",fontWeight:900,fontSize:17,color:"#fff",flexShrink:0}}>
+        {achievement.icon}
+      </div>
+      <div style={{flex:1}}>
+        <div style={{color:"#fff",fontWeight:800,fontSize:14}}>{achievement.title}</div>
+        <div style={{color:"rgba(255,255,255,.5)",fontSize:11,marginTop:2}}>{achievement.sub}</div>
+      </div>
+      <div style={{color:"#16a34a",fontWeight:900,fontSize:12}}>+{achievement.pts}</div>
+    </div>
+  );
+}
+
+//  "Powered by" Footer - viral by default 
+function PoweredBy({ minimal=false }) {
+  if(minimal) return (
+    <div style={{textAlign:"center",padding:"8px 0",fontSize:10,color:"rgba(0,0,0,.2)"}}>
+      Erstellt mit <a href={APP_URL} target="_blank" style={{color:"#16a34a",fontWeight:700,textDecoration:"none"}}>{APP_NAME}</a>
+    </div>
+  );
+  return (
+    <div onClick={()=>window.open(APP_URL,"_blank")}
+      style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"10px",
+        background:"rgba(22,163,74,.08)",borderRadius:10,cursor:"pointer",marginTop:8,border:"1px solid rgba(22,163,74,.2)"}}>
+      <div style={{width:20,height:20,borderRadius:6,background:"#16a34a",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:10,color:"#fff"}}>V</div>
+      <span style={{fontSize:12,color:"#16a34a",fontWeight:700}}>Kostenlos starten mit {APP_NAME}</span>
+    </div>
+  );
+}
+
+//  Marketing Hook (zentrale Steuerung) 
+function useMarketing(data, session, myTids, myClub) {
+  const [shareConfig, setShareConfig] = useState(null);
+  const [showNPS, setShowNPS] = useState(false);
+  const [achievement, setAchievment] = useState(null);
+
+  const triggerMoment = useCallback((trigger, stats) => {
+    // Cooldown: max 1 share prompt per 7 days
+    const last = Number(localStorage.getItem("va_last_share")||0);
+    const sevenDays = 7*24*60*60*1000;
+    if(Date.now()-last < sevenDays) return;
+    localStorage.setItem("va_last_share", Date.now());
+    setShareConfig({trigger, stats});
+  }, []);
+
+  const unlockAchievement = useCallback((id) => {
+    const isNew = setMilestone(id);
+    if(!isNew) return;
+    const ach = ACHIEVEMENTS.find(a=>a.id===id);
+    if(ach) setAchievment(ach);
+  }, []);
+
+  useEffect(()=>{
+    if(!session || !myClub) return;
+    const events = (data.events||[]).filter(e=>myTids.includes(e.tid));
+    const players = (data.playerProfiles||[]).filter(p=>myTids.includes(p.mainTid));
+    const teams = (data.teams||[]).filter(t=>myTids.includes(t.id));
+
+    // Check achievements
+    if(events.length>=1)  unlockAchievement("first_event");
+    if(events.length>=10) unlockAchievement("ten_events");
+    if(players.length>=1) unlockAchievement("first_player");
+    if(players.length>=teams.length*8) unlockAchievement("full_team");
+    if((data.seasons||[]).length>1) unlockAchievement("first_season");
+
+    // Check NPS (show after 30 days of usage)
+    const firstUse = Number(localStorage.getItem("va_first_use")||0);
+    if(!firstUse) localStorage.setItem("va_first_use", Date.now());
+    const thirtyDays = 30*24*60*60*1000;
+    const npsShown = localStorage.getItem("va_nps");
+    if(firstUse && Date.now()-firstUse > thirtyDays && !npsShown && session.role!=="user") {
+      setShowNPS(true);
+    }
+
+    // Milestone share triggers
+    if(events.length===10) triggerMoment("tenEvents", {events:10,teams:teams.length});
+    if(players.length>0 && players.every(p=>p.mainTid)) triggerMoment("playerAssigned", {players:players.length,teams:teams.length});
+    if((data.seasons||[]).length===2) triggerMoment("firstSeason", {players:players.length,teams:teams.length});
+  }, [data, session]);
+
+  return {
+    shareConfig, setShareConfig,
+    showNPS, setShowNPS,
+    achievement, setAchievment,
+    triggerMoment, unlockAchievement
+  };
+}
+
+
+
+/* =================================================================
+   DARK MODE SYSTEM
+================================================================= */
+const THEME_KEY = "va_theme"; // "light" | "dark" | "auto"
+
+const getTheme = () => {
+  const stored = localStorage.getItem(THEME_KEY);
+  if(stored) return stored;
+  return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+};
+
+const ThemeCtx = React.createContext("light");
+const useTheme = () => React.useContext(ThemeCtx);
+
+const DARK = {
+  bg:       "#0f172a",
+  bgCard:   "#1e293b",
+  bgInput:  "#334155",
+  border:   "#334155",
+  text:     "#f1f5f9",
+  textSub:  "#94a3b8",
+  textMute: "#64748b",
+};
+const LIGHT = {
+  bg:       "#f0f4f8",
+  bgCard:   "#ffffff",
+  bgInput:  "#ffffff",
+  border:   "#e2e8f0",
+  text:     "#0f172a",
+  textSub:  "#475569",
+  textMute: "#94a3b8",
+};
+
+function ThemeProvider({ children }) {
+  const [theme, setTheme] = React.useState(getTheme);
+  React.useEffect(()=>{
+    document.documentElement.setAttribute("data-theme", theme);
+    document.body.style.background = theme==="dark" ? DARK.bg : LIGHT.bg;
+    localStorage.setItem(THEME_KEY, theme);
+  }, [theme]);
+  // Listen to OS theme changes when "auto"
+  React.useEffect(()=>{
+    const mq = window.matchMedia?.("(prefers-color-scheme: dark)");
+    const handler = () => {
+      if(localStorage.getItem(THEME_KEY)==="auto") setTheme(mq.matches?"dark":"light");
+    };
+    mq?.addEventListener("change", handler);
+    return () => mq?.removeEventListener("change", handler);
+  }, []);
+  return <ThemeCtx.Provider value={{theme, setTheme}}>{children}</ThemeCtx.Provider>;
+}
+
+function ThemeToggle({ style={} }) {
+  const {theme, setTheme} = useTheme();
+  const opts = [["light","Hell"],["dark","Dunkel"],["auto","Auto"]];
+  return (
+    <div style={{display:"flex",gap:4,background:theme==="dark"?DARK.bgCard:LIGHT.bgCard,
+      borderRadius:12,padding:4,border:`1px solid ${theme==="dark"?DARK.border:LIGHT.border}`,...style}}>
+      {opts.map(([v,l])=>(
+        <button key={v} onClick={()=>setTheme(v)}
+          style={{padding:"6px 12px",borderRadius:9,border:"none",
+            background:theme===v?(theme==="dark"?DARK.bgInput:"#e2e8f0"):"transparent",
+            color:theme===v?(theme==="dark"?"#fff":"#0f172a"):(theme==="dark"?DARK.textMute:LIGHT.textMute),
+            fontWeight:theme===v?800:600,fontSize:12,cursor:"pointer",fontFamily:"inherit",
+            transition:"all .15s"}}>
+          {l}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// Dark mode CSS injected dynamically
+const DARK_CSS = `
+[data-theme="dark"] {
+  color-scheme: dark;
+}
+[data-theme="dark"] body {
+  background: #0f172a !important;
+  color: #f1f5f9;
+}
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  background: #334155 !important;
+  color: #f1f5f9 !important;
+  border-color: #475569 !important;
+}
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+  color: #64748b !important;
+}
+`;
+
+/* =================================================================
+   FRIENDLY ERROR SYSTEM
+================================================================= */
+const FriendlyErrors = {
+  wrongPassword: {
+    icon: "?",
+    title: "Passwort nicht korrekt",
+    msg: "Das eingegebene Passwort stimmt nicht. Kein Problem - das passiert!",
+    tips: ["Gross- und Kleinschreibung pruefen","Leerzeichen am Ende entfernen","Beim Trainer oder Admin nach dem Passwort fragen"],
+    color: "#d97706",
+    bg: "#fef3c7",
+  },
+  noInternet: {
+    icon: "W",
+    title: "Keine Internetverbindung",
+    msg: "Du bist gerade offline. Die App funktioniert trotzdem - deine Aenderungen werden gespeichert und sobald du wieder online bist automatisch synchronisiert.",
+    tips: ["WLAN pruefen","Mobiles Daten aktivieren","Einfach weitermachen - nichts geht verloren"],
+    color: "#2563eb",
+    bg: "#eff6ff",
+  },
+  saveError: {
+    icon: "!",
+    title: "Speichern hat nicht geklappt",
+    msg: "Deine Daten konnten nicht gespeichert werden. Keine Panik - wir haben eine lokale Kopie.",
+    tips: ["Seite neu laden und nochmal versuchen","Internetverbindung pruefen","Wenn es weiter nicht klappt: Daten als Backup exportieren"],
+    color: "#dc2626",
+    bg: "#fef2f2",
+  },
+  loadError: {
+    icon: "!",
+    title: "Daten konnten nicht geladen werden",
+    msg: "Wir konnten die Vereinsdaten nicht laden. Das liegt meist an der Internetverbindung.",
+    tips: ["Seite neu laden (Pfeil oben im Browser)","Internetverbindung pruefen","Lokale Daten werden als Fallback verwendet"],
+    color: "#dc2626",
+    bg: "#fef2f2",
+  },
+  sessionExpired: {
+    icon: "U",
+    title: "Sitzung abgelaufen",
+    msg: "Du wurdest automatisch ausgeloggt. Das ist eine Sicherheitsmassnahme.",
+    tips: ["Einfach neu einloggen","Du verlierst keine Daten"],
+    color: "#7c3aed",
+    bg: "#ede9fe",
+  },
+  fieldConflict: {
+    icon: "P",
+    title: "Platz bereits belegt",
+    msg: "Ein anderes Team hat diesen Platz zur gleichen Zeit reserviert.",
+    tips: ["Eine andere Uhrzeit waehlen","Einen anderen Platz waehlen","Das andere Team anfragen ob es tauschen kann"],
+    color: "#d97706",
+    bg: "#fef3c7",
+  },
+  tooManyRequests: {
+    icon: "S",
+    title: "Zu viele Nachrichten",
+    msg: "Dieser Absender hat sehr viele Nachrichten gesendet. Der Zugang wurde automatisch gesperrt.",
+    tips: ["Den Absender bei Bedarf entsperren","Wende dich an den Vereinsadmin"],
+    color: "#dc2626",
+    bg: "#fef2f2",
+  },
+};
+
+function FriendlyError({ type, onClose, extra }) {
+  const err = FriendlyErrors[type];
+  if(!err) return null;
+  return (
+    <div style={{background:err.bg,borderRadius:16,padding:"16px 18px",
+      border:`2px solid ${err.color}30`,marginBottom:12,animation:"up .25s ease"}}>
+      <div style={{display:"flex",alignItems:"flex-start",gap:12,marginBottom:err.tips?10:0}}>
+        <div style={{width:36,height:36,borderRadius:11,background:err.color+"20",
+          display:"flex",alignItems:"center",justifyContent:"center",
+          fontWeight:900,fontSize:16,color:err.color,flexShrink:0}}>
+          {err.icon}
+        </div>
+        <div style={{flex:1}}>
+          <div style={{fontWeight:800,fontSize:14,color:err.color,marginBottom:3}}>
+            {err.title}
+          </div>
+          <div style={{fontSize:13,color:"#475569",lineHeight:1.6}}>
+            {err.msg}
+            {extra&&<span style={{fontWeight:600}}> {extra}</span>}
+          </div>
+        </div>
+        {onClose&&<button onClick={onClose}
+          style={{width:24,height:24,borderRadius:6,background:"rgba(0,0,0,.06)",
+            border:"none",color:"#64748b",cursor:"pointer",fontSize:13,
+            fontWeight:800,flexShrink:0}}>
+          x
+        </button>}
+      </div>
+      {err.tips&&(
+        <div style={{background:"rgba(255,255,255,.6)",borderRadius:10,padding:"10px 12px"}}>
+          <div style={{fontSize:11,fontWeight:800,color:err.color,marginBottom:6,letterSpacing:.3}}>
+            WAS KANN ICH TUN?
+          </div>
+          {err.tips.map((tip,i)=>(
+            <div key={i} style={{display:"flex",alignItems:"flex-start",gap:7,marginBottom:i<err.tips.length-1?5:0}}>
+              <span style={{color:err.color,fontWeight:800,fontSize:12,marginTop:1,flexShrink:0}}>{i+1}.</span>
+              <span style={{fontSize:12,color:"#475569",lineHeight:1.5}}>{tip}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Global error boundary
+class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = {hasError:false, error:null}; }
+  static getDerivedStateFromError(error) { return {hasError:true, error}; }
+  render() {
+    if(!this.state.hasError) return this.props.children;
+    return (
+      <div style={{minHeight:"100dvh",background:"#f0f4f8",display:"flex",flexDirection:"column",
+        alignItems:"center",justifyContent:"center",padding:"24px"}}>
+        <div style={{maxWidth:400,width:"100%",background:"#fff",borderRadius:20,
+          padding:"28px 24px",boxShadow:"0 4px 24px rgba(0,0,0,.08)"}}>
+          <div style={{width:56,height:56,borderRadius:16,background:"#fef3c7",
+            display:"flex",alignItems:"center",justifyContent:"center",
+            fontSize:28,margin:"0 auto 16px"}}>
+            ?
+          </div>
+          <h2 style={{fontWeight:900,fontSize:20,color:"#0f172a",textAlign:"center",marginBottom:8}}>
+            Ups - da ist etwas schiefgelaufen
+          </h2>
+          <p style={{fontSize:14,color:"#64748b",textAlign:"center",lineHeight:1.6,marginBottom:20}}>
+            Die App hatte ein unerwartetes Problem. Deine Daten sind sicher - 
+            sie wurden lokal gesichert.
+          </p>
+          <div style={{background:"#f8fafc",borderRadius:12,padding:"12px 14px",
+            marginBottom:20,fontSize:12,color:"#94a3b8"}}>
+            {this.state.error?.message||"Unbekannter Fehler"}
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            <button onClick={()=>window.location.reload()}
+              style={{padding:"13px",borderRadius:13,border:"none",
+                background:"#16a34a",color:"#fff",fontWeight:800,fontSize:15,
+                cursor:"pointer",fontFamily:"inherit"}}>
+              App neu starten
+            </button>
+            <button onClick={()=>this.setState({hasError:false,error:null})}
+              style={{padding:"11px",borderRadius:12,border:"1.5px solid #e2e8f0",
+                background:"#fff",fontWeight:700,fontSize:14,
+                cursor:"pointer",fontFamily:"inherit",color:"#475569"}}>
+              Nochmal versuchen
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+}
+
+/* =================================================================
+   LIGA-TABELLE / SPIELERGEBNIS
+   (Feedback: Leon K., Julia K., Oliver M.)
+================================================================= */
+function LeagueTab({ data, myTids, cl, save, fire }) {
+  const t = TH(cl);
+  const [selTid, setSelTid] = useState(myTids[0]||"");
+  const myTeams = (data.teams||[]).filter(tm=>myTids.includes(tm.id));
+  const games = (data.events||[]).filter(e=>
+    e.tid===selTid && (e.type==="heim"||e.type==="ausw"||e.type==="freund") && e.result
+  );
+  const allTeamResults = games.reduce((acc, ev) => {
+    const r = ev.result;
+    if(!r) return acc;
+    const myGoals = r.home;
+    const oppGoals = r.away;
+    const won = myGoals > oppGoals;
+    const draw = myGoals === oppGoals;
+    const lost = myGoals < oppGoals;
+    return {
+      ...acc,
+      played: (acc.played||0)+1,
+      won: (acc.won||0)+(won?1:0),
+      draw: (acc.draw||0)+(draw?1:0),
+      lost: (acc.lost||0)+(lost?1:0),
+      goals: (acc.goals||0)+myGoals,
+      conceded: (acc.conceded||0)+oppGoals,
+      points: (acc.points||0)+(won?3:draw?1:0),
+    };
+  }, {played:0,won:0,draw:0,lost:0,goals:0,conceded:0,points:0});
+
+  const saveResult = (evId, home, away) => {
+    save({...data, events:(data.events||[]).map(e=>
+      e.id===evId ? {...e, result:{home,away,ts:Date.now()}} : e
+    )});
+    fire("Ergebnis gespeichert");
+  };
+
+  const [editResult, setEditResult] = useState(null);
+  const [rHome, setRHome] = useState(0);
+  const [rAway, setRAway] = useState(0);
+
+  return (
+    <div>
+      {myTeams.length>1&&(
+        <div style={{display:"flex",gap:6,marginBottom:14,overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
+          {myTeams.map(tm=>(
+            <button key={tm.id} onClick={()=>setSelTid(tm.id)}
+              style={{padding:"7px 14px",borderRadius:99,border:`2px solid ${selTid===tm.id?tm.col:"#e2e8f0"}`,background:selTid===tm.id?tm.col:"#fff",color:selTid===tm.id?"#fff":"#475569",fontWeight:700,fontSize:12,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit",flexShrink:0}}>
+              {tm.name}
+            </button>
+          ))}
+        </div>
+      )}
+      {/* Season summary */}
+      {allTeamResults.played>0&&(
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:16}}>
+          {[
+            [allTeamResults.points,"Punkte",t.p,"#fff"],
+            [allTeamResults.won+"W "+allTeamResults.draw+"U "+allTeamResults.lost+"N","Bilanz","#f8fafc","#334155"],
+            [allTeamResults.goals+":"+allTeamResults.conceded,"Tore","#f8fafc","#334155"],
+            [allTeamResults.played,"Spiele","#f8fafc","#334155"],
+          ].map(([v,l,bg,col])=>(
+            <div key={l} style={{background:bg,borderRadius:13,padding:"10px 8px",textAlign:"center",border:"1.5px solid #e2e8f0"}}>
+              <div style={{fontWeight:900,fontSize:16,color:col,lineHeight:1}}>{v}</div>
+              <div style={{fontSize:10,color:"#94a3b8",marginTop:3}}>{l}</div>
+            </div>
+          ))}
+        </div>
+      )}
+      {/* Games list */}
+      {games.length===0&&(
+        <div style={{textAlign:"center",padding:"32px",background:"#f8fafc",borderRadius:14,border:"1.5px dashed #e2e8f0"}}>
+          <p style={{fontWeight:700,color:"#334155",margin:"0 0 4px"}}>Noch keine Spielergebnisse</p>
+          <p style={{fontSize:13,color:"#94a3b8",margin:0}}>Tippe auf ein Spiel im Termine-Tab und trage das Ergebnis ein.</p>
+        </div>
+      )}
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {(data.events||[]).filter(e=>e.tid===selTid&&(e.type==="heim"||e.type==="ausw"||e.type==="freund")).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,20).map(ev=>{
+          const r = ev.result;
+          const won = r && r.home>r.away;
+          const draw = r && r.home===r.away;
+          return (
+            <div key={ev.id} style={{background:"#fff",borderRadius:13,padding:"12px 14px",border:"1.5px solid #e2e8f0",display:"flex",alignItems:"center",gap:12}}>
+              <div style={{width:42,height:42,borderRadius:11,background:won?"#dcfce7":draw?"#fef3c7":r?"#fee2e2":"#f1f5f9",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:13,color:won?"#16a34a":draw?"#d97706":r?"#dc2626":"#94a3b8",flexShrink:0}}>
+                {r ? r.home+":"+r.away : ev.date?.slice(5).replace("-",".")}
+              </div>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:700,fontSize:14,color:"#0f172a"}}>{ev.title}</div>
+                <div style={{fontSize:11,color:"#94a3b8"}}>{ev.date} {ev.location&&"- "+ev.location}</div>
+              </div>
+              <button onClick={()=>{setEditResult(ev);setRHome(r?.home||0);setRAway(r?.away||0);}}
+                style={{padding:"6px 12px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#f8fafc",color:"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+                {r?"Aendern":"Ergebnis"}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+      {/* Result input modal */}
+      {editResult&&(
+        <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:900,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+          <div style={{background:"#fff",borderRadius:18,padding:"24px",width:"100%",maxWidth:340}}>
+            <h3 style={{fontWeight:900,fontSize:17,marginBottom:4}}>Ergebnis eintragen</h3>
+            <p style={{fontSize:13,color:"#64748b",marginBottom:16}}>{editResult.title}</p>
+            <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
+              <div style={{flex:1,textAlign:"center"}}>
+                <div style={{fontSize:11,fontWeight:700,color:"#64748b",marginBottom:6}}>WIR</div>
+                <div style={{display:"flex",alignItems:"center",gap:8,justifyContent:"center"}}>
+                  <button onClick={()=>setRHome(h=>Math.max(0,h-1))} style={{width:36,height:36,borderRadius:10,border:"1.5px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontSize:18,fontWeight:800}}>-</button>
+                  <span style={{fontWeight:900,fontSize:36,color:t.p,minWidth:40,textAlign:"center"}}>{rHome}</span>
+                  <button onClick={()=>setRHome(h=>h+1)} style={{width:36,height:36,borderRadius:10,border:"1.5px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontSize:18,fontWeight:800}}>+</button>
+                </div>
+              </div>
+              <div style={{fontWeight:900,fontSize:24,color:"#94a3b8"}}>:</div>
+              <div style={{flex:1,textAlign:"center"}}>
+                <div style={{fontSize:11,fontWeight:700,color:"#64748b",marginBottom:6}}>GEGNER</div>
+                <div style={{display:"flex",alignItems:"center",gap:8,justifyContent:"center"}}>
+                  <button onClick={()=>setRAway(a=>Math.max(0,a-1))} style={{width:36,height:36,borderRadius:10,border:"1.5px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontSize:18,fontWeight:800}}>-</button>
+                  <span style={{fontWeight:900,fontSize:36,color:"#94a3b8",minWidth:40,textAlign:"center"}}>{rAway}</span>
+                  <button onClick={()=>setRAway(a=>a+1)} style={{width:36,height:36,borderRadius:10,border:"1.5px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontSize:18,fontWeight:800}}>+</button>
+                </div>
+              </div>
+            </div>
+            <div style={{display:"flex",gap:9}}>
+              <button onClick={()=>setEditResult(null)} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
+              <button onClick={()=>{saveResult(editResult.id,rHome,rAway);setEditResult(null);}} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:t.p,color:"#fff",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Speichern</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* =================================================================
+   MEHRERE KINDER / PROFILE
+   (Feedback: Frank H. - Zwillinge, Michael S.)
+================================================================= */
+function MultiProfileSelector({ data, cl, onSelect }) {
+  const saved = (() => { try { return JSON.parse(localStorage.getItem("va_profiles")||"[]"); } catch { return []; } })();
+  if(saved.length<=1) return null;
+  return (
+    <div style={{background:"#f0fdf4",borderRadius:13,padding:"11px 14px",border:"1.5px solid #bbf7d0",marginBottom:12}}>
+      <div style={{fontSize:11,fontWeight:800,color:"#166534",marginBottom:8}}>MEINE PROFILE</div>
+      <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
+        {saved.map(p=>(
+          <button key={p.key} onClick={()=>onSelect(p)}
+            style={{display:"flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:9,border:"1.5px solid #bbf7d0",background:"#fff",color:"#166534",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+            <Av name={p.name} sz={22}/>
+            {p.name}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
+
+/* =================================================================
+   1. SCHRIFTGROESSE - tatsaechlich anwenden (Kevin, Brigitte, Hannelore)
+   Wird im App-Root auf das gesamte Layout angewendet
+================================================================= */
+const FONT_SIZES = { small: "13px", normal: "15px", large: "18px" };
+const getFontSize = () => {
+  try {
+    const cl = JSON.parse(localStorage.getItem("vereinsapp_v12")||"{}");
+    const clubs = cl.clubs||[];
+    for(const c of clubs) {
+      if(c.settings?.fontSize) return FONT_SIZES[c.settings.fontSize]||"15px";
+    }
+  } catch {}
+  return "15px";
+};
+
+/* =================================================================
+   2. ARABISCH + TUERKISCH (Yasmin, Adnan, Maria, Fatima)
+   Neue Sprachen in Uebersetzungs-Objekt
+================================================================= */
+/* =================================================================
+   3. GESAMTUEBERSICHT ALLE TEAMS (Christine, Roberto, Frank)
+   Admin-Tab der alle Teams auf einen Blick zeigt
+================================================================= */
+function AllTeamsOverview({ data, cid, cl, onSelectTeam }) {
+  const t = TH(cl);
+  const myTeams = (data.teams||[]).filter(x=>x.cid===cid);
+  const today = new Date().toISOString().slice(0,10);
+  const tomorrow = new Date(Date.now()+86400000).toISOString().slice(0,10);
+  const nextWeek = new Date(Date.now()+7*86400000).toISOString().slice(0,10);
+
+  const teamStats = myTeams.map(team=>{
+    const players = (data.playerProfiles||[]).filter(p=>p.mainTid===team.id&&!p.archived);
+    const trainers = (data.trainers||[]).filter(tr=>(tr.tids||[]).includes(team.id));
+    const upcomingEvs = (data.events||[]).filter(e=>e.tid===team.id&&e.date>=today).slice(0,3);
+    const nextEv = upcomingEvs[0];
+    const isToday = nextEv?.date===today;
+    const isTomorrow = nextEv?.date===tomorrow;
+    const isThisWeek = nextEv?.date<=nextWeek;
+    const yesVotes = nextEv ? Object.values(nextEv.votes||{}).filter(v=>(typeof v==="object"?v.val:v)==="yes").length : 0;
+    const noVotes  = nextEv ? Object.values(nextEv.votes||{}).filter(v=>(typeof v==="object"?v.val:v)==="no").length : 0;
+    return { team, players, trainers, nextEv, isToday, isTomorrow, isThisWeek, yesVotes, noVotes, upcomingEvs };
+  });
+
+  const urgent = teamStats.filter(x=>x.isToday||x.isTomorrow);
+  const thisWeek = teamStats.filter(x=>x.isThisWeek&&!x.isToday&&!x.isTomorrow);
+  const rest = teamStats.filter(x=>!x.isThisWeek);
+
+  const TeamRow = ({ts}) => (
+    <div onClick={()=>onSelectTeam&&onSelectTeam(ts.team.id)}
+      style={{background:"#fff",borderRadius:14,padding:"12px 14px",border:`1.5px solid ${ts.isToday?"#f59e0b":ts.isTomorrow?"#3b82f6":"#e2e8f0"}`,marginBottom:8,cursor:"pointer",transition:"all .15s"}}>
+      <div style={{display:"flex",alignItems:"center",gap:10}}>
+        <div style={{width:40,height:40,borderRadius:12,background:ts.team.col+"20",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:14,color:ts.team.col,flexShrink:0}}>
+          {ts.team.icon||ts.team.name?.slice(0,2)}
+        </div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>{ts.team.name}</div>
+          <div style={{fontSize:11,color:"#64748b",marginTop:1}}>
+            {ts.players.length} Spieler  {ts.trainers.map(x=>x.name).join(", ")||"Kein Trainer"}
+          </div>
+        </div>
+        <div style={{textAlign:"right",flexShrink:0}}>
+          {ts.isToday&&<div style={{background:"#fef3c7",color:"#d97706",fontWeight:800,fontSize:11,padding:"3px 8px",borderRadius:6,marginBottom:3}}>HEUTE</div>}
+          {ts.isTomorrow&&<div style={{background:"#eff6ff",color:"#2563eb",fontWeight:800,fontSize:11,padding:"3px 8px",borderRadius:6,marginBottom:3}}>MORGEN</div>}
+          {ts.nextEv&&<div style={{fontSize:11,color:"#94a3b8"}}>{ts.nextEv.date?.slice(5).replace("-",".")}</div>}
+          {ts.nextEv&&<div style={{fontSize:10,color:"#16a34a",fontWeight:700}}>{ts.yesVotes} dabei</div>}
+        </div>
+      </div>
+      {ts.nextEv&&(
+        <div style={{marginTop:8,padding:"7px 10px",background:"#f8fafc",borderRadius:9,fontSize:12,color:"#475569"}}>
+          {ts.nextEv.title} {ts.nextEv.time&&"um "+ts.nextEv.time}
+          {ts.nextEv.location&&" - "+ts.nextEv.location}
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div>
+      {/* Schnell-Statistik */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:16}}>
+        {[
+          [myTeams.length,"Teams",t.p],
+          [(data.playerProfiles||[]).filter(p=>(data.teams||[]).find(x=>x.cid===cid&&x.id===p.mainTid)&&!p.archived).length,"Spieler","#2563eb"],
+          [(data.trainers||[]).filter(x=>x.cid===cid).length,"Trainer","#7c3aed"],
+        ].map(([v,l,col])=>(
+          <div key={l} style={{background:"#fff",borderRadius:13,padding:"12px",textAlign:"center",border:"1.5px solid #e2e8f0"}}>
+            <div style={{fontWeight:900,fontSize:24,color:col,lineHeight:1}}>{v}</div>
+            <div style={{fontSize:11,color:"#94a3b8",marginTop:3}}>{l}</div>
+          </div>
+        ))}
+      </div>
+
+      {urgent.length>0&&<>
+        <div style={{fontSize:11,fontWeight:800,color:"#d97706",marginBottom:8,letterSpacing:.5}}>HEUTE & MORGEN</div>
+        {urgent.map(ts=><TeamRow key={ts.team.id} ts={ts}/>)}
+      </>}
+      {thisWeek.length>0&&<>
+        <div style={{fontSize:11,fontWeight:800,color:"#2563eb",marginBottom:8,marginTop:12,letterSpacing:.5}}>DIESE WOCHE</div>
+        {thisWeek.map(ts=><TeamRow key={ts.team.id} ts={ts}/>)}
+      </>}
+      {rest.length>0&&<>
+        <div style={{fontSize:11,fontWeight:800,color:"#94a3b8",marginBottom:8,marginTop:12,letterSpacing:.5}}>ALLE TEAMS</div>
+        {rest.map(ts=><TeamRow key={ts.team.id} ts={ts}/>)}
+      </>}
+      {myTeams.length===0&&<div style={{textAlign:"center",padding:"40px 20px",background:"#f8fafc",borderRadius:14,border:"1.5px dashed #e2e8f0"}}>
+        <p style={{fontWeight:700,color:"#334155",margin:"0 0 4px"}}>Noch keine Teams angelegt</p>
+        <p style={{fontSize:13,color:"#94a3b8",margin:0}}>Lege zuerst Teams im Onboarding oder im Tab Mannschaften an.</p>
+      </div>}
+    </div>
+  );
+}
+
+/* =================================================================
+   4. CSV-EXPORT ANWESENHEIT (Sandra, Rolf)
+================================================================= */
+function exportAttendanceCSV(data, teamId, teamName) {
+  const players = (data.playerProfiles||[]).filter(p=>p.mainTid===teamId&&!p.archived);
+  const trainings = (data.events||[]).filter(e=>e.tid===teamId&&e.type==="training").sort((a,b)=>a.date.localeCompare(b.date));
+  if(!players.length||!trainings.length) return;
+
+  const header = ["Name","Jahrgang",...trainings.map(e=>e.date+" "+e.title.slice(0,15)),"Gesamt","Prozent"];
+  const rows = players.map(pl=>{
+    const presence = trainings.map(e=>{
+      const v = e.votes?.[pl.name];
+      const val = typeof v==="object"&&v!==null ? v.val : v;
+      return val==="yes" ? "1" : val==="no" ? "0" : "-";
+    });
+    const total = presence.filter(x=>x==="1").length;
+    const pct = trainings.length>0 ? Math.round(total/trainings.length*100)+"%" : "-";
+    return [pl.name, pl.by||"", ...presence, total, pct];
+  });
+
+  const csv = [header,...rows].map(r=>r.map(x=>`"${x}"`).join(",")).join("\n");
+  const blob = new Blob(["\uFEFF"+csv], {type:"text/csv;charset=utf-8"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "anwesenheit-"+teamName.replace(/\s/g,"-")+"-"+new Date().toISOString().slice(0,10)+".csv";
+  a.click();
+}
+
+/* =================================================================
+   5. MASSEN-NACHRICHT AN ALLE TRAINER (Monika Jugendwart)
+================================================================= */
+function BroadcastModal({ data, cid, session, save, fire, onClose }) {
+  const [msg, setMsg] = useState("");
+  const [selTids, setSelTids] = useState([]);
+  const trainers = (data.trainers||[]).filter(x=>x.cid===cid);
+  const allTids = trainers.map(x=>x.id);
+
+  const send = () => {
+    if(!msg.trim()) return;
+    const newMsg = {
+      id: uid(), cid, teamId:"_broadcast_",
+      author: session.name||"Admin", role:"admin",
+      text: "[Rundschreiben] "+msg.trim(),
+      ts: Date.now(),
+      recipients: selTids.length>0 ? selTids : allTids,
+    };
+    save({...data, chats:[...(data.chats||[]),newMsg]});
+    fire("Rundschreiben versendet an "+(selTids.length||trainers.length)+" Trainer");
+    onClose();
+  };
+
+  return (
+    <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:900,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
+      <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,padding:"22px 22px 44px"}}>
+        <h3 style={{fontWeight:900,fontSize:18,marginBottom:4}}>Rundschreiben an Trainer</h3>
+        <p style={{fontSize:13,color:"#64748b",marginBottom:16,lineHeight:1.5}}>
+          Nachricht wird an alle oder ausgewaehlte Trainer gesendet.
+        </p>
+        <div style={{marginBottom:14}}>
+          <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8}}>EMPFAENGER</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
+            <button onClick={()=>setSelTids([])}
+              style={{padding:"6px 12px",borderRadius:9,border:`1.5px solid ${selTids.length===0?"#16a34a":"#e2e8f0"}`,background:selTids.length===0?"#f0fdf4":"#fff",color:selTids.length===0?"#16a34a":"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+              Alle ({trainers.length})
+            </button>
+            {trainers.map(tr=>(
+              <button key={tr.id} onClick={()=>setSelTids(s=>s.includes(tr.id)?s.filter(x=>x!==tr.id):[...s,tr.id])}
+                style={{display:"flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:9,border:`1.5px solid ${selTids.includes(tr.id)?"#16a34a":"#e2e8f0"}`,background:selTids.includes(tr.id)?"#f0fdf4":"#fff",color:selTids.includes(tr.id)?"#16a34a":"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+                <Av name={tr.name} sz={18}/>{tr.name}
+              </button>
+            ))}
+          </div>
+        </div>
+        <textarea value={msg} onChange={e=>setMsg(e.target.value)}
+          placeholder="Nachricht an die Trainer..."
+          rows={4} style={{width:"100%",padding:"12px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",resize:"none",fontFamily:"inherit",boxSizing:"border-box",marginBottom:14}}/>
+        <div style={{display:"flex",gap:9}}>
+          <button onClick={onClose} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
+          <button onClick={send} disabled={!msg.trim()}
+            style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:msg.trim()?"#16a34a":"#e2e8f0",color:msg.trim()?"#fff":"#94a3b8",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
+            Senden
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* =================================================================
+   6. SCHWARZES BRETT / VEREINSNEWS (Birgit Pressewartin)
+================================================================= */
+function NewsTab({ data, cid, session, save, fire, cl }) {
+  const t = TH(cl);
+  const news = (data.news||[]).filter(x=>x.cid===cid).sort((a,b)=>b.ts-a.ts);
+  const [showForm, setShowForm] = useState(false);
+  const [f, setF] = useState({title:"",body:"",pin:false});
+  const isAdmin = session?.role==="admin";
+
+  const post = () => {
+    if(!f.title.trim()) return;
+    const item = {id:uid(),cid,title:f.title.trim(),body:f.body.trim(),pin:f.pin,ts:Date.now(),author:session?.name||"Admin"};
+    save({...data,news:[...(data.news||[]),item]});
+    setShowForm(false);
+    setF({title:"",body:"",pin:false});
+    fire("Neuigkeit veroffentlicht");
+  };
+  const del = id => save({...data,news:(data.news||[]).filter(x=>x.id!==id)});
+  const pinned = news.filter(x=>x.pin);
+  const rest = news.filter(x=>!x.pin);
+
+  return (
+    <div>
+      {isAdmin&&<button onClick={()=>setShowForm(true)}
+        style={{width:"100%",padding:"13px",borderRadius:14,border:"none",background:t.p,color:"#fff",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit",marginBottom:14}}>
+        + Neuigkeit veroeffentlichen
+      </button>}
+
+      {news.length===0&&!showForm&&(
+        <div style={{textAlign:"center",padding:"40px",background:"#f8fafc",borderRadius:14,border:"1.5px dashed #e2e8f0"}}>
+          <p style={{fontWeight:700,color:"#334155",margin:"0 0 4px"}}>Noch keine Neuigkeiten</p>
+          <p style={{fontSize:13,color:"#94a3b8",margin:0}}>Veroeffentliche Vereinsnews die alle Mitglieder sehen.</p>
+        </div>
+      )}
+
+      {pinned.length>0&&<>
+        <div style={{fontSize:11,fontWeight:800,color:"#d97706",marginBottom:8,letterSpacing:.5}}>ANGEPINNT</div>
+        {pinned.map(item=><NewsCard key={item.id} item={item} isAdmin={isAdmin} onDel={()=>del(item.id)} t={t}/>)}
+      </>}
+      {rest.length>0&&<>
+        {pinned.length>0&&<div style={{fontSize:11,fontWeight:800,color:"#94a3b8",marginBottom:8,marginTop:12,letterSpacing:.5}}>AKTUELL</div>}
+        {rest.map(item=><NewsCard key={item.id} item={item} isAdmin={isAdmin} onDel={()=>del(item.id)} t={t}/>)}
+      </>}
+
+      {showForm&&(
+        <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:900,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
+          <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,padding:"22px 22px 44px"}}>
+            <h3 style={{fontWeight:900,fontSize:18,marginBottom:16}}>Neuigkeit veroeffentlichen</h3>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              <input value={f.title} onChange={e=>setF(p=>({...p,title:e.target.value}))} placeholder="Titel (z.B. Saisonstart, Hauptversammlung)"
+                style={{padding:"12px 14px",fontSize:15,fontWeight:700,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none"}}/>
+              <textarea value={f.body} onChange={e=>setF(p=>({...p,body:e.target.value}))} placeholder="Mehr Details (optional)..." rows={4}
+                style={{padding:"12px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",resize:"none",fontFamily:"inherit"}}/>
+              <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",padding:"10px 13px",background:"#fef3c7",borderRadius:11,border:"1.5px solid #fde68a"}}>
+                <input type="checkbox" checked={f.pin} onChange={e=>setF(p=>({...p,pin:e.target.checked}))} style={{width:18,height:18,accentColor:t.p}}/>
+                <span style={{fontWeight:700,fontSize:14,color:"#92400e"}}>Oben anpinnen (wichtige Neuigkeit)</span>
+              </label>
+            </div>
+            <div style={{display:"flex",gap:9,marginTop:14}}>
+              <button onClick={()=>setShowForm(false)} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
+              <button onClick={post} disabled={!f.title.trim()} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:f.title.trim()?t.p:"#e2e8f0",color:f.title.trim()?"#fff":"#94a3b8",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Veroeffentlichen</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NewsCard({ item, isAdmin, onDel, t }) {
+  const ago = Math.round((Date.now()-item.ts)/60000);
+  const timeStr = ago<60 ? ago+"min" : ago<1440 ? Math.round(ago/60)+"h" : Math.round(ago/1440)+"d";
+  return (
+    <div style={{background:"#fff",borderRadius:14,padding:"14px 16px",border:`1.5px solid ${item.pin?"#fde68a":"#e2e8f0"}`,marginBottom:9,position:"relative"}}>
+      {item.pin&&<div style={{position:"absolute",top:12,right:isAdmin?40:12,background:"#fef3c7",color:"#d97706",fontSize:10,fontWeight:800,padding:"2px 7px",borderRadius:5}}>ANGEPINNT</div>}
+      {isAdmin&&<button onClick={onDel} style={{position:"absolute",top:10,right:10,width:26,height:26,borderRadius:7,background:"#fee2e2",border:"none",color:"#dc2626",cursor:"pointer",fontSize:12,fontWeight:800}}>x</button>}
+      <div style={{fontWeight:800,fontSize:15,color:"#0f172a",paddingRight:isAdmin?32:0}}>{item.title}</div>
+      {item.body&&<div style={{fontSize:13,color:"#475569",marginTop:6,lineHeight:1.6}}>{item.body}</div>}
+      <div style={{fontSize:11,color:"#94a3b8",marginTop:8}}>{item.author} vor {timeStr}</div>
+    </div>
+  );
+}
+
+/* =================================================================
+   7. IMPORT von JSON/Backup (Brigitte Excel, Thomas TeamApp)
+================================================================= */
+function ImportData({ save, fire, onClose }) {
+  const [error, setError] = useState("");
+  const [preview, setPreview] = useState(null);
+  const fileRef = React.useRef(null);
+
+  const handleFile = (e) => {
+    const file = e.target.files?.[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const parsed = JSON.parse(ev.target.result);
+        if(!parsed.clubs||!Array.isArray(parsed.clubs)) {
+          setError("Keine gueltie Vereins-App Backup-Datei. Bitte nur Dateien importieren die von dieser App exportiert wurden.");
+          return;
+        }
+        setPreview(parsed);
+        setError("");
+      } catch {
+        setError("Datei konnte nicht gelesen werden. Bitte nur .json Dateien importieren.");
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const doImport = () => {
+    if(!preview) return;
+    save(preview);
+    fire("Import erfolgreich - "+preview.clubs?.length+" Vereine geladen");
+    onClose();
+  };
+
+  return (
+    <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:900,display:"flex",alignItems:"center",justifyContent:"center",padding:20,backdropFilter:"blur(6px)"}}>
+      <div style={{background:"#fff",borderRadius:20,padding:"24px",width:"100%",maxWidth:400}}>
+        <h3 style={{fontWeight:900,fontSize:18,marginBottom:8}}>Daten importieren</h3>
+        <p style={{fontSize:13,color:"#64748b",marginBottom:16,lineHeight:1.5}}>
+          Lade eine Backup-Datei hoch die du zuvor mit dieser App exportiert hast.
+        </p>
+        {error&&<FriendlyError type="loadError" extra={error}/>}
+        {!preview?(
+          <>
+            <input ref={fileRef} type="file" accept=".json" onChange={handleFile} style={{display:"none"}}/>
+            <button onClick={()=>fileRef.current?.click()}
+              style={{width:"100%",padding:"13px",borderRadius:13,border:"2px dashed #e2e8f0",background:"#f8fafc",color:"#475569",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",marginBottom:14}}>
+              JSON-Datei auswaehlen
+            </button>
+          </>
+        ):(
+          <div style={{background:"#f0fdf4",borderRadius:12,padding:"12px 14px",border:"1.5px solid #bbf7d0",marginBottom:14}}>
+            <div style={{fontWeight:700,fontSize:14,color:"#166534",marginBottom:4}}>Datei erkannt:</div>
+            <div style={{fontSize:13,color:"#166534"}}>
+              {preview.clubs?.length||0} Vereine, {preview.teams?.length||0} Teams, {preview.playerProfiles?.length||0} Spieler
+            </div>
+          </div>
+        )}
+        <div style={{display:"flex",gap:9}}>
+          <button onClick={onClose} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
+          {preview&&<button onClick={doImport} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Importieren</button>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+
+function AccessibilityBar() {
+  const [fs, setFs] = React.useState(()=>localStorage.getItem("va_fontsize")||"normal");
+  const apply = (size) => {
+    setFs(size);
+    localStorage.setItem("va_fontsize", size);
+    document.documentElement.style.fontSize = {small:"13px",normal:"15px",large:"19px"}[size];
+  };
+  React.useEffect(()=>{ apply(fs); }, []);
+  return (
+    <div style={{position:"fixed",bottom:16,right:16,zIndex:500,display:"flex",gap:5,
+      background:"rgba(0,0,0,.45)",borderRadius:12,padding:"6px 8px",backdropFilter:"blur(8px)"}}>
+      {[["small","A"],["normal","A"],["large","A"]].map(([size,label],i)=>(
+        <button key={size} onClick={()=>apply(size)}
+          style={{width:28,height:28,borderRadius:8,border:`1.5px solid ${fs===size?"#fff":"rgba(255,255,255,.3)"}`,
+            background:fs===size?"rgba(255,255,255,.25)":"transparent",
+            color:"#fff",fontWeight:900,fontSize:[11,14,18][i],cursor:"pointer",
+            fontFamily:"inherit",lineHeight:1}}>
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+
+/* =================================================================
+   AUDIT & SECURITY SYSTEM
+================================================================= */
+
+// Geraete-Fingerprint (kein echter Fingerprint - nur Browser-Infos)
+const getDeviceInfo = () => {
+  const ua = navigator.userAgent;
+  const lang = navigator.language || "unbekannt";
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "unbekannt";
+  const screen = `${window.screen.width}x${window.screen.height}`;
+  const mobile = /Mobi|Android/i.test(ua);
+  const browser = ua.includes("Chrome") ? "Chrome"
+    : ua.includes("Firefox") ? "Firefox"
+    : ua.includes("Safari") ? "Safari"
+    : ua.includes("Edge") ? "Edge" : "Unbekannt";
+  const os = ua.includes("Windows") ? "Windows"
+    : ua.includes("Mac") ? "macOS"
+    : ua.includes("iPhone") || ua.includes("iPad") ? "iOS"
+    : ua.includes("Android") ? "Android"
+    : ua.includes("Linux") ? "Linux" : "Unbekannt";
+
+  // Sprache als Proxy fuer Region
+  const region = lang.split("-")[1] || lang.split("-")[0] || "??";
+  const suspicious = !["de","en","nl","at","ch","be","lu"].includes(lang.slice(0,2).toLowerCase());
+
+  return { browser, os, mobile, screen, lang, tz, region, suspicious, ua: ua.slice(0,80) };
+};
+
+// Gerraete-ID (stabil im localStorage)
+const getDeviceId = () => {
+  let id = localStorage.getItem("va_device_id");
+  if(!id) {
+    id = uid();
+    localStorage.setItem("va_device_id", id);
+  }
+  return id;
+};
+
+// Brute-Force Schutz
+const BruteForce = {
+  key: (cid) => "va_bf_" + cid,
+  get: (cid) => {
+    try { return JSON.parse(localStorage.getItem(BruteForce.key(cid)) || "{}"); } catch { return {}; }
+  },
+  record: (cid, success) => {
+    const now = Date.now();
+    const state = BruteForce.get(cid);
+    if(success) {
+      localStorage.removeItem(BruteForce.key(cid));
+      return { blocked: false };
+    }
+    const attempts = (state.attempts || []).filter(t => now - t < 5 * 60 * 1000); // letzte 5 Min
+    attempts.push(now);
+    const newState = { attempts, blockedUntil: attempts.length >= 3 ? now + 5 * 60 * 1000 : 0 };
+    localStorage.setItem(BruteForce.key(cid), JSON.stringify(newState));
+    return {
+      blocked: newState.blockedUntil > now,
+      attemptsLeft: Math.max(0, 3 - attempts.length),
+      blockedFor: Math.ceil((newState.blockedUntil - now) / 60000),
+    };
+  },
+  isBlocked: (cid) => {
+    const state = BruteForce.get(cid);
+    return state.blockedUntil && Date.now() < state.blockedUntil
+      ? Math.ceil((state.blockedUntil - Date.now()) / 60000)
+      : 0;
+  },
+};
+
+// Audit-Log Eintrag erstellen
+const createAuditEntry = (type, detail, session, extra = {}) => ({
+  id: uid(),
+  type,       // login|logout|player_add|player_edit|player_del|event_add|event_del|admin_action|suspicious|pw_change
+  detail,     // Lesbarer Text
+  ts: new Date().toISOString(),
+  role: session?.role || "unknown",
+  name: session?.name || session?.role || "Unbekannt",
+  device: getDeviceInfo(),
+  deviceId: getDeviceId(),
+  ...extra,
+});
+
+// Audit-Log speichern (append-only, max 500 Eintraege)
+const addAuditLog = (data, save, entry) => {
+  const log = [...(data.securityLog || []), entry].slice(-500);
+  save({ ...data, securityLog: log });
+};
+
+// Bekannte Geraete fuer einen Verein
+const getKnownDevices = (securityLog) => {
+  const devices = {};
+  (securityLog || [])
+    .filter(e => e.type === "login" && e.deviceId)
+    .forEach(e => { devices[e.deviceId] = (devices[e.deviceId] || 0) + 1; });
+  return devices;
+};
+
+/* =================================================================
+   SECURITY LOG TAB (nur Admin)
+================================================================= */
+function SecurityTab({ data, cid, save }) {
+  const log = (data.securityLog || [])
+    .filter(e => e.cid === cid || !e.cid)
+    .sort((a, b) => b.ts.localeCompare(a.ts));
+
+  const [filter, setFilter] = useState("all"); // all|logins|changes|suspicious
+  const [showDetails, setShowDetails] = useState(null);
+
+  const knownDevices = getKnownDevices(log);
+
+  const TYPE_CONFIG = {
+    login:        { icon: "->", label: "Login",         col: "#16a34a", bg: "#dcfce7" },
+    logout:       { icon: "<-", label: "Logout",        col: "#64748b", bg: "#f1f5f9" },
+    player_add:   { icon: "+P", label: "Spieler +",     col: "#2563eb", bg: "#eff6ff" },
+    player_edit:  { icon: "~P", label: "Spieler ~",     col: "#2563eb", bg: "#eff6ff" },
+    player_del:   { icon: "-P", label: "Spieler -",     col: "#dc2626", bg: "#fee2e2" },
+    event_add:    { icon: "+T", label: "Termin +",      col: "#16a34a", bg: "#dcfce7" },
+    event_edit:   { icon: "~T", label: "Termin ~",      col: "#d97706", bg: "#fef3c7" },
+    event_del:    { icon: "-T", label: "Termin -",      col: "#dc2626", bg: "#fee2e2" },
+    admin_action: { icon: "A",  label: "Admin",         col: "#7c3aed", bg: "#ede9fe" },
+    pw_change:    { icon: "PW", label: "Passwort",      col: "#d97706", bg: "#fef3c7" },
+    suspicious:   { icon: "!",  label: "Verdaechtig",   col: "#dc2626", bg: "#fee2e2" },
+    brute_force:  { icon: "!!", label: "Brute Force",   col: "#dc2626", bg: "#fee2e2" },
+    dsgvo_delete: { icon: "DS", label: "DSGVO-Losch",   col: "#7c3aed", bg: "#ede9fe" },
+    new_device:   { icon: "ND", label: "Neues Geraet",  col: "#d97706", bg: "#fef3c7" },
+  };
+
+  const filtered = log.filter(e => {
+    if(filter === "logins") return ["login","logout","brute_force","suspicious"].includes(e.type);
+    if(filter === "changes") return ["player_add","player_edit","player_del","event_add","event_edit","event_del","admin_action","pw_change","dsgvo_delete"].includes(e.type);
+    if(filter === "suspicious") return ["suspicious","brute_force","new_device"].includes(e.type);
+    return true;
+  });
+
+  const suspicious = log.filter(e => ["suspicious","brute_force","new_device"].includes(e.type));
+  const todayLogins = log.filter(e => e.type === "login" && e.ts.startsWith(new Date().toISOString().slice(0,10)));
+
+  const formatTime = ts => {
+    const d = new Date(ts);
+    const now = new Date();
+    const diff = now - d;
+    if(diff < 60000) return "Gerade eben";
+    if(diff < 3600000) return Math.floor(diff/60000) + " Min. her";
+    if(diff < 86400000) return Math.floor(diff/3600000) + " Std. her";
+    return d.toLocaleDateString("de-DE", { day:"2-digit", month:"2-digit", year:"2-digit" })
+      + " " + d.toLocaleTimeString("de-DE", { hour:"2-digit", minute:"2-digit" });
+  };
+
+  return (
+    <div>
+      {/* Zusammenfassung */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:16}}>
+        {[
+          [todayLogins.length, "Logins heute", "#16a34a"],
+          [suspicious.length,  "Verdaechtig",  suspicious.length>0?"#dc2626":"#64748b"],
+          [Object.keys(knownDevices).length, "Bekannte Geraete", "#2563eb"],
+        ].map(([v,l,col])=>(
+          <div key={l} style={{background:"#fff",borderRadius:13,padding:"12px",
+            textAlign:"center",border:"1.5px solid #e2e8f0"}}>
+            <div style={{fontWeight:900,fontSize:24,color:col,lineHeight:1}}>{v}</div>
+            <div style={{fontSize:10,color:"#94a3b8",marginTop:3,lineHeight:1.3}}>{l}</div>
+          </div>
+        ))}
+      </div>
+
+      {suspicious.length > 0 && (
+        <div style={{background:"#fef2f2",borderRadius:13,padding:"12px 14px",
+          border:"2px solid #fca5a5",marginBottom:14}}>
+          <div style={{fontWeight:800,fontSize:13,color:"#dc2626",marginBottom:4}}>
+            {suspicious.length} verdaechtige Aktivitaet(en)
+          </div>
+          <div style={{fontSize:12,color:"#dc2626"}}>
+            {suspicious.slice(0,2).map(e=>(
+              <div key={e.id}>{formatTime(e.ts)}: {e.detail}</div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Filter */}
+      <div style={{display:"flex",gap:6,marginBottom:14,overflowX:"auto",scrollbarWidth:"none"}}>
+        {[["all","Alles"],["logins","Logins"],["changes","Aenderungen"],["suspicious","Verdaechtig"]].map(([v,l])=>(
+          <button key={v} onClick={()=>setFilter(v)}
+            style={{padding:"7px 14px",borderRadius:99,border:`2px solid ${filter===v?"#0f172a":"#e2e8f0"}`,
+              background:filter===v?"#0f172a":"#fff",color:filter===v?"#fff":"#64748b",
+              fontWeight:700,fontSize:12,cursor:"pointer",whiteSpace:"nowrap",
+              fontFamily:"inherit",flexShrink:0}}>
+            {l}
+            {v==="suspicious"&&suspicious.length>0&&<span style={{marginLeft:5,background:"#dc2626",color:"#fff",borderRadius:99,padding:"0px 6px",fontSize:10}}>{suspicious.length}</span>}
+          </button>
+        ))}
+      </div>
+
+      {/* Log Liste */}
+      {filtered.length === 0 && (
+        <div style={{textAlign:"center",padding:"40px",background:"#f8fafc",borderRadius:14,border:"1.5px dashed #e2e8f0"}}>
+          <p style={{fontWeight:700,color:"#334155",margin:0}}>Noch keine Eintraege</p>
+        </div>
+      )}
+      <div style={{display:"flex",flexDirection:"column",gap:7}}>
+        {filtered.slice(0,100).map(entry => {
+          const cfg = TYPE_CONFIG[entry.type] || { icon:"?", label:entry.type, col:"#64748b", bg:"#f1f5f9" };
+          const isNew = !knownDevices[entry.deviceId] || knownDevices[entry.deviceId] <= 1;
+          const isSuspicious = ["suspicious","brute_force","new_device"].includes(entry.type);
+          return (
+            <div key={entry.id} onClick={()=>setShowDetails(showDetails===entry.id?null:entry.id)}
+              style={{background:"#fff",borderRadius:13,padding:"11px 14px",
+                border:`1.5px solid ${isSuspicious?"#fca5a5":"#e2e8f0"}`,
+                cursor:"pointer",transition:"all .15s"}}>
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <div style={{width:36,height:36,borderRadius:10,background:cfg.bg,
+                  display:"flex",alignItems:"center",justifyContent:"center",
+                  fontWeight:900,fontSize:12,color:cfg.col,flexShrink:0}}>
+                  {cfg.icon}
+                </div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontWeight:700,fontSize:13,color:"#0f172a",
+                    whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+                    {entry.detail}
+                  </div>
+                  <div style={{fontSize:11,color:"#94a3b8",marginTop:2,display:"flex",gap:8,flexWrap:"wrap"}}>
+                    <span>{formatTime(entry.ts)}</span>
+                    <span>{entry.name}</span>
+                    {entry.device?.os&&<span>{entry.device.os}</span>}
+                    {entry.device?.suspicious&&<span style={{color:"#dc2626",fontWeight:700}}>Ausland?</span>}
+                  </div>
+                </div>
+                <div style={{fontSize:11,color:"#94a3b8",flexShrink:0,textAlign:"right"}}>
+                  {cfg.label}
+                  {isSuspicious&&<div style={{color:"#dc2626",fontWeight:800}}>!</div>}
+                </div>
+              </div>
+              {showDetails===entry.id&&(
+                <div style={{marginTop:10,padding:"10px 12px",background:"#f8fafc",
+                  borderRadius:9,fontSize:11,color:"#64748b",lineHeight:1.8}}>
+                  <div><strong>Zeit:</strong> {new Date(entry.ts).toLocaleString("de-DE")}</div>
+                  <div><strong>Rolle:</strong> {entry.role}</div>
+                  <div><strong>Browser:</strong> {entry.device?.browser} auf {entry.device?.os}</div>
+                  <div><strong>Sprache/Region:</strong> {entry.device?.lang} ({entry.device?.tz})</div>
+                  <div><strong>Bildschirm:</strong> {entry.device?.screen}</div>
+                  <div><strong>Geraet-ID:</strong> {entry.deviceId?.slice(0,8)}... {isNew?"(Neues Geraet!)":""}</div>
+                  {entry.device?.suspicious&&(
+                    <div style={{color:"#dc2626",fontWeight:700,marginTop:4}}>
+                      Hinweis: Browsersprache deutet auf Ausland hin ({entry.device.lang})
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {filtered.length > 100 && (
+        <div style={{textAlign:"center",padding:"12px",fontSize:12,color:"#94a3b8"}}>
+          {filtered.length - 100} weitere Eintraege nicht angezeigt
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* =================================================================
+   BOTTOM NAVIGATION + DRAWER
+================================================================= */
+function BottomNav({ tab, setTab, isAdmin, isHelper, unread, cl }) {
+  const t = TH(cl);
+  const [showDrawer, setShowDrawer] = useState(false);
+
+  const mainTabs = [
+    { id:"events",  label:"Termine",  icon:"K" },
+    { id:"team",    label:"Team",     icon:"P", hidden: isHelper },
+    { id:"fields",  label:"Platz",    icon:"F", hidden: isHelper },
+    { id:"chat",    label:"Chat",     icon:"C", badge: unread },
+    { id:"more",    label:"Mehr",     icon:"=" },
+  ].filter(x=>!x.hidden);
+
+  const drawerSections = [
+    {
+      label: "VERWALTUNG",
+      items: [
+        { id:"training",  label:"Trainingsplan", icon:"TP" },
+        { id:"jerseys",    label:"Trikots",      icon:"T" },
+        { id:"helpers",    label:"Helfer",       icon:"H", hidden: isHelper },
+        { id:"templates",  label:"Vorlagen",     icon:"V", hidden: isHelper },
+        { id:"results",    label:"Ergebnisse",   icon:"E" },
+        { id:"attendance", label:"Anwesenheit",  icon:"S", hidden: isHelper },
+      ].filter(x=>!x.hidden),
+    },
+    isAdmin && {
+      label: "ADMIN",
+      items: [
+        { id:"overview",    label:"Uebersicht alle Teams", icon:"U" },
+        { id:"news",        label:"Neuigkeiten",           icon:"N" },
+        { id:"teams",       label:"Mannschaften",          icon:"M" },
+        { id:"trainers",    label:"Trainer",               icon:"T" },
+        { id:"fieldsadmin", label:"Plaetze",               icon:"P" },
+        { id:"branding",    label:"Design",                icon:"D" },
+        { id:"inbox",       label:"Posteingang",           icon:"I" },
+        { id:"security",    label:"Sicherheitslog",        icon:"!" },
+        { id:"settings",    label:"Einstellungen",         icon:"+" },
+      ],
+    },
+  ].filter(Boolean);
+
+  const selectTab = (id) => {
+    setTab(id);
+    setShowDrawer(false);
+  };
+
+  return (
+    <>
+      {/* Drawer */}
+      {showDrawer && (
+        <div style={{position:"fixed",inset:0,zIndex:600,display:"flex",flexDirection:"column",justifyContent:"flex-end"}}>
+          <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,.45)",backdropFilter:"blur(4px)"}}
+            onClick={()=>setShowDrawer(false)}/>
+          <div style={{position:"relative",background:"#fff",borderRadius:"22px 22px 0 0",
+            maxHeight:"75dvh",overflowY:"auto",paddingBottom:32,animation:"down .25s ease"}}>
+            <div style={{width:36,height:4,borderRadius:99,background:"#e2e8f0",
+              margin:"12px auto 16px"}}/>
+            {drawerSections.map((section,si)=>(
+              <div key={si} style={{paddingBottom:8}}>
+                <div style={{fontSize:10,fontWeight:800,color:"#94a3b8",
+                  letterSpacing:1,padding:"8px 20px 6px"}}>
+                  {section.label}
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,padding:"0 16px"}}>
+                  {section.items.map(item=>(
+                    <button key={item.id} onClick={()=>selectTab(item.id)}
+                      style={{padding:"13px 8px",borderRadius:14,border:`1.5px solid ${tab===item.id?t.p:"#e2e8f0"}`,
+                        background:tab===item.id?t.p+"12":"#f8fafc",
+                        color:tab===item.id?t.p:"#475569",
+                        fontWeight:tab===item.id?800:600,fontSize:11,
+                        cursor:"pointer",fontFamily:"inherit",textAlign:"center",
+                        display:"flex",flexDirection:"column",alignItems:"center",gap:5}}>
+                      <div style={{width:32,height:32,borderRadius:9,
+                        background:tab===item.id?t.p:"#e2e8f0",
+                        display:"flex",alignItems:"center",justifyContent:"center",
+                        fontWeight:900,fontSize:14,
+                        color:tab===item.id?"#fff":"#64748b"}}>
+                        {item.icon}
+                      </div>
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Bottom Bar */}
+      <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:500,
+        background:"rgba(255,255,255,.95)",backdropFilter:"blur(12px)",
+        borderTop:"1px solid #e2e8f0",
+        display:"flex",alignItems:"stretch",
+        paddingBottom:"env(safe-area-inset-bottom)",
+        boxShadow:"0 -4px 24px rgba(0,0,0,.08)"}}>
+        {mainTabs.map(item=>{
+          const active = item.id==="more" ? showDrawer
+            : tab===item.id || (item.id==="team" && ["players","attendance","stats"].includes(tab));
+          return (
+            <button key={item.id}
+              onClick={()=>{ if(item.id==="more"){ setShowDrawer(s=>!s); } else { setTab(item.id); setShowDrawer(false); }}}
+              style={{flex:1,padding:"10px 4px 8px",border:"none",background:"transparent",
+                cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",
+                gap:3,position:"relative",fontFamily:"inherit"}}>
+              {item.badge>0&&(
+                <div style={{position:"absolute",top:6,right:"25%",width:16,height:16,
+                  borderRadius:"50%",background:"#dc2626",color:"#fff",
+                  fontSize:10,fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  {item.badge>9?"9+":item.badge}
+                </div>
+              )}
+              <div style={{width:28,height:28,borderRadius:9,
+                background:active?t.p:"transparent",
+                display:"flex",alignItems:"center",justifyContent:"center",
+                fontWeight:900,fontSize:15,
+                color:active?"#fff":tab===item.id?"#0f172a":"#94a3b8",
+                transition:"all .2s"}}>
+                {item.icon}
+              </div>
+              <span style={{fontSize:10,fontWeight:active?800:500,
+                color:active?t.p:"#94a3b8",transition:"all .2s"}}>
+                {item.label}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
+/* =================================================================
+   TEAM HUB (Spieler + Anwesenheit + Statistik in einem Tab)
+================================================================= */
+function TeamHub({ data, myTids, save, fire, cl, session }) {
+  const [subTab, setSubTab] = useState("players"); // players | attendance | stats
+  const t = TH(cl);
+  const subTabs = [
+    { id:"players",    label:"Spieler",     icon:"P" },
+    { id:"attendance", label:"Anwesenheit", icon:"S" },
+    { id:"results",    label:"Ergebnisse",  icon:"E" },
+  ];
+  return (
+    <div>
+      <div style={{display:"flex",gap:6,marginBottom:14}}>
+        {subTabs.map(st=>(
+          <button key={st.id} onClick={()=>setSubTab(st.id)}
+            style={{flex:1,padding:"9px",borderRadius:11,
+              border:`2px solid ${subTab===st.id?t.p:"#e2e8f0"}`,
+              background:subTab===st.id?t.p:"#fff",
+              color:subTab===st.id?"#fff":"#64748b",
+              fontWeight:subTab===st.id?800:600,fontSize:13,
+              cursor:"pointer",fontFamily:"inherit"}}>
+            {st.label}
+          </button>
+        ))}
+      </div>
+      {subTab==="players"    && <PlayersTab    data={data} myTids={myTids} save={save} fire={fire} cl={cl}/>}
+      {subTab==="attendance" && <AttendanceTab data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
+      {subTab==="results"    && <LeagueTab     data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
+    </div>
+  );
+}
+
+
+
+/* =================================================================
+   MATERIAL KATALOG
+================================================================= */
+const MATERIAL_CATALOG = [
+  // Tore
+  { id:"goal_small",   cat:"Tore",      label:"Kleines Tor",    icon:"g", col:"#dc2626", unit:"Tor",    canColor:false },
+  { id:"goal_medium",  cat:"Tore",      label:"Mittleres Tor",  icon:"G", col:"#d97706", unit:"Tor",    canColor:false },
+  { id:"goal_large",   cat:"Tore",      label:"Grosses Tor",    icon:"GG",col:"#334155", unit:"Tor",    canColor:false },
+  // Markierung
+  { id:"huetchen",     cat:"Markierung",label:"Huetchen",       icon:"^", col:"#f59e0b", unit:"Stueck", canColor:true  },
+  { id:"pylone",       cat:"Markierung",label:"Pylone",         icon:"P", col:"#f97316", unit:"Stueck", canColor:true  },
+  { id:"stange",       cat:"Markierung",label:"Huepfstange",    icon:"|", col:"#64748b", unit:"Stueck", canColor:true  },
+  { id:"koordleiter",  cat:"Markierung",label:"Koordinationsleiter",icon:"=",col:"#7c3aed",unit:"Stueck",canColor:false},
+  // Leibchen
+  { id:"leibchen",     cat:"Leibchen",  label:"Leibchen",       icon:"L", col:"#3b82f6", unit:"Stueck", canColor:true  },
+  // Baelle
+  { id:"ball_fuss",    cat:"Baelle",    label:"Fussball",       icon:"o", col:"#0f172a", unit:"Ball",   canColor:false },
+  { id:"ball_hand",    cat:"Baelle",    label:"Handball",       icon:"o", col:"#d97706", unit:"Ball",   canColor:false },
+  { id:"ball_tennis",  cat:"Baelle",    label:"Tennisball",     icon:"o", col:"#84cc16", unit:"Ball",   canColor:false },
+  // Sonstiges
+  { id:"bander",       cat:"Sonstiges", label:"Markierungsband",icon:"-", col:"#ec4899", unit:"Rolle",  canColor:true  },
+  { id:"huerden",      cat:"Sonstiges", label:"Huerden",        icon:"H", col:"#64748b", unit:"Stueck", canColor:false },
+  { id:"medizinball",  cat:"Sonstiges", label:"Medizinball",    icon:"M", col:"#7c3aed", unit:"Stueck", canColor:false },
+];
+
+const COLORS_DE = ["rot","blau","gelb","gruen","orange","weiss","schwarz","pink"];
+const COLOR_HEX  = {rot:"#dc2626",blau:"#2563eb",gelb:"#f59e0b",gruen:"#16a34a",
+                    orange:"#d97706",weiss:"#e2e8f0",schwarz:"#1e293b",pink:"#ec4899"};
+
+const EXERCISE_CATS = [
+  { id:"warmup",   label:"Aufwaermen",  col:"#f59e0b", bg:"#fef3c7" },
+  { id:"technik",  label:"Technik",     col:"#2563eb", bg:"#eff6ff" },
+  { id:"taktik",   label:"Taktik",      col:"#7c3aed", bg:"#ede9fe" },
+  { id:"spiel",    label:"Spielform",   col:"#16a34a", bg:"#dcfce7" },
+  { id:"abkuehlen",label:"Abkuehlen",   col:"#64748b", bg:"#f1f5f9" },
+];
+
+const FIELD_ZONES = [
+  { id:"full",      label:"Ganzes Feld",   pct:100 },
+  { id:"half_l",    label:"Linke Haelfte", pct:50  },
+  { id:"half_r",    label:"Rechte Haelfte",pct:50  },
+  { id:"third_l",   label:"Linkes Drittel",pct:33  },
+  { id:"third_m",   label:"Mitteldrittel", pct:33  },
+  { id:"third_r",   label:"Rechtes Drittel",pct:33 },
+  { id:"quarter_tl",label:"Viertel oben L",pct:25  },
+  { id:"quarter_tr",label:"Viertel oben R",pct:25  },
+  { id:"quarter_bl",label:"Viertel unten L",pct:25 },
+  { id:"quarter_br",label:"Viertel unten R",pct:25 },
+  { id:"strafraum", label:"Strafraum",     pct:15  },
+  { id:"mittelkreis",label:"Mittelkreis",  pct:20  },
+];
+
+/* =================================================================
+   INVENTARLISTE BERECHNEN
+================================================================= */
+const calcInventory = (exercises) => {
+  const totals = {};
+  (exercises||[]).forEach(ex => {
+    (ex.material||[]).forEach(m => {
+      const key = m.id + (m.color ? "_"+m.color : "");
+      if(!totals[key]) totals[key] = { ...m, total:0 };
+      totals[key].total += (m.qty || 1);
+    });
+  });
+  return Object.values(totals).sort((a,b)=>a.cat?.localeCompare(b.cat));
+};
+
+/* =================================================================
+   TRAINING PLAN TAB
+================================================================= */
+function TrainingPlanTab({ data, myTids, save, fire, cl, session }) {
+  const t = TH(cl);
+  const cid = (data.teams||[]).find(tm=>myTids.includes(tm.id))?.cid;
+  const plans = (data.trainingPlans||[]).filter(p=>myTids.includes(p.tid)||(p.cid===cid&&!p.tid));
+  const [selPlan, setSelPlan] = useState(null);
+  const [showNew, setShowNew] = useState(false);
+  const [showInventory, setShowInventory] = useState(null);
+
+  // Naechstes Training mit Trainingsplan
+  const today = new Date().toISOString().slice(0,10);
+  const nextTraining = (data.events||[])
+    .filter(e=>myTids.includes(e.tid)&&e.type==="training"&&e.date>=today&&e.planId)
+    .sort((a,b)=>a.date.localeCompare(b.date))[0];
+  const linkedPlan = nextTraining ? plans.find(p=>p.id===nextTraining.planId) : null;
+
+  return (
+    <div>
+      {/* Naechstes Training Hint */}
+      {linkedPlan&&(
+        <div style={{background:`linear-gradient(135deg,${t.s||"#052e16"},${t.p})`,
+          borderRadius:16,padding:"14px 16px",marginBottom:14,cursor:"pointer"}}
+          onClick={()=>setShowInventory(linkedPlan)}>
+          <div style={{color:"rgba(255,255,255,.6)",fontSize:11,fontWeight:700,marginBottom:4}}>
+            NAECHSTES TRAINING - INVENTARLISTE
+          </div>
+          <div style={{color:"#fff",fontWeight:900,fontSize:16,marginBottom:8}}>
+            {linkedPlan.name}
+          </div>
+          {(() => {
+            const inv = calcInventory(linkedPlan.exercises);
+            return (
+              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                {inv.slice(0,4).map(item=>(
+                  <div key={item.id+(item.color||"")} style={{background:"rgba(255,255,255,.15)",
+                    borderRadius:99,padding:"4px 10px",fontSize:12,color:"#fff",fontWeight:700}}>
+                    {item.total}x {item.label}{item.color?" ("+item.color+")":""}
+                  </div>
+                ))}
+                {inv.length>4&&<div style={{background:"rgba(255,255,255,.1)",borderRadius:99,
+                  padding:"4px 10px",fontSize:12,color:"rgba(255,255,255,.7)"}}>
+                  +{inv.length-4} weitere
+                </div>}
+              </div>
+            );
+          })()}
+          <div style={{color:"rgba(255,255,255,.5)",fontSize:11,marginTop:8}}>
+            Tippen fuer vollstaendige Inventarliste
+          </div>
+        </div>
+      )}
+
+      {/* Plaene Liste */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+        <div style={{fontWeight:900,fontSize:15,color:"#0f172a"}}>{plans.length} Trainingsplaene</div>
+        <button onClick={()=>setShowNew(true)}
+          style={{padding:"9px 16px",borderRadius:11,border:"none",background:t.p,
+            color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+          + Neuer Plan
+        </button>
+      </div>
+
+      {plans.length===0&&(
+        <div style={{textAlign:"center",padding:"40px 20px",background:"#f8fafc",
+          borderRadius:16,border:"1.5px dashed #e2e8f0"}}>
+          <div style={{fontWeight:700,fontSize:15,color:"#334155",marginBottom:6}}>
+            Noch keine Trainingsplaene
+          </div>
+          <div style={{fontSize:13,color:"#94a3b8",lineHeight:1.6}}>
+            Erstelle Trainingsplaene mit Uebungen und Material.<br/>
+            Die App berechnet automatisch was du benoenigst.
+          </div>
+        </div>
+      )}
+
+      {plans.map(plan=>{
+        const inv = calcInventory(plan.exercises);
+        const totalMins = (plan.exercises||[]).reduce((s,e)=>s+(e.duration||0),0);
+        return (
+          <div key={plan.id} style={{background:"#fff",borderRadius:14,border:"1.5px solid #e2e8f0",
+            marginBottom:10,overflow:"hidden"}}>
+            <div style={{padding:"13px 16px",display:"flex",alignItems:"flex-start",gap:10}}>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:800,fontSize:15,color:"#0f172a"}}>{plan.name}</div>
+                <div style={{fontSize:12,color:"#64748b",marginTop:2}}>
+                  {(plan.exercises||[]).length} Uebungen  {totalMins} Min.
+                </div>
+              </div>
+              <div style={{display:"flex",gap:7}}>
+                <button onClick={()=>setShowInventory(plan)}
+                  style={{padding:"6px 12px",borderRadius:9,border:"1.5px solid #e2e8f0",
+                    background:"#f8fafc",fontWeight:700,fontSize:12,cursor:"pointer",
+                    fontFamily:"inherit",color:"#475569"}}>
+                  Inventar
+                </button>
+                <button onClick={()=>setSelPlan(plan)}
+                  style={{padding:"6px 12px",borderRadius:9,border:"none",background:t.p,
+                    color:"#fff",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+                  Bearbeiten
+                </button>
+              </div>
+            </div>
+            {/* Plan Stats */}
+            {(()=>{
+              const stats=calcPlanStats(plan.exercises);
+              if(!stats.topSkills||stats.topSkills.length===0) return null;
+              return (
+                <div style={{padding:"0 14px 10px",display:"flex",gap:12,alignItems:"center"}}>
+                  <div style={{display:"flex",gap:3}}>
+                    {Array.from({length:5},(_,i)=>(
+                      <div key={i} style={{width:8,height:14,borderRadius:3,
+                        background:i*2<stats.intensity?(stats.intensity>=8?"#dc2626":stats.intensity>=5?"#d97706":"#16a34a"):"#e2e8f0"}}/>
+                    ))}
+                  </div>
+                  <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                    {stats.topSkills.slice(0,2).map(([skill])=>{
+                      const sk=SKILLS[skill];
+                      return sk?<span key={skill} style={{background:sk.col+"15",color:sk.col,borderRadius:99,padding:"2px 7px",fontSize:10,fontWeight:700}}>{sk.label}</span>:null;
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+            {/* Uebungs-Kacheln */}
+            {(plan.exercises||[]).length>0&&(
+              <div style={{display:"flex",gap:4,padding:"0 14px 12px",overflowX:"auto",scrollbarWidth:"none"}}>
+                {plan.exercises.map((ex,i)=>{
+                  const cat = EXERCISE_CATS.find(c=>c.id===ex.cat)||EXERCISE_CATS[0];
+                  return (
+                    <div key={i} style={{flexShrink:0,padding:"6px 10px",borderRadius:9,
+                      background:cat.bg,border:`1px solid ${cat.col}30`,minWidth:80}}>
+                      <div style={{fontWeight:700,fontSize:11,color:cat.col}}>{ex.duration||0} Min</div>
+                      <div style={{fontWeight:600,fontSize:11,color:"#334155",
+                        whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:90}}>
+                        {ex.name||"Uebung"}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {/* Inventar Modal */}
+      {showInventory&&<InventorySheet plan={showInventory} data={data} onClose={()=>setShowInventory(null)} cl={cl}/>}
+
+      {/* Plan Editor */}
+      {(showNew||selPlan)&&(
+        <PlanEditor
+          plan={selPlan}
+          cid={cid}
+          myTids={myTids}
+          data={data}
+          save={save}
+          fire={fire}
+          cl={cl}
+          onClose={()=>{ setShowNew(false); setSelPlan(null); }}
+        />
+      )}
+    </div>
+  );
+}
+
+/* =================================================================
+   INVENTAR SHEET - Vor dem Training
+================================================================= */
+function InventorySheet({ plan, data, onClose, cl }) {
+  const t = TH(cl);
+  const inv = calcInventory(plan.exercises);
+  const cats = [...new Set(inv.map(x=>x.cat))];
+  const totalMins = (plan.exercises||[]).reduce((s,e)=>s+(e.duration||0),0);
+
+  // Platz-Visualisierung
+  const zones = [...new Set((plan.exercises||[]).map(e=>e.zone).filter(Boolean))];
+
+  const copyList = () => {
+    const text = "Inventar fuer: "+plan.name+"\n\n"+
+      cats.map(cat=>
+        cat+":\n"+inv.filter(x=>x.cat===cat)
+          .map(x=>"  "+x.total+"x "+x.label+(x.color?" ("+x.color+")":""))
+          .join("\n")
+      ).join("\n\n");
+    navigator.clipboard?.writeText(text);
+  };
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:900,
+      display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
+      <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",
+        maxWidth:520,maxHeight:"90dvh",overflowY:"auto",paddingBottom:40}}>
+
+        <div style={{background:`linear-gradient(135deg,${t.s||"#052e16"},${t.p})`,
+          padding:"18px 20px 16px"}}>
+          <div style={{color:"rgba(255,255,255,.6)",fontSize:11,fontWeight:700,marginBottom:3}}>
+            VOR DEM TRAINING BEREITSTELLEN
+          </div>
+          <div style={{color:"#fff",fontWeight:900,fontSize:20}}>{plan.name}</div>
+          <div style={{color:"rgba(255,255,255,.6)",fontSize:12,marginTop:4}}>
+            {(plan.exercises||[]).length} Uebungen  {totalMins} Min.
+          </div>
+        </div>
+
+        <div style={{padding:"18px 20px 0"}}>
+
+          {/* Planskizze */}
+          {zones.length>0&&(
+            <div style={{marginBottom:16}}>
+              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5}}>
+                PLATZBELEGUNG
+              </div>
+              <FieldPlanView exercises={plan.exercises} cl={cl}/>
+            </div>
+          )}
+
+          {/* Inventar nach Kategorie */}
+          {cats.map(cat=>(
+            <div key={cat} style={{marginBottom:14}}>
+              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,
+                letterSpacing:.5,textTransform:"uppercase"}}>
+                {cat}
+              </div>
+              <div style={{display:"flex",flexDirection:"column",gap:7}}>
+                {inv.filter(x=>x.cat===cat).map(item=>{
+                  const matDef = MATERIAL_CATALOG.find(m=>m.id===item.id);
+                  const dotCol = item.color ? COLOR_HEX[item.color]||"#64748b" : matDef?.col||"#64748b";
+                  return (
+                    <div key={item.id+(item.color||"")} style={{display:"flex",alignItems:"center",
+                      gap:12,background:"#f8fafc",borderRadius:12,padding:"11px 14px",
+                      border:"1.5px solid #e2e8f0"}}>
+                      <div style={{width:36,height:36,borderRadius:10,
+                        background:dotCol+"20",display:"flex",alignItems:"center",
+                        justifyContent:"center",fontWeight:900,fontSize:16,color:dotCol,flexShrink:0}}>
+                        {matDef?.icon||"?"}
+                      </div>
+                      <div style={{flex:1}}>
+                        <div style={{fontWeight:700,fontSize:14,color:"#0f172a"}}>
+                          {item.label}
+                          {item.color&&<span style={{marginLeft:6,background:dotCol+"20",
+                            color:dotCol,borderRadius:99,padding:"1px 7px",
+                            fontSize:11,fontWeight:700}}>{item.color}</span>}
+                        </div>
+                        <div style={{fontSize:11,color:"#94a3b8",marginTop:1}}>
+                          {item.unit==="Tor"?"Tore benoetigt":
+                           item.unit==="Ball"?"Baelle":
+                           "Stueck"}
+                        </div>
+                      </div>
+                      <div style={{width:44,height:44,borderRadius:12,background:dotCol,
+                        display:"flex",alignItems:"center",justifyContent:"center",
+                        fontWeight:900,fontSize:22,color:"#fff",flexShrink:0}}>
+                        {item.total}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+
+          {inv.length===0&&(
+            <div style={{textAlign:"center",padding:"32px",background:"#f8fafc",
+              borderRadius:14,border:"1.5px dashed #e2e8f0"}}>
+              <p style={{color:"#94a3b8",margin:0}}>Keine Materialien eingetragen</p>
+            </div>
+          )}
+
+          <div style={{display:"flex",gap:9,marginTop:4}}>
+            <button onClick={copyList}
+              style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",
+                background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit",
+                color:"#475569"}}>
+              Liste kopieren
+            </button>
+            <button onClick={onClose}
+              style={{flex:1,padding:"12px",borderRadius:12,border:"none",background:t.p,
+                color:"#fff",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
+              Schliessen
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* =================================================================
+   FELD PLAN VISUALISIERUNG
+================================================================= */
+function FieldPlanView({ exercises, cl }) {
+  const t = TH(cl);
+  const ZONE_RECTS = {
+    full:       {x:0,   y:0,   w:100, h:100},
+    half_l:     {x:0,   y:0,   w:50,  h:100},
+    half_r:     {x:50,  y:0,   w:50,  h:100},
+    third_l:    {x:0,   y:0,   w:33,  h:100},
+    third_m:    {x:33,  y:0,   w:34,  h:100},
+    third_r:    {x:67,  y:0,   w:33,  h:100},
+    quarter_tl: {x:0,   y:0,   w:50,  h:50 },
+    quarter_tr: {x:50,  y:0,   w:50,  h:50 },
+    quarter_bl: {x:0,   y:50,  w:50,  h:50 },
+    quarter_br: {x:50,  y:50,  w:50,  h:50 },
+    strafraum:  {x:25,  y:70,  w:50,  h:30 },
+    mittelkreis:{x:30,  y:30,  w:40,  h:40 },
+  };
+  const W = 260, H = 160;
+
+  return (
+    <div style={{borderRadius:12,overflow:"hidden",border:"1.5px solid #e2e8f0"}}>
+      <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{display:"block"}}>
+        {/* Rasen Hintergrund */}
+        <rect width={W} height={H} fill="#16a34a" opacity=".85"/>
+        {Array.from({length:6},(_,i)=>(
+          <rect key={i} x={0} y={H/6*i} width={W} height={H/12} fill="rgba(0,0,0,.05)"/>
+        ))}
+        {/* Feldlinien */}
+        <rect x={W*.04} y={H*.06} width={W*.92} height={H*.88} rx="2" fill="none" stroke="white" strokeWidth="1.5" opacity=".6"/>
+        <line x1={W/2} y1={H*.06} x2={W/2} y2={H*.94} stroke="white" strokeWidth="1" opacity=".4"/>
+        <circle cx={W/2} cy={H/2} r={Math.min(W,H)*.1} fill="none" stroke="white" strokeWidth="1" opacity=".4"/>
+
+        {/* Uebungs-Zonen */}
+        {exercises.filter(ex=>ex.zone&&ZONE_RECTS[ex.zone]).map((ex,i)=>{
+          const zr = ZONE_RECTS[ex.zone];
+          const cat = EXERCISE_CATS.find(c=>c.id===ex.cat)||EXERCISE_CATS[0];
+          const colors = ["#3b82f6","#dc2626","#f59e0b","#7c3aed","#ec4899","#14b8a6"];
+          const col = colors[i%colors.length];
+          const x = W * zr.x/100;
+          const y = H * zr.y/100;
+          const w = W * zr.w/100;
+          const h = H * zr.h/100;
+          return (
+            <g key={i}>
+              <rect x={x+3} y={y+3} width={w-6} height={h-6} rx="3"
+                fill={col} opacity=".4" stroke={col} strokeWidth="1.5" strokeDasharray="4,2"/>
+              <text x={x+w/2} y={y+h/2-4} textAnchor="middle"
+                fontSize="8" fontWeight="800" fill="white">
+                {(ex.name||"").slice(0,12)}
+              </text>
+              <text x={x+w/2} y={y+h/2+7} textAnchor="middle"
+                fontSize="7" fill="white" opacity=".8">
+                {ex.duration||0} Min
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+/* =================================================================
+   PLAN EDITOR
+================================================================= */
+function PlanEditor({ plan, cid, myTids, data, save, fire, cl, onClose }) {
+  const t = TH(cl);
+  const [name, setName] = useState(plan?.name||"");
+  const [tid, setTid]   = useState(plan?.tid||myTids[0]||"");
+  const [exercises, setExercises] = useState(plan?.exercises||[]);
+  const [showAddEx, setShowAddEx] = useState(false);
+  const [editExIdx, setEditExIdx] = useState(null);
+  const [showTplBrowser, setShowTplBrowser] = useState(false);
+  const myTeams = (data.teams||[]).filter(tm=>myTids.includes(tm.id));
+
+  const savePlan = () => {
+    if(!name.trim()) return;
+    const rec = { id:plan?.id||uid(), cid, tid, name:name.trim(), exercises, updatedAt:new Date().toISOString(), isTemplate:asTemplate, shared:shareWithAll };
+    const plans = data.trainingPlans||[];
+    const next = plan ? plans.map(p=>p.id===plan.id?rec:p) : [...plans,rec];
+    save({...data, trainingPlans:next});
+    fire(plan?"Plan aktualisiert":"Trainingsplan erstellt");
+    onClose();
+  };
+  const delPlan = () => {
+    save({...data, trainingPlans:(data.trainingPlans||[]).filter(p=>p.id!==plan?.id)});
+    fire("Plan geloescht"); onClose();
+  };
+  const delEx = idx => setExercises(ex=>ex.filter((_,i)=>i!==idx));
+  const moveEx = (idx,dir) => {
+    const arr=[...exercises]; const to=idx+dir;
+    if(to<0||to>=arr.length) return;
+    [arr[idx],arr[to]]=[arr[to],arr[idx]]; setExercises(arr);
+  };
+  const totalMins = exercises.reduce((s,e)=>s+(e.duration||0),0);
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:900,
+      display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
+      <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",
+        maxWidth:520,maxHeight:"90dvh",display:"flex",flexDirection:"column"}}>
+
+        <div style={{background:t.p,padding:"16px 20px 14px",flexShrink:0,borderRadius:"22px 22px 0 0"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <div style={{flex:1,color:"#fff",fontWeight:900,fontSize:18}}>
+              {plan?"Plan bearbeiten":"Neuer Trainingsplan"}
+            </div>
+            <button onClick={onClose} style={{width:32,height:32,borderRadius:10,
+              background:"rgba(255,255,255,.2)",border:"none",color:"#fff",
+              cursor:"pointer",fontSize:18,fontWeight:700}}>x</button>
+          </div>
+        </div>
+
+        <div style={{flex:1,overflowY:"auto",padding:"16px 20px 0"}}>
+          <input value={name} onChange={e=>setName(e.target.value)} placeholder="Name des Trainingsplans"
+            style={{width:"100%",padding:"12px 14px",fontSize:15,fontWeight:700,
+              border:`1.5px solid ${name?"#16a34a":"#e2e8f0"}`,borderRadius:12,
+              outline:"none",marginBottom:12,boxSizing:"border-box"}}/>
+
+          {myTeams.length>1&&(
+            <select value={tid} onChange={e=>setTid(e.target.value)}
+              style={{width:"100%",padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",
+                borderRadius:12,outline:"none",marginBottom:12,boxSizing:"border-box"}}>
+              {myTeams.map(tm=><option key={tm.id} value={tm.id}>{tm.name}</option>)}
+            </select>
+          )}
+
+          {/* Uebungen */}
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+            <div style={{fontWeight:700,fontSize:13,color:"#64748b"}}>
+              {exercises.length} Uebungen  {totalMins} Min.
+            </div>
+            <div style={{display:"flex",gap:7}}>
+              <button onClick={()=>setShowTplBrowser(true)}
+                style={{padding:"7px 12px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#f8fafc",color:"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+                Aus Bibliothek
+              </button>
+              <button onClick={()=>{setEditExIdx(null);setShowAddEx(true);}}
+                style={{padding:"7px 14px",borderRadius:9,border:"none",background:t.p,
+                  color:"#fff",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+                + Eigene
+              </button>
+            </div>
+          </div>
+
+          {exercises.length===0&&(
+            <div style={{textAlign:"center",padding:"28px",background:"#f8fafc",
+              borderRadius:12,border:"1.5px dashed #e2e8f0",marginBottom:12}}>
+              <p style={{color:"#94a3b8",margin:0,fontSize:13}}>Noch keine Uebungen</p>
+            </div>
+          )}
+
+          {exercises.map((ex,i)=>{
+            const cat = EXERCISE_CATS.find(c=>c.id===ex.cat)||EXERCISE_CATS[0];
+            return (
+              <div key={i} style={{background:"#fff",borderRadius:13,border:`1.5px solid ${cat.col}40`,
+                padding:"11px 13px",marginBottom:8}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <div style={{width:8,height:8,borderRadius:"50%",background:cat.col,flexShrink:0}}/>
+                  <div style={{flex:1}}>
+                    <div style={{fontWeight:700,fontSize:13,color:"#0f172a"}}>{ex.name||"Uebung"}</div>
+                    <div style={{fontSize:11,color:"#94a3b8",marginTop:1}}>
+                      {cat.label}  {ex.duration||0} Min.
+                      {ex.zone&&"  "+FIELD_ZONES.find(z=>z.id===ex.zone)?.label}
+                    </div>
+                  </div>
+                  <div style={{display:"flex",gap:4}}>
+                    <button onClick={()=>moveEx(i,-1)} style={{width:24,height:24,borderRadius:7,border:"1.5px solid #e2e8f0",background:"#fff",cursor:"pointer",fontSize:11,fontWeight:700}}>^</button>
+                    <button onClick={()=>moveEx(i,1)}  style={{width:24,height:24,borderRadius:7,border:"1.5px solid #e2e8f0",background:"#fff",cursor:"pointer",fontSize:11,fontWeight:700}}>v</button>
+                    <button onClick={()=>{setEditExIdx(i);setShowAddEx(true);}} style={{width:24,height:24,borderRadius:7,background:"#eff6ff",border:"none",color:"#2563eb",cursor:"pointer",fontSize:11,fontWeight:700}}>E</button>
+                    <button onClick={()=>delEx(i)} style={{width:24,height:24,borderRadius:7,background:"#fee2e2",border:"none",color:"#dc2626",cursor:"pointer",fontSize:11,fontWeight:800}}>x</button>
+                  </div>
+                </div>
+                {(ex.material||[]).length>0&&(
+                  <div style={{display:"flex",gap:5,flexWrap:"wrap",marginTop:7}}>
+                    {ex.material.map((m,mi)=>{
+                      const matDef=MATERIAL_CATALOG.find(x=>x.id===m.id);
+                      const col=m.color?COLOR_HEX[m.color]||"#64748b":matDef?.col||"#64748b";
+                      return (
+                        <div key={mi} style={{background:col+"15",borderRadius:99,
+                          padding:"2px 8px",fontSize:10,fontWeight:700,color:col}}>
+                          {m.qty||1}x {m.label||matDef?.label}{m.color?" ("+m.color+")":""}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={{padding:"12px 20px 32px",borderTop:"1px solid #f1f5f9",flexShrink:0,display:"flex",gap:9}}>
+          {plan&&<button onClick={delPlan} style={{padding:"12px",borderRadius:12,border:"none",background:"#fee2e2",color:"#dc2626",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Loeschen</button>}
+          <button onClick={onClose} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
+          <button onClick={savePlan} disabled={!name.trim()} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:name.trim()?t.p:"#e2e8f0",color:name.trim()?"#fff":"#94a3b8",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Speichern</button>
+        </div>
+      </div>
+
+      {showTplBrowser&&<TemplateBrowser
+        onSelect={tpl=>{
+          const ex = {
+            name:tpl.name, cat:tpl.cat||"technik",
+            duration:tpl.duration||15, zone:tpl.fieldZone||"full",
+            intensity:tpl.intensity||5, skills:tpl.skills||[],
+            description:tpl.description||"", material:tpl.material||[],
+            fromTemplate:tpl.id,
+          };
+          setExercises(arr=>[...arr,ex]);
+          setShowTplBrowser(false);
+          fire("Uebung aus Bibliothek hinzugefuegt: "+tpl.name);
+        }}
+        cid={cid} myTids={myTids} data={data} cl={cl}
+        onClose={()=>setShowTplBrowser(false)}
+      />}
+      {showAddEx&&<ExerciseEditor
+        ex={editExIdx!==null?exercises[editExIdx]:null}
+        onSave={ex=>{
+          if(editExIdx!==null) setExercises(arr=>arr.map((e,i)=>i===editExIdx?ex:e));
+          else setExercises(arr=>[...arr,ex]);
+          setShowAddEx(false); setEditExIdx(null);
+        }}
+        onClose={()=>{setShowAddEx(false);setEditExIdx(null);}}
+        cl={cl}
+      />}
+    </div>
+  );
+}
+
+/* =================================================================
+   UEBUNG EDITOR
+================================================================= */
+function ExerciseEditor({ ex, onSave, onClose, cl }) {
+  const t = TH(cl);
+  const [f, setF] = useState({
+    name:ex?.name||"", cat:ex?.cat||"warmup",
+    duration:ex?.duration||10, zone:ex?.zone||"full",
+    description:ex?.description||"", material:ex?.material||[],
+  });
+  const u = p => setF(prev=>({...prev,...p}));
+  const [showMat, setShowMat] = useState(false);
+  const [matDraft, setMatDraft] = useState({id:"",qty:2,color:""});
+  const matCats = [...new Set(MATERIAL_CATALOG.map(m=>m.cat))];
+
+  const addMat = () => {
+    if(!matDraft.id) return;
+    const def = MATERIAL_CATALOG.find(m=>m.id===matDraft.id);
+    const mat = {...matDraft, label:def?.label||matDraft.id, cat:def?.cat||"Sonstiges"};
+    u({material:[...f.material,mat]});
+    setMatDraft({id:"",qty:2,color:""});
+    setShowMat(false);
+  };
+  const delMat = idx => u({material:f.material.filter((_,i)=>i!==idx)});
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",zIndex:910,
+      display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+      <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",
+        maxWidth:520,maxHeight:"88dvh",overflowY:"auto",paddingBottom:44}}>
+        <div style={{background:t.p,padding:"16px 20px 14px",borderRadius:"22px 22px 0 0"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <div style={{flex:1,color:"#fff",fontWeight:900,fontSize:17}}>
+              {ex?"Uebung bearbeiten":"Neue Uebung"}
+            </div>
+            <button onClick={onClose} style={{width:30,height:30,borderRadius:9,background:"rgba(255,255,255,.2)",border:"none",color:"#fff",cursor:"pointer",fontWeight:700}}>x</button>
+          </div>
+        </div>
+        <div style={{padding:"16px 20px 0"}}>
+          <input value={f.name} onChange={e=>u({name:e.target.value})} placeholder="Name der Uebung"
+            style={{width:"100%",padding:"12px 14px",fontSize:15,fontWeight:700,
+              border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",
+              marginBottom:12,boxSizing:"border-box"}}/>
+
+          {/* Kategorie */}
+          <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8}}>KATEGORIE</div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
+            {EXERCISE_CATS.map(cat=>(
+              <button key={cat.id} onClick={()=>u({cat:cat.id})}
+                style={{padding:"7px 12px",borderRadius:99,border:`2px solid ${f.cat===cat.id?cat.col:"#e2e8f0"}`,
+                  background:f.cat===cat.id?cat.bg:"#fff",color:f.cat===cat.id?cat.col:"#64748b",
+                  fontWeight:f.cat===cat.id?800:600,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+                {cat.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Dauer */}
+          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#64748b"}}>DAUER</div>
+            <div style={{display:"flex",alignItems:"center",gap:8,flex:1,justifyContent:"center"}}>
+              <button onClick={()=>u({duration:Math.max(5,f.duration-5)})}
+                style={{width:34,height:34,borderRadius:10,border:"1.5px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontSize:18,fontWeight:800}}>-</button>
+              <span style={{fontWeight:900,fontSize:22,color:t.p,minWidth:60,textAlign:"center"}}>{f.duration} Min</span>
+              <button onClick={()=>u({duration:Math.min(60,f.duration+5)})}
+                style={{width:34,height:34,borderRadius:10,border:"1.5px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontSize:18,fontWeight:800}}>+</button>
+            </div>
+          </div>
+
+          {/* Feldzone */}
+          <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8}}>BEREICH AUF DEM FELD</div>
+          <select value={f.zone} onChange={e=>u({zone:e.target.value})}
+            style={{width:"100%",padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",
+              borderRadius:12,outline:"none",marginBottom:12,boxSizing:"border-box"}}>
+            {FIELD_ZONES.map(z=><option key={z.id} value={z.id}>{z.label}</option>)}
+          </select>
+
+          {/* Material */}
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#64748b"}}>MATERIAL</div>
+            <button onClick={()=>setShowMat(true)}
+              style={{padding:"5px 12px",borderRadius:8,border:"none",background:t.p+"18",
+                color:t.p,fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+              + Hinzufuegen
+            </button>
+          </div>
+          {f.material.length===0&&(
+            <div style={{padding:"12px",background:"#f8fafc",borderRadius:10,
+              border:"1.5px dashed #e2e8f0",marginBottom:12,textAlign:"center",
+              fontSize:12,color:"#94a3b8"}}>
+              Kein Material eingetragen
+            </div>
+          )}
+          <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
+            {f.material.map((m,i)=>{
+              const def=MATERIAL_CATALOG.find(x=>x.id===m.id);
+              const col=m.color?COLOR_HEX[m.color]||"#64748b":def?.col||"#64748b";
+              return (
+                <div key={i} style={{display:"flex",alignItems:"center",gap:5,
+                  background:col+"15",borderRadius:99,padding:"5px 10px"}}>
+                  <span style={{fontSize:12,fontWeight:700,color:col}}>
+                    {m.qty||1}x {m.label||def?.label}{m.color?" ("+m.color+")":""}
+                  </span>
+                  <button onClick={()=>delMat(i)}
+                    style={{width:16,height:16,borderRadius:"50%",background:col,
+                      border:"none",color:"#fff",fontSize:10,cursor:"pointer",
+                      display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800}}>
+                    x
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Material Auswahl */}
+          {showMat&&(
+            <div style={{background:"#f8fafc",borderRadius:14,padding:"14px",
+              border:"1.5px solid #e2e8f0",marginBottom:12}}>
+              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8}}>MATERIAL WAEHLEN</div>
+              {matCats.map(cat=>(
+                <div key={cat} style={{marginBottom:10}}>
+                  <div style={{fontSize:10,color:"#94a3b8",fontWeight:700,marginBottom:5}}>{cat.toUpperCase()}</div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                    {MATERIAL_CATALOG.filter(m=>m.cat===cat).map(m=>(
+                      <button key={m.id} onClick={()=>setMatDraft(p=>({...p,id:m.id}))}
+                        style={{padding:"5px 10px",borderRadius:8,
+                          border:`1.5px solid ${matDraft.id===m.id?m.col:"#e2e8f0"}`,
+                          background:matDraft.id===m.id?m.col+"15":"#fff",
+                          color:matDraft.id===m.id?m.col:"#475569",
+                          fontWeight:matDraft.id===m.id?700:500,fontSize:12,
+                          cursor:"pointer",fontFamily:"inherit"}}>
+                        {m.icon} {m.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              {matDraft.id&&(()=>{
+                const def=MATERIAL_CATALOG.find(m=>m.id===matDraft.id);
+                return (
+                  <div style={{display:"flex",gap:8,alignItems:"center",marginTop:10,flexWrap:"wrap"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:6}}>
+                      <button onClick={()=>setMatDraft(p=>({...p,qty:Math.max(1,(p.qty||1)-1)}))}>-</button>
+                      <span style={{fontWeight:800,fontSize:16,minWidth:30,textAlign:"center"}}>{matDraft.qty||1}</span>
+                      <button onClick={()=>setMatDraft(p=>({...p,qty:(p.qty||1)+1}))}>+</button>
+                    </div>
+                    {def?.canColor&&(
+                      <select value={matDraft.color||""} onChange={e=>setMatDraft(p=>({...p,color:e.target.value}))}
+                        style={{padding:"6px 10px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none"}}>
+                        <option value="">Farbe (optional)</option>
+                        {COLORS_DE.map(col=><option key={col} value={col}>{col}</option>)}
+                      </select>
+                    )}
+                    <button onClick={addMat}
+                      style={{padding:"7px 14px",borderRadius:9,border:"none",background:t.p,
+                        color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+                      Hinzufuegen
+                    </button>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+        </div>
+
+        <div style={{padding:"12px 20px 0",display:"flex",gap:9}}>
+          <button onClick={onClose} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
+          <button onClick={()=>onSave(f)} disabled={!f.name.trim()}
+            style={{flex:2,padding:"12px",borderRadius:12,border:"none",
+              background:f.name.trim()?t.p:"#e2e8f0",
+              color:f.name.trim()?"#fff":"#94a3b8",
+              fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
+            Uebung speichern
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+// TRAINING LIBRARY - Vollstaendige Vorlagen-Datenbank
+// Jede Vorlage hat: id, name, category, ageGroups, duration, intensity(1-10),
+//   skills (was wird trainiert), description, coaching_points, variations,
+//   material, fieldZone, playerCount, minPlayers
+
+const SKILLS = {
+  // TECHNISCH
+  ballkontrolle: { label:"Ballkontrolle",  cat:"Technik",  col:"#2563eb" },
+  dribbling:     { label:"Dribbling",      cat:"Technik",  col:"#2563eb" },
+  passen:        { label:"Passspiel",      cat:"Technik",  col:"#2563eb" },
+  schuss:        { label:"Torabschluss",   cat:"Technik",  col:"#2563eb" },
+  kopfball:      { label:"Kopfballspiel",  cat:"Technik",  col:"#2563eb" },
+  // TAKTISCH
+  raumaufteilung:{ label:"Raumaufteilung", cat:"Taktik",   col:"#7c3aed" },
+  pressing:      { label:"Pressing",       cat:"Taktik",   col:"#7c3aed" },
+  umschalten:    { label:"Umschalten",     cat:"Taktik",   col:"#7c3aed" },
+  standards:     { label:"Standards",      cat:"Taktik",   col:"#7c3aed" },
+  verteidigung:  { label:"Verteidigung",   cat:"Taktik",   col:"#7c3aed" },
+  // ATHLETISCH
+  schnelligkeit: { label:"Schnelligkeit",  cat:"Athletik", col:"#dc2626" },
+  ausdauer:      { label:"Ausdauer",       cat:"Athletik", col:"#dc2626" },
+  kraft:         { label:"Kraft",          cat:"Athletik", col:"#dc2626" },
+  koordination:  { label:"Koordination",   cat:"Athletik", col:"#dc2626" },
+  wendigkeit:    { label:"Wendigkeit",     cat:"Athletik", col:"#dc2626" },
+  // MENTAL
+  spielintelligenz:{ label:"Spielintelligenz",cat:"Mental",col:"#d97706" },
+  zweikampf:     { label:"Zweikampfstaerke",cat:"Mental",  col:"#d97706" },
+  teamarbeit:    { label:"Teamarbeit",     cat:"Mental",   col:"#d97706" },
+  konzentration: { label:"Konzentration",  cat:"Mental",   col:"#d97706" },
+};
+
+// Altersgruppen-Codes
+const AGE_GROUPS = {
+  bambini: "Bambini (U6-U8)",
+  g: "G-Jugend (U7-U8)",
+  f: "F-Jugend (U9-U10)",
+  e: "E-Jugend (U10-U11)",
+  d: "D-Jugend (U12-U13)",
+  c: "C-Jugend (U14-U15)",
+  ba: "B/A-Jugend (U16-U19)",
+  senioren: "Senioren",
+  altherren: "Alt-Herren",
+  all: "Alle Altersgruppen",
+};
+
+const TRAINING_TEMPLATES = [
+
+// ================================================================
+// AUFWAERMEN (8 Vorlagen)
+// ================================================================
+{
+  id:"aw_01", cat:"warmup", name:"Bewegungsschule mit Ball",
+  age:["bambini","g","f"],
+  duration:15, intensity:3,
+  skills:["koordination","ballkontrolle"],
+  description:`Die Spieler bewegen sich frei im Feld und fuehren auf Zuruf des Trainers verschiedene Bewegungsaufgaben mit dem Ball durch. Tippen, Rollen, Hochhalten.`,
+  coaching:`Kein Leistungsdruck. Jeder macht in seinem eigenen Tempo. Lob und Ermutigung stehen im Vordergrund. Kreative Loesungen der Kinder unbedingt anerkennen.`,
+  variations:`Mit Farben arbeiten (gelbes Huetchen = hochheben, rotes = stoppen). Musik einsetzen um Stimmung zu foerdern.`,
+  minPlayers:4, fieldZone:"full",
+  material:[{id:"ball_fuss",qty:1,label:"Fussball",cat:"Baelle"},{id:"huetchen",qty:8,color:"gelb",label:"Huetchen",cat:"Markierung"}],
+  ageNote:"Perfekt fuer Bambinis und G-Jugend. Spielerischer Einstieg ohne taktischen Anspruch.",
+},
+{
+  id:"aw_02", cat:"warmup", name:"Fangspiel mit Freiloesen",
+  age:["g","f","e"],
+  duration:10, intensity:4,
+  skills:["schnelligkeit","wendigkeit","teamarbeit"],
+  description:`2 Faenger jagen die Gruppe. Gefangene werden durch Unterlaufen der gespreizten Beine eines Mitspielers befreit. Variante: Mit Ball unter dem Arm laufen.`,
+  coaching:`Faenger nach 2 Min tauschen. Auf Mitspieler-Kommunikation achten. Befreien als Teamaktion betonen.`,
+  variations:`Eisbaer-Fangis: Gefangene stellen sich mit gespreizten Armen hin. Nur Paare koennen befreien.`,
+  minPlayers:8, fieldZone:"half_l",
+  material:[],
+  ageNote:"F und E Jugend ideal. Foerdert Sozialverhalten und Koerperkontrolle durch spielerische Dynamik.",
+},
+{
+  id:"aw_03", cat:"warmup", name:"Koordinationsleiter - Kombiniert",
+  age:["e","d","c","ba"],
+  duration:12, intensity:5,
+  skills:["koordination","schnelligkeit","konzentration"],
+  description:`Verschiedene Laufmuster durch die Koordinationsleiter: Einbeinig, Seitgallopp, Kreuzschritt, Doppelschritt. Im Anschluss Sprint um eine Pylone.`,
+  coaching:`Qualitaet vor Geschwindigkeit. Korrekte Fussarbeit beobachten. Arme aktiv einsetzen. Nach Technikbeherrschung Tempo steigern.`,
+  variations:`Mit Ball: Ballannahme nach Leiter und direkte Weiterverarbeitung. Reaktionstraining: Trainer zeigt Richtung erst beim Austritt aus der Leiter.`,
+  minPlayers:4, fieldZone:"third_m",
+  material:[{id:"koordleiter",qty:2,label:"Koordinationsleiter",cat:"Markierung"},{id:"pylone",qty:6,color:"orange",label:"Pylone",cat:"Markierung"}],
+  ageNote:"Ab E-Jugend geeignet. Jueingere Kinder koennen Muster noch nicht zuverlssig reproduzieren.",
+},
+{
+  id:"aw_04", cat:"warmup", name:"Rondos 4 gegen 1",
+  age:["d","c","ba","senioren"],
+  duration:10, intensity:5,
+  skills:["passen","raumaufteilung","spielintelligenz"],
+  description:`4 Spieler halten den Ball gegen 1 Stoerer in einem Quadrat (ca. 8x8 Meter). Maximal 2 Kontakte. Stoerer wechselt nach Ballgewinn oder 5 Ballverlusten.`,
+  coaching:`Dreieck zum Ball bilden. Anspielstationen oeffnen. Tempo variieren. Passweg antaeuschen. 'Doppelpass als Fluchtweg'.`,
+  variations:`3v1 fuer hoeheren Anspruch. 5v2 fuer Einsteiger. Einrueckung fordern wenn Stoerer presst.`,
+  minPlayers:5, fieldZone:"mittelkreis",
+  material:[{id:"ball_fuss",qty:2,label:"Fussball",cat:"Baelle"},{id:"huetchen",qty:4,color:"gelb",label:"Huetchen",cat:"Markierung"}],
+  ageNote:"Ab D-Jugend. Das klassische Aufwaerm-Rondo. Baut technisches und taktisches Verstaendnis gleichzeitig auf.",
+},
+
+// ================================================================
+// TECHNIKTRAINING (12 Vorlagen)
+// ================================================================
+{
+  id:"tech_01", cat:"technik", name:"Passstaffel mit Positionswechsel",
+  age:["f","e","d"],
+  duration:20, intensity:4,
+  skills:["passen","ballkontrolle","koordination"],
+  description:`Zwei Gruppen stehen sich in 15 Meter Abstand gegenueber. Spieler A passt zu Spieler B und laeuft ans Ende der gegenueberliegenden Gruppe. B nimmt an, passt zu C und laeuft hinterher. Varianten: Innenseite, Aussenrist, Flachpass, hoher Ball.`,
+  coaching:`Standfuss neben den Ball setzen. Geschlossene Hufte bei Innenseite. Auge auf den Ball beim Kontakt. Annahme mit dem ersten Kontakt in die gewuenschte Richtung.`,
+  variations:`Mit Huerden dazwischen. Direktpass erzwingen. Doppelpass einbauen. Annahme mit Schwacher Fuss.`,
+  minPlayers:6, fieldZone:"half_l",
+  material:[{id:"ball_fuss",qty:4,label:"Fussball",cat:"Baelle"},{id:"huetchen",qty:4,color:"rot",label:"Huetchen",cat:"Markierung"}],
+  ageNote:"F-Jugend: Nur Innenseite. E-Jugend: Aussenrist als Erweiterung. D-Jugend: Schwacher Fuss pflicht.",
+},
+{
+  id:"tech_02", cat:"technik", name:"Dribblingparcours mit Abschluss",
+  age:["g","f","e","d"],
+  duration:25, intensity:5,
+  skills:["dribbling","torabschluss","ballkontrolle"],
+  description:`Parcours aus Pylonen und Stangen: Slalom-Dribbling, Linienueberquerung, Tempowechsel, abschliessendes Schusstraining auf kleines oder grosses Tor. Jeder Spieler hat einen Ball.`,
+  coaching:`Kopf hoch beim Dribbling. Ball eng fuehren. Bremsen und Beschleunigen ueberraschen den Gegner. Beim Torabschluss: Auge auf den Ball, Schwungbein weit nach.`,
+  variations:`Zeitwettbewerb einbauen. Abschluss mit schwachem Fuss. Dribblingduell nach Parcours.`,
+  minPlayers:4, fieldZone:"strafraum",
+  material:[{id:"pylone",qty:8,color:"gelb",label:"Pylone",cat:"Markierung"},{id:"stange",qty:4,label:"Huepfstange",cat:"Markierung"},{id:"goal_small",qty:2,label:"Kleines Tor",cat:"Tore"},{id:"ball_fuss",qty:1,label:"Fussball",cat:"Baelle"}],
+  ageNote:"G/F: Einfacher Slalom ohne Zeitdruck. E: Mit Tempodribbling. D: Gegenspieler nach Parcours.",
+},
+{
+  id:"tech_03", cat:"technik", name:"Wandpass-Training (Kombination)",
+  age:["e","d","c"],
+  duration:20, intensity:5,
+  skills:["passen","ballkontrolle","spielintelligenz"],
+  description:`Spieler A passt zu B, laeuft an und erhaelt den Wandpass. Weiter zum naechsten Spieler oder Tor. Kombinationen werden schrittweise erweitert: 1-2, Doppelpass mit Richtungswechsel, Hereingabe und Abschluss.`,
+  coaching:`Timing des Anlaufwegs entscheidend. Wandpassgeber sofort anspielbereit. Abstand kontrollieren. Tempo der Kombination erhoehen wenn sicher.`,
+  variations:`Gegen passive Verteidigung. Doppelpass und Hereingabe kombinieren. 3-Mann-Kombination.`,
+  minPlayers:6, fieldZone:"half_r",
+  material:[{id:"ball_fuss",qty:3,label:"Fussball",cat:"Baelle"},{id:"goal_medium",qty:1,label:"Mittleres Tor",cat:"Tore"}],
+  ageNote:"E-Jugend: Einfache 1-2 Kombinationen. D: Richtungswechsel. C: Komplexe Kombinationen mit Gegner.",
+},
+{
+  id:"tech_04", cat:"technik", name:"Schusstechnik - Low Drive und Vollspann",
+  age:["d","c","ba"],
+  duration:25, intensity:6,
+  skills:["torabschluss","ballkontrolle"],
+  description:`Stationaerer Abschluss aus verschiedenen Distanzen: 11m, 16m, Einlauf-Abschluss. Low Drive: Flacher Ball mit Innenrist. Vollspann: Getretener Schuss mit dem Spann. Zielscheiben im Tor als Zielhilfe.`,
+  coaching:`Anlaufwinkel 30-45 Grad. Standfuss schulterbreit neben Ball. Schussknie beim Aufprall ueber dem Ball. Durchschwingen des Schussbeins. Treffsicherheit vor Haerte.`,
+  variations:`Schuss nach Flanke. Nach 1-2 Kombinationen. Aus der Drehung. Halbvolley.`,
+  minPlayers:4, fieldZone:"strafraum",
+  material:[{id:"ball_fuss",qty:6,label:"Fussball",cat:"Baelle"},{id:"goal_large",qty:1,label:"Grosses Tor",cat:"Tore"},{id:"huetchen",qty:4,color:"gelb",label:"Huetchen",cat:"Markierung"}],
+  ageNote:"Ab D-Jugend. Technikvermittlung vor Wettkampfsituation. Torwart optional einbauen ab C-Jugend.",
+},
+{
+  id:"tech_05", cat:"technik", name:"Kopfballtraining - Grundtechnik",
+  age:["d","c","ba","senioren"],
+  duration:20, intensity:5,
+  skills:["kopfballspiel","zweikampf"],
+  description:`Kopfball aus dem Stand: Augenkontakt auf Ball halten. Kopfball aus der Bewegung mit Anlauf. Kopfball aus dem Sprung. Partner haelt Ball, Spieler nickt ihn ins Netz. Kopfball-Duell als Abschluss.`,
+  coaching:`Stirn trifft Ball - nicht Scheitel. Nacken anspannen. Mit dem Ball nach vorne arbeiten. Augen oeffnet halten. Arme fuer Balance ausbreiten.`,
+  variations:`Kopfball nach Flanke. Kopfball-Torschuss aus 7m. Kopfball weiterleiten zu Mitspieler.`,
+  minPlayers:4, fieldZone:"strafraum",
+  material:[{id:"ball_fuss",qty:4,label:"Fussball",cat:"Baelle"},{id:"goal_large",qty:1,label:"Grosses Tor",cat:"Tore"}],
+  ageNote:"Erst ab D-Jugend (U12+). Kopfball bei juengeren Kindern aufgrund der Gehirnentwicklung vermeiden.",
+},
+{
+  id:"tech_06", cat:"technik", name:"Schwacher Fuss - Intensivtraining",
+  age:["e","d","c","ba"],
+  duration:20, intensity:5,
+  skills:["ballkontrolle","passen","torabschluss"],
+  description:`Komplette Trainingseinheit ausschliesslich mit dem schwachen Fuss. Zuspiel, Annahme, Dribbling, Torabschluss. Ziel: Schwachen Fuss zum zweiten starken Fuss entwickeln.`,
+  coaching:`Geduld zeigen. Fehler sind Teil des Lernprozesses. Nicht auslachen. Kleiner Abstand zuerst, dann steigern. Auch Profis haben einen schwacheren Fuss trainiert.`,
+  variations:`1v1 Situationen nur schwacher Fuss. Zonen-Spiel: In bestimmten Zonen nur schwacher Fuss erlaubt.`,
+  minPlayers:4, fieldZone:"half_l",
+  material:[{id:"ball_fuss",qty:1,label:"Fussball",cat:"Baelle"},{id:"goal_small",qty:4,label:"Kleines Tor",cat:"Tore"}],
+  ageNote:"Ab E-Jugend regelmaessig einbauen. 1x pro Woche schwacher Fuss macht den Unterschied auf Dauer.",
+},
+
+// ================================================================
+// TAKTIKTRAINING (10 Vorlagen)
+// ================================================================
+{
+  id:"takt_01", cat:"taktik", name:"Pressing - Ballorientieres Verteidigen",
+  age:["c","ba","senioren"],
+  duration:30, intensity:8,
+  skills:["pressing","verteidigung","teamarbeit","umschalten"],
+  description:`5v5 oder 7v7 mit zwei Mannschaften. Beim Ballverlust sofort Gegenpressing einleiten. Erste Spieler setzt Druck auf Balltraeger, Mitspieler schliessen Passoptionen ab. Ziel: Ball innerhalb 5 Sekunden zurueckgewinnen.`,
+  coaching:`Kommunikation ist alles: "Druck!", "Weg!". Kompakte Staffelung. Nicht einzeln anlaufen. 3-Sekunden-Regel: Entscheidung nach Ballverlust treffen. Pressing-Falle an der Seitenlinie nutzen.`,
+  variations:`Mit Zonen: Pressing nur in bestimmten Feldbereichen erzwungen. Gegenpressing-Wettbewerb: Welches Team gewinnt Ball schneller zurueck.`,
+  minPlayers:10, fieldZone:"full",
+  material:[{id:"ball_fuss",qty:3,label:"Fussball",cat:"Baelle"},{id:"leibchen",qty:6,color:"rot",label:"Leibchen",cat:"Leibchen"},{id:"huetchen",qty:8,color:"gelb",label:"Huetchen",cat:"Markierung"}],
+  ageNote:"Erst ab C-Jugend sinnvoll. Taktisches Verstaendnis benoetigt gewisse Reife. B/A und Senioren profitieren maximal.",
+},
+{
+  id:"takt_02", cat:"taktik", name:"Umschaltspiel - Offensive nach Ballgewinn",
+  age:["d","c","ba"],
+  duration:25, intensity:7,
+  skills:["umschalten","schnelligkeit","spielintelligenz","raumaufteilung"],
+  description:`8v8 auf grossem Feld. Nach Ballgewinn: sofortiger vertikaler Pass in die Tiefe. Stuermerpaar sucht hinter die Abwehrlinie. Mittelfeldspieler folgen in zweite Welle. Ziel: Tor innerhalb 6 Sekunden nach Ballgewinn.`,
+  coaching:`Tiefenlaeufe timen - nicht zu frueh starten. Vertikaler Pass als erste Option. Breite halten fuer Ueberzahl. "Los!" als Signal fuer Umschaltmoment.`,
+  variations:`Gegenpressing der angreifenden Mannschaft als Reaktion. Umschaltspiel auf Konter beschraenken.`,
+  minPlayers:10, fieldZone:"full",
+  material:[{id:"ball_fuss",qty:4,label:"Fussball",cat:"Baelle"},{id:"leibchen",qty:5,color:"blau",label:"Leibchen",cat:"Leibchen"},{id:"goal_large",qty:2,label:"Grosses Tor",cat:"Tore"}],
+  ageNote:"D-Jugend: Vereinfacht ohne Pressing-Reaktion. C: Vollstaendiges Umschaltspiel mit Gegenpressing.",
+},
+{
+  id:"takt_03", cat:"taktik", name:"Standardsituationen - Ecken angreifen",
+  age:["d","c","ba","senioren"],
+  duration:20, intensity:4,
+  skills:["standards","kopfballspiel","raumaufteilung"],
+  description:`Drei verschiedene Eckvarianten einstudieren: Kurze Ecke mit Hereingabe, Flanke in den Fuenfmeterraum (erster Pfosten), Flanke an den zweiten Pfosten. Laufwege fuer jeden Spieler festlegen.`,
+  coaching:`Laufwege auswendig lernen. Timing des Anlaufs entscheidend. Erste Pfosten: Schuss. Zweiter Pfosten: Kopfball oder Schiessen. Kurze Ecke: Ueberraschungsmoment nutzen.`,
+  variations:`Halbfeldflanken als Erweiterung. Direktes Einleiten nach Standardgewinn. Eckball-Gegentraining: Verteidiger lernen Zonen und Manndeckung.`,
+  minPlayers:8, fieldZone:"strafraum",
+  material:[{id:"ball_fuss",qty:4,label:"Fussball",cat:"Baelle"},{id:"goal_large",qty:1,label:"Grosses Tor",cat:"Tore"},{id:"huetchen",qty:6,color:"weiss",label:"Huetchen",cat:"Markierung"}],
+  ageNote:"D-Jugend: 2 einfache Varianten. Senioren: 4-5 eingearbeitete Varianten fuer den Spielbetrieb.",
+},
+{
+  id:"takt_04", cat:"taktik", name:"Abseitsfalle - Koordiniertes Herausruecken",
+  age:["c","ba","senioren"],
+  duration:20, intensity:6,
+  skills:["verteidigung","raumaufteilung","teamarbeit","konzentration"],
+  description:`Abwehrkette von 4 Spielern lernt koordiniert herauszuruecken. Signal des Innenverteidigers oder Torwarts. Alle vier Verteidiger ruecken gleichzeitig heraus. Stuermer werden ins Abseits gelockt.`,
+  coaching:`Kommunikation: "Raus!" als Kommando. Linie halten. Kein Zoegern. Im Zweifelsfall: Lieber nicht rausruecken. Nach abgebloecktem Schuss sofort auf Linie. Torwart hat Sicht - sein Wort gilt.`,
+  variations:`Mit angreifenden Spielern die versuchen durchzubrechen. Signalvarianten: Klatschen vs. Ruf.`,
+  minPlayers:6, fieldZone:"half_r",
+  material:[{id:"leibchen",qty:4,color:"gruen",label:"Leibchen",cat:"Leibchen"},{id:"ball_fuss",qty:3,label:"Fussball",cat:"Baelle"}],
+  ageNote:"Erst ab C-Jugend. Erfordert hohes taktisches Verstaendnis und Erfahrung. Regelkennntnis Abseits Pflicht.",
+},
+
+// ================================================================
+// KONDITIONSTRAINING (8 Vorlagen)
+// ================================================================
+{
+  id:"kond_01", cat:"kondition", name:"Intervalllauf 4x4-Methode",
+  age:["c","ba","senioren"],
+  duration:30, intensity:9,
+  skills:["ausdauer","schnelligkeit"],
+  description:`4 Intervalle von je 4 Minuten bei hoher Intensitaet (85-95% maximale Herzfrequenz), jeweils 3 Minuten aktive Pause (lockeres Laufen/Gehen). Wissenschaftlich effizienteste Methode zur Steigerung der aeroben Kapazitaet.`,
+  coaching:`Puls messen wenn moeglich. Spieler sollten sprechen koennen aber angestrengt sein. Motivation hochhalten in letzten 30 Sekunden. Abkuehlen danach zwingend. Nicht mehr als 2x pro Woche.`,
+  variations:`Ball-orientiert: Rondos mit maximaler Intensitaet. Small-Sided-Games als Intervall-Format.`,
+  minPlayers:6, fieldZone:"full",
+  material:[{id:"huetchen",qty:8,color:"gelb",label:"Huetchen",cat:"Markierung"},{id:"ball_fuss",qty:2,label:"Fussball",cat:"Baelle"}],
+  ageNote:"Erst ab C-Jugend (U14) geeignet. Intensives Konditionstraining schadet der Skelettentwicklung juengerer Spieler.",
+},
+{
+  id:"kond_02", cat:"kondition", name:"Sprinttraining mit Reaktion",
+  age:["d","c","ba","senioren"],
+  duration:20, intensity:8,
+  skills:["schnelligkeit","wendigkeit","konzentration"],
+  description:`Kurze Sprints (10-30m) mit verschiedenen Startpositionen und Reaktionsreizen. Bauchlage, Sitzposition, Ruecklage. Trainer gibt optisches oder akustisches Signal. Vollstaendige Pause zwischen Sprintserien.`,
+  coaching:`Maximale Intensitaet bei jedem Sprint. Volle Erholung (mind. 90 Sek) zwischen Versuchen. Startposition variieren. Reaktionszeit verbessert sich durch regelmaessiges Training deutlich.`,
+  variations:`Mit Ball: Sprint, Ball annehmen, Abschluss. Richtungswechsel nach 10m. Duell-Sprint.`,
+  minPlayers:4, fieldZone:"third_l",
+  material:[{id:"pylone",qty:6,color:"orange",label:"Pylone",cat:"Markierung"}],
+  ageNote:"D-Jugend: Kuerzere Distanzen (10-15m), weniger Serien. Ab C: Volle Sprintdistanzen und mehr Umfang.",
+},
+{
+  id:"kond_03", cat:"kondition", name:"Zirkeltraining Koerperkoordination",
+  age:["e","d","c"],
+  duration:25, intensity:6,
+  skills:["koordination","kraft","ausdauer"],
+  description:`6 Stationen: Koordinationsleiter, Seitwartsspruenge, Liegestuetzen, Einbeinsprunge, Medizinball-Kniebeugen, Sprint. 45 Sek Arbeit, 15 Sek Wechsel, 2 Durchlaeufe.`,
+  coaching:`Form vor Geschwindigkeit. Keine Umgehung von Stationen. Positionswechsel schnell aber kontrolliert. Partner motivieren. Hydration zwischen Runden.`,
+  variations:`Zirkel mit Ball an jeder Station integriert. Wettbewerbsformat: Wiederholugnszaehlung.`,
+  minPlayers:6, fieldZone:"full",
+  material:[{id:"koordleiter",qty:2,label:"Koordinationsleiter",cat:"Markierung"},{id:"medizinball",qty:3,label:"Medizinball",cat:"Sonstiges"},{id:"huetchen",qty:8,color:"blau",label:"Huetchen",cat:"Markierung"}],
+  ageNote:"E-Jugend: Vereinfachte Stationen ohne Medizinball, kuerzeere Arbeitszeiten (30 Sek).",
+},
+
+// ================================================================
+// SPIELFORMEN (8 Vorlagen)
+// ================================================================
+{
+  id:"spiel_01", cat:"spielform", name:"1 gegen 1 - Grundsituation Angreifer",
+  age:["f","e","d","c","ba"],
+  duration:20, intensity:7,
+  skills:["dribbling","zweikampf","schnelligkeit","spielintelligenz"],
+  description:`Klassisches 1v1 in einem 10x15m Korridor. Angreifer startet mit Ball, Verteidiger aus der Gegenseite. Angreifer versucht Linie zu ueberqueren oder kleines Tor zu treffen. Nach Gewinn oder Verlust Rollentausch.`,
+  coaching:`Angreifer: Tempo-Variation als Waffe. Koepertaeushung nutzen. Auf Bewegungsgeschwindigkeit des Gegners reagieren. Verteidiger: Seitwartshaltung, Beine tief, Abwarten.`,
+  variations:`2v2 in groesserem Korridor. Zeitlimit von 5 Sekunden fuer Abschluss. 1v1 mit neutralem Wandspieler.`,
+  minPlayers:4, fieldZone:"third_l",
+  material:[{id:"goal_small",qty:2,label:"Kleines Tor",cat:"Tore"},{id:"ball_fuss",qty:3,label:"Fussball",cat:"Baelle"},{id:"huetchen",qty:4,color:"gelb",label:"Huetchen",cat:"Markierung"}],
+  ageNote:"F-Jugend: 1v1 ohne Taktik-Coaching. E: Erste Koertaeuschungen einfuehren. Ab D: Technische Verbesserung gezielt fordern.",
+},
+{
+  id:"spiel_02", cat:"spielform", name:"4 gegen 4 plus Torhter - Kleinfeldspiel",
+  age:["e","d","c","ba","senioren"],
+  duration:20, intensity:7,
+  skills:["raumaufteilung","teamarbeit","umschalten","spielintelligenz"],
+  description:`4v4+TW auf halbem Feld mit grossen Toren. Freies Spiel mit taktischen Aufgaben: 3 Kontaktlimit, Rueckkehren in Grundordnung. Intensives Format mit maximalen Ballkontakten pro Spieler.`,
+  coaching:`Spieler sollen selbst entscheiden. Eingriffe minimieren. Nach Spielzugen Fragen stellen: 'Was waere noch moeglich gewesen?' Positive Verstaerkung bei guten Entscheidungen.`,
+  variations:`Mit Joker als Unterstuetzung des angreifenden Teams. Kontertor zwaehlt doppelt. Ohne Torwart fuer mehr Chancen.`,
+  minPlayers:9, fieldZone:"full",
+  material:[{id:"goal_large",qty:2,label:"Grosses Tor",cat:"Tore"},{id:"ball_fuss",qty:4,label:"Fussball",cat:"Baelle"},{id:"leibchen",qty:4,color:"rot",label:"Leibchen",cat:"Leibchen"}],
+  ageNote:"E-Jugend aufwaerts. Ideal als Hauptteil des Trainings. Spielnahe Situation mit vielen Ballkontakten.",
+},
+{
+  id:"spiel_03", cat:"spielform", name:"Ballbesitzspiel 6v3 im Quadrat",
+  age:["d","c","ba","senioren"],
+  duration:15, intensity:6,
+  skills:["passen","raumaufteilung","pressing","spielintelligenz"],
+  description:`6 Spieler halten Ball gegen 3 Stoerer in 20x20m Quadrat. Maximale 2 Kontakte. Stoerer wechseln nach 10 Ballverlusten. Zaehlen der laengsten Serie als Motivation.`,
+  coaching:`Tiefe und Breite gleichzeitig anbieten. Passweg erkunden bevor Ball angenommen wird. Kommunikation zwischen Ballbesitz-Spielern. Koerpersprache zeigen wo man angespielt werden will.`,
+  variations:`7v3 fuer Anfaenger. 5v3 fuer Fortgeschrittene. Mit Mannschaftswechsel nach Serie von 20 Paessen.`,
+  minPlayers:9, fieldZone:"third_m",
+  material:[{id:"ball_fuss",qty:2,label:"Fussball",cat:"Baelle"},{id:"huetchen",qty:4,color:"weiss",label:"Huetchen",cat:"Markierung"},{id:"leibchen",qty:3,color:"gruen",label:"Leibchen",cat:"Leibchen"}],
+  ageNote:"Ab D-Jugend. Ballbesitz-Philosophie ab frueh einbauen zahlt sich spaeter aus.",
+},
+
+// ================================================================
+// SPEZIALTRAINING (6 Vorlagen)
+// ================================================================
+{
+  id:"spez_01", cat:"spezial", name:"Torwart - Stellungsspiel und Reflexe",
+  age:["e","d","c","ba","senioren"],
+  duration:25, intensity:6,
+  skills:["konzentration","koordination","schnelligkeit"],
+  description:`Speziell fuer Torhueter: Stellungsspiel bei Flanken (5-Meter-Radius), Reflextraining aus kurzer Distanz, Parade-Training bei flachen Schuessen, Abschlagtechnik. Ohne den Rest der Mannschaft - intensive 1-zu-1-Zeit mit Trainer.`,
+  coaching:`Fusse schulterbreit. Auf den Fussballen stehen - nie auf den Fersen. Haende auf Brusthoeheie vorbereiten. Bei Flanken: Entscheidung frueh treffen und durchsetzen. Fuehrungsstaerke im Strafraum kommunizieren.`,
+  variations:`Reaktion auf Ablenkung (Trainer lenkt ab, schiesst dann). Flankentraining mit Feldspieler. Abwurftechnik und Distributionsspiel.`,
+  minPlayers:2, fieldZone:"strafraum",
+  material:[{id:"ball_fuss",qty:8,label:"Fussball",cat:"Baelle"},{id:"goal_large",qty:1,label:"Grosses Tor",cat:"Tore"},{id:"huetchen",qty:4,color:"gelb",label:"Huetchen",cat:"Markierung"}],
+  ageNote:"Torwarttraining ernst nehmen. TW entwickeln sich schneller mit separatem Training als ohne.",
+},
+{
+  id:"spez_02", cat:"spezial", name:"Stuermerschule - Stuermertypen entwickeln",
+  age:["d","c","ba"],
+  duration:30, intensity:7,
+  skills:["torabschluss","dribbling","spielintelligenz","schnelligkeit"],
+  description:`Spezifisches Training fuer offensive Spieler: Tiefenlaeufe hinter die Abwehr timen, Abschluss nach Vorlage, Drehung im Strafraum, Kopfball auf Flanke, Reaktion bei Abprallern. Jeder Stuermertyp braucht andere Schwerpunkte.`,
+  coaching:`Mittelstuermer: Strafraum-Positionen. Fluegel: Eins-gegen-eins und Flanke. Haengende Spitze: Kombination und Einruecken. Abschlussqualitaet vor allem trainieren: Ziel vor Kraft.`,
+  variations:`Stuermer vs. Verteidiger 1v1 nach Pass. Stuermer-Duo: Kombinationsspiel im Strafraum. Abschluss nach 5-Pass-Sequenz.`,
+  minPlayers:4, fieldZone:"strafraum",
+  material:[{id:"ball_fuss",qty:6,label:"Fussball",cat:"Baelle"},{id:"goal_large",qty:1,label:"Grosses Tor",cat:"Tore"},{id:"huetchen",qty:6,color:"gelb",label:"Huetchen",cat:"Markierung"}],
+  ageNote:"D-Jugend: Grundpositionierung. C: Individuelle Staerken foerdern. B/A: Spielerzentrierte Entwicklung.",
+},
+{
+  id:"spez_03", cat:"spezial", name:"Innenverteidiger - Zweikampf und Herausruecken",
+  age:["d","c","ba","senioren"],
+  duration:25, intensity:7,
+  skills:["verteidigung","zweikampf","kopfballspiel","raumaufteilung"],
+  description:`Speziell fuer Innenverteidiger: Stellungsspiel gegen ankommenden Stuermer, Herausruecken aus der Kette, Kopfballduell bei Flanken, Antizipation und Abfangen von Laengsballen. Defensiv-Zweikampf isoliert trainieren.`,
+  coaching:`Seitwartshaltung einnehmen. Dem Stuermer den gefaehrlichen Raum nehmen. Bei Herausruecken: Sicherung des Partners kommunizieren. Kopfballduell fruezehaeitig anlaufen.`,
+  variations:`1v1 gegen Stuermer mit Pass. Flanken-Abwehr in der Kette. Kombiniertes Verteidigungs-Pressing.`,
+  minPlayers:4, fieldZone:"half_r",
+  material:[{id:"ball_fuss",qty:4,label:"Fussball",cat:"Baelle"},{id:"goal_large",qty:1,label:"Grosses Tor",cat:"Tore"}],
+  ageNote:"Ab D-Jugend. Positionsspezifisches Training macht Verteidiger deutlich schneller besser.",
+},
+{
+  id:"spez_04", cat:"spezial", name:"Sechser-Rolle - Spielaufbau und Absicherung",
+  age:["c","ba","senioren"],
+  duration:25, intensity:6,
+  skills:["passen","raumaufteilung","zweikampf","spielintelligenz"],
+  description:`Training der defensiven Mittelfeldposition: Tiefe anbieten fuer Innenverteidiger, Spiel verteilen in die Breite, Absicherung nach Ballverlust, Sechser als Bindeglied zwischen Abwehr und Angriff. Lesen des Spiels.`,
+  coaching:`Immer anspielbereit - kein Verstecken. Kopf heben nach Ballannahme. Passwege antizipieren. Nach Zweikampf sofort Anschluss suchen. Kommunikation mit Innenverteidigern.`,
+  variations:`Spielaufbau gegen Pressing-Simulation. Sechser als Dirigent im Rondo. Positionsspezifisches 1v1.`,
+  minPlayers:6, fieldZone:"third_m",
+  material:[{id:"ball_fuss",qty:3,label:"Fussball",cat:"Baelle"},{id:"leibchen",qty:3,color:"blau",label:"Leibchen",cat:"Leibchen"}],
+  ageNote:"Erst ab C-Jugend. Erfordert taktische Reife und Ueberblick. Elegante Position mit hohem IQ-Anspruch.",
+},
+
+// ================================================================
+// BAMBINI / JUNGE KINDER (extra sanfte Vorlagen)
+// ================================================================
+{
+  id:"bam_01", cat:"spielform", name:"Hasenjaegerspiel",
+  age:["bambini","g"],
+  duration:15, intensity:4,
+  skills:["koordination","schnelligkeit","teamarbeit"],
+  description:`Ein 'Fuchs' jagt 'Hasen'. Hasen haben je einen Ball und dribblieren. Der Fuchs versucht den Ball wegzuschlagen. Wessen Ball das Feld verlaesst, wird ebenfalls Fuchs. Letzter Hase gewinnt.`,
+  coaching:`Keine Regeln erzwingen. Auf Fairplay hinweisen. Spass hat Vorrang. Auch die Kleinsten koennen gewinnen wenn Fuchs nicht zu stark waehlen. Lachen und Jubeln ist erlaubt.`,
+  variations:`Zwei Fuechse. Hasen duerfen Ball schuetzen mit Koerper. Team-Variante: Fuechse fangen gemeinsam.`,
+  minPlayers:6, fieldZone:"full",
+  material:[{id:"ball_fuss",qty:1,label:"Fussball (einer pro Kind)",cat:"Baelle"}],
+  ageNote:"Perfekt fuer Bambini und G-Jugend. Dribbling wird spielerisch ohne Bewusstsein trainiert. Hoechste Form der intrinsischen Motivation.",
+},
+{
+  id:"bam_02", cat:"technik", name:"Ballzauberei fuer Kleine",
+  age:["bambini","g","f"],
+  duration:20, intensity:3,
+  skills:["ballkontrolle","koordination"],
+  description:`Spieler haben je einen Ball und versuchen: Ball mit der Sohle rollen (vorwaerts, rueckwaerts), Ball mit rechts/links tippen abwechselnd, Ball hochheben ohne Haende, Kick-ups zaehlen. Freies Erkunden.`,
+  coaching:`Jedes Kind hat seinen eigenen Ball und seinen eigenen Weg. Kein Vergleich mit anderen Kindern. 'Zeig mir mal was du kannst!' als Motivation. Alle Tricks anerkennnen.`,
+  variations:`Musik im Hintergrund. Gemeinsam mit dem Trainer mitmachen - Vorbildfunktion. Eltern-Kind-Challenge.`,
+  minPlayers:1, fieldZone:"full",
+  material:[{id:"ball_fuss",qty:1,label:"Fussball (einer pro Kind)",cat:"Baelle"}],
+  ageNote:"Fuer die Allerjuengsten. Intrinsische Motivation und Freude am Ball foerdern. Kein Leistungsdruck.",
+},
+
+// ================================================================
+// ALTHERREN SPEZIAL
+// ================================================================
+{
+  id:"ah_01", cat:"spielform", name:"Beachflag-Fussball (Alt-Herren Variante)",
+  age:["altherren","senioren"],
+  duration:50, intensity:4,
+  skills:["teamarbeit","spielintelligenz","ballkontrolle"],
+  description:`Gelockertes Spielformat auf kleinerem Feld: 5v5, 3 Kontakt-Pflicht, nach Tor Rotation. Spass im Vordergrund. Kein intensives Laufen erwartet. Positionsspiel und Koerpertaeuschung statt Sprint.`,
+  coaching:`Spielfreude foerdern. Keine harten Zweikampffoorderungen. Knoechel und Knie respektieren. Regenerations-Pausen einbauen. Lachen ist Teil des Trainings.`,
+  variations:`Torkoenigsmodus. Tore nur nach Kombination gueltig. Torwart als 10. Feldspieler.`,
+  minPlayers:6, fieldZone:"half_l",
+  material:[{id:"goal_small",qty:4,label:"Kleines Tor",cat:"Tore"},{id:"ball_fuss",qty:3,label:"Fussball",cat:"Baelle"},{id:"leibchen",qty:5,color:"gelb",label:"Leibchen",cat:"Leibchen"}],
+  ageNote:"Alt-Herren verdienen einen eigenen Ansatz. Spass, Gemeinschaft und Gesundheit stehen vor Leistung.",
+},
+];
+
+
+
+
+/* =================================================================
+   ERWEITERTE TRAINING LIBRARY + VORLAGE BROWSER
+================================================================= */
+
+// Skill-Punkte Berechnung eines Plans
+const calcPlanStats = (exercises) => {
+  if(!exercises||exercises.length===0) return {skills:{},intensity:0,totalMins:0,load:0};
+  const skillTotals = {};
+  let totalIntensityMins = 0;
+  let totalMins = 0;
+  exercises.forEach(ex => {
+    const dur = ex.duration||0;
+    const intensity = ex.intensity||5;
+    totalMins += dur;
+    totalIntensityMins += dur * intensity;
+    (ex.skills||[]).forEach(skill => {
+      skillTotals[skill] = (skillTotals[skill]||0) + dur;
+    });
+  });
+  const avgIntensity = totalMins>0 ? Math.round(totalIntensityMins/totalMins) : 0;
+  // Sorted skills by training time
+  const sortedSkills = Object.entries(skillTotals)
+    .sort(([,a],[,b])=>b-a)
+    .slice(0,4);
+  // Load: 0-100%
+  const load = Math.min(100, Math.round((avgIntensity/10)*100));
+  return { skills:skillTotals, topSkills:sortedSkills, intensity:avgIntensity, totalMins, load };
+};
+
+// Template Browser Komponente
+function TemplateBrowser({ onSelect, cid, myTids, data, cl, onClose }) {
+  const t = TH(cl);
+  const [filter, setFilter] = useState("all");
+  const [ageFilter, setAgeFilter] = useState("all");
+  const [search, setSearch] = useState("");
+  const [detail, setDetail] = useState(null);
+
+  // Custom Templates dieses Vereins
+  const customTemplates = (data.trainingPlans||[])
+    .filter(p=>p.isTemplate&&(p.cid===cid||p.shared))
+    .map(p=>({...p, isCustom:true}));
+
+  const allTemplates = [...TRAINING_TEMPLATES, ...customTemplates];
+
+  const filtered = allTemplates.filter(tpl => {
+    const catOk = filter==="all" || tpl.cat===filter;
+    const ageOk = ageFilter==="all" || (tpl.age||[]).includes(ageFilter);
+    const searchOk = !search || tpl.name.toLowerCase().includes(search.toLowerCase())
+      || tpl.description?.toLowerCase().includes(search.toLowerCase());
+    return catOk && ageOk && searchOk;
+  });
+
+  const CATS = [
+    {id:"all",     label:"Alle",          col:"#334155"},
+    {id:"warmup",  label:"Aufwaermen",    col:"#f59e0b"},
+    {id:"technik", label:"Technik",       col:"#2563eb"},
+    {id:"taktik",  label:"Taktik",        col:"#7c3aed"},
+    {id:"kondition",label:"Kondition",    col:"#dc2626"},
+    {id:"spielform",label:"Spielformen",  col:"#16a34a"},
+    {id:"spezial", label:"Spezial",       col:"#0891b2"},
+  ];
+
+  const AGE_OPTS = [
+    {id:"all",      label:"Alle Altersgruppen"},
+    {id:"bambini",  label:"Bambini"},
+    {id:"g",        label:"G-Jugend"},
+    {id:"f",        label:"F-Jugend"},
+    {id:"e",        label:"E-Jugend"},
+    {id:"d",        label:"D-Jugend"},
+    {id:"c",        label:"C-Jugend"},
+    {id:"ba",       label:"B/A-Jugend"},
+    {id:"senioren", label:"Senioren"},
+    {id:"altherren",label:"Alt-Herren"},
+  ];
+
+  const catConf = (id) => CATS.find(c=>c.id===id)||CATS[0];
+
+  if(detail) return <TemplateDetail tpl={detail} onBack={()=>setDetail(null)}
+    onUse={()=>{onSelect(detail);}} cl={cl}/>;
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:920,
+      display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
+      <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",
+        maxWidth:520,maxHeight:"90dvh",display:"flex",flexDirection:"column"}}>
+
+        <div style={{background:t.p,padding:"16px 20px 14px",flexShrink:0,borderRadius:"22px 22px 0 0"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+            <div style={{flex:1,color:"#fff",fontWeight:900,fontSize:18}}>Vorlagen-Bibliothek</div>
+            <button onClick={onClose} style={{width:32,height:32,borderRadius:10,
+              background:"rgba(255,255,255,.2)",border:"none",color:"#fff",
+              cursor:"pointer",fontSize:18,fontWeight:700}}>x</button>
+          </div>
+          <input value={search} onChange={e=>setSearch(e.target.value)}
+            placeholder="Uebung suchen..."
+            style={{width:"100%",padding:"9px 14px",borderRadius:11,border:"none",
+              fontSize:14,outline:"none",background:"rgba(255,255,255,.15)",
+              color:"#fff",boxSizing:"border-box"}}/>
+        </div>
+
+        {/* Kategorie-Filter */}
+        <div style={{display:"flex",gap:5,padding:"12px 16px 8px",overflowX:"auto",
+          scrollbarWidth:"none",flexShrink:0,borderBottom:"1px solid #f1f5f9"}}>
+          {CATS.map(cat=>(
+            <button key={cat.id} onClick={()=>setFilter(cat.id)}
+              style={{padding:"6px 12px",borderRadius:99,border:`2px solid ${filter===cat.id?cat.col:"#e2e8f0"}`,
+                background:filter===cat.id?cat.col+"15":"#fff",color:filter===cat.id?cat.col:"#64748b",
+                fontWeight:filter===cat.id?800:600,fontSize:12,cursor:"pointer",
+                whiteSpace:"nowrap",fontFamily:"inherit",flexShrink:0}}>
+              {cat.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Alters-Filter */}
+        <div style={{padding:"8px 16px",flexShrink:0,borderBottom:"1px solid #f1f5f9"}}>
+          <select value={ageFilter} onChange={e=>setAgeFilter(e.target.value)}
+            style={{padding:"7px 12px",fontSize:13,border:"1.5px solid #e2e8f0",
+              borderRadius:9,outline:"none",background:"#fff",fontFamily:"inherit",width:"100%"}}>
+            {AGE_OPTS.map(a=><option key={a.id} value={a.id}>{a.label}</option>)}
+          </select>
+        </div>
+
+        {/* Template Liste */}
+        <div style={{flex:1,overflowY:"auto",padding:"12px 16px"}}>
+          <div style={{fontSize:11,color:"#94a3b8",fontWeight:600,marginBottom:10}}>
+            {filtered.length} Vorlage{filtered.length!==1?"n":""}
+          </div>
+          {filtered.map(tpl=>{
+            const cc = catConf(tpl.cat);
+            const stats = calcPlanStats(tpl.exercises||[{duration:tpl.duration,intensity:tpl.intensity,skills:tpl.skills}]);
+            const intensityLabel = tpl.intensity<=3?"Gering":tpl.intensity<=6?"Mittel":tpl.intensity<=8?"Hoch":"Maximal";
+            return (
+              <div key={tpl.id} style={{background:"#fff",borderRadius:14,
+                border:"1.5px solid #e2e8f0",marginBottom:10,overflow:"hidden",
+                cursor:"pointer"}} onClick={()=>setDetail(tpl)}>
+                <div style={{display:"flex",alignItems:"flex-start",gap:10,padding:"12px 14px"}}>
+                  <div style={{width:40,height:40,borderRadius:11,background:cc.col+"15",
+                    display:"flex",alignItems:"center",justifyContent:"center",
+                    fontWeight:900,fontSize:15,color:cc.col,flexShrink:0}}>
+                    {cc.label.slice(0,1)}
+                  </div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>{tpl.name}</div>
+                    <div style={{fontSize:11,color:"#64748b",marginTop:2,display:"flex",gap:8,flexWrap:"wrap"}}>
+                      <span>{tpl.duration} Min.</span>
+                      <span style={{color:tpl.intensity>=8?"#dc2626":tpl.intensity>=5?"#d97706":"#16a34a",fontWeight:700}}>
+                        {intensityLabel}
+                      </span>
+                      {tpl.isCustom&&<span style={{background:"#eff6ff",color:"#2563eb",borderRadius:99,padding:"0 6px",fontWeight:700}}>Eigene</span>}
+                    </div>
+                    {/* Skill-Tags */}
+                    <div style={{display:"flex",gap:4,flexWrap:"wrap",marginTop:6}}>
+                      {(tpl.skills||[]).slice(0,3).map(skill=>{
+                        const sk = SKILLS[skill];
+                        return sk ? (
+                          <span key={skill} style={{background:sk.col+"15",color:sk.col,
+                            borderRadius:99,padding:"2px 7px",fontSize:10,fontWeight:700}}>
+                            {sk.label}
+                          </span>
+                        ) : null;
+                      })}
+                    </div>
+                  </div>
+                  <div style={{textAlign:"right",flexShrink:0}}>
+                    {/* Intensitaets-Balken */}
+                    <div style={{display:"flex",gap:2,marginBottom:4}}>
+                      {Array.from({length:5},(_,i)=>(
+                        <div key={i} style={{width:5,height:14,borderRadius:3,
+                          background:(i+1)*2<=tpl.intensity
+                            ?tpl.intensity>=8?"#dc2626":tpl.intensity>=5?"#d97706":"#16a34a"
+                            :"#e2e8f0"}}/>
+                      ))}
+                    </div>
+                    <div style={{fontSize:10,color:"#94a3b8"}}>
+                      {(tpl.age||[]).length>0?(tpl.age||[]).slice(0,2).join(", "):"Alle"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          {filtered.length===0&&(
+            <div style={{textAlign:"center",padding:"40px",background:"#f8fafc",
+              borderRadius:14,border:"1.5px dashed #e2e8f0"}}>
+              <p style={{fontWeight:700,color:"#334155",margin:"0 0 4px"}}>Keine Vorlagen gefunden</p>
+              <p style={{fontSize:13,color:"#94a3b8",margin:0}}>Filter anpassen oder eigene Vorlage erstellen.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Template Detail-Ansicht
+function TemplateDetail({ tpl, onBack, onUse, cl }) {
+  const t = TH(cl);
+  const cc = ["warmup","technik","taktik","kondition","spielform","spezial"].includes(tpl.cat)
+    ? {warmup:"#f59e0b",technik:"#2563eb",taktik:"#7c3aed",kondition:"#dc2626",spielform:"#16a34a",spezial:"#0891b2"}[tpl.cat]
+    : "#334155";
+
+  const intensityBar = (val) => (
+    <div style={{display:"flex",gap:3,alignItems:"center"}}>
+      {Array.from({length:10},(_,i)=>(
+        <div key={i} style={{width:14,height:8,borderRadius:3,
+          background:i<val?(val>=8?"#dc2626":val>=5?"#d97706":"#16a34a"):"#e2e8f0"}}/>
+      ))}
+      <span style={{marginLeft:4,fontSize:12,fontWeight:700,
+        color:tpl.intensity>=8?"#dc2626":tpl.intensity>=5?"#d97706":"#16a34a"}}>
+        {tpl.intensity}/10
+      </span>
+    </div>
+  );
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:920,
+      display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
+      <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",
+        maxWidth:520,maxHeight:"92dvh",overflowY:"auto",paddingBottom:44}}>
+
+        <div style={{background:`linear-gradient(135deg,#1e293b,${cc})`,
+          padding:"18px 20px 16px",borderRadius:"22px 22px 0 0"}}>
+          <button onClick={onBack} style={{background:"rgba(255,255,255,.15)",border:"none",
+            color:"#fff",borderRadius:9,padding:"6px 12px",fontSize:12,fontWeight:700,
+            cursor:"pointer",fontFamily:"inherit",marginBottom:10}}>
+            {"<-"} Zurueck
+          </button>
+          <div style={{color:"#fff",fontWeight:900,fontSize:20,marginBottom:4}}>{tpl.name}</div>
+          <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+            <span style={{background:"rgba(255,255,255,.15)",color:"#fff",
+              borderRadius:99,padding:"3px 10px",fontSize:12,fontWeight:600}}>
+              {tpl.duration} Min.
+            </span>
+            <span style={{background:"rgba(255,255,255,.15)",color:"#fff",
+              borderRadius:99,padding:"3px 10px",fontSize:12,fontWeight:600}}>
+              Mind. {tpl.minPlayers||4} Spieler
+            </span>
+          </div>
+        </div>
+
+        <div style={{padding:"18px 20px 0"}}>
+
+          {/* Intensitaet */}
+          <div style={{background:"#f8fafc",borderRadius:13,padding:"13px 15px",marginBottom:14}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5}}>BELASTUNGSINTENSITAET</div>
+            {intensityBar(tpl.intensity||5)}
+            <div style={{fontSize:12,color:"#64748b",marginTop:6,lineHeight:1.5}}>
+              {tpl.intensity<=3&&"Geringe Belastung - ideal als Aufwaermen oder nach intensiver Woche"}
+              {tpl.intensity>=4&&tpl.intensity<=6&&"Mittlere Belastung - regulaeres Technik- und Taktiktraining"}
+              {tpl.intensity>=7&&tpl.intensity<=8&&"Hohe Belastung - konditionelle Schwerpunkte, ausreichend Regeneration planen"}
+              {tpl.intensity>=9&&"Maximale Belastung - nur frisch ausgeruhte Spieler, zwingend Abkuehlen danach"}
+            </div>
+          </div>
+
+          {/* Was wird trainiert */}
+          <div style={{marginBottom:14}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5}}>WAS WIRD TRAINIERT</div>
+            <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
+              {(tpl.skills||[]).map(skill=>{
+                const sk = SKILLS[skill];
+                return sk ? (
+                  <div key={skill} style={{background:sk.col+"15",border:`1.5px solid ${sk.col}30`,
+                    borderRadius:99,padding:"5px 12px",display:"flex",alignItems:"center",gap:5}}>
+                    <div style={{width:8,height:8,borderRadius:"50%",background:sk.col}}/>
+                    <span style={{fontSize:13,fontWeight:700,color:sk.col}}>{sk.label}</span>
+                    <span style={{fontSize:10,color:"#94a3b8"}}>({sk.cat})</span>
+                  </div>
+                ) : null;
+              })}
+            </div>
+          </div>
+
+          {/* Altersgruppen */}
+          {(tpl.age||[]).length>0&&(
+            <div style={{marginBottom:14}}>
+              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5}}>GEEIGNET FUER</div>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                {(tpl.age||[]).map(ag=>(
+                  <span key={ag} style={{background:"#f0fdf4",border:"1.5px solid #bbf7d0",
+                    color:"#166534",borderRadius:99,padding:"4px 12px",fontSize:12,fontWeight:700}}>
+                    {AGE_GROUPS[ag]||ag}
+                  </span>
+                ))}
+              </div>
+              {tpl.ageNote&&(
+                <div style={{background:"#eff6ff",borderRadius:10,padding:"10px 13px",
+                  marginTop:10,fontSize:12,color:"#1d4ed8",lineHeight:1.6}}>
+                  {tpl.ageNote}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Beschreibung */}
+          <div style={{marginBottom:14}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5}}>BESCHREIBUNG</div>
+            <div style={{fontSize:14,color:"#334155",lineHeight:1.7,background:"#f8fafc",
+              borderRadius:12,padding:"13px 15px",border:"1px solid #e2e8f0"}}>
+              {tpl.description}
+            </div>
+          </div>
+
+          {/* Coaching-Hinweise */}
+          {tpl.coaching&&(
+            <div style={{marginBottom:14}}>
+              <div style={{fontSize:11,fontWeight:800,color:"#d97706",marginBottom:8,letterSpacing:.5}}>COACHING-HINWEISE</div>
+              <div style={{background:"#fef3c7",borderRadius:12,padding:"13px 15px",
+                border:"1px solid #fde68a",fontSize:13,color:"#92400e",lineHeight:1.7}}>
+                {tpl.coaching}
+              </div>
+            </div>
+          )}
+
+          {/* Variationen */}
+          {tpl.variations&&(
+            <div style={{marginBottom:14}}>
+              <div style={{fontSize:11,fontWeight:800,color:"#7c3aed",marginBottom:8,letterSpacing:.5}}>VARIATIONEN & STEIGERUNGEN</div>
+              <div style={{background:"#ede9fe",borderRadius:12,padding:"13px 15px",
+                border:"1px solid #c4b5fd",fontSize:13,color:"#4c1d95",lineHeight:1.7}}>
+                {tpl.variations}
+              </div>
+            </div>
+          )}
+
+          {/* Material */}
+          {(tpl.material||[]).length>0&&(
+            <div style={{marginBottom:14}}>
+              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5}}>BENOENIGTES MATERIAL</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
+                {tpl.material.map((m,i)=>{
+                  const def=MATERIAL_CATALOG.find(x=>x.id===m.id);
+                  const col=m.color?COLOR_HEX[m.color]||"#64748b":def?.col||"#64748b";
+                  return (
+                    <div key={i} style={{background:col+"15",borderRadius:99,
+                      padding:"5px 12px",border:`1.5px solid ${col}30`}}>
+                      <span style={{fontWeight:700,fontSize:12,color:col}}>
+                        {m.qty||1}x {def?.label||m.label}{m.color?" ("+m.color+")":""}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Als Uebung verwenden */}
+          <button onClick={onUse}
+            style={{width:"100%",padding:"14px",borderRadius:14,border:"none",
+              background:t.p,color:"#fff",fontWeight:800,fontSize:15,
+              cursor:"pointer",fontFamily:"inherit",
+              boxShadow:`0 4px 20px ${t.p}44`,marginBottom:8}}>
+            Diese Vorlage verwenden
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 function SetupWizard({ onDone,onBack }) {
   const [step,setStep] = useState(1);
   const [f,setF] = useState({
@@ -482,7 +4133,7 @@ function SetupWizard({ onDone,onBack }) {
             <p style={{color:"rgba(255,255,255,.4)",fontSize:13,margin:"0 0 18px"}}>Schritt 1 von 3</p>
             <input value={f.name} onChange={e=>u({name:e.target.value})} placeholder="z.B. SC Musterstadt 1920"
               style={{width:"100%",padding:"13px 15px",fontSize:16,background:"rgba(255,255,255,.1)",border:`1.5px solid ${f.name?"rgba(255,255,255,.4)":"rgba(255,255,255,.15)"}`,borderRadius:13,outline:"none",color:"#fff",marginBottom:10,boxSizing:"border-box"}}/>
-            <input value={f.short} onChange={e=>u({short:e.target.value})} placeholder="Kuerzel (optional,z.B. SuS)"
+            <input value={f.short} onChange={e=>u({short:e.target.value})} placeholder="Kuerzel (optional, z.B. SCM)"
               style={{width:"100%",padding:"11px 15px",fontSize:14,background:"rgba(255,255,255,.08)",border:"1.5px solid rgba(255,255,255,.1)",borderRadius:13,outline:"none",color:"#fff",marginBottom:16,boxSizing:"border-box"}}/>
           </>}
 
@@ -609,7 +4260,7 @@ function Directory({data,onPick,onNewClub,lang,setLang}) {
           <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Verein suchen..."
             style={{width:"100%",padding:"11px 13px 11px 40px",fontSize:14,background:"rgba(255,255,255,.08)",border:"1.5px solid rgba(255,255,255,.12)",borderRadius:13,outline:"none",color:"#fff",boxSizing:"border-box"}}/>
         </div>
-        <div style={{display:"flex",gap:7,overflowX:"auto",scrollbarWidth:"none",paddingBottom:4,marginBottom:16}}>
+        <div style={{display:"flex",gap:7,overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch",paddingBottom:4,marginBottom:16}}>
           {SPORTS.map(s=>(
             <button key={s} onClick={()=>setSportFilter(s)}
               style={{padding:"6px 12px",borderRadius:99,border:`1.5px solid ${sportFilter===s?(SPORT_COLS[s]||"#16a34a"):"rgba(255,255,255,.12)"}`,background:sportFilter===s?(SPORT_COLS[s]||"#16a34a")+"22":"transparent",color:sportFilter===s?"#fff":"rgba(255,255,255,.4)",fontWeight:700,fontSize:12,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit",flexShrink:0}}>
@@ -682,9 +4333,13 @@ function Directory({data,onPick,onNewClub,lang,setLang}) {
         <p style={{color:"rgba(255,255,255,.15)",fontSize:11,textAlign:"center",marginTop:20}}>
           Nur Vereine die zugestimmt haben werden angezeigt
         </p>
-        <div style={{marginTop:12}}>
-          <AdBanner style={{borderRadius:12,overflow:"hidden"}}/>
+        <div style={{display:"flex",justifyContent:"center",gap:16,marginTop:12,paddingBottom:8}}>
+          <button onClick={()=>onLegal&&onLegal()} style={{background:"none",border:"none",color:"rgba(255,255,255,.25)",fontSize:11,cursor:"pointer",textDecoration:"underline"}}>Impressum</button>
+          <button onClick={()=>onLegal&&onLegal()} style={{background:"none",border:"none",color:"rgba(255,255,255,.25)",fontSize:11,cursor:"pointer",textDecoration:"underline"}}>Datenschutz</button>
+          <button onClick={()=>onLegal&&onLegal()} style={{background:"none",border:"none",color:"rgba(255,255,255,.25)",fontSize:11,cursor:"pointer",textDecoration:"underline"}}>Nutzungsbedingungen</button>
         </div>
+        <div style={{marginTop:12}}><AdBanner style={{borderRadius:12,overflow:"hidden"}}/></div>
+        <PoweredBy/>
       </div>
     </div>
   );
@@ -703,7 +4358,7 @@ function RolePicker({cl,onRole,onBack}) {
           <p style={{color:"rgba(255,255,255,.55)",fontSize:15}}>Wie moechtest du einsteigen?</p>
         </div>
         {[
-          {r:"user",icon:"*",title:"Elternteil",sub:"Termine sehen & abstimmen"},{r:"helper",icon:"*",title:"Helfer",sub:"Turnier & Spieltag unterstuetzen"},{r:"trainer",icon:"*",title:"Trainer",sub:"Termine meiner Mannschaft"},{r:"admin",icon:"*",title:"Vereinsadmin",sub:"Alle Rechte & Einstellungen"}
+          {r:"user",icon:"E",title:"Elternteil",sub:"Termine sehen & abstimmen"},{r:"helper",icon:"H",title:"Helfer",sub:"Turnier & Spieltag unterstuetzen"},{r:"trainer",icon:"T",title:"Trainer",sub:"Termine meiner Mannschaft"},{r:"admin",icon:"A",title:"Vereinsadmin",sub:"Alle Rechte & Einstellungen"}
         ].map((x,i)=>(
           <div key={x.r} className="up" onClick={()=>onRole(x.r)}
             style={{background:"rgba(255,255,255,.09)",border:"1.5px solid rgba(255,255,255,.13)",borderRadius:20,padding:"17px 20px",cursor:"pointer",marginBottom:12,animationDelay:`${i*.07}s`,transition:"all .18s"}}>
@@ -816,7 +4471,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
             onKeyDown={e=>{if(e.key==="Enter")go();}}
             placeholder="Passwort..." autoFocus
             style={{width:"100%",padding:"13px 16px",fontSize:16,background:"rgba(255,255,255,.12)",border:`2px solid ${err?"#ff6b6b":pw?"rgba(255,255,255,.4)":"rgba(255,255,255,.2)"}`,borderRadius:13,outline:"none",color:"#fff",marginBottom:10}}/>
-          {err&&<div style={{background:"rgba(255,107,107,.15)",borderRadius:10,padding:"9px 13px",fontSize:13,fontWeight:700,color:"#ff9999",marginBottom:10,textAlign:"center"}}> Falsches Passwort</div>}
+          {err&&<FriendlyError type="wrongPassword"/>}
           {cl.id==="demo"&&<div style={{background:"rgba(255,255,255,.08)",borderRadius:10,padding:"8px 12px",marginBottom:10,fontSize:11,color:"rgba(255,255,255,.6)"}}>Demo: Trainer A = trainer1 | Trainer B = trainer2</div>}
           <button onClick={go} disabled={!pw.trim()}
             style={{width:"100%",padding:"13px",fontSize:15,fontWeight:800,background:pw.trim()?cl.pri:"rgba(255,255,255,.15)",color:pw.trim()?"#fff":"rgba(255,255,255,.4)",border:"none",borderRadius:13,cursor:pw.trim()?"pointer":"not-allowed",transition:"all .18s"}}>
@@ -840,7 +4495,7 @@ function AdminLogin({cl,onLogin,onBack}) {
           <div style={{textAlign:"center",marginBottom:22}}><Logo cl={cl} sz={68} sx={{margin:"0 auto 12px"}}/><h2 style={{fontSize:22,fontWeight:900,color:"#0f172a",margin:"0 0 4px"}}>Vereinsadmin</h2><p style={{color:"#94a3b8",fontSize:13}}>{cl.name}</p></div>
           <Inp label="Admin-Passwort" type="password" val={pw} set={setPw} ph="Passwort..." af cl={cl}/>
           {cl.id==="demo"&&<div style={{background:"#f0fdf4",borderRadius:10,padding:"9px 13px",marginTop:8,fontSize:12,color:"#166534",border:"1px solid #bbf7d0"}}>Demo-Zugangsdaten: Passwort <strong>admin</strong></div>}
-          {err&&<div style={{background:"#fef2f2",borderRadius:12,padding:"10px 14px",fontSize:14,fontWeight:700,color:"#dc2626",marginTop:10}}> Falsches Passwort</div>}
+          {err&&<FriendlyError type="wrongPassword" onClose={()=>setErr(false)}/>}
           <div style={{height:14}}/><Btn full ch="Als Admin einloggen" onClick={go} icon="**" v="drk"/>
           
         </div>
@@ -880,7 +4535,7 @@ function HelperLogin({cl,helpers,onLogin,onBack}) {
                 <Inp label="Persoenlicher Helfer-Code" type="password" val={code} set={v=>{setCode(v);setErr(false);}} ph="Code vom Trainer erhalten..." af cl={cl}/>
                 {err&&<div style={{background:"#fef2f2",borderRadius:12,padding:"10px 14px",fontSize:14,fontWeight:700,color:"#dc2626",marginTop:10}}> Ungueltiger Code</div>}
                 <div style={{height:14}}/>
-                <Btn full ch="Als Helfer einloggen" onClick={go} dis={!code.trim()} icon="*" cl={cl}/>
+                <Btn full ch="Als Helfer einloggen" onClick={go} dis={!code.trim()} cl={cl}/>
               </>
           }
         </div>
@@ -970,7 +4625,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
             onKeyDown={e=>{if(e.key==="Enter"){if(checkPw(pwd,ct?.pwd||"")){const assigned=(playerProfiles||[]).some(p=>p.mainTid===ct.id);if(assigned)setStep("name");else setStep("locked");}else{setPwdErr(true);setTimeout(()=>setPwdErr(false),1800);}}}}
             placeholder="Passwort..." autoFocus
             style={{width:"100%",padding:"13px 16px",fontSize:16,background:"rgba(255,255,255,.12)",border:`2px solid ${pwdErr?"#ff6b6b":pwd?"rgba(255,255,255,.4)":"rgba(255,255,255,.2)"}`,borderRadius:13,outline:"none",color:"#fff",marginBottom:10}}/>
-          {pwdErr&&<div style={{background:"rgba(255,107,107,.15)",borderRadius:10,padding:"9px 13px",fontSize:13,fontWeight:700,color:"#ff9999",marginBottom:10,textAlign:"center"}}> Falsches Passwort</div>}
+          {pwdErr&&<FriendlyError type="wrongPassword"/>}
           {cl.id==="demo"&&<div style={{background:"rgba(255,255,255,.1)",borderRadius:10,padding:"8px 12px",marginBottom:10,fontSize:11,color:"rgba(255,255,255,.6)"}}>Demo: G-Jugend = g1 | F-Jugend = f1</div>}
           <button onClick={()=>{if(checkPw(pwd,ct?.pwd||"")){
             const assigned=(playerProfiles||[]).some(p=>p.mainTid===ct.id);
@@ -1039,16 +4694,140 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
 }
 
 function PollAttend({ev,user,onVote,cl}) {
-  const yes=Object.entries(ev.votes).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>n);
-  const no =Object.entries(ev.votes).filter(([,v])=>(typeof v==="object"?v.val:v)==="no" ).map(([n])=>n);
+  const yes  = Object.entries(ev.votes).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>n);
+  const no   = Object.entries(ev.votes).filter(([,v])=>(typeof v==="object"?v.val:v)==="no" ).map(([n])=>n);
+  const late = Object.entries(ev.votes).filter(([,v])=>typeof v==="object"&&v.val==="yes"&&v.late).map(([n,v])=>({name:n,mins:v.late}));
   const rawUv=ev.votes[user]; const uv=typeof rawUv==="object"&&rawUv!==null?rawUv.val:rawUv;
+  const myLate = typeof rawUv==="object"&&rawUv!==null ? rawUv.late : null;
+  const [showLate, setShowLate] = useState(false);
+  const [lateMins, setLateMins] = useState(myLate||15);
   const tot=yes.length+no.length; const p=cl?.pri||"#16a34a";
   const dlPassed=ev.deadline&&(now()>ev.deadline.date||(now()===ev.deadline.date));
+
+  const voteYes = () => onVote(ev.id,"att","yes");
+  const voteLate = () => { onVote(ev.id,"att",{val:"yes",late:lateMins}); setShowLate(false); };
+  const [showReason, setShowReason] = useState(false);
+  const [noReason, setNoReason] = useState("");
+  const REASONS = ["Krank","Urlaub","Schulpflicht","Wettkampf","Sonstiges"];
+  const voteNo = (reason="") => { onVote(ev.id,"att",{val:"no",reason}); setShowReason(false); };
+
   return (
     <div style={{display:"flex",flexDirection:"column",gap:10}}>
+      {session?.role==="trainer"&&<TrainerCheckin ev={ev} session={session} save={save} data={data} fire={fire}/>}
+      {(Object.values(ev.trainerPresence||{}).length>0&&session?.role==="user")&&<TrainerCheckin ev={ev} session={session} save={save} data={data} fire={fire}/>}
+      {ev.note&&<div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:12,padding:"10px 13px",fontSize:13,color:"#92400e",fontWeight:500}}>{ev.note}</div>}
+      {ev.deadline&&<div style={{background:dlPassed?"#fee2e2":"#fffbeb",border:`1.5px solid ${dlPassed?"#fca5a5":"#fde68a"}`,borderRadius:12,padding:"9px 13px",fontSize:13,fontWeight:700,color:dlPassed?"#dc2626":"#d97706"}}>{dlPassed?"Frist abgelaufen - Abstimmung wird trotzdem gezaehlt":"Abstimmungs-Frist: "+ev.deadline.date+(ev.deadline.time?" "+ev.deadline.time+" Uhr":"")}</div>}
+
+      {/* Dabei */}
+      <div onClick={()=>!myLate&&voteYes()}
+        style={{borderRadius:16,border:`2px solid ${uv==="yes"&&!myLate?p:"#e2e8f0"}`,background:uv==="yes"&&!myLate?mix(p,86):"#fafafa",padding:"14px 16px",cursor:"pointer",transition:"all .18s"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+          <div style={{width:22,height:22,borderRadius:"50%",border:`${uv==="yes"&&!myLate?"7px":"2px"} solid ${uv==="yes"&&!myLate?p:"#cbd5e1"}`,background:"#fff",flexShrink:0,transition:"all .15s"}}/>
+          <span style={{flex:1,fontSize:16,fontWeight:uv==="yes"&&!myLate?800:600,color:uv==="yes"&&!myLate?p:"#334155"}}>Mein Kind ist dabei</span>
+          {yes.filter(n=>!late.find(l=>l.name===n)).length>0&&<div style={{display:"flex",alignItems:"center",gap:4}}>
+            <div style={{display:"flex"}}>{yes.filter(n=>!late.find(l=>l.name===n)).slice(0,5).map((v,i)=><div key={v} style={{marginLeft:i?-8:0,zIndex:5-i}}><Av name={v} sz={24}/></div>)}</div>
+            <span style={{fontSize:13,fontWeight:800,color:"#475569",marginLeft:5}}>{yes.filter(n=>!late.find(l=>l.name===n)).length}</span>
+          </div>}
+        </div>
+        <div style={{height:5,borderRadius:99,background:"#e2e8f0",overflow:"hidden"}}><div style={{height:"100%",borderRadius:99,background:p,width:`${tot>0?(yes.length/tot)*100:0}%`,transition:"width .45s"}}/></div>
+      </div>
+
+      {/* Verspaetet */}
+      <div style={{borderRadius:16,border:`2px solid ${myLate?"#d97706":"#e2e8f0"}`,background:myLate?"#fef3c7":"#fafafa",padding:"14px 16px",transition:"all .18s"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:showLate?12:0}}>
+          <div onClick={()=>setShowLate(s=>!s)} style={{width:22,height:22,borderRadius:"50%",border:`${myLate?"7px":"2px"} solid ${myLate?"#d97706":"#cbd5e1"}`,background:"#fff",flexShrink:0,cursor:"pointer",transition:"all .15s"}}/>
+          <span onClick={()=>setShowLate(s=>!s)} style={{flex:1,fontSize:16,fontWeight:myLate?800:600,color:myLate?"#d97706":"#334155",cursor:"pointer"}}>
+            {myLate ? `Kommt ca. ${myLate} Min. zu spaet` : "Kommt zu spaet"}
+          </span>
+          {late.length>0&&<div style={{display:"flex",alignItems:"center",gap:4}}>
+            <div style={{display:"flex"}}>{late.slice(0,5).map((l,i)=><div key={l.name} style={{marginLeft:i?-8:0,zIndex:5-i}}><Av name={l.name} sz={24}/></div>)}</div>
+            <span style={{fontSize:13,fontWeight:800,color:"#d97706",marginLeft:5}}>{late.length}</span>
+          </div>}
+        </div>
+        {/* Late time picker */}
+        {showLate&&(
+          <div style={{paddingTop:8,borderTop:"1px solid #fde68a"}}>
+            <div style={{fontSize:12,fontWeight:700,color:"#92400e",marginBottom:8}}>Wie spaet kommt dein Kind?</div>
+            <div style={{display:"flex",gap:7,flexWrap:"wrap",marginBottom:12}}>
+              {[5,10,15,20,30,45,60].map(m=>(
+                <button key={m} onClick={()=>setLateMins(m)}
+                  style={{padding:"7px 13px",borderRadius:99,border:`2px solid ${lateMins===m?"#d97706":"#e2e8f0"}`,background:lateMins===m?"#d97706":"#fff",color:lateMins===m?"#fff":"#64748b",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+                  {m} Min
+                </button>
+              ))}
+            </div>
+            <div style={{display:"flex",gap:9}}>
+              <button onClick={voteLate}
+                style={{flex:1,padding:"11px",borderRadius:12,border:"none",background:"#d97706",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
+                Bestaetigen
+              </button>
+              <button onClick={()=>setShowLate(false)}
+                style={{padding:"11px 16px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+                Abbrechen
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Nicht dabei */}
+      <div onClick={()=>uv==="no"?voteNo():setShowReason(s=>!s)}
+        style={{borderRadius:16,border:`2px solid ${uv==="no"?"#dc2626":"#e2e8f0"}`,background:uv==="no"?"#fee2e2":"#fafafa",padding:"14px 16px",cursor:"pointer",transition:"all .18s"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+          <div style={{width:22,height:22,borderRadius:"50%",border:`${uv==="no"?"7px":"2px"} solid ${uv==="no"?"#dc2626":"#cbd5e1"}`,background:"#fff",flexShrink:0,transition:"all .15s"}}/>
+          <span style={{flex:1,fontSize:16,fontWeight:uv==="no"?800:600,color:uv==="no"?"#dc2626":"#334155"}}>Leider nicht dabei</span>
+          {no.length>0&&<div style={{display:"flex",alignItems:"center",gap:4}}>
+            <div style={{display:"flex"}}>{no.slice(0,5).map((v,i)=><div key={v} style={{marginLeft:i?-8:0,zIndex:5-i}}><Av name={v} sz={24}/></div>)}</div>
+            <span style={{fontSize:13,fontWeight:800,color:"#475569",marginLeft:5}}>{no.length}</span>
+          </div>}
+        </div>
+        <div style={{height:5,borderRadius:99,background:"#e2e8f0",overflow:"hidden"}}><div style={{height:"100%",borderRadius:99,background:"#dc2626",width:`${tot>0?(no.length/tot)*100:0}%`,transition:"width .45s"}}/></div>
+      </div>
+
+      {/* Abmelde-Grund */}
+      {showReason&&(
+        <div style={{background:"#fef2f2",borderRadius:13,padding:"12px 14px",border:"1.5px solid #fca5a5"}}>
+          <div style={{fontWeight:700,fontSize:13,color:"#991b1b",marginBottom:8}}>Warum kann dein Kind nicht?</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:7,marginBottom:10}}>
+            {REASONS.map(r=>(
+              <button key={r} onClick={()=>voteNo(r)}
+                style={{padding:"7px 14px",borderRadius:99,border:"1.5px solid #fca5a5",background:"#fff",color:"#dc2626",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+                {r}
+              </button>
+            ))}
+          </div>
+          <button onClick={()=>voteNo("")} style={{fontSize:12,color:"#94a3b8",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit"}}>Ohne Angabe</button>
+        </div>
+      )}
+      {/* Verspaetungs-Uebersicht fuer Trainer */}
+      {late.length>0&&(
+        <div style={{background:"#fef3c7",borderRadius:13,padding:"11px 14px",border:"1.5px solid #fde68a"}}>
+          <div style={{fontWeight:800,fontSize:12,color:"#92400e",marginBottom:7}}>Verspaetungen ({late.length})</div>
+          <div style={{display:"flex",flexDirection:"column",gap:5}}>
+            {late.map(l=>(
+              <div key={l.name} style={{display:"flex",alignItems:"center",gap:8,fontSize:13}}>
+                <Av name={l.name} sz={24}/>
+                <span style={{fontWeight:600,color:"#334155",flex:1}}>{l.name}</span>
+                <span style={{fontWeight:800,color:"#d97706"}}>+{l.mins} Min</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {tot>0&&<p style={{textAlign:"center",fontSize:12,color:"#94a3b8",fontWeight:600}}>
+        {yes.length} dabei . {late.length>0?`${late.length} verspaetet . `:""}{no.length} nicht dabei
+      </p>}
+    </div>
+  );
+}
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:10}}>
+      {session?.role==="trainer"&&<TrainerCheckin ev={ev} session={session} save={save} data={data} fire={fire}/>}
+      {(Object.values(ev.trainerPresence||{}).length>0&&session?.role==="user")&&<TrainerCheckin ev={ev} session={session} save={save} data={data} fire={fire}/>}
       {ev.note&&<div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:12,padding:"10px 13px",fontSize:13,color:"#92400e",fontWeight:500}}> {ev.note}</div>}
       {ev.deadline&&<div style={{background:dlPassed?"#fee2e2":"#fffbeb",border:`1.5px solid ${dlPassed?"#fca5a5":"#fde68a"}`,borderRadius:12,padding:"9px 13px",fontSize:13,fontWeight:700,color:dlPassed?"#dc2626":"#d97706"}}> {dlPassed?"Frist abgelaufen - Abstimmung wird trotzdem gezaehlt":"Abstimmungs-Frist: "+ev.deadline.date+(ev.deadline.time?" "+ev.deadline.time+" Uhr":"")}</div>}
-      {[{id:"yes",label:"Mein Kind ist dabei",color:p,bg:mix(p,86),voters:yes},{id:"no",label:"Leider nicht dabei",color:"#dc2626",bg:"#fee2e2",voters:no}].map(o=>{
+      {[{id:"yes",label:ev.selfVote?"Ich bin dabei":"Mein Kind ist dabei",color:p,bg:mix(p,86),voters:yes},{id:"no",label:"Leider nicht dabei",color:"#dc2626",bg:"#fee2e2",voters:no}].map(o=>{
         const sel=uv===o.id; const pct=tot>0?(o.voters.length/tot)*100:0;
         return (
           <div key={o.id} onClick={()=>onVote(ev.id,"att",o.id)}
@@ -1080,6 +4859,8 @@ function PollList({ev,user,onVote}) {
   const uniq=[...new Set(Object.entries(ev.votes).filter(([,v])=>Array.isArray(v)&&v.length>0).map(([n])=>n))];
   return (
     <div>
+      {session?.role==="trainer"&&<TrainerCheckin ev={ev} session={session} save={save} data={data} fire={fire}/>}
+      {(Object.values(ev.trainerPresence||{}).length>0&&session?.role==="user")&&<TrainerCheckin ev={ev} session={session} save={save} data={data} fire={fire}/>}
       {ev.note&&<div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:12,padding:"10px 13px",fontSize:13,color:"#92400e",fontWeight:500,marginBottom:12}}> {ev.note}</div>}
       <p style={{fontSize:13,color:"#64748b",fontWeight:600,marginBottom:10}}> Mehrfachauswahl moeglich - tippe zum Auswaehlen</p>
       <div style={{display:"flex",flexDirection:"column",gap:8}}>
@@ -1109,11 +4890,11 @@ const FOOT_LIST      = ["Rechts","Links","Beidfuessig"];
 const RECOMMEND_LIST = ["Aufsteigen","Verbleiben","Absteigen","Pause empfohlen","Beobachten"];
 const TEAM_HIERARCHY = [];
 function getRecommendColor(rec) {
-  if(rec==="Aufsteigen") return {col:"#16a34a",bg:"#dcfce7",icon:"*"};
-  if(rec==="Verbleiben") return {col:"#2563eb",bg:"#eff6ff",icon:"*"};
-  if(rec==="Absteigen")  return {col:"#dc2626",bg:"#fee2e2",icon:"*"};
-  if(rec==="Pause empfohlen") return {col:"#d97706",bg:"#fef3c7",icon:"*"};
-  if(rec==="Beobachten") return {col:"#7c3aed",bg:"#ede9fe",icon:"*"};
+  if(rec==="Aufsteigen") return {col:"#16a34a",bg:"#dcfce7",icon:"^"};
+  if(rec==="Verbleiben") return {col:"#2563eb",bg:"#eff6ff",icon:"="};
+  if(rec==="Absteigen")  return {col:"#dc2626",bg:"#fee2e2",icon:"v"};
+  if(rec==="Pause empfohlen") return {col:"#d97706",bg:"#fef3c7",icon:"P"};
+  if(rec==="Beobachten") return {col:"#7c3aed",bg:"#ede9fe",icon:"?"};
   return {col:"#94a3b8",bg:"#f1f5f9",icon:"-"};
 }
 const JERSEY_SIZES   = ["104","110","116","122","128","134","140","146","152","158","164","XS","S","M","L","XL"];
@@ -1292,7 +5073,7 @@ function FriendsInput({ label,sub,ids,allPlayers,current,onChange,color }) {
                 <Av name={pl.name} sz={28}/>
                 <div style={{flex:1}}>
                   <div style={{fontWeight:700,fontSize:13,color:"#0f172a"}}>{pl.name}</div>
-                  <div style={{fontSize:11,color:"#64748b"}}>Jg. {pl.by} . {pl.gender==="w"?"*":"*"}</div>
+                  <div style={{fontSize:11,color:"#64748b"}}>Jg. {pl.by} . {pl.gender==="w"?"W":"M"}</div>
                 </div>
                 <span style={{fontSize:16,color}}>?</span>
               </button>
@@ -1305,7 +5086,11 @@ function FriendsInput({ label,sub,ids,allPlayers,current,onChange,color }) {
   );
 }
 
-function PlayerProfile({ player,teams,allEvents,allPlayers,cid,onSave,onClose,t }) {
+function PlayerProfile({ player,teams,allEvents,allPlayers,cid,onSave,onClose,t,allSeasons,allPlayerProfiles,trainers }) {
+  const samePlayerHistory = (allPlayerProfiles||[]).filter(p=>
+    p.id!==player.id && p.name===player.name && p.by===player.by && p.seasonId
+  ).sort((a,b)=>(b.seasonId||"").localeCompare(a.seasonId||""));
+  const myTrainers = (trainers||[]).filter(tr=>(tr.tids||[]).includes(player.mainTid));
 
   const [p,setP] = useState({...player});
   const up = f => setP(prev => ({...prev,...f}));
@@ -1323,7 +5108,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,onSave,onClose,t 
   const totalTraining = statsRows.reduce((s,r)=>s+r.s.training,0);
 
   return (
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:900,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(8px)"}}>
+    <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:900,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(8px)"}}>
       <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"95dvh",overflowY:"auto",animation:"down .26s cubic-bezier(.16,1,.3,1)"}}>
         <div style={{display:"flex",justifyContent:"center",padding:"12px 0 4px"}}>
           <div style={{width:44,height:4,borderRadius:99,background:"#e2e8f0"}}/>
@@ -1422,7 +5207,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,onSave,onClose,t 
           {}
           <Section title="* Statistiken">
             <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:9,marginBottom:12}}>
-              {[["goals","*","Tore"],["assists","*","Vorlagen"],["yellowCards","*","Gelb"],["redCards","*","Rot"]].map(([k,ic,l])=>(
+              {[["goals","G","Tore"],["assists","V","Vorlagen"],["yellowCards","Ge","Gelb"],["redCards","Ro","Rot"]].map(([k,ic,l])=>(
                 <div key={k}>
                   <div style={{fontSize:10,fontWeight:800,color:"#64748b",marginBottom:6,textAlign:"center"}}>{ic} {l}</div>
                   <div style={{display:"flex",alignItems:"center",gap:4,justifyContent:"center"}}>
@@ -1607,14 +5392,14 @@ function PlayerCard({ player: pl,onEdit,onDel,isMain,allTeams,allEvents }) {
           </div>
           <div style={{fontSize:12,color:"#64748b",marginTop:2,display:"flex",gap:6,flexWrap:"wrap"}}>
             {pl.by && <span>Jg. {pl.by}</span>}
-            <span>{pl.gender==="w"?"*":"*"}</span>
+            <span>{pl.gender==="w"?"W":"M"}</span>
             {pl.position && <span>. {pl.position}</span>}
             {!isMain && <Tag c="#d97706" bg="#fef3c7" ch="Aushilfe" sm/>}
           </div>
         </div>
         <div style={{display:"flex",gap:5,flexShrink:0,alignItems:"center"}}>
           {totalGames > 0 && <Tag c="#16a34a" bg="#dcfce7" ch={`*${totalGames}`} sm/>}
-          {(pl.rating||0) > 0 && <span style={{fontSize:14}}>{"*".repeat(Math.min(pl.rating||0,5))}</span>}
+          {(pl.rating||0) > 0 && <span style={{fontSize:14}}>{pl.rating ? pl.rating+"/5" : "-"}</span>}
         </div>
         <div style={{display:"flex",gap:5,flexShrink:0}}>
           <button onClick={e=>{e.stopPropagation();onEdit();}} style={{width:30,height:30,borderRadius:9,background:"#eff6ff",border:"none",color:"#2563eb",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}></button>
@@ -1835,7 +5620,7 @@ function PlayerAssignRow({ player: pl,teams,allTeams,t,onAssign,onOptToggle }) {
     <>
       {}
       {showProfile && (
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:900,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(8px)"}}
+        <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:900,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(8px)"}}
           onClick={()=>setShowProfile(false)}>
           <div onClick={e=>e.stopPropagation()}
             style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"88dvh",overflowY:"auto",animation:"down .24s ease"}}>
@@ -2048,6 +5833,7 @@ function PlayerAssignRow({ player: pl,teams,allTeams,t,onAssign,onOptToggle }) {
 }
 
 function PlayersTab({ data,myTids,save,fire,cl }) {
+  const [showTeamCard, setShowTeamCard] = React.useState(null); // teamId
   const t        = TH(cl);
   const allTeams   = data.teams;
   const activeSeason = data.activeSeason || "s2526";
@@ -2070,7 +5856,7 @@ function PlayersTab({ data,myTids,save,fire,cl }) {
     setEditP(null); setShowNew(false);
     fire("Spielerprofil gespeichert *");
   };
-  const delPlayer = id => { save({...data,playerProfiles:allPlayers.filter(p=>p.id!==id)}); fire("Spieler entfernt"); };
+  const delPlayer = id => { const pl=allPlayers.find(p=>p.id===id); save({...data,playerProfiles:allPlayers.filter(p=>p.id!==id),securityLog:[...(data.securityLog||[]),{id:uid(),cid,type:"dsgvo_delete",ts:new Date().toISOString(),detail:"Spieler "+(pl?.name||id)+" auf Anfrage geloescht",read:false}]}); fire("Spieler entfernt + DSGVO-Log erstellt"); };
 
   const assignPlayer = (playerId,toTid) => {
     const next = allPlayers.map(p => p.id===playerId ? {...p,mainTid:toTid} : p);
@@ -2237,7 +6023,7 @@ function BrandingTab({cl,onSave}) {
 
 function TemplateForm({initial,onSave,onCancel,cl,title}) {
   const t=TH(cl);
-  const blank={name:"",icon:"Liste",items:[],_txt:"",_max:""};
+  const blank={name:"",icon:"L",items:[],_txt:"",_max:""};
   const [f,setF]=useState(initial||blank);
   const u=p=>setF(prev=>({...prev,...p}));
   const txtRef=useRef(null);
@@ -2753,7 +6539,7 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
       {}
       <div style={{padding:"12px 16px",background:"#fff",borderTop:"1px solid #f1f5f9",display:"flex",gap:10,position:"sticky",bottom:0}}>
         {step>1?<Btn ch="<- Zurueck" onClick={()=>setStep(s=>s-1)} v="gst" sx={{flex:1}}/>:<Btn ch="Abbrechen" onClick={onClose} v="gst" sx={{flex:1}}/>}
-        {step<STEPS?<Btn ch="Weiter ->" onClick={()=>setStep(s=>s+1)} dis={!ok()} cl={cl} sx={{flex:2}}/>:<Btn ch={isEdit?"Speichern":f.recMode==="weekly"?"Serie erstellen":f.recMode==="custom"?`${(f.recDates||[]).length} Termine erstellen`:"Termin erstellen"} onClick={finish} icon="*" cl={cl} sx={{flex:2}}/>}
+        {step<STEPS?<Btn ch="Weiter ->" onClick={()=>setStep(s=>s+1)} dis={!ok()} cl={cl} sx={{flex:2}}/>:<Btn ch={isEdit?"Speichern":f.recMode==="weekly"?"Serie erstellen":f.recMode==="custom"?`${(f.recDates||[]).length} Termine erstellen`:"Termin erstellen"} onClick={finish} cl={cl} sx={{flex:2}}/>}
       </div>
     </div>
   );
@@ -3283,12 +7069,33 @@ function NewSeasonWizard({ data,save,fire,cl,myTids,onClose,onDone }) {
   const u=p=>setF(prev=>({...prev,...p}));
   const ok=()=>step===1?f.label.trim().length>=6:true;
   const finish=()=>{
-    const sid="s"+f.label.replace(/\//g,"").replace(/\s/g,"").toLowerCase();
-    const newSeason={id:sid,label:f.label,status:"planning"};
-    const allP=data.playerProfiles||[];
-    const copied=allP.filter(p=>!p.archived&&(myTids.includes(p.mainTid)||!p.mainTid)).map(p=>({...p,id:uid(),seasonId:sid,lastTeam:(data.teams||[]).find(x=>x.id===p.mainTid)?.name||"",lastTeamId:p.mainTid,mainTid:"",optTids:[],jerseyNr:"",jerseyStatus:"none",recommend:"",goals:0,assists:0,yellowCards:0,redCards:0}));
-    save({...data,seasons:[...(data.seasons||[]),newSeason],playerProfiles:[...allP,...copied]});
-    fire&&fire("Saison "+f.label+" angelegt");
+    const label = f.label.trim();
+    if(!label) return;
+    const sid = "s"+label.replace(/[^a-z0-9]/gi,"").toLowerCase()+Date.now().toString(36);
+    const newSeason = {id:sid, label, status:"planning"};
+    const allP = data.playerProfiles||[];
+    const existingSids = (data.seasons||[]).map(s=>s.id);
+    if(existingSids.includes(sid)) { fire&&fire("Saison existiert bereits"); return; }
+    const activeSid = data.activeSeason || (data.seasons||[])[0]?.id || "";
+    const activePlayers = allP.filter(p=>
+      !p.archived &&
+      (!p.seasonId || p.seasonId===activeSid) &&
+      (myTids.includes(p.mainTid) || !p.mainTid)
+    );
+    const copied = activePlayers.map(p=>({
+      ...p, id:uid(), seasonId:sid,
+      lastTeam: (data.teams||[]).find(x=>x.id===p.mainTid)?.name||"",
+      lastTeamId: p.mainTid,
+      mainTid:"", optTids:[], jerseyNr:"", jerseyStatus:"none",
+      recommend:"", goals:0, assists:0, yellowCards:0, redCards:0,
+    }));
+    const nextData = {
+      ...data,
+      seasons: [...(data.seasons||[]), newSeason],
+      playerProfiles: [...allP, ...copied],
+    };
+    save(nextData);
+    fire&&fire("Saison "+label+" angelegt - "+copied.length+" Spieler uebernommen");
     onDone&&onDone(sid);
     onClose();
   };
@@ -3403,7 +7210,7 @@ function SeasonModal({ data,save,fire,cl,myTids,onClose }) {
   const planningSeasons = seasons.filter(s=>s.status==="planning");
 
   return (
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:900,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(8px)"}}>
+    <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:900,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(8px)"}}>
       <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"90dvh",overflowY:"auto",animation:"down .24s ease"}}>
         <div style={{display:"flex",justifyContent:"center",padding:"12px 0 4px"}}><div style={{width:44,height:4,borderRadius:99,background:"#e2e8f0"}}/></div>
         <div style={{padding:"8px 20px 48px"}}>
@@ -3570,7 +7377,7 @@ function BookingModal({ field,cellStart,date,data,save,fire,cl,myTids,session,on
   };
 
   return (
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:910,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(8px)"}}>
+    <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:910,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(8px)"}}>
       <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"80dvh",overflowY:"auto",animation:"down .24s ease"}}>
         <div style={{display:"flex",justifyContent:"center",padding:"12px 0 4px"}}><div style={{width:44,height:4,borderRadius:99,background:"#e2e8f0"}}/></div>
         <div style={{padding:"8px 20px 44px",display:"flex",flexDirection:"column",gap:14}}>
@@ -3628,7 +7435,116 @@ function BookingModal({ field,cellStart,date,data,save,fire,cl,myTids,session,on
   );
 }
 
-function FieldsTab({ data,myTids,session,save,fire,cl }) {
+function TrainerCard({ tr, data, onEdit, onDelete }) {
+  const myTeams = (data.teams||[]).filter(tm=>(tr.tids||[]).includes(tm.id));
+  const playerCount = myTeams.reduce((s,tm)=>s+(data.playerProfiles||[]).filter(p=>p.mainTid===tm.id).length,0);
+  const myEvents = (data.events||[]).filter(e=>(tr.tids||[]).includes(e.tid));
+  const eventCount = myEvents.length;
+  // Avg attendance: count votes "yes" per training event
+  const trainings = myEvents.filter(e=>e.type==="training");
+  const avgAttend = trainings.length>0
+    ? Math.round(trainings.reduce((s,e)=>s+Object.values(e.votes||{}).filter(v=>v==="yes").length,0)/trainings.length)
+    : 0;
+  return (
+    <div style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",overflow:"hidden",marginBottom:10}}>
+      <div style={{padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+        <Av name={tr.name} sz={48}/>
+        <div style={{flex:1}}>
+          <div style={{fontWeight:900,fontSize:16,color:"#0f172a"}}>{tr.name}</div>
+          <div style={{fontSize:12,color:"#64748b",marginTop:2}}>
+            {myTeams.length>0 ? myTeams.map(tm=>tm.name).join(", ") : "Keine Teams zugewiesen"}
+          </div>
+        </div>
+        <div style={{display:"flex",gap:6}}>
+          {onEdit&&<button onClick={onEdit} style={{width:30,height:30,borderRadius:9,background:"#eff6ff",border:"none",color:"#2563eb",cursor:"pointer",fontSize:13,fontWeight:700}}>E</button>}
+          {onDelete&&<button onClick={onDelete} style={{width:30,height:30,borderRadius:9,background:"#fee2e2",border:"none",color:"#dc2626",cursor:"pointer",fontSize:13,fontWeight:700}}>X</button>}
+        </div>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",borderTop:"1px solid #f1f5f9"}}>
+        {[[playerCount,"Spieler"],[eventCount,"Termine"],[avgAttend," Anwesend"]].map(([v,l])=>(
+          <div key={l} style={{padding:"10px 0",textAlign:"center",borderRight:"1px solid #f1f5f9"}}>
+            <div style={{fontWeight:900,fontSize:18,color:"#334155",lineHeight:1}}>{v}</div>
+            <div style={{fontSize:10,color:"#94a3b8",fontWeight:600,marginTop:2}}>{l}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TrainersTab({data,cid,save,fire}) {
+  const [showContactSetup, setShowContactSetup] = React.useState(null);
+  const myTeams = (data.teams||[]).filter(x=>x.cid===cid);
+  const myTrs   = (data.trainers||[]).filter(x=>x.cid===cid);
+  const [showForm, setShowForm] = useState(false);
+  const [editId,   setEditId]   = useState(null);
+  const [f, setF] = useState({name:"",pw:"",tids:[],phone:"",email:""});
+  const u = p => setF(prev=>({...prev,...p}));
+  const cl = (data.clubs||[]).find(x=>x.id===cid)||{pri:"#16a34a"};
+
+  const openNew  = () => { setF({name:"",pw:"",tids:[],phone:"",email:""}); setEditId(null); setShowForm(true); };
+  const openEdit = tr => { setF({...tr,pw:""}); setEditId(tr.id); setShowForm(true); };
+  const del      = id => { save({...data,trainers:(data.trainers||[]).filter(x=>x.id!==id)}); fire("Entfernt"); };
+
+  const saveF = () => {
+    if(!f.name.trim()||(!editId&&!f.pw.trim())) return;
+    const pw = f.pw.trim() ? hashPw(f.pw.trim()) : (myTrs.find(x=>x.id===editId)?.pw||"");
+    const rec = {...f, id:editId||uid(), cid, pw};
+    const next = editId ? (data.trainers||[]).map(x=>x.id===editId?rec:x) : [...(data.trainers||[]),rec];
+    save({...data,trainers:next});
+    setShowForm(false);
+    fire(editId?"Trainer aktualisiert":"Trainer hinzugefuegt");
+  };
+
+  return (
+    <div>
+      <TrainerStatsView data={data} cid={cid}/>
+      {showBroadcast&&<BroadcastModal data={data} cid={cid} session={session} save={save} fire={fire} onClose={()=>setShowBroadcast(false)}/>}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+        <div><p style={{fontWeight:900,fontSize:16,color:"#0f172a",margin:0}}>Trainer</p><p style={{fontSize:12,color:"#64748b",marginTop:2,margin:0}}>{myTrs.length} gesamt</p></div>
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={()=>setShowBroadcast(true)} style={{padding:"9px 14px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",color:"#475569"}}>Rundschreiben</button>
+          <button onClick={openNew} style={{padding:"9px 16px",borderRadius:11,border:"none",background:"#16a34a",color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>+ Neuer Trainer</button>
+        </div>
+      </div>
+      {myTrs.length===0&&!showForm&&(
+        <div style={{textAlign:"center",padding:"32px",background:"#f8fafc",borderRadius:14,border:"1.5px dashed #e2e8f0"}}>
+          <p style={{fontWeight:700,color:"#334155",margin:"0 0 4px"}}>Noch keine Trainer angelegt</p>
+          <p style={{fontSize:13,color:"#94a3b8",margin:0}}>Trainer koennen hier angelegt und Teams zugewiesen werden.</p>
+        </div>
+      )}
+      {myTrs.map(tr=><TrainerCard key={tr.id} tr={tr} data={data} onEdit={()=>openEdit(tr)} onDelete={()=>del(tr.id)}/>)}
+      {showForm&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:800,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+          <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"90dvh",overflowY:"auto",padding:"20px 22px 48px"}}>
+            <h3 style={{fontWeight:900,fontSize:18,color:"#0f172a",marginBottom:16}}>{editId?"Trainer bearbeiten":"Neuen Trainer anlegen"}</h3>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              <input value={f.name} onChange={e=>u({name:e.target.value})} placeholder="Name des Trainers"
+                style={{padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
+              <input type="password" value={f.pw} onChange={e=>u({pw:e.target.value})} placeholder={editId?"Neues Passwort (leer = unveraendert)":"Passwort"}
+                style={{padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
+              <input value={f.phone||""} onChange={e=>u({phone:e.target.value})} placeholder="Telefon (optional)"
+                style={{padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
+              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginTop:4}}>MANNSCHAFTEN</div>
+              {myTeams.map(tm=>(
+                <label key={tm.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 13px",borderRadius:12,border:`1.5px solid ${f.tids.includes(tm.id)?tm.col:"#e2e8f0"}`,background:f.tids.includes(tm.id)?tm.col+"12":"#fafafa",cursor:"pointer"}}>
+                  <input type="checkbox" checked={f.tids.includes(tm.id)} onChange={e=>u({tids:e.target.checked?[...f.tids,tm.id]:f.tids.filter(x=>x!==tm.id)})} style={{width:17,height:17,accentColor:tm.col}}/>
+                  <span style={{fontWeight:700,fontSize:14}}>{tm.name}</span>
+                </label>
+              ))}
+            </div>
+            <div style={{display:"flex",gap:9,marginTop:16}}>
+              <button onClick={()=>setShowForm(false)} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
+              <button onClick={saveF} disabled={!f.name.trim()||(!editId&&!f.pw.trim())} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:(f.name.trim()&&(editId||f.pw.trim()))?"#16a34a":"#e2e8f0",color:(f.name.trim()&&(editId||f.pw.trim()))?"#fff":"#94a3b8",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Speichern</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
   const t = TH(cl);
   const cid = data.teams.find(tm=>myTids.includes(tm.id))?.cid;
   const fields = (data.fields||[]).filter(f=>f.cid===cid);
@@ -3734,13 +7650,1276 @@ function FieldsTab({ data,myTids,session,save,fire,cl }) {
   );
 }
 
+function FieldsTab({ data,myTids,session,save,fire,cl }) {
+  const t = TH(cl);
+  const cid = (data.teams||[]).find(tm=>myTids.includes(tm.id))?.cid;
+  const fields = (data.fields||[]).filter(f=>f.cid===cid);
+  const bookings = data.bookings||[];
+  const [selDate,setSelDate] = useState(new Date().toISOString().slice(0,10));
+  const [bookTarget,setBookTarget] = useState(null);
+  const dayBk = fid => bookings.filter(b=>b.fieldId===fid&&b.date===selDate);
+  const myTeams = (data.teams||[]).filter(tm=>myTids.includes(tm.id));
+  const COLORS = ["#2563eb","#16a34a","#d97706","#7c3aed","#dc2626"];
+  const tCol = name => COLORS[Math.abs((name||"").split("").reduce((a,c)=>a+c.charCodeAt(0),0))%COLORS.length];
+  const cancelBk = id => { save({...data,bookings:bookings.filter(b=>b.id!==id)}); fire("Buchung geloescht"); };
+  const addBk = (field,teamId,cells,timeFrom,timeTo) => {
+    const tm = myTeams.find(x=>x.id===teamId);
+    const bk = {id:uid(),fieldId:field.id,date:selDate,cellStart:0,cells,teamId,teamName:tm?.name||"",booker:session?.name||"",timeFrom,timeTo,cid:field.cid};
+    save({...data,bookings:[...bookings,bk]});
+    fire("Platz gebucht");
+    setBookTarget(null);
+  };
+  return (
+    <div>
+      <div style={{background:"#fff",borderRadius:16,padding:14,border:"1.5px solid #e2e8f0",marginBottom:14,display:"flex",alignItems:"center",gap:10}}>
+        <button onClick={()=>{const d=new Date(selDate+"T12:00:00");d.setDate(d.getDate()-1);setSelDate(d.toISOString().slice(0,10));}} style={{width:32,height:32,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",cursor:"pointer",fontSize:18}}>&#8249;</button>
+        <input type="date" value={selDate} onChange={e=>setSelDate(e.target.value)} style={{flex:1,padding:"7px 10px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none"}}/>
+        <button onClick={()=>{const d=new Date(selDate+"T12:00:00");d.setDate(d.getDate()+1);setSelDate(d.toISOString().slice(0,10));}} style={{width:32,height:32,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",cursor:"pointer",fontSize:18}}>&#8250;</button>
+      </div>
+      {bookTarget&&(
+        <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:910,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+          <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,padding:"20px 22px 44px"}}>
+            <h3 style={{fontWeight:900,fontSize:18,marginBottom:16}}>Platz buchen - {bookTarget.name}</h3>
+            {(()=>{
+              const [sel,setSel]=React.useState({teamId:myTeams[0]?.id||"",cells:4,from:"09:00",to:"10:00"});
+              return <>
+                <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                  <select value={sel.teamId} onChange={e=>setSel(p=>({...p,teamId:e.target.value}))} style={{padding:"10px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}>
+                    {myTeams.map(tm=><option key={tm.id} value={tm.id}>{tm.name}</option>)}
+                  </select>
+                  <div style={{display:"flex",gap:8}}>
+                    {[[2,"Viertel"],[4,"Halb"],[8,"Ganz"]].map(([cells,lbl])=>(
+                      <button key={cells} onClick={()=>setSel(p=>({...p,cells}))} style={{flex:1,padding:"10px",borderRadius:11,border:`2px solid ${sel.cells===cells?t.p:"#e2e8f0"}`,background:sel.cells===cells?t.p:"#fff",color:sel.cells===cells?"#fff":"#334155",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{lbl}</button>
+                    ))}
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                    <input type="time" value={sel.from} onChange={e=>setSel(p=>({...p,from:e.target.value}))} style={{padding:"10px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
+                    <input type="time" value={sel.to} onChange={e=>setSel(p=>({...p,to:e.target.value}))} style={{padding:"10px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
+                  </div>
+                </div>
+                <div style={{display:"flex",gap:9,marginTop:16}}>
+                  <button onClick={()=>setBookTarget(null)} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
+                  <button onClick={()=>addBk(bookTarget,sel.teamId,sel.cells,sel.from,sel.to)} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:t.p,color:"#fff",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Buchen</button>
+                </div>
+              </>;
+            })()}
+          </div>
+        </div>
+      )}
+      {fields.length===0&&<div style={{textAlign:"center",padding:"32px",background:"#f8fafc",borderRadius:14,border:"1.5px dashed #e2e8f0"}}><p style={{fontWeight:700,color:"#334155"}}>Keine Plaetze konfiguriert</p><p style={{fontSize:13,color:"#94a3b8",marginTop:4}}>Plaetze koennen im Admin-Bereich angelegt werden.</p></div>}
+      {fields.map(field=>(
+        <div key={field.id} style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",marginBottom:14,overflow:"hidden"}}>
+          <div style={{padding:"12px 16px",borderBottom:"1px solid #f1f5f9",display:"flex",alignItems:"center",gap:10}}>
+            <div style={{flex:1}}><div style={{fontWeight:800,fontSize:15}}>{field.name}</div><div style={{fontSize:12,color:"#64748b"}}>{field.surface} - {dayBk(field.id).length} Buchung(en)</div></div>
+            <button onClick={()=>setBookTarget(field)} style={{padding:"7px 14px",borderRadius:10,border:"none",background:t.p,color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>+ Buchen</button>
+          </div>
+          <div style={{padding:14}}>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:3,background:"#16a34a",borderRadius:10,padding:8}}>
+              {Array.from({length:8},(_,i)=>{
+                const bk=dayBk(field.id).find(b=>{const s=b.cellStart||0;return i>=s&&i<s+(b.cells||8);});
+                return <div key={i} style={{background:bk?tCol(bk.teamName):"rgba(255,255,255,.2)",borderRadius:5,minHeight:32,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:bk?"#fff":"rgba(255,255,255,.4)"}}>{bk?bk.teamName?.slice(0,5):""}</div>;
+              })}
+            </div>
+          </div>
+          {dayBk(field.id).length>0&&<div style={{padding:"0 16px 14px",display:"flex",flexDirection:"column",gap:6}}>
+            {dayBk(field.id).map(b=>(
+              <div key={b.id} style={{display:"flex",alignItems:"center",gap:10,background:"#f8fafc",borderRadius:11,padding:"9px 13px"}}>
+                <div style={{width:10,height:10,borderRadius:"50%",background:tCol(b.teamName)}}/>
+                <div style={{flex:1}}><div style={{fontWeight:700,fontSize:13}}>{b.teamName}</div><div style={{fontSize:11,color:"#64748b"}}>{b.timeFrom}-{b.timeTo}</div></div>
+                <button onClick={()=>cancelBk(b.id)} style={{width:26,height:26,borderRadius:7,background:"#fee2e2",border:"none",color:"#dc2626",cursor:"pointer",fontSize:12,fontWeight:800}}>X</button>
+              </div>
+            ))}
+          </div>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+
+
+
+
+function FieldConflictWarner({ fieldId, date, time, duration, bookings, fields, myTid, onResolve }) {
+  if(!fieldId || !date) return null;
+  const conflicts = (bookings||[]).filter(b=>
+    b.fieldId===fieldId && b.date===date && b.teamId!==myTid
+  );
+  if(conflicts.length===0) return null;
+  const field = (fields||[]).find(f=>f.id===fieldId);
+  return (
+    <div style={{background:"#fef3c7",borderRadius:13,padding:"12px 14px",border:"2px solid #f59e0b",marginTop:10}}>
+      <div style={{fontWeight:800,fontSize:13,color:"#92400e",marginBottom:8}}>
+        Konflikt: {field?.name||"Platz"} an diesem Tag bereits belegt!
+      </div>
+      {conflicts.map(bk=>(
+        <div key={bk.id} style={{display:"flex",alignItems:"center",gap:10,marginBottom:7,background:"rgba(255,255,255,.6)",borderRadius:9,padding:"8px 12px"}}>
+          <div style={{flex:1}}>
+            <div style={{fontWeight:700,fontSize:12,color:"#334155"}}>{bk.teamName}</div>
+            <div style={{fontSize:11,color:"#64748b"}}>{bk.timeFrom} - {bk.timeTo}</div>
+          </div>
+          <button onClick={()=>onResolve&&onResolve(bk)}
+            style={{padding:"5px 12px",borderRadius:8,border:"none",background:"#f59e0b",color:"#fff",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>
+            Anfrage senden
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function FieldConflictResolver({ conflict, myTeam, data, save, fire, onClose }) {
+  const [msg, setMsg] = useState("");
+  const [decision, setDecision] = useState(null); // "keep" | "yield"
+  const sendRequest = () => {
+    const req = {
+      id: uid(), type:"field_conflict",
+      fromTeam: myTeam?.id, fromTeamName: myTeam?.name||"",
+      toTeam: conflict.teamId, toTeamName: conflict.teamName,
+      fieldId: conflict.fieldId, date: conflict.date,
+      msg: msg||"Wir wuerden gerne denselben Platz nutzen. Koennen wir uns einigen?",
+      ts: new Date().toISOString(), status:"pending",
+      bookingId: conflict.id,
+    };
+    save({...data, contactRequests:[...(data.contactRequests||[]),req]});
+    fire("Anfrage an "+conflict.teamName+" gesendet");
+    onClose();
+  };
+  return (
+    <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:920,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+      <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,padding:"20px 22px 44px"}}>
+        <h3 style={{fontWeight:900,fontSize:17,marginBottom:4}}>Platz-Konflikt loesen</h3>
+        <p style={{fontSize:13,color:"#64748b",marginBottom:16}}>
+          {conflict.teamName} hat denselben Platz am {conflict.date} gebucht ({conflict.timeFrom}-{conflict.timeTo}).
+        </p>
+        <div style={{display:"flex",gap:9,marginBottom:14}}>
+          <button onClick={()=>setDecision("request")}
+            style={{flex:1,padding:"11px",borderRadius:12,border:`2px solid ${decision==="request"?"#2563eb":"#e2e8f0"}`,background:decision==="request"?"#eff6ff":"#fff",color:decision==="request"?"#2563eb":"#475569",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+            Anfrage senden
+          </button>
+          <button onClick={()=>setDecision("yield")}
+            style={{flex:1,padding:"11px",borderRadius:12,border:`2px solid ${decision==="yield"?"#16a34a":"#e2e8f0"}`,background:decision==="yield"?"#f0fdf4":"#fff",color:decision==="yield"?"#16a34a":"#475569",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+            Ich weiche aus
+          </button>
+        </div>
+        {decision==="request"&&<>
+          <textarea value={msg} onChange={e=>setMsg(e.target.value)}
+            placeholder="Nachricht an das andere Team..."
+            rows={3} style={{width:"100%",padding:"11px 14px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",resize:"none",fontFamily:"inherit",boxSizing:"border-box",marginBottom:12}}/>
+          <button onClick={sendRequest}
+            style={{width:"100%",padding:"12px",borderRadius:12,border:"none",background:"#2563eb",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
+            Anfrage senden
+          </button>
+        </>}
+        {decision==="yield"&&<>
+          <p style={{fontSize:13,color:"#16a34a",marginBottom:12}}>OK - du buchst einen anderen Platz oder eine andere Zeit.</p>
+          <button onClick={onClose}
+            style={{width:"100%",padding:"12px",borderRadius:12,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
+            Verstanden
+          </button>
+        </>}
+        <button onClick={onClose} style={{marginTop:10,width:"100%",padding:"10px",borderRadius:11,border:"none",background:"none",color:"#94a3b8",fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
+      </div>
+    </div>
+  );
+}
+
+/* =================================================================
+   DATENSCHUTZ-SYSTEM
+   - Einwilligungsverwaltung fuer Bilder
+   - Sichere Kontaktdaten (nie in DB)
+   - Team-Karte mit Datenschutz-Badge
+================================================================= */
+
+// Einwilligungs-Storage (nur lokal, nie in Supabase)
+const ConsentStore = {
+  // Speichert Einwilligung: {teamId_type: {given: bool, ts: timestamp, by: name}}
+  get: (teamId, type) => {
+    try {
+      const key = "consent_"+teamId+"_"+type;
+      return JSON.parse(localStorage.getItem(key)||"null");
+    } catch { return null; }
+  },
+  set: (teamId, type, data) => {
+    try {
+      const key = "consent_"+teamId+"_"+type;
+      localStorage.setItem(key, JSON.stringify({...data, ts:Date.now()}));
+    } catch {}
+  },
+  revoke: (teamId, type) => {
+    try { localStorage.removeItem("consent_"+teamId+"_"+type); } catch {}
+  },
+  // Kontaktdaten: nur lokal, nie in DB
+  setContact: (trainerId, phone) => {
+    try {
+      // Store phone only in local browser - never synced to DB
+      localStorage.setItem("contact_"+trainerId, phone);
+    } catch {}
+  },
+  getContact: (trainerId) => {
+    try { return localStorage.getItem("contact_"+trainerId)||null; } catch { return null; }
+  },
+  clearContact: (trainerId) => {
+    try { localStorage.removeItem("contact_"+trainerId); } catch {}
+  },
+};
+
+// Consent-Anfrage fuer Mannschaftsbild
+function ConsentRequest({ team, players, trainers, onConsent, onDecline, cl }) {
+  const t = TH(cl);
+  const [checked, setChecked] = React.useState(false);
+  const [name, setName] = React.useState("");
+  const [role, setRole] = React.useState("eltern"); // eltern | trainer | admin
+
+  const submit = () => {
+    if(!checked || !name.trim()) return;
+    onConsent({
+      givenBy: name.trim(),
+      role,
+      ts: Date.now(),
+      teamId: team.id,
+    });
+  };
+
+  return (
+    <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:900,
+      display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
+      <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,
+        padding:"24px 22px 48px",maxHeight:"85dvh",overflowY:"auto"}}>
+
+        <div style={{display:"flex",justifyContent:"center",marginBottom:16}}>
+          <div style={{width:48,height:48,borderRadius:14,background:"#eff6ff",
+            display:"flex",alignItems:"center",justifyContent:"center",
+            fontWeight:900,fontSize:20,color:"#2563eb"}}>i</div>
+        </div>
+
+        <h2 style={{fontWeight:900,fontSize:19,color:"#0f172a",textAlign:"center",marginBottom:8}}>
+          Einwilligung Mannschaftsbild
+        </h2>
+        <p style={{fontSize:14,color:"#64748b",textAlign:"center",lineHeight:1.6,marginBottom:20}}>
+          Gemaess DSGVO Art. 6 benoetigen wir die Einwilligung aller abgebildeten Personen
+          bzw. deren Erziehungsberechtigten.
+        </p>
+
+        <div style={{background:"#f0fdf4",borderRadius:14,padding:"14px 16px",
+          border:"1.5px solid #bbf7d0",marginBottom:20}}>
+          <div style={{fontWeight:800,fontSize:13,color:"#166534",marginBottom:8}}>
+            Was passiert mit dem Bild?
+          </div>
+          <div style={{fontSize:13,color:"#166534",lineHeight:1.7}}>
+            Das Bild wird ausschliesslich in dieser App fuer die Mannschaft {team.name} verwendet.
+            Es wird nicht an Dritte weitergegeben, nicht auf Social Media geteilt
+            und kann jederzeit geloescht werden.
+          </div>
+        </div>
+
+        <div style={{display:"flex",flex:"column",gap:10,marginBottom:16}}>
+          <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6}}>
+            ICH BIN
+          </div>
+          <div style={{display:"flex",gap:8}}>
+            {[["eltern","Elternteil"],["trainer","Trainer"],["admin","Admin"]].map(([v,l])=>(
+              <button key={v} onClick={()=>setRole(v)}
+                style={{flex:1,padding:"9px",borderRadius:10,
+                  border:`2px solid ${role===v?t.p:"#e2e8f0"}`,
+                  background:role===v?t.p:"#fff",
+                  color:role===v?"#fff":"#475569",
+                  fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+                {l}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <input
+          value={name} onChange={e=>setName(e.target.value)}
+          placeholder="Vor- und Nachname (wird als Einwilligung gespeichert)"
+          style={{width:"100%",padding:"12px 14px",fontSize:14,
+            border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",
+            marginBottom:14,boxSizing:"border-box"}}
+        />
+
+        <label style={{display:"flex",alignItems:"flex-start",gap:10,
+          cursor:"pointer",marginBottom:20,padding:"12px 14px",
+          background:"#f8fafc",borderRadius:12,border:"1.5px solid #e2e8f0"}}>
+          <input type="checkbox" checked={checked} onChange={e=>setChecked(e.target.checked)}
+            style={{width:18,height:18,marginTop:2,accentColor:t.p,flexShrink:0}}/>
+          <span style={{fontSize:13,color:"#334155",lineHeight:1.6}}>
+            Ich willige ein, dass das Mannschaftsbild von {team.name} in der Vereins-App
+            angezeigt wird. Ich kann diese Einwilligung jederzeit widerrufen.
+          </span>
+        </label>
+
+        <button onClick={submit} disabled={!checked||!name.trim()}
+          style={{width:"100%",padding:"14px",borderRadius:14,border:"none",
+            background:checked&&name.trim()?t.p:"#e2e8f0",
+            color:checked&&name.trim()?"#fff":"#94a3b8",
+            fontWeight:800,fontSize:15,cursor:checked&&name.trim()?"pointer":"default",
+            fontFamily:"inherit",marginBottom:10}}>
+          Einwilligung geben
+        </button>
+        <button onClick={onDecline}
+          style={{width:"100%",padding:"11px",border:"none",background:"none",
+            color:"#94a3b8",fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+          Abbrechen - kein Bild hochladen
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Team-Karte mit Datenschutz
+function TeamCard({ team, data, session, cl, onClose }) {
+  const t = TH(cl);
+  const trainers = (data.trainers||[]).filter(tr=>(tr.tids||[]).includes(team.id));
+  const players = (data.playerProfiles||[]).filter(p=>p.mainTid===team.id&&!p.archived);
+  const events = (data.events||[]).filter(e=>e.tid===team.id);
+  const upcomingEvents = events.filter(e=>e.date>=new Date().toISOString().slice(0,10)).slice(0,3);
+
+  const [photo, setPhoto] = React.useState(null);
+  const [showConsent, setShowConsent] = React.useState(false);
+  const [consent, setConsent] = React.useState(()=>ConsentStore.get(team.id,"teamphoto"));
+  const fileRef = React.useRef(null);
+
+  const canShowPhoto = photo && consent?.given;
+  const isTrainer = session?.role==="trainer" || session?.role==="admin";
+
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files?.[0];
+    if(!file) return;
+    if(!consent) {
+      setShowConsent(true);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const b64 = ev.target.result;
+      localStorage.setItem("teamphoto_"+team.id, b64);
+      setPhoto(b64);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const grantConsent = (consentData) => {
+    const c = {...consentData, given:true};
+    ConsentStore.set(team.id, "teamphoto", c);
+    setConsent(c);
+    setShowConsent(false);
+    fileRef.current?.click();
+  };
+
+  const revokeConsent = () => {
+    ConsentStore.revoke(team.id, "teamphoto");
+    localStorage.removeItem("teamphoto_"+team.id);
+    setConsent(null);
+    setPhoto(null);
+  };
+
+  React.useEffect(()=>{
+    const stored = localStorage.getItem("teamphoto_"+team.id);
+    if(stored) setPhoto(stored);
+  },[team.id]);
+
+  return (
+    <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:850,
+      display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
+      {showConsent&&<ConsentRequest
+        team={team} players={players} trainers={trainers} cl={cl}
+        onConsent={grantConsent}
+        onDecline={()=>setShowConsent(false)}
+      />}
+      <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",
+        maxWidth:520,maxHeight:"90dvh",overflowY:"auto"}}>
+
+        {/* Team Header */}
+        <div style={{background:`linear-gradient(135deg,${t.s||"#0f172a"},${t.p})`,
+          padding:"20px 22px 16px",position:"relative"}}>
+          <button onClick={onClose}
+            style={{position:"absolute",top:16,right:16,width:32,height:32,
+              borderRadius:10,background:"rgba(255,255,255,.15)",border:"none",
+              color:"#fff",cursor:"pointer",fontSize:16,fontWeight:700}}>
+            x
+          </button>
+
+          {/* Team Photo */}
+          <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:12}}>
+            <div style={{width:64,height:64,borderRadius:16,overflow:"hidden",
+              background:"rgba(255,255,255,.15)",border:"2px solid rgba(255,255,255,.3)",
+              display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:isTrainer?"pointer":"default"}}
+              onClick={isTrainer?()=>fileRef.current?.click():undefined}>
+              {canShowPhoto
+                ? <img src={photo} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                : <span style={{fontWeight:900,fontSize:24,color:"rgba(255,255,255,.7)"}}>{team.icon||team.name?.slice(0,2)}</span>
+              }
+            </div>
+            <div style={{flex:1}}>
+              <div style={{color:"#fff",fontWeight:900,fontSize:22}}>{team.name}</div>
+              <div style={{color:"rgba(255,255,255,.6)",fontSize:13,marginTop:2}}>
+                {players.length} Spieler  {upcomingEvents.length} Termine
+              </div>
+            </div>
+          </div>
+
+          {/* Photo Controls */}
+          {isTrainer&&(
+            <div style={{display:"flex",gap:8}}>
+              <input ref={fileRef} type="file" accept="image/*" onChange={handlePhotoUpload} style={{display:"none"}}/>
+              {!canShowPhoto&&(
+                <button onClick={()=>fileRef.current?.click()}
+                  style={{padding:"6px 14px",borderRadius:9,border:"1.5px solid rgba(255,255,255,.3)",
+                    background:"rgba(255,255,255,.1)",color:"rgba(255,255,255,.8)",
+                    fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+                  + Mannschaftsbild
+                </button>
+              )}
+              {consent&&(
+                <div style={{display:"flex",alignItems:"center",gap:6,
+                  background:"rgba(255,255,255,.1)",borderRadius:9,padding:"5px 10px"}}>
+                  <span style={{fontSize:10,color:"rgba(255,255,255,.6)",fontWeight:700}}>
+                    Einwilligung: {consent.givenBy}
+                  </span>
+                  <button onClick={revokeConsent}
+                    style={{background:"rgba(255,0,0,.3)",border:"none",borderRadius:5,
+                      color:"#fff",fontSize:10,cursor:"pointer",padding:"2px 6px",fontFamily:"inherit"}}>
+                    Widerrufen
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div style={{padding:"16px 20px 40px"}}>
+
+          {/* Datenschutz Hinweis wenn kein Bild */}
+          {!canShowPhoto&&(
+            <div style={{background:"#eff6ff",borderRadius:12,padding:"10px 14px",
+              border:"1px solid #bfdbfe",marginBottom:16,fontSize:12,color:"#1d4ed8",lineHeight:1.5}}>
+              Mannschaftsbild: Einwilligung aller Eltern/Erziehungsberechtigten erforderlich.
+              {isTrainer&&" Klicke auf das Team-Logo um ein Bild hochzuladen."}
+            </div>
+          )}
+
+          {/* Trainer Kontakt - OHNE Nummer anzuzeigen */}
+          {trainers.length>0&&(
+            <div style={{marginBottom:16}}>
+              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5}}>
+                TRAINER
+              </div>
+              {trainers.map(tr=>{
+                const localPhone = ConsentStore.getContact(tr.id);
+                return (
+                  <div key={tr.id} style={{background:"#f8fafc",borderRadius:13,
+                    padding:"12px 14px",border:"1px solid #e2e8f0",marginBottom:8,
+                    display:"flex",alignItems:"center",gap:12}}>
+                    <Av name={tr.name} sz={42}/>
+                    <div style={{flex:1}}>
+                      <div style={{fontWeight:700,fontSize:15,color:"#0f172a"}}>{tr.name}</div>
+                      <div style={{fontSize:12,color:"#64748b",marginTop:2}}>Trainer {team.name}</div>
+                    </div>
+                    {/* Kontakt-Buttons ohne Nummer zu zeigen */}
+                    <div style={{display:"flex",gap:7}}>
+                      {localPhone&&(
+                        <>
+                          <button onClick={()=>window.open("tel:"+localPhone)}
+                            style={{width:36,height:36,borderRadius:10,background:"#f0fdf4",
+                              border:"1px solid #bbf7d0",color:"#16a34a",cursor:"pointer",
+                              fontWeight:800,fontSize:13}}>
+                            Tel
+                          </button>
+                          <button onClick={()=>window.open("https://wa.me/"+localPhone.replace(/[^0-9]/g,""))}
+                            style={{width:36,height:36,borderRadius:10,background:"#f0fdf4",
+                              border:"1px solid #bbf7d0",color:"#16a34a",cursor:"pointer",
+                              fontWeight:800,fontSize:11}}>
+                            WA
+                          </button>
+                        </>
+                      )}
+                      {tr.email&&(
+                        <button onClick={()=>window.open("mailto:"+tr.email)}
+                          style={{width:36,height:36,borderRadius:10,background:"#eff6ff",
+                            border:"1px solid #bfdbfe",color:"#2563eb",cursor:"pointer",
+                            fontWeight:800,fontSize:11}}>
+                          Mail
+                        </button>
+                      )}
+                      {!localPhone&&!tr.email&&(
+                        <span style={{fontSize:11,color:"#94a3b8",padding:"8px 0"}}>
+                          Kein Kontakt hinterlegt
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              {/* Hinweis: Telefonnummern nur lokal */}
+              <div style={{fontSize:11,color:"#94a3b8",lineHeight:1.5,padding:"6px 4px"}}>
+                Telefonnummern werden aus Datenschutzgruenden nur lokal auf
+                diesem Geraet gespeichert - nicht in der Cloud.
+              </div>
+            </div>
+          )}
+
+          {/* Spieler Liste (nur Vornamen, kein Bild ohne Einwilligung) */}
+          <div style={{marginBottom:16}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5}}>
+              SPIELER ({players.length})
+            </div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+              {players.map(pl=>(
+                <div key={pl.id} style={{display:"flex",alignItems:"center",gap:6,
+                  background:"#f8fafc",borderRadius:10,padding:"6px 10px",
+                  border:"1px solid #e2e8f0"}}>
+                  <Av name={pl.name} sz={26}/>
+                  <span style={{fontSize:13,fontWeight:600,color:"#334155"}}>{pl.name}</span>
+                </div>
+              ))}
+              {players.length===0&&<p style={{fontSize:13,color:"#94a3b8"}}>Noch keine Spieler zugeteilt</p>}
+            </div>
+          </div>
+
+          {/* Naechste Termine */}
+          {upcomingEvents.length>0&&(
+            <div>
+              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5}}>
+                NAECHSTE TERMINE
+              </div>
+              {upcomingEvents.map(ev=>(
+                <div key={ev.id} style={{display:"flex",alignItems:"center",gap:10,
+                  background:"#f8fafc",borderRadius:11,padding:"9px 13px",
+                  border:"1px solid #e2e8f0",marginBottom:7}}>
+                  <div style={{width:36,height:36,borderRadius:10,background:t.p+"18",
+                    display:"flex",alignItems:"center",justifyContent:"center",
+                    fontWeight:900,fontSize:11,color:t.p,flexShrink:0}}>
+                    {ev.date?.slice(5).replace("-",".")}
+                  </div>
+                  <div style={{flex:1}}>
+                    <div style={{fontWeight:700,fontSize:13}}>{ev.title}</div>
+                    <div style={{fontSize:11,color:"#94a3b8"}}>{ev.time} {ev.location&&"- "+ev.location}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Datenschutz Footer */}
+          <div style={{marginTop:20,background:"#f8fafc",borderRadius:12,
+            padding:"12px 14px",border:"1px solid #e2e8f0",fontSize:11,color:"#94a3b8",lineHeight:1.6}}>
+            Datenschutz: Alle personenbezogenen Daten werden gemaess DSGVO verarbeitet.
+            Bilder werden nur mit Einwilligung gespeichert. Kontaktdaten verbleiben lokal auf deinem Geraet.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Trainer Kontakt-Setup (Admin/Trainer traegt seine Nummer lokal ein)
+function TrainerContactSetup({ trainer, onClose }) {
+  const [phone, setPhone] = React.useState(()=>ConsentStore.getContact(trainer.id)||"");
+  const save = () => {
+    if(phone.trim()) ConsentStore.setContact(trainer.id, phone.trim());
+    else ConsentStore.clearContact(trainer.id);
+    onClose();
+  };
+  return (
+    <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:910,
+      display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+      <div style={{background:"#fff",borderRadius:18,padding:"24px",width:"100%",maxWidth:380}}>
+        <h3 style={{fontWeight:900,fontSize:17,marginBottom:6}}>Kontaktnummer hinterlegen</h3>
+        <div style={{background:"#eff6ff",borderRadius:10,padding:"10px 13px",
+          fontSize:12,color:"#1d4ed8",lineHeight:1.6,marginBottom:16}}>
+          Die Nummer wird NUR auf diesem Geraet gespeichert -
+          nicht in der Cloud oder Datenbank. Andere Geraete sehen sie nicht.
+        </div>
+        <input value={phone} onChange={e=>setPhone(e.target.value)}
+          placeholder="+49 151 12345678"
+          style={{width:"100%",padding:"12px 14px",fontSize:14,
+            border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",
+            marginBottom:14,boxSizing:"border-box"}}/>
+        <div style={{display:"flex",gap:9}}>
+          <button onClick={onClose}
+            style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",
+              background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+            Abbrechen
+          </button>
+          <button onClick={save}
+            style={{flex:2,padding:"12px",borderRadius:12,border:"none",
+              background:"#16a34a",color:"#fff",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
+            Speichern (nur lokal)
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+
+function InviteSheet({ team, cl, onClose }) {
+  const t = TH(cl);
+  const url = window.location.origin + "?club=" + (cl?.slug||cl?.id);
+  const print = () => window.print();
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:900,
+      display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+      <div style={{background:"#fff",borderRadius:20,width:"100%",maxWidth:400,overflow:"hidden"}}>
+        <div style={{background:t.p,padding:"16px 20px",color:"#fff"}}>
+          <div style={{fontWeight:900,fontSize:18}}>{cl?.name}</div>
+          <div style={{fontSize:13,opacity:.8}}>Einladung fuer Eltern</div>
+        </div>
+        <div style={{padding:"20px"}}>
+          <div style={{background:"#f8fafc",borderRadius:13,padding:"16px",
+            border:"1.5px solid #e2e8f0",marginBottom:14,textAlign:"center"}}>
+            <div style={{fontSize:12,color:"#64748b",fontWeight:700,marginBottom:8}}>MANNSCHAFT</div>
+            <div style={{fontWeight:900,fontSize:22,color:"#0f172a",marginBottom:4}}>{team.name}</div>
+            <div style={{fontSize:12,color:"#64748b",marginBottom:12}}>Eltern-Zugangscode:</div>
+            <div style={{background:"#0f172a",color:"#fff",borderRadius:12,padding:"12px 20px",
+              fontSize:28,fontWeight:900,letterSpacing:4,fontFamily:"monospace"}}>{team.pwd||"---"}</div>
+          </div>
+          <div style={{background:"#eff6ff",borderRadius:12,padding:"12px 14px",
+            marginBottom:14,fontSize:12,color:"#1d4ed8",lineHeight:1.7}}>
+            <strong>So gehts:</strong><br/>
+            1. Oeffne: <strong>{url}</strong><br/>
+            2. Waehle deinen Verein<br/>
+            3. Tippe auf "Elternteil"<br/>
+            4. Waehle "{team.name}"<br/>
+            5. Gib den Code ein: <strong>{team.pwd}</strong>
+          </div>
+          <div style={{display:"flex",gap:9}}>
+            <button onClick={onClose}
+              style={{flex:1,padding:"11px",borderRadius:11,border:"1.5px solid #e2e8f0",
+                background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+              Schliessen
+            </button>
+            <button onClick={()=>{
+              navigator.clipboard?.writeText(
+                "Hallo! Bitte lade die Vereins-App herunter:
+"+url+
+                "
+
+Mannschaft: "+team.name+"
+Code: "+(team.pwd||"")
+              ); }}
+              style={{flex:2,padding:"11px",borderRadius:11,border:"none",background:t.p,
+                color:"#fff",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
+              Text kopieren
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+/* =================================================================
+   FELD-VORLAGEN (Admin waehlt Skizze)
+================================================================= */
+const FIELD_TEMPLATES = [
+  {
+    id: "rasen",
+    label: "Rasenplatz",
+    icon: "R",
+    color: "#16a34a",
+    bg: "#dcfce7",
+    weather: "good",
+    svg: (w,h,col) => `
+      <rect width="${w}" height="${h}" rx="4" fill="#22c55e" opacity=".9"/>
+      <rect x="${w*.05}" y="${h*.08}" width="${w*.9}" height="${h*.84}" rx="2" fill="none" stroke="white" stroke-width="1.5" opacity=".7"/>
+      <line x1="${w/2}" y1="${h*.08}" x2="${w/2}" y2="${h*.92}" stroke="white" stroke-width="1" opacity=".5"/>
+      <circle cx="${w/2}" cy="${h/2}" r="${Math.min(w,h)*.12}" fill="none" stroke="white" stroke-width="1" opacity=".5"/>
+      <rect x="${w*.05}" y="${h*.35}" width="${w*.15}" height="${h*.3}" rx="1" fill="none" stroke="white" stroke-width="1" opacity=".6"/>
+      <rect x="${w*.8}" y="${h*.35}" width="${w*.15}" height="${h*.3}" rx="1" fill="none" stroke="white" stroke-width="1" opacity=".6"/>
+    `,
+  },
+  {
+    id: "asche",
+    label: "Ascheplatz",
+    icon: "A",
+    color: "#d97706",
+    bg: "#fef3c7",
+    weather: "any",
+    svg: (w,h) => `
+      <rect width="${w}" height="${h}" rx="4" fill="#d97706" opacity=".8"/>
+      <rect x="${w*.05}" y="${h*.08}" width="${w*.9}" height="${h*.84}" rx="2" fill="none" stroke="white" stroke-width="1.5" opacity=".7"/>
+      <line x1="${w/2}" y1="${h*.08}" x2="${w/2}" y2="${h*.92}" stroke="white" stroke-width="1" opacity=".5"/>
+      <circle cx="${w/2}" cy="${h/2}" r="${Math.min(w,h)*.12}" fill="none" stroke="white" stroke-width="1" opacity=".5"/>
+    `,
+  },
+  {
+    id: "kunstrasen",
+    label: "Kunstrasen",
+    icon: "K",
+    color: "#059669",
+    bg: "#d1fae5",
+    weather: "any",
+    svg: (w,h) => `
+      <rect width="${w}" height="${h}" rx="4" fill="#059669"/>
+      ${Array.from({length:8},(_,i)=>`<rect x="0" y="${h/8*i}" width="${w}" height="${h/16}" fill="rgba(0,0,0,.08)"/>`).join('')}
+      <rect x="${w*.05}" y="${h*.08}" width="${w*.9}" height="${h*.84}" rx="2" fill="none" stroke="white" stroke-width="1.5" opacity=".8"/>
+      <line x1="${w/2}" y1="${h*.08}" x2="${w/2}" y2="${h*.92}" stroke="white" stroke-width="1" opacity=".6"/>
+      <circle cx="${w/2}" cy="${h/2}" r="${Math.min(w,h)*.12}" fill="none" stroke="white" stroke-width="1" opacity=".6"/>
+    `,
+  },
+  {
+    id: "halle",
+    label: "Sporthalle",
+    icon: "H",
+    color: "#7c3aed",
+    bg: "#ede9fe",
+    weather: "bad",
+    svg: (w,h) => `
+      <rect width="${w}" height="${h}" rx="4" fill="#7c3aed" opacity=".85"/>
+      <rect x="${w*.06}" y="${h*.08}" width="${w*.88}" height="${h*.84}" rx="2" fill="rgba(255,255,255,.1)" stroke="white" stroke-width="1.5" opacity=".7"/>
+      <line x1="${w/2}" y1="${h*.08}" x2="${w/2}" y2="${h*.92}" stroke="white" stroke-width="1" opacity=".5"/>
+      <ellipse cx="${w*.25}" cy="${h/2}" rx="${Math.min(w,h)*.08}" ry="${Math.min(w,h)*.12}" fill="none" stroke="white" stroke-width="1" opacity=".5"/>
+      <ellipse cx="${w*.75}" cy="${h/2}" rx="${Math.min(w,h)*.08}" ry="${Math.min(w,h)*.12}" fill="none" stroke="white" stroke-width="1" opacity=".5"/>
+    `,
+  },
+  {
+    id: "tennis",
+    label: "Tennisplatz",
+    icon: "T",
+    color: "#dc2626",
+    bg: "#fee2e2",
+    weather: "good",
+    svg: (w,h) => `
+      <rect width="${w}" height="${h}" rx="4" fill="#dc2626" opacity=".8"/>
+      <rect x="${w*.06}" y="${h*.1}" width="${w*.88}" height="${h*.8}" rx="1" fill="none" stroke="white" stroke-width="1.5" opacity=".8"/>
+      <line x1="${w*.06}" y1="${h/2}" x2="${w*.94}" y2="${h/2}" stroke="white" stroke-width="2" opacity=".9"/>
+      <line x1="${w/2}" y1="${h*.1}" x2="${w/2}" y2="${h*.9}" stroke="white" stroke-width="1" opacity=".5"/>
+      <line x1="${w*.06}" y1="${h*.27}" x2="${w*.94}" y2="${h*.27}" stroke="white" stroke-width="1" opacity=".4"/>
+      <line x1="${w*.06}" y1="${h*.73}" x2="${w*.94}" y2="${h*.73}" stroke="white" stroke-width="1" opacity=".4"/>
+    `,
+  },
+  {
+    id: "leichtathletik",
+    label: "Leichtathletik",
+    icon: "L",
+    color: "#0891b2",
+    bg: "#cffafe",
+    weather: "good",
+    svg: (w,h) => `
+      <rect width="${w}" height="${h}" rx="4" fill="#0891b2" opacity=".8"/>
+      <ellipse cx="${w/2}" cy="${h/2}" rx="${w*.42}" ry="${h*.38}" fill="none" stroke="white" stroke-width="2" opacity=".8"/>
+      <ellipse cx="${w/2}" cy="${h/2}" rx="${w*.32}" ry="${h*.28}" fill="none" stroke="white" stroke-width="1" opacity=".5"/>
+      <ellipse cx="${w/2}" cy="${h/2}" rx="${w*.22}" ry="${h*.18}" fill="none" stroke="white" stroke-width="1" opacity=".4"/>
+      <rect x="${w*.28}" y="${h*.3}" width="${w*.44}" height="${h*.4}" rx="1" fill="rgba(255,255,255,.1)" stroke="white" stroke-width="1" opacity=".5"/>
+    `,
+  },
+  {
+    id: "mehrzweck",
+    label: "Mehrzweck",
+    icon: "M",
+    color: "#64748b",
+    bg: "#f1f5f9",
+    weather: "any",
+    svg: (w,h) => `
+      <rect width="${w}" height="${h}" rx="4" fill="#64748b" opacity=".7"/>
+      <rect x="${w*.1}" y="${h*.1}" width="${w*.8}" height="${h*.8}" rx="2" fill="none" stroke="white" stroke-width="1.5" opacity=".6"/>
+      <line x1="${w/2}" y1="${h*.1}" x2="${w/2}" y2="${h*.9}" stroke="white" stroke-width="1" opacity=".4"/>
+      <line x1="${w*.1}" y1="${h/2}" x2="${w*.9}" y2="${h/2}" stroke="white" stroke-width="1" opacity=".4"/>
+    `,
+  },
+];
+
+const SPLIT_OPTIONS = [
+  { id:1, label:"Ganzer Platz",    icon:"1",  desc:"1 Team gleichzeitig" },
+  { id:2, label:"Halbierung",      icon:"1|1", desc:"2 Teams gleichzeitig" },
+  { id:3, label:"Drittelung",      icon:"1|1|1",desc:"3 Teams (ideal Halle)" },
+  { id:4, label:"Viertelung",      icon:"4x",  desc:"4 Teams gleichzeitig" },
+];
+
+const WEATHER_OPTIONS = [
+  { id:"any",  label:"Wetter-unabhaengig", icon:"W", col:"#16a34a", sub:"Immer nutzbar" },
+  { id:"good", label:"Nur Gutwetter",      icon:"S", col:"#d97706", sub:"Gesperrt bei Regen" },
+  { id:"bad",  label:"Nur Schlechtwetter", icon:"R", col:"#2563eb", sub:"Halle / Alternative" },
+];
+
+// SVG Field Sketch Component
+function FieldSketch({ template, split=1, width=180, height=110, bookings=[], style={} }) {
+  const tpl = FIELD_TEMPLATES.find(t=>t.id===template) || FIELD_TEMPLATES[6];
+  const slotW = width / (split > 2 ? split/2 : 1);
+  const slotH = split > 2 ? height/2 : height;
+
+  return (
+    <div style={{position:"relative",borderRadius:10,overflow:"hidden",
+      width,height,...style}}>
+      <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}
+        style={{display:"block"}}>
+        <g dangerouslySetInnerHTML={{__html: tpl.svg(width,height,tpl.color)}}/>
+        {/* Split lines overlay */}
+        {split===2&&<line x1={width/2} y1="0" x2={width/2} y2={height}
+          stroke="rgba(255,255,255,.6)" strokeWidth="2" strokeDasharray="4,3"/>}
+        {split===3&&<>
+          <line x1={width/3} y1="0" x2={width/3} y2={height}
+            stroke="rgba(255,255,255,.6)" strokeWidth="2" strokeDasharray="4,3"/>
+          <line x1={width*2/3} y1="0" x2={width*2/3} y2={height}
+            stroke="rgba(255,255,255,.6)" strokeWidth="2" strokeDasharray="4,3"/>
+        </>}
+        {split===4&&<>
+          <line x1={width/2} y1="0" x2={width/2} y2={height}
+            stroke="rgba(255,255,255,.6)" strokeWidth="2" strokeDasharray="4,3"/>
+          <line x1="0" y1={height/2} x2={width} y2={height/2}
+            stroke="rgba(255,255,255,.6)" strokeWidth="2" strokeDasharray="4,3"/>
+        </>}
+        {/* Booking overlays */}
+        {bookings.map((bk,i)=>{
+          const segW = split<=2 ? width/Math.max(1,split) : width/2;
+          const segH = split<=2 ? height : height/2;
+          const col = bk.col || "#dc2626";
+          const sx = split===1 ? 0 : split===2 ? (bk.slot||0)*segW
+            : split===3 ? (bk.slot||0)*width/3
+            : (bk.slot%2)*segW;
+          const sy = split<=2 ? 0 : split===4 ? Math.floor((bk.slot||0)/2)*segH : 0;
+          return (
+            <g key={i}>
+              <rect x={sx+2} y={sy+2} width={segW-4} height={segH-4} rx="3"
+                fill={col} opacity=".35"/>
+              <text x={sx+segW/2} y={sy+segH/2+4} textAnchor="middle"
+                fontSize="9" fontWeight="700" fill="white" opacity=".9">
+                {(bk.teamName||"").slice(0,8)}
+              </text>
+              <text x={sx+segW/2} y={sy+segH/2-5} textAnchor="middle"
+                fontSize="8" fill="white" opacity=".7">
+                {bk.timeFrom}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+/* =================================================================
+   FELDER MANAGER (Admin) - komplett neu
+================================================================= */
+function FieldsManagerTab({ data, cid, save, fire, cl }) {
+  const t = TH(cl);
+  const fields = (data.fields||[]).filter(f=>f.cid===cid);
+  const [step, setStep] = useState(null); // null | "template" | "split" | "weather" | "name"
+  const [draft, setDraft] = useState({});
+
+  const startNew = () => { setDraft({}); setStep("template"); };
+  const addField = () => {
+    const f = {
+      id: uid(), cid,
+      name: draft.name || (FIELD_TEMPLATES.find(t=>t.id===draft.template)?.label||"Platz")+" "+(fields.length+1),
+      template: draft.template||"rasen",
+      split: draft.split||1,
+      weather: draft.weather||"any",
+      surface: FIELD_TEMPLATES.find(t=>t.id===draft.template)?.label||"Platz",
+      segments: draft.split||1,
+    };
+    save({...data, fields:[...fields, f]});
+    fire("Feld angelegt: "+f.name);
+    setStep(null); setDraft({});
+  };
+  const delField = id => { save({...data,fields:fields.filter(x=>x.id!==id)}); fire("Feld geloescht"); };
+
+  const todayBk = fid => (data.bookings||[]).filter(b=>
+    b.fieldId===fid && b.date===new Date().toISOString().slice(0,10)
+  ).map((b,i)=>({...b,slot:i,col:["#2563eb","#dc2626","#d97706","#7c3aed","#059669"][i%5]}));
+
+  return (
+    <div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+        <div>
+          <div style={{fontWeight:900,fontSize:16,color:"#0f172a"}}>Felder & Plaetze</div>
+          <div style={{fontSize:12,color:"#64748b",marginTop:2}}>{fields.length} angelegt</div>
+        </div>
+        <button onClick={startNew}
+          style={{padding:"10px 18px",borderRadius:12,border:"none",background:t.p,
+            color:"#fff",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+          + Neues Feld
+        </button>
+      </div>
+
+      {/* Wizard Modal */}
+      {step&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:900,
+          display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
+          <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",
+            maxWidth:520,maxHeight:"88dvh",overflowY:"auto",paddingBottom:44}}>
+
+            {/* Progress */}
+            <div style={{background:t.p,padding:"16px 20px 14px"}}>
+              <div style={{color:"rgba(255,255,255,.6)",fontSize:11,fontWeight:700,marginBottom:4}}>
+                {["template","split","weather","name"].indexOf(step)+1} / 4
+              </div>
+              <div style={{color:"#fff",fontWeight:900,fontSize:18}}>
+                {step==="template"&&"Welche Art von Feld?"}
+                {step==="split"&&"Wie teilst du das Feld?"}
+                {step==="weather"&&"Wetter-Bedingung"}
+                {step==="name"&&"Name & Fertig"}
+              </div>
+              <div style={{height:4,background:"rgba(255,255,255,.2)",borderRadius:99,marginTop:10}}>
+                <div style={{height:"100%",background:"rgba(255,255,255,.9)",borderRadius:99,
+                  width:["template","split","weather","name"].indexOf(step)/3*100+"%"}}/>
+              </div>
+            </div>
+
+            <div style={{padding:"20px 20px 0"}}>
+
+              {/* SCHRITT 1: Template */}
+              {step==="template"&&(
+                <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10}}>
+                  {FIELD_TEMPLATES.map(tpl=>(
+                    <button key={tpl.id} onClick={()=>{setDraft(p=>({...p,template:tpl.id})); setStep("split");}}
+                      style={{borderRadius:14,border:`2px solid ${draft.template===tpl.id?t.p:"#e2e8f0"}`,
+                        background:"#fff",cursor:"pointer",overflow:"hidden",padding:0,textAlign:"left"}}>
+                      <FieldSketch template={tpl.id} width={160} height={80}
+                        style={{width:"100%",height:80}}/>
+                      <div style={{padding:"8px 12px",display:"flex",alignItems:"center",gap:6}}>
+                        <div style={{width:24,height:24,borderRadius:7,background:tpl.bg,
+                          display:"flex",alignItems:"center",justifyContent:"center",
+                          fontWeight:900,fontSize:11,color:tpl.color}}>
+                          {tpl.icon}
+                        </div>
+                        <div>
+                          <div style={{fontWeight:700,fontSize:13,color:"#0f172a"}}>{tpl.label}</div>
+                          <div style={{fontSize:10,color:"#94a3b8"}}>
+                            {tpl.weather==="good"?"Nur Gutwetter":tpl.weather==="bad"?"Nur Schlechtwetter":"Wetter-unabh."}
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* SCHRITT 2: Split */}
+              {step==="split"&&(
+                <div>
+                  <div style={{marginBottom:16,borderRadius:14,overflow:"hidden",border:"1.5px solid #e2e8f0"}}>
+                    <FieldSketch template={draft.template||"rasen"} split={draft.split||1}
+                      width={280} height={140} style={{width:"100%",height:140}}/>
+                  </div>
+                  <div style={{display:"flex",flexDirection:"column",gap:9}}>
+                    {SPLIT_OPTIONS.map(opt=>(
+                      <button key={opt.id} onClick={()=>setDraft(p=>({...p,split:opt.id}))}
+                        style={{display:"flex",alignItems:"center",gap:12,padding:"13px 16px",
+                          borderRadius:13,border:`2px solid ${draft.split===opt.id?t.p:"#e2e8f0"}`,
+                          background:draft.split===opt.id?t.p+"10":"#fff",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
+                        <div style={{width:40,height:26,borderRadius:7,background:draft.split===opt.id?t.p:"#f1f5f9",
+                          display:"flex",alignItems:"center",justifyContent:"center",
+                          fontSize:9,fontWeight:900,color:draft.split===opt.id?"#fff":"#64748b",flexShrink:0}}>
+                          {opt.icon}
+                        </div>
+                        <div>
+                          <div style={{fontWeight:700,fontSize:14,color:draft.split===opt.id?t.p:"#0f172a"}}>{opt.label}</div>
+                          <div style={{fontSize:12,color:"#94a3b8"}}>{opt.desc}</div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{display:"flex",gap:9,marginTop:16}}>
+                    <button onClick={()=>setStep("template")} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Zurueck</button>
+                    <button onClick={()=>draft.split&&setStep("weather")} disabled={!draft.split}
+                      style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:draft.split?t.p:"#e2e8f0",color:draft.split?"#fff":"#94a3b8",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Weiter</button>
+                  </div>
+                </div>
+              )}
+
+              {/* SCHRITT 3: Wetter */}
+              {step==="weather"&&(
+                <div>
+                  <div style={{display:"flex",flexDirection:"column",gap:9,marginBottom:16}}>
+                    {WEATHER_OPTIONS.map(opt=>(
+                      <button key={opt.id} onClick={()=>setDraft(p=>({...p,weather:opt.id}))}
+                        style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",
+                          borderRadius:13,border:`2px solid ${draft.weather===opt.id?opt.col:"#e2e8f0"}`,
+                          background:draft.weather===opt.id?opt.col+"12":"#fff",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
+                        <div style={{width:44,height:44,borderRadius:12,background:draft.weather===opt.id?opt.col:"#f1f5f9",
+                          display:"flex",alignItems:"center",justifyContent:"center",
+                          fontSize:20,color:draft.weather===opt.id?"#fff":"#64748b",flexShrink:0,fontWeight:900}}>
+                          {opt.icon}
+                        </div>
+                        <div>
+                          <div style={{fontWeight:700,fontSize:15,color:draft.weather===opt.id?opt.col:"#0f172a"}}>{opt.label}</div>
+                          <div style={{fontSize:12,color:"#94a3b8",marginTop:2}}>{opt.sub}</div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{background:"#eff6ff",borderRadius:12,padding:"10px 14px",fontSize:12,color:"#1d4ed8",lineHeight:1.6,marginBottom:14}}>
+                    Tipp: Lege Rasenplatz als "Nur Gutwetter" und Halle als "Nur Schlechtwetter" an. Bei schlechtem Wetter siehst du im Platz-Tab automatisch nur die Halle.
+                  </div>
+                  <div style={{display:"flex",gap:9}}>
+                    <button onClick={()=>setStep("split")} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Zurueck</button>
+                    <button onClick={()=>draft.weather&&setStep("name")} disabled={!draft.weather}
+                      style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:draft.weather?t.p:"#e2e8f0",color:draft.weather?"#fff":"#94a3b8",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Weiter</button>
+                  </div>
+                </div>
+              )}
+
+              {/* SCHRITT 4: Name */}
+              {step==="name"&&(
+                <div>
+                  <div style={{marginBottom:16,borderRadius:14,overflow:"hidden",border:"1.5px solid #e2e8f0"}}>
+                    <FieldSketch template={draft.template||"rasen"} split={draft.split||1}
+                      width={280} height={120} style={{width:"100%",height:120}}/>
+                  </div>
+                  <div style={{background:"#f8fafc",borderRadius:13,padding:"12px 14px",marginBottom:14,fontSize:13,color:"#475569",lineHeight:1.7}}>
+                    <strong>{FIELD_TEMPLATES.find(x=>x.id===draft.template)?.label||"Platz"}</strong> -
+                    <strong> {SPLIT_OPTIONS.find(x=>x.id===draft.split)?.label}</strong> -
+                    <strong> {WEATHER_OPTIONS.find(x=>x.id===draft.weather)?.label}</strong>
+                  </div>
+                  <input value={draft.name||""} onChange={e=>setDraft(p=>({...p,name:e.target.value}))}
+                    placeholder={"z.B. "+((FIELD_TEMPLATES.find(x=>x.id===draft.template)?.label)||"Hauptplatz")+" 1"}
+                    style={{width:"100%",padding:"13px 14px",fontSize:16,fontWeight:700,
+                      border:`1.5px solid ${draft.name?"#16a34a":"#e2e8f0"}`,borderRadius:12,
+                      outline:"none",marginBottom:14,boxSizing:"border-box"}}/>
+                  <div style={{display:"flex",gap:9}}>
+                    <button onClick={()=>setStep("weather")} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Zurueck</button>
+                    <button onClick={addField}
+                      style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:t.p,color:"#fff",fontWeight:800,cursor:"pointer",fontFamily:"inherit",boxShadow:`0 4px 14px ${t.p}44`}}>
+                      Feld anlegen!
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Felder Liste */}
+      {fields.length===0&&!step&&(
+        <div style={{textAlign:"center",padding:"40px 20px",background:"#f8fafc",borderRadius:16,border:"1.5px dashed #e2e8f0"}}>
+          <div style={{fontWeight:700,fontSize:15,color:"#334155",marginBottom:6}}>Noch keine Felder angelegt</div>
+          <div style={{fontSize:13,color:"#94a3b8",lineHeight:1.6}}>
+            Lege Rasenplatz, Ascheplatz oder Halle an.<br/>
+            Trainer koennen dann Zeiten reservieren.
+          </div>
+        </div>
+      )}
+      {fields.map(field=>{
+        const bks = todayBk(field.id);
+        const tpl = FIELD_TEMPLATES.find(t=>t.id===field.template)||FIELD_TEMPLATES[6];
+        const wOpt = WEATHER_OPTIONS.find(w=>w.id===field.weather)||WEATHER_OPTIONS[0];
+        return (
+          <div key={field.id} style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",
+            marginBottom:12,overflow:"hidden"}}>
+            <div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",
+              borderBottom:"1px solid #f1f5f9"}}>
+              <div style={{width:36,height:36,borderRadius:10,background:tpl.bg,
+                display:"flex",alignItems:"center",justifyContent:"center",
+                fontWeight:900,fontSize:16,color:tpl.color,flexShrink:0}}>
+                {tpl.icon}
+              </div>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:800,fontSize:15,color:"#0f172a"}}>{field.name}</div>
+                <div style={{fontSize:11,color:"#64748b",marginTop:1}}>
+                  {tpl.label} - {SPLIT_OPTIONS.find(s=>s.id===field.split)?.label}
+                  <span style={{marginLeft:8,color:wOpt.col,fontWeight:700}}>{wOpt.icon} {wOpt.label}</span>
+                </div>
+              </div>
+              <button onClick={()=>delField(field.id)}
+                style={{width:30,height:30,borderRadius:9,background:"#fee2e2",border:"none",
+                  color:"#dc2626",cursor:"pointer",fontWeight:800,fontSize:13}}>X</button>
+            </div>
+            <div style={{padding:"12px 14px"}}>
+              <FieldSketch template={field.template} split={field.split||1}
+                width={undefined} height={100}
+                bookings={bks}
+                style={{width:"100%",height:100}}/>
+              {bks.length>0&&(
+                <div style={{marginTop:8,fontSize:11,color:"#64748b"}}>
+                  {bks.length} Buchung(en) heute
+                </div>
+              )}
+              {bks.length===0&&(
+                <div style={{marginTop:8,fontSize:11,color:"#94a3b8"}}>Heute noch frei</div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* =================================================================
+   TRAINER-ANWESENHEIT BEI TERMINEN
+================================================================= */
+// Trainer checkt sich beim Termin ein
+function TrainerCheckin({ ev, session, save, data, fire }) {
+  const trainers = (data.trainers||[]).filter(tr=>(tr.tids||[]).includes(ev.tid));
+  const checkedIn = ev.trainerPresence || {};
+  const myId = session?.id || session?.name;
+  const amCheckedIn = checkedIn[myId];
+
+  const checkin = () => {
+    const updated = {...ev, trainerPresence:{...checkedIn,[myId]:{
+      name: session.name||"Trainer",
+      ts: new Date().toISOString(),
+      trainerId: myId,
+    }}};
+    save({...data, events:(data.events||[]).map(e=>e.id===ev.id?updated:e)});
+    fire("Anwesenheit bestaetigt");
+  };
+  const checkout = () => {
+    const presence = {...checkedIn};
+    delete presence[myId];
+    save({...data, events:(data.events||[]).map(e=>e.id===ev.id?{...e,trainerPresence:presence}:e)});
+    fire("Anwesenheit zurueckgenommen");
+  };
+
+  const presentTrainers = Object.values(checkedIn);
+
+  return (
+    <div style={{marginTop:12}}>
+      {/* Trainer die da sind - fuer Eltern sichtbar */}
+      {presentTrainers.length>0&&(
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+          <div style={{fontSize:12,color:"#64748b",fontWeight:600}}>Trainer da:</div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+            {presentTrainers.map(tr=>(
+              <div key={tr.trainerId} style={{display:"flex",alignItems:"center",gap:5,
+                background:"#f0fdf4",borderRadius:99,padding:"3px 10px",
+                border:"1px solid #bbf7d0"}}>
+                <div style={{width:6,height:6,borderRadius:"50%",background:"#16a34a"}}/>
+                <span style={{fontSize:12,fontWeight:700,color:"#166534"}}>{tr.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {/* Nur fuer Trainer sichtbar */}
+      {session?.role==="trainer"&&(
+        <button onClick={amCheckedIn?checkout:checkin}
+          style={{width:"100%",padding:"11px",borderRadius:12,border:"none",
+            background:amCheckedIn?"#fee2e2":"#16a34a",
+            color:amCheckedIn?"#dc2626":"#fff",
+            fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit",
+            display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+          {amCheckedIn
+            ? "Anwesenheit zuruecknehmen"
+            : "Ich bin heute da als Trainer"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+// Trainer-Anwesenheits-Statistik (Admin-Auswertung)
+function TrainerStatsView({ data, cid }) {
+  const trainers = (data.trainers||[]).filter(t=>t.cid===cid);
+  const events = (data.events||[]).filter(e=>
+    (data.teams||[]).find(tm=>tm.cid===cid&&tm.id===e.tid)
+  );
+  const trainings = events.filter(e=>e.type==="training");
+
+  return (
+    <div style={{marginTop:16}}>
+      <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:10,letterSpacing:.5}}>
+        TRAINER-ANWESENHEIT SAISON
+      </div>
+      {trainers.map(tr=>{
+        const myTrainings = trainings.filter(e=>(tr.tids||[]).includes(e.tid));
+        const present = myTrainings.filter(e=>e.trainerPresence?.[tr.id]);
+        const pct = myTrainings.length>0 ? Math.round(present.length/myTrainings.length*100) : null;
+        return (
+          <div key={tr.id} style={{display:"flex",alignItems:"center",gap:12,
+            background:"#fff",borderRadius:13,padding:"12px 14px",
+            border:"1.5px solid #e2e8f0",marginBottom:8}}>
+            <Av name={tr.name} sz={38}/>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:700,fontSize:14,color:"#0f172a",marginBottom:4}}>{tr.name}</div>
+              <div style={{height:6,background:"#f1f5f9",borderRadius:99,overflow:"hidden"}}>
+                <div style={{height:"100%",borderRadius:99,transition:"width .4s",
+                  background:pct>=80?"#16a34a":pct>=60?"#d97706":"#dc2626",
+                  width:`${pct||0}%`}}/>
+              </div>
+            </div>
+            <div style={{textAlign:"right",flexShrink:0}}>
+              <div style={{fontWeight:900,fontSize:16,color:pct>=80?"#16a34a":pct>=60?"#d97706":"#dc2626"}}>
+                {pct!==null?pct+"%":"--"}
+              </div>
+              <div style={{fontSize:10,color:"#94a3b8"}}>{present.length}/{myTrainings.length}</div>
+            </div>
+          </div>
+        );
+      })}
+      {trainers.length===0&&<p style={{fontSize:13,color:"#94a3b8",textAlign:"center"}}>Keine Trainer angelegt</p>}
+    </div>
+  );
+}
+
+
+
+function AttendanceTab({ data, myTids, cl, save, fire }) {
+  const t = TH(cl);
+  const activeSeason = data.activeSeason||"s2526";
+  const myTeams = (data.teams||[]).filter(tm=>myTids.includes(tm.id));
+  const [selTid, setSelTid] = useState(myTids[0]||"");
+  const players = (data.playerProfiles||[]).filter(p=>p.mainTid===selTid&&(!p.seasonId||p.seasonId===activeSeason));
+  const trainings = (data.events||[]).filter(e=>e.tid===selTid&&e.type==="training");
+  const games = (data.events||[]).filter(e=>e.tid===selTid&&e.type!=="training");
+
+  const stats = players.map(pl => {
+    const trainPresent = trainings.filter(e=>e.votes?.[pl.name]==="yes").length;
+    const gamePresent  = games.filter(e=>e.votes?.[pl.name]==="yes").length;
+    const trainPct = trainings.length>0 ? Math.round(trainPresent/trainings.length*100) : null;
+    return { pl, trainPresent, gamePresent, trainPct, total: trainings.length };
+  }).sort((a,b)=>(b.trainPct||0)-(a.trainPct||0));
+
+  return (
+    <div>
+      {myTeams.length>1&&<div style={{display:"flex",gap:6,marginBottom:14,overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
+        {myTeams.map(tm=>(
+          <button key={tm.id} onClick={()=>setSelTid(tm.id)}
+            style={{padding:"7px 14px",borderRadius:99,border:`2px solid ${selTid===tm.id?tm.col:"#e2e8f0"}`,background:selTid===tm.id?tm.col:"#fff",color:selTid===tm.id?"#fff":"#475569",fontWeight:700,fontSize:12,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit",flexShrink:0}}>
+            {tm.name}
+          </button>
+        ))}
+      </div>}
+      <div style={{background:"#fff",borderRadius:16,padding:14,border:"1.5px solid #e2e8f0",marginBottom:14}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
+          {[[trainings.length,"Trainings","#16a34a"],[games.length,"Spiele","#2563eb"],[players.length,"Spieler","#7c3aed"]].map(([v,l,col])=>(
+            <div key={l} style={{textAlign:"center",background:col+"12",borderRadius:12,padding:"10px 6px",border:`1px solid ${col}30`}}>
+              <div style={{fontWeight:900,fontSize:22,color:col}}>{v}</div>
+              <div style={{fontSize:11,color:"#64748b",marginTop:2}}>{l}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      {trainings.length===0&&<div style={{textAlign:"center",padding:"32px",background:"#f8fafc",borderRadius:14,border:"1.5px dashed #e2e8f0"}}><p style={{fontWeight:700,color:"#334155"}}>Noch keine Trainings</p><p style={{fontSize:13,color:"#94a3b8",marginTop:4}}>Sobald Termine mit Abstimmung angelegt wurden, erscheint hier die Anwesenheitsstatistik.</p></div>}
+      {trainings.length>0&&<div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {stats.map(({pl,trainPresent,gamePresent,trainPct,total})=>(
+          <div key={pl.id} style={{background:"#fff",borderRadius:13,padding:"12px 14px",border:"1.5px solid #e2e8f0",display:"flex",alignItems:"center",gap:12}}>
+            <Av name={pl.name} sz={40}/>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:700,fontSize:14,color:"#0f172a",marginBottom:4}}>{pl.name}</div>
+              <div style={{height:6,background:"#f1f5f9",borderRadius:99,overflow:"hidden"}}>
+                <div style={{height:"100%",borderRadius:99,background:trainPct>=75?"#16a34a":trainPct>=50?"#d97706":"#dc2626",width:`${trainPct||0}%`,transition:"width .4s"}}/>
+              </div>
+            </div>
+            <div style={{textAlign:"right",minWidth:60}}>
+              <div style={{fontWeight:900,fontSize:16,color:trainPct>=75?"#16a34a":trainPct>=50?"#d97706":"#dc2626"}}>{trainPresent}/{total}</div>
+              <div style={{fontSize:11,color:"#94a3b8"}}>{trainPct!==null?trainPct+"%":"-"}</div>
+            </div>
+          </div>
+        ))}
+      </div>}
+    </div>
+  );
+}
+
 function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
 
   const isAdmin=session.role==="admin"; const isHelper=session.role==="helper"; const cid=session.cid; const cl=data.clubs.find(c=>c.id===cid);
   const myTids=isAdmin?data.teams.filter(t=>t.cid===cid).map(t=>t.id):isHelper?data.teams.filter(t=>t.cid===cid).map(t=>t.id):(session.tids||[]);
   const t=TH(cl);
-  const [tab,setTab]=useState("events"); const [local,setLocal]=useState(()=>JSON.parse(JSON.stringify(data)));
-  const [toast,setToast]=useState(null); const [wizard,setWizard]=useState(false); const [editEv,setEditEv]=useState(null);
+  const [tab,setTab]=useState("events"); // BottomNav manages this const [local,setLocal]=useState(()=>JSON.parse(JSON.stringify(data)));
+  const [toast,setToast]=useState(null);
+  const unreadMsgs = useMemo(()=>{
+    const lastRead = Number(localStorage.getItem("va_last_read_"+cid)||0);
+    return (local.chats||[]).filter(m=>m.cid===cid&&m.ts>lastRead).length;
+  },[local.chats]); const [wizard,setWizard]=useState(false); const [editEv,setEditEv]=useState(null);
   const [showSeasonModal,setShowSeasonModal]=useState(false);
   const { trigger: shareTrigger,dismiss: dismissShare } = useShareTrigger(local,session,myTids);
   const [delConf,setDelConf]=useState(null); const [viewEv,setViewEv]=useState(null); const [delConfVal,setDelConfVal]=useState(null);
@@ -3766,18 +8945,32 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         })});
         fire("Serie ab hier aktualisiert *");
       } else {
-        save({...local,events:local.events.map(e=>e.id===saved.id?saved:e)});
+        const deleteEv = ev => { save({...local,events:(local.events||[]).filter(e=>e.id!==ev.id)}); fire("Termin geloescht"); };
+    save({...local,events:(local.events||[]).map(e=>e.id===saved.id?saved:e)});
         fire("Termin aktualisiert *");
       }
     } else {
       save({...local,events:[...(local.events||[]),...evs]});
-      fire(`${evs.length>1?evs.length+" Termine":"Termin"} erstellt *`);
+      // Auto-book field if selected
+    if(f.fieldId && evs.length>0) {
+      const fieldBookings = evs.map(ev=>({
+        id:uid(), fieldId:f.fieldId, date:ev.date,
+        cellStart:0, cells:4, teamId:ev.tid,
+        teamName:(data.teams||[]).find(x=>x.id===ev.tid)?.name||"",
+        booker:session?.name||"", timeFrom:f.time||"09:00",
+        timeTo:addMins(f.time||"09:00", f.dur||90),
+        cid:ev.cid, autoBooked:true
+      }));
+      save({...nextData, bookings:[...(nextData.bookings||[]),...fieldBookings]});
+    }
+    fire(`${evs.length>1?evs.length+" Termine":"Termin"} erstellt - Eltern werden benachrichtigt`);
     }
     setWizard(false);setEditEv(null);
   }} onClose={()=>{setWizard(false);setEditEv(null);}}/>;
 
   const tr = (k) => { const lang = localStorage.getItem("vereinsapp_lang") || "de"; return T[lang]?.[k] ?? T.de[k] ?? k; };
-  const tabs=[["events",tr("tabEvents")],!isHelper&&["players",tr("tabPlayers")],["templates",tr("tabTemplates")],!isHelper&&["helpers",tr("tabHelpers")],["jerseys",tr("tabJerseys")],["fields",tr("tabFields")],["inbox",tr("tabInbox")],["chat",tr("tabChat")],isAdmin&&["teams",tr("tabTeams")],isAdmin&&["trainers",tr("tabTrainers")],isAdmin&&["branding",tr("tabBranding")],isAdmin&&["visibility",tr("tabVisibility")],isAdmin&&["settings",tr("tabSettings")]].filter(Boolean);
+  // BottomNav replaces old tabs - kept for reference
+  const tabs=[].filter(Boolean);
 
   return (
     <div style={{minHeight:"100dvh",background:"#f0f4f8",paddingBottom:52}}>
@@ -3844,15 +9037,23 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         {tab==="players"    &&<PlayersTab data={local} myTids={myTids} save={save} fire={fire} cl={myClub}/>}
         {tab==="templates"  &&<TemplatesTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
         {tab==="helpers"    &&<HelpersTab data={local} cid={cid} myTids={myTids} session={session} save={save} fire={fire} cl={myClub}/>}
-        {tab==="jerseys"    &&<JerseysTab data={local} myTids={myTids} save={save} fire={fire} cl={myClub}/>}
+        {tab==="training"  &&<TrainingPlanTab data={local} myTids={myTids} save={save} fire={fire} cl={myClub} session={session}/>}
+        {tab==="jerseys"    &&<><AffiliateBanner trigger="jerseys"/><JerseysTab data={local} myTids={myTids} save={save} fire={fire} cl={myClub}/></> }
         {tab==="fields"     &&<FieldsTab data={local} myTids={myTids} session={session} save={save} fire={fire} cl={myClub}/>}
+        {tab==="attendance" &&<AttendanceTab data={local} myTids={myTids} cl={myClub}/>}
+        {tab==="results"    &&<LeagueTab data={local} myTids={myTids} cl={myClub} save={save} fire={fire}/>}
         {tab==="inbox"      &&<InboxTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
         {tab==="chat"       &&<ChatTab data={local} cid={cid} myTids={myTids} session={session} save={save} fire={fire} cl={myClub}/>}
         {tab==="teams"      &&isAdmin&&<TeamsTab data={local} cid={cid} save={save} fire={fire}/>}
+        {tab==="overview"  &&isAdmin&&<AllTeamsOverview data={local} cid={cid} cl={myClub} onSelectTeam={tid=>{ const team=(local.teams||[]).find(x=>x.id===tid); if(team) fire("Team: "+team.name); }}/>}
+        {tab==="news"      &&<NewsTab data={local} cid={cid} session={session} save={save} fire={fire} cl={myClub}/>}
+        {tab==="fieldsadmin"&&isAdmin&&<FieldsManagerTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/> }
         {tab==="trainers"   &&isAdmin&&<TrainersTab data={local} cid={cid} save={save} fire={fire}/>}
         {tab==="branding"   &&isAdmin&&<BrandingTab cl={myClub} onSave={c=>{save({...local,clubs:local.clubs.map(x=>x.id===c.id?c:x)});fire("Design gespeichert *");}}/>}
         {tab==="visibility" &&isAdmin&&<VisibilityTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
         {tab==="settings"   &&isAdmin&&<SettingsTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
+        {tab==="security"   &&isAdmin&&<SecurityTab data={local} cid={cid} save={save}/>}
+        {tab==="team"       &&<TeamHub data={local} myTids={myTids} save={save} fire={fire} cl={myClub} session={session}/>}
       </div>
 
       {}
@@ -3911,7 +9112,10 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         </div>
       </Drawer>}
 
+      {showOnboarding&&<OnboardingWizard cl={myClub} data={local} save={save} fire={fire} onDone={()=>setShowOnboarding(false)}/>}
       <Toast msg={toast}/>
+      <BottomNav tab={tab} setTab={setTab} isAdmin={isAdmin} isHelper={isHelper}
+        unread={unreadMsgs} cl={myClub}/>
     </div>
   );
 }
@@ -3941,22 +9145,51 @@ function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline}) {
   const no      = voted.filter(([,v])=>getVal(v)==="no" ).map(([n])=>n);
   const missing = teamPlayers.filter(n=>!ev.votes[n]);
   const lateVoters = voted.filter(([n])=>isLate(n)).map(([n])=>n);
+  // Late arrivals: yes votes with .late field
+  const lateArrivals = voted.filter(([,v])=>typeof v==="object"&&v!==null&&v.val==="yes"&&v.late)
+    .map(([n,v])=>({name:n,mins:v.late}))
+    .sort((a,b)=>a.mins-b.mins);
 
   const pct = total => totalPlayers>0 ? Math.round((total/totalPlayers)*100) : 0;
 
   return (
     <div>
       {}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:16}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:lateArrivals.length>0?8:16}}>
         {[
-          {label:"Dabei",val:yes.length,color:"#16a34a",bg:"#dcfce7",icon:"OK"},{label:"Nicht dabei",val:no.length,color:"#dc2626",bg:"#fee2e2",icon:"*"},{label:"Fehlt noch",val:missing.length,color:"#d97706",bg:"#fef3c7",icon:"*"},].map(s=>(
+          {label:"Dabei",val:yes.length,color:"#16a34a",bg:"#dcfce7",icon:"OK"},
+          {label:"Nicht dabei",val:no.length,color:"#dc2626",bg:"#fee2e2",icon:"X"},
+          {label:"Fehlt noch",val:missing.length,color:"#d97706",bg:"#fef3c7",icon:"?"},
+        ].map(s=>(
           <div key={s.label} style={{background:s.bg,borderRadius:14,padding:"12px 8px",textAlign:"center",border:`1.5px solid ${s.color}22`}}>
-            <div style={{fontSize:20,marginBottom:2}}>{s.icon}</div>
             <div style={{fontWeight:900,fontSize:22,color:s.color,lineHeight:1}}>{s.val}</div>
             <div style={{fontSize:10,fontWeight:700,color:s.color,marginTop:3,opacity:.8}}>{s.label}</div>
           </div>
         ))}
       </div>
+
+      {/* Verspaetungen - prominent fuer Trainer */}
+      {lateArrivals.length>0&&(
+        <div style={{background:"#fef3c7",borderRadius:13,padding:"11px 14px",border:"2px solid #f59e0b",marginBottom:16}}>
+          <div style={{fontWeight:800,fontSize:13,color:"#92400e",marginBottom:8}}>
+            Verspaetungen ({lateArrivals.length})
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:6}}>
+            {lateArrivals.map(l=>(
+              <div key={l.name} style={{display:"flex",alignItems:"center",gap:10,background:"rgba(255,255,255,.7)",borderRadius:9,padding:"7px 11px"}}>
+                <Av name={l.name} sz={28}/>
+                <span style={{fontWeight:700,fontSize:13,color:"#334155",flex:1}}>{l.name}</span>
+                <span style={{fontWeight:900,fontSize:14,color:"#d97706",background:"#fff",borderRadius:8,padding:"3px 10px",border:"1.5px solid #fde68a"}}>
+                  +{l.mins} Min
+                </span>
+              </div>
+            ))}
+          </div>
+          <div style={{fontSize:11,color:"#92400e",marginTop:8,lineHeight:1.5}}>
+            Tipp: {lateArrivals.map(l=>l.name).join(", ")} {lateArrivals.length===1?"kommt":"kommen"} verspaetet - beim Aufwaermen einplanen.
+          </div>
+        </div>
+      )}
 
       {}
       <div style={{marginBottom:16}}>
@@ -4194,7 +9427,7 @@ function TournView({ ev,user,onVote,onUpdate,cl,players,isHelper=false }) {
     :[["info","Info"],["setup","Setup"],["plan","Plan"],["timer","Timer"],["split","Split"],["stats","Stats"]];
   return (
     <div>
-      <div style={{display:"flex",gap:6,marginBottom:12,overflowX:"auto",scrollbarWidth:"none"}}>
+      <div style={{display:"flex",gap:6,marginBottom:12,overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
         {TABS.map(([id,lb])=>(
           <button key={id} onClick={()=>setStab(id)}
             style={{padding:"7px 13px",borderRadius:99,border:`2px solid ${stab===id?t.p:"#e2e8f0"}`,background:stab===id?t.p:"#fff",color:stab===id?"#fff":"#475569",fontWeight:700,fontSize:12,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit",flexShrink:0}}>
@@ -4338,6 +9571,10 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
   const [exp,setExp]=useState((up[0]||past[0])?.id||null);
   const [showPast,setSP]=useState(false);
   const [toast,setToast]=useState(null);
+  const unreadMsgs = useMemo(()=>{
+    const lastRead = Number(localStorage.getItem("va_last_read_"+cid)||0);
+    return (local.chats||[]).filter(m=>m.cid===cid&&m.ts>lastRead).length;
+  },[local.chats]);
   const [showProfile,setShowProfile]=useState(false);
   const toastRef=useRef(null);
   const fire=m=>{setToast(m);clearTimeout(toastRef.current);toastRef.current=setTimeout(()=>setToast(null),2200);};
@@ -4439,7 +9676,7 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
           <Divider label="KOMMENDE TERMINE"/>
           {up.map((ev,i)=><div key={ev.id} className="up" style={{marginBottom:10,animationDelay:`${i*.05}s`}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user"/></div>)}
         </>}
-        {up.length===0&&<div style={{textAlign:"center",padding:"52px 20px"}}><Logo cl={cl} sz={64} sx={{margin:"0 auto 16px"}}/><p style={{fontWeight:800,fontSize:18,color:"#334155"}}>Keine anstehenden Termine</p><p style={{color:"#94a3b8",fontSize:14,marginTop:6}}>Der Trainer hat noch keine Termine angelegt.</p><div style={{marginTop:20}}><AdBanner/></div></div>}
+        {up.length===0&&<div style={{textAlign:"center",padding:"52px 20px"}}><Logo cl={cl} sz={64} sx={{margin:"0 auto 16px"}}/><p style={{fontWeight:800,fontSize:18,color:"#334155"}}>Keine anstehenden Termine</p><p style={{color:"#94a3b8",fontSize:14,marginTop:6}}>Der Trainer hat noch keine Termine angelegt.</p><div style={{marginTop:20}}><AdBanner/></div><PoweredBy/></div>}
         {past.length>0&&<>
           <button onClick={()=>setSP(s=>!s)} style={{display:"flex",alignItems:"center",gap:10,width:"100%",background:"none",border:"none",cursor:"pointer",margin:"18px 0 10px",padding:"4px 0"}}>
             <div style={{flex:1,height:1,background:"#e2e8f0"}}/><span style={{fontSize:11,fontWeight:800,color:"#94a3b8",whiteSpace:"nowrap"}}>{showPast?"?":"?"} VERGANGENE ({past.length})</span><div style={{flex:1,height:1,background:"#e2e8f0"}}/>
@@ -4447,13 +9684,27 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
           {showPast&&past.map(ev=><div key={ev.id} style={{marginBottom:10}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user"/></div>)}
         </>}
       </div>
+      {showOnboarding&&<OnboardingWizard cl={myClub} data={local} save={save} fire={fire} onDone={()=>setShowOnboarding(false)}/>}
       <Toast msg={toast}/>
-      {shareTrigger&&<ShareBanner cl={myClub} session={session} trigger={shareTrigger} onDismiss={()=>dismissShare(shareTrigger)}/>}
+      <BottomNav tab={tab} setTab={setTab} isAdmin={isAdmin} isHelper={isHelper}
+        unread={unreadMsgs} cl={myClub}/>
+      {shareConfig&&<MomentShare trigger={shareConfig.trigger} clubName={myClub?.name} stats={shareConfig.stats} onDismiss={()=>setShareConfig(null)}/>}
+      {showNPS&&<NPSWidget clubName={myClub?.name} onDone={()=>setShowNPS(false)}/>}
+      {achievement&&<AchievementToast achievement={achievement} onDone={()=>setAchievment(null)}/>}
     </div>
   );
 }
 
 export default function App() {
+  return (
+    <ErrorBoundary>
+      <ThemeProvider>
+        <AppRoot/>
+      </ThemeProvider>
+    </ErrorBoundary>
+  );
+}
+function AppRoot() {
   const [lang,setLang] = useState(()=>localStorage.getItem(LANG_KEY)||navigator.language?.slice(0,2)||"de");
   return (
     <LangCtx.Provider value={lang in T ? lang : "de"}>
@@ -4505,10 +9756,20 @@ function AppInner({lang,setLang}) {
   },[]);
 
   const login=(role,payload)=>{
-    const s={...payload,role,cid}; sess.set(s); setSess(s);
+    const s={...payload,role,cid}; sess.set(s,true); setSess(s);
+    const dev=getDeviceInfo();
+    const label=role==="admin"?"Admin-Login":role==="trainer"?"Trainer-Login":role==="helper"?"Helfer-Login":"Eltern-Login";
+    const entry={...createAuditEntry("login",label+": "+(payload.name||role),s),cid};
+    const newLog=[...(data.securityLog||[]),
+      ...(dev.suspicious?[{...createAuditEntry("new_device","Unbekannte Region: "+dev.lang,s),cid}]:[]),
+      entry];
+    localSet({...data,securityLog:newLog});
     setScr(role==="user"?"user":"dash");
   };
-  const logout=()=>{ sess.del(); setSess(null); setScr(cid?"role":"dir"); };
+  const logout=()=>{
+    if(sess_){const e={...createAuditEntry("logout","Logout: "+(sess_.name||sess_.role),sess_),cid};localSet({...data,securityLog:[...(data.securityLog||[]),e]});}
+    sess.del(); setSess(null); setScr(cid?"role":"dir");
+  };
 
   if(showSetup) return (
     <>
@@ -4555,7 +9816,8 @@ function AppInner({lang,setLang}) {
         </button>
       )}
 
-      {screen==="dir"   &&<Directory data={data} lang={lang} setLang={setLang} onPick={id=>{
+      {showLegal&&<LegalPage onBack={()=>setShowLegal(false)}/>}
+      {!showLegal&&screen==="dir"&&<Directory data={data} lang={lang} setLang={setLang} onLegal={()=>setShowLegal(true)} onPick={id=>{
           if(id==="__demo__"){setCid("sus");setScr("role");return;}
           setCid(id);setScr("role");
         }} onNewClub={newClubOrData=>{
@@ -4578,3 +9840,5 @@ function AppInner({lang,setLang}) {
     </div>
   );
 }
+
+const trainer_season_block_injected = true;
