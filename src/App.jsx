@@ -1,4 +1,4 @@
-import { useState,useEffect,useCallback,useRef,useMemo,createContext,useContext } from "react";
++import React, { useState,useEffect,useCallback,useRef,useMemo,createContext,useContext } from "react";
 
 const LANG_KEY = "vereinsapp_lang";
 const LangCtx  = createContext("de");
@@ -8844,7 +8844,7 @@ function Directory({data,onPick,onNewClub,lang,setLang}) {
         </div>
         {}
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:8}}>
-          {[[pub.length||1024,"Vereine"],["8.300+","Mitglieder"],["94k+","Termine"]].map(([v,l])=>(
+          {[[pub.length.toLocaleString("de-DE"),"Vereine"],[Object.values(data.players||{}).reduce((s,a)=>s+(Array.isArray(a)?a.length:0),0).toLocaleString("de-DE"),"Mitglieder"],[(data.events||[]).length.toLocaleString("de-DE"),"Termine"]].map(([v,l])=>(
             <div key={l} style={{background:"rgba(255,255,255,.06)",borderRadius:12,padding:"10px 6px",textAlign:"center",border:"1px solid rgba(255,255,255,.08)"}}>
               <div style={{fontWeight:900,fontSize:16,color:"#86efac"}}>{v}</div>
               <div style={{fontSize:10,color:"rgba(255,255,255,.4)",marginTop:2}}>{l}</div>
@@ -14300,6 +14300,7 @@ function AppInner({lang,setLang}) {
   const [cid,setCid]      = useState(null);
   const [session,setSess] = useState(null);
   const [showSetup,setShowSetup] = useState(false);
+  const [showLegal,setShowLegal] = useState(false);
   const [showSuperAdmin,setShowSuperAdmin] = useState(
     ()=>new URLSearchParams(window.location.search).has("superadmin")
   );
