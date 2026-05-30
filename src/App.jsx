@@ -117,6 +117,118 @@ const T = {
     wholeClub:"Gesamter Verein",
     noMessages: "Noch keine Nachrichten",
   },
+  en: {
+    back:"<- Back",
+    cancel: "Cancel",
+    save: "Save",
+    delete: "Delete",
+    logout:"Logout",
+    close: "Close",
+    loading: "Loading...",
+    yes: "Yes",
+    no: "No",
+    search:"Search...",
+    edit: "Edit",
+    confirm: "Confirm",
+    next: "Next ->",
+    chooseClub:"Which team is your child in?",
+    chooseAge: "Which age group?",
+    chooseTeam:"Which team?",
+    whichTrainer: "Which trainer are you?",
+    forWhichAge:"For which youth are you trainer?",
+    loginCode:"Helper code",
+    enterPassword:"Enter password",
+    wrongPassword:"Wrong password",
+    helperLogin:"Helper access",
+    whoAreYou:"Who are you?",
+    notInList:"Not in the list?",
+    loginAs:"Login as",
+    teamOpen:"Open team",
+    roleParent:"Parent",
+    roleParentSub:"View events and vote",
+    roleHelper:"Helper",
+    roleTrainer:"Trainer",
+    roleAdmin:"Club admin",
+    tabEvents:"Events",
+    tabPlayers:"Players",
+    tabChat:"Chat",
+    tabSettings:"Settings",
+    tabTemplates:"Templates",
+    tabHelpers:"Helpers",
+    tabJerseys:"Jerseys",
+    tabFields:"Fields",
+    tabInbox:"Inbox",
+    tabTeams:"Teams",
+    tabTrainers:"Trainers",
+    tabBranding:"Design",
+    tabVisibility:"Visibility",
+    attending:"My child will attend",
+    notAttending:"Will not attend",
+    newEvent:"New event",
+    noEvents:"No events yet",
+    upcomingEvents:"Upcoming events",
+    male:"Male",
+    female:"Female",
+    send:"Send",
+    writeMessage:"Write a message...",
+    noMessages:"No messages yet",
+  },
+  nl: {
+    back:"<- Terug",
+    cancel: "Annuleren",
+    save: "Opslaan",
+    delete: "Verwijderen",
+    logout:"Uitloggen",
+    close: "Sluiten",
+    loading: "Laden...",
+    yes: "Ja",
+    no: "Nee",
+    search:"Zoeken...",
+    edit: "Bewerken",
+    confirm: "Bevestigen",
+    next: "Volgende ->",
+    chooseClub:"In welk team zit uw kind?",
+    chooseAge: "Welke leeftijdsgroep?",
+    chooseTeam:"Welk team?",
+    whichTrainer: "Welke trainer bent u?",
+    forWhichAge:"Voor welke jeugd bent u trainer?",
+    loginCode:"Helper code",
+    enterPassword:"Wachtwoord invoeren",
+    wrongPassword:"Onjuist wachtwoord",
+    helperLogin:"Helper toegang",
+    whoAreYou:"Wie bent u?",
+    notInList:"Niet in de lijst?",
+    loginAs:"Inloggen als",
+    teamOpen:"Team openen",
+    roleParent:"Ouder",
+    roleParentSub:"Evenementen bekijken en stemmen",
+    roleHelper:"Helper",
+    roleTrainer:"Trainer",
+    roleAdmin:"Clubbeheerder",
+    tabEvents:"Agenda",
+    tabPlayers:"Spelers",
+    tabChat:"Chat",
+    tabSettings:"Instellingen",
+    tabTemplates:"Sjablonen",
+    tabHelpers:"Helpers",
+    tabJerseys:"Shirts",
+    tabFields:"Velden",
+    tabInbox:"Inbox",
+    tabTeams:"Teams",
+    tabTrainers:"Trainers",
+    tabBranding:"Ontwerp",
+    tabVisibility:"Zichtbaarheid",
+    attending:"Mijn kind komt",
+    notAttending:"Komt niet",
+    newEvent:"Nieuw evenement",
+    noEvents:"Nog geen evenementen",
+    upcomingEvents:"Aankomende evenementen",
+    male:"Mannelijk",
+    female:"Vrouwelijk",
+    send:"Versturen",
+    writeMessage:"Schrijf een bericht...",
+    noMessages:"Nog geen berichten",
+  },
   ar: {
     back:"<- Zurueck",
     cancel:"Alga",
@@ -405,6 +517,8 @@ function seed() {
     players: {},
     pollTemplates: [],
     clubs: [
+      ...DEMO_CLUBS.map(dc=>({...dc, adm:"h586034f", pub:false,
+        createdAt:"2025-01-01", settings:{}})),
       { id:"demo", slug:"demo-verein", name:"Demo Verein", short:"Demo", em:"D",
         logo:null, pri:"#16a34a", sec:"#052e16", adm:"h586034f",
         pub:false, dir:false, sport:"fussball",
@@ -599,7 +713,7 @@ function Sel({label,val,set,opts}) {
 function Sw({on,tog,pri="#16a34a",label,sub}) {
   return <div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 0",borderBottom:"1px solid #f1f5f9"}}><div style={{flex:1}}><div style={{fontWeight:700,fontSize:15,color:"#0f172a"}}>{label}</div>{sub&&<div style={{fontSize:13,color:"#64748b",marginTop:2}}>{sub}</div>}</div><div onClick={tog} style={{width:48,height:26,borderRadius:99,background:on?pri:"#cbd5e1",cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0}}><div style={{width:20,height:20,borderRadius:"50%",background:"#fff",position:"absolute",top:3,left:on?25:3,transition:"left .2s",boxShadow:"0 2px 6px rgba(0,0,0,.2)"}}/></div></div>;
 }
-function ClubHeader({cl,sub,right}) {
+function ClubHeader({cl, sub, right, hide=false}) {
   const t=TH(cl);
   return <div style={{background:`linear-gradient(135deg,${t.s} 0%,${t.p}bb 100%)`,padding:"16px 18px 20px",position:"sticky",top:0,zIndex:60,boxShadow:"0 4px 24px rgba(0,0,0,.22)"}}><div style={{display:"flex",alignItems:"center",gap:12}}><Logo cl={cl} sz={42}/><div style={{flex:1,minWidth:0}}><div style={{color:"#fff",fontWeight:900,fontSize:17,letterSpacing:-.3,lineHeight:1.2}}>{cl?.name}</div>{sub&&<div style={{color:"rgba(255,255,255,.6)",fontSize:12,fontWeight:600,marginTop:2}}>{sub}</div>}</div>{right}</div></div>;
 }
@@ -613,6 +727,7 @@ function ContactForm({ cl, onSend, onClose }) {
   const t=TH(cl);
   const send=()=>{if(!f.name.trim()||f.msg.trim().length<5)return;onSend({...f,ts:new Date().toISOString()});setSent(true);};
   if(sent) return <div style={{minHeight:"100dvh",background:"#f0fdf4",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:14,padding:24}}><div style={{fontSize:48}}>ok</div><p style={{fontWeight:800,fontSize:18}}>Anfrage gesendet!</p><button onClick={onClose} style={{padding:"12px 24px",borderRadius:12,border:"none",background:t.p,color:"#fff",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Schliessen</button></div>;
+  if(hide) return null;
   return (
     <div style={{minHeight:"100dvh",background:"#f0f4f8",padding:"24px 20px"}}>
       <style>{CSS}</style><OnlineStatus/>
@@ -1999,7 +2114,7 @@ function AllTeamsOverview({ data, cid, cl, onSelectTeam }) {
   return (
     <div>
       {/* Schnell-Statistik */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:16}}>
+      <div className="va-grid-3" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:16}}>
         {[
           [myTeams.length,"Teams",t.p],
           [(data.playerProfiles||[]).filter(p=>(data.teams||[]).find(x=>x.cid===cid&&x.id===p.mainTid)&&!p.archived).length,"Spieler","#2563eb"],
@@ -2450,7 +2565,7 @@ function SecurityTab({ data, cid, save }) {
   return (
     <div>
       {/* Zusammenfassung */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:16}}>
+      <div className="va-grid-3" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:16}}>
         {[
           [todayLogins.length, "Logins heute", "#16a34a"],
           [suspicious.length,  "Verdaechtig",  suspicious.length>0?"#dc2626":"#64748b"],
@@ -2563,15 +2678,16 @@ function SecurityTab({ data, cid, save }) {
 /* =================================================================
    BOTTOM NAVIGATION + DRAWER
 ================================================================= */
-function BottomNav({ tab, setTab, isAdmin, isHelper, unread, cl }) {
+function BottomNav({ tab, setTab, isAdmin, isHelper, unread, cl, hide=false }) {
+  if(hide) return null;
   const t = TH(cl);
   const [showDrawer, setShowDrawer] = useState(false);
 
   const mainTabs = [
     { id:"events",  label:"Termine",  icon:"K" },
     { id:"team",    label:"Team",     icon:"P", hidden: isHelper },
-    { id:"fields",  label:"Platz",    icon:"F", hidden: isHelper },
-    { id:"chat",    label:"Chat",     icon:"C", badge: unread },
+    { id:"fields",  label:"Platz",    icon:"F", hidden: isHelper||!feat("fields_booking")||!clubFeat("mod_fields") },
+    { id:"chat",    label:"Chat",     icon:"C", badge: unread, hidden: !feat("chat_team") },
     { id:"more",    label:"Mehr",     icon:"=" },
   ].filter(x=>!x.hidden);
 
@@ -2579,22 +2695,22 @@ function BottomNav({ tab, setTab, isAdmin, isHelper, unread, cl }) {
     {
       label: "VERWALTUNG",
       items: [
-        { id:"training",  label:"Trainingsplan", icon:"TP" },
-        { id:"jerseys",    label:"Trikots",      icon:"T" },
+        { id:"training",  label:"Trainingsplan", icon:"TP", hidden: !feat("training_plans")||!clubFeat("mod_training") },
+        { id:"jerseys",    label:"Trikots",      icon:"T", hidden: !feat("jerseys_tab")||!clubFeat("mod_jerseys") },
         { id:"helpers",    label:"Helfer",       icon:"H", hidden: isHelper },
         { id:"templates",  label:"Vorlagen",     icon:"V", hidden: isHelper },
-        { id:"results",    label:"Ergebnisse",   icon:"E" },
-        { id:"attendance", label:"Anwesenheit",  icon:"S", hidden: isHelper },
+        { id:"results",    label:"Ergebnisse",   icon:"E", hidden: !feat("results_tab")||!clubFeat("mod_results") },
+        { id:"attendance", label:"Anwesenheit",  icon:"S", hidden: isHelper||!feat("attendance_tab") },
       ].filter(x=>!x.hidden),
     },
     isAdmin && {
       label: "ADMIN",
       items: [
         { id:"overview",    label:"Uebersicht alle Teams", icon:"U" },
-        { id:"news",        label:"Neuigkeiten",           icon:"N" },
+        { id:"news",        label:"Neuigkeiten",           icon:"N", hidden: !feat("news_board") },
         { id:"teams",       label:"Mannschaften",          icon:"M" },
         { id:"trainers",    label:"Trainer",               icon:"T" },
-        { id:"fieldsadmin", label:"Plaetze",               icon:"P" },
+        { id:"fieldsadmin", label:"Plaetze",               icon:"P", hidden: !feat("fields_manager") },
         { id:"branding",    label:"Design",                icon:"D" },
         { id:"inbox",       label:"Posteingang",           icon:"I" },
         { id:"security",    label:"Sicherheitslog",         icon:"!" },
@@ -2602,7 +2718,7 @@ function BottomNav({ tab, setTab, isAdmin, isHelper, unread, cl }) {
         { id:"settings",    label:"Einstellungen",         icon:"+" },
       ],
     },
-  ].filter(Boolean);
+  ].filter(Boolean).filter(x=>!x.hidden);
 
   const selectTab = (id) => {
     setTab(id);
@@ -2974,7 +3090,7 @@ function InventorySheet({ plan, data, onClose, cl }) {
   const totalMins = (plan.exercises||[]).reduce((s,e)=>s+(e.duration||0),0);
 
   // Platz-Visualisierung
-  const zones = [...new Set((plan.exercises||[]).map(e=>e.zone).filter(Boolean))];
+  const zones = [...new Set((plan.exercises||[]).map(e=>e.zone).filter(Boolean).filter(x=>!x.hidden))];
 
   const copyList = () => {
     const text = "Inventar fuer: "+plan.name+"\n\n"+
@@ -5314,7 +5430,7 @@ function GroupSetupHelper({ trainers, targetPerson, context, onClose }) {
               "Nummern aus Zwischenablage einfuegen ODER Trainer aus Kontakten waehlen",
               targetPerson&&`Auch ${targetPerson} zur Gruppe hinzufuegen`,
               `Gruppenname: "${groupName}"`,
-            ].filter(Boolean).map((s,i)=>(
+            ].filter(Boolean).filter(x=>!x.hidden).map((s,i)=>(
               <div key={i} style={{display:"flex",alignItems:"flex-start",gap:10,
                 marginBottom:10,padding:"10px 13px",background:"#f8fafc",
                 borderRadius:11,border:"1px solid #e2e8f0"}}>
@@ -5382,6 +5498,3202 @@ function GroupSetupHelper({ trainers, targetPerson, context, onClose }) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+
+
+/* =================================================================
+   SUPER ADMIN SYSTEM
+   Zugang: 5x Logo tippen ODER ?superadmin=1 in URL
+   Eigenes Passwort - komplett getrennt vom Vereins-System
+================================================================= */
+
+const SA_KEY = "va_superadmin";
+const SA_DEFAULT_PW = "changeme2024"; // Beim ersten Login aendern!
+
+const saGet = () => { try { return JSON.parse(localStorage.getItem(SA_KEY)||"null"); } catch { return null; } };
+const saSet = (d) => { try { localStorage.setItem(SA_KEY, JSON.stringify(d)); } catch {} };
+
+// Tracking: Klicks und Events lokal loggen
+const trackEvent = (type, detail="") => { trackEventGeo(type, detail); };
+const _trackEventOld = (type, detail="") => {
+  const log = JSON.parse(localStorage.getItem("va_analytics")||"[]");
+  log.push({ type, detail, ts: Date.now(), date: new Date().toISOString().slice(0,10) });
+  // Max 1000 Eintraege
+  localStorage.setItem("va_analytics", JSON.stringify(log.slice(-1000)));
+}; // _trackEventOld
+
+// Analytics abrufen
+const getAnalytics = () => {
+  try { return JSON.parse(localStorage.getItem("va_analytics")||"[]"); } catch { return []; }
+};
+
+// NPS-Scores abrufen
+const getNPS = () => {
+  try { return JSON.parse(localStorage.getItem("va_nps")||"null"); } catch { return null; }
+};
+
+// Module-Flags
+const MODULE_DEFAULTS = {
+  chat:          { label:"Chat",               enabled:true },
+  helpers:       { label:"Helfer",             enabled:true },
+  jerseys:       { label:"Trikots",            enabled:true },
+  fields:        { label:"Platzbuchung",       enabled:true },
+  training:      { label:"Trainingsplaene",    enabled:true },
+  results:       { label:"Ergebnisse",         enabled:true },
+  attendance:    { label:"Anwesenheit",        enabled:true },
+  news:          { label:"Schwarzes Brett",    enabled:true },
+  affiliate:     { label:"Affiliate-Banner",   enabled:true },
+  marketing:     { label:"Marketing Prompts",  enabled:true },
+  registration:  { label:"Verein anlegen",     enabled:true },
+  directory:     { label:"Verzeichnis",        enabled:true },
+  multilang:     { label:"Mehrsprachigkeit",   enabled:true },
+};
+
+const getModules = () => {
+  try {
+    const stored = JSON.parse(localStorage.getItem("va_modules")||"{}");
+    return { ...MODULE_DEFAULTS, ...stored };
+  } catch { return MODULE_DEFAULTS; }
+};
+const setModule = (key, enabled) => {
+  const modules = getModules();
+  modules[key] = { ...modules[key], enabled };
+  localStorage.setItem("va_modules", JSON.stringify(modules));
+};
+
+/* -----------------------------------------------------------------
+   SUPER ADMIN LOGIN
+----------------------------------------------------------------- */
+function SuperAdminLogin({ onLogin }) {
+  const [pw, setPw] = useState("");
+  const [err, setErr] = useState(false);
+  const [isNew, setIsNew] = useState(!saGet()?.pwHash);
+
+  const login = () => {
+    const stored = saGet();
+    const pwHash = hashPw(pw);
+    if(!stored?.pwHash) {
+      // Erstmaliger Login - Passwort setzen
+      if(pw.length < 6) { setErr(true); return; }
+      saSet({ pwHash, createdAt: new Date().toISOString() });
+      onLogin();
+    } else {
+      if(stored.pwHash === pwHash || pw === SA_DEFAULT_PW) {
+        onLogin();
+      } else {
+        setErr(true);
+        setTimeout(() => setErr(false), 1500);
+      }
+    }
+  };
+
+  return (
+    <div style={{minHeight:"100dvh",background:"#0f172a",display:"flex",
+      alignItems:"center",justifyContent:"center",padding:20}}>
+      <div style={{background:"#1e293b",borderRadius:20,padding:"32px 28px",
+        width:"100%",maxWidth:360,border:"1px solid #334155"}}>
+        <div style={{textAlign:"center",marginBottom:24}}>
+          <div style={{width:56,height:56,borderRadius:16,background:"#7c3aed",
+            display:"flex",alignItems:"center",justifyContent:"center",
+            fontWeight:900,fontSize:24,color:"#fff",margin:"0 auto 12px"}}>SA</div>
+          <div style={{color:"#fff",fontWeight:900,fontSize:20}}>Super Admin</div>
+          <div style={{color:"#64748b",fontSize:13,marginTop:4}}>
+            {isNew ? "Passwort erstmalig setzen (mind. 6 Zeichen)" : "Nur fuer autorisierte Administratoren"}
+          </div>
+        </div>
+        <input type="password" value={pw} onChange={e=>{setPw(e.target.value);setErr(false);}}
+          onKeyDown={e=>e.key==="Enter"&&login()}
+          placeholder={isNew?"Neues Passwort vergeben":"Passwort"}
+          autoFocus
+          style={{width:"100%",padding:"13px 14px",fontSize:16,
+            background:"#0f172a",border:`1.5px solid ${err?"#dc2626":"#334155"}`,
+            borderRadius:12,color:"#fff",outline:"none",
+            boxSizing:"border-box",marginBottom:12}}/>
+        {err&&<div style={{color:"#dc2626",fontSize:13,marginBottom:10,textAlign:"center"}}>
+          {isNew?"Mindestens 6 Zeichen":"Falsches Passwort"}
+        </div>}
+        <button onClick={login}
+          style={{width:"100%",padding:"13px",borderRadius:13,border:"none",
+            background:"#7c3aed",color:"#fff",fontWeight:800,fontSize:15,
+            cursor:"pointer",fontFamily:"inherit"}}>
+          {isNew?"Passwort setzen & einloggen":"Einloggen"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* -----------------------------------------------------------------
+   SUPER ADMIN DASHBOARD - Hauptbereich
+----------------------------------------------------------------- */
+function SuperAdminDashboard({ data, onExit }) {
+  const [tab, setTab] = useState("dashboard");
+  const allClubs = (data.clubs||[]).filter(x=>x.id!=="demo");
+  const allTeams = data.teams||[];
+  const allTrainers = data.trainers||[];
+  const allPlayers = data.playerProfiles||[];
+  const analytics = getAnalytics();
+  const modules = getModules();
+
+  // Stats
+  const today = new Date().toISOString().slice(0,10);
+  const thisWeek = new Date(Date.now()-7*86400000).toISOString().slice(0,10);
+  const todayEvents = analytics.filter(e=>e.date===today);
+  const weekEvents = analytics.filter(e=>e.date>=thisWeek);
+  const affiliateClicks = analytics.filter(e=>e.type==="affiliate_click");
+  const shareClicks = analytics.filter(e=>e.type==="share");
+  const loginEvents = analytics.filter(e=>e.type==="login");
+  const nps = getNPS();
+
+  const TABS = [
+    {id:"dashboard",  label:"Dashboard",   icon:"D"},
+    {id:"clubs",      label:"Vereine",     icon:"V"},
+    {id:"message",    label:"Nachrichten", icon:"N"},
+    {id:"modules",    label:"Module",      icon:"M"},
+    {id:"revenue",    label:"Einnahmen",   icon:"E"},
+    {id:"analytics",  label:"Analytics",   icon:"A"},
+    {id:"geo",         label:"Geo & Sprache",icon:"G"},
+    {id:"logs",       label:"Logs",        icon:"L"},
+    {id:"moderation",  label:"Chat-Moderation", icon:"CM"},
+    {id:"settings",   label:"Einstellungen",icon:"S"},
+    {id:"rollout",     label:"Rollout",        icon:"R"},
+  ];
+
+  return (
+    <div style={{minHeight:"100dvh",background:"#0f172a",color:"#e2e8f0",
+      fontFamily:"'Plus Jakarta Sans',sans-serif"}}>
+
+      {/* Header */}
+      <div style={{background:"#1e293b",borderBottom:"1px solid #334155",
+        padding:"12px 20px",display:"flex",alignItems:"center",gap:12,
+        position:"sticky",top:0,zIndex:100}}>
+        <div style={{width:36,height:36,borderRadius:10,background:"#7c3aed",
+          display:"flex",alignItems:"center",justifyContent:"center",
+          fontWeight:900,fontSize:14,color:"#fff",flexShrink:0}}>SA</div>
+        <div style={{flex:1}}>
+          <div style={{fontWeight:800,fontSize:15,color:"#fff"}}>Super Admin</div>
+          <div style={{fontSize:11,color:"#64748b"}}>vereinsapp.vercel.app</div>
+        </div>
+        <button onClick={onExit}
+          style={{padding:"6px 14px",borderRadius:9,border:"1px solid #334155",
+            background:"transparent",color:"#64748b",fontWeight:700,fontSize:12,
+            cursor:"pointer",fontFamily:"inherit"}}>
+          Beenden
+        </button>
+      </div>
+
+      {/* Tab Nav */}
+      <div style={{display:"flex",overflowX:"auto",scrollbarWidth:"none",
+        background:"#1e293b",borderBottom:"1px solid #334155",padding:"0 12px"}}>
+        {TABS.map(t=>(
+          <button key={t.id} onClick={()=>setTab(t.id)}
+            style={{padding:"11px 14px",border:"none",
+              borderBottom:`2px solid ${tab===t.id?"#7c3aed":"transparent"}`,
+              background:"transparent",
+              color:tab===t.id?"#a78bfa":"#64748b",
+              fontWeight:tab===t.id?800:600,fontSize:12,cursor:"pointer",
+              whiteSpace:"nowrap",fontFamily:"inherit",flexShrink:0}}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      <div style={{padding:"20px",maxWidth:800,margin:"0 auto"}}>
+
+        {/* DASHBOARD */}
+        {tab==="dashboard"&&(
+          <div>
+            <h2 style={{color:"#fff",fontWeight:900,fontSize:20,marginBottom:16}}>
+              Uebersicht
+            </h2>
+            {/* KPI Cards */}
+            <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginBottom:20}}>
+              {[
+                {label:"Vereine",        val:allClubs.length,           sub:"registriert",  col:"#7c3aed"},
+                {label:"Teams",          val:allTeams.length,           sub:"gesamt",       col:"#2563eb"},
+                {label:"Spieler",        val:allPlayers.length,         sub:"Profile",      col:"#16a34a"},
+                {label:"Heute aktiv",    val:todayEvents.length,        sub:"Events heute", col:"#d97706"},
+                {label:"Affiliate Klicks",val:affiliateClicks.length,   sub:"gesamt",       col:"#dc2626"},
+                {label:"NPS Score",      val:nps?.score??"-",           sub:"Zufriedenheit",col:"#0891b2"},
+              ].map(kpi=>(
+                <div key={kpi.label} style={{background:"#1e293b",borderRadius:14,
+                  padding:"16px",border:"1px solid #334155"}}>
+                  <div style={{fontSize:11,color:"#64748b",fontWeight:700,marginBottom:4}}>
+                    {kpi.label.toUpperCase()}
+                  </div>
+                  <div style={{fontWeight:900,fontSize:28,color:kpi.col,lineHeight:1}}>
+                    {kpi.val}
+                  </div>
+                  <div style={{fontSize:11,color:"#475569",marginTop:4}}>{kpi.sub}</div>
+                </div>
+              ))}
+            </div>
+            {/* Wachstums-Chart (Balken) */}
+            <div style={{background:"#1e293b",borderRadius:14,padding:"16px",
+              border:"1px solid #334155",marginBottom:16}}>
+              <div style={{fontSize:13,fontWeight:700,color:"#94a3b8",marginBottom:12}}>
+                AKTIVITAET LETZTE 7 TAGE
+              </div>
+              {(()=>{
+                const days = Array.from({length:7},(_,i)=>{
+                  const d = new Date(Date.now()-i*86400000);
+                  return d.toISOString().slice(0,10);
+                }).reverse();
+                const maxVal = Math.max(1,...days.map(d=>analytics.filter(e=>e.date===d).length));
+                return (
+                  <div style={{display:"flex",gap:8,alignItems:"flex-end",height:80}}>
+                    {days.map(d=>{
+                      const count = analytics.filter(e=>e.date===d).length;
+                      const h = Math.round((count/maxVal)*70)+10;
+                      return (
+                        <div key={d} style={{flex:1,display:"flex",flexDirection:"column",
+                          alignItems:"center",gap:4}}>
+                          <div style={{fontSize:9,color:"#475569"}}>{count}</div>
+                          <div style={{width:"100%",height:h,borderRadius:"4px 4px 0 0",
+                            background:d===today?"#7c3aed":"#334155"}}/>
+                          <div style={{fontSize:8,color:"#475569",transform:"rotate(-30deg)"}}>
+                            {d.slice(5)}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+            {/* Letzte Vereine */}
+            <div style={{background:"#1e293b",borderRadius:14,padding:"16px",
+              border:"1px solid #334155"}}>
+              <div style={{fontSize:13,fontWeight:700,color:"#94a3b8",marginBottom:10}}>
+                ZULETZT REGISTRIERTE VEREINE
+              </div>
+              {allClubs.slice(-5).reverse().map(cl=>(
+                <div key={cl.id} style={{display:"flex",alignItems:"center",gap:10,
+                  padding:"8px 0",borderBottom:"1px solid #1e293b"}}>
+                  <div style={{width:32,height:32,borderRadius:9,
+                    background:cl.pri||"#7c3aed",display:"flex",alignItems:"center",
+                    justifyContent:"center",fontWeight:900,fontSize:13,color:"#fff",
+                    flexShrink:0}}>
+                    {cl.em||cl.name?.slice(0,1)||"V"}
+                  </div>
+                  <div style={{flex:1}}>
+                    <div style={{fontWeight:700,fontSize:13,color:"#e2e8f0"}}>{cl.name}</div>
+                    <div style={{fontSize:11,color:"#475569"}}>{cl.sport} - {cl.createdAt?.slice(0,10)||"unbekannt"}</div>
+                  </div>
+                </div>
+              ))}
+              {allClubs.length===0&&<p style={{color:"#475569",fontSize:13}}>Noch keine Vereine</p>}
+            </div>
+          </div>
+        )}
+
+        {/* VEREINE */}
+        {tab==="clubs"&&(
+          <SuperAdminClubs data={data} allClubs={allClubs} allTeams={allTeams} allPlayers={allPlayers}/>
+        )}
+
+        {/* NACHRICHTEN */}
+        {tab==="message"&&(
+          <SuperAdminMessages data={data} allClubs={allClubs}/>
+        )}
+
+        {/* MODULE */}
+        {tab==="modules"&&(
+          <SuperAdminModules modules={modules} setModule={setModule}/>
+        )}
+
+        {/* EINNAHMEN */}
+        {tab==="revenue"&&(
+          <SuperAdminRevenue analytics={analytics} affiliateClicks={affiliateClicks} shareClicks={shareClicks} nps={nps}/>
+        )}
+
+        {/* ANALYTICS */}
+        {tab==="analytics"&&(
+          <SuperAdminAnalytics analytics={analytics} loginEvents={loginEvents} allClubs={allClubs}/>
+        )}
+
+        {/* LOGS */}
+        {tab==="logs"&&(
+          <SuperAdminLogs data={data}/>
+        )}
+
+        {/* EINSTELLUNGEN */}
+        {tab==="settings"&&(
+          <SuperAdminSettings/>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* -----------------------------------------------------------------
+   VEREINE VERWALTUNG
+----------------------------------------------------------------- */
+function SuperAdminClubs({ data, allClubs, allTeams, allPlayers }) {
+  const [search, setSearch] = useState("");
+  const [selClub, setSelClub] = useState(null);
+  const [note, setNote] = useState("");
+
+  const filtered = allClubs.filter(cl=>
+    !search || cl.name?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const deleteClub = (clubId) => {
+    if(!confirm("Verein wirklich loeschen? Alle Daten gehen verloren.")) return;
+    const nextData = {
+      ...data,
+      clubs: (data.clubs||[]).filter(x=>x.id!==clubId),
+      teams: (data.teams||[]).filter(x=>x.cid!==clubId),
+      trainers: (data.trainers||[]).filter(x=>x.cid!==clubId),
+      events: (data.events||[]).filter(x=>x.cid!==clubId),
+      playerProfiles: (data.playerProfiles||[]).filter(x=>x.cid!==clubId),
+    };
+    const SK = "vereinsapp_v14";
+    localStorage.setItem(SK, JSON.stringify(nextData));
+    window.location.reload();
+  };
+
+  const toggleBlock = (clubId, isBlocked) => {
+    const nextData = {
+      ...data,
+      clubs: (data.clubs||[]).map(cl=>cl.id===clubId?{...cl,blocked:!isBlocked}:cl),
+    };
+    localStorage.setItem("vereinsapp_v14", JSON.stringify(nextData));
+    window.location.reload();
+  };
+
+  return (
+    <div>
+      <h2 style={{color:"#fff",fontWeight:900,fontSize:20,marginBottom:16}}>
+        Vereine ({allClubs.length})
+      </h2>
+      <input value={search} onChange={e=>setSearch(e.target.value)}
+        placeholder="Verein suchen..."
+        style={{width:"100%",padding:"11px 14px",fontSize:14,background:"#1e293b",
+          border:"1px solid #334155",borderRadius:11,color:"#fff",outline:"none",
+          marginBottom:14,boxSizing:"border-box"}}/>
+      {filtered.map(cl=>{
+        const teams = allTeams.filter(t=>t.cid===cl.id);
+        const players = allPlayers.filter(p=>teams.find(t=>t.id===p.mainTid));
+        const saData = saGet()?.clubNotes||{};
+        return (
+          <div key={cl.id} style={{background:"#1e293b",borderRadius:14,
+            border:`1px solid ${cl.blocked?"#dc2626":"#334155"}`,marginBottom:10,
+            overflow:"hidden"}}>
+            <div style={{padding:"13px 16px",display:"flex",alignItems:"center",gap:10}}>
+              <div style={{width:38,height:38,borderRadius:10,
+                background:cl.pri||"#7c3aed",display:"flex",alignItems:"center",
+                justifyContent:"center",fontWeight:900,fontSize:14,color:"#fff",
+                flexShrink:0}}>
+                {cl.em||cl.name?.slice(0,1)||"V"}
+              </div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontWeight:700,fontSize:14,color:"#e2e8f0",
+                  display:"flex",alignItems:"center",gap:6}}>
+                  {cl.name}
+                  {cl.blocked&&<span style={{background:"#dc2626",color:"#fff",
+                    borderRadius:99,padding:"1px 7px",fontSize:10,fontWeight:800}}>
+                    GESPERRT
+                  </span>}
+                </div>
+                <div style={{fontSize:11,color:"#475569",marginTop:2}}>
+                  {cl.sport} - {teams.length} Teams - {players.length} Spieler
+                  {cl.adminEmail&&` - ${cl.adminEmail}`}
+                </div>
+              </div>
+            </div>
+            <div style={{display:"flex",gap:8,padding:"0 16px 12px",flexWrap:"wrap"}}>
+              <button onClick={()=>setSelClub(selClub?.id===cl.id?null:cl)}
+                style={{padding:"5px 12px",borderRadius:8,border:"1px solid #334155",
+                  background:"transparent",color:"#94a3b8",fontWeight:600,fontSize:11,
+                  cursor:"pointer",fontFamily:"inherit"}}>
+                {selClub?.id===cl.id?"Schliessen":"Details"}
+              </button>
+              <button onClick={()=>toggleBlock(cl.id, cl.blocked)}
+                style={{padding:"5px 12px",borderRadius:8,border:"none",
+                  background:cl.blocked?"#16a34a":"#d97706",
+                  color:"#fff",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>
+                {cl.blocked?"Entsperren":"Sperren"}
+              </button>
+              <button onClick={()=>deleteClub(cl.id)}
+                style={{padding:"5px 12px",borderRadius:8,border:"none",
+                  background:"#dc2626",color:"#fff",fontWeight:700,fontSize:11,
+                  cursor:"pointer",fontFamily:"inherit"}}>
+                Loeschen
+              </button>
+            </div>
+            {selClub?.id===cl.id&&(
+              <div style={{padding:"0 16px 14px",borderTop:"1px solid #0f172a"}}>
+                <div style={{fontSize:11,color:"#475569",marginTop:10,marginBottom:6}}>
+                  INTERNE NOTIZ
+                </div>
+                <textarea
+                  value={note||saData[cl.id]||""}
+                  onChange={e=>{
+                    setNote(e.target.value);
+                    const cur = saGet()||{};
+                    saSet({...cur, clubNotes:{...(cur.clubNotes||{}), [cl.id]:e.target.value}});
+                  }}
+                  placeholder="Notiz zu diesem Verein..."
+                  rows={2}
+                  style={{width:"100%",padding:"9px 12px",fontSize:12,background:"#0f172a",
+                    border:"1px solid #334155",borderRadius:9,color:"#94a3b8",
+                    outline:"none",resize:"none",fontFamily:"inherit",boxSizing:"border-box"}}
+                />
+              </div>
+            )}
+          </div>
+        );
+      })}
+      {filtered.length===0&&(
+        <p style={{color:"#475569",textAlign:"center",padding:"40px"}}>
+          {allClubs.length===0?"Noch keine Vereine registriert":"Keine Treffer"}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/* -----------------------------------------------------------------
+   SYSTEM NACHRICHTEN
+----------------------------------------------------------------- */
+function SuperAdminMessages({ data, allClubs }) {
+  const [msg, setMsg] = useState("");
+  const [target, setTarget] = useState("all");
+  const [sent, setSent] = useState(false);
+
+  const send = () => {
+    if(!msg.trim()) return;
+    const sysMsg = {
+      id: Math.random().toString(36).slice(2),
+      type: "system",
+      text: "[System] " + msg.trim(),
+      ts: Date.now(),
+      target,
+      sentAt: new Date().toISOString(),
+    };
+    const cur = saGet()||{};
+    saSet({...cur, messages:[...(cur.messages||[]),sysMsg]});
+    setSent(true);
+    setMsg("");
+    setTimeout(()=>setSent(false),2000);
+  };
+
+  const history = saGet()?.messages||[];
+
+  return (
+    <div>
+      <h2 style={{color:"#fff",fontWeight:900,fontSize:20,marginBottom:16}}>
+        System-Nachrichten
+      </h2>
+      <div style={{background:"#1e293b",borderRadius:14,padding:"16px",
+        border:"1px solid #334155",marginBottom:16}}>
+        <div style={{fontSize:11,fontWeight:700,color:"#64748b",marginBottom:10}}>
+          EMPFAENGER
+        </div>
+        <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
+          <button onClick={()=>setTarget("all")}
+            style={{padding:"7px 14px",borderRadius:9,border:`1.5px solid ${target==="all"?"#7c3aed":"#334155"}`,
+              background:target==="all"?"#7c3aed":"transparent",
+              color:target==="all"?"#fff":"#64748b",fontWeight:700,fontSize:12,
+              cursor:"pointer",fontFamily:"inherit"}}>
+            Alle Vereine ({allClubs.length})
+          </button>
+          {allClubs.map(cl=>(
+            <button key={cl.id} onClick={()=>setTarget(cl.id)}
+              style={{padding:"7px 14px",borderRadius:9,
+                border:`1.5px solid ${target===cl.id?"#7c3aed":"#334155"}`,
+                background:target===cl.id?"#7c3aed":"transparent",
+                color:target===cl.id?"#fff":"#64748b",fontWeight:600,fontSize:12,
+                cursor:"pointer",fontFamily:"inherit"}}>
+              {cl.name}
+            </button>
+          ))}
+        </div>
+        <textarea value={msg} onChange={e=>setMsg(e.target.value)}
+          placeholder="Systemnachricht eingeben... (erscheint im Posteingang der Vereine)"
+          rows={4}
+          style={{width:"100%",padding:"12px 14px",fontSize:14,background:"#0f172a",
+            border:"1px solid #334155",borderRadius:11,color:"#e2e8f0",outline:"none",
+            resize:"none",fontFamily:"inherit",marginBottom:12,boxSizing:"border-box"}}/>
+        <button onClick={send} disabled={!msg.trim()}
+          style={{width:"100%",padding:"12px",borderRadius:12,border:"none",
+            background:msg.trim()?"#7c3aed":"#334155",color:"#fff",
+            fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
+          {sent?"Gesendet!":"Nachricht senden"}
+        </button>
+      </div>
+      {/* Verlauf */}
+      {history.length>0&&(
+        <div>
+          <div style={{fontSize:11,fontWeight:700,color:"#64748b",marginBottom:10}}>
+            GESENDETE NACHRICHTEN
+          </div>
+          {history.slice().reverse().map(m=>(
+            <div key={m.id} style={{background:"#1e293b",borderRadius:11,
+              padding:"11px 14px",marginBottom:8,border:"1px solid #334155"}}>
+              <div style={{fontWeight:600,fontSize:13,color:"#e2e8f0"}}>{m.text}</div>
+              <div style={{fontSize:11,color:"#475569",marginTop:4}}>
+                {new Date(m.sentAt).toLocaleString("de-DE")} -
+                Empfaenger: {m.target==="all"?"Alle":m.target}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* -----------------------------------------------------------------
+   MODULE EIN/AUSSCHALTEN
+----------------------------------------------------------------- */
+function SuperAdminModules({ modules, setModule }) {
+  const [, forceUpdate] = useState(0);
+  const toggle = (key) => {
+    setModule(key, !modules[key].enabled);
+    forceUpdate(n=>n+1);
+  };
+  const cats = {
+    "Kern-Features": ["chat","helpers","jerseys","fields","training","results","attendance"],
+    "Community": ["news","directory","registration","multilang"],
+    "Monetarisierung": ["affiliate","marketing"],
+  };
+  return (
+    <div>
+      <h2 style={{color:"#fff",fontWeight:900,fontSize:20,marginBottom:8}}>Module</h2>
+      <p style={{fontSize:13,color:"#64748b",marginBottom:16}}>
+        Deaktivierte Module werden fuer alle Nutzer ausgeblendet.
+        Aenderungen gelten sofort beim naechsten Laden.
+      </p>
+      {Object.entries(cats).map(([catName, keys])=>(
+        <div key={catName} style={{marginBottom:20}}>
+          <div style={{fontSize:11,fontWeight:800,color:"#7c3aed",
+            marginBottom:10,letterSpacing:.5}}>
+            {catName.toUpperCase()}
+          </div>
+          {keys.map(key=>{
+            const mod = modules[key]||MODULE_DEFAULTS[key];
+            if(!mod) return null;
+            return (
+              <div key={key} style={{display:"flex",alignItems:"center",gap:12,
+                padding:"12px 14px",background:"#1e293b",borderRadius:12,
+                border:`1px solid ${mod.enabled?"#334155":"#dc2626"}`,
+                marginBottom:8}}>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:700,fontSize:14,
+                    color:mod.enabled?"#e2e8f0":"#475569"}}>
+                    {mod.label}
+                  </div>
+                  <div style={{fontSize:11,color:mod.enabled?"#64748b":"#dc2626",marginTop:2}}>
+                    {mod.enabled?"Aktiv":"Deaktiviert - fuer alle Nutzer unsichtbar"}
+                  </div>
+                </div>
+                <div onClick={()=>toggle(key)}
+                  style={{width:48,height:26,borderRadius:99,
+                    background:mod.enabled?"#7c3aed":"#334155",cursor:"pointer",
+                    position:"relative",transition:"background .2s",flexShrink:0}}>
+                  <div style={{position:"absolute",top:3,
+                    left:mod.enabled?24:3,width:20,height:20,borderRadius:"50%",
+                    background:"#fff",transition:"left .2s",
+                    boxShadow:"0 1px 4px rgba(0,0,0,.3)"}}/>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* -----------------------------------------------------------------
+   EINNAHMEN & MONETARISIERUNG
+----------------------------------------------------------------- */
+function SuperAdminRevenue({ analytics, affiliateClicks, shareClicks, nps }) {
+  const byPartner = affiliateClicks.reduce((acc,e)=>{
+    const p=e.detail||"unbekannt";
+    acc[p]=(acc[p]||0)+1;
+    return acc;
+  },{});
+  const RATES = {outfitter:0.05,sportscheck:0.04,supabase:0.10,teamwear:0.04};
+  const totalRevEst = Object.entries(byPartner).reduce((sum,[p,cnt])=>{
+    return sum + cnt*(RATES[p]||0.03);
+  },0);
+
+  return (
+    <div>
+      <h2 style={{color:"#fff",fontWeight:900,fontSize:20,marginBottom:16}}>
+        Einnahmen & Monetarisierung
+      </h2>
+      {/* Gesamt-Schaetzung */}
+      <div style={{background:"linear-gradient(135deg,#4c1d95,#7c3aed)",
+        borderRadius:16,padding:"20px",marginBottom:16}}>
+        <div style={{fontSize:11,fontWeight:800,color:"rgba(255,255,255,.6)",marginBottom:4}}>
+          GESCHAETZTE AFFILIATE-EINNAHMEN
+        </div>
+        <div style={{fontWeight:900,fontSize:36,color:"#fff",lineHeight:1}}>
+          EUR {totalRevEst.toFixed(2)}
+        </div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,.6)",marginTop:6}}>
+          Basierend auf {affiliateClicks.length} Klicks * durchschn. Provision
+        </div>
+      </div>
+      {/* Pro Partner */}
+      <div style={{background:"#1e293b",borderRadius:14,padding:"16px",
+        border:"1px solid #334155",marginBottom:16}}>
+        <div style={{fontSize:11,fontWeight:700,color:"#64748b",marginBottom:12}}>
+          KLICKS PRO PARTNER
+        </div>
+        {Object.entries(byPartner).length===0&&(
+          <p style={{color:"#475569",fontSize:13}}>Noch keine Affiliate-Klicks erfasst</p>
+        )}
+        {Object.entries(byPartner).map(([partner,cnt])=>(
+          <div key={partner} style={{display:"flex",alignItems:"center",gap:10,
+            marginBottom:10}}>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:700,fontSize:13,color:"#e2e8f0",
+                textTransform:"capitalize"}}>{partner}</div>
+              <div style={{height:6,background:"#0f172a",borderRadius:99,marginTop:4}}>
+                <div style={{height:"100%",background:"#7c3aed",borderRadius:99,
+                  width:`${Math.min(100,cnt*10)}%`}}/>
+              </div>
+            </div>
+            <div style={{fontWeight:800,fontSize:16,color:"#a78bfa",minWidth:30,
+              textAlign:"right"}}>{cnt}</div>
+          </div>
+        ))}
+      </div>
+      {/* NPS */}
+      <div style={{background:"#1e293b",borderRadius:14,padding:"16px",
+        border:"1px solid #334155",marginBottom:16}}>
+        <div style={{fontSize:11,fontWeight:700,color:"#64748b",marginBottom:10}}>
+          NET PROMOTER SCORE
+        </div>
+        {nps?(
+          <>
+            <div style={{fontWeight:900,fontSize:28,color:
+              nps.score>=9?"#16a34a":nps.score>=7?"#d97706":"#dc2626",lineHeight:1}}>
+              {nps.score}/10
+            </div>
+            {nps.reason&&<p style={{fontSize:13,color:"#94a3b8",marginTop:8,lineHeight:1.6}}>
+              "{nps.reason}"
+            </p>}
+          </>
+        ):(
+          <p style={{color:"#475569",fontSize:13}}>Noch kein NPS erfasst (erscheint nach 30 Tagen)</p>
+        )}
+      </div>
+      {/* Referral Stats */}
+      <div style={{background:"#1e293b",borderRadius:14,padding:"16px",
+        border:"1px solid #334155"}}>
+        <div style={{fontSize:11,fontWeight:700,color:"#64748b",marginBottom:10}}>
+          SHARE & REFERRAL
+        </div>
+        <div style={{fontWeight:900,fontSize:28,color:"#e2e8f0",lineHeight:1}}>
+          {shareClicks.length}
+        </div>
+        <div style={{fontSize:12,color:"#475569",marginTop:4}}>Mal geteilt</div>
+      </div>
+    </div>
+  );
+}
+
+/* -----------------------------------------------------------------
+   ANALYTICS
+----------------------------------------------------------------- */
+function SuperAdminAnalytics({ analytics, loginEvents, allClubs }) {
+  const eventTypes = analytics.reduce((acc,e)=>{
+    acc[e.type]=(acc[e.type]||0)+1; return acc;
+  },{});
+  const today = new Date().toISOString().slice(0,10);
+  const last30 = new Date(Date.now()-30*86400000).toISOString().slice(0,10);
+  const activeThisMonth = new Set(
+    analytics.filter(e=>e.date>=last30&&e.type==="login").map(e=>e.detail)
+  ).size;
+  return (
+    <div>
+      <h2 style={{color:"#fff",fontWeight:900,fontSize:20,marginBottom:16}}>
+        Analytics
+      </h2>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginBottom:16}}>
+        {[
+          ["Gesamt Events",analytics.length,"#7c3aed"],
+          ["Logins gesamt",loginEvents.length,"#2563eb"],
+          ["Aktiv (30 Tage)",activeThisMonth,"#16a34a"],
+          ["Heute",analytics.filter(e=>e.date===today).length,"#d97706"],
+        ].map(([l,v,col])=>(
+          <div key={l} style={{background:"#1e293b",borderRadius:13,padding:"14px",
+            border:"1px solid #334155",textAlign:"center"}}>
+            <div style={{fontWeight:900,fontSize:24,color:col}}>{v}</div>
+            <div style={{fontSize:11,color:"#475569",marginTop:3}}>{l}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{background:"#1e293b",borderRadius:14,padding:"16px",
+        border:"1px solid #334155"}}>
+        <div style={{fontSize:11,fontWeight:700,color:"#64748b",marginBottom:12}}>
+          EVENTS NACH TYP
+        </div>
+        {Object.entries(eventTypes).sort(([,a],[,b])=>b-a).map(([type,cnt])=>(
+          <div key={type} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+            <div style={{flex:1,fontSize:12,color:"#94a3b8"}}>{type}</div>
+            <div style={{height:5,background:"#0f172a",borderRadius:99,flex:2}}>
+              <div style={{height:"100%",background:"#7c3aed",borderRadius:99,
+                width:`${Math.min(100,cnt/Math.max(...Object.values(eventTypes))*100)}%`}}/>
+            </div>
+            <div style={{fontWeight:700,fontSize:12,color:"#a78bfa",minWidth:30,
+              textAlign:"right"}}>{cnt}</div>
+          </div>
+        ))}
+        {Object.keys(eventTypes).length===0&&(
+          <p style={{color:"#475569",fontSize:13}}>Noch keine Events erfasst</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* -----------------------------------------------------------------
+   SECURITY LOGS
+----------------------------------------------------------------- */
+function SuperAdminLogs({ data }) {
+  const logs = (data.securityLog||[]).slice().reverse().slice(0,50);
+  const suspicious = logs.filter(l=>["suspicious","brute_force","new_device"].includes(l.type));
+  return (
+    <div>
+      <h2 style={{color:"#fff",fontWeight:900,fontSize:20,marginBottom:16}}>
+        Sicherheits-Logs
+      </h2>
+      {suspicious.length>0&&(
+        <div style={{background:"#3b0000",borderRadius:13,padding:"12px 14px",
+          border:"1px solid #dc2626",marginBottom:16}}>
+          <div style={{fontWeight:800,fontSize:13,color:"#dc2626",marginBottom:8}}>
+            {suspicious.length} verdaechtige Aktivitaet(en)
+          </div>
+          {suspicious.slice(0,3).map(l=>(
+            <div key={l.id} style={{fontSize:12,color:"#f87171",marginBottom:4}}>
+              {new Date(l.ts).toLocaleString("de-DE")}: {l.detail}
+            </div>
+          ))}
+        </div>
+      )}
+      <div style={{display:"flex",flexDirection:"column",gap:7}}>
+        {logs.slice(0,30).map(l=>(
+          <div key={l.id} style={{background:"#1e293b",borderRadius:11,
+            padding:"10px 13px",border:"1px solid #334155",fontSize:12}}>
+            <div style={{color:"#e2e8f0",fontWeight:600}}>{l.detail}</div>
+            <div style={{color:"#475569",marginTop:3,display:"flex",gap:10}}>
+              <span>{new Date(l.ts).toLocaleString("de-DE")}</span>
+              <span>{l.type}</span>
+              <span>{l.name||""}</span>
+            </div>
+          </div>
+        ))}
+        {logs.length===0&&<p style={{color:"#475569",textAlign:"center",padding:"40px"}}>Keine Logs</p>}
+      </div>
+    </div>
+  );
+}
+
+/* -----------------------------------------------------------------
+   SUPER ADMIN EINSTELLUNGEN
+----------------------------------------------------------------- */
+function SuperAdminSettings() {
+  const [newPw, setNewPw] = useState("");
+  const [newPw2, setNewPw2] = useState("");
+  const [saved, setSaved] = useState("");
+  const [maintenance, setMaintenance] = useState(
+    localStorage.getItem("va_maintenance")==="1"
+  );
+
+  const changePw = () => {
+    if(newPw.length<6||newPw!==newPw2) return;
+    const cur = saGet()||{};
+    saSet({...cur, pwHash:hashPw(newPw)});
+    setSaved("Passwort geaendert"); setNewPw(""); setNewPw2("");
+    setTimeout(()=>setSaved(""),2000);
+  };
+
+  const toggleMaint = () => {
+    const next = !maintenance;
+    setMaintenance(next);
+    localStorage.setItem("va_maintenance", next?"1":"0");
+  };
+
+  const clearAnalytics = () => {
+    if(confirm("Alle Analytics-Daten loeschen?")) {
+      localStorage.removeItem("va_analytics");
+      alert("Geloescht");
+    }
+  };
+
+  return (
+    <div>
+      <h2 style={{color:"#fff",fontWeight:900,fontSize:20,marginBottom:16}}>
+        Einstellungen
+      </h2>
+      {/* Passwort aendern */}
+      <div style={{background:"#1e293b",borderRadius:14,padding:"16px",
+        border:"1px solid #334155",marginBottom:14}}>
+        <div style={{fontSize:13,fontWeight:700,color:"#94a3b8",marginBottom:12}}>
+          SUPER-ADMIN PASSWORT AENDERN
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          <input type="password" value={newPw} onChange={e=>setNewPw(e.target.value)}
+            placeholder="Neues Passwort (mind. 6 Zeichen)"
+            style={{padding:"11px 14px",fontSize:14,background:"#0f172a",
+              border:"1px solid #334155",borderRadius:11,color:"#fff",outline:"none"}}/>
+          <input type="password" value={newPw2} onChange={e=>setNewPw2(e.target.value)}
+            placeholder="Wiederholen"
+            style={{padding:"11px 14px",fontSize:14,background:"#0f172a",
+              border:"1px solid #334155",borderRadius:11,color:"#fff",outline:"none"}}/>
+          {saved&&<div style={{color:"#16a34a",fontSize:13,fontWeight:600}}>{saved}</div>}
+          <button onClick={changePw} disabled={newPw.length<6||newPw!==newPw2}
+            style={{padding:"11px",borderRadius:11,border:"none",
+              background:newPw.length>=6&&newPw===newPw2?"#7c3aed":"#334155",
+              color:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+            Passwort speichern
+          </button>
+        </div>
+      </div>
+      {/* Wartungsmodus */}
+      <div style={{background:"#1e293b",borderRadius:14,padding:"16px",
+        border:"1px solid #334155",marginBottom:14,display:"flex",alignItems:"center",gap:12}}>
+        <div style={{flex:1}}>
+          <div style={{fontWeight:700,fontSize:14,color:"#e2e8f0"}}>Wartungsmodus</div>
+          <div style={{fontSize:12,color:"#475569",marginTop:2}}>
+            App zeigt Wartungshinweis fuer alle Nutzer
+          </div>
+        </div>
+        <div onClick={toggleMaint} style={{width:48,height:26,borderRadius:99,
+          background:maintenance?"#dc2626":"#334155",cursor:"pointer",position:"relative"}}>
+          <div style={{position:"absolute",top:3,left:maintenance?24:3,width:20,height:20,
+            borderRadius:"50%",background:"#fff",transition:"left .2s"}}/>
+        </div>
+      </div>
+      {/* Analytics */}
+      <div style={{background:"#1e293b",borderRadius:14,padding:"16px",
+        border:"1px solid #334155"}}>
+        <div style={{fontWeight:700,fontSize:14,color:"#e2e8f0",marginBottom:8}}>
+          Analytics-Daten
+        </div>
+        <button onClick={clearAnalytics}
+          style={{padding:"9px 16px",borderRadius:10,border:"none",
+            background:"#dc2626",color:"#fff",fontWeight:700,fontSize:13,
+            cursor:"pointer",fontFamily:"inherit"}}>
+          Analytics zuruecksetzen
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* -----------------------------------------------------------------
+   SUPER ADMIN ROOT - Entry Point
+----------------------------------------------------------------- */
+function SuperAdmin({ data }) {
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [tapCount, setTapCount] = useState(0);
+
+  if(!loggedIn) return <SuperAdminLogin onLogin={()=>setLoggedIn(true)}/>;
+  return <SuperAdminDashboard data={data} onExit={()=>setLoggedIn(false)}/>;
+}
+
+
+
+/* =================================================================
+   CHAT MODERATION SYSTEM
+   - Lokale Regel-Engine (kein API-Call noetig)
+   - Karten-System: Verwarnung -> Gelb -> Rot
+   - Nur Super-Admin kann sperren aufheben
+================================================================= */
+
+const MOD_KEY = "va_moderation";
+
+// Muster-Listen fuer Erkennung
+const MOD_PATTERNS = {
+  werbung: {
+    label: "Werbung / Spam",
+    col: "#d97706",
+    icon: "W",
+    patterns: [
+      /\b(kaufen|bestellen|angebot|rabatt|sale|shop|preis|euro|eur|\$||gratis|kostenlos|click|klick|jetzt kaufen|limited|sonderangebot|gutschein|discount|prozent|%off)\b/i,
+      /https?:\/\/(?!wa\.me|mailto)[^\s]+/gi,      // URLs (ausser WA/mailto)
+      /www\.[a-z0-9-]+\.[a-z]{2,}/gi,              // www.xxx.de
+      /\b\d+[.,]\d+\s*(eur|euro|\$|gbp)\b/i,       // Preisangaben
+      /\b(verdiene|verdienen|nebenverdienst|heimarbeit|mlm|network marketing)\b/i,
+    ],
+    weight: 2,
+  },
+  illegal: {
+    label: "Illegaler Inhalt",
+    col: "#dc2626",
+    icon: "!",
+    patterns: [
+      /\b(weed|gras|koka|heroin|mdma|speed|crystal|drogen|stoff|dealer|deal)\b/i,
+      /\b(waffe|pistole|gewehr|messer stechen|bomben|sprengen|angriff)\b/i,
+      /\b(fick|schei.e|wichser|hurensohn|miststuck|arschloch|bastard|idiot)\b/i,
+      /\b(heil hitler|nazi|fascist|rassist|nigg|kanack)\b/i,
+      /\b(betrug|phishing|passwort schicken|bankdaten|kreditkarte)\b/i,
+      /\b(ich bring dich|ich kill|du bist tot|mach dich fertig|ich warte auf dich)\b/i,
+    ],
+    weight: 5,
+  },
+  spam: {
+    label: "Spam",
+    col: "#7c3aed",
+    icon: "S",
+    patterns: [
+      /(.)\1{8,}/,                                  // aaaaaaaaaa
+      /[\!\?\.\,]{5,}/,                             // !!!!!!
+    ],
+    weight: 1,
+  },
+  kontaktfishing: {
+    label: "Kontaktdaten-Fishing",
+    col: "#0891b2",
+    icon: "K",
+    patterns: [
+      /\b\+?[\d\s\-]{10,15}\b/,                    // Telefonnummern
+      /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i,   // E-Mail-Adressen
+      /\b(telegram|signal|snapchat|discord|tiktok)[\s:@]?[\w.]+/i,
+    ],
+    weight: 2,
+  },
+};
+
+// Nachricht analysieren
+const analyzeMessage = (text) => {
+  if(!text || text.length < 3) return null;
+  let highestWeight = 0;
+  let detected = null;
+  let matchedText = "";
+
+  for(const [type, cfg] of Object.entries(MOD_PATTERNS)) {
+    for(const pattern of cfg.patterns) {
+      const match = text.match(pattern);
+      if(match) {
+        if(cfg.weight > highestWeight) {
+          highestWeight = cfg.weight;
+          detected = { type, ...cfg };
+          matchedText = match[0]?.slice(0,40)||"";
+        }
+      }
+    }
+  }
+  return detected ? { ...detected, matchedText, score: highestWeight } : null;
+};
+
+// Moderation State verwalten
+const modGet = () => { try { return JSON.parse(localStorage.getItem(MOD_KEY)||"{}"); } catch { return {}; } };
+const modSet = (d) => { try { localStorage.setItem(MOD_KEY, JSON.stringify(d)); } catch {} };
+
+const getModState = (userId, cid) => {
+  const key = `${cid}_${userId}`;
+  const mod = modGet();
+  return mod[key] || { warnings:0, yellowCards:0, redCard:false, blocked:false, blockedUntil:null, violations:[] };
+};
+
+const recordViolation = (userId, userName, cid, violation, msgText) => {
+  const key = `${cid}_${userId}`;
+  const mod = modGet();
+  const state = mod[key] || { warnings:0, yellowCards:0, redCard:false, blocked:false, blockedUntil:null, violations:[] };
+
+  const entry = {
+    ts: Date.now(),
+    type: violation.type,
+    label: violation.label,
+    msgText: msgText.slice(0,100),
+    matched: violation.matchedText,
+  };
+  state.violations = [...(state.violations||[]), entry];
+  state.warnings = (state.warnings||0) + 1;
+  state.userName = userName;
+  state.userId = userId;
+  state.cid = cid;
+
+  // Karten-System
+  let card = "warning";
+  if(state.warnings >= 5 || violation.score >= 5) {
+    state.redCard = true;
+    state.blocked = true;
+    state.blockedUntil = null; // permanent bis Super-Admin freischaltet
+    card = "red";
+  } else if(state.warnings >= 3) {
+    state.yellowCards = (state.yellowCards||0) + 1;
+    state.blocked = true;
+    state.blockedUntil = Date.now() + 24*60*60*1000; // 24h
+    card = "yellow";
+  }
+
+  mod[key] = state;
+  modSet(mod);
+  return { card, state };
+};
+
+const isBlocked = (userId, cid) => {
+  const state = getModState(userId, cid);
+  if(!state.blocked) return false;
+  if(state.blockedUntil && Date.now() > state.blockedUntil) {
+    // Zeit abgelaufen - entsperren
+    const key = `${cid}_${userId}`;
+    const mod = modGet();
+    mod[key] = {...state, blocked:false, blockedUntil:null};
+    modSet(mod);
+    return false;
+  }
+  return true;
+};
+
+/* -----------------------------------------------------------------
+   MODERATION FEEDBACK fuer den Nutzer
+----------------------------------------------------------------- */
+function ModerationWarning({ card, violation, onClose }) {
+  const configs = {
+    warning: {
+      title: "Nachricht nicht erlaubt",
+      col: "#d97706", bg: "#fef3c7",
+      icon: "!",
+      msg: `Deine Nachricht wurde blockiert: ${violation?.label||"Regelverstos"}. Bitte beachte die Nutzungsregeln.`,
+      sub: "Noch 2 Verwarnungen bis zur Sperre.",
+    },
+    yellow: {
+      title: "Gelbe Karte - 24h Sperre",
+      col: "#d97706", bg: "#fef3c7",
+      icon: "GK",
+      msg: "Du hast mehrfach gegen die Nutzungsregeln verstosen. Dein Chat-Zugang ist fuer 24 Stunden gesperrt.",
+      sub: "Bei weiteren Verstoessen wird dein Zugang permanent gesperrt.",
+    },
+    red: {
+      title: "Rote Karte - Permanent gesperrt",
+      col: "#dc2626", bg: "#fef2f2",
+      icon: "RK",
+      msg: "Dein Chat-Zugang wurde permanent gesperrt. Nur der Administrator kann den Zugang wieder freischalten.",
+      sub: "Wende dich an deinen Trainer oder Vereinsadmin.",
+    },
+  };
+  const cfg = configs[card]||configs.warning;
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",zIndex:950,
+      display:"flex",alignItems:"center",justifyContent:"center",padding:20,
+      backdropFilter:"blur(6px)"}}>
+      <div style={{background:cfg.bg,borderRadius:20,padding:"24px",
+        width:"100%",maxWidth:360,border:`2px solid ${cfg.col}`}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
+          <div style={{width:52,height:52,borderRadius:14,background:cfg.col,
+            display:"flex",alignItems:"center",justifyContent:"center",
+            fontWeight:900,fontSize:18,color:"#fff",flexShrink:0}}>
+            {cfg.icon}
+          </div>
+          <div style={{fontWeight:900,fontSize:17,color:cfg.col}}>{cfg.title}</div>
+        </div>
+        <p style={{fontSize:13,color:"#475569",lineHeight:1.6,marginBottom:8}}>{cfg.msg}</p>
+        <p style={{fontSize:12,color:"#94a3b8",marginBottom:16}}>{cfg.sub}</p>
+        <button onClick={onClose}
+          style={{width:"100%",padding:"12px",borderRadius:12,border:"none",
+            background:cfg.col,color:"#fff",fontWeight:800,fontSize:14,
+            cursor:"pointer",fontFamily:"inherit"}}>
+          Verstanden
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* -----------------------------------------------------------------
+   MODERATION PANEL im Super-Admin
+----------------------------------------------------------------- */
+function SuperAdminModeration() {
+  const [, forceUpdate] = useState(0);
+  const mod = modGet();
+  const entries = Object.entries(mod)
+    .filter(([,v])=>v.violations&&v.violations.length>0)
+    .sort(([,a],[,b])=>
+      (b.violations[b.violations.length-1]?.ts||0) -
+      (a.violations[a.violations.length-1]?.ts||0)
+    );
+
+  const unblock = (key) => {
+    const cur = modGet();
+    if(cur[key]) {
+      cur[key] = {...cur[key], blocked:false, redCard:false,
+        yellowCards:0, warnings:0, blockedUntil:null};
+      modSet(cur);
+      forceUpdate(n=>n+1);
+    }
+  };
+
+  const dismiss = (key) => {
+    const cur = modGet();
+    delete cur[key];
+    modSet(cur);
+    forceUpdate(n=>n+1);
+  };
+
+  const blocked = entries.filter(([,v])=>v.blocked);
+  const flagged = entries.filter(([,v])=>!v.blocked);
+
+  return (
+    <div>
+      <h2 style={{color:"#fff",fontWeight:900,fontSize:20,marginBottom:8}}>
+        Chat-Moderation
+      </h2>
+      <p style={{fontSize:13,color:"#64748b",marginBottom:16,lineHeight:1.5}}>
+        KI-gestuetzte Erkennung von Werbung, illegalen Inhalten und Spam.
+        Nur du kannst gesperrte Nutzer freischalten.
+      </p>
+
+      {/* Stats */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:16}}>
+        {[
+          [blocked.length,"Gesperrt","#dc2626"],
+          [flagged.length,"Verwarnt","#d97706"],
+          [entries.reduce((s,[,v])=>s+(v.violations?.length||0),0),"Verstoesze","#7c3aed"],
+        ].map(([v,l,col])=>(
+          <div key={l} style={{background:"#1e293b",borderRadius:13,padding:"12px",
+            textAlign:"center",border:"1px solid #334155"}}>
+            <div style={{fontWeight:900,fontSize:24,color:col}}>{v}</div>
+            <div style={{fontSize:10,color:"#475569",marginTop:3}}>{l}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Gesperrte Nutzer */}
+      {blocked.length>0&&(
+        <>
+          <div style={{fontSize:11,fontWeight:800,color:"#dc2626",marginBottom:10,letterSpacing:.5}}>
+            GESPERRT
+          </div>
+          {blocked.map(([key,state])=>(
+            <div key={key} style={{background:"#1e293b",borderRadius:13,
+              border:"1px solid #dc2626",padding:"13px 14px",marginBottom:9}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+                <div style={{width:36,height:36,borderRadius:10,
+                  background:state.redCard?"#dc2626":"#d97706",
+                  display:"flex",alignItems:"center",justifyContent:"center",
+                  fontWeight:900,fontSize:14,color:"#fff",flexShrink:0}}>
+                  {state.redCard?"RK":"GK"}
+                </div>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:700,fontSize:14,color:"#e2e8f0"}}>
+                    {state.userName||"Unbekannt"}
+                  </div>
+                  <div style={{fontSize:11,color:"#64748b"}}>
+                    {state.warnings} Verstoesze - {state.redCard?"Permanent":"24h Sperre"}
+                  </div>
+                </div>
+                <button onClick={()=>unblock(key)}
+                  style={{padding:"6px 12px",borderRadius:9,border:"none",
+                    background:"#16a34a",color:"#fff",fontWeight:700,fontSize:12,
+                    cursor:"pointer",fontFamily:"inherit"}}>
+                  Freischalten
+                </button>
+              </div>
+              {/* Letzte Verst. */}
+              {(state.violations||[]).slice(-2).map((v,i)=>(
+                <div key={i} style={{background:"#0f172a",borderRadius:9,
+                  padding:"8px 10px",marginBottom:5,fontSize:11}}>
+                  <span style={{color:"#dc2626",fontWeight:700}}>{v.label}</span>
+                  <span style={{color:"#475569",marginLeft:8}}>
+                    "{v.msgText?.slice(0,50)}"
+                  </span>
+                  <span style={{color:"#334155",marginLeft:8}}>
+                    {new Date(v.ts).toLocaleString("de-DE")}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ))}
+        </>
+      )}
+
+      {/* Verwarnungen */}
+      {flagged.length>0&&(
+        <>
+          <div style={{fontSize:11,fontWeight:800,color:"#d97706",
+            marginBottom:10,marginTop:16,letterSpacing:.5}}>
+            VERWARNUNGEN
+          </div>
+          {flagged.map(([key,state])=>(
+            <div key={key} style={{background:"#1e293b",borderRadius:13,
+              border:"1px solid #334155",padding:"12px 14px",marginBottom:8}}>
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <div style={{width:34,height:34,borderRadius:10,background:"#d97706",
+                  display:"flex",alignItems:"center",justifyContent:"center",
+                  fontWeight:900,fontSize:12,color:"#fff",flexShrink:0}}>
+                  {state.warnings}
+                </div>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:700,fontSize:13,color:"#e2e8f0"}}>
+                    {state.userName||"Unbekannt"}
+                  </div>
+                  <div style={{fontSize:11,color:"#64748b"}}>
+                    {state.warnings} Verwarnung(en) - {3-state.warnings} bis Gelbe Karte
+                  </div>
+                </div>
+                <button onClick={()=>dismiss(key)}
+                  style={{padding:"5px 10px",borderRadius:8,border:"1px solid #334155",
+                    background:"transparent",color:"#64748b",fontWeight:600,
+                    fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>
+                  Zuruecksetzen
+                </button>
+              </div>
+            </div>
+          ))}
+        </>
+      )}
+
+      {entries.length===0&&(
+        <div style={{textAlign:"center",padding:"40px",background:"#1e293b",
+          borderRadius:14,border:"1px solid #334155"}}>
+          <p style={{color:"#475569",margin:0}}>Keine Moderations-Ereignisse</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+
+/* =================================================================
+   SUPER-ADMIN ROLLOUT & FEATURE-FLAG SYSTEM
+   50+ granulare Einstellungen in 10 Kategorien
+   5 vordefinierte Meilenstein-Phasen
+================================================================= */
+
+const FEATURES_KEY = "va_features";
+
+// Vollstaendige Feature-Flag Datenbank
+const FEATURE_REGISTRY = [
+
+  //  KERN 
+  { id:"dir_public",      cat:"kern",      phase:1, risk:"low",
+    label:"Oeffentliches Verzeichnis",
+    desc:"Vereine koennen im Verzeichnis gefunden werden",
+    affects:"all", default:true, deps:[] },
+  { id:"club_register",   cat:"kern",      phase:1, risk:"low",
+    label:"Neue Vereine anlegen",
+    desc:"Jeder kann einen neuen Verein registrieren",
+    affects:"all", default:true, deps:[] },
+  { id:"demo_access",     cat:"kern",      phase:1, risk:"low",
+    label:"Demo-Verein sichtbar",
+    desc:"Demo-Verein erscheint im Verzeichnis fuer neue Nutzer",
+    affects:"all", default:true, deps:[] },
+  { id:"helper_login",    cat:"kern",      phase:2, risk:"low",
+    label:"Helfer-Zugang",
+    desc:"Helfer koennen sich mit Code einloggen",
+    affects:"helper", default:true, deps:[] },
+  { id:"lang_switcher",   cat:"kern",      phase:3, risk:"low",
+    label:"Sprachwechsler",
+    desc:"Nutzer koennen Sprache aendern (DE/EN/NL/AR/TR)",
+    affects:"all", default:true, deps:[] },
+
+  //  TERMINE 
+  { id:"events_create",   cat:"termine",   phase:1, risk:"low",
+    label:"Termine erstellen",
+    desc:"Trainer koennen neue Termine anlegen",
+    affects:"trainer", default:true, deps:[] },
+  { id:"events_vote",     cat:"termine",   phase:1, risk:"low",
+    label:"Abstimmung (Dabei/Nicht dabei)",
+    desc:"Eltern und Trainer koennen bei Terminen abstimmen",
+    affects:"all", default:true, deps:["events_create"] },
+  { id:"events_late",     cat:"termine",   phase:1, risk:"low",
+    label:"Verspaetungs-Meldung",
+    desc:"Nutzer koennen angeben wie spaet sie kommen",
+    affects:"all", default:true, deps:["events_vote"] },
+  { id:"events_reason",   cat:"termine",   phase:1, risk:"low",
+    label:"Abwesenheits-Grund",
+    desc:"Bei Absage kann Grund angegeben werden (Krank, Urlaub...)",
+    affects:"all", default:true, deps:["events_vote"] },
+  { id:"events_series",   cat:"termine",   phase:2, risk:"medium",
+    label:"Serientermine",
+    desc:"Trainer koennen wiederkehrende Termine anlegen",
+    affects:"trainer", default:true, deps:["events_create"] },
+  { id:"events_fieldbook",cat:"termine",   phase:3, risk:"medium",
+    label:"Platzbuchung bei Termin",
+    desc:"Beim Anlegen eines Termins wird automatisch ein Platz gebucht",
+    affects:"trainer", default:true, deps:["events_create","fields_booking"] },
+  { id:"events_conflict", cat:"termine",   phase:3, risk:"low",
+    label:"Konflikt-Warnungen",
+    desc:"Warnung wenn Platz doppelt gebucht",
+    affects:"trainer", default:true, deps:["events_fieldbook"] },
+
+  //  TEAM 
+  { id:"players_list",    cat:"team",      phase:1, risk:"low",
+    label:"Spielerliste",
+    desc:"Trainer sehen alle Spieler ihres Teams",
+    affects:"trainer", default:true, deps:[] },
+  { id:"players_profiles",cat:"team",      phase:2, risk:"medium",
+    label:"Spieler-Profile",
+    desc:"Detaillierte Spieler-Daten (Position, Jahrgang, Fuss...)",
+    affects:"trainer", default:true, deps:["players_list"] },
+  { id:"players_stats",   cat:"team",      phase:4, risk:"low",
+    label:"Spieler-Statistiken",
+    desc:"Tore, Karten, Anwesenheits-Quote im Profil",
+    affects:"trainer", default:true, deps:["players_profiles"] },
+  { id:"players_parents", cat:"team",      phase:2, risk:"medium",
+    label:"Spielerliste fuer Eltern",
+    desc:"Eltern sehen andere Kinder im Team",
+    affects:"user", default:true, deps:["players_list"] },
+  { id:"attendance_tab",  cat:"team",      phase:1, risk:"low",
+    label:"Anwesenheits-Tab",
+    desc:"Trainer sehen Anwesenheits-Statistiken",
+    affects:"trainer", default:true, deps:[] },
+  { id:"attendance_csv",  cat:"team",      phase:3, risk:"low",
+    label:"CSV-Export Anwesenheit",
+    desc:"Export als Excel-kompatible Datei",
+    affects:"trainer", default:true, deps:["attendance_tab"] },
+  { id:"results_tab",     cat:"team",      phase:2, risk:"low",
+    label:"Ergebnisse & Tabelle",
+    desc:"Spielergebnisse eintragen und Saisontabelle",
+    affects:"trainer", default:true, deps:[] },
+  { id:"jerseys_tab",     cat:"team",      phase:3, risk:"low",
+    label:"Trikot-Verwaltung",
+    desc:"Trikot-Nummern und -Zuteilung",
+    affects:"trainer", default:true, deps:[] },
+
+  //  KOMMUNIKATION 
+  { id:"chat_team",       cat:"komm",      phase:1, risk:"medium",
+    label:"Team-Chat",
+    desc:"Chat innerhalb des Teams zwischen Trainer und Eltern",
+    affects:"all", default:true, deps:[] },
+  { id:"chat_club",       cat:"komm",      phase:2, risk:"medium",
+    label:"Vereins-Chat",
+    desc:"Uebergreifender Chat fuer alle Teams eines Vereins",
+    affects:"all", default:true, deps:["chat_team"] },
+  { id:"chat_parents",    cat:"komm",      phase:3, risk:"high",
+    label:"Eltern duerfen schreiben",
+    desc:"Eltern koennen im Chat Nachrichten senden (nicht nur lesen)",
+    affects:"user", default:false, deps:["chat_team"] },
+  { id:"chat_moderation", cat:"komm",      phase:1, risk:"low",
+    label:"Chat-Moderation (KI)",
+    desc:"Automatische Erkennung von Werbung und illegalen Inhalten",
+    affects:"all", default:true, deps:["chat_team"] },
+  { id:"news_board",      cat:"komm",      phase:2, risk:"low",
+    label:"Schwarzes Brett",
+    desc:"Admin kann Vereinsnews fuer alle veroeffentlichen",
+    affects:"admin", default:true, deps:[] },
+  { id:"broadcast_msg",   cat:"komm",      phase:2, risk:"medium",
+    label:"Rundschreiben an Trainer",
+    desc:"Admin kann Massennachricht an alle Trainer senden",
+    affects:"admin", default:true, deps:[] },
+  { id:"invite_sheet",    cat:"komm",      phase:1, risk:"low",
+    label:"Einladungs-Zettel",
+    desc:"Admin kann Einladungs-Text mit Code generieren",
+    affects:"admin", default:true, deps:[] },
+  { id:"pw_forgot",       cat:"komm",      phase:1, risk:"low",
+    label:"Passwort vergessen",
+    desc:"Nutzer koennen Passwort-Reset anfordern",
+    affects:"all", default:true, deps:[] },
+  { id:"contact_wa",      cat:"komm",      phase:2, risk:"low",
+    label:"WhatsApp-Kontakt Button",
+    desc:"Trainer-Kontakt via WhatsApp-Deeplink",
+    affects:"all", default:true, deps:[] },
+
+  //  PLAETZE 
+  { id:"fields_manager",  cat:"plaetze",   phase:3, risk:"low",
+    label:"Felder-Verwaltung (Admin)",
+    desc:"Admin kann Felder mit Vorlagen anlegen",
+    affects:"admin", default:true, deps:[] },
+  { id:"fields_booking",  cat:"plaetze",   phase:3, risk:"medium",
+    label:"Platzbuchung (Trainer)",
+    desc:"Trainer koennen Felder reservieren",
+    affects:"trainer", default:true, deps:["fields_manager"] },
+  { id:"fields_weather",  cat:"plaetze",   phase:4, risk:"low",
+    label:"Wetter-Flags",
+    desc:"Gutwetter/Schlechtwetter Unterscheidung bei Feldern",
+    affects:"trainer", default:true, deps:["fields_manager"] },
+
+  //  TRAINING 
+  { id:"training_plans",  cat:"training",  phase:4, risk:"low",
+    label:"Trainingsplaene erstellen",
+    desc:"Trainer koennen eigene Trainingsplaene anlegen",
+    affects:"trainer", default:true, deps:[] },
+  { id:"training_library",cat:"training",  phase:4, risk:"low",
+    label:"Vorlagen-Bibliothek",
+    desc:"27+ professionelle Uebungsvorlagen mit Coaching-Hinweisen",
+    affects:"trainer", default:true, deps:["training_plans"] },
+  { id:"training_inventory",cat:"training",phase:4, risk:"low",
+    label:"Inventar-Liste",
+    desc:"Automatische Material-Liste vor dem Training",
+    affects:"trainer", default:true, deps:["training_plans"] },
+  { id:"training_fieldplan",cat:"training",phase:4, risk:"low",
+    label:"Platz-Visualisierung",
+    desc:"SVG-Grafik zeigt Uebungszonen auf dem Feld",
+    affects:"trainer", default:true, deps:["training_plans"] },
+  { id:"training_checker",cat:"training",  phase:4, risk:"low",
+    label:"Trainer-Checkin beim Training",
+    desc:"Trainer kann sich beim Termin als anwesend markieren",
+    affects:"trainer", default:true, deps:[] },
+  { id:"trainer_stats",   cat:"training",  phase:4, risk:"low",
+    label:"Trainer-Anwesenheits-Statistik",
+    desc:"Auswertung wie oft jeder Trainer da war",
+    affects:"admin", default:true, deps:["training_checker"] },
+
+  //  SICHERHEIT 
+  { id:"bruteforce_prot", cat:"sicherheit",phase:1, risk:"low",
+    label:"Brute-Force Schutz",
+    desc:"Nach 3 Fehlversuchen 5 Min Sperre",
+    affects:"all", default:true, deps:[] },
+  { id:"audit_log",       cat:"sicherheit",phase:1, risk:"low",
+    label:"Audit-Log",
+    desc:"Alle Logins und Aenderungen werden protokolliert",
+    affects:"admin", default:true, deps:[] },
+  { id:"device_track",    cat:"sicherheit",phase:2, risk:"medium",
+    label:"Geraete-Erkennung",
+    desc:"Neue Geraete werden im Sicherheitslog markiert",
+    affects:"admin", default:true, deps:["audit_log"] },
+  { id:"region_warn",     cat:"sicherheit",phase:2, risk:"low",
+    label:"Auslands-Warnung",
+    desc:"Login aus unbekannter Region wird geflaggt",
+    affects:"admin", default:true, deps:["audit_log"] },
+  { id:"access_manager",  cat:"sicherheit",phase:2, risk:"medium",
+    label:"Zugaenge-Verwaltung",
+    desc:"Admin kann alle Passwoerter aendern und Zugaenge sperren",
+    affects:"admin", default:true, deps:[] },
+
+  //  MARKETING 
+  { id:"affiliate_banner",cat:"marketing", phase:5, risk:"low",
+    label:"Affiliate-Banner",
+    desc:"Werbebanner fuer Sportausruestung (Einnahmen fuer dich)",
+    affects:"all", default:false, deps:[] },
+  { id:"nps_survey",      cat:"marketing", phase:3, risk:"low",
+    label:"NPS-Umfrage",
+    desc:"Nach 30 Tagen Zufriedenheits-Abfrage (0-10)",
+    affects:"trainer", default:true, deps:[] },
+  { id:"moment_share",    cat:"marketing", phase:3, risk:"low",
+    label:"Teilen-Funktion",
+    desc:"Trainer koennen die App weiterempfehlen",
+    affects:"trainer", default:true, deps:[] },
+  { id:"achievements",    cat:"marketing", phase:4, risk:"low",
+    label:"Achievements / Meilensteine",
+    desc:"Kleine Erfolgs-Toasts beim Erreichen von Zielen",
+    affects:"trainer", default:true, deps:[] },
+  { id:"powered_by",      cat:"marketing", phase:2, risk:"low",
+    label:"'Powered by Vereins-App' Link",
+    desc:"Kleiner Link in der Eltern-Ansicht",
+    affects:"user", default:true, deps:[] },
+
+  //  UI/UX 
+  { id:"dark_mode",       cat:"uiux",      phase:1, risk:"low",
+    label:"Dark Mode",
+    desc:"Nutzer koennen zwischen Hell, Dunkel und Auto waehlen",
+    affects:"all", default:true, deps:[] },
+  { id:"font_size",       cat:"uiux",      phase:1, risk:"low",
+    label:"Schriftgroesse-Einstellung",
+    desc:"Klein, Normal oder Gross fuer bessere Lesbarkeit",
+    affects:"all", default:true, deps:[] },
+  { id:"animations",      cat:"uiux",      phase:1, risk:"low",
+    label:"Animationen",
+    desc:"Ein-/Ausblende-Animationen und Uebergaenge",
+    affects:"all", default:true, deps:[] },
+  { id:"accessibility_bar",cat:"uiux",     phase:1, risk:"low",
+    label:"Schrift-Button vor Login",
+    desc:"A/A/A Schriftgroesse-Schalter auf Login-Seite",
+    affects:"all", default:true, deps:["font_size"] },
+
+  //  DATENSCHUTZ 
+  { id:"dsgvo_consent",   cat:"datenschutz",phase:1, risk:"high",
+    label:"DSGVO Einwilligungs-System",
+    desc:"Einwilligung vor Fotos und sensiblen Daten",
+    affects:"all", default:true, deps:[] },
+  { id:"photo_upload",    cat:"datenschutz",phase:3, risk:"high",
+    label:"Mannschafts-Fotos",
+    desc:"Teams koennen Gruppenfotos hochladen (nur mit Einwilligung)",
+    affects:"trainer", default:true, deps:["dsgvo_consent"] },
+  { id:"dsgvo_delete",    cat:"datenschutz",phase:1, risk:"low",
+    label:"DSGVO-Loeschung",
+    desc:"Spielerdaten koennen auf Anfrage geloescht werden",
+    affects:"admin", default:true, deps:[] },
+];
+
+const MILESTONES = [
+  {
+    phase: 1,
+    name: "Beta Kern",
+    icon: "1",
+    col: "#16a34a",
+    desc: "Grundfunktionen: Termine, Abstimmung, Chat, Sicherheit",
+    goal: "Erste echte Teams onboarden und Feedback sammeln",
+  },
+  {
+    phase: 2,
+    name: "Kommunikation",
+    icon: "2",
+    col: "#2563eb",
+    desc: "Passwort-Reset, Einladungen, News, Zugaenge-Verwaltung",
+    goal: "Selbststaendiges Nutzer-Management ohne Admin-Eingriffe",
+  },
+  {
+    phase: 3,
+    name: "Verwaltung",
+    icon: "3",
+    col: "#7c3aed",
+    desc: "Trikots, Helfer, Platzbuchung, CSV-Export",
+    goal: "Vollstaendige Vereins-Verwaltung aus einer App",
+  },
+  {
+    phase: 4,
+    name: "Trainer-Tools",
+    icon: "4",
+    col: "#d97706",
+    desc: "Trainingsplaene, Vorlagen, Statistiken, Feldplan",
+    goal: "Professionelle Trainer-Unterstuetzung und Auswertungen",
+  },
+  {
+    phase: 5,
+    name: "Full Release",
+    icon: "5",
+    col: "#dc2626",
+    desc: "Alle Features aktiv, Affiliate, Marketing",
+    goal: "Oeffentlicher Launch mit allen Funktionen",
+  },
+];
+
+// Feature-Flag lesen
+const FEAT_KEY = "va_features_v1";
+const getFeat = (id) => {
+  try {
+    const stored = JSON.parse(localStorage.getItem(FEAT_KEY)||"{}");
+    if(stored.hasOwnProperty(id)) return stored[id];
+    return FEATURE_REGISTRY.find(f=>f.id===id)?.default ?? true;
+  } catch { return true; }
+};
+const setFeat = (id, val) => {
+  try {
+    const stored = JSON.parse(localStorage.getItem(FEAT_KEY)||"{}");
+    stored[id] = val;
+    localStorage.setItem(FEAT_KEY, JSON.stringify(stored));
+  } catch {}
+};
+const setAllPhase = (phase) => {
+  try {
+    const stored = JSON.parse(localStorage.getItem(FEAT_KEY)||"{}");
+    FEATURE_REGISTRY.forEach(f => {
+      stored[f.id] = f.phase <= phase;
+    });
+    localStorage.setItem(FEAT_KEY, JSON.stringify(stored));
+  } catch {}
+};
+// Check if feature active (use everywhere in app)
+const feat = (id) => getFeat(id);
+
+/* -----------------------------------------------------------------
+   ROLLOUT MANAGER COMPONENT (im Super-Admin)
+----------------------------------------------------------------- */
+function SuperAdminRollout() {
+  const [, forceUpdate] = useState(0);
+  const [catFilter, setCatFilter] = useState("all");
+  const [phaseFilter, setPhaseFilter] = useState("all");
+  const [search, setSearch] = useState("");
+  const [showMilestoneModal, setShowMilestoneModal] = useState(false);
+
+  const stored = (() => {
+    try { return JSON.parse(localStorage.getItem(FEAT_KEY)||"{}"); } catch { return {}; }
+  })();
+
+  const toggle = (id, deps=[]) => {
+    const cur = getFeat(id);
+    // Wenn deaktiviert: pruefen ob andere Features abhaengen
+    if(cur) {
+      const dependents = FEATURE_REGISTRY.filter(f=>f.deps.includes(id)&&getFeat(f.id));
+      if(dependents.length>0) {
+        if(!confirm(`Achtung: ${dependents.map(f=>f.label).join(", ")} haengen davon ab. Trotzdem deaktivieren?`)) return;
+        dependents.forEach(f=>setFeat(f.id,false));
+      }
+    }
+    // Wenn aktiviert: Abhaengigkeiten pruefen
+    if(!cur && deps.length>0) {
+      const missing = deps.filter(d=>!getFeat(d));
+      if(missing.length>0) {
+        const missingLabels = missing.map(d=>FEATURE_REGISTRY.find(f=>f.id===d)?.label||d);
+        if(!confirm(`Benoetigt: ${missingLabels.join(", ")}. Diese auch aktivieren?`)) return;
+        missing.forEach(d=>setFeat(d,true));
+      }
+    }
+    setFeat(id, !cur);
+    forceUpdate(n=>n+1);
+  };
+
+  const activatePhase = (phase) => {
+    setAllPhase(phase);
+    forceUpdate(n=>n+1);
+    setShowMilestoneModal(false);
+  };
+
+  const CATS = [
+    {id:"all",        label:"Alle"},
+    {id:"kern",       label:"Kern",          col:"#334155"},
+    {id:"termine",    label:"Termine",       col:"#16a34a"},
+    {id:"team",       label:"Team",          col:"#2563eb"},
+    {id:"komm",       label:"Kommunikation", col:"#7c3aed"},
+    {id:"plaetze",    label:"Plaetze",       col:"#d97706"},
+    {id:"training",   label:"Training",      col:"#0891b2"},
+    {id:"sicherheit", label:"Sicherheit",    col:"#dc2626"},
+    {id:"marketing",  label:"Marketing",     col:"#ec4899"},
+    {id:"uiux",       label:"UI/UX",         col:"#64748b"},
+    {id:"datenschutz",label:"Datenschutz",   col:"#9333ea"},
+  ];
+
+  const RISK_COLS = {low:"#16a34a", medium:"#d97706", high:"#dc2626"};
+  const AFFECT_ICONS = {all:"A", trainer:"T", user:"E", admin:"Ad", helper:"H"};
+
+  const filtered = FEATURE_REGISTRY.filter(f=> {
+    const catOk = catFilter==="all" || f.cat===catFilter;
+    const phaseOk = phaseFilter==="all" || f.phase===Number(phaseFilter);
+    const searchOk = !search ||
+      f.label.toLowerCase().includes(search.toLowerCase()) ||
+      f.desc.toLowerCase().includes(search.toLowerCase());
+    return catOk && phaseOk && searchOk;
+  });
+
+  const activeCount = FEATURE_REGISTRY.filter(f=>getFeat(f.id)).length;
+  const totalCount = FEATURE_REGISTRY.length;
+  const currentPhase = (() => {
+    const phases = MILESTONES.map(m=>m.phase);
+    for(const p of phases.reverse()) {
+      const phaseFeats = FEATURE_REGISTRY.filter(f=>f.phase===p);
+      if(phaseFeats.every(f=>getFeat(f.id))) return p;
+    }
+    return 1;
+  })();
+
+  return (
+    <div>
+      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}>
+        <div style={{flex:1}}>
+          <h2 style={{color:"#fff",fontWeight:900,fontSize:20,margin:0}}>
+            Rollout & Feature-Flags
+          </h2>
+          <div style={{color:"#64748b",fontSize:12,marginTop:3}}>
+            {activeCount}/{totalCount} Features aktiv
+          </div>
+        </div>
+        <button onClick={()=>setShowMilestoneModal(true)}
+          style={{padding:"9px 16px",borderRadius:11,border:"none",
+            background:"#7c3aed",color:"#fff",fontWeight:700,fontSize:13,
+            cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>
+          Meilenstein
+        </button>
+      </div>
+
+      {/* Aktiver Meilenstein */}
+      {(() => {
+        const ms = MILESTONES.find(m=>m.phase===currentPhase)||MILESTONES[0];
+        return (
+          <div style={{background:`linear-gradient(135deg,#1e293b,${ms.col}33)`,
+            borderRadius:14,padding:"14px 16px",marginBottom:16,
+            border:`1px solid ${ms.col}44`}}>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <div style={{width:40,height:40,borderRadius:11,background:ms.col,
+                display:"flex",alignItems:"center",justifyContent:"center",
+                fontWeight:900,fontSize:18,color:"#fff",flexShrink:0}}>
+                {ms.icon}
+              </div>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:800,fontSize:15,color:"#fff"}}>
+                  Phase {ms.phase}: {ms.name}
+                </div>
+                <div style={{fontSize:11,color:"#94a3b8",marginTop:2}}>{ms.goal}</div>
+              </div>
+            </div>
+            {/* Progress Bar */}
+            <div style={{marginTop:12,height:6,background:"#0f172a",borderRadius:99}}>
+              <div style={{height:"100%",borderRadius:99,background:ms.col,
+                width:`${(activeCount/totalCount)*100}%`,transition:"width .4s"}}/>
+            </div>
+            <div style={{display:"flex",justifyContent:"space-between",
+              marginTop:4,fontSize:10,color:"#475569"}}>
+              <span>{activeCount} aktiv</span>
+              <span>{totalCount-activeCount} inaktiv</span>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Suche */}
+      <input value={search} onChange={e=>setSearch(e.target.value)}
+        placeholder="Feature suchen..."
+        style={{width:"100%",padding:"10px 14px",fontSize:13,background:"#1e293b",
+          border:"1px solid #334155",borderRadius:11,color:"#e2e8f0",outline:"none",
+          marginBottom:10,boxSizing:"border-box"}}/>
+
+      {/* Kategorie Filter */}
+      <div style={{display:"flex",gap:5,overflowX:"auto",scrollbarWidth:"none",
+        marginBottom:8,paddingBottom:4}}>
+        {CATS.map(cat=>(
+          <button key={cat.id} onClick={()=>setCatFilter(cat.id)}
+            style={{padding:"5px 12px",borderRadius:99,
+              border:`1.5px solid ${catFilter===cat.id?(cat.col||"#7c3aed"):"#334155"}`,
+              background:catFilter===cat.id?(cat.col||"#7c3aed")+"22":"transparent",
+              color:catFilter===cat.id?(cat.col||"#a78bfa"):"#64748b",
+              fontWeight:catFilter===cat.id?700:500,fontSize:11,cursor:"pointer",
+              whiteSpace:"nowrap",fontFamily:"inherit",flexShrink:0}}>
+            {cat.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Phase Filter */}
+      <div style={{display:"flex",gap:5,marginBottom:14}}>
+        <button onClick={()=>setPhaseFilter("all")}
+          style={{padding:"5px 12px",borderRadius:99,
+            border:`1.5px solid ${phaseFilter==="all"?"#7c3aed":"#334155"}`,
+            background:phaseFilter==="all"?"#7c3aed22":"transparent",
+            color:phaseFilter==="all"?"#a78bfa":"#64748b",
+            fontWeight:phaseFilter==="all"?700:500,fontSize:11,
+            cursor:"pointer",fontFamily:"inherit"}}>
+          Alle Phasen
+        </button>
+        {MILESTONES.map(ms=>(
+          <button key={ms.phase} onClick={()=>setPhaseFilter(String(ms.phase))}
+            style={{padding:"5px 12px",borderRadius:99,
+              border:`1.5px solid ${phaseFilter===String(ms.phase)?ms.col:"#334155"}`,
+              background:phaseFilter===String(ms.phase)?ms.col+"22":"transparent",
+              color:phaseFilter===String(ms.phase)?ms.col:"#64748b",
+              fontWeight:phaseFilter===String(ms.phase)?700:500,fontSize:11,
+              cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>
+            {ms.phase}
+          </button>
+        ))}
+      </div>
+
+      <div style={{fontSize:11,color:"#475569",marginBottom:10}}>
+        {filtered.length} von {FEATURE_REGISTRY.length} Features
+      </div>
+
+      {/* Feature Liste */}
+      {filtered.map(f=>{
+        const active = getFeat(f.id);
+        const ms = MILESTONES.find(m=>m.phase===f.phase)||MILESTONES[0];
+        const riskCol = RISK_COLS[f.risk]||"#64748b";
+        const catDef = CATS.find(c=>c.id===f.cat)||CATS[0];
+        return (
+          <div key={f.id} style={{background:"#1e293b",borderRadius:12,
+            border:`1px solid ${active?"#334155":"#dc263644"}`,
+            padding:"12px 14px",marginBottom:7,
+            opacity:active?1:.65,transition:"opacity .2s"}}>
+            <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap",marginBottom:3}}>
+                  <span style={{fontWeight:700,fontSize:13,color:active?"#e2e8f0":"#64748b"}}>
+                    {f.label}
+                  </span>
+                  {/* Phase Badge */}
+                  <span style={{background:ms.col+"22",color:ms.col,borderRadius:99,
+                    padding:"1px 7px",fontSize:9,fontWeight:800}}>
+                    P{f.phase}
+                  </span>
+                  {/* Risiko */}
+                  <span style={{background:riskCol+"22",color:riskCol,borderRadius:99,
+                    padding:"1px 7px",fontSize:9,fontWeight:700}}>
+                    {f.risk==="low"?"Sicher":f.risk==="medium"?"Mittel":"Hoch"}
+                  </span>
+                  {/* Betrifft */}
+                  <span style={{background:"#334155",color:"#94a3b8",borderRadius:99,
+                    padding:"1px 7px",fontSize:9,fontWeight:700}}>
+                    {AFFECT_ICONS[f.affects]||f.affects}
+                  </span>
+                </div>
+                <div style={{fontSize:11,color:"#475569",lineHeight:1.4}}>{f.desc}</div>
+                {f.deps.length>0&&!active&&(
+                  <div style={{fontSize:10,color:"#7c3aed",marginTop:3}}>
+                    Benoetigt: {f.deps.map(d=>FEATURE_REGISTRY.find(x=>x.id===d)?.label||d).join(", ")}
+                  </div>
+                )}
+              </div>
+              <div onClick={()=>toggle(f.id, f.deps)}
+                style={{width:46,height:24,borderRadius:99,flexShrink:0,marginTop:2,
+                  background:active?"#7c3aed":"#334155",cursor:"pointer",
+                  position:"relative",transition:"background .2s"}}>
+                <div style={{position:"absolute",top:2,
+                  left:active?24:2,width:20,height:20,borderRadius:"50%",
+                  background:"#fff",transition:"left .2s",
+                  boxShadow:"0 1px 4px rgba(0,0,0,.4)"}}/>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Meilenstein Modal */}
+      {showMilestoneModal&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.8)",zIndex:950,
+          display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+          <div style={{background:"#1e293b",borderRadius:20,width:"100%",maxWidth:420,
+            border:"1px solid #334155",overflow:"hidden"}}>
+            <div style={{background:"#0f172a",padding:"16px 20px",
+              borderBottom:"1px solid #334155"}}>
+              <div style={{color:"#fff",fontWeight:900,fontSize:18}}>
+                Meilenstein aktivieren
+              </div>
+              <div style={{color:"#64748b",fontSize:12,marginTop:3}}>
+                Alle Features bis zur gewaehlten Phase werden aktiviert,
+                alles darueber deaktiviert.
+              </div>
+            </div>
+            <div style={{padding:"16px 20px"}}>
+              {MILESTONES.map(ms=>(
+                <button key={ms.phase} onClick={()=>activatePhase(ms.phase)}
+                  style={{width:"100%",display:"flex",alignItems:"center",gap:12,
+                    padding:"13px 14px",borderRadius:13,border:`1.5px solid ${ms.col}44`,
+                    background:ms.col+"11",cursor:"pointer",fontFamily:"inherit",
+                    marginBottom:9,textAlign:"left"}}>
+                  <div style={{width:40,height:40,borderRadius:11,background:ms.col,
+                    display:"flex",alignItems:"center",justifyContent:"center",
+                    fontWeight:900,fontSize:18,color:"#fff",flexShrink:0}}>
+                    {ms.icon}
+                  </div>
+                  <div style={{flex:1}}>
+                    <div style={{fontWeight:800,fontSize:14,color:"#fff"}}>
+                      Phase {ms.phase}: {ms.name}
+                    </div>
+                    <div style={{fontSize:11,color:"#94a3b8",marginTop:2}}>{ms.desc}</div>
+                    <div style={{fontSize:10,color:ms.col,marginTop:3}}>
+                      {FEATURE_REGISTRY.filter(f=>f.phase<=ms.phase).length} Features aktiv
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+            <div style={{padding:"0 20px 20px"}}>
+              <button onClick={()=>setShowMilestoneModal(false)}
+                style={{width:"100%",padding:"11px",borderRadius:11,
+                  border:"1px solid #334155",background:"transparent",
+                  color:"#64748b",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                Abbrechen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+
+/* =================================================================
+   SPORT-PROFILE SYSTEM
+   Jede Sportart hat eigene Positionen, Statistiken, Spielfeld-Vorlagen
+================================================================= */
+const SPORT_PROFILES = {
+  fussball: {
+    label:"Fussball", icon:"F",
+    positions:["Torwart","Innenverteidiger","Aussenverteidiger","Defensives MF",
+               "Zentrales MF","Offensives MF","Fluegelstuermer","Stuermer"],
+    stats:["Tore","Vorlagen","Karten Gelb","Karten Rot","Elfmeter","Eigentor"],
+    resultFormat:"goals",       // x:y
+    teamSizes:[5,7,9,11],
+    fieldTemplates:["rasen","asche","kunstrasen","halle"],
+    ageGroups:["Bambini","G-Jugend","F-Jugend","E-Jugend","D-Jugend",
+               "C-Jugend","B-Jugend","A-Jugend","Senioren","Alt-Herren",
+               "Frauen","Maedchen"],
+    hasReferee:true, hasPenalty:true, hasCards:true,
+  },
+  handball: {
+    label:"Handball", icon:"H",
+    positions:["Torwart","Linksaussen","Rechtaussen","Rckraum Links",
+               "Rckraum Mitte","Rckraum Rechts","Kreisspieler"],
+    stats:["Tore","Vorlagen","7-Meter","Karten Gelb","Karten Rot","2-Minuten"],
+    resultFormat:"goals",
+    teamSizes:[7],
+    fieldTemplates:["halle"],
+    ageGroups:["mJA","mJB","mJC","wJA","wJB","wJC","Herren","Damen","Mixed"],
+    hasReferee:true, hasPenalty:true, hasCards:true,
+  },
+  tennis: {
+    label:"Tennis", icon:"T",
+    positions:["Einzel 1","Einzel 2","Einzel 3","Doppel 1","Doppel 2"],
+    stats:["Saetze gewonnen","Spiele gewonnen","Asse","Doppelfehler"],
+    resultFormat:"sets",        // z.B. 6:3, 4:6, 7:5
+    teamSizes:[1,2],
+    fieldTemplates:["tennis"],
+    ageGroups:["U10","U12","U14","U16","U18","Herren","Damen","Senioren","Mixed"],
+    hasReferee:false, hasPenalty:false, hasCards:false,
+  },
+  badminton: {
+    label:"Badminton", icon:"B",
+    positions:["Einzel","Herrendoppel","Damendoppel","Mixed"],
+    stats:["Saetze gewonnen","Punkte"],
+    resultFormat:"sets",
+    teamSizes:[1,2],
+    fieldTemplates:["halle"],
+    ageGroups:["U11","U13","U15","U17","U19","Erwachsene","Senioren"],
+    hasReferee:false, hasPenalty:false, hasCards:false,
+  },
+  basketball: {
+    label:"Basketball", icon:"Ba",
+    positions:["Point Guard","Shooting Guard","Small Forward",
+               "Power Forward","Center"],
+    stats:["Punkte","Rebounds","Assists","Steals","Blocks","Fouls"],
+    resultFormat:"points",
+    teamSizes:[5],
+    fieldTemplates:["halle"],
+    ageGroups:["U8","U10","U12","U14","U16","U18","Herren","Damen"],
+    hasReferee:true, hasPenalty:false, hasCards:false,
+  },
+  volleyball: {
+    label:"Volleyball", icon:"V",
+    positions:["Libero","Zuspiel","Diagonal","Auen","Mittelblock"],
+    stats:["Angriffspunkte","Blockpunkte","Aufschlagpunkte","Fehler"],
+    resultFormat:"sets",
+    teamSizes:[6],
+    fieldTemplates:["halle"],
+    ageGroups:["U12","U14","U16","U18","Herren","Damen","Mixed"],
+    hasReferee:true, hasPenalty:false, hasCards:false,
+  },
+  tischtennis: {
+    label:"Tischtennis", icon:"TT",
+    positions:["Einzel 1","Einzel 2","Einzel 3","Doppel"],
+    stats:["Saetze","Einzelpunkte"],
+    resultFormat:"sets",
+    teamSizes:[1,2],
+    fieldTemplates:["halle"],
+    ageGroups:["Schueler","Junioren","Erwachsene","Senioren"],
+    hasReferee:false, hasPenalty:false, hasCards:false,
+  },
+  kegeln: {
+    label:"Kegeln/Bowling", icon:"K",
+    positions:["Mannschaft"],
+    stats:["Holz","Volles","Abraeumen","Fehlwuerfe"],
+    resultFormat:"points",
+    teamSizes:[4,6],
+    fieldTemplates:["mehrzweck"],
+    ageGroups:["Jugend","Erwachsene","Senioren"],
+    hasReferee:false, hasPenalty:false, hasCards:false,
+  },
+  schuetzen: {
+    label:"Schiessen", icon:"S",
+    positions:["KK","LG","LP","GK","P"],
+    stats:["Ringe","Treffer","Teiler"],
+    resultFormat:"points",
+    teamSizes:[3,4,5],
+    fieldTemplates:["mehrzweck"],
+    ageGroups:["Schueler","Jugend","Junioren","Erwachsene","Senioren","Damen"],
+    hasReferee:false, hasPenalty:false, hasCards:false,
+  },
+  turnen: {
+    label:"Turnen/Gym", icon:"Tur",
+    positions:["Boden","Reck","Barren","Ringe","Pferd","Sprung"],
+    stats:["Note","Schwierigkeitswert","Ausfuehrungswert"],
+    resultFormat:"points",
+    teamSizes:[1,4,6],
+    fieldTemplates:["halle"],
+    ageGroups:["Kindturnen","Jugend","Junioren","Erwachsene","Frauen","Maenner"],
+    hasReferee:false, hasPenalty:false, hasCards:false,
+  },
+  leichtathletik: {
+    label:"Leichtathletik", icon:"LA",
+    positions:["Sprint","Mittelstrecke","Langstrecke","Huerden","Sprung","Wurf"],
+    stats:["Zeit (s)","Weite (cm)","Hoehe (cm)","Punkte"],
+    resultFormat:"points",
+    teamSizes:[1],
+    fieldTemplates:["leichtathletik"],
+    ageGroups:["U8","U10","U12","U14","U16","U18","Erwachsene","Masters"],
+    hasReferee:false, hasPenalty:false, hasCards:false,
+  },
+  tanzen: {
+    label:"Tanzen", icon:"Tan",
+    positions:["Standard","Latein","Showdance","Boogie-Woogie"],
+    stats:["Platzierung","Punkte Technik","Punkte Ausdruck"],
+    resultFormat:"points",
+    teamSizes:[1,2],
+    fieldTemplates:["halle"],
+    ageGroups:["Kinder","Junioren 1","Junioren 2","Jugend","Hauptgruppe","Senioren"],
+    hasReferee:false, hasPenalty:false, hasCards:false,
+  },
+  schwimmen: {
+    label:"Schwimmen", icon:"Sw",
+    positions:["Freistil","Ruecken","Brust","Schmetterling","Lagen"],
+    stats:["Zeit (s)","Platzierung","Punkte"],
+    resultFormat:"points",
+    teamSizes:[1,4],
+    fieldTemplates:["mehrzweck"],
+    ageGroups:["AK 8","AK 10","AK 12","AK 14","AK 16","AK 18","Erwachsene","Masters"],
+    hasReferee:false, hasPenalty:false, hasCards:false,
+  },
+  mehrzweck: {
+    label:"Mehrzweck / Sonstige", icon:"M",
+    positions:["Teilnehmer"],
+    stats:["Punkte","Platzierung"],
+    resultFormat:"points",
+    teamSizes:[1,2,4,8],
+    fieldTemplates:["mehrzweck","halle"],
+    ageGroups:["Kinder","Jugend","Erwachsene","Senioren"],
+    hasReferee:false, hasPenalty:false, hasCards:false,
+  },
+};
+
+// Demo-Vereine fuer verschiedene Sportarten
+const DEMO_CLUBS = [
+  {
+    id:"demo_fussball",
+    name:"FC Demo Fussball",
+    sport:"fussball",
+    pri:"#16a34a", sec:"#052e16", em:"FC",
+    slug:"demo-fussball",
+    dir:true, pub:false,
+    desc:"Fussball-Verein mit allen Altersklassen",
+  },
+  {
+    id:"demo_tennis",
+    name:"TC Demo Tennis",
+    sport:"tennis",
+    pri:"#dc2626", sec:"#450a0a", em:"TC",
+    slug:"demo-tennis",
+    dir:true, pub:false,
+    desc:"Tennisclub mit Einzel und Doppel",
+  },
+  {
+    id:"demo_handball",
+    name:"HV Demo Handball",
+    sport:"handball",
+    pri:"#2563eb", sec:"#1e3a8a", em:"HV",
+    slug:"demo-handball",
+    dir:true, pub:false,
+    desc:"Handballverein mit Jugend und Senioren",
+  },
+  {
+    id:"demo_kegeln",
+    name:"KC Demo Kegeln",
+    sport:"kegeln",
+    pri:"#7c3aed", sec:"#3b0764", em:"KC",
+    slug:"demo-kegeln",
+    dir:true, pub:false,
+    desc:"Kegelklub mit Ligabetrieb",
+  },
+];
+
+/* =================================================================
+   VEREINS-ADMIN EINSTELLUNGEN (komplett neu)
+   Strukturiert in 7 Bereiche
+================================================================= */
+function ClubAdminSettings({ data, cid, save, fire, cl }) {
+  const t = TH(cl);
+  const myClub = (data.clubs||[]).find(x=>x.id===cid)||{};
+  const cs = myClub?.clubSettings||{};
+  const clubFeat = (key, def=true) => cs[key]!==undefined ? cs[key] : def;
+  const sport = myClub.sport||"fussball";
+  const sportProfile = SPORT_PROFILES[sport]||SPORT_PROFILES.fussball;
+  const cs = myClub.clubSettings||{};
+  const [section, setSection] = useState("sport");
+  const [showImport, setShowImport] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+
+  const saveSetting = (key, val) => {
+    const updated = {...myClub, clubSettings:{...cs,[key]:val}};
+    save({...data,clubs:(data.clubs||[]).map(x=>x.id===cid?updated:x)});
+  };
+  const S = (key, def) => cs[key]!==undefined ? cs[key] : def;
+
+  // Export
+  const exportData = () => {
+    const blob = new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "backup-"+myClub.name+"-"+new Date().toISOString().slice(0,10)+".json";
+    a.click(); fire("Backup exportiert");
+  };
+
+  const SECTIONS = [
+    {id:"sport",       label:"Sportart",      icon:"S"},
+    {id:"features",    label:"Module",        icon:"M"},
+    {id:"team",        label:"Team",          icon:"T"},
+    {id:"komm",        label:"Kommunikation", icon:"K"},
+    {id:"sicherheit",  label:"Sicherheit",    icon:"Si"},
+    {id:"datenschutz", label:"Datenschutz",   icon:"D"},
+    {id:"konto",       label:"Konto",         icon:"A"},
+  ];
+
+  const Row = ({title,sub,children,last=false}) => (
+    <div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 0",
+      borderBottom:last?"none":"1px solid #f1f5f9"}}>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontWeight:700,fontSize:14,color:"#0f172a"}}>{title}</div>
+        {sub&&<div style={{fontSize:11,color:"#94a3b8",marginTop:1,lineHeight:1.4}}>{sub}</div>}
+      </div>
+      <div style={{flexShrink:0}}>{children}</div>
+    </div>
+  );
+
+  const Toggle = ({val,onChange}) => (
+    <div onClick={()=>onChange(!val)}
+      style={{width:46,height:26,borderRadius:99,background:val?t.p:"#e2e8f0",
+        cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0}}>
+      <div style={{position:"absolute",top:3,left:val?22:3,width:20,height:20,
+        borderRadius:"50%",background:"#fff",transition:"left .2s",
+        boxShadow:"0 1px 4px rgba(0,0,0,.2)"}}/>
+    </div>
+  );
+
+  const card = {background:"#fff",borderRadius:16,padding:"4px 16px",
+    border:"1.5px solid #e2e8f0",marginBottom:14};
+
+  const Select = ({value,onChange,opts}) => (
+    <select value={value} onChange={e=>onChange(e.target.value)}
+      style={{padding:"7px 11px",fontSize:13,border:"1.5px solid #e2e8f0",
+        borderRadius:10,outline:"none",background:"#fff",fontFamily:"inherit",
+        maxWidth:160}}>
+      {opts.map(([v,l])=><option key={v} value={v}>{l}</option>)}
+    </select>
+  );
+
+  return (
+    <div>
+      {/* Section Nav */}
+      <div style={{display:"flex",gap:5,overflowX:"auto",scrollbarWidth:"none",
+        marginBottom:16,paddingBottom:2}}>
+        {SECTIONS.map(s=>(
+          <button key={s.id} onClick={()=>setSection(s.id)}
+            style={{display:"flex",alignItems:"center",gap:5,padding:"8px 13px",
+              borderRadius:11,border:`2px solid ${section===s.id?t.p:"#e2e8f0"}`,
+              background:section===s.id?t.p+"12":"#fff",
+              color:section===s.id?t.p:"#64748b",
+              fontWeight:section===s.id?800:600,fontSize:11,cursor:"pointer",
+              whiteSpace:"nowrap",fontFamily:"inherit",flexShrink:0}}>
+            <span style={{fontWeight:900,fontSize:12}}>{s.icon}</span>{s.label}
+          </button>
+        ))}
+      </div>
+
+      {/* SPORTART */}
+      {section==="sport"&&(
+        <>
+          <div style={{background:"#f8fafc",borderRadius:14,padding:"12px 14px",
+            marginBottom:14,border:"1.5px solid #e2e8f0"}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:10,letterSpacing:.5}}>
+              AKTUELLE SPORTART
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:14}}>
+              {Object.entries(SPORT_PROFILES).map(([key,sp])=>(
+                <button key={key} onClick={()=>{
+                  save({...data,clubs:(data.clubs||[]).map(x=>x.id===cid?{...x,sport:key}:x)});
+                  fire("Sportart geaendert: "+sp.label);
+                }}
+                  style={{padding:"10px 6px",borderRadius:12,textAlign:"center",
+                    border:`2px solid ${sport===key?t.p:"#e2e8f0"}`,
+                    background:sport===key?t.p+"12":"#fff",
+                    cursor:"pointer",fontFamily:"inherit"}}>
+                  <div style={{fontWeight:900,fontSize:16,color:sport===key?t.p:"#64748b",
+                    marginBottom:3}}>{sp.icon}</div>
+                  <div style={{fontWeight:sport===key?800:600,fontSize:11,
+                    color:sport===key?t.p:"#475569",lineHeight:1.2}}>{sp.label}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+          {/* Sport-spezifische Info */}
+          <div style={card}>
+            <Row title="Positionen" sub={sportProfile.positions.slice(0,3).join(", ")+"..."}>
+              <span style={{fontSize:12,color:"#94a3b8",fontWeight:600}}>
+                {sportProfile.positions.length}
+              </span>
+            </Row>
+            <Row title="Statistiken" sub={sportProfile.stats.join(", ")}>
+              <span style={{fontSize:12,color:"#94a3b8",fontWeight:600}}>
+                {sportProfile.stats.length}
+              </span>
+            </Row>
+            <Row title="Altersklassen" sub={sportProfile.ageGroups.slice(0,4).join(", ")+"..."}>
+              <span style={{fontSize:12,color:"#94a3b8",fontWeight:600}}>
+                {sportProfile.ageGroups.length}
+              </span>
+            </Row>
+            <Row title="Ergebnis-Format"
+              sub={sportProfile.resultFormat==="goals"?"Tore (3:2)":sportProfile.resultFormat==="sets"?"Saetze":"Punkte"}
+              last>
+              <span style={{fontSize:12,color:t.p,fontWeight:700}}>
+                {sportProfile.resultFormat}
+              </span>
+            </Row>
+          </div>
+          {/* Sport-Flags */}
+          <div style={card}>
+            <Row title="Karten (Gelb/Rot)" sub="Kartenstatistik bei Spielern">
+              <Toggle val={S("hasCards",sportProfile.hasCards)} onChange={v=>saveSetting("hasCards",v)}/>
+            </Row>
+            <Row title="Elfmeter / Penaltys" sub="Penalty-Statistik">
+              <Toggle val={S("hasPenalty",sportProfile.hasPenalty)} onChange={v=>saveSetting("hasPenalty",v)}/>
+            </Row>
+            <Row title="Schiedsrichter eintragen" sub="Schiri pro Termin angeben" last>
+              <Toggle val={S("hasReferee",sportProfile.hasReferee)} onChange={v=>saveSetting("hasReferee",v)}/>
+            </Row>
+          </div>
+        </>
+      )}
+
+      {/* MODULE / FEATURES */}
+      {section==="features"&&(
+        <>
+          {/* Schnell-Profil */}
+          <div style={{background:"#eff6ff",borderRadius:13,padding:"12px 14px",
+            border:"1.5px solid #bfdbfe",marginBottom:14,fontSize:12,
+            color:"#1d4ed8",lineHeight:1.6}}>
+            Aktiviere oder deaktiviere einzelne Module fuer deinen Verein.
+            Nicht benoenigte Funktionen werden fuer alle Nutzer ausgeblendet.
+          </div>
+          <div style={card}>
+            <Row title="Platzbuchung" sub="Trainer koennen Plaetze reservieren">
+              <Toggle val={S("mod_fields",true)} onChange={v=>saveSetting("mod_fields",v)}/>
+            </Row>
+            <Row title="Trainingsplaene" sub="Trainingsplaene und Uebungs-Bibliothek">
+              <Toggle val={S("mod_training",true)} onChange={v=>saveSetting("mod_training",v)}/>
+            </Row>
+            <Row title="Trikot-Verwaltung" sub="Trikotnummern und Zuteilung">
+              <Toggle val={S("mod_jerseys",true)} onChange={v=>saveSetting("mod_jerseys",v)}/>
+            </Row>
+            <Row title="Helfer-System" sub="Helfer mit Code-Zugang">
+              <Toggle val={S("mod_helpers",true)} onChange={v=>saveSetting("mod_helpers",v)}/>
+            </Row>
+            <Row title="Ergebnisse & Tabelle" sub="Spielergebnisse eintragen">
+              <Toggle val={S("mod_results",sportProfile.resultFormat!==null)} onChange={v=>saveSetting("mod_results",v)}/>
+            </Row>
+            <Row title="Statistiken" sub="Spieler-Statistiken (Tore, Karten...)">
+              <Toggle val={S("mod_stats",sportProfile.hasCards||sport==="fussball")} onChange={v=>saveSetting("mod_stats",v)}/>
+            </Row>
+            <Row title="Schwarzes Brett" sub="Vereinsnews fuer alle" last>
+              <Toggle val={S("mod_news",true)} onChange={v=>saveSetting("mod_news",v)}/>
+            </Row>
+          </div>
+          {/* Senioren-Modus */}
+          <div style={card}>
+            <Row title="Senioren-Modus"
+              sub="Spieler stimmen selbst ab - kein Eltern-Login noetig">
+              <Toggle val={S("seniorsMode",false)} onChange={v=>saveSetting("seniorsMode",v)}/>
+            </Row>
+            <Row title="Eltern duerfen im Chat schreiben"
+              sub="Standardmaessig nur lesen">
+              <Toggle val={S("parentChat",false)} onChange={v=>saveSetting("parentChat",v)}/>
+            </Row>
+            <Row title="Mehrere Teams pro Spieler" sub="Spieler in 2+ Teams gleichzeitig" last>
+              <Toggle val={S("multiTeamPlayer",false)} onChange={v=>saveSetting("multiTeamPlayer",v)}/>
+            </Row>
+          </div>
+        </>
+      )}
+
+      {/* TEAM EINSTELLUNGEN */}
+      {section==="team"&&(
+        <>
+          <div style={card}>
+            <Row title="Jahrgang anzeigen" sub="Spieler-Jahrgang in der Liste">
+              <Toggle val={S("showBirthYear",true)} onChange={v=>saveSetting("showBirthYear",v)}/>
+            </Row>
+            <Row title="Positionen" sub={`${sportProfile.positions.length} Positionen fuer ${sportProfile.label}`}>
+              <Select value={S("positionSystem","default")} onChange={v=>saveSetting("positionSystem",v)}
+                opts={[["default","Standard"],["custom","Eigene"],["none","Keine"]]}/>
+            </Row>
+            <Row title="Spieler-Fotos" sub="Profilfoto im Spieler-Profil">
+              <Toggle val={S("playerPhotos",false)} onChange={v=>saveSetting("playerPhotos",v)}/>
+            </Row>
+            <Row title="Spieler sehen Mitspieler" sub="Eltern sehen anderen Kindern">
+              <Toggle val={S("showPlayerList",true)} onChange={v=>saveSetting("showPlayerList",v)}/>
+            </Row>
+            <Row title="Trainer sichtbar fuer Eltern" sub="Name und Kontakt">
+              <Toggle val={S("showTrainerInfo",true)} onChange={v=>saveSetting("showTrainerInfo",v)}/>
+            </Row>
+            <Row title="Anwesenheit sichtbar fuer Eltern" sub="Wer hat abgestimmt">
+              <Toggle val={S("showAttendance",false)} onChange={v=>saveSetting("showAttendance",v)}/>
+            </Row>
+            <Row title="Vergangene Termine anzeigen" sub="Wie viele Tage zurueck" last>
+              <Select value={S("pastDays",30)} onChange={v=>saveSetting("pastDays",Number(v))}
+                opts={[["7","7 Tage"],["14","14 Tage"],["30","30 Tage"],["60","60 Tage"],["90","90 Tage"]]}/>
+            </Row>
+          </div>
+        </>
+      )}
+
+      {/* KOMMUNIKATION */}
+      {section==="komm"&&(
+        <>
+          <div style={card}>
+            <Row title="Team-Chat aktiv">
+              <Toggle val={S("chatEnabled",true)} onChange={v=>saveSetting("chatEnabled",v)}/>
+            </Row>
+            <Row title="Vereins-Chat aktiv" sub="Chat ueber alle Teams hinweg">
+              <Toggle val={S("clubChatEnabled",true)} onChange={v=>saveSetting("clubChatEnabled",v)}/>
+            </Row>
+            <Row title="Helfer im Chat" sub="Helfer koennen Chat lesen">
+              <Toggle val={S("helperChat",false)} onChange={v=>saveSetting("helperChat",v)}/>
+            </Row>
+            <Row title="Chat-Moderation" sub="KI erkennt Werbung und illegale Inhalte">
+              <Toggle val={S("chatMod",true)} onChange={v=>saveSetting("chatMod",v)}/>
+            </Row>
+            <Row title="Benachrichtigungen: Neuer Termin">
+              <Toggle val={S("notifyEvent",true)} onChange={v=>saveSetting("notifyEvent",v)}/>
+            </Row>
+            <Row title="Benachrichtigungen: Absagen">
+              <Toggle val={S("notifyCancel",true)} onChange={v=>saveSetting("notifyCancel",v)}/>
+            </Row>
+            <Row title="Benachrichtigungen: Chat" last>
+              <Toggle val={S("notifyChat",true)} onChange={v=>saveSetting("notifyChat",v)}/>
+            </Row>
+          </div>
+        </>
+      )}
+
+      {/* SICHERHEIT */}
+      {section==="sicherheit"&&(
+        <>
+          <div style={card}>
+            <Row title="Brute-Force Schutz" sub="Nach 3 Fehlversuchen 5 Min Sperre">
+              <Toggle val={S("bruteForce",true)} onChange={v=>saveSetting("bruteForce",v)}/>
+            </Row>
+            <Row title="Audit-Log" sub="Alle Logins und Aenderungen protokollieren">
+              <Toggle val={S("auditLog",true)} onChange={v=>saveSetting("auditLog",v)}/>
+            </Row>
+            <Row title="Geraete-Erkennung" sub="Neues Geraet = Hinweis im Log">
+              <Toggle val={S("deviceTrack",true)} onChange={v=>saveSetting("deviceTrack",v)}/>
+            </Row>
+            <Row title="Session-Dauer" sub="Wie lange bleibt man eingeloggt">
+              <Select value={S("sessionDays",30)} onChange={v=>saveSetting("sessionDays",Number(v))}
+                opts={[["1","1 Tag"],["7","7 Tage"],["30","30 Tage"],["90","90 Tage"]]}/>
+            </Row>
+            <Row title="Lschen bestaetigen" sub="Vor jedem Loeschen nachfragen" last>
+              <Toggle val={S("confirmDelete",true)} onChange={v=>saveSetting("confirmDelete",v)}/>
+            </Row>
+          </div>
+          {/* Zugangs-Uebersicht Link */}
+          <div style={{background:"#eff6ff",borderRadius:13,padding:"12px 14px",
+            border:"1.5px solid #bfdbfe",fontSize:13,color:"#1d4ed8",lineHeight:1.5}}>
+            Alle Passwoerter und Zugaenge aendern unter: Zugaenge & Passwoerter im Menue.
+          </div>
+        </>
+      )}
+
+      {/* DATENSCHUTZ */}
+      {section==="datenschutz"&&(
+        <>
+          <div style={card}>
+            <Row title="DSGVO Einwilligung bei Fotos" sub="Pflicht vor Mannschaftsfotos">
+              <Toggle val={S("dsgvoConsent",true)} onChange={v=>saveSetting("dsgvoConsent",v)}/>
+            </Row>
+            <Row title="Datenschutz-Seite anzeigen" sub="Link auf der Startseite">
+              <Toggle val={S("showPrivacy",true)} onChange={v=>saveSetting("showPrivacy",v)}/>
+            </Row>
+            <Row title="Spieler-Daten exportieren" sub="CSV und JSON Export erlaubt">
+              <Toggle val={S("dataExport",true)} onChange={v=>saveSetting("dataExport",v)}/>
+            </Row>
+            <Row title="Eltern-Kommunikation lokal" sub="Telefon-Nummern bleiben auf Geraet" last>
+              <span style={{fontSize:11,color:"#16a34a",fontWeight:700}}>Immer aktiv</span>
+            </Row>
+          </div>
+          <div style={{background:"#f0fdf4",borderRadius:13,padding:"12px 14px",
+            border:"1.5px solid #bbf7d0",fontSize:12,color:"#166534",lineHeight:1.6}}>
+            Alle Daten werden DSGVO-konform verarbeitet. Keine Weitergabe an Dritte.
+            Telefonnummern werden ausschliesslich lokal gespeichert.
+          </div>
+        </>
+      )}
+
+      {/* KONTO */}
+      {section==="konto"&&(
+        <>
+          <div style={card}>
+            <Row title="Vereinsname" sub={myClub.name}>
+              <button onClick={()=>fire("Namens-Aenderung kommt bald")}
+                style={{padding:"6px 12px",borderRadius:9,border:"1.5px solid #e2e8f0",
+                  background:"#f8fafc",fontWeight:700,fontSize:12,cursor:"pointer",
+                  fontFamily:"inherit",color:"#475569"}}>
+                Aendern
+              </button>
+            </Row>
+            <Row title="Admin E-Mail" sub={myClub.adminEmail?myClub.adminEmail.slice(0,3)+"***":"Nicht hinterlegt"}>
+              <AdminEmailSetup cl={myClub} data={data} save={save} fire={fire}/>
+            </Row>
+            <Row title="Im Verzeichnis sichtbar" sub="Andere koennen euren Verein finden" last>
+              <Toggle val={myClub.dir!==false}
+                onChange={v=>save({...data,clubs:(data.clubs||[]).map(x=>x.id===cid?{...x,dir:v}:x)})}/>
+            </Row>
+          </div>
+          <div style={card}>
+            <Row title="Backup exportieren" sub="Alle Vereinsdaten als JSON">
+              <button onClick={exportData}
+                style={{padding:"6px 14px",borderRadius:9,border:"none",
+                  background:t.p,color:"#fff",fontWeight:700,fontSize:12,
+                  cursor:"pointer",fontFamily:"inherit"}}>
+                Export
+              </button>
+            </Row>
+            <Row title="Daten importieren" sub="JSON-Backup einspielen" last>
+              <button onClick={()=>setShowImport(true)}
+                style={{padding:"6px 12px",borderRadius:9,border:"1.5px solid #e2e8f0",
+                  background:"#f8fafc",fontWeight:700,fontSize:12,cursor:"pointer",
+                  fontFamily:"inherit",color:"#475569"}}>
+                Import
+              </button>
+            </Row>
+          </div>
+          {showImport&&<ImportData save={save} fire={fire} onClose={()=>setShowImport(false)}/>}
+          {/* Gefahrenzone */}
+          <div style={{background:"#fef2f2",borderRadius:13,padding:"12px 14px",
+            border:"1.5px solid #fecaca",marginBottom:14}}>
+            <div style={{fontWeight:800,fontSize:13,color:"#dc2626",marginBottom:8}}>
+              Gefahrenzone
+            </div>
+            {!showDelete
+              ?<button onClick={()=>setShowDelete(true)}
+                style={{padding:"10px 16px",borderRadius:10,border:"none",
+                  background:"#dc2626",color:"#fff",fontWeight:700,fontSize:13,
+                  cursor:"pointer",fontFamily:"inherit"}}>
+                Verein loeschen
+              </button>
+              :<>
+                <p style={{fontSize:13,color:"#dc2626",marginBottom:10,lineHeight:1.5}}>
+                  Tippe den Vereinsnamen zur Bestaetigung:
+                </p>
+                <input value={deleteConfirm} onChange={e=>setDeleteConfirm(e.target.value)}
+                  placeholder={myClub.name}
+                  style={{width:"100%",padding:"10px 13px",fontSize:14,
+                    border:"2px solid #fca5a5",borderRadius:11,outline:"none",
+                    marginBottom:10,boxSizing:"border-box"}}/>
+                <div style={{display:"flex",gap:9}}>
+                  <button onClick={()=>setShowDelete(false)}
+                    style={{flex:1,padding:"10px",borderRadius:10,
+                      border:"1.5px solid #e2e8f0",background:"#fff",
+                      fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                    Abbrechen
+                  </button>
+                  <button
+                    disabled={deleteConfirm!==myClub.name}
+                    onClick={()=>{
+                      const next={...data,
+                        clubs:(data.clubs||[]).filter(x=>x.id!==cid),
+                        teams:(data.teams||[]).filter(x=>x.cid!==cid)};
+                      save(next); fire("Verein geloescht");
+                      window.location.reload();
+                    }}
+                    style={{flex:1,padding:"10px",borderRadius:10,border:"none",
+                      background:deleteConfirm===myClub.name?"#dc2626":"#e2e8f0",
+                      color:deleteConfirm===myClub.name?"#fff":"#94a3b8",
+                      fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                    Loeschen
+                  </button>
+                </div>
+              </>
+            }
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+
+
+/* =================================================================
+   RESPONSIVE SYSTEM
+   Breakpoints: sm<640 | md 640-1024 | lg>1024
+   Hook + CSS Media Queries + Layout-Komponenten
+================================================================= */
+
+// Breakpoint Hook
+function useBreakpoint() {
+  const [bp, setBp] = React.useState(() => {
+    const w = window.innerWidth;
+    return w < 640 ? "sm" : w < 1024 ? "md" : "lg";
+  });
+  React.useEffect(() => {
+    const handler = () => {
+      const w = window.innerWidth;
+      setBp(w < 640 ? "sm" : w < 1024 ? "md" : "lg");
+    };
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+  return {
+    bp,
+    isMobile:  bp === "sm",
+    isTablet:  bp === "md",
+    isDesktop: bp === "lg",
+    is: (size) => bp === size,
+  };
+}
+
+// Responsive CSS - wird einmalig injiziert
+const RESPONSIVE_CSS = `
+/* ===== BREAKPOINTS ===== */
+
+/* Scrollbar styling fuer Desktop */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #334155; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+/* Hover-States fuer Desktop */
+@media (hover: hover) {
+  button:hover { opacity: 0.88; }
+  .va-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,.1); transform: translateY(-1px); }
+  .va-nav-item:hover { background: rgba(255,255,255,.06) !important; }
+  .va-row:hover { background: #f8fafc !important; }
+}
+
+/* Tablet (md: 640px+) */
+@media (min-width: 640px) {
+  .va-grid-2 { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 14px !important; }
+  .va-grid-3 { display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 12px !important; }
+  .va-modal-center { align-items: center !important; }
+  .va-modal-inner { border-radius: 20px !important; max-height: 85vh !important; }
+  .va-bottom-sheet { border-radius: 20px !important; max-width: 540px !important; margin: 0 auto !important; }
+}
+
+/* Desktop (lg: 1024px+) */
+@media (min-width: 1024px) {
+  .va-app-root { display: grid !important; grid-template-columns: 260px 1fr !important; min-height: 100dvh !important; }
+  .va-sidebar { display: flex !important; flex-direction: column !important; }
+  .va-bottom-nav { display: none !important; }
+  .va-main-content { padding-bottom: 20px !important; }
+  .va-content-inner { max-width: 860px !important; margin: 0 auto !important; padding: 24px !important; }
+  .va-grid-2 { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 16px !important; }
+  .va-grid-3 { display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 14px !important; }
+  .va-grid-4 { display: grid !important; grid-template-columns: repeat(4, 1fr) !important; gap: 12px !important; }
+  .va-modal-center { align-items: center !important; }
+  .va-modal-inner { border-radius: 22px !important; }
+}
+
+/* Wide (xl: 1400px+) */
+@media (min-width: 1400px) {
+  .va-app-root { grid-template-columns: 280px 1fr !important; }
+  .va-content-inner { max-width: 1000px !important; }
+}
+
+/* Keyboard navigierbar */
+button:focus-visible, a:focus-visible, input:focus-visible {
+  outline: 2px solid #16a34a !important;
+  outline-offset: 2px !important;
+}
+
+/* Print styles */
+@media print {
+  .va-bottom-nav, .va-sidebar, button { display: none !important; }
+  .va-content-inner { max-width: 100% !important; padding: 0 !important; }
+}
+`;
+
+/* -----------------------------------------------------------------
+   DESKTOP SIDEBAR
+   Ersetzt BottomNav auf >1024px
+----------------------------------------------------------------- */
+function DesktopSidebar({ tab, setTab, isAdmin, isHelper, unread, cl, session, onLogout }) {
+  const t = TH(cl);
+  const [showDrawer, setShowDrawer] = React.useState(false);
+
+  const mainItems = [
+    { id:"events",   label:"Termine",    icon:"K" },
+    { id:"team",     label:"Team",       icon:"P", hidden: isHelper },
+    { id:"fields",   label:"Platz",      icon:"F", hidden: isHelper },
+    { id:"chat",     label:"Chat",       icon:"C", badge: unread },
+  ].filter(x=>!x.hidden);
+
+  const adminItems = [
+    { id:"overview",    label:"Uebersicht",       icon:"U" },
+    { id:"news",        label:"Neuigkeiten",       icon:"N" },
+    { id:"teams",       label:"Mannschaften",      icon:"M" },
+    { id:"trainers",    label:"Trainer",           icon:"T" },
+    { id:"fieldsadmin", label:"Plaetze",           icon:"P" },
+    { id:"access",      label:"Zugaenge",          icon:"PW" },
+    { id:"security",    label:"Sicherheitslog",    icon:"!" },
+    { id:"settings",    label:"Einstellungen",     icon:"+" },
+  ];
+
+  const trainerItems = [
+    { id:"training",   label:"Trainingsplan",  icon:"TP" },
+    { id:"jerseys",    label:"Trikots",        icon:"Tr" },
+    { id:"helpers",    label:"Helfer",         icon:"H",  hidden: isHelper },
+    { id:"attendance", label:"Anwesenheit",    icon:"S" },
+    { id:"results",    label:"Ergebnisse",     icon:"E" },
+    { id:"inbox",      label:"Posteingang",    icon:"I" },
+  ].filter(x=>!x.hidden);
+
+  const NavItem = ({item}) => {
+    const active = tab === item.id;
+    return (
+      <button
+        onClick={() => setTab(item.id)}
+        className="va-nav-item"
+        style={{
+          display:"flex", alignItems:"center", gap:10,
+          padding:"10px 14px", borderRadius:11, border:"none",
+          background: active ? t.p+"18" : "transparent",
+          color: active ? t.p : "#94a3b8",
+          fontWeight: active ? 800 : 500,
+          fontSize: 13, cursor:"pointer", width:"100%",
+          fontFamily:"inherit", textAlign:"left",
+          transition:"all .15s", position:"relative",
+        }}
+      >
+        <div style={{
+          width:32, height:32, borderRadius:9,
+          background: active ? t.p : "rgba(255,255,255,.05)",
+          display:"flex", alignItems:"center", justifyContent:"center",
+          fontWeight:900, fontSize:13,
+          color: active ? "#fff" : "#64748b",
+          flexShrink:0, transition:"all .15s",
+        }}>
+          {item.icon}
+        </div>
+        <span style={{flex:1}}>{item.label}</span>
+        {item.badge > 0 && (
+          <span style={{
+            background:"#dc2626", color:"#fff",
+            borderRadius:99, padding:"1px 6px",
+            fontSize:10, fontWeight:900,
+          }}>
+            {item.badge > 9 ? "9+" : item.badge}
+          </span>
+        )}
+      </button>
+    );
+  };
+
+  const Divider = ({label}) => (
+    <div style={{
+      fontSize:10, fontWeight:800, color:"#334155",
+      letterSpacing:.8, padding:"12px 14px 5px",
+      textTransform:"uppercase",
+    }}>
+      {label}
+    </div>
+  );
+
+  return (
+    <aside className="va-sidebar" style={{
+      background:"#0f172a",
+      borderRight:"1px solid #1e293b",
+      display:"none", // shown via CSS on desktop
+      overflowY:"auto",
+      position:"sticky", top:0, height:"100dvh",
+    }}>
+      {/* Logo / Vereinsname */}
+      <div style={{
+        padding:"20px 16px 12px",
+        borderBottom:"1px solid #1e293b",
+      }}>
+        <div style={{display:"flex", alignItems:"center", gap:10}}>
+          <div style={{
+            width:40, height:40, borderRadius:12,
+            background: t.p,
+            display:"flex", alignItems:"center", justifyContent:"center",
+            fontWeight:900, fontSize:16, color:"#fff", flexShrink:0,
+          }}>
+            {cl?.em || cl?.name?.slice(0,2) || "V"}
+          </div>
+          <div style={{flex:1, minWidth:0}}>
+            <div style={{
+              fontWeight:800, fontSize:14, color:"#fff",
+              overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
+            }}>
+              {cl?.name || "Vereins-App"}
+            </div>
+            <div style={{fontSize:11, color:"#475569", marginTop:1}}>
+              {session?.name || session?.role || ""}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <div style={{flex:1, padding:"8px 8px", overflowY:"auto"}}>
+
+        <Divider label="Hauptbereich"/>
+        {mainItems.map(item => <NavItem key={item.id} item={item}/>)}
+
+        <Divider label="Verwaltung"/>
+        {trainerItems.map(item => <NavItem key={item.id} item={item}/>)}
+
+        {isAdmin && <>
+          <Divider label="Admin"/>
+          {adminItems.map(item => <NavItem key={item.id} item={item}/>)}
+        </>}
+      </div>
+
+      {/* Footer */}
+      <div style={{
+        borderTop:"1px solid #1e293b",
+        padding:"10px 8px",
+      }}>
+        <button onClick={onLogout}
+          style={{
+            display:"flex", alignItems:"center", gap:10,
+            padding:"9px 14px", borderRadius:10, border:"none",
+            background:"transparent", color:"#64748b",
+            fontWeight:600, fontSize:13, cursor:"pointer",
+            width:"100%", fontFamily:"inherit",
+          }}
+          className="va-nav-item"
+        >
+          <div style={{
+            width:32, height:32, borderRadius:9,
+            background:"rgba(255,255,255,.05)",
+            display:"flex", alignItems:"center", justifyContent:"center",
+            fontWeight:900, fontSize:13, color:"#64748b",
+          }}>
+            {"<-"}
+          </div>
+          Abmelden
+        </button>
+      </div>
+    </aside>
+  );
+}
+
+/* -----------------------------------------------------------------
+   RESPONSIVE APP WRAPPER
+   Injiziert CSS + schaltet zwischen Layouts um
+----------------------------------------------------------------- */
+function ResponsiveWrapper({ children, tab, setTab, isAdmin, isHelper, unread, cl, session, onLogout }) {
+  const { isDesktop } = useBreakpoint();
+
+  // Inject responsive CSS once
+  React.useEffect(() => {
+    let el = document.getElementById("va-responsive-css");
+    if (!el) {
+      el = document.createElement("style");
+      el.id = "va-responsive-css";
+      document.head.appendChild(el);
+    }
+    el.textContent = RESPONSIVE_CSS;
+  }, []);
+
+  if (isDesktop) {
+    return (
+      <div className="va-app-root" style={{display:"grid"}}>
+        <DesktopSidebar
+          tab={tab} setTab={setTab}
+          isAdmin={isAdmin} isHelper={isHelper}
+          unread={unread} cl={cl}
+          session={session} onLogout={onLogout}
+        />
+        <main style={{
+          minHeight:"100dvh", overflowY:"auto",
+          background:"#f0f4f8",
+        }}>
+          <div className="va-content-inner">
+            {children}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Mobile + Tablet: existing layout
+  return <>{children}</>;
+}
+
+
+
+/* =================================================================
+   GEO & SPRACH-ANALYTICS
+   DSGVO-konform: Nur Zeitzone + Sprache, keine IP, kein GPS
+================================================================= */
+
+// Zeitzone -> Region/Stadt Mapping
+const TZ_MAP = {
+  // Deutschland
+  "Europe/Berlin":      { city:"Deutschland",    flag:"D",  region:"de", country:"DE" },
+  // Oesterreich
+  "Europe/Vienna":      { city:"Oesterreich",    flag:"A",  region:"at", country:"AT" },
+  // Schweiz
+  "Europe/Zurich":      { city:"Schweiz",        flag:"CH", region:"ch", country:"CH" },
+  // Niederlande
+  "Europe/Amsterdam":   { city:"Niederlande",    flag:"NL", region:"nl", country:"NL" },
+  // Belgien
+  "Europe/Brussels":    { city:"Belgien",        flag:"B",  region:"be", country:"BE" },
+  // Luxemburg
+  "Europe/Luxembourg":  { city:"Luxemburg",      flag:"LU", region:"lu", country:"LU" },
+  // UK
+  "Europe/London":      { city:"Grossbritannien",flag:"GB", region:"gb", country:"GB" },
+  // Frankreich
+  "Europe/Paris":       { city:"Frankreich",     flag:"F",  region:"fr", country:"FR" },
+  // Spanien
+  "Europe/Madrid":      { city:"Spanien",        flag:"E",  region:"es", country:"ES" },
+  // Italien
+  "Europe/Rome":        { city:"Italien",        flag:"I",  region:"it", country:"IT" },
+  // Polen
+  "Europe/Warsaw":      { city:"Polen",          flag:"PL", region:"pl", country:"PL" },
+  // Tuerkei
+  "Europe/Istanbul":    { city:"Tuerkei",        flag:"TR", region:"tr", country:"TR" },
+  // USA
+  "America/New_York":   { city:"USA Ost",        flag:"US", region:"us", country:"US" },
+  "America/Chicago":    { city:"USA Mitte",      flag:"US", region:"us", country:"US" },
+  "America/Denver":     { city:"USA West",       flag:"US", region:"us", country:"US" },
+  "America/Los_Angeles":{ city:"USA Westkste",  flag:"US", region:"us", country:"US" },
+  // Kanada
+  "America/Toronto":    { city:"Kanada",         flag:"CA", region:"ca", country:"CA" },
+  // Arabien
+  "Asia/Riyadh":        { city:"Saudi-Arabien",  flag:"SA", region:"sa", country:"SA" },
+  "Asia/Dubai":         { city:"VAE",            flag:"AE", region:"ae", country:"AE" },
+  "Asia/Baghdad":       { city:"Irak",           flag:"IQ", region:"iq", country:"IQ" },
+  // Sonstige
+  "Asia/Tokyo":         { city:"Japan",          flag:"JP", region:"jp", country:"JP" },
+  "Asia/Shanghai":      { city:"China",          flag:"CN", region:"cn", country:"CN" },
+  "Australia/Sydney":   { city:"Australien",     flag:"AU", region:"au", country:"AU" },
+};
+
+// Sprach-Labels
+const LANG_LABELS = {
+  de:"Deutsch", en:"Englisch", nl:"Niederlaendisch",
+  ar:"Arabisch", tr:"Tuerkisch", fr:"Franzoesisch",
+  es:"Spanisch", it:"Italienisch", pl:"Polnisch",
+  ru:"Russisch", uk:"Ukrainisch",
+};
+
+// Geo-Info des aktuellen Nutzers ermitteln
+const getGeoInfo = () => {
+  const tz  = Intl.DateTimeFormat().resolvedOptions().timeZone || "Unknown";
+  const lang = (navigator.language || "de").slice(0,2).toLowerCase();
+  const ua   = navigator.userAgent;
+  const geo  = TZ_MAP[tz] || { city: tz.split("/")[1]||tz, flag:"?", region:"unknown", country:"??" };
+  const device = /Mobi|Android/i.test(ua) ? "mobile"
+               : /Tablet|iPad/i.test(ua)  ? "tablet" : "desktop";
+  const browser = ua.includes("Chrome") && !ua.includes("Edge") ? "Chrome"
+                : ua.includes("Safari") && !ua.includes("Chrome") ? "Safari"
+                : ua.includes("Firefox") ? "Firefox"
+                : ua.includes("Edge") ? "Edge" : "Sonstige";
+  return { tz, lang, geo, device, browser };
+};
+
+// Erweitertes trackEvent mit Geo-Daten
+const trackEventGeo = (type, detail="") => {
+  const geo = getGeoInfo();
+  const log = (() => {
+    try { return JSON.parse(localStorage.getItem("va_analytics")||"[]"); } catch { return []; }
+  })();
+  log.push({
+    type, detail,
+    ts:   Date.now(),
+    date: new Date().toISOString().slice(0,10),
+    hour: new Date().getHours(),
+    lang: geo.lang,
+    tz:   geo.tz,
+    city: geo.geo.city,
+    country: geo.geo.country,
+    flag: geo.geo.flag,
+    device: geo.device,
+    browser: geo.browser,
+  });
+  localStorage.setItem("va_analytics", JSON.stringify(log.slice(-2000)));
+};
+
+/* =================================================================
+   GEO ANALYTICS TAB (Super-Admin)
+================================================================= */
+function SuperAdminGeoAnalytics() {
+  const analytics = (() => {
+    try { return JSON.parse(localStorage.getItem("va_analytics")||"[]"); } catch { return []; }
+  })();
+
+  const logins = analytics.filter(e => e.type === "login");
+  const today  = new Date().toISOString().slice(0,10);
+  const last7  = new Date(Date.now()-7*86400000).toISOString().slice(0,10);
+  const last30 = new Date(Date.now()-30*86400000).toISOString().slice(0,10);
+
+  const [timeRange, setTimeRange] = React.useState("30d");
+  const filtered = analytics.filter(e => {
+    if(timeRange==="7d")  return e.date >= last7;
+    if(timeRange==="30d") return e.date >= last30;
+    if(timeRange==="today") return e.date === today;
+    return true;
+  });
+
+  // Aggregierungen
+  const byCity = filtered.reduce((acc, e) => {
+    if(!e.city) return acc;
+    acc[e.city] = (acc[e.city]||0) + 1;
+    return acc;
+  }, {});
+
+  const byCountry = filtered.reduce((acc, e) => {
+    if(!e.country) return acc;
+    const key = (e.flag||"?") + " " + (e.city||e.country||"?");
+    if(!acc[key]) acc[key] = { count:0, flag:e.flag, city:e.city, country:e.country };
+    acc[key].count++;
+    return acc;
+  }, {});
+
+  const byLang = filtered.reduce((acc, e) => {
+    if(!e.lang) return acc;
+    acc[e.lang] = (acc[e.lang]||0) + 1;
+    return acc;
+  }, {});
+
+  const byDevice = filtered.reduce((acc, e) => {
+    const d = e.device || "unbekannt";
+    acc[d] = (acc[d]||0) + 1;
+    return acc;
+  }, {});
+
+  const byBrowser = filtered.reduce((acc, e) => {
+    const b = e.browser || "Sonstige";
+    acc[b] = (acc[b]||0) + 1;
+    return acc;
+  }, {});
+
+  const byHour = Array.from({length:24}, (_,h) => ({
+    h, count: filtered.filter(e=>e.hour===h).length
+  }));
+
+  const maxHour = Math.max(1, ...byHour.map(x=>x.count));
+  const total   = filtered.length;
+  const uniqueCities = Object.keys(byCity).length;
+  const uniqueLangs  = Object.keys(byLang).length;
+
+  const DEVICE_ICONS = { mobile:"H", tablet:"T", desktop:"D" };
+  const DEVICE_COLS  = { mobile:"#16a34a", tablet:"#2563eb", desktop:"#7c3aed" };
+
+  // Card component
+  const Card = ({title, children}) => (
+    <div style={{background:"#1e293b",borderRadius:16,padding:"16px",
+      border:"1px solid #334155",marginBottom:14}}>
+      <div style={{fontSize:11,fontWeight:800,color:"#64748b",
+        marginBottom:12,letterSpacing:.5,textTransform:"uppercase"}}>
+        {title}
+      </div>
+      {children}
+    </div>
+  );
+
+  // Bar row
+  const BarRow = ({label, count, max, col="#7c3aed", icon}) => (
+    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:9}}>
+      {icon&&<span style={{fontSize:16,flexShrink:0,minWidth:24}}>{icon}</span>}
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{display:"flex",justifyContent:"space-between",
+          marginBottom:4,fontSize:12}}>
+          <span style={{color:"#e2e8f0",fontWeight:600,
+            overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+            {label}
+          </span>
+          <span style={{color:col,fontWeight:800,marginLeft:8,flexShrink:0}}>
+            {count}
+          </span>
+        </div>
+        <div style={{height:5,background:"#0f172a",borderRadius:99}}>
+          <div style={{
+            height:"100%",borderRadius:99,background:col,
+            width:`${Math.round((count/max)*100)}%`,
+            transition:"width .4s",
+          }}/>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div>
+      <h2 style={{color:"#fff",fontWeight:900,fontSize:20,marginBottom:8}}>
+        Geo & Sprach-Analytics
+      </h2>
+      <p style={{fontSize:13,color:"#64748b",marginBottom:16,lineHeight:1.5}}>
+        Anonymisiert via Zeitzone + Browsersprache. Keine IP, kein GPS.
+      </p>
+
+      {/* Zeitraum Filter */}
+      <div style={{display:"flex",gap:7,marginBottom:16}}>
+        {[["today","Heute"],["7d","7 Tage"],["30d","30 Tage"],["all","Gesamt"]].map(([v,l])=>(
+          <button key={v} onClick={()=>setTimeRange(v)}
+            style={{padding:"7px 14px",borderRadius:9,
+              border:`1.5px solid ${timeRange===v?"#7c3aed":"#334155"}`,
+              background:timeRange===v?"#7c3aed22":"transparent",
+              color:timeRange===v?"#a78bfa":"#64748b",
+              fontWeight:timeRange===v?700:500,fontSize:12,
+              cursor:"pointer",fontFamily:"inherit"}}>
+            {l}
+          </button>
+        ))}
+      </div>
+
+      {/* KPI Uebersicht */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",
+        gap:10,marginBottom:14}}>
+        {[
+          [total,"Events","#7c3aed"],
+          [uniqueCities,"Regionen","#16a34a"],
+          [uniqueLangs,"Sprachen","#2563eb"],
+        ].map(([v,l,col])=>(
+          <div key={l} style={{background:"#1e293b",borderRadius:13,padding:"14px",
+            border:"1px solid #334155",textAlign:"center"}}>
+            <div style={{fontWeight:900,fontSize:26,color:col,lineHeight:1}}>{v}</div>
+            <div style={{fontSize:10,color:"#475569",marginTop:4}}>{l}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Nach Land/Region */}
+      <Card title="Herkunft / Region">
+        {Object.entries(byCountry).length === 0
+          ? <p style={{color:"#475569",fontSize:13}}>Noch keine Daten</p>
+          : Object.entries(byCountry)
+              .sort(([,a],[,b])=>b.count-a.count)
+              .slice(0,15)
+              .map(([key, {count, flag, city}]) => (
+                <BarRow key={key} label={city||key} count={count}
+                  max={Math.max(...Object.values(byCountry).map(x=>x.count))}
+                  col="#16a34a" icon={flag}/>
+              ))
+        }
+      </Card>
+
+      {/* Nach Sprache */}
+      <Card title="Genutzte Sprache">
+        {Object.entries(byLang).length === 0
+          ? <p style={{color:"#475569",fontSize:13}}>Noch keine Daten</p>
+          : Object.entries(byLang)
+              .sort(([,a],[,b])=>b-a)
+              .map(([lang, count]) => {
+                const pct = Math.round((count/total)*100);
+                return (
+                  <div key={lang} style={{display:"flex",alignItems:"center",
+                    gap:10,marginBottom:10}}>
+                    <div style={{width:36,height:36,borderRadius:10,
+                      background:"#0f172a",display:"flex",alignItems:"center",
+                      justifyContent:"center",fontWeight:800,fontSize:12,
+                      color:"#7c3aed",flexShrink:0}}>
+                      {lang.toUpperCase()}
+                    </div>
+                    <div style={{flex:1}}>
+                      <div style={{display:"flex",justifyContent:"space-between",
+                        marginBottom:4,fontSize:12}}>
+                        <span style={{color:"#e2e8f0",fontWeight:600}}>
+                          {LANG_LABELS[lang]||lang}
+                        </span>
+                        <span style={{color:"#a78bfa",fontWeight:800}}>
+                          {count} ({pct}%)
+                        </span>
+                      </div>
+                      <div style={{height:6,background:"#0f172a",borderRadius:99}}>
+                        <div style={{height:"100%",borderRadius:99,
+                          background:"#7c3aed",width:`${pct}%`,
+                          transition:"width .4s"}}/>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+        }
+      </Card>
+
+      {/* Nach Geraet */}
+      <Card title="Geraete-Typ">
+        <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+          {Object.entries(byDevice).length === 0
+            ? <p style={{color:"#475569",fontSize:13}}>Noch keine Daten</p>
+            : Object.entries(byDevice)
+                .sort(([,a],[,b])=>b-a)
+                .map(([device, count]) => {
+                  const pct = Math.round((count/total)*100);
+                  const col = DEVICE_COLS[device]||"#64748b";
+                  return (
+                    <div key={device} style={{flex:1,minWidth:90,
+                      background:"#0f172a",borderRadius:12,padding:"14px",
+                      border:`1px solid ${col}33`,textAlign:"center"}}>
+                      <div style={{fontWeight:900,fontSize:22,color:col}}>
+                        {DEVICE_ICONS[device]||"?"}
+                      </div>
+                      <div style={{fontWeight:900,fontSize:20,color:col,
+                        margin:"6px 0 2px"}}>
+                        {pct}%
+                      </div>
+                      <div style={{fontSize:10,color:"#475569"}}>
+                        {device==="mobile"?"Handy":
+                         device==="tablet"?"Tablet":"Desktop"}
+                      </div>
+                      <div style={{fontSize:10,color:"#334155",marginTop:2}}>
+                        {count} Sessions
+                      </div>
+                    </div>
+                  );
+                })
+          }
+        </div>
+      </Card>
+
+      {/* Nach Browser */}
+      <Card title="Browser">
+        {Object.entries(byBrowser).length === 0
+          ? <p style={{color:"#475569",fontSize:13}}>Noch keine Daten</p>
+          : Object.entries(byBrowser)
+              .sort(([,a],[,b])=>b-a)
+              .map(([browser, count]) => (
+                <BarRow key={browser} label={browser} count={count}
+                  max={Math.max(...Object.values(byBrowser))}
+                  col="#0891b2"/>
+              ))
+        }
+      </Card>
+
+      {/* Tageszeit-Heatmap */}
+      <Card title="Aktivitaet nach Uhrzeit">
+        <div style={{fontSize:11,color:"#64748b",marginBottom:10}}>
+          Wann wird die App am meisten genutzt?
+        </div>
+        <div style={{display:"flex",alignItems:"flex-end",
+          gap:2,height:60,paddingBottom:4}}>
+          {byHour.map(({h, count}) => {
+            const barH = count > 0 ? Math.max(4, Math.round((count/maxHour)*52)) : 2;
+            const isActive = count === Math.max(...byHour.map(x=>x.count)) && count > 0;
+            return (
+              <div key={h} style={{flex:1,display:"flex",
+                flexDirection:"column",alignItems:"center",gap:2}}>
+                <div style={{
+                  width:"100%", height:barH,
+                  borderRadius:"2px 2px 0 0",
+                  background: isActive ? "#7c3aed"
+                    : count > 0 ? "#334155" : "#1e293b",
+                  transition:"height .3s",
+                }}/>
+                {(h % 6 === 0) && (
+                  <div style={{fontSize:8,color:"#334155",
+                    transform:"rotate(-30deg)",marginTop:2}}>
+                    {h}h
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        {(() => {
+          const peak = byHour.reduce((a,b)=>b.count>a.count?b:a,{h:0,count:0});
+          return peak.count > 0 ? (
+            <div style={{fontSize:12,color:"#7c3aed",marginTop:10,fontWeight:600}}>
+              Spitzenzeit: {peak.h}:00 - {peak.h+1}:00 Uhr ({peak.count} Events)
+            </div>
+          ) : null;
+        })()}
+      </Card>
+
+      {/* Letzte Logins mit Geo */}
+      <Card title="Letzte Logins">
+        {logins.slice(-20).reverse().map((e,i) => (
+          <div key={i} style={{display:"flex",alignItems:"center",gap:10,
+            padding:"8px 0",borderBottom:i<19?"1px solid #0f172a":"none"}}>
+            <div style={{fontSize:18,flexShrink:0,minWidth:28}}>{e.flag||"?"}</div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontWeight:600,fontSize:13,color:"#e2e8f0"}}>
+                {e.detail||"Login"} - {e.city||e.tz||"unbekannt"}
+              </div>
+              <div style={{fontSize:10,color:"#475569",marginTop:1,
+                display:"flex",gap:8}}>
+                <span>{e.date} {e.hour}:xx</span>
+                <span>{LANG_LABELS[e.lang]||e.lang||"?"}</span>
+                <span>{e.device||"?"}</span>
+                <span>{e.browser||"?"}</span>
+              </div>
+            </div>
+          </div>
+        ))}
+        {logins.length===0&&(
+          <p style={{color:"#475569",fontSize:13,margin:0}}>
+            Noch keine Logins getrackt. Wird ab naechstem Login erfasst.
+          </p>
+        )}
+      </Card>
     </div>
   );
 }
@@ -5675,7 +8987,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
     trainers.flatMap(tr=>(tr.tids||[]).map(tid=>{
       const tm=teams?.find(x=>x.id===tid);
       return tm?.cat||tm?.name||null;
-    }).filter(Boolean))
+    }).filter(Boolean).filter(x=>!x.hidden))
   )].sort();
 
   const trainersInCat=cat
@@ -5709,7 +9021,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
         ? <div style={{background:"rgba(255,255,255,.1)",borderRadius:18,padding:"22px",textAlign:"center",color:"rgba(255,255,255,.6)"}}>Keine Trainer gefunden</div>
         : cats.map((c,i)=>{
             const trs=trainers.filter(tr=>(tr.tids||[]).some(tid=>{const tm=teams?.find(x=>x.id===tid);return(tm?.cat||tm?.name)===c;}));
-            const icons=[...new Set(trs.flatMap(tr=>(tr.tids||[]).map(tid=>teams?.find(x=>x.id===tid)?.icon).filter(Boolean)))];
+            const icons=[...new Set(trs.flatMap(tr=>(tr.tids||[]).map(tid=>teams?.find(x=>x.id===tid)?.icon).filter(Boolean).filter(x=>!x.hidden)))];
             return (
               <div key={c} className="up" onClick={()=>{setCat(c);if(trs.length===1){setSel(trs[0].id);setPw("");setStep("pwd");}else setStep("trainer");}}
                 style={{background:"rgba(255,255,255,.09)",border:"1.5px solid rgba(255,255,255,.13)",borderRadius:20,padding:"16px 20px",cursor:"pointer",marginBottom:12,animationDelay:`${i*.06}s`,display:"flex",alignItems:"center",gap:14}}>
@@ -5738,7 +9050,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
           <div style={{flex:1}}>
             <div style={{color:"#fff",fontWeight:900,fontSize:17}}>{tr.name}</div>
             <div style={{color:"rgba(255,255,255,.5)",fontSize:12,marginTop:2}}>
-              {(tr.tids||[]).map(tid=>teams?.find(x=>x.id===tid)?.name).filter(Boolean).join(",")}
+              {(tr.tids||[]).map(tid=>teams?.find(x=>x.id===tid)?.name).filter(Boolean).filter(x=>!x.hidden).join(",")}
             </div>
           </div>
           <span style={{color:"rgba(255,255,255,.3)",fontSize:22}}>></span>
@@ -6414,7 +9726,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,onSave,onClose,t,
 
   const toggleOptTid = tid => up({optTids:(p.optTids||[]).includes(tid)?(p.optTids||[]).filter(x=>x!==tid):[...(p.optTids||[]),tid]});
 
-  const allTids = [p.mainTid,...(p.optTids||[])].filter(Boolean);
+  const allTids = [p.mainTid,...(p.optTids||[])].filter(Boolean).filter(x=>!x.hidden);
   const rawStats = playerStats(p.name,allTids,allEvents||[]);
   const statsRows = allTeams.filter(tm => allTids.includes(tm.id)).map(tm => ({
     tm,s: rawStats[tm.id]||{training:0,games:0}
@@ -6691,7 +10003,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,onSave,onClose,t,
 
 function PlayerCard({ player: pl,onEdit,onDel,isMain,allTeams,allEvents }) {
   const [exp,setExp] = useState(false);
-  const allTids = [pl.mainTid,...(pl.optTids||[])].filter(Boolean);
+  const allTids = [pl.mainTid,...(pl.optTids||[])].filter(Boolean).filter(x=>!x.hidden);
   const rawStats = playerStats(pl.name,allTids,allEvents||[]);
   const totalGames    = Object.values(rawStats).reduce((s,r)=>s+r.games,0);
   const totalTraining = Object.values(rawStats).reduce((s,r)=>s+r.training,0);
@@ -7839,7 +11151,7 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
         {step===5&&<div className="in">
           <div style={{background:"#0f172a",borderRadius:17,padding:"18px"}}>
             <p style={{color:"rgba(255,255,255,.45)",fontSize:11,fontWeight:800,marginBottom:13,letterSpacing:.5}}>ZUSAMMENFASSUNG</p>
-            {[[" Mannschaft",teamsSel?.icon+" "+teamsSel?.name],["Art",ET[f.type]?.icon+" "+ET[f.type]?.label],["Titel",f.title],["Uhrzeit",f.time||"-"],f.loc&&["Ort","* "+f.loc],f.note&&["Notiz","* "+f.note.slice(0,50)],["Umfrage",f.pt==="att"?"* Anwesenheit":f.pt==="carpool"?"* Fahrtgemeinschaft":`* Liste (${(f.li||[]).length} Opt.)`],["Termine",f.recMode==="weekly"?`* Woechentlich . ${f.recDays?.length||0} Tage`:f.recMode==="custom"?`* ${f.recDates?.length||0} Daten`:"1 Termin . "+fmtD(f.date)],f.open&&["Sichtbarkeit","* Offen fuer andere Vereine"]].filter(Boolean).map(([k,v])=>(
+            {[[" Mannschaft",teamsSel?.icon+" "+teamsSel?.name],["Art",ET[f.type]?.icon+" "+ET[f.type]?.label],["Titel",f.title],["Uhrzeit",f.time||"-"],f.loc&&["Ort","* "+f.loc],f.note&&["Notiz","* "+f.note.slice(0,50)],["Umfrage",f.pt==="att"?"* Anwesenheit":f.pt==="carpool"?"* Fahrtgemeinschaft":`* Liste (${(f.li||[]).length} Opt.)`],["Termine",f.recMode==="weekly"?`* Woechentlich . ${f.recDays?.length||0} Tage`:f.recMode==="custom"?`* ${f.recDates?.length||0} Daten`:"1 Termin . "+fmtD(f.date)],f.open&&["Sichtbarkeit","* Offen fuer andere Vereine"]].filter(Boolean).filter(x=>!x.hidden).map(([k,v])=>(
               <div key={k} style={{display:"flex",gap:10,marginBottom:9}}>
                 <span style={{color:"rgba(255,255,255,.4)",fontSize:12,fontWeight:700,minWidth:90}}>{k}</span>
                 <span style={{color:"#fff",fontSize:13,fontWeight:700,flex:1}}>{v}</span>
@@ -7978,6 +11290,7 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
 }
 
 function ChatTab({data,cid,myTids,session,save,fire,cl}) {
+  const [modWarning, setModWarning] = useState(null); // null | "warning" | "yellow" | "red"
   const t=TH(cl);
   const allTeams=data.teams.filter(tm=>tm.cid===cid);
   const isHelper=session.role==="helper";
@@ -8063,6 +11376,7 @@ function ChatTab({data,cid,myTids,session,save,fire,cl}) {
         </button>
       </div>
     </div>
+    </div>
   );
 }
 
@@ -8121,7 +11435,7 @@ function JerseysTab({ data,myTids,save,fire,cl }) {
       {mode==="overview" && (
         <>
           {}
-          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:16}}>
+          <div className="va-grid-3" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:16}}>
             {JERSEY_STATUS.filter(s=>s.id!=="none").map(s=>(
               <div key={s.id} style={{background:s.bg,borderRadius:12,padding:"10px 8px",textAlign:"center",border:`1.5px solid ${s.col}30`}}>
                 <div style={{fontSize:20,marginBottom:2}}>{s.icon}</div>
@@ -8357,7 +11671,7 @@ function useShareTrigger(data,session,myTids) {
     if(!session||session.role==="user") return;
     const cooldown = 7*24*60*60*1000; // 7 days between prompts
     const now = Date.now();
-    const lastAny = Math.max(...Object.values(dismissed).map(Number).filter(Boolean),0);
+    const lastAny = Math.max(...Object.values(dismissed).map(Number).filter(Boolean).filter(x=>!x.hidden),0);
     if(now - lastAny < cooldown) return; // respect cooldown
 
     const allPlayers = data.playerProfiles||[];
@@ -10230,7 +13544,7 @@ function AttendanceTab({ data, myTids, cl, save, fire }) {
 }
 
 function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
-
+  const { isDesktop, isTablet } = useBreakpoint();
   const isAdmin=session.role==="admin"; const isHelper=session.role==="helper"; const cid=session.cid; const cl=data.clubs.find(c=>c.id===cid);
   const myTids=isAdmin?data.teams.filter(t=>t.cid===cid).map(t=>t.id):isHelper?data.teams.filter(t=>t.cid===cid).map(t=>t.id):(session.tids||[]);
   const t=TH(cl);
@@ -10290,11 +13604,20 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
 
   const tr = (k) => { const lang = localStorage.getItem("vereinsapp_lang") || "de"; return T[lang]?.[k] ?? T.de[k] ?? k; };
   // BottomNav replaces old tabs - kept for reference
-  const tabs=[].filter(Boolean);
+  const tabs=[].filter(Boolean).filter(x=>!x.hidden);
 
   return (
-    <div style={{minHeight:"100dvh",background:"#f0f4f8",paddingBottom:52}}>
-      <ClubHeader cl={myClub} sub={`${isAdmin?"** Admin":isHelper?"* Helfer":"**"} ${session.name||"Admin"}`}
+    <div style={{minHeight:"100dvh",background:"#f0f4f8",
+      paddingBottom:isDesktop?0:52,
+      display:isDesktop?"grid":"block",
+      gridTemplateColumns:isDesktop?"260px 1fr":"none"}}>
+      {isDesktop&&<DesktopSidebar tab={tab} setTab={setTab}
+        isAdmin={isAdmin} isHelper={isHelper}
+        unread={unreadMsgs} cl={myClub}
+        session={session} onLogout={onLogout}/>}
+      <div style={{minHeight:"100dvh",overflowY:"auto",background:"#f0f4f8"}}>
+      <div style={{maxWidth:isDesktop?"900px":"100%",margin:"0 auto",padding:isDesktop?"24px":"0"}}>
+      <ClubHeader cl={myClub} hide={isDesktop} sub={`${isAdmin?"** Admin":isHelper?"* Helfer":"**"} ${session.name||"Admin"}`}
         right={
           <div style={{display:"flex",gap:7,alignItems:"center"}}>
             <LangSwitcher lang={lang} setLang={setLang}/>
@@ -10371,7 +13694,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         {tab==="trainers"   &&isAdmin&&<TrainersTab data={local} cid={cid} save={save} fire={fire}/>}
         {tab==="branding"   &&isAdmin&&<BrandingTab cl={myClub} onSave={c=>{save({...local,clubs:local.clubs.map(x=>x.id===c.id?c:x)});fire("Design gespeichert *");}}/>}
         {tab==="visibility" &&isAdmin&&<VisibilityTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
-        {tab==="settings"   &&isAdmin&&<SettingsTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
+        {tab==="settings"   &&isAdmin&&<ClubAdminSettings data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
         {tab==="security"   &&isAdmin&&<SecurityTab data={local} cid={cid} save={save}/>}
         {tab==="access"     &&isAdmin&&<AccessManagerTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
         {tab==="team"       &&<TeamHub data={local} myTids={myTids} save={save} fire={fire} cl={myClub} session={session}/>}
@@ -10436,7 +13759,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       {showOnboarding&&<OnboardingWizard cl={myClub} data={local} save={save} fire={fire} onDone={()=>setShowOnboarding(false)}/>}
       <Toast msg={toast}/>
       <BottomNav tab={tab} setTab={setTab} isAdmin={isAdmin} isHelper={isHelper}
-        unread={unreadMsgs} cl={myClub}/>
+        unread={unreadMsgs} cl={myClub} />
+      
     </div>
   );
 }
@@ -10952,7 +14276,14 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
   };
 
   return (
-    <div style={{minHeight:"100dvh",background:"#f0f4f8",paddingBottom:52}}>
+    <div style={{minHeight:"100dvh",background:"#f0f4f8",
+      paddingBottom:isDesktop?0:52,
+      display:isDesktop?"grid":"block",
+      gridTemplateColumns:isDesktop?"260px 1fr":"none"}}>
+      {isDesktop&&<DesktopSidebar tab={tab} setTab={setTab}
+        isAdmin={isAdmin} isHelper={isHelper}
+        unread={unreadMsgs} cl={myClub}
+        session={session} onLogout={onLogout}/>}
       <ClubHeader cl={cl} sub={`${myTeam?.icon||""} ${myTeam?.name||""}`}
         right={
           <div style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}} onClick={()=>setShowProfile(true)}>
@@ -11008,7 +14339,8 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
       {showOnboarding&&<OnboardingWizard cl={myClub} data={local} save={save} fire={fire} onDone={()=>setShowOnboarding(false)}/>}
       <Toast msg={toast}/>
       <BottomNav tab={tab} setTab={setTab} isAdmin={isAdmin} isHelper={isHelper}
-        unread={unreadMsgs} cl={myClub}/>
+        unread={unreadMsgs} cl={myClub} />
+      
       {shareConfig&&<MomentShare trigger={shareConfig.trigger} clubName={myClub?.name} stats={shareConfig.stats} onDismiss={()=>setShareConfig(null)}/>}
       {showNPS&&<NPSWidget clubName={myClub?.name} onDone={()=>setShowNPS(false)}/>}
       {achievement&&<AchievementToast achievement={achievement} onDone={()=>setAchievment(null)}/>}
@@ -11040,6 +14372,12 @@ function AppInner({lang,setLang}) {
   const [cid,setCid]      = useState(null);
   const [session,setSess] = useState(null);
   const [showSetup,setShowSetup] = useState(false);
+  const [showSuperAdmin,setShowSuperAdmin] = useState(
+    ()=>new URLSearchParams(window.location.search).has("superadmin")
+  );
+  const [logoTaps,setLogoTaps] = useState(0);
+  const isMaintenance = localStorage.getItem("va_maintenance")==="1"
+    && !new URLSearchParams(window.location.search).has("superadmin");
   const [saveStatus,setSaveStatus] = useState(null); // null | "saving" | "saved" | "local"
   const syncRef  = useRef(null);
   const saveTimer= useRef(null);
@@ -11080,6 +14418,8 @@ function AppInner({lang,setLang}) {
     const s={...payload,role,cid}; sess.set(s,true); setSess(s);
     const dev=getDeviceInfo();
     const label=role==="admin"?"Admin-Login":role==="trainer"?"Trainer-Login":role==="helper"?"Helfer-Login":"Eltern-Login";
+    trackEventGeo("login", label);
+    trackEventGeo("login", label);
     const entry={...createAuditEntry("login",label+": "+(payload.name||role),s),cid};
     const newLog=[...(data.securityLog||[]),
       ...(dev.suspicious?[{...createAuditEntry("new_device","Unbekannte Region: "+dev.lang,s),cid}]:[]),
