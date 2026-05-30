@@ -7580,7 +7580,6 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
   const clubFeat = (key, def=true) => cs[key]!==undefined ? cs[key] : def;
   const sport = myClub.sport||"fussball";
   const sportProfile = SPORT_PROFILES[sport]||SPORT_PROFILES.fussball;
-  const cs = myClub.clubSettings||{};
   const [section, setSection] = useState("sport");
   const [showImport, setShowImport] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
@@ -8952,7 +8951,7 @@ function RolePicker({cl,onRole,onBack}) {
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s} 0%,${t.p}66 100%)`}}>
       <style>{CSS}</style>
       <div style={{padding:"50px 22px 0",maxWidth:440,margin:"0 auto"}}>
-        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:32}}><- Zurueck</button>
+        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:32}}>← Zurueck</button>
         <div className="up" style={{display:"flex",flexDirection:"column",alignItems:"center",marginBottom:40}}>
           <Logo cl={cl} sz={80}/>
           <h1 style={{color:"#fff",fontSize:26,fontWeight:900,letterSpacing:-.5,margin:"14px 0 6px",textAlign:"center"}}>{cl.name}</h1>
@@ -9005,7 +9004,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
       <style>{CSS}</style>
       <div style={{padding:"48px 20px 0",maxWidth:460,margin:"0 auto"}}>
         <button onClick={step==="cat"?onBack:step==="trainer"?()=>setStep("cat"):()=>{setStep("trainer");setPw("");setErr(false);}}
-          style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:28}}><- Zurueck</button>
+          style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:28}}>← Zurueck</button>
         {children}
       </div>
     </div>
@@ -9061,7 +9060,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
   return (
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s},${t.p}66)`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,position:"relative"}}>
       <style>{CSS}</style>
-      <button onClick={()=>{setStep(trainersInCat.length>1?"trainer":"cat");setPw("");setErr(false);}} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}><- Zurueck</button>
+      <button onClick={()=>{setStep(trainersInCat.length>1?"trainer":"cat");setPw("");setErr(false);}} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}>← Zurueck</button>
       <div className="up" style={{width:"100%",maxWidth:370}}>
         <div style={{textAlign:"center",marginBottom:28}}>
           <Av name={selTr?.name||"?"} sz={72} sx={{margin:"0 auto 14px"}}/>
@@ -9074,7 +9073,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
             placeholder="Passwort..." autoFocus
             style={{width:"100%",padding:"13px 16px",fontSize:16,background:"rgba(255,255,255,.12)",border:`2px solid ${err?"#ff6b6b":pw?"rgba(255,255,255,.4)":"rgba(255,255,255,.2)"}`,borderRadius:13,outline:"none",color:"#fff",marginBottom:10}}/>
           {err&&<FriendlyError type="wrongPassword"/>}
-          {cl.id==="demo"&&<div style={{background:"rgba(255,255,255,.08)",borderRadius:10,padding:"8px 12px",marginBottom:10,fontSize:11,color:"rgba(255,255,255,.6)"}}>Demo: Trainer A = trainer1 | Trainer B = trainer2</div>
+          {cl.id==="demo"&&<div style={{background:"rgba(255,255,255,.08)",borderRadius:10,padding:"8px 12px",marginBottom:10,fontSize:11,color:"rgba(255,255,255,.6)"}}>Demo: Trainer A = trainer1 | Trainer B = trainer2</div>}
           <button onClick={()=>setShowForgotTr(true)}
             style={{background:"none",border:"none",color:"rgba(255,255,255,.4)",
               fontSize:12,cursor:"pointer",fontFamily:"inherit",
@@ -9082,7 +9081,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
             Passwort vergessen?
           </button>
           {showForgotTr&&<ForgotPasswordHelp cl={cl} trainers={trainers}
-            forRole="trainer" onBack={()=>setShowForgotTr(false)}/>}}
+            forRole="trainer" onBack={()=>setShowForgotTr(false)}/>}
           <button onClick={go} disabled={!pw.trim()}
             style={{width:"100%",padding:"13px",fontSize:15,fontWeight:800,background:pw.trim()?cl.pri:"rgba(255,255,255,.15)",color:pw.trim()?"#fff":"rgba(255,255,255,.4)",border:"none",borderRadius:13,cursor:pw.trim()?"pointer":"not-allowed",transition:"all .18s"}}>
              Einloggen
@@ -9100,7 +9099,7 @@ function AdminLogin({cl,onLogin,onBack}) {
     <div style={{minHeight:"100dvh",background:`linear-gradient(135deg,${t.s},${t.p}66)`,display:"flex",alignItems:"center",justifyContent:"center",padding:22}}>
       <style>{CSS}</style>
       <div className="up" style={{width:"100%",maxWidth:390}}>
-        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:26}}><- Zurueck</button>
+        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:26}}>← Zurueck</button>
         <div style={{background:"#fff",borderRadius:24,padding:"34px 26px",boxShadow:"0 24px 80px rgba(0,0,0,.4)"}}>
           <div style={{textAlign:"center",marginBottom:22}}><Logo cl={cl} sz={68} sx={{margin:"0 auto 12px"}}/><h2 style={{fontSize:22,fontWeight:900,color:"#0f172a",margin:"0 0 4px"}}>Vereinsadmin</h2><p style={{color:"#94a3b8",fontSize:13}}>{cl.name}</p></div>
           <Inp label="Admin-Passwort" type="password" val={pw} set={setPw} ph="Passwort..." af cl={cl}/>
@@ -9134,7 +9133,7 @@ function HelperLogin({cl,helpers,onLogin,onBack}) {
     <div style={{minHeight:"100dvh",background:`linear-gradient(135deg,${t.s},${t.p}66)`,display:"flex",alignItems:"center",justifyContent:"center",padding:22}}>
       <style>{CSS}</style>
       <div className="up" style={{width:"100%",maxWidth:390}}>
-        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:26}}><- Zurueck</button>
+        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:26}}>← Zurueck</button>
         <div style={{background:"#fff",borderRadius:24,padding:"34px 26px",boxShadow:"0 24px 80px rgba(0,0,0,.3)"}}>
           <div style={{textAlign:"center",marginBottom:22}}>
             <div style={{fontSize:52,marginBottom:8}}></div>
@@ -9188,7 +9187,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s} 0%,${t.p}66 100%)`}}>
       <style>{CSS}</style>
       <div style={{padding:"48px 20px 0",maxWidth:460,margin:"0 auto"}}>
-        <button onClick={goBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:28}}><- Zurueck</button>
+        <button onClick={goBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:28}}>← Zurueck</button>
         <div className="up" style={{display:"flex",flexDirection:"column",alignItems:"center",marginBottom:32}}>
           <Logo cl={cl} sz={64}/>
           <h2 style={{color:"#fff",fontSize:24,fontWeight:900,margin:"12px 0 4px",textAlign:"center"}}>{title}</h2>
@@ -9231,7 +9230,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
   if(step==="pwd") return (
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s},${t.p}66)`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,position:"relative"}}>
       <style>{CSS}</style>
-      <button onClick={goBack} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}><- Zurueck</button>
+      <button onClick={goBack} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}>← Zurueck</button>
       <div className="up" style={{width:"100%",maxWidth:370}}>
         <div style={{textAlign:"center",marginBottom:28}}>
           <div style={{width:72,height:72,borderRadius:22,background:ct?.col+"33",border:`1.5px solid ${ct?.col}66`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:38,margin:"0 auto 14px"}}>{ct?.icon}</div>
@@ -9270,7 +9269,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
   if(step==="locked") return (
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s},${t.p}66)`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
       <style>{CSS}</style>
-      <button onClick={()=>setStep("pwd")} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}><- Zurueck</button>
+      <button onClick={()=>setStep("pwd")} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}>← Zurueck</button>
       <div className="up" style={{textAlign:"center",maxWidth:340}}>
         <div style={{fontSize:64,marginBottom:16}}></div>
         <h2 style={{color:"#fff",fontSize:22,fontWeight:900,margin:"0 0 12px"}}>{ct?.name}</h2>
@@ -9284,7 +9283,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
           </div>
         </div>
         <button onClick={()=>setStep("pwd")} style={{marginTop:20,padding:"12px 28px",borderRadius:13,border:"1.5px solid rgba(255,255,255,.3)",background:"transparent",color:"rgba(255,255,255,.7)",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
-          <- Zurueck zum Login
+          ← Zurueck zum Login
         </button>
       </div>
     </div>
@@ -9292,7 +9291,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
   return (
     <div style={{minHeight:"100dvh",background:"#f0f4f8",display:"flex",flexDirection:"column"}}>
       <div style={{background:`linear-gradient(135deg,${t.s},${t.p}99)`,padding:"16px 18px 22px"}}>
-        <button onClick={goBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:14}}><- Zurueck</button>
+        <button onClick={goBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:14}}>← Zurueck</button>
         <div style={{display:"flex",alignItems:"center",gap:12}}><Logo cl={cl} sz={40}/><div><div style={{color:"rgba(255,255,255,.6)",fontSize:12,fontWeight:700}}>{ct?.icon} {ct?.name}</div><div style={{color:"#fff",fontSize:20,fontWeight:900}}>Wer bist du?</div></div></div>
       </div>
       <div style={{padding:"12px 14px 0",background:"#f0f4f8",position:"sticky",top:0,zIndex:10}}>
@@ -11394,7 +11393,6 @@ function ChatTab({data,cid,myTids,session,save,fire,cl}) {
         </button>
       </div>
     </div>
-    </div>
   );
 }
 
@@ -11598,8 +11596,6 @@ function AdBanner({ slot="auto",style={} }) {
   );
 }
 
-const APP_URL = "https://vereinsapp.de"; // Deine Domain hier eintragen
-
 function ShareBanner({ cl,session,trigger,onDismiss }) {
   const t = TH(cl);
   const [copied,setCopied] = useState(false);
@@ -11704,10 +11700,6 @@ function useShareTrigger(data,session,myTids) {
 
   return { trigger,dismiss };
 }
-
-  {id:"left",icon:"Tuer",label:"Verein verlassen"},{id:"injury",icon:"Krank",label:"Verletzt / Pause"},{id:"retired",icon:"Ende",label:"Karriereende"},{id:"nolust",icon:"Pause",label:"Keine Lust / Auszeit"},{id:"moved",icon:"Weg",label:"Weggezogen"},{id:"other",icon:"?",label:"Sonstiges"},];
-const AGE_GROUPS = [
-  {id:"bambinis",label:"Bambinis",icon:"B",ageRange:"U5-U6"},{id:"g",label:"G-Jugend",icon:"G",ageRange:"U7"},{id:"f",label:"F-Jugend",icon:"F",ageRange:"U8-U9"},{id:"e",label:"E-Jugend",icon:"E",ageRange:"U10-U11"},{id:"d",label:"D-Jugend",icon:"D",ageRange:"U12-U13"},{id:"c",label:"C-Jugend",icon:"C",ageRange:"U14-U15"},{id:"b",label:"B-Jugend",icon:"B2",ageRange:"U16-U17"},{id:"a",label:"A-Jugend",icon:"A",ageRange:"U18-U19"},{id:"seniors",label:"Senioren",icon:"S",ageRange:"Aktive"},{id:"altherren",label:"Alt-Herren",icon:"AH",ageRange:"Ue32"},{id:"frauen",label:"Frauen",icon:"FR",ageRange:"Aktive"},];
 
 function NewSeasonWizard({ data,save,fire,cl,myTids,onClose,onDone }) {
   const t=TH(cl||(data.clubs||[])[0]);
@@ -12841,12 +12833,7 @@ function InviteSheet({ team, cl, onClose }) {
             </button>
             <button onClick={()=>{
               navigator.clipboard?.writeText(
-                "Hallo! Bitte lade die Vereins-App herunter:
-"+url+
-                "
-
-Mannschaft: "+team.name+"
-Code: "+(team.pwd||"")
+                `Hallo! Bitte lade die Vereins-App herunter:\n${url}\n\nMannschaft: ${team.name}\nCode: ${team.pwd||""}`
               ); }}
               style={{flex:2,padding:"11px",borderRadius:11,border:"none",background:t.p,
                 color:"#fff",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
@@ -13461,7 +13448,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const isAdmin=session.role==="admin"; const isHelper=session.role==="helper"; const cid=session.cid; const cl=data.clubs.find(c=>c.id===cid);
   const myTids=isAdmin?data.teams.filter(t=>t.cid===cid).map(t=>t.id):isHelper?data.teams.filter(t=>t.cid===cid).map(t=>t.id):(session.tids||[]);
   const t=TH(cl);
-  const [tab,setTab]=useState("events"); // BottomNav manages this const [local,setLocal]=useState(()=>JSON.parse(JSON.stringify(data)));
+  const [tab,setTab]=useState("events"); // BottomNav manages this
+  const [local,setLocal]=useState(()=>JSON.parse(JSON.stringify(data)));
   const [toast,setToast]=useState(null);
   const unreadMsgs = useMemo(()=>{
     const lastRead = Number(localStorage.getItem("va_last_read_"+cid)||0);
@@ -13668,6 +13656,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           <Btn v="gst" full ch="Abbrechen" onClick={()=>setEditConf(null)}/>
         </div>
       </Drawer>}
+      </div>
+    </div>
 
       {showOnboarding&&<OnboardingWizard cl={myClub} data={local} save={save} fire={fire} onDone={()=>setShowOnboarding(false)}/>}
       <Toast msg={toast}/>
