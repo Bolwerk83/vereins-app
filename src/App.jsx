@@ -9447,7 +9447,6 @@ function PollAttend({ev,user,onVote,cl}) {
       </p>}
     </div>
   );
-}
   return (
     <div style={{display:"flex",flexDirection:"column",gap:10}}>
       {session?.role==="trainer"&&<TrainerCheckin ev={ev} session={session} save={save} data={data} fire={fire}/>}
@@ -10646,7 +10645,26 @@ function BrandingTab({cl,onSave}) {
               {c.logo?<img src={c.logo} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span style={{fontSize:34}}>{c.em||"*"}</span>}
             </div>
             <div style={{flex:1,display:"flex",flexDirection:"column",gap:7}}>
-              <input ref={ref} type="file" accept="image
+              <input ref={ref} type="file" accept="image/*" style={{display:"none"}} onChange={up}/>
+              <button onClick={()=>ref.current?.click()}
+                style={{padding:"9px 16px",borderRadius:10,border:"none",
+                  background:"#e2e8f0",fontWeight:700,fontSize:13,
+                  cursor:"pointer",fontFamily:"inherit"}}>
+                Logo hochladen
+              </button>
+            </div>
+          </div>
+        </div>
+        <button onClick={()=>onSave(c)}
+          style={{width:"100%",padding:"13px",borderRadius:13,border:"none",
+            background:cl?.pri||"#16a34a",color:"#fff",fontWeight:800,
+            fontSize:14,cursor:"pointer",fontFamily:"inherit",marginTop:8}}>
+          Design speichern
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function TemplateForm({initial,onSave,onCancel,cl,title}) {
   const t=TH(cl);
@@ -12178,111 +12196,6 @@ function TrainersTab({data,cid,save,fire}) {
   );
 }
 
-
-  const t = TH(cl);
-  const cid = data.teams.find(tm=>myTids.includes(tm.id))?.cid;
-  const fields = (data.fields||[]).filter(f=>f.cid===cid);
-  const bookings = data.bookings||[];
-  const [selDate,setSelDate] = useState(now());
-  const [bookingTarget,setBookingTarget] = useState(null); // {field,cellStart}
-  const [view,setView] = useState("day"); // day | week
-  const weekDates = Array.from({length:7},(_,i)=>{
-    const d = new Date(selDate+"T12:00:00");
-    d.setDate(d.getDate()-d.getDay()+1+i);
-    return d.toISOString().slice(0,10);
-  });
-
-  const dayBookings = (fieldId) => bookings.filter(b=>b.fieldId===fieldId&&b.date===selDate);
-
-  const cancelBooking = id => {
-    save({...data,bookings:bookings.filter(b=>b.id!==id)});
-    fire("Buchung geloescht");
-  };
-  const totalCells = fields.length * 8;
-  const bookedCells = bookings.filter(b=>b.date===selDate&&fields.find(f=>f.id===b.fieldId)).reduce((s,b)=>s+(b.cells||8),0);
-  const utilPct = totalCells>0?Math.round(bookedCells/totalCells*100):0;
-
-  return (
-    <div>
-      {bookingTarget&&<BookingModal
-        field={bookingTarget.field} cellStart={bookingTarget.cellStart}
-        date={selDate} data={data} save={save} fire={fire} cl={cl}
-        myTids={myTids} session={session}
-        onClose={()=>setBookingTarget(null)}
-      />}
-
-      {}
-      <div style={{background:"#fff",borderRadius:16,padding:"14px",border:"1.5px solid #e2e8f0",marginBottom:14}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-          <div style={{fontWeight:800,fontSize:16,color:"#0f172a"}}>Platzbelegung</div>
-          <div style={{display:"flex",gap:6}}>
-            <button onClick={()=>{const d=new Date(selDate+"T12:00:00");d.setDate(d.getDate()-1);setSelDate(d.toISOString().slice(0,10));}} style={{width:32,height:32,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",cursor:"pointer",fontSize:18}}><</button>
-            <input type="date" value={selDate} onChange={e=>setSelDate(e.target.value)} style={{padding:"6px 10px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",fontFamily:"inherit"}}/>
-            <button onClick={()=>{const d=new Date(selDate+"T12:00:00");d.setDate(d.getDate()+1);setSelDate(d.toISOString().slice(0,10));}} style={{width:32,height:32,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",cursor:"pointer",fontSize:18}}>></button>
-          </div>
-        </div>
-        {}
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <div style={{flex:1,height:8,borderRadius:99,background:"#e2e8f0",overflow:"hidden"}}>
-            <div style={{height:"100%",borderRadius:99,background:utilPct>80?"#dc2626":utilPct>50?"#d97706":"#16a34a",width:`${utilPct}%`,transition:"width .4s ease"}}/>
-          </div>
-          <span style={{fontSize:12,fontWeight:800,color:utilPct>80?"#dc2626":utilPct>50?"#d97706":"#16a34a",minWidth:38}}>{utilPct}%</span>
-          <span style={{fontSize:12,color:"#94a3b8"}}>belegt</span>
-        </div>
-      </div>
-
-      {}
-      {fields.length===0&&<div style={{textAlign:"center",padding:"32px",background:"#f8fafc",borderRadius:14,border:"1.5px dashed #e2e8f0"}}>
-        <div style={{fontSize:36,marginBottom:8}}></div>
-        <p style={{fontWeight:700,color:"#334155"}}>Keine Plaetze konfiguriert</p>
-        <p style={{fontSize:13,color:"#94a3b8",marginTop:4}}>Plaetze werden vom Admin angelegt</p>
-      </div>}
-
-      {fields.map(field=>(
-        <div key={field.id} style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",marginBottom:14,overflow:"hidden"}}>
-          {}
-          <div style={{padding:"12px 16px",borderBottom:"1px solid #f1f5f9",display:"flex",alignItems:"center",gap:10}}>
-            <div style={{width:36,height:36,borderRadius:10,background:"#16a34a22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}></div>
-            <div style={{flex:1}}>
-              <div style={{fontWeight:800,fontSize:15,color:"#0f172a"}}>{field.name}</div>
-              <div style={{fontSize:12,color:"#64748b"}}>{field.surface} . {dayBookings(field.id).length} Buchung{dayBookings(field.id).length!==1?"en":""}</div>
-            </div>
-            <button onClick={()=>setBookingTarget({field,cellStart:0})}
-              style={{padding:"7px 14px",borderRadius:10,border:"none",background:t.p,color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",boxShadow:`0 2px 8px ${t.p}44`}}>
-              + Buchen
-            </button>
-          </div>
-          {}
-          <div style={{padding:"14px 16px"}}>
-            <FieldGraphic
-              field={field} bookings={bookings} date={selDate}
-              onBook={(f,cell)=>setBookingTarget({field:f,cellStart:cell})}
-              myName={session.name} t={t}
-            />
-          </div>
-          {}
-          {dayBookings(field.id).length>0&&<div style={{padding:"0 16px 14px",display:"flex",flexDirection:"column",gap:6}}>
-            <div style={{fontSize:10,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:2}}>BUCHUNGEN</div>
-            {dayBookings(field.id).map(b=>{
-              const tm=data.teams.find(x=>x.id===b.teamId);
-              const sizeLbl=b.cells>=8?"Ganzer Platz":b.cells>=4?"Halber Platz":"Viertel";
-              return (
-                <div key={b.id} style={{display:"flex",alignItems:"center",gap:10,background:"#f8fafc",borderRadius:11,padding:"9px 13px",border:"1px solid #e2e8f0"}}>
-                  <div style={{width:10,height:10,borderRadius:"50%",background:tm?.col||"#64748b",flexShrink:0}}/>
-                  <div style={{flex:1}}>
-                    <div style={{fontWeight:700,fontSize:13}}>{b.teamName||b.booker}</div>
-                    <div style={{fontSize:11,color:"#64748b"}}>{b.timeFrom}-{b.timeTo} . {sizeLbl}{b.note?" . "+b.note:""}</div>
-                  </div>
-                  <button onClick={()=>cancelBooking(b.id)} style={{width:26,height:26,borderRadius:7,background:"#fee2e2",border:"none",color:"#dc2626",cursor:"pointer",fontSize:13,fontWeight:800}}></button>
-                </div>
-              );
-            })}
-          </div>}
-        </div>
-      ))}
-    </div>
-  );
-}
 
 function FieldsTab({ data,myTids,session,save,fire,cl }) {
   const t = TH(cl);
@@ -14043,7 +13956,32 @@ function PhotoUploader({photo,name,onSave,onRemove,t}) {
   return (
     <>
       {showLegal && <LegalModal onAccept={accept} onDecline={decline}/>}
-      <input ref={fileRef} type="file" accept="image
+      <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleFile}/>
+      {pending && (
+        <div style={{marginTop:10,borderRadius:12,overflow:"hidden",
+          border:"1.5px solid #e2e8f0",maxWidth:200}}>
+          <img src={pending} alt="Vorschau"
+            style={{width:"100%",display:"block",maxHeight:150,objectFit:"cover"}}/>
+        </div>
+      )}
+      <button onClick={()=>fileRef.current?.click()}
+        style={{marginTop:8,padding:"9px 16px",borderRadius:10,border:"none",
+          background:"#e2e8f0",fontWeight:700,fontSize:13,cursor:"pointer",
+          fontFamily:"inherit"}}>
+        {photo ? "Bild aendern" : "Bild hochladen"}
+      </button>
+      {photo && (
+        <button onClick={onRemove}
+          style={{marginTop:6,padding:"7px 14px",borderRadius:9,border:"none",
+            background:"#fee2e2",color:"#dc2626",fontWeight:700,fontSize:12,
+            cursor:"pointer",fontFamily:"inherit"}}>
+          Bild entfernen
+        </button>
+      )}
+    </>
+  );
+}
+
 function CarpoolWizard({ev,user,onSave,onClose,cl}) {
   return <div style={{padding:16,textAlign:"center",color:"#64748b"}}><p>Fahrgemeinschaft-Funktion in Entwicklung.</p><button onClick={onClose} style={{marginTop:12,padding:"10px 20px",borderRadius:10,border:"none",background:TH(cl).p,color:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Schliessen</button></div>;
 }
