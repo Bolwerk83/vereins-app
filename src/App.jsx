@@ -14636,7 +14636,8 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
         </div>
       )}
 
-      <div style={{maxWidth:520,margin:"0 auto",padding:"16px 14px"}}>
+      <div style={{maxWidth:isDesktop?1080:520,margin:"0 auto",padding:isDesktop?"24px":"16px 14px",display:isDesktop?"grid":"block",gridTemplateColumns:isDesktop?"1fr 320px":"none",gap:isDesktop?24:0,alignItems:"start"}}>
+        <div>
         {up.length>0&&<>
           <Divider label="KOMMENDE TERMINE"/>
           {up.map((ev,i)=><div key={ev.id} className="up" style={{marginBottom:10,animationDelay:`${i*.05}s`}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user"/></div>)}
@@ -14648,6 +14649,45 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
           </button>
           {showPast&&past.map(ev=><div key={ev.id} style={{marginBottom:10}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user"/></div>)}
         </>}
+        </div>
+        {isDesktop&&(
+          <aside style={{position:"sticky",top:24,display:"flex",flexDirection:"column",gap:16}}>
+            <div style={{borderRadius:18,overflow:"hidden",boxShadow:"0 4px 20px rgba(0,0,0,.06)"}}>
+              <div style={{background:`linear-gradient(135deg,${t.s} 0%,${t.p} 100%)`,padding:"22px 20px",color:"#fff",position:"relative"}}>
+                <svg viewBox="0 0 120 120" width="120" height="120" style={{position:"absolute",right:-10,top:-10,opacity:.16}}>
+                  <circle cx="60" cy="60" r="34" fill="none" stroke="#fff" strokeWidth="3"/>
+                  <path d="M60 26 L70 50 L60 64 L50 50 Z M60 64 L40 78 L48 96 L72 96 L80 78 Z" fill="#fff"/>
+                </svg>
+                <div style={{display:"flex",alignItems:"center",gap:11,marginBottom:8}}>
+                  <Logo cl={cl} sz={40}/>
+                  <div>
+                    <div style={{fontWeight:900,fontSize:16,lineHeight:1.2}}>{cl?.name}</div>
+                    <div style={{fontSize:12,color:"rgba(255,255,255,.7)"}}>{myTeam?.name}</div>
+                  </div>
+                </div>
+                <div style={{fontSize:13,color:"rgba(255,255,255,.9)",fontWeight:600}}>Hallo {user}!</div>
+              </div>
+              <div style={{background:"#fff",padding:"16px 18px"}}>
+                <div style={{fontSize:11,fontWeight:800,color:"#94a3b8",letterSpacing:.5,marginBottom:8}}>ÜBERSICHT</div>
+                <div style={{display:"flex",gap:10}}>
+                  <div style={{flex:1,background:t.p+"12",borderRadius:12,padding:"12px 10px",textAlign:"center"}}>
+                    <div style={{fontSize:24,fontWeight:900,color:t.p}}>{up.length}</div>
+                    <div style={{fontSize:11,color:"#64748b",fontWeight:600}}>anstehend</div>
+                  </div>
+                  <div style={{flex:1,background:"#f1f5f9",borderRadius:12,padding:"12px 10px",textAlign:"center"}}>
+                    <div style={{fontSize:24,fontWeight:900,color:"#64748b"}}>{past.length}</div>
+                    <div style={{fontSize:11,color:"#64748b",fontWeight:600}}>vergangen</div>
+                  </div>
+                </div>
+                {up[0]&&<div style={{marginTop:14,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
+                  <div style={{fontSize:11,fontWeight:800,color:"#94a3b8",letterSpacing:.5,marginBottom:6}}>NÄCHSTER TERMIN</div>
+                  <div style={{fontWeight:800,fontSize:14,color:"#334155"}}>{up[0].title}</div>
+                  <div style={{fontSize:12.5,color:"#64748b",marginTop:2}}>{new Date(up[0].date+"T12:00:00").toLocaleDateString("de-DE",{weekday:"short",day:"2-digit",month:"2-digit"})}{up[0].time?` · ${up[0].time}`:""}</div>
+                </div>}
+              </div>
+            </div>
+          </aside>
+        )}
       </div>
       <Toast msg={toast}/>
       <BottomNav tab={tab} setTab={setTab} isAdmin={isAdmin} isHelper={isHelper}
