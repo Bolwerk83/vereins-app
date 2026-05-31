@@ -488,7 +488,7 @@ const addMins = (time, mins) => {
   return String(Math.floor(total/60)%24).padStart(2,"0")+":"+String(total%60).padStart(2,"0");
 };
 const hashPw = (pw) => { let h=0; for(let i=0;i<pw.length;i++){h=Math.imul(31,h)+pw.charCodeAt(i)|0;} return "h"+Math.abs(h).toString(36); };
-const checkPw = (input,stored) => { if(!stored)return false; if(stored.startsWith("h"))return hashPw(input)===stored; return input===stored; };
+const checkPw = (input,stored) => { if(!stored)return false; const inp=(input||"").trim(); if(stored.startsWith("h"))return hashPw(inp)===stored; return inp===stored; };
 
 const now   = () => new Date().toISOString().slice(0,10);
 const addD  = (iso,n) => { const d=new Date(iso+"T12:00:00"); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
@@ -511,8 +511,8 @@ function seed() {
     _v: 14,
     helpers: [], chats: [], messages: [], events: [
       {id:"de1",cid:"demo",tid:"demo_g",type:"training",title:"Training G-Jugend",date:addD(now(),2),time:"17:00",loc:"Sportplatz Platz 2",note:"Bitte Hallenschuhe mitbringen",votes:{"Lukas Berger":"yes","Emma Wolf":"yes","Noah Schmidt":"no","Mia Hoffmann":"maybe"},pt:"att",selType:"multi",li:[],fi:[],sc:[]},
-      {id:"de2",cid:"demo",tid:"demo_f1",type:"spiel",title:"Heimspiel vs. SV Adler",date:addD(now(),5),time:"10:30",loc:"Hauptplatz",note:"Treffen 1 Stunde vorher zum Aufwärmen",votes:{"Ben Fischer":"yes","Leon Weber":"yes","Sophie Klein":"yes","Paul Becker":"yes","Lina Schulz":"maybe"},pt:"att",selType:"multi",li:[],fi:[],sc:[]},
-      {id:"de3",cid:"demo",tid:"demo_e",type:"spiel",title:"Auswärts bei FC Löwen",date:addD(now(),6),time:"11:00",loc:"Sportzentrum Löwen, Auswärts",note:"Fahrgemeinschaften bitte im Chat absprechen",votes:{"Felix Braun":"yes","Anna Richter":"yes","Tim Neumann":"no"},pt:"att",selType:"multi",li:[],fi:[],sc:[]},
+      {id:"de2",cid:"demo",tid:"demo_f1",type:"spiel",title:"Heimspiel vs. SV Adler",date:addD(now(),5),time:"10:30",loc:"Hauptplatz",note:"Treffen 1 Stunde vorher zum Aufwärmen",sollPlayers:5,votes:{"Ben Fischer":"yes","Leon Weber":"yes","Sophie Klein":"yes","Paul Becker":"yes","Lina Schulz":"maybe"},pt:"att",selType:"multi",li:[],fi:[],sc:[]},
+      {id:"de3",cid:"demo",tid:"demo_e",type:"spiel",title:"Auswärts bei FC Löwen",date:addD(now(),6),time:"11:00",loc:"Sportzentrum Löwen, Auswärts",note:"Fahrgemeinschaften bitte im Chat absprechen",sollPlayers:7,votes:{"Felix Braun":"yes","Anna Richter":"yes","Tim Neumann":"no"},pt:"att",selType:"multi",li:[],fi:[],sc:[]},
       {id:"de4",cid:"demo",tid:"demo_g",type:"turnier",title:"Hallenturnier Pfingsten",date:addD(now(),12),time:"09:00",loc:"Stadthalle",note:"Ganztägig, Verpflegung wird gestellt",votes:{"Lukas Berger":"yes","Emma Wolf":"maybe"},pt:"att",selType:"multi",li:[],fi:[],sc:[]},
       {id:"de5",cid:"demo",tid:"demo_f1",type:"training",title:"Abschlusstraining vor dem Spiel",date:addD(now(),3),time:"17:30",loc:"Sportplatz Platz 1",note:"",votes:{"Ben Fischer":"yes","Leon Weber":"yes","Sophie Klein":"maybe","Lina Schulz":"yes"},pt:"att",selType:"multi",li:[],fi:[],sc:[]},
       {id:"de6",cid:"demo",tid:"demo_sen",type:"training",title:"Mannschaftstraining Senioren",date:addD(now(),1),time:"19:30",loc:"Sportplatz Platz 1",note:"Anschließend gemütliches Beisammensein",votes:{},pt:"att",selType:"multi",li:[],fi:[],sc:[]}
@@ -9412,6 +9412,20 @@ function PollAttend({ev,user,onVote,cl,session=null,save=()=>{},data=null,fire=(
           </div>}
         </div>
         <div style={{height:5,borderRadius:99,background:"#e2e8f0",overflow:"hidden"}}><div style={{height:"100%",borderRadius:99,background:p,width:`${tot>0?(yes.length/tot)*100:0}%`,transition:"width .45s"}}/></div>
+        {(()=>{
+          const soll=ev.sollPlayers; if(!soll||soll<=0) return null;
+          const tone=attendanceTone(yes.length,soll);
+          const maxInfo=ev.maxPlayers&&yes.length>ev.maxPlayers ? ` · Max ${ev.maxPlayers} überschritten` : (ev.maxPlayers?` · Max ${ev.maxPlayers}`:"");
+          return (
+            <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8,background:tone.bg,borderRadius:10,padding:"7px 11px"}}>
+              <span style={{width:9,height:9,borderRadius:"50%",background:tone.col,flexShrink:0}}/>
+              <span style={{fontSize:12.5,fontWeight:800,color:tone.col}}>{yes.length} / {soll} dabei</span>
+              <span style={{fontSize:11.5,fontWeight:600,color:tone.col,opacity:.85}}>
+                {tone.label==="zu wenig"?`noch ${soll-yes.length} fehlen`:tone.label==="knapp"?`${soll-yes.length} fehlt`:"genug Spieler"}{maxInfo}
+              </span>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Verspaetet */}
@@ -9628,6 +9642,21 @@ function sollFor(cl, cat, axes) {
   const override = cl?.skillTargets?.[cat] || null;
   return axes.map(a => (override && typeof override[a]==="number") ? override[a] : defaultSoll(rank,a));
 }
+
+// Empfohlene Spieleranzahl auf dem Feld je Altersklasse (DFB-Spielformen, Stand 2024/25)
+const SOLL_PLAYERS_BY_CAT = {
+  "Bambinis":3,"G-Jugend":3,"F-Jugend":5,"E-Jugend":7,"D-Jugend":9,
+  "C-Jugend":11,"B-Jugend":11,"A-Jugend":11,"Senioren":11,"Alt-Herren":11,"Frauen":11,"Maedchen":7
+};
+const defaultSollPlayers = cat => SOLL_PLAYERS_BY_CAT[cat] ?? 7;
+// Ampel: rot wenn 3+ unter Soll, gelb wenn 1-2 unter, sonst gruen
+function attendanceTone(yesCount, soll) {
+  if(!soll || soll<=0) return null;
+  if(yesCount <= soll-3) return { col:"#dc2626", bg:"#fee2e2", label:"zu wenig" };
+  if(yesCount <  soll)   return { col:"#d97706", bg:"#fef3c7", label:"knapp" };
+  return { col:"#16a34a", bg:"#dcfce7", label:"genug" };
+}
+
 
 
 // Reines SVG-Spinnennetz (keine externe Bibliothek noetig)
@@ -11239,13 +11268,14 @@ function SeriesWizard({f,u,t}) {
 
 function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTemplate=null}) {
   const t=TH(cl); const isEdit=!!editEv; const STEPS=5;
-  const blank={tid:teams[0]?.id||"",type:"training",title:"",date:now(),time:"",loc:"",note:"",pt:"att",recMode:"none",recDays:[],recStart:now(),recUntil:"",recDates:[],li:[],fi:[],sc:[],selType:"multi",open:false,_li:{txt:"",max:""},_fi:{name:"",col:"#16a34a"},_sc:{fid:"",time:"",a:"",b:"",ref:""}};
+  const blank={tid:teams[0]?.id||"",type:"training",title:"",date:now(),time:"",loc:"",note:"",sollPlayers:null,maxPlayers:null,pt:"att",recMode:"none",recDays:[],recStart:now(),recUntil:"",recDates:[],li:[],fi:[],sc:[],selType:"multi",open:false,_li:{txt:"",max:""},_fi:{name:"",col:"#16a34a"},_sc:{fid:"",time:"",a:"",b:"",ref:""}};
   const [step,setStep]=useState(1);
   const [f,setF]=useState(editEv?{...blank,...editEv,recMode:"none",recDays:[],recDates:[],_li:{txt:"",max:""},_fi:{name:"",col:"#16a34a"},_sc:{fid:"",time:"",a:"",b:"",ref:""}}:blank);
   const u=p=>setF(prev=>({...prev,...p}));
   const ok=()=>{if(step===1)return!!f.tid;if(step===2)return!!f.type;if(step===3)return f.title.trim().length>1;return true;};
   const finish=()=>{
     const{_li,_fi,_sc,recMode,recDays,recStart,recUntil,recDates,...base}=f;
+    { const c=(teams.find(x=>x.id===base.tid)?.cat)||(teams.find(x=>x.id===base.tid)?.name)||""; if(base.sollPlayers==null) base.sollPlayers=defaultSollPlayers(c); }
     if(isEdit){onSave([{...base,id:editEv.id}]);return;}
     let eventDates=[];
     if(recMode==="weekly"&&recDays.length&&recUntil){
@@ -11296,6 +11326,35 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
           </div>
           <SeriesWizard f={f} u={u} t={t} cl={cl}/>
           {f.recMode==="none"&&<Inp label="Datum" val={f.date} set={v=>u({date:v})} type="date" cl={cl}/>}
+          {(()=>{
+            const selCat = (teams.find(x=>x.id===f.tid)?.cat)||(teams.find(x=>x.id===f.tid)?.name)||"";
+            const vorschlag = defaultSollPlayers(selCat);
+            const sollVal = (f.sollPlayers ?? vorschlag);
+            return (
+              <div>
+                <div style={{fontSize:11,fontWeight:800,color:"#64748b",margin:"4px 0 6px",letterSpacing:.5}}>SPIELERANZAHL (optional)</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:11,alignItems:"end"}}>
+                  <div>
+                    <div style={{fontSize:11,color:"#94a3b8",marginBottom:4}}>Soll (für die Ampel)</div>
+                    <div style={{display:"flex",alignItems:"center",gap:6}}>
+                      <button type="button" onClick={()=>u({sollPlayers:Math.max(0,sollVal-1)})} style={{width:32,height:38,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontWeight:800,fontSize:16}}>–</button>
+                      <span style={{flex:1,textAlign:"center",fontWeight:900,fontSize:18}}>{sollVal}</span>
+                      <button type="button" onClick={()=>u({sollPlayers:sollVal+1})} style={{width:32,height:38,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontWeight:800,fontSize:16}}>+</button>
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{fontSize:11,color:"#94a3b8",marginBottom:4}}>Max (optional)</div>
+                    <div style={{display:"flex",alignItems:"center",gap:6}}>
+                      <button type="button" onClick={()=>u({maxPlayers:f.maxPlayers?Math.max(0,f.maxPlayers-1):0})} style={{width:32,height:38,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontWeight:800,fontSize:16}}>–</button>
+                      <span style={{flex:1,textAlign:"center",fontWeight:900,fontSize:18,color:f.maxPlayers?"#0f172a":"#cbd5e1"}}>{f.maxPlayers||"–"}</span>
+                      <button type="button" onClick={()=>u({maxPlayers:(f.maxPlayers||sollVal)+1})} style={{width:32,height:38,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontWeight:800,fontSize:16}}>+</button>
+                    </div>
+                  </div>
+                </div>
+                <div style={{fontSize:11,color:"#94a3b8",marginTop:5}}>Vorschlag {vorschlag} (für {selCat||"diese Mannschaft"}, DFB-Spielform) – anpassbar.</div>
+              </div>
+            );
+          })()}
           <Inp label="Nachricht an Eltern (optional)" val={f.note} set={v=>u({note:v})} ph="z.B. Bitte 15 Min frueher da sein..." rows={2} cl={cl}/>
         </div>}
         {}
