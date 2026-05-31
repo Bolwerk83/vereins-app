@@ -32,7 +32,7 @@ const T = {
     whoAreYou:"Wer bist du?",
     notInList: "Nicht in der Liste?",
     loginAs:"Einloggen als",
-    teamOpen: "Team oeffnen",
+    teamOpen: "Team öffnen",
     roleParent:"Elternteil",
     roleParentSub: "Termine sehen & abstimmen",
     roleHelper:"Helfer",
@@ -725,7 +725,7 @@ function Btn({ch,onClick,v="pri",full,sm,dis,load,icon,cl,sx={}}) {
 function Inp({label,val,set,ph,type="text",af,rows,cl,note}) {
   const [f,setF]=useState(false); const c=cl?.pri||"#16a34a";
   const base={width:"100%",padding:"12px 15px",fontSize:15,border:`2px solid ${f?c:"#e2e8f0"}`,borderRadius:13,outline:"none",background:"#fff",transition:"border-color .17s",display:"block",resize:"vertical"};
-  return <div style={{display:"flex",flexDirection:"column",gap:5}}>{label&&<div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.6,textTransform:"uppercase"}}>{label}</div>}{rows?<textarea value={val} onChange={e=>set(e.target.value)} placeholder={ph} rows={rows} onFocus={()=>setF(true)} onBlur={()=>setF(false)} style={base}/>:<input type={type} value={val} onChange={e=>set(e.target.value)} placeholder={ph} autoFocus={af} onFocus={()=>setF(true)} onBlur={()=>setF(false)} style={base}/>}{note&&<div style={{fontSize:12,color:"#94a3b8"}}>{note}</div>}</div>;
+  return <div style={{display:"flex",flexDirection:"column",gap:5}}>{label&&<div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.6,textTransform:"uppercase"}}>{label}</div>}{rows?<textarea value={val} onChange={e=>set(e.target.value)} placeholder={ph} rows={rows} onFocus={()=>setF(true)} onBlur={()=>setF(false)} style={base}/>:<input type={type} value={val} onChange={e=>set(e.target.value)} placeholder={ph} autoFocus={af} autoCapitalize={type==="password"?"none":"sentences"} autoCorrect={type==="password"?"off":"on"} spellCheck={type==="password"?false:undefined} onFocus={()=>setF(true)} onBlur={()=>setF(false)} style={base}/>}{note&&<div style={{fontSize:12,color:"#94a3b8"}}>{note}</div>}</div>;
 }
 function Sel({label,val,set,opts}) {
   return <div style={{display:"flex",flexDirection:"column",gap:5}}>{label&&<div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.6,textTransform:"uppercase"}}>{label}</div>}<select value={val} onChange={e=>set(e.target.value)} style={{width:"100%",padding:"12px 15px",fontSize:15,border:"2px solid #e2e8f0",borderRadius:13,outline:"none",background:"#fff",appearance:"none",backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`,backgroundRepeat:"no-repeat",backgroundPosition:"right 15px center"}}>{opts.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></div>;
@@ -1185,56 +1185,73 @@ function LegalPage({ onBack }) {
         ))}
       </div>
       <div style={{flex:1,overflowY:"auto",padding:"20px",maxWidth:600,margin:"0 auto",width:"100%"}}>
+        <div style={{background:"#fff7ed",border:"1px solid #fed7aa",borderRadius:10,padding:"10px 13px",fontSize:12,color:"#9a3412",lineHeight:1.5,marginBottom:16}}>
+          <strong>Hinweis:</strong> Dies ist eine Vorlage. Trage deine echten Daten ein (Felder in eckigen Klammern) und lass die Texte vor dem Echtbetrieb mit Kinderdaten von einer fachkundigen Person (Datenschutz/Anwalt) prüfen.
+        </div>
         {tab==="imprint"&&(
           <div style={{lineHeight:1.8,fontSize:14,color:"#334155"}}>
             <h2 style={{fontWeight:800,marginBottom:12}}>Impressum</h2>
-            <p><strong>Vereins-App</strong> wird betrieben von:<br/>
-            [Dein Name]<br/>
-            [Deine Adresse]<br/>
-            [PLZ Ort]<br/>
+            <p>Angaben gemäß § 5 DDG (Digitale-Dienste-Gesetz):</p>
+            <p style={{marginTop:10}}><strong>Diensteanbieter:</strong><br/>
+            [Vor- und Nachname]<br/>
+            [Straße und Hausnummer]<br/>
+            [PLZ und Ort]<br/>
+            [Land]</p>
+            <p style={{marginTop:10}}><strong>Kontakt:</strong><br/>
+            Telefon: [Telefonnummer]<br/>
             E-Mail: [deine@email.de]</p>
+            <p style={{marginTop:10}}><strong>Verantwortlich für den Inhalt:</strong><br/>
+            [Vor- und Nachname], Anschrift wie oben</p>
             <p style={{marginTop:12,fontSize:12,color:"#94a3b8"}}>
-              Bitte trage deine echten Kontaktdaten ein bevor du die App veroeffentlichst.
+              Trage hier deine echten Kontaktdaten ein, bevor du die App veröffentlichst. Ein vollständiges Impressum ist gesetzlich verpflichtend.
             </p>
           </div>
         )}
         {tab==="privacy"&&(
-          <div style={{lineHeight:1.8,fontSize:14,color:"#334155"}}>
-            <h2 style={{fontWeight:800,marginBottom:12}}>Datenschutzerklaerung</h2>
-            <p><strong>Verantwortlicher:</strong> Betreiber gemaess Impressum.</p>
-            <p><strong>Welche Daten werden gespeichert?</strong><br/>
-            Vereins-App speichert ausschliesslich Daten die du selbst eingibst:
-            Namen von Teammitgliedern, Termine und Kommunikation innerhalb deines Vereins.</p>
-            <p><strong>Wo werden Daten gespeichert?</strong><br/>
-            Alle Daten werden lokal in deinem Browser gespeichert (localStorage).
-            Optional koennen Daten ueber Supabase in der Cloud gespeichert werden -
-            dies geschieht nur mit deiner ausdruecklichen Einrichtung.</p>
-            <p><strong>Weitergabe an Dritte:</strong><br/>
-            Keine Weitergabe an Dritte. Keine Analyse-Tools. Keine Werbedaten.</p>
-            <p><strong>Loeschung:</strong><br/>
-            Du kannst alle deine Daten jederzeit loeschen indem du den Browser-Verlauf
-            und die Website-Daten loeschst.</p>
-            <p><strong>Minderjaerige:</strong><br/>
-            Die App verarbeitet Vornamen von Minderjaerigen im Rahmen der Vereinsverwaltung.
-            Eltern haben das Recht auf Auskunft und Loeschung dieser Daten.</p>
-            <p><strong>Kontakt:</strong> Datenschutzanfragen bitte an die im Impressum genannte Adresse.</p>
+          <div style={{lineHeight:1.75,fontSize:14,color:"#334155"}}>
+            <h2 style={{fontWeight:800,marginBottom:12}}>Datenschutzerklärung</h2>
+
+            <p><strong>1. Verantwortlicher</strong><br/>
+            Verantwortlich im Sinne der DSGVO ist der im Impressum genannte Betreiber.</p>
+
+            <p style={{marginTop:12}}><strong>2. Welche Daten werden verarbeitet?</strong><br/>
+            Es werden nur die Daten verarbeitet, die im Verein eingegeben werden: Namen bzw. Vornamen von Mitgliedern, Geburtsjahr, Mannschaftszugehörigkeit, Termine, An-/Abmeldungen, Nachrichten innerhalb des Vereins sowie optionale sportliche Einschätzungen (z. B. Position, Skill-Profil). Es werden bewusst möglichst wenige Daten erhoben (Datensparsamkeit, Art. 5 DSGVO).</p>
+
+            <p style={{marginTop:12}}><strong>3. Rechtsgrundlage</strong><br/>
+            Die Verarbeitung erfolgt auf Grundlage einer Einwilligung (Art. 6 Abs. 1 lit. a DSGVO) und/oder zur Durchführung der Vereinsorganisation (berechtigtes Interesse, Art. 6 Abs. 1 lit. f DSGVO).</p>
+
+            <p style={{marginTop:12}}><strong>4. Minderjährige</strong><br/>
+            Für die Verarbeitung von Daten Minderjähriger ist die Einwilligung der Erziehungsberechtigten erforderlich (Art. 8 DSGVO). Eltern können die Daten ihres Kindes jederzeit einsehen, berichtigen und löschen lassen.</p>
+
+            <p style={{marginTop:12}}><strong>5. Speicherort</strong><br/>
+            Daten werden lokal im Browser gespeichert. Sofern der Verein die Cloud-Speicherung über Supabase einrichtet, werden Daten dort als Auftragsverarbeiter gespeichert; hierfür ist ein Auftragsverarbeitungsvertrag erforderlich.</p>
+
+            <p style={{marginTop:12}}><strong>6. Werbung &amp; externe Links</strong><br/>
+            Die App kann als Werbung gekennzeichnete Empfehlungen (Affiliate-Links) zu externen Shops anzeigen. Beim Klick verlässt du die App; auf den Zielseiten gelten deren eigene Datenschutzbestimmungen. Es werden keine personenbezogenen Mitgliederdaten an diese Dritten weitergegeben.</p>
+
+            <p style={{marginTop:12}}><strong>7. Deine Rechte</strong><br/>
+            Du hast das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit und Widerspruch sowie das Recht auf Beschwerde bei einer Datenschutz-Aufsichtsbehörde.</p>
+
+            <p style={{marginTop:12}}><strong>8. Speicherdauer</strong><br/>
+            Daten werden gespeichert, solange die Vereinszugehörigkeit besteht, und auf Wunsch gelöscht.</p>
+
+            <p style={{marginTop:12}}><strong>9. Kontakt</strong><br/>
+            Datenschutzanfragen bitte an die im Impressum genannte Adresse.</p>
           </div>
         )}
         {tab==="terms"&&(
           <div style={{lineHeight:1.8,fontSize:14,color:"#334155"}}>
             <h2 style={{fontWeight:800,marginBottom:12}}>Nutzungsbedingungen</h2>
             <p><strong>Nutzung:</strong><br/>
-            Vereins-App darf kostenlos fuer die Vereinsverwaltung genutzt werden.
-            Kommerzielle Weiterverwendung ist nicht gestattet.</p>
-            <p><strong>Datenschutz-Verantwortung:</strong><br/>
-            Der Vereinsadmin ist verantwortlich fuer den datenschutzkonformen Umgang
-            mit den eingegebenen Daten seiner Mitglieder.</p>
-            <p><strong>Haftung:</strong><br/>
-            Die App wird ohne Gewaehrleistung bereitgestellt.
-            Der Betreiber haftet nicht fuer Datenverlust.</p>
-            <p><strong>Aenderungen:</strong><br/>
-            Diese Bedingungen koennen jederzeit angepasst werden.
-            Wesentliche Aenderungen werden angekuendigt.</p>
+            Die App darf für die Vereinsverwaltung genutzt werden.</p>
+            <p style={{marginTop:10}}><strong>Verantwortung des Vereins:</strong><br/>
+            Der Vereinsadmin ist dafür verantwortlich, dass für eingegebene personenbezogene Daten – insbesondere von Minderjährigen – die erforderlichen Einwilligungen vorliegen und der Umgang datenschutzkonform erfolgt.</p>
+            <p style={{marginTop:10}}><strong>Werbung:</strong><br/>
+            Die App kann als solche gekennzeichnete Werbung/Affiliate-Empfehlungen enthalten.</p>
+            <p style={{marginTop:10}}><strong>Haftung:</strong><br/>
+            Die App wird ohne Gewähr bereitgestellt. Es wird keine Haftung für Datenverlust übernommen.</p>
+            <p style={{marginTop:10}}><strong>Änderungen:</strong><br/>
+            Diese Bedingungen können angepasst werden; wesentliche Änderungen werden angekündigt.</p>
           </div>
         )}
       </div>
@@ -1273,6 +1290,7 @@ function AffiliateBanner({ trigger, style={} }) {
         {aff.icon}
       </div>
       <div style={{flex:1,cursor:"pointer"}} onClick={()=>window.open(aff.url,"_blank")}>
+        <div style={{fontSize:9,fontWeight:800,color:"#cbd5e1",letterSpacing:.5,marginBottom:2}}>WERBUNG</div>
         <div style={{fontWeight:700,fontSize:13,color:"#334155"}}>{aff.text}</div>
         <div style={{fontSize:11,color:"#94a3b8",marginTop:2}}>{aff.sub}</div>
       </div>
@@ -3728,7 +3746,7 @@ const TRAINING_TEMPLATES = [
   duration:10, intensity:5,
   skills:["passen","raumaufteilung","spielintelligenz"],
   description:`4 Spieler halten den Ball gegen 1 Stoerer in einem Quadrat (ca. 8x8 Meter). Maximal 2 Kontakte. Stoerer wechselt nach Ballgewinn oder 5 Ballverlusten.`,
-  coaching:`Dreieck zum Ball bilden. Anspielstationen oeffnen. Tempo variieren. Passweg antaeuschen. 'Doppelpass als Fluchtweg'.`,
+  coaching:`Dreieck zum Ball bilden. Anspielstationen öffnen. Tempo variieren. Passweg antaeuschen. 'Doppelpass als Fluchtweg'.`,
   variations:`3v1 fuer hoeheren Anspruch. 5v2 fuer Einsteiger. Einrueckung fordern wenn Stoerer presst.`,
   minPlayers:5, fieldZone:"mittelkreis",
   material:[{id:"ball_fuss",qty:2,label:"Fussball",cat:"Baelle"},{id:"huetchen",qty:4,color:"gelb",label:"Huetchen",cat:"Markierung"}],
@@ -5446,7 +5464,7 @@ function GroupSetupHelper({ trainers, targetPerson, context, onClose }) {
               SCHRITT 2: GRUPPE ERSTELLEN
             </div>
             {[
-              "WhatsApp oeffnen",
+              "WhatsApp öffnen",
               "Oben rechts auf das Chat-Symbol tippen",
               'Auf "Neue Gruppe" tippen',
               "Nummern aus Zwischenablage einfuegen ODER Trainer aus Kontakten waehlen",
@@ -8860,7 +8878,7 @@ function Directory({data,onPick,onNewClub,lang,setLang}) {
       {}
       <div style={{position:"relative",padding:"32px 22px 6px",maxWidth:520,margin:"0 auto",textAlign:"center"}}>
         <div className="up" style={{display:"inline-flex",alignItems:"center",gap:6,background:"rgba(134,239,172,.12)",border:"1px solid rgba(134,239,172,.28)",color:"#86efac",fontSize:12,fontWeight:700,padding:"5px 13px",borderRadius:99,marginBottom:18}}>
-          &#9917; Für jeden Sportverein &middot; kostenlos
+          &#9917; Für jeden Sportverein
         </div>
         <h1 className="up" style={{fontWeight:900,fontSize:34,lineHeight:1.08,letterSpacing:-1.2,margin:"0 0 14px",animationDelay:".05s"}}>
           Schluss mit dem<br/><span style={{color:"#4ade80"}}>WhatsApp-Chaos</span> im Verein.
@@ -8871,7 +8889,7 @@ function Directory({data,onPick,onNewClub,lang,setLang}) {
         <div className="up" style={{display:"flex",flexDirection:"column",gap:10,maxWidth:340,margin:"0 auto 12px",animationDelay:".15s"}}>
           <button onClick={()=>setMode("setup")}
             style={{padding:"16px",borderRadius:15,border:"none",background:"linear-gradient(135deg,#22c55e,#16a34a)",color:"#fff",fontWeight:800,fontSize:16,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 10px 34px rgba(22,163,74,.5)"}}>
-            Verein kostenlos anlegen &#8594;
+            Verein anlegen &#8594;
           </button>
           <button onClick={()=>onPick("__demo__")}
             style={{padding:"13px",borderRadius:15,border:"1.5px solid rgba(255,255,255,.18)",background:"rgba(255,255,255,.06)",color:"#fff",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
@@ -8879,7 +8897,7 @@ function Directory({data,onPick,onNewClub,lang,setLang}) {
           </button>
         </div>
         <p className="up" style={{color:"rgba(255,255,255,.45)",fontSize:12,fontWeight:600,margin:"0 0 28px",animationDelay:".2s"}}>
-          Kostenlos &middot; Keine Kreditkarte &middot; In 2 Minuten startklar
+          In 2 Minuten startklar
         </p>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,textAlign:"left"}}>
           <div className="up" style={{background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.09)",borderRadius:14,padding:"13px 11px",animationDelay:".25s"}}>
@@ -8995,7 +9013,6 @@ function Directory({data,onPick,onNewClub,lang,setLang}) {
           <button onClick={()=>onLegal&&onLegal()} style={{background:"none",border:"none",color:"rgba(255,255,255,.25)",fontSize:11,cursor:"pointer",textDecoration:"underline"}}>Nutzungsbedingungen</button>
         </div>
         <div style={{marginTop:12}}><AdBanner style={{borderRadius:12,overflow:"hidden"}}/></div>
-        <PoweredBy/>
       </div>
     </div>
   );
@@ -9126,7 +9143,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
         <div style={{background:"rgba(255,255,255,.1)",backdropFilter:"blur(16px)",borderRadius:22,padding:"24px 22px",border:"1px solid rgba(255,255,255,.15)"}}>
           <input type="password" value={pw} onChange={e=>{setPw(e.target.value);setErr(false);}}
             onKeyDown={e=>{if(e.key==="Enter")go();}}
-            placeholder="Passwort..." autoFocus
+            placeholder="Passwort..." autoFocus autoCapitalize="none" autoCorrect="off" spellCheck={false}
             style={{width:"100%",padding:"13px 16px",fontSize:16,background:"rgba(255,255,255,.12)",border:`2px solid ${err?"#ff6b6b":pw?"rgba(255,255,255,.4)":"rgba(255,255,255,.2)"}`,borderRadius:13,outline:"none",color:"#fff",marginBottom:10}}/>
           {err&&<FriendlyError type="wrongPassword"/>}
           {cl.id==="demo"&&<div style={{background:"rgba(255,255,255,.08)",borderRadius:10,padding:"8px 12px",marginBottom:10,fontSize:11,color:"rgba(255,255,255,.6)"}}>Demo: Trainer A = trainer1 | Trainer B = trainer2</div>}
@@ -9296,7 +9313,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
         <div style={{background:"rgba(255,255,255,.1)",backdropFilter:"blur(16px)",borderRadius:22,padding:"24px 22px",border:"1px solid rgba(255,255,255,.15)"}}>
           <input type="password" value={pwd} onChange={e=>{setPwd(e.target.value);setPwdErr(false);}}
             onKeyDown={e=>{if(e.key==="Enter"){if(ct?.locked){setPwdErr(true);}else if(checkPw(pwd,ct?.pwd||"")){const assigned=(playerProfiles||[]).some(p=>p.mainTid===ct.id);if(assigned)setStep("name");else setStep("locked");}else{setPwdErr(true);setTimeout(()=>setPwdErr(false),1800);}}}}
-            placeholder="Passwort..." autoFocus
+            placeholder="Passwort..." autoFocus autoCapitalize="none" autoCorrect="off" spellCheck={false}
             style={{width:"100%",padding:"13px 16px",fontSize:16,background:"rgba(255,255,255,.12)",border:`2px solid ${pwdErr?"#ff6b6b":pwd?"rgba(255,255,255,.4)":"rgba(255,255,255,.2)"}`,borderRadius:13,outline:"none",color:"#fff",marginBottom:10}}/>
           {pwdErr&&<FriendlyError type="wrongPassword"/>}
           {showForgotParent&&<ForgotPasswordHelp cl={cl} trainers={trainers}
@@ -9315,7 +9332,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
             else setStep("locked"); // team not yet released
           }else{setPwdErr(true);setTimeout(()=>setPwdErr(false),1800);}}} disabled={!pwd.trim()}
             style={{width:"100%",padding:"13px",fontSize:15,fontWeight:800,background:pwd.trim()?cl.pri:"rgba(255,255,255,.15)",color:pwd.trim()?"#fff":"rgba(255,255,255,.4)",border:"none",borderRadius:13,cursor:pwd.trim()?"pointer":"not-allowed",transition:"all .18s"}}>
-             Team oeffnen
+             Team öffnen
           </button>
           
         </div>
@@ -10734,7 +10751,7 @@ function PlayersTab({ data,myTids,save,fire,cl }) {
               {allPlayers.filter(p=>!p.mainTid).length} Spieler noch nicht zugeteilt
             </div>
             <div style={{fontSize:12,color:"#9a3412",marginTop:2}}>
-              Eltern koennen sich erst anmelden wenn alle Spieler zugeteilt sind -> Zuteilung oeffnen
+              Eltern koennen sich erst anmelden wenn alle Spieler zugeteilt sind -> Zuteilung öffnen
             </div>
           </div>
           <span style={{color:"#d97706",fontSize:18}}>></span>
@@ -11848,6 +11865,7 @@ function AdBanner({ slot="auto",style={} }) {
   );
   return (
     <div style={{textAlign:"center",...style}}>
+      <div style={{fontSize:9,fontWeight:800,color:"#cbd5e1",letterSpacing:.5,marginBottom:2,textAlign:"left"}}>ANZEIGE</div>
       <ins ref={ref} className="adsbygoogle" style={{display:"block"}}
         data-ad-client={ADSENSE_ID} data-ad-slot={slot}
         data-ad-format="auto" data-full-width-responsive="true"/>
@@ -12064,7 +12082,7 @@ function SeasonPicker({ data,save,fire,onSelect,t }) {
               <div style={{fontSize:12,color:"#64748b"}}>{cnt} Spieler</div>
             </div>
             <div style={{display:"flex",gap:7}}>
-              {s.status!=="archived"&&<button onClick={()=>switchActive(s.id)} style={{padding:"7px 14px",borderRadius:10,border:`2px solid ${t.p}`,background:isActive?t.p:"#fff",color:isActive?"#fff":t.p,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{isActive?"Aktiv":"Oeffnen"}</button>}
+              {s.status!=="archived"&&<button onClick={()=>switchActive(s.id)} style={{padding:"7px 14px",borderRadius:10,border:`2px solid ${t.p}`,background:isActive?t.p:"#fff",color:isActive?"#fff":t.p,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{isActive?"Aktiv":"Öffnen"}</button>}
               {s.status==="planning"&&<button onClick={()=>archiveSeason(s.id)} style={{padding:"7px 12px",borderRadius:10,border:"1.5px solid #e2e8f0",background:"#f8fafc",color:"#64748b",fontWeight:600,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Archiv</button>}
             </div>
           </div>
@@ -14520,7 +14538,7 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
           <Divider label="KOMMENDE TERMINE"/>
           {up.map((ev,i)=><div key={ev.id} className="up" style={{marginBottom:10,animationDelay:`${i*.05}s`}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user"/></div>)}
         </>}
-        {up.length===0&&<div style={{textAlign:"center",padding:"52px 20px"}}><Logo cl={cl} sz={64} sx={{margin:"0 auto 16px"}}/><p style={{fontWeight:800,fontSize:18,color:"#334155"}}>Keine anstehenden Termine</p><p style={{color:"#94a3b8",fontSize:14,marginTop:6}}>Der Trainer hat noch keine Termine angelegt.</p><div style={{marginTop:20}}><AdBanner/></div><PoweredBy/></div>}
+        {up.length===0&&<div style={{textAlign:"center",padding:"52px 20px"}}><Logo cl={cl} sz={64} sx={{margin:"0 auto 16px"}}/><p style={{fontWeight:800,fontSize:18,color:"#334155"}}>Keine anstehenden Termine</p><p style={{color:"#94a3b8",fontSize:14,marginTop:6}}>Der Trainer hat noch keine Termine angelegt.</p><div style={{marginTop:20}}><AdBanner/></div></div>}
         {past.length>0&&<>
           <button onClick={()=>setSP(s=>!s)} style={{display:"flex",alignItems:"center",gap:10,width:"100%",background:"none",border:"none",cursor:"pointer",margin:"18px 0 10px",padding:"4px 0"}}>
             <div style={{flex:1,height:1,background:"#e2e8f0"}}/><span style={{fontSize:11,fontWeight:800,color:"#94a3b8",whiteSpace:"nowrap"}}>{showPast?"?":"?"} VERGANGENE ({past.length})</span><div style={{flex:1,height:1,background:"#e2e8f0"}}/>
