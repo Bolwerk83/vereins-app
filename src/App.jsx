@@ -509,8 +509,28 @@ const ET = {
 function seed() {
   return {
     _v: 14,
-    helpers: [], chats: [], messages: [], events: [], bookings: [],
-    contactRequests: [], securityLog: [], playerProfiles: [],
+    helpers: [], chats: [], messages: [], events: [
+      {id:"de1",cid:"demo",tid:"demo_g",type:"training",title:"Training G-Jugend",date:addD(now(),2),time:"17:00",loc:"Sportplatz Platz 2",note:"Bitte Hallenschuhe mitbringen",votes:{"Lukas Berger":"yes","Emma Wolf":"yes","Noah Schmidt":"no","Mia Hoffmann":"maybe"},pt:"att",selType:"multi",li:[],fi:[],sc:[]},
+      {id:"de2",cid:"demo",tid:"demo_f1",type:"spiel",title:"Heimspiel vs. SV Adler",date:addD(now(),5),time:"10:30",loc:"Hauptplatz",note:"Treffen 1 Stunde vorher zum Aufwärmen",votes:{"Ben Fischer":"yes","Leon Weber":"yes","Sophie Klein":"yes","Paul Becker":"yes","Lina Schulz":"maybe"},pt:"att",selType:"multi",li:[],fi:[],sc:[]},
+      {id:"de3",cid:"demo",tid:"demo_e",type:"spiel",title:"Auswärts bei FC Löwen",date:addD(now(),6),time:"11:00",loc:"Sportzentrum Löwen, Auswärts",note:"Fahrgemeinschaften bitte im Chat absprechen",votes:{"Felix Braun":"yes","Anna Richter":"yes","Tim Neumann":"no"},pt:"att",selType:"multi",li:[],fi:[],sc:[]},
+      {id:"de4",cid:"demo",tid:"demo_g",type:"turnier",title:"Hallenturnier Pfingsten",date:addD(now(),12),time:"09:00",loc:"Stadthalle",note:"Ganztägig, Verpflegung wird gestellt",votes:{"Lukas Berger":"yes","Emma Wolf":"maybe"},pt:"att",selType:"multi",li:[],fi:[],sc:[]},
+      {id:"de5",cid:"demo",tid:"demo_f1",type:"training",title:"Abschlusstraining vor dem Spiel",date:addD(now(),3),time:"17:30",loc:"Sportplatz Platz 1",note:"",votes:{"Ben Fischer":"yes","Leon Weber":"yes","Sophie Klein":"maybe","Lina Schulz":"yes"},pt:"att",selType:"multi",li:[],fi:[],sc:[]},
+      {id:"de6",cid:"demo",tid:"demo_sen",type:"training",title:"Mannschaftstraining Senioren",date:addD(now(),1),time:"19:30",loc:"Sportplatz Platz 1",note:"Anschließend gemütliches Beisammensein",votes:{},pt:"att",selType:"multi",li:[],fi:[],sc:[]}
+    ], bookings: [],
+    contactRequests: [], securityLog: [], playerProfiles: [
+      {id:"dp1",cid:"demo",seasonId:"s2526",archived:false,name:"Lukas Berger",by:2018,gender:"m",mainTid:"demo_g",optTids:[],position:"Sturm",foot:"rechts",strengths:["Schnelligkeit"],customStrengths:[],goals:4,assists:2,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"9",jerseySize:"128",jerseyStatus:"have",lastTeam:"G-Jugend"},
+      {id:"dp2",cid:"demo",seasonId:"s2526",archived:false,name:"Emma Wolf",by:2019,gender:"w",mainTid:"demo_g",optTids:[],position:"Mittelfeld",foot:"links",strengths:["Technik"],customStrengths:[],goals:2,assists:5,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"10",jerseySize:"128",jerseyStatus:"have",lastTeam:"G-Jugend"},
+      {id:"dp3",cid:"demo",seasonId:"s2526",archived:false,name:"Noah Schmidt",by:2018,gender:"m",mainTid:"demo_g",optTids:[],position:"Abwehr",foot:"rechts",strengths:["Zweikampf"],customStrengths:[],goals:0,assists:1,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"4",jerseySize:"122",jerseyStatus:"none",lastTeam:"G-Jugend"},
+      {id:"dp4",cid:"demo",seasonId:"s2526",archived:false,name:"Mia Hoffmann",by:2019,gender:"w",mainTid:"demo_g",optTids:[],position:"Tor",foot:"rechts",strengths:["Reflexe"],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"1",jerseySize:"128",jerseyStatus:"ordered",lastTeam:"G-Jugend"},
+      {id:"dp5",cid:"demo",seasonId:"s2526",archived:false,name:"Ben Fischer",by:2016,gender:"m",mainTid:"demo_f1",optTids:[],position:"Sturm",foot:"rechts",strengths:["Abschluss"],customStrengths:[],goals:8,assists:3,yellowCards:1,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"11",jerseySize:"140",jerseyStatus:"have",lastTeam:"F-Jugend 1"},
+      {id:"dp6",cid:"demo",seasonId:"s2526",archived:false,name:"Leon Weber",by:2017,gender:"m",mainTid:"demo_f1",optTids:[],position:"Mittelfeld",foot:"beidf.",strengths:["Passspiel"],customStrengths:[],goals:3,assists:7,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"8",jerseySize:"140",jerseyStatus:"have",lastTeam:"F-Jugend 1"},
+      {id:"dp7",cid:"demo",seasonId:"s2526",archived:false,name:"Sophie Klein",by:2016,gender:"w",mainTid:"demo_f1",optTids:[],position:"Abwehr",foot:"links",strengths:["Stellungsspiel"],customStrengths:[],goals:1,assists:2,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"5",jerseySize:"134",jerseyStatus:"none",lastTeam:"F-Jugend 1"},
+      {id:"dp8",cid:"demo",seasonId:"s2526",archived:false,name:"Paul Becker",by:2017,gender:"m",mainTid:"demo_f1",optTids:[],position:"Tor",foot:"rechts",strengths:["Abschlag"],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"1",jerseySize:"140",jerseyStatus:"have",lastTeam:"F-Jugend 1"},
+      {id:"dp9",cid:"demo",seasonId:"s2526",archived:false,name:"Lina Schulz",by:2016,gender:"w",mainTid:"demo_f1",optTids:[],position:"Sturm",foot:"rechts",strengths:["Schnelligkeit"],customStrengths:[],goals:6,assists:4,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"7",jerseySize:"134",jerseyStatus:"have",lastTeam:"F-Jugend 1"},
+      {id:"dp10",cid:"demo",seasonId:"s2526",archived:false,name:"Felix Braun",by:2014,gender:"m",mainTid:"demo_e",optTids:[],position:"Mittelfeld",foot:"rechts",strengths:["Übersicht"],customStrengths:[],goals:5,assists:9,yellowCards:2,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"10",jerseySize:"152",jerseyStatus:"have",lastTeam:"E-Jugend"},
+      {id:"dp11",cid:"demo",seasonId:"s2526",archived:false,name:"Anna Richter",by:2015,gender:"w",mainTid:"demo_e",optTids:[],position:"Sturm",foot:"links",strengths:["Abschluss"],customStrengths:[],goals:11,assists:5,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"9",jerseySize:"152",jerseyStatus:"have",lastTeam:"E-Jugend"},
+      {id:"dp12",cid:"demo",seasonId:"s2526",archived:false,name:"Tim Neumann",by:2014,gender:"m",mainTid:"demo_e",optTids:[],position:"Abwehr",foot:"rechts",strengths:["Kopfball"],customStrengths:[],goals:2,assists:1,yellowCards:1,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"3",jerseySize:"146",jerseyStatus:"ordered",lastTeam:"E-Jugend"}
+    ],
     seasons: [{ id:"s2526", label:"2025/2026", status:"active" }],
     activeSeason: "s2526",
     fields: [],
@@ -520,27 +540,27 @@ function seed() {
       ...DEMO_CLUBS.map(dc=>({...dc, adm:"h586034f", pub:false,
         createdAt:"2025-01-01", settings:{}})),
       { id:"demo", slug:"demo-verein", name:"Demo Verein", short:"Demo", em:"D",
-        logo:null, pri:"#16a34a", sec:"#052e16", adm:"h586034f",
+        logo:null, pri:"#16a34a", sec:"#052e16", adm:"h1j67nz",
         pub:false, dir:false, sport:"fussball",
         createdAt:"2025-01-01T00:00:00.000Z" }
     ],
     teams: [
       { id:"demo_g", cid:"demo", name:"G-Jugend", icon:"G", col:"#16a34a",
-        pub:true, pwd:"hcaa", cat:"G-Jugend", years:"2018/19" },
+        pub:true, pwd:"h2i2", cat:"G-Jugend", years:"2018/19" },
       { id:"demo_f1", cid:"demo", name:"F-Jugend 1", icon:"F", col:"#2563eb",
-        pub:true, pwd:"hc8b", cat:"F-Jugend", years:"2016/17" },
+        pub:true, pwd:"h2h7", cat:"F-Jugend", years:"2016/17" },
       { id:"demo_e", cid:"demo", name:"E-Jugend", icon:"E", col:"#7c3aed",
-        pub:true, pwd:"hc6c", cat:"E-Jugend", years:"2014/15" },
+        pub:true, pwd:"h2gc", cat:"E-Jugend", years:"2014/15" },
       { id:"demo_sen", cid:"demo", name:"Senioren", icon:"S", col:"#d97706",
-        pub:true, pwd:"h35cf55", cat:"Senioren", years:"" },
+        pub:true, pwd:"h23l1x", cat:"Senioren", years:"" },
       { id:"demo_ah", cid:"demo", name:"Alt-Herren", icon:"AH", col:"#64748b",
-        pub:true, pwd:"h178ea", cat:"Alt-Herren", years:"" }
+        pub:true, pwd:"h22ga", cat:"Alt-Herren", years:"" }
     ],
     trainers: [
       { id:"dt1", cid:"demo", name:"Trainer A", role:"Trainer",
-        tids:["demo_g","demo_f1"], pw:"h4c0ffa1c", phone:"", email:"" },
+        tids:["demo_g","demo_f1"], pw:"hl3rl0c", phone:"", email:"" },
       { id:"dt2", cid:"demo", name:"Trainer B", role:"Trainer",
-        tids:["demo_e","demo_sen"], pw:"h4c0ffa1d", phone:"", email:"" }
+        tids:["demo_e","demo_sen"], pw:"hl3rl0d", phone:"", email:"" }
     ]
   };
 }
@@ -2683,6 +2703,8 @@ function BottomNav({ tab, setTab, isAdmin, isHelper, unread, cl, hide=false }) {
   const t = TH(cl);
   const [showDrawer, setShowDrawer] = useState(false);
 
+  const cs = cl?.clubSettings||{};
+  const clubFeat = (key, def=true) => cs[key]!==undefined ? cs[key] : def;
   const mainTabs = [
     { id:"events",  label:"Termine",  icon:"K" },
     { id:"team",    label:"Team",     icon:"P", hidden: isHelper },
@@ -8820,36 +8842,70 @@ function Directory({data,onPick,onNewClub,lang,setLang}) {
   );
 
   return (
-    <div style={{minHeight:"100dvh",background:"linear-gradient(160deg,#0f172a 0%,#052e16 55%,#14532d 100%)",color:"#fff"}}>
+    <div style={{minHeight:"100dvh",background:"linear-gradient(160deg,#0f172a 0%,#052e16 55%,#14532d 100%)",color:"#fff",position:"relative",overflow:"hidden"}}>
       <style>{CSS}</style>
 
       {}
-      <div style={{padding:"48px 22px 20px",textAlign:"center",maxWidth:460,margin:"0 auto"}}>
-        <div style={{fontSize:52,marginBottom:10}}>&#x26BD;</div>
-        <h1 style={{fontWeight:900,fontSize:28,margin:"0 0 8px",letterSpacing:-1}}>Vereins-App</h1>
-        <p style={{color:"#86efac",fontSize:15,fontWeight:600,margin:"0 0 20px"}}>Termine. Mannschaften. Kommunikation.</p>
-        {}
-        <div style={{display:"flex",justifyContent:"center",marginBottom:14}}>
-          <LangSwitcher lang={lang} setLang={setLang}/>
+      <div style={{position:"absolute",top:-80,left:"50%",transform:"translateX(-50%)",width:420,height:420,background:"radial-gradient(circle,rgba(34,197,94,.25),transparent 70%)",filter:"blur(20px)",pointerEvents:"none"}}/>
+
+      {}
+      <div style={{position:"relative",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"18px 22px 0",maxWidth:520,margin:"0 auto"}}>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <div style={{width:30,height:30,borderRadius:9,background:"#16a34a",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,boxShadow:"0 2px 12px rgba(22,163,74,.6)"}}>&#9917;</div>
+          <span style={{fontWeight:800,fontSize:15,letterSpacing:-.3}}>Vereins-App</span>
         </div>
-        <div style={{display:"flex",gap:10,marginBottom:12}}>
-          <button onClick={()=>onPick("__demo__")}
-            style={{flex:1,padding:"13px 12px",borderRadius:14,border:"none",background:"rgba(255,255,255,.12)",color:"#fff",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
-            {tr("demoView")}
-          </button>
+        <LangSwitcher lang={lang} setLang={setLang}/>
+      </div>
+
+      {}
+      <div style={{position:"relative",padding:"32px 22px 6px",maxWidth:520,margin:"0 auto",textAlign:"center"}}>
+        <div className="up" style={{display:"inline-flex",alignItems:"center",gap:6,background:"rgba(134,239,172,.12)",border:"1px solid rgba(134,239,172,.28)",color:"#86efac",fontSize:12,fontWeight:700,padding:"5px 13px",borderRadius:99,marginBottom:18}}>
+          &#9917; Für jeden Sportverein &middot; kostenlos
+        </div>
+        <h1 className="up" style={{fontWeight:900,fontSize:34,lineHeight:1.08,letterSpacing:-1.2,margin:"0 0 14px",animationDelay:".05s"}}>
+          Schluss mit dem<br/><span style={{color:"#4ade80"}}>WhatsApp-Chaos</span> im Verein.
+        </h1>
+        <p className="up" style={{color:"rgba(255,255,255,.72)",fontSize:16,lineHeight:1.5,fontWeight:500,margin:"0 auto 24px",maxWidth:400,animationDelay:".1s"}}>
+          Termine, Anwesenheit, Mannschaften und Kommunikation &ndash; alles an einem Ort. Eltern stimmen mit einem Tipp ab, du planst die Saison in Minuten.
+        </p>
+        <div className="up" style={{display:"flex",flexDirection:"column",gap:10,maxWidth:340,margin:"0 auto 12px",animationDelay:".15s"}}>
           <button onClick={()=>setMode("setup")}
-            style={{flex:1,padding:"13px 12px",borderRadius:14,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 4px 20px rgba(22,163,74,.4)"}}>
-            {tr("createClub")}
+            style={{padding:"16px",borderRadius:15,border:"none",background:"linear-gradient(135deg,#22c55e,#16a34a)",color:"#fff",fontWeight:800,fontSize:16,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 10px 34px rgba(22,163,74,.5)"}}>
+            Verein kostenlos anlegen &#8594;
+          </button>
+          <button onClick={()=>onPick("__demo__")}
+            style={{padding:"13px",borderRadius:15,border:"1.5px solid rgba(255,255,255,.18)",background:"rgba(255,255,255,.06)",color:"#fff",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
+            Erst die Demo ansehen
           </button>
         </div>
-        {}
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:8}}>
-          {[[pub.length.toLocaleString("de-DE"),"Vereine"],[Object.values(data.players||{}).reduce((s,a)=>s+(Array.isArray(a)?a.length:0),0).toLocaleString("de-DE"),"Mitglieder"],[(data.events||[]).length.toLocaleString("de-DE"),"Termine"]].map(([v,l])=>(
-            <div key={l} style={{background:"rgba(255,255,255,.06)",borderRadius:12,padding:"10px 6px",textAlign:"center",border:"1px solid rgba(255,255,255,.08)"}}>
-              <div style={{fontWeight:900,fontSize:16,color:"#86efac"}}>{v}</div>
-              <div style={{fontSize:10,color:"rgba(255,255,255,.4)",marginTop:2}}>{l}</div>
-            </div>
-          ))}
+        <p className="up" style={{color:"rgba(255,255,255,.45)",fontSize:12,fontWeight:600,margin:"0 0 28px",animationDelay:".2s"}}>
+          Kostenlos &middot; Keine Kreditkarte &middot; In 2 Minuten startklar
+        </p>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,textAlign:"left"}}>
+          <div className="up" style={{background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.09)",borderRadius:14,padding:"13px 11px",animationDelay:".25s"}}>
+            <div style={{fontSize:20,marginBottom:6}}>&#128197;</div>
+            <div style={{fontWeight:800,fontSize:13,color:"#fff"}}>Nie wieder</div>
+            <div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:1}}>Termin-Chaos</div>
+          </div>
+          <div className="up" style={{background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.09)",borderRadius:14,padding:"13px 11px",animationDelay:".3s"}}>
+            <div style={{fontSize:20,marginBottom:6}}>&#9989;</div>
+            <div style={{fontWeight:800,fontSize:13,color:"#fff"}}>Ein Tipp</div>
+            <div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:1}}>Eltern stimmen ab</div>
+          </div>
+          <div className="up" style={{background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.09)",borderRadius:14,padding:"13px 11px",animationDelay:".35s"}}>
+            <div style={{fontSize:20,marginBottom:6}}>&#128172;</div>
+            <div style={{fontWeight:800,fontSize:13,color:"#fff"}}>Statt 5</div>
+            <div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:1}}>WhatsApp-Gruppen</div>
+          </div>
+        </div>
+      </div>
+
+      {}
+      <div style={{maxWidth:520,margin:"30px auto 0",padding:"0 22px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <div style={{flex:1,height:1,background:"rgba(255,255,255,.1)"}}/>
+          <span style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,.4)",whiteSpace:"nowrap"}}>Schon dabei? Finde deinen Verein</span>
+          <div style={{flex:1,height:1,background:"rgba(255,255,255,.1)"}}/>
         </div>
       </div>
 
@@ -9093,7 +9149,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
 }
 
 function AdminLogin({cl,onLogin,onBack}) {
-  const t=TH(cl); const [pw,setPw]=useState(""); const [err,setErr]=useState(false);
+  const t=TH(cl); const [pw,setPw]=useState(""); const [err,setErr]=useState(false); const [showForgot,setShowForgot]=useState(false);
   const go=()=>{ if(checkPw(pw,cl.adm||"")){onLogin({id:"admin",role:"admin",cid:cl.id,name:"Vereinsadmin"});}else{setErr(true);setTimeout(()=>setErr(false),1800);} };
   return (
     <div style={{minHeight:"100dvh",background:`linear-gradient(135deg,${t.s},${t.p}66)`,display:"flex",alignItems:"center",justifyContent:"center",padding:22}}>
@@ -9171,7 +9227,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
   const ct=teams.find(x=>x.id===tid);
   const cats=[...new Set(teams.map(tm=>tm.cat||tm.name))];
   const teamsInCat=cat?teams.filter(tm=>(tm.cat||tm.name)===cat):[];
-  const list=(players[tid]||[]).filter(p=>p.toLowerCase().includes(q.toLowerCase()));
+  const list=(playerProfiles||[]).filter(p=>p.mainTid===tid&&!p.archived&&(p.name||"").toLowerCase().includes(q.toLowerCase())).map(p=>p.name);
   const hasAssigned = tid
     ? (playerProfiles||[]).some(p=>p.mainTid===tid)
     : false;
@@ -9246,7 +9302,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
           {showForgotParent&&<ForgotPasswordHelp cl={cl} trainers={trainers}
             forRole="user" teamId={ct?.id}
             onBack={()=>setShowForgotParent(false)}/>}
-          {cl.id==="demo"&&<div style={{background:"rgba(255,255,255,.1)",borderRadius:10,padding:"8px 12px",marginBottom:10,fontSize:11,color:"rgba(255,255,255,.6)"}}>Demo: G-Jugend = g1 | F-Jugend = f1</div>}
+          {cl.id==="demo"&&<div style={{background:"rgba(255,255,255,.1)",borderRadius:10,padding:"8px 12px",marginBottom:10,fontSize:11,color:"rgba(255,255,255,.6)"}}>Demo: G-Jugend=g1 | F-Jugend=f1 | E-Jugend=e1 | Senioren=sen1 | Alt-Herren=ah1</div>}
           <button onClick={()=>setShowForgotParent(true)}
             style={{background:"none",border:"none",color:"rgba(255,255,255,.4)",
               fontSize:12,cursor:"pointer",fontFamily:"inherit",
@@ -9319,7 +9375,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
   );
 }
 
-function PollAttend({ev,user,onVote,cl}) {
+function PollAttend({ev,user,onVote,cl,session=null,save=()=>{},data=null,fire=()=>{}}) {
   const yes  = Object.entries(ev.votes).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>n);
   const no   = Object.entries(ev.votes).filter(([,v])=>(typeof v==="object"?v.val:v)==="no" ).map(([n])=>n);
   const late = Object.entries(ev.votes).filter(([,v])=>typeof v==="object"&&v.val==="yes"&&v.late).map(([n,v])=>({name:n,mins:v.late}));
@@ -9339,8 +9395,8 @@ function PollAttend({ev,user,onVote,cl}) {
 
   return (
     <div style={{display:"flex",flexDirection:"column",gap:10}}>
-      {session?.role==="trainer"&&<TrainerCheckin ev={ev} session={session} save={save} data={data} fire={fire}/>}
-      {(Object.values(ev.trainerPresence||{}).length>0&&session?.role==="user")&&<TrainerCheckin ev={ev} session={session} save={save} data={data} fire={fire}/>}
+      {session?.role==="trainer"&&data&&<TrainerCheckin ev={ev} session={session} save={save} data={data} fire={fire}/>}
+      {(Object.values(ev.trainerPresence||{}).length>0&&session?.role==="user"&&data)&&<TrainerCheckin ev={ev} session={session} save={save} data={data} fire={fire}/>}
       {ev.note&&<div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:12,padding:"10px 13px",fontSize:13,color:"#92400e",fontWeight:500}}>{ev.note}</div>}
       {ev.deadline&&<div style={{background:dlPassed?"#fee2e2":"#fffbeb",border:`1.5px solid ${dlPassed?"#fca5a5":"#fde68a"}`,borderRadius:12,padding:"9px 13px",fontSize:13,fontWeight:700,color:dlPassed?"#dc2626":"#d97706"}}>{dlPassed?"Frist abgelaufen - Abstimmung wird trotzdem gezaehlt":"Abstimmungs-Frist: "+ev.deadline.date+(ev.deadline.time?" "+ev.deadline.time+" Uhr":"")}</div>}
 
@@ -9448,8 +9504,8 @@ function PollAttend({ev,user,onVote,cl}) {
   );
   return (
     <div style={{display:"flex",flexDirection:"column",gap:10}}>
-      {session?.role==="trainer"&&<TrainerCheckin ev={ev} session={session} save={save} data={data} fire={fire}/>}
-      {(Object.values(ev.trainerPresence||{}).length>0&&session?.role==="user")&&<TrainerCheckin ev={ev} session={session} save={save} data={data} fire={fire}/>}
+      {session?.role==="trainer"&&data&&<TrainerCheckin ev={ev} session={session} save={save} data={data} fire={fire}/>}
+      {(Object.values(ev.trainerPresence||{}).length>0&&session?.role==="user"&&data)&&<TrainerCheckin ev={ev} session={session} save={save} data={data} fire={fire}/>}
       {ev.note&&<div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:12,padding:"10px 13px",fontSize:13,color:"#92400e",fontWeight:500}}> {ev.note}</div>}
       {ev.deadline&&<div style={{background:dlPassed?"#fee2e2":"#fffbeb",border:`1.5px solid ${dlPassed?"#fca5a5":"#fde68a"}`,borderRadius:12,padding:"9px 13px",fontSize:13,fontWeight:700,color:dlPassed?"#dc2626":"#d97706"}}> {dlPassed?"Frist abgelaufen - Abstimmung wird trotzdem gezaehlt":"Abstimmungs-Frist: "+ev.deadline.date+(ev.deadline.time?" "+ev.deadline.time+" Uhr":"")}</div>}
       {[{id:"yes",label:ev.selfVote?"Ich bin dabei":"Mein Kind ist dabei",color:p,bg:mix(p,86),voters:yes},{id:"no",label:"Leider nicht dabei",color:"#dc2626",bg:"#fee2e2",voters:no}].map(o=>{
@@ -9484,8 +9540,8 @@ function PollList({ev,user,onVote}) {
   const uniq=[...new Set(Object.entries(ev.votes).filter(([,v])=>Array.isArray(v)&&v.length>0).map(([n])=>n))];
   return (
     <div>
-      {session?.role==="trainer"&&<TrainerCheckin ev={ev} session={session} save={save} data={data} fire={fire}/>}
-      {(Object.values(ev.trainerPresence||{}).length>0&&session?.role==="user")&&<TrainerCheckin ev={ev} session={session} save={save} data={data} fire={fire}/>}
+      {session?.role==="trainer"&&data&&<TrainerCheckin ev={ev} session={session} save={save} data={data} fire={fire}/>}
+      {(Object.values(ev.trainerPresence||{}).length>0&&session?.role==="user"&&data)&&<TrainerCheckin ev={ev} session={session} save={save} data={data} fire={fire}/>}
       {ev.note&&<div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:12,padding:"10px 13px",fontSize:13,color:"#92400e",fontWeight:500,marginBottom:12}}> {ev.note}</div>}
       <p style={{fontSize:13,color:"#64748b",fontWeight:600,marginBottom:10}}> Mehrfachauswahl moeglich - tippe zum Auswaehlen</p>
       <div style={{display:"flex",flexDirection:"column",gap:8}}>
@@ -9526,6 +9582,86 @@ const JERSEY_SIZES   = ["104","110","116","122","128","134","140","146","152","1
 const JERSEY_STATUS  = [
   {id:"home",icon:"Heim",label:"Zu Hause",col:"#16a34a",bg:"#dcfce7"},{id:"bag",icon:"*",label:"Im Sporttasche",col:"#2563eb",bg:"#eff6ff"},{id:"lost",icon:"*",label:"Nicht auffindbar",col:"#d97706",bg:"#fef3c7"},{id:"damaged",icon:"*",label:"Beschaedigt",col:"#dc2626",bg:"#fee2e2"},{id:"ok",icon:"OK",label:"Abgegeben",col:"#16a34a",bg:"#dcfce7"},{id:"none",icon:"-",label:"Keine Angabe",col:"#94a3b8",bg:"#f1f5f9"},];
 const BASE_STRENGTHS = ["Schnelligkeit","Technik","Zweikampf","Kopfball","Uebersicht","Flanken","Schuss","Ausdauer","Fuehrung","Einsatz","Pressing","Spielaufbau","Defensivstaerke","Torwartreflex"];
+
+/* =================================================================
+   SKILL-ACHSEN PRO SPORTART (rein sportlich) + SPINNENNETZ
+================================================================= */
+const SKILL_AXES = {
+  fussball:      ["Technik","Schnelligkeit","Zweikampf","Uebersicht","Abschluss","Ausdauer","Teamplay"],
+  handball:      ["Wurfkraft","Sprung","Zweikampf","Uebersicht","Tempo","Ausdauer","Teamplay"],
+  basketball:    ["Wurf","Dribbling","Sprung","Uebersicht","Defense","Ausdauer","Teamplay"],
+  volleyball:    ["Aufschlag","Annahme","Angriff","Block","Stellung","Sprungkraft","Teamplay"],
+  tennis:        ["Vorhand","Rueckhand","Aufschlag","Beinarbeit","Taktik","Ausdauer","Mentalstaerke"],
+  badminton:     ["Schlagtechnik","Beinarbeit","Reaktion","Taktik","Kondition","Mentalstaerke"],
+  tischtennis:   ["Vorhand","Rueckhand","Aufschlag","Beinarbeit","Spinkontrolle","Taktik"],
+  kegeln:        ["Technik","Konstanz","Konzentration","Zielgenauigkeit","Nervenstaerke"],
+  schuetzen:     ["Praezision","Ruhe","Atemkontrolle","Konzentration","Standfestigkeit"],
+  turnen:        ["Kraft","Beweglichkeit","Gleichgewicht","Koordination","Haltung","Mut"],
+  leichtathletik:["Schnelligkeit","Sprungkraft","Wurfkraft","Ausdauer","Technik","Koordination"],
+  tanzen:        ["Rhythmus","Koordination","Ausdruck","Beweglichkeit","Synchronitaet","Haltung"],
+  schwimmen:     ["Technik","Schnelligkeit","Ausdauer","Wende","Atmung","Kraft"],
+  mehrzweck:     ["Technik","Schnelligkeit","Kraft","Ausdauer","Koordination","Teamplay"],
+};
+const skillAxesFor = sport => SKILL_AXES[sport] || SKILL_AXES.mehrzweck;
+
+// Quelle fuer altersgerechte Zielwerte (offizielle Verbands-Konzeption)
+const SKILL_SOURCE = { label:"DFB-Ausbildungskonzeption", url:"https://training-service.fussball.de/trainer/bambinie/artikel/online-blaetterfunktion-dfb-ausbildungskonzeption-651/" };
+
+// Soll-VORSCHLAEGE pro Altersklasse (1-5). Bewusst als Startwerte gedacht -
+// vom Verein anhand der eigenen Ausbildungskonzeption editierbar.
+// Steigende Messlatte: Technik frueh, Kondition/Kraft spaeter (DFB-Leitgedanke).
+const CAT_RANK = { "Bambinis":0,"G-Jugend":1,"F-Jugend":2,"E-Jugend":3,"D-Jugend":4,"C-Jugend":5,"B-Jugend":6,"A-Jugend":7,"Senioren":8,"Alt-Herren":8,"Frauen":8,"Maedchen":4 };
+// Default-Zielwert je Achse abhaengig vom Altersrang (0..8). Technik-naher Skill steigt frueher.
+const _techAxes = ["Technik","Vorhand","Rueckhand","Aufschlag","Schlagtechnik","Dribbling","Wurf","Praezision","Koordination","Rhythmus","Annahme"];
+const _condAxes = ["Ausdauer","Kraft","Sprungkraft","Sprung","Tempo","Wurfkraft","Kondition","Standfestigkeit"];
+function defaultSoll(rank, axis) {
+  // Basislinie steigt mit Alter; Technik frueher hoch, Kondition spaeter
+  const base = 2 + rank*0.32;                  // ~2.0 (Bambini) .. ~4.6 (Senioren)
+  let v = base;
+  if(_techAxes.includes(axis)) v = base + 0.5;  // Technik frueher gefordert
+  if(_condAxes.includes(axis)) v = base - 0.6;  // Kondition spaeter
+  return Math.max(1, Math.min(5, Math.round(v)));
+}
+// Liefert die Soll-Werte fuer eine Kategorie + Achsen, beruecksichtigt Vereins-Overrides (cl.skillTargets[cat])
+function sollFor(cl, cat, axes) {
+  const rank = CAT_RANK[cat] ?? 4;
+  const override = cl?.skillTargets?.[cat] || null;
+  return axes.map(a => (override && typeof override[a]==="number") ? override[a] : defaultSoll(rank,a));
+}
+
+
+// Reines SVG-Spinnennetz (keine externe Bibliothek noetig)
+function SpiderChart({ axes, values, compareValues=null, size=260, color="#16a34a", compareColor="#94a3b8", max=5 }) {
+  const n = axes.length;
+  if(n<3) return null;
+  const cx=size/2, cy=size/2, r=size*0.36;
+  const angle = i => (Math.PI*2*i/n) - Math.PI/2;
+  const point = (i,val) => {
+    const rad = r*(Math.max(0,Math.min(max,val))/max);
+    return [cx+rad*Math.cos(angle(i)), cy+rad*Math.sin(angle(i))];
+  };
+  const polygon = vals => vals.map((v,i)=>point(i,v).join(",")).join(" ");
+  const rings = [1,2,3,4,5].slice(0,max);
+  return (
+    <svg viewBox={`0 0 ${size} ${size}`} width="100%" style={{maxWidth:size,display:"block",margin:"0 auto"}}>
+      {rings.map((ring,ri)=>(
+        <polygon key={ri}
+          points={axes.map((_,i)=>{const rad=r*(ring/max);return [cx+rad*Math.cos(angle(i)),cy+rad*Math.sin(angle(i))].join(",");}).join(" ")}
+          fill="none" stroke="#e2e8f0" strokeWidth="1"/>
+      ))}
+      {axes.map((_,i)=>{const [x,y]=point(i,max);return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="#e2e8f0" strokeWidth="1"/>;})}
+      {compareValues && <polygon points={polygon(compareValues)} fill={compareColor+"33"} stroke={compareColor} strokeWidth="2"/>}
+      <polygon points={polygon(values)} fill={color+"33"} stroke={color} strokeWidth="2.5"/>
+      {axes.map((ax,i)=>{
+        const [lx,ly]=point(i,max*1.18);
+        return <text key={i} x={lx} y={ly} fontSize="10.5" fontWeight="700" fill="#475569"
+          textAnchor={Math.abs(lx-cx)<8?"middle":(lx<cx?"end":"start")}
+          dominantBaseline="middle">{ax}</text>;
+      })}
+    </svg>
+  );
+}
+
 
 const CAT_YEARS = {
   "Bambinis": [2019,2020,2021,2022],"G-Jugend": [2017,2018,2019],"F-Jugend": [2015,2016,2017],"E-Jugend": [2013,2014,2015],"D-Jugend": [2011,2012,2013],"C-Jugend": [2009,2010,2011],"B-Jugend": [2007,2008,2009],"A-Jugend": [2005,2006,2007],};
@@ -9568,7 +9704,7 @@ function fitLabel(fitType) {
 
 function mkPlayer(fields = {}) {
   return {
-    id: uid(),name: "",by:2014,gender:"m",mainTid:"",optTids: [],position: "",foot: "",strengths: [],customStrengths: [],goals:0,assists:0,yellowCards:0,redCards:0,notes: "",recommend: "",rating:0,friends: [],mustWith: [],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam: "",// Freitext: z.B. "F3 25/26" oder "G-Jugend"
+    id: uid(),name: "",by:2014,gender:"m",mainTid:"",optTids: [],position: "",foot: "",strengths: [],customStrengths: [],skills:{},goals:0,assists:0,yellowCards:0,redCards:0,notes: "",recommend: "",rating:0,friends: [],mustWith: [],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam: "",// Freitext: z.B. "F3 25/26" oder "G-Jugend"
     lastTeamId: "",// Team-ID der letzten Saison fuer Logik
     seasonId: "",// Saison-ID z.B. "s2526"
     ...fields
@@ -9711,7 +9847,7 @@ function FriendsInput({ label,sub,ids,allPlayers,current,onChange,color }) {
   );
 }
 
-function PlayerProfile({ player,teams,allEvents,allPlayers,cid,onSave,onClose,t,allSeasons,allPlayerProfiles,trainers }) {
+function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",club=null,onSave,onClose,t,allSeasons,allPlayerProfiles,trainers }) {
   const samePlayerHistory = (allPlayerProfiles||[]).filter(p=>
     p.id!==player.id && p.name===player.name && p.by===player.by && p.seasonId
   ).sort((a,b)=>(b.seasonId||"").localeCompare(a.seasonId||""));
@@ -9826,6 +9962,53 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,onSave,onClose,t,
                 ))}
                 {(p.rating||0) > 0 && <span style={{fontSize:13,color:"#64748b",alignSelf:"center",marginLeft:4,fontWeight:600}}>{p.rating}/5</span>}
               </div>
+            </div>
+
+            {}
+            <div style={{marginTop:18}}>
+              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:4,letterSpacing:.5}}>SKILL-PROFIL (1 = Foerderbedarf, 5 = Staerke)</div>
+              <div style={{fontSize:11,color:"#94a3b8",marginBottom:12,lineHeight:1.5}}>Nur sportliche Faehigkeiten. Daraus entsteht das Spinnennetz und der Trainings-Vorschlag.</div>
+              {(()=>{
+                const axes = skillAxesFor(sport);
+                const sk = p.skills||{};
+                const setSkill = (ax,val)=>up({skills:{...sk,[ax]:sk[ax]===val?0:val}});
+                const vals = axes.map(a=>sk[a]||0);
+                const myTeam = (teams||[]).find(tm=>tm.id===p.mainTid);
+                const cat = myTeam?.cat || myTeam?.name || "E-Jugend";
+                const soll = sollFor(club, cat, axes);
+                const foerder = axes.map((a,i)=>({a,ist:sk[a]||0,soll:soll[i]})).filter(x=>x.ist>0&&x.ist<x.soll);
+                const hasAny = axes.some(a=>(sk[a]||0)>0);
+                return (
+                  <div>
+                    {axes.map((ax,i)=>(
+                      <div key={ax} style={{display:"flex",alignItems:"center",gap:8,marginBottom:7}}>
+                        <span style={{flex:1,fontSize:13,fontWeight:600,color:"#334155"}}>{ax} <span style={{color:"#cbd5e1",fontSize:11,fontWeight:700}}>Ziel {soll[i]}</span></span>
+                        <div style={{display:"flex",gap:3}}>
+                          {[1,2,3,4,5].map(n=>(
+                            <button key={n} type="button" onClick={()=>setSkill(ax,n)}
+                              style={{width:26,height:26,borderRadius:7,border:`1.5px solid ${n<=(sk[ax]||0)?(t.p||"#16a34a"):(n<=soll[i]?"#fde68a":"#e2e8f0")}`,background:n<=(sk[ax]||0)?(t.p||"#16a34a"):"#fff",color:n<=(sk[ax]||0)?"#fff":"#cbd5e1",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{n}</button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                    {hasAny&&<div style={{marginTop:16,background:"#f8fafc",borderRadius:14,padding:"14px 10px"}}>
+                      <SpiderChart axes={axes} values={vals} compareValues={soll} color={t.p||"#16a34a"} compareColor="#f59e0b" size={240}/>
+                      <div style={{display:"flex",gap:16,justifyContent:"center",fontSize:11,fontWeight:700,marginTop:8}}>
+                        <span><span style={{display:"inline-block",width:10,height:10,borderRadius:3,background:t.p||"#16a34a",marginRight:4,verticalAlign:"middle"}}/>Ist</span>
+                        <span><span style={{display:"inline-block",width:10,height:10,borderRadius:3,background:"#f59e0b",marginRight:4,verticalAlign:"middle"}}/>Ziel {cat}</span>
+                      </div>
+                    </div>}
+                    {foerder.length>0&&<div style={{marginTop:12,background:"#fff7ed",border:"1px solid #fed7aa",borderRadius:11,padding:"10px 13px"}}>
+                      <div style={{fontSize:11,fontWeight:800,color:"#9a3412",marginBottom:4,letterSpacing:.3}}>ENTWICKLUNGSZIELE ({cat})</div>
+                      <div style={{fontSize:13,color:"#9a3412",lineHeight:1.6}}>{foerder.map(x=>`${x.a} (${x.ist}→${x.soll})`).join(", ")}</div>
+                    </div>}
+                    <div style={{marginTop:10,fontSize:11,color:"#94a3b8",lineHeight:1.5}}>
+                      Zielwerte sind Vorschläge, anpassbar an eure Ausbildungskonzeption. Quelle:{" "}
+                      <a href={SKILL_SOURCE.url} target="_blank" rel="noopener noreferrer" style={{color:t.p||"#16a34a",fontWeight:700}}>{SKILL_SOURCE.label}</a>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </Section>
 
@@ -9960,10 +10143,25 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,onSave,onClose,t,
             </div>
 
             <div>
-              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.5}}>NOTIZEN</div>
-              <textarea value={p.notes||""} onChange={e=>up({notes:e.target.value})} rows={4}
-                placeholder="z.B. Entwicklung,Verhalten,Staerken,Schwaechen..."
-                style={{width:"100%",padding:"12px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",resize:"vertical",fontFamily:"inherit",lineHeight:1.5}}/>
+              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.5}}>SPORTLICHE BEOBACHTUNGEN</div>
+              {(()=>{
+                const OPTS=["Pünktlich","Zuverlässig","Teamplayer","Kampfstark","Technisch stark","Schnell","Ausdauernd","Torgefährlich","Gute Übersicht","Beidfüßig","Kopfballstark","Führungsspieler","Entwicklungspotenzial","Braucht Förderung Technik","Braucht Förderung Kondition","Neu im Team"];
+                const sel=(p.notes||"").split(",").map(s=>s.trim()).filter(Boolean);
+                const toggle=v=>{const has=sel.includes(v);const next=has?sel.filter(x=>x!==v):[...sel,v];up({notes:next.join(", ")});};
+                return (
+                  <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
+                    {OPTS.map(o=>{const on=sel.includes(o);return (
+                      <button key={o} type="button" onClick={()=>toggle(o)}
+                        style={{padding:"7px 13px",borderRadius:99,border:`1.5px solid ${on?(t.p||"#16a34a"):"#e2e8f0"}`,background:on?(t.p||"#16a34a"):"#fff",color:on?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",transition:"all .12s"}}>
+                        {o}
+                      </button>
+                    );})}
+                  </div>
+                );
+              })()}
+              <div style={{marginTop:10,background:"#fffbeb",border:"1px solid #fde68a",borderRadius:10,padding:"9px 12px",fontSize:12,color:"#92400e",lineHeight:1.5}}>
+                <strong>Datenschutz:</strong> Bitte nur sportliche Einschätzungen. Keine Angaben zu Gesundheit, Krankheit, Religion, Herkunft, Familie oder Verhalten außerhalb des Sports.
+              </div>
             </div>
           </Section>
 
@@ -10622,6 +10820,8 @@ function PlayersTab({ data,myTids,save,fire,cl }) {
           allEvents={allEvents}
           allPlayers={allPlayers}
           cid={cid}
+          sport={cl?.sport||"fussball"}
+          club={cl}
           onSave={savePlayer}
           onClose={()=>{setEditP(null);setShowNew(false);}}
           t={t}
@@ -13456,6 +13656,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
     return (local.chats||[]).filter(m=>m.cid===cid&&m.ts>lastRead).length;
   },[local.chats]); const [wizard,setWizard]=useState(false); const [editEv,setEditEv]=useState(null);
   const [showSeasonModal,setShowSeasonModal]=useState(false);
+  const [showOnboarding,setShowOnboarding]=useState(false);
   const { trigger: shareTrigger,dismiss: dismissShare } = useShareTrigger(local,session,myTids);
   const [delConf,setDelConf]=useState(null); const [viewEv,setViewEv]=useState(null); const [delConfVal,setDelConfVal]=useState(null);
   const [editConf,setEditConf]=useState(null);
@@ -14136,6 +14337,10 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
   const tr = (k) => T[lang]?.[k] ?? T.de[k] ?? k;
   const {tid,user,cid}=session;
   const cl=data.clubs.find(c=>c.id===cid);
+  const myClub=cl;
+  const isAdmin=false, isHelper=false;
+  const [tab,setTab]=useState("events");
+  const isDesktop = typeof window!=="undefined" && window.innerWidth>=1024;
   const myTeam=data.teams.find(x=>x.id===tid);
   const t=TH(cl); const tod=now();
   const evs=data.events.filter(e=>e.tid===tid).sort((a,b)=>a.date.localeCompare(b.date));
@@ -14146,8 +14351,8 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
   const [toast,setToast]=useState(null);
   const unreadMsgs = useMemo(()=>{
     const lastRead = Number(localStorage.getItem("va_last_read_"+cid)||0);
-    return (local.chats||[]).filter(m=>m.cid===cid&&m.ts>lastRead).length;
-  },[local.chats]);
+    return (data.chats||[]).filter(m=>m.cid===cid&&m.ts>lastRead).length;
+  },[data.chats]);
   const [showProfile,setShowProfile]=useState(false);
   const toastRef=useRef(null);
   const fire=m=>{setToast(m);clearTimeout(toastRef.current);toastRef.current=setTimeout(()=>setToast(null),2200);};
@@ -14264,14 +14469,9 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
           {showPast&&past.map(ev=><div key={ev.id} style={{marginBottom:10}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user"/></div>)}
         </>}
       </div>
-      {showOnboarding&&<OnboardingWizard cl={myClub} data={local} save={save} fire={fire} onDone={()=>setShowOnboarding(false)}/>}
       <Toast msg={toast}/>
       <BottomNav tab={tab} setTab={setTab} isAdmin={isAdmin} isHelper={isHelper}
         unread={unreadMsgs} cl={myClub} />
-      
-      {shareConfig&&<MomentShare trigger={shareConfig.trigger} clubName={myClub?.name} stats={shareConfig.stats} onDismiss={()=>setShareConfig(null)}/>}
-      {showNPS&&<NPSWidget clubName={myClub?.name} onDone={()=>setShowNPS(false)}/>}
-      {achievement&&<AchievementToast achievement={achievement} onDone={()=>setAchievment(null)}/>}
     </div>
   );
 }
@@ -14408,7 +14608,7 @@ function AppInner({lang,setLang}) {
 
       {showLegal&&<LegalPage onBack={()=>setShowLegal(false)}/>}
       {!showLegal&&screen==="dir"&&<Directory data={data} lang={lang} setLang={setLang} onLegal={()=>setShowLegal(true)} onPick={id=>{
-          if(id==="__demo__"){setCid("sus");setScr("role");return;}
+          if(id==="__demo__"){setCid("demo");setScr("role");return;}
           setCid(id);setScr("role");
         }} onNewClub={newClubOrData=>{
           if(newClubOrData.clubs){
