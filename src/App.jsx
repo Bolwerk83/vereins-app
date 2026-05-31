@@ -564,6 +564,23 @@ function seed() {
     ]
   };
 }
+// Setzt den Demo-Verein bei jedem Laden frisch aus dem Code (korrekte Passwörter etc.).
+// Echte Vereine des Nutzers bleiben unverändert erhalten.
+function refreshDemo(d) {
+  try {
+    if(!d || typeof d!=="object") return d;
+    const f = seed();
+    const notDemo = x => x && x.cid !== "demo";
+    const isDemo  = x => x && x.cid === "demo";
+    d.clubs          = [...(d.clubs||[]).filter(c=>c&&c.id!=="demo"), ...(f.clubs||[]).filter(c=>c.id==="demo")];
+    d.teams          = [...(d.teams||[]).filter(notDemo),          ...(f.teams||[]).filter(isDemo)];
+    d.playerProfiles = [...(d.playerProfiles||[]).filter(notDemo), ...(f.playerProfiles||[]).filter(isDemo)];
+    d.events         = [...(d.events||[]).filter(notDemo),         ...(f.events||[]).filter(isDemo)];
+    d.trainers       = [...(d.trainers||[]).filter(notDemo),       ...(f.trainers||[]).filter(isDemo)];
+    d.seasons        = [...(d.seasons||[]).filter(notDemo),        ...(f.seasons||[]).filter(isDemo)];
+  } catch {}
+  return d;
+}
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%;text-size-adjust:100%}
@@ -5699,6 +5716,7 @@ function SuperAdminDashboard({ data, onExit }) {
     {id:"logs",       label:"Logs",        icon:"L"},
     {id:"moderation",  label:"Chat-Moderation", icon:"CM"},
     {id:"settings",   label:"Einstellungen",icon:"S"},
+    {id:"compliance",  label:"Compliance",    icon:"C"},
     {id:"rollout",     label:"Rollout",        icon:"R"},
   ];
 
@@ -5864,7 +5882,92 @@ function SuperAdminDashboard({ data, onExit }) {
         {tab==="settings"&&(
           <SuperAdminSettings/>
         )}
+
+        {/* COMPLIANCE / SICHERHEITS-STATUS */}
+        {tab==="compliance"&&(
+          <SuperAdminCompliance allClubs={allClubs} allPlayers={allPlayers}/>
+        )}
       </div>
+    </div>
+  );
+}
+
+/* -----------------------------------------------------------------
+   COMPLIANCE / SICHERHEITS-STATUS  (ehrliche Bestandsaufnahme)
+----------------------------------------------------------------- */
+function SuperAdminCompliance({ allClubs, allPlayers }) {
+  const STATUS = {
+    ok:    { label:"Erfüllt",        col:"#16a34a", bg:"rgba(22,163,74,.15)" },
+    part:  { label:"Teilweise",      col:"#d97706", bg:"rgba(217,119,6,.15)" },
+    open:  { label:"Offen",          col:"#dc2626", bg:"rgba(220,38,38,.15)" },
+    na:    { label:"Nicht relevant", col:"#64748b", bg:"rgba(100,116,139,.15)" },
+  };
+  const SECTIONS = [
+    { title:"KI & EU AI Act", items:[
+      { s:"na",   t:"Keine KI-Verarbeitung von Personendaten",
+        d:"Die App nutzt bewusst keine externe KI. Skill-Auswertung & Trainings-Logik laufen regelbasiert und lokal. Damit ist der EU AI Act aktuell nicht einschlägig." },
+      { s:"open", t:"Falls später KI ergänzt wird",
+        d:"Sobald KI Kinderdaten verarbeitet, gelten Transparenz-, Risiko- und Einwilligungspflichten (EU AI Act + DSGVO). Dann hier neu bewerten." },
+    ]},
+    { title:"Datenschutz (DSGVO)", items:[
+      { s:"ok",   t:"Datensparsamkeit",
+        d:"Nur Vorname/Jahr/Mannschaft; Notizen als feste Auswahl statt Freitext; Skill-Profil rein sportlich." },
+      { s:"ok",   t:"Werbe-Kennzeichnung",
+        d:"Affiliate-/Werbe-Banner sind als „Werbung\"/„Anzeige\" gekennzeichnet." },
+      { s:"part", t:"Datenschutzerklärung / Impressum / Nutzung",
+        d:"Vollständige Vorlage vorhanden – echte Betreiberdaten eintragen und juristisch prüfen lassen." },
+      { s:"part", t:"Eltern-Einwilligung (Minderjährige, Art. 8)",
+        d:"Einwilligung für Team-Fotos vorhanden. Generelle Einwilligung zur Datenverarbeitung bei Anmeldung noch offen." },
+      { s:"open", t:"Auftragsverarbeitungs-Vertrag (Supabase)",
+        d:"Pflicht, sobald personenbezogene Daten in der Cloud gespeichert werden." },
+    ]},
+    { title:"Datenbank & Zugriff", items:[
+      { s:"ok",   t:"Verschlüsselte Übertragung (HTTPS)",
+        d:"Auslieferung über Vercel erfolgt per HTTPS." },
+      { s:"open", t:"Zugriffstrennung (Row-Level-Security)",
+        d:"SQL-Schema mit RLS als Vorlage vorhanden, aber noch nicht angebunden. Aktuell könnten Daten zu breit lesbar sein." },
+      { s:"open", t:"Sichere Anmeldung & Passwörter",
+        d:"Noch selbstgebautes Hashing. Empfehlung: Supabase-Auth – übernimmt sicheres Hashing/Sessions." },
+      { s:"part", t:"Löschkonzept",
+        d:"Daten lokal löschbar; serverseitiges, nachvollziehbares Löschen kommt mit der echten Datenbank." },
+    ]},
+  ];
+  const counts = SECTIONS.flatMap(s=>s.items).reduce((a,i)=>{a[i.s]=(a[i.s]||0)+1;return a;},{});
+  return (
+    <div>
+      <h2 style={{color:"#fff",fontWeight:900,fontSize:20,marginBottom:6}}>Compliance & Sicherheit</h2>
+      <p style={{color:"#64748b",fontSize:12.5,lineHeight:1.6,marginBottom:16}}>
+        Ehrliche Bestandsaufnahme – keine Rechtsberatung. Vor Echtbetrieb mit Kinderdaten fachkundig prüfen lassen.
+      </p>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:20}}>
+        {Object.entries(STATUS).map(([k,v])=>(
+          <div key={k} style={{display:"flex",alignItems:"center",gap:6,background:v.bg,borderRadius:8,padding:"5px 10px"}}>
+            <span style={{width:8,height:8,borderRadius:"50%",background:v.col}}/>
+            <span style={{fontSize:11.5,fontWeight:700,color:v.col}}>{v.label}</span>
+            <span style={{fontSize:11.5,fontWeight:800,color:"#94a3b8"}}>{counts[k]||0}</span>
+          </div>
+        ))}
+      </div>
+      {SECTIONS.map(sec=>(
+        <div key={sec.title} style={{marginBottom:22}}>
+          <div style={{color:"#a78bfa",fontWeight:800,fontSize:13,letterSpacing:.4,marginBottom:10,textTransform:"uppercase"}}>{sec.title}</div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {sec.items.map((it,i)=>{
+              const st=STATUS[it.s];
+              return (
+                <div key={i} style={{background:"#1e293b",border:"1px solid #334155",borderRadius:12,padding:"13px 15px"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:5}}>
+                    <span style={{width:10,height:10,borderRadius:"50%",background:st.col,flexShrink:0}}/>
+                    <span style={{flex:1,fontWeight:700,fontSize:14,color:"#e2e8f0"}}>{it.t}</span>
+                    <span style={{fontSize:11,fontWeight:800,color:st.col,background:st.bg,borderRadius:7,padding:"3px 9px",whiteSpace:"nowrap"}}>{st.label}</span>
+                  </div>
+                  <div style={{fontSize:12.5,color:"#94a3b8",lineHeight:1.55,paddingLeft:20}}>{it.d}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -14593,6 +14696,7 @@ function AppInner({lang,setLang}) {
       let d=null;
       try { d = await sb.get(); if(d?._v < 10) d=null; } catch {}
       if(!d) { d=seed(); try { await sb.set(d); } catch {} }
+      else { d=refreshDemo(d); try { await sb.set(d); } catch {} }
       setData(d);
       const s=sess.get();
       if(s){ setCid(s.cid); setSess(s); setScr(s.role==="user"?"user":"dash"); return; }
@@ -14601,7 +14705,7 @@ function AppInner({lang,setLang}) {
     syncRef.current=setInterval(async()=>{
       try {
         const r=await sb.get();
-        if(r?._v>=12) setData(p=>{if(JSON.stringify(p)===JSON.stringify(r))return p;return r;});
+        if(r?._v>=12) setData(p=>{const rr=refreshDemo(r);if(JSON.stringify(p)===JSON.stringify(rr))return p;return rr;});
       } catch {}
     },10000);
     return()=>clearInterval(syncRef.current);
@@ -14658,6 +14762,8 @@ function AppInner({lang,setLang}) {
       </div>
     </div>
   );
+
+  if(showSuperAdmin) return (<><style>{CSS}</style><SuperAdmin data={data}/></>);
 
   const activeCl = data.clubs.find(c=>c.id===cid);
   const clTeams  = data.teams.filter(t=>t.cid===cid);
