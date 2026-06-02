@@ -346,7 +346,14 @@ function LangSwitcher({ lang,setLang }) {
 const SK  = "vereinsapp_v14";
 const SS  = "vereinsapp_v12_session";
 const CFG = "vereinsapp_config";
-const getConfig = () => { try { return JSON.parse(localStorage.getItem(CFG)||"null"); } catch { return null; } };
+// Fest eingebaute Verbindung: jedes Gerät verbindet sich automatisch mit der Vereins-Datenbank.
+// Der anon-Key ist bauartbedingt öffentlich (steckt ohnehin im ausgelieferten Browser-Code).
+// Echter Datenschutz erfolgt über Zugriffsregeln (RLS) in der Datenbank, nicht über Geheimhaltung dieses Keys.
+const DEFAULT_CFG = {
+  url: "https://phpkyzujpvrsypqqptlv.supabase.co",
+  key: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBocGt5enVqcHZyc3lwcXFwdGx2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0MjA2MjAsImV4cCI6MjA5NTk5NjYyMH0.t7wCh6Juzkn9cyshpy78ZfJ_G9ji8pko_v1hoOzui8w"
+};
+const getConfig = () => { try { const v=JSON.parse(localStorage.getItem(CFG)||"null"); return (v&&v.url&&v.key)?v:DEFAULT_CFG; } catch { return DEFAULT_CFG; } };
 const setConfig = c => { try { localStorage.setItem(CFG,JSON.stringify(c)); } catch {} };
 // ----------------------------------------------------------------
 // Daten-Trennung pro Verein (Phase 1: Schreib-Isolation).
@@ -17437,7 +17444,7 @@ function AppInner({lang,setLang}) {
       )}
 
       {}
-      {(screen==="dir"||screen==="role")&&(
+      {(screen==="dir"||screen==="role")&&new URLSearchParams(window.location.search).has("dbsetup")&&(
         <button onClick={()=>setShowSetup(true)}
           style={{position:"fixed",bottom:20,left:16,zIndex:998,display:"flex",alignItems:"center",gap:6,background:getConfig()?"#052e16":"#0f172a",border:`1px solid ${getConfig()?"#16a34a":"rgba(255,255,255,.15)"}`,borderRadius:99,padding:"8px 14px",fontSize:12,fontWeight:700,color:getConfig()?"#86efac":"rgba(255,255,255,.4)",cursor:"pointer",fontFamily:"inherit"}}>
            {getConfig()?"DB verbunden":"Datenbank einrichten"}
