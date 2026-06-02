@@ -787,6 +787,10 @@ function seed() {
     ],
     seasons: [{ id:"s2526", label:"2025/2026", status:"active" }],
     activeSeason: "s2526",
+    trainings: [
+      {id:"dtr1",cid:"demo",ownerTid:"demo_g",title:"Dribbling & Ballgefühl",focus:"Technik",blocks:[{phase:"Aufwärmen",title:"Fangen mit Ball",min:10},{phase:"Hauptteil",title:"Dribbel-Parcours",min:25},{phase:"Abschluss",title:"Kleines Abschlussspiel",min:15}],vis:"club",sharedTids:[],createdAt:"2026-01-01T10:00:00.000Z",updatedAt:"2026-01-01T10:00:00.000Z"},
+      {id:"dtr2",cid:"demo",ownerTid:"demo_g",title:"Passspiel im Quadrat",focus:"Passgenauigkeit",blocks:[{phase:"Aufwärmen",title:"Einlaufen + Mobilisation",min:10},{phase:"Hauptteil",title:"Passen im 4er-Quadrat",min:30}],vis:"team",sharedTids:[],createdAt:"2026-01-02T10:00:00.000Z",updatedAt:"2026-01-02T10:00:00.000Z"},
+    ],
     fields: [
       {id:"df1",cid:"demo",name:"Hauptplatz",template:"rasen",split:2,weather:"good",surface:"Rasenplatz",segments:2},
       {id:"df2",cid:"demo",name:"Sporthalle",template:"rasen",split:1,weather:"bad",surface:"Halle",segments:1},
@@ -1030,6 +1034,7 @@ function ContactForm({ cl, onSend, onClose }) {
         <div style={{fontWeight:900,fontSize:18,marginBottom:16}}>{cl.name} kontaktieren</div>
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
           <input value={f.name} onChange={e=>setF(p=>({...p,name:e.target.value}))} placeholder="Dein Name" style={{padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
+          <PrivacyNote/>
           <input value={f.email} onChange={e=>setF(p=>({...p,email:e.target.value}))} placeholder="E-Mail (optional)" style={{padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
           <textarea value={f.msg} onChange={e=>setF(p=>({...p,msg:e.target.value}))} placeholder="Deine Nachricht..." rows={4} style={{padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",resize:"none",fontFamily:"inherit"}}/>
         </div>
@@ -3531,6 +3536,193 @@ function DrillLibrary({ cl }) {
 }
 
 // Trainingsplan-Generator: Einheit oder Woche, Schwerpunkt manuell oder aus Förderlücken
+// ---- Teilbare Trainings-Bibliothek -------------------------------------
+// Sichtbarkeit: eigene (Besitzer-Team) immer; "club" vereinsweit; "teams" nur freigegebene Teams; "team" nur Besitzer.
+const canSeeTraining  = (tr, myTids) => { if(!tr) return false; if(myTids.includes(tr.ownerTid)) return true; if(tr.vis==="club") return true; if(tr.vis==="teams") return (tr.sharedTids||[]).some(id=>myTids.includes(id)); return false; };
+const canEditTraining = (tr, myTids) => !!tr && myTids.includes(tr.ownerTid);
+const visibleTrainings = (list, myTids) => (list||[]).filter(tr=>canSeeTraining(tr,myTids));
+const VIS_LABEL = { team:"Nur mein Team", club:"Ganzer Verein", teams:"Bestimmte Teams" };
+const TRAIN_PHASES = ["Aufwärmen","Hauptteil","Abschluss","Spielform","Athletik"];
+
+function TrainingsLibrary({ data, myTids, cl, save, fire }) {
+  const t=TH(cl);
+  const cid=(data.teams||[]).find(tm=>myTids.includes(tm.id))?.cid;
+  const myTeams=(data.teams||[]).filter(tm=>myTids.includes(tm.id));
+  const clubTeams=(data.teams||[]).filter(tm=>tm.cid===cid);
+  const all=(data.trainings||[]).filter(tr=>tr.cid===cid);
+  const visible=visibleTrainings(all, myTids);
+  const teamName=id=>(data.teams||[]).find(tm=>tm.id===id)?.name||"Team";
+
+  const [editing,setEditing]=useState(null); // null | {} (neu) | training (bearbeiten)
+  const [sched,setSched]=useState(null);     // Training, das terminiert wird
+
+  const blank=()=>({ id:"tr_"+uid(), cid, ownerTid:myTeams[0]?.id||myTids[0], title:"", focus:"", blocks:[{phase:"Aufwärmen",title:"",min:10}], vis:"team", sharedTids:[] });
+
+  if(editing){
+    const e=editing;
+    const set=(patch)=>setEditing(p=>({...p,...patch}));
+    const setBlock=(i,patch)=>set({blocks:e.blocks.map((b,j)=>j===i?{...b,...patch}:b)});
+    const valid=e.title.trim().length>0;
+    const doSave=()=>{
+      if(!valid) return;
+      const now2=new Date().toISOString();
+      const rec={...e, title:e.title.trim(), focus:e.focus.trim(), createdAt:e.createdAt||now2, updatedAt:now2,
+        sharedTids: e.vis==="teams"?e.sharedTids:[]};
+      const exists=(data.trainings||[]).some(x=>x.id===rec.id);
+      const trainings=exists ? (data.trainings||[]).map(x=>x.id===rec.id?rec:x) : [...(data.trainings||[]), rec];
+      save({...data, trainings});
+      fire&&fire(exists?"Training gespeichert *":"Training angelegt *");
+      setEditing(null);
+    };
+    return (
+      <div style={{display:"flex",flexDirection:"column",gap:14}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <h3 style={{margin:0,fontSize:17,fontWeight:900,color:"#0f172a"}}>{(data.trainings||[]).some(x=>x.id===e.id)?"Training bearbeiten":"Neues Training"}</h3>
+          <button onClick={()=>setEditing(null)} style={{background:"none",border:"none",color:"#64748b",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
+        </div>
+        {myTeams.length>1&&(
+          <div style={{background:"#fff",borderRadius:12,padding:"12px 14px",border:"1.5px solid #e2e8f0"}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.4}}>BESITZER-TEAM</div>
+            <select value={e.ownerTid} onChange={ev=>set({ownerTid:ev.target.value})} style={{width:"100%",padding:"10px",borderRadius:10,border:"1.5px solid #e2e8f0",fontSize:14,fontFamily:"inherit"}}>
+              {myTeams.map(tm=><option key={tm.id} value={tm.id}>{tm.name}</option>)}
+            </select>
+          </div>
+        )}
+        <input value={e.title} onChange={ev=>set({title:ev.target.value})} placeholder="Titel des Trainings (z. B. Passspiel & Abschluss)"
+          style={{width:"100%",padding:"12px 14px",fontSize:15,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",boxSizing:"border-box"}}/>
+        <input value={e.focus} onChange={ev=>set({focus:ev.target.value})} placeholder="Schwerpunkt (optional, z. B. Technik)"
+          style={{width:"100%",padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",boxSizing:"border-box"}}/>
+
+        <div style={{background:"#fff",borderRadius:12,padding:"12px 14px",border:"1.5px solid #e2e8f0"}}>
+          <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.4}}>ABLAUF</div>
+          {e.blocks.map((b,i)=>(
+            <div key={i} style={{display:"flex",gap:6,marginBottom:6,alignItems:"center"}}>
+              <select value={b.phase} onChange={ev=>setBlock(i,{phase:ev.target.value})} style={{padding:"8px",borderRadius:9,border:"1.5px solid #e2e8f0",fontSize:13,fontFamily:"inherit",flexShrink:0}}>
+                {TRAIN_PHASES.map(p=><option key={p} value={p}>{p}</option>)}
+              </select>
+              <input value={b.title} onChange={ev=>setBlock(i,{title:ev.target.value})} placeholder="Übung / Inhalt"
+                style={{flex:1,minWidth:0,padding:"8px 10px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",boxSizing:"border-box"}}/>
+              <input type="number" value={b.min} onChange={ev=>setBlock(i,{min:Number(ev.target.value)||0})} style={{width:52,padding:"8px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",boxSizing:"border-box"}}/>
+              <span style={{fontSize:11,color:"#94a3b8",flexShrink:0}}>Min</span>
+              {e.blocks.length>1&&<button onClick={()=>set({blocks:e.blocks.filter((_,j)=>j!==i)})} style={{background:"none",border:"none",color:"#dc2626",fontWeight:800,fontSize:16,cursor:"pointer",flexShrink:0}}>×</button>}
+            </div>
+          ))}
+          <button onClick={()=>set({blocks:[...e.blocks,{phase:"Hauptteil",title:"",min:10}]})} style={{marginTop:4,background:"#f1f5f9",border:"none",borderRadius:9,padding:"8px 12px",fontSize:13,fontWeight:700,color:"#475569",cursor:"pointer",fontFamily:"inherit"}}>+ Block</button>
+        </div>
+
+        <div style={{background:"#fff",borderRadius:12,padding:"12px 14px",border:"1.5px solid #e2e8f0"}}>
+          <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.4}}>WER DARF ES SEHEN?</div>
+          {["team","club","teams"].map(v=>(
+            <label key={v} style={{display:"flex",alignItems:"center",gap:9,padding:"8px 0",cursor:"pointer"}}>
+              <input type="radio" name="vis" checked={e.vis===v} onChange={()=>set({vis:v})} style={{width:18,height:18,accentColor:t.p}}/>
+              <span style={{fontSize:14,fontWeight:700,color:"#0f172a"}}>{VIS_LABEL[v]}</span>
+            </label>
+          ))}
+          {e.vis==="teams"&&(
+            <div style={{marginTop:6,paddingTop:10,borderTop:"1px solid #e2e8f0"}}>
+              <div style={{fontSize:12,color:"#64748b",marginBottom:6}}>Für diese Teams freigeben:</div>
+              {clubTeams.filter(tm=>tm.id!==e.ownerTid).map(tm=>{
+                const on=(e.sharedTids||[]).includes(tm.id);
+                return (
+                  <label key={tm.id} style={{display:"flex",alignItems:"center",gap:9,padding:"6px 0",cursor:"pointer"}}>
+                    <input type="checkbox" checked={on} onChange={()=>set({sharedTids: on?e.sharedTids.filter(x=>x!==tm.id):[...(e.sharedTids||[]),tm.id]})} style={{width:17,height:17,accentColor:t.p}}/>
+                    <span style={{fontSize:13,color:"#334155"}}>{tm.name}</span>
+                  </label>
+                );
+              })}
+              {clubTeams.filter(tm=>tm.id!==e.ownerTid).length===0&&<div style={{fontSize:12,color:"#94a3b8"}}>Keine weiteren Teams im Verein.</div>}
+            </div>
+          )}
+        </div>
+        <button onClick={doSave} disabled={!valid} style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:valid?t.p:"#e2e8f0",color:valid?"#fff":"#94a3b8",fontWeight:800,fontSize:15,cursor:valid?"pointer":"default",fontFamily:"inherit"}}>Training speichern</button>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:12}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <h3 style={{margin:0,fontSize:17,fontWeight:900,color:"#0f172a"}}>Trainings</h3>
+        <button onClick={()=>setEditing(blank())} style={{padding:"9px 14px",borderRadius:10,border:"none",background:t.p,color:"#fff",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>+ Neues Training</button>
+      </div>
+      <p style={{fontSize:12.5,color:"#64748b",margin:"0 0 2px"}}>Eigene Trainings anlegen, bearbeiten, löschen. Standardmäßig nur für dein Team – du kannst sie aber für den Verein oder einzelne Teams freigeben.</p>
+      {visible.length===0&&<div style={{background:"#f8fafc",borderRadius:12,padding:"20px",textAlign:"center",color:"#94a3b8",fontSize:14}}>Noch keine Trainings. Lege dein erstes an.</div>}
+      {visible.map(tr=>{
+        const mine=canEditTraining(tr,myTids);
+        const totalMin=(tr.blocks||[]).reduce((s,b)=>s+(b.min||0),0);
+        return (
+          <div key={tr.id} style={{background:"#fff",borderRadius:13,padding:"14px",border:"1.5px solid #e2e8f0"}}>
+            <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8}}>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:800,fontSize:15,color:"#0f172a"}}>{tr.title}</div>
+                {tr.focus&&<div style={{fontSize:12.5,color:"#64748b",marginTop:1}}>Schwerpunkt: {tr.focus}</div>}
+                <div style={{fontSize:12,color:"#94a3b8",marginTop:3}}>{teamName(tr.ownerTid)} · {(tr.blocks||[]).length} Blöcke · {totalMin} Min</div>
+              </div>
+              <span style={{flexShrink:0,fontSize:10.5,fontWeight:800,padding:"3px 8px",borderRadius:99,background:tr.vis==="club"?"#dcfce7":tr.vis==="teams"?"#dbeafe":"#f1f5f9",color:tr.vis==="club"?"#15803d":tr.vis==="teams"?"#1d4ed8":"#64748b"}}>{VIS_LABEL[tr.vis]}</span>
+            </div>
+            {(tr.blocks||[]).length>0&&(
+              <div style={{marginTop:10,paddingTop:10,borderTop:"1px solid #f1f5f9",display:"flex",flexDirection:"column",gap:4}}>
+                {tr.blocks.map((b,i)=>(
+                  <div key={i} style={{display:"flex",gap:8,fontSize:12.5}}>
+                    <span style={{fontWeight:700,color:t.p,minWidth:78,flexShrink:0}}>{b.phase}</span>
+                    <span style={{flex:1,color:"#334155"}}>{b.title||"—"}</span>
+                    <span style={{color:"#94a3b8",flexShrink:0}}>{b.min} Min</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div style={{display:"flex",gap:8,marginTop:12}}>
+              <button onClick={()=>setSched(tr)} style={{flex:1,padding:"9px",borderRadius:9,border:`1.5px solid ${t.p}`,background:"#fff",color:t.p,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Als Termin planen</button>
+              {mine&&<button onClick={()=>setEditing(tr)} style={{padding:"9px 14px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Bearbeiten</button>}
+              {mine&&<button onClick={()=>{ if(typeof window!=="undefined"&&window.confirm&&!window.confirm("Dieses Training löschen?"))return; save({...data,trainings:(data.trainings||[]).filter(x=>x.id!==tr.id)}); fire&&fire("Training gelöscht *"); }} style={{padding:"9px 12px",borderRadius:9,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Löschen</button>}
+            </div>
+          </div>
+        );
+      })}
+
+      {sched&&<Drawer onClose={()=>setSched(null)} title="Als Termin planen" ch={
+        <ScheduleTraining tr={sched} myTeams={myTeams} data={data} cl={cl} save={save} fire={fire} onDone={()=>setSched(null)}/>
+      }/>}
+    </div>
+  );
+}
+
+function ScheduleTraining({ tr, myTeams, data, cl, save, fire, onDone }){
+  const t=TH(cl);
+  const [tid,setTid]=useState(myTeams.find(tm=>tm.id===tr.ownerTid)?.id||myTeams[0]?.id||tr.ownerTid);
+  const [date,setDate]=useState(addD(now(),1));
+  const [time,setTime]=useState("17:00");
+  const create=()=>{
+    const plan={ focus:tr.focus, sessions:[{ title:tr.title, blocks:(tr.blocks||[]).map(b=>({phase:b.phase,title:b.title,min:b.min})) }] };
+    const ev={ id:"e_"+uid(), cid:tr.cid, tid, type:"training", title:tr.title, date, time, loc:"", note:tr.focus?("Schwerpunkt: "+tr.focus):"",
+      votes:{}, pt:"att", selType:"multi", li:[], fi:[], sc:[], trainingPlan:plan };
+    save({...data, events:[...(data.events||[]), ev]});
+    fire&&fire("Termin erstellt *");
+    onDone&&onDone();
+  };
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:12}}>
+      <p style={{fontSize:13,color:"#475569",margin:0}}>„{tr.title}" als Trainingstermin in den Kalender legen.</p>
+      {myTeams.length>1&&(
+        <select value={tid} onChange={e=>setTid(e.target.value)} style={{padding:"11px",borderRadius:10,border:"1.5px solid #e2e8f0",fontSize:14,fontFamily:"inherit"}}>
+          {myTeams.map(tm=><option key={tm.id} value={tm.id}>{tm.name}</option>)}
+        </select>
+      )}
+      <div style={{display:"flex",gap:10}}>
+        <div style={{flex:1}}>
+          <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:5}}>DATUM</div>
+          <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{width:"100%",padding:"11px",borderRadius:10,border:"1.5px solid #e2e8f0",fontSize:14,fontFamily:"inherit",boxSizing:"border-box"}}/>
+        </div>
+        <div style={{width:120}}>
+          <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:5}}>UHRZEIT</div>
+          <input type="time" value={time} onChange={e=>setTime(e.target.value)} style={{width:"100%",padding:"11px",borderRadius:10,border:"1.5px solid #e2e8f0",fontSize:14,fontFamily:"inherit",boxSizing:"border-box"}}/>
+        </div>
+      </div>
+      <button onClick={create} style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:t.p,color:"#fff",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>Termin erstellen</button>
+    </div>
+  );
+}
+
 function TrainingPlanner({ data, myTids, cl, save, fire }) {
   const t = TH(cl);
   const sport = cl?.sport || "fussball";
@@ -3807,6 +3999,7 @@ function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false }) {
     { id:"ziele",      label:"Ziele",       icon:"Z" },
     { id:"drills",     label:"Übungen",     icon:"U" },
     { id:"planner",    label:"Planer",      icon:"W" },
+    { id:"trainings",  label:"Trainings",   icon:"TP" },
     ...(isAdmin ? [{ id:"manage", label:"Mannschaften", icon:"M" }] : []),
   ];
   return (
@@ -3832,6 +4025,7 @@ function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false }) {
       {subTab==="ziele"      && <TrainerTrainingZiele data={data} cid={cl?.id} myTids={myTids} save={save} fire={fire} cl={cl}/>}
       {subTab==="drills"     && <DrillLibrary cl={cl}/>}
       {subTab==="planner"    && <TrainingPlanner data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
+      {subTab==="trainings"  && <TrainingsLibrary data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
       {subTab==="manage"     && <ManageTeams   data={data} save={save} fire={fire} cl={cl}/>}
     </div>
   );
@@ -10189,6 +10383,25 @@ function SetupWizard({ onDone,onBack }) {
   );
 }
 
+function PrivacyBanner(){
+  return (
+    <div style={{background:"#fef2f2",border:"1.5px solid #fecaca",borderRadius:12,padding:"12px 14px",margin:"0 0 14px"}}>
+      <div style={{fontWeight:800,color:"#b91c1c",fontSize:13,marginBottom:4}}>⚠ Bitte keine echten persönlichen Daten eingeben</div>
+      <div style={{fontSize:12.5,color:"#7f1d1d",lineHeight:1.5}}>
+        Diese App wird noch entwickelt. Gib hier keine echten persönlichen Daten ein – also keine vollständigen Namen,
+        Geburtsdaten, Adressen oder Telefonnummern von dir oder deinem Kind. Ein Spitzname oder „Vorname + erster
+        Buchstabe des Nachnamens" reicht völlig. Eingegebene Daten sind nicht garantiert sicher – eine Haftung wird nicht übernommen.
+      </div>
+    </div>
+  );
+}
+function PrivacyNote(){
+  return (
+    <div style={{fontSize:12,color:"#b45309",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:9,padding:"7px 10px",marginTop:6,lineHeight:1.45}}>
+      Bitte keine echten persönlichen Daten – ein Spitzname oder „Vorname + Anfangsbuchstabe" genügt. Eingabe ohne Gewähr.
+    </div>
+  );
+}
 function Directory({data,onPick,onNewClub,lang,setLang}) {
   const tr = (k) => T[lang]?.[k] ?? T.de[k] ?? k;
   const [mode,setMode] = useState("home");
@@ -10286,6 +10499,7 @@ function Directory({data,onPick,onNewClub,lang,setLang}) {
       </div>
 
       {}
+      <div style={{maxWidth:520,margin:"24px auto 0",padding:"0 22px"}}><PrivacyBanner/></div>
       <div style={{maxWidth:520,margin:"30px auto 0",padding:"0 22px"}}>
         <div style={{display:"flex",alignItems:"center",gap:12}}>
           <div style={{flex:1,height:1,background:"rgba(255,255,255,.1)"}}/>
@@ -10760,6 +10974,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid}) 
         <p style={{fontSize:11,fontWeight:800,color:"#94a3b8",marginBottom:8}}>NICHT IN DER LISTE?</p>
         <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Namen manuell eingeben..."
           style={{width:"100%",padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",marginBottom:8}}/>
+        <div style={{marginBottom:8}}><PrivacyNote/></div>
         {q.trim().length>1&&<button onClick={()=>onDone(tid,q.trim())}
           style={{width:"100%",padding:"11px",borderRadius:12,border:"none",background:cl.pri,color:contrast(cl.pri),fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
            Als "{q.trim()}" einloggen
@@ -15159,6 +15374,7 @@ function ConsentRequest({ team, players, trainers, onConsent, onDecline, cl }) {
             border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",
             marginBottom:14,boxSizing:"border-box"}}
         />
+        <div style={{marginTop:-8,marginBottom:14}}><PrivacyNote/></div>
 
         <label style={{display:"flex",alignItems:"flex-start",gap:10,
           cursor:"pointer",marginBottom:20,padding:"12px 14px",
