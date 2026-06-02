@@ -6,7 +6,7 @@ const useLang  = () => useContext(LangCtx);
 
 const T = {
   de: {
-    back:"<- Zurueck",
+    back:"<- Zurück",
     cancel: "Abbrechen",
     save: "Speichern",
     delete: "Loeschen",
@@ -230,7 +230,7 @@ const T = {
     noMessages:"Nog geen berichten",
   },
   ar: {
-    back:"<- Zurueck",
+    back:"<- Zurück",
     cancel:"Alga",
     save:"Hifz",
     delete:"Hazf",
@@ -324,7 +324,12 @@ function useT() {
   const lang = useLang();
   return (key,fallback) => T[lang]?.[key] ?? T.de[key] ?? fallback ?? key;
 }
+// Sprachumschalter vorerst deaktiviert: EN/NL sind noch nicht vollständig übersetzt,
+// daher wäre ein sichtbarer Schalter ein nicht eingelöstes Versprechen.
+// Zum Reaktivieren (sobald Übersetzungen vollständig sind): auf true setzen.
+const LANG_SWITCHER_ENABLED = false;
 function LangSwitcher({ lang,setLang }) {
+  if(!LANG_SWITCHER_ENABLED) return null;
   const LANGS = [{id:"de",flag:"DE"},{id:"en",flag:"EN"},{id:"nl",flag:"NL"}];
   return (
     <div style={{display:"flex",gap:4}}>
@@ -343,26 +348,156 @@ const SS  = "vereinsapp_v12_session";
 const CFG = "vereinsapp_config";
 const getConfig = () => { try { return JSON.parse(localStorage.getItem(CFG)||"null"); } catch { return null; } };
 const setConfig = c => { try { localStorage.setItem(CFG,JSON.stringify(c)); } catch {} };
+// ----------------------------------------------------------------
+// Daten-Trennung pro Verein (Phase 1: Schreib-Isolation).
+// Jeder Verein wird in einer eigenen Zeile gespeichert. Beim Speichern
+// schreibt ein Verein nur seine eigene Zeile -> kann andere nicht überschreiben.
+// splitData/mergeData sind GENERISCH und verlustfrei: jeder Datensatz wird
+// genau einem Verein zugeordnet (über cid bzw. Team-Zugehörigkeit); alles,
+// was keinem bekannten Verein zuzuordnen ist, landet in der globalen Zeile.
+// ----------------------------------------------------------------
+const splitData = (data) => {
+  if(!data) return { global:null, shards:{} };
+  const idSet = new Set((data.clubs||[]).map(c=>c&&c.id).filter(Boolean));
+  const teamCid = {}; (data.teams||[]).forEach(t=>{ if(t&&t.id) teamCid[t.id]=t.cid; });
+  const shards = {}; const ensure = id => (shards[id] ||= {});
+  idSet.forEach(id=>ensure(id));
+  const global = {};
+  for(const [key,val] of Object.entries(data)){
+    if(key==="clubs"){
+      // Vereinsliste komplett in die globale Zeile (leicht: nur Metadaten, keine schweren Arrays)
+      global.clubs = [ ...(global.clubs||[]), ...(val||[]) ];
+    } else if(key==="players" && val && typeof val==="object" && !Array.isArray(val)){
+      global.players ||= {}; // leeres/Rest-players bleibt erhalten (Verlustfreiheit)
+      for(const [tid,pv] of Object.entries(val)){
+        const cid=teamCid[tid];
+        if(cid && idSet.has(cid)) (ensure(cid).players ||= {})[tid]=pv;
+        else (global.players ||= {})[tid]=pv;
+      }
+    } else if(Array.isArray(val) && val.length && val.every(r=>r&&typeof r==="object") && val.some(r=>"cid" in r)){
+      val.forEach(rec=>{
+        const cid=rec.cid;
+        if(cid && idSet.has(cid)) (ensure(cid)[key] ||= []).push(rec);
+        else (global[key] ||= []).push(rec);
+      });
+    } else {
+      global[key]=val; // global/skalar/Objekt/Array-ohne-cid (z.B. seasons, activeSeason, _v)
+    }
+  }
+  return { global, shards };
+};
+const mergeData = (global, shardList) => {
+  const out = global ? JSON.parse(JSON.stringify(global)) : {};
+  for(const shard of (shardList||[])){
+    if(!shard) continue;
+    for(const [key,val] of Object.entries(shard)){
+      if(key==="players" && val && typeof val==="object" && !Array.isArray(val)){
+        out.players = { ...(out.players||{}), ...val };
+      } else if(Array.isArray(val)){
+        out[key] = [ ...(out[key]||[]), ...val ];
+      } else {
+        out[key]=val;
+      }
+    }
+  }
+  return out;
+};
+
 const sb = {
-  _url: () => getConfig()?.url,_key: () => getConfig()?.key,_hdr: () => ({ "Content-Type":"application/json","apikey": sb._key(),"Authorization":"Bearer "+sb._key() }),get: async () => {
+  _url: () => getConfig()?.url,_key: () => getConfig()?.key,_hdr: () => ({ "Content-Type":"application/json","apikey": sb._key(),"Authorization":"Bearer "+sb._key() }),
+  _glKey: SK+"__global",
+  _clubKey: cid => SK+"__club_"+cid,
+  // Migration der alten Einzel-Zeile, falls noch keine getrennten Zeilen existieren. Gibt true zurück, wenn migriert.
+  _migrate: async () => {
+    const url = sb._url();
+    try {
+      const lr = await fetch(`${url}/rest/v1/app_data?key=eq.${SK}&select=value`,{ headers: sb._hdr() });
+      if (lr.ok) {
+        const lrows = await lr.json();
+        const legacy = lrows[0]?.value;
+        if (legacy) { await sb.set(legacy); return legacy; }
+      }
+    } catch {}
+    return null;
+  },
+  // Voll-Laden (alle Vereine): für SuperAdmin und als Fallback.
+  get: async () => {
     const url = sb._url();
     if (!url || !sb._key()) return localGet();
     try {
-      const r = await fetch(`${url}/rest/v1/app_data?key=eq.${SK}&select=value`,{ headers: sb._hdr() });
-      if (!r.ok) return localGet();
-      const rows = await r.json();
-      return rows[0]?.value || null;
+      const r = await fetch(`${url}/rest/v1/app_data?key=like.${SK}__*&select=key,value`,{ headers: sb._hdr() });
+      if (r.ok) {
+        const rows = await r.json();
+        if (rows && rows.length) {
+          const gl = rows.find(x=>x.key===sb._glKey)?.value || {};
+          const shardRows = rows.filter(x=>x.key!==sb._glKey).map(x=>x.value);
+          const merged = mergeData(gl, shardRows);
+          localSet(merged);
+          return merged;
+        }
+      }
+      const migrated = await sb._migrate();
+      if (migrated) return migrated;
+      return localGet();
     } catch { return localGet(); }
-  },set: async d => {
-    localSet(d); // always save locally too
+  },
+  // Nur die leichte Vereinsliste laden (Startseite/Verzeichnis) – ohne schwere Daten anderer Vereine.
+  getDirectory: async () => {
+    const url = sb._url();
+    if (!url || !sb._key()) return localGet(); // lokal: voller Block (Einzelgerät, kein Mehrvereins-Thema)
+    try {
+      const r = await fetch(`${url}/rest/v1/app_data?key=eq.${sb._glKey}&select=value`,{ headers: sb._hdr() });
+      if (r.ok) {
+        const rows = await r.json();
+        if (rows[0]?.value) return rows[0].value; // {_v, seasons, activeSeason, clubs:[alle, leicht]}
+      }
+      const migrated = await sb._migrate();
+      if (migrated) { const { global } = splitData(migrated); return global; }
+      return localGet();
+    } catch { return localGet(); }
+  },
+  // Einen Verein komplett laden (global + dessen Zeile). Andere Vereine bleiben ungeladen.
+  getClub: async (cid) => {
+    const url = sb._url();
+    if (!url || !sb._key()) return localGet(); // lokal: voller Block
+    try {
+      const r = await fetch(`${url}/rest/v1/app_data?or=(key.eq.${sb._glKey},key.eq.${sb._clubKey(cid)})&select=key,value`,{ headers: sb._hdr() });
+      if (r.ok) {
+        const rows = await r.json();
+        if (rows && rows.length) {
+          const gl = rows.find(x=>x.key===sb._glKey)?.value || {};
+          const shard = rows.find(x=>x.key===sb._clubKey(cid))?.value || {};
+          return mergeData(gl, [shard]);
+        }
+      }
+      const migrated = await sb._migrate();
+      if (migrated) {
+        const { global, shards } = splitData(migrated);
+        return mergeData(global, [shards[cid]||{}]);
+      }
+      return localGet();
+    } catch { return localGet(); }
+  },
+  // set(d): schreibt global + Verein-Zeile(n). Mit cid: nur dieser Verein (+ global). Ohne cid: alle.
+  set: async (d, cid=null) => {
+    localSet(d); // immer auch lokal sichern
     const url = sb._url();
     if (!url || !sb._key()) return;
+    const { global, shards } = splitData(d);
+    const ts = new Date().toISOString();
+    let rows = [{ key: sb._glKey, value: global, updated_at: ts }];
+    if (cid && shards[cid]) {
+      rows.push({ key: sb._clubKey(cid), value: shards[cid], updated_at: ts });
+    } else {
+      for (const id of Object.keys(shards)) rows.push({ key: sb._clubKey(id), value: shards[id], updated_at: ts });
+    }
     try {
       await fetch(`${url}/rest/v1/app_data`,{
-        method:"POST",headers: { ...sb._hdr(),"Prefer":"resolution=merge-duplicates" },body: JSON.stringify({ key: SK,value: d,updated_at: new Date().toISOString() })
+        method:"POST",headers: { ...sb._hdr(),"Prefer":"resolution=merge-duplicates" },body: JSON.stringify(rows)
       });
     } catch {}
-  },test: async (url,key) => {
+  },
+  test: async (url,key) => {
     try {
       const r = await fetch(`${url}/rest/v1/app_data?limit=1`,{
         headers: { "apikey": key,"Authorization":"Bearer "+key }
@@ -420,21 +555,29 @@ function SupabaseSetup({ onDone,onSkip }) {
 
         <div style={{background:"rgba(255,255,255,.05)",borderRadius:20,padding:"24px",border:"1px solid rgba(255,255,255,.1)",marginBottom:16}}>
           {}
-          <div style={{background:"rgba(255,255,255,.05)",borderRadius:12,padding:"14px",marginBottom:20,fontSize:12,color:"rgba(255,255,255,.6)",lineHeight:1.8}}>
-            <div style={{fontWeight:800,color:"rgba(255,255,255,.8)",marginBottom:6,fontSize:13}}> Einrichtung (2 Min):</div>
-            <div>1. <a href="https://supabase.com" target="_blank" style={{color:"#38bdf8"}}>supabase.com</a> -> kostenlosen Account erstellen</div>
-            <div>2. "New project" -> Frankfurt -> Passwort setzen</div>
-            <div>3. SQL Editor -> folgendes ausfuehren:</div>
+          <div style={{background:"rgba(255,255,255,.05)",borderRadius:12,padding:"14px",marginBottom:16,fontSize:12,color:"rgba(255,255,255,.6)",lineHeight:1.8}}>
+            <div style={{fontWeight:800,color:"rgba(255,255,255,.8)",marginBottom:6,fontSize:13}}>Einrichtung (ca. 3 Min):</div>
+            <div>1. <a href="https://supabase.com" target="_blank" rel="noopener" style={{color:"#38bdf8"}}>supabase.com</a> → kostenlosen Account erstellen</div>
+            <div>2. "New project" → Region Frankfurt (EU) → Datenbank-Passwort setzen</div>
+            <div>3. SQL Editor → folgendes ausführen:</div>
             <div style={{background:"rgba(0,0,0,.4)",borderRadius:8,padding:"10px",margin:"8px 0",fontFamily:"monospace",fontSize:11,color:"#86efac",lineHeight:1.6}}>
               CREATE TABLE app_data (<br/>
               &nbsp;&nbsp;key TEXT PRIMARY KEY,<br/>
               &nbsp;&nbsp;value JSONB,<br/>
               &nbsp;&nbsp;updated_at TIMESTAMPTZ DEFAULT NOW()<br/>
               );<br/>
-              ALTER TABLE app_data ENABLE ROW LEVEL SECURITY;<br/>
-              CREATE POLICY "Public" ON app_data FOR ALL USING (true) WITH CHECK (true);
+              ALTER TABLE app_data ENABLE ROW LEVEL SECURITY;
             </div>
-            <div>4. Settings -> API -> URL + anon key kopieren</div>
+            <div>4. Settings → API → Project URL + anon key kopieren</div>
+          </div>
+
+          <div style={{background:"rgba(220,38,38,.12)",borderRadius:12,padding:"13px 15px",marginBottom:20,border:"1px solid rgba(248,113,113,.4)",fontSize:12,color:"#fca5a5",lineHeight:1.65}}>
+            <div style={{fontWeight:900,color:"#fecaca",marginBottom:5,fontSize:12.5}}>⚠ Wichtig zum Datenschutz (besonders bei Kinderdaten)</div>
+            <div style={{color:"rgba(254,202,202,.85)"}}>
+              Mit dem obigen SQL ist die Tabelle <b>gesperrt</b> – ohne zusätzliche Regel kann <b>niemand</b> zugreifen, auch die App nicht. Du musst selbst festlegen, wer darf. Setze <b>keine</b> Regel, die allen alles erlaubt (z.&nbsp;B. <span style={{fontFamily:"monospace"}}>USING (true)</span>) – damit lägen alle Vereins- und Kinderdaten für jeden offen im Netz.
+              <br/><br/>
+              Für echten Schutz von Kinderdaten reicht diese App allein nicht aus. Lass das Datenbank-Setup von einer Person mit Datenschutz-Kenntnissen prüfen und kläre eine Einwilligung der Eltern. Diese App kann den Zugriff technisch nicht erzwingen – das passiert nur in der Datenbank.
+            </div>
           </div>
 
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
@@ -487,8 +630,108 @@ const addMins = (time, mins) => {
   const total = h*60 + m + (mins||0);
   return String(Math.floor(total/60)%24).padStart(2,"0")+":"+String(total%60).padStart(2,"0");
 };
-const hashPw = (pw) => { let h=0; for(let i=0;i<pw.length;i++){h=Math.imul(31,h)+pw.charCodeAt(i)|0;} return "h"+Math.abs(h).toString(36); };
-const checkPw = (input,stored) => { if(!stored)return false; const inp=(input||"").trim(); if(stored.startsWith("h"))return hashPw(inp)===stored; return inp===stored; };
+
+// Ist ein Team in einer bestimmten Saison aktiv? Abgemeldete Teams (endedSid) bleiben in
+// früheren Saisons sichtbar, verschwinden aber ab der Saison, in der sie abgemeldet wurden.
+// Teams ohne startedSid/endedSid gelten als immer aktiv (Abwärtskompatibilität mit Bestandsdaten).
+const seasonIndex = (sid, seasons) => {
+  if(!sid) return -1;
+  const i=(seasons||[]).findIndex(s=>s.id===sid);
+  return i; // -1 wenn unbekannt
+};
+const isTeamActiveInSeason = (team, sid, seasons) => {
+  if(!team) return false;
+  if(!sid) return !team.endedSid; // ohne Saison-Kontext: nur nicht-abgemeldete
+  const cur = seasonIndex(sid, seasons);
+  // gestartet? (wenn startedSid gesetzt, muss aktuelle Saison >= Startsaison sein)
+  if(team.startedSid){
+    const st = seasonIndex(team.startedSid, seasons);
+    if(st>=0 && cur>=0 && cur<st) return false; // Team gibt es in dieser (früheren) Saison noch nicht
+  }
+  // abgemeldet? (ab endedSid nicht mehr aktiv)
+  if(team.endedSid){
+    const en = seasonIndex(team.endedSid, seasons);
+    if(en>=0 && cur>=0 && cur>=en) return false; // ab Abmelde-Saison nicht mehr aktiv
+  }
+  return true;
+};
+// bequemer Filter: aktive Teams eines Vereins in der aktiven Saison
+const activeTeamsFor = (data, cid) => {
+  const sid = data.activeSeason || (data.seasons||[])[0]?.id || null;
+  return (data.teams||[]).filter(tm=>tm.cid===cid && isTeamActiveInSeason(tm, sid, data.seasons||[]));
+};
+
+// Synchrone SHA-256-Implementierung (reines JS, kein async nötig – ersetzt 15+ synchrone Aufrufe ohne Umbau)
+const _sha256 = (ascii) => {
+  function rightRotate(value, amount){ return (value>>>amount) | (value<<(32-amount)); }
+  const mathPow = Math.pow; const maxWord = mathPow(2,32);
+  let result = "";
+  const words = []; const asciiBitLength = ascii.length*8;
+  let hash = _sha256.h = _sha256.h || [];
+  const k = _sha256.k = _sha256.k || [];
+  let primeCounter = k.length; const isComposite = {};
+  for(let candidate=2; primeCounter<64; candidate++){
+    if(!isComposite[candidate]){
+      for(let i=0;i<313;i+=candidate){ isComposite[i]=candidate; }
+      hash[primeCounter] = (mathPow(candidate,.5)*maxWord)|0;
+      k[primeCounter++] = (mathPow(candidate,1/3)*maxWord)|0;
+    }
+  }
+  // frische Kopie der initialen Hash-Werte (hash darf nicht überschrieben bleiben)
+  hash = hash.slice(0,8).slice();
+  ascii += "\x80";
+  while(ascii.length%64-56) ascii += "\x00";
+  for(let i=0;i<ascii.length;i++){
+    const j = ascii.charCodeAt(i);
+    if(j>>8) return "";
+    words[i>>2] |= j << ((3-i)%4)*8;
+  }
+  words[words.length] = (asciiBitLength/maxWord)|0;
+  words[words.length] = asciiBitLength;
+  for(let j=0;j<words.length;){
+    const w = words.slice(j, j+=16);
+    const oldHash = hash.slice(0,8);
+    for(let i=0;i<64;i++){
+      const w15 = w[i-15], w2 = w[i-2];
+      const a = hash[0], e = hash[4];
+      const temp1 = hash[7]
+        + (rightRotate(e,6) ^ rightRotate(e,11) ^ rightRotate(e,25))
+        + ((e&hash[5])^((~e)&hash[6]))
+        + k[i]
+        + (w[i] = (i<16) ? w[i]|0 : (
+            w[i-16]
+            + (rightRotate(w15,7) ^ rightRotate(w15,18) ^ (w15>>>3))
+            + w[i-7]
+            + (rightRotate(w2,17) ^ rightRotate(w2,19) ^ (w2>>>10))
+          )|0
+        );
+      const temp2 = (rightRotate(a,2) ^ rightRotate(a,13) ^ rightRotate(a,22))
+        + ((a&hash[1])^(a&hash[2])^(hash[1]&hash[2]));
+      hash = [(temp1+temp2)|0].concat(hash);
+      hash[4] = (hash[4]+temp1)|0;
+    }
+    for(let i=0;i<8;i++){ hash[i] = (hash[i]+oldHash[i])|0; }
+  }
+  for(let i=0;i<8;i++){
+    for(let j=3;j+1;j--){
+      const b = (hash[i]>>(j*8))&255;
+      result += ((b<16) ? 0 : "") + b.toString(16);
+    }
+  }
+  return result;
+};
+// Salt macht gleiche Passwörter zu unterschiedlichen Hashes schwerer pauschal angreifbar (clientseitig begrenzt, aber besser als ohne)
+const _PW_SALT = "vapp.v1.";
+const hashPw = (pw) => "s" + _sha256(_PW_SALT + (pw||""));
+// altes Verfahren nur noch zum Prüfen bestehender Passwörter
+const _legacyHash = (pw) => { let h=0; for(let i=0;i<pw.length;i++){h=Math.imul(31,h)+pw.charCodeAt(i)|0;} return "h"+Math.abs(h).toString(36); };
+const checkPw = (input,stored) => {
+  if(!stored) return false;
+  const inp=(input||"").trim();
+  if(stored.startsWith("s")) return hashPw(inp)===stored;       // neues SHA-256-Format
+  if(stored.startsWith("h")) return _legacyHash(inp)===stored;  // altes Format (Abwärtskompatibilität)
+  return inp===stored;                                          // Klartext-Fallback (z.B. unverschlüsselte Demo)
+};
 
 const now   = () => new Date().toISOString().slice(0,10);
 const addD  = (iso,n) => { const d=new Date(iso+"T12:00:00"); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
@@ -511,20 +754,24 @@ function seed() {
     _v: 14,
     helpers: [], chats: [], messages: [], events: [
       {id:"de1",cid:"demo",tid:"demo_g",type:"training",title:"Training G-Jugend",date:addD(now(),2),time:"17:00",loc:"Sportplatz Platz 2",note:"Bitte Hallenschuhe mitbringen",votes:{"Lukas Berger":"yes","Emma Wolf":"yes","Noah Schmidt":"no","Mia Hoffmann":"maybe"},pt:"att",selType:"multi",li:[],fi:[],sc:[]},
-      {id:"de2",cid:"demo",tid:"demo_f1",type:"spiel",title:"Heimspiel vs. SV Adler",date:addD(now(),5),time:"10:30",loc:"Hauptplatz",note:"Treffen 1 Stunde vorher zum Aufwärmen",sollPlayers:5,votes:{"Ben Fischer":"yes","Leon Weber":"yes","Sophie Klein":"yes","Paul Becker":"yes","Lina Schulz":"maybe"},pt:"att",selType:"multi",li:[],fi:[],sc:[]},
-      {id:"de3",cid:"demo",tid:"demo_e",type:"spiel",title:"Auswärts bei FC Löwen",date:addD(now(),6),time:"11:00",loc:"Sportzentrum Löwen, Auswärts",note:"Fahrgemeinschaften bitte im Chat absprechen",sollPlayers:7,votes:{"Felix Braun":"yes","Anna Richter":"yes","Tim Neumann":"no"},pt:"att",selType:"multi",li:[],fi:[],sc:[]},
+      {id:"de2",cid:"demo",tid:"demo_f1",type:"heimspiel",title:"Heimspiel vs. SV Adler",date:addD(now(),5),time:"10:30",loc:"Hauptplatz",note:"Treffen 1 Stunde vorher zum Aufwärmen",sollPlayers:5,votes:{"Ben Fischer":"yes","Leon Weber":"yes","Sophie Klein":"yes","Paul Becker":"yes","Lina Schulz":"maybe"},pt:"att",selType:"multi",li:[],fi:[],sc:[]},
+      {id:"de3",cid:"demo",tid:"demo_e",type:"auswarts",title:"Auswärts bei FC Löwen",date:addD(now(),6),time:"11:00",loc:"Sportzentrum Löwen, Auswärts",note:"Fahrgemeinschaften bitte im Chat absprechen",sollPlayers:7,votes:{"Felix Braun":"yes","Anna Richter":"yes","Tim Neumann":"no"},pt:"att",selType:"multi",li:[],fi:[],sc:[]},
       {id:"de4",cid:"demo",tid:"demo_g",type:"turnier",title:"Hallenturnier Pfingsten",date:addD(now(),12),time:"09:00",loc:"Stadthalle",note:"Ganztägig, Verpflegung wird gestellt",votes:{"Lukas Berger":"yes","Emma Wolf":"maybe"},pt:"att",selType:"multi",li:[],fi:[],sc:[]},
-      {id:"de5",cid:"demo",tid:"demo_f1",type:"training",title:"Abschlusstraining vor dem Spiel",date:addD(now(),3),time:"17:30",loc:"Sportplatz Platz 1",note:"",votes:{"Ben Fischer":"yes","Leon Weber":"yes","Sophie Klein":"maybe","Lina Schulz":"yes"},pt:"att",selType:"multi",li:[],fi:[],sc:[]},
+      {id:"de5",cid:"demo",tid:"demo_f1",type:"training",title:"Abschlusstraining vor dem Spiel",date:addD(now(),3),time:"17:30",endTime:"19:00",loc:"Sportplatz Platz 1",note:"",votes:{"Ben Fischer":"yes","Leon Weber":"yes","Sophie Klein":"maybe","Lina Schulz":"yes"},pt:"att",selType:"multi",li:[],fi:[],sc:[]},
       {id:"de6",cid:"demo",tid:"demo_sen",type:"training",title:"Mannschaftstraining Senioren",date:addD(now(),1),time:"19:30",loc:"Sportplatz Platz 1",note:"Anschließend gemütliches Beisammensein",votes:{},pt:"att",selType:"multi",li:[],fi:[],sc:[]}
-    ], bookings: [],
+    ], bookings: [
+      {id:"dbk1",fieldId:"df1",date:new Date().toISOString().slice(0,10),cellStart:0,cells:4,teamId:"demo_g",teamName:"G-Jugend",booker:"Trainer",timeFrom:"16:00",timeTo:"17:00",cid:"demo"},
+      {id:"dbk2",fieldId:"df1",date:new Date().toISOString().slice(0,10),cellStart:0,cells:4,teamId:"demo_e",teamName:"E-Jugend",booker:"Trainer",timeFrom:"17:15",timeTo:"18:30",cid:"demo"},
+      {id:"dbk3",fieldId:"df2",date:new Date().toISOString().slice(0,10),cellStart:0,cells:8,teamId:"demo_sen",teamName:"Senioren",booker:"Trainer",timeFrom:"19:00",timeTo:"20:30",cid:"demo"},
+    ],
     contactRequests: [], securityLog: [], playerProfiles: [
       {id:"dp1",cid:"demo",seasonId:"s2526",archived:false,name:"Lukas Berger",by:2018,gender:"m",mainTid:"demo_g",optTids:[],position:"Sturm",foot:"rechts",strengths:["Schnelligkeit"],customStrengths:[],goals:4,assists:2,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"9",jerseySize:"128",jerseyStatus:"have",lastTeam:"G-Jugend"},
       {id:"dp2",cid:"demo",seasonId:"s2526",archived:false,name:"Emma Wolf",by:2019,gender:"w",mainTid:"demo_g",optTids:[],position:"Mittelfeld",foot:"links",strengths:["Technik"],customStrengths:[],goals:2,assists:5,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"10",jerseySize:"128",jerseyStatus:"have",lastTeam:"G-Jugend"},
       {id:"dp3",cid:"demo",seasonId:"s2526",archived:false,name:"Noah Schmidt",by:2018,gender:"m",mainTid:"demo_g",optTids:[],position:"Abwehr",foot:"rechts",strengths:["Zweikampf"],customStrengths:[],goals:0,assists:1,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"4",jerseySize:"122",jerseyStatus:"none",lastTeam:"G-Jugend"},
       {id:"dp4",cid:"demo",seasonId:"s2526",archived:false,name:"Mia Hoffmann",by:2019,gender:"w",mainTid:"demo_g",optTids:[],position:"Tor",foot:"rechts",strengths:["Reflexe"],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"1",jerseySize:"128",jerseyStatus:"ordered",lastTeam:"G-Jugend"},
-      {id:"dp5",cid:"demo",seasonId:"s2526",archived:false,name:"Ben Fischer",by:2016,gender:"m",mainTid:"demo_f1",optTids:[],position:"Sturm",foot:"rechts",strengths:["Abschluss"],customStrengths:[],goals:8,assists:3,yellowCards:1,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"11",jerseySize:"140",jerseyStatus:"have",lastTeam:"F-Jugend 1"},
+      {id:"dp5",cid:"demo",seasonId:"s2526",archived:false,name:"Ben Fischer",by:2016,gender:"m",mainTid:"demo_f1",optTids:[],position:"Sturm",foot:"rechts",strengths:["Abschluss"],customStrengths:[],skills:{Technik:4,Schnelligkeit:5,Zweikampf:3,Uebersicht:3,Abschluss:5,Ausdauer:3,Teamplay:4},goals:8,assists:3,yellowCards:1,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"11",jerseySize:"140",jerseyStatus:"have",lastTeam:"F-Jugend 1"},
       {id:"dp6",cid:"demo",seasonId:"s2526",archived:false,name:"Leon Weber",by:2017,gender:"m",mainTid:"demo_f1",optTids:[],position:"Mittelfeld",foot:"beidf.",strengths:["Passspiel"],customStrengths:[],goals:3,assists:7,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"8",jerseySize:"140",jerseyStatus:"have",lastTeam:"F-Jugend 1"},
-      {id:"dp7",cid:"demo",seasonId:"s2526",archived:false,name:"Sophie Klein",by:2016,gender:"w",mainTid:"demo_f1",optTids:[],position:"Abwehr",foot:"links",strengths:["Stellungsspiel"],customStrengths:[],goals:1,assists:2,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"5",jerseySize:"134",jerseyStatus:"none",lastTeam:"F-Jugend 1"},
+      {id:"dp7",cid:"demo",seasonId:"s2526",archived:false,name:"Sophie Klein",by:2016,gender:"w",mainTid:"demo_f1",optTids:[],position:"Abwehr",foot:"links",strengths:["Stellungsspiel"],customStrengths:[],skills:{Technik:3,Schnelligkeit:3,Zweikampf:5,Uebersicht:4,Abschluss:2,Ausdauer:4,Teamplay:4},goals:1,assists:2,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"5",jerseySize:"134",jerseyStatus:"none",lastTeam:"F-Jugend 1"},
       {id:"dp8",cid:"demo",seasonId:"s2526",archived:false,name:"Paul Becker",by:2017,gender:"m",mainTid:"demo_f1",optTids:[],position:"Tor",foot:"rechts",strengths:["Abschlag"],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"1",jerseySize:"140",jerseyStatus:"have",lastTeam:"F-Jugend 1"},
       {id:"dp9",cid:"demo",seasonId:"s2526",archived:false,name:"Lina Schulz",by:2016,gender:"w",mainTid:"demo_f1",optTids:[],position:"Sturm",foot:"rechts",strengths:["Schnelligkeit"],customStrengths:[],goals:6,assists:4,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"7",jerseySize:"134",jerseyStatus:"have",lastTeam:"F-Jugend 1"},
       {id:"dp10",cid:"demo",seasonId:"s2526",archived:false,name:"Felix Braun",by:2014,gender:"m",mainTid:"demo_e",optTids:[],position:"Mittelfeld",foot:"rechts",strengths:["Übersicht"],customStrengths:[],goals:5,assists:9,yellowCards:2,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"10",jerseySize:"152",jerseyStatus:"have",lastTeam:"E-Jugend"},
@@ -533,7 +780,10 @@ function seed() {
     ],
     seasons: [{ id:"s2526", label:"2025/2026", status:"active" }],
     activeSeason: "s2526",
-    fields: [],
+    fields: [
+      {id:"df1",cid:"demo",name:"Hauptplatz",template:"rasen",split:2,weather:"good",surface:"Rasenplatz",segments:2},
+      {id:"df2",cid:"demo",name:"Sporthalle",template:"rasen",split:1,weather:"bad",surface:"Halle",segments:1},
+    ],
     players: {},
     pollTemplates: [],
     clubs: [
@@ -1118,8 +1368,9 @@ function OnboardingWizard({ cl, data, save, fire, onDone }) {
               </p>
               <div style={{display:"flex",flexDirection:"column",gap:10}}>
                 <input value={trainerName} onChange={e=>setTrainerName(e.target.value)}
-                  placeholder="Name des Trainers (z.B. Max Muster)"
+                  placeholder="Name (z.B. Max M.)"
                   style={{padding:"12px 14px",fontSize:14,border:`1.5px solid ${trainerName?"#16a34a":"#e2e8f0"}`,borderRadius:12,outline:"none"}}/>
+                <div style={{fontSize:12,color:"#94a3b8",marginTop:-4}}>Datenschutz: Bitte nur Vorname, höchstens Nachname-Initial.</div>
                 <input type="password" value={trainerPw} onChange={e=>setTrainerPw(e.target.value)}
                   placeholder="Passwort fuer den Trainer"
                   style={{padding:"12px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none"}}/>
@@ -1165,7 +1416,7 @@ function OnboardingWizard({ cl, data, save, fire, onDone }) {
         {/* Navigation */}
         <div style={{padding:"12px 22px 32px",borderTop:"1px solid #f1f5f9",display:"flex",gap:10,flexShrink:0}}>
           {step>1
-            ? <button onClick={()=>setStep(s=>s-1)} style={{flex:1,padding:"13px",borderRadius:13,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Zurueck</button>
+            ? <button onClick={()=>setStep(s=>s-1)} style={{flex:1,padding:"13px",borderRadius:13,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Zurück</button>
             : <div style={{flex:1}}/>
           }
           {step<STEPS
@@ -2115,7 +2366,7 @@ const getFontSize = () => {
 ================================================================= */
 function AllTeamsOverview({ data, cid, cl, onSelectTeam }) {
   const t = TH(cl);
-  const myTeams = (data.teams||[]).filter(x=>x.cid===cid);
+  const myTeams = activeTeamsFor(data,cid);
   const today = new Date().toISOString().slice(0,10);
   const tomorrow = new Date(Date.now()+86400000).toISOString().slice(0,10);
   const nextWeek = new Date(Date.now()+7*86400000).toISOString().slice(0,10);
@@ -2733,6 +2984,59 @@ function SecurityTab({ data, cid, save }) {
 /* =================================================================
    BOTTOM NAVIGATION + DRAWER
 ================================================================= */
+// Inline-SVG-Icons (keine externe Bibliothek). stroke=currentColor -> erbt Farbe.
+function NavIcon({ name, size=20, color="currentColor" }) {
+  const p = { width:size, height:size, viewBox:"0 0 24 24", fill:"none",
+    stroke:color, strokeWidth:2, strokeLinecap:"round", strokeLinejoin:"round" };
+  switch(name){
+    case "events":   return <svg {...p}><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>;
+    case "team":     return <svg {...p}><circle cx="9" cy="7" r="3"/><path d="M2 21v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1"/><circle cx="18" cy="8" r="2.2"/><path d="M22 21v-.5a4 4 0 0 0-3-3.8"/></svg>;
+    case "teams":    return <svg {...p}><circle cx="7" cy="8" r="2.4"/><circle cx="17" cy="8" r="2.4"/><path d="M1.5 19v-.5a4 4 0 0 1 4-4h3a4 4 0 0 1 4 4V19M14 19v-.5a4 4 0 0 1 4-4h0a4 4 0 0 1 4 4V19"/></svg>;
+    case "fields":   return <svg {...p}><rect x="3" y="5" width="18" height="14" rx="1"/><path d="M12 5v14M3 9h3v6H3M21 9h-3v6h3"/><circle cx="12" cy="12" r="2.2"/></svg>;
+    case "chat":     return <svg {...p}><path d="M21 15a2 2 0 0 1-2 2H8l-4 4V5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2z"/></svg>;
+    case "more":     return <svg {...p}><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>;
+    case "training": return <svg {...p}><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>;
+    case "jerseys":  return <svg {...p}><path d="M4 6l4-3 4 2 4-2 4 3-2 4-2-1v10H8V9L6 10z"/></svg>;
+    case "helpers":  return <svg {...p}><circle cx="12" cy="7" r="3.2"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/><path d="M12 11v4M10 13h4"/></svg>;
+    case "templates":return <svg {...p}><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>;
+    case "results":  return <svg {...p}><path d="M8 21h8M12 17v4"/><path d="M5 4h14v5a7 7 0 0 1-14 0z"/><path d="M5 6H3v2a3 3 0 0 0 2 2.8M19 6h2v2a3 3 0 0 1-2 2.8"/></svg>;
+    case "attendance":return <svg {...p}><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>;
+    case "overview": return <svg {...p}><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>;
+    case "news":     return <svg {...p}><path d="M4 4h13v16H6a2 2 0 0 1-2-2z"/><path d="M17 8h3v10a2 2 0 0 1-2 2M8 8h5M8 12h5M8 16h3"/></svg>;
+    case "trainers": return <svg {...p}><circle cx="12" cy="7" r="3.2"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/><path d="M16 3l1.5 1.5L21 1"/></svg>;
+    case "fieldsadmin":return <svg {...p}><rect x="3" y="5" width="18" height="14" rx="1"/><path d="M12 5v14"/><circle cx="12" cy="12" r="2"/><path d="M18 3l1 1 2-2"/></svg>;
+    case "branding": return <svg {...p}><circle cx="13.5" cy="6.5" r="1.5"/><circle cx="17.5" cy="10.5" r="1.5"/><circle cx="8.5" cy="7.5" r="1.5"/><circle cx="6.5" cy="12.5" r="1.5"/><path d="M12 2a10 10 0 0 0 0 20c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.2 0-1 .9-1.7 1.9-1.7H17a5 5 0 0 0 5-5c0-4.4-4.5-8-10-8z"/></svg>;
+    case "inbox":    return <svg {...p}><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5h13l3.5 7v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z"/></svg>;
+    case "security": return <svg {...p}><path d="M12 2l8 3v6c0 5-3.5 8-8 11-4.5-3-8-6-8-11V5z"/><path d="M9 12l2 2 4-4"/></svg>;
+    case "access":   return <svg {...p}><circle cx="8" cy="15" r="4"/><path d="M10.8 12.2 21 2M17 6l3 1M14 9l2 1"/></svg>;
+    case "settings": return <svg {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 0 1-4 0v-.1A1.6 1.6 0 0 0 7 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H1a2 2 0 0 1 0-4h.1A1.6 1.6 0 0 0 2.6 7a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H7a1.6 1.6 0 0 0 1-1.5V1a2 2 0 0 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V7a1.6 1.6 0 0 0 1.5 1H23a2 2 0 0 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg>;
+    case "players":  return <svg {...p}><circle cx="12" cy="7" r="3.2"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/></svg>;
+    case "analysis": return <svg {...p}><path d="M3 3v18h18"/><path d="M7 14l3-4 3 3 4-6"/></svg>;
+    case "ziele":    return <svg {...p}><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.3" fill={color} stroke="none"/></svg>;
+    case "drills":   return <svg {...p}><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8 7.5l8 9"/><path d="M14 5h5v5"/></svg>;
+    case "planner":  return <svg {...p}><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 16l2 2 4-4"/></svg>;
+    case "manage":   return <svg {...p}><circle cx="7" cy="8" r="2.4"/><circle cx="17" cy="8" r="2.4"/><path d="M1.5 19v-.5a4 4 0 0 1 4-4h3a4 4 0 0 1 4 4V19M14 19v-.5a4 4 0 0 1 4-4h0a4 4 0 0 1 4 4V19"/></svg>;
+    default:         return null;
+  }
+}
+// true, wenn fuer diese ID ein SVG existiert (sonst Fallback auf Buchstabe)
+const HAS_ICON = new Set(["events","team","teams","fields","chat","more","training","jerseys","helpers","templates","results","attendance","overview","news","trainers","fieldsadmin","branding","inbox","security","access","settings","players","analysis","ziele","drills","planner","manage"]);
+
+// Icons für Event-Typen (Training, Heim/Auswärts, Turnier...)
+function EventIcon({ type, size=22, color="#16a34a" }) {
+  const p = { width:size, height:size, viewBox:"0 0 24 24", fill:"none", stroke:color, strokeWidth:2, strokeLinecap:"round", strokeLinejoin:"round" };
+  switch(type){
+    case "training": return <svg {...p}><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>;
+    case "heimspiel": return <svg {...p}><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>;
+    case "auswarts": return <svg {...p}><rect x="3" y="6" width="15" height="11" rx="2"/><path d="M18 9h2.5L22 12v4h-4"/><circle cx="7" cy="18" r="1.8"/><circle cx="16" cy="18" r="1.8"/></svg>;
+    case "freundschaft": return <svg {...p}><path d="M8 13l-3-3a2.5 2.5 0 0 1 3.5-3.5l.5.5.5-.5A2.5 2.5 0 0 1 16 10l-3 3"/><path d="M11 11l3 3-2 2-3-3"/></svg>;
+    case "turnier": return <svg {...p}><path d="M8 21h8M12 17v4"/><path d="M5 4h14v5a7 7 0 0 1-14 0z"/><path d="M5 6H3v2a3 3 0 0 0 2 2.8M19 6h2v2a3 3 0 0 1-2 2.8"/></svg>;
+    case "event": return <svg {...p}><path d="M4 8h16M6 8l1.5 12h9L18 8"/><path d="M9 8V5a3 3 0 0 1 6 0v3"/></svg>;
+    default: return <svg {...p}><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>;
+  }
+}
+const EVENT_TYPE_ALIAS = { spiel:"heimspiel", heim:"heimspiel", ausw:"auswarts", freund:"freundschaft" };
+
 function BottomNav({ tab, setTab, isAdmin, isHelper, unread, cl, hide=false }) {
   if(hide) return null;
   const t = TH(cl);
@@ -2752,11 +3056,11 @@ function BottomNav({ tab, setTab, isAdmin, isHelper, unread, cl, hide=false }) {
     {
       label: "VERWALTUNG",
       items: [
-        { id:"training",  label:"Trainingsplan", icon:"TP", hidden: !feat("training_plans")||!clubFeat("mod_training") },
-        { id:"jerseys",    label:"Trikots",      icon:"T", hidden: !feat("jerseys_tab")||!clubFeat("mod_jerseys") },
+        { id:"training",  label:"Trainingsplan", icon:"TP", hidden: isHelper||!feat("training_plans")||!clubFeat("mod_training") },
+        { id:"jerseys",    label:"Trikots",      icon:"T", hidden: isHelper||!feat("jerseys_tab")||!clubFeat("mod_jerseys") },
         { id:"helpers",    label:"Helfer",       icon:"H", hidden: isHelper },
         { id:"templates",  label:"Vorlagen",     icon:"V", hidden: isHelper },
-        { id:"results",    label:"Ergebnisse",   icon:"E", hidden: !feat("results_tab")||!clubFeat("mod_results") },
+        { id:"results",    label:"Ergebnisse",   icon:"E", hidden: isHelper||!feat("results_tab")||!clubFeat("mod_results") },
         { id:"attendance", label:"Anwesenheit",  icon:"S", hidden: isHelper||!feat("attendance_tab") },
       ].filter(x=>!x.hidden),
     },
@@ -2813,7 +3117,7 @@ function BottomNav({ tab, setTab, isAdmin, isHelper, unread, cl, hide=false }) {
                         display:"flex",alignItems:"center",justifyContent:"center",
                         fontWeight:900,fontSize:14,
                         color:tab===item.id?"#fff":"#64748b"}}>
-                        {item.icon}
+                        {HAS_ICON.has(item.id)?<NavIcon name={item.id} size={18}/>:item.icon}
                       </div>
                       {item.label}
                     </button>
@@ -2854,7 +3158,7 @@ function BottomNav({ tab, setTab, isAdmin, isHelper, unread, cl, hide=false }) {
                 fontWeight:900,fontSize:15,
                 color:active?"#fff":tab===item.id?"#0f172a":"#94a3b8",
                 transition:"all .2s"}}>
-                {item.icon}
+                {HAS_ICON.has(item.id)?<NavIcon name={item.id} size={19}/>:item.icon}
               </div>
               <span style={{fontSize:10,fontWeight:active?800:500,
                 color:active?t.p:"#94a3b8",transition:"all .2s"}}>
@@ -2871,25 +3175,645 @@ function BottomNav({ tab, setTab, isAdmin, isHelper, unread, cl, hide=false }) {
 /* =================================================================
    TEAM HUB (Spieler + Anwesenheit + Statistik in einem Tab)
 ================================================================= */
-function TeamHub({ data, myTids, save, fire, cl, session }) {
+// Mannschaften anlegen/umbenennen/löschen (nur Admin)
+function ManageTeams({ data, save, fire, cl }) {
+  const t = TH(cl);
+  const teams = (data.teams||[]).filter(tm=>tm.cid===cl.id);
+  const TEAM_COLORS = ["#16a34a","#2563eb","#d97706","#7c3aed","#dc2626","#0891b2","#059669","#ea580c"];
+  const CATS = Object.keys(CAT_YEARS);
+  const [name,setName] = useState("");
+  const [cat,setCat]   = useState(CATS[0]||"E-Jugend");
+  const [pwd,setPwd]   = useState("");
+  const [editId,setEditId] = useState(null);
+  const [editName,setEditName] = useState("");
+  const [showFmt,setShowFmt] = useState(null);
+
+  const addTeam = () => {
+    const nm = name.trim(); if(!nm) return;
+    const team = {
+      id: uid(), cid: cl.id, name: nm,
+      icon: nm.slice(0,2).toUpperCase(),
+      col: TEAM_COLORS[teams.length % TEAM_COLORS.length],
+      pub: true, pwd: hashPw((pwd||"team").trim()),
+      cat, years: CAT_YEARS[cat]||"",
+    };
+    save({...data, teams:[...(data.teams||[]), team]});
+    fire&&fire("Mannschaft \""+nm+"\" angelegt");
+    setName(""); setPwd("");
+  };
+  const renameTeam = id => {
+    const nm = editName.trim(); if(!nm) return;
+    save({...data, teams:(data.teams||[]).map(tm=>tm.id===id?{...tm,name:nm,icon:nm.slice(0,2).toUpperCase()}:tm)});
+    fire&&fire("Umbenannt"); setEditId(null);
+  };
+  const delTeam = id => {
+    const tm=(data.teams||[]).find(x=>x.id===id);
+    const cnt=(data.playerProfiles||[]).filter(p=>p.mainTid===id&&!p.archived).length;
+    if(!window.confirm(`Mannschaft "${tm?.name}" wirklich löschen?`+(cnt?`\n\n${cnt} Spieler sind zugeordnet – ihre Zuordnung wird entfernt (Spieler bleiben erhalten).`:""))) return;
+    save({...data,
+      teams:(data.teams||[]).filter(x=>x.id!==id),
+      playerProfiles:(data.playerProfiles||[]).map(p=>p.mainTid===id?{...p,mainTid:""}:p),
+    });
+    fire&&fire("Mannschaft gelöscht");
+  };
+
+  return (
+    <div>
+      <div style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",padding:"16px",marginBottom:16}}>
+        <div style={{fontWeight:800,fontSize:15,marginBottom:12,color:"#0f172a"}}>Neue Mannschaft anlegen</div>
+        <input value={name} onChange={e=>setName(e.target.value)} placeholder="Name, z.B. E-Jugend 1"
+          style={{width:"100%",padding:"12px 14px",fontSize:15,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",marginBottom:10,boxSizing:"border-box"}}/>
+        <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.4}}>ALTERSKLASSE</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
+          {CATS.map(c=>(
+            <button key={c} type="button" onClick={()=>setCat(c)}
+              style={{padding:"6px 12px",borderRadius:99,border:`1.5px solid ${cat===c?t.p:"#e2e8f0"}`,background:cat===c?t.p:"#fff",color:cat===c?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{c}</button>
+          ))}
+        </div>
+        <input value={pwd} onChange={e=>setPwd(e.target.value)} placeholder="Team-Passwort (optional, Standard: team)"
+          autoCapitalize="none" autoCorrect="off" spellCheck={false}
+          style={{width:"100%",padding:"12px 14px",fontSize:15,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",marginBottom:12,boxSizing:"border-box"}}/>
+        <button onClick={addTeam} disabled={!name.trim()}
+          style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:name.trim()?t.p:"#e2e8f0",color:name.trim()?"#fff":"#94a3b8",fontWeight:800,fontSize:15,cursor:name.trim()?"pointer":"default",fontFamily:"inherit"}}>
+          + Mannschaft anlegen
+        </button>
+      </div>
+
+      <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.4}}>BESTEHENDE MANNSCHAFTEN ({teams.length})</div>
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {teams.length===0&&<div style={{color:"#94a3b8",fontSize:14,padding:"16px",textAlign:"center"}}>Noch keine Mannschaften.</div>}
+        {teams.map(tm=>{
+          const cnt=(data.playerProfiles||[]).filter(p=>p.mainTid===tm.id&&!p.archived).length;
+          const tmCat = tm.cat || tm.name;
+          const isFootball = (cl?.sport||"fussball")==="fussball";
+          return (
+            <div key={tm.id}>
+            <div style={{background:"#fff",borderRadius:13,border:"1.5px solid #e2e8f0",padding:"12px 14px",display:"flex",alignItems:"center",gap:11}}>
+              <div style={{width:38,height:38,borderRadius:10,background:tm.col||t.p,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:14,flexShrink:0}}>{tm.icon||tm.name?.slice(0,2).toUpperCase()}</div>
+              <div style={{flex:1,minWidth:0}}>
+                {editId===tm.id ? (
+                  <input value={editName} onChange={e=>setEditName(e.target.value)} autoFocus
+                    onKeyDown={e=>{if(e.key==="Enter")renameTeam(tm.id);}}
+                    style={{width:"100%",padding:"7px 10px",fontSize:14,border:`1.5px solid ${t.p}`,borderRadius:8,outline:"none",boxSizing:"border-box"}}/>
+                ) : (
+                  <>
+                    <div style={{fontWeight:700,fontSize:14,color:"#0f172a",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{tm.name}{tm.endedSid&&<span style={{marginLeft:7,fontSize:10.5,fontWeight:800,color:"#b45309",background:"#fef3c7",borderRadius:5,padding:"1px 6px",verticalAlign:"middle"}}>abgemeldet</span>}</div>
+                    <div style={{fontSize:12,color:"#94a3b8"}}>{tm.cat||""}{tm.cat?" · ":""}{cnt} Spieler</div>
+                  </>
+                )}
+              </div>
+              {editId===tm.id ? (
+                <button onClick={()=>renameTeam(tm.id)} style={{padding:"7px 12px",borderRadius:9,border:"none",background:t.p,color:"#fff",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>OK</button>
+              ) : (
+                <div style={{display:"flex",gap:6}}>
+                  {isFootball && tmCat && <button onClick={()=>setShowFmt(showFmt===tm.id?null:tm.id)} style={{padding:"7px 11px",borderRadius:9,border:`1.5px solid ${showFmt===tm.id?t.p:"#e2e8f0"}`,background:showFmt===tm.id?t.p+"12":"#f8fafc",color:showFmt===tm.id?t.p:"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Spielform</button>}
+                  <button onClick={()=>{setEditId(tm.id);setEditName(tm.name);}} style={{padding:"7px 11px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#f8fafc",color:"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Umbenennen</button>
+                  <button onClick={()=>delTeam(tm.id)} style={{padding:"7px 11px",borderRadius:9,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Löschen</button>
+                </div>
+              )}
+            </div>
+            {showFmt===tm.id && <div style={{marginTop:8}}><PlayFormatCard cat={tmCat} sport={cl?.sport||"fussball"} cl={cl} compact/></div>}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// Trainingsziele für Trainer: nur die Altersklassen der eigenen Teams, voll editierbar
+function TrainerTrainingZiele({ data, cid, myTids, save, fire, cl }) {
+  const sport = cl?.sport || "fussball";
+  const myTeams = (data.teams||[]).filter(tm=>myTids.includes(tm.id));
+  const allowedCats = [...new Set(myTeams.map(tm=>tm.cat||tm.name).filter(Boolean))];
+  if(allowedCats.length===0) return <div style={{color:"#94a3b8",fontSize:14,padding:"16px",textAlign:"center"}}>Keine Altersklasse zugeordnet.</div>;
+  return (
+    <div>
+      <div style={{background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:12,padding:"11px 14px",marginBottom:16,fontSize:12.5,color:"#1e40af",lineHeight:1.55}}>
+        Du bearbeitest hier die Trainingsziele deiner Mannschaft{allowedCats.length>1?"en":""}. Änderungen gelten vereinsweit für diese Altersklasse{allowedCats.length>1?"n":""}.
+      </div>
+      <SkillTargetsEditor data={data} cid={cid} save={save} fire={fire} cl={cl} sport={sport} allowedCats={allowedCats}/>
+      {sport==="fussball" && <PlayFormatsEditor data={data} cid={cid} save={save} fire={fire} cl={cl} allowedCats={allowedCats}/>}
+    </div>
+  );
+}
+
+// Kompakter Umschalter für die Diagramm-Darstellung (Rasen / Taktiktafel / Für Kinder)
+function StyleToggle({ value, onChange, t }){
+  const opts=[["grass","Rasen",t.p],["chalk","Tafel","#1c2530"],["kids","Kinder","#f59e0b"]];
+  return (
+    <div style={{display:"flex",gap:5,marginBottom:10,flexWrap:"wrap"}}>
+      {opts.map(([v,lbl,col])=>(
+        <button key={v} onClick={()=>onChange(v)}
+          style={{padding:"4px 10px",borderRadius:99,border:`1.5px solid ${value===v?col:"#e2e8f0"}`,background:value===v?col:"#fff",color:value===v?"#fff":"#475569",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>{lbl}</button>
+      ))}
+    </div>
+  );
+}
+
+// Mannschafts-Skill-Analyse: Schnitt im Spinnennetz + regelbasierte Trainingsvorschläge
+function TeamSkillAnalysis({ data, myTids, cl }) {
+  const t = TH(cl);
+  const sport = cl?.sport || "fussball";
+  const axes = skillAxesFor(sport);
+  const teams = (data.teams||[]).filter(tm=>myTids.includes(tm.id));
+  const [tid, setTid] = useState(teams[0]?.id || "");
+  const [openDrill, setOpenDrill] = useState(null);
+  const [diaStyle, setDiaStyle] = useState("grass");
+  const team = teams.find(x=>x.id===tid) || teams[0];
+  const players = (data.playerProfiles||[]).filter(p=>p.mainTid===tid && !p.archived);
+  const withSkills = players.filter(p=>p.skills && Object.values(p.skills).some(v=>Number(v)>0));
+  const avg = teamSkillAverages(withSkills, axes);
+  const cat = team?.cat || team?.name || "E-Jugend";
+  const soll = sollFor(cl, cat, axes);
+  // Schwächste Achsen ggü. Soll (größte Lücke), nur wo Daten vorhanden
+  const gaps = axes.map((a,i)=>({ axis:a, avg:avg[i], soll:soll[i], gap: avg[i]>0 ? soll[i]-avg[i] : 0 }))
+                   .filter(x=>x.gap>0).sort((a,b)=>b.gap-a.gap).slice(0,3);
+  const trainMap = AXIS_TRAINING[sport] || {};
+
+  if(teams.length===0) return <div style={{color:"#94a3b8",fontSize:14,padding:"16px",textAlign:"center"}}>Keine Mannschaft zugeordnet.</div>;
+
+  return (
+    <div>
+      {teams.length>1 && (
+        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:14}}>
+          {teams.map(tm=>(
+            <button key={tm.id} onClick={()=>setTid(tm.id)}
+              style={{padding:"7px 13px",borderRadius:99,border:`1.5px solid ${tid===tm.id?t.p:"#e2e8f0"}`,background:tid===tm.id?t.p:"#fff",color:tid===tm.id?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{tm.name}</button>
+          ))}
+        </div>
+      )}
+
+      {withSkills.length===0 ? (
+        <div style={{background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:14,padding:"22px 16px",textAlign:"center"}}>
+          <div style={{fontWeight:700,fontSize:14,color:"#475569",marginBottom:5}}>Noch keine Skill-Daten</div>
+          <div style={{fontSize:13,color:"#94a3b8",lineHeight:1.5}}>Trage bei den Spielern dieser Mannschaft im Profil das Skill-Profil ein, dann erscheint hier der Mannschaftsschnitt und ein Trainingsvorschlag.</div>
+        </div>
+      ) : (
+        <>
+          <div style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",padding:"16px",marginBottom:14}}>
+            <div style={{fontWeight:800,fontSize:15,color:"#0f172a",marginBottom:2}}>Mannschaftsschnitt</div>
+            <div style={{fontSize:12,color:"#94a3b8",marginBottom:12}}>{withSkills.length} von {players.length} Spielern mit Skill-Profil · Ziel: {cat}</div>
+            <div style={{background:"#f8fafc",borderRadius:14,padding:"14px 10px"}}>
+              <SpiderChart axes={axes} values={avg} compareValues={soll} color={t.p||"#16a34a"} compareColor="#f59e0b" size={250}/>
+              <div style={{display:"flex",gap:16,justifyContent:"center",fontSize:11,fontWeight:700,marginTop:8}}>
+                <span><span style={{display:"inline-block",width:10,height:10,borderRadius:3,background:t.p||"#16a34a",marginRight:4,verticalAlign:"middle"}}/>Schnitt</span>
+                <span><span style={{display:"inline-block",width:10,height:10,borderRadius:3,background:"#f59e0b",marginRight:4,verticalAlign:"middle"}}/>Ziel {cat}</span>
+              </div>
+            </div>
+          </div>
+
+          {gaps.length>0 ? (
+            <div style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",padding:"16px"}}>
+              <div style={{fontWeight:800,fontSize:15,color:"#0f172a",marginBottom:3}}>Trainingsvorschlag</div>
+              <div style={{fontSize:12,color:"#94a3b8",marginBottom:14}}>Größte Lücken zum Ziel – darauf sollte das Gesamttraining den Schwerpunkt legen.</div>
+              {gaps.map((g,gi)=>{
+                const drills = drillsForAxis(g.axis).slice(0,3);
+                return (
+                <div key={g.axis} style={{marginBottom:gi<gaps.length-1?14:0,paddingBottom:gi<gaps.length-1?14:0,borderBottom:gi<gaps.length-1?"1px solid #f1f5f9":"none"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                    <span style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>{g.axis}</span>
+                    <span style={{fontSize:12,fontWeight:700,color:"#d97706",background:"#fef3c7",borderRadius:7,padding:"2px 8px"}}>Schnitt {g.avg} · Ziel {g.soll}</span>
+                  </div>
+                  {drills.length===0 ? (
+                    <div style={{fontSize:12.5,color:"#94a3b8"}}>Noch keine passende Übung in der Bibliothek.</div>
+                  ) : (
+                    <div style={{display:"flex",flexDirection:"column",gap:7}}>
+                      {drills.map(d=>{
+                        const fo=DRILL_FOCUS.find(f=>f.id===d.focus)||{label:d.focus,col:"#64748b"};
+                        const isOpen=openDrill===d.id;
+                        return (
+                          <div key={d.id} style={{border:"1px solid #e2e8f0",borderRadius:10,overflow:"hidden"}}>
+                            <button onClick={()=>setOpenDrill(isOpen?null:d.id)} style={{width:"100%",textAlign:"left",padding:"9px 12px",background:"#f8fafc",border:"none",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:9}}>
+                              <span style={{width:8,height:8,borderRadius:"50%",background:fo.col,flexShrink:0}}/>
+                              <span style={{flex:1,fontWeight:700,fontSize:13,color:"#0f172a"}}>{d.title}</span>
+                              <span style={{fontSize:11,color:"#94a3b8"}}>{d.min} Min</span>
+                              <span style={{fontSize:15,color:"#cbd5e1",transform:isOpen?"rotate(90deg)":"none"}}>›</span>
+                            </button>
+                            {isOpen && (
+                              <div style={{padding:"10px 12px"}}>
+                                <StyleToggle value={diaStyle} onChange={setDiaStyle} t={t}/>
+                                <div style={{display:"flex",justifyContent:"center",marginBottom:9}}>
+                                  <DrillDiagram field={d.field} elements={d.el} color={t.p||"#16a34a"} width={260} variant={diaStyle}/>
+                                </div>
+                                {diaStyle==="kids"&&d.kids
+                                  ? <div style={{background:"#fffbeb",border:"2px solid #fde68a",borderRadius:12,padding:"11px 13px",fontSize:14,color:"#78350f",lineHeight:1.6,fontWeight:600}}>{d.kids}</div>
+                                  : <>
+                                <p style={{fontSize:12.5,color:"#334155",lineHeight:1.55,margin:0}}>{d.desc}</p>
+                                {d.coach && <div style={{marginTop:7,background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:8,padding:"7px 10px",fontSize:11.5,color:"#166534",lineHeight:1.45}}><strong>Coaching:</strong> {d.coach}</div>}
+                                    </>}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+                );
+              })}
+              <div style={{marginTop:14,fontSize:11,color:"#94a3b8",lineHeight:1.5}}>
+                Lokal berechnet aus den Skill-Profilen – ohne externen Dienst, keine Spielerdaten verlassen die App. Vorschlag, kein Ersatz für die Trainerplanung.
+              </div>
+            </div>
+          ) : (
+            <div style={{background:"#dcfce7",border:"1px solid #bbf7d0",borderRadius:14,padding:"16px",textAlign:"center",fontSize:13,color:"#166534",fontWeight:600}}>
+              Die Mannschaft erreicht im Schnitt alle Ziel-Werte. Stärken weiter festigen!
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// Trainings-Übungsbibliothek mit Schwerpunkt-Filter und Diagrammen
+function DrillLibrary({ cl }) {
+  const t = TH(cl);
+  const [focus, setFocus] = useState("all");
+  const [cat, setCat] = useState("all");
+  const [q, setQ] = useState("");
+  const [open, setOpen] = useState(null);
+  const [style, setStyle] = useState("grass"); // grass | chalk
+  const allCats = CAT_ORDER.filter(c=>DRILL_LIB.some(d=>(d.cats||[]).includes(c)));
+  const ql = q.trim().toLowerCase();
+  const list = DRILL_LIB.filter(d=>
+    (focus==="all" || d.focus===focus) &&
+    (cat==="all" || (d.cats||[]).includes(cat)) &&
+    (!ql || d.title.toLowerCase().includes(ql) || (d.desc||"").toLowerCase().includes(ql))
+  );
+  const focusOf = id => DRILL_FOCUS.find(f=>f.id===id) || {label:id,col:"#64748b"};
+  return (
+    <div>
+      <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Übung suchen (Name oder Inhalt)…"
+        autoCapitalize="none" autoCorrect="off"
+        style={{width:"100%",padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",marginBottom:10,boxSizing:"border-box"}}/>
+      <div style={{display:"flex",gap:6,marginBottom:10,alignItems:"center"}}>
+        <span style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.3}}>DARSTELLUNG:</span>
+        <button onClick={()=>setStyle("grass")} style={{padding:"5px 12px",borderRadius:99,border:`1.5px solid ${style==="grass"?t.p:"#e2e8f0"}`,background:style==="grass"?t.p:"#fff",color:style==="grass"?"#fff":"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Rasen</button>
+        <button onClick={()=>setStyle("chalk")} style={{padding:"5px 12px",borderRadius:99,border:`1.5px solid ${style==="chalk"?"#1c2530":"#e2e8f0"}`,background:style==="chalk"?"#1c2530":"#fff",color:style==="chalk"?"#fff":"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Taktiktafel</button>
+        <button onClick={()=>setStyle("kids")} style={{padding:"5px 12px",borderRadius:99,border:`1.5px solid ${style==="kids"?"#f59e0b":"#e2e8f0"}`,background:style==="kids"?"#f59e0b":"#fff",color:style==="kids"?"#fff":"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Für Kinder</button>
+      </div>
+      <div style={{display:"flex",gap:6,overflowX:"auto",marginBottom:8,scrollbarWidth:"none"}}>
+        <button onClick={()=>setFocus("all")} style={{flex:"0 0 auto",padding:"7px 14px",borderRadius:99,border:`1.5px solid ${focus==="all"?t.p:"#e2e8f0"}`,background:focus==="all"?t.p:"#fff",color:focus==="all"?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>Alle ({DRILL_LIB.length})</button>
+        {DRILL_FOCUS.map(f=>{
+          const n=DRILL_LIB.filter(d=>d.focus===f.id).length;
+          return (
+            <button key={f.id} onClick={()=>setFocus(f.id)} style={{flex:"0 0 auto",padding:"7px 14px",borderRadius:99,border:`1.5px solid ${focus===f.id?f.col:"#e2e8f0"}`,background:focus===f.id?f.col:"#fff",color:focus===f.id?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{f.label} ({n})</button>
+          );
+        })}
+      </div>
+
+      <div style={{display:"flex",gap:6,overflowX:"auto",marginBottom:10,scrollbarWidth:"none"}}>
+        <button onClick={()=>setCat("all")} style={{flex:"0 0 auto",padding:"6px 12px",borderRadius:99,border:`1.5px solid ${cat==="all"?t.p:"#e2e8f0"}`,background:cat==="all"?"#f0fdf4":"#fff",color:cat==="all"?t.p:"#94a3b8",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>Alle Klassen</button>
+        {allCats.map(c=>(
+          <button key={c} onClick={()=>setCat(c)} style={{flex:"0 0 auto",padding:"6px 12px",borderRadius:99,border:`1.5px solid ${cat===c?t.p:"#e2e8f0"}`,background:cat===c?"#f0fdf4":"#fff",color:cat===c?t.p:"#94a3b8",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{c}</button>
+        ))}
+      </div>
+
+      <div style={{fontSize:12,color:"#94a3b8",fontWeight:700,marginBottom:10}}>{list.length} {list.length===1?"Übung":"Übungen"}</div>
+
+      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+        {list.length===0 && <div style={{color:"#94a3b8",fontSize:14,padding:"20px",textAlign:"center"}}>Keine Übung gefunden. Filter oder Suche anpassen.</div>}
+        {list.map(d=>{
+          const f=focusOf(d.focus);
+          const isOpen=open===d.id;
+          return (
+            <div key={d.id} style={{background:"#fff",borderRadius:14,border:"1.5px solid #e2e8f0",overflow:"hidden"}}>
+              <button onClick={()=>setOpen(isOpen?null:d.id)} style={{width:"100%",textAlign:"left",padding:"13px 15px",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:10}}>
+                <span style={{width:9,height:9,borderRadius:"50%",background:f.col,flexShrink:0}}/>
+                <span style={{flex:1,minWidth:0}}>
+                  <span style={{display:"block",fontWeight:800,fontSize:14.5,color:"#0f172a"}}>{d.title}</span>
+                  <span style={{display:"block",fontSize:12,color:"#94a3b8",marginTop:1}}>{f.label} · {d.min} Min · {d.players} Spieler</span>
+                </span>
+                <span style={{fontSize:18,color:"#cbd5e1",transform:isOpen?"rotate(90deg)":"none",transition:"transform .2s"}}>›</span>
+              </button>
+              {isOpen && (
+                <div style={{padding:"0 15px 15px"}}>
+                  <div style={{display:"flex",justifyContent:"center",marginBottom:12}}>
+                    <DrillDiagram field={d.field} elements={d.el} color={t.p||"#16a34a"} width={300} variant={style}/>
+                  </div>
+                  {style==="kids" ? (
+                    d.kids ? (
+                      <div style={{background:"#fffbeb",border:"2px solid #fde68a",borderRadius:14,padding:"14px 16px",fontSize:16,color:"#78350f",lineHeight:1.65,fontWeight:600}}>
+                        {d.kids}
+                      </div>
+                    ) : (
+                      <div style={{background:"#f1f5f9",borderRadius:12,padding:"12px 14px",fontSize:13.5,color:"#64748b",lineHeight:1.6}}>
+                        Diese Übung ist eher für ältere Kinder gedacht. Für die Jüngsten eignen sich z.&nbsp;B. Ballschule, Fangspiel oder Dribbel-Übungen am besten.
+                      </div>
+                    )
+                  ) : (
+                    <>
+                      <p style={{fontSize:13.5,color:"#334155",lineHeight:1.6,marginBottom:10}}>{d.desc}</p>
+                      {d.coach && <div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:10,padding:"9px 12px",fontSize:12.5,color:"#166534",lineHeight:1.5,marginBottom:8}}><strong>Coaching:</strong> {d.coach}</div>}
+                    </>
+                  )}
+                  <div style={{fontSize:11.5,color:"#94a3b8",marginTop:8}}>Geeignet für: {d.cats.join(", ")}</div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <div style={{marginTop:14,fontSize:11,color:"#94a3b8",lineHeight:1.5,textAlign:"center"}}>
+        {DRILL_LIB.length} Übungen · weitere folgen. Diagramme als Orientierung, an Gruppe und Platz anpassen.
+      </div>
+    </div>
+  );
+}
+
+// Trainingsplan-Generator: Einheit oder Woche, Schwerpunkt manuell oder aus Förderlücken
+function TrainingPlanner({ data, myTids, cl, save, fire }) {
+  const t = TH(cl);
+  const sport = cl?.sport || "fussball";
+  const axes = skillAxesFor(sport);
+  const teams = (data.teams||[]).filter(tm=>myTids.includes(tm.id));
+  const [tid, setTid] = useState(teams[0]?.id || "");
+  const [mode, setMode] = useState("single");     // single | week
+  const [planStyle, setPlanStyle] = useState("grass");
+  const [focus, setFocus] = useState("technik");  // Schwerpunkt-Id oder "auto"
+  const [dur, setDur] = useState(60);              // Zieldauer in Minuten
+  const [plan, setPlan] = useState(null);
+  const [openDrill, setOpenDrill] = useState(null);
+  const [copied, setCopied] = useState(false);
+
+  // Plan als formatierten Text aufbauen
+  const planToText = () => {
+    if(!plan) return "";
+    const L = [];
+    L.push("TRAININGSPLAN" + (cat?" – "+cat:""));
+    if(cl?.name) L.push("Verein: " + cl.name);
+    L.push("");
+    plan.sessions.forEach(sess=>{
+      const total = sess.blocks.reduce((a,b)=>a+(b.drill.min||0),0);
+      L.push("=== " + sess.title + " (" + total + " Min) ===");
+      sess.blocks.forEach(b=>{
+        L.push("• [" + b.phase + "] " + b.drill.title + " (" + b.drill.min + " Min)");
+        if(b.drill.desc) L.push("  " + b.drill.desc);
+        if(b.drill.coach) L.push("  Coaching: " + b.drill.coach);
+      });
+      L.push("");
+    });
+    return L.join("\n").trim();
+  };
+  const doShare = async () => {
+    const text = planToText();
+    if(navigator.share){ try { await navigator.share({ title:"Trainingsplan", text }); return; } catch {} }
+    navigator.clipboard?.writeText(text).then(()=>{ setCopied(true); setTimeout(()=>setCopied(false),2000); });
+  };
+  const doCopy = () => {
+    navigator.clipboard?.writeText(planToText()).then(()=>{ setCopied(true); setTimeout(()=>setCopied(false),2000); });
+  };
+  const doDownload = () => {
+    const blob = new Blob([planToText()], {type:"text/plain;charset=utf-8"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "trainingsplan-" + (cat||"team").replace(/\s/g,"-").toLowerCase() + "-" + new Date().toISOString().slice(0,10) + ".txt";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+  };
+  // Plan an einen Termin hängen (im Event speichern)
+  const [attachedTo, setAttachedTo] = useState(null);
+  const attachToEvent = (ev) => {
+    if(!plan || !save) return;
+    const compact = {
+      cat, createdAt: now(),
+      sessions: plan.sessions.map(s=>({
+        title:s.title,
+        blocks:s.blocks.map(b=>({phase:b.phase, id:b.drill.id, title:b.drill.title, min:b.drill.min})),
+      })),
+    };
+    const events = (data.events||[]).map(e=> e.id===ev.id ? {...e, trainingPlan:compact} : e);
+    save({...data, events});
+    fire && fire("Plan an Termin gehängt");
+    setAttachedTo(ev.id);
+    setTimeout(()=>setAttachedTo(null), 2500);
+  };
+  const removeFromEvent = (ev) => {
+    if(!save) return;
+    const events = (data.events||[]).map(e=>{ if(e.id!==ev.id) return e; const {trainingPlan, ...rest}=e; return rest; });
+    save({...data, events});
+    fire && fire("Plan vom Termin entfernt");
+  };
+  const team = teams.find(x=>x.id===tid) || teams[0];
+  const cat = team?.cat || team?.name || null;
+  // Kommende Trainings dieser Mannschaft mit hinterlegter Endzeit (Dauer auslesbar)
+  const today = now();
+  const upcomingTrainings = (data.events||[])
+    .filter(e=>e.tid===tid && e.type==="training" && e.date>=today && eventDurationMin(e)!=null)
+    .sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time))
+    .slice(0,4);
+
+  // Förderlücken der Mannschaft (für "auto")
+  const autoFocus = () => {
+    const players = (data.playerProfiles||[]).filter(p=>p.mainTid===tid && !p.archived && p.skills);
+    if(players.length===0) return "technik";
+    const avg = teamSkillAverages(players, axes);
+    const soll = sollFor(cl, cat||"E-Jugend", axes);
+    const gaps = axes.map((a,i)=>({axis:a, gap: avg[i]>0 ? soll[i]-avg[i] : 0})).filter(g=>g.gap>0).sort((a,b)=>b.gap-a.gap);
+    return gaps.length ? (AXIS_TO_FOCUS[gaps[0].axis]||"technik") : "technik";
+  };
+
+  const generate = () => {
+    const realFocus = focus==="auto" ? autoFocus() : focus;
+    if(mode==="single"){
+      setPlan({ type:"single", sessions:[{ title:"Trainingseinheit", blocks: buildSession({focus:realFocus, cat, targetMin:dur}) }] });
+    } else {
+      const days = ["Einheit 1","Einheit 2","Einheit 3"];
+      const used=[]; const sessions=[];
+      days.forEach((d,i)=>{
+        const f = focus==="auto" ? autoFocus() : (i===1?"taktik":i===2?"torschuss":realFocus);
+        const blocks = buildSession({focus:f, cat, used, targetMin:dur});
+        blocks.forEach(b=>used.push(b.drill.id));
+        sessions.push({ title:d, blocks });
+      });
+      setPlan({ type:"week", sessions });
+    }
+    setOpenDrill(null);
+  };
+
+  const FOCUS_OPTS = [
+    {id:"auto",label:"Aus Förderlücken"},
+    {id:"technik",label:"Technik"},{id:"taktik",label:"Taktik"},
+    {id:"torschuss",label:"Torschuss"},{id:"kondition",label:"Kondition"},
+  ];
+
+  return (
+    <div>
+      {teams.length>1 && (
+        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
+          {teams.map(tm=>(
+            <button key={tm.id} onClick={()=>{setTid(tm.id);setPlan(null);}} style={{padding:"7px 13px",borderRadius:99,border:`1.5px solid ${tid===tm.id?t.p:"#e2e8f0"}`,background:tid===tm.id?t.p:"#fff",color:tid===tm.id?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{tm.name}</button>
+          ))}
+        </div>
+      )}
+
+      <div style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",padding:"16px",marginBottom:14}}>
+        <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.4}}>UMFANG</div>
+        <div style={{display:"flex",gap:8,marginBottom:14}}>
+          {[["single","Eine Einheit"],["week","Ganze Woche (3)"]].map(([k,l])=>(
+            <button key={k} onClick={()=>{setMode(k);setPlan(null);}} style={{flex:1,padding:"10px",borderRadius:11,border:`2px solid ${mode===k?t.p:"#e2e8f0"}`,background:mode===k?t.p:"#fff",color:mode===k?"#fff":"#64748b",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
+          ))}
+        </div>
+        <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.4}}>SCHWERPUNKT</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:16}}>
+          {FOCUS_OPTS.map(f=>(
+            <button key={f.id} onClick={()=>{setFocus(f.id);}} style={{padding:"7px 13px",borderRadius:99,border:`1.5px solid ${focus===f.id?t.p:"#e2e8f0"}`,background:focus===f.id?t.p:"#fff",color:focus===f.id?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{f.label}</button>
+          ))}
+        </div>
+        {upcomingTrainings.length>0 && (
+          <>
+            <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.4}}>DAUER AUS TERMIN ÜBERNEHMEN</div>
+            <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:16}}>
+              {upcomingTrainings.map(ev=>{
+                const m=eventDurationMin(ev);
+                return (
+                  <button key={ev.id} onClick={()=>setDur(m)} style={{textAlign:"left",padding:"9px 12px",borderRadius:10,border:`1.5px solid ${dur===m?t.p:"#e2e8f0"}`,background:dur===m?t.p+"10":"#fff",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:10}}>
+                    <span style={{flex:1,fontSize:13,fontWeight:600,color:"#334155"}}>{ev.title||"Training"}<span style={{color:"#94a3b8",fontWeight:500}}> · {ev.date.slice(8,10)}.{ev.date.slice(5,7)}. {ev.time}–{ev.endTime}</span></span>
+                    <span style={{fontSize:12,fontWeight:800,color:dur===m?t.p:"#94a3b8"}}>{m} Min</span>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+        <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.4}}>DAUER</div>
+        <div style={{display:"flex",gap:6,marginBottom:16}}>
+          {[45,60,75,90,120].map(m=>(
+            <button key={m} onClick={()=>setDur(m)} style={{flex:1,padding:"9px 4px",borderRadius:10,border:`1.5px solid ${dur===m?t.p:"#e2e8f0"}`,background:dur===m?t.p:"#fff",color:dur===m?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{m}'</button>
+          ))}
+        </div>
+        {cat && <div style={{fontSize:12,color:"#94a3b8",marginBottom:12}}>Übungen passend für: <strong style={{color:"#475569"}}>{cat}</strong></div>}
+        <button onClick={generate} style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:t.p,color:"#fff",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>
+          {plan?"Neu generieren":"Trainingsplan erstellen"}
+        </button>
+      </div>
+
+      {(()=>{
+        const withPlan = (data.events||[]).filter(e=>e.tid===tid && e.trainingPlan && e.date>=now())
+          .sort((a,b)=>(a.date+(a.time||"")).localeCompare(b.date+(b.time||"")));
+        if(withPlan.length===0) return null;
+        return (
+          <div style={{background:"#fff",borderRadius:14,border:"1.5px solid #e2e8f0",padding:"14px",marginBottom:14}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.4}}>TERMINE MIT PLAN</div>
+            <div style={{display:"flex",flexDirection:"column",gap:6}}>
+              {withPlan.map(ev=>{
+                const n=(ev.trainingPlan.sessions?.[0]?.blocks||[]).length;
+                return (
+                  <div key={ev.id} style={{display:"flex",alignItems:"center",gap:6,padding:"9px 12px",borderRadius:10,border:"1.5px solid #e2e8f0",background:"#f8fafc"}}>
+                    <span style={{flex:1,fontSize:13,fontWeight:600,color:"#334155"}}>{ev.title||"Training"}<span style={{color:"#94a3b8",fontWeight:500}}> · {ev.date.slice(8,10)}.{ev.date.slice(5,7)}.{ev.time?" "+ev.time:""} · {n} Übungen</span></span>
+                    <button onClick={()=>removeFromEvent(ev)} title="Plan entfernen" style={{flexShrink:0,padding:"6px 11px",borderRadius:9,border:"1.5px solid #fecaca",background:"#fef2f2",color:"#dc2626",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>entfernen</button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
+      {plan && plan.sessions.map((sess,si)=>{
+        const total = sess.blocks.reduce((a,b)=>a+(b.drill.min||0),0);
+        return (
+          <div key={si} style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",padding:"16px",marginBottom:12}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+              <div style={{fontWeight:800,fontSize:15,color:"#0f172a"}}>{sess.title}</div>
+              <span style={{fontSize:12,fontWeight:700,color:t.p,background:t.p+"15",borderRadius:7,padding:"3px 9px"}}>{total} Min{dur && total < dur-10 ? " / Ziel "+dur : ""}</span>
+            </div>
+            {dur && total < dur-10 && <div style={{background:"#fef9c3",border:"1px solid #fde68a",borderRadius:9,padding:"8px 11px",fontSize:11.5,color:"#854d0e",lineHeight:1.45,marginBottom:10}}>Für diese Altersklasse gibt es nicht genug passende Übungen, um {dur} Min zu füllen – das entspricht auch der kürzeren Trainingszeit jüngerer Jahrgänge.</div>}
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {sess.blocks.map((b,bi)=>{
+                const fo=DRILL_FOCUS.find(f=>f.id===b.drill.focus)||{label:b.drill.focus,col:"#64748b"};
+                const key=si+"-"+bi;
+                const isOpen=openDrill===key;
+                return (
+                  <div key={bi} style={{border:"1px solid #e2e8f0",borderRadius:11,overflow:"hidden"}}>
+                    <button onClick={()=>setOpenDrill(isOpen?null:key)} style={{width:"100%",textAlign:"left",padding:"10px 12px",background:"#f8fafc",border:"none",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:9}}>
+                      <span style={{fontSize:10,fontWeight:800,color:"#94a3b8",width:62,flexShrink:0}}>{b.phase}</span>
+                      <span style={{width:8,height:8,borderRadius:"50%",background:fo.col,flexShrink:0}}/>
+                      <span style={{flex:1,fontWeight:700,fontSize:13.5,color:"#0f172a"}}>{b.drill.title}</span>
+                      <span style={{fontSize:11,color:"#94a3b8"}}>{b.drill.min} Min</span>
+                      <span style={{fontSize:15,color:"#cbd5e1",transform:isOpen?"rotate(90deg)":"none"}}>›</span>
+                    </button>
+                    {isOpen && (
+                      <div style={{padding:"10px 12px"}}>
+                        <StyleToggle value={planStyle} onChange={setPlanStyle} t={t}/>
+                        <div style={{display:"flex",justifyContent:"center",marginBottom:9}}>
+                          <DrillDiagram field={b.drill.field} elements={b.drill.el} color={t.p||"#16a34a"} width={260} variant={planStyle}/>
+                        </div>
+                        {planStyle==="kids"&&b.drill.kids
+                          ? <div style={{background:"#fffbeb",border:"2px solid #fde68a",borderRadius:12,padding:"11px 13px",fontSize:14,color:"#78350f",lineHeight:1.6,fontWeight:600}}>{b.drill.kids}</div>
+                          : <>
+                        <p style={{fontSize:12.5,color:"#334155",lineHeight:1.55,margin:0}}>{b.drill.desc}</p>
+                        {b.drill.coach && <div style={{marginTop:7,background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:8,padding:"7px 10px",fontSize:11.5,color:"#166534",lineHeight:1.45}}><strong>Coaching:</strong> {b.drill.coach}</div>}
+                            </>}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+      {plan && <div style={{display:"flex",gap:8,marginBottom:10}}>
+        <button onClick={doShare} style={{flex:1,padding:"11px",borderRadius:11,border:"none",background:t.p,color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Teilen</button>
+        <button onClick={doCopy} style={{flex:1,padding:"11px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{copied?"Kopiert ✓":"Kopieren"}</button>
+        <button onClick={doDownload} style={{flex:1,padding:"11px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Download</button>
+      </div>}
+      {plan && plan.type==="single" && (()=>{
+        const upcoming = (data.events||[]).filter(e=>e.tid===tid && e.type==="training" && e.date>=now())
+          .sort((a,b)=>(a.date+(a.time||"")).localeCompare(b.date+(b.time||""))).slice(0,5);
+        if(upcoming.length===0) return null;
+        return (
+          <div style={{background:"#fff",borderRadius:14,border:"1.5px solid #e2e8f0",padding:"14px",marginBottom:10}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.4}}>AN TERMIN HÄNGEN</div>
+            <div style={{display:"flex",flexDirection:"column",gap:6}}>
+              {upcoming.map(ev=>(
+                <div key={ev.id} style={{display:"flex",alignItems:"center",gap:6}}>
+                  <button onClick={()=>attachToEvent(ev)} style={{flex:1,textAlign:"left",padding:"9px 12px",borderRadius:10,border:`1.5px solid ${attachedTo===ev.id?t.p:"#e2e8f0"}`,background:attachedTo===ev.id?t.p+"10":"#fff",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:10}}>
+                    <span style={{flex:1,fontSize:13,fontWeight:600,color:"#334155"}}>{ev.title||"Training"}<span style={{color:"#94a3b8",fontWeight:500}}> · {ev.date.slice(8,10)}.{ev.date.slice(5,7)}.{ev.time?" "+ev.time:""}</span></span>
+                    <span style={{fontSize:12,fontWeight:700,color:attachedTo===ev.id?t.p:"#94a3b8"}}>{attachedTo===ev.id?"Gehängt ✓":ev.trainingPlan?"ersetzen":"wählen"}</span>
+                  </button>
+                  {ev.trainingPlan && attachedTo!==ev.id && (
+                    <button onClick={()=>removeFromEvent(ev)} title="Plan entfernen" style={{flexShrink:0,width:38,height:38,borderRadius:10,border:"1.5px solid #fecaca",background:"#fef2f2",color:"#dc2626",fontWeight:800,fontSize:16,cursor:"pointer",fontFamily:"inherit"}}>×</button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+      {plan && <div style={{fontSize:11,color:"#94a3b8",lineHeight:1.5,textAlign:"center",marginTop:4}}>Vorschlag aus der Übungsbibliothek – „Neu generieren" für andere Auswahl. Lokal erstellt, keine Daten verlassen die App.</div>}
+    </div>
+  );
+}
+
+function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false }) {
   const [subTab, setSubTab] = useState("players"); // players | attendance | stats
   const t = TH(cl);
   const subTabs = [
     { id:"players",    label:"Spieler",     icon:"P" },
     { id:"attendance", label:"Anwesenheit", icon:"S" },
     { id:"results",    label:"Ergebnisse",  icon:"E" },
+    { id:"analysis",   label:"Analyse",     icon:"A" },
+    { id:"ziele",      label:"Ziele",       icon:"Z" },
+    { id:"drills",     label:"Übungen",     icon:"U" },
+    { id:"planner",    label:"Planer",      icon:"W" },
+    ...(isAdmin ? [{ id:"manage", label:"Mannschaften", icon:"M" }] : []),
   ];
   return (
     <div>
-      <div style={{display:"flex",gap:6,marginBottom:14}}>
+      <div style={{display:"flex",gap:6,marginBottom:14,overflowX:"auto",scrollbarWidth:"none"}}>
         {subTabs.map(st=>(
           <button key={st.id} onClick={()=>setSubTab(st.id)}
-            style={{flex:1,padding:"9px",borderRadius:11,
+            style={{flex:"1 0 auto",padding:"9px 12px",borderRadius:11,whiteSpace:"nowrap",
               border:`2px solid ${subTab===st.id?t.p:"#e2e8f0"}`,
               background:subTab===st.id?t.p:"#fff",
               color:subTab===st.id?"#fff":"#64748b",
               fontWeight:subTab===st.id?800:600,fontSize:13,
-              cursor:"pointer",fontFamily:"inherit"}}>
+              cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:6}}>
+            {HAS_ICON.has(st.id)&&<NavIcon name={st.id} size={16}/>}
             {st.label}
           </button>
         ))}
@@ -2897,6 +3821,11 @@ function TeamHub({ data, myTids, save, fire, cl, session }) {
       {subTab==="players"    && <PlayersTab    data={data} myTids={myTids} save={save} fire={fire} cl={cl}/>}
       {subTab==="attendance" && <AttendanceTab data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
       {subTab==="results"    && <LeagueTab     data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
+      {subTab==="analysis"   && <TeamSkillAnalysis data={data} myTids={myTids} cl={cl}/>}
+      {subTab==="ziele"      && <TrainerTrainingZiele data={data} cid={cl?.id} myTids={myTids} save={save} fire={fire} cl={cl}/>}
+      {subTab==="drills"     && <DrillLibrary cl={cl}/>}
+      {subTab==="planner"    && <TrainingPlanner data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
+      {subTab==="manage"     && <ManageTeams   data={data} save={save} fire={fire} cl={cl}/>}
     </div>
   );
 }
@@ -3854,9 +4783,9 @@ const TRAINING_TEMPLATES = [
   age:["c","ba","senioren"],
   duration:30, intensity:8,
   skills:["pressing","verteidigung","teamarbeit","umschalten"],
-  description:`5v5 oder 7v7 mit zwei Mannschaften. Beim Ballverlust sofort Gegenpressing einleiten. Erste Spieler setzt Druck auf Balltraeger, Mitspieler schliessen Passoptionen ab. Ziel: Ball innerhalb 5 Sekunden zurueckgewinnen.`,
+  description:`5v5 oder 7v7 mit zwei Mannschaften. Beim Ballverlust sofort Gegenpressing einleiten. Erste Spieler setzt Druck auf Balltraeger, Mitspieler schliessen Passoptionen ab. Ziel: Ball innerhalb 5 Sekunden zurückgewinnen.`,
   coaching:`Kommunikation ist alles: "Druck!", "Weg!". Kompakte Staffelung. Nicht einzeln anlaufen. 3-Sekunden-Regel: Entscheidung nach Ballverlust treffen. Pressing-Falle an der Seitenlinie nutzen.`,
-  variations:`Mit Zonen: Pressing nur in bestimmten Feldbereichen erzwungen. Gegenpressing-Wettbewerb: Welches Team gewinnt Ball schneller zurueck.`,
+  variations:`Mit Zonen: Pressing nur in bestimmten Feldbereichen erzwungen. Gegenpressing-Wettbewerb: Welches Team gewinnt Ball schneller zurück.`,
   minPlayers:10, fieldZone:"full",
   material:[{id:"ball_fuss",qty:3,label:"Fussball",cat:"Baelle"},{id:"leibchen",qty:6,color:"rot",label:"Leibchen",cat:"Leibchen"},{id:"huetchen",qty:8,color:"gelb",label:"Huetchen",cat:"Markierung"}],
   ageNote:"Erst ab C-Jugend sinnvoll. Taktisches Verstaendnis benoetigt gewisse Reife. B/A und Senioren profitieren maximal.",
@@ -3890,7 +4819,7 @@ const TRAINING_TEMPLATES = [
   age:["c","ba","senioren"],
   duration:20, intensity:6,
   skills:["verteidigung","raumaufteilung","teamarbeit","konzentration"],
-  description:`Abwehrkette von 4 Spielern lernt koordiniert herauszuruecken. Signal des Innenverteidigers oder Torwarts. Alle vier Verteidiger ruecken gleichzeitig heraus. Stuermer werden ins Abseits gelockt.`,
+  description:`Abwehrkette von 4 Spielern lernt koordiniert herauszurücken. Signal des Innenverteidigers oder Torwarts. Alle vier Verteidiger ruecken gleichzeitig heraus. Stuermer werden ins Abseits gelockt.`,
   coaching:`Kommunikation: "Raus!" als Kommando. Linie halten. Kein Zoegern. Im Zweifelsfall: Lieber nicht rausruecken. Nach abgebloecktem Schuss sofort auf Linie. Torwart hat Sicht - sein Wort gilt.`,
   variations:`Mit angreifenden Spielern die versuchen durchzubrechen. Signalvarianten: Klatschen vs. Ruf.`,
   minPlayers:6, fieldZone:"half_r",
@@ -4304,7 +5233,7 @@ function TemplateDetail({ tpl, onBack, onUse, cl }) {
           <button onClick={onBack} style={{background:"rgba(255,255,255,.15)",border:"none",
             color:"#fff",borderRadius:9,padding:"6px 12px",fontSize:12,fontWeight:700,
             cursor:"pointer",fontFamily:"inherit",marginBottom:10}}>
-            {"<-"} Zurueck
+            {"<-"} Zurück
           </button>
           <div style={{color:"#fff",fontWeight:900,fontSize:20,marginBottom:4}}>{tpl.name}</div>
           <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
@@ -4447,7 +5376,7 @@ function ResetDataButton({ fire }) {
     Object.keys(localStorage)
       .filter(k => k.startsWith("vereinsapp_"))
       .forEach(k => localStorage.removeItem(k));
-    fire("Alle lokalen Daten zurueckgesetzt - Seite wird neu geladen...");
+    fire("Alle lokalen Daten zurückgesetzt - Seite wird neu geladen...");
     setTimeout(() => window.location.reload(), 1500);
   };
   if(!confirm) return (
@@ -4483,7 +5412,7 @@ function ResetDataButton({ fire }) {
 /* =================================================================
    PASSWORT-VERWALTUNG (nur Admin)
    - Alle Zugaenge des Vereins auf einen Blick
-   - Passwort setzen, zuruecksetzen, sperren
+   - Passwort setzen, zurücksetzen, sperren
    - Kein Klartext gespeichert
 ================================================================= */
 function AccessManagerTab({ data, cid, save, fire, cl }) {
@@ -4523,8 +5452,9 @@ function AccessManagerTab({ data, cid, save, fire, cl }) {
         cl.id===cid ? {...cl, adm:hash} : cl
       );
     } else if(editing.type === "helper") {
+      // Helfer-Code wird im Klartext gespeichert: er wird dem Admin angezeigt und beim Login direkt verglichen (kein Passwort-Hash)
       nextData.helpers = (data.helpers||[]).map(h=>
-        h.id===editing.id ? {...h, code:hash} : h
+        h.id===editing.id ? {...h, code:newPw.trim()} : h
       );
     }
     // Audit log
@@ -4868,14 +5798,14 @@ function AdminForgotPassword({ cl, onBack, onReset }) {
           style={{background:"none",border:"none",color:"#64748b",fontSize:13,
             cursor:"pointer",fontFamily:"inherit",marginBottom:12,padding:0,
             fontWeight:700}}>
-          {"<-"} Zurueck
+          {"<-"} Zurück
         </button>
 
         {step==="email"&&<>
           <h3 style={{fontWeight:900,fontSize:18,marginBottom:6}}>Passwort vergessen</h3>
           <p style={{fontSize:13,color:"#64748b",marginBottom:16,lineHeight:1.6}}>
             Gib deine Admin-E-Mail-Adresse ein. Wir senden dir einen Code
-            zum Zuruecksetzen des Passwortes.
+            zum Zurücksetzen des Passwortes.
           </p>
           <input value={email} onChange={e=>{setEmail(e.target.value);setErr("");}}
             type="email" placeholder="Deine E-Mail-Adresse"
@@ -5066,7 +5996,7 @@ function ForgotPasswordHelp({ cl, teams, trainers, forRole, teamId, onBack }) {
           marginBottom:16,fontSize:13,color:"#92400e",lineHeight:1.6,
           border:"1.5px solid #fde68a"}}>
           {forRole==="trainer"
-            ? "Bitte den Vereinsadmin kontaktieren um dein Passwort zuruecksetzen zu lassen."
+            ? "Bitte den Vereinsadmin kontaktieren um dein Passwort zurücksetzen zu lassen."
             : "Bitte deinen Trainer kontaktieren um das Team-Passwort zu erfragen."
           }
         </div>
@@ -5707,6 +6637,7 @@ function SuperAdminDashboard({ data, onExit }) {
 
   const TABS = [
     {id:"dashboard",  label:"Dashboard",   icon:"D"},
+    {id:"activity",   label:"Aktivität",   icon:"AK"},
     {id:"clubs",      label:"Vereine",     icon:"V"},
     {id:"message",    label:"Nachrichten", icon:"N"},
     {id:"modules",    label:"Module",      icon:"M"},
@@ -5848,6 +6779,11 @@ function SuperAdminDashboard({ data, onExit }) {
           </div>
         )}
 
+        {/* AKTIVITÄT */}
+        {tab==="activity"&&(
+          <SuperAdminActivity data={data} allClubs={allClubs}/>
+        )}
+
         {/* VEREINE */}
         {tab==="clubs"&&(
           <SuperAdminClubs data={data} allClubs={allClubs} allTeams={allTeams} allPlayers={allPlayers}/>
@@ -5975,6 +6911,89 @@ function SuperAdminCompliance({ allClubs, allPlayers }) {
 /* -----------------------------------------------------------------
    VEREINE VERWALTUNG
 ----------------------------------------------------------------- */
+function SuperAdminActivity({ data, allClubs }) {
+  const log = (data.securityLog||[]).filter(e=>e.type==="login");
+  const today = new Date().toISOString().slice(0,10);
+  const dayStr = d => new Date(Date.now()-d*86400000).toISOString().slice(0,10);
+  // Anmeldungen pro Tag (letzte 14 Tage) aus dem echten securityLog
+  const days = [];
+  for(let i=13;i>=0;i--){
+    const ds = dayStr(i);
+    const cnt = log.filter(e=>(e.ts||"").slice(0,10)===ds).length;
+    days.push({ ds, cnt, label: new Date(ds).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"}) });
+  }
+  const maxCnt = Math.max(1,...days.map(d=>d.cnt));
+  const todayCnt = days[days.length-1].cnt;
+  const week = log.filter(e=>(e.ts||"").slice(0,10)>=dayStr(6)).length;
+  // aktive Vereine = mind. 1 Login in letzten 30 Tagen
+  const d30 = dayStr(30);
+  const activeClubIds = new Set(log.filter(e=>(e.ts||"").slice(0,10)>=d30).map(e=>e.cid));
+  // Vereine mit letzter Aktivität, sortiert (älteste zuerst → Löschkandidaten oben)
+  const clubRows = allClubs.map(c=>{
+    const la = c.lastActive || null;
+    const days = la ? Math.floor((Date.now()-new Date(la).getTime())/86400000) : null;
+    return { id:c.id, name:c.name, lastActive:la, daysAgo:days };
+  }).sort((a,b)=>{
+    if(a.daysAgo==null) return 1; if(b.daysAgo==null) return -1; return b.daysAgo-a.daysAgo;
+  });
+  const stale = clubRows.filter(c=>c.daysAgo!=null && c.daysAgo>=365).length;
+  const card = (l,v,col)=>(
+    <div key={l} style={{background:"#1e293b",borderRadius:13,padding:"14px",border:"1px solid #334155",textAlign:"center"}}>
+      <div style={{fontWeight:900,fontSize:24,color:col}}>{v}</div>
+      <div style={{fontSize:11,color:"#64748b",marginTop:3}}>{l}</div>
+    </div>
+  );
+  return (
+    <div>
+      <h2 style={{color:"#fff",fontWeight:900,fontSize:20,marginBottom:6}}>Aktivität</h2>
+      <p style={{color:"#64748b",fontSize:12,marginBottom:16}}>Basiert auf dem synchronisierten Login-Protokoll aller Vereine.</p>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginBottom:18}}>
+        {card("Anmeldungen heute",todayCnt,"#d97706")}
+        {card("Anmeldungen (7 Tage)",week,"#2563eb")}
+        {card("Aktive Vereine (30 T.)",activeClubIds.size,"#16a34a")}
+        {card("Vereine gesamt",allClubs.length,"#7c3aed")}
+      </div>
+
+      <div style={{background:"#1e293b",borderRadius:14,padding:"16px",border:"1px solid #334155",marginBottom:18}}>
+        <div style={{fontSize:11,fontWeight:700,color:"#64748b",marginBottom:14}}>ANMELDUNGEN PRO TAG (LETZTE 14 TAGE)</div>
+        <div style={{display:"flex",alignItems:"flex-end",gap:4,height:120}}>
+          {days.map(d=>(
+            <div key={d.ds} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+              <div style={{fontSize:10,color:"#94a3b8",fontWeight:700}}>{d.cnt||""}</div>
+              <div style={{width:"100%",height:`${Math.round(d.cnt/maxCnt*80)}px`,minHeight:d.cnt?4:1,background:d.ds===today?"#d97706":"#7c3aed",borderRadius:"4px 4px 0 0",transition:"height .3s"}}/>
+              <div style={{fontSize:8.5,color:"#475569",transform:"rotate(-45deg)",whiteSpace:"nowrap",marginTop:2}}>{d.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{background:"#1e293b",borderRadius:14,padding:"16px",border:"1px solid #334155"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+          <div style={{fontSize:11,fontWeight:700,color:"#64748b"}}>VEREINE – ZULETZT ONLINE (ÄLTESTE ZUERST)</div>
+          {stale>0&&<span style={{fontSize:10.5,fontWeight:800,color:"#fca5a5",background:"#450a0a",borderRadius:6,padding:"2px 8px"}}>{stale} über 1 Jahr inaktiv</span>}
+        </div>
+        {clubRows.length===0&&<p style={{color:"#475569",fontSize:13}}>Noch keine Vereine.</p>}
+        {clubRows.map(c=>{
+          const danger = c.daysAgo!=null && c.daysAgo>=365;
+          const warn = c.daysAgo!=null && c.daysAgo>=300 && c.daysAgo<365;
+          return (
+            <div key={c.id} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 0",borderBottom:"1px solid #283548"}}>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:13,fontWeight:700,color:"#e2e8f0",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{c.name}</div>
+                <div style={{fontSize:11,color:"#64748b"}}>{c.lastActive?new Date(c.lastActive).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"}):"noch nie eingeloggt"}</div>
+              </div>
+              <div style={{fontSize:11,fontWeight:800,color:danger?"#fca5a5":warn?"#fbbf24":"#16a34a",whiteSpace:"nowrap"}}>
+                {c.daysAgo==null?"–":c.daysAgo===0?"heute":c.daysAgo+" Tage"}
+              </div>
+            </div>
+          );
+        })}
+        <p style={{fontSize:11,color:"#475569",marginTop:12,lineHeight:1.5}}>Vereine ohne Anmeldung seit über 1 Jahr sind rot markiert – Kandidaten für eine Bereinigung.</p>
+      </div>
+    </div>
+  );
+}
+
 function SuperAdminClubs({ data, allClubs, allTeams, allPlayers }) {
   const [search, setSearch] = useState("");
   const [selClub, setSelClub] = useState(null);
@@ -6528,7 +7547,7 @@ function SuperAdminSettings() {
           style={{padding:"9px 16px",borderRadius:10,border:"none",
             background:"#dc2626",color:"#fff",fontWeight:700,fontSize:13,
             cursor:"pointer",fontFamily:"inherit"}}>
-          Analytics zuruecksetzen
+          Analytics zurücksetzen
         </button>
       </div>
     </div>
@@ -6882,7 +7901,7 @@ function SuperAdminModeration() {
                   style={{padding:"5px 10px",borderRadius:8,border:"1px solid #334155",
                     background:"transparent",color:"#64748b",fontWeight:600,
                     fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>
-                  Zuruecksetzen
+                  Zurücksetzen
                 </button>
               </div>
             </div>
@@ -7716,6 +8735,231 @@ const DEMO_CLUBS = [
    VEREINS-ADMIN EINSTELLUNGEN (komplett neu)
    Strukturiert in 7 Bereiche
 ================================================================= */
+// Editor für die Soll-/Zielwerte der Skill-Profile pro Altersklasse (überschreibt Defaults)
+// Editor für die Positions-Gewichtung (welche Skill-Achse zählt wie stark je Position)
+function PositionWeightsEditor({ data, cid, save, fire, cl, sport="fussball" }) {
+  const t = TH(cl);
+  const positions = POSITIONS_FOR(sport);
+  const axes = skillAxesFor(sport);
+  const [pos, setPos] = useState(positions[0]||"");
+  const ov = cl?.positionWeights?.[sport] || {};
+  const base = POSITION_WEIGHTS[sport]||{};
+  const current = (ov[pos]) || base[pos] || {};
+  const hasOverride = !!(ov[pos]);
+
+  const setWeight = (axis, val) => {
+    const posObj = {...(ov[pos]||base[pos]||{})};
+    if(val<=0) delete posObj[axis]; else posObj[axis]=val;
+    const nextSport = {...ov, [pos]:posObj};
+    const updated = {...cl, positionWeights:{...(cl?.positionWeights||{}), [sport]:nextSport}};
+    save({...data, clubs:(data.clubs||[]).map(x=>x.id===cid?updated:x)});
+  };
+  const resetPos = () => {
+    const nextSport = {...ov}; delete nextSport[pos];
+    const updated = {...cl, positionWeights:{...(cl?.positionWeights||{}), [sport]:nextSport}};
+    save({...data, clubs:(data.clubs||[]).map(x=>x.id===cid?updated:x)});
+    fire&&fire(pos+" auf Standard zurückgesetzt");
+  };
+
+  if(positions.length===0) return null;
+  return (
+    <div style={{marginTop:24}}>
+      <div style={{fontWeight:800,fontSize:16,color:"#0f172a",marginBottom:4}}>Positions-Gewichtung</div>
+      <div style={{background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:12,padding:"11px 14px",marginBottom:14,fontSize:12.5,color:"#1e40af",lineHeight:1.55}}>
+        Hier legst du fest, welche Fähigkeiten für welche Position wie wichtig sind (0 = unwichtig, 3 = sehr wichtig). Daraus berechnet die App die Positions-Eignung jedes Spielers in Prozent.
+      </div>
+
+      <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:14}}>
+        {positions.map(p=>(
+          <button key={p} onClick={()=>setPos(p)}
+            style={{padding:"7px 14px",borderRadius:99,border:`1.5px solid ${pos===p?t.p:"#e2e8f0"}`,background:pos===p?t.p:"#fff",color:pos===p?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
+            {p}{ov[p]&&<span style={{marginLeft:5,fontSize:10,opacity:.8}}>•</span>}
+          </button>
+        ))}
+      </div>
+
+      <div style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",padding:"16px"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+          <div style={{fontWeight:800,fontSize:15,color:"#0f172a"}}>Gewichtung {pos}</div>
+          <span style={{fontSize:11,fontWeight:700,color:hasOverride?t.p:"#94a3b8",background:hasOverride?t.p+"15":"#f1f5f9",borderRadius:7,padding:"3px 9px"}}>
+            {hasOverride?"Angepasst":"Standard"}
+          </span>
+        </div>
+        {axes.map(ax=>{
+          const v = Number(current[ax])||0;
+          return (
+            <div key={ax} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+              <span style={{flex:1,fontSize:13,fontWeight:600,color:"#334155"}}>{ax}</span>
+              <div style={{display:"flex",gap:3}}>
+                {[0,1,2,3].map(n=>(
+                  <button key={n} onClick={()=>setWeight(ax,n)}
+                    style={{width:30,height:28,borderRadius:7,border:`1.5px solid ${n===v?t.p:"#e2e8f0"}`,background:n===v?t.p:"#fff",color:n===v?"#fff":"#94a3b8",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{n}</button>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+        {hasOverride && (
+          <button onClick={resetPos} style={{marginTop:14,width:"100%",padding:"11px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+            Auf Standard zurücksetzen
+          </button>
+        )}
+      </div>
+      <div style={{marginTop:10,fontSize:11,color:"#94a3b8",lineHeight:1.5}}>
+        Die Gewichtung wirkt sofort auf die Positions-Eignung in allen Spielerprofilen. Standardwerte sind ein Vorschlag.
+      </div>
+    </div>
+  );
+}
+
+// Editor für die Spielform-Werte (Feld/Tore/Ball/Spielzeit) pro Altersklasse
+function PlayFormatsEditor({ data, cid, save, fire, cl, allowedCats=null }) {
+  const t = TH(cl);
+  const cats = Object.keys(PLAY_FORMATS).filter(c=>!allowedCats||allowedCats.includes(c));
+  const [cat, setCat] = useState(cats[0]||"G-Jugend");
+  const ov = cl?.playFormats || {};
+  const current = playFormatFor(cl, cat);
+  const hasOverride = !!(ov[cat]);
+  const FIELDS = [
+    ["form","Spielform"],["field","Spielfeld"],["goals","Tore"],["ball","Ball"],["time","Spielzeit"],["note","Hinweis"],
+  ];
+  const setField = (key, val) => {
+    const catObj = {...(ov[cat]||{})};
+    // erst alle aktuellen Werte festhalten, dann ändern
+    FIELDS.forEach(([k])=>{ if(catObj[k]===undefined && current[k]!==undefined) catObj[k]=current[k]; });
+    catObj[key] = val;
+    const updated = {...cl, playFormats:{...ov, [cat]:catObj}};
+    save({...data, clubs:(data.clubs||[]).map(x=>x.id===cid?updated:x)});
+  };
+  const resetCat = () => {
+    const next = {...ov}; delete next[cat];
+    const updated = {...cl, playFormats:next};
+    save({...data, clubs:(data.clubs||[]).map(x=>x.id===cid?updated:x)});
+    fire&&fire(cat+" auf Standard zurückgesetzt");
+  };
+
+  return (
+    <div style={{marginTop:24}}>
+      <div style={{fontWeight:800,fontSize:16,color:"#0f172a",marginBottom:4}}>Spielform-Vorgaben</div>
+      <div style={{background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:12,padding:"11px 14px",marginBottom:14,fontSize:12.5,color:"#1e40af",lineHeight:1.55}}>
+        Feld, Tore, Ball und Spielzeit pro Altersklasse. Die Startwerte folgen den DFB-Empfehlungen – passt sie an die Durchführungsbestimmungen eures Landesverbands an.
+      </div>
+
+      <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:14}}>
+        {cats.map(c=>(
+          <button key={c} onClick={()=>setCat(c)}
+            style={{padding:"7px 13px",borderRadius:99,border:`1.5px solid ${cat===c?t.p:"#e2e8f0"}`,background:cat===c?t.p:"#fff",color:cat===c?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
+            {c}{ov[c]&&<span style={{marginLeft:5,fontSize:10,opacity:.8}}>•</span>}
+          </button>
+        ))}
+      </div>
+
+      <div style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",padding:"16px"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+          <div style={{fontWeight:800,fontSize:15,color:"#0f172a"}}>Spielform {cat}</div>
+          <span style={{fontSize:11,fontWeight:700,color:hasOverride?t.p:"#94a3b8",background:hasOverride?t.p+"15":"#f1f5f9",borderRadius:7,padding:"3px 9px"}}>
+            {hasOverride?"Angepasst":"Standard"}
+          </span>
+        </div>
+        {FIELDS.map(([key,label])=>(
+          <div key={key} style={{marginBottom:11}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:4,letterSpacing:.4}}>{label.toUpperCase()}</div>
+            <input value={current[key]||""} onChange={e=>setField(key,e.target.value)}
+              style={{width:"100%",padding:"10px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",boxSizing:"border-box"}}/>
+          </div>
+        ))}
+        {hasOverride && (
+          <button onClick={resetCat} style={{marginTop:8,width:"100%",padding:"11px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+            Auf Standard zurücksetzen
+          </button>
+        )}
+      </div>
+      <div style={{marginTop:10,fontSize:11,color:"#94a3b8",lineHeight:1.5}}>
+        Quelle der Startwerte: <a href={PLAY_FORMAT_SOURCE.url} target="_blank" rel="noopener noreferrer" style={{color:t.p,fontWeight:700}}>{PLAY_FORMAT_SOURCE.label}</a>. Änderungen erscheinen sofort in der Spielform-Anzeige der Mannschaften.
+      </div>
+    </div>
+  );
+}
+
+function SkillTargetsEditor({ data, cid, save, fire, cl, sport="fussball", allowedCats=null }) {
+  const t = TH(cl);
+  const axes = skillAxesFor(sport);
+  const cats = CAT_ORDER.filter(c=>CAT_RANK[c]!==undefined).filter(c=>!allowedCats||allowedCats.includes(c));
+  const [cat, setCat] = useState(cats[0]||"E-Jugend");
+  const targets = cl?.skillTargets || {};
+  // aktuelle Werte (Override falls vorhanden, sonst Default)
+  const current = sollFor(cl, cat, axes);
+  const hasOverride = !!(targets[cat]);
+
+  const setVal = (axis, val) => {
+    const catObj = {...(targets[cat]||{})};
+    axes.forEach((a,i)=>{ if(catObj[a]===undefined) catObj[a]=current[i]; }); // erst alle aktuellen festhalten
+    catObj[axis] = val;
+    const updated = {...cl, skillTargets:{...targets,[cat]:catObj}};
+    save({...data, clubs:(data.clubs||[]).map(x=>x.id===cid?updated:x)});
+  };
+  const resetCat = () => {
+    const next = {...targets}; delete next[cat];
+    const updated = {...cl, skillTargets:next};
+    save({...data, clubs:(data.clubs||[]).map(x=>x.id===cid?updated:x)});
+    fire&&fire(cat+" auf Standard zurückgesetzt");
+  };
+
+  return (
+    <div>
+      <div style={{background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:12,padding:"11px 14px",marginBottom:14,fontSize:12.5,color:"#1e40af",lineHeight:1.55}}>
+        Hier legst du fest, welches Skill-Niveau in welcher Altersklasse angestrebt wird. Diese Ziellinie erscheint im Spinnennetz jedes Spielers. Die Startwerte sind ein Vorschlag (steigend mit dem Alter) – passt sie an eure Ausbildungskonzeption an.
+      </div>
+
+      <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.4}}>ALTERSKLASSE</div>
+      <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:16}}>
+        {cats.map(c=>(
+          <button key={c} onClick={()=>setCat(c)}
+            style={{padding:"7px 13px",borderRadius:99,border:`1.5px solid ${cat===c?t.p:"#e2e8f0"}`,background:cat===c?t.p:"#fff",color:cat===c?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",position:"relative"}}>
+            {c}{targets[c]&&<span style={{marginLeft:5,fontSize:10,opacity:.8}}>•</span>}
+          </button>
+        ))}
+      </div>
+
+      <div style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",padding:"16px"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+          <div style={{fontWeight:800,fontSize:15,color:"#0f172a"}}>Zielwerte {cat}</div>
+          <span style={{fontSize:11,fontWeight:700,color:hasOverride?t.p:"#94a3b8",background:hasOverride?t.p+"15":"#f1f5f9",borderRadius:7,padding:"3px 9px"}}>
+            {hasOverride?"Angepasst":"Standard"}
+          </span>
+        </div>
+
+        {axes.map((ax,i)=>(
+          <div key={ax} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+            <span style={{flex:1,fontSize:13,fontWeight:600,color:"#334155"}}>{ax}</span>
+            <div style={{display:"flex",gap:3}}>
+              {[1,2,3,4,5].map(n=>(
+                <button key={n} onClick={()=>setVal(ax,n)}
+                  style={{width:28,height:28,borderRadius:7,border:`1.5px solid ${n<=current[i]?t.p:"#e2e8f0"}`,background:n<=current[i]?t.p:"#fff",color:n<=current[i]?"#fff":"#cbd5e1",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{n}</button>
+              ))}
+            </div>
+          </div>
+        ))}
+
+        <div style={{marginTop:16,background:"#f8fafc",borderRadius:14,padding:"14px 10px"}}>
+          <SpiderChart axes={axes} values={current} color="#f59e0b" size={230}/>
+          <div style={{textAlign:"center",fontSize:11,fontWeight:700,color:"#94a3b8",marginTop:6}}>Ziel-Profil {cat}</div>
+        </div>
+
+        {hasOverride && (
+          <button onClick={resetCat} style={{marginTop:14,width:"100%",padding:"11px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+            Auf Standard zurücksetzen
+          </button>
+        )}
+      </div>
+
+      <div style={{marginTop:12,fontSize:11,color:"#94a3b8",lineHeight:1.5}}>
+        Quelle der Startwerte: <a href={SKILL_SOURCE.url} target="_blank" rel="noopener noreferrer" style={{color:t.p,fontWeight:700}}>{SKILL_SOURCE.label}</a>. Änderungen wirken sofort für alle Spieler dieser Altersklasse.
+      </div>
+    </div>
+  );
+}
+
 function ClubAdminSettings({ data, cid, save, fire, cl }) {
   const t = TH(cl);
   const myClub = (data.clubs||[]).find(x=>x.id===cid)||{};
@@ -7747,6 +8991,7 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
     {id:"sport",       label:"Sportart",      icon:"S"},
     {id:"features",    label:"Module",        icon:"M"},
     {id:"team",        label:"Team",          icon:"T"},
+    {id:"ziele",       label:"Trainingsziele",icon:"Z"},
     {id:"komm",        label:"Kommunikation", icon:"K"},
     {id:"sicherheit",  label:"Sicherheit",    icon:"Si"},
     {id:"datenschutz", label:"Datenschutz",   icon:"D"},
@@ -7943,11 +9188,20 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
             <Row title="Anwesenheit sichtbar fuer Eltern" sub="Wer hat abgestimmt">
               <Toggle val={S("showAttendance",false)} onChange={v=>saveSetting("showAttendance",v)}/>
             </Row>
-            <Row title="Vergangene Termine anzeigen" sub="Wie viele Tage zurueck" last>
+            <Row title="Vergangene Termine anzeigen" sub="Wie viele Tage zurück" last>
               <Select value={S("pastDays",30)} onChange={v=>saveSetting("pastDays",Number(v))}
                 opts={[["7","7 Tage"],["14","14 Tage"],["30","30 Tage"],["60","60 Tage"],["90","90 Tage"]]}/>
             </Row>
           </div>
+        </>
+      )}
+
+      {/* SKILL-ZIELE */}
+      {section==="ziele"&&(
+        <>
+          <SkillTargetsEditor data={data} cid={cid} save={save} fire={fire} cl={myClub} sport={sport}/>
+          {sport==="fussball" && <PositionWeightsEditor data={data} cid={cid} save={save} fire={fire} cl={myClub} sport={sport}/>}
+          {sport==="fussball" && <PlayFormatsEditor data={data} cid={cid} save={save} fire={fire} cl={myClub}/>}
         </>
       )}
 
@@ -8245,11 +9499,11 @@ function DesktopSidebar({ tab, setTab, isAdmin, isHelper, unread, cl, session, o
   ];
 
   const trainerItems = [
-    { id:"training",   label:"Trainingsplan",  icon:"TP" },
-    { id:"jerseys",    label:"Trikots",        icon:"Tr" },
+    { id:"training",   label:"Trainingsplan",  icon:"TP", hidden: isHelper },
+    { id:"jerseys",    label:"Trikots",        icon:"Tr", hidden: isHelper },
     { id:"helpers",    label:"Helfer",         icon:"H",  hidden: isHelper },
-    { id:"attendance", label:"Anwesenheit",    icon:"S" },
-    { id:"results",    label:"Ergebnisse",     icon:"E" },
+    { id:"attendance", label:"Anwesenheit",    icon:"S",  hidden: isHelper },
+    { id:"results",    label:"Ergebnisse",     icon:"E",  hidden: isHelper },
     { id:"inbox",      label:"Posteingang",    icon:"I" },
   ].filter(x=>!x.hidden);
 
@@ -8278,7 +9532,7 @@ function DesktopSidebar({ tab, setTab, isAdmin, isHelper, unread, cl, session, o
           color: active ? "#fff" : "#64748b",
           flexShrink:0, transition:"all .15s",
         }}>
-          {item.icon}
+          {HAS_ICON.has(item.id)?<NavIcon name={item.id} size={18}/>:item.icon}
         </div>
         <span style={{flex:1}}>{item.label}</span>
         {item.badge > 0 && (
@@ -8909,11 +10163,14 @@ function SetupWizard({ onDone,onBack }) {
                 <div style={{color:"rgba(255,255,255,.35)",fontSize:11,marginTop:1}}>Andere koennen deinen Verein auf der Startseite finden</div>
               </div>
             </label>
+            <div style={{marginTop:14,background:"rgba(251,191,36,.1)",border:"1px solid rgba(251,191,36,.3)",borderRadius:11,padding:"11px 13px",fontSize:11.5,color:"#fcd34d",lineHeight:1.5}}>
+              <b>Hinweis:</b> Wird der Verein länger als 1 Jahr nicht genutzt (keine Anmeldung), kann er automatisch gelöscht werden, um Altlasten zu vermeiden. Logge dich einfach gelegentlich ein, um ihn aktiv zu halten.
+            </div>
           </>}
 
           {}
           <div style={{display:"flex",gap:9}}>
-            {step>1&&<button onClick={()=>setStep(s=>s-1)} style={{flex:1,padding:"12px",borderRadius:13,border:"1.5px solid rgba(255,255,255,.15)",background:"transparent",color:"rgba(255,255,255,.6)",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Zurueck</button>}
+            {step>1&&<button onClick={()=>setStep(s=>s-1)} style={{flex:1,padding:"12px",borderRadius:13,border:"1.5px solid rgba(255,255,255,.15)",background:"transparent",color:"rgba(255,255,255,.6)",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Zurück</button>}
             {step<3
               ?<button onClick={()=>ok()&&setStep(s=>s+1)} disabled={!ok()} style={{flex:2,padding:"12px",borderRadius:13,border:"none",background:ok()?"#16a34a":"rgba(255,255,255,.1)",color:ok()?"#fff":"rgba(255,255,255,.3)",fontWeight:800,fontSize:15,cursor:ok()?"pointer":"default",fontFamily:"inherit"}}>Weiter</button>
               :<button onClick={()=>ok()&&finish()} disabled={!ok()} style={{flex:2,padding:"12px",borderRadius:13,border:"none",background:ok()?"#16a34a":"rgba(255,255,255,.1)",color:ok()?"#fff":"rgba(255,255,255,.3)",fontWeight:800,fontSize:15,cursor:ok()?"pointer":"default",fontFamily:"inherit"}}>Verein anlegen</button>
@@ -9127,7 +10384,7 @@ function RolePicker({cl,onRole,onBack}) {
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s} 0%,${t.p}66 100%)`}}>
       <style>{CSS}</style>
       <div style={{padding:"50px 22px 0",maxWidth:440,margin:"0 auto"}}>
-        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:32}}>← Zurueck</button>
+        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:32}}>← Zurück</button>
         <div className="up" style={{display:"flex",flexDirection:"column",alignItems:"center",marginBottom:40}}>
           <Logo cl={cl} sz={80}/>
           <h1 style={{color:"#fff",fontSize:26,fontWeight:900,letterSpacing:-.5,margin:"14px 0 6px",textAlign:"center"}}>{cl.name}</h1>
@@ -9180,7 +10437,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
       <style>{CSS}</style>
       <div style={{padding:"48px 20px 0",maxWidth:460,margin:"0 auto"}}>
         <button onClick={step==="cat"?onBack:step==="trainer"?()=>setStep("cat"):()=>{setStep("trainer");setPw("");setErr(false);}}
-          style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:28}}>← Zurueck</button>
+          style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:28}}>← Zurück</button>
         {children}
       </div>
     </div>
@@ -9236,7 +10493,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
   return (
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s},${t.p}66)`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,position:"relative"}}>
       <style>{CSS}</style>
-      <button onClick={()=>{setStep(trainersInCat.length>1?"trainer":"cat");setPw("");setErr(false);}} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}>← Zurueck</button>
+      <button onClick={()=>{setStep(trainersInCat.length>1?"trainer":"cat");setPw("");setErr(false);}} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}>← Zurück</button>
       <div className="up" style={{width:"100%",maxWidth:370}}>
         <div style={{textAlign:"center",marginBottom:28}}>
           <Av name={selTr?.name||"?"} sz={72} sx={{margin:"0 auto 14px"}}/>
@@ -9275,7 +10532,7 @@ function AdminLogin({cl,onLogin,onBack}) {
     <div style={{minHeight:"100dvh",background:`linear-gradient(135deg,${t.s},${t.p}66)`,display:"flex",alignItems:"center",justifyContent:"center",padding:22}}>
       <style>{CSS}</style>
       <div className="up" style={{width:"100%",maxWidth:390}}>
-        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:26}}>← Zurueck</button>
+        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:26}}>← Zurück</button>
         <div style={{background:"#fff",borderRadius:24,padding:"34px 26px",boxShadow:"0 24px 80px rgba(0,0,0,.4)"}}>
           <div style={{textAlign:"center",marginBottom:22}}><Logo cl={cl} sz={68} sx={{margin:"0 auto 12px"}}/><h2 style={{fontSize:22,fontWeight:900,color:"#0f172a",margin:"0 0 4px"}}>Vereinsadmin</h2><p style={{color:"#94a3b8",fontSize:13}}>{cl.name}</p></div>
           <Inp label="Admin-Passwort" type="password" val={pw} set={setPw} ph="Passwort..." af cl={cl}/>
@@ -9301,7 +10558,9 @@ function HelperLogin({cl,helpers,onLogin,onBack}) {
   const [code,setCode]=useState(""); const [err,setErr]=useState(false);
   const clHelpers=(helpers||[]).filter(h=>h.cid===cl.id&&h.active!==false);
   const go=()=>{
-    const h=clHelpers.find(x=>x.code===code.trim());
+    const entered=code.trim();
+    // Klartext-Vergleich (Normalfall); Fallback: alte, versehentlich gehashte Codes aus früherer Version
+    const h=clHelpers.find(x=>x.code===entered) || clHelpers.find(x=>x.code&&x.code.startsWith("s")&&hashPw(entered)===x.code) || clHelpers.find(x=>x.code&&x.code.startsWith("h")&&checkPw(entered,x.code));
     if(h){onLogin({id:h.id,role:"helper",cid:cl.id,name:h.name,helperId:h.id});}
     else{setErr(true);setTimeout(()=>setErr(false),1800);}
   };
@@ -9309,7 +10568,7 @@ function HelperLogin({cl,helpers,onLogin,onBack}) {
     <div style={{minHeight:"100dvh",background:`linear-gradient(135deg,${t.s},${t.p}66)`,display:"flex",alignItems:"center",justifyContent:"center",padding:22}}>
       <style>{CSS}</style>
       <div className="up" style={{width:"100%",maxWidth:390}}>
-        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:26}}>← Zurueck</button>
+        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:26}}>← Zurück</button>
         <div style={{background:"#fff",borderRadius:24,padding:"34px 26px",boxShadow:"0 24px 80px rgba(0,0,0,.3)"}}>
           <div style={{textAlign:"center",marginBottom:22}}>
             <div style={{fontSize:52,marginBottom:8}}></div>
@@ -9336,14 +10595,22 @@ function HelperLogin({cl,helpers,onLogin,onBack}) {
   );
 }
 
-function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
+function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid}) {
   const t=TH(cl);
   const [step,setStep]=useState("cat");
   const [cat,setCat]=useState(null);
   const [tid,setTid]=useState(null);
-  const [q,setQ]=useState("");
+  const [q,setQ]=useState(""); 
   const [pwd,setPwd]=useState(""); const [pwdErr,setPwdErr]=useState(false);
   const [showForgotParent,setShowForgotParent]=useState(false);
+  // Direktlink: Team vorauswählen und direkt zum Passwort-Schritt springen
+  React.useEffect(()=>{
+    if(preselectTid){
+      const pt=teams.find(x=>x.id===preselectTid);
+      if(pt){ setCat(pt.cat||pt.name); setTid(pt.id); setStep("pwd"); }
+    }
+  // eslint-disable-next-line
+  },[preselectTid]);
   const ct=teams.find(x=>x.id===tid);
   const cats=[...new Set(teams.map(tm=>tm.cat||tm.name))];
   const teamsInCat=cat?teams.filter(tm=>(tm.cat||tm.name)===cat):[];
@@ -9363,7 +10630,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s} 0%,${t.p}66 100%)`}}>
       <style>{CSS}</style>
       <div style={{padding:"48px 20px 0",maxWidth:460,margin:"0 auto"}}>
-        <button onClick={goBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:28}}>← Zurueck</button>
+        <button onClick={goBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:28}}>← Zurück</button>
         <div className="up" style={{display:"flex",flexDirection:"column",alignItems:"center",marginBottom:32}}>
           <Logo cl={cl} sz={64}/>
           <h2 style={{color:"#fff",fontSize:24,fontWeight:900,margin:"12px 0 4px",textAlign:"center"}}>{title}</h2>
@@ -9406,7 +10673,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
   if(step==="pwd") return (
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s},${t.p}66)`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,position:"relative"}}>
       <style>{CSS}</style>
-      <button onClick={goBack} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}>← Zurueck</button>
+      <button onClick={goBack} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}>← Zurück</button>
       <div className="up" style={{width:"100%",maxWidth:370}}>
         <div style={{textAlign:"center",marginBottom:28}}>
           <div style={{width:72,height:72,borderRadius:22,background:ct?.col+"33",border:`1.5px solid ${ct?.col}66`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:38,margin:"0 auto 14px"}}>{ct?.icon}</div>
@@ -9445,7 +10712,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
   if(step==="locked") return (
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s},${t.p}66)`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
       <style>{CSS}</style>
-      <button onClick={()=>setStep("pwd")} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}>← Zurueck</button>
+      <button onClick={()=>setStep("pwd")} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}>← Zurück</button>
       <div className="up" style={{textAlign:"center",maxWidth:340}}>
         <div style={{fontSize:64,marginBottom:16}}></div>
         <h2 style={{color:"#fff",fontSize:22,fontWeight:900,margin:"0 0 12px"}}>{ct?.name}</h2>
@@ -9459,7 +10726,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
           </div>
         </div>
         <button onClick={()=>setStep("pwd")} style={{marginTop:20,padding:"12px 28px",borderRadius:13,border:"1.5px solid rgba(255,255,255,.3)",background:"transparent",color:"rgba(255,255,255,.7)",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
-          ← Zurueck zum Login
+          ← Zurück zum Login
         </button>
       </div>
     </div>
@@ -9467,7 +10734,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
   return (
     <div style={{minHeight:"100dvh",background:"#f0f4f8",display:"flex",flexDirection:"column"}}>
       <div style={{background:`linear-gradient(135deg,${t.s},${t.p}99)`,padding:"16px 18px 22px"}}>
-        <button onClick={goBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:14}}>← Zurueck</button>
+        <button onClick={goBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:14}}>← Zurück</button>
         <div style={{display:"flex",alignItems:"center",gap:12}}><Logo cl={cl} sz={40}/><div><div style={{color:"rgba(255,255,255,.6)",fontSize:12,fontWeight:700}}>{ct?.icon} {ct?.name}</div><div style={{color:"#fff",fontSize:20,fontWeight:900}}>Wer bist du?</div></div></div>
       </div>
       <div style={{padding:"12px 14px 0",background:"#f0f4f8",position:"sticky",top:0,zIndex:10}}>
@@ -9738,6 +11005,68 @@ const SKILL_AXES = {
 };
 const skillAxesFor = sport => SKILL_AXES[sport] || SKILL_AXES.mehrzweck;
 
+// Positions-Eignung: welche Skill-Achsen zählen wie stark je Position (Vorschlag, anpassbar).
+// Nur für Fußball; Werte 0..3 = Gewicht. Achsen, die hier fehlen, zählen mit 0.
+const POSITION_WEIGHTS = {
+  fussball: {
+    "Tor":       { Uebersicht:3, Zweikampf:2, Teamplay:2, Technik:1 },
+    "Abwehr":    { Zweikampf:3, Uebersicht:2, Teamplay:2, Ausdauer:2, Technik:1 },
+    "Mittelfeld":{ Technik:3, Uebersicht:3, Teamplay:2, Ausdauer:2, Schnelligkeit:1 },
+    "Sturm":     { Abschluss:3, Schnelligkeit:3, Technik:2, Zweikampf:1 },
+  },
+};
+const POSITIONS_FOR = sport => Object.keys(POSITION_WEIGHTS[sport]||{});
+// Liefert die Gewichtungs-Tabelle für eine Sportart, mit Vereins-Override (cl.positionWeights[sport])
+function positionWeightsFor(cl, sport) {
+  const base = POSITION_WEIGHTS[sport] || {};
+  const ov = cl?.positionWeights?.[sport] || null;
+  if(!ov) return base;
+  // pro Position das Override-Objekt nehmen, falls vorhanden, sonst Default
+  const out = {};
+  for(const pos of Object.keys(base)) out[pos] = ov[pos] || base[pos];
+  return out;
+}
+// Liefert [{pos, pct}] absteigend sortiert; pct = gewichteter Skill-Schnitt in % (0..100)
+function positionFit(sport, skills, cl=null) {
+  const table = positionWeightsFor(cl, sport); if(!table || !skills) return [];
+  const out = [];
+  for(const pos of Object.keys(table)){
+    const w = table[pos];
+    let sum=0, wsum=0;
+    for(const ax of Object.keys(w)){
+      const val = Number(skills[ax])||0;        // 0..5
+      if(val>0 && w[ax]>0){ sum += val*w[ax]; wsum += 5*w[ax]; } // max wäre 5 pro Achse
+    }
+    if(wsum>0) out.push({ pos, pct: Math.round((sum/wsum)*100) });
+  }
+  return out.sort((a,b)=>b.pct-a.pct);
+}
+
+// Welche Trainings-Übungstypen helfen bei welcher Skill-Achse (Vorschlag, lokal – keine externe KI)
+const AXIS_TRAINING = {
+  fussball: {
+    "Technik":      ["Ballkontrolle", "Dribbling-Parcours", "Passspiel im Quadrat"],
+    "Schnelligkeit":["Antritts-Sprints", "Reaktionsläufe", "Dribbling mit Tempo"],
+    "Zweikampf":    ["1-gegen-1-Duelle", "Abschirmen des Balls", "Tacklingtechnik"],
+    "Uebersicht":   ["Spielform mit Überzahl", "Kopf-hoch-Übungen", "Positionsspiel 4v2"],
+    "Abschluss":    ["Torschuss aus der Drehung", "Abschluss nach Flanke", "Direktabnahme"],
+    "Ausdauer":     ["Intervallläufe", "Spielform über volle Feldlänge", "Staffelläufe"],
+    "Teamplay":     ["Passstaffeln in der Gruppe", "Spielform mit Pflichtkontakten", "Kombinationsspiel"],
+  },
+};
+// Mannschafts-Durchschnitt pro Achse aus den Spielerprofilen
+function teamSkillAverages(players, axes) {
+  const sums = {}, counts = {};
+  axes.forEach(a=>{ sums[a]=0; counts[a]=0; });
+  for(const p of players){
+    const sk = p.skills||{};
+    axes.forEach(a=>{ const v=Number(sk[a])||0; if(v>0){ sums[a]+=v; counts[a]++; } });
+  }
+  return axes.map(a=> counts[a]>0 ? Math.round((sums[a]/counts[a])*10)/10 : 0 );
+}
+
+
+
 // Quelle fuer altersgerechte Zielwerte (offizielle Verbands-Konzeption)
 const SKILL_SOURCE = { label:"DFB-Ausbildungskonzeption", url:"https://training-service.fussball.de/trainer/bambinie/artikel/online-blaetterfunktion-dfb-ausbildungskonzeption-651/" };
 
@@ -9769,6 +11098,25 @@ const SOLL_PLAYERS_BY_CAT = {
   "C-Jugend":11,"B-Jugend":11,"A-Jugend":11,"Senioren":11,"Alt-Herren":11,"Frauen":11,"Maedchen":7
 };
 const defaultSollPlayers = cat => SOLL_PLAYERS_BY_CAT[cat] ?? 7;
+
+// DFB-Spielform-Vorgaben pro Altersklasse (Stand Saison 2024/25, verbindlich G/F/E).
+// Vorschlagswerte - Landesverbände können abweichen (Durchführungsbestimmungen).
+const PLAY_FORMATS = {
+  "Bambinis":  { form:"2v2 / 3v3", field:"ca. 20×25 m", goals:"4 Minitore, ohne Torwart", ball:"Größe 3 (290g)", time:"Durchgänge max. 7 Min", note:"Festival, keine Tabelle. Rotation nach jedem Tor." },
+  "G-Jugend":  { form:"2v2 / 3v3", field:"ca. 20×25 m", goals:"4 Minitore, ohne Torwart", ball:"Größe 3 (290g)", time:"max. 7 Durchgänge à 7 Min", note:"Festival, keine Tabelle. 4 Tore schulen Wahrnehmung." },
+  "F-Jugend":  { form:"3v3 / 4v4 / 5v5", field:"3v3: ca. 25×20 m · 4v4/5v5: ca. 40×25 m", goals:"4 Minitore; ab 4v4 optional 2 Kleinfeldtore (5×2 m) mit Torwart", ball:"Größe 3/4 (290–350g)", time:"max. 6 Durchgänge à 10–12 Min", note:"Festival, keine Tabelle. Rotation nach Tor oder 3 Min." },
+  "E-Jugend":  { form:"4v4 / 6v6 / 7v7", field:"7v7: ca. 55×35 m (kleinere Formen wie F-Jugend)", goals:"7v7: 2 Kleinfeldtore (5×2 m) mit Torwart", ball:"Größe 4 (350g)", time:"4 Mannschaften: 2×12 Min · 2 Mannschaften: 4×15 Min", note:"Festival, keine Tabelle. Rotation alle 3 Min per Pfiff." },
+  "D-Jugend":  { form:"9v9 (alt. 7v7/8v8)", field:"ca. 70×50 m", goals:"2 Tore 5×2 m", ball:"Größe 4/5", time:"2×30 Min", note:"Ab hier wieder fester Ligabetrieb mit Tabelle." },
+  "C-Jugend":  { form:"11v11", field:"Großfeld", goals:"normale Tore", ball:"Größe 5", time:"2×35 Min", note:"" },
+  "B-Jugend":  { form:"11v11", field:"Großfeld", goals:"normale Tore", ball:"Größe 5", time:"2×40 Min", note:"" },
+  "A-Jugend":  { form:"11v11", field:"Großfeld", goals:"normale Tore", ball:"Größe 5", time:"2×45 Min", note:"" },
+};
+const PLAY_FORMAT_SOURCE = { label:"DFB-Kinderfußball", url:"https://www.dfb.de/mehr-fussball/kinderfussball" };
+function playFormatFor(cl, cat) {
+  const override = cl?.playFormats?.[cat] || null;
+  return { ...(PLAY_FORMATS[cat]||{}), ...(override||{}) };
+}
+
 // Ampel: rot wenn 3+ unter Soll, gelb wenn 1-2 unter, sonst gruen
 function attendanceTone(yesCount, soll) {
   if(!soll || soll<=0) return null;
@@ -9778,6 +11126,43 @@ function attendanceTone(yesCount, soll) {
 }
 
 
+
+// Zeigt die Spielform-Vorgaben (Feld/Tore/Ball/Spielzeit) für eine Altersklasse
+function PlayFormatCard({ cat, sport="fussball", cl, compact=false }) {
+  const t = TH(cl);
+  if(sport!=="fussball") return null;
+  const fmt = playFormatFor(cl, cat);
+  if(!fmt || !fmt.form) return null;
+  const rows = [
+    ["Spielform", fmt.form],
+    ["Spielfeld", fmt.field],
+    ["Tore", fmt.goals],
+    ["Ball", fmt.ball],
+    ["Spielzeit", fmt.time],
+  ].filter(r=>r[1]);
+  return (
+    <div style={{background:"#fff",borderRadius:14,border:"1.5px solid #e2e8f0",padding:compact?"12px 14px":"16px",marginBottom:12}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+        <div style={{width:28,height:28,borderRadius:8,background:t.p,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+          <NavIcon name="fields" size={17} color="#fff"/>
+        </div>
+        <div style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>Spielform {cat}</div>
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:7}}>
+        {rows.map(([k,v])=>(
+          <div key={k} style={{display:"flex",gap:10,fontSize:13,lineHeight:1.45}}>
+            <span style={{width:78,flexShrink:0,color:"#94a3b8",fontWeight:700}}>{k}</span>
+            <span style={{color:"#334155",fontWeight:600}}>{v}</span>
+          </div>
+        ))}
+      </div>
+      {fmt.note && <div style={{marginTop:10,background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:9,padding:"8px 11px",fontSize:12,color:"#166534",lineHeight:1.5}}>{fmt.note}</div>}
+      <div style={{marginTop:9,fontSize:11,color:"#94a3b8",lineHeight:1.5}}>
+        Vorschlag nach <a href={PLAY_FORMAT_SOURCE.url} target="_blank" rel="noopener noreferrer" style={{color:t.p,fontWeight:700}}>{PLAY_FORMAT_SOURCE.label}</a> · Landesverband kann abweichen.
+      </div>
+    </div>
+  );
+}
 
 // Reines SVG-Spinnennetz (keine externe Bibliothek noetig)
 function SpiderChart({ axes, values, compareValues=null, size=260, color="#16a34a", compareColor="#94a3b8", max=5 }) {
@@ -9811,8 +11196,563 @@ function SpiderChart({ axes, values, compareValues=null, size=260, color="#16a34
   );
 }
 
+/* =================================================================
+   TRAININGS-DIAGRAMM (reines SVG) — Feld, Spieler, Pfeile, Tore, Hütchen
+   Koordinaten 0..100 (x) / 0..100 (y), Ursprung oben links.
+   element-Typen: player, opp, ball, cone, goal, passArrow, runArrow, dribbleArrow, zone, label
+================================================================= */
+function DrillDiagram({ field="half", elements=[], color="#16a34a", width=320, variant="grass" }) {
+  // Halbfeld: Hochformat (schmaler), Vollfeld: Querformat
+  const ratio = field==="full" ? 0.64 : 1.3;   // h/w
+  const W = 100, H = Math.round(100*ratio);
+  const px = x => (x/100)*W;
+  const py = y => (y/100)*H;
+  const chalk = variant==="chalk";
+  const kids = variant==="kids";
+  const lineCol = chalk ? "rgba(255,255,255,.85)" : kids ? "rgba(255,255,255,.7)" : "rgba(255,255,255,.55)";
+  const grass = chalk ? "#1c2530" : kids ? "#22c55e" : "#15803d";
+  const lineW = chalk ? 0.7 : 0.8;
+  const ownCol = chalk ? "#fff" : color;          // eigene Spieler
+  const arrowCol = chalk ? "#fff" : "#fff";
+
+  const arrowDefs = (
+    <defs>
+      <marker id="dd-arrow" markerWidth="6" markerHeight="6" refX="4.5" refY="3" orient="auto">
+        <path d="M0,0 L6,3 L0,6 Z" fill="#fff"/>
+      </marker>
+      <marker id="dd-arrow-ball" markerWidth="6" markerHeight="6" refX="4.5" refY="3" orient="auto">
+        <path d="M0,0 L6,3 L0,6 Z" fill={chalk?"#fff":"#fde047"}/>
+      </marker>
+    </defs>
+  );
+
+  const renderEl = (el, i) => {
+    const c = el.color || "#fff";
+    switch(el.type){
+      case "player": return (
+        <g key={i}>
+          {chalk ? (
+            <circle cx={px(el.x)} cy={py(el.y)} r="3.4" fill="none" stroke="#fff" strokeWidth="1"/>
+          ) : kids ? (
+            <circle cx={px(el.x)} cy={py(el.y)} r="4.5" fill="#fde047" stroke="#fff" strokeWidth="1.2"/>
+          ) : (
+            <circle cx={px(el.x)} cy={py(el.y)} r="3.4" fill={color} stroke="#fff" strokeWidth="0.8"/>
+          )}
+          {el.n!=null && !kids && <text x={px(el.x)} y={py(el.y)} fontSize="3.4" fontWeight="800" fill="#fff" textAnchor="middle" dominantBaseline="central">{el.n}</text>}
+          {el.label && <text x={px(el.x)} y={py(el.y)-5} fontSize={kids?"3.6":"3"} fontWeight="700" fill="#fff" textAnchor="middle">{el.label}</text>}
+        </g>
+      );
+      case "opp": return (
+        <g key={i}>
+          {chalk ? (
+            <g stroke="#fff" strokeWidth="1" strokeLinecap="round">
+              <line x1={px(el.x)-2.6} y1={py(el.y)-2.6} x2={px(el.x)+2.6} y2={py(el.y)+2.6}/>
+              <line x1={px(el.x)+2.6} y1={py(el.y)-2.6} x2={px(el.x)-2.6} y2={py(el.y)+2.6}/>
+            </g>
+          ) : kids ? (
+            <circle cx={px(el.x)} cy={py(el.y)} r="4.5" fill="#ef4444" stroke="#fff" strokeWidth="1.2"/>
+          ) : (
+            <>
+              <circle cx={px(el.x)} cy={py(el.y)} r="3.4" fill="#1e293b" stroke="#fff" strokeWidth="0.8"/>
+              {el.n!=null && <text x={px(el.x)} y={py(el.y)} fontSize="3.4" fontWeight="800" fill="#fff" textAnchor="middle" dominantBaseline="central">{el.n}</text>}
+            </>
+          )}
+        </g>
+      );
+      case "ball": return chalk
+        ? <g key={i}><circle cx={px(el.x)} cy={py(el.y)} r="2" fill="none" stroke="#fff" strokeWidth="0.9"/><circle cx={px(el.x)} cy={py(el.y)} r="0.7" fill="#fff"/></g>
+        : <circle key={i} cx={px(el.x)} cy={py(el.y)} r={kids?"2.6":"2"} fill="#fff" stroke="#1e293b" strokeWidth="0.6"/>;
+      case "cone": return <path key={i} d={`M ${px(el.x)} ${py(el.y)-3} L ${px(el.x)+2.2} ${py(el.y)+2} L ${px(el.x)-2.2} ${py(el.y)+2} Z`} fill={chalk?"none":"#f59e0b"} stroke="#fff" strokeWidth={chalk?"0.9":"0.4"}/>;
+      case "goal": {
+        const w=el.w||10;
+        return <rect key={i} x={px(el.x)-px(w)/2} y={py(el.y)-1} width={px(w)} height="2.4" fill="none" stroke="#fff" strokeWidth="1.2"/>;
+      }
+      case "zone": return <rect key={i} x={px(el.x)} y={py(el.y)} width={px(el.w||20)} height={py(el.h||20)} fill={chalk?"none":(el.color||color)+"22"} stroke={chalk?"rgba(255,255,255,.5)":(el.color||color)+"66"} strokeWidth="0.6" strokeDasharray="2 1.5" rx="1"/>;
+      case "passArrow": case "runArrow": case "dribbleArrow": {
+        const dash = el.type==="passArrow" ? "3 2" : el.type==="dribbleArrow" ? "0.5 2" : "none";
+        const stroke = (el.ball&&!chalk) ? "#fde047" : "#fff";
+        const marker = (el.ball&&!chalk) ? "url(#dd-arrow-ball)" : "url(#dd-arrow)";
+        return <line key={i} x1={px(el.x1)} y1={py(el.y1)} x2={px(el.x2)} y2={py(el.y2)}
+          stroke={stroke} strokeWidth="1" strokeDasharray={dash} markerEnd={marker}/>;
+      }
+      case "label": return <text key={i} x={px(el.x)} y={py(el.y)} fontSize="3.2" fontWeight="700" fill="#fff" textAnchor="middle">{el.text}</text>;
+      default: return null;
+    }
+  };
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width={width} style={{maxWidth:"100%",display:"block",borderRadius:10,background:grass}}>
+      {arrowDefs}
+      {/* Rasenstreifen nur im Rasen-Stil */}
+      {!chalk && Array.from({length:6}).map((_,i)=>(
+        <rect key={i} x="0" y={(H/6)*i} width={W} height={H/6} fill={i%2?"rgba(255,255,255,.04)":"transparent"}/>
+      ))}
+      {/* Feldbegrenzung */}
+      <rect x="2" y="2" width={W-4} height={H-4} fill="none" stroke={lineCol} strokeWidth="0.8"/>
+      {field==="full" ? (
+        <>
+          <line x1={W/2} y1="2" x2={W/2} y2={H-2} stroke={lineCol} strokeWidth="0.8"/>
+          <circle cx={W/2} cy={H/2} r="9" fill="none" stroke={lineCol} strokeWidth="0.8"/>
+          <rect x="2" y={H/2-12} width="10" height="24" fill="none" stroke={lineCol} strokeWidth="0.8"/>
+          <rect x={W-12} y={H/2-12} width="10" height="24" fill="none" stroke={lineCol} strokeWidth="0.8"/>
+        </>
+      ) : (
+        <>
+          {/* Halbfeld: Strafraum oben, Mittellinie unten angedeutet */}
+          <rect x={W/2-18} y="2" width="36" height="14" fill="none" stroke={lineCol} strokeWidth="0.8"/>
+          <rect x={W/2-8} y="2" width="16" height="6" fill="none" stroke={lineCol} strokeWidth="0.8"/>
+          <circle cx={W/2} cy="22" r="6" fill="none" stroke={lineCol} strokeWidth="0.8"/>
+          <line x1="2" y1={H-2} x2={W-2} y2={H-2} stroke={lineCol} strokeWidth="0.8"/>
+        </>
+      )}
+      {elements.map(renderEl)}
+    </svg>
+  );
+}
+
+/* =================================================================
+   TRAININGS-BIBLIOTHEK — Übungen mit Diagramm, Schwerpunkt-Filter
+   focus: technik | taktik | kondition | spielform | torschuss | aufwaermen
+================================================================= */
+const DRILL_FOCUS = [
+  { id:"aufwaermen", label:"Aufwärmen",  col:"#f59e0b" },
+  { id:"technik",    label:"Technik",    col:"#2563eb" },
+  { id:"taktik",     label:"Taktik",     col:"#7c3aed" },
+  { id:"torschuss",  label:"Torschuss",  col:"#dc2626" },
+  { id:"kondition",  label:"Kondition",  col:"#0891b2" },
+  { id:"spielform",  label:"Spielform",  col:"#16a34a" },
+];
+const DRILL_LIB = [
+  // ---- AUFWÄRMEN ----
+  { id:"d01", focus:"aufwaermen", axes:["Technik","Teamplay"], title:"Passdreieck", min:10, players:"3+", cats:["F-Jugend","E-Jugend","D-Jugend","C-Jugend"],
+    desc:"Drei Spieler bilden ein Dreieck und spielen kurze Pässe. Nach dem Pass dem Ball hinterherlaufen. Lockeres Einspielen mit vielen Ballkontakten.",
+    kids:"Stellt euch zu dritt zu einem Dreieck auf. Schiebt euch den Ball reihum zu und lauft danach kurz dem Pass hinterher. Schau immer schon hin, wohin der Ball als Nächstes soll.",
+    coach:"Auf saubere Mitnahme und Blick zum Mitspieler achten.", field:"half",
+    el:[{type:"player",x:30,y:75,n:1},{type:"player",x:70,y:75,n:2},{type:"player",x:50,y:45,n:3},{type:"ball",x:33,y:72},{type:"passArrow",x1:33,y1:72,x2:67,y2:72,ball:true},{type:"passArrow",x1:70,y1:70,x2:52,y2:47,ball:true},{type:"runArrow",x1:30,y1:78,x2:48,y2:78}] },
+  { id:"d02", focus:"aufwaermen", axes:["Schnelligkeit","Ausdauer"], title:"Lauf-ABC mit Hütchen", min:8, players:"beliebig", cats:["E-Jugend","D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
+    desc:"Vier Hütchen in Reihe. Anfersen, Kniehebelauf, Seitschritte und Sprints zwischen den Hütchen. Dynamische Mobilisation.",
+    kids:"Lauf locker durch die Hütchen-Gasse und mach die Übungen mit: Knie hoch, kleine Schritte, seitlich. Wie ein Aufwärm-Tanz, bevor es richtig losgeht!",
+    coach:"Saubere Technik vor Tempo. Arme aktiv mitnehmen.", field:"half",
+    el:[{type:"cone",x:50,y:80},{type:"cone",x:50,y:60},{type:"cone",x:50,y:40},{type:"cone",x:50,y:20},{type:"player",x:50,y:88,n:1},{type:"runArrow",x1:50,y1:86,x2:50,y2:22}] },
+  // ---- TECHNIK ----
+  { id:"d03", focus:"technik", axes:["Technik"], title:"Hütchen-Dribbelparcours", min:12, players:"1+", cats:["G-Jugend","F-Jugend","E-Jugend","D-Jugend"],
+    desc:"Slalom durch vier Hütchen mit enger Ballführung, beidfüßig. Am Ende Rückpass oder Abschluss.",
+    kids:"Stell dir vor, die Hütchen sind kleine Türme. Führe den Ball ganz nah am Fuß – wie einen kleinen Hund an der Leine – einmal um jeden Turm herum. Nicht zu schnell, der Ball soll bei dir bleiben!",
+    coach:"Ball nah am Fuß, kurze Kontakte, Kopf hoch zwischen den Hütchen.", field:"half",
+    el:[{type:"cone",x:50,y:70},{type:"cone",x:40,y:55},{type:"cone",x:60,y:40},{type:"cone",x:45,y:25},{type:"player",x:50,y:82,n:1},{type:"ball",x:48,y:79},{type:"dribbleArrow",x1:48,y1:78,x2:42,y2:56,ball:true},{type:"dribbleArrow",x1:42,y1:55,x2:58,y2:41,ball:true},{type:"dribbleArrow",x1:58,y1:40,x2:46,y2:26,ball:true}] },
+  { id:"d04", focus:"technik", axes:["Technik","Uebersicht"], title:"Passen & Mitnehmen im Quadrat", min:12, players:"4+", cats:["F-Jugend","E-Jugend","D-Jugend","C-Jugend"],
+    desc:"Vier Spieler an den Ecken eines Quadrats. Pass im Uhrzeigersinn, erste Berührung in Laufrichtung, dann nachrücken auf die nächste Ecke.",
+    kids:"Im Quadrat passt ihr euch den Ball zu und nehmt ihn weich mit – als würdet ihr ein rohes Ei fangen. Erst stoppen, dann weiterspielen.",
+    coach:"Offene Stellung, Ball mit dem entfernten Fuß mitnehmen.", field:"half",
+    el:[{type:"cone",x:32,y:30},{type:"cone",x:68,y:30},{type:"cone",x:68,y:70},{type:"cone",x:32,y:70},{type:"player",x:32,y:70,n:1},{type:"player",x:32,y:30,n:2},{type:"player",x:68,y:30,n:3},{type:"player",x:68,y:70,n:4},{type:"ball",x:35,y:68},{type:"passArrow",x1:34,y1:66,x2:34,y2:34,ball:true},{type:"passArrow",x1:36,y1:30,x2:64,y2:30,ball:true}] },
+  { id:"d05", focus:"technik", axes:["Technik"], title:"Innenseitstoß-Paare", min:10, players:"2+", cats:["G-Jugend","F-Jugend","E-Jugend"],
+    desc:"Zwei Spieler gegenüber, fester Abstand mit Hütchen markiert. Pässe mit der Innenseite, Ball stoppen und zurückspielen.",
+    kids:"Such dir einen Partner. Schiebt euch den Ball mit der Innenseite des Fußes zu, so als würdet ihr ihn ganz sanft anstupsen. Stopp den Ball mit dem Fuß, bevor du zurückspielst.",
+    coach:"Standbein neben den Ball, Sprunggelenk fest, Ball flach halten.", field:"half",
+    el:[{type:"player",x:35,y:75,n:1},{type:"player",x:65,y:35,n:2},{type:"cone",x:35,y:80},{type:"cone",x:65,y:30},{type:"ball",x:38,y:72},{type:"passArrow",x1:38,y1:72,x2:62,y2:38,ball:true}] },
+  // ---- TAKTIK ----
+  { id:"d06", focus:"taktik", axes:["Zweikampf","Abschluss"], title:"1-gegen-1 mit Abschluss", min:15, players:"2+", cats:["E-Jugend","D-Jugend","C-Jugend","B-Jugend"],
+    desc:"Angreifer dribbelt aus dem Halbfeld gegen einen Verteidiger und schließt aufs Tor ab. Danach Wechsel der Rollen.",
+    kids:"Du gegen einen anderen Spieler, und vorne wartet das Tor. Versuch, am Gegner vorbeizukommen und zu treffen. Trau dich, einfach loszudribbeln!",
+    coach:"Tempowechsel und Finte vor dem Verteidiger, früh den Abschluss suchen.", field:"half",
+    el:[{type:"goal",x:50,y:4,w:16},{type:"player",x:50,y:70,n:1,label:"A"},{type:"opp",x:50,y:40,n:1},{type:"ball",x:47,y:67},{type:"dribbleArrow",x1:48,y1:65,x2:42,y2:30,ball:true},{type:"passArrow",x1:42,y1:28,x2:48,y2:8,ball:true}] },
+  { id:"d07", focus:"taktik", axes:["Uebersicht","Teamplay"], title:"Überzahl 3-gegen-2", min:15, players:"5+", cats:["E-Jugend","D-Jugend","C-Jugend"],
+    desc:"Drei Angreifer spielen gegen zwei Verteidiger auf ein Tor. Überzahl sauber ausspielen, freie Spieler finden.",
+    coach:"Breite und Tiefe schaffen, schnelle Pässe, nicht überdribbeln.", field:"half",
+    el:[{type:"goal",x:50,y:4,w:16},{type:"player",x:30,y:55,n:1},{type:"player",x:50,y:62,n:2},{type:"player",x:70,y:55,n:3},{type:"opp",x:42,y:30,n:1},{type:"opp",x:58,y:30,n:2},{type:"ball",x:50,y:60},{type:"passArrow",x1:50,y1:60,x2:31,y2:56,ball:true},{type:"runArrow",x1:70,y1:53,x2:62,y2:20}] },
+  { id:"d08", focus:"taktik", axes:["Uebersicht","Zweikampf"], title:"Verschieben in der Kette", min:15, players:"4+", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
+    desc:"Viererkette verschiebt geschlossen zur Ballseite. Trainer gibt die Ballposition vor, Kette rückt gemeinsam heraus.",
+    coach:"Abstände halten, ballnaher Verteidiger attackiert, Rest sichert.", field:"full",
+    el:[{type:"player",x:25,y:25,n:1},{type:"player",x:25,y:42,n:2},{type:"player",x:25,y:58,n:3},{type:"player",x:25,y:75,n:4},{type:"ball",x:60,y:30},{type:"runArrow",x1:25,y1:25,x2:35,y2:30},{type:"runArrow",x1:25,y1:42,x2:33,y2:40}] },
+  // ---- TORSCHUSS ----
+  { id:"d09", focus:"torschuss", axes:["Abschluss"], title:"Torschuss nach Zuspiel", min:15, players:"2+", cats:["E-Jugend","D-Jugend","C-Jugend","B-Jugend"],
+    desc:"Anspieler legt den Ball aus dem Halbfeld auf, Schütze läuft ein und schließt direkt ab.",
+    kids:"Ein Mitspieler legt dir den Ball vor, und du schießt aufs Tor. Schau kurz hin, wo das Tor ist, und dann fest drauf!",
+    coach:"Auf den Ball zulaufen, Innenrist oder Vollspann, platziert statt nur fest.", field:"half",
+    el:[{type:"goal",x:50,y:4,w:16},{type:"player",x:30,y:55,n:1,label:"Pass"},{type:"player",x:62,y:60,n:2,label:"Schuss"},{type:"ball",x:33,y:53},{type:"passArrow",x1:33,y1:53,x2:55,y2:48,ball:true},{type:"runArrow",x1:62,y1:58,x2:55,y2:30},{type:"passArrow",x1:54,y1:46,x2:50,y2:8,ball:true}] },
+  { id:"d10", focus:"torschuss", axes:["Abschluss","Technik"], title:"Abschluss nach Flanke", min:15, players:"3+", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
+    desc:"Außenspieler dribbelt bis zur Grundlinie und flankt. Zwei Stürmer laufen kurzer und langer Pfosten an.",
+    coach:"Timing des Einlaufs, erster Kontakt aufs Tor. Flanke scharf und flach/halbhoch.", field:"half",
+    el:[{type:"goal",x:50,y:4,w:16},{type:"player",x:82,y:45,n:1,label:"Flanke"},{type:"player",x:40,y:18,n:2},{type:"player",x:58,y:22,n:3},{type:"ball",x:80,y:42},{type:"dribbleArrow",x1:80,y1:42,x2:80,y2:18,ball:true},{type:"passArrow",x1:80,y1:16,x2:52,y2:14,ball:true},{type:"runArrow",x1:40,y1:18,x2:46,y2:10}] },
+  // ---- KONDITION ----
+  { id:"d11", focus:"kondition", axes:["Ausdauer","Schnelligkeit"], title:"Intervall-Shuttle", min:12, players:"beliebig", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
+    desc:"Sprints zwischen zwei Hütchenlinien (15–20 m). 15 s Belastung, 30 s Pause, mehrere Sätze. Schult die Schnelligkeitsausdauer.",
+    coach:"Voller Antritt, sauberes Abbremsen, in der Pause locker gehen.", field:"half",
+    el:[{type:"cone",x:30,y:80},{type:"cone",x:70,y:80},{type:"cone",x:30,y:25},{type:"cone",x:70,y:25},{type:"player",x:30,y:82,n:1},{type:"player",x:70,y:82,n:2},{type:"runArrow",x1:30,y1:80,x2:30,y2:27},{type:"runArrow",x1:70,y1:80,x2:70,y2:27}] },
+  { id:"d12", focus:"kondition", axes:["Ausdauer","Technik"], title:"Dribbel-Staffel", min:12, players:"4+", cats:["F-Jugend","E-Jugend","D-Jugend"],
+    desc:"Zwei Teams, Staffel: mit Ball um das Wendehütchen und zurück, übergeben an den nächsten. Tempo mit Ball am Fuß.",
+    kids:"Dribbel-Wettrennen! Führe den Ball schnell, aber nah am Fuß bis zum Hütchen und wieder zurück. Dann ist dein Teamkamerad dran.",
+    coach:"Enge Ballführung auch unter Belastung, kontrolliert wenden.", field:"half",
+    el:[{type:"cone",x:50,y:20},{type:"player",x:38,y:80,n:1},{type:"player",x:62,y:80,n:2},{type:"ball",x:38,y:77},{type:"dribbleArrow",x1:38,y1:77,x2:48,y2:22,ball:true},{type:"dribbleArrow",x1:52,y1:22,x2:62,y2:77,ball:true}] },
+  // ---- SPIELFORM ----
+  { id:"d13", focus:"spielform", axes:["Teamplay","Technik"], title:"Funino 3-gegen-3 (4 Tore)", min:20, players:"6+", cats:["G-Jugend","F-Jugend","E-Jugend"],
+    desc:"Zwei kleine Tore je Seite. 3 gegen 3 ohne Torwart. Viele Ballkontakte, Tore aus verschiedenen Winkeln. DFB-Kinderfußball-Spielform.",
+    kids:"Es gibt vier kleine Tore. Versuche, in irgendeines davon ein Tor zu schießen! Lauf viel, hol dir den Ball und hab einfach Spaß. Es gibt keinen Torwart – also trau dich zu schießen!",
+    coach:"Kein Coaching von außen erzwingen – Kinder Lösungen finden lassen. Kurze Spiele, oft wechseln.", field:"half",
+    el:[{type:"goal",x:30,y:4,w:10},{type:"goal",x:70,y:4,w:10},{type:"goal",x:30,y:96,w:10},{type:"goal",x:70,y:96,w:10},{type:"player",x:35,y:38,n:1},{type:"player",x:55,y:45,n:2},{type:"player",x:48,y:60,n:3},{type:"opp",x:62,y:55,n:1},{type:"opp",x:42,y:48,n:2},{type:"opp",x:58,y:70,n:3},{type:"ball",x:50,y:50}] },
+  { id:"d14", focus:"spielform", axes:["Uebersicht","Teamplay"], title:"Positionsspiel 4-gegen-2", min:15, players:"6+", cats:["E-Jugend","D-Jugend","C-Jugend","B-Jugend"],
+    desc:"Vier Spieler im Quadrat halten den Ball gegen zwei in der Mitte. Ziel: viele Pässe in Folge. Bei Ballverlust wechseln.",
+    coach:"Anbieten in den Passschatten, erstes Kontakt-Spiel, Tempo hochhalten.", field:"half",
+    el:[{type:"cone",x:30,y:30},{type:"cone",x:70,y:30},{type:"cone",x:70,y:70},{type:"cone",x:30,y:70},{type:"player",x:30,y:30,n:1},{type:"player",x:70,y:30,n:2},{type:"player",x:70,y:70,n:3},{type:"player",x:30,y:70,n:4},{type:"opp",x:48,y:45,n:1},{type:"opp",x:52,y:58,n:2},{type:"ball",x:33,y:32},{type:"passArrow",x1:33,y1:32,x2:67,y2:32,ball:true}] },
+  { id:"d15", focus:"spielform", axes:["Abschluss","Teamplay"], title:"Abschlussspiel auf 2 Tore", min:20, players:"8+", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
+    desc:"Freies Spiel 4 gegen 4 plus Torhüter auf zwei große Tore. Fokus je nach Trainerthema (z. B. schneller Abschluss nach Ballgewinn).",
+    coach:"Vorgabe geben (z. B. max. 3 Kontakte), nach Ballgewinn sofort zum Tor.", field:"full",
+    el:[{type:"goal",x:4,y:50,w:18},{type:"goal",x:96,y:50,w:18},{type:"player",x:25,y:35,n:1},{type:"player",x:30,y:60,n:2},{type:"player",x:45,y:48,n:3},{type:"player",x:38,y:75,n:4},{type:"opp",x:60,y:40,n:1},{type:"opp",x:68,y:62,n:2},{type:"opp",x:55,y:70,n:3},{type:"opp",x:72,y:35,n:4},{type:"ball",x:45,y:48}] },
+  // ---- AUFWÄRMEN (weitere) ----
+  { id:"d16", focus:"aufwaermen", axes:["Schnelligkeit"], title:"Fangspiel im Quadrat", min:8, players:"6+", cats:["G-Jugend","F-Jugend","E-Jugend"],
+    desc:"Begrenztes Quadrat, ein bis zwei Fänger. Alle laufen frei, Gefangene werden selbst zu Fängern. Spielerisches Aufwärmen mit Richtungswechseln.",
+    kids:"Das ist wie Fangen, aber mit Grenzen: Bleibt im Feld zwischen den Hütchen. Wer gefangen wird, hilft beim Fangen mit. Lauf, weiche aus und hab Spaß!",
+    coach:"Kleines Feld für viele Aktionen. Auf Ausweichbewegungen und Tempo achten.", field:"half",
+    el:[{type:"cone",x:28,y:28},{type:"cone",x:72,y:28},{type:"cone",x:72,y:78},{type:"cone",x:28,y:78},{type:"player",x:40,y:45,n:1},{type:"player",x:60,y:60,n:2},{type:"opp",x:50,y:50,n:1},{type:"runArrow",x1:50,y1:50,x2:42,y2:46}] },
+  { id:"d17", focus:"aufwaermen", axes:["Technik"], title:"Ballgewöhnung in Bewegung", min:10, players:"beliebig", cats:["G-Jugend","F-Jugend","E-Jugend","D-Jugend"],
+    desc:"Jeder Spieler mit Ball läuft frei im Feld. Auf Trainerkommando: Sohle, Innenseite, Wenden, Tempodribbling. Viele Ballkontakte.",
+    kids:"Jeder hat einen eigenen Ball. Lauf herum und mach, was der Trainer ruft: mit der Fußsohle rollen, stoppen, schnell laufen. Schau dabei nach vorne, damit du niemanden anrempelst!",
+    coach:"Kommandos wechseln, Kopf hoch fordern, Zusammenstöße vermeiden.", field:"half",
+    el:[{type:"player",x:35,y:40,n:1},{type:"player",x:60,y:55,n:2},{type:"player",x:48,y:70,n:3},{type:"ball",x:33,y:38},{type:"ball",x:58,y:53},{type:"ball",x:46,y:68},{type:"dribbleArrow",x1:35,y1:40,x2:50,y2:30,ball:true}] },
+  // ---- TECHNIK (weitere) ----
+  { id:"d18", focus:"technik", axes:["Technik","Teamplay"], title:"Doppelpass am Hütchen", min:12, players:"2+", cats:["E-Jugend","D-Jugend","C-Jugend"],
+    desc:"Spieler passt zum Wandspieler, läuft am Hütchen vorbei und bekommt den Ball in den Lauf zurück (Doppelpass).",
+    kids:"Spiel einen schnellen Doppelpass: Ball zum Partner, weiterlaufen, Ball zurückbekommen. Wie 'Wandspielen', nur mit einem Freund.",
+    coach:"Timing: Pass und Loslaufen abstimmen, Rückpass in den freien Raum.", field:"half",
+    el:[{type:"cone",x:50,y:45},{type:"player",x:40,y:75,n:1},{type:"player",x:65,y:55,n:2,label:"Wand"},{type:"ball",x:42,y:72},{type:"passArrow",x1:42,y1:72,x2:62,y2:57,ball:true},{type:"runArrow",x1:40,y1:73,x2:50,y2:40},{type:"passArrow",x1:64,y1:53,x2:52,y2:38,ball:true}] },
+  { id:"d19", focus:"technik", axes:["Technik","Uebersicht"], title:"Ballannahme & Drehen", min:12, players:"2+", cats:["E-Jugend","D-Jugend","C-Jugend","B-Jugend"],
+    desc:"Zuspiel auf den Spieler mit dem Rücken zum Tor. Erste Berührung zur Seite, aufdrehen und Richtung Tor dribbeln.",
+    kids:"Nimm den Ball an und dreh dich gleich mit ihm in die andere Richtung. Stell dir vor, du drehst dich weg von einem Gegner, der dir den Ball klauen will.",
+    coach:"Vor der Annahme über die Schulter schauen, offene Stellung einnehmen.", field:"half",
+    el:[{type:"goal",x:50,y:4,w:16},{type:"player",x:50,y:38,n:1},{type:"player",x:50,y:78,n:2,label:"Pass"},{type:"ball",x:48,y:75},{type:"passArrow",x1:48,y1:75,x2:50,y2:42,ball:true},{type:"dribbleArrow",x1:50,y1:36,x2:44,y2:18,ball:true}] },
+  { id:"d20", focus:"technik", axes:["Technik"], title:"Jonglier-Stationen", min:10, players:"beliebig", cats:["E-Jugend","D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
+    desc:"An mehreren Stationen Ballgefühl schulen: Hochhalten, Fuß-Oberschenkel-Kopf, Aufsetzer kontrollieren. Eigene Bestmarke verbessern.",
+    kids:"Wie oft schaffst du es, den Ball hochzuhalten? Probier es mit dem Fuß, dann mit dem Oberschenkel. Jeder Tag wird ein bisschen besser!",
+    coach:"Ruhige Berührungen, Ball zentral treffen, kleine Ziele setzen.", field:"half",
+    el:[{type:"cone",x:30,y:35},{type:"cone",x:70,y:35},{type:"cone",x:50,y:70},{type:"player",x:30,y:35,n:1},{type:"player",x:70,y:35,n:2},{type:"player",x:50,y:70,n:3},{type:"ball",x:30,y:30},{type:"ball",x:70,y:30},{type:"ball",x:50,y:65}] },
+  // ---- TAKTIK (weitere) ----
+  { id:"d21", focus:"taktik", axes:["Zweikampf","Teamplay"], title:"Pressing-Auslöser", min:15, players:"6+", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
+    desc:"Bei Pass auf den Außenverteidiger löst der ballnahe Stürmer das Pressing aus, Mitspieler schieben nach und schließen Passwege.",
+    coach:"Gemeinsam und auf Signal pressen, nicht vereinzelt anlaufen.", field:"full",
+    el:[{type:"opp",x:20,y:50,n:1},{type:"opp",x:35,y:25,n:2},{type:"player",x:45,y:35,n:1},{type:"player",x:48,y:55,n:2},{type:"player",x:60,y:45,n:3},{type:"ball",x:35,y:25},{type:"runArrow",x1:45,y1:35,x2:38,y2:27},{type:"passArrow",x1:20,y1:50,x2:34,y2:26,ball:true}] },
+  { id:"d22", focus:"taktik", axes:["Uebersicht","Schnelligkeit"], title:"Umschalten nach Ballgewinn", min:18, players:"8+", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
+    desc:"Nach Balleroberung sofort nach vorne spielen. Erster Pass in die Tiefe, schneller Angriff auf das gegnerische Tor.",
+    coach:"Erste Option ist immer nach vorne. Tempo in den ersten 3 Sekunden.", field:"full",
+    el:[{type:"goal",x:96,y:50,w:18},{type:"player",x:35,y:50,n:1},{type:"player",x:55,y:30,n:2},{type:"player",x:60,y:65,n:3},{type:"opp",x:45,y:45,n:1},{type:"ball",x:35,y:50},{type:"passArrow",x1:35,y1:50,x2:55,y2:32,ball:true},{type:"runArrow",x1:60,y1:65,x2:80,y2:55}] },
+  { id:"d23", focus:"taktik", axes:["Uebersicht"], title:"Raumaufteilung 4-4-Zonen", min:15, players:"4+", cats:["C-Jugend","B-Jugend","A-Jugend"],
+    desc:"Feld in Zonen geteilt. Spieler lernen, ihre Zone zu halten und bei Ballbesitz die Breite zu nutzen.",
+    coach:"Abstände zwischen den Linien halten, nicht alle zum Ball.", field:"full",
+    el:[{type:"zone",x:5,y:8,w:42,h:84,color:"#7c3aed"},{type:"player",x:25,y:30,n:1},{type:"player",x:25,y:62,n:2},{type:"player",x:40,y:46,n:3},{type:"ball",x:40,y:46}] },
+  // ---- TORSCHUSS (weitere) ----
+  { id:"d24", focus:"torschuss", axes:["Abschluss"], title:"Schuss aus der zweiten Reihe", min:15, players:"2+", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
+    desc:"Ablage vom Mitspieler an der Strafraumkante, Schütze zieht direkt aus der zweiten Reihe ab.",
+    coach:"Körper über dem Ball, Vollspann, flach und platziert in die Ecke.", field:"half",
+    el:[{type:"goal",x:50,y:4,w:16},{type:"player",x:42,y:35,n:1,label:"Ablage"},{type:"player",x:55,y:55,n:2,label:"Schuss"},{type:"ball",x:53,y:52},{type:"passArrow",x1:53,y1:52,x2:44,y2:37,ball:true},{type:"passArrow",x1:43,y1:34,x2:50,y2:8,ball:true}] },
+  { id:"d25", focus:"torschuss", axes:["Abschluss","Technik"], title:"Direktabnahme nach Querpass", min:15, players:"3+", cats:["E-Jugend","D-Jugend","C-Jugend","B-Jugend"],
+    desc:"Flacher Querpass durch den Strafraum, einlaufender Spieler nimmt direkt ab. Timing und erste Berührung aufs Tor.",
+    coach:"Spät und mit Tempo einlaufen, Innenseite oder Vollspann zum Tor.", field:"half",
+    el:[{type:"goal",x:50,y:4,w:16},{type:"player",x:78,y:30,n:1,label:"Quer"},{type:"player",x:38,y:40,n:2},{type:"ball",x:76,y:28},{type:"passArrow",x1:76,y1:28,x2:44,y2:26,ball:true},{type:"runArrow",x1:38,y1:40,x2:46,y2:24},{type:"passArrow",x1:46,y1:24,x2:50,y2:8,ball:true}] },
+  // ---- KONDITION (weitere) ----
+  { id:"d26", focus:"kondition", axes:["Ausdauer","Schnelligkeit"], title:"Tempoläufe mit Ball", min:12, players:"beliebig", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
+    desc:"Über die halbe Feldlänge mit Ball antreiben, am Ende Abschluss oder Pass. Mehrere Wiederholungen mit Pausen.",
+    coach:"Hohes Tempo, aber kontrollierte Ballführung. Saubere Atmung.", field:"half",
+    el:[{type:"goal",x:50,y:4,w:16},{type:"player",x:50,y:85,n:1},{type:"ball",x:48,y:82},{type:"dribbleArrow",x1:48,y1:82,x2:50,y2:20,ball:true},{type:"passArrow",x1:50,y1:18,x2:50,y2:8,ball:true}] },
+  { id:"d27", focus:"kondition", axes:["Schnelligkeit"], title:"Koordinationsleiter + Sprint", min:10, players:"beliebig", cats:["E-Jugend","D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
+    desc:"Schnelle Füße durch die Koordinationsleiter (mit Hütchen markiert), anschließend Sprint zum Wendehütchen.",
+    coach:"Fußspitze, hohe Frequenz, dann explosiver Antritt.", field:"half",
+    el:[{type:"cone",x:50,y:78},{type:"cone",x:50,y:68},{type:"cone",x:50,y:58},{type:"cone",x:50,y:48},{type:"cone",x:50,y:22},{type:"player",x:50,y:85,n:1},{type:"runArrow",x1:50,y1:84,x2:50,y2:24}] },
+  // ---- SPIELFORM (weitere) ----
+  { id:"d28", focus:"spielform", axes:["Teamplay","Uebersicht"], title:"Ballhalten 5-gegen-2", min:15, players:"7+", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
+    desc:"Fünf Spieler außen halten den Ball gegen zwei in der Mitte. Pflicht: erste oder zweite Berührung. Schult Tempo im Passspiel.",
+    coach:"Anbieten, bevor der Ball kommt. Druckmomente erkennen und schnell klatschen lassen.", field:"half",
+    el:[{type:"player",x:30,y:28,n:1},{type:"player",x:70,y:28,n:2},{type:"player",x:78,y:60,n:3},{type:"player",x:50,y:78,n:4},{type:"player",x:22,y:60,n:5},{type:"opp",x:45,y:48,n:1},{type:"opp",x:58,y:52,n:2},{type:"ball",x:32,y:30},{type:"passArrow",x1:32,y1:30,x2:68,y2:30,ball:true}] },
+  { id:"d29", focus:"spielform", axes:["Uebersicht","Teamplay"], title:"4-gegen-4 mit 4 Minitoren", min:20, players:"8+", cats:["F-Jugend","E-Jugend","D-Jugend"],
+    desc:"Vier kleine Tore, 4 gegen 4. Punkten durch Tor in eines von zwei zugewiesenen Toren. Fördert Spielübersicht und Seitenverlagerung.",
+    kids:"Vier gegen vier auf vier kleine Tore. Es gibt keinen Torwart – also viele Tore möglich! Lauf mit, biete dich an und hab Spaß.",
+    coach:"Köpfe hochbekommen, freies Tor suchen, Spiel breit machen.", field:"half",
+    el:[{type:"goal",x:25,y:4,w:8},{type:"goal",x:75,y:4,w:8},{type:"goal",x:25,y:96,w:8},{type:"goal",x:75,y:96,w:8},{type:"player",x:35,y:40,n:1},{type:"player",x:60,y:38,n:2},{type:"player",x:45,y:60,n:3},{type:"player",x:62,y:65,n:4},{type:"opp",x:50,y:48,n:1},{type:"opp",x:40,y:70,n:2},{type:"ball",x:45,y:60}] },
+  { id:"d30", focus:"spielform", axes:["Uebersicht","Teamplay"], title:"Spiel mit Kontaktbegrenzung", min:18, players:"8+", cats:["C-Jugend","B-Jugend","A-Jugend"],
+    desc:"Normales Spiel auf zwei Tore, aber maximal zwei Ballkontakte pro Spieler. Zwingt zu schnellem Spiel und gutem Stellungsspiel.",
+    coach:"Vor der Annahme orientieren, Anspielstationen früh anbieten.", field:"full",
+    el:[{type:"goal",x:4,y:50,w:18},{type:"goal",x:96,y:50,w:18},{type:"player",x:30,y:40,n:1},{type:"player",x:42,y:60,n:2},{type:"player",x:55,y:45,n:3},{type:"opp",x:62,y:50,n:1},{type:"opp",x:70,y:38,n:2},{type:"ball",x:42,y:60}] },
+  // ---- AUFWÄRMEN (weitere) ----
+  { id:"d31", focus:"aufwaermen", axes:["Technik","Schnelligkeit"], title:"Spiegel-Dribbeln", min:8, players:"2+", cats:["F-Jugend","E-Jugend","D-Jugend"],
+    desc:"Zwei Spieler gegenüber, einer führt Bewegungen mit Ball aus, der andere spiegelt sie. Richtungswechsel, Tempowechsel, Finten.",
+    kids:"Du machst genau das nach, was dein Partner mit dem Ball macht – wie sein Spiegelbild. Mal langsam, mal schnell. Gut aufpassen!",
+    coach:"Aufmerksam beobachten, sofort reagieren, Ball eng führen.", field:"half",
+    el:[{type:"player",x:38,y:60,n:1},{type:"player",x:62,y:60,n:2},{type:"ball",x:36,y:58},{type:"ball",x:64,y:58},{type:"dribbleArrow",x1:38,y1:60,x2:30,y2:48,ball:true},{type:"dribbleArrow",x1:62,y1:60,x2:70,y2:48,ball:true}] },
+  { id:"d32", focus:"aufwaermen", axes:["Teamplay","Technik"], title:"Ball durch die Reihe", min:8, players:"6+", cats:["G-Jugend","F-Jugend","E-Jugend"],
+    desc:"Spieler im Kreis spielen den Ball mit vorgegebener Technik (Innenseite, Direktpass) reihum. Tempo langsam steigern.",
+    kids:"Stellt euch im Kreis auf. Schiebt euch den Ball schön der Reihe nach zu. Sag den Namen von dem Kind, dem du den Ball gibst – dann weiß es, dass es gleich dran ist!",
+    coach:"Sauberes Anbieten, freundliche Pässe in den Fuß.", field:"half",
+    el:[{type:"player",x:50,y:25,n:1},{type:"player",x:72,y:45,n:2},{type:"player",x:62,y:72,n:3},{type:"player",x:38,y:72,n:4},{type:"player",x:28,y:45,n:5},{type:"ball",x:50,y:28},{type:"passArrow",x1:50,y1:28,x2:70,y2:45,ball:true}] },
+  // ---- TECHNIK (weitere) ----
+  { id:"d33", focus:"technik", axes:["Technik"], title:"Sohlenrolle & Übersteiger", min:10, players:"1+", cats:["E-Jugend","D-Jugend","C-Jugend","B-Jugend"],
+    desc:"An der Hütchenstation Grundtricks üben: Sohlenrolle, Übersteiger, Ausfallschritt. Jeweils beidseitig, dann Tempo aufnehmen.",
+    coach:"Erst langsam und sauber, dann schneller. Beide Füße fordern.", field:"half",
+    el:[{type:"cone",x:50,y:50},{type:"player",x:50,y:72,n:1},{type:"ball",x:48,y:69},{type:"dribbleArrow",x1:48,y1:69,x2:48,y2:52,ball:true},{type:"dribbleArrow",x1:52,y1:50,x2:58,y2:35,ball:true}] },
+  { id:"d34", focus:"technik", axes:["Technik","Teamplay"], title:"Pass-Klatschen Dreieck", min:12, players:"3+", cats:["E-Jugend","D-Jugend","C-Jugend"],
+    desc:"Im Dreieck Klatschpässe (Direktablage) spielen. A spielt zu B, B klatscht zu C, C spielt weiter. Schult schnelles Kombinationsspiel.",
+    coach:"Erste Berührung in den Lauf des Mitspielers, Tempo halten.", field:"half",
+    el:[{type:"player",x:30,y:70,n:1},{type:"player",x:70,y:70,n:2},{type:"player",x:50,y:40,n:3},{type:"ball",x:32,y:68},{type:"passArrow",x1:32,y1:68,x2:50,y2:42,ball:true},{type:"passArrow",x1:50,y1:44,x2:68,y2:68,ball:true}] },
+  { id:"d35", focus:"technik", axes:["Technik","Uebersicht"], title:"Drehung unter Druck", min:12, players:"3+", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
+    desc:"Spieler bekommt Ball mit dem Rücken zum Spielfeld, ein Verteidiger setzt leichten Druck. Aufdrehen oder klatschen lassen je nach Druckseite.",
+    coach:"Vor der Annahme Schulterblick, Körper zwischen Ball und Gegner.", field:"half",
+    el:[{type:"player",x:50,y:45,n:1},{type:"opp",x:50,y:32,n:1},{type:"player",x:50,y:78,n:2,label:"Pass"},{type:"ball",x:48,y:75},{type:"passArrow",x1:48,y1:75,x2:50,y2:48,ball:true},{type:"dribbleArrow",x1:53,y1:45,x2:62,y2:35,ball:true}] },
+  { id:"d36", focus:"technik", axes:["Technik","Schnelligkeit"], title:"Tempodribbling mit Abschluss", min:12, players:"1+", cats:["E-Jugend","D-Jugend","C-Jugend"],
+    desc:"Aus dem eigenen Drittel mit hohem Tempo dribbeln, durch ein Hütchentor, dann Abschluss aufs Tor.",
+    coach:"Ball weiter vorlegen bei freiem Raum, vor dem Schuss kurz kontrollieren.", field:"half",
+    el:[{type:"goal",x:50,y:4,w:16},{type:"cone",x:42,y:40},{type:"cone",x:58,y:40},{type:"player",x:50,y:82,n:1},{type:"ball",x:48,y:79},{type:"dribbleArrow",x1:48,y1:79,x2:50,y2:42,ball:true},{type:"passArrow",x1:50,y1:38,x2:50,y2:8,ball:true}] },
+  // ---- TAKTIK (weitere) ----
+  { id:"d37", focus:"taktik", axes:["Uebersicht","Teamplay"], title:"Spielverlagerung", min:15, players:"6+", cats:["C-Jugend","B-Jugend","A-Jugend"],
+    desc:"Ball wird bewusst von einer Seite zur anderen verlagert, um den freien Raum zu nutzen. Außenspieler bieten sich breit an.",
+    coach:"Vor der Verlagerung Kopf hoch, langer Pass flach und präzise.", field:"full",
+    el:[{type:"player",x:25,y:30,n:1},{type:"player",x:45,y:50,n:2},{type:"player",x:75,y:70,n:3},{type:"ball",x:25,y:30},{type:"passArrow",x1:25,y1:30,x2:45,y2:50,ball:true},{type:"passArrow",x1:45,y1:50,x2:74,y2:69,ball:true}] },
+  { id:"d38", focus:"taktik", axes:["Zweikampf","Uebersicht"], title:"Verteidigen im 2-gegen-1", min:15, players:"3+", cats:["D-Jugend","C-Jugend","B-Jugend"],
+    desc:"Zwei Verteidiger gegen einen Angreifer: einer stellt, der andere sichert. Rollen nach jedem Durchgang tauschen.",
+    coach:"Ballnaher Verteidiger lenkt, der zweite sichert dahinter ab.", field:"half",
+    el:[{type:"goal",x:50,y:4,w:16},{type:"player",x:42,y:35,n:1},{type:"player",x:58,y:45,n:2},{type:"opp",x:50,y:70,n:1},{type:"ball",x:48,y:67},{type:"dribbleArrow",x1:48,y1:67,x2:46,y2:42,ball:true},{type:"runArrow",x1:42,y1:35,x2:46,y2:50}] },
+  { id:"d39", focus:"taktik", axes:["Uebersicht","Teamplay"], title:"Anbieten & Freilaufen", min:15, players:"5+", cats:["E-Jugend","D-Jugend","C-Jugend"],
+    desc:"Ballbesitzer wird von Mitspielern durch Freilaufbewegungen angeboten. Diagonale Läufe in die Lücken, immer anspielbar sein.",
+    coach:"Nicht stehen bleiben, in den freien Raum starten, Blickkontakt.", field:"half",
+    el:[{type:"player",x:50,y:75,n:1},{type:"player",x:30,y:50,n:2},{type:"player",x:70,y:50,n:3},{type:"ball",x:48,y:72},{type:"runArrow",x1:30,y1:55,x2:38,y2:35},{type:"runArrow",x1:70,y1:55,x2:62,y2:35},{type:"passArrow",x1:48,y1:72,x2:40,y2:37,ball:true}] },
+  { id:"d40", focus:"taktik", axes:["Zweikampf","Teamplay"], title:"Gegenpressing-Box", min:15, players:"8+", cats:["C-Jugend","B-Jugend","A-Jugend"],
+    desc:"In einem begrenzten Feld: bei Ballverlust sofort mit mehreren Spielern den Ball zurückerobern (5 Sekunden Regel).",
+    coach:"Nach Ballverlust sofort nachsetzen, Passwege zustellen.", field:"half",
+    el:[{type:"zone",x:20,y:20,w:60,h:60,color:"#7c3aed"},{type:"player",x:40,y:45,n:1},{type:"player",x:55,y:55,n:2},{type:"player",x:48,y:65,n:3},{type:"opp",x:50,y:50,n:1},{type:"ball",x:50,y:50},{type:"runArrow",x1:40,y1:45,x2:47,y2:49}] },
+  // ---- TORSCHUSS (weitere) ----
+  { id:"d41", focus:"torschuss", axes:["Abschluss","Schnelligkeit"], title:"Schuss nach Antritt", min:12, players:"1+", cats:["E-Jugend","D-Jugend","C-Jugend","B-Jugend"],
+    desc:"Kurzer Sprint zum bereitliegenden Ball, dann direkter Abschluss. Mehrere Bälle in Folge für viele Wiederholungen.",
+    coach:"Explosiv antreten, Standbein neben den Ball, Blick zum Tor.", field:"half",
+    el:[{type:"goal",x:50,y:4,w:16},{type:"ball",x:50,y:40},{type:"player",x:50,y:75,n:1},{type:"runArrow",x1:50,y1:73,x2:50,y2:44},{type:"passArrow",x1:50,y1:38,x2:50,y2:8,ball:true}] },
+  { id:"d42", focus:"torschuss", axes:["Abschluss","Technik"], title:"Volleyschuss aus der Luft", min:12, players:"2+", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
+    desc:"Zuwurf oder hohe Flanke vom Partner, Schütze nimmt den Ball volley oder als Aufsetzer und schließt ab.",
+    coach:"Über dem Ball bleiben, Spann fest, Ball nach unten drücken.", field:"half",
+    el:[{type:"goal",x:50,y:4,w:16},{type:"player",x:72,y:40,n:1,label:"Zuwurf"},{type:"player",x:45,y:35,n:2},{type:"ball",x:70,y:38},{type:"passArrow",x1:70,y1:38,x2:48,y2:33,ball:true},{type:"passArrow",x1:46,y1:31,x2:50,y2:8,ball:true}] },
+  { id:"d43", focus:"torschuss", axes:["Abschluss","Uebersicht"], title:"1-gegen-Torwart", min:12, players:"2+", cats:["F-Jugend","E-Jugend","D-Jugend"],
+    desc:"Angreifer läuft allein auf den Torwart zu und versucht zu erzielen – durch Schuss oder Umspielen. Entscheidung treffen.",
+    coach:"Ruhe bewahren, Torwart abwarten lassen, früh Tempo variieren.", field:"half",
+    el:[{type:"goal",x:50,y:4,w:16},{type:"opp",x:50,y:14,n:1,label:"TW"},{type:"player",x:50,y:70,n:1},{type:"ball",x:48,y:67},{type:"dribbleArrow",x1:48,y1:67,x2:48,y2:25,ball:true}] },
+  // ---- KONDITION (weitere) ----
+  { id:"d44", focus:"kondition", axes:["Ausdauer"], title:"Rundenlauf mit Aufgaben", min:12, players:"beliebig", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
+    desc:"Lockerer Dauerlauf um das Feld, an markierten Ecken kurze Zusatzaufgaben (Hopserlauf, Sidesteps, Sprints).",
+    coach:"Gleichmäßiges Grundtempo, an den Ecken bewusst Technik.", field:"full",
+    el:[{type:"cone",x:10,y:15},{type:"cone",x:90,y:15},{type:"cone",x:90,y:85},{type:"cone",x:10,y:85},{type:"player",x:10,y:15,n:1},{type:"runArrow",x1:14,y1:15,x2:86,y2:15},{type:"runArrow",x1:90,y1:20,x2:90,y2:80}] },
+  { id:"d45", focus:"kondition", axes:["Schnelligkeit","Zweikampf"], title:"Reaktions-Sprint zum Ball", min:10, players:"2+", cats:["E-Jugend","D-Jugend","C-Jugend","B-Jugend"],
+    desc:"Zwei Spieler nebeneinander, auf Trainersignal sprinten beide zum Ball – wer zuerst da ist, geht in den Angriff, der andere verteidigt.",
+    coach:"Auf das Signal explosiv reagieren, ersten Schritt schnell.", field:"half",
+    el:[{type:"player",x:42,y:70,n:1},{type:"player",x:58,y:70,n:2},{type:"ball",x:50,y:40},{type:"runArrow",x1:42,y1:68,x2:49,y2:43},{type:"runArrow",x1:58,y1:68,x2:51,y2:43}] },
+  { id:"d46", focus:"kondition", axes:["Ausdauer","Schnelligkeit"], title:"Pyramiden-Läufe", min:12, players:"beliebig", cats:["C-Jugend","B-Jugend","A-Jugend"],
+    desc:"Steigerungsläufe über zunehmende Distanzen (10-20-30 m) und wieder zurück. Belastung steigt, dann fällt sie wieder.",
+    coach:"Sauber steigern, nicht von Anfang an Vollgas. Pausen einhalten.", field:"half",
+    el:[{type:"cone",x:50,y:78},{type:"cone",x:50,y:62},{type:"cone",x:50,y:42},{type:"cone",x:50,y:18},{type:"player",x:50,y:85,n:1},{type:"runArrow",x1:50,y1:84,x2:50,y2:20}] },
+  // ---- SPIELFORM (weitere) ----
+  { id:"d47", focus:"spielform", axes:["Teamplay","Technik"], title:"3-gegen-3 mit Anspielern", min:18, players:"8+", cats:["E-Jugend","D-Jugend","C-Jugend"],
+    desc:"3 gegen 3 im Feld, dazu neutrale Anspieler an den Außenlinien, die immer für das ballbesitzende Team spielen (Überzahl im Aufbau).",
+    coach:"Anspieler einbeziehen, schnelles Umschalten nach Ballverlust.", field:"half",
+    el:[{type:"player",x:35,y:45,n:1},{type:"player",x:55,y:40,n:2},{type:"player",x:48,y:62,n:3},{type:"opp",x:60,y:55,n:1},{type:"opp",x:42,y:50,n:2},{type:"opp",x:55,y:72,n:3},{type:"player",x:15,y:50,n:4,label:"A"},{type:"player",x:85,y:50,n:5,label:"A"},{type:"ball",x:48,y:62}] },
+  { id:"d48", focus:"spielform", axes:["Uebersicht","Abschluss"], title:"Spiel auf 4 Tore", min:20, players:"8+", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
+    desc:"Jedes Team verteidigt zwei Tore und greift auf zwei an. Zwingt zur Spielverlagerung und zum Erkennen des freien Tores.",
+    coach:"Köpfe hoch, schnell die offene Seite bespielen.", field:"full",
+    el:[{type:"goal",x:4,y:30,w:14},{type:"goal",x:4,y:70,w:14},{type:"goal",x:96,y:30,w:14},{type:"goal",x:96,y:70,w:14},{type:"player",x:35,y:40,n:1},{type:"player",x:45,y:65,n:2},{type:"opp",x:60,y:45,n:1},{type:"opp",x:68,y:60,n:2},{type:"ball",x:45,y:65}] },
+  { id:"d49", focus:"spielform", axes:["Teamplay","Uebersicht"], title:"Ballbesitz 6-gegen-6 + Joker", min:20, players:"12+", cats:["C-Jugend","B-Jugend","A-Jugend"],
+    desc:"Zwei Teams plus ein neutraler Joker, der immer mit dem Ballbesitzer spielt. Ziel: festgelegte Passzahl erreichen = Punkt.",
+    coach:"Joker clever einbinden, Räume öffnen, Tempo variieren.", field:"full",
+    el:[{type:"player",x:30,y:35,n:1},{type:"player",x:40,y:60,n:2},{type:"player",x:55,y:45,n:3},{type:"opp",x:50,y:38,n:1},{type:"opp",x:62,y:62,n:2},{type:"opp",x:45,y:70,n:3},{type:"player",x:48,y:52,n:9,label:"J",color:"#fbbf24"},{type:"ball",x:48,y:52}] },
+  { id:"d50", focus:"spielform", axes:["Abschluss","Teamplay"], title:"Pokalturnier im Training", min:25, players:"8+", cats:["F-Jugend","E-Jugend","D-Jugend"],
+    desc:"Mehrere kleine Teams spielen kurze Spiele (je 4-5 Min) gegeneinander im Turniermodus. Hohe Motivation, viele Spielsituationen.",
+    coach:"Faire Teams einteilen, kurze Spiele, alle kommen viel zum Einsatz.", field:"half",
+    el:[{type:"goal",x:50,y:4,w:14},{type:"goal",x:50,y:96,w:14},{type:"player",x:40,y:45,n:1},{type:"player",x:58,y:55,n:2},{type:"opp",x:50,y:50,n:1},{type:"opp",x:45,y:65,n:2},{type:"ball",x:50,y:50}] },
+  // ---- TECHNIK / TORSCHUSS Abschluss-Sammlung ----
+  { id:"d51", focus:"technik", axes:["Technik","Teamplay"], title:"Vier-Ecken-Passspiel", min:12, players:"8+", cats:["D-Jugend","C-Jugend","B-Jugend"],
+    desc:"An jeder Ecke eine Gruppe. Pass zur nächsten Ecke, dann selbst nachlaufen. Im Uhrzeigersinn, später Richtung wechseln.",
+    coach:"Genauer Pass, sofort nachrücken, beidfüßig anbieten.", field:"half",
+    el:[{type:"cone",x:28,y:28},{type:"cone",x:72,y:28},{type:"cone",x:72,y:72},{type:"cone",x:28,y:72},{type:"player",x:28,y:72,n:1},{type:"player",x:28,y:28,n:2},{type:"ball",x:31,y:70},{type:"passArrow",x1:31,y1:70,x2:30,y2:31,ball:true},{type:"runArrow",x1:28,y1:74,x2:28,y2:34}] },
+  { id:"d52", focus:"torschuss", axes:["Abschluss","Zweikampf"], title:"Abschluss unter Gegnerdruck", min:15, players:"3+", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
+    desc:"Angreifer erhält Zuspiel, ein Verteidiger startet verzögert und setzt Druck. Schneller Abschluss, bevor der Gegner blockt.",
+    coach:"Erster Kontakt zum Tor, früh abschließen, Ball verdecken.", field:"half",
+    el:[{type:"goal",x:50,y:4,w:16},{type:"player",x:50,y:55,n:1},{type:"opp",x:62,y:68,n:1},{type:"player",x:30,y:60,n:2,label:"Pass"},{type:"ball",x:32,y:58},{type:"passArrow",x1:32,y1:58,x2:48,y2:53,ball:true},{type:"runArrow",x1:62,y1:66,x2:52,y2:50},{type:"passArrow",x1:50,y1:50,x2:50,y2:8,ball:true}] },
+  // ---- AUFWÄRMEN (weitere) ----
+  { id:"d53", focus:"aufwaermen", axes:["Schnelligkeit","Technik"], title:"Reifen-Antritt", min:8, players:"beliebig", cats:["F-Jugend","E-Jugend","D-Jugend"],
+    desc:"Durch eine Reihe von Reifen oder Hütchen-Toren mit Tempo, am Ende kurzer Sprint. Schult Fußkoordination und Antritt.",
+    coach:"Hohe Frequenz in den Reifen, danach explosiv antreten.", field:"half",
+    el:[{type:"cone",x:50,y:78},{type:"cone",x:50,y:66},{type:"cone",x:50,y:54},{type:"cone",x:50,y:42},{type:"player",x:50,y:86,n:1},{type:"runArrow",x1:50,y1:85,x2:50,y2:25}] },
+  { id:"d54", focus:"aufwaermen", axes:["Teamplay","Uebersicht"], title:"Komm-mit / Lauf-weg", min:8, players:"6+", cats:["E-Jugend","D-Jugend","C-Jugend"],
+    desc:"Paare gegenüber. Trainer ruft 'mit' oder 'weg' – Spieler reagieren, fangen oder fliehen. Reaktion und Spaß zum Start.",
+    kids:"Der Trainer ruft 'Komm mit!' oder 'Lauf weg!'. Du musst blitzschnell reagieren und in die richtige Richtung flitzen. Ein lustiges Reaktionsspiel zum Warmwerden.",
+    coach:"Klare Kommandos, kurze Distanzen, sofort reagieren.", field:"half",
+    el:[{type:"player",x:40,y:45,n:1},{type:"player",x:60,y:45,n:2},{type:"runArrow",x1:40,y1:48,x2:48,y2:60},{type:"runArrow",x1:60,y1:48,x2:52,y2:60}] },
+  { id:"d55", focus:"aufwaermen", axes:["Technik"], title:"Ballschule Stationen", min:10, players:"beliebig", cats:["Bambinis","G-Jugend","F-Jugend"],
+    desc:"Mehrere kleine Stationen: rollen, stoppen, jonglieren, durch Hütchen führen. Spielerische Ballgewöhnung für die Kleinsten.",
+    kids:"An jeder Station gibt es etwas zu entdecken: den Ball rollen, stoppen, hochwerfen, um die Hütchen führen. Probier alle Stationen aus – wie auf einem Spielplatz für Fußball!",
+    coach:"Viel Lob, kleine Erfolge, jedes Kind mit eigenem Ball.", field:"half",
+    el:[{type:"cone",x:30,y:35},{type:"cone",x:70,y:35},{type:"cone",x:30,y:70},{type:"cone",x:70,y:70},{type:"player",x:30,y:35,n:1},{type:"player",x:70,y:35,n:2},{type:"ball",x:30,y:31},{type:"ball",x:70,y:31}] },
+  // ---- TECHNIK (weitere) ----
+  { id:"d56", focus:"technik", axes:["Technik","Schnelligkeit"], title:"Slalom mit Tempowechsel", min:12, players:"1+", cats:["E-Jugend","D-Jugend","C-Jugend"],
+    desc:"Enger Slalom durch Hütchen, nach dem letzten Hütchen Tempodribbling auf freier Strecke.",
+    coach:"In den engen Passagen kurze Kontakte, danach Ball vorlegen.", field:"half",
+    el:[{type:"cone",x:45,y:75},{type:"cone",x:55,y:65},{type:"cone",x:45,y:55},{type:"cone",x:55,y:45},{type:"player",x:45,y:82,n:1},{type:"ball",x:43,y:79},{type:"dribbleArrow",x1:43,y1:79,x2:55,y2:45,ball:true},{type:"dribbleArrow",x1:55,y1:43,x2:55,y2:20,ball:true}] },
+  { id:"d57", focus:"technik", axes:["Technik","Teamplay"], title:"Pass in den Lauf", min:12, players:"2+", cats:["E-Jugend","D-Jugend","C-Jugend","B-Jugend"],
+    desc:"Mitspieler startet diagonal, Passgeber spielt den Ball präzise in den freien Raum vor ihm. Timing von Pass und Lauf.",
+    coach:"Nicht auf den Fuß, sondern in den Lauf passen. Tempo der Vorlage anpassen.", field:"half",
+    el:[{type:"player",x:30,y:75,n:1},{type:"player",x:55,y:60,n:2},{type:"ball",x:32,y:72},{type:"runArrow",x1:55,y1:58,x2:68,y2:35},{type:"passArrow",x1:32,y1:72,x2:66,y2:38,ball:true}] },
+  { id:"d58", focus:"technik", axes:["Technik","Uebersicht"], title:"Drei-Farben-Passspiel", min:12, players:"6+", cats:["D-Jugend","C-Jugend","B-Jugend"],
+    desc:"Spieler in Gruppen, Pässe nur in festgelegter Reihenfolge (z. B. Rot zu Blau zu Gelb). Fordert Orientierung vor der Annahme.",
+    coach:"Vor dem Pass den nächsten Empfänger suchen, Kopf hoch.", field:"half",
+    el:[{type:"player",x:30,y:35,n:1,color:"#dc2626"},{type:"player",x:70,y:40,n:2,color:"#2563eb"},{type:"player",x:50,y:72,n:3,color:"#eab308"},{type:"ball",x:32,y:37},{type:"passArrow",x1:32,y1:37,x2:68,y2:40,ball:true},{type:"passArrow",x1:68,y1:42,x2:52,y2:70,ball:true}] },
+  { id:"d59", focus:"technik", axes:["Technik"], title:"Erste Berührung am Hütchentor", min:10, players:"2+", cats:["E-Jugend","D-Jugend","C-Jugend"],
+    desc:"Zuspiel, erste Berührung durch ein kleines Hütchentor zur Seite, dann weiterspielen. Schult die gezielte Ballmitnahme.",
+    coach:"Ball mit dem entfernten Fuß in die offene Richtung mitnehmen.", field:"half",
+    el:[{type:"cone",x:45,y:50},{type:"cone",x:55,y:50},{type:"player",x:50,y:75,n:1},{type:"player",x:50,y:30,n:2,label:"Pass"},{type:"ball",x:48,y:33},{type:"passArrow",x1:48,y1:33,x2:50,y2:55,ball:true},{type:"dribbleArrow",x1:50,y1:55,x2:62,y2:62,ball:true}] },
+  // ---- TAKTIK (weitere) ----
+  { id:"d60", focus:"taktik", axes:["Uebersicht","Teamplay"], title:"Aufbau von hinten", min:18, players:"8+", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
+    desc:"Spielaufbau vom Torwart über die Abwehr. Anspielstationen bilden, Druck überspielen, ruhig kombinieren.",
+    coach:"Breit und tief anbieten, nicht überhastet lang schlagen.", field:"full",
+    el:[{type:"player",x:8,y:50,label:"TW"},{type:"player",x:25,y:30,n:1},{type:"player",x:25,y:70,n:2},{type:"player",x:42,y:50,n:3},{type:"ball",x:8,y:50},{type:"passArrow",x1:10,y1:50,x2:24,y2:31,ball:true},{type:"passArrow",x1:25,y1:30,x2:41,y2:49,ball:true}] },
+  { id:"d61", focus:"taktik", axes:["Zweikampf","Uebersicht"], title:"Zonenverteidigung 4-gegen-4", min:18, players:"8+", cats:["C-Jugend","B-Jugend","A-Jugend"],
+    desc:"Verteidigung verschiebt kompakt als Block. Angreifer versuchen, durch die Zonen zu kombinieren.",
+    coach:"Abstände halten, ballnah pressen, ballfern absichern.", field:"full",
+    el:[{type:"player",x:35,y:25,n:1},{type:"player",x:35,y:45,n:2},{type:"player",x:35,y:62,n:3},{type:"player",x:35,y:80,n:4},{type:"opp",x:55,y:35,n:1},{type:"opp",x:60,y:60,n:2},{type:"ball",x:55,y:35},{type:"runArrow",x1:35,y1:45,x2:44,y2:40}] },
+  { id:"d62", focus:"taktik", axes:["Uebersicht","Schnelligkeit"], title:"Konter über die Außen", min:15, players:"6+", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
+    desc:"Nach Ballgewinn schneller Pass auf den Außenspieler, der das Tempo aufnimmt und in die Mitte flankt.",
+    coach:"Erste Option ist der schnelle Außenspieler, früh in die Tiefe.", field:"full",
+    el:[{type:"goal",x:96,y:50,w:18},{type:"player",x:35,y:50,n:1},{type:"player",x:55,y:18,n:2},{type:"player",x:60,y:75,n:3},{type:"ball",x:35,y:50},{type:"passArrow",x1:35,y1:50,x2:55,y2:20,ball:true},{type:"runArrow",x1:55,y1:18,x2:80,y2:25}] },
+  { id:"d63", focus:"taktik", axes:["Teamplay","Uebersicht"], title:"Dreiecksbildung im Aufbau", min:15, players:"6+", cats:["D-Jugend","C-Jugend","B-Jugend"],
+    desc:"Spieler bilden ständig Passdreiecke, um immer zwei Anspielstationen zu haben. Bei Pass neue Dreiecke bilden.",
+    coach:"Nie in einer Linie stehen, immer Dreiecke anbieten.", field:"half",
+    el:[{type:"player",x:30,y:70,n:1},{type:"player",x:55,y:55,n:2},{type:"player",x:40,y:40,n:3},{type:"ball",x:32,y:68},{type:"passArrow",x1:32,y1:68,x2:53,y2:55,ball:true},{type:"runArrow",x1:40,y1:40,x2:60,y2:35}] },
+  // ---- TORSCHUSS (weitere) ----
+  { id:"d64", focus:"torschuss", axes:["Abschluss"], title:"Distanzschuss-Wettbewerb", min:12, players:"2+", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
+    desc:"Von der Strafraumgrenze auf Tore oder in markierte Zonen schießen. Punkte sammeln, Wettbewerb in zwei Teams.",
+    coach:"Stützbein neben dem Ball, Spann fest, Körper über dem Ball.", field:"half",
+    el:[{type:"goal",x:50,y:4,w:16},{type:"player",x:35,y:55,n:1},{type:"player",x:65,y:55,n:2},{type:"ball",x:35,y:52},{type:"ball",x:65,y:52},{type:"passArrow",x1:35,y1:52,x2:46,y2:8,ball:true},{type:"passArrow",x1:65,y1:52,x2:54,y2:8,ball:true}] },
+  { id:"d65", focus:"torschuss", axes:["Abschluss","Technik"], title:"Kopfball nach Flanke", min:12, players:"3+", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
+    desc:"Hohe Flanke vom Außenspieler, Stürmer köpft aufs Tor. Timing des Absprungs und Kopfballtechnik.",
+    coach:"Spät einlaufen, mit Stirn treffen, Ball nach unten köpfen.", field:"half",
+    el:[{type:"goal",x:50,y:4,w:16},{type:"player",x:80,y:40,n:1,label:"Flanke"},{type:"player",x:48,y:22,n:2},{type:"ball",x:78,y:38},{type:"passArrow",x1:78,y1:38,x2:52,y2:16,ball:true},{type:"runArrow",x1:48,y1:24,x2:50,y2:14}] },
+  { id:"d66", focus:"torschuss", axes:["Abschluss","Schnelligkeit"], title:"Wettlauf zum Abschluss", min:12, players:"2+", cats:["E-Jugend","D-Jugend","C-Jugend"],
+    desc:"Zwei Spieler sprinten um die Wette zum aufgelegten Ball, der Erste schließt ab, der Zweite stört.",
+    coach:"Explosiv starten, unter Druck ruhig abschließen.", field:"half",
+    el:[{type:"goal",x:50,y:4,w:16},{type:"player",x:40,y:75,n:1},{type:"player",x:60,y:75,n:2},{type:"ball",x:50,y:45},{type:"runArrow",x1:40,y1:73,x2:49,y2:48},{type:"runArrow",x1:60,y1:73,x2:51,y2:48},{type:"passArrow",x1:50,y1:43,x2:50,y2:8,ball:true}] },
+  // ---- KONDITION (weitere) ----
+  { id:"d67", focus:"kondition", axes:["Ausdauer","Technik"], title:"Dribbel-Parcours auf Zeit", min:12, players:"beliebig", cats:["E-Jugend","D-Jugend","C-Jugend"],
+    desc:"Längerer Parcours mit Slalom, Wende und Sprint, mit Ball. Auf Zeit, mehrere Durchgänge mit Pause.",
+    coach:"Ballkontrolle auch bei Tempo, sauber wenden.", field:"half",
+    el:[{type:"cone",x:35,y:75},{type:"cone",x:65,y:60},{type:"cone",x:40,y:40},{type:"cone",x:60,y:22},{type:"player",x:35,y:85,n:1},{type:"ball",x:33,y:82},{type:"dribbleArrow",x1:33,y1:82,x2:60,y2:22,ball:true}] },
+  { id:"d68", focus:"kondition", axes:["Ausdauer"], title:"Spielform mit langen Wegen", min:18, players:"8+", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
+    desc:"Kleinfeldspiel über die volle Feldlänge, sodass viele Sprints und Wege entstehen. Belastung durch große Distanzen.",
+    coach:"Immer wieder anbieten und nachsetzen, Tempo hochhalten.", field:"full",
+    el:[{type:"goal",x:4,y:50,w:16},{type:"goal",x:96,y:50,w:16},{type:"player",x:30,y:45,n:1},{type:"player",x:55,y:55,n:2},{type:"opp",x:65,y:45,n:1},{type:"ball",x:30,y:45},{type:"runArrow",x1:30,y1:45,x2:70,y2:50}] },
+  { id:"d69", focus:"kondition", axes:["Schnelligkeit","Zweikampf"], title:"Hütchen-Reaktionslauf", min:10, players:"2+", cats:["E-Jugend","D-Jugend","C-Jugend","B-Jugend"],
+    desc:"Vier farbige Hütchen im Halbkreis. Trainer ruft eine Farbe, Spieler sprintet hin und zurück. Reaktion und Antritt.",
+    coach:"Auf das Signal sofort reagieren, sauber abbremsen.", field:"half",
+    el:[{type:"cone",x:30,y:40,color:"#dc2626"},{type:"cone",x:45,y:30,color:"#2563eb"},{type:"cone",x:60,y:30,color:"#eab308"},{type:"cone",x:72,y:42},{type:"player",x:50,y:72,n:1},{type:"runArrow",x1:50,y1:70,x2:45,y2:33}] },
+  // ---- SPIELFORM (weitere) ----
+  { id:"d70", focus:"spielform", axes:["Teamplay","Uebersicht"], title:"5-gegen-5 mit Aufbauzonen", min:20, players:"10+", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
+    desc:"Feld mit Aufbau-, Mittel- und Abschlusszone. Punkt nur nach kontrolliertem Aufbau durch alle Zonen.",
+    coach:"Geduld im Aufbau, kein langer Ball, durch die Zonen kombinieren.", field:"full",
+    el:[{type:"zone",x:5,y:8,w:28,h:84,color:"#16a34a"},{type:"player",x:18,y:35,n:1},{type:"player",x:18,y:65,n:2},{type:"player",x:45,y:50,n:3},{type:"opp",x:55,y:45,n:1},{type:"ball",x:18,y:35}] },
+  { id:"d71", focus:"spielform", axes:["Abschluss","Teamplay"], title:"3-gegen-3 plus Torhüter", min:20, players:"8+", cats:["E-Jugend","D-Jugend","C-Jugend"],
+    desc:"Kleinfeld 3 gegen 3 auf zwei Tore mit Torhütern. Schneller Wechsel zwischen Angriff und Verteidigung.",
+    coach:"Nach Ballgewinn sofort umschalten, Torhüter ins Spiel einbeziehen.", field:"half",
+    el:[{type:"goal",x:50,y:4,w:14},{type:"goal",x:50,y:96,w:14},{type:"player",x:40,y:40,n:1},{type:"player",x:58,y:48,n:2},{type:"player",x:50,y:62,n:3},{type:"opp",x:45,y:55,n:1},{type:"opp",x:60,y:65,n:2},{type:"opp",x:48,y:38,n:3},{type:"ball",x:50,y:50}] },
+  { id:"d72", focus:"spielform", axes:["Uebersicht","Teamplay"], title:"Überzahl-Wellenspiel", min:20, players:"9+", cats:["D-Jugend","C-Jugend","B-Jugend"],
+    desc:"Angreifer starten in Wellen mit Überzahl gegen wechselnde Verteidiger. Nach Abschluss kommt sofort die nächste Welle.",
+    coach:"Überzahl konsequent ausspielen, schnell abschließen.", field:"full",
+    el:[{type:"goal",x:96,y:50,w:18},{type:"player",x:30,y:35,n:1},{type:"player",x:35,y:55,n:2},{type:"player",x:45,y:70,n:3},{type:"opp",x:60,y:50,n:1},{type:"opp",x:70,y:60,n:2},{type:"ball",x:35,y:55},{type:"passArrow",x1:35,y1:55,x2:48,y2:68,ball:true}] },
+  { id:"d73", focus:"spielform", axes:["Teamplay","Technik"], title:"Tor-Tennis", min:15, players:"4+", cats:["E-Jugend","D-Jugend","C-Jugend"],
+    desc:"Über eine Hütchenlinie den Ball ins gegnerische Feld spielen, maximal X Bodenkontakte. Schult Ballkontrolle und Übersicht.",
+    coach:"Sauber annehmen, gezielt ins freie Feld spielen.", field:"half",
+    el:[{type:"cone",x:30,y:50},{type:"cone",x:50,y:50},{type:"cone",x:70,y:50},{type:"player",x:40,y:70,n:1},{type:"player",x:60,y:30,n:2},{type:"ball",x:42,y:67},{type:"passArrow",x1:42,y1:67,x2:58,y2:33,ball:true}] },
+  { id:"d74", focus:"spielform", axes:["Zweikampf","Abschluss"], title:"1-gegen-1 Turnier", min:18, players:"6+", cats:["E-Jugend","D-Jugend","C-Jugend","B-Jugend"],
+    desc:"Reihum 1 gegen 1 auf ein Tor mit Torwart. Sieger bleibt, Verlierer wechselt. Viele intensive Duelle.",
+    coach:"Mutig angreifen, Finten einsetzen, schnell abschließen.", field:"half",
+    el:[{type:"goal",x:50,y:4,w:16},{type:"opp",x:50,y:14,label:"TW"},{type:"player",x:42,y:60,n:1},{type:"opp",x:58,y:45,n:1},{type:"ball",x:40,y:57},{type:"dribbleArrow",x1:40,y1:57,x2:46,y2:25,ball:true}] },
+  // ---- TECHNIK / TAKTIK Auffüllung ----
+  { id:"d75", focus:"technik", axes:["Technik","Schnelligkeit"], title:"Beidfuß-Parcours", min:12, players:"1+", cats:["D-Jugend","C-Jugend","B-Jugend"],
+    desc:"Parcours, der bewusst beide Füße fordert: links um die Hütchen, rechts abschließen und umgekehrt.",
+    coach:"Schwachen Fuß bewusst einsetzen, sauber bleiben.", field:"half",
+    el:[{type:"cone",x:40,y:70},{type:"cone",x:60,y:55},{type:"cone",x:40,y:40},{type:"player",x:40,y:80,n:1},{type:"ball",x:38,y:77},{type:"dribbleArrow",x1:38,y1:77,x2:40,y2:40,ball:true}] },
+  { id:"d76", focus:"taktik", axes:["Uebersicht","Teamplay"], title:"Positionswechsel einstudieren", min:15, players:"6+", cats:["C-Jugend","B-Jugend","A-Jugend"],
+    desc:"Zwei Spieler tauschen während des Angriffs die Positionen, um den Gegner zu verwirren und Räume zu schaffen.",
+    coach:"Wechsel mit Tempo, Lücke sofort nutzen, kommunizieren.", field:"full",
+    el:[{type:"player",x:40,y:35,n:1},{type:"player",x:55,y:60,n:2},{type:"ball",x:40,y:35},{type:"runArrow",x1:40,y1:38,x2:55,y2:58},{type:"runArrow",x1:55,y1:57,x2:42,y2:38}] },
+  { id:"d77", focus:"taktik", axes:["Zweikampf","Teamplay"], title:"Pressingfalle stellen", min:18, players:"8+", cats:["B-Jugend","A-Jugend"],
+    desc:"Gegner wird bewusst auf eine Seite gelenkt, dort presst die Mannschaft gemeinsam und erobert den Ball.",
+    coach:"Außen pressen, Mitte zustellen, gemeinsam auslösen.", field:"full",
+    el:[{type:"opp",x:25,y:30,n:1},{type:"player",x:38,y:28,n:1},{type:"player",x:42,y:48,n:2},{type:"player",x:55,y:38,n:3},{type:"ball",x:25,y:30},{type:"runArrow",x1:38,y1:28,x2:30,y2:29},{type:"runArrow",x1:42,y1:48,x2:36,y2:38}] },
+  // ---- KONDITION / AUFWÄRMEN Auffüllung ----
+  { id:"d78", focus:"kondition", axes:["Ausdauer","Teamplay"], title:"Staffel mit Pass", min:12, players:"6+", cats:["F-Jugend","E-Jugend","D-Jugend"],
+    desc:"Staffelform: dribbeln, passen zum Wartenden, der startet. Belastung mit Ball, Teamcharakter motiviert.",
+    coach:"Genauer Pass auf den Starter, dann selbst hinten anstellen.", field:"half",
+    el:[{type:"cone",x:50,y:25},{type:"player",x:40,y:80,n:1},{type:"player",x:60,y:80,n:2},{type:"ball",x:40,y:77},{type:"dribbleArrow",x1:40,y1:77,x2:48,y2:27,ball:true},{type:"passArrow",x1:50,y1:25,x2:60,y2:77,ball:true}] },
+  { id:"d79", focus:"aufwaermen", axes:["Teamplay","Technik"], title:"Rondo 4-gegen-1 locker", min:8, players:"5+", cats:["E-Jugend","D-Jugend","C-Jugend","B-Jugend"],
+    desc:"Vier Spieler im Kreis halten den Ball gegen einen in der Mitte. Lockeres Einspielen mit Köpfchen.",
+    coach:"Erste oder zweite Berührung, ruhig und sauber.", field:"half",
+    el:[{type:"player",x:50,y:28,n:1},{type:"player",x:72,y:55,n:2},{type:"player",x:50,y:78,n:3},{type:"player",x:28,y:55,n:4},{type:"opp",x:50,y:53,n:1},{type:"ball",x:50,y:30},{type:"passArrow",x1:50,y1:30,x2:70,y2:54,ball:true}] },
+  { id:"d80", focus:"spielform", axes:["Abschluss","Uebersicht","Teamplay"], title:"Abschlussturnier 4-gegen-4", min:25, players:"12+", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
+    desc:"Mehrere Teams, kurze Spiele 4 gegen 4 auf zwei Tore mit Torhütern im Turniermodus. Krönung einer Trainingseinheit.",
+    coach:"Faire Teams, kurze intensive Spiele, alle Themen anwenden lassen.", field:"full",
+    el:[{type:"goal",x:4,y:50,w:18},{type:"goal",x:96,y:50,w:18},{type:"player",x:28,y:38,n:1},{type:"player",x:38,y:62,n:2},{type:"player",x:50,y:48,n:3},{type:"opp",x:62,y:42,n:1},{type:"opp",x:70,y:64,n:2},{type:"opp",x:55,y:70,n:3},{type:"ball",x:50,y:48}] },
+];
+const drillsByFocus = f => DRILL_LIB.filter(d=>d.focus===f);
+// Übungen, die eine bestimmte Skill-Achse trainieren (für Förderlücken-Vorschläge)
+const drillsForAxis = axis => DRILL_LIB.filter(d=>(d.axes||[]).includes(axis));
+
+// Dauer eines Termins in Minuten aus time + endTime (oder null wenn nicht bestimmbar)
+function eventDurationMin(ev) {
+  if(!ev || !ev.time || !ev.endTime) return null;
+  const [h1,m1] = ev.time.split(":").map(Number);
+  const [h2,m2] = ev.endTime.split(":").map(Number);
+  if([h1,m1,h2,m2].some(x=>Number.isNaN(x))) return null;
+  let diff = (h2*60+m2) - (h1*60+m1);
+  if(diff <= 0) return null;       // Ende vor Start = ungültig
+  if(diff > 240) return null;      // unplausibel lang
+  return diff;
+}
+
+// ----- Trainingsplan-Generator (lokal, ohne externen Dienst) -----
+// Eine Einheit folgt: Aufwärmen -> Hauptteil(Schwerpunkt) -> Spielform/Abschluss
+function pickRandom(arr, exclude=[]) {
+  const pool = arr.filter(d=>!exclude.includes(d.id));
+  if(pool.length===0) return arr[Math.floor(Math.random()*arr.length)]||null;
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+// Baut eine Einheit. focus = Schwerpunkt-Id, cat = Altersklasse, used = bereits verwendete IDs
+// targetMin = angestrebte Gesamtdauer; die Auswahl füllt die Phasen passend dazu.
+function buildSession({ focus="technik", cat=null, used=[], targetMin=60 }) {
+  const inCat = d => !cat || (d.cats||[]).includes(cat);
+  const byFocus = (fid) => DRILL_LIB.filter(d=>d.focus===fid && inCat(d));
+  const blocks = [];
+  const ex = [...used];
+  const add = (phase, drill) => { if(drill){ blocks.push({phase, drill}); ex.push(drill.id); } };
+  const sum = () => blocks.reduce((a,b)=>a+(b.drill.min||0),0);
+
+  const mainFocus = (focus==="auto"||focus==="spielform"||focus==="aufwaermen") ? "technik" : focus;
+  // 1) Aufwärmen (immer)
+  add("Aufwärmen", pickRandom(byFocus("aufwaermen"), ex));
+  // 2) Hauptteil 1 — Schwerpunkt
+  add("Hauptteil", pickRandom(byFocus(mainFocus), ex));
+  // 3) Abschluss — Spielform (immer, als Abschluss)
+  const game = pickRandom(byFocus("spielform"), ex);
+  // 4) optionale weitere Hauptteil-Blöcke, bis Zieldauer (abzüglich Abschluss) etwa erreicht ist
+  const gameMin = game?.min||18;
+  const secondFocus = ["torschuss","technik"].includes(mainFocus) ? "taktik" : "torschuss";
+  const fillPool = [secondFocus, mainFocus, "kondition"];
+  let fi=0, guard=0;
+  while(sum() + gameMin < targetMin - 6 && guard < 8){
+    const fid = fillPool[fi % fillPool.length]; fi++; guard++;
+    const d = pickRandom(byFocus(fid), ex);
+    if(d && sum() + gameMin + d.min <= targetMin + 6){ add("Hauptteil", d); }
+  }
+  // Abschluss zuletzt anhängen
+  add("Abschluss", game);
+  return blocks;
+}
+// Schwerpunkt aus den größten Förderlücken ableiten (Achse -> Schwerpunkt-Id)
+const AXIS_TO_FOCUS = {
+  Technik:"technik", Schnelligkeit:"kondition", Zweikampf:"taktik",
+  Uebersicht:"taktik", Abschluss:"torschuss", Ausdauer:"kondition", Teamplay:"spielform",
+};
+
 
 const CAT_YEARS = {
+
   "Bambinis": [2019,2020,2021,2022],"G-Jugend": [2017,2018,2019],"F-Jugend": [2015,2016,2017],"E-Jugend": [2013,2014,2015],"D-Jugend": [2011,2012,2013],"C-Jugend": [2009,2010,2011],"B-Jugend": [2007,2008,2009],"A-Jugend": [2005,2006,2007],};
 const CAT_ORDER = ["Bambinis","G-Jugend","F-Jugend","E-Jugend","D-Jugend","C-Jugend","B-Jugend","A-Jugend"];
 
@@ -10043,7 +11983,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
 
           {}
           <Section title="* Stammdaten">
-            <Inp label="Name" val={p.name} set={v=>up({name:v})} ph="Vorname Nachname" cl={{pri:t.p}}/>
+            <Inp label="Name" val={p.name} set={v=>up({name:v})} ph="z.B. Max M." cl={{pri:t.p}} note="Datenschutz: Bitte nur Vorname, höchstens Nachname-Initial (z.B. Max M.). So wenig wie möglich."/>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
               <Inp label="Geburtsjahr" val={String(p.by||"")} set={v=>up({by:parseInt(v)||p.by})} type="number" ph="z.B. 2014" cl={{pri:t.p}}/>
               <Sel label="Geschlecht" val={p.gender||"m"} set={v=>up({gender:v})} opts={[["m","* Maennlich"],["w","* Weiblich"]]}/>
@@ -10151,6 +12091,30 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
                       <div style={{fontSize:11,fontWeight:800,color:"#9a3412",marginBottom:4,letterSpacing:.3}}>ENTWICKLUNGSZIELE ({cat})</div>
                       <div style={{fontSize:13,color:"#9a3412",lineHeight:1.6}}>{foerder.map(x=>`${x.a} (${x.ist}→${x.soll})`).join(", ")}</div>
                     </div>}
+                    {(()=>{
+                      const fits = positionFit(sport, sk, club);
+                      if(!hasAny || fits.length===0) return null;
+                      const best = fits[0];
+                      return (
+                        <div style={{marginTop:12,background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:11,padding:"12px 14px"}}>
+                          <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.3}}>POSITIONS-EIGNUNG</div>
+                          {fits.map(f=>(
+                            <div key={f.pos} style={{marginBottom:8}}>
+                              <div style={{display:"flex",justifyContent:"space-between",fontSize:13,marginBottom:3}}>
+                                <span style={{fontWeight:f.pos===best.pos?800:600,color:f.pos===best.pos?(t.p||"#16a34a"):"#475569"}}>{f.pos}{p.position===f.pos?" (aktuell)":""}</span>
+                                <span style={{fontWeight:800,color:f.pos===best.pos?(t.p||"#16a34a"):"#94a3b8"}}>{f.pct}%</span>
+                              </div>
+                              <div style={{height:6,borderRadius:99,background:"#e2e8f0",overflow:"hidden"}}>
+                                <div style={{height:"100%",borderRadius:99,width:`${f.pct}%`,background:f.pos===best.pos?(t.p||"#16a34a"):"#cbd5e1",transition:"width .4s"}}/>
+                              </div>
+                            </div>
+                          ))}
+                          <div style={{fontSize:11,color:"#94a3b8",marginTop:6,lineHeight:1.5}}>
+                            Berechnet aus dem Skill-Profil. Gewichtung ist ein Vorschlag – ersetzt nicht die Einschätzung des Trainers.
+                          </div>
+                        </div>
+                      );
+                    })()}
                     <div style={{marginTop:10,fontSize:11,color:"#94a3b8",lineHeight:1.5}}>
                       Zielwerte sind Vorschläge, anpassbar an eure Ausbildungskonzeption. Quelle:{" "}
                       <a href={SKILL_SOURCE.url} target="_blank" rel="noopener noreferrer" style={{color:t.p||"#16a34a",fontWeight:700}}>{SKILL_SOURCE.label}</a>
@@ -10961,6 +12925,10 @@ function PlayersTab({ data,myTids,save,fire,cl }) {
         </>
       )}
 
+      {view==="list"&&selTeam&&(
+        <div style={{marginTop:16}}><ShareTeamLink cl={cl} team={selTeam} t={t}/></div>
+      )}
+
       {}
       {(editP||showNew) && (
         <PlayerProfile
@@ -11388,7 +13356,7 @@ function SeriesWizard({f,u,t}) {
 
 function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTemplate=null}) {
   const t=TH(cl); const isEdit=!!editEv; const STEPS=5;
-  const blank={tid:teams[0]?.id||"",type:"training",title:"",date:now(),time:"",loc:"",note:"",sollPlayers:null,maxPlayers:null,pt:"att",recMode:"none",recDays:[],recStart:now(),recUntil:"",recDates:[],li:[],fi:[],sc:[],selType:"multi",open:false,_li:{txt:"",max:""},_fi:{name:"",col:"#16a34a"},_sc:{fid:"",time:"",a:"",b:"",ref:""}};
+  const blank={tid:teams[0]?.id||"",type:"training",title:"",date:now(),time:"",endTime:"",loc:"",note:"",sollPlayers:null,maxPlayers:null,pt:"att",recMode:"none",recDays:[],recStart:now(),recUntil:"",recDates:[],li:[],fi:[],sc:[],selType:"multi",open:false,_li:{txt:"",max:""},_fi:{name:"",col:"#16a34a"},_sc:{fid:"",time:"",a:"",b:"",ref:""}};
   const [step,setStep]=useState(1);
   const [f,setF]=useState(editEv?{...blank,...editEv,recMode:"none",recDays:[],recDates:[],_li:{txt:"",max:""},_fi:{name:"",col:"#16a34a"},_sc:{fid:"",time:"",a:"",b:"",ref:""}}:blank);
   const u=p=>setF(prev=>({...prev,...p}));
@@ -11442,8 +13410,9 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
           <Inp label="Titel" val={f.title} set={v=>u({title:v})} ph={`z.B. ${ET[f.type]?.label}`} af cl={cl}/>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:11}}>
             <Inp label="Uhrzeit" val={f.time} set={v=>u({time:v})} type="time" ph="09:00" cl={cl}/>
-            <Inp label="Ort" val={f.loc} set={v=>u({loc:v})} ph="Sportplatz" cl={cl}/>
+            <Inp label="Ende (optional)" val={f.endTime} set={v=>u({endTime:v})} type="time" ph="" cl={cl}/>
           </div>
+          <Inp label="Ort" val={f.loc} set={v=>u({loc:v})} ph="Sportplatz" cl={cl}/>
           <SeriesWizard f={f} u={u} t={t} cl={cl}/>
           {f.recMode==="none"&&<Inp label="Datum" val={f.date} set={v=>u({date:v})} type="date" cl={cl}/>}
           {(()=>{
@@ -11561,7 +13530,7 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
       </div>
       {}
       <div style={{padding:"12px 16px",background:"#fff",borderTop:"1px solid #f1f5f9",display:"flex",gap:10,position:"sticky",bottom:0}}>
-        {step>1?<Btn ch="<- Zurueck" onClick={()=>setStep(s=>s-1)} v="gst" sx={{flex:1}}/>:<Btn ch="Abbrechen" onClick={onClose} v="gst" sx={{flex:1}}/>}
+        {step>1?<Btn ch="<- Zurück" onClick={()=>setStep(s=>s-1)} v="gst" sx={{flex:1}}/>:<Btn ch="Abbrechen" onClick={onClose} v="gst" sx={{flex:1}}/>}
         {step<STEPS?<Btn ch="Weiter ->" onClick={()=>setStep(s=>s+1)} dis={!ok()} cl={cl} sx={{flex:2}}/>:<Btn ch={isEdit?"Speichern":f.recMode==="weekly"?"Serie erstellen":f.recMode==="custom"?`${(f.recDates||[]).length} Termine erstellen`:"Termin erstellen"} onClick={finish} cl={cl} sx={{flex:2}}/>}
       </div>
     </div>
@@ -11640,7 +13609,7 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
           <div style={{display:"flex",justifyContent:"center",padding:"12px 0 4px"}}><div style={{width:44,height:4,borderRadius:99,background:"#e2e8f0"}}/></div>
           <div style={{padding:"8px 22px 44px",display:"flex",flexDirection:"column",gap:12}}>
             <h3 style={{fontWeight:900,fontSize:18,color:"#0f172a"}}>{editH?"Helfer bearbeiten":"Neuen Helfer anlegen"}</h3>
-            <Inp label="Name des Helfers" val={f.name} set={v=>u({name:v})} ph="z.B. Maria Mueller" cl={cl}/>
+            <Inp label="Name des Helfers" val={f.name} set={v=>u({name:v})} ph="z.B. Maria M." cl={cl} note="Datenschutz: Bitte nur Vorname, höchstens Nachname-Initial."/>
             <Inp label="Kind im Verein (optional)" val={f.childName||""} set={v=>u({childName:v})} ph="z.B. Leon Mueller,G-Jugend" cl={cl}/>
             <Inp label="Notizen (intern)" val={f.notes||""} set={v=>u({notes:v})} ph="z.B. Hilft bei Heimspielen" rows={2} cl={cl}/>
 
@@ -11696,11 +13665,44 @@ function ChatTab({data,cid,myTids,session,save,fire,cl}) {
 
   const [selScope,setSelScope]=useState(scopes[0]?.id||"");
   const [text,setText]=useState("");
+  const [editId,setEditId]=useState(null);
+  const [editText,setEditText]=useState("");
+  const [menuId,setMenuId]=useState(null);
   const msgRef=useRef(null);
 
   const chats=data.chats||[];
   const chat=chats.find(c=>c.id===selScope);
   const msgs=chat?.messages||[];
+
+  const delMsg=(id)=>{
+    const next=chats.map(c=>c.id===selScope?{...c,messages:c.messages.filter(m=>m.id!==id)}:c);
+    save({...data,chats:next}); setMenuId(null); fire&&fire("Nachricht gelöscht");
+  };
+  const saveEdit=(id)=>{
+    if(!editText.trim()){ setEditId(null); return; }
+    const next=chats.map(c=>c.id===selScope?{...c,messages:c.messages.map(m=>m.id===id?{...m,text:editText.trim(),edited:true}:m)}:c);
+    save({...data,chats:next}); setEditId(null); setEditText(""); setMenuId(null);
+  };
+
+  // Auto-Löschung: Nachrichten älter als 30 Tage entfernen (läuft beim Öffnen des Chats)
+  useEffect(()=>{
+    const cutoff=Date.now()-30*24*60*60*1000;
+    const cur=data.chats||[];
+    let changed=false;
+    const cleaned=cur.map(c=>{
+      const keep=(c.messages||[]).filter(m=>m.system||new Date(m.ts).getTime()>=cutoff);
+      const removed=(c.messages||[]).length-keep.length;
+      if(removed>0){
+        changed=true;
+        // System-Vermerk an den Anfang, wenn noch nicht vorhanden für heute
+        const note={id:uid(),system:true,ts:new Date().toISOString(),text:removed+" ältere Nachricht"+(removed>1?"en":"")+" nach 30 Tagen automatisch gelöscht"};
+        return {...c,messages:[note,...keep]};
+      }
+      return c;
+    });
+    if(changed) save({...data,chats:cleaned});
+  // eslint-disable-next-line
+  },[]);
 
   const send=()=>{
     if(!text.trim())return;
@@ -11731,6 +13733,7 @@ function ChatTab({data,cid,myTids,session,save,fire,cl}) {
         ))}
       </div>
 
+      <div style={{fontSize:10.5,color:"#94a3b8",textAlign:"center",marginBottom:6}}>Nachrichten werden nach 30 Tagen automatisch gelöscht. Tippe auf deine eigene Nachricht zum Bearbeiten oder Löschen.</div>
       {}
       <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:10,paddingBottom:12}}>
         {msgs.length===0&&<div style={{textAlign:"center",padding:"32px",color:"#94a3b8"}}>
@@ -11741,6 +13744,14 @@ function ChatTab({data,cid,myTids,session,save,fire,cl}) {
         {msgs.map((msg,i)=>{
           const isMe=msg.author===session.name;
           const showDate=i===0||fmtD(msgs[i-1].ts)!==fmtD(msg.ts);
+          if(msg.system){
+            return (
+              <div key={msg.id}>
+                {showDate&&<div style={{textAlign:"center",marginBottom:8}}><span style={{fontSize:11,fontWeight:700,color:"#94a3b8",background:"#f1f5f9",borderRadius:99,padding:"3px 12px"}}>{fmtD(msg.ts)}</span></div>}
+                <div style={{textAlign:"center",margin:"4px 0"}}><span style={{fontSize:11,color:"#94a3b8",fontStyle:"italic",background:"#f8fafc",borderRadius:99,padding:"4px 12px"}}>{msg.text}</span></div>
+              </div>
+            );
+          }
           return (
             <div key={msg.id}>
               {showDate&&<div style={{textAlign:"center",marginBottom:8}}><span style={{fontSize:11,fontWeight:700,color:"#94a3b8",background:"#f1f5f9",borderRadius:99,padding:"3px 12px"}}>{fmtD(msg.ts)}</span></div>}
@@ -11748,9 +13759,29 @@ function ChatTab({data,cid,myTids,session,save,fire,cl}) {
                 {!isMe&&<Av name={msg.author} sz={28}/>}
                 <div style={{maxWidth:"78%"}}>
                   {!isMe&&<div style={{fontSize:11,fontWeight:700,color:roleColor[msg.role]||"#64748b",marginBottom:3,marginLeft:4}}>{msg.author} . <span style={{color:"#94a3b8",fontWeight:500}}>{roleLabel[msg.role]||msg.role}</span></div>}
-                  <div style={{background:isMe?t.p:"#fff",color:isMe?contrast(t.p):"#0f172a",borderRadius:isMe?"18px 18px 4px 18px":"18px 18px 18px 4px",padding:"10px 14px",fontSize:14,lineHeight:1.5,boxShadow:isMe?`0 3px 12px ${t.p}44`:"0 1px 6px rgba(0,0,0,.07)",border:isMe?"none":"1.5px solid #f1f5f9"}}>
-                    {msg.text}
-                  </div>
+                  {editId===msg.id ? (
+                    <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                      <input value={editText} onChange={e=>setEditText(e.target.value)} autoFocus
+                        onKeyDown={e=>{if(e.key==="Enter")saveEdit(msg.id);if(e.key==="Escape")setEditId(null);}}
+                        style={{padding:"9px 12px",borderRadius:12,border:`1.5px solid ${t.p}`,fontSize:14,outline:"none",fontFamily:"inherit",minWidth:180}}/>
+                      <div style={{display:"flex",gap:6,justifyContent:"flex-end"}}>
+                        <button onClick={()=>setEditId(null)} style={{padding:"5px 11px",borderRadius:8,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
+                        <button onClick={()=>saveEdit(msg.id)} style={{padding:"5px 11px",borderRadius:8,border:"none",background:t.p,color:"#fff",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Speichern</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div onClick={()=>{ if(isMe) setMenuId(menuId===msg.id?null:msg.id); }}
+                      style={{background:isMe?t.p:"#fff",color:isMe?contrast(t.p):"#0f172a",borderRadius:isMe?"18px 18px 4px 18px":"18px 18px 18px 4px",padding:"10px 14px",fontSize:14,lineHeight:1.5,boxShadow:isMe?`0 3px 12px ${t.p}44`:"0 1px 6px rgba(0,0,0,.07)",border:isMe?"none":"1.5px solid #f1f5f9",cursor:isMe?"pointer":"default"}}>
+                      {msg.text}
+                      {msg.edited&&<span style={{fontSize:10,opacity:.65,marginLeft:6}}>(bearbeitet)</span>}
+                    </div>
+                  )}
+                  {isMe&&menuId===msg.id&&editId!==msg.id&&(
+                    <div style={{display:"flex",gap:6,justifyContent:"flex-end",marginTop:5}}>
+                      <button onClick={()=>{setEditId(msg.id);setEditText(msg.text);setMenuId(null);}} style={{padding:"4px 10px",borderRadius:8,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>Bearbeiten</button>
+                      <button onClick={()=>delMsg(msg.id)} style={{padding:"4px 10px",borderRadius:8,border:"1.5px solid #fecaca",background:"#fef2f2",color:"#dc2626",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>Löschen</button>
+                    </div>
+                  )}
                   <div style={{fontSize:10,color:"#94a3b8",marginTop:3,textAlign:isMe?"right":"left",marginLeft:isMe?0:4}}>{fmt(msg.ts)}</div>
                 </div>
               </div>
@@ -12083,10 +14114,18 @@ function useShareTrigger(data,session,myTids) {
 
 function NewSeasonWizard({ data,save,fire,cl,myTids,onClose,onDone }) {
   const t=TH(cl||(data.clubs||[])[0]);
+  const clubId=(cl||(data.clubs||[])[0])?.id;
+  const curTeams=(data.teams||[]).filter(tm=>tm.cid===clubId&&!tm.endedSid);
   const [step,setStep]=useState(1);
   const [f,setF]=useState({label:"",ageGroups:[],teamCount:{},newPlayers:[],archivePlayers:[]});
+  // Mannschafts-Plan: pro bestehendem Team keep/drop + neue Teams
+  const [keep,setKeep]=useState(()=>{const o={};curTeams.forEach(tm=>o[tm.id]=true);return o;});
+  const [newTeams,setNewTeams]=useState([]); // {name,cat}
+  const [ntName,setNtName]=useState(""); const [ntCat,setNtCat]=useState((Object.keys(CAT_YEARS)[0])||"E-Jugend");
   const u=p=>setF(prev=>({...prev,...p}));
   const ok=()=>step===1?f.label.trim().length>=6:true;
+  const addNewTeam=()=>{ const nm=ntName.trim(); if(!nm)return; setNewTeams(a=>[...a,{name:nm,cat:ntCat}]); setNtName(""); };
+  const rmNewTeam=i=>setNewTeams(a=>a.filter((_,idx)=>idx!==i));
   const finish=()=>{
     const label = f.label.trim();
     if(!label) return;
@@ -12096,10 +14135,25 @@ function NewSeasonWizard({ data,save,fire,cl,myTids,onClose,onDone }) {
     const existingSids = (data.seasons||[]).map(s=>s.id);
     if(existingSids.includes(sid)) { fire&&fire("Saison existiert bereits"); return; }
     const activeSid = data.activeSeason || (data.seasons||[])[0]?.id || "";
+    // Teams: abgemeldete bekommen endedSid (bleiben in alter Saison erhalten), neue werden angelegt
+    const TEAM_COLORS = ["#16a34a","#2563eb","#d97706","#7c3aed","#dc2626","#0891b2","#059669","#ea580c"];
+    let teamsOut = (data.teams||[]).map(tm=>{
+      if(tm.cid!==clubId) return tm;
+      if(keep[tm.id]===false && !tm.endedSid) return {...tm, endedSid:sid}; // ab neuer Saison abgemeldet
+      return tm;
+    });
+    const createdTeams = newTeams.map((nt,i)=>({
+      id:uid(), cid:clubId, name:nt.name, icon:nt.name.slice(0,2).toUpperCase(),
+      col:TEAM_COLORS[(curTeams.length+i)%TEAM_COLORS.length],
+      pub:true, pwd:hashPw("team"), cat:nt.cat, years:CAT_YEARS[nt.cat]||"", startedSid:sid,
+    }));
+    teamsOut=[...teamsOut, ...createdTeams];
+    const keptTids = teamsOut.filter(tm=>tm.cid===clubId&&!tm.endedSid).map(tm=>tm.id);
+    // nur Spieler übernommener Teams kopieren
     const activePlayers = allP.filter(p=>
       !p.archived &&
       (!p.seasonId || p.seasonId===activeSid) &&
-      (myTids.includes(p.mainTid) || !p.mainTid)
+      (keptTids.includes(p.mainTid) || !p.mainTid)
     );
     const copied = activePlayers.map(p=>({
       ...p, id:uid(), seasonId:sid,
@@ -12110,15 +14164,19 @@ function NewSeasonWizard({ data,save,fire,cl,myTids,onClose,onDone }) {
     }));
     const nextData = {
       ...data,
+      teams: teamsOut,
       seasons: [...(data.seasons||[]), newSeason],
       playerProfiles: [...allP, ...copied],
+      events: (data.events||[]).map(e=> e.seasonId ? e : {...e, seasonId: activeSid}),
+      activeSeason: sid,
     };
     save(nextData);
-    fire&&fire("Saison "+label+" angelegt - "+copied.length+" Spieler uebernommen");
+    const droppedN=curTeams.filter(tm=>keep[tm.id]===false).length;
+    fire&&fire("Saison "+label+" angelegt – "+copied.length+" Spieler, "+createdTeams.length+" neue, "+droppedN+" abgemeldet");
     onDone&&onDone(sid);
     onClose();
   };
-  const STEPS=["Saison","Altersklassen","Fertig"];
+  const STEPS=["Saison","Mannschaften","Bereit","Fertig"];
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.65)",zIndex:960,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(8px)"}}>
       <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"90dvh",overflowY:"auto"}}>
@@ -12139,18 +14197,53 @@ function NewSeasonWizard({ data,save,fire,cl,myTids,onClose,onDone }) {
             </div>
           </>}
           {step===2&&<>
-            <h3 style={{fontWeight:900,fontSize:18,margin:"0 0 8px"}}>Bereit?</h3>
-            <p style={{fontSize:14,color:"#64748b",lineHeight:1.6}}>Alle aktiven Spieler der aktuellen Saison werden in die neue Saison {f.label} kopiert. Zuteilungen werden zurueckgesetzt - du kannst neu einteilen.</p>
-            <div style={{background:"#f0fdf4",borderRadius:12,padding:"12px",border:"1.5px solid #bbf7d0",marginTop:12,fontSize:13,color:"#166534"}}>
-              {(data.playerProfiles||[]).filter(p=>!p.archived&&myTids.includes(p.mainTid)).length} Spieler werden uebernommen
+            <h3 style={{fontWeight:900,fontSize:18,margin:"0 0 4px"}}>Mannschaften für {f.label||"die neue Saison"}</h3>
+            <p style={{fontSize:13,color:"#64748b",lineHeight:1.5,marginBottom:14}}>Wähle, welche Mannschaften übernommen werden. Abgemeldete bleiben in der alten Saison erhalten, die neue startet ohne sie.</p>
+            <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:16}}>
+              {curTeams.length===0&&<div style={{color:"#94a3b8",fontSize:13,textAlign:"center",padding:"10px"}}>Noch keine Mannschaften vorhanden.</div>}
+              {curTeams.map(tm=>(
+                <button key={tm.id} onClick={()=>setKeep(k=>({...k,[tm.id]:!k[tm.id]}))}
+                  style={{display:"flex",alignItems:"center",gap:11,padding:"11px 13px",borderRadius:12,border:`2px solid ${keep[tm.id]?t.p:"#e2e8f0"}`,background:keep[tm.id]?t.p+"0f":"#fff",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
+                  <div style={{width:34,height:34,borderRadius:9,background:tm.col||t.p,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:13,flexShrink:0}}>{tm.icon||tm.name?.slice(0,2).toUpperCase()}</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>{tm.name}</div>
+                    <div style={{fontSize:11.5,color:keep[tm.id]?"#16a34a":"#dc2626",fontWeight:700}}>{keep[tm.id]?"✓ wird übernommen":"✗ wird abgemeldet"}</div>
+                  </div>
+                  <div style={{width:24,height:24,borderRadius:7,border:`2px solid ${keep[tm.id]?t.p:"#cbd5e1"}`,background:keep[tm.id]?t.p:"#fff",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:14,flexShrink:0}}>{keep[tm.id]?"✓":""}</div>
+                </button>
+              ))}
+            </div>
+            <div style={{background:"#f8fafc",borderRadius:12,border:"1.5px dashed #cbd5e1",padding:"13px"}}>
+              <div style={{fontWeight:800,fontSize:13,color:"#334155",marginBottom:8}}>Neue Mannschaft hinzufügen (z.B. F-Jugend 2 oder aufgerückte Jugend)</div>
+              {newTeams.map((nt,i)=>(
+                <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,background:"#fff",borderRadius:9,padding:"7px 10px",border:"1px solid #e2e8f0"}}>
+                  <span style={{flex:1,fontSize:13,fontWeight:700,color:"#0f172a"}}>{nt.name} <span style={{color:"#94a3b8",fontWeight:600}}>· {nt.cat}</span></span>
+                  <button onClick={()=>rmNewTeam(i)} style={{background:"none",border:"none",color:"#dc2626",cursor:"pointer",fontWeight:800,fontSize:16,padding:0}}>×</button>
+                </div>
+              ))}
+              <input value={ntName} onChange={e=>setNtName(e.target.value)} placeholder="Name, z.B. F-Jugend 2"
+                style={{width:"100%",padding:"10px 12px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",marginBottom:8,boxSizing:"border-box"}}/>
+              <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:9}}>
+                {Object.keys(CAT_YEARS).map(c=>(
+                  <button key={c} onClick={()=>setNtCat(c)} style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid ${ntCat===c?t.p:"#e2e8f0"}`,background:ntCat===c?t.p:"#fff",color:ntCat===c?"#fff":"#475569",fontWeight:700,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>{c}</button>
+                ))}
+              </div>
+              <button onClick={addNewTeam} disabled={!ntName.trim()} style={{width:"100%",padding:"10px",borderRadius:10,border:"none",background:ntName.trim()?t.p:"#e2e8f0",color:ntName.trim()?"#fff":"#94a3b8",fontWeight:800,fontSize:13,cursor:ntName.trim()?"pointer":"default",fontFamily:"inherit"}}>+ Hinzufügen</button>
             </div>
           </>}
           {step===3&&<>
+            <h3 style={{fontWeight:900,fontSize:18,margin:"0 0 8px"}}>Bereit?</h3>
+            <p style={{fontSize:14,color:"#64748b",lineHeight:1.6}}>Die Spieler der übernommenen Mannschaften werden in die neue Saison {f.label} kopiert. Zuteilungen werden zurückgesetzt – du kannst neu einteilen.</p>
+            <div style={{background:"#f0fdf4",borderRadius:12,padding:"12px",border:"1.5px solid #bbf7d0",marginTop:12,fontSize:13,color:"#166534",lineHeight:1.7}}>
+              {curTeams.filter(tm=>keep[tm.id]).length} Mannschaften übernommen{newTeams.length>0?`, ${newTeams.length} neu`:""}{curTeams.filter(tm=>!keep[tm.id]).length>0?`, ${curTeams.filter(tm=>!keep[tm.id]).length} abgemeldet`:""}
+            </div>
+          </>}
+          {step===4&&<>
             <h3 style={{fontWeight:900,fontSize:18,margin:"0 0 8px"}}>Saison anlegen</h3>
             <p style={{fontSize:14,color:"#64748b"}}>Saison {f.label} wird als Planungs-Saison angelegt.</p>
           </>}
           <div style={{display:"flex",gap:9,marginTop:20,paddingBottom:32}}>
-            {step>1?<button onClick={()=>setStep(s=>s-1)} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Zurueck</button>:<button onClick={onClose} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>}
+            {step>1?<button onClick={()=>setStep(s=>s-1)} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Zurück</button>:<button onClick={onClose} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>}
             {step<STEPS.length?<button onClick={()=>ok()&&setStep(s=>s+1)} disabled={!ok()} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:ok()?t.p:"#e2e8f0",color:ok()?"#fff":"#94a3b8",fontWeight:800,cursor:ok()?"pointer":"default",fontFamily:"inherit"}}>Weiter</button>:<button onClick={finish} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:t.p,color:"#fff",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Saison anlegen</button>}
           </div>
         </div>
@@ -12170,7 +14263,7 @@ function SeasonPicker({ data,save,fire,onSelect,t }) {
   const teams = data.teams||[];
   return (
     <div style={{display:"flex",flexDirection:"column",gap:10}}>
-      {showWizard&&<NewSeasonWizard data={data} save={save} fire={fire} cl={clubs[0]||null} myTids={teams.map(tm=>tm.id)} onClose={()=>setShowWizard(false)} onDone={sid=>{switchActive(sid);setShowWizard(false);}}/>}
+      {showWizard&&<NewSeasonWizard data={data} save={save} fire={fire} cl={clubs[0]||null} myTids={teams.map(tm=>tm.id)} onClose={()=>setShowWizard(false)} onDone={()=>setShowWizard(false)}/>}
       {seasons.map(s=>{
         const st=STATUS[s.status]||STATUS.active;
         const isActive=s.id===active;
@@ -12262,7 +14355,7 @@ function SeasonModal({ data,save,fire,cl,myTids,onClose }) {
             <div style={{display:"flex",flexDirection:"column",gap:14}}>
               <div style={{background:"#eff6ff",borderRadius:13,padding:"13px 15px",border:"1.5px solid #bfdbfe",fontSize:13,color:"#1d4ed8",lineHeight:1.6}}>
                  <strong>Spieler in neue Saison kopieren</strong><br/>
-                Alle Spieler werden uebernommen. Ihr letztes Team wird automatisch als "Letzte Saison" eingetragen. Trikotnummern,Statistiken und Zuteilungen werden zurueckgesetzt - so kannst du neu einteilen.
+                Alle Spieler werden uebernommen. Ihr letztes Team wird automatisch als "Letzte Saison" eingetragen. Trikotnummern,Statistiken und Zuteilungen werden zurückgesetzt - so kannst du neu einteilen.
               </div>
 
               <div>
@@ -12295,7 +14388,7 @@ function SeasonModal({ data,save,fire,cl,myTids,onClose }) {
               {copyFrom&&copyTo&&(
                 <div style={{background:"#f8fafc",borderRadius:12,padding:"12px 14px",border:"1.5px solid #e2e8f0",fontSize:13,color:"#64748b"}}>
                   <strong style={{color:"#334155"}}>{allPlayers.filter(p=>p.seasonId===copyFrom&&myTids.includes(p.mainTid)).length} Spieler</strong> werden kopiert
-                  {" -> "}letztes Team vorausgefuellt,Positionen+Staerken uebernommen,Zuteilung zurueckgesetzt
+                  {" -> "}letztes Team vorausgefuellt,Positionen+Staerken uebernommen,Zuteilung zurückgesetzt
                 </div>
               )}
 
@@ -12543,8 +14636,9 @@ function TrainersTab({data,cid,save,fire}) {
           <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"90dvh",overflowY:"auto",padding:"20px 22px 48px"}}>
             <h3 style={{fontWeight:900,fontSize:18,color:"#0f172a",marginBottom:16}}>{editId?"Trainer bearbeiten":"Neuen Trainer anlegen"}</h3>
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
-              <input value={f.name} onChange={e=>u({name:e.target.value})} placeholder="Name des Trainers"
+              <input value={f.name} onChange={e=>u({name:e.target.value})} placeholder="Name (z.B. Max M.)"
                 style={{padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
+              <div style={{fontSize:12,color:"#94a3b8",marginTop:-4}}>Datenschutz: Bitte nur Vorname, höchstens Nachname-Initial.</div>
               <input type="password" value={f.pw} onChange={e=>u({pw:e.target.value})} placeholder={editId?"Neues Passwort (leer = unveraendert)":"Passwort"}
                 style={{padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
               <input value={f.phone||""} onChange={e=>u({phone:e.target.value})} placeholder="Telefon (optional)"
@@ -12569,6 +14663,193 @@ function TrainersTab({data,cid,save,fire}) {
 }
 
 
+// Tages-Zeitleiste pro Platz im 15-Minuten-Raster
+function toMin(t){ if(!t) return null; const [h,m]=t.split(":").map(Number); if(Number.isNaN(h)||Number.isNaN(m)) return null; return h*60+m; }
+function minToTime(min){ const h=Math.floor(min/60)%24, m=min%60; return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0"); }
+function DayTimeline({ field, bookings, trainings, date, dayStart=480, dayEnd=1320, onSlot, onCancel, tCol, t }){
+  const SLOT=15;                       // Minuten pro Zelle
+  const PXP=0.9;                       // Pixel pro Minute
+  const totalMin=dayEnd-dayStart;
+  const H=totalMin*PXP;
+  const hourLines=[];
+  for(let m=dayStart; m<=dayEnd; m+=60){ hourLines.push(m); }
+  const areaLabel=(cs,cells)=>{
+    if((cells||8)>=8) return "";
+    if(cells===4) return cs>=4?"rechts":"links";
+    if(cells===2) return ["Feld 1","Feld 2","Feld 3","Feld 4"][Math.floor((cs||0)/2)]||"";
+    // Achtel (1 Zelle)
+    return "Feld "+((cs||0)+1);
+  };
+  const blocks=bookings.map(b=>{
+    const s=toMin(b.timeFrom), e=toMin(b.timeTo);
+    if(s==null||e==null||e<=s) return null;
+    const area=areaLabel(b.cellStart||0,b.cells||8);
+    return { id:b.id, label:(b.teamName||b.booker||"Belegt"), area, from:s, to:e, color:tCol(b.teamName||b.booker||"?"), kind:"booking" };
+  }).filter(Boolean);
+  const trainBlocks=(trainings||[]).map(ev=>{
+    const s=toMin(ev.time); const dur=eventDurationMin(ev);
+    if(s==null||!dur) return null;
+    return { id:"ev_"+ev.id, label:(ev.title||"Training"), from:s, to:s+dur, color:"#0891b2", kind:"training" };
+  }).filter(Boolean);
+  const all=[...blocks,...trainBlocks];
+  return (
+    <div style={{display:"flex",gap:8}}>
+      <div style={{position:"relative",width:42,flexShrink:0,height:H}}>
+        {hourLines.map(m=>(
+          <div key={m} style={{position:"absolute",top:(m-dayStart)*PXP-6,fontSize:10,color:"#94a3b8",fontWeight:700}}>{minToTime(m)}</div>
+        ))}
+      </div>
+      <div style={{position:"relative",flex:1,height:H,background:"#f8fafc",borderRadius:10,border:"1.5px solid #e2e8f0",overflow:"hidden"}}>
+        {Array.from({length:Math.ceil(totalMin/SLOT)},(_,i)=>{
+          const m=dayStart+i*SLOT;
+          const isHour=m%60===0;
+          return (
+            <div key={i} onClick={()=>onSlot&&onSlot(minToTime(m))}
+              style={{position:"absolute",top:(m-dayStart)*PXP,left:0,right:0,height:SLOT*PXP,
+                borderTop:isHour?"1px solid #e2e8f0":"1px solid #f1f5f9",cursor:"pointer"}}/>
+          );
+        })}
+        {all.map(bl=>{
+          const top=(bl.from-dayStart)*PXP, h=(bl.to-bl.from)*PXP;
+          // Horizontale Position nach Bereich: links/rechts/ganz
+          let lft="3px", rgt="3px";
+          if(bl.area==="links") rgt="51%";
+          else if(bl.area==="rechts") lft="51%";
+          else if(/Feld [12]/.test(bl.area)) rgt="51%";
+          else if(/Feld [34]/.test(bl.area)) lft="51%";
+          return (
+            <div key={bl.id} style={{position:"absolute",top,left:lft,right:rgt,height:Math.max(h-2,14),
+              background:bl.color,borderRadius:7,padding:"3px 7px",color:"#fff",overflow:"hidden",
+              boxShadow:"0 1px 4px rgba(0,0,0,.15)",border:bl.kind==="training"?"2px dashed rgba(255,255,255,.6)":"none"}}>
+              <div style={{fontSize:10.5,fontWeight:800,lineHeight:1.2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{bl.label}{bl.area?<span style={{fontSize:8.5,fontWeight:700,opacity:.85,marginLeft:4,background:"rgba(255,255,255,.25)",borderRadius:4,padding:"0 4px"}}>{bl.area}</span>:null}</div>
+              <div style={{fontSize:9.5,opacity:.9}}>{minToTime(bl.from)}–{minToTime(bl.to)}{bl.kind==="training"?" · Termin":""}</div>
+              {bl.kind==="booking"&&onCancel&&<button onClick={e=>{e.stopPropagation();onCancel(bl.id);}} style={{position:"absolute",top:2,right:2,width:18,height:18,borderRadius:5,background:"rgba(0,0,0,.25)",border:"none",color:"#fff",cursor:"pointer",fontSize:11,fontWeight:800,lineHeight:1,padding:0}}>×</button>}
+            </div>
+          );
+        })}
+        {all.length===0&&<div style={{position:"absolute",top:"50%",left:0,right:0,transform:"translateY(-50%)",textAlign:"center",fontSize:12,color:"#cbd5e1",fontWeight:700}}>frei – tippe für Buchung</div>}
+      </div>
+    </div>
+  );
+}
+
+// Wochenansicht: 7 Tagesspalten nebeneinander (horizontal scrollbar auf dem Handy)
+function WeekTimeline({ field, bookings, allTrainings, weekStart, dayStart=480, dayEnd=1320, onPickDay, tCol }){
+  const PXP=0.55;                      // kompakter als Tagesansicht
+  const totalMin=dayEnd-dayStart;
+  const H=totalMin*PXP;
+  const DAYS=["Mo","Di","Mi","Do","Fr","Sa","So"];
+  // 7 Tage ab weekStart (Montag)
+  const days=Array.from({length:7},(_,i)=>{
+    const d=new Date(weekStart+"T12:00:00"); d.setDate(d.getDate()+i);
+    return d.toISOString().slice(0,10);
+  });
+  const hourLines=[];
+  for(let m=dayStart;m<=dayEnd;m+=120){ hourLines.push(m); } // alle 2h ein Label (kompakt)
+  const today=new Date().toISOString().slice(0,10);
+  const blocksFor=(date)=>{
+    const bk=bookings.filter(b=>b.fieldId===field.id&&b.date===date).map(b=>{
+      const s=toMin(b.timeFrom),e=toMin(b.timeTo); if(s==null||e==null||e<=s)return null;
+      return {from:s,to:e,color:tCol(b.teamName||b.booker||"?"),label:b.teamName||"Belegt",kind:"booking"};
+    }).filter(Boolean);
+    const tr=(allTrainings||[]).filter(ev=>ev.date===date).map(ev=>{
+      const s=toMin(ev.time),dur=eventDurationMin(ev); if(s==null||!dur)return null;
+      return {from:s,to:s+dur,color:"#0891b2",label:ev.title||"Training",kind:"training"};
+    }).filter(Boolean);
+    return [...bk,...tr];
+  };
+  return (
+    <div style={{display:"flex",gap:4,overflowX:"auto",WebkitOverflowScrolling:"touch",paddingBottom:4}}>
+      {/* Zeitachse */}
+      <div style={{position:"relative",width:30,flexShrink:0,height:H+18}}>
+        <div style={{height:18}}/>
+        {hourLines.map(m=>(
+          <div key={m} style={{position:"absolute",top:18+(m-dayStart)*PXP-5,fontSize:8.5,color:"#94a3b8",fontWeight:700}}>{minToTime(m)}</div>
+        ))}
+      </div>
+      {days.map((date,di)=>{
+        const blocks=blocksFor(date);
+        const isToday=date===today;
+        return (
+          <div key={date} style={{flex:"1 0 44px",minWidth:44}}>
+            <div onClick={()=>onPickDay&&onPickDay(date)} style={{height:18,textAlign:"center",fontSize:10,fontWeight:800,color:isToday?"#fff":"#475569",background:isToday?"#16a34a":"transparent",borderRadius:6,cursor:"pointer",lineHeight:"18px",marginBottom:1}}>{DAYS[di]} {new Date(date+"T12:00:00").getDate()}</div>
+            <div style={{position:"relative",height:H,background:"#f8fafc",borderRadius:7,border:"1px solid #e2e8f0",overflow:"hidden"}}>
+              {hourLines.map(m=>(
+                <div key={m} style={{position:"absolute",top:(m-dayStart)*PXP,left:0,right:0,borderTop:"1px solid #f1f5f9"}}/>
+              ))}
+              {blocks.map((bl,i)=>{
+                const top=(bl.from-dayStart)*PXP,h=(bl.to-bl.from)*PXP;
+                return (
+                  <div key={i} title={bl.label+" "+minToTime(bl.from)+"–"+minToTime(bl.to)}
+                    style={{position:"absolute",top,left:1,right:1,height:Math.max(h-1,7),
+                      background:bl.color,borderRadius:4,overflow:"hidden",
+                      border:bl.kind==="training"?"1.5px dashed rgba(255,255,255,.7)":"none"}}>
+                    <div style={{fontSize:7.5,fontWeight:800,color:"#fff",padding:"1px 3px",lineHeight:1.1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{bl.label}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// Buchungs-Dialog als eigene Komponente (Hooks regelkonform)
+function FieldBookingModal({ field, myTeams, prefillFrom, t, onCancel, onBook }){
+  const split = field.split || field.segments || 1;
+  // Größenoptionen abhängig von der Platz-Teilung (8-Zellen-Modell: ganz=8, halb=4, viertel=2, achtel=1)
+  const sizeOptions = split>=8 ? [[1,"Achtel"],[2,"Viertel"],[4,"Halb"],[8,"Ganz"]]
+    : split>=4 ? [[2,"Viertel"],[4,"Halb"],[8,"Ganz"]]
+    : split>=2 ? [[4,"Halbe Seite"],[8,"Ganz"]]
+    : [[8,"Ganzer Platz"]];
+  const [sel,setSel]=useState({teamId:myTeams[0]?.id||"",cells:split>=2?4:8,cellStart:0,from:prefillFrom||"09:00",to:addMins(prefillFrom||"09:00",90)});
+  // mögliche Bereiche je nach gewählter Größe (cells)
+  const areaOptions = sel.cells>=8 ? [[0,"Ganzer Platz"]]
+    : sel.cells===4 ? [[0,"Linke Hälfte"],[4,"Rechte Hälfte"]]
+    : sel.cells===2 ? [[0,"Feld 1 (links)"],[2,"Feld 2"],[4,"Feld 3"],[6,"Feld 4 (rechts)"]]
+    : [[0,"Feld 1"],[1,"Feld 2"],[2,"Feld 3"],[3,"Feld 4"],[4,"Feld 5"],[5,"Feld 6"],[6,"Feld 7"],[7,"Feld 8"]];
+  // Bereich-Auswahl: setzt cellStart direkt; bei Größenwechsel auf 0
+  const pickArea = start => setSel(p=>({...p,cellStart:start}));
+  const setSize = cells => setSel(p=>({...p,cells,cellStart:0}));
+  return (
+    <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:910,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+      <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,padding:"20px 22px 44px"}}>
+        <h3 style={{fontWeight:900,fontSize:18,marginBottom:16}}>Platz buchen – {field.name}</h3>
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          <select value={sel.teamId} onChange={e=>setSel(p=>({...p,teamId:e.target.value}))} style={{padding:"10px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}>
+            {myTeams.map(tm=><option key={tm.id} value={tm.id}>{tm.name}</option>)}
+          </select>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            {sizeOptions.map(([cells,lbl])=>(
+              <button key={cells} onClick={()=>setSize(cells)} style={{flex:"1 0 auto",padding:"10px",borderRadius:11,border:`2px solid ${sel.cells===cells?t.p:"#e2e8f0"}`,background:sel.cells===cells?t.p:"#fff",color:sel.cells===cells?"#fff":"#334155",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{lbl}</button>
+            ))}
+          </div>
+          {sel.cells!==8 && (
+            <div>
+              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:5}}>WELCHER BEREICH? (mehrere Teams können gleichzeitig verschiedene Bereiche nutzen)</div>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                {areaOptions.map(([start,lbl])=>(
+                  <button key={start} onClick={()=>pickArea(start)} style={{flex:"1 0 auto",padding:"8px 10px",borderRadius:9,border:`2px solid ${sel.cellStart===start?t.p:"#e2e8f0"}`,background:sel.cellStart===start?t.p+"18":"#fff",color:sel.cellStart===start?t.p:"#475569",fontWeight:700,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>{lbl}</button>
+                ))}
+              </div>
+            </div>
+          )}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            <input type="time" value={sel.from} onChange={e=>setSel(p=>({...p,from:e.target.value}))} style={{padding:"10px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
+            <input type="time" value={sel.to} onChange={e=>setSel(p=>({...p,to:e.target.value}))} style={{padding:"10px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
+          </div>
+        </div>
+        <div style={{display:"flex",gap:9,marginTop:16}}>
+          <button onClick={onCancel} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
+          <button onClick={()=>onBook(field,sel.teamId,sel.cells,sel.from,sel.to,sel.cells===8?0:sel.cellStart)} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:t.p,color:"#fff",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Buchen</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function FieldsTab({ data,myTids,session,save,fire,cl }) {
   const t = TH(cl);
   const cid = (data.teams||[]).find(tm=>myTids.includes(tm.id))?.cid;
@@ -12576,17 +14857,41 @@ function FieldsTab({ data,myTids,session,save,fire,cl }) {
   const bookings = data.bookings||[];
   const [selDate,setSelDate] = useState(new Date().toISOString().slice(0,10));
   const [bookTarget,setBookTarget] = useState(null);
+  const [view,setView] = useState("timeline"); // timeline | week | grid
+  const [prefillFrom,setPrefillFrom] = useState(null);
   const dayBk = fid => bookings.filter(b=>b.fieldId===fid&&b.date===selDate);
+  // Trainings-Termine des Tages (für automatische Anzeige in der Zeitleiste)
+  const dayTrainings = (data.events||[]).filter(e=>e.date===selDate&&e.type==="training"&&myTids.includes(e.tid)&&e.time);
+  // Alle Trainings (für Wochenansicht)
+  const allTrainings = (data.events||[]).filter(e=>e.type==="training"&&myTids.includes(e.tid)&&e.time);
+  // Montag der Woche, in der selDate liegt
+  const weekStart = (()=>{ const d=new Date(selDate+"T12:00:00"); const jd=d.getDay(); const off=jd===0?6:jd-1; d.setDate(d.getDate()-off); return d.toISOString().slice(0,10); })();
   const myTeams = (data.teams||[]).filter(tm=>myTids.includes(tm.id));
   const COLORS = ["#2563eb","#16a34a","#d97706","#7c3aed","#dc2626"];
   const tCol = name => COLORS[Math.abs((name||"").split("").reduce((a,c)=>a+c.charCodeAt(0),0))%COLORS.length];
   const cancelBk = id => { save({...data,bookings:bookings.filter(b=>b.id!==id)}); fire("Buchung geloescht"); };
-  const addBk = (field,teamId,cells,timeFrom,timeTo) => {
+  const addBk = (field,teamId,cells,timeFrom,timeTo,cellStart=0) => {
+    const ns=toMin(timeFrom), ne=toMin(timeTo);
+    if(ns==null||ne==null||ne<=ns){ fire("Bitte gültige Start- und Endzeit wählen"); return false; }
+    const nCellEnd = cellStart + cells;
+    // Konflikt nur, wenn sich ZEIT UND PLATZBEREICH überschneiden
+    const clash = bookings.find(b=>{
+      if(b.fieldId!==field.id||b.date!==selDate) return false;
+      const bs=toMin(b.timeFrom), be=toMin(b.timeTo);
+      if(bs==null||be==null) return false;
+      const timeOverlap = ns<be && bs<ne;
+      if(!timeOverlap) return false;
+      const bStart=b.cellStart||0, bEnd=bStart+(b.cells||8);
+      const cellOverlap = cellStart<bEnd && bStart<nCellEnd;   // Bereiche überschneiden sich
+      return cellOverlap;
+    });
+    if(clash){ fire("Bereich in dieser Zeit schon belegt: "+(clash.teamName||clash.booker||"andere Buchung")+" ("+clash.timeFrom+"–"+clash.timeTo+")"); return false; }
     const tm = myTeams.find(x=>x.id===teamId);
-    const bk = {id:uid(),fieldId:field.id,date:selDate,cellStart:0,cells,teamId,teamName:tm?.name||"",booker:session?.name||"",timeFrom,timeTo,cid:field.cid};
+    const bk = {id:uid(),fieldId:field.id,date:selDate,cellStart,cells,teamId,teamName:tm?.name||"",booker:session?.name||"",timeFrom,timeTo,cid:field.cid};
     save({...data,bookings:[...bookings,bk]});
     fire("Platz gebucht");
     setBookTarget(null);
+    return true;
   };
   return (
     <div>
@@ -12595,35 +14900,15 @@ function FieldsTab({ data,myTids,session,save,fire,cl }) {
         <input type="date" value={selDate} onChange={e=>setSelDate(e.target.value)} style={{flex:1,padding:"7px 10px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none"}}/>
         <button onClick={()=>{const d=new Date(selDate+"T12:00:00");d.setDate(d.getDate()+1);setSelDate(d.toISOString().slice(0,10));}} style={{width:32,height:32,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",cursor:"pointer",fontSize:18}}>&#8250;</button>
       </div>
+      <div style={{display:"flex",gap:6,marginBottom:14}}>
+        <button onClick={()=>setView("timeline")} style={{flex:1,padding:"8px",borderRadius:10,border:`1.5px solid ${view==="timeline"?t.p:"#e2e8f0"}`,background:view==="timeline"?t.p:"#fff",color:view==="timeline"?"#fff":"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Tag</button>
+        <button onClick={()=>setView("week")} style={{flex:1,padding:"8px",borderRadius:10,border:`1.5px solid ${view==="week"?t.p:"#e2e8f0"}`,background:view==="week"?t.p:"#fff",color:view==="week"?"#fff":"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Woche</button>
+        <button onClick={()=>setView("grid")} style={{flex:1,padding:"8px",borderRadius:10,border:`1.5px solid ${view==="grid"?t.p:"#e2e8f0"}`,background:view==="grid"?t.p:"#fff",color:view==="grid"?"#fff":"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Aufteilung</button>
+      </div>
       {bookTarget&&(
-        <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:910,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
-          <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,padding:"20px 22px 44px"}}>
-            <h3 style={{fontWeight:900,fontSize:18,marginBottom:16}}>Platz buchen - {bookTarget.name}</h3>
-            {(()=>{
-              const [sel,setSel]=React.useState({teamId:myTeams[0]?.id||"",cells:4,from:"09:00",to:"10:00"});
-              return <>
-                <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                  <select value={sel.teamId} onChange={e=>setSel(p=>({...p,teamId:e.target.value}))} style={{padding:"10px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}>
-                    {myTeams.map(tm=><option key={tm.id} value={tm.id}>{tm.name}</option>)}
-                  </select>
-                  <div style={{display:"flex",gap:8}}>
-                    {[[2,"Viertel"],[4,"Halb"],[8,"Ganz"]].map(([cells,lbl])=>(
-                      <button key={cells} onClick={()=>setSel(p=>({...p,cells}))} style={{flex:1,padding:"10px",borderRadius:11,border:`2px solid ${sel.cells===cells?t.p:"#e2e8f0"}`,background:sel.cells===cells?t.p:"#fff",color:sel.cells===cells?"#fff":"#334155",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{lbl}</button>
-                    ))}
-                  </div>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-                    <input type="time" value={sel.from} onChange={e=>setSel(p=>({...p,from:e.target.value}))} style={{padding:"10px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
-                    <input type="time" value={sel.to} onChange={e=>setSel(p=>({...p,to:e.target.value}))} style={{padding:"10px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
-                  </div>
-                </div>
-                <div style={{display:"flex",gap:9,marginTop:16}}>
-                  <button onClick={()=>setBookTarget(null)} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
-                  <button onClick={()=>addBk(bookTarget,sel.teamId,sel.cells,sel.from,sel.to)} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:t.p,color:"#fff",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Buchen</button>
-                </div>
-              </>;
-            })()}
-          </div>
-        </div>
+        <FieldBookingModal field={bookTarget} myTeams={myTeams} prefillFrom={prefillFrom} t={t}
+          onCancel={()=>{setBookTarget(null);setPrefillFrom(null);}}
+          onBook={(field,teamId,cells,from,to,cellStart)=>addBk(field,teamId,cells,from,to,cellStart)}/>
       )}
       {fields.length===0&&<div style={{textAlign:"center",padding:"32px",background:"#f8fafc",borderRadius:14,border:"1.5px dashed #e2e8f0"}}><p style={{fontWeight:700,color:"#334155"}}>Keine Plaetze konfiguriert</p><p style={{fontSize:13,color:"#94a3b8",marginTop:4}}>Plaetze koennen im Admin-Bereich angelegt werden.</p></div>}
       {fields.map(field=>(
@@ -12633,12 +14918,22 @@ function FieldsTab({ data,myTids,session,save,fire,cl }) {
             <button onClick={()=>setBookTarget(field)} style={{padding:"7px 14px",borderRadius:10,border:"none",background:t.p,color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>+ Buchen</button>
           </div>
           <div style={{padding:14}}>
+            {view==="timeline" ? (
+              <DayTimeline field={field} bookings={dayBk(field.id)} trainings={dayTrainings} date={selDate}
+                tCol={tCol} t={t}
+                onSlot={(from)=>{ setPrefillFrom(from); setBookTarget(field); }}
+                onCancel={cancelBk}/>
+            ) : view==="week" ? (
+              <WeekTimeline field={field} bookings={bookings} allTrainings={allTrainings} weekStart={weekStart}
+                tCol={tCol} onPickDay={(date)=>{ setSelDate(date); setView("timeline"); }}/>
+            ) : (
             <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:3,background:"#16a34a",borderRadius:10,padding:8}}>
               {Array.from({length:8},(_,i)=>{
                 const bk=dayBk(field.id).find(b=>{const s=b.cellStart||0;return i>=s&&i<s+(b.cells||8);});
                 return <div key={i} style={{background:bk?tCol(bk.teamName):"rgba(255,255,255,.2)",borderRadius:5,minHeight:32,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:bk?"#fff":"rgba(255,255,255,.4)"}}>{bk?bk.teamName?.slice(0,5):""}</div>;
               })}
             </div>
+            )}
           </div>
           {dayBk(field.id).length>0&&<div style={{padding:"0 16px 14px",display:"flex",flexDirection:"column",gap:6}}>
             {dayBk(field.id).map(b=>(
@@ -13114,7 +15409,7 @@ function TeamCard({ team, data, session, cl, onClose }) {
                   </div>
                   <div style={{flex:1}}>
                     <div style={{fontWeight:700,fontSize:13}}>{ev.title}</div>
-                    <div style={{fontSize:11,color:"#94a3b8"}}>{ev.time} {ev.location&&"- "+ev.location}</div>
+                    <div style={{fontSize:11,color:"#94a3b8"}}>{ev.time}{ev.endTime?"–"+ev.endTime:""} {ev.location&&"- "+ev.location}</div>
                   </div>
                 </div>
               ))}
@@ -13343,6 +15638,7 @@ const SPLIT_OPTIONS = [
   { id:2, label:"Halbierung",      icon:"1|1", desc:"2 Teams gleichzeitig" },
   { id:3, label:"Drittelung",      icon:"1|1|1",desc:"3 Teams (ideal Halle)" },
   { id:4, label:"Viertelung",      icon:"4x",  desc:"4 Teams gleichzeitig" },
+  { id:8, label:"Achtelung",       icon:"8x",  desc:"8 Gruppen (z.B. Bambini-Stationen)" },
 ];
 
 const WEATHER_OPTIONS = [
@@ -13377,6 +15673,12 @@ function FieldSketch({ template, split=1, width=180, height=110, bookings=[], st
             stroke="rgba(255,255,255,.6)" strokeWidth="2" strokeDasharray="4,3"/>
           <line x1="0" y1={height/2} x2={width} y2={height/2}
             stroke="rgba(255,255,255,.6)" strokeWidth="2" strokeDasharray="4,3"/>
+        </>}
+        {split===8&&<>
+          {[1,2,3].map(i=><line key={"v"+i} x1={width*i/4} y1="0" x2={width*i/4} y2={height}
+            stroke="rgba(255,255,255,.6)" strokeWidth="1.5" strokeDasharray="4,3"/>)}
+          <line x1="0" y1={height/2} x2={width} y2={height/2}
+            stroke="rgba(255,255,255,.6)" strokeWidth="1.5" strokeDasharray="4,3"/>
         </>}
         {/* Booking overlays */}
         {bookings.map((bk,i)=>{
@@ -13530,7 +15832,7 @@ function FieldsManagerTab({ data, cid, save, fire, cl }) {
                     ))}
                   </div>
                   <div style={{display:"flex",gap:9,marginTop:16}}>
-                    <button onClick={()=>setStep("template")} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Zurueck</button>
+                    <button onClick={()=>setStep("template")} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Zurück</button>
                     <button onClick={()=>draft.split&&setStep("weather")} disabled={!draft.split}
                       style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:draft.split?t.p:"#e2e8f0",color:draft.split?"#fff":"#94a3b8",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Weiter</button>
                   </div>
@@ -13562,7 +15864,7 @@ function FieldsManagerTab({ data, cid, save, fire, cl }) {
                     Tipp: Lege Rasenplatz als "Nur Gutwetter" und Halle als "Nur Schlechtwetter" an. Bei schlechtem Wetter siehst du im Platz-Tab automatisch nur die Halle.
                   </div>
                   <div style={{display:"flex",gap:9}}>
-                    <button onClick={()=>setStep("split")} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Zurueck</button>
+                    <button onClick={()=>setStep("split")} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Zurück</button>
                     <button onClick={()=>draft.weather&&setStep("name")} disabled={!draft.weather}
                       style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:draft.weather?t.p:"#e2e8f0",color:draft.weather?"#fff":"#94a3b8",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Weiter</button>
                   </div>
@@ -13587,7 +15889,7 @@ function FieldsManagerTab({ data, cid, save, fire, cl }) {
                       border:`1.5px solid ${draft.name?"#16a34a":"#e2e8f0"}`,borderRadius:12,
                       outline:"none",marginBottom:14,boxSizing:"border-box"}}/>
                   <div style={{display:"flex",gap:9}}>
-                    <button onClick={()=>setStep("weather")} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Zurueck</button>
+                    <button onClick={()=>setStep("weather")} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Zurück</button>
                     <button onClick={addField}
                       style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:t.p,color:"#fff",fontWeight:800,cursor:"pointer",fontFamily:"inherit",boxShadow:`0 4px 14px ${t.p}44`}}>
                       Feld anlegen!
@@ -13679,7 +15981,7 @@ function TrainerCheckin({ ev, session, save, data, fire }) {
     const presence = {...checkedIn};
     delete presence[myId];
     save({...data, events:(data.events||[]).map(e=>e.id===ev.id?{...e,trainerPresence:presence}:e)});
-    fire("Anwesenheit zurueckgenommen");
+    fire("Anwesenheit zurückgenommen");
   };
 
   const presentTrainers = Object.values(checkedIn);
@@ -13711,7 +16013,7 @@ function TrainerCheckin({ ev, session, save, data, fire }) {
             fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit",
             display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
           {amCheckedIn
-            ? "Anwesenheit zuruecknehmen"
+            ? "Anwesenheit zurücknehmen"
             : "Ich bin heute da als Trainer"}
         </button>
       )}
@@ -13826,7 +16128,7 @@ function AttendanceTab({ data, myTids, cl, save, fire }) {
 function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const { isDesktop, isTablet } = useBreakpoint();
   const isAdmin=session.role==="admin"; const isHelper=session.role==="helper"; const cid=session.cid; const cl=data.clubs.find(c=>c.id===cid);
-  const myTids=isAdmin?data.teams.filter(t=>t.cid===cid).map(t=>t.id):isHelper?data.teams.filter(t=>t.cid===cid).map(t=>t.id):(session.tids||[]);
+  const myTids=isAdmin?activeTeamsFor(data,cid).map(t=>t.id):isHelper?activeTeamsFor(data,cid).map(t=>t.id):(session.tids||[]);
   const t=TH(cl);
   const [tab,setTab]=useState("events"); // BottomNav manages this
   const [local,setLocal]=useState(()=>JSON.parse(JSON.stringify(data)));
@@ -13844,8 +16146,24 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const fire=m=>{setToast(m);clearTimeout(toastRef.current);toastRef.current=setTimeout(()=>setToast(null),2500);};
   const save=next=>{setLocal(next);onSave(next);};
   const myClub=local.clubs.find(c=>c.id===cid);
-  const myEvs=local.events.filter(e=>myTids.includes(e.tid)&&e.cid===cid).sort((a,b)=>a.date.localeCompare(b.date));
+  const _activeSid = local.activeSeason || (local.seasons||[])[0]?.id || null;
+  const myEvs=local.events.filter(e=>myTids.includes(e.tid)&&e.cid===cid&&(!e.seasonId||e.seasonId===_activeSid)).sort((a,b)=>a.date.localeCompare(b.date));
+  // Trainer/Admin kann selbst zu-/absagen (stimmt unter eigenem Namen ab)
+  const selfName = session.name || (isAdmin?"Admin":isHelper?"Helfer":"");
+  const selfVote = (evId,val) => {
+    if(!selfName) return;
+    save({...local, events: local.events.map(e=>{
+      if(e.id!==evId) return e;
+      const votes={...(e.votes||{})};
+      if((typeof votes[selfName]==="object"?votes[selfName]?.val:votes[selfName])===val) delete votes[selfName]; // erneuter Klick = zurücknehmen
+      else votes[selfName]=val;
+      return {...e,votes};
+    })});
+    fire(val==="yes"?"Du bist dabei":"Du hast abgesagt");
+  };
   const tod=now(); const up=myEvs.filter(e=>e.date>=tod); const past=myEvs.filter(e=>e.date<tod).reverse();
+  const _in10=addD(now(),10); const soon=up.filter(e=>e.date<=_in10); const later=up.filter(e=>e.date>_in10);
+  const [showLater,setShowLater]=useState(false);
 
   if(wizard||editEv) return <Wizard teams={local.teams.filter(x=>myTids.includes(x.id))} cl={myClub} editEv={editEv}
     onTemplates={(local.pollTemplates||[]).filter(t=>t.cid===cid)}
@@ -13860,13 +16178,22 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           return e;
         })});
         fire("Serie ab hier aktualisiert *");
+      } else if(editEv._editSeries==="all"&&editEv.sid){
+        const {title,time,loc,note,pt,li}=saved;
+        save({...local,events:local.events.map(e=>{
+          if(e.sid===editEv.sid) return{...e,title,time,loc,note,pt,li};
+          return e;
+        })});
+        fire("Ganze Serie aktualisiert *");
       } else {
         const deleteEv = ev => { save({...local,events:(local.events||[]).filter(e=>e.id!==ev.id)}); fire("Termin geloescht"); };
     save({...local,events:(local.events||[]).map(e=>e.id===saved.id?saved:e)});
         fire("Termin aktualisiert *");
       }
     } else {
-      save({...local,events:[...(local.events||[]),...evs]});
+      const _sid = local.activeSeason || (local.seasons||[])[0]?.id || null;
+      const evsWithSeason = evs.map(e=>({...e, seasonId: e.seasonId || _sid}));
+      save({...local,events:[...(local.events||[]),...evsWithSeason]});
       // Auto-book field if selected
     if(f.fieldId && evs.length>0) {
       const fieldBookings = evs.map(ev=>({
@@ -13884,7 +16211,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
     setWizard(false);setEditEv(null);
   }} onClose={()=>{setWizard(false);setEditEv(null);}}/>;
 
-  const tr = (k) => { const lang = localStorage.getItem("vereinsapp_lang") || "de"; return T[lang]?.[k] ?? T.de[k] ?? k; };
+  const tr = (k) => { const lang = LANG_SWITCHER_ENABLED ? (localStorage.getItem("vereinsapp_lang") || "de") : "de"; return T[lang]?.[k] ?? T.de[k] ?? k; };
   // BottomNav replaces old tabs - kept for reference
   const tabs=[].filter(Boolean).filter(x=>!x.hidden);
 
@@ -13955,7 +16282,12 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             </div>
             <div style={{width:32,height:32,borderRadius:10,background:"rgba(0,0,0,.15)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:18,fontWeight:700,flexShrink:0}}>></div>
           </div>
-          {up.length>0&&<><Divider label={`KOMMENDE (${up.length})`}/>{up.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurueckgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)}/>)}</>}
+          {up.length>0&&<><Divider label={`NÄCHSTE 10 TAGE (${soon.length})`}/>{soon.length>0?soon.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={selfName} onSelfVote={selfVote}/>):<p style={{textAlign:"center",color:"#94a3b8",fontSize:13.5,padding:"14px 10px"}}>Keine Termine in den nächsten 10 Tagen.</p>}
+            {later.length>0&&<>
+              <button onClick={()=>setShowLater(s=>!s)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",background:showLater?"#f1f5f9":"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,cursor:"pointer",margin:"6px 0 12px",padding:"11px 14px",fontWeight:800,fontSize:13,color:"#475569",fontFamily:"inherit"}}>{showLater?"▲ Weitere Termine ausblenden":"▼ Weitere "+later.length+" Termine anzeigen"}</button>
+              {showLater&&later.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={selfName} onSelfVote={selfVote}/>)}
+            </>}
+          </>}
           {up.length===0&&<div style={{textAlign:"center",padding:"30px",background:"#fff",borderRadius:18,border:"1.5px dashed #e2e8f0",color:"#94a3b8"}}><Logo cl={myClub} sz={50} sx={{margin:"0 auto 12px"}}/><p style={{fontWeight:800,fontSize:15}}>Noch keine Termine</p><p style={{fontSize:13,marginTop:3}}>Klicke oben auf "Neuen Termin anlegen"</p></div>}
           {past.length>0&&<><Divider label={`VERGANGENE (${past.length})`} light/><div style={{opacity:.72}}>{past.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{}} onCopyLink={()=>{}}/>)}</div></>}
         </>}
@@ -13969,28 +16301,34 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         {tab==="results"    &&<LeagueTab data={local} myTids={myTids} cl={myClub} save={save} fire={fire}/>}
         {tab==="inbox"      &&<InboxTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
         {tab==="chat"       &&<ChatTab data={local} cid={cid} myTids={myTids} session={session} save={save} fire={fire} cl={myClub}/>}
-        {tab==="teams"      &&isAdmin&&<TeamsTab data={local} cid={cid} save={save} fire={fire}/>}
+        {tab==="teams"      &&isAdmin&&<TeamHub data={local} myTids={myTids} save={save} fire={fire} cl={myClub} session={session} isAdmin={isAdmin}/>}
         {tab==="overview"  &&isAdmin&&<AllTeamsOverview data={local} cid={cid} cl={myClub} onSelectTeam={tid=>{ const team=(local.teams||[]).find(x=>x.id===tid); if(team) fire("Team: "+team.name); }}/>}
         {tab==="news"      &&<NewsTab data={local} cid={cid} session={session} save={save} fire={fire} cl={myClub}/>}
         {tab==="fieldsadmin"&&isAdmin&&<FieldsManagerTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/> }
         {tab==="trainers"   &&isAdmin&&<TrainersTab data={local} cid={cid} save={save} fire={fire}/>}
         {tab==="branding"   &&isAdmin&&<BrandingTab cl={myClub} onSave={c=>{save({...local,clubs:local.clubs.map(x=>x.id===c.id?c:x)});fire("Design gespeichert *");}}/>}
-        {tab==="visibility" &&isAdmin&&<VisibilityTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
         {tab==="settings"   &&isAdmin&&<ClubAdminSettings data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
         {tab==="security"   &&isAdmin&&<SecurityTab data={local} cid={cid} save={save}/>}
         {tab==="access"     &&isAdmin&&<AccessManagerTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
-        {tab==="team"       &&<TeamHub data={local} myTids={myTids} save={save} fire={fire} cl={myClub} session={session}/>}
+        {tab==="team"       &&<TeamHub data={local} myTids={myTids} save={save} fire={fire} cl={myClub} session={session} isAdmin={isAdmin}/>}
       </div>
 
       {}
       {viewEv&&<Drawer onClose={()=>setViewEv(null)} title={viewEv.title}>
-        <VoteOverview ev={viewEv} players={local.players} teams={local.teams} myTids={myTids} cl={myClub}
-          onSetDeadline={deadline=>{
-            save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,deadline}:e)});
-            setViewEv(prev=>({...prev,deadline}));
-            fire("Frist gesetzt *");
-          }}
-        />
+        {viewEv.type==="turnier"
+          ? <TournView ev={viewEv} user={session.name||"Admin"} onVote={()=>{}} cl={myClub} players={local.players} isHelper={isHelper} fields={(data.fields||[]).filter(f=>f.cid===cid)}
+              onUpdate={patch=>{
+                save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,...patch}:e)});
+                setViewEv(prev=>({...prev,...patch}));
+                fire("Turnier aktualisiert *");
+              }}/>
+          : <VoteOverview ev={viewEv} players={local.players} teams={local.teams} myTids={myTids} cl={myClub}
+              onSetDeadline={deadline=>{
+                save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,deadline}:e)});
+                setViewEv(prev=>({...prev,deadline}));
+                fire("Frist gesetzt *");
+              }}
+            />}
         <div style={{height:14}}/><Btn full ch="Schliessen" v="gst" onClick={()=>setViewEv(null)}/>
       </Drawer>}
 
@@ -14033,6 +16371,9 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           }}/>
           {editConf.sid&&<Btn full ch="Diesen + alle zukuenftigen bearbeiten" icon="**" cl={myClub} onClick={()=>{
             setEditEv({...editConf,_editSeries:"future"});setEditConf(null);
+          }}/>}
+          {editConf.sid&&<Btn full ch="Ganze Serie bearbeiten" icon="**" cl={myClub} onClick={()=>{
+            setEditEv({...editConf,_editSeries:"all"});setEditConf(null);
           }}/>}
           <Btn v="gst" full ch="Abbrechen" onClick={()=>setEditConf(null)}/>
         </div>
@@ -14223,12 +16564,15 @@ function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline}) {
   );
 }
 
-function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink}) {
+function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSelfVote}) {
   const eT=ET[ev.type]||ET.training; const tF=ev.date===tod; const p=cl?.pri||"#16a34a";
   const vc=Object.keys(ev.votes).length;
   const yes=ev.pt==="att"?Object.values(ev.votes).filter(v=>(typeof v==="object"?v.val:v)==="yes").length:0;
   const no =ev.pt==="att"?Object.values(ev.votes).filter(v=>(typeof v==="object"?v.val:v)==="no" ).length:0;
   const dlPassed = ev.deadline && now()>ev.deadline.date;
+  const myVoteRaw = selfName ? ev.votes[selfName] : null;
+  const myVote = typeof myVoteRaw==="object"&&myVoteRaw!==null ? myVoteRaw.val : myVoteRaw;
+  const canSelfVote = selfName && onSelfVote && (ev.pt==="att"||!ev.pt) && ev.date>=tod;
   const BtnSm=({onClick,label,icon,bg,col})=>(
     <button onClick={onClick} style={{display:"flex",alignItems:"center",gap:5,padding:"6px 11px",borderRadius:9,border:"none",background:bg,color:col,fontSize:12,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit"}}>
       <span style={{fontSize:14}}>{icon}</span>{label}
@@ -14236,8 +16580,8 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink}) {
   );
   return (
     <div style={{background:"#fff",borderRadius:15,border:`1.5px solid ${tF?p:"#e2e8f0"}`,marginBottom:8,overflow:"hidden",boxShadow:"0 1px 6px rgba(0,0,0,.04)"}}>
-      <div style={{padding:"12px 14px",display:"flex",gap:10,alignItems:"center"}}>\
-        <div style={{width:42,height:42,borderRadius:13,background:eT.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{eT.icon}</div>
+      <div style={{padding:"12px 14px",display:"flex",gap:10,alignItems:"center"}}>
+        <div style={{width:42,height:42,borderRadius:13,background:eT.bg,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><EventIcon type={EVENT_TYPE_ALIAS[ev.type]||ev.type} size={22} color={eT.col}/></div>
         <div style={{flex:1,minWidth:0}}>
           <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}><span style={{fontWeight:800,fontSize:14,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ev.title}</span>{tF&&<Tag c={p} bg={p+"20"} ch="Heute"/>}{ev.open&&<Tag c="#7c3aed" bg="#ede9fe" ch="* Offen"/>}{ev.sid&&<Tag c="#94a3b8" bg="#f1f5f9" ch="* Serie"/>}</div>
           <div style={{fontSize:12,color:"#64748b",marginTop:3}}>{fmtDShort(ev.date)}{ev.time?" . "+ev.time:""}{ev.loc?" . *"+ev.loc:""}</div>
@@ -14245,11 +16589,18 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink}) {
           {ev.deadline&&<div style={{marginTop:4}}><span style={{fontSize:11,fontWeight:700,color:dlPassed?"#dc2626":"#d97706",background:dlPassed?"#fee2e2":"#fef3c7",borderRadius:6,padding:"2px 8px"}}> {dlPassed?"Frist abgelaufen":"Frist: "}{!dlPassed&&ev.deadline.date}</span></div>}
         </div>
       </div>
+      {canSelfVote&&(
+        <div style={{display:"flex",gap:6,padding:"4px 12px 8px",alignItems:"center"}}>
+          <span style={{fontSize:11,fontWeight:700,color:"#94a3b8"}}>Ich:</span>
+          <button onClick={()=>onSelfVote(ev.id,"yes")} style={{flex:1,padding:"7px",borderRadius:9,border:`1.5px solid ${myVote==="yes"?"#16a34a":"#e2e8f0"}`,background:myVote==="yes"?"#16a34a":"#fff",color:myVote==="yes"?"#fff":"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Bin dabei</button>
+          <button onClick={()=>onSelfVote(ev.id,"no")} style={{flex:1,padding:"7px",borderRadius:9,border:`1.5px solid ${myVote==="no"?"#dc2626":"#e2e8f0"}`,background:myVote==="no"?"#dc2626":"#fff",color:myVote==="no"?"#fff":"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Sage ab</button>
+        </div>
+      )}
       {}
       <div style={{display:"flex",gap:6,padding:"8px 12px 10px",borderTop:"1px solid #f1f5f9",flexWrap:"wrap"}}>
         <BtnSm onClick={onView}  icon="*" label="Ansehen"   bg="#f1f5f9" col="#475569"/>
         <BtnSm onClick={onEdit}  icon="**" label="Bearbeiten" bg="#f0fdf4" col="#16a34a"/>
-        <BtnSm onClick={onReset} icon="*" label="Zuruecksetzen" bg="#fff7ed" col="#d97706"/>
+        <BtnSm onClick={onReset} icon="*" label="Zurücksetzen" bg="#fff7ed" col="#d97706"/>
         {ev.open&&<BtnSm onClick={onCopyLink} icon="*" label="Link kopieren" bg="#ede9fe" col="#7c3aed"/>}
         <BtnSm onClick={onDel}   icon="*" label="Loeschen"   bg="#fee2e2" col="#dc2626"/>
       </div>
@@ -14369,10 +16720,183 @@ function TournStats({ev,cl}) {
   return <div style={{background:"#f8fafc",borderRadius:12,padding:"14px",fontSize:13,color:"#64748b"}}>Turnier-Statistiken</div>;
 }
 
-function buildSchedule(setup){return[];}
+// Spielplan-Generator: Round-Robin (jeder gegen jeden), verteilt auf Spielflächen + Zeitslots.
+// Nie ein Team zur selben Zeit doppelt. setup: {clubs, pitches|fields, gameTime, startTime, pause}
+function buildSchedule(setup){
+  const teams=(setup.clubs||[]).filter(Boolean);
+  if(teams.length<2) return [];
+  let lanes=[];
+  if(setup.pitches&&setup.pitches.length){
+    setup.pitches.forEach(p=>{ const n=Math.max(1,p.split||1); for(let i=0;i<n;i++) lanes.push(n>1?`${p.name} ${String.fromCharCode(65+i)}`:p.name); });
+  } else { const cnt=Math.max(1,setup.fields||2); for(let i=0;i<cnt;i++) lanes.push(`Feld ${i+1}`); }
+  let arr=[...teams]; if(arr.length%2!==0) arr.push(null);
+  const n=arr.length, rounds=n-1, half=n/2;
+  const roundList=[]; let idx=[...arr.keys()];
+  for(let r=0;r<rounds;r++){
+    const pairs=[];
+    for(let i=0;i<half;i++){ const a=arr[idx[i]], b=arr[idx[n-1-i]]; if(a!==null&&b!==null) pairs.push([a,b]); }
+    roundList.push(pairs);
+    idx=[idx[0], idx[n-1], ...idx.slice(1,n-1)];
+  }
+  const dur=Math.max(1,setup.gameTime||8);
+  const pause=Number.isFinite(setup.pause)?setup.pause:2;
+  const [sh,sm]=(setup.startTime||"09:00").split(":").map(Number);
+  const t0=(sh*60+(sm||0));
+  const games=[]; let slot=0;
+  for(const pairs of roundList){
+    let lane=0, used=new Set();
+    for(const [a,b] of pairs){
+      if(lane>=lanes.length || used.has(a) || used.has(b)){ slot++; lane=0; used=new Set(); }
+      const minutes=t0 + slot*(dur+pause);
+      const hh=String(Math.floor(minutes/60)%24).padStart(2,"0"), mm=String(minutes%60).padStart(2,"0");
+      games.push({ field:lanes[lane], time:`${hh}:${mm}`, a, b });
+      used.add(a); used.add(b); lane++;
+    }
+    slot++;
+  }
+  return games;
+}
 function exportTournPDF(ev){alert("PDF-Export in Entwicklung");}
 
-function TournView({ ev,user,onVote,onUpdate,cl,players,isHelper=false }) {
+const SIZE_LABEL = { 1:"Ganzer Platz", 2:"Halbierung", 3:"Drittelung", 4:"Viertelung", 8:"Achtelung" };
+function TournSetup({ setup, cl, t, onUpdate, fields=[] }){
+  const [nFields,setNFields]=useState(setup.fields||2);
+  const [gameTime,setGameTime]=useState(setup.gameTime||8);
+  const [clubName,setClubName]=useState(setup.clubName||cl?.name||"");
+  const [teams,setTeams]=useState(setup.clubs||[]);
+  const [pitches,setPitches]=useState(setup.pitches||[]); // [{id,name,surface,split}]
+  const [nt,setNt]=useState("");
+  const [saved,setSaved]=useState(false);
+  const sizeOf = f => f.split||f.segments||1;
+  const areasOf = list => list.reduce((s,p)=>s+(p.split||1),0);
+  if(!onUpdate){
+    return (<div style={{background:"#f8fafc",borderRadius:14,padding:"14px"}}>
+      <p style={{fontWeight:700,color:"#334155",marginBottom:8}}>Turnier-Setup</p>
+      <p style={{fontSize:13,color:"#64748b"}}>Verein: {clubName}</p>
+      <p style={{fontSize:13,color:"#64748b"}}>Plätze: {pitches.length||nFields} | Spielzeit: {gameTime} Min</p>
+      <p style={{fontSize:13,color:"#64748b"}}>Teams: {teams.length||"-"}</p>
+    </div>);
+  }
+  const Stepper=({val,set,min,max,suffix})=>(
+    <div style={{display:"flex",alignItems:"center",gap:10}}>
+      <button onClick={()=>set(Math.max(min,Number(val)-1))} style={{width:36,height:36,borderRadius:10,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:900,fontSize:18,cursor:"pointer",color:"#475569"}}>−</button>
+      <span style={{minWidth:54,textAlign:"center",fontWeight:800,fontSize:17,color:"#0f172a"}}>{val}{suffix||""}</span>
+      <button onClick={()=>set(Math.min(max,Number(val)+1))} style={{width:36,height:36,borderRadius:10,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:900,fontSize:18,cursor:"pointer",color:"#475569"}}>+</button>
+    </div>
+  );
+  const togglePitch = f => { setSaved(false); setPitches(cur=> cur.some(p=>p.id===f.id) ? cur.filter(p=>p.id!==f.id) : [...cur,{id:f.id,name:f.name,surface:f.surface||f.template||"Platz",split:sizeOf(f)}] ); };
+  const addTeam=()=>{ const n=nt.trim(); if(!n)return; setTeams(a=>[...a,n]); setNt(""); setSaved(false); };
+  const save=()=>{
+    const eff = pitches.length ? areasOf(pitches) : Number(nFields)||1;
+    onUpdate({setup:{...setup, fields:eff, pitches, gameTime:Number(gameTime)||1, clubName:clubName.trim()||cl?.name, clubs:teams}});
+    setSaved(true); setTimeout(()=>setSaved(false),2000);
+  };
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+      <div style={{background:"#fff",borderRadius:14,padding:"14px",border:"1.5px solid #e2e8f0"}}>
+        <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.4}}>AUSRICHTENDER VEREIN</div>
+        <input value={clubName} onChange={e=>{setClubName(e.target.value);setSaved(false);}} placeholder="Vereinsname"
+          style={{width:"100%",padding:"11px 13px",fontSize:15,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",boxSizing:"border-box"}}/>
+      </div>
+
+      {/* Plätze: echte Vereins-Plätze auswählen (Typ + Größe). Fallback: Felderzahl */}
+      <div style={{background:"#fff",borderRadius:14,padding:"14px",border:"1.5px solid #e2e8f0"}}>
+        <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:10,letterSpacing:.4}}>PLÄTZE</div>
+        {fields.length===0
+          ? <>
+              <div style={{fontSize:12,color:"#94a3b8",marginBottom:10}}>Keine Plätze in der Platzverwaltung angelegt – Anzahl direkt festlegen:</div>
+              <Stepper val={nFields} set={v=>{setNFields(v);setSaved(false);}} min={1} max={12} suffix=" Felder"/>
+            </>
+          : <>
+              {fields.map(f=>{ const sel=pitches.some(p=>p.id===f.id); const sz=sizeOf(f); return (
+                <button key={f.id} onClick={()=>togglePitch(f)}
+                  style={{width:"100%",textAlign:"left",display:"flex",alignItems:"center",gap:10,marginBottom:7,background:sel?t.p+"14":"#f8fafc",borderRadius:11,padding:"10px 12px",border:`2px solid ${sel?t.p:"#e2e8f0"}`,cursor:"pointer",fontFamily:"inherit"}}>
+                  <div style={{width:22,height:22,borderRadius:6,border:`2px solid ${sel?t.p:"#cbd5e1"}`,background:sel?t.p:"#fff",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:14,flexShrink:0}}>{sel?"✓":""}</div>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:14,fontWeight:800,color:"#0f172a"}}>{f.name}</div>
+                    <div style={{fontSize:12,color:"#64748b"}}>{f.surface||f.template||"Platz"} · {SIZE_LABEL[sz]||sz+" Teile"}{sz>1?` → ${sz} Spielflächen`:""}</div>
+                  </div>
+                </button>
+              );})}
+              <div style={{fontSize:12,fontWeight:700,color:pitches.length?t.p:"#94a3b8",marginTop:4}}>
+                {pitches.length? `${pitches.length} Platz/Plätze · ${areasOf(pitches)} Spielflächen gleichzeitig` : "Noch keine Plätze gewählt"}
+              </div>
+            </>
+        }
+      </div>
+
+      <div style={{background:"#fff",borderRadius:14,padding:"14px",border:"1.5px solid #e2e8f0"}}>
+        <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:10,letterSpacing:.4}}>SPIELZEIT PRO SPIEL</div>
+        <Stepper val={gameTime} set={v=>{setGameTime(v);setSaved(false);}} min={1} max={90} suffix=" Min"/>
+      </div>
+
+      <div style={{background:"#fff",borderRadius:14,padding:"14px",border:"1.5px solid #e2e8f0"}}>
+        <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.4}}>TEILNEHMENDE TEAMS ({teams.length})</div>
+        {teams.map((tm,i)=>(
+          <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,background:"#f8fafc",borderRadius:9,padding:"8px 11px",border:"1px solid #e2e8f0"}}>
+            <span style={{flex:1,fontSize:14,fontWeight:700,color:"#0f172a"}}>{tm}</span>
+            <button onClick={()=>{setTeams(a=>a.filter((_,j)=>j!==i));setSaved(false);}} style={{background:"none",border:"none",color:"#dc2626",cursor:"pointer",fontWeight:800,fontSize:17,padding:0}}>×</button>
+          </div>
+        ))}
+        <div style={{display:"flex",gap:8,marginTop:4}}>
+          <input value={nt} onChange={e=>setNt(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")addTeam();}} placeholder="Team / Verein hinzufügen"
+            style={{flex:1,padding:"10px 12px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",boxSizing:"border-box"}}/>
+          <button onClick={addTeam} disabled={!nt.trim()} style={{padding:"10px 15px",borderRadius:10,border:"none",background:nt.trim()?t.p:"#e2e8f0",color:nt.trim()?"#fff":"#94a3b8",fontWeight:800,fontSize:14,cursor:nt.trim()?"pointer":"default",fontFamily:"inherit"}}>+</button>
+        </div>
+      </div>
+      <button onClick={save} style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:saved?"#16a34a":t.p,color:"#fff",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>{saved?"Gespeichert ✓":"Setup speichern"}</button>
+    </div>
+  );
+}
+function TournPlan({ ev, setup, t, onUpdate, isHelper }){
+  const sched=ev.schedule||[];
+  const [startTime,setStartTime]=useState(setup.startTime||"09:00");
+  const teams=(setup.clubs||[]).filter(Boolean);
+  const canGen = !!onUpdate && !isHelper;
+  const gen=()=>{ const s={...setup,startTime}; onUpdate({ setup:s, schedule:buildSchedule(s) }); };
+  // nach Zeit gruppieren
+  const groups={}; sched.forEach(g=>{ (groups[g.time] ||= []).push(g); });
+  const times=Object.keys(groups).sort();
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:12}}>
+      {canGen&&<div style={{background:"#fff",borderRadius:14,padding:"14px",border:"1.5px solid #e2e8f0"}}>
+        <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:10,letterSpacing:.4}}>SPIELPLAN ERSTELLEN</div>
+        {teams.length<2
+          ? <p style={{fontSize:13,color:"#b45309"}}>Mindestens 2 Teams im Setup nötig (aktuell {teams.length}).</p>
+          : <>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+                <span style={{fontSize:13,color:"#475569",fontWeight:600}}>Startzeit</span>
+                <input type="time" value={startTime} onChange={e=>setStartTime(e.target.value)}
+                  style={{padding:"8px 11px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",fontFamily:"inherit"}}/>
+              </div>
+              <button onClick={gen} style={{width:"100%",padding:"12px",borderRadius:11,border:"none",background:t.p,color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
+                {sched.length? "Spielplan neu erzeugen" : "Spielplan generieren"}
+              </button>
+              <p style={{fontSize:12,color:"#94a3b8",marginTop:8}}>Jeder gegen jeden · {teams.length} Teams · {teams.length*(teams.length-1)/2} Spiele</p>
+            </>
+        }
+      </div>}
+      <div style={{background:"#f8fafc",borderRadius:14,padding:"14px"}}>
+        <p style={{fontWeight:700,color:"#334155",marginBottom:10}}>Spielplan {sched.length?`(${sched.length} Spiele)`:""}</p>
+        {sched.length===0
+          ? <p style={{fontSize:13,color:"#94a3b8"}}>Noch kein Spielplan generiert.</p>
+          : times.map(tm=>(
+            <div key={tm} style={{marginBottom:12}}>
+              <div style={{fontSize:12,fontWeight:800,color:t.p,marginBottom:5}}>{tm} Uhr</div>
+              {groups[tm].map((g,i)=>(
+                <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 11px",marginBottom:5,background:"#fff",borderRadius:9,border:"1px solid #e2e8f0",fontSize:13}}>
+                  <span style={{fontSize:11,fontWeight:700,color:"#64748b",minWidth:78,flexShrink:0}}>{g.field}</span>
+                  <span style={{flex:1,fontWeight:700,color:"#0f172a",textAlign:"center"}}>{g.a} <span style={{color:"#94a3b8",fontWeight:600}}>vs</span> {g.b}</span>
+                </div>
+              ))}
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  );
+}
+function TournView({ ev,user,onVote,onUpdate,cl,players,isHelper=false,fields=[] }) {
   const t=TH(cl);
   const setup=ev.setup||{};
   const [stab,setStab]=useState("info");
@@ -14390,24 +16914,8 @@ function TournView({ ev,user,onVote,onUpdate,cl,players,isHelper=false }) {
         ))}
       </div>
       {stab==="info"&&<PollAttend ev={ev} user={user} onVote={onVote} cl={cl}/>}
-      {stab==="setup"&&!isHelper&&<div style={{background:"#f8fafc",borderRadius:14,padding:"14px"}}>
-        <p style={{fontWeight:700,color:"#334155",marginBottom:8}}>Turnier-Setup</p>
-        <p style={{fontSize:13,color:"#64748b"}}>Verein: {setup.clubName||cl?.name}</p>
-        <p style={{fontSize:13,color:"#64748b"}}>Felder: {setup.fields||2} | Spielzeit: {setup.gameTime||8} Min</p>
-        <p style={{fontSize:13,color:"#64748b"}}>Teams: {(setup.clubs||[]).length || "-"}</p>
-      </div>}
-      {stab==="plan"&&<div style={{background:"#f8fafc",borderRadius:14,padding:"14px"}}>
-        <p style={{fontWeight:700,color:"#334155",marginBottom:8}}>Spielplan</p>
-        {(ev.schedule||[]).length===0
-          ? <p style={{fontSize:13,color:"#94a3b8"}}>Noch kein Spielplan generiert.</p>
-          : (ev.schedule||[]).map((g,i)=>(
-            <div key={i} style={{padding:"8px 0",borderBottom:"1px solid #e2e8f0",fontSize:13}}>
-              <span style={{color:"#64748b"}}>Feld {g.field} . {g.time}</span>
-              <span style={{marginLeft:10,fontWeight:700}}>{g.a} vs {g.b}</span>
-            </div>
-          ))
-        }
-      </div>}
+      {stab==="setup"&&!isHelper&&<TournSetup setup={setup} cl={cl} t={t} onUpdate={onUpdate} fields={fields}/>}
+      {stab==="plan"&&<TournPlan ev={ev} setup={setup} t={t} onUpdate={onUpdate} isHelper={isHelper}/>}
       {stab==="timer"&&<CompactTimer ev={ev} cl={cl}/>}
       {stab==="split"&&<div style={{background:"#f8fafc",borderRadius:14,padding:"14px"}}>
         <p style={{fontWeight:700,color:"#334155",marginBottom:8}}>Team-Aufteilung</p>
@@ -14423,21 +16931,40 @@ function TournView({ ev,user,onVote,onUpdate,cl,players,isHelper=false }) {
 
 function CompactTimer({ ev,cl }) {
   const t=TH(cl);
-  const fields=(ev.setup?.fields||2);
   const dur=(ev.setup?.gameTime||8)*60;
-  const [times,setTimes]=useState(()=>Array.from({length:fields},()=>({sec:0,running:false})));
+  // Spielflächen aus den ausgewählten Plätzen ableiten (Größe beachten: halbierter Platz = 2 Flächen)
+  const lanes=React.useMemo(()=>{
+    const pitches=ev.setup?.pitches;
+    const out=[];
+    if(pitches&&pitches.length){
+      pitches.forEach(p=>{
+        const n=Math.max(1,p.split||1);
+        for(let i=0;i<n;i++) out.push({ label: n>1?`${p.name} ${String.fromCharCode(65+i)}`:p.name, sub:p.surface||"" });
+      });
+    } else {
+      const cnt=ev.setup?.fields||2;
+      for(let i=0;i<cnt;i++) out.push({ label:`Feld ${i+1}`, sub:"" });
+    }
+    return out;
+  },[ev.setup]);
+  const [times,setTimes]=useState(()=>lanes.map(()=>({sec:0,running:false})));
+  // Bei Änderung der Platz-Anzahl Timer-Liste angleichen (laufende Zeiten erhalten)
+  useEffect(()=>{ setTimes(prev=> lanes.map((_,i)=> prev[i]||{sec:0,running:false})); },[lanes.length]);
   useEffect(()=>{
     const iv=setInterval(()=>{
       setTimes(prev=>prev.map(f=>f.running?{...f,sec:Math.min(f.sec+1,dur*2)}:f));
     },1000);
     return()=>clearInterval(iv);
-  },[]);
+  },[dur]);
   const fmt=s=>`${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
   return (
     <div style={{display:"flex",flexDirection:"column",gap:10}}>
       {times.map((f,i)=>(
         <div key={i} style={{background:"#fff",borderRadius:14,padding:"14px",border:"1.5px solid #e2e8f0"}}>
-          <div style={{fontWeight:700,marginBottom:6}}>Feld {i+1}</div>
+          <div style={{display:"flex",alignItems:"baseline",gap:8,marginBottom:6}}>
+            <span style={{fontWeight:800}}>{lanes[i]?.label||`Feld ${i+1}`}</span>
+            {lanes[i]?.sub&&<span style={{fontSize:12,color:"#94a3b8",fontWeight:600}}>{lanes[i].sub}</span>}
+          </div>
           <div style={{fontWeight:900,fontSize:36,color:f.sec>=dur?"#dc2626":t.p,fontFamily:"monospace",marginBottom:8}}>{fmt(f.sec)}</div>
           <div style={{display:"flex",gap:8}}>
             <button onClick={()=>setTimes(p=>p.map((x,j)=>j===i?{...x,running:!x.running}:x))}
@@ -14482,7 +17009,7 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
     <div style={{background:"#fff",borderRadius:20,boxShadow:expanded?"0 8px 32px rgba(0,0,0,.11)":"0 2px 10px rgba(0,0,0,.05)",border:`2px solid ${expanded?p:status?.urgent?"#fde68a":"#e2e8f0"}`,overflow:"hidden",transition:"all .2s",opacity:isPast&&!expanded?.7:1}}>
       {status?.urgent&&!expanded&&!isPast&&<div style={{background:"#fffbeb",borderBottom:"1px solid #fde68a",padding:"6px 17px",display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:13}}></span><span style={{fontSize:12,fontWeight:700,color:"#d97706"}}>Deine Antwort fehlt noch!</span></div>}
       <div onClick={onToggle} style={{padding:"14px 17px",cursor:"pointer",display:"flex",alignItems:"center",gap:12}}>
-        <div style={{width:48,height:48,borderRadius:15,background:eT.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{eT.icon}</div>
+        <div style={{width:48,height:48,borderRadius:15,background:eT.bg,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><EventIcon type={EVENT_TYPE_ALIAS[ev.type]||ev.type} size={26} color={eT.col}/></div>
         <div style={{flex:1,minWidth:0}}>
           <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
             <span style={{fontWeight:900,fontSize:17,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ev.title}</span>
@@ -14491,7 +17018,7 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
             {ev.sid&&<Tag c="#94a3b8" bg="#f1f5f9" ch="*" sm/>}
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8,marginTop:4,flexWrap:"wrap"}}>
-            <span style={{fontSize:13,color:"#64748b",fontWeight:600}}>{fmtD(ev.date)}{ev.time?" . "+ev.time:""}</span>
+            <span style={{fontSize:13,color:"#64748b",fontWeight:600}}>{fmtD(ev.date)}{ev.time?" . "+ev.time+(ev.endTime?"–"+ev.endTime:""):""}</span>
             {ev.loc&&<span style={{fontSize:12,color:"#94a3b8"}}> {ev.loc}</span>}
           </div>
           {status&&<div style={{marginTop:6,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
@@ -14503,12 +17030,54 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
       </div>
       {expanded&&<div style={{padding:"0 17px 20px",borderTop:"1px solid #f1f5f9"}}>
         <div style={{height:14}}/>
+        {ev.trainingPlan && (
+          <div style={{background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:14,padding:"13px 15px",marginBottom:14}}>
+            <div style={{fontSize:12,fontWeight:800,color:"#166534",marginBottom:8,letterSpacing:.3}}>TRAININGSPLAN{ev.trainingPlan.cat?" · "+ev.trainingPlan.cat:""}</div>
+            {(ev.trainingPlan.sessions||[]).map((s,si)=>(
+              <div key={si} style={{marginBottom:si<ev.trainingPlan.sessions.length-1?10:0}}>
+                {(s.blocks||[]).map((b,bi)=>(
+                  <div key={bi} style={{display:"flex",alignItems:"center",gap:8,padding:"4px 0",fontSize:13,color:"#334155"}}>
+                    <span style={{fontSize:10,fontWeight:800,color:"#16a34a",width:58,flexShrink:0}}>{b.phase}</span>
+                    <span style={{flex:1,fontWeight:600}}>{b.title}</span>
+                    <span style={{fontSize:11,color:"#94a3b8"}}>{b.min} Min</span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
         {ev.type==="turnier"&&isTrainerOrHelper?<TournView ev={ev} user={user} onVote={onVote} cl={cl} players={players} isHelper={role==="helper"}/>
           :ev.type==="turnier"?<PollAttend ev={ev} user={user} onVote={onVote} cl={cl}/>
           :ev.pt==="carpool"?<PollCarpool ev={ev} user={user} onVote={onVote} cl={cl}/>
           :ev.pt==="list"?<PollList ev={ev} user={user} onVote={onVote}/>
           :<PollAttend ev={ev} user={user} onVote={onVote} cl={cl}/>}
       </div>}
+    </div>
+  );
+}
+
+// Teilbarer Direktlink zu Verein + Team (direkt zur Anmeldung). Jeder eingeloggte Nutzer darf ihn weitergeben.
+function ShareTeamLink({ cl, team, t, compact }){
+  const [copied,setCopied]=useState(false);
+  if(!cl||!team) return null;
+  const base = (typeof window!=="undefined" ? window.location.origin : "") ;
+  const link = base + "/?club=" + encodeURIComponent(cl.slug||cl.id) + "&team=" + encodeURIComponent(team.id);
+  const msg = `Anmeldung ${cl.name} – ${team.name}: ${link}`;
+  const doShare = async () => {
+    if(typeof navigator!=="undefined" && navigator.share){
+      try { await navigator.share({title:cl.name+" – "+team.name, text:"Direkt zur Anmeldung", url:link}); return; } catch {}
+    }
+    try { await navigator.clipboard?.writeText(link); } catch {}
+    setCopied(true); setTimeout(()=>setCopied(false),2000);
+  };
+  return (
+    <div style={{background:"#fff",borderRadius:14,border:"1.5px solid #e2e8f0",padding:compact?"12px 14px":"15px 16px"}}>
+      <div style={{fontSize:13,fontWeight:800,color:"#334155",marginBottom:4}}>Anmelde-Link teilen</div>
+      <div style={{fontSize:12,color:"#64748b",lineHeight:1.5,marginBottom:10}}>Führt direkt zur Anmeldung von <b>{team.name}</b>. Ideal für neue Eltern – einfach per WhatsApp, E-Mail o.&nbsp;Ä. weitergeben.</div>
+      <div style={{display:"flex",gap:8,alignItems:"center"}}>
+        <div style={{flex:1,minWidth:0,fontSize:11.5,color:"#475569",background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:9,padding:"8px 10px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontFamily:"monospace"}}>{link}</div>
+        <button onClick={doShare} style={{flexShrink:0,padding:"9px 15px",borderRadius:10,border:"none",background:t.p,color:"#fff",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{copied?"Kopiert ✓":"Teilen"}</button>
+      </div>
     </div>
   );
 }
@@ -14523,9 +17092,14 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
   const isDesktop = typeof window!=="undefined" && window.innerWidth>=1024;
   const myTeam=data.teams.find(x=>x.id===tid);
   const t=TH(cl); const tod=now();
-  const evs=data.events.filter(e=>e.tid===tid).sort((a,b)=>a.date.localeCompare(b.date));
+  const _activeSid=data.activeSeason||(data.seasons||[])[0]?.id||null;
+  const evs=data.events.filter(e=>e.tid===tid&&(!e.seasonId||e.seasonId===_activeSid)).sort((a,b)=>a.date.localeCompare(b.date));
   const up=evs.filter(e=>e.date>=tod);
   const past=evs.filter(e=>e.date<tod).reverse();
+  const _in10=addD(now(),10);                          // Grenze: heute + 10 Tage
+  const soon=up.filter(e=>e.date<=_in10);              // nächste 10 Tage
+  const later=up.filter(e=>e.date>_in10);              // weiter in der Zukunft
+  const [showLater,setShowLater]=useState(false);
   const [exp,setExp]=useState((up[0]||past[0])?.id||null);
   const [showPast,setSP]=useState(false);
   const [toast,setToast]=useState(null);
@@ -14629,6 +17203,7 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
                <strong>Datenschutz:</strong> Dein Profilbild wird verschluesselt auf dem Server gespeichert und ist nur fuer dich sichtbar. Du kannst es jederzeit loeschen.
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:9}}>
+              <div style={{marginBottom:4}}><ShareTeamLink cl={cl} team={myTeam} t={t} compact/></div>
               <button onClick={()=>setShowProfile(false)} style={{width:"100%",padding:"13px",borderRadius:13,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Schliessen</button>
               <button onClick={()=>{setShowProfile(false);onLogout();}} style={{width:"100%",padding:"13px",borderRadius:13,border:"none",background:"#fee2e2",color:"#dc2626",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}> Team wechseln / Abmelden</button>
             </div>
@@ -14639,13 +17214,21 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
       <div style={{maxWidth:isDesktop?1080:520,margin:"0 auto",padding:isDesktop?"24px":"16px 14px",display:isDesktop?"grid":"block",gridTemplateColumns:isDesktop?"1fr 320px":"none",gap:isDesktop?24:0,alignItems:"start"}}>
         <div>
         {up.length>0&&<>
-          <Divider label="KOMMENDE TERMINE"/>
-          {up.map((ev,i)=><div key={ev.id} className="up" style={{marginBottom:10,animationDelay:`${i*.05}s`}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user"/></div>)}
+          <Divider label="NÄCHSTE 10 TAGE"/>
+          {soon.length>0
+            ? soon.map((ev,i)=><div key={ev.id} className="up" style={{marginBottom:10,animationDelay:`${i*.05}s`}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user"/></div>)
+            : <p style={{textAlign:"center",color:"#94a3b8",fontSize:13.5,padding:"16px 10px"}}>Keine Termine in den nächsten 10 Tagen.</p>}
+          {later.length>0&&<>
+            <button onClick={()=>setShowLater(s=>!s)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",background:showLater?"#f1f5f9":"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,cursor:"pointer",margin:"6px 0 10px",padding:"11px 14px",fontWeight:800,fontSize:13,color:"#475569",fontFamily:"inherit"}}>
+              <span>{showLater?"▲ Weitere Termine ausblenden":"▼ Weitere "+later.length+" Termine anzeigen"}</span>
+            </button>
+            {showLater&&later.map((ev,i)=><div key={ev.id} style={{marginBottom:10}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user"/></div>)}
+          </>}
         </>}
         {up.length===0&&<div style={{textAlign:"center",padding:"52px 20px"}}><Logo cl={cl} sz={64} sx={{margin:"0 auto 16px"}}/><p style={{fontWeight:800,fontSize:18,color:"#334155"}}>Keine anstehenden Termine</p><p style={{color:"#94a3b8",fontSize:14,marginTop:6}}>Der Trainer hat noch keine Termine angelegt.</p><div style={{marginTop:20}}><AdBanner/></div></div>}
         {past.length>0&&<>
           <button onClick={()=>setSP(s=>!s)} style={{display:"flex",alignItems:"center",gap:10,width:"100%",background:"none",border:"none",cursor:"pointer",margin:"18px 0 10px",padding:"4px 0"}}>
-            <div style={{flex:1,height:1,background:"#e2e8f0"}}/><span style={{fontSize:11,fontWeight:800,color:"#94a3b8",whiteSpace:"nowrap"}}>{showPast?"?":"?"} VERGANGENE ({past.length})</span><div style={{flex:1,height:1,background:"#e2e8f0"}}/>
+            <div style={{flex:1,height:1,background:"#e2e8f0"}}/><span style={{fontSize:11,fontWeight:800,color:"#94a3b8",whiteSpace:"nowrap"}}>{showPast?"▲":"▼"} VERGANGENE ({past.length})</span><div style={{flex:1,height:1,background:"#e2e8f0"}}/>
           </button>
           {showPast&&past.map(ev=><div key={ev.id} style={{marginBottom:10}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user"/></div>)}
         </>}
@@ -14682,7 +17265,7 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
                 {up[0]&&<div style={{marginTop:14,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
                   <div style={{fontSize:11,fontWeight:800,color:"#94a3b8",letterSpacing:.5,marginBottom:6}}>NÄCHSTER TERMIN</div>
                   <div style={{fontWeight:800,fontSize:14,color:"#334155"}}>{up[0].title}</div>
-                  <div style={{fontSize:12.5,color:"#64748b",marginTop:2}}>{new Date(up[0].date+"T12:00:00").toLocaleDateString("de-DE",{weekday:"short",day:"2-digit",month:"2-digit"})}{up[0].time?` · ${up[0].time}`:""}</div>
+                  <div style={{fontSize:12.5,color:"#64748b",marginTop:2}}>{new Date(up[0].date+"T12:00:00").toLocaleDateString("de-DE",{weekday:"short",day:"2-digit",month:"2-digit"})}{up[0].time?` · ${up[0].time}${up[0].endTime?"–"+up[0].endTime:""}`:""}</div>
                 </div>}
               </div>
             </div>
@@ -14706,7 +17289,7 @@ export default function App() {
   );
 }
 function AppRoot() {
-  const [lang,setLang] = useState(()=>localStorage.getItem(LANG_KEY)||navigator.language?.slice(0,2)||"de");
+  const [lang,setLang] = useState(()=> LANG_SWITCHER_ENABLED ? (localStorage.getItem(LANG_KEY)||navigator.language?.slice(0,2)||"de") : "de");
   return (
     <LangCtx.Provider value={lang in T ? lang : "de"}>
       <AppInner lang={lang} setLang={setLang}/>
@@ -14718,6 +17301,7 @@ function AppInner({lang,setLang}) {
   const [data,setData]    = useState(null);
   const [screen,setScr]   = useState("boot");
   const [cid,setCid]      = useState(null);
+  const [linkTeam,setLinkTeam] = useState(null);
   const [session,setSess] = useState(null);
   const [showSetup,setShowSetup] = useState(false);
   const [showLegal,setShowLegal] = useState(false);
@@ -14730,22 +17314,49 @@ function AppInner({lang,setLang}) {
   const [saveStatus,setSaveStatus] = useState(null); // null | "saving" | "saved" | "local"
   const syncRef  = useRef(null);
   const saveTimer= useRef(null);
+  const cidRef   = useRef(null); cidRef.current = cid; // immer aktueller Verein für Schreib-Isolation
 
   useEffect(()=>{
     (async()=>{
-      let d=null;
-      try { d = await sb.get(); if(d?._v < 10) d=null; } catch {}
-      if(!d) { d=seed(); try { await sb.set(d); } catch {} }
-      else { d=refreshDemo(d); try { await sb.set(d); } catch {} }
-      setData(d);
+      // 1) Leichtes Verzeichnis laden (nur Vereinsliste, keine schweren Daten); falls leer -> seed
+      let dir=null;
+      try { dir = await sb.getDirectory(); } catch {}
+      if(!dir || (dir._v!=null && dir._v < 10)) { const seeded=seed(); try { await sb.set(seeded); } catch {} dir=seeded; }
+      // SuperAdmin braucht alle Daten -> voll laden
+      if(new URLSearchParams(window.location.search).has("superadmin")){
+        let full=null; try { full=await sb.get(); } catch {}
+        setData(refreshDemo(full||dir)); setScr("dir"); return; // screen!=="boot", SuperAdmin-Render greift
+      }
       const s=sess.get();
-      if(s){ setCid(s.cid); setSess(s); setScr(s.role==="user"?"user":"dash"); return; }
-      setScr("dir");
+      if(s){
+        // nur den Verein des angemeldeten Nutzers laden
+        let cd=null; try { cd=await sb.getClub(s.cid); } catch {}
+        cd = cd||dir; if(s.cid==="demo") cd=refreshDemo(cd);
+        setData(cd); setCid(s.cid); setSess(s); setScr(s.role==="user"?"user":"dash"); return;
+      }
+      // Direktlink ?club=<slug|id>&team=<id> → Verein laden, dann zur Anmeldung
+      const params=new URLSearchParams(window.location.search);
+      const clubParam=params.get("club");
+      if(clubParam){
+        const club=(dir.clubs||[]).find(c=>c.slug===clubParam||c.id===clubParam);
+        if(club){
+          let cd=null; try { cd=await sb.getClub(club.id); } catch {}
+          cd = cd||dir; if(club.id==="demo") cd=refreshDemo(cd);
+          setData(cd); setCid(club.id);
+          const teamParam=params.get("team");
+          if(teamParam){ setLinkTeam(teamParam); setScr("flow"); }
+          else setScr("role");
+          return;
+        }
+      }
+      // Verzeichnis anzeigen (nur leichte Vereinsliste)
+      setData(refreshDemo(dir)); setScr("dir");
     })();
     syncRef.current=setInterval(async()=>{
       try {
-        const r=await sb.get();
-        if(r?._v>=12) setData(p=>{const rr=refreshDemo(r);if(JSON.stringify(p)===JSON.stringify(rr))return p;return rr;});
+        const cur=cidRef.current;
+        const r = cur ? await sb.getClub(cur) : await sb.getDirectory();
+        if(r?._v>=12){ const rr=(cur==="demo")?refreshDemo(r):r; setData(p=>JSON.stringify(p)===JSON.stringify(rr)?p:rr); }
       } catch {}
     },10000);
     return()=>clearInterval(syncRef.current);
@@ -14756,7 +17367,7 @@ function AppInner({lang,setLang}) {
     setSaveStatus("saving");
     clearTimeout(saveTimer.current);
     try {
-      await sb.set(next);
+      await sb.set(next, cidRef.current); // nur die Zeile des aktuellen Vereins schreiben (Schreib-Isolation)
       setSaveStatus(getConfig()?"saved":"local");
     } catch {
       setSaveStatus("local");
@@ -14774,11 +17385,15 @@ function AppInner({lang,setLang}) {
     const newLog=[...(data.securityLog||[]),
       ...(dev.suspicious?[{...createAuditEntry("new_device","Unbekannte Region: "+dev.lang,s),cid}]:[]),
       entry];
-    localSet({...data,securityLog:newLog});
+    const nowIso=new Date().toISOString();
+    localSet({...data,
+      securityLog:newLog,
+      clubs:(data.clubs||[]).map(c=>c.id===cid?{...c,lastActive:nowIso}:c),
+    });
     setScr(role==="user"?"user":"dash");
   };
   const logout=()=>{
-    if(sess_){const e={...createAuditEntry("logout","Logout: "+(sess_.name||sess_.role),sess_),cid};localSet({...data,securityLog:[...(data.securityLog||[]),e]});}
+    if(session){const e={...createAuditEntry("logout","Logout: "+(session.name||session.role),session),cid};localSet({...data,securityLog:[...(data.securityLog||[]),e]});}
     sess.del(); setSess(null); setScr(cid?"role":"dir");
   };
 
@@ -14806,7 +17421,7 @@ function AppInner({lang,setLang}) {
   if(showSuperAdmin) return (<><style>{CSS}</style><SuperAdmin data={data}/></>);
 
   const activeCl = data.clubs.find(c=>c.id===cid);
-  const clTeams  = data.teams.filter(t=>t.cid===cid);
+  const clTeams  = activeTeamsFor(data,cid);
 
   return (
     <div>
@@ -14830,9 +17445,11 @@ function AppInner({lang,setLang}) {
       )}
 
       {showLegal&&<LegalPage onBack={()=>setShowLegal(false)}/>}
-      {!showLegal&&screen==="dir"&&<Directory data={data} lang={lang} setLang={setLang} onLegal={()=>setShowLegal(true)} onPick={id=>{
-          if(id==="__demo__"){setCid("demo");setScr("role");return;}
-          setCid(id);setScr("role");
+      {!showLegal&&screen==="dir"&&<Directory data={data} lang={lang} setLang={setLang} onLegal={()=>setShowLegal(true)} onPick={async id=>{
+          const realId = id==="__demo__"?"demo":id;
+          let cd=null; try { cd=await sb.getClub(realId); } catch {}
+          if(cd){ setData(realId==="demo"?refreshDemo(cd):cd); }
+          setCid(realId); setScr("role");
         }} onNewClub={newClubOrData=>{
           if(newClubOrData.clubs){
             save(newClubOrData);
@@ -14844,7 +17461,7 @@ function AppInner({lang,setLang}) {
           }
         }}/>}
       {screen==="role"  &&activeCl&&<RolePicker cl={activeCl} onRole={r=>setScr(r==="user"?"flow":r==="trainer"?"tlogin":r==="helper"?"hlogin":"alogin")} onBack={()=>setScr("dir")}/>}
-      {screen==="flow"  &&activeCl&&<UserFlow cl={activeCl} teams={clTeams} players={data.players} playerProfiles={data.playerProfiles||[]} onDone={(tid,user)=>login("user",{tid,user})} onBack={()=>setScr("role")}/>}
+      {screen==="flow"  &&activeCl&&<UserFlow cl={activeCl} teams={clTeams} players={data.players} playerProfiles={data.playerProfiles||[]} preselectTid={linkTeam} onDone={(tid,user)=>login("user",{tid,user})} onBack={()=>setScr(linkTeam?"role":"role")}/>}
       {screen==="tlogin"&&activeCl&&<TrainerLogin cl={activeCl} trainers={data.trainers.filter(t=>t.cid===cid)} teams={clTeams} onLogin={tr=>login("trainer",tr)} onBack={()=>setScr("role")}/>}
       {screen==="hlogin"&&activeCl&&<HelperLogin cl={activeCl} helpers={data.helpers||[]} onLogin={h=>login("helper",{...h,cid})} onBack={()=>setScr("role")}/>}
       {screen==="alogin"&&activeCl&&<AdminLogin cl={activeCl} onLogin={a=>login("admin",{...a,cid})} onBack={()=>setScr("role")}/>}
