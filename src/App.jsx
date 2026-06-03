@@ -414,6 +414,7 @@ const sb = {
   _url: () => getConfig()?.url,_key: () => getConfig()?.key,_hdr: () => ({ "Content-Type":"application/json","apikey": sb._key(),"Authorization":"Bearer "+sb._key() }),
   _glKey: SK+"__global",
   _clubKey: cid => SK+"__club_"+cid,
+  _lastWrite: null,
   // Migration der alten Einzel-Zeile, falls noch keine getrennten Zeilen existieren. Gibt true zurück, wenn migriert.
   _migrate: async () => {
     const url = sb._url();
@@ -489,7 +490,7 @@ const sb = {
   set: async (d, cid=null) => {
     localSet(d); // immer auch lokal sichern
     const url = sb._url();
-    if (!url || !sb._key()) return;
+    if (!url || !sb._key()) { sb._lastWrite={ok:false,status:0,error:"keine DB konfiguriert",at:Date.now()}; return sb._lastWrite; }
     const { global, shards } = splitData(d);
     const ts = new Date().toISOString();
     let rows = [{ key: sb._glKey, value: global, updated_at: ts }];
@@ -499,10 +500,12 @@ const sb = {
       for (const id of Object.keys(shards)) rows.push({ key: sb._clubKey(id), value: shards[id], updated_at: ts });
     }
     try {
-      await fetch(`${url}/rest/v1/app_data`,{
+      const r = await fetch(`${url}/rest/v1/app_data`,{
         method:"POST",headers: { ...sb._hdr(),"Prefer":"resolution=merge-duplicates" },body: JSON.stringify(rows)
       });
-    } catch {}
+      if(!r.ok){ let txt=""; try{ txt=await r.text(); }catch{} sb._lastWrite={ok:false,status:r.status,error:(txt||"").slice(0,400),at:Date.now()}; return sb._lastWrite; }
+      sb._lastWrite={ok:true,status:r.status,error:"",at:Date.now()}; return sb._lastWrite;
+    } catch(e){ sb._lastWrite={ok:false,status:0,error:String((e&&e.message)||e).slice(0,400),at:Date.now()}; return sb._lastWrite; }
   },
   test: async (url,key) => {
     try {
@@ -511,6 +514,20 @@ const sb = {
       });
       return r.ok || r.status === 406; // 406 = table empty,still connected
     } catch { return false; }
+  },
+  selfTest: async () => {
+    const url=sb._url(), key=sb._key();
+    if(!url||!key) return {step:"config",ok:false,status:0,msg:"Keine Datenbank konfiguriert."};
+    const tkey=SK+"__dbtest", tval={t:Date.now()};
+    let w; try{ w=await fetch(`${url}/rest/v1/app_data`,{method:"POST",headers:{...sb._hdr(),"Prefer":"resolution=merge-duplicates"},body:JSON.stringify([{key:tkey,value:tval,updated_at:new Date().toISOString()}])}); }
+    catch(e){ return {step:"write",ok:false,status:0,msg:String((e&&e.message)||e)}; }
+    if(!w.ok){ let t=""; try{t=await w.text();}catch{} return {step:"write",ok:false,status:w.status,msg:(t||"").slice(0,400)}; }
+    let rd; try{ rd=await fetch(`${url}/rest/v1/app_data?key=eq.${tkey}&select=value`,{headers:sb._hdr()}); }
+    catch(e){ return {step:"read",ok:false,status:0,msg:String((e&&e.message)||e)}; }
+    if(!rd.ok){ let t=""; try{t=await rd.text();}catch{} return {step:"read",ok:false,status:rd.status,msg:(t||"").slice(0,400)}; }
+    let rows=[]; try{ rows=await rd.json(); }catch{}
+    if(!rows.length || rows[0]?.value?.t!==tval.t) return {step:"verify",ok:false,status:rd.status,msg:"Geschrieben, aber Zurücklesen lieferte den Wert nicht. Antwort: "+JSON.stringify(rows).slice(0,200)};
+    return {step:"done",ok:true,status:w.status,msg:"Schreiben und Zurücklesen erfolgreich."};
   }
 };
 const localGet = () => { try { const v=localStorage.getItem(SK); return v?JSON.parse(v):null; } catch { return null; } };
@@ -17717,6 +17734,49 @@ function AppRoot() {
   );
 }
 
+function DbTest(){
+  const [res,setRes]=useState(null); const [busy,setBusy]=useState(true);
+  const run=async()=>{ setBusy(true); let r; try{ r=await sb.selfTest(); }catch(e){ r={step:"fehler",ok:false,status:0,msg:String((e&&e.message)||e)}; } setRes(r); setBusy(false); };
+  useEffect(()=>{ run(); },[]);
+  const cfg=getConfig();
+  const hint=(r)=>{
+    if(!r) return "";
+    if(r.ok) return "Alles in Ordnung \u2013 die App kann in die Datenbank schreiben und wieder lesen.";
+    const m=(r.msg||"").toLowerCase();
+    if(r.status===401||/jwt|api key|apikey|invalid|no api key/.test(m)) return "Der anon-Key oder die URL stimmt nicht. Pruefe in Supabase: Settings \u2192 API.";
+    if(r.status===404||/does not exist|not exist|could not find the table|undefined table/.test(m)) return "Die Tabelle app_data fehlt. Lege sie mit dem CREATE-TABLE-Befehl an.";
+    if(r.status===403||/row-level security|policy|permission denied|rls/.test(m)) return "Row Level Security (RLS) sperrt den Zugriff. Die App darf nicht schreiben, bis du das in Supabase freigibst (siehe unten). Das ist die haeufigste Ursache fuer \u201eSpeichert nicht\u201c.";
+    if(r.step==="verify") return "Schreiben ging, aber Zuruecklesen lieferte nichts \u2013 meist blockiert RLS das Lesen.";
+    return "Unerwarteter Fehler \u2013 die genaue Meldung steht unten.";
+  };
+  const rls = res&&!res.ok&&(res.status===403||/security|policy|permission/.test((res.msg||"").toLowerCase())||res.step==="verify");
+  return (<div style={{minHeight:"100dvh",background:"#0f172a",color:"#e2e8f0",padding:"28px 18px",fontFamily:"system-ui,sans-serif"}}>
+    <div style={{maxWidth:580,margin:"0 auto"}}>
+      <h1 style={{fontSize:22,fontWeight:900,margin:"0 0 4px"}}>Datenbank-Selbsttest</h1>
+      <p style={{color:"#94a3b8",fontSize:13,margin:"0 0 18px",lineHeight:1.6}}>Schreibt eine kleine Testzeile und liest sie sofort zurueck \u2013 und zeigt die genaue Antwort von Supabase.</p>
+      <div style={{background:"#1e293b",borderRadius:12,padding:"12px 16px",fontSize:13,marginBottom:14}}>
+        Datenbank: <b>{cfg?.url?.replace("https://","").split(".")[0]||"\u2014 keine konfiguriert"}</b>
+      </div>
+      {busy&&<div style={{color:"#94a3b8"}}>Test laeuft\u2026</div>}
+      {res&&(<div style={{background:res.ok?"#052e16":"#450a0a",border:`1px solid ${res.ok?"#16a34a":"#dc2626"}`,borderRadius:12,padding:"16px 18px"}}>
+        <div style={{fontSize:18,fontWeight:900,color:res.ok?"#86efac":"#fca5a5",marginBottom:8}}>{res.ok?"\u2713 Datenbank funktioniert":"\u2715 Fehler beim Schritt: "+res.step}</div>
+        {!res.ok&&<div style={{fontSize:13,marginBottom:8}}>HTTP-Status: <b>{res.status||"\u2014"}</b></div>}
+        <div style={{fontSize:14,lineHeight:1.6,marginBottom:res.ok?0:10}}>{hint(res)}</div>
+        {!res.ok&&res.msg&&<pre style={{whiteSpace:"pre-wrap",wordBreak:"break-word",fontSize:11.5,background:"rgba(0,0,0,.35)",borderRadius:8,padding:"10px 12px",color:"#cbd5e1",margin:0}}>{res.msg}</pre>}
+      </div>)}
+      {rls&&(
+        <div style={{background:"#1e293b",borderRadius:12,padding:"16px 18px",marginTop:14,fontSize:13,lineHeight:1.7}}>
+          <div style={{fontWeight:800,marginBottom:8}}>Schreiben in Supabase freigeben</div>
+          <div style={{marginBottom:10}}><b>Schneller Weg</b> (Daten sind dann fuer jeden mit dem App-Key les-/schreibbar):<br/>
+            <code style={{display:"inline-block",marginTop:4,background:"rgba(0,0,0,.45)",padding:"4px 8px",borderRadius:6,color:"#86efac"}}>ALTER TABLE app_data DISABLE ROW LEVEL SECURITY;</code></div>
+          <div style={{color:"#fca5a5"}}>Achtung: Bei Kinder-/Personendaten ist das nicht empfohlen. Der sichere Weg laeuft ueber eine Edge Function (Anleitung liegt vor). Sag mir Bescheid, dann gehen wir den sicheren Weg.</div>
+        </div>
+      )}
+      <button onClick={run} disabled={busy} style={{marginTop:16,padding:"12px 18px",borderRadius:10,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:14,cursor:busy?"default":"pointer",opacity:busy?.6:1}}>Erneut testen</button>
+    </div>
+  </div>);
+}
+
 function AppInner({lang,setLang}) {
   const [data,setData]    = useState(null);
   const [screen,setScr]   = useState("boot");
@@ -17786,13 +17846,9 @@ function AppInner({lang,setLang}) {
     setData(next);
     setSaveStatus("saving");
     clearTimeout(saveTimer.current);
-    try {
-      await sb.set(next, cidRef.current); // nur die Zeile des aktuellen Vereins schreiben (Schreib-Isolation)
-      setSaveStatus(getConfig()?"saved":"local");
-    } catch {
-      setSaveStatus("local");
-    }
-    saveTimer.current=setTimeout(()=>setSaveStatus(null),2500);
+    const res = await sb.set(next, cidRef.current);
+    setSaveStatus(!getConfig() ? "local" : (res && res.ok) ? "saved" : "error");
+    saveTimer.current=setTimeout(()=>setSaveStatus(null),4000);
   },[]);
 
   const login=(role,payload)=>{
@@ -17827,12 +17883,14 @@ function AppInner({lang,setLang}) {
     </>
   );
 
+  if(new URLSearchParams(window.location.search).has("dbtest")) return (<><style>{CSS}</style><DbTest/></>);
+
   if(screen==="boot"||!data) return (
     <div style={{minHeight:"100dvh",display:"flex",alignItems:"center",justifyContent:"center",background:"#0f172a"}}>
       <style>{CSS}</style>
       <div style={{textAlign:"center"}}>
         <div style={{fontSize:60,animation:"pulse 1.5s ease infinite",marginBottom:14}}></div>
-        <p style={{color:"#86efac",fontWeight:800,fontSize:17}}>Vereins-App laedt...</p>
+        <p style={{color:"#86efac",fontWeight:800,fontSize:17}}>Vereins-App lädt...</p>
         {!getConfig()&&<p style={{color:"rgba(255,255,255,.3)",fontSize:12,marginTop:8}}>Lokaler Speicher aktiv</p>}
       </div>
     </div>
@@ -17848,11 +17906,12 @@ function AppInner({lang,setLang}) {
       <style>{CSS}</style>
       {}
       {saveStatus&&(
-        <div style={{position:"fixed",bottom:20,right:16,zIndex:999,display:"flex",alignItems:"center",gap:7,background:saveStatus==="saved"?"#052e16":saveStatus==="saving"?"#0f172a":"#451a03",borderRadius:99,padding:"8px 14px",boxShadow:"0 4px 20px rgba(0,0,0,.3)",border:`1px solid ${saveStatus==="saved"?"#16a34a":saveStatus==="saving"?"#334155":"#d97706"}`,fontSize:12,fontWeight:700,color:saveStatus==="saved"?"#86efac":saveStatus==="saving"?"#94a3b8":"#fbbf24"}}>
+        <div style={{position:"fixed",bottom:20,right:16,zIndex:999,display:"flex",alignItems:"center",gap:7,background:saveStatus==="saved"?"#052e16":saveStatus==="saving"?"#0f172a":saveStatus==="error"?"#450a0a":"#451a03",borderRadius:99,padding:"8px 14px",boxShadow:"0 4px 20px rgba(0,0,0,.3)",border:`1px solid ${saveStatus==="saved"?"#16a34a":saveStatus==="saving"?"#334155":saveStatus==="error"?"#dc2626":"#d97706"}`,fontSize:12,fontWeight:700,color:saveStatus==="saved"?"#86efac":saveStatus==="saving"?"#94a3b8":saveStatus==="error"?"#fca5a5":"#fbbf24"}}>
           {saveStatus==="saving"&&<div style={{width:12,height:12,border:"2px solid rgba(255,255,255,.2)",borderTopColor:"#94a3b8",borderRadius:"50%",animation:"spin .7s linear infinite"}}/>}
           {saveStatus==="saved"&&"* Supabase gespeichert"}
           {saveStatus==="saving"&&"Speichert..."}
           {saveStatus==="local"&&"* Lokal gespeichert"}
+          {saveStatus==="error"&&"DB-Speichern fehlgeschlagen \u2013 nur lokal (Test: ?dbtest)"}
         </div>
       )}
 
