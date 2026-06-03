@@ -4675,6 +4675,8 @@ function PlanEditor({ plan, cid, myTids, data, save, fire, cl, onClose }) {
 
   const savePlan = () => {
     if(!name.trim()) return;
+    const asTemplate = !!(plan?.isTemplate);
+    const shareWithAll = !!(plan?.shared);
     const rec = { id:plan?.id||uid(), cid, tid, name:name.trim(), exercises, updatedAt:new Date().toISOString(), isTemplate:asTemplate, shared:shareWithAll };
     const plans = data.trainingPlans||[];
     const next = plan ? plans.map(p=>p.id===plan.id?rec:p) : [...plans,rec];
@@ -14778,7 +14780,7 @@ function SeasonModal({ data,save,fire,cl,myTids,onClose }) {
           {tab==="seasons"&&(
             <SeasonPicker
               data={data} save={save} fire={fire}
-              onSelect={sid=>{switchActive(sid);setSelSeason(sid);}}
+              onSelect={sid=>{switchActive(sid);}}
               t={t}
             />
           )}
@@ -16631,19 +16633,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       const _sid = local.activeSeason || (local.seasons||[])[0]?.id || null;
       const evsWithSeason = evs.map(e=>({...e, seasonId: e.seasonId || _sid}));
       save({...local,events:[...(local.events||[]),...evsWithSeason]});
-      // Auto-book field if selected
-    if(f.fieldId && evs.length>0) {
-      const fieldBookings = evs.map(ev=>({
-        id:uid(), fieldId:f.fieldId, date:ev.date,
-        cellStart:0, cells:4, teamId:ev.tid,
-        teamName:(data.teams||[]).find(x=>x.id===ev.tid)?.name||"",
-        booker:session?.name||"", timeFrom:f.time||"09:00",
-        timeTo:addMins(f.time||"09:00", f.dur||90),
-        cid:ev.cid, autoBooked:true
-      }));
-      save({...nextData, bookings:[...(nextData.bookings||[]),...fieldBookings]});
-    }
-    fire(`${evs.length>1?evs.length+" Termine":"Termin"} erstellt - Eltern werden benachrichtigt`);
+      fire(`${evs.length>1?evs.length+" Termine":"Termin"} erstellt - Eltern werden benachrichtigt`);
     }
     setWizard(false);setEditEv(null);
   }} onClose={()=>{setWizard(false);setEditEv(null);}}/>;
