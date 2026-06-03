@@ -10829,7 +10829,7 @@ function RolePicker({cl,onRole,onBack}) {
             <div style={{display:"flex",alignItems:"center",gap:14}}>
               <div style={{width:48,height:48,borderRadius:15,background:"rgba(255,255,255,.12)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{x.icon}</div>
               <div style={{flex:1}}><div style={{color:"#fff",fontWeight:900,fontSize:17}}>{x.title}</div><div style={{color:"rgba(255,255,255,.5)",fontSize:13,marginTop:2}}>{x.sub}</div></div>
-              <div style={{color:"rgba(255,255,255,.3)",fontSize:22}}>></div>
+              <div style={{color:"rgba(255,255,255,.3)",fontSize:22}}>{">"}</div>
             </div>
           </div>
         ))}
@@ -10893,7 +10893,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
                   <div style={{color:"#fff",fontWeight:900,fontSize:18}}>{c}</div>
                   <div style={{color:"rgba(255,255,255,.5)",fontSize:12,marginTop:2}}>{trs.length} Trainer</div>
                 </div>
-                <span style={{color:"rgba(255,255,255,.3)",fontSize:22}}>></span>
+                <span style={{color:"rgba(255,255,255,.3)",fontSize:22}}>{">"}</span>
               </div>
             );
           })
@@ -10916,7 +10916,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
               {(tr.tids||[]).map(tid=>teams?.find(x=>x.id===tid)?.name).filter(Boolean).filter(x=>!x.hidden).join(",")}
             </div>
           </div>
-          <span style={{color:"rgba(255,255,255,.3)",fontSize:22}}>></span>
+          <span style={{color:"rgba(255,255,255,.3)",fontSize:22}}>{">"}</span>
         </div>
       ))}
     </GradWrap>
@@ -11084,7 +11084,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid}) 
               <div style={{color:"#fff",fontWeight:900,fontSize:18}}>{c}</div>
               {tms.length>1&&<div style={{color:"rgba(255,255,255,.5)",fontSize:12,marginTop:2}}>{tms.length} Mannschaften</div>}
             </div>
-            <span style={{color:"rgba(255,255,255,.3)",fontSize:22}}>></span>
+            <span style={{color:"rgba(255,255,255,.3)",fontSize:22}}>{">"}</span>
           </div>
         );
       })}
@@ -11097,7 +11097,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid}) 
           style={{background:"rgba(255,255,255,.09)",border:"1.5px solid rgba(255,255,255,.13)",borderRadius:20,padding:"16px 20px",cursor:"pointer",marginBottom:12,animationDelay:`${i*.06}s`,display:"flex",alignItems:"center",gap:14}}>
           <div style={{width:46,height:46,borderRadius:14,background:tm.col+"33",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{tm.icon}</div>
           <span style={{color:"#fff",fontWeight:900,fontSize:18}}>{tm.name}</span>
-          <span style={{marginLeft:"auto",color:"rgba(255,255,255,.3)",fontSize:22}}>></span>
+          <span style={{marginLeft:"auto",color:"rgba(255,255,255,.3)",fontSize:22}}>{">"}</span>
         </div>
       ))}
     </GradWrap>
@@ -11176,7 +11176,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid}) 
         {list.map((p,i)=>(
           <div key={p} className="up" onClick={()=>onDone(tid,p)}
             style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:16,padding:"13px 16px",cursor:"pointer",display:"flex",alignItems:"center",gap:12,animationDelay:`${i*.03}s`}}>
-            <Av name={p} sz={40}/><span style={{fontWeight:700,fontSize:16,color:"#0f172a",flex:1}}>{p}</span><span style={{color:"#94a3b8",fontSize:20}}>></span>
+            <Av name={p} sz={40}/><span style={{fontWeight:700,fontSize:16,color:"#0f172a",flex:1}}>{p}</span><span style={{color:"#94a3b8",fontSize:20}}>{">"}</span>
           </div>
         ))}
         {list.length===0&&<div style={{textAlign:"center",padding:"32px",color:"#94a3b8"}}><div style={{fontSize:36,marginBottom:8}}></div><p style={{fontWeight:700}}>Niemanden gefunden</p></div>}
@@ -13254,7 +13254,7 @@ function PlayersTab({ data,myTids,save,fire,cl }) {
               Eltern können sich erst anmelden wenn alle Spieler zugeteilt sind -> Zuteilung öffnen
             </div>
           </div>
-          <span style={{color:"#d97706",fontSize:18}}>></span>
+          <span style={{color:"#d97706",fontSize:18}}>{">"}</span>
         </div>
       )}
       {}
@@ -16717,7 +16717,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               <div style={{color:"#fff",fontWeight:900,fontSize:18,letterSpacing:"-.3px",textShadow:"0 1px 3px rgba(0,0,0,.25)"}}>Neuen Termin anlegen</div>
               <div style={{color:"rgba(255,255,255,.9)",fontSize:13,marginTop:3,fontWeight:500}}>Schritt-für-Schritt Assistent</div>
             </div>
-            <div style={{width:32,height:32,borderRadius:10,background:"rgba(0,0,0,.15)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:18,fontWeight:700,flexShrink:0}}>></div>
+            <div style={{width:32,height:32,borderRadius:10,background:"rgba(0,0,0,.15)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:18,fontWeight:700,flexShrink:0}}>{">"}</div>
           </div>
           {up.length>0&&<><Divider label={`NÄCHSTE 10 TAGE (${soon.length})`}/>{soon.length>0?soon.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={selfName} onSelfVote={selfVote}/>):<p style={{textAlign:"center",color:"#94a3b8",fontSize:13.5,padding:"14px 10px"}}>Keine Termine in den nächsten 10 Tagen.</p>}
             {later.length>0&&<>
