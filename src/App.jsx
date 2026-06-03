@@ -9920,7 +9920,7 @@ function DesktopSidebar({ tab, setTab, isAdmin, isHelper, unread, cl, session, o
     <aside className="va-sidebar" style={{
       background:"#0f172a",
       borderRight:"1px solid #1e293b",
-      display:"none", // shown via CSS on desktop
+      display:"flex", flexDirection:"column", // nur im Desktop-Layout gerendert
       overflowY:"auto",
       position:"sticky", top:0, height:"100dvh",
     }}>
@@ -16764,8 +16764,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
 
       {showOnboarding&&<OnboardingWizard cl={myClub} data={local} save={save} fire={fire} onDone={()=>setShowOnboarding(false)}/>}
       <Toast msg={toast}/>
-      <BottomNav tab={tab} setTab={setTab} isAdmin={isAdmin} isHelper={isHelper}
-        unread={unreadMsgs} cl={myClub} />
+      {!isDesktop&&<BottomNav tab={tab} setTab={setTab} isAdmin={isAdmin} isHelper={isHelper}
+        unread={unreadMsgs} cl={myClub} />}
       
     </div>
   );
