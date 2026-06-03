@@ -410,8 +410,16 @@ const mergeData = (global, shardList) => {
   return out;
 };
 
+let APP_TOKEN = null; // nach Login/Anlegen gesetzt (nur im Speicher, nicht dauerhaft)
 const sb = {
   _url: () => getConfig()?.url,_key: () => getConfig()?.key,_hdr: () => ({ "Content-Type":"application/json","apikey": sb._key(),"Authorization":"Bearer "+sb._key() }),
+  _fnUrl: () => `${getConfig()?.url}/functions/v1/data-api`,
+  _callFn: async (body) => {
+    const r = await fetch(sb._fnUrl(), { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(body) });
+    let j=null; try{ j=await r.json(); }catch{}
+    if(!r.ok){ const e=new Error((j&&j.error)||("fn "+r.status)); e.status=r.status; throw e; }
+    return j||{};
+  },
   _glKey: SK+"__global",
   _clubKey: cid => SK+"__club_"+cid,
   _lastWrite: null,
@@ -449,63 +457,43 @@ const sb = {
       return localGet();
     } catch { return localGet(); }
   },
-  // Nur die leichte Vereinsliste laden (Startseite/Verzeichnis) – ohne schwere Daten anderer Vereine.
+  // Nur die leichte Vereinsliste laden (Startseite/Verzeichnis) – ueber die Function (kein Token noetig).
   getDirectory: async () => {
     const url = sb._url();
-    if (!url || !sb._key()) return localGet(); // lokal: voller Block (Einzelgerät, kein Mehrvereins-Thema)
-    try {
-      const r = await fetch(`${url}/rest/v1/app_data?key=eq.${sb._glKey}&select=value`,{ headers: sb._hdr() });
-      if (r.ok) {
-        const rows = await r.json();
-        if (rows[0]?.value) return rows[0].value; // {_v, seasons, activeSeason, clubs:[alle, leicht]}
-      }
-      const migrated = await sb._migrate();
-      if (migrated) { const { global } = splitData(migrated); return global; }
-      return localGet();
-    } catch { return localGet(); }
+    if (!url) return localGet();
+    try { const { global } = await sb._callFn({ action:"getDirectory" }); return global || localGet(); }
+    catch { return localGet(); }
   },
-  // Einen Verein komplett laden (global + dessen Zeile). Andere Vereine bleiben ungeladen.
+  // Einloggen: prueft Passwort serverseitig, liefert ein Token (12h). typ: admin|trainer|team|helper
+  login: async (cid, typ, id, password) => {
+    const { token } = await sb._callFn({ action:"login", cid, typ, id, password });
+    APP_TOKEN = token; try{ localStorage.setItem("vapp_token", token); }catch{} return token;
+  },
+  // Neuen Verein anlegen (kein Token noetig). Schreibt Vereinszeile + Verzeichniseintrag, liefert Token.
+  createClub: async (cid, club, clubMeta) => {
+    const { token } = await sb._callFn({ action:"createClub", cid, club: club||{}, clubMeta: clubMeta||null });
+    APP_TOKEN = token; try{ localStorage.setItem("vapp_token", token); }catch{} return token;
+  },
+  // Einen Verein komplett laden (global + dessen Zeile) – ueber die Function, Token noetig.
   getClub: async (cid) => {
-    const url = sb._url();
-    if (!url || !sb._key()) return localGet(); // lokal: voller Block
+    if (!APP_TOKEN) return localGet(); // ohne Token (noch nicht eingeloggt) lokal anzeigen
     try {
-      const r = await fetch(`${url}/rest/v1/app_data?or=(key.eq.${sb._glKey},key.eq.${sb._clubKey(cid)})&select=key,value`,{ headers: sb._hdr() });
-      if (r.ok) {
-        const rows = await r.json();
-        if (rows && rows.length) {
-          const gl = rows.find(x=>x.key===sb._glKey)?.value || {};
-          const shard = rows.find(x=>x.key===sb._clubKey(cid))?.value || {};
-          return mergeData(gl, [shard]);
-        }
-      }
-      const migrated = await sb._migrate();
-      if (migrated) {
-        const { global, shards } = splitData(migrated);
-        return mergeData(global, [shards[cid]||{}]);
-      }
-      return localGet();
+      const { global, club } = await sb._callFn({ action:"getClub", cid, token: APP_TOKEN });
+      const merged = mergeData(global||{}, [club||{}]);
+      localSet(merged);
+      return merged;
     } catch { return localGet(); }
   },
-  // set(d): schreibt global + Verein-Zeile(n). Mit cid: nur dieser Verein (+ global). Ohne cid: alle.
+  // set(d): speichert lokal + (mit Token & cid) den Verein ueber die Function.
   set: async (d, cid=null) => {
     localSet(d); // immer auch lokal sichern
-    const url = sb._url();
-    if (!url || !sb._key()) { sb._lastWrite={ok:false,status:0,error:"keine DB konfiguriert",at:Date.now()}; return sb._lastWrite; }
-    const { global, shards } = splitData(d);
-    const ts = new Date().toISOString();
-    let rows = [{ key: sb._glKey, value: global, updated_at: ts }];
-    if (cid && shards[cid]) {
-      rows.push({ key: sb._clubKey(cid), value: shards[cid], updated_at: ts });
-    } else {
-      for (const id of Object.keys(shards)) rows.push({ key: sb._clubKey(id), value: shards[id], updated_at: ts });
-    }
+    if (!APP_TOKEN || !cid) { sb._lastWrite={ok:false,status:0,error: !cid?"kein Verein aktiv (nur lokal)":"nicht eingeloggt (kein Token)",at:Date.now()}; return sb._lastWrite; }
+    const { shards } = splitData(d);
+    const clubMeta = (d.clubs||[]).find(c=>c&&c.id===cid) || null;
     try {
-      const r = await fetch(`${url}/rest/v1/app_data`,{
-        method:"POST",headers: { ...sb._hdr(),"Prefer":"resolution=merge-duplicates" },body: JSON.stringify(rows)
-      });
-      if(!r.ok){ let txt=""; try{ txt=await r.text(); }catch{} sb._lastWrite={ok:false,status:r.status,error:(txt||"").slice(0,400),at:Date.now()}; return sb._lastWrite; }
-      sb._lastWrite={ok:true,status:r.status,error:"",at:Date.now()}; return sb._lastWrite;
-    } catch(e){ sb._lastWrite={ok:false,status:0,error:String((e&&e.message)||e).slice(0,400),at:Date.now()}; return sb._lastWrite; }
+      await sb._callFn({ action:"setClub", cid, token: APP_TOKEN, club: shards[cid]||{}, clubMeta });
+      sb._lastWrite={ok:true,status:200,error:"",at:Date.now()}; return sb._lastWrite;
+    } catch(e){ sb._lastWrite={ok:false,status:e.status||0,error:String((e&&e.message)||e).slice(0,400),at:Date.now()}; return sb._lastWrite; }
   },
   test: async (url,key) => {
     try {
@@ -530,11 +518,11 @@ const sb = {
     return {step:"done",ok:true,status:w.status,msg:"Schreiben und Zurücklesen erfolgreich."};
   },
   fnTest: async () => {
-    const url=sb._url(), key=sb._key();
+    const url=sb._url();
     if(!url) return {ok:false,status:0,msg:"Keine URL konfiguriert."};
     const fnUrl=`${url}/functions/v1/data-api`;
     try {
-      const r=await fetch(fnUrl,{method:"POST",headers:{"Content-Type":"application/json","apikey":key,"Authorization":"Bearer "+key},body:JSON.stringify({action:"getDirectory"})});
+      const r=await fetch(fnUrl,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"getDirectory"})});
       let t=""; try{ t=await r.text(); }catch{}
       if(!r.ok) return {ok:false,status:r.status,msg:(t||"").slice(0,400)};
       return {ok:true,status:r.status,msg:(t||"").slice(0,300)};
@@ -10972,7 +10960,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
 function AdminLogin({cl,onLogin,onBack}) {
   const t=TH(cl); const [pw,setPw]=useState(""); const [err,setErr]=useState(false); const [showForgot,setShowForgot]=useState(false);
   const pwRef=useRef(null);
-  const go=()=>{ const val=(pwRef.current?.value)||pw; if(checkPw(val,cl.adm||"")){onLogin({id:"admin",role:"admin",cid:cl.id,name:"Vereinsadmin"});}else{setErr(true);setTimeout(()=>setErr(false),1800);} };
+  const go=async()=>{ const val=(pwRef.current?.value)||pw; if(!checkPw(val,cl.adm||"")){setErr(true);setTimeout(()=>setErr(false),1800);return;} try{ await sb.login(cl.id,"admin","admin",val); }catch(e){ /* Token-Fehler zeigt sich beim Speichern */ } onLogin({id:"admin",role:"admin",cid:cl.id,name:"Vereinsadmin"}); };
   return (
     <div style={{minHeight:"100dvh",background:`linear-gradient(135deg,${t.s},${t.p}66)`,display:"flex",alignItems:"center",justifyContent:"center",padding:22}}>
       <style>{CSS}</style>
@@ -17809,6 +17797,7 @@ function AppInner({lang,setLang}) {
 
   useEffect(()=>{
     (async()=>{
+      try{ APP_TOKEN = localStorage.getItem("vapp_token") || APP_TOKEN; }catch{}
       // 1) Leichtes Verzeichnis laden (nur Vereinsliste, keine schweren Daten); falls leer -> seed
       let dir=null;
       try { dir = await sb.getDirectory(); } catch {}
@@ -17878,9 +17867,12 @@ function AppInner({lang,setLang}) {
       clubs:(data.clubs||[]).map(c=>c.id===cid?{...c,lastActive:nowIso}:c),
     });
     setScr(role==="user"?"user":"dash");
+    // Frische Daten aus der DB laden (wichtig auf neuen Geraeten), sobald ein Token vorhanden ist
+    if(APP_TOKEN && cid && cid!=="demo"){ sb.getClub(cid).then(cd=>{ if(cd&&cd.clubs) setData(cd); }).catch(()=>{}); }
   };
   const logout=()=>{
     if(session){const e={...createAuditEntry("logout","Logout: "+(session.name||session.role),session),cid};localSet({...data,securityLog:[...(data.securityLog||[]),e]});}
+    APP_TOKEN=null; try{ localStorage.removeItem("vapp_token"); }catch{}
     sess.del(); setSess(null); setScr(cid?"role":"dir");
   };
 
@@ -17940,13 +17932,15 @@ function AppInner({lang,setLang}) {
           let cd=null; try { cd=await sb.getClub(realId); } catch {}
           if(cd){ setData(realId==="demo"?refreshDemo(cd):cd); }
           setCid(realId); setScr("role");
-        }} onNewClub={newClubOrData=>{
+        }} onNewClub={async newClubOrData=>{
           if(newClubOrData.clubs){
             save(newClubOrData);
           } else {
-            const next={...data,clubs:[...data.clubs,newClubOrData]};
-            save(next);
-            setCid(newClubOrData.id);
+            const c=newClubOrData;
+            const next={...data,clubs:[...data.clubs,c]};
+            // Verein in der Datenbank anlegen (Verzeichnis + Vereinszeile), Token kommt zurueck
+            try { await sb.createClub(c.id, splitData(next).shards[c.id]||{}, c); } catch(e){ /* Fehler zeigt sich spaeter beim Speichern */ }
+            setData(next); setCid(c.id);
             setScr("alogin");
           }
         }}/>}
