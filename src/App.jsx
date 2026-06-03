@@ -14927,7 +14927,7 @@ function BookingModal({ field,cellStart,date,data,save,fire,cl,myTids,session,on
   );
 }
 
-function TrainerCard({ tr, data, onEdit, onDelete }) {
+function TrainerCard({ tr, data, onEdit, onDelete, onContact }) {
   const myTeams = (data.teams||[]).filter(tm=>(tr.tids||[]).includes(tm.id));
   const playerCount = myTeams.reduce((s,tm)=>s+(data.playerProfiles||[]).filter(p=>p.mainTid===tm.id).length,0);
   const myEvents = (data.events||[]).filter(e=>(tr.tids||[]).includes(e.tid));
@@ -14967,11 +14967,12 @@ function TrainerCard({ tr, data, onEdit, onDelete }) {
   );
 }
 
-function TrainersTab({data,cid,save,fire}) {
+function TrainersTab({data,cid,save,fire,session}) {
   const [showContactSetup, setShowContactSetup] = React.useState(null);
   const myTeams = (data.teams||[]).filter(x=>x.cid===cid);
   const myTrs   = (data.trainers||[]).filter(x=>x.cid===cid);
   const [showForm, setShowForm] = useState(false);
+  const [showBroadcast, setShowBroadcast] = useState(false);
   const [editId,   setEditId]   = useState(null);
   const [f, setF] = useState({name:"",pw:"",tids:[],phone:"",email:""});
   const u = p => setF(prev=>({...prev,...p}));
@@ -14995,11 +14996,10 @@ function TrainersTab({data,cid,save,fire}) {
     <div>
       <TrainerStatsView data={data} cid={cid}/>
       {showBroadcast&&<BroadcastModal data={data} cid={cid} session={session} save={save} fire={fire} onClose={()=>setShowBroadcast(false)}/>}
+      {showContactSetup&&<TrainerContactSettings trainer={showContactSetup} cl={cl} onClose={()=>setShowContactSetup(null)} onSave={updated=>{ save({...data,trainers:(data.trainers||[]).map(x=>x.id===updated.id?updated:x)}); setShowContactSetup(null); fire("Kontakt gespeichert"); }}/>}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
         <div><p style={{fontWeight:900,fontSize:16,color:"#0f172a",margin:0}}>Trainer</p><p style={{fontSize:12,color:"#64748b",marginTop:2,margin:0}}>{myTrs.length} gesamt</p></div>
         <div style={{display:"flex",gap:8}}>
-          <button onClick={()=>setShowGroupHelper(true)}
-            style={{padding:"9px 12px",borderRadius:11,border:"1.5px solid #25D366",background:"#f0fdf4",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit",color:"#166534"}}>WA Gruppe</button>
           <button onClick={()=>setShowBroadcast(true)} style={{padding:"9px 14px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",color:"#475569"}}>Rundschreiben</button>
           <button onClick={openNew} style={{padding:"9px 16px",borderRadius:11,border:"none",background:"#16a34a",color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>+ Neuer Trainer</button>
         </div>
@@ -15010,7 +15010,7 @@ function TrainersTab({data,cid,save,fire}) {
           <p style={{fontSize:13,color:"#94a3b8",margin:0}}>Trainer können hier angelegt und Teams zugewiesen werden.</p>
         </div>
       )}
-      {myTrs.map(tr=><TrainerCard key={tr.id} tr={tr} data={data} onContact={()=>setContactSetupFor(tr)} onEdit={()=>openEdit(tr)} onDelete={()=>del(tr.id)}/>)}
+      {myTrs.map(tr=><TrainerCard key={tr.id} tr={tr} data={data} onContact={()=>setShowContactSetup(tr)} onEdit={()=>openEdit(tr)} onDelete={()=>del(tr.id)}/>)}
       {showForm&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:800,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
           <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"90dvh",overflowY:"auto",padding:"20px 22px 48px"}}>
@@ -16686,7 +16686,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         {tab==="overview"  &&isAdmin&&<AllTeamsOverview data={local} cid={cid} cl={myClub} onSelectTeam={tid=>{ const team=(local.teams||[]).find(x=>x.id===tid); if(team) fire("Team: "+team.name); }}/>}
         {tab==="news"      &&<NewsTab data={local} cid={cid} session={session} save={save} fire={fire} cl={myClub}/>}
         {tab==="fieldsadmin"&&isAdmin&&<FieldsManagerTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/> }
-        {tab==="trainers"   &&isAdmin&&<TrainersTab data={local} cid={cid} save={save} fire={fire}/>}
+        {tab==="trainers"   &&isAdmin&&<TrainersTab data={local} cid={cid} save={save} fire={fire} session={session}/>}
         {tab==="branding"   &&isAdmin&&<BrandingTab cl={myClub} onSave={c=>{save({...local,clubs:local.clubs.map(x=>x.id===c.id?c:x)});fire("Design gespeichert *");}}/>}
         {tab==="settings"   &&isAdmin&&<ClubAdminSettings data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
         {tab==="security"   &&isAdmin&&<SecurityTab data={local} cid={cid} save={save}/>}
