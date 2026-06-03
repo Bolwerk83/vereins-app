@@ -2353,7 +2353,7 @@ function MultiProfileSelector({ data, cl, onSelect }) {
 
 
 /* =================================================================
-   1. SCHRIFTGROESSE - tatsaechlich anwenden (Kevin, Brigitte, Hannelore)
+   1. SCHRIFTGRÖSSE - tatsaechlich anwenden (Kevin, Brigitte, Hannelore)
    Wird im App-Root auf das gesamte Layout angewendet
 ================================================================= */
 const FONT_SIZES = { small: "13px", normal: "15px", large: "18px" };
@@ -2369,11 +2369,11 @@ const getFontSize = () => {
 };
 
 /* =================================================================
-   2. ARABISCH + TUERKISCH (Yasmin, Adnan, Maria, Fatima)
+   2. ARABISCH + TÜRKISCH (Yasmin, Adnan, Maria, Fatima)
    Neue Sprachen in Übersetzungs-Objekt
 ================================================================= */
 /* =================================================================
-   3. GESAMTUEBERSICHT ALLE TEAMS (Christine, Roberto, Frank)
+   3. GESAMTÜBERSICHT ALLE TEAMS (Christine, Roberto, Frank)
    Admin-Tab der alle Teams auf einen Blick zeigt
 ================================================================= */
 function AllTeamsOverview({ data, cid, cl, onSelectTeam }) {
@@ -2524,7 +2524,7 @@ function BroadcastModal({ data, cid, session, save, fire, onClose }) {
           Nachricht wird an alle oder ausgewählte Trainer gesendet.
         </p>
         <div style={{marginBottom:14}}>
-          <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8}}>EMPFAENGER</div>
+          <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8}}>EMPFÄNGER</div>
           <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
             <button onClick={()=>setSelTids([])}
               style={{padding:"6px 12px",borderRadius:9,border:`1.5px solid ${selTids.length===0?"#16a34a":"#e2e8f0"}`,background:selTids.length===0?"#f0fdf4":"#fff",color:selTids.length===0?"#16a34a":"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
@@ -3629,11 +3629,17 @@ function TacticBoard({ data, myTids, cl, save, fire }) {
   useEffect(()=>{ setTokens(buildTokens(sport,count,formIdx)); /* eslint-disable-next-line */ },[sport,count,formIdx]);
 
   const svgRef=useRef(null); const dragRef=useRef(null);
+  const [mode,setMode]=useState("move");
+  const [arrows,setArrows]=useState([]);
+  const [draw,setDraw0]=useState(null); const drawRef=useRef(null);
+  const setDraw=(v)=>{ const nv=typeof v==="function"?v(drawRef.current):v; drawRef.current=nv; setDraw0(nv); };
+  const ARR_COL={run:"#ffffff",pass:"#fb923c"};
   const toSvg=(e)=>{ const el=svgRef.current; if(!el) return null; const r=el.getBoundingClientRect(); const cx=(e.touches?e.touches[0].clientX:e.clientX); const cy=(e.touches?e.touches[0].clientY:e.clientY); return { x:(cx-r.left)/r.width*F.vw, y:(cy-r.top)/r.height*F.vh }; };
-  const onMove=(e)=>{ if(dragRef.current==null) return; const p=toSvg(e); if(!p) return; const R=F.r; setTokens(ts=>ts.map(tk=>tk.id===dragRef.current?{...tk,x:Math.max(R,Math.min(F.vw-R,p.x)),y:Math.max(R,Math.min(F.vh-R,p.y))}:tk)); };
-  const endDrag=()=>{ dragRef.current=null; };
+  const startDraw=(e)=>{ if(mode==="move") return; const p=toSvg(e); if(!p) return; if(e.preventDefault)e.preventDefault(); setDraw({type:mode,x1:p.x,y1:p.y,x2:p.x,y2:p.y}); };
+  const onMove=(e)=>{ const p=toSvg(e); if(!p) return; if(mode==="move"){ if(dragRef.current==null) return; const R=F.r; setTokens(ts=>ts.map(tk=>tk.id===dragRef.current?{...tk,x:Math.max(R,Math.min(F.vw-R,p.x)),y:Math.max(R,Math.min(F.vh-R,p.y))}:tk)); } else { if(!drawRef.current) return; setDraw(d=>d?{...d,x2:p.x,y2:p.y}:d); } };
+  const endDrag=()=>{ if(mode==="move"){ dragRef.current=null; return; } const d=drawRef.current; if(d){ const len=Math.hypot(d.x2-d.x1,d.y2-d.y1); if(len>F.vw*0.04) setArrows(a=>[...a,{...d,id:"ar"+Date.now()+Math.round(Math.random()*999)}]); } setDraw(null); };
 
-  const chSport=(sp)=>{ const FF=TB_FIELDS[sp]||TB_FIELDS.generic; const c=FF.counts.includes(11)?11:FF.counts[0]; setSport(sp); setCount(c); setFormIdx(0); };
+  const chSport=(sp)=>{ const FF=TB_FIELDS[sp]||TB_FIELDS.generic; const c=FF.counts.includes(11)?11:FF.counts[0]; setSport(sp); setCount(c); setFormIdx(0); setArrows([]); setDraw(null); };
   const Btn=({active,onClick,children})=>(
     <button onClick={onClick} style={{padding:"7px 12px",borderRadius:9,border:active?`1.5px solid ${t.p}`:"1.5px solid #e2e8f0",background:active?t.p:"#fff",color:active?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{children}</button>
   );
@@ -3642,7 +3648,7 @@ function TacticBoard({ data, myTids, cl, save, fire }) {
     <div style={{display:"flex",flexDirection:"column",gap:12}}>
       <div>
         <h3 style={{margin:"0 0 2px",fontSize:17,fontWeight:900,color:"#0f172a"}}>Taktikboard</h3>
-        <p style={{fontSize:12.5,color:"#64748b",margin:0}}>Feld &amp; Aufstellung – Spieler lassen sich mit dem Finger frei verschieben.</p>
+        <p style={{fontSize:12.5,color:"#64748b",margin:0}}>Feld &amp; Aufstellung – Spieler verschieben und Lauf-/Passwege einzeichnen.</p>
       </div>
       <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
         {TB_SPORTS.map(s=><Btn key={s.id} active={sport===s.id} onClick={()=>chSport(s.id)}>{s.label}</Btn>)}
@@ -3657,17 +3663,43 @@ function TacticBoard({ data, myTids, cl, save, fire }) {
         <span style={{fontSize:11,fontWeight:800,color:"#94a3b8",marginRight:2}}>SYSTEM</span>
         {forms.map((f,i)=><Btn key={f.name} active={formIdx===i} onClick={()=>setFormIdx(i)}>{f.name}</Btn>)}
       </div>
+      <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
+        <span style={{fontSize:11,fontWeight:800,color:"#94a3b8",marginRight:2}}>WERKZEUG</span>
+        <Btn active={mode==="move"} onClick={()=>setMode("move")}>Bewegen</Btn>
+        <Btn active={mode==="run"} onClick={()=>setMode("run")}>Laufweg</Btn>
+        <Btn active={mode==="pass"} onClick={()=>setMode("pass")}>Passweg</Btn>
+        <button onClick={()=>setArrows(a=>a.slice(0,-1))} disabled={!arrows.length}
+          style={{padding:"7px 12px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:arrows.length?"#475569":"#cbd5e1",fontWeight:700,fontSize:12.5,cursor:arrows.length?"pointer":"default",fontFamily:"inherit",whiteSpace:"nowrap"}}>Rückgängig</button>
+        <button onClick={()=>{setArrows([]);setDraw(null);}} disabled={!arrows.length&&!draw}
+          style={{padding:"7px 12px",borderRadius:9,border:"1.5px solid #fecaca",background:"#fff",color:(arrows.length||draw)?"#dc2626":"#fca5a5",fontWeight:700,fontSize:12.5,cursor:(arrows.length||draw)?"pointer":"default",fontFamily:"inherit",whiteSpace:"nowrap"}}>Pfeile löschen</button>
+      </div>
 
       <div style={{background:F.bg,borderRadius:14,padding:8,boxShadow:"inset 0 0 0 1px rgba(255,255,255,.08)"}}>
         <svg ref={svgRef} viewBox={`0 0 ${F.vw} ${F.vh}`} preserveAspectRatio="xMidYMid meet"
-          style={{width:"100%",maxHeight:"58vh",display:"block",touchAction:"none"}}
+          style={{width:"100%",maxHeight:"58vh",display:"block",touchAction:"none",cursor:mode==="move"?"default":"crosshair"}}
+          onPointerDown={startDraw} onTouchStart={startDraw}
           onPointerMove={onMove} onPointerUp={endDrag} onPointerLeave={endDrag}
           onTouchMove={onMove} onTouchEnd={endDrag}>
+          <defs>
+            <marker id="tb-ar-run" markerWidth="3.6" markerHeight="3.6" refX="2.7" refY="1.8" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L3.6,1.8 L0,3.6 Z" fill={ARR_COL.run}/></marker>
+            <marker id="tb-ar-pass" markerWidth="3.6" markerHeight="3.6" refX="2.7" refY="1.8" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L3.6,1.8 L0,3.6 Z" fill={ARR_COL.pass}/></marker>
+          </defs>
           {F.draw("rgba(255,255,255,.85)")}
+          {arrows.map(a=>(
+            <line key={a.id} x1={a.x1} y1={a.y1} x2={a.x2} y2={a.y2}
+              stroke={ARR_COL[a.type]} strokeWidth={F.vw*0.012} strokeLinecap="round"
+              strokeDasharray={a.type==="pass"?`${F.vw*0.03} ${F.vw*0.022}`:undefined}
+              markerEnd={`url(#tb-ar-${a.type})`}/>
+          ))}
+          {draw&&Math.hypot(draw.x2-draw.x1,draw.y2-draw.y1)>0.1&&(
+            <line x1={draw.x1} y1={draw.y1} x2={draw.x2} y2={draw.y2} opacity={0.6}
+              stroke={ARR_COL[draw.type]} strokeWidth={F.vw*0.012} strokeLinecap="round"
+              strokeDasharray={draw.type==="pass"?`${F.vw*0.03} ${F.vw*0.022}`:undefined}/>
+          )}
           {tokens.map(tk=>(
-            <g key={tk.id} style={{cursor:"grab"}}
-               onPointerDown={(e)=>{e.preventDefault(); dragRef.current=tk.id;}}
-               onTouchStart={(e)=>{ dragRef.current=tk.id;}}>
+            <g key={tk.id} style={{cursor:mode==="move"?"grab":"crosshair"}}
+               onPointerDown={(e)=>{ if(mode!=="move") return; e.preventDefault(); dragRef.current=tk.id;}}
+               onTouchStart={(e)=>{ if(mode!=="move") return; dragRef.current=tk.id;}}>
               <circle cx={tk.x} cy={tk.y} r={F.r} fill={tk.n===1?"#facc15":teamCol} stroke="#fff" strokeWidth={F.r*0.16}/>
               <text x={tk.x} y={tk.y+F.fs*0.36} textAnchor="middle" fontSize={F.fs} fontWeight="800"
                     fill={tk.n===1?"#1e293b":contrast(teamCol)} style={{pointerEvents:"none",userSelect:"none"}}>{tk.n}</text>
@@ -3683,8 +3715,12 @@ function TacticBoard({ data, myTids, cl, save, fire }) {
           Aufstellung zurücksetzen
         </button>
       </div>
+      <div style={{display:"flex",gap:14,alignItems:"center",flexWrap:"wrap",fontSize:11.5,color:"#64748b"}}>
+        <span><span style={{display:"inline-block",width:22,height:0,borderTop:"3px solid #94a3b8",verticalAlign:"middle",marginRight:5}}/>Laufweg</span>
+        <span><span style={{display:"inline-block",width:22,height:0,borderTop:"3px dashed #fb923c",verticalAlign:"middle",marginRight:5}}/>Passweg</span>
+      </div>
       <div style={{fontSize:12,color:"#64748b",background:"#f8fafc",borderRadius:10,padding:"10px 12px",lineHeight:1.5}}>
-        Nächste Ausbaustufen (kommen Schritt für Schritt): Gegner-Formation in zweiter Farbe, Lauf- und Passwege zeichnen, eigene Tor-/Material-Varianten aufs Feld setzen, sowie Taktik speichern und teilen (wie bei den Trainings).
+        Tipp: Werkzeug auf <strong>Laufweg</strong> oder <strong>Passweg</strong> stellen, dann auf dem Feld vom Start- zum Zielpunkt ziehen. Nächste Ausbaustufen: Gegner-Formation in zweiter Farbe, eigene Tor-/Material-Varianten aufs Feld setzen, sowie Taktik speichern und teilen (wie bei den Trainings).
       </div>
     </div>
   );
@@ -4280,7 +4316,7 @@ function TrainingPlanTab({ data, myTids, save, fire, cl, session }) {
           borderRadius:16,padding:"14px 16px",marginBottom:14,cursor:"pointer"}}
           onClick={()=>setShowInventory(linkedPlan)}>
           <div style={{color:"rgba(255,255,255,.6)",fontSize:11,fontWeight:700,marginBottom:4}}>
-            NAECHSTES TRAINING - INVENTARLISTE
+            NÄCHSTES TRAINING - INVENTARLISTE
           </div>
           <div style={{color:"#fff",fontWeight:900,fontSize:16,marginBottom:8}}>
             {linkedPlan.name}
@@ -4892,7 +4928,7 @@ function ExerciseEditor({ ex, onSave, onClose, cl }) {
           {showMat&&(
             <div style={{background:"#f8fafc",borderRadius:14,padding:"14px",
               border:"1.5px solid #e2e8f0",marginBottom:12}}>
-              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8}}>MATERIAL WAEHLEN</div>
+              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8}}>MATERIAL WÄHLEN</div>
               {matCats.map(cat=>(
                 <div key={cat} style={{marginBottom:10}}>
                   <div style={{fontSize:10,color:"#94a3b8",fontWeight:700,marginBottom:5}}>{cat.toUpperCase()}</div>
@@ -5003,7 +5039,7 @@ const AGE_GROUPS = {
 const TRAINING_TEMPLATES = [
 
 // ================================================================
-// AUFWAERMEN (8 Vorlagen)
+// AUFWÄRMEN (8 Vorlagen)
 // ================================================================
 {
   id:"aw_01", cat:"warmup", name:"Bewegungsschule mit Ball",
@@ -5607,7 +5643,7 @@ function TemplateDetail({ tpl, onBack, onUse, cl }) {
 
           {/* Intensität */}
           <div style={{background:"#f8fafc",borderRadius:13,padding:"13px 15px",marginBottom:14}}>
-            <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5}}>BELASTUNGSINTENSITAET</div>
+            <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5}}>BELASTUNGSINTENSITÄT</div>
             {intensityBar(tpl.intensity||5)}
             <div style={{fontSize:12,color:"#64748b",marginTop:6,lineHeight:1.5}}>
               {tpl.intensity<=3&&"Geringe Belastung - ideal als Aufwärmen oder nach intensiver Woche"}
@@ -5638,7 +5674,7 @@ function TemplateDetail({ tpl, onBack, onUse, cl }) {
           {/* Altersgruppen */}
           {(tpl.age||[]).length>0&&(
             <div style={{marginBottom:14}}>
-              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5}}>GEEIGNET FUER</div>
+              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5}}>GEEIGNET FÜR</div>
               <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
                 {(tpl.age||[]).map(ag=>(
                   <span key={ag} style={{background:"#f0fdf4",border:"1.5px solid #bbf7d0",
@@ -5690,7 +5726,7 @@ function TemplateDetail({ tpl, onBack, onUse, cl }) {
           {/* Material */}
           {(tpl.material||[]).length>0&&(
             <div style={{marginBottom:14}}>
-              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5}}>BENOENIGTES MATERIAL</div>
+              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5}}>BENÖTIGTES MATERIAL</div>
               <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
                 {tpl.material.map((m,i)=>{
                   const def=MATERIAL_CATALOG.find(x=>x.id===m.id);
@@ -5993,7 +6029,7 @@ function AccessManagerTab({ data, cid, save, fire, cl }) {
         <div style={{marginBottom:14}}>
           <div style={{fontSize:11, fontWeight:800, color:"#64748b",
             marginBottom:8, letterSpacing:.5}}>
-            ELTERN-ZUGAENGE ({teams.length} Mannschaften)
+            ELTERN-ZUGÄNGE ({teams.length} Mannschaften)
           </div>
           {teams.map(tm=>(
             <AccessRow key={tm.id} type="team" id={tm.id}
@@ -6008,7 +6044,7 @@ function AccessManagerTab({ data, cid, save, fire, cl }) {
         <div style={{marginBottom:14}}>
           <div style={{fontSize:11, fontWeight:800, color:"#64748b",
             marginBottom:8, letterSpacing:.5}}>
-            TRAINER-ZUGAENGE ({trainers.length})
+            TRAINER-ZUGÄNGE ({trainers.length})
           </div>
           {trainers.map(tr=>(
             <AccessRow key={tr.id} type="trainer" id={tr.id}
@@ -7079,7 +7115,7 @@ function SuperAdminDashboard({ data, onExit }) {
             <div style={{background:"#1e293b",borderRadius:14,padding:"16px",
               border:"1px solid #334155",marginBottom:16}}>
               <div style={{fontSize:13,fontWeight:700,color:"#94a3b8",marginBottom:12}}>
-                AKTIVITAET LETZTE 7 TAGE
+                AKTIVITÄT LETZTE 7 TAGE
               </div>
               {(()=>{
                 const days = Array.from({length:7},(_,i)=>{
@@ -7512,7 +7548,7 @@ function SuperAdminMessages({ data, allClubs }) {
       <div style={{background:"#1e293b",borderRadius:14,padding:"16px",
         border:"1px solid #334155",marginBottom:16}}>
         <div style={{fontSize:11,fontWeight:700,color:"#64748b",marginBottom:10}}>
-          EMPFAENGER
+          EMPFÄNGER
         </div>
         <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
           <button onClick={()=>setTarget("all")}
@@ -7653,7 +7689,7 @@ function SuperAdminRevenue({ analytics, affiliateClicks, shareClicks, nps }) {
       <div style={{background:"linear-gradient(135deg,#4c1d95,#7c3aed)",
         borderRadius:16,padding:"20px",marginBottom:16}}>
         <div style={{fontSize:11,fontWeight:800,color:"rgba(255,255,255,.6)",marginBottom:4}}>
-          GESCHAETZTE AFFILIATE-EINNAHMEN
+          GESCHÄTZTE AFFILIATE-EINNAHMEN
         </div>
         <div style={{fontWeight:900,fontSize:36,color:"#fff",lineHeight:1}}>
           EUR {totalRevEst.toFixed(2)}
@@ -8414,7 +8450,7 @@ const FEATURE_REGISTRY = [
     desc:"Trainer-Kontakt via WhatsApp-Deeplink",
     affects:"all", default:true, deps:[] },
 
-  //  PLAETZE 
+  //  PLÄTZE 
   { id:"fields_manager",  cat:"plätze",   phase:3, risk:"low",
     label:"Felder-Verwaltung (Admin)",
     desc:"Admin kann Felder mit Vorlagen anlegen",
@@ -11450,7 +11486,7 @@ function teamSkillAverages(players, axes) {
 // Quelle für altersgerechte Zielwerte (offizielle Verbands-Konzeption)
 const SKILL_SOURCE = { label:"DFB-Ausbildungskonzeption", url:"https://training-service.fussball.de/trainer/bambinie/artikel/online-blaetterfunktion-dfb-ausbildungskonzeption-651/" };
 
-// Soll-VORSCHLAEGE pro Altersklasse (1-5). Bewusst als Startwerte gedacht -
+// Soll-VORSCHLÄGE pro Altersklasse (1-5). Bewusst als Startwerte gedacht -
 // vom Verein anhand der eigenen Ausbildungskonzeption editierbar.
 // Steigende Messlatte: Technik frueh, Kondition/Kraft später (DFB-Leitgedanke).
 const CAT_RANK = { "Bambinis":0,"G-Jugend":1,"F-Jugend":2,"E-Jugend":3,"D-Jugend":4,"C-Jugend":5,"B-Jugend":6,"A-Jugend":7,"Senioren":8,"Alt-Herren":8,"Frauen":8,"Maedchen":4 };
@@ -12240,7 +12276,7 @@ function StrengthsInput({ strengths,customStrengths,onChange,tp }) {
           {allCustom.map(s => (
             <span key={s} style={{display:"inline-flex",alignItems:"center",gap:5,background:tp+"15",color:tp,borderRadius:99,padding:"5px 11px",fontSize:12,fontWeight:700,border:`1.5px solid ${tp}40`}}>
                {s}
-              <button onClick={()=>removeCustom(s)} style={{background:"none",border:"none",color:tp,cursor:"pointer",fontSize:13,lineHeight:1,padding:0,opacity:.7}}></button>
+              <button onClick={()=>removeCustom(s)} style={{background:"none",border:"none",color:tp,cursor:"pointer",fontSize:13,lineHeight:1,padding:0,opacity:.7}}>✕</button>
             </span>
           ))}
         </div>
@@ -12282,7 +12318,7 @@ function FriendsInput({ label,sub,ids,allPlayers,current,onChange,color }) {
             <div key={pl.id} style={{display:"flex",alignItems:"center",gap:6,background:color+"15",borderRadius:99,padding:"5px 10px",border:`1.5px solid ${color}40`}}>
               <Av name={pl.name} sz={22}/>
               <span style={{fontSize:12,fontWeight:700,color}}>{pl.name}</span>
-              <button onClick={()=>toggle(pl.id)} style={{background:"none",border:"none",color,cursor:"pointer",fontSize:14,padding:0,lineHeight:1,opacity:.7}}></button>
+              <button onClick={()=>toggle(pl.id)} style={{background:"none",border:"none",color,cursor:"pointer",fontSize:14,padding:0,lineHeight:1,opacity:.7}}>✕</button>
             </div>
           ))}
         </div>
@@ -12355,7 +12391,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
                 {p.name && totalGames > 0 && ` . * ${totalGames} Spiele`}
               </div>
             </div>
-            <button onClick={onClose} style={{width:36,height:36,borderRadius:11,background:"rgba(255,255,255,.15)",border:"none",color:"rgba(255,255,255,.8)",fontSize:18,cursor:"pointer"}}></button>
+            <button onClick={onClose} style={{width:36,height:36,borderRadius:11,background:"rgba(255,255,255,.15)",border:"none",color:"rgba(255,255,255,.8)",fontSize:18,cursor:"pointer"}}>✕</button>
           </div>
         </div>
 
@@ -12427,7 +12463,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
               <div style={{display:"flex",gap:4}}>
                 {[1,2,3,4,5].map(n=>(
                   <button key={n} onClick={()=>up({rating:p.rating===n?0:n})}
-                    style={{fontSize:28,background:"none",border:"none",cursor:"pointer",opacity:n<=(p.rating||0)?1:.2,transition:"opacity .14s"}}></button>
+                    style={{fontSize:28,background:"none",border:"none",cursor:"pointer",opacity:n<=(p.rating||0)?1:.2,transition:"opacity .14s"}}>★</button>
                 ))}
                 {(p.rating||0) > 0 && <span style={{fontSize:13,color:"#64748b",alignSelf:"center",marginLeft:4,fontWeight:600}}>{p.rating}/5</span>}
               </div>
@@ -12718,8 +12754,8 @@ function PlayerCard({ player: pl,onEdit,onDel,isMain,allTeams,allEvents }) {
           {(pl.rating||0) > 0 && <span style={{fontSize:14}}>{pl.rating ? pl.rating+"/5" : "-"}</span>}
         </div>
         <div style={{display:"flex",gap:5,flexShrink:0}}>
-          <button onClick={e=>{e.stopPropagation();onEdit();}} style={{width:30,height:30,borderRadius:9,background:"#eff6ff",border:"none",color:"#2563eb",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}></button>
-          {onDel&&<button onClick={e=>{e.stopPropagation();onDel();}} style={{width:30,height:30,borderRadius:9,background:"#fee2e2",border:"none",color:"#dc2626",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}></button>}
+          <button onClick={e=>{e.stopPropagation();onEdit();}} style={{width:30,height:30,borderRadius:9,background:"#eff6ff",border:"none",color:"#2563eb",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>✎</button>
+          {onDel&&<button onClick={e=>{e.stopPropagation();onDel();}} style={{width:30,height:30,borderRadius:9,background:"#fee2e2",border:"none",color:"#dc2626",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>✕</button>}
         </div>
       </div>
       {exp && (
@@ -12956,7 +12992,7 @@ function PlayerAssignRow({ player: pl,teams,allTeams,t,onAssign,onOptToggle }) {
                   </div>
                   {pl.position&&<div style={{color:"rgba(255,255,255,.6)",fontSize:12,marginTop:2}}> {pl.position}{pl.foot?` . ${pl.foot}`:""}</div>}
                 </div>
-                <button onClick={()=>setShowProfile(false)} style={{width:34,height:34,borderRadius:11,background:"rgba(255,255,255,.15)",border:"none",color:"rgba(255,255,255,.8)",fontSize:18,cursor:"pointer"}}></button>
+                <button onClick={()=>setShowProfile(false)} style={{width:34,height:34,borderRadius:11,background:"rgba(255,255,255,.15)",border:"none",color:"rgba(255,255,255,.8)",fontSize:18,cursor:"pointer"}}>✕</button>
               </div>
               {}
               {(pl.rating||0)>0&&<div style={{marginTop:10,display:"flex",gap:2}}>
@@ -13524,9 +13560,9 @@ function ItemRow({item,idx,tp,onDragStart,onDragEnter,onDragEnd,onChange,onRemov
       {item.max&&<span style={{fontSize:11,fontWeight:700,color:"#d97706",background:"#fef3c7",borderRadius:6,padding:"3px 8px",whiteSpace:"nowrap"}}>max {item.max}x</span>}
       {}
       <button onClick={()=>setEditing(true)}
-        style={{width:30,height:30,borderRadius:8,background:"#eff6ff",border:"none",color:"#2563eb",fontSize:13,cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}></button>
+        style={{width:30,height:30,borderRadius:8,background:"#eff6ff",border:"none",color:"#2563eb",fontSize:13,cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>✎</button>
       <button onClick={onRemove}
-        style={{width:30,height:30,borderRadius:8,background:"#fee2e2",border:"none",color:"#dc2626",fontSize:14,fontWeight:800,cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}></button>
+        style={{width:30,height:30,borderRadius:8,background:"#fee2e2",border:"none",color:"#dc2626",fontSize:14,fontWeight:800,cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
     </div>
   );
 }
@@ -13722,7 +13758,7 @@ function SeriesWizard({f,u,t}) {
               {(f.recDates||[]).map(d=>(
                 <div key={d} style={{display:"flex",alignItems:"center",gap:5,background:t.p+"15",borderRadius:9,padding:"5px 10px",border:`1px solid ${t.p}30`}}>
                   <span style={{fontSize:12,fontWeight:700,color:t.p}}>{fmtS(d)}</span>
-                  <button onClick={()=>u({recDates:(f.recDates||[]).filter(x=>x!==d)})} style={{background:"none",border:"none",color:t.p,cursor:"pointer",fontSize:13,padding:0,opacity:.7}}></button>
+                  <button onClick={()=>u({recDates:(f.recDates||[]).filter(x=>x!==d)})} style={{background:"none",border:"none",color:t.p,cursor:"pointer",fontSize:13,padding:0,opacity:.7}}>✕</button>
                 </div>
               ))}
             </div>
@@ -13760,7 +13796,7 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
     <div style={{minHeight:"100dvh",background:"#f0f4f8",display:"flex",flexDirection:"column"}}>
       <div style={{background:`linear-gradient(135deg,${t.s},${t.p}aa)`,padding:"16px 18px 20px"}}>
         <div style={{display:"flex",alignItems:"center",gap:11,marginBottom:14}}>
-          <button onClick={onClose} style={{width:34,height:34,borderRadius:11,background:"rgba(255,255,255,.15)",border:"none",color:"rgba(255,255,255,.8)",fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}></button>
+          <button onClick={onClose} style={{width:34,height:34,borderRadius:11,background:"rgba(255,255,255,.15)",border:"none",color:"rgba(255,255,255,.8)",fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
           <div style={{flex:1}}><div style={{color:"rgba(255,255,255,.55)",fontSize:11,fontWeight:700}}>SCHRITT {step} / {STEPS} . {SL[step-1].toUpperCase()}</div><div style={{color:"#fff",fontWeight:900,fontSize:18,marginTop:2}}>{isEdit?"Termin bearbeiten":"Neuer Termin"}</div></div>
         </div>
         <div style={{height:4,borderRadius:99,background:"rgba(255,255,255,.2)"}}><div style={{height:"100%",borderRadius:99,background:"rgba(255,255,255,.9)",width:`${(step/STEPS)*100}%`,transition:"width .3s ease"}}/></div>
@@ -13867,7 +13903,7 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
                   <span style={{fontSize:12,color:t.p,fontWeight:700,minWidth:18}}>{i+1}.</span>
                   <span style={{flex:1,fontWeight:600,fontSize:14,color:"#334155"}}>{item.txt}</span>
                   {item.max&&<Tag c="#d97706" bg="#fef3c7" ch={`max ${item.max}`} sm/>}
-                  <button onClick={()=>u({li:f.li.filter((_,j)=>j!==i)})} style={{width:26,height:26,borderRadius:7,background:"#fee2e2",border:"none",color:"#dc2626",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:800}}></button>
+                  <button onClick={()=>u({li:f.li.filter((_,j)=>j!==i)})} style={{width:26,height:26,borderRadius:7,background:"#fee2e2",border:"none",color:"#dc2626",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:800}}>✕</button>
                 </div>
               ))}
             </div>
@@ -13971,8 +14007,8 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
               </div>
               <div style={{display:"flex",gap:5}}>
                 <button onClick={()=>toggle(h.id)} style={{width:30,height:30,borderRadius:8,background:h.active!==false?"#fee2e2":"#dcfce7",border:"none",color:h.active!==false?"#dc2626":"#16a34a",cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>{h.active!==false?"?":"?"}</button>
-                <button onClick={()=>openEdit(h)} style={{width:30,height:30,borderRadius:8,background:"#eff6ff",border:"none",color:"#2563eb",cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center"}}></button>
-                <button onClick={()=>del(h.id)} style={{width:30,height:30,borderRadius:8,background:"#fee2e2",border:"none",color:"#dc2626",cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center"}}></button>
+                <button onClick={()=>openEdit(h)} style={{width:30,height:30,borderRadius:8,background:"#eff6ff",border:"none",color:"#2563eb",cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center"}}>✎</button>
+                <button onClick={()=>del(h.id)} style={{width:30,height:30,borderRadius:8,background:"#fee2e2",border:"none",color:"#dc2626",cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
               </div>
             </div>
             {h.notes&&<div style={{padding:"0 14px 11px",fontSize:12,color:"#64748b",fontStyle:"italic"}}>{h.notes}</div>}
@@ -14421,7 +14457,7 @@ function ShareBanner({ cl,session,trigger,onDismiss }) {
     <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:990,padding:"0 0 env(safe-area-inset-bottom)",animation:"slideUp .35s ease"}}>
       <div style={{background:"#fff",borderRadius:"20px 20px 0 0",boxShadow:"0 -8px 40px rgba(0,0,0,.15)",border:"1px solid #e2e8f0",padding:"20px 20px 32px",maxWidth:520,margin:"0 auto"}}>
         {}
-        <button onClick={onDismiss} style={{position:"absolute",top:14,right:16,width:28,height:28,borderRadius:"50%",background:"#f1f5f9",border:"none",fontSize:14,cursor:"pointer",color:"#64748b"}}></button>
+        <button onClick={onDismiss} style={{position:"absolute",top:14,right:16,width:28,height:28,borderRadius:"50%",background:"#f1f5f9",border:"none",fontSize:14,cursor:"pointer",color:"#64748b"}}>✕</button>
 
         <div style={{display:"flex",alignItems:"flex-start",gap:12,marginBottom:14}}>
           <div style={{width:44,height:44,borderRadius:13,background:t.p+"15",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}></div>
@@ -14708,7 +14744,7 @@ function SeasonModal({ data,save,fire,cl,myTids,onClose }) {
         <div style={{padding:"8px 20px 48px"}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
             <h2 style={{fontWeight:900,fontSize:20,color:"#0f172a",margin:0}}> Saisonplanung</h2>
-            <button onClick={onClose} style={{width:34,height:34,borderRadius:11,background:"#f1f5f9",border:"none",fontSize:17,cursor:"pointer"}}></button>
+            <button onClick={onClose} style={{width:34,height:34,borderRadius:11,background:"#f1f5f9",border:"none",fontSize:17,cursor:"pointer"}}>✕</button>
           </div>
 
           {}
@@ -14875,7 +14911,7 @@ function BookingModal({ field,cellStart,date,data,save,fire,cl,myTids,session,on
         <div style={{padding:"8px 20px 44px",display:"flex",flexDirection:"column",gap:14}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <div><div style={{fontWeight:900,fontSize:18,color:"#0f172a"}}>Platz buchen</div><div style={{fontSize:13,color:"#64748b"}}>{field.name} . {date}</div></div>
-            <button onClick={onClose} style={{width:34,height:34,borderRadius:11,background:"#f1f5f9",border:"none",fontSize:17,cursor:"pointer"}}></button>
+            <button onClick={onClose} style={{width:34,height:34,borderRadius:11,background:"#f1f5f9",border:"none",fontSize:17,cursor:"pointer"}}>✕</button>
           </div>
           {}
           <div>
@@ -15777,7 +15813,7 @@ function TeamCard({ team, data, session, cl, onClose }) {
           {upcomingEvents.length>0&&(
             <div>
               <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5}}>
-                NAECHSTE TERMINE
+                NÄCHSTE TERMINE
               </div>
               {upcomingEvents.map(ev=>(
                 <div key={ev.id} style={{display:"flex",alignItems:"center",gap:10,
@@ -16161,7 +16197,7 @@ function FieldsManagerTab({ data, cid, save, fire, cl }) {
             <div style={{padding:"20px 20px 0"}}>
 
               {/* SCHRITT 1: Template */}
-              {step==="template"&&(
+              {step==="template"&&(<>
                 <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10}}>
                   {FIELD_TEMPLATES.map(tpl=>(
                     <button key={tpl.id} onClick={()=>{setDraft(p=>({...p,template:tpl.id})); setStep("split");}}
@@ -16185,7 +16221,10 @@ function FieldsManagerTab({ data, cid, save, fire, cl }) {
                     </button>
                   ))}
                 </div>
-              )}
+                <div style={{marginTop:16}}>
+                  <button onClick={()=>setStep(null)} style={{width:"100%",padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit",color:"#475569"}}>Abbrechen</button>
+                </div>
+              </>)}
 
               {/* SCHRITT 2: Split */}
               {step==="split"&&(
