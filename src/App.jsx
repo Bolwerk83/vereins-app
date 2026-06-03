@@ -528,6 +528,17 @@ const sb = {
     let rows=[]; try{ rows=await rd.json(); }catch{}
     if(!rows.length || rows[0]?.value?.t!==tval.t) return {step:"verify",ok:false,status:rd.status,msg:"Geschrieben, aber Zurücklesen lieferte den Wert nicht. Antwort: "+JSON.stringify(rows).slice(0,200)};
     return {step:"done",ok:true,status:w.status,msg:"Schreiben und Zurücklesen erfolgreich."};
+  },
+  fnTest: async () => {
+    const url=sb._url(), key=sb._key();
+    if(!url) return {ok:false,status:0,msg:"Keine URL konfiguriert."};
+    const fnUrl=`${url}/functions/v1/data-api`;
+    try {
+      const r=await fetch(fnUrl,{method:"POST",headers:{"Content-Type":"application/json","apikey":key,"Authorization":"Bearer "+key},body:JSON.stringify({action:"getDirectory"})});
+      let t=""; try{ t=await r.text(); }catch{}
+      if(!r.ok) return {ok:false,status:r.status,msg:(t||"").slice(0,400)};
+      return {ok:true,status:r.status,msg:(t||"").slice(0,300)};
+    } catch(e){ return {ok:false,status:0,msg:String((e&&e.message)||e)}; }
   }
 };
 const localGet = () => { try { const v=localStorage.getItem(SK); return v?JSON.parse(v):null; } catch { return null; } };
@@ -17725,44 +17736,54 @@ function AppRoot() {
 }
 
 function DbTest(){
-  const [res,setRes]=useState(null); const [busy,setBusy]=useState(true);
-  const run=async()=>{ setBusy(true); let r; try{ r=await sb.selfTest(); }catch(e){ r={step:"fehler",ok:false,status:0,msg:String((e&&e.message)||e)}; } setRes(r); setBusy(false); };
+  const [fn,setFn]=useState(null); const [direct,setDirect]=useState(null); const [busy,setBusy]=useState(true);
+  const run=async()=>{
+    setBusy(true);
+    let f; try{ f=await sb.fnTest(); }catch(e){ f={ok:false,status:0,msg:String((e&&e.message)||e)}; } setFn(f);
+    let d; try{ d=await sb.selfTest(); }catch(e){ d={step:"fehler",ok:false,status:0,msg:String((e&&e.message)||e)}; } setDirect(d);
+    setBusy(false);
+  };
   useEffect(()=>{ run(); },[]);
   const cfg=getConfig();
-  const hint=(r)=>{
+  const fnHint=(r)=>{
     if(!r) return "";
-    if(r.ok) return "Alles in Ordnung \u2013 die App kann in die Datenbank schreiben und wieder lesen.";
+    if(r.ok) return "Die Edge Function antwortet. Sehr gut \u2013 damit kann der App-Umbau gemacht werden.";
     const m=(r.msg||"").toLowerCase();
-    if(r.status===401||/jwt|api key|apikey|invalid|no api key/.test(m)) return "Der anon-Key oder die URL stimmt nicht. Pruefe in Supabase: Settings \u2192 API.";
-    if(r.status===404||/does not exist|not exist|could not find the table|undefined table/.test(m)) return "Die Tabelle app_data fehlt. Lege sie mit dem CREATE-TABLE-Befehl an.";
-    if(r.status===403||/row-level security|policy|permission denied|rls/.test(m)) return "Row Level Security (RLS) sperrt den Zugriff. Die App darf nicht schreiben, bis du das in Supabase freigibst (siehe unten). Das ist die haeufigste Ursache fuer \u201eSpeichert nicht\u201c.";
-    if(r.step==="verify") return "Schreiben ging, aber Zuruecklesen lieferte nichts \u2013 meist blockiert RLS das Lesen.";
-    return "Unerwarteter Fehler \u2013 die genaue Meldung steht unten.";
+    if(r.status===401) return "Function blockt mit 401. Ist bei der Function \u201eVerify JWT\u201c wirklich AUS und gespeichert?";
+    if(r.status===404||/not found|no such function/.test(m)) return "Function nicht gefunden. Heisst sie exakt \u201edata-api\u201c und ist sie deployed?";
+    if(r.status>=500||/app_token_secret|service_role|env/.test(m)) return "Function-interner Fehler (Status "+r.status+"). Meist fehlt ein Secret (z. B. APP_TOKEN_SECRET) \u2013 in Supabase unter Edge Functions \u2192 Secrets pruefen.";
+    return "Function erreichbar, aber Antwort unerwartet \u2013 genaue Meldung unten.";
   };
-  const rls = res&&!res.ok&&(res.status===403||/security|policy|permission/.test((res.msg||"").toLowerCase())||res.step==="verify");
+  const directBlocked = direct&&!direct.ok&&(direct.status===403||/security|policy|permission/.test((direct.msg||"").toLowerCase())||direct.step==="verify");
+  const Card=({title,ok,warn,children})=>(
+    <div style={{background:ok?"#052e16":warn?"#422006":"#450a0a",border:`1px solid ${ok?"#16a34a":warn?"#d97706":"#dc2626"}`,borderRadius:12,padding:"16px 18px",marginBottom:14}}>
+      <div style={{fontSize:16,fontWeight:900,color:ok?"#86efac":warn?"#fbbf24":"#fca5a5",marginBottom:8}}>{title}</div>
+      {children}
+    </div>
+  );
   return (<div style={{minHeight:"100dvh",background:"#0f172a",color:"#e2e8f0",padding:"28px 18px",fontFamily:"system-ui,sans-serif"}}>
-    <div style={{maxWidth:580,margin:"0 auto"}}>
-      <h1 style={{fontSize:22,fontWeight:900,margin:"0 0 4px"}}>Datenbank-Selbsttest</h1>
-      <p style={{color:"#94a3b8",fontSize:13,margin:"0 0 18px",lineHeight:1.6}}>Schreibt eine kleine Testzeile und liest sie sofort zurueck \u2013 und zeigt die genaue Antwort von Supabase.</p>
+    <div style={{maxWidth:600,margin:"0 auto"}}>
+      <h1 style={{fontSize:22,fontWeight:900,margin:"0 0 4px"}}>Datenbank- & Function-Test</h1>
+      <p style={{color:"#94a3b8",fontSize:13,margin:"0 0 18px",lineHeight:1.6}}>Prueft die Edge Function (soll antworten) und den direkten Datenbankzugriff (soll jetzt gesperrt sein).</p>
       <div style={{background:"#1e293b",borderRadius:12,padding:"12px 16px",fontSize:13,marginBottom:14}}>
-        Datenbank: <b>{cfg?.url?.replace("https://","").split(".")[0]||"\u2014 keine konfiguriert"}</b>
+        Projekt: <b>{cfg?.url?.replace("https://","").split(".")[0]||"\u2014"}</b>
       </div>
-      {busy&&<div style={{color:"#94a3b8"}}>Test laeuft\u2026</div>}
-      {res&&(<div style={{background:res.ok?"#052e16":"#450a0a",border:`1px solid ${res.ok?"#16a34a":"#dc2626"}`,borderRadius:12,padding:"16px 18px"}}>
-        <div style={{fontSize:18,fontWeight:900,color:res.ok?"#86efac":"#fca5a5",marginBottom:8}}>{res.ok?"\u2713 Datenbank funktioniert":"\u2715 Fehler beim Schritt: "+res.step}</div>
-        {!res.ok&&<div style={{fontSize:13,marginBottom:8}}>HTTP-Status: <b>{res.status||"\u2014"}</b></div>}
-        <div style={{fontSize:14,lineHeight:1.6,marginBottom:res.ok?0:10}}>{hint(res)}</div>
-        {!res.ok&&res.msg&&<pre style={{whiteSpace:"pre-wrap",wordBreak:"break-word",fontSize:11.5,background:"rgba(0,0,0,.35)",borderRadius:8,padding:"10px 12px",color:"#cbd5e1",margin:0}}>{res.msg}</pre>}
-      </div>)}
-      {rls&&(
-        <div style={{background:"#1e293b",borderRadius:12,padding:"16px 18px",marginTop:14,fontSize:13,lineHeight:1.7}}>
-          <div style={{fontWeight:800,marginBottom:8}}>Schreiben in Supabase freigeben</div>
-          <div style={{marginBottom:10}}><b>Schneller Weg</b> (Daten sind dann fuer jeden mit dem App-Key les-/schreibbar):<br/>
-            <code style={{display:"inline-block",marginTop:4,background:"rgba(0,0,0,.45)",padding:"4px 8px",borderRadius:6,color:"#86efac"}}>ALTER TABLE app_data DISABLE ROW LEVEL SECURITY;</code></div>
-          <div style={{color:"#fca5a5"}}>Achtung: Bei Kinder-/Personendaten ist das nicht empfohlen. Der sichere Weg laeuft ueber eine Edge Function (Anleitung liegt vor). Sag mir Bescheid, dann gehen wir den sicheren Weg.</div>
+      {busy&&<div style={{color:"#94a3b8",marginBottom:14}}>Tests laufen\u2026</div>}
+
+      {fn&&<Card title={fn.ok?"\u2713 Edge Function \u201edata-api\u201c antwortet":"\u2715 Edge Function antwortet nicht"} ok={fn.ok}>
+        {!fn.ok&&<div style={{fontSize:13,marginBottom:8}}>HTTP-Status: <b>{fn.status||"\u2014"}</b></div>}
+        <div style={{fontSize:14,lineHeight:1.6,marginBottom:fn.msg?10:0}}>{fnHint(fn)}</div>
+        {fn.msg&&<pre style={{whiteSpace:"pre-wrap",wordBreak:"break-word",fontSize:11.5,background:"rgba(0,0,0,.35)",borderRadius:8,padding:"10px 12px",color:"#cbd5e1",margin:0}}>{fn.msg}</pre>}
+      </Card>}
+
+      {direct&&<Card title={directBlocked?"\u2713 Direktzugriff ist gesperrt (RLS aktiv)":direct.ok?"\u26a0 Direktzugriff ist noch offen":"Direktzugriff: "+(direct.status||"Fehler")} ok={directBlocked} warn={direct.ok}>
+        <div style={{fontSize:14,lineHeight:1.6,marginBottom:direct.msg&&!directBlocked?10:0}}>
+          {directBlocked?"Gut so: Mit dem App-Key kommt man nicht mehr direkt an die Daten \u2013 nur ueber die Function.":direct.ok?"Achtung: Die Tabelle ist noch ohne RLS offen. Solange die App ueber die Function laeuft, sollte der Direktzugriff gesperrt sein (RLS an).":"Unerwartet \u2013 Meldung unten."}
         </div>
-      )}
-      <button onClick={run} disabled={busy} style={{marginTop:16,padding:"12px 18px",borderRadius:10,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:14,cursor:busy?"default":"pointer",opacity:busy?.6:1}}>Erneut testen</button>
+        {direct.msg&&!directBlocked&&<pre style={{whiteSpace:"pre-wrap",wordBreak:"break-word",fontSize:11.5,background:"rgba(0,0,0,.35)",borderRadius:8,padding:"10px 12px",color:"#cbd5e1",margin:0}}>{direct.msg}</pre>}
+      </Card>}
+
+      <button onClick={run} disabled={busy} style={{marginTop:4,padding:"12px 18px",borderRadius:10,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:14,cursor:busy?"default":"pointer",opacity:busy?.6:1}}>Erneut testen</button>
     </div>
   </div>);
 }
