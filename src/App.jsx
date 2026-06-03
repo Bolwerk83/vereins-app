@@ -1000,10 +1000,10 @@ function Btn({ch,onClick,v="pri",full,sm,dis,load,icon,cl,sx={}}) {
     </button>
   );
 }
-function Inp({label,val,set,ph,type="text",af,rows,cl,note}) {
+function Inp({label,val,set,ph,type="text",af,rows,cl,note,onEnter,inputRef}) {
   const [f,setF]=useState(false); const c=cl?.pri||"#16a34a";
   const base={width:"100%",padding:"12px 15px",fontSize:15,border:`2px solid ${f?c:"#e2e8f0"}`,borderRadius:13,outline:"none",background:"#fff",transition:"border-color .17s",display:"block",resize:"vertical"};
-  return <div style={{display:"flex",flexDirection:"column",gap:5}}>{label&&<div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.6,textTransform:"uppercase"}}>{label}</div>}{rows?<textarea value={val} onChange={e=>set(e.target.value)} placeholder={ph} rows={rows} onFocus={()=>setF(true)} onBlur={()=>setF(false)} style={base}/>:<input type={type} value={val} onChange={e=>set(e.target.value)} placeholder={ph} autoFocus={af} autoCapitalize={type==="password"?"none":"sentences"} autoCorrect={type==="password"?"off":"on"} spellCheck={type==="password"?false:undefined} onFocus={()=>setF(true)} onBlur={()=>setF(false)} style={base}/>}{note&&<div style={{fontSize:12,color:"#94a3b8"}}>{note}</div>}</div>;
+  return <div style={{display:"flex",flexDirection:"column",gap:5}}>{label&&<div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.6,textTransform:"uppercase"}}>{label}</div>}{rows?<textarea value={val} onChange={e=>set(e.target.value)} placeholder={ph} rows={rows} onFocus={()=>setF(true)} onBlur={()=>setF(false)} style={base}/>:<input ref={inputRef} type={type} value={val} onChange={e=>set(e.target.value)} placeholder={ph} autoFocus={af} autoCapitalize={type==="password"?"none":"sentences"} autoCorrect={type==="password"?"off":"on"} spellCheck={type==="password"?false:undefined} onKeyDown={onEnter?(e=>{if(e.key==="Enter"){e.preventDefault();onEnter();}}):undefined} onFocus={()=>setF(true)} onBlur={()=>setF(false)} style={base}/>}{note&&<div style={{fontSize:12,color:"#94a3b8"}}>{note}</div>}</div>;
 }
 function Sel({label,val,set,opts}) {
   return <div style={{display:"flex",flexDirection:"column",gap:5}}>{label&&<div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.6,textTransform:"uppercase"}}>{label}</div>}<select value={val} onChange={e=>set(e.target.value)} style={{width:"100%",padding:"12px 15px",fontSize:15,border:"2px solid #e2e8f0",borderRadius:13,outline:"none",background:"#fff",appearance:"none",backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`,backgroundRepeat:"no-repeat",backgroundPosition:"right 15px center"}}>{opts.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></div>;
@@ -6973,7 +6973,7 @@ function SuperAdminLogin({ onLogin }) {
 ----------------------------------------------------------------- */
 function SuperAdminDashboard({ data, onExit }) {
   const [tab, setTab] = useState("dashboard");
-  const allClubs = (data.clubs||[]).filter(x=>x.id!=="demo");
+  const allClubs = (data.clubs||[]).filter(x=>!(x.id||"").startsWith("demo"));
   const allTeams = data.teams||[];
   const allTrainers = data.trainers||[];
   const allPlayers = data.playerProfiles||[];
@@ -7056,7 +7056,7 @@ function SuperAdminDashboard({ data, onExit }) {
             {/* KPI Cards */}
             <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginBottom:20}}>
               {[
-                {label:"Vereine",        val:allClubs.length,           sub:"registriert",  col:"#7c3aed"},
+                {label:"Vereine",        val:allClubs.length,           sub:"in Datenbank", col:"#7c3aed"},
                 {label:"Teams",          val:allTeams.length,           sub:"gesamt",       col:"#2563eb"},
                 {label:"Spieler",        val:allPlayers.length,         sub:"Profile",      col:"#16a34a"},
                 {label:"Heute aktiv",    val:todayEvents.length,        sub:"Events heute", col:"#d97706"},
@@ -7124,7 +7124,10 @@ function SuperAdminDashboard({ data, onExit }) {
                     {cl.em||cl.name?.slice(0,1)||"V"}
                   </div>
                   <div style={{flex:1}}>
-                    <div style={{fontWeight:700,fontSize:13,color:"#e2e8f0"}}>{cl.name}</div>
+                    <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                      <div style={{fontWeight:700,fontSize:13,color:"#e2e8f0"}}>{cl.name}</div>
+                      <span style={{fontSize:9,fontWeight:800,color:"#34d399",background:"#064e3b",borderRadius:5,padding:"2px 6px",letterSpacing:.3}}>IN DATENBANK</span>
+                    </div>
                     <div style={{fontSize:11,color:"#475569"}}>{cl.sport} - {cl.createdAt?.slice(0,10)||"unbekannt"}</div>
                   </div>
                 </div>
@@ -10902,7 +10905,8 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
 
 function AdminLogin({cl,onLogin,onBack}) {
   const t=TH(cl); const [pw,setPw]=useState(""); const [err,setErr]=useState(false); const [showForgot,setShowForgot]=useState(false);
-  const go=()=>{ if(checkPw(pw,cl.adm||"")){onLogin({id:"admin",role:"admin",cid:cl.id,name:"Vereinsadmin"});}else{setErr(true);setTimeout(()=>setErr(false),1800);} };
+  const pwRef=useRef(null);
+  const go=()=>{ const val=(pwRef.current?.value)||pw; if(checkPw(val,cl.adm||"")){onLogin({id:"admin",role:"admin",cid:cl.id,name:"Vereinsadmin"});}else{setErr(true);setTimeout(()=>setErr(false),1800);} };
   return (
     <div style={{minHeight:"100dvh",background:`linear-gradient(135deg,${t.s},${t.p}66)`,display:"flex",alignItems:"center",justifyContent:"center",padding:22}}>
       <style>{CSS}</style>
@@ -10910,7 +10914,7 @@ function AdminLogin({cl,onLogin,onBack}) {
         <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:26}}>← Zurück</button>
         <div style={{background:"#fff",borderRadius:24,padding:"34px 26px",boxShadow:"0 24px 80px rgba(0,0,0,.4)"}}>
           <div style={{textAlign:"center",marginBottom:22}}><Logo cl={cl} sz={68} sx={{margin:"0 auto 12px"}}/><h2 style={{fontSize:22,fontWeight:900,color:"#0f172a",margin:"0 0 4px"}}>Vereinsadmin</h2><p style={{color:"#94a3b8",fontSize:13}}>{cl.name}</p></div>
-          <Inp label="Admin-Passwort" type="password" val={pw} set={setPw} ph="Passwort..." af cl={cl}/>
+          <Inp label="Admin-Passwort" type="password" val={pw} set={setPw} ph="Passwort..." af cl={cl} onEnter={go} inputRef={pwRef}/>
           {cl.id==="demo"&&<div style={{background:"#f0fdf4",borderRadius:10,padding:"9px 13px",marginTop:8,fontSize:12,color:"#166534",border:"1px solid #bbf7d0"}}>Demo-Zugangsdaten: Passwort <strong>admin</strong></div>}
           {showForgot&&<AdminForgotPassword cl={cl} onBack={()=>setShowForgot(false)} onReset={newHash=>{onLogin({id:"admin",role:"admin",cid:cl.id,name:"Vereinsadmin"});}}/>}
           {err&&<FriendlyError type="wrongPassword" onClose={()=>setErr(false)}/>}
@@ -10958,7 +10962,7 @@ function HelperLogin({cl,helpers,onLogin,onBack}) {
                 Keine aktiven Helfer-Accounts.<br/>Bitte Trainer kontaktieren.
               </div>
             : <>
-                <Inp label="Persönlicher Helfer-Code" type="password" val={code} set={v=>{setCode(v);setErr(false);}} ph="Code vom Trainer erhalten..." af cl={cl}/>
+                <Inp label="Persönlicher Helfer-Code" type="password" val={code} set={v=>{setCode(v);setErr(false);}} ph="Code vom Trainer erhalten..." af cl={cl} onEnter={go}/>
                 {err&&<div style={{background:"#fef2f2",borderRadius:12,padding:"10px 14px",fontSize:14,fontWeight:700,color:"#dc2626",marginTop:10}}> Ungültiger Code</div>}
                 <div style={{height:14}}/>
                 <Btn full ch="Als Helfer einloggen" onClick={go} dis={!code.trim()} cl={cl}/>
@@ -12411,7 +12415,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
               <Sel label="Starker Fuss" val={p.foot||""} set={v=>up({foot:v})} opts={[["","- wählen -"],...FOOT_LIST.map(x=>[x,x])]}/>
             </div>
             <div>
-              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5}}>STAeRKEN</div>
+              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5}}>STÄRKEN</div>
               <StrengthsInput
                 strengths={p.strengths||[]}
                 customStrengths={p.customStrengths||[]}
@@ -12600,7 +12604,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
 
             {}
             <div>
-              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.5}}>EMPFEHLUNG NAeCHSTE SAISON</div>
+              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.5}}>EMPFEHLUNG NÄCHSTE SAISON</div>
               {}
               {p.lastTeamId&&(()=>{
                 const lastIdx=TEAM_HIERARCHY.indexOf(p.lastTeamId);
@@ -12965,7 +12969,7 @@ function PlayerAssignRow({ player: pl,teams,allTeams,t,onAssign,onOptToggle }) {
 
               {}
               <div style={{background:"#f8fafc",borderRadius:13,padding:"13px 15px",border:"1.5px solid #e2e8f0"}}>
-                <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:9,letterSpacing:.5}}> ALTERSMAeSSIG PASSENDE TEAMS</div>
+                <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:9,letterSpacing:.5}}> ALTERSMÄSSIG PASSENDE TEAMS</div>
                 <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
                   {allTeams.filter(tm=>playerFitsTeam(pl,tm)).map(tm=>{
                     const ft=playerFitType(pl,tm);
@@ -12994,7 +12998,7 @@ function PlayerAssignRow({ player: pl,teams,allTeams,t,onAssign,onOptToggle }) {
               {}
               {((pl.strengths||[]).length>0||(pl.customStrengths||[]).length>0)&&(
                 <div>
-                  <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5}}> STAeRKEN</div>
+                  <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5}}> STÄRKEN</div>
                   <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
                     {(pl.strengths||[]).map(s=>(
                       <span key={s} style={{fontSize:12,fontWeight:700,color:"#2563eb",background:"#eff6ff",borderRadius:7,padding:"4px 10px",border:"1px solid #bfdbfe"}}>{s}</span>
@@ -13031,7 +13035,7 @@ function PlayerAssignRow({ player: pl,teams,allTeams,t,onAssign,onOptToggle }) {
                 <div style={{display:"flex",alignItems:"center",gap:10,background:getRecommendColor(pl.recommend).bg,borderRadius:12,padding:"12px 14px",border:`1.5px solid ${getRecommendColor(pl.recommend).col}30`}}>
                   <span style={{fontSize:22}}>{getRecommendColor(pl.recommend).icon}</span>
                   <div>
-                    <div style={{fontSize:11,fontWeight:800,color:"#64748b"}}>EMPFEHLUNG NAeCHSTE SAISON</div>
+                    <div style={{fontSize:11,fontWeight:800,color:"#64748b"}}>EMPFEHLUNG NÄCHSTE SAISON</div>
                     <div style={{fontWeight:800,fontSize:15,color:"#0f172a",marginTop:2}}>{pl.recommend}</div>
                     {pl.lastTeam&&pl.lastTeam!=="-"&&<div style={{fontSize:11,color:"#64748b",marginTop:2}}> Letzte Saison: {pl.lastTeam}</div>}
                   </div>
@@ -13367,7 +13371,7 @@ function TemplateForm({initial,onSave,onCancel,cl,title}) {
   const dragIdx=useRef(null);
   const dragOverIdx=useRef(null);
 
-  const QUICK_EMOJIS=["*","Getränk","Pizza","Bus","Helfer","Pokal","Fest","Salat","Kuchen","Ball","Ziel","Einkauf"];
+  const QUICK_EMOJIS=["⚽","🥤","🍕","🌭","🍰","🥗","🏆","🎉","🙋","🚌","🛒","🎯"];
 
   const addItem=()=>{
     if(!f._txt.trim())return;
@@ -13394,7 +13398,7 @@ function TemplateForm({initial,onSave,onCancel,cl,title}) {
 
       {}
       <div style={{marginBottom:14}}>
-        <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:8}}>SYMBOL WAeHLEN</div>
+        <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:8}}>SYMBOL WÄHLEN</div>
         <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
           {QUICK_EMOJIS.map(em=>(
             <button key={em} onClick={()=>u({icon:em})}
@@ -13703,7 +13707,7 @@ function SeriesWizard({f,u,t}) {
         </>}
         {mode==="custom"&&<>
           <div style={{marginBottom:12}}>
-            <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:9,letterSpacing:.5}}>DATUM HINZUFUeGEN</div>
+            <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:9,letterSpacing:.5}}>DATUM HINZUFÜGEN</div>
             <div style={{display:"flex",gap:8}}>
               <input type="date" id="custDatePicker"
                 style={{flex:1,padding:"11px 12px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
@@ -14001,7 +14005,7 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
 
             {}
             <div>
-              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8}}>ZUGELASSEN FUeR</div>
+              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8}}>ZUGELASSEN FÜR</div>
               {myTeams.map(tm=>(
                 <label key={tm.id} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",borderRadius:11,border:`1.5px solid ${(f.tids||[]).includes(tm.id)?tm.col:"#e2e8f0"}`,background:(f.tids||[]).includes(tm.id)?tm.col+"12":"#fafafa",cursor:"pointer",marginBottom:6}}>
                   <input type="checkbox" checked={(f.tids||[]).includes(tm.id)} onChange={()=>u({tids:(f.tids||[]).includes(tm.id)?(f.tids||[]).filter(x=>x!==tm.id):[...(f.tids||[]),tm.id]})} style={{width:17,height:17,accentColor:tm.col}}/>
