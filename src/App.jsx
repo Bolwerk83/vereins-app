@@ -268,7 +268,6 @@ const T = {
     newEvent:"Maw3id jadid",
     noEvents:"La mawa3id ba3d",
     upcomingEvents:"Almawa3id alqadima",
-    search:"Bahth...",
     male:"Zakar",
     female:"Untha",
     send:"Irsal",
@@ -313,7 +312,6 @@ const T = {
     newEvent:"Yeni etkinlik",
     noEvents:"Henuz etkinlik yok",
     upcomingEvents:"Yaklasan etkinlikler",
-    search:"Ara...",
     male:"Erkek",
     female:"Kiz",
     send:"Gonder",
@@ -422,9 +420,9 @@ function SupabaseSetup({ onDone,onSkip }) {
           {}
           <div style={{background:"rgba(255,255,255,.05)",borderRadius:12,padding:"14px",marginBottom:20,fontSize:12,color:"rgba(255,255,255,.6)",lineHeight:1.8}}>
             <div style={{fontWeight:800,color:"rgba(255,255,255,.8)",marginBottom:6,fontSize:13}}> Einrichtung (2 Min):</div>
-            <div>1. <a href="https://supabase.com" target="_blank" style={{color:"#38bdf8"}}>supabase.com</a> -> kostenlosen Account erstellen</div>
-            <div>2. "New project" -> Frankfurt -> Passwort setzen</div>
-            <div>3. SQL Editor -> folgendes ausfuehren:</div>
+            <div>1. <a href="https://supabase.com" target="_blank" style={{color:"#38bdf8"}}>supabase.com</a> {"->"} kostenlosen Account erstellen</div>
+            <div>2. "New project" {"->"} Frankfurt {"->"} Passwort setzen</div>
+            <div>3. SQL Editor {"->"} folgendes ausfuehren:</div>
             <div style={{background:"rgba(0,0,0,.4)",borderRadius:8,padding:"10px",margin:"8px 0",fontFamily:"monospace",fontSize:11,color:"#86efac",lineHeight:1.6}}>
               CREATE TABLE app_data (<br/>
               &nbsp;&nbsp;key TEXT PRIMARY KEY,<br/>
@@ -434,7 +432,7 @@ function SupabaseSetup({ onDone,onSkip }) {
               ALTER TABLE app_data ENABLE ROW LEVEL SECURITY;<br/>
               CREATE POLICY "Public" ON app_data FOR ALL USING (true) WITH CHECK (true);
             </div>
-            <div>4. Settings -> API -> URL + anon key kopieren</div>
+            <div>4. Settings {"->"} API {"->"} URL + anon key kopieren</div>
           </div>
 
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
@@ -7580,7 +7578,6 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
   const clubFeat = (key, def=true) => cs[key]!==undefined ? cs[key] : def;
   const sport = myClub.sport||"fussball";
   const sportProfile = SPORT_PROFILES[sport]||SPORT_PROFILES.fussball;
-  const cs = myClub.clubSettings||{};
   const [section, setSection] = useState("sport");
   const [showImport, setShowImport] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
@@ -8952,7 +8949,7 @@ function RolePicker({cl,onRole,onBack}) {
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s} 0%,${t.p}66 100%)`}}>
       <style>{CSS}</style>
       <div style={{padding:"50px 22px 0",maxWidth:440,margin:"0 auto"}}>
-        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:32}}><- Zurueck</button>
+        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:32}}>{"<- "}Zurueck</button>
         <div className="up" style={{display:"flex",flexDirection:"column",alignItems:"center",marginBottom:40}}>
           <Logo cl={cl} sz={80}/>
           <h1 style={{color:"#fff",fontSize:26,fontWeight:900,letterSpacing:-.5,margin:"14px 0 6px",textAlign:"center"}}>{cl.name}</h1>
@@ -8966,7 +8963,7 @@ function RolePicker({cl,onRole,onBack}) {
             <div style={{display:"flex",alignItems:"center",gap:14}}>
               <div style={{width:48,height:48,borderRadius:15,background:"rgba(255,255,255,.12)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{x.icon}</div>
               <div style={{flex:1}}><div style={{color:"#fff",fontWeight:900,fontSize:17}}>{x.title}</div><div style={{color:"rgba(255,255,255,.5)",fontSize:13,marginTop:2}}>{x.sub}</div></div>
-              <div style={{color:"rgba(255,255,255,.3)",fontSize:22}}>></div>
+              <div style={{color:"rgba(255,255,255,.3)",fontSize:22}}>{">"}</div>
             </div>
           </div>
         ))}
@@ -9005,7 +9002,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
       <style>{CSS}</style>
       <div style={{padding:"48px 20px 0",maxWidth:460,margin:"0 auto"}}>
         <button onClick={step==="cat"?onBack:step==="trainer"?()=>setStep("cat"):()=>{setStep("trainer");setPw("");setErr(false);}}
-          style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:28}}><- Zurueck</button>
+          style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:28}}>{"<- "}Zurueck</button>
         {children}
       </div>
     </div>
@@ -9030,7 +9027,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
                   <div style={{color:"#fff",fontWeight:900,fontSize:18}}>{c}</div>
                   <div style={{color:"rgba(255,255,255,.5)",fontSize:12,marginTop:2}}>{trs.length} Trainer</div>
                 </div>
-                <span style={{color:"rgba(255,255,255,.3)",fontSize:22}}>></span>
+                <span style={{color:"rgba(255,255,255,.3)",fontSize:22}}>{">"}</span>
               </div>
             );
           })
@@ -9053,7 +9050,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
               {(tr.tids||[]).map(tid=>teams?.find(x=>x.id===tid)?.name).filter(Boolean).filter(x=>!x.hidden).join(",")}
             </div>
           </div>
-          <span style={{color:"rgba(255,255,255,.3)",fontSize:22}}>></span>
+          <span style={{color:"rgba(255,255,255,.3)",fontSize:22}}>{">"}</span>
         </div>
       ))}
     </GradWrap>
@@ -9061,7 +9058,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
   return (
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s},${t.p}66)`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,position:"relative"}}>
       <style>{CSS}</style>
-      <button onClick={()=>{setStep(trainersInCat.length>1?"trainer":"cat");setPw("");setErr(false);}} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}><- Zurueck</button>
+      <button onClick={()=>{setStep(trainersInCat.length>1?"trainer":"cat");setPw("");setErr(false);}} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}>{"<- "}Zurueck</button>
       <div className="up" style={{width:"100%",maxWidth:370}}>
         <div style={{textAlign:"center",marginBottom:28}}>
           <Av name={selTr?.name||"?"} sz={72} sx={{margin:"0 auto 14px"}}/>
@@ -9074,7 +9071,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
             placeholder="Passwort..." autoFocus
             style={{width:"100%",padding:"13px 16px",fontSize:16,background:"rgba(255,255,255,.12)",border:`2px solid ${err?"#ff6b6b":pw?"rgba(255,255,255,.4)":"rgba(255,255,255,.2)"}`,borderRadius:13,outline:"none",color:"#fff",marginBottom:10}}/>
           {err&&<FriendlyError type="wrongPassword"/>}
-          {cl.id==="demo"&&<div style={{background:"rgba(255,255,255,.08)",borderRadius:10,padding:"8px 12px",marginBottom:10,fontSize:11,color:"rgba(255,255,255,.6)"}}>Demo: Trainer A = trainer1 | Trainer B = trainer2</div>
+          {cl.id==="demo"&&<div style={{background:"rgba(255,255,255,.08)",borderRadius:10,padding:"8px 12px",marginBottom:10,fontSize:11,color:"rgba(255,255,255,.6)"}}>Demo: Trainer A = trainer1 | Trainer B = trainer2</div>}
           <button onClick={()=>setShowForgotTr(true)}
             style={{background:"none",border:"none",color:"rgba(255,255,255,.4)",
               fontSize:12,cursor:"pointer",fontFamily:"inherit",
@@ -9082,7 +9079,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
             Passwort vergessen?
           </button>
           {showForgotTr&&<ForgotPasswordHelp cl={cl} trainers={trainers}
-            forRole="trainer" onBack={()=>setShowForgotTr(false)}/>}}
+            forRole="trainer" onBack={()=>setShowForgotTr(false)}/>}
           <button onClick={go} disabled={!pw.trim()}
             style={{width:"100%",padding:"13px",fontSize:15,fontWeight:800,background:pw.trim()?cl.pri:"rgba(255,255,255,.15)",color:pw.trim()?"#fff":"rgba(255,255,255,.4)",border:"none",borderRadius:13,cursor:pw.trim()?"pointer":"not-allowed",transition:"all .18s"}}>
              Einloggen
@@ -9100,7 +9097,7 @@ function AdminLogin({cl,onLogin,onBack}) {
     <div style={{minHeight:"100dvh",background:`linear-gradient(135deg,${t.s},${t.p}66)`,display:"flex",alignItems:"center",justifyContent:"center",padding:22}}>
       <style>{CSS}</style>
       <div className="up" style={{width:"100%",maxWidth:390}}>
-        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:26}}><- Zurueck</button>
+        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:26}}>{"<- "}Zurueck</button>
         <div style={{background:"#fff",borderRadius:24,padding:"34px 26px",boxShadow:"0 24px 80px rgba(0,0,0,.4)"}}>
           <div style={{textAlign:"center",marginBottom:22}}><Logo cl={cl} sz={68} sx={{margin:"0 auto 12px"}}/><h2 style={{fontSize:22,fontWeight:900,color:"#0f172a",margin:"0 0 4px"}}>Vereinsadmin</h2><p style={{color:"#94a3b8",fontSize:13}}>{cl.name}</p></div>
           <Inp label="Admin-Passwort" type="password" val={pw} set={setPw} ph="Passwort..." af cl={cl}/>
@@ -9134,7 +9131,7 @@ function HelperLogin({cl,helpers,onLogin,onBack}) {
     <div style={{minHeight:"100dvh",background:`linear-gradient(135deg,${t.s},${t.p}66)`,display:"flex",alignItems:"center",justifyContent:"center",padding:22}}>
       <style>{CSS}</style>
       <div className="up" style={{width:"100%",maxWidth:390}}>
-        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:26}}><- Zurueck</button>
+        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:26}}>{"<- "}Zurueck</button>
         <div style={{background:"#fff",borderRadius:24,padding:"34px 26px",boxShadow:"0 24px 80px rgba(0,0,0,.3)"}}>
           <div style={{textAlign:"center",marginBottom:22}}>
             <div style={{fontSize:52,marginBottom:8}}></div>
@@ -9188,7 +9185,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s} 0%,${t.p}66 100%)`}}>
       <style>{CSS}</style>
       <div style={{padding:"48px 20px 0",maxWidth:460,margin:"0 auto"}}>
-        <button onClick={goBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:28}}><- Zurueck</button>
+        <button onClick={goBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:28}}>{"<- "}Zurueck</button>
         <div className="up" style={{display:"flex",flexDirection:"column",alignItems:"center",marginBottom:32}}>
           <Logo cl={cl} sz={64}/>
           <h2 style={{color:"#fff",fontSize:24,fontWeight:900,margin:"12px 0 4px",textAlign:"center"}}>{title}</h2>
@@ -9210,7 +9207,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
               <div style={{color:"#fff",fontWeight:900,fontSize:18}}>{c}</div>
               {tms.length>1&&<div style={{color:"rgba(255,255,255,.5)",fontSize:12,marginTop:2}}>{tms.length} Mannschaften</div>}
             </div>
-            <span style={{color:"rgba(255,255,255,.3)",fontSize:22}}>></span>
+            <span style={{color:"rgba(255,255,255,.3)",fontSize:22}}>{">"}</span>
           </div>
         );
       })}
@@ -9223,7 +9220,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
           style={{background:"rgba(255,255,255,.09)",border:"1.5px solid rgba(255,255,255,.13)",borderRadius:20,padding:"16px 20px",cursor:"pointer",marginBottom:12,animationDelay:`${i*.06}s`,display:"flex",alignItems:"center",gap:14}}>
           <div style={{width:46,height:46,borderRadius:14,background:tm.col+"33",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{tm.icon}</div>
           <span style={{color:"#fff",fontWeight:900,fontSize:18}}>{tm.name}</span>
-          <span style={{marginLeft:"auto",color:"rgba(255,255,255,.3)",fontSize:22}}>></span>
+          <span style={{marginLeft:"auto",color:"rgba(255,255,255,.3)",fontSize:22}}>{">"}</span>
         </div>
       ))}
     </GradWrap>
@@ -9231,7 +9228,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
   if(step==="pwd") return (
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s},${t.p}66)`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,position:"relative"}}>
       <style>{CSS}</style>
-      <button onClick={goBack} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}><- Zurueck</button>
+      <button onClick={goBack} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}>{"<- "}Zurueck</button>
       <div className="up" style={{width:"100%",maxWidth:370}}>
         <div style={{textAlign:"center",marginBottom:28}}>
           <div style={{width:72,height:72,borderRadius:22,background:ct?.col+"33",border:`1.5px solid ${ct?.col}66`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:38,margin:"0 auto 14px"}}>{ct?.icon}</div>
@@ -9270,7 +9267,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
   if(step==="locked") return (
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s},${t.p}66)`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
       <style>{CSS}</style>
-      <button onClick={()=>setStep("pwd")} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}><- Zurueck</button>
+      <button onClick={()=>setStep("pwd")} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}>{"<- "}Zurueck</button>
       <div className="up" style={{textAlign:"center",maxWidth:340}}>
         <div style={{fontSize:64,marginBottom:16}}></div>
         <h2 style={{color:"#fff",fontSize:22,fontWeight:900,margin:"0 0 12px"}}>{ct?.name}</h2>
@@ -9284,7 +9281,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
           </div>
         </div>
         <button onClick={()=>setStep("pwd")} style={{marginTop:20,padding:"12px 28px",borderRadius:13,border:"1.5px solid rgba(255,255,255,.3)",background:"transparent",color:"rgba(255,255,255,.7)",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
-          <- Zurueck zum Login
+          {"<- "}Zurueck zum Login
         </button>
       </div>
     </div>
@@ -9292,7 +9289,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
   return (
     <div style={{minHeight:"100dvh",background:"#f0f4f8",display:"flex",flexDirection:"column"}}>
       <div style={{background:`linear-gradient(135deg,${t.s},${t.p}99)`,padding:"16px 18px 22px"}}>
-        <button onClick={goBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:14}}><- Zurueck</button>
+        <button onClick={goBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:14}}>{"<- "}Zurueck</button>
         <div style={{display:"flex",alignItems:"center",gap:12}}><Logo cl={cl} sz={40}/><div><div style={{color:"rgba(255,255,255,.6)",fontSize:12,fontWeight:700}}>{ct?.icon} {ct?.name}</div><div style={{color:"#fff",fontSize:20,fontWeight:900}}>Wer bist du?</div></div></div>
       </div>
       <div style={{padding:"12px 14px 0",background:"#f0f4f8",position:"sticky",top:0,zIndex:10}}>
@@ -9302,7 +9299,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
         {list.map((p,i)=>(
           <div key={p} className="up" onClick={()=>onDone(tid,p)}
             style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:16,padding:"13px 16px",cursor:"pointer",display:"flex",alignItems:"center",gap:12,animationDelay:`${i*.03}s`}}>
-            <Av name={p} sz={40}/><span style={{fontWeight:700,fontSize:16,color:"#0f172a",flex:1}}>{p}</span><span style={{color:"#94a3b8",fontSize:20}}>></span>
+            <Av name={p} sz={40}/><span style={{fontWeight:700,fontSize:16,color:"#0f172a",flex:1}}>{p}</span><span style={{color:"#94a3b8",fontSize:20}}>{">"}</span>
           </div>
         ))}
         {list.length===0&&<div style={{textAlign:"center",padding:"32px",color:"#94a3b8"}}><div style={{fontSize:36,marginBottom:8}}></div><p style={{fontWeight:700}}>Niemanden gefunden</p></div>}
@@ -10365,7 +10362,7 @@ function PlayerAssignRow({ player: pl,teams,allTeams,t,onAssign,onOptToggle }) {
                   {scopeElig.filter(tm=>tm.id!==pl.mainTid).map(tm=>(
                     <button key={tm.id} onClick={()=>{onAssign(tm.id);setShowProfile(false);}}
                       style={{display:"flex",alignItems:"center",gap:6,padding:"9px 15px",borderRadius:11,border:`2px solid ${tm.col}`,background:tm.col+"12",color:tm.col,fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",transition:"all .14s"}}>
-                      -> {tm.name}
+                      {"->"} {tm.name}
                     </button>
                   ))}
                 </div>
@@ -10508,10 +10505,10 @@ function PlayersTab({ data,myTids,save,fire,cl }) {
               {allPlayers.filter(p=>!p.mainTid).length} Spieler noch nicht zugeteilt
             </div>
             <div style={{fontSize:12,color:"#9a3412",marginTop:2}}>
-              Eltern koennen sich erst anmelden wenn alle Spieler zugeteilt sind -> Zuteilung oeffnen
+              Eltern koennen sich erst anmelden wenn alle Spieler zugeteilt sind {"->"} Zuteilung oeffnen
             </div>
           </div>
-          <span style={{color:"#d97706",fontSize:18}}>></span>
+          <span style={{color:"#d97706",fontSize:18}}>{">"}</span>
         </div>
       )}
       {}
@@ -11394,7 +11391,6 @@ function ChatTab({data,cid,myTids,session,save,fire,cl}) {
         </button>
       </div>
     </div>
-    </div>
   );
 }
 
@@ -11468,7 +11464,7 @@ function JerseysTab({ data,myTids,save,fire,cl }) {
             ? <div style={{textAlign:"center",padding:"32px",background:"#f8fafc",borderRadius:14,border:"1.5px dashed #e2e8f0"}}>
                 <div style={{fontSize:36,marginBottom:8}}></div>
                 <p style={{fontWeight:700,color:"#334155"}}>Noch keine Trikotnummern vergeben</p>
-                <p style={{fontSize:13,color:"#94a3b8",marginTop:4}}>Im Spielerprofil ->  Trikot eintragen</p>
+                <p style={{fontSize:13,color:"#94a3b8",marginTop:4}}>Im Spielerprofil {"->"}  Trikot eintragen</p>
               </div>
             : <div style={{display:"flex",flexDirection:"column",gap:7}}>
                 {teamPlayers.map(pl => {
@@ -11598,8 +11594,6 @@ function AdBanner({ slot="auto",style={} }) {
   );
 }
 
-const APP_URL = "https://vereinsapp.de"; // Deine Domain hier eintragen
-
 function ShareBanner({ cl,session,trigger,onDismiss }) {
   const t = TH(cl);
   const [copied,setCopied] = useState(false);
@@ -11705,8 +11699,7 @@ function useShareTrigger(data,session,myTids) {
   return { trigger,dismiss };
 }
 
-  {id:"left",icon:"Tuer",label:"Verein verlassen"},{id:"injury",icon:"Krank",label:"Verletzt / Pause"},{id:"retired",icon:"Ende",label:"Karriereende"},{id:"nolust",icon:"Pause",label:"Keine Lust / Auszeit"},{id:"moved",icon:"Weg",label:"Weggezogen"},{id:"other",icon:"?",label:"Sonstiges"},];
-const AGE_GROUPS = [
+const AGE_GROUPS_LIST = [
   {id:"bambinis",label:"Bambinis",icon:"B",ageRange:"U5-U6"},{id:"g",label:"G-Jugend",icon:"G",ageRange:"U7"},{id:"f",label:"F-Jugend",icon:"F",ageRange:"U8-U9"},{id:"e",label:"E-Jugend",icon:"E",ageRange:"U10-U11"},{id:"d",label:"D-Jugend",icon:"D",ageRange:"U12-U13"},{id:"c",label:"C-Jugend",icon:"C",ageRange:"U14-U15"},{id:"b",label:"B-Jugend",icon:"B2",ageRange:"U16-U17"},{id:"a",label:"A-Jugend",icon:"A",ageRange:"U18-U19"},{id:"seniors",label:"Senioren",icon:"S",ageRange:"Aktive"},{id:"altherren",label:"Alt-Herren",icon:"AH",ageRange:"Ue32"},{id:"frauen",label:"Frauen",icon:"FR",ageRange:"Aktive"},];
 
 function NewSeasonWizard({ data,save,fire,cl,myTids,onClose,onDone }) {
@@ -12841,12 +12834,7 @@ function InviteSheet({ team, cl, onClose }) {
             </button>
             <button onClick={()=>{
               navigator.clipboard?.writeText(
-                "Hallo! Bitte lade die Vereins-App herunter:
-"+url+
-                "
-
-Mannschaft: "+team.name+"
-Code: "+(team.pwd||"")
+                `Hallo! Bitte lade die Vereins-App herunter:\n${url}\n\nMannschaft: ${team.name}\nCode: ${team.pwd||""}`
               ); }}
               style={{flex:2,padding:"11px",borderRadius:11,border:"none",background:t.p,
                 color:"#fff",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
@@ -13573,7 +13561,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
                 <div style={{fontWeight:800,fontSize:13,color:"#1d4ed8"}}>
                   Saison {(local.seasons||[]).find(s=>s.status==="planning")?.label} in Planung
                 </div>
-                <div style={{fontSize:12,color:"#3b82f6",marginTop:1}}>Spieler zuteilen und Saison aktivieren -></div>
+                <div style={{fontSize:12,color:"#3b82f6",marginTop:1}}>Spieler zuteilen und Saison aktivieren {"->"}</div>
               </div>
             </div>
           )}
@@ -13584,7 +13572,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               <div style={{color:"#fff",fontWeight:900,fontSize:18,letterSpacing:"-.3px",textShadow:"0 1px 3px rgba(0,0,0,.25)"}}>Neuen Termin anlegen</div>
               <div style={{color:"rgba(255,255,255,.9)",fontSize:13,marginTop:3,fontWeight:500}}>Schritt-fuer-Schritt Assistent</div>
             </div>
-            <div style={{width:32,height:32,borderRadius:10,background:"rgba(0,0,0,.15)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:18,fontWeight:700,flexShrink:0}}>></div>
+            <div style={{width:32,height:32,borderRadius:10,background:"rgba(0,0,0,.15)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:18,fontWeight:700,flexShrink:0}}>{">"}</div>
           </div>
           {up.length>0&&<><Divider label={`KOMMENDE (${up.length})`}/>{up.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurueckgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)}/>)}</>}
           {up.length===0&&<div style={{textAlign:"center",padding:"30px",background:"#fff",borderRadius:18,border:"1.5px dashed #e2e8f0",color:"#94a3b8"}}><Logo cl={myClub} sz={50} sx={{margin:"0 auto 12px"}}/><p style={{fontWeight:800,fontSize:15}}>Noch keine Termine</p><p style={{fontSize:13,marginTop:3}}>Klicke oben auf "Neuen Termin anlegen"</p></div>}
@@ -13673,7 +13661,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       <Toast msg={toast}/>
       <BottomNav tab={tab} setTab={setTab} isAdmin={isAdmin} isHelper={isHelper}
         unread={unreadMsgs} cl={myClub} />
-      
+      </div>
+      </div>
     </div>
   );
 }
