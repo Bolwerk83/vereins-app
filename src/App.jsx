@@ -14408,7 +14408,7 @@ function AppInner({lang,setLang}) {
 
       {showLegal&&<LegalPage onBack={()=>setShowLegal(false)}/>}
       {!showLegal&&screen==="dir"&&<Directory data={data} lang={lang} setLang={setLang} onLegal={()=>setShowLegal(true)} onPick={id=>{
-          if(id==="__demo__"){setCid("sus");setScr("role");return;}
+          if(id==="__demo__"){setCid("demo");setScr("role");return;}
           setCid(id);setScr("role");
         }} onNewClub={newClubOrData=>{
           if(newClubOrData.clubs){
