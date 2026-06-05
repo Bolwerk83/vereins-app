@@ -13449,7 +13449,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const isAdmin=session.role==="admin"; const isHelper=session.role==="helper"; const cid=session.cid; const cl=data.clubs.find(c=>c.id===cid);
   const myTids=isAdmin?data.teams.filter(t=>t.cid===cid).map(t=>t.id):isHelper?data.teams.filter(t=>t.cid===cid).map(t=>t.id):(session.tids||[]);
   const t=TH(cl);
-  const [tab,setTab]=useState("events"); // BottomNav manages this const [local,setLocal]=useState(()=>JSON.parse(JSON.stringify(data)));
+  const [tab,setTab]=useState("events"); // BottomNav manages this
+  const [local,setLocal]=useState(()=>JSON.parse(JSON.stringify(data)));
   const [toast,setToast]=useState(null);
   const unreadMsgs = useMemo(()=>{
     const lastRead = Number(localStorage.getItem("va_last_read_"+cid)||0);
@@ -13459,6 +13460,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const { trigger: shareTrigger,dismiss: dismissShare } = useShareTrigger(local,session,myTids);
   const [delConf,setDelConf]=useState(null); const [viewEv,setViewEv]=useState(null); const [delConfVal,setDelConfVal]=useState(null);
   const [editConf,setEditConf]=useState(null);
+  const [showOnboarding,setShowOnboarding]=useState(false);
   const toastRef=useRef(null);
   const fire=m=>{setToast(m);clearTimeout(toastRef.current);toastRef.current=setTimeout(()=>setToast(null),2500);};
   const save=next=>{setLocal(next);onSave(next);};
@@ -14299,6 +14301,7 @@ function AppInner({lang,setLang}) {
   const [cid,setCid]      = useState(null);
   const [session,setSess] = useState(null);
   const [showSetup,setShowSetup] = useState(false);
+  const [showLegal,setShowLegal] = useState(false);
   const [showSuperAdmin,setShowSuperAdmin] = useState(
     ()=>new URLSearchParams(window.location.search).has("superadmin")
   );
