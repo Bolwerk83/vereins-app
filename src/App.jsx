@@ -524,15 +524,15 @@ function seed() {
     ],
     teams: [
       { id:"demo_g", cid:"demo", name:"G-Jugend", icon:"G", col:"#16a34a",
-        pub:true, pwd:"hcaa", cat:"G-Jugend", years:"2018/19" },
+        pub:true, pwd:"g1", cat:"G-Jugend", years:"2018/19" },
       { id:"demo_f1", cid:"demo", name:"F-Jugend 1", icon:"F", col:"#2563eb",
-        pub:true, pwd:"hc8b", cat:"F-Jugend", years:"2016/17" },
+        pub:true, pwd:"f1", cat:"F-Jugend", years:"2016/17" },
       { id:"demo_e", cid:"demo", name:"E-Jugend", icon:"E", col:"#7c3aed",
-        pub:true, pwd:"hc6c", cat:"E-Jugend", years:"2014/15" },
+        pub:true, pwd:"e1", cat:"E-Jugend", years:"2014/15" },
       { id:"demo_sen", cid:"demo", name:"Senioren", icon:"S", col:"#d97706",
-        pub:true, pwd:"h35cf55", cat:"Senioren", years:"" },
+        pub:true, pwd:"s1", cat:"Senioren", years:"" },
       { id:"demo_ah", cid:"demo", name:"Alt-Herren", icon:"AH", col:"#64748b",
-        pub:true, pwd:"h178ea", cat:"Alt-Herren", years:"" }
+        pub:true, pwd:"ah1", cat:"Alt-Herren", years:"" }
     ],
     trainers: [
       { id:"dt1", cid:"demo", name:"Trainer A", role:"Trainer",
@@ -9243,7 +9243,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
           {showForgotParent&&<ForgotPasswordHelp cl={cl} trainers={trainers}
             forRole="user" teamId={ct?.id}
             onBack={()=>setShowForgotParent(false)}/>}
-          {cl.id==="demo"&&<div style={{background:"rgba(255,255,255,.1)",borderRadius:10,padding:"8px 12px",marginBottom:10,fontSize:11,color:"rgba(255,255,255,.6)"}}>Demo: G-Jugend = g1 | F-Jugend = f1</div>}
+          {cl.id==="demo"&&<div style={{background:"rgba(255,255,255,.1)",borderRadius:10,padding:"8px 12px",marginBottom:10,fontSize:11,color:"rgba(255,255,255,.6)"}}>Demo-Passwort: <strong>{ct?.pwd}</strong></div>}
           <button onClick={()=>setShowForgotParent(true)}
             style={{background:"none",border:"none",color:"rgba(255,255,255,.4)",
               fontSize:12,cursor:"pointer",fontFamily:"inherit",
