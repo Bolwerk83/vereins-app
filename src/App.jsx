@@ -8937,7 +8937,6 @@ function Directory({data,onPick,onNewClub,lang,setLang}) {
           <button onClick={()=>onLegal&&onLegal()} style={{background:"none",border:"none",color:"rgba(255,255,255,.25)",fontSize:11,cursor:"pointer",textDecoration:"underline"}}>Nutzungsbedingungen</button>
         </div>
         <div style={{marginTop:12}}><AdBanner style={{borderRadius:12,overflow:"hidden"}}/></div>
-        <PoweredBy/>
       </div>
     </div>
   );
