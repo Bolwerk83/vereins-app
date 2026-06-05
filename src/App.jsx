@@ -1,4 +1,4 @@
-import React, { useState,useEffect,useCallback,useRef,useMemo,createContext,useContext } from "react";
+import { useState,useEffect,useCallback,useRef,useMemo,createContext,useContext } from "react";
 
 const LANG_KEY = "vereinsapp_lang";
 const LangCtx  = createContext("de");
@@ -6,37 +6,37 @@ const useLang  = () => useContext(LangCtx);
 
 const T = {
   de: {
-    back:"<- Zurück",
+    back:"<- Zurueck",
     cancel: "Abbrechen",
     save: "Speichern",
-    delete: "Löschen",
+    delete: "Loeschen",
     logout:"Logout",
-    close: "Schließen",
+    close: "Schliessen",
     loading: "Laedt...",
     yes: "Ja",
     no: "Nein",
     search:"Suchen...",
     edit: "Bearbeiten",
-    confirm: "Bestätigen",
+    confirm: "Bestaetigen",
     next: "Weiter ->",
     chooseClub:"Welche Mannschaft ist dein Kind?",
     chooseAge: "In welcher Altersklasse spielt dein Kind?",
     chooseTeam:"Welche Mannschaft?",
     whichTrainer: "Welcher Trainer bist du?",
-    forWhichAge:"Für welche Jugend bist du Trainer?",
+    forWhichAge:"Fuer welche Jugend bist du Trainer?",
     loginCode: "Helfer-Code",
     enterPassword:"Passwort eingeben",
     wrongPassword: "Falsches Passwort",
     helperLogin:"Helfer-Zugang",
-    helperHint: "Zugriff auf Spielpläne und Turnier-Übersichten.",
+    helperHint: "Zugriff auf Spielplaene und Turnier-Uebersichten.",
     whoAreYou:"Wer bist du?",
     notInList: "Nicht in der Liste?",
     loginAs:"Einloggen als",
-    teamOpen: "Team öffnen",
+    teamOpen: "Team oeffnen",
     roleParent:"Elternteil",
     roleParentSub: "Termine sehen & abstimmen",
     roleHelper:"Helfer",
-    roleHelperSub: "Turnier & Spieltag unterstützen",
+    roleHelperSub: "Turnier & Spieltag unterstuetzen",
     roleTrainer:"Trainer",
     roleTrainerSub: "Termine meiner Mannschaft",
     roleAdmin:"Vereinsadmin",
@@ -70,13 +70,13 @@ const T = {
     mainTeam:"Hauptmannschaft",
     canHelpIn: "Kann aushelfen in",
     assignTo:"Zu Team zuweisen",
-    recommendation: "Empfehlung nächste Saison",
+    recommendation: "Empfehlung naechste Saison",
     lastSeason:"Letzte Saison gespielt in",
     notes: "Notizen",
     jerseyNumber:"Trikotnummer",
-    jerseySize: "Trikotgröße",
+    jerseySize: "Trikotgroesse",
     jerseyStatus:"Trikot Status",
-    strengths: "Stärken",
+    strengths: "Staerken",
     statistics: "Statistiken",
     goals:"Tore",
     assists:"Vorlagen",
@@ -230,7 +230,7 @@ const T = {
     noMessages:"Nog geen berichten",
   },
   ar: {
-    back:"<- Zurück",
+    back:"<- Zurueck",
     cancel:"Alga",
     save:"Hifz",
     delete:"Hazf",
@@ -324,12 +324,7 @@ function useT() {
   const lang = useLang();
   return (key,fallback) => T[lang]?.[key] ?? T.de[key] ?? fallback ?? key;
 }
-// Sprachumschalter vorerst deaktiviert: EN/NL sind noch nicht vollständig übersetzt,
-// daher wäre ein sichtbarer Schalter ein nicht eingelöstes Versprechen.
-// Zum Reaktivieren (sobald Übersetzungen vollständig sind): auf true setzen.
-const LANG_SWITCHER_ENABLED = false;
 function LangSwitcher({ lang,setLang }) {
-  if(!LANG_SWITCHER_ENABLED) return null;
   const LANGS = [{id:"de",flag:"DE"},{id:"en",flag:"EN"},{id:"nl",flag:"NL"}];
   return (
     <div style={{display:"flex",gap:4}}>
@@ -346,187 +341,34 @@ function LangSwitcher({ lang,setLang }) {
 const SK  = "vereinsapp_v14";
 const SS  = "vereinsapp_v12_session";
 const CFG = "vereinsapp_config";
-// Fest eingebaute Verbindung: jedes Gerät verbindet sich automatisch mit der Vereins-Datenbank.
-// Der anon-Key ist bauartbedingt öffentlich (steckt ohnehin im ausgelieferten Browser-Code).
-// Echter Datenschutz erfolgt über Zugriffsregeln (RLS) in der Datenbank, nicht über Geheimhaltung dieses Keys.
-const DEFAULT_CFG = {
-  url: "https://phpkyzujpvrsypqqptlv.supabase.co",
-  key: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBocGt5enVqcHZyc3lwcXFwdGx2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0MjA2MjAsImV4cCI6MjA5NTk5NjYyMH0.t7wCh6Juzkn9cyshpy78ZfJ_G9ji8pko_v1hoOzui8w"
-};
-const getConfig = () => { try { const v=JSON.parse(localStorage.getItem(CFG)||"null"); return (v&&v.url&&v.key)?v:DEFAULT_CFG; } catch { return DEFAULT_CFG; } };
+const getConfig = () => { try { return JSON.parse(localStorage.getItem(CFG)||"null"); } catch { return null; } };
 const setConfig = c => { try { localStorage.setItem(CFG,JSON.stringify(c)); } catch {} };
-// ----------------------------------------------------------------
-// Daten-Trennung pro Verein (Phase 1: Schreib-Isolation).
-// Jeder Verein wird in einer eigenen Zeile gespeichert. Beim Speichern
-// schreibt ein Verein nur seine eigene Zeile -> kann andere nicht überschreiben.
-// splitData/mergeData sind GENERISCH und verlustfrei: jeder Datensatz wird
-// genau einem Verein zugeordnet (über cid bzw. Team-Zugehörigkeit); alles,
-// was keinem bekannten Verein zuzuordnen ist, landet in der globalen Zeile.
-// ----------------------------------------------------------------
-const splitData = (data) => {
-  if(!data) return { global:null, shards:{} };
-  const idSet = new Set((data.clubs||[]).map(c=>c&&c.id).filter(Boolean));
-  const teamCid = {}; (data.teams||[]).forEach(t=>{ if(t&&t.id) teamCid[t.id]=t.cid; });
-  const shards = {}; const ensure = id => (shards[id] ||= {});
-  idSet.forEach(id=>ensure(id));
-  const global = {};
-  for(const [key,val] of Object.entries(data)){
-    if(key==="clubs"){
-      // Vereinsliste komplett in die globale Zeile (leicht: nur Metadaten, keine schweren Arrays)
-      global.clubs = [ ...(global.clubs||[]), ...(val||[]) ];
-    } else if(key==="players" && val && typeof val==="object" && !Array.isArray(val)){
-      global.players ||= {}; // leeres/Rest-players bleibt erhalten (Verlustfreiheit)
-      for(const [tid,pv] of Object.entries(val)){
-        const cid=teamCid[tid];
-        if(cid && idSet.has(cid)) (ensure(cid).players ||= {})[tid]=pv;
-        else (global.players ||= {})[tid]=pv;
-      }
-    } else if(Array.isArray(val) && val.length && val.every(r=>r&&typeof r==="object") && val.some(r=>"cid" in r)){
-      val.forEach(rec=>{
-        const cid=rec.cid;
-        if(cid && idSet.has(cid)) (ensure(cid)[key] ||= []).push(rec);
-        else (global[key] ||= []).push(rec);
-      });
-    } else {
-      global[key]=val; // global/skalar/Objekt/Array-ohne-cid (z.B. seasons, activeSeason, _v)
-    }
-  }
-  return { global, shards };
-};
-const mergeData = (global, shardList) => {
-  const out = global ? JSON.parse(JSON.stringify(global)) : {};
-  for(const shard of (shardList||[])){
-    if(!shard) continue;
-    for(const [key,val] of Object.entries(shard)){
-      if(key==="players" && val && typeof val==="object" && !Array.isArray(val)){
-        out.players = { ...(out.players||{}), ...val };
-      } else if(Array.isArray(val)){
-        out[key] = [ ...(out[key]||[]), ...val ];
-      } else {
-        out[key]=val;
-      }
-    }
-  }
-  return out;
-};
-
-let APP_TOKEN = null; // nach Login/Anlegen gesetzt (nur im Speicher, nicht dauerhaft)
 const sb = {
-  _url: () => getConfig()?.url,_key: () => getConfig()?.key,_hdr: () => ({ "Content-Type":"application/json","apikey": sb._key(),"Authorization":"Bearer "+sb._key() }),
-  _fnUrl: () => `${getConfig()?.url}/functions/v1/data-api`,
-  _callFn: async (body) => {
-    const r = await fetch(sb._fnUrl(), { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(body) });
-    let j=null; try{ j=await r.json(); }catch{}
-    if(!r.ok){ const e=new Error((j&&j.error)||("fn "+r.status)); e.status=r.status; throw e; }
-    return j||{};
-  },
-  _glKey: SK+"__global",
-  _clubKey: cid => SK+"__club_"+cid,
-  _lastWrite: null,
-  // Migration der alten Einzel-Zeile, falls noch keine getrennten Zeilen existieren. Gibt true zurück, wenn migriert.
-  _migrate: async () => {
-    const url = sb._url();
-    try {
-      const lr = await fetch(`${url}/rest/v1/app_data?key=eq.${SK}&select=value`,{ headers: sb._hdr() });
-      if (lr.ok) {
-        const lrows = await lr.json();
-        const legacy = lrows[0]?.value;
-        if (legacy) { await sb.set(legacy); return legacy; }
-      }
-    } catch {}
-    return null;
-  },
-  // Voll-Laden (alle Vereine): für SuperAdmin und als Fallback.
-  get: async () => {
+  _url: () => getConfig()?.url,_key: () => getConfig()?.key,_hdr: () => ({ "Content-Type":"application/json","apikey": sb._key(),"Authorization":"Bearer "+sb._key() }),get: async () => {
     const url = sb._url();
     if (!url || !sb._key()) return localGet();
     try {
-      const r = await fetch(`${url}/rest/v1/app_data?key=like.${SK}__*&select=key,value`,{ headers: sb._hdr() });
-      if (r.ok) {
-        const rows = await r.json();
-        if (rows && rows.length) {
-          const gl = rows.find(x=>x.key===sb._glKey)?.value || {};
-          const shardRows = rows.filter(x=>x.key!==sb._glKey).map(x=>x.value);
-          const merged = mergeData(gl, shardRows);
-          localSet(merged);
-          return merged;
-        }
-      }
-      const migrated = await sb._migrate();
-      if (migrated) return migrated;
-      return localGet();
+      const r = await fetch(`${url}/rest/v1/app_data?key=eq.${SK}&select=value`,{ headers: sb._hdr() });
+      if (!r.ok) return localGet();
+      const rows = await r.json();
+      return rows[0]?.value || null;
     } catch { return localGet(); }
-  },
-  // Nur die leichte Vereinsliste laden (Startseite/Verzeichnis) – ueber die Function (kein Token noetig).
-  getDirectory: async () => {
+  },set: async d => {
+    localSet(d); // always save locally too
     const url = sb._url();
-    if (!url) return localGet();
-    try { const { global } = await sb._callFn({ action:"getDirectory" }); return global || localGet(); }
-    catch { return localGet(); }
-  },
-  // Einloggen: prueft Passwort serverseitig, liefert ein Token (12h). typ: admin|trainer|team|helper
-  login: async (cid, typ, id, password) => {
-    const { token } = await sb._callFn({ action:"login", cid, typ, id, password });
-    APP_TOKEN = token; try{ localStorage.setItem("vapp_token", token); }catch{} return token;
-  },
-  // Neuen Verein anlegen (kein Token noetig). Schreibt Vereinszeile + Verzeichniseintrag, liefert Token.
-  createClub: async (cid, club, clubMeta) => {
-    const { token } = await sb._callFn({ action:"createClub", cid, club: club||{}, clubMeta: clubMeta||null });
-    APP_TOKEN = token; try{ localStorage.setItem("vapp_token", token); }catch{} return token;
-  },
-  // Einen Verein komplett laden (global + dessen Zeile) – ueber die Function, Token noetig.
-  getClub: async (cid) => {
-    if (!APP_TOKEN) return localGet(); // ohne Token (noch nicht eingeloggt) lokal anzeigen
+    if (!url || !sb._key()) return;
     try {
-      const { global, club } = await sb._callFn({ action:"getClub", cid, token: APP_TOKEN });
-      const merged = mergeData(global||{}, [club||{}]);
-      localSet(merged);
-      return merged;
-    } catch { return localGet(); }
-  },
-  // set(d): speichert lokal + (mit Token & cid) den Verein ueber die Function.
-  set: async (d, cid=null) => {
-    localSet(d); // immer auch lokal sichern
-    if (!APP_TOKEN || !cid) { sb._lastWrite={ok:false,status:0,error: !cid?"kein Verein aktiv (nur lokal)":"nicht eingeloggt (kein Token)",at:Date.now()}; return sb._lastWrite; }
-    const { shards } = splitData(d);
-    const clubMeta = (d.clubs||[]).find(c=>c&&c.id===cid) || null;
-    try {
-      await sb._callFn({ action:"setClub", cid, token: APP_TOKEN, club: shards[cid]||{}, clubMeta });
-      sb._lastWrite={ok:true,status:200,error:"",at:Date.now()}; return sb._lastWrite;
-    } catch(e){ sb._lastWrite={ok:false,status:e.status||0,error:String((e&&e.message)||e).slice(0,400),at:Date.now()}; return sb._lastWrite; }
-  },
-  test: async (url,key) => {
+      await fetch(`${url}/rest/v1/app_data`,{
+        method:"POST",headers: { ...sb._hdr(),"Prefer":"resolution=merge-duplicates" },body: JSON.stringify({ key: SK,value: d,updated_at: new Date().toISOString() })
+      });
+    } catch {}
+  },test: async (url,key) => {
     try {
       const r = await fetch(`${url}/rest/v1/app_data?limit=1`,{
         headers: { "apikey": key,"Authorization":"Bearer "+key }
       });
       return r.ok || r.status === 406; // 406 = table empty,still connected
     } catch { return false; }
-  },
-  selfTest: async () => {
-    const url=sb._url(), key=sb._key();
-    if(!url||!key) return {step:"config",ok:false,status:0,msg:"Keine Datenbank konfiguriert."};
-    const tkey=SK+"__dbtest", tval={t:Date.now()};
-    let w; try{ w=await fetch(`${url}/rest/v1/app_data`,{method:"POST",headers:{...sb._hdr(),"Prefer":"resolution=merge-duplicates"},body:JSON.stringify([{key:tkey,value:tval,updated_at:new Date().toISOString()}])}); }
-    catch(e){ return {step:"write",ok:false,status:0,msg:String((e&&e.message)||e)}; }
-    if(!w.ok){ let t=""; try{t=await w.text();}catch{} return {step:"write",ok:false,status:w.status,msg:(t||"").slice(0,400)}; }
-    let rd; try{ rd=await fetch(`${url}/rest/v1/app_data?key=eq.${tkey}&select=value`,{headers:sb._hdr()}); }
-    catch(e){ return {step:"read",ok:false,status:0,msg:String((e&&e.message)||e)}; }
-    if(!rd.ok){ let t=""; try{t=await rd.text();}catch{} return {step:"read",ok:false,status:rd.status,msg:(t||"").slice(0,400)}; }
-    let rows=[]; try{ rows=await rd.json(); }catch{}
-    if(!rows.length || rows[0]?.value?.t!==tval.t) return {step:"verify",ok:false,status:rd.status,msg:"Geschrieben, aber Zurücklesen lieferte den Wert nicht. Antwort: "+JSON.stringify(rows).slice(0,200)};
-    return {step:"done",ok:true,status:w.status,msg:"Schreiben und Zurücklesen erfolgreich."};
-  },
-  fnTest: async () => {
-    const url=sb._url();
-    if(!url) return {ok:false,status:0,msg:"Keine URL konfiguriert."};
-    const fnUrl=`${url}/functions/v1/data-api`;
-    try {
-      const r=await fetch(fnUrl,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"getDirectory"})});
-      let t=""; try{ t=await r.text(); }catch{}
-      if(!r.ok) return {ok:false,status:r.status,msg:(t||"").slice(0,400)};
-      return {ok:true,status:r.status,msg:(t||"").slice(0,300)};
-    } catch(e){ return {ok:false,status:0,msg:String((e&&e.message)||e)}; }
   }
 };
 const localGet = () => { try { const v=localStorage.getItem(SK); return v?JSON.parse(v):null; } catch { return null; } };
@@ -573,34 +415,26 @@ function SupabaseSetup({ onDone,onSkip }) {
         <div style={{textAlign:"center",marginBottom:28}}>
           <div style={{fontSize:52,marginBottom:10}}></div>
           <h1 style={{color:"#fff",fontSize:24,fontWeight:900,margin:"0 0 6px"}}>Datenbank verbinden</h1>
-          <p style={{color:"rgba(255,255,255,.5)",fontSize:14}}>Verbinde Supabase für permanente Datenspeicherung</p>
+          <p style={{color:"rgba(255,255,255,.5)",fontSize:14}}>Verbinde Supabase fuer permanente Datenspeicherung</p>
         </div>
 
         <div style={{background:"rgba(255,255,255,.05)",borderRadius:20,padding:"24px",border:"1px solid rgba(255,255,255,.1)",marginBottom:16}}>
           {}
-          <div style={{background:"rgba(255,255,255,.05)",borderRadius:12,padding:"14px",marginBottom:16,fontSize:12,color:"rgba(255,255,255,.6)",lineHeight:1.8}}>
-            <div style={{fontWeight:800,color:"rgba(255,255,255,.8)",marginBottom:6,fontSize:13}}>Einrichtung (ca. 3 Min):</div>
-            <div>1. <a href="https://supabase.com" target="_blank" rel="noopener" style={{color:"#38bdf8"}}>supabase.com</a> → kostenlosen Account erstellen</div>
-            <div>2. "New project" → Region Frankfurt (EU) → Datenbank-Passwort setzen</div>
-            <div>3. SQL Editor → folgendes ausführen:</div>
+          <div style={{background:"rgba(255,255,255,.05)",borderRadius:12,padding:"14px",marginBottom:20,fontSize:12,color:"rgba(255,255,255,.6)",lineHeight:1.8}}>
+            <div style={{fontWeight:800,color:"rgba(255,255,255,.8)",marginBottom:6,fontSize:13}}> Einrichtung (2 Min):</div>
+            <div>1. <a href="https://supabase.com" target="_blank" style={{color:"#38bdf8"}}>supabase.com</a> -> kostenlosen Account erstellen</div>
+            <div>2. "New project" -> Frankfurt -> Passwort setzen</div>
+            <div>3. SQL Editor -> folgendes ausfuehren:</div>
             <div style={{background:"rgba(0,0,0,.4)",borderRadius:8,padding:"10px",margin:"8px 0",fontFamily:"monospace",fontSize:11,color:"#86efac",lineHeight:1.6}}>
               CREATE TABLE app_data (<br/>
               &nbsp;&nbsp;key TEXT PRIMARY KEY,<br/>
               &nbsp;&nbsp;value JSONB,<br/>
               &nbsp;&nbsp;updated_at TIMESTAMPTZ DEFAULT NOW()<br/>
               );<br/>
-              ALTER TABLE app_data ENABLE ROW LEVEL SECURITY;
+              ALTER TABLE app_data ENABLE ROW LEVEL SECURITY;<br/>
+              CREATE POLICY "Public" ON app_data FOR ALL USING (true) WITH CHECK (true);
             </div>
-            <div>4. Settings → API → Project URL + anon key kopieren</div>
-          </div>
-
-          <div style={{background:"rgba(220,38,38,.12)",borderRadius:12,padding:"13px 15px",marginBottom:20,border:"1px solid rgba(248,113,113,.4)",fontSize:12,color:"#fca5a5",lineHeight:1.65}}>
-            <div style={{fontWeight:900,color:"#fecaca",marginBottom:5,fontSize:12.5}}>⚠ Wichtig zum Datenschutz (besonders bei Kinderdaten)</div>
-            <div style={{color:"rgba(254,202,202,.85)"}}>
-              Mit dem obigen SQL ist die Tabelle <b>gesperrt</b> – ohne zusätzliche Regel kann <b>niemand</b> zugreifen, auch die App nicht. Du musst selbst festlegen, wer darf. Setze <b>keine</b> Regel, die allen alles erlaubt (z.&nbsp;B. <span style={{fontFamily:"monospace"}}>USING (true)</span>) – damit lägen alle Vereins- und Kinderdaten für jeden offen im Netz.
-              <br/><br/>
-              Für echten Schutz von Kinderdaten reicht diese App allein nicht aus. Lass das Datenbank-Setup von einer Person mit Datenschutz-Kenntnissen prüfen und kläre eine Einwilligung der Eltern. Diese App kann den Zugriff technisch nicht erzwingen – das passiert nur in der Datenbank.
-            </div>
+            <div>4. Settings -> API -> URL + anon key kopieren</div>
           </div>
 
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
@@ -618,7 +452,7 @@ function SupabaseSetup({ onDone,onSkip }) {
 
           {status==="testing"&&<div style={{marginTop:12,textAlign:"center",color:"#94a3b8",fontSize:13}}> Verbindung wird getestet...</div>}
           {status==="ok"&&<div style={{marginTop:12,background:"#052e16",border:"1.5px solid #16a34a",borderRadius:10,padding:"10px 14px",color:"#86efac",fontSize:13,fontWeight:700}}> Verbindung erfolgreich! App wird geladen...</div>}
-          {status==="fail"&&<div style={{marginTop:12,background:"#450a0a",border:"1.5px solid #dc2626",borderRadius:10,padding:"10px 14px",color:"#fca5a5",fontSize:13,fontWeight:700}}> Verbindung fehlgeschlagen. URL und Key prüfen.</div>}
+          {status==="fail"&&<div style={{marginTop:12,background:"#450a0a",border:"1.5px solid #dc2626",borderRadius:10,padding:"10px 14px",color:"#fca5a5",fontSize:13,fontWeight:700}}> Verbindung fehlgeschlagen. URL und Key pruefen.</div>}
 
           <div style={{display:"flex",gap:9,marginTop:16}}>
             <button onClick={test} disabled={!url.trim()||!key.trim()||status==="testing"}
@@ -627,11 +461,11 @@ function SupabaseSetup({ onDone,onSkip }) {
             </button>
             <button onClick={onSkip}
               style={{flex:1,padding:"13px",borderRadius:13,border:"1px solid rgba(255,255,255,.15)",background:"transparent",color:"rgba(255,255,255,.4)",fontWeight:600,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
-              Überspringen
+              Ueberspringen
             </button>
           </div>
           <p style={{textAlign:"center",fontSize:11,color:"rgba(255,255,255,.25)",marginTop:10}}>
-            Ohne Verbindung werden Daten im Browser-Speicher gesichert (gehen beim Löschen des Browsers verloren)
+            Ohne Verbindung werden Daten im Browser-Speicher gesichert (gehen beim Loeschen des Browsers verloren)
           </p>
         </div>
 
@@ -653,108 +487,8 @@ const addMins = (time, mins) => {
   const total = h*60 + m + (mins||0);
   return String(Math.floor(total/60)%24).padStart(2,"0")+":"+String(total%60).padStart(2,"0");
 };
-
-// Ist ein Team in einer bestimmten Saison aktiv? Abgemeldete Teams (endedSid) bleiben in
-// früheren Saisons sichtbar, verschwinden aber ab der Saison, in der sie abgemeldet wurden.
-// Teams ohne startedSid/endedSid gelten als immer aktiv (Abwärtskompatibilität mit Bestandsdaten).
-const seasonIndex = (sid, seasons) => {
-  if(!sid) return -1;
-  const i=(seasons||[]).findIndex(s=>s.id===sid);
-  return i; // -1 wenn unbekannt
-};
-const isTeamActiveInSeason = (team, sid, seasons) => {
-  if(!team) return false;
-  if(!sid) return !team.endedSid; // ohne Saison-Kontext: nur nicht-abgemeldete
-  const cur = seasonIndex(sid, seasons);
-  // gestartet? (wenn startedSid gesetzt, muss aktuelle Saison >= Startsaison sein)
-  if(team.startedSid){
-    const st = seasonIndex(team.startedSid, seasons);
-    if(st>=0 && cur>=0 && cur<st) return false; // Team gibt es in dieser (früheren) Saison noch nicht
-  }
-  // abgemeldet? (ab endedSid nicht mehr aktiv)
-  if(team.endedSid){
-    const en = seasonIndex(team.endedSid, seasons);
-    if(en>=0 && cur>=0 && cur>=en) return false; // ab Abmelde-Saison nicht mehr aktiv
-  }
-  return true;
-};
-// bequemer Filter: aktive Teams eines Vereins in der aktiven Saison
-const activeTeamsFor = (data, cid) => {
-  const sid = data.activeSeason || (data.seasons||[])[0]?.id || null;
-  return (data.teams||[]).filter(tm=>tm.cid===cid && isTeamActiveInSeason(tm, sid, data.seasons||[]));
-};
-
-// Synchrone SHA-256-Implementierung (reines JS, kein async nötig – ersetzt 15+ synchrone Aufrufe ohne Umbau)
-const _sha256 = (ascii) => {
-  function rightRotate(value, amount){ return (value>>>amount) | (value<<(32-amount)); }
-  const mathPow = Math.pow; const maxWord = mathPow(2,32);
-  let result = "";
-  const words = []; const asciiBitLength = ascii.length*8;
-  let hash = _sha256.h = _sha256.h || [];
-  const k = _sha256.k = _sha256.k || [];
-  let primeCounter = k.length; const isComposite = {};
-  for(let candidate=2; primeCounter<64; candidate++){
-    if(!isComposite[candidate]){
-      for(let i=0;i<313;i+=candidate){ isComposite[i]=candidate; }
-      hash[primeCounter] = (mathPow(candidate,.5)*maxWord)|0;
-      k[primeCounter++] = (mathPow(candidate,1/3)*maxWord)|0;
-    }
-  }
-  // frische Kopie der initialen Hash-Werte (hash darf nicht überschrieben bleiben)
-  hash = hash.slice(0,8).slice();
-  ascii += "\x80";
-  while(ascii.length%64-56) ascii += "\x00";
-  for(let i=0;i<ascii.length;i++){
-    const j = ascii.charCodeAt(i);
-    if(j>>8) return "";
-    words[i>>2] |= j << ((3-i)%4)*8;
-  }
-  words[words.length] = (asciiBitLength/maxWord)|0;
-  words[words.length] = asciiBitLength;
-  for(let j=0;j<words.length;){
-    const w = words.slice(j, j+=16);
-    const oldHash = hash.slice(0,8);
-    for(let i=0;i<64;i++){
-      const w15 = w[i-15], w2 = w[i-2];
-      const a = hash[0], e = hash[4];
-      const temp1 = hash[7]
-        + (rightRotate(e,6) ^ rightRotate(e,11) ^ rightRotate(e,25))
-        + ((e&hash[5])^((~e)&hash[6]))
-        + k[i]
-        + (w[i] = (i<16) ? w[i]|0 : (
-            w[i-16]
-            + (rightRotate(w15,7) ^ rightRotate(w15,18) ^ (w15>>>3))
-            + w[i-7]
-            + (rightRotate(w2,17) ^ rightRotate(w2,19) ^ (w2>>>10))
-          )|0
-        );
-      const temp2 = (rightRotate(a,2) ^ rightRotate(a,13) ^ rightRotate(a,22))
-        + ((a&hash[1])^(a&hash[2])^(hash[1]&hash[2]));
-      hash = [(temp1+temp2)|0].concat(hash);
-      hash[4] = (hash[4]+temp1)|0;
-    }
-    for(let i=0;i<8;i++){ hash[i] = (hash[i]+oldHash[i])|0; }
-  }
-  for(let i=0;i<8;i++){
-    for(let j=3;j+1;j--){
-      const b = (hash[i]>>(j*8))&255;
-      result += ((b<16) ? 0 : "") + b.toString(16);
-    }
-  }
-  return result;
-};
-// Salt macht gleiche Passwörter zu unterschiedlichen Hashes schwerer pauschal angreifbar (clientseitig begrenzt, aber besser als ohne)
-const _PW_SALT = "vapp.v1.";
-const hashPw = (pw) => "s" + _sha256(_PW_SALT + (pw||""));
-// altes Verfahren nur noch zum Prüfen bestehender Passwörter
-const _legacyHash = (pw) => { let h=0; for(let i=0;i<pw.length;i++){h=Math.imul(31,h)+pw.charCodeAt(i)|0;} return "h"+Math.abs(h).toString(36); };
-const checkPw = (input,stored) => {
-  if(!stored) return false;
-  const inp=(input||"").trim();
-  if(stored.startsWith("s")) return hashPw(inp)===stored;       // neues SHA-256-Format
-  if(stored.startsWith("h")) return _legacyHash(inp)===stored;  // altes Format (Abwärtskompatibilität)
-  return inp===stored;                                          // Klartext-Fallback (z.B. unverschlüsselte Demo)
-};
+const hashPw = (pw) => { let h=0; for(let i=0;i<pw.length;i++){h=Math.imul(31,h)+pw.charCodeAt(i)|0;} return "h"+Math.abs(h).toString(36); };
+const checkPw = (input,stored) => { if(!stored)return false; if(stored.startsWith("h"))return hashPw(input)===stored; return input===stored; };
 
 const now   = () => new Date().toISOString().slice(0,10);
 const addD  = (iso,n) => { const d=new Date(iso+"T12:00:00"); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
@@ -770,93 +504,45 @@ const mix = (hex,p) => { let r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(
 
 const ET = {
   training:     { label:"Training",    icon:"TR", col:"#16a34a", bg:"#dcfce7" },
-  heimspiel:    { label:"Heimspiel",icon:"Heim",col:"#2563eb",bg:"#dbeafe" },auswarts:     { label:"Auswärtsspiel",icon:"Bus",col:"#d97706",bg:"#fef3c7" },freundschaft: { label:"Freundschaftsspiel",icon:"Hand",col:"#7c3aed",bg:"#ede9fe" },turnier:      { label:"Turnier",icon:"Pokal",col:"#dc2626",bg:"#fee2e2" },event:        { label:"Sondertermin",icon:"Fest",col:"#0891b2",bg:"#e0f2fe" },};
+  heimspiel:    { label:"Heimspiel",icon:"Heim",col:"#2563eb",bg:"#dbeafe" },auswarts:     { label:"Auswaertsspiel",icon:"Bus",col:"#d97706",bg:"#fef3c7" },freundschaft: { label:"Freundschaftsspiel",icon:"Hand",col:"#7c3aed",bg:"#ede9fe" },turnier:      { label:"Turnier",icon:"Pokal",col:"#dc2626",bg:"#fee2e2" },event:        { label:"Sondertermin",icon:"Fest",col:"#0891b2",bg:"#e0f2fe" },};
 
 function seed() {
   return {
     _v: 14,
-    helpers: [], chats: [], messages: [], events: [
-      {id:"de1",cid:"demo",tid:"demo_g",type:"training",title:"Training G-Jugend",date:addD(now(),2),time:"17:00",loc:"Sportplatz Platz 2",note:"Bitte Hallenschuhe mitbringen",votes:{"Lukas Berger":"yes","Emma Wolf":"yes","Noah Schmidt":"no","Mia Hoffmann":"maybe"},pt:"att",selType:"multi",li:[],fi:[],sc:[]},
-      {id:"de2",cid:"demo",tid:"demo_f1",type:"heimspiel",title:"Heimspiel vs. SV Adler",date:addD(now(),5),time:"10:30",loc:"Hauptplatz",note:"Treffen 1 Stunde vorher zum Aufwärmen",sollPlayers:5,votes:{"Ben Fischer":"yes","Leon Weber":"yes","Sophie Klein":"yes","Paul Becker":"yes","Lina Schulz":"maybe"},pt:"att",selType:"multi",li:[],fi:[],sc:[]},
-      {id:"de3",cid:"demo",tid:"demo_e",type:"auswarts",title:"Auswärts bei FC Löwen",date:addD(now(),6),time:"11:00",loc:"Sportzentrum Löwen, Auswärts",note:"Fahrgemeinschaften bitte im Chat absprechen",sollPlayers:7,votes:{"Felix Braun":"yes","Anna Richter":"yes","Tim Neumann":"no"},pt:"att",selType:"multi",li:[],fi:[],sc:[]},
-      {id:"de4",cid:"demo",tid:"demo_g",type:"turnier",title:"Hallenturnier Pfingsten",date:addD(now(),12),time:"09:00",loc:"Stadthalle",note:"Ganztägig, Verpflegung wird gestellt",votes:{"Lukas Berger":"yes","Emma Wolf":"maybe"},pt:"att",selType:"multi",li:[],fi:[],sc:[]},
-      {id:"de5",cid:"demo",tid:"demo_f1",type:"training",title:"Abschlusstraining vor dem Spiel",date:addD(now(),3),time:"17:30",endTime:"19:00",loc:"Sportplatz Platz 1",note:"",votes:{"Ben Fischer":"yes","Leon Weber":"yes","Sophie Klein":"maybe","Lina Schulz":"yes"},pt:"att",selType:"multi",li:[],fi:[],sc:[]},
-      {id:"de6",cid:"demo",tid:"demo_sen",type:"training",title:"Mannschaftstraining Senioren",date:addD(now(),1),time:"19:30",loc:"Sportplatz Platz 1",note:"Anschließend gemütliches Beisammensein",votes:{},pt:"att",selType:"multi",li:[],fi:[],sc:[]}
-    ], bookings: [
-      {id:"dbk1",fieldId:"df1",date:new Date().toISOString().slice(0,10),cellStart:0,cells:4,teamId:"demo_g",teamName:"G-Jugend",booker:"Trainer",timeFrom:"16:00",timeTo:"17:00",cid:"demo"},
-      {id:"dbk2",fieldId:"df1",date:new Date().toISOString().slice(0,10),cellStart:0,cells:4,teamId:"demo_e",teamName:"E-Jugend",booker:"Trainer",timeFrom:"17:15",timeTo:"18:30",cid:"demo"},
-      {id:"dbk3",fieldId:"df2",date:new Date().toISOString().slice(0,10),cellStart:0,cells:8,teamId:"demo_sen",teamName:"Senioren",booker:"Trainer",timeFrom:"19:00",timeTo:"20:30",cid:"demo"},
-    ],
-    contactRequests: [], securityLog: [], playerProfiles: [
-      {id:"dp1",cid:"demo",seasonId:"s2526",archived:false,name:"Lukas Berger",by:2018,gender:"m",mainTid:"demo_g",optTids:[],position:"Sturm",foot:"rechts",strengths:["Schnelligkeit"],customStrengths:[],goals:4,assists:2,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"9",jerseySize:"128",jerseyStatus:"have",lastTeam:"G-Jugend"},
-      {id:"dp2",cid:"demo",seasonId:"s2526",archived:false,name:"Emma Wolf",by:2019,gender:"w",mainTid:"demo_g",optTids:[],position:"Mittelfeld",foot:"links",strengths:["Technik"],customStrengths:[],goals:2,assists:5,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"10",jerseySize:"128",jerseyStatus:"have",lastTeam:"G-Jugend"},
-      {id:"dp3",cid:"demo",seasonId:"s2526",archived:false,name:"Noah Schmidt",by:2018,gender:"m",mainTid:"demo_g",optTids:[],position:"Abwehr",foot:"rechts",strengths:["Zweikampf"],customStrengths:[],goals:0,assists:1,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"4",jerseySize:"122",jerseyStatus:"none",lastTeam:"G-Jugend"},
-      {id:"dp4",cid:"demo",seasonId:"s2526",archived:false,name:"Mia Hoffmann",by:2019,gender:"w",mainTid:"demo_g",optTids:[],position:"Tor",foot:"rechts",strengths:["Reflexe"],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"1",jerseySize:"128",jerseyStatus:"ordered",lastTeam:"G-Jugend"},
-      {id:"dp5",cid:"demo",seasonId:"s2526",archived:false,name:"Ben Fischer",by:2016,gender:"m",mainTid:"demo_f1",optTids:[],position:"Sturm",foot:"rechts",strengths:["Abschluss"],customStrengths:[],skills:{Technik:4,Schnelligkeit:5,Zweikampf:3,Übersicht:3,Abschluss:5,Ausdauer:3,Teamplay:4},goals:8,assists:3,yellowCards:1,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"11",jerseySize:"140",jerseyStatus:"have",lastTeam:"F-Jugend 1"},
-      {id:"dp6",cid:"demo",seasonId:"s2526",archived:false,name:"Leon Weber",by:2017,gender:"m",mainTid:"demo_f1",optTids:[],position:"Mittelfeld",foot:"beidf.",strengths:["Passspiel"],customStrengths:[],goals:3,assists:7,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"8",jerseySize:"140",jerseyStatus:"have",lastTeam:"F-Jugend 1"},
-      {id:"dp7",cid:"demo",seasonId:"s2526",archived:false,name:"Sophie Klein",by:2016,gender:"w",mainTid:"demo_f1",optTids:[],position:"Abwehr",foot:"links",strengths:["Stellungsspiel"],customStrengths:[],skills:{Technik:3,Schnelligkeit:3,Zweikampf:5,Übersicht:4,Abschluss:2,Ausdauer:4,Teamplay:4},goals:1,assists:2,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"5",jerseySize:"134",jerseyStatus:"none",lastTeam:"F-Jugend 1"},
-      {id:"dp8",cid:"demo",seasonId:"s2526",archived:false,name:"Paul Becker",by:2017,gender:"m",mainTid:"demo_f1",optTids:[],position:"Tor",foot:"rechts",strengths:["Abschlag"],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"1",jerseySize:"140",jerseyStatus:"have",lastTeam:"F-Jugend 1"},
-      {id:"dp9",cid:"demo",seasonId:"s2526",archived:false,name:"Lina Schulz",by:2016,gender:"w",mainTid:"demo_f1",optTids:[],position:"Sturm",foot:"rechts",strengths:["Schnelligkeit"],customStrengths:[],goals:6,assists:4,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"7",jerseySize:"134",jerseyStatus:"have",lastTeam:"F-Jugend 1"},
-      {id:"dp10",cid:"demo",seasonId:"s2526",archived:false,name:"Felix Braun",by:2014,gender:"m",mainTid:"demo_e",optTids:[],position:"Mittelfeld",foot:"rechts",strengths:["Übersicht"],customStrengths:[],goals:5,assists:9,yellowCards:2,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"10",jerseySize:"152",jerseyStatus:"have",lastTeam:"E-Jugend"},
-      {id:"dp11",cid:"demo",seasonId:"s2526",archived:false,name:"Anna Richter",by:2015,gender:"w",mainTid:"demo_e",optTids:[],position:"Sturm",foot:"links",strengths:["Abschluss"],customStrengths:[],goals:11,assists:5,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"9",jerseySize:"152",jerseyStatus:"have",lastTeam:"E-Jugend"},
-      {id:"dp12",cid:"demo",seasonId:"s2526",archived:false,name:"Tim Neumann",by:2014,gender:"m",mainTid:"demo_e",optTids:[],position:"Abwehr",foot:"rechts",strengths:["Kopfball"],customStrengths:[],goals:2,assists:1,yellowCards:1,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"3",jerseySize:"146",jerseyStatus:"ordered",lastTeam:"E-Jugend"}
-    ],
+    helpers: [], chats: [], messages: [], events: [], bookings: [],
+    contactRequests: [], securityLog: [], playerProfiles: [],
     seasons: [{ id:"s2526", label:"2025/2026", status:"active" }],
     activeSeason: "s2526",
-    trainings: [
-      {id:"dtr1",cid:"demo",ownerTid:"demo_g",title:"Dribbling & Ballgefühl",focus:"Technik",blocks:[{phase:"Aufwärmen",title:"Fangen mit Ball",min:10},{phase:"Hauptteil",title:"Dribbel-Parcours",min:25},{phase:"Abschluss",title:"Kleines Abschlussspiel",min:15}],vis:"club",sharedTids:[],createdAt:"2026-01-01T10:00:00.000Z",updatedAt:"2026-01-01T10:00:00.000Z"},
-      {id:"dtr2",cid:"demo",ownerTid:"demo_g",title:"Passspiel im Quadrat",focus:"Passgenauigkeit",blocks:[{phase:"Aufwärmen",title:"Einlaufen + Mobilisation",min:10},{phase:"Hauptteil",title:"Passen im 4er-Quadrat",min:30}],vis:"team",sharedTids:[],createdAt:"2026-01-02T10:00:00.000Z",updatedAt:"2026-01-02T10:00:00.000Z"},
-    ],
-    fields: [
-      {id:"df1",cid:"demo",name:"Hauptplatz",template:"rasen",split:2,weather:"good",surface:"Rasenplatz",segments:2},
-      {id:"df2",cid:"demo",name:"Sporthalle",template:"rasen",split:1,weather:"bad",surface:"Halle",segments:1},
-    ],
+    fields: [],
     players: {},
     pollTemplates: [],
     clubs: [
       ...DEMO_CLUBS.map(dc=>({...dc, adm:"h586034f", pub:false,
         createdAt:"2025-01-01", settings:{}})),
       { id:"demo", slug:"demo-verein", name:"Demo Verein", short:"Demo", em:"D",
-        logo:null, pri:"#16a34a", sec:"#052e16", adm:"h1j67nz",
+        logo:null, pri:"#16a34a", sec:"#052e16", adm:"h586034f",
         pub:false, dir:false, sport:"fussball",
         createdAt:"2025-01-01T00:00:00.000Z" }
     ],
     teams: [
       { id:"demo_g", cid:"demo", name:"G-Jugend", icon:"G", col:"#16a34a",
-        pub:true, pwd:"h2i2", cat:"G-Jugend", years:"2018/19" },
+        pub:true, pwd:"hcaa", cat:"G-Jugend", years:"2018/19" },
       { id:"demo_f1", cid:"demo", name:"F-Jugend 1", icon:"F", col:"#2563eb",
-        pub:true, pwd:"h2h7", cat:"F-Jugend", years:"2016/17" },
+        pub:true, pwd:"hc8b", cat:"F-Jugend", years:"2016/17" },
       { id:"demo_e", cid:"demo", name:"E-Jugend", icon:"E", col:"#7c3aed",
-        pub:true, pwd:"h2gc", cat:"E-Jugend", years:"2014/15" },
+        pub:true, pwd:"hc6c", cat:"E-Jugend", years:"2014/15" },
       { id:"demo_sen", cid:"demo", name:"Senioren", icon:"S", col:"#d97706",
-        pub:true, pwd:"h23l1x", cat:"Senioren", years:"" },
+        pub:true, pwd:"h35cf55", cat:"Senioren", years:"" },
       { id:"demo_ah", cid:"demo", name:"Alt-Herren", icon:"AH", col:"#64748b",
-        pub:true, pwd:"h22ga", cat:"Alt-Herren", years:"" }
+        pub:true, pwd:"h178ea", cat:"Alt-Herren", years:"" }
     ],
     trainers: [
       { id:"dt1", cid:"demo", name:"Trainer A", role:"Trainer",
-        tids:["demo_g","demo_f1"], pw:"hl3rl0c", phone:"", email:"" },
+        tids:["demo_g","demo_f1"], pw:"h4c0ffa1c", phone:"", email:"" },
       { id:"dt2", cid:"demo", name:"Trainer B", role:"Trainer",
-        tids:["demo_e","demo_sen"], pw:"hl3rl0d", phone:"", email:"" }
+        tids:["demo_e","demo_sen"], pw:"h4c0ffa1d", phone:"", email:"" }
     ]
   };
-}
-// Setzt den Demo-Verein bei jedem Laden frisch aus dem Code (korrekte Passwörter etc.).
-// Echte Vereine des Nutzers bleiben unverändert erhalten.
-function refreshDemo(d) {
-  try {
-    if(!d || typeof d!=="object") return d;
-    const f = seed();
-    const notDemo = x => x && x.cid !== "demo";
-    const isDemo  = x => x && x.cid === "demo";
-    d.clubs          = [...(d.clubs||[]).filter(c=>c&&c.id!=="demo"), ...(f.clubs||[]).filter(c=>c.id==="demo")];
-    d.teams          = [...(d.teams||[]).filter(notDemo),          ...(f.teams||[]).filter(isDemo)];
-    d.playerProfiles = [...(d.playerProfiles||[]).filter(notDemo), ...(f.playerProfiles||[]).filter(isDemo)];
-    d.events         = [...(d.events||[]).filter(notDemo),         ...(f.events||[]).filter(isDemo)];
-    d.trainers       = [...(d.trainers||[]).filter(notDemo),       ...(f.trainers||[]).filter(isDemo)];
-    d.seasons        = [...(d.seasons||[]).filter(notDemo),        ...(f.seasons||[]).filter(isDemo)];
-  } catch {}
-  return d;
 }
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
@@ -900,13 +586,13 @@ function ChangePasswordModal({ cl, onSave, onClose }) {
   const save = () => {
     if(!checkPw(oldPw, cl.adm||"")) { setErr("Altes Passwort falsch"); return; }
     if(newPw.length < 4) { setErr("Mindestens 4 Zeichen"); return; }
-    if(newPw !== newPw2) { setErr("Passwörter stimmen nicht überein"); return; }
+    if(newPw !== newPw2) { setErr("Passwoerter stimmen nicht ueberein"); return; }
     onSave(hashPw(newPw));
   };
   return (
     <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:900,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
       <div style={{background:"#fff",borderRadius:18,padding:"24px",width:"100%",maxWidth:380}}>
-        <h3 style={{fontWeight:900,fontSize:18,marginBottom:16}}>Passwort ändern</h3>
+        <h3 style={{fontWeight:900,fontSize:18,marginBottom:16}}>Passwort aendern</h3>
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
           <input type="password" value={oldPw} onChange={e=>setOldPw(e.target.value)} placeholder="Aktuelles Passwort"
             style={{padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
@@ -1016,10 +702,10 @@ function Btn({ch,onClick,v="pri",full,sm,dis,load,icon,cl,sx={}}) {
     </button>
   );
 }
-function Inp({label,val,set,ph,type="text",af,rows,cl,note,onEnter,inputRef}) {
+function Inp({label,val,set,ph,type="text",af,rows,cl,note}) {
   const [f,setF]=useState(false); const c=cl?.pri||"#16a34a";
   const base={width:"100%",padding:"12px 15px",fontSize:15,border:`2px solid ${f?c:"#e2e8f0"}`,borderRadius:13,outline:"none",background:"#fff",transition:"border-color .17s",display:"block",resize:"vertical"};
-  return <div style={{display:"flex",flexDirection:"column",gap:5}}>{label&&<div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.6,textTransform:"uppercase"}}>{label}</div>}{rows?<textarea value={val} onChange={e=>set(e.target.value)} placeholder={ph} rows={rows} onFocus={()=>setF(true)} onBlur={()=>setF(false)} style={base}/>:<input ref={inputRef} type={type} value={val} onChange={e=>set(e.target.value)} placeholder={ph} autoFocus={af} autoCapitalize={type==="password"?"none":"sentences"} autoCorrect={type==="password"?"off":"on"} spellCheck={type==="password"?false:undefined} onKeyDown={onEnter?(e=>{if(e.key==="Enter"){e.preventDefault();onEnter();}}):undefined} onFocus={()=>setF(true)} onBlur={()=>setF(false)} style={base}/>}{note&&<div style={{fontSize:12,color:"#94a3b8"}}>{note}</div>}</div>;
+  return <div style={{display:"flex",flexDirection:"column",gap:5}}>{label&&<div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.6,textTransform:"uppercase"}}>{label}</div>}{rows?<textarea value={val} onChange={e=>set(e.target.value)} placeholder={ph} rows={rows} onFocus={()=>setF(true)} onBlur={()=>setF(false)} style={base}/>:<input type={type} value={val} onChange={e=>set(e.target.value)} placeholder={ph} autoFocus={af} onFocus={()=>setF(true)} onBlur={()=>setF(false)} style={base}/>}{note&&<div style={{fontSize:12,color:"#94a3b8"}}>{note}</div>}</div>;
 }
 function Sel({label,val,set,opts}) {
   return <div style={{display:"flex",flexDirection:"column",gap:5}}>{label&&<div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.6,textTransform:"uppercase"}}>{label}</div>}<select value={val} onChange={e=>set(e.target.value)} style={{width:"100%",padding:"12px 15px",fontSize:15,border:"2px solid #e2e8f0",borderRadius:13,outline:"none",background:"#fff",appearance:"none",backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`,backgroundRepeat:"no-repeat",backgroundPosition:"right 15px center"}}>{opts.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></div>;
@@ -1040,7 +726,7 @@ function ContactForm({ cl, onSend, onClose }) {
   const [sent,setSent]=useState(false);
   const t=TH(cl);
   const send=()=>{if(!f.name.trim()||f.msg.trim().length<5)return;onSend({...f,ts:new Date().toISOString()});setSent(true);};
-  if(sent) return <div style={{minHeight:"100dvh",background:"#f0fdf4",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:14,padding:24}}><div style={{fontSize:48}}>ok</div><p style={{fontWeight:800,fontSize:18}}>Anfrage gesendet!</p><button onClick={onClose} style={{padding:"12px 24px",borderRadius:12,border:"none",background:t.p,color:"#fff",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Schließen</button></div>;
+  if(sent) return <div style={{minHeight:"100dvh",background:"#f0fdf4",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:14,padding:24}}><div style={{fontSize:48}}>ok</div><p style={{fontWeight:800,fontSize:18}}>Anfrage gesendet!</p><button onClick={onClose} style={{padding:"12px 24px",borderRadius:12,border:"none",background:t.p,color:"#fff",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Schliessen</button></div>;
   if(hide) return null;
   return (
     <div style={{minHeight:"100dvh",background:"#f0f4f8",padding:"24px 20px"}}>
@@ -1050,7 +736,6 @@ function ContactForm({ cl, onSend, onClose }) {
         <div style={{fontWeight:900,fontSize:18,marginBottom:16}}>{cl.name} kontaktieren</div>
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
           <input value={f.name} onChange={e=>setF(p=>({...p,name:e.target.value}))} placeholder="Dein Name" style={{padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
-          <PrivacyNote/>
           <input value={f.email} onChange={e=>setF(p=>({...p,email:e.target.value}))} placeholder="E-Mail (optional)" style={{padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
           <textarea value={f.msg} onChange={e=>setF(p=>({...p,msg:e.target.value}))} placeholder="Deine Nachricht..." rows={4} style={{padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",resize:"none",fontFamily:"inherit"}}/>
         </div>
@@ -1084,7 +769,7 @@ function InboxTab({ data,cid,save,fire,cl }) {
   const fmtDate = ts => new Date(ts).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
 
   const SEC_TYPES = {
-    spam_block:    {icon:"X",col:"#dc2626",bg:"#fee2e2",label:"Spam blockiert"},many_requests: {icon:"!",col:"#d97706",bg:"#fef3c7",label:"Viele Anfragen"},login_fail:    {icon:"?",col:"#7c3aed",bg:"#ede9fe",label:"Fehlerhafte Logins"},suspicious:    {icon:"!!",col:"#dc2626",bg:"#fee2e2",label:"Verdaechtige Aktivität"},};
+    spam_block:    {icon:"X",col:"#dc2626",bg:"#fee2e2",label:"Spam blockiert"},many_requests: {icon:"!",col:"#d97706",bg:"#fef3c7",label:"Viele Anfragen"},login_fail:    {icon:"?",col:"#7c3aed",bg:"#ede9fe",label:"Fehlerhafte Logins"},suspicious:    {icon:"!!",col:"#dc2626",bg:"#fee2e2",label:"Verdaechtige Aktivitaet"},};
 
   const visible = requests.filter(r=>!r.blocked);
   const blocked = requests.filter(r=>r.blocked);
@@ -1132,7 +817,7 @@ function InboxTab({ data,cid,save,fire,cl }) {
               <div style={{display:"flex",borderTop:"1px solid #f1f5f9"}}>
                 {!req.read&&<button onClick={()=>markRead(req.id)} style={{flex:1,padding:"9px",border:"none",background:"none",color:"#16a34a",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Gelesen</button>}
                 <button onClick={()=>blockSender(req)} style={{flex:1,padding:"9px",border:"none",background:"none",color:"#d97706",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Blockieren</button>
-                <button onClick={()=>deleteReq(req.id)} style={{flex:1,padding:"9px",border:"none",background:"none",color:"#dc2626",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Löschen</button>
+                <button onClick={()=>deleteReq(req.id)} style={{flex:1,padding:"9px",border:"none",background:"none",color:"#dc2626",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Loeschen</button>
               </div>
             </div>
           ))}
@@ -1151,13 +836,13 @@ function InboxTab({ data,cid,save,fire,cl }) {
       {}
       {view==="security"&&<>
         <div style={{background:"#eff6ff",borderRadius:13,padding:"12px 14px",border:"1.5px solid #bfdbfe",marginBottom:14,fontSize:13,color:"#1d4ed8",lineHeight:1.6}}>
-          Hier siehst du sicherheitsrelevante Ereignisse für deinen Verein. Wir überwachen automatisch ob dein Vereinszugang missbraucht wird.
+          Hier siehst du sicherheitsrelevante Ereignisse fuer deinen Verein. Wir ueberwachen automatisch ob dein Vereinszugang missbraucht wird.
         </div>
         {secLog.length===0&&(
           <div style={{textAlign:"center",padding:"32px",background:"#f8fafc",borderRadius:14,border:"1.5px dashed #e2e8f0"}}>
             <div style={{fontSize:36,marginBottom:8}}>&#x1F6E1;</div>
             <p style={{fontWeight:700,color:"#16a34a"}}>Alles in Ordnung</p>
-            <p style={{fontSize:13,color:"#94a3b8",marginTop:4}}>Keine ungewoehnlichen Aktivitäten erkannt.</p>
+            <p style={{fontSize:13,color:"#94a3b8",marginTop:4}}>Keine ungewoehnlichen Aktivitaeten erkannt.</p>
           </div>
         )}
         <div style={{display:"flex",flexDirection:"column",gap:8}}>
@@ -1333,7 +1018,7 @@ function OnboardingWizard({ cl, data, save, fire, onDone }) {
           {step===2&&(
             <div>
               <p style={{color:"#64748b",fontSize:13,marginBottom:14,lineHeight:1.5}}>
-                Welche Abteilungen gibt es in deinem Verein? Du kannst später weitere hinzufügen.
+                Welche Abteilungen gibt es in deinem Verein? Du kannst spaeter weitere hinzufuegen.
               </p>
               <div style={{display:"flex",flexDirection:"column",gap:7}}>
                 {cats.map(cat=>{
@@ -1384,7 +1069,7 @@ function OnboardingWizard({ cl, data, save, fire, onDone }) {
               })}
               <div style={{background:"#eff6ff",borderRadius:12,padding:"11px 14px",fontSize:12,color:"#1d4ed8",lineHeight:1.5}}>
                 Jede Mannschaft bekommt automatisch einen Eltern-Zugangscode.
-                Du kannst ihn später anpassen.
+                Du kannst ihn spaeter anpassen.
               </div>
             </div>
           )}
@@ -1392,15 +1077,14 @@ function OnboardingWizard({ cl, data, save, fire, onDone }) {
           {step===4&&(
             <div>
               <p style={{color:"#64748b",fontSize:13,marginBottom:14,lineHeight:1.5}}>
-                Wer ist der erste Trainer? (Optional - du kannst das später machen)
+                Wer ist der erste Trainer? (Optional - du kannst das spaeter machen)
               </p>
               <div style={{display:"flex",flexDirection:"column",gap:10}}>
                 <input value={trainerName} onChange={e=>setTrainerName(e.target.value)}
-                  placeholder="Name (z.B. Max M.)"
+                  placeholder="Name des Trainers (z.B. Max Muster)"
                   style={{padding:"12px 14px",fontSize:14,border:`1.5px solid ${trainerName?"#16a34a":"#e2e8f0"}`,borderRadius:12,outline:"none"}}/>
-                <div style={{fontSize:12,color:"#94a3b8",marginTop:-4}}>Datenschutz: Bitte nur Vorname, höchstens Nachname-Initial.</div>
                 <input type="password" value={trainerPw} onChange={e=>setTrainerPw(e.target.value)}
-                  placeholder="Passwort für den Trainer"
+                  placeholder="Passwort fuer den Trainer"
                   style={{padding:"12px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none"}}/>
                 {trainerName&&!trainerPw&&<div style={{fontSize:12,color:"#d97706",background:"#fef3c7",borderRadius:9,padding:"8px 12px"}}>
                   Bitte auch ein Passwort vergeben.
@@ -1408,7 +1092,7 @@ function OnboardingWizard({ cl, data, save, fire, onDone }) {
               </div>
               <button onClick={()=>{ setTrainerName(""); setTrainerPw(""); setStep(5); }}
                 style={{marginTop:12,background:"none",border:"none",color:"#94a3b8",fontSize:13,cursor:"pointer",textDecoration:"underline"}}>
-                Überspringen - später hinzufügen
+                Ueberspringen - spaeter hinzufuegen
               </button>
             </div>
           )}
@@ -1444,7 +1128,7 @@ function OnboardingWizard({ cl, data, save, fire, onDone }) {
         {/* Navigation */}
         <div style={{padding:"12px 22px 32px",borderTop:"1px solid #f1f5f9",display:"flex",gap:10,flexShrink:0}}>
           {step>1
-            ? <button onClick={()=>setStep(s=>s-1)} style={{flex:1,padding:"13px",borderRadius:13,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Zurück</button>
+            ? <button onClick={()=>setStep(s=>s-1)} style={{flex:1,padding:"13px",borderRadius:13,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Zurueck</button>
             : <div style={{flex:1}}/>
           }
           {step<STEPS
@@ -1481,73 +1165,56 @@ function LegalPage({ onBack }) {
         ))}
       </div>
       <div style={{flex:1,overflowY:"auto",padding:"20px",maxWidth:600,margin:"0 auto",width:"100%"}}>
-        <div style={{background:"#fff7ed",border:"1px solid #fed7aa",borderRadius:10,padding:"10px 13px",fontSize:12,color:"#9a3412",lineHeight:1.5,marginBottom:16}}>
-          <strong>Hinweis:</strong> Dies ist eine Vorlage. Trage deine echten Daten ein (Felder in eckigen Klammern) und lass die Texte vor dem Echtbetrieb mit Kinderdaten von einer fachkundigen Person (Datenschutz/Anwalt) prüfen.
-        </div>
         {tab==="imprint"&&(
           <div style={{lineHeight:1.8,fontSize:14,color:"#334155"}}>
             <h2 style={{fontWeight:800,marginBottom:12}}>Impressum</h2>
-            <p>Angaben gemäß § 5 DDG (Digitale-Dienste-Gesetz):</p>
-            <p style={{marginTop:10}}><strong>Diensteanbieter:</strong><br/>
-            [Vor- und Nachname]<br/>
-            [Straße und Hausnummer]<br/>
-            [PLZ und Ort]<br/>
-            [Land]</p>
-            <p style={{marginTop:10}}><strong>Kontakt:</strong><br/>
-            Telefon: [Telefonnummer]<br/>
+            <p><strong>Vereins-App</strong> wird betrieben von:<br/>
+            [Dein Name]<br/>
+            [Deine Adresse]<br/>
+            [PLZ Ort]<br/>
             E-Mail: [deine@email.de]</p>
-            <p style={{marginTop:10}}><strong>Verantwortlich für den Inhalt:</strong><br/>
-            [Vor- und Nachname], Anschrift wie oben</p>
             <p style={{marginTop:12,fontSize:12,color:"#94a3b8"}}>
-              Trage hier deine echten Kontaktdaten ein, bevor du die App veröffentlichst. Ein vollständiges Impressum ist gesetzlich verpflichtend.
+              Bitte trage deine echten Kontaktdaten ein bevor du die App veroeffentlichst.
             </p>
           </div>
         )}
         {tab==="privacy"&&(
-          <div style={{lineHeight:1.75,fontSize:14,color:"#334155"}}>
-            <h2 style={{fontWeight:800,marginBottom:12}}>Datenschutzerklärung</h2>
-
-            <p><strong>1. Verantwortlicher</strong><br/>
-            Verantwortlich im Sinne der DSGVO ist der im Impressum genannte Betreiber.</p>
-
-            <p style={{marginTop:12}}><strong>2. Welche Daten werden verarbeitet?</strong><br/>
-            Es werden nur die Daten verarbeitet, die im Verein eingegeben werden: Namen bzw. Vornamen von Mitgliedern, Geburtsjahr, Mannschaftszugehörigkeit, Termine, An-/Abmeldungen, Nachrichten innerhalb des Vereins sowie optionale sportliche Einschätzungen (z. B. Position, Skill-Profil). Es werden bewusst möglichst wenige Daten erhoben (Datensparsamkeit, Art. 5 DSGVO).</p>
-
-            <p style={{marginTop:12}}><strong>3. Rechtsgrundlage</strong><br/>
-            Die Verarbeitung erfolgt auf Grundlage einer Einwilligung (Art. 6 Abs. 1 lit. a DSGVO) und/oder zur Durchführung der Vereinsorganisation (berechtigtes Interesse, Art. 6 Abs. 1 lit. f DSGVO).</p>
-
-            <p style={{marginTop:12}}><strong>4. Minderjährige</strong><br/>
-            Für die Verarbeitung von Daten Minderjähriger ist die Einwilligung der Erziehungsberechtigten erforderlich (Art. 8 DSGVO). Eltern können die Daten ihres Kindes jederzeit einsehen, berichtigen und löschen lassen.</p>
-
-            <p style={{marginTop:12}}><strong>5. Speicherort</strong><br/>
-            Daten werden lokal im Browser gespeichert. Sofern der Verein die Cloud-Speicherung über Supabase einrichtet, werden Daten dort als Auftragsverarbeiter gespeichert; hierfür ist ein Auftragsverarbeitungsvertrag erforderlich.</p>
-
-            <p style={{marginTop:12}}><strong>6. Werbung &amp; externe Links</strong><br/>
-            Die App kann als Werbung gekennzeichnete Empfehlungen (Affiliate-Links) zu externen Shops anzeigen. Beim Klick verlässt du die App; auf den Zielseiten gelten deren eigene Datenschutzbestimmungen. Es werden keine personenbezogenen Mitgliederdaten an diese Dritten weitergegeben.</p>
-
-            <p style={{marginTop:12}}><strong>7. Deine Rechte</strong><br/>
-            Du hast das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit und Widerspruch sowie das Recht auf Beschwerde bei einer Datenschutz-Aufsichtsbehörde.</p>
-
-            <p style={{marginTop:12}}><strong>8. Speicherdauer</strong><br/>
-            Daten werden gespeichert, solange die Vereinszugehörigkeit besteht, und auf Wunsch gelöscht.</p>
-
-            <p style={{marginTop:12}}><strong>9. Kontakt</strong><br/>
-            Datenschutzanfragen bitte an die im Impressum genannte Adresse.</p>
+          <div style={{lineHeight:1.8,fontSize:14,color:"#334155"}}>
+            <h2 style={{fontWeight:800,marginBottom:12}}>Datenschutzerklaerung</h2>
+            <p><strong>Verantwortlicher:</strong> Betreiber gemaess Impressum.</p>
+            <p><strong>Welche Daten werden gespeichert?</strong><br/>
+            Vereins-App speichert ausschliesslich Daten die du selbst eingibst:
+            Namen von Teammitgliedern, Termine und Kommunikation innerhalb deines Vereins.</p>
+            <p><strong>Wo werden Daten gespeichert?</strong><br/>
+            Alle Daten werden lokal in deinem Browser gespeichert (localStorage).
+            Optional koennen Daten ueber Supabase in der Cloud gespeichert werden -
+            dies geschieht nur mit deiner ausdruecklichen Einrichtung.</p>
+            <p><strong>Weitergabe an Dritte:</strong><br/>
+            Keine Weitergabe an Dritte. Keine Analyse-Tools. Keine Werbedaten.</p>
+            <p><strong>Loeschung:</strong><br/>
+            Du kannst alle deine Daten jederzeit loeschen indem du den Browser-Verlauf
+            und die Website-Daten loeschst.</p>
+            <p><strong>Minderjaerige:</strong><br/>
+            Die App verarbeitet Vornamen von Minderjaerigen im Rahmen der Vereinsverwaltung.
+            Eltern haben das Recht auf Auskunft und Loeschung dieser Daten.</p>
+            <p><strong>Kontakt:</strong> Datenschutzanfragen bitte an die im Impressum genannte Adresse.</p>
           </div>
         )}
         {tab==="terms"&&(
           <div style={{lineHeight:1.8,fontSize:14,color:"#334155"}}>
             <h2 style={{fontWeight:800,marginBottom:12}}>Nutzungsbedingungen</h2>
             <p><strong>Nutzung:</strong><br/>
-            Die App darf für die Vereinsverwaltung genutzt werden.</p>
-            <p style={{marginTop:10}}><strong>Verantwortung des Vereins:</strong><br/>
-            Der Vereinsadmin ist dafür verantwortlich, dass für eingegebene personenbezogene Daten – insbesondere von Minderjährigen – die erforderlichen Einwilligungen vorliegen und der Umgang datenschutzkonform erfolgt.</p>
-            <p style={{marginTop:10}}><strong>Werbung:</strong><br/>
-            Die App kann als solche gekennzeichnete Werbung/Affiliate-Empfehlungen enthalten.</p>
-            <p style={{marginTop:10}}><strong>Haftung:</strong><br/>
-            Die App wird ohne Gewähr bereitgestellt. Es wird keine Haftung für Datenverlust übernommen.</p>
-            <p style={{marginTop:10}}><strong>Änderungen:</strong><br/>
-            Diese Bedingungen können angepasst werden; wesentliche Änderungen werden angekündigt.</p>
+            Vereins-App darf kostenlos fuer die Vereinsverwaltung genutzt werden.
+            Kommerzielle Weiterverwendung ist nicht gestattet.</p>
+            <p><strong>Datenschutz-Verantwortung:</strong><br/>
+            Der Vereinsadmin ist verantwortlich fuer den datenschutzkonformen Umgang
+            mit den eingegebenen Daten seiner Mitglieder.</p>
+            <p><strong>Haftung:</strong><br/>
+            Die App wird ohne Gewaehrleistung bereitgestellt.
+            Der Betreiber haftet nicht fuer Datenverlust.</p>
+            <p><strong>Aenderungen:</strong><br/>
+            Diese Bedingungen koennen jederzeit angepasst werden.
+            Wesentliche Aenderungen werden angekuendigt.</p>
           </div>
         )}
       </div>
@@ -1559,16 +1226,16 @@ function LegalPage({ onBack }) {
 // Dezente Empfehlungen - nur in relevanten Kontexten
 const AFFILIATES = [
   { id:"outfitter", trigger:"jerseys",
-    text:"Trikots günstig bestellen", sub:"Bei Outfitter - Vereinssonderkonditionen",
+    text:"Trikots guenstig bestellen", sub:"Bei Outfitter - Vereinssonderkonditionen",
     url:"https://www.outfitter.de/?ref=vereinsapp", icon:"T" },
   { id:"sportcheck", trigger:"fields",
-    text:"Sportausrüstung für den Verein", sub:"SportScheck - bis 20% Vereinsrabatt",
+    text:"Sportausruestung fuer den Verein", sub:"SportScheck - bis 20% Vereinsrabatt",
     url:"https://www.sportscheck.com/?ref=vereinsapp", icon:"S" },
   { id:"supabase", trigger:"settings",
     text:"Daten in der Cloud speichern", sub:"Supabase kostenlos starten",
     url:"https://supabase.com/?ref=vereinsapp", icon:"D" },
   { id:"teamwear", trigger:"players",
-    text:"Teamkleidung & Ausrüstung", sub:"Hummel, Erima, adidas - Vereinspreise",
+    text:"Teamkleidung & Ausruestung", sub:"Hummel, Erima, adidas - Vereinspreise",
     url:"https://www.teamwear.de/?ref=vereinsapp", icon:"K" },
 ];
 
@@ -1586,7 +1253,6 @@ function AffiliateBanner({ trigger, style={} }) {
         {aff.icon}
       </div>
       <div style={{flex:1,cursor:"pointer"}} onClick={()=>window.open(aff.url,"_blank")}>
-        <div style={{fontSize:9,fontWeight:800,color:"#cbd5e1",letterSpacing:.5,marginBottom:2}}>WERBUNG</div>
         <div style={{fontWeight:700,fontSize:13,color:"#334155"}}>{aff.text}</div>
         <div style={{fontSize:11,color:"#94a3b8",marginTop:2}}>{aff.sub}</div>
       </div>
@@ -1626,14 +1292,14 @@ const getReferralCode = (clName) => {
   return code;
 };
 
-//  Smart Share Messages (kontextabhängig) 
+//  Smart Share Messages (kontextabhaengig) 
 const getShareMessage = (trigger, clubName, stats) => {
-  const url = APP_URL;  // Kurzer Link ohne Referral-Param für WhatsApp
+  const url = APP_URL;  // Kurzer Link ohne Referral-Param fuer WhatsApp
   const msgs = {
-    firstSeason: `Wir haben unsere Saison mit der Vereins-App geplant - ${stats?.players||0} Spieler, ${stats?.teams||0} Teams. Kostenlos für jeden Verein: ${url}`,
-    tenEvents: `Schon ${stats?.events||10} Termine über die Vereins-App organisiert. Unsere Eltern lieben es! Probiert es aus: ${url}`,
-    playerAssigned: `${stats?.players||0} Spieler zugeteilt in ${stats?.teams||0} Teams - die Vereins-App macht das super einfach. Für euren Verein: ${url}`,
-    firstLogin: `Unser Verein nutzt jetzt die Vereins-App für Termine und Kommunikation. Schaut mal rein: ${url}`,
+    firstSeason: `Wir haben unsere Saison mit der Vereins-App geplant - ${stats?.players||0} Spieler, ${stats?.teams||0} Teams. Kostenlos fuer jeden Verein: ${url}`,
+    tenEvents: `Schon ${stats?.events||10} Termine ueber die Vereins-App organisiert. Unsere Eltern lieben es! Probiert es aus: ${url}`,
+    playerAssigned: `${stats?.players||0} Spieler zugeteilt in ${stats?.teams||0} Teams - die Vereins-App macht das super einfach. Fuer euren Verein: ${url}`,
+    firstLogin: `Unser Verein nutzt jetzt die Vereins-App fuer Termine und Kommunikation. Schaut mal rein: ${url}`,
     jerseyDone: `Trikotverwaltung, Termine, Spieler - alles an einem Ort. Die Vereins-App ist kostenlos: ${url}`,
     default: `Schaut mal die Vereins-App an: ${url}`,
   };
@@ -1648,7 +1314,7 @@ function MomentShare({ trigger, clubName, stats, onDismiss }) {
   const refUrl = `${APP_URL}?ref=${getReferralCode(clubName)}`;
 
   const CELEBRATIONS = {
-    firstSeason:   { icon:"S", title:"Saison geplant!", sub:"Euer Verein ist startklar für die neue Saison.", color:"#16a34a" },
+    firstSeason:   { icon:"S", title:"Saison geplant!", sub:"Euer Verein ist startklar fuer die neue Saison.", color:"#16a34a" },
     tenEvents:     { icon:"10", title:"10 Termine!", sub:"Stark - euer Team ist super organisiert.", color:"#2563eb" },
     playerAssigned:{ icon:"OK", title:"Team steht!", sub:"Alle Spieler sind eingeteilt.", color:"#7c3aed" },
     firstLogin:    { icon:"Hi", title:"Willkommen!", sub:"Schoeen dass ihr dabei seid.", color:"#16a34a" },
@@ -1720,7 +1386,7 @@ function MomentShare({ trigger, clubName, stats, onDismiss }) {
           <div style={{padding:"24px"}}>
             <h3 style={{fontWeight:900,fontSize:18,marginBottom:6}}>Weiterempfehlen</h3>
             <p style={{fontSize:13,color:"#64748b",marginBottom:16,lineHeight:1.6}}>
-              Jeder Verein der über deinen Link kommt hilft dir und uns!
+              Jeder Verein der ueber deinen Link kommt hilft dir und uns!
             </p>
             {/* Referral URL display */}
             <div style={{background:"#f8fafc",borderRadius:12,padding:"12px 14px",border:"1.5px solid #e2e8f0",marginBottom:14,display:"flex",alignItems:"center",gap:10}}>
@@ -1739,18 +1405,18 @@ function MomentShare({ trigger, clubName, stats, onDismiss }) {
                 style={{padding:"13px",borderRadius:13,border:"none",background:"#25D366",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
                 W WhatsApp
               </button>
-              <button onClick={()=>{ const sub=encodeURIComponent(APP_NAME+" - Tipp für euren Verein"); const body=encodeURIComponent(msg); window.open(`mailto:?subject=${sub}&body=${body}`,"_blank"); }}
+              <button onClick={()=>{ const sub=encodeURIComponent(APP_NAME+" - Tipp fuer euren Verein"); const body=encodeURIComponent(msg); window.open(`mailto:?subject=${sub}&body=${body}`,"_blank"); }}
                 style={{padding:"13px",borderRadius:13,border:"1.5px solid #e2e8f0",background:"#fff",color:"#334155",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
                 E-Mail senden
               </button>
             </div>
-            <button onClick={onDismiss} style={{width:"100%",marginTop:12,padding:"10px",border:"none",background:"none",color:"#94a3b8",fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Schließen</button>
+            <button onClick={onDismiss} style={{width:"100%",marginTop:12,padding:"10px",border:"none",background:"none",color:"#94a3b8",fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Schliessen</button>
           </div>
         )}
         {phase==="thanks"&&(
           <div style={{padding:"32px 24px",textAlign:"center"}}>
             <div style={{fontSize:48,marginBottom:12}}>OK</div>
-            <h3 style={{fontWeight:900,fontSize:20,marginBottom:8}}>Danke fürs Teilen!</h3>
+            <h3 style={{fontWeight:900,fontSize:20,marginBottom:8}}>Danke fuers Teilen!</h3>
             <p style={{color:"#64748b",fontSize:14,lineHeight:1.6}}>
               Du hilfst anderen Vereinen, sich besser zu organisieren.
               Das ist Gemeinschaft!
@@ -1811,13 +1477,13 @@ function NPSWidget({ clubName, onDone }) {
             <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#94a3b8",marginBottom:16,paddingHorizontal:4}}>
               <span>Gar nicht</span><span>Auf jeden Fall</span>
             </div>
-            <button onClick={onDone} style={{width:"100%",padding:"10px",border:"none",background:"none",color:"#94a3b8",fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Später</button>
+            <button onClick={onDone} style={{width:"100%",padding:"10px",border:"none",background:"none",color:"#94a3b8",fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Spaeter</button>
           </>
         )}
         {phase==="reason"&&(
           <>
             <h3 style={{fontWeight:900,fontSize:17,marginBottom:6}}>
-              {score>=9?"Super! Was gefaellt dir besonders?":score>=7?"Was könnte besser sein?":"Was müssen wir verbessern?"}
+              {score>=9?"Super! Was gefaellt dir besonders?":score>=7?"Was koennte besser sein?":"Was muessen wir verbessern?"}
             </h3>
             <textarea value={reason} onChange={e=>setReason(e.target.value)}
               placeholder="Dein Feedback hilft uns..."
@@ -1843,8 +1509,8 @@ function NPSWidget({ clubName, onDone }) {
         )}
         {phase==="thanks"&&(
           <div style={{textAlign:"center",padding:"16px 0"}}>
-            <div style={{fontWeight:900,fontSize:18,marginBottom:8}}>Danke für dein Feedback!</div>
-            <p style={{color:"#64748b",fontSize:14}}>Wir arbeiten ständig daran, die App besser zu machen.</p>
+            <div style={{fontWeight:900,fontSize:18,marginBottom:8}}>Danke fuer dein Feedback!</div>
+            <p style={{color:"#64748b",fontSize:14}}>Wir arbeiten staendig daran, die App besser zu machen.</p>
           </div>
         )}
       </div>
@@ -1857,7 +1523,7 @@ const ACHIEVEMENTS = [
   { id:"first_event",   icon:"K", title:"Erster Termin!",     sub:"Du hast deinen ersten Termin angelegt.",     pts:10 },
   { id:"ten_events",    icon:"10",title:"10 Termine!",         sub:"Euer Verein ist richtig aktiv.",             pts:25 },
   { id:"first_player",  icon:"P", title:"Erster Spieler!",    sub:"Der erste Spieler ist im System.",           pts:10 },
-  { id:"full_team",     icon:"T", title:"Team vollständig!", sub:"Alle Spieler sind zugeteilt.",               pts:50 },
+  { id:"full_team",     icon:"T", title:"Team vollstaendig!", sub:"Alle Spieler sind zugeteilt.",               pts:50 },
   { id:"first_season",  icon:"S", title:"Erste Saison!",      sub:"Saison erfolgreich geplant.",                pts:100 },
   { id:"jersey_done",   icon:"J", title:"Trikots verwaltet!", sub:"Kein Chaos mehr bei der Ausgabe.",           pts:20 },
   { id:"field_booked",  icon:"F", title:"Platz gebucht!",     sub:"Platzbuchung klappt reibungslos.",           pts:15 },
@@ -2062,15 +1728,15 @@ const FriendlyErrors = {
     icon: "?",
     title: "Passwort nicht korrekt",
     msg: "Das eingegebene Passwort stimmt nicht. Kein Problem - das passiert!",
-    tips: ["Groß- und Kleinschreibung prüfen","Leerzeichen am Ende entfernen","Beim Trainer oder Admin nach dem Passwort fragen"],
+    tips: ["Gross- und Kleinschreibung pruefen","Leerzeichen am Ende entfernen","Beim Trainer oder Admin nach dem Passwort fragen"],
     color: "#d97706",
     bg: "#fef3c7",
   },
   noInternet: {
     icon: "W",
     title: "Keine Internetverbindung",
-    msg: "Du bist gerade offline. Die App funktioniert trotzdem - deine Änderungen werden gespeichert und sobald du wieder online bist automatisch synchronisiert.",
-    tips: ["WLAN prüfen","Mobiles Daten aktivieren","Einfach weitermachen - nichts geht verloren"],
+    msg: "Du bist gerade offline. Die App funktioniert trotzdem - deine Aenderungen werden gespeichert und sobald du wieder online bist automatisch synchronisiert.",
+    tips: ["WLAN pruefen","Mobiles Daten aktivieren","Einfach weitermachen - nichts geht verloren"],
     color: "#2563eb",
     bg: "#eff6ff",
   },
@@ -2078,7 +1744,7 @@ const FriendlyErrors = {
     icon: "!",
     title: "Speichern hat nicht geklappt",
     msg: "Deine Daten konnten nicht gespeichert werden. Keine Panik - wir haben eine lokale Kopie.",
-    tips: ["Seite neu laden und nochmal versuchen","Internetverbindung prüfen","Wenn es weiter nicht klappt: Daten als Backup exportieren"],
+    tips: ["Seite neu laden und nochmal versuchen","Internetverbindung pruefen","Wenn es weiter nicht klappt: Daten als Backup exportieren"],
     color: "#dc2626",
     bg: "#fef2f2",
   },
@@ -2086,14 +1752,14 @@ const FriendlyErrors = {
     icon: "!",
     title: "Daten konnten nicht geladen werden",
     msg: "Wir konnten die Vereinsdaten nicht laden. Das liegt meist an der Internetverbindung.",
-    tips: ["Seite neu laden (Pfeil oben im Browser)","Internetverbindung prüfen","Lokale Daten werden als Fallback verwendet"],
+    tips: ["Seite neu laden (Pfeil oben im Browser)","Internetverbindung pruefen","Lokale Daten werden als Fallback verwendet"],
     color: "#dc2626",
     bg: "#fef2f2",
   },
   sessionExpired: {
     icon: "U",
     title: "Sitzung abgelaufen",
-    msg: "Du wurdest automatisch ausgeloggt. Das ist eine Sicherheitsmaßnahme.",
+    msg: "Du wurdest automatisch ausgeloggt. Das ist eine Sicherheitsmassnahme.",
     tips: ["Einfach neu einloggen","Du verlierst keine Daten"],
     color: "#7c3aed",
     bg: "#ede9fe",
@@ -2102,7 +1768,7 @@ const FriendlyErrors = {
     icon: "P",
     title: "Platz bereits belegt",
     msg: "Ein anderes Team hat diesen Platz zur gleichen Zeit reserviert.",
-    tips: ["Eine andere Uhrzeit wählen","Einen anderen Platz wählen","Das andere Team anfragen ob es tauschen kann"],
+    tips: ["Eine andere Uhrzeit waehlen","Einen anderen Platz waehlen","Das andere Team anfragen ob es tauschen kann"],
     color: "#d97706",
     bg: "#fef3c7",
   },
@@ -2301,7 +1967,7 @@ function LeagueTab({ data, myTids, cl, save, fire }) {
               </div>
               <button onClick={()=>{setEditResult(ev);setRHome(r?.home||0);setRAway(r?.away||0);}}
                 style={{padding:"6px 12px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#f8fafc",color:"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
-                {r?"Ändern":"Ergebnis"}
+                {r?"Aendern":"Ergebnis"}
               </button>
             </div>
           );
@@ -2369,7 +2035,7 @@ function MultiProfileSelector({ data, cl, onSelect }) {
 
 
 /* =================================================================
-   1. SCHRIFTGRÖSSE - tatsaechlich anwenden (Kevin, Brigitte, Hannelore)
+   1. SCHRIFTGROESSE - tatsaechlich anwenden (Kevin, Brigitte, Hannelore)
    Wird im App-Root auf das gesamte Layout angewendet
 ================================================================= */
 const FONT_SIZES = { small: "13px", normal: "15px", large: "18px" };
@@ -2385,16 +2051,16 @@ const getFontSize = () => {
 };
 
 /* =================================================================
-   2. ARABISCH + TÜRKISCH (Yasmin, Adnan, Maria, Fatima)
-   Neue Sprachen in Übersetzungs-Objekt
+   2. ARABISCH + TUERKISCH (Yasmin, Adnan, Maria, Fatima)
+   Neue Sprachen in Uebersetzungs-Objekt
 ================================================================= */
 /* =================================================================
-   3. GESAMTÜBERSICHT ALLE TEAMS (Christine, Roberto, Frank)
+   3. GESAMTUEBERSICHT ALLE TEAMS (Christine, Roberto, Frank)
    Admin-Tab der alle Teams auf einen Blick zeigt
 ================================================================= */
 function AllTeamsOverview({ data, cid, cl, onSelectTeam }) {
   const t = TH(cl);
-  const myTeams = activeTeamsFor(data,cid);
+  const myTeams = (data.teams||[]).filter(x=>x.cid===cid);
   const today = new Date().toISOString().slice(0,10);
   const tomorrow = new Date(Date.now()+86400000).toISOString().slice(0,10);
   const nextWeek = new Date(Date.now()+7*86400000).toISOString().slice(0,10);
@@ -2537,10 +2203,10 @@ function BroadcastModal({ data, cid, session, save, fire, onClose }) {
       <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,padding:"22px 22px 44px"}}>
         <h3 style={{fontWeight:900,fontSize:18,marginBottom:4}}>Rundschreiben an Trainer</h3>
         <p style={{fontSize:13,color:"#64748b",marginBottom:16,lineHeight:1.5}}>
-          Nachricht wird an alle oder ausgewählte Trainer gesendet.
+          Nachricht wird an alle oder ausgewaehlte Trainer gesendet.
         </p>
         <div style={{marginBottom:14}}>
-          <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8}}>EMPFÄNGER</div>
+          <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8}}>EMPFAENGER</div>
           <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
             <button onClick={()=>setSelTids([])}
               style={{padding:"6px 12px",borderRadius:9,border:`1.5px solid ${selTids.length===0?"#16a34a":"#e2e8f0"}`,background:selTids.length===0?"#f0fdf4":"#fff",color:selTids.length===0?"#16a34a":"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
@@ -2595,13 +2261,13 @@ function NewsTab({ data, cid, session, save, fire, cl }) {
     <div>
       {isAdmin&&<button onClick={()=>setShowForm(true)}
         style={{width:"100%",padding:"13px",borderRadius:14,border:"none",background:t.p,color:"#fff",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit",marginBottom:14}}>
-        + Neuigkeit veröffentlichen
+        + Neuigkeit veroeffentlichen
       </button>}
 
       {news.length===0&&!showForm&&(
         <div style={{textAlign:"center",padding:"40px",background:"#f8fafc",borderRadius:14,border:"1.5px dashed #e2e8f0"}}>
           <p style={{fontWeight:700,color:"#334155",margin:"0 0 4px"}}>Noch keine Neuigkeiten</p>
-          <p style={{fontSize:13,color:"#94a3b8",margin:0}}>Veröffentliche Vereinsnews die alle Mitglieder sehen.</p>
+          <p style={{fontSize:13,color:"#94a3b8",margin:0}}>Veroeffentliche Vereinsnews die alle Mitglieder sehen.</p>
         </div>
       )}
 
@@ -2617,7 +2283,7 @@ function NewsTab({ data, cid, session, save, fire, cl }) {
       {showForm&&(
         <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:900,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
           <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,padding:"22px 22px 44px"}}>
-            <h3 style={{fontWeight:900,fontSize:18,marginBottom:16}}>Neuigkeit veröffentlichen</h3>
+            <h3 style={{fontWeight:900,fontSize:18,marginBottom:16}}>Neuigkeit veroeffentlichen</h3>
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
               <input value={f.title} onChange={e=>setF(p=>({...p,title:e.target.value}))} placeholder="Titel (z.B. Saisonstart, Hauptversammlung)"
                 style={{padding:"12px 14px",fontSize:15,fontWeight:700,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none"}}/>
@@ -2630,7 +2296,7 @@ function NewsTab({ data, cid, session, save, fire, cl }) {
             </div>
             <div style={{display:"flex",gap:9,marginTop:14}}>
               <button onClick={()=>setShowForm(false)} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
-              <button onClick={post} disabled={!f.title.trim()} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:f.title.trim()?t.p:"#e2e8f0",color:f.title.trim()?"#fff":"#94a3b8",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Veröffentlichen</button>
+              <button onClick={post} disabled={!f.title.trim()} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:f.title.trim()?t.p:"#e2e8f0",color:f.title.trim()?"#fff":"#94a3b8",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Veroeffentlichen</button>
             </div>
           </div>
         </div>
@@ -2701,7 +2367,7 @@ function ImportData({ save, fire, onClose }) {
             <input ref={fileRef} type="file" accept=".json" onChange={handleFile} style={{display:"none"}}/>
             <button onClick={()=>fileRef.current?.click()}
               style={{width:"100%",padding:"13px",borderRadius:13,border:"2px dashed #e2e8f0",background:"#f8fafc",color:"#475569",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",marginBottom:14}}>
-              JSON-Datei auswählen
+              JSON-Datei auswaehlen
             </button>
           </>
         ):(
@@ -2752,7 +2418,7 @@ function AccessibilityBar() {
    AUDIT & SECURITY SYSTEM
 ================================================================= */
 
-// Geräte-Fingerprint (kein echter Fingerprint - nur Browser-Infos)
+// Geraete-Fingerprint (kein echter Fingerprint - nur Browser-Infos)
 const getDeviceInfo = () => {
   const ua = navigator.userAgent;
   const lang = navigator.language || "unbekannt";
@@ -2769,7 +2435,7 @@ const getDeviceInfo = () => {
     : ua.includes("Android") ? "Android"
     : ua.includes("Linux") ? "Linux" : "Unbekannt";
 
-  // Sprache als Proxy für Region
+  // Sprache als Proxy fuer Region
   const region = lang.split("-")[1] || lang.split("-")[0] || "??";
   const suspicious = !["de","en","nl","at","ch","be","lu"].includes(lang.slice(0,2).toLowerCase());
 
@@ -2836,7 +2502,7 @@ const addAuditLog = (data, save, entry) => {
   save({ ...data, securityLog: log });
 };
 
-// Bekannte Geräte für einen Verein
+// Bekannte Geraete fuer einen Verein
 const getKnownDevices = (securityLog) => {
   const devices = {};
   (securityLog || [])
@@ -2872,7 +2538,7 @@ function SecurityTab({ data, cid, save }) {
     suspicious:   { icon: "!",  label: "Verdaechtig",   col: "#dc2626", bg: "#fee2e2" },
     brute_force:  { icon: "!!", label: "Brute Force",   col: "#dc2626", bg: "#fee2e2" },
     dsgvo_delete: { icon: "DS", label: "DSGVO-Losch",   col: "#7c3aed", bg: "#ede9fe" },
-    new_device:   { icon: "ND", label: "Neues Gerät",  col: "#d97706", bg: "#fef3c7" },
+    new_device:   { icon: "ND", label: "Neues Geraet",  col: "#d97706", bg: "#fef3c7" },
   };
 
   const filtered = log.filter(e => {
@@ -2903,7 +2569,7 @@ function SecurityTab({ data, cid, save }) {
         {[
           [todayLogins.length, "Logins heute", "#16a34a"],
           [suspicious.length,  "Verdaechtig",  suspicious.length>0?"#dc2626":"#64748b"],
-          [Object.keys(knownDevices).length, "Bekannte Geräte", "#2563eb"],
+          [Object.keys(knownDevices).length, "Bekannte Geraete", "#2563eb"],
         ].map(([v,l,col])=>(
           <div key={l} style={{background:"#fff",borderRadius:13,padding:"12px",
             textAlign:"center",border:"1.5px solid #e2e8f0"}}>
@@ -2917,7 +2583,7 @@ function SecurityTab({ data, cid, save }) {
         <div style={{background:"#fef2f2",borderRadius:13,padding:"12px 14px",
           border:"2px solid #fca5a5",marginBottom:14}}>
           <div style={{fontWeight:800,fontSize:13,color:"#dc2626",marginBottom:4}}>
-            {suspicious.length} verdaechtige Aktivität(en)
+            {suspicious.length} verdaechtige Aktivitaet(en)
           </div>
           <div style={{fontSize:12,color:"#dc2626"}}>
             {suspicious.slice(0,2).map(e=>(
@@ -2929,7 +2595,7 @@ function SecurityTab({ data, cid, save }) {
 
       {/* Filter */}
       <div style={{display:"flex",gap:6,marginBottom:14,overflowX:"auto",scrollbarWidth:"none"}}>
-        {[["all","Alles"],["logins","Logins"],["changes","Änderungen"],["suspicious","Verdaechtig"]].map(([v,l])=>(
+        {[["all","Alles"],["logins","Logins"],["changes","Aenderungen"],["suspicious","Verdaechtig"]].map(([v,l])=>(
           <button key={v} onClick={()=>setFilter(v)}
             style={{padding:"7px 14px",borderRadius:99,border:`2px solid ${filter===v?"#0f172a":"#e2e8f0"}`,
               background:filter===v?"#0f172a":"#fff",color:filter===v?"#fff":"#64748b",
@@ -2988,7 +2654,7 @@ function SecurityTab({ data, cid, save }) {
                   <div><strong>Browser:</strong> {entry.device?.browser} auf {entry.device?.os}</div>
                   <div><strong>Sprache/Region:</strong> {entry.device?.lang} ({entry.device?.tz})</div>
                   <div><strong>Bildschirm:</strong> {entry.device?.screen}</div>
-                  <div><strong>Gerät-ID:</strong> {entry.deviceId?.slice(0,8)}... {isNew?"(Neues Gerät!)":""}</div>
+                  <div><strong>Geraet-ID:</strong> {entry.deviceId?.slice(0,8)}... {isNew?"(Neues Geraet!)":""}</div>
                   {entry.device?.suspicious&&(
                     <div style={{color:"#dc2626",fontWeight:700,marginTop:4}}>
                       Hinweis: Browsersprache deutet auf Ausland hin ({entry.device.lang})
@@ -3012,66 +2678,11 @@ function SecurityTab({ data, cid, save }) {
 /* =================================================================
    BOTTOM NAVIGATION + DRAWER
 ================================================================= */
-// Inline-SVG-Icons (keine externe Bibliothek). stroke=currentColor -> erbt Farbe.
-function NavIcon({ name, size=20, color="currentColor" }) {
-  const p = { width:size, height:size, viewBox:"0 0 24 24", fill:"none",
-    stroke:color, strokeWidth:2, strokeLinecap:"round", strokeLinejoin:"round" };
-  switch(name){
-    case "events":   return <svg {...p}><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>;
-    case "team":     return <svg {...p}><circle cx="9" cy="7" r="3"/><path d="M2 21v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1"/><circle cx="18" cy="8" r="2.2"/><path d="M22 21v-.5a4 4 0 0 0-3-3.8"/></svg>;
-    case "teams":    return <svg {...p}><circle cx="7" cy="8" r="2.4"/><circle cx="17" cy="8" r="2.4"/><path d="M1.5 19v-.5a4 4 0 0 1 4-4h3a4 4 0 0 1 4 4V19M14 19v-.5a4 4 0 0 1 4-4h0a4 4 0 0 1 4 4V19"/></svg>;
-    case "fields":   return <svg {...p}><rect x="3" y="5" width="18" height="14" rx="1"/><path d="M12 5v14M3 9h3v6H3M21 9h-3v6h3"/><circle cx="12" cy="12" r="2.2"/></svg>;
-    case "chat":     return <svg {...p}><path d="M21 15a2 2 0 0 1-2 2H8l-4 4V5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2z"/></svg>;
-    case "more":     return <svg {...p}><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>;
-    case "training": return <svg {...p}><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>;
-    case "jerseys":  return <svg {...p}><path d="M4 6l4-3 4 2 4-2 4 3-2 4-2-1v10H8V9L6 10z"/></svg>;
-    case "helpers":  return <svg {...p}><circle cx="12" cy="7" r="3.2"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/><path d="M12 11v4M10 13h4"/></svg>;
-    case "templates":return <svg {...p}><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>;
-    case "results":  return <svg {...p}><path d="M8 21h8M12 17v4"/><path d="M5 4h14v5a7 7 0 0 1-14 0z"/><path d="M5 6H3v2a3 3 0 0 0 2 2.8M19 6h2v2a3 3 0 0 1-2 2.8"/></svg>;
-    case "attendance":return <svg {...p}><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>;
-    case "overview": return <svg {...p}><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>;
-    case "news":     return <svg {...p}><path d="M4 4h13v16H6a2 2 0 0 1-2-2z"/><path d="M17 8h3v10a2 2 0 0 1-2 2M8 8h5M8 12h5M8 16h3"/></svg>;
-    case "trainers": return <svg {...p}><circle cx="12" cy="7" r="3.2"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/><path d="M16 3l1.5 1.5L21 1"/></svg>;
-    case "fieldsadmin":return <svg {...p}><rect x="3" y="5" width="18" height="14" rx="1"/><path d="M12 5v14"/><circle cx="12" cy="12" r="2"/><path d="M18 3l1 1 2-2"/></svg>;
-    case "branding": return <svg {...p}><circle cx="13.5" cy="6.5" r="1.5"/><circle cx="17.5" cy="10.5" r="1.5"/><circle cx="8.5" cy="7.5" r="1.5"/><circle cx="6.5" cy="12.5" r="1.5"/><path d="M12 2a10 10 0 0 0 0 20c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.2 0-1 .9-1.7 1.9-1.7H17a5 5 0 0 0 5-5c0-4.4-4.5-8-10-8z"/></svg>;
-    case "inbox":    return <svg {...p}><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5h13l3.5 7v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z"/></svg>;
-    case "security": return <svg {...p}><path d="M12 2l8 3v6c0 5-3.5 8-8 11-4.5-3-8-6-8-11V5z"/><path d="M9 12l2 2 4-4"/></svg>;
-    case "access":   return <svg {...p}><circle cx="8" cy="15" r="4"/><path d="M10.8 12.2 21 2M17 6l3 1M14 9l2 1"/></svg>;
-    case "settings": return <svg {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 0 1-4 0v-.1A1.6 1.6 0 0 0 7 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H1a2 2 0 0 1 0-4h.1A1.6 1.6 0 0 0 2.6 7a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H7a1.6 1.6 0 0 0 1-1.5V1a2 2 0 0 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V7a1.6 1.6 0 0 0 1.5 1H23a2 2 0 0 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg>;
-    case "players":  return <svg {...p}><circle cx="12" cy="7" r="3.2"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/></svg>;
-    case "analysis": return <svg {...p}><path d="M3 3v18h18"/><path d="M7 14l3-4 3 3 4-6"/></svg>;
-    case "ziele":    return <svg {...p}><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.3" fill={color} stroke="none"/></svg>;
-    case "drills":   return <svg {...p}><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8 7.5l8 9"/><path d="M14 5h5v5"/></svg>;
-    case "planner":  return <svg {...p}><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 16l2 2 4-4"/></svg>;
-    case "manage":   return <svg {...p}><circle cx="7" cy="8" r="2.4"/><circle cx="17" cy="8" r="2.4"/><path d="M1.5 19v-.5a4 4 0 0 1 4-4h3a4 4 0 0 1 4 4V19M14 19v-.5a4 4 0 0 1 4-4h0a4 4 0 0 1 4 4V19"/></svg>;
-    default:         return null;
-  }
-}
-// true, wenn für diese ID ein SVG existiert (sonst Fallback auf Buchstabe)
-const HAS_ICON = new Set(["events","team","teams","fields","chat","more","training","jerseys","helpers","templates","results","attendance","overview","news","trainers","fieldsadmin","branding","inbox","security","access","settings","players","analysis","ziele","drills","planner","manage"]);
-
-// Icons für Event-Typen (Training, Heim/Auswärts, Turnier...)
-function EventIcon({ type, size=22, color="#16a34a" }) {
-  const p = { width:size, height:size, viewBox:"0 0 24 24", fill:"none", stroke:color, strokeWidth:2, strokeLinecap:"round", strokeLinejoin:"round" };
-  switch(type){
-    case "training": return <svg {...p}><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>;
-    case "heimspiel": return <svg {...p}><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>;
-    case "auswarts": return <svg {...p}><rect x="3" y="6" width="15" height="11" rx="2"/><path d="M18 9h2.5L22 12v4h-4"/><circle cx="7" cy="18" r="1.8"/><circle cx="16" cy="18" r="1.8"/></svg>;
-    case "freundschaft": return <svg {...p}><path d="M8 13l-3-3a2.5 2.5 0 0 1 3.5-3.5l.5.5.5-.5A2.5 2.5 0 0 1 16 10l-3 3"/><path d="M11 11l3 3-2 2-3-3"/></svg>;
-    case "turnier": return <svg {...p}><path d="M8 21h8M12 17v4"/><path d="M5 4h14v5a7 7 0 0 1-14 0z"/><path d="M5 6H3v2a3 3 0 0 0 2 2.8M19 6h2v2a3 3 0 0 1-2 2.8"/></svg>;
-    case "event": return <svg {...p}><path d="M4 8h16M6 8l1.5 12h9L18 8"/><path d="M9 8V5a3 3 0 0 1 6 0v3"/></svg>;
-    default: return <svg {...p}><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>;
-  }
-}
-const EVENT_TYPE_ALIAS = { spiel:"heimspiel", heim:"heimspiel", ausw:"auswarts", freund:"freundschaft" };
-
 function BottomNav({ tab, setTab, isAdmin, isHelper, unread, cl, hide=false }) {
   if(hide) return null;
   const t = TH(cl);
   const [showDrawer, setShowDrawer] = useState(false);
 
-  const cs = cl?.clubSettings||{};
-  const clubFeat = (key, def=true) => cs[key]!==undefined ? cs[key] : def;
   const mainTabs = [
     { id:"events",  label:"Termine",  icon:"K" },
     { id:"team",    label:"Team",     icon:"P", hidden: isHelper },
@@ -3084,26 +2695,26 @@ function BottomNav({ tab, setTab, isAdmin, isHelper, unread, cl, hide=false }) {
     {
       label: "VERWALTUNG",
       items: [
-        { id:"training",  label:"Trainingsplan", icon:"TP", hidden: isHelper||!feat("training_plans")||!clubFeat("mod_training") },
-        { id:"jerseys",    label:"Trikots",      icon:"T", hidden: isHelper||!feat("jerseys_tab")||!clubFeat("mod_jerseys") },
+        { id:"training",  label:"Trainingsplan", icon:"TP", hidden: !feat("training_plans")||!clubFeat("mod_training") },
+        { id:"jerseys",    label:"Trikots",      icon:"T", hidden: !feat("jerseys_tab")||!clubFeat("mod_jerseys") },
         { id:"helpers",    label:"Helfer",       icon:"H", hidden: isHelper },
         { id:"templates",  label:"Vorlagen",     icon:"V", hidden: isHelper },
-        { id:"results",    label:"Ergebnisse",   icon:"E", hidden: isHelper||!feat("results_tab")||!clubFeat("mod_results") },
+        { id:"results",    label:"Ergebnisse",   icon:"E", hidden: !feat("results_tab")||!clubFeat("mod_results") },
         { id:"attendance", label:"Anwesenheit",  icon:"S", hidden: isHelper||!feat("attendance_tab") },
       ].filter(x=>!x.hidden),
     },
     isAdmin && {
       label: "ADMIN",
       items: [
-        { id:"overview",    label:"Übersicht alle Teams", icon:"U" },
+        { id:"overview",    label:"Uebersicht alle Teams", icon:"U" },
         { id:"news",        label:"Neuigkeiten",           icon:"N", hidden: !feat("news_board") },
         { id:"teams",       label:"Mannschaften",          icon:"M" },
         { id:"trainers",    label:"Trainer",               icon:"T" },
-        { id:"fieldsadmin", label:"Plätze",               icon:"P", hidden: !feat("fields_manager") },
+        { id:"fieldsadmin", label:"Plaetze",               icon:"P", hidden: !feat("fields_manager") },
         { id:"branding",    label:"Design",                icon:"D" },
         { id:"inbox",       label:"Posteingang",           icon:"I" },
         { id:"security",    label:"Sicherheitslog",         icon:"!" },
-        { id:"access",      label:"Zugänge & Passwörter",  icon:"PW" },
+        { id:"access",      label:"Zugaenge & Passwoerter",  icon:"PW" },
         { id:"settings",    label:"Einstellungen",         icon:"+" },
       ],
     },
@@ -3145,7 +2756,7 @@ function BottomNav({ tab, setTab, isAdmin, isHelper, unread, cl, hide=false }) {
                         display:"flex",alignItems:"center",justifyContent:"center",
                         fontWeight:900,fontSize:14,
                         color:tab===item.id?"#fff":"#64748b"}}>
-                        {HAS_ICON.has(item.id)?<NavIcon name={item.id} size={18}/>:item.icon}
+                        {item.icon}
                       </div>
                       {item.label}
                     </button>
@@ -3186,7 +2797,7 @@ function BottomNav({ tab, setTab, isAdmin, isHelper, unread, cl, hide=false }) {
                 fontWeight:900,fontSize:15,
                 color:active?"#fff":tab===item.id?"#0f172a":"#94a3b8",
                 transition:"all .2s"}}>
-                {HAS_ICON.has(item.id)?<NavIcon name={item.id} size={19}/>:item.icon}
+                {item.icon}
               </div>
               <span style={{fontSize:10,fontWeight:active?800:500,
                 color:active?t.p:"#94a3b8",transition:"all .2s"}}>
@@ -3203,1022 +2814,25 @@ function BottomNav({ tab, setTab, isAdmin, isHelper, unread, cl, hide=false }) {
 /* =================================================================
    TEAM HUB (Spieler + Anwesenheit + Statistik in einem Tab)
 ================================================================= */
-// Mannschaften anlegen/umbenennen/löschen (nur Admin)
-function ManageTeams({ data, save, fire, cl }) {
-  const t = TH(cl);
-  const teams = (data.teams||[]).filter(tm=>tm.cid===cl.id);
-  const TEAM_COLORS = ["#16a34a","#2563eb","#d97706","#7c3aed","#dc2626","#0891b2","#059669","#ea580c"];
-  const CATS = Object.keys(CAT_YEARS);
-  const [name,setName] = useState("");
-  const [cat,setCat]   = useState(CATS[0]||"E-Jugend");
-  const [pwd,setPwd]   = useState("");
-  const [editId,setEditId] = useState(null);
-  const [editName,setEditName] = useState("");
-  const [showFmt,setShowFmt] = useState(null);
-
-  const addTeam = () => {
-    const nm = name.trim(); if(!nm) return;
-    const team = {
-      id: uid(), cid: cl.id, name: nm,
-      icon: nm.slice(0,2).toUpperCase(),
-      col: TEAM_COLORS[teams.length % TEAM_COLORS.length],
-      pub: true, pwd: hashPw((pwd||"team").trim()),
-      cat, years: CAT_YEARS[cat]||"",
-    };
-    save({...data, teams:[...(data.teams||[]), team]});
-    fire&&fire("Mannschaft \""+nm+"\" angelegt");
-    setName(""); setPwd("");
-  };
-  const renameTeam = id => {
-    const nm = editName.trim(); if(!nm) return;
-    save({...data, teams:(data.teams||[]).map(tm=>tm.id===id?{...tm,name:nm,icon:nm.slice(0,2).toUpperCase()}:tm)});
-    fire&&fire("Umbenannt"); setEditId(null);
-  };
-  const delTeam = id => {
-    const tm=(data.teams||[]).find(x=>x.id===id);
-    const cnt=(data.playerProfiles||[]).filter(p=>p.mainTid===id&&!p.archived).length;
-    if(!window.confirm(`Mannschaft "${tm?.name}" wirklich löschen?`+(cnt?`\n\n${cnt} Spieler sind zugeordnet – ihre Zuordnung wird entfernt (Spieler bleiben erhalten).`:""))) return;
-    save({...data,
-      teams:(data.teams||[]).filter(x=>x.id!==id),
-      playerProfiles:(data.playerProfiles||[]).map(p=>p.mainTid===id?{...p,mainTid:""}:p),
-    });
-    fire&&fire("Mannschaft gelöscht");
-  };
-
-  return (
-    <div>
-      <div style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",padding:"16px",marginBottom:16}}>
-        <div style={{fontWeight:800,fontSize:15,marginBottom:12,color:"#0f172a"}}>Neue Mannschaft anlegen</div>
-        <input value={name} onChange={e=>setName(e.target.value)} placeholder="Name, z.B. E-Jugend 1"
-          style={{width:"100%",padding:"12px 14px",fontSize:15,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",marginBottom:10,boxSizing:"border-box"}}/>
-        <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.4}}>ALTERSKLASSE</div>
-        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
-          {CATS.map(c=>(
-            <button key={c} type="button" onClick={()=>setCat(c)}
-              style={{padding:"6px 12px",borderRadius:99,border:`1.5px solid ${cat===c?t.p:"#e2e8f0"}`,background:cat===c?t.p:"#fff",color:cat===c?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{c}</button>
-          ))}
-        </div>
-        <input value={pwd} onChange={e=>setPwd(e.target.value)} placeholder="Team-Passwort (optional, Standard: team)"
-          autoCapitalize="none" autoCorrect="off" spellCheck={false}
-          style={{width:"100%",padding:"12px 14px",fontSize:15,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",marginBottom:12,boxSizing:"border-box"}}/>
-        <button onClick={addTeam} disabled={!name.trim()}
-          style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:name.trim()?t.p:"#e2e8f0",color:name.trim()?"#fff":"#94a3b8",fontWeight:800,fontSize:15,cursor:name.trim()?"pointer":"default",fontFamily:"inherit"}}>
-          + Mannschaft anlegen
-        </button>
-      </div>
-
-      <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.4}}>BESTEHENDE MANNSCHAFTEN ({teams.length})</div>
-      <div style={{display:"flex",flexDirection:"column",gap:8}}>
-        {teams.length===0&&<div style={{color:"#94a3b8",fontSize:14,padding:"16px",textAlign:"center"}}>Noch keine Mannschaften.</div>}
-        {teams.map(tm=>{
-          const cnt=(data.playerProfiles||[]).filter(p=>p.mainTid===tm.id&&!p.archived).length;
-          const tmCat = tm.cat || tm.name;
-          const isFootball = (cl?.sport||"fussball")==="fussball";
-          return (
-            <div key={tm.id}>
-            <div style={{background:"#fff",borderRadius:13,border:"1.5px solid #e2e8f0",padding:"12px 14px",display:"flex",alignItems:"center",gap:11}}>
-              <div style={{width:38,height:38,borderRadius:10,background:tm.col||t.p,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:14,flexShrink:0}}>{tm.icon||tm.name?.slice(0,2).toUpperCase()}</div>
-              <div style={{flex:1,minWidth:0}}>
-                {editId===tm.id ? (
-                  <input value={editName} onChange={e=>setEditName(e.target.value)} autoFocus
-                    onKeyDown={e=>{if(e.key==="Enter")renameTeam(tm.id);}}
-                    style={{width:"100%",padding:"7px 10px",fontSize:14,border:`1.5px solid ${t.p}`,borderRadius:8,outline:"none",boxSizing:"border-box"}}/>
-                ) : (
-                  <>
-                    <div style={{fontWeight:700,fontSize:14,color:"#0f172a",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{tm.name}{tm.endedSid&&<span style={{marginLeft:7,fontSize:10.5,fontWeight:800,color:"#b45309",background:"#fef3c7",borderRadius:5,padding:"1px 6px",verticalAlign:"middle"}}>abgemeldet</span>}</div>
-                    <div style={{fontSize:12,color:"#94a3b8"}}>{tm.cat||""}{tm.cat?" · ":""}{cnt} Spieler</div>
-                  </>
-                )}
-              </div>
-              {editId===tm.id ? (
-                <button onClick={()=>renameTeam(tm.id)} style={{padding:"7px 12px",borderRadius:9,border:"none",background:t.p,color:"#fff",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>OK</button>
-              ) : (
-                <div style={{display:"flex",gap:6}}>
-                  {isFootball && tmCat && <button onClick={()=>setShowFmt(showFmt===tm.id?null:tm.id)} style={{padding:"7px 11px",borderRadius:9,border:`1.5px solid ${showFmt===tm.id?t.p:"#e2e8f0"}`,background:showFmt===tm.id?t.p+"12":"#f8fafc",color:showFmt===tm.id?t.p:"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Spielform</button>}
-                  <button onClick={()=>{setEditId(tm.id);setEditName(tm.name);}} style={{padding:"7px 11px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#f8fafc",color:"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Umbenennen</button>
-                  <button onClick={()=>delTeam(tm.id)} style={{padding:"7px 11px",borderRadius:9,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Löschen</button>
-                </div>
-              )}
-            </div>
-            {showFmt===tm.id && <div style={{marginTop:8}}><PlayFormatCard cat={tmCat} sport={cl?.sport||"fussball"} cl={cl} compact/></div>}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// Trainingsziele für Trainer: nur die Altersklassen der eigenen Teams, voll editierbar
-function TrainerTrainingZiele({ data, cid, myTids, save, fire, cl }) {
-  const sport = cl?.sport || "fussball";
-  const myTeams = (data.teams||[]).filter(tm=>myTids.includes(tm.id));
-  const allowedCats = [...new Set(myTeams.map(tm=>tm.cat||tm.name).filter(Boolean))];
-  if(allowedCats.length===0) return <div style={{color:"#94a3b8",fontSize:14,padding:"16px",textAlign:"center"}}>Keine Altersklasse zugeordnet.</div>;
-  return (
-    <div>
-      <div style={{background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:12,padding:"11px 14px",marginBottom:16,fontSize:12.5,color:"#1e40af",lineHeight:1.55}}>
-        Du bearbeitest hier die Trainingsziele deiner Mannschaft{allowedCats.length>1?"en":""}. Änderungen gelten vereinsweit für diese Altersklasse{allowedCats.length>1?"n":""}.
-      </div>
-      <SkillTargetsEditor data={data} cid={cid} save={save} fire={fire} cl={cl} sport={sport} allowedCats={allowedCats}/>
-      {sport==="fussball" && <PlayFormatsEditor data={data} cid={cid} save={save} fire={fire} cl={cl} allowedCats={allowedCats}/>}
-    </div>
-  );
-}
-
-// Kompakter Umschalter für die Diagramm-Darstellung (Rasen / Taktiktafel / Für Kinder)
-function StyleToggle({ value, onChange, t }){
-  const opts=[["grass","Rasen",t.p],["chalk","Tafel","#1c2530"],["kids","Kinder","#f59e0b"]];
-  return (
-    <div style={{display:"flex",gap:5,marginBottom:10,flexWrap:"wrap"}}>
-      {opts.map(([v,lbl,col])=>(
-        <button key={v} onClick={()=>onChange(v)}
-          style={{padding:"4px 10px",borderRadius:99,border:`1.5px solid ${value===v?col:"#e2e8f0"}`,background:value===v?col:"#fff",color:value===v?"#fff":"#475569",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>{lbl}</button>
-      ))}
-    </div>
-  );
-}
-
-// Mannschafts-Skill-Analyse: Schnitt im Spinnennetz + regelbasierte Trainingsvorschläge
-function TeamSkillAnalysis({ data, myTids, cl }) {
-  const t = TH(cl);
-  const sport = cl?.sport || "fussball";
-  const axes = skillAxesFor(sport);
-  const teams = (data.teams||[]).filter(tm=>myTids.includes(tm.id));
-  const [tid, setTid] = useState(teams[0]?.id || "");
-  const [openDrill, setOpenDrill] = useState(null);
-  const [diaStyle, setDiaStyle] = useState("grass");
-  const team = teams.find(x=>x.id===tid) || teams[0];
-  const players = (data.playerProfiles||[]).filter(p=>p.mainTid===tid && !p.archived);
-  const withSkills = players.filter(p=>p.skills && Object.values(p.skills).some(v=>Number(v)>0));
-  const avg = teamSkillAverages(withSkills, axes);
-  const cat = team?.cat || team?.name || "E-Jugend";
-  const soll = sollFor(cl, cat, axes);
-  // Schwächste Achsen ggü. Soll (größte Lücke), nur wo Daten vorhanden
-  const gaps = axes.map((a,i)=>({ axis:a, avg:avg[i], soll:soll[i], gap: avg[i]>0 ? soll[i]-avg[i] : 0 }))
-                   .filter(x=>x.gap>0).sort((a,b)=>b.gap-a.gap).slice(0,3);
-  const trainMap = AXIS_TRAINING[sport] || {};
-
-  if(teams.length===0) return <div style={{color:"#94a3b8",fontSize:14,padding:"16px",textAlign:"center"}}>Keine Mannschaft zugeordnet.</div>;
-
-  return (
-    <div>
-      {teams.length>1 && (
-        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:14}}>
-          {teams.map(tm=>(
-            <button key={tm.id} onClick={()=>setTid(tm.id)}
-              style={{padding:"7px 13px",borderRadius:99,border:`1.5px solid ${tid===tm.id?t.p:"#e2e8f0"}`,background:tid===tm.id?t.p:"#fff",color:tid===tm.id?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{tm.name}</button>
-          ))}
-        </div>
-      )}
-
-      {withSkills.length===0 ? (
-        <div style={{background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:14,padding:"22px 16px",textAlign:"center"}}>
-          <div style={{fontWeight:700,fontSize:14,color:"#475569",marginBottom:5}}>Noch keine Skill-Daten</div>
-          <div style={{fontSize:13,color:"#94a3b8",lineHeight:1.5}}>Trage bei den Spielern dieser Mannschaft im Profil das Skill-Profil ein, dann erscheint hier der Mannschaftsschnitt und ein Trainingsvorschlag.</div>
-        </div>
-      ) : (
-        <>
-          <div style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",padding:"16px",marginBottom:14}}>
-            <div style={{fontWeight:800,fontSize:15,color:"#0f172a",marginBottom:2}}>Mannschaftsschnitt</div>
-            <div style={{fontSize:12,color:"#94a3b8",marginBottom:12}}>{withSkills.length} von {players.length} Spielern mit Skill-Profil · Ziel: {cat}</div>
-            <div style={{background:"#f8fafc",borderRadius:14,padding:"14px 10px"}}>
-              <SpiderChart axes={axes} values={avg} compareValues={soll} color={t.p||"#16a34a"} compareColor="#f59e0b" size={250}/>
-              <div style={{display:"flex",gap:16,justifyContent:"center",fontSize:11,fontWeight:700,marginTop:8}}>
-                <span><span style={{display:"inline-block",width:10,height:10,borderRadius:3,background:t.p||"#16a34a",marginRight:4,verticalAlign:"middle"}}/>Schnitt</span>
-                <span><span style={{display:"inline-block",width:10,height:10,borderRadius:3,background:"#f59e0b",marginRight:4,verticalAlign:"middle"}}/>Ziel {cat}</span>
-              </div>
-            </div>
-          </div>
-
-          {gaps.length>0 ? (
-            <div style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",padding:"16px"}}>
-              <div style={{fontWeight:800,fontSize:15,color:"#0f172a",marginBottom:3}}>Trainingsvorschlag</div>
-              <div style={{fontSize:12,color:"#94a3b8",marginBottom:14}}>Größte Lücken zum Ziel – darauf sollte das Gesamttraining den Schwerpunkt legen.</div>
-              {gaps.map((g,gi)=>{
-                const drills = drillsForAxis(g.axis).slice(0,3);
-                return (
-                <div key={g.axis} style={{marginBottom:gi<gaps.length-1?14:0,paddingBottom:gi<gaps.length-1?14:0,borderBottom:gi<gaps.length-1?"1px solid #f1f5f9":"none"}}>
-                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-                    <span style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>{g.axis}</span>
-                    <span style={{fontSize:12,fontWeight:700,color:"#d97706",background:"#fef3c7",borderRadius:7,padding:"2px 8px"}}>Schnitt {g.avg} · Ziel {g.soll}</span>
-                  </div>
-                  {drills.length===0 ? (
-                    <div style={{fontSize:12.5,color:"#94a3b8"}}>Noch keine passende Übung in der Bibliothek.</div>
-                  ) : (
-                    <div style={{display:"flex",flexDirection:"column",gap:7}}>
-                      {drills.map(d=>{
-                        const fo=DRILL_FOCUS.find(f=>f.id===d.focus)||{label:d.focus,col:"#64748b"};
-                        const isOpen=openDrill===d.id;
-                        return (
-                          <div key={d.id} style={{border:"1px solid #e2e8f0",borderRadius:10,overflow:"hidden"}}>
-                            <button onClick={()=>setOpenDrill(isOpen?null:d.id)} style={{width:"100%",textAlign:"left",padding:"9px 12px",background:"#f8fafc",border:"none",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:9}}>
-                              <span style={{width:8,height:8,borderRadius:"50%",background:fo.col,flexShrink:0}}/>
-                              <span style={{flex:1,fontWeight:700,fontSize:13,color:"#0f172a"}}>{d.title}</span>
-                              <span style={{fontSize:11,color:"#94a3b8"}}>{d.min} Min</span>
-                              <span style={{fontSize:15,color:"#cbd5e1",transform:isOpen?"rotate(90deg)":"none"}}>›</span>
-                            </button>
-                            {isOpen && (
-                              <div style={{padding:"10px 12px"}}>
-                                <StyleToggle value={diaStyle} onChange={setDiaStyle} t={t}/>
-                                <div style={{display:"flex",justifyContent:"center",marginBottom:9}}>
-                                  <DrillDiagram field={d.field} elements={d.el} color={t.p||"#16a34a"} width={260} variant={diaStyle}/>
-                                </div>
-                                {diaStyle==="kids"&&d.kids
-                                  ? <div style={{background:"#fffbeb",border:"2px solid #fde68a",borderRadius:12,padding:"11px 13px",fontSize:14,color:"#78350f",lineHeight:1.6,fontWeight:600}}>{d.kids}</div>
-                                  : <>
-                                <p style={{fontSize:12.5,color:"#334155",lineHeight:1.55,margin:0}}>{d.desc}</p>
-                                {d.coach && <div style={{marginTop:7,background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:8,padding:"7px 10px",fontSize:11.5,color:"#166534",lineHeight:1.45}}><strong>Coaching:</strong> {d.coach}</div>}
-                                    </>}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-                );
-              })}
-              <div style={{marginTop:14,fontSize:11,color:"#94a3b8",lineHeight:1.5}}>
-                Lokal berechnet aus den Skill-Profilen – ohne externen Dienst, keine Spielerdaten verlassen die App. Vorschlag, kein Ersatz für die Trainerplanung.
-              </div>
-            </div>
-          ) : (
-            <div style={{background:"#dcfce7",border:"1px solid #bbf7d0",borderRadius:14,padding:"16px",textAlign:"center",fontSize:13,color:"#166534",fontWeight:600}}>
-              Die Mannschaft erreicht im Schnitt alle Ziel-Werte. Stärken weiter festigen!
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
-}
-
-// Trainings-Übungsbibliothek mit Schwerpunkt-Filter und Diagrammen
-function DrillLibrary({ cl }) {
-  const t = TH(cl);
-  const [focus, setFocus] = useState("all");
-  const [cat, setCat] = useState("all");
-  const [q, setQ] = useState("");
-  const [open, setOpen] = useState(null);
-  const [style, setStyle] = useState("grass"); // grass | chalk
-  const allCats = CAT_ORDER.filter(c=>DRILL_LIB.some(d=>(d.cats||[]).includes(c)));
-  const ql = q.trim().toLowerCase();
-  const list = DRILL_LIB.filter(d=>
-    (focus==="all" || d.focus===focus) &&
-    (cat==="all" || (d.cats||[]).includes(cat)) &&
-    (!ql || d.title.toLowerCase().includes(ql) || (d.desc||"").toLowerCase().includes(ql))
-  );
-  const focusOf = id => DRILL_FOCUS.find(f=>f.id===id) || {label:id,col:"#64748b"};
-  return (
-    <div>
-      <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Übung suchen (Name oder Inhalt)…"
-        autoCapitalize="none" autoCorrect="off"
-        style={{width:"100%",padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",marginBottom:10,boxSizing:"border-box"}}/>
-      <div style={{display:"flex",gap:6,marginBottom:10,alignItems:"center"}}>
-        <span style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.3}}>DARSTELLUNG:</span>
-        <button onClick={()=>setStyle("grass")} style={{padding:"5px 12px",borderRadius:99,border:`1.5px solid ${style==="grass"?t.p:"#e2e8f0"}`,background:style==="grass"?t.p:"#fff",color:style==="grass"?"#fff":"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Rasen</button>
-        <button onClick={()=>setStyle("chalk")} style={{padding:"5px 12px",borderRadius:99,border:`1.5px solid ${style==="chalk"?"#1c2530":"#e2e8f0"}`,background:style==="chalk"?"#1c2530":"#fff",color:style==="chalk"?"#fff":"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Taktiktafel</button>
-        <button onClick={()=>setStyle("kids")} style={{padding:"5px 12px",borderRadius:99,border:`1.5px solid ${style==="kids"?"#f59e0b":"#e2e8f0"}`,background:style==="kids"?"#f59e0b":"#fff",color:style==="kids"?"#fff":"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Für Kinder</button>
-      </div>
-      <div style={{display:"flex",gap:6,overflowX:"auto",marginBottom:8,scrollbarWidth:"none"}}>
-        <button onClick={()=>setFocus("all")} style={{flex:"0 0 auto",padding:"7px 14px",borderRadius:99,border:`1.5px solid ${focus==="all"?t.p:"#e2e8f0"}`,background:focus==="all"?t.p:"#fff",color:focus==="all"?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>Alle ({DRILL_LIB.length})</button>
-        {DRILL_FOCUS.map(f=>{
-          const n=DRILL_LIB.filter(d=>d.focus===f.id).length;
-          return (
-            <button key={f.id} onClick={()=>setFocus(f.id)} style={{flex:"0 0 auto",padding:"7px 14px",borderRadius:99,border:`1.5px solid ${focus===f.id?f.col:"#e2e8f0"}`,background:focus===f.id?f.col:"#fff",color:focus===f.id?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{f.label} ({n})</button>
-          );
-        })}
-      </div>
-
-      <div style={{display:"flex",gap:6,overflowX:"auto",marginBottom:10,scrollbarWidth:"none"}}>
-        <button onClick={()=>setCat("all")} style={{flex:"0 0 auto",padding:"6px 12px",borderRadius:99,border:`1.5px solid ${cat==="all"?t.p:"#e2e8f0"}`,background:cat==="all"?"#f0fdf4":"#fff",color:cat==="all"?t.p:"#94a3b8",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>Alle Klassen</button>
-        {allCats.map(c=>(
-          <button key={c} onClick={()=>setCat(c)} style={{flex:"0 0 auto",padding:"6px 12px",borderRadius:99,border:`1.5px solid ${cat===c?t.p:"#e2e8f0"}`,background:cat===c?"#f0fdf4":"#fff",color:cat===c?t.p:"#94a3b8",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{c}</button>
-        ))}
-      </div>
-
-      <div style={{fontSize:12,color:"#94a3b8",fontWeight:700,marginBottom:10}}>{list.length} {list.length===1?"Übung":"Übungen"}</div>
-
-      <div style={{display:"flex",flexDirection:"column",gap:10}}>
-        {list.length===0 && <div style={{color:"#94a3b8",fontSize:14,padding:"20px",textAlign:"center"}}>Keine Übung gefunden. Filter oder Suche anpassen.</div>}
-        {list.map(d=>{
-          const f=focusOf(d.focus);
-          const isOpen=open===d.id;
-          return (
-            <div key={d.id} style={{background:"#fff",borderRadius:14,border:"1.5px solid #e2e8f0",overflow:"hidden"}}>
-              <button onClick={()=>setOpen(isOpen?null:d.id)} style={{width:"100%",textAlign:"left",padding:"13px 15px",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:10}}>
-                <span style={{width:9,height:9,borderRadius:"50%",background:f.col,flexShrink:0}}/>
-                <span style={{flex:1,minWidth:0}}>
-                  <span style={{display:"block",fontWeight:800,fontSize:14.5,color:"#0f172a"}}>{d.title}</span>
-                  <span style={{display:"block",fontSize:12,color:"#94a3b8",marginTop:1}}>{f.label} · {d.min} Min · {d.players} Spieler</span>
-                </span>
-                <span style={{fontSize:18,color:"#cbd5e1",transform:isOpen?"rotate(90deg)":"none",transition:"transform .2s"}}>›</span>
-              </button>
-              {isOpen && (
-                <div style={{padding:"0 15px 15px"}}>
-                  <div style={{display:"flex",justifyContent:"center",marginBottom:12}}>
-                    <DrillDiagram field={d.field} elements={d.el} color={t.p||"#16a34a"} width={300} variant={style}/>
-                  </div>
-                  {style==="kids" ? (
-                    d.kids ? (
-                      <div style={{background:"#fffbeb",border:"2px solid #fde68a",borderRadius:14,padding:"14px 16px",fontSize:16,color:"#78350f",lineHeight:1.65,fontWeight:600}}>
-                        {d.kids}
-                      </div>
-                    ) : (
-                      <div style={{background:"#f1f5f9",borderRadius:12,padding:"12px 14px",fontSize:13.5,color:"#64748b",lineHeight:1.6}}>
-                        Diese Übung ist eher für ältere Kinder gedacht. Für die Jüngsten eignen sich z.&nbsp;B. Ballschule, Fangspiel oder Dribbel-Übungen am besten.
-                      </div>
-                    )
-                  ) : (
-                    <>
-                      <p style={{fontSize:13.5,color:"#334155",lineHeight:1.6,marginBottom:10}}>{d.desc}</p>
-                      {d.coach && <div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:10,padding:"9px 12px",fontSize:12.5,color:"#166534",lineHeight:1.5,marginBottom:8}}><strong>Coaching:</strong> {d.coach}</div>}
-                    </>
-                  )}
-                  <div style={{fontSize:11.5,color:"#94a3b8",marginTop:8}}>Geeignet für: {d.cats.join(", ")}</div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-      <div style={{marginTop:14,fontSize:11,color:"#94a3b8",lineHeight:1.5,textAlign:"center"}}>
-        {DRILL_LIB.length} Übungen · weitere folgen. Diagramme als Orientierung, an Gruppe und Platz anpassen.
-      </div>
-    </div>
-  );
-}
-
-// Trainingsplan-Generator: Einheit oder Woche, Schwerpunkt manuell oder aus Förderlücken
-// ---- Teilbare Trainings-Bibliothek -------------------------------------
-// Sichtbarkeit: eigene (Besitzer-Team) immer; "club" vereinsweit; "teams" nur freigegebene Teams; "team" nur Besitzer.
-const canSeeTraining  = (tr, myTids) => { if(!tr) return false; if(myTids.includes(tr.ownerTid)) return true; if(tr.vis==="club") return true; if(tr.vis==="teams") return (tr.sharedTids||[]).some(id=>myTids.includes(id)); return false; };
-const canEditTraining = (tr, myTids) => !!tr && myTids.includes(tr.ownerTid);
-const visibleTrainings = (list, myTids) => (list||[]).filter(tr=>canSeeTraining(tr,myTids));
-const VIS_LABEL = { team:"Nur mein Team", club:"Ganzer Verein", teams:"Bestimmte Teams" };
-const TRAIN_PHASES = ["Aufwärmen","Hauptteil","Abschluss","Spielform","Athletik"];
-
-// ---- Taktikboard (mehrere Sportarten) — Phase 1: Feld + Formationen -----
-const TB_FIELDS = {
-  football: { vw:68, vh:105, bg:"#16a34a", r:2.6, fs:2.6, counts:[5,7,9,11], draw:(L)=>[
-    <rect key="b" x={2} y={2} width={64} height={101} rx={1} fill="none" stroke={L} strokeWidth={0.6}/>,
-    <line key="h" x1={2} y1={52.5} x2={66} y2={52.5} stroke={L} strokeWidth={0.5}/>,
-    <circle key="c" cx={34} cy={52.5} r={9.15} fill="none" stroke={L} strokeWidth={0.5}/>,
-    <circle key="cd" cx={34} cy={52.5} r={0.7} fill={L}/>,
-    <rect key="pb" x={13.85} y={86.5} width={40.3} height={16.5} fill="none" stroke={L} strokeWidth={0.5}/>,
-    <rect key="pt" x={13.85} y={2} width={40.3} height={16.5} fill="none" stroke={L} strokeWidth={0.5}/>,
-    <rect key="ggb" x={24.85} y={97} width={18.3} height={6} fill="none" stroke={L} strokeWidth={0.4}/>,
-    <rect key="ggt" x={24.85} y={2} width={18.3} height={6} fill="none" stroke={L} strokeWidth={0.4}/>,
-    <rect key="gb" x={30.5} y={103} width={7} height={1.6} fill={L}/>,
-    <rect key="gt" x={30.5} y={0.4} width={7} height={1.6} fill={L}/>,
-  ]},
-  handball: { vw:20, vh:40, bg:"#2f7ed8", r:1.15, fs:1.15, counts:[7], draw:(L)=>[
-    <rect key="b" x={1} y={1} width={18} height={38} fill="none" stroke={L} strokeWidth={0.3}/>,
-    <line key="h" x1={1} y1={20} x2={19} y2={20} stroke={L} strokeWidth={0.25}/>,
-    <path key="d6b" d="M4 39 A6 6 0 0 1 16 39" fill="none" stroke={L} strokeWidth={0.3}/>,
-    <path key="d6t" d="M4 1 A6 6 0 0 0 16 1" fill="none" stroke={L} strokeWidth={0.3}/>,
-    <path key="d9b" d="M2.5 39 A8.5 8.5 0 0 1 17.5 39" fill="none" stroke={L} strokeWidth={0.22} strokeDasharray="0.6 0.6"/>,
-    <path key="d9t" d="M2.5 1 A8.5 8.5 0 0 0 17.5 1" fill="none" stroke={L} strokeWidth={0.22} strokeDasharray="0.6 0.6"/>,
-    <rect key="gb" x={8} y={38.8} width={4} height={1} fill={L}/>,
-    <rect key="gt" x={8} y={0.2} width={4} height={1} fill={L}/>,
-  ]},
-  basketball: { vw:15, vh:14, bg:"#c2853f", r:0.75, fs:0.75, counts:[5], half:true, draw:(L)=>[
-    <rect key="b" x={0.5} y={0.5} width={14} height={13} fill="none" stroke={L} strokeWidth={0.22}/>,
-    <rect key="key" x={5.4} y={0.5} width={4.2} height={5.8} fill="none" stroke={L} strokeWidth={0.22}/>,
-    <circle key="ft" cx={7.5} cy={6.3} r={1.8} fill="none" stroke={L} strokeWidth={0.22}/>,
-    <circle key="hoop" cx={7.5} cy={1.7} r={0.45} fill="none" stroke={L} strokeWidth={0.3}/>,
-    <path key="3" d="M1.6 0.5 L1.6 3.8 A6.6 6.6 0 0 0 13.4 3.8 L13.4 0.5" fill="none" stroke={L} strokeWidth={0.22}/>,
-  ]},
-  generic: { vw:68, vh:105, bg:"#16a34a", r:2.6, fs:2.6, counts:[5,7,9,11], draw:(L)=>[
-    <rect key="b" x={2} y={2} width={64} height={101} rx={1} fill="none" stroke={L} strokeWidth={0.6}/>,
-    <line key="h" x1={2} y1={52.5} x2={66} y2={52.5} stroke={L} strokeWidth={0.5}/>,
-    <circle key="c" cx={34} cy={52.5} r={8} fill="none" stroke={L} strokeWidth={0.5}/>,
-  ]},
-};
-const TB_FORMATIONS = {
-  football: {
-    5:[ {name:"2-1-1",p:[[.5,.9],[.3,.72],[.7,.72],[.5,.5],[.5,.28]]},
-        {name:"1-2-1",p:[[.5,.9],[.5,.74],[.3,.52],[.7,.52],[.5,.28]]} ],
-    7:[ {name:"2-3-1",p:[[.5,.9],[.32,.73],[.68,.73],[.22,.5],[.5,.52],[.78,.5],[.5,.27]]},
-        {name:"3-2-1",p:[[.5,.9],[.25,.74],[.5,.76],[.75,.74],[.35,.5],[.65,.5],[.5,.27]]},
-        {name:"2-1-2-1",p:[[.5,.9],[.3,.76],[.7,.76],[.5,.6],[.3,.42],[.7,.42],[.5,.25]]} ],
-    9:[ {name:"3-3-2",p:[[.5,.92],[.22,.75],[.5,.77],[.78,.75],[.25,.52],[.5,.54],[.75,.52],[.38,.28],[.62,.28]]},
-        {name:"3-2-3",p:[[.5,.92],[.22,.75],[.5,.77],[.78,.75],[.38,.55],[.62,.55],[.22,.3],[.5,.28],[.78,.3]]},
-        {name:"2-4-2",p:[[.5,.92],[.32,.76],[.68,.76],[.18,.52],[.42,.54],[.58,.54],[.82,.52],[.38,.28],[.62,.28]]} ],
-    11:[ {name:"4-4-2",p:[[.5,.93],[.18,.76],[.4,.78],[.6,.78],[.82,.76],[.18,.52],[.4,.54],[.6,.54],[.82,.52],[.4,.28],[.6,.28]]},
-         {name:"4-3-3",p:[[.5,.93],[.18,.76],[.4,.78],[.6,.78],[.82,.76],[.3,.55],[.5,.57],[.7,.55],[.25,.3],[.5,.28],[.75,.3]]},
-         {name:"3-5-2",p:[[.5,.93],[.28,.77],[.5,.79],[.72,.77],[.15,.55],[.35,.57],[.5,.58],[.65,.57],[.85,.55],[.4,.3],[.6,.3]]} ],
-  },
-  handball: { 7:[
-    {name:"Angriff 3:3",p:[[.5,.93],[.12,.45],[.3,.62],[.5,.66],[.7,.62],[.88,.45],[.5,.32]]},
-    {name:"Abwehr 6:0",p:[[.5,.93],[.12,.7],[.3,.72],[.43,.73],[.57,.73],[.7,.72],[.88,.7]]},
-    {name:"Abwehr 5:1",p:[[.5,.93],[.15,.72],[.35,.74],[.5,.75],[.65,.74],[.85,.72],[.5,.55]]},
-  ]},
-  basketball: { 5:[
-    {name:"Positionen",p:[[.5,.8],[.2,.62],[.8,.62],[.32,.38],[.5,.24]]},
-    {name:"1-3-1",p:[[.5,.82],[.2,.55],[.5,.5],[.8,.55],[.5,.26]]},
-    {name:"4-Out",p:[[.5,.82],[.18,.5],[.4,.4],[.6,.4],[.82,.5]]},
-  ]},
-  generic: {
-    5:[{name:"Verteilt",p:[[.5,.85],[.3,.6],[.7,.6],[.35,.35],[.65,.35]]}],
-    7:[{name:"Verteilt",p:[[.5,.88],[.3,.7],[.7,.7],[.25,.5],[.5,.5],[.75,.5],[.5,.3]]}],
-    9:[{name:"Verteilt",p:[[.5,.9],[.25,.72],[.5,.74],[.75,.72],[.25,.52],[.5,.54],[.75,.52],[.4,.3],[.6,.3]]}],
-    11:[{name:"Verteilt",p:[[.5,.92],[.2,.75],[.4,.77],[.6,.77],[.8,.75],[.2,.52],[.4,.54],[.6,.54],[.8,.52],[.4,.3],[.6,.3]]}],
-  },
-};
-const TB_SPORTS = [{id:"football",label:"Fußball"},{id:"handball",label:"Handball"},{id:"basketball",label:"Basketball"},{id:"generic",label:"Allgemein"}];
-function tbForms(sport,count){ return (TB_FORMATIONS[sport]||TB_FORMATIONS.generic)[count] || TB_FORMATIONS.generic[count] || []; }
-
-function TacticBoard({ data, myTids, cl, save, fire }) {
-  const t=TH(cl);
-  const sportMap={fussball:"football",handball:"handball",basketball:"basketball"};
-  const [sport,setSport]=useState(sportMap[cl?.sport]||"football");
-  const F = TB_FIELDS[sport]||TB_FIELDS.generic;
-  const [count,setCount]=useState(F.counts.includes(11)?11:F.counts[0]);
-  const [formIdx,setFormIdx]=useState(0);
-  const forms = tbForms(sport,count);
-  const teamCol = cl?.pri || "#16a34a";
-  const buildTokens = (sp,cnt,fi)=>{ const FF=TB_FIELDS[sp]||TB_FIELDS.generic; const f=tbForms(sp,cnt)[fi]||tbForms(sp,cnt)[0]; return (f?.p||[]).map((pos,i)=>({id:"tk"+i,x:pos[0]*FF.vw,y:pos[1]*FF.vh,n:i+1})); };
-  const [tokens,setTokens]=useState(()=>buildTokens(sport,count,formIdx));
-  useEffect(()=>{ setTokens(buildTokens(sport,count,formIdx)); /* eslint-disable-next-line */ },[sport,count,formIdx]);
-
-  const svgRef=useRef(null); const dragRef=useRef(null);
-  const [mode,setMode]=useState("move");
-  const [arrows,setArrows]=useState([]);
-  const [draw,setDraw0]=useState(null); const drawRef=useRef(null);
-  const setDraw=(v)=>{ const nv=typeof v==="function"?v(drawRef.current):v; drawRef.current=nv; setDraw0(nv); };
-  const ARR_COL={run:"#ffffff",pass:"#fb923c"};
-  const toSvg=(e)=>{ const el=svgRef.current; if(!el) return null; const r=el.getBoundingClientRect(); const cx=(e.touches?e.touches[0].clientX:e.clientX); const cy=(e.touches?e.touches[0].clientY:e.clientY); return { x:(cx-r.left)/r.width*F.vw, y:(cy-r.top)/r.height*F.vh }; };
-  const startDraw=(e)=>{ if(mode==="move") return; const p=toSvg(e); if(!p) return; if(e.preventDefault)e.preventDefault(); setDraw({type:mode,x1:p.x,y1:p.y,x2:p.x,y2:p.y}); };
-  const onMove=(e)=>{ const p=toSvg(e); if(!p) return; if(mode==="move"){ if(dragRef.current==null) return; const R=F.r; setTokens(ts=>ts.map(tk=>tk.id===dragRef.current?{...tk,x:Math.max(R,Math.min(F.vw-R,p.x)),y:Math.max(R,Math.min(F.vh-R,p.y))}:tk)); } else { if(!drawRef.current) return; setDraw(d=>d?{...d,x2:p.x,y2:p.y}:d); } };
-  const endDrag=()=>{ if(mode==="move"){ dragRef.current=null; return; } const d=drawRef.current; if(d){ const len=Math.hypot(d.x2-d.x1,d.y2-d.y1); if(len>F.vw*0.04) setArrows(a=>[...a,{...d,id:"ar"+Date.now()+Math.round(Math.random()*999)}]); } setDraw(null); };
-
-  const chSport=(sp)=>{ const FF=TB_FIELDS[sp]||TB_FIELDS.generic; const c=FF.counts.includes(11)?11:FF.counts[0]; setSport(sp); setCount(c); setFormIdx(0); setArrows([]); setDraw(null); };
-  const Btn=({active,onClick,children})=>(
-    <button onClick={onClick} style={{padding:"7px 12px",borderRadius:9,border:active?`1.5px solid ${t.p}`:"1.5px solid #e2e8f0",background:active?t.p:"#fff",color:active?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{children}</button>
-  );
-
-  return (
-    <div style={{display:"flex",flexDirection:"column",gap:12}}>
-      <div>
-        <h3 style={{margin:"0 0 2px",fontSize:17,fontWeight:900,color:"#0f172a"}}>Taktikboard</h3>
-        <p style={{fontSize:12.5,color:"#64748b",margin:0}}>Feld &amp; Aufstellung – Spieler verschieben und Lauf-/Passwege einzeichnen.</p>
-      </div>
-      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-        {TB_SPORTS.map(s=><Btn key={s.id} active={sport===s.id} onClick={()=>chSport(s.id)}>{s.label}</Btn>)}
-      </div>
-      {F.counts.length>1&&(
-        <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
-          <span style={{fontSize:11,fontWeight:800,color:"#94a3b8",marginRight:2}}>SPIELER</span>
-          {F.counts.map(c=><Btn key={c} active={count===c} onClick={()=>{setCount(c);setFormIdx(0);}}>{c}er</Btn>)}
-        </div>
-      )}
-      <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
-        <span style={{fontSize:11,fontWeight:800,color:"#94a3b8",marginRight:2}}>SYSTEM</span>
-        {forms.map((f,i)=><Btn key={f.name} active={formIdx===i} onClick={()=>setFormIdx(i)}>{f.name}</Btn>)}
-      </div>
-      <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
-        <span style={{fontSize:11,fontWeight:800,color:"#94a3b8",marginRight:2}}>WERKZEUG</span>
-        <Btn active={mode==="move"} onClick={()=>setMode("move")}>Bewegen</Btn>
-        <Btn active={mode==="run"} onClick={()=>setMode("run")}>Laufweg</Btn>
-        <Btn active={mode==="pass"} onClick={()=>setMode("pass")}>Passweg</Btn>
-        <button onClick={()=>setArrows(a=>a.slice(0,-1))} disabled={!arrows.length}
-          style={{padding:"7px 12px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:arrows.length?"#475569":"#cbd5e1",fontWeight:700,fontSize:12.5,cursor:arrows.length?"pointer":"default",fontFamily:"inherit",whiteSpace:"nowrap"}}>Rückgängig</button>
-        <button onClick={()=>{setArrows([]);setDraw(null);}} disabled={!arrows.length&&!draw}
-          style={{padding:"7px 12px",borderRadius:9,border:"1.5px solid #fecaca",background:"#fff",color:(arrows.length||draw)?"#dc2626":"#fca5a5",fontWeight:700,fontSize:12.5,cursor:(arrows.length||draw)?"pointer":"default",fontFamily:"inherit",whiteSpace:"nowrap"}}>Pfeile löschen</button>
-      </div>
-
-      <div style={{background:F.bg,borderRadius:14,padding:8,boxShadow:"inset 0 0 0 1px rgba(255,255,255,.08)"}}>
-        <svg ref={svgRef} viewBox={`0 0 ${F.vw} ${F.vh}`} preserveAspectRatio="xMidYMid meet"
-          style={{width:"100%",maxHeight:"58vh",display:"block",touchAction:"none",cursor:mode==="move"?"default":"crosshair"}}
-          onPointerDown={startDraw} onTouchStart={startDraw}
-          onPointerMove={onMove} onPointerUp={endDrag} onPointerLeave={endDrag}
-          onTouchMove={onMove} onTouchEnd={endDrag}>
-          <defs>
-            <marker id="tb-ar-run" markerWidth="3.6" markerHeight="3.6" refX="2.7" refY="1.8" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L3.6,1.8 L0,3.6 Z" fill={ARR_COL.run}/></marker>
-            <marker id="tb-ar-pass" markerWidth="3.6" markerHeight="3.6" refX="2.7" refY="1.8" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L3.6,1.8 L0,3.6 Z" fill={ARR_COL.pass}/></marker>
-          </defs>
-          {F.draw("rgba(255,255,255,.85)")}
-          {arrows.map(a=>(
-            <line key={a.id} x1={a.x1} y1={a.y1} x2={a.x2} y2={a.y2}
-              stroke={ARR_COL[a.type]} strokeWidth={F.vw*0.012} strokeLinecap="round"
-              strokeDasharray={a.type==="pass"?`${F.vw*0.03} ${F.vw*0.022}`:undefined}
-              markerEnd={`url(#tb-ar-${a.type})`}/>
-          ))}
-          {draw&&Math.hypot(draw.x2-draw.x1,draw.y2-draw.y1)>0.1&&(
-            <line x1={draw.x1} y1={draw.y1} x2={draw.x2} y2={draw.y2} opacity={0.6}
-              stroke={ARR_COL[draw.type]} strokeWidth={F.vw*0.012} strokeLinecap="round"
-              strokeDasharray={draw.type==="pass"?`${F.vw*0.03} ${F.vw*0.022}`:undefined}/>
-          )}
-          {tokens.map(tk=>(
-            <g key={tk.id} style={{cursor:mode==="move"?"grab":"crosshair"}}
-               onPointerDown={(e)=>{ if(mode!=="move") return; e.preventDefault(); dragRef.current=tk.id;}}
-               onTouchStart={(e)=>{ if(mode!=="move") return; dragRef.current=tk.id;}}>
-              <circle cx={tk.x} cy={tk.y} r={F.r} fill={tk.n===1?"#facc15":teamCol} stroke="#fff" strokeWidth={F.r*0.16}/>
-              <text x={tk.x} y={tk.y+F.fs*0.36} textAnchor="middle" fontSize={F.fs} fontWeight="800"
-                    fill={tk.n===1?"#1e293b":contrast(teamCol)} style={{pointerEvents:"none",userSelect:"none"}}>{tk.n}</text>
-            </g>
-          ))}
-        </svg>
-      </div>
-
-      <div style={{display:"flex",gap:8,alignItems:"center",justifyContent:"space-between"}}>
-        <span style={{fontSize:12,color:"#94a3b8"}}>Spieler 1 = Torwart (gelb)</span>
-        <button onClick={()=>setTokens(buildTokens(sport,count,formIdx))}
-          style={{padding:"8px 14px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
-          Aufstellung zurücksetzen
-        </button>
-      </div>
-      <div style={{display:"flex",gap:14,alignItems:"center",flexWrap:"wrap",fontSize:11.5,color:"#64748b"}}>
-        <span><span style={{display:"inline-block",width:22,height:0,borderTop:"3px solid #94a3b8",verticalAlign:"middle",marginRight:5}}/>Laufweg</span>
-        <span><span style={{display:"inline-block",width:22,height:0,borderTop:"3px dashed #fb923c",verticalAlign:"middle",marginRight:5}}/>Passweg</span>
-      </div>
-      <div style={{fontSize:12,color:"#64748b",background:"#f8fafc",borderRadius:10,padding:"10px 12px",lineHeight:1.5}}>
-        Tipp: Werkzeug auf <strong>Laufweg</strong> oder <strong>Passweg</strong> stellen, dann auf dem Feld vom Start- zum Zielpunkt ziehen. Nächste Ausbaustufen: Gegner-Formation in zweiter Farbe, eigene Tor-/Material-Varianten aufs Feld setzen, sowie Taktik speichern und teilen (wie bei den Trainings).
-      </div>
-    </div>
-  );
-}
-
-function TrainingsLibrary({ data, myTids, cl, save, fire }) {
-  const t=TH(cl);
-  const cid=cl?.id || (data.teams||[]).find(tm=>myTids.includes(tm.id))?.cid;
-  const myTeams=(data.teams||[]).filter(tm=>myTids.includes(tm.id));
-  const clubTeams=(data.teams||[]).filter(tm=>tm.cid===cid);
-  const all=(data.trainings||[]).filter(tr=>tr.cid===cid);
-  const visible=visibleTrainings(all, myTids);
-  const teamName=id=>(data.teams||[]).find(tm=>tm.id===id)?.name||"Team";
-
-  const [editing,setEditing]=useState(null); // null | {} (neu) | training (bearbeiten)
-  const [sched,setSched]=useState(null);     // Training, das terminiert wird
-
-  const blank=()=>({ id:"tr_"+uid(), cid, ownerTid:myTeams[0]?.id||myTids[0], title:"", focus:"", blocks:[{phase:"Aufwärmen",title:"",min:10}], vis:"team", sharedTids:[] });
-
-  if(editing){
-    const e=editing;
-    const set=(patch)=>setEditing(p=>({...p,...patch}));
-    const setBlock=(i,patch)=>set({blocks:e.blocks.map((b,j)=>j===i?{...b,...patch}:b)});
-    const valid=e.title.trim().length>0;
-    const doSave=()=>{
-      if(!valid) return;
-      const now2=new Date().toISOString();
-      const rec={...e, title:e.title.trim(), focus:e.focus.trim(), createdAt:e.createdAt||now2, updatedAt:now2,
-        sharedTids: e.vis==="teams"?e.sharedTids:[]};
-      const exists=(data.trainings||[]).some(x=>x.id===rec.id);
-      const trainings=exists ? (data.trainings||[]).map(x=>x.id===rec.id?rec:x) : [...(data.trainings||[]), rec];
-      save({...data, trainings});
-      fire&&fire(exists?"Training gespeichert *":"Training angelegt *");
-      setEditing(null);
-    };
-    return (
-      <div style={{display:"flex",flexDirection:"column",gap:14}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-          <h3 style={{margin:0,fontSize:17,fontWeight:900,color:"#0f172a"}}>{(data.trainings||[]).some(x=>x.id===e.id)?"Training bearbeiten":"Neues Training"}</h3>
-          <button onClick={()=>setEditing(null)} style={{background:"none",border:"none",color:"#64748b",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
-        </div>
-        {myTeams.length>1&&(
-          <div style={{background:"#fff",borderRadius:12,padding:"12px 14px",border:"1.5px solid #e2e8f0"}}>
-            <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.4}}>BESITZER-TEAM</div>
-            <select value={e.ownerTid} onChange={ev=>set({ownerTid:ev.target.value})} style={{width:"100%",padding:"10px",borderRadius:10,border:"1.5px solid #e2e8f0",fontSize:14,fontFamily:"inherit"}}>
-              {myTeams.map(tm=><option key={tm.id} value={tm.id}>{tm.name}</option>)}
-            </select>
-          </div>
-        )}
-        <input value={e.title} onChange={ev=>set({title:ev.target.value})} placeholder="Titel des Trainings (z. B. Passspiel & Abschluss)"
-          style={{width:"100%",padding:"12px 14px",fontSize:15,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",boxSizing:"border-box"}}/>
-        <input value={e.focus} onChange={ev=>set({focus:ev.target.value})} placeholder="Schwerpunkt (optional, z. B. Technik)"
-          style={{width:"100%",padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",boxSizing:"border-box"}}/>
-
-        <div style={{background:"#fff",borderRadius:12,padding:"12px 14px",border:"1.5px solid #e2e8f0"}}>
-          <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.4}}>ABLAUF</div>
-          {e.blocks.map((b,i)=>(
-            <div key={i} style={{display:"flex",gap:6,marginBottom:6,alignItems:"center"}}>
-              <select value={b.phase} onChange={ev=>setBlock(i,{phase:ev.target.value})} style={{padding:"8px",borderRadius:9,border:"1.5px solid #e2e8f0",fontSize:13,fontFamily:"inherit",flexShrink:0}}>
-                {TRAIN_PHASES.map(p=><option key={p} value={p}>{p}</option>)}
-              </select>
-              <input value={b.title} onChange={ev=>setBlock(i,{title:ev.target.value})} placeholder="Übung / Inhalt"
-                style={{flex:1,minWidth:0,padding:"8px 10px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",boxSizing:"border-box"}}/>
-              <input type="number" value={b.min} onChange={ev=>setBlock(i,{min:Number(ev.target.value)||0})} style={{width:52,padding:"8px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",boxSizing:"border-box"}}/>
-              <span style={{fontSize:11,color:"#94a3b8",flexShrink:0}}>Min</span>
-              {e.blocks.length>1&&<button onClick={()=>set({blocks:e.blocks.filter((_,j)=>j!==i)})} style={{background:"none",border:"none",color:"#dc2626",fontWeight:800,fontSize:16,cursor:"pointer",flexShrink:0}}>×</button>}
-            </div>
-          ))}
-          <button onClick={()=>set({blocks:[...e.blocks,{phase:"Hauptteil",title:"",min:10}]})} style={{marginTop:4,background:"#f1f5f9",border:"none",borderRadius:9,padding:"8px 12px",fontSize:13,fontWeight:700,color:"#475569",cursor:"pointer",fontFamily:"inherit"}}>+ Block</button>
-        </div>
-
-        <div style={{background:"#fff",borderRadius:12,padding:"12px 14px",border:"1.5px solid #e2e8f0"}}>
-          <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.4}}>WER DARF ES SEHEN?</div>
-          {["team","club","teams"].map(v=>(
-            <label key={v} style={{display:"flex",alignItems:"center",gap:9,padding:"8px 0",cursor:"pointer"}}>
-              <input type="radio" name="vis" checked={e.vis===v} onChange={()=>set({vis:v})} style={{width:18,height:18,accentColor:t.p}}/>
-              <span style={{fontSize:14,fontWeight:700,color:"#0f172a"}}>{VIS_LABEL[v]}</span>
-            </label>
-          ))}
-          {e.vis==="teams"&&(
-            <div style={{marginTop:6,paddingTop:10,borderTop:"1px solid #e2e8f0"}}>
-              <div style={{fontSize:12,color:"#64748b",marginBottom:6}}>Für diese Teams freigeben:</div>
-              {clubTeams.filter(tm=>tm.id!==e.ownerTid).map(tm=>{
-                const on=(e.sharedTids||[]).includes(tm.id);
-                return (
-                  <label key={tm.id} style={{display:"flex",alignItems:"center",gap:9,padding:"6px 0",cursor:"pointer"}}>
-                    <input type="checkbox" checked={on} onChange={()=>set({sharedTids: on?e.sharedTids.filter(x=>x!==tm.id):[...(e.sharedTids||[]),tm.id]})} style={{width:17,height:17,accentColor:t.p}}/>
-                    <span style={{fontSize:13,color:"#334155"}}>{tm.name}</span>
-                  </label>
-                );
-              })}
-              {clubTeams.filter(tm=>tm.id!==e.ownerTid).length===0&&<div style={{fontSize:12,color:"#94a3b8"}}>Keine weiteren Teams im Verein.</div>}
-            </div>
-          )}
-        </div>
-        <button onClick={doSave} disabled={!valid} style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:valid?t.p:"#e2e8f0",color:valid?"#fff":"#94a3b8",fontWeight:800,fontSize:15,cursor:valid?"pointer":"default",fontFamily:"inherit"}}>Training speichern</button>
-      </div>
-    );
-  }
-
-  return (
-    <div style={{display:"flex",flexDirection:"column",gap:12}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        <h3 style={{margin:0,fontSize:17,fontWeight:900,color:"#0f172a"}}>Trainings</h3>
-        {myTeams.length>0&&<button onClick={()=>setEditing(blank())} style={{padding:"9px 14px",borderRadius:10,border:"none",background:t.p,color:"#fff",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>+ Neues Training</button>}
-      </div>
-      {myTeams.length===0&&(
-        <div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:12,padding:"16px",fontSize:13.5,color:"#92400e",lineHeight:1.5}}>
-          <b>Noch keine Mannschaft vorhanden.</b><br/>
-          Ein Training gehört immer zu einer Mannschaft. Lege zuerst unter <b>Mehr → Mannschaften</b> mindestens eine Mannschaft an – danach kannst du hier Trainings erstellen, bearbeiten und teilen.
-        </div>
-      )}
-      <p style={{fontSize:12.5,color:"#64748b",margin:"0 0 2px"}}>Eigene Trainings anlegen, bearbeiten, löschen. Standardmäßig nur für dein Team – du kannst sie aber für den Verein oder einzelne Teams freigeben.</p>
-      {myTeams.length>0&&visible.length===0&&<div style={{background:"#f8fafc",borderRadius:12,padding:"20px",textAlign:"center",color:"#94a3b8",fontSize:14}}>Noch keine Trainings. Lege dein erstes an.</div>}
-      {visible.map(tr=>{
-        const mine=canEditTraining(tr,myTids);
-        const totalMin=(tr.blocks||[]).reduce((s,b)=>s+(b.min||0),0);
-        return (
-          <div key={tr.id} style={{background:"#fff",borderRadius:13,padding:"14px",border:"1.5px solid #e2e8f0"}}>
-            <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8}}>
-              <div style={{flex:1}}>
-                <div style={{fontWeight:800,fontSize:15,color:"#0f172a"}}>{tr.title}</div>
-                {tr.focus&&<div style={{fontSize:12.5,color:"#64748b",marginTop:1}}>Schwerpunkt: {tr.focus}</div>}
-                <div style={{fontSize:12,color:"#94a3b8",marginTop:3}}>{teamName(tr.ownerTid)} · {(tr.blocks||[]).length} Blöcke · {totalMin} Min</div>
-              </div>
-              <span style={{flexShrink:0,fontSize:10.5,fontWeight:800,padding:"3px 8px",borderRadius:99,background:tr.vis==="club"?"#dcfce7":tr.vis==="teams"?"#dbeafe":"#f1f5f9",color:tr.vis==="club"?"#15803d":tr.vis==="teams"?"#1d4ed8":"#64748b"}}>{VIS_LABEL[tr.vis]}</span>
-            </div>
-            {(tr.blocks||[]).length>0&&(
-              <div style={{marginTop:10,paddingTop:10,borderTop:"1px solid #f1f5f9",display:"flex",flexDirection:"column",gap:4}}>
-                {tr.blocks.map((b,i)=>(
-                  <div key={i} style={{display:"flex",gap:8,fontSize:12.5}}>
-                    <span style={{fontWeight:700,color:t.p,minWidth:78,flexShrink:0}}>{b.phase}</span>
-                    <span style={{flex:1,color:"#334155"}}>{b.title||"—"}</span>
-                    <span style={{color:"#94a3b8",flexShrink:0}}>{b.min} Min</span>
-                  </div>
-                ))}
-              </div>
-            )}
-            <div style={{display:"flex",gap:8,marginTop:12}}>
-              <button onClick={()=>setSched(tr)} style={{flex:1,padding:"9px",borderRadius:9,border:`1.5px solid ${t.p}`,background:"#fff",color:t.p,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Als Termin planen</button>
-              {mine&&<button onClick={()=>setEditing(tr)} style={{padding:"9px 14px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Bearbeiten</button>}
-              {mine&&<button onClick={()=>{ if(typeof window!=="undefined"&&window.confirm&&!window.confirm("Dieses Training löschen?"))return; save({...data,trainings:(data.trainings||[]).filter(x=>x.id!==tr.id)}); fire&&fire("Training gelöscht *"); }} style={{padding:"9px 12px",borderRadius:9,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Löschen</button>}
-            </div>
-          </div>
-        );
-      })}
-
-      {sched&&<Drawer onClose={()=>setSched(null)} title="Als Termin planen" ch={
-        <ScheduleTraining tr={sched} myTeams={myTeams} data={data} cl={cl} save={save} fire={fire} onDone={()=>setSched(null)}/>
-      }/>}
-    </div>
-  );
-}
-
-function ScheduleTraining({ tr, myTeams, data, cl, save, fire, onDone }){
-  const t=TH(cl);
-  const [tid,setTid]=useState(myTeams.find(tm=>tm.id===tr.ownerTid)?.id||myTeams[0]?.id||tr.ownerTid);
-  const [date,setDate]=useState(addD(now(),1));
-  const [time,setTime]=useState("17:00");
-  const create=()=>{
-    const plan={ focus:tr.focus, sessions:[{ title:tr.title, blocks:(tr.blocks||[]).map(b=>({phase:b.phase,title:b.title,min:b.min})) }] };
-    const ev={ id:"e_"+uid(), cid:tr.cid, tid, type:"training", title:tr.title, date, time, loc:"", note:tr.focus?("Schwerpunkt: "+tr.focus):"",
-      votes:{}, pt:"att", selType:"multi", li:[], fi:[], sc:[], trainingPlan:plan };
-    save({...data, events:[...(data.events||[]), ev]});
-    fire&&fire("Termin erstellt *");
-    onDone&&onDone();
-  };
-  return (
-    <div style={{display:"flex",flexDirection:"column",gap:12}}>
-      <p style={{fontSize:13,color:"#475569",margin:0}}>„{tr.title}" als Trainingstermin in den Kalender legen.</p>
-      {myTeams.length>1&&(
-        <select value={tid} onChange={e=>setTid(e.target.value)} style={{padding:"11px",borderRadius:10,border:"1.5px solid #e2e8f0",fontSize:14,fontFamily:"inherit"}}>
-          {myTeams.map(tm=><option key={tm.id} value={tm.id}>{tm.name}</option>)}
-        </select>
-      )}
-      <div style={{display:"flex",gap:10}}>
-        <div style={{flex:1}}>
-          <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:5}}>DATUM</div>
-          <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{width:"100%",padding:"11px",borderRadius:10,border:"1.5px solid #e2e8f0",fontSize:14,fontFamily:"inherit",boxSizing:"border-box"}}/>
-        </div>
-        <div style={{width:120}}>
-          <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:5}}>UHRZEIT</div>
-          <input type="time" value={time} onChange={e=>setTime(e.target.value)} style={{width:"100%",padding:"11px",borderRadius:10,border:"1.5px solid #e2e8f0",fontSize:14,fontFamily:"inherit",boxSizing:"border-box"}}/>
-        </div>
-      </div>
-      <button onClick={create} style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:t.p,color:"#fff",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>Termin erstellen</button>
-    </div>
-  );
-}
-
-function TrainingPlanner({ data, myTids, cl, save, fire }) {
-  const t = TH(cl);
-  const sport = cl?.sport || "fussball";
-  const axes = skillAxesFor(sport);
-  const teams = (data.teams||[]).filter(tm=>myTids.includes(tm.id));
-  const [tid, setTid] = useState(teams[0]?.id || "");
-  const [mode, setMode] = useState("single");     // single | week
-  const [planStyle, setPlanStyle] = useState("grass");
-  const [focus, setFocus] = useState("technik");  // Schwerpunkt-Id oder "auto"
-  const [dur, setDur] = useState(60);              // Zieldauer in Minuten
-  const [plan, setPlan] = useState(null);
-  const [openDrill, setOpenDrill] = useState(null);
-  const [copied, setCopied] = useState(false);
-
-  // Plan als formatierten Text aufbauen
-  const planToText = () => {
-    if(!plan) return "";
-    const L = [];
-    L.push("TRAININGSPLAN" + (cat?" – "+cat:""));
-    if(cl?.name) L.push("Verein: " + cl.name);
-    L.push("");
-    plan.sessions.forEach(sess=>{
-      const total = sess.blocks.reduce((a,b)=>a+(b.drill.min||0),0);
-      L.push("=== " + sess.title + " (" + total + " Min) ===");
-      sess.blocks.forEach(b=>{
-        L.push("• [" + b.phase + "] " + b.drill.title + " (" + b.drill.min + " Min)");
-        if(b.drill.desc) L.push("  " + b.drill.desc);
-        if(b.drill.coach) L.push("  Coaching: " + b.drill.coach);
-      });
-      L.push("");
-    });
-    return L.join("\n").trim();
-  };
-  const doShare = async () => {
-    const text = planToText();
-    if(navigator.share){ try { await navigator.share({ title:"Trainingsplan", text }); return; } catch {} }
-    navigator.clipboard?.writeText(text).then(()=>{ setCopied(true); setTimeout(()=>setCopied(false),2000); });
-  };
-  const doCopy = () => {
-    navigator.clipboard?.writeText(planToText()).then(()=>{ setCopied(true); setTimeout(()=>setCopied(false),2000); });
-  };
-  const doDownload = () => {
-    const blob = new Blob([planToText()], {type:"text/plain;charset=utf-8"});
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "trainingsplan-" + (cat||"team").replace(/\s/g,"-").toLowerCase() + "-" + new Date().toISOString().slice(0,10) + ".txt";
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
-  };
-  // Plan an einen Termin hängen (im Event speichern)
-  const [attachedTo, setAttachedTo] = useState(null);
-  const attachToEvent = (ev) => {
-    if(!plan || !save) return;
-    const compact = {
-      cat, createdAt: now(),
-      sessions: plan.sessions.map(s=>({
-        title:s.title,
-        blocks:s.blocks.map(b=>({phase:b.phase, id:b.drill.id, title:b.drill.title, min:b.drill.min})),
-      })),
-    };
-    const events = (data.events||[]).map(e=> e.id===ev.id ? {...e, trainingPlan:compact} : e);
-    save({...data, events});
-    fire && fire("Plan an Termin gehängt");
-    setAttachedTo(ev.id);
-    setTimeout(()=>setAttachedTo(null), 2500);
-  };
-  const removeFromEvent = (ev) => {
-    if(!save) return;
-    const events = (data.events||[]).map(e=>{ if(e.id!==ev.id) return e; const {trainingPlan, ...rest}=e; return rest; });
-    save({...data, events});
-    fire && fire("Plan vom Termin entfernt");
-  };
-  const team = teams.find(x=>x.id===tid) || teams[0];
-  const cat = team?.cat || team?.name || null;
-  // Kommende Trainings dieser Mannschaft mit hinterlegter Endzeit (Dauer auslesbar)
-  const today = now();
-  const upcomingTrainings = (data.events||[])
-    .filter(e=>e.tid===tid && e.type==="training" && e.date>=today && eventDurationMin(e)!=null)
-    .sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time))
-    .slice(0,4);
-
-  // Förderlücken der Mannschaft (für "auto")
-  const autoFocus = () => {
-    const players = (data.playerProfiles||[]).filter(p=>p.mainTid===tid && !p.archived && p.skills);
-    if(players.length===0) return "technik";
-    const avg = teamSkillAverages(players, axes);
-    const soll = sollFor(cl, cat||"E-Jugend", axes);
-    const gaps = axes.map((a,i)=>({axis:a, gap: avg[i]>0 ? soll[i]-avg[i] : 0})).filter(g=>g.gap>0).sort((a,b)=>b.gap-a.gap);
-    return gaps.length ? (AXIS_TO_FOCUS[gaps[0].axis]||"technik") : "technik";
-  };
-
-  const generate = () => {
-    const realFocus = focus==="auto" ? autoFocus() : focus;
-    if(mode==="single"){
-      setPlan({ type:"single", sessions:[{ title:"Trainingseinheit", blocks: buildSession({focus:realFocus, cat, targetMin:dur}) }] });
-    } else {
-      const days = ["Einheit 1","Einheit 2","Einheit 3"];
-      const used=[]; const sessions=[];
-      days.forEach((d,i)=>{
-        const f = focus==="auto" ? autoFocus() : (i===1?"taktik":i===2?"torschuss":realFocus);
-        const blocks = buildSession({focus:f, cat, used, targetMin:dur});
-        blocks.forEach(b=>used.push(b.drill.id));
-        sessions.push({ title:d, blocks });
-      });
-      setPlan({ type:"week", sessions });
-    }
-    setOpenDrill(null);
-  };
-
-  const FOCUS_OPTS = [
-    {id:"auto",label:"Aus Förderlücken"},
-    {id:"technik",label:"Technik"},{id:"taktik",label:"Taktik"},
-    {id:"torschuss",label:"Torschuss"},{id:"kondition",label:"Kondition"},
-  ];
-
-  return (
-    <div>
-      {teams.length>1 && (
-        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
-          {teams.map(tm=>(
-            <button key={tm.id} onClick={()=>{setTid(tm.id);setPlan(null);}} style={{padding:"7px 13px",borderRadius:99,border:`1.5px solid ${tid===tm.id?t.p:"#e2e8f0"}`,background:tid===tm.id?t.p:"#fff",color:tid===tm.id?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{tm.name}</button>
-          ))}
-        </div>
-      )}
-
-      <div style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",padding:"16px",marginBottom:14}}>
-        <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.4}}>UMFANG</div>
-        <div style={{display:"flex",gap:8,marginBottom:14}}>
-          {[["single","Eine Einheit"],["week","Ganze Woche (3)"]].map(([k,l])=>(
-            <button key={k} onClick={()=>{setMode(k);setPlan(null);}} style={{flex:1,padding:"10px",borderRadius:11,border:`2px solid ${mode===k?t.p:"#e2e8f0"}`,background:mode===k?t.p:"#fff",color:mode===k?"#fff":"#64748b",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
-          ))}
-        </div>
-        <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.4}}>SCHWERPUNKT</div>
-        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:16}}>
-          {FOCUS_OPTS.map(f=>(
-            <button key={f.id} onClick={()=>{setFocus(f.id);}} style={{padding:"7px 13px",borderRadius:99,border:`1.5px solid ${focus===f.id?t.p:"#e2e8f0"}`,background:focus===f.id?t.p:"#fff",color:focus===f.id?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{f.label}</button>
-          ))}
-        </div>
-        {upcomingTrainings.length>0 && (
-          <>
-            <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.4}}>DAUER AUS TERMIN ÜBERNEHMEN</div>
-            <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:16}}>
-              {upcomingTrainings.map(ev=>{
-                const m=eventDurationMin(ev);
-                return (
-                  <button key={ev.id} onClick={()=>setDur(m)} style={{textAlign:"left",padding:"9px 12px",borderRadius:10,border:`1.5px solid ${dur===m?t.p:"#e2e8f0"}`,background:dur===m?t.p+"10":"#fff",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:10}}>
-                    <span style={{flex:1,fontSize:13,fontWeight:600,color:"#334155"}}>{ev.title||"Training"}<span style={{color:"#94a3b8",fontWeight:500}}> · {ev.date.slice(8,10)}.{ev.date.slice(5,7)}. {ev.time}–{ev.endTime}</span></span>
-                    <span style={{fontSize:12,fontWeight:800,color:dur===m?t.p:"#94a3b8"}}>{m} Min</span>
-                  </button>
-                );
-              })}
-            </div>
-          </>
-        )}
-        <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.4}}>DAUER</div>
-        <div style={{display:"flex",gap:6,marginBottom:16}}>
-          {[45,60,75,90,120].map(m=>(
-            <button key={m} onClick={()=>setDur(m)} style={{flex:1,padding:"9px 4px",borderRadius:10,border:`1.5px solid ${dur===m?t.p:"#e2e8f0"}`,background:dur===m?t.p:"#fff",color:dur===m?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{m}'</button>
-          ))}
-        </div>
-        {cat && <div style={{fontSize:12,color:"#94a3b8",marginBottom:12}}>Übungen passend für: <strong style={{color:"#475569"}}>{cat}</strong></div>}
-        <button onClick={generate} style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:t.p,color:"#fff",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>
-          {plan?"Neu generieren":"Trainingsplan erstellen"}
-        </button>
-      </div>
-
-      {(()=>{
-        const withPlan = (data.events||[]).filter(e=>e.tid===tid && e.trainingPlan && e.date>=now())
-          .sort((a,b)=>(a.date+(a.time||"")).localeCompare(b.date+(b.time||"")));
-        if(withPlan.length===0) return null;
-        return (
-          <div style={{background:"#fff",borderRadius:14,border:"1.5px solid #e2e8f0",padding:"14px",marginBottom:14}}>
-            <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.4}}>TERMINE MIT PLAN</div>
-            <div style={{display:"flex",flexDirection:"column",gap:6}}>
-              {withPlan.map(ev=>{
-                const n=(ev.trainingPlan.sessions?.[0]?.blocks||[]).length;
-                return (
-                  <div key={ev.id} style={{display:"flex",alignItems:"center",gap:6,padding:"9px 12px",borderRadius:10,border:"1.5px solid #e2e8f0",background:"#f8fafc"}}>
-                    <span style={{flex:1,fontSize:13,fontWeight:600,color:"#334155"}}>{ev.title||"Training"}<span style={{color:"#94a3b8",fontWeight:500}}> · {ev.date.slice(8,10)}.{ev.date.slice(5,7)}.{ev.time?" "+ev.time:""} · {n} Übungen</span></span>
-                    <button onClick={()=>removeFromEvent(ev)} title="Plan entfernen" style={{flexShrink:0,padding:"6px 11px",borderRadius:9,border:"1.5px solid #fecaca",background:"#fef2f2",color:"#dc2626",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>entfernen</button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })()}
-
-      {plan && plan.sessions.map((sess,si)=>{
-        const total = sess.blocks.reduce((a,b)=>a+(b.drill.min||0),0);
-        return (
-          <div key={si} style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",padding:"16px",marginBottom:12}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
-              <div style={{fontWeight:800,fontSize:15,color:"#0f172a"}}>{sess.title}</div>
-              <span style={{fontSize:12,fontWeight:700,color:t.p,background:t.p+"15",borderRadius:7,padding:"3px 9px"}}>{total} Min{dur && total < dur-10 ? " / Ziel "+dur : ""}</span>
-            </div>
-            {dur && total < dur-10 && <div style={{background:"#fef9c3",border:"1px solid #fde68a",borderRadius:9,padding:"8px 11px",fontSize:11.5,color:"#854d0e",lineHeight:1.45,marginBottom:10}}>Für diese Altersklasse gibt es nicht genug passende Übungen, um {dur} Min zu füllen – das entspricht auch der kürzeren Trainingszeit jüngerer Jahrgänge.</div>}
-            <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              {sess.blocks.map((b,bi)=>{
-                const fo=DRILL_FOCUS.find(f=>f.id===b.drill.focus)||{label:b.drill.focus,col:"#64748b"};
-                const key=si+"-"+bi;
-                const isOpen=openDrill===key;
-                return (
-                  <div key={bi} style={{border:"1px solid #e2e8f0",borderRadius:11,overflow:"hidden"}}>
-                    <button onClick={()=>setOpenDrill(isOpen?null:key)} style={{width:"100%",textAlign:"left",padding:"10px 12px",background:"#f8fafc",border:"none",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:9}}>
-                      <span style={{fontSize:10,fontWeight:800,color:"#94a3b8",width:62,flexShrink:0}}>{b.phase}</span>
-                      <span style={{width:8,height:8,borderRadius:"50%",background:fo.col,flexShrink:0}}/>
-                      <span style={{flex:1,fontWeight:700,fontSize:13.5,color:"#0f172a"}}>{b.drill.title}</span>
-                      <span style={{fontSize:11,color:"#94a3b8"}}>{b.drill.min} Min</span>
-                      <span style={{fontSize:15,color:"#cbd5e1",transform:isOpen?"rotate(90deg)":"none"}}>›</span>
-                    </button>
-                    {isOpen && (
-                      <div style={{padding:"10px 12px"}}>
-                        <StyleToggle value={planStyle} onChange={setPlanStyle} t={t}/>
-                        <div style={{display:"flex",justifyContent:"center",marginBottom:9}}>
-                          <DrillDiagram field={b.drill.field} elements={b.drill.el} color={t.p||"#16a34a"} width={260} variant={planStyle}/>
-                        </div>
-                        {planStyle==="kids"&&b.drill.kids
-                          ? <div style={{background:"#fffbeb",border:"2px solid #fde68a",borderRadius:12,padding:"11px 13px",fontSize:14,color:"#78350f",lineHeight:1.6,fontWeight:600}}>{b.drill.kids}</div>
-                          : <>
-                        <p style={{fontSize:12.5,color:"#334155",lineHeight:1.55,margin:0}}>{b.drill.desc}</p>
-                        {b.drill.coach && <div style={{marginTop:7,background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:8,padding:"7px 10px",fontSize:11.5,color:"#166534",lineHeight:1.45}}><strong>Coaching:</strong> {b.drill.coach}</div>}
-                            </>}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })}
-      {plan && <div style={{display:"flex",gap:8,marginBottom:10}}>
-        <button onClick={doShare} style={{flex:1,padding:"11px",borderRadius:11,border:"none",background:t.p,color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Teilen</button>
-        <button onClick={doCopy} style={{flex:1,padding:"11px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{copied?"Kopiert ✓":"Kopieren"}</button>
-        <button onClick={doDownload} style={{flex:1,padding:"11px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Download</button>
-      </div>}
-      {plan && plan.type==="single" && (()=>{
-        const upcoming = (data.events||[]).filter(e=>e.tid===tid && e.type==="training" && e.date>=now())
-          .sort((a,b)=>(a.date+(a.time||"")).localeCompare(b.date+(b.time||""))).slice(0,5);
-        if(upcoming.length===0) return null;
-        return (
-          <div style={{background:"#fff",borderRadius:14,border:"1.5px solid #e2e8f0",padding:"14px",marginBottom:10}}>
-            <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.4}}>AN TERMIN HÄNGEN</div>
-            <div style={{display:"flex",flexDirection:"column",gap:6}}>
-              {upcoming.map(ev=>(
-                <div key={ev.id} style={{display:"flex",alignItems:"center",gap:6}}>
-                  <button onClick={()=>attachToEvent(ev)} style={{flex:1,textAlign:"left",padding:"9px 12px",borderRadius:10,border:`1.5px solid ${attachedTo===ev.id?t.p:"#e2e8f0"}`,background:attachedTo===ev.id?t.p+"10":"#fff",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:10}}>
-                    <span style={{flex:1,fontSize:13,fontWeight:600,color:"#334155"}}>{ev.title||"Training"}<span style={{color:"#94a3b8",fontWeight:500}}> · {ev.date.slice(8,10)}.{ev.date.slice(5,7)}.{ev.time?" "+ev.time:""}</span></span>
-                    <span style={{fontSize:12,fontWeight:700,color:attachedTo===ev.id?t.p:"#94a3b8"}}>{attachedTo===ev.id?"Gehängt ✓":ev.trainingPlan?"ersetzen":"wählen"}</span>
-                  </button>
-                  {ev.trainingPlan && attachedTo!==ev.id && (
-                    <button onClick={()=>removeFromEvent(ev)} title="Plan entfernen" style={{flexShrink:0,width:38,height:38,borderRadius:10,border:"1.5px solid #fecaca",background:"#fef2f2",color:"#dc2626",fontWeight:800,fontSize:16,cursor:"pointer",fontFamily:"inherit"}}>×</button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      })()}
-      {plan && <div style={{fontSize:11,color:"#94a3b8",lineHeight:1.5,textAlign:"center",marginTop:4}}>Vorschlag aus der Übungsbibliothek – „Neu generieren" für andere Auswahl. Lokal erstellt, keine Daten verlassen die App.</div>}
-    </div>
-  );
-}
-
-function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false }) {
+function TeamHub({ data, myTids, save, fire, cl, session }) {
   const [subTab, setSubTab] = useState("players"); // players | attendance | stats
   const t = TH(cl);
   const subTabs = [
     { id:"players",    label:"Spieler",     icon:"P" },
     { id:"attendance", label:"Anwesenheit", icon:"S" },
     { id:"results",    label:"Ergebnisse",  icon:"E" },
-    { id:"analysis",   label:"Analyse",     icon:"A" },
-    { id:"ziele",      label:"Ziele",       icon:"Z" },
-    { id:"drills",     label:"Übungen",     icon:"U" },
-    { id:"planner",    label:"Planer",      icon:"W" },
-    { id:"trainings",  label:"Trainings",   icon:"TP" },
-    { id:"taktik",     label:"Taktik",      icon:"TB" },
-    ...(isAdmin ? [{ id:"manage", label:"Mannschaften", icon:"M" }] : []),
   ];
   return (
     <div>
-      <div style={{display:"flex",gap:6,marginBottom:14,overflowX:"auto",scrollbarWidth:"none"}}>
+      <div style={{display:"flex",gap:6,marginBottom:14}}>
         {subTabs.map(st=>(
           <button key={st.id} onClick={()=>setSubTab(st.id)}
-            style={{flex:"1 0 auto",padding:"9px 12px",borderRadius:11,whiteSpace:"nowrap",
+            style={{flex:1,padding:"9px",borderRadius:11,
               border:`2px solid ${subTab===st.id?t.p:"#e2e8f0"}`,
               background:subTab===st.id?t.p:"#fff",
               color:subTab===st.id?"#fff":"#64748b",
               fontWeight:subTab===st.id?800:600,fontSize:13,
-              cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:6}}>
-            {HAS_ICON.has(st.id)&&<NavIcon name={st.id} size={16}/>}
+              cursor:"pointer",fontFamily:"inherit"}}>
             {st.label}
           </button>
         ))}
@@ -4226,13 +2840,6 @@ function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false }) {
       {subTab==="players"    && <PlayersTab    data={data} myTids={myTids} save={save} fire={fire} cl={cl}/>}
       {subTab==="attendance" && <AttendanceTab data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
       {subTab==="results"    && <LeagueTab     data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
-      {subTab==="analysis"   && <TeamSkillAnalysis data={data} myTids={myTids} cl={cl}/>}
-      {subTab==="ziele"      && <TrainerTrainingZiele data={data} cid={cl?.id} myTids={myTids} save={save} fire={fire} cl={cl}/>}
-      {subTab==="drills"     && <DrillLibrary cl={cl}/>}
-      {subTab==="planner"    && <TrainingPlanner data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
-      {subTab==="trainings"  && <TrainingsLibrary data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
-      {subTab==="taktik"     && <TacticBoard data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
-      {subTab==="manage"     && <ManageTeams   data={data} save={save} fire={fire} cl={cl}/>}
     </div>
   );
 }
@@ -4246,22 +2853,22 @@ const MATERIAL_CATALOG = [
   // Tore
   { id:"goal_small",   cat:"Tore",      label:"Kleines Tor",    icon:"g", col:"#dc2626", unit:"Tor",    canColor:false },
   { id:"goal_medium",  cat:"Tore",      label:"Mittleres Tor",  icon:"G", col:"#d97706", unit:"Tor",    canColor:false },
-  { id:"goal_large",   cat:"Tore",      label:"Großes Tor",    icon:"GG",col:"#334155", unit:"Tor",    canColor:false },
+  { id:"goal_large",   cat:"Tore",      label:"Grosses Tor",    icon:"GG",col:"#334155", unit:"Tor",    canColor:false },
   // Markierung
-  { id:"huetchen",     cat:"Markierung",label:"Hütchen",       icon:"^", col:"#f59e0b", unit:"Stück", canColor:true  },
-  { id:"pylone",       cat:"Markierung",label:"Pylone",         icon:"P", col:"#f97316", unit:"Stück", canColor:true  },
-  { id:"stange",       cat:"Markierung",label:"Hüpfstange",    icon:"|", col:"#64748b", unit:"Stück", canColor:true  },
-  { id:"koordleiter",  cat:"Markierung",label:"Koordinationsleiter",icon:"=",col:"#7c3aed",unit:"Stück",canColor:false},
+  { id:"huetchen",     cat:"Markierung",label:"Huetchen",       icon:"^", col:"#f59e0b", unit:"Stueck", canColor:true  },
+  { id:"pylone",       cat:"Markierung",label:"Pylone",         icon:"P", col:"#f97316", unit:"Stueck", canColor:true  },
+  { id:"stange",       cat:"Markierung",label:"Huepfstange",    icon:"|", col:"#64748b", unit:"Stueck", canColor:true  },
+  { id:"koordleiter",  cat:"Markierung",label:"Koordinationsleiter",icon:"=",col:"#7c3aed",unit:"Stueck",canColor:false},
   // Leibchen
-  { id:"leibchen",     cat:"Leibchen",  label:"Leibchen",       icon:"L", col:"#3b82f6", unit:"Stück", canColor:true  },
-  // Bälle
-  { id:"ball_fuss",    cat:"Bälle",    label:"Fußball",       icon:"o", col:"#0f172a", unit:"Ball",   canColor:false },
-  { id:"ball_hand",    cat:"Bälle",    label:"Handball",       icon:"o", col:"#d97706", unit:"Ball",   canColor:false },
-  { id:"ball_tennis",  cat:"Bälle",    label:"Tennisball",     icon:"o", col:"#84cc16", unit:"Ball",   canColor:false },
+  { id:"leibchen",     cat:"Leibchen",  label:"Leibchen",       icon:"L", col:"#3b82f6", unit:"Stueck", canColor:true  },
+  // Baelle
+  { id:"ball_fuss",    cat:"Baelle",    label:"Fussball",       icon:"o", col:"#0f172a", unit:"Ball",   canColor:false },
+  { id:"ball_hand",    cat:"Baelle",    label:"Handball",       icon:"o", col:"#d97706", unit:"Ball",   canColor:false },
+  { id:"ball_tennis",  cat:"Baelle",    label:"Tennisball",     icon:"o", col:"#84cc16", unit:"Ball",   canColor:false },
   // Sonstiges
   { id:"bander",       cat:"Sonstiges", label:"Markierungsband",icon:"-", col:"#ec4899", unit:"Rolle",  canColor:true  },
-  { id:"hürden",      cat:"Sonstiges", label:"Hürden",        icon:"H", col:"#64748b", unit:"Stück", canColor:false },
-  { id:"medizinball",  cat:"Sonstiges", label:"Medizinball",    icon:"M", col:"#7c3aed", unit:"Stück", canColor:false },
+  { id:"huerden",      cat:"Sonstiges", label:"Huerden",        icon:"H", col:"#64748b", unit:"Stueck", canColor:false },
+  { id:"medizinball",  cat:"Sonstiges", label:"Medizinball",    icon:"M", col:"#7c3aed", unit:"Stueck", canColor:false },
 ];
 
 const COLORS_DE = ["rot","blau","gelb","gruen","orange","weiss","schwarz","pink"];
@@ -4269,17 +2876,17 @@ const COLOR_HEX  = {rot:"#dc2626",blau:"#2563eb",gelb:"#f59e0b",gruen:"#16a34a",
                     orange:"#d97706",weiss:"#e2e8f0",schwarz:"#1e293b",pink:"#ec4899"};
 
 const EXERCISE_CATS = [
-  { id:"warmup",   label:"Aufwärmen",  col:"#f59e0b", bg:"#fef3c7" },
+  { id:"warmup",   label:"Aufwaermen",  col:"#f59e0b", bg:"#fef3c7" },
   { id:"technik",  label:"Technik",     col:"#2563eb", bg:"#eff6ff" },
   { id:"taktik",   label:"Taktik",      col:"#7c3aed", bg:"#ede9fe" },
   { id:"spiel",    label:"Spielform",   col:"#16a34a", bg:"#dcfce7" },
-  { id:"abkühlen",label:"Abkühlen",   col:"#64748b", bg:"#f1f5f9" },
+  { id:"abkuehlen",label:"Abkuehlen",   col:"#64748b", bg:"#f1f5f9" },
 ];
 
 const FIELD_ZONES = [
   { id:"full",      label:"Ganzes Feld",   pct:100 },
-  { id:"half_l",    label:"Linke Hälfte", pct:50  },
-  { id:"half_r",    label:"Rechte Hälfte",pct:50  },
+  { id:"half_l",    label:"Linke Haelfte", pct:50  },
+  { id:"half_r",    label:"Rechte Haelfte",pct:50  },
   { id:"third_l",   label:"Linkes Drittel",pct:33  },
   { id:"third_m",   label:"Mitteldrittel", pct:33  },
   { id:"third_r",   label:"Rechtes Drittel",pct:33 },
@@ -4317,7 +2924,7 @@ function TrainingPlanTab({ data, myTids, save, fire, cl, session }) {
   const [showNew, setShowNew] = useState(false);
   const [showInventory, setShowInventory] = useState(null);
 
-  // Nächstes Training mit Trainingsplan
+  // Naechstes Training mit Trainingsplan
   const today = new Date().toISOString().slice(0,10);
   const nextTraining = (data.events||[])
     .filter(e=>myTids.includes(e.tid)&&e.type==="training"&&e.date>=today&&e.planId)
@@ -4326,13 +2933,13 @@ function TrainingPlanTab({ data, myTids, save, fire, cl, session }) {
 
   return (
     <div>
-      {/* Nächstes Training Hint */}
+      {/* Naechstes Training Hint */}
       {linkedPlan&&(
         <div style={{background:`linear-gradient(135deg,${t.s||"#052e16"},${t.p})`,
           borderRadius:16,padding:"14px 16px",marginBottom:14,cursor:"pointer"}}
           onClick={()=>setShowInventory(linkedPlan)}>
           <div style={{color:"rgba(255,255,255,.6)",fontSize:11,fontWeight:700,marginBottom:4}}>
-            NÄCHSTES TRAINING - INVENTARLISTE
+            NAECHSTES TRAINING - INVENTARLISTE
           </div>
           <div style={{color:"#fff",fontWeight:900,fontSize:16,marginBottom:8}}>
             {linkedPlan.name}
@@ -4355,14 +2962,14 @@ function TrainingPlanTab({ data, myTids, save, fire, cl, session }) {
             );
           })()}
           <div style={{color:"rgba(255,255,255,.5)",fontSize:11,marginTop:8}}>
-            Tippen für vollständige Inventarliste
+            Tippen fuer vollstaendige Inventarliste
           </div>
         </div>
       )}
 
-      {/* Pläne Liste */}
+      {/* Plaene Liste */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-        <div style={{fontWeight:900,fontSize:15,color:"#0f172a"}}>{plans.length} Trainingspläne</div>
+        <div style={{fontWeight:900,fontSize:15,color:"#0f172a"}}>{plans.length} Trainingsplaene</div>
         <button onClick={()=>setShowNew(true)}
           style={{padding:"9px 16px",borderRadius:11,border:"none",background:t.p,
             color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
@@ -4374,10 +2981,10 @@ function TrainingPlanTab({ data, myTids, save, fire, cl, session }) {
         <div style={{textAlign:"center",padding:"40px 20px",background:"#f8fafc",
           borderRadius:16,border:"1.5px dashed #e2e8f0"}}>
           <div style={{fontWeight:700,fontSize:15,color:"#334155",marginBottom:6}}>
-            Noch keine Trainingspläne
+            Noch keine Trainingsplaene
           </div>
           <div style={{fontSize:13,color:"#94a3b8",lineHeight:1.6}}>
-            Erstelle Trainingspläne mit Übungen und Material.<br/>
+            Erstelle Trainingsplaene mit Uebungen und Material.<br/>
             Die App berechnet automatisch was du benoenigst.
           </div>
         </div>
@@ -4393,7 +3000,7 @@ function TrainingPlanTab({ data, myTids, save, fire, cl, session }) {
               <div style={{flex:1}}>
                 <div style={{fontWeight:800,fontSize:15,color:"#0f172a"}}>{plan.name}</div>
                 <div style={{fontSize:12,color:"#64748b",marginTop:2}}>
-                  {(plan.exercises||[]).length} Übungen  {totalMins} Min.
+                  {(plan.exercises||[]).length} Uebungen  {totalMins} Min.
                 </div>
               </div>
               <div style={{display:"flex",gap:7}}>
@@ -4431,7 +3038,7 @@ function TrainingPlanTab({ data, myTids, save, fire, cl, session }) {
                 </div>
               );
             })()}
-            {/* Übungs-Kacheln */}
+            {/* Uebungs-Kacheln */}
             {(plan.exercises||[]).length>0&&(
               <div style={{display:"flex",gap:4,padding:"0 14px 12px",overflowX:"auto",scrollbarWidth:"none"}}>
                 {plan.exercises.map((ex,i)=>{
@@ -4442,7 +3049,7 @@ function TrainingPlanTab({ data, myTids, save, fire, cl, session }) {
                       <div style={{fontWeight:700,fontSize:11,color:cat.col}}>{ex.duration||0} Min</div>
                       <div style={{fontWeight:600,fontSize:11,color:"#334155",
                         whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:90}}>
-                        {ex.name||"Übung"}
+                        {ex.name||"Uebung"}
                       </div>
                     </div>
                   );
@@ -4486,7 +3093,7 @@ function InventorySheet({ plan, data, onClose, cl }) {
   const zones = [...new Set((plan.exercises||[]).map(e=>e.zone).filter(Boolean).filter(x=>!x.hidden))];
 
   const copyList = () => {
-    const text = "Inventar für: "+plan.name+"\n\n"+
+    const text = "Inventar fuer: "+plan.name+"\n\n"+
       cats.map(cat=>
         cat+":\n"+inv.filter(x=>x.cat===cat)
           .map(x=>"  "+x.total+"x "+x.label+(x.color?" ("+x.color+")":""))
@@ -4508,7 +3115,7 @@ function InventorySheet({ plan, data, onClose, cl }) {
           </div>
           <div style={{color:"#fff",fontWeight:900,fontSize:20}}>{plan.name}</div>
           <div style={{color:"rgba(255,255,255,.6)",fontSize:12,marginTop:4}}>
-            {(plan.exercises||[]).length} Übungen  {totalMins} Min.
+            {(plan.exercises||[]).length} Uebungen  {totalMins} Min.
           </div>
         </div>
 
@@ -4552,9 +3159,9 @@ function InventorySheet({ plan, data, onClose, cl }) {
                             fontSize:11,fontWeight:700}}>{item.color}</span>}
                         </div>
                         <div style={{fontSize:11,color:"#94a3b8",marginTop:1}}>
-                          {item.unit==="Tor"?"Tore benötigt":
-                           item.unit==="Ball"?"Bälle":
-                           "Stück"}
+                          {item.unit==="Tor"?"Tore benoetigt":
+                           item.unit==="Ball"?"Baelle":
+                           "Stueck"}
                         </div>
                       </div>
                       <div style={{width:44,height:44,borderRadius:12,background:dotCol,
@@ -4586,7 +3193,7 @@ function InventorySheet({ plan, data, onClose, cl }) {
             <button onClick={onClose}
               style={{flex:1,padding:"12px",borderRadius:12,border:"none",background:t.p,
                 color:"#fff",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
-              Schließen
+              Schliessen
             </button>
           </div>
         </div>
@@ -4629,7 +3236,7 @@ function FieldPlanView({ exercises, cl }) {
         <line x1={W/2} y1={H*.06} x2={W/2} y2={H*.94} stroke="white" strokeWidth="1" opacity=".4"/>
         <circle cx={W/2} cy={H/2} r={Math.min(W,H)*.1} fill="none" stroke="white" strokeWidth="1" opacity=".4"/>
 
-        {/* Übungs-Zonen */}
+        {/* Uebungs-Zonen */}
         {exercises.filter(ex=>ex.zone&&ZONE_RECTS[ex.zone]).map((ex,i)=>{
           const zr = ZONE_RECTS[ex.zone];
           const cat = EXERCISE_CATS.find(c=>c.id===ex.cat)||EXERCISE_CATS[0];
@@ -4674,8 +3281,6 @@ function PlanEditor({ plan, cid, myTids, data, save, fire, cl, onClose }) {
 
   const savePlan = () => {
     if(!name.trim()) return;
-    const asTemplate = !!(plan?.isTemplate);
-    const shareWithAll = !!(plan?.shared);
     const rec = { id:plan?.id||uid(), cid, tid, name:name.trim(), exercises, updatedAt:new Date().toISOString(), isTemplate:asTemplate, shared:shareWithAll };
     const plans = data.trainingPlans||[];
     const next = plan ? plans.map(p=>p.id===plan.id?rec:p) : [...plans,rec];
@@ -4685,7 +3290,7 @@ function PlanEditor({ plan, cid, myTids, data, save, fire, cl, onClose }) {
   };
   const delPlan = () => {
     save({...data, trainingPlans:(data.trainingPlans||[]).filter(p=>p.id!==plan?.id)});
-    fire("Plan gelöscht"); onClose();
+    fire("Plan geloescht"); onClose();
   };
   const delEx = idx => setExercises(ex=>ex.filter((_,i)=>i!==idx));
   const moveEx = (idx,dir) => {
@@ -4726,10 +3331,10 @@ function PlanEditor({ plan, cid, myTids, data, save, fire, cl, onClose }) {
             </select>
           )}
 
-          {/* Übungen */}
+          {/* Uebungen */}
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
             <div style={{fontWeight:700,fontSize:13,color:"#64748b"}}>
-              {exercises.length} Übungen  {totalMins} Min.
+              {exercises.length} Uebungen  {totalMins} Min.
             </div>
             <div style={{display:"flex",gap:7}}>
               <button onClick={()=>setShowTplBrowser(true)}
@@ -4747,7 +3352,7 @@ function PlanEditor({ plan, cid, myTids, data, save, fire, cl, onClose }) {
           {exercises.length===0&&(
             <div style={{textAlign:"center",padding:"28px",background:"#f8fafc",
               borderRadius:12,border:"1.5px dashed #e2e8f0",marginBottom:12}}>
-              <p style={{color:"#94a3b8",margin:0,fontSize:13}}>Noch keine Übungen</p>
+              <p style={{color:"#94a3b8",margin:0,fontSize:13}}>Noch keine Uebungen</p>
             </div>
           )}
 
@@ -4759,7 +3364,7 @@ function PlanEditor({ plan, cid, myTids, data, save, fire, cl, onClose }) {
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
                   <div style={{width:8,height:8,borderRadius:"50%",background:cat.col,flexShrink:0}}/>
                   <div style={{flex:1}}>
-                    <div style={{fontWeight:700,fontSize:13,color:"#0f172a"}}>{ex.name||"Übung"}</div>
+                    <div style={{fontWeight:700,fontSize:13,color:"#0f172a"}}>{ex.name||"Uebung"}</div>
                     <div style={{fontSize:11,color:"#94a3b8",marginTop:1}}>
                       {cat.label}  {ex.duration||0} Min.
                       {ex.zone&&"  "+FIELD_ZONES.find(z=>z.id===ex.zone)?.label}
@@ -4792,7 +3397,7 @@ function PlanEditor({ plan, cid, myTids, data, save, fire, cl, onClose }) {
         </div>
 
         <div style={{padding:"12px 20px 32px",borderTop:"1px solid #f1f5f9",flexShrink:0,display:"flex",gap:9}}>
-          {plan&&<button onClick={delPlan} style={{padding:"12px",borderRadius:12,border:"none",background:"#fee2e2",color:"#dc2626",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Löschen</button>}
+          {plan&&<button onClick={delPlan} style={{padding:"12px",borderRadius:12,border:"none",background:"#fee2e2",color:"#dc2626",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Loeschen</button>}
           <button onClick={onClose} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
           <button onClick={savePlan} disabled={!name.trim()} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:name.trim()?t.p:"#e2e8f0",color:name.trim()?"#fff":"#94a3b8",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Speichern</button>
         </div>
@@ -4809,7 +3414,7 @@ function PlanEditor({ plan, cid, myTids, data, save, fire, cl, onClose }) {
           };
           setExercises(arr=>[...arr,ex]);
           setShowTplBrowser(false);
-          fire("Übung aus Bibliothek hinzugefügt: "+tpl.name);
+          fire("Uebung aus Bibliothek hinzugefuegt: "+tpl.name);
         }}
         cid={cid} myTids={myTids} data={data} cl={cl}
         onClose={()=>setShowTplBrowser(false)}
@@ -4861,13 +3466,13 @@ function ExerciseEditor({ ex, onSave, onClose, cl }) {
         <div style={{background:t.p,padding:"16px 20px 14px",borderRadius:"22px 22px 0 0"}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             <div style={{flex:1,color:"#fff",fontWeight:900,fontSize:17}}>
-              {ex?"Übung bearbeiten":"Neue Übung"}
+              {ex?"Uebung bearbeiten":"Neue Uebung"}
             </div>
             <button onClick={onClose} style={{width:30,height:30,borderRadius:9,background:"rgba(255,255,255,.2)",border:"none",color:"#fff",cursor:"pointer",fontWeight:700}}>x</button>
           </div>
         </div>
         <div style={{padding:"16px 20px 0"}}>
-          <input value={f.name} onChange={e=>u({name:e.target.value})} placeholder="Name der Übung"
+          <input value={f.name} onChange={e=>u({name:e.target.value})} placeholder="Name der Uebung"
             style={{width:"100%",padding:"12px 14px",fontSize:15,fontWeight:700,
               border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",
               marginBottom:12,boxSizing:"border-box"}}/>
@@ -4911,7 +3516,7 @@ function ExerciseEditor({ ex, onSave, onClose, cl }) {
             <button onClick={()=>setShowMat(true)}
               style={{padding:"5px 12px",borderRadius:8,border:"none",background:t.p+"18",
                 color:t.p,fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
-              + Hinzufügen
+              + Hinzufuegen
             </button>
           </div>
           {f.material.length===0&&(
@@ -4946,7 +3551,7 @@ function ExerciseEditor({ ex, onSave, onClose, cl }) {
           {showMat&&(
             <div style={{background:"#f8fafc",borderRadius:14,padding:"14px",
               border:"1.5px solid #e2e8f0",marginBottom:12}}>
-              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8}}>MATERIAL WÄHLEN</div>
+              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8}}>MATERIAL WAEHLEN</div>
               {matCats.map(cat=>(
                 <div key={cat} style={{marginBottom:10}}>
                   <div style={{fontSize:10,color:"#94a3b8",fontWeight:700,marginBottom:5}}>{cat.toUpperCase()}</div>
@@ -4984,7 +3589,7 @@ function ExerciseEditor({ ex, onSave, onClose, cl }) {
                     <button onClick={addMat}
                       style={{padding:"7px 14px",borderRadius:9,border:"none",background:t.p,
                         color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
-                      Hinzufügen
+                      Hinzufuegen
                     </button>
                   </div>
                 );
@@ -5000,7 +3605,7 @@ function ExerciseEditor({ ex, onSave, onClose, cl }) {
               background:f.name.trim()?t.p:"#e2e8f0",
               color:f.name.trim()?"#fff":"#94a3b8",
               fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
-            Übung speichern
+            Uebung speichern
           </button>
         </div>
       </div>
@@ -5009,7 +3614,7 @@ function ExerciseEditor({ ex, onSave, onClose, cl }) {
 }
 
 
-// TRAINING LIBRARY - Vollständige Vorlagen-Datenbank
+// TRAINING LIBRARY - Vollstaendige Vorlagen-Datenbank
 // Jede Vorlage hat: id, name, category, ageGroups, duration, intensity(1-10),
 //   skills (was wird trainiert), description, coaching_points, variations,
 //   material, fieldZone, playerCount, minPlayers
@@ -5035,7 +3640,7 @@ const SKILLS = {
   wendigkeit:    { label:"Wendigkeit",     cat:"Athletik", col:"#dc2626" },
   // MENTAL
   spielintelligenz:{ label:"Spielintelligenz",cat:"Mental",col:"#d97706" },
-  zweikampf:     { label:"Zweikampfstärke",cat:"Mental",  col:"#d97706" },
+  zweikampf:     { label:"Zweikampfstaerke",cat:"Mental",  col:"#d97706" },
   teamarbeit:    { label:"Teamarbeit",     cat:"Mental",   col:"#d97706" },
   konzentration: { label:"Konzentration",  cat:"Mental",   col:"#d97706" },
 };
@@ -5057,19 +3662,19 @@ const AGE_GROUPS = {
 const TRAINING_TEMPLATES = [
 
 // ================================================================
-// AUFWÄRMEN (8 Vorlagen)
+// AUFWAERMEN (8 Vorlagen)
 // ================================================================
 {
   id:"aw_01", cat:"warmup", name:"Bewegungsschule mit Ball",
   age:["bambini","g","f"],
   duration:15, intensity:3,
   skills:["koordination","ballkontrolle"],
-  description:`Die Spieler bewegen sich frei im Feld und führen auf Zuruf des Trainers verschiedene Bewegungsaufgaben mit dem Ball durch. Tippen, Rollen, Hochhalten.`,
-  coaching:`Kein Leistungsdruck. Jeder macht in seinem eigenen Tempo. Lob und Ermutigung stehen im Vordergrund. Kreative Lösungen der Kinder unbedingt anerkennen.`,
-  variations:`Mit Farben arbeiten (gelbes Hütchen = hochheben, rotes = stoppen). Musik einsetzen um Stimmung zu fördern.`,
+  description:`Die Spieler bewegen sich frei im Feld und fuehren auf Zuruf des Trainers verschiedene Bewegungsaufgaben mit dem Ball durch. Tippen, Rollen, Hochhalten.`,
+  coaching:`Kein Leistungsdruck. Jeder macht in seinem eigenen Tempo. Lob und Ermutigung stehen im Vordergrund. Kreative Loesungen der Kinder unbedingt anerkennen.`,
+  variations:`Mit Farben arbeiten (gelbes Huetchen = hochheben, rotes = stoppen). Musik einsetzen um Stimmung zu foerdern.`,
   minPlayers:4, fieldZone:"full",
-  material:[{id:"ball_fuss",qty:1,label:"Fußball",cat:"Bälle"},{id:"huetchen",qty:8,color:"gelb",label:"Hütchen",cat:"Markierung"}],
-  ageNote:"Perfekt für Bambinis und G-Jugend. Spielerischer Einstieg ohne taktischen Anspruch.",
+  material:[{id:"ball_fuss",qty:1,label:"Fussball",cat:"Baelle"},{id:"huetchen",qty:8,color:"gelb",label:"Huetchen",cat:"Markierung"}],
+  ageNote:"Perfekt fuer Bambinis und G-Jugend. Spielerischer Einstieg ohne taktischen Anspruch.",
 },
 {
   id:"aw_02", cat:"warmup", name:"Fangspiel mit Freiloesen",
@@ -5078,10 +3683,10 @@ const TRAINING_TEMPLATES = [
   skills:["schnelligkeit","wendigkeit","teamarbeit"],
   description:`2 Faenger jagen die Gruppe. Gefangene werden durch Unterlaufen der gespreizten Beine eines Mitspielers befreit. Variante: Mit Ball unter dem Arm laufen.`,
   coaching:`Faenger nach 2 Min tauschen. Auf Mitspieler-Kommunikation achten. Befreien als Teamaktion betonen.`,
-  variations:`Eisbaer-Fangis: Gefangene stellen sich mit gespreizten Armen hin. Nur Paare können befreien.`,
+  variations:`Eisbaer-Fangis: Gefangene stellen sich mit gespreizten Armen hin. Nur Paare koennen befreien.`,
   minPlayers:8, fieldZone:"half_l",
   material:[],
-  ageNote:"F und E Jugend ideal. Fördert Sozialverhalten und Koerperkontrolle durch spielerische Dynamik.",
+  ageNote:"F und E Jugend ideal. Foerdert Sozialverhalten und Koerperkontrolle durch spielerische Dynamik.",
 },
 {
   id:"aw_03", cat:"warmup", name:"Koordinationsleiter - Kombiniert",
@@ -5089,23 +3694,23 @@ const TRAINING_TEMPLATES = [
   duration:12, intensity:5,
   skills:["koordination","schnelligkeit","konzentration"],
   description:`Verschiedene Laufmuster durch die Koordinationsleiter: Einbeinig, Seitgallopp, Kreuzschritt, Doppelschritt. Im Anschluss Sprint um eine Pylone.`,
-  coaching:`Qualität vor Geschwindigkeit. Korrekte Fussarbeit beobachten. Arme aktiv einsetzen. Nach Technikbeherrschung Tempo steigern.`,
+  coaching:`Qualitaet vor Geschwindigkeit. Korrekte Fussarbeit beobachten. Arme aktiv einsetzen. Nach Technikbeherrschung Tempo steigern.`,
   variations:`Mit Ball: Ballannahme nach Leiter und direkte Weiterverarbeitung. Reaktionstraining: Trainer zeigt Richtung erst beim Austritt aus der Leiter.`,
   minPlayers:4, fieldZone:"third_m",
   material:[{id:"koordleiter",qty:2,label:"Koordinationsleiter",cat:"Markierung"},{id:"pylone",qty:6,color:"orange",label:"Pylone",cat:"Markierung"}],
-  ageNote:"Ab E-Jugend geeignet. Jueingere Kinder können Muster noch nicht zuverlssig reproduzieren.",
+  ageNote:"Ab E-Jugend geeignet. Jueingere Kinder koennen Muster noch nicht zuverlssig reproduzieren.",
 },
 {
   id:"aw_04", cat:"warmup", name:"Rondos 4 gegen 1",
   age:["d","c","ba","senioren"],
   duration:10, intensity:5,
   skills:["passen","raumaufteilung","spielintelligenz"],
-  description:`4 Spieler halten den Ball gegen 1 Störer in einem Quadrat (ca. 8x8 Meter). Maximal 2 Kontakte. Störer wechselt nach Ballgewinn oder 5 Ballverlusten.`,
-  coaching:`Dreieck zum Ball bilden. Anspielstationen öffnen. Tempo variieren. Passweg antaeuschen. 'Doppelpass als Fluchtweg'.`,
-  variations:`3v1 für höheren Anspruch. 5v2 für Einsteiger. Einrueckung fordern wenn Störer presst.`,
+  description:`4 Spieler halten den Ball gegen 1 Stoerer in einem Quadrat (ca. 8x8 Meter). Maximal 2 Kontakte. Stoerer wechselt nach Ballgewinn oder 5 Ballverlusten.`,
+  coaching:`Dreieck zum Ball bilden. Anspielstationen oeffnen. Tempo variieren. Passweg antaeuschen. 'Doppelpass als Fluchtweg'.`,
+  variations:`3v1 fuer hoeheren Anspruch. 5v2 fuer Einsteiger. Einrueckung fordern wenn Stoerer presst.`,
   minPlayers:5, fieldZone:"mittelkreis",
-  material:[{id:"ball_fuss",qty:2,label:"Fußball",cat:"Bälle"},{id:"huetchen",qty:4,color:"gelb",label:"Hütchen",cat:"Markierung"}],
-  ageNote:"Ab D-Jugend. Das klassische Aufwärm-Rondo. Baut technisches und taktisches Verständnis gleichzeitig auf.",
+  material:[{id:"ball_fuss",qty:2,label:"Fussball",cat:"Baelle"},{id:"huetchen",qty:4,color:"gelb",label:"Huetchen",cat:"Markierung"}],
+  ageNote:"Ab D-Jugend. Das klassische Aufwaerm-Rondo. Baut technisches und taktisches Verstaendnis gleichzeitig auf.",
 },
 
 // ================================================================
@@ -5116,11 +3721,11 @@ const TRAINING_TEMPLATES = [
   age:["f","e","d"],
   duration:20, intensity:4,
   skills:["passen","ballkontrolle","koordination"],
-  description:`Zwei Gruppen stehen sich in 15 Meter Abstand gegenüber. Spieler A passt zu Spieler B und laeuft ans Ende der gegenüberliegenden Gruppe. B nimmt an, passt zu C und laeuft hinterher. Varianten: Innenseite, Aussenrist, Flachpass, hoher Ball.`,
-  coaching:`Standfuss neben den Ball setzen. Geschlossene Hufte bei Innenseite. Auge auf den Ball beim Kontakt. Annahme mit dem ersten Kontakt in die gewünschte Richtung.`,
-  variations:`Mit Hürden dazwischen. Direktpass erzwingen. Doppelpass einbauen. Annahme mit Schwacher Fuss.`,
+  description:`Zwei Gruppen stehen sich in 15 Meter Abstand gegenueber. Spieler A passt zu Spieler B und laeuft ans Ende der gegenueberliegenden Gruppe. B nimmt an, passt zu C und laeuft hinterher. Varianten: Innenseite, Aussenrist, Flachpass, hoher Ball.`,
+  coaching:`Standfuss neben den Ball setzen. Geschlossene Hufte bei Innenseite. Auge auf den Ball beim Kontakt. Annahme mit dem ersten Kontakt in die gewuenschte Richtung.`,
+  variations:`Mit Huerden dazwischen. Direktpass erzwingen. Doppelpass einbauen. Annahme mit Schwacher Fuss.`,
   minPlayers:6, fieldZone:"half_l",
-  material:[{id:"ball_fuss",qty:4,label:"Fußball",cat:"Bälle"},{id:"huetchen",qty:4,color:"rot",label:"Hütchen",cat:"Markierung"}],
+  material:[{id:"ball_fuss",qty:4,label:"Fussball",cat:"Baelle"},{id:"huetchen",qty:4,color:"rot",label:"Huetchen",cat:"Markierung"}],
   ageNote:"F-Jugend: Nur Innenseite. E-Jugend: Aussenrist als Erweiterung. D-Jugend: Schwacher Fuss pflicht.",
 },
 {
@@ -5128,11 +3733,11 @@ const TRAINING_TEMPLATES = [
   age:["g","f","e","d"],
   duration:25, intensity:5,
   skills:["dribbling","torabschluss","ballkontrolle"],
-  description:`Parcours aus Pylonen und Stangen: Slalom-Dribbling, Linienüberquerung, Tempowechsel, abschließendes Schusstraining auf kleines oder großes Tor. Jeder Spieler hat einen Ball.`,
-  coaching:`Kopf hoch beim Dribbling. Ball eng führen. Bremsen und Beschleunigen überraschen den Gegner. Beim Torabschluss: Auge auf den Ball, Schwungbein weit nach.`,
+  description:`Parcours aus Pylonen und Stangen: Slalom-Dribbling, Linienueberquerung, Tempowechsel, abschliessendes Schusstraining auf kleines oder grosses Tor. Jeder Spieler hat einen Ball.`,
+  coaching:`Kopf hoch beim Dribbling. Ball eng fuehren. Bremsen und Beschleunigen ueberraschen den Gegner. Beim Torabschluss: Auge auf den Ball, Schwungbein weit nach.`,
   variations:`Zeitwettbewerb einbauen. Abschluss mit schwachem Fuss. Dribblingduell nach Parcours.`,
   minPlayers:4, fieldZone:"strafraum",
-  material:[{id:"pylone",qty:8,color:"gelb",label:"Pylone",cat:"Markierung"},{id:"stange",qty:4,label:"Hüpfstange",cat:"Markierung"},{id:"goal_small",qty:2,label:"Kleines Tor",cat:"Tore"},{id:"ball_fuss",qty:1,label:"Fußball",cat:"Bälle"}],
+  material:[{id:"pylone",qty:8,color:"gelb",label:"Pylone",cat:"Markierung"},{id:"stange",qty:4,label:"Huepfstange",cat:"Markierung"},{id:"goal_small",qty:2,label:"Kleines Tor",cat:"Tore"},{id:"ball_fuss",qty:1,label:"Fussball",cat:"Baelle"}],
   ageNote:"G/F: Einfacher Slalom ohne Zeitdruck. E: Mit Tempodribbling. D: Gegenspieler nach Parcours.",
 },
 {
@@ -5140,11 +3745,11 @@ const TRAINING_TEMPLATES = [
   age:["e","d","c"],
   duration:20, intensity:5,
   skills:["passen","ballkontrolle","spielintelligenz"],
-  description:`Spieler A passt zu B, laeuft an und erhält den Wandpass. Weiter zum nächsten Spieler oder Tor. Kombinationen werden schrittweise erweitert: 1-2, Doppelpass mit Richtungswechsel, Hereingabe und Abschluss.`,
-  coaching:`Timing des Anlaufwegs entscheidend. Wandpassgeber sofort anspielbereit. Abstand kontrollieren. Tempo der Kombination erhöhen wenn sicher.`,
+  description:`Spieler A passt zu B, laeuft an und erhaelt den Wandpass. Weiter zum naechsten Spieler oder Tor. Kombinationen werden schrittweise erweitert: 1-2, Doppelpass mit Richtungswechsel, Hereingabe und Abschluss.`,
+  coaching:`Timing des Anlaufwegs entscheidend. Wandpassgeber sofort anspielbereit. Abstand kontrollieren. Tempo der Kombination erhoehen wenn sicher.`,
   variations:`Gegen passive Verteidigung. Doppelpass und Hereingabe kombinieren. 3-Mann-Kombination.`,
   minPlayers:6, fieldZone:"half_r",
-  material:[{id:"ball_fuss",qty:3,label:"Fußball",cat:"Bälle"},{id:"goal_medium",qty:1,label:"Mittleres Tor",cat:"Tore"}],
+  material:[{id:"ball_fuss",qty:3,label:"Fussball",cat:"Baelle"},{id:"goal_medium",qty:1,label:"Mittleres Tor",cat:"Tore"}],
   ageNote:"E-Jugend: Einfache 1-2 Kombinationen. D: Richtungswechsel. C: Komplexe Kombinationen mit Gegner.",
 },
 {
@@ -5153,10 +3758,10 @@ const TRAINING_TEMPLATES = [
   duration:25, intensity:6,
   skills:["torabschluss","ballkontrolle"],
   description:`Stationaerer Abschluss aus verschiedenen Distanzen: 11m, 16m, Einlauf-Abschluss. Low Drive: Flacher Ball mit Innenrist. Vollspann: Getretener Schuss mit dem Spann. Zielscheiben im Tor als Zielhilfe.`,
-  coaching:`Anlaufwinkel 30-45 Grad. Standfuss schulterbreit neben Ball. Schussknie beim Aufprall über dem Ball. Durchschwingen des Schussbeins. Treffsicherheit vor Haerte.`,
+  coaching:`Anlaufwinkel 30-45 Grad. Standfuss schulterbreit neben Ball. Schussknie beim Aufprall ueber dem Ball. Durchschwingen des Schussbeins. Treffsicherheit vor Haerte.`,
   variations:`Schuss nach Flanke. Nach 1-2 Kombinationen. Aus der Drehung. Halbvolley.`,
   minPlayers:4, fieldZone:"strafraum",
-  material:[{id:"ball_fuss",qty:6,label:"Fußball",cat:"Bälle"},{id:"goal_large",qty:1,label:"Großes Tor",cat:"Tore"},{id:"huetchen",qty:4,color:"gelb",label:"Hütchen",cat:"Markierung"}],
+  material:[{id:"ball_fuss",qty:6,label:"Fussball",cat:"Baelle"},{id:"goal_large",qty:1,label:"Grosses Tor",cat:"Tore"},{id:"huetchen",qty:4,color:"gelb",label:"Huetchen",cat:"Markierung"}],
   ageNote:"Ab D-Jugend. Technikvermittlung vor Wettkampfsituation. Torwart optional einbauen ab C-Jugend.",
 },
 {
@@ -5164,11 +3769,11 @@ const TRAINING_TEMPLATES = [
   age:["d","c","ba","senioren"],
   duration:20, intensity:5,
   skills:["kopfballspiel","zweikampf"],
-  description:`Kopfball aus dem Stand: Augenkontakt auf Ball halten. Kopfball aus der Bewegung mit Anlauf. Kopfball aus dem Sprung. Partner hält Ball, Spieler nickt ihn ins Netz. Kopfball-Duell als Abschluss.`,
-  coaching:`Stirn trifft Ball - nicht Scheitel. Nacken anspannen. Mit dem Ball nach vorne arbeiten. Augen öffnet halten. Arme für Balance ausbreiten.`,
+  description:`Kopfball aus dem Stand: Augenkontakt auf Ball halten. Kopfball aus der Bewegung mit Anlauf. Kopfball aus dem Sprung. Partner haelt Ball, Spieler nickt ihn ins Netz. Kopfball-Duell als Abschluss.`,
+  coaching:`Stirn trifft Ball - nicht Scheitel. Nacken anspannen. Mit dem Ball nach vorne arbeiten. Augen oeffnet halten. Arme fuer Balance ausbreiten.`,
   variations:`Kopfball nach Flanke. Kopfball-Torschuss aus 7m. Kopfball weiterleiten zu Mitspieler.`,
   minPlayers:4, fieldZone:"strafraum",
-  material:[{id:"ball_fuss",qty:4,label:"Fußball",cat:"Bälle"},{id:"goal_large",qty:1,label:"Großes Tor",cat:"Tore"}],
+  material:[{id:"ball_fuss",qty:4,label:"Fussball",cat:"Baelle"},{id:"goal_large",qty:1,label:"Grosses Tor",cat:"Tore"}],
   ageNote:"Erst ab D-Jugend (U12+). Kopfball bei juengeren Kindern aufgrund der Gehirnentwicklung vermeiden.",
 },
 {
@@ -5176,12 +3781,12 @@ const TRAINING_TEMPLATES = [
   age:["e","d","c","ba"],
   duration:20, intensity:5,
   skills:["ballkontrolle","passen","torabschluss"],
-  description:`Komplette Trainingseinheit ausschließlich mit dem schwachen Fuss. Zuspiel, Annahme, Dribbling, Torabschluss. Ziel: Schwachen Fuss zum zweiten starken Fuss entwickeln.`,
+  description:`Komplette Trainingseinheit ausschliesslich mit dem schwachen Fuss. Zuspiel, Annahme, Dribbling, Torabschluss. Ziel: Schwachen Fuss zum zweiten starken Fuss entwickeln.`,
   coaching:`Geduld zeigen. Fehler sind Teil des Lernprozesses. Nicht auslachen. Kleiner Abstand zuerst, dann steigern. Auch Profis haben einen schwacheren Fuss trainiert.`,
   variations:`1v1 Situationen nur schwacher Fuss. Zonen-Spiel: In bestimmten Zonen nur schwacher Fuss erlaubt.`,
   minPlayers:4, fieldZone:"half_l",
-  material:[{id:"ball_fuss",qty:1,label:"Fußball",cat:"Bälle"},{id:"goal_small",qty:4,label:"Kleines Tor",cat:"Tore"}],
-  ageNote:"Ab E-Jugend regelmäßig einbauen. 1x pro Woche schwacher Fuss macht den Unterschied auf Dauer.",
+  material:[{id:"ball_fuss",qty:1,label:"Fussball",cat:"Baelle"},{id:"goal_small",qty:4,label:"Kleines Tor",cat:"Tore"}],
+  ageNote:"Ab E-Jugend regelmaessig einbauen. 1x pro Woche schwacher Fuss macht den Unterschied auf Dauer.",
 },
 
 // ================================================================
@@ -5192,48 +3797,48 @@ const TRAINING_TEMPLATES = [
   age:["c","ba","senioren"],
   duration:30, intensity:8,
   skills:["pressing","verteidigung","teamarbeit","umschalten"],
-  description:`5v5 oder 7v7 mit zwei Mannschaften. Beim Ballverlust sofort Gegenpressing einleiten. Erste Spieler setzt Druck auf Balltraeger, Mitspieler schließen Passoptionen ab. Ziel: Ball innerhalb 5 Sekunden zurückgewinnen.`,
+  description:`5v5 oder 7v7 mit zwei Mannschaften. Beim Ballverlust sofort Gegenpressing einleiten. Erste Spieler setzt Druck auf Balltraeger, Mitspieler schliessen Passoptionen ab. Ziel: Ball innerhalb 5 Sekunden zurueckgewinnen.`,
   coaching:`Kommunikation ist alles: "Druck!", "Weg!". Kompakte Staffelung. Nicht einzeln anlaufen. 3-Sekunden-Regel: Entscheidung nach Ballverlust treffen. Pressing-Falle an der Seitenlinie nutzen.`,
-  variations:`Mit Zonen: Pressing nur in bestimmten Feldbereichen erzwungen. Gegenpressing-Wettbewerb: Welches Team gewinnt Ball schneller zurück.`,
+  variations:`Mit Zonen: Pressing nur in bestimmten Feldbereichen erzwungen. Gegenpressing-Wettbewerb: Welches Team gewinnt Ball schneller zurueck.`,
   minPlayers:10, fieldZone:"full",
-  material:[{id:"ball_fuss",qty:3,label:"Fußball",cat:"Bälle"},{id:"leibchen",qty:6,color:"rot",label:"Leibchen",cat:"Leibchen"},{id:"huetchen",qty:8,color:"gelb",label:"Hütchen",cat:"Markierung"}],
-  ageNote:"Erst ab C-Jugend sinnvoll. Taktisches Verständnis benötigt gewisse Reife. B/A und Senioren profitieren maximal.",
+  material:[{id:"ball_fuss",qty:3,label:"Fussball",cat:"Baelle"},{id:"leibchen",qty:6,color:"rot",label:"Leibchen",cat:"Leibchen"},{id:"huetchen",qty:8,color:"gelb",label:"Huetchen",cat:"Markierung"}],
+  ageNote:"Erst ab C-Jugend sinnvoll. Taktisches Verstaendnis benoetigt gewisse Reife. B/A und Senioren profitieren maximal.",
 },
 {
   id:"takt_02", cat:"taktik", name:"Umschaltspiel - Offensive nach Ballgewinn",
   age:["d","c","ba"],
   duration:25, intensity:7,
   skills:["umschalten","schnelligkeit","spielintelligenz","raumaufteilung"],
-  description:`8v8 auf großem Feld. Nach Ballgewinn: sofortiger vertikaler Pass in die Tiefe. Stürmerpaar sucht hinter die Abwehrlinie. Mittelfeldspieler folgen in zweite Welle. Ziel: Tor innerhalb 6 Sekunden nach Ballgewinn.`,
-  coaching:`Tiefenlaeufe timen - nicht zu frueh starten. Vertikaler Pass als erste Option. Breite halten für Überzahl. "Los!" als Signal für Umschaltmoment.`,
+  description:`8v8 auf grossem Feld. Nach Ballgewinn: sofortiger vertikaler Pass in die Tiefe. Stuermerpaar sucht hinter die Abwehrlinie. Mittelfeldspieler folgen in zweite Welle. Ziel: Tor innerhalb 6 Sekunden nach Ballgewinn.`,
+  coaching:`Tiefenlaeufe timen - nicht zu frueh starten. Vertikaler Pass als erste Option. Breite halten fuer Ueberzahl. "Los!" als Signal fuer Umschaltmoment.`,
   variations:`Gegenpressing der angreifenden Mannschaft als Reaktion. Umschaltspiel auf Konter beschraenken.`,
   minPlayers:10, fieldZone:"full",
-  material:[{id:"ball_fuss",qty:4,label:"Fußball",cat:"Bälle"},{id:"leibchen",qty:5,color:"blau",label:"Leibchen",cat:"Leibchen"},{id:"goal_large",qty:2,label:"Großes Tor",cat:"Tore"}],
-  ageNote:"D-Jugend: Vereinfacht ohne Pressing-Reaktion. C: Vollständiges Umschaltspiel mit Gegenpressing.",
+  material:[{id:"ball_fuss",qty:4,label:"Fussball",cat:"Baelle"},{id:"leibchen",qty:5,color:"blau",label:"Leibchen",cat:"Leibchen"},{id:"goal_large",qty:2,label:"Grosses Tor",cat:"Tore"}],
+  ageNote:"D-Jugend: Vereinfacht ohne Pressing-Reaktion. C: Vollstaendiges Umschaltspiel mit Gegenpressing.",
 },
 {
   id:"takt_03", cat:"taktik", name:"Standardsituationen - Ecken angreifen",
   age:["d","c","ba","senioren"],
   duration:20, intensity:4,
   skills:["standards","kopfballspiel","raumaufteilung"],
-  description:`Drei verschiedene Eckvarianten einstudieren: Kurze Ecke mit Hereingabe, Flanke in den Fuenfmeterraum (erster Pfosten), Flanke an den zweiten Pfosten. Laufwege für jeden Spieler festlegen.`,
-  coaching:`Laufwege auswendig lernen. Timing des Anlaufs entscheidend. Erste Pfosten: Schuss. Zweiter Pfosten: Kopfball oder Schiessen. Kurze Ecke: Überraschungsmoment nutzen.`,
+  description:`Drei verschiedene Eckvarianten einstudieren: Kurze Ecke mit Hereingabe, Flanke in den Fuenfmeterraum (erster Pfosten), Flanke an den zweiten Pfosten. Laufwege fuer jeden Spieler festlegen.`,
+  coaching:`Laufwege auswendig lernen. Timing des Anlaufs entscheidend. Erste Pfosten: Schuss. Zweiter Pfosten: Kopfball oder Schiessen. Kurze Ecke: Ueberraschungsmoment nutzen.`,
   variations:`Halbfeldflanken als Erweiterung. Direktes Einleiten nach Standardgewinn. Eckball-Gegentraining: Verteidiger lernen Zonen und Manndeckung.`,
   minPlayers:8, fieldZone:"strafraum",
-  material:[{id:"ball_fuss",qty:4,label:"Fußball",cat:"Bälle"},{id:"goal_large",qty:1,label:"Großes Tor",cat:"Tore"},{id:"huetchen",qty:6,color:"weiss",label:"Hütchen",cat:"Markierung"}],
-  ageNote:"D-Jugend: 2 einfache Varianten. Senioren: 4-5 eingearbeitete Varianten für den Spielbetrieb.",
+  material:[{id:"ball_fuss",qty:4,label:"Fussball",cat:"Baelle"},{id:"goal_large",qty:1,label:"Grosses Tor",cat:"Tore"},{id:"huetchen",qty:6,color:"weiss",label:"Huetchen",cat:"Markierung"}],
+  ageNote:"D-Jugend: 2 einfache Varianten. Senioren: 4-5 eingearbeitete Varianten fuer den Spielbetrieb.",
 },
 {
   id:"takt_04", cat:"taktik", name:"Abseitsfalle - Koordiniertes Herausruecken",
   age:["c","ba","senioren"],
   duration:20, intensity:6,
   skills:["verteidigung","raumaufteilung","teamarbeit","konzentration"],
-  description:`Abwehrkette von 4 Spielern lernt koordiniert herauszurücken. Signal des Innenverteidigers oder Torwarts. Alle vier Verteidiger ruecken gleichzeitig heraus. Stürmer werden ins Abseits gelockt.`,
+  description:`Abwehrkette von 4 Spielern lernt koordiniert herauszuruecken. Signal des Innenverteidigers oder Torwarts. Alle vier Verteidiger ruecken gleichzeitig heraus. Stuermer werden ins Abseits gelockt.`,
   coaching:`Kommunikation: "Raus!" als Kommando. Linie halten. Kein Zoegern. Im Zweifelsfall: Lieber nicht rausruecken. Nach abgebloecktem Schuss sofort auf Linie. Torwart hat Sicht - sein Wort gilt.`,
   variations:`Mit angreifenden Spielern die versuchen durchzubrechen. Signalvarianten: Klatschen vs. Ruf.`,
   minPlayers:6, fieldZone:"half_r",
-  material:[{id:"leibchen",qty:4,color:"gruen",label:"Leibchen",cat:"Leibchen"},{id:"ball_fuss",qty:3,label:"Fußball",cat:"Bälle"}],
-  ageNote:"Erst ab C-Jugend. Erfordert hohes taktisches Verständnis und Erfahrung. Regelkennntnis Abseits Pflicht.",
+  material:[{id:"leibchen",qty:4,color:"gruen",label:"Leibchen",cat:"Leibchen"},{id:"ball_fuss",qty:3,label:"Fussball",cat:"Baelle"}],
+  ageNote:"Erst ab C-Jugend. Erfordert hohes taktisches Verstaendnis und Erfahrung. Regelkennntnis Abseits Pflicht.",
 },
 
 // ================================================================
@@ -5244,11 +3849,11 @@ const TRAINING_TEMPLATES = [
   age:["c","ba","senioren"],
   duration:30, intensity:9,
   skills:["ausdauer","schnelligkeit"],
-  description:`4 Intervalle von je 4 Minuten bei hoher Intensität (85-95% maximale Herzfrequenz), jeweils 3 Minuten aktive Pause (lockeres Laufen/Gehen). Wissenschaftlich effizienteste Methode zur Steigerung der aeroben Kapazität.`,
-  coaching:`Puls messen wenn möglich. Spieler sollten sprechen können aber angestrengt sein. Motivation hochhalten in letzten 30 Sekunden. Abkühlen danach zwingend. Nicht mehr als 2x pro Woche.`,
-  variations:`Ball-orientiert: Rondos mit maximaler Intensität. Small-Sided-Games als Intervall-Format.`,
+  description:`4 Intervalle von je 4 Minuten bei hoher Intensitaet (85-95% maximale Herzfrequenz), jeweils 3 Minuten aktive Pause (lockeres Laufen/Gehen). Wissenschaftlich effizienteste Methode zur Steigerung der aeroben Kapazitaet.`,
+  coaching:`Puls messen wenn moeglich. Spieler sollten sprechen koennen aber angestrengt sein. Motivation hochhalten in letzten 30 Sekunden. Abkuehlen danach zwingend. Nicht mehr als 2x pro Woche.`,
+  variations:`Ball-orientiert: Rondos mit maximaler Intensitaet. Small-Sided-Games als Intervall-Format.`,
   minPlayers:6, fieldZone:"full",
-  material:[{id:"huetchen",qty:8,color:"gelb",label:"Hütchen",cat:"Markierung"},{id:"ball_fuss",qty:2,label:"Fußball",cat:"Bälle"}],
+  material:[{id:"huetchen",qty:8,color:"gelb",label:"Huetchen",cat:"Markierung"},{id:"ball_fuss",qty:2,label:"Fussball",cat:"Baelle"}],
   ageNote:"Erst ab C-Jugend (U14) geeignet. Intensives Konditionstraining schadet der Skelettentwicklung juengerer Spieler.",
 },
 {
@@ -5256,8 +3861,8 @@ const TRAINING_TEMPLATES = [
   age:["d","c","ba","senioren"],
   duration:20, intensity:8,
   skills:["schnelligkeit","wendigkeit","konzentration"],
-  description:`Kurze Sprints (10-30m) mit verschiedenen Startpositionen und Reaktionsreizen. Bauchlage, Sitzposition, Ruecklage. Trainer gibt optisches oder akustisches Signal. Vollständige Pause zwischen Sprintserien.`,
-  coaching:`Maximale Intensität bei jedem Sprint. Volle Erholung (mind. 90 Sek) zwischen Versuchen. Startposition variieren. Reaktionszeit verbessert sich durch regelmäßiges Training deutlich.`,
+  description:`Kurze Sprints (10-30m) mit verschiedenen Startpositionen und Reaktionsreizen. Bauchlage, Sitzposition, Ruecklage. Trainer gibt optisches oder akustisches Signal. Vollstaendige Pause zwischen Sprintserien.`,
+  coaching:`Maximale Intensitaet bei jedem Sprint. Volle Erholung (mind. 90 Sek) zwischen Versuchen. Startposition variieren. Reaktionszeit verbessert sich durch regelmaessiges Training deutlich.`,
   variations:`Mit Ball: Sprint, Ball annehmen, Abschluss. Richtungswechsel nach 10m. Duell-Sprint.`,
   minPlayers:4, fieldZone:"third_l",
   material:[{id:"pylone",qty:6,color:"orange",label:"Pylone",cat:"Markierung"}],
@@ -5268,11 +3873,11 @@ const TRAINING_TEMPLATES = [
   age:["e","d","c"],
   duration:25, intensity:6,
   skills:["koordination","kraft","ausdauer"],
-  description:`6 Stationen: Koordinationsleiter, Seitwartsspruenge, Liegestützen, Einbeinsprunge, Medizinball-Kniebeugen, Sprint. 45 Sek Arbeit, 15 Sek Wechsel, 2 Durchlaeufe.`,
+  description:`6 Stationen: Koordinationsleiter, Seitwartsspruenge, Liegestuetzen, Einbeinsprunge, Medizinball-Kniebeugen, Sprint. 45 Sek Arbeit, 15 Sek Wechsel, 2 Durchlaeufe.`,
   coaching:`Form vor Geschwindigkeit. Keine Umgehung von Stationen. Positionswechsel schnell aber kontrolliert. Partner motivieren. Hydration zwischen Runden.`,
   variations:`Zirkel mit Ball an jeder Station integriert. Wettbewerbsformat: Wiederholugnszaehlung.`,
   minPlayers:6, fieldZone:"full",
-  material:[{id:"koordleiter",qty:2,label:"Koordinationsleiter",cat:"Markierung"},{id:"medizinball",qty:3,label:"Medizinball",cat:"Sonstiges"},{id:"huetchen",qty:8,color:"blau",label:"Hütchen",cat:"Markierung"}],
+  material:[{id:"koordleiter",qty:2,label:"Koordinationsleiter",cat:"Markierung"},{id:"medizinball",qty:3,label:"Medizinball",cat:"Sonstiges"},{id:"huetchen",qty:8,color:"blau",label:"Huetchen",cat:"Markierung"}],
   ageNote:"E-Jugend: Vereinfachte Stationen ohne Medizinball, kuerzeere Arbeitszeiten (30 Sek).",
 },
 
@@ -5284,36 +3889,36 @@ const TRAINING_TEMPLATES = [
   age:["f","e","d","c","ba"],
   duration:20, intensity:7,
   skills:["dribbling","zweikampf","schnelligkeit","spielintelligenz"],
-  description:`Klassisches 1v1 in einem 10x15m Korridor. Angreifer startet mit Ball, Verteidiger aus der Gegenseite. Angreifer versucht Linie zu überqueren oder kleines Tor zu treffen. Nach Gewinn oder Verlust Rollentausch.`,
+  description:`Klassisches 1v1 in einem 10x15m Korridor. Angreifer startet mit Ball, Verteidiger aus der Gegenseite. Angreifer versucht Linie zu ueberqueren oder kleines Tor zu treffen. Nach Gewinn oder Verlust Rollentausch.`,
   coaching:`Angreifer: Tempo-Variation als Waffe. Koepertaeushung nutzen. Auf Bewegungsgeschwindigkeit des Gegners reagieren. Verteidiger: Seitwartshaltung, Beine tief, Abwarten.`,
-  variations:`2v2 in größerem Korridor. Zeitlimit von 5 Sekunden für Abschluss. 1v1 mit neutralem Wandspieler.`,
+  variations:`2v2 in groesserem Korridor. Zeitlimit von 5 Sekunden fuer Abschluss. 1v1 mit neutralem Wandspieler.`,
   minPlayers:4, fieldZone:"third_l",
-  material:[{id:"goal_small",qty:2,label:"Kleines Tor",cat:"Tore"},{id:"ball_fuss",qty:3,label:"Fußball",cat:"Bälle"},{id:"huetchen",qty:4,color:"gelb",label:"Hütchen",cat:"Markierung"}],
-  ageNote:"F-Jugend: 1v1 ohne Taktik-Coaching. E: Erste Koertaeuschungen einführen. Ab D: Technische Verbesserung gezielt fordern.",
+  material:[{id:"goal_small",qty:2,label:"Kleines Tor",cat:"Tore"},{id:"ball_fuss",qty:3,label:"Fussball",cat:"Baelle"},{id:"huetchen",qty:4,color:"gelb",label:"Huetchen",cat:"Markierung"}],
+  ageNote:"F-Jugend: 1v1 ohne Taktik-Coaching. E: Erste Koertaeuschungen einfuehren. Ab D: Technische Verbesserung gezielt fordern.",
 },
 {
   id:"spiel_02", cat:"spielform", name:"4 gegen 4 plus Torhter - Kleinfeldspiel",
   age:["e","d","c","ba","senioren"],
   duration:20, intensity:7,
   skills:["raumaufteilung","teamarbeit","umschalten","spielintelligenz"],
-  description:`4v4+TW auf halbem Feld mit großen Toren. Freies Spiel mit taktischen Aufgaben: 3 Kontaktlimit, Rueckkehren in Grundordnung. Intensives Format mit maximalen Ballkontakten pro Spieler.`,
-  coaching:`Spieler sollen selbst entscheiden. Eingriffe minimieren. Nach Spielzugen Fragen stellen: 'Was wäre noch möglich gewesen?' Positive Verstärkung bei guten Entscheidungen.`,
-  variations:`Mit Joker als Unterstützung des angreifenden Teams. Kontertor zwählt doppelt. Ohne Torwart für mehr Chancen.`,
+  description:`4v4+TW auf halbem Feld mit grossen Toren. Freies Spiel mit taktischen Aufgaben: 3 Kontaktlimit, Rueckkehren in Grundordnung. Intensives Format mit maximalen Ballkontakten pro Spieler.`,
+  coaching:`Spieler sollen selbst entscheiden. Eingriffe minimieren. Nach Spielzugen Fragen stellen: 'Was waere noch moeglich gewesen?' Positive Verstaerkung bei guten Entscheidungen.`,
+  variations:`Mit Joker als Unterstuetzung des angreifenden Teams. Kontertor zwaehlt doppelt. Ohne Torwart fuer mehr Chancen.`,
   minPlayers:9, fieldZone:"full",
-  material:[{id:"goal_large",qty:2,label:"Großes Tor",cat:"Tore"},{id:"ball_fuss",qty:4,label:"Fußball",cat:"Bälle"},{id:"leibchen",qty:4,color:"rot",label:"Leibchen",cat:"Leibchen"}],
-  ageNote:"E-Jugend aufwärts. Ideal als Hauptteil des Trainings. Spielnahe Situation mit vielen Ballkontakten.",
+  material:[{id:"goal_large",qty:2,label:"Grosses Tor",cat:"Tore"},{id:"ball_fuss",qty:4,label:"Fussball",cat:"Baelle"},{id:"leibchen",qty:4,color:"rot",label:"Leibchen",cat:"Leibchen"}],
+  ageNote:"E-Jugend aufwaerts. Ideal als Hauptteil des Trainings. Spielnahe Situation mit vielen Ballkontakten.",
 },
 {
   id:"spiel_03", cat:"spielform", name:"Ballbesitzspiel 6v3 im Quadrat",
   age:["d","c","ba","senioren"],
   duration:15, intensity:6,
   skills:["passen","raumaufteilung","pressing","spielintelligenz"],
-  description:`6 Spieler halten Ball gegen 3 Störer in 20x20m Quadrat. Maximale 2 Kontakte. Störer wechseln nach 10 Ballverlusten. Zaehlen der längsten Serie als Motivation.`,
+  description:`6 Spieler halten Ball gegen 3 Stoerer in 20x20m Quadrat. Maximale 2 Kontakte. Stoerer wechseln nach 10 Ballverlusten. Zaehlen der laengsten Serie als Motivation.`,
   coaching:`Tiefe und Breite gleichzeitig anbieten. Passweg erkunden bevor Ball angenommen wird. Kommunikation zwischen Ballbesitz-Spielern. Koerpersprache zeigen wo man angespielt werden will.`,
-  variations:`7v3 für Anfaenger. 5v3 für Fortgeschrittene. Mit Mannschaftswechsel nach Serie von 20 Paessen.`,
+  variations:`7v3 fuer Anfaenger. 5v3 fuer Fortgeschrittene. Mit Mannschaftswechsel nach Serie von 20 Paessen.`,
   minPlayers:9, fieldZone:"third_m",
-  material:[{id:"ball_fuss",qty:2,label:"Fußball",cat:"Bälle"},{id:"huetchen",qty:4,color:"weiss",label:"Hütchen",cat:"Markierung"},{id:"leibchen",qty:3,color:"gruen",label:"Leibchen",cat:"Leibchen"}],
-  ageNote:"Ab D-Jugend. Ballbesitz-Philosophie ab frueh einbauen zahlt sich später aus.",
+  material:[{id:"ball_fuss",qty:2,label:"Fussball",cat:"Baelle"},{id:"huetchen",qty:4,color:"weiss",label:"Huetchen",cat:"Markierung"},{id:"leibchen",qty:3,color:"gruen",label:"Leibchen",cat:"Leibchen"}],
+  ageNote:"Ab D-Jugend. Ballbesitz-Philosophie ab frueh einbauen zahlt sich spaeter aus.",
 },
 
 // ================================================================
@@ -5324,35 +3929,35 @@ const TRAINING_TEMPLATES = [
   age:["e","d","c","ba","senioren"],
   duration:25, intensity:6,
   skills:["konzentration","koordination","schnelligkeit"],
-  description:`Speziell für Torhueter: Stellungsspiel bei Flanken (5-Meter-Radius), Reflextraining aus kurzer Distanz, Parade-Training bei flachen Schuessen, Abschlagtechnik. Ohne den Rest der Mannschaft - intensive 1-zu-1-Zeit mit Trainer.`,
-  coaching:`Fusse schulterbreit. Auf den Fußballen stehen - nie auf den Fersen. Haende auf Brusthöheie vorbereiten. Bei Flanken: Entscheidung frueh treffen und durchsetzen. Führungsstärke im Strafraum kommunizieren.`,
+  description:`Speziell fuer Torhueter: Stellungsspiel bei Flanken (5-Meter-Radius), Reflextraining aus kurzer Distanz, Parade-Training bei flachen Schuessen, Abschlagtechnik. Ohne den Rest der Mannschaft - intensive 1-zu-1-Zeit mit Trainer.`,
+  coaching:`Fusse schulterbreit. Auf den Fussballen stehen - nie auf den Fersen. Haende auf Brusthoeheie vorbereiten. Bei Flanken: Entscheidung frueh treffen und durchsetzen. Fuehrungsstaerke im Strafraum kommunizieren.`,
   variations:`Reaktion auf Ablenkung (Trainer lenkt ab, schiesst dann). Flankentraining mit Feldspieler. Abwurftechnik und Distributionsspiel.`,
   minPlayers:2, fieldZone:"strafraum",
-  material:[{id:"ball_fuss",qty:8,label:"Fußball",cat:"Bälle"},{id:"goal_large",qty:1,label:"Großes Tor",cat:"Tore"},{id:"huetchen",qty:4,color:"gelb",label:"Hütchen",cat:"Markierung"}],
+  material:[{id:"ball_fuss",qty:8,label:"Fussball",cat:"Baelle"},{id:"goal_large",qty:1,label:"Grosses Tor",cat:"Tore"},{id:"huetchen",qty:4,color:"gelb",label:"Huetchen",cat:"Markierung"}],
   ageNote:"Torwarttraining ernst nehmen. TW entwickeln sich schneller mit separatem Training als ohne.",
 },
 {
-  id:"spez_02", cat:"spezial", name:"Stürmerschule - Stürmertypen entwickeln",
+  id:"spez_02", cat:"spezial", name:"Stuermerschule - Stuermertypen entwickeln",
   age:["d","c","ba"],
   duration:30, intensity:7,
   skills:["torabschluss","dribbling","spielintelligenz","schnelligkeit"],
-  description:`Spezifisches Training für offensive Spieler: Tiefenlaeufe hinter die Abwehr timen, Abschluss nach Vorlage, Drehung im Strafraum, Kopfball auf Flanke, Reaktion bei Abprallern. Jeder Stürmertyp braucht andere Schwerpunkte.`,
-  coaching:`Mittelstürmer: Strafraum-Positionen. Fluegel: Eins-gegen-eins und Flanke. Hängende Spitze: Kombination und Einruecken. Abschlussqualität vor allem trainieren: Ziel vor Kraft.`,
-  variations:`Stürmer vs. Verteidiger 1v1 nach Pass. Stürmer-Duo: Kombinationsspiel im Strafraum. Abschluss nach 5-Pass-Sequenz.`,
+  description:`Spezifisches Training fuer offensive Spieler: Tiefenlaeufe hinter die Abwehr timen, Abschluss nach Vorlage, Drehung im Strafraum, Kopfball auf Flanke, Reaktion bei Abprallern. Jeder Stuermertyp braucht andere Schwerpunkte.`,
+  coaching:`Mittelstuermer: Strafraum-Positionen. Fluegel: Eins-gegen-eins und Flanke. Haengende Spitze: Kombination und Einruecken. Abschlussqualitaet vor allem trainieren: Ziel vor Kraft.`,
+  variations:`Stuermer vs. Verteidiger 1v1 nach Pass. Stuermer-Duo: Kombinationsspiel im Strafraum. Abschluss nach 5-Pass-Sequenz.`,
   minPlayers:4, fieldZone:"strafraum",
-  material:[{id:"ball_fuss",qty:6,label:"Fußball",cat:"Bälle"},{id:"goal_large",qty:1,label:"Großes Tor",cat:"Tore"},{id:"huetchen",qty:6,color:"gelb",label:"Hütchen",cat:"Markierung"}],
-  ageNote:"D-Jugend: Grundpositionierung. C: Individuelle Stärken fördern. B/A: Spielerzentrierte Entwicklung.",
+  material:[{id:"ball_fuss",qty:6,label:"Fussball",cat:"Baelle"},{id:"goal_large",qty:1,label:"Grosses Tor",cat:"Tore"},{id:"huetchen",qty:6,color:"gelb",label:"Huetchen",cat:"Markierung"}],
+  ageNote:"D-Jugend: Grundpositionierung. C: Individuelle Staerken foerdern. B/A: Spielerzentrierte Entwicklung.",
 },
 {
   id:"spez_03", cat:"spezial", name:"Innenverteidiger - Zweikampf und Herausruecken",
   age:["d","c","ba","senioren"],
   duration:25, intensity:7,
   skills:["verteidigung","zweikampf","kopfballspiel","raumaufteilung"],
-  description:`Speziell für Innenverteidiger: Stellungsspiel gegen ankommenden Stürmer, Herausruecken aus der Kette, Kopfballduell bei Flanken, Antizipation und Abfangen von Längsballen. Defensiv-Zweikampf isoliert trainieren.`,
-  coaching:`Seitwartshaltung einnehmen. Dem Stürmer den gefährlichen Raum nehmen. Bei Herausruecken: Sicherung des Partners kommunizieren. Kopfballduell fruezehaeitig anlaufen.`,
-  variations:`1v1 gegen Stürmer mit Pass. Flanken-Abwehr in der Kette. Kombiniertes Verteidigungs-Pressing.`,
+  description:`Speziell fuer Innenverteidiger: Stellungsspiel gegen ankommenden Stuermer, Herausruecken aus der Kette, Kopfballduell bei Flanken, Antizipation und Abfangen von Laengsballen. Defensiv-Zweikampf isoliert trainieren.`,
+  coaching:`Seitwartshaltung einnehmen. Dem Stuermer den gefaehrlichen Raum nehmen. Bei Herausruecken: Sicherung des Partners kommunizieren. Kopfballduell fruezehaeitig anlaufen.`,
+  variations:`1v1 gegen Stuermer mit Pass. Flanken-Abwehr in der Kette. Kombiniertes Verteidigungs-Pressing.`,
   minPlayers:4, fieldZone:"half_r",
-  material:[{id:"ball_fuss",qty:4,label:"Fußball",cat:"Bälle"},{id:"goal_large",qty:1,label:"Großes Tor",cat:"Tore"}],
+  material:[{id:"ball_fuss",qty:4,label:"Fussball",cat:"Baelle"},{id:"goal_large",qty:1,label:"Grosses Tor",cat:"Tore"}],
   ageNote:"Ab D-Jugend. Positionsspezifisches Training macht Verteidiger deutlich schneller besser.",
 },
 {
@@ -5360,12 +3965,12 @@ const TRAINING_TEMPLATES = [
   age:["c","ba","senioren"],
   duration:25, intensity:6,
   skills:["passen","raumaufteilung","zweikampf","spielintelligenz"],
-  description:`Training der defensiven Mittelfeldposition: Tiefe anbieten für Innenverteidiger, Spiel verteilen in die Breite, Absicherung nach Ballverlust, Sechser als Bindeglied zwischen Abwehr und Angriff. Lesen des Spiels.`,
+  description:`Training der defensiven Mittelfeldposition: Tiefe anbieten fuer Innenverteidiger, Spiel verteilen in die Breite, Absicherung nach Ballverlust, Sechser als Bindeglied zwischen Abwehr und Angriff. Lesen des Spiels.`,
   coaching:`Immer anspielbereit - kein Verstecken. Kopf heben nach Ballannahme. Passwege antizipieren. Nach Zweikampf sofort Anschluss suchen. Kommunikation mit Innenverteidigern.`,
   variations:`Spielaufbau gegen Pressing-Simulation. Sechser als Dirigent im Rondo. Positionsspezifisches 1v1.`,
   minPlayers:6, fieldZone:"third_m",
-  material:[{id:"ball_fuss",qty:3,label:"Fußball",cat:"Bälle"},{id:"leibchen",qty:3,color:"blau",label:"Leibchen",cat:"Leibchen"}],
-  ageNote:"Erst ab C-Jugend. Erfordert taktische Reife und Überblick. Elegante Position mit hohem IQ-Anspruch.",
+  material:[{id:"ball_fuss",qty:3,label:"Fussball",cat:"Baelle"},{id:"leibchen",qty:3,color:"blau",label:"Leibchen",cat:"Leibchen"}],
+  ageNote:"Erst ab C-Jugend. Erfordert taktische Reife und Ueberblick. Elegante Position mit hohem IQ-Anspruch.",
 },
 
 // ================================================================
@@ -5377,38 +3982,38 @@ const TRAINING_TEMPLATES = [
   duration:15, intensity:4,
   skills:["koordination","schnelligkeit","teamarbeit"],
   description:`Ein 'Fuchs' jagt 'Hasen'. Hasen haben je einen Ball und dribblieren. Der Fuchs versucht den Ball wegzuschlagen. Wessen Ball das Feld verlaesst, wird ebenfalls Fuchs. Letzter Hase gewinnt.`,
-  coaching:`Keine Regeln erzwingen. Auf Fairplay hinweisen. Spass hat Vorrang. Auch die Kleinsten können gewinnen wenn Fuchs nicht zu stark wählen. Lachen und Jubeln ist erlaubt.`,
-  variations:`Zwei Fuechse. Hasen dürfen Ball schützen mit Koerper. Team-Variante: Fuechse fangen gemeinsam.`,
+  coaching:`Keine Regeln erzwingen. Auf Fairplay hinweisen. Spass hat Vorrang. Auch die Kleinsten koennen gewinnen wenn Fuchs nicht zu stark waehlen. Lachen und Jubeln ist erlaubt.`,
+  variations:`Zwei Fuechse. Hasen duerfen Ball schuetzen mit Koerper. Team-Variante: Fuechse fangen gemeinsam.`,
   minPlayers:6, fieldZone:"full",
-  material:[{id:"ball_fuss",qty:1,label:"Fußball (einer pro Kind)",cat:"Bälle"}],
-  ageNote:"Perfekt für Bambini und G-Jugend. Dribbling wird spielerisch ohne Bewusstsein trainiert. Hoechste Form der intrinsischen Motivation.",
+  material:[{id:"ball_fuss",qty:1,label:"Fussball (einer pro Kind)",cat:"Baelle"}],
+  ageNote:"Perfekt fuer Bambini und G-Jugend. Dribbling wird spielerisch ohne Bewusstsein trainiert. Hoechste Form der intrinsischen Motivation.",
 },
 {
-  id:"bam_02", cat:"technik", name:"Ballzauberei für Kleine",
+  id:"bam_02", cat:"technik", name:"Ballzauberei fuer Kleine",
   age:["bambini","g","f"],
   duration:20, intensity:3,
   skills:["ballkontrolle","koordination"],
-  description:`Spieler haben je einen Ball und versuchen: Ball mit der Sohle rollen (vorwärts, rueckwärts), Ball mit rechts/links tippen abwechselnd, Ball hochheben ohne Haende, Kick-ups zaehlen. Freies Erkunden.`,
+  description:`Spieler haben je einen Ball und versuchen: Ball mit der Sohle rollen (vorwaerts, rueckwaerts), Ball mit rechts/links tippen abwechselnd, Ball hochheben ohne Haende, Kick-ups zaehlen. Freies Erkunden.`,
   coaching:`Jedes Kind hat seinen eigenen Ball und seinen eigenen Weg. Kein Vergleich mit anderen Kindern. 'Zeig mir mal was du kannst!' als Motivation. Alle Tricks anerkennnen.`,
   variations:`Musik im Hintergrund. Gemeinsam mit dem Trainer mitmachen - Vorbildfunktion. Eltern-Kind-Challenge.`,
   minPlayers:1, fieldZone:"full",
-  material:[{id:"ball_fuss",qty:1,label:"Fußball (einer pro Kind)",cat:"Bälle"}],
-  ageNote:"Für die Allerjuengsten. Intrinsische Motivation und Freude am Ball fördern. Kein Leistungsdruck.",
+  material:[{id:"ball_fuss",qty:1,label:"Fussball (einer pro Kind)",cat:"Baelle"}],
+  ageNote:"Fuer die Allerjuengsten. Intrinsische Motivation und Freude am Ball foerdern. Kein Leistungsdruck.",
 },
 
 // ================================================================
 // ALTHERREN SPEZIAL
 // ================================================================
 {
-  id:"ah_01", cat:"spielform", name:"Beachflag-Fußball (Alt-Herren Variante)",
+  id:"ah_01", cat:"spielform", name:"Beachflag-Fussball (Alt-Herren Variante)",
   age:["altherren","senioren"],
   duration:50, intensity:4,
   skills:["teamarbeit","spielintelligenz","ballkontrolle"],
   description:`Gelockertes Spielformat auf kleinerem Feld: 5v5, 3 Kontakt-Pflicht, nach Tor Rotation. Spass im Vordergrund. Kein intensives Laufen erwartet. Positionsspiel und Koerpertaeuschung statt Sprint.`,
-  coaching:`Spielfreude fördern. Keine harten Zweikampffoorderungen. Knoechel und Knie respektieren. Regenerations-Pausen einbauen. Lachen ist Teil des Trainings.`,
-  variations:`Torkoenigsmodus. Tore nur nach Kombination gültig. Torwart als 10. Feldspieler.`,
+  coaching:`Spielfreude foerdern. Keine harten Zweikampffoorderungen. Knoechel und Knie respektieren. Regenerations-Pausen einbauen. Lachen ist Teil des Trainings.`,
+  variations:`Torkoenigsmodus. Tore nur nach Kombination gueltig. Torwart als 10. Feldspieler.`,
   minPlayers:6, fieldZone:"half_l",
-  material:[{id:"goal_small",qty:4,label:"Kleines Tor",cat:"Tore"},{id:"ball_fuss",qty:3,label:"Fußball",cat:"Bälle"},{id:"leibchen",qty:5,color:"gelb",label:"Leibchen",cat:"Leibchen"}],
+  material:[{id:"goal_small",qty:4,label:"Kleines Tor",cat:"Tore"},{id:"ball_fuss",qty:3,label:"Fussball",cat:"Baelle"},{id:"leibchen",qty:5,color:"gelb",label:"Leibchen",cat:"Leibchen"}],
   ageNote:"Alt-Herren verdienen einen eigenen Ansatz. Spass, Gemeinschaft und Gesundheit stehen vor Leistung.",
 },
 ];
@@ -5470,7 +4075,7 @@ function TemplateBrowser({ onSelect, cid, myTids, data, cl, onClose }) {
 
   const CATS = [
     {id:"all",     label:"Alle",          col:"#334155"},
-    {id:"warmup",  label:"Aufwärmen",    col:"#f59e0b"},
+    {id:"warmup",  label:"Aufwaermen",    col:"#f59e0b"},
     {id:"technik", label:"Technik",       col:"#2563eb"},
     {id:"taktik",  label:"Taktik",        col:"#7c3aed"},
     {id:"kondition",label:"Kondition",    col:"#dc2626"},
@@ -5510,7 +4115,7 @@ function TemplateBrowser({ onSelect, cid, myTids, data, cl, onClose }) {
               cursor:"pointer",fontSize:18,fontWeight:700}}>x</button>
           </div>
           <input value={search} onChange={e=>setSearch(e.target.value)}
-            placeholder="Übung suchen..."
+            placeholder="Uebung suchen..."
             style={{width:"100%",padding:"9px 14px",borderRadius:11,border:"none",
               fontSize:14,outline:"none",background:"rgba(255,255,255,.15)",
               color:"#fff",boxSizing:"border-box"}}/>
@@ -5581,7 +4186,7 @@ function TemplateBrowser({ onSelect, cid, myTids, data, cl, onClose }) {
                     </div>
                   </div>
                   <div style={{textAlign:"right",flexShrink:0}}>
-                    {/* Intensitäts-Balken */}
+                    {/* Intensitaets-Balken */}
                     <div style={{display:"flex",gap:2,marginBottom:4}}>
                       {Array.from({length:5},(_,i)=>(
                         <div key={i} style={{width:5,height:14,borderRadius:3,
@@ -5642,7 +4247,7 @@ function TemplateDetail({ tpl, onBack, onUse, cl }) {
           <button onClick={onBack} style={{background:"rgba(255,255,255,.15)",border:"none",
             color:"#fff",borderRadius:9,padding:"6px 12px",fontSize:12,fontWeight:700,
             cursor:"pointer",fontFamily:"inherit",marginBottom:10}}>
-            {"<-"} Zurück
+            {"<-"} Zurueck
           </button>
           <div style={{color:"#fff",fontWeight:900,fontSize:20,marginBottom:4}}>{tpl.name}</div>
           <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
@@ -5659,15 +4264,15 @@ function TemplateDetail({ tpl, onBack, onUse, cl }) {
 
         <div style={{padding:"18px 20px 0"}}>
 
-          {/* Intensität */}
+          {/* Intensitaet */}
           <div style={{background:"#f8fafc",borderRadius:13,padding:"13px 15px",marginBottom:14}}>
-            <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5}}>BELASTUNGSINTENSITÄT</div>
+            <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5}}>BELASTUNGSINTENSITAET</div>
             {intensityBar(tpl.intensity||5)}
             <div style={{fontSize:12,color:"#64748b",marginTop:6,lineHeight:1.5}}>
-              {tpl.intensity<=3&&"Geringe Belastung - ideal als Aufwärmen oder nach intensiver Woche"}
+              {tpl.intensity<=3&&"Geringe Belastung - ideal als Aufwaermen oder nach intensiver Woche"}
               {tpl.intensity>=4&&tpl.intensity<=6&&"Mittlere Belastung - regulaeres Technik- und Taktiktraining"}
               {tpl.intensity>=7&&tpl.intensity<=8&&"Hohe Belastung - konditionelle Schwerpunkte, ausreichend Regeneration planen"}
-              {tpl.intensity>=9&&"Maximale Belastung - nur frisch ausgeruhte Spieler, zwingend Abkühlen danach"}
+              {tpl.intensity>=9&&"Maximale Belastung - nur frisch ausgeruhte Spieler, zwingend Abkuehlen danach"}
             </div>
           </div>
 
@@ -5692,7 +4297,7 @@ function TemplateDetail({ tpl, onBack, onUse, cl }) {
           {/* Altersgruppen */}
           {(tpl.age||[]).length>0&&(
             <div style={{marginBottom:14}}>
-              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5}}>GEEIGNET FÜR</div>
+              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5}}>GEEIGNET FUER</div>
               <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
                 {(tpl.age||[]).map(ag=>(
                   <span key={ag} style={{background:"#f0fdf4",border:"1.5px solid #bbf7d0",
@@ -5744,7 +4349,7 @@ function TemplateDetail({ tpl, onBack, onUse, cl }) {
           {/* Material */}
           {(tpl.material||[]).length>0&&(
             <div style={{marginBottom:14}}>
-              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5}}>BENÖTIGTES MATERIAL</div>
+              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5}}>BENOENIGTES MATERIAL</div>
               <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
                 {tpl.material.map((m,i)=>{
                   const def=MATERIAL_CATALOG.find(x=>x.id===m.id);
@@ -5762,7 +4367,7 @@ function TemplateDetail({ tpl, onBack, onUse, cl }) {
             </div>
           )}
 
-          {/* Als Übung verwenden */}
+          {/* Als Uebung verwenden */}
           <button onClick={onUse}
             style={{width:"100%",padding:"14px",borderRadius:14,border:"none",
               background:t.p,color:"#fff",fontWeight:800,fontSize:15,
@@ -5785,7 +4390,7 @@ function ResetDataButton({ fire }) {
     Object.keys(localStorage)
       .filter(k => k.startsWith("vereinsapp_"))
       .forEach(k => localStorage.removeItem(k));
-    fire("Alle lokalen Daten zurückgesetzt - Seite wird neu geladen...");
+    fire("Alle lokalen Daten zurueckgesetzt - Seite wird neu geladen...");
     setTimeout(() => window.location.reload(), 1500);
   };
   if(!confirm) return (
@@ -5793,13 +4398,13 @@ function ResetDataButton({ fire }) {
       style={{padding:"10px 16px",borderRadius:11,border:"1.5px solid #e2e8f0",
         background:"#fff",color:"#dc2626",fontWeight:700,fontSize:13,
         cursor:"pointer",fontFamily:"inherit",width:"100%"}}>
-      Lokale Testdaten löschen
+      Lokale Testdaten loeschen
     </button>
   );
   return (
     <div style={{background:"#fef2f2",borderRadius:13,padding:"14px",border:"1.5px solid #fca5a5"}}>
       <p style={{fontSize:13,color:"#dc2626",fontWeight:700,margin:"0 0 10px"}}>
-        Wirklich alle lokalen Daten löschen? Das betrifft nur diesen Browser.
+        Wirklich alle lokalen Daten loeschen? Das betrifft nur diesen Browser.
       </p>
       <div style={{display:"flex",gap:9}}>
         <button onClick={()=>setConfirm(false)}
@@ -5810,7 +4415,7 @@ function ResetDataButton({ fire }) {
         <button onClick={doReset}
           style={{flex:1,padding:"10px",borderRadius:10,border:"none",
             background:"#dc2626",color:"#fff",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
-          Ja, löschen
+          Ja, loeschen
         </button>
       </div>
     </div>
@@ -5820,8 +4425,8 @@ function ResetDataButton({ fire }) {
 
 /* =================================================================
    PASSWORT-VERWALTUNG (nur Admin)
-   - Alle Zugänge des Vereins auf einen Blick
-   - Passwort setzen, zurücksetzen, sperren
+   - Alle Zugaenge des Vereins auf einen Blick
+   - Passwort setzen, zuruecksetzen, sperren
    - Kein Klartext gespeichert
 ================================================================= */
 function AccessManagerTab({ data, cid, save, fire, cl }) {
@@ -5844,7 +4449,7 @@ function AccessManagerTab({ data, cid, save, fire, cl }) {
 
   const doSave = () => {
     if(newPw.length < 4) { setErr("Mindestens 4 Zeichen"); return; }
-    if(newPw !== newPw2) { setErr("Passwörter stimmen nicht überein"); return; }
+    if(newPw !== newPw2) { setErr("Passwoerter stimmen nicht ueberein"); return; }
     const hash = hashPw(newPw);
     let nextData = {...data};
 
@@ -5861,15 +4466,14 @@ function AccessManagerTab({ data, cid, save, fire, cl }) {
         cl.id===cid ? {...cl, adm:hash} : cl
       );
     } else if(editing.type === "helper") {
-      // Helfer-Code wird im Klartext gespeichert: er wird dem Admin angezeigt und beim Login direkt verglichen (kein Passwort-Hash)
       nextData.helpers = (data.helpers||[]).map(h=>
-        h.id===editing.id ? {...h, code:newPw.trim()} : h
+        h.id===editing.id ? {...h, code:hash} : h
       );
     }
     // Audit log
     const entry = {
       id:uid(), cid, type:"pw_change",
-      detail:`Admin änderte Passwort für: ${editing.name} (${editing.type})`,
+      detail:`Admin aenderte Passwort fuer: ${editing.name} (${editing.type})`,
       ts:new Date().toISOString(), role:"admin", name:"Admin",
       device:getDeviceInfo(), deviceId:getDeviceId(),
     };
@@ -5877,7 +4481,7 @@ function AccessManagerTab({ data, cid, save, fire, cl }) {
     save(nextData);
     setSaved("Gespeichert"); setErr("");
     setTimeout(()=>{ setEditing(null); setSaved(""); }, 1200);
-    fire(`Passwort geändert: ${editing.name}`);
+    fire(`Passwort geaendert: ${editing.name}`);
   };
 
   const doLock = (type, id, name, isLocked) => {
@@ -5943,7 +4547,7 @@ function AccessManagerTab({ data, cid, save, fire, cl }) {
           style={{padding:"6px 12px", borderRadius:9, border:"none",
             background:t.p+"15", color:t.p,
             fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"inherit"}}>
-          Ändern
+          Aendern
         </button>
         <button onClick={()=>doLock(type, id, name, isLocked)}
           style={{padding:"6px 10px", borderRadius:9,
@@ -5959,7 +4563,7 @@ function AccessManagerTab({ data, cid, save, fire, cl }) {
 
   return (
     <div>
-      {/* Passwort-Änderungs-Modal */}
+      {/* Passwort-Aenderungs-Modal */}
       {editing && (
         <div style={{position:"fixed", inset:0, background:"rgba(0,0,0,.6)",
           zIndex:900, display:"flex", alignItems:"center",
@@ -5970,7 +4574,7 @@ function AccessManagerTab({ data, cid, save, fire, cl }) {
               Passwort setzen
             </h3>
             <p style={{fontSize:13, color:"#64748b", marginBottom:16, lineHeight:1.5}}>
-              Neues Passwort für: <strong>{editing.name}</strong>
+              Neues Passwort fuer: <strong>{editing.name}</strong>
             </p>
             <div style={{display:"flex", flexDirection:"column", gap:10}}>
               <input
@@ -6047,7 +4651,7 @@ function AccessManagerTab({ data, cid, save, fire, cl }) {
         <div style={{marginBottom:14}}>
           <div style={{fontSize:11, fontWeight:800, color:"#64748b",
             marginBottom:8, letterSpacing:.5}}>
-            ELTERN-ZUGÄNGE ({teams.length} Mannschaften)
+            ELTERN-ZUGAENGE ({teams.length} Mannschaften)
           </div>
           {teams.map(tm=>(
             <AccessRow key={tm.id} type="team" id={tm.id}
@@ -6062,7 +4666,7 @@ function AccessManagerTab({ data, cid, save, fire, cl }) {
         <div style={{marginBottom:14}}>
           <div style={{fontSize:11, fontWeight:800, color:"#64748b",
             marginBottom:8, letterSpacing:.5}}>
-            TRAINER-ZUGÄNGE ({trainers.length})
+            TRAINER-ZUGAENGE ({trainers.length})
           </div>
           {trainers.map(tr=>(
             <AccessRow key={tr.id} type="trainer" id={tr.id}
@@ -6092,11 +4696,11 @@ function AccessManagerTab({ data, cid, save, fire, cl }) {
           background:"#f8fafc", borderRadius:14,
           border:"1.5px dashed #e2e8f0"}}>
           <p style={{fontWeight:700, color:"#334155", margin:"0 0 4px"}}>
-            Noch keine Zugänge
+            Noch keine Zugaenge
           </p>
           <p style={{fontSize:13, color:"#94a3b8", margin:0, lineHeight:1.5}}>
             Lege zuerst Teams und Trainer an.
-            Hier kannst du dann alle Zugänge verwalten.
+            Hier kannst du dann alle Zugaenge verwalten.
           </p>
         </div>
       )}
@@ -6105,9 +4709,9 @@ function AccessManagerTab({ data, cid, save, fire, cl }) {
       <div style={{background:"#f0fdf4", borderRadius:13,
         padding:"12px 14px", border:"1.5px solid #bbf7d0",
         fontSize:12, color:"#166534", lineHeight:1.6}}>
-        Alle Passwörter werden als kryptografischer Hash gespeichert.
+        Alle Passwoerter werden als kryptografischer Hash gespeichert.
         Kein Klartext ist in der Datenbank hinterlegt.
-        Passwortänderungen werden im Sicherheitsprotokoll erfasst.
+        Passwortaenderungen werden im Sicherheitsprotokoll erfasst.
       </div>
     </div>
   );
@@ -6119,7 +4723,7 @@ function AccessManagerTab({ data, cid, save, fire, cl }) {
    PASSWORT VERGESSEN - KOMPLETTES SYSTEM
 ================================================================= */
 
-// Temporaeren Reset-Code generieren (6 Stellen, 15 Min gültig)
+// Temporaeren Reset-Code generieren (6 Stellen, 15 Min gueltig)
 const generateResetCode = () => {
   const code = Math.floor(100000 + Math.random() * 900000).toString();
   const expires = Date.now() + 15 * 60 * 1000;
@@ -6162,18 +4766,18 @@ function AdminForgotPassword({ cl, onBack, onReset }) {
       return;
     }
     if (email.toLowerCase().trim() !== adminEmail.toLowerCase().trim()) {
-      setErr("Diese E-Mail-Adresse stimmt nicht mit der gespeicherten überein.");
+      setErr("Diese E-Mail-Adresse stimmt nicht mit der gespeicherten ueberein.");
       return;
     }
     const c = generateResetCode();
     setGenCode(c);
-    // Öffne E-Mail-App mit vorbereiteter Mail
+    // Oeffne E-Mail-App mit vorbereiteter Mail
     const subject = encodeURIComponent("Vereins-App: Dein Reset-Code");
     const body = encodeURIComponent(
-      "Dein Reset-Code für die Vereins-App:\n\n" +
+      "Dein Reset-Code fuer die Vereins-App:\n\n" +
       "CODE: " + c + "\n\n" +
-      "Dieser Code ist 15 Minuten gültig.\n" +
-      "Gib ihn in der App ein um dein Passwort zu ändern.\n\n" +
+      "Dieser Code ist 15 Minuten gueltig.\n" +
+      "Gib ihn in der App ein um dein Passwort zu aendern.\n\n" +
       "Falls du diesen Code nicht angefordert hast, ignoriere diese Mail."
     );
     window.open(`mailto:${adminEmail}?subject=${subject}&body=${body}`);
@@ -6186,13 +4790,13 @@ function AdminForgotPassword({ cl, onBack, onReset }) {
       setStep("newpw");
       setErr("");
     } else {
-      setErr("Code ungültig oder abgelaufen. Bitte neu anfordern.");
+      setErr("Code ungueltig oder abgelaufen. Bitte neu anfordern.");
     }
   };
 
   const doReset = () => {
     if (newPw.length < 4) { setErr("Mindestens 4 Zeichen"); return; }
-    if (newPw !== newPw2)  { setErr("Passwörter stimmen nicht überein"); return; }
+    if (newPw !== newPw2)  { setErr("Passwoerter stimmen nicht ueberein"); return; }
     onReset(hashPw(newPw));
   };
 
@@ -6207,14 +4811,14 @@ function AdminForgotPassword({ cl, onBack, onReset }) {
           style={{background:"none",border:"none",color:"#64748b",fontSize:13,
             cursor:"pointer",fontFamily:"inherit",marginBottom:12,padding:0,
             fontWeight:700}}>
-          {"<-"} Zurück
+          {"<-"} Zurueck
         </button>
 
         {step==="email"&&<>
           <h3 style={{fontWeight:900,fontSize:18,marginBottom:6}}>Passwort vergessen</h3>
           <p style={{fontSize:13,color:"#64748b",marginBottom:16,lineHeight:1.6}}>
             Gib deine Admin-E-Mail-Adresse ein. Wir senden dir einen Code
-            zum Zurücksetzen des Passwortes.
+            zum Zuruecksetzen des Passwortes.
           </p>
           <input value={email} onChange={e=>{setEmail(e.target.value);setErr("");}}
             type="email" placeholder="Deine E-Mail-Adresse"
@@ -6237,7 +4841,7 @@ function AdminForgotPassword({ cl, onBack, onReset }) {
           <h3 style={{fontWeight:900,fontSize:18,marginBottom:6}}>Code eingeben</h3>
           <div style={{background:"#f0fdf4",borderRadius:12,padding:"12px 14px",
             marginBottom:16,fontSize:13,color:"#166534",lineHeight:1.6}}>
-            Deine E-Mail-App hat sich geöffnet mit einer vorbereiteten Mail.
+            Deine E-Mail-App hat sich geoeffnet mit einer vorbereiteten Mail.
             Sende sie ab und trage dann den 6-stelligen Code hier ein.
           </div>
           <input value={code} onChange={e=>{setCode(e.target.value);setErr("");}}
@@ -6261,7 +4865,7 @@ function AdminForgotPassword({ cl, onBack, onReset }) {
                 background:code.length===6?t.p:"#e2e8f0",
                 color:code.length===6?"#fff":"#94a3b8",
                 fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
-              Bestätigen
+              Bestaetigen
             </button>
           </div>
         </>}
@@ -6269,7 +4873,7 @@ function AdminForgotPassword({ cl, onBack, onReset }) {
         {step==="newpw"&&<>
           <h3 style={{fontWeight:900,fontSize:18,marginBottom:6}}>Neues Passwort</h3>
           <p style={{fontSize:13,color:"#64748b",marginBottom:16}}>
-            Code bestätigt. Vergib jetzt dein neues Passwort.
+            Code bestaetigt. Vergib jetzt dein neues Passwort.
           </p>
           <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:14}}>
             <input type="password" value={newPw}
@@ -6305,18 +4909,18 @@ function AdminForgotPassword({ cl, onBack, onReset }) {
 function ForgotPasswordHelp({ cl, teams, trainers, forRole, teamId, onBack }) {
   const t = TH(cl);
 
-  // Für Eltern: Trainer des Teams finden
+  // Fuer Eltern: Trainer des Teams finden
   const myTrainers = forRole==="user"
     ? (trainers||[]).filter(tr=>(tr.tids||[]).includes(teamId))
     : [];
-  // Für Trainer: Admin kontaktieren
+  // Fuer Trainer: Admin kontaktieren
   const adminEmail = cl.adminEmail || "";
 
   const openWA = (phone) => {
     const clean = phone.replace(/[^0-9+]/g,"");
     const msg = encodeURIComponent(
-      "Hallo, ich habe mein Passwort für die Vereins-App vergessen. " +
-      "Könnt ihr mir bitte ein neues setzen? Verein: " + cl.name
+      "Hallo, ich habe mein Passwort fuer die Vereins-App vergessen. " +
+      "Koennt ihr mir bitte ein neues setzen? Verein: " + cl.name
     );
     window.open(`https://wa.me/${clean}?text=${msg}`);
   };
@@ -6325,8 +4929,8 @@ function ForgotPasswordHelp({ cl, teams, trainers, forRole, teamId, onBack }) {
     const sub = encodeURIComponent("Vereins-App: Passwort vergessen");
     const body = encodeURIComponent(
       "Hallo " + name + ",\n\n" +
-      "ich habe mein Passwort für die Vereins-App vergessen.\n" +
-      "Könnt ihr mir bitte ein neues Passwort setzen?\n\n" +
+      "ich habe mein Passwort fuer die Vereins-App vergessen.\n" +
+      "Koennt ihr mir bitte ein neues Passwort setzen?\n\n" +
       "Vielen Dank!"
     );
     window.open(`mailto:${email}?subject=${sub}&body=${body}`);
@@ -6377,7 +4981,7 @@ function ForgotPasswordHelp({ cl, teams, trainers, forRole, teamId, onBack }) {
           {!actualPhone&&!email&&(
             <div style={{padding:"11px 14px",borderRadius:11,background:"#f8fafc",
               border:"1.5px solid #e2e8f0",fontSize:13,color:"#64748b",lineHeight:1.5}}>
-              Beim nächsten Training ansprechen oder
+              Beim naechsten Training ansprechen oder
               direkt im Verein nachfragen.
             </div>
           )}
@@ -6405,7 +5009,7 @@ function ForgotPasswordHelp({ cl, teams, trainers, forRole, teamId, onBack }) {
           marginBottom:16,fontSize:13,color:"#92400e",lineHeight:1.6,
           border:"1.5px solid #fde68a"}}>
           {forRole==="trainer"
-            ? "Bitte den Vereinsadmin kontaktieren um dein Passwort zurücksetzen zu lassen."
+            ? "Bitte den Vereinsadmin kontaktieren um dein Passwort zuruecksetzen zu lassen."
             : "Bitte deinen Trainer kontaktieren um das Team-Passwort zu erfragen."
           }
         </div>
@@ -6431,7 +5035,7 @@ function ForgotPasswordHelp({ cl, teams, trainers, forRole, teamId, onBack }) {
         {forRole==="user"&&myTrainers.length===0&&(
           <div style={{background:"#f8fafc",borderRadius:13,padding:"14px 16px",
             border:"1.5px solid #e2e8f0",fontSize:13,color:"#64748b",lineHeight:1.6}}>
-            Kein Trainer gefunden. Bitte beim nächsten Training nach dem
+            Kein Trainer gefunden. Bitte beim naechsten Training nach dem
             Zugangs-Code fragen.
           </div>
         )}
@@ -6450,8 +5054,8 @@ function AdminEmailSetup({ cl, data, save, fire, onClose }) {
   const [err, setErr]       = useState("");
 
   const doSave = () => {
-    if(!email.trim()||!email.includes("@")) { setErr("Bitte gültige E-Mail eingeben"); return; }
-    if(email.trim() !== email2.trim()) { setErr("E-Mail-Adressen stimmen nicht überein"); return; }
+    if(!email.trim()||!email.includes("@")) { setErr("Bitte gueltige E-Mail eingeben"); return; }
+    if(email.trim() !== email2.trim()) { setErr("E-Mail-Adressen stimmen nicht ueberein"); return; }
     save({...data, clubs:(data.clubs||[]).map(x=>
       x.id===cl.id ? {...x, adminEmail:email.trim().toLowerCase()} : x
     )});
@@ -6466,8 +5070,8 @@ function AdminEmailSetup({ cl, data, save, fire, onClose }) {
         Admin E-Mail-Adresse
       </div>
       <div style={{fontSize:12,color:"#64748b",marginBottom:12,lineHeight:1.6}}>
-        Benötigt für Passwort-Reset und App-Benachrichtigungen.
-        Wird nicht öffentlich angezeigt.
+        Benoetigt fuer Passwort-Reset und App-Benachrichtigungen.
+        Wird nicht oeffentlich angezeigt.
       </div>
       <div style={{display:"flex",flexDirection:"column",gap:9}}>
         <input value={email} onChange={e=>{setEmail(e.target.value);setErr("");}}
@@ -6517,7 +5121,7 @@ function TrainerContactSettings({ trainer, onSave, onClose, cl }) {
     { id:"whatsapp", label:"WhatsApp",        icon:"W", col:"#25D366", sub:"Schnellste Option" },
     { id:"phone",    label:"Telefon",         icon:"T", col:"#2563eb", sub:"Direkter Anruf" },
     { id:"email",    label:"E-Mail",          icon:"@", col:"#7c3aed", sub:"Nicht zeitkritisch" },
-    { id:"training", label:"Beim Training",   icon:"F", col:"#d97706", sub:"Persönlich" },
+    { id:"training", label:"Beim Training",   icon:"F", col:"#d97706", sub:"Persoenlich" },
   ];
 
   const save = () => {
@@ -6577,8 +5181,8 @@ function TrainerContactSettings({ trainer, onSave, onClose, cl }) {
             </div>
             <div style={{background:"#eff6ff",borderRadius:11,padding:"10px 13px",
               marginBottom:10,fontSize:12,color:"#1d4ed8",lineHeight:1.5}}>
-              Die Nummer wird NUR auf DIESEM Gerät gespeichert.
-              Sie wird nicht in die Cloud übertragen.
+              Die Nummer wird NUR auf DIESEM Geraet gespeichert.
+              Sie wird nicht in die Cloud uebertragen.
             </div>
             <div style={{position:"relative"}}>
               <input
@@ -6672,7 +5276,7 @@ function SmartContactButton({ trainer, message, style={} }) {
               {trainer.name} kontaktieren
             </div>
             <p style={{fontSize:13,color:"#64748b",marginBottom:16}}>
-              Wähle einen Kontaktweg:
+              Waehle einen Kontaktweg:
             </p>
             {phone&&<button onClick={()=>{openWA(message);setShowOpts(false);}}
               style={{width:"100%",padding:"13px",borderRadius:12,border:"none",
@@ -6706,12 +5310,12 @@ function SmartContactButton({ trainer, message, style={} }) {
             </button>}
             {!phone&&!email&&<div style={{background:"#f8fafc",borderRadius:12,
               padding:"14px",fontSize:13,color:"#64748b",lineHeight:1.6,marginBottom:9}}>
-              Kein Kontaktweg hinterlegt. Bitte beim nächsten Training ansprechen.
+              Kein Kontaktweg hinterlegt. Bitte beim naechsten Training ansprechen.
             </div>}
             <button onClick={()=>setShowOpts(false)}
               style={{width:"100%",padding:"11px",border:"none",background:"none",
                 color:"#94a3b8",fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
-              Schließen
+              Schliessen
             </button>
           </div>
         </div>
@@ -6723,7 +5327,7 @@ function SmartContactButton({ trainer, message, style={} }) {
 /* =================================================================
    GRUPPEN-SETUP ASSISTENT
    Da WhatsApp keine automatischen Gruppen erlaubt,
-   führen wir den Nutzer durch die manuelle Erstellung
+   fuehren wir den Nutzer durch die manuelle Erstellung
 ================================================================= */
 function GroupSetupHelper({ trainers, targetPerson, context, onClose }) {
   const [step, setStep] = useState(1); // 1=phones | 2=instructions | 3=done
@@ -6744,8 +5348,8 @@ function GroupSetupHelper({ trainers, targetPerson, context, onClose }) {
 
   const groupName = `Vereins-App: ${context||"Kontakt"}`;
   const introMsg =
-    `Hallo! Ich möchte euch kurz zusammenbringen.\n` +
-    `${targetPerson?" Bitte "+targetPerson+" zur Gruppe hinzufügen.":""}\n` +
+    `Hallo! Ich moechte euch kurz zusammenbringen.\n` +
+    `${targetPerson?" Bitte "+targetPerson+" zur Gruppe hinzufuegen.":""}\n` +
     `Thema: ${context||"Passwort vergessen / Hilfe"}`;
 
   return (
@@ -6771,7 +5375,7 @@ function GroupSetupHelper({ trainers, targetPerson, context, onClose }) {
         <div style={{background:"#fef3c7",borderRadius:12,padding:"11px 14px",
           marginBottom:16,fontSize:12,color:"#92400e",lineHeight:1.6,
           border:"1px solid #fde68a"}}>
-          WhatsApp erlaubt es aus Datenschutzgründen keiner App,
+          WhatsApp erlaubt es aus Datenschutzgruenden keiner App,
           automatisch Gruppen zu erstellen. Aber mit dieser Anleitung
           geht es in 30 Sekunden manuell.
         </div>
@@ -6820,11 +5424,11 @@ function GroupSetupHelper({ trainers, targetPerson, context, onClose }) {
               SCHRITT 2: GRUPPE ERSTELLEN
             </div>
             {[
-              "WhatsApp öffnen",
+              "WhatsApp oeffnen",
               "Oben rechts auf das Chat-Symbol tippen",
               'Auf "Neue Gruppe" tippen',
-              "Nummern aus Zwischenablage einfügen ODER Trainer aus Kontakten wählen",
-              targetPerson&&`Auch ${targetPerson} zur Gruppe hinzufügen`,
+              "Nummern aus Zwischenablage einfuegen ODER Trainer aus Kontakten waehlen",
+              targetPerson&&`Auch ${targetPerson} zur Gruppe hinzufuegen`,
               `Gruppenname: "${groupName}"`,
             ].filter(Boolean).filter(x=>!x.hidden).map((s,i)=>(
               <div key={i} style={{display:"flex",alignItems:"flex-start",gap:10,
@@ -6907,7 +5511,7 @@ function GroupSetupHelper({ trainers, targetPerson, context, onClose }) {
 ================================================================= */
 
 const SA_KEY = "va_superadmin";
-const SA_DEFAULT_PW = "changeme2024"; // Beim ersten Login ändern!
+const SA_DEFAULT_PW = "changeme2024"; // Beim ersten Login aendern!
 
 const saGet = () => { try { return JSON.parse(localStorage.getItem(SA_KEY)||"null"); } catch { return null; } };
 const saSet = (d) => { try { localStorage.setItem(SA_KEY, JSON.stringify(d)); } catch {} };
@@ -6937,7 +5541,7 @@ const MODULE_DEFAULTS = {
   helpers:       { label:"Helfer",             enabled:true },
   jerseys:       { label:"Trikots",            enabled:true },
   fields:        { label:"Platzbuchung",       enabled:true },
-  training:      { label:"Trainingspläne",    enabled:true },
+  training:      { label:"Trainingsplaene",    enabled:true },
   results:       { label:"Ergebnisse",         enabled:true },
   attendance:    { label:"Anwesenheit",        enabled:true },
   news:          { label:"Schwarzes Brett",    enabled:true },
@@ -6997,7 +5601,7 @@ function SuperAdminLogin({ onLogin }) {
             fontWeight:900,fontSize:24,color:"#fff",margin:"0 auto 12px"}}>SA</div>
           <div style={{color:"#fff",fontWeight:900,fontSize:20}}>Super Admin</div>
           <div style={{color:"#64748b",fontSize:13,marginTop:4}}>
-            {isNew ? "Passwort erstmalig setzen (mind. 6 Zeichen)" : "Nur für autorisierte Administratoren"}
+            {isNew ? "Passwort erstmalig setzen (mind. 6 Zeichen)" : "Nur fuer autorisierte Administratoren"}
           </div>
         </div>
         <input type="password" value={pw} onChange={e=>{setPw(e.target.value);setErr(false);}}
@@ -7027,7 +5631,7 @@ function SuperAdminLogin({ onLogin }) {
 ----------------------------------------------------------------- */
 function SuperAdminDashboard({ data, onExit }) {
   const [tab, setTab] = useState("dashboard");
-  const allClubs = (data.clubs||[]).filter(x=>!(x.id||"").startsWith("demo"));
+  const allClubs = (data.clubs||[]).filter(x=>x.id!=="demo");
   const allTeams = data.teams||[];
   const allTrainers = data.trainers||[];
   const allPlayers = data.playerProfiles||[];
@@ -7046,7 +5650,6 @@ function SuperAdminDashboard({ data, onExit }) {
 
   const TABS = [
     {id:"dashboard",  label:"Dashboard",   icon:"D"},
-    {id:"activity",   label:"Aktivität",   icon:"AK"},
     {id:"clubs",      label:"Vereine",     icon:"V"},
     {id:"message",    label:"Nachrichten", icon:"N"},
     {id:"modules",    label:"Module",      icon:"M"},
@@ -7056,7 +5659,6 @@ function SuperAdminDashboard({ data, onExit }) {
     {id:"logs",       label:"Logs",        icon:"L"},
     {id:"moderation",  label:"Chat-Moderation", icon:"CM"},
     {id:"settings",   label:"Einstellungen",icon:"S"},
-    {id:"compliance",  label:"Compliance",    icon:"C"},
     {id:"rollout",     label:"Rollout",        icon:"R"},
   ];
 
@@ -7105,12 +5707,12 @@ function SuperAdminDashboard({ data, onExit }) {
         {tab==="dashboard"&&(
           <div>
             <h2 style={{color:"#fff",fontWeight:900,fontSize:20,marginBottom:16}}>
-              Übersicht
+              Uebersicht
             </h2>
             {/* KPI Cards */}
             <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginBottom:20}}>
               {[
-                {label:"Vereine",        val:allClubs.length,           sub:"in Datenbank", col:"#7c3aed"},
+                {label:"Vereine",        val:allClubs.length,           sub:"registriert",  col:"#7c3aed"},
                 {label:"Teams",          val:allTeams.length,           sub:"gesamt",       col:"#2563eb"},
                 {label:"Spieler",        val:allPlayers.length,         sub:"Profile",      col:"#16a34a"},
                 {label:"Heute aktiv",    val:todayEvents.length,        sub:"Events heute", col:"#d97706"},
@@ -7133,7 +5735,7 @@ function SuperAdminDashboard({ data, onExit }) {
             <div style={{background:"#1e293b",borderRadius:14,padding:"16px",
               border:"1px solid #334155",marginBottom:16}}>
               <div style={{fontSize:13,fontWeight:700,color:"#94a3b8",marginBottom:12}}>
-                AKTIVITÄT LETZTE 7 TAGE
+                AKTIVITAET LETZTE 7 TAGE
               </div>
               {(()=>{
                 const days = Array.from({length:7},(_,i)=>{
@@ -7178,10 +5780,7 @@ function SuperAdminDashboard({ data, onExit }) {
                     {cl.em||cl.name?.slice(0,1)||"V"}
                   </div>
                   <div style={{flex:1}}>
-                    <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-                      <div style={{fontWeight:700,fontSize:13,color:"#e2e8f0"}}>{cl.name}</div>
-                      <span style={{fontSize:9,fontWeight:800,color:"#34d399",background:"#064e3b",borderRadius:5,padding:"2px 6px",letterSpacing:.3}}>IN DATENBANK</span>
-                    </div>
+                    <div style={{fontWeight:700,fontSize:13,color:"#e2e8f0"}}>{cl.name}</div>
                     <div style={{fontSize:11,color:"#475569"}}>{cl.sport} - {cl.createdAt?.slice(0,10)||"unbekannt"}</div>
                   </div>
                 </div>
@@ -7189,11 +5788,6 @@ function SuperAdminDashboard({ data, onExit }) {
               {allClubs.length===0&&<p style={{color:"#475569",fontSize:13}}>Noch keine Vereine</p>}
             </div>
           </div>
-        )}
-
-        {/* AKTIVITÄT */}
-        {tab==="activity"&&(
-          <SuperAdminActivity data={data} allClubs={allClubs}/>
         )}
 
         {/* VEREINE */}
@@ -7230,92 +5824,7 @@ function SuperAdminDashboard({ data, onExit }) {
         {tab==="settings"&&(
           <SuperAdminSettings/>
         )}
-
-        {/* COMPLIANCE / SICHERHEITS-STATUS */}
-        {tab==="compliance"&&(
-          <SuperAdminCompliance allClubs={allClubs} allPlayers={allPlayers}/>
-        )}
       </div>
-    </div>
-  );
-}
-
-/* -----------------------------------------------------------------
-   COMPLIANCE / SICHERHEITS-STATUS  (ehrliche Bestandsaufnahme)
------------------------------------------------------------------ */
-function SuperAdminCompliance({ allClubs, allPlayers }) {
-  const STATUS = {
-    ok:    { label:"Erfüllt",        col:"#16a34a", bg:"rgba(22,163,74,.15)" },
-    part:  { label:"Teilweise",      col:"#d97706", bg:"rgba(217,119,6,.15)" },
-    open:  { label:"Offen",          col:"#dc2626", bg:"rgba(220,38,38,.15)" },
-    na:    { label:"Nicht relevant", col:"#64748b", bg:"rgba(100,116,139,.15)" },
-  };
-  const SECTIONS = [
-    { title:"KI & EU AI Act", items:[
-      { s:"na",   t:"Keine KI-Verarbeitung von Personendaten",
-        d:"Die App nutzt bewusst keine externe KI. Skill-Auswertung & Trainings-Logik laufen regelbasiert und lokal. Damit ist der EU AI Act aktuell nicht einschlägig." },
-      { s:"open", t:"Falls später KI ergänzt wird",
-        d:"Sobald KI Kinderdaten verarbeitet, gelten Transparenz-, Risiko- und Einwilligungspflichten (EU AI Act + DSGVO). Dann hier neu bewerten." },
-    ]},
-    { title:"Datenschutz (DSGVO)", items:[
-      { s:"ok",   t:"Datensparsamkeit",
-        d:"Nur Vorname/Jahr/Mannschaft; Notizen als feste Auswahl statt Freitext; Skill-Profil rein sportlich." },
-      { s:"ok",   t:"Werbe-Kennzeichnung",
-        d:"Affiliate-/Werbe-Banner sind als „Werbung\"/„Anzeige\" gekennzeichnet." },
-      { s:"part", t:"Datenschutzerklärung / Impressum / Nutzung",
-        d:"Vollständige Vorlage vorhanden – echte Betreiberdaten eintragen und juristisch prüfen lassen." },
-      { s:"part", t:"Eltern-Einwilligung (Minderjährige, Art. 8)",
-        d:"Einwilligung für Team-Fotos vorhanden. Generelle Einwilligung zur Datenverarbeitung bei Anmeldung noch offen." },
-      { s:"open", t:"Auftragsverarbeitungs-Vertrag (Supabase)",
-        d:"Pflicht, sobald personenbezogene Daten in der Cloud gespeichert werden." },
-    ]},
-    { title:"Datenbank & Zugriff", items:[
-      { s:"ok",   t:"Verschlüsselte Übertragung (HTTPS)",
-        d:"Auslieferung über Vercel erfolgt per HTTPS." },
-      { s:"open", t:"Zugriffstrennung (Row-Level-Security)",
-        d:"SQL-Schema mit RLS als Vorlage vorhanden, aber noch nicht angebunden. Aktuell könnten Daten zu breit lesbar sein." },
-      { s:"open", t:"Sichere Anmeldung & Passwörter",
-        d:"Noch selbstgebautes Hashing. Empfehlung: Supabase-Auth – übernimmt sicheres Hashing/Sessions." },
-      { s:"part", t:"Löschkonzept",
-        d:"Daten lokal löschbar; serverseitiges, nachvollziehbares Löschen kommt mit der echten Datenbank." },
-    ]},
-  ];
-  const counts = SECTIONS.flatMap(s=>s.items).reduce((a,i)=>{a[i.s]=(a[i.s]||0)+1;return a;},{});
-  return (
-    <div>
-      <h2 style={{color:"#fff",fontWeight:900,fontSize:20,marginBottom:6}}>Compliance & Sicherheit</h2>
-      <p style={{color:"#64748b",fontSize:12.5,lineHeight:1.6,marginBottom:16}}>
-        Ehrliche Bestandsaufnahme – keine Rechtsberatung. Vor Echtbetrieb mit Kinderdaten fachkundig prüfen lassen.
-      </p>
-      <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:20}}>
-        {Object.entries(STATUS).map(([k,v])=>(
-          <div key={k} style={{display:"flex",alignItems:"center",gap:6,background:v.bg,borderRadius:8,padding:"5px 10px"}}>
-            <span style={{width:8,height:8,borderRadius:"50%",background:v.col}}/>
-            <span style={{fontSize:11.5,fontWeight:700,color:v.col}}>{v.label}</span>
-            <span style={{fontSize:11.5,fontWeight:800,color:"#94a3b8"}}>{counts[k]||0}</span>
-          </div>
-        ))}
-      </div>
-      {SECTIONS.map(sec=>(
-        <div key={sec.title} style={{marginBottom:22}}>
-          <div style={{color:"#a78bfa",fontWeight:800,fontSize:13,letterSpacing:.4,marginBottom:10,textTransform:"uppercase"}}>{sec.title}</div>
-          <div style={{display:"flex",flexDirection:"column",gap:8}}>
-            {sec.items.map((it,i)=>{
-              const st=STATUS[it.s];
-              return (
-                <div key={i} style={{background:"#1e293b",border:"1px solid #334155",borderRadius:12,padding:"13px 15px"}}>
-                  <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:5}}>
-                    <span style={{width:10,height:10,borderRadius:"50%",background:st.col,flexShrink:0}}/>
-                    <span style={{flex:1,fontWeight:700,fontSize:14,color:"#e2e8f0"}}>{it.t}</span>
-                    <span style={{fontSize:11,fontWeight:800,color:st.col,background:st.bg,borderRadius:7,padding:"3px 9px",whiteSpace:"nowrap"}}>{st.label}</span>
-                  </div>
-                  <div style={{fontSize:12.5,color:"#94a3b8",lineHeight:1.55,paddingLeft:20}}>{it.d}</div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      ))}
     </div>
   );
 }
@@ -7323,89 +5832,6 @@ function SuperAdminCompliance({ allClubs, allPlayers }) {
 /* -----------------------------------------------------------------
    VEREINE VERWALTUNG
 ----------------------------------------------------------------- */
-function SuperAdminActivity({ data, allClubs }) {
-  const log = (data.securityLog||[]).filter(e=>e.type==="login");
-  const today = new Date().toISOString().slice(0,10);
-  const dayStr = d => new Date(Date.now()-d*86400000).toISOString().slice(0,10);
-  // Anmeldungen pro Tag (letzte 14 Tage) aus dem echten securityLog
-  const days = [];
-  for(let i=13;i>=0;i--){
-    const ds = dayStr(i);
-    const cnt = log.filter(e=>(e.ts||"").slice(0,10)===ds).length;
-    days.push({ ds, cnt, label: new Date(ds).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"}) });
-  }
-  const maxCnt = Math.max(1,...days.map(d=>d.cnt));
-  const todayCnt = days[days.length-1].cnt;
-  const week = log.filter(e=>(e.ts||"").slice(0,10)>=dayStr(6)).length;
-  // aktive Vereine = mind. 1 Login in letzten 30 Tagen
-  const d30 = dayStr(30);
-  const activeClubIds = new Set(log.filter(e=>(e.ts||"").slice(0,10)>=d30).map(e=>e.cid));
-  // Vereine mit letzter Aktivität, sortiert (älteste zuerst → Löschkandidaten oben)
-  const clubRows = allClubs.map(c=>{
-    const la = c.lastActive || null;
-    const days = la ? Math.floor((Date.now()-new Date(la).getTime())/86400000) : null;
-    return { id:c.id, name:c.name, lastActive:la, daysAgo:days };
-  }).sort((a,b)=>{
-    if(a.daysAgo==null) return 1; if(b.daysAgo==null) return -1; return b.daysAgo-a.daysAgo;
-  });
-  const stale = clubRows.filter(c=>c.daysAgo!=null && c.daysAgo>=365).length;
-  const card = (l,v,col)=>(
-    <div key={l} style={{background:"#1e293b",borderRadius:13,padding:"14px",border:"1px solid #334155",textAlign:"center"}}>
-      <div style={{fontWeight:900,fontSize:24,color:col}}>{v}</div>
-      <div style={{fontSize:11,color:"#64748b",marginTop:3}}>{l}</div>
-    </div>
-  );
-  return (
-    <div>
-      <h2 style={{color:"#fff",fontWeight:900,fontSize:20,marginBottom:6}}>Aktivität</h2>
-      <p style={{color:"#64748b",fontSize:12,marginBottom:16}}>Basiert auf dem synchronisierten Login-Protokoll aller Vereine.</p>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginBottom:18}}>
-        {card("Anmeldungen heute",todayCnt,"#d97706")}
-        {card("Anmeldungen (7 Tage)",week,"#2563eb")}
-        {card("Aktive Vereine (30 T.)",activeClubIds.size,"#16a34a")}
-        {card("Vereine gesamt",allClubs.length,"#7c3aed")}
-      </div>
-
-      <div style={{background:"#1e293b",borderRadius:14,padding:"16px",border:"1px solid #334155",marginBottom:18}}>
-        <div style={{fontSize:11,fontWeight:700,color:"#64748b",marginBottom:14}}>ANMELDUNGEN PRO TAG (LETZTE 14 TAGE)</div>
-        <div style={{display:"flex",alignItems:"flex-end",gap:4,height:120}}>
-          {days.map(d=>(
-            <div key={d.ds} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-              <div style={{fontSize:10,color:"#94a3b8",fontWeight:700}}>{d.cnt||""}</div>
-              <div style={{width:"100%",height:`${Math.round(d.cnt/maxCnt*80)}px`,minHeight:d.cnt?4:1,background:d.ds===today?"#d97706":"#7c3aed",borderRadius:"4px 4px 0 0",transition:"height .3s"}}/>
-              <div style={{fontSize:8.5,color:"#475569",transform:"rotate(-45deg)",whiteSpace:"nowrap",marginTop:2}}>{d.label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div style={{background:"#1e293b",borderRadius:14,padding:"16px",border:"1px solid #334155"}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
-          <div style={{fontSize:11,fontWeight:700,color:"#64748b"}}>VEREINE – ZULETZT ONLINE (ÄLTESTE ZUERST)</div>
-          {stale>0&&<span style={{fontSize:10.5,fontWeight:800,color:"#fca5a5",background:"#450a0a",borderRadius:6,padding:"2px 8px"}}>{stale} über 1 Jahr inaktiv</span>}
-        </div>
-        {clubRows.length===0&&<p style={{color:"#475569",fontSize:13}}>Noch keine Vereine.</p>}
-        {clubRows.map(c=>{
-          const danger = c.daysAgo!=null && c.daysAgo>=365;
-          const warn = c.daysAgo!=null && c.daysAgo>=300 && c.daysAgo<365;
-          return (
-            <div key={c.id} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 0",borderBottom:"1px solid #283548"}}>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:13,fontWeight:700,color:"#e2e8f0",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{c.name}</div>
-                <div style={{fontSize:11,color:"#64748b"}}>{c.lastActive?new Date(c.lastActive).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"}):"noch nie eingeloggt"}</div>
-              </div>
-              <div style={{fontSize:11,fontWeight:800,color:danger?"#fca5a5":warn?"#fbbf24":"#16a34a",whiteSpace:"nowrap"}}>
-                {c.daysAgo==null?"–":c.daysAgo===0?"heute":c.daysAgo+" Tage"}
-              </div>
-            </div>
-          );
-        })}
-        <p style={{fontSize:11,color:"#475569",marginTop:12,lineHeight:1.5}}>Vereine ohne Anmeldung seit über 1 Jahr sind rot markiert – Kandidaten für eine Bereinigung.</p>
-      </div>
-    </div>
-  );
-}
-
 function SuperAdminClubs({ data, allClubs, allTeams, allPlayers }) {
   const [search, setSearch] = useState("");
   const [selClub, setSelClub] = useState(null);
@@ -7416,7 +5842,7 @@ function SuperAdminClubs({ data, allClubs, allTeams, allPlayers }) {
   );
 
   const deleteClub = (clubId) => {
-    if(!confirm("Verein wirklich löschen? Alle Daten gehen verloren.")) return;
+    if(!confirm("Verein wirklich loeschen? Alle Daten gehen verloren.")) return;
     const nextData = {
       ...data,
       clubs: (data.clubs||[]).filter(x=>x.id!==clubId),
@@ -7484,7 +5910,7 @@ function SuperAdminClubs({ data, allClubs, allTeams, allPlayers }) {
                 style={{padding:"5px 12px",borderRadius:8,border:"1px solid #334155",
                   background:"transparent",color:"#94a3b8",fontWeight:600,fontSize:11,
                   cursor:"pointer",fontFamily:"inherit"}}>
-                {selClub?.id===cl.id?"Schließen":"Details"}
+                {selClub?.id===cl.id?"Schliessen":"Details"}
               </button>
               <button onClick={()=>toggleBlock(cl.id, cl.blocked)}
                 style={{padding:"5px 12px",borderRadius:8,border:"none",
@@ -7496,7 +5922,7 @@ function SuperAdminClubs({ data, allClubs, allTeams, allPlayers }) {
                 style={{padding:"5px 12px",borderRadius:8,border:"none",
                   background:"#dc2626",color:"#fff",fontWeight:700,fontSize:11,
                   cursor:"pointer",fontFamily:"inherit"}}>
-                Löschen
+                Loeschen
               </button>
             </div>
             {selClub?.id===cl.id&&(
@@ -7566,7 +5992,7 @@ function SuperAdminMessages({ data, allClubs }) {
       <div style={{background:"#1e293b",borderRadius:14,padding:"16px",
         border:"1px solid #334155",marginBottom:16}}>
         <div style={{fontSize:11,fontWeight:700,color:"#64748b",marginBottom:10}}>
-          EMPFÄNGER
+          EMPFAENGER
         </div>
         <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
           <button onClick={()=>setTarget("all")}
@@ -7612,7 +6038,7 @@ function SuperAdminMessages({ data, allClubs }) {
               <div style={{fontWeight:600,fontSize:13,color:"#e2e8f0"}}>{m.text}</div>
               <div style={{fontSize:11,color:"#475569",marginTop:4}}>
                 {new Date(m.sentAt).toLocaleString("de-DE")} -
-                Empfänger: {m.target==="all"?"Alle":m.target}
+                Empfaenger: {m.target==="all"?"Alle":m.target}
               </div>
             </div>
           ))}
@@ -7640,8 +6066,8 @@ function SuperAdminModules({ modules, setModule }) {
     <div>
       <h2 style={{color:"#fff",fontWeight:900,fontSize:20,marginBottom:8}}>Module</h2>
       <p style={{fontSize:13,color:"#64748b",marginBottom:16}}>
-        Deaktivierte Module werden für alle Nutzer ausgeblendet.
-        Änderungen gelten sofort beim nächsten Laden.
+        Deaktivierte Module werden fuer alle Nutzer ausgeblendet.
+        Aenderungen gelten sofort beim naechsten Laden.
       </p>
       {Object.entries(cats).map(([catName, keys])=>(
         <div key={catName} style={{marginBottom:20}}>
@@ -7663,7 +6089,7 @@ function SuperAdminModules({ modules, setModule }) {
                     {mod.label}
                   </div>
                   <div style={{fontSize:11,color:mod.enabled?"#64748b":"#dc2626",marginTop:2}}>
-                    {mod.enabled?"Aktiv":"Deaktiviert - für alle Nutzer unsichtbar"}
+                    {mod.enabled?"Aktiv":"Deaktiviert - fuer alle Nutzer unsichtbar"}
                   </div>
                 </div>
                 <div onClick={()=>toggle(key)}
@@ -7707,7 +6133,7 @@ function SuperAdminRevenue({ analytics, affiliateClicks, shareClicks, nps }) {
       <div style={{background:"linear-gradient(135deg,#4c1d95,#7c3aed)",
         borderRadius:16,padding:"20px",marginBottom:16}}>
         <div style={{fontSize:11,fontWeight:800,color:"rgba(255,255,255,.6)",marginBottom:4}}>
-          GESCHÄTZTE AFFILIATE-EINNAHMEN
+          GESCHAETZTE AFFILIATE-EINNAHMEN
         </div>
         <div style={{fontWeight:900,fontSize:36,color:"#fff",lineHeight:1}}>
           EUR {totalRevEst.toFixed(2)}
@@ -7846,7 +6272,7 @@ function SuperAdminLogs({ data }) {
         <div style={{background:"#3b0000",borderRadius:13,padding:"12px 14px",
           border:"1px solid #dc2626",marginBottom:16}}>
           <div style={{fontWeight:800,fontSize:13,color:"#dc2626",marginBottom:8}}>
-            {suspicious.length} verdaechtige Aktivität(en)
+            {suspicious.length} verdaechtige Aktivitaet(en)
           </div>
           {suspicious.slice(0,3).map(l=>(
             <div key={l.id} style={{fontSize:12,color:"#f87171",marginBottom:4}}>
@@ -7888,7 +6314,7 @@ function SuperAdminSettings() {
     if(newPw.length<6||newPw!==newPw2) return;
     const cur = saGet()||{};
     saSet({...cur, pwHash:hashPw(newPw)});
-    setSaved("Passwort geändert"); setNewPw(""); setNewPw2("");
+    setSaved("Passwort geaendert"); setNewPw(""); setNewPw2("");
     setTimeout(()=>setSaved(""),2000);
   };
 
@@ -7899,9 +6325,9 @@ function SuperAdminSettings() {
   };
 
   const clearAnalytics = () => {
-    if(confirm("Alle Analytics-Daten löschen?")) {
+    if(confirm("Alle Analytics-Daten loeschen?")) {
       localStorage.removeItem("va_analytics");
-      alert("Gelöscht");
+      alert("Geloescht");
     }
   };
 
@@ -7910,7 +6336,7 @@ function SuperAdminSettings() {
       <h2 style={{color:"#fff",fontWeight:900,fontSize:20,marginBottom:16}}>
         Einstellungen
       </h2>
-      {/* Passwort ändern */}
+      {/* Passwort aendern */}
       <div style={{background:"#1e293b",borderRadius:14,padding:"16px",
         border:"1px solid #334155",marginBottom:14}}>
         <div style={{fontSize:13,fontWeight:700,color:"#94a3b8",marginBottom:12}}>
@@ -7940,7 +6366,7 @@ function SuperAdminSettings() {
         <div style={{flex:1}}>
           <div style={{fontWeight:700,fontSize:14,color:"#e2e8f0"}}>Wartungsmodus</div>
           <div style={{fontSize:12,color:"#475569",marginTop:2}}>
-            App zeigt Wartungshinweis für alle Nutzer
+            App zeigt Wartungshinweis fuer alle Nutzer
           </div>
         </div>
         <div onClick={toggleMaint} style={{width:48,height:26,borderRadius:99,
@@ -7959,7 +6385,7 @@ function SuperAdminSettings() {
           style={{padding:"9px 16px",borderRadius:10,border:"none",
             background:"#dc2626",color:"#fff",fontWeight:700,fontSize:13,
             cursor:"pointer",fontFamily:"inherit"}}>
-          Analytics zurücksetzen
+          Analytics zuruecksetzen
         </button>
       </div>
     </div>
@@ -7988,7 +6414,7 @@ function SuperAdmin({ data }) {
 
 const MOD_KEY = "va_moderation";
 
-// Muster-Listen für Erkennung
+// Muster-Listen fuer Erkennung
 const MOD_PATTERNS = {
   werbung: {
     label: "Werbung / Spam",
@@ -8124,7 +6550,7 @@ const isBlocked = (userId, cid) => {
 };
 
 /* -----------------------------------------------------------------
-   MODERATION FEEDBACK für den Nutzer
+   MODERATION FEEDBACK fuer den Nutzer
 ----------------------------------------------------------------- */
 function ModerationWarning({ card, violation, onClose }) {
   const configs = {
@@ -8139,7 +6565,7 @@ function ModerationWarning({ card, violation, onClose }) {
       title: "Gelbe Karte - 24h Sperre",
       col: "#d97706", bg: "#fef3c7",
       icon: "GK",
-      msg: "Du hast mehrfach gegen die Nutzungsregeln verstosen. Dein Chat-Zugang ist für 24 Stunden gesperrt.",
+      msg: "Du hast mehrfach gegen die Nutzungsregeln verstosen. Dein Chat-Zugang ist fuer 24 Stunden gesperrt.",
       sub: "Bei weiteren Verstoessen wird dein Zugang permanent gesperrt.",
     },
     red: {
@@ -8217,7 +6643,7 @@ function SuperAdminModeration() {
         Chat-Moderation
       </h2>
       <p style={{fontSize:13,color:"#64748b",marginBottom:16,lineHeight:1.5}}>
-        KI-gestützte Erkennung von Werbung, illegalen Inhalten und Spam.
+        KI-gestuetzte Erkennung von Werbung, illegalen Inhalten und Spam.
         Nur du kannst gesperrte Nutzer freischalten.
       </p>
 
@@ -8313,7 +6739,7 @@ function SuperAdminModeration() {
                   style={{padding:"5px 10px",borderRadius:8,border:"1px solid #334155",
                     background:"transparent",color:"#64748b",fontWeight:600,
                     fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>
-                  Zurücksetzen
+                  Zuruecksetzen
                 </button>
               </div>
             </div>
@@ -8341,13 +6767,13 @@ function SuperAdminModeration() {
 
 const FEATURES_KEY = "va_features";
 
-// Vollständige Feature-Flag Datenbank
+// Vollstaendige Feature-Flag Datenbank
 const FEATURE_REGISTRY = [
 
   //  KERN 
   { id:"dir_public",      cat:"kern",      phase:1, risk:"low",
-    label:"Öffentliches Verzeichnis",
-    desc:"Vereine können im Verzeichnis gefunden werden",
+    label:"Oeffentliches Verzeichnis",
+    desc:"Vereine koennen im Verzeichnis gefunden werden",
     affects:"all", default:true, deps:[] },
   { id:"club_register",   cat:"kern",      phase:1, risk:"low",
     label:"Neue Vereine anlegen",
@@ -8355,29 +6781,29 @@ const FEATURE_REGISTRY = [
     affects:"all", default:true, deps:[] },
   { id:"demo_access",     cat:"kern",      phase:1, risk:"low",
     label:"Demo-Verein sichtbar",
-    desc:"Demo-Verein erscheint im Verzeichnis für neue Nutzer",
+    desc:"Demo-Verein erscheint im Verzeichnis fuer neue Nutzer",
     affects:"all", default:true, deps:[] },
   { id:"helper_login",    cat:"kern",      phase:2, risk:"low",
     label:"Helfer-Zugang",
-    desc:"Helfer können sich mit Code einloggen",
+    desc:"Helfer koennen sich mit Code einloggen",
     affects:"helper", default:true, deps:[] },
   { id:"lang_switcher",   cat:"kern",      phase:3, risk:"low",
     label:"Sprachwechsler",
-    desc:"Nutzer können Sprache ändern (DE/EN/NL/AR/TR)",
+    desc:"Nutzer koennen Sprache aendern (DE/EN/NL/AR/TR)",
     affects:"all", default:true, deps:[] },
 
   //  TERMINE 
   { id:"events_create",   cat:"termine",   phase:1, risk:"low",
     label:"Termine erstellen",
-    desc:"Trainer können neue Termine anlegen",
+    desc:"Trainer koennen neue Termine anlegen",
     affects:"trainer", default:true, deps:[] },
   { id:"events_vote",     cat:"termine",   phase:1, risk:"low",
     label:"Abstimmung (Dabei/Nicht dabei)",
-    desc:"Eltern und Trainer können bei Terminen abstimmen",
+    desc:"Eltern und Trainer koennen bei Terminen abstimmen",
     affects:"all", default:true, deps:["events_create"] },
   { id:"events_late",     cat:"termine",   phase:1, risk:"low",
-    label:"Verspätungs-Meldung",
-    desc:"Nutzer können angeben wie spät sie kommen",
+    label:"Verspaetungs-Meldung",
+    desc:"Nutzer koennen angeben wie spaet sie kommen",
     affects:"all", default:true, deps:["events_vote"] },
   { id:"events_reason",   cat:"termine",   phase:1, risk:"low",
     label:"Abwesenheits-Grund",
@@ -8385,7 +6811,7 @@ const FEATURE_REGISTRY = [
     affects:"all", default:true, deps:["events_vote"] },
   { id:"events_series",   cat:"termine",   phase:2, risk:"medium",
     label:"Serientermine",
-    desc:"Trainer können wiederkehrende Termine anlegen",
+    desc:"Trainer koennen wiederkehrende Termine anlegen",
     affects:"trainer", default:true, deps:["events_create"] },
   { id:"events_fieldbook",cat:"termine",   phase:3, risk:"medium",
     label:"Platzbuchung bei Termin",
@@ -8410,7 +6836,7 @@ const FEATURE_REGISTRY = [
     desc:"Tore, Karten, Anwesenheits-Quote im Profil",
     affects:"trainer", default:true, deps:["players_profiles"] },
   { id:"players_parents", cat:"team",      phase:2, risk:"medium",
-    label:"Spielerliste für Eltern",
+    label:"Spielerliste fuer Eltern",
     desc:"Eltern sehen andere Kinder im Team",
     affects:"user", default:true, deps:["players_list"] },
   { id:"attendance_tab",  cat:"team",      phase:1, risk:"low",
@@ -8437,11 +6863,11 @@ const FEATURE_REGISTRY = [
     affects:"all", default:true, deps:[] },
   { id:"chat_club",       cat:"komm",      phase:2, risk:"medium",
     label:"Vereins-Chat",
-    desc:"Übergreifender Chat für alle Teams eines Vereins",
+    desc:"Uebergreifender Chat fuer alle Teams eines Vereins",
     affects:"all", default:true, deps:["chat_team"] },
   { id:"chat_parents",    cat:"komm",      phase:3, risk:"high",
-    label:"Eltern dürfen schreiben",
-    desc:"Eltern können im Chat Nachrichten senden (nicht nur lesen)",
+    label:"Eltern duerfen schreiben",
+    desc:"Eltern koennen im Chat Nachrichten senden (nicht nur lesen)",
     affects:"user", default:false, deps:["chat_team"] },
   { id:"chat_moderation", cat:"komm",      phase:1, risk:"low",
     label:"Chat-Moderation (KI)",
@@ -8449,7 +6875,7 @@ const FEATURE_REGISTRY = [
     affects:"all", default:true, deps:["chat_team"] },
   { id:"news_board",      cat:"komm",      phase:2, risk:"low",
     label:"Schwarzes Brett",
-    desc:"Admin kann Vereinsnews für alle veröffentlichen",
+    desc:"Admin kann Vereinsnews fuer alle veroeffentlichen",
     affects:"admin", default:true, deps:[] },
   { id:"broadcast_msg",   cat:"komm",      phase:2, risk:"medium",
     label:"Rundschreiben an Trainer",
@@ -8461,35 +6887,35 @@ const FEATURE_REGISTRY = [
     affects:"admin", default:true, deps:[] },
   { id:"pw_forgot",       cat:"komm",      phase:1, risk:"low",
     label:"Passwort vergessen",
-    desc:"Nutzer können Passwort-Reset anfordern",
+    desc:"Nutzer koennen Passwort-Reset anfordern",
     affects:"all", default:true, deps:[] },
   { id:"contact_wa",      cat:"komm",      phase:2, risk:"low",
     label:"WhatsApp-Kontakt Button",
     desc:"Trainer-Kontakt via WhatsApp-Deeplink",
     affects:"all", default:true, deps:[] },
 
-  //  PLÄTZE 
-  { id:"fields_manager",  cat:"plätze",   phase:3, risk:"low",
+  //  PLAETZE 
+  { id:"fields_manager",  cat:"plaetze",   phase:3, risk:"low",
     label:"Felder-Verwaltung (Admin)",
     desc:"Admin kann Felder mit Vorlagen anlegen",
     affects:"admin", default:true, deps:[] },
-  { id:"fields_booking",  cat:"plätze",   phase:3, risk:"medium",
+  { id:"fields_booking",  cat:"plaetze",   phase:3, risk:"medium",
     label:"Platzbuchung (Trainer)",
-    desc:"Trainer können Felder reservieren",
+    desc:"Trainer koennen Felder reservieren",
     affects:"trainer", default:true, deps:["fields_manager"] },
-  { id:"fields_weather",  cat:"plätze",   phase:4, risk:"low",
+  { id:"fields_weather",  cat:"plaetze",   phase:4, risk:"low",
     label:"Wetter-Flags",
     desc:"Gutwetter/Schlechtwetter Unterscheidung bei Feldern",
     affects:"trainer", default:true, deps:["fields_manager"] },
 
   //  TRAINING 
   { id:"training_plans",  cat:"training",  phase:4, risk:"low",
-    label:"Trainingspläne erstellen",
-    desc:"Trainer können eigene Trainingspläne anlegen",
+    label:"Trainingsplaene erstellen",
+    desc:"Trainer koennen eigene Trainingsplaene anlegen",
     affects:"trainer", default:true, deps:[] },
   { id:"training_library",cat:"training",  phase:4, risk:"low",
     label:"Vorlagen-Bibliothek",
-    desc:"27+ professionelle Übungsvorlagen mit Coaching-Hinweisen",
+    desc:"27+ professionelle Uebungsvorlagen mit Coaching-Hinweisen",
     affects:"trainer", default:true, deps:["training_plans"] },
   { id:"training_inventory",cat:"training",phase:4, risk:"low",
     label:"Inventar-Liste",
@@ -8497,7 +6923,7 @@ const FEATURE_REGISTRY = [
     affects:"trainer", default:true, deps:["training_plans"] },
   { id:"training_fieldplan",cat:"training",phase:4, risk:"low",
     label:"Platz-Visualisierung",
-    desc:"SVG-Grafik zeigt Übungszonen auf dem Feld",
+    desc:"SVG-Grafik zeigt Uebungszonen auf dem Feld",
     affects:"trainer", default:true, deps:["training_plans"] },
   { id:"training_checker",cat:"training",  phase:4, risk:"low",
     label:"Trainer-Checkin beim Training",
@@ -8515,25 +6941,25 @@ const FEATURE_REGISTRY = [
     affects:"all", default:true, deps:[] },
   { id:"audit_log",       cat:"sicherheit",phase:1, risk:"low",
     label:"Audit-Log",
-    desc:"Alle Logins und Änderungen werden protokolliert",
+    desc:"Alle Logins und Aenderungen werden protokolliert",
     affects:"admin", default:true, deps:[] },
   { id:"device_track",    cat:"sicherheit",phase:2, risk:"medium",
-    label:"Geräte-Erkennung",
-    desc:"Neue Geräte werden im Sicherheitslog markiert",
+    label:"Geraete-Erkennung",
+    desc:"Neue Geraete werden im Sicherheitslog markiert",
     affects:"admin", default:true, deps:["audit_log"] },
   { id:"region_warn",     cat:"sicherheit",phase:2, risk:"low",
     label:"Auslands-Warnung",
     desc:"Login aus unbekannter Region wird geflaggt",
     affects:"admin", default:true, deps:["audit_log"] },
   { id:"access_manager",  cat:"sicherheit",phase:2, risk:"medium",
-    label:"Zugänge-Verwaltung",
-    desc:"Admin kann alle Passwörter ändern und Zugänge sperren",
+    label:"Zugaenge-Verwaltung",
+    desc:"Admin kann alle Passwoerter aendern und Zugaenge sperren",
     affects:"admin", default:true, deps:[] },
 
   //  MARKETING 
   { id:"affiliate_banner",cat:"marketing", phase:5, risk:"low",
     label:"Affiliate-Banner",
-    desc:"Werbebanner für Sportausrüstung (Einnahmen für dich)",
+    desc:"Werbebanner fuer Sportausruestung (Einnahmen fuer dich)",
     affects:"all", default:false, deps:[] },
   { id:"nps_survey",      cat:"marketing", phase:3, risk:"low",
     label:"NPS-Umfrage",
@@ -8541,7 +6967,7 @@ const FEATURE_REGISTRY = [
     affects:"trainer", default:true, deps:[] },
   { id:"moment_share",    cat:"marketing", phase:3, risk:"low",
     label:"Teilen-Funktion",
-    desc:"Trainer können die App weiterempfehlen",
+    desc:"Trainer koennen die App weiterempfehlen",
     affects:"trainer", default:true, deps:[] },
   { id:"achievements",    cat:"marketing", phase:4, risk:"low",
     label:"Achievements / Meilensteine",
@@ -8555,19 +6981,19 @@ const FEATURE_REGISTRY = [
   //  UI/UX 
   { id:"dark_mode",       cat:"uiux",      phase:1, risk:"low",
     label:"Dark Mode",
-    desc:"Nutzer können zwischen Hell, Dunkel und Auto wählen",
+    desc:"Nutzer koennen zwischen Hell, Dunkel und Auto waehlen",
     affects:"all", default:true, deps:[] },
   { id:"font_size",       cat:"uiux",      phase:1, risk:"low",
-    label:"Schriftgröße-Einstellung",
-    desc:"Klein, Normal oder Groß für bessere Lesbarkeit",
+    label:"Schriftgroesse-Einstellung",
+    desc:"Klein, Normal oder Gross fuer bessere Lesbarkeit",
     affects:"all", default:true, deps:[] },
   { id:"animations",      cat:"uiux",      phase:1, risk:"low",
     label:"Animationen",
-    desc:"Ein-/Ausblende-Animationen und Übergaenge",
+    desc:"Ein-/Ausblende-Animationen und Uebergaenge",
     affects:"all", default:true, deps:[] },
   { id:"accessibility_bar",cat:"uiux",     phase:1, risk:"low",
     label:"Schrift-Button vor Login",
-    desc:"A/A/A Schriftgröße-Schalter auf Login-Seite",
+    desc:"A/A/A Schriftgroesse-Schalter auf Login-Seite",
     affects:"all", default:true, deps:["font_size"] },
 
   //  DATENSCHUTZ 
@@ -8577,11 +7003,11 @@ const FEATURE_REGISTRY = [
     affects:"all", default:true, deps:[] },
   { id:"photo_upload",    cat:"datenschutz",phase:3, risk:"high",
     label:"Mannschafts-Fotos",
-    desc:"Teams können Gruppenfotos hochladen (nur mit Einwilligung)",
+    desc:"Teams koennen Gruppenfotos hochladen (nur mit Einwilligung)",
     affects:"trainer", default:true, deps:["dsgvo_consent"] },
   { id:"dsgvo_delete",    cat:"datenschutz",phase:1, risk:"low",
-    label:"DSGVO-Löschung",
-    desc:"Spielerdaten können auf Anfrage gelöscht werden",
+    label:"DSGVO-Loeschung",
+    desc:"Spielerdaten koennen auf Anfrage geloescht werden",
     affects:"admin", default:true, deps:[] },
 ];
 
@@ -8599,8 +7025,8 @@ const MILESTONES = [
     name: "Kommunikation",
     icon: "2",
     col: "#2563eb",
-    desc: "Passwort-Reset, Einladungen, News, Zugänge-Verwaltung",
-    goal: "Selbstständiges Nutzer-Management ohne Admin-Eingriffe",
+    desc: "Passwort-Reset, Einladungen, News, Zugaenge-Verwaltung",
+    goal: "Selbststaendiges Nutzer-Management ohne Admin-Eingriffe",
   },
   {
     phase: 3,
@@ -8608,15 +7034,15 @@ const MILESTONES = [
     icon: "3",
     col: "#7c3aed",
     desc: "Trikots, Helfer, Platzbuchung, CSV-Export",
-    goal: "Vollständige Vereins-Verwaltung aus einer App",
+    goal: "Vollstaendige Vereins-Verwaltung aus einer App",
   },
   {
     phase: 4,
     name: "Trainer-Tools",
     icon: "4",
     col: "#d97706",
-    desc: "Trainingspläne, Vorlagen, Statistiken, Feldplan",
-    goal: "Professionelle Trainer-Unterstützung und Auswertungen",
+    desc: "Trainingsplaene, Vorlagen, Statistiken, Feldplan",
+    goal: "Professionelle Trainer-Unterstuetzung und Auswertungen",
   },
   {
     phase: 5,
@@ -8624,7 +7050,7 @@ const MILESTONES = [
     icon: "5",
     col: "#dc2626",
     desc: "Alle Features aktiv, Affiliate, Marketing",
-    goal: "Öffentlicher Launch mit allen Funktionen",
+    goal: "Oeffentlicher Launch mit allen Funktionen",
   },
 ];
 
@@ -8672,20 +7098,20 @@ function SuperAdminRollout() {
 
   const toggle = (id, deps=[]) => {
     const cur = getFeat(id);
-    // Wenn deaktiviert: prüfen ob andere Features abhängen
+    // Wenn deaktiviert: pruefen ob andere Features abhaengen
     if(cur) {
       const dependents = FEATURE_REGISTRY.filter(f=>f.deps.includes(id)&&getFeat(f.id));
       if(dependents.length>0) {
-        if(!confirm(`Achtung: ${dependents.map(f=>f.label).join(", ")} hängen davon ab. Trotzdem deaktivieren?`)) return;
+        if(!confirm(`Achtung: ${dependents.map(f=>f.label).join(", ")} haengen davon ab. Trotzdem deaktivieren?`)) return;
         dependents.forEach(f=>setFeat(f.id,false));
       }
     }
-    // Wenn aktiviert: Abhängigkeiten prüfen
+    // Wenn aktiviert: Abhaengigkeiten pruefen
     if(!cur && deps.length>0) {
       const missing = deps.filter(d=>!getFeat(d));
       if(missing.length>0) {
         const missingLabels = missing.map(d=>FEATURE_REGISTRY.find(f=>f.id===d)?.label||d);
-        if(!confirm(`Benötigt: ${missingLabels.join(", ")}. Diese auch aktivieren?`)) return;
+        if(!confirm(`Benoetigt: ${missingLabels.join(", ")}. Diese auch aktivieren?`)) return;
         missing.forEach(d=>setFeat(d,true));
       }
     }
@@ -8705,7 +7131,7 @@ function SuperAdminRollout() {
     {id:"termine",    label:"Termine",       col:"#16a34a"},
     {id:"team",       label:"Team",          col:"#2563eb"},
     {id:"komm",       label:"Kommunikation", col:"#7c3aed"},
-    {id:"plätze",    label:"Plätze",       col:"#d97706"},
+    {id:"plaetze",    label:"Plaetze",       col:"#d97706"},
     {id:"training",   label:"Training",      col:"#0891b2"},
     {id:"sicherheit", label:"Sicherheit",    col:"#dc2626"},
     {id:"marketing",  label:"Marketing",     col:"#ec4899"},
@@ -8876,7 +7302,7 @@ function SuperAdminRollout() {
                 <div style={{fontSize:11,color:"#475569",lineHeight:1.4}}>{f.desc}</div>
                 {f.deps.length>0&&!active&&(
                   <div style={{fontSize:10,color:"#7c3aed",marginTop:3}}>
-                    Benötigt: {f.deps.map(d=>FEATURE_REGISTRY.find(x=>x.id===d)?.label||d).join(", ")}
+                    Benoetigt: {f.deps.map(d=>FEATURE_REGISTRY.find(x=>x.id===d)?.label||d).join(", ")}
                   </div>
                 )}
               </div>
@@ -8906,8 +7332,8 @@ function SuperAdminRollout() {
                 Meilenstein aktivieren
               </div>
               <div style={{color:"#64748b",fontSize:12,marginTop:3}}>
-                Alle Features bis zur gewählten Phase werden aktiviert,
-                alles darüber deaktiviert.
+                Alle Features bis zur gewaehlten Phase werden aktiviert,
+                alles darueber deaktiviert.
               </div>
             </div>
             <div style={{padding:"16px 20px"}}>
@@ -8957,9 +7383,9 @@ function SuperAdminRollout() {
 ================================================================= */
 const SPORT_PROFILES = {
   fussball: {
-    label:"Fußball", icon:"F",
+    label:"Fussball", icon:"F",
     positions:["Torwart","Innenverteidiger","Aussenverteidiger","Defensives MF",
-               "Zentrales MF","Offensives MF","Fluegelstürmer","Stürmer"],
+               "Zentrales MF","Offensives MF","Fluegelstuermer","Stuermer"],
     stats:["Tore","Vorlagen","Karten Gelb","Karten Rot","Elfmeter","Eigentor"],
     resultFormat:"goals",       // x:y
     teamSizes:[5,7,9,11],
@@ -8983,7 +7409,7 @@ const SPORT_PROFILES = {
   tennis: {
     label:"Tennis", icon:"T",
     positions:["Einzel 1","Einzel 2","Einzel 3","Doppel 1","Doppel 2"],
-    stats:["Sätze gewonnen","Spiele gewonnen","Asse","Doppelfehler"],
+    stats:["Saetze gewonnen","Spiele gewonnen","Asse","Doppelfehler"],
     resultFormat:"sets",        // z.B. 6:3, 4:6, 7:5
     teamSizes:[1,2],
     fieldTemplates:["tennis"],
@@ -8993,7 +7419,7 @@ const SPORT_PROFILES = {
   badminton: {
     label:"Badminton", icon:"B",
     positions:["Einzel","Herrendoppel","Damendoppel","Mixed"],
-    stats:["Sätze gewonnen","Punkte"],
+    stats:["Saetze gewonnen","Punkte"],
     resultFormat:"sets",
     teamSizes:[1,2],
     fieldTemplates:["halle"],
@@ -9024,47 +7450,47 @@ const SPORT_PROFILES = {
   tischtennis: {
     label:"Tischtennis", icon:"TT",
     positions:["Einzel 1","Einzel 2","Einzel 3","Doppel"],
-    stats:["Sätze","Einzelpunkte"],
+    stats:["Saetze","Einzelpunkte"],
     resultFormat:"sets",
     teamSizes:[1,2],
     fieldTemplates:["halle"],
-    ageGroups:["Schüler","Junioren","Erwachsene","Senioren"],
+    ageGroups:["Schueler","Junioren","Erwachsene","Senioren"],
     hasReferee:false, hasPenalty:false, hasCards:false,
   },
   kegeln: {
     label:"Kegeln/Bowling", icon:"K",
     positions:["Mannschaft"],
-    stats:["Holz","Volles","Abraeumen","Fehlwürfe"],
+    stats:["Holz","Volles","Abraeumen","Fehlwuerfe"],
     resultFormat:"points",
     teamSizes:[4,6],
     fieldTemplates:["mehrzweck"],
     ageGroups:["Jugend","Erwachsene","Senioren"],
     hasReferee:false, hasPenalty:false, hasCards:false,
   },
-  schützen: {
+  schuetzen: {
     label:"Schiessen", icon:"S",
     positions:["KK","LG","LP","GK","P"],
     stats:["Ringe","Treffer","Teiler"],
     resultFormat:"points",
     teamSizes:[3,4,5],
     fieldTemplates:["mehrzweck"],
-    ageGroups:["Schüler","Jugend","Junioren","Erwachsene","Senioren","Damen"],
+    ageGroups:["Schueler","Jugend","Junioren","Erwachsene","Senioren","Damen"],
     hasReferee:false, hasPenalty:false, hasCards:false,
   },
   turnen: {
     label:"Turnen/Gym", icon:"Tur",
     positions:["Boden","Reck","Barren","Ringe","Pferd","Sprung"],
-    stats:["Note","Schwierigkeitswert","Ausführungswert"],
+    stats:["Note","Schwierigkeitswert","Ausfuehrungswert"],
     resultFormat:"points",
     teamSizes:[1,4,6],
     fieldTemplates:["halle"],
-    ageGroups:["Kindturnen","Jugend","Junioren","Erwachsene","Frauen","Männer"],
+    ageGroups:["Kindturnen","Jugend","Junioren","Erwachsene","Frauen","Maenner"],
     hasReferee:false, hasPenalty:false, hasCards:false,
   },
   leichtathletik: {
     label:"Leichtathletik", icon:"LA",
-    positions:["Sprint","Mittelstrecke","Langstrecke","Hürden","Sprung","Wurf"],
-    stats:["Zeit (s)","Weite (cm)","Höhe (cm)","Punkte"],
+    positions:["Sprint","Mittelstrecke","Langstrecke","Huerden","Sprung","Wurf"],
+    stats:["Zeit (s)","Weite (cm)","Hoehe (cm)","Punkte"],
     resultFormat:"points",
     teamSizes:[1],
     fieldTemplates:["leichtathletik"],
@@ -9103,16 +7529,16 @@ const SPORT_PROFILES = {
   },
 };
 
-// Demo-Vereine für verschiedene Sportarten
+// Demo-Vereine fuer verschiedene Sportarten
 const DEMO_CLUBS = [
   {
     id:"demo_fussball",
-    name:"FC Demo Fußball",
+    name:"FC Demo Fussball",
     sport:"fussball",
     pri:"#16a34a", sec:"#052e16", em:"FC",
     slug:"demo-fussball",
     dir:true, pub:false,
-    desc:"Fußball-Verein mit allen Altersklassen",
+    desc:"Fussball-Verein mit allen Altersklassen",
   },
   {
     id:"demo_tennis",
@@ -9147,231 +7573,6 @@ const DEMO_CLUBS = [
    VEREINS-ADMIN EINSTELLUNGEN (komplett neu)
    Strukturiert in 7 Bereiche
 ================================================================= */
-// Editor für die Soll-/Zielwerte der Skill-Profile pro Altersklasse (überschreibt Defaults)
-// Editor für die Positions-Gewichtung (welche Skill-Achse zählt wie stark je Position)
-function PositionWeightsEditor({ data, cid, save, fire, cl, sport="fussball" }) {
-  const t = TH(cl);
-  const positions = POSITIONS_FOR(sport);
-  const axes = skillAxesFor(sport);
-  const [pos, setPos] = useState(positions[0]||"");
-  const ov = cl?.positionWeights?.[sport] || {};
-  const base = POSITION_WEIGHTS[sport]||{};
-  const current = (ov[pos]) || base[pos] || {};
-  const hasOverride = !!(ov[pos]);
-
-  const setWeight = (axis, val) => {
-    const posObj = {...(ov[pos]||base[pos]||{})};
-    if(val<=0) delete posObj[axis]; else posObj[axis]=val;
-    const nextSport = {...ov, [pos]:posObj};
-    const updated = {...cl, positionWeights:{...(cl?.positionWeights||{}), [sport]:nextSport}};
-    save({...data, clubs:(data.clubs||[]).map(x=>x.id===cid?updated:x)});
-  };
-  const resetPos = () => {
-    const nextSport = {...ov}; delete nextSport[pos];
-    const updated = {...cl, positionWeights:{...(cl?.positionWeights||{}), [sport]:nextSport}};
-    save({...data, clubs:(data.clubs||[]).map(x=>x.id===cid?updated:x)});
-    fire&&fire(pos+" auf Standard zurückgesetzt");
-  };
-
-  if(positions.length===0) return null;
-  return (
-    <div style={{marginTop:24}}>
-      <div style={{fontWeight:800,fontSize:16,color:"#0f172a",marginBottom:4}}>Positions-Gewichtung</div>
-      <div style={{background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:12,padding:"11px 14px",marginBottom:14,fontSize:12.5,color:"#1e40af",lineHeight:1.55}}>
-        Hier legst du fest, welche Fähigkeiten für welche Position wie wichtig sind (0 = unwichtig, 3 = sehr wichtig). Daraus berechnet die App die Positions-Eignung jedes Spielers in Prozent.
-      </div>
-
-      <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:14}}>
-        {positions.map(p=>(
-          <button key={p} onClick={()=>setPos(p)}
-            style={{padding:"7px 14px",borderRadius:99,border:`1.5px solid ${pos===p?t.p:"#e2e8f0"}`,background:pos===p?t.p:"#fff",color:pos===p?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
-            {p}{ov[p]&&<span style={{marginLeft:5,fontSize:10,opacity:.8}}>•</span>}
-          </button>
-        ))}
-      </div>
-
-      <div style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",padding:"16px"}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-          <div style={{fontWeight:800,fontSize:15,color:"#0f172a"}}>Gewichtung {pos}</div>
-          <span style={{fontSize:11,fontWeight:700,color:hasOverride?t.p:"#94a3b8",background:hasOverride?t.p+"15":"#f1f5f9",borderRadius:7,padding:"3px 9px"}}>
-            {hasOverride?"Angepasst":"Standard"}
-          </span>
-        </div>
-        {axes.map(ax=>{
-          const v = Number(current[ax])||0;
-          return (
-            <div key={ax} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-              <span style={{flex:1,fontSize:13,fontWeight:600,color:"#334155"}}>{ax}</span>
-              <div style={{display:"flex",gap:3}}>
-                {[0,1,2,3].map(n=>(
-                  <button key={n} onClick={()=>setWeight(ax,n)}
-                    style={{width:30,height:28,borderRadius:7,border:`1.5px solid ${n===v?t.p:"#e2e8f0"}`,background:n===v?t.p:"#fff",color:n===v?"#fff":"#94a3b8",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{n}</button>
-                ))}
-              </div>
-            </div>
-          );
-        })}
-        {hasOverride && (
-          <button onClick={resetPos} style={{marginTop:14,width:"100%",padding:"11px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
-            Auf Standard zurücksetzen
-          </button>
-        )}
-      </div>
-      <div style={{marginTop:10,fontSize:11,color:"#94a3b8",lineHeight:1.5}}>
-        Die Gewichtung wirkt sofort auf die Positions-Eignung in allen Spielerprofilen. Standardwerte sind ein Vorschlag.
-      </div>
-    </div>
-  );
-}
-
-// Editor für die Spielform-Werte (Feld/Tore/Ball/Spielzeit) pro Altersklasse
-function PlayFormatsEditor({ data, cid, save, fire, cl, allowedCats=null }) {
-  const t = TH(cl);
-  const cats = Object.keys(PLAY_FORMATS).filter(c=>!allowedCats||allowedCats.includes(c));
-  const [cat, setCat] = useState(cats[0]||"G-Jugend");
-  const ov = cl?.playFormats || {};
-  const current = playFormatFor(cl, cat);
-  const hasOverride = !!(ov[cat]);
-  const FIELDS = [
-    ["form","Spielform"],["field","Spielfeld"],["goals","Tore"],["ball","Ball"],["time","Spielzeit"],["note","Hinweis"],
-  ];
-  const setField = (key, val) => {
-    const catObj = {...(ov[cat]||{})};
-    // erst alle aktuellen Werte festhalten, dann ändern
-    FIELDS.forEach(([k])=>{ if(catObj[k]===undefined && current[k]!==undefined) catObj[k]=current[k]; });
-    catObj[key] = val;
-    const updated = {...cl, playFormats:{...ov, [cat]:catObj}};
-    save({...data, clubs:(data.clubs||[]).map(x=>x.id===cid?updated:x)});
-  };
-  const resetCat = () => {
-    const next = {...ov}; delete next[cat];
-    const updated = {...cl, playFormats:next};
-    save({...data, clubs:(data.clubs||[]).map(x=>x.id===cid?updated:x)});
-    fire&&fire(cat+" auf Standard zurückgesetzt");
-  };
-
-  return (
-    <div style={{marginTop:24}}>
-      <div style={{fontWeight:800,fontSize:16,color:"#0f172a",marginBottom:4}}>Spielform-Vorgaben</div>
-      <div style={{background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:12,padding:"11px 14px",marginBottom:14,fontSize:12.5,color:"#1e40af",lineHeight:1.55}}>
-        Feld, Tore, Ball und Spielzeit pro Altersklasse. Die Startwerte folgen den DFB-Empfehlungen – passt sie an die Durchführungsbestimmungen eures Landesverbands an.
-      </div>
-
-      <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:14}}>
-        {cats.map(c=>(
-          <button key={c} onClick={()=>setCat(c)}
-            style={{padding:"7px 13px",borderRadius:99,border:`1.5px solid ${cat===c?t.p:"#e2e8f0"}`,background:cat===c?t.p:"#fff",color:cat===c?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
-            {c}{ov[c]&&<span style={{marginLeft:5,fontSize:10,opacity:.8}}>•</span>}
-          </button>
-        ))}
-      </div>
-
-      <div style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",padding:"16px"}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-          <div style={{fontWeight:800,fontSize:15,color:"#0f172a"}}>Spielform {cat}</div>
-          <span style={{fontSize:11,fontWeight:700,color:hasOverride?t.p:"#94a3b8",background:hasOverride?t.p+"15":"#f1f5f9",borderRadius:7,padding:"3px 9px"}}>
-            {hasOverride?"Angepasst":"Standard"}
-          </span>
-        </div>
-        {FIELDS.map(([key,label])=>(
-          <div key={key} style={{marginBottom:11}}>
-            <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:4,letterSpacing:.4}}>{label.toUpperCase()}</div>
-            <input value={current[key]||""} onChange={e=>setField(key,e.target.value)}
-              style={{width:"100%",padding:"10px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",boxSizing:"border-box"}}/>
-          </div>
-        ))}
-        {hasOverride && (
-          <button onClick={resetCat} style={{marginTop:8,width:"100%",padding:"11px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
-            Auf Standard zurücksetzen
-          </button>
-        )}
-      </div>
-      <div style={{marginTop:10,fontSize:11,color:"#94a3b8",lineHeight:1.5}}>
-        Quelle der Startwerte: <a href={PLAY_FORMAT_SOURCE.url} target="_blank" rel="noopener noreferrer" style={{color:t.p,fontWeight:700}}>{PLAY_FORMAT_SOURCE.label}</a>. Änderungen erscheinen sofort in der Spielform-Anzeige der Mannschaften.
-      </div>
-    </div>
-  );
-}
-
-function SkillTargetsEditor({ data, cid, save, fire, cl, sport="fussball", allowedCats=null }) {
-  const t = TH(cl);
-  const axes = skillAxesFor(sport);
-  const cats = CAT_ORDER.filter(c=>CAT_RANK[c]!==undefined).filter(c=>!allowedCats||allowedCats.includes(c));
-  const [cat, setCat] = useState(cats[0]||"E-Jugend");
-  const targets = cl?.skillTargets || {};
-  // aktuelle Werte (Override falls vorhanden, sonst Default)
-  const current = sollFor(cl, cat, axes);
-  const hasOverride = !!(targets[cat]);
-
-  const setVal = (axis, val) => {
-    const catObj = {...(targets[cat]||{})};
-    axes.forEach((a,i)=>{ if(catObj[a]===undefined) catObj[a]=current[i]; }); // erst alle aktuellen festhalten
-    catObj[axis] = val;
-    const updated = {...cl, skillTargets:{...targets,[cat]:catObj}};
-    save({...data, clubs:(data.clubs||[]).map(x=>x.id===cid?updated:x)});
-  };
-  const resetCat = () => {
-    const next = {...targets}; delete next[cat];
-    const updated = {...cl, skillTargets:next};
-    save({...data, clubs:(data.clubs||[]).map(x=>x.id===cid?updated:x)});
-    fire&&fire(cat+" auf Standard zurückgesetzt");
-  };
-
-  return (
-    <div>
-      <div style={{background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:12,padding:"11px 14px",marginBottom:14,fontSize:12.5,color:"#1e40af",lineHeight:1.55}}>
-        Hier legst du fest, welches Skill-Niveau in welcher Altersklasse angestrebt wird. Diese Ziellinie erscheint im Spinnennetz jedes Spielers. Die Startwerte sind ein Vorschlag (steigend mit dem Alter) – passt sie an eure Ausbildungskonzeption an.
-      </div>
-
-      <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.4}}>ALTERSKLASSE</div>
-      <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:16}}>
-        {cats.map(c=>(
-          <button key={c} onClick={()=>setCat(c)}
-            style={{padding:"7px 13px",borderRadius:99,border:`1.5px solid ${cat===c?t.p:"#e2e8f0"}`,background:cat===c?t.p:"#fff",color:cat===c?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",position:"relative"}}>
-            {c}{targets[c]&&<span style={{marginLeft:5,fontSize:10,opacity:.8}}>•</span>}
-          </button>
-        ))}
-      </div>
-
-      <div style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",padding:"16px"}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-          <div style={{fontWeight:800,fontSize:15,color:"#0f172a"}}>Zielwerte {cat}</div>
-          <span style={{fontSize:11,fontWeight:700,color:hasOverride?t.p:"#94a3b8",background:hasOverride?t.p+"15":"#f1f5f9",borderRadius:7,padding:"3px 9px"}}>
-            {hasOverride?"Angepasst":"Standard"}
-          </span>
-        </div>
-
-        {axes.map((ax,i)=>(
-          <div key={ax} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-            <span style={{flex:1,fontSize:13,fontWeight:600,color:"#334155"}}>{ax}</span>
-            <div style={{display:"flex",gap:3}}>
-              {[1,2,3,4,5].map(n=>(
-                <button key={n} onClick={()=>setVal(ax,n)}
-                  style={{width:28,height:28,borderRadius:7,border:`1.5px solid ${n<=current[i]?t.p:"#e2e8f0"}`,background:n<=current[i]?t.p:"#fff",color:n<=current[i]?"#fff":"#cbd5e1",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{n}</button>
-              ))}
-            </div>
-          </div>
-        ))}
-
-        <div style={{marginTop:16,background:"#f8fafc",borderRadius:14,padding:"14px 10px"}}>
-          <SpiderChart axes={axes} values={current} color="#f59e0b" size={230}/>
-          <div style={{textAlign:"center",fontSize:11,fontWeight:700,color:"#94a3b8",marginTop:6}}>Ziel-Profil {cat}</div>
-        </div>
-
-        {hasOverride && (
-          <button onClick={resetCat} style={{marginTop:14,width:"100%",padding:"11px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
-            Auf Standard zurücksetzen
-          </button>
-        )}
-      </div>
-
-      <div style={{marginTop:12,fontSize:11,color:"#94a3b8",lineHeight:1.5}}>
-        Quelle der Startwerte: <a href={SKILL_SOURCE.url} target="_blank" rel="noopener noreferrer" style={{color:t.p,fontWeight:700}}>{SKILL_SOURCE.label}</a>. Änderungen wirken sofort für alle Spieler dieser Altersklasse.
-      </div>
-    </div>
-  );
-}
-
 function ClubAdminSettings({ data, cid, save, fire, cl }) {
   const t = TH(cl);
   const myClub = (data.clubs||[]).find(x=>x.id===cid)||{};
@@ -9379,6 +7580,7 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
   const clubFeat = (key, def=true) => cs[key]!==undefined ? cs[key] : def;
   const sport = myClub.sport||"fussball";
   const sportProfile = SPORT_PROFILES[sport]||SPORT_PROFILES.fussball;
+  const cs = myClub.clubSettings||{};
   const [section, setSection] = useState("sport");
   const [showImport, setShowImport] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
@@ -9403,7 +7605,6 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
     {id:"sport",       label:"Sportart",      icon:"S"},
     {id:"features",    label:"Module",        icon:"M"},
     {id:"team",        label:"Team",          icon:"T"},
-    {id:"ziele",       label:"Trainingsziele",icon:"Z"},
     {id:"komm",        label:"Kommunikation", icon:"K"},
     {id:"sicherheit",  label:"Sicherheit",    icon:"Si"},
     {id:"datenschutz", label:"Datenschutz",   icon:"D"},
@@ -9473,7 +7674,7 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
               {Object.entries(SPORT_PROFILES).map(([key,sp])=>(
                 <button key={key} onClick={()=>{
                   save({...data,clubs:(data.clubs||[]).map(x=>x.id===cid?{...x,sport:key}:x)});
-                  fire("Sportart geändert: "+sp.label);
+                  fire("Sportart geaendert: "+sp.label);
                 }}
                   style={{padding:"10px 6px",borderRadius:12,textAlign:"center",
                     border:`2px solid ${sport===key?t.p:"#e2e8f0"}`,
@@ -9505,7 +7706,7 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
               </span>
             </Row>
             <Row title="Ergebnis-Format"
-              sub={sportProfile.resultFormat==="goals"?"Tore (3:2)":sportProfile.resultFormat==="sets"?"Sätze":"Punkte"}
+              sub={sportProfile.resultFormat==="goals"?"Tore (3:2)":sportProfile.resultFormat==="sets"?"Saetze":"Punkte"}
               last>
               <span style={{fontSize:12,color:t.p,fontWeight:700}}>
                 {sportProfile.resultFormat}
@@ -9534,14 +7735,14 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
           <div style={{background:"#eff6ff",borderRadius:13,padding:"12px 14px",
             border:"1.5px solid #bfdbfe",marginBottom:14,fontSize:12,
             color:"#1d4ed8",lineHeight:1.6}}>
-            Aktiviere oder deaktiviere einzelne Module für deinen Verein.
-            Nicht benoenigte Funktionen werden für alle Nutzer ausgeblendet.
+            Aktiviere oder deaktiviere einzelne Module fuer deinen Verein.
+            Nicht benoenigte Funktionen werden fuer alle Nutzer ausgeblendet.
           </div>
           <div style={card}>
-            <Row title="Platzbuchung" sub="Trainer können Plätze reservieren">
+            <Row title="Platzbuchung" sub="Trainer koennen Plaetze reservieren">
               <Toggle val={S("mod_fields",true)} onChange={v=>saveSetting("mod_fields",v)}/>
             </Row>
-            <Row title="Trainingspläne" sub="Trainingspläne und Übungs-Bibliothek">
+            <Row title="Trainingsplaene" sub="Trainingsplaene und Uebungs-Bibliothek">
               <Toggle val={S("mod_training",true)} onChange={v=>saveSetting("mod_training",v)}/>
             </Row>
             <Row title="Trikot-Verwaltung" sub="Trikotnummern und Zuteilung">
@@ -9556,7 +7757,7 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
             <Row title="Statistiken" sub="Spieler-Statistiken (Tore, Karten...)">
               <Toggle val={S("mod_stats",sportProfile.hasCards||sport==="fussball")} onChange={v=>saveSetting("mod_stats",v)}/>
             </Row>
-            <Row title="Schwarzes Brett" sub="Vereinsnews für alle" last>
+            <Row title="Schwarzes Brett" sub="Vereinsnews fuer alle" last>
               <Toggle val={S("mod_news",true)} onChange={v=>saveSetting("mod_news",v)}/>
             </Row>
           </div>
@@ -9566,8 +7767,8 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
               sub="Spieler stimmen selbst ab - kein Eltern-Login noetig">
               <Toggle val={S("seniorsMode",false)} onChange={v=>saveSetting("seniorsMode",v)}/>
             </Row>
-            <Row title="Eltern dürfen im Chat schreiben"
-              sub="Standardmäßig nur lesen">
+            <Row title="Eltern duerfen im Chat schreiben"
+              sub="Standardmaessig nur lesen">
               <Toggle val={S("parentChat",false)} onChange={v=>saveSetting("parentChat",v)}/>
             </Row>
             <Row title="Mehrere Teams pro Spieler" sub="Spieler in 2+ Teams gleichzeitig" last>
@@ -9584,7 +7785,7 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
             <Row title="Jahrgang anzeigen" sub="Spieler-Jahrgang in der Liste">
               <Toggle val={S("showBirthYear",true)} onChange={v=>saveSetting("showBirthYear",v)}/>
             </Row>
-            <Row title="Positionen" sub={`${sportProfile.positions.length} Positionen für ${sportProfile.label}`}>
+            <Row title="Positionen" sub={`${sportProfile.positions.length} Positionen fuer ${sportProfile.label}`}>
               <Select value={S("positionSystem","default")} onChange={v=>saveSetting("positionSystem",v)}
                 opts={[["default","Standard"],["custom","Eigene"],["none","Keine"]]}/>
             </Row>
@@ -9594,26 +7795,17 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
             <Row title="Spieler sehen Mitspieler" sub="Eltern sehen anderen Kindern">
               <Toggle val={S("showPlayerList",true)} onChange={v=>saveSetting("showPlayerList",v)}/>
             </Row>
-            <Row title="Trainer sichtbar für Eltern" sub="Name und Kontakt">
+            <Row title="Trainer sichtbar fuer Eltern" sub="Name und Kontakt">
               <Toggle val={S("showTrainerInfo",true)} onChange={v=>saveSetting("showTrainerInfo",v)}/>
             </Row>
-            <Row title="Anwesenheit sichtbar für Eltern" sub="Wer hat abgestimmt">
+            <Row title="Anwesenheit sichtbar fuer Eltern" sub="Wer hat abgestimmt">
               <Toggle val={S("showAttendance",false)} onChange={v=>saveSetting("showAttendance",v)}/>
             </Row>
-            <Row title="Vergangene Termine anzeigen" sub="Wie viele Tage zurück" last>
+            <Row title="Vergangene Termine anzeigen" sub="Wie viele Tage zurueck" last>
               <Select value={S("pastDays",30)} onChange={v=>saveSetting("pastDays",Number(v))}
                 opts={[["7","7 Tage"],["14","14 Tage"],["30","30 Tage"],["60","60 Tage"],["90","90 Tage"]]}/>
             </Row>
           </div>
-        </>
-      )}
-
-      {/* SKILL-ZIELE */}
-      {section==="ziele"&&(
-        <>
-          <SkillTargetsEditor data={data} cid={cid} save={save} fire={fire} cl={myClub} sport={sport}/>
-          {sport==="fussball" && <PositionWeightsEditor data={data} cid={cid} save={save} fire={fire} cl={myClub} sport={sport}/>}
-          {sport==="fussball" && <PlayFormatsEditor data={data} cid={cid} save={save} fire={fire} cl={myClub}/>}
         </>
       )}
 
@@ -9624,10 +7816,10 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
             <Row title="Team-Chat aktiv">
               <Toggle val={S("chatEnabled",true)} onChange={v=>saveSetting("chatEnabled",v)}/>
             </Row>
-            <Row title="Vereins-Chat aktiv" sub="Chat über alle Teams hinweg">
+            <Row title="Vereins-Chat aktiv" sub="Chat ueber alle Teams hinweg">
               <Toggle val={S("clubChatEnabled",true)} onChange={v=>saveSetting("clubChatEnabled",v)}/>
             </Row>
-            <Row title="Helfer im Chat" sub="Helfer können Chat lesen">
+            <Row title="Helfer im Chat" sub="Helfer koennen Chat lesen">
               <Toggle val={S("helperChat",false)} onChange={v=>saveSetting("helperChat",v)}/>
             </Row>
             <Row title="Chat-Moderation" sub="KI erkennt Werbung und illegale Inhalte">
@@ -9653,24 +7845,24 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
             <Row title="Brute-Force Schutz" sub="Nach 3 Fehlversuchen 5 Min Sperre">
               <Toggle val={S("bruteForce",true)} onChange={v=>saveSetting("bruteForce",v)}/>
             </Row>
-            <Row title="Audit-Log" sub="Alle Logins und Änderungen protokollieren">
+            <Row title="Audit-Log" sub="Alle Logins und Aenderungen protokollieren">
               <Toggle val={S("auditLog",true)} onChange={v=>saveSetting("auditLog",v)}/>
             </Row>
-            <Row title="Geräte-Erkennung" sub="Neues Gerät = Hinweis im Log">
+            <Row title="Geraete-Erkennung" sub="Neues Geraet = Hinweis im Log">
               <Toggle val={S("deviceTrack",true)} onChange={v=>saveSetting("deviceTrack",v)}/>
             </Row>
             <Row title="Session-Dauer" sub="Wie lange bleibt man eingeloggt">
               <Select value={S("sessionDays",30)} onChange={v=>saveSetting("sessionDays",Number(v))}
                 opts={[["1","1 Tag"],["7","7 Tage"],["30","30 Tage"],["90","90 Tage"]]}/>
             </Row>
-            <Row title="Lschen bestätigen" sub="Vor jedem Löschen nachfragen" last>
+            <Row title="Lschen bestaetigen" sub="Vor jedem Loeschen nachfragen" last>
               <Toggle val={S("confirmDelete",true)} onChange={v=>saveSetting("confirmDelete",v)}/>
             </Row>
           </div>
-          {/* Zugangs-Übersicht Link */}
+          {/* Zugangs-Uebersicht Link */}
           <div style={{background:"#eff6ff",borderRadius:13,padding:"12px 14px",
             border:"1.5px solid #bfdbfe",fontSize:13,color:"#1d4ed8",lineHeight:1.5}}>
-            Alle Passwörter und Zugänge ändern unter: Zugänge & Passwörter im Menue.
+            Alle Passwoerter und Zugaenge aendern unter: Zugaenge & Passwoerter im Menue.
           </div>
         </>
       )}
@@ -9688,14 +7880,14 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
             <Row title="Spieler-Daten exportieren" sub="CSV und JSON Export erlaubt">
               <Toggle val={S("dataExport",true)} onChange={v=>saveSetting("dataExport",v)}/>
             </Row>
-            <Row title="Eltern-Kommunikation lokal" sub="Telefon-Nummern bleiben auf Gerät" last>
+            <Row title="Eltern-Kommunikation lokal" sub="Telefon-Nummern bleiben auf Geraet" last>
               <span style={{fontSize:11,color:"#16a34a",fontWeight:700}}>Immer aktiv</span>
             </Row>
           </div>
           <div style={{background:"#f0fdf4",borderRadius:13,padding:"12px 14px",
             border:"1.5px solid #bbf7d0",fontSize:12,color:"#166534",lineHeight:1.6}}>
             Alle Daten werden DSGVO-konform verarbeitet. Keine Weitergabe an Dritte.
-            Telefonnummern werden ausschließlich lokal gespeichert.
+            Telefonnummern werden ausschliesslich lokal gespeichert.
           </div>
         </>
       )}
@@ -9705,17 +7897,17 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
         <>
           <div style={card}>
             <Row title="Vereinsname" sub={myClub.name}>
-              <button onClick={()=>fire("Namens-Änderung kommt bald")}
+              <button onClick={()=>fire("Namens-Aenderung kommt bald")}
                 style={{padding:"6px 12px",borderRadius:9,border:"1.5px solid #e2e8f0",
                   background:"#f8fafc",fontWeight:700,fontSize:12,cursor:"pointer",
                   fontFamily:"inherit",color:"#475569"}}>
-                Ändern
+                Aendern
               </button>
             </Row>
             <Row title="Admin E-Mail" sub={myClub.adminEmail?myClub.adminEmail.slice(0,3)+"***":"Nicht hinterlegt"}>
               <AdminEmailSetup cl={myClub} data={data} save={save} fire={fire}/>
             </Row>
-            <Row title="Im Verzeichnis sichtbar" sub="Andere können euren Verein finden" last>
+            <Row title="Im Verzeichnis sichtbar" sub="Andere koennen euren Verein finden" last>
               <Toggle val={myClub.dir!==false}
                 onChange={v=>save({...data,clubs:(data.clubs||[]).map(x=>x.id===cid?{...x,dir:v}:x)})}/>
             </Row>
@@ -9750,11 +7942,11 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
                 style={{padding:"10px 16px",borderRadius:10,border:"none",
                   background:"#dc2626",color:"#fff",fontWeight:700,fontSize:13,
                   cursor:"pointer",fontFamily:"inherit"}}>
-                Verein löschen
+                Verein loeschen
               </button>
               :<>
                 <p style={{fontSize:13,color:"#dc2626",marginBottom:10,lineHeight:1.5}}>
-                  Tippe den Vereinsnamen zur Bestätigung:
+                  Tippe den Vereinsnamen zur Bestaetigung:
                 </p>
                 <input value={deleteConfirm} onChange={e=>setDeleteConfirm(e.target.value)}
                   placeholder={myClub.name}
@@ -9774,14 +7966,14 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
                       const next={...data,
                         clubs:(data.clubs||[]).filter(x=>x.id!==cid),
                         teams:(data.teams||[]).filter(x=>x.cid!==cid)};
-                      save(next); fire("Verein gelöscht");
+                      save(next); fire("Verein geloescht");
                       window.location.reload();
                     }}
                     style={{flex:1,padding:"10px",borderRadius:10,border:"none",
                       background:deleteConfirm===myClub.name?"#dc2626":"#e2e8f0",
                       color:deleteConfirm===myClub.name?"#fff":"#94a3b8",
                       fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-                    Löschen
+                    Loeschen
                   </button>
                 </div>
               </>
@@ -9828,13 +8020,13 @@ function useBreakpoint() {
 const RESPONSIVE_CSS = `
 /* ===== BREAKPOINTS ===== */
 
-/* Scrollbar styling für Desktop */
+/* Scrollbar styling fuer Desktop */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #334155; border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: #475569; }
 
-/* Hover-States für Desktop */
+/* Hover-States fuer Desktop */
 @media (hover: hover) {
   button:hover { opacity: 0.88; }
   .va-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,.1); transform: translateY(-1px); }
@@ -9900,22 +8092,22 @@ function DesktopSidebar({ tab, setTab, isAdmin, isHelper, unread, cl, session, o
   ].filter(x=>!x.hidden);
 
   const adminItems = [
-    { id:"overview",    label:"Übersicht",       icon:"U" },
+    { id:"overview",    label:"Uebersicht",       icon:"U" },
     { id:"news",        label:"Neuigkeiten",       icon:"N" },
     { id:"teams",       label:"Mannschaften",      icon:"M" },
     { id:"trainers",    label:"Trainer",           icon:"T" },
-    { id:"fieldsadmin", label:"Plätze",           icon:"P" },
-    { id:"access",      label:"Zugänge",          icon:"PW" },
+    { id:"fieldsadmin", label:"Plaetze",           icon:"P" },
+    { id:"access",      label:"Zugaenge",          icon:"PW" },
     { id:"security",    label:"Sicherheitslog",    icon:"!" },
     { id:"settings",    label:"Einstellungen",     icon:"+" },
   ];
 
   const trainerItems = [
-    { id:"training",   label:"Trainingsplan",  icon:"TP", hidden: isHelper },
-    { id:"jerseys",    label:"Trikots",        icon:"Tr", hidden: isHelper },
+    { id:"training",   label:"Trainingsplan",  icon:"TP" },
+    { id:"jerseys",    label:"Trikots",        icon:"Tr" },
     { id:"helpers",    label:"Helfer",         icon:"H",  hidden: isHelper },
-    { id:"attendance", label:"Anwesenheit",    icon:"S",  hidden: isHelper },
-    { id:"results",    label:"Ergebnisse",     icon:"E",  hidden: isHelper },
+    { id:"attendance", label:"Anwesenheit",    icon:"S" },
+    { id:"results",    label:"Ergebnisse",     icon:"E" },
     { id:"inbox",      label:"Posteingang",    icon:"I" },
   ].filter(x=>!x.hidden);
 
@@ -9944,7 +8136,7 @@ function DesktopSidebar({ tab, setTab, isAdmin, isHelper, unread, cl, session, o
           color: active ? "#fff" : "#64748b",
           flexShrink:0, transition:"all .15s",
         }}>
-          {HAS_ICON.has(item.id)?<NavIcon name={item.id} size={18}/>:item.icon}
+          {item.icon}
         </div>
         <span style={{flex:1}}>{item.label}</span>
         {item.badge > 0 && (
@@ -9974,7 +8166,7 @@ function DesktopSidebar({ tab, setTab, isAdmin, isHelper, unread, cl, session, o
     <aside className="va-sidebar" style={{
       background:"#0f172a",
       borderRight:"1px solid #1e293b",
-      display:"flex", flexDirection:"column", // nur im Desktop-Layout gerendert
+      display:"none", // shown via CSS on desktop
       overflowY:"auto",
       position:"sticky", top:0, height:"100dvh",
     }}>
@@ -10116,7 +8308,7 @@ const TZ_MAP = {
   // Luxemburg
   "Europe/Luxembourg":  { city:"Luxemburg",      flag:"LU", region:"lu", country:"LU" },
   // UK
-  "Europe/London":      { city:"Großbritannien",flag:"GB", region:"gb", country:"GB" },
+  "Europe/London":      { city:"Grossbritannien",flag:"GB", region:"gb", country:"GB" },
   // Frankreich
   "Europe/Paris":       { city:"Frankreich",     flag:"F",  region:"fr", country:"FR" },
   // Spanien
@@ -10125,8 +8317,8 @@ const TZ_MAP = {
   "Europe/Rome":        { city:"Italien",        flag:"I",  region:"it", country:"IT" },
   // Polen
   "Europe/Warsaw":      { city:"Polen",          flag:"PL", region:"pl", country:"PL" },
-  // Türkei
-  "Europe/Istanbul":    { city:"Türkei",        flag:"TR", region:"tr", country:"TR" },
+  // Tuerkei
+  "Europe/Istanbul":    { city:"Tuerkei",        flag:"TR", region:"tr", country:"TR" },
   // USA
   "America/New_York":   { city:"USA Ost",        flag:"US", region:"us", country:"US" },
   "America/Chicago":    { city:"USA Mitte",      flag:"US", region:"us", country:"US" },
@@ -10146,8 +8338,8 @@ const TZ_MAP = {
 
 // Sprach-Labels
 const LANG_LABELS = {
-  de:"Deutsch", en:"Englisch", nl:"Niederländisch",
-  ar:"Arabisch", tr:"Türkisch", fr:"Franzoesisch",
+  de:"Deutsch", en:"Englisch", nl:"Niederlaendisch",
+  ar:"Arabisch", tr:"Tuerkisch", fr:"Franzoesisch",
   es:"Spanisch", it:"Italienisch", pl:"Polnisch",
   ru:"Russisch", uk:"Ukrainisch",
 };
@@ -10317,7 +8509,7 @@ function SuperAdminGeoAnalytics() {
         ))}
       </div>
 
-      {/* KPI Übersicht */}
+      {/* KPI Uebersicht */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",
         gap:10,marginBottom:14}}>
         {[
@@ -10387,8 +8579,8 @@ function SuperAdminGeoAnalytics() {
         }
       </Card>
 
-      {/* Nach Gerät */}
-      <Card title="Geräte-Typ">
+      {/* Nach Geraet */}
+      <Card title="Geraete-Typ">
         <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
           {Object.entries(byDevice).length === 0
             ? <p style={{color:"#475569",fontSize:13}}>Noch keine Daten</p>
@@ -10437,7 +8629,7 @@ function SuperAdminGeoAnalytics() {
       </Card>
 
       {/* Tageszeit-Heatmap */}
-      <Card title="Aktivität nach Uhrzeit">
+      <Card title="Aktivitaet nach Uhrzeit">
         <div style={{fontSize:11,color:"#64748b",marginBottom:10}}>
           Wann wird die App am meisten genutzt?
         </div>
@@ -10498,7 +8690,7 @@ function SuperAdminGeoAnalytics() {
         ))}
         {logins.length===0&&(
           <p style={{color:"#475569",fontSize:13,margin:0}}>
-            Noch keine Logins getrackt. Wird ab nächstem Login erfasst.
+            Noch keine Logins getrackt. Wird ab naechstem Login erfasst.
           </p>
         )}
       </Card>
@@ -10514,7 +8706,7 @@ function SetupWizard({ onDone,onBack }) {
   });
   const u = p => setF(prev=>({...prev,...p}));
   const SPORTS = [
-    {id:"fussball",label:"Fußball",col:"#16a34a"},{id:"handball",label:"Handball",col:"#2563eb"},{id:"tennis",label:"Tennis",col:"#d97706"},{id:"badminton",label:"Badminton",col:"#7c3aed"},{id:"schützen",label:"Schützen",col:"#dc2626"},{id:"volleyball",label:"Volleyball",col:"#0891b2"},{id:"basketball",label:"Basketball",col:"#ea580c"},{id:"sonstiges",label:"Sonstiges",col:"#64748b"},];
+    {id:"fussball",label:"Fussball",col:"#16a34a"},{id:"handball",label:"Handball",col:"#2563eb"},{id:"tennis",label:"Tennis",col:"#d97706"},{id:"badminton",label:"Badminton",col:"#7c3aed"},{id:"schuetzen",label:"Schuetzen",col:"#dc2626"},{id:"volleyball",label:"Volleyball",col:"#0891b2"},{id:"basketball",label:"Basketball",col:"#ea580c"},{id:"sonstiges",label:"Sonstiges",col:"#64748b"},];
   const selSport = SPORTS.find(s=>s.id===f.sport)||SPORTS[0];
 
   const finish = () => {
@@ -10538,7 +8730,7 @@ function SetupWizard({ onDone,onBack }) {
           </div>
 
           {step===1&&<>
-            <h2 style={{color:"#fff",fontWeight:900,fontSize:20,margin:"0 0 6px"}}>Wie heißt dein Verein?</h2>
+            <h2 style={{color:"#fff",fontWeight:900,fontSize:20,margin:"0 0 6px"}}>Wie heisst dein Verein?</h2>
             <p style={{color:"rgba(255,255,255,.4)",fontSize:13,margin:"0 0 18px"}}>Schritt 1 von 3</p>
             <input value={f.name} onChange={e=>u({name:e.target.value})} placeholder="z.B. FC Blauweiss 1920"
               style={{width:"100%",padding:"13px 15px",fontSize:16,background:"rgba(255,255,255,.1)",border:`1.5px solid ${f.name?"rgba(255,255,255,.4)":"rgba(255,255,255,.15)"}`,borderRadius:13,outline:"none",color:"#fff",marginBottom:10,boxSizing:"border-box"}}/>
@@ -10572,17 +8764,14 @@ function SetupWizard({ onDone,onBack }) {
               <input type="checkbox" checked={f.pub!==false} onChange={e=>u({pub:e.target.checked})} style={{width:18,height:18,accentColor:"#16a34a"}}/>
               <div>
                 <div style={{color:"#fff",fontSize:13,fontWeight:700}}>Im Vereinsverzeichnis anzeigen</div>
-                <div style={{color:"rgba(255,255,255,.35)",fontSize:11,marginTop:1}}>Andere können deinen Verein auf der Startseite finden</div>
+                <div style={{color:"rgba(255,255,255,.35)",fontSize:11,marginTop:1}}>Andere koennen deinen Verein auf der Startseite finden</div>
               </div>
             </label>
-            <div style={{marginTop:14,background:"rgba(251,191,36,.1)",border:"1px solid rgba(251,191,36,.3)",borderRadius:11,padding:"11px 13px",fontSize:11.5,color:"#fcd34d",lineHeight:1.5}}>
-              <b>Hinweis:</b> Wird der Verein länger als 1 Jahr nicht genutzt (keine Anmeldung), kann er automatisch gelöscht werden, um Altlasten zu vermeiden. Logge dich einfach gelegentlich ein, um ihn aktiv zu halten.
-            </div>
           </>}
 
           {}
           <div style={{display:"flex",gap:9}}>
-            {step>1&&<button onClick={()=>setStep(s=>s-1)} style={{flex:1,padding:"12px",borderRadius:13,border:"1.5px solid rgba(255,255,255,.15)",background:"transparent",color:"rgba(255,255,255,.6)",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Zurück</button>}
+            {step>1&&<button onClick={()=>setStep(s=>s-1)} style={{flex:1,padding:"12px",borderRadius:13,border:"1.5px solid rgba(255,255,255,.15)",background:"transparent",color:"rgba(255,255,255,.6)",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Zurueck</button>}
             {step<3
               ?<button onClick={()=>ok()&&setStep(s=>s+1)} disabled={!ok()} style={{flex:2,padding:"12px",borderRadius:13,border:"none",background:ok()?"#16a34a":"rgba(255,255,255,.1)",color:ok()?"#fff":"rgba(255,255,255,.3)",fontWeight:800,fontSize:15,cursor:ok()?"pointer":"default",fontFamily:"inherit"}}>Weiter</button>
               :<button onClick={()=>ok()&&finish()} disabled={!ok()} style={{flex:2,padding:"12px",borderRadius:13,border:"none",background:ok()?"#16a34a":"rgba(255,255,255,.1)",color:ok()?"#fff":"rgba(255,255,255,.3)",fontWeight:800,fontSize:15,cursor:ok()?"pointer":"default",fontFamily:"inherit"}}>Verein anlegen</button>
@@ -10594,25 +8783,6 @@ function SetupWizard({ onDone,onBack }) {
   );
 }
 
-function PrivacyBanner(){
-  return (
-    <div style={{background:"#fef2f2",border:"1.5px solid #fecaca",borderRadius:12,padding:"12px 14px",margin:"0 0 14px"}}>
-      <div style={{fontWeight:800,color:"#b91c1c",fontSize:13,marginBottom:4}}>⚠ Bitte keine echten persönlichen Daten eingeben</div>
-      <div style={{fontSize:12.5,color:"#7f1d1d",lineHeight:1.5}}>
-        Diese App wird noch entwickelt. Gib hier keine echten persönlichen Daten ein – also keine vollständigen Namen,
-        Geburtsdaten, Adressen oder Telefonnummern von dir oder deinem Kind. Ein Spitzname oder „Vorname + erster
-        Buchstabe des Nachnamens" reicht völlig. Eingegebene Daten sind nicht garantiert sicher – eine Haftung wird nicht übernommen.
-      </div>
-    </div>
-  );
-}
-function PrivacyNote(){
-  return (
-    <div style={{fontSize:12,color:"#b45309",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:9,padding:"7px 10px",marginTop:6,lineHeight:1.45}}>
-      Bitte keine echten persönlichen Daten – ein Spitzname oder „Vorname + Anfangsbuchstabe" genügt. Eingabe ohne Gewähr.
-    </div>
-  );
-}
 function Directory({data,onPick,onNewClub,lang,setLang}) {
   const tr = (k) => T[lang]?.[k] ?? T.de[k] ?? k;
   const [mode,setMode] = useState("home");
@@ -10628,9 +8798,9 @@ function Directory({data,onPick,onNewClub,lang,setLang}) {
     return matchName && matchSport;
   });
 
-  const SPORTS = ["alle","fussball","handball","tennis","badminton","schützen"];
-  const SPORT_LABELS = {alle:"Alle",fussball:"Fußball",handball:"Handball",tennis:"Tennis",badminton:"Badminton","schützen":"Schützen"};
-  const SPORT_COLS = {fussball:"#16a34a",handball:"#2563eb",tennis:"#d97706",badminton:"#7c3aed","schützen":"#dc2626"};
+  const SPORTS = ["alle","fussball","handball","tennis","badminton","schuetzen"];
+  const SPORT_LABELS = {alle:"Alle",fussball:"Fussball",handball:"Handball",tennis:"Tennis",badminton:"Badminton","schuetzen":"Schuetzen"};
+  const SPORT_COLS = {fussball:"#16a34a",handball:"#2563eb",tennis:"#d97706",badminton:"#7c3aed","schuetzen":"#dc2626"};
   const letters = [...new Set(filtered.map(c=>c.name[0].toUpperCase()))].sort();
 
   if(mode==="setup") return (
@@ -10651,71 +8821,36 @@ function Directory({data,onPick,onNewClub,lang,setLang}) {
   );
 
   return (
-    <div style={{minHeight:"100dvh",background:"linear-gradient(160deg,#0f172a 0%,#052e16 55%,#14532d 100%)",color:"#fff",position:"relative",overflow:"hidden"}}>
+    <div style={{minHeight:"100dvh",background:"linear-gradient(160deg,#0f172a 0%,#052e16 55%,#14532d 100%)",color:"#fff"}}>
       <style>{CSS}</style>
 
       {}
-      <div style={{position:"absolute",top:-80,left:"50%",transform:"translateX(-50%)",width:420,height:420,background:"radial-gradient(circle,rgba(34,197,94,.25),transparent 70%)",filter:"blur(20px)",pointerEvents:"none"}}/>
-
-      {}
-      <div style={{position:"relative",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"18px 22px 0",maxWidth:520,margin:"0 auto"}}>
-        <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <div style={{width:30,height:30,borderRadius:9,background:"#16a34a",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,boxShadow:"0 2px 12px rgba(22,163,74,.6)"}}>&#9917;</div>
-          <span style={{fontWeight:800,fontSize:15,letterSpacing:-.3}}>Vereins-App</span>
+      <div style={{padding:"48px 22px 20px",textAlign:"center",maxWidth:460,margin:"0 auto"}}>
+        <div style={{fontSize:52,marginBottom:10}}>&#x26BD;</div>
+        <h1 style={{fontWeight:900,fontSize:28,margin:"0 0 8px",letterSpacing:-1}}>Vereins-App</h1>
+        <p style={{color:"#86efac",fontSize:15,fontWeight:600,margin:"0 0 20px"}}>Termine. Mannschaften. Kommunikation.</p>
+        {}
+        <div style={{display:"flex",justifyContent:"center",marginBottom:14}}>
+          <LangSwitcher lang={lang} setLang={setLang}/>
         </div>
-        <LangSwitcher lang={lang} setLang={setLang}/>
-      </div>
-
-      {}
-      <div style={{position:"relative",padding:"32px 22px 6px",maxWidth:520,margin:"0 auto",textAlign:"center"}}>
-        <div className="up" style={{display:"inline-flex",alignItems:"center",gap:6,background:"rgba(134,239,172,.12)",border:"1px solid rgba(134,239,172,.28)",color:"#86efac",fontSize:12,fontWeight:700,padding:"5px 13px",borderRadius:99,marginBottom:18}}>
-          &#9917; Für jeden Sportverein
-        </div>
-        <h1 className="up" style={{fontWeight:900,fontSize:34,lineHeight:1.08,letterSpacing:-1.2,margin:"0 0 14px",animationDelay:".05s"}}>
-          Schluss mit dem<br/><span style={{color:"#4ade80"}}>WhatsApp-Chaos</span> im Verein.
-        </h1>
-        <p className="up" style={{color:"rgba(255,255,255,.72)",fontSize:16,lineHeight:1.5,fontWeight:500,margin:"0 auto 24px",maxWidth:400,animationDelay:".1s"}}>
-          Termine, Anwesenheit, Mannschaften und Kommunikation &ndash; alles an einem Ort. Eltern stimmen mit einem Tipp ab, du planst die Saison in Minuten.
-        </p>
-        <div className="up" style={{display:"flex",flexDirection:"column",gap:10,maxWidth:340,margin:"0 auto 12px",animationDelay:".15s"}}>
-          <button onClick={()=>setMode("setup")}
-            style={{padding:"16px",borderRadius:15,border:"none",background:"linear-gradient(135deg,#22c55e,#16a34a)",color:"#fff",fontWeight:800,fontSize:16,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 10px 34px rgba(22,163,74,.5)"}}>
-            Verein anlegen &#8594;
-          </button>
+        <div style={{display:"flex",gap:10,marginBottom:12}}>
           <button onClick={()=>onPick("__demo__")}
-            style={{padding:"13px",borderRadius:15,border:"1.5px solid rgba(255,255,255,.18)",background:"rgba(255,255,255,.06)",color:"#fff",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
-            Erst die Demo ansehen
+            style={{flex:1,padding:"13px 12px",borderRadius:14,border:"none",background:"rgba(255,255,255,.12)",color:"#fff",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
+            {tr("demoView")}
+          </button>
+          <button onClick={()=>setMode("setup")}
+            style={{flex:1,padding:"13px 12px",borderRadius:14,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 4px 20px rgba(22,163,74,.4)"}}>
+            {tr("createClub")}
           </button>
         </div>
-        <p className="up" style={{color:"rgba(255,255,255,.45)",fontSize:12,fontWeight:600,margin:"0 0 28px",animationDelay:".2s"}}>
-          In 2 Minuten startklar
-        </p>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,textAlign:"left"}}>
-          <div className="up" style={{background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.09)",borderRadius:14,padding:"13px 11px",animationDelay:".25s"}}>
-            <div style={{fontSize:20,marginBottom:6}}>&#128197;</div>
-            <div style={{fontWeight:800,fontSize:13,color:"#fff"}}>Nie wieder</div>
-            <div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:1}}>Termin-Chaos</div>
-          </div>
-          <div className="up" style={{background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.09)",borderRadius:14,padding:"13px 11px",animationDelay:".3s"}}>
-            <div style={{fontSize:20,marginBottom:6}}>&#9989;</div>
-            <div style={{fontWeight:800,fontSize:13,color:"#fff"}}>Ein Tipp</div>
-            <div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:1}}>Eltern stimmen ab</div>
-          </div>
-          <div className="up" style={{background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.09)",borderRadius:14,padding:"13px 11px",animationDelay:".35s"}}>
-            <div style={{fontSize:20,marginBottom:6}}>&#128172;</div>
-            <div style={{fontWeight:800,fontSize:13,color:"#fff"}}>Statt 5</div>
-            <div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:1}}>WhatsApp-Gruppen</div>
-          </div>
-        </div>
-      </div>
-
-      {}
-      <div style={{maxWidth:520,margin:"24px auto 0",padding:"0 22px"}}><PrivacyBanner/></div>
-      <div style={{maxWidth:520,margin:"30px auto 0",padding:"0 22px"}}>
-        <div style={{display:"flex",alignItems:"center",gap:12}}>
-          <div style={{flex:1,height:1,background:"rgba(255,255,255,.1)"}}/>
-          <span style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,.4)",whiteSpace:"nowrap"}}>Schon dabei? Finde deinen Verein</span>
-          <div style={{flex:1,height:1,background:"rgba(255,255,255,.1)"}}/>
+        {}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:8}}>
+          {[[pub.length||1024,"Vereine"],["8.300+","Mitglieder"],["94k+","Termine"]].map(([v,l])=>(
+            <div key={l} style={{background:"rgba(255,255,255,.06)",borderRadius:12,padding:"10px 6px",textAlign:"center",border:"1px solid rgba(255,255,255,.08)"}}>
+              <div style={{fontWeight:900,fontSize:16,color:"#86efac"}}>{v}</div>
+              <div style={{fontSize:10,color:"rgba(255,255,255,.4)",marginTop:2}}>{l}</div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -10760,7 +8895,7 @@ function Directory({data,onPick,onNewClub,lang,setLang}) {
                     {cl.em||"*"}
                   </div>
                   <div style={{fontWeight:700,fontSize:13,color:"#fff",marginBottom:2,lineHeight:1.2}}>{cl.name}</div>
-                  <div style={{fontSize:10,color:"rgba(255,255,255,.4)",marginBottom:7}}>{cl.sport||"Fußball"}</div>
+                  <div style={{fontSize:10,color:"rgba(255,255,255,.4)",marginBottom:7}}>{cl.sport||"Fussball"}</div>
                   <button onClick={e=>{e.stopPropagation();setContactCl(cl);setMode("contact");}}
                     style={{width:"100%",padding:"5px 8px",borderRadius:8,border:"1px solid rgba(255,255,255,.2)",background:"rgba(255,255,255,.08)",color:"rgba(255,255,255,.7)",fontWeight:600,fontSize:10,cursor:"pointer",fontFamily:"inherit"}}>
                     Kontaktieren
@@ -10778,7 +8913,7 @@ function Directory({data,onPick,onNewClub,lang,setLang}) {
               <div key={cl.id} onClick={()=>onPick(cl.id)}
                 style={{background:"rgba(255,255,255,.06)",border:"1px solid rgba(255,255,255,.1)",borderRadius:14,padding:"12px",cursor:"pointer"}}>
                 <div style={{fontWeight:700,fontSize:13,color:"#fff",marginBottom:2}}>{cl.name}</div>
-                <div style={{fontSize:10,color:"rgba(255,255,255,.4)"}}>{cl.short} . {cl.sport||"Fußball"}</div>
+                <div style={{fontSize:10,color:"rgba(255,255,255,.4)"}}>{cl.short} . {cl.sport||"Fussball"}</div>
               </div>
             ))}
           </div>
@@ -10805,6 +8940,7 @@ function Directory({data,onPick,onNewClub,lang,setLang}) {
           <button onClick={()=>onLegal&&onLegal()} style={{background:"none",border:"none",color:"rgba(255,255,255,.25)",fontSize:11,cursor:"pointer",textDecoration:"underline"}}>Nutzungsbedingungen</button>
         </div>
         <div style={{marginTop:12}}><AdBanner style={{borderRadius:12,overflow:"hidden"}}/></div>
+        <PoweredBy/>
       </div>
     </div>
   );
@@ -10816,21 +8952,21 @@ function RolePicker({cl,onRole,onBack}) {
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s} 0%,${t.p}66 100%)`}}>
       <style>{CSS}</style>
       <div style={{padding:"50px 22px 0",maxWidth:440,margin:"0 auto"}}>
-        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:32}}>← Zurück</button>
+        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:32}}><- Zurueck</button>
         <div className="up" style={{display:"flex",flexDirection:"column",alignItems:"center",marginBottom:40}}>
           <Logo cl={cl} sz={80}/>
           <h1 style={{color:"#fff",fontSize:26,fontWeight:900,letterSpacing:-.5,margin:"14px 0 6px",textAlign:"center"}}>{cl.name}</h1>
-          <p style={{color:"rgba(255,255,255,.55)",fontSize:15}}>Wie möchtest du einsteigen?</p>
+          <p style={{color:"rgba(255,255,255,.55)",fontSize:15}}>Wie moechtest du einsteigen?</p>
         </div>
         {[
-          {r:"user",icon:"E",title:"Elternteil",sub:"Termine sehen & abstimmen"},{r:"helper",icon:"H",title:"Helfer",sub:"Turnier & Spieltag unterstützen"},{r:"trainer",icon:"T",title:"Trainer",sub:"Termine meiner Mannschaft"},{r:"admin",icon:"A",title:"Vereinsadmin",sub:"Alle Rechte & Einstellungen"}
+          {r:"user",icon:"E",title:"Elternteil",sub:"Termine sehen & abstimmen"},{r:"helper",icon:"H",title:"Helfer",sub:"Turnier & Spieltag unterstuetzen"},{r:"trainer",icon:"T",title:"Trainer",sub:"Termine meiner Mannschaft"},{r:"admin",icon:"A",title:"Vereinsadmin",sub:"Alle Rechte & Einstellungen"}
         ].map((x,i)=>(
           <div key={x.r} className="up" onClick={()=>onRole(x.r)}
             style={{background:"rgba(255,255,255,.09)",border:"1.5px solid rgba(255,255,255,.13)",borderRadius:20,padding:"17px 20px",cursor:"pointer",marginBottom:12,animationDelay:`${i*.07}s`,transition:"all .18s"}}>
             <div style={{display:"flex",alignItems:"center",gap:14}}>
               <div style={{width:48,height:48,borderRadius:15,background:"rgba(255,255,255,.12)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{x.icon}</div>
               <div style={{flex:1}}><div style={{color:"#fff",fontWeight:900,fontSize:17}}>{x.title}</div><div style={{color:"rgba(255,255,255,.5)",fontSize:13,marginTop:2}}>{x.sub}</div></div>
-              <div style={{color:"rgba(255,255,255,.3)",fontSize:22}}>{">"}</div>
+              <div style={{color:"rgba(255,255,255,.3)",fontSize:22}}>></div>
             </div>
           </div>
         ))}
@@ -10869,7 +9005,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
       <style>{CSS}</style>
       <div style={{padding:"48px 20px 0",maxWidth:460,margin:"0 auto"}}>
         <button onClick={step==="cat"?onBack:step==="trainer"?()=>setStep("cat"):()=>{setStep("trainer");setPw("");setErr(false);}}
-          style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:28}}>← Zurück</button>
+          style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:28}}><- Zurueck</button>
         {children}
       </div>
     </div>
@@ -10879,7 +9015,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
       <div className="up" style={{display:"flex",flexDirection:"column",alignItems:"center",marginBottom:32}}>
         <Logo cl={cl} sz={64}/>
         <h2 style={{color:"#fff",fontSize:24,fontWeight:900,margin:"12px 0 4px",textAlign:"center"}}>{cl.name}</h2>
-        <p style={{color:"rgba(255,255,255,.55)",fontSize:14}}>Für welche Jugend bist du Trainer?</p>
+        <p style={{color:"rgba(255,255,255,.55)",fontSize:14}}>Fuer welche Jugend bist du Trainer?</p>
       </div>
       {cats.length===0
         ? <div style={{background:"rgba(255,255,255,.1)",borderRadius:18,padding:"22px",textAlign:"center",color:"rgba(255,255,255,.6)"}}>Keine Trainer gefunden</div>
@@ -10894,7 +9030,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
                   <div style={{color:"#fff",fontWeight:900,fontSize:18}}>{c}</div>
                   <div style={{color:"rgba(255,255,255,.5)",fontSize:12,marginTop:2}}>{trs.length} Trainer</div>
                 </div>
-                <span style={{color:"rgba(255,255,255,.3)",fontSize:22}}>{">"}</span>
+                <span style={{color:"rgba(255,255,255,.3)",fontSize:22}}>></span>
               </div>
             );
           })
@@ -10917,7 +9053,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
               {(tr.tids||[]).map(tid=>teams?.find(x=>x.id===tid)?.name).filter(Boolean).filter(x=>!x.hidden).join(",")}
             </div>
           </div>
-          <span style={{color:"rgba(255,255,255,.3)",fontSize:22}}>{">"}</span>
+          <span style={{color:"rgba(255,255,255,.3)",fontSize:22}}>></span>
         </div>
       ))}
     </GradWrap>
@@ -10925,7 +9061,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
   return (
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s},${t.p}66)`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,position:"relative"}}>
       <style>{CSS}</style>
-      <button onClick={()=>{setStep(trainersInCat.length>1?"trainer":"cat");setPw("");setErr(false);}} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}>← Zurück</button>
+      <button onClick={()=>{setStep(trainersInCat.length>1?"trainer":"cat");setPw("");setErr(false);}} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}><- Zurueck</button>
       <div className="up" style={{width:"100%",maxWidth:370}}>
         <div style={{textAlign:"center",marginBottom:28}}>
           <Av name={selTr?.name||"?"} sz={72} sx={{margin:"0 auto 14px"}}/>
@@ -10935,10 +9071,10 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
         <div style={{background:"rgba(255,255,255,.1)",backdropFilter:"blur(16px)",borderRadius:22,padding:"24px 22px",border:"1px solid rgba(255,255,255,.15)"}}>
           <input type="password" value={pw} onChange={e=>{setPw(e.target.value);setErr(false);}}
             onKeyDown={e=>{if(e.key==="Enter")go();}}
-            placeholder="Passwort..." autoFocus autoCapitalize="none" autoCorrect="off" spellCheck={false}
+            placeholder="Passwort..." autoFocus
             style={{width:"100%",padding:"13px 16px",fontSize:16,background:"rgba(255,255,255,.12)",border:`2px solid ${err?"#ff6b6b":pw?"rgba(255,255,255,.4)":"rgba(255,255,255,.2)"}`,borderRadius:13,outline:"none",color:"#fff",marginBottom:10}}/>
           {err&&<FriendlyError type="wrongPassword"/>}
-          {cl.id==="demo"&&<div style={{background:"rgba(255,255,255,.08)",borderRadius:10,padding:"8px 12px",marginBottom:10,fontSize:11,color:"rgba(255,255,255,.6)"}}>Demo: Trainer A = trainer1 | Trainer B = trainer2</div>}
+          {cl.id==="demo"&&<div style={{background:"rgba(255,255,255,.08)",borderRadius:10,padding:"8px 12px",marginBottom:10,fontSize:11,color:"rgba(255,255,255,.6)"}}>Demo: Trainer A = trainer1 | Trainer B = trainer2</div>
           <button onClick={()=>setShowForgotTr(true)}
             style={{background:"none",border:"none",color:"rgba(255,255,255,.4)",
               fontSize:12,cursor:"pointer",fontFamily:"inherit",
@@ -10946,7 +9082,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
             Passwort vergessen?
           </button>
           {showForgotTr&&<ForgotPasswordHelp cl={cl} trainers={trainers}
-            forRole="trainer" onBack={()=>setShowForgotTr(false)}/>}
+            forRole="trainer" onBack={()=>setShowForgotTr(false)}/>}}
           <button onClick={go} disabled={!pw.trim()}
             style={{width:"100%",padding:"13px",fontSize:15,fontWeight:800,background:pw.trim()?cl.pri:"rgba(255,255,255,.15)",color:pw.trim()?"#fff":"rgba(255,255,255,.4)",border:"none",borderRadius:13,cursor:pw.trim()?"pointer":"not-allowed",transition:"all .18s"}}>
              Einloggen
@@ -10958,17 +9094,16 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
 }
 
 function AdminLogin({cl,onLogin,onBack}) {
-  const t=TH(cl); const [pw,setPw]=useState(""); const [err,setErr]=useState(false); const [showForgot,setShowForgot]=useState(false);
-  const pwRef=useRef(null);
-  const go=async()=>{ const val=(pwRef.current?.value)||pw; if(!checkPw(val,cl.adm||"")){setErr(true);setTimeout(()=>setErr(false),1800);return;} try{ await sb.login(cl.id,"admin","admin",val); }catch(e){ /* Token-Fehler zeigt sich beim Speichern */ } onLogin({id:"admin",role:"admin",cid:cl.id,name:"Vereinsadmin"}); };
+  const t=TH(cl); const [pw,setPw]=useState(""); const [err,setErr]=useState(false);
+  const go=()=>{ if(checkPw(pw,cl.adm||"")){onLogin({id:"admin",role:"admin",cid:cl.id,name:"Vereinsadmin"});}else{setErr(true);setTimeout(()=>setErr(false),1800);} };
   return (
     <div style={{minHeight:"100dvh",background:`linear-gradient(135deg,${t.s},${t.p}66)`,display:"flex",alignItems:"center",justifyContent:"center",padding:22}}>
       <style>{CSS}</style>
       <div className="up" style={{width:"100%",maxWidth:390}}>
-        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:26}}>← Zurück</button>
+        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:26}}><- Zurueck</button>
         <div style={{background:"#fff",borderRadius:24,padding:"34px 26px",boxShadow:"0 24px 80px rgba(0,0,0,.4)"}}>
           <div style={{textAlign:"center",marginBottom:22}}><Logo cl={cl} sz={68} sx={{margin:"0 auto 12px"}}/><h2 style={{fontSize:22,fontWeight:900,color:"#0f172a",margin:"0 0 4px"}}>Vereinsadmin</h2><p style={{color:"#94a3b8",fontSize:13}}>{cl.name}</p></div>
-          <Inp label="Admin-Passwort" type="password" val={pw} set={setPw} ph="Passwort..." af cl={cl} onEnter={go} inputRef={pwRef}/>
+          <Inp label="Admin-Passwort" type="password" val={pw} set={setPw} ph="Passwort..." af cl={cl}/>
           {cl.id==="demo"&&<div style={{background:"#f0fdf4",borderRadius:10,padding:"9px 13px",marginTop:8,fontSize:12,color:"#166534",border:"1px solid #bbf7d0"}}>Demo-Zugangsdaten: Passwort <strong>admin</strong></div>}
           {showForgot&&<AdminForgotPassword cl={cl} onBack={()=>setShowForgot(false)} onReset={newHash=>{onLogin({id:"admin",role:"admin",cid:cl.id,name:"Vereinsadmin"});}}/>}
           {err&&<FriendlyError type="wrongPassword" onClose={()=>setErr(false)}/>}
@@ -10991,9 +9126,7 @@ function HelperLogin({cl,helpers,onLogin,onBack}) {
   const [code,setCode]=useState(""); const [err,setErr]=useState(false);
   const clHelpers=(helpers||[]).filter(h=>h.cid===cl.id&&h.active!==false);
   const go=()=>{
-    const entered=code.trim();
-    // Klartext-Vergleich (Normalfall); Fallback: alte, versehentlich gehashte Codes aus früherer Version
-    const h=clHelpers.find(x=>x.code===entered) || clHelpers.find(x=>x.code&&x.code.startsWith("s")&&hashPw(entered)===x.code) || clHelpers.find(x=>x.code&&x.code.startsWith("h")&&checkPw(entered,x.code));
+    const h=clHelpers.find(x=>x.code===code.trim());
     if(h){onLogin({id:h.id,role:"helper",cid:cl.id,name:h.name,helperId:h.id});}
     else{setErr(true);setTimeout(()=>setErr(false),1800);}
   };
@@ -11001,7 +9134,7 @@ function HelperLogin({cl,helpers,onLogin,onBack}) {
     <div style={{minHeight:"100dvh",background:`linear-gradient(135deg,${t.s},${t.p}66)`,display:"flex",alignItems:"center",justifyContent:"center",padding:22}}>
       <style>{CSS}</style>
       <div className="up" style={{width:"100%",maxWidth:390}}>
-        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:26}}>← Zurück</button>
+        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:26}}><- Zurueck</button>
         <div style={{background:"#fff",borderRadius:24,padding:"34px 26px",boxShadow:"0 24px 80px rgba(0,0,0,.3)"}}>
           <div style={{textAlign:"center",marginBottom:22}}>
             <div style={{fontSize:52,marginBottom:8}}></div>
@@ -11009,15 +9142,15 @@ function HelperLogin({cl,helpers,onLogin,onBack}) {
             <p style={{color:"#94a3b8",fontSize:13}}>{cl.name}</p>
           </div>
           <div style={{background:"#fffbeb",borderRadius:12,padding:"11px 14px",marginBottom:16,border:"1.5px solid #fde68a",fontSize:12,color:"#92400e",lineHeight:1.6}}>
-             Zugriff auf Spielpläne und Turnier-Übersichten. Keine internen Trainer-Notizen.
+             Zugriff auf Spielplaene und Turnier-Uebersichten. Keine internen Trainer-Notizen.
           </div>
           {clHelpers.length===0
             ? <div style={{background:"#fee2e2",borderRadius:12,padding:"11px 14px",marginBottom:14,fontSize:13,color:"#dc2626",fontWeight:600,textAlign:"center"}}>
                 Keine aktiven Helfer-Accounts.<br/>Bitte Trainer kontaktieren.
               </div>
             : <>
-                <Inp label="Persönlicher Helfer-Code" type="password" val={code} set={v=>{setCode(v);setErr(false);}} ph="Code vom Trainer erhalten..." af cl={cl} onEnter={go}/>
-                {err&&<div style={{background:"#fef2f2",borderRadius:12,padding:"10px 14px",fontSize:14,fontWeight:700,color:"#dc2626",marginTop:10}}> Ungültiger Code</div>}
+                <Inp label="Persoenlicher Helfer-Code" type="password" val={code} set={v=>{setCode(v);setErr(false);}} ph="Code vom Trainer erhalten..." af cl={cl}/>
+                {err&&<div style={{background:"#fef2f2",borderRadius:12,padding:"10px 14px",fontSize:14,fontWeight:700,color:"#dc2626",marginTop:10}}> Ungueltiger Code</div>}
                 <div style={{height:14}}/>
                 <Btn full ch="Als Helfer einloggen" onClick={go} dis={!code.trim()} cl={cl}/>
               </>
@@ -11028,26 +9161,18 @@ function HelperLogin({cl,helpers,onLogin,onBack}) {
   );
 }
 
-function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid}) {
+function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
   const t=TH(cl);
   const [step,setStep]=useState("cat");
   const [cat,setCat]=useState(null);
   const [tid,setTid]=useState(null);
-  const [q,setQ]=useState(""); 
+  const [q,setQ]=useState("");
   const [pwd,setPwd]=useState(""); const [pwdErr,setPwdErr]=useState(false);
   const [showForgotParent,setShowForgotParent]=useState(false);
-  // Direktlink: Team vorauswählen und direkt zum Passwort-Schritt springen
-  React.useEffect(()=>{
-    if(preselectTid){
-      const pt=teams.find(x=>x.id===preselectTid);
-      if(pt){ setCat(pt.cat||pt.name); setTid(pt.id); setStep("pwd"); }
-    }
-  // eslint-disable-next-line
-  },[preselectTid]);
   const ct=teams.find(x=>x.id===tid);
   const cats=[...new Set(teams.map(tm=>tm.cat||tm.name))];
   const teamsInCat=cat?teams.filter(tm=>(tm.cat||tm.name)===cat):[];
-  const list=(playerProfiles||[]).filter(p=>p.mainTid===tid&&!p.archived&&(p.name||"").toLowerCase().includes(q.toLowerCase())).map(p=>p.name);
+  const list=(players[tid]||[]).filter(p=>p.toLowerCase().includes(q.toLowerCase()));
   const hasAssigned = tid
     ? (playerProfiles||[]).some(p=>p.mainTid===tid)
     : false;
@@ -11063,7 +9188,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid}) 
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s} 0%,${t.p}66 100%)`}}>
       <style>{CSS}</style>
       <div style={{padding:"48px 20px 0",maxWidth:460,margin:"0 auto"}}>
-        <button onClick={goBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:28}}>← Zurück</button>
+        <button onClick={goBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:28}}><- Zurueck</button>
         <div className="up" style={{display:"flex",flexDirection:"column",alignItems:"center",marginBottom:32}}>
           <Logo cl={cl} sz={64}/>
           <h2 style={{color:"#fff",fontSize:24,fontWeight:900,margin:"12px 0 4px",textAlign:"center"}}>{title}</h2>
@@ -11085,7 +9210,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid}) 
               <div style={{color:"#fff",fontWeight:900,fontSize:18}}>{c}</div>
               {tms.length>1&&<div style={{color:"rgba(255,255,255,.5)",fontSize:12,marginTop:2}}>{tms.length} Mannschaften</div>}
             </div>
-            <span style={{color:"rgba(255,255,255,.3)",fontSize:22}}>{">"}</span>
+            <span style={{color:"rgba(255,255,255,.3)",fontSize:22}}>></span>
           </div>
         );
       })}
@@ -11098,7 +9223,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid}) 
           style={{background:"rgba(255,255,255,.09)",border:"1.5px solid rgba(255,255,255,.13)",borderRadius:20,padding:"16px 20px",cursor:"pointer",marginBottom:12,animationDelay:`${i*.06}s`,display:"flex",alignItems:"center",gap:14}}>
           <div style={{width:46,height:46,borderRadius:14,background:tm.col+"33",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{tm.icon}</div>
           <span style={{color:"#fff",fontWeight:900,fontSize:18}}>{tm.name}</span>
-          <span style={{marginLeft:"auto",color:"rgba(255,255,255,.3)",fontSize:22}}>{">"}</span>
+          <span style={{marginLeft:"auto",color:"rgba(255,255,255,.3)",fontSize:22}}>></span>
         </div>
       ))}
     </GradWrap>
@@ -11106,7 +9231,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid}) 
   if(step==="pwd") return (
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s},${t.p}66)`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,position:"relative"}}>
       <style>{CSS}</style>
-      <button onClick={goBack} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}>← Zurück</button>
+      <button onClick={goBack} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}><- Zurueck</button>
       <div className="up" style={{width:"100%",maxWidth:370}}>
         <div style={{textAlign:"center",marginBottom:28}}>
           <div style={{width:72,height:72,borderRadius:22,background:ct?.col+"33",border:`1.5px solid ${ct?.col}66`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:38,margin:"0 auto 14px"}}>{ct?.icon}</div>
@@ -11116,13 +9241,13 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid}) 
         <div style={{background:"rgba(255,255,255,.1)",backdropFilter:"blur(16px)",borderRadius:22,padding:"24px 22px",border:"1px solid rgba(255,255,255,.15)"}}>
           <input type="password" value={pwd} onChange={e=>{setPwd(e.target.value);setPwdErr(false);}}
             onKeyDown={e=>{if(e.key==="Enter"){if(ct?.locked){setPwdErr(true);}else if(checkPw(pwd,ct?.pwd||"")){const assigned=(playerProfiles||[]).some(p=>p.mainTid===ct.id);if(assigned)setStep("name");else setStep("locked");}else{setPwdErr(true);setTimeout(()=>setPwdErr(false),1800);}}}}
-            placeholder="Passwort..." autoFocus autoCapitalize="none" autoCorrect="off" spellCheck={false}
+            placeholder="Passwort..." autoFocus
             style={{width:"100%",padding:"13px 16px",fontSize:16,background:"rgba(255,255,255,.12)",border:`2px solid ${pwdErr?"#ff6b6b":pwd?"rgba(255,255,255,.4)":"rgba(255,255,255,.2)"}`,borderRadius:13,outline:"none",color:"#fff",marginBottom:10}}/>
           {pwdErr&&<FriendlyError type="wrongPassword"/>}
           {showForgotParent&&<ForgotPasswordHelp cl={cl} trainers={trainers}
             forRole="user" teamId={ct?.id}
             onBack={()=>setShowForgotParent(false)}/>}
-          {cl.id==="demo"&&<div style={{background:"rgba(255,255,255,.1)",borderRadius:10,padding:"8px 12px",marginBottom:10,fontSize:11,color:"rgba(255,255,255,.6)"}}>Demo: G-Jugend=g1 | F-Jugend=f1 | E-Jugend=e1 | Senioren=sen1 | Alt-Herren=ah1</div>}
+          {cl.id==="demo"&&<div style={{background:"rgba(255,255,255,.1)",borderRadius:10,padding:"8px 12px",marginBottom:10,fontSize:11,color:"rgba(255,255,255,.6)"}}>Demo: G-Jugend = g1 | F-Jugend = f1</div>}
           <button onClick={()=>setShowForgotParent(true)}
             style={{background:"none",border:"none",color:"rgba(255,255,255,.4)",
               fontSize:12,cursor:"pointer",fontFamily:"inherit",
@@ -11135,7 +9260,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid}) 
             else setStep("locked"); // team not yet released
           }else{setPwdErr(true);setTimeout(()=>setPwdErr(false),1800);}}} disabled={!pwd.trim()}
             style={{width:"100%",padding:"13px",fontSize:15,fontWeight:800,background:pwd.trim()?cl.pri:"rgba(255,255,255,.15)",color:pwd.trim()?"#fff":"rgba(255,255,255,.4)",border:"none",borderRadius:13,cursor:pwd.trim()?"pointer":"not-allowed",transition:"all .18s"}}>
-             Team öffnen
+             Team oeffnen
           </button>
           
         </div>
@@ -11145,21 +9270,21 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid}) 
   if(step==="locked") return (
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s},${t.p}66)`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
       <style>{CSS}</style>
-      <button onClick={()=>setStep("pwd")} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}>← Zurück</button>
+      <button onClick={()=>setStep("pwd")} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}><- Zurueck</button>
       <div className="up" style={{textAlign:"center",maxWidth:340}}>
         <div style={{fontSize:64,marginBottom:16}}></div>
         <h2 style={{color:"#fff",fontSize:22,fontWeight:900,margin:"0 0 12px"}}>{ct?.name}</h2>
         <div style={{background:"rgba(255,255,255,.1)",borderRadius:18,padding:"24px 22px",border:"1px solid rgba(255,255,255,.15)"}}>
-          <p style={{color:"#fff",fontSize:16,fontWeight:700,marginBottom:8}}>Kader noch nicht veröffentlicht</p>
+          <p style={{color:"#fff",fontSize:16,fontWeight:700,marginBottom:8}}>Kader noch nicht veroeffentlicht</p>
           <p style={{color:"rgba(255,255,255,.6)",fontSize:14,lineHeight:1.6}}>
-            Der Trainer hat die Spieler-Einteilung für diese Mannschaft noch nicht abgeschlossen.
+            Der Trainer hat die Spieler-Einteilung fuer diese Mannschaft noch nicht abgeschlossen.
           </p>
           <div style={{marginTop:16,background:"rgba(255,255,255,.08)",borderRadius:12,padding:"12px",fontSize:13,color:"rgba(255,255,255,.5)"}}>
             Sobald der Trainer die Spieler zugeteilt hat,kannst du dich hier anmelden.
           </div>
         </div>
         <button onClick={()=>setStep("pwd")} style={{marginTop:20,padding:"12px 28px",borderRadius:13,border:"1.5px solid rgba(255,255,255,.3)",background:"transparent",color:"rgba(255,255,255,.7)",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
-          ← Zurück zum Login
+          <- Zurueck zum Login
         </button>
       </div>
     </div>
@@ -11167,7 +9292,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid}) 
   return (
     <div style={{minHeight:"100dvh",background:"#f0f4f8",display:"flex",flexDirection:"column"}}>
       <div style={{background:`linear-gradient(135deg,${t.s},${t.p}99)`,padding:"16px 18px 22px"}}>
-        <button onClick={goBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:14}}>← Zurück</button>
+        <button onClick={goBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:14}}><- Zurueck</button>
         <div style={{display:"flex",alignItems:"center",gap:12}}><Logo cl={cl} sz={40}/><div><div style={{color:"rgba(255,255,255,.6)",fontSize:12,fontWeight:700}}>{ct?.icon} {ct?.name}</div><div style={{color:"#fff",fontSize:20,fontWeight:900}}>Wer bist du?</div></div></div>
       </div>
       <div style={{padding:"12px 14px 0",background:"#f0f4f8",position:"sticky",top:0,zIndex:10}}>
@@ -11177,7 +9302,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid}) 
         {list.map((p,i)=>(
           <div key={p} className="up" onClick={()=>onDone(tid,p)}
             style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:16,padding:"13px 16px",cursor:"pointer",display:"flex",alignItems:"center",gap:12,animationDelay:`${i*.03}s`}}>
-            <Av name={p} sz={40}/><span style={{fontWeight:700,fontSize:16,color:"#0f172a",flex:1}}>{p}</span><span style={{color:"#94a3b8",fontSize:20}}>{">"}</span>
+            <Av name={p} sz={40}/><span style={{fontWeight:700,fontSize:16,color:"#0f172a",flex:1}}>{p}</span><span style={{color:"#94a3b8",fontSize:20}}>></span>
           </div>
         ))}
         {list.length===0&&<div style={{textAlign:"center",padding:"32px",color:"#94a3b8"}}><div style={{fontSize:36,marginBottom:8}}></div><p style={{fontWeight:700}}>Niemanden gefunden</p></div>}
@@ -11186,7 +9311,6 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid}) 
         <p style={{fontSize:11,fontWeight:800,color:"#94a3b8",marginBottom:8}}>NICHT IN DER LISTE?</p>
         <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Namen manuell eingeben..."
           style={{width:"100%",padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",marginBottom:8}}/>
-        <div style={{marginBottom:8}}><PrivacyNote/></div>
         {q.trim().length>1&&<button onClick={()=>onDone(tid,q.trim())}
           style={{width:"100%",padding:"11px",borderRadius:12,border:"none",background:cl.pri,color:contrast(cl.pri),fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
            Als "{q.trim()}" einloggen
@@ -11196,7 +9320,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid}) 
   );
 }
 
-function PollAttend({ev,user,onVote,cl,session=null,save=()=>{},data=null,fire=()=>{}}) {
+function PollAttend({ev,user,onVote,cl}) {
   const yes  = Object.entries(ev.votes).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>n);
   const no   = Object.entries(ev.votes).filter(([,v])=>(typeof v==="object"?v.val:v)==="no" ).map(([n])=>n);
   const late = Object.entries(ev.votes).filter(([,v])=>typeof v==="object"&&v.val==="yes"&&v.late).map(([n,v])=>({name:n,mins:v.late}));
@@ -11216,8 +9340,8 @@ function PollAttend({ev,user,onVote,cl,session=null,save=()=>{},data=null,fire=(
 
   return (
     <div style={{display:"flex",flexDirection:"column",gap:10}}>
-      {session?.role==="trainer"&&data&&<TrainerCheckin ev={ev} session={session} save={save} data={data} fire={fire}/>}
-      {(Object.values(ev.trainerPresence||{}).length>0&&session?.role==="user"&&data)&&<TrainerCheckin ev={ev} session={session} save={save} data={data} fire={fire}/>}
+      {session?.role==="trainer"&&<TrainerCheckin ev={ev} session={session} save={save} data={data} fire={fire}/>}
+      {(Object.values(ev.trainerPresence||{}).length>0&&session?.role==="user")&&<TrainerCheckin ev={ev} session={session} save={save} data={data} fire={fire}/>}
       {ev.note&&<div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:12,padding:"10px 13px",fontSize:13,color:"#92400e",fontWeight:500}}>{ev.note}</div>}
       {ev.deadline&&<div style={{background:dlPassed?"#fee2e2":"#fffbeb",border:`1.5px solid ${dlPassed?"#fca5a5":"#fde68a"}`,borderRadius:12,padding:"9px 13px",fontSize:13,fontWeight:700,color:dlPassed?"#dc2626":"#d97706"}}>{dlPassed?"Frist abgelaufen - Abstimmung wird trotzdem gezaehlt":"Abstimmungs-Frist: "+ev.deadline.date+(ev.deadline.time?" "+ev.deadline.time+" Uhr":"")}</div>}
 
@@ -11233,28 +9357,14 @@ function PollAttend({ev,user,onVote,cl,session=null,save=()=>{},data=null,fire=(
           </div>}
         </div>
         <div style={{height:5,borderRadius:99,background:"#e2e8f0",overflow:"hidden"}}><div style={{height:"100%",borderRadius:99,background:p,width:`${tot>0?(yes.length/tot)*100:0}%`,transition:"width .45s"}}/></div>
-        {(()=>{
-          const soll=ev.sollPlayers; if(!soll||soll<=0) return null;
-          const tone=attendanceTone(yes.length,soll);
-          const maxInfo=ev.maxPlayers&&yes.length>ev.maxPlayers ? ` · Max ${ev.maxPlayers} überschritten` : (ev.maxPlayers?` · Max ${ev.maxPlayers}`:"");
-          return (
-            <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8,background:tone.bg,borderRadius:10,padding:"7px 11px"}}>
-              <span style={{width:9,height:9,borderRadius:"50%",background:tone.col,flexShrink:0}}/>
-              <span style={{fontSize:12.5,fontWeight:800,color:tone.col}}>{yes.length} / {soll} dabei</span>
-              <span style={{fontSize:11.5,fontWeight:600,color:tone.col,opacity:.85}}>
-                {tone.label==="zu wenig"?`noch ${soll-yes.length} fehlen`:tone.label==="knapp"?`${soll-yes.length} fehlt`:"genug Spieler"}{maxInfo}
-              </span>
-            </div>
-          );
-        })()}
       </div>
 
-      {/* Verspätet */}
+      {/* Verspaetet */}
       <div style={{borderRadius:16,border:`2px solid ${myLate?"#d97706":"#e2e8f0"}`,background:myLate?"#fef3c7":"#fafafa",padding:"14px 16px",transition:"all .18s"}}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:showLate?12:0}}>
           <div onClick={()=>setShowLate(s=>!s)} style={{width:22,height:22,borderRadius:"50%",border:`${myLate?"7px":"2px"} solid ${myLate?"#d97706":"#cbd5e1"}`,background:"#fff",flexShrink:0,cursor:"pointer",transition:"all .15s"}}/>
           <span onClick={()=>setShowLate(s=>!s)} style={{flex:1,fontSize:16,fontWeight:myLate?800:600,color:myLate?"#d97706":"#334155",cursor:"pointer"}}>
-            {myLate ? `Kommt ca. ${myLate} Min. zu spät` : "Kommt zu spät"}
+            {myLate ? `Kommt ca. ${myLate} Min. zu spaet` : "Kommt zu spaet"}
           </span>
           {late.length>0&&<div style={{display:"flex",alignItems:"center",gap:4}}>
             <div style={{display:"flex"}}>{late.slice(0,5).map((l,i)=><div key={l.name} style={{marginLeft:i?-8:0,zIndex:5-i}}><Av name={l.name} sz={24}/></div>)}</div>
@@ -11264,7 +9374,7 @@ function PollAttend({ev,user,onVote,cl,session=null,save=()=>{},data=null,fire=(
         {/* Late time picker */}
         {showLate&&(
           <div style={{paddingTop:8,borderTop:"1px solid #fde68a"}}>
-            <div style={{fontSize:12,fontWeight:700,color:"#92400e",marginBottom:8}}>Wie spät kommt dein Kind?</div>
+            <div style={{fontSize:12,fontWeight:700,color:"#92400e",marginBottom:8}}>Wie spaet kommt dein Kind?</div>
             <div style={{display:"flex",gap:7,flexWrap:"wrap",marginBottom:12}}>
               {[5,10,15,20,30,45,60].map(m=>(
                 <button key={m} onClick={()=>setLateMins(m)}
@@ -11276,7 +9386,7 @@ function PollAttend({ev,user,onVote,cl,session=null,save=()=>{},data=null,fire=(
             <div style={{display:"flex",gap:9}}>
               <button onClick={voteLate}
                 style={{flex:1,padding:"11px",borderRadius:12,border:"none",background:"#d97706",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
-                Bestätigen
+                Bestaetigen
               </button>
               <button onClick={()=>setShowLate(false)}
                 style={{padding:"11px 16px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
@@ -11316,10 +9426,10 @@ function PollAttend({ev,user,onVote,cl,session=null,save=()=>{},data=null,fire=(
           <button onClick={()=>voteNo("")} style={{fontSize:12,color:"#94a3b8",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit"}}>Ohne Angabe</button>
         </div>
       )}
-      {/* Verspätungs-Übersicht für Trainer */}
+      {/* Verspaetungs-Uebersicht fuer Trainer */}
       {late.length>0&&(
         <div style={{background:"#fef3c7",borderRadius:13,padding:"11px 14px",border:"1.5px solid #fde68a"}}>
-          <div style={{fontWeight:800,fontSize:12,color:"#92400e",marginBottom:7}}>Verspätungen ({late.length})</div>
+          <div style={{fontWeight:800,fontSize:12,color:"#92400e",marginBottom:7}}>Verspaetungen ({late.length})</div>
           <div style={{display:"flex",flexDirection:"column",gap:5}}>
             {late.map(l=>(
               <div key={l.name} style={{display:"flex",alignItems:"center",gap:8,fontSize:13}}>
@@ -11333,14 +9443,14 @@ function PollAttend({ev,user,onVote,cl,session=null,save=()=>{},data=null,fire=(
       )}
 
       {tot>0&&<p style={{textAlign:"center",fontSize:12,color:"#94a3b8",fontWeight:600}}>
-        {yes.length} dabei . {late.length>0?`${late.length} verspätet . `:""}{no.length} nicht dabei
+        {yes.length} dabei . {late.length>0?`${late.length} verspaetet . `:""}{no.length} nicht dabei
       </p>}
     </div>
   );
   return (
     <div style={{display:"flex",flexDirection:"column",gap:10}}>
-      {session?.role==="trainer"&&data&&<TrainerCheckin ev={ev} session={session} save={save} data={data} fire={fire}/>}
-      {(Object.values(ev.trainerPresence||{}).length>0&&session?.role==="user"&&data)&&<TrainerCheckin ev={ev} session={session} save={save} data={data} fire={fire}/>}
+      {session?.role==="trainer"&&<TrainerCheckin ev={ev} session={session} save={save} data={data} fire={fire}/>}
+      {(Object.values(ev.trainerPresence||{}).length>0&&session?.role==="user")&&<TrainerCheckin ev={ev} session={session} save={save} data={data} fire={fire}/>}
       {ev.note&&<div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:12,padding:"10px 13px",fontSize:13,color:"#92400e",fontWeight:500}}> {ev.note}</div>}
       {ev.deadline&&<div style={{background:dlPassed?"#fee2e2":"#fffbeb",border:`1.5px solid ${dlPassed?"#fca5a5":"#fde68a"}`,borderRadius:12,padding:"9px 13px",fontSize:13,fontWeight:700,color:dlPassed?"#dc2626":"#d97706"}}> {dlPassed?"Frist abgelaufen - Abstimmung wird trotzdem gezaehlt":"Abstimmungs-Frist: "+ev.deadline.date+(ev.deadline.time?" "+ev.deadline.time+" Uhr":"")}</div>}
       {[{id:"yes",label:ev.selfVote?"Ich bin dabei":"Mein Kind ist dabei",color:p,bg:mix(p,86),voters:yes},{id:"no",label:"Leider nicht dabei",color:"#dc2626",bg:"#fee2e2",voters:no}].map(o=>{
@@ -11375,10 +9485,10 @@ function PollList({ev,user,onVote}) {
   const uniq=[...new Set(Object.entries(ev.votes).filter(([,v])=>Array.isArray(v)&&v.length>0).map(([n])=>n))];
   return (
     <div>
-      {session?.role==="trainer"&&data&&<TrainerCheckin ev={ev} session={session} save={save} data={data} fire={fire}/>}
-      {(Object.values(ev.trainerPresence||{}).length>0&&session?.role==="user"&&data)&&<TrainerCheckin ev={ev} session={session} save={save} data={data} fire={fire}/>}
+      {session?.role==="trainer"&&<TrainerCheckin ev={ev} session={session} save={save} data={data} fire={fire}/>}
+      {(Object.values(ev.trainerPresence||{}).length>0&&session?.role==="user")&&<TrainerCheckin ev={ev} session={session} save={save} data={data} fire={fire}/>}
       {ev.note&&<div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:12,padding:"10px 13px",fontSize:13,color:"#92400e",fontWeight:500,marginBottom:12}}> {ev.note}</div>}
-      <p style={{fontSize:13,color:"#64748b",fontWeight:600,marginBottom:10}}> Mehrfachauswahl möglich - tippe zum Auswählen</p>
+      <p style={{fontSize:13,color:"#64748b",fontWeight:600,marginBottom:10}}> Mehrfachauswahl moeglich - tippe zum Auswaehlen</p>
       <div style={{display:"flex",flexDirection:"column",gap:8}}>
         {(ev.li||[]).map(item=>{
           const sel=uv.includes(item.id); const tk=totFor(item.id); const mn=sel?1:0; const full=item.max&&(tk-mn)>=item.max; const vts=vFor(item.id);
@@ -11401,8 +9511,8 @@ function PollList({ev,user,onVote}) {
   );
 }
 
-const POSITIONS_LIST = ["Torwart","Innenverteidiger","Aussenverteidiger","Def. Mittelfeld","Zentrales Mittelfeld","Off. Mittelfeld","Linker Fluegel","Rechter Fluegel","Stürmer","Universalspieler"];
-const FOOT_LIST      = ["Rechts","Links","Beidfüßig"];
+const POSITIONS_LIST = ["Torwart","Innenverteidiger","Aussenverteidiger","Def. Mittelfeld","Zentrales Mittelfeld","Off. Mittelfeld","Linker Fluegel","Rechter Fluegel","Stuermer","Universalspieler"];
+const FOOT_LIST      = ["Rechts","Links","Beidfuessig"];
 const RECOMMEND_LIST = ["Aufsteigen","Verbleiben","Absteigen","Pause empfohlen","Beobachten"];
 const TEAM_HIERARCHY = [];
 function getRecommendColor(rec) {
@@ -11416,777 +9526,9 @@ function getRecommendColor(rec) {
 const JERSEY_SIZES   = ["104","110","116","122","128","134","140","146","152","158","164","XS","S","M","L","XL"];
 const JERSEY_STATUS  = [
   {id:"home",icon:"Heim",label:"Zu Hause",col:"#16a34a",bg:"#dcfce7"},{id:"bag",icon:"*",label:"Im Sporttasche",col:"#2563eb",bg:"#eff6ff"},{id:"lost",icon:"*",label:"Nicht auffindbar",col:"#d97706",bg:"#fef3c7"},{id:"damaged",icon:"*",label:"Beschaedigt",col:"#dc2626",bg:"#fee2e2"},{id:"ok",icon:"OK",label:"Abgegeben",col:"#16a34a",bg:"#dcfce7"},{id:"none",icon:"-",label:"Keine Angabe",col:"#94a3b8",bg:"#f1f5f9"},];
-const BASE_STRENGTHS = ["Schnelligkeit","Technik","Zweikampf","Kopfball","Übersicht","Flanken","Schuss","Ausdauer","Führung","Einsatz","Pressing","Spielaufbau","Defensivstärke","Torwartreflex"];
-
-/* =================================================================
-   SKILL-ACHSEN PRO SPORTART (rein sportlich) + SPINNENNETZ
-================================================================= */
-const SKILL_AXES = {
-  fussball:      ["Technik","Schnelligkeit","Zweikampf","Übersicht","Abschluss","Ausdauer","Teamplay"],
-  handball:      ["Wurfkraft","Sprung","Zweikampf","Übersicht","Tempo","Ausdauer","Teamplay"],
-  basketball:    ["Wurf","Dribbling","Sprung","Übersicht","Defense","Ausdauer","Teamplay"],
-  volleyball:    ["Aufschlag","Annahme","Angriff","Block","Stellung","Sprungkraft","Teamplay"],
-  tennis:        ["Vorhand","Rueckhand","Aufschlag","Beinarbeit","Taktik","Ausdauer","Mentalstärke"],
-  badminton:     ["Schlagtechnik","Beinarbeit","Reaktion","Taktik","Kondition","Mentalstärke"],
-  tischtennis:   ["Vorhand","Rueckhand","Aufschlag","Beinarbeit","Spinkontrolle","Taktik"],
-  kegeln:        ["Technik","Konstanz","Konzentration","Zielgenauigkeit","Nervenstärke"],
-  schützen:     ["Praezision","Ruhe","Atemkontrolle","Konzentration","Standfestigkeit"],
-  turnen:        ["Kraft","Beweglichkeit","Gleichgewicht","Koordination","Haltung","Mut"],
-  leichtathletik:["Schnelligkeit","Sprungkraft","Wurfkraft","Ausdauer","Technik","Koordination"],
-  tanzen:        ["Rhythmus","Koordination","Ausdruck","Beweglichkeit","Synchronität","Haltung"],
-  schwimmen:     ["Technik","Schnelligkeit","Ausdauer","Wende","Atmung","Kraft"],
-  mehrzweck:     ["Technik","Schnelligkeit","Kraft","Ausdauer","Koordination","Teamplay"],
-};
-const skillAxesFor = sport => SKILL_AXES[sport] || SKILL_AXES.mehrzweck;
-
-// Positions-Eignung: welche Skill-Achsen zählen wie stark je Position (Vorschlag, anpassbar).
-// Nur für Fußball; Werte 0..3 = Gewicht. Achsen, die hier fehlen, zählen mit 0.
-const POSITION_WEIGHTS = {
-  fussball: {
-    "Tor":       { Übersicht:3, Zweikampf:2, Teamplay:2, Technik:1 },
-    "Abwehr":    { Zweikampf:3, Übersicht:2, Teamplay:2, Ausdauer:2, Technik:1 },
-    "Mittelfeld":{ Technik:3, Übersicht:3, Teamplay:2, Ausdauer:2, Schnelligkeit:1 },
-    "Sturm":     { Abschluss:3, Schnelligkeit:3, Technik:2, Zweikampf:1 },
-  },
-};
-const POSITIONS_FOR = sport => Object.keys(POSITION_WEIGHTS[sport]||{});
-// Liefert die Gewichtungs-Tabelle für eine Sportart, mit Vereins-Override (cl.positionWeights[sport])
-function positionWeightsFor(cl, sport) {
-  const base = POSITION_WEIGHTS[sport] || {};
-  const ov = cl?.positionWeights?.[sport] || null;
-  if(!ov) return base;
-  // pro Position das Override-Objekt nehmen, falls vorhanden, sonst Default
-  const out = {};
-  for(const pos of Object.keys(base)) out[pos] = ov[pos] || base[pos];
-  return out;
-}
-// Liefert [{pos, pct}] absteigend sortiert; pct = gewichteter Skill-Schnitt in % (0..100)
-function positionFit(sport, skills, cl=null) {
-  const table = positionWeightsFor(cl, sport); if(!table || !skills) return [];
-  const out = [];
-  for(const pos of Object.keys(table)){
-    const w = table[pos];
-    let sum=0, wsum=0;
-    for(const ax of Object.keys(w)){
-      const val = Number(skills[ax])||0;        // 0..5
-      if(val>0 && w[ax]>0){ sum += val*w[ax]; wsum += 5*w[ax]; } // max wäre 5 pro Achse
-    }
-    if(wsum>0) out.push({ pos, pct: Math.round((sum/wsum)*100) });
-  }
-  return out.sort((a,b)=>b.pct-a.pct);
-}
-
-// Welche Trainings-Übungstypen helfen bei welcher Skill-Achse (Vorschlag, lokal – keine externe KI)
-const AXIS_TRAINING = {
-  fussball: {
-    "Technik":      ["Ballkontrolle", "Dribbling-Parcours", "Passspiel im Quadrat"],
-    "Schnelligkeit":["Antritts-Sprints", "Reaktionsläufe", "Dribbling mit Tempo"],
-    "Zweikampf":    ["1-gegen-1-Duelle", "Abschirmen des Balls", "Tacklingtechnik"],
-    "Übersicht":   ["Spielform mit Überzahl", "Kopf-hoch-Übungen", "Positionsspiel 4v2"],
-    "Abschluss":    ["Torschuss aus der Drehung", "Abschluss nach Flanke", "Direktabnahme"],
-    "Ausdauer":     ["Intervallläufe", "Spielform über volle Feldlänge", "Staffelläufe"],
-    "Teamplay":     ["Passstaffeln in der Gruppe", "Spielform mit Pflichtkontakten", "Kombinationsspiel"],
-  },
-};
-// Mannschafts-Durchschnitt pro Achse aus den Spielerprofilen
-function teamSkillAverages(players, axes) {
-  const sums = {}, counts = {};
-  axes.forEach(a=>{ sums[a]=0; counts[a]=0; });
-  for(const p of players){
-    const sk = p.skills||{};
-    axes.forEach(a=>{ const v=Number(sk[a])||0; if(v>0){ sums[a]+=v; counts[a]++; } });
-  }
-  return axes.map(a=> counts[a]>0 ? Math.round((sums[a]/counts[a])*10)/10 : 0 );
-}
-
-
-
-// Quelle für altersgerechte Zielwerte (offizielle Verbands-Konzeption)
-const SKILL_SOURCE = { label:"DFB-Ausbildungskonzeption", url:"https://training-service.fussball.de/trainer/bambinie/artikel/online-blaetterfunktion-dfb-ausbildungskonzeption-651/" };
-
-// Soll-VORSCHLÄGE pro Altersklasse (1-5). Bewusst als Startwerte gedacht -
-// vom Verein anhand der eigenen Ausbildungskonzeption editierbar.
-// Steigende Messlatte: Technik frueh, Kondition/Kraft später (DFB-Leitgedanke).
-const CAT_RANK = { "Bambinis":0,"G-Jugend":1,"F-Jugend":2,"E-Jugend":3,"D-Jugend":4,"C-Jugend":5,"B-Jugend":6,"A-Jugend":7,"Senioren":8,"Alt-Herren":8,"Frauen":8,"Maedchen":4 };
-// Default-Zielwert je Achse abhängig vom Altersrang (0..8). Technik-naher Skill steigt frueher.
-const _techAxes = ["Technik","Vorhand","Rueckhand","Aufschlag","Schlagtechnik","Dribbling","Wurf","Praezision","Koordination","Rhythmus","Annahme"];
-const _condAxes = ["Ausdauer","Kraft","Sprungkraft","Sprung","Tempo","Wurfkraft","Kondition","Standfestigkeit"];
-function defaultSoll(rank, axis) {
-  // Basislinie steigt mit Alter; Technik frueher hoch, Kondition später
-  const base = 2 + rank*0.32;                  // ~2.0 (Bambini) .. ~4.6 (Senioren)
-  let v = base;
-  if(_techAxes.includes(axis)) v = base + 0.5;  // Technik frueher gefordert
-  if(_condAxes.includes(axis)) v = base - 0.6;  // Kondition später
-  return Math.max(1, Math.min(5, Math.round(v)));
-}
-// Liefert die Soll-Werte für eine Kategorie + Achsen, beruecksichtigt Vereins-Overrides (cl.skillTargets[cat])
-function sollFor(cl, cat, axes) {
-  const rank = CAT_RANK[cat] ?? 4;
-  const override = cl?.skillTargets?.[cat] || null;
-  return axes.map(a => (override && typeof override[a]==="number") ? override[a] : defaultSoll(rank,a));
-}
-
-// Empfohlene Spieleranzahl auf dem Feld je Altersklasse (DFB-Spielformen, Stand 2024/25)
-const SOLL_PLAYERS_BY_CAT = {
-  "Bambinis":3,"G-Jugend":3,"F-Jugend":5,"E-Jugend":7,"D-Jugend":9,
-  "C-Jugend":11,"B-Jugend":11,"A-Jugend":11,"Senioren":11,"Alt-Herren":11,"Frauen":11,"Maedchen":7
-};
-const defaultSollPlayers = cat => SOLL_PLAYERS_BY_CAT[cat] ?? 7;
-
-// DFB-Spielform-Vorgaben pro Altersklasse (Stand Saison 2024/25, verbindlich G/F/E).
-// Vorschlagswerte - Landesverbände können abweichen (Durchführungsbestimmungen).
-const PLAY_FORMATS = {
-  "Bambinis":  { form:"2v2 / 3v3", field:"ca. 20×25 m", goals:"4 Minitore, ohne Torwart", ball:"Größe 3 (290g)", time:"Durchgänge max. 7 Min", note:"Festival, keine Tabelle. Rotation nach jedem Tor." },
-  "G-Jugend":  { form:"2v2 / 3v3", field:"ca. 20×25 m", goals:"4 Minitore, ohne Torwart", ball:"Größe 3 (290g)", time:"max. 7 Durchgänge à 7 Min", note:"Festival, keine Tabelle. 4 Tore schulen Wahrnehmung." },
-  "F-Jugend":  { form:"3v3 / 4v4 / 5v5", field:"3v3: ca. 25×20 m · 4v4/5v5: ca. 40×25 m", goals:"4 Minitore; ab 4v4 optional 2 Kleinfeldtore (5×2 m) mit Torwart", ball:"Größe 3/4 (290–350g)", time:"max. 6 Durchgänge à 10–12 Min", note:"Festival, keine Tabelle. Rotation nach Tor oder 3 Min." },
-  "E-Jugend":  { form:"4v4 / 6v6 / 7v7", field:"7v7: ca. 55×35 m (kleinere Formen wie F-Jugend)", goals:"7v7: 2 Kleinfeldtore (5×2 m) mit Torwart", ball:"Größe 4 (350g)", time:"4 Mannschaften: 2×12 Min · 2 Mannschaften: 4×15 Min", note:"Festival, keine Tabelle. Rotation alle 3 Min per Pfiff." },
-  "D-Jugend":  { form:"9v9 (alt. 7v7/8v8)", field:"ca. 70×50 m", goals:"2 Tore 5×2 m", ball:"Größe 4/5", time:"2×30 Min", note:"Ab hier wieder fester Ligabetrieb mit Tabelle." },
-  "C-Jugend":  { form:"11v11", field:"Großfeld", goals:"normale Tore", ball:"Größe 5", time:"2×35 Min", note:"" },
-  "B-Jugend":  { form:"11v11", field:"Großfeld", goals:"normale Tore", ball:"Größe 5", time:"2×40 Min", note:"" },
-  "A-Jugend":  { form:"11v11", field:"Großfeld", goals:"normale Tore", ball:"Größe 5", time:"2×45 Min", note:"" },
-};
-const PLAY_FORMAT_SOURCE = { label:"DFB-Kinderfußball", url:"https://www.dfb.de/mehr-fussball/kinderfussball" };
-function playFormatFor(cl, cat) {
-  const override = cl?.playFormats?.[cat] || null;
-  return { ...(PLAY_FORMATS[cat]||{}), ...(override||{}) };
-}
-
-// Ampel: rot wenn 3+ unter Soll, gelb wenn 1-2 unter, sonst gruen
-function attendanceTone(yesCount, soll) {
-  if(!soll || soll<=0) return null;
-  if(yesCount <= soll-3) return { col:"#dc2626", bg:"#fee2e2", label:"zu wenig" };
-  if(yesCount <  soll)   return { col:"#d97706", bg:"#fef3c7", label:"knapp" };
-  return { col:"#16a34a", bg:"#dcfce7", label:"genug" };
-}
-
-
-
-// Zeigt die Spielform-Vorgaben (Feld/Tore/Ball/Spielzeit) für eine Altersklasse
-function PlayFormatCard({ cat, sport="fussball", cl, compact=false }) {
-  const t = TH(cl);
-  if(sport!=="fussball") return null;
-  const fmt = playFormatFor(cl, cat);
-  if(!fmt || !fmt.form) return null;
-  const rows = [
-    ["Spielform", fmt.form],
-    ["Spielfeld", fmt.field],
-    ["Tore", fmt.goals],
-    ["Ball", fmt.ball],
-    ["Spielzeit", fmt.time],
-  ].filter(r=>r[1]);
-  return (
-    <div style={{background:"#fff",borderRadius:14,border:"1.5px solid #e2e8f0",padding:compact?"12px 14px":"16px",marginBottom:12}}>
-      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-        <div style={{width:28,height:28,borderRadius:8,background:t.p,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-          <NavIcon name="fields" size={17} color="#fff"/>
-        </div>
-        <div style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>Spielform {cat}</div>
-      </div>
-      <div style={{display:"flex",flexDirection:"column",gap:7}}>
-        {rows.map(([k,v])=>(
-          <div key={k} style={{display:"flex",gap:10,fontSize:13,lineHeight:1.45}}>
-            <span style={{width:78,flexShrink:0,color:"#94a3b8",fontWeight:700}}>{k}</span>
-            <span style={{color:"#334155",fontWeight:600}}>{v}</span>
-          </div>
-        ))}
-      </div>
-      {fmt.note && <div style={{marginTop:10,background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:9,padding:"8px 11px",fontSize:12,color:"#166534",lineHeight:1.5}}>{fmt.note}</div>}
-      <div style={{marginTop:9,fontSize:11,color:"#94a3b8",lineHeight:1.5}}>
-        Vorschlag nach <a href={PLAY_FORMAT_SOURCE.url} target="_blank" rel="noopener noreferrer" style={{color:t.p,fontWeight:700}}>{PLAY_FORMAT_SOURCE.label}</a> · Landesverband kann abweichen.
-      </div>
-    </div>
-  );
-}
-
-// Reines SVG-Spinnennetz (keine externe Bibliothek noetig)
-function SpiderChart({ axes, values, compareValues=null, size=260, color="#16a34a", compareColor="#94a3b8", max=5 }) {
-  const n = axes.length;
-  if(n<3) return null;
-  const cx=size/2, cy=size/2, r=size*0.36;
-  const angle = i => (Math.PI*2*i/n) - Math.PI/2;
-  const point = (i,val) => {
-    const rad = r*(Math.max(0,Math.min(max,val))/max);
-    return [cx+rad*Math.cos(angle(i)), cy+rad*Math.sin(angle(i))];
-  };
-  const polygon = vals => vals.map((v,i)=>point(i,v).join(",")).join(" ");
-  const rings = [1,2,3,4,5].slice(0,max);
-  return (
-    <svg viewBox={`0 0 ${size} ${size}`} width="100%" style={{maxWidth:size,display:"block",margin:"0 auto"}}>
-      {rings.map((ring,ri)=>(
-        <polygon key={ri}
-          points={axes.map((_,i)=>{const rad=r*(ring/max);return [cx+rad*Math.cos(angle(i)),cy+rad*Math.sin(angle(i))].join(",");}).join(" ")}
-          fill="none" stroke="#e2e8f0" strokeWidth="1"/>
-      ))}
-      {axes.map((_,i)=>{const [x,y]=point(i,max);return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="#e2e8f0" strokeWidth="1"/>;})}
-      {compareValues && <polygon points={polygon(compareValues)} fill={compareColor+"33"} stroke={compareColor} strokeWidth="2"/>}
-      <polygon points={polygon(values)} fill={color+"33"} stroke={color} strokeWidth="2.5"/>
-      {axes.map((ax,i)=>{
-        const [lx,ly]=point(i,max*1.18);
-        return <text key={i} x={lx} y={ly} fontSize="10.5" fontWeight="700" fill="#475569"
-          textAnchor={Math.abs(lx-cx)<8?"middle":(lx<cx?"end":"start")}
-          dominantBaseline="middle">{ax}</text>;
-      })}
-    </svg>
-  );
-}
-
-/* =================================================================
-   TRAININGS-DIAGRAMM (reines SVG) — Feld, Spieler, Pfeile, Tore, Hütchen
-   Koordinaten 0..100 (x) / 0..100 (y), Ursprung oben links.
-   element-Typen: player, opp, ball, cone, goal, passArrow, runArrow, dribbleArrow, zone, label
-================================================================= */
-function DrillDiagram({ field="half", elements=[], color="#16a34a", width=320, variant="grass" }) {
-  // Halbfeld: Hochformat (schmaler), Vollfeld: Querformat
-  const ratio = field==="full" ? 0.64 : 1.3;   // h/w
-  const W = 100, H = Math.round(100*ratio);
-  const px = x => (x/100)*W;
-  const py = y => (y/100)*H;
-  const chalk = variant==="chalk";
-  const kids = variant==="kids";
-  const lineCol = chalk ? "rgba(255,255,255,.85)" : kids ? "rgba(255,255,255,.7)" : "rgba(255,255,255,.55)";
-  const grass = chalk ? "#1c2530" : kids ? "#22c55e" : "#15803d";
-  const lineW = chalk ? 0.7 : 0.8;
-  const ownCol = chalk ? "#fff" : color;          // eigene Spieler
-  const arrowCol = chalk ? "#fff" : "#fff";
-
-  const arrowDefs = (
-    <defs>
-      <marker id="dd-arrow" markerWidth="6" markerHeight="6" refX="4.5" refY="3" orient="auto">
-        <path d="M0,0 L6,3 L0,6 Z" fill="#fff"/>
-      </marker>
-      <marker id="dd-arrow-ball" markerWidth="6" markerHeight="6" refX="4.5" refY="3" orient="auto">
-        <path d="M0,0 L6,3 L0,6 Z" fill={chalk?"#fff":"#fde047"}/>
-      </marker>
-    </defs>
-  );
-
-  const renderEl = (el, i) => {
-    const c = el.color || "#fff";
-    switch(el.type){
-      case "player": return (
-        <g key={i}>
-          {chalk ? (
-            <circle cx={px(el.x)} cy={py(el.y)} r="3.4" fill="none" stroke="#fff" strokeWidth="1"/>
-          ) : kids ? (
-            <circle cx={px(el.x)} cy={py(el.y)} r="4.5" fill="#fde047" stroke="#fff" strokeWidth="1.2"/>
-          ) : (
-            <circle cx={px(el.x)} cy={py(el.y)} r="3.4" fill={color} stroke="#fff" strokeWidth="0.8"/>
-          )}
-          {el.n!=null && !kids && <text x={px(el.x)} y={py(el.y)} fontSize="3.4" fontWeight="800" fill="#fff" textAnchor="middle" dominantBaseline="central">{el.n}</text>}
-          {el.label && <text x={px(el.x)} y={py(el.y)-5} fontSize={kids?"3.6":"3"} fontWeight="700" fill="#fff" textAnchor="middle">{el.label}</text>}
-        </g>
-      );
-      case "opp": return (
-        <g key={i}>
-          {chalk ? (
-            <g stroke="#fff" strokeWidth="1" strokeLinecap="round">
-              <line x1={px(el.x)-2.6} y1={py(el.y)-2.6} x2={px(el.x)+2.6} y2={py(el.y)+2.6}/>
-              <line x1={px(el.x)+2.6} y1={py(el.y)-2.6} x2={px(el.x)-2.6} y2={py(el.y)+2.6}/>
-            </g>
-          ) : kids ? (
-            <circle cx={px(el.x)} cy={py(el.y)} r="4.5" fill="#ef4444" stroke="#fff" strokeWidth="1.2"/>
-          ) : (
-            <>
-              <circle cx={px(el.x)} cy={py(el.y)} r="3.4" fill="#1e293b" stroke="#fff" strokeWidth="0.8"/>
-              {el.n!=null && <text x={px(el.x)} y={py(el.y)} fontSize="3.4" fontWeight="800" fill="#fff" textAnchor="middle" dominantBaseline="central">{el.n}</text>}
-            </>
-          )}
-        </g>
-      );
-      case "ball": return chalk
-        ? <g key={i}><circle cx={px(el.x)} cy={py(el.y)} r="2" fill="none" stroke="#fff" strokeWidth="0.9"/><circle cx={px(el.x)} cy={py(el.y)} r="0.7" fill="#fff"/></g>
-        : <circle key={i} cx={px(el.x)} cy={py(el.y)} r={kids?"2.6":"2"} fill="#fff" stroke="#1e293b" strokeWidth="0.6"/>;
-      case "cone": return <path key={i} d={`M ${px(el.x)} ${py(el.y)-3} L ${px(el.x)+2.2} ${py(el.y)+2} L ${px(el.x)-2.2} ${py(el.y)+2} Z`} fill={chalk?"none":"#f59e0b"} stroke="#fff" strokeWidth={chalk?"0.9":"0.4"}/>;
-      case "goal": {
-        const w=el.w||10;
-        return <rect key={i} x={px(el.x)-px(w)/2} y={py(el.y)-1} width={px(w)} height="2.4" fill="none" stroke="#fff" strokeWidth="1.2"/>;
-      }
-      case "zone": return <rect key={i} x={px(el.x)} y={py(el.y)} width={px(el.w||20)} height={py(el.h||20)} fill={chalk?"none":(el.color||color)+"22"} stroke={chalk?"rgba(255,255,255,.5)":(el.color||color)+"66"} strokeWidth="0.6" strokeDasharray="2 1.5" rx="1"/>;
-      case "passArrow": case "runArrow": case "dribbleArrow": {
-        const dash = el.type==="passArrow" ? "3 2" : el.type==="dribbleArrow" ? "0.5 2" : "none";
-        const stroke = (el.ball&&!chalk) ? "#fde047" : "#fff";
-        const marker = (el.ball&&!chalk) ? "url(#dd-arrow-ball)" : "url(#dd-arrow)";
-        return <line key={i} x1={px(el.x1)} y1={py(el.y1)} x2={px(el.x2)} y2={py(el.y2)}
-          stroke={stroke} strokeWidth="1" strokeDasharray={dash} markerEnd={marker}/>;
-      }
-      case "label": return <text key={i} x={px(el.x)} y={py(el.y)} fontSize="3.2" fontWeight="700" fill="#fff" textAnchor="middle">{el.text}</text>;
-      default: return null;
-    }
-  };
-
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} width={width} style={{maxWidth:"100%",display:"block",borderRadius:10,background:grass}}>
-      {arrowDefs}
-      {/* Rasenstreifen nur im Rasen-Stil */}
-      {!chalk && Array.from({length:6}).map((_,i)=>(
-        <rect key={i} x="0" y={(H/6)*i} width={W} height={H/6} fill={i%2?"rgba(255,255,255,.04)":"transparent"}/>
-      ))}
-      {/* Feldbegrenzung */}
-      <rect x="2" y="2" width={W-4} height={H-4} fill="none" stroke={lineCol} strokeWidth="0.8"/>
-      {field==="full" ? (
-        <>
-          <line x1={W/2} y1="2" x2={W/2} y2={H-2} stroke={lineCol} strokeWidth="0.8"/>
-          <circle cx={W/2} cy={H/2} r="9" fill="none" stroke={lineCol} strokeWidth="0.8"/>
-          <rect x="2" y={H/2-12} width="10" height="24" fill="none" stroke={lineCol} strokeWidth="0.8"/>
-          <rect x={W-12} y={H/2-12} width="10" height="24" fill="none" stroke={lineCol} strokeWidth="0.8"/>
-        </>
-      ) : (
-        <>
-          {/* Halbfeld: Strafraum oben, Mittellinie unten angedeutet */}
-          <rect x={W/2-18} y="2" width="36" height="14" fill="none" stroke={lineCol} strokeWidth="0.8"/>
-          <rect x={W/2-8} y="2" width="16" height="6" fill="none" stroke={lineCol} strokeWidth="0.8"/>
-          <circle cx={W/2} cy="22" r="6" fill="none" stroke={lineCol} strokeWidth="0.8"/>
-          <line x1="2" y1={H-2} x2={W-2} y2={H-2} stroke={lineCol} strokeWidth="0.8"/>
-        </>
-      )}
-      {elements.map(renderEl)}
-    </svg>
-  );
-}
-
-/* =================================================================
-   TRAININGS-BIBLIOTHEK — Übungen mit Diagramm, Schwerpunkt-Filter
-   focus: technik | taktik | kondition | spielform | torschuss | aufwärmen
-================================================================= */
-const DRILL_FOCUS = [
-  { id:"aufwärmen", label:"Aufwärmen",  col:"#f59e0b" },
-  { id:"technik",    label:"Technik",    col:"#2563eb" },
-  { id:"taktik",     label:"Taktik",     col:"#7c3aed" },
-  { id:"torschuss",  label:"Torschuss",  col:"#dc2626" },
-  { id:"kondition",  label:"Kondition",  col:"#0891b2" },
-  { id:"spielform",  label:"Spielform",  col:"#16a34a" },
-];
-const DRILL_LIB = [
-  // ---- AUFWÄRMEN ----
-  { id:"d01", focus:"aufwärmen", axes:["Technik","Teamplay"], title:"Passdreieck", min:10, players:"3+", cats:["F-Jugend","E-Jugend","D-Jugend","C-Jugend"],
-    desc:"Drei Spieler bilden ein Dreieck und spielen kurze Pässe. Nach dem Pass dem Ball hinterherlaufen. Lockeres Einspielen mit vielen Ballkontakten.",
-    kids:"Stellt euch zu dritt zu einem Dreieck auf. Schiebt euch den Ball reihum zu und lauft danach kurz dem Pass hinterher. Schau immer schon hin, wohin der Ball als Nächstes soll.",
-    coach:"Auf saubere Mitnahme und Blick zum Mitspieler achten.", field:"half",
-    el:[{type:"player",x:30,y:75,n:1},{type:"player",x:70,y:75,n:2},{type:"player",x:50,y:45,n:3},{type:"ball",x:33,y:72},{type:"passArrow",x1:33,y1:72,x2:67,y2:72,ball:true},{type:"passArrow",x1:70,y1:70,x2:52,y2:47,ball:true},{type:"runArrow",x1:30,y1:78,x2:48,y2:78}] },
-  { id:"d02", focus:"aufwärmen", axes:["Schnelligkeit","Ausdauer"], title:"Lauf-ABC mit Hütchen", min:8, players:"beliebig", cats:["E-Jugend","D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
-    desc:"Vier Hütchen in Reihe. Anfersen, Kniehebelauf, Seitschritte und Sprints zwischen den Hütchen. Dynamische Mobilisation.",
-    kids:"Lauf locker durch die Hütchen-Gasse und mach die Übungen mit: Knie hoch, kleine Schritte, seitlich. Wie ein Aufwärm-Tanz, bevor es richtig losgeht!",
-    coach:"Saubere Technik vor Tempo. Arme aktiv mitnehmen.", field:"half",
-    el:[{type:"cone",x:50,y:80},{type:"cone",x:50,y:60},{type:"cone",x:50,y:40},{type:"cone",x:50,y:20},{type:"player",x:50,y:88,n:1},{type:"runArrow",x1:50,y1:86,x2:50,y2:22}] },
-  // ---- TECHNIK ----
-  { id:"d03", focus:"technik", axes:["Technik"], title:"Hütchen-Dribbelparcours", min:12, players:"1+", cats:["G-Jugend","F-Jugend","E-Jugend","D-Jugend"],
-    desc:"Slalom durch vier Hütchen mit enger Ballführung, beidfüßig. Am Ende Rückpass oder Abschluss.",
-    kids:"Stell dir vor, die Hütchen sind kleine Türme. Führe den Ball ganz nah am Fuß – wie einen kleinen Hund an der Leine – einmal um jeden Turm herum. Nicht zu schnell, der Ball soll bei dir bleiben!",
-    coach:"Ball nah am Fuß, kurze Kontakte, Kopf hoch zwischen den Hütchen.", field:"half",
-    el:[{type:"cone",x:50,y:70},{type:"cone",x:40,y:55},{type:"cone",x:60,y:40},{type:"cone",x:45,y:25},{type:"player",x:50,y:82,n:1},{type:"ball",x:48,y:79},{type:"dribbleArrow",x1:48,y1:78,x2:42,y2:56,ball:true},{type:"dribbleArrow",x1:42,y1:55,x2:58,y2:41,ball:true},{type:"dribbleArrow",x1:58,y1:40,x2:46,y2:26,ball:true}] },
-  { id:"d04", focus:"technik", axes:["Technik","Übersicht"], title:"Passen & Mitnehmen im Quadrat", min:12, players:"4+", cats:["F-Jugend","E-Jugend","D-Jugend","C-Jugend"],
-    desc:"Vier Spieler an den Ecken eines Quadrats. Pass im Uhrzeigersinn, erste Berührung in Laufrichtung, dann nachrücken auf die nächste Ecke.",
-    kids:"Im Quadrat passt ihr euch den Ball zu und nehmt ihn weich mit – als würdet ihr ein rohes Ei fangen. Erst stoppen, dann weiterspielen.",
-    coach:"Offene Stellung, Ball mit dem entfernten Fuß mitnehmen.", field:"half",
-    el:[{type:"cone",x:32,y:30},{type:"cone",x:68,y:30},{type:"cone",x:68,y:70},{type:"cone",x:32,y:70},{type:"player",x:32,y:70,n:1},{type:"player",x:32,y:30,n:2},{type:"player",x:68,y:30,n:3},{type:"player",x:68,y:70,n:4},{type:"ball",x:35,y:68},{type:"passArrow",x1:34,y1:66,x2:34,y2:34,ball:true},{type:"passArrow",x1:36,y1:30,x2:64,y2:30,ball:true}] },
-  { id:"d05", focus:"technik", axes:["Technik"], title:"Innenseitstoß-Paare", min:10, players:"2+", cats:["G-Jugend","F-Jugend","E-Jugend"],
-    desc:"Zwei Spieler gegenüber, fester Abstand mit Hütchen markiert. Pässe mit der Innenseite, Ball stoppen und zurückspielen.",
-    kids:"Such dir einen Partner. Schiebt euch den Ball mit der Innenseite des Fußes zu, so als würdet ihr ihn ganz sanft anstupsen. Stopp den Ball mit dem Fuß, bevor du zurückspielst.",
-    coach:"Standbein neben den Ball, Sprunggelenk fest, Ball flach halten.", field:"half",
-    el:[{type:"player",x:35,y:75,n:1},{type:"player",x:65,y:35,n:2},{type:"cone",x:35,y:80},{type:"cone",x:65,y:30},{type:"ball",x:38,y:72},{type:"passArrow",x1:38,y1:72,x2:62,y2:38,ball:true}] },
-  // ---- TAKTIK ----
-  { id:"d06", focus:"taktik", axes:["Zweikampf","Abschluss"], title:"1-gegen-1 mit Abschluss", min:15, players:"2+", cats:["E-Jugend","D-Jugend","C-Jugend","B-Jugend"],
-    desc:"Angreifer dribbelt aus dem Halbfeld gegen einen Verteidiger und schließt aufs Tor ab. Danach Wechsel der Rollen.",
-    kids:"Du gegen einen anderen Spieler, und vorne wartet das Tor. Versuch, am Gegner vorbeizukommen und zu treffen. Trau dich, einfach loszudribbeln!",
-    coach:"Tempowechsel und Finte vor dem Verteidiger, früh den Abschluss suchen.", field:"half",
-    el:[{type:"goal",x:50,y:4,w:16},{type:"player",x:50,y:70,n:1,label:"A"},{type:"opp",x:50,y:40,n:1},{type:"ball",x:47,y:67},{type:"dribbleArrow",x1:48,y1:65,x2:42,y2:30,ball:true},{type:"passArrow",x1:42,y1:28,x2:48,y2:8,ball:true}] },
-  { id:"d07", focus:"taktik", axes:["Übersicht","Teamplay"], title:"Überzahl 3-gegen-2", min:15, players:"5+", cats:["E-Jugend","D-Jugend","C-Jugend"],
-    desc:"Drei Angreifer spielen gegen zwei Verteidiger auf ein Tor. Überzahl sauber ausspielen, freie Spieler finden.",
-    coach:"Breite und Tiefe schaffen, schnelle Pässe, nicht überdribbeln.", field:"half",
-    el:[{type:"goal",x:50,y:4,w:16},{type:"player",x:30,y:55,n:1},{type:"player",x:50,y:62,n:2},{type:"player",x:70,y:55,n:3},{type:"opp",x:42,y:30,n:1},{type:"opp",x:58,y:30,n:2},{type:"ball",x:50,y:60},{type:"passArrow",x1:50,y1:60,x2:31,y2:56,ball:true},{type:"runArrow",x1:70,y1:53,x2:62,y2:20}] },
-  { id:"d08", focus:"taktik", axes:["Übersicht","Zweikampf"], title:"Verschieben in der Kette", min:15, players:"4+", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
-    desc:"Viererkette verschiebt geschlossen zur Ballseite. Trainer gibt die Ballposition vor, Kette rückt gemeinsam heraus.",
-    coach:"Abstände halten, ballnaher Verteidiger attackiert, Rest sichert.", field:"full",
-    el:[{type:"player",x:25,y:25,n:1},{type:"player",x:25,y:42,n:2},{type:"player",x:25,y:58,n:3},{type:"player",x:25,y:75,n:4},{type:"ball",x:60,y:30},{type:"runArrow",x1:25,y1:25,x2:35,y2:30},{type:"runArrow",x1:25,y1:42,x2:33,y2:40}] },
-  // ---- TORSCHUSS ----
-  { id:"d09", focus:"torschuss", axes:["Abschluss"], title:"Torschuss nach Zuspiel", min:15, players:"2+", cats:["E-Jugend","D-Jugend","C-Jugend","B-Jugend"],
-    desc:"Anspieler legt den Ball aus dem Halbfeld auf, Schütze läuft ein und schließt direkt ab.",
-    kids:"Ein Mitspieler legt dir den Ball vor, und du schießt aufs Tor. Schau kurz hin, wo das Tor ist, und dann fest drauf!",
-    coach:"Auf den Ball zulaufen, Innenrist oder Vollspann, platziert statt nur fest.", field:"half",
-    el:[{type:"goal",x:50,y:4,w:16},{type:"player",x:30,y:55,n:1,label:"Pass"},{type:"player",x:62,y:60,n:2,label:"Schuss"},{type:"ball",x:33,y:53},{type:"passArrow",x1:33,y1:53,x2:55,y2:48,ball:true},{type:"runArrow",x1:62,y1:58,x2:55,y2:30},{type:"passArrow",x1:54,y1:46,x2:50,y2:8,ball:true}] },
-  { id:"d10", focus:"torschuss", axes:["Abschluss","Technik"], title:"Abschluss nach Flanke", min:15, players:"3+", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
-    desc:"Außenspieler dribbelt bis zur Grundlinie und flankt. Zwei Stürmer laufen kurzer und langer Pfosten an.",
-    coach:"Timing des Einlaufs, erster Kontakt aufs Tor. Flanke scharf und flach/halbhoch.", field:"half",
-    el:[{type:"goal",x:50,y:4,w:16},{type:"player",x:82,y:45,n:1,label:"Flanke"},{type:"player",x:40,y:18,n:2},{type:"player",x:58,y:22,n:3},{type:"ball",x:80,y:42},{type:"dribbleArrow",x1:80,y1:42,x2:80,y2:18,ball:true},{type:"passArrow",x1:80,y1:16,x2:52,y2:14,ball:true},{type:"runArrow",x1:40,y1:18,x2:46,y2:10}] },
-  // ---- KONDITION ----
-  { id:"d11", focus:"kondition", axes:["Ausdauer","Schnelligkeit"], title:"Intervall-Shuttle", min:12, players:"beliebig", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
-    desc:"Sprints zwischen zwei Hütchenlinien (15–20 m). 15 s Belastung, 30 s Pause, mehrere Sätze. Schult die Schnelligkeitsausdauer.",
-    coach:"Voller Antritt, sauberes Abbremsen, in der Pause locker gehen.", field:"half",
-    el:[{type:"cone",x:30,y:80},{type:"cone",x:70,y:80},{type:"cone",x:30,y:25},{type:"cone",x:70,y:25},{type:"player",x:30,y:82,n:1},{type:"player",x:70,y:82,n:2},{type:"runArrow",x1:30,y1:80,x2:30,y2:27},{type:"runArrow",x1:70,y1:80,x2:70,y2:27}] },
-  { id:"d12", focus:"kondition", axes:["Ausdauer","Technik"], title:"Dribbel-Staffel", min:12, players:"4+", cats:["F-Jugend","E-Jugend","D-Jugend"],
-    desc:"Zwei Teams, Staffel: mit Ball um das Wendehütchen und zurück, übergeben an den nächsten. Tempo mit Ball am Fuß.",
-    kids:"Dribbel-Wettrennen! Führe den Ball schnell, aber nah am Fuß bis zum Hütchen und wieder zurück. Dann ist dein Teamkamerad dran.",
-    coach:"Enge Ballführung auch unter Belastung, kontrolliert wenden.", field:"half",
-    el:[{type:"cone",x:50,y:20},{type:"player",x:38,y:80,n:1},{type:"player",x:62,y:80,n:2},{type:"ball",x:38,y:77},{type:"dribbleArrow",x1:38,y1:77,x2:48,y2:22,ball:true},{type:"dribbleArrow",x1:52,y1:22,x2:62,y2:77,ball:true}] },
-  // ---- SPIELFORM ----
-  { id:"d13", focus:"spielform", axes:["Teamplay","Technik"], title:"Funino 3-gegen-3 (4 Tore)", min:20, players:"6+", cats:["G-Jugend","F-Jugend","E-Jugend"],
-    desc:"Zwei kleine Tore je Seite. 3 gegen 3 ohne Torwart. Viele Ballkontakte, Tore aus verschiedenen Winkeln. DFB-Kinderfußball-Spielform.",
-    kids:"Es gibt vier kleine Tore. Versuche, in irgendeines davon ein Tor zu schießen! Lauf viel, hol dir den Ball und hab einfach Spaß. Es gibt keinen Torwart – also trau dich zu schießen!",
-    coach:"Kein Coaching von außen erzwingen – Kinder Lösungen finden lassen. Kurze Spiele, oft wechseln.", field:"half",
-    el:[{type:"goal",x:30,y:4,w:10},{type:"goal",x:70,y:4,w:10},{type:"goal",x:30,y:96,w:10},{type:"goal",x:70,y:96,w:10},{type:"player",x:35,y:38,n:1},{type:"player",x:55,y:45,n:2},{type:"player",x:48,y:60,n:3},{type:"opp",x:62,y:55,n:1},{type:"opp",x:42,y:48,n:2},{type:"opp",x:58,y:70,n:3},{type:"ball",x:50,y:50}] },
-  { id:"d14", focus:"spielform", axes:["Übersicht","Teamplay"], title:"Positionsspiel 4-gegen-2", min:15, players:"6+", cats:["E-Jugend","D-Jugend","C-Jugend","B-Jugend"],
-    desc:"Vier Spieler im Quadrat halten den Ball gegen zwei in der Mitte. Ziel: viele Pässe in Folge. Bei Ballverlust wechseln.",
-    coach:"Anbieten in den Passschatten, erstes Kontakt-Spiel, Tempo hochhalten.", field:"half",
-    el:[{type:"cone",x:30,y:30},{type:"cone",x:70,y:30},{type:"cone",x:70,y:70},{type:"cone",x:30,y:70},{type:"player",x:30,y:30,n:1},{type:"player",x:70,y:30,n:2},{type:"player",x:70,y:70,n:3},{type:"player",x:30,y:70,n:4},{type:"opp",x:48,y:45,n:1},{type:"opp",x:52,y:58,n:2},{type:"ball",x:33,y:32},{type:"passArrow",x1:33,y1:32,x2:67,y2:32,ball:true}] },
-  { id:"d15", focus:"spielform", axes:["Abschluss","Teamplay"], title:"Abschlussspiel auf 2 Tore", min:20, players:"8+", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
-    desc:"Freies Spiel 4 gegen 4 plus Torhüter auf zwei große Tore. Fokus je nach Trainerthema (z. B. schneller Abschluss nach Ballgewinn).",
-    coach:"Vorgabe geben (z. B. max. 3 Kontakte), nach Ballgewinn sofort zum Tor.", field:"full",
-    el:[{type:"goal",x:4,y:50,w:18},{type:"goal",x:96,y:50,w:18},{type:"player",x:25,y:35,n:1},{type:"player",x:30,y:60,n:2},{type:"player",x:45,y:48,n:3},{type:"player",x:38,y:75,n:4},{type:"opp",x:60,y:40,n:1},{type:"opp",x:68,y:62,n:2},{type:"opp",x:55,y:70,n:3},{type:"opp",x:72,y:35,n:4},{type:"ball",x:45,y:48}] },
-  // ---- AUFWÄRMEN (weitere) ----
-  { id:"d16", focus:"aufwärmen", axes:["Schnelligkeit"], title:"Fangspiel im Quadrat", min:8, players:"6+", cats:["G-Jugend","F-Jugend","E-Jugend"],
-    desc:"Begrenztes Quadrat, ein bis zwei Fänger. Alle laufen frei, Gefangene werden selbst zu Fängern. Spielerisches Aufwärmen mit Richtungswechseln.",
-    kids:"Das ist wie Fangen, aber mit Grenzen: Bleibt im Feld zwischen den Hütchen. Wer gefangen wird, hilft beim Fangen mit. Lauf, weiche aus und hab Spaß!",
-    coach:"Kleines Feld für viele Aktionen. Auf Ausweichbewegungen und Tempo achten.", field:"half",
-    el:[{type:"cone",x:28,y:28},{type:"cone",x:72,y:28},{type:"cone",x:72,y:78},{type:"cone",x:28,y:78},{type:"player",x:40,y:45,n:1},{type:"player",x:60,y:60,n:2},{type:"opp",x:50,y:50,n:1},{type:"runArrow",x1:50,y1:50,x2:42,y2:46}] },
-  { id:"d17", focus:"aufwärmen", axes:["Technik"], title:"Ballgewöhnung in Bewegung", min:10, players:"beliebig", cats:["G-Jugend","F-Jugend","E-Jugend","D-Jugend"],
-    desc:"Jeder Spieler mit Ball läuft frei im Feld. Auf Trainerkommando: Sohle, Innenseite, Wenden, Tempodribbling. Viele Ballkontakte.",
-    kids:"Jeder hat einen eigenen Ball. Lauf herum und mach, was der Trainer ruft: mit der Fußsohle rollen, stoppen, schnell laufen. Schau dabei nach vorne, damit du niemanden anrempelst!",
-    coach:"Kommandos wechseln, Kopf hoch fordern, Zusammenstöße vermeiden.", field:"half",
-    el:[{type:"player",x:35,y:40,n:1},{type:"player",x:60,y:55,n:2},{type:"player",x:48,y:70,n:3},{type:"ball",x:33,y:38},{type:"ball",x:58,y:53},{type:"ball",x:46,y:68},{type:"dribbleArrow",x1:35,y1:40,x2:50,y2:30,ball:true}] },
-  // ---- TECHNIK (weitere) ----
-  { id:"d18", focus:"technik", axes:["Technik","Teamplay"], title:"Doppelpass am Hütchen", min:12, players:"2+", cats:["E-Jugend","D-Jugend","C-Jugend"],
-    desc:"Spieler passt zum Wandspieler, läuft am Hütchen vorbei und bekommt den Ball in den Lauf zurück (Doppelpass).",
-    kids:"Spiel einen schnellen Doppelpass: Ball zum Partner, weiterlaufen, Ball zurückbekommen. Wie 'Wandspielen', nur mit einem Freund.",
-    coach:"Timing: Pass und Loslaufen abstimmen, Rückpass in den freien Raum.", field:"half",
-    el:[{type:"cone",x:50,y:45},{type:"player",x:40,y:75,n:1},{type:"player",x:65,y:55,n:2,label:"Wand"},{type:"ball",x:42,y:72},{type:"passArrow",x1:42,y1:72,x2:62,y2:57,ball:true},{type:"runArrow",x1:40,y1:73,x2:50,y2:40},{type:"passArrow",x1:64,y1:53,x2:52,y2:38,ball:true}] },
-  { id:"d19", focus:"technik", axes:["Technik","Übersicht"], title:"Ballannahme & Drehen", min:12, players:"2+", cats:["E-Jugend","D-Jugend","C-Jugend","B-Jugend"],
-    desc:"Zuspiel auf den Spieler mit dem Rücken zum Tor. Erste Berührung zur Seite, aufdrehen und Richtung Tor dribbeln.",
-    kids:"Nimm den Ball an und dreh dich gleich mit ihm in die andere Richtung. Stell dir vor, du drehst dich weg von einem Gegner, der dir den Ball klauen will.",
-    coach:"Vor der Annahme über die Schulter schauen, offene Stellung einnehmen.", field:"half",
-    el:[{type:"goal",x:50,y:4,w:16},{type:"player",x:50,y:38,n:1},{type:"player",x:50,y:78,n:2,label:"Pass"},{type:"ball",x:48,y:75},{type:"passArrow",x1:48,y1:75,x2:50,y2:42,ball:true},{type:"dribbleArrow",x1:50,y1:36,x2:44,y2:18,ball:true}] },
-  { id:"d20", focus:"technik", axes:["Technik"], title:"Jonglier-Stationen", min:10, players:"beliebig", cats:["E-Jugend","D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
-    desc:"An mehreren Stationen Ballgefühl schulen: Hochhalten, Fuß-Oberschenkel-Kopf, Aufsetzer kontrollieren. Eigene Bestmarke verbessern.",
-    kids:"Wie oft schaffst du es, den Ball hochzuhalten? Probier es mit dem Fuß, dann mit dem Oberschenkel. Jeder Tag wird ein bisschen besser!",
-    coach:"Ruhige Berührungen, Ball zentral treffen, kleine Ziele setzen.", field:"half",
-    el:[{type:"cone",x:30,y:35},{type:"cone",x:70,y:35},{type:"cone",x:50,y:70},{type:"player",x:30,y:35,n:1},{type:"player",x:70,y:35,n:2},{type:"player",x:50,y:70,n:3},{type:"ball",x:30,y:30},{type:"ball",x:70,y:30},{type:"ball",x:50,y:65}] },
-  // ---- TAKTIK (weitere) ----
-  { id:"d21", focus:"taktik", axes:["Zweikampf","Teamplay"], title:"Pressing-Auslöser", min:15, players:"6+", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
-    desc:"Bei Pass auf den Außenverteidiger löst der ballnahe Stürmer das Pressing aus, Mitspieler schieben nach und schließen Passwege.",
-    coach:"Gemeinsam und auf Signal pressen, nicht vereinzelt anlaufen.", field:"full",
-    el:[{type:"opp",x:20,y:50,n:1},{type:"opp",x:35,y:25,n:2},{type:"player",x:45,y:35,n:1},{type:"player",x:48,y:55,n:2},{type:"player",x:60,y:45,n:3},{type:"ball",x:35,y:25},{type:"runArrow",x1:45,y1:35,x2:38,y2:27},{type:"passArrow",x1:20,y1:50,x2:34,y2:26,ball:true}] },
-  { id:"d22", focus:"taktik", axes:["Übersicht","Schnelligkeit"], title:"Umschalten nach Ballgewinn", min:18, players:"8+", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
-    desc:"Nach Balleroberung sofort nach vorne spielen. Erster Pass in die Tiefe, schneller Angriff auf das gegnerische Tor.",
-    coach:"Erste Option ist immer nach vorne. Tempo in den ersten 3 Sekunden.", field:"full",
-    el:[{type:"goal",x:96,y:50,w:18},{type:"player",x:35,y:50,n:1},{type:"player",x:55,y:30,n:2},{type:"player",x:60,y:65,n:3},{type:"opp",x:45,y:45,n:1},{type:"ball",x:35,y:50},{type:"passArrow",x1:35,y1:50,x2:55,y2:32,ball:true},{type:"runArrow",x1:60,y1:65,x2:80,y2:55}] },
-  { id:"d23", focus:"taktik", axes:["Übersicht"], title:"Raumaufteilung 4-4-Zonen", min:15, players:"4+", cats:["C-Jugend","B-Jugend","A-Jugend"],
-    desc:"Feld in Zonen geteilt. Spieler lernen, ihre Zone zu halten und bei Ballbesitz die Breite zu nutzen.",
-    coach:"Abstände zwischen den Linien halten, nicht alle zum Ball.", field:"full",
-    el:[{type:"zone",x:5,y:8,w:42,h:84,color:"#7c3aed"},{type:"player",x:25,y:30,n:1},{type:"player",x:25,y:62,n:2},{type:"player",x:40,y:46,n:3},{type:"ball",x:40,y:46}] },
-  // ---- TORSCHUSS (weitere) ----
-  { id:"d24", focus:"torschuss", axes:["Abschluss"], title:"Schuss aus der zweiten Reihe", min:15, players:"2+", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
-    desc:"Ablage vom Mitspieler an der Strafraumkante, Schütze zieht direkt aus der zweiten Reihe ab.",
-    coach:"Körper über dem Ball, Vollspann, flach und platziert in die Ecke.", field:"half",
-    el:[{type:"goal",x:50,y:4,w:16},{type:"player",x:42,y:35,n:1,label:"Ablage"},{type:"player",x:55,y:55,n:2,label:"Schuss"},{type:"ball",x:53,y:52},{type:"passArrow",x1:53,y1:52,x2:44,y2:37,ball:true},{type:"passArrow",x1:43,y1:34,x2:50,y2:8,ball:true}] },
-  { id:"d25", focus:"torschuss", axes:["Abschluss","Technik"], title:"Direktabnahme nach Querpass", min:15, players:"3+", cats:["E-Jugend","D-Jugend","C-Jugend","B-Jugend"],
-    desc:"Flacher Querpass durch den Strafraum, einlaufender Spieler nimmt direkt ab. Timing und erste Berührung aufs Tor.",
-    coach:"Spät und mit Tempo einlaufen, Innenseite oder Vollspann zum Tor.", field:"half",
-    el:[{type:"goal",x:50,y:4,w:16},{type:"player",x:78,y:30,n:1,label:"Quer"},{type:"player",x:38,y:40,n:2},{type:"ball",x:76,y:28},{type:"passArrow",x1:76,y1:28,x2:44,y2:26,ball:true},{type:"runArrow",x1:38,y1:40,x2:46,y2:24},{type:"passArrow",x1:46,y1:24,x2:50,y2:8,ball:true}] },
-  // ---- KONDITION (weitere) ----
-  { id:"d26", focus:"kondition", axes:["Ausdauer","Schnelligkeit"], title:"Tempoläufe mit Ball", min:12, players:"beliebig", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
-    desc:"Über die halbe Feldlänge mit Ball antreiben, am Ende Abschluss oder Pass. Mehrere Wiederholungen mit Pausen.",
-    coach:"Hohes Tempo, aber kontrollierte Ballführung. Saubere Atmung.", field:"half",
-    el:[{type:"goal",x:50,y:4,w:16},{type:"player",x:50,y:85,n:1},{type:"ball",x:48,y:82},{type:"dribbleArrow",x1:48,y1:82,x2:50,y2:20,ball:true},{type:"passArrow",x1:50,y1:18,x2:50,y2:8,ball:true}] },
-  { id:"d27", focus:"kondition", axes:["Schnelligkeit"], title:"Koordinationsleiter + Sprint", min:10, players:"beliebig", cats:["E-Jugend","D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
-    desc:"Schnelle Füße durch die Koordinationsleiter (mit Hütchen markiert), anschließend Sprint zum Wendehütchen.",
-    coach:"Fußspitze, hohe Frequenz, dann explosiver Antritt.", field:"half",
-    el:[{type:"cone",x:50,y:78},{type:"cone",x:50,y:68},{type:"cone",x:50,y:58},{type:"cone",x:50,y:48},{type:"cone",x:50,y:22},{type:"player",x:50,y:85,n:1},{type:"runArrow",x1:50,y1:84,x2:50,y2:24}] },
-  // ---- SPIELFORM (weitere) ----
-  { id:"d28", focus:"spielform", axes:["Teamplay","Übersicht"], title:"Ballhalten 5-gegen-2", min:15, players:"7+", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
-    desc:"Fünf Spieler außen halten den Ball gegen zwei in der Mitte. Pflicht: erste oder zweite Berührung. Schult Tempo im Passspiel.",
-    coach:"Anbieten, bevor der Ball kommt. Druckmomente erkennen und schnell klatschen lassen.", field:"half",
-    el:[{type:"player",x:30,y:28,n:1},{type:"player",x:70,y:28,n:2},{type:"player",x:78,y:60,n:3},{type:"player",x:50,y:78,n:4},{type:"player",x:22,y:60,n:5},{type:"opp",x:45,y:48,n:1},{type:"opp",x:58,y:52,n:2},{type:"ball",x:32,y:30},{type:"passArrow",x1:32,y1:30,x2:68,y2:30,ball:true}] },
-  { id:"d29", focus:"spielform", axes:["Übersicht","Teamplay"], title:"4-gegen-4 mit 4 Minitoren", min:20, players:"8+", cats:["F-Jugend","E-Jugend","D-Jugend"],
-    desc:"Vier kleine Tore, 4 gegen 4. Punkten durch Tor in eines von zwei zugewiesenen Toren. Fördert Spielübersicht und Seitenverlagerung.",
-    kids:"Vier gegen vier auf vier kleine Tore. Es gibt keinen Torwart – also viele Tore möglich! Lauf mit, biete dich an und hab Spaß.",
-    coach:"Köpfe hochbekommen, freies Tor suchen, Spiel breit machen.", field:"half",
-    el:[{type:"goal",x:25,y:4,w:8},{type:"goal",x:75,y:4,w:8},{type:"goal",x:25,y:96,w:8},{type:"goal",x:75,y:96,w:8},{type:"player",x:35,y:40,n:1},{type:"player",x:60,y:38,n:2},{type:"player",x:45,y:60,n:3},{type:"player",x:62,y:65,n:4},{type:"opp",x:50,y:48,n:1},{type:"opp",x:40,y:70,n:2},{type:"ball",x:45,y:60}] },
-  { id:"d30", focus:"spielform", axes:["Übersicht","Teamplay"], title:"Spiel mit Kontaktbegrenzung", min:18, players:"8+", cats:["C-Jugend","B-Jugend","A-Jugend"],
-    desc:"Normales Spiel auf zwei Tore, aber maximal zwei Ballkontakte pro Spieler. Zwingt zu schnellem Spiel und gutem Stellungsspiel.",
-    coach:"Vor der Annahme orientieren, Anspielstationen früh anbieten.", field:"full",
-    el:[{type:"goal",x:4,y:50,w:18},{type:"goal",x:96,y:50,w:18},{type:"player",x:30,y:40,n:1},{type:"player",x:42,y:60,n:2},{type:"player",x:55,y:45,n:3},{type:"opp",x:62,y:50,n:1},{type:"opp",x:70,y:38,n:2},{type:"ball",x:42,y:60}] },
-  // ---- AUFWÄRMEN (weitere) ----
-  { id:"d31", focus:"aufwärmen", axes:["Technik","Schnelligkeit"], title:"Spiegel-Dribbeln", min:8, players:"2+", cats:["F-Jugend","E-Jugend","D-Jugend"],
-    desc:"Zwei Spieler gegenüber, einer führt Bewegungen mit Ball aus, der andere spiegelt sie. Richtungswechsel, Tempowechsel, Finten.",
-    kids:"Du machst genau das nach, was dein Partner mit dem Ball macht – wie sein Spiegelbild. Mal langsam, mal schnell. Gut aufpassen!",
-    coach:"Aufmerksam beobachten, sofort reagieren, Ball eng führen.", field:"half",
-    el:[{type:"player",x:38,y:60,n:1},{type:"player",x:62,y:60,n:2},{type:"ball",x:36,y:58},{type:"ball",x:64,y:58},{type:"dribbleArrow",x1:38,y1:60,x2:30,y2:48,ball:true},{type:"dribbleArrow",x1:62,y1:60,x2:70,y2:48,ball:true}] },
-  { id:"d32", focus:"aufwärmen", axes:["Teamplay","Technik"], title:"Ball durch die Reihe", min:8, players:"6+", cats:["G-Jugend","F-Jugend","E-Jugend"],
-    desc:"Spieler im Kreis spielen den Ball mit vorgegebener Technik (Innenseite, Direktpass) reihum. Tempo langsam steigern.",
-    kids:"Stellt euch im Kreis auf. Schiebt euch den Ball schön der Reihe nach zu. Sag den Namen von dem Kind, dem du den Ball gibst – dann weiß es, dass es gleich dran ist!",
-    coach:"Sauberes Anbieten, freundliche Pässe in den Fuß.", field:"half",
-    el:[{type:"player",x:50,y:25,n:1},{type:"player",x:72,y:45,n:2},{type:"player",x:62,y:72,n:3},{type:"player",x:38,y:72,n:4},{type:"player",x:28,y:45,n:5},{type:"ball",x:50,y:28},{type:"passArrow",x1:50,y1:28,x2:70,y2:45,ball:true}] },
-  // ---- TECHNIK (weitere) ----
-  { id:"d33", focus:"technik", axes:["Technik"], title:"Sohlenrolle & Übersteiger", min:10, players:"1+", cats:["E-Jugend","D-Jugend","C-Jugend","B-Jugend"],
-    desc:"An der Hütchenstation Grundtricks üben: Sohlenrolle, Übersteiger, Ausfallschritt. Jeweils beidseitig, dann Tempo aufnehmen.",
-    coach:"Erst langsam und sauber, dann schneller. Beide Füße fordern.", field:"half",
-    el:[{type:"cone",x:50,y:50},{type:"player",x:50,y:72,n:1},{type:"ball",x:48,y:69},{type:"dribbleArrow",x1:48,y1:69,x2:48,y2:52,ball:true},{type:"dribbleArrow",x1:52,y1:50,x2:58,y2:35,ball:true}] },
-  { id:"d34", focus:"technik", axes:["Technik","Teamplay"], title:"Pass-Klatschen Dreieck", min:12, players:"3+", cats:["E-Jugend","D-Jugend","C-Jugend"],
-    desc:"Im Dreieck Klatschpässe (Direktablage) spielen. A spielt zu B, B klatscht zu C, C spielt weiter. Schult schnelles Kombinationsspiel.",
-    coach:"Erste Berührung in den Lauf des Mitspielers, Tempo halten.", field:"half",
-    el:[{type:"player",x:30,y:70,n:1},{type:"player",x:70,y:70,n:2},{type:"player",x:50,y:40,n:3},{type:"ball",x:32,y:68},{type:"passArrow",x1:32,y1:68,x2:50,y2:42,ball:true},{type:"passArrow",x1:50,y1:44,x2:68,y2:68,ball:true}] },
-  { id:"d35", focus:"technik", axes:["Technik","Übersicht"], title:"Drehung unter Druck", min:12, players:"3+", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
-    desc:"Spieler bekommt Ball mit dem Rücken zum Spielfeld, ein Verteidiger setzt leichten Druck. Aufdrehen oder klatschen lassen je nach Druckseite.",
-    coach:"Vor der Annahme Schulterblick, Körper zwischen Ball und Gegner.", field:"half",
-    el:[{type:"player",x:50,y:45,n:1},{type:"opp",x:50,y:32,n:1},{type:"player",x:50,y:78,n:2,label:"Pass"},{type:"ball",x:48,y:75},{type:"passArrow",x1:48,y1:75,x2:50,y2:48,ball:true},{type:"dribbleArrow",x1:53,y1:45,x2:62,y2:35,ball:true}] },
-  { id:"d36", focus:"technik", axes:["Technik","Schnelligkeit"], title:"Tempodribbling mit Abschluss", min:12, players:"1+", cats:["E-Jugend","D-Jugend","C-Jugend"],
-    desc:"Aus dem eigenen Drittel mit hohem Tempo dribbeln, durch ein Hütchentor, dann Abschluss aufs Tor.",
-    coach:"Ball weiter vorlegen bei freiem Raum, vor dem Schuss kurz kontrollieren.", field:"half",
-    el:[{type:"goal",x:50,y:4,w:16},{type:"cone",x:42,y:40},{type:"cone",x:58,y:40},{type:"player",x:50,y:82,n:1},{type:"ball",x:48,y:79},{type:"dribbleArrow",x1:48,y1:79,x2:50,y2:42,ball:true},{type:"passArrow",x1:50,y1:38,x2:50,y2:8,ball:true}] },
-  // ---- TAKTIK (weitere) ----
-  { id:"d37", focus:"taktik", axes:["Übersicht","Teamplay"], title:"Spielverlagerung", min:15, players:"6+", cats:["C-Jugend","B-Jugend","A-Jugend"],
-    desc:"Ball wird bewusst von einer Seite zur anderen verlagert, um den freien Raum zu nutzen. Außenspieler bieten sich breit an.",
-    coach:"Vor der Verlagerung Kopf hoch, langer Pass flach und präzise.", field:"full",
-    el:[{type:"player",x:25,y:30,n:1},{type:"player",x:45,y:50,n:2},{type:"player",x:75,y:70,n:3},{type:"ball",x:25,y:30},{type:"passArrow",x1:25,y1:30,x2:45,y2:50,ball:true},{type:"passArrow",x1:45,y1:50,x2:74,y2:69,ball:true}] },
-  { id:"d38", focus:"taktik", axes:["Zweikampf","Übersicht"], title:"Verteidigen im 2-gegen-1", min:15, players:"3+", cats:["D-Jugend","C-Jugend","B-Jugend"],
-    desc:"Zwei Verteidiger gegen einen Angreifer: einer stellt, der andere sichert. Rollen nach jedem Durchgang tauschen.",
-    coach:"Ballnaher Verteidiger lenkt, der zweite sichert dahinter ab.", field:"half",
-    el:[{type:"goal",x:50,y:4,w:16},{type:"player",x:42,y:35,n:1},{type:"player",x:58,y:45,n:2},{type:"opp",x:50,y:70,n:1},{type:"ball",x:48,y:67},{type:"dribbleArrow",x1:48,y1:67,x2:46,y2:42,ball:true},{type:"runArrow",x1:42,y1:35,x2:46,y2:50}] },
-  { id:"d39", focus:"taktik", axes:["Übersicht","Teamplay"], title:"Anbieten & Freilaufen", min:15, players:"5+", cats:["E-Jugend","D-Jugend","C-Jugend"],
-    desc:"Ballbesitzer wird von Mitspielern durch Freilaufbewegungen angeboten. Diagonale Läufe in die Lücken, immer anspielbar sein.",
-    coach:"Nicht stehen bleiben, in den freien Raum starten, Blickkontakt.", field:"half",
-    el:[{type:"player",x:50,y:75,n:1},{type:"player",x:30,y:50,n:2},{type:"player",x:70,y:50,n:3},{type:"ball",x:48,y:72},{type:"runArrow",x1:30,y1:55,x2:38,y2:35},{type:"runArrow",x1:70,y1:55,x2:62,y2:35},{type:"passArrow",x1:48,y1:72,x2:40,y2:37,ball:true}] },
-  { id:"d40", focus:"taktik", axes:["Zweikampf","Teamplay"], title:"Gegenpressing-Box", min:15, players:"8+", cats:["C-Jugend","B-Jugend","A-Jugend"],
-    desc:"In einem begrenzten Feld: bei Ballverlust sofort mit mehreren Spielern den Ball zurückerobern (5 Sekunden Regel).",
-    coach:"Nach Ballverlust sofort nachsetzen, Passwege zustellen.", field:"half",
-    el:[{type:"zone",x:20,y:20,w:60,h:60,color:"#7c3aed"},{type:"player",x:40,y:45,n:1},{type:"player",x:55,y:55,n:2},{type:"player",x:48,y:65,n:3},{type:"opp",x:50,y:50,n:1},{type:"ball",x:50,y:50},{type:"runArrow",x1:40,y1:45,x2:47,y2:49}] },
-  // ---- TORSCHUSS (weitere) ----
-  { id:"d41", focus:"torschuss", axes:["Abschluss","Schnelligkeit"], title:"Schuss nach Antritt", min:12, players:"1+", cats:["E-Jugend","D-Jugend","C-Jugend","B-Jugend"],
-    desc:"Kurzer Sprint zum bereitliegenden Ball, dann direkter Abschluss. Mehrere Bälle in Folge für viele Wiederholungen.",
-    coach:"Explosiv antreten, Standbein neben den Ball, Blick zum Tor.", field:"half",
-    el:[{type:"goal",x:50,y:4,w:16},{type:"ball",x:50,y:40},{type:"player",x:50,y:75,n:1},{type:"runArrow",x1:50,y1:73,x2:50,y2:44},{type:"passArrow",x1:50,y1:38,x2:50,y2:8,ball:true}] },
-  { id:"d42", focus:"torschuss", axes:["Abschluss","Technik"], title:"Volleyschuss aus der Luft", min:12, players:"2+", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
-    desc:"Zuwurf oder hohe Flanke vom Partner, Schütze nimmt den Ball volley oder als Aufsetzer und schließt ab.",
-    coach:"Über dem Ball bleiben, Spann fest, Ball nach unten drücken.", field:"half",
-    el:[{type:"goal",x:50,y:4,w:16},{type:"player",x:72,y:40,n:1,label:"Zuwurf"},{type:"player",x:45,y:35,n:2},{type:"ball",x:70,y:38},{type:"passArrow",x1:70,y1:38,x2:48,y2:33,ball:true},{type:"passArrow",x1:46,y1:31,x2:50,y2:8,ball:true}] },
-  { id:"d43", focus:"torschuss", axes:["Abschluss","Übersicht"], title:"1-gegen-Torwart", min:12, players:"2+", cats:["F-Jugend","E-Jugend","D-Jugend"],
-    desc:"Angreifer läuft allein auf den Torwart zu und versucht zu erzielen – durch Schuss oder Umspielen. Entscheidung treffen.",
-    coach:"Ruhe bewahren, Torwart abwarten lassen, früh Tempo variieren.", field:"half",
-    el:[{type:"goal",x:50,y:4,w:16},{type:"opp",x:50,y:14,n:1,label:"TW"},{type:"player",x:50,y:70,n:1},{type:"ball",x:48,y:67},{type:"dribbleArrow",x1:48,y1:67,x2:48,y2:25,ball:true}] },
-  // ---- KONDITION (weitere) ----
-  { id:"d44", focus:"kondition", axes:["Ausdauer"], title:"Rundenlauf mit Aufgaben", min:12, players:"beliebig", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
-    desc:"Lockerer Dauerlauf um das Feld, an markierten Ecken kurze Zusatzaufgaben (Hopserlauf, Sidesteps, Sprints).",
-    coach:"Gleichmäßiges Grundtempo, an den Ecken bewusst Technik.", field:"full",
-    el:[{type:"cone",x:10,y:15},{type:"cone",x:90,y:15},{type:"cone",x:90,y:85},{type:"cone",x:10,y:85},{type:"player",x:10,y:15,n:1},{type:"runArrow",x1:14,y1:15,x2:86,y2:15},{type:"runArrow",x1:90,y1:20,x2:90,y2:80}] },
-  { id:"d45", focus:"kondition", axes:["Schnelligkeit","Zweikampf"], title:"Reaktions-Sprint zum Ball", min:10, players:"2+", cats:["E-Jugend","D-Jugend","C-Jugend","B-Jugend"],
-    desc:"Zwei Spieler nebeneinander, auf Trainersignal sprinten beide zum Ball – wer zuerst da ist, geht in den Angriff, der andere verteidigt.",
-    coach:"Auf das Signal explosiv reagieren, ersten Schritt schnell.", field:"half",
-    el:[{type:"player",x:42,y:70,n:1},{type:"player",x:58,y:70,n:2},{type:"ball",x:50,y:40},{type:"runArrow",x1:42,y1:68,x2:49,y2:43},{type:"runArrow",x1:58,y1:68,x2:51,y2:43}] },
-  { id:"d46", focus:"kondition", axes:["Ausdauer","Schnelligkeit"], title:"Pyramiden-Läufe", min:12, players:"beliebig", cats:["C-Jugend","B-Jugend","A-Jugend"],
-    desc:"Steigerungsläufe über zunehmende Distanzen (10-20-30 m) und wieder zurück. Belastung steigt, dann fällt sie wieder.",
-    coach:"Sauber steigern, nicht von Anfang an Vollgas. Pausen einhalten.", field:"half",
-    el:[{type:"cone",x:50,y:78},{type:"cone",x:50,y:62},{type:"cone",x:50,y:42},{type:"cone",x:50,y:18},{type:"player",x:50,y:85,n:1},{type:"runArrow",x1:50,y1:84,x2:50,y2:20}] },
-  // ---- SPIELFORM (weitere) ----
-  { id:"d47", focus:"spielform", axes:["Teamplay","Technik"], title:"3-gegen-3 mit Anspielern", min:18, players:"8+", cats:["E-Jugend","D-Jugend","C-Jugend"],
-    desc:"3 gegen 3 im Feld, dazu neutrale Anspieler an den Außenlinien, die immer für das ballbesitzende Team spielen (Überzahl im Aufbau).",
-    coach:"Anspieler einbeziehen, schnelles Umschalten nach Ballverlust.", field:"half",
-    el:[{type:"player",x:35,y:45,n:1},{type:"player",x:55,y:40,n:2},{type:"player",x:48,y:62,n:3},{type:"opp",x:60,y:55,n:1},{type:"opp",x:42,y:50,n:2},{type:"opp",x:55,y:72,n:3},{type:"player",x:15,y:50,n:4,label:"A"},{type:"player",x:85,y:50,n:5,label:"A"},{type:"ball",x:48,y:62}] },
-  { id:"d48", focus:"spielform", axes:["Übersicht","Abschluss"], title:"Spiel auf 4 Tore", min:20, players:"8+", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
-    desc:"Jedes Team verteidigt zwei Tore und greift auf zwei an. Zwingt zur Spielverlagerung und zum Erkennen des freien Tores.",
-    coach:"Köpfe hoch, schnell die offene Seite bespielen.", field:"full",
-    el:[{type:"goal",x:4,y:30,w:14},{type:"goal",x:4,y:70,w:14},{type:"goal",x:96,y:30,w:14},{type:"goal",x:96,y:70,w:14},{type:"player",x:35,y:40,n:1},{type:"player",x:45,y:65,n:2},{type:"opp",x:60,y:45,n:1},{type:"opp",x:68,y:60,n:2},{type:"ball",x:45,y:65}] },
-  { id:"d49", focus:"spielform", axes:["Teamplay","Übersicht"], title:"Ballbesitz 6-gegen-6 + Joker", min:20, players:"12+", cats:["C-Jugend","B-Jugend","A-Jugend"],
-    desc:"Zwei Teams plus ein neutraler Joker, der immer mit dem Ballbesitzer spielt. Ziel: festgelegte Passzahl erreichen = Punkt.",
-    coach:"Joker clever einbinden, Räume öffnen, Tempo variieren.", field:"full",
-    el:[{type:"player",x:30,y:35,n:1},{type:"player",x:40,y:60,n:2},{type:"player",x:55,y:45,n:3},{type:"opp",x:50,y:38,n:1},{type:"opp",x:62,y:62,n:2},{type:"opp",x:45,y:70,n:3},{type:"player",x:48,y:52,n:9,label:"J",color:"#fbbf24"},{type:"ball",x:48,y:52}] },
-  { id:"d50", focus:"spielform", axes:["Abschluss","Teamplay"], title:"Pokalturnier im Training", min:25, players:"8+", cats:["F-Jugend","E-Jugend","D-Jugend"],
-    desc:"Mehrere kleine Teams spielen kurze Spiele (je 4-5 Min) gegeneinander im Turniermodus. Hohe Motivation, viele Spielsituationen.",
-    coach:"Faire Teams einteilen, kurze Spiele, alle kommen viel zum Einsatz.", field:"half",
-    el:[{type:"goal",x:50,y:4,w:14},{type:"goal",x:50,y:96,w:14},{type:"player",x:40,y:45,n:1},{type:"player",x:58,y:55,n:2},{type:"opp",x:50,y:50,n:1},{type:"opp",x:45,y:65,n:2},{type:"ball",x:50,y:50}] },
-  // ---- TECHNIK / TORSCHUSS Abschluss-Sammlung ----
-  { id:"d51", focus:"technik", axes:["Technik","Teamplay"], title:"Vier-Ecken-Passspiel", min:12, players:"8+", cats:["D-Jugend","C-Jugend","B-Jugend"],
-    desc:"An jeder Ecke eine Gruppe. Pass zur nächsten Ecke, dann selbst nachlaufen. Im Uhrzeigersinn, später Richtung wechseln.",
-    coach:"Genauer Pass, sofort nachrücken, beidfüßig anbieten.", field:"half",
-    el:[{type:"cone",x:28,y:28},{type:"cone",x:72,y:28},{type:"cone",x:72,y:72},{type:"cone",x:28,y:72},{type:"player",x:28,y:72,n:1},{type:"player",x:28,y:28,n:2},{type:"ball",x:31,y:70},{type:"passArrow",x1:31,y1:70,x2:30,y2:31,ball:true},{type:"runArrow",x1:28,y1:74,x2:28,y2:34}] },
-  { id:"d52", focus:"torschuss", axes:["Abschluss","Zweikampf"], title:"Abschluss unter Gegnerdruck", min:15, players:"3+", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
-    desc:"Angreifer erhält Zuspiel, ein Verteidiger startet verzögert und setzt Druck. Schneller Abschluss, bevor der Gegner blockt.",
-    coach:"Erster Kontakt zum Tor, früh abschließen, Ball verdecken.", field:"half",
-    el:[{type:"goal",x:50,y:4,w:16},{type:"player",x:50,y:55,n:1},{type:"opp",x:62,y:68,n:1},{type:"player",x:30,y:60,n:2,label:"Pass"},{type:"ball",x:32,y:58},{type:"passArrow",x1:32,y1:58,x2:48,y2:53,ball:true},{type:"runArrow",x1:62,y1:66,x2:52,y2:50},{type:"passArrow",x1:50,y1:50,x2:50,y2:8,ball:true}] },
-  // ---- AUFWÄRMEN (weitere) ----
-  { id:"d53", focus:"aufwärmen", axes:["Schnelligkeit","Technik"], title:"Reifen-Antritt", min:8, players:"beliebig", cats:["F-Jugend","E-Jugend","D-Jugend"],
-    desc:"Durch eine Reihe von Reifen oder Hütchen-Toren mit Tempo, am Ende kurzer Sprint. Schult Fußkoordination und Antritt.",
-    coach:"Hohe Frequenz in den Reifen, danach explosiv antreten.", field:"half",
-    el:[{type:"cone",x:50,y:78},{type:"cone",x:50,y:66},{type:"cone",x:50,y:54},{type:"cone",x:50,y:42},{type:"player",x:50,y:86,n:1},{type:"runArrow",x1:50,y1:85,x2:50,y2:25}] },
-  { id:"d54", focus:"aufwärmen", axes:["Teamplay","Übersicht"], title:"Komm-mit / Lauf-weg", min:8, players:"6+", cats:["E-Jugend","D-Jugend","C-Jugend"],
-    desc:"Paare gegenüber. Trainer ruft 'mit' oder 'weg' – Spieler reagieren, fangen oder fliehen. Reaktion und Spaß zum Start.",
-    kids:"Der Trainer ruft 'Komm mit!' oder 'Lauf weg!'. Du musst blitzschnell reagieren und in die richtige Richtung flitzen. Ein lustiges Reaktionsspiel zum Warmwerden.",
-    coach:"Klare Kommandos, kurze Distanzen, sofort reagieren.", field:"half",
-    el:[{type:"player",x:40,y:45,n:1},{type:"player",x:60,y:45,n:2},{type:"runArrow",x1:40,y1:48,x2:48,y2:60},{type:"runArrow",x1:60,y1:48,x2:52,y2:60}] },
-  { id:"d55", focus:"aufwärmen", axes:["Technik"], title:"Ballschule Stationen", min:10, players:"beliebig", cats:["Bambinis","G-Jugend","F-Jugend"],
-    desc:"Mehrere kleine Stationen: rollen, stoppen, jonglieren, durch Hütchen führen. Spielerische Ballgewöhnung für die Kleinsten.",
-    kids:"An jeder Station gibt es etwas zu entdecken: den Ball rollen, stoppen, hochwerfen, um die Hütchen führen. Probier alle Stationen aus – wie auf einem Spielplatz für Fußball!",
-    coach:"Viel Lob, kleine Erfolge, jedes Kind mit eigenem Ball.", field:"half",
-    el:[{type:"cone",x:30,y:35},{type:"cone",x:70,y:35},{type:"cone",x:30,y:70},{type:"cone",x:70,y:70},{type:"player",x:30,y:35,n:1},{type:"player",x:70,y:35,n:2},{type:"ball",x:30,y:31},{type:"ball",x:70,y:31}] },
-  // ---- TECHNIK (weitere) ----
-  { id:"d56", focus:"technik", axes:["Technik","Schnelligkeit"], title:"Slalom mit Tempowechsel", min:12, players:"1+", cats:["E-Jugend","D-Jugend","C-Jugend"],
-    desc:"Enger Slalom durch Hütchen, nach dem letzten Hütchen Tempodribbling auf freier Strecke.",
-    coach:"In den engen Passagen kurze Kontakte, danach Ball vorlegen.", field:"half",
-    el:[{type:"cone",x:45,y:75},{type:"cone",x:55,y:65},{type:"cone",x:45,y:55},{type:"cone",x:55,y:45},{type:"player",x:45,y:82,n:1},{type:"ball",x:43,y:79},{type:"dribbleArrow",x1:43,y1:79,x2:55,y2:45,ball:true},{type:"dribbleArrow",x1:55,y1:43,x2:55,y2:20,ball:true}] },
-  { id:"d57", focus:"technik", axes:["Technik","Teamplay"], title:"Pass in den Lauf", min:12, players:"2+", cats:["E-Jugend","D-Jugend","C-Jugend","B-Jugend"],
-    desc:"Mitspieler startet diagonal, Passgeber spielt den Ball präzise in den freien Raum vor ihm. Timing von Pass und Lauf.",
-    coach:"Nicht auf den Fuß, sondern in den Lauf passen. Tempo der Vorlage anpassen.", field:"half",
-    el:[{type:"player",x:30,y:75,n:1},{type:"player",x:55,y:60,n:2},{type:"ball",x:32,y:72},{type:"runArrow",x1:55,y1:58,x2:68,y2:35},{type:"passArrow",x1:32,y1:72,x2:66,y2:38,ball:true}] },
-  { id:"d58", focus:"technik", axes:["Technik","Übersicht"], title:"Drei-Farben-Passspiel", min:12, players:"6+", cats:["D-Jugend","C-Jugend","B-Jugend"],
-    desc:"Spieler in Gruppen, Pässe nur in festgelegter Reihenfolge (z. B. Rot zu Blau zu Gelb). Fordert Orientierung vor der Annahme.",
-    coach:"Vor dem Pass den nächsten Empfänger suchen, Kopf hoch.", field:"half",
-    el:[{type:"player",x:30,y:35,n:1,color:"#dc2626"},{type:"player",x:70,y:40,n:2,color:"#2563eb"},{type:"player",x:50,y:72,n:3,color:"#eab308"},{type:"ball",x:32,y:37},{type:"passArrow",x1:32,y1:37,x2:68,y2:40,ball:true},{type:"passArrow",x1:68,y1:42,x2:52,y2:70,ball:true}] },
-  { id:"d59", focus:"technik", axes:["Technik"], title:"Erste Berührung am Hütchentor", min:10, players:"2+", cats:["E-Jugend","D-Jugend","C-Jugend"],
-    desc:"Zuspiel, erste Berührung durch ein kleines Hütchentor zur Seite, dann weiterspielen. Schult die gezielte Ballmitnahme.",
-    coach:"Ball mit dem entfernten Fuß in die offene Richtung mitnehmen.", field:"half",
-    el:[{type:"cone",x:45,y:50},{type:"cone",x:55,y:50},{type:"player",x:50,y:75,n:1},{type:"player",x:50,y:30,n:2,label:"Pass"},{type:"ball",x:48,y:33},{type:"passArrow",x1:48,y1:33,x2:50,y2:55,ball:true},{type:"dribbleArrow",x1:50,y1:55,x2:62,y2:62,ball:true}] },
-  // ---- TAKTIK (weitere) ----
-  { id:"d60", focus:"taktik", axes:["Übersicht","Teamplay"], title:"Aufbau von hinten", min:18, players:"8+", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
-    desc:"Spielaufbau vom Torwart über die Abwehr. Anspielstationen bilden, Druck überspielen, ruhig kombinieren.",
-    coach:"Breit und tief anbieten, nicht überhastet lang schlagen.", field:"full",
-    el:[{type:"player",x:8,y:50,label:"TW"},{type:"player",x:25,y:30,n:1},{type:"player",x:25,y:70,n:2},{type:"player",x:42,y:50,n:3},{type:"ball",x:8,y:50},{type:"passArrow",x1:10,y1:50,x2:24,y2:31,ball:true},{type:"passArrow",x1:25,y1:30,x2:41,y2:49,ball:true}] },
-  { id:"d61", focus:"taktik", axes:["Zweikampf","Übersicht"], title:"Zonenverteidigung 4-gegen-4", min:18, players:"8+", cats:["C-Jugend","B-Jugend","A-Jugend"],
-    desc:"Verteidigung verschiebt kompakt als Block. Angreifer versuchen, durch die Zonen zu kombinieren.",
-    coach:"Abstände halten, ballnah pressen, ballfern absichern.", field:"full",
-    el:[{type:"player",x:35,y:25,n:1},{type:"player",x:35,y:45,n:2},{type:"player",x:35,y:62,n:3},{type:"player",x:35,y:80,n:4},{type:"opp",x:55,y:35,n:1},{type:"opp",x:60,y:60,n:2},{type:"ball",x:55,y:35},{type:"runArrow",x1:35,y1:45,x2:44,y2:40}] },
-  { id:"d62", focus:"taktik", axes:["Übersicht","Schnelligkeit"], title:"Konter über die Außen", min:15, players:"6+", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
-    desc:"Nach Ballgewinn schneller Pass auf den Außenspieler, der das Tempo aufnimmt und in die Mitte flankt.",
-    coach:"Erste Option ist der schnelle Außenspieler, früh in die Tiefe.", field:"full",
-    el:[{type:"goal",x:96,y:50,w:18},{type:"player",x:35,y:50,n:1},{type:"player",x:55,y:18,n:2},{type:"player",x:60,y:75,n:3},{type:"ball",x:35,y:50},{type:"passArrow",x1:35,y1:50,x2:55,y2:20,ball:true},{type:"runArrow",x1:55,y1:18,x2:80,y2:25}] },
-  { id:"d63", focus:"taktik", axes:["Teamplay","Übersicht"], title:"Dreiecksbildung im Aufbau", min:15, players:"6+", cats:["D-Jugend","C-Jugend","B-Jugend"],
-    desc:"Spieler bilden ständig Passdreiecke, um immer zwei Anspielstationen zu haben. Bei Pass neue Dreiecke bilden.",
-    coach:"Nie in einer Linie stehen, immer Dreiecke anbieten.", field:"half",
-    el:[{type:"player",x:30,y:70,n:1},{type:"player",x:55,y:55,n:2},{type:"player",x:40,y:40,n:3},{type:"ball",x:32,y:68},{type:"passArrow",x1:32,y1:68,x2:53,y2:55,ball:true},{type:"runArrow",x1:40,y1:40,x2:60,y2:35}] },
-  // ---- TORSCHUSS (weitere) ----
-  { id:"d64", focus:"torschuss", axes:["Abschluss"], title:"Distanzschuss-Wettbewerb", min:12, players:"2+", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
-    desc:"Von der Strafraumgrenze auf Tore oder in markierte Zonen schießen. Punkte sammeln, Wettbewerb in zwei Teams.",
-    coach:"Stützbein neben dem Ball, Spann fest, Körper über dem Ball.", field:"half",
-    el:[{type:"goal",x:50,y:4,w:16},{type:"player",x:35,y:55,n:1},{type:"player",x:65,y:55,n:2},{type:"ball",x:35,y:52},{type:"ball",x:65,y:52},{type:"passArrow",x1:35,y1:52,x2:46,y2:8,ball:true},{type:"passArrow",x1:65,y1:52,x2:54,y2:8,ball:true}] },
-  { id:"d65", focus:"torschuss", axes:["Abschluss","Technik"], title:"Kopfball nach Flanke", min:12, players:"3+", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
-    desc:"Hohe Flanke vom Außenspieler, Stürmer köpft aufs Tor. Timing des Absprungs und Kopfballtechnik.",
-    coach:"Spät einlaufen, mit Stirn treffen, Ball nach unten köpfen.", field:"half",
-    el:[{type:"goal",x:50,y:4,w:16},{type:"player",x:80,y:40,n:1,label:"Flanke"},{type:"player",x:48,y:22,n:2},{type:"ball",x:78,y:38},{type:"passArrow",x1:78,y1:38,x2:52,y2:16,ball:true},{type:"runArrow",x1:48,y1:24,x2:50,y2:14}] },
-  { id:"d66", focus:"torschuss", axes:["Abschluss","Schnelligkeit"], title:"Wettlauf zum Abschluss", min:12, players:"2+", cats:["E-Jugend","D-Jugend","C-Jugend"],
-    desc:"Zwei Spieler sprinten um die Wette zum aufgelegten Ball, der Erste schließt ab, der Zweite stört.",
-    coach:"Explosiv starten, unter Druck ruhig abschließen.", field:"half",
-    el:[{type:"goal",x:50,y:4,w:16},{type:"player",x:40,y:75,n:1},{type:"player",x:60,y:75,n:2},{type:"ball",x:50,y:45},{type:"runArrow",x1:40,y1:73,x2:49,y2:48},{type:"runArrow",x1:60,y1:73,x2:51,y2:48},{type:"passArrow",x1:50,y1:43,x2:50,y2:8,ball:true}] },
-  // ---- KONDITION (weitere) ----
-  { id:"d67", focus:"kondition", axes:["Ausdauer","Technik"], title:"Dribbel-Parcours auf Zeit", min:12, players:"beliebig", cats:["E-Jugend","D-Jugend","C-Jugend"],
-    desc:"Längerer Parcours mit Slalom, Wende und Sprint, mit Ball. Auf Zeit, mehrere Durchgänge mit Pause.",
-    coach:"Ballkontrolle auch bei Tempo, sauber wenden.", field:"half",
-    el:[{type:"cone",x:35,y:75},{type:"cone",x:65,y:60},{type:"cone",x:40,y:40},{type:"cone",x:60,y:22},{type:"player",x:35,y:85,n:1},{type:"ball",x:33,y:82},{type:"dribbleArrow",x1:33,y1:82,x2:60,y2:22,ball:true}] },
-  { id:"d68", focus:"kondition", axes:["Ausdauer"], title:"Spielform mit langen Wegen", min:18, players:"8+", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
-    desc:"Kleinfeldspiel über die volle Feldlänge, sodass viele Sprints und Wege entstehen. Belastung durch große Distanzen.",
-    coach:"Immer wieder anbieten und nachsetzen, Tempo hochhalten.", field:"full",
-    el:[{type:"goal",x:4,y:50,w:16},{type:"goal",x:96,y:50,w:16},{type:"player",x:30,y:45,n:1},{type:"player",x:55,y:55,n:2},{type:"opp",x:65,y:45,n:1},{type:"ball",x:30,y:45},{type:"runArrow",x1:30,y1:45,x2:70,y2:50}] },
-  { id:"d69", focus:"kondition", axes:["Schnelligkeit","Zweikampf"], title:"Hütchen-Reaktionslauf", min:10, players:"2+", cats:["E-Jugend","D-Jugend","C-Jugend","B-Jugend"],
-    desc:"Vier farbige Hütchen im Halbkreis. Trainer ruft eine Farbe, Spieler sprintet hin und zurück. Reaktion und Antritt.",
-    coach:"Auf das Signal sofort reagieren, sauber abbremsen.", field:"half",
-    el:[{type:"cone",x:30,y:40,color:"#dc2626"},{type:"cone",x:45,y:30,color:"#2563eb"},{type:"cone",x:60,y:30,color:"#eab308"},{type:"cone",x:72,y:42},{type:"player",x:50,y:72,n:1},{type:"runArrow",x1:50,y1:70,x2:45,y2:33}] },
-  // ---- SPIELFORM (weitere) ----
-  { id:"d70", focus:"spielform", axes:["Teamplay","Übersicht"], title:"5-gegen-5 mit Aufbauzonen", min:20, players:"10+", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
-    desc:"Feld mit Aufbau-, Mittel- und Abschlusszone. Punkt nur nach kontrolliertem Aufbau durch alle Zonen.",
-    coach:"Geduld im Aufbau, kein langer Ball, durch die Zonen kombinieren.", field:"full",
-    el:[{type:"zone",x:5,y:8,w:28,h:84,color:"#16a34a"},{type:"player",x:18,y:35,n:1},{type:"player",x:18,y:65,n:2},{type:"player",x:45,y:50,n:3},{type:"opp",x:55,y:45,n:1},{type:"ball",x:18,y:35}] },
-  { id:"d71", focus:"spielform", axes:["Abschluss","Teamplay"], title:"3-gegen-3 plus Torhüter", min:20, players:"8+", cats:["E-Jugend","D-Jugend","C-Jugend"],
-    desc:"Kleinfeld 3 gegen 3 auf zwei Tore mit Torhütern. Schneller Wechsel zwischen Angriff und Verteidigung.",
-    coach:"Nach Ballgewinn sofort umschalten, Torhüter ins Spiel einbeziehen.", field:"half",
-    el:[{type:"goal",x:50,y:4,w:14},{type:"goal",x:50,y:96,w:14},{type:"player",x:40,y:40,n:1},{type:"player",x:58,y:48,n:2},{type:"player",x:50,y:62,n:3},{type:"opp",x:45,y:55,n:1},{type:"opp",x:60,y:65,n:2},{type:"opp",x:48,y:38,n:3},{type:"ball",x:50,y:50}] },
-  { id:"d72", focus:"spielform", axes:["Übersicht","Teamplay"], title:"Überzahl-Wellenspiel", min:20, players:"9+", cats:["D-Jugend","C-Jugend","B-Jugend"],
-    desc:"Angreifer starten in Wellen mit Überzahl gegen wechselnde Verteidiger. Nach Abschluss kommt sofort die nächste Welle.",
-    coach:"Überzahl konsequent ausspielen, schnell abschließen.", field:"full",
-    el:[{type:"goal",x:96,y:50,w:18},{type:"player",x:30,y:35,n:1},{type:"player",x:35,y:55,n:2},{type:"player",x:45,y:70,n:3},{type:"opp",x:60,y:50,n:1},{type:"opp",x:70,y:60,n:2},{type:"ball",x:35,y:55},{type:"passArrow",x1:35,y1:55,x2:48,y2:68,ball:true}] },
-  { id:"d73", focus:"spielform", axes:["Teamplay","Technik"], title:"Tor-Tennis", min:15, players:"4+", cats:["E-Jugend","D-Jugend","C-Jugend"],
-    desc:"Über eine Hütchenlinie den Ball ins gegnerische Feld spielen, maximal X Bodenkontakte. Schult Ballkontrolle und Übersicht.",
-    coach:"Sauber annehmen, gezielt ins freie Feld spielen.", field:"half",
-    el:[{type:"cone",x:30,y:50},{type:"cone",x:50,y:50},{type:"cone",x:70,y:50},{type:"player",x:40,y:70,n:1},{type:"player",x:60,y:30,n:2},{type:"ball",x:42,y:67},{type:"passArrow",x1:42,y1:67,x2:58,y2:33,ball:true}] },
-  { id:"d74", focus:"spielform", axes:["Zweikampf","Abschluss"], title:"1-gegen-1 Turnier", min:18, players:"6+", cats:["E-Jugend","D-Jugend","C-Jugend","B-Jugend"],
-    desc:"Reihum 1 gegen 1 auf ein Tor mit Torwart. Sieger bleibt, Verlierer wechselt. Viele intensive Duelle.",
-    coach:"Mutig angreifen, Finten einsetzen, schnell abschließen.", field:"half",
-    el:[{type:"goal",x:50,y:4,w:16},{type:"opp",x:50,y:14,label:"TW"},{type:"player",x:42,y:60,n:1},{type:"opp",x:58,y:45,n:1},{type:"ball",x:40,y:57},{type:"dribbleArrow",x1:40,y1:57,x2:46,y2:25,ball:true}] },
-  // ---- TECHNIK / TAKTIK Auffüllung ----
-  { id:"d75", focus:"technik", axes:["Technik","Schnelligkeit"], title:"Beidfuß-Parcours", min:12, players:"1+", cats:["D-Jugend","C-Jugend","B-Jugend"],
-    desc:"Parcours, der bewusst beide Füße fordert: links um die Hütchen, rechts abschließen und umgekehrt.",
-    coach:"Schwachen Fuß bewusst einsetzen, sauber bleiben.", field:"half",
-    el:[{type:"cone",x:40,y:70},{type:"cone",x:60,y:55},{type:"cone",x:40,y:40},{type:"player",x:40,y:80,n:1},{type:"ball",x:38,y:77},{type:"dribbleArrow",x1:38,y1:77,x2:40,y2:40,ball:true}] },
-  { id:"d76", focus:"taktik", axes:["Übersicht","Teamplay"], title:"Positionswechsel einstudieren", min:15, players:"6+", cats:["C-Jugend","B-Jugend","A-Jugend"],
-    desc:"Zwei Spieler tauschen während des Angriffs die Positionen, um den Gegner zu verwirren und Räume zu schaffen.",
-    coach:"Wechsel mit Tempo, Lücke sofort nutzen, kommunizieren.", field:"full",
-    el:[{type:"player",x:40,y:35,n:1},{type:"player",x:55,y:60,n:2},{type:"ball",x:40,y:35},{type:"runArrow",x1:40,y1:38,x2:55,y2:58},{type:"runArrow",x1:55,y1:57,x2:42,y2:38}] },
-  { id:"d77", focus:"taktik", axes:["Zweikampf","Teamplay"], title:"Pressingfalle stellen", min:18, players:"8+", cats:["B-Jugend","A-Jugend"],
-    desc:"Gegner wird bewusst auf eine Seite gelenkt, dort presst die Mannschaft gemeinsam und erobert den Ball.",
-    coach:"Außen pressen, Mitte zustellen, gemeinsam auslösen.", field:"full",
-    el:[{type:"opp",x:25,y:30,n:1},{type:"player",x:38,y:28,n:1},{type:"player",x:42,y:48,n:2},{type:"player",x:55,y:38,n:3},{type:"ball",x:25,y:30},{type:"runArrow",x1:38,y1:28,x2:30,y2:29},{type:"runArrow",x1:42,y1:48,x2:36,y2:38}] },
-  // ---- KONDITION / AUFWÄRMEN Auffüllung ----
-  { id:"d78", focus:"kondition", axes:["Ausdauer","Teamplay"], title:"Staffel mit Pass", min:12, players:"6+", cats:["F-Jugend","E-Jugend","D-Jugend"],
-    desc:"Staffelform: dribbeln, passen zum Wartenden, der startet. Belastung mit Ball, Teamcharakter motiviert.",
-    coach:"Genauer Pass auf den Starter, dann selbst hinten anstellen.", field:"half",
-    el:[{type:"cone",x:50,y:25},{type:"player",x:40,y:80,n:1},{type:"player",x:60,y:80,n:2},{type:"ball",x:40,y:77},{type:"dribbleArrow",x1:40,y1:77,x2:48,y2:27,ball:true},{type:"passArrow",x1:50,y1:25,x2:60,y2:77,ball:true}] },
-  { id:"d79", focus:"aufwärmen", axes:["Teamplay","Technik"], title:"Rondo 4-gegen-1 locker", min:8, players:"5+", cats:["E-Jugend","D-Jugend","C-Jugend","B-Jugend"],
-    desc:"Vier Spieler im Kreis halten den Ball gegen einen in der Mitte. Lockeres Einspielen mit Köpfchen.",
-    coach:"Erste oder zweite Berührung, ruhig und sauber.", field:"half",
-    el:[{type:"player",x:50,y:28,n:1},{type:"player",x:72,y:55,n:2},{type:"player",x:50,y:78,n:3},{type:"player",x:28,y:55,n:4},{type:"opp",x:50,y:53,n:1},{type:"ball",x:50,y:30},{type:"passArrow",x1:50,y1:30,x2:70,y2:54,ball:true}] },
-  { id:"d80", focus:"spielform", axes:["Abschluss","Übersicht","Teamplay"], title:"Abschlussturnier 4-gegen-4", min:25, players:"12+", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
-    desc:"Mehrere Teams, kurze Spiele 4 gegen 4 auf zwei Tore mit Torhütern im Turniermodus. Krönung einer Trainingseinheit.",
-    coach:"Faire Teams, kurze intensive Spiele, alle Themen anwenden lassen.", field:"full",
-    el:[{type:"goal",x:4,y:50,w:18},{type:"goal",x:96,y:50,w:18},{type:"player",x:28,y:38,n:1},{type:"player",x:38,y:62,n:2},{type:"player",x:50,y:48,n:3},{type:"opp",x:62,y:42,n:1},{type:"opp",x:70,y:64,n:2},{type:"opp",x:55,y:70,n:3},{type:"ball",x:50,y:48}] },
-];
-const drillsByFocus = f => DRILL_LIB.filter(d=>d.focus===f);
-// Übungen, die eine bestimmte Skill-Achse trainieren (für Förderlücken-Vorschläge)
-const drillsForAxis = axis => DRILL_LIB.filter(d=>(d.axes||[]).includes(axis));
-
-// Dauer eines Termins in Minuten aus time + endTime (oder null wenn nicht bestimmbar)
-function eventDurationMin(ev) {
-  if(!ev || !ev.time || !ev.endTime) return null;
-  const [h1,m1] = ev.time.split(":").map(Number);
-  const [h2,m2] = ev.endTime.split(":").map(Number);
-  if([h1,m1,h2,m2].some(x=>Number.isNaN(x))) return null;
-  let diff = (h2*60+m2) - (h1*60+m1);
-  if(diff <= 0) return null;       // Ende vor Start = ungültig
-  if(diff > 240) return null;      // unplausibel lang
-  return diff;
-}
-
-// ----- Trainingsplan-Generator (lokal, ohne externen Dienst) -----
-// Eine Einheit folgt: Aufwärmen -> Hauptteil(Schwerpunkt) -> Spielform/Abschluss
-function pickRandom(arr, exclude=[]) {
-  const pool = arr.filter(d=>!exclude.includes(d.id));
-  if(pool.length===0) return arr[Math.floor(Math.random()*arr.length)]||null;
-  return pool[Math.floor(Math.random()*pool.length)];
-}
-// Baut eine Einheit. focus = Schwerpunkt-Id, cat = Altersklasse, used = bereits verwendete IDs
-// targetMin = angestrebte Gesamtdauer; die Auswahl füllt die Phasen passend dazu.
-function buildSession({ focus="technik", cat=null, used=[], targetMin=60 }) {
-  const inCat = d => !cat || (d.cats||[]).includes(cat);
-  const byFocus = (fid) => DRILL_LIB.filter(d=>d.focus===fid && inCat(d));
-  const blocks = [];
-  const ex = [...used];
-  const add = (phase, drill) => { if(drill){ blocks.push({phase, drill}); ex.push(drill.id); } };
-  const sum = () => blocks.reduce((a,b)=>a+(b.drill.min||0),0);
-
-  const mainFocus = (focus==="auto"||focus==="spielform"||focus==="aufwärmen") ? "technik" : focus;
-  // 1) Aufwärmen (immer)
-  add("Aufwärmen", pickRandom(byFocus("aufwärmen"), ex));
-  // 2) Hauptteil 1 — Schwerpunkt
-  add("Hauptteil", pickRandom(byFocus(mainFocus), ex));
-  // 3) Abschluss — Spielform (immer, als Abschluss)
-  const game = pickRandom(byFocus("spielform"), ex);
-  // 4) optionale weitere Hauptteil-Blöcke, bis Zieldauer (abzüglich Abschluss) etwa erreicht ist
-  const gameMin = game?.min||18;
-  const secondFocus = ["torschuss","technik"].includes(mainFocus) ? "taktik" : "torschuss";
-  const fillPool = [secondFocus, mainFocus, "kondition"];
-  let fi=0, guard=0;
-  while(sum() + gameMin < targetMin - 6 && guard < 8){
-    const fid = fillPool[fi % fillPool.length]; fi++; guard++;
-    const d = pickRandom(byFocus(fid), ex);
-    if(d && sum() + gameMin + d.min <= targetMin + 6){ add("Hauptteil", d); }
-  }
-  // Abschluss zuletzt anhängen
-  add("Abschluss", game);
-  return blocks;
-}
-// Schwerpunkt aus den größten Förderlücken ableiten (Achse -> Schwerpunkt-Id)
-const AXIS_TO_FOCUS = {
-  Technik:"technik", Schnelligkeit:"kondition", Zweikampf:"taktik",
-  Übersicht:"taktik", Abschluss:"torschuss", Ausdauer:"kondition", Teamplay:"spielform",
-};
-
+const BASE_STRENGTHS = ["Schnelligkeit","Technik","Zweikampf","Kopfball","Uebersicht","Flanken","Schuss","Ausdauer","Fuehrung","Einsatz","Pressing","Spielaufbau","Defensivstaerke","Torwartreflex"];
 
 const CAT_YEARS = {
-
   "Bambinis": [2019,2020,2021,2022],"G-Jugend": [2017,2018,2019],"F-Jugend": [2015,2016,2017],"E-Jugend": [2013,2014,2015],"D-Jugend": [2011,2012,2013],"C-Jugend": [2009,2010,2011],"B-Jugend": [2007,2008,2009],"A-Jugend": [2005,2006,2007],};
 const CAT_ORDER = ["Bambinis","G-Jugend","F-Jugend","E-Jugend","D-Jugend","C-Jugend","B-Jugend","A-Jugend"];
 
@@ -12227,8 +9569,8 @@ function fitLabel(fitType) {
 
 function mkPlayer(fields = {}) {
   return {
-    id: uid(),name: "",by:2014,gender:"m",mainTid:"",optTids: [],position: "",foot: "",strengths: [],customStrengths: [],skills:{},goals:0,assists:0,yellowCards:0,redCards:0,notes: "",recommend: "",rating:0,friends: [],mustWith: [],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam: "",// Freitext: z.B. "F3 25/26" oder "G-Jugend"
-    lastTeamId: "",// Team-ID der letzten Saison für Logik
+    id: uid(),name: "",by:2014,gender:"m",mainTid:"",optTids: [],position: "",foot: "",strengths: [],customStrengths: [],goals:0,assists:0,yellowCards:0,redCards:0,notes: "",recommend: "",rating:0,friends: [],mustWith: [],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam: "",// Freitext: z.B. "F3 25/26" oder "G-Jugend"
+    lastTeamId: "",// Team-ID der letzten Saison fuer Logik
     seasonId: "",// Saison-ID z.B. "s2526"
     ...fields
   };
@@ -12294,7 +9636,7 @@ function StrengthsInput({ strengths,customStrengths,onChange,tp }) {
           {allCustom.map(s => (
             <span key={s} style={{display:"inline-flex",alignItems:"center",gap:5,background:tp+"15",color:tp,borderRadius:99,padding:"5px 11px",fontSize:12,fontWeight:700,border:`1.5px solid ${tp}40`}}>
                {s}
-              <button onClick={()=>removeCustom(s)} style={{background:"none",border:"none",color:tp,cursor:"pointer",fontSize:13,lineHeight:1,padding:0,opacity:.7}}>✕</button>
+              <button onClick={()=>removeCustom(s)} style={{background:"none",border:"none",color:tp,cursor:"pointer",fontSize:13,lineHeight:1,padding:0,opacity:.7}}></button>
             </span>
           ))}
         </div>
@@ -12302,14 +9644,14 @@ function StrengthsInput({ strengths,customStrengths,onChange,tp }) {
       <div style={{display:"flex",gap:8}}>
         <input value={custom} onChange={e=>setCustom(e.target.value)}
           onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();addCustom();}}}
-          placeholder="Eigene Stärke eingeben..."
+          placeholder="Eigene Staerke eingeben..."
           style={{flex:1,padding:"9px 13px",fontSize:13,border:`1.5px solid ${custom?tp:"#e2e8f0"}`,borderRadius:10,outline:"none",transition:"border-color .14s"}}/>
         <button onClick={addCustom} disabled={!custom.trim()}
           style={{padding:"0 14px",height:38,borderRadius:10,border:"none",background:custom.trim()?tp:"#e2e8f0",color:custom.trim()?"#fff":"#94a3b8",fontWeight:700,fontSize:13,cursor:custom.trim()?"pointer":"default",fontFamily:"inherit",transition:"all .18s",whiteSpace:"nowrap"}}>
-          + Hinzufügen
+          + Hinzufuegen
         </button>
       </div>
-      <p style={{fontSize:11,color:"#94a3b8",marginTop:6}}>? Enter oder Button . Eigene Stärken werden orange angezeigt</p>
+      <p style={{fontSize:11,color:"#94a3b8",marginTop:6}}>? Enter oder Button . Eigene Staerken werden orange angezeigt</p>
     </div>
   );
 }
@@ -12336,7 +9678,7 @@ function FriendsInput({ label,sub,ids,allPlayers,current,onChange,color }) {
             <div key={pl.id} style={{display:"flex",alignItems:"center",gap:6,background:color+"15",borderRadius:99,padding:"5px 10px",border:`1.5px solid ${color}40`}}>
               <Av name={pl.name} sz={22}/>
               <span style={{fontSize:12,fontWeight:700,color}}>{pl.name}</span>
-              <button onClick={()=>toggle(pl.id)} style={{background:"none",border:"none",color,cursor:"pointer",fontSize:14,padding:0,lineHeight:1,opacity:.7}}>✕</button>
+              <button onClick={()=>toggle(pl.id)} style={{background:"none",border:"none",color,cursor:"pointer",fontSize:14,padding:0,lineHeight:1,opacity:.7}}></button>
             </div>
           ))}
         </div>
@@ -12344,7 +9686,7 @@ function FriendsInput({ label,sub,ids,allPlayers,current,onChange,color }) {
       {}
       <button onClick={()=>setOpen(s=>!s)}
         style={{display:"flex",alignItems:"center",gap:6,padding:"7px 12px",borderRadius:10,border:`2px dashed ${color}50`,background:color+"08",color,fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",width:"100%",justifyContent:"center"}}>
-        {open?"? Schließen":"? Spieler hinzufügen"}
+        {open?"? Schliessen":"? Spieler hinzufuegen"}
       </button>
       {open&&(
         <div style={{marginTop:8,background:"#f8fafc",borderRadius:12,padding:"10px",border:"1.5px solid #e2e8f0"}}>
@@ -12370,7 +9712,7 @@ function FriendsInput({ label,sub,ids,allPlayers,current,onChange,color }) {
   );
 }
 
-function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",club=null,onSave,onClose,t,allSeasons,allPlayerProfiles,trainers }) {
+function PlayerProfile({ player,teams,allEvents,allPlayers,cid,onSave,onClose,t,allSeasons,allPlayerProfiles,trainers }) {
   const samePlayerHistory = (allPlayerProfiles||[]).filter(p=>
     p.id!==player.id && p.name===player.name && p.by===player.by && p.seasonId
   ).sort((a,b)=>(b.seasonId||"").localeCompare(a.seasonId||""));
@@ -12409,7 +9751,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
                 {p.name && totalGames > 0 && ` . * ${totalGames} Spiele`}
               </div>
             </div>
-            <button onClick={onClose} style={{width:36,height:36,borderRadius:11,background:"rgba(255,255,255,.15)",border:"none",color:"rgba(255,255,255,.8)",fontSize:18,cursor:"pointer"}}>✕</button>
+            <button onClick={onClose} style={{width:36,height:36,borderRadius:11,background:"rgba(255,255,255,.15)",border:"none",color:"rgba(255,255,255,.8)",fontSize:18,cursor:"pointer"}}></button>
           </div>
         </div>
 
@@ -12417,14 +9759,14 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
 
           {}
           <Section title="* Stammdaten">
-            <Inp label="Name" val={p.name} set={v=>up({name:v})} ph="z.B. Max M." cl={{pri:t.p}} note="Datenschutz: Bitte nur Vorname, höchstens Nachname-Initial (z.B. Max M.). So wenig wie möglich."/>
+            <Inp label="Name" val={p.name} set={v=>up({name:v})} ph="Vorname Nachname" cl={{pri:t.p}}/>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
               <Inp label="Geburtsjahr" val={String(p.by||"")} set={v=>up({by:parseInt(v)||p.by})} type="number" ph="z.B. 2014" cl={{pri:t.p}}/>
-              <Sel label="Geschlecht" val={p.gender||"m"} set={v=>up({gender:v})} opts={[["m","* Männlich"],["w","* Weiblich"]]}/>
+              <Sel label="Geschlecht" val={p.gender||"m"} set={v=>up({gender:v})} opts={[["m","* Maennlich"],["w","* Weiblich"]]}/>
             </div>
             {p.by && (
               <div style={{background:"#f0fdf4",borderRadius:10,padding:"9px 13px",fontSize:12,color:"#15803d",fontWeight:600}}>
-                 Passt altersmäßig in: {eligibleCats(p.by,p.gender||"m").join(",")||"Keine Kategorie"}
+                 Passt altersmaessig in: {eligibleCats(p.by,p.gender||"m").join(",")||"Keine Kategorie"}
                 {p.gender==="w"&&<span style={{color:"#d97706",marginLeft:5}}>. Maedchen +2 Jahre beruecksichtigt</span>}
               </div>
             )}
@@ -12465,11 +9807,11 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
           {}
           <Section title="* Spielerprofil (nur Trainer)">
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-              <Sel label="Position" val={p.position||""} set={v=>up({position:v})} opts={[["","- wählen -"],...POSITIONS_LIST.map(x=>[x,x])]}/>
-              <Sel label="Starker Fuss" val={p.foot||""} set={v=>up({foot:v})} opts={[["","- wählen -"],...FOOT_LIST.map(x=>[x,x])]}/>
+              <Sel label="Position" val={p.position||""} set={v=>up({position:v})} opts={[["","- waehlen -"],...POSITIONS_LIST.map(x=>[x,x])]}/>
+              <Sel label="Starker Fuss" val={p.foot||""} set={v=>up({foot:v})} opts={[["","- waehlen -"],...FOOT_LIST.map(x=>[x,x])]}/>
             </div>
             <div>
-              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5}}>STÄRKEN</div>
+              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5}}>STAeRKEN</div>
               <StrengthsInput
                 strengths={p.strengths||[]}
                 customStrengths={p.customStrengths||[]}
@@ -12481,81 +9823,10 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
               <div style={{display:"flex",gap:4}}>
                 {[1,2,3,4,5].map(n=>(
                   <button key={n} onClick={()=>up({rating:p.rating===n?0:n})}
-                    style={{fontSize:28,background:"none",border:"none",cursor:"pointer",opacity:n<=(p.rating||0)?1:.2,transition:"opacity .14s"}}>★</button>
+                    style={{fontSize:28,background:"none",border:"none",cursor:"pointer",opacity:n<=(p.rating||0)?1:.2,transition:"opacity .14s"}}></button>
                 ))}
                 {(p.rating||0) > 0 && <span style={{fontSize:13,color:"#64748b",alignSelf:"center",marginLeft:4,fontWeight:600}}>{p.rating}/5</span>}
               </div>
-            </div>
-
-            {}
-            <div style={{marginTop:18}}>
-              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:4,letterSpacing:.5}}>SKILL-PROFIL (1 = Förderbedarf, 5 = Stärke)</div>
-              <div style={{fontSize:11,color:"#94a3b8",marginBottom:12,lineHeight:1.5}}>Nur sportliche Faehigkeiten. Daraus entsteht das Spinnennetz und der Trainings-Vorschlag.</div>
-              {(()=>{
-                const axes = skillAxesFor(sport);
-                const sk = p.skills||{};
-                const setSkill = (ax,val)=>up({skills:{...sk,[ax]:sk[ax]===val?0:val}});
-                const vals = axes.map(a=>sk[a]||0);
-                const myTeam = (teams||[]).find(tm=>tm.id===p.mainTid);
-                const cat = myTeam?.cat || myTeam?.name || "E-Jugend";
-                const soll = sollFor(club, cat, axes);
-                const foerder = axes.map((a,i)=>({a,ist:sk[a]||0,soll:soll[i]})).filter(x=>x.ist>0&&x.ist<x.soll);
-                const hasAny = axes.some(a=>(sk[a]||0)>0);
-                return (
-                  <div>
-                    {axes.map((ax,i)=>(
-                      <div key={ax} style={{display:"flex",alignItems:"center",gap:8,marginBottom:7}}>
-                        <span style={{flex:1,fontSize:13,fontWeight:600,color:"#334155"}}>{ax} <span style={{color:"#cbd5e1",fontSize:11,fontWeight:700}}>Ziel {soll[i]}</span></span>
-                        <div style={{display:"flex",gap:3}}>
-                          {[1,2,3,4,5].map(n=>(
-                            <button key={n} type="button" onClick={()=>setSkill(ax,n)}
-                              style={{width:26,height:26,borderRadius:7,border:`1.5px solid ${n<=(sk[ax]||0)?(t.p||"#16a34a"):(n<=soll[i]?"#fde68a":"#e2e8f0")}`,background:n<=(sk[ax]||0)?(t.p||"#16a34a"):"#fff",color:n<=(sk[ax]||0)?"#fff":"#cbd5e1",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{n}</button>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                    {hasAny&&<div style={{marginTop:16,background:"#f8fafc",borderRadius:14,padding:"14px 10px"}}>
-                      <SpiderChart axes={axes} values={vals} compareValues={soll} color={t.p||"#16a34a"} compareColor="#f59e0b" size={240}/>
-                      <div style={{display:"flex",gap:16,justifyContent:"center",fontSize:11,fontWeight:700,marginTop:8}}>
-                        <span><span style={{display:"inline-block",width:10,height:10,borderRadius:3,background:t.p||"#16a34a",marginRight:4,verticalAlign:"middle"}}/>Ist</span>
-                        <span><span style={{display:"inline-block",width:10,height:10,borderRadius:3,background:"#f59e0b",marginRight:4,verticalAlign:"middle"}}/>Ziel {cat}</span>
-                      </div>
-                    </div>}
-                    {foerder.length>0&&<div style={{marginTop:12,background:"#fff7ed",border:"1px solid #fed7aa",borderRadius:11,padding:"10px 13px"}}>
-                      <div style={{fontSize:11,fontWeight:800,color:"#9a3412",marginBottom:4,letterSpacing:.3}}>ENTWICKLUNGSZIELE ({cat})</div>
-                      <div style={{fontSize:13,color:"#9a3412",lineHeight:1.6}}>{foerder.map(x=>`${x.a} (${x.ist}→${x.soll})`).join(", ")}</div>
-                    </div>}
-                    {(()=>{
-                      const fits = positionFit(sport, sk, club);
-                      if(!hasAny || fits.length===0) return null;
-                      const best = fits[0];
-                      return (
-                        <div style={{marginTop:12,background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:11,padding:"12px 14px"}}>
-                          <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.3}}>POSITIONS-EIGNUNG</div>
-                          {fits.map(f=>(
-                            <div key={f.pos} style={{marginBottom:8}}>
-                              <div style={{display:"flex",justifyContent:"space-between",fontSize:13,marginBottom:3}}>
-                                <span style={{fontWeight:f.pos===best.pos?800:600,color:f.pos===best.pos?(t.p||"#16a34a"):"#475569"}}>{f.pos}{p.position===f.pos?" (aktuell)":""}</span>
-                                <span style={{fontWeight:800,color:f.pos===best.pos?(t.p||"#16a34a"):"#94a3b8"}}>{f.pct}%</span>
-                              </div>
-                              <div style={{height:6,borderRadius:99,background:"#e2e8f0",overflow:"hidden"}}>
-                                <div style={{height:"100%",borderRadius:99,width:`${f.pct}%`,background:f.pos===best.pos?(t.p||"#16a34a"):"#cbd5e1",transition:"width .4s"}}/>
-                              </div>
-                            </div>
-                          ))}
-                          <div style={{fontSize:11,color:"#94a3b8",marginTop:6,lineHeight:1.5}}>
-                            Berechnet aus dem Skill-Profil. Gewichtung ist ein Vorschlag – ersetzt nicht die Einschätzung des Trainers.
-                          </div>
-                        </div>
-                      );
-                    })()}
-                    <div style={{marginTop:10,fontSize:11,color:"#94a3b8",lineHeight:1.5}}>
-                      Zielwerte sind Vorschläge, anpassbar an eure Ausbildungskonzeption. Quelle:{" "}
-                      <a href={SKILL_SOURCE.url} target="_blank" rel="noopener noreferrer" style={{color:t.p||"#16a34a",fontWeight:700}}>{SKILL_SOURCE.label}</a>
-                    </div>
-                  </div>
-                );
-              })()}
             </div>
           </Section>
 
@@ -12622,10 +9893,10 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
                   style={{width:"100%",padding:"11px 13px",fontSize:18,fontWeight:900,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",textAlign:"center",color:"#0f172a"}}/>
               </div>
               <div>
-                <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.5}}>GRÖSSE</div>
+                <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.5}}>GROeSSE</div>
                 <select value={p.jerseySize||""} onChange={e=>up({jerseySize:e.target.value})}
                   style={{width:"100%",padding:"11px 13px",fontSize:15,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",background:"#fff",fontFamily:"inherit"}}>
-                  <option value="">- wählen -</option>
+                  <option value="">- waehlen -</option>
                   {JERSEY_SIZES.map(s=><option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
@@ -12658,15 +9929,15 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
 
             {}
             <div>
-              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.5}}>EMPFEHLUNG NÄCHSTE SAISON</div>
+              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.5}}>EMPFEHLUNG NAeCHSTE SAISON</div>
               {}
               {p.lastTeamId&&(()=>{
                 const lastIdx=TEAM_HIERARCHY.indexOf(p.lastTeamId);
                 const curIdx=TEAM_HIERARCHY.indexOf(p.mainTid);
                 const hint = lastIdx<0 ? null :
-                  curIdx>lastIdx ? "* Aufstieg gegenüber letzter Saison" :
+                  curIdx>lastIdx ? "* Aufstieg gegenueber letzter Saison" :
                   curIdx===lastIdx ? "?* Gleiches Niveau wie letzte Saison" :
-                  "?* Abstieg gegenüber letzter Saison - nur in Einzelfaellen";
+                  "?* Abstieg gegenueber letzter Saison - nur in Einzelfaellen";
                 const hintCol = curIdx>lastIdx?"#16a34a":curIdx===lastIdx?"#2563eb":"#dc2626";
                 return hint ? <div style={{background:hintCol+"10",borderRadius:9,padding:"7px 11px",fontSize:12,fontWeight:600,color:hintCol,marginBottom:8,border:`1px solid ${hintCol}25`}}>{hint}</div> : null;
               })()}
@@ -12680,7 +9951,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
                       <span style={{fontSize:20}}>{icon}</span>
                       <div style={{flex:1,textAlign:"left"}}>
                         <div style={{fontWeight:700,fontSize:14,color:(p.recommend===rec)?col:"#334155"}}>{rec}</div>
-                        {isDowngrade&&<div style={{fontSize:11,color:"#dc2626",marginTop:1}}> Nur in begründeten Einzelfaellen</div>}
+                        {isDowngrade&&<div style={{fontSize:11,color:"#dc2626",marginTop:1}}> Nur in begruendeten Einzelfaellen</div>}
                       </div>
                       {p.recommend===rec&&<span style={{fontSize:16}}></span>}
                     </button>
@@ -12690,25 +9961,10 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
             </div>
 
             <div>
-              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.5}}>SPORTLICHE BEOBACHTUNGEN</div>
-              {(()=>{
-                const OPTS=["Pünktlich","Zuverlässig","Teamplayer","Kampfstark","Technisch stark","Schnell","Ausdauernd","Torgefährlich","Gute Übersicht","Beidfüßig","Kopfballstark","Führungsspieler","Entwicklungspotenzial","Braucht Förderung Technik","Braucht Förderung Kondition","Neu im Team"];
-                const sel=(p.notes||"").split(",").map(s=>s.trim()).filter(Boolean);
-                const toggle=v=>{const has=sel.includes(v);const next=has?sel.filter(x=>x!==v):[...sel,v];up({notes:next.join(", ")});};
-                return (
-                  <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
-                    {OPTS.map(o=>{const on=sel.includes(o);return (
-                      <button key={o} type="button" onClick={()=>toggle(o)}
-                        style={{padding:"7px 13px",borderRadius:99,border:`1.5px solid ${on?(t.p||"#16a34a"):"#e2e8f0"}`,background:on?(t.p||"#16a34a"):"#fff",color:on?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",transition:"all .12s"}}>
-                        {o}
-                      </button>
-                    );})}
-                  </div>
-                );
-              })()}
-              <div style={{marginTop:10,background:"#fffbeb",border:"1px solid #fde68a",borderRadius:10,padding:"9px 12px",fontSize:12,color:"#92400e",lineHeight:1.5}}>
-                <strong>Datenschutz:</strong> Bitte nur sportliche Einschätzungen. Keine Angaben zu Gesundheit, Krankheit, Religion, Herkunft, Familie oder Verhalten außerhalb des Sports.
-              </div>
+              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.5}}>NOTIZEN</div>
+              <textarea value={p.notes||""} onChange={e=>up({notes:e.target.value})} rows={4}
+                placeholder="z.B. Entwicklung,Verhalten,Staerken,Schwaechen..."
+                style={{width:"100%",padding:"12px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",resize:"vertical",fontFamily:"inherit",lineHeight:1.5}}/>
             </div>
           </Section>
 
@@ -12716,7 +9972,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
           <Section title="* Freundschaften & Zusammenspiel">
             <FriendsInput
               label="* Ist befreundet mit"
-              sub="Wenn möglich im selben Team"
+              sub="Wenn moeglich im selben Team"
               ids={p.friends||[]}
               allPlayers={allPlayers}
               current={player}
@@ -12772,8 +10028,8 @@ function PlayerCard({ player: pl,onEdit,onDel,isMain,allTeams,allEvents }) {
           {(pl.rating||0) > 0 && <span style={{fontSize:14}}>{pl.rating ? pl.rating+"/5" : "-"}</span>}
         </div>
         <div style={{display:"flex",gap:5,flexShrink:0}}>
-          <button onClick={e=>{e.stopPropagation();onEdit();}} style={{width:30,height:30,borderRadius:9,background:"#eff6ff",border:"none",color:"#2563eb",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>✎</button>
-          {onDel&&<button onClick={e=>{e.stopPropagation();onDel();}} style={{width:30,height:30,borderRadius:9,background:"#fee2e2",border:"none",color:"#dc2626",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>✕</button>}
+          <button onClick={e=>{e.stopPropagation();onEdit();}} style={{width:30,height:30,borderRadius:9,background:"#eff6ff",border:"none",color:"#2563eb",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}></button>
+          {onDel&&<button onClick={e=>{e.stopPropagation();onDel();}} style={{width:30,height:30,borderRadius:9,background:"#fee2e2",border:"none",color:"#dc2626",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}></button>}
         </div>
       </div>
       {exp && (
@@ -12853,9 +10109,9 @@ function PoolView({ allPlayers,myTeams,allTeams,defaultScopeTids,cid,onAssign,on
           style={{width:"100%",padding:"12px 16px",border:"none",background:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:10,fontFamily:"inherit"}}>
           <span style={{fontSize:16}}></span>
           <div style={{flex:1,textAlign:"left"}}>
-            <div style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>Zuteilung für</div>
+            <div style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>Zuteilung fuer</div>
             <div style={{fontSize:12,color:"#64748b",marginTop:1}}>
-              {scopeTeams.length===0?"Keine Mannschaft gewählt":scopeTeams.map(tm=>tm.name).join(",")}
+              {scopeTeams.length===0?"Keine Mannschaft gewaehlt":scopeTeams.map(tm=>tm.name).join(",")}
             </div>
           </div>
           <div style={{display:"flex",gap:5}}>
@@ -12898,7 +10154,7 @@ function PoolView({ allPlayers,myTeams,allTeams,defaultScopeTids,cid,onAssign,on
             <div style={{display:"flex",gap:8,marginTop:4}}>
               <button onClick={()=>setScopeTids(myTeams.map(tm=>tm.id))}
                 style={{padding:"6px 13px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
-                Alle auswählen
+                Alle auswaehlen
               </button>
               <button onClick={()=>setScopeTids(defaultScopeTids||[])}
                 style={{padding:"6px 13px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:t.p,fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
@@ -12906,7 +10162,7 @@ function PoolView({ allPlayers,myTeams,allTeams,defaultScopeTids,cid,onAssign,on
               </button>
               <button onClick={()=>setScopeTids([])}
                 style={{padding:"6px 13px",borderRadius:9,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
-                Alle abwählen
+                Alle abwaehlen
               </button>
             </div>
           </div>
@@ -12952,8 +10208,8 @@ function PoolView({ allPlayers,myTeams,allTeams,defaultScopeTids,cid,onAssign,on
       {scopeTeams.length===0&&(
         <div style={{textAlign:"center",padding:"28px",background:"#f8fafc",borderRadius:14,border:"1.5px dashed #e2e8f0",color:"#94a3b8"}}>
           <div style={{fontSize:32,marginBottom:8}}></div>
-          <p style={{fontWeight:700}}>Keine Mannschaft ausgewählt</p>
-          <p style={{fontSize:13,marginTop:4}}>Wähle oben mindestens eine Mannschaft für die Zuteilung</p>
+          <p style={{fontWeight:700}}>Keine Mannschaft ausgewaehlt</p>
+          <p style={{fontSize:13,marginTop:4}}>Waehle oben mindestens eine Mannschaft fuer die Zuteilung</p>
         </div>
       )}
 
@@ -13010,7 +10266,7 @@ function PlayerAssignRow({ player: pl,teams,allTeams,t,onAssign,onOptToggle }) {
                   </div>
                   {pl.position&&<div style={{color:"rgba(255,255,255,.6)",fontSize:12,marginTop:2}}> {pl.position}{pl.foot?` . ${pl.foot}`:""}</div>}
                 </div>
-                <button onClick={()=>setShowProfile(false)} style={{width:34,height:34,borderRadius:11,background:"rgba(255,255,255,.15)",border:"none",color:"rgba(255,255,255,.8)",fontSize:18,cursor:"pointer"}}>✕</button>
+                <button onClick={()=>setShowProfile(false)} style={{width:34,height:34,borderRadius:11,background:"rgba(255,255,255,.15)",border:"none",color:"rgba(255,255,255,.8)",fontSize:18,cursor:"pointer"}}></button>
               </div>
               {}
               {(pl.rating||0)>0&&<div style={{marginTop:10,display:"flex",gap:2}}>
@@ -13023,7 +10279,7 @@ function PlayerAssignRow({ player: pl,teams,allTeams,t,onAssign,onOptToggle }) {
 
               {}
               <div style={{background:"#f8fafc",borderRadius:13,padding:"13px 15px",border:"1.5px solid #e2e8f0"}}>
-                <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:9,letterSpacing:.5}}> ALTERSMÄSSIG PASSENDE TEAMS</div>
+                <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:9,letterSpacing:.5}}> ALTERSMAeSSIG PASSENDE TEAMS</div>
                 <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
                   {allTeams.filter(tm=>playerFitsTeam(pl,tm)).map(tm=>{
                     const ft=playerFitType(pl,tm);
@@ -13044,7 +10300,7 @@ function PlayerAssignRow({ player: pl,teams,allTeams,t,onAssign,onOptToggle }) {
                 {}
                 {allTeams.filter(tm=>playerFitType(pl,tm)==="pullup"||playerFitType(pl,tm)==="girlpullup").length>0&&(
                   <div style={{marginTop:10,background:"#fffbeb",borderRadius:9,padding:"9px 12px",border:"1px solid #fde68a",fontSize:12,color:"#92400e",lineHeight:1.6}}>
-                     <strong>Hochholen möglich:</strong> Jungen max. 2 Kategorien . Maedchen max. 4 Kategorien über dem normalen Altersband
+                     <strong>Hochholen moeglich:</strong> Jungen max. 2 Kategorien . Maedchen max. 4 Kategorien ueber dem normalen Altersband
                   </div>
                 )}
               </div>
@@ -13052,7 +10308,7 @@ function PlayerAssignRow({ player: pl,teams,allTeams,t,onAssign,onOptToggle }) {
               {}
               {((pl.strengths||[]).length>0||(pl.customStrengths||[]).length>0)&&(
                 <div>
-                  <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5}}> STÄRKEN</div>
+                  <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5}}> STAeRKEN</div>
                   <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
                     {(pl.strengths||[]).map(s=>(
                       <span key={s} style={{fontSize:12,fontWeight:700,color:"#2563eb",background:"#eff6ff",borderRadius:7,padding:"4px 10px",border:"1px solid #bfdbfe"}}>{s}</span>
@@ -13089,7 +10345,7 @@ function PlayerAssignRow({ player: pl,teams,allTeams,t,onAssign,onOptToggle }) {
                 <div style={{display:"flex",alignItems:"center",gap:10,background:getRecommendColor(pl.recommend).bg,borderRadius:12,padding:"12px 14px",border:`1.5px solid ${getRecommendColor(pl.recommend).col}30`}}>
                   <span style={{fontSize:22}}>{getRecommendColor(pl.recommend).icon}</span>
                   <div>
-                    <div style={{fontSize:11,fontWeight:800,color:"#64748b"}}>EMPFEHLUNG NÄCHSTE SAISON</div>
+                    <div style={{fontSize:11,fontWeight:800,color:"#64748b"}}>EMPFEHLUNG NAeCHSTE SAISON</div>
                     <div style={{fontWeight:800,fontSize:15,color:"#0f172a",marginTop:2}}>{pl.recommend}</div>
                     {pl.lastTeam&&pl.lastTeam!=="-"&&<div style={{fontSize:11,color:"#64748b",marginTop:2}}> Letzte Saison: {pl.lastTeam}</div>}
                   </div>
@@ -13193,7 +10449,7 @@ function PlayerAssignRow({ player: pl,teams,allTeams,t,onAssign,onOptToggle }) {
                 </button>
               );
             })}
-            {allElig.length===0&&<span style={{fontSize:12,color:"#94a3b8"}}>Kein weiteres Team verfügbar</span>}
+            {allElig.length===0&&<span style={{fontSize:12,color:"#94a3b8"}}>Kein weiteres Team verfuegbar</span>}
           </div>
         </div>
       )}
@@ -13226,7 +10482,7 @@ function PlayersTab({ data,myTids,save,fire,cl }) {
     setEditP(null); setShowNew(false);
     fire("Spielerprofil gespeichert *");
   };
-  const delPlayer = id => { const pl=allPlayers.find(p=>p.id===id); save({...data,playerProfiles:allPlayers.filter(p=>p.id!==id),securityLog:[...(data.securityLog||[]),{id:uid(),cid,type:"dsgvo_delete",ts:new Date().toISOString(),detail:"Spieler "+(pl?.name||id)+" auf Anfrage gelöscht",read:false}]}); fire("Spieler entfernt + DSGVO-Log erstellt"); };
+  const delPlayer = id => { const pl=allPlayers.find(p=>p.id===id); save({...data,playerProfiles:allPlayers.filter(p=>p.id!==id),securityLog:[...(data.securityLog||[]),{id:uid(),cid,type:"dsgvo_delete",ts:new Date().toISOString(),detail:"Spieler "+(pl?.name||id)+" auf Anfrage geloescht",read:false}]}); fire("Spieler entfernt + DSGVO-Log erstellt"); };
 
   const assignPlayer = (playerId,toTid) => {
     const next = allPlayers.map(p => p.id===playerId ? {...p,mainTid:toTid} : p);
@@ -13252,10 +10508,10 @@ function PlayersTab({ data,myTids,save,fire,cl }) {
               {allPlayers.filter(p=>!p.mainTid).length} Spieler noch nicht zugeteilt
             </div>
             <div style={{fontSize:12,color:"#9a3412",marginTop:2}}>
-              Eltern können sich erst anmelden wenn alle Spieler zugeteilt sind -> Zuteilung öffnen
+              Eltern koennen sich erst anmelden wenn alle Spieler zugeteilt sind -> Zuteilung oeffnen
             </div>
           </div>
-          <span style={{color:"#d97706",fontSize:18}}>{">"}</span>
+          <span style={{color:"#d97706",fontSize:18}}>></span>
         </div>
       )}
       {}
@@ -13359,10 +10615,6 @@ function PlayersTab({ data,myTids,save,fire,cl }) {
         </>
       )}
 
-      {view==="list"&&selTeam&&(
-        <div style={{marginTop:16}}><ShareTeamLink cl={cl} team={selTeam} t={t}/></div>
-      )}
-
       {}
       {(editP||showNew) && (
         <PlayerProfile
@@ -13371,8 +10623,6 @@ function PlayersTab({ data,myTids,save,fire,cl }) {
           allEvents={allEvents}
           allPlayers={allPlayers}
           cid={cid}
-          sport={cl?.sport||"fussball"}
-          club={cl}
           onSave={savePlayer}
           onClose={()=>{setEditP(null);setShowNew(false);}}
           t={t}
@@ -13425,7 +10675,7 @@ function TemplateForm({initial,onSave,onCancel,cl,title}) {
   const dragIdx=useRef(null);
   const dragOverIdx=useRef(null);
 
-  const QUICK_EMOJIS=["⚽","🥤","🍕","🌭","🍰","🥗","🏆","🎉","🙋","🚌","🛒","🎯"];
+  const QUICK_EMOJIS=["*","Getraenk","Pizza","Bus","Helfer","Pokal","Fest","Salat","Kuchen","Ball","Ziel","Einkauf"];
 
   const addItem=()=>{
     if(!f._txt.trim())return;
@@ -13452,7 +10702,7 @@ function TemplateForm({initial,onSave,onCancel,cl,title}) {
 
       {}
       <div style={{marginBottom:14}}>
-        <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:8}}>SYMBOL WÄHLEN</div>
+        <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:8}}>SYMBOL WAeHLEN</div>
         <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
           {QUICK_EMOJIS.map(em=>(
             <button key={em} onClick={()=>u({icon:em})}
@@ -13474,7 +10724,7 @@ function TemplateForm({initial,onSave,onCancel,cl,title}) {
       <div style={{marginBottom:16}}>
         <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5}}>AUSWAHLMODUS</div>
         <div style={{display:"flex",gap:8}}>
-          {[["single","** Einfachauswahl","Nur eine Option wählbar"],["multi","** Mehrfachauswahl","Mehrere Optionen wählbar"]].map(([k,label,sub])=>(
+          {[["single","** Einfachauswahl","Nur eine Option waehlbar"],["multi","** Mehrfachauswahl","Mehrere Optionen waehlbar"]].map(([k,label,sub])=>(
             <div key={k} onClick={()=>u({selType:k})}
               style={{flex:1,borderRadius:14,border:`2px solid ${(f.selType||"multi")===k?t.p:"#e2e8f0"}`,background:(f.selType||"multi")===k?t.p+"10":"#fff",padding:"12px 10px",cursor:"pointer",textAlign:"center",transition:"all .15s"}}>
               <div style={{fontSize:22,marginBottom:4}}>{label.split(" ")[0]}</div>
@@ -13507,7 +10757,7 @@ function TemplateForm({initial,onSave,onCancel,cl,title}) {
 
         {}
         <div style={{background:`${t.p}08`,borderRadius:14,padding:"14px",border:`2px dashed ${t.p}35`}}>
-          <div style={{fontSize:12,fontWeight:700,color:t.p,marginBottom:10}}> Option hinzufügen</div>
+          <div style={{fontSize:12,fontWeight:700,color:t.p,marginBottom:10}}> Option hinzufuegen</div>
           <div style={{display:"flex",gap:8,marginBottom:10}}>
             <input ref={txtRef} value={f._txt} onChange={e=>u({_txt:e.target.value})}
               onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();addItem();}}}
@@ -13515,23 +10765,23 @@ function TemplateForm({initial,onSave,onCancel,cl,title}) {
               style={{flex:1,padding:"11px 13px",fontSize:14,border:`2px solid ${f._txt?t.p:"#e2e8f0"}`,borderRadius:11,outline:"none",background:"#fff",transition:"border-color .15s"}}/>
             <button onClick={addItem} disabled={!f._txt.trim()}
               style={{padding:"0 18px",height:44,borderRadius:11,border:"none",background:f._txt.trim()?t.p:"#e2e8f0",color:f._txt.trim()?contrast(t.p):"#94a3b8",fontWeight:700,fontSize:14,cursor:f._txt.trim()?"pointer":"default",transition:"all .18s",whiteSpace:"nowrap",fontFamily:"inherit",flexShrink:0}}>
-              + Hinzufügen
+              + Hinzufuegen
             </button>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             <label style={{fontSize:12,color:"#64748b",fontWeight:600,whiteSpace:"nowrap"}}>Maximum (optional):</label>
             <input value={f._max} onChange={e=>u({_max:e.target.value})} type="number" min="1" placeholder="z.B. 2"
               style={{width:70,padding:"8px 10px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",textAlign:"center"}}/>
-            <span style={{fontSize:11,color:"#94a3b8"}}>= max. xx auswählbar</span>
+            <span style={{fontSize:11,color:"#94a3b8"}}>= max. xx auswaehlbar</span>
           </div>
-          <p style={{fontSize:11,color:"#94a3b8",marginTop:8}}>Tipp: ? Enter = schnell hinzufügen</p>
+          <p style={{fontSize:11,color:"#94a3b8",marginTop:8}}>Tipp: ? Enter = schnell hinzufuegen</p>
         </div>
       </div>
 
       <Btn full ch={`* Vorlage speichern (${f.items.length} Option${f.items.length!==1?"en":""})`}
         onClick={()=>canSave&&onSave(f)} dis={!canSave} cl={cl}/>
       {!canSave&&f.name.trim()&&f.items.length===0&&(
-        <p style={{textAlign:"center",fontSize:12,color:"#f59e0b",marginTop:8}}> Mindestens eine Option hinzufügen</p>
+        <p style={{textAlign:"center",fontSize:12,color:"#f59e0b",marginTop:8}}> Mindestens eine Option hinzufuegen</p>
       )}
     </div>
   );
@@ -13578,9 +10828,9 @@ function ItemRow({item,idx,tp,onDragStart,onDragEnter,onDragEnd,onChange,onRemov
       {item.max&&<span style={{fontSize:11,fontWeight:700,color:"#d97706",background:"#fef3c7",borderRadius:6,padding:"3px 8px",whiteSpace:"nowrap"}}>max {item.max}x</span>}
       {}
       <button onClick={()=>setEditing(true)}
-        style={{width:30,height:30,borderRadius:8,background:"#eff6ff",border:"none",color:"#2563eb",fontSize:13,cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>✎</button>
+        style={{width:30,height:30,borderRadius:8,background:"#eff6ff",border:"none",color:"#2563eb",fontSize:13,cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}></button>
       <button onClick={onRemove}
-        style={{width:30,height:30,borderRadius:8,background:"#fee2e2",border:"none",color:"#dc2626",fontSize:14,fontWeight:800,cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+        style={{width:30,height:30,borderRadius:8,background:"#fee2e2",border:"none",color:"#dc2626",fontSize:14,fontWeight:800,cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}></button>
     </div>
   );
 }
@@ -13602,7 +10852,7 @@ function TemplatesTab({data,cid,save,fire,cl}) {
   };
   const doDel=id=>{
     save({...data,pollTemplates:(data.pollTemplates||[]).filter(x=>x.id!==id)});
-    setDelId(null);fire("Vorlage gelöscht");
+    setDelId(null);fire("Vorlage geloescht");
   };
 
   return (
@@ -13635,9 +10885,9 @@ function TemplatesTab({data,cid,save,fire,cl}) {
       {}
       {delId&&(
         <div style={{background:"#fff7f7",borderRadius:16,padding:"16px",border:"1.5px solid #fecaca",marginBottom:14}} className="in">
-          <p style={{fontWeight:700,fontSize:14,color:"#dc2626",marginBottom:12}}> Vorlage wirklich löschen?</p>
+          <p style={{fontWeight:700,fontSize:14,color:"#dc2626",marginBottom:12}}> Vorlage wirklich loeschen?</p>
           <div style={{display:"flex",gap:9}}>
-            <button onClick={()=>doDel(delId)} style={{flex:1,padding:"11px",borderRadius:12,border:"none",background:"#dc2626",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Ja,löschen</button>
+            <button onClick={()=>doDel(delId)} style={{flex:1,padding:"11px",borderRadius:12,border:"none",background:"#dc2626",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Ja,loeschen</button>
             <button onClick={()=>setDelId(null)} style={{flex:1,padding:"11px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
           </div>
         </div>
@@ -13648,7 +10898,7 @@ function TemplatesTab({data,cid,save,fire,cl}) {
         <div style={{textAlign:"center",padding:"48px 20px",background:"#f8fafc",borderRadius:20,border:"1.5px dashed #e2e8f0"}}>
           <div style={{fontSize:52,marginBottom:14}}></div>
           <p style={{fontWeight:800,fontSize:17,color:"#334155"}}>Noch keine Vorlagen</p>
-          <p style={{color:"#94a3b8",fontSize:13,marginTop:8,lineHeight:1.6}}>Erstelle Vorlagen für häufig genutzte Umfragen.<br/>Beim nächsten Termin laedst du sie mit einem Klick.</p>
+          <p style={{color:"#94a3b8",fontSize:13,marginTop:8,lineHeight:1.6}}>Erstelle Vorlagen fuer haeufig genutzte Umfragen.<br/>Beim naechsten Termin laedst du sie mit einem Klick.</p>
           <button onClick={()=>setMode("new")} style={{marginTop:16,padding:"12px 24px",borderRadius:13,border:"none",background:t.p,color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>+ Erste Vorlage erstellen</button>
         </div>
       )}
@@ -13756,18 +11006,18 @@ function SeriesWizard({f,u,t}) {
               {dates.map(d=><span key={d} style={{fontSize:11,fontWeight:700,background:t.p+"15",color:t.p,borderRadius:6,padding:"3px 8px"}}>{fmtS(d)}</span>)}
             </div>
           </div>}
-          {(f.recDays||[]).length===0&&<p style={{fontSize:12,color:"#f59e0b",fontWeight:600,marginTop:8}}> Mindestens einen Wochentag wählen</p>}
-          {(f.recDays||[]).length>0&&!f.recUntil&&<p style={{fontSize:12,color:"#f59e0b",fontWeight:600,marginTop:8}}> Enddatum wählen</p>}
+          {(f.recDays||[]).length===0&&<p style={{fontSize:12,color:"#f59e0b",fontWeight:600,marginTop:8}}> Mindestens einen Wochentag waehlen</p>}
+          {(f.recDays||[]).length>0&&!f.recUntil&&<p style={{fontSize:12,color:"#f59e0b",fontWeight:600,marginTop:8}}> Enddatum waehlen</p>}
         </>}
         {mode==="custom"&&<>
           <div style={{marginBottom:12}}>
-            <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:9,letterSpacing:.5}}>DATUM HINZUFÜGEN</div>
+            <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:9,letterSpacing:.5}}>DATUM HINZUFUeGEN</div>
             <div style={{display:"flex",gap:8}}>
               <input type="date" id="custDatePicker"
                 style={{flex:1,padding:"11px 12px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
               <button onClick={()=>{const el=document.getElementById("custDatePicker");const v=el?.value;if(!v||(f.recDates||[]).includes(v))return;u({recDates:[...(f.recDates||[]),v].sort()});el.value="";}}
                 style={{padding:"0 16px",height:44,borderRadius:11,border:"none",background:t.p,color:contrast(t.p),fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>
-                + Hinzufügen
+                + Hinzufuegen
               </button>
             </div>
           </div>
@@ -13776,12 +11026,12 @@ function SeriesWizard({f,u,t}) {
               {(f.recDates||[]).map(d=>(
                 <div key={d} style={{display:"flex",alignItems:"center",gap:5,background:t.p+"15",borderRadius:9,padding:"5px 10px",border:`1px solid ${t.p}30`}}>
                   <span style={{fontSize:12,fontWeight:700,color:t.p}}>{fmtS(d)}</span>
-                  <button onClick={()=>u({recDates:(f.recDates||[]).filter(x=>x!==d)})} style={{background:"none",border:"none",color:t.p,cursor:"pointer",fontSize:13,padding:0,opacity:.7}}>✕</button>
+                  <button onClick={()=>u({recDates:(f.recDates||[]).filter(x=>x!==d)})} style={{background:"none",border:"none",color:t.p,cursor:"pointer",fontSize:13,padding:0,opacity:.7}}></button>
                 </div>
               ))}
             </div>
-            <div style={{background:"#fff",borderRadius:12,padding:"10px 14px",border:`1.5px solid ${t.p}30`,fontSize:12,fontWeight:700,color:t.p}}> {(f.recDates||[]).length} Termine gewählt</div>
-          </>:<p style={{fontSize:12,color:"#94a3b8",textAlign:"center",padding:"10px"}}>Noch keine Daten ausgewählt</p>}
+            <div style={{background:"#fff",borderRadius:12,padding:"10px 14px",border:`1.5px solid ${t.p}30`,fontSize:12,fontWeight:700,color:t.p}}> {(f.recDates||[]).length} Termine gewaehlt</div>
+          </>:<p style={{fontSize:12,color:"#94a3b8",textAlign:"center",padding:"10px"}}>Noch keine Daten ausgewaehlt</p>}
         </>}
       </div>}
     </div>
@@ -13790,14 +11040,13 @@ function SeriesWizard({f,u,t}) {
 
 function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTemplate=null}) {
   const t=TH(cl); const isEdit=!!editEv; const STEPS=5;
-  const blank={tid:teams[0]?.id||"",type:"training",title:"",date:now(),time:"",endTime:"",loc:"",note:"",sollPlayers:null,maxPlayers:null,pt:"att",recMode:"none",recDays:[],recStart:now(),recUntil:"",recDates:[],li:[],fi:[],sc:[],selType:"multi",open:false,_li:{txt:"",max:""},_fi:{name:"",col:"#16a34a"},_sc:{fid:"",time:"",a:"",b:"",ref:""}};
+  const blank={tid:teams[0]?.id||"",type:"training",title:"",date:now(),time:"",loc:"",note:"",pt:"att",recMode:"none",recDays:[],recStart:now(),recUntil:"",recDates:[],li:[],fi:[],sc:[],selType:"multi",open:false,_li:{txt:"",max:""},_fi:{name:"",col:"#16a34a"},_sc:{fid:"",time:"",a:"",b:"",ref:""}};
   const [step,setStep]=useState(1);
   const [f,setF]=useState(editEv?{...blank,...editEv,recMode:"none",recDays:[],recDates:[],_li:{txt:"",max:""},_fi:{name:"",col:"#16a34a"},_sc:{fid:"",time:"",a:"",b:"",ref:""}}:blank);
   const u=p=>setF(prev=>({...prev,...p}));
   const ok=()=>{if(step===1)return!!f.tid;if(step===2)return!!f.type;if(step===3)return f.title.trim().length>1;return true;};
   const finish=()=>{
     const{_li,_fi,_sc,recMode,recDays,recStart,recUntil,recDates,...base}=f;
-    { const c=(teams.find(x=>x.id===base.tid)?.cat)||(teams.find(x=>x.id===base.tid)?.name)||""; if(base.sollPlayers==null) base.sollPlayers=defaultSollPlayers(c); }
     if(isEdit){onSave([{...base,id:editEv.id}]);return;}
     let eventDates=[];
     if(recMode==="weekly"&&recDays.length&&recUntil){
@@ -13814,7 +11063,7 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
     <div style={{minHeight:"100dvh",background:"#f0f4f8",display:"flex",flexDirection:"column"}}>
       <div style={{background:`linear-gradient(135deg,${t.s},${t.p}aa)`,padding:"16px 18px 20px"}}>
         <div style={{display:"flex",alignItems:"center",gap:11,marginBottom:14}}>
-          <button onClick={onClose} style={{width:34,height:34,borderRadius:11,background:"rgba(255,255,255,.15)",border:"none",color:"rgba(255,255,255,.8)",fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+          <button onClick={onClose} style={{width:34,height:34,borderRadius:11,background:"rgba(255,255,255,.15)",border:"none",color:"rgba(255,255,255,.8)",fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}></button>
           <div style={{flex:1}}><div style={{color:"rgba(255,255,255,.55)",fontSize:11,fontWeight:700}}>SCHRITT {step} / {STEPS} . {SL[step-1].toUpperCase()}</div><div style={{color:"#fff",fontWeight:900,fontSize:18,marginTop:2}}>{isEdit?"Termin bearbeiten":"Neuer Termin"}</div></div>
         </div>
         <div style={{height:4,borderRadius:99,background:"rgba(255,255,255,.2)"}}><div style={{height:"100%",borderRadius:99,background:"rgba(255,255,255,.9)",width:`${(step/STEPS)*100}%`,transition:"width .3s ease"}}/></div>
@@ -13844,40 +11093,10 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
           <Inp label="Titel" val={f.title} set={v=>u({title:v})} ph={`z.B. ${ET[f.type]?.label}`} af cl={cl}/>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:11}}>
             <Inp label="Uhrzeit" val={f.time} set={v=>u({time:v})} type="time" ph="09:00" cl={cl}/>
-            <Inp label="Ende (optional)" val={f.endTime} set={v=>u({endTime:v})} type="time" ph="" cl={cl}/>
+            <Inp label="Ort" val={f.loc} set={v=>u({loc:v})} ph="Sportplatz" cl={cl}/>
           </div>
-          <Inp label="Ort" val={f.loc} set={v=>u({loc:v})} ph="Sportplatz" cl={cl}/>
           <SeriesWizard f={f} u={u} t={t} cl={cl}/>
           {f.recMode==="none"&&<Inp label="Datum" val={f.date} set={v=>u({date:v})} type="date" cl={cl}/>}
-          {(()=>{
-            const selCat = (teams.find(x=>x.id===f.tid)?.cat)||(teams.find(x=>x.id===f.tid)?.name)||"";
-            const vorschlag = defaultSollPlayers(selCat);
-            const sollVal = (f.sollPlayers ?? vorschlag);
-            return (
-              <div>
-                <div style={{fontSize:11,fontWeight:800,color:"#64748b",margin:"4px 0 6px",letterSpacing:.5}}>SPIELERANZAHL (optional)</div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:11,alignItems:"end"}}>
-                  <div>
-                    <div style={{fontSize:11,color:"#94a3b8",marginBottom:4}}>Soll (für die Ampel)</div>
-                    <div style={{display:"flex",alignItems:"center",gap:6}}>
-                      <button type="button" onClick={()=>u({sollPlayers:Math.max(0,sollVal-1)})} style={{width:32,height:38,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontWeight:800,fontSize:16}}>–</button>
-                      <span style={{flex:1,textAlign:"center",fontWeight:900,fontSize:18}}>{sollVal}</span>
-                      <button type="button" onClick={()=>u({sollPlayers:sollVal+1})} style={{width:32,height:38,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontWeight:800,fontSize:16}}>+</button>
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{fontSize:11,color:"#94a3b8",marginBottom:4}}>Max (optional)</div>
-                    <div style={{display:"flex",alignItems:"center",gap:6}}>
-                      <button type="button" onClick={()=>u({maxPlayers:f.maxPlayers?Math.max(0,f.maxPlayers-1):0})} style={{width:32,height:38,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontWeight:800,fontSize:16}}>–</button>
-                      <span style={{flex:1,textAlign:"center",fontWeight:900,fontSize:18,color:f.maxPlayers?"#0f172a":"#cbd5e1"}}>{f.maxPlayers||"–"}</span>
-                      <button type="button" onClick={()=>u({maxPlayers:(f.maxPlayers||sollVal)+1})} style={{width:32,height:38,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontWeight:800,fontSize:16}}>+</button>
-                    </div>
-                  </div>
-                </div>
-                <div style={{fontSize:11,color:"#94a3b8",marginTop:5}}>Vorschlag {vorschlag} (für {selCat||"diese Mannschaft"}, DFB-Spielform) – anpassbar.</div>
-              </div>
-            );
-          })()}
           <Inp label="Nachricht an Eltern (optional)" val={f.note} set={v=>u({note:v})} ph="z.B. Bitte 15 Min frueher da sein..." rows={2} cl={cl}/>
         </div>}
         {}
@@ -13893,7 +11112,7 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
           {f.pt==="list"&&<div>
             {}
             <div style={{display:"flex",gap:8,marginBottom:14}}>
-              {[["multi","**","Mehrfachauswahl","Mehrere wählbar"],["single","**","Einfachauswahl","Nur eine wählbar"]].map(([k,em,label,sub])=>(
+              {[["multi","**","Mehrfachauswahl","Mehrere waehlbar"],["single","**","Einfachauswahl","Nur eine waehlbar"]].map(([k,em,label,sub])=>(
                 <div key={k} onClick={()=>u({selType:k})}
                   style={{flex:1,borderRadius:13,border:`2px solid ${(f.selType||"multi")===k?t.p:"#e2e8f0"}`,background:(f.selType||"multi")===k?t.p+"10":"#fff",padding:"10px 8px",cursor:"pointer",textAlign:"center",transition:"all .15s"}}>
                   <div style={{fontSize:20,marginBottom:2}}>{em}</div>
@@ -13921,7 +11140,7 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
                   <span style={{fontSize:12,color:t.p,fontWeight:700,minWidth:18}}>{i+1}.</span>
                   <span style={{flex:1,fontWeight:600,fontSize:14,color:"#334155"}}>{item.txt}</span>
                   {item.max&&<Tag c="#d97706" bg="#fef3c7" ch={`max ${item.max}`} sm/>}
-                  <button onClick={()=>u({li:f.li.filter((_,j)=>j!==i)})} style={{width:26,height:26,borderRadius:7,background:"#fee2e2",border:"none",color:"#dc2626",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:800}}>✕</button>
+                  <button onClick={()=>u({li:f.li.filter((_,j)=>j!==i)})} style={{width:26,height:26,borderRadius:7,background:"#fee2e2",border:"none",color:"#dc2626",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:800}}></button>
                 </div>
               ))}
             </div>
@@ -13934,7 +11153,7 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
                   style={{flex:1,padding:"10px 13px",fontSize:14,border:`2px solid ${f._li.txt?t.p:"#e2e8f0"}`,borderRadius:10,outline:"none"}}/>
                 <button onClick={()=>{if(!f._li.txt.trim())return;u({li:[...(f.li||[]),{id:uid(),txt:f._li.txt.trim(),max:f._li.max?parseInt(f._li.max):null}],_li:{txt:"",max:""}});}}
                   style={{padding:"0 14px",height:42,borderRadius:10,border:"none",background:f._li.txt.trim()?t.p:"#e2e8f0",color:f._li.txt.trim()?contrast(t.p):"#94a3b8",fontWeight:700,cursor:f._li.txt.trim()?"pointer":"default",fontFamily:"inherit",fontSize:13}}>
-                  + Hinzufügen
+                  + Hinzufuegen
                 </button>
               </div>
               <div style={{display:"flex",alignItems:"center",gap:8}}>
@@ -13950,7 +11169,7 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
         {step===5&&<div className="in">
           <div style={{background:"#0f172a",borderRadius:17,padding:"18px"}}>
             <p style={{color:"rgba(255,255,255,.45)",fontSize:11,fontWeight:800,marginBottom:13,letterSpacing:.5}}>ZUSAMMENFASSUNG</p>
-            {[[" Mannschaft",teamsSel?.icon+" "+teamsSel?.name],["Art",ET[f.type]?.icon+" "+ET[f.type]?.label],["Titel",f.title],["Uhrzeit",f.time||"-"],f.loc&&["Ort","* "+f.loc],f.note&&["Notiz","* "+f.note.slice(0,50)],["Umfrage",f.pt==="att"?"* Anwesenheit":f.pt==="carpool"?"* Fahrtgemeinschaft":`* Liste (${(f.li||[]).length} Opt.)`],["Termine",f.recMode==="weekly"?`* Woechentlich . ${f.recDays?.length||0} Tage`:f.recMode==="custom"?`* ${f.recDates?.length||0} Daten`:"1 Termin . "+fmtD(f.date)],f.open&&["Sichtbarkeit","* Offen für andere Vereine"]].filter(Boolean).filter(x=>!x.hidden).map(([k,v])=>(
+            {[[" Mannschaft",teamsSel?.icon+" "+teamsSel?.name],["Art",ET[f.type]?.icon+" "+ET[f.type]?.label],["Titel",f.title],["Uhrzeit",f.time||"-"],f.loc&&["Ort","* "+f.loc],f.note&&["Notiz","* "+f.note.slice(0,50)],["Umfrage",f.pt==="att"?"* Anwesenheit":f.pt==="carpool"?"* Fahrtgemeinschaft":`* Liste (${(f.li||[]).length} Opt.)`],["Termine",f.recMode==="weekly"?`* Woechentlich . ${f.recDays?.length||0} Tage`:f.recMode==="custom"?`* ${f.recDates?.length||0} Daten`:"1 Termin . "+fmtD(f.date)],f.open&&["Sichtbarkeit","* Offen fuer andere Vereine"]].filter(Boolean).filter(x=>!x.hidden).map(([k,v])=>(
               <div key={k} style={{display:"flex",gap:10,marginBottom:9}}>
                 <span style={{color:"rgba(255,255,255,.4)",fontSize:12,fontWeight:700,minWidth:90}}>{k}</span>
                 <span style={{color:"#fff",fontSize:13,fontWeight:700,flex:1}}>{v}</span>
@@ -13958,13 +11177,13 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
             ))}
           </div>
           {!isEdit&&<div style={{marginTop:14}}>
-            <Sw on={f.open} tog={()=>u({open:!f.open})} pri={t.p} label="* Offen für andere Vereine" sub="Eltern ohne Login können abstimmen"/>
+            <Sw on={f.open} tog={()=>u({open:!f.open})} pri={t.p} label="* Offen fuer andere Vereine" sub="Eltern ohne Login koennen abstimmen"/>
           </div>}
         </div>}
       </div>
       {}
       <div style={{padding:"12px 16px",background:"#fff",borderTop:"1px solid #f1f5f9",display:"flex",gap:10,position:"sticky",bottom:0}}>
-        {step>1?<Btn ch="<- Zurück" onClick={()=>setStep(s=>s-1)} v="gst" sx={{flex:1}}/>:<Btn ch="Abbrechen" onClick={onClose} v="gst" sx={{flex:1}}/>}
+        {step>1?<Btn ch="<- Zurueck" onClick={()=>setStep(s=>s-1)} v="gst" sx={{flex:1}}/>:<Btn ch="Abbrechen" onClick={onClose} v="gst" sx={{flex:1}}/>}
         {step<STEPS?<Btn ch="Weiter ->" onClick={()=>setStep(s=>s+1)} dis={!ok()} cl={cl} sx={{flex:2}}/>:<Btn ch={isEdit?"Speichern":f.recMode==="weekly"?"Serie erstellen":f.recMode==="custom"?`${(f.recDates||[]).length} Termine erstellen`:"Termin erstellen"} onClick={finish} cl={cl} sx={{flex:2}}/>}
       </div>
     </div>
@@ -13994,7 +11213,7 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
   const del=id=>{save({...data,helpers:(data.helpers||[]).filter(h=>h.id!==id)});fire("Helfer entfernt");};
   const toggle=id=>{
     const next=(data.helpers||[]).map(h=>h.id===id?{...h,active:!h.active}:h);
-    save({...data,helpers:next});fire("Status geändert");
+    save({...data,helpers:next});fire("Status geaendert");
   };
 
   return (
@@ -14007,7 +11226,7 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
       {allHelpers.length===0&&<div style={{textAlign:"center",padding:"32px",background:"#f8fafc",borderRadius:16,border:"1.5px dashed #e2e8f0"}}>
         <div style={{fontSize:36,marginBottom:8}}></div>
         <p style={{fontWeight:700,color:"#334155"}}>Noch keine Helfer angelegt</p>
-        <p style={{fontSize:13,color:"#94a3b8",marginTop:4}}>Erstelle personalisierte Zugänge mit eigenem Code</p>
+        <p style={{fontSize:13,color:"#94a3b8",marginTop:4}}>Erstelle personalisierte Zugaenge mit eigenem Code</p>
       </div>}
 
       <div style={{display:"flex",flexDirection:"column",gap:9}}>
@@ -14025,8 +11244,8 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
               </div>
               <div style={{display:"flex",gap:5}}>
                 <button onClick={()=>toggle(h.id)} style={{width:30,height:30,borderRadius:8,background:h.active!==false?"#fee2e2":"#dcfce7",border:"none",color:h.active!==false?"#dc2626":"#16a34a",cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>{h.active!==false?"?":"?"}</button>
-                <button onClick={()=>openEdit(h)} style={{width:30,height:30,borderRadius:8,background:"#eff6ff",border:"none",color:"#2563eb",cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center"}}>✎</button>
-                <button onClick={()=>del(h.id)} style={{width:30,height:30,borderRadius:8,background:"#fee2e2",border:"none",color:"#dc2626",cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+                <button onClick={()=>openEdit(h)} style={{width:30,height:30,borderRadius:8,background:"#eff6ff",border:"none",color:"#2563eb",cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center"}}></button>
+                <button onClick={()=>del(h.id)} style={{width:30,height:30,borderRadius:8,background:"#fee2e2",border:"none",color:"#dc2626",cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center"}}></button>
               </div>
             </div>
             {h.notes&&<div style={{padding:"0 14px 11px",fontSize:12,color:"#64748b",fontStyle:"italic"}}>{h.notes}</div>}
@@ -14043,13 +11262,13 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
           <div style={{display:"flex",justifyContent:"center",padding:"12px 0 4px"}}><div style={{width:44,height:4,borderRadius:99,background:"#e2e8f0"}}/></div>
           <div style={{padding:"8px 22px 44px",display:"flex",flexDirection:"column",gap:12}}>
             <h3 style={{fontWeight:900,fontSize:18,color:"#0f172a"}}>{editH?"Helfer bearbeiten":"Neuen Helfer anlegen"}</h3>
-            <Inp label="Name des Helfers" val={f.name} set={v=>u({name:v})} ph="z.B. Maria M." cl={cl} note="Datenschutz: Bitte nur Vorname, höchstens Nachname-Initial."/>
-            <Inp label="Kind im Verein (optional)" val={f.childName||""} set={v=>u({childName:v})} ph="z.B. Leon Müller,G-Jugend" cl={cl}/>
+            <Inp label="Name des Helfers" val={f.name} set={v=>u({name:v})} ph="z.B. Maria Mueller" cl={cl}/>
+            <Inp label="Kind im Verein (optional)" val={f.childName||""} set={v=>u({childName:v})} ph="z.B. Leon Mueller,G-Jugend" cl={cl}/>
             <Inp label="Notizen (intern)" val={f.notes||""} set={v=>u({notes:v})} ph="z.B. Hilft bei Heimspielen" rows={2} cl={cl}/>
 
             {}
             <div style={{background:"#eff6ff",borderRadius:12,padding:"12px 14px",border:"1.5px solid #bfdbfe"}}>
-              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6}}>LOGIN-CODE (persönlich & geheim)</div>
+              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6}}>LOGIN-CODE (persoenlich & geheim)</div>
               <div style={{display:"flex",alignItems:"center",gap:10}}>
                 <span style={{fontWeight:900,fontSize:22,color:"#2563eb",fontFamily:"monospace",flex:1}}>{f.code}</span>
                 <button onClick={()=>u({code:genCode()})} style={{padding:"6px 12px",borderRadius:9,border:"1.5px solid #bfdbfe",background:"#fff",color:"#2563eb",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}> Neu generieren</button>
@@ -14059,7 +11278,7 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
 
             {}
             <div>
-              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8}}>ZUGELASSEN FÜR</div>
+              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8}}>ZUGELASSEN FUeR</div>
               {myTeams.map(tm=>(
                 <label key={tm.id} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",borderRadius:11,border:`1.5px solid ${(f.tids||[]).includes(tm.id)?tm.col:"#e2e8f0"}`,background:(f.tids||[]).includes(tm.id)?tm.col+"12":"#fafafa",cursor:"pointer",marginBottom:6}}>
                   <input type="checkbox" checked={(f.tids||[]).includes(tm.id)} onChange={()=>u({tids:(f.tids||[]).includes(tm.id)?(f.tids||[]).filter(x=>x!==tm.id):[...(f.tids||[]),tm.id]})} style={{width:17,height:17,accentColor:tm.col}}/>
@@ -14071,7 +11290,7 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
 
             {}
             <div style={{display:"flex",alignItems:"center",gap:12,background:"#f8fafc",borderRadius:12,padding:"12px 14px",border:"1.5px solid #e2e8f0"}}>
-              <div style={{flex:1}}><div style={{fontWeight:700,fontSize:14}}>Account aktiv</div><div style={{fontSize:12,color:"#64748b",marginTop:2}}>Inaktive Accounts können sich nicht einloggen</div></div>
+              <div style={{flex:1}}><div style={{fontWeight:700,fontSize:14}}>Account aktiv</div><div style={{fontSize:12,color:"#64748b",marginTop:2}}>Inaktive Accounts koennen sich nicht einloggen</div></div>
               <div onClick={()=>u({active:!f.active})} style={{width:48,height:26,borderRadius:99,background:f.active?t.p:"#e2e8f0",position:"relative",cursor:"pointer",transition:"background .2s"}}>
                 <div style={{width:20,height:20,borderRadius:"50%",background:"#fff",position:"absolute",top:3,left:f.active?25:3,transition:"left .2s",boxShadow:"0 1px 4px rgba(0,0,0,.2)"}}/>
               </div>
@@ -14099,44 +11318,11 @@ function ChatTab({data,cid,myTids,session,save,fire,cl}) {
 
   const [selScope,setSelScope]=useState(scopes[0]?.id||"");
   const [text,setText]=useState("");
-  const [editId,setEditId]=useState(null);
-  const [editText,setEditText]=useState("");
-  const [menuId,setMenuId]=useState(null);
   const msgRef=useRef(null);
 
   const chats=data.chats||[];
   const chat=chats.find(c=>c.id===selScope);
   const msgs=chat?.messages||[];
-
-  const delMsg=(id)=>{
-    const next=chats.map(c=>c.id===selScope?{...c,messages:c.messages.filter(m=>m.id!==id)}:c);
-    save({...data,chats:next}); setMenuId(null); fire&&fire("Nachricht gelöscht");
-  };
-  const saveEdit=(id)=>{
-    if(!editText.trim()){ setEditId(null); return; }
-    const next=chats.map(c=>c.id===selScope?{...c,messages:c.messages.map(m=>m.id===id?{...m,text:editText.trim(),edited:true}:m)}:c);
-    save({...data,chats:next}); setEditId(null); setEditText(""); setMenuId(null);
-  };
-
-  // Auto-Löschung: Nachrichten älter als 30 Tage entfernen (läuft beim Öffnen des Chats)
-  useEffect(()=>{
-    const cutoff=Date.now()-30*24*60*60*1000;
-    const cur=data.chats||[];
-    let changed=false;
-    const cleaned=cur.map(c=>{
-      const keep=(c.messages||[]).filter(m=>m.system||new Date(m.ts).getTime()>=cutoff);
-      const removed=(c.messages||[]).length-keep.length;
-      if(removed>0){
-        changed=true;
-        // System-Vermerk an den Anfang, wenn noch nicht vorhanden für heute
-        const note={id:uid(),system:true,ts:new Date().toISOString(),text:removed+" ältere Nachricht"+(removed>1?"en":"")+" nach 30 Tagen automatisch gelöscht"};
-        return {...c,messages:[note,...keep]};
-      }
-      return c;
-    });
-    if(changed) save({...data,chats:cleaned});
-  // eslint-disable-next-line
-  },[]);
 
   const send=()=>{
     if(!text.trim())return;
@@ -14167,7 +11353,6 @@ function ChatTab({data,cid,myTids,session,save,fire,cl}) {
         ))}
       </div>
 
-      <div style={{fontSize:10.5,color:"#94a3b8",textAlign:"center",marginBottom:6}}>Nachrichten werden nach 30 Tagen automatisch gelöscht. Tippe auf deine eigene Nachricht zum Bearbeiten oder Löschen.</div>
       {}
       <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:10,paddingBottom:12}}>
         {msgs.length===0&&<div style={{textAlign:"center",padding:"32px",color:"#94a3b8"}}>
@@ -14178,14 +11363,6 @@ function ChatTab({data,cid,myTids,session,save,fire,cl}) {
         {msgs.map((msg,i)=>{
           const isMe=msg.author===session.name;
           const showDate=i===0||fmtD(msgs[i-1].ts)!==fmtD(msg.ts);
-          if(msg.system){
-            return (
-              <div key={msg.id}>
-                {showDate&&<div style={{textAlign:"center",marginBottom:8}}><span style={{fontSize:11,fontWeight:700,color:"#94a3b8",background:"#f1f5f9",borderRadius:99,padding:"3px 12px"}}>{fmtD(msg.ts)}</span></div>}
-                <div style={{textAlign:"center",margin:"4px 0"}}><span style={{fontSize:11,color:"#94a3b8",fontStyle:"italic",background:"#f8fafc",borderRadius:99,padding:"4px 12px"}}>{msg.text}</span></div>
-              </div>
-            );
-          }
           return (
             <div key={msg.id}>
               {showDate&&<div style={{textAlign:"center",marginBottom:8}}><span style={{fontSize:11,fontWeight:700,color:"#94a3b8",background:"#f1f5f9",borderRadius:99,padding:"3px 12px"}}>{fmtD(msg.ts)}</span></div>}
@@ -14193,29 +11370,9 @@ function ChatTab({data,cid,myTids,session,save,fire,cl}) {
                 {!isMe&&<Av name={msg.author} sz={28}/>}
                 <div style={{maxWidth:"78%"}}>
                   {!isMe&&<div style={{fontSize:11,fontWeight:700,color:roleColor[msg.role]||"#64748b",marginBottom:3,marginLeft:4}}>{msg.author} . <span style={{color:"#94a3b8",fontWeight:500}}>{roleLabel[msg.role]||msg.role}</span></div>}
-                  {editId===msg.id ? (
-                    <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                      <input value={editText} onChange={e=>setEditText(e.target.value)} autoFocus
-                        onKeyDown={e=>{if(e.key==="Enter")saveEdit(msg.id);if(e.key==="Escape")setEditId(null);}}
-                        style={{padding:"9px 12px",borderRadius:12,border:`1.5px solid ${t.p}`,fontSize:14,outline:"none",fontFamily:"inherit",minWidth:180}}/>
-                      <div style={{display:"flex",gap:6,justifyContent:"flex-end"}}>
-                        <button onClick={()=>setEditId(null)} style={{padding:"5px 11px",borderRadius:8,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
-                        <button onClick={()=>saveEdit(msg.id)} style={{padding:"5px 11px",borderRadius:8,border:"none",background:t.p,color:"#fff",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Speichern</button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div onClick={()=>{ if(isMe) setMenuId(menuId===msg.id?null:msg.id); }}
-                      style={{background:isMe?t.p:"#fff",color:isMe?contrast(t.p):"#0f172a",borderRadius:isMe?"18px 18px 4px 18px":"18px 18px 18px 4px",padding:"10px 14px",fontSize:14,lineHeight:1.5,boxShadow:isMe?`0 3px 12px ${t.p}44`:"0 1px 6px rgba(0,0,0,.07)",border:isMe?"none":"1.5px solid #f1f5f9",cursor:isMe?"pointer":"default"}}>
-                      {msg.text}
-                      {msg.edited&&<span style={{fontSize:10,opacity:.65,marginLeft:6}}>(bearbeitet)</span>}
-                    </div>
-                  )}
-                  {isMe&&menuId===msg.id&&editId!==msg.id&&(
-                    <div style={{display:"flex",gap:6,justifyContent:"flex-end",marginTop:5}}>
-                      <button onClick={()=>{setEditId(msg.id);setEditText(msg.text);setMenuId(null);}} style={{padding:"4px 10px",borderRadius:8,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>Bearbeiten</button>
-                      <button onClick={()=>delMsg(msg.id)} style={{padding:"4px 10px",borderRadius:8,border:"1.5px solid #fecaca",background:"#fef2f2",color:"#dc2626",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>Löschen</button>
-                    </div>
-                  )}
+                  <div style={{background:isMe?t.p:"#fff",color:isMe?contrast(t.p):"#0f172a",borderRadius:isMe?"18px 18px 4px 18px":"18px 18px 18px 4px",padding:"10px 14px",fontSize:14,lineHeight:1.5,boxShadow:isMe?`0 3px 12px ${t.p}44`:"0 1px 6px rgba(0,0,0,.07)",border:isMe?"none":"1.5px solid #f1f5f9"}}>
+                    {msg.text}
+                  </div>
                   <div style={{fontSize:10,color:"#94a3b8",marginTop:3,textAlign:isMe?"right":"left",marginLeft:isMe?0:4}}>{fmt(msg.ts)}</div>
                 </div>
               </div>
@@ -14236,6 +11393,7 @@ function ChatTab({data,cid,myTids,session,save,fire,cl}) {
           
         </button>
       </div>
+    </div>
     </div>
   );
 }
@@ -14283,7 +11441,7 @@ function JerseysTab({ data,myTids,save,fire,cl }) {
 
       {}
       <div style={{display:"flex",gap:8,marginBottom:16}}>
-        {[["overview","* Übersicht"],["collect","* Einsammeln"]].map(([m,l])=>(
+        {[["overview","* Uebersicht"],["collect","* Einsammeln"]].map(([m,l])=>(
           <button key={m} onClick={()=>setMode(m)}
             style={{flex:1,padding:"10px",borderRadius:12,border:`2px solid ${mode===m?t.p:"#e2e8f0"}`,background:mode===m?t.p:"#fff",color:mode===m?"#fff":"#475569",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",transition:"all .15s"}}>
             {l}
@@ -14324,7 +11482,7 @@ function JerseysTab({ data,myTids,save,fire,cl }) {
                       <div style={{flex:1}}>
                         <div style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>{pl.name}</div>
                         <div style={{fontSize:12,color:"#64748b",marginTop:1,display:"flex",gap:7}}>
-                          {pl.jerseySize&&<span>Größe {pl.jerseySize}</span>}
+                          {pl.jerseySize&&<span>Groesse {pl.jerseySize}</span>}
                           {pl.position&&<span>. {pl.position}</span>}
                         </div>
                       </div>
@@ -14433,7 +11591,6 @@ function AdBanner({ slot="auto",style={} }) {
   );
   return (
     <div style={{textAlign:"center",...style}}>
-      <div style={{fontSize:9,fontWeight:800,color:"#cbd5e1",letterSpacing:.5,marginBottom:2,textAlign:"left"}}>ANZEIGE</div>
       <ins ref={ref} className="adsbygoogle" style={{display:"block"}}
         data-ad-client={ADSENSE_ID} data-ad-slot={slot}
         data-ad-format="auto" data-full-width-responsive="true"/>
@@ -14441,12 +11598,14 @@ function AdBanner({ slot="auto",style={} }) {
   );
 }
 
+const APP_URL = "https://vereinsapp.de"; // Deine Domain hier eintragen
+
 function ShareBanner({ cl,session,trigger,onDismiss }) {
   const t = TH(cl);
   const [copied,setCopied] = useState(false);
   const [shared,setShared] = useState(false);
 
-  const shareText = `Ich nutze die Vereins-App für ${cl?.name || "unseren Verein"} - super einfach für Termine,Mannschaften und Kommunikation! ${APP_URL}`;
+  const shareText = `Ich nutze die Vereins-App fuer ${cl?.name || "unseren Verein"} - super einfach fuer Termine,Mannschaften und Kommunikation! ${APP_URL}`;
 
   const doShare = async () => {
     if (navigator.share) {
@@ -14475,13 +11634,13 @@ function ShareBanner({ cl,session,trigger,onDismiss }) {
     <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:990,padding:"0 0 env(safe-area-inset-bottom)",animation:"slideUp .35s ease"}}>
       <div style={{background:"#fff",borderRadius:"20px 20px 0 0",boxShadow:"0 -8px 40px rgba(0,0,0,.15)",border:"1px solid #e2e8f0",padding:"20px 20px 32px",maxWidth:520,margin:"0 auto"}}>
         {}
-        <button onClick={onDismiss} style={{position:"absolute",top:14,right:16,width:28,height:28,borderRadius:"50%",background:"#f1f5f9",border:"none",fontSize:14,cursor:"pointer",color:"#64748b"}}>✕</button>
+        <button onClick={onDismiss} style={{position:"absolute",top:14,right:16,width:28,height:28,borderRadius:"50%",background:"#f1f5f9",border:"none",fontSize:14,cursor:"pointer",color:"#64748b"}}></button>
 
         <div style={{display:"flex",alignItems:"flex-start",gap:12,marginBottom:14}}>
           <div style={{width:44,height:44,borderRadius:13,background:t.p+"15",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}></div>
           <div>
             <div style={{fontWeight:800,fontSize:16,color:"#0f172a",marginBottom:3}}>
-              {shared ? "Danke fürs Teilen!" : "Anderen Trainern helfen?"}
+              {shared ? "Danke fuers Teilen!" : "Anderen Trainern helfen?"}
             </div>
             <div style={{fontSize:13,color:"#64748b",lineHeight:1.5}}>
               {shared
@@ -14546,20 +11705,16 @@ function useShareTrigger(data,session,myTids) {
   return { trigger,dismiss };
 }
 
+  {id:"left",icon:"Tuer",label:"Verein verlassen"},{id:"injury",icon:"Krank",label:"Verletzt / Pause"},{id:"retired",icon:"Ende",label:"Karriereende"},{id:"nolust",icon:"Pause",label:"Keine Lust / Auszeit"},{id:"moved",icon:"Weg",label:"Weggezogen"},{id:"other",icon:"?",label:"Sonstiges"},];
+const AGE_GROUPS = [
+  {id:"bambinis",label:"Bambinis",icon:"B",ageRange:"U5-U6"},{id:"g",label:"G-Jugend",icon:"G",ageRange:"U7"},{id:"f",label:"F-Jugend",icon:"F",ageRange:"U8-U9"},{id:"e",label:"E-Jugend",icon:"E",ageRange:"U10-U11"},{id:"d",label:"D-Jugend",icon:"D",ageRange:"U12-U13"},{id:"c",label:"C-Jugend",icon:"C",ageRange:"U14-U15"},{id:"b",label:"B-Jugend",icon:"B2",ageRange:"U16-U17"},{id:"a",label:"A-Jugend",icon:"A",ageRange:"U18-U19"},{id:"seniors",label:"Senioren",icon:"S",ageRange:"Aktive"},{id:"altherren",label:"Alt-Herren",icon:"AH",ageRange:"Ue32"},{id:"frauen",label:"Frauen",icon:"FR",ageRange:"Aktive"},];
+
 function NewSeasonWizard({ data,save,fire,cl,myTids,onClose,onDone }) {
   const t=TH(cl||(data.clubs||[])[0]);
-  const clubId=(cl||(data.clubs||[])[0])?.id;
-  const curTeams=(data.teams||[]).filter(tm=>tm.cid===clubId&&!tm.endedSid);
   const [step,setStep]=useState(1);
   const [f,setF]=useState({label:"",ageGroups:[],teamCount:{},newPlayers:[],archivePlayers:[]});
-  // Mannschafts-Plan: pro bestehendem Team keep/drop + neue Teams
-  const [keep,setKeep]=useState(()=>{const o={};curTeams.forEach(tm=>o[tm.id]=true);return o;});
-  const [newTeams,setNewTeams]=useState([]); // {name,cat}
-  const [ntName,setNtName]=useState(""); const [ntCat,setNtCat]=useState((Object.keys(CAT_YEARS)[0])||"E-Jugend");
   const u=p=>setF(prev=>({...prev,...p}));
   const ok=()=>step===1?f.label.trim().length>=6:true;
-  const addNewTeam=()=>{ const nm=ntName.trim(); if(!nm)return; setNewTeams(a=>[...a,{name:nm,cat:ntCat}]); setNtName(""); };
-  const rmNewTeam=i=>setNewTeams(a=>a.filter((_,idx)=>idx!==i));
   const finish=()=>{
     const label = f.label.trim();
     if(!label) return;
@@ -14569,25 +11724,10 @@ function NewSeasonWizard({ data,save,fire,cl,myTids,onClose,onDone }) {
     const existingSids = (data.seasons||[]).map(s=>s.id);
     if(existingSids.includes(sid)) { fire&&fire("Saison existiert bereits"); return; }
     const activeSid = data.activeSeason || (data.seasons||[])[0]?.id || "";
-    // Teams: abgemeldete bekommen endedSid (bleiben in alter Saison erhalten), neue werden angelegt
-    const TEAM_COLORS = ["#16a34a","#2563eb","#d97706","#7c3aed","#dc2626","#0891b2","#059669","#ea580c"];
-    let teamsOut = (data.teams||[]).map(tm=>{
-      if(tm.cid!==clubId) return tm;
-      if(keep[tm.id]===false && !tm.endedSid) return {...tm, endedSid:sid}; // ab neuer Saison abgemeldet
-      return tm;
-    });
-    const createdTeams = newTeams.map((nt,i)=>({
-      id:uid(), cid:clubId, name:nt.name, icon:nt.name.slice(0,2).toUpperCase(),
-      col:TEAM_COLORS[(curTeams.length+i)%TEAM_COLORS.length],
-      pub:true, pwd:hashPw("team"), cat:nt.cat, years:CAT_YEARS[nt.cat]||"", startedSid:sid,
-    }));
-    teamsOut=[...teamsOut, ...createdTeams];
-    const keptTids = teamsOut.filter(tm=>tm.cid===clubId&&!tm.endedSid).map(tm=>tm.id);
-    // nur Spieler übernommener Teams kopieren
     const activePlayers = allP.filter(p=>
       !p.archived &&
       (!p.seasonId || p.seasonId===activeSid) &&
-      (keptTids.includes(p.mainTid) || !p.mainTid)
+      (myTids.includes(p.mainTid) || !p.mainTid)
     );
     const copied = activePlayers.map(p=>({
       ...p, id:uid(), seasonId:sid,
@@ -14598,19 +11738,15 @@ function NewSeasonWizard({ data,save,fire,cl,myTids,onClose,onDone }) {
     }));
     const nextData = {
       ...data,
-      teams: teamsOut,
       seasons: [...(data.seasons||[]), newSeason],
       playerProfiles: [...allP, ...copied],
-      events: (data.events||[]).map(e=> e.seasonId ? e : {...e, seasonId: activeSid}),
-      activeSeason: sid,
     };
     save(nextData);
-    const droppedN=curTeams.filter(tm=>keep[tm.id]===false).length;
-    fire&&fire("Saison "+label+" angelegt – "+copied.length+" Spieler, "+createdTeams.length+" neue, "+droppedN+" abgemeldet");
+    fire&&fire("Saison "+label+" angelegt - "+copied.length+" Spieler uebernommen");
     onDone&&onDone(sid);
     onClose();
   };
-  const STEPS=["Saison","Mannschaften","Bereit","Fertig"];
+  const STEPS=["Saison","Altersklassen","Fertig"];
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.65)",zIndex:960,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(8px)"}}>
       <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"90dvh",overflowY:"auto"}}>
@@ -14631,53 +11767,18 @@ function NewSeasonWizard({ data,save,fire,cl,myTids,onClose,onDone }) {
             </div>
           </>}
           {step===2&&<>
-            <h3 style={{fontWeight:900,fontSize:18,margin:"0 0 4px"}}>Mannschaften für {f.label||"die neue Saison"}</h3>
-            <p style={{fontSize:13,color:"#64748b",lineHeight:1.5,marginBottom:14}}>Wähle, welche Mannschaften übernommen werden. Abgemeldete bleiben in der alten Saison erhalten, die neue startet ohne sie.</p>
-            <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:16}}>
-              {curTeams.length===0&&<div style={{color:"#94a3b8",fontSize:13,textAlign:"center",padding:"10px"}}>Noch keine Mannschaften vorhanden.</div>}
-              {curTeams.map(tm=>(
-                <button key={tm.id} onClick={()=>setKeep(k=>({...k,[tm.id]:!k[tm.id]}))}
-                  style={{display:"flex",alignItems:"center",gap:11,padding:"11px 13px",borderRadius:12,border:`2px solid ${keep[tm.id]?t.p:"#e2e8f0"}`,background:keep[tm.id]?t.p+"0f":"#fff",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
-                  <div style={{width:34,height:34,borderRadius:9,background:tm.col||t.p,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:13,flexShrink:0}}>{tm.icon||tm.name?.slice(0,2).toUpperCase()}</div>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>{tm.name}</div>
-                    <div style={{fontSize:11.5,color:keep[tm.id]?"#16a34a":"#dc2626",fontWeight:700}}>{keep[tm.id]?"✓ wird übernommen":"✗ wird abgemeldet"}</div>
-                  </div>
-                  <div style={{width:24,height:24,borderRadius:7,border:`2px solid ${keep[tm.id]?t.p:"#cbd5e1"}`,background:keep[tm.id]?t.p:"#fff",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:14,flexShrink:0}}>{keep[tm.id]?"✓":""}</div>
-                </button>
-              ))}
-            </div>
-            <div style={{background:"#f8fafc",borderRadius:12,border:"1.5px dashed #cbd5e1",padding:"13px"}}>
-              <div style={{fontWeight:800,fontSize:13,color:"#334155",marginBottom:8}}>Neue Mannschaft hinzufügen (z.B. F-Jugend 2 oder aufgerückte Jugend)</div>
-              {newTeams.map((nt,i)=>(
-                <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,background:"#fff",borderRadius:9,padding:"7px 10px",border:"1px solid #e2e8f0"}}>
-                  <span style={{flex:1,fontSize:13,fontWeight:700,color:"#0f172a"}}>{nt.name} <span style={{color:"#94a3b8",fontWeight:600}}>· {nt.cat}</span></span>
-                  <button onClick={()=>rmNewTeam(i)} style={{background:"none",border:"none",color:"#dc2626",cursor:"pointer",fontWeight:800,fontSize:16,padding:0}}>×</button>
-                </div>
-              ))}
-              <input value={ntName} onChange={e=>setNtName(e.target.value)} placeholder="Name, z.B. F-Jugend 2"
-                style={{width:"100%",padding:"10px 12px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",marginBottom:8,boxSizing:"border-box"}}/>
-              <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:9}}>
-                {Object.keys(CAT_YEARS).map(c=>(
-                  <button key={c} onClick={()=>setNtCat(c)} style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid ${ntCat===c?t.p:"#e2e8f0"}`,background:ntCat===c?t.p:"#fff",color:ntCat===c?"#fff":"#475569",fontWeight:700,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>{c}</button>
-                ))}
-              </div>
-              <button onClick={addNewTeam} disabled={!ntName.trim()} style={{width:"100%",padding:"10px",borderRadius:10,border:"none",background:ntName.trim()?t.p:"#e2e8f0",color:ntName.trim()?"#fff":"#94a3b8",fontWeight:800,fontSize:13,cursor:ntName.trim()?"pointer":"default",fontFamily:"inherit"}}>+ Hinzufügen</button>
+            <h3 style={{fontWeight:900,fontSize:18,margin:"0 0 8px"}}>Bereit?</h3>
+            <p style={{fontSize:14,color:"#64748b",lineHeight:1.6}}>Alle aktiven Spieler der aktuellen Saison werden in die neue Saison {f.label} kopiert. Zuteilungen werden zurueckgesetzt - du kannst neu einteilen.</p>
+            <div style={{background:"#f0fdf4",borderRadius:12,padding:"12px",border:"1.5px solid #bbf7d0",marginTop:12,fontSize:13,color:"#166534"}}>
+              {(data.playerProfiles||[]).filter(p=>!p.archived&&myTids.includes(p.mainTid)).length} Spieler werden uebernommen
             </div>
           </>}
           {step===3&&<>
-            <h3 style={{fontWeight:900,fontSize:18,margin:"0 0 8px"}}>Bereit?</h3>
-            <p style={{fontSize:14,color:"#64748b",lineHeight:1.6}}>Die Spieler der übernommenen Mannschaften werden in die neue Saison {f.label} kopiert. Zuteilungen werden zurückgesetzt – du kannst neu einteilen.</p>
-            <div style={{background:"#f0fdf4",borderRadius:12,padding:"12px",border:"1.5px solid #bbf7d0",marginTop:12,fontSize:13,color:"#166534",lineHeight:1.7}}>
-              {curTeams.filter(tm=>keep[tm.id]).length} Mannschaften übernommen{newTeams.length>0?`, ${newTeams.length} neu`:""}{curTeams.filter(tm=>!keep[tm.id]).length>0?`, ${curTeams.filter(tm=>!keep[tm.id]).length} abgemeldet`:""}
-            </div>
-          </>}
-          {step===4&&<>
             <h3 style={{fontWeight:900,fontSize:18,margin:"0 0 8px"}}>Saison anlegen</h3>
             <p style={{fontSize:14,color:"#64748b"}}>Saison {f.label} wird als Planungs-Saison angelegt.</p>
           </>}
           <div style={{display:"flex",gap:9,marginTop:20,paddingBottom:32}}>
-            {step>1?<button onClick={()=>setStep(s=>s-1)} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Zurück</button>:<button onClick={onClose} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>}
+            {step>1?<button onClick={()=>setStep(s=>s-1)} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Zurueck</button>:<button onClick={onClose} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>}
             {step<STEPS.length?<button onClick={()=>ok()&&setStep(s=>s+1)} disabled={!ok()} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:ok()?t.p:"#e2e8f0",color:ok()?"#fff":"#94a3b8",fontWeight:800,cursor:ok()?"pointer":"default",fontFamily:"inherit"}}>Weiter</button>:<button onClick={finish} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:t.p,color:"#fff",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Saison anlegen</button>}
           </div>
         </div>
@@ -14697,7 +11798,7 @@ function SeasonPicker({ data,save,fire,onSelect,t }) {
   const teams = data.teams||[];
   return (
     <div style={{display:"flex",flexDirection:"column",gap:10}}>
-      {showWizard&&<NewSeasonWizard data={data} save={save} fire={fire} cl={clubs[0]||null} myTids={teams.map(tm=>tm.id)} onClose={()=>setShowWizard(false)} onDone={()=>setShowWizard(false)}/>}
+      {showWizard&&<NewSeasonWizard data={data} save={save} fire={fire} cl={clubs[0]||null} myTids={teams.map(tm=>tm.id)} onClose={()=>setShowWizard(false)} onDone={sid=>{switchActive(sid);setShowWizard(false);}}/>}
       {seasons.map(s=>{
         const st=STATUS[s.status]||STATUS.active;
         const isActive=s.id===active;
@@ -14712,7 +11813,7 @@ function SeasonPicker({ data,save,fire,onSelect,t }) {
               <div style={{fontSize:12,color:"#64748b"}}>{cnt} Spieler</div>
             </div>
             <div style={{display:"flex",gap:7}}>
-              {s.status!=="archived"&&<button onClick={()=>switchActive(s.id)} style={{padding:"7px 14px",borderRadius:10,border:`2px solid ${t.p}`,background:isActive?t.p:"#fff",color:isActive?"#fff":t.p,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{isActive?"Aktiv":"Öffnen"}</button>}
+              {s.status!=="archived"&&<button onClick={()=>switchActive(s.id)} style={{padding:"7px 14px",borderRadius:10,border:`2px solid ${t.p}`,background:isActive?t.p:"#fff",color:isActive?"#fff":t.p,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{isActive?"Aktiv":"Oeffnen"}</button>}
               {s.status==="planning"&&<button onClick={()=>archiveSeason(s.id)} style={{padding:"7px 12px",borderRadius:10,border:"1.5px solid #e2e8f0",background:"#f8fafc",color:"#64748b",fontWeight:600,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Archiv</button>}
             </div>
           </div>
@@ -14735,7 +11836,7 @@ function SeasonModal({ data,save,fire,cl,myTids,onClose }) {
   const [tab,setTab] = useState("seasons");
   const copyToSeason = (fromId,toId) => {
     const existing  = allPlayers.filter(p=>p.seasonId===toId);
-    if (existing.length > 0 && !window.confirm(`Die Saison hat bereits ${existing.length} Spieler. Trotzdem kopieren (Duplikate möglich)?`)) return;
+    if (existing.length > 0 && !window.confirm(`Die Saison hat bereits ${existing.length} Spieler. Trotzdem kopieren (Duplikate moeglich)?`)) return;
 
     const toCopy = allPlayers.filter(p => p.seasonId===fromId && myTids.includes(p.mainTid));
     const copied = toCopy.map(p => ({
@@ -14762,7 +11863,7 @@ function SeasonModal({ data,save,fire,cl,myTids,onClose }) {
         <div style={{padding:"8px 20px 48px"}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
             <h2 style={{fontWeight:900,fontSize:20,color:"#0f172a",margin:0}}> Saisonplanung</h2>
-            <button onClick={onClose} style={{width:34,height:34,borderRadius:11,background:"#f1f5f9",border:"none",fontSize:17,cursor:"pointer"}}>✕</button>
+            <button onClick={onClose} style={{width:34,height:34,borderRadius:11,background:"#f1f5f9",border:"none",fontSize:17,cursor:"pointer"}}></button>
           </div>
 
           {}
@@ -14779,7 +11880,7 @@ function SeasonModal({ data,save,fire,cl,myTids,onClose }) {
           {tab==="seasons"&&(
             <SeasonPicker
               data={data} save={save} fire={fire}
-              onSelect={sid=>{switchActive(sid);}}
+              onSelect={sid=>{switchActive(sid);setSelSeason(sid);}}
               t={t}
             />
           )}
@@ -14789,7 +11890,7 @@ function SeasonModal({ data,save,fire,cl,myTids,onClose }) {
             <div style={{display:"flex",flexDirection:"column",gap:14}}>
               <div style={{background:"#eff6ff",borderRadius:13,padding:"13px 15px",border:"1.5px solid #bfdbfe",fontSize:13,color:"#1d4ed8",lineHeight:1.6}}>
                  <strong>Spieler in neue Saison kopieren</strong><br/>
-                Alle Spieler werden übernommen. Ihr letztes Team wird automatisch als "Letzte Saison" eingetragen. Trikotnummern,Statistiken und Zuteilungen werden zurückgesetzt - so kannst du neu einteilen.
+                Alle Spieler werden uebernommen. Ihr letztes Team wird automatisch als "Letzte Saison" eingetragen. Trikotnummern,Statistiken und Zuteilungen werden zurueckgesetzt - so kannst du neu einteilen.
               </div>
 
               <div>
@@ -14811,7 +11912,7 @@ function SeasonModal({ data,save,fire,cl,myTids,onClose }) {
                 ) : (
                   <select value={copyTo} onChange={e=>setCopyTo(e.target.value)}
                     style={{width:"100%",padding:"11px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",background:"#fff"}}>
-                    <option value="">- Ziel-Saison wählen -</option>
+                    <option value="">- Ziel-Saison waehlen -</option>
                     {planningSeasons.map(s=>(
                       <option key={s.id} value={s.id}>{s.label}</option>
                     ))}
@@ -14822,7 +11923,7 @@ function SeasonModal({ data,save,fire,cl,myTids,onClose }) {
               {copyFrom&&copyTo&&(
                 <div style={{background:"#f8fafc",borderRadius:12,padding:"12px 14px",border:"1.5px solid #e2e8f0",fontSize:13,color:"#64748b"}}>
                   <strong style={{color:"#334155"}}>{allPlayers.filter(p=>p.seasonId===copyFrom&&myTids.includes(p.mainTid)).length} Spieler</strong> werden kopiert
-                  {" -> "}letztes Team vorausgefuellt,Positionen+Stärken übernommen,Zuteilung zurückgesetzt
+                  {" -> "}letztes Team vorausgefuellt,Positionen+Staerken uebernommen,Zuteilung zurueckgesetzt
                 </div>
               )}
 
@@ -14929,7 +12030,7 @@ function BookingModal({ field,cellStart,date,data,save,fire,cl,myTids,session,on
         <div style={{padding:"8px 20px 44px",display:"flex",flexDirection:"column",gap:14}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <div><div style={{fontWeight:900,fontSize:18,color:"#0f172a"}}>Platz buchen</div><div style={{fontSize:13,color:"#64748b"}}>{field.name} . {date}</div></div>
-            <button onClick={onClose} style={{width:34,height:34,borderRadius:11,background:"#f1f5f9",border:"none",fontSize:17,cursor:"pointer"}}>✕</button>
+            <button onClick={onClose} style={{width:34,height:34,borderRadius:11,background:"#f1f5f9",border:"none",fontSize:17,cursor:"pointer"}}></button>
           </div>
           {}
           <div>
@@ -14944,7 +12045,7 @@ function BookingModal({ field,cellStart,date,data,save,fire,cl,myTids,session,on
           </div>
           {}
           <div>
-            <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:7,letterSpacing:.5}}>PLATZGRÖSSE</div>
+            <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:7,letterSpacing:.5}}>PLATZGROeSSE</div>
             <div style={{display:"flex",gap:8}}>
               {SIZES.map(s=>(
                 <button key={s.cells} onClick={()=>u({cells:s.cells})}
@@ -14981,7 +12082,7 @@ function BookingModal({ field,cellStart,date,data,save,fire,cl,myTids,session,on
   );
 }
 
-function TrainerCard({ tr, data, onEdit, onDelete, onContact }) {
+function TrainerCard({ tr, data, onEdit, onDelete }) {
   const myTeams = (data.teams||[]).filter(tm=>(tr.tids||[]).includes(tm.id));
   const playerCount = myTeams.reduce((s,tm)=>s+(data.playerProfiles||[]).filter(p=>p.mainTid===tm.id).length,0);
   const myEvents = (data.events||[]).filter(e=>(tr.tids||[]).includes(e.tid));
@@ -15021,12 +12122,11 @@ function TrainerCard({ tr, data, onEdit, onDelete, onContact }) {
   );
 }
 
-function TrainersTab({data,cid,save,fire,session}) {
+function TrainersTab({data,cid,save,fire}) {
   const [showContactSetup, setShowContactSetup] = React.useState(null);
   const myTeams = (data.teams||[]).filter(x=>x.cid===cid);
   const myTrs   = (data.trainers||[]).filter(x=>x.cid===cid);
   const [showForm, setShowForm] = useState(false);
-  const [showBroadcast, setShowBroadcast] = useState(false);
   const [editId,   setEditId]   = useState(null);
   const [f, setF] = useState({name:"",pw:"",tids:[],phone:"",email:""});
   const u = p => setF(prev=>({...prev,...p}));
@@ -15043,17 +12143,18 @@ function TrainersTab({data,cid,save,fire,session}) {
     const next = editId ? (data.trainers||[]).map(x=>x.id===editId?rec:x) : [...(data.trainers||[]),rec];
     save({...data,trainers:next});
     setShowForm(false);
-    fire(editId?"Trainer aktualisiert":"Trainer hinzugefügt");
+    fire(editId?"Trainer aktualisiert":"Trainer hinzugefuegt");
   };
 
   return (
     <div>
       <TrainerStatsView data={data} cid={cid}/>
       {showBroadcast&&<BroadcastModal data={data} cid={cid} session={session} save={save} fire={fire} onClose={()=>setShowBroadcast(false)}/>}
-      {showContactSetup&&<TrainerContactSettings trainer={showContactSetup} cl={cl} onClose={()=>setShowContactSetup(null)} onSave={updated=>{ save({...data,trainers:(data.trainers||[]).map(x=>x.id===updated.id?updated:x)}); setShowContactSetup(null); fire("Kontakt gespeichert"); }}/>}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
         <div><p style={{fontWeight:900,fontSize:16,color:"#0f172a",margin:0}}>Trainer</p><p style={{fontSize:12,color:"#64748b",marginTop:2,margin:0}}>{myTrs.length} gesamt</p></div>
         <div style={{display:"flex",gap:8}}>
+          <button onClick={()=>setShowGroupHelper(true)}
+            style={{padding:"9px 12px",borderRadius:11,border:"1.5px solid #25D366",background:"#f0fdf4",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit",color:"#166534"}}>WA Gruppe</button>
           <button onClick={()=>setShowBroadcast(true)} style={{padding:"9px 14px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",color:"#475569"}}>Rundschreiben</button>
           <button onClick={openNew} style={{padding:"9px 16px",borderRadius:11,border:"none",background:"#16a34a",color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>+ Neuer Trainer</button>
         </div>
@@ -15061,19 +12162,18 @@ function TrainersTab({data,cid,save,fire,session}) {
       {myTrs.length===0&&!showForm&&(
         <div style={{textAlign:"center",padding:"32px",background:"#f8fafc",borderRadius:14,border:"1.5px dashed #e2e8f0"}}>
           <p style={{fontWeight:700,color:"#334155",margin:"0 0 4px"}}>Noch keine Trainer angelegt</p>
-          <p style={{fontSize:13,color:"#94a3b8",margin:0}}>Trainer können hier angelegt und Teams zugewiesen werden.</p>
+          <p style={{fontSize:13,color:"#94a3b8",margin:0}}>Trainer koennen hier angelegt und Teams zugewiesen werden.</p>
         </div>
       )}
-      {myTrs.map(tr=><TrainerCard key={tr.id} tr={tr} data={data} onContact={()=>setShowContactSetup(tr)} onEdit={()=>openEdit(tr)} onDelete={()=>del(tr.id)}/>)}
+      {myTrs.map(tr=><TrainerCard key={tr.id} tr={tr} data={data} onContact={()=>setContactSetupFor(tr)} onEdit={()=>openEdit(tr)} onDelete={()=>del(tr.id)}/>)}
       {showForm&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:800,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
           <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"90dvh",overflowY:"auto",padding:"20px 22px 48px"}}>
             <h3 style={{fontWeight:900,fontSize:18,color:"#0f172a",marginBottom:16}}>{editId?"Trainer bearbeiten":"Neuen Trainer anlegen"}</h3>
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
-              <input value={f.name} onChange={e=>u({name:e.target.value})} placeholder="Name (z.B. Max M.)"
+              <input value={f.name} onChange={e=>u({name:e.target.value})} placeholder="Name des Trainers"
                 style={{padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
-              <div style={{fontSize:12,color:"#94a3b8",marginTop:-4}}>Datenschutz: Bitte nur Vorname, höchstens Nachname-Initial.</div>
-              <input type="password" value={f.pw} onChange={e=>u({pw:e.target.value})} placeholder={editId?"Neues Passwort (leer = unverändert)":"Passwort"}
+              <input type="password" value={f.pw} onChange={e=>u({pw:e.target.value})} placeholder={editId?"Neues Passwort (leer = unveraendert)":"Passwort"}
                 style={{padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
               <input value={f.phone||""} onChange={e=>u({phone:e.target.value})} placeholder="Telefon (optional)"
                 style={{padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
@@ -15097,193 +12197,6 @@ function TrainersTab({data,cid,save,fire,session}) {
 }
 
 
-// Tages-Zeitleiste pro Platz im 15-Minuten-Raster
-function toMin(t){ if(!t) return null; const [h,m]=t.split(":").map(Number); if(Number.isNaN(h)||Number.isNaN(m)) return null; return h*60+m; }
-function minToTime(min){ const h=Math.floor(min/60)%24, m=min%60; return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0"); }
-function DayTimeline({ field, bookings, trainings, date, dayStart=480, dayEnd=1320, onSlot, onCancel, tCol, t }){
-  const SLOT=15;                       // Minuten pro Zelle
-  const PXP=0.9;                       // Pixel pro Minute
-  const totalMin=dayEnd-dayStart;
-  const H=totalMin*PXP;
-  const hourLines=[];
-  for(let m=dayStart; m<=dayEnd; m+=60){ hourLines.push(m); }
-  const areaLabel=(cs,cells)=>{
-    if((cells||8)>=8) return "";
-    if(cells===4) return cs>=4?"rechts":"links";
-    if(cells===2) return ["Feld 1","Feld 2","Feld 3","Feld 4"][Math.floor((cs||0)/2)]||"";
-    // Achtel (1 Zelle)
-    return "Feld "+((cs||0)+1);
-  };
-  const blocks=bookings.map(b=>{
-    const s=toMin(b.timeFrom), e=toMin(b.timeTo);
-    if(s==null||e==null||e<=s) return null;
-    const area=areaLabel(b.cellStart||0,b.cells||8);
-    return { id:b.id, label:(b.teamName||b.booker||"Belegt"), area, from:s, to:e, color:tCol(b.teamName||b.booker||"?"), kind:"booking" };
-  }).filter(Boolean);
-  const trainBlocks=(trainings||[]).map(ev=>{
-    const s=toMin(ev.time); const dur=eventDurationMin(ev);
-    if(s==null||!dur) return null;
-    return { id:"ev_"+ev.id, label:(ev.title||"Training"), from:s, to:s+dur, color:"#0891b2", kind:"training" };
-  }).filter(Boolean);
-  const all=[...blocks,...trainBlocks];
-  return (
-    <div style={{display:"flex",gap:8}}>
-      <div style={{position:"relative",width:42,flexShrink:0,height:H}}>
-        {hourLines.map(m=>(
-          <div key={m} style={{position:"absolute",top:(m-dayStart)*PXP-6,fontSize:10,color:"#94a3b8",fontWeight:700}}>{minToTime(m)}</div>
-        ))}
-      </div>
-      <div style={{position:"relative",flex:1,height:H,background:"#f8fafc",borderRadius:10,border:"1.5px solid #e2e8f0",overflow:"hidden"}}>
-        {Array.from({length:Math.ceil(totalMin/SLOT)},(_,i)=>{
-          const m=dayStart+i*SLOT;
-          const isHour=m%60===0;
-          return (
-            <div key={i} onClick={()=>onSlot&&onSlot(minToTime(m))}
-              style={{position:"absolute",top:(m-dayStart)*PXP,left:0,right:0,height:SLOT*PXP,
-                borderTop:isHour?"1px solid #e2e8f0":"1px solid #f1f5f9",cursor:"pointer"}}/>
-          );
-        })}
-        {all.map(bl=>{
-          const top=(bl.from-dayStart)*PXP, h=(bl.to-bl.from)*PXP;
-          // Horizontale Position nach Bereich: links/rechts/ganz
-          let lft="3px", rgt="3px";
-          if(bl.area==="links") rgt="51%";
-          else if(bl.area==="rechts") lft="51%";
-          else if(/Feld [12]/.test(bl.area)) rgt="51%";
-          else if(/Feld [34]/.test(bl.area)) lft="51%";
-          return (
-            <div key={bl.id} style={{position:"absolute",top,left:lft,right:rgt,height:Math.max(h-2,14),
-              background:bl.color,borderRadius:7,padding:"3px 7px",color:"#fff",overflow:"hidden",
-              boxShadow:"0 1px 4px rgba(0,0,0,.15)",border:bl.kind==="training"?"2px dashed rgba(255,255,255,.6)":"none"}}>
-              <div style={{fontSize:10.5,fontWeight:800,lineHeight:1.2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{bl.label}{bl.area?<span style={{fontSize:8.5,fontWeight:700,opacity:.85,marginLeft:4,background:"rgba(255,255,255,.25)",borderRadius:4,padding:"0 4px"}}>{bl.area}</span>:null}</div>
-              <div style={{fontSize:9.5,opacity:.9}}>{minToTime(bl.from)}–{minToTime(bl.to)}{bl.kind==="training"?" · Termin":""}</div>
-              {bl.kind==="booking"&&onCancel&&<button onClick={e=>{e.stopPropagation();onCancel(bl.id);}} style={{position:"absolute",top:2,right:2,width:18,height:18,borderRadius:5,background:"rgba(0,0,0,.25)",border:"none",color:"#fff",cursor:"pointer",fontSize:11,fontWeight:800,lineHeight:1,padding:0}}>×</button>}
-            </div>
-          );
-        })}
-        {all.length===0&&<div style={{position:"absolute",top:"50%",left:0,right:0,transform:"translateY(-50%)",textAlign:"center",fontSize:12,color:"#cbd5e1",fontWeight:700}}>frei – tippe für Buchung</div>}
-      </div>
-    </div>
-  );
-}
-
-// Wochenansicht: 7 Tagesspalten nebeneinander (horizontal scrollbar auf dem Handy)
-function WeekTimeline({ field, bookings, allTrainings, weekStart, dayStart=480, dayEnd=1320, onPickDay, tCol }){
-  const PXP=0.55;                      // kompakter als Tagesansicht
-  const totalMin=dayEnd-dayStart;
-  const H=totalMin*PXP;
-  const DAYS=["Mo","Di","Mi","Do","Fr","Sa","So"];
-  // 7 Tage ab weekStart (Montag)
-  const days=Array.from({length:7},(_,i)=>{
-    const d=new Date(weekStart+"T12:00:00"); d.setDate(d.getDate()+i);
-    return d.toISOString().slice(0,10);
-  });
-  const hourLines=[];
-  for(let m=dayStart;m<=dayEnd;m+=120){ hourLines.push(m); } // alle 2h ein Label (kompakt)
-  const today=new Date().toISOString().slice(0,10);
-  const blocksFor=(date)=>{
-    const bk=bookings.filter(b=>b.fieldId===field.id&&b.date===date).map(b=>{
-      const s=toMin(b.timeFrom),e=toMin(b.timeTo); if(s==null||e==null||e<=s)return null;
-      return {from:s,to:e,color:tCol(b.teamName||b.booker||"?"),label:b.teamName||"Belegt",kind:"booking"};
-    }).filter(Boolean);
-    const tr=(allTrainings||[]).filter(ev=>ev.date===date).map(ev=>{
-      const s=toMin(ev.time),dur=eventDurationMin(ev); if(s==null||!dur)return null;
-      return {from:s,to:s+dur,color:"#0891b2",label:ev.title||"Training",kind:"training"};
-    }).filter(Boolean);
-    return [...bk,...tr];
-  };
-  return (
-    <div style={{display:"flex",gap:4,overflowX:"auto",WebkitOverflowScrolling:"touch",paddingBottom:4}}>
-      {/* Zeitachse */}
-      <div style={{position:"relative",width:30,flexShrink:0,height:H+18}}>
-        <div style={{height:18}}/>
-        {hourLines.map(m=>(
-          <div key={m} style={{position:"absolute",top:18+(m-dayStart)*PXP-5,fontSize:8.5,color:"#94a3b8",fontWeight:700}}>{minToTime(m)}</div>
-        ))}
-      </div>
-      {days.map((date,di)=>{
-        const blocks=blocksFor(date);
-        const isToday=date===today;
-        return (
-          <div key={date} style={{flex:"1 0 44px",minWidth:44}}>
-            <div onClick={()=>onPickDay&&onPickDay(date)} style={{height:18,textAlign:"center",fontSize:10,fontWeight:800,color:isToday?"#fff":"#475569",background:isToday?"#16a34a":"transparent",borderRadius:6,cursor:"pointer",lineHeight:"18px",marginBottom:1}}>{DAYS[di]} {new Date(date+"T12:00:00").getDate()}</div>
-            <div style={{position:"relative",height:H,background:"#f8fafc",borderRadius:7,border:"1px solid #e2e8f0",overflow:"hidden"}}>
-              {hourLines.map(m=>(
-                <div key={m} style={{position:"absolute",top:(m-dayStart)*PXP,left:0,right:0,borderTop:"1px solid #f1f5f9"}}/>
-              ))}
-              {blocks.map((bl,i)=>{
-                const top=(bl.from-dayStart)*PXP,h=(bl.to-bl.from)*PXP;
-                return (
-                  <div key={i} title={bl.label+" "+minToTime(bl.from)+"–"+minToTime(bl.to)}
-                    style={{position:"absolute",top,left:1,right:1,height:Math.max(h-1,7),
-                      background:bl.color,borderRadius:4,overflow:"hidden",
-                      border:bl.kind==="training"?"1.5px dashed rgba(255,255,255,.7)":"none"}}>
-                    <div style={{fontSize:7.5,fontWeight:800,color:"#fff",padding:"1px 3px",lineHeight:1.1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{bl.label}</div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-// Buchungs-Dialog als eigene Komponente (Hooks regelkonform)
-function FieldBookingModal({ field, myTeams, prefillFrom, t, onCancel, onBook }){
-  const split = field.split || field.segments || 1;
-  // Größenoptionen abhängig von der Platz-Teilung (8-Zellen-Modell: ganz=8, halb=4, viertel=2, achtel=1)
-  const sizeOptions = split>=8 ? [[1,"Achtel"],[2,"Viertel"],[4,"Halb"],[8,"Ganz"]]
-    : split>=4 ? [[2,"Viertel"],[4,"Halb"],[8,"Ganz"]]
-    : split>=2 ? [[4,"Halbe Seite"],[8,"Ganz"]]
-    : [[8,"Ganzer Platz"]];
-  const [sel,setSel]=useState({teamId:myTeams[0]?.id||"",cells:split>=2?4:8,cellStart:0,from:prefillFrom||"09:00",to:addMins(prefillFrom||"09:00",90)});
-  // mögliche Bereiche je nach gewählter Größe (cells)
-  const areaOptions = sel.cells>=8 ? [[0,"Ganzer Platz"]]
-    : sel.cells===4 ? [[0,"Linke Hälfte"],[4,"Rechte Hälfte"]]
-    : sel.cells===2 ? [[0,"Feld 1 (links)"],[2,"Feld 2"],[4,"Feld 3"],[6,"Feld 4 (rechts)"]]
-    : [[0,"Feld 1"],[1,"Feld 2"],[2,"Feld 3"],[3,"Feld 4"],[4,"Feld 5"],[5,"Feld 6"],[6,"Feld 7"],[7,"Feld 8"]];
-  // Bereich-Auswahl: setzt cellStart direkt; bei Größenwechsel auf 0
-  const pickArea = start => setSel(p=>({...p,cellStart:start}));
-  const setSize = cells => setSel(p=>({...p,cells,cellStart:0}));
-  return (
-    <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:910,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
-      <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,padding:"20px 22px 44px"}}>
-        <h3 style={{fontWeight:900,fontSize:18,marginBottom:16}}>Platz buchen – {field.name}</h3>
-        <div style={{display:"flex",flexDirection:"column",gap:10}}>
-          <select value={sel.teamId} onChange={e=>setSel(p=>({...p,teamId:e.target.value}))} style={{padding:"10px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}>
-            {myTeams.map(tm=><option key={tm.id} value={tm.id}>{tm.name}</option>)}
-          </select>
-          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-            {sizeOptions.map(([cells,lbl])=>(
-              <button key={cells} onClick={()=>setSize(cells)} style={{flex:"1 0 auto",padding:"10px",borderRadius:11,border:`2px solid ${sel.cells===cells?t.p:"#e2e8f0"}`,background:sel.cells===cells?t.p:"#fff",color:sel.cells===cells?"#fff":"#334155",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{lbl}</button>
-            ))}
-          </div>
-          {sel.cells!==8 && (
-            <div>
-              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:5}}>WELCHER BEREICH? (mehrere Teams können gleichzeitig verschiedene Bereiche nutzen)</div>
-              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                {areaOptions.map(([start,lbl])=>(
-                  <button key={start} onClick={()=>pickArea(start)} style={{flex:"1 0 auto",padding:"8px 10px",borderRadius:9,border:`2px solid ${sel.cellStart===start?t.p:"#e2e8f0"}`,background:sel.cellStart===start?t.p+"18":"#fff",color:sel.cellStart===start?t.p:"#475569",fontWeight:700,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>{lbl}</button>
-                ))}
-              </div>
-            </div>
-          )}
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-            <input type="time" value={sel.from} onChange={e=>setSel(p=>({...p,from:e.target.value}))} style={{padding:"10px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
-            <input type="time" value={sel.to} onChange={e=>setSel(p=>({...p,to:e.target.value}))} style={{padding:"10px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
-          </div>
-        </div>
-        <div style={{display:"flex",gap:9,marginTop:16}}>
-          <button onClick={onCancel} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
-          <button onClick={()=>onBook(field,sel.teamId,sel.cells,sel.from,sel.to,sel.cells===8?0:sel.cellStart)} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:t.p,color:"#fff",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Buchen</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function FieldsTab({ data,myTids,session,save,fire,cl }) {
   const t = TH(cl);
   const cid = (data.teams||[]).find(tm=>myTids.includes(tm.id))?.cid;
@@ -15291,41 +12204,17 @@ function FieldsTab({ data,myTids,session,save,fire,cl }) {
   const bookings = data.bookings||[];
   const [selDate,setSelDate] = useState(new Date().toISOString().slice(0,10));
   const [bookTarget,setBookTarget] = useState(null);
-  const [view,setView] = useState("timeline"); // timeline | week | grid
-  const [prefillFrom,setPrefillFrom] = useState(null);
   const dayBk = fid => bookings.filter(b=>b.fieldId===fid&&b.date===selDate);
-  // Trainings-Termine des Tages (für automatische Anzeige in der Zeitleiste)
-  const dayTrainings = (data.events||[]).filter(e=>e.date===selDate&&e.type==="training"&&myTids.includes(e.tid)&&e.time);
-  // Alle Trainings (für Wochenansicht)
-  const allTrainings = (data.events||[]).filter(e=>e.type==="training"&&myTids.includes(e.tid)&&e.time);
-  // Montag der Woche, in der selDate liegt
-  const weekStart = (()=>{ const d=new Date(selDate+"T12:00:00"); const jd=d.getDay(); const off=jd===0?6:jd-1; d.setDate(d.getDate()-off); return d.toISOString().slice(0,10); })();
   const myTeams = (data.teams||[]).filter(tm=>myTids.includes(tm.id));
   const COLORS = ["#2563eb","#16a34a","#d97706","#7c3aed","#dc2626"];
   const tCol = name => COLORS[Math.abs((name||"").split("").reduce((a,c)=>a+c.charCodeAt(0),0))%COLORS.length];
-  const cancelBk = id => { save({...data,bookings:bookings.filter(b=>b.id!==id)}); fire("Buchung gelöscht"); };
-  const addBk = (field,teamId,cells,timeFrom,timeTo,cellStart=0) => {
-    const ns=toMin(timeFrom), ne=toMin(timeTo);
-    if(ns==null||ne==null||ne<=ns){ fire("Bitte gültige Start- und Endzeit wählen"); return false; }
-    const nCellEnd = cellStart + cells;
-    // Konflikt nur, wenn sich ZEIT UND PLATZBEREICH überschneiden
-    const clash = bookings.find(b=>{
-      if(b.fieldId!==field.id||b.date!==selDate) return false;
-      const bs=toMin(b.timeFrom), be=toMin(b.timeTo);
-      if(bs==null||be==null) return false;
-      const timeOverlap = ns<be && bs<ne;
-      if(!timeOverlap) return false;
-      const bStart=b.cellStart||0, bEnd=bStart+(b.cells||8);
-      const cellOverlap = cellStart<bEnd && bStart<nCellEnd;   // Bereiche überschneiden sich
-      return cellOverlap;
-    });
-    if(clash){ fire("Bereich in dieser Zeit schon belegt: "+(clash.teamName||clash.booker||"andere Buchung")+" ("+clash.timeFrom+"–"+clash.timeTo+")"); return false; }
+  const cancelBk = id => { save({...data,bookings:bookings.filter(b=>b.id!==id)}); fire("Buchung geloescht"); };
+  const addBk = (field,teamId,cells,timeFrom,timeTo) => {
     const tm = myTeams.find(x=>x.id===teamId);
-    const bk = {id:uid(),fieldId:field.id,date:selDate,cellStart,cells,teamId,teamName:tm?.name||"",booker:session?.name||"",timeFrom,timeTo,cid:field.cid};
+    const bk = {id:uid(),fieldId:field.id,date:selDate,cellStart:0,cells,teamId,teamName:tm?.name||"",booker:session?.name||"",timeFrom,timeTo,cid:field.cid};
     save({...data,bookings:[...bookings,bk]});
     fire("Platz gebucht");
     setBookTarget(null);
-    return true;
   };
   return (
     <div>
@@ -15334,17 +12223,37 @@ function FieldsTab({ data,myTids,session,save,fire,cl }) {
         <input type="date" value={selDate} onChange={e=>setSelDate(e.target.value)} style={{flex:1,padding:"7px 10px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none"}}/>
         <button onClick={()=>{const d=new Date(selDate+"T12:00:00");d.setDate(d.getDate()+1);setSelDate(d.toISOString().slice(0,10));}} style={{width:32,height:32,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",cursor:"pointer",fontSize:18}}>&#8250;</button>
       </div>
-      <div style={{display:"flex",gap:6,marginBottom:14}}>
-        <button onClick={()=>setView("timeline")} style={{flex:1,padding:"8px",borderRadius:10,border:`1.5px solid ${view==="timeline"?t.p:"#e2e8f0"}`,background:view==="timeline"?t.p:"#fff",color:view==="timeline"?"#fff":"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Tag</button>
-        <button onClick={()=>setView("week")} style={{flex:1,padding:"8px",borderRadius:10,border:`1.5px solid ${view==="week"?t.p:"#e2e8f0"}`,background:view==="week"?t.p:"#fff",color:view==="week"?"#fff":"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Woche</button>
-        <button onClick={()=>setView("grid")} style={{flex:1,padding:"8px",borderRadius:10,border:`1.5px solid ${view==="grid"?t.p:"#e2e8f0"}`,background:view==="grid"?t.p:"#fff",color:view==="grid"?"#fff":"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Aufteilung</button>
-      </div>
       {bookTarget&&(
-        <FieldBookingModal field={bookTarget} myTeams={myTeams} prefillFrom={prefillFrom} t={t}
-          onCancel={()=>{setBookTarget(null);setPrefillFrom(null);}}
-          onBook={(field,teamId,cells,from,to,cellStart)=>addBk(field,teamId,cells,from,to,cellStart)}/>
+        <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:910,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+          <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,padding:"20px 22px 44px"}}>
+            <h3 style={{fontWeight:900,fontSize:18,marginBottom:16}}>Platz buchen - {bookTarget.name}</h3>
+            {(()=>{
+              const [sel,setSel]=React.useState({teamId:myTeams[0]?.id||"",cells:4,from:"09:00",to:"10:00"});
+              return <>
+                <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                  <select value={sel.teamId} onChange={e=>setSel(p=>({...p,teamId:e.target.value}))} style={{padding:"10px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}>
+                    {myTeams.map(tm=><option key={tm.id} value={tm.id}>{tm.name}</option>)}
+                  </select>
+                  <div style={{display:"flex",gap:8}}>
+                    {[[2,"Viertel"],[4,"Halb"],[8,"Ganz"]].map(([cells,lbl])=>(
+                      <button key={cells} onClick={()=>setSel(p=>({...p,cells}))} style={{flex:1,padding:"10px",borderRadius:11,border:`2px solid ${sel.cells===cells?t.p:"#e2e8f0"}`,background:sel.cells===cells?t.p:"#fff",color:sel.cells===cells?"#fff":"#334155",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{lbl}</button>
+                    ))}
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                    <input type="time" value={sel.from} onChange={e=>setSel(p=>({...p,from:e.target.value}))} style={{padding:"10px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
+                    <input type="time" value={sel.to} onChange={e=>setSel(p=>({...p,to:e.target.value}))} style={{padding:"10px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
+                  </div>
+                </div>
+                <div style={{display:"flex",gap:9,marginTop:16}}>
+                  <button onClick={()=>setBookTarget(null)} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
+                  <button onClick={()=>addBk(bookTarget,sel.teamId,sel.cells,sel.from,sel.to)} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:t.p,color:"#fff",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Buchen</button>
+                </div>
+              </>;
+            })()}
+          </div>
+        </div>
       )}
-      {fields.length===0&&<div style={{textAlign:"center",padding:"32px",background:"#f8fafc",borderRadius:14,border:"1.5px dashed #e2e8f0"}}><p style={{fontWeight:700,color:"#334155"}}>Keine Plätze konfiguriert</p><p style={{fontSize:13,color:"#94a3b8",marginTop:4}}>Plätze können im Admin-Bereich angelegt werden.</p></div>}
+      {fields.length===0&&<div style={{textAlign:"center",padding:"32px",background:"#f8fafc",borderRadius:14,border:"1.5px dashed #e2e8f0"}}><p style={{fontWeight:700,color:"#334155"}}>Keine Plaetze konfiguriert</p><p style={{fontSize:13,color:"#94a3b8",marginTop:4}}>Plaetze koennen im Admin-Bereich angelegt werden.</p></div>}
       {fields.map(field=>(
         <div key={field.id} style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",marginBottom:14,overflow:"hidden"}}>
           <div style={{padding:"12px 16px",borderBottom:"1px solid #f1f5f9",display:"flex",alignItems:"center",gap:10}}>
@@ -15352,22 +12261,12 @@ function FieldsTab({ data,myTids,session,save,fire,cl }) {
             <button onClick={()=>setBookTarget(field)} style={{padding:"7px 14px",borderRadius:10,border:"none",background:t.p,color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>+ Buchen</button>
           </div>
           <div style={{padding:14}}>
-            {view==="timeline" ? (
-              <DayTimeline field={field} bookings={dayBk(field.id)} trainings={dayTrainings} date={selDate}
-                tCol={tCol} t={t}
-                onSlot={(from)=>{ setPrefillFrom(from); setBookTarget(field); }}
-                onCancel={cancelBk}/>
-            ) : view==="week" ? (
-              <WeekTimeline field={field} bookings={bookings} allTrainings={allTrainings} weekStart={weekStart}
-                tCol={tCol} onPickDay={(date)=>{ setSelDate(date); setView("timeline"); }}/>
-            ) : (
             <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:3,background:"#16a34a",borderRadius:10,padding:8}}>
               {Array.from({length:8},(_,i)=>{
                 const bk=dayBk(field.id).find(b=>{const s=b.cellStart||0;return i>=s&&i<s+(b.cells||8);});
                 return <div key={i} style={{background:bk?tCol(bk.teamName):"rgba(255,255,255,.2)",borderRadius:5,minHeight:32,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:bk?"#fff":"rgba(255,255,255,.4)"}}>{bk?bk.teamName?.slice(0,5):""}</div>;
               })}
             </div>
-            )}
           </div>
           {dayBk(field.id).length>0&&<div style={{padding:"0 16px 14px",display:"flex",flexDirection:"column",gap:6}}>
             {dayBk(field.id).map(b=>(
@@ -15425,7 +12324,7 @@ function FieldConflictResolver({ conflict, myTeam, data, save, fire, onClose }) 
       fromTeam: myTeam?.id, fromTeamName: myTeam?.name||"",
       toTeam: conflict.teamId, toTeamName: conflict.teamName,
       fieldId: conflict.fieldId, date: conflict.date,
-      msg: msg||"Wir wuerden gerne denselben Platz nutzen. Können wir uns einigen?",
+      msg: msg||"Wir wuerden gerne denselben Platz nutzen. Koennen wir uns einigen?",
       ts: new Date().toISOString(), status:"pending",
       bookingId: conflict.id,
     };
@@ -15474,7 +12373,7 @@ function FieldConflictResolver({ conflict, myTeam, data, save, fire, onClose }) 
 
 /* =================================================================
    DATENSCHUTZ-SYSTEM
-   - Einwilligungsverwaltung für Bilder
+   - Einwilligungsverwaltung fuer Bilder
    - Sichere Kontaktdaten (nie in DB)
    - Team-Karte mit Datenschutz-Badge
 ================================================================= */
@@ -15512,7 +12411,7 @@ const ConsentStore = {
   },
 };
 
-// Consent-Anfrage für Mannschaftsbild
+// Consent-Anfrage fuer Mannschaftsbild
 function ConsentRequest({ team, players, trainers, onConsent, onDecline, cl }) {
   const t = TH(cl);
   const [checked, setChecked] = React.useState(false);
@@ -15545,7 +12444,7 @@ function ConsentRequest({ team, players, trainers, onConsent, onDecline, cl }) {
           Einwilligung Mannschaftsbild
         </h2>
         <p style={{fontSize:14,color:"#64748b",textAlign:"center",lineHeight:1.6,marginBottom:20}}>
-          Gemäß DSGVO Art. 6 benötigen wir die Einwilligung aller abgebildeten Personen
+          Gemaess DSGVO Art. 6 benoetigen wir die Einwilligung aller abgebildeten Personen
           bzw. deren Erziehungsberechtigten.
         </p>
 
@@ -15555,9 +12454,9 @@ function ConsentRequest({ team, players, trainers, onConsent, onDecline, cl }) {
             Was passiert mit dem Bild?
           </div>
           <div style={{fontSize:13,color:"#166534",lineHeight:1.7}}>
-            Das Bild wird ausschließlich in dieser App für die Mannschaft {team.name} verwendet.
+            Das Bild wird ausschliesslich in dieser App fuer die Mannschaft {team.name} verwendet.
             Es wird nicht an Dritte weitergegeben, nicht auf Social Media geteilt
-            und kann jederzeit gelöscht werden.
+            und kann jederzeit geloescht werden.
           </div>
         </div>
 
@@ -15586,7 +12485,6 @@ function ConsentRequest({ team, players, trainers, onConsent, onDecline, cl }) {
             border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",
             marginBottom:14,boxSizing:"border-box"}}
         />
-        <div style={{marginTop:-8,marginBottom:14}}><PrivacyNote/></div>
 
         <label style={{display:"flex",alignItems:"flex-start",gap:10,
           cursor:"pointer",marginBottom:20,padding:"12px 14px",
@@ -15803,8 +12701,8 @@ function TeamCard({ team, data, session, cl, onClose }) {
               })}
               {/* Hinweis: Telefonnummern nur lokal */}
               <div style={{fontSize:11,color:"#94a3b8",lineHeight:1.5,padding:"6px 4px"}}>
-                Telefonnummern werden aus Datenschutzgründen nur lokal auf
-                diesem Gerät gespeichert - nicht in der Cloud.
+                Telefonnummern werden aus Datenschutzgruenden nur lokal auf
+                diesem Geraet gespeichert - nicht in der Cloud.
               </div>
             </div>
           )}
@@ -15827,11 +12725,11 @@ function TeamCard({ team, data, session, cl, onClose }) {
             </div>
           </div>
 
-          {/* Nächste Termine */}
+          {/* Naechste Termine */}
           {upcomingEvents.length>0&&(
             <div>
               <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5}}>
-                NÄCHSTE TERMINE
+                NAECHSTE TERMINE
               </div>
               {upcomingEvents.map(ev=>(
                 <div key={ev.id} style={{display:"flex",alignItems:"center",gap:10,
@@ -15844,7 +12742,7 @@ function TeamCard({ team, data, session, cl, onClose }) {
                   </div>
                   <div style={{flex:1}}>
                     <div style={{fontWeight:700,fontSize:13}}>{ev.title}</div>
-                    <div style={{fontSize:11,color:"#94a3b8"}}>{ev.time}{ev.endTime?"–"+ev.endTime:""} {ev.location&&"- "+ev.location}</div>
+                    <div style={{fontSize:11,color:"#94a3b8"}}>{ev.time} {ev.location&&"- "+ev.location}</div>
                   </div>
                 </div>
               ))}
@@ -15854,8 +12752,8 @@ function TeamCard({ team, data, session, cl, onClose }) {
           {/* Datenschutz Footer */}
           <div style={{marginTop:20,background:"#f8fafc",borderRadius:12,
             padding:"12px 14px",border:"1px solid #e2e8f0",fontSize:11,color:"#94a3b8",lineHeight:1.6}}>
-            Datenschutz: Alle personenbezogenen Daten werden gemäß DSGVO verarbeitet.
-            Bilder werden nur mit Einwilligung gespeichert. Kontaktdaten verbleiben lokal auf deinem Gerät.
+            Datenschutz: Alle personenbezogenen Daten werden gemaess DSGVO verarbeitet.
+            Bilder werden nur mit Einwilligung gespeichert. Kontaktdaten verbleiben lokal auf deinem Geraet.
           </div>
         </div>
       </div>
@@ -15878,8 +12776,8 @@ function TrainerContactSetup({ trainer, onClose }) {
         <h3 style={{fontWeight:900,fontSize:17,marginBottom:6}}>Kontaktnummer hinterlegen</h3>
         <div style={{background:"#eff6ff",borderRadius:10,padding:"10px 13px",
           fontSize:12,color:"#1d4ed8",lineHeight:1.6,marginBottom:16}}>
-          Die Nummer wird NUR auf diesem Gerät gespeichert -
-          nicht in der Cloud oder Datenbank. Andere Geräte sehen sie nicht.
+          Die Nummer wird NUR auf diesem Geraet gespeichert -
+          nicht in der Cloud oder Datenbank. Andere Geraete sehen sie nicht.
         </div>
         <input value={phone} onChange={e=>setPhone(e.target.value)}
           placeholder="+49 151 12345678"
@@ -15915,7 +12813,7 @@ function InviteSheet({ team, cl, onClose }) {
       <div style={{background:"#fff",borderRadius:20,width:"100%",maxWidth:400,overflow:"hidden"}}>
         <div style={{background:t.p,padding:"16px 20px",color:"#fff"}}>
           <div style={{fontWeight:900,fontSize:18}}>{cl?.name}</div>
-          <div style={{fontSize:13,opacity:.8}}>Einladung für Eltern</div>
+          <div style={{fontSize:13,opacity:.8}}>Einladung fuer Eltern</div>
         </div>
         <div style={{padding:"20px"}}>
           <div style={{background:"#f8fafc",borderRadius:13,padding:"16px",
@@ -15929,21 +12827,26 @@ function InviteSheet({ team, cl, onClose }) {
           <div style={{background:"#eff6ff",borderRadius:12,padding:"12px 14px",
             marginBottom:14,fontSize:12,color:"#1d4ed8",lineHeight:1.7}}>
             <strong>So gehts:</strong><br/>
-            1. Öffne: <strong>{url}</strong><br/>
-            2. Wähle deinen Verein<br/>
+            1. Oeffne: <strong>{url}</strong><br/>
+            2. Waehle deinen Verein<br/>
             3. Tippe auf "Elternteil"<br/>
-            4. Wähle "{team.name}"<br/>
+            4. Waehle "{team.name}"<br/>
             5. Gib den Code ein: <strong>{team.pwd}</strong>
           </div>
           <div style={{display:"flex",gap:9}}>
             <button onClick={onClose}
               style={{flex:1,padding:"11px",borderRadius:11,border:"1.5px solid #e2e8f0",
                 background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-              Schließen
+              Schliessen
             </button>
             <button onClick={()=>{
               navigator.clipboard?.writeText(
-                `Hallo! Bitte lade die Vereins-App herunter:\n${url}\n\nMannschaft: ${team.name}\nCode: ${team.pwd||""}`
+                "Hallo! Bitte lade die Vereins-App herunter:
+"+url+
+                "
+
+Mannschaft: "+team.name+"
+Code: "+(team.pwd||"")
               ); }}
               style={{flex:2,padding:"11px",borderRadius:11,border:"none",background:t.p,
                 color:"#fff",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
@@ -15958,7 +12861,7 @@ function InviteSheet({ team, cl, onClose }) {
 
 
 /* =================================================================
-   FELD-VORLAGEN (Admin wählt Skizze)
+   FELD-VORLAGEN (Admin waehlt Skizze)
 ================================================================= */
 const FIELD_TEMPLATES = [
   {
@@ -16073,11 +12976,10 @@ const SPLIT_OPTIONS = [
   { id:2, label:"Halbierung",      icon:"1|1", desc:"2 Teams gleichzeitig" },
   { id:3, label:"Drittelung",      icon:"1|1|1",desc:"3 Teams (ideal Halle)" },
   { id:4, label:"Viertelung",      icon:"4x",  desc:"4 Teams gleichzeitig" },
-  { id:8, label:"Achtelung",       icon:"8x",  desc:"8 Gruppen (z.B. Bambini-Stationen)" },
 ];
 
 const WEATHER_OPTIONS = [
-  { id:"any",  label:"Wetter-unabhängig", icon:"W", col:"#16a34a", sub:"Immer nutzbar" },
+  { id:"any",  label:"Wetter-unabhaengig", icon:"W", col:"#16a34a", sub:"Immer nutzbar" },
   { id:"good", label:"Nur Gutwetter",      icon:"S", col:"#d97706", sub:"Gesperrt bei Regen" },
   { id:"bad",  label:"Nur Schlechtwetter", icon:"R", col:"#2563eb", sub:"Halle / Alternative" },
 ];
@@ -16108,12 +13010,6 @@ function FieldSketch({ template, split=1, width=180, height=110, bookings=[], st
             stroke="rgba(255,255,255,.6)" strokeWidth="2" strokeDasharray="4,3"/>
           <line x1="0" y1={height/2} x2={width} y2={height/2}
             stroke="rgba(255,255,255,.6)" strokeWidth="2" strokeDasharray="4,3"/>
-        </>}
-        {split===8&&<>
-          {[1,2,3].map(i=><line key={"v"+i} x1={width*i/4} y1="0" x2={width*i/4} y2={height}
-            stroke="rgba(255,255,255,.6)" strokeWidth="1.5" strokeDasharray="4,3"/>)}
-          <line x1="0" y1={height/2} x2={width} y2={height/2}
-            stroke="rgba(255,255,255,.6)" strokeWidth="1.5" strokeDasharray="4,3"/>
         </>}
         {/* Booking overlays */}
         {bookings.map((bk,i)=>{
@@ -16168,7 +13064,7 @@ function FieldsManagerTab({ data, cid, save, fire, cl }) {
     fire("Feld angelegt: "+f.name);
     setStep(null); setDraft({});
   };
-  const delField = id => { save({...data,fields:fields.filter(x=>x.id!==id)}); fire("Feld gelöscht"); };
+  const delField = id => { save({...data,fields:fields.filter(x=>x.id!==id)}); fire("Feld geloescht"); };
 
   const todayBk = fid => (data.bookings||[]).filter(b=>
     b.fieldId===fid && b.date===new Date().toISOString().slice(0,10)
@@ -16178,7 +13074,7 @@ function FieldsManagerTab({ data, cid, save, fire, cl }) {
     <div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
         <div>
-          <div style={{fontWeight:900,fontSize:16,color:"#0f172a"}}>Felder & Plätze</div>
+          <div style={{fontWeight:900,fontSize:16,color:"#0f172a"}}>Felder & Plaetze</div>
           <div style={{fontSize:12,color:"#64748b",marginTop:2}}>{fields.length} angelegt</div>
         </div>
         <button onClick={startNew}
@@ -16215,7 +13111,7 @@ function FieldsManagerTab({ data, cid, save, fire, cl }) {
             <div style={{padding:"20px 20px 0"}}>
 
               {/* SCHRITT 1: Template */}
-              {step==="template"&&(<>
+              {step==="template"&&(
                 <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10}}>
                   {FIELD_TEMPLATES.map(tpl=>(
                     <button key={tpl.id} onClick={()=>{setDraft(p=>({...p,template:tpl.id})); setStep("split");}}
@@ -16239,10 +13135,7 @@ function FieldsManagerTab({ data, cid, save, fire, cl }) {
                     </button>
                   ))}
                 </div>
-                <div style={{marginTop:16}}>
-                  <button onClick={()=>setStep(null)} style={{width:"100%",padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit",color:"#475569"}}>Abbrechen</button>
-                </div>
-              </>)}
+              )}
 
               {/* SCHRITT 2: Split */}
               {step==="split"&&(
@@ -16270,7 +13163,7 @@ function FieldsManagerTab({ data, cid, save, fire, cl }) {
                     ))}
                   </div>
                   <div style={{display:"flex",gap:9,marginTop:16}}>
-                    <button onClick={()=>setStep("template")} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Zurück</button>
+                    <button onClick={()=>setStep("template")} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Zurueck</button>
                     <button onClick={()=>draft.split&&setStep("weather")} disabled={!draft.split}
                       style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:draft.split?t.p:"#e2e8f0",color:draft.split?"#fff":"#94a3b8",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Weiter</button>
                   </div>
@@ -16302,7 +13195,7 @@ function FieldsManagerTab({ data, cid, save, fire, cl }) {
                     Tipp: Lege Rasenplatz als "Nur Gutwetter" und Halle als "Nur Schlechtwetter" an. Bei schlechtem Wetter siehst du im Platz-Tab automatisch nur die Halle.
                   </div>
                   <div style={{display:"flex",gap:9}}>
-                    <button onClick={()=>setStep("split")} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Zurück</button>
+                    <button onClick={()=>setStep("split")} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Zurueck</button>
                     <button onClick={()=>draft.weather&&setStep("name")} disabled={!draft.weather}
                       style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:draft.weather?t.p:"#e2e8f0",color:draft.weather?"#fff":"#94a3b8",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Weiter</button>
                   </div>
@@ -16327,7 +13220,7 @@ function FieldsManagerTab({ data, cid, save, fire, cl }) {
                       border:`1.5px solid ${draft.name?"#16a34a":"#e2e8f0"}`,borderRadius:12,
                       outline:"none",marginBottom:14,boxSizing:"border-box"}}/>
                   <div style={{display:"flex",gap:9}}>
-                    <button onClick={()=>setStep("weather")} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Zurück</button>
+                    <button onClick={()=>setStep("weather")} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Zurueck</button>
                     <button onClick={addField}
                       style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:t.p,color:"#fff",fontWeight:800,cursor:"pointer",fontFamily:"inherit",boxShadow:`0 4px 14px ${t.p}44`}}>
                       Feld anlegen!
@@ -16346,7 +13239,7 @@ function FieldsManagerTab({ data, cid, save, fire, cl }) {
           <div style={{fontWeight:700,fontSize:15,color:"#334155",marginBottom:6}}>Noch keine Felder angelegt</div>
           <div style={{fontSize:13,color:"#94a3b8",lineHeight:1.6}}>
             Lege Rasenplatz, Ascheplatz oder Halle an.<br/>
-            Trainer können dann Zeiten reservieren.
+            Trainer koennen dann Zeiten reservieren.
           </div>
         </div>
       )}
@@ -16413,20 +13306,20 @@ function TrainerCheckin({ ev, session, save, data, fire }) {
       trainerId: myId,
     }}};
     save({...data, events:(data.events||[]).map(e=>e.id===ev.id?updated:e)});
-    fire("Anwesenheit bestätigt");
+    fire("Anwesenheit bestaetigt");
   };
   const checkout = () => {
     const presence = {...checkedIn};
     delete presence[myId];
     save({...data, events:(data.events||[]).map(e=>e.id===ev.id?{...e,trainerPresence:presence}:e)});
-    fire("Anwesenheit zurückgenommen");
+    fire("Anwesenheit zurueckgenommen");
   };
 
   const presentTrainers = Object.values(checkedIn);
 
   return (
     <div style={{marginTop:12}}>
-      {/* Trainer die da sind - für Eltern sichtbar */}
+      {/* Trainer die da sind - fuer Eltern sichtbar */}
       {presentTrainers.length>0&&(
         <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
           <div style={{fontSize:12,color:"#64748b",fontWeight:600}}>Trainer da:</div>
@@ -16442,7 +13335,7 @@ function TrainerCheckin({ ev, session, save, data, fire }) {
           </div>
         </div>
       )}
-      {/* Nur für Trainer sichtbar */}
+      {/* Nur fuer Trainer sichtbar */}
       {session?.role==="trainer"&&(
         <button onClick={amCheckedIn?checkout:checkin}
           style={{width:"100%",padding:"11px",borderRadius:12,border:"none",
@@ -16451,7 +13344,7 @@ function TrainerCheckin({ ev, session, save, data, fire }) {
             fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit",
             display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
           {amCheckedIn
-            ? "Anwesenheit zurücknehmen"
+            ? "Anwesenheit zuruecknehmen"
             : "Ich bin heute da als Trainer"}
         </button>
       )}
@@ -16566,17 +13459,15 @@ function AttendanceTab({ data, myTids, cl, save, fire }) {
 function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const { isDesktop, isTablet } = useBreakpoint();
   const isAdmin=session.role==="admin"; const isHelper=session.role==="helper"; const cid=session.cid; const cl=data.clubs.find(c=>c.id===cid);
-  const myTids=isAdmin?activeTeamsFor(data,cid).map(t=>t.id):isHelper?activeTeamsFor(data,cid).map(t=>t.id):(session.tids||[]);
+  const myTids=isAdmin?data.teams.filter(t=>t.cid===cid).map(t=>t.id):isHelper?data.teams.filter(t=>t.cid===cid).map(t=>t.id):(session.tids||[]);
   const t=TH(cl);
-  const [tab,setTab]=useState("events"); // BottomNav manages this
-  const [local,setLocal]=useState(()=>JSON.parse(JSON.stringify(data)));
+  const [tab,setTab]=useState("events"); // BottomNav manages this const [local,setLocal]=useState(()=>JSON.parse(JSON.stringify(data)));
   const [toast,setToast]=useState(null);
   const unreadMsgs = useMemo(()=>{
     const lastRead = Number(localStorage.getItem("va_last_read_"+cid)||0);
     return (local.chats||[]).filter(m=>m.cid===cid&&m.ts>lastRead).length;
   },[local.chats]); const [wizard,setWizard]=useState(false); const [editEv,setEditEv]=useState(null);
   const [showSeasonModal,setShowSeasonModal]=useState(false);
-  const [showOnboarding,setShowOnboarding]=useState(false);
   const { trigger: shareTrigger,dismiss: dismissShare } = useShareTrigger(local,session,myTids);
   const [delConf,setDelConf]=useState(null); const [viewEv,setViewEv]=useState(null); const [delConfVal,setDelConfVal]=useState(null);
   const [editConf,setEditConf]=useState(null);
@@ -16584,24 +13475,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const fire=m=>{setToast(m);clearTimeout(toastRef.current);toastRef.current=setTimeout(()=>setToast(null),2500);};
   const save=next=>{setLocal(next);onSave(next);};
   const myClub=local.clubs.find(c=>c.id===cid);
-  const _activeSid = local.activeSeason || (local.seasons||[])[0]?.id || null;
-  const myEvs=local.events.filter(e=>myTids.includes(e.tid)&&e.cid===cid&&(!e.seasonId||e.seasonId===_activeSid)).sort((a,b)=>a.date.localeCompare(b.date));
-  // Trainer/Admin kann selbst zu-/absagen (stimmt unter eigenem Namen ab)
-  const selfName = session.name || (isAdmin?"Admin":isHelper?"Helfer":"");
-  const selfVote = (evId,val) => {
-    if(!selfName) return;
-    save({...local, events: local.events.map(e=>{
-      if(e.id!==evId) return e;
-      const votes={...(e.votes||{})};
-      if((typeof votes[selfName]==="object"?votes[selfName]?.val:votes[selfName])===val) delete votes[selfName]; // erneuter Klick = zurücknehmen
-      else votes[selfName]=val;
-      return {...e,votes};
-    })});
-    fire(val==="yes"?"Du bist dabei":"Du hast abgesagt");
-  };
+  const myEvs=local.events.filter(e=>myTids.includes(e.tid)&&e.cid===cid).sort((a,b)=>a.date.localeCompare(b.date));
   const tod=now(); const up=myEvs.filter(e=>e.date>=tod); const past=myEvs.filter(e=>e.date<tod).reverse();
-  const _in10=addD(now(),10); const soon=up.filter(e=>e.date<=_in10); const later=up.filter(e=>e.date>_in10);
-  const [showLater,setShowLater]=useState(false);
 
   if(wizard||editEv) return <Wizard teams={local.teams.filter(x=>myTids.includes(x.id))} cl={myClub} editEv={editEv}
     onTemplates={(local.pollTemplates||[]).filter(t=>t.cid===cid)}
@@ -16616,28 +13491,31 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           return e;
         })});
         fire("Serie ab hier aktualisiert *");
-      } else if(editEv._editSeries==="all"&&editEv.sid){
-        const {title,time,loc,note,pt,li}=saved;
-        save({...local,events:local.events.map(e=>{
-          if(e.sid===editEv.sid) return{...e,title,time,loc,note,pt,li};
-          return e;
-        })});
-        fire("Ganze Serie aktualisiert *");
       } else {
-        const deleteEv = ev => { save({...local,events:(local.events||[]).filter(e=>e.id!==ev.id)}); fire("Termin gelöscht"); };
+        const deleteEv = ev => { save({...local,events:(local.events||[]).filter(e=>e.id!==ev.id)}); fire("Termin geloescht"); };
     save({...local,events:(local.events||[]).map(e=>e.id===saved.id?saved:e)});
         fire("Termin aktualisiert *");
       }
     } else {
-      const _sid = local.activeSeason || (local.seasons||[])[0]?.id || null;
-      const evsWithSeason = evs.map(e=>({...e, seasonId: e.seasonId || _sid}));
-      save({...local,events:[...(local.events||[]),...evsWithSeason]});
-      fire(`${evs.length>1?evs.length+" Termine":"Termin"} erstellt - Eltern werden benachrichtigt`);
+      save({...local,events:[...(local.events||[]),...evs]});
+      // Auto-book field if selected
+    if(f.fieldId && evs.length>0) {
+      const fieldBookings = evs.map(ev=>({
+        id:uid(), fieldId:f.fieldId, date:ev.date,
+        cellStart:0, cells:4, teamId:ev.tid,
+        teamName:(data.teams||[]).find(x=>x.id===ev.tid)?.name||"",
+        booker:session?.name||"", timeFrom:f.time||"09:00",
+        timeTo:addMins(f.time||"09:00", f.dur||90),
+        cid:ev.cid, autoBooked:true
+      }));
+      save({...nextData, bookings:[...(nextData.bookings||[]),...fieldBookings]});
+    }
+    fire(`${evs.length>1?evs.length+" Termine":"Termin"} erstellt - Eltern werden benachrichtigt`);
     }
     setWizard(false);setEditEv(null);
   }} onClose={()=>{setWizard(false);setEditEv(null);}}/>;
 
-  const tr = (k) => { const lang = LANG_SWITCHER_ENABLED ? (localStorage.getItem("vereinsapp_lang") || "de") : "de"; return T[lang]?.[k] ?? T.de[k] ?? k; };
+  const tr = (k) => { const lang = localStorage.getItem("vereinsapp_lang") || "de"; return T[lang]?.[k] ?? T.de[k] ?? k; };
   // BottomNav replaces old tabs - kept for reference
   const tabs=[].filter(Boolean).filter(x=>!x.hidden);
 
@@ -16704,16 +13582,11 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             <div style={{width:52,height:52,borderRadius:16,background:"rgba(0,0,0,.15)",border:"2px solid rgba(255,255,255,.35)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,fontWeight:900,color:"#fff",flexShrink:0}}>+</div>
             <div style={{flex:1}}>
               <div style={{color:"#fff",fontWeight:900,fontSize:18,letterSpacing:"-.3px",textShadow:"0 1px 3px rgba(0,0,0,.25)"}}>Neuen Termin anlegen</div>
-              <div style={{color:"rgba(255,255,255,.9)",fontSize:13,marginTop:3,fontWeight:500}}>Schritt-für-Schritt Assistent</div>
+              <div style={{color:"rgba(255,255,255,.9)",fontSize:13,marginTop:3,fontWeight:500}}>Schritt-fuer-Schritt Assistent</div>
             </div>
-            <div style={{width:32,height:32,borderRadius:10,background:"rgba(0,0,0,.15)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:18,fontWeight:700,flexShrink:0}}>{">"}</div>
+            <div style={{width:32,height:32,borderRadius:10,background:"rgba(0,0,0,.15)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:18,fontWeight:700,flexShrink:0}}>></div>
           </div>
-          {up.length>0&&<><Divider label={`NÄCHSTE 10 TAGE (${soon.length})`}/>{soon.length>0?soon.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={selfName} onSelfVote={selfVote}/>):<p style={{textAlign:"center",color:"#94a3b8",fontSize:13.5,padding:"14px 10px"}}>Keine Termine in den nächsten 10 Tagen.</p>}
-            {later.length>0&&<>
-              <button onClick={()=>setShowLater(s=>!s)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",background:showLater?"#f1f5f9":"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,cursor:"pointer",margin:"6px 0 12px",padding:"11px 14px",fontWeight:800,fontSize:13,color:"#475569",fontFamily:"inherit"}}>{showLater?"▲ Weitere Termine ausblenden":"▼ Weitere "+later.length+" Termine anzeigen"}</button>
-              {showLater&&later.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={selfName} onSelfVote={selfVote}/>)}
-            </>}
-          </>}
+          {up.length>0&&<><Divider label={`KOMMENDE (${up.length})`}/>{up.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurueckgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)}/>)}</>}
           {up.length===0&&<div style={{textAlign:"center",padding:"30px",background:"#fff",borderRadius:18,border:"1.5px dashed #e2e8f0",color:"#94a3b8"}}><Logo cl={myClub} sz={50} sx={{margin:"0 auto 12px"}}/><p style={{fontWeight:800,fontSize:15}}>Noch keine Termine</p><p style={{fontSize:13,marginTop:3}}>Klicke oben auf "Neuen Termin anlegen"</p></div>}
           {past.length>0&&<><Divider label={`VERGANGENE (${past.length})`} light/><div style={{opacity:.72}}>{past.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{}} onCopyLink={()=>{}}/>)}</div></>}
         </>}
@@ -16727,58 +13600,52 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         {tab==="results"    &&<LeagueTab data={local} myTids={myTids} cl={myClub} save={save} fire={fire}/>}
         {tab==="inbox"      &&<InboxTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
         {tab==="chat"       &&<ChatTab data={local} cid={cid} myTids={myTids} session={session} save={save} fire={fire} cl={myClub}/>}
-        {tab==="teams"      &&isAdmin&&<TeamHub data={local} myTids={myTids} save={save} fire={fire} cl={myClub} session={session} isAdmin={isAdmin}/>}
+        {tab==="teams"      &&isAdmin&&<TeamsTab data={local} cid={cid} save={save} fire={fire}/>}
         {tab==="overview"  &&isAdmin&&<AllTeamsOverview data={local} cid={cid} cl={myClub} onSelectTeam={tid=>{ const team=(local.teams||[]).find(x=>x.id===tid); if(team) fire("Team: "+team.name); }}/>}
         {tab==="news"      &&<NewsTab data={local} cid={cid} session={session} save={save} fire={fire} cl={myClub}/>}
         {tab==="fieldsadmin"&&isAdmin&&<FieldsManagerTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/> }
-        {tab==="trainers"   &&isAdmin&&<TrainersTab data={local} cid={cid} save={save} fire={fire} session={session}/>}
+        {tab==="trainers"   &&isAdmin&&<TrainersTab data={local} cid={cid} save={save} fire={fire}/>}
         {tab==="branding"   &&isAdmin&&<BrandingTab cl={myClub} onSave={c=>{save({...local,clubs:local.clubs.map(x=>x.id===c.id?c:x)});fire("Design gespeichert *");}}/>}
+        {tab==="visibility" &&isAdmin&&<VisibilityTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
         {tab==="settings"   &&isAdmin&&<ClubAdminSettings data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
         {tab==="security"   &&isAdmin&&<SecurityTab data={local} cid={cid} save={save}/>}
         {tab==="access"     &&isAdmin&&<AccessManagerTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
-        {tab==="team"       &&<TeamHub data={local} myTids={myTids} save={save} fire={fire} cl={myClub} session={session} isAdmin={isAdmin}/>}
+        {tab==="team"       &&<TeamHub data={local} myTids={myTids} save={save} fire={fire} cl={myClub} session={session}/>}
       </div>
 
       {}
       {viewEv&&<Drawer onClose={()=>setViewEv(null)} title={viewEv.title}>
-        {viewEv.type==="turnier"
-          ? <TournView ev={viewEv} user={session.name||"Admin"} onVote={()=>{}} cl={myClub} players={local.players} isHelper={isHelper} fields={(data.fields||[]).filter(f=>f.cid===cid)}
-              onUpdate={patch=>{
-                save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,...patch}:e)});
-                setViewEv(prev=>({...prev,...patch}));
-                fire("Turnier aktualisiert *");
-              }}/>
-          : <VoteOverview ev={viewEv} players={local.players} teams={local.teams} myTids={myTids} cl={myClub}
-              onSetDeadline={deadline=>{
-                save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,deadline}:e)});
-                setViewEv(prev=>({...prev,deadline}));
-                fire("Frist gesetzt *");
-              }}
-            />}
-        <div style={{height:14}}/><Btn full ch="Schließen" v="gst" onClick={()=>setViewEv(null)}/>
+        <VoteOverview ev={viewEv} players={local.players} teams={local.teams} myTids={myTids} cl={myClub}
+          onSetDeadline={deadline=>{
+            save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,deadline}:e)});
+            setViewEv(prev=>({...prev,deadline}));
+            fire("Frist gesetzt *");
+          }}
+        />
+        <div style={{height:14}}/><Btn full ch="Schliessen" v="gst" onClick={()=>setViewEv(null)}/>
       </Drawer>}
 
       {}
-      {delConf&&<Drawer onClose={()=>setDelConf(null)} title="Termin löschen?">
+      {delConf&&<Drawer onClose={()=>setDelConf(null)} title="Termin loeschen?">
         <div style={{background:"#fff5f5",borderRadius:14,padding:"14px",marginBottom:16,border:"1.5px solid #fecaca"}}>
           <p style={{fontSize:14,color:"#7f1d1d",fontWeight:600}}>"{delConfVal}"</p>
           {local.events.find(e=>e.id===delConf)?.sid&&<p style={{fontSize:13,color:"#b45309",marginTop:6}}> Dieser Termin ist Teil einer Terminserie.</p>}
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:9}}>
-          <Btn v="red" full ch="Nur diesen Termin löschen" icon="**" onClick={()=>{
+          <Btn v="red" full ch="Nur diesen Termin loeschen" icon="**" onClick={()=>{
             save({...local,events:local.events.filter(e=>e.id!==delConf)});
-            setDelConf(null);setDelConfVal(null);fire("Termin gelöscht");
+            setDelConf(null);setDelConfVal(null);fire("Termin geloescht");
           }}/>
           {local.events.find(e=>e.id===delConf)?.sid&&<>
-            <Btn v="red" full ch="Diesen + alle zukünftigen löschen" icon="**" onClick={()=>{
+            <Btn v="red" full ch="Diesen + alle zukuenftigen loeschen" icon="**" onClick={()=>{
               const ev=local.events.find(e=>e.id===delConf);
               save({...local,events:local.events.filter(e=>!(e.sid===ev.sid&&e.date>=ev.date))});
-              setDelConf(null);setDelConfVal(null);fire("Serientermine gelöscht");
+              setDelConf(null);setDelConfVal(null);fire("Serientermine geloescht");
             }}/>
-            <Btn v="red" full ch="Gesamte Serie löschen" icon="**" onClick={()=>{
+            <Btn v="red" full ch="Gesamte Serie loeschen" icon="**" onClick={()=>{
               const ev=local.events.find(e=>e.id===delConf);
               save({...local,events:local.events.filter(e=>e.sid!==ev.sid)});
-              setDelConf(null);setDelConfVal(null);fire("Gesamte Serie gelöscht");
+              setDelConf(null);setDelConfVal(null);fire("Gesamte Serie geloescht");
             }}/>
           </>}
           <Btn v="gst" full ch="Abbrechen" onClick={()=>setDelConf(null)}/>
@@ -16795,22 +13662,17 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           <Btn full ch="Nur diesen Termin bearbeiten" icon="**" cl={myClub} onClick={()=>{
             setEditEv(editConf);setEditConf(null);
           }}/>
-          {editConf.sid&&<Btn full ch="Diesen + alle zukünftigen bearbeiten" icon="**" cl={myClub} onClick={()=>{
+          {editConf.sid&&<Btn full ch="Diesen + alle zukuenftigen bearbeiten" icon="**" cl={myClub} onClick={()=>{
             setEditEv({...editConf,_editSeries:"future"});setEditConf(null);
-          }}/>}
-          {editConf.sid&&<Btn full ch="Ganze Serie bearbeiten" icon="**" cl={myClub} onClick={()=>{
-            setEditEv({...editConf,_editSeries:"all"});setEditConf(null);
           }}/>}
           <Btn v="gst" full ch="Abbrechen" onClick={()=>setEditConf(null)}/>
         </div>
       </Drawer>}
-      </div>
-    </div>
 
       {showOnboarding&&<OnboardingWizard cl={myClub} data={local} save={save} fire={fire} onDone={()=>setShowOnboarding(false)}/>}
       <Toast msg={toast}/>
-      {!isDesktop&&<BottomNav tab={tab} setTab={setTab} isAdmin={isAdmin} isHelper={isHelper}
-        unread={unreadMsgs} cl={myClub} />}
+      <BottomNav tab={tab} setTab={setTab} isAdmin={isAdmin} isHelper={isHelper}
+        unread={unreadMsgs} cl={myClub} />
       
     </div>
   );
@@ -16864,11 +13726,11 @@ function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline}) {
         ))}
       </div>
 
-      {/* Verspätungen - prominent für Trainer */}
+      {/* Verspaetungen - prominent fuer Trainer */}
       {lateArrivals.length>0&&(
         <div style={{background:"#fef3c7",borderRadius:13,padding:"11px 14px",border:"2px solid #f59e0b",marginBottom:16}}>
           <div style={{fontWeight:800,fontSize:13,color:"#92400e",marginBottom:8}}>
-            Verspätungen ({lateArrivals.length})
+            Verspaetungen ({lateArrivals.length})
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:6}}>
             {lateArrivals.map(l=>(
@@ -16882,7 +13744,7 @@ function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline}) {
             ))}
           </div>
           <div style={{fontSize:11,color:"#92400e",marginTop:8,lineHeight:1.5}}>
-            Tipp: {lateArrivals.map(l=>l.name).join(", ")} {lateArrivals.length===1?"kommt":"kommen"} verspätet - beim Aufwärmen einplanen.
+            Tipp: {lateArrivals.map(l=>l.name).join(", ")} {lateArrivals.length===1?"kommt":"kommen"} verspaetet - beim Aufwaermen einplanen.
           </div>
         </div>
       )}
@@ -16912,14 +13774,14 @@ function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline}) {
             {dlLabel
               ? <div style={{fontSize:12,marginTop:3,fontWeight:600,color:dlPassed?"#dc2626":"#16a34a"}}>
                   {dlPassed?"* Abgelaufen:":"* Bis:"} {dlLabel}
-                  {lateVoters.length>0&&<span style={{color:"#d97706",marginLeft:6}}>. {lateVoters.length} zu spät</span>}
+                  {lateVoters.length>0&&<span style={{color:"#d97706",marginLeft:6}}>. {lateVoters.length} zu spaet</span>}
                 </div>
               : <div style={{fontSize:12,color:"#94a3b8",marginTop:2}}>Keine Frist gesetzt</div>
             }
           </div>
           <button onClick={()=>setShowDL(s=>!s)}
             style={{padding:"6px 12px",borderRadius:9,border:`1.5px solid ${p}`,background:p+"15",color:p,fontWeight:700,fontSize:12,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit"}}>
-            {dlLabel?"** Ändern":"+ Frist setzen"}
+            {dlLabel?"** Aendern":"+ Frist setzen"}
           </button>
         </div>
         {showDeadlineForm&&(
@@ -16964,7 +13826,7 @@ function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline}) {
                   {ts&&<div style={{fontSize:11,color:"#94a3b8",marginTop:1}}>{new Date(ts).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"})} {new Date(ts).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"})}</div>}
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:6}}>
-                  {late&&<span style={{fontSize:11,fontWeight:700,color:"#d97706",background:"#fef3c7",borderRadius:6,padding:"2px 7px"}}> Zu spät</span>}
+                  {late&&<span style={{fontSize:11,fontWeight:700,color:"#d97706",background:"#fef3c7",borderRadius:6,padding:"2px 7px"}}> Zu spaet</span>}
                   <span style={{fontSize:14,fontWeight:700,color:val==="yes"?"#16a34a":"#dc2626"}}>{val==="yes"?"* Dabei":"* Nicht dabei"}</span>
                 </div>
               </div>
@@ -16990,15 +13852,12 @@ function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline}) {
   );
 }
 
-function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSelfVote}) {
+function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink}) {
   const eT=ET[ev.type]||ET.training; const tF=ev.date===tod; const p=cl?.pri||"#16a34a";
   const vc=Object.keys(ev.votes).length;
   const yes=ev.pt==="att"?Object.values(ev.votes).filter(v=>(typeof v==="object"?v.val:v)==="yes").length:0;
   const no =ev.pt==="att"?Object.values(ev.votes).filter(v=>(typeof v==="object"?v.val:v)==="no" ).length:0;
   const dlPassed = ev.deadline && now()>ev.deadline.date;
-  const myVoteRaw = selfName ? ev.votes[selfName] : null;
-  const myVote = typeof myVoteRaw==="object"&&myVoteRaw!==null ? myVoteRaw.val : myVoteRaw;
-  const canSelfVote = selfName && onSelfVote && (ev.pt==="att"||!ev.pt) && ev.date>=tod;
   const BtnSm=({onClick,label,icon,bg,col})=>(
     <button onClick={onClick} style={{display:"flex",alignItems:"center",gap:5,padding:"6px 11px",borderRadius:9,border:"none",background:bg,color:col,fontSize:12,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit"}}>
       <span style={{fontSize:14}}>{icon}</span>{label}
@@ -17006,8 +13865,8 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
   );
   return (
     <div style={{background:"#fff",borderRadius:15,border:`1.5px solid ${tF?p:"#e2e8f0"}`,marginBottom:8,overflow:"hidden",boxShadow:"0 1px 6px rgba(0,0,0,.04)"}}>
-      <div style={{padding:"12px 14px",display:"flex",gap:10,alignItems:"center"}}>
-        <div style={{width:42,height:42,borderRadius:13,background:eT.bg,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><EventIcon type={EVENT_TYPE_ALIAS[ev.type]||ev.type} size={22} color={eT.col}/></div>
+      <div style={{padding:"12px 14px",display:"flex",gap:10,alignItems:"center"}}>\
+        <div style={{width:42,height:42,borderRadius:13,background:eT.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{eT.icon}</div>
         <div style={{flex:1,minWidth:0}}>
           <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}><span style={{fontWeight:800,fontSize:14,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ev.title}</span>{tF&&<Tag c={p} bg={p+"20"} ch="Heute"/>}{ev.open&&<Tag c="#7c3aed" bg="#ede9fe" ch="* Offen"/>}{ev.sid&&<Tag c="#94a3b8" bg="#f1f5f9" ch="* Serie"/>}</div>
           <div style={{fontSize:12,color:"#64748b",marginTop:3}}>{fmtDShort(ev.date)}{ev.time?" . "+ev.time:""}{ev.loc?" . *"+ev.loc:""}</div>
@@ -17015,20 +13874,13 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
           {ev.deadline&&<div style={{marginTop:4}}><span style={{fontSize:11,fontWeight:700,color:dlPassed?"#dc2626":"#d97706",background:dlPassed?"#fee2e2":"#fef3c7",borderRadius:6,padding:"2px 8px"}}> {dlPassed?"Frist abgelaufen":"Frist: "}{!dlPassed&&ev.deadline.date}</span></div>}
         </div>
       </div>
-      {canSelfVote&&(
-        <div style={{display:"flex",gap:6,padding:"4px 12px 8px",alignItems:"center"}}>
-          <span style={{fontSize:11,fontWeight:700,color:"#94a3b8"}}>Ich:</span>
-          <button onClick={()=>onSelfVote(ev.id,"yes")} style={{flex:1,padding:"7px",borderRadius:9,border:`1.5px solid ${myVote==="yes"?"#16a34a":"#e2e8f0"}`,background:myVote==="yes"?"#16a34a":"#fff",color:myVote==="yes"?"#fff":"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Bin dabei</button>
-          <button onClick={()=>onSelfVote(ev.id,"no")} style={{flex:1,padding:"7px",borderRadius:9,border:`1.5px solid ${myVote==="no"?"#dc2626":"#e2e8f0"}`,background:myVote==="no"?"#dc2626":"#fff",color:myVote==="no"?"#fff":"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Sage ab</button>
-        </div>
-      )}
       {}
       <div style={{display:"flex",gap:6,padding:"8px 12px 10px",borderTop:"1px solid #f1f5f9",flexWrap:"wrap"}}>
         <BtnSm onClick={onView}  icon="*" label="Ansehen"   bg="#f1f5f9" col="#475569"/>
         <BtnSm onClick={onEdit}  icon="**" label="Bearbeiten" bg="#f0fdf4" col="#16a34a"/>
-        <BtnSm onClick={onReset} icon="*" label="Zurücksetzen" bg="#fff7ed" col="#d97706"/>
+        <BtnSm onClick={onReset} icon="*" label="Zuruecksetzen" bg="#fff7ed" col="#d97706"/>
         {ev.open&&<BtnSm onClick={onCopyLink} icon="*" label="Link kopieren" bg="#ede9fe" col="#7c3aed"/>}
-        <BtnSm onClick={onDel}   icon="*" label="Löschen"   bg="#fee2e2" col="#dc2626"/>
+        <BtnSm onClick={onDel}   icon="*" label="Loeschen"   bg="#fee2e2" col="#dc2626"/>
       </div>
     </div>
   );
@@ -17056,15 +13908,15 @@ function LegalModal({onAccept,onDecline}) {
             <div style={{fontSize:13,color:"#9a3412",lineHeight:1.75,display:"flex",flexDirection:"column",gap:7}}>
               <p> Das Profilbild wird <strong>auf eigene Gefahr</strong> hochgeladen und gespeichert.</p>
               <p> Diese App wird von einem ehrenamtlichen Vereinsadmin betrieben - es handelt sich <strong>nicht um einen kommerziellen Dienst</strong>.</p>
-              <p> Der Vereinsadmin sowie der Betreiber dieser App übernehmen <strong>keinerlei Haftung</strong> für Verlust,Diebstahl,Missbrauch oder unbefugten Zugriff auf hochgeladene Bilder oder gespeicherte Daten.</p>
-              <p> Du kannst dein Bild jederzeit selbst entfernen. Eine vollständige Löschung aus allen Systemen kann <strong>nicht garantiert</strong> werden.</p>
+              <p> Der Vereinsadmin sowie der Betreiber dieser App uebernehmen <strong>keinerlei Haftung</strong> fuer Verlust,Diebstahl,Missbrauch oder unbefugten Zugriff auf hochgeladene Bilder oder gespeicherte Daten.</p>
+              <p> Du kannst dein Bild jederzeit selbst entfernen. Eine vollstaendige Loeschung aus allen Systemen kann <strong>nicht garantiert</strong> werden.</p>
               <p> Lade <strong>keine Bilder von Minderjaehrigen</strong> hoch,es sei denn,du bist erziehungsberechtigt und hast ausdruecklich zugestimmt.</p>
-              <p> Mit dem Upload bestätigst du,dass du <strong>auf eigenes Risiko</strong> handelst und alle Bedingungen akzeptierst.</p>
+              <p> Mit dem Upload bestaetigst du,dass du <strong>auf eigenes Risiko</strong> handelst und alle Bedingungen akzeptierst.</p>
             </div>
           </div>
 
           <div style={{background:"#f8fafc",borderRadius:12,padding:"12px 14px",border:"1px solid #e2e8f0",marginBottom:18,fontSize:11,color:"#64748b",lineHeight:1.7}}>
-            <strong>Haftungsausschluss (? 8 TMG):</strong> Der Vereinsadmin haftet nicht für Schaeden durch die Nutzung dieser Funktion - einschließlich Datenverlust,unberechtigte Zugriffe Dritter oder Weitergabe von Daten bei einem Sicherheitsvorfall. Die Nutzung erfolgt freiwillig und vollständig auf eigene Verantwortung der hochladenden Person.
+            <strong>Haftungsausschluss (? 8 TMG):</strong> Der Vereinsadmin haftet nicht fuer Schaeden durch die Nutzung dieser Funktion - einschliesslich Datenverlust,unberechtigte Zugriffe Dritter oder Weitergabe von Daten bei einem Sicherheitsvorfall. Die Nutzung erfolgt freiwillig und vollstaendig auf eigene Verantwortung der hochladenden Person.
           </div>
 
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
@@ -17091,7 +13943,7 @@ function PhotoUploader({photo,name,onSave,onRemove,t}) {
   const handleFile = e => {
     const f = e.target.files?.[0];
     if (!f) return;
-    if (f.size > 3*1024*1024) { alert("Bild zu groß - bitte max. 3 MB."); return; }
+    if (f.size > 3*1024*1024) { alert("Bild zu gross - bitte max. 3 MB."); return; }
     const r = new FileReader();
     r.onload = ev => { setPending(ev.target.result); setShowLegal(true); };
     r.readAsDataURL(f);
@@ -17116,7 +13968,7 @@ function PhotoUploader({photo,name,onSave,onRemove,t}) {
         style={{marginTop:8,padding:"9px 16px",borderRadius:10,border:"none",
           background:"#e2e8f0",fontWeight:700,fontSize:13,cursor:"pointer",
           fontFamily:"inherit"}}>
-        {photo ? "Bild ändern" : "Bild hochladen"}
+        {photo ? "Bild aendern" : "Bild hochladen"}
       </button>
       {photo && (
         <button onClick={onRemove}
@@ -17131,7 +13983,7 @@ function PhotoUploader({photo,name,onSave,onRemove,t}) {
 }
 
 function CarpoolWizard({ev,user,onSave,onClose,cl}) {
-  return <div style={{padding:16,textAlign:"center",color:"#64748b"}}><p>Fahrgemeinschaft-Funktion in Entwicklung.</p><button onClick={onClose} style={{marginTop:12,padding:"10px 20px",borderRadius:10,border:"none",background:TH(cl).p,color:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Schließen</button></div>;
+  return <div style={{padding:16,textAlign:"center",color:"#64748b"}}><p>Fahrgemeinschaft-Funktion in Entwicklung.</p><button onClick={onClose} style={{marginTop:12,padding:"10px 20px",borderRadius:10,border:"none",background:TH(cl).p,color:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Schliessen</button></div>;
 }
 
 function PollCarpool({ev,user,onVote,cl}) {
@@ -17146,183 +13998,10 @@ function TournStats({ev,cl}) {
   return <div style={{background:"#f8fafc",borderRadius:12,padding:"14px",fontSize:13,color:"#64748b"}}>Turnier-Statistiken</div>;
 }
 
-// Spielplan-Generator: Round-Robin (jeder gegen jeden), verteilt auf Spielflächen + Zeitslots.
-// Nie ein Team zur selben Zeit doppelt. setup: {clubs, pitches|fields, gameTime, startTime, pause}
-function buildSchedule(setup){
-  const teams=(setup.clubs||[]).filter(Boolean);
-  if(teams.length<2) return [];
-  let lanes=[];
-  if(setup.pitches&&setup.pitches.length){
-    setup.pitches.forEach(p=>{ const n=Math.max(1,p.split||1); for(let i=0;i<n;i++) lanes.push(n>1?`${p.name} ${String.fromCharCode(65+i)}`:p.name); });
-  } else { const cnt=Math.max(1,setup.fields||2); for(let i=0;i<cnt;i++) lanes.push(`Feld ${i+1}`); }
-  let arr=[...teams]; if(arr.length%2!==0) arr.push(null);
-  const n=arr.length, rounds=n-1, half=n/2;
-  const roundList=[]; let idx=[...arr.keys()];
-  for(let r=0;r<rounds;r++){
-    const pairs=[];
-    for(let i=0;i<half;i++){ const a=arr[idx[i]], b=arr[idx[n-1-i]]; if(a!==null&&b!==null) pairs.push([a,b]); }
-    roundList.push(pairs);
-    idx=[idx[0], idx[n-1], ...idx.slice(1,n-1)];
-  }
-  const dur=Math.max(1,setup.gameTime||8);
-  const pause=Number.isFinite(setup.pause)?setup.pause:2;
-  const [sh,sm]=(setup.startTime||"09:00").split(":").map(Number);
-  const t0=(sh*60+(sm||0));
-  const games=[]; let slot=0;
-  for(const pairs of roundList){
-    let lane=0, used=new Set();
-    for(const [a,b] of pairs){
-      if(lane>=lanes.length || used.has(a) || used.has(b)){ slot++; lane=0; used=new Set(); }
-      const minutes=t0 + slot*(dur+pause);
-      const hh=String(Math.floor(minutes/60)%24).padStart(2,"0"), mm=String(minutes%60).padStart(2,"0");
-      games.push({ field:lanes[lane], time:`${hh}:${mm}`, a, b });
-      used.add(a); used.add(b); lane++;
-    }
-    slot++;
-  }
-  return games;
-}
+function buildSchedule(setup){return[];}
 function exportTournPDF(ev){alert("PDF-Export in Entwicklung");}
 
-const SIZE_LABEL = { 1:"Ganzer Platz", 2:"Halbierung", 3:"Drittelung", 4:"Viertelung", 8:"Achtelung" };
-function TournSetup({ setup, cl, t, onUpdate, fields=[] }){
-  const [nFields,setNFields]=useState(setup.fields||2);
-  const [gameTime,setGameTime]=useState(setup.gameTime||8);
-  const [clubName,setClubName]=useState(setup.clubName||cl?.name||"");
-  const [teams,setTeams]=useState(setup.clubs||[]);
-  const [pitches,setPitches]=useState(setup.pitches||[]); // [{id,name,surface,split}]
-  const [nt,setNt]=useState("");
-  const [saved,setSaved]=useState(false);
-  const sizeOf = f => f.split||f.segments||1;
-  const areasOf = list => list.reduce((s,p)=>s+(p.split||1),0);
-  if(!onUpdate){
-    return (<div style={{background:"#f8fafc",borderRadius:14,padding:"14px"}}>
-      <p style={{fontWeight:700,color:"#334155",marginBottom:8}}>Turnier-Setup</p>
-      <p style={{fontSize:13,color:"#64748b"}}>Verein: {clubName}</p>
-      <p style={{fontSize:13,color:"#64748b"}}>Plätze: {pitches.length||nFields} | Spielzeit: {gameTime} Min</p>
-      <p style={{fontSize:13,color:"#64748b"}}>Teams: {teams.length||"-"}</p>
-    </div>);
-  }
-  const Stepper=({val,set,min,max,suffix})=>(
-    <div style={{display:"flex",alignItems:"center",gap:10}}>
-      <button onClick={()=>set(Math.max(min,Number(val)-1))} style={{width:36,height:36,borderRadius:10,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:900,fontSize:18,cursor:"pointer",color:"#475569"}}>−</button>
-      <span style={{minWidth:54,textAlign:"center",fontWeight:800,fontSize:17,color:"#0f172a"}}>{val}{suffix||""}</span>
-      <button onClick={()=>set(Math.min(max,Number(val)+1))} style={{width:36,height:36,borderRadius:10,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:900,fontSize:18,cursor:"pointer",color:"#475569"}}>+</button>
-    </div>
-  );
-  const togglePitch = f => { setSaved(false); setPitches(cur=> cur.some(p=>p.id===f.id) ? cur.filter(p=>p.id!==f.id) : [...cur,{id:f.id,name:f.name,surface:f.surface||f.template||"Platz",split:sizeOf(f)}] ); };
-  const addTeam=()=>{ const n=nt.trim(); if(!n)return; setTeams(a=>[...a,n]); setNt(""); setSaved(false); };
-  const save=()=>{
-    const eff = pitches.length ? areasOf(pitches) : Number(nFields)||1;
-    onUpdate({setup:{...setup, fields:eff, pitches, gameTime:Number(gameTime)||1, clubName:clubName.trim()||cl?.name, clubs:teams}});
-    setSaved(true); setTimeout(()=>setSaved(false),2000);
-  };
-  return (
-    <div style={{display:"flex",flexDirection:"column",gap:14}}>
-      <div style={{background:"#fff",borderRadius:14,padding:"14px",border:"1.5px solid #e2e8f0"}}>
-        <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.4}}>AUSRICHTENDER VEREIN</div>
-        <input value={clubName} onChange={e=>{setClubName(e.target.value);setSaved(false);}} placeholder="Vereinsname"
-          style={{width:"100%",padding:"11px 13px",fontSize:15,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",boxSizing:"border-box"}}/>
-      </div>
-
-      {/* Plätze: echte Vereins-Plätze auswählen (Typ + Größe). Fallback: Felderzahl */}
-      <div style={{background:"#fff",borderRadius:14,padding:"14px",border:"1.5px solid #e2e8f0"}}>
-        <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:10,letterSpacing:.4}}>PLÄTZE</div>
-        {fields.length===0
-          ? <>
-              <div style={{fontSize:12,color:"#94a3b8",marginBottom:10}}>Keine Plätze in der Platzverwaltung angelegt – Anzahl direkt festlegen:</div>
-              <Stepper val={nFields} set={v=>{setNFields(v);setSaved(false);}} min={1} max={12} suffix=" Felder"/>
-            </>
-          : <>
-              {fields.map(f=>{ const sel=pitches.some(p=>p.id===f.id); const sz=sizeOf(f); return (
-                <button key={f.id} onClick={()=>togglePitch(f)}
-                  style={{width:"100%",textAlign:"left",display:"flex",alignItems:"center",gap:10,marginBottom:7,background:sel?t.p+"14":"#f8fafc",borderRadius:11,padding:"10px 12px",border:`2px solid ${sel?t.p:"#e2e8f0"}`,cursor:"pointer",fontFamily:"inherit"}}>
-                  <div style={{width:22,height:22,borderRadius:6,border:`2px solid ${sel?t.p:"#cbd5e1"}`,background:sel?t.p:"#fff",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:14,flexShrink:0}}>{sel?"✓":""}</div>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:14,fontWeight:800,color:"#0f172a"}}>{f.name}</div>
-                    <div style={{fontSize:12,color:"#64748b"}}>{f.surface||f.template||"Platz"} · {SIZE_LABEL[sz]||sz+" Teile"}{sz>1?` → ${sz} Spielflächen`:""}</div>
-                  </div>
-                </button>
-              );})}
-              <div style={{fontSize:12,fontWeight:700,color:pitches.length?t.p:"#94a3b8",marginTop:4}}>
-                {pitches.length? `${pitches.length} Platz/Plätze · ${areasOf(pitches)} Spielflächen gleichzeitig` : "Noch keine Plätze gewählt"}
-              </div>
-            </>
-        }
-      </div>
-
-      <div style={{background:"#fff",borderRadius:14,padding:"14px",border:"1.5px solid #e2e8f0"}}>
-        <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:10,letterSpacing:.4}}>SPIELZEIT PRO SPIEL</div>
-        <Stepper val={gameTime} set={v=>{setGameTime(v);setSaved(false);}} min={1} max={90} suffix=" Min"/>
-      </div>
-
-      <div style={{background:"#fff",borderRadius:14,padding:"14px",border:"1.5px solid #e2e8f0"}}>
-        <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.4}}>TEILNEHMENDE TEAMS ({teams.length})</div>
-        {teams.map((tm,i)=>(
-          <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,background:"#f8fafc",borderRadius:9,padding:"8px 11px",border:"1px solid #e2e8f0"}}>
-            <span style={{flex:1,fontSize:14,fontWeight:700,color:"#0f172a"}}>{tm}</span>
-            <button onClick={()=>{setTeams(a=>a.filter((_,j)=>j!==i));setSaved(false);}} style={{background:"none",border:"none",color:"#dc2626",cursor:"pointer",fontWeight:800,fontSize:17,padding:0}}>×</button>
-          </div>
-        ))}
-        <div style={{display:"flex",gap:8,marginTop:4}}>
-          <input value={nt} onChange={e=>setNt(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")addTeam();}} placeholder="Team / Verein hinzufügen"
-            style={{flex:1,padding:"10px 12px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",boxSizing:"border-box"}}/>
-          <button onClick={addTeam} disabled={!nt.trim()} style={{padding:"10px 15px",borderRadius:10,border:"none",background:nt.trim()?t.p:"#e2e8f0",color:nt.trim()?"#fff":"#94a3b8",fontWeight:800,fontSize:14,cursor:nt.trim()?"pointer":"default",fontFamily:"inherit"}}>+</button>
-        </div>
-      </div>
-      <button onClick={save} style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:saved?"#16a34a":t.p,color:"#fff",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>{saved?"Gespeichert ✓":"Setup speichern"}</button>
-    </div>
-  );
-}
-function TournPlan({ ev, setup, t, onUpdate, isHelper }){
-  const sched=ev.schedule||[];
-  const [startTime,setStartTime]=useState(setup.startTime||"09:00");
-  const teams=(setup.clubs||[]).filter(Boolean);
-  const canGen = !!onUpdate && !isHelper;
-  const gen=()=>{ const s={...setup,startTime}; onUpdate({ setup:s, schedule:buildSchedule(s) }); };
-  // nach Zeit gruppieren
-  const groups={}; sched.forEach(g=>{ (groups[g.time] ||= []).push(g); });
-  const times=Object.keys(groups).sort();
-  return (
-    <div style={{display:"flex",flexDirection:"column",gap:12}}>
-      {canGen&&<div style={{background:"#fff",borderRadius:14,padding:"14px",border:"1.5px solid #e2e8f0"}}>
-        <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:10,letterSpacing:.4}}>SPIELPLAN ERSTELLEN</div>
-        {teams.length<2
-          ? <p style={{fontSize:13,color:"#b45309"}}>Mindestens 2 Teams im Setup nötig (aktuell {teams.length}).</p>
-          : <>
-              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
-                <span style={{fontSize:13,color:"#475569",fontWeight:600}}>Startzeit</span>
-                <input type="time" value={startTime} onChange={e=>setStartTime(e.target.value)}
-                  style={{padding:"8px 11px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",fontFamily:"inherit"}}/>
-              </div>
-              <button onClick={gen} style={{width:"100%",padding:"12px",borderRadius:11,border:"none",background:t.p,color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
-                {sched.length? "Spielplan neu erzeugen" : "Spielplan generieren"}
-              </button>
-              <p style={{fontSize:12,color:"#94a3b8",marginTop:8}}>Jeder gegen jeden · {teams.length} Teams · {teams.length*(teams.length-1)/2} Spiele</p>
-            </>
-        }
-      </div>}
-      <div style={{background:"#f8fafc",borderRadius:14,padding:"14px"}}>
-        <p style={{fontWeight:700,color:"#334155",marginBottom:10}}>Spielplan {sched.length?`(${sched.length} Spiele)`:""}</p>
-        {sched.length===0
-          ? <p style={{fontSize:13,color:"#94a3b8"}}>Noch kein Spielplan generiert.</p>
-          : times.map(tm=>(
-            <div key={tm} style={{marginBottom:12}}>
-              <div style={{fontSize:12,fontWeight:800,color:t.p,marginBottom:5}}>{tm} Uhr</div>
-              {groups[tm].map((g,i)=>(
-                <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 11px",marginBottom:5,background:"#fff",borderRadius:9,border:"1px solid #e2e8f0",fontSize:13}}>
-                  <span style={{fontSize:11,fontWeight:700,color:"#64748b",minWidth:78,flexShrink:0}}>{g.field}</span>
-                  <span style={{flex:1,fontWeight:700,color:"#0f172a",textAlign:"center"}}>{g.a} <span style={{color:"#94a3b8",fontWeight:600}}>vs</span> {g.b}</span>
-                </div>
-              ))}
-            </div>
-          ))
-        }
-      </div>
-    </div>
-  );
-}
-function TournView({ ev,user,onVote,onUpdate,cl,players,isHelper=false,fields=[] }) {
+function TournView({ ev,user,onVote,onUpdate,cl,players,isHelper=false }) {
   const t=TH(cl);
   const setup=ev.setup||{};
   const [stab,setStab]=useState("info");
@@ -17340,12 +14019,28 @@ function TournView({ ev,user,onVote,onUpdate,cl,players,isHelper=false,fields=[]
         ))}
       </div>
       {stab==="info"&&<PollAttend ev={ev} user={user} onVote={onVote} cl={cl}/>}
-      {stab==="setup"&&!isHelper&&<TournSetup setup={setup} cl={cl} t={t} onUpdate={onUpdate} fields={fields}/>}
-      {stab==="plan"&&<TournPlan ev={ev} setup={setup} t={t} onUpdate={onUpdate} isHelper={isHelper}/>}
+      {stab==="setup"&&!isHelper&&<div style={{background:"#f8fafc",borderRadius:14,padding:"14px"}}>
+        <p style={{fontWeight:700,color:"#334155",marginBottom:8}}>Turnier-Setup</p>
+        <p style={{fontSize:13,color:"#64748b"}}>Verein: {setup.clubName||cl?.name}</p>
+        <p style={{fontSize:13,color:"#64748b"}}>Felder: {setup.fields||2} | Spielzeit: {setup.gameTime||8} Min</p>
+        <p style={{fontSize:13,color:"#64748b"}}>Teams: {(setup.clubs||[]).length || "-"}</p>
+      </div>}
+      {stab==="plan"&&<div style={{background:"#f8fafc",borderRadius:14,padding:"14px"}}>
+        <p style={{fontWeight:700,color:"#334155",marginBottom:8}}>Spielplan</p>
+        {(ev.schedule||[]).length===0
+          ? <p style={{fontSize:13,color:"#94a3b8"}}>Noch kein Spielplan generiert.</p>
+          : (ev.schedule||[]).map((g,i)=>(
+            <div key={i} style={{padding:"8px 0",borderBottom:"1px solid #e2e8f0",fontSize:13}}>
+              <span style={{color:"#64748b"}}>Feld {g.field} . {g.time}</span>
+              <span style={{marginLeft:10,fontWeight:700}}>{g.a} vs {g.b}</span>
+            </div>
+          ))
+        }
+      </div>}
       {stab==="timer"&&<CompactTimer ev={ev} cl={cl}/>}
       {stab==="split"&&<div style={{background:"#f8fafc",borderRadius:14,padding:"14px"}}>
         <p style={{fontWeight:700,color:"#334155",marginBottom:8}}>Team-Aufteilung</p>
-        <p style={{fontSize:13,color:"#64748b"}}>Spieler zufällig auf Teams aufteilen.</p>
+        <p style={{fontSize:13,color:"#64748b"}}>Spieler zufaellig auf Teams aufteilen.</p>
       </div>}
       {stab==="stats"&&<div style={{background:"#f8fafc",borderRadius:14,padding:"14px"}}>
         <p style={{fontWeight:700,color:"#334155",marginBottom:8}}>Statistiken</p>
@@ -17357,40 +14052,21 @@ function TournView({ ev,user,onVote,onUpdate,cl,players,isHelper=false,fields=[]
 
 function CompactTimer({ ev,cl }) {
   const t=TH(cl);
+  const fields=(ev.setup?.fields||2);
   const dur=(ev.setup?.gameTime||8)*60;
-  // Spielflächen aus den ausgewählten Plätzen ableiten (Größe beachten: halbierter Platz = 2 Flächen)
-  const lanes=React.useMemo(()=>{
-    const pitches=ev.setup?.pitches;
-    const out=[];
-    if(pitches&&pitches.length){
-      pitches.forEach(p=>{
-        const n=Math.max(1,p.split||1);
-        for(let i=0;i<n;i++) out.push({ label: n>1?`${p.name} ${String.fromCharCode(65+i)}`:p.name, sub:p.surface||"" });
-      });
-    } else {
-      const cnt=ev.setup?.fields||2;
-      for(let i=0;i<cnt;i++) out.push({ label:`Feld ${i+1}`, sub:"" });
-    }
-    return out;
-  },[ev.setup]);
-  const [times,setTimes]=useState(()=>lanes.map(()=>({sec:0,running:false})));
-  // Bei Änderung der Platz-Anzahl Timer-Liste angleichen (laufende Zeiten erhalten)
-  useEffect(()=>{ setTimes(prev=> lanes.map((_,i)=> prev[i]||{sec:0,running:false})); },[lanes.length]);
+  const [times,setTimes]=useState(()=>Array.from({length:fields},()=>({sec:0,running:false})));
   useEffect(()=>{
     const iv=setInterval(()=>{
       setTimes(prev=>prev.map(f=>f.running?{...f,sec:Math.min(f.sec+1,dur*2)}:f));
     },1000);
     return()=>clearInterval(iv);
-  },[dur]);
+  },[]);
   const fmt=s=>`${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
   return (
     <div style={{display:"flex",flexDirection:"column",gap:10}}>
       {times.map((f,i)=>(
         <div key={i} style={{background:"#fff",borderRadius:14,padding:"14px",border:"1.5px solid #e2e8f0"}}>
-          <div style={{display:"flex",alignItems:"baseline",gap:8,marginBottom:6}}>
-            <span style={{fontWeight:800}}>{lanes[i]?.label||`Feld ${i+1}`}</span>
-            {lanes[i]?.sub&&<span style={{fontSize:12,color:"#94a3b8",fontWeight:600}}>{lanes[i].sub}</span>}
-          </div>
+          <div style={{fontWeight:700,marginBottom:6}}>Feld {i+1}</div>
           <div style={{fontWeight:900,fontSize:36,color:f.sec>=dur?"#dc2626":t.p,fontFamily:"monospace",marginBottom:8}}>{fmt(f.sec)}</div>
           <div style={{display:"flex",gap:8}}>
             <button onClick={()=>setTimes(p=>p.map((x,j)=>j===i?{...x,running:!x.running}:x))}
@@ -17420,7 +14096,7 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
     else if(!isPast)status={icon:"*",label:"Noch nicht abgestimmt",color:"#d97706",bg:"#fef3c7",urgent:true};
   } else if(ev.pt==="list"){
     const mc=Array.isArray(uv)?uv:[];
-    if(mc.length>0)status={icon:"Liste",label:`${mc.length} ausgewählt`,color:"#16a34a",bg:"#dcfce7",urgent:false};
+    if(mc.length>0)status={icon:"Liste",label:`${mc.length} ausgewaehlt`,color:"#16a34a",bg:"#dcfce7",urgent:false};
     else if(!isPast)status={icon:"Liste",label:"Auswahl fehlt noch",color:"#d97706",bg:"#fef3c7",urgent:true};
   } else if(ev.pt==="carpool"){
     const hN=!!ev.carpoolNeeds?.[user];const hO=!!ev.carpoolOffers?.[user];
@@ -17435,7 +14111,7 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
     <div style={{background:"#fff",borderRadius:20,boxShadow:expanded?"0 8px 32px rgba(0,0,0,.11)":"0 2px 10px rgba(0,0,0,.05)",border:`2px solid ${expanded?p:status?.urgent?"#fde68a":"#e2e8f0"}`,overflow:"hidden",transition:"all .2s",opacity:isPast&&!expanded?.7:1}}>
       {status?.urgent&&!expanded&&!isPast&&<div style={{background:"#fffbeb",borderBottom:"1px solid #fde68a",padding:"6px 17px",display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:13}}></span><span style={{fontSize:12,fontWeight:700,color:"#d97706"}}>Deine Antwort fehlt noch!</span></div>}
       <div onClick={onToggle} style={{padding:"14px 17px",cursor:"pointer",display:"flex",alignItems:"center",gap:12}}>
-        <div style={{width:48,height:48,borderRadius:15,background:eT.bg,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><EventIcon type={EVENT_TYPE_ALIAS[ev.type]||ev.type} size={26} color={eT.col}/></div>
+        <div style={{width:48,height:48,borderRadius:15,background:eT.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{eT.icon}</div>
         <div style={{flex:1,minWidth:0}}>
           <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
             <span style={{fontWeight:900,fontSize:17,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ev.title}</span>
@@ -17444,7 +14120,7 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
             {ev.sid&&<Tag c="#94a3b8" bg="#f1f5f9" ch="*" sm/>}
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8,marginTop:4,flexWrap:"wrap"}}>
-            <span style={{fontSize:13,color:"#64748b",fontWeight:600}}>{fmtD(ev.date)}{ev.time?" . "+ev.time+(ev.endTime?"–"+ev.endTime:""):""}</span>
+            <span style={{fontSize:13,color:"#64748b",fontWeight:600}}>{fmtD(ev.date)}{ev.time?" . "+ev.time:""}</span>
             {ev.loc&&<span style={{fontSize:12,color:"#94a3b8"}}> {ev.loc}</span>}
           </div>
           {status&&<div style={{marginTop:6,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
@@ -17456,22 +14132,6 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
       </div>
       {expanded&&<div style={{padding:"0 17px 20px",borderTop:"1px solid #f1f5f9"}}>
         <div style={{height:14}}/>
-        {ev.trainingPlan && (
-          <div style={{background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:14,padding:"13px 15px",marginBottom:14}}>
-            <div style={{fontSize:12,fontWeight:800,color:"#166534",marginBottom:8,letterSpacing:.3}}>TRAININGSPLAN{ev.trainingPlan.cat?" · "+ev.trainingPlan.cat:""}</div>
-            {(ev.trainingPlan.sessions||[]).map((s,si)=>(
-              <div key={si} style={{marginBottom:si<ev.trainingPlan.sessions.length-1?10:0}}>
-                {(s.blocks||[]).map((b,bi)=>(
-                  <div key={bi} style={{display:"flex",alignItems:"center",gap:8,padding:"4px 0",fontSize:13,color:"#334155"}}>
-                    <span style={{fontSize:10,fontWeight:800,color:"#16a34a",width:58,flexShrink:0}}>{b.phase}</span>
-                    <span style={{flex:1,fontWeight:600}}>{b.title}</span>
-                    <span style={{fontSize:11,color:"#94a3b8"}}>{b.min} Min</span>
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-        )}
         {ev.type==="turnier"&&isTrainerOrHelper?<TournView ev={ev} user={user} onVote={onVote} cl={cl} players={players} isHelper={role==="helper"}/>
           :ev.type==="turnier"?<PollAttend ev={ev} user={user} onVote={onVote} cl={cl}/>
           :ev.pt==="carpool"?<PollCarpool ev={ev} user={user} onVote={onVote} cl={cl}/>
@@ -17482,57 +14142,22 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
   );
 }
 
-// Teilbarer Direktlink zu Verein + Team (direkt zur Anmeldung). Jeder eingeloggte Nutzer darf ihn weitergeben.
-function ShareTeamLink({ cl, team, t, compact }){
-  const [copied,setCopied]=useState(false);
-  if(!cl||!team) return null;
-  const base = (typeof window!=="undefined" ? window.location.origin : "") ;
-  const link = base + "/?club=" + encodeURIComponent(cl.slug||cl.id) + "&team=" + encodeURIComponent(team.id);
-  const msg = `Anmeldung ${cl.name} – ${team.name}: ${link}`;
-  const doShare = async () => {
-    if(typeof navigator!=="undefined" && navigator.share){
-      try { await navigator.share({title:cl.name+" – "+team.name, text:"Direkt zur Anmeldung", url:link}); return; } catch {}
-    }
-    try { await navigator.clipboard?.writeText(link); } catch {}
-    setCopied(true); setTimeout(()=>setCopied(false),2000);
-  };
-  return (
-    <div style={{background:"#fff",borderRadius:14,border:"1.5px solid #e2e8f0",padding:compact?"12px 14px":"15px 16px"}}>
-      <div style={{fontSize:13,fontWeight:800,color:"#334155",marginBottom:4}}>Anmelde-Link teilen</div>
-      <div style={{fontSize:12,color:"#64748b",lineHeight:1.5,marginBottom:10}}>Führt direkt zur Anmeldung von <b>{team.name}</b>. Ideal für neue Eltern – einfach per WhatsApp, E-Mail o.&nbsp;Ä. weitergeben.</div>
-      <div style={{display:"flex",gap:8,alignItems:"center"}}>
-        <div style={{flex:1,minWidth:0,fontSize:11.5,color:"#475569",background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:9,padding:"8px 10px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontFamily:"monospace"}}>{link}</div>
-        <button onClick={doShare} style={{flexShrink:0,padding:"9px 15px",borderRadius:10,border:"none",background:t.p,color:"#fff",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{copied?"Kopiert ✓":"Teilen"}</button>
-      </div>
-    </div>
-  );
-}
-
 function UserHome({data,session,onSave,onLogout,lang="de"}) {
   const tr = (k) => T[lang]?.[k] ?? T.de[k] ?? k;
   const {tid,user,cid}=session;
   const cl=data.clubs.find(c=>c.id===cid);
-  const myClub=cl;
-  const isAdmin=false, isHelper=false;
-  const [tab,setTab]=useState("events");
-  const isDesktop = typeof window!=="undefined" && window.innerWidth>=1024;
   const myTeam=data.teams.find(x=>x.id===tid);
   const t=TH(cl); const tod=now();
-  const _activeSid=data.activeSeason||(data.seasons||[])[0]?.id||null;
-  const evs=data.events.filter(e=>e.tid===tid&&(!e.seasonId||e.seasonId===_activeSid)).sort((a,b)=>a.date.localeCompare(b.date));
+  const evs=data.events.filter(e=>e.tid===tid).sort((a,b)=>a.date.localeCompare(b.date));
   const up=evs.filter(e=>e.date>=tod);
   const past=evs.filter(e=>e.date<tod).reverse();
-  const _in10=addD(now(),10);                          // Grenze: heute + 10 Tage
-  const soon=up.filter(e=>e.date<=_in10);              // nächste 10 Tage
-  const later=up.filter(e=>e.date>_in10);              // weiter in der Zukunft
-  const [showLater,setShowLater]=useState(false);
   const [exp,setExp]=useState((up[0]||past[0])?.id||null);
   const [showPast,setSP]=useState(false);
   const [toast,setToast]=useState(null);
   const unreadMsgs = useMemo(()=>{
     const lastRead = Number(localStorage.getItem("va_last_read_"+cid)||0);
-    return (data.chats||[]).filter(m=>m.cid===cid&&m.ts>lastRead).length;
-  },[data.chats]);
+    return (local.chats||[]).filter(m=>m.cid===cid&&m.ts>lastRead).length;
+  },[local.chats]);
   const [showProfile,setShowProfile]=useState(false);
   const toastRef=useRef(null);
   const fire=m=>{setToast(m);clearTimeout(toastRef.current);toastRef.current=setTimeout(()=>setToast(null),2200);};
@@ -17626,81 +14251,37 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
               <span style={{fontSize:12}}>{myTeam?.name}</span>
             </div>
             <div style={{background:"#fffbeb",borderRadius:11,padding:"10px 13px",marginBottom:16,fontSize:12,color:"#92400e",lineHeight:1.6}}>
-               <strong>Datenschutz:</strong> Dein Profilbild wird verschluesselt auf dem Server gespeichert und ist nur für dich sichtbar. Du kannst es jederzeit löschen.
+               <strong>Datenschutz:</strong> Dein Profilbild wird verschluesselt auf dem Server gespeichert und ist nur fuer dich sichtbar. Du kannst es jederzeit loeschen.
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:9}}>
-              <div style={{marginBottom:4}}><ShareTeamLink cl={cl} team={myTeam} t={t} compact/></div>
-              <button onClick={()=>setShowProfile(false)} style={{width:"100%",padding:"13px",borderRadius:13,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Schließen</button>
+              <button onClick={()=>setShowProfile(false)} style={{width:"100%",padding:"13px",borderRadius:13,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Schliessen</button>
               <button onClick={()=>{setShowProfile(false);onLogout();}} style={{width:"100%",padding:"13px",borderRadius:13,border:"none",background:"#fee2e2",color:"#dc2626",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}> Team wechseln / Abmelden</button>
             </div>
           </div>
         </div>
       )}
 
-      <div style={{maxWidth:isDesktop?1080:520,margin:"0 auto",padding:isDesktop?"24px":"16px 14px",display:isDesktop?"grid":"block",gridTemplateColumns:isDesktop?"1fr 320px":"none",gap:isDesktop?24:0,alignItems:"start"}}>
-        <div>
+      <div style={{maxWidth:520,margin:"0 auto",padding:"16px 14px"}}>
         {up.length>0&&<>
-          <Divider label="NÄCHSTE 10 TAGE"/>
-          {soon.length>0
-            ? soon.map((ev,i)=><div key={ev.id} className="up" style={{marginBottom:10,animationDelay:`${i*.05}s`}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user"/></div>)
-            : <p style={{textAlign:"center",color:"#94a3b8",fontSize:13.5,padding:"16px 10px"}}>Keine Termine in den nächsten 10 Tagen.</p>}
-          {later.length>0&&<>
-            <button onClick={()=>setShowLater(s=>!s)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",background:showLater?"#f1f5f9":"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,cursor:"pointer",margin:"6px 0 10px",padding:"11px 14px",fontWeight:800,fontSize:13,color:"#475569",fontFamily:"inherit"}}>
-              <span>{showLater?"▲ Weitere Termine ausblenden":"▼ Weitere "+later.length+" Termine anzeigen"}</span>
-            </button>
-            {showLater&&later.map((ev,i)=><div key={ev.id} style={{marginBottom:10}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user"/></div>)}
-          </>}
+          <Divider label="KOMMENDE TERMINE"/>
+          {up.map((ev,i)=><div key={ev.id} className="up" style={{marginBottom:10,animationDelay:`${i*.05}s`}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user"/></div>)}
         </>}
-        {up.length===0&&<div style={{textAlign:"center",padding:"52px 20px"}}><Logo cl={cl} sz={64} sx={{margin:"0 auto 16px"}}/><p style={{fontWeight:800,fontSize:18,color:"#334155"}}>Keine anstehenden Termine</p><p style={{color:"#94a3b8",fontSize:14,marginTop:6}}>Der Trainer hat noch keine Termine angelegt.</p><div style={{marginTop:20}}><AdBanner/></div></div>}
+        {up.length===0&&<div style={{textAlign:"center",padding:"52px 20px"}}><Logo cl={cl} sz={64} sx={{margin:"0 auto 16px"}}/><p style={{fontWeight:800,fontSize:18,color:"#334155"}}>Keine anstehenden Termine</p><p style={{color:"#94a3b8",fontSize:14,marginTop:6}}>Der Trainer hat noch keine Termine angelegt.</p><div style={{marginTop:20}}><AdBanner/></div><PoweredBy/></div>}
         {past.length>0&&<>
           <button onClick={()=>setSP(s=>!s)} style={{display:"flex",alignItems:"center",gap:10,width:"100%",background:"none",border:"none",cursor:"pointer",margin:"18px 0 10px",padding:"4px 0"}}>
-            <div style={{flex:1,height:1,background:"#e2e8f0"}}/><span style={{fontSize:11,fontWeight:800,color:"#94a3b8",whiteSpace:"nowrap"}}>{showPast?"▲":"▼"} VERGANGENE ({past.length})</span><div style={{flex:1,height:1,background:"#e2e8f0"}}/>
+            <div style={{flex:1,height:1,background:"#e2e8f0"}}/><span style={{fontSize:11,fontWeight:800,color:"#94a3b8",whiteSpace:"nowrap"}}>{showPast?"?":"?"} VERGANGENE ({past.length})</span><div style={{flex:1,height:1,background:"#e2e8f0"}}/>
           </button>
           {showPast&&past.map(ev=><div key={ev.id} style={{marginBottom:10}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user"/></div>)}
         </>}
-        </div>
-        {isDesktop&&(
-          <aside style={{position:"sticky",top:24,display:"flex",flexDirection:"column",gap:16}}>
-            <div style={{borderRadius:18,overflow:"hidden",boxShadow:"0 4px 20px rgba(0,0,0,.06)"}}>
-              <div style={{background:`linear-gradient(135deg,${t.s} 0%,${t.p} 100%)`,padding:"22px 20px",color:"#fff",position:"relative"}}>
-                <svg viewBox="0 0 120 120" width="120" height="120" style={{position:"absolute",right:-10,top:-10,opacity:.16}}>
-                  <circle cx="60" cy="60" r="34" fill="none" stroke="#fff" strokeWidth="3"/>
-                  <path d="M60 26 L70 50 L60 64 L50 50 Z M60 64 L40 78 L48 96 L72 96 L80 78 Z" fill="#fff"/>
-                </svg>
-                <div style={{display:"flex",alignItems:"center",gap:11,marginBottom:8}}>
-                  <Logo cl={cl} sz={40}/>
-                  <div>
-                    <div style={{fontWeight:900,fontSize:16,lineHeight:1.2}}>{cl?.name}</div>
-                    <div style={{fontSize:12,color:"rgba(255,255,255,.7)"}}>{myTeam?.name}</div>
-                  </div>
-                </div>
-                <div style={{fontSize:13,color:"rgba(255,255,255,.9)",fontWeight:600}}>Hallo {user}!</div>
-              </div>
-              <div style={{background:"#fff",padding:"16px 18px"}}>
-                <div style={{fontSize:11,fontWeight:800,color:"#94a3b8",letterSpacing:.5,marginBottom:8}}>ÜBERSICHT</div>
-                <div style={{display:"flex",gap:10}}>
-                  <div style={{flex:1,background:t.p+"12",borderRadius:12,padding:"12px 10px",textAlign:"center"}}>
-                    <div style={{fontSize:24,fontWeight:900,color:t.p}}>{up.length}</div>
-                    <div style={{fontSize:11,color:"#64748b",fontWeight:600}}>anstehend</div>
-                  </div>
-                  <div style={{flex:1,background:"#f1f5f9",borderRadius:12,padding:"12px 10px",textAlign:"center"}}>
-                    <div style={{fontSize:24,fontWeight:900,color:"#64748b"}}>{past.length}</div>
-                    <div style={{fontSize:11,color:"#64748b",fontWeight:600}}>vergangen</div>
-                  </div>
-                </div>
-                {up[0]&&<div style={{marginTop:14,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
-                  <div style={{fontSize:11,fontWeight:800,color:"#94a3b8",letterSpacing:.5,marginBottom:6}}>NÄCHSTER TERMIN</div>
-                  <div style={{fontWeight:800,fontSize:14,color:"#334155"}}>{up[0].title}</div>
-                  <div style={{fontSize:12.5,color:"#64748b",marginTop:2}}>{new Date(up[0].date+"T12:00:00").toLocaleDateString("de-DE",{weekday:"short",day:"2-digit",month:"2-digit"})}{up[0].time?` · ${up[0].time}${up[0].endTime?"–"+up[0].endTime:""}`:""}</div>
-                </div>}
-              </div>
-            </div>
-          </aside>
-        )}
       </div>
+      {showOnboarding&&<OnboardingWizard cl={myClub} data={local} save={save} fire={fire} onDone={()=>setShowOnboarding(false)}/>}
       <Toast msg={toast}/>
       <BottomNav tab={tab} setTab={setTab} isAdmin={isAdmin} isHelper={isHelper}
         unread={unreadMsgs} cl={myClub} />
+      
+      {shareConfig&&<MomentShare trigger={shareConfig.trigger} clubName={myClub?.name} stats={shareConfig.stats} onDismiss={()=>setShareConfig(null)}/>}
+      {showNPS&&<NPSWidget clubName={myClub?.name} onDone={()=>setShowNPS(false)}/>}
+      {achievement&&<AchievementToast achievement={achievement} onDone={()=>setAchievment(null)}/>}
     </div>
   );
 }
@@ -17715,7 +14296,7 @@ export default function App() {
   );
 }
 function AppRoot() {
-  const [lang,setLang] = useState(()=> LANG_SWITCHER_ENABLED ? (localStorage.getItem(LANG_KEY)||navigator.language?.slice(0,2)||"de") : "de");
+  const [lang,setLang] = useState(()=>localStorage.getItem(LANG_KEY)||navigator.language?.slice(0,2)||"de");
   return (
     <LangCtx.Provider value={lang in T ? lang : "de"}>
       <AppInner lang={lang} setLang={setLang}/>
@@ -17723,67 +14304,12 @@ function AppRoot() {
   );
 }
 
-function DbTest(){
-  const [fn,setFn]=useState(null); const [direct,setDirect]=useState(null); const [busy,setBusy]=useState(true);
-  const run=async()=>{
-    setBusy(true);
-    let f; try{ f=await sb.fnTest(); }catch(e){ f={ok:false,status:0,msg:String((e&&e.message)||e)}; } setFn(f);
-    let d; try{ d=await sb.selfTest(); }catch(e){ d={step:"fehler",ok:false,status:0,msg:String((e&&e.message)||e)}; } setDirect(d);
-    setBusy(false);
-  };
-  useEffect(()=>{ run(); },[]);
-  const cfg=getConfig();
-  const fnHint=(r)=>{
-    if(!r) return "";
-    if(r.ok) return "Die Edge Function antwortet. Sehr gut \u2013 damit kann der App-Umbau gemacht werden.";
-    const m=(r.msg||"").toLowerCase();
-    if(r.status===401) return "Function blockt mit 401. Ist bei der Function \u201eVerify JWT\u201c wirklich AUS und gespeichert?";
-    if(r.status===404||/not found|no such function/.test(m)) return "Function nicht gefunden. Heisst sie exakt \u201edata-api\u201c und ist sie deployed?";
-    if(r.status>=500||/app_token_secret|service_role|env/.test(m)) return "Function-interner Fehler (Status "+r.status+"). Meist fehlt ein Secret (z. B. APP_TOKEN_SECRET) \u2013 in Supabase unter Edge Functions \u2192 Secrets pruefen.";
-    return "Function erreichbar, aber Antwort unerwartet \u2013 genaue Meldung unten.";
-  };
-  const directBlocked = direct&&!direct.ok&&(direct.status===403||/security|policy|permission/.test((direct.msg||"").toLowerCase())||direct.step==="verify");
-  const Card=({title,ok,warn,children})=>(
-    <div style={{background:ok?"#052e16":warn?"#422006":"#450a0a",border:`1px solid ${ok?"#16a34a":warn?"#d97706":"#dc2626"}`,borderRadius:12,padding:"16px 18px",marginBottom:14}}>
-      <div style={{fontSize:16,fontWeight:900,color:ok?"#86efac":warn?"#fbbf24":"#fca5a5",marginBottom:8}}>{title}</div>
-      {children}
-    </div>
-  );
-  return (<div style={{minHeight:"100dvh",background:"#0f172a",color:"#e2e8f0",padding:"28px 18px",fontFamily:"system-ui,sans-serif"}}>
-    <div style={{maxWidth:600,margin:"0 auto"}}>
-      <h1 style={{fontSize:22,fontWeight:900,margin:"0 0 4px"}}>Datenbank- & Function-Test</h1>
-      <p style={{color:"#94a3b8",fontSize:13,margin:"0 0 18px",lineHeight:1.6}}>Prueft die Edge Function (soll antworten) und den direkten Datenbankzugriff (soll jetzt gesperrt sein).</p>
-      <div style={{background:"#1e293b",borderRadius:12,padding:"12px 16px",fontSize:13,marginBottom:14}}>
-        Projekt: <b>{cfg?.url?.replace("https://","").split(".")[0]||"\u2014"}</b>
-      </div>
-      {busy&&<div style={{color:"#94a3b8",marginBottom:14}}>Tests laufen\u2026</div>}
-
-      {fn&&<Card title={fn.ok?"\u2713 Edge Function \u201edata-api\u201c antwortet":"\u2715 Edge Function antwortet nicht"} ok={fn.ok}>
-        {!fn.ok&&<div style={{fontSize:13,marginBottom:8}}>HTTP-Status: <b>{fn.status||"\u2014"}</b></div>}
-        <div style={{fontSize:14,lineHeight:1.6,marginBottom:fn.msg?10:0}}>{fnHint(fn)}</div>
-        {fn.msg&&<pre style={{whiteSpace:"pre-wrap",wordBreak:"break-word",fontSize:11.5,background:"rgba(0,0,0,.35)",borderRadius:8,padding:"10px 12px",color:"#cbd5e1",margin:0}}>{fn.msg}</pre>}
-      </Card>}
-
-      {direct&&<Card title={directBlocked?"\u2713 Direktzugriff ist gesperrt (RLS aktiv)":direct.ok?"\u26a0 Direktzugriff ist noch offen":"Direktzugriff: "+(direct.status||"Fehler")} ok={directBlocked} warn={direct.ok}>
-        <div style={{fontSize:14,lineHeight:1.6,marginBottom:direct.msg&&!directBlocked?10:0}}>
-          {directBlocked?"Gut so: Mit dem App-Key kommt man nicht mehr direkt an die Daten \u2013 nur ueber die Function.":direct.ok?"Achtung: Die Tabelle ist noch ohne RLS offen. Solange die App ueber die Function laeuft, sollte der Direktzugriff gesperrt sein (RLS an).":"Unerwartet \u2013 Meldung unten."}
-        </div>
-        {direct.msg&&!directBlocked&&<pre style={{whiteSpace:"pre-wrap",wordBreak:"break-word",fontSize:11.5,background:"rgba(0,0,0,.35)",borderRadius:8,padding:"10px 12px",color:"#cbd5e1",margin:0}}>{direct.msg}</pre>}
-      </Card>}
-
-      <button onClick={run} disabled={busy} style={{marginTop:4,padding:"12px 18px",borderRadius:10,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:14,cursor:busy?"default":"pointer",opacity:busy?.6:1}}>Erneut testen</button>
-    </div>
-  </div>);
-}
-
 function AppInner({lang,setLang}) {
   const [data,setData]    = useState(null);
   const [screen,setScr]   = useState("boot");
   const [cid,setCid]      = useState(null);
-  const [linkTeam,setLinkTeam] = useState(null);
   const [session,setSess] = useState(null);
   const [showSetup,setShowSetup] = useState(false);
-  const [showLegal,setShowLegal] = useState(false);
   const [showSuperAdmin,setShowSuperAdmin] = useState(
     ()=>new URLSearchParams(window.location.search).has("superadmin")
   );
@@ -17793,50 +14319,21 @@ function AppInner({lang,setLang}) {
   const [saveStatus,setSaveStatus] = useState(null); // null | "saving" | "saved" | "local"
   const syncRef  = useRef(null);
   const saveTimer= useRef(null);
-  const cidRef   = useRef(null); cidRef.current = cid; // immer aktueller Verein für Schreib-Isolation
 
   useEffect(()=>{
     (async()=>{
-      try{ APP_TOKEN = localStorage.getItem("vapp_token") || APP_TOKEN; }catch{}
-      // 1) Leichtes Verzeichnis laden (nur Vereinsliste, keine schweren Daten); falls leer -> seed
-      let dir=null;
-      try { dir = await sb.getDirectory(); } catch {}
-      if(!dir || (dir._v!=null && dir._v < 10)) { const seeded=seed(); try { await sb.set(seeded); } catch {} dir=seeded; }
-      // SuperAdmin braucht alle Daten -> voll laden
-      if(new URLSearchParams(window.location.search).has("superadmin")){
-        let full=null; try { full=await sb.get(); } catch {}
-        setData(refreshDemo(full||dir)); setScr("dir"); return; // screen!=="boot", SuperAdmin-Render greift
-      }
+      let d=null;
+      try { d = await sb.get(); if(d?._v < 10) d=null; } catch {}
+      if(!d) { d=seed(); try { await sb.set(d); } catch {} }
+      setData(d);
       const s=sess.get();
-      if(s){
-        // nur den Verein des angemeldeten Nutzers laden
-        let cd=null; try { cd=await sb.getClub(s.cid); } catch {}
-        cd = cd||dir; if(s.cid==="demo") cd=refreshDemo(cd);
-        setData(cd); setCid(s.cid); setSess(s); setScr(s.role==="user"?"user":"dash"); return;
-      }
-      // Direktlink ?club=<slug|id>&team=<id> → Verein laden, dann zur Anmeldung
-      const params=new URLSearchParams(window.location.search);
-      const clubParam=params.get("club");
-      if(clubParam){
-        const club=(dir.clubs||[]).find(c=>c.slug===clubParam||c.id===clubParam);
-        if(club){
-          let cd=null; try { cd=await sb.getClub(club.id); } catch {}
-          cd = cd||dir; if(club.id==="demo") cd=refreshDemo(cd);
-          setData(cd); setCid(club.id);
-          const teamParam=params.get("team");
-          if(teamParam){ setLinkTeam(teamParam); setScr("flow"); }
-          else setScr("role");
-          return;
-        }
-      }
-      // Verzeichnis anzeigen (nur leichte Vereinsliste)
-      setData(refreshDemo(dir)); setScr("dir");
+      if(s){ setCid(s.cid); setSess(s); setScr(s.role==="user"?"user":"dash"); return; }
+      setScr("dir");
     })();
     syncRef.current=setInterval(async()=>{
       try {
-        const cur=cidRef.current;
-        const r = cur ? await sb.getClub(cur) : await sb.getDirectory();
-        if(r?._v>=12){ const rr=(cur==="demo")?refreshDemo(r):r; setData(p=>JSON.stringify(p)===JSON.stringify(rr)?p:rr); }
+        const r=await sb.get();
+        if(r?._v>=12) setData(p=>{if(JSON.stringify(p)===JSON.stringify(r))return p;return r;});
       } catch {}
     },10000);
     return()=>clearInterval(syncRef.current);
@@ -17846,9 +14343,13 @@ function AppInner({lang,setLang}) {
     setData(next);
     setSaveStatus("saving");
     clearTimeout(saveTimer.current);
-    const res = await sb.set(next, cidRef.current);
-    setSaveStatus(!getConfig() ? "local" : (res && res.ok) ? "saved" : "error");
-    saveTimer.current=setTimeout(()=>setSaveStatus(null),4000);
+    try {
+      await sb.set(next);
+      setSaveStatus(getConfig()?"saved":"local");
+    } catch {
+      setSaveStatus("local");
+    }
+    saveTimer.current=setTimeout(()=>setSaveStatus(null),2500);
   },[]);
 
   const login=(role,payload)=>{
@@ -17861,18 +14362,11 @@ function AppInner({lang,setLang}) {
     const newLog=[...(data.securityLog||[]),
       ...(dev.suspicious?[{...createAuditEntry("new_device","Unbekannte Region: "+dev.lang,s),cid}]:[]),
       entry];
-    const nowIso=new Date().toISOString();
-    localSet({...data,
-      securityLog:newLog,
-      clubs:(data.clubs||[]).map(c=>c.id===cid?{...c,lastActive:nowIso}:c),
-    });
+    localSet({...data,securityLog:newLog});
     setScr(role==="user"?"user":"dash");
-    // Frische Daten aus der DB laden (wichtig auf neuen Geraeten), sobald ein Token vorhanden ist
-    if(APP_TOKEN && cid && cid!=="demo"){ sb.getClub(cid).then(cd=>{ if(cd&&cd.clubs) setData(cd); }).catch(()=>{}); }
   };
   const logout=()=>{
-    if(session){const e={...createAuditEntry("logout","Logout: "+(session.name||session.role),session),cid};localSet({...data,securityLog:[...(data.securityLog||[]),e]});}
-    APP_TOKEN=null; try{ localStorage.removeItem("vapp_token"); }catch{}
+    if(sess_){const e={...createAuditEntry("logout","Logout: "+(sess_.name||sess_.role),sess_),cid};localSet({...data,securityLog:[...(data.securityLog||[]),e]});}
     sess.del(); setSess(null); setScr(cid?"role":"dir");
   };
 
@@ -17886,40 +14380,35 @@ function AppInner({lang,setLang}) {
     </>
   );
 
-  if(new URLSearchParams(window.location.search).has("dbtest")) return (<><style>{CSS}</style><DbTest/></>);
-
   if(screen==="boot"||!data) return (
     <div style={{minHeight:"100dvh",display:"flex",alignItems:"center",justifyContent:"center",background:"#0f172a"}}>
       <style>{CSS}</style>
       <div style={{textAlign:"center"}}>
         <div style={{fontSize:60,animation:"pulse 1.5s ease infinite",marginBottom:14}}></div>
-        <p style={{color:"#86efac",fontWeight:800,fontSize:17}}>Vereins-App lädt...</p>
+        <p style={{color:"#86efac",fontWeight:800,fontSize:17}}>Vereins-App laedt...</p>
         {!getConfig()&&<p style={{color:"rgba(255,255,255,.3)",fontSize:12,marginTop:8}}>Lokaler Speicher aktiv</p>}
       </div>
     </div>
   );
 
-  if(showSuperAdmin) return (<><style>{CSS}</style><SuperAdmin data={data}/></>);
-
   const activeCl = data.clubs.find(c=>c.id===cid);
-  const clTeams  = activeTeamsFor(data,cid);
+  const clTeams  = data.teams.filter(t=>t.cid===cid);
 
   return (
     <div>
       <style>{CSS}</style>
       {}
       {saveStatus&&(
-        <div style={{position:"fixed",bottom:20,right:16,zIndex:999,display:"flex",alignItems:"center",gap:7,background:saveStatus==="saved"?"#052e16":saveStatus==="saving"?"#0f172a":saveStatus==="error"?"#450a0a":"#451a03",borderRadius:99,padding:"8px 14px",boxShadow:"0 4px 20px rgba(0,0,0,.3)",border:`1px solid ${saveStatus==="saved"?"#16a34a":saveStatus==="saving"?"#334155":saveStatus==="error"?"#dc2626":"#d97706"}`,fontSize:12,fontWeight:700,color:saveStatus==="saved"?"#86efac":saveStatus==="saving"?"#94a3b8":saveStatus==="error"?"#fca5a5":"#fbbf24"}}>
+        <div style={{position:"fixed",bottom:20,right:16,zIndex:999,display:"flex",alignItems:"center",gap:7,background:saveStatus==="saved"?"#052e16":saveStatus==="saving"?"#0f172a":"#451a03",borderRadius:99,padding:"8px 14px",boxShadow:"0 4px 20px rgba(0,0,0,.3)",border:`1px solid ${saveStatus==="saved"?"#16a34a":saveStatus==="saving"?"#334155":"#d97706"}`,fontSize:12,fontWeight:700,color:saveStatus==="saved"?"#86efac":saveStatus==="saving"?"#94a3b8":"#fbbf24"}}>
           {saveStatus==="saving"&&<div style={{width:12,height:12,border:"2px solid rgba(255,255,255,.2)",borderTopColor:"#94a3b8",borderRadius:"50%",animation:"spin .7s linear infinite"}}/>}
           {saveStatus==="saved"&&"* Supabase gespeichert"}
           {saveStatus==="saving"&&"Speichert..."}
           {saveStatus==="local"&&"* Lokal gespeichert"}
-          {saveStatus==="error"&&"DB-Speichern fehlgeschlagen \u2013 nur lokal (Test: ?dbtest)"}
         </div>
       )}
 
       {}
-      {(screen==="dir"||screen==="role")&&new URLSearchParams(window.location.search).has("dbsetup")&&(
+      {(screen==="dir"||screen==="role")&&(
         <button onClick={()=>setShowSetup(true)}
           style={{position:"fixed",bottom:20,left:16,zIndex:998,display:"flex",alignItems:"center",gap:6,background:getConfig()?"#052e16":"#0f172a",border:`1px solid ${getConfig()?"#16a34a":"rgba(255,255,255,.15)"}`,borderRadius:99,padding:"8px 14px",fontSize:12,fontWeight:700,color:getConfig()?"#86efac":"rgba(255,255,255,.4)",cursor:"pointer",fontFamily:"inherit"}}>
            {getConfig()?"DB verbunden":"Datenbank einrichten"}
@@ -17927,25 +14416,21 @@ function AppInner({lang,setLang}) {
       )}
 
       {showLegal&&<LegalPage onBack={()=>setShowLegal(false)}/>}
-      {!showLegal&&screen==="dir"&&<Directory data={data} lang={lang} setLang={setLang} onLegal={()=>setShowLegal(true)} onPick={async id=>{
-          const realId = id==="__demo__"?"demo":id;
-          let cd=null; try { cd=await sb.getClub(realId); } catch {}
-          if(cd){ setData(realId==="demo"?refreshDemo(cd):cd); }
-          setCid(realId); setScr("role");
-        }} onNewClub={async newClubOrData=>{
+      {!showLegal&&screen==="dir"&&<Directory data={data} lang={lang} setLang={setLang} onLegal={()=>setShowLegal(true)} onPick={id=>{
+          if(id==="__demo__"){setCid("sus");setScr("role");return;}
+          setCid(id);setScr("role");
+        }} onNewClub={newClubOrData=>{
           if(newClubOrData.clubs){
             save(newClubOrData);
           } else {
-            const c=newClubOrData;
-            const next={...data,clubs:[...data.clubs,c]};
-            // Verein in der Datenbank anlegen (Verzeichnis + Vereinszeile), Token kommt zurueck
-            try { await sb.createClub(c.id, splitData(next).shards[c.id]||{}, c); } catch(e){ /* Fehler zeigt sich spaeter beim Speichern */ }
-            setData(next); setCid(c.id);
+            const next={...data,clubs:[...data.clubs,newClubOrData]};
+            save(next);
+            setCid(newClubOrData.id);
             setScr("alogin");
           }
         }}/>}
       {screen==="role"  &&activeCl&&<RolePicker cl={activeCl} onRole={r=>setScr(r==="user"?"flow":r==="trainer"?"tlogin":r==="helper"?"hlogin":"alogin")} onBack={()=>setScr("dir")}/>}
-      {screen==="flow"  &&activeCl&&<UserFlow cl={activeCl} teams={clTeams} players={data.players} playerProfiles={data.playerProfiles||[]} preselectTid={linkTeam} onDone={(tid,user)=>login("user",{tid,user})} onBack={()=>setScr(linkTeam?"role":"role")}/>}
+      {screen==="flow"  &&activeCl&&<UserFlow cl={activeCl} teams={clTeams} players={data.players} playerProfiles={data.playerProfiles||[]} onDone={(tid,user)=>login("user",{tid,user})} onBack={()=>setScr("role")}/>}
       {screen==="tlogin"&&activeCl&&<TrainerLogin cl={activeCl} trainers={data.trainers.filter(t=>t.cid===cid)} teams={clTeams} onLogin={tr=>login("trainer",tr)} onBack={()=>setScr("role")}/>}
       {screen==="hlogin"&&activeCl&&<HelperLogin cl={activeCl} helpers={data.helpers||[]} onLogin={h=>login("helper",{...h,cid})} onBack={()=>setScr("role")}/>}
       {screen==="alogin"&&activeCl&&<AdminLogin cl={activeCl} onLogin={a=>login("admin",{...a,cid})} onBack={()=>setScr("role")}/>}
