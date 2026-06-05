@@ -505,63 +505,62 @@ const ET = {
   heimspiel:    { label:"Heimspiel",icon:"Heim",col:"#2563eb",bg:"#dbeafe" },auswarts:     { label:"Auswaertsspiel",icon:"Bus",col:"#d97706",bg:"#fef3c7" },freundschaft: { label:"Freundschaftsspiel",icon:"Hand",col:"#7c3aed",bg:"#ede9fe" },turnier:      { label:"Turnier",icon:"Pokal",col:"#dc2626",bg:"#fee2e2" },event:        { label:"Sondertermin",icon:"Fest",col:"#0891b2",bg:"#e0f2fe" },};
 
 function seed() {
-  // --- Demo-Inhalte: Spieler + Termine, damit das Demo Daten zeigt ---
-  const _mp = (tid, by, name, extra={}) => mkPlayer({ name, by, mainTid:tid, seasonId:"s2526", ...extra });
-  const _pp = [
-    _mp("demo_g",2018,"Max Mueller",{position:"Sturm",foot:"rechts",goals:6,assists:3,jerseyNr:"9"}),
-    _mp("demo_g",2018,"Leon Schmidt",{position:"Mittelfeld",goals:2,assists:5,jerseyNr:"8"}),
-    _mp("demo_g",2019,"Finn Weber",{position:"Tor",jerseyNr:"1"}),
-    _mp("demo_g",2018,"Noah Fischer",{position:"Abwehr",jerseyNr:"4"}),
-    _mp("demo_g",2019,"Emil Becker",{position:"Mittelfeld",jerseyNr:"6"}),
-    _mp("demo_g",2018,"Mia Wagner",{gender:"w",position:"Sturm",goals:4,jerseyNr:"11"}),
-    _mp("demo_f1",2016,"Ben Hofmann",{position:"Sturm",goals:9,assists:4,jerseyNr:"10"}),
-    _mp("demo_f1",2016,"Luca Schaefer",{position:"Mittelfeld",assists:6,jerseyNr:"7"}),
-    _mp("demo_f1",2017,"Paul Koch",{position:"Abwehr",jerseyNr:"3"}),
-    _mp("demo_f1",2016,"Jonas Richter",{position:"Tor",jerseyNr:"1"}),
-    _mp("demo_f1",2017,"Lina Wolf",{gender:"w",position:"Mittelfeld",goals:3,jerseyNr:"14"}),
-    _mp("demo_f1",2016,"Tim Neumann",{position:"Abwehr",jerseyNr:"5"}),
-    _mp("demo_e",2014,"Elias Schwarz",{position:"Sturm",goals:12,assists:7,jerseyNr:"9"}),
-    _mp("demo_e",2014,"David Zimmermann",{position:"Mittelfeld",assists:8,jerseyNr:"10"}),
-    _mp("demo_e",2015,"Felix Braun",{position:"Abwehr",jerseyNr:"2"}),
-    _mp("demo_e",2014,"Moritz Krueger",{position:"Tor",jerseyNr:"1"}),
-    _mp("demo_e",2015,"Anton Hartmann",{position:"Mittelfeld",goals:5,jerseyNr:"8"}),
-    _mp("demo_e",2014,"Emma Lange",{gender:"w",position:"Sturm",goals:7,jerseyNr:"7"}),
-    _mp("demo_sen",1998,"Marco Klein",{position:"Sturm",goals:14,jerseyNr:"9"}),
-    _mp("demo_sen",1995,"Kevin Vogel",{position:"Mittelfeld",assists:9,jerseyNr:"10"}),
-    _mp("demo_sen",2000,"Tobias Frank",{position:"Abwehr",jerseyNr:"4"}),
-    _mp("demo_sen",1997,"Dennis Berger",{position:"Tor",jerseyNr:"1"}),
-    _mp("demo_sen",1999,"Sven Roth",{position:"Mittelfeld",jerseyNr:"6"}),
-    _mp("demo_ah",1985,"Andreas Huber",{position:"Sturm",jerseyNr:"9"}),
-    _mp("demo_ah",1982,"Stefan Maier",{position:"Abwehr",jerseyNr:"5"}),
-    _mp("demo_ah",1988,"Ralf Koehler",{position:"Mittelfeld",jerseyNr:"8"}),
-    _mp("demo_ah",1980,"Juergen Walter",{position:"Tor",jerseyNr:"1"}),
+  // --- Demo-Inhalte: Teams, Spieler (Profile + Namensliste) und Termine ---
+  const _teamDefs = [
+    { id:"demo_g1",   name:"G1",            icon:"G",  col:"#16a34a", pwd:"g1",  cat:"G-Jugend",   years:"2018/19", by:2018 },
+    { id:"demo_g2",   name:"G2",            icon:"G",  col:"#16a34a", pwd:"g2",  cat:"G-Jugend",   years:"2018/19", by:2018 },
+    { id:"demo_f1",   name:"F1",            icon:"F",  col:"#2563eb", pwd:"f1",  cat:"F-Jugend",   years:"2016/17", by:2016 },
+    { id:"demo_f2",   name:"F2",            icon:"F",  col:"#2563eb", pwd:"f2",  cat:"F-Jugend",   years:"2016/17", by:2016 },
+    { id:"demo_f3",   name:"F3",            icon:"F",  col:"#2563eb", pwd:"f3",  cat:"F-Jugend",   years:"2016/17", by:2016 },
+    { id:"demo_e1",   name:"E1",            icon:"E",  col:"#7c3aed", pwd:"e1",  cat:"E-Jugend",   years:"2014/15", by:2014 },
+    { id:"demo_e2",   name:"E2",            icon:"E",  col:"#7c3aed", pwd:"e2",  cat:"E-Jugend",   years:"2014/15", by:2014 },
+    { id:"demo_sen1", name:"1. Mannschaft", icon:"S",  col:"#d97706", pwd:"s1",  cat:"Senioren",   years:"",        by:1998 },
+    { id:"demo_sen2", name:"2. Mannschaft", icon:"S",  col:"#d97706", pwd:"s2",  cat:"Senioren",   years:"",        by:1996 },
+    { id:"demo_ah",   name:"Alt-Herren",    icon:"AH", col:"#64748b", pwd:"ah1", cat:"Alt-Herren", years:"",        by:1985 },
   ];
+  const _FN = ["Max","Leon","Finn","Noah","Emil","Ben","Luca","Paul","Jonas","Tim","Elias","David","Felix","Moritz","Anton","Marco","Kevin","Tobias","Dennis","Sven","Andreas","Stefan","Ralf","Juergen","Lukas","Nico","Jan","Tom","Erik","Simon","Mia","Lina","Emma","Lara","Hanna"];
+  const _LN = ["Mueller","Schmidt","Weber","Fischer","Becker","Wagner","Hofmann","Schaefer","Koch","Richter","Wolf","Neumann","Schwarz","Zimmermann","Braun","Krueger","Hartmann","Lange","Klein","Vogel","Frank","Berger","Roth","Huber","Maier","Koehler","Walter","Bauer","Schulz","Hoffmann"];
+  const _POS = ["Tor","Abwehr","Mittelfeld","Sturm"];
+  const _pp = [];
+  const _players = {};
+  const _ev = [];
   const _mkEv = (tid, type, title, off, time, loc) => ({
     id:uid(), tid, type, title, date:addD(now(),off), time, loc, note:"",
     pt:"att", recMode:"none", recDays:[], recStart:now(), recUntil:"", recDates:[],
     li:[], fi:[], sc:[], selType:"multi", open:false, votes:{}, sid:null
   });
-  const _ev = [
-    _mkEv("demo_g","training","Training",2,"17:00","Sportplatz Nord"),
-    _mkEv("demo_g","match","Spiel vs. SV Beispiel",5,"10:30","Sportplatz Nord"),
-    _mkEv("demo_g","training","Training",-3,"17:00","Sportplatz Nord"),
-    _mkEv("demo_f1","training","Training",1,"17:30","Sportplatz Sued"),
-    _mkEv("demo_f1","match","Punktspiel vs. FC Muster",6,"11:00","Auswaerts"),
-    _mkEv("demo_e","training","Training",3,"18:00","Kunstrasen"),
-    _mkEv("demo_e","match","Heimspiel vs. TSV Demo",7,"14:00","Kunstrasen"),
-    _mkEv("demo_e","training","Training",-2,"18:00","Kunstrasen"),
-    _mkEv("demo_sen","training","Mannschaftstraining",2,"19:30","Sportplatz Nord"),
-    _mkEv("demo_sen","match","Verbandsliga vs. SC Test",4,"15:00","Sportplatz Nord"),
-    _mkEv("demo_ah","training","Training",4,"20:00","Halle"),
-  ];
+  _teamDefs.forEach((td, ti) => {
+    const count = td.cat==="Alt-Herren" ? 5 : 6;
+    const names = [];
+    for (let k=0; k<count; k++) {
+      const fn = _FN[(ti*5 + k) % _FN.length];
+      const ln = _LN[(ti*7 + k*3) % _LN.length];
+      const name = `${fn} ${ln}`;
+      names.push(name);
+      _pp.push(mkPlayer({
+        name, by: td.by - (k%2), gender: k===count-1 ? "w" : "m",
+        mainTid: td.id, seasonId: "s2526",
+        position: _POS[k % _POS.length], jerseyNr: String(k+1),
+        goals: (k*2) % 9, assists: (k*3) % 7,
+      }));
+    }
+    _players[td.id] = names;
+    _ev.push(_mkEv(td.id, "training", "Training", 2 + (ti % 3), "17:30", "Sportplatz Nord"));
+    _ev.push(_mkEv(td.id, "match", `Spiel vs. Gegner ${ti+1}`, 5 + (ti % 4), "11:00", "Sportplatz Nord"));
+    _ev.push(_mkEv(td.id, "training", "Training", -3, "17:30", "Sportplatz Nord"));
+  });
+  const _teams = _teamDefs.map(td => ({
+    id: td.id, cid: "demo", name: td.name, icon: td.icon, col: td.col,
+    pub: true, pwd: td.pwd, cat: td.cat, years: td.years
+  }));
   return {
-    _v: 15,
+    _v: 16,
     helpers: [], chats: [], messages: [], events: _ev, bookings: [],
     contactRequests: [], securityLog: [], playerProfiles: _pp,
     seasons: [{ id:"s2526", label:"2025/2026", status:"active" }],
     activeSeason: "s2526",
     fields: [],
-    players: {},
+    players: _players,
     pollTemplates: [],
     clubs: [
       ...DEMO_CLUBS.map(dc=>({...dc, adm:"h586034f", pub:false,
@@ -571,23 +570,12 @@ function seed() {
         pub:false, dir:false, sport:"fussball",
         createdAt:"2025-01-01T00:00:00.000Z" }
     ],
-    teams: [
-      { id:"demo_g", cid:"demo", name:"G-Jugend", icon:"G", col:"#16a34a",
-        pub:true, pwd:"g1", cat:"G-Jugend", years:"2018/19" },
-      { id:"demo_f1", cid:"demo", name:"F-Jugend 1", icon:"F", col:"#2563eb",
-        pub:true, pwd:"f1", cat:"F-Jugend", years:"2016/17" },
-      { id:"demo_e", cid:"demo", name:"E-Jugend", icon:"E", col:"#7c3aed",
-        pub:true, pwd:"e1", cat:"E-Jugend", years:"2014/15" },
-      { id:"demo_sen", cid:"demo", name:"Senioren", icon:"S", col:"#d97706",
-        pub:true, pwd:"s1", cat:"Senioren", years:"" },
-      { id:"demo_ah", cid:"demo", name:"Alt-Herren", icon:"AH", col:"#64748b",
-        pub:true, pwd:"ah1", cat:"Alt-Herren", years:"" }
-    ],
+    teams: _teams,
     trainers: [
       { id:"dt1", cid:"demo", name:"Trainer A", role:"Trainer",
-        tids:["demo_g","demo_f1"], pw:"h4c0ffa1c", phone:"", email:"" },
+        tids:["demo_g1","demo_g2","demo_f1","demo_f2","demo_f3"], pw:"h4c0ffa1c", phone:"", email:"" },
       { id:"dt2", cid:"demo", name:"Trainer B", role:"Trainer",
-        tids:["demo_e","demo_sen"], pw:"h4c0ffa1d", phone:"", email:"" }
+        tids:["demo_e1","demo_e2","demo_sen1","demo_sen2","demo_ah"], pw:"h4c0ffa1d", phone:"", email:"" }
     ]
   };
 }
@@ -14363,7 +14351,7 @@ function AppInner({lang,setLang}) {
   useEffect(()=>{
     (async()=>{
       let d=null;
-      try { d = await sb.get(); if(d?._v < 15) d=null; } catch {}
+      try { d = await sb.get(); if(d?._v < 16) d=null; } catch {}
       if(!d) { d=seed(); try { await sb.set(d); } catch {} }
       setData(d);
       const s=sess.get();
@@ -14373,7 +14361,7 @@ function AppInner({lang,setLang}) {
     syncRef.current=setInterval(async()=>{
       try {
         const r=await sb.get();
-        if(r?._v>=15) setData(p=>{if(JSON.stringify(p)===JSON.stringify(r))return p;return r;});
+        if(r?._v>=16) setData(p=>{if(JSON.stringify(p)===JSON.stringify(r))return p;return r;});
       } catch {}
     },10000);
     return()=>clearInterval(syncRef.current);
