@@ -1,5 +1,4 @@
 import React, { useState,useEffect,useCallback,useRef,useMemo,createContext,useContext } from "react";
-import { createClient } from "@supabase/supabase-js";
 
 const LANG_KEY = "vereinsapp_lang";
 const LangCtx  = createContext("de");
@@ -393,28 +392,51 @@ const sb = {
 const localGet = () => { try { const v=localStorage.getItem(SK); return v?JSON.parse(v):null; } catch { return null; } };
 const localSet = d => { try { localStorage.setItem(SK,JSON.stringify(d)); } catch {} };
 
-// --- Supabase Auth-Client (Schritt 1 der Backend-Umstellung) ---
-let _sbc=null,_sbcKey="";
-function sbc(){
-  const c=getConfig(); if(!c?.url||!c?.key) return null;
-  const k=c.url+"|"+c.key;
-  if(!_sbc||_sbcKey!==k){
-    _sbc=createClient(c.url,c.key,{auth:{persistSession:true,autoRefreshToken:true,storageKey:"vereinsapp_auth"}});
-    _sbcKey=k;
-  }
-  return _sbc;
+// --- Supabase Auth ohne SDK (nur fetch) – Schritt 1 der Backend-Umstellung ---
+const AUTH_KEY = "vereinsapp_auth";
+const authStore = {
+  get(){ try{ return JSON.parse(localStorage.getItem(AUTH_KEY)||"null"); }catch{ return null; } },
+  set(s){ try{ localStorage.setItem(AUTH_KEY,JSON.stringify(s)); }catch{} },
+  clear(){ try{ localStorage.removeItem(AUTH_KEY); }catch{} }
+};
+const _authHdr = () => ({ "Content-Type":"application/json", "apikey": sb._key() });
+const _withExpiry = (s) => {
+  if(!s) return s;
+  if(!s.expires_at) s.expires_at = Math.floor(Date.now()/1000) + (s.expires_in||3600);
+  return s;
+};
+async function signInAnon(){
+  const url=sb._url(); if(!url||!sb._key()) return null;
+  try{
+    const r=await fetch(`${url}/auth/v1/signup`,{ method:"POST", headers:_authHdr(), body:JSON.stringify({ data:{} }) });
+    if(!r.ok){ console.warn("Anon-Login HTTP",r.status); return null; }
+    const s=await r.json();
+    if(!s.access_token) return null;
+    authStore.set(_withExpiry(s)); return s;
+  }catch(e){ console.warn("signInAnon:",e?.message||e); return null; }
+}
+async function refreshSession(s){
+  const url=sb._url(); if(!url||!s?.refresh_token) return null;
+  try{
+    const r=await fetch(`${url}/auth/v1/token?grant_type=refresh_token`,{ method:"POST", headers:_authHdr(), body:JSON.stringify({ refresh_token:s.refresh_token }) });
+    if(!r.ok) return null;
+    const ns=await r.json();
+    if(!ns.access_token) return null;
+    authStore.set(_withExpiry(ns)); return ns;
+  }catch{ return null; }
 }
 // Stellt sicher, dass eine (anonyme) Sitzung existiert. Gibt die Session oder null zurueck.
 async function ensureAuth(){
-  const c=sbc(); if(!c) return null;
-  try{
-    const { data:{ session } } = await c.auth.getSession();
-    if(session) return session;
-    const { data, error } = await c.auth.signInAnonymously();
-    if(error){ console.warn("Anon-Login fehlgeschlagen:",error.message); return null; }
-    return data.session;
-  }catch(e){ console.warn("ensureAuth:",e?.message||e); return null; }
+  const url=sb._url(); if(!url||!sb._key()) return null;
+  let s=authStore.get();
+  if(!s) return await signInAnon();
+  if(s.expires_at && s.expires_at*1000 < Date.now()+30000){
+    s = (await refreshSession(s)) || (await signInAnon());
+  }
+  return s;
 }
+// Gueltiges Access-Token fuer authentifizierte REST-/RPC-Aufrufe (spaetere Schritte)
+async function authToken(){ const s=await ensureAuth(); return s?.access_token||null; }
 
 const sess = {
   get: () => {
