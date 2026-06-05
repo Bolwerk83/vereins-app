@@ -14181,10 +14181,6 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
   const [exp,setExp]=useState((up[0]||past[0])?.id||null);
   const [showPast,setSP]=useState(false);
   const [toast,setToast]=useState(null);
-  const unreadMsgs = useMemo(()=>{
-    const lastRead = Number(localStorage.getItem("va_last_read_"+cid)||0);
-    return (local.chats||[]).filter(m=>m.cid===cid&&m.ts>lastRead).length;
-  },[local.chats]);
   const [showProfile,setShowProfile]=useState(false);
   const toastRef=useRef(null);
   const fire=m=>{setToast(m);clearTimeout(toastRef.current);toastRef.current=setTimeout(()=>setToast(null),2200);};
@@ -14241,14 +14237,7 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
   };
 
   return (
-    <div style={{minHeight:"100dvh",background:"#f0f4f8",
-      paddingBottom:isDesktop?0:52,
-      display:isDesktop?"grid":"block",
-      gridTemplateColumns:isDesktop?"260px 1fr":"none"}}>
-      {isDesktop&&<DesktopSidebar tab={tab} setTab={setTab}
-        isAdmin={isAdmin} isHelper={isHelper}
-        unread={unreadMsgs} cl={myClub}
-        session={session} onLogout={onLogout}/>}
+    <div style={{minHeight:"100dvh",background:"#f0f4f8",paddingBottom:24}}>
       <ClubHeader cl={cl} sub={`${myTeam?.icon||""} ${myTeam?.name||""}`}
         right={
           <div style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}} onClick={()=>setShowProfile(true)}>
@@ -14301,14 +14290,7 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
           {showPast&&past.map(ev=><div key={ev.id} style={{marginBottom:10}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user"/></div>)}
         </>}
       </div>
-      {showOnboarding&&<OnboardingWizard cl={myClub} data={local} save={save} fire={fire} onDone={()=>setShowOnboarding(false)}/>}
       <Toast msg={toast}/>
-      <BottomNav tab={tab} setTab={setTab} isAdmin={isAdmin} isHelper={isHelper}
-        unread={unreadMsgs} cl={myClub} />
-      
-      {shareConfig&&<MomentShare trigger={shareConfig.trigger} clubName={myClub?.name} stats={shareConfig.stats} onDismiss={()=>setShareConfig(null)}/>}
-      {showNPS&&<NPSWidget clubName={myClub?.name} onDone={()=>setShowNPS(false)}/>}
-      {achievement&&<AchievementToast achievement={achievement} onDone={()=>setAchievment(null)}/>}
     </div>
   );
 }
