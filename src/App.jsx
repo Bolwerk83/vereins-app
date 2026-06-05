@@ -666,13 +666,13 @@ const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%;text-size-adjust:100%}
 html{overflow-x:hidden;touch-action:manipulation}
-html,body{height:100%;max-width:100vw;overflow-x:hidden;font-family:'Plus Jakarta Sans',sans-serif;background:#f0f4f8;overscroll-behavior:none}
+html,body{height:100%;max-width:100vw;overflow-x:hidden;font-family:'Plus Jakarta Sans',sans-serif;background:#f0f4f8;overscroll-behavior:none;display:block;margin:0;padding:0;place-items:normal}
 button{touch-action:manipulation;cursor:pointer}
 button,select{font-family:'Plus Jakarta Sans',sans-serif;font-size:inherit}
 input,textarea{font-family:'Plus Jakarta Sans',sans-serif;font-size:16px !important}
 input::placeholder,textarea::placeholder{color:#94a3b8}
 img{max-width:100%;height:auto}
-#root{max-width:100vw;overflow-x:hidden}
+#root{max-width:100vw;width:100%;overflow-x:hidden;margin:0;padding:0;text-align:left}
 @keyframes up    {from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
 @keyframes in    {from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
 @keyframes down  {from{transform:translateY(100%)}to{transform:none}}
@@ -833,6 +833,7 @@ function Sw({on,tog,pri="#16a34a",label,sub}) {
 }
 function ClubHeader({cl, sub, right, hide=false}) {
   const t=TH(cl);
+  if(hide) return null;
   return <div style={{background:`linear-gradient(135deg,${t.s} 0%,${t.p}bb 100%)`,padding:"16px 18px 20px",position:"sticky",top:0,zIndex:60,boxShadow:"0 4px 24px rgba(0,0,0,.22)"}}><div style={{display:"flex",alignItems:"center",gap:12}}><Logo cl={cl} sz={42}/><div style={{flex:1,minWidth:0}}><div style={{color:"#fff",fontWeight:900,fontSize:17,letterSpacing:-.3,lineHeight:1.2}}>{cl?.name}</div>{sub&&<div style={{color:"rgba(255,255,255,.6)",fontSize:12,fontWeight:600,marginTop:2}}>{sub}</div>}</div>{right}</div></div>;
 }
 function Divider({label,light}) {
