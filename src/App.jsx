@@ -756,7 +756,7 @@ function Divider({label,light}) {
   return <div style={{display:"flex",alignItems:"center",gap:10,margin:"14px 0 10px"}}><div style={{flex:1,height:1,background:"#e2e8f0"}}/><span style={{fontSize:11,fontWeight:800,color:light?"#94a3b8":"#64748b",whiteSpace:"nowrap"}}>{label}</span><div style={{flex:1,height:1,background:"#e2e8f0"}}/></div>;
 }
 
-function ContactForm({ cl, onSend, onClose }) {
+function ContactForm({ cl, onSend, onClose, hide }) {
   const [f,setF]=useState({name:"",email:"",msg:""});
   const [sent,setSent]=useState(false);
   const t=TH(cl);
@@ -2716,6 +2716,7 @@ function SecurityTab({ data, cid, save }) {
 function BottomNav({ tab, setTab, isAdmin, isHelper, unread, cl, hide=false }) {
   if(hide) return null;
   const t = TH(cl);
+  const clubFeat = (key, def=true) => { const cs = cl?.clubSettings||{}; return cs[key]!==undefined ? cs[key] : def; };
   const [showDrawer, setShowDrawer] = useState(false);
 
   const mainTabs = [
@@ -3312,6 +3313,8 @@ function PlanEditor({ plan, cid, myTids, data, save, fire, cl, onClose }) {
   const [showAddEx, setShowAddEx] = useState(false);
   const [editExIdx, setEditExIdx] = useState(null);
   const [showTplBrowser, setShowTplBrowser] = useState(false);
+  const [asTemplate, setAsTemplate] = useState(plan?.isTemplate||false);
+  const [shareWithAll, setShareWithAll] = useState(plan?.shared||false);
   const myTeams = (data.teams||[]).filter(tm=>myTids.includes(tm.id));
 
   const savePlan = () => {
@@ -8817,7 +8820,7 @@ function SetupWizard({ onDone,onBack }) {
   );
 }
 
-function Directory({data,onPick,onNewClub,lang,setLang}) {
+function Directory({data,onPick,onNewClub,lang,setLang,onLegal}) {
   const tr = (k) => T[lang]?.[k] ?? T.de[k] ?? k;
   const [mode,setMode] = useState("home");
   const [contactCl,setContactCl] = useState(null);
@@ -8973,7 +8976,7 @@ function Directory({data,onPick,onNewClub,lang,setLang}) {
           <button onClick={()=>onLegal&&onLegal()} style={{background:"none",border:"none",color:"rgba(255,255,255,.25)",fontSize:11,cursor:"pointer",textDecoration:"underline"}}>Datenschutz</button>
           <button onClick={()=>onLegal&&onLegal()} style={{background:"none",border:"none",color:"rgba(255,255,255,.25)",fontSize:11,cursor:"pointer",textDecoration:"underline"}}>Nutzungsbedingungen</button>
         </div>
-        <div style={{marginTop:12}}><AdBanner style={{borderRadius:12,overflow:"hidden"}}/></div>
+        <div style={{marginTop:12}}></div>
       </div>
     </div>
   );
@@ -9127,7 +9130,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
 }
 
 function AdminLogin({cl,onLogin,onBack}) {
-  const t=TH(cl); const [pw,setPw]=useState(""); const [err,setErr]=useState(false);
+  const t=TH(cl); const [pw,setPw]=useState(""); const [err,setErr]=useState(false); const [showForgot,setShowForgot]=useState(false);
   const go=()=>{ if(checkPw(pw,cl.adm||"")){onLogin({id:"admin",role:"admin",cid:cl.id,name:"Vereinsadmin"});}else{setErr(true);setTimeout(()=>setErr(false),1800);} };
   return (
     <div style={{minHeight:"100dvh",background:`linear-gradient(135deg,${t.s},${t.p}66)`,display:"flex",alignItems:"center",justifyContent:"center",padding:22}}>
@@ -9194,7 +9197,7 @@ function HelperLogin({cl,helpers,onLogin,onBack}) {
   );
 }
 
-function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
+function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,trainers=[]}) {
   const t=TH(cl);
   const [step,setStep]=useState("cat");
   const [cat,setCat]=useState(null);
@@ -9353,7 +9356,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
   );
 }
 
-function PollAttend({ev,user,onVote,cl}) {
+function PollAttend({ev,user,onVote,cl,session,save,data,fire}) {
   const yes  = Object.entries(ev.votes).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>n);
   const no   = Object.entries(ev.votes).filter(([,v])=>(typeof v==="object"?v.val:v)==="no" ).map(([n])=>n);
   const late = Object.entries(ev.votes).filter(([,v])=>typeof v==="object"&&v.val==="yes"&&v.late).map(([n,v])=>({name:n,mins:v.late}));
@@ -9505,7 +9508,7 @@ function PollAttend({ev,user,onVote,cl}) {
   );
 }
 
-function PollList({ev,user,onVote}) {
+function PollList({ev,user,onVote,session,save,data,fire}) {
   const uv=ev.votes[user]||[];
   const totFor=id=>Object.values(ev.votes).flat().filter(v=>v===id).length;
   const vFor  =id=>Object.entries(ev.votes).filter(([,vs])=>Array.isArray(vs)&&vs.includes(id)).map(([n])=>n);
@@ -11882,6 +11885,7 @@ function SeasonModal({ data,save,fire,cl,myTids,onClose }) {
   };
 
   const [copyFrom,setCopyFrom] = useState(active);
+  const [selSeason,setSelSeason] = useState(active);
   const [copyTo,setCopyTo]   = useState(seasons.find(s=>s.status==="planning")?.id||"");
   const planningSeasons = seasons.filter(s=>s.status==="planning");
 
@@ -12111,7 +12115,7 @@ function BookingModal({ field,cellStart,date,data,save,fire,cl,myTids,session,on
   );
 }
 
-function TrainerCard({ tr, data, onEdit, onDelete }) {
+function TrainerCard({ tr, data, onEdit, onDelete, onContact }) {
   const myTeams = (data.teams||[]).filter(tm=>(tr.tids||[]).includes(tm.id));
   const playerCount = myTeams.reduce((s,tm)=>s+(data.playerProfiles||[]).filter(p=>p.mainTid===tm.id).length,0);
   const myEvents = (data.events||[]).filter(e=>(tr.tids||[]).includes(e.tid));
@@ -12151,8 +12155,10 @@ function TrainerCard({ tr, data, onEdit, onDelete }) {
   );
 }
 
-function TrainersTab({data,cid,save,fire}) {
+function TrainersTab({data,cid,save,fire,session}) {
   const [showContactSetup, setShowContactSetup] = React.useState(null);
+  const [showBroadcast, setShowBroadcast] = useState(false);
+  const [showGroupHelper, setShowGroupHelper] = useState(false);
   const myTeams = (data.teams||[]).filter(x=>x.cid===cid);
   const myTrs   = (data.trainers||[]).filter(x=>x.cid===cid);
   const [showForm, setShowForm] = useState(false);
@@ -12194,7 +12200,7 @@ function TrainersTab({data,cid,save,fire}) {
           <p style={{fontSize:13,color:"#94a3b8",margin:0}}>Trainer koennen hier angelegt und Teams zugewiesen werden.</p>
         </div>
       )}
-      {myTrs.map(tr=><TrainerCard key={tr.id} tr={tr} data={data} onContact={()=>setContactSetupFor(tr)} onEdit={()=>openEdit(tr)} onDelete={()=>del(tr.id)}/>)}
+      {myTrs.map(tr=><TrainerCard key={tr.id} tr={tr} data={data} onContact={()=>setShowContactSetup(tr)} onEdit={()=>openEdit(tr)} onDelete={()=>del(tr.id)}/>)}
       {showForm&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:800,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
           <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"90dvh",overflowY:"auto",padding:"20px 22px 48px"}}>
@@ -13480,6 +13486,38 @@ function AttendanceTab({ data, myTids, cl, save, fire }) {
   );
 }
 
+function TeamsTab({ data, cid, save, fire }) {
+  const teams = (data.teams||[]).filter(t=>t.cid===cid);
+  const countFor = id => (data.playerProfiles||[]).filter(p=>p.mainTid===id && !p.archived).length;
+  return (
+    <div style={{padding:"16px 14px",maxWidth:560,margin:"0 auto"}}>
+      <h2 style={{fontSize:20,fontWeight:900,color:"#0f172a",marginBottom:12}}>Mannschaften</h2>
+      {teams.length===0 && <p style={{color:"#94a3b8",fontSize:14}}>Noch keine Mannschaften angelegt.</p>}
+      {teams.map(tm=>(
+        <div key={tm.id} style={{display:"flex",alignItems:"center",gap:12,background:"#fff",borderRadius:14,padding:"12px 14px",marginBottom:8,border:"1px solid #e2e8f0"}}>
+          <div style={{width:42,height:42,borderRadius:12,background:(tm.col||"#16a34a")+"22",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:18,color:tm.col||"#16a34a"}}>{tm.icon||"?"}</div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontWeight:800,color:"#0f172a"}}>{tm.name}</div>
+            <div style={{fontSize:12,color:"#94a3b8"}}>{tm.cat||""}{tm.years?(" · "+tm.years):""}</div>
+          </div>
+          <div style={{fontSize:12,fontWeight:700,color:countFor(tm.id)?"#16a34a":"#94a3b8",whiteSpace:"nowrap"}}>{countFor(tm.id)} Spieler</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function VisibilityTab({ data, cid, save, fire, cl }) {
+  return (
+    <div style={{padding:"16px 14px",maxWidth:560,margin:"0 auto"}}>
+      <h2 style={{fontSize:20,fontWeight:900,color:"#0f172a",marginBottom:12}}>Sichtbarkeit</h2>
+      <div style={{background:"#fff",borderRadius:14,padding:"16px",border:"1px solid #e2e8f0",color:"#64748b",fontSize:14,lineHeight:1.6}}>
+        Hier laesst sich spaeter steuern, welche Bereiche fuer Eltern und Helfer sichtbar sind. Diese Funktion ist noch in Vorbereitung.
+      </div>
+    </div>
+  );
+}
+
 function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const { isDesktop, isTablet } = useBreakpoint();
   const isAdmin=session.role==="admin"; const isHelper=session.role==="helper"; const cid=session.cid; const cl=data.clubs.find(c=>c.id===cid);
@@ -13524,19 +13562,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       }
     } else {
       save({...local,events:[...(local.events||[]),...evs]});
-      // Auto-book field if selected
-    if(f.fieldId && evs.length>0) {
-      const fieldBookings = evs.map(ev=>({
-        id:uid(), fieldId:f.fieldId, date:ev.date,
-        cellStart:0, cells:4, teamId:ev.tid,
-        teamName:(data.teams||[]).find(x=>x.id===ev.tid)?.name||"",
-        booker:session?.name||"", timeFrom:f.time||"09:00",
-        timeTo:addMins(f.time||"09:00", f.dur||90),
-        cid:ev.cid, autoBooked:true
-      }));
-      save({...nextData, bookings:[...(nextData.bookings||[]),...fieldBookings]});
-    }
-    fire(`${evs.length>1?evs.length+" Termine":"Termin"} erstellt - Eltern werden benachrichtigt`);
+      fire(`${evs.length>1?evs.length+" Termine":"Termin"} erstellt - Eltern werden benachrichtigt`);
     }
     setWizard(false);setEditEv(null);
   }} onClose={()=>{setWizard(false);setEditEv(null);}}/>;
@@ -13630,7 +13656,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         {tab==="overview"  &&isAdmin&&<AllTeamsOverview data={local} cid={cid} cl={myClub} onSelectTeam={tid=>{ const team=(local.teams||[]).find(x=>x.id===tid); if(team) fire("Team: "+team.name); }}/>}
         {tab==="news"      &&<NewsTab data={local} cid={cid} session={session} save={save} fire={fire} cl={myClub}/>}
         {tab==="fieldsadmin"&&isAdmin&&<FieldsManagerTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/> }
-        {tab==="trainers"   &&isAdmin&&<TrainersTab data={local} cid={cid} save={save} fire={fire}/>}
+        {tab==="trainers"   &&isAdmin&&<TrainersTab data={local} cid={cid} save={save} fire={fire} session={session}/>}
         {tab==="branding"   &&isAdmin&&<BrandingTab cl={myClub} onSave={c=>{save({...local,clubs:local.clubs.map(x=>x.id===c.id?c:x)});fire("Design gespeichert *");}}/>}
         {tab==="visibility" &&isAdmin&&<VisibilityTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
         {tab==="settings"   &&isAdmin&&<ClubAdminSettings data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
@@ -14182,6 +14208,7 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
   const [showPast,setSP]=useState(false);
   const [toast,setToast]=useState(null);
   const [showProfile,setShowProfile]=useState(false);
+  const [ptab,setPtab]=useState("events");
   const toastRef=useRef(null);
   const fire=m=>{setToast(m);clearTimeout(toastRef.current);toastRef.current=setTimeout(()=>setToast(null),2200);};
   const photoKey=`photo_${cid}_${user}`;
@@ -14236,8 +14263,13 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
     onSave(next);fire("Gespeichert *");
   };
 
+  const parentTabs = [
+    {id:"events",label:"Termine",icon:"K",active:ptab==="events",onClick:()=>setPtab("events")},
+    ...(feat("chat_team")?[{id:"chat",label:"Chat",icon:"C",active:ptab==="chat",onClick:()=>setPtab("chat")}]:[]),
+    {id:"profil",label:"Profil",icon:"P",active:false,onClick:()=>setShowProfile(true)},
+  ];
   return (
-    <div style={{minHeight:"100dvh",background:"#f0f4f8",paddingBottom:24}}>
+    <div style={{minHeight:"100dvh",background:"#f0f4f8",paddingBottom:80}}>
       <ClubHeader cl={cl} sub={`${myTeam?.icon||""} ${myTeam?.name||""}`}
         right={
           <div style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}} onClick={()=>setShowProfile(true)}>
@@ -14277,7 +14309,7 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
         </div>
       )}
 
-      <div style={{maxWidth:520,margin:"0 auto",padding:"16px 14px"}}>
+      {ptab==="events"&&<div style={{maxWidth:520,margin:"0 auto",padding:"16px 14px"}}>
         {up.length>0&&<>
           <Divider label="KOMMENDE TERMINE"/>
           {up.map((ev,i)=><div key={ev.id} className="up" style={{marginBottom:10,animationDelay:`${i*.05}s`}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user"/></div>)}
@@ -14289,6 +14321,17 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
           </button>
           {showPast&&past.map(ev=><div key={ev.id} style={{marginBottom:10}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user"/></div>)}
         </>}
+      </div>}
+      {ptab==="chat"&&<div style={{maxWidth:520,margin:"0 auto",padding:"16px 14px"}}>
+        <ChatTab data={data} cid={cid} myTids={[tid]} session={session} save={onSave} fire={fire} cl={cl}/>
+      </div>}
+      <div style={{position:"fixed",left:0,right:0,bottom:0,background:"#fff",borderTop:"1px solid #e2e8f0",display:"flex",zIndex:100}}>
+        {parentTabs.map(p=>(
+          <button key={p.id} onClick={p.onClick} style={{flex:1,background:"none",border:"none",padding:"8px 4px 12px",cursor:"pointer",fontFamily:"inherit",display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+            <div style={{width:30,height:30,borderRadius:9,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:13,background:p.active?t.p:"#f1f5f9",color:p.active?"#fff":"#64748b"}}>{p.icon}</div>
+            <span style={{fontSize:11,fontWeight:700,color:p.active?t.p:"#94a3b8"}}>{p.label}</span>
+          </button>
+        ))}
       </div>
       <Toast msg={toast}/>
     </div>
@@ -14376,7 +14419,7 @@ function AppInner({lang,setLang}) {
     setScr(role==="user"?"user":"dash");
   };
   const logout=()=>{
-    if(sess_){const e={...createAuditEntry("logout","Logout: "+(sess_.name||sess_.role),sess_),cid};localSet({...data,securityLog:[...(data.securityLog||[]),e]});}
+    if(session){const e={...createAuditEntry("logout","Logout: "+(session.name||session.role),session),cid};localSet({...data,securityLog:[...(data.securityLog||[]),e]});}
     sess.del(); setSess(null); setScr(cid?"role":"dir");
   };
 
@@ -14440,7 +14483,7 @@ function AppInner({lang,setLang}) {
           }
         }}/>}
       {screen==="role"  &&activeCl&&<RolePicker cl={activeCl} onRole={r=>setScr(r==="user"?"flow":r==="trainer"?"tlogin":r==="helper"?"hlogin":"alogin")} onBack={()=>setScr("dir")}/>}
-      {screen==="flow"  &&activeCl&&<UserFlow cl={activeCl} teams={clTeams} players={data.players} playerProfiles={data.playerProfiles||[]} onDone={(tid,user)=>login("user",{tid,user})} onBack={()=>setScr("role")}/>}
+      {screen==="flow"  &&activeCl&&<UserFlow cl={activeCl} teams={clTeams} players={data.players} playerProfiles={data.playerProfiles||[]} trainers={(data.trainers||[]).filter(tr=>tr.cid===cid)} onDone={(tid,user)=>login("user",{tid,user,name:user})} onBack={()=>setScr("role")}/>}
       {screen==="tlogin"&&activeCl&&<TrainerLogin cl={activeCl} trainers={data.trainers.filter(t=>t.cid===cid)} teams={clTeams} onLogin={tr=>login("trainer",tr)} onBack={()=>setScr("role")}/>}
       {screen==="hlogin"&&activeCl&&<HelperLogin cl={activeCl} helpers={data.helpers||[]} onLogin={h=>login("helper",{...h,cid})} onBack={()=>setScr("role")}/>}
       {screen==="alogin"&&activeCl&&<AdminLogin cl={activeCl} onLogin={a=>login("admin",{...a,cid})} onBack={()=>setScr("role")}/>}
