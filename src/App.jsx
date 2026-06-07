@@ -10833,20 +10833,21 @@ function SetupWizard({ onDone,onBack }) {
 
 function PrivacyBanner(){
   return (
-    <div style={{background:"#fef2f2",border:"1.5px solid #fecaca",borderRadius:12,padding:"12px 14px",margin:"0 0 14px"}}>
-      <div style={{fontWeight:800,color:"#b91c1c",fontSize:13,marginBottom:4}}>⚠ Bitte keine echten persönlichen Daten eingeben</div>
-      <div style={{fontSize:12.5,color:"#7f1d1d",lineHeight:1.5}}>
-        Diese App wird noch entwickelt. Gib hier keine echten persönlichen Daten ein – also keine vollständigen Namen,
-        Geburtsdaten, Adressen oder Telefonnummern von dir oder deinem Kind. Ein Spitzname oder „Vorname + erster
-        Buchstabe des Nachnamens" reicht völlig. Eingegebene Daten sind nicht garantiert sicher – eine Haftung wird nicht übernommen.
+    <div style={{background:"#eff6ff",border:"1.5px solid #bfdbfe",borderRadius:12,padding:"12px 14px",margin:"0 0 14px"}}>
+      <div style={{fontWeight:800,color:"#1e40af",fontSize:13,marginBottom:4}}>Beta-Test mit Cloud-Datenbank</div>
+      <div style={{fontSize:12.5,color:"#1e3a8a",lineHeight:1.5}}>
+        Deine Eingaben werden in einer verschlüsselten Datenbank (Supabase, Frankfurt) gespeichert.
+        Du kannst die App mit echten Vereinsdaten nutzen – beachte aber, dass sie sich noch in der
+        Test-Phase befindet und Funktionen sich ändern können. Für Kinderdaten bitte die Einwilligung
+        der Eltern einholen. Die datenschutzrechtliche Verantwortung liegt beim jeweiligen Verein.
       </div>
     </div>
   );
 }
 function PrivacyNote(){
   return (
-    <div style={{fontSize:12,color:"#b45309",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:9,padding:"7px 10px",marginTop:6,lineHeight:1.45}}>
-      Bitte keine echten persönlichen Daten – ein Spitzname oder „Vorname + Anfangsbuchstabe" genügt. Eingabe ohne Gewähr.
+    <div style={{fontSize:12,color:"#1e40af",background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:9,padding:"7px 10px",marginTop:6,lineHeight:1.45}}>
+      Daten werden in einer verschlüsselten Cloud-Datenbank gespeichert. Für Kinderdaten bitte Eltern-Einwilligung einholen.
     </div>
   );
 }
