@@ -11356,6 +11356,7 @@ function Directory({data,onPick,onNewClub,lang,setLang}) {
           <button onClick={()=>onLegal&&onLegal()} style={{background:"none",border:"none",color:"rgba(255,255,255,.25)",fontSize:11,cursor:"pointer",textDecoration:"underline"}}>Datenschutz</button>
           <button onClick={()=>onLegal&&onLegal()} style={{background:"none",border:"none",color:"rgba(255,255,255,.25)",fontSize:11,cursor:"pointer",textDecoration:"underline"}}>Nutzungsbedingungen</button>
         </div>
+        <div style={{textAlign:"center",fontSize:10,color:"rgba(255,255,255,.2)",marginTop:6}}>Affiliate-Partner: Awin</div>
         <div style={{marginTop:12}}><AdBanner style={{borderRadius:12,overflow:"hidden"}}/></div>
       </div>
     </div>
