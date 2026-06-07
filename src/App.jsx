@@ -197,7 +197,7 @@ const contrast = hex => { const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.sli
 const mix = (hex,p) => { let r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16); const m=c=>Math.min(255,Math.floor(c+(255-c)*(p/100))); return `#${m(r).toString(16).padStart(2,"0")}${m(g).toString(16).padStart(2,"0")}${m(b).toString(16).padStart(2,"0")}`; };
 
 const ET = {
-  training:     { label:"Training",icon:"Kick",col:"#16a34a",bg:"#dcfce7" },heimspiel:    { label:"Heimspiel",icon:"Heim",col:"#2563eb",bg:"#dbeafe" },auswarts:     { label:"Auswaertsspiel",icon:"Bus",col:"#d97706",bg:"#fef3c7" },freundschaft: { label:"Freundschaftsspiel",icon:"Hand",col:"#7c3aed",bg:"#ede9fe" },turnier:      { label:"Turnier",icon:"Pokal",col:"#dc2626",bg:"#fee2e2" },event:        { label:"Sondertermin",icon:"Fest",col:"#0891b2",bg:"#e0f2fe" },};
+  training:     { label:"Training",icon:"⚽",col:"#16a34a",bg:"#dcfce7" },heimspiel:    { label:"Heimspiel",icon:"🏠",col:"#2563eb",bg:"#dbeafe" },auswarts:     { label:"Auswaertsspiel",icon:"🚌",col:"#d97706",bg:"#fef3c7" },freundschaft: { label:"Freundschaftsspiel",icon:"🤝",col:"#7c3aed",bg:"#ede9fe" },turnier:      { label:"Turnier",icon:"🏆",col:"#dc2626",bg:"#fee2e2" },event:        { label:"Sondertermin",icon:"🎉",col:"#0891b2",bg:"#e0f2fe" },};
 
 function seed() {
   const t = now();
@@ -209,13 +209,13 @@ function seed() {
     securityLog: [],// {id,cid,type,ts,detail,read}
     playerProfiles: [
       {id:"r01",name:"Lasse",by:2020,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r02",name:"Lucas",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r03",name:"Jonas",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"Koennte spielerisch auch in die E",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r04",name:"Maximilian",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r05",name:"Carlos E.",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r06",name:"Emilio",by:2020,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r07",name:"Elias H.",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r08",name:"Levi",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r09",name:"Lian",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r10",name:"Maxim K.",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"Spielt bereits F3",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r11",name:"Saleh",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r12",name:"Beni",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r13",name:"Zipadin",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r14",name:"Lukas M.",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"Spielt bereits F3",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r15",name:"Finn",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"Spielt bereits F3",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r16",name:"Johann",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"Spielt bereits F3",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r17",name:"Karl",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r18",name:"Barghash",by:2019,gender:"m",mainTid:"sus_g",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"G-Jugend 25/26",lastTeamId:"sus_g",seasonId:"s2526"},{id:"r19",name:"Mohammad T.",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r20",name:"Ahmad M.",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r21",name:"Tilo",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r22",name:"Amjed",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r23",name:"Jan",by:2018,gender:"m",mainTid:"sus_f2",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F2 25/26",lastTeamId:"sus_f2",seasonId:"s2526"},{id:"r24",name:"Carlos B.",by:2018,gender:"m",mainTid:"sus_f2",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F2 25/26",lastTeamId:"sus_f2",seasonId:"s2526"},{id:"r25",name:"Jud",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r26",name:"Abdul Rashid",by:2019,gender:"m",mainTid:"sus_f1",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"Spielt bereits F1",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F1 25/26",lastTeamId:"sus_f1",seasonId:"s2526"},{id:"r27",name:"Ahmad B.",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r28",name:"Tian",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r29",name:"Luis",by:2018,gender:"m",mainTid:"sus_f2",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F2 25/26",lastTeamId:"sus_f2",seasonId:"s2526"},{id:"r30",name:"Lukas Kr.",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"Spielt bereits F3",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r31",name:"Henri",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r32",name:"Yehor",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r33",name:"Elias O.",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r34",name:"Maxim R.",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r35",name:"Phil-Lamar",by:2018,gender:"m",mainTid:"",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"-",lastTeamId:"",seasonId:"s2526"},{id:"r36",name:"Edwin",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r37",name:"Lennart",by:2018,gender:"m",mainTid:"sus_f2",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F2 25/26",lastTeamId:"sus_f2",seasonId:"s2526"},{id:"r38",name:"Abdulla",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r39",name:"Kabher",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r40",name:"Maxim vE.",by:2018,gender:"m",mainTid:"sus_f2",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F2 25/26",lastTeamId:"sus_f2",seasonId:"s2526"},{id:"r41",name:"Leonard",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r42",name:"Timur",by:2018,gender:"m",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r43",name:"Paulina",by:2017,gender:"w",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r44",name:"Tilda",by:2017,gender:"w",mainTid:"sus_f3",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F3 25/26",lastTeamId:"sus_f3",seasonId:"s2526"},{id:"r45",name:"Xenia",by:2016,gender:"w",mainTid:"sus_f2",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F2 25/26",lastTeamId:"sus_f2",seasonId:"s2526"},{id:"r46",name:"Anne",by:2018,gender:"w",mainTid:"sus_f2",optTids:[],position:"",foot:"",strengths:[],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"",jerseySize:"",jerseyStatus:"none",lastTeam:"F2 25/26",lastTeamId:"sus_f2",seasonId:"s2526"},],clubs: [
-      { id:"sus",slug:"sus-kalkar",name:"SuS Kalkar",short:"SuS",em:"*",logo:null,pri:"#16a34a",sec:"#052e16",adm:"admin123",pub:true,dir:true },{ id:"bvw",slug:"bv-wissel",name:"BV Sturm Wissel",short:"BVW",em:"*",logo:null,pri:"#1d4ed8",sec:"#1e1b4b",adm:"wissel123",pub:true,dir:true },],teams: [
-      { id:"sus_bam",cid:"sus",name:"Bambinis",icon:"*",col:"#f59e0b",pub:true,pwd:"bam",cat:"Bambinis",years:"2019/20/21" },{ id:"sus_g",cid:"sus",name:"G-Jugend",icon:"Ball",col:"#16a34a",pub:true,pwd:"g1",cat:"G-Jugend",years:"2017/18/19" },{ id:"sus_f1",cid:"sus",name:"F-Jugend 1",icon:"Pokal",col:"#2563eb",pub:false,pwd:"f1",cat:"F-Jugend",years:"2015/16/17" },{ id:"sus_f2",cid:"sus",name:"F-Jugend 2",icon:"Pokal",col:"#1d4ed8",pub:false,pwd:"f2",cat:"F-Jugend",years:"2015/16/17" },{ id:"sus_f3",cid:"sus",name:"F-Jugend 3",icon:"Pokal",col:"#1e40af",pub:false,pwd:"f3",cat:"F-Jugend",years:"2015/16/17" },{ id:"sus_e",cid:"sus",name:"E-Jugend",icon:"*",col:"#7c3aed",pub:true,pwd:"e1",cat:"E-Jugend",years:"2013/14/15" },{ id:"bvw_g",cid:"bvw",name:"G-Jugend",icon:"*",col:"#1d4ed8",pub:true,cat:"G-Jugend",years:"2017/18/19" },{ id:"bvw_f",cid:"bvw",name:"F-Jugend",icon:"*",col:"#dc2626",pub:true },],trainers: [
+      { id:"sus",slug:"sus-kalkar",name:"SuS Kalkar",short:"SuS",em:"⚽",logo:null,pri:"#16a34a",sec:"#052e16",adm:"admin123",pub:true,dir:true },{ id:"bvw",slug:"bv-wissel",name:"BV Sturm Wissel",short:"BVW",em:"⚽",logo:null,pri:"#1d4ed8",sec:"#1e1b4b",adm:"wissel123",pub:true,dir:true },],teams: [
+      { id:"sus_bam",cid:"sus",name:"Bambinis",icon:"⚽",col:"#f59e0b",pub:true,pwd:"bam",cat:"Bambinis",years:"2019/20/21" },{ id:"sus_g",cid:"sus",name:"G-Jugend",icon:"⚽",col:"#16a34a",pub:true,pwd:"g1",cat:"G-Jugend",years:"2017/18/19" },{ id:"sus_f1",cid:"sus",name:"F-Jugend 1",icon:"🏆",col:"#2563eb",pub:false,pwd:"f1",cat:"F-Jugend",years:"2015/16/17" },{ id:"sus_f2",cid:"sus",name:"F-Jugend 2",icon:"🏆",col:"#1d4ed8",pub:false,pwd:"f2",cat:"F-Jugend",years:"2015/16/17" },{ id:"sus_f3",cid:"sus",name:"F-Jugend 3",icon:"🏆",col:"#1e40af",pub:false,pwd:"f3",cat:"F-Jugend",years:"2015/16/17" },{ id:"sus_e",cid:"sus",name:"E-Jugend",icon:"⚽",col:"#7c3aed",pub:true,pwd:"e1",cat:"E-Jugend",years:"2013/14/15" },{ id:"bvw_g",cid:"bvw",name:"G-Jugend",icon:"⚽",col:"#1d4ed8",pub:true,cat:"G-Jugend",years:"2017/18/19" },{ id:"bvw_f",cid:"bvw",name:"F-Jugend",icon:"⚽",col:"#dc2626",pub:true },],trainers: [
       { id:"tr1",cid:"sus",name:"Marcel",role:"Trainer",tids:["sus_f1"],pw:"marcel123",phone:"",email:"",adm:false },{ id:"tr2",cid:"sus",name:"Daniel",role:"Co-Trainer",tids:["sus_f1"],pw:"daniel123",phone:"",email:"",adm:false },{ id:"tr3",cid:"sus",name:"Dennis",role:"Trainer",tids:["sus_f2"],pw:"dennis123",phone:"",email:"",adm:false },{ id:"tr4",cid:"sus",name:"Mario",role:"Co-Trainer",tids:["sus_f2"],pw:"mario123",phone:"",email:"",adm:false },{ id:"tr5",cid:"sus",name:"David",role:"Trainer",tids:["sus_f3","sus_g"],pw:"david123",phone:"",email:"",adm:false },{ id:"tr6",cid:"sus",name:"Thorsten",role:"Co-Trainer",tids:["sus_f3"],pw:"thorsten123",phone:"",email:"",adm:false },{ id:"tr7",cid:"sus",name:"Sarah",role:"Trainer",tids:["sus_bam"],pw:"sarah123",phone:"",email:"",adm:false },{ id:"tr8",cid:"sus",name:"Klaus",role:"Trainer",tids:["sus_e"],pw:"klaus123",phone:"",email:"",adm:false },{ id:"tr9",cid:"bvw",name:"Tom",role:"Trainer",tids:["bvw_g","bvw_f"],pw:"tom123",phone:"",email:"",adm:false },],players: {
       sus_bam: ["Lena M.","Tom K.","Max S.","Sophie W.","Finn B.","Mia L.","Luis P.","Emma R.","Theo J.","Clara N."],sus_g:   ["Jonas H.","Anna T.","Noah G.","Clara F.","Ben M.","Lea S.","Felix K.","Sarah B.","Tim W.","Nina D.","Elias R.","Maja L."],sus_f1:  ["Paul R.","Julia S.","Leon K.","Marie H.","Jan B.","Lisa W.","Mark T.","Laura P.","Nico V.","Hanna G."],sus_f2:  ["Kai S.","Mia B.","Tom F.","Lara K.","Max W.","Nina H.","Ben R.","Sara L.","Joel T.","Zoe M."],sus_f3:  ["Luca D.","Emma P.","Finn S.","Clara B.","Jonas K.","Leah W.","Moritz R.","Alina T.","Noah F.","Ida V."],sus_e:   ["Erik Z.","Jana M.","Sven L.","Petra W.","Lars K.","Mona T."],bvw_g:   ["Finn R.","Hanna G.","Lars K.","Mona T.","Sven L.","Jana M.","Erik S.","Petra W."],bvw_f:   ["Max B.","Lara K.","Tim S.","Julia M.","Nico H.","Eva R."],},events: [
       { id:"e1",cid:"sus",tid:"sus_g",type:"training",title:"Training G-Jugend",date:addD(t,-14),time:"17:00",loc:"Sportplatz Nord",pt:"attendance",votes:{},li:[],fi:[],sc:[],note:"",open:false },{ id:"e2",cid:"sus",tid:"sus_g",type:"training",title:"Training G-Jugend",date:addD(t,-7),time:"17:00",loc:"Sportplatz Nord",pt:"attendance",votes:{"Jonas H.":"yes","Anna T.":"yes","Noah G.":"no","Clara F.":"yes","Ben M.":"yes","Lea S.":"no"},li:[],fi:[],sc:[],note:"",open:false },{ id:"e3",cid:"sus",tid:"sus_g",type:"training",title:"Training G-Jugend",date:t,time:"17:00",loc:"Sportplatz Nord",pt:"attendance",votes:{},li:[],fi:[],sc:[],note:"",open:false },{ id:"e4",cid:"sus",tid:"sus_g",type:"heimspiel",title:"Heimspiel vs. VfL Xanten",date:addD(t,4),time:"10:00",loc:"Hauptplatz",pt:"list",votes:{},li:[{id:"li1",txt:"Wasser",max:null},{id:"li2",txt:"Apfelschorle",max:null},{id:"li3",txt:"Trinkpaeckchen",max:null},{id:"li4",txt:"Muffins",max:3},{id:"li5",txt:"Waffeln",max:2},{id:"li6",txt:"Kuchen",max:null},{id:"li7",txt:"Obst",max:null}],fi:[],sc:[],note:"Bitte 30 Minuten frueher da sein!",open:false },{ id:"e5",cid:"sus",tid:"sus_g",type:"turnier",title:"Stadtturnier Kalkar 2026",date:addD(t,11),time:"09:00",loc:"Hauptplatz",pt:"attendance",votes:{},li:[],note:"Jahresabschlussturnier mit 8 Teams. Bitte Trikot mitbringen!",open:true,fi:[{id:"f1",name:"Feld 1",col:"#16a34a"},{id:"f2",name:"Feld 2",col:"#2563eb"},{id:"f3",name:"Feld 3",col:"#dc2626"}],sc:[
           {id:"s1",fid:"f1",time:"09:00",a:"SuS Kalkar 1",b:"VfL Xanten",ref:"David Mueller"},{id:"s2",fid:"f2",time:"09:00",a:"SuS Kalkar 2",b:"BV Sturm Wissel",ref:"Sarah Koch"},{id:"s3",fid:"f3",time:"09:00",a:"FC Kleve",b:"SV Bedburg",ref:"Klaus Weber"},{id:"s4",fid:"f1",time:"09:25",a:"VfL Xanten",b:"BV Sturm Wissel",ref:"Tom Schneider"},{id:"s5",fid:"f2",time:"09:25",a:"SuS Kalkar 1",b:"FC Kleve",ref:"David Mueller"},{id:"s6",fid:"f3",time:"09:25",a:"SuS Kalkar 2",b:"SV Bedburg",ref:"Sarah Koch"},]},{ id:"e6",cid:"sus",tid:"sus_g",type:"training",title:"Training G-Jugend",date:addD(t,18),time:"17:00",loc:"Sportplatz Nord",pt:"attendance",votes:{},li:[],fi:[],sc:[],note:"",open:false },{ id:"e7",cid:"sus",tid:"sus_g",type:"auswarts",title:"Auswaertsspiel SV Bedburg",date:addD(t,25),time:"11:00",loc:"SV Bedburg Platz",pt:"carpool",votes:{},li:[],fi:[],sc:[],note:"Treffpunkt: 10:15 Uhr Sportplatz Nord",open:false,carpoolNeeds:{},carpoolOffers:{} },{ id:"e8",cid:"sus",tid:"sus_bam",type:"training",title:"Training Bambinis",date:t,time:"16:00",loc:"Nebenplatz",pt:"attendance",votes:{},li:[],fi:[],sc:[],note:"",open:false },{ id:"e9",cid:"sus",tid:"sus_bam",type:"event",title:"Bambini-Fest *",date:addD(t,8),time:"14:00",loc:"Vereinsheim",pt:"attendance",votes:{},li:[],fi:[],sc:[],note:"Eltern sind herzlich eingeladen!",open:false },{ id:"e10",cid:"sus",tid:"sus_e",type:"training",title:"Training E-Jugend",date:t,time:"15:30",loc:"Nebenplatz 2",pt:"attendance",votes:{},li:[],fi:[],sc:[],note:"",open:false },{ id:"e11",cid:"sus",tid:"sus_f1",type:"freundschaft",title:"Freundschaftsspiel",date:addD(t,6),time:"10:00",loc:"Hauptplatz",pt:"attendance",votes:{},li:[],fi:[],sc:[],note:"",open:false },{ id:"e12",cid:"bvw",tid:"bvw_g",type:"training",title:"Training G-Jugend BVW",date:t,time:"17:30",loc:"BVW Platz",pt:"attendance",votes:{},li:[],fi:[],sc:[],note:"",open:false },{ id:"e13",cid:"bvw",tid:"bvw_f",type:"heimspiel",title:"Heimspiel F-Jugend",date:addD(t,5),time:"09:00",loc:"BVW Hauptplatz",pt:"attendance",votes:{},li:[],fi:[],sc:[],note:"",open:false },],messages: [],pollTemplates: [
-      { id:"pt1",cid:"sus",name:"Verpflegung Heimspiel",icon:"*",items:[{id:"i1",txt:"Wasser",max:null},{id:"i2",txt:"Apfelschorle",max:null},{id:"i3",txt:"Trinkpaeckchen",max:null},{id:"i4",txt:"Muffins",max:3},{id:"i5",txt:"Waffeln",max:2},{id:"i6",txt:"Kuchen",max:null},{id:"i7",txt:"Obst",max:null}] },{ id:"pt2",cid:"sus",name:"Helfer Turnier",icon:"*",items:[{id:"i1",txt:"Aufbau helfen",max:2},{id:"i2",txt:"Abbau helfen",max:2},{id:"i3",txt:"Schiedsrichter",max:1},{id:"i4",txt:"Getraenkestand",max:2}] },{ id:"pt3",cid:"sus",name:"Auswaertsspiel Verpflegung",icon:"Bus",items:[{id:"i1",txt:"Broetchen",max:null},{id:"i2",txt:"Obst",max:null},{id:"i3",txt:"Wasser",max:null},{id:"i4",txt:"Saft",max:null}] },],};
+      { id:"pt1",cid:"sus",name:"Verpflegung Heimspiel",icon:"⚽",items:[{id:"i1",txt:"Wasser",max:null},{id:"i2",txt:"Apfelschorle",max:null},{id:"i3",txt:"Trinkpaeckchen",max:null},{id:"i4",txt:"Muffins",max:3},{id:"i5",txt:"Waffeln",max:2},{id:"i6",txt:"Kuchen",max:null},{id:"i7",txt:"Obst",max:null}] },{ id:"pt2",cid:"sus",name:"Helfer Turnier",icon:"⚽",items:[{id:"i1",txt:"Aufbau helfen",max:2},{id:"i2",txt:"Abbau helfen",max:2},{id:"i3",txt:"Schiedsrichter",max:1},{id:"i4",txt:"Getraenkestand",max:2}] },{ id:"pt3",cid:"sus",name:"Auswaertsspiel Verpflegung",icon:"🚌",items:[{id:"i1",txt:"Broetchen",max:null},{id:"i2",txt:"Obst",max:null},{id:"i3",txt:"Wasser",max:null},{id:"i4",txt:"Saft",max:null}] },],};
 }
 
 const CSS = `
@@ -237,7 +237,12 @@ input::placeholder,textarea::placeholder{color:#94a3b8}
 .down {animation:down .24s cubic-bezier(.2,0,.1,1) both}
 button:active:not(:disabled){transform:scale(.95)}
 ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:99px}
+@media (min-width: 768px) { html,body{background:linear-gradient(135deg,#e2e8f0 0%,#f0f4f8 50%,#dbeafe 100%) fixed} }
+@media (min-width: 1024px) { html,body{background:linear-gradient(160deg,#cbd5e1 0%,#f1f5f9 35%,#ddd6fe 70%,#e0e7ff 100%) fixed} }
 `;
+
+const ICON_MAP = {"*":"⚽","Ball":"⚽","Kick":"⚽","Pokal":"🏆","Heim":"🏠","Bus":"🚌","Hand":"🤝","Fest":"🎉","Liste":"📋","OK":"✅","Tuer":"🚪","Weg":"📦","Pause":"⏸","Krank":"🤕","Ende":"🏁","Getraenk":"🥤","Pizza":"🍕","Helfer":"🙋","Salat":"🥗","Kuchen":"🍰","Ziel":"🎯","Einkauf":"🛒"};
+const ico = v => ICON_MAP[v] || v || "";
 
 const TH = cl => {
   const p = cl?.pri||"#16a34a";
@@ -247,7 +252,7 @@ const TH = cl => {
 function Logo({cl,sz=48,sx={}}) {
   const t=TH(cl);
   if(t.logo) return <img src={t.logo} alt="" style={{width:sz,height:sz,borderRadius:sz*.22,objectFit:"cover",flexShrink:0,...sx}}/>;
-  return <div style={{width:sz,height:sz,borderRadius:sz*.22,background:t.p+"28",display:"flex",alignItems:"center",justifyContent:"center",fontSize:sz*.5,flexShrink:0,...sx}}>{t.em}</div>;
+  return <div style={{width:sz,height:sz,borderRadius:sz*.22,background:t.p+"28",display:"flex",alignItems:"center",justifyContent:"center",fontSize:sz*.5,flexShrink:0,...sx}}>{ico(t.em)}</div>;
 }
 function Av({name,sz=32,border=true}) {
   return <div style={{width:sz,height:sz,borderRadius:"50%",background:acol(name),color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:sz*.36,fontWeight:800,border:border?"2px solid rgba(255,255,255,.7)":"none",flexShrink:0,boxShadow:"0 1px 4px rgba(0,0,0,.15)"}}>{inits(name)}</div>;
@@ -445,7 +450,7 @@ function InboxTab({ data,cid,save,fire,cl }) {
             const st=SEC_TYPES[e.type]||{icon:"i",col:"#64748b",bg:"#f1f5f9",label:e.type};
             return (
               <div key={e.id} style={{background:"#fff",borderRadius:14,border:`1.5px solid ${e.read?"#e2e8f0":st.col+"40"}`,padding:"12px 14px",display:"flex",gap:12,alignItems:"flex-start"}}>
-                <div style={{width:36,height:36,borderRadius:11,background:st.bg,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:13,color:st.col,flexShrink:0}}>{st.icon}</div>
+                <div style={{width:36,height:36,borderRadius:11,background:st.bg,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:13,color:st.col,flexShrink:0}}>{ico(st.icon)}</div>
                 <div style={{flex:1}}>
                   <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:3}}>
                     <span style={{fontWeight:800,fontSize:13,color:"#0f172a"}}>{st.label}</span>
@@ -480,7 +485,7 @@ function SetupWizard({ onDone,onBack }) {
   const finish = () => {
     const cid = "c_"+uid();
     const newClub = {
-      id:cid,slug:f.name.toLowerCase().replace(/\s+/g,"-"),name:f.name.trim(),short:f.short.trim()||f.name.slice(0,4).toUpperCase(),em:"*",logo:null,pri:selSport.col,sec:"#0f172a",adm:f.adm,pub:true,dir:true,sport:f.sport,createdAt:new Date().toISOString(),};
+      id:cid,slug:f.name.toLowerCase().replace(/\s+/g,"-"),name:f.name.trim(),short:f.short.trim()||f.name.slice(0,4).toUpperCase(),em:"⚽",logo:null,pri:selSport.col,sec:"#0f172a",adm:f.adm,pub:true,dir:true,sport:f.sport,createdAt:new Date().toISOString(),};
     onDone(newClub);
   };
 
@@ -660,7 +665,7 @@ function Directory({data,onPick,onNewClub,lang,setLang}) {
                   onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,.1)"}
                   onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,.06)"}>
                   <div style={{width:36,height:36,borderRadius:10,background:(cl.pri||"#16a34a")+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,marginBottom:7}}>
-                    {cl.em||"*"}
+                    {ico(cl.em||"*")}
                   </div>
                   <div style={{fontWeight:700,fontSize:13,color:"#fff",marginBottom:2,lineHeight:1.2}}>{cl.name}</div>
                   <div style={{fontSize:10,color:"rgba(255,255,255,.4)",marginBottom:7}}>{cl.sport||"Fussball"}</div>
@@ -723,12 +728,12 @@ function RolePicker({cl,onRole,onBack}) {
           <p style={{color:"rgba(255,255,255,.55)",fontSize:15}}>Wie moechtest du einsteigen?</p>
         </div>
         {[
-          {r:"user",icon:"*",title:"Elternteil",sub:"Termine sehen & abstimmen"},{r:"helper",icon:"*",title:"Helfer",sub:"Turnier & Spieltag unterstuetzen"},{r:"trainer",icon:"*",title:"Trainer",sub:"Termine meiner Mannschaft"},{r:"admin",icon:"*",title:"Vereinsadmin",sub:"Alle Rechte & Einstellungen"}
+          {r:"user",icon:"⚽",title:"Elternteil",sub:"Termine sehen & abstimmen"},{r:"helper",icon:"⚽",title:"Helfer",sub:"Turnier & Spieltag unterstuetzen"},{r:"trainer",icon:"⚽",title:"Trainer",sub:"Termine meiner Mannschaft"},{r:"admin",icon:"⚽",title:"Vereinsadmin",sub:"Alle Rechte & Einstellungen"}
         ].map((x,i)=>(
           <div key={x.r} className="up" onClick={()=>onRole(x.r)}
             style={{background:"rgba(255,255,255,.09)",border:"1.5px solid rgba(255,255,255,.13)",borderRadius:20,padding:"17px 20px",cursor:"pointer",marginBottom:12,animationDelay:`${i*.07}s`,transition:"all .18s"}}>
             <div style={{display:"flex",alignItems:"center",gap:14}}>
-              <div style={{width:48,height:48,borderRadius:15,background:"rgba(255,255,255,.12)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{x.icon}</div>
+              <div style={{width:48,height:48,borderRadius:15,background:"rgba(255,255,255,.12)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{ico(x.icon)}</div>
               <div style={{flex:1}}><div style={{color:"#fff",fontWeight:900,fontSize:17}}>{x.title}</div><div style={{color:"rgba(255,255,255,.5)",fontSize:13,marginTop:2}}>{x.sub}</div></div>
               <div style={{color:"rgba(255,255,255,.3)",fontSize:22}}>&gt;</div>
             </div>
@@ -966,7 +971,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack}) {
       {teamsInCat.map((tm,i)=>(
         <div key={tm.id} className="up" onClick={()=>{setTid(tm.id);setPwd("");setStep("pwd");}}
           style={{background:"rgba(255,255,255,.09)",border:"1.5px solid rgba(255,255,255,.13)",borderRadius:20,padding:"16px 20px",cursor:"pointer",marginBottom:12,animationDelay:`${i*.06}s`,display:"flex",alignItems:"center",gap:14}}>
-          <div style={{width:46,height:46,borderRadius:14,background:tm.col+"33",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{tm.icon}</div>
+          <div style={{width:46,height:46,borderRadius:14,background:tm.col+"33",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{ico(tm.icon)}</div>
           <span style={{color:"#fff",fontWeight:900,fontSize:18}}>{tm.name}</span>
           <span style={{marginLeft:"auto",color:"rgba(255,255,255,.3)",fontSize:22}}>&gt;</span>
         </div>
@@ -1126,16 +1131,16 @@ const FOOT_LIST      = ["Rechts","Links","Beidfuessig"];
 const RECOMMEND_LIST = ["Aufsteigen","Verbleiben","Absteigen","Pause empfohlen","Beobachten"];
 const TEAM_HIERARCHY = ["sus_f3","sus_f2","sus_f1","sus_e","sus_d","sus_c","sus_b","sus_a"];
 function getRecommendColor(rec) {
-  if(rec==="Aufsteigen") return {col:"#16a34a",bg:"#dcfce7",icon:"*"};
-  if(rec==="Verbleiben") return {col:"#2563eb",bg:"#eff6ff",icon:"*"};
-  if(rec==="Absteigen")  return {col:"#dc2626",bg:"#fee2e2",icon:"*"};
-  if(rec==="Pause empfohlen") return {col:"#d97706",bg:"#fef3c7",icon:"*"};
-  if(rec==="Beobachten") return {col:"#7c3aed",bg:"#ede9fe",icon:"*"};
+  if(rec==="Aufsteigen") return {col:"#16a34a",bg:"#dcfce7",icon:"⚽"};
+  if(rec==="Verbleiben") return {col:"#2563eb",bg:"#eff6ff",icon:"⚽"};
+  if(rec==="Absteigen")  return {col:"#dc2626",bg:"#fee2e2",icon:"⚽"};
+  if(rec==="Pause empfohlen") return {col:"#d97706",bg:"#fef3c7",icon:"⚽"};
+  if(rec==="Beobachten") return {col:"#7c3aed",bg:"#ede9fe",icon:"⚽"};
   return {col:"#94a3b8",bg:"#f1f5f9",icon:"-"};
 }
 const JERSEY_SIZES   = ["104","110","116","122","128","134","140","146","152","158","164","XS","S","M","L","XL"];
 const JERSEY_STATUS  = [
-  {id:"home",icon:"Heim",label:"Zu Hause",col:"#16a34a",bg:"#dcfce7"},{id:"bag",icon:"*",label:"Im Sporttasche",col:"#2563eb",bg:"#eff6ff"},{id:"lost",icon:"*",label:"Nicht auffindbar",col:"#d97706",bg:"#fef3c7"},{id:"damaged",icon:"*",label:"Beschaedigt",col:"#dc2626",bg:"#fee2e2"},{id:"ok",icon:"OK",label:"Abgegeben",col:"#16a34a",bg:"#dcfce7"},{id:"none",icon:"-",label:"Keine Angabe",col:"#94a3b8",bg:"#f1f5f9"},];
+  {id:"home",icon:"🏠",label:"Zu Hause",col:"#16a34a",bg:"#dcfce7"},{id:"bag",icon:"⚽",label:"Im Sporttasche",col:"#2563eb",bg:"#eff6ff"},{id:"lost",icon:"⚽",label:"Nicht auffindbar",col:"#d97706",bg:"#fef3c7"},{id:"damaged",icon:"⚽",label:"Beschaedigt",col:"#dc2626",bg:"#fee2e2"},{id:"ok",icon:"✅",label:"Abgegeben",col:"#16a34a",bg:"#dcfce7"},{id:"none",icon:"-",label:"Keine Angabe",col:"#94a3b8",bg:"#f1f5f9"},];
 const BASE_STRENGTHS = ["Schnelligkeit","Technik","Zweikampf","Kopfball","Uebersicht","Flanken","Schuss","Ausdauer","Fuehrung","Einsatz","Pressing","Spielaufbau","Defensivstaerke","Torwartreflex"];
 
 const CAT_YEARS = {
@@ -1392,7 +1397,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,onSave,onClose,t 
                   return (
                     <label key={tm.id} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",borderRadius:12,border:`1.5px solid ${sel?"#16a34a":"#e2e8f0"}`,background:sel?"#f0fdf4":"#fafafa",cursor:fits?"pointer":"not-allowed",opacity:fits?1:.45}}>
                       <input type="checkbox" checked={sel} onChange={()=>fits&&toggleOptTid(tm.id)} style={{width:17,height:17,accentColor:"#16a34a"}}/>
-                      <span style={{fontSize:17}}>{tm.icon}</span>
+                      <span style={{fontSize:17}}>{ico(tm.icon)}</span>
                       <div style={{flex:1}}>
                         <div style={{fontWeight:700,fontSize:14}}>{tm.name}</div>
                         <div style={{fontSize:11,color:"#64748b"}}>{tm.cat}{!fits?" . Jahrgang passt nicht":""}</div>
@@ -1458,7 +1463,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,onSave,onClose,t 
                 <div style={{display:"flex",flexDirection:"column",gap:6}}>
                   {statsRows.map(({tm,s})=>(
                     <div key={tm.id} style={{display:"flex",alignItems:"center",gap:10,background:"#f8fafc",borderRadius:10,padding:"9px 12px",border:"1px solid #e2e8f0"}}>
-                      <span style={{fontSize:16}}>{tm.icon}</span>
+                      <span style={{fontSize:16}}>{ico(tm.icon)}</span>
                       <div style={{flex:1}}>
                         <div style={{fontWeight:700,fontSize:13}}>{tm.name}</div>
                         <div style={{fontSize:11,color:"#64748b"}}>{tm.id===p.mainTid?"Hauptmannschaft":"Aushilfe"}</div>
@@ -1513,7 +1518,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,onSave,onClose,t 
                 {JERSEY_STATUS.map(s=>(
                   <button key={s.id} onClick={()=>up({jerseyStatus:s.id})}
                     style={{display:"flex",alignItems:"center",gap:8,padding:"10px 12px",borderRadius:11,border:`2px solid ${(p.jerseyStatus||"none")===s.id?s.col:"#e2e8f0"}`,background:(p.jerseyStatus||"none")===s.id?s.bg:"#fff",cursor:"pointer",fontFamily:"inherit",transition:"all .14s"}}>
-                    <span style={{fontSize:18}}>{s.icon}</span>
+                    <span style={{fontSize:18}}>{ico(s.icon)}</span>
                     <div style={{textAlign:"left"}}>
                       <div style={{fontSize:12,fontWeight:700,color:(p.jerseyStatus||"none")===s.id?s.col:"#334155"}}>{s.label}</div>
                     </div>
@@ -1667,7 +1672,7 @@ function PlayerCard({ player: pl,onEdit,onDel,isMain,allTeams,allEvents }) {
                 if(!s.training && !s.games) return null;
                 return (
                   <div key={tm.id} style={{display:"flex",alignItems:"center",gap:8,background:"#f8fafc",borderRadius:9,padding:"6px 10px"}}>
-                    <span style={{fontSize:14}}>{tm.icon}</span>
+                    <span style={{fontSize:14}}>{ico(tm.icon)}</span>
                     <span style={{fontSize:12,fontWeight:600,flex:1,color:"#334155"}}>{tm.name}{tm.id!==pl.mainTid?" (Aushilfe)":""}</span>
                     {s.games>0&&<Tag c="#16a34a" bg="#dcfce7" ch={`* ${s.games}`} sm/>}
                     {s.training>0&&<Tag c="#2563eb" bg="#eff6ff" ch={`* ${s.training}`} sm/>}
@@ -2158,7 +2163,7 @@ function PlayersTab({ data,myTids,save,fire,cl }) {
             {myTeams.map(tm=>(
               <button key={tm.id} onClick={()=>setSelTid(tm.id)}
                 style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",borderRadius:99,border:`2px solid ${selTid===tm.id?tm.col:"#e2e8f0"}`,background:selTid===tm.id?tm.col+"15":"#fff",color:selTid===tm.id?tm.col:"#475569",fontWeight:700,fontSize:13,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit"}}>
-                {tm.icon} {tm.name}
+                {ico(tm.icon)} {tm.name}
                 <span style={{background:selTid===tm.id?tm.col:"#e2e8f0",color:selTid===tm.id?"#fff":"#64748b",borderRadius:99,padding:"1px 7px",fontSize:11,fontWeight:800}}>
                   {allPlayers.filter(p=>p.mainTid===tm.id).length}
                 </span>
@@ -2247,7 +2252,7 @@ function BrandingTab({cl,onSave}) {
           <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.6,textTransform:"uppercase",marginBottom:8}}>Vereinslogo</div>
           <div style={{display:"flex",alignItems:"center",gap:14}}>
             <div style={{width:70,height:70,borderRadius:18,overflow:"hidden",border:"2px solid #e2e8f0",background:"#f8fafc",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-              {c.logo?<img src={c.logo} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span style={{fontSize:34}}>{c.em||"*"}</span>}
+              {c.logo?<img src={c.logo} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span style={{fontSize:34}}>{ico(c.em||"*")}</span>}
             </div>
             <div style={{flex:1,display:"flex",flexDirection:"column",gap:7}}>
               <input ref={ref} type="file" accept="image/*" onChange={up} style={{display:"none"}}/>
@@ -2274,14 +2279,14 @@ function BrandingTab({cl,onSave}) {
 
 function TemplateForm({initial,onSave,onCancel,cl,title}) {
   const t=TH(cl);
-  const blank={name:"",icon:"Liste",items:[],_txt:"",_max:""};
+  const blank={name:"",icon:"📋",items:[],_txt:"",_max:""};
   const [f,setF]=useState(initial||blank);
   const u=p=>setF(prev=>({...prev,...p}));
   const txtRef=useRef(null);
   const dragIdx=useRef(null);
   const dragOverIdx=useRef(null);
 
-  const QUICK_EMOJIS=["*","Getraenk","Pizza","Bus","Helfer","Pokal","Fest","Salat","Kuchen","Ball","Ziel","Einkauf"];
+  const QUICK_EMOJIS=["⚽","🥤","🍕","🚌","🙋","🏆","🎉","🥗","🍰","🥎","🎯","🛒"];
 
   const addItem=()=>{
     if(!f._txt.trim())return;
@@ -2515,7 +2520,7 @@ function TemplatesTab({data,cid,save,fire,cl}) {
           <div key={tpl.id} style={{background:"#fff",borderRadius:18,border:"1.5px solid #e2e8f0",overflow:"hidden",transition:"box-shadow .18s"}}>
             {}
             <div style={{padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
-              <div style={{width:48,height:48,borderRadius:14,background:t.p+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{tpl.icon}</div>
+              <div style={{width:48,height:48,borderRadius:14,background:t.p+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{ico(tpl.icon)}</div>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontWeight:800,fontSize:15,color:"#0f172a"}}>{tpl.name}</div>
                 <div style={{fontSize:12,color:"#64748b",marginTop:2}}>{tpl.items.length} Option{tpl.items.length!==1?"en":""}</div>
@@ -2679,7 +2684,7 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
         {step===1&&<div className="in" style={{display:"flex",flexDirection:"column",gap:11}}>
           {teams.map(tm=>(
             <div key={tm.id} onClick={()=>u({tid:tm.id})} style={{background:"#fff",borderRadius:17,padding:"15px 16px",border:`2px solid ${f.tid===tm.id?t.p:"#e2e8f0"}`,cursor:"pointer",display:"flex",alignItems:"center",gap:13,transition:"all .18s"}}>
-              <div style={{width:50,height:50,borderRadius:16,background:f.tid===tm.id?t.p+"20":"#f8fafc",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26}}>{tm.icon}</div>
+              <div style={{width:50,height:50,borderRadius:16,background:f.tid===tm.id?t.p+"20":"#f8fafc",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26}}>{ico(tm.icon)}</div>
               <div style={{flex:1}}><div style={{fontWeight:800,fontSize:16,color:f.tid===tm.id?t.p:"#0f172a"}}>{tm.name}</div>{tm.cat&&<div style={{fontSize:12,color:"#64748b",marginTop:2}}>{tm.cat}</div>}</div>
               <div style={{width:22,height:22,borderRadius:"50%",border:`${f.tid===tm.id?"7px":"2px"} solid ${f.tid===tm.id?t.p:"#cbd5e1"}`,transition:"all .18s"}}/>
             </div>
@@ -2689,7 +2694,7 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
         {step===2&&<div className="in" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
           {Object.entries(ET).map(([k,v])=>(
             <div key={k} onClick={()=>u({type:k,title:isEdit?f.title:v.label})} style={{background:"#fff",borderRadius:16,padding:"16px 14px",border:`2px solid ${f.type===k?t.p:"#e2e8f0"}`,cursor:"pointer",textAlign:"center",transition:"all .18s"}}>
-              <div style={{fontSize:32,marginBottom:8}}>{v.icon}</div>
+              <div style={{fontSize:32,marginBottom:8}}>{ico(v.icon)}</div>
               <div style={{fontWeight:800,fontSize:14,color:f.type===k?t.p:"#334155"}}>{v.label}</div>
             </div>
           ))}
@@ -2708,9 +2713,9 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
         {}
         {step===4&&<div className="in" style={{display:"flex",flexDirection:"column",gap:14}}>
           <p style={{fontSize:13,fontWeight:700,color:"#64748b"}}>Welche Abstimmung soll es geben?</p>
-          {[{k:"att",icon:"OK",title:"Anwesenheit",sub:"Dabei / Nicht dabei"},{k:"list",icon:"Liste",title:"Auswahlliste",sub:"z.B. Verpflegung,Helfer"},{k:"carpool",icon:"*",title:"Fahrtgemeinschaft",sub:"Wer braucht Mitnahme? Wer kann fahren?"}].map(o=>(
+          {[{k:"att",icon:"✅",title:"Anwesenheit",sub:"Dabei / Nicht dabei"},{k:"list",icon:"📋",title:"Auswahlliste",sub:"z.B. Verpflegung,Helfer"},{k:"carpool",icon:"⚽",title:"Fahrtgemeinschaft",sub:"Wer braucht Mitnahme? Wer kann fahren?"}].map(o=>(
             <div key={o.k} onClick={()=>u({pt:o.k})} style={{background:"#fff",borderRadius:16,padding:"14px 16px",border:`2px solid ${f.pt===o.k?t.p:"#e2e8f0"}`,cursor:"pointer",display:"flex",alignItems:"center",gap:13,transition:"all .18s"}}>
-              <div style={{width:46,height:46,borderRadius:14,background:f.pt===o.k?t.p+"20":"#f8fafc",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{o.icon}</div>
+              <div style={{width:46,height:46,borderRadius:14,background:f.pt===o.k?t.p+"20":"#f8fafc",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{ico(o.icon)}</div>
               <div style={{flex:1}}><div style={{fontWeight:800,fontSize:15,color:f.pt===o.k?t.p:"#334155"}}>{o.title}</div><div style={{fontSize:12,color:"#64748b",marginTop:2}}>{o.sub}</div></div>
               <div style={{width:22,height:22,borderRadius:"50%",border:`${f.pt===o.k?"7px":"2px"} solid ${f.pt===o.k?t.p:"#cbd5e1"}`,transition:"all .18s"}}/>
             </div>
@@ -2734,7 +2739,7 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
                 {onTemplates.map(tpl=>(
                   <button key={tpl.id} onClick={()=>u({li:tpl.items.map(it=>({...it,id:uid()})),selType:tpl.selType||"multi"})}
                     style={{display:"flex",alignItems:"center",gap:6,padding:"7px 12px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontSize:13,fontWeight:700,color:"#334155",fontFamily:"inherit"}}>
-                    <span>{tpl.icon}</span>{tpl.name}
+                    <span>{ico(tpl.icon)}</span>{tpl.name}
                   </button>
                 ))}
               </div>
@@ -2768,7 +2773,7 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
                   style={{width:60,padding:"7px 10px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",textAlign:"center"}}/>
               </div>
             </div>
-            {onSaveTemplate&&f.li?.length>0&&<button onClick={()=>{const name=prompt("Name der Vorlage?");if(name)onSaveTemplate({id:uid(),name,icon:"Liste",selType:f.selType||"multi",items:f.li});}} style={{marginTop:10,width:"100%",padding:"10px",borderRadius:11,border:`1.5px dashed ${t.p}`,background:"transparent",color:t.p,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}> Als Vorlage speichern</button>}
+            {onSaveTemplate&&f.li?.length>0&&<button onClick={()=>{const name=prompt("Name der Vorlage?");if(name)onSaveTemplate({id:uid(),name,icon:"📋",selType:f.selType||"multi",items:f.li});}} style={{marginTop:10,width:"100%",padding:"10px",borderRadius:11,border:`1.5px dashed ${t.p}`,background:"transparent",color:t.p,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}> Als Vorlage speichern</button>}
           </div>}
         </div>}
         {}
@@ -2856,7 +2861,7 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
             </div>
             {h.notes&&<div style={{padding:"0 14px 11px",fontSize:12,color:"#64748b",fontStyle:"italic"}}>{h.notes}</div>}
             {(h.tids||[]).length>0&&<div style={{padding:"0 14px 11px",display:"flex",gap:5,flexWrap:"wrap"}}>
-              {data.teams.filter(tm=>(h.tids||[]).includes(tm.id)).map(tm=><span key={tm.id} style={{fontSize:11,fontWeight:700,color:tm.col,background:tm.col+"18",borderRadius:6,padding:"2px 8px"}}>{tm.icon} {tm.name}</span>)}
+              {data.teams.filter(tm=>(h.tids||[]).includes(tm.id)).map(tm=><span key={tm.id} style={{fontSize:11,fontWeight:700,color:tm.col,background:tm.col+"18",borderRadius:6,padding:"2px 8px"}}>{ico(tm.icon)} {tm.name}</span>)}
             </div>}
           </div>
         ))}
@@ -2888,7 +2893,7 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
               {myTeams.map(tm=>(
                 <label key={tm.id} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",borderRadius:11,border:`1.5px solid ${(f.tids||[]).includes(tm.id)?tm.col:"#e2e8f0"}`,background:(f.tids||[]).includes(tm.id)?tm.col+"12":"#fafafa",cursor:"pointer",marginBottom:6}}>
                   <input type="checkbox" checked={(f.tids||[]).includes(tm.id)} onChange={()=>u({tids:(f.tids||[]).includes(tm.id)?(f.tids||[]).filter(x=>x!==tm.id):[...(f.tids||[]),tm.id]})} style={{width:17,height:17,accentColor:tm.col}}/>
-                  <span style={{fontSize:16}}>{tm.icon}</span>
+                  <span style={{fontSize:16}}>{ico(tm.icon)}</span>
                   <span style={{fontWeight:700,fontSize:14}}>{tm.name}</span>
                 </label>
               ))}
@@ -3035,7 +3040,7 @@ function JerseysTab({ data,myTids,save,fire,cl }) {
         {myTeams.map(tm=>(
           <button key={tm.id} onClick={()=>setSelTid(tm.id)}
             style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",borderRadius:99,border:`2px solid ${selTid===tm.id?tm.col:"#e2e8f0"}`,background:selTid===tm.id?tm.col+"15":"#fff",color:selTid===tm.id?tm.col:"#475569",fontWeight:700,fontSize:13,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit"}}>
-            {tm.icon} {tm.name}
+            {ico(tm.icon)} {tm.name}
             <span style={{background:selTid===tm.id?tm.col:"#e2e8f0",color:selTid===tm.id?"#fff":"#64748b",borderRadius:99,padding:"1px 7px",fontSize:11,fontWeight:800}}>
               {allPlayers.filter(p=>p.mainTid===tm.id&&p.jerseyNr).length}
             </span>
@@ -3060,7 +3065,7 @@ function JerseysTab({ data,myTids,save,fire,cl }) {
           <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:16}}>
             {JERSEY_STATUS.filter(s=>s.id!=="none").map(s=>(
               <div key={s.id} style={{background:s.bg,borderRadius:12,padding:"10px 8px",textAlign:"center",border:`1.5px solid ${s.col}30`}}>
-                <div style={{fontSize:20,marginBottom:2}}>{s.icon}</div>
+                <div style={{fontSize:20,marginBottom:2}}>{ico(s.icon)}</div>
                 <div style={{fontWeight:900,fontSize:20,color:s.col,lineHeight:1}}>{counts[s.id]||0}</div>
                 <div style={{fontSize:10,color:s.col,fontWeight:700,marginTop:2,opacity:.8}}>{s.label}</div>
               </div>
@@ -3091,7 +3096,7 @@ function JerseysTab({ data,myTids,save,fire,cl }) {
                         </div>
                       </div>
                       <div style={{display:"flex",alignItems:"center",gap:6,background:st.bg,borderRadius:9,padding:"5px 10px",border:`1px solid ${st.col}30`}}>
-                        <span style={{fontSize:16}}>{st.icon}</span>
+                        <span style={{fontSize:16}}>{ico(st.icon)}</span>
                         <span style={{fontSize:11,fontWeight:700,color:st.col}}>{st.label}</span>
                       </div>
                     </div>
@@ -3121,7 +3126,7 @@ function JerseysTab({ data,myTids,save,fire,cl }) {
           <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
             {JERSEY_STATUS.map(s=>(counts[s.id]>0&&(
               <span key={s.id} style={{fontSize:11,fontWeight:700,color:s.col,background:s.bg,borderRadius:7,padding:"3px 9px",border:`1px solid ${s.col}25`}}>
-                {s.icon} {s.label} ({counts[s.id]})
+                {ico(s.icon)} {s.label} ({counts[s.id]})
               </span>
             )))}
           </div>
@@ -3148,7 +3153,7 @@ function JerseysTab({ data,myTids,save,fire,cl }) {
                         </div>
                       </div>
                       <div style={{background:st.bg,borderRadius:9,padding:"5px 10px",border:`1px solid ${st.col}30`,fontSize:18}}>
-                        {st.icon}
+                        {ico(st.icon)}
                       </div>
                     </div>
                     {}
@@ -3156,7 +3161,7 @@ function JerseysTab({ data,myTids,save,fire,cl }) {
                       {JERSEY_STATUS.map(s=>(
                         <button key={s.id} onClick={()=>setStatus(pl.id,s.id)}
                           style={{flex:1,padding:"9px 4px",border:"none",borderRight:"1px solid #f1f5f9",background:(pl.jerseyStatus||"none")===s.id?s.bg:"#fff",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2,transition:"background .13s"}}>
-                          <span style={{fontSize:16}}>{s.icon}</span>
+                          <span style={{fontSize:16}}>{ico(s.icon)}</span>
                           <span style={{fontSize:9,fontWeight:700,color:(pl.jerseyStatus||"none")===s.id?s.col:"#94a3b8",lineHeight:1.2,textAlign:"center"}}>{s.label.split(" ")[0]}</span>
                         </button>
                       ))}
@@ -3353,7 +3358,7 @@ function useShareTrigger(data,session,myTids) {
 }
 
 const LEAVE_REASONS = [
-  {id:"left",icon:"Tuer",label:"Verein verlassen"},{id:"injury",icon:"Krank",label:"Verletzt / Pause"},{id:"retired",icon:"Ende",label:"Karriereende"},{id:"nolust",icon:"Pause",label:"Keine Lust / Auszeit"},{id:"moved",icon:"Weg",label:"Weggezogen"},{id:"other",icon:"?",label:"Sonstiges"},];
+  {id:"left",icon:"🚪",label:"Verein verlassen"},{id:"injury",icon:"🤕",label:"Verletzt / Pause"},{id:"retired",icon:"🏁",label:"Karriereende"},{id:"nolust",icon:"⏸",label:"Keine Lust / Auszeit"},{id:"moved",icon:"📦",label:"Weggezogen"},{id:"other",icon:"?",label:"Sonstiges"},];
 const AGE_GROUPS = [
   {id:"bambinis",label:"Bambinis",icon:"B",ageRange:"U5-U6"},{id:"g",label:"G-Jugend",icon:"G",ageRange:"U7"},{id:"f",label:"F-Jugend",icon:"F",ageRange:"U8-U9"},{id:"e",label:"E-Jugend",icon:"E",ageRange:"U10-U11"},{id:"d",label:"D-Jugend",icon:"D",ageRange:"U12-U13"},{id:"c",label:"C-Jugend",icon:"C",ageRange:"U14-U15"},{id:"b",label:"B-Jugend",icon:"B2",ageRange:"U16-U17"},{id:"a",label:"A-Jugend",icon:"A",ageRange:"U18-U19"},{id:"seniors",label:"Senioren",icon:"S",ageRange:"Aktive"},{id:"altherren",label:"Alt-Herren",icon:"AH",ageRange:"Ue32"},{id:"frauen",label:"Frauen",icon:"FR",ageRange:"Aktive"},];
 
@@ -3568,7 +3573,7 @@ function SeasonModal({ data,save,fire,cl,myTids,onClose }) {
 }
 
 const FIELD_SEGMENTS = [
-  {id:4,label:"Ganzer Platz",icon:"*",fraction:1},{id:2,label:"Halber Platz",icon:"*",fraction:0.5},{id:1,label:"Viertel",icon:"*",fraction:0.25},{id:0.5,label:"Achtel",icon:".",fraction:0.125},];
+  {id:4,label:"Ganzer Platz",icon:"⚽",fraction:1},{id:2,label:"Halber Platz",icon:"⚽",fraction:0.5},{id:1,label:"Viertel",icon:"⚽",fraction:0.25},{id:0.5,label:"Achtel",icon:".",fraction:0.125},];
 
 function FieldGraphic({ field,bookings,date,onBook,myName,t }) {
   const segs = field.segments || 4; // how many quarter-segments the field has
@@ -3638,7 +3643,7 @@ function BookingModal({ field,cellStart,date,data,save,fire,cl,myTids,session,on
   const u = p => setF(prev=>({...prev,...p}));
 
   const SIZES = [
-    {cells:2,label:"Viertel (1/4)",icon:"*"},{cells:4,label:"Halber Platz",icon:"*"},{cells:8,label:"Ganzer Platz",icon:"*"},];
+    {cells:2,label:"Viertel (1/4)",icon:"⚽"},{cells:4,label:"Halber Platz",icon:"⚽"},{cells:8,label:"Ganzer Platz",icon:"⚽"},];
 
   const save2 = () => {
     const tm = data.teams.find(x=>x.id===f.teamId);
@@ -3665,7 +3670,7 @@ function BookingModal({ field,cellStart,date,data,save,fire,cl,myTids,session,on
             {myTeams.map(tm=>(
               <label key={tm.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 13px",borderRadius:12,border:`2px solid ${f.teamId===tm.id?tm.col:"#e2e8f0"}`,background:f.teamId===tm.id?tm.col+"12":"#fafafa",cursor:"pointer",marginBottom:7}}>
                 <input type="radio" name="team" checked={f.teamId===tm.id} onChange={()=>u({teamId:tm.id})} style={{accentColor:tm.col}}/>
-                <span style={{fontSize:17}}>{tm.icon}</span>
+                <span style={{fontSize:17}}>{ico(tm.icon)}</span>
                 <span style={{fontWeight:700,fontSize:14,color:f.teamId===tm.id?tm.col:"#334155"}}>{tm.name}</span>
               </label>
             ))}
@@ -3677,7 +3682,7 @@ function BookingModal({ field,cellStart,date,data,save,fire,cl,myTids,session,on
               {SIZES.map(s=>(
                 <button key={s.cells} onClick={()=>u({cells:s.cells})}
                   style={{flex:1,padding:"10px 8px",borderRadius:12,border:`2px solid ${f.cells===s.cells?t.p:"#e2e8f0"}`,background:f.cells===s.cells?t.p:"#fff",color:f.cells===s.cells?"#fff":"#334155",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",textAlign:"center"}}>
-                  <div style={{fontSize:20,marginBottom:3}}>{s.icon}</div>
+                  <div style={{fontSize:20,marginBottom:3}}>{ico(s.icon)}</div>
                   {s.label}
                 </button>
               ))}
@@ -4030,9 +4035,9 @@ function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline}) {
       {}
       <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:16}}>
         {[
-          {label:"Dabei",val:yes.length,color:"#16a34a",bg:"#dcfce7",icon:"OK"},{label:"Nicht dabei",val:no.length,color:"#dc2626",bg:"#fee2e2",icon:"*"},{label:"Fehlt noch",val:missing.length,color:"#d97706",bg:"#fef3c7",icon:"*"},].map(s=>(
+          {label:"Dabei",val:yes.length,color:"#16a34a",bg:"#dcfce7",icon:"✅"},{label:"Nicht dabei",val:no.length,color:"#dc2626",bg:"#fee2e2",icon:"⚽"},{label:"Fehlt noch",val:missing.length,color:"#d97706",bg:"#fef3c7",icon:"⚽"},].map(s=>(
           <div key={s.label} style={{background:s.bg,borderRadius:14,padding:"12px 8px",textAlign:"center",border:`1.5px solid ${s.color}22`}}>
-            <div style={{fontSize:20,marginBottom:2}}>{s.icon}</div>
+            <div style={{fontSize:20,marginBottom:2}}>{ico(s.icon)}</div>
             <div style={{fontWeight:900,fontSize:22,color:s.color,lineHeight:1}}>{s.val}</div>
             <div style={{fontSize:10,fontWeight:700,color:s.color,marginTop:3,opacity:.8}}>{s.label}</div>
           </div>
@@ -4367,20 +4372,20 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
   const p=cl?.pri||"#16a34a";
   let status=null;
   if(ev.pt==="att"){
-    if(uvVal==="yes")status={icon:"OK",label:"Ich bin dabei",color:"#16a34a",bg:"#dcfce7",urgent:false};
-    else if(uvVal==="no")status={icon:"*",label:"Nicht dabei",color:"#dc2626",bg:"#fee2e2",urgent:false};
-    else if(!isPast)status={icon:"*",label:"Noch nicht abgestimmt",color:"#d97706",bg:"#fef3c7",urgent:true};
+    if(uvVal==="yes")status={icon:"✅",label:"Ich bin dabei",color:"#16a34a",bg:"#dcfce7",urgent:false};
+    else if(uvVal==="no")status={icon:"⚽",label:"Nicht dabei",color:"#dc2626",bg:"#fee2e2",urgent:false};
+    else if(!isPast)status={icon:"⚽",label:"Noch nicht abgestimmt",color:"#d97706",bg:"#fef3c7",urgent:true};
   } else if(ev.pt==="list"){
     const mc=Array.isArray(uv)?uv:[];
-    if(mc.length>0)status={icon:"Liste",label:`${mc.length} ausgewaehlt`,color:"#16a34a",bg:"#dcfce7",urgent:false};
-    else if(!isPast)status={icon:"Liste",label:"Auswahl fehlt noch",color:"#d97706",bg:"#fef3c7",urgent:true};
+    if(mc.length>0)status={icon:"📋",label:`${mc.length} ausgewaehlt`,color:"#16a34a",bg:"#dcfce7",urgent:false};
+    else if(!isPast)status={icon:"📋",label:"Auswahl fehlt noch",color:"#d97706",bg:"#fef3c7",urgent:true};
   } else if(ev.pt==="carpool"){
     const hN=!!ev.carpoolNeeds?.[user];const hO=!!ev.carpoolOffers?.[user];
     const isP=Object.values(ev.carpoolOffers||{}).some(o=>(o.passengers||[]).includes(user));
-    if(hO)status={icon:"*",label:"Ich fahre",color:"#16a34a",bg:"#dcfce7",urgent:false};
-    else if(isP){const dr=Object.entries(ev.carpoolOffers||{}).find(([,o])=>(o.passengers||[]).includes(user))?.[0];status={icon:"*",label:`Mitfahrt bei ${dr}`,color:"#16a34a",bg:"#dcfce7",urgent:false};}
-    else if(hN)status={icon:"*",label:"Mitfahrt angefragt",color:"#d97706",bg:"#fef3c7",urgent:false};
-    else if(!isPast)status={icon:"*",label:"Noch nicht eingetragen",color:"#64748b",bg:"#f1f5f9",urgent:false};
+    if(hO)status={icon:"⚽",label:"Ich fahre",color:"#16a34a",bg:"#dcfce7",urgent:false};
+    else if(isP){const dr=Object.entries(ev.carpoolOffers||{}).find(([,o])=>(o.passengers||[]).includes(user))?.[0];status={icon:"⚽",label:`Mitfahrt bei ${dr}`,color:"#16a34a",bg:"#dcfce7",urgent:false};}
+    else if(hN)status={icon:"⚽",label:"Mitfahrt angefragt",color:"#d97706",bg:"#fef3c7",urgent:false};
+    else if(!isPast)status={icon:"⚽",label:"Noch nicht eingetragen",color:"#64748b",bg:"#f1f5f9",urgent:false};
   }
   const yesN=Object.values(ev.votes).filter(v=>(typeof v==="object"?v.val:v)==="yes").length;
   return (
