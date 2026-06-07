@@ -643,6 +643,20 @@ const sb = {
       return sb._lastWrite;
     }
   },
+  // RPC-Aufruf (Postgres-Function) - liefert das JSON-Ergebnis oder wirft.
+  rpc: async (name, args = {}) => {
+    const cfg = getConfig();
+    if (!cfg?.url || !cfg?.key) throw new Error("DB nicht konfiguriert");
+    const r = await sb._fetch(`/rest/v1/rpc/${name}`, {
+      method: "POST",
+      body: JSON.stringify(args),
+    });
+    if (!r.ok) {
+      let t=""; try{ t=await r.text(); }catch{}
+      throw new Error("RPC "+name+" "+r.status+" "+(t||"").slice(0,200));
+    }
+    return await r.json();
+  },
   test: async (url, key) => {
     try {
       const r = await fetch(`${url}/rest/v1/app_data?limit=1`, {
@@ -7067,7 +7081,8 @@ function GroupSetupHelper({ trainers, targetPerson, context, onClose }) {
 ================================================================= */
 
 const SA_KEY = "va_superadmin";
-const SA_DEFAULT_PW = "changeme2024"; // Beim ersten Login ändern!
+// SA-Passwort liegt NICHT im Code, sondern als Hash in app_secret.sa_password_hash.
+// Geprueft via RPC check_sa_password; Setup-Status via sa_is_setup.
 
 const saGet = () => { try { return JSON.parse(localStorage.getItem(SA_KEY)||"null"); } catch { return null; } };
 const saSet = (d) => { try { localStorage.setItem(SA_KEY, JSON.stringify(d)); } catch {} };
@@ -7125,58 +7140,92 @@ const setModule = (key, enabled) => {
 ----------------------------------------------------------------- */
 function SuperAdminLogin({ onLogin }) {
   const [pw, setPw] = useState("");
-  const [err, setErr] = useState(false);
-  const [isNew, setIsNew] = useState(!saGet()?.pwHash);
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(true);
+  const [needsSetup, setNeedsSetup] = useState(false);
+  const [unavailable, setUnavailable] = useState(false);
 
-  const login = () => {
-    const stored = saGet();
-    const pwHash = hashPw(pw);
-    if(!stored?.pwHash) {
-      // Erstmaliger Login - Passwort setzen
-      if(pw.length < 6) { setErr(true); return; }
-      saSet({ pwHash, createdAt: new Date().toISOString() });
-      onLogin();
-    } else {
-      if(stored.pwHash === pwHash || pw === SA_DEFAULT_PW) {
-        onLogin();
-      } else {
-        setErr(true);
-        setTimeout(() => setErr(false), 1500);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const ok = await sb.rpc("sa_is_setup");
+        if (cancelled) return;
+        setNeedsSetup(ok !== true);
+        setBusy(false);
+      } catch {
+        if (cancelled) return;
+        setUnavailable(true);
+        setBusy(false);
       }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const login = async () => {
+    if (busy || needsSetup || unavailable) return;
+    setErr(""); setBusy(true);
+    try {
+      const ok = await sb.rpc("check_sa_password", { p_password: pw });
+      if (ok === true) {
+        onLogin();
+        return;
+      }
+      setErr("Falsches Passwort");
+      setTimeout(() => setErr(""), 1800);
+    } catch (e) {
+      setErr("Datenbank nicht erreichbar");
     }
+    setBusy(false);
   };
 
   return (
     <div style={{minHeight:"100dvh",background:"#0f172a",display:"flex",
       alignItems:"center",justifyContent:"center",padding:20}}>
       <div style={{background:"#1e293b",borderRadius:20,padding:"32px 28px",
-        width:"100%",maxWidth:360,border:"1px solid #334155"}}>
+        width:"100%",maxWidth:380,border:"1px solid #334155"}}>
         <div style={{textAlign:"center",marginBottom:24}}>
           <div style={{width:56,height:56,borderRadius:16,background:"#7c3aed",
             display:"flex",alignItems:"center",justifyContent:"center",
             fontWeight:900,fontSize:24,color:"#fff",margin:"0 auto 12px"}}>SA</div>
           <div style={{color:"#fff",fontWeight:900,fontSize:20}}>Super Admin</div>
           <div style={{color:"#64748b",fontSize:13,marginTop:4}}>
-            {isNew ? "Passwort erstmalig setzen (mind. 6 Zeichen)" : "Nur für autorisierte Administratoren"}
+            {unavailable ? "Datenbank antwortet nicht" : needsSetup ? "Noch kein SA-Passwort gesetzt" : "Nur für autorisierte Administratoren"}
           </div>
         </div>
-        <input type="password" value={pw} onChange={e=>{setPw(e.target.value);setErr(false);}}
-          onKeyDown={e=>e.key==="Enter"&&login()}
-          placeholder={isNew?"Neues Passwort vergeben":"Passwort"}
-          autoFocus
-          style={{width:"100%",padding:"13px 14px",fontSize:16,
-            background:"#0f172a",border:`1.5px solid ${err?"#dc2626":"#334155"}`,
-            borderRadius:12,color:"#fff",outline:"none",
-            boxSizing:"border-box",marginBottom:12}}/>
-        {err&&<div style={{color:"#dc2626",fontSize:13,marginBottom:10,textAlign:"center"}}>
-          {isNew?"Mindestens 6 Zeichen":"Falsches Passwort"}
-        </div>}
-        <button onClick={login}
-          style={{width:"100%",padding:"13px",borderRadius:13,border:"none",
-            background:"#7c3aed",color:"#fff",fontWeight:800,fontSize:15,
-            cursor:"pointer",fontFamily:"inherit"}}>
-          {isNew?"Passwort setzen & einloggen":"Einloggen"}
-        </button>
+        {unavailable ? (
+          <div style={{color:"#fca5a5",fontSize:13,lineHeight:1.6,background:"#450a0a",border:"1px solid #dc2626",borderRadius:12,padding:"12px 14px"}}>
+            Die App konnte das SuperAdmin-Setup nicht prüfen. Internet checken oder später erneut versuchen.
+          </div>
+        ) : needsSetup ? (
+          <div style={{color:"#fbbf24",fontSize:13,lineHeight:1.65,background:"#422006",border:"1px solid #d97706",borderRadius:12,padding:"12px 14px"}}>
+            Im Supabase-SQL-Editor einmal ausführen (DEIN-SA-PASSWORT durch dein Wunschpasswort ersetzen):
+            <div style={{background:"#0f172a",borderRadius:8,padding:"10px 12px",margin:"10px 0 0",fontFamily:"monospace",fontSize:11,color:"#86efac",lineHeight:1.55}}>
+              update public.app_secret<br/>
+              &nbsp;&nbsp;set sa_password_hash =<br/>
+              &nbsp;&nbsp;encode(digest('DEIN-SA-PASSWORT','sha256'),'hex')<br/>
+              &nbsp;&nbsp;where id = 1;
+            </div>
+          </div>
+        ) : (
+          <>
+            <input type="password" value={pw} onChange={e=>{setPw(e.target.value);setErr("");}}
+              onKeyDown={e=>e.key==="Enter"&&login()}
+              placeholder="Passwort"
+              autoFocus
+              style={{width:"100%",padding:"13px 14px",fontSize:16,
+                background:"#0f172a",border:`1.5px solid ${err?"#dc2626":"#334155"}`,
+                borderRadius:12,color:"#fff",outline:"none",
+                boxSizing:"border-box",marginBottom:12}}/>
+            {err && <div style={{color:"#dc2626",fontSize:13,marginBottom:10,textAlign:"center"}}>{err}</div>}
+            <button onClick={login} disabled={busy||!pw}
+              style={{width:"100%",padding:"13px",borderRadius:13,border:"none",
+                background:(busy||!pw)?"#475569":"#7c3aed",color:"#fff",fontWeight:800,fontSize:15,
+                cursor:(busy||!pw)?"default":"pointer",fontFamily:"inherit"}}>
+              {busy?"Prüfe…":"Einloggen"}
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
