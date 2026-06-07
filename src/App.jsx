@@ -1780,29 +1780,135 @@ function LegalPage({ onBack }) {
   );
 }
 
-/*  AFFILIATE BANNER  */
-// Dezente Empfehlungen - nur in relevanten Kontexten
+/* =============================================================
+   AFFILIATE + WERBUNG
+   -------------------------------------------------------------
+   HIER deine Affiliate-IDs eintragen, sobald du dich bei den
+   jeweiligen Programmen angemeldet hast. Solange ein Feld leer
+   ist, läuft der Link auf den fallback-Wert ("vereinsapp") -
+   damit verdienst du NICHTS, der Klick zählt aber als Test-Klick.
+   ============================================================= */
+const AFFILIATE_IDS = {
+  amazon: "",          // Amazon Partnernet: Tag wie "deinname-21"
+  owayo:  "",          // Owayo Vereins-Partner-ID
+  awin:   "",          // AWIN Publisher-ID (für 11teamsports, Decathlon, ...)
+  hrs:    "",          // HRS Sports / Hotel-Affiliate-ID
+  jako:   "",          // JAKO Direktpartner-Code (langfristig)
+  trainerakademie: "", // Deutsche Trainerakademie etc.
+};
+
+/* AdSense-Konfiguration (Display-Werbung). Solange `client` leer
+   ist, wird KEIN AdSense-Code geladen. Damit personalisierte Ads in
+   der EU laufen können, braucht es zusätzlich einen Consent-Manager
+   (Google Funding Choices oder externes CMP). Solange nicht
+   konfiguriert: nur nicht-personalisierte Anzeigen. */
+const ADSENSE_CONFIG = {
+  client: "",          // z. B. "ca-pub-1234567890123456"
+  slots: {
+    directoryTop: "",  // Slot-ID für oben auf der Vereins-Liste
+    feedInline:   "",  // Slot-ID für Inline-Position
+  },
+};
+
+/* Affiliate-Slots. weight = Reihenfolge wenn mehrere für einen
+   Trigger konfiguriert wären; idKey verweist auf AFFILIATE_IDS. */
 const AFFILIATES = [
-  { id:"outfitter", trigger:"jerseys",
-    text:"Trikots günstig bestellen", sub:"Bei Outfitter - Vereinssonderkonditionen",
-    url:"https://www.outfitter.de/?ref=vereinsapp", icon:"T" },
-  { id:"sportcheck", trigger:"fields",
-    text:"Sportausrüstung für den Verein", sub:"SportScheck - bis 20% Vereinsrabatt",
-    url:"https://www.sportscheck.com/?ref=vereinsapp", icon:"S" },
-  { id:"supabase", trigger:"settings",
-    text:"Daten in der Cloud speichern", sub:"Supabase kostenlos starten",
-    url:"https://supabase.com/?ref=vereinsapp", icon:"D" },
-  { id:"teamwear", trigger:"players",
-    text:"Teamkleidung & Ausrüstung", sub:"Hummel, Erima, adidas - Vereinspreise",
-    url:"https://www.teamwear.de/?ref=vereinsapp", icon:"K" },
+  // jerseys
+  { id:"owayo-jerseys", trigger:"jerseys", weight:3, idKey:"owayo", icon:"O",
+    text:"Trikots & Vereinskleidung drucken",
+    sub:"Owayo · Vereinspreise ab 5 Trikots",
+    network:"Owayo",
+    url:(id)=>`https://www.owayo.de/?partner=${id||"vereinsapp"}` },
+  { id:"11teamsports-jerseys", trigger:"jerseys", weight:2, idKey:"awin", icon:"11",
+    text:"DFB- & Bundesliga-Trikots",
+    sub:"11teamsports · Vereinskonditionen",
+    network:"AWIN · 11teamsports",
+    url:(id)=>`https://www.awin1.com/cread.php?awinmid=14589&awinaffid=${id||"0"}&clickref=jerseys` },
+  { id:"amazon-jerseys", trigger:"jerseys", weight:1, idKey:"amazon", icon:"A",
+    text:"Trikots & Sportbekleidung",
+    sub:"Amazon · große Auswahl",
+    network:"Amazon Partnernet",
+    url:(id)=>`https://www.amazon.de/s?k=fu%C3%9Fball+trikot+kinder&tag=${id||"vereinsapp-21"}` },
+
+  // players
+  { id:"11teamsports-players", trigger:"players", weight:2, idKey:"awin", icon:"11",
+    text:"Fußballschuhe & Schienbeinschoner",
+    sub:"11teamsports · schnelle Lieferung",
+    network:"AWIN · 11teamsports",
+    url:(id)=>`https://www.awin1.com/cread.php?awinmid=14589&awinaffid=${id||"0"}&clickref=players` },
+  { id:"amazon-players", trigger:"players", weight:1, idKey:"amazon", icon:"A",
+    text:"Sportausrüstung für Kinder",
+    sub:"Amazon · alles fürs Training",
+    network:"Amazon Partnernet",
+    url:(id)=>`https://www.amazon.de/s?k=fu%C3%9Fball+kinder+ausr%C3%BCstung&tag=${id||"vereinsapp-21"}` },
+
+  // events (Auswärtsspiel/Turnier)
+  { id:"hrs-events", trigger:"events", weight:2, idKey:"hrs", icon:"H",
+    text:"Hotel fürs Auswärtsspiel",
+    sub:"HRS Sports · Vereinsraten",
+    network:"HRS Sports",
+    url:(id)=>`https://www.hrs.de/?partnerid=${id||"vereinsapp"}` },
+  { id:"amazon-events", trigger:"events", weight:1, idKey:"amazon", icon:"A",
+    text:"Reisetaschen & Trinkflaschen",
+    sub:"Amazon · für Auswärtsfahrten",
+    network:"Amazon Partnernet",
+    url:(id)=>`https://www.amazon.de/s?k=sporttasche+trinkflasche&tag=${id||"vereinsapp-21"}` },
+
+  // fields
+  { id:"amazon-fields", trigger:"fields", weight:1, idKey:"amazon", icon:"A",
+    text:"Trainings-Equipment",
+    sub:"Hütchen, Mini-Tore, Markierungen",
+    network:"Amazon Partnernet",
+    url:(id)=>`https://www.amazon.de/s?k=fu%C3%9Fballtor+kinder+training&tag=${id||"vereinsapp-21"}` },
+
+  // results (Spielanalyse/Sportcam)
+  { id:"amazon-cam", trigger:"results", weight:1, idKey:"amazon", icon:"A",
+    text:"Sportkamera fürs Spiel",
+    sub:"Automatisches Aufzeichnen · ab 200 €",
+    network:"Amazon Partnernet",
+    url:(id)=>`https://www.amazon.de/s?k=sportkamera+fu%C3%9Fball&tag=${id||"vereinsapp-21"}` },
+
+  // training (Trainer-Weiterbildung)
+  { id:"trainerakademie", trigger:"training", weight:1, idKey:"trainerakademie", icon:"T",
+    text:"Trainer-Lizenz online",
+    sub:"DFB-konforme Weiterbildung",
+    network:"Trainerakademie",
+    url:(id)=>`https://www.deutsche-trainerakademie.de/?ref=${id||"vereinsapp"}` },
+
+  // settings (Operatives)
+  { id:"supabase", trigger:"settings", weight:1, idKey:null, icon:"S",
+    text:"Eigene Cloud-Datenbank",
+    sub:"Supabase · kostenloser Vereins-Start",
+    network:"Direkt",
+    url:()=>`https://supabase.com/?ref=vereinsapp` },
 ];
+
+function pickAffiliate(trigger) {
+  const list = AFFILIATES.filter(a=>a.trigger===trigger);
+  if (!list.length) return null;
+  // Sortierung: konfigurierte IDs zuerst, dann nach weight
+  list.sort((a,b)=>{
+    const aOk = a.idKey ? !!AFFILIATE_IDS[a.idKey] : 1;
+    const bOk = b.idKey ? !!AFFILIATE_IDS[b.idKey] : 1;
+    if (aOk !== bOk) return bOk - aOk;
+    return (b.weight||0) - (a.weight||0);
+  });
+  return list[0];
+}
+function affiliateUrl(aff) {
+  if (!aff) return "#";
+  const id = aff.idKey ? AFFILIATE_IDS[aff.idKey] : "";
+  try { return aff.url(id); } catch { return "#"; }
+}
 
 function AffiliateBanner({ trigger, style={} }) {
   const [dismissed, setDismissed] = useState(false);
-  const [shown, setShown] = useState(false);
-  const aff = AFFILIATES.find(a=>a.trigger===trigger);
-  if(!aff || dismissed) return null;
-  // Only show every 3rd time the tab is opened (not annoying)
+  const aff = pickAffiliate(trigger);
+  if (!aff || dismissed) return null;
+  const onClick = () => {
+    try { trackEventGeo&&trackEventGeo("affiliate_click", aff.id); } catch {}
+    window.open(affiliateUrl(aff), "_blank", "noopener,noreferrer");
+  };
   return (
     <div style={{background:"#f8fafc",borderRadius:13,padding:"12px 14px",border:"1px solid #e2e8f0",
       display:"flex",alignItems:"center",gap:12,marginBottom:14,...style}}>
@@ -1810,14 +1916,57 @@ function AffiliateBanner({ trigger, style={} }) {
         alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:14,color:"#64748b",flexShrink:0}}>
         {aff.icon}
       </div>
-      <div style={{flex:1,cursor:"pointer"}} onClick={()=>window.open(aff.url,"_blank")}>
-        <div style={{fontSize:9,fontWeight:800,color:"#cbd5e1",letterSpacing:.5,marginBottom:2}}>WERBUNG</div>
+      <div style={{flex:1,cursor:"pointer"}} onClick={onClick}>
+        <div style={{fontSize:9,fontWeight:800,color:"#cbd5e1",letterSpacing:.5,marginBottom:2}}>
+          WERBUNG{aff.network?" · "+aff.network:""}
+        </div>
         <div style={{fontWeight:700,fontSize:13,color:"#334155"}}>{aff.text}</div>
-        <div style={{fontSize:11,color:"#94a3b8",marginTop:2}}>{aff.sub}</div>
+        <div style={{fontSize:11,color:"#94a3b8",marginTop:2}}>
+          {aff.sub} · <span title="Provisions-Link">Affiliate-Link*</span>
+        </div>
       </div>
-      <button onClick={()=>setDismissed(true)}
+      <button onClick={()=>setDismissed(true)} aria-label="Werbung ausblenden"
         style={{width:24,height:24,borderRadius:6,background:"none",border:"none",color:"#94a3b8",
-          cursor:"pointer",fontSize:14,fontWeight:800,flexShrink:0}}>x</button>
+          cursor:"pointer",fontSize:14,fontWeight:800,flexShrink:0}}>×</button>
+    </div>
+  );
+}
+
+/* AdSense-Slot. Rendert nichts, solange ADSENSE_CONFIG.client leer ist.
+   Wenn konfiguriert: laedt das adsbygoogle.js-Script einmalig und
+   schaltet auf NICHT-personalisierte Anzeigen (TTDSG-/DSGVO-vertraeglich
+   ohne separates Consent-Banner). Fuer personalisierte Ads zusaetzlich
+   einen Consent-Manager einbinden. */
+function AdSenseSlot({ slot, format="auto", style={} }) {
+  const client = ADSENSE_CONFIG.client;
+  const slotId = ADSENSE_CONFIG.slots?.[slot];
+  useEffect(() => {
+    if (!client || !slotId) return;
+    if (!window.__vaAdsenseLoaded) {
+      try {
+        window.adsbygoogle = window.adsbygoogle || [];
+        // Nicht-personalisierte Ads bis ein Consent-Manager da ist
+        window.adsbygoogle.requestNonPersonalizedAds = 1;
+        const s = document.createElement("script");
+        s.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${client}`;
+        s.crossOrigin = "anonymous";
+        s.async = true;
+        document.head.appendChild(s);
+        window.__vaAdsenseLoaded = true;
+      } catch {}
+    }
+    try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch {}
+  }, [client, slotId]);
+  if (!client || !slotId) return null;
+  return (
+    <div style={{margin:"12px 0",textAlign:"center",...style}}>
+      <div style={{fontSize:9,fontWeight:800,color:"#cbd5e1",letterSpacing:.5,marginBottom:4}}>WERBUNG</div>
+      <ins className="adsbygoogle"
+        style={{display:"block",minHeight:90}}
+        data-ad-client={client}
+        data-ad-slot={slotId}
+        data-ad-format={format}
+        data-full-width-responsive="true"/>
     </div>
   );
 }
@@ -7951,16 +8100,92 @@ function SuperAdminRevenue({ analytics, affiliateClicks, shareClicks, nps }) {
     acc[p]=(acc[p]||0)+1;
     return acc;
   },{});
-  const RATES = {outfitter:0.05,sportscheck:0.04,supabase:0.10,teamwear:0.04};
-  const totalRevEst = Object.entries(byPartner).reduce((sum,[p,cnt])=>{
-    return sum + cnt*(RATES[p]||0.03);
-  },0);
+  // Geschaetzte durchschnittliche Provisionen je Partner (Quelle: oeffentliche Programm-Beschreibungen).
+  const RATES = {
+    "owayo-jerseys":0.12,
+    "11teamsports-jerseys":0.06, "11teamsports-players":0.06,
+    "amazon-jerseys":0.04, "amazon-players":0.04, "amazon-events":0.04,
+    "amazon-fields":0.04, "amazon-cam":0.04,
+    "hrs-events":0.05,
+    "trainerakademie":0.08,
+    "supabase":0.10,
+  };
+  // Geschaetzte Einnahmen pro Klick und Partner
+  const estPerPartner = {};
+  let totalRevEst = 0;
+  for (const [p,cnt] of Object.entries(byPartner)) {
+    const eur = cnt * (RATES[p]||0.03);
+    estPerPartner[p] = eur;
+    totalRevEst += eur;
+  }
+
+  // ===== Tatsaechliche Einnahmen (manuell, im SA-localStorage) =====
+  const sa = saGet() || {};
+  const [revs, setRevs] = useState(sa.revenue || []);
+  const [showAdd, setShowAdd] = useState(false);
+  const [form, setForm] = useState({
+    partner: AFFILIATES[0]?.id || "",
+    amount: "",
+    month: new Date().toISOString().slice(0,7),
+    note: "",
+  });
+  const saveRevs = (next) => {
+    setRevs(next);
+    const cur = saGet() || {};
+    saSet({ ...cur, revenue: next });
+  };
+  const addRevenue = () => {
+    const amt = parseFloat(String(form.amount).replace(",","."));
+    if (!form.partner || !amt || !form.month) return;
+    const entry = { id: Math.random().toString(36).slice(2), partner: form.partner, amount: amt, month: form.month, note: form.note, addedAt: Date.now() };
+    saveRevs([...revs, entry]);
+    setForm({ partner: form.partner, amount: "", month: form.month, note: "" });
+    setShowAdd(false);
+  };
+  const delRevenue = (id) => {
+    if (!confirm("Eintrag wirklich löschen?")) return;
+    saveRevs(revs.filter(r=>r.id!==id));
+  };
+  const totalRevConfirmed = revs.reduce((s,r)=>s+(r.amount||0),0);
+  // Pro Partner aufsummiert
+  const confirmedPerPartner = revs.reduce((acc,r)=>{ acc[r.partner]=(acc[r.partner]||0)+(r.amount||0); return acc; },{});
+  // Pro Monat aufsummiert
+  const byMonth = revs.reduce((acc,r)=>{ acc[r.month]=(acc[r.month]||0)+(r.amount||0); return acc; },{});
+
+  const partnerLabel = (id) => {
+    const a = AFFILIATES.find(x=>x.id===id);
+    return a ? `${a.network||""} · ${a.text}` : id;
+  };
 
   return (
     <div>
       <h2 style={{color:"#fff",fontWeight:900,fontSize:20,marginBottom:16}}>
         Einnahmen & Monetarisierung
       </h2>
+      {/* Tatsaechlich bestaetigt */}
+      <div style={{background:"linear-gradient(135deg,#14532d,#16a34a)",
+        borderRadius:16,padding:"20px",marginBottom:12}}>
+        <div style={{fontSize:11,fontWeight:800,color:"rgba(255,255,255,.7)",marginBottom:4}}>
+          TATSÄCHLICH ERHALTEN (manuell erfasst)
+        </div>
+        <div style={{fontWeight:900,fontSize:36,color:"#fff",lineHeight:1}}>
+          EUR {totalRevConfirmed.toFixed(2)}
+        </div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,.7)",marginTop:6}}>
+          {revs.length} Einträge · gepflegt aus den Partner-Dashboards
+        </div>
+        <button onClick={()=>setShowAdd(true)}
+          style={{marginTop:12,padding:"9px 16px",borderRadius:10,border:"1.5px solid rgba(255,255,255,.4)",
+            background:"rgba(255,255,255,.15)",color:"#fff",fontWeight:800,fontSize:13,
+            cursor:"pointer",fontFamily:"inherit"}}>+ Einnahme erfassen</button>
+      </div>
+      {/* Auto-Import Hinweis */}
+      <div style={{background:"#1e293b",border:"1px solid #334155",borderRadius:10,padding:"10px 14px",
+        marginBottom:16,fontSize:12,color:"#94a3b8",lineHeight:1.55}}>
+        <b style={{color:"#cbd5e1"}}>Auto-Import?</b> Theoretisch möglich (AWIN-API, Amazon Partnernet Reports),
+        braucht aber server-seitige API-Credentials und einen Cron in Supabase Edge Functions.
+        Solange noch nicht aktiviert: monatlich Beträge aus den Partner-Dashboards eintragen.
+      </div>
       {/* Gesamt-Schaetzung */}
       <div style={{background:"linear-gradient(135deg,#4c1d95,#7c3aed)",
         borderRadius:16,padding:"20px",marginBottom:16}}>
@@ -7971,9 +8196,76 @@ function SuperAdminRevenue({ analytics, affiliateClicks, shareClicks, nps }) {
           EUR {totalRevEst.toFixed(2)}
         </div>
         <div style={{fontSize:12,color:"rgba(255,255,255,.6)",marginTop:6}}>
-          Basierend auf {affiliateClicks.length} Klicks * durchschn. Provision
+          Basierend auf {affiliateClicks.length} Klicks · Durchschnittsprovision je Partner
         </div>
       </div>
+      {/* Erfasste Einnahmen */}
+      {revs.length>0 && (
+        <div style={{background:"#1e293b",borderRadius:14,padding:"16px",border:"1px solid #334155",marginBottom:16}}>
+          <div style={{fontSize:11,fontWeight:700,color:"#64748b",marginBottom:12}}>EINNAHMEN PRO MONAT</div>
+          {Object.entries(byMonth).sort(([a],[b])=>b.localeCompare(a)).map(([m,sum])=>(
+            <div key={m} style={{display:"flex",justifyContent:"space-between",alignItems:"center",
+              padding:"7px 0",borderBottom:"1px solid #334155"}}>
+              <div style={{fontWeight:700,fontSize:13,color:"#e2e8f0"}}>{m}</div>
+              <div style={{fontWeight:800,fontSize:14,color:"#86efac"}}>EUR {sum.toFixed(2)}</div>
+            </div>
+          ))}
+          <div style={{marginTop:14,fontSize:11,fontWeight:700,color:"#64748b",marginBottom:10}}>EINZELNE EINTRÄGE</div>
+          {revs.slice().sort((a,b)=>(b.month+b.addedAt).localeCompare(a.month+a.addedAt)).map(r=>(
+            <div key={r.id} style={{display:"flex",alignItems:"center",gap:10,
+              padding:"9px 0",borderBottom:"1px solid #334155"}}>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontWeight:700,fontSize:13,color:"#e2e8f0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                  {partnerLabel(r.partner)}
+                </div>
+                <div style={{fontSize:11,color:"#64748b",marginTop:1}}>
+                  {r.month}{r.note?` · ${r.note}`:""}
+                </div>
+              </div>
+              <div style={{fontWeight:800,fontSize:14,color:"#86efac",whiteSpace:"nowrap"}}>EUR {r.amount.toFixed(2)}</div>
+              <button onClick={()=>delRevenue(r.id)} aria-label="Löschen"
+                style={{background:"none",border:"none",color:"#475569",fontSize:18,cursor:"pointer",padding:"0 4px"}}>×</button>
+            </div>
+          ))}
+        </div>
+      )}
+      {/* Modal: neue Einnahme */}
+      {showAdd && (
+        <div onClick={()=>setShowAdd(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.65)",
+          display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:18}}>
+          <div onClick={e=>e.stopPropagation()} style={{background:"#1e293b",borderRadius:16,padding:"20px",
+            width:"100%",maxWidth:380,border:"1px solid #334155"}}>
+            <div style={{fontSize:17,fontWeight:900,color:"#fff",marginBottom:14}}>Einnahme erfassen</div>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              <select value={form.partner} onChange={e=>setForm({...form,partner:e.target.value})}
+                style={{padding:"11px 12px",fontSize:14,background:"#0f172a",border:"1px solid #334155",
+                  borderRadius:10,color:"#e2e8f0",fontFamily:"inherit"}}>
+                {AFFILIATES.map(a=><option key={a.id} value={a.id}>{a.network} · {a.text}</option>)}
+              </select>
+              <input type="number" step="0.01" value={form.amount} onChange={e=>setForm({...form,amount:e.target.value})}
+                placeholder="Betrag in EUR"
+                style={{padding:"11px 12px",fontSize:14,background:"#0f172a",border:"1px solid #334155",
+                  borderRadius:10,color:"#e2e8f0",fontFamily:"inherit"}}/>
+              <input type="month" value={form.month} onChange={e=>setForm({...form,month:e.target.value})}
+                style={{padding:"11px 12px",fontSize:14,background:"#0f172a",border:"1px solid #334155",
+                  borderRadius:10,color:"#e2e8f0",fontFamily:"inherit"}}/>
+              <input value={form.note} onChange={e=>setForm({...form,note:e.target.value})}
+                placeholder="Notiz (optional)"
+                style={{padding:"11px 12px",fontSize:14,background:"#0f172a",border:"1px solid #334155",
+                  borderRadius:10,color:"#e2e8f0",fontFamily:"inherit"}}/>
+            </div>
+            <div style={{display:"flex",gap:8,marginTop:14}}>
+              <button onClick={()=>setShowAdd(false)}
+                style={{flex:1,padding:"11px",borderRadius:10,border:"1px solid #334155",
+                  background:"transparent",color:"#94a3b8",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
+              <button onClick={addRevenue} disabled={!form.amount||!form.partner||!form.month}
+                style={{flex:2,padding:"11px",borderRadius:10,border:"none",
+                  background:form.amount&&form.partner&&form.month?"#16a34a":"#334155",
+                  color:"#fff",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Speichern</button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Pro Partner */}
       <div style={{background:"#1e293b",borderRadius:14,padding:"16px",
         border:"1px solid #334155",marginBottom:16}}>
@@ -10970,6 +11262,7 @@ function Directory({data,onPick,onNewClub,lang,setLang}) {
 
       {}
       <div style={{maxWidth:520,margin:"24px auto 0",padding:"0 22px"}}><PrivacyBanner/></div>
+      <div style={{maxWidth:520,margin:"0 auto",padding:"0 22px"}}><AdSenseSlot slot="directoryTop"/></div>
       <div style={{maxWidth:520,margin:"30px auto 0",padding:"0 22px"}}>
         <div style={{display:"flex",alignItems:"center",gap:12}}>
           <div style={{flex:1,height:1,background:"rgba(255,255,255,.1)"}}/>
@@ -16975,15 +17268,16 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           </>}
           {up.length===0&&<div style={{textAlign:"center",padding:"30px",background:"#fff",borderRadius:18,border:"1.5px dashed #e2e8f0",color:"#94a3b8"}}><Logo cl={myClub} sz={50} sx={{margin:"0 auto 12px"}}/><p style={{fontWeight:800,fontSize:15}}>Noch keine Termine</p><p style={{fontSize:13,marginTop:3}}>Klicke oben auf "Neuen Termin anlegen"</p></div>}
           {past.length>0&&<><Divider label={`VERGANGENE (${past.length})`} light/><div style={{opacity:.72}}>{past.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{}} onCopyLink={()=>{}}/>)}</div></>}
+          <AffiliateBanner trigger="events" style={{marginTop:14}}/>
         </>}
-        {tab==="players"    &&<PlayersTab data={local} myTids={myTids} save={save} fire={fire} cl={myClub}/>}
+        {tab==="players"    &&<><PlayersTab data={local} myTids={myTids} save={save} fire={fire} cl={myClub}/><AffiliateBanner trigger="players" style={{marginTop:14}}/></> }
         {tab==="templates"  &&<TemplatesTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
         {tab==="helpers"    &&<HelpersTab data={local} cid={cid} myTids={myTids} session={session} save={save} fire={fire} cl={myClub}/>}
-        {tab==="training"  &&<TrainingPlanTab data={local} myTids={myTids} save={save} fire={fire} cl={myClub} session={session}/>}
+        {tab==="training"  &&<><TrainingPlanTab data={local} myTids={myTids} save={save} fire={fire} cl={myClub} session={session}/><AffiliateBanner trigger="training" style={{marginTop:14}}/></> }
         {tab==="jerseys"    &&<><AffiliateBanner trigger="jerseys"/><JerseysTab data={local} myTids={myTids} save={save} fire={fire} cl={myClub}/></> }
-        {tab==="fields"     &&<FieldsTab data={local} myTids={myTids} session={session} save={save} fire={fire} cl={myClub}/>}
+        {tab==="fields"     &&<><FieldsTab data={local} myTids={myTids} session={session} save={save} fire={fire} cl={myClub}/><AffiliateBanner trigger="fields" style={{marginTop:14}}/></> }
         {tab==="attendance" &&<AttendanceTab data={local} myTids={myTids} cl={myClub}/>}
-        {tab==="results"    &&<LeagueTab data={local} myTids={myTids} cl={myClub} save={save} fire={fire}/>}
+        {tab==="results"    &&<><LeagueTab data={local} myTids={myTids} cl={myClub} save={save} fire={fire}/><AffiliateBanner trigger="results" style={{marginTop:14}}/></> }
         {tab==="inbox"      &&<InboxTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
         {tab==="chat"       &&<ChatTab data={local} cid={cid} myTids={myTids} session={session} save={save} fire={fire} cl={myClub}/>}
         {tab==="teams"      &&isAdmin&&<TeamHub data={local} myTids={myTids} save={save} fire={fire} cl={myClub} session={session} isAdmin={isAdmin}/>}
