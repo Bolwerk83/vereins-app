@@ -1,79 +1,96 @@
 # Vereins-App
 
-Progressive Web App zur Vereinsverwaltung: Termine, Mannschaften, Spieler,
-Trikots, Platzbuchungen, Chat und mehr. Mehrsprachig (DE / EN / NL).
-
-Technik: React 18 + Vite. Daten werden lokal im Browser gespeichert und
-optional mit einem sicheren Supabase-Backend synchronisiert.
+Verwaltungs-App für Sportvereine (React + Vite). Die gesamte Anwendung liegt in `src/App.jsx`.
 
 ## Lokal starten
 
-Voraussetzung: Node.js 18 oder neuer.
-
 ```bash
 npm install
-npm run dev      # Entwicklungsserver auf http://localhost:5173
-npm run build    # Produktiv-Build nach dist/
-npm run preview  # Produktiv-Build lokal testen
+npm run dev
 ```
 
-Ohne Datenbank-Verbindung laeuft die App vollstaendig lokal (Daten im
-Browser-Speicher des jeweiligen Geraets).
+## Bauen
 
-## Als Web-App / PWA bereitstellen (Deployment)
+```bash
+npm run build      # erzeugt dist/
+npm run preview    # gebauten Stand lokal ansehen
+```
 
-Die App ist ein statisches Vite-Projekt und laesst sich bei jedem
-Static-Hosting betreiben. Empfohlen: **Vercel** (kostenloses Kontingent).
+## Deploy (Vercel)
 
-1. Code zu GitHub pushen (ist bereits eingerichtet).
-2. Auf [vercel.com](https://vercel.com) anmelden, **New Project**, das
-   Repository auswaehlen.
-3. Vercel erkennt Vite automatisch (`vercel.json` ist enthalten) und baut
-   mit `npm run build`. Auf **Deploy** klicken.
-4. Nach dem Deployment ist die App unter einer `*.vercel.app`-Adresse
-   erreichbar. Diesen Link teilst du mit den Nutzern; auf dem Handy laesst
-   sich die App ueber das Browser-Menue ("Zum Startbildschirm hinzufuegen")
-   wie eine native App installieren.
+Repo mit Vercel verbinden – Vercel erkennt Vite automatisch:
+- Build Command: `npm run build`
+- Output Directory: `dist`
 
-Alternative ohne Hosting-Konto: `npm run build` ausfuehren und den Inhalt
-des Ordners `dist/` auf einen beliebigen Webspace hochladen.
-
-## Sichere, gemeinsame Datenbank einrichten (Supabase)
-
-Damit viele Nutzer dieselben Daten sehen und teilen, wird ein
-Supabase-Backend verwendet. Die Daten sind durch **Row Level Security**
-geschuetzt (nur wer den Vereinscode kennt, hat Zugriff) und von Supabase
-**verschluesselt** gespeichert (Festplatte) sowie verschluesselt uebertragen
-(TLS).
-
-1. Auf [supabase.com](https://supabase.com) ein kostenloses Projekt anlegen.
-2. **SQL Editor** oeffnen, den Inhalt von [`supabase/schema.sql`](supabase/schema.sql)
-   einfuegen. Vorher unten im Skript `HIER-DEINEN-CODE` durch einen langen,
-   geheimen **Vereinscode** ersetzen (mind. 12 Zeichen). Dann **Run**.
-3. **Authentication -> Sign In / Up** oeffnen und **Anonymous sign-ins**
-   aktivieren (jedes Geraet erhaelt damit eine sichere Identitaet).
-4. **Project Settings -> API**: *Project URL* und *anon public key* kopieren.
-5. In der App den Bildschirm **Sichere Datenbank verbinden** oeffnen
-   (erscheint automatisch, sobald eine Verbindung konfiguriert ist, oder
-   ueber die Einstellungen). URL, anon key und den Vereinscode eingeben und
-   **Verbinden & testen**.
-
-Den Vereinscode gibst du an die Vereinsmitglieder weiter. Wer den Code
-einmal eingegeben hat, ist dauerhaft auf dem Geraet freigeschaltet.
-
-Wichtig:
-- Es wird ausschliesslich der **anon public key** benoetigt. Der
-  `service_role`-Key darf niemals in die App oder ins Repository gelangen.
-- Der Vereinscode ist der Zugangsschluessel. Geht er verloren, kann er im
-  SQL-Editor neu gesetzt werden (Schritt 6 im Schema erneut ausfuehren).
+Bei jedem Push auf den Hauptbranch deployt Vercel automatisch.
 
 ## Projektstruktur
 
 ```
-src/App.jsx          gesamte App (Komponenten, Datenlogik)
-src/main.jsx         Einstiegspunkt
-src/notifications.js  Erinnerungs-Helfer (optional)
-public/              manifest.json, sw.js (Service Worker), App-Icons
-supabase/schema.sql  SQL fuer das sichere Backend
-vercel.json          Hosting-Konfiguration
+.
+├── index.html          Einstiegspunkt (lädt src/main.jsx)
+├── package.json        Abhängigkeiten + Scripts
+├── vite.config.js      Vite + React-Plugin
+├── manifest.json       PWA-Manifest
+├── sw.js               Service Worker (Offline-Cache)
+├── .gitignore
+└── src/
+    ├── main.jsx        React-Mount
+    └── App.jsx         Die komplette App
 ```
+
+## Hinweis zu Icons
+
+`manifest.json` und `index.html` verweisen auf `/icon-192.png` und `/icon-512.png`.
+Diese beiden Dateien im Projekt-Stammverzeichnis ablegen, falls die PWA-Icons
+genutzt werden sollen (optional – die App läuft auch ohne).
+
+## Push-Benachrichtigungen (iOS, Android, Desktop)
+
+Nutzer:innen sehen unten rechts ein 🔔-Symbol. Tippen → Sheet mit
+„Aktivieren", danach Schalter pro Bereich (Abstimm-Erinnerung, Morgens
+am Termin, Chat) sowie pro Termin-Art und pro Einzeltermin.
+
+Voraussetzung auf dem iPhone (iOS 16.4+): die App muss einmalig zum
+**Home-Bildschirm** hinzugefügt werden — Safari → „Teilen" → „Zum
+Home-Bildschirm". Aus dem Safari-Tab heraus erlaubt Apple keinen Push.
+
+### Einmalige Einrichtung (Server-Seite)
+
+1. **Tabellen + Funktionen anlegen** — `supabase/notifications.sql` im
+   Supabase SQL-Editor ausführen.
+2. **VAPID-Schlüssel als Secrets setzen** — Supabase → Edge Functions →
+   Secrets:
+   - `VAPID_PUBLIC_KEY` = der öffentliche Schlüssel
+   - `VAPID_PRIVATE_KEY` = der private Schlüssel
+   - `VAPID_EMAIL` = `mailto:deine@email`
+   - `APP_DATA_KEY` = `vereinsapp_v14` (Default)
+
+   Den öffentlichen Schlüssel zusätzlich oben in
+   `src/notifications.jsx` in der Konstante `VAPID_PUBLIC_KEY`
+   eintragen. (Schlüsselpaar mit `node -e "..."` erzeugen — die App
+   liefert bereits eines mit; bei Bedarf rotieren.)
+3. **Edge-Function deployen** — `supabase functions deploy notify`
+   (CLI) oder per Dashboard den Inhalt von
+   `supabase/functions/notify/index.ts` einfügen.
+4. **Täglichen Versand einrichten** — Extensions `pg_cron` und
+   `pg_net` aktivieren, dann den auskommentierten Block am Ende von
+   `supabase/notifications.sql` (Projekt-URL + Service-Role-Key
+   eintragen) im SQL-Editor ausführen.
+5. **Chat-Benachrichtigungen** (optional) — in Supabase
+   Database → Webhooks einen Webhook auf die Tabelle `app_data` mit
+   POST auf die Edge-Function-URL und Body
+   `{"mode":"chat","message":{"cid":"…","tid":"…","from":"…","text":"…"}}`
+   anlegen, oder die App schickt den Push beim Absenden direkt an die
+   Function.
+
+### Test
+
+```bash
+curl -X POST https://DEIN-PROJEKT.supabase.co/functions/v1/notify \
+  -H "Authorization: Bearer DEIN-SERVICE-ROLE-KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"mode":"test"}'
+```
+
+Alle aktiven Subscriptions bekommen daraufhin eine Test-Benachrichtigung.
