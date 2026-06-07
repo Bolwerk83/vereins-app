@@ -1082,11 +1082,11 @@ function ChangePasswordModal({ cl, onSave, onClose }) {
       <div style={{background:"#fff",borderRadius:18,padding:"24px",width:"100%",maxWidth:380}}>
         <h3 style={{fontWeight:900,fontSize:18,marginBottom:16}}>Passwort ändern</h3>
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
-          <input type="password" value={oldPw} onChange={e=>setOldPw(e.target.value)} placeholder="Aktuelles Passwort"
+          <PwInput value={oldPw} onChange={e=>setOldPw(e.target.value)} placeholder="Aktuelles Passwort"
             style={{padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
-          <input type="password" value={newPw} onChange={e=>setNewPw(e.target.value)} placeholder="Neues Passwort"
+          <PwInput value={newPw} onChange={e=>setNewPw(e.target.value)} placeholder="Neues Passwort"
             style={{padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
-          <input type="password" value={newPw2} onChange={e=>setNewPw2(e.target.value)} placeholder="Neues Passwort wiederholen"
+          <PwInput value={newPw2} onChange={e=>setNewPw2(e.target.value)} placeholder="Neues Passwort wiederholen"
             style={{padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
           {err&&<div style={{background:"#fef2f2",borderRadius:10,padding:"9px 13px",fontSize:13,color:"#dc2626"}}>{err}</div>}
         </div>
@@ -1190,10 +1190,40 @@ function Btn({ch,onClick,v="pri",full,sm,dis,load,icon,cl,sx={}}) {
     </button>
   );
 }
+function EyeBtn({show,onClick}) {
+  return <button type="button" onClick={onClick} tabIndex={-1}
+    aria-label={show?"Passwort verbergen":"Passwort anzeigen"}
+    style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",padding:6,cursor:"pointer",color:"#64748b",display:"flex",alignItems:"center",fontFamily:"inherit",zIndex:1}}>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      {show
+        ? <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></>
+        : <><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></>}
+    </svg>
+  </button>;
+}
+function PwInput({style, value, onChange, placeholder, autoFocus, onKeyDown, name, ...rest}) {
+  const [show, setShow] = useState(false);
+  return (
+    <div style={{position:"relative", width: style?.width||"100%"}}>
+      <input {...rest} type={show?"text":"password"} value={value} onChange={onChange}
+        placeholder={placeholder} autoFocus={autoFocus} onKeyDown={onKeyDown} name={name}
+        autoCapitalize="none" autoCorrect="off" spellCheck={false}
+        style={{...(style||{}), paddingRight:44, width:"100%", boxSizing:"border-box"}}/>
+      <EyeBtn show={show} onClick={()=>setShow(s=>!s)}/>
+    </div>
+  );
+}
 function Inp({label,val,set,ph,type="text",af,rows,cl,note,onEnter,inputRef}) {
   const [f,setF]=useState(false); const c=cl?.pri||"#16a34a";
+  const [show,setShow]=useState(false);
+  const isPw=type==="password"&&!rows;
+  const actualType=isPw&&show?"text":type;
   const base={width:"100%",padding:"12px 15px",fontSize:15,border:`2px solid ${f?c:"#e2e8f0"}`,borderRadius:13,outline:"none",background:"#fff",transition:"border-color .17s",display:"block",resize:"vertical"};
-  return <div style={{display:"flex",flexDirection:"column",gap:5}}>{label&&<div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.6,textTransform:"uppercase"}}>{label}</div>}{rows?<textarea value={val} onChange={e=>set(e.target.value)} placeholder={ph} rows={rows} onFocus={()=>setF(true)} onBlur={()=>setF(false)} style={base}/>:<input ref={inputRef} type={type} value={val} onChange={e=>set(e.target.value)} placeholder={ph} autoFocus={af} autoCapitalize={type==="password"?"none":"sentences"} autoCorrect={type==="password"?"off":"on"} spellCheck={type==="password"?false:undefined} onKeyDown={onEnter?(e=>{if(e.key==="Enter"){e.preventDefault();onEnter();}}):undefined} onFocus={()=>setF(true)} onBlur={()=>setF(false)} style={base}/>}{note&&<div style={{fontSize:12,color:"#94a3b8"}}>{note}</div>}</div>;
+  const inputStyle=isPw?{...base,paddingRight:44}:base;
+  const inputEl = rows
+    ? <textarea value={val} onChange={e=>set(e.target.value)} placeholder={ph} rows={rows} onFocus={()=>setF(true)} onBlur={()=>setF(false)} style={base}/>
+    : <input ref={inputRef} type={actualType} value={val} onChange={e=>set(e.target.value)} placeholder={ph} autoFocus={af} autoCapitalize={type==="password"?"none":"sentences"} autoCorrect={type==="password"?"off":"on"} spellCheck={type==="password"?false:undefined} onKeyDown={onEnter?(e=>{if(e.key==="Enter"){e.preventDefault();onEnter();}}):undefined} onFocus={()=>setF(true)} onBlur={()=>setF(false)} style={inputStyle}/>;
+  return <div style={{display:"flex",flexDirection:"column",gap:5}}>{label&&<div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.6,textTransform:"uppercase"}}>{label}</div>}{isPw?<div style={{position:"relative"}}>{inputEl}<EyeBtn show={show} onClick={()=>setShow(s=>!s)}/></div>:inputEl}{note&&<div style={{fontSize:12,color:"#94a3b8"}}>{note}</div>}</div>;
 }
 function Sel({label,val,set,opts}) {
   return <div style={{display:"flex",flexDirection:"column",gap:5}}>{label&&<div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.6,textTransform:"uppercase"}}>{label}</div>}<select value={val} onChange={e=>set(e.target.value)} style={{width:"100%",padding:"12px 15px",fontSize:15,border:"2px solid #e2e8f0",borderRadius:13,outline:"none",background:"#fff",appearance:"none",backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`,backgroundRepeat:"no-repeat",backgroundPosition:"right 15px center"}}>{opts.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></div>;
@@ -1573,7 +1603,7 @@ function OnboardingWizard({ cl, data, save, fire, onDone }) {
                   placeholder="Name (z.B. Max M.)"
                   style={{padding:"12px 14px",fontSize:14,border:`1.5px solid ${trainerName?"#16a34a":"#e2e8f0"}`,borderRadius:12,outline:"none"}}/>
                 <div style={{fontSize:12,color:"#94a3b8",marginTop:-4}}>Datenschutz: Bitte nur Vorname, höchstens Nachname-Initial.</div>
-                <input type="password" value={trainerPw} onChange={e=>setTrainerPw(e.target.value)}
+                <PwInput value={trainerPw} onChange={e=>setTrainerPw(e.target.value)}
                   placeholder="Passwort für den Trainer"
                   style={{padding:"12px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none"}}/>
                 {trainerName&&!trainerPw&&<div style={{fontSize:12,color:"#d97706",background:"#fef3c7",borderRadius:9,padding:"8px 12px"}}>
@@ -6147,8 +6177,7 @@ function AccessManagerTab({ data, cid, save, fire, cl }) {
               Neues Passwort für: <strong>{editing.name}</strong>
             </p>
             <div style={{display:"flex", flexDirection:"column", gap:10}}>
-              <input
-                type="password"
+              <PwInput
                 value={newPw}
                 onChange={e=>{ setNewPw(e.target.value); setErr(""); }}
                 placeholder="Neues Passwort (mind. 4 Zeichen)"
@@ -6157,8 +6186,7 @@ function AccessManagerTab({ data, cid, save, fire, cl }) {
                   border:`1.5px solid ${err?"#fca5a5":"#e2e8f0"}`,
                   borderRadius:12, outline:"none"}}
               />
-              <input
-                type="password"
+              <PwInput
                 value={newPw2}
                 onChange={e=>{ setNewPw2(e.target.value); setErr(""); }}
                 placeholder="Passwort wiederholen"
@@ -6446,12 +6474,12 @@ function AdminForgotPassword({ cl, onBack, onReset }) {
             Code bestätigt. Vergib jetzt dein neues Passwort.
           </p>
           <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:14}}>
-            <input type="password" value={newPw}
+            <PwInput value={newPw}
               onChange={e=>{setNewPw(e.target.value);setErr("");}}
               placeholder="Neues Passwort (mind. 4 Zeichen)"
               style={{padding:"12px 14px",fontSize:16,
                 border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none"}}/>
-            <input type="password" value={newPw2}
+            <PwInput value={newPw2}
               onChange={e=>{setNewPw2(e.target.value);setErr("");}}
               placeholder="Passwort wiederholen"
               style={{padding:"12px 14px",fontSize:16,
@@ -7209,7 +7237,7 @@ function SuperAdminLogin({ onLogin }) {
           </div>
         ) : (
           <>
-            <input type="password" value={pw} onChange={e=>{setPw(e.target.value);setErr("");}}
+            <PwInput value={pw} onChange={e=>{setPw(e.target.value);setErr("");}}
               onKeyDown={e=>e.key==="Enter"&&login()}
               placeholder="Passwort"
               autoFocus
@@ -8126,11 +8154,11 @@ function SuperAdminSettings() {
           SUPER-ADMIN PASSWORT AENDERN
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
-          <input type="password" value={newPw} onChange={e=>setNewPw(e.target.value)}
+          <PwInput value={newPw} onChange={e=>setNewPw(e.target.value)}
             placeholder="Neues Passwort (mind. 6 Zeichen)"
             style={{padding:"11px 14px",fontSize:14,background:"#0f172a",
               border:"1px solid #334155",borderRadius:11,color:"#fff",outline:"none"}}/>
-          <input type="password" value={newPw2} onChange={e=>setNewPw2(e.target.value)}
+          <PwInput value={newPw2} onChange={e=>setNewPw2(e.target.value)}
             placeholder="Wiederholen"
             style={{padding:"11px 14px",fontSize:14,background:"#0f172a",
               border:"1px solid #334155",borderRadius:11,color:"#fff",outline:"none"}}/>
@@ -10771,7 +10799,7 @@ function SetupWizard({ onDone,onBack }) {
           {step===3&&<>
             <h2 style={{color:"#fff",fontWeight:900,fontSize:20,margin:"0 0 6px"}}>Admin-Passwort</h2>
             <p style={{color:"rgba(255,255,255,.4)",fontSize:13,margin:"0 0 18px"}}>Schritt 3 von 3 - merke es dir gut!</p>
-            <input type="password" value={f.adm} onChange={e=>u({adm:e.target.value})} placeholder="Mind. 4 Zeichen"
+            <PwInput value={f.adm} onChange={e=>u({adm:e.target.value})} placeholder="Mind. 4 Zeichen"
               style={{width:"100%",padding:"13px 15px",fontSize:16,background:"rgba(255,255,255,.1)",border:`1.5px solid ${f.adm.length>=4?"rgba(255,255,255,.4)":"rgba(255,255,255,.15)"}`,borderRadius:13,outline:"none",color:"#fff",marginBottom:10,boxSizing:"border-box"}}/>
             <div style={{background:"rgba(255,255,255,.06)",borderRadius:10,padding:"11px 14px",fontSize:12,color:"rgba(255,255,255,.4)",lineHeight:1.6,marginBottom:16}}>
               Mit diesem Passwort meldest du dich als Admin an. Dein Verein wird mit dem Sport-Profil "{selSport.label}" angelegt.
@@ -11142,7 +11170,7 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
           <p style={{color:"rgba(255,255,255,.5)",fontSize:13}}>{cat} . {cl.name}</p>
         </div>
         <div style={{background:"rgba(255,255,255,.1)",backdropFilter:"blur(16px)",borderRadius:22,padding:"24px 22px",border:"1px solid rgba(255,255,255,.15)"}}>
-          <input type="password" value={pw} onChange={e=>{setPw(e.target.value);setErr(false);}}
+          <PwInput value={pw} onChange={e=>{setPw(e.target.value);setErr(false);}}
             onKeyDown={e=>{if(e.key==="Enter")go();}}
             placeholder="Passwort..." autoFocus autoCapitalize="none" autoCorrect="off" spellCheck={false}
             style={{width:"100%",padding:"13px 16px",fontSize:16,background:"rgba(255,255,255,.12)",border:`2px solid ${err?"#ff6b6b":pw?"rgba(255,255,255,.4)":"rgba(255,255,255,.2)"}`,borderRadius:13,outline:"none",color:"#fff",marginBottom:10}}/>
@@ -11323,7 +11351,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid}) 
           <p style={{color:"rgba(255,255,255,.5)",fontSize:13}}>Team-Passwort eingeben</p>
         </div>
         <div style={{background:"rgba(255,255,255,.1)",backdropFilter:"blur(16px)",borderRadius:22,padding:"24px 22px",border:"1px solid rgba(255,255,255,.15)"}}>
-          <input type="password" value={pwd} onChange={e=>{setPwd(e.target.value);setPwdErr(false);}}
+          <PwInput value={pwd} onChange={e=>{setPwd(e.target.value);setPwdErr(false);}}
             onKeyDown={e=>{if(e.key==="Enter"){if(ct?.locked){setPwdErr(true);}else if(checkPw(pwd,ct?.pwd||"")){const assigned=(playerProfiles||[]).some(p=>p.mainTid===ct.id);if(assigned)setStep("name");else setStep("locked");}else{setPwdErr(true);setTimeout(()=>setPwdErr(false),1800);}}}}
             placeholder="Passwort..." autoFocus autoCapitalize="none" autoCorrect="off" spellCheck={false}
             style={{width:"100%",padding:"13px 16px",fontSize:16,background:"rgba(255,255,255,.12)",border:`2px solid ${pwdErr?"#ff6b6b":pwd?"rgba(255,255,255,.4)":"rgba(255,255,255,.2)"}`,borderRadius:13,outline:"none",color:"#fff",marginBottom:10}}/>
@@ -15282,7 +15310,7 @@ function TrainersTab({data,cid,save,fire,session}) {
               <input value={f.name} onChange={e=>u({name:e.target.value})} placeholder="Name (z.B. Max M.)"
                 style={{padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
               <div style={{fontSize:12,color:"#94a3b8",marginTop:-4}}>Datenschutz: Bitte nur Vorname, höchstens Nachname-Initial.</div>
-              <input type="password" value={f.pw} onChange={e=>u({pw:e.target.value})} placeholder={editId?"Neues Passwort (leer = unverändert)":"Passwort"}
+              <PwInput value={f.pw} onChange={e=>u({pw:e.target.value})} placeholder={editId?"Neues Passwort (leer = unverändert)":"Passwort"}
                 style={{padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
               <input value={f.phone||""} onChange={e=>u({phone:e.target.value})} placeholder="Telefon (optional)"
                 style={{padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
