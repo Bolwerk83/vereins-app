@@ -410,30 +410,153 @@ const mergeData = (global, shardList) => {
   return out;
 };
 
+// ----------------------------------------------------------------
+// Auth: anonymer Login + Vereinscode → Mitgliedschaft (gegen RLS).
+// Token wird in localStorage gehalten; bei 401 wird automatisch
+// neu angemeldet, bei 403 wird die Mitgliedschaft eingelöst.
+// ----------------------------------------------------------------
+const JOIN_CODE = "r3EDDDJf0t4U4Zep8_tTXw";
+const AUTH_KEY  = SK + "__auth";
+
+const auth = {
+  _s: null,
+  _load() {
+    if (this._s) return this._s;
+    try { this._s = JSON.parse(localStorage.getItem(AUTH_KEY) || "null"); }
+    catch { this._s = null; }
+    return this._s;
+  },
+  _save(s) {
+    try { localStorage.setItem(AUTH_KEY, JSON.stringify(s)); } catch {}
+    this._s = s;
+  },
+  _clear() {
+    try { localStorage.removeItem(AUTH_KEY); } catch {}
+    this._s = null;
+  },
+  async getToken() {
+    const cfg = getConfig();
+    if (!cfg?.url || !cfg?.key) return null;
+    const s = this._load();
+    const now = Math.floor(Date.now() / 1000);
+    if (s?.access_token && s?.expires_at && s.expires_at > now + 60) return s.access_token;
+    // Refresh wenn möglich
+    if (s?.refresh_token) {
+      try {
+        const r = await fetch(`${cfg.url}/auth/v1/token?grant_type=refresh_token`, {
+          method: "POST",
+          headers: { "Content-Type":"application/json","apikey": cfg.key },
+          body: JSON.stringify({ refresh_token: s.refresh_token }),
+        });
+        if (r.ok) {
+          const d = await r.json();
+          const ns = {
+            ...(s||{}),
+            access_token: d.access_token,
+            refresh_token: d.refresh_token,
+            expires_at: d.expires_at || (now + (d.expires_in||3600)),
+            user_id: d.user?.id || s.user_id,
+          };
+          this._save(ns);
+          return ns.access_token;
+        }
+      } catch {}
+    }
+    // Anonyme Anmeldung (Supabase: "Allow anonymous sign-ins" muss aktiv sein)
+    try {
+      const r = await fetch(`${cfg.url}/auth/v1/signup`, {
+        method: "POST",
+        headers: { "Content-Type":"application/json","apikey": cfg.key },
+        body: JSON.stringify({}),
+      });
+      if (r.ok) {
+        const d = await r.json();
+        const at = d.access_token || d.session?.access_token;
+        const rt = d.refresh_token || d.session?.refresh_token;
+        if (at) {
+          const ns = {
+            access_token: at,
+            refresh_token: rt,
+            expires_at: d.expires_at || d.session?.expires_at || (now + 3600),
+            user_id: d.user?.id || d.id,
+            is_member: false,
+          };
+          this._save(ns);
+          return at;
+        }
+      }
+    } catch {}
+    return null;
+  },
+  async ensureMember() {
+    const cfg = getConfig();
+    const token = await this.getToken();
+    if (!token) return false;
+    const s = this._load();
+    if (s?.is_member) return true;
+    try {
+      const r = await fetch(`${cfg.url}/rest/v1/rpc/redeem_code`, {
+        method: "POST",
+        headers: {
+          "Content-Type":"application/json",
+          "apikey": cfg.key,
+          "Authorization":"Bearer "+token,
+        },
+        body: JSON.stringify({ p_code: JOIN_CODE }),
+      });
+      if (r.ok) {
+        const ok = await r.json();
+        if (ok === true) {
+          this._save({ ...(s||{}), is_member: true });
+          return true;
+        }
+      }
+    } catch {}
+    return false;
+  },
+};
+
 const sb = {
-  _url: () => getConfig()?.url,_key: () => getConfig()?.key,_hdr: () => ({ "Content-Type":"application/json","apikey": sb._key(),"Authorization":"Bearer "+sb._key() }),
+  _url: () => getConfig()?.url,
+  _key: () => getConfig()?.key,
   _glKey: SK+"__global",
   _clubKey: cid => SK+"__club_"+cid,
   _lastWrite: null,
-  // Migration der alten Einzel-Zeile, falls noch keine getrennten Zeilen existieren. Gibt true zurück, wenn migriert.
+  // Header mit Bearer-Token aus auth (fällt auf anon-Key zurück, wenn Auth noch nicht da).
+  _hdr: async () => {
+    const cfg = getConfig();
+    const t = await auth.getToken();
+    return {
+      "Content-Type":"application/json",
+      "apikey": cfg.key,
+      "Authorization":"Bearer "+(t || cfg.key),
+    };
+  },
+  // Fetch mit Auto-Retry: 401 → Token neu, 403 → Mitgliedschaft einlösen.
+  _fetch: async (path, init={}, retried=false) => {
+    const cfg = getConfig();
+    if (!cfg?.url || !cfg?.key) throw new Error("DB nicht konfiguriert");
+    const hdr = await sb._hdr();
+    const r = await fetch(cfg.url+path, { ...init, headers: { ...hdr, ...(init.headers||{}) } });
+    if (retried) return r;
+    if (r.status === 401) { auth._clear(); return sb._fetch(path, init, true); }
+    if (r.status === 403) { const ok = await auth.ensureMember(); if (ok) return sb._fetch(path, init, true); }
+    return r;
+  },
   _migrate: async () => {
-    const url = sb._url();
     try {
-      const lr = await fetch(`${url}/rest/v1/app_data?key=eq.${SK}&select=value`,{ headers: sb._hdr() });
-      if (lr.ok) {
-        const lrows = await lr.json();
-        const legacy = lrows[0]?.value;
+      const r = await sb._fetch(`/rest/v1/app_data?key=eq.${SK}&select=value`);
+      if (r.ok) {
+        const rows = await r.json();
+        const legacy = rows[0]?.value;
         if (legacy) { await sb.set(legacy); return legacy; }
       }
     } catch {}
     return null;
   },
-  // Voll-Laden (alle Vereine): für SuperAdmin und als Fallback.
   get: async () => {
-    const url = sb._url();
-    if (!url || !sb._key()) return localGet();
     try {
-      const r = await fetch(`${url}/rest/v1/app_data?key=like.${SK}__*&select=key,value`,{ headers: sb._hdr() });
+      const r = await sb._fetch(`/rest/v1/app_data?key=like.${SK}__*&select=key,value`);
       if (r.ok) {
         const rows = await r.json();
         if (rows && rows.length) {
@@ -443,33 +566,29 @@ const sb = {
           localSet(merged);
           return merged;
         }
+        const m = await sb._migrate();
+        if (m) return m;
+        return null;
       }
-      const migrated = await sb._migrate();
-      if (migrated) return migrated;
-      return localGet();
-    } catch { return localGet(); }
+    } catch {}
+    return localGet();
   },
-  // Nur die leichte Vereinsliste laden (Startseite/Verzeichnis) – ohne schwere Daten anderer Vereine.
   getDirectory: async () => {
-    const url = sb._url();
-    if (!url || !sb._key()) return localGet(); // lokal: voller Block (Einzelgerät, kein Mehrvereins-Thema)
     try {
-      const r = await fetch(`${url}/rest/v1/app_data?key=eq.${sb._glKey}&select=value`,{ headers: sb._hdr() });
+      const r = await sb._fetch(`/rest/v1/app_data?key=eq.${sb._glKey}&select=value`);
       if (r.ok) {
         const rows = await r.json();
-        if (rows[0]?.value) return rows[0].value; // {_v, seasons, activeSeason, clubs:[alle, leicht]}
+        if (rows[0]?.value) return rows[0].value;
+        const m = await sb._migrate();
+        if (m) { const { global } = splitData(m); return global; }
+        return null;
       }
-      const migrated = await sb._migrate();
-      if (migrated) { const { global } = splitData(migrated); return global; }
-      return localGet();
-    } catch { return localGet(); }
+    } catch {}
+    return localGet();
   },
-  // Einen Verein komplett laden (global + dessen Zeile). Andere Vereine bleiben ungeladen.
   getClub: async (cid) => {
-    const url = sb._url();
-    if (!url || !sb._key()) return localGet(); // lokal: voller Block
     try {
-      const r = await fetch(`${url}/rest/v1/app_data?or=(key.eq.${sb._glKey},key.eq.${sb._clubKey(cid)})&select=key,value`,{ headers: sb._hdr() });
+      const r = await sb._fetch(`/rest/v1/app_data?or=(key.eq.${sb._glKey},key.eq.${sb._clubKey(cid)})&select=key,value`);
       if (r.ok) {
         const rows = await r.json();
         if (rows && rows.length) {
@@ -477,20 +596,20 @@ const sb = {
           const shard = rows.find(x=>x.key===sb._clubKey(cid))?.value || {};
           return mergeData(gl, [shard]);
         }
+        const m = await sb._migrate();
+        if (m) { const { global, shards } = splitData(m); return mergeData(global, [shards[cid]||{}]); }
+        return null;
       }
-      const migrated = await sb._migrate();
-      if (migrated) {
-        const { global, shards } = splitData(migrated);
-        return mergeData(global, [shards[cid]||{}]);
-      }
-      return localGet();
-    } catch { return localGet(); }
+    } catch {}
+    return localGet();
   },
-  // set(d): schreibt global + Verein-Zeile(n). Mit cid: nur dieser Verein (+ global). Ohne cid: alle.
+  // set(d): schreibt erst in die Cloud; localStorage wird erst nach Erfolg aktualisiert.
   set: async (d, cid=null) => {
-    localSet(d); // immer auch lokal sichern
-    const url = sb._url();
-    if (!url || !sb._key()) { sb._lastWrite={ok:false,status:0,error:"keine DB konfiguriert",at:Date.now()}; return sb._lastWrite; }
+    const cfg = getConfig();
+    if (!cfg?.url || !cfg?.key) {
+      sb._lastWrite = { ok:false, status:0, error:"keine DB konfiguriert", at:Date.now() };
+      return sb._lastWrite;
+    }
     const { global, shards } = splitData(d);
     const ts = new Date().toISOString();
     let rows = [{ key: sb._glKey, value: global, updated_at: ts }];
@@ -500,46 +619,69 @@ const sb = {
       for (const id of Object.keys(shards)) rows.push({ key: sb._clubKey(id), value: shards[id], updated_at: ts });
     }
     try {
-      const r = await fetch(`${url}/rest/v1/app_data`,{
-        method:"POST",headers: { ...sb._hdr(),"Prefer":"resolution=merge-duplicates" },body: JSON.stringify(rows)
+      const r = await sb._fetch(`/rest/v1/app_data`, {
+        method:"POST",
+        headers: { "Prefer":"resolution=merge-duplicates" },
+        body: JSON.stringify(rows),
       });
-      if(!r.ok){ let txt=""; try{ txt=await r.text(); }catch{} sb._lastWrite={ok:false,status:r.status,error:(txt||"").slice(0,400),at:Date.now()}; return sb._lastWrite; }
-      sb._lastWrite={ok:true,status:r.status,error:"",at:Date.now()}; return sb._lastWrite;
-    } catch(e){ sb._lastWrite={ok:false,status:0,error:String((e&&e.message)||e).slice(0,400),at:Date.now()}; return sb._lastWrite; }
+      if (!r.ok) {
+        let txt=""; try{ txt=await r.text(); }catch{}
+        sb._lastWrite = { ok:false, status:r.status, error:(txt||"").slice(0,400), at:Date.now() };
+        return sb._lastWrite;
+      }
+      localSet(d); // Cache erst nach Cloud-Erfolg
+      sb._lastWrite = { ok:true, status:r.status, error:"", at:Date.now() };
+      return sb._lastWrite;
+    } catch (e) {
+      sb._lastWrite = { ok:false, status:0, error:String((e&&e.message)||e).slice(0,400), at:Date.now() };
+      return sb._lastWrite;
+    }
   },
-  test: async (url,key) => {
+  test: async (url, key) => {
     try {
-      const r = await fetch(`${url}/rest/v1/app_data?limit=1`,{
-        headers: { "apikey": key,"Authorization":"Bearer "+key }
+      const r = await fetch(`${url}/rest/v1/app_data?limit=1`, {
+        headers: { "apikey": key, "Authorization":"Bearer "+key },
       });
-      return r.ok || r.status === 406; // 406 = table empty,still connected
+      return r.ok || r.status === 401 || r.status === 403 || r.status === 406;
     } catch { return false; }
   },
   selfTest: async () => {
-    const url=sb._url(), key=sb._key();
-    if(!url||!key) return {step:"config",ok:false,status:0,msg:"Keine Datenbank konfiguriert."};
-    const tkey=SK+"__dbtest", tval={t:Date.now()};
-    let w; try{ w=await fetch(`${url}/rest/v1/app_data`,{method:"POST",headers:{...sb._hdr(),"Prefer":"resolution=merge-duplicates"},body:JSON.stringify([{key:tkey,value:tval,updated_at:new Date().toISOString()}])}); }
-    catch(e){ return {step:"write",ok:false,status:0,msg:String((e&&e.message)||e)}; }
-    if(!w.ok){ let t=""; try{t=await w.text();}catch{} return {step:"write",ok:false,status:w.status,msg:(t||"").slice(0,400)}; }
-    let rd; try{ rd=await fetch(`${url}/rest/v1/app_data?key=eq.${tkey}&select=value`,{headers:sb._hdr()}); }
-    catch(e){ return {step:"read",ok:false,status:0,msg:String((e&&e.message)||e)}; }
-    if(!rd.ok){ let t=""; try{t=await rd.text();}catch{} return {step:"read",ok:false,status:rd.status,msg:(t||"").slice(0,400)}; }
-    let rows=[]; try{ rows=await rd.json(); }catch{}
-    if(!rows.length || rows[0]?.value?.t!==tval.t) return {step:"verify",ok:false,status:rd.status,msg:"Geschrieben, aber Zurücklesen lieferte den Wert nicht. Antwort: "+JSON.stringify(rows).slice(0,200)};
-    return {step:"done",ok:true,status:w.status,msg:"Schreiben und Zurücklesen erfolgreich."};
+    const cfg = getConfig();
+    if (!cfg?.url || !cfg?.key) return { step:"config", ok:false, status:0, msg:"Keine Datenbank konfiguriert." };
+    const tkey = SK+"__dbtest", tval = { t: Date.now() };
+    let w;
+    try {
+      w = await sb._fetch(`/rest/v1/app_data`, {
+        method:"POST",
+        headers:{ "Prefer":"resolution=merge-duplicates" },
+        body: JSON.stringify([{ key:tkey, value:tval, updated_at:new Date().toISOString() }]),
+      });
+    } catch (e) { return { step:"write", ok:false, status:0, msg:String((e&&e.message)||e) }; }
+    if (!w.ok) { let t=""; try{ t=await w.text(); }catch{} return { step:"write", ok:false, status:w.status, msg:(t||"").slice(0,400) }; }
+    let rd;
+    try { rd = await sb._fetch(`/rest/v1/app_data?key=eq.${tkey}&select=value`); }
+    catch (e) { return { step:"read", ok:false, status:0, msg:String((e&&e.message)||e) }; }
+    if (!rd.ok) { let t=""; try{ t=await rd.text(); }catch{} return { step:"read", ok:false, status:rd.status, msg:(t||"").slice(0,400) }; }
+    let rows=[]; try{ rows = await rd.json(); }catch{}
+    if (!rows.length || rows[0]?.value?.t !== tval.t) return { step:"verify", ok:false, status:rd.status, msg:"Geschrieben, aber Zurücklesen lieferte den Wert nicht. Antwort: "+JSON.stringify(rows).slice(0,200) };
+    return { step:"done", ok:true, status:w.status, msg:"Schreiben und Zurücklesen erfolgreich." };
   },
   fnTest: async () => {
-    const url=sb._url(), key=sb._key();
-    if(!url) return {ok:false,status:0,msg:"Keine URL konfiguriert."};
-    const fnUrl=`${url}/functions/v1/data-api`;
+    const cfg = getConfig();
+    if (!cfg?.url) return { ok:false, status:0, msg:"Keine URL konfiguriert." };
+    const fnUrl = `${cfg.url}/functions/v1/data-api`;
     try {
-      const r=await fetch(fnUrl,{method:"POST",headers:{"Content-Type":"application/json","apikey":key,"Authorization":"Bearer "+key},body:JSON.stringify({action:"getDirectory"})});
-      let t=""; try{ t=await r.text(); }catch{}
-      if(!r.ok) return {ok:false,status:r.status,msg:(t||"").slice(0,400)};
-      return {ok:true,status:r.status,msg:(t||"").slice(0,300)};
-    } catch(e){ return {ok:false,status:0,msg:String((e&&e.message)||e)}; }
-  }
+      const t = await auth.getToken();
+      const r = await fetch(fnUrl, {
+        method:"POST",
+        headers:{ "Content-Type":"application/json","apikey":cfg.key,"Authorization":"Bearer "+(t || cfg.key) },
+        body: JSON.stringify({ action:"getDirectory" }),
+      });
+      let txt=""; try{ txt = await r.text(); }catch{}
+      if (!r.ok) return { ok:false, status:r.status, msg:(txt||"").slice(0,400) };
+      return { ok:true, status:r.status, msg:(txt||"").slice(0,300) };
+    } catch (e) { return { ok:false, status:0, msg:String((e&&e.message)||e) }; }
+  },
 };
 const localGet = () => { try { const v=localStorage.getItem(SK); return v?JSON.parse(v):null; } catch { return null; } };
 const localSet = d => { try { localStorage.setItem(SK,JSON.stringify(d)); } catch {} };
@@ -17873,14 +18015,14 @@ function AppInner({lang,setLang}) {
       ...(dev.suspicious?[{...createAuditEntry("new_device","Unbekannte Region: "+dev.lang,s),cid}]:[]),
       entry];
     const nowIso=new Date().toISOString();
-    localSet({...data,
+    sb.set({...data,
       securityLog:newLog,
       clubs:(data.clubs||[]).map(c=>c.id===cid?{...c,lastActive:nowIso}:c),
-    });
+    }, cid).catch(()=>{});
     setScr(role==="user"?"user":"dash");
   };
   const logout=()=>{
-    if(session){const e={...createAuditEntry("logout","Logout: "+(session.name||session.role),session),cid};localSet({...data,securityLog:[...(data.securityLog||[]),e]});}
+    if(session){const e={...createAuditEntry("logout","Logout: "+(session.name||session.role),session),cid};sb.set({...data,securityLog:[...(data.securityLog||[]),e]}, cid).catch(()=>{});}
     sess.del(); setSess(null); setScr(cid?"role":"dir");
   };
 

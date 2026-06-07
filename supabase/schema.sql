@@ -80,5 +80,5 @@ grant execute on function public.redeem_code(text) to anon, authenticated;
 --     Code zu aendern.
 -- ============================================================
 insert into public.app_secret (id, code_hash)
-values (1, encode(digest('HIER-DEINEN-CODE', 'sha256'), 'hex'))
+values (1, encode(digest('r3EDDDJf0t4U4Zep8_tTXw', 'sha256'), 'hex'))
 on conflict (id) do update set code_hash = excluded.code_hash;
