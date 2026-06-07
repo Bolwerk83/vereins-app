@@ -17962,53 +17962,152 @@ function AppRoot() {
 }
 
 function DbTest(){
-  const [fn,setFn]=useState(null); const [direct,setDirect]=useState(null); const [busy,setBusy]=useState(true);
+  const [steps,setSteps]=useState([]);
+  const [busy,setBusy]=useState(true);
+  const cfg=getConfig();
+
   const run=async()=>{
     setBusy(true);
-    let f; try{ f=await sb.fnTest(); }catch(e){ f={ok:false,status:0,msg:String((e&&e.message)||e)}; } setFn(f);
-    let d; try{ d=await sb.selfTest(); }catch(e){ d={step:"fehler",ok:false,status:0,msg:String((e&&e.message)||e)}; } setDirect(d);
+    const acc=[];
+    const push=(s)=>{ acc.push(s); setSteps([...acc]); };
+
+    // 0) Konfiguration
+    if(!cfg?.url || !cfg?.key) {
+      push({n:"Konfiguration", ok:false, msg:"Keine Supabase-URL/-Key konfiguriert."});
+      setBusy(false); return;
+    }
+    push({n:"Konfiguration", ok:true, msg:cfg.url});
+
+    // 1) Anonymer Sign-Up
+    auth._clear();
+    let token=null, userId=null;
+    try {
+      const r = await fetch(`${cfg.url}/auth/v1/signup`, {
+        method:"POST",
+        headers:{ "Content-Type":"application/json","apikey":cfg.key },
+        body: JSON.stringify({ data:{} })
+      });
+      const txt = await r.text();
+      let d=null; try{ d=JSON.parse(txt); }catch{}
+      token = d?.access_token || d?.session?.access_token;
+      userId = d?.user?.id || d?.id;
+      if(r.ok && token) {
+        push({n:"1. Anonymer Sign-Up", ok:true, msg:`user_id=${(userId||"").slice(0,8)}\u2026 token=${token.slice(0,20)}\u2026`});
+        auth._save({
+          access_token: token,
+          refresh_token: d?.refresh_token || d?.session?.refresh_token,
+          expires_at: d?.expires_at || d?.session?.expires_at || (Math.floor(Date.now()/1000)+3600),
+          user_id: userId, is_member:false,
+        });
+      } else {
+        push({n:"1. Anonymer Sign-Up", ok:false, msg:`HTTP ${r.status} \u2013 ${txt.slice(0,400)}`,
+              hint:r.status===422 || /anonymous/i.test(txt) ? "Anonymous Sign-Ins sind im Supabase-Dashboard NICHT aktiviert. Authentication \u2192 Sign In / Up \u2192 'Allow anonymous sign-ins' anschalten." : "Antwort vom Auth-Endpoint unerwartet \u2013 siehe Meldung."});
+        setBusy(false); return;
+      }
+    } catch(e) {
+      push({n:"1. Anonymer Sign-Up", ok:false, msg:String((e&&e.message)||e)});
+      setBusy(false); return;
+    }
+
+    // 2) Vereinscode einl\u00f6sen
+    try {
+      const r = await fetch(`${cfg.url}/rest/v1/rpc/redeem_code`, {
+        method:"POST",
+        headers:{ "Content-Type":"application/json","apikey":cfg.key,"Authorization":"Bearer "+token },
+        body: JSON.stringify({ p_code: JOIN_CODE })
+      });
+      const txt = await r.text();
+      let ok=null; try{ ok=JSON.parse(txt); }catch{}
+      if(r.ok && ok===true) {
+        push({n:"2. Vereinscode einl\u00f6sen", ok:true, msg:"redeem_code \u2192 true (Mitgliedschaft eingetragen)"});
+        const s=auth._load(); auth._save({ ...(s||{}), is_member:true });
+      } else if(r.ok && ok===false) {
+        push({n:"2. Vereinscode einl\u00f6sen", ok:false, msg:"redeem_code \u2192 false",
+              hint:"Code-Hash in app_secret stimmt nicht zum App-Code. Im SQL-Editor erneut ausf\u00fchren: insert into public.app_secret (id,code_hash) values (1,encode(digest('"+JOIN_CODE+"','sha256'),'hex')) on conflict (id) do update set code_hash = excluded.code_hash;"});
+        setBusy(false); return;
+      } else {
+        push({n:"2. Vereinscode einl\u00f6sen", ok:false, msg:`HTTP ${r.status} \u2013 ${txt.slice(0,400)}`,
+              hint:r.status===404 ? "RPC 'redeem_code' nicht gefunden. schema.sql ausf\u00fchren." : "Unerwarteter Status."});
+        setBusy(false); return;
+      }
+    } catch(e) {
+      push({n:"2. Vereinscode einl\u00f6sen", ok:false, msg:String((e&&e.message)||e)});
+      setBusy(false); return;
+    }
+
+    // 3) Lesetest app_data
+    try {
+      const r = await fetch(`${cfg.url}/rest/v1/app_data?limit=1`, {
+        headers:{ "apikey":cfg.key,"Authorization":"Bearer "+token }
+      });
+      const txt = await r.text();
+      if(r.ok) {
+        push({n:"3. Lesezugriff app_data", ok:true, msg:`HTTP 200 \u2013 ${txt.slice(0,200)}`});
+      } else {
+        push({n:"3. Lesezugriff app_data", ok:false, msg:`HTTP ${r.status} \u2013 ${txt.slice(0,400)}`,
+              hint:r.status===403 || r.status===401 ? "RLS l\u00e4sst nicht durch \u2013 Policy 'members access app_data' fehlt oder Mitgliedschaft nicht eingetragen." : ""});
+        setBusy(false); return;
+      }
+    } catch(e) {
+      push({n:"3. Lesezugriff app_data", ok:false, msg:String((e&&e.message)||e)});
+      setBusy(false); return;
+    }
+
+    // 4) Schreibtest app_data
+    const tkey = SK+"__dbtest", tval={ t: Date.now() };
+    try {
+      const w = await fetch(`${cfg.url}/rest/v1/app_data`, {
+        method:"POST",
+        headers:{ "Content-Type":"application/json","apikey":cfg.key,"Authorization":"Bearer "+token,"Prefer":"resolution=merge-duplicates" },
+        body: JSON.stringify([{ key:tkey, value:tval, updated_at: new Date().toISOString() }])
+      });
+      const wtxt = await w.text();
+      if(!w.ok) {
+        push({n:"4. Schreibzugriff app_data", ok:false, msg:`HTTP ${w.status} \u2013 ${wtxt.slice(0,400)}`,
+              hint:"RLS blockiert das Schreiben."});
+        setBusy(false); return;
+      }
+      const rb = await fetch(`${cfg.url}/rest/v1/app_data?key=eq.${tkey}&select=value`, {
+        headers:{ "apikey":cfg.key,"Authorization":"Bearer "+token }
+      });
+      const rtxt = await rb.text();
+      let rows=[]; try{ rows=JSON.parse(rtxt); }catch{}
+      if(rows[0]?.value?.t===tval.t) {
+        push({n:"4. Schreibzugriff app_data", ok:true, msg:"Geschrieben + zur\u00fcckgelesen, Wert stimmt."});
+      } else {
+        push({n:"4. Schreibzugriff app_data", ok:false, msg:`Wert weicht ab: ${rtxt.slice(0,200)}`});
+      }
+    } catch(e) {
+      push({n:"4. Schreibzugriff app_data", ok:false, msg:String((e&&e.message)||e)});
+    }
     setBusy(false);
   };
+
   useEffect(()=>{ run(); },[]);
-  const cfg=getConfig();
-  const fnHint=(r)=>{
-    if(!r) return "";
-    if(r.ok) return "Die Edge Function antwortet. Sehr gut \u2013 damit kann der App-Umbau gemacht werden.";
-    const m=(r.msg||"").toLowerCase();
-    if(r.status===401) return "Function blockt mit 401. Ist bei der Function \u201eVerify JWT\u201c wirklich AUS und gespeichert?";
-    if(r.status===404||/not found|no such function/.test(m)) return "Function nicht gefunden. Heisst sie exakt \u201edata-api\u201c und ist sie deployed?";
-    if(r.status>=500||/app_token_secret|service_role|env/.test(m)) return "Function-interner Fehler (Status "+r.status+"). Meist fehlt ein Secret (z. B. APP_TOKEN_SECRET) \u2013 in Supabase unter Edge Functions \u2192 Secrets pruefen.";
-    return "Function erreichbar, aber Antwort unerwartet \u2013 genaue Meldung unten.";
-  };
-  const directBlocked = direct&&!direct.ok&&(direct.status===403||/security|policy|permission/.test((direct.msg||"").toLowerCase())||direct.step==="verify");
-  const Card=({title,ok,warn,children})=>(
-    <div style={{background:ok?"#052e16":warn?"#422006":"#450a0a",border:`1px solid ${ok?"#16a34a":warn?"#d97706":"#dc2626"}`,borderRadius:12,padding:"16px 18px",marginBottom:14}}>
-      <div style={{fontSize:16,fontWeight:900,color:ok?"#86efac":warn?"#fbbf24":"#fca5a5",marginBottom:8}}>{title}</div>
-      {children}
+
+  const allOk = steps.length>=5 && steps.every(s=>s.ok);
+  const Card=({s})=>(
+    <div style={{background:s.ok?"#052e16":"#450a0a",border:`1px solid ${s.ok?"#16a34a":"#dc2626"}`,borderRadius:12,padding:"14px 16px",marginBottom:10}}>
+      <div style={{fontSize:14,fontWeight:900,color:s.ok?"#86efac":"#fca5a5",marginBottom:6}}>{s.ok?"\u2713 ":"\u2715 "}{s.n}</div>
+      <div style={{fontSize:12.5,lineHeight:1.55,color:s.ok?"#bbf7d0":"#fecaca",wordBreak:"break-word"}}>{s.msg}</div>
+      {s.hint && <div style={{marginTop:8,fontSize:12,background:"#0f172a",border:"1px solid #334155",borderRadius:8,padding:"8px 10px",color:"#fbbf24",lineHeight:1.5}}>Hinweis: {s.hint}</div>}
     </div>
   );
+
   return (<div style={{minHeight:"100dvh",background:"#0f172a",color:"#e2e8f0",padding:"28px 18px",fontFamily:"system-ui,sans-serif"}}>
     <div style={{maxWidth:600,margin:"0 auto"}}>
-      <h1 style={{fontSize:22,fontWeight:900,margin:"0 0 4px"}}>Datenbank- & Function-Test</h1>
-      <p style={{color:"#94a3b8",fontSize:13,margin:"0 0 18px",lineHeight:1.6}}>Prueft die Edge Function (soll antworten) und den direkten Datenbankzugriff (soll jetzt gesperrt sein).</p>
+      <h1 style={{fontSize:22,fontWeight:900,margin:"0 0 4px"}}>Datenbank-Diagnose</h1>
+      <p style={{color:"#94a3b8",fontSize:13,margin:"0 0 18px",lineHeight:1.6}}>Geht den ganzen Auth- und Speicher-Weg Schritt f\u00fcr Schritt durch.</p>
       <div style={{background:"#1e293b",borderRadius:12,padding:"12px 16px",fontSize:13,marginBottom:14}}>
         Projekt: <b>{cfg?.url?.replace("https://","").split(".")[0]||"\u2014"}</b>
       </div>
-      {busy&&<div style={{color:"#94a3b8",marginBottom:14}}>Tests laufen\u2026</div>}
-
-      {fn&&<Card title={fn.ok?"\u2713 Edge Function \u201edata-api\u201c antwortet":"\u2715 Edge Function antwortet nicht"} ok={fn.ok}>
-        {!fn.ok&&<div style={{fontSize:13,marginBottom:8}}>HTTP-Status: <b>{fn.status||"\u2014"}</b></div>}
-        <div style={{fontSize:14,lineHeight:1.6,marginBottom:fn.msg?10:0}}>{fnHint(fn)}</div>
-        {fn.msg&&<pre style={{whiteSpace:"pre-wrap",wordBreak:"break-word",fontSize:11.5,background:"rgba(0,0,0,.35)",borderRadius:8,padding:"10px 12px",color:"#cbd5e1",margin:0}}>{fn.msg}</pre>}
-      </Card>}
-
-      {direct&&<Card title={directBlocked?"\u2713 Direktzugriff ist gesperrt (RLS aktiv)":direct.ok?"\u26a0 Direktzugriff ist noch offen":"Direktzugriff: "+(direct.status||"Fehler")} ok={directBlocked} warn={direct.ok}>
-        <div style={{fontSize:14,lineHeight:1.6,marginBottom:direct.msg&&!directBlocked?10:0}}>
-          {directBlocked?"Gut so: Mit dem App-Key kommt man nicht mehr direkt an die Daten \u2013 nur ueber die Function.":direct.ok?"Achtung: Die Tabelle ist noch ohne RLS offen. Solange die App ueber die Function laeuft, sollte der Direktzugriff gesperrt sein (RLS an).":"Unerwartet \u2013 Meldung unten."}
+      {steps.map((s,i)=><Card key={i} s={s}/>)}
+      {busy && <div style={{color:"#94a3b8",margin:"8px 0 14px"}}>Test l\u00e4uft\u2026</div>}
+      {!busy && allOk && (
+        <div style={{background:"#052e16",border:"1px solid #16a34a",borderRadius:12,padding:"14px 16px",marginBottom:14,fontSize:14,color:"#86efac",fontWeight:800}}>
+          Alles gr\u00fcn \u2013 die App ist bereit f\u00fcr echte Speicherung.
         </div>
-        {direct.msg&&!directBlocked&&<pre style={{whiteSpace:"pre-wrap",wordBreak:"break-word",fontSize:11.5,background:"rgba(0,0,0,.35)",borderRadius:8,padding:"10px 12px",color:"#cbd5e1",margin:0}}>{direct.msg}</pre>}
-      </Card>}
-
+      )}
       <button onClick={run} disabled={busy} style={{marginTop:4,padding:"12px 18px",borderRadius:10,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:14,cursor:busy?"default":"pointer",opacity:busy?.6:1}}>Erneut testen</button>
     </div>
   </div>);
@@ -18086,6 +18185,7 @@ function AppInner({lang,setLang}) {
     const res = await sb.set(next, cidRef.current);
     setSaveStatus(!getConfig() ? "local" : (res && res.ok) ? "saved" : "error");
     saveTimer.current=setTimeout(()=>setSaveStatus(null),4000);
+    return res;
   },[]);
 
   const login=(role,payload)=>{
@@ -18166,14 +18266,22 @@ function AppInner({lang,setLang}) {
           let cd=null; try { cd=await sb.getClub(realId); } catch {}
           if(cd){ setData(realId==="demo"?refreshDemo(cd):cd); }
           setCid(realId); setScr("role");
-        }} onNewClub={newClubOrData=>{
+        }} onNewClub={async newClubOrData=>{
           if(newClubOrData.clubs){
-            save(newClubOrData);
-          } else {
-            const next={...data,clubs:[...data.clubs,newClubOrData]};
-            save(next);
+            await save(newClubOrData);
+            return;
+          }
+          const next={...data,clubs:[...data.clubs,newClubOrData]};
+          const res = await save(next);
+          // Nur weiterleiten, wenn der Cloud-Write geklappt hat -
+          // sonst bliebe der Verein nur als React-Zustand stehen.
+          if(res && res.ok){
             setCid(newClubOrData.id);
             setScr("alogin");
+          } else {
+            // Verein aus React-State wieder entfernen, damit klar wird:
+            // ohne DB ist das hier kein gespeicherter Verein.
+            setData(p => p ? {...p, clubs:(p.clubs||[]).filter(c=>c.id!==newClubOrData.id)} : p);
           }
         }}/>}
       {screen==="role"  &&activeCl&&<RolePicker cl={activeCl} onRole={r=>setScr(r==="user"?"flow":r==="trainer"?"tlogin":r==="helper"?"hlogin":"alogin")} onBack={()=>setScr("dir")}/>}
