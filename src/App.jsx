@@ -516,6 +516,27 @@ const auth = {
   },
 };
 
+// ----------------------------------------------------------------
+// Normalisierung: stellt sicher, dass jedes Lese-Ergebnis die
+// erwarteten Array-/Objekt-Felder hat. Verhindert Crashes wie
+// "data.events.filter is not a function", wenn nur das Verzeichnis
+// (skinny global) geladen ist und ein einzelner Verein-View
+// auf events/chats/... zugreift.
+// ----------------------------------------------------------------
+const _DATA_ARRAYS = [
+  "events","chats","messages","helpers","teams","trainers",
+  "playerProfiles","trainings","fields","bookings",
+  "contactRequests","securityLog","seasons","pollTemplates",
+  "clubs","news","newsItems","photos"
+];
+const normData = (d) => {
+  if (!d || typeof d !== "object") return d;
+  const o = { ...d };
+  for (const k of _DATA_ARRAYS) if (!Array.isArray(o[k])) o[k] = [];
+  if (!o.players || typeof o.players !== "object" || Array.isArray(o.players)) o.players = {};
+  return o;
+};
+
 const sb = {
   _url: () => getConfig()?.url,
   _key: () => getConfig()?.key,
@@ -562,17 +583,17 @@ const sb = {
         if (rows && rows.length) {
           const gl = rows.find(x=>x.key===sb._glKey)?.value || {};
           const shardRows = rows.filter(x=>x.key!==sb._glKey).map(x=>x.value);
-          const merged = mergeData(gl, shardRows);
+          const merged = normData(mergeData(gl, shardRows));
           localSet(merged);
           return merged;
         }
         const m = await sb._migrate();
-        if (m) return m;
+        if (m) return normData(m);
         return null;
       }
       return null; // Cloud antwortet, sperrt aber (401/403) - kein Local-Cache zeigen
     } catch {
-      return localGet(); // Netzwerk-Aus - Offline-Cache
+      return normData(localGet()); // Netzwerk-Aus - Offline-Cache
     }
   },
   getDirectory: async () => {
@@ -580,14 +601,14 @@ const sb = {
       const r = await sb._fetch(`/rest/v1/app_data?key=eq.${sb._glKey}&select=value`);
       if (r.ok) {
         const rows = await r.json();
-        if (rows[0]?.value) return rows[0].value;
+        if (rows[0]?.value) return normData(rows[0].value);
         const m = await sb._migrate();
-        if (m) { const { global } = splitData(m); return global; }
+        if (m) { const { global } = splitData(m); return normData(global); }
         return null;
       }
       return null;
     } catch {
-      return localGet();
+      return normData(localGet());
     }
   },
   getClub: async (cid) => {
@@ -598,15 +619,15 @@ const sb = {
         if (rows && rows.length) {
           const gl = rows.find(x=>x.key===sb._glKey)?.value || {};
           const shard = rows.find(x=>x.key===sb._clubKey(cid))?.value || {};
-          return mergeData(gl, [shard]);
+          return normData(mergeData(gl, [shard]));
         }
         const m = await sb._migrate();
-        if (m) { const { global, shards } = splitData(m); return mergeData(global, [shards[cid]||{}]); }
+        if (m) { const { global, shards } = splitData(m); return normData(mergeData(global, [shards[cid]||{}])); }
         return null;
       }
       return null;
     } catch {
-      return localGet();
+      return normData(localGet());
     }
   },
   // set(d): schreibt erst in die Cloud; localStorage wird erst nach Erfolg aktualisiert.
