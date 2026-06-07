@@ -1,5 +1,5 @@
-// Vereins-App Service Worker — auto-updating with sensible cache strategies.
-const CACHE = 'vereins-v3';
+// Vereins-App Service Worker — auto-updating + Web-Push.
+const CACHE = 'vereins-v4';
 
 self.addEventListener('install', () => {
   self.skipWaiting();
@@ -19,7 +19,7 @@ self.addEventListener('fetch', e => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
 
-  // Always fetch fresh HTML so a new build is picked up immediately.
+  // HTML/navigation: always network-first so a new build is picked up.
   if (req.mode === 'navigate' || req.destination === 'document') {
     e.respondWith(
       fetch(req).then(res => {
@@ -48,4 +48,37 @@ self.addEventListener('fetch', e => {
 
 self.addEventListener('message', e => {
   if (e.data === 'SKIP_WAITING') self.skipWaiting();
+});
+
+// ── Web Push ──────────────────────────────────────────────
+self.addEventListener('push', e => {
+  let data = {};
+  try { data = e.data ? e.data.json() : {}; } catch { data = { title: 'Vereins-App', body: e.data && e.data.text() }; }
+  const title = data.title || 'Vereins-App';
+  const opts = {
+    body: data.body || '',
+    tag: data.tag || 'vereins',
+    icon: data.icon || '/icon-192.png',
+    badge: data.badge || '/icon-192.png',
+    data: { url: data.url || '/' },
+    renotify: !!data.renotify,
+    requireInteraction: !!data.requireInteraction,
+    actions: data.actions || [],
+  };
+  e.waitUntil(self.registration.showNotification(title, opts));
+});
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const target = (e.notification.data && e.notification.data.url) || '/';
+  e.waitUntil((async () => {
+    const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const sameOrigin = all.filter(c => new URL(c.url).origin === self.location.origin);
+    if (sameOrigin.length) {
+      const client = sameOrigin[0];
+      try { await client.focus(); client.navigate(target).catch(()=>{}); } catch {}
+      return;
+    }
+    await self.clients.openWindow(target);
+  })());
 });
