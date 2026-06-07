@@ -686,7 +686,12 @@ img{max-width:100%;height:auto}
 .down {animation:down .24s cubic-bezier(.2,0,.1,1) both}
 button:active:not(:disabled){transform:scale(.95)}
 ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:99px}
+@media (min-width: 768px) { html,body{background:linear-gradient(135deg,#e2e8f0 0%,#f0f4f8 50%,#dbeafe 100%) fixed} }
+@media (min-width: 1024px) { html,body{background:linear-gradient(160deg,#cbd5e1 0%,#f1f5f9 35%,#ddd6fe 70%,#e0e7ff 100%) fixed} }
 `;
+
+const ICON_MAP = {"*":"⚽","Ball":"⚽","Kick":"⚽","Pokal":"🏆","Heim":"🏠","Bus":"🚌","Hand":"🤝","Fest":"🎉","Liste":"📋","OK":"✅","Tuer":"🚪","Weg":"📦","Pause":"⏸","Krank":"🤕","Ende":"🏁","Getraenk":"🥤","Pizza":"🍕","Helfer":"🙋","Salat":"🥗","Kuchen":"🍰","Ziel":"🎯","Einkauf":"🛒"};
+const ico = v => ICON_MAP[v] || v || "";
 
 const TH = cl => {
   const p = cl?.pri||"#16a34a";
@@ -769,7 +774,7 @@ function exportICS(events, clName) {
 function Logo({cl,sz=48,sx={}}) {
   const t=TH(cl);
   if(t.logo) return <img src={t.logo} alt="" style={{width:sz,height:sz,borderRadius:sz*.22,objectFit:"cover",flexShrink:0,...sx}}/>;
-  return <div style={{width:sz,height:sz,borderRadius:sz*.22,background:t.p+"28",display:"flex",alignItems:"center",justifyContent:"center",fontSize:sz*.5,flexShrink:0,...sx}}>{t.em}</div>;
+  return <div style={{width:sz,height:sz,borderRadius:sz*.22,background:t.p+"28",display:"flex",alignItems:"center",justifyContent:"center",fontSize:sz*.5,flexShrink:0,...sx}}>{ico(t.em)}</div>;
 }
 function Av({name,sz=32,border=true}) {
   return <div style={{width:sz,height:sz,borderRadius:"50%",background:acol(name),color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:sz*.36,fontWeight:800,border:border?"2px solid rgba(255,255,255,.7)":"none",flexShrink:0,boxShadow:"0 1px 4px rgba(0,0,0,.15)"}}>{inits(name)}</div>;
@@ -969,7 +974,7 @@ function InboxTab({ data,cid,save,fire,cl }) {
             const st=SEC_TYPES[e.type]||{icon:"i",col:"#64748b",bg:"#f1f5f9",label:e.type};
             return (
               <div key={e.id} style={{background:"#fff",borderRadius:14,border:`1.5px solid ${e.read?"#e2e8f0":st.col+"40"}`,padding:"12px 14px",display:"flex",gap:12,alignItems:"flex-start"}}>
-                <div style={{width:36,height:36,borderRadius:11,background:st.bg,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:13,color:st.col,flexShrink:0}}>{st.icon}</div>
+                <div style={{width:36,height:36,borderRadius:11,background:st.bg,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:13,color:st.col,flexShrink:0}}>{ico(st.icon)}</div>
                 <div style={{flex:1}}>
                   <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:3}}>
                     <span style={{fontWeight:800,fontSize:13,color:"#0f172a"}}>{st.label}</span>
@@ -1369,7 +1374,7 @@ function AffiliateBanner({ trigger, style={} }) {
       display:"flex",alignItems:"center",gap:12,marginBottom:14,...style}}>
       <div style={{width:38,height:38,borderRadius:10,background:"#e2e8f0",display:"flex",
         alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:14,color:"#64748b",flexShrink:0}}>
-        {aff.icon}
+        {ico(aff.icon)}
       </div>
       <div style={{flex:1,cursor:"pointer"}} onClick={()=>window.open(aff.url,"_blank")}>
         <div style={{fontWeight:700,fontSize:13,color:"#334155"}}>{aff.text}</div>
@@ -1464,7 +1469,7 @@ function MomentShare({ trigger, clubName, stats, onDismiss }) {
             {/* Celebration header */}
             <div style={{background:`linear-gradient(135deg,${cel.color},${cel.color}aa)`,padding:"28px 24px 20px",textAlign:"center",borderRadius:"24px 24px 0 0"}}>
               <div style={{width:64,height:64,borderRadius:20,background:"rgba(255,255,255,.2)",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:22,color:"#fff",margin:"0 auto 12px"}}>
-                {cel.icon}
+                {ico(cel.icon)}
               </div>
               <div style={{color:"#fff",fontWeight:900,fontSize:22,marginBottom:4}}>{cel.title}</div>
               <div style={{color:"rgba(255,255,255,.8)",fontSize:14}}>{cel.sub}</div>
@@ -1657,7 +1662,7 @@ function AchievementToast({ achievement, onDone }) {
       boxShadow:"0 8px 32px rgba(0,0,0,.3)",animation:"up .3s ease",maxWidth:320,width:"90%"}}>
       <div style={{width:44,height:44,borderRadius:13,background:"#16a34a",display:"flex",alignItems:"center",
         justifyContent:"center",fontWeight:900,fontSize:17,color:"#fff",flexShrink:0}}>
-        {achievement.icon}
+        {ico(achievement.icon)}
       </div>
       <div style={{flex:1}}>
         <div style={{color:"#fff",fontWeight:800,fontSize:14}}>{achievement.title}</div>
@@ -1911,7 +1916,7 @@ function FriendlyError({ type, onClose, extra }) {
         <div style={{width:36,height:36,borderRadius:11,background:err.color+"20",
           display:"flex",alignItems:"center",justifyContent:"center",
           fontWeight:900,fontSize:16,color:err.color,flexShrink:0}}>
-          {err.icon}
+          {ico(err.icon)}
         </div>
         <div style={{flex:1}}>
           <div style={{fontWeight:800,fontSize:14,color:err.color,marginBottom:3}}>
@@ -2746,7 +2751,7 @@ function SecurityTab({ data, cid, save }) {
                 <div style={{width:36,height:36,borderRadius:10,background:cfg.bg,
                   display:"flex",alignItems:"center",justifyContent:"center",
                   fontWeight:900,fontSize:12,color:cfg.col,flexShrink:0}}>
-                  {cfg.icon}
+                  {ico(cfg.icon)}
                 </div>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontWeight:700,fontSize:13,color:"#0f172a",
@@ -2876,7 +2881,7 @@ function BottomNav({ tab, setTab, isAdmin, isHelper, unread, cl, hide=false }) {
                         display:"flex",alignItems:"center",justifyContent:"center",
                         fontWeight:900,fontSize:14,
                         color:tab===item.id?"#fff":"#64748b"}}>
-                        {item.icon}
+                        {ico(item.icon)}
                       </div>
                       {item.label}
                     </button>
@@ -2917,7 +2922,7 @@ function BottomNav({ tab, setTab, isAdmin, isHelper, unread, cl, hide=false }) {
                 fontWeight:900,fontSize:15,
                 color:active?"#fff":tab===item.id?"#0f172a":"#94a3b8",
                 transition:"all .2s"}}>
-                {item.icon}
+                {ico(item.icon)}
               </div>
               <span style={{fontSize:10,fontWeight:active?800:500,
                 color:active?t.p:"#94a3b8",transition:"all .2s"}}>
@@ -3686,7 +3691,7 @@ function ExerciseEditor({ ex, onSave, onClose, cl }) {
                           color:matDraft.id===m.id?m.col:"#475569",
                           fontWeight:matDraft.id===m.id?700:500,fontSize:12,
                           cursor:"pointer",fontFamily:"inherit"}}>
-                        {m.icon} {m.label}
+                        {ico(m.icon)} {m.label}
                       </button>
                     ))}
                   </div>
@@ -5280,7 +5285,7 @@ function TrainerContactSettings({ trainer, onSave, onClose, cl }) {
                 display:"flex",alignItems:"center",justifyContent:"center",
                 fontWeight:900,fontSize:17,
                 color:pref===opt.id?"#fff":"#64748b",flexShrink:0}}>
-                {opt.icon}
+                {ico(opt.icon)}
               </div>
               <div style={{flex:1}}>
                 <div style={{fontWeight:700,fontSize:14,
@@ -5385,7 +5390,7 @@ function SmartContactButton({ trainer, message, style={} }) {
           borderRadius:11,border:"none",background:primary.col,
           color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer",
           fontFamily:"inherit",...style}}>
-        <span style={{fontWeight:900,fontSize:16}}>{primary.icon}</span>
+        <span style={{fontWeight:900,fontSize:16}}>{ico(primary.icon)}</span>
         {primary.label}
       </button>
 
@@ -6709,7 +6714,7 @@ function ModerationWarning({ card, violation, onClose }) {
           <div style={{width:52,height:52,borderRadius:14,background:cfg.col,
             display:"flex",alignItems:"center",justifyContent:"center",
             fontWeight:900,fontSize:18,color:"#fff",flexShrink:0}}>
-            {cfg.icon}
+            {ico(cfg.icon)}
           </div>
           <div style={{fontWeight:900,fontSize:17,color:cfg.col}}>{cfg.title}</div>
         </div>
@@ -7314,7 +7319,7 @@ function SuperAdminRollout() {
               <div style={{width:40,height:40,borderRadius:11,background:ms.col,
                 display:"flex",alignItems:"center",justifyContent:"center",
                 fontWeight:900,fontSize:18,color:"#fff",flexShrink:0}}>
-                {ms.icon}
+                {ico(ms.icon)}
               </div>
               <div style={{flex:1}}>
                 <div style={{fontWeight:800,fontSize:15,color:"#fff"}}>
@@ -7468,7 +7473,7 @@ function SuperAdminRollout() {
                   <div style={{width:40,height:40,borderRadius:11,background:ms.col,
                     display:"flex",alignItems:"center",justifyContent:"center",
                     fontWeight:900,fontSize:18,color:"#fff",flexShrink:0}}>
-                    {ms.icon}
+                    {ico(ms.icon)}
                   </div>
                   <div style={{flex:1}}>
                     <div style={{fontWeight:800,fontSize:14,color:"#fff"}}>
@@ -7778,7 +7783,7 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
               color:section===s.id?t.p:"#64748b",
               fontWeight:section===s.id?800:600,fontSize:11,cursor:"pointer",
               whiteSpace:"nowrap",fontFamily:"inherit",flexShrink:0}}>
-            <span style={{fontWeight:900,fontSize:12}}>{s.icon}</span>{s.label}
+            <span style={{fontWeight:900,fontSize:12}}>{ico(s.icon)}</span>{s.label}
           </button>
         ))}
       </div>
@@ -7802,7 +7807,7 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
                     background:sport===key?t.p+"12":"#fff",
                     cursor:"pointer",fontFamily:"inherit"}}>
                   <div style={{fontWeight:900,fontSize:16,color:sport===key?t.p:"#64748b",
-                    marginBottom:3}}>{sp.icon}</div>
+                    marginBottom:3}}>{ico(sp.icon)}</div>
                   <div style={{fontWeight:sport===key?800:600,fontSize:11,
                     color:sport===key?t.p:"#475569",lineHeight:1.2}}>{sp.label}</div>
                 </button>
@@ -8257,7 +8262,7 @@ function DesktopSidebar({ tab, setTab, isAdmin, isHelper, unread, cl, session, o
           color: active ? "#fff" : "#64748b",
           flexShrink:0, transition:"all .15s",
         }}>
-          {item.icon}
+          {ico(item.icon)}
         </div>
         <span style={{flex:1}}>{item.label}</span>
         {item.badge > 0 && (
@@ -9085,7 +9090,7 @@ function RolePicker({cl,onRole,onBack}) {
           <div key={x.r} className="up" onClick={()=>onRole(x.r)}
             style={{background:"rgba(255,255,255,.09)",border:"1.5px solid rgba(255,255,255,.13)",borderRadius:20,padding:"17px 20px",cursor:"pointer",marginBottom:12,animationDelay:`${i*.07}s`,transition:"all .18s"}}>
             <div style={{display:"flex",alignItems:"center",gap:14}}>
-              <div style={{width:48,height:48,borderRadius:15,background:"rgba(255,255,255,.12)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{x.icon}</div>
+              <div style={{width:48,height:48,borderRadius:15,background:"rgba(255,255,255,.12)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{ico(x.icon)}</div>
               <div style={{flex:1}}><div style={{color:"#fff",fontWeight:900,fontSize:17}}>{x.title}</div><div style={{color:"rgba(255,255,255,.5)",fontSize:13,marginTop:2}}>{x.sub}</div></div>
               <div style={{color:"rgba(255,255,255,.3)",fontSize:22}}>{">"}</div>
             </div>
@@ -9342,7 +9347,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,trainers=[]}) {
       {teamsInCat.map((tm,i)=>(
         <div key={tm.id} className="up" onClick={()=>{setTid(tm.id);setPwd("");setStep("pwd");}}
           style={{background:"rgba(255,255,255,.09)",border:"1.5px solid rgba(255,255,255,.13)",borderRadius:20,padding:"16px 20px",cursor:"pointer",marginBottom:12,animationDelay:`${i*.06}s`,display:"flex",alignItems:"center",gap:14}}>
-          <div style={{width:46,height:46,borderRadius:14,background:tm.col+"33",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{tm.icon}</div>
+          <div style={{width:46,height:46,borderRadius:14,background:tm.col+"33",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{ico(tm.icon)}</div>
           <span style={{color:"#fff",fontWeight:900,fontSize:18}}>{tm.name}</span>
           <span style={{marginLeft:"auto",color:"rgba(255,255,255,.3)",fontSize:22}}>{">"}</span>
         </div>
@@ -9907,7 +9912,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,onSave,onClose,t,
                   return (
                     <label key={tm.id} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",borderRadius:12,border:`1.5px solid ${sel?"#16a34a":"#e2e8f0"}`,background:sel?"#f0fdf4":"#fafafa",cursor:fits?"pointer":"not-allowed",opacity:fits?1:.45}}>
                       <input type="checkbox" checked={sel} onChange={()=>fits&&toggleOptTid(tm.id)} style={{width:17,height:17,accentColor:"#16a34a"}}/>
-                      <span style={{fontSize:17}}>{tm.icon}</span>
+                      <span style={{fontSize:17}}>{ico(tm.icon)}</span>
                       <div style={{flex:1}}>
                         <div style={{fontWeight:700,fontSize:14}}>{tm.name}</div>
                         <div style={{fontSize:11,color:"#64748b"}}>{tm.cat}{!fits?" . Jahrgang passt nicht":""}</div>
@@ -9973,7 +9978,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,onSave,onClose,t,
                 <div style={{display:"flex",flexDirection:"column",gap:6}}>
                   {statsRows.map(({tm,s})=>(
                     <div key={tm.id} style={{display:"flex",alignItems:"center",gap:10,background:"#f8fafc",borderRadius:10,padding:"9px 12px",border:"1px solid #e2e8f0"}}>
-                      <span style={{fontSize:16}}>{tm.icon}</span>
+                      <span style={{fontSize:16}}>{ico(tm.icon)}</span>
                       <div style={{flex:1}}>
                         <div style={{fontWeight:700,fontSize:13}}>{tm.name}</div>
                         <div style={{fontSize:11,color:"#64748b"}}>{tm.id===p.mainTid?"Hauptmannschaft":"Aushilfe"}</div>
@@ -10028,7 +10033,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,onSave,onClose,t,
                 {JERSEY_STATUS.map(s=>(
                   <button key={s.id} onClick={()=>up({jerseyStatus:s.id})}
                     style={{display:"flex",alignItems:"center",gap:8,padding:"10px 12px",borderRadius:11,border:`2px solid ${(p.jerseyStatus||"none")===s.id?s.col:"#e2e8f0"}`,background:(p.jerseyStatus||"none")===s.id?s.bg:"#fff",cursor:"pointer",fontFamily:"inherit",transition:"all .14s"}}>
-                    <span style={{fontSize:18}}>{s.icon}</span>
+                    <span style={{fontSize:18}}>{ico(s.icon)}</span>
                     <div style={{textAlign:"left"}}>
                       <div style={{fontSize:12,fontWeight:700,color:(p.jerseyStatus||"none")===s.id?s.col:"#334155"}}>{s.label}</div>
                     </div>
@@ -10182,7 +10187,7 @@ function PlayerCard({ player: pl,onEdit,onDel,isMain,allTeams,allEvents }) {
                 if(!s.training && !s.games) return null;
                 return (
                   <div key={tm.id} style={{display:"flex",alignItems:"center",gap:8,background:"#f8fafc",borderRadius:9,padding:"6px 10px"}}>
-                    <span style={{fontSize:14}}>{tm.icon}</span>
+                    <span style={{fontSize:14}}>{ico(tm.icon)}</span>
                     <span style={{fontSize:12,fontWeight:600,flex:1,color:"#334155"}}>{tm.name}{tm.id!==pl.mainTid?" (Aushilfe)":""}</span>
                     {s.games>0&&<Tag c="#16a34a" bg="#dcfce7" ch={`* ${s.games}`} sm/>}
                     {s.training>0&&<Tag c="#2563eb" bg="#eff6ff" ch={`* ${s.training}`} sm/>}
@@ -10674,7 +10679,7 @@ function PlayersTab({ data,myTids,save,fire,cl }) {
             {myTeams.map(tm=>(
               <button key={tm.id} onClick={()=>setSelTid(tm.id)}
                 style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",borderRadius:99,border:`2px solid ${selTid===tm.id?tm.col:"#e2e8f0"}`,background:selTid===tm.id?tm.col+"15":"#fff",color:selTid===tm.id?tm.col:"#475569",fontWeight:700,fontSize:13,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit"}}>
-                {tm.icon} {tm.name}
+                {ico(tm.icon)} {tm.name}
                 <span style={{background:selTid===tm.id?tm.col:"#e2e8f0",color:selTid===tm.id?"#fff":"#64748b",borderRadius:99,padding:"1px 7px",fontSize:11,fontWeight:800}}>
                   {allPlayers.filter(p=>p.mainTid===tm.id).length}
                 </span>
@@ -10831,7 +10836,7 @@ function TemplateForm({initial,onSave,onCancel,cl,title}) {
               {em}
             </button>
           ))}
-          <input value={f.icon} onChange={e=>u({icon:e.target.value})} maxLength={2}
+          <input value={ico(f.icon)} onChange={e=>u({icon:e.target.value})} maxLength={2}
             style={{width:38,height:38,fontSize:20,textAlign:"center",border:"2px dashed #e2e8f0",borderRadius:10,outline:"none",cursor:"text",background:"#fafafa"}} title="Eigenes Emoji"/>
         </div>
       </div>
@@ -11030,7 +11035,7 @@ function TemplatesTab({data,cid,save,fire,cl}) {
           <div key={tpl.id} style={{background:"#fff",borderRadius:18,border:"1.5px solid #e2e8f0",overflow:"hidden",transition:"box-shadow .18s"}}>
             {}
             <div style={{padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
-              <div style={{width:48,height:48,borderRadius:14,background:t.p+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{tpl.icon}</div>
+              <div style={{width:48,height:48,borderRadius:14,background:t.p+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{ico(tpl.icon)}</div>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontWeight:800,fontSize:15,color:"#0f172a"}}>{tpl.name}</div>
                 <div style={{fontSize:12,color:"#64748b",marginTop:2}}>{tpl.items.length} Option{tpl.items.length!==1?"en":""}</div>
@@ -11194,7 +11199,7 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
         {step===1&&<div className="in" style={{display:"flex",flexDirection:"column",gap:11}}>
           {teams.map(tm=>(
             <div key={tm.id} onClick={()=>u({tid:tm.id})} style={{background:"#fff",borderRadius:17,padding:"15px 16px",border:`2px solid ${f.tid===tm.id?t.p:"#e2e8f0"}`,cursor:"pointer",display:"flex",alignItems:"center",gap:13,transition:"all .18s"}}>
-              <div style={{width:50,height:50,borderRadius:16,background:f.tid===tm.id?t.p+"20":"#f8fafc",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26}}>{tm.icon}</div>
+              <div style={{width:50,height:50,borderRadius:16,background:f.tid===tm.id?t.p+"20":"#f8fafc",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26}}>{ico(tm.icon)}</div>
               <div style={{flex:1}}><div style={{fontWeight:800,fontSize:16,color:f.tid===tm.id?t.p:"#0f172a"}}>{tm.name}</div>{tm.cat&&<div style={{fontSize:12,color:"#64748b",marginTop:2}}>{tm.cat}</div>}</div>
               <div style={{width:22,height:22,borderRadius:"50%",border:`${f.tid===tm.id?"7px":"2px"} solid ${f.tid===tm.id?t.p:"#cbd5e1"}`,transition:"all .18s"}}/>
             </div>
@@ -11204,7 +11209,7 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
         {step===2&&<div className="in" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
           {Object.entries(ET).map(([k,v])=>(
             <div key={k} onClick={()=>u({type:k,title:isEdit?f.title:v.label})} style={{background:"#fff",borderRadius:16,padding:"16px 14px",border:`2px solid ${f.type===k?t.p:"#e2e8f0"}`,cursor:"pointer",textAlign:"center",transition:"all .18s"}}>
-              <div style={{fontSize:32,marginBottom:8}}>{v.icon}</div>
+              <div style={{fontSize:32,marginBottom:8}}>{ico(v.icon)}</div>
               <div style={{fontWeight:800,fontSize:14,color:f.type===k?t.p:"#334155"}}>{v.label}</div>
             </div>
           ))}
@@ -11225,7 +11230,7 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
           <p style={{fontSize:13,fontWeight:700,color:"#64748b"}}>Welche Abstimmung soll es geben?</p>
           {[{k:"att",icon:"OK",title:"Anwesenheit",sub:"Dabei / Nicht dabei"},{k:"list",icon:"Liste",title:"Auswahlliste",sub:"z.B. Verpflegung,Helfer"},{k:"carpool",icon:"*",title:"Fahrtgemeinschaft",sub:"Wer braucht Mitnahme? Wer kann fahren?"}].map(o=>(
             <div key={o.k} onClick={()=>u({pt:o.k})} style={{background:"#fff",borderRadius:16,padding:"14px 16px",border:`2px solid ${f.pt===o.k?t.p:"#e2e8f0"}`,cursor:"pointer",display:"flex",alignItems:"center",gap:13,transition:"all .18s"}}>
-              <div style={{width:46,height:46,borderRadius:14,background:f.pt===o.k?t.p+"20":"#f8fafc",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{o.icon}</div>
+              <div style={{width:46,height:46,borderRadius:14,background:f.pt===o.k?t.p+"20":"#f8fafc",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{ico(o.icon)}</div>
               <div style={{flex:1}}><div style={{fontWeight:800,fontSize:15,color:f.pt===o.k?t.p:"#334155"}}>{o.title}</div><div style={{fontSize:12,color:"#64748b",marginTop:2}}>{o.sub}</div></div>
               <div style={{width:22,height:22,borderRadius:"50%",border:`${f.pt===o.k?"7px":"2px"} solid ${f.pt===o.k?t.p:"#cbd5e1"}`,transition:"all .18s"}}/>
             </div>
@@ -11249,7 +11254,7 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
                 {onTemplates.map(tpl=>(
                   <button key={tpl.id} onClick={()=>u({li:tpl.items.map(it=>({...it,id:uid()})),selType:tpl.selType||"multi"})}
                     style={{display:"flex",alignItems:"center",gap:6,padding:"7px 12px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontSize:13,fontWeight:700,color:"#334155",fontFamily:"inherit"}}>
-                    <span>{tpl.icon}</span>{tpl.name}
+                    <span>{ico(tpl.icon)}</span>{tpl.name}
                   </button>
                 ))}
               </div>
@@ -11371,7 +11376,7 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
             </div>
             {h.notes&&<div style={{padding:"0 14px 11px",fontSize:12,color:"#64748b",fontStyle:"italic"}}>{h.notes}</div>}
             {(h.tids||[]).length>0&&<div style={{padding:"0 14px 11px",display:"flex",gap:5,flexWrap:"wrap"}}>
-              {data.teams.filter(tm=>(h.tids||[]).includes(tm.id)).map(tm=><span key={tm.id} style={{fontSize:11,fontWeight:700,color:tm.col,background:tm.col+"18",borderRadius:6,padding:"2px 8px"}}>{tm.icon} {tm.name}</span>)}
+              {data.teams.filter(tm=>(h.tids||[]).includes(tm.id)).map(tm=><span key={tm.id} style={{fontSize:11,fontWeight:700,color:tm.col,background:tm.col+"18",borderRadius:6,padding:"2px 8px"}}>{ico(tm.icon)} {tm.name}</span>)}
             </div>}
           </div>
         ))}
@@ -11403,7 +11408,7 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
               {myTeams.map(tm=>(
                 <label key={tm.id} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",borderRadius:11,border:`1.5px solid ${(f.tids||[]).includes(tm.id)?tm.col:"#e2e8f0"}`,background:(f.tids||[]).includes(tm.id)?tm.col+"12":"#fafafa",cursor:"pointer",marginBottom:6}}>
                   <input type="checkbox" checked={(f.tids||[]).includes(tm.id)} onChange={()=>u({tids:(f.tids||[]).includes(tm.id)?(f.tids||[]).filter(x=>x!==tm.id):[...(f.tids||[]),tm.id]})} style={{width:17,height:17,accentColor:tm.col}}/>
-                  <span style={{fontSize:16}}>{tm.icon}</span>
+                  <span style={{fontSize:16}}>{ico(tm.icon)}</span>
                   <span style={{fontWeight:700,fontSize:14}}>{tm.name}</span>
                 </label>
               ))}
@@ -11551,7 +11556,7 @@ function JerseysTab({ data,myTids,save,fire,cl }) {
         {myTeams.map(tm=>(
           <button key={tm.id} onClick={()=>setSelTid(tm.id)}
             style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",borderRadius:99,border:`2px solid ${selTid===tm.id?tm.col:"#e2e8f0"}`,background:selTid===tm.id?tm.col+"15":"#fff",color:selTid===tm.id?tm.col:"#475569",fontWeight:700,fontSize:13,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit"}}>
-            {tm.icon} {tm.name}
+            {ico(tm.icon)} {tm.name}
             <span style={{background:selTid===tm.id?tm.col:"#e2e8f0",color:selTid===tm.id?"#fff":"#64748b",borderRadius:99,padding:"1px 7px",fontSize:11,fontWeight:800}}>
               {allPlayers.filter(p=>p.mainTid===tm.id&&p.jerseyNr).length}
             </span>
@@ -11576,7 +11581,7 @@ function JerseysTab({ data,myTids,save,fire,cl }) {
           <div className="va-grid-3" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:16}}>
             {JERSEY_STATUS.filter(s=>s.id!=="none").map(s=>(
               <div key={s.id} style={{background:s.bg,borderRadius:12,padding:"10px 8px",textAlign:"center",border:`1.5px solid ${s.col}30`}}>
-                <div style={{fontSize:20,marginBottom:2}}>{s.icon}</div>
+                <div style={{fontSize:20,marginBottom:2}}>{ico(s.icon)}</div>
                 <div style={{fontWeight:900,fontSize:20,color:s.col,lineHeight:1}}>{counts[s.id]||0}</div>
                 <div style={{fontSize:10,color:s.col,fontWeight:700,marginTop:2,opacity:.8}}>{s.label}</div>
               </div>
@@ -11607,7 +11612,7 @@ function JerseysTab({ data,myTids,save,fire,cl }) {
                         </div>
                       </div>
                       <div style={{display:"flex",alignItems:"center",gap:6,background:st.bg,borderRadius:9,padding:"5px 10px",border:`1px solid ${st.col}30`}}>
-                        <span style={{fontSize:16}}>{st.icon}</span>
+                        <span style={{fontSize:16}}>{ico(st.icon)}</span>
                         <span style={{fontSize:11,fontWeight:700,color:st.col}}>{st.label}</span>
                       </div>
                     </div>
@@ -11637,7 +11642,7 @@ function JerseysTab({ data,myTids,save,fire,cl }) {
           <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
             {JERSEY_STATUS.map(s=>(counts[s.id]>0&&(
               <span key={s.id} style={{fontSize:11,fontWeight:700,color:s.col,background:s.bg,borderRadius:7,padding:"3px 9px",border:`1px solid ${s.col}25`}}>
-                {s.icon} {s.label} ({counts[s.id]})
+                {ico(s.icon)} {s.label} ({counts[s.id]})
               </span>
             )))}
           </div>
@@ -11664,7 +11669,7 @@ function JerseysTab({ data,myTids,save,fire,cl }) {
                         </div>
                       </div>
                       <div style={{background:st.bg,borderRadius:9,padding:"5px 10px",border:`1px solid ${st.col}30`,fontSize:18}}>
-                        {st.icon}
+                        {ico(st.icon)}
                       </div>
                     </div>
                     {}
@@ -11672,7 +11677,7 @@ function JerseysTab({ data,myTids,save,fire,cl }) {
                       {JERSEY_STATUS.map(s=>(
                         <button key={s.id} onClick={()=>setStatus(pl.id,s.id)}
                           style={{flex:1,padding:"9px 4px",border:"none",borderRight:"1px solid #f1f5f9",background:(pl.jerseyStatus||"none")===s.id?s.bg:"#fff",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2,transition:"background .13s"}}>
-                          <span style={{fontSize:16}}>{s.icon}</span>
+                          <span style={{fontSize:16}}>{ico(s.icon)}</span>
                           <span style={{fontSize:9,fontWeight:700,color:(pl.jerseyStatus||"none")===s.id?s.col:"#94a3b8",lineHeight:1.2,textAlign:"center"}}>{s.label.split(" ")[0]}</span>
                         </button>
                       ))}
@@ -12156,7 +12161,7 @@ function BookingModal({ field,cellStart,date,data,save,fire,cl,myTids,session,on
             {myTeams.map(tm=>(
               <label key={tm.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 13px",borderRadius:12,border:`2px solid ${f.teamId===tm.id?tm.col:"#e2e8f0"}`,background:f.teamId===tm.id?tm.col+"12":"#fafafa",cursor:"pointer",marginBottom:7}}>
                 <input type="radio" name="team" checked={f.teamId===tm.id} onChange={()=>u({teamId:tm.id})} style={{accentColor:tm.col}}/>
-                <span style={{fontSize:17}}>{tm.icon}</span>
+                <span style={{fontSize:17}}>{ico(tm.icon)}</span>
                 <span style={{fontWeight:700,fontSize:14,color:f.teamId===tm.id?tm.col:"#334155"}}>{tm.name}</span>
               </label>
             ))}
@@ -12168,7 +12173,7 @@ function BookingModal({ field,cellStart,date,data,save,fire,cl,myTids,session,on
               {SIZES.map(s=>(
                 <button key={s.cells} onClick={()=>u({cells:s.cells})}
                   style={{flex:1,padding:"10px 8px",borderRadius:12,border:`2px solid ${f.cells===s.cells?t.p:"#e2e8f0"}`,background:f.cells===s.cells?t.p:"#fff",color:f.cells===s.cells?"#fff":"#334155",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",textAlign:"center"}}>
-                  <div style={{fontSize:20,marginBottom:3}}>{s.icon}</div>
+                  <div style={{fontSize:20,marginBottom:3}}>{ico(s.icon)}</div>
                   {s.label}
                 </button>
               ))}
@@ -13238,7 +13243,7 @@ function FieldsManagerTab({ data, cid, save, fire, cl }) {
                         <div style={{width:24,height:24,borderRadius:7,background:tpl.bg,
                           display:"flex",alignItems:"center",justifyContent:"center",
                           fontWeight:900,fontSize:11,color:tpl.color}}>
-                          {tpl.icon}
+                          {ico(tpl.icon)}
                         </div>
                         <div>
                           <div style={{fontWeight:700,fontSize:13,color:"#0f172a"}}>{tpl.label}</div>
@@ -13268,7 +13273,7 @@ function FieldsManagerTab({ data, cid, save, fire, cl }) {
                         <div style={{width:40,height:26,borderRadius:7,background:draft.split===opt.id?t.p:"#f1f5f9",
                           display:"flex",alignItems:"center",justifyContent:"center",
                           fontSize:9,fontWeight:900,color:draft.split===opt.id?"#fff":"#64748b",flexShrink:0}}>
-                          {opt.icon}
+                          {ico(opt.icon)}
                         </div>
                         <div>
                           <div style={{fontWeight:700,fontSize:14,color:draft.split===opt.id?t.p:"#0f172a"}}>{opt.label}</div>
@@ -13297,7 +13302,7 @@ function FieldsManagerTab({ data, cid, save, fire, cl }) {
                         <div style={{width:44,height:44,borderRadius:12,background:draft.weather===opt.id?opt.col:"#f1f5f9",
                           display:"flex",alignItems:"center",justifyContent:"center",
                           fontSize:20,color:draft.weather===opt.id?"#fff":"#64748b",flexShrink:0,fontWeight:900}}>
-                          {opt.icon}
+                          {ico(opt.icon)}
                         </div>
                         <div>
                           <div style={{fontWeight:700,fontSize:15,color:draft.weather===opt.id?opt.col:"#0f172a"}}>{opt.label}</div>
@@ -13370,13 +13375,13 @@ function FieldsManagerTab({ data, cid, save, fire, cl }) {
               <div style={{width:36,height:36,borderRadius:10,background:tpl.bg,
                 display:"flex",alignItems:"center",justifyContent:"center",
                 fontWeight:900,fontSize:16,color:tpl.color,flexShrink:0}}>
-                {tpl.icon}
+                {ico(tpl.icon)}
               </div>
               <div style={{flex:1}}>
                 <div style={{fontWeight:800,fontSize:15,color:"#0f172a"}}>{field.name}</div>
                 <div style={{fontSize:11,color:"#64748b",marginTop:1}}>
                   {tpl.label} - {SPLIT_OPTIONS.find(s=>s.id===field.split)?.label}
-                  <span style={{marginLeft:8,color:wOpt.col,fontWeight:700}}>{wOpt.icon} {wOpt.label}</span>
+                  <span style={{marginLeft:8,color:wOpt.col,fontWeight:700}}>{ico(wOpt.icon)} {wOpt.label}</span>
                 </div>
               </div>
               <button onClick={()=>delField(field.id)}
@@ -14004,7 +14009,7 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink}) {
   return (
     <div style={{background:"#fff",borderRadius:15,border:`1.5px solid ${tF?p:"#e2e8f0"}`,marginBottom:8,overflow:"hidden",boxShadow:"0 1px 6px rgba(0,0,0,.04)"}}>
       <div style={{padding:"12px 14px",display:"flex",gap:10,alignItems:"center"}}>\
-        <div style={{width:42,height:42,borderRadius:13,background:eT.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{eT.icon}</div>
+        <div style={{width:42,height:42,borderRadius:13,background:eT.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{ico(eT.icon)}</div>
         <div style={{flex:1,minWidth:0}}>
           <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}><span style={{fontWeight:800,fontSize:14,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ev.title}</span>{tF&&<Tag c={p} bg={p+"20"} ch="Heute"/>}{ev.open&&<Tag c="#7c3aed" bg="#ede9fe" ch="* Offen"/>}{ev.sid&&<Tag c="#94a3b8" bg="#f1f5f9" ch="* Serie"/>}</div>
           <div style={{fontSize:12,color:"#64748b",marginTop:3}}>{fmtDShort(ev.date)}{ev.time?" . "+ev.time:""}{ev.loc?" . *"+ev.loc:""}</div>
@@ -14249,7 +14254,7 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
     <div style={{background:"#fff",borderRadius:20,boxShadow:expanded?"0 8px 32px rgba(0,0,0,.11)":"0 2px 10px rgba(0,0,0,.05)",border:`2px solid ${expanded?p:status?.urgent?"#fde68a":"#e2e8f0"}`,overflow:"hidden",transition:"all .2s",opacity:isPast&&!expanded?.7:1}}>
       {status?.urgent&&!expanded&&!isPast&&<div style={{background:"#fffbeb",borderBottom:"1px solid #fde68a",padding:"6px 17px",display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:13}}></span><span style={{fontSize:12,fontWeight:700,color:"#d97706"}}>Deine Antwort fehlt noch!</span></div>}
       <div onClick={onToggle} style={{padding:"14px 17px",cursor:"pointer",display:"flex",alignItems:"center",gap:12}}>
-        <div style={{width:48,height:48,borderRadius:15,background:eT.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{eT.icon}</div>
+        <div style={{width:48,height:48,borderRadius:15,background:eT.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{ico(eT.icon)}</div>
         <div style={{flex:1,minWidth:0}}>
           <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
             <span style={{fontWeight:900,fontSize:17,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ev.title}</span>
@@ -14262,7 +14267,7 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
             {ev.loc&&<span style={{fontSize:12,color:"#94a3b8"}}> {ev.loc}</span>}
           </div>
           {status&&<div style={{marginTop:6,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-            <span style={{display:"inline-flex",alignItems:"center",gap:4,background:status.bg,color:status.color,borderRadius:8,padding:"3px 9px",fontSize:12,fontWeight:700}}>{status.icon} {status.label}</span>
+            <span style={{display:"inline-flex",alignItems:"center",gap:4,background:status.bg,color:status.color,borderRadius:8,padding:"3px 9px",fontSize:12,fontWeight:700}}>{ico(status.icon)} {status.label}</span>
             {!expanded&&yesN>0&&<Tag c={eT.col} bg={eT.bg} ch={`${yesN} dabei`} sm/>}
           </div>}
         </div>
@@ -14419,7 +14424,7 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
       <div style={{position:"fixed",left:0,right:0,bottom:0,background:"#fff",borderTop:"1px solid #e2e8f0",display:"flex",zIndex:100}}>
         {parentTabs.map(p=>(
           <button key={p.id} onClick={p.onClick} style={{flex:1,background:"none",border:"none",padding:"8px 4px 12px",cursor:"pointer",fontFamily:"inherit",display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
-            <div style={{width:30,height:30,borderRadius:9,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:13,background:p.active?t.p:"#f1f5f9",color:p.active?"#fff":"#64748b"}}>{p.icon}</div>
+            <div style={{width:30,height:30,borderRadius:9,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:13,background:p.active?t.p:"#f1f5f9",color:p.active?"#fff":"#64748b"}}>{ico(p.icon)}</div>
             <span style={{fontSize:11,fontWeight:700,color:p.active?t.p:"#94a3b8"}}>{p.label}</span>
           </button>
         ))}
