@@ -18064,7 +18064,7 @@ function AppInner({lang,setLang}) {
           {saveStatus==="saved"&&"* Supabase gespeichert"}
           {saveStatus==="saving"&&"Speichert..."}
           {saveStatus==="local"&&"* Lokal gespeichert"}
-          {saveStatus==="error"&&"DB-Speichern fehlgeschlagen \u2013 nur lokal (Test: ?dbtest)"}
+          {saveStatus==="error"&&"DB-Speichern fehlgeschlagen \u2013 nicht gespeichert (Details: ?dbtest)"}
         </div>
       )}
 
