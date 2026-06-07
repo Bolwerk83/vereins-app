@@ -570,8 +570,10 @@ const sb = {
         if (m) return m;
         return null;
       }
-    } catch {}
-    return localGet();
+      return null; // Cloud antwortet, sperrt aber (401/403) - kein Local-Cache zeigen
+    } catch {
+      return localGet(); // Netzwerk-Aus - Offline-Cache
+    }
   },
   getDirectory: async () => {
     try {
@@ -583,8 +585,10 @@ const sb = {
         if (m) { const { global } = splitData(m); return global; }
         return null;
       }
-    } catch {}
-    return localGet();
+      return null;
+    } catch {
+      return localGet();
+    }
   },
   getClub: async (cid) => {
     try {
@@ -600,8 +604,10 @@ const sb = {
         if (m) { const { global, shards } = splitData(m); return mergeData(global, [shards[cid]||{}]); }
         return null;
       }
-    } catch {}
-    return localGet();
+      return null;
+    } catch {
+      return localGet();
+    }
   },
   // set(d): schreibt erst in die Cloud; localStorage wird erst nach Erfolg aktualisiert.
   set: async (d, cid=null) => {
