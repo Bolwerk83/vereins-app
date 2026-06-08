@@ -11344,63 +11344,81 @@ function Directory({data,onPick,onNewClub,lang,setLang}) {
 
       {}
       {isDesktop ? (
-      <div style={{position:"relative",padding:"56px 28px 16px",maxWidth:1120,margin:"0 auto",
-        display:"grid",gridTemplateColumns:"1.1fr .9fr",gap:48,alignItems:"center"}}>
+      <div style={{position:"relative",padding:"22px 28px 8px",maxWidth:1180,margin:"0 auto",
+        display:"grid",gridTemplateColumns:"1.05fr .95fr",gap:32,alignItems:"start"}}>
         <div>
-          <div className="up" style={{display:"inline-flex",alignItems:"center",gap:6,background:"rgba(134,239,172,.12)",border:"1px solid rgba(134,239,172,.28)",color:"#86efac",fontSize:12,fontWeight:700,padding:"5px 13px",borderRadius:99,marginBottom:20}}>
+          <div className="up" style={{display:"inline-flex",alignItems:"center",gap:6,background:"rgba(134,239,172,.12)",border:"1px solid rgba(134,239,172,.28)",color:"#86efac",fontSize:11,fontWeight:700,padding:"4px 11px",borderRadius:99,marginBottom:12}}>
             &#9917; Für jeden Sportverein
           </div>
-          <h1 className="up" style={{fontWeight:900,fontSize:54,lineHeight:1.05,letterSpacing:-1.8,margin:"0 0 18px"}}>
-            Schluss mit dem<br/><span style={{color:"#4ade80"}}>WhatsApp-Chaos</span> im Verein.
+          <h1 className="up" style={{fontWeight:900,fontSize:38,lineHeight:1.06,letterSpacing:-1.2,margin:"0 0 10px"}}>
+            Schluss mit dem <span style={{color:"#4ade80"}}>WhatsApp-Chaos</span> im Verein.
           </h1>
-          <p className="up" style={{color:"rgba(255,255,255,.72)",fontSize:18,lineHeight:1.55,fontWeight:500,margin:"0 0 28px",maxWidth:540,animationDelay:".1s"}}>
+          <p className="up" style={{color:"rgba(255,255,255,.7)",fontSize:14,lineHeight:1.5,fontWeight:500,margin:"0 0 14px",maxWidth:560,animationDelay:".1s"}}>
             Termine, Anwesenheit, Mannschaften und Kommunikation &ndash; alles an einem Ort. Eltern stimmen mit einem Tipp ab, du planst die Saison in Minuten.
           </p>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,maxWidth:540}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,maxWidth:560}}>
             {[
               ["&#127919;","Klare Termin&shy;Abstimmung","Zusagen, Absagen, Begründungen – alles auf einen Blick."],
               ["&#128221;","Mannschaften & Saisons","Mehrere Teams, alle Trainer im selben System."],
-              ["&#128172;","Chat ohne 5 Gruppen","Pro Mannschaft, ohne private Nummern teilen zu müssen."],
+              ["&#128172;","Chat ohne 5 Gruppen","Pro Mannschaft, ohne private Nummern."],
               ["&#128190;","Cloud-Speicherung","Verschlüsselt in Frankfurt – nichts liegt nur lokal."],
             ].map(([ic,h,p])=>(
-              <div key={h} className="up" style={{background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.09)",borderRadius:14,padding:"14px 16px"}}>
-                <div style={{fontSize:22,marginBottom:8}} dangerouslySetInnerHTML={{__html:ic}}/>
-                <div style={{fontWeight:800,fontSize:14,color:"#fff",marginBottom:3}} dangerouslySetInnerHTML={{__html:h}}/>
-                <div style={{fontSize:12,color:"rgba(255,255,255,.55)",lineHeight:1.5}}>{p}</div>
+              <div key={h} className="up" style={{background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.09)",borderRadius:11,padding:"9px 12px"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
+                  <span style={{fontSize:16}} dangerouslySetInnerHTML={{__html:ic}}/>
+                  <span style={{fontWeight:800,fontSize:12.5,color:"#fff"}} dangerouslySetInnerHTML={{__html:h}}/>
+                </div>
+                <div style={{fontSize:11,color:"rgba(255,255,255,.55)",lineHeight:1.45}}>{p}</div>
               </div>
             ))}
           </div>
         </div>
-        <div className="up" style={{background:"rgba(255,255,255,.07)",border:"1px solid rgba(255,255,255,.12)",borderRadius:22,padding:"30px 28px",boxShadow:"0 30px 80px -30px rgba(0,0,0,.6)"}}>
-          <div style={{textAlign:"center",marginBottom:22}}>
-            <div style={{fontSize:13,fontWeight:800,color:"#86efac",letterSpacing:.6,textTransform:"uppercase",marginBottom:6}}>Loslegen</div>
-            <div style={{fontWeight:900,fontSize:22,letterSpacing:-.4}}>In 2 Minuten startklar</div>
-            <p style={{color:"rgba(255,255,255,.55)",fontSize:13,marginTop:6,lineHeight:1.5}}>Kein Konto-Zwang, keine Kreditkarte. Direkt einrichten oder erst die Demo testen.</p>
+        <div className="up" style={{background:"rgba(255,255,255,.07)",border:"1px solid rgba(255,255,255,.12)",borderRadius:18,padding:"18px 20px",boxShadow:"0 20px 60px -25px rgba(0,0,0,.6)"}}>
+          <div style={{textAlign:"center",marginBottom:14}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#86efac",letterSpacing:.5,textTransform:"uppercase",marginBottom:3}}>Loslegen</div>
+            <div style={{fontWeight:900,fontSize:18,letterSpacing:-.3}}>In 2 Minuten startklar</div>
           </div>
-          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:12}}>
             <button onClick={()=>setMode("setup")}
-              style={{padding:"16px",borderRadius:15,border:"none",background:"linear-gradient(135deg,#22c55e,#16a34a)",color:"#fff",fontWeight:800,fontSize:16,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 10px 34px rgba(22,163,74,.5)"}}>
+              style={{padding:"13px",borderRadius:13,border:"none",background:"linear-gradient(135deg,#22c55e,#16a34a)",color:"#fff",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 6px 20px rgba(22,163,74,.5)"}}>
               Verein anlegen &#8594;
             </button>
             <button onClick={()=>onPick("__demo__")}
-              style={{padding:"13px",borderRadius:15,border:"1.5px solid rgba(255,255,255,.18)",background:"rgba(255,255,255,.06)",color:"#fff",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
+              style={{padding:"10px",borderRadius:13,border:"1.5px solid rgba(255,255,255,.18)",background:"rgba(255,255,255,.06)",color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
               Erst die Demo ansehen
             </button>
           </div>
-          <div style={{marginTop:22,paddingTop:18,borderTop:"1px solid rgba(255,255,255,.08)",
-            display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,textAlign:"center"}}>
+          {/* Suchleiste direkt in die CTA-Karte */}
+          <div style={{position:"relative",marginBottom:8}}>
+            <span style={{position:"absolute",left:11,top:"50%",transform:"translateY(-50%)",fontSize:13,pointerEvents:"none",opacity:.5}}>&#128269;</span>
+            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Verein suchen…"
+              style={{width:"100%",padding:"9px 11px 9px 34px",fontSize:13,background:"rgba(0,0,0,.25)",border:"1.5px solid rgba(255,255,255,.1)",borderRadius:11,outline:"none",color:"#fff",boxSizing:"border-box"}}/>
+          </div>
+          <div style={{display:"flex",gap:5,overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch",paddingBottom:2,marginBottom:8}}>
+            {SPORTS.map(s=>(
+              <button key={s} onClick={()=>setSportFilter(s)}
+                style={{padding:"4px 10px",borderRadius:99,border:`1.5px solid ${sportFilter===s?(SPORT_COLS[s]||"#16a34a"):"rgba(255,255,255,.12)"}`,background:sportFilter===s?(SPORT_COLS[s]||"#16a34a")+"22":"transparent",color:sportFilter===s?"#fff":"rgba(255,255,255,.5)",fontWeight:700,fontSize:11,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit",flexShrink:0}}>
+                {SPORT_LABELS[s]}
+              </button>
+            ))}
+          </div>
+          <div style={{paddingTop:10,borderTop:"1px solid rgba(255,255,255,.08)",
+            display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,textAlign:"center"}}>
             <div>
-              <div style={{fontWeight:900,fontSize:18,color:"#86efac"}}>{(data.clubs||[]).length}</div>
-              <div style={{fontSize:10,color:"rgba(255,255,255,.4)",fontWeight:700,letterSpacing:.4,marginTop:2}}>VEREINE</div>
+              <div style={{fontWeight:900,fontSize:15,color:"#86efac"}}>{(data.clubs||[]).length}</div>
+              <div style={{fontSize:9,color:"rgba(255,255,255,.4)",fontWeight:700,letterSpacing:.4}}>VEREINE</div>
             </div>
             <div>
-              <div style={{fontWeight:900,fontSize:18,color:"#86efac"}}>{(data.teams||[]).length}</div>
-              <div style={{fontSize:10,color:"rgba(255,255,255,.4)",fontWeight:700,letterSpacing:.4,marginTop:2}}>MANN&shy;SCHAFTEN</div>
+              <div style={{fontWeight:900,fontSize:15,color:"#86efac"}}>{(data.teams||[]).length}</div>
+              <div style={{fontSize:9,color:"rgba(255,255,255,.4)",fontWeight:700,letterSpacing:.4}}>MANNSCHAFTEN</div>
             </div>
             <div>
-              <div style={{fontWeight:900,fontSize:18,color:"#86efac"}}>{(data.events||[]).length}</div>
-              <div style={{fontSize:10,color:"rgba(255,255,255,.4)",fontWeight:700,letterSpacing:.4,marginTop:2}}>TERMINE</div>
+              <div style={{fontWeight:900,fontSize:15,color:"#86efac"}}>{(data.events||[]).length}</div>
+              <div style={{fontSize:9,color:"rgba(255,255,255,.4)",fontWeight:700,letterSpacing:.4}}>TERMINE</div>
             </div>
+          </div>
+          <div style={{marginTop:10,fontSize:10.5,color:"rgba(255,255,255,.4)",lineHeight:1.45,textAlign:"center"}}>
+            Beta-Test · verschlüsselt in Frankfurt · DSGVO-Verantwortung beim Verein
           </div>
         </div>
       </div>
@@ -11449,18 +11467,18 @@ function Directory({data,onPick,onNewClub,lang,setLang}) {
       )}
 
       {}
-      <div style={{maxWidth:isDesktop?1120:520,margin:"24px auto 0",padding:"0 22px"}}><PrivacyBanner/></div>
-      <div style={{maxWidth:isDesktop?1120:520,margin:"0 auto",padding:"0 22px"}}><AdSenseSlot slot="directoryTop"/></div>
-      <div style={{maxWidth:520,margin:"30px auto 0",padding:"0 22px"}}>
+      {!isDesktop && <div style={{maxWidth:520,margin:"24px auto 0",padding:"0 22px"}}><PrivacyBanner/></div>}
+      <div style={{maxWidth:isDesktop?1180:520,margin:"0 auto",padding:"0 22px"}}><AdSenseSlot slot="directoryTop"/></div>
+      {!isDesktop && <div style={{maxWidth:520,margin:"30px auto 0",padding:"0 22px"}}>
         <div style={{display:"flex",alignItems:"center",gap:12}}>
           <div style={{flex:1,height:1,background:"rgba(255,255,255,.1)"}}/>
           <span style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,.4)",whiteSpace:"nowrap"}}>Schon dabei? Finde deinen Verein</span>
           <div style={{flex:1,height:1,background:"rgba(255,255,255,.1)"}}/>
         </div>
-      </div>
+      </div>}
 
       {}
-      <div style={{padding:"0 16px",maxWidth:460,margin:"0 auto"}}>
+      {!isDesktop && <div style={{padding:"0 16px",maxWidth:460,margin:"0 auto"}}>
         <div style={{position:"relative",marginBottom:10}}>
           <span style={{position:"absolute",left:13,top:"50%",transform:"translateY(-50%)",fontSize:15,pointerEvents:"none",opacity:.5}}>&#128269;</span>
           <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Verein suchen..."
@@ -11474,10 +11492,10 @@ function Directory({data,onPick,onNewClub,lang,setLang}) {
             </button>
           ))}
         </div>
-      </div>
+      </div>}
 
       {}
-      <div style={{maxWidth:460,margin:"0 auto",padding:"0 16px 60px"}}>
+      <div style={{maxWidth:isDesktop?1180:460,margin:"0 auto",padding:isDesktop?"4px 28px 30px":"0 16px 60px"}}>
         {filtered.length===0&&search&&(
           <div style={{textAlign:"center",padding:"32px",color:"rgba(255,255,255,.3)"}}>
             <p style={{fontWeight:700,fontSize:15}}>Kein Verein gefunden</p>
@@ -11489,8 +11507,8 @@ function Directory({data,onPick,onNewClub,lang,setLang}) {
         {}
         {!search && letters.map(letter=>(
           <div key={letter} id={"letter-"+letter}>
-            <div style={{color:"rgba(255,255,255,.25)",fontSize:11,fontWeight:800,letterSpacing:.5,padding:"12px 0 6px"}}>{letter}</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:4}}>
+            <div style={{color:"rgba(255,255,255,.25)",fontSize:11,fontWeight:800,letterSpacing:.5,padding:isDesktop?"6px 0 4px":"12px 0 6px"}}>{letter}</div>
+            <div style={{display:"grid",gridTemplateColumns:isDesktop?"repeat(auto-fill,minmax(180px,1fr))":"1fr 1fr",gap:8,marginBottom:4}}>
               {filtered.filter(c=>c.name[0].toUpperCase()===letter).map(cl=>(
                 <div key={cl.id} onClick={()=>onPick(cl.id)}
                   style={{background:"rgba(255,255,255,.06)",border:"1px solid rgba(255,255,255,.1)",borderRadius:14,padding:"12px",cursor:"pointer",transition:"background .15s"}}
@@ -11513,7 +11531,7 @@ function Directory({data,onPick,onNewClub,lang,setLang}) {
 
         {}
         {search && filtered.length>0&&(
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+          <div style={{display:"grid",gridTemplateColumns:isDesktop?"repeat(auto-fill,minmax(180px,1fr))":"1fr 1fr",gap:8}}>
             {filtered.map(cl=>(
               <div key={cl.id} onClick={()=>onPick(cl.id)}
                 style={{background:"rgba(255,255,255,.06)",border:"1px solid rgba(255,255,255,.1)",borderRadius:14,padding:"12px",cursor:"pointer"}}>
