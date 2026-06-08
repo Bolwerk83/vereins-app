@@ -1344,26 +1344,148 @@ function Divider({label,light}) {
   return <div style={{display:"flex",alignItems:"center",gap:10,margin:"14px 0 10px"}}><div style={{flex:1,height:1,background:"#e2e8f0"}}/><span style={{fontSize:11,fontWeight:800,color:light?"#94a3b8":"#64748b",whiteSpace:"nowrap"}}>{label}</span><div style={{flex:1,height:1,background:"#e2e8f0"}}/></div>;
 }
 
+function PushSetupGuide({ onClose }) {
+  const [tab, setTab] = useState("ios");
+  const tabs = [
+    { id:"ios",     label:"iPhone / iPad", icon:"📱" },
+    { id:"android", label:"Android",       icon:"🤖" },
+    { id:"desktop", label:"Mac / PC",      icon:"💻" },
+  ];
+  const steps = {
+    ios: [
+      { t:"Voraussetzung", s:"iOS 16.4 oder neuer. App muss zum Home-Bildschirm hinzugefügt sein – aus dem Safari-Tab raus geht KEIN Push auf iPhone." },
+      { t:"App zum Home-Bildschirm", s:"In Safari die App öffnen (verein.bolwerk24.de) → unten Mitte „Teilen“-Symbol → „Zum Home-Bildschirm“." },
+      { t:"App vom Home-Bildschirm öffnen", s:"Wichtig: NICHT mehr aus Safari, sondern vom Home-Bildschirm aus tippen." },
+      { t:"Benachrichtigungen aktivieren", s:"Unten rechts erscheint ein 🔔-Symbol. Antippen → „Aktivieren“ → iOS fragt nach Berechtigung → erlauben." },
+      { t:"Was du dann einstellen kannst", s:"Pro Bereich (Abstimm-Erinnerung 3 Tage vorher, Morgens am Termin-Tag, Chat-Nachrichten) sowie pro Termin-Art (Training/Spiel/…) und pro einzelnem Termin an/aus." },
+    ],
+    android: [
+      { t:"Voraussetzung", s:"Aktueller Chrome (oder Edge/Firefox). App muss nicht installiert sein, kann aber – funktioniert auch im normalen Tab." },
+      { t:"App öffnen", s:"verein.bolwerk24.de in Chrome öffnen." },
+      { t:"Optional installieren", s:"Adressleiste zeigt ein Installations-Icon (rechts) → „App installieren“. Spart Suchen später." },
+      { t:"Benachrichtigungen aktivieren", s:"🔔-Symbol unten rechts → „Aktivieren“ → Chrome-Dialog → erlauben." },
+      { t:"Was du dann einstellen kannst", s:"Genau wie auf iPhone: pro Bereich, pro Termin-Art und pro Einzeltermin abschaltbar." },
+    ],
+    desktop: [
+      { t:"Voraussetzung", s:"Chrome, Edge, Firefox oder Safari. macOS: Safari 16+ unterstützt Web-Push seit 2023." },
+      { t:"App öffnen", s:"verein.bolwerk24.de im Browser." },
+      { t:"Benachrichtigungen aktivieren", s:"🔔-Symbol unten rechts → „Aktivieren“ → Browser fragt nach Berechtigung." },
+      { t:"Mac: System-Berechtigung prüfen", s:"Falls keine Benachrichtigung kommt: Systemeinstellungen → Mitteilungen → den Browser auf „Erlauben“ stellen." },
+      { t:"Banner-Stil wählen", s:"In den Betriebssystem-Einstellungen kannst du wählen, ob Benachrichtigungen kurz oder dauerhaft eingeblendet werden." },
+    ],
+  };
+  return (
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.75)",
+      display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:18}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:20,
+        width:"100%",maxWidth:560,maxHeight:"88vh",overflow:"auto",boxShadow:"0 20px 60px rgba(0,0,0,.4)"}}>
+        <div style={{padding:"22px 24px 14px",borderBottom:"1px solid #f1f5f9",position:"sticky",top:0,background:"#fff"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12}}>
+            <div>
+              <div style={{fontWeight:900,fontSize:18,color:"#0f172a"}}>🔔 Benachrichtigungen einrichten</div>
+              <p style={{fontSize:13,color:"#64748b",margin:"4px 0 0",lineHeight:1.5}}>
+                Du verpasst keinen Termin mehr — und Eltern werden 3 Tage vorher erinnert, wenn sie noch nicht abgestimmt haben.
+              </p>
+            </div>
+            <button onClick={onClose} style={{background:"none",border:"none",fontSize:22,color:"#94a3b8",cursor:"pointer",padding:"0 4px",fontFamily:"inherit"}}>×</button>
+          </div>
+          <div style={{display:"flex",gap:5,marginTop:14}}>
+            {tabs.map(tt=>(
+              <button key={tt.id} onClick={()=>setTab(tt.id)}
+                style={{flex:1,padding:"9px 8px",borderRadius:11,border:"none",
+                  background:tab===tt.id?"#16a34a":"#f1f5f9",
+                  color:tab===tt.id?"#fff":"#475569",
+                  fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
+                <span style={{marginRight:5}}>{tt.icon}</span>{tt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div style={{padding:"18px 24px 22px"}}>
+          {steps[tab].map((step,i)=>(
+            <div key={i} style={{display:"flex",gap:12,marginBottom:14,paddingBottom:14,borderBottom:i<steps[tab].length-1?"1px solid #f1f5f9":"none"}}>
+              <div style={{width:28,height:28,borderRadius:9,background:"#16a34a",color:"#fff",
+                display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:13,flexShrink:0}}>{i+1}</div>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>{step.t}</div>
+                <div style={{fontSize:13,color:"#64748b",lineHeight:1.55,marginTop:3}}>{step.s}</div>
+              </div>
+            </div>
+          ))}
+          <div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:12,padding:"12px 14px",marginTop:6,fontSize:12.5,color:"#15803d",lineHeight:1.55}}>
+            <b>Wichtig:</b> Damit der Verein Benachrichtigungen senden kann, muss der Vereins-Admin die Push-Funktion einmalig in den Settings aktiviert haben (Schlüssel + Edge-Function).
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const CONTACT_TEMPLATES = [
+  { id:"freundschaft", label:"Freundschaftsspiel anfragen", icon:"⚽",
+    msg: ({club})=>`Hallo,\n\nwir würden gerne ein Freundschaftsspiel gegen euch organisieren.\n\nVorschlag:\n• Datum: \n• Uhrzeit: \n• Heim/Auswärts: \n• Altersklasse: \n\nWürde euch das passen? Antwort gerne per Mail oder Telefon.\n\nViele Grüße`
+  },
+  { id:"turnier", label:"Zum Turnier einladen", icon:"🏆",
+    msg: ({club})=>`Hallo,\n\nwir veranstalten ein Turnier und würden euch gerne dazu einladen.\n\nEckdaten:\n• Datum: \n• Ort: \n• Altersklassen: \n• Startgebühr: \n• Anmeldeschluss: \n\nMeldet euch bei Interesse - genauere Infos und Anmeldeunterlagen schicke ich euch dann zu.\n\nViele Grüße`
+  },
+  { id:"training", label:"Gemeinsames Training", icon:"👟",
+    msg: ({club})=>`Hallo,\n\nwir wollten anfragen, ob ihr Interesse an einem gemeinsamen Training mit uns hättet (eine oder mehrere Einheiten).\n\nVorschlag:\n• Wann: \n• Wo: \n• Altersklasse / Mannschaft: \n• Schwerpunkt (z. B. Spielform, Technik): \n\nIst das aus eurer Sicht machbar?\n\nViele Grüße`
+  },
+  { id:"hospitation", label:"Hospitation Trainer", icon:"🎯",
+    msg: ({club})=>`Hallo,\n\nich/wir würden gerne bei einem eurer Trainings hospitieren und mir/uns ein paar Impulse holen.\n\n• Wunsch-Datum: \n• Wer kommt vorbei: \n• Interesse besonders an: \n\nGeht das bei euch?\n\nViele Grüße`
+  },
+];
+
 function ContactForm({ cl, onSend, onClose }) {
   const [f,setF]=useState({name:"",email:"",msg:""});
   const [sent,setSent]=useState(false);
+  const [showTpl,setShowTpl]=useState(false);
   const t=TH(cl);
   const send=()=>{if(!f.name.trim()||f.msg.trim().length<5)return;onSend({...f,ts:new Date().toISOString()});setSent(true);};
-  if(sent) return <div style={{minHeight:"100dvh",background:"#f0fdf4",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:14,padding:24}}><div style={{fontSize:48}}>ok</div><p style={{fontWeight:800,fontSize:18}}>Anfrage gesendet!</p><button onClick={onClose} style={{padding:"12px 24px",borderRadius:12,border:"none",background:t.p,color:"#fff",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Schließen</button></div>;
-  if(hide) return null;
+  const applyTpl = (tpl) => {
+    setF(p=>({...p, msg: tpl.msg({club:cl})}));
+    setShowTpl(false);
+  };
+  if(sent) return <div style={{minHeight:"100dvh",background:"#f0fdf4",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:14,padding:24}}><div style={{fontSize:48}}>✓</div><p style={{fontWeight:800,fontSize:18}}>Anfrage gesendet!</p><button onClick={onClose} style={{padding:"12px 24px",borderRadius:12,border:"none",background:t.p,color:"#fff",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Schließen</button></div>;
   return (
     <div style={{minHeight:"100dvh",background:"#f0f4f8",padding:"24px 20px"}}>
       <style>{CSS}</style><OnlineStatus/>
-      <button onClick={onClose} style={{background:"none",border:"none",color:"#64748b",fontWeight:700,fontSize:14,cursor:"pointer",marginBottom:16}}>Abbrechen</button>
-      <div style={{background:"#fff",borderRadius:18,padding:"20px"}}>
-        <div style={{fontWeight:900,fontSize:18,marginBottom:16}}>{cl.name} kontaktieren</div>
-        <div style={{display:"flex",flexDirection:"column",gap:10}}>
-          <input value={f.name} onChange={e=>setF(p=>({...p,name:e.target.value}))} placeholder="Dein Name" style={{padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
-          <PrivacyNote/>
-          <input value={f.email} onChange={e=>setF(p=>({...p,email:e.target.value}))} placeholder="E-Mail (optional)" style={{padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
-          <textarea value={f.msg} onChange={e=>setF(p=>({...p,msg:e.target.value}))} placeholder="Deine Nachricht..." rows={4} style={{padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",resize:"none",fontFamily:"inherit"}}/>
+      <div style={{maxWidth:560,margin:"0 auto"}}>
+        <button onClick={onClose} style={{background:"none",border:"none",color:"#64748b",fontWeight:700,fontSize:14,cursor:"pointer",marginBottom:16}}>← Zurück</button>
+        <div style={{background:"#fff",borderRadius:18,padding:"22px"}}>
+          <div style={{fontWeight:900,fontSize:18,marginBottom:4}}>{cl.name} kontaktieren</div>
+          <p style={{fontSize:13,color:"#64748b",margin:"0 0 16px"}}>Nachricht geht an die Admin-Inbox des Vereins. Du kannst eine Vorlage nutzen oder frei schreiben.</p>
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            <input value={f.name} onChange={e=>setF(p=>({...p,name:e.target.value}))} placeholder="Dein Name (oder Verein)" style={{padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",fontFamily:"inherit"}}/>
+            <input value={f.email} onChange={e=>setF(p=>({...p,email:e.target.value}))} placeholder="E-Mail für Antwort (optional, aber empfohlen)" style={{padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",fontFamily:"inherit"}}/>
+            <PrivacyNote/>
+            <div>
+              <button onClick={()=>setShowTpl(s=>!s)} type="button"
+                style={{width:"100%",padding:"11px 14px",borderRadius:11,border:`1.5px dashed ${t.p}`,background:"#f8fafc",color:t.p,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",marginBottom:showTpl?8:0}}>
+                {showTpl?"Vorlagen ausblenden":"📝 Vorlage einfügen…"}
+              </button>
+              {showTpl && (
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:8}}>
+                  {CONTACT_TEMPLATES.map(tpl=>(
+                    <button key={tpl.id} type="button" onClick={()=>applyTpl(tpl)}
+                      style={{padding:"10px 12px",borderRadius:10,border:"1.5px solid #e2e8f0",background:"#fff",color:"#334155",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",textAlign:"left",lineHeight:1.4}}>
+                      <span style={{marginRight:6}}>{tpl.icon}</span>{tpl.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <textarea value={f.msg} onChange={e=>setF(p=>({...p,msg:e.target.value}))} placeholder="Deine Nachricht..." rows={10}
+              style={{padding:"12px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",resize:"vertical",fontFamily:"inherit",lineHeight:1.55}}/>
+          </div>
+          <button onClick={send} disabled={!f.name.trim()||f.msg.trim().length<5}
+            style={{width:"100%",marginTop:14,padding:"13px",borderRadius:12,border:"none",
+              background:(f.name.trim()&&f.msg.trim().length>=5)?t.p:"#cbd5e1",
+              color:"#fff",fontWeight:800,fontSize:15,
+              cursor:(f.name.trim()&&f.msg.trim().length>=5)?"pointer":"not-allowed",fontFamily:"inherit"}}>
+            Anfrage senden
+          </button>
         </div>
-        <button onClick={send} style={{width:"100%",marginTop:14,padding:"13px",borderRadius:12,border:"none",background:t.p,color:"#fff",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>Senden</button>
       </div>
     </div>
   );
@@ -11290,6 +11412,7 @@ function Directory({data,onPick,onNewClub,lang,setLang}) {
   const [contactCl,setContactCl] = useState(null);
   const [search,setSearch] = useState("");
   const [sportFilter,setSportFilter] = useState("alle");
+  const [showPushHelp, setShowPushHelp] = useState(false);
   const vw = useViewportWidth();
   const isDesktop = vw >= 900;
   const pub = (data.clubs||[]).filter(c=>c.dir!==false&&c.pub!==false);
@@ -11326,6 +11449,7 @@ function Directory({data,onPick,onNewClub,lang,setLang}) {
   return (
     <div style={{minHeight:"100dvh",background:"linear-gradient(160deg,#0f172a 0%,#052e16 55%,#14532d 100%)",color:"#fff",position:"relative",overflow:"hidden"}}>
       <style>{CSS}</style>
+      {showPushHelp && <PushSetupGuide onClose={()=>setShowPushHelp(false)}/>}
 
       {}
       <div style={{position:"absolute",top:-80,left:"50%",transform:"translateX(-50%)",width:420,height:420,background:"radial-gradient(circle,rgba(34,197,94,.25),transparent 70%)",filter:"blur(20px)",pointerEvents:"none"}}/>
@@ -11417,7 +11541,11 @@ function Directory({data,onPick,onNewClub,lang,setLang}) {
               <div style={{fontSize:9,color:"rgba(255,255,255,.4)",fontWeight:700,letterSpacing:.4}}>TERMINE</div>
             </div>
           </div>
-          <div style={{marginTop:10,fontSize:10.5,color:"rgba(255,255,255,.4)",lineHeight:1.45,textAlign:"center"}}>
+          <button onClick={()=>setShowPushHelp(true)}
+            style={{width:"100%",marginTop:10,padding:"8px",borderRadius:10,border:"1px solid rgba(255,255,255,.12)",background:"rgba(255,255,255,.05)",color:"rgba(255,255,255,.7)",fontWeight:700,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>
+            🔔 Benachrichtigungen einrichten
+          </button>
+          <div style={{marginTop:8,fontSize:10.5,color:"rgba(255,255,255,.4)",lineHeight:1.45,textAlign:"center"}}>
             Beta-Test · verschlüsselt in Frankfurt · DSGVO-Verantwortung beim Verein
           </div>
         </div>
@@ -11441,6 +11569,10 @@ function Directory({data,onPick,onNewClub,lang,setLang}) {
           <button onClick={()=>onPick("__demo__")}
             style={{padding:"13px",borderRadius:15,border:"1.5px solid rgba(255,255,255,.18)",background:"rgba(255,255,255,.06)",color:"#fff",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
             Erst die Demo ansehen
+          </button>
+          <button onClick={()=>setShowPushHelp(true)}
+            style={{padding:"10px",borderRadius:13,border:"1px dashed rgba(255,255,255,.2)",background:"transparent",color:"rgba(255,255,255,.7)",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
+            🔔 So kriegst du Benachrichtigungen
           </button>
         </div>
         <p className="up" style={{color:"rgba(255,255,255,.45)",fontSize:12,fontWeight:600,margin:"0 0 28px",animationDelay:".2s"}}>
