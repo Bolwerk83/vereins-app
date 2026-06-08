@@ -664,6 +664,38 @@ const sb = {
       return sb._lastWrite;
     }
   },
+  // Verifiziert, dass eine Club-ID wirklich im Cloud-Stand auftaucht.
+  // Wird nach onNewClub aufgerufen, um "lokal scheinbar gespeichert,
+  // aber nicht in Cloud" zu erkennen.
+  verifyClubInCloud: async (clubId) => {
+    try {
+      const r = await sb._fetch(`/rest/v1/app_data?key=eq.${sb._glKey}&select=value`);
+      if (!r.ok) return { ok:false, reason:`HTTP ${r.status}` };
+      const rows = await r.json();
+      const val = rows[0]?.value;
+      if (!val) return { ok:false, reason:"keine Cloud-Antwort" };
+      const found = (val.clubs||[]).some(c=>c?.id===clubId);
+      return found ? { ok:true } : { ok:false, reason:"Club fehlt in Cloud-Antwort" };
+    } catch (e) {
+      return { ok:false, reason:String((e&&e.message)||e).slice(0,200) };
+    }
+  },
+  // Live-Health: einmaliger Connection-/Membership-Check
+  health: async () => {
+    const cfg = getConfig();
+    if (!cfg?.url || !cfg?.key) return { online:false, member:false, reason:"keine Config" };
+    try {
+      const tok = await auth.getToken();
+      if (!tok) return { online:false, member:false, reason:"kein Token" };
+      const r = await sb._fetch(`/rest/v1/app_data?limit=1`);
+      if (r.ok) return { online:true, member:true };
+      if (r.status === 401) return { online:true, member:false, reason:"Token abgelaufen" };
+      if (r.status === 403) return { online:true, member:false, reason:"keine Mitgliedschaft (Vereinscode)" };
+      return { online:true, member:false, reason:`HTTP ${r.status}` };
+    } catch (e) {
+      return { online:false, member:false, reason:String((e&&e.message)||e).slice(0,200) };
+    }
+  },
   // RPC-Aufruf (Postgres-Function) - liefert das JSON-Ergebnis oder wirft.
   rpc: async (name, args = {}) => {
     const cfg = getConfig();
@@ -11164,12 +11196,50 @@ function PrivacyNote(){
     </div>
   );
 }
+function CloudStatus() {
+  const [s, setS] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    const check = async () => { const r = await sb.health(); if (alive) setS(r); };
+    check();
+    const id = setInterval(check, 20000);
+    return () => { alive = false; clearInterval(id); };
+  }, []);
+  if (!s) return null;
+  const color = s.online && s.member ? "#22c55e" : s.online ? "#f59e0b" : "#ef4444";
+  const label = s.online && s.member ? "Cloud" : s.online ? "Cloud · kein Code" : "offline";
+  const title = s.online && s.member
+    ? "Mit der Cloud-Datenbank verbunden, Mitglied"
+    : s.online ? `Cloud erreichbar, aber: ${s.reason||""}` : `Nicht erreichbar: ${s.reason||""}`;
+  return (
+    <div title={title} style={{display:"inline-flex",alignItems:"center",gap:6,
+      background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.12)",
+      borderRadius:99,padding:"4px 9px 4px 8px",fontSize:11,fontWeight:700,color:"rgba(255,255,255,.7)"}}>
+      <span style={{width:7,height:7,borderRadius:"50%",background:color,
+        boxShadow:`0 0 8px ${color}`}}/>
+      {label}
+    </div>
+  );
+}
+
+function useViewportWidth() {
+  const [w, setW] = useState(typeof window !== "undefined" ? window.innerWidth : 1024);
+  useEffect(() => {
+    const h = () => setW(window.innerWidth);
+    window.addEventListener("resize", h);
+    return () => window.removeEventListener("resize", h);
+  }, []);
+  return w;
+}
+
 function Directory({data,onPick,onNewClub,lang,setLang}) {
   const tr = (k) => T[lang]?.[k] ?? T.de[k] ?? k;
   const [mode,setMode] = useState("home");
   const [contactCl,setContactCl] = useState(null);
   const [search,setSearch] = useState("");
   const [sportFilter,setSportFilter] = useState("alle");
+  const vw = useViewportWidth();
+  const isDesktop = vw >= 900;
   const pub = (data.clubs||[]).filter(c=>c.dir!==false&&c.pub!==false);
   const q = search.toLowerCase();
 
@@ -11209,15 +11279,80 @@ function Directory({data,onPick,onNewClub,lang,setLang}) {
       <div style={{position:"absolute",top:-80,left:"50%",transform:"translateX(-50%)",width:420,height:420,background:"radial-gradient(circle,rgba(34,197,94,.25),transparent 70%)",filter:"blur(20px)",pointerEvents:"none"}}/>
 
       {}
-      <div style={{position:"relative",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"18px 22px 0",maxWidth:520,margin:"0 auto"}}>
+      <div style={{position:"relative",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"18px 22px 0",maxWidth:isDesktop?1120:520,margin:"0 auto"}}>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <div style={{width:30,height:30,borderRadius:9,background:"#16a34a",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,boxShadow:"0 2px 12px rgba(22,163,74,.6)"}}>&#9917;</div>
           <span style={{fontWeight:800,fontSize:15,letterSpacing:-.3}}>Vereins-App</span>
         </div>
-        <LangSwitcher lang={lang} setLang={setLang}/>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <CloudStatus/>
+          <LangSwitcher lang={lang} setLang={setLang}/>
+        </div>
       </div>
 
       {}
+      {isDesktop ? (
+      <div style={{position:"relative",padding:"56px 28px 16px",maxWidth:1120,margin:"0 auto",
+        display:"grid",gridTemplateColumns:"1.1fr .9fr",gap:48,alignItems:"center"}}>
+        <div>
+          <div className="up" style={{display:"inline-flex",alignItems:"center",gap:6,background:"rgba(134,239,172,.12)",border:"1px solid rgba(134,239,172,.28)",color:"#86efac",fontSize:12,fontWeight:700,padding:"5px 13px",borderRadius:99,marginBottom:20}}>
+            &#9917; Für jeden Sportverein
+          </div>
+          <h1 className="up" style={{fontWeight:900,fontSize:54,lineHeight:1.05,letterSpacing:-1.8,margin:"0 0 18px"}}>
+            Schluss mit dem<br/><span style={{color:"#4ade80"}}>WhatsApp-Chaos</span> im Verein.
+          </h1>
+          <p className="up" style={{color:"rgba(255,255,255,.72)",fontSize:18,lineHeight:1.55,fontWeight:500,margin:"0 0 28px",maxWidth:540,animationDelay:".1s"}}>
+            Termine, Anwesenheit, Mannschaften und Kommunikation &ndash; alles an einem Ort. Eltern stimmen mit einem Tipp ab, du planst die Saison in Minuten.
+          </p>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,maxWidth:540}}>
+            {[
+              ["&#127919;","Klare Termin&shy;Abstimmung","Zusagen, Absagen, Begründungen – alles auf einen Blick."],
+              ["&#128221;","Mannschaften & Saisons","Mehrere Teams, alle Trainer im selben System."],
+              ["&#128172;","Chat ohne 5 Gruppen","Pro Mannschaft, ohne private Nummern teilen zu müssen."],
+              ["&#128190;","Cloud-Speicherung","Verschlüsselt in Frankfurt – nichts liegt nur lokal."],
+            ].map(([ic,h,p])=>(
+              <div key={h} className="up" style={{background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.09)",borderRadius:14,padding:"14px 16px"}}>
+                <div style={{fontSize:22,marginBottom:8}} dangerouslySetInnerHTML={{__html:ic}}/>
+                <div style={{fontWeight:800,fontSize:14,color:"#fff",marginBottom:3}} dangerouslySetInnerHTML={{__html:h}}/>
+                <div style={{fontSize:12,color:"rgba(255,255,255,.55)",lineHeight:1.5}}>{p}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="up" style={{background:"rgba(255,255,255,.07)",border:"1px solid rgba(255,255,255,.12)",borderRadius:22,padding:"30px 28px",boxShadow:"0 30px 80px -30px rgba(0,0,0,.6)"}}>
+          <div style={{textAlign:"center",marginBottom:22}}>
+            <div style={{fontSize:13,fontWeight:800,color:"#86efac",letterSpacing:.6,textTransform:"uppercase",marginBottom:6}}>Loslegen</div>
+            <div style={{fontWeight:900,fontSize:22,letterSpacing:-.4}}>In 2 Minuten startklar</div>
+            <p style={{color:"rgba(255,255,255,.55)",fontSize:13,marginTop:6,lineHeight:1.5}}>Kein Konto-Zwang, keine Kreditkarte. Direkt einrichten oder erst die Demo testen.</p>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            <button onClick={()=>setMode("setup")}
+              style={{padding:"16px",borderRadius:15,border:"none",background:"linear-gradient(135deg,#22c55e,#16a34a)",color:"#fff",fontWeight:800,fontSize:16,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 10px 34px rgba(22,163,74,.5)"}}>
+              Verein anlegen &#8594;
+            </button>
+            <button onClick={()=>onPick("__demo__")}
+              style={{padding:"13px",borderRadius:15,border:"1.5px solid rgba(255,255,255,.18)",background:"rgba(255,255,255,.06)",color:"#fff",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
+              Erst die Demo ansehen
+            </button>
+          </div>
+          <div style={{marginTop:22,paddingTop:18,borderTop:"1px solid rgba(255,255,255,.08)",
+            display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,textAlign:"center"}}>
+            <div>
+              <div style={{fontWeight:900,fontSize:18,color:"#86efac"}}>{(data.clubs||[]).length}</div>
+              <div style={{fontSize:10,color:"rgba(255,255,255,.4)",fontWeight:700,letterSpacing:.4,marginTop:2}}>VEREINE</div>
+            </div>
+            <div>
+              <div style={{fontWeight:900,fontSize:18,color:"#86efac"}}>{(data.teams||[]).length}</div>
+              <div style={{fontSize:10,color:"rgba(255,255,255,.4)",fontWeight:700,letterSpacing:.4,marginTop:2}}>MANN&shy;SCHAFTEN</div>
+            </div>
+            <div>
+              <div style={{fontWeight:900,fontSize:18,color:"#86efac"}}>{(data.events||[]).length}</div>
+              <div style={{fontSize:10,color:"rgba(255,255,255,.4)",fontWeight:700,letterSpacing:.4,marginTop:2}}>TERMINE</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      ) : (
       <div style={{position:"relative",padding:"32px 22px 6px",maxWidth:520,margin:"0 auto",textAlign:"center"}}>
         <div className="up" style={{display:"inline-flex",alignItems:"center",gap:6,background:"rgba(134,239,172,.12)",border:"1px solid rgba(134,239,172,.28)",color:"#86efac",fontSize:12,fontWeight:700,padding:"5px 13px",borderRadius:99,marginBottom:18}}>
           &#9917; Für jeden Sportverein
@@ -11259,10 +11394,11 @@ function Directory({data,onPick,onNewClub,lang,setLang}) {
           </div>
         </div>
       </div>
+      )}
 
       {}
-      <div style={{maxWidth:520,margin:"24px auto 0",padding:"0 22px"}}><PrivacyBanner/></div>
-      <div style={{maxWidth:520,margin:"0 auto",padding:"0 22px"}}><AdSenseSlot slot="directoryTop"/></div>
+      <div style={{maxWidth:isDesktop?1120:520,margin:"24px auto 0",padding:"0 22px"}}><PrivacyBanner/></div>
+      <div style={{maxWidth:isDesktop?1120:520,margin:"0 auto",padding:"0 22px"}}><AdSenseSlot slot="directoryTop"/></div>
       <div style={{maxWidth:520,margin:"30px auto 0",padding:"0 22px"}}>
         <div style={{display:"flex",alignItems:"center",gap:12}}>
           <div style={{flex:1,height:1,background:"rgba(255,255,255,.1)"}}/>
@@ -18589,16 +18725,26 @@ function AppInner({lang,setLang}) {
           }
           const next={...data,clubs:[...data.clubs,newClubOrData]};
           const res = await save(next);
-          // Nur weiterleiten, wenn der Cloud-Write geklappt hat -
-          // sonst bliebe der Verein nur als React-Zustand stehen.
-          if(res && res.ok){
-            setCid(newClubOrData.id);
-            setScr("alogin");
-          } else {
-            // Verein aus React-State wieder entfernen, damit klar wird:
-            // ohne DB ist das hier kein gespeicherter Verein.
+          // Schritt 1: Save muss überhaupt ok sein.
+          if (!res || !res.ok) {
+            const err = res?.error || "unbekannt";
+            window.alert("Verein konnte NICHT in der Cloud gespeichert werden.\n\nFehler: "+err+"\n\nBitte URL ?dbtest aufrufen, um zu pruefen woran es liegt.");
             setData(p => p ? {...p, clubs:(p.clubs||[]).filter(c=>c.id!==newClubOrData.id)} : p);
+            return;
           }
+          // Schritt 2: Cloud-Verifizierung - liest die Directory zurueck
+          // und prueft, ob der neue Club wirklich drin ist. Das deckt den Fall ab,
+          // dass der POST mit HTTP 200 zurueckkommt, aber der Server gar nicht
+          // gespeichert hat (Trigger, RLS-with-check-failure, etc.).
+          const verify = await sb.verifyClubInCloud(newClubOrData.id);
+          if (!verify.ok) {
+            window.alert("Verein wurde scheinbar gespeichert, ist aber NICHT in der Cloud auffindbar.\n\nGrund: "+verify.reason+"\n\nDas ist genau das Problem das du gemeldet hast. Bitte schick einen Screenshot dieser Meldung + ?dbtest-Output.");
+            setData(p => p ? {...p, clubs:(p.clubs||[]).filter(c=>c.id!==newClubOrData.id)} : p);
+            return;
+          }
+          // Schritt 3: bestaetigt - Verein ist in Cloud sichtbar.
+          setCid(newClubOrData.id);
+          setScr("alogin");
         }}/>}
       {screen==="role"  &&activeCl&&<RolePicker cl={activeCl} onRole={r=>setScr(r==="user"?"flow":r==="trainer"?"tlogin":r==="helper"?"hlogin":"alogin")} onBack={()=>setScr("dir")}/>}
       {screen==="flow"  &&activeCl&&<UserFlow cl={activeCl} teams={clTeams} players={data.players} playerProfiles={data.playerProfiles||[]} preselectTid={linkTeam} onDone={(tid,user)=>login("user",{tid,user})} onBack={()=>setScr(linkTeam?"role":"role")}/>}
