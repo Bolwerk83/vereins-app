@@ -3,7 +3,8 @@
    ===================================================================== */
 (function () {
   "use strict";
-  const { CATEGORIES, APPS } = window.BOLWERK || { CATEGORIES: [], APPS: [] };
+  const { CATEGORIES, APPS, CONFIG } = window.BOLWERK || { CATEGORIES: [], APPS: [], CONFIG: {} };
+  const NL = (CONFIG && CONFIG.newsletter) || {};
   const $  = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
@@ -206,17 +207,47 @@
     stats.forEach((s) => io.observe(s));
   }
 
-  /* ---------- Newsletter ---------- */
+  /* ---------- Newsletter (Brevo + lokaler Fallback) ---------- */
   function initNewsletter() {
     const form = $("#nl-form");
-    form?.addEventListener("submit", (e) => {
+    if (!form) return;
+    const input = $("#nl-email");
+    const btn = form.querySelector('button[type="submit"]');
+
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const email = $("#nl-email").value.trim();
-      if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return;
-      // Demo: lokal merken. Später an Mailprovider / Supabase anbinden.
+      const email = input.value.trim();
+      if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+        input.focus();
+        return;
+      }
+      const app = input.dataset.app || "";
+
+      if (NL.brevoFormUrl) {
+        // An Brevo senden. sibforms erlaubt kein CORS-Auslesen -> no-cors:
+        // Wir gehen bei erfolgreichem Absenden von Erfolg aus (DOI-Mail folgt).
+        if (btn) { btn.disabled = true; btn.textContent = "Sende …"; }
+        try {
+          const body = new URLSearchParams();
+          body.set(NL.emailField || "EMAIL", email);
+          if (app && NL.sourceField) body.set(NL.sourceField, app);
+          await fetch(NL.brevoFormUrl, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: body.toString(),
+          });
+        } catch {
+          /* Netzwerkfehler ignorieren — DOI-Mail entscheidet final */
+        }
+        form.classList.add("done");
+        return;
+      }
+
+      // Fallback ohne konfiguriertes Backend: lokal merken (Demo).
       try {
         const list = JSON.parse(localStorage.getItem("bw24-leads") || "[]");
-        list.push({ email, app: $("#nl-email").dataset.app || "", at: Date.now() });
+        list.push({ email, app, at: Date.now() });
         localStorage.setItem("bw24-leads", JSON.stringify(list));
       } catch {}
       form.classList.add("done");

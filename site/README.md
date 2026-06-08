@@ -44,6 +44,41 @@ site/
 
 Fertig — Karte, Filter & Hero-Mockup aktualisieren sich automatisch.
 
+**Akzentfarben** (`color`) bringen Leben in die neutrale Basis. Bewährte Werte:
+
+| Farbe | Hex | passend für |
+|-------|-----|-------------|
+| Grün | `#16a34a` | Vereine, Sport, Erfolg |
+| Blau | `#0ea5e9` | Finanzen, Vorsorge, Vertrauen |
+| Indigo | `#6366f1` | Kommunikation, Tech |
+| Violett | `#8b5cf6` | Kreatives, Premium |
+| Orange | `#f97316` | Essen, Familie, Energie |
+| Rot | `#ef4444` | Gesundheit, Wichtiges |
+| Türkis | `#14b8a6` | Reise, Natur |
+| Pink | `#ec4899` | Lifestyle, Community |
+
+## Newsletter an Brevo anbinden (sicher, ohne API-Key)
+
+In `assets/js/apps.js` ganz unten im `CONFIG`-Block:
+
+1. In [Brevo](https://www.brevo.com) eine Kontaktliste anlegen.
+2. **Kontakte → Formulare** → ein **DOI-Anmeldeformular** erstellen.
+3. Im Einbettungs-Code die `action`-URL kopieren
+   (`https://xxxxx.sibforms.com/serve/MUIFA…`).
+4. Diese URL bei `newsletter.brevoFormUrl` eintragen.
+
+```js
+newsletter: {
+  brevoFormUrl: "https://abc123.sibforms.com/serve/MUIFAxyz...",
+  emailField: "EMAIL",   // Standard bei Brevo
+  sourceField: "APP",    // optional: welche App vorgemerkt wurde
+}
+```
+
+Der API-Key bleibt geheim – das Form-Endpoint ist von Brevo öffentlich &
+sicher ausgelegt. Solange das Feld leer ist, werden Adressen nur lokal im
+Browser gespeichert (Demo-Modus).
+
 ## Werbung / Affiliate aktivieren
 
 1. Im Cookie-Banner wird die Einwilligung abgefragt. Erst danach ruft
@@ -62,7 +97,7 @@ Fertig — Karte, Filter & Hero-Mockup aktualisieren sich automatisch.
 - [ ] In `impressum.html` die Felder `[DEIN NAME]`, `[STRASSE]`, `[PLZ ORT]` ausfüllen.
 - [ ] In `datenschutz.html` Hoster + tatsächlich genutzte Werbe-/Newsletter-Dienste eintragen.
 - [ ] Echte Live-URLs der Apps in `apps.js` setzen.
-- [ ] Newsletter an einen echten Dienst anbinden (aktuell nur lokale Demo-Speicherung).
+- [ ] Newsletter: `brevoFormUrl` in `apps.js` setzen (siehe Abschnitt oben).
 - [ ] Social-Media-Links im Footer (`index.html`) ergänzen.
 
 ## Lokal ansehen

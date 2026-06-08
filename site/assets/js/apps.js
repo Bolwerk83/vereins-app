@@ -88,5 +88,25 @@ const APPS = [
   },
 ];
 
+/* ---------------------------------------------------------------------
+   ZENTRALE KONFIGURATION
+   --------------------------------------------------------------------- */
+const CONFIG = {
+  /* Newsletter / Update-Liste -------------------------------------------
+     Anbindung an Brevo (ehemals Sendinblue) OHNE API-Key im Code:
+       1. In Brevo eine Kontaktliste anlegen.
+       2. Unter "Kontakte → Formulare" ein DOI-Anmeldeformular erstellen.
+       3. Im erzeugten Einbettungs-Code die "action"-URL kopieren
+          (Form: https://xxxxx.sibforms.com/serve/MUIFA...).
+       4. Diese URL hier eintragen — fertig. Solange leer, speichert die
+          Seite die E-Mail nur lokal (Demo). Der API-Key bleibt geheim,
+          weil Brevo das Form-Endpoint öffentlich & sicher bereitstellt.   */
+  newsletter: {
+    brevoFormUrl: "",        // z. B. "https://abc123.sibforms.com/serve/MUIFAxyz..."
+    emailField: "EMAIL",     // Standard-Feldname in Brevo-Formularen
+    sourceField: "APP",      // optionales verstecktes Feld: welche App gewünscht wurde
+  },
+};
+
 /* global window */
-window.BOLWERK = { CATEGORIES, APPS };
+window.BOLWERK = { CATEGORIES, APPS, CONFIG };
