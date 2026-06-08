@@ -987,6 +987,58 @@ const now   = () => new Date().toISOString().slice(0,10);
 const addD  = (iso,n) => { const d=new Date(iso+"T12:00:00"); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
 const addW  = (iso,n) => addD(iso,n*7);
 const fmtD  = iso => { const d=new Date(iso+"T12:00:00"); return `${["So","Mo","Di","Mi","Do","Fr","Sa"][d.getDay()]},${String(d.getDate()).padStart(2,"0")}.${String(d.getMonth()+1).padStart(2,"0")}.${d.getFullYear()}`; };
+
+// ----------------------------------------------------------------
+// Aktivitäts-Status: Trainer/Helfer/Spieler können in Pause geschaltet
+// werden. `active === false` blendet sie überall aus Auswahl-Listen aus.
+// Fehlende Property = aktiv (Backwards-Compat).
+// ----------------------------------------------------------------
+const isActive = (entity) => !entity ? false : entity.active !== false;
+
+// ----------------------------------------------------------------
+// Event-Timing & Vote-Lock.
+//   eventStart(ev)      → Date-Objekt
+//   eventDeadline(ev)   → 24h vor Event-Start, ab dann nur noch Absagen möglich
+//   isVotingLocked(ev)  → true wenn Deadline durch
+//   daysUntil(ev)       → restliche Tage bis zum Event (Float)
+//   isUpcoming5(ev)     → true wenn innerhalb der nächsten 5 Tage und nicht vorbei
+//   formatCountdown(ms) → "2 T 14 h", "14 h 7 m", "23 m" …
+// ----------------------------------------------------------------
+const eventStart = (ev) => {
+  if (!ev?.date) return null;
+  const t = (ev.time || "12:00").padStart(5,"0");
+  const d = new Date(ev.date + "T" + t + ":00");
+  return isNaN(d.getTime()) ? null : d;
+};
+const eventDeadline = (ev) => {
+  const s = eventStart(ev); if (!s) return null;
+  return new Date(s.getTime() - 24 * 60 * 60 * 1000);
+};
+const isVotingLocked = (ev) => {
+  const dl = eventDeadline(ev); if (!dl) return false;
+  return Date.now() >= dl.getTime();
+};
+const isEventPast = (ev) => {
+  const s = eventStart(ev); if (!s) return false;
+  return Date.now() >= s.getTime();
+};
+const daysUntil = (ev) => {
+  const s = eventStart(ev); if (!s) return Infinity;
+  return (s.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+};
+const isUpcoming5 = (ev) => {
+  const d = daysUntil(ev);
+  return d > 0 && d <= 5;
+};
+const formatCountdown = (ms) => {
+  if (ms <= 0) return "Jetzt";
+  const days = Math.floor(ms / (1000*60*60*24));
+  const hrs  = Math.floor((ms % (1000*60*60*24)) / (1000*60*60));
+  const mins = Math.floor((ms % (1000*60*60)) / (1000*60));
+  if (days > 0) return `${days} T ${hrs} h`;
+  if (hrs > 0)  return `${hrs} h ${mins} m`;
+  return `${mins} m`;
+};
 const fmtDShort = iso => { const d=new Date(iso+"T12:00:00"); return `${String(d.getDate()).padStart(2,"0")}.${String(d.getMonth()+1).padStart(2,"0")}.`; };
 
 const ACOLORS = ["#e74c3c","#e67e22","#2ecc71","#1abc9c","#3498db","#9b59b6","#e91e63","#00bcd4","#f59e0b","#8bc34a","#ff6b6b","#845ef7"];
@@ -14373,6 +14425,86 @@ function OnbStep4Done({ cl, teams, trainers, onFinish, onBack }) {
   );
 }
 
+/* ============================================================
+   Welcome-Modals für Trainer + Helfer beim ersten Login.
+   Werden nur einmal pro Person gezeigt (Flag im Datensatz).
+   ============================================================ */
+function WelcomeModal({ title, sub, points, onClose, theme="#16a34a" }) {
+  return (
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.65)",
+      display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:18}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:20,padding:"28px 24px",
+        width:"100%",maxWidth:420,boxShadow:"0 20px 60px rgba(0,0,0,.4)"}}>
+        <div style={{width:64,height:64,borderRadius:18,background:theme+"22",color:theme,
+          display:"flex",alignItems:"center",justifyContent:"center",
+          fontWeight:900,fontSize:30,margin:"0 auto 16px"}}>👋</div>
+        <h2 style={{fontWeight:900,fontSize:22,color:"#0f172a",textAlign:"center",margin:"0 0 8px"}}>{title}</h2>
+        <p style={{fontSize:14,color:"#64748b",textAlign:"center",lineHeight:1.55,margin:"0 0 22px"}}>{sub}</p>
+        <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:22}}>
+          {points.map((p,i)=>(
+            <div key={i} style={{display:"flex",gap:12,padding:"11px 13px",background:"#f8fafc",borderRadius:12,border:"1px solid #f1f5f9"}}>
+              <div style={{width:28,height:28,borderRadius:9,background:theme,color:"#fff",
+                display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:13,flexShrink:0}}>{i+1}</div>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>{p.title}</div>
+                <div style={{fontSize:12.5,color:"#64748b",lineHeight:1.5,marginTop:2}}>{p.text}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <button onClick={onClose}
+          style={{width:"100%",padding:"13px",borderRadius:13,border:"none",
+            background:theme,color:"#fff",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>
+          Verstanden, los geht's
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function TrainerWelcome({ tr, data, save, onClose }) {
+  const cl = (data.clubs||[]).find(c=>c.id===tr?.cid);
+  const theme = cl?.pri || "#16a34a";
+  const handleClose = () => {
+    const next = (data.trainers||[]).map(x=>x.id===tr.id?{...x,onboarded:true}:x);
+    save({...data, trainers: next}).catch?.(()=>{});
+    onClose();
+  };
+  return (
+    <WelcomeModal
+      theme={theme}
+      title={`Willkommen, ${tr?.name?.split(" ")[0]||"Trainer"}!`}
+      sub="Kurze Einweisung in deinen Trainer-Account. Alles, was du brauchst, in 3 Punkten."
+      points={[
+        { title:"Termine + Abstimmungen", text:"Auf der Termine-Seite siehst du alle anstehenden Trainings, Spiele und Turniere deiner Mannschaften. Eltern stimmen mit einem Tipp ab – du siehst die Zu-/Absagen live." },
+        { title:"Anmelde-Frist 24 h", text:"Eltern können bis 24 Stunden vor jedem Termin zu-/absagen. Danach werden 'Späte Absagen' separat erfasst – du behältst den Überblick wer wirklich kommt." },
+        { title:"Spieler & Pausen", text:"Im Team-Tab kannst du deine Spieler verwalten. Spieler in Pause werden in Auswahllisten ausgeblendet. Logos und Mannschafts-Einstellungen liegen beim Admin." },
+      ]}
+      onClose={handleClose}/>
+  );
+}
+
+function HelperWelcome({ h, data, save, onClose }) {
+  const cl = (data.clubs||[]).find(c=>c.id===h?.cid);
+  const theme = cl?.pri || "#16a34a";
+  const handleClose = () => {
+    const next = (data.helpers||[]).map(x=>x.id===h.id?{...x,onboarded:true}:x);
+    save({...data, helpers: next}).catch?.(()=>{});
+    onClose();
+  };
+  return (
+    <WelcomeModal
+      theme={theme}
+      title={`Willkommen, ${h?.name?.split(" ")[0]||"Helfer"}!`}
+      sub="Kurze Einweisung in deinen Helfer-Zugang."
+      points={[
+        { title:"Was du siehst", text:"Du siehst alle Termine, bei denen Hilfe gebraucht wird, und kannst dich pro Termin eintragen." },
+        { title:"Anmelden + Pausen", text:"Du kannst dich jederzeit für offene Termine melden. Wenn dir mal was dazwischen kommt, schreib es bitte in den Chat. Bei Pausen kannst du im Profil dich vorübergehend deaktivieren." },
+      ]}
+      onClose={handleClose}/>
+  );
+}
+
 function TemplateForm({initial,onSave,onCancel,cl,title}) {
   const t=TH(cl);
   const blank={name:"",icon:"L",items:[],_txt:"",_max:""};
@@ -15938,27 +16070,35 @@ function BookingModal({ field,cellStart,date,data,save,fire,cl,myTids,session,on
   );
 }
 
-function TrainerCard({ tr, data, onEdit, onDelete, onContact }) {
+function TrainerCard({ tr, data, onEdit, onDelete, onContact, onToggleActive }) {
   const myTeams = (data.teams||[]).filter(tm=>(tr.tids||[]).includes(tm.id));
   const playerCount = myTeams.reduce((s,tm)=>s+(data.playerProfiles||[]).filter(p=>p.mainTid===tm.id).length,0);
   const myEvents = (data.events||[]).filter(e=>(tr.tids||[]).includes(e.tid));
   const eventCount = myEvents.length;
-  // Avg attendance: count votes "yes" per training event
   const trainings = myEvents.filter(e=>e.type==="training");
   const avgAttend = trainings.length>0
     ? Math.round(trainings.reduce((s,e)=>s+Object.values(e.votes||{}).filter(v=>v==="yes").length,0)/trainings.length)
     : 0;
+  const inactive = !isActive(tr);
   return (
-    <div style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",overflow:"hidden",marginBottom:10}}>
+    <div style={{background:inactive?"#f8fafc":"#fff",borderRadius:16,border:`1.5px solid ${inactive?"#cbd5e1":"#e2e8f0"}`,overflow:"hidden",marginBottom:10,opacity:inactive?.7:1}}>
       <div style={{padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
         <Av name={tr.name} sz={48}/>
-        <div style={{flex:1}}>
-          <div style={{fontWeight:900,fontSize:16,color:"#0f172a"}}>{tr.name}</div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+            <div style={{fontWeight:900,fontSize:16,color:"#0f172a"}}>{tr.name}</div>
+            {inactive && <span style={{fontSize:10,fontWeight:800,letterSpacing:.5,background:"#fef3c7",color:"#854d0e",padding:"2px 7px",borderRadius:6}}>PAUSE</span>}
+          </div>
           <div style={{fontSize:12,color:"#64748b",marginTop:2}}>
             {myTeams.length>0 ? myTeams.map(tm=>tm.name).join(", ") : "Keine Teams zugewiesen"}
           </div>
         </div>
         <div style={{display:"flex",gap:6}}>
+          {onToggleActive && <button onClick={onToggleActive}
+            title={inactive?"Wieder aktiv setzen":"In Pause schicken (Auswahl-Listen verstecken)"}
+            style={{width:30,height:30,borderRadius:9,background:inactive?"#fef3c7":"#f1f5f9",border:"none",color:inactive?"#854d0e":"#64748b",cursor:"pointer",fontSize:13,fontWeight:700}}>
+            {inactive?"▶":"⏸"}
+          </button>}
           {onContact&&<button onClick={onContact}
           style={{width:30,height:30,borderRadius:9,background:"#f0fdf4",
             border:"none",color:"#16a34a",cursor:"pointer",fontSize:13,fontWeight:700}}>K</button>}
@@ -16021,7 +16161,15 @@ function TrainersTab({data,cid,save,fire,session}) {
           <p style={{fontSize:13,color:"#94a3b8",margin:0}}>Trainer können hier angelegt und Teams zugewiesen werden.</p>
         </div>
       )}
-      {myTrs.map(tr=><TrainerCard key={tr.id} tr={tr} data={data} onContact={()=>setShowContactSetup(tr)} onEdit={()=>openEdit(tr)} onDelete={()=>del(tr.id)}/>)}
+      {myTrs.map(tr=><TrainerCard key={tr.id} tr={tr} data={data}
+        onContact={()=>setShowContactSetup(tr)}
+        onEdit={()=>openEdit(tr)}
+        onDelete={()=>del(tr.id)}
+        onToggleActive={()=>{
+          const next = (data.trainers||[]).map(x=>x.id===tr.id?{...x,active:isActive(x)?false:true}:x);
+          save({...data, trainers: next});
+          fire(isActive(tr)?"Trainer in Pause":"Trainer wieder aktiv");
+        }}/>)}
       {showForm&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:800,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
           <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"90dvh",overflowY:"auto",padding:"20px 22px 48px"}}>
@@ -17534,6 +17682,11 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   },[local.chats]); const [wizard,setWizard]=useState(false); const [editEv,setEditEv]=useState(null);
   const [showSeasonModal,setShowSeasonModal]=useState(false);
   const [showOnboarding,setShowOnboarding]=useState(false);
+  // Welcome-Modal beim ersten Login für Trainer / Helfer (nur einmalig)
+  const meTrainer = session.role==="trainer" ? (data.trainers||[]).find(x=>x.id===session.id) : null;
+  const meHelper  = session.role==="helper"  ? (data.helpers||[]).find(x=>x.id===session.id) : null;
+  const [trainerWelcomeOpen, setTrainerWelcomeOpen] = useState(()=>!!(meTrainer && meTrainer.onboarded!==true));
+  const [helperWelcomeOpen,  setHelperWelcomeOpen]  = useState(()=>!!(meHelper  && meHelper.onboarded!==true));
   const { trigger: shareTrigger,dismiss: dismissShare } = useShareTrigger(local,session,myTids);
   const [delConf,setDelConf]=useState(null); const [viewEv,setViewEv]=useState(null); const [delConfVal,setDelConfVal]=useState(null);
   const [editConf,setEditConf]=useState(null);
@@ -17766,6 +17919,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
     </div>
 
       {showOnboarding&&<OnboardingWizard cl={myClub} data={local} save={save} fire={fire} onDone={()=>setShowOnboarding(false)}/>}
+      {trainerWelcomeOpen && meTrainer && <TrainerWelcome tr={meTrainer} data={local} save={save} onClose={()=>setTrainerWelcomeOpen(false)}/>}
+      {helperWelcomeOpen && meHelper && <HelperWelcome h={meHelper} data={local} save={save} onClose={()=>setHelperWelcomeOpen(false)}/>}
       <Toast msg={toast}/>
       {!isDesktop&&<BottomNav tab={tab} setTab={setTab} isAdmin={isAdmin} isHelper={isHelper}
         unread={unreadMsgs} cl={myClub} />}
@@ -17956,7 +18111,21 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
   const dlPassed = ev.deadline && now()>ev.deadline.date;
   const myVoteRaw = selfName ? ev.votes[selfName] : null;
   const myVote = typeof myVoteRaw==="object"&&myVoteRaw!==null ? myVoteRaw.val : myVoteRaw;
+  const upcoming5 = isUpcoming5(ev);
+  const votingLocked = isVotingLocked(ev) && !isEventPast(ev);
+  const lateCount = (ev.lateCancellations||[]).length;
   const canSelfVote = selfName && onSelfVote && (ev.pt==="att"||!ev.pt) && ev.date>=tod;
+  // Live-Countdown nur bei anstehenden Events innerhalb der nächsten 5 Tage
+  const [now2, setNow2] = useState(Date.now());
+  useEffect(() => {
+    if (!upcoming5) return;
+    const id = setInterval(()=>setNow2(Date.now()), 60000);
+    return () => clearInterval(id);
+  }, [upcoming5]);
+  const start = eventStart(ev);
+  const msToStart = start ? start.getTime() - now2 : 0;
+  const dl = eventDeadline(ev);
+  const msToDeadline = dl ? dl.getTime() - now2 : 0;
   const BtnSm=({onClick,label,icon,bg,col})=>(
     <button onClick={onClick} style={{display:"flex",alignItems:"center",gap:5,padding:"6px 11px",borderRadius:9,border:"none",background:bg,color:col,fontSize:12,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit"}}>
       <span style={{fontSize:14}}>{icon}</span>{label}
@@ -17971,13 +18140,41 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
           <div style={{fontSize:12,color:"#64748b",marginTop:3}}>{fmtDShort(ev.date)}{ev.time?" . "+ev.time:""}{ev.loc?" . *"+ev.loc:""}</div>
           {vc>0&&<div style={{display:"flex",gap:5,marginTop:4,flexWrap:"wrap"}}>{ev.pt==="att"?<><Tag c="#16a34a" ch={`* ${yes}`}/><Tag c="#dc2626" bg="#fee2e2" ch={`* ${no}`}/></>:<Tag c="#2563eb" ch={`* ${vc} Eintraege`}/>}</div>}
           {ev.deadline&&<div style={{marginTop:4}}><span style={{fontSize:11,fontWeight:700,color:dlPassed?"#dc2626":"#d97706",background:dlPassed?"#fee2e2":"#fef3c7",borderRadius:6,padding:"2px 8px"}}> {dlPassed?"Frist abgelaufen":"Frist: "}{!dlPassed&&ev.deadline.date}</span></div>}
+          {upcoming5 && !votingLocked && msToStart>0 && (
+            <div style={{marginTop:4,display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
+              <span style={{fontSize:11,fontWeight:800,color:"#0c4a6e",background:"#e0f2fe",borderRadius:6,padding:"2px 8px",letterSpacing:.3}}>
+                ⏱ in {formatCountdown(msToStart)}
+              </span>
+              {msToDeadline > 0 && (
+                <span style={{fontSize:11,fontWeight:700,color:"#854d0e",background:"#fef9c3",borderRadius:6,padding:"2px 8px"}}>
+                  Anmeldung schließt in {formatCountdown(msToDeadline)}
+                </span>
+              )}
+            </div>
+          )}
+          {votingLocked && (
+            <div style={{marginTop:4}}>
+              <span style={{fontSize:11,fontWeight:800,color:"#7f1d1d",background:"#fee2e2",borderRadius:6,padding:"2px 8px"}}>
+                Anmeldung geschlossen – nur noch Absage möglich
+              </span>
+            </div>
+          )}
+          {lateCount > 0 && (
+            <div style={{marginTop:4}}>
+              <span title="Späte Absagen nach Anmeldeschluss" style={{fontSize:11,fontWeight:700,color:"#9a3412",background:"#ffedd5",borderRadius:6,padding:"2px 8px"}}>
+                Späte Absagen: {lateCount}
+              </span>
+            </div>
+          )}
         </div>
       </div>
       {canSelfVote&&(
         <div style={{display:"flex",gap:6,padding:"4px 12px 8px",alignItems:"center"}}>
           <span style={{fontSize:11,fontWeight:700,color:"#94a3b8"}}>Ich:</span>
-          <button onClick={()=>onSelfVote(ev.id,"yes")} style={{flex:1,padding:"7px",borderRadius:9,border:`1.5px solid ${myVote==="yes"?"#16a34a":"#e2e8f0"}`,background:myVote==="yes"?"#16a34a":"#fff",color:myVote==="yes"?"#fff":"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Bin dabei</button>
-          <button onClick={()=>onSelfVote(ev.id,"no")} style={{flex:1,padding:"7px",borderRadius:9,border:`1.5px solid ${myVote==="no"?"#dc2626":"#e2e8f0"}`,background:myVote==="no"?"#dc2626":"#fff",color:myVote==="no"?"#fff":"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Sage ab</button>
+          <button onClick={()=>onSelfVote(ev.id,"yes")} disabled={votingLocked}
+            title={votingLocked?"Anmeldung geschlossen":""}
+            style={{flex:1,padding:"7px",borderRadius:9,border:`1.5px solid ${myVote==="yes"?"#16a34a":"#e2e8f0"}`,background:myVote==="yes"?"#16a34a":(votingLocked?"#f1f5f9":"#fff"),color:myVote==="yes"?"#fff":(votingLocked?"#cbd5e1":"#475569"),fontWeight:700,fontSize:12,cursor:votingLocked?"not-allowed":"pointer",fontFamily:"inherit",opacity:votingLocked?.6:1}}>Bin dabei</button>
+          <button onClick={()=>onSelfVote(ev.id,"no")} style={{flex:1,padding:"7px",borderRadius:9,border:`1.5px solid ${myVote==="no"?"#dc2626":"#e2e8f0"}`,background:myVote==="no"?"#dc2626":"#fff",color:myVote==="no"?"#fff":"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{votingLocked?"Späte Absage":"Sage ab"}</button>
         </div>
       )}
       {}
@@ -18535,15 +18732,40 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
   };
 
   const vote=(eid,pt,val)=>{
+    let lateCancel = null;
+    let blocked = false;
     const next={...data,events:data.events.map(e=>{
       if(e.id!==eid)return e;
       if(pt==="carpool")return val;
+      if(pt==="att"){
+        const locked = isVotingLocked(e) && !isEventPast(e);
+        const newVal = (typeof val==="object"&&val!==null) ? val.val : val;
+        const prev   = e.votes[user];
+        const prevVal= (typeof prev==="object"&&prev!==null) ? prev.val : prev;
+        if (locked) {
+          if (newVal !== "no") {
+            blocked = true;
+            return e;
+          }
+          if (prevVal==="yes"||prevVal==="maybe"||prevVal==="late") {
+            lateCancel = { user, prev: prevVal, ts: new Date().toISOString(),
+              reason: (typeof val==="object"&&val!==null) ? (val.reason||"") : "" };
+          }
+        }
+      }
       const nv={...e.votes};const ts=new Date().toISOString();
       if(pt==="att"){if(typeof nv[user]==="object"&&nv[user]?.val===val)delete nv[user];else if(nv[user]===val)delete nv[user];else nv[user]={val,ts};}
       else nv[user]=val;
-      return{...e,votes:nv};
+      const updated = {...e,votes:nv};
+      if (lateCancel) updated.lateCancellations = [...(e.lateCancellations||[]), lateCancel];
+      return updated;
     })};
-    onSave(next);fire("Gespeichert *");
+    if (blocked) {
+      window.alert("Anmeldung ist geschlossen (24 h vor Termin).\nDu kannst nur noch absagen oder eine Nachfrage stellen.");
+      return;
+    }
+    onSave(next);
+    fire(lateCancel ? "Späte Absage erfasst" : "Gespeichert *");
   };
 
   return (
@@ -19025,7 +19247,7 @@ function AppInner({lang,setLang}) {
       {screen==="onboard"&&activeCl&&isAdmin&&<AdminOnboarding data={data} cl={activeCl} cid={cid} save={save} onDone={()=>setScr("dash")}/>}
       {screen==="role"  &&activeCl&&<RolePicker cl={activeCl} onRole={r=>setScr(r==="user"?"flow":r==="trainer"?"tlogin":r==="helper"?"hlogin":"alogin")} onBack={()=>setScr("dir")}/>}
       {screen==="flow"  &&activeCl&&<UserFlow cl={activeCl} teams={clTeams} players={data.players} playerProfiles={data.playerProfiles||[]} preselectTid={linkTeam} onDone={(tid,user)=>login("user",{tid,user})} onBack={()=>setScr(linkTeam?"role":"role")}/>}
-      {screen==="tlogin"&&activeCl&&<TrainerLogin cl={activeCl} trainers={data.trainers.filter(t=>t.cid===cid)} teams={clTeams} onLogin={tr=>login("trainer",tr)} onBack={()=>setScr("role")}/>}
+      {screen==="tlogin"&&activeCl&&<TrainerLogin cl={activeCl} trainers={data.trainers.filter(t=>t.cid===cid&&isActive(t))} teams={clTeams} onLogin={tr=>login("trainer",tr)} onBack={()=>setScr("role")}/>}
       {screen==="hlogin"&&activeCl&&<HelperLogin cl={activeCl} helpers={data.helpers||[]} onLogin={h=>login("helper",{...h,cid})} onBack={()=>setScr("role")}/>}
       {screen==="alogin"&&activeCl&&<AdminLogin cl={activeCl} onLogin={a=>login("admin",{...a,cid})} onBack={()=>setScr("role")}/>}
       {screen==="user"  &&session&&activeCl&&<UserHome data={data} session={session} onSave={save} onLogout={logout} lang={lang}/>}
