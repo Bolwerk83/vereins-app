@@ -14105,6 +14105,274 @@ function BrandingTab({cl,onSave}) {
   );
 }
 
+/* ============================================================
+   AdminOnboarding - Wizard nach erstem Admin-Login.
+   4 Schritte: Logo -> Mannschaften -> Trainer -> Fertig.
+   Jeder Schritt ueberspringbar; setupCompleted setzt Flag im Club.
+   ============================================================ */
+function AdminOnboarding({ data, cl, cid, save, onDone }) {
+  const [step, setStep] = useState(1);
+  const total = 4;
+  const t = TH(cl);
+  const teams = (data.teams||[]).filter(tm=>tm.cid===cid);
+  const trainers = (data.trainers||[]).filter(tr=>tr.cid===cid);
+
+  const finish = async () => {
+    const next = {...data,
+      clubs:(data.clubs||[]).map(c=>c.id===cid?{...c,setupCompleted:true}:c),
+    };
+    await save(next);
+    onDone();
+  };
+  const skipAll = async () => {
+    if (!window.confirm("Wizard wirklich überspringen? Du kannst alles später in den jeweiligen Bereichen nachholen.")) return;
+    await finish();
+  };
+
+  return (
+    <div style={{minHeight:"100dvh",background:"linear-gradient(160deg,#0f172a 0%,#052e16 60%,#14532d 100%)",padding:"24px 18px 60px"}}>
+      <style>{CSS}</style>
+      <div style={{maxWidth:560,margin:"0 auto"}}>
+        {/* Header */}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:18,color:"rgba(255,255,255,.6)",fontSize:12,fontWeight:700,letterSpacing:.4}}>
+          <div>SCHRITT {step} VON {total}</div>
+          <button onClick={skipAll} style={{background:"none",border:"none",color:"rgba(255,255,255,.45)",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",textDecoration:"underline"}}>Wizard überspringen</button>
+        </div>
+        {/* Progress */}
+        <div style={{display:"flex",gap:6,marginBottom:24}}>
+          {Array.from({length:total},(_,i)=>(
+            <div key={i} style={{flex:1,height:4,borderRadius:99,background:i<step?"#22c55e":"rgba(255,255,255,.12)"}}/>
+          ))}
+        </div>
+
+        {step===1 && <OnbStep1Logo cl={cl} data={data} cid={cid} save={save} onNext={()=>setStep(2)}/>}
+        {step===2 && <OnbStep2Teams cl={cl} data={data} cid={cid} save={save} teams={teams} onNext={()=>setStep(3)} onBack={()=>setStep(1)}/>}
+        {step===3 && <OnbStep3Trainers cl={cl} data={data} cid={cid} save={save} teams={teams} trainers={trainers} onNext={()=>setStep(4)} onBack={()=>setStep(2)}/>}
+        {step===4 && <OnbStep4Done cl={cl} teams={teams} trainers={trainers} onFinish={finish} onBack={()=>setStep(3)}/>}
+      </div>
+    </div>
+  );
+}
+
+function OnbCard({title,sub,children}) {
+  return (
+    <div style={{background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.1)",borderRadius:22,padding:"28px 24px",color:"#fff"}}>
+      <h2 style={{fontWeight:900,fontSize:24,letterSpacing:-.6,margin:"0 0 6px"}}>{title}</h2>
+      <p style={{color:"rgba(255,255,255,.6)",fontSize:14,lineHeight:1.55,margin:"0 0 22px"}}>{sub}</p>
+      {children}
+    </div>
+  );
+}
+function OnbBtnRow({back,nextLabel,onNext,nextDisabled,skipLabel}) {
+  return (
+    <div style={{display:"flex",gap:10,marginTop:22}}>
+      {back && <button onClick={back} style={{flex:1,padding:"13px",borderRadius:13,border:"1.5px solid rgba(255,255,255,.18)",background:"transparent",color:"rgba(255,255,255,.7)",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Zurück</button>}
+      <button onClick={onNext} disabled={nextDisabled}
+        style={{flex:2,padding:"14px",borderRadius:13,border:"none",
+          background:nextDisabled?"rgba(255,255,255,.1)":"linear-gradient(135deg,#22c55e,#16a34a)",
+          color:nextDisabled?"rgba(255,255,255,.4)":"#fff",fontWeight:800,fontSize:15,
+          cursor:nextDisabled?"default":"pointer",fontFamily:"inherit"}}>
+        {nextLabel || (skipLabel?skipLabel:"Weiter")}
+      </button>
+    </div>
+  );
+}
+
+function OnbStep1Logo({ cl, data, cid, save, onNext }) {
+  const [logo, setLogo] = useState(cl?.logo || null);
+  const [saving, setSaving] = useState(false);
+  const ref = useRef(null);
+  const onFile = e => {
+    const f = e.target.files?.[0]; if (!f) return;
+    if (f.size > 3 * 1024 * 1024) { window.alert("Bild zu groß (max. 3 MB)."); return; }
+    const r = new FileReader(); r.onload = ev => setLogo(ev.target.result);
+    r.readAsDataURL(f);
+  };
+  const saveAndNext = async () => {
+    if (logo === cl?.logo) { onNext(); return; }
+    setSaving(true);
+    const next = {...data, clubs:(data.clubs||[]).map(c=>c.id===cid?{...c,logo}:c)};
+    await save(next);
+    setSaving(false);
+    onNext();
+  };
+  return (
+    <OnbCard
+      title="Logo hochladen"
+      sub="Ein gutes Logo macht deinen Verein in der App sofort erkennbar. Quadratisch, mind. 200×200 Pixel, max. 3 MB. Kannst du auch später anpassen.">
+      <div style={{display:"flex",alignItems:"center",gap:18,marginBottom:16}}>
+        <div style={{width:96,height:96,borderRadius:22,overflow:"hidden",border:"2px solid rgba(255,255,255,.15)",background:"rgba(255,255,255,.05)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+          {logo ? <img src={logo} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/> : <span style={{fontSize:44,color:"rgba(255,255,255,.4)"}}>{cl?.em||"*"}</span>}
+        </div>
+        <div style={{flex:1}}>
+          <input ref={ref} type="file" accept="image/*" style={{display:"none"}} onChange={onFile}/>
+          <button onClick={()=>ref.current?.click()} style={{padding:"11px 18px",borderRadius:12,border:"none",background:"rgba(255,255,255,.12)",color:"#fff",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>{logo?"Anderes Bild":"Bild auswählen"}</button>
+          {logo && <button onClick={()=>setLogo(null)} style={{marginLeft:8,padding:"11px 14px",borderRadius:12,border:"1.5px solid rgba(255,255,255,.15)",background:"transparent",color:"rgba(255,255,255,.6)",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Entfernen</button>}
+        </div>
+      </div>
+      <OnbBtnRow nextLabel={logo===cl?.logo?"Überspringen":(saving?"Speichert…":"Speichern & weiter")} onNext={saveAndNext} nextDisabled={saving}/>
+    </OnbCard>
+  );
+}
+
+function OnbStep2Teams({ cl, data, cid, save, teams, onNext, onBack }) {
+  const [name, setName] = useState("");
+  const [cat, setCat] = useState(Object.keys(CAT_YEARS)[0]||"E-Jugend");
+  const [saving, setSaving] = useState(false);
+  const TEAM_COLORS = ["#16a34a","#2563eb","#d97706","#7c3aed","#dc2626","#0891b2","#059669","#ea580c"];
+  const CATS = Object.keys(CAT_YEARS);
+  const addTeam = async () => {
+    const nm = name.trim(); if (!nm) return;
+    setSaving(true);
+    const team = {
+      id: uid(), cid: cl.id, name: nm,
+      icon: nm.slice(0,2).toUpperCase(),
+      col: TEAM_COLORS[teams.length % TEAM_COLORS.length],
+      pub: true, pwd: hashPw("team"),
+      cat, years: CAT_YEARS[cat]||"",
+    };
+    await save({...data, teams:[...(data.teams||[]),team]});
+    setSaving(false); setName("");
+  };
+  const del = async (id) => {
+    if (!window.confirm("Diese Mannschaft entfernen?")) return;
+    await save({...data, teams:(data.teams||[]).filter(t=>t.id!==id)});
+  };
+  return (
+    <OnbCard
+      title="Mannschaften anlegen"
+      sub="Trag deine Mannschaften ein. Du kannst Trikot-Farbe & Passwort später anpassen. Mindestens eine empfehlen wir – sonst wirken die Termine später leer.">
+      <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:14}}>
+        {teams.map(tm=>(
+          <div key={tm.id} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 14px",borderRadius:13,background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.08)"}}>
+            <div style={{width:36,height:36,borderRadius:10,background:tm.col,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:13,color:"#fff",flexShrink:0}}>{tm.icon}</div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontWeight:700,fontSize:14,color:"#fff"}}>{tm.name}</div>
+              <div style={{fontSize:11,color:"rgba(255,255,255,.5)"}}>{tm.cat} · {tm.years||""}</div>
+            </div>
+            <button onClick={()=>del(tm.id)} style={{background:"none",border:"none",color:"rgba(255,255,255,.4)",fontSize:18,cursor:"pointer",padding:"4px 6px",fontFamily:"inherit"}} aria-label="Entfernen">×</button>
+          </div>
+        ))}
+      </div>
+      <div style={{background:"rgba(255,255,255,.04)",border:"1px dashed rgba(255,255,255,.18)",borderRadius:14,padding:"14px 14px"}}>
+        <input value={name} onChange={e=>setName(e.target.value)} placeholder="Name, z.B. E-Jugend 1"
+          onKeyDown={e=>e.key==="Enter"&&addTeam()}
+          style={{width:"100%",padding:"11px 13px",fontSize:14,background:"rgba(0,0,0,.25)",border:"1.5px solid rgba(255,255,255,.1)",borderRadius:11,outline:"none",color:"#fff",marginBottom:10,boxSizing:"border-box",fontFamily:"inherit"}}/>
+        <div style={{fontSize:10,fontWeight:800,color:"rgba(255,255,255,.5)",letterSpacing:.5,marginBottom:6}}>ALTERSKLASSE</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:12}}>
+          {CATS.map(c=>(
+            <button key={c} type="button" onClick={()=>setCat(c)}
+              style={{padding:"6px 11px",borderRadius:99,border:`1.5px solid ${cat===c?"#22c55e":"rgba(255,255,255,.12)"}`,background:cat===c?"rgba(34,197,94,.2)":"transparent",color:cat===c?"#86efac":"rgba(255,255,255,.6)",fontWeight:700,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>{c}</button>
+          ))}
+        </div>
+        <button onClick={addTeam} disabled={!name.trim()||saving}
+          style={{width:"100%",padding:"12px",borderRadius:11,border:"none",background:name.trim()&&!saving?"#16a34a":"rgba(255,255,255,.1)",color:name.trim()?"#fff":"rgba(255,255,255,.4)",fontWeight:800,fontSize:14,cursor:name.trim()&&!saving?"pointer":"default",fontFamily:"inherit"}}>
+          {saving?"Speichert…":"+ Mannschaft hinzufügen"}
+        </button>
+      </div>
+      <OnbBtnRow back={onBack} nextLabel="Weiter" onNext={onNext}/>
+    </OnbCard>
+  );
+}
+
+function OnbStep3Trainers({ cl, data, cid, save, teams, trainers, onNext, onBack }) {
+  const [f, setF] = useState({name:"",tids:[]});
+  const [saving, setSaving] = useState(false);
+  const [genPwd, setGenPwd] = useState("");
+  const u = p => setF(prev=>({...prev,...p}));
+  const toggleTid = (id) => u({tids:f.tids.includes(id)?f.tids.filter(x=>x!==id):[...f.tids,id]});
+
+  const addTrainer = async () => {
+    const nm = f.name.trim(); if (!nm) return;
+    setSaving(true);
+    // Einfaches Auto-Passwort (4-stelliger Code) - User kann's in Trainer-Tab aendern.
+    const pw = Math.random().toString(36).slice(2,6).toUpperCase();
+    const rec = { id: uid(), cid, name: nm, role:"Trainer", tids:f.tids, pw: hashPw(pw), phone:"", email:"" };
+    await save({...data, trainers:[...(data.trainers||[]),rec]});
+    setSaving(false); setF({name:"",tids:[]});
+    setGenPwd(`${nm}: ${pw}`);
+    setTimeout(()=>setGenPwd(""), 6000);
+  };
+  const del = async (id) => {
+    if (!window.confirm("Diesen Trainer entfernen?")) return;
+    await save({...data, trainers:(data.trainers||[]).filter(t=>t.id!==id)});
+  };
+  return (
+    <OnbCard
+      title="Trainer anlegen"
+      sub="Trag die Trainer ein und ordne ihnen Mannschaften zu. Jeder bekommt automatisch einen Login-Code – den du nach dem Anlegen kurz angezeigt kriegst.">
+      <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:14}}>
+        {trainers.map(tr=>{
+          const tnames=tr.tids?.map(id=>teams.find(t=>t.id===id)?.name).filter(Boolean).join(", ");
+          return (
+            <div key={tr.id} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 14px",borderRadius:13,background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.08)"}}>
+              <div style={{width:36,height:36,borderRadius:"50%",background:"rgba(255,255,255,.1)",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:13,color:"#fff",flexShrink:0}}>{tr.name.slice(0,2).toUpperCase()}</div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontWeight:700,fontSize:14,color:"#fff"}}>{tr.name}</div>
+                <div style={{fontSize:11,color:"rgba(255,255,255,.5)"}}>{tnames||"– keine Mannschaft –"}</div>
+              </div>
+              <button onClick={()=>del(tr.id)} style={{background:"none",border:"none",color:"rgba(255,255,255,.4)",fontSize:18,cursor:"pointer",padding:"4px 6px",fontFamily:"inherit"}} aria-label="Entfernen">×</button>
+            </div>
+          );
+        })}
+      </div>
+      {genPwd && (
+        <div style={{background:"rgba(34,197,94,.12)",border:"1px solid rgba(34,197,94,.35)",borderRadius:12,padding:"10px 14px",marginBottom:14,color:"#86efac",fontSize:13,fontWeight:700}}>
+          Login-Code: <span style={{fontFamily:"monospace",letterSpacing:1}}>{genPwd}</span> · weitergeben oder im Trainer-Tab neu setzen.
+        </div>
+      )}
+      <div style={{background:"rgba(255,255,255,.04)",border:"1px dashed rgba(255,255,255,.18)",borderRadius:14,padding:"14px 14px"}}>
+        <input value={f.name} onChange={e=>u({name:e.target.value})} placeholder="Trainer-Name"
+          onKeyDown={e=>e.key==="Enter"&&addTrainer()}
+          style={{width:"100%",padding:"11px 13px",fontSize:14,background:"rgba(0,0,0,.25)",border:"1.5px solid rgba(255,255,255,.1)",borderRadius:11,outline:"none",color:"#fff",marginBottom:10,boxSizing:"border-box",fontFamily:"inherit"}}/>
+        {teams.length>0 && <>
+          <div style={{fontSize:10,fontWeight:800,color:"rgba(255,255,255,.5)",letterSpacing:.5,marginBottom:6}}>MANNSCHAFT(EN) ZUWEISEN</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:12}}>
+            {teams.map(tm=>(
+              <button key={tm.id} type="button" onClick={()=>toggleTid(tm.id)}
+                style={{padding:"6px 11px",borderRadius:99,border:`1.5px solid ${f.tids.includes(tm.id)?tm.col:"rgba(255,255,255,.12)"}`,background:f.tids.includes(tm.id)?tm.col+"33":"transparent",color:f.tids.includes(tm.id)?"#fff":"rgba(255,255,255,.6)",fontWeight:700,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>
+                {tm.name}
+              </button>
+            ))}
+          </div>
+        </>}
+        {teams.length===0 && <div style={{fontSize:12,color:"rgba(255,255,255,.45)",marginBottom:10,fontStyle:"italic"}}>Noch keine Mannschaft angelegt – Trainer kannst du auch nachträglich zuordnen.</div>}
+        <button onClick={addTrainer} disabled={!f.name.trim()||saving}
+          style={{width:"100%",padding:"12px",borderRadius:11,border:"none",background:f.name.trim()&&!saving?"#16a34a":"rgba(255,255,255,.1)",color:f.name.trim()?"#fff":"rgba(255,255,255,.4)",fontWeight:800,fontSize:14,cursor:f.name.trim()&&!saving?"pointer":"default",fontFamily:"inherit"}}>
+          {saving?"Speichert…":"+ Trainer hinzufügen"}
+        </button>
+      </div>
+      <OnbBtnRow back={onBack} nextLabel="Weiter" onNext={onNext}/>
+    </OnbCard>
+  );
+}
+
+function OnbStep4Done({ cl, teams, trainers, onFinish, onBack }) {
+  const stats = [
+    { label:"Logo", done: !!cl?.logo, hint:"Vereinslogo gesetzt" },
+    { label:"Mannschaften", count: teams.length, done: teams.length>0, hint: teams.length>0 ? `${teams.length} angelegt` : "noch keine" },
+    { label:"Trainer", count: trainers.length, done: trainers.length>0, hint: trainers.length>0 ? `${trainers.length} angelegt` : "noch keine" },
+  ];
+  return (
+    <OnbCard
+      title="Fast fertig"
+      sub="Das war's für den Einstieg. Alles, was du gleich noch brauchst, findest du in der Sidebar – Termine, Trikots, Plätze und mehr. Viel Erfolg!">
+      <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:8}}>
+        {stats.map(s=>(
+          <div key={s.label} style={{display:"flex",alignItems:"center",gap:14,padding:"12px 16px",borderRadius:13,background:"rgba(255,255,255,.05)",border:`1px solid ${s.done?"rgba(34,197,94,.3)":"rgba(255,255,255,.08)"}`}}>
+            <div style={{width:32,height:32,borderRadius:"50%",background:s.done?"rgba(34,197,94,.2)":"rgba(255,255,255,.08)",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:14,color:s.done?"#86efac":"rgba(255,255,255,.4)",flexShrink:0}}>{s.done?"✓":"·"}</div>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:700,fontSize:14,color:"#fff"}}>{s.label}</div>
+              <div style={{fontSize:12,color:"rgba(255,255,255,.55)"}}>{s.hint}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <OnbBtnRow back={onBack} nextLabel="Jetzt loslegen →" onNext={onFinish}/>
+    </OnbCard>
+  );
+}
+
 function TemplateForm({initial,onSave,onCancel,cl,title}) {
   const t=TH(cl);
   const blank={name:"",icon:"L",items:[],_txt:"",_max:""};
@@ -18655,7 +18923,15 @@ function AppInner({lang,setLang}) {
       securityLog:newLog,
       clubs:(data.clubs||[]).map(c=>c.id===cid?{...c,lastActive:nowIso}:c),
     }, cid).catch(()=>{});
-    setScr(role==="user"?"user":"dash");
+    // Admin: Onboarding-Wizard wenn Verein noch leer/unfertig.
+    if (role === "admin") {
+      const club = (data.clubs||[]).find(c=>c.id===cid);
+      const teamCount = (data.teams||[]).filter(t=>t.cid===cid).length;
+      const needsOnboarding = !club?.setupCompleted && teamCount === 0;
+      setScr(needsOnboarding ? "onboard" : "dash");
+    } else {
+      setScr(role==="user"?"user":"dash");
+    }
   };
   const logout=()=>{
     if(session){const e={...createAuditEntry("logout","Logout: "+(session.name||session.role),session),cid};sb.set({...data,securityLog:[...(data.securityLog||[]),e]}, cid).catch(()=>{});}
@@ -18746,6 +19022,7 @@ function AppInner({lang,setLang}) {
           setCid(newClubOrData.id);
           setScr("alogin");
         }}/>}
+      {screen==="onboard"&&activeCl&&isAdmin&&<AdminOnboarding data={data} cl={activeCl} cid={cid} save={save} onDone={()=>setScr("dash")}/>}
       {screen==="role"  &&activeCl&&<RolePicker cl={activeCl} onRole={r=>setScr(r==="user"?"flow":r==="trainer"?"tlogin":r==="helper"?"hlogin":"alogin")} onBack={()=>setScr("dir")}/>}
       {screen==="flow"  &&activeCl&&<UserFlow cl={activeCl} teams={clTeams} players={data.players} playerProfiles={data.playerProfiles||[]} preselectTid={linkTeam} onDone={(tid,user)=>login("user",{tid,user})} onBack={()=>setScr(linkTeam?"role":"role")}/>}
       {screen==="tlogin"&&activeCl&&<TrainerLogin cl={activeCl} trainers={data.trainers.filter(t=>t.cid===cid)} teams={clTeams} onLogin={tr=>login("trainer",tr)} onBack={()=>setScr("role")}/>}
