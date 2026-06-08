@@ -4598,10 +4598,11 @@ function TrainingPlanner({ data, myTids, cl, save, fire }) {
   );
 }
 
-function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false }) {
-  const [subTab, setSubTab] = useState("players"); // players | attendance | stats
+function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false, initialSubTab }) {
+  const [subTab, setSubTab] = useState(initialSubTab || "players"); // players | attendance | stats
   const t = TH(cl);
   const subTabs = [
+    ...(isAdmin ? [{ id:"manage", label:"Mannschaften", icon:"M" }] : []),
     { id:"players",    label:"Spieler",     icon:"P" },
     { id:"attendance", label:"Anwesenheit", icon:"S" },
     { id:"results",    label:"Ergebnisse",  icon:"E" },
@@ -4611,7 +4612,6 @@ function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false }) {
     { id:"planner",    label:"Planer",      icon:"W" },
     { id:"trainings",  label:"Trainings",   icon:"TP" },
     { id:"taktik",     label:"Taktik",      icon:"TB" },
-    ...(isAdmin ? [{ id:"manage", label:"Mannschaften", icon:"M" }] : []),
   ];
   return (
     <div>
@@ -17417,7 +17417,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         {tab==="results"    &&<><LeagueTab data={local} myTids={myTids} cl={myClub} save={save} fire={fire}/><AffiliateBanner trigger="results" style={{marginTop:14}}/></> }
         {tab==="inbox"      &&<InboxTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
         {tab==="chat"       &&<ChatTab data={local} cid={cid} myTids={myTids} session={session} save={save} fire={fire} cl={myClub}/>}
-        {tab==="teams"      &&isAdmin&&<TeamHub data={local} myTids={myTids} save={save} fire={fire} cl={myClub} session={session} isAdmin={isAdmin}/>}
+        {tab==="teams"      &&isAdmin&&<TeamHub data={local} myTids={myTids} save={save} fire={fire} cl={myClub} session={session} isAdmin={isAdmin} initialSubTab="manage"/>}
         {tab==="overview"  &&isAdmin&&<AllTeamsOverview data={local} cid={cid} cl={myClub} onSelectTeam={tid=>{ const team=(local.teams||[]).find(x=>x.id===tid); if(team) fire("Team: "+team.name); }}/>}
         {tab==="news"      &&<NewsTab data={local} cid={cid} session={session} save={save} fire={fire} cl={myClub}/>}
         {tab==="fieldsadmin"&&isAdmin&&<FieldsManagerTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/> }
