@@ -15930,7 +15930,13 @@ function SeasonPicker({ data,save,fire,onSelect,t }) {
   const active  = data.activeSeason || seasons[0]?.id;
   const [showWizard,setShowWizard] = useState(false);
   const archiveSeason = sid => { save({...data,seasons:seasons.map(s=>s.id===sid?{...s,status:"archived"}:s)}); fire&&fire("Archiviert"); };
-  const switchActive  = sid => { save({...data,activeSeason:sid}); onSelect&&onSelect(sid); };
+  // Wenn der Parent (SeasonModal) das Aktivieren uebernimmt: kein lokaler Save,
+  // sonst greift die Migration in activateAndMigrate nicht (active waere schon
+  // umgesetzt). Ohne Parent-Handler: Default-Verhalten (nur Activeseason setzen).
+  const switchActive  = sid => {
+    if (onSelect) { onSelect(sid); return; }
+    save({...data, activeSeason: sid});
+  };
   const STATUS = {active:{col:"#16a34a",bg:"#dcfce7",l:"Aktiv",i:"gruen"},planning:{col:"#2563eb",bg:"#eff6ff",l:"Planung",i:"blau"},archived:{col:"#64748b",bg:"#f1f5f9",l:"Archiviert",i:"grau"}};
   const clubs = data.clubs||[];
   const teams = data.teams||[];
@@ -15972,23 +15978,104 @@ function SeasonModal({ data,save,fire,cl,myTids,onClose }) {
   const allTeams     = data.teams;
   const myTeams      = allTeams.filter(tm => myTids.includes(tm.id));
   const [tab,setTab] = useState("seasons");
-  const copyToSeason = (fromId,toId) => {
-    const existing  = allPlayers.filter(p=>p.seasonId===toId);
-    if (existing.length > 0 && !window.confirm(`Die Saison hat bereits ${existing.length} Spieler. Trotzdem kopieren (Duplikate möglich)?`)) return;
 
-    const toCopy = allPlayers.filter(p => p.seasonId===fromId && myTids.includes(p.mainTid));
-    const copied = toCopy.map(p => ({
-      ...p,id: uid(),seasonId: toId,lastTeam:   (allTeams.find(tm=>tm.id===p.mainTid)?.name||"") + " " + (seasons.find(s=>s.id===fromId)?.label||""),lastTeamId: p.mainTid,mainTid:"",optTids: [],jerseyNr:"",jerseyStatus:"none",recommend:"",goals:0,assists:0,yellowCards:0,redCards:0,}));
+  // Schluessel zur Duplikat-Erkennung: gleicher Verein + gleiche Saison + Name (case-insensitive) + Jahrgang
+  const dupKey = p => `${p.cid}|${p.seasonId}|${(p.name||"").toLowerCase().trim()}|${p.by||""}`;
 
-    save({ ...data,playerProfiles: [...allPlayers,...copied] });
-    fire(`* ${copied.length} Spieler in Saison ${seasons.find(s=>s.id===toId)?.label||toId} kopiert`);
+  // Aktiv setzen + automatische Uebernahme der Spieler aus der alten aktiven Saison.
+  // - Spieler wandern in die neue Saison: Jahrgang + Empfehlung + lastTeam bleiben,
+  //   mainTid/optTids/Stats werden zurueckgesetzt (Trainer teilt neu zu).
+  // - Wer schon in der Zielsaison existiert (Name+Jahrgang), wird NICHT dupliziert.
+  // - Die alte Saison wird archiviert.
+  const activateAndMigrate = (toId) => {
+    if (toId === active) return;
+    const fromId = active;
+    const fromPlayers = allPlayers.filter(p => p.seasonId===fromId && !p.archived);
+    const toExisting  = allPlayers.filter(p => p.seasonId===toId);
+    const existingKeys = new Set(toExisting.map(dupKey));
+
+    const newCopies = fromPlayers
+      .filter(p => !existingKeys.has(`${p.cid}|${toId}|${(p.name||"").toLowerCase().trim()}|${p.by||""}`))
+      .map(p => ({
+        ...p,
+        id: uid(),
+        seasonId: toId,
+        mainTid: "",
+        optTids: [],
+        jerseyNr: "",
+        jerseyStatus: "none",
+        goals: 0, assists: 0, yellowCards: 0, redCards: 0,
+        lastTeam: p.lastTeam || ((data.teams||[]).find(tm=>tm.id===p.mainTid)?.name || ""),
+        lastTeamId: p.mainTid || p.lastTeamId || "",
+      }));
+
+    const next = {
+      ...data,
+      activeSeason: toId,
+      seasons: seasons.map(s =>
+        s.id === fromId ? {...s, status:"archived"} :
+        s.id === toId   ? {...s, status:"active"}    : s
+      ),
+      playerProfiles: [...allPlayers, ...newCopies],
+    };
+    save(next);
+    fire(`Saison ${seasons.find(s=>s.id===toId)?.label||""} aktiv · ${newCopies.length} Spieler übernommen`);
     onClose();
   };
 
-  const switchActive = sid => {
-    save({ ...data,activeSeason: sid });
-    fire(`Saison ${seasons.find(s=>s.id===sid)?.label} aktiv`);
+  // Doppelte Spieler im aktuellen Verein zusammenfuehren.
+  // Gleicher Name + Jahrgang + Saison wird als Duplikat erkannt. Behalten wird der
+  // Eintrag mit dem hoechsten Completeness-Score (mainTid + Empfehlung + Trikot etc.).
+  const dedupePlayers = () => {
+    const cid = cl?.id;
+    if (!cid) return;
+    const mine = allPlayers.filter(p => p.cid === cid);
+    const groups = {};
+    mine.forEach(p => { (groups[dupKey(p)] = groups[dupKey(p)]||[]).push(p); });
+    const dupGroups = Object.values(groups).filter(g => g.length > 1);
+    if (dupGroups.length === 0) {
+      fire("Keine Duplikate gefunden");
+      return;
+    }
+    const removeCount = dupGroups.reduce((s,g)=>s+g.length-1,0);
+    if (!window.confirm(`${removeCount} doppelte Eintraege gefunden (in ${dupGroups.length} Gruppen).\nDer jeweils am besten ausgefuellte Datensatz bleibt, die anderen werden geloescht. Trotzdem fortfahren?`)) return;
+
+    const keepIds = new Set();
+    for (const g of Object.values(groups)) {
+      const scored = g.map(p => ({
+        p,
+        score: (p.mainTid?5:0) + (p.recommend?3:0) + ((p.optTids?.length||0)) + (p.jerseyNr?1:0) + (p.skills?2:0) + ((p.goals||0)+(p.assists||0))
+      }));
+      scored.sort((a,b)=>b.score - a.score);
+      keepIds.add(scored[0].p.id);
+    }
+    const newProfiles = allPlayers.filter(p => p.cid !== cid || keepIds.has(p.id));
+    save({...data, playerProfiles: newProfiles});
+    fire(`${removeCount} Duplikate entfernt`);
   };
+
+  const copyToSeason = (fromId,toId) => {
+    const fromPlayers = allPlayers.filter(p => p.seasonId===fromId && myTids.includes(p.mainTid));
+    const toExisting  = allPlayers.filter(p => p.seasonId===toId);
+    const existingKeys = new Set(toExisting.map(dupKey));
+
+    const copied = fromPlayers
+      .filter(p => !existingKeys.has(`${p.cid}|${toId}|${(p.name||"").toLowerCase().trim()}|${p.by||""}`))
+      .map(p => ({
+        ...p, id: uid(), seasonId: toId,
+        lastTeam:   (allTeams.find(tm=>tm.id===p.mainTid)?.name||"") + " " + (seasons.find(s=>s.id===fromId)?.label||""),
+        lastTeamId: p.mainTid,
+        mainTid:"", optTids: [], jerseyNr:"", jerseyStatus:"none",
+        goals:0, assists:0, yellowCards:0, redCards:0,
+      }));
+
+    const skipped = fromPlayers.length - copied.length;
+    save({ ...data,playerProfiles: [...allPlayers,...copied] });
+    fire(`${copied.length} Spieler in ${seasons.find(s=>s.id===toId)?.label||toId} kopiert${skipped?` · ${skipped} bereits vorhanden, übersprungen`:""}`);
+    onClose();
+  };
+
+  const switchActive = sid => activateAndMigrate(sid);
 
   const [copyFrom,setCopyFrom] = useState(active);
   const [copyTo,setCopyTo]   = useState(seasons.find(s=>s.status==="planning")?.id||"");
@@ -16016,11 +16103,17 @@ function SeasonModal({ data,save,fire,cl,myTids,onClose }) {
 
           {}
           {tab==="seasons"&&(
-            <SeasonPicker
-              data={data} save={save} fire={fire}
-              onSelect={sid=>{switchActive(sid);}}
-              t={t}
-            />
+            <>
+              <SeasonPicker
+                data={data} save={save} fire={fire}
+                onSelect={sid=>{switchActive(sid);}}
+                t={t}
+              />
+              <button onClick={dedupePlayers}
+                style={{marginTop:14,width:"100%",padding:"11px",borderRadius:11,border:`1.5px dashed ${t.p}`,background:"#f8fafc",color:t.p,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+                🧹 Doppelte Spieler im aktuellen Verein zusammenführen
+              </button>
+            </>
           )}
 
           {}
