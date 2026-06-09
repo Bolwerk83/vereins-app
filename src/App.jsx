@@ -14901,6 +14901,18 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
             </div>
           </Section>
 
+          <Section title="Datenschutz">
+            <label style={{display:"flex",alignItems:"center",gap:11,cursor:"pointer",background:p.consentAt?"#f0fdf4":"#fffbeb",border:`1.5px solid ${p.consentAt?"#bbf7d0":"#fde68a"}`,borderRadius:12,padding:"12px 14px"}}>
+              <input type="checkbox" checked={!!p.consentAt}
+                onChange={e=>up({consentAt: e.target.checked?new Date().toISOString():"", consentBy: e.target.checked?"Trainer/Admin":""})}
+                style={{width:20,height:20,accentColor:t.p||"#16a34a",flexShrink:0}}/>
+              <div>
+                <div style={{fontWeight:700,fontSize:14,color:"#0f172a"}}>Einwilligung der Erziehungsberechtigten liegt vor</div>
+                <div style={{fontSize:12,color:"#64748b",marginTop:1}}>{p.consentAt?("Bestätigt am "+fmtD(String(p.consentAt).slice(0,10))):"Für Minderjährige erforderlich (Art. 8 DSGVO)"}</div>
+              </div>
+            </label>
+          </Section>
+
           {}
           <Section title="* Trainer-Notizen (intern)">
             {}
@@ -15020,6 +15032,7 @@ function PlayerCard({ player: pl,onEdit,onDel,isMain,allTeams,allEvents }) {
             <span>{pl.gender==="w"?"W":"M"}</span>
             {pl.position && <span>. {pl.position}</span>}
             {!isMain && <Tag c="#d97706" bg="#fef3c7" ch="Aushilfe" sm/>}
+            {!pl.consentAt && <Tag c="#b45309" bg="#fef3c7" ch="Einwilligung fehlt" sm/>}
           </div>
         </div>
         <div style={{display:"flex",gap:5,flexShrink:0,alignItems:"center"}}>
@@ -15488,6 +15501,7 @@ function BulkAddPlayers({ cid, cl, selTid, selTeam, clubTeams, activeSeason, all
   const [text, setText] = useState("");
   const [assignTid, setAssignTid] = useState(selTid || "");
   const [defaultGender, setDefaultGender] = useState("m");
+  const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
 
   // Live-Parser
@@ -15510,13 +15524,14 @@ function BulkAddPlayers({ cid, cl, selTid, selTeam, clubTeams, activeSeason, all
   const doSave = async () => {
     if (newOnly.length === 0) return;
     setBusy(true);
-    const newPlayers = newOnly.map(p => mkPlayer({
+    const consentAt = consent ? new Date().toISOString() : "";
+    const newPlayers = newOnly.map(p => ({ ...mkPlayer({
       cid, seasonId: activeSeason,
       name: p.name,
       by: p.by,
       gender: p.gender,
       mainTid: assignTid || "",
-    }));
+    }), consentAt, consentBy: consent?"Trainer/Admin":"" }));
     // volle Liste verwenden, sonst gehen Spieler anderer Saisons verloren
     await save({...data, playerProfiles: [...(data.playerProfiles||[]), ...newPlayers]});
     setBusy(false);
@@ -15599,6 +15614,10 @@ Ben Fischer | 2016 | m`;
             </div>
           )}
         </div>
+        <label style={{display:"flex",alignItems:"center",gap:10,margin:"0 20px",padding:"10px 12px",borderRadius:11,background:consent?"#f0fdf4":"#fffbeb",border:`1.5px solid ${consent?"#bbf7d0":"#fde68a"}`,cursor:"pointer"}}>
+          <input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)} style={{width:18,height:18,accentColor:t.p,flexShrink:0}}/>
+          <span style={{fontSize:12.5,fontWeight:600,color:"#334155"}}>Elterliche Einwilligung liegt für alle vor (Art. 8 DSGVO)</span>
+        </label>
         <div style={{padding:"12px 20px 16px",borderTop:"1px solid #f1f5f9",display:"flex",gap:8}}>
           <button onClick={onClose}
             style={{flex:1,padding:"12px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
@@ -21252,6 +21271,27 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
     fire("Bild entfernt");
   };
 
+  // DSGVO: eigene Daten als JSON exportieren (Auskunft/Datenuebertragbarkeit, Art. 15/20)
+  const exportMyData=()=>{
+    const profil=(data.playerProfiles||[]).filter(p=>p.cid===cid && (p.name||"").toLowerCase()===String(user).toLowerCase());
+    const abstimmungen=(data.events||[]).filter(e=>e.cid===cid && e.votes && (user in e.votes)).map(e=>({termin:e.title,datum:e.date,antwort:e.votes[user]}));
+    const payload={ exportiertAm:new Date().toISOString(), verein:cl?.name||cid, person:user, team:myTeam?.name||"", profil, abstimmungen };
+    try{
+      const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+      const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`meine-daten-${String(user).replace(/[^a-z0-9]/gi,"_")}.json`; a.click();
+      setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+      fire("Daten exportiert *");
+    }catch{ fire("Export fehlgeschlagen"); }
+  };
+  // DSGVO: Loeschung beim Verein anfragen (landet im Admin-Posteingang)
+  const requestDeletion=()=>{
+    if(!window.confirm("Möchtest du beim Verein die Löschung deiner Daten anfragen? Der Vereinsadmin erhält die Anfrage im Posteingang.")) return;
+    const req={id:uid(),cid,fromName:String(user),fromEmail:"",msg:"[DSGVO-Löschantrag] Bitte die in der App gespeicherten Daten von „"+user+"“ löschen.",ts:new Date().toISOString(),read:false,blocked:false,dsgvo:true};
+    onSave({...data, contactRequests:[...(data.contactRequests||[]),req]});
+    fire("Löschantrag an den Verein gesendet");
+    setShowProfile(false);
+  };
+
   const vote=(eid,pt,val)=>{
     let lateCancel = null;
     let blocked = false;
@@ -21332,6 +21372,13 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
             </div>
             <div style={{background:"#fffbeb",borderRadius:11,padding:"10px 13px",marginBottom:16,fontSize:12,color:"#92400e",lineHeight:1.6}}>
                <strong>Datenschutz:</strong> Dein Profilbild wird verschluesselt auf dem Server gespeichert und ist nur für dich sichtbar. Du kannst es jederzeit löschen.
+            </div>
+            <div style={{background:"#f8fafc",borderRadius:12,padding:"12px 14px",marginBottom:14,border:"1px solid #e2e8f0"}}>
+              <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.4,marginBottom:8}}>MEINE DATEN (DSGVO)</div>
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={exportMyData} style={{flex:1,padding:"10px",borderRadius:10,border:"1.5px solid #e2e8f0",background:"#fff",color:"#334155",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Daten exportieren</button>
+                <button onClick={requestDeletion} style={{flex:1,padding:"10px",borderRadius:10,border:"1.5px solid #fecaca",background:"#fff7f7",color:"#dc2626",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Löschung anfragen</button>
+              </div>
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:9}}>
               <div style={{marginBottom:4}}><ShareTeamLink cl={cl} team={myTeam} t={t} compact/></div>
