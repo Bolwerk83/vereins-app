@@ -16796,14 +16796,21 @@ function ChatTab({data,cid,myTids,session,save,fire,cl}) {
   // eslint-disable-next-line
   },[]);
 
-  const send=()=>{
+  const send=async ()=>{
     if(!text.trim())return;
     const msg={id:uid(),author:session.name||"Unbekannt",role:session.role,text:text.trim(),ts:new Date().toISOString()};
-    const next=chats.find(c=>c.id===selScope)
-      ?chats.map(c=>c.id===selScope?{...c,messages:[...c.messages,msg]}:c)
-      :[...chats,{id:selScope,cid,messages:[msg]}];
-    save({...data,chats:next});
     setText("");
+    // Frischen Cloud-Stand der Chats als Basis nehmen und die neue Nachricht
+    // daran anhaengen. Da beim Speichern das ganze Chat-Dokument geschrieben
+    // wird, wuerden sonst parallele Nachrichten anderer Geraete verloren gehen;
+    // so bleiben sie im Normalfall (Nachrichten im Sekundenabstand) erhalten.
+    let baseChats = chats;
+    try { const fresh = await sb.getClub(cid); if(fresh && fresh._v) baseChats = fresh.chats||[]; } catch {}
+    const exists = baseChats.find(c=>c.id===selScope);
+    const next = exists
+      ? baseChats.map(c=>c.id===selScope?{...c,messages:[...(c.messages||[]),msg]}:c)
+      : [...baseChats,{id:selScope,cid,messages:[msg]}];
+    save({...data,chats:next});
     setTimeout(()=>msgRef.current?.scrollIntoView({behavior:"smooth"}),100);
   };
 
