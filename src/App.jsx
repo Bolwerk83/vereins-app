@@ -787,6 +787,7 @@ const sb = {
   _glKey: SK+"__global",
   _clubKey: cid => SK+"__club_"+cid,
   _lastWrite: null,
+  _writing: false,
   // Header mit Bearer-Token aus auth (fällt auf anon-Key zurück, wenn Auth noch nicht da).
   _hdr: async () => {
     const cfg = getConfig();
@@ -909,6 +910,10 @@ const sb = {
         if (hasData(shards[id])) rows.push({ key: sb._clubKey(id), value: shards[id], updated_at: ts });
       }
     }
+    // Schreibvorgang markieren: der Hintergrund-Sync darf den lokalen Stand
+    // NICHT mit einem aelteren Cloud-Read ueberschreiben, solange ein Write
+    // laeuft - sonst gehen frisch angelegte Vereine wieder verloren.
+    sb._writing = true;
     try {
       const r = await sb._fetch(`/rest/v1/app_data`, {
         method:"POST",
@@ -926,6 +931,8 @@ const sb = {
     } catch (e) {
       sb._lastWrite = { ok:false, status:0, error:String((e&&e.message)||e).slice(0,400), at:Date.now() };
       return sb._lastWrite;
+    } finally {
+      sb._writing = false;
     }
   },
   // Verifiziert, dass eine Club-ID wirklich im Cloud-Stand auftaucht.
@@ -20752,8 +20759,16 @@ function AppInner({lang,setLang}) {
     })();
     syncRef.current=setInterval(async()=>{
       try {
+        // Waehrend eines laufenden Schreibvorgangs - oder kurz danach, bis die
+        // Cloud den neuen Stand sicher zurueckliefert - NICHT vom Cloud-Read
+        // ueberschreiben. Sonst kann ein frisch angelegter Verein aus dem
+        // lokalen Stand fallen und beim naechsten Save aus global.clubs
+        // verschwinden (Shard bleibt, Verzeichnis-Eintrag geht verloren).
+        if (sb._writing) return;
+        if (sb._lastWrite?.at && Date.now()-sb._lastWrite.at < 6000) return;
         const cur=cidRef.current;
         const r = cur ? await sb.getClub(cur) : await sb.getDirectory();
+        if (sb._writing) return; // Read koennte mit einem zwischenzeitlichen Write kollidieren
         if(r?._v>=12){ const rr=(cur==="demo")?refreshDemo(r):r; setData(p=>JSON.stringify(p)===JSON.stringify(rr)?p:rr); }
       } catch {}
     },10000);
