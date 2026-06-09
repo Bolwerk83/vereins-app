@@ -697,6 +697,31 @@ const sb = {
       return { online:false, member:false, reason:String((e&&e.message)||e).slice(0,200) };
     }
   },
+  // SuperAdmin: alle app_data-Zeilen listen (key + updated_at + Wert)
+  dbList: async () => {
+    const r = await sb._fetch(`/rest/v1/app_data?select=key,updated_at,value&order=updated_at.desc`);
+    if (!r.ok) throw new Error("HTTP "+r.status);
+    return await r.json();
+  },
+  // SuperAdmin: eine Zeile loeschen
+  dbDelete: async (key) => {
+    const r = await sb._fetch(`/rest/v1/app_data?key=eq.${encodeURIComponent(key)}`, { method:"DELETE" });
+    if (!r.ok) throw new Error("HTTP "+r.status);
+    return true;
+  },
+  // SuperAdmin: Push-Subscriptions + Members zaehlen
+  dbCounts: async () => {
+    const out = {};
+    try {
+      const r1 = await sb._fetch(`/rest/v1/push_subscriptions?select=endpoint`, { headers:{ "Prefer":"count=exact" } });
+      out.pushSubs = r1.headers.get("content-range")?.split("/")[1] || "?";
+    } catch { out.pushSubs = "?"; }
+    try {
+      const r2 = await sb._fetch(`/rest/v1/app_members?select=user_id`, { headers:{ "Prefer":"count=exact" } });
+      out.members = r2.headers.get("content-range")?.split("/")[1] || "?";
+    } catch { out.members = "?"; }
+    return out;
+  },
   // RPC-Aufruf (Postgres-Function) - liefert das JSON-Ergebnis oder wirft.
   rpc: async (name, args = {}) => {
     const cfg = getConfig();
@@ -7672,6 +7697,7 @@ function SuperAdminDashboard({ data, onExit }) {
     {id:"settings",   label:"Einstellungen",icon:"S"},
     {id:"compliance",  label:"Compliance",    icon:"C"},
     {id:"rollout",     label:"Rollout",        icon:"R"},
+    {id:"database",    label:"Datenbank",      icon:"DB"},
   ];
 
   return (
@@ -7849,6 +7875,11 @@ function SuperAdminDashboard({ data, onExit }) {
         {tab==="compliance"&&(
           <SuperAdminCompliance allClubs={allClubs} allPlayers={allPlayers}/>
         )}
+
+        {/* DATENBANK - app_data Rows ansehen + loeschen */}
+        {tab==="database"&&(
+          <SuperAdminDatabase/>
+        )}
       </div>
     </div>
   );
@@ -7930,6 +7961,188 @@ function SuperAdminCompliance({ allClubs, allPlayers }) {
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+/* -----------------------------------------------------------------
+   DATENBANK-INSPEKTOR - alle app_data-Zeilen + Loeschen
+----------------------------------------------------------------- */
+function SuperAdminDatabase() {
+  const [rows, setRows] = useState([]);
+  const [counts, setCounts] = useState({});
+  const [busy, setBusy] = useState(true);
+  const [err, setErr] = useState("");
+  const [selected, setSelected] = useState(null); // {key,value,updated_at}
+  const [filter, setFilter] = useState("");
+
+  const refresh = async () => {
+    setBusy(true); setErr("");
+    try {
+      const list = await sb.dbList();
+      setRows(list);
+      const c = await sb.dbCounts();
+      setCounts(c);
+    } catch(e) {
+      setErr(String((e&&e.message)||e));
+    }
+    setBusy(false);
+  };
+
+  useEffect(()=>{ refresh(); }, []);
+
+  const del = async (key) => {
+    if (!window.confirm(`Zeile "${key}" wirklich löschen?\n\nUnwiderruflich. Wird beim nächsten App-Öffnen ggf. neu erzeugt.`)) return;
+    try {
+      await sb.dbDelete(key);
+      setSelected(null);
+      await refresh();
+    } catch(e) {
+      window.alert("Löschen fehlgeschlagen: " + String((e&&e.message)||e));
+    }
+  };
+
+  const purgeDbTest = async () => {
+    const targets = rows.filter(r => r.key.endsWith("__dbtest"));
+    if (targets.length === 0) { window.alert("Keine __dbtest-Zeilen vorhanden."); return; }
+    if (!window.confirm(`${targets.length} __dbtest-Zeile(n) löschen?`)) return;
+    for (const r of targets) {
+      try { await sb.dbDelete(r.key); } catch {}
+    }
+    await refresh();
+  };
+
+  const fmtBytes = (n) => n < 1024 ? `${n} B` : n < 1024*1024 ? `${(n/1024).toFixed(1)} KB` : `${(n/1024/1024).toFixed(1)} MB`;
+  const sizeOf = (val) => { try { return JSON.stringify(val||{}).length; } catch { return 0; } };
+  const labelOf = (r) => {
+    if (r.key.endsWith("__global"))   return "Globaler Stand (Vereinsliste + Seasons)";
+    if (r.key.endsWith("__dbtest"))   return "Test-Schreibzugriff";
+    if (r.key.includes("__club_"))    return "Verein-Daten (Events, Spieler, Trainer)";
+    return "Sonstiges / Legacy";
+  };
+  const clubsInRow = (val) => Array.isArray(val?.clubs) ? val.clubs : null;
+  const visible = rows.filter(r => !filter || r.key.toLowerCase().includes(filter.toLowerCase()));
+  const totalSize = rows.reduce((s,r)=>s+sizeOf(r.value), 0);
+
+  return (
+    <div>
+      <h2 style={{color:"#fff",fontWeight:900,fontSize:20,marginBottom:8}}>Datenbank-Inspektor</h2>
+      <p style={{color:"#94a3b8",fontSize:13,marginBottom:16,lineHeight:1.55}}>
+        Direkter Blick auf die Supabase-Tabelle <code style={{background:"#1e293b",padding:"2px 6px",borderRadius:5,fontSize:12}}>public.app_data</code>. Jede Zeile löschbar – die App regeneriert globalen Stand und Verein-Shards automatisch beim nächsten Schreibzugriff.
+      </p>
+
+      {/* Counts */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:18}}>
+        {[
+          {l:"Zeilen", v:rows.length, col:"#7c3aed"},
+          {l:"Gesamt-Größe", v:fmtBytes(totalSize), col:"#2563eb"},
+          {l:"Push-Abos", v:counts.pushSubs||"…", col:"#16a34a"},
+          {l:"Mitglieder", v:counts.members||"…", col:"#d97706"},
+        ].map(s=>(
+          <div key={s.l} style={{background:"#1e293b",border:"1px solid #334155",borderRadius:12,padding:"12px 14px"}}>
+            <div style={{fontSize:11,fontWeight:700,color:"#64748b",letterSpacing:.4,marginBottom:4}}>{s.l.toUpperCase()}</div>
+            <div style={{fontSize:18,fontWeight:900,color:s.col}}>{s.v}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Toolbar */}
+      <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
+        <input value={filter} onChange={e=>setFilter(e.target.value)} placeholder="Nach key filtern…"
+          style={{flex:1,minWidth:200,padding:"9px 12px",fontSize:13,background:"#0f172a",border:"1px solid #334155",borderRadius:10,color:"#e2e8f0",outline:"none",fontFamily:"inherit"}}/>
+        <button onClick={refresh} disabled={busy}
+          style={{padding:"9px 14px",borderRadius:10,border:"none",background:"#334155",color:"#fff",fontWeight:700,fontSize:13,cursor:busy?"default":"pointer",fontFamily:"inherit"}}>
+          {busy?"Lädt…":"Neu laden"}
+        </button>
+        <button onClick={purgeDbTest}
+          style={{padding:"9px 14px",borderRadius:10,border:"1.5px solid #dc2626",background:"transparent",color:"#fca5a5",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+          __dbtest aufräumen
+        </button>
+      </div>
+
+      {err && (
+        <div style={{background:"#450a0a",border:"1px solid #dc2626",borderRadius:11,padding:"11px 14px",marginBottom:14,color:"#fca5a5",fontSize:13}}>
+          Fehler beim Laden: {err}
+        </div>
+      )}
+
+      {/* Liste */}
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {visible.map(r=>{
+          const clubs = clubsInRow(r.value);
+          return (
+            <div key={r.key} style={{background:"#1e293b",border:"1px solid #334155",borderRadius:13,padding:"13px 16px"}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                    <code style={{color:"#a78bfa",fontSize:13,fontWeight:700,wordBreak:"break-all"}}>{r.key}</code>
+                  </div>
+                  <div style={{fontSize:11,color:"#64748b",marginTop:3}}>
+                    {labelOf(r)} · {fmtBytes(sizeOf(r.value))} · zuletzt {new Date(r.updated_at).toLocaleString("de-DE")}
+                  </div>
+                </div>
+                <button onClick={()=>setSelected(r)}
+                  style={{padding:"7px 12px",borderRadius:9,border:"1.5px solid #334155",background:"transparent",color:"#cbd5e1",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+                  Anzeigen
+                </button>
+                <button onClick={()=>del(r.key)}
+                  style={{padding:"7px 12px",borderRadius:9,border:"1.5px solid #dc2626",background:"transparent",color:"#fca5a5",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+                  Löschen
+                </button>
+              </div>
+              {clubs && clubs.length > 0 && r.key.endsWith("__global") && (
+                <div style={{marginTop:6,paddingTop:8,borderTop:"1px solid #334155"}}>
+                  <div style={{fontSize:10,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:4}}>VEREINE ({clubs.length})</div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                    {clubs.map(c=>(
+                      <span key={c.id} style={{fontSize:11,fontWeight:600,color:"#e2e8f0",background:"#0f172a",border:"1px solid #334155",borderRadius:6,padding:"3px 8px"}}>
+                        {c.name || c.id}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+        {!busy && visible.length === 0 && (
+          <div style={{textAlign:"center",padding:"40px",color:"#475569",fontSize:14}}>
+            Keine Zeilen{filter?" für diesen Filter":""}.
+          </div>
+        )}
+      </div>
+
+      {/* Detail-Modal */}
+      {selected && (
+        <div onClick={()=>setSelected(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.75)",
+          display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:18}}>
+          <div onClick={e=>e.stopPropagation()} style={{background:"#0f172a",borderRadius:16,
+            width:"100%",maxWidth:820,maxHeight:"88vh",display:"flex",flexDirection:"column",border:"1px solid #334155"}}>
+            <div style={{padding:"16px 20px",borderBottom:"1px solid #334155",display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12}}>
+              <div style={{flex:1,minWidth:0}}>
+                <code style={{color:"#a78bfa",fontSize:13,fontWeight:700,wordBreak:"break-all"}}>{selected.key}</code>
+                <div style={{fontSize:11,color:"#64748b",marginTop:4}}>
+                  {labelOf(selected)} · {fmtBytes(sizeOf(selected.value))} · {new Date(selected.updated_at).toLocaleString("de-DE")}
+                </div>
+              </div>
+              <div style={{display:"flex",gap:6}}>
+                <button onClick={()=>{ try{ navigator.clipboard.writeText(JSON.stringify(selected.value,null,2)); }catch{} }}
+                  style={{padding:"7px 12px",borderRadius:9,border:"1.5px solid #334155",background:"transparent",color:"#cbd5e1",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+                  Kopieren
+                </button>
+                <button onClick={()=>del(selected.key)}
+                  style={{padding:"7px 12px",borderRadius:9,border:"1.5px solid #dc2626",background:"transparent",color:"#fca5a5",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+                  Löschen
+                </button>
+                <button onClick={()=>setSelected(null)} style={{background:"none",border:"none",color:"#64748b",fontSize:22,cursor:"pointer",padding:"0 6px",fontFamily:"inherit"}}>×</button>
+              </div>
+            </div>
+            <pre style={{flex:1,overflow:"auto",margin:0,padding:"16px 20px",fontSize:11.5,color:"#cbd5e1",fontFamily:"monospace",lineHeight:1.55,whiteSpace:"pre-wrap",wordBreak:"break-word"}}>
+              {JSON.stringify(selected.value, null, 2)}
+            </pre>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
