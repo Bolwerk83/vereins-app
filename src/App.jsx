@@ -896,11 +896,18 @@ const sb = {
     }
     const { global, shards } = splitData(d);
     const ts = new Date().toISOString();
+    // Ein leerer Shard ({}) bedeutet: für diesen Verein sind KEINE Detaildaten
+    // geladen (z.B. beim Speichern aus dem Directory). Ihn per Upsert zu schreiben
+    // würde die echten Cloud-Daten (Teams/Spieler/Events) dieses Vereins mit {}
+    // überschreiben. Solche leeren Shards werden daher nie geschrieben.
+    const hasData = obj => obj && Object.keys(obj).length > 0;
     let rows = [{ key: sb._glKey, value: global, updated_at: ts }];
-    if (cid && shards[cid]) {
-      rows.push({ key: sb._clubKey(cid), value: shards[cid], updated_at: ts });
+    if (cid) {
+      if (hasData(shards[cid])) rows.push({ key: sb._clubKey(cid), value: shards[cid], updated_at: ts });
     } else {
-      for (const id of Object.keys(shards)) rows.push({ key: sb._clubKey(id), value: shards[id], updated_at: ts });
+      for (const id of Object.keys(shards)) {
+        if (hasData(shards[id])) rows.push({ key: sb._clubKey(id), value: shards[id], updated_at: ts });
+      }
     }
     try {
       const r = await sb._fetch(`/rest/v1/app_data`, {
