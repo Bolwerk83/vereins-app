@@ -2266,6 +2266,23 @@ function AdSenseSlot({ slot, format="auto", style={} }) {
 
 const APP_URL = "https://vereinsapp.vercel.app"; // Deine echte Domain
 const APP_NAME = "Vereins-App";
+// Build-ID kommt von vite.config.js (define-Block). Bei jedem Build neu gesetzt.
+// Fallback "dev" wenn man die App ohne Vite-Build startet.
+const BUILD_ID = (typeof __BUILD_ID__ !== "undefined") ? __BUILD_ID__ : "dev";
+
+function VersionBadge() {
+  return (
+    <div title={"Build: "+BUILD_ID}
+      style={{position:"fixed",bottom:6,right:8,zIndex:100,
+        fontSize:9.5,fontWeight:600,color:"rgba(0,0,0,.32)",
+        background:"rgba(255,255,255,.55)",backdropFilter:"blur(4px)",
+        padding:"2px 7px",borderRadius:6,fontFamily:"monospace",
+        pointerEvents:"auto",userSelect:"text",lineHeight:1.2,
+        boxShadow:"0 1px 3px rgba(0,0,0,.08)"}}>
+      v {BUILD_ID}
+    </div>
+  );
+}
 
 //  Tracking: welche Aktionen hat der Nutzer gemacht 
 const getMilestones = () => {
@@ -20242,6 +20259,7 @@ export default function App() {
     <ErrorBoundary>
       <ThemeProvider>
         <AppRoot/>
+        <VersionBadge/>
       </ThemeProvider>
     </ErrorBoundary>
   );
