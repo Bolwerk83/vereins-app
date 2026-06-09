@@ -14751,8 +14751,15 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
               <div>
                 <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.5}}>NUMMER</div>
-                <input value={p.jerseyNr||""} onChange={e=>up({jerseyNr:e.target.value})} placeholder="z.B. 9"
-                  style={{width:"100%",padding:"11px 13px",fontSize:18,fontWeight:900,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",textAlign:"center",color:"#0f172a"}}/>
+                {(()=>{
+                  const n=String(p.jerseyNr||"").trim();
+                  const clash = n && p.mainTid && (allPlayers||[]).some(o=>o.id!==p.id && o.mainTid===p.mainTid && String(o.jerseyNr||"").trim()===n);
+                  return (<>
+                    <input value={p.jerseyNr||""} onChange={e=>up({jerseyNr:e.target.value})} placeholder="z.B. 9"
+                      style={{width:"100%",padding:"11px 13px",fontSize:18,fontWeight:900,border:`1.5px solid ${clash?"#fca5a5":"#e2e8f0"}`,borderRadius:11,outline:"none",textAlign:"center",color:clash?"#dc2626":"#0f172a"}}/>
+                    {clash&&<div style={{fontSize:11,color:"#dc2626",fontWeight:700,marginTop:5}}>Nummer in dieser Mannschaft bereits vergeben.</div>}
+                  </>);
+                })()}
               </div>
               <div>
                 <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.5}}>GRÖSSE</div>
@@ -16904,6 +16911,13 @@ function JerseysTab({ data,myTids,save,fire,cl }) {
     .filter(p => p.mainTid === selTid && p.jerseyNr)
     .sort((a,b) => parseInt(a.jerseyNr||0)-parseInt(b.jerseyNr||0));
 
+  // Doppelt vergebene Nummern innerhalb der gewaehlten Mannschaft erkennen
+  const dupNumbers = (() => {
+    const m = {};
+    teamPlayers.forEach(p => { const n=String(p.jerseyNr).trim(); if(n) m[n]=(m[n]||0)+1; });
+    return new Set(Object.keys(m).filter(n => m[n] > 1));
+  })();
+
   const allWithJersey = allPlayers.filter(p => myTids.includes(p.mainTid) && p.jerseyNr);
   const q = search.toLowerCase();
 
@@ -16957,6 +16971,11 @@ function JerseysTab({ data,myTids,save,fire,cl }) {
           </div>
 
           {}
+          {dupNumbers.size>0 && (
+            <div style={{background:"#fef2f2",border:"1.5px solid #fca5a5",borderRadius:12,padding:"10px 13px",marginBottom:12,fontSize:13,color:"#b91c1c",fontWeight:700}}>
+              Trikotnummer{dupNumbers.size>1?"n":""} {[...dupNumbers].sort((a,b)=>parseInt(a)-parseInt(b)).map(n=>"#"+n).join(", ")} {dupNumbers.size>1?"sind":"ist"} in dieser Mannschaft doppelt vergeben.
+            </div>
+          )}
           {teamPlayers.length===0
             ? <div style={{textAlign:"center",padding:"32px",background:"#f8fafc",borderRadius:14,border:"1.5px dashed #e2e8f0"}}>
                 <div style={{fontSize:36,marginBottom:8}}></div>
@@ -16966,10 +16985,11 @@ function JerseysTab({ data,myTids,save,fire,cl }) {
             : <div style={{display:"flex",flexDirection:"column",gap:7}}>
                 {teamPlayers.map(pl => {
                   const st = statusFor(pl.jerseyStatus||"none");
+                  const isDup = dupNumbers.has(String(pl.jerseyNr).trim());
                   return (
-                    <div key={pl.id} style={{background:"#fff",borderRadius:13,border:`1.5px solid ${st.col}30`,padding:"11px 14px",display:"flex",alignItems:"center",gap:12}}>
+                    <div key={pl.id} style={{background:"#fff",borderRadius:13,border:`1.5px solid ${isDup?"#fca5a5":st.col+"30"}`,padding:"11px 14px",display:"flex",alignItems:"center",gap:12}}>
                       {}
-                      <div style={{width:44,height:44,borderRadius:12,background:t.p,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:900,fontSize:18,flexShrink:0,boxShadow:`0 2px 8px ${t.p}44`}}>
+                      <div title={isDup?"Diese Nummer ist doppelt vergeben":undefined} style={{width:44,height:44,borderRadius:12,background:isDup?"#dc2626":t.p,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:900,fontSize:18,flexShrink:0,boxShadow:`0 2px 8px ${(isDup?"#dc2626":t.p)}44`}}>
                         {pl.jerseyNr}
                       </div>
                       <div style={{flex:1}}>
