@@ -553,15 +553,27 @@ const sb = {
       "Authorization":"Bearer "+(t || cfg.key),
     };
   },
-  // Fetch mit Auto-Retry: 401 → Token neu, 403 → Mitgliedschaft einlösen.
-  _fetch: async (path, init={}, retried=false) => {
+  // Fetch mit Auto-Retry. Beim Kaltstart kann die frisch eingeloeste
+  // Mitgliedschaft noch nicht durch die RLS-Pruefung propagiert sein -
+  // deshalb 403 bis zu 3x mit kurzem Delay nachfassen.
+  _fetch: async (path, init={}, attempt=0) => {
     const cfg = getConfig();
     if (!cfg?.url || !cfg?.key) throw new Error("DB nicht konfiguriert");
     const hdr = await sb._hdr();
     const r = await fetch(cfg.url+path, { ...init, headers: { ...hdr, ...(init.headers||{}) } });
-    if (retried) return r;
-    if (r.status === 401) { auth._clear(); return sb._fetch(path, init, true); }
-    if (r.status === 403) { const ok = await auth.ensureMember(); if (ok) return sb._fetch(path, init, true); }
+    if (attempt >= 3) return r;
+    if (r.status === 401) {
+      auth._clear();
+      await new Promise(res=>setTimeout(res, 150*(attempt+1)));
+      return sb._fetch(path, init, attempt+1);
+    }
+    if (r.status === 403) {
+      const ok = await auth.ensureMember();
+      // Auch wenn ensureMember (noch) false liefert: kurz warten und erneut
+      // versuchen - der Insert braucht u.U. einen Moment bis er sichtbar ist.
+      await new Promise(res=>setTimeout(res, 250*(attempt+1)));
+      if (ok || attempt < 2) return sb._fetch(path, init, attempt+1);
+    }
     return r;
   },
   _migrate: async () => {
@@ -20416,6 +20428,11 @@ function AppInner({lang,setLang}) {
 
   useEffect(()=>{
     (async()=>{
+      // 0) Auth-Warmup: Token + Vereinscode-Mitgliedschaft EINMAL etablieren,
+      //    bevor der Nutzer navigiert. Verhindert die "erst Fehler, nach Reload
+      //    klappt's"-Race beim ersten Login (403 weil Membership noch nicht da).
+      try { await auth.ensureMember(); } catch {}
+
       // 1) Verzeichnis laden. Cloud-leer (HTTP 200, keine Daten) -> seed initial.
       //    Cloud-Fehler / Auth-Block -> KEIN Seed, sonst werden echte Daten ueberschrieben.
       let dir=null;
@@ -20568,6 +20585,9 @@ function AppInner({lang,setLang}) {
       {!showLegal&&screen==="dir"&&<Directory data={data} lang={lang} setLang={setLang} onLegal={()=>setShowLegal(true)} onPick={async id=>{
           const realId = id==="__demo__"?"demo":id;
           let cd=null; try { cd=await sb.getClub(realId); } catch {}
+          // Transienter Auth-Fehler? Einmal Mitgliedschaft sichern + erneut laden,
+          // damit der Admin nicht mit unvollstaendigen Daten ins Dashboard kommt.
+          if(!cd){ try { await auth.ensureMember(); cd=await sb.getClub(realId); } catch {} }
           if(cd){ setData(realId==="demo"?refreshDemo(cd):cd); }
           setCid(realId); setScr("role");
         }} onNewClub={async newClubOrData=>{
