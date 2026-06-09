@@ -1,8 +1,7 @@
-import React, { useState,useEffect,useCallback,useRef,useMemo,createContext,useContext } from "react";
+import React, { useState,useEffect,useCallback,useRef,useMemo,createContext } from "react";
 
 const LANG_KEY = "vereinsapp_lang";
 const LangCtx  = createContext("de");
-const useLang  = () => useContext(LangCtx);
 
 const T = {
   de: {
@@ -566,14 +565,13 @@ const T = {
     noMessages:"Henuz mesaj yok",
   },
 };
-function useT() {
-  const lang = useLang();
-  return (key,fallback) => T[lang]?.[key] ?? T.de[key] ?? fallback ?? key;
-}
-// Sprachumschalter vorerst deaktiviert: EN/NL sind noch nicht vollständig übersetzt,
-// daher wäre ein sichtbarer Schalter ein nicht eingelöstes Versprechen.
-// Zum Reaktivieren (sobald Übersetzungen vollständig sind): auf true setzen.
-const LANG_SWITCHER_ENABLED = false;
+// Sprachumschalter aktiv (de/en/nl). EN/NL sind im T-Table vollständig übersetzt.
+// Hinweis: Übersetzt werden nur Texte, die über das T-Table laufen (Einstieg,
+// Vereinsauswahl, Rollenauswahl, Tab-/Rollen-Labels). Inhaltsseiten mit fest
+// verdrahteten deutschen Texten bleiben unabhängig von der Sprachwahl deutsch.
+// ar/tr liegen vollständig (transliteriert) im T-Table, sind aber bewusst nicht
+// als sichtbare Schalter-Option gelistet.
+const LANG_SWITCHER_ENABLED = true;
 function LangSwitcher({ lang,setLang }) {
   if(!LANG_SWITCHER_ENABLED) return null;
   const LANGS = [{id:"de",flag:"DE"},{id:"en",flag:"EN"},{id:"nl",flag:"NL"}];
