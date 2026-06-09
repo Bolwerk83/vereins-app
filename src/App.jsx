@@ -771,7 +771,7 @@ const _DATA_ARRAYS = [
   "events","chats","messages","helpers","teams","trainers",
   "playerProfiles","trainings","fields","bookings",
   "contactRequests","securityLog","seasons","pollTemplates",
-  "clubs","news","newsItems","photos"
+  "clubs","news","newsItems","photos","broadcasts"
 ];
 const normData = (d) => {
   if (!d || typeof d !== "object") return d;
@@ -3472,15 +3472,16 @@ function BroadcastModal({ data, cid, session, save, fire, onClose }) {
 
   const send = () => {
     if(!msg.trim()) return;
-    const newMsg = {
-      id: uid(), cid, teamId:"_broadcast_",
-      author: session.name||"Admin", role:"admin",
-      text: "[Rundschreiben] "+msg.trim(),
-      ts: Date.now(),
-      recipients: selTids.length>0 ? selTids : allTids,
+    const rec = {
+      id: uid(), cid,
+      fromName: session.name||"Vereinsadmin",
+      text: msg.trim(),
+      ts: new Date().toISOString(),
+      recipients: selTids.length>0 ? selTids : "all",
+      readBy: [],
     };
-    save({...data, chats:[...(data.chats||[]),newMsg]});
-    fire("Rundschreiben versendet an "+(selTids.length||trainers.length)+" Trainer");
+    save({...data, broadcasts:[...(data.broadcasts||[]), rec]});
+    fire("Rundschreiben gesendet an "+(selTids.length||trainers.length)+" Trainer");
     onClose();
   };
 
@@ -4017,10 +4018,11 @@ function EventIcon({ type, size=22, color="#16a34a" }) {
 }
 const EVENT_TYPE_ALIAS = { spiel:"heimspiel", heim:"heimspiel", ausw:"auswarts", freund:"freundschaft" };
 
-function BottomNav({ tab, setTab, isAdmin, isHelper, unread, cl, hide=false }) {
+function BottomNav({ tab, setTab, isAdmin, isHelper, unread, inboxUnread=0, cl, hide=false }) {
   if(hide) return null;
   const t = TH(cl);
   const [showDrawer, setShowDrawer] = useState(false);
+  const isTrainer = !isAdmin && !isHelper;
 
   const cs = cl?.clubSettings||{};
   const clubFeat = (key, def=true) => cs[key]!==undefined ? cs[key] : def;
@@ -4029,13 +4031,14 @@ function BottomNav({ tab, setTab, isAdmin, isHelper, unread, cl, hide=false }) {
     { id:"team",    label:"Team",     icon:"P", hidden: isHelper },
     { id:"fields",  label:"Platz",    icon:"F", hidden: isHelper||!feat("fields_booking")||!clubFeat("mod_fields") },
     { id:"chat",    label:"Chat",     icon:"C", badge: unread, hidden: !feat("chat_team") },
-    { id:"more",    label:"Mehr",     icon:"=" },
+    { id:"more",    label:"Mehr",     icon:"=", badge: inboxUnread },
   ].filter(x=>!x.hidden);
 
   const drawerSections = [
     {
       label: "VERWALTUNG",
       items: [
+        { id:"tinbox",    label: inboxUnread>0?`Posteingang (${inboxUnread})`:"Posteingang", icon:"I", hidden: !isTrainer },
         { id:"training",  label:"Trainingsplan", icon:"TP", hidden: isHelper||!feat("training_plans")||!clubFeat("mod_training") },
         { id:"jerseys",    label:"Trikots",      icon:"T", hidden: isHelper||!feat("jerseys_tab")||!clubFeat("mod_jerseys") },
         { id:"helpers",    label:"Helfer",       icon:"H", hidden: isHelper },
@@ -11881,9 +11884,10 @@ button:focus-visible, a:focus-visible, input:focus-visible {
    DESKTOP SIDEBAR
    Ersetzt BottomNav auf >1024px
 ----------------------------------------------------------------- */
-function DesktopSidebar({ tab, setTab, isAdmin, isHelper, unread, cl, session, onLogout }) {
+function DesktopSidebar({ tab, setTab, isAdmin, isHelper, unread, inboxUnread=0, cl, session, onLogout }) {
   const t = TH(cl);
   const [showDrawer, setShowDrawer] = React.useState(false);
+  const isTrainer = !isAdmin && !isHelper;
 
   const mainItems = [
     { id:"events",   label:"Termine",    icon:"K" },
@@ -11898,18 +11902,19 @@ function DesktopSidebar({ tab, setTab, isAdmin, isHelper, unread, cl, session, o
     { id:"teams",       label:"Mannschaften",      icon:"M" },
     { id:"trainers",    label:"Trainer",           icon:"T" },
     { id:"fieldsadmin", label:"Plätze",           icon:"P" },
+    { id:"inbox",       label:"Posteingang",       icon:"I" },
     { id:"access",      label:"Zugänge",          icon:"PW" },
     { id:"security",    label:"Sicherheitslog",    icon:"!" },
     { id:"settings",    label:"Einstellungen",     icon:"+" },
   ];
 
   const trainerItems = [
+    { id:"tinbox",     label: inboxUnread>0?`Posteingang (${inboxUnread})`:"Posteingang", icon:"I", hidden: !isTrainer },
     { id:"training",   label:"Trainingsplan",  icon:"TP", hidden: isHelper },
     { id:"jerseys",    label:"Trikots",        icon:"Tr", hidden: isHelper },
     { id:"helpers",    label:"Helfer",         icon:"H",  hidden: isHelper },
     { id:"attendance", label:"Anwesenheit",    icon:"S",  hidden: isHelper },
     { id:"results",    label:"Ergebnisse",     icon:"E",  hidden: isHelper },
-    { id:"inbox",      label:"Posteingang",    icon:"I" },
   ].filter(x=>!x.hidden);
 
   const NavItem = ({item}) => {
@@ -17814,6 +17819,51 @@ function TrainerAccessShare({ tr, cl, data, save, fire, onClose }) {
   );
 }
 
+// Posteingang fuer Trainer: zeigt Rundschreiben des Vereinsadmins, die an
+// "alle" oder gezielt an diesen Trainer (session.id) gerichtet sind.
+function TrainerInboxTab({ data, cid, session, save, cl }) {
+  const myId = session.id;
+  const t = TH(cl);
+  const forMe = b => b && b.cid===cid && (b.recipients==="all" || !b.recipients || (Array.isArray(b.recipients)&&b.recipients.includes(myId)));
+  const mine = (data.broadcasts||[]).filter(forMe).sort((a,b)=>String(b.ts||"").localeCompare(String(a.ts||"")));
+  // Beim Oeffnen alles als gelesen markieren (pro Trainer via readBy).
+  useEffect(()=>{
+    const unreadIds = new Set(mine.filter(b=>!(b.readBy||[]).includes(myId)).map(b=>b.id));
+    if(unreadIds.size){
+      save({...data, broadcasts:(data.broadcasts||[]).map(b=> unreadIds.has(b.id) ? {...b, readBy:[...(b.readBy||[]), myId]} : b)});
+    }
+  // eslint-disable-next-line
+  },[]);
+  const fmt = ts => { try { return new Date(ts).toLocaleString("de-DE",{day:"2-digit",month:"2-digit",year:"2-digit",hour:"2-digit",minute:"2-digit"}); } catch { return ""; } };
+  return (
+    <div>
+      <p style={{fontWeight:900,fontSize:16,color:"#0f172a",margin:"0 0 4px"}}>Posteingang</p>
+      <p style={{fontSize:12,color:"#64748b",margin:"0 0 14px"}}>Rundschreiben vom Vereinsadmin</p>
+      {mine.length===0 ? (
+        <div style={{textAlign:"center",padding:"32px",background:"#f8fafc",borderRadius:14,border:"1.5px dashed #e2e8f0"}}>
+          <p style={{fontWeight:700,color:"#334155",margin:"0 0 4px"}}>Keine Nachrichten</p>
+          <p style={{fontSize:13,color:"#94a3b8",margin:0}}>Rundschreiben des Vereinsadmins erscheinen hier.</p>
+        </div>
+      ) : (
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {mine.map(b=>(
+            <div key={b.id} style={{background:"#fff",borderRadius:14,border:"1.5px solid #e2e8f0",padding:"13px 15px"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                <div style={{width:30,height:30,borderRadius:9,background:t.p+"18",color:t.p,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:13}}>i</div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontWeight:800,fontSize:13.5,color:"#0f172a"}}>{b.fromName||"Vereinsadmin"}</div>
+                  <div style={{fontSize:11,color:"#94a3b8"}}>{fmt(b.ts)}</div>
+                </div>
+              </div>
+              <div style={{fontSize:14,color:"#334155",lineHeight:1.5,whiteSpace:"pre-wrap"}}>{b.text}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function TrainersTab({data,cid,save,fire,session}) {
   const [showContactSetup, setShowContactSetup] = React.useState(null);
   const myTeams = (data.teams||[]).filter(x=>x.cid===cid);
@@ -19378,7 +19428,14 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const unreadMsgs = useMemo(()=>{
     const lastRead = Number(localStorage.getItem("va_last_read_"+cid)||0);
     return (local.chats||[]).filter(m=>m.cid===cid&&m.ts>lastRead).length;
-  },[local.chats]); const [wizard,setWizard]=useState(false); const [editEv,setEditEv]=useState(null);
+  },[local.chats]);
+  // Ungelesene Rundschreiben fuer den eingeloggten Trainer (Posteingang-Badge)
+  const unreadInbox = useMemo(()=>{
+    if(session.role!=="trainer") return 0;
+    return (local.broadcasts||[]).filter(b=>b.cid===cid
+      && (b.recipients==="all"||!b.recipients||(Array.isArray(b.recipients)&&b.recipients.includes(session.id)))
+      && !(b.readBy||[]).includes(session.id)).length;
+  },[local.broadcasts]); const [wizard,setWizard]=useState(false); const [editEv,setEditEv]=useState(null);
   const [showSeasonModal,setShowSeasonModal]=useState(false);
   const [showOnboarding,setShowOnboarding]=useState(false);
   // Welcome-Modal beim ersten Login für Trainer / Helfer (nur einmalig)
@@ -19459,7 +19516,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       gridTemplateColumns:isDesktop?"260px 1fr":"none"}}>
       {isDesktop&&<DesktopSidebar tab={tab} setTab={setTab}
         isAdmin={isAdmin} isHelper={isHelper}
-        unread={unreadMsgs} cl={myClub}
+        unread={unreadMsgs} inboxUnread={unreadInbox} cl={myClub}
         session={session} onLogout={onLogout}/>}
       <div style={{minHeight:"100dvh",overflowY:"auto",background:"#f0f4f8"}}>
       <div style={{maxWidth:isDesktop?"900px":"100%",margin:"0 auto",padding:isDesktop?"24px":"0"}}>
@@ -19538,6 +19595,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         {tab==="attendance" &&<AttendanceTab data={local} myTids={myTids} cl={myClub}/>}
         {tab==="results"    &&<><LeagueTab data={local} myTids={myTids} cl={myClub} save={save} fire={fire}/><AffiliateBanner trigger="results" style={{marginTop:14}}/></> }
         {tab==="inbox"      &&<InboxTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
+        {tab==="tinbox"     &&<TrainerInboxTab data={local} cid={cid} session={session} save={save} cl={myClub}/>}
         {tab==="chat"       &&<ChatTab data={local} cid={cid} myTids={myTids} session={session} save={save} fire={fire} cl={myClub}/>}
         {tab==="teams"      &&isAdmin&&<TeamHub data={local} myTids={myTids} save={save} fire={fire} cl={myClub} session={session} isAdmin={isAdmin} initialSubTab="manage"/>}
         {tab==="overview"  &&isAdmin&&<AllTeamsOverview data={local} cid={cid} cl={myClub} onSelectTeam={tid=>{ const team=(local.teams||[]).find(x=>x.id===tid); if(team) fire("Team: "+team.name); }}/>}
@@ -19624,7 +19682,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       {helperWelcomeOpen && meHelper && <HelperWelcome h={meHelper} data={local} save={save} onClose={()=>setHelperWelcomeOpen(false)}/>}
       <Toast msg={toast}/>
       {!isDesktop&&<BottomNav tab={tab} setTab={setTab} isAdmin={isAdmin} isHelper={isHelper}
-        unread={unreadMsgs} cl={myClub} />}
+        unread={unreadMsgs} inboxUnread={unreadInbox} cl={myClub} />}
       
     </div>
   );
