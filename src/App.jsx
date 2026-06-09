@@ -13534,6 +13534,95 @@ function PollList({ev,user,onVote}) {
   );
 }
 
+// Zusatz-Auswahlliste an einem Termin (eigene Stimmen je Liste). Mehrere
+// solcher Listen koennen an einem Termin haengen, z.B. "Wer bringt was mit?".
+function ExtraListPoll({poll, user, onChange, readOnly=false}) {
+  const votes = poll.votes||{};
+  const single = poll.selType==="single";
+  const uv = Array.isArray(votes[user]) ? votes[user] : [];
+  const totFor=id=>Object.values(votes).flat().filter(v=>v===id).length;
+  const vFor  =id=>Object.entries(votes).filter(([,vs])=>Array.isArray(vs)&&vs.includes(id)).map(([n])=>n);
+  const tog=id=>{
+    if(readOnly) return;
+    const item=(poll.items||[]).find(i=>i.id===id);
+    let cur=[...uv]; const idx=cur.indexOf(id);
+    if(idx>=0){cur.splice(idx,1);}
+    else{
+      const tk=totFor(id),mn=cur.includes(id)?1:0;
+      if(item?.max&&(tk-mn)>=item.max)return;
+      cur = single ? [id] : [...cur,id];
+    }
+    onChange&&onChange(cur);
+  };
+  const mxPct=Math.max(...(poll.items||[]).map(i=>totFor(i.id)),1);
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:8}}>
+      {(poll.items||[]).map(item=>{
+        const sel=uv.includes(item.id); const tk=totFor(item.id); const mn=sel?1:0; const full=item.max&&(tk-mn)>=item.max; const vts=vFor(item.id);
+        return (
+          <div key={item.id} onClick={()=>!readOnly&&!full&&tog(item.id)}
+            style={{borderRadius:14,border:`2px solid ${sel?"#16a34a":full?"#fca5a5":"#e2e8f0"}`,background:sel?"#dcfce7":full&&!sel?"#fff5f5":"#fafafa",padding:"11px 13px",cursor:readOnly?"default":full&&!sel?"not-allowed":"pointer",opacity:full&&!sel?.55:1,transition:"all .15s"}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:vts.length?5:0}}>
+              {!readOnly&&<div style={{width:21,height:21,borderRadius:7,background:sel?"#16a34a":"#fff",border:`2px solid ${sel?"#16a34a":"#cbd5e1"}`,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>{sel&&<span style={{color:"#fff",fontSize:12,fontWeight:900,lineHeight:1}}>✓</span>}</div>}
+              <span style={{flex:1,fontWeight:sel?800:600,fontSize:14.5,color:sel?"#15803d":"#334155"}}>{item.txt}</span>
+              {item.max&&<Tag c={full&&!sel?"#dc2626":"#64748b"} bg={full&&!sel?"#fee2e2":"#f1f5f9"} ch={full&&!sel?"Voll":`max ${item.max}`}/>}
+              {vts.length>0&&<div style={{display:"flex",alignItems:"center",gap:3}}><div style={{display:"flex"}}>{vts.slice(0,3).map((v,i)=><div key={v} style={{marginLeft:i?-6:0,zIndex:3-i}}><Av name={v} sz={20}/></div>)}</div><span style={{fontSize:12,fontWeight:800,color:"#475569",marginLeft:3}}>{tk}</span></div>}
+            </div>
+            {vts.length>0&&<div style={{fontSize:11,color:"#64748b",paddingLeft:readOnly?0:31}}>{vts.join(", ")}</div>}
+            <div style={{height:4,borderRadius:99,background:"#e2e8f0",overflow:"hidden",marginTop:5}}><div style={{height:"100%",borderRadius:99,background:sel?"#16a34a":full?"#fca5a5":"#94a3b8",width:`${(tk/mxPct)*100}%`,transition:"width .4s ease"}}/></div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// Editor fuer eine Zusatz-Auswahlliste im Termin-Wizard.
+function ExtraPollEditor({poll, onChange, onRemove, t, templates=[]}) {
+  const [txt,setTxt]=useState(""); const [max,setMax]=useState("");
+  const up=patch=>onChange({...poll,...patch});
+  const addItem=()=>{ if(!txt.trim())return; up({items:[...(poll.items||[]),{id:uid(),txt:txt.trim(),max:max?parseInt(max):null}]}); setTxt(""); setMax(""); };
+  return (
+    <div style={{background:"#fff",borderRadius:14,border:`1.5px solid ${t.p}30`,padding:"13px 14px",marginBottom:10}}>
+      <div style={{display:"flex",gap:8,marginBottom:10}}>
+        <input value={poll.title} onChange={e=>up({title:e.target.value})} placeholder="Titel, z.B. Wer bringt was mit?"
+          style={{flex:1,padding:"10px 12px",fontSize:14,fontWeight:700,border:`1.5px solid ${poll.title?t.p:"#e2e8f0"}`,borderRadius:10,outline:"none"}}/>
+        <button onClick={onRemove} title="Liste entfernen" style={{width:42,borderRadius:10,border:"1.5px solid #fecaca",background:"#fff7f7",color:"#dc2626",fontWeight:800,fontSize:15,cursor:"pointer",flexShrink:0}}>✕</button>
+      </div>
+      {templates.length>0&&<div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
+        {templates.map(tpl=>(
+          <button key={tpl.id} onClick={()=>up({items:tpl.items.map(it=>({...it,id:uid()})),selType:tpl.selType||"multi",title:poll.title||tpl.name})}
+            style={{display:"flex",alignItems:"center",gap:5,padding:"6px 10px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontSize:12,fontWeight:700,color:"#334155",fontFamily:"inherit"}}>
+            <span>{tpl.icon}</span>{tpl.name}
+          </button>
+        ))}
+      </div>}
+      <div style={{display:"flex",gap:7,marginBottom:8}}>
+        {[["multi","Mehrfach"],["single","Einfach"]].map(([k,label])=>(
+          <button key={k} onClick={()=>up({selType:k})}
+            style={{flex:1,padding:"7px",borderRadius:9,border:`1.5px solid ${(poll.selType||"multi")===k?t.p:"#e2e8f0"}`,background:(poll.selType||"multi")===k?t.p+"12":"#fff",color:(poll.selType||"multi")===k?t.p:"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{label}auswahl</button>
+        ))}
+      </div>
+      {(poll.items||[]).length>0&&<div style={{display:"flex",flexDirection:"column",gap:5,marginBottom:8}}>
+        {(poll.items||[]).map((it,i)=>(
+          <div key={it.id} style={{display:"flex",alignItems:"center",gap:7,background:"#f8fafc",borderRadius:9,padding:"7px 10px",border:"1px solid #e2e8f0"}}>
+            <span style={{flex:1,fontSize:13,fontWeight:600,color:"#334155"}}>{it.txt}</span>
+            {it.max&&<span style={{fontSize:10,fontWeight:700,color:"#d97706"}}>max {it.max}</span>}
+            <button onClick={()=>up({items:poll.items.filter((_,j)=>j!==i)})} style={{width:24,height:24,borderRadius:7,background:"#fee2e2",border:"none",color:"#dc2626",cursor:"pointer",fontWeight:800,fontSize:12}}>✕</button>
+          </div>
+        ))}
+      </div>}
+      <div style={{display:"flex",gap:7}}>
+        <input value={txt} onChange={e=>setTxt(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();addItem();}}} placeholder="Option…"
+          style={{flex:1,padding:"9px 11px",fontSize:13,border:`1.5px solid ${txt?t.p:"#e2e8f0"}`,borderRadius:9,outline:"none"}}/>
+        <input value={max} onChange={e=>setMax(e.target.value)} type="number" min="1" placeholder="max"
+          style={{width:58,padding:"9px 6px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",textAlign:"center"}}/>
+        <button onClick={addItem} disabled={!txt.trim()} style={{padding:"0 14px",borderRadius:9,border:"none",background:txt.trim()?t.p:"#e2e8f0",color:txt.trim()?contrast(t.p):"#94a3b8",fontWeight:700,fontSize:13,cursor:txt.trim()?"pointer":"default",fontFamily:"inherit"}}>+</button>
+      </div>
+    </div>
+  );
+}
+
 const POSITIONS_LIST = ["Torwart","Innenverteidiger","Aussenverteidiger","Def. Mittelfeld","Zentrales Mittelfeld","Off. Mittelfeld","Linker Fluegel","Rechter Fluegel","Stürmer","Universalspieler"];
 const FOOT_LIST      = ["Rechts","Links","Beidfüßig"];
 const RECOMMEND_LIST = ["Aufsteigen","Verbleiben","Absteigen","Pause empfohlen","Beobachten"];
@@ -16547,7 +16636,7 @@ function SeriesWizard({f,u,t}) {
 
 function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTemplate=null}) {
   const t=TH(cl); const isEdit=!!editEv; const STEPS=5;
-  const blank={tid:teams[0]?.id||"",type:"training",title:"",date:now(),time:"",endTime:"",loc:"",note:"",sollPlayers:null,maxPlayers:null,pt:"att",recMode:"none",recDays:[],recStart:now(),recUntil:"",recDates:[],li:[],fi:[],sc:[],selType:"multi",open:false,_li:{txt:"",max:""},_fi:{name:"",col:"#16a34a"},_sc:{fid:"",time:"",a:"",b:"",ref:""}};
+  const blank={tid:teams[0]?.id||"",type:"training",title:"",date:now(),time:"",endTime:"",loc:"",note:"",sollPlayers:null,maxPlayers:null,pt:"att",recMode:"none",recDays:[],recStart:now(),recUntil:"",recDates:[],li:[],fi:[],sc:[],extraPolls:[],selType:"multi",open:false,_li:{txt:"",max:""},_fi:{name:"",col:"#16a34a"},_sc:{fid:"",time:"",a:"",b:"",ref:""}};
   const [step,setStep]=useState(1);
   const [f,setF]=useState(editEv?{...blank,...editEv,recMode:"none",recDays:[],recDates:[],_li:{txt:"",max:""},_fi:{name:"",col:"#16a34a"},_sc:{fid:"",time:"",a:"",b:"",ref:""}}:blank);
   const u=p=>setF(prev=>({...prev,...p}));
@@ -16563,7 +16652,7 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
     }else if(recMode==="custom"&&recDates.length){eventDates=recDates;}
     else eventDates=[base.date||now()];
     const sid=eventDates.length>1?uid():null;
-    onSave(eventDates.map((date,i)=>({...base,id:uid(),date,votes:{},sid,sidx:i})));
+    onSave(eventDates.map((date,i)=>({...base,id:uid(),date,votes:{},sid,sidx:i,extraPolls:(base.extraPolls||[]).map(p=>({...p,votes:{}}))})));
   };
   const SL=["Mannschaft","Art","Details","Umfrage","Abschluss"];
   const teamsSel=teams.find(x=>x.id===f.tid);
@@ -16706,12 +16795,25 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
             </div>
             {onSaveTemplate&&f.li?.length>0&&<button onClick={()=>{const name=prompt("Name der Vorlage?");if(name)onSaveTemplate({id:uid(),name,icon:"Liste",selType:f.selType||"multi",items:f.li,tid:f.tid});}} style={{marginTop:10,width:"100%",padding:"10px",borderRadius:11,border:`1.5px dashed ${t.p}`,background:"transparent",color:t.p,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}> Als Vorlage speichern</button>}
           </div>}
+          {}
+          <div style={{borderTop:"1px solid #e2e8f0",paddingTop:14}}>
+            <p style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:4}}>WEITERE AUSWAHLLISTEN (OPTIONAL)</p>
+            <p style={{fontSize:12,color:"#94a3b8",marginBottom:10}}>Zusätzliche Listen am selben Termin, z.B. „Wer bringt was mit?" – jede mit eigener Abstimmung.</p>
+            {(f.extraPolls||[]).map((p,i)=>(
+              <ExtraPollEditor key={p.id} poll={p} t={t}
+                templates={onTemplates.filter(tp=>!tp.tid||tp.tid===f.tid)}
+                onChange={np=>u({extraPolls:f.extraPolls.map((x,j)=>j===i?np:x)})}
+                onRemove={()=>u({extraPolls:f.extraPolls.filter((_,j)=>j!==i)})}/>
+            ))}
+            <button onClick={()=>u({extraPolls:[...(f.extraPolls||[]),{id:uid(),title:"",selType:"multi",items:[]}]})}
+              style={{width:"100%",padding:"11px",borderRadius:11,border:`1.5px dashed ${t.p}`,background:"transparent",color:t.p,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>+ Weitere Liste hinzufügen</button>
+          </div>
         </div>}
         {}
         {step===5&&<div className="in">
           <div style={{background:"#0f172a",borderRadius:17,padding:"18px"}}>
             <p style={{color:"rgba(255,255,255,.45)",fontSize:11,fontWeight:800,marginBottom:13,letterSpacing:.5}}>ZUSAMMENFASSUNG</p>
-            {[[" Mannschaft",teamsSel?.icon+" "+teamsSel?.name],["Art",ET[f.type]?.icon+" "+ET[f.type]?.label],["Titel",f.title],["Uhrzeit",f.time||"-"],f.loc&&["Ort","* "+f.loc],f.note&&["Notiz","* "+f.note.slice(0,50)],["Umfrage",f.pt==="att"?"* Anwesenheit":f.pt==="carpool"?"* Fahrtgemeinschaft":`* Liste (${(f.li||[]).length} Opt.)`],["Termine",f.recMode==="weekly"?`* Woechentlich . ${f.recDays?.length||0} Tage`:f.recMode==="custom"?`* ${f.recDates?.length||0} Daten`:"1 Termin . "+fmtD(f.date)],f.open&&["Sichtbarkeit","* Offen für andere Vereine"]].filter(Boolean).filter(x=>!x.hidden).map(([k,v])=>(
+            {[[" Mannschaft",teamsSel?.icon+" "+teamsSel?.name],["Art",ET[f.type]?.icon+" "+ET[f.type]?.label],["Titel",f.title],["Uhrzeit",f.time||"-"],f.loc&&["Ort","* "+f.loc],f.note&&["Notiz","* "+f.note.slice(0,50)],["Umfrage",(f.pt==="att"?"* Anwesenheit":f.pt==="carpool"?"* Fahrtgemeinschaft":`* Liste (${(f.li||[]).length} Opt.)`)+((f.extraPolls||[]).length?` + ${f.extraPolls.length} Liste${f.extraPolls.length>1?"n":""}`:"")],["Termine",f.recMode==="weekly"?`* Woechentlich . ${f.recDays?.length||0} Tage`:f.recMode==="custom"?`* ${f.recDates?.length||0} Daten`:"1 Termin . "+fmtD(f.date)],f.open&&["Sichtbarkeit","* Offen für andere Vereine"]].filter(Boolean).filter(x=>!x.hidden).map(([k,v])=>(
               <div key={k} style={{display:"flex",gap:10,marginBottom:9}}>
                 <span style={{color:"rgba(255,255,255,.4)",fontSize:12,fontWeight:700,minWidth:90}}>{k}</span>
                 <span style={{color:"#fff",fontSize:13,fontWeight:700,flex:1}}>{v}</span>
@@ -19755,6 +19857,19 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
                 fire("Frist gesetzt *");
               }}
             />}
+        {(viewEv.extraPolls||[]).map(p=>(
+          <div key={p.id} style={{marginTop:16,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+              <span style={{fontSize:18}}>{p.icon||"📋"}</span>
+              <span style={{fontWeight:800,fontSize:15,color:"#0f172a"}}>{p.title||"Auswahl"}</span>
+            </div>
+            <ExtraListPoll poll={p} user={session.name||"Admin"} onChange={arr=>{
+              const np=(viewEv.extraPolls||[]).map(x=>x.id===p.id?{...x,votes:{...(x.votes||{}),[session.name||"Admin"]:arr}}:x);
+              save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,extraPolls:np}:e)});
+              setViewEv(prev=>({...prev,extraPolls:np}));
+            }}/>
+          </div>
+        ))}
         <div style={{height:14}}/><Btn full ch="Schließen" v="gst" onClick={()=>setViewEv(null)}/>
       </Drawer>}
 
@@ -20574,6 +20689,15 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
           :ev.pt==="carpool"?<PollCarpool ev={ev} user={user} onVote={onVote} cl={cl}/>
           :ev.pt==="list"?<PollList ev={ev} user={user} onVote={onVote}/>
           :<PollAttend ev={ev} user={user} onVote={onVote} cl={cl}/>}
+        {(ev.extraPolls||[]).map(p=>(
+          <div key={p.id} style={{marginTop:16,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+              <span style={{fontSize:18}}>{p.icon||"📋"}</span>
+              <span style={{fontWeight:800,fontSize:15,color:"#0f172a"}}>{p.title||"Auswahl"}</span>
+            </div>
+            <ExtraListPoll poll={p} user={user} onChange={arr=>onVote(ev.id,"extra:"+p.id,arr)}/>
+          </div>
+        ))}
       </div>}
     </div>
   );
@@ -20679,6 +20803,10 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
     const next={...data,events:data.events.map(e=>{
       if(e.id!==eid)return e;
       if(pt==="carpool")return {...e, votes:{...(e.votes||{}), [user]: val}};
+      if(typeof pt==="string"&&pt.startsWith("extra:")){
+        const pid=pt.slice(6);
+        return {...e, extraPolls:(e.extraPolls||[]).map(p=>p.id===pid?{...p, votes:{...(p.votes||{}), [user]: val}}:p)};
+      }
       if(pt==="att"){
         const locked = isVotingLocked(e) && !isEventPast(e);
         const newVal = (typeof val==="object"&&val!==null) ? val.val : val;
