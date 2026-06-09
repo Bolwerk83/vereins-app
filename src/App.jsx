@@ -20188,12 +20188,19 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         {viewEv.type==="turnier"
           ? <TournView ev={viewEv} user={session.name||"Admin"} onVote={()=>{}} cl={myClub} players={local.players} isHelper={isHelper} fields={(data.fields||[]).filter(f=>f.cid===cid)}
               onUpdate={patch=>{
-                save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,...patch}:e)});
+                const events=local.events.map(e=>e.id===viewEv.id?{...e,...patch}:e);
+                const updatedEv=events.find(e=>e.id===viewEv.id);
+                // Falls veroeffentlicht: oeffentlichen Spiegel (liveEvents.pub) mitziehen,
+                // damit Gaeste Plan/Timer live sehen.
+                const isPub=(local.liveEvents||[]).some(x=>x.eid===viewEv.id);
+                const liveEvents=isPub?(local.liveEvents||[]).map(x=>x.eid===viewEv.id?{...x,title:updatedEv.title,date:updatedEv.date,pub:tournPubSnapshot(updatedEv)}:x):local.liveEvents;
+                save({...local,events,...(isPub?{liveEvents}:{})});
                 setViewEv(prev=>({...prev,...patch}));
                 fire("Turnier aktualisiert *");
               }}
               onPublish={isHelper?undefined:({from,until})=>{
-                const entry={id:viewEv.id,eid:viewEv.id,clubId:cid,clubSlug:(myClub?.slug||cid),title:viewEv.title,date:viewEv.date,from,until};
+                const pubEv={...viewEv,published:true,pubFrom:from,pubUntil:until};
+                const entry={id:viewEv.id,eid:viewEv.id,clubId:cid,clubSlug:(myClub?.slug||cid),title:viewEv.title,date:viewEv.date,from,until,pub:tournPubSnapshot(pubEv)};
                 const liveEvents=[...(local.liveEvents||[]).filter(x=>x.eid!==viewEv.id),entry];
                 const events=local.events.map(e=>e.id===viewEv.id?{...e,published:true,pubFrom:from,pubUntil:until}:e);
                 save({...local,liveEvents,events});
@@ -20935,6 +20942,26 @@ const isLiveNow = (e) => {
   return now>=from && now<=until;
 };
 
+// Oeffentlicher Schnappschuss eines Turniers fuer den Besucher-Spiegel
+// (globaler liveEvents-Index). So koennen Gaeste alles aus der globalen
+// Zeile lesen, ohne Zugriff auf den Vereins-Shard (RLS-fest).
+function tournPubSnapshot(ev){
+  return {
+    title: ev.title||"Turnier", date: ev.date||"", time: ev.time||"", endTime: ev.endTime||"",
+    loc: ev.loc||"", note: ev.note||"",
+    clubName: ev.setup?.clubName||"",
+    gameTime: ev.setup?.gameTime||8,
+    fields: ev.setup?.fields||0,
+    pitches: ev.setup?.pitches||null,
+    teams: (ev.setup?.clubs||[]).filter(Boolean),
+    schedule: ev.schedule||[],
+    lanes: tournLanes(ev),
+    viewPwHash: ev.setup?.viewPwHash||"",
+    ctrlPwHash: ev.setup?.ctrlPwHash||"",
+    timer: Array.isArray(ev.timer)?ev.timer:[],
+  };
+}
+
 // Veroeffentlichungs-Wizard: Freischaltfenster festlegen (z.B. 1 Std. vor
 // Beginn bis 1 Std. nach Ende). Nach Fensterende faellt das Turnier aus dem
 // oeffentlichen Index (Archiv).
@@ -21092,8 +21119,16 @@ function TournamentPublic({ eid, clubParam, onBack }){
   const [showCtrl,setShowCtrl]=useState(false); const [cpw,setCpw]=useState(""); const [cerr,setCerr]=useState(false); const [ctrl,setCtrl]=useState(false);
   const [tab,setTab]=useState("info");
   const cidRef=useRef(null);
+  const mirrorRef=useRef(false); // true = aus globalem liveEvents-Spiegel (RLS-fest)
 
   const pickEv = cd => (cd?.events||[]).find(x=>x.id===eid);
+  // Synthetisches Event aus dem oeffentlichen Spiegel-Snapshot bauen.
+  const evFromPub = (p) => ({
+    id: eid, type:"turnier", title:p.title, date:p.date, time:p.time||"", endTime:p.endTime||"",
+    loc:p.loc||"", note:p.note||"", schedule:p.schedule||[], timer:Array.isArray(p.timer)?p.timer:[],
+    setup:{ clubName:p.clubName, gameTime:p.gameTime, fields:p.fields||0, pitches:p.pitches||null,
+            clubs:p.teams||[], viewPwHash:p.viewPwHash||"", ctrlPwHash:p.ctrlPwHash||"" },
+  });
   const load=async ()=>{
     try{
       try{ await auth.ensureMember(); }catch{}
@@ -21101,6 +21136,17 @@ function TournamentPublic({ eid, clubParam, onBack }){
       const club=(dir?.clubs||[]).find(c=>c.slug===clubParam||c.id===clubParam);
       if(!club){ setPhase("notfound"); return; }
       cidRef.current=club.id; setCid(club.id);
+      // 1) Bevorzugt aus dem oeffentlichen Spiegel (nur globale Zeile -> RLS-fest)
+      const mirror=(dir?.liveEvents||[]).find(x=>x.eid===eid && x.pub);
+      if(mirror){
+        mirrorRef.current=true;
+        const e=evFromPub(mirror.pub);
+        setData({clubs:dir.clubs||[], liveEvents:dir.liveEvents||[]}); setEv(e);
+        if(!e.setup?.viewPwHash){ setAuthed(true); setPhase("view"); } else setPhase("locked");
+        return;
+      }
+      // 2) Fallback: Vereins-Shard (vor RLS-Verschaerfung / nicht veroeffentlicht)
+      mirrorRef.current=false;
       const cd=await sb.getClub(club.id);
       const e=pickEv(cd);
       if(!e){ setData(cd); setPhase("notfound"); return; }
@@ -21112,8 +21158,16 @@ function TournamentPublic({ eid, clubParam, onBack }){
   useEffect(()=>{
     load();
     const iv=setInterval(async()=>{
-      try{ const cur=cidRef.current; if(!cur) return; if(sb._writing) return;
-        const cd=await sb.getClub(cur); if(cd){ const e=pickEv(cd); setData(cd); if(e) setEv(e); } }catch{}
+      try{ if(sb._writing) return;
+        if(mirrorRef.current){
+          const dir=await sb.getDirectory();
+          const m=(dir?.liveEvents||[]).find(x=>x.eid===eid && x.pub);
+          if(m){ setData({clubs:dir.clubs||[], liveEvents:dir.liveEvents||[]}); setEv(evFromPub(m.pub)); }
+        } else {
+          const cur=cidRef.current; if(!cur) return;
+          const cd=await sb.getClub(cur); if(cd){ const e=pickEv(cd); setData(cd); if(e) setEv(e); }
+        }
+      }catch{}
     },6000);
     return ()=>clearInterval(iv);
   // eslint-disable-next-line
@@ -21125,9 +21179,17 @@ function TournamentPublic({ eid, clubParam, onBack }){
   const tryCtrl=()=>{ if(checkPw(cpw, ev?.setup?.ctrlPwHash||"")){ setCtrl(true); setShowCtrl(false); setCpw(""); } else { setCerr(true); setTimeout(()=>setCerr(false),1600); } };
   const saveTimer=async (arr)=>{
     const cur=cidRef.current; if(!cur||!data) return;
-    const next={...data, events:(data.events||[]).map(x=>x.id===eid?{...x,timer:arr}:x)};
-    setData(next); setEv(e=>e?{...e,timer:arr}:e);
-    try{ await sb.set(next, cur); }catch{}
+    if(mirrorRef.current){
+      // Timer in den globalen Spiegel schreiben (nur globale Zeile, RLS-fest)
+      const liveEvents=(data.liveEvents||[]).map(x=>x.eid===eid?{...x,pub:{...(x.pub||{}),timer:arr}}:x);
+      const next={clubs:data.clubs||[], liveEvents};
+      setData(next); setEv(e=>e?{...e,timer:arr}:e);
+      try{ await sb.set(next, null); }catch{}
+    } else {
+      const next={...data, events:(data.events||[]).map(x=>x.id===eid?{...x,timer:arr}:x)};
+      setData(next); setEv(e=>e?{...e,timer:arr}:e);
+      try{ await sb.set(next, cur); }catch{}
+    }
   };
 
   const Shell=({children})=>(
