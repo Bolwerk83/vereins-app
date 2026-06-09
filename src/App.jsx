@@ -1,4 +1,5 @@
 import React, { useState,useEffect,useCallback,useRef,useMemo,createContext } from "react";
+import { splitData, mergeData, merge3Obj } from "./data.js";
 
 const LANG_KEY = "vereinsapp_lang";
 const LangCtx  = createContext("de");
@@ -607,52 +608,8 @@ const setConfig = c => { try { localStorage.setItem(CFG,JSON.stringify(c)); } ca
 // genau einem Verein zugeordnet (über cid bzw. Team-Zugehörigkeit); alles,
 // was keinem bekannten Verein zuzuordnen ist, landet in der globalen Zeile.
 // ----------------------------------------------------------------
-const splitData = (data) => {
-  if(!data) return { global:null, shards:{} };
-  const idSet = new Set((data.clubs||[]).map(c=>c&&c.id).filter(Boolean));
-  const teamCid = {}; (data.teams||[]).forEach(t=>{ if(t&&t.id) teamCid[t.id]=t.cid; });
-  const shards = {}; const ensure = id => (shards[id] ||= {});
-  idSet.forEach(id=>ensure(id));
-  const global = {};
-  for(const [key,val] of Object.entries(data)){
-    if(key==="clubs"){
-      // Vereinsliste komplett in die globale Zeile (leicht: nur Metadaten, keine schweren Arrays)
-      global.clubs = [ ...(global.clubs||[]), ...(val||[]) ];
-    } else if(key==="players" && val && typeof val==="object" && !Array.isArray(val)){
-      global.players ||= {}; // leeres/Rest-players bleibt erhalten (Verlustfreiheit)
-      for(const [tid,pv] of Object.entries(val)){
-        const cid=teamCid[tid];
-        if(cid && idSet.has(cid)) (ensure(cid).players ||= {})[tid]=pv;
-        else (global.players ||= {})[tid]=pv;
-      }
-    } else if(Array.isArray(val) && val.length && val.every(r=>r&&typeof r==="object") && val.some(r=>"cid" in r)){
-      val.forEach(rec=>{
-        const cid=rec.cid;
-        if(cid && idSet.has(cid)) (ensure(cid)[key] ||= []).push(rec);
-        else (global[key] ||= []).push(rec);
-      });
-    } else {
-      global[key]=val; // global/skalar/Objekt/Array-ohne-cid (z.B. seasons, activeSeason, _v)
-    }
-  }
-  return { global, shards };
-};
-const mergeData = (global, shardList) => {
-  const out = global ? JSON.parse(JSON.stringify(global)) : {};
-  for(const shard of (shardList||[])){
-    if(!shard) continue;
-    for(const [key,val] of Object.entries(shard)){
-      if(key==="players" && val && typeof val==="object" && !Array.isArray(val)){
-        out.players = { ...(out.players||{}), ...val };
-      } else if(Array.isArray(val)){
-        out[key] = [ ...(out[key]||[]), ...val ];
-      } else {
-        out[key]=val;
-      }
-    }
-  }
-  return out;
-};
+// splitData/mergeData/merge3* sind nach src/data.js ausgelagert (testbar) und
+// werden oben importiert.
 
 // ----------------------------------------------------------------
 // Auth: anonymer Login + Vereinscode → Mitgliedschaft (gegen RLS).
@@ -788,6 +745,7 @@ const sb = {
   _clubKey: cid => SK+"__club_"+cid,
   _lastWrite: null,
   _writing: false,
+  _snap: {}, // letzter gelesener Roh-Zeilenwert je key (Basis fuer 3-Wege-Merge)
   // Header mit Bearer-Token aus auth (fällt auf anon-Key zurück, wenn Auth noch nicht da).
   _hdr: async () => {
     const cfg = getConfig();
@@ -838,6 +796,7 @@ const sb = {
       if (r.ok) {
         const rows = await r.json();
         if (rows && rows.length) {
+          rows.forEach(x=>{ sb._snap[x.key]=x.value; });
           const gl = rows.find(x=>x.key===sb._glKey)?.value || {};
           const shardRows = rows.filter(x=>x.key!==sb._glKey).map(x=>x.value);
           const merged = normData(mergeData(gl, shardRows));
@@ -858,7 +817,7 @@ const sb = {
       const r = await sb._fetch(`/rest/v1/app_data?key=eq.${sb._glKey}&select=value`);
       if (r.ok) {
         const rows = await r.json();
-        if (rows[0]?.value) return normData(rows[0].value);
+        if (rows[0]?.value) { sb._snap[sb._glKey]=rows[0].value; return normData(rows[0].value); }
         const m = await sb._migrate();
         if (m) { const { global } = splitData(m); return normData(global); }
         // Cloud ist erreichbar, aber wirklich leer - das Init darf seedn.
@@ -875,6 +834,7 @@ const sb = {
       if (r.ok) {
         const rows = await r.json();
         if (rows && rows.length) {
+          rows.forEach(x=>{ sb._snap[x.key]=x.value; });
           const gl = rows.find(x=>x.key===sb._glKey)?.value || {};
           const shard = rows.find(x=>x.key===sb._clubKey(cid))?.value || {};
           return normData(mergeData(gl, [shard]));
@@ -915,6 +875,21 @@ const sb = {
     // laeuft - sonst gehen frisch angelegte Vereine wieder verloren.
     sb._writing = true;
     try {
+      // 3-Wege-Merge: frischen Cloud-Stand der zu schreibenden Zeilen lesen und
+      // mit dem lokalen Stand zusammenfuehren, damit parallele Aenderungen anderer
+      // Geraete nicht ueberschrieben werden. Nur mergen, wenn der Read GELANG.
+      try {
+        const inList = rows.map(x=>`"${x.key}"`).join(",");
+        const rr = await sb._fetch(`/rest/v1/app_data?key=in.(${inList})&select=key,value`);
+        if (rr.ok) {
+          const cur = await rr.json();
+          const cloudByKey = {}; cur.forEach(x=>{ cloudByKey[x.key]=x.value; });
+          rows = rows.map(x=>{
+            if (!(x.key in cloudByKey)) return x; // Zeile existiert noch nicht -> unveraendert anlegen
+            return { ...x, value: merge3Obj(sb._snap[x.key], cloudByKey[x.key], x.value) };
+          });
+        }
+      } catch {}
       const r = await sb._fetch(`/rest/v1/app_data`, {
         method:"POST",
         headers: { "Prefer":"resolution=merge-duplicates" },
@@ -926,6 +901,7 @@ const sb = {
         return sb._lastWrite;
       }
       localSet(d); // Cache erst nach Cloud-Erfolg
+      rows.forEach(x=>{ sb._snap[x.key]=x.value; }); // Snapshot = neuer Cloud-Stand
       sb._lastWrite = { ok:true, status:r.status, error:"", at:Date.now() };
       return sb._lastWrite;
     } catch (e) {
