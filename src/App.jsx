@@ -771,7 +771,7 @@ const _DATA_ARRAYS = [
   "events","chats","messages","helpers","teams","trainers",
   "playerProfiles","trainings","fields","bookings",
   "contactRequests","securityLog","seasons","pollTemplates",
-  "clubs","news","newsItems","photos","broadcasts"
+  "clubs","news","newsItems","photos","broadcasts","treasuries"
 ];
 const normData = (d) => {
   if (!d || typeof d !== "object") return d;
@@ -4039,6 +4039,7 @@ function BottomNav({ tab, setTab, isAdmin, isHelper, unread, inboxUnread=0, cl, 
       label: "VERWALTUNG",
       items: [
         { id:"tinbox",    label: inboxUnread>0?`Posteingang (${inboxUnread})`:"Posteingang", icon:"I", hidden: !isTrainer },
+        { id:"treasury",  label:"Kasse",        icon:"€", hidden: isHelper },
         { id:"training",  label:"Trainingsplan", icon:"TP", hidden: isHelper||!feat("training_plans")||!clubFeat("mod_training") },
         { id:"jerseys",    label:"Trikots",      icon:"T", hidden: isHelper||!feat("jerseys_tab")||!clubFeat("mod_jerseys") },
         { id:"helpers",    label:"Helfer",       icon:"H", hidden: isHelper },
@@ -11910,6 +11911,7 @@ function DesktopSidebar({ tab, setTab, isAdmin, isHelper, unread, inboxUnread=0,
 
   const trainerItems = [
     { id:"tinbox",     label: inboxUnread>0?`Posteingang (${inboxUnread})`:"Posteingang", icon:"I", hidden: !isTrainer },
+    { id:"treasury",   label:"Kasse",          icon:"€", hidden: isHelper },
     { id:"training",   label:"Trainingsplan",  icon:"TP", hidden: isHelper },
     { id:"jerseys",    label:"Trikots",        icon:"Tr", hidden: isHelper },
     { id:"helpers",    label:"Helfer",         icon:"H",  hidden: isHelper },
@@ -16537,6 +16539,180 @@ function TemplatesTab({data,cid,save,fire,cl,myTids=[],teams=[]}) {
   );
 }
 
+// Mannschaftskasse: Kassen koennen ein oder mehrere Teams umfassen
+// (gemeinsame Kasse z.B. fuer alle F-Jugenden) und/oder pro Team bestehen.
+const fmtEur = n => (Number(n)||0).toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2})+" €";
+function kasseBalance(k){ return (k.entries||[]).reduce((s,e)=>s+(e.type==="out"?-1:1)*(Number(e.amount)||0),0); }
+
+function TreasuryTab({ data, cid, save, fire, cl, myTids=[], teams=[], isAdmin=false }) {
+  const t=TH(cl);
+  const clubTeams = teams.filter(tm=>tm.cid===cid);
+  const myTeams   = clubTeams.filter(tm=>myTids.includes(tm.id));
+  const selectableTeams = isAdmin ? clubTeams : myTeams;
+  const teamName = id => clubTeams.find(tm=>tm.id===id)?.name||"Team";
+  const all = (data.treasuries||[]).filter(k=>k.cid===cid);
+  const visible = isAdmin ? all : all.filter(k=>(k.tids||[]).some(tid=>myTids.includes(tid)));
+
+  const [form,setForm]=useState(null);     // null | {id?, name, tids:[]}
+  const [openId,setOpenId]=useState(null);  // ausgeklappte Kasse
+  const [entry,setEntry]=useState(null);    // {kid, type, amount, note, date}
+  const [delK,setDelK]=useState(null);
+
+  const saveKasse=()=>{
+    const name=(form.name||"").trim(); if(!name||(form.tids||[]).length===0) return;
+    if(form.id){
+      save({...data,treasuries:all0().map(k=>k.id===form.id?{...k,name,tids:form.tids}:k)});
+      fire("Kasse aktualisiert *");
+    } else {
+      save({...data,treasuries:[...all0(),{id:uid(),cid,name,tids:form.tids,entries:[]}]});
+      fire("Kasse angelegt *");
+    }
+    setForm(null);
+  };
+  const all0=()=>data.treasuries||[];
+  const delKasse=id=>{ save({...data,treasuries:all0().filter(k=>k.id!==id)}); setDelK(null); fire("Kasse gelöscht"); };
+  const addEntry=()=>{
+    const amt=parseFloat(String(entry.amount).replace(",","."));
+    if(!amt||amt<=0) { fire("Betrag fehlt"); return; }
+    const rec={id:uid(),type:entry.type,amount:Math.round(amt*100)/100,note:(entry.note||"").trim(),date:entry.date||now(),by:"Trainer",ts:new Date().toISOString()};
+    save({...data,treasuries:all0().map(k=>k.id===entry.kid?{...k,entries:[...(k.entries||[]),rec]}:k)});
+    setEntry(null); fire("Buchung erfasst *");
+  };
+  const delEntry=(kid,eid)=>{ save({...data,treasuries:all0().map(k=>k.id===kid?{...k,entries:(k.entries||[]).filter(e=>e.id!==eid)}:k)}); fire("Buchung gelöscht"); };
+
+  const toggleTid=tid=>setForm(f=>({...f,tids:(f.tids||[]).includes(tid)?f.tids.filter(x=>x!==tid):[...(f.tids||[]),tid]}));
+
+  // Formular zum Anlegen/Bearbeiten
+  if(form) return (
+    <div className="in">
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+        <p style={{fontSize:16,fontWeight:800,color:"#0f172a"}}>{form.id?"Kasse bearbeiten":"Neue Kasse"}</p>
+        <Btn sm ch="Abbrechen" onClick={()=>setForm(null)} v="gst"/>
+      </div>
+      <div style={{marginBottom:14}}><Inp label="Name der Kasse" val={form.name} set={v=>setForm(f=>({...f,name:v}))} ph="z.B. Mannschaftskasse F-Jugend" cl={cl}/></div>
+      <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:8}}>TEAMS (eine gemeinsame Kasse kann mehrere umfassen)</div>
+      <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:18}}>
+        {selectableTeams.length===0&&<div style={{fontSize:13,color:"#94a3b8"}}>Keine Teams verfügbar.</div>}
+        {selectableTeams.map(tm=>{
+          const on=(form.tids||[]).includes(tm.id);
+          return (
+            <label key={tm.id} style={{display:"flex",alignItems:"center",gap:10,padding:"11px 13px",borderRadius:12,border:`1.5px solid ${on?(tm.col||t.p):"#e2e8f0"}`,background:on?(tm.col||t.p)+"12":"#fafafa",cursor:"pointer"}}>
+              <input type="checkbox" checked={on} onChange={()=>toggleTid(tm.id)} style={{width:18,height:18,accentColor:tm.col||t.p}}/>
+              <span style={{fontSize:18}}>{tm.icon}</span>
+              <span style={{flex:1,fontWeight:700,fontSize:14,color:"#0f172a"}}>{tm.name}</span>
+              {tm.cat&&<span style={{fontSize:12,color:"#64748b"}}>{tm.cat}</span>}
+            </label>
+          );
+        })}
+      </div>
+      <Btn full ch={form.id?"Speichern":"Kasse anlegen"} onClick={saveKasse} dis={!(form.name||"").trim()||(form.tids||[]).length===0} cl={cl}/>
+    </div>
+  );
+
+  return (
+    <div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+        <div>
+          <p style={{fontWeight:800,fontSize:16,color:"#0f172a"}}>Mannschaftskasse</p>
+          <p style={{fontSize:12,color:"#64748b",marginTop:2}}>Einnahmen & Ausgaben je Kasse – auch teamübergreifend</p>
+        </div>
+        <button onClick={()=>setForm({name:"",tids:myTeams.length===1?[myTeams[0].id]:[]})} disabled={selectableTeams.length===0}
+          style={{display:"flex",alignItems:"center",gap:7,padding:"10px 16px",borderRadius:12,border:"none",background:selectableTeams.length?t.p:"#e2e8f0",color:selectableTeams.length?contrast(t.p):"#94a3b8",fontWeight:700,fontSize:14,cursor:selectableTeams.length?"pointer":"default",fontFamily:"inherit"}}>
+          <span style={{fontSize:16}}>+</span> Neue Kasse
+        </button>
+      </div>
+
+      {visible.length===0&&(
+        <div style={{textAlign:"center",padding:"40px 20px",background:"#f8fafc",borderRadius:18,border:"1.5px dashed #e2e8f0"}}>
+          <p style={{fontWeight:800,fontSize:16,color:"#334155"}}>Noch keine Kasse</p>
+          <p style={{color:"#94a3b8",fontSize:13,marginTop:8,lineHeight:1.6}}>Lege eine Kasse für ein Team an – oder eine gemeinsame<br/>Kasse für mehrere Teams (z.B. alle F-Jugenden).</p>
+        </div>
+      )}
+
+      <div style={{display:"flex",flexDirection:"column",gap:12}}>
+        {visible.map(k=>{
+          const bal=kasseBalance(k);
+          const open=openId===k.id;
+          const ent=[...(k.entries||[])].sort((a,b)=>String(b.ts||b.date||"").localeCompare(String(a.ts||a.date||"")));
+          return (
+            <div key={k.id} style={{background:"#fff",borderRadius:18,border:"1.5px solid #e2e8f0",overflow:"hidden"}}>
+              <div onClick={()=>setOpenId(open?null:k.id)} style={{padding:"15px 16px",cursor:"pointer"}}>
+                <div style={{display:"flex",alignItems:"center",gap:12}}>
+                  <div style={{width:46,height:46,borderRadius:14,background:t.p+"15",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>💰</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontWeight:800,fontSize:15,color:"#0f172a"}}>{k.name}</div>
+                    <div style={{fontSize:12,color:"#64748b",marginTop:2}}>{(k.tids||[]).map(teamName).join(", ")||"Keine Teams"}</div>
+                  </div>
+                  <div style={{textAlign:"right"}}>
+                    <div style={{fontWeight:900,fontSize:18,color:bal<0?"#dc2626":"#16a34a"}}>{fmtEur(bal)}</div>
+                    <div style={{fontSize:11,color:"#94a3b8"}}>{(k.entries||[]).length} Buchung{(k.entries||[]).length!==1?"en":""}</div>
+                  </div>
+                </div>
+              </div>
+              {open&&(
+                <div style={{borderTop:"1px solid #f1f5f9",padding:"14px 16px"}}>
+                  <div style={{display:"flex",gap:8,marginBottom:12}}>
+                    <button onClick={()=>setEntry({kid:k.id,type:"in",amount:"",note:"",date:now()})} style={{flex:1,padding:"10px",borderRadius:11,border:"1.5px solid #bbf7d0",background:"#f0fdf4",color:"#16a34a",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>+ Einnahme</button>
+                    <button onClick={()=>setEntry({kid:k.id,type:"out",amount:"",note:"",date:now()})} style={{flex:1,padding:"10px",borderRadius:11,border:"1.5px solid #fecaca",background:"#fff7f7",color:"#dc2626",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>− Ausgabe</button>
+                  </div>
+
+                  {entry&&entry.kid===k.id&&(
+                    <div style={{background:"#f8fafc",borderRadius:13,border:"1.5px solid #e2e8f0",padding:"12px 14px",marginBottom:12}} className="in">
+                      <div style={{fontSize:12,fontWeight:800,color:entry.type==="in"?"#16a34a":"#dc2626",marginBottom:10}}>{entry.type==="in"?"Einnahme erfassen":"Ausgabe erfassen"}</div>
+                      <div style={{display:"flex",gap:8,marginBottom:8}}>
+                        <input value={entry.amount} onChange={e=>setEntry(s=>({...s,amount:e.target.value}))} type="text" inputMode="decimal" placeholder="Betrag €" autoFocus
+                          style={{width:110,padding:"10px 12px",fontSize:15,fontWeight:700,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",textAlign:"center"}}/>
+                        <input value={entry.date} onChange={e=>setEntry(s=>({...s,date:e.target.value}))} type="date"
+                          style={{flex:1,padding:"10px 12px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none"}}/>
+                      </div>
+                      <input value={entry.note} onChange={e=>setEntry(s=>({...s,note:e.target.value}))} placeholder="Verwendungszweck, z.B. Trikots, Mitgliedsbeitrag…"
+                        style={{width:"100%",padding:"10px 12px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",marginBottom:10,boxSizing:"border-box"}}/>
+                      <div style={{display:"flex",gap:8}}>
+                        <button onClick={()=>setEntry(null)} style={{flex:1,padding:"10px",borderRadius:10,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
+                        <button onClick={addEntry} style={{flex:2,padding:"10px",borderRadius:10,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Buchen</button>
+                      </div>
+                    </div>
+                  )}
+
+                  {ent.length===0
+                    ? <p style={{fontSize:13,color:"#94a3b8",textAlign:"center",padding:"10px"}}>Noch keine Buchungen.</p>
+                    : <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                        {ent.map(e=>(
+                          <div key={e.id} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 11px",background:"#f8fafc",borderRadius:10,border:"1px solid #eef2f7"}}>
+                            <div style={{width:30,height:30,borderRadius:9,background:e.type==="out"?"#fee2e2":"#dcfce7",color:e.type==="out"?"#dc2626":"#16a34a",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:15,flexShrink:0}}>{e.type==="out"?"−":"+"}</div>
+                            <div style={{flex:1,minWidth:0}}>
+                              <div style={{fontSize:13.5,fontWeight:700,color:"#0f172a"}}>{e.note||(e.type==="out"?"Ausgabe":"Einnahme")}</div>
+                              <div style={{fontSize:11,color:"#94a3b8"}}>{fmtD(e.date)}</div>
+                            </div>
+                            <div style={{fontWeight:800,fontSize:14,color:e.type==="out"?"#dc2626":"#16a34a",whiteSpace:"nowrap"}}>{e.type==="out"?"−":"+"}{fmtEur(e.amount)}</div>
+                            <button onClick={()=>delEntry(k.id,e.id)} style={{width:26,height:26,borderRadius:7,background:"#fff",border:"1px solid #fecaca",color:"#dc2626",cursor:"pointer",fontWeight:800,fontSize:12,flexShrink:0}}>✕</button>
+                          </div>
+                        ))}
+                      </div>}
+
+                  <div style={{display:"flex",gap:8,marginTop:14}}>
+                    <button onClick={()=>setForm({id:k.id,name:k.name,tids:[...(k.tids||[])]})} style={{flex:1,padding:"9px",borderRadius:10,border:`1.5px solid ${t.p}`,background:t.p+"10",color:t.p,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Bearbeiten</button>
+                    <button onClick={()=>setDelK(k.id)} style={{padding:"9px 13px",borderRadius:10,border:"1.5px solid #fecaca",background:"#fff7f7",color:"#dc2626",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Löschen</button>
+                  </div>
+                  {delK===k.id&&(
+                    <div style={{background:"#fff7f7",borderRadius:12,padding:"12px",border:"1.5px solid #fecaca",marginTop:10}}>
+                      <p style={{fontSize:13,fontWeight:700,color:"#dc2626",marginBottom:10}}>Kasse mit allen Buchungen löschen?</p>
+                      <div style={{display:"flex",gap:8}}>
+                        <button onClick={()=>delKasse(k.id)} style={{flex:1,padding:"9px",borderRadius:10,border:"none",background:"#dc2626",color:"#fff",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Ja, löschen</button>
+                        <button onClick={()=>setDelK(null)} style={{flex:1,padding:"9px",borderRadius:10,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function SeriesWizard({f,u,t}) {
   const DAYS=["Mo","Di","Mi","Do","Fr","Sa","So"];
   const mode=f.recMode||"none";
@@ -19820,6 +19996,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         </>}
         {tab==="players"    &&<><PlayersTab data={local} myTids={myTids} save={save} fire={fire} cl={myClub}/><AffiliateBanner trigger="players" style={{marginTop:14}}/></> }
         {tab==="templates"  &&<TemplatesTab data={local} cid={cid} save={save} fire={fire} cl={myClub} myTids={myTids} teams={(local.teams||[]).filter(tm=>tm.cid===cid)}/>}
+        {tab==="treasury"   &&<TreasuryTab data={local} cid={cid} save={save} fire={fire} cl={myClub} myTids={myTids} teams={(local.teams||[]).filter(tm=>tm.cid===cid)} isAdmin={isAdmin}/>}
         {tab==="helpers"    &&<HelpersTab data={local} cid={cid} myTids={myTids} session={session} save={save} fire={fire} cl={myClub}/>}
         {tab==="training"  &&<><TrainingPlanTab data={local} myTids={myTids} save={save} fire={fire} cl={myClub} session={session}/><AffiliateBanner trigger="training" style={{marginTop:14}}/></> }
         {tab==="jerseys"    &&<><AffiliateBanner trigger="jerseys"/><JerseysTab data={local} myTids={myTids} save={save} fire={fire} cl={myClub}/></> }
