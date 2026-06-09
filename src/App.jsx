@@ -604,9 +604,10 @@ const sb = {
         if (rows[0]?.value) return normData(rows[0].value);
         const m = await sb._migrate();
         if (m) { const { global } = splitData(m); return normData(global); }
-        return null;
+        // Cloud ist erreichbar, aber wirklich leer - das Init darf seedn.
+        return { __cloudEmpty: true };
       }
-      return null;
+      return null; // Cloud erreichbar, aber RLS/Auth blockt -> NICHT seeden, sonst Datenverlust
     } catch {
       return normData(localGet());
     }
@@ -19319,10 +19320,24 @@ function AppInner({lang,setLang}) {
 
   useEffect(()=>{
     (async()=>{
-      // 1) Leichtes Verzeichnis laden (nur Vereinsliste, keine schweren Daten); falls leer -> seed
+      // 1) Verzeichnis laden. Cloud-leer (HTTP 200, keine Daten) -> seed initial.
+      //    Cloud-Fehler / Auth-Block -> KEIN Seed, sonst werden echte Daten ueberschrieben.
       let dir=null;
       try { dir = await sb.getDirectory(); } catch {}
-      if(!dir || (dir._v!=null && dir._v < 10)) { const seeded=seed(); try { await sb.set(seeded); } catch {} dir=seeded; }
+      if (dir && dir.__cloudEmpty) {
+        const seeded = seed();
+        try { await sb.set(seeded); } catch {}
+        dir = seeded;
+      } else if (!dir) {
+        // Cloud nicht autorisiert oder offline - leeren Fallback-Stand zeigen,
+        // sync versucht es alle 10 s erneut. Nichts in die Cloud schreiben.
+        dir = normData({ _v: 14 });
+      } else if (dir._v != null && dir._v < 10) {
+        // Veralteter Stand - migrieren via Seed.
+        const seeded = seed();
+        try { await sb.set(seeded); } catch {}
+        dir = seeded;
+      }
       // SuperAdmin braucht alle Daten -> voll laden
       if(new URLSearchParams(window.location.search).has("superadmin")){
         let full=null; try { full=await sb.get(); } catch {}
