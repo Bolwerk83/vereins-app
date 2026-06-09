@@ -728,7 +728,7 @@ const _DATA_ARRAYS = [
   "events","chats","messages","helpers","teams","trainers",
   "playerProfiles","trainings","fields","bookings",
   "contactRequests","securityLog","seasons","pollTemplates",
-  "clubs","news","newsItems","photos","broadcasts","treasuries"
+  "clubs","news","newsItems","photos","broadcasts","treasuries","liveEvents"
 ];
 const normData = (d) => {
   if (!d || typeof d !== "object") return d;
@@ -12626,9 +12626,10 @@ function useViewportWidth() {
   return w;
 }
 
-function Directory({data,onPick,onNewClub,lang,setLang}) {
+function Directory({data,onPick,onNewClub,onVisitorOpen,lang,setLang}) {
   const tr = (k) => T[lang]?.[k] ?? T.de[k] ?? k;
   const [mode,setMode] = useState("home");
+  const liveNow = (data.liveEvents||[]).filter(isLiveNow).sort((a,b)=>String(a.date||"").localeCompare(String(b.date||"")));
   const [contactCl,setContactCl] = useState(null);
   const [search,setSearch] = useState("");
   const [sportFilter,setSportFilter] = useState("alle");
@@ -12651,6 +12652,34 @@ function Directory({data,onPick,onNewClub,lang,setLang}) {
 
   if(mode==="setup") return (
     <SetupWizard onBack={()=>setMode("home")} onDone={newClub=>{onNewClub&&onNewClub(newClub);setMode("home");}}/>
+  );
+
+  if(mode==="visitor") return (
+    <div style={{minHeight:"100dvh",background:"linear-gradient(160deg,#0f172a 0%,#052e16 60%)",color:"#fff"}}>
+      <style>{CSS}</style>
+      <div style={{maxWidth:520,margin:"0 auto",padding:"26px 18px 40px"}}>
+        <button onClick={()=>setMode("home")} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:20}}>← Zurück</button>
+        <h2 style={{fontWeight:900,fontSize:24,margin:"0 0 4px"}}>Veranstaltungen</h2>
+        <p style={{color:"rgba(255,255,255,.55)",fontSize:14,marginBottom:20}}>Aktuell freigeschaltete Turniere – tippe zum Öffnen (Passwort nötig).</p>
+        {liveNow.length===0
+          ? <div style={{background:"rgba(255,255,255,.07)",borderRadius:18,padding:"32px",textAlign:"center",color:"rgba(255,255,255,.6)",fontSize:14}}>Gerade ist keine Veranstaltung freigeschaltet.</div>
+          : liveNow.map(e=>{
+              const clubName=(data.clubs||[]).find(c=>c.id===e.clubId||c.slug===e.clubSlug)?.name||"";
+              return (
+                <div key={e.eid} onClick={()=>onVisitorOpen&&onVisitorOpen(e.eid,e.clubSlug||e.clubId)}
+                  style={{background:"rgba(255,255,255,.09)",border:"1.5px solid rgba(255,255,255,.14)",borderRadius:18,padding:"16px 18px",cursor:"pointer",marginBottom:12,display:"flex",alignItems:"center",gap:14}}>
+                  <div style={{width:46,height:46,borderRadius:14,background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>&#127942;</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontWeight:900,fontSize:17}}>{e.title||"Turnier"}</div>
+                    <div style={{color:"rgba(255,255,255,.5)",fontSize:13,marginTop:2}}>{clubName}{e.date?" · "+fmtD(e.date):""}</div>
+                  </div>
+                  <span style={{color:"rgba(255,255,255,.3)",fontSize:22}}>{">"}</span>
+                </div>
+              );
+            })
+        }
+      </div>
+    </div>
   );
 
   if(mode==="contact"&&contactCl) return (
@@ -12684,6 +12713,25 @@ function Directory({data,onPick,onNewClub,lang,setLang}) {
           <CloudStatus/>
           <LangSwitcher lang={lang} setLang={setLang}/>
         </div>
+      </div>
+
+      {}
+      <div style={{position:"relative",maxWidth:isDesktop?1120:520,margin:"0 auto",padding:"14px 22px 0"}}>
+        <button onClick={()=>setMode("visitor")}
+          style={{width:"100%",display:"flex",alignItems:"center",gap:13,padding:"14px 18px",borderRadius:16,cursor:"pointer",fontFamily:"inherit",textAlign:"left",
+            background:liveNow.length?"linear-gradient(135deg,#f59e0b,#ea580c)":"rgba(255,255,255,.08)",
+            border:liveNow.length?"none":"1.5px solid rgba(255,255,255,.18)",
+            boxShadow:liveNow.length?"0 8px 28px -8px rgba(234,88,12,.7)":"none",
+            animation:liveNow.length?"pulse 2.4s ease infinite":"none"}}>
+          <div style={{width:42,height:42,borderRadius:13,background:"rgba(255,255,255,.22)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>&#127942;</div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontWeight:900,fontSize:16,color:"#fff"}}>Als Gast: Turnier ansehen</div>
+            <div style={{fontSize:12.5,color:"rgba(255,255,255,.85)",marginTop:1}}>
+              {liveNow.length?`${liveNow.length} Veranstaltung${liveNow.length>1?"en":""} jetzt live · Spielplan & Live-Timer`:"Spielplan, Ergebnisse & Live-Timer ansehen"}
+            </div>
+          </div>
+          <span style={{color:"rgba(255,255,255,.7)",fontSize:22,flexShrink:0}}>{">"}</span>
+        </button>
       </div>
 
       {}
@@ -20002,6 +20050,21 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
                 save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,...patch}:e)});
                 setViewEv(prev=>({...prev,...patch}));
                 fire("Turnier aktualisiert *");
+              }}
+              onPublish={isHelper?undefined:({from,until})=>{
+                const entry={id:viewEv.id,eid:viewEv.id,clubId:cid,clubSlug:(myClub?.slug||cid),title:viewEv.title,date:viewEv.date,from,until};
+                const liveEvents=[...(local.liveEvents||[]).filter(x=>x.eid!==viewEv.id),entry];
+                const events=local.events.map(e=>e.id===viewEv.id?{...e,published:true,pubFrom:from,pubUntil:until}:e);
+                save({...local,liveEvents,events});
+                setViewEv(prev=>({...prev,published:true,pubFrom:from,pubUntil:until}));
+                fire("Turnier veröffentlicht *");
+              }}
+              onUnpublish={isHelper?undefined:()=>{
+                const liveEvents=(local.liveEvents||[]).filter(x=>x.eid!==viewEv.id);
+                const events=local.events.map(e=>e.id===viewEv.id?{...e,published:false}:e);
+                save({...local,liveEvents,events});
+                setViewEv(prev=>({...prev,published:false}));
+                fire("Veröffentlichung zurückgezogen");
               }}/>
           : <VoteOverview ev={viewEv} players={local.players} teams={local.teams} myTids={myTids} cl={myClub}
               onSetDeadline={deadline=>{
@@ -20721,13 +20784,84 @@ function TournPlan({ ev, setup, t, onUpdate, isHelper }){
     </div>
   );
 }
-function TournView({ ev,user,onVote,onUpdate,cl,players,isHelper=false,fields=[] }) {
+// Ist eine veroeffentlichte Veranstaltung gerade fuer Besucher freigeschaltet?
+const isLiveNow = (e) => {
+  if(!e) return false;
+  const now=Date.now();
+  const from=e.from?Date.parse(e.from):(e.pubFrom?Date.parse(e.pubFrom):NaN);
+  const until=e.until?Date.parse(e.until):(e.pubUntil?Date.parse(e.pubUntil):NaN);
+  if(isNaN(from)||isNaN(until)) return false;
+  return now>=from && now<=until;
+};
+
+// Veroeffentlichungs-Wizard: Freischaltfenster festlegen (z.B. 1 Std. vor
+// Beginn bis 1 Std. nach Ende). Nach Fensterende faellt das Turnier aus dem
+// oeffentlichen Index (Archiv).
+function PublishTournament({ ev, cl, onPublish, onUnpublish }) {
+  const t=TH(cl);
+  const start=eventStart(ev);
+  const [beforeH,setBeforeH]=useState(1);
+  const [afterH,setAfterH]=useState(1);
+  const estEnd=()=>{
+    const sched=ev.schedule||[];
+    if(sched.length){ const last=[...sched.map(g=>g.time)].sort().pop(); const [h,m]=last.split(":").map(Number); const tot=h*60+(m||0)+(ev.setup?.gameTime||8); return `${String(Math.floor(tot/60)%24).padStart(2,"0")}:${String(tot%60).padStart(2,"0")}`; }
+    if(ev.time){ const [h,m]=ev.time.split(":").map(Number); const tot=h*60+(m||0)+180; return `${String(Math.floor(tot/60)%24).padStart(2,"0")}:${String(tot%60).padStart(2,"0")}`; }
+    return "18:00";
+  };
+  const [endTime,setEndTime]=useState(estEnd);
+  const hasPw = !!ev.setup?.viewPwHash;
+  const fromDate = start ? new Date(start.getTime()-beforeH*3600000) : null;
+  const endDate  = (ev.date&&endTime) ? new Date(ev.date+"T"+endTime+":00") : null;
+  const untilDate= endDate ? new Date(endDate.getTime()+afterH*3600000) : null;
+  const fmtDT = d => !d||isNaN(d.getTime()) ? "-" : `${fmtD(d.toISOString().slice(0,10))} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")} Uhr`;
+  const Stepper=({val,set,min,max,suffix})=>(
+    <div style={{display:"flex",alignItems:"center",gap:10}}>
+      <button onClick={()=>set(Math.max(min,val-1))} style={{width:34,height:34,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:900,fontSize:17,cursor:"pointer"}}>−</button>
+      <span style={{minWidth:70,textAlign:"center",fontWeight:800,fontSize:16}}>{val}{suffix}</span>
+      <button onClick={()=>set(Math.min(max,val+1))} style={{width:34,height:34,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:900,fontSize:17,cursor:"pointer"}}>+</button>
+    </div>
+  );
+  const live = ev.published && isLiveNow(ev);
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+      {ev.published && (
+        <div style={{background:live?"#dcfce7":"#f1f5f9",border:`1.5px solid ${live?"#86efac":"#e2e8f0"}`,borderRadius:14,padding:"13px 15px"}}>
+          <div style={{fontWeight:800,fontSize:14,color:live?"#15803d":"#475569"}}>{live?"● Jetzt für Besucher freigeschaltet":"Veröffentlicht – Freischaltung zeitgesteuert"}</div>
+          <div style={{fontSize:12.5,color:"#64748b",marginTop:4}}>Sichtbar von {fmtDT(ev.pubFrom?new Date(ev.pubFrom):null)} bis {fmtDT(ev.pubUntil?new Date(ev.pubUntil):null)}</div>
+        </div>
+      )}
+      {!hasPw && <div style={{background:"#fef3c7",border:"1.5px solid #fde68a",borderRadius:12,padding:"11px 13px",fontSize:13,color:"#92400e",fontWeight:600}}>Erst im Tab „Setup" ein Besucher-Passwort vergeben – sonst können Gäste nicht öffnen.</div>}
+      <div style={{background:"#fff",borderRadius:14,padding:"14px",border:"1.5px solid #e2e8f0"}}>
+        <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.4}}>FREISCHALTEN AB</div>
+        <Stepper val={beforeH} set={setBeforeH} min={0} max={48} suffix={beforeH===1?" Std. vor Beginn":" Std. vor Beginn"}/>
+        {start&&<div style={{fontSize:12,color:"#94a3b8",marginTop:6}}>= {fmtDT(fromDate)}</div>}
+      </div>
+      <div style={{background:"#fff",borderRadius:14,padding:"14px",border:"1.5px solid #e2e8f0"}}>
+        <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.4}}>TURNIER-ENDE (ca.)</div>
+        <input type="time" value={endTime} onChange={e=>setEndTime(e.target.value)} style={{padding:"10px 12px",fontSize:15,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",fontFamily:"inherit"}}/>
+      </div>
+      <div style={{background:"#fff",borderRadius:14,padding:"14px",border:"1.5px solid #e2e8f0"}}>
+        <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.4}}>DEAKTIVIEREN</div>
+        <Stepper val={afterH} set={setAfterH} min={0} max={48} suffix=" Std. nach Ende"/>
+        {untilDate&&<div style={{fontSize:12,color:"#94a3b8",marginTop:6}}>= {fmtDT(untilDate)} · danach automatisch im Archiv</div>}
+      </div>
+      <button onClick={()=>fromDate&&untilDate&&onPublish&&onPublish({from:fromDate.toISOString(),until:untilDate.toISOString()})}
+        disabled={!fromDate||!untilDate}
+        style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:(fromDate&&untilDate)?t.p:"#e2e8f0",color:(fromDate&&untilDate)?"#fff":"#94a3b8",fontWeight:800,fontSize:15,cursor:(fromDate&&untilDate)?"pointer":"default",fontFamily:"inherit"}}>
+        {ev.published?"Freischaltung aktualisieren":"Turnier veröffentlichen"}
+      </button>
+      {ev.published&&<button onClick={()=>onUnpublish&&onUnpublish()} style={{width:"100%",padding:"11px",borderRadius:12,border:"1.5px solid #fecaca",background:"#fff7f7",color:"#dc2626",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Veröffentlichung zurückziehen</button>}
+    </div>
+  );
+}
+
+function TournView({ ev,user,onVote,onUpdate,cl,players,isHelper=false,fields=[],onPublish,onUnpublish }) {
   const t=TH(cl);
   const setup=ev.setup||{};
   const [stab,setStab]=useState("info");
   const TABS=isHelper
     ?[["info","Info"],["plan","Plan"],["timer","Timer"],["split","Split"],["stats","Stats"]]
-    :[["info","Info"],["setup","Setup"],["plan","Plan"],["timer","Timer"],["split","Split"],["stats","Stats"]];
+    :[["info","Info"],["setup","Setup"],["plan","Plan"],["timer","Timer"],...(onPublish?[["publish","Freigabe"]]:[]),["split","Split"],["stats","Stats"]];
   return (
     <div>
       <div style={{display:"flex",gap:6,marginBottom:12,overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
@@ -20742,6 +20876,7 @@ function TournView({ ev,user,onVote,onUpdate,cl,players,isHelper=false,fields=[]
       {stab==="setup"&&!isHelper&&<TournSetup setup={setup} cl={cl} t={t} onUpdate={onUpdate} fields={fields} ev={ev}/>}
       {stab==="plan"&&<TournPlan ev={ev} setup={setup} t={t} onUpdate={onUpdate} isHelper={isHelper}/>}
       {stab==="timer"&&<CompactTimer ev={ev} cl={cl} canControl={!!onUpdate} onTimer={arr=>onUpdate&&onUpdate({timer:arr})}/>}
+      {stab==="publish"&&!isHelper&&<PublishTournament ev={ev} cl={cl} onPublish={onPublish} onUnpublish={onUnpublish}/>}
       {stab==="split"&&<div style={{background:"#f8fafc",borderRadius:14,padding:"14px"}}>
         <p style={{fontWeight:700,color:"#334155",marginBottom:8}}>Team-Aufteilung</p>
         <p style={{fontSize:13,color:"#64748b"}}>Spieler zufällig auf Teams aufteilen.</p>
@@ -20806,7 +20941,7 @@ function CompactTimer({ ev,cl,canControl=false,onTimer }) {
 }
 
 // Oeffentliche, passwortgeschuetzte Turnier-Ansicht fuer Gaeste (per Link).
-function TournamentPublic({ eid, clubParam }){
+function TournamentPublic({ eid, clubParam, onBack }){
   const [phase,setPhase]=useState("loading"); // loading | notfound | error | locked | view
   const [data,setData]=useState(null);
   const [cid,setCid]=useState(null);
@@ -20859,6 +20994,7 @@ function TournamentPublic({ eid, clubParam }){
       <style>{CSS}</style>
       <div style={{background:`linear-gradient(135deg,${t.s||"#052e16"},${t.p}cc)`,padding:"22px 18px 18px",color:"#fff"}}>
         <div style={{maxWidth:560,margin:"0 auto"}}>
+          {onBack&&<button onClick={onBack} style={{background:"rgba(255,255,255,.15)",border:"none",borderRadius:10,padding:"6px 12px",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",marginBottom:12}}>← Übersicht</button>}
           <div style={{fontSize:12,fontWeight:700,opacity:.7,letterSpacing:.4}}>{(ev?.setup?.clubName||cl.name||"")} · TURNIER</div>
           <div style={{fontWeight:900,fontSize:21,marginTop:2}}>{ev?.title||"Turnier"}</div>
           {ev&&<div style={{fontSize:13,opacity:.85,marginTop:3}}>{fmtD(ev.date)}{ev.time?" · "+ev.time+" Uhr":""}{ev.loc?" · "+ev.loc:""}</div>}
@@ -21448,6 +21584,7 @@ function DbTest(){
 function AppInner({lang,setLang}) {
   const [data,setData]    = useState(null);
   const [screen,setScr]   = useState("boot");
+  const [visitor,setVisitor] = useState(null); // {eid,club} -> oeffentliche Veranstaltungs-Ansicht
   const [cid,setCid]      = useState(null);
   const [linkTeam,setLinkTeam] = useState(null);
   const [session,setSess] = useState(null);
@@ -21501,6 +21638,13 @@ function AppInner({lang,setLang}) {
           dir = {...dir, seasons: dir.seasons.map(s=>s.id===actId?{...s,label:"2026/2027"}:s), _seasonFix2627:true};
           try { await sb.set(dir); } catch {}
         }
+      }
+      // Abgelaufene Veranstaltungen aus dem oeffentlichen Live-Index entfernen
+      // (nach Ende des Freischaltfensters -> Archiv).
+      if (dir && !dir.__cloudEmpty && Array.isArray(dir.liveEvents) && dir.liveEvents.length) {
+        const nowMs=Date.now();
+        const keep=dir.liveEvents.filter(e=>{ const u=e&&e.until?Date.parse(e.until):NaN; return !isNaN(u)&&nowMs<=u; });
+        if(keep.length!==dir.liveEvents.length){ dir={...dir, liveEvents:keep}; try{ await sb.set(dir); }catch{} }
       }
       // SuperAdmin braucht alle Daten -> voll laden
       if(new URLSearchParams(window.location.search).has("superadmin")){
@@ -21604,6 +21748,8 @@ function AppInner({lang,setLang}) {
 
   {const _q=new URLSearchParams(window.location.search); if(_q.has("tournament")) return (<><style>{CSS}</style><TournamentPublic eid={_q.get("tournament")} clubParam={_q.get("club")}/></>);}
 
+  if(visitor) return (<><style>{CSS}</style><TournamentPublic eid={visitor.eid} clubParam={visitor.club} onBack={()=>setVisitor(null)}/></>);
+
   if(screen==="boot"||!data) return (
     <div style={{minHeight:"100dvh",display:"flex",alignItems:"center",justifyContent:"center",background:"#0f172a"}}>
       <style>{CSS}</style>
@@ -21643,7 +21789,7 @@ function AppInner({lang,setLang}) {
       )}
 
       {showLegal&&<LegalPage onBack={()=>setShowLegal(false)}/>}
-      {!showLegal&&screen==="dir"&&<Directory data={data} lang={lang} setLang={setLang} onLegal={()=>setShowLegal(true)} onPick={async id=>{
+      {!showLegal&&screen==="dir"&&<Directory data={data} lang={lang} setLang={setLang} onLegal={()=>setShowLegal(true)} onVisitorOpen={(eid,club)=>setVisitor({eid,club})} onPick={async id=>{
           const realId = id==="__demo__"?"demo":id;
           let cd=null; try { cd=await sb.getClub(realId); } catch {}
           // Transienter Auth-Fehler? Einmal Mitgliedschaft sichern + erneut laden,
