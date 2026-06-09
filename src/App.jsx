@@ -16243,34 +16243,98 @@ function ItemRow({item,idx,tp,onDragStart,onDragEnter,onDragEnd,onChange,onRemov
   );
 }
 
-function TemplatesTab({data,cid,save,fire,cl}) {
+function TemplatesTab({data,cid,save,fire,cl,myTids=[],teams=[]}) {
   const t=TH(cl);
-  const templates=(data.pollTemplates||[]).filter(x=>x.cid===cid);
-  const [mode,setMode]=useState(null); // null | "new" | tpl.id (edit)
+  const clubTeams = teams.filter(tm=>tm.cid===cid);
+  const myTeams   = clubTeams.filter(tm=>myTids.includes(tm.id));
+  const teamName  = tid => clubTeams.find(tm=>tm.id===tid)?.name || "Team";
+  const all = (data.pollTemplates||[]).filter(x=>x.cid===cid);
+  const [selTid,setSelTid]=useState(()=>myTeams[0]?.id||clubTeams[0]?.id||"");
+  const [mode,setMode]=useState(null);   // null | "new" | tpl.id (edit)
   const [delId,setDelId]=useState(null);
-  const editTpl=templates.find(x=>x.id===mode);
+  const [sendId,setSendId]=useState(null); // Vorlage, die an ein Team gesendet wird
+  const [adoptId,setAdoptId]=useState(null); // eingehende Vorlage, die uebernommen wird
+  const editTpl  = all.find(x=>x.id===mode);
+  const sendTpl  = all.find(x=>x.id===sendId);
+  const adoptTpl = all.find(x=>x.id===adoptId);
+  // Eingehende (an eines meiner Teams gesendete) Vorlagen
+  const incoming = all.filter(x=>x.pending && myTids.includes(x.tid));
+  // Eigene Vorlagen des gewaehlten Teams (plus alte ohne Team-Zuordnung)
+  const templates = all.filter(x=>!x.pending && (x.tid===selTid || !x.tid));
 
   const doSaveNew=f=>{
-    save({...data,pollTemplates:[...(data.pollTemplates||[]),{id:uid(),cid,name:f.name.trim(),icon:f.icon,items:f.items}]});
+    save({...data,pollTemplates:[...(data.pollTemplates||[]),{id:uid(),cid,tid:selTid,name:f.name.trim(),icon:f.icon,selType:f.selType||"multi",items:f.items}]});
     setMode(null);fire("Vorlage erstellt *");
   };
   const doUpdate=f=>{
-    save({...data,pollTemplates:(data.pollTemplates||[]).map(x=>x.id===mode?{...x,name:f.name.trim(),icon:f.icon,items:f.items}:x)});
+    save({...data,pollTemplates:(data.pollTemplates||[]).map(x=>x.id===mode?{...x,tid:x.tid||selTid,name:f.name.trim(),icon:f.icon,selType:f.selType||x.selType||"multi",items:f.items}:x)});
     setMode(null);fire("Vorlage gespeichert *");
   };
   const doDel=id=>{
     save({...data,pollTemplates:(data.pollTemplates||[]).filter(x=>x.id!==id)});
     setDelId(null);fire("Vorlage gelöscht");
   };
+  // Vorlage als ausstehenden Transfer an ein anderes Team senden
+  const doSend=(tpl,targetTid)=>{
+    save({...data,pollTemplates:[...(data.pollTemplates||[]),{id:uid(),cid,tid:targetTid,name:tpl.name,icon:tpl.icon,selType:tpl.selType||"multi",items:(tpl.items||[]).map(it=>({...it,id:uid()})),pending:true,fromName:teamName(tpl.tid)}]});
+    setSendId(null);fire("An "+teamName(targetTid)+" gesendet");
+  };
+  // Eingehende Vorlage uebernehmen (ggf. angepasst) -> wird fuer das Zielteam aktiv
+  const doAdopt=f=>{
+    save({...data,pollTemplates:(data.pollTemplates||[]).map(x=>x.id===adoptId?{...x,pending:false,fromName:undefined,name:f.name.trim(),icon:f.icon,selType:f.selType||x.selType||"multi",items:f.items}:x)});
+    setAdoptId(null);fire("Vorlage übernommen *");
+  };
+  const doDecline=id=>{
+    save({...data,pollTemplates:(data.pollTemplates||[]).filter(x=>x.id!==id)});
+    fire("Eingehende Vorlage abgelehnt");
+  };
+
+  // Team-Auswahl zum Senden
+  if(sendTpl){
+    const targets=clubTeams.filter(tm=>tm.id!==sendTpl.tid);
+    return (
+      <div className="in">
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+          <p style={{fontSize:15,fontWeight:800,color:"#0f172a"}}>"{sendTpl.name}" an Team senden</p>
+          <Btn sm ch="Abbrechen" onClick={()=>setSendId(null)} v="gst"/>
+        </div>
+        <p style={{fontSize:12.5,color:"#64748b",marginBottom:14,lineHeight:1.5}}>Das Zielteam erhaelt die Vorlage als Eingang und kann sie vor dem Speichern noch anpassen.</p>
+        {targets.length===0
+          ? <div style={{textAlign:"center",padding:"28px",background:"#f8fafc",borderRadius:14,border:"1.5px dashed #e2e8f0",color:"#94a3b8",fontSize:13}}>Keine anderen Teams vorhanden.</div>
+          : <div style={{display:"flex",flexDirection:"column",gap:9}}>
+              {targets.map(tm=>(
+                <button key={tm.id} onClick={()=>doSend(sendTpl,tm.id)}
+                  style={{display:"flex",alignItems:"center",gap:12,padding:"13px 15px",borderRadius:14,border:"1.5px solid #e2e8f0",background:"#fff",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
+                  <div style={{width:40,height:40,borderRadius:12,background:(tm.col||t.p)+"20",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>{tm.icon||"T"}</div>
+                  <div style={{flex:1}}><div style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>{tm.name}</div>{tm.cat&&<div style={{fontSize:12,color:"#64748b"}}>{tm.cat}</div>}</div>
+                  <span style={{color:t.p,fontWeight:800,fontSize:13}}>Senden →</span>
+                </button>
+              ))}
+            </div>}
+      </div>
+    );
+  }
+
+  // Eingehende Vorlage uebernehmen/anpassen
+  if(adoptTpl){
+    return (
+      <div className="in">
+        <p style={{fontSize:12.5,color:"#64748b",marginBottom:10,lineHeight:1.5}}>Eingehende Vorlage fuer <b>{teamName(adoptTpl.tid)}</b>{adoptTpl.fromName?` (von ${adoptTpl.fromName})`:""}. Vor dem Speichern anpassbar.</p>
+        <TemplateForm title="Vorlage uebernehmen"
+          initial={{name:adoptTpl.name,icon:adoptTpl.icon,selType:adoptTpl.selType||"multi",items:[...(adoptTpl.items||[])],_txt:"",_max:""}}
+          onSave={doAdopt} onCancel={()=>setAdoptId(null)} cl={cl}/>
+      </div>
+    );
+  }
 
   return (
     <div>
       {}
       {!mode&&(
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
           <div>
             <p style={{fontWeight:800,fontSize:16,color:"#0f172a"}}> Umfrage-Vorlagen</p>
-            <p style={{fontSize:12,color:"#64748b",marginTop:2}}>Beim Termin anlegen mit einem Klick laden</p>
+            <p style={{fontSize:12,color:"#64748b",marginTop:2}}>Pro Team gespeichert · beim Termin anlegen mit einem Klick laden</p>
           </div>
           <button onClick={()=>setMode("new")} style={{display:"flex",alignItems:"center",gap:7,padding:"10px 18px",borderRadius:12,border:"none",background:t.p,color:contrast(t.p),fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",boxShadow:`0 3px 12px ${t.p}55`}}>
             <span style={{fontSize:16}}>+</span> Neue Vorlage
@@ -16279,14 +16343,45 @@ function TemplatesTab({data,cid,save,fire,cl}) {
       )}
 
       {}
+      {!mode&&clubTeams.length>0&&(
+        <div style={{overflowX:"auto",display:"flex",gap:7,marginBottom:14,scrollbarWidth:"none"}}>
+          {(myTeams.length>0?myTeams:clubTeams).map(tm=>(
+            <button key={tm.id} onClick={()=>setSelTid(tm.id)}
+              style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",borderRadius:99,border:`2px solid ${selTid===tm.id?(tm.col||t.p):"#e2e8f0"}`,background:selTid===tm.id?(tm.col||t.p)+"15":"#fff",color:selTid===tm.id?(tm.col||t.p):"#475569",fontWeight:700,fontSize:13,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit"}}>
+              {tm.icon} {tm.name}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {}
+      {!mode&&incoming.length>0&&(
+        <div style={{display:"flex",flexDirection:"column",gap:9,marginBottom:16}}>
+          {incoming.map(tpl=>(
+            <div key={tpl.id} style={{background:"#eff6ff",borderRadius:16,border:"1.5px solid #bfdbfe",padding:"13px 15px"}} className="in">
+              <div style={{fontSize:11,fontWeight:800,color:"#2563eb",letterSpacing:.3,marginBottom:4}}>EINGEHENDE VORLAGE · {teamName(tpl.tid)}{tpl.fromName?` · von ${tpl.fromName}`:""}</div>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+                <div style={{width:40,height:40,borderRadius:12,background:"#dbeafe",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>{tpl.icon}</div>
+                <div style={{flex:1,minWidth:0}}><div style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>{tpl.name}</div><div style={{fontSize:12,color:"#64748b"}}>{(tpl.items||[]).length} Option{(tpl.items||[]).length!==1?"en":""}</div></div>
+              </div>
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={()=>setAdoptId(tpl.id)} style={{flex:2,padding:"10px",borderRadius:11,border:"none",background:"#2563eb",color:"#fff",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Anpassen & übernehmen</button>
+                <button onClick={()=>doDecline(tpl.id)} style={{flex:1,padding:"10px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Ablehnen</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {}
       {mode==="new"&&(
-        <TemplateForm title="Neue Vorlage" onSave={doSaveNew} onCancel={()=>setMode(null)} cl={cl}/>
+        <TemplateForm title={`Neue Vorlage${selTid?" · "+teamName(selTid):""}`} onSave={doSaveNew} onCancel={()=>setMode(null)} cl={cl}/>
       )}
 
       {}
       {mode&&mode!=="new"&&editTpl&&(
-        <TemplateForm title={`** "${editTpl.name}" bearbeiten`}
-          initial={{name:editTpl.name,icon:editTpl.icon,items:[...editTpl.items],_txt:"",_max:""}}
+        <TemplateForm title={`"${editTpl.name}" bearbeiten`}
+          initial={{name:editTpl.name,icon:editTpl.icon,selType:editTpl.selType||"multi",items:[...editTpl.items],_txt:"",_max:""}}
           onSave={doUpdate} onCancel={()=>setMode(null)} cl={cl}/>
       )}
 
@@ -16325,11 +16420,15 @@ function TemplatesTab({data,cid,save,fire,cl}) {
               <div style={{display:"flex",gap:7}}>
                 <button onClick={()=>setMode(tpl.id)}
                   style={{padding:"7px 13px",borderRadius:10,border:`1.5px solid ${t.p}`,background:t.p+"12",color:t.p,fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
-                   Bearbeiten
+                  Bearbeiten
                 </button>
+                {clubTeams.length>1&&<button onClick={()=>setSendId(tpl.id)}
+                  style={{padding:"7px 11px",borderRadius:10,border:"1.5px solid #bfdbfe",background:"#eff6ff",color:"#2563eb",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+                  An Team
+                </button>}
                 <button onClick={()=>setDelId(tpl.id)}
                   style={{padding:"7px 11px",borderRadius:10,border:"1.5px solid #fecaca",background:"#fff7f7",color:"#dc2626",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
-                  
+                  Löschen
                 </button>
               </div>
             </div>
@@ -16561,17 +16660,21 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
               ))}
             </div>
             {}
-            {onTemplates.length>0&&<div style={{marginBottom:14}}>
-              <p style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:8}}> VORLAGE LADEN</p>
-              <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
-                {onTemplates.map(tpl=>(
-                  <button key={tpl.id} onClick={()=>u({li:tpl.items.map(it=>({...it,id:uid()})),selType:tpl.selType||"multi"})}
-                    style={{display:"flex",alignItems:"center",gap:6,padding:"7px 12px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontSize:13,fontWeight:700,color:"#334155",fontFamily:"inherit"}}>
-                    <span>{tpl.icon}</span>{tpl.name}
-                  </button>
-                ))}
-              </div>
-            </div>}
+            {(()=>{
+              const tpls = onTemplates.filter(tpl=>!tpl.tid||tpl.tid===f.tid);
+              if(tpls.length===0) return null;
+              return (<div style={{marginBottom:14}}>
+                <p style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:8}}> VORLAGE LADEN</p>
+                <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
+                  {tpls.map(tpl=>(
+                    <button key={tpl.id} onClick={()=>u({li:tpl.items.map(it=>({...it,id:uid()})),selType:tpl.selType||"multi"})}
+                      style={{display:"flex",alignItems:"center",gap:6,padding:"7px 12px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontSize:13,fontWeight:700,color:"#334155",fontFamily:"inherit"}}>
+                      <span>{tpl.icon}</span>{tpl.name}
+                    </button>
+                  ))}
+                </div>
+              </div>);
+            })()}
             {}
             <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:10}}>
               {(f.li||[]).map((item,i)=>(
@@ -16601,7 +16704,7 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
                   style={{width:60,padding:"7px 10px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",textAlign:"center"}}/>
               </div>
             </div>
-            {onSaveTemplate&&f.li?.length>0&&<button onClick={()=>{const name=prompt("Name der Vorlage?");if(name)onSaveTemplate({id:uid(),name,icon:"Liste",selType:f.selType||"multi",items:f.li});}} style={{marginTop:10,width:"100%",padding:"10px",borderRadius:11,border:`1.5px dashed ${t.p}`,background:"transparent",color:t.p,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}> Als Vorlage speichern</button>}
+            {onSaveTemplate&&f.li?.length>0&&<button onClick={()=>{const name=prompt("Name der Vorlage?");if(name)onSaveTemplate({id:uid(),name,icon:"Liste",selType:f.selType||"multi",items:f.li,tid:f.tid});}} style={{marginTop:10,width:"100%",padding:"10px",borderRadius:11,border:`1.5px dashed ${t.p}`,background:"transparent",color:t.p,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}> Als Vorlage speichern</button>}
           </div>}
         </div>}
         {}
@@ -19497,8 +19600,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const [showLater,setShowLater]=useState(false);
 
   if(wizard||editEv) return <Wizard teams={local.teams.filter(x=>myTids.includes(x.id))} cl={myClub} editEv={editEv}
-    onTemplates={(local.pollTemplates||[]).filter(t=>t.cid===cid)}
-    onSaveTemplate={tpl=>{save({...local,pollTemplates:[...(local.pollTemplates||[]),tpl]});fire("Vorlage gespeichert *");}}
+    onTemplates={(local.pollTemplates||[]).filter(t=>t.cid===cid&&!t.pending)}
+    onSaveTemplate={tpl=>{save({...local,pollTemplates:[...(local.pollTemplates||[]),{...tpl,cid}]});fire("Vorlage gespeichert *");}}
     onSave={evs=>{
     if(editEv){
       const {_editSeries,...saved}=evs[0];
@@ -19614,7 +19717,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           <AffiliateBanner trigger="events" style={{marginTop:14}}/>
         </>}
         {tab==="players"    &&<><PlayersTab data={local} myTids={myTids} save={save} fire={fire} cl={myClub}/><AffiliateBanner trigger="players" style={{marginTop:14}}/></> }
-        {tab==="templates"  &&<TemplatesTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
+        {tab==="templates"  &&<TemplatesTab data={local} cid={cid} save={save} fire={fire} cl={myClub} myTids={myTids} teams={(local.teams||[]).filter(tm=>tm.cid===cid)}/>}
         {tab==="helpers"    &&<HelpersTab data={local} cid={cid} myTids={myTids} session={session} save={save} fire={fire} cl={myClub}/>}
         {tab==="training"  &&<><TrainingPlanTab data={local} myTids={myTids} save={save} fire={fire} cl={myClub} session={session}/><AffiliateBanner trigger="training" style={{marginTop:14}}/></> }
         {tab==="jerseys"    &&<><AffiliateBanner trigger="jerseys"/><JerseysTab data={local} myTids={myTids} save={save} fire={fire} cl={myClub}/></> }
