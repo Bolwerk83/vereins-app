@@ -1256,10 +1256,23 @@ const isTeamActiveInSeason = (team, sid, seasons) => {
   }
   return true;
 };
+// Saisons eines Vereins. Bei MULTI_TENANT pro Verein (Saison traegt cid),
+// sonst global wie bisher (verhaltensneutral bei ausgeschaltetem Flag).
+const clubSeasons = (data, cid) => {
+  const all = (data && data.seasons) || [];
+  return MULTI_TENANT ? all.filter(s=>!s.cid || s.cid===cid) : all;
+};
+// Aktive Saison-ID eines Vereins. Bei MULTI_TENANT zuerst cl.activeSeason,
+// sonst das globale data.activeSeason (bisheriges Verhalten).
+const activeSid = (data, cid) => {
+  const ss = clubSeasons(data, cid);
+  const cl = MULTI_TENANT ? ((data && data.clubs)||[]).find(c=>c.id===cid) : null;
+  return (cl && cl.activeSeason) || (data && data.activeSeason) || ss[0]?.id || null;
+};
 // bequemer Filter: aktive Teams eines Vereins in der aktiven Saison
 const activeTeamsFor = (data, cid) => {
-  const sid = data.activeSeason || (data.seasons||[])[0]?.id || null;
-  return (data.teams||[]).filter(tm=>tm.cid===cid && isTeamActiveInSeason(tm, sid, data.seasons||[]));
+  const sid = activeSid(data, cid);
+  return (data.teams||[]).filter(tm=>tm.cid===cid && isTeamActiveInSeason(tm, sid, clubSeasons(data, cid)));
 };
 
 // Synchrone SHA-256-Implementierung (reines JS, kein async nötig – ersetzt 15+ synchrone Aufrufe ohne Umbau)
@@ -15711,9 +15724,9 @@ function PlayersTab({ data,myTids,save,fire,cl }) {
   const [showTeamCard, setShowTeamCard] = React.useState(null); // teamId
   const t        = TH(cl);
   const allTeams   = data.teams;
-  const activeSeason = data.activeSeason || "s2627";
-  const allPlayers = (data.playerProfiles || []).filter(p => !p.seasonId || p.seasonId === activeSeason);
   const cid        = allTeams.find(tm=>myTids.includes(tm.id))?.cid;
+  const activeSeason = activeSid(data, cid) || "s2627";
+  const allPlayers = (data.playerProfiles || []).filter(p => !p.seasonId || p.seasonId === activeSeason);
   const clubTeams  = allTeams.filter(tm => tm.cid === cid);
   const myTeams    = clubTeams.filter(tm => myTids.includes(tm.id));
   const hasUnassigned = allPlayers.some(p => !p.mainTid);
@@ -17738,11 +17751,11 @@ function NewSeasonWizard({ data,save,fire,cl,myTids,onClose,onDone }) {
     const label = f.label.trim();
     if(!label) return;
     const sid = "s"+label.replace(/[^a-z0-9]/gi,"").toLowerCase()+Date.now().toString(36);
-    const newSeason = {id:sid, label, status:"planning"};
+    const newSeason = {id:sid, label, status:"planning", ...(MULTI_TENANT?{cid:clubId}:{})};
     const allP = data.playerProfiles||[];
     const existingSids = (data.seasons||[]).map(s=>s.id);
     if(existingSids.includes(sid)) { fire&&fire("Saison existiert bereits"); return; }
-    const activeSid = data.activeSeason || (data.seasons||[])[0]?.id || "";
+    const curSid = activeSid(data, clubId) || "";
     // Teams: abgemeldete bekommen endedSid (bleiben in alter Saison erhalten), neue werden angelegt
     const TEAM_COLORS = ["#16a34a","#2563eb","#d97706","#7c3aed","#dc2626","#0891b2","#059669","#ea580c"];
     let teamsOut = (data.teams||[]).map(tm=>{
@@ -17760,7 +17773,7 @@ function NewSeasonWizard({ data,save,fire,cl,myTids,onClose,onDone }) {
     // nur Spieler übernommener Teams kopieren
     const activePlayers = allP.filter(p=>
       !p.archived &&
-      (!p.seasonId || p.seasonId===activeSid) &&
+      (!p.seasonId || p.seasonId===curSid) &&
       (keptTids.includes(p.mainTid) || !p.mainTid)
     );
     const copied = activePlayers.map(p=>({
@@ -17775,8 +17788,9 @@ function NewSeasonWizard({ data,save,fire,cl,myTids,onClose,onDone }) {
       teams: teamsOut,
       seasons: [...(data.seasons||[]), newSeason],
       playerProfiles: [...allP, ...copied],
-      events: (data.events||[]).map(e=> e.seasonId ? e : {...e, seasonId: activeSid}),
+      events: (data.events||[]).map(e=> e.seasonId ? e : {...e, seasonId: curSid}),
       activeSeason: sid,
+      ...(MULTI_TENANT?{clubs:(data.clubs||[]).map(c=>c.id===clubId?{...c,activeSeason:sid}:c)}:{}),
     };
     save(nextData);
     const droppedN=curTeams.filter(tm=>keep[tm.id]===false).length;
@@ -17952,6 +17966,7 @@ function SeasonModal({ data,save,fire,cl,myTids,onClose }) {
         s.id === toId   ? {...s, status:"active"}    : s
       ),
       playerProfiles: [...allPlayers, ...newCopies],
+      ...(MULTI_TENANT&&cl?{clubs:(data.clubs||[]).map(c=>c.id===cl.id?{...c,activeSeason:toId}:c)}:{}),
     };
     save(next);
     fire(`Saison ${seasons.find(s=>s.id===toId)?.label||""} aktiv · ${newCopies.length} Spieler übernommen`);
@@ -19884,7 +19899,7 @@ function TrainerStatsView({ data, cid }) {
 
 function AttendanceTab({ data, myTids, cl, save, fire }) {
   const t = TH(cl);
-  const activeSeason = data.activeSeason|| "s2627";
+  const activeSeason = activeSid(data, (data.teams||[]).find(tm=>myTids.includes(tm.id))?.cid) || "s2627";
   const myTeams = (data.teams||[]).filter(tm=>myTids.includes(tm.id));
   const [selTid, setSelTid] = useState(myTids[0]||"");
   const players = (data.playerProfiles||[]).filter(p=>p.mainTid===selTid&&(!p.seasonId||p.seasonId===activeSeason));
@@ -19973,7 +19988,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const fire=m=>{setToast(m);clearTimeout(toastRef.current);toastRef.current=setTimeout(()=>setToast(null),2500);};
   const save=next=>{setLocal(next);onSave(next);};
   const myClub=local.clubs.find(c=>c.id===cid);
-  const _activeSid = local.activeSeason || (local.seasons||[])[0]?.id || null;
+  const _activeSid = activeSid(local, cid);
   const myEvs=local.events.filter(e=>myTids.includes(e.tid)&&e.cid===cid&&(!e.seasonId||e.seasonId===_activeSid)).sort((a,b)=>a.date.localeCompare(b.date));
   // Trainer/Admin kann selbst zu-/absagen (stimmt unter eigenem Namen ab)
   const selfName = session.name || (isAdmin?"Admin":isHelper?"Helfer":"");
@@ -20020,7 +20035,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         fire("Termin aktualisiert *");
       }
     } else {
-      const _sid = local.activeSeason || (local.seasons||[])[0]?.id || null;
+      const _sid = activeSid(local, cid);
       const evsWithSeason = evs.map(e=>({...e, seasonId: e.seasonId || _sid}));
       save({...local,events:[...(local.events||[]),...evsWithSeason]});
       fire(`${evs.length>1?evs.length+" Termine":"Termin"} erstellt - Eltern werden benachrichtigt`);
@@ -20050,7 +20065,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             {}
             {(()=>{
               const seasons=local.seasons||[];
-              const curSeason=seasons.find(s=>s.id===local.activeSeason)||seasons[0];
+              const curSeason=seasons.find(s=>s.id===activeSid(local,cid))||seasons[0];
               const hasPlan=seasons.some(s=>s.status==="planning");
               return (
                 <button onClick={()=>setShowSeasonModal(true)}
@@ -21285,7 +21300,7 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
   const isDesktop = typeof window!=="undefined" && window.innerWidth>=1024;
   const myTeam=data.teams.find(x=>x.id===tid);
   const t=TH(cl); const tod=now();
-  const _activeSid=data.activeSeason||(data.seasons||[])[0]?.id||null;
+  const _activeSid=activeSid(data, cid);
   const evs=data.events.filter(e=>e.tid===tid&&(!e.seasonId||e.seasonId===_activeSid)).sort((a,b)=>a.date.localeCompare(b.date));
   const up=evs.filter(e=>e.date>=tod);
   const past=evs.filter(e=>e.date<tod).reverse();
