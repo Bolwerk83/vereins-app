@@ -21513,6 +21513,19 @@ function AppInner({lang,setLang}) {
         try { await sb.set(seeded); } catch {}
         dir = seeded;
       }
+      // Einmalige Migration: aktive Saison auf das aktuelle Label "2026/2027"
+      // setzen, falls ein bestehender Verein noch eine aeltere Default-Saison
+      // gespeichert hat. Spieler haengen an seasonId (nicht am Label) -> reines
+      // Umbenennen, verlustfrei. Per Flag genau einmal, damit kuenftige
+      // Saisonwechsel nicht zurueckgesetzt werden.
+      if (dir && !dir.__cloudEmpty && !dir._seasonFix2627 && Array.isArray(dir.seasons) && dir.seasons.length) {
+        const actId = dir.activeSeason || dir.seasons.find(s=>s.status==="active")?.id || dir.seasons[0]?.id;
+        const act = dir.seasons.find(s=>s.id===actId);
+        if (act && act.label!=="2026/2027") {
+          dir = {...dir, seasons: dir.seasons.map(s=>s.id===actId?{...s,label:"2026/2027"}:s), _seasonFix2627:true};
+          try { await sb.set(dir); } catch {}
+        }
+      }
       // SuperAdmin braucht alle Daten -> voll laden
       if(new URLSearchParams(window.location.search).has("superadmin")){
         let full=null; try { full=await sb.get(); } catch {}
