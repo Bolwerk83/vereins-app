@@ -709,6 +709,47 @@ const sb = {
     if (!r.ok) throw new Error("HTTP "+r.status);
     return true;
   },
+  // SuperAdmin: Backup des kompletten Cloud-Stands erstellen.
+  // Liest globale Zeile + alle __club_*-Shards und speichert sie unter
+  // __backup_<ISO>.
+  backupCreate: async () => {
+    const list = await sb.dbList();
+    const sk = SK;
+    const payload = {
+      createdAt: new Date().toISOString(),
+      version: 1,
+      rows: list
+        .filter(r => r.key.startsWith(sk+"__") && !r.key.startsWith(sk+"__backup_") && !r.key.endsWith("__dbtest"))
+        .map(r => ({ key: r.key, value: r.value, updated_at: r.updated_at })),
+    };
+    const stamp = new Date().toISOString().replace(/[:.]/g,"-").slice(0,19);
+    const key = `${sk}__backup_${stamp}`;
+    const r = await sb._fetch(`/rest/v1/app_data`, {
+      method:"POST",
+      headers:{ "Prefer":"resolution=merge-duplicates" },
+      body: JSON.stringify([{ key, value: payload, updated_at: new Date().toISOString() }]),
+    });
+    if (!r.ok) throw new Error("HTTP "+r.status);
+    return key;
+  },
+  // SuperAdmin: Backup wiederherstellen. Schreibt ALLE im Backup enthaltenen Zeilen
+  // zurueck (UPSERT). Nicht im Backup enthaltene Zeilen bleiben unangetastet.
+  backupRestore: async (key) => {
+    const r = await sb._fetch(`/rest/v1/app_data?key=eq.${encodeURIComponent(key)}&select=value`);
+    if (!r.ok) throw new Error("HTTP "+r.status);
+    const rows = await r.json();
+    const payload = rows[0]?.value;
+    if (!payload || !Array.isArray(payload.rows)) throw new Error("Backup-Inhalt ungueltig");
+    const ts = new Date().toISOString();
+    const writeRows = payload.rows.map(r => ({ key: r.key, value: r.value, updated_at: ts }));
+    const w = await sb._fetch(`/rest/v1/app_data`, {
+      method:"POST",
+      headers:{ "Prefer":"resolution=merge-duplicates" },
+      body: JSON.stringify(writeRows),
+    });
+    if (!w.ok) throw new Error("HTTP "+w.status);
+    return writeRows.length;
+  },
   // SuperAdmin: Push-Subscriptions + Members zaehlen
   dbCounts: async () => {
     const out = {};
@@ -3946,6 +3987,215 @@ function StyleToggle({ value, onChange, t }){
 }
 
 // Mannschafts-Skill-Analyse: Schnitt im Spinnennetz + regelbasierte Trainingsvorschläge
+/* ============================================================
+   TeamInsights - regelbasierte Auswertung des Team-Datenstands.
+   Liefert dem Trainer datengestuetzte Hinweise OHNE LLM:
+   - Anwesenheit pro Spieler (letzte 8 Trainings)
+   - "Risiko-Spieler" (Quote <= 50% oder 3+ Termine in Folge gefehlt)
+   - "Verlaessliche" Spieler (Quote >= 80%)
+   - Team-Skill-Aggregat: schwaechste Bereiche
+   - Konkrete Trainings-Empfehlung mit Begruendung
+   ============================================================ */
+function TeamInsights({ data, myTids, cl }) {
+  const t = TH(cl);
+  const today = now();
+  const players = (data.playerProfiles||[]).filter(p =>
+    myTids.includes(p.mainTid) && !p.archived && isActive(p)
+  );
+  const teamNames = (data.teams||[]).filter(tm=>myTids.includes(tm.id)).map(tm=>tm.name).join(", ");
+
+  // Vergangene Trainings der Mannschaft, letzte 8
+  const pastTrainings = (data.events||[])
+    .filter(e => myTids.includes(e.tid) && e.type==="training" && e.date < today)
+    .sort((a,b) => b.date.localeCompare(a.date))
+    .slice(0, 8);
+
+  const attendance = players.map(p => {
+    const last8 = pastTrainings.map(ev => {
+      const v = ev.votes?.[p.name];
+      const val = (typeof v==="object" && v!==null) ? v.val : v;
+      return { date: ev.date, val };
+    });
+    const present = last8.filter(x => x.val === "yes" || x.val === "late" || x.val === "maybe").length;
+    const total = last8.length;
+    const pct = total ? Math.round(100*present/total) : null;
+    // Letzte 3 in Folge gefehlt?
+    let consecutiveMisses = 0;
+    for (const x of last8) {
+      if (x.val === "no" || !x.val) consecutiveMisses++;
+      else break;
+    }
+    return { p, last8, present, total, pct, consecutiveMisses };
+  });
+
+  const reliable = attendance.filter(a => a.pct != null && a.pct >= 80).sort((a,b)=>b.pct-a.pct);
+  const risk = attendance.filter(a => (a.pct != null && a.pct <= 50) || a.consecutiveMisses >= 3);
+
+  // Team-Skill-Aggregat
+  const skillFields = ["Technik","Schnelligkeit","Zweikampf","Übersicht","Abschluss","Ausdauer","Teamplay"];
+  const skillAgg = {};
+  skillFields.forEach(s => skillAgg[s] = { sum:0, n:0 });
+  for (const p of players) {
+    if (!p.skills) continue;
+    for (const s of skillFields) {
+      const v = p.skills[s];
+      if (typeof v === "number" && v > 0) { skillAgg[s].sum += v; skillAgg[s].n++; }
+    }
+  }
+  const skillAvg = skillFields
+    .map(s => ({ s, avg: skillAgg[s].n ? skillAgg[s].sum/skillAgg[s].n : null, n: skillAgg[s].n }))
+    .filter(x => x.n > 0)
+    .sort((a,b) => a.avg - b.avg);
+  const weakest = skillAvg.slice(0, 2);
+
+  // Trainings-Empfehlung
+  const TRAINING_FOCUS = {
+    Technik:        { title:"Ball-Annahme + Passspiel", reason:"Technik-Schnitt schwaechstes Skill", drills:["Pass-Quadrat 4er","Doppelpass-Stationen","Ball-Annahme rechts/links"] },
+    Schnelligkeit:  { title:"Antritts-Sprints + Wendigkeit", reason:"Schnelligkeit als schwaechster Bereich", drills:["5-10-15m Antritte","Slalom-Sprints","Reaktion mit Pfiff"] },
+    Zweikampf:      { title:"Zweikampf-Verhalten + Stellungsspiel", reason:"Zweikampf-Schnitt niedrig - Defensiv-Schwerpunkt", drills:["1-gegen-1 frontal","Kopfball-Duell","Block-Tackling"] },
+    Übersicht:      { title:"Spielfluss + Sichtfeld", reason:"Übersicht niedrig - kognitive Belastung", drills:["3-Farben-Spiel","Pass im Halbraum","Spiel ohne Stimme"] },
+    Abschluss:      { title:"Torabschluss + Distanzschuss", reason:"Abschluss-Schnitt niedrig", drills:["Abschlussreihen","Volleyschuss-Übung","Drucksituation 1v1 Tor"] },
+    Ausdauer:       { title:"Kondition + Spielform", reason:"Ausdauer-Schnitt niedrig", drills:["Intervalle 4x4","Polnischer Tag","Lange Spielform 30min"] },
+    Teamplay:       { title:"Mannschafts-Kommunikation", reason:"Teamplay-Wert niedrig", drills:["Stimme aktiv","Doppelpass-Pflicht","Eckenball-Variante einstudieren"] },
+  };
+  const recommendation = weakest.length > 0 ? TRAINING_FOCUS[weakest[0].s] : null;
+
+  // Empfehlungs-Quote aus playerProfile.recommend
+  const recCount = players.filter(p => (p.recommend||"").trim().length > 0).length;
+
+  const Card = ({title,sub,children,col="#16a34a"}) => (
+    <div style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",padding:"16px",marginBottom:12}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+        <div style={{width:6,height:18,borderRadius:99,background:col}}/>
+        <div>
+          <div style={{fontWeight:900,fontSize:15,color:"#0f172a"}}>{title}</div>
+          {sub && <div style={{fontSize:11,color:"#94a3b8"}}>{sub}</div>}
+        </div>
+      </div>
+      {children}
+    </div>
+  );
+
+  if (players.length === 0) {
+    return <div style={{padding:"32px",textAlign:"center",color:"#94a3b8",fontSize:14}}>
+      Keine Spieler in {teamNames || "deinen Mannschaften"}.
+    </div>;
+  }
+
+  return (
+    <div>
+      {/* Header */}
+      <div style={{background:"linear-gradient(135deg,#0f172a,#1e293b)",borderRadius:16,padding:"14px 16px",marginBottom:14,color:"#fff"}}>
+        <div style={{fontSize:11,fontWeight:800,color:"#86efac",letterSpacing:.4,marginBottom:3}}>🧠 INSIGHTS · {teamNames}</div>
+        <div style={{fontWeight:900,fontSize:17}}>Datenbasierte Hinweise für deine Trainings-Planung</div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,.6)",marginTop:4,lineHeight:1.5}}>
+          Auswertung der letzten {pastTrainings.length} Trainings · {players.length} aktive Spieler · {recCount} mit Trainer-Empfehlung
+        </div>
+      </div>
+
+      {/* Trainings-Empfehlung */}
+      {recommendation && (
+        <Card title="Trainings-Empfehlung" sub="Warum: schwächster Skill-Bereich im Team" col="#7c3aed">
+          <div style={{background:"#faf5ff",borderRadius:12,padding:"12px 14px",border:"1.5px solid #d8b4fe"}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#7c3aed",letterSpacing:.4,marginBottom:3}}>SCHWERPUNKT</div>
+            <div style={{fontWeight:900,fontSize:16,color:"#0f172a",marginBottom:8}}>{recommendation.title}</div>
+            <div style={{fontSize:12.5,color:"#475569",lineHeight:1.5,marginBottom:10}}>
+              {recommendation.reason} ({weakest[0].avg.toFixed(1)} von 5,0). {weakest[1] && <>Zweitschwächster Bereich: <b>{weakest[1].s}</b> ({weakest[1].avg.toFixed(1)})</>}
+            </div>
+            <div style={{fontSize:10,fontWeight:800,color:"#7c3aed",letterSpacing:.4,marginBottom:5}}>VORSCHLAG-ÜBUNGEN</div>
+            <ul style={{margin:"0",paddingLeft:18,fontSize:13,color:"#334155",lineHeight:1.7}}>
+              {recommendation.drills.map((d,i)=><li key={i}>{d}</li>)}
+            </ul>
+          </div>
+        </Card>
+      )}
+
+      {/* Skill-Aggregat */}
+      {skillAvg.length > 0 && (
+        <Card title="Team-Stärke nach Bereich" sub="Aggregierter Schnitt aller Spieler-Skills">
+          <div style={{display:"flex",flexDirection:"column",gap:6}}>
+            {skillAvg.slice().reverse().map(({s,avg,n})=>(
+              <div key={s} style={{display:"flex",alignItems:"center",gap:10}}>
+                <div style={{width:90,fontSize:12,fontWeight:700,color:"#475569"}}>{s}</div>
+                <div style={{flex:1,height:8,background:"#f1f5f9",borderRadius:99,overflow:"hidden"}}>
+                  <div style={{height:"100%",width:`${avg*20}%`,background:avg>=4?"#16a34a":avg>=3?"#d97706":"#dc2626",borderRadius:99}}/>
+                </div>
+                <div style={{width:50,fontSize:12,fontWeight:800,color:"#0f172a",textAlign:"right"}}>{avg.toFixed(1)}</div>
+                <div style={{width:30,fontSize:10,color:"#94a3b8",textAlign:"right"}}>n={n}</div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Risiko-Spieler */}
+      {risk.length > 0 && (
+        <Card title={`Risiko: ${risk.length} Spieler verdienen Aufmerksamkeit`} sub="Niedrige Anwesenheit oder mehrere Termine in Folge gefehlt" col="#dc2626">
+          {risk.map(({p,pct,total,consecutiveMisses})=>(
+            <div key={p.id} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",background:"#fef2f2",borderRadius:10,marginBottom:5,border:"1px solid #fecaca"}}>
+              <Av name={p.name} sz={32}/>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:800,fontSize:13,color:"#0f172a"}}>{p.name}</div>
+                <div style={{fontSize:11,color:"#7f1d1d",marginTop:1}}>
+                  {pct!=null && `${pct}% Anwesenheit (${total} Trainings)`}
+                  {consecutiveMisses >= 3 && ` · ${consecutiveMisses}× hintereinander nicht da`}
+                </div>
+              </div>
+            </div>
+          ))}
+        </Card>
+      )}
+
+      {/* Zuverlässige */}
+      {reliable.length > 0 && (
+        <Card title={`Verlässlich: ${reliable.length} Spieler`} sub="Mind. 80 % Anwesenheit" col="#16a34a">
+          {reliable.slice(0,5).map(({p,pct,total})=>(
+            <div key={p.id} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 10px"}}>
+              <Av name={p.name} sz={28}/>
+              <div style={{flex:1,fontWeight:700,fontSize:13,color:"#0f172a"}}>{p.name}</div>
+              <span style={{fontSize:12,fontWeight:800,color:"#16a34a",background:"#dcfce7",borderRadius:6,padding:"2px 8px"}}>{pct}%</span>
+            </div>
+          ))}
+          {reliable.length > 5 && (
+            <div style={{textAlign:"center",fontSize:11,color:"#94a3b8",marginTop:5}}>+ {reliable.length-5} weitere</div>
+          )}
+        </Card>
+      )}
+
+      {/* Anwesenheits-Übersicht */}
+      <Card title="Anwesenheit letzte 8 Trainings" sub="Pro Spieler · grün = da, rot = nicht da, grau = nicht abgestimmt">
+        <div style={{overflowX:"auto"}}>
+          <table style={{width:"100%",fontSize:12,borderCollapse:"collapse"}}>
+            <thead>
+              <tr>
+                <th style={{textAlign:"left",padding:"4px 6px",color:"#94a3b8",fontWeight:700}}>Spieler</th>
+                {pastTrainings.map((ev,i)=><th key={i} style={{padding:"4px 4px",color:"#94a3b8",fontWeight:700,fontSize:10}}>{ev.date.slice(5).replace("-",".")}</th>)}
+                <th style={{padding:"4px 6px",color:"#94a3b8",fontWeight:700,textAlign:"right"}}>%</th>
+              </tr>
+            </thead>
+            <tbody>
+              {attendance.map(({p,last8,pct})=>(
+                <tr key={p.id} style={{borderTop:"1px solid #f1f5f9"}}>
+                  <td style={{padding:"5px 6px",fontWeight:700,color:"#334155",whiteSpace:"nowrap",maxWidth:140,overflow:"hidden",textOverflow:"ellipsis"}}>{p.name}</td>
+                  {last8.map((x,i)=>(
+                    <td key={i} style={{padding:"5px 4px",textAlign:"center"}}>
+                      <div style={{width:14,height:14,borderRadius:4,margin:"0 auto",
+                        background: x.val==="yes" ? "#16a34a" : x.val==="late" ? "#d97706" : x.val==="maybe" ? "#fbbf24" : x.val==="no" ? "#dc2626" : "#e2e8f0"}}/>
+                    </td>
+                  ))}
+                  <td style={{padding:"5px 6px",textAlign:"right",fontWeight:800,color:pct>=80?"#16a34a":pct>=50?"#d97706":"#dc2626"}}>
+                    {pct==null ? "—" : pct+"%"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
 function TeamSkillAnalysis({ data, myTids, cl }) {
   const t = TH(cl);
   const sport = cl?.sport || "fussball";
@@ -4805,6 +5055,7 @@ function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false, initial
     ...(isAdmin ? [{ id:"manage", label:"Mannschaften", icon:"M" }] : []),
     { id:"players",    label:"Spieler",     icon:"P" },
     { id:"attendance", label:"Anwesenheit", icon:"S" },
+    { id:"insights",   label:"🧠 Insights", icon:"I" },
     { id:"results",    label:"Ergebnisse",  icon:"E" },
     { id:"analysis",   label:"Analyse",     icon:"A" },
     { id:"ziele",      label:"Ziele",       icon:"Z" },
@@ -4832,6 +5083,7 @@ function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false, initial
       {subTab==="players"    && <PlayersTab    data={data} myTids={myTids} save={save} fire={fire} cl={cl}/>}
       {subTab==="attendance" && <AttendanceTab data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
       {subTab==="results"    && <LeagueTab     data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
+      {subTab==="insights"   && <TeamInsights data={data} myTids={myTids} cl={cl}/>}
       {subTab==="analysis"   && <TeamSkillAnalysis data={data} myTids={myTids} cl={cl}/>}
       {subTab==="ziele"      && <TrainerTrainingZiele data={data} cid={cl?.id} myTids={myTids} save={save} fire={fire} cl={cl}/>}
       {subTab==="drills"     && <DrillLibrary cl={cl}/>}
@@ -8012,14 +8264,51 @@ function SuperAdminDatabase() {
     await refresh();
   };
 
+  const makeBackup = async () => {
+    setBusy(true);
+    try {
+      const key = await sb.backupCreate();
+      await refresh();
+      window.alert("Backup erstellt: "+key);
+    } catch (e) {
+      window.alert("Backup fehlgeschlagen: "+String((e&&e.message)||e));
+    }
+    setBusy(false);
+  };
+
+  const restoreBackup = async (key) => {
+    if (!window.confirm("BACKUP WIEDERHERSTELLEN?\n\nDie aktuellen Zeilen (globaler Stand + alle Vereins-Shards) werden mit dem Inhalt aus\n  "+key+"\nüberschrieben. App muss danach von allen Geräten neu geladen werden.\n\nFortfahren?")) return;
+    setBusy(true);
+    try {
+      const n = await sb.backupRestore(key);
+      await refresh();
+      window.alert(`${n} Zeilen wiederhergestellt.`);
+    } catch (e) {
+      window.alert("Restore fehlgeschlagen: "+String((e&&e.message)||e));
+    }
+    setBusy(false);
+  };
+
+  const downloadAll = () => {
+    const blob = new Blob([JSON.stringify({ exportedAt:new Date().toISOString(), rows }, null, 2)], { type:"application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `vereinsapp-export-${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  };
+
   const fmtBytes = (n) => n < 1024 ? `${n} B` : n < 1024*1024 ? `${(n/1024).toFixed(1)} KB` : `${(n/1024/1024).toFixed(1)} MB`;
   const sizeOf = (val) => { try { return JSON.stringify(val||{}).length; } catch { return 0; } };
   const labelOf = (r) => {
+    if (r.key.includes("__backup_"))  return "Backup-Snapshot";
     if (r.key.endsWith("__global"))   return "Globaler Stand (Vereinsliste + Seasons)";
     if (r.key.endsWith("__dbtest"))   return "Test-Schreibzugriff";
     if (r.key.includes("__club_"))    return "Verein-Daten (Events, Spieler, Trainer)";
     return "Sonstiges / Legacy";
   };
+  const isBackup = (r) => r.key.includes("__backup_");
   const clubsInRow = (val) => Array.isArray(val?.clubs) ? val.clubs : null;
   const visible = rows.filter(r => !filter || r.key.toLowerCase().includes(filter.toLowerCase()));
   const totalSize = rows.reduce((s,r)=>s+sizeOf(r.value), 0);
@@ -8047,12 +8336,28 @@ function SuperAdminDatabase() {
       </div>
 
       {/* Toolbar */}
-      <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
+      <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
         <input value={filter} onChange={e=>setFilter(e.target.value)} placeholder="Nach key filtern…"
           style={{flex:1,minWidth:200,padding:"9px 12px",fontSize:13,background:"#0f172a",border:"1px solid #334155",borderRadius:10,color:"#e2e8f0",outline:"none",fontFamily:"inherit"}}/>
         <button onClick={refresh} disabled={busy}
           style={{padding:"9px 14px",borderRadius:10,border:"none",background:"#334155",color:"#fff",fontWeight:700,fontSize:13,cursor:busy?"default":"pointer",fontFamily:"inherit"}}>
           {busy?"Lädt…":"Neu laden"}
+        </button>
+      </div>
+      {/* Backup-Leiste */}
+      <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap",alignItems:"center",
+        background:"#1e293b",border:"1px solid #334155",borderRadius:11,padding:"10px 14px"}}>
+        <div style={{flex:1,minWidth:160,fontSize:12,color:"#94a3b8",lineHeight:1.4}}>
+          <b style={{color:"#cbd5e1"}}>🛟 Sicherung</b><br/>
+          Snapshot aller Cloud-Zeilen. Restore überschreibt die enthaltenen Zeilen mit dem Backup-Stand.
+        </div>
+        <button onClick={makeBackup} disabled={busy}
+          style={{padding:"9px 14px",borderRadius:10,border:"1.5px solid #16a34a",background:"#052e16",color:"#86efac",fontWeight:700,fontSize:13,cursor:busy?"default":"pointer",fontFamily:"inherit"}}>
+          Backup erstellen
+        </button>
+        <button onClick={downloadAll}
+          style={{padding:"9px 14px",borderRadius:10,border:"1.5px solid #334155",background:"transparent",color:"#cbd5e1",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+          Als JSON-Datei
         </button>
         <button onClick={purgeDbTest}
           style={{padding:"9px 14px",borderRadius:10,border:"1.5px solid #dc2626",background:"transparent",color:"#fca5a5",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
@@ -8081,6 +8386,12 @@ function SuperAdminDatabase() {
                     {labelOf(r)} · {fmtBytes(sizeOf(r.value))} · zuletzt {new Date(r.updated_at).toLocaleString("de-DE")}
                   </div>
                 </div>
+                {isBackup(r) && (
+                  <button onClick={()=>restoreBackup(r.key)}
+                    style={{padding:"7px 12px",borderRadius:9,border:"1.5px solid #16a34a",background:"#052e16",color:"#86efac",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+                    Restore
+                  </button>
+                )}
                 <button onClick={()=>setSelected(r)}
                   style={{padding:"7px 12px",borderRadius:9,border:"1.5px solid #334155",background:"transparent",color:"#cbd5e1",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
                   Anzeigen
@@ -14307,6 +14618,164 @@ function PlayerAssignRow({ player: pl,teams,allTeams,t,onAssign,onOptToggle }) {
   );
 }
 
+/* ============================================================
+   Bulk-Spieler-Anlage: kompletten Kader auf einmal anlegen.
+   Akzeptiert eine Zeile pro Spieler. Erkennt Jahrgang (4-stellig
+   im Bereich 1990-2025), Geschlecht (m/w/d/x am Anfang oder Ende),
+   Rest ist der Name. Trennzeichen: Komma, Semikolon, Tab, Pipe.
+   ============================================================ */
+function parseBulkPlayerLine(line) {
+  const raw = line.trim();
+  if (!raw) return null;
+  const parts = raw.split(/[,;\t|]+/).map(s=>s.trim()).filter(Boolean);
+  // Falls nur 1 Teil: schauen ob inline Jahrgang/Geschlecht da sind
+  const tokens = parts.length === 1 ? raw.split(/\s+/) : parts;
+  let by = null, gender = null;
+  const nameParts = [];
+  for (const tok of tokens) {
+    const m = tok.match(/^(19|20)\d{2}$/);
+    if (m && by == null) { by = parseInt(tok); continue; }
+    if (/^[mwdx]$/i.test(tok) && gender == null) { gender = tok.toLowerCase(); continue; }
+    nameParts.push(tok);
+  }
+  const name = nameParts.join(" ").trim();
+  if (!name) return null;
+  return { name, by: by || null, gender: gender || "m" };
+}
+
+function BulkAddPlayers({ cid, cl, selTid, selTeam, clubTeams, activeSeason, allPlayers, data, save, fire, onClose }) {
+  const t = TH(cl);
+  const defaultBy = selTeam?.years ? parseInt(selTeam.years.split("/")[0]) || 2014 : 2014;
+  const [text, setText] = useState("");
+  const [assignTid, setAssignTid] = useState(selTid || "");
+  const [defaultGender, setDefaultGender] = useState("m");
+  const [busy, setBusy] = useState(false);
+
+  // Live-Parser
+  const parsed = useMemo(() => {
+    return text.split(/\n+/).map(parseBulkPlayerLine).filter(Boolean).map(p => ({
+      ...p,
+      by: p.by || defaultBy,
+      gender: p.gender || defaultGender,
+    }));
+  }, [text, defaultBy, defaultGender]);
+
+  // Duplikat-Check gegen bestehende Spieler
+  const existingKeys = new Set(allPlayers.map(p => `${(p.name||"").toLowerCase().trim()}|${p.by||""}`));
+  const withDupFlag = parsed.map(p => ({
+    ...p,
+    dup: existingKeys.has(`${p.name.toLowerCase().trim()}|${p.by||""}`),
+  }));
+  const newOnly = withDupFlag.filter(p => !p.dup);
+
+  const doSave = async () => {
+    if (newOnly.length === 0) return;
+    setBusy(true);
+    const newPlayers = newOnly.map(p => mkPlayer({
+      cid, seasonId: activeSeason,
+      name: p.name,
+      by: p.by,
+      gender: p.gender,
+      mainTid: assignTid || "",
+    }));
+    await save({...data, playerProfiles: [...allPlayers, ...newPlayers]});
+    setBusy(false);
+    fire(`${newPlayers.length} Spieler angelegt`);
+    onClose();
+  };
+
+  const example =
+`Lukas Berger, 2018, m
+Emma Wolf, 2019, w
+Noah Schmidt 2018 m
+Mia Hoffmann
+Ben Fischer | 2016 | m`;
+
+  return (
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.65)",
+      display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:9999,padding:0}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",
+        width:"100%",maxWidth:560,maxHeight:"92vh",display:"flex",flexDirection:"column"}}>
+        <div style={{padding:"16px 20px 12px",borderBottom:"1px solid #f1f5f9"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12}}>
+            <div>
+              <div style={{fontWeight:900,fontSize:18,color:"#0f172a"}}>⚡ Massenanlage Spieler</div>
+              <p style={{fontSize:12.5,color:"#64748b",margin:"3px 0 0",lineHeight:1.5}}>
+                Ein Spieler pro Zeile · Jahrgang + Geschlecht (m/w/d) optional, leer = Default-Werte unten.
+              </p>
+            </div>
+            <button onClick={onClose} style={{background:"none",border:"none",fontSize:22,color:"#94a3b8",cursor:"pointer",padding:"0 4px",fontFamily:"inherit"}}>×</button>
+          </div>
+        </div>
+        <div style={{padding:"14px 20px",overflowY:"auto",flex:1}}>
+          {/* Defaults */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
+            <div>
+              <div style={{fontSize:10,fontWeight:800,color:"#64748b",letterSpacing:.4,marginBottom:4}}>STANDARD-TEAM</div>
+              <select value={assignTid} onChange={e=>setAssignTid(e.target.value)}
+                style={{width:"100%",padding:"9px 11px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:10,background:"#fff",fontFamily:"inherit"}}>
+                <option value="">– nicht zugeordnet –</option>
+                {clubTeams.map(tm=><option key={tm.id} value={tm.id}>{tm.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <div style={{fontSize:10,fontWeight:800,color:"#64748b",letterSpacing:.4,marginBottom:4}}>STANDARD-GESCHLECHT</div>
+              <div style={{display:"flex",gap:5}}>
+                {["m","w","d"].map(g=>(
+                  <button key={g} type="button" onClick={()=>setDefaultGender(g)}
+                    style={{flex:1,padding:"8px",borderRadius:9,border:`1.5px solid ${defaultGender===g?t.p:"#e2e8f0"}`,background:defaultGender===g?t.p:"#fff",color:defaultGender===g?"#fff":"#64748b",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",textTransform:"uppercase"}}>{g}</button>
+                ))}
+              </div>
+            </div>
+          </div>
+          {/* Eingabe */}
+          <textarea value={text} onChange={e=>setText(e.target.value)}
+            placeholder={`Beispiel:\n${example}`}
+            rows={9}
+            style={{width:"100%",padding:"11px 13px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",fontFamily:"monospace",lineHeight:1.55,resize:"vertical",boxSizing:"border-box"}}/>
+          <button onClick={()=>setText(example)} type="button"
+            style={{marginTop:6,background:"none",border:"none",color:t.p,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",padding:0}}>
+            Beispiel einfügen
+          </button>
+          {/* Vorschau */}
+          {withDupFlag.length>0 && (
+            <div style={{marginTop:14}}>
+              <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.4,marginBottom:6}}>
+                VORSCHAU ({newOnly.length} neu{withDupFlag.length-newOnly.length>0?`, ${withDupFlag.length-newOnly.length} bereits vorhanden`:""})
+              </div>
+              <div style={{display:"flex",flexDirection:"column",gap:5,maxHeight:200,overflowY:"auto",border:"1px solid #f1f5f9",borderRadius:10,padding:8}}>
+                {withDupFlag.map((p,i)=>(
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 10px",
+                    background:p.dup?"#fef9c3":"#f0fdf4",border:`1px solid ${p.dup?"#fde68a":"#bbf7d0"}`,
+                    borderRadius:8,fontSize:12.5}}>
+                    <span style={{fontWeight:800,color:p.dup?"#854d0e":"#15803d",fontSize:11}}>
+                      {p.dup?"DUP":"NEU"}
+                    </span>
+                    <span style={{flex:1,fontWeight:700,color:"#0f172a"}}>{p.name}</span>
+                    <span style={{color:"#64748b",fontFamily:"monospace"}}>{p.by} · {p.gender}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        <div style={{padding:"12px 20px 16px",borderTop:"1px solid #f1f5f9",display:"flex",gap:8}}>
+          <button onClick={onClose}
+            style={{flex:1,padding:"12px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
+            Abbrechen
+          </button>
+          <button onClick={doSave} disabled={newOnly.length===0||busy}
+            style={{flex:2,padding:"12px",borderRadius:11,border:"none",
+              background:newOnly.length>0&&!busy?t.p:"#cbd5e1",color:"#fff",fontWeight:800,fontSize:14,
+              cursor:newOnly.length>0&&!busy?"pointer":"not-allowed",fontFamily:"inherit"}}>
+            {busy ? "Lege an…" : newOnly.length===0 ? "Nichts neu" : `${newOnly.length} Spieler anlegen`}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function PlayersTab({ data,myTids,save,fire,cl }) {
   const [showTeamCard, setShowTeamCard] = React.useState(null); // teamId
   const t        = TH(cl);
@@ -14321,6 +14790,7 @@ function PlayersTab({ data,myTids,save,fire,cl }) {
   const [selTid,setSelTid]  = useState(myTids[0]||"");
   const [editP,setEditP]   = useState(null);
   const [showNew,setShowNew] = useState(false);
+  const [showBulk,setShowBulk] = useState(false);
   const [search,setSearch]  = useState("");
   const [showOpt,setShowOpt] = useState(false);
 
@@ -14421,7 +14891,13 @@ function PlayersTab({ data,myTids,save,fire,cl }) {
               style={{padding:"0 16px",height:44,borderRadius:12,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",boxShadow:`0 3px 12px ${t.p}44`}}>
               + Spieler
             </button>
+            <button onClick={()=>setShowBulk(true)}
+              title="Mehrere Spieler auf einmal anlegen (z.B. ganzen Kader aus Liste reinkopieren)"
+              style={{padding:"0 14px",height:44,borderRadius:12,border:`1.5px solid ${t.p}`,background:"#fff",color:t.p,fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>
+              ⚡ Massenanlage
+            </button>
           </div>
+          {showBulk && <BulkAddPlayers cid={cid} cl={cl} selTid={selTid} selTeam={selTeam} clubTeams={clubTeams} activeSeason={activeSeason} allPlayers={allPlayers} data={data} save={save} fire={fire} onClose={()=>setShowBulk(false)}/>}
 
           {}
           <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5,display:"flex",justifyContent:"space-between"}}>
