@@ -1355,6 +1355,14 @@ const isVotingLocked = (ev) => {
   const dl = eventDeadline(ev); if (!dl) return false;
   return Date.now() >= dl.getTime();
 };
+// Manuell gesetzte Abstimmungs-Frist ({date,time}). Eine Stelle fuer alle
+// Anzeigen, damit Dashboard, Detail-Poll und Vote-Uebersicht denselben
+// Frist-Status berechnen (Datum + Uhrzeit korrekt beruecksichtigt).
+const isDeadlinePassed = (ev) => {
+  if (!ev?.deadline?.date) return false;
+  const dl = new Date(`${ev.deadline.date}T${ev.deadline.time||"23:59"}:00`);
+  return !isNaN(dl.getTime()) && Date.now() >= dl.getTime();
+};
 const isEventPast = (ev) => {
   const s = eventStart(ev); if (!s) return false;
   return Date.now() >= s.getTime();
@@ -1379,8 +1387,8 @@ const formatCountdown = (ms) => {
 const fmtDShort = iso => { const d=new Date(iso+"T12:00:00"); return `${String(d.getDate()).padStart(2,"0")}.${String(d.getMonth()+1).padStart(2,"0")}.`; };
 
 const ACOLORS = ["#e74c3c","#e67e22","#2ecc71","#1abc9c","#3498db","#9b59b6","#e91e63","#00bcd4","#f59e0b","#8bc34a","#ff6b6b","#845ef7"];
-const acol  = n => { let h=0; for(const c of n) h=c.charCodeAt(0)+((h<<5)-h); return ACOLORS[Math.abs(h)%ACOLORS.length]; };
-const inits = n => n.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
+const acol  = n => { n=n||""; let h=0; for(const c of n) h=c.charCodeAt(0)+((h<<5)-h); return ACOLORS[Math.abs(h)%ACOLORS.length]; };
+const inits = n => (n||"").split(" ").map(w=>w[0]||"").join("").slice(0,2).toUpperCase();
 const contrast = hex => { const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16); return (r*299+g*587+b*114)/1000>145?"#111":"#fff"; };
 const mix = (hex,p) => { let r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16); const m=c=>Math.min(255,Math.floor(c+(255-c)*(p/100))); return `#${m(r).toString(16).padStart(2,"0")}${m(g).toString(16).padStart(2,"0")}${m(b).toString(16).padStart(2,"0")}`; };
 
@@ -13325,7 +13333,7 @@ function PollAttend({ev,user,onVote,cl,session=null,save=()=>{},data=null,fire=(
   const [showLate, setShowLate] = useState(false);
   const [lateMins, setLateMins] = useState(myLate||15);
   const tot=yes.length+no.length; const p=cl?.pri||"#16a34a";
-  const dlPassed=ev.deadline&&(now()>ev.deadline.date||(now()===ev.deadline.date));
+  const dlPassed=isDeadlinePassed(ev);
 
   const voteYes = () => onVote(ev.id,"att","yes");
   const voteLate = () => { onVote(ev.id,"att",{val:"yes",late:lateMins}); setShowLate(false); };
@@ -14796,7 +14804,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
                   const isDowngrade=rec==="Absteigen";
                   return (
                     <button key={rec} onClick={()=>up({recommend:rec})}
-                      style={{display:"flex",alignItems:"center",gap:10,padding:"10px 13px",borderRadius:11,border:`2px solid ${(p.recommend||""===rec)?col:"#e2e8f0"}`,background:(p.recommend||""===rec)?bg:"#fafafa",cursor:"pointer",fontFamily:"inherit",transition:"all .14s",opacity:isDowngrade?.75:1}}>
+                      style={{display:"flex",alignItems:"center",gap:10,padding:"10px 13px",borderRadius:11,border:`2px solid ${((p.recommend||"")===rec)?col:"#e2e8f0"}`,background:((p.recommend||"")===rec)?bg:"#fafafa",cursor:"pointer",fontFamily:"inherit",transition:"all .14s",opacity:isDowngrade?.75:1}}>
                       <span style={{fontSize:20}}>{icon}</span>
                       <div style={{flex:1,textAlign:"left"}}>
                         <div style={{fontWeight:700,fontSize:14,color:(p.recommend===rec)?col:"#334155"}}>{rec}</div>
@@ -15382,7 +15390,8 @@ function BulkAddPlayers({ cid, cl, selTid, selTeam, clubTeams, activeSeason, all
       gender: p.gender,
       mainTid: assignTid || "",
     }));
-    await save({...data, playerProfiles: [...allPlayers, ...newPlayers]});
+    // volle Liste verwenden, sonst gehen Spieler anderer Saisons verloren
+    await save({...data, playerProfiles: [...(data.playerProfiles||[]), ...newPlayers]});
     setBusy(false);
     fire(`${newPlayers.length} Spieler angelegt`);
     onClose();
@@ -15498,17 +15507,21 @@ function PlayersTab({ data,myTids,save,fire,cl }) {
   const [search,setSearch]  = useState("");
   const [showOpt,setShowOpt] = useState(false);
 
+  // WICHTIG: Schreibvorgaenge IMMER auf der vollen playerProfiles-Liste, nicht
+  // auf der saisongefilterten Anzeige-Liste (allPlayers) - sonst werden bei jeder
+  // Aktion alle Spieler anderer (archivierter) Saisons aus den Daten geloescht.
   const savePlayer = p => {
-    const exists = allPlayers.find(x=>x.id===p.id);
-    const next   = exists ? allPlayers.map(x=>x.id===p.id?p:x) : [...allPlayers,p];
+    const full   = data.playerProfiles||[];
+    const exists = full.find(x=>x.id===p.id);
+    const next   = exists ? full.map(x=>x.id===p.id?p:x) : [...full,p];
     save({...data,playerProfiles:next});
     setEditP(null); setShowNew(false);
     fire("Spielerprofil gespeichert *");
   };
-  const delPlayer = id => { const pl=allPlayers.find(p=>p.id===id); save({...data,playerProfiles:allPlayers.filter(p=>p.id!==id),securityLog:[...(data.securityLog||[]),{id:uid(),cid,type:"dsgvo_delete",ts:new Date().toISOString(),detail:"Spieler "+(pl?.name||id)+" auf Anfrage gelöscht",read:false}]}); fire("Spieler entfernt + DSGVO-Log erstellt"); };
+  const delPlayer = id => { const pl=allPlayers.find(p=>p.id===id); save({...data,playerProfiles:(data.playerProfiles||[]).filter(p=>p.id!==id),securityLog:[...(data.securityLog||[]),{id:uid(),cid,type:"dsgvo_delete",ts:new Date().toISOString(),detail:"Spieler "+(pl?.name||id)+" auf Anfrage gelöscht",read:false}]}); fire("Spieler entfernt + DSGVO-Log erstellt"); };
 
   const assignPlayer = (playerId,toTid) => {
-    const next = allPlayers.map(p => p.id===playerId ? {...p,mainTid:toTid} : p);
+    const next = (data.playerProfiles||[]).map(p => p.id===playerId ? {...p,mainTid:toTid} : p);
     save({...data,playerProfiles:next});
     fire(toTid ? "Spieler zugewiesen *" : "Spieler in Pool verschoben");
   };
@@ -15557,7 +15570,7 @@ function PlayersTab({ data,myTids,save,fire,cl }) {
           cid={cid}
           onAssign={assignPlayer}
           onOptToggle={(playerId,tid,add) => {
-            const next = allPlayers.map(p => {
+            const next = (data.playerProfiles||[]).map(p => {
               if (p.id !== playerId) return p;
               const opts = p.optTids || [];
               return { ...p,optTids: add ? [...opts.filter(x=>x!==tid),tid] : opts.filter(x=>x!==tid) };
@@ -19405,17 +19418,19 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
     onSave={evs=>{
     if(editEv){
       const {_editSeries,...saved}=evs[0];
+      // Bei Serien-Edits alle geaenderten Felder uebernehmen, aber die
+      // instanz-spezifischen je Termin behalten (eigenes Datum, eigene
+      // Stimmen, Serien-Identitaet, Saison, spaete Absagen).
+      const {id:_id,date:_d,votes:_v,sid:_sid,sidx:_sidx,seasonId:_ssn,lateCancellations:_lc,...common}=saved;
       if(editEv._editSeries==="future"&&editEv.sid){
-        const {title,time,loc,note,pt,li}=saved;
         save({...local,events:local.events.map(e=>{
-          if(e.sid===editEv.sid&&e.date>=editEv.date) return{...e,title,time,loc,note,pt,li};
+          if(e.sid===editEv.sid&&e.date>=editEv.date) return{...e,...common};
           return e;
         })});
         fire("Serie ab hier aktualisiert *");
       } else if(editEv._editSeries==="all"&&editEv.sid){
-        const {title,time,loc,note,pt,li}=saved;
         save({...local,events:local.events.map(e=>{
-          if(e.sid===editEv.sid) return{...e,title,time,loc,note,pt,li};
+          if(e.sid===editEv.sid) return{...e,...common};
           return e;
         })});
         fire("Ganze Serie aktualisiert *");
@@ -19622,7 +19637,7 @@ function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline}) {
   const [dlTime,setDlTime]=useState(ev.deadline?.time||"");
   const teamPlayers = (players[ev.tid]||[]);
   const totalPlayers = teamPlayers.length;
-  const dlPassed = ev.deadline && (now()>ev.deadline.date || (now()===ev.deadline.date && new Date().getHours()*60+new Date().getMinutes() > parseInt(ev.deadline.time?.replace(":",""))||0));
+  const dlPassed = isDeadlinePassed(ev);
   const dlLabel  = ev.deadline ? `${ev.deadline.date} ${ev.deadline.time||""}`.trim() : null;
   const getVal  = v => typeof v==="object"&&v!==null&&!Array.isArray(v) ? v.val : v;
   const getTs   = v => typeof v==="object"&&v!==null&&!Array.isArray(v) ? v.ts  : null;
@@ -19794,7 +19809,7 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
   const vc=Object.keys(ev.votes).length;
   const yes=ev.pt==="att"?Object.values(ev.votes).filter(v=>(typeof v==="object"?v.val:v)==="yes").length:0;
   const no =ev.pt==="att"?Object.values(ev.votes).filter(v=>(typeof v==="object"?v.val:v)==="no" ).length:0;
-  const dlPassed = ev.deadline && now()>ev.deadline.date;
+  const dlPassed = isDeadlinePassed(ev);
   const myVoteRaw = selfName ? ev.votes[selfName] : null;
   const myVote = typeof myVoteRaw==="object"&&myVoteRaw!==null ? myVoteRaw.val : myVoteRaw;
   const upcoming5 = isUpcoming5(ev);
@@ -20422,11 +20437,11 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
     let blocked = false;
     const next={...data,events:data.events.map(e=>{
       if(e.id!==eid)return e;
-      if(pt==="carpool")return val;
+      if(pt==="carpool")return {...e, votes:{...(e.votes||{}), [user]: val}};
       if(pt==="att"){
         const locked = isVotingLocked(e) && !isEventPast(e);
         const newVal = (typeof val==="object"&&val!==null) ? val.val : val;
-        const prev   = e.votes[user];
+        const prev   = (e.votes||{})[user];
         const prevVal= (typeof prev==="object"&&prev!==null) ? prev.val : prev;
         if (locked) {
           if (newVal !== "no") {
