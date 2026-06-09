@@ -20069,7 +20069,61 @@ function CarpoolWizard({ev,user,onSave,onClose,cl}) {
 }
 
 function PollCarpool({ev,user,onVote,cl}) {
-  return <PollAttend ev={ev} user={user} onVote={onVote} cl={cl}/>;
+  const t=TH(cl);
+  const votes=ev.votes||{};
+  const entryOf = name => { const v=votes[name]; return v&&typeof v==="object"&&v.mode?v:null; };
+  const mine = entryOf(user);
+  const myMode = mine?.mode || null;
+  const [seats,setSeats]=useState(()=> (mine?.mode==="drive" && mine?.seats) ? mine.seats : 3);
+  const drivers = Object.keys(votes).filter(n=>entryOf(n)?.mode==="drive");
+  const needers = Object.keys(votes).filter(n=>entryOf(n)?.mode==="need");
+  const seatsTotal = drivers.reduce((s,n)=>s+(Number(entryOf(n).seats)||0),0);
+  const set = (mode,s) => onVote(ev.id,"carpool",{mode, seats: mode==="drive"?(s??seats):undefined, ts:new Date().toISOString()});
+  const ModeBtn=({mode,label,sub,col})=>(
+    <button onClick={()=>set(mode, mode==="drive"?seats:undefined)}
+      style={{flex:1,padding:"12px 6px",borderRadius:13,border:`2px solid ${myMode===mode?col:"#e2e8f0"}`,background:myMode===mode?col+"15":"#fff",cursor:"pointer",fontFamily:"inherit",textAlign:"center"}}>
+      <div style={{fontWeight:800,fontSize:13.5,color:myMode===mode?col:"#334155"}}>{label}</div>
+      {sub&&<div style={{fontSize:10.5,color:"#94a3b8",marginTop:2}}>{sub}</div>}
+    </button>
+  );
+  const Row=({n,right,rcol})=>(
+    <div style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0"}}>
+      <Av name={n} sz={26}/>
+      <span style={{flex:1,fontSize:13,fontWeight:700,color:"#0f172a"}}>{n}{n===user?" (du)":""}</span>
+      <span style={{fontSize:11.5,fontWeight:800,color:rcol}}>{right}</span>
+    </div>
+  );
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:13}}>
+      <div style={{display:"flex",gap:8}}>
+        <ModeBtn mode="drive" label="Ich fahre" sub="biete Plätze" col="#16a34a"/>
+        <ModeBtn mode="need" label="Brauche Mitfahrt" sub="" col="#d97706"/>
+        <ModeBtn mode="self" label="Komme selbst" sub="" col="#64748b"/>
+      </div>
+      {myMode==="drive"&&(
+        <div style={{display:"flex",alignItems:"center",gap:10,background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:12,padding:"10px 14px"}}>
+          <div style={{flex:1,fontSize:13,fontWeight:700,color:"#166534"}}>Freie Plätze</div>
+          <button onClick={()=>{const nn=Math.max(1,seats-1);setSeats(nn);set("drive",nn);}} style={{width:34,height:34,borderRadius:9,border:"1.5px solid #bbf7d0",background:"#fff",fontWeight:900,fontSize:18,cursor:"pointer"}}>–</button>
+          <span style={{fontWeight:900,fontSize:18,width:28,textAlign:"center",color:"#166534"}}>{seats}</span>
+          <button onClick={()=>{const nn=seats+1;setSeats(nn);set("drive",nn);}} style={{width:34,height:34,borderRadius:9,border:"1.5px solid #bbf7d0",background:"#fff",fontWeight:900,fontSize:18,cursor:"pointer"}}>+</button>
+        </div>
+      )}
+      <div style={{background:"#f8fafc",borderRadius:13,border:"1.5px solid #e2e8f0",padding:"12px 14px"}}>
+        <div style={{display:"flex",justifyContent:"space-between",marginBottom:drivers.length||needers.length?10:0}}>
+          <span style={{fontSize:12,fontWeight:800,color:"#16a34a"}}>{drivers.length} Fahrer · {seatsTotal} Plätze</span>
+          <span style={{fontSize:12,fontWeight:800,color:needers.length>seatsTotal?"#dc2626":"#d97706"}}>{needers.length} ohne Fahrt</span>
+        </div>
+        {drivers.length>0&&<div style={{marginBottom:needers.length?10:0}}>
+          {drivers.map(n=><Row key={n} n={n} right={`${entryOf(n).seats||0} Plätze`} rcol="#16a34a"/>)}
+        </div>}
+        {needers.length>0&&<div style={{borderTop:drivers.length?"1px solid #e2e8f0":"none",paddingTop:drivers.length?10:0}}>
+          {needers.map(n=><Row key={n} n={n} right="braucht Mitfahrt" rcol="#d97706"/>)}
+        </div>}
+        {drivers.length===0&&needers.length===0&&<div style={{fontSize:13,color:"#94a3b8",textAlign:"center"}}>Noch keine Einträge.</div>}
+      </div>
+      {needers.length>seatsTotal&&<div style={{fontSize:12,color:"#dc2626",fontWeight:700,textAlign:"center"}}>Es fehlen noch {needers.length-seatsTotal} Plätze – wer kann zusätzlich fahren?</div>}
+    </div>
+  );
 }
 
 function TournInviteSection({ev,onUpdate,cl}) {
@@ -20357,14 +20411,13 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
     if(mc.length>0)status={icon:"Liste",label:`${mc.length} ausgewählt`,color:"#16a34a",bg:"#dcfce7",urgent:false};
     else if(!isPast)status={icon:"Liste",label:"Auswahl fehlt noch",color:"#d97706",bg:"#fef3c7",urgent:true};
   } else if(ev.pt==="carpool"){
-    const hN=!!ev.carpoolNeeds?.[user];const hO=!!ev.carpoolOffers?.[user];
-    const isP=Object.values(ev.carpoolOffers||{}).some(o=>(o.passengers||[]).includes(user));
-    if(hO)status={icon:"*",label:"Ich fahre",color:"#16a34a",bg:"#dcfce7",urgent:false};
-    else if(isP){const dr=Object.entries(ev.carpoolOffers||{}).find(([,o])=>(o.passengers||[]).includes(user))?.[0];status={icon:"*",label:`Mitfahrt bei ${dr}`,color:"#16a34a",bg:"#dcfce7",urgent:false};}
-    else if(hN)status={icon:"*",label:"Mitfahrt angefragt",color:"#d97706",bg:"#fef3c7",urgent:false};
-    else if(!isPast)status={icon:"*",label:"Noch nicht eingetragen",color:"#64748b",bg:"#f1f5f9",urgent:false};
+    const cv=(ev.votes||{})[user]; const m=cv&&typeof cv==="object"?cv.mode:null;
+    if(m==="drive")status={icon:"*",label:"Ich fahre",color:"#16a34a",bg:"#dcfce7",urgent:false};
+    else if(m==="need")status={icon:"*",label:"Mitfahrt gesucht",color:"#d97706",bg:"#fef3c7",urgent:true};
+    else if(m==="self")status={icon:"*",label:"Komme selbst",color:"#64748b",bg:"#f1f5f9",urgent:false};
+    else if(!isPast)status={icon:"*",label:"Noch nicht eingetragen",color:"#d97706",bg:"#fef3c7",urgent:true};
   }
-  const yesN=Object.values(ev.votes).filter(v=>(typeof v==="object"?v.val:v)==="yes").length;
+  const yesN=Object.values(ev.votes||{}).filter(v=>(typeof v==="object"?v.val:v)==="yes").length;
   return (
     <div style={{background:"#fff",borderRadius:20,boxShadow:expanded?"0 8px 32px rgba(0,0,0,.11)":"0 2px 10px rgba(0,0,0,.05)",border:`2px solid ${expanded?p:status?.urgent?"#fde68a":"#e2e8f0"}`,overflow:"hidden",transition:"all .2s",opacity:isPast&&!expanded?.7:1}}>
       {status?.urgent&&!expanded&&!isPast&&<div style={{background:"#fffbeb",borderBottom:"1px solid #fde68a",padding:"6px 17px",display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:13}}></span><span style={{fontSize:12,fontWeight:700,color:"#d97706"}}>Deine Antwort fehlt noch!</span></div>}
