@@ -1146,21 +1146,21 @@ function seed() {
       {id:"dbk3",fieldId:"df2",date:new Date().toISOString().slice(0,10),cellStart:0,cells:8,teamId:"demo_sen",teamName:"Senioren",booker:"Trainer",timeFrom:"19:00",timeTo:"20:30",cid:"demo"},
     ],
     contactRequests: [], securityLog: [], playerProfiles: [
-      {id:"dp1",cid:"demo",seasonId:"s2526",archived:false,name:"Lukas Berger",by:2018,gender:"m",mainTid:"demo_g",optTids:[],position:"Sturm",foot:"rechts",strengths:["Schnelligkeit"],customStrengths:[],goals:4,assists:2,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"9",jerseySize:"128",jerseyStatus:"have",lastTeam:"G-Jugend"},
-      {id:"dp2",cid:"demo",seasonId:"s2526",archived:false,name:"Emma Wolf",by:2019,gender:"w",mainTid:"demo_g",optTids:[],position:"Mittelfeld",foot:"links",strengths:["Technik"],customStrengths:[],goals:2,assists:5,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"10",jerseySize:"128",jerseyStatus:"have",lastTeam:"G-Jugend"},
-      {id:"dp3",cid:"demo",seasonId:"s2526",archived:false,name:"Noah Schmidt",by:2018,gender:"m",mainTid:"demo_g",optTids:[],position:"Abwehr",foot:"rechts",strengths:["Zweikampf"],customStrengths:[],goals:0,assists:1,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"4",jerseySize:"122",jerseyStatus:"none",lastTeam:"G-Jugend"},
-      {id:"dp4",cid:"demo",seasonId:"s2526",archived:false,name:"Mia Hoffmann",by:2019,gender:"w",mainTid:"demo_g",optTids:[],position:"Tor",foot:"rechts",strengths:["Reflexe"],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"1",jerseySize:"128",jerseyStatus:"ordered",lastTeam:"G-Jugend"},
-      {id:"dp5",cid:"demo",seasonId:"s2526",archived:false,name:"Ben Fischer",by:2016,gender:"m",mainTid:"demo_f1",optTids:[],position:"Sturm",foot:"rechts",strengths:["Abschluss"],customStrengths:[],skills:{Technik:4,Schnelligkeit:5,Zweikampf:3,Übersicht:3,Abschluss:5,Ausdauer:3,Teamplay:4},goals:8,assists:3,yellowCards:1,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"11",jerseySize:"140",jerseyStatus:"have",lastTeam:"F-Jugend 1"},
-      {id:"dp6",cid:"demo",seasonId:"s2526",archived:false,name:"Leon Weber",by:2017,gender:"m",mainTid:"demo_f1",optTids:[],position:"Mittelfeld",foot:"beidf.",strengths:["Passspiel"],customStrengths:[],goals:3,assists:7,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"8",jerseySize:"140",jerseyStatus:"have",lastTeam:"F-Jugend 1"},
-      {id:"dp7",cid:"demo",seasonId:"s2526",archived:false,name:"Sophie Klein",by:2016,gender:"w",mainTid:"demo_f1",optTids:[],position:"Abwehr",foot:"links",strengths:["Stellungsspiel"],customStrengths:[],skills:{Technik:3,Schnelligkeit:3,Zweikampf:5,Übersicht:4,Abschluss:2,Ausdauer:4,Teamplay:4},goals:1,assists:2,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"5",jerseySize:"134",jerseyStatus:"none",lastTeam:"F-Jugend 1"},
-      {id:"dp8",cid:"demo",seasonId:"s2526",archived:false,name:"Paul Becker",by:2017,gender:"m",mainTid:"demo_f1",optTids:[],position:"Tor",foot:"rechts",strengths:["Abschlag"],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"1",jerseySize:"140",jerseyStatus:"have",lastTeam:"F-Jugend 1"},
-      {id:"dp9",cid:"demo",seasonId:"s2526",archived:false,name:"Lina Schulz",by:2016,gender:"w",mainTid:"demo_f1",optTids:[],position:"Sturm",foot:"rechts",strengths:["Schnelligkeit"],customStrengths:[],goals:6,assists:4,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"7",jerseySize:"134",jerseyStatus:"have",lastTeam:"F-Jugend 1"},
-      {id:"dp10",cid:"demo",seasonId:"s2526",archived:false,name:"Felix Braun",by:2014,gender:"m",mainTid:"demo_e",optTids:[],position:"Mittelfeld",foot:"rechts",strengths:["Übersicht"],customStrengths:[],goals:5,assists:9,yellowCards:2,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"10",jerseySize:"152",jerseyStatus:"have",lastTeam:"E-Jugend"},
-      {id:"dp11",cid:"demo",seasonId:"s2526",archived:false,name:"Anna Richter",by:2015,gender:"w",mainTid:"demo_e",optTids:[],position:"Sturm",foot:"links",strengths:["Abschluss"],customStrengths:[],goals:11,assists:5,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"9",jerseySize:"152",jerseyStatus:"have",lastTeam:"E-Jugend"},
-      {id:"dp12",cid:"demo",seasonId:"s2526",archived:false,name:"Tim Neumann",by:2014,gender:"m",mainTid:"demo_e",optTids:[],position:"Abwehr",foot:"rechts",strengths:["Kopfball"],customStrengths:[],goals:2,assists:1,yellowCards:1,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"3",jerseySize:"146",jerseyStatus:"ordered",lastTeam:"E-Jugend"}
+      {id:"dp1",cid:"demo",seasonId:"s2627",archived:false,name:"Lukas Berger",by:2018,gender:"m",mainTid:"demo_g",optTids:[],position:"Sturm",foot:"rechts",strengths:["Schnelligkeit"],customStrengths:[],goals:4,assists:2,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"9",jerseySize:"128",jerseyStatus:"have",lastTeam:"G-Jugend"},
+      {id:"dp2",cid:"demo",seasonId:"s2627",archived:false,name:"Emma Wolf",by:2019,gender:"w",mainTid:"demo_g",optTids:[],position:"Mittelfeld",foot:"links",strengths:["Technik"],customStrengths:[],goals:2,assists:5,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"10",jerseySize:"128",jerseyStatus:"have",lastTeam:"G-Jugend"},
+      {id:"dp3",cid:"demo",seasonId:"s2627",archived:false,name:"Noah Schmidt",by:2018,gender:"m",mainTid:"demo_g",optTids:[],position:"Abwehr",foot:"rechts",strengths:["Zweikampf"],customStrengths:[],goals:0,assists:1,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"4",jerseySize:"122",jerseyStatus:"none",lastTeam:"G-Jugend"},
+      {id:"dp4",cid:"demo",seasonId:"s2627",archived:false,name:"Mia Hoffmann",by:2019,gender:"w",mainTid:"demo_g",optTids:[],position:"Tor",foot:"rechts",strengths:["Reflexe"],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"1",jerseySize:"128",jerseyStatus:"ordered",lastTeam:"G-Jugend"},
+      {id:"dp5",cid:"demo",seasonId:"s2627",archived:false,name:"Ben Fischer",by:2016,gender:"m",mainTid:"demo_f1",optTids:[],position:"Sturm",foot:"rechts",strengths:["Abschluss"],customStrengths:[],skills:{Technik:4,Schnelligkeit:5,Zweikampf:3,Übersicht:3,Abschluss:5,Ausdauer:3,Teamplay:4},goals:8,assists:3,yellowCards:1,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"11",jerseySize:"140",jerseyStatus:"have",lastTeam:"F-Jugend 1"},
+      {id:"dp6",cid:"demo",seasonId:"s2627",archived:false,name:"Leon Weber",by:2017,gender:"m",mainTid:"demo_f1",optTids:[],position:"Mittelfeld",foot:"beidf.",strengths:["Passspiel"],customStrengths:[],goals:3,assists:7,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"8",jerseySize:"140",jerseyStatus:"have",lastTeam:"F-Jugend 1"},
+      {id:"dp7",cid:"demo",seasonId:"s2627",archived:false,name:"Sophie Klein",by:2016,gender:"w",mainTid:"demo_f1",optTids:[],position:"Abwehr",foot:"links",strengths:["Stellungsspiel"],customStrengths:[],skills:{Technik:3,Schnelligkeit:3,Zweikampf:5,Übersicht:4,Abschluss:2,Ausdauer:4,Teamplay:4},goals:1,assists:2,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"5",jerseySize:"134",jerseyStatus:"none",lastTeam:"F-Jugend 1"},
+      {id:"dp8",cid:"demo",seasonId:"s2627",archived:false,name:"Paul Becker",by:2017,gender:"m",mainTid:"demo_f1",optTids:[],position:"Tor",foot:"rechts",strengths:["Abschlag"],customStrengths:[],goals:0,assists:0,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"1",jerseySize:"140",jerseyStatus:"have",lastTeam:"F-Jugend 1"},
+      {id:"dp9",cid:"demo",seasonId:"s2627",archived:false,name:"Lina Schulz",by:2016,gender:"w",mainTid:"demo_f1",optTids:[],position:"Sturm",foot:"rechts",strengths:["Schnelligkeit"],customStrengths:[],goals:6,assists:4,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"7",jerseySize:"134",jerseyStatus:"have",lastTeam:"F-Jugend 1"},
+      {id:"dp10",cid:"demo",seasonId:"s2627",archived:false,name:"Felix Braun",by:2014,gender:"m",mainTid:"demo_e",optTids:[],position:"Mittelfeld",foot:"rechts",strengths:["Übersicht"],customStrengths:[],goals:5,assists:9,yellowCards:2,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"10",jerseySize:"152",jerseyStatus:"have",lastTeam:"E-Jugend"},
+      {id:"dp11",cid:"demo",seasonId:"s2627",archived:false,name:"Anna Richter",by:2015,gender:"w",mainTid:"demo_e",optTids:[],position:"Sturm",foot:"links",strengths:["Abschluss"],customStrengths:[],goals:11,assists:5,yellowCards:0,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"9",jerseySize:"152",jerseyStatus:"have",lastTeam:"E-Jugend"},
+      {id:"dp12",cid:"demo",seasonId:"s2627",archived:false,name:"Tim Neumann",by:2014,gender:"m",mainTid:"demo_e",optTids:[],position:"Abwehr",foot:"rechts",strengths:["Kopfball"],customStrengths:[],goals:2,assists:1,yellowCards:1,redCards:0,notes:"",recommend:"",rating:0,friends:[],mustWith:[],jerseyNr:"3",jerseySize:"146",jerseyStatus:"ordered",lastTeam:"E-Jugend"}
     ],
-    seasons: [{ id:"s2526", label:"2025/2026", status:"active" }],
-    activeSeason: "s2526",
+    seasons: [{ id:"s2627", label:"2026/2027", status:"active" }],
+    activeSeason: "s2627",
     trainings: [
       {id:"dtr1",cid:"demo",ownerTid:"demo_g",title:"Dribbling & Ballgefühl",focus:"Technik",blocks:[{phase:"Aufwärmen",title:"Fangen mit Ball",min:10},{phase:"Hauptteil",title:"Dribbel-Parcours",min:25},{phase:"Abschluss",title:"Kleines Abschlussspiel",min:15}],vis:"club",sharedTids:[],createdAt:"2026-01-01T10:00:00.000Z",updatedAt:"2026-01-01T10:00:00.000Z"},
       {id:"dtr2",cid:"demo",ownerTid:"demo_g",title:"Passspiel im Quadrat",focus:"Passgenauigkeit",blocks:[{phase:"Aufwärmen",title:"Einlaufen + Mobilisation",min:10},{phase:"Hauptteil",title:"Passen im 4er-Quadrat",min:30}],vis:"team",sharedTids:[],createdAt:"2026-01-02T10:00:00.000Z",updatedAt:"2026-01-02T10:00:00.000Z"},
@@ -15199,7 +15199,7 @@ function PlayersTab({ data,myTids,save,fire,cl }) {
   const [showTeamCard, setShowTeamCard] = React.useState(null); // teamId
   const t        = TH(cl);
   const allTeams   = data.teams;
-  const activeSeason = data.activeSeason || "s2526";
+  const activeSeason = data.activeSeason || "s2627";
   const allPlayers = (data.playerProfiles || []).filter(p => !p.seasonId || p.seasonId === activeSeason);
   const cid        = allTeams.find(tm=>myTids.includes(tm.id))?.cid;
   const clubTeams  = allTeams.filter(tm => tm.cid === cid);
@@ -17035,7 +17035,7 @@ function NewSeasonWizard({ data,save,fire,cl,myTids,onClose,onDone }) {
 }
 
 function SeasonPicker({ data,save,fire,onSelect,t }) {
-  const seasons = data.seasons || [{id:"s2526",label:"2025/2026",status:"active"}];
+  const seasons = data.seasons || [{id:"s2627",label:"2026/2027",status:"active"}];
   const active  = data.activeSeason || seasons[0]?.id;
   const [showWizard,setShowWizard] = useState(false);
   const archiveSeason = sid => { save({...data,seasons:seasons.map(s=>s.id===sid?{...s,status:"archived"}:s)}); fire&&fire("Archiviert"); };
@@ -17081,7 +17081,7 @@ function SeasonPicker({ data,save,fire,onSelect,t }) {
 
 function SeasonModal({ data,save,fire,cl,myTids,onClose }) {
   const t = TH(cl);
-  const seasons      = data.seasons || [{ id:"s2526",label:"2025/2026",status:"active" }];
+  const seasons      = data.seasons || [{ id:"s2627",label:"2026/2027",status:"active" }];
   const active       = data.activeSeason || seasons[0]?.id;
   const allPlayers   = data.playerProfiles || [];
   const allTeams     = data.teams;
@@ -18964,7 +18964,7 @@ function TrainerStatsView({ data, cid }) {
 
 function AttendanceTab({ data, myTids, cl, save, fire }) {
   const t = TH(cl);
-  const activeSeason = data.activeSeason||"s2526";
+  const activeSeason = data.activeSeason|| "s2627";
   const myTeams = (data.teams||[]).filter(tm=>myTids.includes(tm.id));
   const [selTid, setSelTid] = useState(myTids[0]||"");
   const players = (data.playerProfiles||[]).filter(p=>p.mainTid===selTid&&(!p.seasonId||p.seasonId===activeSeason));
