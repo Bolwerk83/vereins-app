@@ -619,6 +619,12 @@ const setConfig = c => { try { localStorage.setItem(CFG,JSON.stringify(c)); } ca
 const JOIN_CODE = "r3EDDDJf0t4U4Zep8_tTXw";
 const AUTH_KEY  = SK + "__auth";
 
+// Mandanten-Trennung (mehrere Vereine isoliert) - siehe docs/mandanten-trennung.md.
+// Default AUS = bisheriges Verhalten (ein globaler Vereinscode). Erst auf true
+// stellen, NACHDEM supabase/schema-multitenant.sql deployt und je Verein ein
+// Code gesetzt wurde - sonst sperrt sich die App aus.
+const MULTI_TENANT = false;
+
 const auth = {
   _s: null,
   _load() {
@@ -714,6 +720,38 @@ const auth = {
       }
     } catch {}
     return false;
+  },
+  // Multi-Tenant: Mitgliedschaft fuer GENAU einen Verein einloesen.
+  // Versucht zuerst die neue Signatur redeem_code(p_cid,p_code); faellt das
+  // RPC (altes Schema) weg, wird auf redeem_code(p_code) zurueckgefallen.
+  async joinClub(cid, code) {
+    const cfg = getConfig();
+    const token = await this.getToken();
+    if (!token) return false;
+    const hdr = { "Content-Type":"application/json","apikey":cfg.key,"Authorization":"Bearer "+token };
+    const call = async (body) => {
+      try {
+        const r = await fetch(`${cfg.url}/rest/v1/rpc/redeem_code`, { method:"POST", headers:hdr, body:JSON.stringify(body) });
+        if (r.status===404) return { missing:true, ok:false };
+        if (!r.ok) return { ok:false };
+        const v = await r.json(); return { ok: v===true };
+      } catch { return { ok:false }; }
+    };
+    let res = await call({ p_cid: cid, p_code: code || JOIN_CODE });
+    if (res.missing) res = await call({ p_code: code || JOIN_CODE }); // altes Schema
+    if (res.ok) {
+      const s = this._load() || {};
+      const cids = new Set(s.cids || []); if (cid) cids.add(cid);
+      this._save({ ...s, is_member:true, cids:[...cids] });
+      return true;
+    }
+    return false;
+  },
+  isMemberOf(cid) {
+    const s = this._load();
+    if (!s) return false;
+    if (!MULTI_TENANT) return !!s.is_member;
+    return !!(s.cids || []).includes(cid);
   },
 };
 
@@ -13116,6 +13154,40 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
   );
 }
 
+// Multi-Tenant: Vereinscode-Eingabe beim Betreten eines Vereins.
+function ClubJoinGate({ cl, onJoined, onBack }) {
+  const t=TH(cl);
+  const [code,setCode]=useState(""); const [err,setErr]=useState(false); const [busy,setBusy]=useState(false);
+  const go=async()=>{
+    if(!code.trim()||busy) return;
+    setBusy(true);
+    const ok=await auth.joinClub(cl.id, code.trim());
+    setBusy(false);
+    if(ok) onJoined(); else { setErr(true); setTimeout(()=>setErr(false),1800); }
+  };
+  return (
+    <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s},${t.p}66)`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,position:"relative"}}>
+      <style>{CSS}</style>
+      <button onClick={onBack} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}>← Zurück</button>
+      <div className="up" style={{width:"100%",maxWidth:370,textAlign:"center"}}>
+        <Logo cl={cl} sz={64} sx={{margin:"0 auto 14px"}}/>
+        <h2 style={{color:"#fff",fontSize:22,fontWeight:900,margin:"0 0 4px"}}>{cl.name}</h2>
+        <p style={{color:"rgba(255,255,255,.55)",fontSize:13,marginBottom:22}}>Vereinscode eingeben, um diesem Verein beizutreten</p>
+        <div style={{background:"rgba(255,255,255,.1)",backdropFilter:"blur(16px)",borderRadius:22,padding:"24px 22px",border:"1px solid rgba(255,255,255,.15)"}}>
+          <PwInput value={code} onChange={e=>{setCode(e.target.value);setErr(false);}} onKeyDown={e=>{if(e.key==="Enter")go();}}
+            placeholder="Vereinscode..." autoFocus autoCapitalize="none" autoCorrect="off" spellCheck={false}
+            style={{width:"100%",padding:"13px 16px",fontSize:16,background:"rgba(255,255,255,.12)",border:`2px solid ${err?"#ff6b6b":code?"rgba(255,255,255,.4)":"rgba(255,255,255,.2)"}`,borderRadius:13,outline:"none",color:"#fff",marginBottom:err?6:12}}/>
+          {err&&<div style={{fontSize:12,color:"#fecaca",fontWeight:700,marginBottom:10}}>Code stimmt nicht</div>}
+          <button onClick={go} disabled={!code.trim()||busy}
+            style={{width:"100%",padding:"13px",fontSize:15,fontWeight:800,background:code.trim()&&!busy?cl.pri:"rgba(255,255,255,.15)",color:code.trim()&&!busy?"#fff":"rgba(255,255,255,.4)",border:"none",borderRadius:13,cursor:code.trim()&&!busy?"pointer":"not-allowed"}}>
+            {busy?"Prüfe...":"Beitreten"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AdminLogin({cl,onLogin,onBack}) {
   const t=TH(cl); const [pw,setPw]=useState(""); const [err,setErr]=useState(false); const [showForgot,setShowForgot]=useState(false);
   const pwRef=useRef(null);
@@ -21700,6 +21772,8 @@ function AppInner({lang,setLang}) {
       }
       const s=sess.get();
       if(s){
+        // Multi-Tenant: noch nicht Mitglied dieses Vereins -> Code-Gate.
+        if(MULTI_TENANT && s.cid!=="demo" && !auth.isMemberOf(s.cid)){ setData(refreshDemo(dir)); setCid(s.cid); setScr("joincode"); return; }
         // nur den Verein des angemeldeten Nutzers laden
         let cd=null; try { cd=await sb.getClub(s.cid); } catch {}
         cd = cd||dir; if(s.cid==="demo") cd=refreshDemo(cd);
@@ -21711,10 +21785,12 @@ function AppInner({lang,setLang}) {
       if(clubParam){
         const club=(dir.clubs||[]).find(c=>c.slug===clubParam||c.id===clubParam);
         if(club){
+          setCid(club.id);
+          const teamParam=params.get("team");
+          if(MULTI_TENANT && club.id!=="demo" && !auth.isMemberOf(club.id)){ setData(refreshDemo(dir)); if(teamParam)setLinkTeam(teamParam); setScr("joincode"); return; }
           let cd=null; try { cd=await sb.getClub(club.id); } catch {}
           cd = cd||dir; if(club.id==="demo") cd=refreshDemo(cd);
-          setData(cd); setCid(club.id);
-          const teamParam=params.get("team");
+          setData(cd);
           if(teamParam){ setLinkTeam(teamParam); setScr("flow"); }
           else setScr("role");
           return;
@@ -21838,12 +21914,15 @@ function AppInner({lang,setLang}) {
       {showLegal&&<LegalPage onBack={()=>setShowLegal(false)}/>}
       {!showLegal&&screen==="dir"&&<Directory data={data} lang={lang} setLang={setLang} onLegal={()=>setShowLegal(true)} onVisitorOpen={(eid,club)=>setVisitor({eid,club})} onPick={async id=>{
           const realId = id==="__demo__"?"demo":id;
+          setCid(realId);
+          // Multi-Tenant: erst Vereinscode-Gate, wenn noch nicht Mitglied.
+          if(MULTI_TENANT && realId!=="demo" && !auth.isMemberOf(realId)){ setScr("joincode"); return; }
           let cd=null; try { cd=await sb.getClub(realId); } catch {}
           // Transienter Auth-Fehler? Einmal Mitgliedschaft sichern + erneut laden,
           // damit der Admin nicht mit unvollstaendigen Daten ins Dashboard kommt.
-          if(!cd){ try { await auth.ensureMember(); cd=await sb.getClub(realId); } catch {} }
+          if(!cd){ try { await (MULTI_TENANT?auth.joinClub(realId):auth.ensureMember()); cd=await sb.getClub(realId); } catch {} }
           if(cd){ setData(realId==="demo"?refreshDemo(cd):cd); }
-          setCid(realId); setScr("role");
+          setScr("role");
         }} onNewClub={async newClubOrData=>{
           if(newClubOrData.clubs){
             await save(newClubOrData);
@@ -21873,6 +21952,11 @@ function AppInner({lang,setLang}) {
           setScr("alogin");
         }}/>}
       {screen==="onboard"&&activeCl&&session?.role==="admin"&&<AdminOnboarding data={data} cl={activeCl} cid={cid} save={save} onDone={()=>setScr("dash")}/>}
+      {screen==="joincode"&&activeCl&&<ClubJoinGate cl={activeCl} onBack={()=>setScr("dir")} onJoined={async()=>{
+          let cd=null; try { cd=await sb.getClub(cid); } catch {}
+          if(cd){ setData(cd); }
+          setScr("role");
+        }}/>}
       {screen==="role"  &&activeCl&&<RolePicker cl={activeCl} onRole={r=>setScr(r==="user"?"flow":r==="trainer"?"tlogin":r==="helper"?"hlogin":"alogin")} onBack={()=>setScr("dir")}/>}
       {screen==="flow"  &&activeCl&&<UserFlow cl={activeCl} teams={clTeams} players={data.players} playerProfiles={data.playerProfiles||[]} preselectTid={linkTeam} onDone={(tid,user)=>login("user",{tid,user})} onBack={()=>setScr(linkTeam?"role":"role")}/>}
       {screen==="tlogin"&&activeCl&&<TrainerLogin cl={activeCl} trainers={data.trainers.filter(t=>t.cid===cid&&isActive(t))} teams={clTeams} onLogin={tr=>login("trainer",tr)} onBack={()=>setScr("role")}/>}
