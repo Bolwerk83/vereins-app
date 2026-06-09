@@ -20618,7 +20618,7 @@ function AppInner({lang,setLang}) {
           setCid(newClubOrData.id);
           setScr("alogin");
         }}/>}
-      {screen==="onboard"&&activeCl&&isAdmin&&<AdminOnboarding data={data} cl={activeCl} cid={cid} save={save} onDone={()=>setScr("dash")}/>}
+      {screen==="onboard"&&activeCl&&session?.role==="admin"&&<AdminOnboarding data={data} cl={activeCl} cid={cid} save={save} onDone={()=>setScr("dash")}/>}
       {screen==="role"  &&activeCl&&<RolePicker cl={activeCl} onRole={r=>setScr(r==="user"?"flow":r==="trainer"?"tlogin":r==="helper"?"hlogin":"alogin")} onBack={()=>setScr("dir")}/>}
       {screen==="flow"  &&activeCl&&<UserFlow cl={activeCl} teams={clTeams} players={data.players} playerProfiles={data.playerProfiles||[]} preselectTid={linkTeam} onDone={(tid,user)=>login("user",{tid,user})} onBack={()=>setScr(linkTeam?"role":"role")}/>}
       {screen==="tlogin"&&activeCl&&<TrainerLogin cl={activeCl} trainers={data.trainers.filter(t=>t.cid===cid&&isActive(t))} teams={clTeams} onLogin={tr=>login("trainer",tr)} onBack={()=>setScr("role")}/>}
