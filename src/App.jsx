@@ -3988,6 +3988,231 @@ function StyleToggle({ value, onChange, t }){
 
 // Mannschafts-Skill-Analyse: Schnitt im Spinnennetz + regelbasierte Trainingsvorschläge
 /* ============================================================
+   TRAINING-TAKTIKTAFELN
+   Pro Trainingsblock optional eine kleine Tafel mit Huetchen,
+   Spieler-Markern und Pfeilen. Bibliothek mit 10 Standard-Vorlagen
+   die im Block per Klick wechselbar sind. Vollbild-Sportplatz-View
+   zeigt die Tafel gross & gut sichtbar fuer Tablet/Handy am Platz.
+   ============================================================ */
+const TACTIC_TEMPLATES = [
+  {
+    id:"slalom", name:"Slalom-Parcours", icon:"〰",
+    desc:"Dribbeln durch Hütchen-Reihe, am Ende Pass oder Abschluss",
+    cones:[{x:15,y:50},{x:25,y:50},{x:35,y:50},{x:45,y:50},{x:55,y:50},{x:65,y:50},{x:75,y:50}],
+    players:[{x:5,y:50,label:"A"}],
+    arrows:[{x1:5,y1:50,x2:78,y2:50,type:"run",path:"wave"}],
+  },
+  {
+    id:"quad5", name:"Quadrat 5×5", icon:"▢",
+    desc:"Passspiel im Quadrat, 4 Eckspieler + 1 in der Mitte",
+    cones:[{x:25,y:20},{x:75,y:20},{x:75,y:80},{x:25,y:80}],
+    players:[{x:25,y:20,label:"1"},{x:75,y:20,label:"2"},{x:75,y:80,label:"3"},{x:25,y:80,label:"4"},{x:50,y:50,label:"M",color:"#dc2626"}],
+    arrows:[{x1:25,y1:20,x2:50,y2:50,type:"pass"},{x1:50,y1:50,x2:75,y2:80,type:"pass"}],
+  },
+  {
+    id:"abschluss", name:"Abschluss-Reihe", icon:"⌖",
+    desc:"Spieler in Reihe, Pass von Trainer, Abschluss auf Tor",
+    cones:[{x:30,y:30},{x:30,y:50},{x:30,y:70}],
+    players:[{x:30,y:30,label:"A"},{x:30,y:50,label:"B"},{x:30,y:70,label:"C"},{x:55,y:50,label:"T",color:"#7c3aed"}],
+    arrows:[{x1:55,y1:50,x2:75,y2:50,type:"pass"},{x1:75,y1:50,x2:90,y2:50,type:"run"}],
+    goal:{x:90,y:50},
+  },
+  {
+    id:"1gegen1", name:"1 gegen 1 frontal", icon:"⚔",
+    desc:"Angreifer + Verteidiger, kleines Tor verteidigen",
+    cones:[{x:80,y:30},{x:80,y:70}],
+    players:[{x:20,y:50,label:"A",color:"#16a34a"},{x:60,y:50,label:"V",color:"#dc2626"}],
+    arrows:[{x1:20,y1:50,x2:60,y2:50,type:"run"},{x1:60,y1:50,x2:80,y2:50,type:"run"}],
+    goal:{x:85,y:50},
+  },
+  {
+    id:"doppelpass", name:"Doppelpass-Station", icon:"⤬",
+    desc:"A passt zu B, läuft, kriegt zurück, Abschluss",
+    cones:[{x:20,y:50},{x:50,y:30}],
+    players:[{x:20,y:50,label:"A"},{x:50,y:30,label:"B"}],
+    arrows:[{x1:20,y1:50,x2:50,y2:30,type:"pass"},{x1:20,y1:50,x2:70,y2:50,type:"run"},{x1:50,y1:30,x2:70,y2:50,type:"pass"},{x1:70,y1:50,x2:90,y2:50,type:"run"}],
+    goal:{x:90,y:50},
+  },
+  {
+    id:"raute", name:"Pass-Raute", icon:"◆",
+    desc:"4 Spieler in Rauten-Anordnung, Pass im Uhrzeigersinn",
+    cones:[],
+    players:[{x:50,y:20,label:"1"},{x:80,y:50,label:"2"},{x:50,y:80,label:"3"},{x:20,y:50,label:"4"}],
+    arrows:[{x1:50,y1:20,x2:80,y2:50,type:"pass"},{x1:80,y1:50,x2:50,y2:80,type:"pass"},{x1:50,y1:80,x2:20,y2:50,type:"pass"},{x1:20,y1:50,x2:50,y2:20,type:"pass"}],
+  },
+  {
+    id:"abwehrkette", name:"Abwehrkette 4er", icon:"━",
+    desc:"Verschieben der Viererkette in Abhängigkeit vom Angreifer",
+    cones:[],
+    players:[{x:25,y:40,label:"LV"},{x:40,y:40,label:"IV"},{x:60,y:40,label:"IV"},{x:75,y:40,label:"RV"},{x:50,y:75,label:"A",color:"#dc2626"}],
+    arrows:[{x1:50,y1:75,x2:50,y2:50,type:"run"},{x1:40,y1:40,x2:50,y2:35,type:"run"}],
+  },
+  {
+    id:"konter", name:"Konter-Spielzug", icon:"⤴",
+    desc:"Schneller Ballgewinn → Pass nach vorne → Lauf in Tiefe",
+    cones:[],
+    players:[{x:25,y:60,label:"IV"},{x:50,y:50,label:"6er"},{x:75,y:30,label:"ST"}],
+    arrows:[{x1:25,y1:60,x2:50,y2:50,type:"pass"},{x1:50,y1:50,x2:75,y2:30,type:"pass"},{x1:75,y1:30,x2:90,y2:50,type:"run"}],
+    goal:{x:90,y:50},
+  },
+  {
+    id:"warmup", name:"Aufwärm-Quadrat", icon:"☼",
+    desc:"Großes Quadrat, Spieler bewegen sich frei, Pässe in alle Richtungen",
+    cones:[{x:15,y:15},{x:85,y:15},{x:85,y:85},{x:15,y:85}],
+    players:[{x:30,y:30,label:"A"},{x:70,y:30,label:"B"},{x:70,y:70,label:"C"},{x:30,y:70,label:"D"},{x:50,y:50,label:"E"}],
+    arrows:[{x1:30,y1:30,x2:70,y2:30,type:"pass"},{x1:70,y1:30,x2:70,y2:70,type:"pass"}],
+  },
+  {
+    id:"stationen", name:"4 Stationen Rotation", icon:"⊞",
+    desc:"4 Stationen mit verschiedenen Übungen, alle 5 Min wechseln",
+    cones:[{x:25,y:25},{x:75,y:25},{x:75,y:75},{x:25,y:75}],
+    players:[{x:25,y:25,label:"1"},{x:75,y:25,label:"2"},{x:75,y:75,label:"3"},{x:25,y:75,label:"4"}],
+    arrows:[{x1:25,y1:25,x2:75,y2:25,type:"run"},{x1:75,y1:25,x2:75,y2:75,type:"run"},{x1:75,y1:75,x2:25,y2:75,type:"run"},{x1:25,y1:75,x2:25,y2:25,type:"run"}],
+  },
+];
+
+function TacticField({ tactic, size="md", showLabels=true }) {
+  // Maße basierend auf size
+  const dims = {
+    xs: { w:80,  h:50, cone:3, player:8, font:7,  arrow:1.5 },
+    sm: { w:160, h:100, cone:4, player:11, font:10, arrow:2 },
+    md: { w:260, h:160, cone:5, player:13, font:11, arrow:2.5 },
+    lg: { w:420, h:260, cone:7, player:18, font:13, arrow:3 },
+    xl: { w:760, h:460, cone:11, player:28, font:18, arrow:5 },
+  };
+  const D = dims[size] || dims.md;
+  if (!tactic) return null;
+  const tpl = TACTIC_TEMPLATES.find(t=>t.id===tactic.template) || tactic;
+  const { cones=[], players=[], arrows=[], goal } = tpl;
+  const arrowCol = (a) => a.type==="pass" ? "#fb923c" : "#ffffff";
+
+  return (
+    <svg viewBox="0 0 100 65" width={D.w} height={D.h}
+      style={{display:"block",background:"#16a34a",borderRadius:8,boxShadow:"inset 0 0 0 2px rgba(255,255,255,.25)"}}>
+      {/* Field markings */}
+      <rect x="0" y="0" width="100" height="65" fill="none" stroke="rgba(255,255,255,.3)" strokeWidth=".3"/>
+      <line x1="50" y1="0" x2="50" y2="65" stroke="rgba(255,255,255,.25)" strokeWidth=".3"/>
+      <circle cx="50" cy="32.5" r="6" fill="none" stroke="rgba(255,255,255,.25)" strokeWidth=".3"/>
+      <rect x="0" y="20" width="12" height="25" fill="none" stroke="rgba(255,255,255,.25)" strokeWidth=".3"/>
+      <rect x="88" y="20" width="12" height="25" fill="none" stroke="rgba(255,255,255,.25)" strokeWidth=".3"/>
+      {goal && <rect x={goal.x*0.85+85} y={goal.y*0.65-6} width="3" height="12" fill="#ffffff"/>}
+      {/* Arrows */}
+      <defs>
+        <marker id="arr-run" viewBox="0 -3 6 6" refX="5" refY="0" markerWidth="3" markerHeight="3" orient="auto"><path d="M0 -3L6 0L0 3z" fill="#ffffff"/></marker>
+        <marker id="arr-pass" viewBox="0 -3 6 6" refX="5" refY="0" markerWidth="3" markerHeight="3" orient="auto"><path d="M0 -3L6 0L0 3z" fill="#fb923c"/></marker>
+      </defs>
+      {arrows.map((a,i)=>(
+        <line key={i}
+          x1={a.x1} y1={a.y1*0.65} x2={a.x2} y2={a.y2*0.65}
+          stroke={arrowCol(a)} strokeWidth="0.8"
+          strokeDasharray={a.type==="pass"?"1.5,1":"none"}
+          markerEnd={`url(#arr-${a.type==="pass"?"pass":"run"})`}/>
+      ))}
+      {/* Cones */}
+      {cones.map((c,i)=>(
+        <g key={"c"+i} transform={`translate(${c.x},${c.y*0.65})`}>
+          <polygon points="-1.6,1.6 1.6,1.6 0,-1.6" fill="#fb923c"/>
+        </g>
+      ))}
+      {/* Players */}
+      {players.map((p,i)=>(
+        <g key={"p"+i} transform={`translate(${p.x},${p.y*0.65})`}>
+          <circle r="2.4" fill={p.color||"#0f172a"} stroke="#fff" strokeWidth=".3"/>
+          {showLabels && <text textAnchor="middle" y="0.9" fontSize="2.7" fontWeight="900" fill="#fff" fontFamily="sans-serif">{p.label}</text>}
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+function TacticPicker({ value, onChange, onFullscreen }) {
+  const [open, setOpen] = useState(false);
+  const tpl = value?.template ? TACTIC_TEMPLATES.find(t=>t.id===value.template) : null;
+  return (
+    <div style={{marginTop:6}}>
+      {tpl ? (
+        <div style={{display:"flex",alignItems:"center",gap:8,background:"#f8fafc",borderRadius:10,padding:"6px 8px",border:"1px solid #e2e8f0"}}>
+          <TacticField tactic={tpl} size="sm" showLabels={false}/>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontWeight:800,fontSize:12,color:"#0f172a"}}>{tpl.icon} {tpl.name}</div>
+            <div style={{fontSize:10.5,color:"#64748b",lineHeight:1.4}}>{tpl.desc}</div>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:4}}>
+            {onFullscreen && <button onClick={()=>onFullscreen(tpl)}
+              title="Auf dem Platz vergrößern"
+              style={{padding:"4px 8px",borderRadius:7,border:"1.5px solid #16a34a",background:"#dcfce7",color:"#15803d",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>🔍 Platz</button>}
+            <button onClick={()=>setOpen(true)}
+              style={{padding:"4px 8px",borderRadius:7,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>Wechseln</button>
+            <button onClick={()=>onChange(null)}
+              style={{padding:"4px 8px",borderRadius:7,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>×</button>
+          </div>
+        </div>
+      ) : (
+        <button onClick={()=>setOpen(true)}
+          style={{width:"100%",padding:"6px 8px",borderRadius:8,border:"1.5px dashed #cbd5e1",background:"transparent",color:"#64748b",fontWeight:700,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>
+          ⚽ Taktiktafel hinzufügen
+        </button>
+      )}
+      {open && <TacticLibrary onPick={(id)=>{onChange({template:id});setOpen(false);}} onClose={()=>setOpen(false)}/>}
+    </div>
+  );
+}
+
+function TacticLibrary({ onPick, onClose }) {
+  return (
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",
+      display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:18}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:18,padding:"20px",
+        width:"100%",maxWidth:720,maxHeight:"88vh",overflowY:"auto"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+          <div>
+            <div style={{fontWeight:900,fontSize:18,color:"#0f172a"}}>Taktiktafel-Bibliothek</div>
+            <div style={{fontSize:12,color:"#64748b"}}>{TACTIC_TEMPLATES.length} Vorlagen · per Klick auswählen</div>
+          </div>
+          <button onClick={onClose} style={{background:"none",border:"none",fontSize:22,color:"#94a3b8",cursor:"pointer"}}>×</button>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:10}}>
+          {TACTIC_TEMPLATES.map(tpl=>(
+            <button key={tpl.id} onClick={()=>onPick(tpl.id)}
+              style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:13,padding:"10px",
+                cursor:"pointer",fontFamily:"inherit",display:"flex",flexDirection:"column",gap:7,textAlign:"left"}}>
+              <TacticField tactic={tpl} size="md"/>
+              <div style={{display:"flex",alignItems:"center",gap:6}}>
+                <span style={{fontSize:18}}>{tpl.icon}</span>
+                <span style={{fontWeight:800,fontSize:13.5,color:"#0f172a"}}>{tpl.name}</span>
+              </div>
+              <div style={{fontSize:11.5,color:"#64748b",lineHeight:1.45}}>{tpl.desc}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TacticFullscreen({ tactic, title, onClose }) {
+  return (
+    <div style={{position:"fixed",inset:0,background:"#0f172a",zIndex:9999,
+      display:"flex",flexDirection:"column",padding:"env(safe-area-inset-top) 12px 12px"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 4px"}}>
+        <div style={{color:"#fff",fontWeight:900,fontSize:18}}>{title || "Taktiktafel"}</div>
+        <button onClick={onClose} style={{padding:"10px 18px",borderRadius:11,border:"none",background:"#dc2626",color:"#fff",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>
+          Fertig
+        </button>
+      </div>
+      <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:"8px"}}>
+        <TacticField tactic={tactic} size="xl"/>
+      </div>
+      {tactic?.desc && (
+        <div style={{background:"rgba(255,255,255,.06)",borderRadius:14,padding:"12px 16px",color:"#cbd5e1",fontSize:14,textAlign:"center",lineHeight:1.55}}>
+          {tactic.desc}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ============================================================
    TeamInsights - regelbasierte Auswertung des Team-Datenstands.
    Liefert dem Trainer datengestuetzte Hinweise OHNE LLM:
    - Anwesenheit pro Spieler (letzte 8 Trainings)
@@ -3996,6 +4221,22 @@ function StyleToggle({ value, onChange, t }){
    - Team-Skill-Aggregat: schwaechste Bereiche
    - Konkrete Trainings-Empfehlung mit Begruendung
    ============================================================ */
+// Helper: extrahiert Geburts-Bandbreite aus Team-Kategorie ("F-Jugend" → [2016,2017])
+function teamYearRange(team) {
+  if (!team) return null;
+  if (team.years) {
+    const m = String(team.years).match(/(\d{4})\D+(\d{2,4})/);
+    if (m) {
+      let a = parseInt(m[1]);
+      let b = m[2].length === 2 ? 2000 + parseInt(m[2]) : parseInt(m[2]);
+      return [Math.min(a,b), Math.max(a,b)];
+    }
+    const m2 = String(team.years).match(/(\d{4})/);
+    if (m2) return [parseInt(m2[1]), parseInt(m2[1])];
+  }
+  return null;
+}
+
 function TeamInsights({ data, myTids, cl }) {
   const t = TH(cl);
   const today = now();
@@ -4062,6 +4303,96 @@ function TeamInsights({ data, myTids, cl }) {
 
   // Empfehlungs-Quote aus playerProfile.recommend
   const recCount = players.filter(p => (p.recommend||"").trim().length > 0).length;
+
+  // === SQUAD AUTO-SUGGEST ===
+  // Vereinsweit: Spieler ohne Team -> bestes Team nach Jahrgang.
+  // Spieler im falschen Team -> Hinweis.
+  const cid = cl?.id;
+  const clubPlayers = (data.playerProfiles||[]).filter(p => p.cid === cid && !p.archived && isActive(p));
+  const clubTeams = (data.teams||[]).filter(tm => tm.cid === cid);
+  const teamAvgSkill = (tm) => {
+    const tp = clubPlayers.filter(p => p.mainTid === tm.id && p.skills);
+    if (tp.length === 0) return null;
+    const sums = tp.map(p => {
+      const vs = Object.values(p.skills||{}).filter(v=>typeof v==="number"&&v>0);
+      return vs.length ? vs.reduce((a,b)=>a+b,0)/vs.length : 0;
+    }).filter(v=>v>0);
+    if (sums.length === 0) return null;
+    return sums.reduce((a,b)=>a+b,0)/sums.length;
+  };
+  const playerSkillAvg = (p) => {
+    const vs = Object.values(p.skills||{}).filter(v=>typeof v==="number"&&v>0);
+    return vs.length ? vs.reduce((a,b)=>a+b,0)/vs.length : null;
+  };
+  const bestTeamForPlayer = (p) => {
+    let best = null, bestScore = -Infinity;
+    for (const tm of clubTeams) {
+      const range = teamYearRange(tm);
+      let score = 0;
+      if (range && p.by) {
+        // Wie gut passt der Jahrgang? 0 = perfekt, 1 = 1 Jahr daneben, ...
+        const diff = p.by < range[0] ? range[0] - p.by : p.by > range[1] ? p.by - range[1] : 0;
+        score -= diff * 10;
+      }
+      // Wunschpartner bevorzugen
+      if (p.friends?.length) {
+        const friendInTeam = clubPlayers.filter(x => x.mainTid===tm.id && p.friends.includes(x.id||x.name)).length;
+        score += friendInTeam * 3;
+      }
+      if (score > bestScore) { bestScore = score; best = tm; }
+    }
+    return best ? { team: best, score: bestScore } : null;
+  };
+
+  // 1. Unzugeordnete Spieler
+  const unassigned = clubPlayers.filter(p => !p.mainTid);
+  const unassignedSuggestions = unassigned.map(p => ({
+    p,
+    suggestion: bestTeamForPlayer(p),
+  })).filter(x => x.suggestion);
+
+  // 2. Spieler im evtl. nicht optimalen Team (Jahrgang weit auseinander)
+  const possibleMismatch = clubPlayers
+    .filter(p => p.mainTid && p.by)
+    .map(p => {
+      const tm = clubTeams.find(t => t.id === p.mainTid);
+      const range = teamYearRange(tm);
+      if (!range) return null;
+      const diff = p.by < range[0] ? range[0] - p.by : p.by > range[1] ? p.by - range[1] : 0;
+      if (diff < 2) return null;
+      const best = bestTeamForPlayer(p);
+      if (!best || best.team.id === p.mainTid) return null;
+      return { p, currentTeam: tm, suggestedTeam: best.team, diff };
+    })
+    .filter(Boolean)
+    .slice(0, 6);
+
+  // === ROTATIONS-HINWEISE ===
+  // Spieler mit Skill-Schnitt deutlich ueber Team-Schnitt -> Probetraining naechsthoeheres Team
+  // Spieler mit Skill-Schnitt deutlich unter Team-Schnitt -> Probetraining gemischt
+  const rotationTips = [];
+  for (const tm of clubTeams) {
+    const teamAvg = teamAvgSkill(tm);
+    if (teamAvg == null) continue;
+    const tp = clubPlayers.filter(p => p.mainTid === tm.id);
+    for (const p of tp) {
+      const pAvg = playerSkillAvg(p);
+      if (pAvg == null) continue;
+      if (pAvg >= teamAvg + 0.8) {
+        // Zu stark -> hoehere Spielklasse zur Abwechslung
+        const stronger = clubTeams
+          .filter(otherTm => otherTm.id !== tm.id && teamAvgSkill(otherTm) > teamAvg)
+          .sort((a,b) => teamAvgSkill(b) - teamAvgSkill(a))[0];
+        if (stronger) rotationTips.push({ p, currentTeam: tm, suggestTeam: stronger, reason:"stärker als Team-Schnitt", type:"up" });
+      } else if (pAvg <= teamAvg - 0.8) {
+        // Schwacher -> niedrigere Spielklasse zur Sicherheit
+        const weaker = clubTeams
+          .filter(otherTm => otherTm.id !== tm.id && teamAvgSkill(otherTm) != null && teamAvgSkill(otherTm) < teamAvg)
+          .sort((a,b) => teamAvgSkill(a) - teamAvgSkill(b))[0];
+        if (weaker) rotationTips.push({ p, currentTeam: tm, suggestTeam: weaker, reason:"unter Team-Schnitt - mehr Erfolgserlebnisse", type:"down" });
+      }
+    }
+  }
 
   const Card = ({title,sub,children,col="#16a34a"}) => (
     <div style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",padding:"16px",marginBottom:12}}>
@@ -4159,6 +4490,63 @@ function TeamInsights({ data, myTids, cl }) {
           {reliable.length > 5 && (
             <div style={{textAlign:"center",fontSize:11,color:"#94a3b8",marginTop:5}}>+ {reliable.length-5} weitere</div>
           )}
+        </Card>
+      )}
+
+      {/* SQUAD-VORSCHLAG: unzugeordnete Spieler */}
+      {unassignedSuggestions.length > 0 && (
+        <Card title={`Kader-Vorschlag: ${unassignedSuggestions.length} unzugeordnete Spieler`} sub="Empfehlung nach Jahrgang + Wunschpartner" col="#2563eb">
+          {unassignedSuggestions.map(({p,suggestion})=>(
+            <div key={p.id} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",background:"#eff6ff",borderRadius:10,marginBottom:5,border:"1px solid #bfdbfe"}}>
+              <Av name={p.name} sz={34}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontWeight:800,fontSize:13,color:"#0f172a"}}>{p.name}</div>
+                <div style={{fontSize:11,color:"#1e40af",marginTop:1}}>
+                  Jg. {p.by||"?"} → <b>{suggestion.team.name}</b>
+                  {suggestion.team.years && ` (${suggestion.team.years})`}
+                </div>
+              </div>
+            </div>
+          ))}
+        </Card>
+      )}
+
+      {/* Mismatch-Hinweis: Spieler im Jahrgang weit daneben */}
+      {possibleMismatch.length > 0 && (
+        <Card title="Jahrgang passt nicht ganz" sub="Diese Spieler sind 2+ Jahre außerhalb der Team-Jahrgangs-Range" col="#d97706">
+          {possibleMismatch.map(({p,currentTeam,suggestedTeam,diff})=>(
+            <div key={p.id} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",background:"#fffbeb",borderRadius:10,marginBottom:5,border:"1px solid #fde68a"}}>
+              <Av name={p.name} sz={34}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontWeight:800,fontSize:13,color:"#0f172a"}}>{p.name} <span style={{color:"#94a3b8",fontWeight:600}}>(Jg. {p.by})</span></div>
+                <div style={{fontSize:11,color:"#92400e",marginTop:1,lineHeight:1.45}}>
+                  Aktuell: <b>{currentTeam?.name}</b> ({currentTeam?.years}) · {diff}J. außerhalb<br/>
+                  Vorschlag: <b>{suggestedTeam.name}</b> ({suggestedTeam.years})
+                </div>
+              </div>
+            </div>
+          ))}
+        </Card>
+      )}
+
+      {/* Rotations-Vorschläge */}
+      {rotationTips.length > 0 && (
+        <Card title="Rotation zur Abwechslung" sub="Probetraining in anderem Team — frische Reize, neue Mitspieler" col="#7c3aed">
+          {rotationTips.slice(0,6).map((tip,i)=>(
+            <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",background:"#faf5ff",borderRadius:10,marginBottom:5,border:"1px solid #d8b4fe"}}>
+              <Av name={tip.p.name} sz={34}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontWeight:800,fontSize:13,color:"#0f172a"}}>{tip.p.name}</div>
+                <div style={{fontSize:11,color:"#6b21a8",marginTop:1,lineHeight:1.45}}>
+                  {tip.currentTeam.name} → mal {tip.type==="up"?"hoch":"runter"} zu <b>{tip.suggestTeam.name}</b><br/>
+                  {tip.reason}
+                </div>
+              </div>
+              <div style={{fontSize:10,fontWeight:800,color:"#7c3aed",letterSpacing:.5}}>
+                {tip.type==="up"?"↑":"↓"}
+              </div>
+            </div>
+          ))}
         </Card>
       )}
 
@@ -4609,6 +4997,7 @@ function TrainingsLibrary({ data, myTids, cl, save, fire }) {
 
   const [editing,setEditing]=useState(null); // null | {} (neu) | training (bearbeiten)
   const [sched,setSched]=useState(null);     // Training, das terminiert wird
+  const [fullscreenTactic,setFullscreenTactic]=useState(null); // {tactic,title}
 
   const blank=()=>({ id:"tr_"+uid(), cid, ownerTid:myTeams[0]?.id||myTids[0], title:"", focus:"", blocks:[{phase:"Aufwärmen",title:"",min:10}], vis:"team", sharedTids:[] });
 
@@ -4630,6 +5019,7 @@ function TrainingsLibrary({ data, myTids, cl, save, fire }) {
     };
     return (
       <div style={{display:"flex",flexDirection:"column",gap:14}}>
+        {fullscreenTactic && <TacticFullscreen tactic={fullscreenTactic.tactic} title={fullscreenTactic.title} onClose={()=>setFullscreenTactic(null)}/>}
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
           <h3 style={{margin:0,fontSize:17,fontWeight:900,color:"#0f172a"}}>{(data.trainings||[]).some(x=>x.id===e.id)?"Training bearbeiten":"Neues Training"}</h3>
           <button onClick={()=>setEditing(null)} style={{background:"none",border:"none",color:"#64748b",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
@@ -4650,15 +5040,21 @@ function TrainingsLibrary({ data, myTids, cl, save, fire }) {
         <div style={{background:"#fff",borderRadius:12,padding:"12px 14px",border:"1.5px solid #e2e8f0"}}>
           <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.4}}>ABLAUF</div>
           {e.blocks.map((b,i)=>(
-            <div key={i} style={{display:"flex",gap:6,marginBottom:6,alignItems:"center"}}>
-              <select value={b.phase} onChange={ev=>setBlock(i,{phase:ev.target.value})} style={{padding:"8px",borderRadius:9,border:"1.5px solid #e2e8f0",fontSize:13,fontFamily:"inherit",flexShrink:0}}>
-                {TRAIN_PHASES.map(p=><option key={p} value={p}>{p}</option>)}
-              </select>
-              <input value={b.title} onChange={ev=>setBlock(i,{title:ev.target.value})} placeholder="Übung / Inhalt"
-                style={{flex:1,minWidth:0,padding:"8px 10px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",boxSizing:"border-box"}}/>
-              <input type="number" value={b.min} onChange={ev=>setBlock(i,{min:Number(ev.target.value)||0})} style={{width:52,padding:"8px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",boxSizing:"border-box"}}/>
-              <span style={{fontSize:11,color:"#94a3b8",flexShrink:0}}>Min</span>
-              {e.blocks.length>1&&<button onClick={()=>set({blocks:e.blocks.filter((_,j)=>j!==i)})} style={{background:"none",border:"none",color:"#dc2626",fontWeight:800,fontSize:16,cursor:"pointer",flexShrink:0}}>×</button>}
+            <div key={i} style={{borderBottom:i<e.blocks.length-1?"1px solid #f1f5f9":"none",paddingBottom:8,marginBottom:8}}>
+              <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                <select value={b.phase} onChange={ev=>setBlock(i,{phase:ev.target.value})} style={{padding:"8px",borderRadius:9,border:"1.5px solid #e2e8f0",fontSize:13,fontFamily:"inherit",flexShrink:0}}>
+                  {TRAIN_PHASES.map(p=><option key={p} value={p}>{p}</option>)}
+                </select>
+                <input value={b.title} onChange={ev=>setBlock(i,{title:ev.target.value})} placeholder="Übung / Inhalt"
+                  style={{flex:1,minWidth:0,padding:"8px 10px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",boxSizing:"border-box"}}/>
+                <input type="number" value={b.min} onChange={ev=>setBlock(i,{min:Number(ev.target.value)||0})} style={{width:52,padding:"8px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",boxSizing:"border-box"}}/>
+                <span style={{fontSize:11,color:"#94a3b8",flexShrink:0}}>Min</span>
+                {e.blocks.length>1&&<button onClick={()=>set({blocks:e.blocks.filter((_,j)=>j!==i)})} style={{background:"none",border:"none",color:"#dc2626",fontWeight:800,fontSize:16,cursor:"pointer",flexShrink:0}}>×</button>}
+              </div>
+              <TacticPicker
+                value={b.tactic}
+                onChange={(tactic)=>setBlock(i,{tactic})}
+                onFullscreen={(tpl)=>setFullscreenTactic({tactic:tpl,title:b.title||tpl.name})}/>
             </div>
           ))}
           <button onClick={()=>set({blocks:[...e.blocks,{phase:"Hauptteil",title:"",min:10}]})} style={{marginTop:4,background:"#f1f5f9",border:"none",borderRadius:9,padding:"8px 12px",fontSize:13,fontWeight:700,color:"#475569",cursor:"pointer",fontFamily:"inherit"}}>+ Block</button>
@@ -4695,6 +5091,7 @@ function TrainingsLibrary({ data, myTids, cl, save, fire }) {
 
   return (
     <div style={{display:"flex",flexDirection:"column",gap:12}}>
+      {fullscreenTactic && <TacticFullscreen tactic={fullscreenTactic.tactic} title={fullscreenTactic.title} onClose={()=>setFullscreenTactic(null)}/>}
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
         <h3 style={{margin:0,fontSize:17,fontWeight:900,color:"#0f172a"}}>Trainings</h3>
         {myTeams.length>0&&<button onClick={()=>setEditing(blank())} style={{padding:"9px 14px",borderRadius:10,border:"none",background:t.p,color:"#fff",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>+ Neues Training</button>}
@@ -4721,14 +5118,24 @@ function TrainingsLibrary({ data, myTids, cl, save, fire }) {
               <span style={{flexShrink:0,fontSize:10.5,fontWeight:800,padding:"3px 8px",borderRadius:99,background:tr.vis==="club"?"#dcfce7":tr.vis==="teams"?"#dbeafe":"#f1f5f9",color:tr.vis==="club"?"#15803d":tr.vis==="teams"?"#1d4ed8":"#64748b"}}>{VIS_LABEL[tr.vis]}</span>
             </div>
             {(tr.blocks||[]).length>0&&(
-              <div style={{marginTop:10,paddingTop:10,borderTop:"1px solid #f1f5f9",display:"flex",flexDirection:"column",gap:4}}>
-                {tr.blocks.map((b,i)=>(
-                  <div key={i} style={{display:"flex",gap:8,fontSize:12.5}}>
+              <div style={{marginTop:10,paddingTop:10,borderTop:"1px solid #f1f5f9",display:"flex",flexDirection:"column",gap:6}}>
+                {tr.blocks.map((b,i)=>{
+                  const tpl = b.tactic?.template ? TACTIC_TEMPLATES.find(x=>x.id===b.tactic.template) : null;
+                  return (
+                  <div key={i} style={{display:"flex",gap:8,alignItems:"center"}}>
+                    {tpl && <button onClick={(ev)=>{ev.stopPropagation();setFullscreenTactic({tactic:tpl,title:b.title||tpl.name});}}
+                      title="Taktiktafel auf dem Platz vergrößern"
+                      style={{padding:0,background:"none",border:"none",cursor:"pointer",flexShrink:0}}>
+                      <TacticField tactic={tpl} size="xs" showLabels={false}/>
+                    </button>}
+                    <div style={{display:"flex",gap:8,fontSize:12.5,flex:1}}>
                     <span style={{fontWeight:700,color:t.p,minWidth:78,flexShrink:0}}>{b.phase}</span>
                     <span style={{flex:1,color:"#334155"}}>{b.title||"—"}</span>
                     <span style={{color:"#94a3b8",flexShrink:0}}>{b.min} Min</span>
+                    </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
             <div style={{display:"flex",gap:8,marginTop:12}}>
