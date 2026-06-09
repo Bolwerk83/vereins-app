@@ -2029,10 +2029,17 @@ function OnboardingWizard({ cl, data, save, fire, onDone }) {
         cat: cat.label, years: cat.years
       }));
     });
+    // Kein Passwort eingegeben? Dann automatisch einen kurzen Login-Code
+    // erzeugen und dem Admin anzeigen - sonst gibt es einen Trainer, dessen
+    // Passwort niemand kennt ("trainer" wurde frueher still gesetzt).
+    const genCode = (trainerName.trim() && !trainerPw.trim())
+      ? Math.random().toString(36).slice(2,6).toUpperCase()
+      : null;
+    const trainerPlainPw = trainerPw.trim() || genCode;
     const newTrainers = trainerName.trim() ? [{
       id: uid(), cid: cl.id, name: trainerName.trim(),
       role: "Trainer", tids: newTeams.slice(0,1).map(x=>x.id),
-      pw: hashPw(trainerPw||"trainer"), phone: "", email: ""
+      pw: hashPw(trainerPlainPw), phone: "", email: ""
     }] : [];
     const newFields = fieldName.trim() ? [{
       id: uid(), cid: cl.id, name: fieldName.trim(),
@@ -2045,6 +2052,9 @@ function OnboardingWizard({ cl, data, save, fire, onDone }) {
       trainers: [...(data.trainers||[]),...newTrainers],
       fields: [...(data.fields||[]),...newFields],
     });
+    if (genCode) {
+      window.alert(`Login-Code für Trainer "${trainerName.trim()}":\n\n${genCode}\n\nBitte notieren und an den Trainer weitergeben. Du kannst ihn jederzeit im Trainer-Tab ändern.`);
+    }
     fire("Verein eingerichtet - Los geht es!");
     onDone();
   };
@@ -2170,8 +2180,8 @@ function OnboardingWizard({ cl, data, save, fire, onDone }) {
                 <PwInput value={trainerPw} onChange={e=>setTrainerPw(e.target.value)}
                   placeholder="Passwort für den Trainer"
                   style={{padding:"12px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none"}}/>
-                {trainerName&&!trainerPw&&<div style={{fontSize:12,color:"#d97706",background:"#fef3c7",borderRadius:9,padding:"8px 12px"}}>
-                  Bitte auch ein Passwort vergeben.
+                {trainerName&&!trainerPw&&<div style={{fontSize:12,color:"#0891b2",background:"#e0f2fe",borderRadius:9,padding:"8px 12px"}}>
+                  Leer lassen ist ok - dann wird automatisch ein Login-Code erzeugt und dir angezeigt.
                 </div>}
               </div>
               <button onClick={()=>{ setTrainerName(""); setTrainerPw(""); setStep(5); }}
