@@ -17707,7 +17707,7 @@ function BookingModal({ field,cellStart,date,data,save,fire,cl,myTids,session,on
   );
 }
 
-function TrainerCard({ tr, data, onEdit, onDelete, onContact, onToggleActive }) {
+function TrainerCard({ tr, data, onEdit, onDelete, onContact, onShare, onToggleActive }) {
   const myTeams = (data.teams||[]).filter(tm=>(tr.tids||[]).includes(tm.id));
   const playerCount = myTeams.reduce((s,tm)=>s+(data.playerProfiles||[]).filter(p=>p.mainTid===tm.id).length,0);
   const myEvents = (data.events||[]).filter(e=>(tr.tids||[]).includes(e.tid));
@@ -17736,6 +17736,9 @@ function TrainerCard({ tr, data, onEdit, onDelete, onContact, onToggleActive }) 
             style={{width:30,height:30,borderRadius:9,background:inactive?"#fef3c7":"#f1f5f9",border:"none",color:inactive?"#854d0e":"#64748b",cursor:"pointer",fontSize:13,fontWeight:700}}>
             {inactive?"▶":"⏸"}
           </button>}
+          {onShare&&<button onClick={onShare} title="Zugang (Link + Passwort) an Trainer senden"
+          style={{width:30,height:30,borderRadius:9,background:"#ecfeff",
+            border:"none",color:"#0891b2",cursor:"pointer",fontSize:13,fontWeight:700}}>↗</button>}
           {onContact&&<button onClick={onContact}
           style={{width:30,height:30,borderRadius:9,background:"#f0fdf4",
             border:"none",color:"#16a34a",cursor:"pointer",fontSize:13,fontWeight:700}}>K</button>}
@@ -17755,12 +17758,56 @@ function TrainerCard({ tr, data, onEdit, onDelete, onContact, onToggleActive }) 
   );
 }
 
+// Admin teilt Trainer-Zugang (Link + Passwort) per WhatsApp/Teilen/Kopieren.
+// Da Passwoerter nur gehasht gespeichert sind, kann ein bestehendes Passwort
+// nicht ausgelesen werden - deshalb wird hier ein (vorgeschlagener, editierbarer)
+// Code gesetzt UND verschickt, damit das geteilte Passwort garantiert passt.
+function TrainerAccessShare({ tr, cl, data, save, fire, onClose }) {
+  const link = window.location.origin + "?club=" + (cl?.slug||cl?.id);
+  const [code, setCode] = useState(()=>Math.random().toString(36).slice(2,6).toUpperCase());
+  const [copied, setCopied] = useState(false);
+  const msg = `Hallo ${tr.name},\n\nhier dein Zugang zur Vereins-App von ${cl?.name||"unserem Verein"} als Trainer:\n\nLink: ${link}\nPasswort: ${code.trim()}\n\nSo geht's: Link oeffnen, "${cl?.name||"Verein"}" auswaehlen, Rolle "Trainer", deinen Namen antippen und das Passwort eingeben.`;
+  const persist = () => {
+    const c = code.trim(); if(!c) return false;
+    save({...data, trainers:(data.trainers||[]).map(x=>x.id===tr.id?{...x, pw:hashPw(c)}:x)});
+    return true;
+  };
+  const onWhatsApp = () => { if(!persist()) return; window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank"); fire("Passwort gesetzt & WhatsApp geoeffnet"); onClose(); };
+  const onShareNative = async () => {
+    if(!persist()) return;
+    if(navigator.share){ try{ await navigator.share({ title:cl?.name||"Vereins-App", text:msg }); }catch{} }
+    else { navigator.clipboard?.writeText(msg); }
+    fire("Passwort gesetzt"); onClose();
+  };
+  const onCopy = () => { if(!persist()) return; navigator.clipboard?.writeText(msg); setCopied(true); setTimeout(()=>setCopied(false),2000); fire("Passwort gesetzt & kopiert"); };
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:850,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={onClose}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"90dvh",overflowY:"auto",padding:"20px 22px 40px"}}>
+        <h3 style={{fontWeight:900,fontSize:18,color:"#0f172a",marginBottom:4}}>Zugang an {tr.name} senden</h3>
+        <p style={{fontSize:12.5,color:"#64748b",margin:"0 0 16px",lineHeight:1.5}}>Beim Senden wird das unten stehende Passwort fuer diesen Trainer gesetzt und zusammen mit dem Link verschickt. Ein evtl. altes Passwort wird damit ersetzt.</p>
+        <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:5}}>LINK</div>
+        <div style={{background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:11,padding:"10px 13px",fontSize:13,color:"#334155",wordBreak:"break-all",marginBottom:14}}>{link}</div>
+        <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:5}}>PASSWORT</div>
+        <input value={code} onChange={e=>setCode(e.target.value)} placeholder="Passwort"
+          style={{width:"100%",padding:"11px 14px",fontSize:15,fontWeight:700,letterSpacing:1,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",marginBottom:16,boxSizing:"border-box"}}/>
+        <div style={{display:"flex",flexDirection:"column",gap:9}}>
+          <button onClick={onWhatsApp} disabled={!code.trim()} style={{width:"100%",padding:"12px",borderRadius:12,border:"none",background:code.trim()?"#25D366":"#e2e8f0",color:code.trim()?"#fff":"#94a3b8",fontWeight:800,cursor:code.trim()?"pointer":"not-allowed",fontFamily:"inherit"}}>Per WhatsApp senden</button>
+          {typeof navigator!=="undefined"&&navigator.share&&<button onClick={onShareNative} disabled={!code.trim()} style={{width:"100%",padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#334155",fontWeight:800,cursor:code.trim()?"pointer":"not-allowed",fontFamily:"inherit"}}>Teilen ...</button>}
+          <button onClick={onCopy} disabled={!code.trim()} style={{width:"100%",padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#334155",fontWeight:800,cursor:code.trim()?"pointer":"not-allowed",fontFamily:"inherit"}}>{copied?"Kopiert!":"Text kopieren"}</button>
+          <button onClick={onClose} style={{width:"100%",padding:"11px",borderRadius:12,border:"none",background:"none",color:"#94a3b8",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Schliessen</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function TrainersTab({data,cid,save,fire,session}) {
   const [showContactSetup, setShowContactSetup] = React.useState(null);
   const myTeams = (data.teams||[]).filter(x=>x.cid===cid);
   const myTrs   = (data.trainers||[]).filter(x=>x.cid===cid);
   const [showForm, setShowForm] = useState(false);
   const [showBroadcast, setShowBroadcast] = useState(false);
+  const [showAccessShare, setShowAccessShare] = useState(null);
   const [editId,   setEditId]   = useState(null);
   const [f, setF] = useState({name:"",pw:"",tids:[],phone:"",email:""});
   const u = p => setF(prev=>({...prev,...p}));
@@ -17784,6 +17831,7 @@ function TrainersTab({data,cid,save,fire,session}) {
     <div>
       <TrainerStatsView data={data} cid={cid}/>
       {showBroadcast&&<BroadcastModal data={data} cid={cid} session={session} save={save} fire={fire} onClose={()=>setShowBroadcast(false)}/>}
+      {showAccessShare&&<TrainerAccessShare tr={showAccessShare} cl={cl} data={data} save={save} fire={fire} onClose={()=>setShowAccessShare(null)}/>}
       {showContactSetup&&<TrainerContactSettings trainer={showContactSetup} cl={cl} onClose={()=>setShowContactSetup(null)} onSave={updated=>{ save({...data,trainers:(data.trainers||[]).map(x=>x.id===updated.id?updated:x)}); setShowContactSetup(null); fire("Kontakt gespeichert"); }}/>}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
         <div><p style={{fontWeight:900,fontSize:16,color:"#0f172a",margin:0}}>Trainer</p><p style={{fontSize:12,color:"#64748b",marginTop:2,margin:0}}>{myTrs.length} gesamt</p></div>
@@ -17800,6 +17848,7 @@ function TrainersTab({data,cid,save,fire,session}) {
       )}
       {myTrs.map(tr=><TrainerCard key={tr.id} tr={tr} data={data}
         onContact={()=>setShowContactSetup(tr)}
+        onShare={()=>setShowAccessShare(tr)}
         onEdit={()=>openEdit(tr)}
         onDelete={()=>del(tr.id)}
         onToggleActive={()=>{
