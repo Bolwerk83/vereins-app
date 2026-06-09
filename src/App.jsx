@@ -20575,14 +20575,18 @@ function buildSchedule(setup){
 function exportTournPDF(ev){alert("PDF-Export in Entwicklung");}
 
 const SIZE_LABEL = { 1:"Ganzer Platz", 2:"Halbierung", 3:"Drittelung", 4:"Viertelung", 8:"Achtelung" };
-function TournSetup({ setup, cl, t, onUpdate, fields=[] }){
+function TournSetup({ setup, cl, t, onUpdate, fields=[], ev=null }){
   const [nFields,setNFields]=useState(setup.fields||2);
   const [gameTime,setGameTime]=useState(setup.gameTime||8);
   const [clubName,setClubName]=useState(setup.clubName||cl?.name||"");
   const [teams,setTeams]=useState(setup.clubs||[]);
   const [pitches,setPitches]=useState(setup.pitches||[]); // [{id,name,surface,split}]
   const [nt,setNt]=useState("");
+  const [viewPw,setViewPw]=useState("");
+  const [ctrlPw,setCtrlPw]=useState("");
+  const [copied,setCopied]=useState(false);
   const [saved,setSaved]=useState(false);
+  const visitorLink = ev ? `${(typeof window!=="undefined"?window.location.origin:"")}/?tournament=${ev.id}&club=${encodeURIComponent(cl?.slug||cl?.id||"")}` : "";
   const sizeOf = f => f.split||f.segments||1;
   const areasOf = list => list.reduce((s,p)=>s+(p.split||1),0);
   if(!onUpdate){
@@ -20604,7 +20608,10 @@ function TournSetup({ setup, cl, t, onUpdate, fields=[] }){
   const addTeam=()=>{ const n=nt.trim(); if(!n)return; setTeams(a=>[...a,n]); setNt(""); setSaved(false); };
   const save=()=>{
     const eff = pitches.length ? areasOf(pitches) : Number(nFields)||1;
-    onUpdate({setup:{...setup, fields:eff, pitches, gameTime:Number(gameTime)||1, clubName:clubName.trim()||cl?.name, clubs:teams}});
+    onUpdate({setup:{...setup, fields:eff, pitches, gameTime:Number(gameTime)||1, clubName:clubName.trim()||cl?.name, clubs:teams,
+      viewPwHash: viewPw.trim()?hashPw(viewPw.trim()):setup.viewPwHash,
+      ctrlPwHash: ctrlPw.trim()?hashPw(ctrlPw.trim()):setup.ctrlPwHash}});
+    setViewPw(""); setCtrlPw("");
     setSaved(true); setTimeout(()=>setSaved(false),2000);
   };
   return (
@@ -20660,6 +20667,32 @@ function TournSetup({ setup, cl, t, onUpdate, fields=[] }){
           <button onClick={addTeam} disabled={!nt.trim()} style={{padding:"10px 15px",borderRadius:10,border:"none",background:nt.trim()?t.p:"#e2e8f0",color:nt.trim()?"#fff":"#94a3b8",fontWeight:800,fontSize:14,cursor:nt.trim()?"pointer":"default",fontFamily:"inherit"}}>+</button>
         </div>
       </div>
+      {/* Besucher-Zugang: zwei Passwoerter (Ansehen / Steuern) + Link */}
+      <div style={{background:"#fff",borderRadius:14,padding:"14px",border:"1.5px solid #e2e8f0"}}>
+        <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:4,letterSpacing:.4}}>BESUCHER-ZUGANG</div>
+        <p style={{fontSize:12,color:"#94a3b8",marginBottom:10,lineHeight:1.5}}>Gäste öffnen den Link und sehen Infos, Spielplan und Live-Timer. Das Steuer-Passwort erlaubt zusätzlich das Bedienen des Timers (für Trainer/Zeitnehmer).</p>
+        <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:10}}>
+          <div>
+            <div style={{fontSize:11,fontWeight:700,color:"#475569",marginBottom:4}}>Ansehen-Passwort {setup.viewPwHash&&<span style={{color:"#16a34a"}}>· gesetzt</span>}</div>
+            <input value={viewPw} onChange={e=>{setViewPw(e.target.value);setSaved(false);}} placeholder={setup.viewPwHash?"Neues Passwort (leer = unverändert)":"z.B. turnier25"}
+              style={{width:"100%",padding:"10px 12px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",boxSizing:"border-box"}}/>
+          </div>
+          <div>
+            <div style={{fontSize:11,fontWeight:700,color:"#475569",marginBottom:4}}>Steuern-Passwort (Timer) {setup.ctrlPwHash&&<span style={{color:"#16a34a"}}>· gesetzt</span>}</div>
+            <input value={ctrlPw} onChange={e=>{setCtrlPw(e.target.value);setSaved(false);}} placeholder={setup.ctrlPwHash?"Neues Passwort (leer = unverändert)":"z.B. zeit25"}
+              style={{width:"100%",padding:"10px 12px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",boxSizing:"border-box"}}/>
+          </div>
+        </div>
+        {ev&&setup.viewPwHash&&(
+          <div style={{display:"flex",gap:8,alignItems:"center"}}>
+            <div style={{flex:1,minWidth:0,fontSize:11,color:"#475569",background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:9,padding:"8px 10px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontFamily:"monospace"}}>{visitorLink}</div>
+            <button onClick={()=>{navigator.clipboard?.writeText(visitorLink);setCopied(true);setTimeout(()=>setCopied(false),2000);}} style={{flexShrink:0,padding:"8px 13px",borderRadius:9,border:"none",background:t.p,color:"#fff",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{copied?"Kopiert ✓":"Kopieren"}</button>
+            <button onClick={()=>window.open(`https://wa.me/?text=${encodeURIComponent("Turnier "+(clubName||cl?.name||"")+" – Spielplan & Live-Timer: "+visitorLink)}`,"_blank")} style={{flexShrink:0,padding:"8px 12px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:"#16a34a",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>WhatsApp</button>
+          </div>
+        )}
+        {ev&&!setup.viewPwHash&&<p style={{fontSize:11,color:"#94a3b8"}}>Ansehen-Passwort setzen und speichern, dann erscheint hier der Teilen-Link.</p>}
+      </div>
+
       <button onClick={save} style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:saved?"#16a34a":t.p,color:"#fff",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>{saved?"Gespeichert ✓":"Setup speichern"}</button>
     </div>
   );
@@ -20730,9 +20763,9 @@ function TournView({ ev,user,onVote,onUpdate,cl,players,isHelper=false,fields=[]
         ))}
       </div>
       {stab==="info"&&<PollAttend ev={ev} user={user} onVote={onVote} cl={cl}/>}
-      {stab==="setup"&&!isHelper&&<TournSetup setup={setup} cl={cl} t={t} onUpdate={onUpdate} fields={fields}/>}
+      {stab==="setup"&&!isHelper&&<TournSetup setup={setup} cl={cl} t={t} onUpdate={onUpdate} fields={fields} ev={ev}/>}
       {stab==="plan"&&<TournPlan ev={ev} setup={setup} t={t} onUpdate={onUpdate} isHelper={isHelper}/>}
-      {stab==="timer"&&<CompactTimer ev={ev} cl={cl}/>}
+      {stab==="timer"&&<CompactTimer ev={ev} cl={cl} canControl={!!onUpdate} onTimer={arr=>onUpdate&&onUpdate({timer:arr})}/>}
       {stab==="split"&&<div style={{background:"#f8fafc",borderRadius:14,padding:"14px"}}>
         <p style={{fontWeight:700,color:"#334155",marginBottom:8}}>Team-Aufteilung</p>
         <p style={{fontSize:13,color:"#64748b"}}>Spieler zufällig auf Teams aufteilen.</p>
@@ -20745,56 +20778,189 @@ function TournView({ ev,user,onVote,onUpdate,cl,players,isHelper=false,fields=[]
   );
 }
 
-function CompactTimer({ ev,cl }) {
+// Spielflächen eines Turniers (halbierter Platz = mehrere Flächen)
+function tournLanes(ev){
+  const out=[]; const pitches=ev?.setup?.pitches;
+  if(pitches&&pitches.length){
+    pitches.forEach(p=>{ const n=Math.max(1,p.split||1); for(let i=0;i<n;i++) out.push({ label: n>1?`${p.name} ${String.fromCharCode(65+i)}`:p.name, sub:p.surface||"" }); });
+  } else { const cnt=ev?.setup?.fields||2; for(let i=0;i<cnt;i++) out.push({ label:`Feld ${i+1}`, sub:"" }); }
+  return out;
+}
+// Aktuelle Sekunden einer Bahn aus dem persistierten Zustand (live, ohne Dauer-Writes)
+const laneSec = l => { if(!l) return 0; const base=Number(l.base)||0; return l.running&&l.startedAt ? base+Math.max(0,Math.floor((Date.now()-l.startedAt)/1000)) : base; };
+
+// Cloud-synchroner Timer: Quelle ist ev.timer (pro Bahn {base,running,startedAt}).
+// canControl steuert, ob Start/Pause/Reset moeglich ist; onTimer persistiert.
+function CompactTimer({ ev,cl,canControl=false,onTimer }) {
   const t=TH(cl);
   const dur=(ev.setup?.gameTime||8)*60;
-  // Spielflächen aus den ausgewählten Plätzen ableiten (Größe beachten: halbierter Platz = 2 Flächen)
-  const lanes=React.useMemo(()=>{
-    const pitches=ev.setup?.pitches;
-    const out=[];
-    if(pitches&&pitches.length){
-      pitches.forEach(p=>{
-        const n=Math.max(1,p.split||1);
-        for(let i=0;i<n;i++) out.push({ label: n>1?`${p.name} ${String.fromCharCode(65+i)}`:p.name, sub:p.surface||"" });
-      });
-    } else {
-      const cnt=ev.setup?.fields||2;
-      for(let i=0;i<cnt;i++) out.push({ label:`Feld ${i+1}`, sub:"" });
-    }
-    return out;
-  },[ev.setup]);
-  const [times,setTimes]=useState(()=>lanes.map(()=>({sec:0,running:false})));
-  // Bei Änderung der Platz-Anzahl Timer-Liste angleichen (laufende Zeiten erhalten)
-  useEffect(()=>{ setTimes(prev=> lanes.map((_,i)=> prev[i]||{sec:0,running:false})); },[lanes.length]);
-  useEffect(()=>{
-    const iv=setInterval(()=>{
-      setTimes(prev=>prev.map(f=>f.running?{...f,sec:Math.min(f.sec+1,dur*2)}:f));
-    },1000);
-    return()=>clearInterval(iv);
-  },[dur]);
+  const lanes=React.useMemo(()=>tournLanes(ev),[ev.setup]);
+  const timer = (Array.isArray(ev.timer)&&ev.timer.length===lanes.length) ? ev.timer : lanes.map(()=>({base:0,running:false,startedAt:null}));
+  const [,setTick]=useState(0);
+  useEffect(()=>{ const iv=setInterval(()=>setTick(x=>x+1),1000); return()=>clearInterval(iv); },[]);
+  const commit=arr=>onTimer&&onTimer(arr);
+  const toggle=i=>{ const l=timer[i]; commit(timer.map((x,j)=>j!==i?x:(x.running?{base:laneSec(x),running:false,startedAt:null}:{base:Number(x.base)||0,running:true,startedAt:Date.now()}))); };
+  const reset=i=>commit(timer.map((x,j)=>j===i?{base:0,running:false,startedAt:null}:x));
   const fmt=s=>`${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
   return (
     <div style={{display:"flex",flexDirection:"column",gap:10}}>
-      {times.map((f,i)=>(
+      {lanes.map((ln,i)=>{ const sec=laneSec(timer[i]); const running=!!timer[i]?.running; return (
         <div key={i} style={{background:"#fff",borderRadius:14,padding:"14px",border:"1.5px solid #e2e8f0"}}>
           <div style={{display:"flex",alignItems:"baseline",gap:8,marginBottom:6}}>
-            <span style={{fontWeight:800}}>{lanes[i]?.label||`Feld ${i+1}`}</span>
-            {lanes[i]?.sub&&<span style={{fontSize:12,color:"#94a3b8",fontWeight:600}}>{lanes[i].sub}</span>}
+            <span style={{fontWeight:800}}>{ln.label||`Feld ${i+1}`}</span>
+            {ln.sub&&<span style={{fontSize:12,color:"#94a3b8",fontWeight:600}}>{ln.sub}</span>}
+            {running&&<span style={{marginLeft:"auto",fontSize:11,fontWeight:800,color:"#16a34a"}}>● läuft</span>}
           </div>
-          <div style={{fontWeight:900,fontSize:36,color:f.sec>=dur?"#dc2626":t.p,fontFamily:"monospace",marginBottom:8}}>{fmt(f.sec)}</div>
-          <div style={{display:"flex",gap:8}}>
-            <button onClick={()=>setTimes(p=>p.map((x,j)=>j===i?{...x,running:!x.running}:x))}
-              style={{flex:1,padding:"9px",borderRadius:10,border:"none",background:t.p,color:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-              {f.running?"Pause":"Start"}
+          <div style={{fontWeight:900,fontSize:36,color:sec>=dur?"#dc2626":t.p,fontFamily:"monospace",marginBottom:canControl?8:0}}>{fmt(sec)}{sec>=dur&&<span style={{fontSize:14,marginLeft:8,color:"#dc2626"}}>Schluss!</span>}</div>
+          {canControl&&<div style={{display:"flex",gap:8}}>
+            <button onClick={()=>toggle(i)}
+              style={{flex:1,padding:"9px",borderRadius:10,border:"none",background:running?"#d97706":t.p,color:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+              {running?"Pause":"Start"}
             </button>
-            <button onClick={()=>setTimes(p=>p.map((x,j)=>j===i?{sec:0,running:false}:x))}
+            <button onClick={()=>reset(i)}
               style={{padding:"9px 14px",borderRadius:10,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
               Reset
             </button>
-          </div>
+          </div>}
         </div>
-      ))}
+      );})}
+      {lanes.length===0&&<p style={{fontSize:13,color:"#94a3b8",textAlign:"center",padding:"10px"}}>Keine Spielflächen – im Setup Plätze/Felder festlegen.</p>}
     </div>
+  );
+}
+
+// Oeffentliche, passwortgeschuetzte Turnier-Ansicht fuer Gaeste (per Link).
+function TournamentPublic({ eid, clubParam }){
+  const [phase,setPhase]=useState("loading"); // loading | notfound | error | locked | view
+  const [data,setData]=useState(null);
+  const [cid,setCid]=useState(null);
+  const [ev,setEv]=useState(null);
+  const [authed,setAuthed]=useState(false);
+  const [pw,setPw]=useState(""); const [err,setErr]=useState(false);
+  const [showCtrl,setShowCtrl]=useState(false); const [cpw,setCpw]=useState(""); const [cerr,setCerr]=useState(false); const [ctrl,setCtrl]=useState(false);
+  const [tab,setTab]=useState("info");
+  const cidRef=useRef(null);
+
+  const pickEv = cd => (cd?.events||[]).find(x=>x.id===eid);
+  const load=async ()=>{
+    try{
+      try{ await auth.ensureMember(); }catch{}
+      const dir=await sb.getDirectory();
+      const club=(dir?.clubs||[]).find(c=>c.slug===clubParam||c.id===clubParam);
+      if(!club){ setPhase("notfound"); return; }
+      cidRef.current=club.id; setCid(club.id);
+      const cd=await sb.getClub(club.id);
+      const e=pickEv(cd);
+      if(!e){ setData(cd); setPhase("notfound"); return; }
+      setData(cd); setEv(e);
+      if(!e.setup?.viewPwHash){ setAuthed(true); setPhase("view"); }
+      else setPhase("locked");
+    }catch{ setPhase("error"); }
+  };
+  useEffect(()=>{
+    load();
+    const iv=setInterval(async()=>{
+      try{ const cur=cidRef.current; if(!cur) return; if(sb._writing) return;
+        const cd=await sb.getClub(cur); if(cd){ const e=pickEv(cd); setData(cd); if(e) setEv(e); } }catch{}
+    },6000);
+    return ()=>clearInterval(iv);
+  // eslint-disable-next-line
+  },[]);
+
+  const cl = (data?.clubs||[]).find(c=>c.id===cid) || { pri:"#16a34a", name: ev?.setup?.clubName||"Turnier" };
+  const t=TH(cl);
+  const tryView=()=>{ if(checkPw(pw, ev?.setup?.viewPwHash||"")){ setAuthed(true); setPhase("view"); } else { setErr(true); setTimeout(()=>setErr(false),1600); } };
+  const tryCtrl=()=>{ if(checkPw(cpw, ev?.setup?.ctrlPwHash||"")){ setCtrl(true); setShowCtrl(false); setCpw(""); } else { setCerr(true); setTimeout(()=>setCerr(false),1600); } };
+  const saveTimer=async (arr)=>{
+    const cur=cidRef.current; if(!cur||!data) return;
+    const next={...data, events:(data.events||[]).map(x=>x.id===eid?{...x,timer:arr}:x)};
+    setData(next); setEv(e=>e?{...e,timer:arr}:e);
+    try{ await sb.set(next, cur); }catch{}
+  };
+
+  const Shell=({children})=>(
+    <div style={{minHeight:"100dvh",background:"#f0f4f8"}}>
+      <style>{CSS}</style>
+      <div style={{background:`linear-gradient(135deg,${t.s||"#052e16"},${t.p}cc)`,padding:"22px 18px 18px",color:"#fff"}}>
+        <div style={{maxWidth:560,margin:"0 auto"}}>
+          <div style={{fontSize:12,fontWeight:700,opacity:.7,letterSpacing:.4}}>{(ev?.setup?.clubName||cl.name||"")} · TURNIER</div>
+          <div style={{fontWeight:900,fontSize:21,marginTop:2}}>{ev?.title||"Turnier"}</div>
+          {ev&&<div style={{fontSize:13,opacity:.85,marginTop:3}}>{fmtD(ev.date)}{ev.time?" · "+ev.time+" Uhr":""}{ev.loc?" · "+ev.loc:""}</div>}
+        </div>
+      </div>
+      <div style={{maxWidth:560,margin:"0 auto",padding:"16px"}}>{children}</div>
+    </div>
+  );
+
+  if(phase==="loading") return <Shell><p style={{textAlign:"center",color:"#94a3b8",padding:"30px",fontWeight:700}}>Lädt …</p></Shell>;
+  if(phase==="notfound") return <Shell><div style={{background:"#fff",borderRadius:16,padding:"26px",textAlign:"center",border:"1.5px solid #e2e8f0"}}><p style={{fontWeight:800,color:"#334155"}}>Turnier nicht gefunden</p><p style={{fontSize:13,color:"#94a3b8",marginTop:6}}>Der Link ist ungültig oder das Turnier wurde entfernt.</p></div></Shell>;
+  if(phase==="error") return <Shell><div style={{background:"#fff",borderRadius:16,padding:"26px",textAlign:"center",border:"1.5px solid #e2e8f0"}}><p style={{fontWeight:800,color:"#334155"}}>Verbindung fehlgeschlagen</p><p style={{fontSize:13,color:"#94a3b8",marginTop:6}}>Bitte später erneut versuchen.</p></div></Shell>;
+
+  if(phase==="locked"||!authed) return (
+    <Shell>
+      <div style={{background:"#fff",borderRadius:18,padding:"22px",border:"1.5px solid #e2e8f0",maxWidth:360,margin:"10px auto"}}>
+        <p style={{fontWeight:800,fontSize:16,color:"#0f172a",marginBottom:4}}>Passwort eingeben</p>
+        <p style={{fontSize:13,color:"#64748b",marginBottom:14}}>Dieser Turnier-Link ist passwortgeschützt.</p>
+        <PwInput value={pw} onChange={e=>{setPw(e.target.value);setErr(false);}} onKeyDown={e=>{if(e.key==="Enter")tryView();}} placeholder="Passwort" autoFocus
+          style={{width:"100%",padding:"12px 14px",fontSize:16,border:`2px solid ${err?"#fca5a5":"#e2e8f0"}`,borderRadius:12,outline:"none",marginBottom:err?6:12,boxSizing:"border-box"}}/>
+        {err&&<p style={{fontSize:12,color:"#dc2626",fontWeight:700,marginBottom:10}}>Falsches Passwort</p>}
+        <button onClick={tryView} disabled={!pw.trim()} style={{width:"100%",padding:"12px",borderRadius:12,border:"none",background:pw.trim()?t.p:"#e2e8f0",color:pw.trim()?"#fff":"#94a3b8",fontWeight:800,fontSize:15,cursor:pw.trim()?"pointer":"default",fontFamily:"inherit"}}>Ansehen</button>
+      </div>
+      <AffiliateBanner trigger="events" style={{maxWidth:360,margin:"14px auto 0"}}/>
+    </Shell>
+  );
+
+  // Angemeldet: Inhalte
+  const teams=(ev?.setup?.clubs||[]).filter(Boolean);
+  return (
+    <Shell>
+      <div style={{display:"flex",gap:6,marginBottom:14,overflowX:"auto",scrollbarWidth:"none"}}>
+        {[["info","Info"],["plan","Spielplan"],["timer","Live-Timer"]].map(([id,lb])=>(
+          <button key={id} onClick={()=>setTab(id)} style={{padding:"8px 15px",borderRadius:99,border:`2px solid ${tab===id?t.p:"#e2e8f0"}`,background:tab===id?t.p:"#fff",color:tab===id?"#fff":"#475569",fontWeight:700,fontSize:13,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit"}}>{lb}</button>
+        ))}
+      </div>
+
+      <AffiliateBanner trigger="events"/>
+
+      {tab==="info"&&(
+        <div style={{background:"#fff",borderRadius:16,padding:"16px",border:"1.5px solid #e2e8f0"}}>
+          {ev?.note&&<div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:12,padding:"10px 13px",fontSize:13,color:"#92400e",fontWeight:500,marginBottom:12}}>{ev.note}</div>}
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {[["Ausrichter",ev?.setup?.clubName||cl.name],["Datum",fmtD(ev?.date||now())],["Beginn",ev?.time||"-"],["Ort",ev?.loc||"-"],["Spielzeit",(ev?.setup?.gameTime||"-")+" Min"],["Teams",teams.length||"-"]].map(([k,v])=>(
+              <div key={k} style={{display:"flex",gap:10}}><span style={{fontSize:13,color:"#94a3b8",fontWeight:700,minWidth:90}}>{k}</span><span style={{fontSize:14,fontWeight:700,color:"#0f172a"}}>{v}</span></div>
+            ))}
+          </div>
+          {teams.length>0&&<div style={{marginTop:14}}><div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.4}}>TEILNEHMER</div><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{teams.map((tm,i)=><span key={i} style={{background:"#f1f5f9",borderRadius:8,padding:"5px 11px",fontSize:13,fontWeight:700,color:"#475569"}}>{tm}</span>)}</div></div>}
+        </div>
+      )}
+
+      {tab==="plan"&&<TournPlan ev={ev} setup={ev?.setup||{}} t={t} onUpdate={null} isHelper={true}/>}
+
+      {tab==="timer"&&(
+        <div>
+          {ev?.setup?.ctrlPwHash&&!ctrl&&(
+            <div style={{marginBottom:12}}>
+              {!showCtrl
+                ? <button onClick={()=>setShowCtrl(true)} style={{width:"100%",padding:"11px",borderRadius:12,border:`1.5px dashed ${t.p}`,background:"transparent",color:t.p,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Timer steuern (für Trainer/Zeitnehmer)</button>
+                : <div style={{background:"#fff",borderRadius:14,padding:"14px",border:"1.5px solid #e2e8f0"}}>
+                    <div style={{fontSize:12,fontWeight:800,color:"#64748b",marginBottom:8}}>STEUER-PASSWORT</div>
+                    <div style={{display:"flex",gap:8}}>
+                      <input type="password" value={cpw} onChange={e=>{setCpw(e.target.value);setCerr(false);}} onKeyDown={e=>{if(e.key==="Enter")tryCtrl();}} placeholder="Passwort" autoFocus
+                        style={{flex:1,padding:"10px 12px",fontSize:15,border:`1.5px solid ${cerr?"#fca5a5":"#e2e8f0"}`,borderRadius:10,outline:"none"}}/>
+                      <button onClick={tryCtrl} style={{padding:"0 16px",borderRadius:10,border:"none",background:t.p,color:"#fff",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>OK</button>
+                    </div>
+                    {cerr&&<p style={{fontSize:12,color:"#dc2626",fontWeight:700,marginTop:6}}>Falsches Passwort</p>}
+                  </div>}
+            </div>
+          )}
+          {ctrl&&<div style={{fontSize:12,fontWeight:800,color:"#16a34a",marginBottom:10,textAlign:"center"}}>● Steuer-Modus aktiv</div>}
+          <CompactTimer ev={ev} cl={cl} canControl={ctrl} onTimer={saveTimer}/>
+        </div>
+      )}
+
+      <AffiliateBanner trigger="events" style={{marginTop:16}}/>
+      <p style={{textAlign:"center",fontSize:11,color:"#cbd5e1",marginTop:14}}>Vereins-App · Live-Turnieransicht</p>
+    </Shell>
   );
 }
 
@@ -21446,6 +21612,8 @@ function AppInner({lang,setLang}) {
   );
 
   if(new URLSearchParams(window.location.search).has("dbtest")) return (<><style>{CSS}</style><DbTest/></>);
+
+  {const _q=new URLSearchParams(window.location.search); if(_q.has("tournament")) return (<><style>{CSS}</style><TournamentPublic eid={_q.get("tournament")} clubParam={_q.get("club")}/></>);}
 
   if(screen==="boot"||!data) return (
     <div style={{minHeight:"100dvh",display:"flex",alignItems:"center",justifyContent:"center",background:"#0f172a"}}>
