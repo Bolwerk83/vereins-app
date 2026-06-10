@@ -13025,6 +13025,16 @@ function RolePicker({cl,onRole,onBack,onGuest}) {
           <h1 style={{color:"#fff",fontSize:26,fontWeight:900,letterSpacing:-.5,margin:"14px 0 6px",textAlign:"center"}}>{cl.name}</h1>
           <p style={{color:"rgba(255,255,255,.55)",fontSize:15}}>Wie möchtest du einsteigen?</p>
         </div>
+        {guestOn&&onGuest&&(
+          <div className="up" onClick={onGuest}
+            style={{marginBottom:16,background:"rgba(245,158,11,.16)",border:"1.5px solid rgba(245,158,11,.4)",borderRadius:20,padding:"17px 20px",cursor:"pointer"}}>
+            <div style={{display:"flex",alignItems:"center",gap:14}}>
+              <div style={{width:48,height:48,borderRadius:15,background:"rgba(245,158,11,.25)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>&#127942;</div>
+              <div style={{flex:1}}><div style={{color:"#fff",fontWeight:900,fontSize:17}}>Als Gast: Turniere ansehen</div><div style={{color:"rgba(255,255,255,.6)",fontSize:13,marginTop:2}}>Spielplan, Ergebnisse &amp; Live-Timer (ohne Login)</div></div>
+              <div style={{color:"rgba(255,255,255,.4)",fontSize:22}}>{">"}</div>
+            </div>
+          </div>
+        )}
         {[
           {r:"user",icon:"E",title:"Elternteil",sub:"Termine sehen & abstimmen"},{r:"helper",icon:"H",title:"Helfer",sub:"Turnier & Spieltag unterstützen"},{r:"trainer",icon:"T",title:"Trainer",sub:"Termine meiner Mannschaft"},{r:"admin",icon:"A",title:"Vereinsadmin",sub:"Alle Rechte & Einstellungen"}
         ].map((x,i)=>(
@@ -13037,16 +13047,6 @@ function RolePicker({cl,onRole,onBack,onGuest}) {
             </div>
           </div>
         ))}
-        {guestOn&&onGuest&&(
-          <div className="up" onClick={onGuest}
-            style={{marginTop:8,background:"rgba(245,158,11,.16)",border:"1.5px solid rgba(245,158,11,.4)",borderRadius:20,padding:"17px 20px",cursor:"pointer",animationDelay:".3s"}}>
-            <div style={{display:"flex",alignItems:"center",gap:14}}>
-              <div style={{width:48,height:48,borderRadius:15,background:"rgba(245,158,11,.25)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>&#127942;</div>
-              <div style={{flex:1}}><div style={{color:"#fff",fontWeight:900,fontSize:17}}>Als Gast: Turniere ansehen</div><div style={{color:"rgba(255,255,255,.6)",fontSize:13,marginTop:2}}>Spielplan, Ergebnisse &amp; Live-Timer (ohne Login)</div></div>
-              <div style={{color:"rgba(255,255,255,.4)",fontSize:22}}>{">"}</div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
