@@ -3267,7 +3267,7 @@ function LeagueTab({ data, myTids, cl, save, fire }) {
         </div>
       )}
       <div style={{display:"flex",flexDirection:"column",gap:8}}>
-        {(data.events||[]).filter(e=>e.tid===selTid&&(e.type==="heim"||e.type==="ausw"||e.type==="freund")).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,20).map(ev=>{
+        {(data.events||[]).filter(e=>e.tid===selTid&&(e.type==="heim"||e.type==="ausw"||e.type==="freund")).sort((a,b)=>(b.date||"").localeCompare(a.date||"")).slice(0,20).map(ev=>{
           const r = ev.result;
           const won = r && r.home>r.away;
           const draw = r && r.home===r.away;
