@@ -13437,10 +13437,11 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid}) 
 }
 
 function PollAttend({ev,user,onVote,cl,session=null,save=()=>{},data=null,fire=()=>{}}) {
-  const yes  = Object.entries(ev.votes).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>n);
-  const no   = Object.entries(ev.votes).filter(([,v])=>(typeof v==="object"?v.val:v)==="no" ).map(([n])=>n);
-  const late = Object.entries(ev.votes).filter(([,v])=>typeof v==="object"&&v.val==="yes"&&v.late).map(([n,v])=>({name:n,mins:v.late}));
-  const rawUv=ev.votes[user]; const uv=typeof rawUv==="object"&&rawUv!==null?rawUv.val:rawUv;
+  const _v = ev.votes||{};
+  const yes  = Object.entries(_v).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>n);
+  const no   = Object.entries(_v).filter(([,v])=>(typeof v==="object"?v.val:v)==="no" ).map(([n])=>n);
+  const late = Object.entries(_v).filter(([,v])=>typeof v==="object"&&v.val==="yes"&&v.late).map(([n,v])=>({name:n,mins:v.late}));
+  const rawUv=_v[user]; const uv=typeof rawUv==="object"&&rawUv!==null?rawUv.val:rawUv;
   const myLate = typeof rawUv==="object"&&rawUv!==null ? rawUv.late : null;
   const [showLate, setShowLate] = useState(false);
   const [lateMins, setLateMins] = useState(myLate||15);
@@ -13603,16 +13604,17 @@ function PollAttend({ev,user,onVote,cl,session=null,save=()=>{},data=null,fire=(
 }
 
 function PollList({ev,user,onVote}) {
-  const uv=ev.votes[user]||[];
-  const totFor=id=>Object.values(ev.votes).flat().filter(v=>v===id).length;
-  const vFor  =id=>Object.entries(ev.votes).filter(([,vs])=>Array.isArray(vs)&&vs.includes(id)).map(([n])=>n);
+  const _v = ev.votes||{};
+  const uv=_v[user]||[];
+  const totFor=id=>Object.values(_v).flat().filter(v=>v===id).length;
+  const vFor  =id=>Object.entries(_v).filter(([,vs])=>Array.isArray(vs)&&vs.includes(id)).map(([n])=>n);
   const tog=id=>{
     const item=ev.li.find(i=>i.id===id); const cur=[...uv]; const idx=cur.indexOf(id);
     if(idx>=0){cur.splice(idx,1);}else{const tk=totFor(id),mn=cur.includes(id)?1:0;if(item.max&&(tk-mn)>=item.max)return;cur.push(id);}
     onVote(ev.id,"list",cur);
   };
   const mxPct=Math.max(...(ev.li||[]).map(i=>totFor(i.id)),1);
-  const uniq=[...new Set(Object.entries(ev.votes).filter(([,v])=>Array.isArray(v)&&v.length>0).map(([n])=>n))];
+  const uniq=[...new Set(Object.entries(_v).filter(([,v])=>Array.isArray(v)&&v.length>0).map(([n])=>n))];
   return (
     <div>
       {session?.role==="trainer"&&data&&<TrainerCheckin ev={ev} session={session} save={save} data={data} fire={fire}/>}
@@ -20077,7 +20079,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       {showSeasonModal&&<SeasonModal data={local} save={d=>{save(d);}} fire={fire} cl={myClub} myTids={myTids} onClose={()=>setShowSeasonModal(false)}/>}
       {}
       <div style={{background:`linear-gradient(90deg,${t.p},${mix(t.p,-20)})`,display:"grid",gridTemplateColumns:"repeat(3,1fr)"}}>
-        {[[up.length,"Termine","*"],[myTids.length,"Teams","*"],[myEvs.reduce((s,e)=>s+Object.keys(e.votes).length,0),"Stimmen","**"]].map(([v,l,em])=>(
+        {[[up.length,"Termine","*"],[myTids.length,"Teams","*"],[myEvs.reduce((s,e)=>s+Object.keys(e.votes||{}).length,0),"Stimmen","**"]].map(([v,l,em])=>(
           <div key={l} style={{padding:"11px 0",textAlign:"center",borderRight:"1px solid rgba(255,255,255,.18)"}}>
             <div style={{fontSize:16}}>{em}</div><div style={{color:"#fff",fontWeight:900,fontSize:20,lineHeight:1}}>{v}</div><div style={{color:"rgba(255,255,255,.6)",fontSize:11}}>{l}</div>
           </div>
@@ -20271,17 +20273,17 @@ function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline}) {
   const getTs   = v => typeof v==="object"&&v!==null&&!Array.isArray(v) ? v.ts  : null;
   const isLate  = (name) => {
     if(!ev.deadline) return false;
-    const ts = getTs(ev.votes[name]);
+    const ts = getTs((ev.votes||{})[name]);
     if(!ts) return false;
     const voted = new Date(ts);
     const dl    = new Date(`${ev.deadline.date}T${ev.deadline.time||"23:59"}:00`);
     return voted > dl;
   };
 
-  const voted   = Object.entries(ev.votes);
+  const voted   = Object.entries(ev.votes||{});
   const yes     = voted.filter(([,v])=>getVal(v)==="yes").map(([n])=>n);
   const no      = voted.filter(([,v])=>getVal(v)==="no" ).map(([n])=>n);
-  const missing = teamPlayers.filter(n=>!ev.votes[n]);
+  const missing = teamPlayers.filter(n=>!(ev.votes||{})[n]);
   const lateVoters = voted.filter(([n])=>isLate(n)).map(([n])=>n);
   // Late arrivals: yes votes with .late field
   const lateArrivals = voted.filter(([,v])=>typeof v==="object"&&v!==null&&v.val==="yes"&&v.late)
@@ -20434,11 +20436,12 @@ function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline}) {
 
 function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSelfVote}) {
   const eT=ET[ev.type]||ET.training; const tF=ev.date===tod; const p=cl?.pri||"#16a34a";
-  const vc=Object.keys(ev.votes).length;
-  const yes=ev.pt==="att"?Object.values(ev.votes).filter(v=>(typeof v==="object"?v.val:v)==="yes").length:0;
-  const no =ev.pt==="att"?Object.values(ev.votes).filter(v=>(typeof v==="object"?v.val:v)==="no" ).length:0;
+  const _v=ev.votes||{};
+  const vc=Object.keys(_v).length;
+  const yes=ev.pt==="att"?Object.values(_v).filter(v=>(typeof v==="object"?v.val:v)==="yes").length:0;
+  const no =ev.pt==="att"?Object.values(_v).filter(v=>(typeof v==="object"?v.val:v)==="no" ).length:0;
   const dlPassed = isDeadlinePassed(ev);
-  const myVoteRaw = selfName ? ev.votes[selfName] : null;
+  const myVoteRaw = selfName ? _v[selfName] : null;
   const myVote = typeof myVoteRaw==="object"&&myVoteRaw!==null ? myVoteRaw.val : myVoteRaw;
   const upcoming5 = isUpcoming5(ev);
   const votingLocked = isVotingLocked(ev) && !isEventPast(ev);
@@ -21243,7 +21246,7 @@ function TournamentPublic({ eid, clubParam, onBack }){
 function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
   const isTrainerOrHelper = role==="trainer"||role==="helper"||role==="admin";
   const eT=ET[ev.type]||ET.training;const isToday=ev.date===now();const isPast=ev.date<now();
-  const uv=ev.votes[user];const uvVal=typeof uv==="object"&&uv!==null?uv.val:uv;
+  const uv=(ev.votes||{})[user];const uvVal=typeof uv==="object"&&uv!==null?uv.val:uv;
   const p=cl?.pri||"#16a34a";
   let status=null;
   if(ev.pt==="att"){
