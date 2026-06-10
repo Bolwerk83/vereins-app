@@ -9292,7 +9292,7 @@ function SuperAdminClubs({ data, allClubs, allTeams, allPlayers }) {
     !search || cl.name?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const deleteClub = (clubId) => {
+  const deleteClub = async (clubId) => {
     if(!confirm("Verein wirklich löschen? Alle Daten gehen verloren.")) return;
     const nextData = {
       ...data,
@@ -9302,17 +9302,20 @@ function SuperAdminClubs({ data, allClubs, allTeams, allPlayers }) {
       events: (data.events||[]).filter(x=>x.cid!==clubId),
       playerProfiles: (data.playerProfiles||[]).filter(x=>x.cid!==clubId),
     };
-    const SK = "vereinsapp_v14";
-    localStorage.setItem(SK, JSON.stringify(nextData));
+    // Echte Persistenz: globale Zeile (Vereinsliste ohne den Verein) schreiben
+    // UND die Shard-Zeile des Vereins entfernen. localStorage allein wuerde der
+    // naechste Cloud-Read sofort wieder ueberschreiben.
+    try { await sb.set(nextData); } catch {}
+    try { await sb.dbDelete(sb._clubKey(clubId)); } catch {}
     window.location.reload();
   };
 
-  const toggleBlock = (clubId, isBlocked) => {
+  const toggleBlock = async (clubId, isBlocked) => {
     const nextData = {
       ...data,
       clubs: (data.clubs||[]).map(cl=>cl.id===clubId?{...cl,blocked:!isBlocked}:cl),
     };
-    localStorage.setItem("vereinsapp_v14", JSON.stringify(nextData));
+    try { await sb.set(nextData); } catch {}
     window.location.reload();
   };
 
@@ -12533,7 +12536,7 @@ function SuperAdminGeoAnalytics() {
 function SetupWizard({ onDone,onBack }) {
   const [step,setStep] = useState(1);
   const [f,setF] = useState({
-    name:"",short:"",sport:"fussball",pri:"#16a34a",adm:""
+    name:"",short:"",sport:"fussball",pri:"#16a34a",adm:"",email:""
   });
   const u = p => setF(prev=>({...prev,...p}));
   const SPORTS = [
@@ -12543,7 +12546,7 @@ function SetupWizard({ onDone,onBack }) {
   const finish = () => {
     const cid = "c_"+uid();
     const newClub = {
-      id:cid,slug:f.name.toLowerCase().replace(/\s+/g,"-"),name:f.name.trim(),short:f.short.trim()||f.name.slice(0,4).toUpperCase(),em:"*",logo:null,pri:selSport.col,sec:"#0f172a",adm:hashPw(f.adm),adminEmail:(f.email||"").toLowerCase().trim(),pub:true,dir:true,sport:f.sport,createdAt:new Date().toISOString(),};
+      id:cid,slug:f.name.toLowerCase().replace(/\s+/g,"-"),name:f.name.trim(),short:f.short.trim()||f.name.slice(0,4).toUpperCase(),em:"*",logo:null,pri:selSport.col,sec:"#0f172a",adm:hashPw(f.adm),adminEmail:(f.email||"").toLowerCase().trim(),pub:f.pub!==false,dir:f.pub!==false,sport:f.sport,createdAt:new Date().toISOString(),};
     onDone(newClub);
   };
 
@@ -12587,6 +12590,9 @@ function SetupWizard({ onDone,onBack }) {
             <p style={{color:"rgba(255,255,255,.4)",fontSize:13,margin:"0 0 18px"}}>Schritt 3 von 3 - merke es dir gut!</p>
             <PwInput value={f.adm} onChange={e=>u({adm:e.target.value})} placeholder="Mind. 4 Zeichen"
               style={{width:"100%",padding:"13px 15px",fontSize:16,background:"rgba(255,255,255,.1)",border:`1.5px solid ${f.adm.length>=4?"rgba(255,255,255,.4)":"rgba(255,255,255,.15)"}`,borderRadius:13,outline:"none",color:"#fff",marginBottom:10,boxSizing:"border-box"}}/>
+            <input type="email" value={f.email} onChange={e=>u({email:e.target.value})} placeholder="E-Mail (für Passwort-Reset, optional)"
+              autoCapitalize="none" autoCorrect="off" spellCheck={false}
+              style={{width:"100%",padding:"12px 15px",fontSize:15,background:"rgba(255,255,255,.1)",border:"1.5px solid rgba(255,255,255,.15)",borderRadius:13,outline:"none",color:"#fff",marginBottom:10,boxSizing:"border-box"}}/>
             <div style={{background:"rgba(255,255,255,.06)",borderRadius:10,padding:"11px 14px",fontSize:12,color:"rgba(255,255,255,.4)",lineHeight:1.6,marginBottom:16}}>
               Mit diesem Passwort meldest du dich als Admin an. Dein Verein wird mit dem Sport-Profil "{selSport.label}" angelegt.
             </div>
@@ -17283,6 +17289,15 @@ function ChatTab({data,cid,myTids,session,save,fire,cl}) {
     save({...data,chats:next}); setEditId(null); setEditText(""); setMenuId(null);
   };
 
+  // Chat geoeffnet -> als gelesen markieren (Ungelesen-Badge klaert beim
+  // naechsten Tab-Wechsel). Beim Verlassen erneut, um spaeter Eintreffende
+  // bis zum Verlassen ebenfalls als gelesen zu zaehlen.
+  useEffect(()=>{
+    const mark=()=>{ try{ localStorage.setItem("va_last_read_"+cid, String(Date.now())); }catch{} };
+    mark();
+    return mark;
+  },[cid]);
+
   // Auto-Löschung: Nachrichten älter als 30 Tage entfernen (läuft beim Öffnen des Chats)
   useEffect(()=>{
     const cutoff=Date.now()-30*24*60*60*1000;
@@ -19963,8 +19978,10 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const [toast,setToast]=useState(null);
   const unreadMsgs = useMemo(()=>{
     const lastRead = Number(localStorage.getItem("va_last_read_"+cid)||0);
-    return (local.chats||[]).filter(m=>m.cid===cid&&m.ts>lastRead).length;
-  },[local.chats]);
+    const me = session?.name;
+    return (local.chats||[]).filter(c=>c.cid===cid).flatMap(c=>c.messages||[])
+      .filter(m=>m&&!m.system&&m.author!==me&&new Date(m.ts).getTime()>lastRead).length;
+  },[local.chats, tab]);
   // Ungelesene Rundschreiben fuer den eingeloggten Trainer (Posteingang-Badge)
   const unreadInbox = useMemo(()=>{
     if(session.role!=="trainer") return 0;
@@ -21374,8 +21391,9 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
   const [toast,setToast]=useState(null);
   const unreadMsgs = useMemo(()=>{
     const lastRead = Number(localStorage.getItem("va_last_read_"+cid)||0);
-    return (data.chats||[]).filter(m=>m.cid===cid&&m.ts>lastRead).length;
-  },[data.chats]);
+    return (data.chats||[]).filter(c=>c.cid===cid).flatMap(c=>c.messages||[])
+      .filter(m=>m&&!m.system&&m.author!==user&&new Date(m.ts).getTime()>lastRead).length;
+  },[data.chats, tab]);
   const [showProfile,setShowProfile]=useState(false);
   const toastRef=useRef(null);
   const fire=m=>{setToast(m);clearTimeout(toastRef.current);toastRef.current=setTimeout(()=>setToast(null),2200);};
