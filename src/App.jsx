@@ -5536,6 +5536,180 @@ function ScheduleTraining({ tr, myTeams, data, cl, save, fire, onDone }){
   );
 }
 
+// Passende Übungen zu einem Skill finden (deterministische Empfehlung):
+// Übungen, deren Skill-Achsen den Skill enthalten, nach Altersklasse + Fokus
+// gewichtet. Keine externe KI nötig – nutzt die getaggte Übungs-Bibliothek.
+function suggestDrillsForSkill(skill, cat, n=4){
+  return DRILL_LIB
+    .filter(d=>(d.axes||[]).includes(skill))
+    .map(d=>{
+      const inCat=!cat||(d.cats||[]).includes(cat);
+      const primary=(d.axes||[])[0]===skill;        // Skill ist Haupt-Achse
+      const focusBonus=12/((d.axes||[]).length||1);  // fokussierte Übung bevorzugen
+      return {d,score:(inCat?100:0)+(primary?25:0)+focusBonus,inCat};
+    })
+    .sort((a,b)=>b.score-a.score)
+    .slice(0,n);
+}
+
+// Förder-Assistent: kurzer Wizard – aktueller Skill in Zahlen, Einzelförderung
+// bei 2 Trainern und ein passender Übungsvorschlag pro Spieler + Skill.
+function FoerderAssistent({ data, myTids, cl }){
+  const t=TH(cl); const sport=cl?.sport||"fussball"; const axes=skillAxesFor(sport);
+  const teams=(data.teams||[]).filter(tm=>myTids.includes(tm.id));
+  const [tid,setTid]=useState(teams[0]?.id||"");
+  const team=teams.find(x=>x.id===tid)||teams[0];
+  const cid=team?.cid; const cat=team?.cat||team?.name||null;
+  const sid=activeSid(data,cid);
+  // IMMER aktuelle Saison: Skills werden beim Saisonwechsel uebernommen, aber
+  // wir zeigen nur den aktuellen Kader -> keine Vorsaison-Daten vermischt.
+  const players=(data.playerProfiles||[]).filter(p=>p.mainTid===tid && !p.archived && (!p.seasonId||p.seasonId===sid));
+  const [step,setStep]=useState(1);
+  const [two,setTwo]=useState(false);
+  const [focusSkill,setFocusSkill]=useState(null);
+  const [selPid,setSelPid]=useState(null);
+  const [selSkill,setSelSkill]=useState(null);
+  const [openD,setOpenD]=useState(null);
+
+  const ratedVals=p=>axes.map(a=>p.skills?.[a]).filter(v=>typeof v==="number"&&v>0);
+  const avgOf=p=>{const v=ratedVals(p);return v.length?Math.round(v.reduce((a,b)=>a+b,0)/v.length*10)/10:null;};
+  const weakOf=p=>{let best=null;axes.forEach(a=>{const v=p.skills?.[a];if(typeof v==="number"&&v>0&&(best===null||v<best.v))best={a,v};});return best;};
+  const teamAxisAvg=a=>{const vs=players.map(p=>p.skills?.[a]).filter(v=>typeof v==="number"&&v>0);return vs.length?vs.reduce((x,y)=>x+y,0)/vs.length:null;};
+  const ratedAxes=axes.map(a=>({a,avg:teamAxisAvg(a)})).filter(x=>x.avg!=null).sort((x,y)=>x.avg-y.avg);
+  const effFocus=focusSkill||ratedAxes[0]?.a||axes[0];
+  // Einzelförderung: schwächste Spieler im Fokus-Skill -> kleine Gruppe (Trainer B)
+  const ranked=players.filter(p=>typeof p.skills?.[effFocus]==="number"&&p.skills[effFocus]>0).sort((a,b)=>a.skills[effFocus]-b.skills[effFocus]);
+  const nInd=Math.min(4,Math.max(1,Math.round(players.length/3)));
+  const indGroup=ranked.slice(0,nInd);
+  const mainGroup=players.filter(p=>!indGroup.some(x=>x.id===p.id));
+  const selPlayer=players.find(p=>p.id===selPid)||indGroup[0]||players[0]||null;
+  const effSelSkill=selSkill||(selPlayer&&weakOf(selPlayer)?.a)||effFocus;
+  const suggestions=suggestDrillsForSkill(effSelSkill,cat,4);
+
+  const Bar=({v})=>(<div style={{display:"flex",gap:2}}>{[1,2,3,4,5].map(i=><div key={i} style={{width:8,height:8,borderRadius:2,background:i<=v?t.p:"#e2e8f0"}}/>)}</div>);
+  const StepDot=({n,label})=>(<div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,flex:1}}><div style={{width:26,height:26,borderRadius:"50%",background:step>=n?t.p:"#e2e8f0",color:step>=n?"#fff":"#94a3b8",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:13}}>{n}</div><span style={{fontSize:10,fontWeight:700,color:step===n?t.p:"#94a3b8",textAlign:"center"}}>{label}</span></div>);
+  const navBtns=(<div style={{display:"flex",gap:9,marginTop:16}}>
+    {step>1&&<button onClick={()=>setStep(s=>s-1)} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Zurück</button>}
+    {step<3&&<button onClick={()=>setStep(s=>s+1)} disabled={players.length===0} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:players.length?t.p:"#e2e8f0",color:players.length?"#fff":"#64748b",fontWeight:800,cursor:players.length?"pointer":"default",fontFamily:"inherit"}}>Weiter</button>}
+  </div>);
+
+  return (
+    <div>
+      {teams.length>1&&(
+        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
+          {teams.map(tm=>(<button key={tm.id} onClick={()=>{setTid(tm.id);setStep(1);setFocusSkill(null);setSelPid(null);setSelSkill(null);}} style={{padding:"7px 13px",borderRadius:99,border:`1.5px solid ${tid===tm.id?t.p:"#e2e8f0"}`,background:tid===tm.id?t.p:"#fff",color:tid===tm.id?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{tm.name}</button>))}
+        </div>
+      )}
+      <div style={{display:"flex",alignItems:"flex-start",marginBottom:16}}>
+        <StepDot n={1} label="Skill-Stand"/><div style={{flex:.5,height:2,background:"#e2e8f0",marginTop:13}}/><StepDot n={2} label="Trainer"/><div style={{flex:.5,height:2,background:"#e2e8f0",marginTop:13}}/><StepDot n={3} label="Übung"/>
+      </div>
+
+      {players.length===0&&(
+        <div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:14,padding:"16px",fontSize:13.5,color:"#92400e",lineHeight:1.5}}>
+          Für diese Mannschaft sind in der <strong>aktuellen Saison</strong> noch keine Spieler zugeordnet. Nach einem Saisonwechsel müssen Spieler der Mannschaft neu zugewiesen werden (Skill-Bewertungen bleiben erhalten). Ordne sie unter „Spieler" zu, dann funktioniert der Assistent hier.
+        </div>
+      )}
+
+      {players.length>0&&step===1&&(
+        <div>
+          <p style={{fontSize:13,color:"#64748b",marginBottom:12,lineHeight:1.5}}>Aktueller Leistungsstand der Mannschaft – Skill in Zahlen (von 5). Schwächster Wert je Spieler ist hervorgehoben.</p>
+          {ratedAxes.length>0&&<div style={{background:`${t.p}0c`,border:`1.5px solid ${t.p}30`,borderRadius:12,padding:"11px 13px",marginBottom:12}}>
+            <div style={{fontSize:11,fontWeight:800,color:t.p,letterSpacing:.3,marginBottom:4}}>GRÖSSTE FÖRDERLÜCKE IM TEAM</div>
+            <div style={{fontSize:14,fontWeight:800,color:"#0f172a"}}>{ratedAxes[0].a} <span style={{color:"#94a3b8",fontWeight:600,fontSize:12.5}}>· Schnitt {Math.round(ratedAxes[0].avg*10)/10}/5</span></div>
+          </div>}
+          <div style={{display:"flex",flexDirection:"column",gap:7}}>
+            {players.map(p=>{const w=weakOf(p);const a=avgOf(p);return (
+              <div key={p.id} style={{display:"flex",alignItems:"center",gap:10,background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"10px 12px"}}>
+                <Av name={p.name} sz={30}/>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontWeight:800,fontSize:14,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</div>
+                  {w?<div style={{fontSize:11.5,color:"#94a3b8",marginTop:1}}>Schwächster Bereich: <span style={{color:"#dc2626",fontWeight:700}}>{w.a} {w.v}/5</span></div>:<div style={{fontSize:11.5,color:"#cbd5e1",marginTop:1}}>noch nicht bewertet</div>}
+                </div>
+                <div style={{textAlign:"right",flexShrink:0}}>{a!=null?<><div style={{fontWeight:900,fontSize:17,color:t.p,lineHeight:1}}>{a}</div><div style={{fontSize:10,color:"#94a3b8"}}>Ø Skill</div></>:<span style={{fontSize:11,color:"#cbd5e1"}}>–</span>}</div>
+              </div>
+            );})}
+          </div>
+          {navBtns}
+        </div>
+      )}
+
+      {players.length>0&&step===2&&(
+        <div>
+          <div onClick={()=>setTwo(v=>!v)} style={{display:"flex",alignItems:"center",gap:12,background:two?"#f0fdf4":"#f8fafc",border:`1.5px solid ${two?"#bbf7d0":"#e2e8f0"}`,borderRadius:14,padding:"13px 15px",cursor:"pointer",marginBottom:14}}>
+            <div style={{flex:1}}><div style={{fontSize:14,fontWeight:800,color:two?"#15803d":"#334155"}}>Wir sind zu zweit (2 Trainer)</div><div style={{fontSize:11.5,color:"#94a3b8",marginTop:1}}>Dann schlage ich eine Einzel-/Kleingruppen-Förderung vor.</div></div>
+            <div style={{width:46,height:26,borderRadius:99,background:two?"#16a34a":"#cbd5e1",position:"relative",flexShrink:0}}><div style={{position:"absolute",top:3,left:two?22:3,width:20,height:20,borderRadius:"50%",background:"#fff",transition:"left .2s"}}/></div>
+          </div>
+          <div style={{marginBottom:14}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.3,marginBottom:8}}>FÖRDER-SCHWERPUNKT</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+              {axes.map(a=>(<button key={a} onClick={()=>setFocusSkill(a)} style={{padding:"7px 12px",borderRadius:99,border:`1.5px solid ${effFocus===a?t.p:"#e2e8f0"}`,background:effFocus===a?t.p:"#fff",color:effFocus===a?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{a}</button>))}
+            </div>
+            <p style={{fontSize:11,color:"#94a3b8",marginTop:6}}>Vorausgewählt: größte Förderlücke des Teams.</p>
+          </div>
+          {two?(
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+              <div style={{background:"#fff",border:"2px solid #fca5a5",borderRadius:14,padding:"12px"}}>
+                <div style={{fontWeight:800,color:"#dc2626",fontSize:13,marginBottom:8}}>Einzelförderung · Trainer B <span style={{color:"#94a3b8",fontWeight:600}}>({indGroup.length})</span></div>
+                {indGroup.map(p=><div key={p.id} style={{display:"flex",alignItems:"center",gap:7,marginBottom:6}}><Av name={p.name} sz={22}/><span style={{flex:1,minWidth:0,fontSize:12.5,fontWeight:600,color:"#334155",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span><span style={{fontSize:11,fontWeight:800,color:"#dc2626"}}>{p.skills[effFocus]}/5</span></div>)}
+                <p style={{fontSize:10.5,color:"#94a3b8",marginTop:4}}>Schwächste {indGroup.length} in {effFocus} – gezielte Übung in Schritt 3.</p>
+              </div>
+              <div style={{background:"#fff",border:`2px solid ${t.p}`,borderRadius:14,padding:"12px"}}>
+                <div style={{fontWeight:800,color:t.p,fontSize:13,marginBottom:8}}>Hauptgruppe · Trainer A <span style={{color:"#94a3b8",fontWeight:600}}>({mainGroup.length})</span></div>
+                {mainGroup.map(p=><div key={p.id} style={{display:"flex",alignItems:"center",gap:7,marginBottom:6}}><Av name={p.name} sz={22}/><span style={{flex:1,minWidth:0,fontSize:12.5,fontWeight:600,color:"#334155",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span></div>)}
+              </div>
+            </div>
+          ):(
+            <div style={{background:"#f8fafc",border:"1.5px dashed #e2e8f0",borderRadius:14,padding:"16px",fontSize:13,color:"#64748b",lineHeight:1.5}}>Als einzelner Trainer hältst du die Mannschaft zusammen. In Schritt 3 bekommst du pro Spieler den passenden Übungs-Vorschlag im gewählten Schwerpunkt – ideal für eine Förderstation im normalen Training.</div>
+          )}
+          {navBtns}
+        </div>
+      )}
+
+      {players.length>0&&step===3&&(
+        <div>
+          <div style={{marginBottom:12}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.3,marginBottom:8}}>SPIELER WÄHLEN</div>
+            <div style={{display:"flex",gap:7,overflowX:"auto",scrollbarWidth:"none",paddingBottom:2}}>
+              {(two&&indGroup.length?indGroup:players).map(p=>(<button key={p.id} onClick={()=>{setSelPid(p.id);setSelSkill(null);}} style={{flexShrink:0,display:"flex",alignItems:"center",gap:6,padding:"7px 12px",borderRadius:99,border:`1.5px solid ${selPlayer?.id===p.id?t.p:"#e2e8f0"}`,background:selPlayer?.id===p.id?t.p+"12":"#fff",color:selPlayer?.id===p.id?t.p:"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}><Av name={p.name} sz={20}/>{p.name.split(" ")[0]}</button>))}
+            </div>
+          </div>
+          {selPlayer&&<div style={{marginBottom:12}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.3,marginBottom:8}}>SKILL FÖRDERN <span style={{color:"#cbd5e1"}}>· {selPlayer.name}</span></div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+              {axes.map(a=>{const v=selPlayer.skills?.[a];return (<button key={a} onClick={()=>setSelSkill(a)} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 11px",borderRadius:10,border:`1.5px solid ${effSelSkill===a?t.p:"#e2e8f0"}`,background:effSelSkill===a?t.p+"12":"#fff",color:effSelSkill===a?t.p:"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{a}{typeof v==="number"&&v>0&&<span style={{fontSize:10.5,color:"#94a3b8",fontWeight:800}}>{v}/5</span>}</button>);})}
+            </div>
+          </div>}
+          <div style={{background:`${t.p}0c`,border:`1.5px solid ${t.p}30`,borderRadius:12,padding:"11px 13px",marginBottom:12}}>
+            <div style={{fontSize:11,fontWeight:800,color:t.p,letterSpacing:.3}}>VORSCHLAG FÜR {effSelSkill.toUpperCase()}</div>
+            <div style={{fontSize:12,color:"#64748b",marginTop:2}}>Passende Übungen aus der Bibliothek{cat?` (${cat})`:""}, beste zuerst.</div>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:9}}>
+            {suggestions.length===0&&<div style={{color:"#94a3b8",fontSize:13,padding:"18px",textAlign:"center"}}>Keine passende Übung für diesen Skill gefunden.</div>}
+            {suggestions.map(({d,inCat})=>{const isOpen=openD===d.id;const f=DRILL_FOCUS.find(x=>x.id===d.focus)||{label:d.focus,col:"#64748b"};return (
+              <div key={d.id} style={{background:"#fff",borderRadius:14,border:"1.5px solid #e2e8f0",overflow:"hidden"}}>
+                <button onClick={()=>setOpenD(isOpen?null:d.id)} style={{width:"100%",textAlign:"left",padding:"12px 14px",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:10}}>
+                  <span style={{width:9,height:9,borderRadius:"50%",background:f.col,flexShrink:0}}/>
+                  <span style={{flex:1,minWidth:0}}>
+                    <span style={{display:"block",fontWeight:800,fontSize:14,color:"#0f172a"}}>{d.title}</span>
+                    <span style={{display:"block",fontSize:11.5,color:"#94a3b8",marginTop:1}}>{f.label} · {d.min} Min · {d.players}{!inCat?" · ⚠ andere Altersklasse":""}</span>
+                  </span>
+                  <span style={{fontSize:18,color:"#cbd5e1",transform:isOpen?"rotate(90deg)":"none",transition:"transform .2s"}}>›</span>
+                </button>
+                {isOpen&&<div style={{padding:"0 14px 14px"}}>
+                  <div style={{display:"flex",justifyContent:"center",marginBottom:10}}><DrillDiagram field={d.field} elements={d.el} color={t.p||"#16a34a"} width={280} variant="grass"/></div>
+                  <p style={{fontSize:13,color:"#334155",lineHeight:1.6,marginBottom:8}}>{d.desc}</p>
+                  {d.coach&&<div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:10,padding:"9px 12px",fontSize:12.5,color:"#166534",lineHeight:1.5}}><strong>Coaching:</strong> {d.coach}</div>}
+                </div>}
+              </div>
+            );})}
+          </div>
+          {navBtns}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function TrainingPlanner({ data, myTids, cl, save, fire }) {
   const t = TH(cl);
   const sport = cl?.sport || "fussball";
@@ -5549,6 +5723,14 @@ function TrainingPlanner({ data, myTids, cl, save, fire }) {
   const [plan, setPlan] = useState(null);
   const [openDrill, setOpenDrill] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [view, setView] = useState("plan");        // plan | foerder
+  const ViewTabs = () => (
+    <div style={{display:"flex",gap:8,marginBottom:14}}>
+      {[["plan","Trainingsplan"],["foerder","Einzelförderung"]].map(([k,l])=>(
+        <button key={k} onClick={()=>setView(k)} style={{flex:1,padding:"10px",borderRadius:11,border:`2px solid ${view===k?t.p:"#e2e8f0"}`,background:view===k?t.p:"#fff",color:view===k?"#fff":"#64748b",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
+      ))}
+    </div>
+  );
 
   // Plan als formatierten Text aufbauen
   const planToText = () => {
@@ -5651,8 +5833,11 @@ function TrainingPlanner({ data, myTids, cl, save, fire }) {
     {id:"torschuss",label:"Torschuss"},{id:"kondition",label:"Kondition"},
   ];
 
+  if(view==="foerder") return (<div><ViewTabs/><FoerderAssistent data={data} myTids={myTids} cl={cl}/></div>);
+
   return (
     <div>
+      <ViewTabs/>
       {teams.length>1 && (
         <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
           {teams.map(tm=>(
