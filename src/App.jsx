@@ -14658,7 +14658,7 @@ function FriendsInput({ label,sub,ids,allPlayers,current,onChange,color }) {
   const available = allPlayers.filter(p =>
     p.id !== current?.id &&
     !ids.includes(p.id) &&
-    p.name.toLowerCase().includes(q.toLowerCase())
+    (p.name||"").toLowerCase().includes(q.toLowerCase())
   );
   const toggle = id => onChange(ids.includes(id) ? ids.filter(x=>x!==id) : [...ids,id]);
 
@@ -15191,7 +15191,7 @@ function PoolView({ allPlayers,myTeams,allTeams,defaultScopeTids,cid,onAssign,on
 
   const q = search.toLowerCase();
   const filtered = allPlayers
-    .filter(p => p.name.toLowerCase().includes(q))
+    .filter(p => (p.name||"").toLowerCase().includes(q))
     .filter(p => {
       if (filter === "all") return true;
       if (filter === "unassigned") return !p.mainTid;
@@ -15762,8 +15762,8 @@ function PlayersTab({ data,myTids,save,fire,cl }) {
   };
 
   const q = search.toLowerCase();
-  const mainPlayers = allPlayers.filter(p=>p.mainTid===selTid && p.name.toLowerCase().includes(q)).sort((a,b)=>a.name.localeCompare(b.name));
-  const optPlayers  = allPlayers.filter(p=>p.mainTid!==selTid && (p.optTids||[]).includes(selTid) && p.name.toLowerCase().includes(q)).sort((a,b)=>a.name.localeCompare(b.name));
+  const mainPlayers = allPlayers.filter(p=>p.mainTid===selTid && (p.name||"").toLowerCase().includes(q)).sort((a,b)=>(a.name||"").localeCompare(b.name||""));
+  const optPlayers  = allPlayers.filter(p=>p.mainTid!==selTid && (p.optTids||[]).includes(selTid) && (p.name||"").toLowerCase().includes(q)).sort((a,b)=>(a.name||"").localeCompare(b.name||""));
   const selTeam     = allTeams.find(tm=>tm.id===selTid);
   const allEvents   = data.events||[];
 
@@ -17566,7 +17566,7 @@ function JerseysTab({ data,myTids,save,fire,cl }) {
 
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
             {allWithJersey
-              .filter(p=>myTids.includes(p.mainTid)&&p.name.toLowerCase().includes(q))
+              .filter(p=>myTids.includes(p.mainTid)&&(p.name||"").toLowerCase().includes(q))
               .sort((a,b)=>parseInt(a.jerseyNr||0)-parseInt(b.jerseyNr||0))
               .map(pl=>{
                 const st=statusFor(pl.jerseyStatus||"none");
@@ -17603,7 +17603,7 @@ function JerseysTab({ data,myTids,save,fire,cl }) {
                 );
               })
             }
-            {allWithJersey.filter(p=>p.name.toLowerCase().includes(q)).length===0&&(
+            {allWithJersey.filter(p=>(p.name||"").toLowerCase().includes(q)).length===0&&(
               <div style={{textAlign:"center",padding:"28px",color:"#94a3b8"}}>
                 <div style={{fontSize:32,marginBottom:8}}></div>
                 <p style={{fontWeight:700}}>Keine Trikots eingetragen</p>
@@ -18795,9 +18795,13 @@ function FieldsTab({ data,myTids,session,save,fire,cl }) {
 
 function FieldConflictWarner({ fieldId, date, time, duration, bookings, fields, myTid, onResolve }) {
   if(!fieldId || !date) return null;
-  const conflicts = (bookings||[]).filter(b=>
-    b.fieldId===fieldId && b.date===date && b.teamId!==myTid
-  );
+  const ns = toMin(time); const ne = ns!=null ? ns + (Number(duration)||60) : null;
+  const conflicts = (bookings||[]).filter(b=>{
+    if(!(b.fieldId===fieldId && b.date===date && b.teamId!==myTid)) return false;
+    const bs=toMin(b.timeFrom), be=toMin(b.timeTo);
+    if(ns==null||ne==null||bs==null||be==null) return true; // ohne Zeiten: konservativ als Konflikt
+    return bs<ne && ns<be; // nur echte Zeit-Ueberschneidung
+  });
   if(conflicts.length===0) return null;
   const field = (fields||[]).find(f=>f.id===fieldId);
   return (
@@ -19569,11 +19573,12 @@ function FieldsManagerTab({ data, cid, save, fire, cl }) {
       surface: FIELD_TEMPLATES.find(t=>t.id===draft.template)?.label||"Platz",
       segments: draft.split||1,
     };
-    save({...data, fields:[...fields, f]});
+    // volle Liste schreiben (sonst gehen Felder anderer Vereine/Demo verloren)
+    save({...data, fields:[...(data.fields||[]), f]});
     fire("Feld angelegt: "+f.name);
     setStep(null); setDraft({});
   };
-  const delField = id => { save({...data,fields:fields.filter(x=>x.id!==id)}); fire("Feld gelöscht"); };
+  const delField = id => { save({...data,fields:(data.fields||[]).filter(x=>x.id!==id)}); fire("Feld gelöscht"); };
 
   const todayBk = fid => (data.bookings||[]).filter(b=>
     b.fieldId===fid && b.date===new Date().toISOString().slice(0,10)
