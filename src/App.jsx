@@ -21082,6 +21082,43 @@ function PublishTournament({ ev, cl, onPublish, onUnpublish }) {
   );
 }
 
+// Team-Aufteilung: zugesagte Spieler zufaellig auf N Teams verteilen.
+function TournSplit({ ev, t }){
+  const present = Object.entries(ev.votes||{}).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>n);
+  const [n,setN]=useState(2);
+  const [order,setOrder]=useState(present);
+  useEffect(()=>{ setOrder(present); /* bei Aenderung der Zusagen neu uebernehmen */ // eslint-disable-next-line
+  },[present.length]);
+  const shuffle=()=>{ const a=[...present]; for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } setOrder(a); };
+  const groups=Array.from({length:n},()=>[]);
+  (order.length?order:present).forEach((name,i)=>groups[i%n].push(name));
+  const COLORS=["#16a34a","#2563eb","#d97706","#7c3aed","#dc2626","#0891b2"];
+  const btn={width:34,height:34,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:900,fontSize:17,cursor:"pointer"};
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:12}}>
+      <div style={{background:"#fff",borderRadius:14,padding:"14px",border:"1.5px solid #e2e8f0"}}>
+        <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:10,letterSpacing:.4}}>ANZAHL TEAMS</div>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <button onClick={()=>setN(Math.max(2,n-1))} style={btn}>−</button>
+          <span style={{minWidth:28,textAlign:"center",fontWeight:800,fontSize:17}}>{n}</span>
+          <button onClick={()=>setN(Math.min(6,n+1))} style={btn}>+</button>
+          <button onClick={shuffle} disabled={present.length===0} style={{marginLeft:"auto",padding:"9px 16px",borderRadius:10,border:"none",background:present.length?t.p:"#e2e8f0",color:present.length?"#fff":"#94a3b8",fontWeight:800,fontSize:13,cursor:present.length?"pointer":"default",fontFamily:"inherit"}}>Neu mischen</button>
+        </div>
+        <div style={{fontSize:12,color:"#94a3b8",marginTop:8}}>{present.length} zugesagte Spieler werden aufgeteilt.</div>
+      </div>
+      {present.length===0
+        ? <div style={{textAlign:"center",padding:"28px",background:"#f8fafc",borderRadius:14,border:"1.5px dashed #e2e8f0",color:"#94a3b8",fontSize:13}}>Noch keine Zusagen. Sobald Spieler unter „Info" zusagen, kannst du sie hier aufteilen.</div>
+        : <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            {groups.map((g,gi)=>(
+              <div key={gi} style={{background:"#fff",borderRadius:14,border:`2px solid ${COLORS[gi%COLORS.length]}`,padding:"12px"}}>
+                <div style={{fontWeight:800,color:COLORS[gi%COLORS.length],marginBottom:8}}>Team {gi+1} <span style={{color:"#94a3b8",fontWeight:600,fontSize:12}}>({g.length})</span></div>
+                {g.map(nme=><div key={nme} style={{display:"flex",alignItems:"center",gap:7,marginBottom:5}}><Av name={nme} sz={22}/><span style={{fontSize:13,fontWeight:600,color:"#334155"}}>{nme}</span></div>)}
+              </div>
+            ))}
+          </div>}
+    </div>
+  );
+}
 function TournView({ ev,user,onVote,onUpdate,cl,players,isHelper=false,fields=[],onPublish,onUnpublish }) {
   const t=TH(cl);
   const setup=ev.setup||{};
@@ -21104,10 +21141,7 @@ function TournView({ ev,user,onVote,onUpdate,cl,players,isHelper=false,fields=[]
       {stab==="plan"&&<TournPlan ev={ev} setup={setup} t={t} onUpdate={onUpdate} isHelper={isHelper}/>}
       {stab==="timer"&&<CompactTimer ev={ev} cl={cl} canControl={!!onUpdate} onTimer={arr=>onUpdate&&onUpdate({timer:arr})}/>}
       {stab==="publish"&&!isHelper&&<PublishTournament ev={ev} cl={cl} onPublish={onPublish} onUnpublish={onUnpublish}/>}
-      {stab==="split"&&<div style={{background:"#f8fafc",borderRadius:14,padding:"14px"}}>
-        <p style={{fontWeight:700,color:"#334155",marginBottom:8}}>Team-Aufteilung</p>
-        <p style={{fontSize:13,color:"#64748b"}}>Spieler zufällig auf Teams aufteilen.</p>
-      </div>}
+      {stab==="split"&&<TournSplit ev={ev} t={t}/>}
       {stab==="stats"&&<div style={{background:"#fff",borderRadius:14,padding:"14px",border:"1.5px solid #e2e8f0"}}>
         <p style={{fontWeight:700,color:"#334155",marginBottom:10}}>Tabelle</p>
         <TournStandings schedule={ev.schedule||[]} teams={(setup.clubs||[]).filter(Boolean)} t={t}/>
