@@ -19926,13 +19926,18 @@ function AttendanceTab({ data, myTids, cl, save, fire }) {
   const players = (data.playerProfiles||[]).filter(p=>p.mainTid===selTid&&(!p.seasonId||p.seasonId===activeSeason));
   const trainings = (data.events||[]).filter(e=>e.tid===selTid&&e.type==="training");
   const games = (data.events||[]).filter(e=>e.tid===selTid&&e.type!=="training");
-
+  // Quote nur ueber bereits stattgefundene Termine; Objekt-Votes ({val:"yes"}) mitzaehlen.
+  const vval = v => (typeof v==="object"&&v) ? v.val : v;
+  const tod = now();
+  const pastTrain = trainings.filter(e=>e.date<tod);
+  const pastGames = games.filter(e=>e.date<tod);
   const stats = players.map(pl => {
-    const trainPresent = trainings.filter(e=>e.votes?.[pl.name]==="yes").length;
-    const gamePresent  = games.filter(e=>e.votes?.[pl.name]==="yes").length;
-    const trainPct = trainings.length>0 ? Math.round(trainPresent/trainings.length*100) : null;
-    return { pl, trainPresent, gamePresent, trainPct, total: trainings.length };
-  }).sort((a,b)=>(b.trainPct||0)-(a.trainPct||0));
+    const tYes = pastTrain.filter(e=>vval(e.votes?.[pl.name])==="yes").length;
+    const gYes = pastGames.filter(e=>vval(e.votes?.[pl.name])==="yes").length;
+    const trainPct = pastTrain.length>0 ? Math.round(tYes/pastTrain.length*100) : null;
+    const gamePct  = pastGames.length>0 ? Math.round(gYes/pastGames.length*100) : null;
+    return { pl, tYes, gYes, trainPct, gamePct, totalT: pastTrain.length, totalG: pastGames.length };
+  }).sort((a,b)=>(b.trainPct??-1)-(a.trainPct??-1));
 
   return (
     <div>
@@ -19956,18 +19961,19 @@ function AttendanceTab({ data, myTids, cl, save, fire }) {
       </div>
       {trainings.length===0&&<div style={{textAlign:"center",padding:"32px",background:"#f8fafc",borderRadius:14,border:"1.5px dashed #e2e8f0"}}><p style={{fontWeight:700,color:"#334155"}}>Noch keine Trainings</p><p style={{fontSize:13,color:"#94a3b8",marginTop:4}}>Sobald Termine mit Abstimmung angelegt wurden, erscheint hier die Anwesenheitsstatistik.</p></div>}
       {trainings.length>0&&<div style={{display:"flex",flexDirection:"column",gap:8}}>
-        {stats.map(({pl,trainPresent,gamePresent,trainPct,total})=>(
+        {stats.map(({pl,tYes,gYes,trainPct,gamePct,totalT,totalG})=>(
           <div key={pl.id} style={{background:"#fff",borderRadius:13,padding:"12px 14px",border:"1.5px solid #e2e8f0",display:"flex",alignItems:"center",gap:12}}>
             <Av name={pl.name} sz={40}/>
-            <div style={{flex:1}}>
+            <div style={{flex:1,minWidth:0}}>
               <div style={{fontWeight:700,fontSize:14,color:"#0f172a",marginBottom:4}}>{pl.name}</div>
               <div style={{height:6,background:"#f1f5f9",borderRadius:99,overflow:"hidden"}}>
-                <div style={{height:"100%",borderRadius:99,background:trainPct>=75?"#16a34a":trainPct>=50?"#d97706":"#dc2626",width:`${trainPct||0}%`,transition:"width .4s"}}/>
+                <div style={{height:"100%",borderRadius:99,background:(trainPct??0)>=75?"#16a34a":(trainPct??0)>=50?"#d97706":"#dc2626",width:`${trainPct||0}%`,transition:"width .4s"}}/>
               </div>
+              {totalG>0&&<div style={{fontSize:11,color:"#64748b",marginTop:4}}>Spiele: {gYes}/{totalG}{gamePct!==null?` · ${gamePct}%`:""}</div>}
             </div>
             <div style={{textAlign:"right",minWidth:60}}>
-              <div style={{fontWeight:900,fontSize:16,color:trainPct>=75?"#16a34a":trainPct>=50?"#d97706":"#dc2626"}}>{trainPresent}/{total}</div>
-              <div style={{fontSize:11,color:"#94a3b8"}}>{trainPct!==null?trainPct+"%":"-"}</div>
+              <div style={{fontWeight:900,fontSize:16,color:(trainPct??0)>=75?"#16a34a":(trainPct??0)>=50?"#d97706":"#dc2626"}}>{tYes}/{totalT}</div>
+              <div style={{fontSize:11,color:"#94a3b8"}}>{trainPct!==null?trainPct+"% Training":"–"}</div>
             </div>
           </div>
         ))}
