@@ -96,3 +96,36 @@ test("merge3Obj: fehlender Cloud-Wert (null) -> lokal unveraendert (kein Datenve
   const local = { events:[{id:1}] };
   assert.deepEqual(merge3Obj(undefined, null, local), local);
 });
+
+// ---- splitData Edgecases ----
+test("splitData: Record mit unbekanntem cid landet global (nicht verloren)", () => {
+  const { global, shards } = splitData({ clubs:[{id:"A"}], events:[{id:"e1",cid:"GIBTSNICHT"}] });
+  assert.equal((global.events||[]).length, 1);
+  assert.ok(!shards.GIBTSNICHT);
+});
+test("splitData: players-Map wird nach Team-cid in Shards verteilt", () => {
+  const { global, shards } = splitData({
+    clubs:[{id:"A"}], teams:[{id:"t1",cid:"A"}],
+    players:{ t1:[{n:"x"}], tX:[{n:"y"}] },
+  });
+  assert.deepEqual(shards.A.players.t1, [{n:"x"}]);
+  assert.deepEqual(global.players.tX, [{n:"y"}]); // unbekanntes Team bleibt global
+});
+test("splitData->mergeData: Round-Trip eines Shard-Records ist verlustfrei", () => {
+  const data = { clubs:[{id:"A"}], teams:[{id:"t1",cid:"A"}], events:[{id:"e1",cid:"A",x:1}], _v:14 };
+  const { global, shards } = splitData(data);
+  const merged = mergeData(global, [shards.A]);
+  assert.equal(merged.events.find(e=>e.id==="e1").x, 1);
+  assert.equal(merged._v, 14);
+});
+
+// ---- merge3Obj: players-Map ----
+test("merge3Obj: players-Map - lokale Team-Aenderung gewinnt, fremde bleiben", () => {
+  const base  = { players:{ t1:["a"] } };
+  const cloud = { players:{ t1:["a"], t2:["remote"] } };  // anderes Geraet: t2
+  const local = { players:{ t1:["mine"] } };               // ich: t1 geaendert
+  const out = merge3Obj(base, cloud, local).players;
+  assert.deepEqual(out.t1, ["mine"]);
+  assert.deepEqual(out.t2, ["remote"]);
+});
+
