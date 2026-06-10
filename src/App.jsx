@@ -5494,7 +5494,7 @@ function ScheduleTraining({ tr, myTeams, data, cl, save, fire, onDone }){
   const create=()=>{
     const plan={ focus:tr.focus, sessions:[{ title:tr.title, blocks:(tr.blocks||[]).map(b=>({phase:b.phase,title:b.title,min:b.min})) }] };
     const ev={ id:"e_"+uid(), cid:tr.cid, tid, type:"training", title:tr.title, date, time, loc:"", note:tr.focus?("Schwerpunkt: "+tr.focus):"",
-      votes:{}, pt:"att", selType:"multi", li:[], fi:[], sc:[], trainingPlan:plan };
+      seasonId:activeSid(data, tr.cid), votes:{}, pt:"att", selType:"multi", li:[], fi:[], sc:[], trainingPlan:plan };
     save({...data, events:[...(data.events||[]), ev]});
     fire&&fire("Termin erstellt *");
     onDone&&onDone();
@@ -20034,7 +20034,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       }
     } else {
       const _sid = activeSid(local, cid);
-      const evsWithSeason = evs.map(e=>({...e, seasonId: e.seasonId || _sid}));
+      const evsWithSeason = evs.map(e=>({...e, cid: e.cid || (local.teams||[]).find(t=>t.id===e.tid)?.cid || cid, seasonId: e.seasonId || _sid}));
       save({...local,events:[...(local.events||[]),...evsWithSeason]});
       fire(`${evs.length>1?evs.length+" Termine":"Termin"} erstellt - Eltern werden benachrichtigt`);
     }
