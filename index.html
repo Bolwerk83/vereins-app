@@ -43,32 +43,8 @@
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
     <script>
-      if('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').then(reg => {
-            // Check for an updated service worker on every load.
-            reg.update().catch(()=>{});
-            reg.addEventListener('updatefound', () => {
-              const nw = reg.installing;
-              if (!nw) return;
-              nw.addEventListener('statechange', () => {
-                if (nw.state === 'installed' && navigator.serviceWorker.controller) {
-                  // A new version is ready - activate it immediately.
-                  nw.postMessage('SKIP_WAITING');
-                }
-              });
-            });
-          }).catch(()=>{});
-          // When the new service worker takes control, reload once so the
-          // page shows the latest assets.
-          let refreshing = false;
-          navigator.serviceWorker.addEventListener('controllerchange', () => {
-            if (refreshing) return;
-            refreshing = true;
-            window.location.reload();
-          });
-        });
-      }
+      // Service-Worker-Registrierung erfolgt in src/main.jsx (mit Build-Version
+      // in der URL, damit jeder Deploy ein SW-Update + Reload erzwingt).
       // Prevent double-tap zoom on iOS
       let lastTouchEnd = 0;
       document.addEventListener('touchend', function(e) {
