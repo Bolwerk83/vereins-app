@@ -1668,7 +1668,18 @@ function Sw({on,tog,pri="#16a34a",label,sub}) {
 }
 function ClubHeader({cl, sub, right, hide=false}) {
   const t=TH(cl);
-  return <div style={{background:`linear-gradient(135deg,${t.s} 0%,${t.p}bb 100%)`,padding:"16px 18px 20px",position:"sticky",top:0,zIndex:60,boxShadow:"0 4px 24px rgba(0,0,0,.22)"}}><div style={{display:"flex",alignItems:"center",gap:12}}><Logo cl={cl} sz={42}/><div style={{flex:1,minWidth:0}}><div style={{color:"#fff",fontWeight:900,fontSize:17,letterSpacing:-.3,lineHeight:1.2}}>{cl?.name}</div>{sub&&<div style={{color:"rgba(255,255,255,.6)",fontSize:12,fontWeight:600,marginTop:2}}>{sub}</div>}</div>{right}</div></div>;
+  return <div style={{background:`linear-gradient(135deg,${t.s} 0%,${t.p}bb 100%)`,padding:"16px 18px 20px",position:"sticky",top:0,zIndex:60,boxShadow:"0 4px 24px rgba(0,0,0,.22)"}}>
+    <div style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap",rowGap:10}}>
+      <div style={{display:"flex",alignItems:"center",gap:12,flex:"1 1 200px",minWidth:0}}>
+        <Logo cl={cl} sz={42}/>
+        <div style={{flex:1,minWidth:0}}>
+          <div title={cl?.name} style={{color:"#fff",fontWeight:900,fontSize:17,letterSpacing:-.3,lineHeight:1.2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{cl?.name}</div>
+          {sub&&<div style={{color:"rgba(255,255,255,.6)",fontSize:12,fontWeight:600,marginTop:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{sub}</div>}
+        </div>
+      </div>
+      {right&&<div style={{flexShrink:0,marginLeft:"auto"}}>{right}</div>}
+    </div>
+  </div>;
 }
 function Divider({label,light}) {
   return <div style={{display:"flex",alignItems:"center",gap:10,margin:"14px 0 10px"}}><div style={{flex:1,height:1,background:"#e2e8f0"}}/><span style={{fontSize:11,fontWeight:800,color:light?"#94a3b8":"#64748b",whiteSpace:"nowrap"}}>{label}</span><div style={{flex:1,height:1,background:"#e2e8f0"}}/></div>;
@@ -16324,10 +16335,22 @@ function HelperWelcome({ h, data, save, onClose }) {
   );
 }
 
+// Fertige Auswahllisten-Vorlagen zum Uebernehmen (typische Vereins-Faelle).
+const LIST_TEMPLATE_PRESETS=[
+  {icon:"🌭",name:"Verpflegung Heimspiel",selType:"multi",items:["Kuchen","Waffeln","Muffins","Obst","Getränke","Kaffee"]},
+  {icon:"🛒",name:"Wer bringt was mit?",selType:"multi",items:["Wasserkiste","Bälle","Leibchen","Erste-Hilfe-Tasche","Eckfahnen","Trikots"]},
+  {icon:"🏆",name:"Aufgaben Turniertag",selType:"multi",items:["Kuchenverkauf","Grill","Kasse","Aufbau","Abbau","Parkplatz-Einweisung","Schiedsrichter"]},
+  {icon:"🎉",name:"Sommerfest / Feier",selType:"multi",items:["Salate","Grillgut","Getränke","Nachtisch","Aufbau","Abbau"]},
+  {icon:"🍕",name:"Essensbestellung",selType:"single",items:["Pizza Margherita","Pizza Salami","Pommes","Currywurst","Vegetarisch"]},
+  {icon:"👕",name:"Trikotgröße",selType:"single",items:["116","128","140","152","164","S","M","L"]},
+  {icon:"🚌",name:"Anreise Auswärtsspiel",selType:"single",items:["Ich fahre & kann mitnehmen","Ich suche eine Mitfahrt","Wir kommen selbst"]},
+];
+
 function TemplateForm({initial,onSave,onCancel,cl,title}) {
   const t=TH(cl);
   const blank={name:"",icon:"L",items:[],_txt:"",_max:""};
   const [f,setF]=useState(initial||blank);
+  const applyPreset=p=>setF(prev=>({...prev,icon:p.icon,name:p.name,selType:p.selType,items:p.items.map(txt=>({id:uid(),txt,max:null})),_txt:"",_max:""}));
   const u=p=>setF(prev=>({...prev,...p}));
   const txtRef=useRef(null);
   const dragIdx=useRef(null);
@@ -16357,6 +16380,29 @@ function TemplateForm({initial,onSave,onCancel,cl,title}) {
         <p style={{fontSize:15,fontWeight:800,color:"#0f172a"}}>{title}</p>
         <Btn sm ch="Abbrechen" onClick={onCancel} v="gst"/>
       </div>
+
+      {/* Fertige Vorlagen zum Uebernehmen – nur solange noch nichts angelegt ist. */}
+      {f.items.length===0&&(
+        <div style={{marginBottom:16}}>
+          <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:8}}>FERTIGE VORLAGE ÜBERNEHMEN</div>
+          <div style={{display:"flex",flexDirection:"column",gap:7}}>
+            {LIST_TEMPLATE_PRESETS.map(p=>(
+              <button key={p.name} onClick={()=>applyPreset(p)}
+                style={{display:"flex",alignItems:"center",gap:11,width:"100%",textAlign:"left",background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:13,padding:"10px 12px",cursor:"pointer",fontFamily:"inherit",transition:"all .15s"}}
+                onMouseEnter={e=>{e.currentTarget.style.borderColor=t.p;e.currentTarget.style.background=t.p+"0c";}}
+                onMouseLeave={e=>{e.currentTarget.style.borderColor="#e2e8f0";e.currentTarget.style.background="#f8fafc";}}>
+                <span style={{fontSize:22,flexShrink:0}}>{p.icon}</span>
+                <span style={{flex:1,minWidth:0}}>
+                  <span style={{display:"block",fontWeight:800,fontSize:14,color:"#0f172a"}}>{p.name}</span>
+                  <span style={{display:"block",fontSize:11.5,color:"#94a3b8",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{(p.selType==="single"?"Einfachauswahl · ":"Mehrfachauswahl · ")+p.items.join(", ")}</span>
+                </span>
+                <span style={{flexShrink:0,fontSize:12,fontWeight:800,color:t.p,whiteSpace:"nowrap"}}>Übernehmen</span>
+              </button>
+            ))}
+          </div>
+          <div style={{textAlign:"center",fontSize:11,color:"#cbd5e1",margin:"12px 0 2px"}}>oder eigene Vorlage erstellen ↓</div>
+        </div>
+      )}
 
       {}
       <div style={{marginBottom:14}}>
