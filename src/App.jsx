@@ -1600,7 +1600,7 @@ function Btn({ch,onClick,v="pri",full,sm,dis,load,icon,cl,sx={}}) {
   const p=cl?.pri||"#16a34a";
   const V={
     pri:{
-      background:dis?"#e2e8f0":`linear-gradient(135deg,${p} 0%,${mix(p,-12)} 100%)`,color:dis?"#94a3b8":contrast(p),boxShadow:dis?"none":`0 2px 8px ${p}40,0 1px 2px ${p}30`,border:"none",},drk:{
+      background:dis?"#e2e8f0":`linear-gradient(135deg,${p} 0%,${mix(p,-12)} 100%)`,color:dis?"#64748b":contrast(p),boxShadow:dis?"none":`0 2px 8px ${p}40,0 1px 2px ${p}30`,border:"none",},drk:{
       background:"linear-gradient(135deg,#1e293b 0%,#0f172a 100%)",color:"#fff",boxShadow:"0 2px 8px rgba(0,0,0,.25),0 1px 2px rgba(0,0,0,.15)",border:"none",},red:{
       background:"linear-gradient(135deg,#ef4444 0%,#dc2626 100%)",color:"#fff",boxShadow:"0 2px 8px rgba(239,68,68,.3)",border:"none",},gst:{
       background:"#fff",color:"#475569",boxShadow:"0 1px 3px rgba(0,0,0,.08),0 0 0 1.5px #e2e8f0",border:"none",},out:{
@@ -1614,7 +1614,7 @@ function Btn({ch,onClick,v="pri",full,sm,dis,load,icon,cl,sx={}}) {
     <button
       onClick={dis||load?undefined:onClick}
       style={{
-        ...s,borderRadius:radius,padding:pad,fontSize:fSize,fontWeight:700,letterSpacing:"-.01em",cursor:dis||load?"not-allowed":"pointer",width:full?"100%":undefined,display:"inline-flex",alignItems:"center",justifyContent:"center",gap:7,transition:"all .15s",opacity:dis?.55:1,fontFamily:"inherit",lineHeight:1.2,...sx
+        ...s,borderRadius:radius,padding:pad,fontSize:fSize,fontWeight:700,letterSpacing:"-.01em",cursor:dis||load?"not-allowed":"pointer",width:full?"100%":undefined,display:"inline-flex",alignItems:"center",justifyContent:"center",gap:7,transition:"all .15s",opacity:1,fontFamily:"inherit",lineHeight:1.2,...sx
       }}
     >
       {load
@@ -2226,7 +2226,7 @@ function OnboardingWizard({ cl, data, save, fire, onDone }) {
           }
           {step<STEPS
             ? <button onClick={()=>ok()&&setStep(s=>s+1)} disabled={!ok()}
-                style={{flex:2,padding:"13px",borderRadius:13,border:"none",background:ok()?t.p:"#e2e8f0",color:ok()?"#fff":"#94a3b8",fontWeight:800,fontSize:15,cursor:ok()?"pointer":"default",fontFamily:"inherit",transition:"all .2s"}}>
+                style={{flex:2,padding:"13px",borderRadius:13,border:"none",background:ok()?t.p:"#e2e8f0",color:ok()?"#fff":"#64748b",fontWeight:800,fontSize:15,cursor:ok()?"pointer":"default",fontFamily:"inherit",transition:"all .2s"}}>
                 Weiter
               </button>
             : <button onClick={finish}
@@ -3539,7 +3539,7 @@ function BroadcastModal({ data, cid, session, save, fire, onClose }) {
         <div style={{display:"flex",gap:9}}>
           <button onClick={onClose} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
           <button onClick={send} disabled={!msg.trim()}
-            style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:msg.trim()?"#16a34a":"#e2e8f0",color:msg.trim()?"#fff":"#94a3b8",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
+            style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:msg.trim()?"#16a34a":"#e2e8f0",color:msg.trim()?"#fff":"#64748b",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
             Senden
           </button>
         </div>
@@ -3609,7 +3609,7 @@ function NewsTab({ data, cid, session, save, fire, cl }) {
             </div>
             <div style={{display:"flex",gap:9,marginTop:14}}>
               <button onClick={()=>setShowForm(false)} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
-              <button onClick={post} disabled={!f.title.trim()} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:f.title.trim()?t.p:"#e2e8f0",color:f.title.trim()?"#fff":"#94a3b8",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Veröffentlichen</button>
+              <button onClick={post} disabled={!f.title.trim()} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:f.title.trim()?t.p:"#e2e8f0",color:f.title.trim()?"#fff":"#64748b",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Veröffentlichen</button>
             </div>
           </div>
         </div>
@@ -4244,7 +4244,7 @@ function ManageTeams({ data, save, fire, cl }) {
           autoCapitalize="none" autoCorrect="off" spellCheck={false}
           style={{width:"100%",padding:"12px 14px",fontSize:15,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",marginBottom:12,boxSizing:"border-box"}}/>
         <button onClick={addTeam} disabled={!name.trim()}
-          style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:name.trim()?t.p:"#e2e8f0",color:name.trim()?"#fff":"#94a3b8",fontWeight:800,fontSize:15,cursor:name.trim()?"pointer":"default",fontFamily:"inherit"}}>
+          style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:name.trim()?t.p:"#e2e8f0",color:name.trim()?"#fff":"#64748b",fontWeight:800,fontSize:15,cursor:name.trim()?"pointer":"default",fontFamily:"inherit"}}>
           + Mannschaft anlegen
         </button>
       </div>
@@ -5419,7 +5419,7 @@ function TrainingsLibrary({ data, myTids, cl, save, fire }) {
             </div>
           )}
         </div>
-        <button onClick={doSave} disabled={!valid} style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:valid?t.p:"#e2e8f0",color:valid?"#fff":"#94a3b8",fontWeight:800,fontSize:15,cursor:valid?"pointer":"default",fontFamily:"inherit"}}>Training speichern</button>
+        <button onClick={doSave} disabled={!valid} style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:valid?t.p:"#e2e8f0",color:valid?"#fff":"#64748b",fontWeight:800,fontSize:15,cursor:valid?"pointer":"default",fontFamily:"inherit"}}>Training speichern</button>
       </div>
     );
   }
@@ -6394,7 +6394,7 @@ function PlanEditor({ plan, cid, myTids, data, save, fire, cl, onClose }) {
         <div style={{padding:"12px 20px 32px",borderTop:"1px solid #f1f5f9",flexShrink:0,display:"flex",gap:9}}>
           {plan&&<button onClick={delPlan} style={{padding:"12px",borderRadius:12,border:"none",background:"#fee2e2",color:"#dc2626",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Löschen</button>}
           <button onClick={onClose} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
-          <button onClick={savePlan} disabled={!name.trim()} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:name.trim()?t.p:"#e2e8f0",color:name.trim()?"#fff":"#94a3b8",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Speichern</button>
+          <button onClick={savePlan} disabled={!name.trim()} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:name.trim()?t.p:"#e2e8f0",color:name.trim()?"#fff":"#64748b",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Speichern</button>
         </div>
       </div>
 
@@ -6598,7 +6598,7 @@ function ExerciseEditor({ ex, onSave, onClose, cl }) {
           <button onClick={()=>onSave(f)} disabled={!f.name.trim()}
             style={{flex:2,padding:"12px",borderRadius:12,border:"none",
               background:f.name.trim()?t.p:"#e2e8f0",
-              color:f.name.trim()?"#fff":"#94a3b8",
+              color:f.name.trim()?"#fff":"#64748b",
               fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
             Übung speichern
           </button>
@@ -7825,7 +7825,7 @@ function AdminForgotPassword({ cl, onBack, onReset }) {
           <button onClick={sendCode} disabled={!email.trim()}
             style={{width:"100%",padding:"13px",borderRadius:13,border:"none",
               background:email.trim()?t.p:"#e2e8f0",
-              color:email.trim()?"#fff":"#94a3b8",
+              color:email.trim()?"#fff":"#64748b",
               fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
             Reset-Code senden
           </button>
@@ -7857,7 +7857,7 @@ function AdminForgotPassword({ cl, onBack, onReset }) {
             <button onClick={checkCode} disabled={code.length!==6}
               style={{flex:2,padding:"12px",borderRadius:12,border:"none",
                 background:code.length===6?t.p:"#e2e8f0",
-                color:code.length===6?"#fff":"#94a3b8",
+                color:code.length===6?"#fff":"#64748b",
                 fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
               Bestätigen
             </button>
@@ -7886,7 +7886,7 @@ function AdminForgotPassword({ cl, onBack, onReset }) {
           <button onClick={doReset} disabled={!newPw.trim()||!newPw2.trim()}
             style={{width:"100%",padding:"13px",borderRadius:13,border:"none",
               background:newPw.trim()&&newPw2.trim()?t.p:"#e2e8f0",
-              color:newPw.trim()&&newPw2.trim()?"#fff":"#94a3b8",
+              color:newPw.trim()&&newPw2.trim()?"#fff":"#64748b",
               fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
             Passwort speichern
           </button>
@@ -8089,7 +8089,7 @@ function AdminEmailSetup({ cl, data, save, fire, onClose }) {
       <button onClick={doSave} disabled={!email.trim()}
         style={{width:"100%",padding:"12px",borderRadius:12,border:"none",
           background:email.trim()?t.p:"#e2e8f0",
-          color:email.trim()?"#fff":"#94a3b8",
+          color:email.trim()?"#fff":"#64748b",
           fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit",
           marginTop:12}}>
         Speichern
@@ -11231,7 +11231,7 @@ function PositionWeightsEditor({ data, cid, save, fire, cl, sport="fussball" }) 
               <div style={{display:"flex",gap:3}}>
                 {[0,1,2,3].map(n=>(
                   <button key={n} onClick={()=>setWeight(ax,n)}
-                    style={{width:30,height:28,borderRadius:7,border:`1.5px solid ${n===v?t.p:"#e2e8f0"}`,background:n===v?t.p:"#fff",color:n===v?"#fff":"#94a3b8",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{n}</button>
+                    style={{width:30,height:28,borderRadius:7,border:`1.5px solid ${n===v?t.p:"#e2e8f0"}`,background:n===v?t.p:"#fff",color:n===v?"#fff":"#64748b",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{n}</button>
                 ))}
               </div>
             </div>
@@ -11808,7 +11808,7 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
                     }}
                     style={{flex:1,padding:"10px",borderRadius:10,border:"none",
                       background:deleteConfirm===myClub.name?"#dc2626":"#e2e8f0",
-                      color:deleteConfirm===myClub.name?"#fff":"#94a3b8",
+                      color:deleteConfirm===myClub.name?"#fff":"#64748b",
                       fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
                     Löschen
                   </button>
@@ -13733,7 +13733,7 @@ function ExtraPollEditor({poll, onChange, onRemove, t, templates=[]}) {
           style={{flex:1,padding:"9px 11px",fontSize:13,border:`1.5px solid ${txt?t.p:"#e2e8f0"}`,borderRadius:9,outline:"none"}}/>
         <input value={max} onChange={e=>setMax(e.target.value)} type="number" min="1" placeholder="max"
           style={{width:58,padding:"9px 6px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",textAlign:"center"}}/>
-        <button onClick={addItem} disabled={!txt.trim()} style={{padding:"0 14px",borderRadius:9,border:"none",background:txt.trim()?t.p:"#e2e8f0",color:txt.trim()?contrast(t.p):"#94a3b8",fontWeight:700,fontSize:13,cursor:txt.trim()?"pointer":"default",fontFamily:"inherit"}}>+</button>
+        <button onClick={addItem} disabled={!txt.trim()} style={{padding:"0 14px",borderRadius:9,border:"none",background:txt.trim()?t.p:"#e2e8f0",color:txt.trim()?contrast(t.p):"#64748b",fontWeight:700,fontSize:13,cursor:txt.trim()?"pointer":"default",fontFamily:"inherit"}}>+</button>
       </div>
     </div>
   );
@@ -14643,7 +14643,7 @@ function StrengthsInput({ strengths,customStrengths,onChange,tp }) {
           placeholder="Eigene Stärke eingeben..."
           style={{flex:1,padding:"9px 13px",fontSize:13,border:`1.5px solid ${custom?tp:"#e2e8f0"}`,borderRadius:10,outline:"none",transition:"border-color .14s"}}/>
         <button onClick={addCustom} disabled={!custom.trim()}
-          style={{padding:"0 14px",height:38,borderRadius:10,border:"none",background:custom.trim()?tp:"#e2e8f0",color:custom.trim()?"#fff":"#94a3b8",fontWeight:700,fontSize:13,cursor:custom.trim()?"pointer":"default",fontFamily:"inherit",transition:"all .18s",whiteSpace:"nowrap"}}>
+          style={{padding:"0 14px",height:38,borderRadius:10,border:"none",background:custom.trim()?tp:"#e2e8f0",color:custom.trim()?"#fff":"#64748b",fontWeight:700,fontSize:13,cursor:custom.trim()?"pointer":"default",fontFamily:"inherit",transition:"all .18s",whiteSpace:"nowrap"}}>
           + Hinzufügen
         </button>
       </div>
@@ -16422,7 +16422,7 @@ function TemplateForm({initial,onSave,onCancel,cl,title}) {
               placeholder="Option eingeben,z.B. Waffeln..."
               style={{flex:1,padding:"11px 13px",fontSize:14,border:`2px solid ${f._txt?t.p:"#e2e8f0"}`,borderRadius:11,outline:"none",background:"#fff",transition:"border-color .15s"}}/>
             <button onClick={addItem} disabled={!f._txt.trim()}
-              style={{padding:"0 18px",height:44,borderRadius:11,border:"none",background:f._txt.trim()?t.p:"#e2e8f0",color:f._txt.trim()?contrast(t.p):"#94a3b8",fontWeight:700,fontSize:14,cursor:f._txt.trim()?"pointer":"default",transition:"all .18s",whiteSpace:"nowrap",fontFamily:"inherit",flexShrink:0}}>
+              style={{padding:"0 18px",height:44,borderRadius:11,border:"none",background:f._txt.trim()?t.p:"#e2e8f0",color:f._txt.trim()?contrast(t.p):"#64748b",fontWeight:700,fontSize:14,cursor:f._txt.trim()?"pointer":"default",transition:"all .18s",whiteSpace:"nowrap",fontFamily:"inherit",flexShrink:0}}>
               + Hinzufügen
             </button>
           </div>
@@ -16776,7 +16776,7 @@ function TreasuryTab({ data, cid, save, fire, cl, myTids=[], teams=[], isAdmin=f
           <p style={{fontSize:12,color:"#64748b",marginTop:2}}>Einnahmen & Ausgaben je Kasse – auch teamübergreifend</p>
         </div>
         <button onClick={()=>setForm({name:"",tids:myTeams.length===1?[myTeams[0].id]:[]})} disabled={selectableTeams.length===0}
-          style={{display:"flex",alignItems:"center",gap:7,padding:"10px 16px",borderRadius:12,border:"none",background:selectableTeams.length?t.p:"#e2e8f0",color:selectableTeams.length?contrast(t.p):"#94a3b8",fontWeight:700,fontSize:14,cursor:selectableTeams.length?"pointer":"default",fontFamily:"inherit"}}>
+          style={{display:"flex",alignItems:"center",gap:7,padding:"10px 16px",borderRadius:12,border:"none",background:selectableTeams.length?t.p:"#e2e8f0",color:selectableTeams.length?contrast(t.p):"#64748b",fontWeight:700,fontSize:14,cursor:selectableTeams.length?"pointer":"default",fontFamily:"inherit"}}>
           <span style={{fontSize:16}}>+</span> Neue Kasse
         </button>
       </div>
@@ -17118,7 +17118,7 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
                   placeholder="Option eingeben..."
                   style={{flex:1,padding:"10px 13px",fontSize:14,border:`2px solid ${f._li.txt?t.p:"#e2e8f0"}`,borderRadius:10,outline:"none"}}/>
                 <button onClick={()=>{if(!f._li.txt.trim())return;u({li:[...(f.li||[]),{id:uid(),txt:f._li.txt.trim(),max:f._li.max?parseInt(f._li.max):null}],_li:{txt:"",max:""}});}}
-                  style={{padding:"0 14px",height:42,borderRadius:10,border:"none",background:f._li.txt.trim()?t.p:"#e2e8f0",color:f._li.txt.trim()?contrast(t.p):"#94a3b8",fontWeight:700,cursor:f._li.txt.trim()?"pointer":"default",fontFamily:"inherit",fontSize:13}}>
+                  style={{padding:"0 14px",height:42,borderRadius:10,border:"none",background:f._li.txt.trim()?t.p:"#e2e8f0",color:f._li.txt.trim()?contrast(t.p):"#64748b",fontWeight:700,cursor:f._li.txt.trim()?"pointer":"default",fontFamily:"inherit",fontSize:13}}>
                   + Hinzufügen
                 </button>
               </div>
@@ -17446,7 +17446,7 @@ function ChatTab({data,cid,myTids,session,save,fire,cl}) {
           placeholder="Nachricht schreiben... (Enter = senden)"
           style={{flex:1,padding:"10px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",background:"#fff"}}/>
         <button onClick={send} disabled={!text.trim()}
-          style={{width:44,height:44,borderRadius:11,border:"none",background:text.trim()?t.p:"#e2e8f0",color:text.trim()?contrast(t.p):"#94a3b8",fontSize:18,cursor:text.trim()?"pointer":"default",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"}}>
+          style={{width:44,height:44,borderRadius:11,border:"none",background:text.trim()?t.p:"#e2e8f0",color:text.trim()?contrast(t.p):"#64748b",fontSize:18,cursor:text.trim()?"pointer":"default",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"}}>
           
         </button>
       </div>
@@ -17890,7 +17890,7 @@ function NewSeasonWizard({ data,save,fire,cl,myTids,onClose,onDone }) {
                   <button key={c} onClick={()=>setNtCat(c)} style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid ${ntCat===c?t.p:"#e2e8f0"}`,background:ntCat===c?t.p:"#fff",color:ntCat===c?"#fff":"#475569",fontWeight:700,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>{c}</button>
                 ))}
               </div>
-              <button onClick={addNewTeam} disabled={!ntName.trim()} style={{width:"100%",padding:"10px",borderRadius:10,border:"none",background:ntName.trim()?t.p:"#e2e8f0",color:ntName.trim()?"#fff":"#94a3b8",fontWeight:800,fontSize:13,cursor:ntName.trim()?"pointer":"default",fontFamily:"inherit"}}>+ Hinzufügen</button>
+              <button onClick={addNewTeam} disabled={!ntName.trim()} style={{width:"100%",padding:"10px",borderRadius:10,border:"none",background:ntName.trim()?t.p:"#e2e8f0",color:ntName.trim()?"#fff":"#64748b",fontWeight:800,fontSize:13,cursor:ntName.trim()?"pointer":"default",fontFamily:"inherit"}}>+ Hinzufügen</button>
             </div>
           </>}
           {step===3&&<>
@@ -17906,7 +17906,7 @@ function NewSeasonWizard({ data,save,fire,cl,myTids,onClose,onDone }) {
           </>}
           <div style={{display:"flex",gap:9,marginTop:20,paddingBottom:32}}>
             {step>1?<button onClick={()=>setStep(s=>s-1)} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Zurück</button>:<button onClick={onClose} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>}
-            {step<STEPS.length?<button onClick={()=>ok()&&setStep(s=>s+1)} disabled={!ok()} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:ok()?t.p:"#e2e8f0",color:ok()?"#fff":"#94a3b8",fontWeight:800,cursor:ok()?"pointer":"default",fontFamily:"inherit"}}>Weiter</button>:<button onClick={finish} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:t.p,color:"#fff",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Saison anlegen</button>}
+            {step<STEPS.length?<button onClick={()=>ok()&&setStep(s=>s+1)} disabled={!ok()} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:ok()?t.p:"#e2e8f0",color:ok()?"#fff":"#64748b",fontWeight:800,cursor:ok()?"pointer":"default",fontFamily:"inherit"}}>Weiter</button>:<button onClick={finish} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:t.p,color:"#fff",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Saison anlegen</button>}
           </div>
         </div>
       </div>
@@ -18150,7 +18150,7 @@ function SeasonModal({ data,save,fire,cl,myTids,onClose }) {
 
               <button onClick={()=>copyFrom&&copyTo&&copyToSeason(copyFrom,copyTo)}
                 disabled={!copyFrom||!copyTo}
-                style={{width:"100%",padding:"14px",borderRadius:14,border:"none",background:copyFrom&&copyTo?t.p:"#e2e8f0",color:copyFrom&&copyTo?"#fff":"#94a3b8",fontWeight:800,fontSize:15,cursor:copyFrom&&copyTo?"pointer":"default",fontFamily:"inherit"}}>
+                style={{width:"100%",padding:"14px",borderRadius:14,border:"none",background:copyFrom&&copyTo?t.p:"#e2e8f0",color:copyFrom&&copyTo?"#fff":"#64748b",fontWeight:800,fontSize:15,cursor:copyFrom&&copyTo?"pointer":"default",fontFamily:"inherit"}}>
                  Spieler jetzt kopieren
               </button>
             </div>
@@ -18294,7 +18294,7 @@ function BookingModal({ field,cellStart,date,data,save,fire,cl,myTids,session,on
               style={{width:"100%",padding:"10px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
           </div>
           <button onClick={save2} disabled={!f.teamId}
-            style={{width:"100%",padding:"14px",borderRadius:14,border:"none",background:f.teamId?t.p:"#e2e8f0",color:f.teamId?"#fff":"#94a3b8",fontWeight:800,fontSize:15,cursor:f.teamId?"pointer":"default",fontFamily:"inherit",boxShadow:f.teamId?`0 4px 16px ${t.p}44`:"none"}}>
+            style={{width:"100%",padding:"14px",borderRadius:14,border:"none",background:f.teamId?t.p:"#e2e8f0",color:f.teamId?"#fff":"#64748b",fontWeight:800,fontSize:15,cursor:f.teamId?"pointer":"default",fontFamily:"inherit",boxShadow:f.teamId?`0 4px 16px ${t.p}44`:"none"}}>
             Platz buchen
           </button>
         </div>
@@ -18387,7 +18387,7 @@ function TrainerAccessShare({ tr, cl, data, save, fire, onClose }) {
         <input value={code} onChange={e=>setCode(e.target.value)} placeholder="Passwort"
           style={{width:"100%",padding:"11px 14px",fontSize:15,fontWeight:700,letterSpacing:1,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",marginBottom:16,boxSizing:"border-box"}}/>
         <div style={{display:"flex",flexDirection:"column",gap:9}}>
-          <button onClick={onWhatsApp} disabled={!code.trim()} style={{width:"100%",padding:"12px",borderRadius:12,border:"none",background:code.trim()?"#25D366":"#e2e8f0",color:code.trim()?"#fff":"#94a3b8",fontWeight:800,cursor:code.trim()?"pointer":"not-allowed",fontFamily:"inherit"}}>Per WhatsApp senden</button>
+          <button onClick={onWhatsApp} disabled={!code.trim()} style={{width:"100%",padding:"12px",borderRadius:12,border:"none",background:code.trim()?"#25D366":"#e2e8f0",color:code.trim()?"#fff":"#64748b",fontWeight:800,cursor:code.trim()?"pointer":"not-allowed",fontFamily:"inherit"}}>Per WhatsApp senden</button>
           {typeof navigator!=="undefined"&&navigator.share&&<button onClick={onShareNative} disabled={!code.trim()} style={{width:"100%",padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#334155",fontWeight:800,cursor:code.trim()?"pointer":"not-allowed",fontFamily:"inherit"}}>Teilen ...</button>}
           <button onClick={onCopy} disabled={!code.trim()} style={{width:"100%",padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#334155",fontWeight:800,cursor:code.trim()?"pointer":"not-allowed",fontFamily:"inherit"}}>{copied?"Kopiert!":"Text kopieren"}</button>
           <button onClick={onClose} style={{width:"100%",padding:"11px",borderRadius:12,border:"none",background:"none",color:"#94a3b8",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Schliessen</button>
@@ -18519,7 +18519,7 @@ function TrainersTab({data,cid,save,fire,session}) {
             </div>
             <div style={{display:"flex",gap:9,marginTop:16}}>
               <button onClick={()=>setShowForm(false)} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
-              <button onClick={saveF} disabled={!f.name.trim()||(!editId&&!f.pw.trim())} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:(f.name.trim()&&(editId||f.pw.trim()))?"#16a34a":"#e2e8f0",color:(f.name.trim()&&(editId||f.pw.trim()))?"#fff":"#94a3b8",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Speichern</button>
+              <button onClick={saveF} disabled={!f.name.trim()||(!editId&&!f.pw.trim())} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:(f.name.trim()&&(editId||f.pw.trim()))?"#16a34a":"#e2e8f0",color:(f.name.trim()&&(editId||f.pw.trim()))?"#fff":"#64748b",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Speichern</button>
             </div>
           </div>
         </div>
@@ -19038,7 +19038,7 @@ function ConsentRequest({ team, players, trainers, onConsent, onDecline, cl }) {
         <button onClick={submit} disabled={!checked||!name.trim()}
           style={{width:"100%",padding:"14px",borderRadius:14,border:"none",
             background:checked&&name.trim()?t.p:"#e2e8f0",
-            color:checked&&name.trim()?"#fff":"#94a3b8",
+            color:checked&&name.trim()?"#fff":"#64748b",
             fontWeight:800,fontSize:15,cursor:checked&&name.trim()?"pointer":"default",
             fontFamily:"inherit",marginBottom:10}}>
           Einwilligung geben
@@ -19709,7 +19709,7 @@ function FieldsManagerTab({ data, cid, save, fire, cl }) {
                   <div style={{display:"flex",gap:9,marginTop:16}}>
                     <button onClick={()=>setStep("template")} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Zurück</button>
                     <button onClick={()=>draft.split&&setStep("weather")} disabled={!draft.split}
-                      style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:draft.split?t.p:"#e2e8f0",color:draft.split?"#fff":"#94a3b8",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Weiter</button>
+                      style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:draft.split?t.p:"#e2e8f0",color:draft.split?"#fff":"#64748b",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Weiter</button>
                   </div>
                 </div>
               )}
@@ -19741,7 +19741,7 @@ function FieldsManagerTab({ data, cid, save, fire, cl }) {
                   <div style={{display:"flex",gap:9}}>
                     <button onClick={()=>setStep("split")} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Zurück</button>
                     <button onClick={()=>draft.weather&&setStep("name")} disabled={!draft.weather}
-                      style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:draft.weather?t.p:"#e2e8f0",color:draft.weather?"#fff":"#94a3b8",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Weiter</button>
+                      style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:draft.weather?t.p:"#e2e8f0",color:draft.weather?"#fff":"#64748b",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Weiter</button>
                   </div>
                 </div>
               )}
@@ -20462,7 +20462,7 @@ function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline}) {
             <div style={{display:"flex",gap:8}}>
               <button onClick={()=>{onSetDeadline({date:dlDate,time:dlTime});setShowDL(false);}}
                 disabled={!dlDate}
-                style={{flex:1,padding:"10px",borderRadius:10,border:"none",background:dlDate?p:"#e2e8f0",color:dlDate?"#fff":"#94a3b8",fontWeight:700,fontSize:13,cursor:dlDate?"pointer":"default",fontFamily:"inherit"}}>
+                style={{flex:1,padding:"10px",borderRadius:10,border:"none",background:dlDate?p:"#e2e8f0",color:dlDate?"#fff":"#64748b",fontWeight:700,fontSize:13,cursor:dlDate?"pointer":"default",fontFamily:"inherit"}}>
                  Speichern
               </button>
               {dlLabel&&<button onClick={()=>{onSetDeadline(null);setShowDL(false);}}
@@ -20904,7 +20904,7 @@ function TournSetup({ setup, cl, t, onUpdate, fields=[], ev=null }){
         <div style={{display:"flex",gap:8,marginTop:4}}>
           <input value={nt} onChange={e=>setNt(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")addTeam();}} placeholder="Team / Verein hinzufügen"
             style={{flex:1,padding:"10px 12px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",boxSizing:"border-box"}}/>
-          <button onClick={addTeam} disabled={!nt.trim()} style={{padding:"10px 15px",borderRadius:10,border:"none",background:nt.trim()?t.p:"#e2e8f0",color:nt.trim()?"#fff":"#94a3b8",fontWeight:800,fontSize:14,cursor:nt.trim()?"pointer":"default",fontFamily:"inherit"}}>+</button>
+          <button onClick={addTeam} disabled={!nt.trim()} style={{padding:"10px 15px",borderRadius:10,border:"none",background:nt.trim()?t.p:"#e2e8f0",color:nt.trim()?"#fff":"#64748b",fontWeight:800,fontSize:14,cursor:nt.trim()?"pointer":"default",fontFamily:"inherit"}}>+</button>
         </div>
       </div>
       {/* Besucher-Zugang: zwei Passwoerter (Ansehen / Steuern) + Link */}
@@ -21174,7 +21174,7 @@ function PublishTournament({ ev, cl, onPublish, onUnpublish }) {
       </div>
       <button onClick={()=>fromDate&&untilDate&&onPublish&&onPublish({from:fromDate.toISOString(),until:untilDate.toISOString()})}
         disabled={!fromDate||!untilDate}
-        style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:(fromDate&&untilDate)?t.p:"#e2e8f0",color:(fromDate&&untilDate)?"#fff":"#94a3b8",fontWeight:800,fontSize:15,cursor:(fromDate&&untilDate)?"pointer":"default",fontFamily:"inherit"}}>
+        style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:(fromDate&&untilDate)?t.p:"#e2e8f0",color:(fromDate&&untilDate)?"#fff":"#64748b",fontWeight:800,fontSize:15,cursor:(fromDate&&untilDate)?"pointer":"default",fontFamily:"inherit"}}>
         {ev.published?"Freischaltung aktualisieren":"Turnier veröffentlichen"}
       </button>
       {ev.published&&<button onClick={()=>onUnpublish&&onUnpublish()} style={{width:"100%",padding:"11px",borderRadius:12,border:"1.5px solid #fecaca",background:"#fff7f7",color:"#dc2626",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Veröffentlichung zurückziehen</button>}
@@ -21202,7 +21202,7 @@ function TournSplit({ ev, t }){
           <button onClick={()=>setN(Math.max(2,n-1))} style={btn}>−</button>
           <span style={{minWidth:28,textAlign:"center",fontWeight:800,fontSize:17}}>{n}</span>
           <button onClick={()=>setN(Math.min(6,n+1))} style={btn}>+</button>
-          <button onClick={shuffle} disabled={present.length===0} style={{marginLeft:"auto",padding:"9px 16px",borderRadius:10,border:"none",background:present.length?t.p:"#e2e8f0",color:present.length?"#fff":"#94a3b8",fontWeight:800,fontSize:13,cursor:present.length?"pointer":"default",fontFamily:"inherit"}}>Neu mischen</button>
+          <button onClick={shuffle} disabled={present.length===0} style={{marginLeft:"auto",padding:"9px 16px",borderRadius:10,border:"none",background:present.length?t.p:"#e2e8f0",color:present.length?"#fff":"#64748b",fontWeight:800,fontSize:13,cursor:present.length?"pointer":"default",fontFamily:"inherit"}}>Neu mischen</button>
         </div>
         <div style={{fontSize:12,color:"#94a3b8",marginTop:8}}>{present.length} zugesagte Spieler werden aufgeteilt.</div>
       </div>
@@ -21482,7 +21482,7 @@ function TournamentPublic({ eid, clubParam, onBack }){
         <PwInput value={pw} onChange={e=>{setPw(e.target.value);setErr(false);}} onKeyDown={e=>{if(e.key==="Enter")tryView();}} placeholder="Passwort" autoFocus
           style={{width:"100%",padding:"12px 14px",fontSize:16,border:`2px solid ${err?"#fca5a5":"#e2e8f0"}`,borderRadius:12,outline:"none",marginBottom:err?6:12,boxSizing:"border-box"}}/>
         {err&&<p style={{fontSize:12,color:"#dc2626",fontWeight:700,marginBottom:10}}>Falsches Passwort</p>}
-        <button onClick={tryView} disabled={!pw.trim()} style={{width:"100%",padding:"12px",borderRadius:12,border:"none",background:pw.trim()?t.p:"#e2e8f0",color:pw.trim()?"#fff":"#94a3b8",fontWeight:800,fontSize:15,cursor:pw.trim()?"pointer":"default",fontFamily:"inherit"}}>Ansehen</button>
+        <button onClick={tryView} disabled={!pw.trim()} style={{width:"100%",padding:"12px",borderRadius:12,border:"none",background:pw.trim()?t.p:"#e2e8f0",color:pw.trim()?"#fff":"#64748b",fontWeight:800,fontSize:15,cursor:pw.trim()?"pointer":"default",fontFamily:"inherit"}}>Ansehen</button>
       </div>
       <AffiliateBanner trigger="events" style={{maxWidth:360,margin:"14px auto 0"}}/>
     </Shell>
@@ -21572,7 +21572,7 @@ function DutyBoard({ ev, user, canManage, onChange }){
       </div>
       {canManage&&<div style={{display:"flex",gap:7,marginTop:9}}>
         <input value={txt} onChange={e=>setTxt(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();addDuty();}}} placeholder="Dienst, z.B. Kuchen, Aufbau, Kasse…" style={{flex:1,padding:"9px 12px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none"}}/>
-        <button onClick={addDuty} disabled={!txt.trim()} style={{padding:"0 15px",borderRadius:10,border:"none",background:txt.trim()?"#16a34a":"#e2e8f0",color:txt.trim()?"#fff":"#94a3b8",fontWeight:900,fontSize:16,cursor:txt.trim()?"pointer":"default",fontFamily:"inherit"}}>+</button>
+        <button onClick={addDuty} disabled={!txt.trim()} style={{padding:"0 15px",borderRadius:10,border:"none",background:txt.trim()?"#16a34a":"#e2e8f0",color:txt.trim()?"#fff":"#64748b",fontWeight:900,fontSize:16,cursor:txt.trim()?"pointer":"default",fontFamily:"inherit"}}>+</button>
       </div>}
     </div>
   );
