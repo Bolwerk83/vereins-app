@@ -136,5 +136,45 @@ Deno.serve(async (req) => {
     return json({ ok: true });
   }
 
+  // ===== SuperAdmin (Service-Role, umgeht RLS) =====
+  // Auth ueber das SuperAdmin-Passwort (Hash in app_secret.sa_password_hash,
+  // reines sha256 wie check_sa_password). Wird gebraucht, sobald die RLS pro
+  // Verein verschaerft ist und der SuperAdmin nicht mehr alle Zeilen sieht.
+  if (action && typeof action === "string" && action.startsWith("sa.")) {
+    const { data: sec } = await admin.from("app_secret").select("sa_password_hash").eq("id", 1).maybeSingle();
+    const stored = sec?.sa_password_hash;
+    if (!stored || (await sha256hex(p.password || "")) !== stored) return json({ error: "sa auth" }, 401);
+
+    if (action === "sa.list") {
+      const { data } = await admin.from("app_data").select("key,updated_at,value").order("updated_at", { ascending: false });
+      return json({ rows: data || [] });
+    }
+    if (action === "sa.delete") {
+      await admin.from("app_data").delete().eq("key", p.key);
+      return json({ ok: true });
+    }
+    if (action === "sa.set") {
+      const rows = (p.rows || []).map((r: any) => ({ key: r.key, value: r.value, updated_at: new Date().toISOString() }));
+      if (rows.length) await admin.from("app_data").upsert(rows);
+      return json({ ok: true });
+    }
+    if (action === "sa.setClubCode") {
+      if (!p.cid || !p.code) return json({ error: "cid/code fehlt" }, 400);
+      await admin.from("app_club_secret").upsert({ cid: p.cid, code_hash: await sha256hex(p.code) });
+      return json({ ok: true });
+    }
+    if (action === "sa.deleteClub") {
+      const cid = p.cid;
+      await admin.from("app_data").delete().eq("key", clubKey(cid));      // Shard
+      const glob = await getRow(glKey) || { clubs: [] };
+      glob.clubs = (glob.clubs || []).filter((c: any) => c.id !== cid);   // aus Verzeichnis
+      await setRow(glKey, glob);
+      try { await admin.from("app_members").delete().eq("cid", cid); } catch {}
+      try { await admin.from("app_club_secret").delete().eq("cid", cid); } catch {}
+      return json({ ok: true });
+    }
+    return json({ error: "unknown sa action" }, 400);
+  }
+
   return json({ error: "unknown action" }, 400);
 });

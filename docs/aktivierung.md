@@ -105,11 +105,21 @@ sperrt sich die App aus. Vorher **Backup** ziehen (SuperAdmin → Backup).
 
 ### Noch offen für die volle Mehr-Vereins-Nutzung (eigene Schritte/Code)
 - **SuperAdmin** greift derzeit mit dem Member-Token zu → unter scharfer RLS
-  sieht er nicht mehr alle Vereine. Lösung: SuperAdmin-Lesen/Schreiben über eine
-  **Service-Role-Edge-Function** (umgeht RLS). Bis dahin SuperAdmin nur über
-  SQL-Editor/Service-Role nutzen.
-- **Vereinscode-Verwaltung** im ClubAdmin (Code setzen/ändern) braucht eine
-  privilegierte RPC – bis dahin per SQL setzen (Schritt 3).
+  sieht er nicht mehr alle Vereine. **Vorbereitet:** die Edge-Function
+  `supabase/functions/data-api/index.ts` hat jetzt SuperAdmin-Endpunkte
+  (mit dem SuperAdmin-Passwort abgesichert, Service-Role umgeht RLS):
+  - `sa.list` – alle `app_data`-Zeilen (key, updated_at, value)
+  - `sa.delete {key}` – Zeile löschen
+  - `sa.set {rows:[{key,value}]}` – Zeilen upserten
+  - `sa.setClubCode {cid, code}` – Vereinscode setzen (für Mandanten-Trennung)
+  - `sa.deleteClub {cid}` – Shard + Verzeichnis-Eintrag + Mitgliedschaften/Code entfernen
+  Aufruf: `POST /functions/v1/data-api` mit `{action:"sa.list", password:"<SA-PW>"}`.
+  **Zu tun:** Function deployen (`supabase functions deploy data-api`) mit Secrets
+  `SUPABASE_SERVICE_ROLE_KEY` (auto) + `APP_TOKEN_SECRET` (selbst wählen); danach
+  die SuperAdmin-Aufrufe in `src/App.jsx` (heute direkte `sb.dbList/dbDelete/...`)
+  auf diese Endpunkte umstellen. Bis dahin SuperAdmin nur über SQL-Editor nutzen.
+- **Vereinscode-Verwaltung** im ClubAdmin: kann künftig `sa.setClubCode` nutzen –
+  bis dahin per SQL setzen (Schritt 3).
 - **Timer-Steuerung durch reine Gäste** ohne Mitgliedschaft schreibt aktuell in
   die globale Zeile (unter der vorgeschlagenen RLS erlaubt). Für strengere RLS
   ggf. kleine `set_timer`-RPC ergänzen.
