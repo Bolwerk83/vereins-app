@@ -20870,8 +20870,71 @@ function TournSetup({ setup, cl, t, onUpdate, fields=[], ev=null }){
     </div>
   );
 }
+// Eine Spielpaarung mit Ergebnis-Eingabe (editierbar) bzw. Anzeige (read-only).
+function GameRow({ g, t, editable, onScore }){
+  const [sa,setSa]=useState(g.sa==null?"":String(g.sa));
+  const [sb,setSb]=useState(g.sb==null?"":String(g.sb));
+  useEffect(()=>{ setSa(g.sa==null?"":String(g.sa)); setSb(g.sb==null?"":String(g.sb)); },[g.sa,g.sb]);
+  const commit=()=>{ const a=sa.trim()===""?null:parseInt(sa); const b=sb.trim()===""?null:parseInt(sb); onScore&&onScore(Number.isNaN(a)?null:a, Number.isNaN(b)?null:b); };
+  const played = g.sa!=null && g.sb!=null;
+  const num={width:38,padding:"6px 4px",fontSize:15,fontWeight:800,textAlign:"center",border:"1.5px solid #e2e8f0",borderRadius:8,outline:"none"};
+  return (
+    <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 11px",marginBottom:5,background:"#fff",borderRadius:9,border:"1px solid #e2e8f0",fontSize:13}}>
+      <span style={{fontSize:11,fontWeight:700,color:"#64748b",minWidth:70,flexShrink:0}}>{g.field}</span>
+      <span style={{flex:1,fontWeight:700,color:"#0f172a",textAlign:"right"}}>{g.a}</span>
+      {editable
+        ? <div style={{display:"flex",alignItems:"center",gap:4,flexShrink:0}}>
+            <input value={sa} onChange={e=>setSa(e.target.value)} onBlur={commit} type="number" min="0" inputMode="numeric" placeholder="-" style={num}/>
+            <span style={{fontWeight:800,color:"#94a3b8"}}>:</span>
+            <input value={sb} onChange={e=>setSb(e.target.value)} onBlur={commit} type="number" min="0" inputMode="numeric" placeholder="-" style={num}/>
+          </div>
+        : <span style={{flexShrink:0,fontWeight:900,fontSize:15,color:played?"#0f172a":"#cbd5e1",minWidth:46,textAlign:"center"}}>{played?`${g.sa} : ${g.sb}`:"– : –"}</span>}
+      <span style={{flex:1,fontWeight:700,color:"#0f172a",textAlign:"left"}}>{g.b}</span>
+    </div>
+  );
+}
+// Tabelle aus gespielten Partien (3/1/0 Punkte).
+function TournStandings({ schedule, teams, t }){
+  const played=(schedule||[]).filter(g=>g&&g.sa!=null&&g.sb!=null);
+  const names=(teams&&teams.length?teams:[...new Set((schedule||[]).flatMap(g=>[g.a,g.b]))]).filter(Boolean);
+  const row={}; names.forEach(n=>row[n]={n,sp:0,s:0,u:0,n_:0,to:0,tg:0,pkt:0});
+  played.forEach(g=>{
+    const A=row[g.a]||(row[g.a]={n:g.a,sp:0,s:0,u:0,n_:0,to:0,tg:0,pkt:0});
+    const B=row[g.b]||(row[g.b]={n:g.b,sp:0,s:0,u:0,n_:0,to:0,tg:0,pkt:0});
+    A.sp++;B.sp++; A.to+=g.sa;A.tg+=g.sb; B.to+=g.sb;B.tg+=g.sa;
+    if(g.sa>g.sb){A.s++;B.n_++;A.pkt+=3;} else if(g.sa<g.sb){B.s++;A.n_++;B.pkt+=3;} else {A.u++;B.u++;A.pkt++;B.pkt++;}
+  });
+  const table=Object.values(row).sort((a,b)=>b.pkt-a.pkt || (b.to-b.tg)-(a.to-a.tg) || b.to-a.to || a.n.localeCompare(b.n));
+  if(table.length===0) return <p style={{fontSize:13,color:"#94a3b8"}}>Noch keine Teams.</p>;
+  return (
+    <div style={{overflowX:"auto"}}>
+      <table style={{width:"100%",borderCollapse:"collapse",fontSize:12.5}}>
+        <thead><tr style={{color:"#94a3b8",fontWeight:800,textAlign:"center"}}>
+          <th style={{textAlign:"left",padding:"6px 6px"}}>#</th><th style={{textAlign:"left"}}>Team</th>
+          <th style={{padding:"6px 5px"}}>Sp</th><th>S</th><th>U</th><th>N</th><th style={{padding:"6px 5px"}}>Tore</th><th style={{padding:"6px 6px"}}>Pkt</th>
+        </tr></thead>
+        <tbody>
+          {table.map((r,i)=>(
+            <tr key={r.n} style={{borderTop:"1px solid #eef2f7"}}>
+              <td style={{padding:"7px 6px",color:"#94a3b8",fontWeight:700}}>{i+1}</td>
+              <td style={{fontWeight:700,color:"#0f172a"}}>{r.n}</td>
+              <td style={{textAlign:"center"}}>{r.sp}</td><td style={{textAlign:"center"}}>{r.s}</td>
+              <td style={{textAlign:"center"}}>{r.u}</td><td style={{textAlign:"center"}}>{r.n_}</td>
+              <td style={{textAlign:"center",whiteSpace:"nowrap"}}>{r.to}:{r.tg}</td>
+              <td style={{textAlign:"center",fontWeight:900,color:t?.p||"#16a34a"}}>{r.pkt}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 function TournPlan({ ev, setup, t, onUpdate, isHelper }){
   const sched=ev.schedule||[];
+  const setScore=(g,a,b)=>{
+    if(!onUpdate) return;
+    onUpdate({ schedule: sched.map(x=>(x.field===g.field&&x.time===g.time&&x.a===g.a&&x.b===g.b)?{...x,sa:a,sb:b}:x) });
+  };
   const [startTime,setStartTime]=useState(setup.startTime||"09:00");
   const teams=(setup.clubs||[]).filter(Boolean);
   const canGen = !!onUpdate && !isHelper;
@@ -20906,15 +20969,19 @@ function TournPlan({ ev, setup, t, onUpdate, isHelper }){
             <div key={tm} style={{marginBottom:12}}>
               <div style={{fontSize:12,fontWeight:800,color:t.p,marginBottom:5}}>{tm} Uhr</div>
               {groups[tm].map((g,i)=>(
-                <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 11px",marginBottom:5,background:"#fff",borderRadius:9,border:"1px solid #e2e8f0",fontSize:13}}>
-                  <span style={{fontSize:11,fontWeight:700,color:"#64748b",minWidth:78,flexShrink:0}}>{g.field}</span>
-                  <span style={{flex:1,fontWeight:700,color:"#0f172a",textAlign:"center"}}>{g.a} <span style={{color:"#94a3b8",fontWeight:600}}>vs</span> {g.b}</span>
-                </div>
+                <GameRow key={g.field+"|"+g.a+"|"+g.b} g={g} t={t} editable={!!onUpdate} onScore={(a,b)=>setScore(g,a,b)}/>
               ))}
             </div>
           ))
         }
+        {sched.length>0&&!!onUpdate&&<p style={{fontSize:11,color:"#94a3b8",marginTop:6}}>Ergebnis eintippen → wird automatisch gespeichert und für Besucher sichtbar.</p>}
       </div>
+      {sched.length>0&&(
+        <div style={{background:"#fff",borderRadius:14,padding:"14px",border:"1.5px solid #e2e8f0"}}>
+          <p style={{fontWeight:700,color:"#334155",marginBottom:10}}>Tabelle</p>
+          <TournStandings schedule={sched} teams={teams} t={t}/>
+        </div>
+      )}
     </div>
   );
 }
@@ -21035,9 +21102,9 @@ function TournView({ ev,user,onVote,onUpdate,cl,players,isHelper=false,fields=[]
         <p style={{fontWeight:700,color:"#334155",marginBottom:8}}>Team-Aufteilung</p>
         <p style={{fontSize:13,color:"#64748b"}}>Spieler zufällig auf Teams aufteilen.</p>
       </div>}
-      {stab==="stats"&&<div style={{background:"#f8fafc",borderRadius:14,padding:"14px"}}>
-        <p style={{fontWeight:700,color:"#334155",marginBottom:8}}>Statistiken</p>
-        <p style={{fontSize:13,color:"#64748b"}}>Hier erscheinen Turnier-Statistiken.</p>
+      {stab==="stats"&&<div style={{background:"#fff",borderRadius:14,padding:"14px",border:"1.5px solid #e2e8f0"}}>
+        <p style={{fontWeight:700,color:"#334155",marginBottom:10}}>Tabelle</p>
+        <TournStandings schedule={ev.schedule||[]} teams={(setup.clubs||[]).filter(Boolean)} t={t}/>
       </div>}
     </div>
   );
