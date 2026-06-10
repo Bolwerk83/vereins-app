@@ -20254,6 +20254,10 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             }}/>
           </div>
         ))}
+        <DutyBoard ev={viewEv} user={session.name||"Trainer"} canManage={!isHelper} onChange={arr=>{
+          save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,duties:arr}:e)});
+          setViewEv(prev=>({...prev,duties:arr}));
+        }}/>
         <div style={{height:14}}/><Btn full ch="Schließen" v="gst" onClick={()=>setViewEv(null)}/>
       </Drawer>}
 
@@ -21401,6 +21405,39 @@ function TournamentPublic({ eid, clubParam, onBack }){
   );
 }
 
+// Helfer-Dienste pro Termin: Aufgaben anlegen (Trainer/Admin) und uebernehmen
+// (alle). Jede Aufgabe hat eine id -> 3-Wege-Merge greift bei parallelen Klicks.
+function DutyBoard({ ev, user, canManage, onChange }){
+  const duties = ev.duties||[];
+  const [txt,setTxt]=useState("");
+  const set = arr => onChange&&onChange(arr);
+  const addDuty = () => { const v=txt.trim(); if(!v)return; set([...duties,{id:uid(),title:v,assignee:""}]); setTxt(""); };
+  if(duties.length===0 && !canManage) return null;
+  return (
+    <div style={{marginTop:14,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
+      <div style={{fontWeight:800,fontSize:14,color:"#0f172a",marginBottom:10}}>Helfer-Dienste</div>
+      {duties.length===0 && <p style={{fontSize:13,color:"#94a3b8",marginBottom:10}}>Noch keine Dienste angelegt.</p>}
+      <div style={{display:"flex",flexDirection:"column",gap:7}}>
+        {duties.map(d=>{
+          const mine = d.assignee && d.assignee===user;
+          return (
+            <div key={d.id} style={{display:"flex",alignItems:"center",gap:10,background:d.assignee?"#f0fdf4":"#fff7ed",border:`1.5px solid ${d.assignee?"#bbf7d0":"#fed7aa"}`,borderRadius:11,padding:"9px 12px"}}>
+              <span style={{flex:1,minWidth:0,fontWeight:700,fontSize:13.5,color:"#0f172a"}}>{d.title}</span>
+              {d.assignee
+                ? <span style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}><Av name={d.assignee} sz={22}/><span style={{fontSize:13,fontWeight:700,color:"#15803d"}}>{d.assignee}</span>{(mine||canManage)&&<button onClick={()=>set(duties.map(x=>x.id===d.id?{...x,assignee:""}:x))} style={{marginLeft:4,background:"none",border:"none",color:"#dc2626",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"inherit"}}>frei</button>}</span>
+                : <button onClick={()=>set(duties.map(x=>x.id===d.id?{...x,assignee:user||"Helfer"}:x))} style={{flexShrink:0,padding:"6px 13px",borderRadius:9,border:"none",background:"#d97706",color:"#fff",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Übernehmen</button>}
+              {canManage&&<button onClick={()=>set(duties.filter(x=>x.id!==d.id))} style={{flexShrink:0,width:26,height:26,borderRadius:7,background:"#fee2e2",border:"none",color:"#dc2626",cursor:"pointer",fontWeight:800,fontSize:12}}>✕</button>}
+            </div>
+          );
+        })}
+      </div>
+      {canManage&&<div style={{display:"flex",gap:7,marginTop:9}}>
+        <input value={txt} onChange={e=>setTxt(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();addDuty();}}} placeholder="Dienst, z.B. Kuchen, Aufbau, Kasse…" style={{flex:1,padding:"9px 12px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none"}}/>
+        <button onClick={addDuty} disabled={!txt.trim()} style={{padding:"0 15px",borderRadius:10,border:"none",background:txt.trim()?"#16a34a":"#e2e8f0",color:txt.trim()?"#fff":"#94a3b8",fontWeight:900,fontSize:16,cursor:txt.trim()?"pointer":"default",fontFamily:"inherit"}}>+</button>
+      </div>}
+    </div>
+  );
+}
 function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
   const isTrainerOrHelper = role==="trainer"||role==="helper"||role==="admin";
   const eT=ET[ev.type]||ET.training;const isToday=ev.date===now();const isPast=ev.date<now();
@@ -21478,6 +21515,7 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
             <ExtraListPoll poll={p} user={user} onChange={arr=>onVote(ev.id,"extra:"+p.id,arr)}/>
           </div>
         ))}
+        <DutyBoard ev={ev} user={user} canManage={isTrainerOrHelper} onChange={arr=>onVote(ev.id,"duty",arr)}/>
       </div>}
     </div>
   );
@@ -21605,6 +21643,7 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
     const next={...data,events:data.events.map(e=>{
       if(e.id!==eid)return e;
       if(pt==="carpool")return {...e, votes:{...(e.votes||{}), [user]: val}};
+      if(pt==="duty")return {...e, duties: val};
       if(typeof pt==="string"&&pt.startsWith("extra:")){
         const pid=pt.slice(6);
         return {...e, extraPolls:(e.extraPolls||[]).map(p=>p.id===pid?{...p, votes:{...(p.votes||{}), [user]: val}}:p)};
