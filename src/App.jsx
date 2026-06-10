@@ -20258,6 +20258,12 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,duties:arr}:e)});
           setViewEv(prev=>({...prev,duties:arr}));
         }}/>
+        {["heimspiel","auswarts","freundschaft","turnier"].includes(viewEv.type)&&<LineupBoard ev={viewEv}
+          present={Object.entries(viewEv.votes||{}).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>n)}
+          canEdit={!isHelper} onChange={lu=>{
+            save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,lineup:lu}:e)});
+            setViewEv(prev=>({...prev,lineup:lu}));
+          }}/>}
         <div style={{height:14}}/><Btn full ch="Schließen" v="gst" onClick={()=>setViewEv(null)}/>
       </Drawer>}
 
@@ -21438,6 +21444,56 @@ function DutyBoard({ ev, user, canManage, onChange }){
     </div>
   );
 }
+// Aufstellung fuer ein Spiel: zugesagte Spieler auf Linien (Tor/Abwehr/
+// Mittelfeld/Angriff) stellen; Rest = Bank. Editierbar (Trainer/Admin) bzw.
+// read-only (Eltern sehen, ob sie in der Startelf stehen).
+const LINEUP_LINES = [["T","Tor"],["A","Abwehr"],["M","Mittelfeld"],["S","Angriff"]];
+function LineupBoard({ ev, present, canEdit, onChange }){
+  const lu = ev.lineup || {T:[],A:[],M:[],S:[]};
+  const placed = [...(lu.T||[]),...(lu.A||[]),...(lu.M||[]),...(lu.S||[])];
+  const bench = (present||[]).filter(n=>!placed.includes(n));
+  if(placed.length===0 && !canEdit) return null;
+  const place = (name, line) => { const next={T:[...(lu.T||[])],A:[...(lu.A||[])],M:[...(lu.M||[])],S:[...(lu.S||[])]}; for(const k of ["T","A","M","S"]) next[k]=next[k].filter(x=>x!==name); next[line]=[...next[line],name]; onChange&&onChange(next); };
+  const remove = (name) => { const next={T:(lu.T||[]).filter(x=>x!==name),A:(lu.A||[]).filter(x=>x!==name),M:(lu.M||[]).filter(x=>x!==name),S:(lu.S||[]).filter(x=>x!==name)}; onChange&&onChange(next); };
+  const lineColors={T:"#d97706",A:"#2563eb",M:"#16a34a",S:"#dc2626"};
+  return (
+    <div style={{marginTop:14,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
+      <div style={{fontWeight:800,fontSize:14,color:"#0f172a",marginBottom:10}}>Aufstellung <span style={{fontWeight:600,fontSize:12,color:"#94a3b8"}}>({placed.length})</span></div>
+      <div style={{background:"linear-gradient(#16a34a22,#16a34a11)",borderRadius:14,border:"1.5px solid #bbf7d0",padding:"10px 12px",display:"flex",flexDirection:"column",gap:8}}>
+        {LINEUP_LINES.map(([k,label])=>(
+          <div key={k} style={{display:"flex",alignItems:"center",gap:8,minHeight:34}}>
+            <span style={{fontSize:10,fontWeight:800,color:lineColors[k],width:74,flexShrink:0,letterSpacing:.3}}>{label.toUpperCase()}</span>
+            <div style={{flex:1,display:"flex",flexWrap:"wrap",gap:5}}>
+              {(lu[k]||[]).length===0 && <span style={{fontSize:12,color:"#94a3b8"}}>–</span>}
+              {(lu[k]||[]).map(n=>(
+                <span key={n} onClick={()=>canEdit&&remove(n)} style={{display:"flex",alignItems:"center",gap:5,background:"#fff",borderRadius:99,padding:"3px 9px 3px 3px",border:`1.5px solid ${lineColors[k]}`,cursor:canEdit?"pointer":"default"}}>
+                  <Av name={n} sz={20}/><span style={{fontSize:12.5,fontWeight:700,color:"#0f172a"}}>{n}</span>{canEdit&&<span style={{color:"#dc2626",fontWeight:800,fontSize:12}}>×</span>}
+                </span>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+      {canEdit&&(
+        <div style={{marginTop:10}}>
+          <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.4}}>BANK / VERFÜGBAR ({bench.length})</div>
+          {bench.length===0 ? <p style={{fontSize:12,color:"#94a3b8"}}>Alle Zusagen sind aufgestellt.</p>
+            : <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                {bench.map(n=>(
+                  <div key={n} style={{display:"flex",alignItems:"center",gap:8,background:"#f8fafc",borderRadius:10,padding:"6px 9px",border:"1px solid #e2e8f0"}}>
+                    <Av name={n} sz={22}/><span style={{flex:1,minWidth:0,fontSize:13,fontWeight:700,color:"#334155"}}>{n}</span>
+                    {LINEUP_LINES.map(([k,label])=>(
+                      <button key={k} onClick={()=>place(n,k)} title={label} style={{width:26,height:26,borderRadius:7,border:`1.5px solid ${lineColors[k]}`,background:lineColors[k]+"15",color:lineColors[k],fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>{k}</button>
+                    ))}
+                  </div>
+                ))}
+              </div>}
+        </div>
+      )}
+      {!canEdit&&bench.length>0&&<div style={{fontSize:11.5,color:"#94a3b8",marginTop:8}}>Bank: {bench.join(", ")}</div>}
+    </div>
+  );
+}
 function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
   const isTrainerOrHelper = role==="trainer"||role==="helper"||role==="admin";
   const eT=ET[ev.type]||ET.training;const isToday=ev.date===now();const isPast=ev.date<now();
@@ -21516,6 +21572,9 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
           </div>
         ))}
         <DutyBoard ev={ev} user={user} canManage={isTrainerOrHelper} onChange={arr=>onVote(ev.id,"duty",arr)}/>
+        {["heimspiel","auswarts","freundschaft","turnier"].includes(ev.type)&&<LineupBoard ev={ev}
+          present={Object.entries(ev.votes||{}).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>n)}
+          canEdit={false}/>}
       </div>}
     </div>
   );
@@ -21644,6 +21703,7 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
       if(e.id!==eid)return e;
       if(pt==="carpool")return {...e, votes:{...(e.votes||{}), [user]: val}};
       if(pt==="duty")return {...e, duties: val};
+      if(pt==="lineup")return {...e, lineup: val};
       if(typeof pt==="string"&&pt.startsWith("extra:")){
         const pid=pt.slice(6);
         return {...e, extraPolls:(e.extraPolls||[]).map(p=>p.id===pid?{...p, votes:{...(p.votes||{}), [user]: val}}:p)};
