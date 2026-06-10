@@ -1,5 +1,6 @@
 import React, { useState,useEffect,useCallback,useRef,useMemo,createContext } from "react";
 import { splitData, mergeData, merge3Obj } from "./data.js";
+import { eventStart, eventDeadline, isVotingLocked, isDeadlinePassed, isEventPast, daysUntil, isUpcoming5, formatCountdown } from "./logic.js";
 
 const LANG_KEY = "vereinsapp_lang";
 const LangCtx  = createContext("de");
@@ -1368,49 +1369,9 @@ const isActive = (entity) => !entity ? false : entity.active !== false;
 //   isUpcoming5(ev)     → true wenn innerhalb der nächsten 5 Tage und nicht vorbei
 //   formatCountdown(ms) → "2 T 14 h", "14 h 7 m", "23 m" …
 // ----------------------------------------------------------------
-const eventStart = (ev) => {
-  if (!ev?.date) return null;
-  const t = (ev.time || "12:00").padStart(5,"0");
-  const d = new Date(ev.date + "T" + t + ":00");
-  return isNaN(d.getTime()) ? null : d;
-};
-const eventDeadline = (ev) => {
-  const s = eventStart(ev); if (!s) return null;
-  return new Date(s.getTime() - 24 * 60 * 60 * 1000);
-};
-const isVotingLocked = (ev) => {
-  const dl = eventDeadline(ev); if (!dl) return false;
-  return Date.now() >= dl.getTime();
-};
-// Manuell gesetzte Abstimmungs-Frist ({date,time}). Eine Stelle fuer alle
-// Anzeigen, damit Dashboard, Detail-Poll und Vote-Uebersicht denselben
-// Frist-Status berechnen (Datum + Uhrzeit korrekt beruecksichtigt).
-const isDeadlinePassed = (ev) => {
-  if (!ev?.deadline?.date) return false;
-  const dl = new Date(`${ev.deadline.date}T${ev.deadline.time||"23:59"}:00`);
-  return !isNaN(dl.getTime()) && Date.now() >= dl.getTime();
-};
-const isEventPast = (ev) => {
-  const s = eventStart(ev); if (!s) return false;
-  return Date.now() >= s.getTime();
-};
-const daysUntil = (ev) => {
-  const s = eventStart(ev); if (!s) return Infinity;
-  return (s.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
-};
-const isUpcoming5 = (ev) => {
-  const d = daysUntil(ev);
-  return d > 0 && d <= 5;
-};
-const formatCountdown = (ms) => {
-  if (ms <= 0) return "Jetzt";
-  const days = Math.floor(ms / (1000*60*60*24));
-  const hrs  = Math.floor((ms % (1000*60*60*24)) / (1000*60*60));
-  const mins = Math.floor((ms % (1000*60*60)) / (1000*60));
-  if (days > 0) return `${days} T ${hrs} h`;
-  if (hrs > 0)  return `${hrs} h ${mins} m`;
-  return `${mins} m`;
-};
+// Event-/Frist-Helfer (eventStart, eventDeadline, isVotingLocked,
+// isDeadlinePassed, isEventPast, daysUntil, isUpcoming5, formatCountdown)
+// ausgelagert nach src/logic.js und oben importiert.
 const fmtDShort = iso => { const d=new Date(iso+"T12:00:00"); return `${String(d.getDate()).padStart(2,"0")}.${String(d.getMonth()+1).padStart(2,"0")}.`; };
 
 const ACOLORS = ["#e74c3c","#e67e22","#2ecc71","#1abc9c","#3498db","#9b59b6","#e91e63","#00bcd4","#f59e0b","#8bc34a","#ff6b6b","#845ef7"];

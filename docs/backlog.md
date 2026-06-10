@@ -18,9 +18,11 @@ je Aufgabe, Build + Tests müssen grün sein.
 ---
 
 ## A. Stabilität & Qualität (laufend)
-- [ ] Mehr Tests für Kernlogik (Event-/Frist-/Saison-Helfer, Vote-Logik) in `src/*.test.js`.
+- ◐ Mehr Tests für Kernlogik: Event-/Frist-Helfer ✅ (`src/logic.js` + `logic.test.js`, 10 Tests).
+  Offen: Vote-Logik, Saison-Helfer (clubSeasons/activeSid).
 - [ ] Tiefes Bug-Audit weiterer Komponenten (Chat, Onboarding, SuperAdmin) – Befunde fixen.
-- [ ] Weitere reine Helfer aus `App.jsx` nach Modulen auslagern (#4 Aufteilen), testbar.
+- ◐ Reine Helfer ausgelagert: `data.js` (split/merge) + `logic.js` (Event/Frist).
+  Offen: Datum-Helfer (now/addD/fmtD), Farb-Helfer.
 - [ ] Defensive Guards (`ev.votes||{}` etc.) an verbliebenen ungeschützten Stellen.
 
 ## B. Mandanten-Trennung (#3) – App-seitig, hinter MULTI_TENANT
