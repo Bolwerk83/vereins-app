@@ -11582,8 +11582,11 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
             <Row title="Statistiken" sub="Spieler-Statistiken (Tore, Karten...)">
               <Toggle val={S("mod_stats",sportProfile.hasCards||sport==="fussball")} onChange={v=>saveSetting("mod_stats",v)}/>
             </Row>
-            <Row title="Schwarzes Brett" sub="Vereinsnews für alle" last>
+            <Row title="Schwarzes Brett" sub="Vereinsnews für alle">
               <Toggle val={S("mod_news",true)} onChange={v=>saveSetting("mod_news",v)}/>
+            </Row>
+            <Row title="Gäste-Turniere (Besucher-Ansicht)" sub="Besucher können freigeschaltete Heimturniere ansehen. Aus = für den ganzen Verein deaktiviert." last>
+              <Toggle val={S("guestTournament",true)} onChange={v=>saveSetting("guestTournament",v)}/>
             </Row>
           </div>
           {/* Senioren-Modus */}
@@ -12771,24 +12774,8 @@ function Directory({data,onPick,onNewClub,onVisitorOpen,lang,setLang}) {
         </div>
       </div>
 
-      {}
-      <div style={{position:"relative",maxWidth:isDesktop?1120:520,margin:"0 auto",padding:"14px 22px 0"}}>
-        <button onClick={()=>setMode("visitor")}
-          style={{width:"100%",display:"flex",alignItems:"center",gap:13,padding:"14px 18px",borderRadius:16,cursor:"pointer",fontFamily:"inherit",textAlign:"left",
-            background:liveNow.length?"linear-gradient(135deg,#f59e0b,#ea580c)":"rgba(255,255,255,.08)",
-            border:liveNow.length?"none":"1.5px solid rgba(255,255,255,.18)",
-            boxShadow:liveNow.length?"0 8px 28px -8px rgba(234,88,12,.7)":"none",
-            animation:liveNow.length?"pulse 2.4s ease infinite":"none"}}>
-          <div style={{width:42,height:42,borderRadius:13,background:"rgba(255,255,255,.22)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>&#127942;</div>
-          <div style={{flex:1,minWidth:0}}>
-            <div style={{fontWeight:900,fontSize:16,color:"#fff"}}>Als Gast: Turnier ansehen</div>
-            <div style={{fontSize:12.5,color:"rgba(255,255,255,.85)",marginTop:1}}>
-              {liveNow.length?`${liveNow.length} Veranstaltung${liveNow.length>1?"en":""} jetzt live · Spielplan & Live-Timer`:"Spielplan, Ergebnisse & Live-Timer ansehen"}
-            </div>
-          </div>
-          <span style={{color:"rgba(255,255,255,.7)",fontSize:22,flexShrink:0}}>{">"}</span>
-        </button>
-      </div>
+      {/* Gast-/Besucherzugang zu Turnieren ist jetzt PRO VEREIN (nach Auswahl
+          des Vereins in der Rollen-Auswahl), nicht mehr global auf der Startseite. */}
 
       {}
       {isDesktop ? (
@@ -13025,8 +13012,9 @@ function Directory({data,onPick,onNewClub,onVisitorOpen,lang,setLang}) {
   );
 }
 
-function RolePicker({cl,onRole,onBack}) {
+function RolePicker({cl,onRole,onBack,onGuest}) {
   const t=TH(cl);
+  const guestOn = cl?.clubSettings?.guestTournament!==false;
   return (
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s} 0%,${t.p}66 100%)`}}>
       <style>{CSS}</style>
@@ -13049,6 +13037,16 @@ function RolePicker({cl,onRole,onBack}) {
             </div>
           </div>
         ))}
+        {guestOn&&onGuest&&(
+          <div className="up" onClick={onGuest}
+            style={{marginTop:8,background:"rgba(245,158,11,.16)",border:"1.5px solid rgba(245,158,11,.4)",borderRadius:20,padding:"17px 20px",cursor:"pointer",animationDelay:".3s"}}>
+            <div style={{display:"flex",alignItems:"center",gap:14}}>
+              <div style={{width:48,height:48,borderRadius:15,background:"rgba(245,158,11,.25)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>&#127942;</div>
+              <div style={{flex:1}}><div style={{color:"#fff",fontWeight:900,fontSize:17}}>Als Gast: Turniere ansehen</div><div style={{color:"rgba(255,255,255,.6)",fontSize:13,marginTop:2}}>Spielplan, Ergebnisse &amp; Live-Timer (ohne Login)</div></div>
+              <div style={{color:"rgba(255,255,255,.4)",fontSize:22}}>{">"}</div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -20213,14 +20211,20 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
                 // Falls veroeffentlicht: oeffentlichen Spiegel (liveEvents.pub) mitziehen,
                 // damit Gaeste Plan/Timer live sehen.
                 const isPub=(local.liveEvents||[]).some(x=>x.eid===viewEv.id);
-                const liveEvents=isPub?(local.liveEvents||[]).map(x=>x.eid===viewEv.id?{...x,title:updatedEv.title,date:updatedEv.date,pub:tournPubSnapshot(updatedEv)}:x):local.liveEvents;
+                // Wenn der Trainer Gaeste-Zugang abschaltet: aus dem oeffentlichen Spiegel entfernen.
+                const guestOff=updatedEv.setup?.guestEnabled===false;
+                const liveEvents=!isPub?local.liveEvents
+                  :guestOff?(local.liveEvents||[]).filter(x=>x.eid!==viewEv.id)
+                  :(local.liveEvents||[]).map(x=>x.eid===viewEv.id?{...x,title:updatedEv.title,date:updatedEv.date,pub:tournPubSnapshot(updatedEv,local.playerProfiles||[])}:x);
                 save({...local,events,...(isPub?{liveEvents}:{})});
                 setViewEv(prev=>({...prev,...patch}));
                 fire("Turnier aktualisiert *");
               }}
               onPublish={isHelper?undefined:({from,until})=>{
+                if(myClub?.clubSettings?.guestTournament===false){ fire("Gäste-Turniere sind im Vereinsadmin deaktiviert"); return; }
+                if(viewEv.setup?.guestEnabled===false){ fire("Erst im Setup die Gäste-Freigabe aktivieren"); return; }
                 const pubEv={...viewEv,published:true,pubFrom:from,pubUntil:until};
-                const entry={id:viewEv.id,eid:viewEv.id,clubId:cid,clubSlug:(myClub?.slug||cid),title:viewEv.title,date:viewEv.date,from,until,pub:tournPubSnapshot(pubEv)};
+                const entry={id:viewEv.id,eid:viewEv.id,clubId:cid,clubSlug:(myClub?.slug||cid),title:viewEv.title,date:viewEv.date,from,until,pub:tournPubSnapshot(pubEv,local.playerProfiles||[])};
                 const liveEvents=[...(local.liveEvents||[]).filter(x=>x.eid!==viewEv.id),entry];
                 const events=local.events.map(e=>e.id===viewEv.id?{...e,published:true,pubFrom:from,pubUntil:until}:e);
                 save({...local,liveEvents,events});
@@ -20260,8 +20264,24 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         }}/>
         {["heimspiel","auswarts","freundschaft","turnier"].includes(viewEv.type)&&<LineupBoard ev={viewEv}
           present={Object.entries(viewEv.votes||{}).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>n)}
-          canEdit={!isHelper} onChange={lu=>{
-            save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,lineup:lu}:e)});
+          canEdit={!isHelper}
+          pub={viewEv.type==="turnier"?!!viewEv.lineupPublic:undefined}
+          onPubChange={viewEv.type==="turnier"&&!isHelper?(val=>{
+            const ev2={...viewEv,lineupPublic:val};
+            const events=local.events.map(e=>e.id===viewEv.id?ev2:e);
+            const isPub=(local.liveEvents||[]).some(x=>x.eid===viewEv.id);
+            const liveEvents=isPub?(local.liveEvents||[]).map(x=>x.eid===viewEv.id?{...x,pub:tournPubSnapshot(ev2,local.playerProfiles||[])}:x):local.liveEvents;
+            save({...local,events,...(isPub?{liveEvents}:{})});
+            setViewEv(prev=>({...prev,lineupPublic:val}));
+            fire(val?"Aufstellung für Gäste sichtbar":"Aufstellung für Gäste verborgen");
+          }):undefined}
+          onChange={lu=>{
+            const ev2={...viewEv,lineup:lu};
+            const events=local.events.map(e=>e.id===viewEv.id?ev2:e);
+            // Falls veroeffentlicht + fuer Gaeste freigegeben: Spiegel mitziehen.
+            const isPub=viewEv.type==="turnier"&&(local.liveEvents||[]).some(x=>x.eid===viewEv.id);
+            const liveEvents=isPub?(local.liveEvents||[]).map(x=>x.eid===viewEv.id?{...x,pub:tournPubSnapshot(ev2,local.playerProfiles||[])}:x):local.liveEvents;
+            save({...local,events,...(isPub?{liveEvents}:{})});
             setViewEv(prev=>({...prev,lineup:lu}));
           }}/>}
         <div style={{height:14}}/><Btn full ch="Schließen" v="gst" onClick={()=>setViewEv(null)}/>
@@ -20802,6 +20822,7 @@ function TournSetup({ setup, cl, t, onUpdate, fields=[], ev=null }){
   const [nt,setNt]=useState("");
   const [viewPw,setViewPw]=useState("");
   const [ctrlPw,setCtrlPw]=useState("");
+  const [guestEnabled,setGuestEnabled]=useState(setup.guestEnabled!==false);
   const [copied,setCopied]=useState(false);
   const [saved,setSaved]=useState(false);
   const visitorLink = ev ? `${(typeof window!=="undefined"?window.location.origin:"")}/?tournament=${ev.id}&club=${encodeURIComponent(cl?.slug||cl?.id||"")}` : "";
@@ -20827,6 +20848,7 @@ function TournSetup({ setup, cl, t, onUpdate, fields=[], ev=null }){
   const save=()=>{
     const eff = pitches.length ? areasOf(pitches) : Number(nFields)||1;
     onUpdate({setup:{...setup, fields:eff, pitches, gameTime:Number(gameTime)||1, clubName:clubName.trim()||cl?.name, clubs:teams,
+      guestEnabled,
       viewPwHash: viewPw.trim()?hashPw(viewPw.trim()):setup.viewPwHash,
       ctrlPwHash: ctrlPw.trim()?hashPw(ctrlPw.trim()):setup.ctrlPwHash}});
     setViewPw(""); setCtrlPw("");
@@ -20889,6 +20911,15 @@ function TournSetup({ setup, cl, t, onUpdate, fields=[], ev=null }){
       <div style={{background:"#fff",borderRadius:14,padding:"14px",border:"1.5px solid #e2e8f0"}}>
         <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:4,letterSpacing:.4}}>BESUCHER-ZUGANG</div>
         <p style={{fontSize:12,color:"#94a3b8",marginBottom:10,lineHeight:1.5}}>Gäste öffnen den Link und sehen Infos, Spielplan und Live-Timer. Das Steuer-Passwort erlaubt zusätzlich das Bedienen des Timers (für Trainer/Zeitnehmer).</p>
+        <div onClick={()=>{setGuestEnabled(g=>!g);setSaved(false);}} style={{display:"flex",alignItems:"center",gap:10,background:guestEnabled?"#f0fdf4":"#f8fafc",border:`1.5px solid ${guestEnabled?"#bbf7d0":"#e2e8f0"}`,borderRadius:11,padding:"10px 12px",marginBottom:10,cursor:"pointer"}}>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:13,fontWeight:800,color:guestEnabled?"#15803d":"#334155"}}>Für Gäste freigeben</div>
+            <div style={{fontSize:11,color:"#94a3b8",marginTop:1}}>Aus = dieses Turnier ist für Besucher nicht sichtbar.</div>
+          </div>
+          <div style={{width:42,height:24,borderRadius:99,background:guestEnabled?"#16a34a":"#cbd5e1",position:"relative",flexShrink:0,transition:"background .2s"}}>
+            <div style={{position:"absolute",top:3,left:guestEnabled?21:3,width:18,height:18,borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.25)"}}/>
+          </div>
+        </div>
         <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:10}}>
           <div>
             <div style={{fontSize:11,fontWeight:700,color:"#475569",marginBottom:4}}>Ansehen-Passwort {setup.viewPwHash&&<span style={{color:"#16a34a"}}>· gesetzt</span>}</div>
@@ -21040,10 +21071,36 @@ const isLiveNow = (e) => {
   return now>=from && now<=until;
 };
 
+// Oeffentliche Mannschafts-/Aufstellungsanzeige fuer Gaeste – DATENSCHUTZ-KRITISCH.
+// Wir REDIGIEREN bereits hier (App-Seite mit Vollzugriff): Namen verlassen die
+// App nur, wenn die Eltern die Anzeige freigegeben haben (profile.pubOk). Nicht
+// freigegebene Spieler erscheinen nur mit Trikotnummer (falls vorhanden), ohne
+// Namen. So liegt im oeffentlichen Spiegel (globale liveEvents-Zeile) niemals
+// ein nicht-freigegebener Name. Nur wenn der Trainer die Aufstellung fuer Gaeste
+// freigegeben hat (ev.lineupPublic) und der Verein/das Turnier Gaeste erlaubt.
+function buildPublicSquad(ev, profiles=[]){
+  if(!ev || !ev.lineupPublic) return [];
+  const byName = {};
+  (profiles||[]).forEach(p=>{ if(p&&p.name) byName[String(p.name).toLowerCase()]=p; });
+  const num = n => { const p=byName[String(n||"").toLowerCase()]; return p&&p.jerseyNr?String(p.jerseyNr):""; };
+  const ok  = n => { const p=byName[String(n||"").toLowerCase()]; return !!(p&&p.pubOk); };
+  const lu = ev.lineup||{};
+  const placed = [...(lu.T||[]),...(lu.A||[]),...(lu.M||[]),...(lu.S||[])];
+  let entries;
+  if(placed.length){
+    entries = LINEUP_LINES.flatMap(([k])=>(lu[k]||[]).map(n=>({n,line:k})));
+  } else {
+    // Keine Formation gestellt -> zugesagte Spieler ("dabei") als Kader.
+    const yes = Object.entries(ev.votes||{}).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>n);
+    entries = yes.map(n=>({n,line:null}));
+  }
+  return entries.map(({n,line})=>{ const released=ok(n); return { name: released?n:"", num: num(n), ok: released, line }; });
+}
+
 // Oeffentlicher Schnappschuss eines Turniers fuer den Besucher-Spiegel
 // (globaler liveEvents-Index). So koennen Gaeste alles aus der globalen
 // Zeile lesen, ohne Zugriff auf den Vereins-Shard (RLS-fest).
-function tournPubSnapshot(ev){
+function tournPubSnapshot(ev, profiles=[]){
   return {
     title: ev.title||"Turnier", date: ev.date||"", time: ev.time||"", endTime: ev.endTime||"",
     loc: ev.loc||"", note: ev.note||"",
@@ -21057,6 +21114,8 @@ function tournPubSnapshot(ev){
     viewPwHash: ev.setup?.viewPwHash||"",
     ctrlPwHash: ev.setup?.ctrlPwHash||"",
     timer: Array.isArray(ev.timer)?ev.timer:[],
+    lineupPublic: !!ev.lineupPublic,
+    squad: buildPublicSquad(ev, profiles),
   };
 }
 
@@ -21096,6 +21155,8 @@ function PublishTournament({ ev, cl, onPublish, onUnpublish }) {
           <div style={{fontSize:12.5,color:"#64748b",marginTop:4}}>Sichtbar von {fmtDT(ev.pubFrom?new Date(ev.pubFrom):null)} bis {fmtDT(ev.pubUntil?new Date(ev.pubUntil):null)}</div>
         </div>
       )}
+      {cl?.clubSettings?.guestTournament===false && <div style={{background:"#fee2e2",border:"1.5px solid #fca5a5",borderRadius:12,padding:"11px 13px",fontSize:13,color:"#991b1b",fontWeight:600}}>Gäste-Turniere sind im Vereinsadmin (Module) deaktiviert. Solange das so ist, können Besucher keine Turniere ansehen.</div>}
+      {ev.setup?.guestEnabled===false && <div style={{background:"#fef3c7",border:"1.5px solid #fde68a",borderRadius:12,padding:"11px 13px",fontSize:13,color:"#92400e",fontWeight:600}}>Dieses Turnier ist im Tab „Setup" nicht „Für Gäste freigegeben". Erst aktivieren, dann veröffentlichen.</div>}
       {!hasPw && <div style={{background:"#fef3c7",border:"1.5px solid #fde68a",borderRadius:12,padding:"11px 13px",fontSize:13,color:"#92400e",fontWeight:600}}>Erst im Tab „Setup" ein Besucher-Passwort vergeben – sonst können Gäste nicht öffnen.</div>}
       <div style={{background:"#fff",borderRadius:14,padding:"14px",border:"1.5px solid #e2e8f0"}}>
         <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.4}}>FREISCHALTEN AB</div>
@@ -21241,6 +21302,73 @@ function CompactTimer({ ev,cl,canControl=false,onTimer }) {
 }
 
 // Oeffentliche, passwortgeschuetzte Turnier-Ansicht fuer Gaeste (per Link).
+// Oeffentliche Mannschafts-/Aufstellungsanzeige (redigiert: ohne Freigabe nur Nummer).
+function PublicSquad({ squad, t }){
+  if(!squad || !squad.length) return <p style={{textAlign:"center",color:"#94a3b8",fontSize:13,padding:"22px"}}>Aufstellung noch nicht freigegeben.</p>;
+  const lineNames={T:"Tor",A:"Abwehr",M:"Mittelfeld",S:"Angriff"};
+  const hasLines = squad.some(s=>s.line);
+  const Chip = ({s,i}) => (
+    <div key={i} style={{display:"flex",alignItems:"center",gap:9,background:s.ok?"#fff":"#f8fafc",border:`1.5px solid ${s.ok?"#e2e8f0":"#eef2f7"}`,borderRadius:12,padding:"8px 12px"}}>
+      <div style={{width:30,height:30,borderRadius:9,background:s.num?(t.p+"18"):"#eef2f7",color:s.num?t.p:"#94a3b8",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:14,flexShrink:0}}>{s.num||"–"}</div>
+      {s.ok
+        ? <span style={{flex:1,minWidth:0,fontSize:14,fontWeight:700,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.name}</span>
+        : <span style={{flex:1,minWidth:0,fontSize:13,fontWeight:600,color:"#94a3b8",fontStyle:"italic"}}>ohne Freigabe</span>}
+    </div>
+  );
+  return (
+    <div style={{background:"#fff",borderRadius:16,padding:"16px",border:"1.5px solid #e2e8f0"}}>
+      <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:10,letterSpacing:.4}}>MANNSCHAFT ({squad.length})</div>
+      {hasLines
+        ? LINEUP_LINES.map(([k])=>{ const grp=squad.filter(s=>s.line===k); if(!grp.length) return null; return (
+            <div key={k} style={{marginBottom:12}}>
+              <div style={{fontSize:11,fontWeight:800,color:"#94a3b8",marginBottom:6}}>{lineNames[k]}</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7}}>{grp.map((s,i)=><Chip key={i} s={s} i={i}/>)}</div>
+            </div>
+          ); })
+        : <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7}}>{squad.map((s,i)=><Chip key={i} s={s} i={i}/>)}</div>}
+      <p style={{fontSize:11,color:"#cbd5e1",marginTop:6}}>Namen werden nur mit Einwilligung der Eltern angezeigt.</p>
+    </div>
+  );
+}
+
+// Gast-Liste PRO VEREIN: aktuell freigeschaltete Heimturniere dieses Vereins.
+// Liest nur aus dem oeffentlichen Spiegel (liveEvents) -> RLS-fest, kein Login.
+function ClubGuestList({ cl, liveEvents, onOpen, onBack }){
+  const t=TH(cl);
+  const off = cl?.clubSettings?.guestTournament===false;
+  const mine = off ? [] : (liveEvents||[]).filter(e=>e&&(e.clubId===cl.id||e.clubSlug===(cl.slug||cl.id))&&isLiveNow(e));
+  return (
+    <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s||"#0f172a"} 0%,${t.p}66 100%)`,color:"#fff"}}>
+      <style>{CSS}</style>
+      <div style={{maxWidth:520,margin:"0 auto",padding:"26px 18px 40px"}}>
+        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:20}}>← Zurück</button>
+        <div className="up" style={{display:"flex",alignItems:"center",gap:12,marginBottom:18}}>
+          <Logo cl={cl} sz={48}/>
+          <div><div style={{fontSize:12,fontWeight:700,opacity:.6}}>{cl.name}</div><h2 style={{fontWeight:900,fontSize:23,margin:"2px 0 0"}}>Turniere</h2></div>
+        </div>
+        <p style={{color:"rgba(255,255,255,.55)",fontSize:14,marginBottom:18}}>Aktuell freigeschaltete Heimturniere – tippe zum Öffnen (Passwort nötig).</p>
+        {off
+          ? <div style={{background:"rgba(255,255,255,.07)",borderRadius:18,padding:"32px",textAlign:"center",color:"rgba(255,255,255,.6)",fontSize:14}}>Die Besucher-Ansicht ist für diesen Verein nicht aktiv.</div>
+          : mine.length===0
+            ? <div style={{background:"rgba(255,255,255,.07)",borderRadius:18,padding:"32px",textAlign:"center",color:"rgba(255,255,255,.6)",fontSize:14}}>Gerade ist kein Turnier freigeschaltet.</div>
+            : mine.map(e=>(
+                <div key={e.eid} onClick={()=>onOpen&&onOpen(e.eid,e.clubSlug||cl.slug||cl.id)}
+                  style={{background:"rgba(255,255,255,.09)",border:"1.5px solid rgba(255,255,255,.14)",borderRadius:18,padding:"16px 18px",cursor:"pointer",marginBottom:12,display:"flex",alignItems:"center",gap:14}}>
+                  <div style={{width:46,height:46,borderRadius:14,background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>&#127942;</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontWeight:900,fontSize:17}}>{e.title||"Turnier"}</div>
+                    <div style={{color:"rgba(255,255,255,.5)",fontSize:13,marginTop:2}}>{e.date?fmtD(e.date):""}</div>
+                  </div>
+                  <span style={{color:"rgba(255,255,255,.3)",fontSize:22}}>{">"}</span>
+                </div>
+              ))
+        }
+        <AffiliateBanner trigger="events" style={{marginTop:8}}/>
+      </div>
+    </div>
+  );
+}
+
 function TournamentPublic({ eid, clubParam, onBack }){
   const [phase,setPhase]=useState("loading"); // loading | notfound | error | locked | view
   const [data,setData]=useState(null);
@@ -21258,6 +21386,7 @@ function TournamentPublic({ eid, clubParam, onBack }){
   const evFromPub = (p) => ({
     id: eid, type:"turnier", title:p.title, date:p.date, time:p.time||"", endTime:p.endTime||"",
     loc:p.loc||"", note:p.note||"", schedule:p.schedule||[], timer:Array.isArray(p.timer)?p.timer:[],
+    lineupPublic:!!p.lineupPublic, squad:Array.isArray(p.squad)?p.squad:[],
     setup:{ clubName:p.clubName, gameTime:p.gameTime, fields:p.fields||0, pitches:p.pitches||null,
             clubs:p.teams||[], viewPwHash:p.viewPwHash||"", ctrlPwHash:p.ctrlPwHash||"" },
   });
@@ -21267,6 +21396,8 @@ function TournamentPublic({ eid, clubParam, onBack }){
       const dir=await sb.getDirectory();
       const club=(dir?.clubs||[]).find(c=>c.slug===clubParam||c.id===clubParam);
       if(!club){ setPhase("notfound"); return; }
+      // Vereinsadmin hat die Gaeste-Funktion komplett deaktiviert -> kein Zugang.
+      if(club.clubSettings?.guestTournament===false){ setPhase("notfound"); return; }
       cidRef.current=club.id; setCid(club.id);
       // 1) Bevorzugt aus dem oeffentlichen Spiegel (nur globale Zeile -> RLS-fest)
       const mirror=(dir?.liveEvents||[]).find(x=>x.eid===eid && x.pub);
@@ -21362,7 +21493,7 @@ function TournamentPublic({ eid, clubParam, onBack }){
   return (
     <Shell>
       <div style={{display:"flex",gap:6,marginBottom:14,overflowX:"auto",scrollbarWidth:"none"}}>
-        {[["info","Info"],["plan","Spielplan"],["timer","Live-Timer"]].map(([id,lb])=>(
+        {[["info","Info"],["plan","Spielplan"],...((ev?.lineupPublic&&(ev?.squad||[]).length)?[["squad","Mannschaft"]]:[]),["timer","Live-Timer"]].map(([id,lb])=>(
           <button key={id} onClick={()=>setTab(id)} style={{padding:"8px 15px",borderRadius:99,border:`2px solid ${tab===id?t.p:"#e2e8f0"}`,background:tab===id?t.p:"#fff",color:tab===id?"#fff":"#475569",fontWeight:700,fontSize:13,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit"}}>{lb}</button>
         ))}
       </div>
@@ -21382,6 +21513,8 @@ function TournamentPublic({ eid, clubParam, onBack }){
       )}
 
       {tab==="plan"&&<TournPlan ev={ev} setup={ev?.setup||{}} t={t} onUpdate={null} isHelper={true}/>}
+
+      {tab==="squad"&&<PublicSquad squad={ev?.squad||[]} t={t}/>}
 
       {tab==="timer"&&(
         <div>
@@ -21448,7 +21581,7 @@ function DutyBoard({ ev, user, canManage, onChange }){
 // Mittelfeld/Angriff) stellen; Rest = Bank. Editierbar (Trainer/Admin) bzw.
 // read-only (Eltern sehen, ob sie in der Startelf stehen).
 const LINEUP_LINES = [["T","Tor"],["A","Abwehr"],["M","Mittelfeld"],["S","Angriff"]];
-function LineupBoard({ ev, present, canEdit, onChange }){
+function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChange=undefined }){
   const lu = ev.lineup || {T:[],A:[],M:[],S:[]};
   const placed = [...(lu.T||[]),...(lu.A||[]),...(lu.M||[]),...(lu.S||[])];
   const bench = (present||[]).filter(n=>!placed.includes(n));
@@ -21459,6 +21592,17 @@ function LineupBoard({ ev, present, canEdit, onChange }){
   return (
     <div style={{marginTop:14,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
       <div style={{fontWeight:800,fontSize:14,color:"#0f172a",marginBottom:10}}>Aufstellung <span style={{fontWeight:600,fontSize:12,color:"#94a3b8"}}>({placed.length})</span></div>
+      {onPubChange&&(
+        <div onClick={()=>onPubChange(!pub)} style={{display:"flex",alignItems:"center",gap:10,background:pub?"#f0fdf4":"#f8fafc",border:`1.5px solid ${pub?"#bbf7d0":"#e2e8f0"}`,borderRadius:12,padding:"10px 12px",marginBottom:10,cursor:"pointer"}}>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:13,fontWeight:800,color:pub?"#15803d":"#334155"}}>Mannschaft für Gäste sichtbar</div>
+            <div style={{fontSize:11,color:"#94a3b8",marginTop:1,lineHeight:1.4}}>Namen nur mit Eltern-Freigabe; sonst nur Trikotnummer.</div>
+          </div>
+          <div style={{width:42,height:24,borderRadius:99,background:pub?"#16a34a":"#cbd5e1",position:"relative",flexShrink:0,transition:"background .2s"}}>
+            <div style={{position:"absolute",top:3,left:pub?21:3,width:18,height:18,borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.25)"}}/>
+          </div>
+        </div>
+      )}
       <div style={{background:"linear-gradient(#16a34a22,#16a34a11)",borderRadius:14,border:"1.5px solid #bbf7d0",padding:"10px 12px",display:"flex",flexDirection:"column",gap:8}}>
         {LINEUP_LINES.map(([k,label])=>(
           <div key={k} style={{display:"flex",alignItems:"center",gap:8,minHeight:34}}>
@@ -21696,6 +21840,26 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
     setShowProfile(false);
   };
 
+  // Eltern-Freigabe: Name des Kindes in der oeffentlichen Turnier-Aufstellung zeigen.
+  // Standard AUS. Ohne Freigabe erscheint das Kind dort nur mit Trikotnummer.
+  const myProfile=(data.playerProfiles||[]).find(p=>p.cid===cid && (p.name||"").toLowerCase()===String(user).toLowerCase() && (p.mainTid===tid || (p.optTids||[]).includes(tid)))
+    || (data.playerProfiles||[]).find(p=>p.cid===cid && (p.name||"").toLowerCase()===String(user).toLowerCase());
+  const pubOk=!!myProfile?.pubOk;
+  const togglePubOk=()=>{
+    if(!myProfile){ fire("Profil nicht gefunden – bitte beim Trainer melden"); return; }
+    const next=(data.playerProfiles||[]).map(p=>p.id===myProfile.id?{...p,pubOk:!pubOk}:p);
+    // Laufende Turnier-Spiegel dieses Vereins auffrischen, damit die (Wider-)
+    // Freigabe sofort fuer Gaeste greift (sonst erst beim naechsten Trainer-Save).
+    const liveEvents=(data.liveEvents||[]).map(le=>{
+      if(le.clubId!==cid && le.clubSlug!==(cl?.slug||cid)) return le;
+      const tev=(data.events||[]).find(e=>e.id===le.eid);
+      if(!tev||!tev.lineupPublic) return le;
+      return {...le, pub:tournPubSnapshot(tev, next)};
+    });
+    onSave({...data,playerProfiles:next,liveEvents});
+    fire(!pubOk?"Freigabe erteilt – Name darf gezeigt werden":"Freigabe zurückgezogen");
+  };
+
   const vote=(eid,pt,val)=>{
     let lateCancel = null;
     let blocked = false;
@@ -21784,6 +21948,15 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
               <div style={{display:"flex",gap:8}}>
                 <button onClick={exportMyData} style={{flex:1,padding:"10px",borderRadius:10,border:"1.5px solid #e2e8f0",background:"#fff",color:"#334155",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Daten exportieren</button>
                 <button onClick={requestDeletion} style={{flex:1,padding:"10px",borderRadius:10,border:"1.5px solid #fecaca",background:"#fff7f7",color:"#dc2626",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Löschung anfragen</button>
+              </div>
+            </div>
+            <div onClick={togglePubOk} style={{display:"flex",alignItems:"center",gap:12,background:pubOk?"#f0fdf4":"#f8fafc",border:`1.5px solid ${pubOk?"#bbf7d0":"#e2e8f0"}`,borderRadius:12,padding:"12px 14px",marginBottom:14,cursor:"pointer"}}>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:13,fontWeight:800,color:pubOk?"#15803d":"#334155"}}>Name in öffentlicher Aufstellung zeigen</div>
+                <div style={{fontSize:11,color:"#94a3b8",marginTop:2,lineHeight:1.45}}>Erlaubt, dass der Name von <strong>{user}</strong> Gästen im Turnier-Spielplan angezeigt wird (sonst nur die Trikotnummer). Jederzeit widerrufbar.</div>
+              </div>
+              <div style={{width:46,height:26,borderRadius:99,background:pubOk?"#16a34a":"#cbd5e1",position:"relative",flexShrink:0,transition:"background .2s"}}>
+                <div style={{position:"absolute",top:3,left:pubOk?22:3,width:20,height:20,borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.25)"}}/>
               </div>
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:9}}>
@@ -22291,7 +22464,8 @@ function AppInner({lang,setLang}) {
           if(cd){ setData(cd); }
           setScr("role");
         }}/>}
-      {screen==="role"  &&activeCl&&<RolePicker cl={activeCl} onRole={r=>setScr(r==="user"?"flow":r==="trainer"?"tlogin":r==="helper"?"hlogin":"alogin")} onBack={()=>setScr("dir")}/>}
+      {screen==="role"  &&activeCl&&<RolePicker cl={activeCl} onRole={r=>setScr(r==="user"?"flow":r==="trainer"?"tlogin":r==="helper"?"hlogin":"alogin")} onGuest={()=>setScr("guest")} onBack={()=>setScr("dir")}/>}
+      {screen==="guest" &&activeCl&&<ClubGuestList cl={activeCl} liveEvents={data.liveEvents||[]} onOpen={(eid,club)=>setVisitor({eid,club})} onBack={()=>setScr("role")}/>}
       {screen==="flow"  &&activeCl&&<UserFlow cl={activeCl} teams={clTeams} players={data.players} playerProfiles={data.playerProfiles||[]} preselectTid={linkTeam} onDone={(tid,user)=>login("user",{tid,user})} onBack={()=>setScr(linkTeam?"role":"role")}/>}
       {screen==="tlogin"&&activeCl&&<TrainerLogin cl={activeCl} trainers={data.trainers.filter(t=>t.cid===cid&&isActive(t))} teams={clTeams} onLogin={tr=>login("trainer",tr)} onBack={()=>setScr("role")}/>}
       {screen==="hlogin"&&activeCl&&<HelperLogin cl={activeCl} helpers={data.helpers||[]} onLogin={h=>login("helper",{...h,cid})} onBack={()=>setScr("role")}/>}
