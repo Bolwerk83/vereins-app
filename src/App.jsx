@@ -15005,6 +15005,32 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
             </label>
           </Section>
 
+          <Section title="Notfall & Gesundheit">
+            <div style={{fontSize:11.5,color:"#92400e",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:9,padding:"8px 11px",lineHeight:1.5}}>
+              Sensible Daten – nur mit Einwilligung der Eltern erfassen. Nur für Trainer/Admin sichtbar; hilfreich am Spieltag/Turnier.
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+              <div>
+                <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.5}}>NOTFALLKONTAKT</div>
+                <input value={p.emergencyName||""} onChange={e=>up({emergencyName:e.target.value})} placeholder="Name (z.B. Mutter)"
+                  style={{width:"100%",padding:"11px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",boxSizing:"border-box"}}/>
+              </div>
+              <div>
+                <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.5}}>TELEFON</div>
+                <div style={{display:"flex",gap:6}}>
+                  <input value={p.emergencyPhone||""} onChange={e=>up({emergencyPhone:e.target.value})} type="tel" placeholder="01512…"
+                    style={{flex:1,minWidth:0,padding:"11px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
+                  {p.emergencyPhone&&<a href={`tel:${(p.emergencyPhone||"").replace(/[^0-9+]/g,"")}`} style={{flexShrink:0,display:"flex",alignItems:"center",padding:"0 13px",borderRadius:11,background:"#16a34a",color:"#fff",fontWeight:800,fontSize:13,textDecoration:"none"}}>Anrufen</a>}
+                </div>
+              </div>
+            </div>
+            <div>
+              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.5}}>GESUNDHEITSHINWEISE (optional)</div>
+              <textarea value={p.healthNote||""} onChange={e=>up({healthNote:e.target.value})} rows={2} placeholder="z.B. Allergien, Medikamente, Asthma…"
+                style={{width:"100%",padding:"11px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",resize:"vertical",fontFamily:"inherit",boxSizing:"border-box"}}/>
+            </div>
+          </Section>
+
           {}
           <Section title="* Trainer-Notizen (intern)">
             {}
