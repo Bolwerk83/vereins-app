@@ -42,6 +42,10 @@ je Aufgabe, Build + Tests müssen grün sein.
 - ✅ Turnier: Ergebnis-Eingabe + Tabelle (Besucher lesen nur)
 - ✅ Turnier: Team-Aufteilung (zugesagte Spieler zufaellig auf N Teams)
 - ✅ Turnier: Statistiken (Stats-Tab zeigt jetzt die Tabelle)
+- ✅ Anwesenheits-Statistik korrigiert/erweitert (Objekt-Votes, nur vergangene, Spiele-Quote)
+- ✅ Notfallkontakt + Gesundheitshinweise je Spieler (nur Trainer/Admin)
+- ✅ Helfer-Dienstplan pro Termin (DutyBoard)
+- ✅ Aufstellung/Lineup pro Spiel (LineupBoard; Eltern read-only)
 - [ ] Affiliate: echte AWIN-mids/Publisher-ID eintragen, sobald Programme bestätigt
 - [ ] Push-Benachrichtigungen finalisieren (VAPID/Edge-Function/Cron laut README)
 
