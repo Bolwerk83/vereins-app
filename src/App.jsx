@@ -1867,6 +1867,11 @@ function InboxTab({ data,cid,save,fire,cl }) {
 
       {}
       {view==="inbox"&&<>
+        {visible.some(r=>r.dsgvo)&&(
+          <div style={{background:"#ede9fe",border:"1.5px solid #c4b5fd",borderRadius:12,padding:"11px 13px",marginBottom:12,fontSize:12.5,color:"#5b21b6",lineHeight:1.5}}>
+            <b>DSGVO-Löschantrag</b> eingegangen. Bitte die betroffenen Daten im Bereich <b>Spieler</b> löschen (erstellt automatisch einen DSGVO-Löschnachweis) und die Anfrage danach als gelesen markieren.
+          </div>
+        )}
         {visible.length===0&&(
           <div style={{textAlign:"center",padding:"32px",background:"#f8fafc",borderRadius:14,border:"1.5px dashed #e2e8f0"}}>
             <div style={{fontSize:36,marginBottom:8}}>&#x2709;</div>
@@ -1885,6 +1890,7 @@ function InboxTab({ data,cid,save,fire,cl }) {
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:2}}>
                       <span style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>{req.fromName}</span>
+                      {req.dsgvo&&<span style={{fontSize:10,fontWeight:800,color:"#7c3aed",background:"#ede9fe",borderRadius:5,padding:"2px 7px"}}>DSGVO-Löschantrag</span>}
                       {!req.read&&<span style={{fontSize:10,fontWeight:800,color:"#1d4ed8",background:"#dbeafe",borderRadius:5,padding:"2px 7px"}}>Neu</span>}
                     </div>
                     {req.fromEmail&&<div style={{fontSize:11,color:"#64748b",marginBottom:4}}>{req.fromEmail}</div>}

@@ -35,10 +35,11 @@ je Aufgabe, Build + Tests müssen grün sein.
 
 ## C. DSGVO (#2) – Feinschliff
 - ✅ Einwilligungs-Nachweis (Spieler) + „Meine Daten"-Export/Löschantrag
-- [ ] Inbox-Kennzeichnung für DSGVO-Löschanträge (Badge im Admin-Posteingang)
-- [ ] Rechtstexte: Platzhalter klar markieren / Hinweis im Admin, echte Daten einzutragen
+- ✅ Inbox-Kennzeichnung für DSGVO-Löschanträge (Badge + Hinweis-Banner im Posteingang)
+- ◐ Rechtstexte: bestehender „Vorlage"-Hinweis vorhanden; echte Verantwortlichen-Daten/anwaltliche Pruefung bleiben Aufgabe des Betreibers.
 
 ## D. Features (zu besprechen/priorisieren)
+- ✅ Turnier: Ergebnis-Eingabe + Tabelle (Besucher lesen nur)
 - [ ] Turnier: Team-Aufteilung (Split-Tab ist Platzhalter)
 - [ ] Turnier: Statistiken (Stats-Tab ist Platzhalter)
 - [ ] Affiliate: echte AWIN-mids/Publisher-ID eintragen, sobald Programme bestätigt
