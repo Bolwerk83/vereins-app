@@ -41,7 +41,7 @@ je Aufgabe, Build + Tests müssen grün sein.
 ## D. Features (zu besprechen/priorisieren)
 - ✅ Turnier: Ergebnis-Eingabe + Tabelle (Besucher lesen nur)
 - ✅ Turnier: Team-Aufteilung (zugesagte Spieler zufaellig auf N Teams)
-- [ ] Turnier: Statistiken (Stats-Tab ist Platzhalter)
+- ✅ Turnier: Statistiken (Stats-Tab zeigt jetzt die Tabelle)
 - [ ] Affiliate: echte AWIN-mids/Publisher-ID eintragen, sobald Programme bestätigt
 - [ ] Push-Benachrichtigungen finalisieren (VAPID/Edge-Function/Cron laut README)
 
