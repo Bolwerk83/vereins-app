@@ -20180,9 +20180,10 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       {showSeasonModal&&<SeasonModal data={local} save={d=>{save(d);}} fire={fire} cl={myClub} myTids={myTids} onClose={()=>setShowSeasonModal(false)}/>}
       {}
       <div style={{background:`linear-gradient(90deg,${t.p},${mix(t.p,-20)})`,display:"grid",gridTemplateColumns:"repeat(3,1fr)"}}>
-        {[[up.length,"Termine","*"],[myTids.length,"Teams","*"],[myEvs.reduce((s,e)=>s+Object.keys(e.votes||{}).length,0),"Stimmen","**"]].map(([v,l,em])=>(
-          <div key={l} style={{padding:"11px 0",textAlign:"center",borderRight:"1px solid rgba(255,255,255,.18)"}}>
-            <div style={{fontSize:16}}>{em}</div><div style={{color:"#fff",fontWeight:900,fontSize:20,lineHeight:1}}>{v}</div><div style={{color:"rgba(255,255,255,.6)",fontSize:11}}>{l}</div>
+        {[[up.length,"Anstehende Termine"],[myTids.length,"Mannschaften"],[myEvs.reduce((s,e)=>s+Object.keys(e.votes||{}).length,0),"Rückmeldungen"]].map(([v,l],i)=>(
+          <div key={l} style={{padding:"12px 6px",textAlign:"center",borderRight:i<2?"1px solid rgba(255,255,255,.2)":"none"}}>
+            <div style={{color:"#fff",fontWeight:900,fontSize:22,lineHeight:1}}>{v}</div>
+            <div style={{color:"#fff",opacity:.85,fontSize:10.5,fontWeight:600,marginTop:4,letterSpacing:.2,lineHeight:1.2}}>{l}</div>
           </div>
         ))}
       </div>
