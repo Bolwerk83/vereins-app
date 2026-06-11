@@ -21107,6 +21107,29 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               </div>
             </div>
           )}
+          {/* Zu-erledigen-Hub: offene Aufgaben über alle Teams */}
+          {(()=>{
+            const todos=[];
+            (local.events||[]).filter(e=>myTids.includes(e.tid)).forEach(e=>{
+              eventWarnings(e,tod).forEach(x=>todos.push({ev:e,label:x.label,col:x.col,bg:x.bg}));
+              if(["heimspiel","auswarts","freundschaft"].includes(e.type)&&e.date<tod&&e.date>=addD(tod,-21)&&!(e.report&&e.report.ts)) todos.push({ev:e,label:"Spielbericht eintragen",col:"#2563eb",bg:"#eff6ff"});
+            });
+            if(todos.length===0) return null;
+            return (
+              <div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:18,padding:"14px 16px",marginBottom:14}}>
+                <div style={{fontWeight:900,fontSize:15,color:"#0f172a",marginBottom:10}}>✅ Zu erledigen <span style={{color:"#94a3b8",fontWeight:700,fontSize:13}}>({todos.length})</span></div>
+                <div style={{display:"flex",flexDirection:"column",gap:7}}>
+                  {todos.slice(0,10).map((td,i)=>(
+                    <button key={i} onClick={()=>setViewEv(td.ev)} style={{display:"flex",alignItems:"center",gap:10,width:"100%",textAlign:"left",background:"#f8fafc",border:"1px solid #eef2f7",borderRadius:11,padding:"9px 11px",cursor:"pointer",fontFamily:"inherit"}}>
+                      <span style={{fontSize:10.5,fontWeight:800,color:td.col,background:td.bg,borderRadius:6,padding:"2px 8px",flexShrink:0,whiteSpace:"nowrap"}}>{td.label}</span>
+                      <span style={{flex:1,minWidth:0,fontSize:13,fontWeight:700,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{td.ev.title}</span>
+                      <span style={{fontSize:11.5,color:"#94a3b8",flexShrink:0}}>{fmtDShort(td.ev.date)}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
           {/* Turnier-Radar: passende Ausschreibungen in der Nähe */}
           {(()=>{
             const myCats=[...new Set((local.teams||[]).filter(tm=>myTids.includes(tm.id)).map(tm=>tm.cat||tm.name))];
