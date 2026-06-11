@@ -21381,6 +21381,7 @@ function CarpoolWizard({ev,user,onSave,onClose,cl}) {
   return <div style={{padding:16,textAlign:"center",color:"#64748b"}}><p>Fahrgemeinschaft-Funktion in Entwicklung.</p><button onClick={onClose} style={{marginTop:12,padding:"10px 20px",borderRadius:10,border:"none",background:TH(cl).p,color:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Schließen</button></div>;
 }
 
+const PICKUP_SUGGEST = ["Sportplatz","Marktplatz","Schule","Kirche","Zuhause","Bahnhof","Rewe","Aldi"];
 function PollCarpool({ev,user,onVote,cl}) {
   const t=TH(cl);
   const votes=ev.votes||{};
@@ -21388,53 +21389,132 @@ function PollCarpool({ev,user,onVote,cl}) {
   const mine = entryOf(user);
   const myMode = mine?.mode || null;
   const [seats,setSeats]=useState(()=> (mine?.mode==="drive" && mine?.seats) ? mine.seats : 3);
+  const [note,setNote]=useState(mine?.note||"");
+  const [pickup,setPickup]=useState(mine?.pickup||"");
   const drivers = Object.keys(votes).filter(n=>entryOf(n)?.mode==="drive");
   const needers = Object.keys(votes).filter(n=>entryOf(n)?.mode==="need");
+  const passengersOf = d => needers.filter(n=>entryOf(n)?.car===d);
   const seatsTotal = drivers.reduce((s,n)=>s+(Number(entryOf(n).seats)||0),0);
-  const set = (mode,s) => onVote(ev.id,"carpool",{mode, seats: mode==="drive"?(s??seats):undefined, ts:new Date().toISOString()});
-  const ModeBtn=({mode,label,sub,col})=>(
-    <button onClick={()=>set(mode, mode==="drive"?seats:undefined)}
+  const unassigned = needers.filter(n=>{ const c=entryOf(n)?.car; return !c || !drivers.includes(c); });
+
+  const saveDriver = (s=seats,nt=note)=> onVote(ev.id,"carpool",{mode:"drive",seats:s,note:nt,ts:new Date().toISOString()});
+  const saveNeed   = (car=mine?.car||null,pk=pickup)=> onVote(ev.id,"carpool",{mode:"need",car,pickup:pk,ts:new Date().toISOString()});
+  const saveSelf   = ()=> onVote(ev.id,"carpool",{mode:"self",ts:new Date().toISOString()});
+  const joinCar = d => { const free=(Number(entryOf(d)?.seats)||0)-passengersOf(d).length; const inThis=mine?.car===d; if(!inThis&&free<=0) return; saveNeed(inThis?null:d, pickup); };
+
+  const ModeBtn=({mode,label,col,onClick})=>(
+    <button onClick={onClick}
       style={{flex:1,padding:"12px 6px",borderRadius:13,border:`2px solid ${myMode===mode?col:"#e2e8f0"}`,background:myMode===mode?col+"15":"#fff",cursor:"pointer",fontFamily:"inherit",textAlign:"center"}}>
       <div style={{fontWeight:800,fontSize:13.5,color:myMode===mode?col:"#334155"}}>{label}</div>
-      {sub&&<div style={{fontSize:10.5,color:"#94a3b8",marginTop:2}}>{sub}</div>}
     </button>
   );
-  const Row=({n,right,rcol})=>(
-    <div style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0"}}>
-      <Av name={n} sz={26}/>
-      <span style={{flex:1,fontSize:13,fontWeight:700,color:"#0f172a"}}>{n}{n===user?" (du)":""}</span>
-      <span style={{fontSize:11.5,fontWeight:800,color:rcol}}>{right}</span>
+  const Seats=({total,taken})=>(
+    <div style={{display:"flex",gap:3,alignItems:"center"}}>
+      {Array.from({length:Math.max(total,taken)},(_,i)=>(
+        <span key={i} title={i<taken?"belegt":"frei"} style={{fontSize:15,lineHeight:1}}>{i<taken?"🟠":"🟢"}</span>
+      ))}
     </div>
   );
+  const PickupEditor = ()=>(
+    <div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:12,padding:"11px 13px"}}>
+      <div style={{fontSize:11,fontWeight:800,color:"#92400e",marginBottom:7}}>WO &amp; WANN STEHST DU?</div>
+      <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:8}}>
+        {PICKUP_SUGGEST.map(s=>(
+          <button key={s} onClick={()=>{setPickup(s);saveNeed(undefined,s);}} style={{padding:"5px 10px",borderRadius:99,border:`1.5px solid ${pickup===s?"#d97706":"#fde68a"}`,background:pickup===s?"#fef3c7":"#fff",color:"#92400e",fontWeight:700,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>{s}</button>
+        ))}
+      </div>
+      <input value={pickup} onChange={e=>setPickup(e.target.value)} onBlur={()=>saveNeed(undefined,pickup)}
+        onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();saveNeed(undefined,pickup);}}}
+        placeholder="z.B. Sportplatz, 9:15 Uhr"
+        style={{width:"100%",padding:"9px 12px",fontSize:13.5,border:"1.5px solid #fde68a",borderRadius:10,outline:"none",boxSizing:"border-box",background:"#fff"}}/>
+    </div>
+  );
+
   return (
     <div style={{display:"flex",flexDirection:"column",gap:13}}>
       <div style={{display:"flex",gap:8}}>
-        <ModeBtn mode="drive" label="Ich fahre" sub="biete Plätze" col="#16a34a"/>
-        <ModeBtn mode="need" label="Brauche Mitfahrt" sub="" col="#d97706"/>
-        <ModeBtn mode="self" label="Komme selbst" sub="" col="#64748b"/>
+        <ModeBtn mode="drive" label="Ich fahre" col="#16a34a" onClick={()=>saveDriver()}/>
+        <ModeBtn mode="need" label="Brauche Mitfahrt" col="#d97706" onClick={()=>saveNeed(mine?.car||null,pickup)}/>
+        <ModeBtn mode="self" label="Komme selbst" col="#64748b" onClick={saveSelf}/>
       </div>
+
       {myMode==="drive"&&(
-        <div style={{display:"flex",alignItems:"center",gap:10,background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:12,padding:"10px 14px"}}>
-          <div style={{flex:1,fontSize:13,fontWeight:700,color:"#166534"}}>Freie Plätze</div>
-          <button onClick={()=>{const nn=Math.max(1,seats-1);setSeats(nn);set("drive",nn);}} style={{width:34,height:34,borderRadius:9,border:"1.5px solid #bbf7d0",background:"#fff",fontWeight:900,fontSize:18,cursor:"pointer"}}>–</button>
-          <span style={{fontWeight:900,fontSize:18,width:28,textAlign:"center",color:"#166534"}}>{seats}</span>
-          <button onClick={()=>{const nn=seats+1;setSeats(nn);set("drive",nn);}} style={{width:34,height:34,borderRadius:9,border:"1.5px solid #bbf7d0",background:"#fff",fontWeight:900,fontSize:18,cursor:"pointer"}}>+</button>
+        <div style={{background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:12,padding:"11px 14px",display:"flex",flexDirection:"column",gap:10}}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <div style={{flex:1,fontSize:13,fontWeight:700,color:"#166534"}}>Plätze im Auto</div>
+            <button onClick={()=>{const nn=Math.max(1,seats-1);setSeats(nn);saveDriver(nn,note);}} style={{width:34,height:34,borderRadius:9,border:"1.5px solid #bbf7d0",background:"#fff",fontWeight:900,fontSize:18,cursor:"pointer"}}>–</button>
+            <span style={{fontWeight:900,fontSize:18,width:28,textAlign:"center",color:"#166534"}}>{seats}</span>
+            <button onClick={()=>{const nn=seats+1;setSeats(nn);saveDriver(nn,note);}} style={{width:34,height:34,borderRadius:9,border:"1.5px solid #bbf7d0",background:"#fff",fontWeight:900,fontSize:18,cursor:"pointer"}}>+</button>
+          </div>
+          <input value={note} onChange={e=>setNote(e.target.value)} onBlur={()=>saveDriver(seats,note)}
+            onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();saveDriver(seats,note);}}}
+            placeholder="Auto-Chat: z.B. Abfahrt 9:30 ab Sportplatz, Treffpunkt Parkplatz"
+            style={{width:"100%",padding:"9px 12px",fontSize:13.5,border:"1.5px solid #bbf7d0",borderRadius:10,outline:"none",boxSizing:"border-box",background:"#fff"}}/>
         </div>
       )}
-      <div style={{background:"#f8fafc",borderRadius:13,border:"1.5px solid #e2e8f0",padding:"12px 14px"}}>
-        <div style={{display:"flex",justifyContent:"space-between",marginBottom:drivers.length||needers.length?10:0}}>
-          <span style={{fontSize:12,fontWeight:800,color:"#16a34a"}}>{drivers.length} Fahrer · {seatsTotal} Plätze</span>
-          <span style={{fontSize:12,fontWeight:800,color:needers.length>seatsTotal?"#dc2626":"#d97706"}}>{needers.length} ohne Fahrt</span>
-        </div>
-        {drivers.length>0&&<div style={{marginBottom:needers.length?10:0}}>
-          {drivers.map(n=><Row key={n} n={n} right={`${entryOf(n).seats||0} Plätze`} rcol="#16a34a"/>)}
-        </div>}
-        {needers.length>0&&<div style={{borderTop:drivers.length?"1px solid #e2e8f0":"none",paddingTop:drivers.length?10:0}}>
-          {needers.map(n=><Row key={n} n={n} right="braucht Mitfahrt" rcol="#d97706"/>)}
-        </div>}
-        {drivers.length===0&&needers.length===0&&<div style={{fontSize:13,color:"#94a3b8",textAlign:"center"}}>Noch keine Einträge.</div>}
+
+      {myMode==="need"&&<PickupEditor/>}
+
+      {/* Autos grafisch */}
+      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+        {drivers.length===0 && <div style={{fontSize:13,color:"#94a3b8",textAlign:"center",padding:"8px"}}>Noch kein Fahrer. Wer kann fahren?</div>}
+        {drivers.map(d=>{
+          const dE=entryOf(d); const total=Number(dE?.seats)||0; const pax=passengersOf(d); const free=total-pax.length;
+          const inThis=mine?.car===d;
+          return (
+            <div key={d} style={{background:"#fff",border:`1.5px solid ${inThis?t.p:"#e2e8f0"}`,borderRadius:14,padding:"12px 14px"}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+                <span style={{fontSize:20}}>🚗</span>
+                <Av name={d} sz={30}/>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>{d}{d===user?" (du)":""}</div>
+                  <div style={{fontSize:11,color:free>0?"#16a34a":"#dc2626",fontWeight:700}}>{free>0?`${free} von ${total} frei`:"voll"}</div>
+                </div>
+                <Seats total={total} taken={pax.length}/>
+              </div>
+              {dE?.note && <div style={{background:"#f0fdf4",borderRadius:9,padding:"7px 10px",fontSize:12.5,color:"#166534",marginBottom:8}}>💬 {dE.note}</div>}
+              {pax.length>0 && <div style={{display:"flex",flexDirection:"column",gap:5,marginBottom:8}}>
+                {pax.map(p=>{const pE=entryOf(p);return (
+                  <div key={p} style={{display:"flex",alignItems:"center",gap:8,fontSize:12.5}}>
+                    <Av name={p} sz={20}/>
+                    <span style={{fontWeight:700,color:"#0f172a"}}>{p}{p===user?" (du)":""}</span>
+                    {pE?.pickup && <span style={{color:"#92400e",background:"#fffbeb",borderRadius:7,padding:"2px 8px",fontWeight:600}}>📍 {pE.pickup}</span>}
+                  </div>
+                );})}
+              </div>}
+              {d!==user && (
+                inThis
+                  ? <button onClick={()=>joinCar(d)} style={{width:"100%",padding:"9px",borderRadius:10,border:"1.5px solid #fecaca",background:"#fff7f7",color:"#dc2626",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Aussteigen</button>
+                  : free>0
+                    ? <button onClick={()=>joinCar(d)} style={{width:"100%",padding:"9px",borderRadius:10,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Mitfahren</button>
+                    : <div style={{textAlign:"center",fontSize:12,color:"#94a3b8",fontWeight:700}}>Auto ist voll</div>
+              )}
+            </div>
+          );
+        })}
       </div>
-      {needers.length>seatsTotal&&<div style={{fontSize:12,color:"#dc2626",fontWeight:700,textAlign:"center"}}>Es fehlen noch {needers.length-seatsTotal} Plätze – wer kann zusätzlich fahren?</div>}
+
+      {/* Wer sucht noch */}
+      {unassigned.length>0 && (
+        <div style={{background:"#fff7ed",border:"1.5px solid #fed7aa",borderRadius:13,padding:"11px 14px"}}>
+          <div style={{fontSize:11,fontWeight:800,color:"#9a3412",marginBottom:8}}>SUCHT NOCH MITFAHRT ({unassigned.length})</div>
+          <div style={{display:"flex",flexDirection:"column",gap:5}}>
+            {unassigned.map(n=>{const e=entryOf(n);return (
+              <div key={n} style={{display:"flex",alignItems:"center",gap:8,fontSize:12.5}}>
+                <Av name={n} sz={22}/>
+                <span style={{flex:1,fontWeight:700,color:"#0f172a"}}>{n}{n===user?" (du)":""}</span>
+                {e?.pickup && <span style={{color:"#9a3412",fontWeight:600}}>📍 {e.pickup}</span>}
+              </div>
+            );})}
+          </div>
+          {drivers.length>0 && <p style={{fontSize:11,color:"#9a3412",marginTop:8}}>Tipp: oben ein Auto antippen und „Mitfahren".</p>}
+        </div>
+      )}
+
+      <div style={{fontSize:12,fontWeight:700,textAlign:"center",color:needers.length>seatsTotal?"#dc2626":"#64748b"}}>
+        {drivers.length} Fahrer · {seatsTotal} Plätze · {needers.length} Mitfahrer
+        {needers.length>seatsTotal?` · es fehlen ${needers.length-seatsTotal} Plätze`:""}
+      </div>
     </div>
   );
 }
