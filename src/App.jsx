@@ -2450,6 +2450,7 @@ const AFFILIATE_IDS = {
   hrs:    "",          // HRS Sports / Hotel-Affiliate-ID
   jako:   "",          // JAKO Direktpartner-Code (langfristig)
   trainerakademie: "", // Deutsche Trainerakademie etc.
+  adsense: "",         // Google AdSense Publisher-ID, z. B. "ca-pub-1234567890123456"
 };
 // Affiliate-IDs zur Laufzeit aus den (global gespeicherten) Vereinsdaten
 // übernehmen – im SuperAdmin pflegbar, ohne Code-Änderung.
@@ -9413,6 +9414,7 @@ function SuperAdminAffiliate({ data }){
     {k:"hrs",label:"HRS Affiliate-ID",ph:"",hint:"Hotels / Reise"},
     {k:"jako",label:"JAKO Code",ph:"",hint:"Sportbekleidung (Direktpartner)"},
     {k:"trainerakademie",label:"Trainerakademie-ID",ph:"",hint:"Trainer-Weiterbildung"},
+    {k:"adsense",label:"Google AdSense Publisher-ID",ph:"ca-pub-1234567890123456",hint:"Aktiviert die Display-Werbeflächen (Format ca-pub-…). AdSense-Konto muss freigeschaltet & Seite genehmigt sein."},
   ];
   const [f,setF]=useState(()=>({...AFFILIATE_IDS,...(data?.affiliateIds||{})}));
   const [saving,setSaving]=useState(false);
@@ -18578,24 +18580,40 @@ function JerseysTab({ data,myTids,save,fire,cl }) {
   );
 }
 
-const ADSENSE_ID = "ca-pub-DEIN-ADSENSE-ID";
-const ADS_ENABLED = ADSENSE_ID !== "ca-pub-DEIN-ADSENSE-ID";
+// AdSense Publisher-ID wird zur Laufzeit aus AFFILIATE_IDS.adsense gelesen
+// (im SuperAdmin unter "Werbung / IDs" pflegbar). Gültige Form: "ca-pub-…".
+const adsenseId = () => AFFILIATE_IDS.adsense || "";
+const adsEnabled = () => /^ca-pub-\d{6,}/.test(adsenseId());
 
 function AdBanner({ slot="auto",style={},trigger="players" }) {
   const ref = useRef(null);
+  const enabled = adsEnabled();
+  const client = adsenseId();
   useEffect(()=>{
-    if(!ADS_ENABLED) return;
-    try { window.adsbygoogle=window.adsbygoogle||[]; window.adsbygoogle.push({}); } catch {}
-  },[]);
+    if(!enabled) return;
+    try {
+      if(!window.__vaAdsenseLoaded){
+        window.adsbygoogle = window.adsbygoogle || [];
+        // Nicht-personalisierte Ads bis ein Consent-Manager eingebunden ist
+        window.adsbygoogle.requestNonPersonalizedAds = 1;
+        const s = document.createElement("script");
+        s.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${client}`;
+        s.crossOrigin = "anonymous"; s.async = true;
+        document.head.appendChild(s);
+        window.__vaAdsenseLoaded = true;
+      }
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
+    } catch {}
+  },[enabled,client]);
 
   // Solange AdSense (Display-Werbung) nicht eingerichtet ist: statt eines leeren
   // "Werbung"-Platzhalters eine echte Affiliate-Anzeige zeigen (nutzt AWIN/Amazon).
-  if(!ADS_ENABLED) return <AffiliateBanner trigger={trigger} style={style}/>;
+  if(!enabled) return <AffiliateBanner trigger={trigger} style={style}/>;
   return (
     <div style={{textAlign:"center",...style}}>
       <div style={{fontSize:9,fontWeight:800,color:"#cbd5e1",letterSpacing:.5,marginBottom:2,textAlign:"left"}}>ANZEIGE</div>
       <ins ref={ref} className="adsbygoogle" style={{display:"block"}}
-        data-ad-client={ADSENSE_ID} data-ad-slot={slot}
+        data-ad-client={client} data-ad-slot={slot}
         data-ad-format="auto" data-full-width-responsive="true"/>
     </div>
   );
