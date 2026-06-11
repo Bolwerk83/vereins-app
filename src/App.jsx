@@ -18138,7 +18138,8 @@ function ChatTab({data,cid,myTids,session,save,fire,cl}) {
   const allTeams=data.teams.filter(tm=>tm.cid===cid);
   const isHelper=session.role==="helper";
   const scopes=[
-    {id:"club_"+cid,label:"* Gesamter Verein",sub:"Alle Teams"},...myTids.map(tid=>{const tm=allTeams.find(x=>x.id===tid);return{id:"team_"+tid,label:tm?.icon+" "+(tm?.name||tid),sub:tm?.cat||""};})
+    {id:"club_"+cid,label:"Gesamter Verein",col:t.p,all:true},
+    ...myTids.map(tid=>{const tm=allTeams.find(x=>x.id===tid);return{id:"team_"+tid,label:tm?.name||tid,col:tm?.col||t.p};})
   ];
 
   const [selScope,setSelScope]=useState(scopes[0]?.id||"");
@@ -18217,14 +18218,14 @@ function ChatTab({data,cid,myTids,session,save,fire,cl}) {
   return (
     <div style={{display:"flex",flexDirection:"column",height:"calc(100dvh - 200px)"}}>
       {}
-      <div style={{overflowX:"auto",display:"flex",gap:7,marginBottom:12,scrollbarWidth:"none",paddingBottom:2}}>
-        {scopes.map(s=>(
+      <div style={{overflowX:"auto",display:"flex",gap:8,marginBottom:12,scrollbarWidth:"none",paddingBottom:2}}>
+        {scopes.map(s=>{const on=selScope===s.id;return (
           <button key={s.id} onClick={()=>setSelScope(s.id)}
-            style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"8px 14px",borderRadius:12,border:`2px solid ${selScope===s.id?t.p:"#e2e8f0"}`,background:selScope===s.id?t.p:"#fff",color:selScope===s.id?"#fff":"#475569",fontWeight:700,fontSize:12,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit",minWidth:80,gap:2}}>
-            <span style={{fontSize:13}}>{s.label}</span>
-            {s.sub&&<span style={{fontSize:10,opacity:.7}}>{s.sub}</span>}
+            style={{display:"flex",alignItems:"center",gap:7,padding:"9px 15px",borderRadius:99,border:`1.5px solid ${on?s.col:"#e2e8f0"}`,background:on?s.col:"#fff",color:on?"#fff":"#334155",fontWeight:700,fontSize:13,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit",flexShrink:0}}>
+            <span style={{width:9,height:9,borderRadius:s.all?3:"50%",background:on?"#fff":s.col,flexShrink:0}}/>
+            {s.label}
           </button>
-        ))}
+        );})}
       </div>
 
       <div style={{fontSize:10.5,color:"#94a3b8",textAlign:"center",marginBottom:6}}>Nachrichten werden nach 30 Tagen automatisch gelöscht. Tippe auf deine eigene Nachricht zum Bearbeiten oder Löschen.</div>
