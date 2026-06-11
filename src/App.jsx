@@ -21145,6 +21145,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const { trigger: shareTrigger,dismiss: dismissShare } = useShareTrigger(local,session,myTids);
   const [delConf,setDelConf]=useState(null); const [viewEv,setViewEv]=useState(null); const [delConfVal,setDelConfVal]=useState(null);
   const [editConf,setEditConf]=useState(null);
+  const [planFor,setPlanFor]=useState(null);
+  const planTitleOf = ev => ev?.trainingId ? ((local.trainings||[]).find(t=>t.id===ev.trainingId)?.title||null) : null;
   const toastRef=useRef(null);
   const fire=m=>{setToast(m);clearTimeout(toastRef.current);toastRef.current=setTimeout(()=>setToast(null),2500);};
   const save=next=>{setLocal(next);onSave(next);};
@@ -21319,10 +21321,10 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             </div>
             <div style={{width:32,height:32,borderRadius:10,background:"rgba(0,0,0,.15)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:18,fontWeight:700,flexShrink:0}}>{">"}</div>
           </div>
-          {up.length>0&&<><Divider label={`NÄCHSTE 10 TAGE (${soon.length})`}/>{soon.length>0?soon.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={selfName} onSelfVote={selfVote} onRemind={()=>remindNonVoters(ev)}/>):<p style={{textAlign:"center",color:"#94a3b8",fontSize:13.5,padding:"14px 10px"}}>Keine Termine in den nächsten 10 Tagen.</p>}
+          {up.length>0&&<><Divider label={`NÄCHSTE 10 TAGE (${soon.length})`}/>{soon.length>0?soon.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={selfName} onSelfVote={selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={()=>setPlanFor(ev)} planTitle={planTitleOf(ev)}/>):<p style={{textAlign:"center",color:"#94a3b8",fontSize:13.5,padding:"14px 10px"}}>Keine Termine in den nächsten 10 Tagen.</p>}
             {later.length>0&&<>
               <button onClick={()=>setShowLater(s=>!s)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",background:showLater?"#f1f5f9":"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,cursor:"pointer",margin:"6px 0 12px",padding:"11px 14px",fontWeight:800,fontSize:13,color:"#475569",fontFamily:"inherit"}}>{showLater?"▲ Weitere Termine ausblenden":"▼ Weitere "+later.length+" Termine anzeigen"}</button>
-              {showLater&&later.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={selfName} onSelfVote={selfVote} onRemind={()=>remindNonVoters(ev)}/>)}
+              {showLater&&later.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={selfName} onSelfVote={selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={()=>setPlanFor(ev)} planTitle={planTitleOf(ev)}/>)}
             </>}
           </>}
           {up.length===0&&<div style={{textAlign:"center",padding:"30px",background:"#fff",borderRadius:18,border:"1.5px dashed #e2e8f0",color:"#94a3b8"}}><Logo cl={myClub} sz={50} sx={{margin:"0 auto 12px"}}/><p style={{fontWeight:800,fontSize:15}}>Noch keine Termine</p><p style={{fontSize:13,marginTop:3}}>Klicke oben auf "Neuen Termin anlegen"</p></div>}
@@ -21398,6 +21400,26 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
                 fire("Frist gesetzt *");
               }}
             />}
+        {viewEv.type==="training"&&(()=>{ const pl=(local.trainings||[]).find(tr=>tr.id===viewEv.trainingId); return (
+          <div style={{marginTop:16,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginBottom:10}}>
+              <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:18}}>📋</span><span style={{fontWeight:800,fontSize:15,color:"#0f172a"}}>Trainingsplan</span></div>
+              {!isHelper&&<button onClick={()=>{setPlanFor(viewEv);setViewEv(null);}} style={{padding:"6px 11px",borderRadius:9,border:"none",background:"#eef2ff",color:"#4f46e5",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{pl?"Ändern":"Hinterlegen"}</button>}
+            </div>
+            {pl
+              ? <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                  {pl.focus&&<div style={{fontSize:12,color:"#64748b",marginBottom:2}}>Schwerpunkt: {pl.focus}</div>}
+                  {(pl.blocks||[]).map((b,i)=>(
+                    <div key={i} style={{display:"flex",gap:10,alignItems:"center",background:"#f8fafc",borderRadius:10,padding:"9px 12px"}}>
+                      <span style={{fontSize:11,fontWeight:800,color:"#4f46e5",minWidth:74}}>{b.phase}</span>
+                      <span style={{flex:1,fontSize:13,color:"#0f172a",fontWeight:600}}>{b.title}</span>
+                      <span style={{fontSize:12,color:"#64748b",fontWeight:700,whiteSpace:"nowrap"}}>{b.min} Min</span>
+                    </div>
+                  ))}
+                </div>
+              : <p style={{fontSize:13,color:"#94a3b8"}}>Noch kein Trainingsplan hinterlegt.</p>}
+          </div>
+        ); })()}
         {["heimspiel","auswarts","freundschaft"].includes(viewEv.type)&&!isHelper&&(
           <MatchReportCard ev={viewEv}
             roster={(local.playerProfiles||[]).filter(p=>p.mainTid===viewEv.tid&&!p.archived).map(p=>p.name)}
@@ -21491,6 +21513,37 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           }}/>}
           <Btn v="gst" full ch="Abbrechen" onClick={()=>setEditConf(null)}/>
         </div>
+      </Drawer>}
+
+      {}
+      {planFor&&<Drawer onClose={()=>setPlanFor(null)} title="Trainingsplan hinterlegen">
+        {(()=>{
+          const plans=(local.trainings||[]).filter(tr=>tr.cid===cid);
+          const totalMin=tr=>(tr.blocks||[]).reduce((s,b)=>s+(Number(b.min)||0),0);
+          const attach=tid=>{ save({...local,events:local.events.map(e=>e.id===planFor.id?{...e,trainingId:tid}:e)}); setPlanFor(null); fire(tid?"Trainingsplan verknüpft *":"Trainingsplan entfernt"); };
+          return (
+            <div>
+              <div style={{background:"#eef2ff",borderRadius:14,padding:"12px 14px",marginBottom:14,border:"1.5px solid #c7d2fe"}}>
+                <p style={{fontSize:13,color:"#3730a3",fontWeight:600,lineHeight:1.5}}>Wähle einen gespeicherten Trainingsplan für „{planFor.title}". Er ist dann beim Termin sichtbar (Tab „Ansehen").</p>
+              </div>
+              {plans.length===0
+                ? <div style={{textAlign:"center",padding:"24px 12px"}}><p style={{fontWeight:700,color:"#475569"}}>Noch keine Trainingspläne</p><p style={{fontSize:13,marginTop:4,color:"#94a3b8"}}>Lege im Tab „Training" Pläne an – sie erscheinen dann hier zur Auswahl.</p></div>
+                : <div style={{display:"flex",flexDirection:"column",gap:9}}>
+                    {plans.map(tr=>{ const sel=planFor.trainingId===tr.id; return (
+                      <button key={tr.id} onClick={()=>attach(tr.id)} style={{textAlign:"left",padding:"12px 14px",borderRadius:12,border:`2px solid ${sel?"#4f46e5":"#e2e8f0"}`,background:sel?"#eef2ff":"#fff",cursor:"pointer",fontFamily:"inherit"}}>
+                        <div style={{display:"flex",alignItems:"center",gap:8}}>
+                          <span style={{fontWeight:800,fontSize:14,color:"#0f172a",flex:1}}>{tr.title}</span>
+                          {sel&&<span style={{fontSize:12,fontWeight:800,color:"#4f46e5"}}>✓ aktiv</span>}
+                        </div>
+                        <div style={{fontSize:12,color:"#64748b",marginTop:3}}>{tr.focus?tr.focus+" · ":""}{(tr.blocks||[]).length} Blöcke · {totalMin(tr)} Min</div>
+                      </button>
+                    );})}
+                  </div>}
+              {planFor.trainingId&&<Btn v="dng" full ch="Plan entfernen" onClick={()=>attach("")} sx={{marginTop:12}}/>}
+              <div style={{height:8}}/><Btn v="gst" full ch="Schließen" onClick={()=>setPlanFor(null)}/>
+            </div>
+          );
+        })()}
       </Drawer>}
       </div>
     </div>
@@ -21704,7 +21757,7 @@ function eventWarnings(ev, tod){
   return w;
 }
 
-function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSelfVote,onRemind}) {
+function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSelfVote,onRemind,onPlan,planTitle}) {
   const eT=ET[ev.type]||ET.training; const tF=ev.date===tod; const p=cl?.pri||"#16a34a";
   const warns=eventWarnings(ev,tod);
   const _v=ev.votes||{};
@@ -21741,6 +21794,7 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
         <div style={{flex:1,minWidth:0}}>
           <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}><span style={{fontWeight:800,fontSize:14,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ev.title}</span>{tF&&<Tag c={p} bg={p+"20"} ch="Heute"/>}{ev.open&&<Tag c="#7c3aed" bg="#ede9fe" ch="* Offen"/>}{ev.sid&&<Tag c="#94a3b8" bg="#f1f5f9" ch="* Serie"/>}</div>
           <div style={{fontSize:12,color:"#64748b",marginTop:3}}>{fmtDShort(ev.date)}{ev.time?" . "+ev.time:""}{ev.loc?" . *"+ev.loc:""}</div>
+          {ev.type==="training"&&planTitle&&<div style={{marginTop:5}}><span style={{fontSize:11,fontWeight:700,color:"#4f46e5",background:"#eef2ff",borderRadius:6,padding:"2px 8px"}}>📋 {planTitle}</span></div>}
           {warns.length>0&&<div style={{display:"flex",gap:5,marginTop:5,flexWrap:"wrap"}}>{warns.map((w,i)=><span key={i} style={{fontSize:11,fontWeight:800,color:w.col,background:w.bg,borderRadius:6,padding:"2px 8px"}}>⚠ {w.label}</span>)}</div>}
           {vc>0&&<div style={{display:"flex",gap:5,marginTop:4,flexWrap:"wrap"}}>{ev.pt==="att"?<><Tag c="#16a34a" ch={`* ${yes}`}/><Tag c="#dc2626" bg="#fee2e2" ch={`* ${no}`}/></>:<Tag c="#2563eb" ch={`* ${vc} Eintraege`}/>}</div>}
           {ev.deadline&&<div style={{marginTop:4}}><span style={{fontSize:11,fontWeight:700,color:dlPassed?"#dc2626":"#d97706",background:dlPassed?"#fee2e2":"#fef3c7",borderRadius:6,padding:"2px 8px"}}> {dlPassed?"Frist abgelaufen":"Frist: "}{!dlPassed&&ev.deadline.date}</span></div>}
@@ -21785,6 +21839,7 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
       <div style={{display:"flex",gap:6,padding:"8px 12px 10px",borderTop:"1px solid #f1f5f9",flexWrap:"wrap"}}>
         <BtnSm onClick={onView}  icon="*" label="Ansehen"   bg="#f1f5f9" col="#475569"/>
         <BtnSm onClick={onEdit}  icon="**" label="Bearbeiten" bg="#f0fdf4" col="#16a34a"/>
+        {ev.type==="training"&&onPlan&&<BtnSm onClick={onPlan} icon="📋" label={planTitle?"Plan ändern":"Trainingsplan"} bg="#eef2ff" col="#4f46e5"/>}
         {onRemind&&(ev.pt==="att"||!ev.pt)&&ev.date>=tod&&<BtnSm onClick={onRemind} icon="🔔" label="Erinnern" bg="#e0f2fe" col="#0369a1"/>}
         <BtnSm onClick={onReset} icon="*" label="Zurücksetzen" bg="#fff7ed" col="#d97706"/>
         {ev.open&&<BtnSm onClick={onCopyLink} icon="*" label="Link kopieren" bg="#ede9fe" col="#7c3aed"/>}
@@ -23743,7 +23798,10 @@ export default function App() {
   );
 }
 function AppRoot() {
-  const [lang,setLang] = useState(()=> LANG_SWITCHER_ENABLED ? (localStorage.getItem(LANG_KEY)||navigator.language?.slice(0,2)||"de") : "de");
+  // Standard immer Deutsch (Vereins-App ist primär deutsch). Nur eine vom Nutzer
+  // aktiv gewählte Sprache (im localStorage) überschreibt das – NICHT die Browser-
+  // sprache, sonst springt die App auf englisch-eingestellten Geräten auf Englisch.
+  const [lang,setLang] = useState(()=> LANG_SWITCHER_ENABLED ? (localStorage.getItem(LANG_KEY)||"de") : "de");
   return (
     <LangCtx.Provider value={lang in T ? lang : "de"}>
       <AppInner lang={lang} setLang={setLang}/>
