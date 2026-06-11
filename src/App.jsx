@@ -16019,9 +16019,17 @@ function PlayerAssignRow({ player: pl,teams,allTeams,t,onAssign,onOptToggle }) {
 function shortenSurname(name){
   const toks=(name||"").trim().split(/\s+/).filter(Boolean);
   if(toks.length<2) return (name||"").trim();
-  const last=toks[toks.length-1].replace(/\.$/,"");
-  if(!last) return toks.slice(0,-1).join(" ");
+  const last=toks[toks.length-1];
+  // Bereits abgekürzt (endet auf Punkt, z.B. "B." oder "Be.") -> manuelle
+  // Eindeutigmachung respektieren und NICHT weiter kürzen.
+  if(/\.$/.test(last)) return (name||"").trim();
   return `${toks.slice(0,-1).join(" ")} ${last[0].toUpperCase()}.`;
+}
+// Mehrdeutige Anzeige-Namen finden: gleicher Name + Jahrgang kommt >1x vor.
+// Liefert ein Set der kollidierenden Schlüssel "name|by" (lowercase).
+function nameClashKeys(list){
+  const cnt={}; list.forEach(p=>{ const k=`${(p.name||"").toLowerCase().trim()}|${p.by||""}`; cnt[k]=(cnt[k]||0)+1; });
+  return new Set(Object.keys(cnt).filter(k=>cnt[k]>1));
 }
 function parseBulkPlayerLine(line) {
   const raw = line.trim();
@@ -16063,16 +16071,18 @@ function BulkAddPlayers({ cid, cl, selTid, selTeam, clubTeams, activeSeason, all
     }));
   }, [text, defaultBy, defaultGender, shorten]);
 
-  // Duplikat-Check gegen bestehende Spieler
+  // Duplikat-Check gegen bestehende Spieler + Mehrdeutigkeits-Check innerhalb der Liste
   const existingKeys = new Set(allPlayers.map(p => `${(p.name||"").toLowerCase().trim()}|${p.by||""}`));
-  const withDupFlag = parsed.map(p => ({
-    ...p,
-    dup: existingKeys.has(`${p.name.toLowerCase().trim()}|${p.by||""}`),
-  }));
+  const clashKeys = nameClashKeys(parsed);
+  const withDupFlag = parsed.map(p => {
+    const key = `${p.name.toLowerCase().trim()}|${p.by||""}`;
+    return { ...p, dup: existingKeys.has(key), clash: clashKeys.has(key) };
+  });
   const newOnly = withDupFlag.filter(p => !p.dup);
+  const hasClash = withDupFlag.some(p => p.clash && !p.dup);
 
   const doSave = async () => {
-    if (newOnly.length === 0) return;
+    if (newOnly.length === 0 || hasClash) return;
     setBusy(true);
     const consentAt = consent ? new Date().toISOString() : "";
     const newPlayers = newOnly.map(p => ({ ...mkPlayer({
@@ -16171,18 +16181,28 @@ Ben Fischer | 2016 | m`;
                 VORSCHAU ({newOnly.length} neu{withDupFlag.length-newOnly.length>0?`, ${withDupFlag.length-newOnly.length} bereits vorhanden`:""})
               </div>
               <div style={{display:"flex",flexDirection:"column",gap:5,maxHeight:200,overflowY:"auto",border:"1px solid #f1f5f9",borderRadius:10,padding:8}}>
-                {withDupFlag.map((p,i)=>(
+                {withDupFlag.map((p,i)=>{
+                  const isClash = p.clash && !p.dup;
+                  const bg = isClash?"#fee2e2":p.dup?"#fef9c3":"#f0fdf4";
+                  const bd = isClash?"#fca5a5":p.dup?"#fde68a":"#bbf7d0";
+                  const lblCol = isClash?"#b91c1c":p.dup?"#854d0e":"#15803d";
+                  return (
                   <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 10px",
-                    background:p.dup?"#fef9c3":"#f0fdf4",border:`1px solid ${p.dup?"#fde68a":"#bbf7d0"}`,
-                    borderRadius:8,fontSize:12.5}}>
-                    <span style={{fontWeight:800,color:p.dup?"#854d0e":"#15803d",fontSize:11}}>
-                      {p.dup?"DUP":"NEU"}
+                    background:bg,border:`1px solid ${bd}`,borderRadius:8,fontSize:12.5}}>
+                    <span style={{fontWeight:800,color:lblCol,fontSize:11,whiteSpace:"nowrap"}}>
+                      {isClash?"MEHRDEUTIG":p.dup?"DUP":"NEU"}
                     </span>
                     <span style={{flex:1,fontWeight:700,color:"#0f172a"}}>{p.name}</span>
                     <span style={{color:"#64748b",fontFamily:"monospace"}}>{p.by} · {p.gender}</span>
                   </div>
-                ))}
+                  );
+                })}
               </div>
+              {hasClash && (
+                <div style={{marginTop:10,background:"#fee2e2",border:"1.5px solid #fca5a5",borderRadius:11,padding:"11px 13px",fontSize:12.5,color:"#991b1b",lineHeight:1.5}}>
+                  <strong>Mehrdeutige Namen gefunden.</strong> Mehrere Spieler hätten denselben Anzeigenamen + Jahrgang (z. B. zwei „Lukas B." Jg. 2015). Bitte vor dem Anlegen eindeutig machen – z. B. den Nachnamen länger abkürzen („Lukas Be.") oder die automatische Kürzung oben ausschalten. Erst dann ist das Anlegen möglich.
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -16195,11 +16215,11 @@ Ben Fischer | 2016 | m`;
             style={{flex:1,padding:"12px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
             Abbrechen
           </button>
-          <button onClick={doSave} disabled={newOnly.length===0||busy}
+          <button onClick={doSave} disabled={newOnly.length===0||busy||hasClash}
             style={{flex:2,padding:"12px",borderRadius:11,border:"none",
-              background:newOnly.length>0&&!busy?t.p:"#cbd5e1",color:"#fff",fontWeight:800,fontSize:14,
-              cursor:newOnly.length>0&&!busy?"pointer":"not-allowed",fontFamily:"inherit"}}>
-            {busy ? "Lege an…" : newOnly.length===0 ? "Nichts neu" : `${newOnly.length} Spieler anlegen`}
+              background:newOnly.length>0&&!busy&&!hasClash?t.p:"#cbd5e1",color:"#fff",fontWeight:800,fontSize:14,
+              cursor:newOnly.length>0&&!busy&&!hasClash?"pointer":"not-allowed",fontFamily:"inherit"}}>
+            {busy ? "Lege an…" : hasClash ? "Namen eindeutig machen" : newOnly.length===0 ? "Nichts neu" : `${newOnly.length} Spieler anlegen`}
           </button>
         </div>
       </div>
@@ -18467,40 +18487,31 @@ function SeasonModal({ data,save,fire,cl,myTids,onClose }) {
   //   mainTid/optTids/Stats werden zurueckgesetzt (Trainer teilt neu zu).
   // - Wer schon in der Zielsaison existiert (Name+Jahrgang), wird NICHT dupliziert.
   // - Die alte Saison wird archiviert.
-  const activateAndMigrate = (toId) => {
-    if (toId === active) return;
+  const buildActivate = (toId, base) => {
     const fromId = active;
-    const fromPlayers = allPlayers.filter(p => p.seasonId===fromId && !p.archived);
-    const toExisting  = allPlayers.filter(p => p.seasonId===toId);
+    const fromPlayers = base.filter(p => p.seasonId===fromId && !p.archived);
+    const toExisting  = base.filter(p => p.seasonId===toId);
     const existingKeys = new Set(toExisting.map(dupKey));
-
     const newCopies = fromPlayers
       .filter(p => !existingKeys.has(`${p.cid}|${toId}|${(p.name||"").toLowerCase().trim()}|${p.by||""}`))
       .map(p => ({
-        ...p,
-        id: uid(),
-        seasonId: toId,
-        mainTid: "",
-        optTids: [],
-        jerseyNr: "",
-        jerseyStatus: "none",
-        goals: 0, assists: 0, yellowCards: 0, redCards: 0,
+        ...p, id: uid(), seasonId: toId, mainTid:"", optTids:[], jerseyNr:"", jerseyStatus:"none",
+        goals:0, assists:0, yellowCards:0, redCards:0,
         lastTeam: p.lastTeam || ((data.teams||[]).find(tm=>tm.id===p.mainTid)?.name || ""),
         lastTeamId: p.mainTid || p.lastTeamId || "",
       }));
-
-    const next = {
-      ...data,
-      activeSeason: toId,
-      seasons: seasons.map(s =>
-        s.id === fromId ? {...s, status:"archived"} :
-        s.id === toId   ? {...s, status:"active"}    : s
-      ),
-      playerProfiles: [...allPlayers, ...newCopies],
+    return { next: {
+      ...data, activeSeason: toId,
+      seasons: seasons.map(s => s.id===fromId?{...s,status:"archived"} : s.id===toId?{...s,status:"active"} : s),
+      playerProfiles: [...base, ...newCopies],
       ...(MULTI_TENANT&&cl?{clubs:(data.clubs||[]).map(c=>c.id===cl.id?{...c,activeSeason:toId}:c)}:{}),
-    };
+    }, count: newCopies.length };
+  };
+  const activateAndMigrate = (toId) => {
+    if (toId === active) return;
+    const { next, count } = buildActivate(toId, allPlayers);
     save(next);
-    fire(`Saison ${seasons.find(s=>s.id===toId)?.label||""} aktiv · ${newCopies.length} Spieler übernommen`);
+    fire(`Saison ${seasons.find(s=>s.id===toId)?.label||""} aktiv · ${count} Spieler übernommen`);
     onClose();
   };
 
@@ -18535,28 +18546,66 @@ function SeasonModal({ data,save,fire,cl,myTids,onClose }) {
     fire(`${removeCount} Duplikate entfernt`);
   };
 
-  const copyToSeason = (fromId,toId) => {
-    const fromPlayers = allPlayers.filter(p => p.seasonId===fromId && myTids.includes(p.mainTid));
-    const toExisting  = allPlayers.filter(p => p.seasonId===toId);
+  const buildCopy = (fromId, toId, base) => {
+    const fromPlayers = base.filter(p => p.seasonId===fromId && myTids.includes(p.mainTid));
+    const toExisting  = base.filter(p => p.seasonId===toId);
     const existingKeys = new Set(toExisting.map(dupKey));
-
     const copied = fromPlayers
       .filter(p => !existingKeys.has(`${p.cid}|${toId}|${(p.name||"").toLowerCase().trim()}|${p.by||""}`))
       .map(p => ({
         ...p, id: uid(), seasonId: toId,
         lastTeam:   (allTeams.find(tm=>tm.id===p.mainTid)?.name||"") + " " + (seasons.find(s=>s.id===fromId)?.label||""),
-        lastTeamId: p.mainTid,
-        mainTid:"", optTids: [], jerseyNr:"", jerseyStatus:"none",
+        lastTeamId: p.mainTid, mainTid:"", optTids:[], jerseyNr:"", jerseyStatus:"none",
         goals:0, assists:0, yellowCards:0, redCards:0,
       }));
-
-    const skipped = fromPlayers.length - copied.length;
-    save({ ...data,playerProfiles: [...allPlayers,...copied] });
-    fire(`${copied.length} Spieler in ${seasons.find(s=>s.id===toId)?.label||toId} kopiert${skipped?` · ${skipped} bereits vorhanden, übersprungen`:""}`);
+    return { next:{...data, playerProfiles:[...base, ...copied]}, count:copied.length, skipped:fromPlayers.length-copied.length };
+  };
+  const copyToSeason = (fromId,toId) => {
+    const { next, count, skipped } = buildCopy(fromId,toId,allPlayers);
+    save(next);
+    fire(`${count} Spieler in ${seasons.find(s=>s.id===toId)?.label||toId} kopiert${skipped?` · ${skipped} bereits vorhanden, übersprungen`:""}`);
     onClose();
   };
 
-  const switchActive = sid => activateAndMigrate(sid);
+  // --- Mehrdeutigkeits-Schutz vor Übertragen/Kopieren ---
+  // Gleiche Anzeigenamen + Jahrgang in der Quell-Saison würden ununterscheidbare
+  // Spieler erzeugen. Vorher in einem Korrekturfeld eindeutig machen.
+  const [pending,setPending]   = useState(null);   // {kind:"activate"|"copy", toId, fromId}
+  const [renameMap,setRenameMap] = useState({});    // id -> neuer Name
+  const sameKey = (name,by)=>`${(name||"").toLowerCase().trim()}|${by||""}`;
+  const transferSource = (fromId,kind)=> allPlayers.filter(p=> p.seasonId===fromId && !p.archived && (kind==="copy"? myTids.includes(p.mainTid) : true));
+  const clashGroups = (fromId,kind)=>{
+    const groups={};
+    transferSource(fromId,kind).forEach(p=>{ const nm=(renameMap[p.id]??p.name); (groups[sameKey(nm,p.by)]=groups[sameKey(nm,p.by)]||[]).push(p); });
+    return Object.values(groups).filter(g=>g.length>1);
+  };
+  const requestActivate = (toId)=>{
+    if(toId===active) return;
+    setRenameMap({});
+    if(clashGroups(active,"activate").length) setPending({kind:"activate",toId});
+    else activateAndMigrate(toId);
+  };
+  const requestCopy = (fromId,toId)=>{
+    if(!fromId||!toId) return;
+    setRenameMap({});
+    if(clashGroups(fromId,"copy").length) setPending({kind:"copy",fromId,toId});
+    else copyToSeason(fromId,toId);
+  };
+  const renamedProfiles = ()=> allPlayers.map(p=> (renameMap[p.id]!=null && renameMap[p.id].trim()) ? {...p,name:renameMap[p.id].trim()} : p);
+  const executePending = ()=>{
+    if(!pending) return;
+    const base = renamedProfiles();
+    if(pending.kind==="activate"){
+      const { next, count } = buildActivate(pending.toId, base);
+      save(next); fire(`Saison ${seasons.find(s=>s.id===pending.toId)?.label||""} aktiv · ${count} Spieler übernommen`);
+    } else {
+      const { next, count, skipped } = buildCopy(pending.fromId, pending.toId, base);
+      save(next); fire(`${count} Spieler kopiert${skipped?` · ${skipped} übersprungen`:""}`);
+    }
+    setPending(null); onClose();
+  };
+
+  const switchActive = sid => requestActivate(sid);
 
   const [copyFrom,setCopyFrom] = useState(active);
   const [copyTo,setCopyTo]   = useState(seasons.find(s=>s.status==="planning")?.id||"");
@@ -18639,7 +18688,7 @@ function SeasonModal({ data,save,fire,cl,myTids,onClose }) {
                 </div>
               )}
 
-              <button onClick={()=>copyFrom&&copyTo&&copyToSeason(copyFrom,copyTo)}
+              <button onClick={()=>copyFrom&&copyTo&&requestCopy(copyFrom,copyTo)}
                 disabled={!copyFrom||!copyTo}
                 style={{width:"100%",padding:"14px",borderRadius:14,border:"none",background:copyFrom&&copyTo?t.p:"#e2e8f0",color:copyFrom&&copyTo?"#fff":"#64748b",fontWeight:800,fontSize:15,cursor:copyFrom&&copyTo?"pointer":"default",fontFamily:"inherit"}}>
                  Spieler jetzt kopieren
@@ -18648,6 +18697,41 @@ function SeasonModal({ data,save,fire,cl,myTids,onClose }) {
           )}
         </div>
       </div>
+
+      {pending && (()=>{
+        const groups = clashGroups(pending.kind==="copy"?pending.fromId:active, pending.kind);
+        const clear = groups.length===0;
+        return (
+          <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:950,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={()=>setPending(null)}>
+            <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"90dvh",overflowY:"auto",padding:"20px 22px 40px"}}>
+              <h3 style={{fontWeight:900,fontSize:18,color:"#0f172a",margin:"0 0 4px"}}>Mehrdeutige Namen anpassen</h3>
+              <p style={{fontSize:12.5,color:"#64748b",margin:"0 0 14px",lineHeight:1.5}}>Diese Spieler hätten denselben Anzeigenamen + Jahrgang und wären nicht unterscheidbar (Abstimmungen, Login). Bitte vor dem {pending.kind==="copy"?"Kopieren":"Übertragen"} eindeutig machen – z. B. den Nachnamen länger abkürzen („Lukas Be.").</p>
+              {clear ? (
+                <div style={{background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:12,padding:"12px 14px",fontSize:13,color:"#15803d",fontWeight:700,marginBottom:14}}>Alles eindeutig – du kannst jetzt {pending.kind==="copy"?"kopieren":"übertragen"}.</div>
+              ) : (
+                <div style={{display:"flex",flexDirection:"column",gap:14,marginBottom:14}}>
+                  {groups.map((g,gi)=>(
+                    <div key={gi} style={{background:"#fee2e2",border:"1.5px solid #fca5a5",borderRadius:12,padding:"12px"}}>
+                      <div style={{fontSize:11,fontWeight:800,color:"#b91c1c",marginBottom:8}}>{(renameMap[g[0].id]??g[0].name)} · Jg. {g[0].by||"?"} — {g.length}× gleich</div>
+                      {g.map(p=>(
+                        <div key={p.id} style={{display:"flex",alignItems:"center",gap:8,marginBottom:7}}>
+                          <Av name={renameMap[p.id]??p.name} sz={26}/>
+                          <input value={renameMap[p.id]??p.name} onChange={e=>setRenameMap(m=>({...m,[p.id]:e.target.value}))}
+                            style={{flex:1,minWidth:0,padding:"9px 11px",fontSize:13.5,fontWeight:600,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",background:"#fff"}}/>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div style={{display:"flex",gap:9}}>
+                <button onClick={()=>setPending(null)} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
+                <button onClick={executePending} disabled={!clear} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:clear?t.p:"#cbd5e1",color:"#fff",fontWeight:800,cursor:clear?"pointer":"not-allowed",fontFamily:"inherit"}}>{pending.kind==="copy"?"Jetzt kopieren":"Jetzt übertragen"}</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
