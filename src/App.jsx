@@ -1366,6 +1366,62 @@ const addW  = (iso,n) => addD(iso,n*7);
 const fmtD  = iso => { const d=new Date(iso+"T12:00:00"); return `${["So","Mo","Di","Mi","Do","Fr","Sa"][d.getDay()]},${String(d.getDate()).padStart(2,"0")}.${String(d.getMonth()+1).padStart(2,"0")}.${d.getFullYear()}`; };
 
 // ----------------------------------------------------------------
+// Standort & Umkreis (Offline-Schätzung über die 2-stellige PLZ-Leitregion).
+// Bewusst grob (±ca. 15-25 km) – reicht, um Turniere "in der Nähe" zu finden,
+// ohne externen Dienst. Koordinaten = ungefährer Hauptort der Leitregion.
+// ----------------------------------------------------------------
+const PLZ2_GEO = {
+  "01":[51.05,13.74],"02":[51.18,14.43],"03":[51.76,14.33],"04":[51.34,12.37],"06":[51.48,11.97],
+  "07":[50.88,11.59],"08":[50.72,12.49],"09":[50.83,12.92],"10":[52.52,13.40],"12":[52.45,13.45],
+  "13":[52.57,13.35],"14":[52.40,13.06],"15":[52.34,14.55],"16":[52.83,13.24],"17":[53.56,13.26],
+  "18":[54.09,12.14],"19":[53.63,11.41],"20":[53.55,9.99],"21":[53.25,10.41],"22":[53.59,9.93],
+  "23":[53.87,10.69],"24":[54.32,10.14],"25":[54.20,9.40],"26":[53.14,8.21],"27":[53.55,8.58],
+  "28":[53.08,8.80],"29":[52.93,10.08],"30":[52.37,9.73],"31":[52.15,9.95],"32":[52.12,8.68],
+  "33":[51.72,8.75],"34":[51.31,9.49],"35":[50.58,8.68],"36":[50.55,9.68],"37":[51.53,9.93],
+  "38":[52.27,10.52],"39":[52.13,11.63],"40":[51.23,6.78],"41":[51.19,6.42],"42":[51.26,7.18],
+  "44":[51.51,7.47],"45":[51.45,7.01],"46":[51.50,6.86],"47":[51.43,6.76],"48":[51.96,7.63],
+  "49":[52.28,8.05],"50":[50.94,6.96],"51":[51.03,7.02],"52":[50.78,6.08],"53":[50.74,7.10],
+  "54":[49.75,6.64],"55":[50.00,8.27],"56":[50.36,7.59],"57":[50.88,8.02],"58":[51.36,7.47],
+  "59":[51.68,7.82],"60":[50.11,8.68],"61":[50.23,8.62],"63":[50.10,8.77],"64":[49.87,8.65],
+  "65":[50.08,8.24],"66":[49.24,6.99],"67":[49.44,7.77],"68":[49.49,8.47],"69":[49.40,8.67],
+  "70":[48.78,9.18],"71":[48.90,9.19],"72":[48.52,9.06],"73":[48.70,9.65],"74":[49.14,9.22],
+  "75":[48.89,8.70],"76":[49.01,8.40],"77":[48.47,7.94],"78":[48.06,8.46],"79":[47.99,7.85],
+  "80":[48.14,11.58],"81":[48.11,11.60],"82":[48.00,11.35],"83":[47.86,12.12],"84":[48.54,12.15],
+  "85":[48.40,11.42],"86":[48.37,10.90],"87":[47.73,10.31],"88":[47.78,9.61],"89":[48.40,9.99],
+  "90":[49.45,11.08],"91":[49.30,10.99],"92":[49.45,12.16],"93":[49.01,12.10],"94":[48.57,13.43],
+  "95":[50.00,11.60],"96":[49.89,10.90],"97":[49.79,9.95],"98":[50.61,10.69],"99":[50.98,11.03],
+};
+const plzToGeo = plz => { const p=String(plz||"").trim().slice(0,2); return PLZ2_GEO[p]||null; };
+const geoDistanceKm = (a,b) => {
+  if(!a||!b) return null;
+  const R=6371, toR=d=>d*Math.PI/180;
+  const dLat=toR(b[0]-a[0]), dLon=toR(b[1]-a[1]);
+  const s=Math.sin(dLat/2)**2 + Math.cos(toR(a[0]))*Math.cos(toR(b[0]))*Math.sin(dLon/2)**2;
+  return Math.round(R*2*Math.atan2(Math.sqrt(s),Math.sqrt(1-s)));
+};
+
+// Mannschafts-Stärke (neutral benannt) – für faires Turnier-Matchmaking.
+const TEAM_STRENGTHS = [
+  { id:1, label:"Entwicklung", col:"#16a34a", desc:"Junge oder neue Mannschaft – Spaß, Lernen und Spielpraxis stehen im Vordergrund. Gegner auf Augenhöhe, damit alle Kinder erfolgreich mitspielen." },
+  { id:2, label:"Ambitioniert", col:"#2563eb", desc:"Eingespielte Mannschaft mit solidem Niveau – ausgeglichene, faire Spiele gegen ähnlich starke Teams." },
+  { id:3, label:"Leistung", col:"#d97706", desc:"Leistungsorientierte Mannschaft – sucht anspruchsvolle, fordernde Gegner auf hohem Niveau." },
+];
+const strengthOf = id => TEAM_STRENGTHS.find(s=>s.id===id) || null;
+
+// Kleiner Info-Punkt: zeigt Erklärung per Hover (title) und per Tipp (Bubble).
+function InfoHint({ text, col="#64748b" }){
+  const [open,setOpen]=useState(false);
+  return (
+    <span style={{position:"relative",display:"inline-flex",verticalAlign:"middle"}}>
+      <button type="button" title={text} onClick={e=>{e.stopPropagation();setOpen(o=>!o);}}
+        style={{width:16,height:16,borderRadius:"50%",border:"none",background:col+"22",color:col,fontSize:11,fontWeight:900,cursor:"pointer",fontFamily:"inherit",lineHeight:1,display:"inline-flex",alignItems:"center",justifyContent:"center"}}>i</button>
+      {open&&<span onClick={e=>{e.stopPropagation();setOpen(false);}} style={{position:"absolute",bottom:"135%",left:"50%",transform:"translateX(-50%)",width:210,background:"#0f172a",color:"#fff",fontSize:11.5,lineHeight:1.45,fontWeight:500,padding:"9px 11px",borderRadius:9,zIndex:60,boxShadow:"0 6px 20px rgba(0,0,0,.35)",textAlign:"left"}}>{text}</span>}
+    </span>
+  );
+}
+
+
+// ----------------------------------------------------------------
 // Aktivitäts-Status: Trainer/Helfer/Spieler können in Pause geschaltet
 // werden. `active === false` blendet sie überall aus Auswahl-Listen aus.
 // Fehlende Property = aktiv (Backwards-Compat).
@@ -4216,9 +4272,11 @@ function ManageTeams({ data, save, fire, cl }) {
   const [name,setName] = useState("");
   const [cat,setCat]   = useState(CATS[0]||"E-Jugend");
   const [pwd,setPwd]   = useState("");
+  const [strength,setStrength] = useState(1);
   const [editId,setEditId] = useState(null);
   const [editName,setEditName] = useState("");
   const [showFmt,setShowFmt] = useState(null);
+  const setTeamStrength = (id,s) => save({...data, teams:(data.teams||[]).map(tm=>tm.id===id?{...tm,strength:s}:tm)});
 
   const addTeam = () => {
     const nm = name.trim(); if(!nm) return;
@@ -4227,7 +4285,7 @@ function ManageTeams({ data, save, fire, cl }) {
       icon: nm.slice(0,2).toUpperCase(),
       col: TEAM_COLORS[teams.length % TEAM_COLORS.length],
       pub: true, pwd: hashPw((pwd||"team").trim()),
-      cat, years: CAT_YEARS[cat]||"",
+      cat, years: CAT_YEARS[cat]||"", strength,
     };
     save({...data, teams:[...(data.teams||[]), team]});
     fire&&fire("Mannschaft \""+nm+"\" angelegt");
@@ -4260,6 +4318,16 @@ function ManageTeams({ data, save, fire, cl }) {
           {CATS.map(c=>(
             <button key={c} type="button" onClick={()=>setCat(c)}
               style={{padding:"6px 12px",borderRadius:99,border:`1.5px solid ${cat===c?t.p:"#e2e8f0"}`,background:cat===c?t.p:"#fff",color:cat===c?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{c}</button>
+          ))}
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+          <span style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.4}}>SPIELSTÄRKE</span>
+          <InfoHint text={"Für faire Turniere: Gegner auf Augenhöhe finden. "+TEAM_STRENGTHS.map(s=>s.label+" = "+s.desc).join("  ·  ")}/>
+        </div>
+        <div style={{display:"flex",gap:6,marginBottom:12}}>
+          {TEAM_STRENGTHS.map(s=>(
+            <button key={s.id} type="button" onClick={()=>setStrength(s.id)} title={s.desc}
+              style={{flex:1,padding:"9px 6px",borderRadius:10,border:`2px solid ${strength===s.id?s.col:"#e2e8f0"}`,background:strength===s.id?s.col+"15":"#fff",color:strength===s.id?s.col:"#475569",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{s.label}</button>
           ))}
         </div>
         <input value={pwd} onChange={e=>setPwd(e.target.value)} placeholder="Team-Passwort (optional, Standard: team)"
@@ -4304,6 +4372,16 @@ function ManageTeams({ data, save, fire, cl }) {
                 </div>
               )}
             </div>
+            {editId!==tm.id && (
+              <div style={{display:"flex",alignItems:"center",gap:6,marginTop:8,flexWrap:"wrap"}}>
+                <span style={{fontSize:10.5,fontWeight:800,color:"#94a3b8",letterSpacing:.3}}>STÄRKE</span>
+                {TEAM_STRENGTHS.map(s=>{const on=(tm.strength||1)===s.id;return (
+                  <button key={s.id} onClick={()=>setTeamStrength(tm.id,s.id)} title={s.desc}
+                    style={{padding:"4px 10px",borderRadius:8,border:`1.5px solid ${on?s.col:"#e2e8f0"}`,background:on?s.col+"15":"#fff",color:on?s.col:"#94a3b8",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>{s.label}</button>
+                );})}
+                <InfoHint text={TEAM_STRENGTHS.map(s=>s.label+": "+s.desc).join("  ·  ")}/>
+              </div>
+            )}
             {showFmt===tm.id && <div style={{marginTop:8}}><PlayFormatCard cat={tmCat} sport={cl?.sport||"fussball"} cl={cl} compact/></div>}
             </div>
           );
@@ -11800,6 +11878,18 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
       {/* SPORTART */}
       {section==="sport"&&(
         <>
+          <div style={{background:"#f8fafc",borderRadius:14,padding:"12px 14px",marginBottom:14,border:"1.5px solid #e2e8f0"}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:10,letterSpacing:.5,display:"flex",alignItems:"center",gap:6}}>STANDORT <InfoHint text="Land und PLZ ermöglichen die Turnier-Umkreissuche (z. B. 20 km)."/></div>
+            <div style={{display:"flex",gap:8}}>
+              <select value={myClub.country||"DE"} onChange={e=>save({...data,clubs:(data.clubs||[]).map(x=>x.id===cid?{...x,country:e.target.value}:x)})}
+                style={{flex:"0 0 40%",padding:"10px 12px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:10,background:"#fff",fontFamily:"inherit"}}>
+                {[["DE","Deutschland"],["AT","Österreich"],["CH","Schweiz"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}
+              </select>
+              <input value={myClub.plz||""} onChange={e=>save({...data,clubs:(data.clubs||[]).map(x=>x.id===cid?{...x,plz:e.target.value.replace(/[^0-9]/g,"").slice(0,5)}:x)})} placeholder="PLZ (z.B. 47533)" inputMode="numeric"
+                style={{flex:1,padding:"10px 12px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
+            </div>
+            {myClub.plz && (myClub.country||"DE")==="DE" && !plzToGeo(myClub.plz) && <div style={{fontSize:11,color:"#b45309",marginTop:6}}>PLZ-Region nicht erkannt – Umkreissuche evtl. ungenau.</div>}
+          </div>
           <div style={{background:"#f8fafc",borderRadius:14,padding:"12px 14px",
             marginBottom:14,border:"1.5px solid #e2e8f0"}}>
             <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:10,letterSpacing:.5}}>
@@ -12863,7 +12953,7 @@ function SuperAdminGeoAnalytics() {
 function SetupWizard({ onDone,onBack }) {
   const [step,setStep] = useState(1);
   const [f,setF] = useState({
-    name:"",short:"",sport:"fussball",pri:"#16a34a",adm:"",email:""
+    name:"",short:"",sport:"fussball",pri:"#16a34a",adm:"",email:"",country:"DE",plz:""
   });
   const u = p => setF(prev=>({...prev,...p}));
   const SPORTS = [
@@ -12873,7 +12963,7 @@ function SetupWizard({ onDone,onBack }) {
   const finish = () => {
     const cid = "c_"+uid();
     const newClub = {
-      id:cid,slug:f.name.toLowerCase().replace(/\s+/g,"-"),name:f.name.trim(),short:f.short.trim()||f.name.slice(0,4).toUpperCase(),em:"*",logo:null,pri:selSport.col,sec:"#0f172a",adm:hashPw(f.adm),adminEmail:(f.email||"").toLowerCase().trim(),pub:f.pub!==false,dir:f.pub!==false,sport:f.sport,createdAt:new Date().toISOString(),};
+      id:cid,slug:f.name.toLowerCase().replace(/\s+/g,"-"),name:f.name.trim(),short:f.short.trim()||f.name.slice(0,4).toUpperCase(),em:"*",logo:null,pri:selSport.col,sec:"#0f172a",adm:hashPw(f.adm),adminEmail:(f.email||"").toLowerCase().trim(),country:f.country||"DE",plz:(f.plz||"").trim(),pub:f.pub!==false,dir:f.pub!==false,sport:f.sport,createdAt:new Date().toISOString(),};
     onDone(newClub);
   };
 
@@ -12896,7 +12986,15 @@ function SetupWizard({ onDone,onBack }) {
             <input value={f.name} onChange={e=>u({name:e.target.value})} placeholder="z.B. FC Blauweiss 1920"
               style={{width:"100%",padding:"13px 15px",fontSize:16,background:"rgba(255,255,255,.1)",border:`1.5px solid ${f.name?"rgba(255,255,255,.4)":"rgba(255,255,255,.15)"}`,borderRadius:13,outline:"none",color:"#fff",marginBottom:10,boxSizing:"border-box"}}/>
             <input value={f.short} onChange={e=>u({short:e.target.value})} placeholder="Kuerzel (optional, z.B. FCA)"
-              style={{width:"100%",padding:"11px 15px",fontSize:14,background:"rgba(255,255,255,.08)",border:"1.5px solid rgba(255,255,255,.1)",borderRadius:13,outline:"none",color:"#fff",marginBottom:16,boxSizing:"border-box"}}/>
+              style={{width:"100%",padding:"11px 15px",fontSize:14,background:"rgba(255,255,255,.08)",border:"1.5px solid rgba(255,255,255,.1)",borderRadius:13,outline:"none",color:"#fff",marginBottom:10,boxSizing:"border-box"}}/>
+            <div style={{display:"flex",gap:8,marginBottom:16}}>
+              <select value={f.country} onChange={e=>u({country:e.target.value})}
+                style={{flex:"0 0 38%",padding:"11px 12px",fontSize:14,background:"rgba(255,255,255,.08)",border:"1.5px solid rgba(255,255,255,.1)",borderRadius:13,outline:"none",color:"#fff",fontFamily:"inherit"}}>
+                {[["DE","Deutschland"],["AT","Österreich"],["CH","Schweiz"]].map(([v,l])=><option key={v} value={v} style={{color:"#0f172a"}}>{l}</option>)}
+              </select>
+              <input value={f.plz} onChange={e=>u({plz:e.target.value.replace(/[^0-9]/g,"").slice(0,5)})} placeholder="PLZ (z.B. 47533)" inputMode="numeric"
+                style={{flex:1,padding:"11px 15px",fontSize:14,background:"rgba(255,255,255,.08)",border:"1.5px solid rgba(255,255,255,.1)",borderRadius:13,outline:"none",color:"#fff",boxSizing:"border-box",fontFamily:"inherit"}}/>
+            </div>
           </>}
 
           {step===2&&<>
