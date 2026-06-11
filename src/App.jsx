@@ -1349,6 +1349,17 @@ const checkPw = (input,stored) => {
   return inp===stored;                                          // Klartext-Fallback (z.B. unverschlüsselte Demo)
 };
 
+// Trainer-Einmalcode: 6 Zeichen, garantiert Buchstabe + Ziffer, ohne leicht
+// verwechselbare Zeichen (O/0, I/1/l). Wird beim Anlegen/Teilen vergeben.
+function genTempPw(){
+  const L="ABCDEFGHJKLMNPQRSTUVWXYZ", D="23456789", A=L+D;
+  const pick = s => s[Math.floor(Math.random()*s.length)];
+  let s = pick(L) + pick(D); for(let i=0;i<4;i++) s += pick(A);
+  return s.split("").sort(()=>Math.random()-0.5).join("");
+}
+// Eigenes Trainer-Passwort: mind. 6 Zeichen, Buchstabe UND Ziffer.
+const validTrainerPw = pw => typeof pw==="string" && pw.trim().length>=6 && /[a-zA-Z]/.test(pw) && /[0-9]/.test(pw);
+
 const now   = () => new Date().toISOString().slice(0,10);
 const addD  = (iso,n) => { const d=new Date(iso+"T12:00:00"); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
 const addW  = (iso,n) => addD(iso,n*7);
@@ -13362,14 +13373,15 @@ function RolePicker({cl,onRole,onBack,onGuest}) {
   );
 }
 
-function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
+function TrainerLogin({cl,trainers,teams,onLogin,onBack,onSetTrainerPw}) {
   const t=TH(cl);
   const [showForgotTr,setShowForgotTr]=useState(false);
-  const [step,setStep]=useState("cat");  // cat -> trainer -> pwd
+  const [step,setStep]=useState("cat");  // cat -> trainer -> pwd -> setpw
   const [cat,setCat]=useState(null);
   const [sel,setSel]=useState(null);
   const [pw,setPw]=useState("");
   const [err,setErr]=useState(false);
+  const [np1,setNp1]=useState(""); const [np2,setNp2]=useState(""); const [npErr,setNpErr]=useState("");
   // Kategorie eines Trainers: erste auflösbare Mannschaft, sonst Sammelgruppe.
   // So ist JEDER aktive Trainer erreichbar – auch ohne (aktive) Mannschaft.
   const NO_TEAM = "Ohne feste Mannschaft";
@@ -13380,8 +13392,18 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
   const selTr=trainers.find(x=>x.id===sel);
 
   const go=()=>{
-    if(selTr&&!selTr.locked&&checkPw(pw,selTr.pw||"")){onLogin({...selTr,role:"trainer"});}
+    if(selTr&&!selTr.locked&&checkPw(pw,selTr.pw||"")){
+      if(selTr.mustChangePw){ setNp1("");setNp2("");setNpErr("");setStep("setpw"); }
+      else onLogin({...selTr,role:"trainer"});
+    }
     else{setErr(true);setTimeout(()=>setErr(false),1800);}
+  };
+  const saveNewPw=()=>{
+    if(!validTrainerPw(np1)){ setNpErr("Mind. 6 Zeichen, Buchstaben UND Zahlen."); return; }
+    if(np1!==np2){ setNpErr("Die Passwörter stimmen nicht überein."); return; }
+    const newHash=hashPw(np1.trim());
+    onSetTrainerPw && onSetTrainerPw(selTr.id, newHash);
+    onLogin({...selTr, pw:newHash, mustChangePw:false, role:"trainer"});
   };
 
   const GradWrap=({children})=>(
@@ -13441,6 +13463,30 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
         </div>
       ))}
     </GradWrap>
+  );
+  if(step==="setpw") return (
+    <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s},${t.p}66)`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,position:"relative"}}>
+      <style>{CSS}</style>
+      <div className="up" style={{width:"100%",maxWidth:370}}>
+        <div style={{textAlign:"center",marginBottom:24}}>
+          <Av name={selTr?.name||"?"} sz={64} sx={{margin:"0 auto 14px"}}/>
+          <h2 style={{color:"#fff",fontSize:22,fontWeight:900,margin:"0 0 6px"}}>Eigenes Passwort vergeben</h2>
+          <p style={{color:"rgba(255,255,255,.6)",fontSize:13,lineHeight:1.5}}>Du bist mit einem Einmal-Passwort angemeldet. Lege jetzt dein persönliches Passwort fest – mind. 6 Zeichen mit Buchstaben und Zahlen.</p>
+        </div>
+        <div style={{background:"rgba(255,255,255,.1)",backdropFilter:"blur(16px)",borderRadius:22,padding:"22px",border:"1px solid rgba(255,255,255,.15)",display:"flex",flexDirection:"column",gap:10}}>
+          <PwInput value={np1} onChange={e=>{setNp1(e.target.value);setNpErr("");}} placeholder="Neues Passwort" autoFocus autoCapitalize="none" autoCorrect="off" spellCheck={false}
+            style={{width:"100%",padding:"13px 16px",fontSize:16,background:"rgba(255,255,255,.12)",border:`2px solid ${npErr?"#ff6b6b":"rgba(255,255,255,.25)"}`,borderRadius:13,outline:"none",color:"#fff",boxSizing:"border-box"}}/>
+          <PwInput value={np2} onChange={e=>{setNp2(e.target.value);setNpErr("");}} onKeyDown={e=>{if(e.key==="Enter")saveNewPw();}} placeholder="Passwort wiederholen" autoCapitalize="none" autoCorrect="off" spellCheck={false}
+            style={{width:"100%",padding:"13px 16px",fontSize:16,background:"rgba(255,255,255,.12)",border:`2px solid ${npErr?"#ff6b6b":"rgba(255,255,255,.25)"}`,borderRadius:13,outline:"none",color:"#fff",boxSizing:"border-box"}}/>
+          <div style={{fontSize:11.5,color:np1&&!validTrainerPw(np1)?"#fca5a5":"rgba(255,255,255,.5)"}}>{validTrainerPw(np1)?"✓ sicher genug":"Mind. 6 Zeichen · Buchstaben + Zahlen"}</div>
+          {npErr&&<p style={{fontSize:12.5,color:"#fca5a5",fontWeight:700,margin:0}}>{npErr}</p>}
+          <button onClick={saveNewPw} disabled={!np1||!np2}
+            style={{width:"100%",padding:"13px",fontSize:15,fontWeight:800,background:np1&&np2?cl.pri:"rgba(255,255,255,.15)",color:np1&&np2?"#fff":"rgba(255,255,255,.4)",border:"none",borderRadius:13,cursor:np1&&np2?"pointer":"not-allowed",fontFamily:"inherit"}}>
+            Passwort speichern & einloggen
+          </button>
+        </div>
+      </div>
+    </div>
   );
   return (
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s},${t.p}66)`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,position:"relative"}}>
@@ -16658,13 +16704,13 @@ function OnbStep3Trainers({ cl, data, cid, save, teams, trainers, onNext, onBack
   const addTrainer = async () => {
     const nm = f.name.trim(); if (!nm) return;
     setSaving(true);
-    // Einfaches Auto-Passwort (4-stelliger Code) - User kann's in Trainer-Tab aendern.
-    const pw = Math.random().toString(36).slice(2,6).toUpperCase();
-    const rec = { id: uid(), cid, name: nm, role:"Trainer", tids:f.tids, pw: hashPw(pw), phone:"", email:"" };
+    // Einmal-Passwort: der Trainer vergibt beim ersten Login sein eigenes.
+    const pw = genTempPw();
+    const rec = { id: uid(), cid, name: nm, role:"Trainer", tids:f.tids, pw: hashPw(pw), mustChangePw:true, sharedAt:null, phone:"", email:"" };
     await save({...data, trainers:[...(data.trainers||[]),rec]});
     setSaving(false); setF({name:"",tids:[]});
     setGenPwd(`${nm}: ${pw}`);
-    setTimeout(()=>setGenPwd(""), 6000);
+    setTimeout(()=>setGenPwd(""), 12000);
   };
   const del = async (id) => {
     if (!window.confirm("Diesen Trainer entfernen?")) return;
@@ -18922,6 +18968,8 @@ function TrainerCard({ tr, data, onEdit, onDelete, onContact, onShare, onToggleA
           <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
             <div style={{fontWeight:900,fontSize:16,color:"#0f172a"}}>{tr.name}</div>
             {inactive && <span style={{fontSize:10,fontWeight:800,letterSpacing:.5,background:"#fef3c7",color:"#854d0e",padding:"2px 7px",borderRadius:6}}>PAUSE</span>}
+            {tr.mustChangePw && !tr.sharedAt && <span style={{fontSize:10,fontWeight:800,letterSpacing:.3,background:"#ffedd5",color:"#9a3412",padding:"2px 7px",borderRadius:6}}>● NOCH NICHT INFORMIERT</span>}
+            {tr.mustChangePw && tr.sharedAt && <span style={{fontSize:10,fontWeight:800,letterSpacing:.3,background:"#dbeafe",color:"#1e40af",padding:"2px 7px",borderRadius:6}}>EINMAL-CODE AKTIV</span>}
           </div>
           <div style={{fontSize:12,color:"#64748b",marginTop:2}}>
             {myTeams.length>0 ? myTeams.map(tm=>tm.name).join(", ") : "Keine Teams zugewiesen"}
@@ -18962,25 +19010,28 @@ function TrainerCard({ tr, data, onEdit, onDelete, onContact, onShare, onToggleA
 function TrainerAccessShare({ tr, cl, data, save, fire, onClose }) {
   const link = window.location.origin + "?club=" + (cl?.slug||cl?.id);
   const [setNewPw, setSetNewPw] = useState(true);
-  const [code, setCode] = useState(()=>Math.random().toString(36).slice(2,6).toUpperCase());
+  const [code, setCode] = useState(()=>tr._initialCode || genTempPw());
   const [copied, setCopied] = useState(false);
-  const pwLine = setNewPw ? `Passwort: ${code.trim()}` : `Passwort: dein bereits vergebenes Passwort (frag den Verein, falls unklar)`;
-  const msg = `Hallo ${tr.name},\n\nhier dein Zugang zur Vereins-App von ${cl?.name||"unserem Verein"} als Trainer:\n\nLink: ${link}\n${pwLine}\n\nSo geht's: Link oeffnen, "${cl?.name||"Verein"}" auswaehlen, Rolle "Trainer", deinen Namen antippen und das Passwort eingeben.`;
+  const pwLine = setNewPw ? `Einmal-Passwort: ${code.trim()}` : `Passwort: dein bereits vergebenes Passwort (frag den Verein, falls unklar)`;
+  const hint = setNewPw ? `\n\nBeim ersten Login wirst du gebeten, ein eigenes Passwort zu vergeben (mind. 6 Zeichen, Buchstaben + Zahlen).` : "";
+  const msg = `Hallo ${tr.name},\n\nhier dein Zugang zur Vereins-App von ${cl?.name||"unserem Verein"} als Trainer:\n\nLink: ${link}\n${pwLine}\n\nSo geht's: Link oeffnen, "${cl?.name||"Verein"}" auswaehlen, Rolle "Trainer", deinen Namen antippen und das Passwort eingeben.${hint}`;
   const persist = () => {
-    if(!setNewPw) return true;                 // bestehendes Passwort unveraendert lassen
+    const at = new Date().toISOString();
+    if(!setNewPw){ save({...data, trainers:(data.trainers||[]).map(x=>x.id===tr.id?{...x, sharedAt:at}:x)}); return true; }
     const c = code.trim(); if(!c) return false;
-    save({...data, trainers:(data.trainers||[]).map(x=>x.id===tr.id?{...x, pw:hashPw(c)}:x)});
+    // Einmal-Passwort setzen -> Trainer muss beim Login ein eigenes vergeben.
+    save({...data, trainers:(data.trainers||[]).map(x=>x.id===tr.id?{...x, pw:hashPw(c), mustChangePw:true, sharedAt:at}:x)});
     return true;
   };
   const canSend = !setNewPw || !!code.trim();
-  const onWhatsApp = () => { if(!persist()) return; window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank"); fire(setNewPw?"Passwort gesetzt & WhatsApp geoeffnet":"WhatsApp geoeffnet"); onClose(); };
+  const onWhatsApp = () => { if(!persist()) return; window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank"); fire(setNewPw?"Einmal-Passwort gesetzt & WhatsApp geoeffnet":"WhatsApp geoeffnet"); onClose(); };
   const onShareNative = async () => {
     if(!persist()) return;
     if(navigator.share){ try{ await navigator.share({ title:cl?.name||"Vereins-App", text:msg }); }catch{} }
     else { navigator.clipboard?.writeText(msg); }
-    fire(setNewPw?"Passwort gesetzt":"Zugang geteilt"); onClose();
+    fire(setNewPw?"Einmal-Passwort gesetzt":"Zugang geteilt"); onClose();
   };
-  const onCopy = () => { if(!persist()) return; navigator.clipboard?.writeText(msg); setCopied(true); setTimeout(()=>setCopied(false),2000); fire(setNewPw?"Passwort gesetzt & kopiert":"Text kopiert"); };
+  const onCopy = () => { if(!persist()) return; navigator.clipboard?.writeText(msg); setCopied(true); setTimeout(()=>setCopied(false),2000); fire(setNewPw?"Einmal-Passwort gesetzt & kopiert":"Text kopiert"); };
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:850,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={onClose}>
       <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"90dvh",overflowY:"auto",padding:"20px 22px 40px"}}>
@@ -18989,15 +19040,15 @@ function TrainerAccessShare({ tr, cl, data, save, fire, onClose }) {
         <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:5}}>LINK</div>
         <div style={{background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:11,padding:"10px 13px",fontSize:13,color:"#334155",wordBreak:"break-all",marginBottom:14}}>{link}</div>
         <div onClick={()=>setSetNewPw(v=>!v)} style={{display:"flex",alignItems:"center",gap:10,background:setNewPw?"#f0fdf4":"#f8fafc",border:`1.5px solid ${setNewPw?"#bbf7d0":"#e2e8f0"}`,borderRadius:11,padding:"10px 13px",cursor:"pointer",marginBottom:12}}>
-          <div style={{flex:1}}><div style={{fontSize:13,fontWeight:800,color:setNewPw?"#15803d":"#334155"}}>Neues Passwort setzen</div><div style={{fontSize:11,color:"#94a3b8",marginTop:1}}>{setNewPw?"Das alte Passwort wird ersetzt.":"Bestehendes Passwort bleibt unverändert."}</div></div>
+          <div style={{flex:1}}><div style={{fontSize:13,fontWeight:800,color:setNewPw?"#15803d":"#334155"}}>Neues Einmal-Passwort setzen</div><div style={{fontSize:11,color:"#94a3b8",marginTop:1}}>{setNewPw?"Trainer vergibt beim Login sein eigenes Passwort.":"Bestehendes Passwort bleibt unverändert."}</div></div>
           <div style={{width:42,height:24,borderRadius:99,background:setNewPw?"#16a34a":"#cbd5e1",position:"relative",flexShrink:0}}><div style={{position:"absolute",top:3,left:setNewPw?21:3,width:18,height:18,borderRadius:"50%",background:"#fff",transition:"left .2s"}}/></div>
         </div>
         {setNewPw&&<>
-          <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:5}}>NEUES PASSWORT</div>
+          <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:5}}>EINMAL-PASSWORT</div>
           <div style={{display:"flex",gap:8,marginBottom:16}}>
             <input value={code} onChange={e=>setCode(e.target.value)} placeholder="Passwort"
               style={{flex:1,padding:"11px 14px",fontSize:15,fontWeight:700,letterSpacing:1,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",boxSizing:"border-box"}}/>
-            <button onClick={()=>setCode(Math.random().toString(36).slice(2,6).toUpperCase())} style={{flexShrink:0,padding:"0 14px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>🎲</button>
+            <button onClick={()=>setCode(genTempPw())} style={{flexShrink:0,padding:"0 14px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>🎲</button>
           </div>
         </>}
         <div style={{display:"flex",flexDirection:"column",gap:9}}>
@@ -19073,13 +19124,21 @@ function TrainersTab({data,cid,save,fire,session}) {
   const del      = id => { save({...data,trainers:(data.trainers||[]).filter(x=>x.id!==id)}); fire("Entfernt"); };
 
   const saveF = () => {
-    if(!f.name.trim()||(!editId&&!f.pw.trim())) return;
-    const pw = f.pw.trim() ? hashPw(f.pw.trim()) : (myTrs.find(x=>x.id===editId)?.pw||"");
-    const rec = {...f, id:editId||uid(), cid, pw};
-    const next = editId ? (data.trainers||[]).map(x=>x.id===editId?rec:x) : [...(data.trainers||[]),rec];
-    save({...data,trainers:next});
-    setShowForm(false);
-    fire(editId?"Trainer aktualisiert":"Trainer hinzugefügt");
+    if(!f.name.trim()) return;
+    if(editId){
+      const existing = myTrs.find(x=>x.id===editId)||{};
+      const rec = {...existing, ...f, id:editId, cid, pw: existing.pw}; // Passwort/Flags bleiben
+      save({...data,trainers:(data.trainers||[]).map(x=>x.id===editId?rec:x)});
+      setShowForm(false); fire("Trainer aktualisiert");
+    } else {
+      // Einmal-Passwort vergeben; der Trainer setzt beim ersten Login sein eigenes.
+      const temp = genTempPw();
+      const rec = {...f, id:uid(), cid, pw:hashPw(temp), mustChangePw:true, sharedAt:null, _initialCode:temp};
+      save({...data,trainers:[...(data.trainers||[]),rec]});
+      setShowForm(false);
+      setShowAccessShare(rec);   // direkt Teilen-Dialog mit dem Einmal-Code
+      fire("Trainer angelegt – jetzt Zugang teilen");
+    }
   };
 
   return (
@@ -19119,8 +19178,7 @@ function TrainersTab({data,cid,save,fire,session}) {
               <input value={f.name} onChange={e=>u({name:e.target.value})} placeholder="Name (z.B. Max M.)"
                 style={{padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
               <div style={{fontSize:12,color:"#94a3b8",marginTop:-4}}>Datenschutz: Bitte nur Vorname, höchstens Nachname-Initial.</div>
-              <PwInput value={f.pw} onChange={e=>u({pw:e.target.value})} placeholder={editId?"Neues Passwort (leer = unverändert)":"Passwort"}
-                style={{padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
+              {!editId && <div style={{background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:11,padding:"10px 13px",fontSize:12.5,color:"#1d4ed8",lineHeight:1.5}}>Es wird automatisch ein Einmal-Passwort erzeugt. Nach dem Speichern kannst du den Zugang direkt teilen – der Trainer vergibt beim ersten Login sein eigenes Passwort.</div>}
               <input value={f.phone||""} onChange={e=>u({phone:e.target.value})} placeholder="Telefon (optional)"
                 style={{padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
               <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginTop:4}}>MANNSCHAFTEN</div>
@@ -19133,7 +19191,7 @@ function TrainersTab({data,cid,save,fire,session}) {
             </div>
             <div style={{display:"flex",gap:9,marginTop:16}}>
               <button onClick={()=>setShowForm(false)} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
-              <button onClick={saveF} disabled={!f.name.trim()||(!editId&&!f.pw.trim())} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:(f.name.trim()&&(editId||f.pw.trim()))?"#16a34a":"#e2e8f0",color:(f.name.trim()&&(editId||f.pw.trim()))?"#fff":"#64748b",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Speichern</button>
+              <button onClick={saveF} disabled={!f.name.trim()} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:f.name.trim()?"#16a34a":"#e2e8f0",color:f.name.trim()?"#fff":"#64748b",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>{editId?"Speichern":"Anlegen & teilen"}</button>
             </div>
           </div>
         </div>
@@ -23082,7 +23140,7 @@ function AppInner({lang,setLang}) {
       {screen==="role"  &&activeCl&&<RolePicker cl={activeCl} onRole={r=>setScr(r==="user"?"flow":r==="trainer"?"tlogin":r==="helper"?"hlogin":"alogin")} onGuest={()=>setScr("guest")} onBack={()=>setScr("dir")}/>}
       {screen==="guest" &&activeCl&&<ClubGuestList cl={activeCl} liveEvents={data.liveEvents||[]} onOpen={(eid,club)=>setVisitor({eid,club})} onBack={()=>setScr("role")}/>}
       {screen==="flow"  &&activeCl&&<UserFlow cl={activeCl} teams={clTeams} players={data.players} playerProfiles={data.playerProfiles||[]} preselectTid={linkTeam} onDone={(tid,user)=>login("user",{tid,user})} onBack={()=>setScr(linkTeam?"role":"role")}/>}
-      {screen==="tlogin"&&activeCl&&<TrainerLogin cl={activeCl} trainers={data.trainers.filter(t=>t.cid===cid&&isActive(t))} teams={(data.teams||[]).filter(tm=>tm.cid===cid)} onLogin={tr=>login("trainer",tr)} onBack={()=>setScr("role")}/>}
+      {screen==="tlogin"&&activeCl&&<TrainerLogin cl={activeCl} trainers={data.trainers.filter(t=>t.cid===cid&&isActive(t))} teams={(data.teams||[]).filter(tm=>tm.cid===cid)} onLogin={tr=>login("trainer",tr)} onSetTrainerPw={(trId,newHash)=>{ save({...data,trainers:(data.trainers||[]).map(t=>t.id===trId?{...t,pw:newHash,mustChangePw:false,sharedAt:t.sharedAt||new Date().toISOString()}:t)}); }} onBack={()=>setScr("role")}/>}
       {screen==="hlogin"&&activeCl&&<HelperLogin cl={activeCl} helpers={data.helpers||[]} onLogin={h=>login("helper",{...h,cid})} onBack={()=>setScr("role")}/>}
       {screen==="alogin"&&activeCl&&<AdminLogin cl={activeCl} onLogin={a=>login("admin",{...a,cid})} onBack={()=>setScr("role")}/>}
       {screen==="user"  &&session&&activeCl&&<UserHome data={data} session={session} onSave={save} onLogout={logout} lang={lang}/>}
