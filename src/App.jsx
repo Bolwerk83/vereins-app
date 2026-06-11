@@ -16708,7 +16708,7 @@ function TrainerWelcome({ tr, data, save, onClose }) {
   const theme = cl?.pri || "#16a34a";
   const handleClose = () => {
     const next = (data.trainers||[]).map(x=>x.id===tr.id?{...x,onboarded:true}:x);
-    save({...data, trainers: next}).catch?.(()=>{});
+    try { save({...data, trainers: next}); } catch {}
     onClose();
   };
   return (
@@ -16730,7 +16730,7 @@ function HelperWelcome({ h, data, save, onClose }) {
   const theme = cl?.pri || "#16a34a";
   const handleClose = () => {
     const next = (data.helpers||[]).map(x=>x.id===h.id?{...x,onboarded:true}:x);
-    save({...data, helpers: next}).catch?.(()=>{});
+    try { save({...data, helpers: next}); } catch {}
     onClose();
   };
   return (
