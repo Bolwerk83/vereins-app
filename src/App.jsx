@@ -2319,8 +2319,10 @@ function OnboardingWizard({ cl, data, save, fire, onDone }) {
 }
 
 /*  LEGAL / IMPRESSUM / DATENSCHUTZ  */
-function LegalPage({ onBack }) {
+function LegalPage({ onBack, cl }) {
   const [tab, setTab] = useState("imprint"); // imprint | privacy | terms
+  const imp = cl?.clubSettings?.impressum || null;
+  const impFilled = imp && (imp.provider||imp.street||imp.email);
   return (
     <div style={{minHeight:"100dvh",background:"#f0f4f8",display:"flex",flexDirection:"column"}}>
       <div style={{background:"#fff",padding:"16px 20px",borderBottom:"1px solid #e2e8f0",display:"flex",alignItems:"center",gap:12}}>
@@ -2336,26 +2338,36 @@ function LegalPage({ onBack }) {
         ))}
       </div>
       <div style={{flex:1,overflowY:"auto",padding:"20px",maxWidth:600,margin:"0 auto",width:"100%"}}>
-        <div style={{background:"#fff7ed",border:"1px solid #fed7aa",borderRadius:10,padding:"10px 13px",fontSize:12,color:"#9a3412",lineHeight:1.5,marginBottom:16}}>
-          <strong>Hinweis:</strong> Dies ist eine Vorlage. Trage deine echten Daten ein (Felder in eckigen Klammern) und lass die Texte vor dem Echtbetrieb mit Kinderdaten von einer fachkundigen Person (Datenschutz/Anwalt) prüfen.
-        </div>
+        {!(impFilled&&tab==="imprint") && <div style={{background:"#fff7ed",border:"1px solid #fed7aa",borderRadius:10,padding:"10px 13px",fontSize:12,color:"#9a3412",lineHeight:1.5,marginBottom:16}}>
+          <strong>Hinweis:</strong> Dies ist eine Vorlage. Trage deine echten Daten ein (Impressum im Vereinsadmin unter Datenschutz) und lass die Texte vor dem Echtbetrieb mit Kinderdaten von einer fachkundigen Person (Datenschutz/Anwalt) prüfen.
+        </div>}
         {tab==="imprint"&&(
           <div style={{lineHeight:1.8,fontSize:14,color:"#334155"}}>
             <h2 style={{fontWeight:800,marginBottom:12}}>Impressum</h2>
             <p>Angaben gemäß § 5 DDG (Digitale-Dienste-Gesetz):</p>
-            <p style={{marginTop:10}}><strong>Diensteanbieter:</strong><br/>
-            [Vor- und Nachname]<br/>
-            [Straße und Hausnummer]<br/>
-            [PLZ und Ort]<br/>
-            [Land]</p>
-            <p style={{marginTop:10}}><strong>Kontakt:</strong><br/>
-            Telefon: [Telefonnummer]<br/>
-            E-Mail: [deine@email.de]</p>
-            <p style={{marginTop:10}}><strong>Verantwortlich für den Inhalt:</strong><br/>
-            [Vor- und Nachname], Anschrift wie oben</p>
-            <p style={{marginTop:12,fontSize:12,color:"#94a3b8"}}>
-              Trage hier deine echten Kontaktdaten ein, bevor du die App veröffentlichst. Ein vollständiges Impressum ist gesetzlich verpflichtend.
-            </p>
+            {impFilled ? (
+              <>
+                <p style={{marginTop:10}}><strong>Diensteanbieter:</strong><br/>
+                {imp.provider||cl?.name}<br/>
+                {imp.street&&<>{imp.street}<br/></>}
+                {imp.plzCity&&<>{imp.plzCity}<br/></>}
+                {imp.country||"Deutschland"}</p>
+                {(imp.phone||imp.email)&&<p style={{marginTop:10}}><strong>Kontakt:</strong><br/>
+                {imp.phone&&<>Telefon: {imp.phone}<br/></>}
+                {imp.email&&<>E-Mail: {imp.email}</>}</p>}
+                {imp.represent&&<p style={{marginTop:10}}><strong>Vertretungsberechtigt:</strong><br/>{imp.represent}</p>}
+                {(imp.register||imp.registerNr)&&<p style={{marginTop:10}}><strong>Register:</strong><br/>{imp.register||""}{imp.register&&imp.registerNr?" · ":""}{imp.registerNr||""}</p>}
+                {imp.ustId&&<p style={{marginTop:10}}><strong>USt-IdNr.:</strong> {imp.ustId}</p>}
+                <p style={{marginTop:10}}><strong>Verantwortlich für den Inhalt:</strong><br/>{imp.represent||imp.provider||cl?.name}, Anschrift wie oben</p>
+              </>
+            ) : (
+              <>
+                <p style={{marginTop:10}}><strong>Diensteanbieter:</strong><br/>[Vereinsname]<br/>[Straße und Hausnummer]<br/>[PLZ und Ort]<br/>[Land]</p>
+                <p style={{marginTop:10}}><strong>Kontakt:</strong><br/>Telefon: [Telefonnummer]<br/>E-Mail: [verein@email.de]</p>
+                <p style={{marginTop:10}}><strong>Vertretungsberechtigt:</strong><br/>[z. B. 1. Vorsitzende/r]</p>
+                <p style={{marginTop:12,fontSize:12,color:"#94a3b8"}}>Trage die echten Daten im Vereinsadmin unter <strong>Einstellungen → Datenschutz → Impressum</strong> ein. Ein vollständiges Impressum ist gesetzlich verpflichtend.</p>
+              </>
+            )}
           </div>
         )}
         {tab==="privacy"&&(
@@ -11851,6 +11863,35 @@ function SkillTargetsEditor({ data, cid, save, fire, cl, sport="fussball", allow
   );
 }
 
+// Impressum-Editor (Pflichtangaben § 5 DDG) – Daten landen in clubSettings.impressum
+function ImpressumEditor({ value, t, clubName, onSave }){
+  const [f,setF]=useState({ provider:value.provider||clubName||"", street:value.street||"", plzCity:value.plzCity||"", country:value.country||"Deutschland", represent:value.represent||"", phone:value.phone||"", email:value.email||"", register:value.register||"", registerNr:value.registerNr||"", ustId:value.ustId||"" });
+  const u=p=>setF(prev=>({...prev,...p}));
+  const inp={width:"100%",padding:"10px 12px",fontSize:13.5,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",boxSizing:"border-box",fontFamily:"inherit"};
+  const Field=({k,ph,label})=>(<div style={{marginBottom:8}}><div style={{fontSize:10.5,fontWeight:800,color:"#64748b",marginBottom:3,letterSpacing:.3}}>{label}</div><input value={f[k]} onChange={e=>u({[k]:e.target.value})} placeholder={ph} style={inp}/></div>);
+  return (
+    <div style={{background:"#fff",borderRadius:16,padding:"14px 16px",border:"1.5px solid #e2e8f0",marginBottom:14}}>
+      <div style={{fontWeight:800,fontSize:14,color:"#0f172a",marginBottom:3}}>Impressum (Pflichtangaben)</div>
+      <p style={{fontSize:11.5,color:"#94a3b8",margin:"0 0 12px",lineHeight:1.5}}>Erscheint unter „Rechtliches → Impressum". Ein vollständiges Impressum ist gesetzlich verpflichtend (§ 5 DDG).</p>
+      <Field k="provider" label="VEREIN / DIENSTEANBIETER" ph="z.B. SV Musterstadt e.V."/>
+      <Field k="street" label="STRASSE & HAUSNUMMER" ph="Musterstraße 1"/>
+      <Field k="plzCity" label="PLZ & ORT" ph="12345 Musterstadt"/>
+      <Field k="country" label="LAND" ph="Deutschland"/>
+      <Field k="represent" label="VERTRETUNGSBERECHTIGT" ph="z.B. Max Mustermann (1. Vorsitzender)"/>
+      <div style={{display:"flex",gap:8}}>
+        <div style={{flex:1}}><Field k="email" label="E-MAIL" ph="verein@email.de"/></div>
+        <div style={{flex:1}}><Field k="phone" label="TELEFON" ph="0123 456789"/></div>
+      </div>
+      <div style={{display:"flex",gap:8}}>
+        <div style={{flex:1}}><Field k="register" label="VEREINSREGISTER (optional)" ph="z.B. AG Musterstadt"/></div>
+        <div style={{flex:1}}><Field k="registerNr" label="REGISTER-NR. (optional)" ph="VR 1234"/></div>
+      </div>
+      <Field k="ustId" label="UST-IDNR. (optional)" ph="DE123456789"/>
+      <button onClick={()=>onSave(f)} style={{width:"100%",marginTop:6,padding:"11px",borderRadius:11,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Impressum speichern</button>
+    </div>
+  );
+}
+
 function ClubAdminSettings({ data, cid, save, fire, cl }) {
   const t = TH(cl);
   const myClub = (data.clubs||[]).find(x=>x.id===cid)||{};
@@ -12172,6 +12213,7 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
       {/* DATENSCHUTZ */}
       {section==="datenschutz"&&(
         <>
+          <ImpressumEditor value={cs.impressum||{}} t={t} clubName={myClub.name} onSave={obj=>{ saveSetting("impressum",obj); fire("Impressum gespeichert"); }}/>
           <div style={card}>
             <Row title="DSGVO Einwilligung bei Fotos" sub="Pflicht vor Mannschaftsfotos">
               <Toggle val={S("dsgvoConsent",true)} onChange={v=>saveSetting("dsgvoConsent",v)}/>
@@ -23640,7 +23682,7 @@ function AppInner({lang,setLang}) {
         </button>
       )}
 
-      {showLegal&&<LegalPage onBack={()=>setShowLegal(false)}/>}
+      {showLegal&&<LegalPage onBack={()=>setShowLegal(false)} cl={activeCl}/>}
       {!showLegal&&screen==="dir"&&<Directory data={data} lang={lang} setLang={setLang} onLegal={()=>setShowLegal(true)} onVisitorOpen={(eid,club)=>setVisitor({eid,club})} onPick={async id=>{
           const realId = id==="__demo__"?"demo":id;
           setCid(realId);
