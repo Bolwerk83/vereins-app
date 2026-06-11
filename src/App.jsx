@@ -16014,6 +16014,15 @@ function PlayerAssignRow({ player: pl,teams,allTeams,t,onAssign,onOptToggle }) {
    im Bereich 1990-2025), Geschlecht (m/w/d/x am Anfang oder Ende),
    Rest ist der Name. Trennzeichen: Komma, Semikolon, Tab, Pipe.
    ============================================================ */
+// Nachnamen datenschutzfreundlich auf Initiale kürzen: "Lukas Berger" -> "Lukas B."
+// Bereits gekürzte ("Ben F.") oder einzelne Vornamen bleiben unverändert.
+function shortenSurname(name){
+  const toks=(name||"").trim().split(/\s+/).filter(Boolean);
+  if(toks.length<2) return (name||"").trim();
+  const last=toks[toks.length-1].replace(/\.$/,"");
+  if(!last) return toks.slice(0,-1).join(" ");
+  return `${toks.slice(0,-1).join(" ")} ${last[0].toUpperCase()}.`;
+}
 function parseBulkPlayerLine(line) {
   const raw = line.trim();
   if (!raw) return null;
@@ -16041,15 +16050,18 @@ function BulkAddPlayers({ cid, cl, selTid, selTeam, clubTeams, activeSeason, all
   const [defaultGender, setDefaultGender] = useState("m");
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [shorten, setShorten] = useState(true);   // Nachnamen auf Initiale kürzen
+  const [photo, setPhoto] = useState(null);        // Foto/Screenshot als Abtipp-Vorlage
 
   // Live-Parser
   const parsed = useMemo(() => {
     return text.split(/\n+/).map(parseBulkPlayerLine).filter(Boolean).map(p => ({
       ...p,
+      name: shorten ? shortenSurname(p.name) : p.name,
       by: p.by || defaultBy,
       gender: p.gender || defaultGender,
     }));
-  }, [text, defaultBy, defaultGender]);
+  }, [text, defaultBy, defaultGender, shorten]);
 
   // Duplikat-Check gegen bestehende Spieler
   const existingKeys = new Set(allPlayers.map(p => `${(p.name||"").toLowerCase().trim()}|${p.by||""}`));
@@ -16121,6 +16133,24 @@ Ben Fischer | 2016 | m`;
               </div>
             </div>
           </div>
+          {/* Foto / Screenshot als Vorlage (nutzt die Texterkennung des Handys) */}
+          <div style={{background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"12px",marginBottom:12}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.4,marginBottom:8}}>📷 AUS FOTO / SCREENSHOT</div>
+            {!photo ? (
+              <label style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,padding:"12px",borderRadius:10,border:`1.5px dashed ${t.p}`,background:"#fff",color:t.p,fontWeight:800,fontSize:13,cursor:"pointer"}}>
+                Foto aufnehmen / wählen
+                <input type="file" accept="image/*" capture="environment" onChange={e=>{const f=e.target.files?.[0]; if(f){ const r=new FileReader(); r.onload=()=>setPhoto(r.result); r.readAsDataURL(f);} e.target.value="";}} style={{display:"none"}}/>
+              </label>
+            ) : (
+              <div>
+                <img src={photo} alt="Vorlage" style={{width:"100%",maxHeight:220,objectFit:"contain",borderRadius:10,border:"1px solid #e2e8f0",background:"#fff"}}/>
+                <button type="button" onClick={()=>setPhoto(null)} style={{marginTop:6,background:"none",border:"none",color:"#dc2626",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",padding:0}}>Foto entfernen</button>
+              </div>
+            )}
+            <p style={{fontSize:11.5,color:"#64748b",lineHeight:1.5,marginTop:8}}>
+              Tipp: Markiere den Text <strong>direkt im Bild</strong> (iPhone: „Text auswählen"/Live&nbsp;Text, Android: Google&nbsp;Lens), kopiere ihn und füge ihn unten ein – Namen und Jahrgang werden automatisch erkannt. Das Foto ist nur eine Abtipp-Vorlage und wird nicht gespeichert.
+            </p>
+          </div>
           {/* Eingabe */}
           <textarea value={text} onChange={e=>setText(e.target.value)}
             placeholder={`Beispiel:\n${example}`}
@@ -16130,6 +16160,10 @@ Ben Fischer | 2016 | m`;
             style={{marginTop:6,background:"none",border:"none",color:t.p,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",padding:0}}>
             Beispiel einfügen
           </button>
+          <label style={{display:"flex",alignItems:"center",gap:9,marginTop:10,cursor:"pointer"}}>
+            <input type="checkbox" checked={shorten} onChange={e=>setShorten(e.target.checked)} style={{width:17,height:17,accentColor:t.p,flexShrink:0}}/>
+            <span style={{fontSize:12.5,color:"#334155",fontWeight:600}}>Nachnamen automatisch kürzen (Datenschutz): „Lukas Berger" → „Lukas B."</span>
+          </label>
           {/* Vorschau */}
           {withDupFlag.length>0 && (
             <div style={{marginTop:14}}>
