@@ -20889,6 +20889,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const myTids=isAdmin?activeTeamsFor(data,cid).map(t=>t.id):isHelper?activeTeamsFor(data,cid).map(t=>t.id):(session.tids||[]);
   const t=TH(cl);
   const [tab,setTab]=useState("events"); // BottomNav manages this
+  const [teamSub,setTeamSub]=useState(null); // Sprungziel im Team-Bereich (z.B. Turnier-Börse)
+  const goBoerse=()=>{ setTeamSub("boerse"); setTab("team"); };
   const [local,setLocal]=useState(()=>JSON.parse(JSON.stringify(data)));
   const [toast,setToast]=useState(null);
   const unreadMsgs = useMemo(()=>{
@@ -21036,6 +21038,25 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               </div>
             </div>
           )}
+          {/* Turnier-Radar: passende Ausschreibungen in der Nähe */}
+          {(()=>{
+            const myCats=[...new Set((local.teams||[]).filter(tm=>myTids.includes(tm.id)).map(tm=>tm.cat||tm.name))];
+            const mg=plzToGeo(myClub?.plz);
+            const rad=(local.tournamentOffers||[]).filter(o=>!o.closed && o.hostCid!==cid && myCats.includes(o.cat) && o.date>=tod && !(local.tournamentRegs||[]).some(r=>r.offerId===o.id&&r.byCid===cid)).map(o=>{const g=offerGeo(o);return {...o,_d:(mg&&g)?geoDistanceKm(mg,g):null};}).filter(o=>o._d==null||o._d<=50).sort((a,b)=>(a._d??999)-(b._d??999));
+            if(rad.length===0) return null;
+            return (
+              <div onClick={goBoerse} style={{background:"linear-gradient(135deg,#f59e0b,#ea580c)",borderRadius:18,padding:"14px 16px",marginBottom:14,cursor:"pointer",color:"#fff",boxShadow:"0 8px 24px -8px rgba(234,88,12,.6)"}}>
+                <div style={{display:"flex",alignItems:"center",gap:12}}>
+                  <div style={{fontSize:24}}>🔔</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontWeight:900,fontSize:15}}>Turnier-Radar: {rad.length} passende{rad.length===1?"s":""} Turnier{rad.length>1?"e":""} in der Nähe</div>
+                    <div style={{fontSize:12.5,opacity:.92,marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{rad.slice(0,2).map(o=>`${o.cat} · ${fmtD(o.date)}${o._d!=null?" · "+o._d+" km":""}`).join("   ·   ")}</div>
+                  </div>
+                  <span style={{fontSize:20,opacity:.85,flexShrink:0}}>{">"}</span>
+                </div>
+              </div>
+            );
+          })()}
           {}
           <div onClick={()=>setWizard(true)} style={{background:t.p,borderRadius:20,padding:"18px 20px",cursor:"pointer",marginBottom:18,display:"flex",alignItems:"center",gap:14,boxShadow:`0 6px 24px ${t.p}66,0 2px 8px rgba(0,0,0,.15)`,transition:"all .2s"}}>
             <div style={{width:52,height:52,borderRadius:16,background:"rgba(0,0,0,.15)",border:"2px solid rgba(255,255,255,.35)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,fontWeight:900,color:"#fff",flexShrink:0}}>+</div>
@@ -21076,7 +21097,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         {tab==="settings"   &&isAdmin&&<ClubAdminSettings data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
         {tab==="security"   &&isAdmin&&<SecurityTab data={local} cid={cid} save={save}/>}
         {tab==="access"     &&isAdmin&&<AccessManagerTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
-        {tab==="team"       &&<TeamHub data={local} myTids={myTids} save={save} fire={fire} cl={myClub} session={session} isAdmin={isAdmin}/>}
+        {tab==="team"       &&<TeamHub key={teamSub||"team"} data={local} myTids={myTids} save={save} fire={fire} cl={myClub} session={session} isAdmin={isAdmin} initialSubTab={teamSub||undefined}/>}
       </div>
 
       {}
