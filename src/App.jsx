@@ -1202,7 +1202,7 @@ function SupabaseSetup({ onDone,onSkip }) {
 
           <div style={{display:"flex",gap:9,marginTop:16}}>
             <button onClick={test} disabled={!url.trim()||!key.trim()||status==="testing"}
-              style={{flex:2,padding:"13px",borderRadius:13,border:"none",background:url.trim()&&key.trim()?"#2563eb":"rgba(255,255,255,.1)",color:url.trim()&&key.trim()?"#fff":"rgba(255,255,255,.3)",fontWeight:800,fontSize:15,cursor:url.trim()&&key.trim()?"pointer":"default",fontFamily:"inherit",transition:"all .2s"}}>
+              style={{flex:2,padding:"13px",borderRadius:13,border:url.trim()&&key.trim()?"none":"1.5px solid rgba(255,255,255,.25)",background:url.trim()&&key.trim()?"#2563eb":"rgba(255,255,255,.16)",color:url.trim()&&key.trim()?"#fff":"rgba(255,255,255,.65)",fontWeight:800,fontSize:15,cursor:url.trim()&&key.trim()?"pointer":"default",fontFamily:"inherit",transition:"all .2s"}}>
                Verbinden & testen
             </button>
             <button onClick={onSkip}
@@ -1699,7 +1699,7 @@ function Btn({ch,onClick,v="pri",full,sm,dis,load,icon,cl,sx={}}) {
   const p=cl?.pri||"#16a34a";
   const V={
     pri:{
-      background:dis?"#e2e8f0":`linear-gradient(135deg,${p} 0%,${mix(p,-12)} 100%)`,color:dis?"#64748b":contrast(p),boxShadow:dis?"none":`0 2px 8px ${p}40,0 1px 2px ${p}30`,border:"none",},drk:{
+      background:dis?"#cbd5e1":`linear-gradient(135deg,${p} 0%,${mix(p,-12)} 100%)`,color:dis?"#1e293b":contrast(p),boxShadow:dis?"none":`0 2px 8px ${p}40,0 1px 2px ${p}30`,border:"none",},drk:{
       background:"linear-gradient(135deg,#1e293b 0%,#0f172a 100%)",color:"#fff",boxShadow:"0 2px 8px rgba(0,0,0,.25),0 1px 2px rgba(0,0,0,.15)",border:"none",},red:{
       background:"linear-gradient(135deg,#ef4444 0%,#dc2626 100%)",color:"#fff",boxShadow:"0 2px 8px rgba(239,68,68,.3)",border:"none",},gst:{
       background:"#fff",color:"#475569",boxShadow:"0 1px 3px rgba(0,0,0,.08),0 0 0 1.5px #e2e8f0",border:"none",},out:{
@@ -5902,7 +5902,7 @@ function FoerderAssistent({ data, myTids, cl, save, fire }){
   const StepDot=({n,label})=>(<div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,flex:1}}><div style={{width:26,height:26,borderRadius:"50%",background:step>=n?t.p:"#e2e8f0",color:step>=n?"#fff":"#94a3b8",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:13}}>{n}</div><span style={{fontSize:10,fontWeight:700,color:step===n?t.p:"#94a3b8",textAlign:"center"}}>{label}</span></div>);
   const navBtns=(<div style={{display:"flex",gap:9,marginTop:16}}>
     {step>1&&<button onClick={()=>setStep(s=>s-1)} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Zurück</button>}
-    {step<3&&<button onClick={()=>setStep(s=>s+1)} disabled={players.length===0} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:players.length?t.p:"#e2e8f0",color:players.length?"#fff":"#64748b",fontWeight:800,cursor:players.length?"pointer":"default",fontFamily:"inherit"}}>Weiter</button>}
+    {step<3&&<button onClick={()=>setStep(s=>s+1)} disabled={players.length===0} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:players.length?t.p:"#cbd5e1",color:players.length?contrast(t.p):"#1e293b",fontWeight:800,cursor:players.length?"pointer":"default",fontFamily:"inherit"}}>Weiter</button>}
   </div>);
 
   return (
@@ -11990,14 +11990,18 @@ function RecommendCard({ theme="#16a34a", title="Gefällt dir die App?", sub="Ze
   const native=async()=>{ if(navigator.share){try{await navigator.share({title:"Vereins-App",text:msg,url:RECOMMEND_LINK});}catch{}} else {navigator.clipboard?.writeText(msg);} };
   const [copied,setCopied]=useState(false);
   const copy=()=>{ navigator.clipboard?.writeText(msg); setCopied(true); setTimeout(()=>setCopied(false),2000); };
+  // Theme-sicher: bei hellen Vereinsfarben würde weißer Text unlesbar – Textfarbe
+  // automatisch passend zum Hintergrund wählen (dunkel auf hell, weiß auf dunkel).
+  const ink = contrast(theme)==="#fff" ? "#ffffff" : "#0f172a";
+  const primTxt = ink==="#ffffff" ? theme : "#ffffff";
   return (
-    <div style={{background:`linear-gradient(135deg,${theme},${mix(theme,-18)})`,borderRadius:16,padding:"15px 16px",color:"#fff",...style}}>
+    <div style={{background:`linear-gradient(135deg,${theme},${mix(theme,-18)})`,borderRadius:16,padding:"15px 16px",color:ink,...style}}>
       <div style={{fontWeight:900,fontSize:15,marginBottom:3}}>💚 {title}</div>
       <div style={{fontSize:12.5,opacity:.92,lineHeight:1.5,marginBottom:12}}>{sub}</div>
       <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-        <button onClick={wa} style={{flex:"1 1 auto",padding:"10px 14px",borderRadius:11,border:"none",background:"#fff",color:theme,fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Per WhatsApp empfehlen</button>
-        {typeof navigator!=="undefined"&&navigator.share&&<button onClick={native} style={{flexShrink:0,padding:"10px 14px",borderRadius:11,border:"1.5px solid rgba(255,255,255,.4)",background:"rgba(255,255,255,.14)",color:"#fff",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Teilen</button>}
-        <button onClick={copy} style={{flexShrink:0,padding:"10px 14px",borderRadius:11,border:"1.5px solid rgba(255,255,255,.4)",background:"rgba(255,255,255,.14)",color:"#fff",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{copied?"Kopiert!":"Link kopieren"}</button>
+        <button onClick={wa} style={{flex:"1 1 auto",padding:"10px 14px",borderRadius:11,border:"none",background:ink,color:primTxt,fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Per WhatsApp empfehlen</button>
+        {typeof navigator!=="undefined"&&navigator.share&&<button onClick={native} style={{flexShrink:0,padding:"10px 14px",borderRadius:11,border:`1.5px solid ${ink}66`,background:`${ink}24`,color:ink,fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Teilen</button>}
+        <button onClick={copy} style={{flexShrink:0,padding:"10px 14px",borderRadius:11,border:`1.5px solid ${ink}66`,background:`${ink}24`,color:ink,fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{copied?"Kopiert!":"Link kopieren"}</button>
       </div>
     </div>
   );
@@ -13286,8 +13290,8 @@ function SetupWizard({ onDone,onBack }) {
           <div style={{display:"flex",gap:9}}>
             {step>1&&<button onClick={()=>setStep(s=>s-1)} style={{flex:1,padding:"12px",borderRadius:13,border:"1.5px solid rgba(255,255,255,.15)",background:"transparent",color:"rgba(255,255,255,.6)",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Zurück</button>}
             {step<3
-              ?<button onClick={()=>ok()&&setStep(s=>s+1)} disabled={!ok()} style={{flex:2,padding:"12px",borderRadius:13,border:"none",background:ok()?"#16a34a":"rgba(255,255,255,.1)",color:ok()?"#fff":"rgba(255,255,255,.3)",fontWeight:800,fontSize:15,cursor:ok()?"pointer":"default",fontFamily:"inherit"}}>Weiter</button>
-              :<button onClick={()=>ok()&&finish()} disabled={!ok()} style={{flex:2,padding:"12px",borderRadius:13,border:"none",background:ok()?"#16a34a":"rgba(255,255,255,.1)",color:ok()?"#fff":"rgba(255,255,255,.3)",fontWeight:800,fontSize:15,cursor:ok()?"pointer":"default",fontFamily:"inherit"}}>Verein anlegen</button>
+              ?<button onClick={()=>ok()&&setStep(s=>s+1)} disabled={!ok()} style={{flex:2,padding:"12px",borderRadius:13,border:ok()?"none":"1.5px solid rgba(255,255,255,.25)",background:ok()?"#16a34a":"rgba(255,255,255,.16)",color:ok()?"#fff":"rgba(255,255,255,.65)",fontWeight:800,fontSize:15,cursor:ok()?"pointer":"default",fontFamily:"inherit"}}>Weiter</button>
+              :<button onClick={()=>ok()&&finish()} disabled={!ok()} style={{flex:2,padding:"12px",borderRadius:13,border:ok()?"none":"1.5px solid rgba(255,255,255,.25)",background:ok()?"#16a34a":"rgba(255,255,255,.16)",color:ok()?"#fff":"rgba(255,255,255,.65)",fontWeight:800,fontSize:15,cursor:ok()?"pointer":"default",fontFamily:"inherit"}}>Verein anlegen</button>
             }
           </div>
         </div>
@@ -17146,7 +17150,7 @@ function OnbStep3Trainers({ cl, data, cid, save, teams, trainers, onNext, onBack
         </>}
         {teams.length===0 && <div style={{fontSize:12,color:"rgba(255,255,255,.45)",marginBottom:10,fontStyle:"italic"}}>Noch keine Mannschaft angelegt – Trainer kannst du auch nachträglich zuordnen.</div>}
         <button onClick={addTrainer} disabled={!f.name.trim()||saving}
-          style={{width:"100%",padding:"12px",borderRadius:11,border:"none",background:f.name.trim()&&!saving?"#16a34a":"rgba(255,255,255,.1)",color:f.name.trim()?"#fff":"rgba(255,255,255,.4)",fontWeight:800,fontSize:14,cursor:f.name.trim()&&!saving?"pointer":"default",fontFamily:"inherit"}}>
+          style={{width:"100%",padding:"12px",borderRadius:11,border:f.name.trim()?"none":"1.5px solid rgba(255,255,255,.25)",background:f.name.trim()&&!saving?"#16a34a":"rgba(255,255,255,.16)",color:f.name.trim()?"#fff":"rgba(255,255,255,.6)",fontWeight:800,fontSize:14,cursor:f.name.trim()&&!saving?"pointer":"default",fontFamily:"inherit"}}>
           {saving?"Speichert…":"+ Trainer hinzufügen"}
         </button>
       </div>
@@ -18908,7 +18912,7 @@ function NewSeasonWizard({ data,save,fire,cl,myTids,onClose,onDone }) {
           </>}
           <div style={{display:"flex",gap:9,marginTop:20,paddingBottom:32}}>
             {step>1?<button onClick={()=>setStep(s=>s-1)} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Zurück</button>:<button onClick={onClose} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>}
-            {step<STEPS.length?<button onClick={()=>ok()&&setStep(s=>s+1)} disabled={!ok()} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:ok()?t.p:"#e2e8f0",color:ok()?"#fff":"#64748b",fontWeight:800,cursor:ok()?"pointer":"default",fontFamily:"inherit"}}>Weiter</button>:<button onClick={finish} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:t.p,color:"#fff",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Saison anlegen</button>}
+            {step<STEPS.length?<button onClick={()=>ok()&&setStep(s=>s+1)} disabled={!ok()} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:ok()?t.p:"#cbd5e1",color:ok()?contrast(t.p):"#1e293b",fontWeight:800,cursor:ok()?"pointer":"default",fontFamily:"inherit"}}>Weiter</button>:<button onClick={finish} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Saison anlegen</button>}
           </div>
         </div>
       </div>
@@ -20800,7 +20804,7 @@ function FieldsManagerTab({ data, cid, save, fire, cl }) {
                   <div style={{display:"flex",gap:9,marginTop:16}}>
                     <button onClick={()=>setStep("template")} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Zurück</button>
                     <button onClick={()=>draft.split&&setStep("weather")} disabled={!draft.split}
-                      style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:draft.split?t.p:"#e2e8f0",color:draft.split?"#fff":"#64748b",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Weiter</button>
+                      style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:draft.split?t.p:"#cbd5e1",color:draft.split?contrast(t.p):"#1e293b",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Weiter</button>
                   </div>
                 </div>
               )}
@@ -20832,7 +20836,7 @@ function FieldsManagerTab({ data, cid, save, fire, cl }) {
                   <div style={{display:"flex",gap:9}}>
                     <button onClick={()=>setStep("split")} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Zurück</button>
                     <button onClick={()=>draft.weather&&setStep("name")} disabled={!draft.weather}
-                      style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:draft.weather?t.p:"#e2e8f0",color:draft.weather?"#fff":"#64748b",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Weiter</button>
+                      style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:draft.weather?t.p:"#cbd5e1",color:draft.weather?contrast(t.p):"#1e293b",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Weiter</button>
                   </div>
                 </div>
               )}
