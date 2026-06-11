@@ -6193,6 +6193,7 @@ function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false, initial
     { id:"planner",    label:"Planer",      icon:"W" },
     { id:"trainings",  label:"Trainings",   icon:"TP" },
     { id:"taktik",     label:"Taktik",      icon:"TB" },
+    { id:"boerse",     label:"🌐 Turnier-Börse", icon:"B" },
   ];
   return (
     <div>
@@ -6220,6 +6221,7 @@ function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false, initial
       {subTab==="planner"    && <TrainingPlanner data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
       {subTab==="trainings"  && <TrainingsLibrary data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
       {subTab==="taktik"     && <TacticBoard data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
+      {subTab==="boerse"     && <TournBoerse data={data} cid={cl?.id} myTids={myTids} cl={cl} save={save} fire={fire}/>}
       {subTab==="manage"     && <ManageTeams   data={data} save={save} fire={fire} cl={cl}/>}
     </div>
   );
@@ -21479,6 +21481,291 @@ function CarpoolWizard({ev,user,onSave,onClose,cl}) {
   return <div style={{padding:16,textAlign:"center",color:"#64748b"}}><p>Fahrgemeinschaft-Funktion in Entwicklung.</p><button onClick={onClose} style={{marginTop:12,padding:"10px 20px",borderRadius:10,border:"none",background:TH(cl).p,color:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Schließen</button></div>;
 }
 
+// ===== Turnier-Börse: Ausschreibungen + Anmeldungen (global, RLS-fest) =====
+const offerGeo = o => (o && Array.isArray(o.geo) && o.geo.length===2) ? o.geo : plzToGeo(o&&o.plz);
+const offerRegLink = o => `${typeof window!=="undefined"?window.location.origin:""}/?offer=${o.id}`;
+const offerPlanLink = o => o&&o.eid ? `${typeof window!=="undefined"?window.location.origin:""}/?tournament=${o.eid}&club=${encodeURIComponent(o.hostSlug||o.hostCid||"")}` : "";
+const offerMsg = (o) => {
+  const L=[`Turnier: ${o.title||"Heimturnier"}`];
+  L.push(`Ausrichter: ${o.hostName||""}`);
+  if(o.date) L.push(`Datum: ${fmtD(o.date)}${o.time?" "+o.time+" Uhr":""}`);
+  if(o.cat) L.push(`Altersklasse: ${o.cat}`);
+  if(o.loc||o.plz) L.push(`Ort: ${o.loc||""} ${o.plz||""}`.trim());
+  L.push(`Mannschaften: ${o.minTeams||"?"}–${o.maxTeams||"?"}`);
+  if((o.strengths||[]).length) L.push(`Spielstärke: ${(o.strengths||[]).map(s=>strengthOf(s)?.label).filter(Boolean).join(", ")}`);
+  L.push(`\nAnmeldung: ${offerRegLink(o)}`);
+  if(offerPlanLink(o)) L.push(`Turnierplan: ${offerPlanLink(o)}`);
+  return L.join("\n");
+};
+
+function TournBoerse({ data, cid, myTids, cl, save, fire }){
+  const t=TH(cl);
+  const myClub=(data.clubs||[]).find(c=>c.id===cid)||{};
+  const myGeo=plzToGeo(myClub.plz);
+  const offers=(data.tournamentOffers||[]);
+  const regs=(data.tournamentRegs||[]);
+  const myTeams=(data.teams||[]).filter(tm=>myTids.includes(tm.id));
+  const CATS=Object.keys(CAT_YEARS);
+  const [view,setView]=useState("find");
+  const [radius,setRadius]=useState(20);
+  const [fCat,setFCat]=useState("all");
+  const [fStr,setFStr]=useState(0);
+  const [regFor,setRegFor]=useState(null);   // offer being registered to
+  const writeOffers = arr => save({...data, tournamentOffers:arr});
+  const writeRegs   = arr => save({...data, tournamentRegs:arr});
+
+  // ---------- FINDEN ----------
+  const withDist = offers.filter(o=>!o.closed && o.hostCid!==cid).map(o=>{
+    const g=offerGeo(o); const dist=(myGeo&&g)?geoDistanceKm(myGeo,g):null; return {...o,_dist:dist};
+  }).filter(o=> (fCat==="all"||o.cat===fCat) && (fStr===0||(o.strengths||[]).includes(fStr)) && (o._dist==null || o._dist<=radius))
+    .sort((a,b)=>(a._dist??9999)-(b._dist??9999));
+
+  const myRegFor = oid => regs.find(r=>r.offerId===oid && r.byCid===cid);
+  const doRegister = (offer, payload) => {
+    const reg={ id:uid(), offerId:offer.id, byCid:cid, teamName:payload.teamName, cat:payload.cat||offer.cat||"", teams:payload.teams||1, strength:payload.strength||1, contact:{}, note:payload.note||"", status:"pending", ts:new Date().toISOString() };
+    writeRegs([...regs, reg]); setRegFor(null); fire("Anmeldung gesendet – wartet auf Bestätigung");
+  };
+  const withdraw = oid => { const r=myRegFor(oid); if(!r) return; writeRegs(regs.filter(x=>x.id!==r.id)); fire("Abgemeldet"); };
+
+  // ---------- MEINE AUSSCHREIBUNGEN ----------
+  const myOffers=offers.filter(o=>o.hostCid===cid);
+  const regsOf = oid => regs.filter(r=>r.offerId===oid);
+  const setRegStatus = (rid,st) => writeRegs(regs.map(r=>r.id===rid?{...r,status:st}:r));
+  const closeOffer = (oid,closed) => writeOffers(offers.map(o=>o.id===oid?{...o,closed}:o));
+  const delOffer = oid => { if(!window.confirm("Ausschreibung löschen?"))return; writeOffers(offers.filter(o=>o.id!==oid)); writeRegs(regs.filter(r=>r.offerId!==oid)); };
+
+  // ---------- NEU ----------
+  const liveTourns=(data.events||[]).filter(e=>e.type==="turnier" && (myTids.includes(e.tid)));
+  const [nf,setNf]=useState(()=>({ title:"", cat:CATS[2]||"E-Jugend", date:"", time:"", loc:myClub.name||"", minTeams:6, maxTeams:8, strengths:[1,2], eid:"", email:myClub.adminEmail||"", phone:"", whatsapp:"" }));
+  const un=p=>setNf(prev=>({...prev,...p}));
+  const toggleStr=s=>un({strengths:nf.strengths.includes(s)?nf.strengths.filter(x=>x!==s):[...nf.strengths,s]});
+  const createOffer=()=>{
+    if(!nf.title.trim()||!nf.date){ fire("Titel und Datum nötig"); return; }
+    const ev=liveTourns.find(e=>e.id===nf.eid);
+    const o={ id:uid(), hostCid:cid, hostName:myClub.name||"", hostSlug:myClub.slug||cid, title:nf.title.trim(), cat:nf.cat, date:nf.date, time:nf.time, loc:nf.loc.trim(), plz:myClub.plz||"", country:myClub.country||"DE", geo:myGeo||null, minTeams:Number(nf.minTeams)||1, maxTeams:Number(nf.maxTeams)||1, strengths:nf.strengths.length?nf.strengths:[1,2], eid:nf.eid||(ev?ev.id:""), contact:{email:nf.email.trim(),phone:nf.phone.trim(),whatsapp:nf.whatsapp.trim()}, closed:false, createdAt:new Date().toISOString() };
+    writeOffers([...offers,o]); setView("mine"); fire("Turnier ausgeschrieben");
+  };
+
+  const share = o => { const txt=offerMsg(o); if(navigator.share){navigator.share({title:o.title,text:txt}).catch(()=>{});} else {navigator.clipboard?.writeText(txt); fire("Text kopiert");} };
+  const Tab=({k,label})=>(<button onClick={()=>setView(k)} style={{flex:1,padding:"9px",borderRadius:10,border:"none",background:view===k?t.p:"#fff",color:view===k?"#fff":"#64748b",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit",boxShadow:view===k?"none":"inset 0 0 0 1.5px #e2e8f0"}}>{label}</button>);
+  const StrBadges=({ids})=> <span style={{display:"inline-flex",gap:4,flexWrap:"wrap"}}>{(ids||[]).map(s=>{const x=strengthOf(s);return x?<span key={s} style={{fontSize:10,fontWeight:800,color:x.col,background:x.col+"18",borderRadius:6,padding:"1px 7px"}}>{x.label}</span>:null;})}</span>;
+
+  return (
+    <div>
+      {!myClub.plz && <div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:12,padding:"11px 13px",fontSize:12.5,color:"#92400e",marginBottom:12,lineHeight:1.5}}>Für den Umkreis fehlt die PLZ deines Vereins. Trag sie unter <strong>Einstellungen → Sportart → Standort</strong> ein.</div>}
+      <div style={{display:"flex",gap:6,marginBottom:14}}>
+        <Tab k="find" label="Finden"/><Tab k="mine" label={`Meine (${myOffers.length})`}/><Tab k="new" label="Ausschreiben"/>
+      </div>
+
+      {view==="find"&&<>
+        <div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:13,padding:"12px 14px",marginBottom:12}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+            <span style={{fontSize:12,fontWeight:800,color:"#64748b"}}>Umkreis</span>
+            <input type="range" min="5" max="100" step="5" value={radius} onChange={e=>setRadius(Number(e.target.value))} style={{flex:1,accentColor:t.p}}/>
+            <span style={{fontWeight:900,fontSize:14,color:t.p,minWidth:48,textAlign:"right"}}>{radius} km</span>
+          </div>
+          <div style={{display:"flex",gap:6,overflowX:"auto",scrollbarWidth:"none",marginBottom:8}}>
+            <button onClick={()=>setFCat("all")} style={{flexShrink:0,padding:"5px 11px",borderRadius:99,border:`1.5px solid ${fCat==="all"?t.p:"#e2e8f0"}`,background:fCat==="all"?t.p:"#fff",color:fCat==="all"?"#fff":"#475569",fontWeight:700,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>Alle Klassen</button>
+            {CATS.map(c=><button key={c} onClick={()=>setFCat(c)} style={{flexShrink:0,padding:"5px 11px",borderRadius:99,border:`1.5px solid ${fCat===c?t.p:"#e2e8f0"}`,background:fCat===c?t.p:"#fff",color:fCat===c?"#fff":"#475569",fontWeight:700,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>{c}</button>)}
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:6}}>
+            <span style={{fontSize:11,fontWeight:800,color:"#64748b"}}>Stärke</span>
+            <button onClick={()=>setFStr(0)} style={{padding:"4px 10px",borderRadius:8,border:`1.5px solid ${fStr===0?t.p:"#e2e8f0"}`,background:fStr===0?t.p+"15":"#fff",color:fStr===0?t.p:"#94a3b8",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>Alle</button>
+            {TEAM_STRENGTHS.map(s=><button key={s.id} onClick={()=>setFStr(s.id)} style={{padding:"4px 10px",borderRadius:8,border:`1.5px solid ${fStr===s.id?s.col:"#e2e8f0"}`,background:fStr===s.id?s.col+"15":"#fff",color:fStr===s.id?s.col:"#94a3b8",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>{s.label}</button>)}
+            <InfoHint text={TEAM_STRENGTHS.map(s=>s.label+": "+s.desc).join("  ·  ")}/>
+          </div>
+        </div>
+        <AffiliateBanner trigger="events" style={{marginBottom:12}}/>
+        {withDist.length===0 && <div style={{textAlign:"center",color:"#94a3b8",fontSize:13,padding:"24px"}}>Keine Turniere im {radius}-km-Umkreis{fCat!=="all"?" ("+fCat+")":""}. Radius erhöhen oder Filter ändern.</div>}
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {withDist.map(o=>{const mine=myRegFor(o.id);return (
+            <div key={o.id} style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:14,padding:"13px 15px"}}>
+              <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontWeight:900,fontSize:15,color:"#0f172a"}}>{o.title}</div>
+                  <div style={{fontSize:12,color:"#64748b",marginTop:2}}>{o.hostName} · {o.cat} · {fmtD(o.date)}{o.time?" "+o.time:""}</div>
+                  <div style={{fontSize:12,color:"#94a3b8",marginTop:2}}>{o.loc||o.plz} · {o.minTeams}–{o.maxTeams} Teams</div>
+                  <div style={{marginTop:6}}><StrBadges ids={o.strengths}/></div>
+                </div>
+                {o._dist!=null && <div style={{flexShrink:0,textAlign:"right"}}><div style={{fontWeight:900,fontSize:16,color:t.p}}>{o._dist}</div><div style={{fontSize:10,color:"#94a3b8"}}>km ca.</div></div>}
+              </div>
+              <div style={{display:"flex",gap:8,marginTop:10}}>
+                {mine
+                  ? <button onClick={()=>withdraw(o.id)} style={{flex:1,padding:"9px",borderRadius:10,border:"1.5px solid #fecaca",background:"#fff7f7",color:"#dc2626",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Anmeldung zurückziehen ({mine.status==="accepted"?"bestätigt":mine.status==="declined"?"abgelehnt":"offen"})</button>
+                  : <button onClick={()=>setRegFor(o)} style={{flex:1,padding:"9px",borderRadius:10,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Mannschaft anmelden</button>}
+                <button onClick={()=>share(o)} style={{flexShrink:0,padding:"9px 13px",borderRadius:10,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Teilen</button>
+              </div>
+            </div>
+          );})}
+        </div>
+      </>}
+
+      {view==="mine"&&<>
+        {myOffers.length===0 && <div style={{textAlign:"center",color:"#94a3b8",fontSize:13,padding:"24px"}}>Noch keine eigene Ausschreibung. Tippe „Ausschreiben".</div>}
+        {myOffers.map(o=>{const rs=regsOf(o.id);const acc=rs.filter(r=>r.status==="accepted");return (
+          <div key={o.id} style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:14,padding:"13px 15px",marginBottom:10}}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontWeight:900,fontSize:15,color:"#0f172a"}}>{o.title}{o.closed&&<span style={{marginLeft:7,fontSize:10,fontWeight:800,color:"#854d0e",background:"#fef3c7",borderRadius:5,padding:"1px 6px"}}>geschlossen</span>}</div>
+                <div style={{fontSize:12,color:"#64748b",marginTop:2}}>{o.cat} · {fmtD(o.date)} · {acc.length}/{o.maxTeams} zugesagt</div>
+              </div>
+              <button onClick={()=>share(o)} style={{padding:"7px 11px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Teilen</button>
+            </div>
+            <div style={{marginTop:10,display:"flex",flexDirection:"column",gap:7}}>
+              {rs.length===0 && <div style={{fontSize:12.5,color:"#94a3b8"}}>Noch keine Anmeldungen.</div>}
+              {rs.map(r=>(
+                <div key={r.id} style={{background:r.status==="accepted"?"#f0fdf4":r.status==="declined"?"#fef2f2":"#f8fafc",border:`1px solid ${r.status==="accepted"?"#bbf7d0":r.status==="declined"?"#fecaca":"#e2e8f0"}`,borderRadius:11,padding:"9px 11px"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontWeight:800,fontSize:13.5,color:"#0f172a"}}>{r.teamName} <span style={{color:"#94a3b8",fontWeight:600}}>· {r.teams} Team{r.teams>1?"s":""}{r.cat?" · "+r.cat:""}</span></div>
+                      {r.note&&<div style={{fontSize:11.5,color:"#64748b",marginTop:1}}>{r.note}</div>}
+                      {(r.contact?.email||r.contact?.phone||r.contact?.whatsapp)&&<div style={{fontSize:11.5,color:"#64748b",marginTop:2}}>{[r.contact.email,r.contact.phone,r.contact.whatsapp].filter(Boolean).join(" · ")}</div>}
+                    </div>
+                    {r.status==="pending"
+                      ? <div style={{display:"flex",gap:6}}>
+                          <button onClick={()=>setRegStatus(r.id,"accepted")} style={{padding:"6px 11px",borderRadius:8,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Zusagen</button>
+                          <button onClick={()=>setRegStatus(r.id,"declined")} style={{padding:"6px 11px",borderRadius:8,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Ablehnen</button>
+                        </div>
+                      : <span style={{fontSize:11,fontWeight:800,color:r.status==="accepted"?"#15803d":"#dc2626"}}>{r.status==="accepted"?"ZUGESAGT":"ABGELEHNT"}</span>}
+                  </div>
+                  {r.status==="accepted"&&(r.contact?.whatsapp||r.contact?.email)&&(
+                    <div style={{display:"flex",gap:6,marginTop:8}}>
+                      {r.contact.whatsapp&&<button onClick={()=>window.open(`https://wa.me/${r.contact.whatsapp.replace(/[^0-9]/g,"")}?text=${encodeURIComponent("Zusage Turnier "+o.title+"\n"+offerMsg(o))}`,"_blank")} style={{padding:"6px 11px",borderRadius:8,border:"none",background:"#25D366",color:"#fff",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>WhatsApp: Plan senden</button>}
+                      {r.contact.email&&<button onClick={()=>window.open(`mailto:${r.contact.email}?subject=${encodeURIComponent("Zusage Turnier "+o.title)}&body=${encodeURIComponent(offerMsg(o))}`,"_blank")} style={{padding:"6px 11px",borderRadius:8,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>E-Mail: Plan senden</button>}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div style={{display:"flex",gap:8,marginTop:10}}>
+              <button onClick={()=>closeOffer(o.id,!o.closed)} style={{flex:1,padding:"8px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{o.closed?"Wieder öffnen":"Anmeldung schließen"}</button>
+              <button onClick={()=>delOffer(o.id)} style={{flexShrink:0,padding:"8px 13px",borderRadius:9,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Löschen</button>
+            </div>
+          </div>
+        );})}
+      </>}
+
+      {view==="new"&&<div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:14,padding:"15px",display:"flex",flexDirection:"column",gap:11}}>
+        <input value={nf.title} onChange={e=>un({title:e.target.value})} placeholder="Turnier-Titel (z.B. F-Jugend Pfingstturnier)" style={{padding:"11px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
+        <div style={{display:"flex",gap:8}}>
+          <input type="date" value={nf.date} onChange={e=>un({date:e.target.value})} style={{flex:1,padding:"11px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",fontFamily:"inherit"}}/>
+          <input type="time" value={nf.time} onChange={e=>un({time:e.target.value})} style={{flex:"0 0 38%",padding:"11px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",fontFamily:"inherit"}}/>
+        </div>
+        <input value={nf.loc} onChange={e=>un({loc:e.target.value})} placeholder="Ort / Sportanlage" style={{padding:"11px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
+        <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.3}}>ALTERSKLASSE</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:5}}>{CATS.map(c=><button key={c} onClick={()=>un({cat:c})} style={{padding:"6px 11px",borderRadius:99,border:`1.5px solid ${nf.cat===c?t.p:"#e2e8f0"}`,background:nf.cat===c?t.p:"#fff",color:nf.cat===c?"#fff":"#475569",fontWeight:700,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>{c}</button>)}</div>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <span style={{fontSize:12,fontWeight:700,color:"#475569",flex:1}}>Mannschaften min/max</span>
+          <input type="number" min="1" value={nf.minTeams} onChange={e=>un({minTeams:e.target.value})} style={{width:60,padding:"8px",fontSize:14,textAlign:"center",border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none"}}/>
+          <span style={{color:"#94a3b8"}}>–</span>
+          <input type="number" min="1" value={nf.maxTeams} onChange={e=>un({maxTeams:e.target.value})} style={{width:60,padding:"8px",fontSize:14,textAlign:"center",border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none"}}/>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.3}}>WILLKOMMENE SPIELSTÄRKE</span><InfoHint text={TEAM_STRENGTHS.map(s=>s.label+": "+s.desc).join("  ·  ")}/></div>
+        <div style={{display:"flex",gap:6}}>{TEAM_STRENGTHS.map(s=>{const on=nf.strengths.includes(s.id);return <button key={s.id} onClick={()=>toggleStr(s.id)} style={{flex:1,padding:"8px 6px",borderRadius:10,border:`2px solid ${on?s.col:"#e2e8f0"}`,background:on?s.col+"15":"#fff",color:on?s.col:"#94a3b8",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{on?"✓ ":""}{s.label}</button>;})}</div>
+        {liveTourns.length>0 && <select value={nf.eid} onChange={e=>un({eid:e.target.value})} style={{padding:"11px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",fontFamily:"inherit",background:"#fff"}}>
+          <option value="">– eigenes Turnier verknüpfen (Spielplan-Link, optional) –</option>
+          {liveTourns.map(e=><option key={e.id} value={e.id}>{e.title} · {fmtD(e.date)}</option>)}
+        </select>}
+        <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.3}}>KONTAKT FÜR ANMELDUNGEN</div>
+        <div style={{display:"flex",gap:8}}>
+          <input value={nf.email} onChange={e=>un({email:e.target.value})} placeholder="E-Mail" style={{flex:1,padding:"10px 12px",fontSize:13.5,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none"}}/>
+          <input value={nf.whatsapp} onChange={e=>un({whatsapp:e.target.value})} placeholder="WhatsApp/Tel." style={{flex:1,padding:"10px 12px",fontSize:13.5,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none"}}/>
+        </div>
+        <button onClick={createOffer} disabled={!nf.title.trim()||!nf.date} style={{padding:"13px",borderRadius:12,border:"none",background:(nf.title.trim()&&nf.date)?t.p:"#e2e8f0",color:"#fff",fontWeight:800,fontSize:15,cursor:(nf.title.trim()&&nf.date)?"pointer":"default",fontFamily:"inherit"}}>Turnier ausschreiben</button>
+        {!myClub.plz && <p style={{fontSize:11,color:"#b45309",margin:0}}>Hinweis: Ohne PLZ deines Vereins erscheint die Ausschreibung nicht in der Umkreissuche anderer.</p>}
+      </div>}
+
+      {regFor && <RegisterOfferModal offer={regFor} myTeams={myTeams} t={t} onClose={()=>setRegFor(null)} onRegister={p=>doRegister(regFor,p)}/>}
+    </div>
+  );
+}
+
+function RegisterOfferModal({ offer, myTeams, t, onClose, onRegister, guest=false }){
+  const fit=myTeams.find(tm=>(tm.cat||tm.name)===offer.cat);
+  const [teamName,setTeamName]=useState(fit?.name||(myTeams[0]?.name)||"");
+  const [teams,setTeams]=useState(1);
+  const [strength,setStrength]=useState(fit?.strength||1);
+  const [note,setNote]=useState("");
+  const [contact,setContact]=useState({email:"",phone:"",whatsapp:""});
+  const ok = teamName.trim() && (!guest || (contact.email.trim()||contact.phone.trim()||contact.whatsapp.trim()));
+  return (
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:900,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"90dvh",overflowY:"auto",padding:"20px 22px 40px"}}>
+        <h3 style={{fontWeight:900,fontSize:18,color:"#0f172a",margin:"0 0 4px"}}>Anmeldung: {offer.title}</h3>
+        <p style={{fontSize:12.5,color:"#64748b",margin:"0 0 16px"}}>{offer.hostName} · {offer.cat} · {fmtD(offer.date)} · {offer.minTeams}–{offer.maxTeams} Teams</p>
+        <div style={{display:"flex",flexDirection:"column",gap:11}}>
+          {(!guest&&myTeams.length>0) && <div style={{display:"flex",flexWrap:"wrap",gap:5}}>{myTeams.map(tm=><button key={tm.id} onClick={()=>{setTeamName(tm.name);setStrength(tm.strength||1);}} style={{padding:"6px 11px",borderRadius:99,border:`1.5px solid ${teamName===tm.name?t.p:"#e2e8f0"}`,background:teamName===tm.name?t.p+"15":"#fff",color:teamName===tm.name?t.p:"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{tm.name}</button>)}</div>}
+          <input value={teamName} onChange={e=>setTeamName(e.target.value)} placeholder="Mannschaft / Verein" style={{padding:"11px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:13,fontWeight:700,color:"#475569",flex:1}}>Anzahl Mannschaften</span>
+            <button onClick={()=>setTeams(Math.max(1,teams-1))} style={{width:34,height:34,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:900,fontSize:17,cursor:"pointer"}}>−</button>
+            <span style={{fontWeight:900,fontSize:17,width:26,textAlign:"center"}}>{teams}</span>
+            <button onClick={()=>setTeams(teams+1)} style={{width:34,height:34,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:900,fontSize:17,cursor:"pointer"}}>+</button>
+          </div>
+          <div style={{display:"flex",gap:6}}>{TEAM_STRENGTHS.map(s=><button key={s.id} onClick={()=>setStrength(s.id)} title={s.desc} style={{flex:1,padding:"8px 6px",borderRadius:10,border:`2px solid ${strength===s.id?s.col:"#e2e8f0"}`,background:strength===s.id?s.col+"15":"#fff",color:strength===s.id?s.col:"#94a3b8",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{s.label}</button>)}</div>
+          <input value={note} onChange={e=>setNote(e.target.value)} placeholder="Nachricht an den Ausrichter (optional)" style={{padding:"11px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
+          {guest && <>
+            <div style={{fontSize:11,fontWeight:800,color:"#64748b"}}>KONTAKT (für die Rückmeldung) *</div>
+            <div style={{display:"flex",gap:8}}>
+              <input value={contact.email} onChange={e=>setContact(c=>({...c,email:e.target.value}))} placeholder="E-Mail" style={{flex:1,padding:"10px 12px",fontSize:13.5,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none"}}/>
+              <input value={contact.whatsapp} onChange={e=>setContact(c=>({...c,whatsapp:e.target.value}))} placeholder="WhatsApp/Tel." style={{flex:1,padding:"10px 12px",fontSize:13.5,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none"}}/>
+            </div>
+          </>}
+          <button onClick={()=>ok&&onRegister({teamName:teamName.trim(),teams,strength,note:note.trim(),contact})} disabled={!ok} style={{padding:"13px",borderRadius:12,border:"none",background:ok?t.p:"#e2e8f0",color:"#fff",fontWeight:800,fontSize:15,cursor:ok?"pointer":"default",fontFamily:"inherit"}}>Anmeldung senden</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Öffentliche Anmeldeseite für Gäste ohne Account (?offer=<id>)
+function OfferPublic({ offerId }){
+  const [phase,setPhase]=useState("loading");
+  const [offer,setOffer]=useState(null);
+  const [dir,setDir]=useState(null);
+  const [done,setDone]=useState(false);
+  useEffect(()=>{ (async()=>{
+    try{ try{await auth.ensureMember();}catch{}
+      const d=await sb.getDirectory(); setDir(d);
+      const o=(d?.tournamentOffers||[]).find(x=>x.id===offerId && !x.closed);
+      if(!o){ setPhase("notfound"); return; }
+      setOffer(o); setPhase("view");
+    }catch{ setPhase("error"); }
+  })(); },[offerId]);
+  const cl=offer?{pri:"#16a34a",name:offer.hostName}:{pri:"#16a34a"};
+  const register = async (p) => {
+    const reg={ id:uid(), offerId, byCid:null, teamName:p.teamName, cat:offer.cat||"", teams:p.teams||1, strength:p.strength||1, contact:p.contact||{}, note:p.note||"", status:"pending", ts:new Date().toISOString() };
+    const next={ ...(dir||{}), tournamentRegs:[...((dir&&dir.tournamentRegs)||[]), reg] };
+    setDir(next); setDone(true);
+    try{ await sb.set(next, null); }catch{}
+  };
+  const Shell=({children})=>(<div style={{minHeight:"100dvh",background:"#f0f4f8"}}><style>{CSS}</style><div style={{background:"linear-gradient(135deg,#052e16,#16a34acc)",padding:"22px 18px",color:"#fff"}}><div style={{maxWidth:520,margin:"0 auto"}}><div style={{fontSize:12,fontWeight:700,opacity:.7}}>TURNIER-ANMELDUNG</div><div style={{fontWeight:900,fontSize:21}}>{offer?.title||"Turnier"}</div></div></div><div style={{maxWidth:520,margin:"0 auto",padding:"16px"}}>{children}</div></div>);
+  if(phase==="loading") return <Shell><p style={{textAlign:"center",color:"#94a3b8",padding:"30px",fontWeight:700}}>Lädt …</p></Shell>;
+  if(phase==="notfound") return <Shell><div style={{background:"#fff",borderRadius:16,padding:"26px",textAlign:"center",border:"1.5px solid #e2e8f0"}}><p style={{fontWeight:800,color:"#334155"}}>Ausschreibung nicht gefunden</p><p style={{fontSize:13,color:"#94a3b8",marginTop:6}}>Der Link ist ungültig oder die Anmeldung wurde geschlossen.</p></div></Shell>;
+  if(phase==="error") return <Shell><div style={{background:"#fff",borderRadius:16,padding:"26px",textAlign:"center"}}><p style={{fontWeight:800,color:"#334155"}}>Verbindung fehlgeschlagen</p></div></Shell>;
+  return (
+    <Shell>
+      <div style={{background:"#fff",borderRadius:16,padding:"16px",border:"1.5px solid #e2e8f0",marginBottom:14}}>
+        {[["Ausrichter",offer.hostName],["Datum",fmtD(offer.date)+(offer.time?" "+offer.time+" Uhr":"")],["Altersklasse",offer.cat],["Ort",offer.loc||offer.plz||"-"],["Mannschaften",offer.minTeams+"–"+offer.maxTeams],["Spielstärke",(offer.strengths||[]).map(s=>strengthOf(s)?.label).filter(Boolean).join(", ")]].map(([k,v])=>(
+          <div key={k} style={{display:"flex",gap:10,padding:"3px 0"}}><span style={{fontSize:13,color:"#94a3b8",fontWeight:700,minWidth:100}}>{k}</span><span style={{fontSize:14,fontWeight:700,color:"#0f172a"}}>{v}</span></div>
+        ))}
+      </div>
+      <AffiliateBanner trigger="events" style={{marginBottom:14}}/>
+      {done
+        ? <div style={{background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:16,padding:"22px",textAlign:"center"}}><p style={{fontWeight:800,fontSize:16,color:"#15803d"}}>Anmeldung gesendet ✓</p><p style={{fontSize:13,color:"#64748b",marginTop:6}}>Der Ausrichter meldet sich über deinen angegebenen Kontakt. Du bekommst dann alles schriftlich inkl. Link zum Turnierplan.</p></div>
+        : <RegisterOfferModalInline offer={offer} register={register}/>}
+      <p style={{textAlign:"center",fontSize:11,color:"#cbd5e1",marginTop:14}}>Vereins-App · Turnier-Börse</p>
+    </Shell>
+  );
+}
+function RegisterOfferModalInline({ offer, register }){
+  // einfache Inline-Variante des Anmeldeformulars (Gast)
+  const t={p:"#16a34a"};
+  const [open,setOpen]=useState(true);
+  return open ? <RegisterOfferModal offer={offer} myTeams={[]} t={t} guest={true} onClose={()=>setOpen(false)} onRegister={p=>{register(p);}}/> :
+    <button onClick={()=>setOpen(true)} style={{width:"100%",padding:"14px",borderRadius:13,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>Mannschaft anmelden</button>;
+}
+
 const PICKUP_SUGGEST = ["Sportplatz","Marktplatz","Schule","Kirche","Zuhause","Bahnhof","Rewe","Aldi"];
 function PollCarpool({ev,user,onVote,cl}) {
   const t=TH(cl);
@@ -23228,6 +23515,7 @@ function AppInner({lang,setLang}) {
   if(new URLSearchParams(window.location.search).has("dbtest")) return (<><style>{CSS}</style><DbTest/></>);
 
   {const _q=new URLSearchParams(window.location.search); if(_q.has("tournament")) return (<><style>{CSS}</style><TournamentPublic eid={_q.get("tournament")} clubParam={_q.get("club")}/></>);}
+  {const _q=new URLSearchParams(window.location.search); if(_q.has("offer")) return (<><style>{CSS}</style><OfferPublic offerId={_q.get("offer")}/></>);}
 
   if(visitor) return (<><style>{CSS}</style><TournamentPublic eid={visitor.eid} clubParam={visitor.club} onBack={()=>setVisitor(null)}/></>);
 
