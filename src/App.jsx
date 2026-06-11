@@ -18589,8 +18589,11 @@ function AdBanner({ slot="auto",style={},trigger="players" }) {
   const ref = useRef(null);
   const enabled = adsEnabled();
   const client = adsenseId();
+  // "unfilled" = AdSense liefert (noch) keine Anzeige -> auf Affiliate zurückfallen
+  const [unfilled, setUnfilled] = useState(false);
   useEffect(()=>{
     if(!enabled) return;
+    setUnfilled(false);
     try {
       if(!window.__vaAdsenseLoaded){
         window.adsbygoogle = window.adsbygoogle || [];
@@ -18604,11 +18607,21 @@ function AdBanner({ slot="auto",style={},trigger="players" }) {
       }
       (window.adsbygoogle = window.adsbygoogle || []).push({});
     } catch {}
+    // Nach kurzer Zeit prüfen, ob Google eine Anzeige geliefert hat. Wenn nicht
+    // (Konto/Domain noch nicht freigeschaltet oder kein passender Werbe-Fill),
+    // zeigen wir den Affiliate-Banner statt einer leeren Box.
+    const t = setTimeout(()=>{
+      const el = ref.current;
+      if(!el) return;
+      const status = el.getAttribute("data-ad-status");
+      if(status==="unfilled" || el.offsetHeight < 10) setUnfilled(true);
+    }, 2800);
+    return ()=>clearTimeout(t);
   },[enabled,client]);
 
-  // Solange AdSense (Display-Werbung) nicht eingerichtet ist: statt eines leeren
-  // "Werbung"-Platzhalters eine echte Affiliate-Anzeige zeigen (nutzt AWIN/Amazon).
-  if(!enabled) return <AffiliateBanner trigger={trigger} style={style}/>;
+  // Kein AdSense konfiguriert ODER AdSense liefert nichts: echte Affiliate-Anzeige
+  // (AWIN/Amazon) zeigen statt eines leeren "Werbung"-Platzhalters.
+  if(!enabled || unfilled) return <AffiliateBanner trigger={trigger} style={style}/>;
   return (
     <div style={{textAlign:"center",...style}}>
       <div style={{fontSize:9,fontWeight:800,color:"#cbd5e1",letterSpacing:.5,marginBottom:2,textAlign:"left"}}>ANZEIGE</div>
