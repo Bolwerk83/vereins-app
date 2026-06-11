@@ -2451,6 +2451,9 @@ const AFFILIATE_IDS = {
   jako:   "",          // JAKO Direktpartner-Code (langfristig)
   trainerakademie: "", // Deutsche Trainerakademie etc.
 };
+// Affiliate-IDs zur Laufzeit aus den (global gespeicherten) Vereinsdaten
+// übernehmen – im SuperAdmin pflegbar, ohne Code-Änderung.
+function applyAffiliateIds(o){ if(o&&typeof o==="object"){ for(const k of Object.keys(AFFILIATE_IDS)){ if(typeof o[k]==="string") AFFILIATE_IDS[k]=o[k]; } } }
 
 /* AdSense-Konfiguration (Display-Werbung). Solange `client` leer
    ist, wird KEIN AdSense-Code geladen. Damit personalisierte Ads in
@@ -9198,6 +9201,7 @@ function SuperAdminDashboard({ data, onExit }) {
     {id:"message",    label:"Nachrichten", icon:"N"},
     {id:"modules",    label:"Module",      icon:"M"},
     {id:"revenue",    label:"Einnahmen",   icon:"E"},
+    {id:"affiliate",  label:"Werbung / IDs",icon:"€"},
     {id:"analytics",  label:"Analytics",   icon:"A"},
     {id:"geo",         label:"Geo & Sprache",icon:"G"},
     {id:"logs",       label:"Logs",        icon:"L"},
@@ -9375,6 +9379,10 @@ function SuperAdminDashboard({ data, onExit }) {
         )}
 
         {/* EINSTELLUNGEN */}
+        {tab==="affiliate"&&(
+          <SuperAdminAffiliate data={data}/>
+        )}
+
         {tab==="settings"&&(
           <SuperAdminSettings/>
         )}
@@ -9396,6 +9404,46 @@ function SuperAdminDashboard({ data, onExit }) {
 /* -----------------------------------------------------------------
    COMPLIANCE / SICHERHEITS-STATUS  (ehrliche Bestandsaufnahme)
 ----------------------------------------------------------------- */
+// Affiliate-/Werbe-IDs pflegen – global gespeichert (data.affiliateIds), greift sofort.
+function SuperAdminAffiliate({ data }){
+  const FIELDS=[
+    {k:"awin",label:"AWIN Publisher-ID",ph:"z.B. 123456",hint:"11teamsports, Decathlon, HRS u.a. laufen über AWIN"},
+    {k:"amazon",label:"Amazon Partner-Tag",ph:"z.B. deinname-21",hint:"Amazon PartnerNet (Tracking-ID)"},
+    {k:"owayo",label:"Owayo Partner-ID",ph:"",hint:"Trikot-/Teamwear-Druck"},
+    {k:"hrs",label:"HRS Affiliate-ID",ph:"",hint:"Hotels / Reise"},
+    {k:"jako",label:"JAKO Code",ph:"",hint:"Sportbekleidung (Direktpartner)"},
+    {k:"trainerakademie",label:"Trainerakademie-ID",ph:"",hint:"Trainer-Weiterbildung"},
+  ];
+  const [f,setF]=useState(()=>({...AFFILIATE_IDS,...(data?.affiliateIds||{})}));
+  const [saving,setSaving]=useState(false);
+  const [saved,setSaved]=useState(false);
+  const doSave=async()=>{
+    setSaving(true);
+    const clean={}; FIELDS.forEach(x=>clean[x.k]=(f[x.k]||"").trim());
+    applyAffiliateIds(clean);
+    try{ await sb.set({...data, affiliateIds:clean}); }catch{}
+    setSaving(false); setSaved(true); setTimeout(()=>setSaved(false),2500);
+  };
+  const inp={width:"100%",padding:"11px 13px",fontSize:14,background:"#0f172a",border:"1px solid #334155",borderRadius:10,color:"#e2e8f0",outline:"none",boxSizing:"border-box",fontFamily:"inherit"};
+  return (
+    <div>
+      <h2 style={{color:"#fff",fontWeight:900,fontSize:20,marginBottom:6}}>Werbung / Affiliate-IDs</h2>
+      <p style={{color:"#94a3b8",fontSize:13,marginBottom:16,lineHeight:1.6}}>Trag hier deine Partner-IDs ein. Sobald eine ID gesetzt ist, werden die zugehörigen Angebote bevorzugt ausgespielt und Klicks dir zugeordnet. Leer = Platzhalter ohne Provision. Gilt für alle Vereine.</p>
+      <div style={{display:"flex",flexDirection:"column",gap:14,maxWidth:480}}>
+        {FIELDS.map(x=>(
+          <div key={x.k}>
+            <div style={{fontSize:12,fontWeight:800,color:"#cbd5e1",marginBottom:5}}>{x.label}{(f[x.k]||"").trim()&&<span style={{color:"#22c55e",marginLeft:6}}>● aktiv</span>}</div>
+            <input value={f[x.k]||""} onChange={e=>setF(s=>({...s,[x.k]:e.target.value}))} placeholder={x.ph} style={inp}/>
+            {x.hint&&<div style={{fontSize:11,color:"#64748b",marginTop:4}}>{x.hint}</div>}
+          </div>
+        ))}
+      </div>
+      <button onClick={doSave} disabled={saving} style={{marginTop:18,padding:"12px 22px",borderRadius:11,border:"none",background:saved?"#16a34a":"#7c3aed",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>{saving?"Speichert…":saved?"Gespeichert ✓":"Speichern"}</button>
+      <p style={{color:"#475569",fontSize:11,marginTop:14,maxWidth:480,lineHeight:1.5}}>Weitere Netzwerke (neue Shops) brauchen zusätzlich einen passenden Werbeplatz im Code – sag Bescheid, dann ergänze ich das Angebot und hier erscheint automatisch ein Feld dafür.</p>
+    </div>
+  );
+}
+
 function SuperAdminCompliance({ allClubs, allPlayers }) {
   const STATUS = {
     ok:    { label:"Erfüllt",        col:"#16a34a", bg:"rgba(22,163,74,.15)" },
@@ -23778,6 +23826,7 @@ function DbTest(){
 
 function AppInner({lang,setLang}) {
   const [data,setData]    = useState(null);
+  useEffect(()=>{ applyAffiliateIds(data&&data.affiliateIds); },[data]);
   const [screen,setScr]   = useState("boot");
   const [visitor,setVisitor] = useState(null); // {eid,club} -> oeffentliche Veranstaltungs-Ansicht
   const [cid,setCid]      = useState(null);
