@@ -1464,11 +1464,29 @@ const ET = {
 function seed() {
   return {
     _v: 14,
-    helpers: [], chats: [], messages: [], events: [
+    helpers: [
+      {id:"dh1",cid:"demo",name:"Petra Sommer",childName:"Emma Wolf",tids:["demo_g"],notes:"Kuchenstand & Kasse beim Heimturnier",active:true,code:"9F4KQ2",createdAt:"2026-01-01T10:00:00.000Z"},
+      {id:"dh2",cid:"demo",name:"Markus Lang",childName:"Ben Fischer",tids:["demo_f1"],notes:"Auf- und Abbau, Grillstand",active:true,code:"M7XP3A",createdAt:"2026-01-02T10:00:00.000Z"},
+      {id:"dh3",cid:"demo",name:"Sabine Vogt",childName:"",tids:["demo_g","demo_f1"],notes:"Turnier-Orga & Spielerpässe",active:true,code:"B2RT8Z",createdAt:"2026-01-03T10:00:00.000Z"},
+    ], chats: [], messages: [], events: [
       {id:"de1",cid:"demo",tid:"demo_g",type:"training",title:"Training G-Jugend",date:addD(now(),2),time:"17:00",loc:"Sportplatz Platz 2",note:"Bitte Hallenschuhe mitbringen",votes:{"Lukas Berger":"yes","Emma Wolf":"yes","Noah Schmidt":"no","Mia Hoffmann":"maybe"},pt:"att",selType:"multi",li:[],fi:[],sc:[]},
       {id:"de2",cid:"demo",tid:"demo_f1",type:"heimspiel",title:"Heimspiel vs. SV Adler",date:addD(now(),5),time:"10:30",loc:"Hauptplatz",note:"Treffen 1 Stunde vorher zum Aufwärmen",sollPlayers:5,votes:{"Ben Fischer":"yes","Leon Weber":"yes","Sophie Klein":"yes","Paul Becker":"yes","Lina Schulz":"maybe"},pt:"att",selType:"multi",li:[],fi:[],sc:[]},
       {id:"de3",cid:"demo",tid:"demo_e",type:"auswarts",title:"Auswärts bei FC Löwen",date:addD(now(),6),time:"11:00",loc:"Sportzentrum Löwen, Auswärts",note:"Fahrgemeinschaften bitte im Chat absprechen",sollPlayers:7,votes:{"Felix Braun":"yes","Anna Richter":"yes","Tim Neumann":"no"},pt:"att",selType:"multi",li:[],fi:[],sc:[]},
-      {id:"de4",cid:"demo",tid:"demo_g",type:"turnier",title:"Hallenturnier Pfingsten",date:addD(now(),12),time:"09:00",loc:"Stadthalle",note:"Ganztägig, Verpflegung wird gestellt",votes:{"Lukas Berger":"yes","Emma Wolf":"maybe"},pt:"att",selType:"multi",li:[],fi:[],sc:[]},
+      {id:"de4",cid:"demo",tid:"demo_g",type:"turnier",title:"Hallenturnier Pfingsten",date:addD(now(),12),time:"09:00",loc:"Stadthalle",note:"Ganztägig, Verpflegung wird gestellt",votes:{"Lukas Berger":"yes","Emma Wolf":"yes","Noah Schmidt":"yes","Mia Hoffmann":"maybe"},pt:"att",selType:"multi",li:[],fi:[],sc:[],
+        setup:{ clubName:"Demo Verein", gameTime:8, fields:2, startTime:"09:00", pause:2, guestEnabled:true,
+          clubs:["Demo G-Jugend","SV Adler","FC Löwen","TSV Falken","Blau-Weiß 04","SC Sterne"] },
+        schedule:[
+          {field:"Feld 1",time:"09:00",a:"Demo G-Jugend",b:"SV Adler",sa:3,sb:1},
+          {field:"Feld 2",time:"09:00",a:"FC Löwen",b:"TSV Falken",sa:2,sb:2},
+          {field:"Feld 1",time:"09:10",a:"Blau-Weiß 04",b:"SC Sterne",sa:0,sb:1},
+          {field:"Feld 2",time:"09:10",a:"Demo G-Jugend",b:"FC Löwen",sa:1,sb:0},
+          {field:"Feld 1",time:"09:20",a:"SV Adler",b:"TSV Falken",sa:2,sb:3},
+          {field:"Feld 2",time:"09:20",a:"Blau-Weiß 04",b:"Demo G-Jugend",sa:1,sb:4},
+          {field:"Feld 1",time:"09:30",a:"SC Sterne",b:"FC Löwen",sa:0,sb:2},
+          {field:"Feld 2",time:"09:30",a:"TSV Falken",b:"Blau-Weiß 04"},
+          {field:"Feld 1",time:"09:40",a:"SV Adler",b:"SC Sterne"},
+          {field:"Feld 2",time:"09:40",a:"Demo G-Jugend",b:"TSV Falken"},
+        ]},
       {id:"de5",cid:"demo",tid:"demo_f1",type:"training",title:"Abschlusstraining vor dem Spiel",date:addD(now(),3),time:"17:30",endTime:"19:00",loc:"Sportplatz Platz 1",note:"",votes:{"Ben Fischer":"yes","Leon Weber":"yes","Sophie Klein":"maybe","Lina Schulz":"yes"},pt:"att",selType:"multi",li:[],fi:[],sc:[]},
       {id:"de6",cid:"demo",tid:"demo_sen",type:"training",title:"Mannschaftstraining Senioren",date:addD(now(),1),time:"19:30",loc:"Sportplatz Platz 1",note:"Anschließend gemütliches Beisammensein",votes:{},pt:"att",selType:"multi",li:[],fi:[],sc:[]}
     ], bookings: [
@@ -1542,6 +1560,7 @@ function refreshDemo(d) {
     d.teams          = [...(d.teams||[]).filter(notDemo),          ...(f.teams||[]).filter(isDemo)];
     d.playerProfiles = [...(d.playerProfiles||[]).filter(notDemo), ...(f.playerProfiles||[]).filter(isDemo)];
     d.events         = [...(d.events||[]).filter(notDemo),         ...(f.events||[]).filter(isDemo)];
+    d.helpers        = [...(d.helpers||[]).filter(notDemo),        ...(f.helpers||[]).filter(isDemo)];
     d.trainers       = [...(d.trainers||[]).filter(notDemo),       ...(f.trainers||[]).filter(isDemo)];
     d.seasons        = [...(d.seasons||[]).filter(notDemo),        ...(f.seasons||[]).filter(isDemo)];
   } catch {}
@@ -14055,7 +14074,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid}) 
           {showForgotParent&&<ForgotPasswordHelp cl={cl} trainers={trainers}
             forRole="user" teamId={ct?.id}
             onBack={()=>setShowForgotParent(false)}/>}
-          {cl.id==="demo"&&<div style={{background:"rgba(255,255,255,.1)",borderRadius:10,padding:"8px 12px",marginBottom:10,fontSize:11,color:"rgba(255,255,255,.6)"}}>Demo: G-Jugend=g1 | F-Jugend=f1 | E-Jugend=e1 | Senioren=sen1 | Alt-Herren=ah1</div>}
+          {cl.id==="demo"&&({demo_g:"g1",demo_f1:"f1",demo_e:"e1",demo_sen:"sen1",demo_ah:"ah1"}[ct?.id])&&<div style={{background:"rgba(255,255,255,.1)",borderRadius:10,padding:"8px 12px",marginBottom:10,fontSize:11,color:"rgba(255,255,255,.6)"}}>Demo-Code für {ct?.name}: <strong>{{demo_g:"g1",demo_f1:"f1",demo_e:"e1",demo_sen:"sen1",demo_ah:"ah1"}[ct?.id]}</strong></div>}
           <button onClick={()=>setShowForgotParent(true)}
             style={{background:"none",border:"none",color:"rgba(255,255,255,.4)",
               fontSize:12,cursor:"pointer",fontFamily:"inherit",
