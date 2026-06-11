@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>bolwerk24 – Smarte Apps für deinen Alltag</title>
+  <meta name="description" content="bolwerk24 ist die App-Sammlung für deinen Alltag: VereinsApp, Vorsorge, Klartext, Kochbuch & mehr. Kostenlos, ohne Installation, direkt im Browser. Für Handy, Tablet und PC." />
+  <meta name="theme-color" content="#ffffff" />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="canonical" href="https://bolwerk24.de/" />
+
+  <!-- Open Graph / Social -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="bolwerk24" />
+  <meta property="og:title" content="bolwerk24 – Smarte Apps für deinen Alltag" />
+  <meta property="og:description" content="Eine Sammlung praktischer Apps für Verein, Vorsorge, Alltag & Familie. Kostenlos, ohne Installation." />
+  <meta property="og:url" content="https://bolwerk24.de/" />
+  <meta property="og:image" content="https://bolwerk24.de/assets/img/og.png" />
+  <meta property="og:locale" content="de_DE" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="bolwerk24 – Smarte Apps für deinen Alltag" />
+  <meta name="twitter:description" content="Praktische Apps für Verein, Vorsorge, Alltag & Familie. Kostenlos, ohne Installation." />
+
+  <!-- Awin Publisher · Verifizierung -->
+  <meta name="awin-verification" content="bolwerk24-publisher" />
+
+  <!-- Icons / Manifest -->
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/assets/img/icon-192.png" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+
+  <!-- Fonts (mit System-Fallback, blockiert nicht) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap" />
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap" /></noscript>
+
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+
+  <!-- Strukturierte Daten (SEO) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      { "@type": "Organization", "name": "bolwerk24", "url": "https://bolwerk24.de", "logo": "https://bolwerk24.de/favicon.svg" },
+      { "@type": "WebSite", "name": "bolwerk24", "url": "https://bolwerk24.de" }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <a href="#apps" class="btn" style="position:absolute;left:-999px;top:0;z-index:999" onfocus="this.style.left='8px'" onblur="this.style.left='-999px'">Zum Inhalt springen</a>
+
+  <!-- ===== Header ===== -->
+  <header class="site-header" id="site-header">
+    <nav class="nav container" aria-label="Hauptnavigation">
+      <a class="brand" href="/" aria-label="bolwerk24 Startseite">
+        <img class="logo" src="/favicon.svg" alt="" width="34" height="34" />
+        <span>bolwerk<b>24</b></span>
+      </a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="#apps">Apps</a></li>
+        <li><a href="#warum">Warum bolwerk24</a></li>
+        <li><a href="#so-gehts">So funktioniert's</a></li>
+        <li><a href="#faq">FAQ</a></li>
+        <li><a href="#newsletter">Updates</a></li>
+      </ul>
+      <div class="nav-actions">
+        <button class="icon-btn theme-toggle" id="theme-toggle" aria-label="Hell/Dunkel umschalten">
+          <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+          <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        </button>
+        <a href="#apps" class="btn btn-primary btn-sm nav-cta-desktop">Apps entdecken</a>
+        <button class="icon-btn nav-toggle" id="nav-toggle" aria-label="Menü" aria-expanded="false" aria-controls="nav-links">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ===== Hero ===== -->
+    <section class="hero">
+      <div class="hero-bg" aria-hidden="true">
+        <span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span>
+      </div>
+      <div class="hero-grid-overlay" aria-hidden="true"></div>
+      <div class="container hero-inner">
+        <div class="hero-text">
+          <span class="eyebrow reveal">✦ Dein persönlicher App-Store</span>
+          <h1 class="reveal d1">Smarte Apps für<br /><span class="grad">deinen Alltag.</span></h1>
+          <p class="lead reveal d2">Eine Sammlung durchdachter Web-Apps – für Verein, Vorsorge, Familie & mehr. Kostenlos, ohne Installation, direkt im Browser. Auf Handy, Tablet und PC.</p>
+          <div class="hero-cta reveal d3">
+            <a href="#apps" class="btn btn-primary btn-lg">Apps entdecken
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </a>
+            <a href="#newsletter" class="btn btn-ghost btn-lg">Updates abonnieren</a>
+          </div>
+          <div class="hero-stats reveal d3">
+            <div class="stat"><div class="n" data-count="4" data-suffix="+">4+</div><div class="l">Apps & Projekte</div></div>
+            <div class="stat"><div class="n" data-count="100" data-suffix="%">100%</div><div class="l">Im Browser, ohne Install</div></div>
+            <div class="stat"><div class="n">0€</div><div class="l">Kostenlos nutzbar</div></div>
+          </div>
+        </div>
+        <div class="hero-visual">
+          <div class="device">
+            <div class="device-screen">
+              <div class="device-title">bolwerk24</div>
+              <div class="device-sub">Deine Apps auf einen Blick</div>
+              <div class="device-apps" id="hero-apps"></div>
+            </div>
+          </div>
+          <div class="float-card fc1"><span class="dot" style="background:#16a34a">✓</span> 100% kostenlos</div>
+          <div class="float-card fc2"><span class="dot" style="background:#6366f1">⚡</span> Sofort startklar</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Vertrauensleiste ===== -->
+    <div class="trust-strip" aria-hidden="true">
+      <p class="label">Gebaut mit modernen Web-Standards</p>
+      <div class="marquee">
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg> Datenschutz first</span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg> Blitzschnell</span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="3"/><path d="M12 18h.01"/></svg> Mobil optimiert</span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg> Hell- & Dunkelmodus</span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Sicher & werbefinanziert</span>
+        <!-- Duplikat für nahtlose Schleife -->
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg> Datenschutz first</span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg> Blitzschnell</span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="3"/><path d="M12 18h.01"/></svg> Mobil optimiert</span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg> Hell- & Dunkelmodus</span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Sicher & werbefinanziert</span>
+      </div>
+    </div>
+
+    <!-- ===== Werbung: Leaderboard ===== -->
+    <div class="container" style="padding-top:36px">
+      <div class="ad-slot ad-leaderboard reveal" data-ad="leaderboard-top">
+        <p class="ph"><b>Werbefläche</b> · Leaderboard 728×90 — hier erscheint nach Cookie-Zustimmung dein Awin-/AdSense-Banner.</p>
+      </div>
+    </div>
+
+    <!-- ===== Apps ===== -->
+    <section class="section" id="apps">
+      <div class="container">
+        <div class="section-head center reveal">
+          <span class="eyebrow">Die Sammlung</span>
+          <h2>Alle Apps an einem Ort</h2>
+          <p>Jede App löst ein konkretes Alltagsproblem – durchdacht, schlank und sofort nutzbar. Wähle eine Kategorie oder stöbere einfach.</p>
+        </div>
+        <div class="filters reveal" id="filters" role="tablist" aria-label="Kategorien"></div>
+        <div class="apps-grid" id="apps-grid"></div>
+      </div>
+    </section>
+
+    <!-- ===== Spotlight (Featured) ===== -->
+    <section class="section" style="padding-top:0">
+      <div class="container">
+        <div class="spotlight reveal" id="spotlight"></div>
+      </div>
+    </section>
+
+    <!-- ===== Werbung: Inline ===== -->
+    <div class="container">
+      <div class="ad-slot ad-inline reveal" data-ad="inline-mid">
+        <p class="ph"><b>Werbefläche</b> · Responsive — passt sich an Handy, Tablet & Desktop an.</p>
+      </div>
+    </div>
+
+    <!-- ===== Warum bolwerk24 ===== -->
+    <section class="section" id="warum">
+      <div class="container">
+        <div class="section-head center reveal">
+          <span class="eyebrow">Warum bolwerk24</span>
+          <h2>Klein, schnell, ehrlich</h2>
+          <p>Keine App-Store-Downloads, keine versteckten Abos. Nur nützliche Werkzeuge, die einfach funktionieren.</p>
+        </div>
+        <div class="feature-grid">
+          <div class="f-card reveal">
+            <div class="f-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg></div>
+            <h3>Sofort startklar</h3>
+            <p>Link öffnen, loslegen. Keine Installation, kein App-Store, kein Account-Zwang. Funktioniert auch offline.</p>
+          </div>
+          <div class="f-card reveal d1">
+            <div class="f-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></div>
+            <h3>Datenschutz first</h3>
+            <p>Deine Daten bleiben deine Sache. Transparenter Umgang, DSGVO-konform, Tracking nur mit deiner Zustimmung.</p>
+          </div>
+          <div class="f-card reveal d2">
+            <div class="f-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="3"/><path d="M12 18h.01"/></svg></div>
+            <h3>Auf jedem Gerät</h3>
+            <p>Ein Design, das auf Handy, Tablet und PC gleich gut aussieht – mit Hell- und Dunkelmodus.</p>
+          </div>
+          <div class="f-card reveal">
+            <div class="f-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7h-9M14 17H5M17 17a3 3 0 1 0 0 .01M7 7a3 3 0 1 0 0 .01"/></svg></div>
+            <h3>Ständig verbessert</h3>
+            <p>Als Herzensprojekt wachsen die Apps stetig. Neue Funktionen kommen regelmäßig dazu – auf Wunsch der Nutzer.</p>
+          </div>
+          <div class="f-card reveal d1">
+            <div class="f-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M6 21v-1a6 6 0 0 1 12 0v1"/></svg></div>
+            <h3>Für echte Menschen</h3>
+            <p>Entwickelt für Alltagsthemen, die wirklich jeden betreffen – einfach erklärt, ohne Fachchinesisch.</p>
+          </div>
+          <div class="f-card reveal d2">
+            <div class="f-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg></div>
+            <h3>Komplett kostenlos</h3>
+            <p>Finanziert über faire, klar gekennzeichnete Werbung – damit die Apps für dich gratis bleiben.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== So funktioniert's ===== -->
+    <section class="section" id="so-gehts" style="background:var(--bg-subtle)">
+      <div class="container">
+        <div class="section-head center reveal">
+          <span class="eyebrow">In 3 Schritten</span>
+          <h2>So einfach geht's</h2>
+        </div>
+        <div class="steps">
+          <div class="step reveal"><h3>App auswählen</h3><p>Stöbere durch die Sammlung und finde die App, die zu deinem Alltag passt.</p></div>
+          <div class="step reveal d1"><h3>Direkt öffnen</h3><p>Ein Klick genügt – die App startet sofort im Browser, ohne Download oder Anmeldung.</p></div>
+          <div class="step reveal d2"><h3>Zum Homescreen</h3><p>Optional: „Zum Startbildschirm hinzufügen" – schon hast du sie wie eine echte App auf dem Handy.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Werbung: Rectangle ===== -->
+    <div class="container" style="padding-block:48px">
+      <div class="ad-slot ad-rectangle reveal" data-ad="rectangle-mid">
+        <p class="ph"><b>Werbefläche</b> · Medium Rectangle 300×250 — ideal für Affiliate-Produkte passend zur Zielgruppe.</p>
+      </div>
+    </div>
+
+    <!-- ===== Newsletter ===== -->
+    <section class="section newsletter" id="newsletter">
+      <div class="container">
+        <div class="newsletter-card reveal">
+          <span class="eyebrow" style="background:rgba(255,255,255,.12);color:#c4bcff">🔔 Bleib dran</span>
+          <h2 style="margin-top:16px">Sei dabei, wenn neue Apps starten</h2>
+          <p>Vorsorge, Klartext, Kochbuch & mehr sind in Arbeit. Trag dich ein und erfahre als Erste:r, wenn eine neue App live geht – kein Spam, jederzeit abbestellbar.</p>
+          <form class="nl-form" id="nl-form" novalidate>
+            <input type="email" id="nl-email" placeholder="deine@email.de" aria-label="E-Mail-Adresse" required />
+            <button type="submit" class="btn btn-primary">Vormerken</button>
+          </form>
+          <p class="nl-success">✓ Geschafft! Du bekommst Bescheid, sobald es Neues gibt.</p>
+          <p class="nl-note">Mit dem Eintragen stimmst du der <a href="/datenschutz.html" style="color:#c4bcff">Datenschutzerklärung</a> zu.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== FAQ ===== -->
+    <section class="section" id="faq">
+      <div class="container">
+        <div class="section-head center reveal">
+          <span class="eyebrow">Häufige Fragen</span>
+          <h2>Gut zu wissen</h2>
+        </div>
+        <div class="faq reveal">
+          <div class="faq-item">
+            <button class="faq-q" aria-expanded="false"><span>Sind die Apps wirklich kostenlos?</span><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button>
+            <div class="faq-a"><div class="faq-a-inner">Ja. Alle Apps auf bolwerk24 sind kostenlos nutzbar. Finanziert wird das Ganze über dezente, klar gekennzeichnete Werbung und Affiliate-Empfehlungen – so bleibt es für dich gratis.</div></div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-q" aria-expanded="false"><span>Muss ich etwas installieren?</span><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button>
+            <div class="faq-a"><div class="faq-a-inner">Nein. Die Apps laufen direkt im Browser auf Handy, Tablet und PC. Du kannst sie optional über „Zum Startbildschirm hinzufügen" wie eine native App ablegen – das ist aber kein Muss.</div></div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-q" aria-expanded="false"><span>Was passiert mit meinen Daten?</span><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button>
+            <div class="faq-a"><div class="faq-a-inner">Datenschutz hat Priorität. Es wird nur das Nötigste verarbeitet, Werbe-Tracking nur nach deiner ausdrücklichen Zustimmung. Details findest du in der <a href="/datenschutz.html">Datenschutzerklärung</a>.</div></div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-q" aria-expanded="false"><span>Wann kommen die anderen Apps?</span><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button>
+            <div class="faq-a"><div class="faq-a-inner">bolwerk24 ist ein Herzensprojekt und wächst Schritt für Schritt. Trag dich oben in die Update-Liste ein, dann erfährst du sofort, sobald eine neue App startet.</div></div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-q" aria-expanded="false"><span>Kann ich Wünsche oder Feedback geben?</span><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button>
+            <div class="faq-a"><div class="faq-a-inner">Sehr gerne! Die Apps werden auf Basis von echtem Nutzer-Feedback weiterentwickelt. Schreib einfach eine kurze Nachricht – Kontakt findest du im <a href="/impressum.html">Impressum</a>.</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===== Footer ===== -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a class="brand" href="/"><img class="logo" src="/favicon.svg" alt="" width="34" height="34" /><span>bolwerk<b>24</b></span></a>
+          <p>Smarte Web-Apps für deinen Alltag. Ein Herzensprojekt – kostenlos, datenschutzfreundlich und für jedes Gerät.</p>
+          <div class="socials">
+            <a href="#" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><path d="M17.5 6.5h.01"/></svg></a>
+            <a href="#" aria-label="TikTok"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 8.2a5.8 5.8 0 0 0 3.4 1.1V6.7a3.3 3.3 0 0 1-1.8-.6 3.3 3.3 0 0 1-1.4-2.6h-2.6v10.9a2.1 2.1 0 1 1-1.5-2v-2.7a4.8 4.8 0 1 0 3.9 4.7V8.2z"/></svg></a>
+            <a href="#" aria-label="YouTube"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 9a3 3 0 0 0-2.1-2.1C18 6.4 12 6.4 12 6.4s-6 0-7.9.5A3 3 0 0 0 2 9a31 31 0 0 0 0 6 3 3 0 0 0 2.1 2.1c1.9.5 7.9.5 7.9.5s6 0 7.9-.5A3 3 0 0 0 22 15a31 31 0 0 0 0-6z"/><path d="m10 15 5-3-5-3z" fill="currentColor"/></svg></a>
+          </div>
+        </div>
+        <div class="footer-col">
+          <h4>Apps</h4>
+          <a href="#apps">VereinsApp</a>
+          <a href="#apps">Vorsorge</a>
+          <a href="#apps">Klartext</a>
+          <a href="#apps">Kochbuch</a>
+        </div>
+        <div class="footer-col">
+          <h4>Entdecken</h4>
+          <a href="#warum">Warum bolwerk24</a>
+          <a href="#so-gehts">So funktioniert's</a>
+          <a href="#faq">FAQ</a>
+          <a href="#newsletter">Updates</a>
+        </div>
+        <div class="footer-col">
+          <h4>Rechtliches</h4>
+          <a href="/impressum.html">Impressum</a>
+          <a href="/datenschutz.html">Datenschutz</a>
+          <a href="/datenschutz.html#cookies">Cookie-Einstellungen</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© <span id="year">2026</span> bolwerk24 · Mit ♥ gebaut in Deutschland</p>
+        <div class="legal">
+          <a href="/impressum.html">Impressum</a>
+          <a href="/datenschutz.html">Datenschutz</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ===== Cookie-Consent ===== -->
+  <div class="cookie" id="cookie" role="dialog" aria-live="polite" aria-label="Cookie-Hinweis">
+    <div class="c-txt"><b>Cookies & Werbung.</b> Wir nutzen essenzielle Cookies sowie – mit deiner Zustimmung – Cookies für Werbung und Affiliate-Partner, um bolwerk24 kostenlos zu halten. Mehr in der <a href="/datenschutz.html">Datenschutzerklärung</a>.</div>
+    <div class="c-actions">
+      <button class="btn btn-ghost btn-sm" id="cookie-decline">Nur essenzielle</button>
+      <button class="btn btn-primary btn-sm" id="cookie-accept">Alle akzeptieren</button>
+    </div>
+  </div>
+
+  <!-- ===== Back to top ===== -->
+  <button class="to-top" id="to-top" aria-label="Nach oben"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg></button>
+
+  <script src="/assets/js/apps.js"></script>
+  <script src="/assets/js/main.js"></script>
+</body>
+</html>
