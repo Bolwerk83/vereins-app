@@ -1684,13 +1684,13 @@ function Tag({c="#64748b",bg,ch,sm}) {
 function Toast({msg}) {
   return msg?<div style={{position:"fixed",bottom:30,left:"50%",transform:"translateX(-50%)",background:"#0f172a",color:"#fff",borderRadius:99,padding:"11px 22px",fontSize:14,fontWeight:700,boxShadow:"0 8px 32px rgba(0,0,0,.35)",animation:"toast .26s ease",zIndex:9999,whiteSpace:"nowrap",pointerEvents:"none"}}>{msg}</div>:null;
 }
-function Drawer({ch,onClose,title,maxH="92dvh"}) {
+function Drawer({ch,children,onClose,title,maxH="92dvh"}) {
   return (
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:900,backdropFilter:"blur(8px)"}}>
       <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:560,maxHeight:maxH,overflowY:"auto",boxShadow:"0 -16px 60px rgba(0,0,0,.2)",animation:"down .22s ease"}}>
         <div style={{display:"flex",justifyContent:"center",padding:"10px 0 2px"}}><div style={{width:36,height:4,borderRadius:99,background:"#e2e8f0"}}/></div>
         {title&&<div style={{padding:"6px 22px 14px",fontSize:18,fontWeight:800,color:"#0f172a"}}>{title}</div>}
-        <div style={{padding:"0 20px 48px"}}>{ch}</div>
+        <div style={{padding:"0 20px 48px"}}>{ch||children}</div>
       </div>
     </div>
   );
