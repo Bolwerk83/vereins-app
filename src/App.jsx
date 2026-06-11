@@ -18581,18 +18581,16 @@ function JerseysTab({ data,myTids,save,fire,cl }) {
 const ADSENSE_ID = "ca-pub-DEIN-ADSENSE-ID";
 const ADS_ENABLED = ADSENSE_ID !== "ca-pub-DEIN-ADSENSE-ID";
 
-function AdBanner({ slot="auto",style={} }) {
+function AdBanner({ slot="auto",style={},trigger="players" }) {
   const ref = useRef(null);
   useEffect(()=>{
     if(!ADS_ENABLED) return;
     try { window.adsbygoogle=window.adsbygoogle||[]; window.adsbygoogle.push({}); } catch {}
   },[]);
 
-  if(!ADS_ENABLED) return (
-    <div style={{background:"#f8fafc",border:"1px dashed #e2e8f0",borderRadius:8,padding:"6px 12px",textAlign:"center",fontSize:11,color:"#94a3b8",fontWeight:600,...style}}>
-      Werbung
-    </div>
-  );
+  // Solange AdSense (Display-Werbung) nicht eingerichtet ist: statt eines leeren
+  // "Werbung"-Platzhalters eine echte Affiliate-Anzeige zeigen (nutzt AWIN/Amazon).
+  if(!ADS_ENABLED) return <AffiliateBanner trigger={trigger} style={style}/>;
   return (
     <div style={{textAlign:"center",...style}}>
       <div style={{fontSize:9,fontWeight:800,color:"#cbd5e1",letterSpacing:.5,marginBottom:2,textAlign:"left"}}>ANZEIGE</div>
