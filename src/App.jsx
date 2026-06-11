@@ -21531,6 +21531,21 @@ function TournBoerse({ data, cid, myTids, cl, save, fire }){
   const myOffers=offers.filter(o=>o.hostCid===cid);
   const regsOf = oid => regs.filter(r=>r.offerId===oid);
   const setRegStatus = (rid,st) => writeRegs(regs.map(r=>r.id===rid?{...r,status:st}:r));
+  // Zusagen: Status setzen UND – falls mit eigenem Turnier verknüpft – das Team
+  // direkt in den Turniermodus (setup.clubs) übernehmen.
+  const acceptReg = (r,offer) => {
+    const nextRegs = regs.map(x=>x.id===r.id?{...x,status:"accepted"}:x);
+    let events = data.events;
+    if(offer.eid){
+      events = (data.events||[]).map(e=>{
+        if(e.id!==offer.eid) return e;
+        const clubs=(e.setup?.clubs||[]);
+        return clubs.includes(r.teamName)?e:{...e,setup:{...(e.setup||{}),clubs:[...clubs,r.teamName]}};
+      });
+    }
+    save({...data, tournamentRegs:nextRegs, events});
+    fire("Zugesagt"+(offer.eid?" · ins Turnier übernommen":""));
+  };
   const closeOffer = (oid,closed) => writeOffers(offers.map(o=>o.id===oid?{...o,closed}:o));
   const delOffer = oid => { if(!window.confirm("Ausschreibung löschen?"))return; writeOffers(offers.filter(o=>o.id!==oid)); writeRegs(regs.filter(r=>r.offerId!==oid)); };
 
@@ -21623,7 +21638,7 @@ function TournBoerse({ data, cid, myTids, cl, save, fire }){
                     </div>
                     {r.status==="pending"
                       ? <div style={{display:"flex",gap:6}}>
-                          <button onClick={()=>setRegStatus(r.id,"accepted")} style={{padding:"6px 11px",borderRadius:8,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Zusagen</button>
+                          <button onClick={()=>acceptReg(r,o)} style={{padding:"6px 11px",borderRadius:8,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Zusagen</button>
                           <button onClick={()=>setRegStatus(r.id,"declined")} style={{padding:"6px 11px",borderRadius:8,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Ablehnen</button>
                         </div>
                       : <span style={{fontSize:11,fontWeight:800,color:r.status==="accepted"?"#15803d":"#dc2626"}}>{r.status==="accepted"?"ZUGESAGT":"ABGELEHNT"}</span>}
