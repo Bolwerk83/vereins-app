@@ -23504,7 +23504,15 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
         }
       }
       const nv={...e.votes};const ts=new Date().toISOString();
-      if(pt==="att"){if(typeof nv[user]==="object"&&nv[user]?.val===val)delete nv[user];else if(nv[user]===val)delete nv[user];else nv[user]={val,ts};}
+      if(pt==="att"){
+        const isObj = typeof val==="object" && val!==null;
+        const cur = nv[user];
+        const curVal = (typeof cur==="object"&&cur!==null) ? cur.val : cur;
+        const curHasExtra = typeof cur==="object"&&cur!==null&&(cur.late||cur.reason);
+        if(!isObj && curVal===val && !curHasExtra) delete nv[user];   // gleiche einfache Auswahl -> abwählen
+        else if(isObj) nv[user] = {...val, ts};                       // Objekt (z.B. {val:'yes',late:30}) unverändert speichern
+        else nv[user] = {val, ts};                                    // einfache Auswahl
+      }
       else nv[user]=val;
       const updated = {...e,votes:nv};
       if (lateCancel) updated.lateCancellations = [...(e.lateCancellations||[]), lateCancel];
