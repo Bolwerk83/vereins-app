@@ -5788,6 +5788,10 @@ function FoerderAssistent({ data, myTids, cl, save, fire }){
   const ratedVals=p=>axes.map(a=>p.skills?.[a]).filter(v=>typeof v==="number"&&v>0);
   const avgOf=p=>{const v=ratedVals(p);return v.length?Math.round(v.reduce((a,b)=>a+b,0)/v.length*10)/10:null;};
   const weakOf=p=>{let best=null;axes.forEach(a=>{const v=p.skills?.[a];if(typeof v==="number"&&v>0&&(best===null||v<best.v))best={a,v};});return best;};
+  // Förder-Kette: Anwesenheit aus vergangenen Terminen der Mannschaft einbeziehen.
+  const _todayStr=now();
+  const pastTeamEvs=(data.events||[]).filter(e=>e.tid===tid && (!e.seasonId||e.seasonId===sid) && e.date<_todayStr && (e.pt==="att"||!e.pt));
+  const attOf=p=>{ let yes=0,cnt=0; pastTeamEvs.forEach(e=>{const v=(e.votes||{})[p.name];const val=(typeof v==="object"&&v)?v.val:v; if(val==="yes")yes++; if(val==="yes"||val==="no")cnt++;}); return cnt>0?Math.round(yes/cnt*100):null; };
   const teamAxisAvg=a=>{const vs=players.map(p=>p.skills?.[a]).filter(v=>typeof v==="number"&&v>0);return vs.length?vs.reduce((x,y)=>x+y,0)/vs.length:null;};
   const ratedAxes=axes.map(a=>({a,avg:teamAxisAvg(a)})).filter(x=>x.avg!=null).sort((x,y)=>x.avg-y.avg);
   const effFocus=focusSkill||ratedAxes[0]?.a||axes[0];
@@ -5859,14 +5863,15 @@ function FoerderAssistent({ data, myTids, cl, save, fire }){
             <div style={{fontSize:14,fontWeight:800,color:"#0f172a"}}>{ratedAxes[0].a} <span style={{color:"#94a3b8",fontWeight:600,fontSize:12.5}}>· Schnitt {Math.round(ratedAxes[0].avg*10)/10}/5</span></div>
           </div>}
           <div style={{display:"flex",flexDirection:"column",gap:7}}>
-            {players.map(p=>{const w=weakOf(p);const a=avgOf(p);return (
+            {players.map(p=>{const w=weakOf(p);const a=avgOf(p);const att=attOf(p);return (
               <div key={p.id} style={{display:"flex",alignItems:"center",gap:10,background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"10px 12px"}}>
                 <Av name={p.name} sz={30}/>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontWeight:800,fontSize:14,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</div>
                   {w?<div style={{fontSize:11.5,color:"#94a3b8",marginTop:1}}>Schwächster Bereich: <span style={{color:"#dc2626",fontWeight:700}}>{w.a} {w.v}/5</span></div>:<div style={{fontSize:11.5,color:"#cbd5e1",marginTop:1}}>noch nicht bewertet</div>}
                 </div>
-                <div style={{textAlign:"right",flexShrink:0}}>{a!=null?<><div style={{fontWeight:900,fontSize:17,color:t.p,lineHeight:1}}>{a}</div><div style={{fontSize:10,color:"#94a3b8"}}>Ø Skill</div></>:<span style={{fontSize:11,color:"#cbd5e1"}}>–</span>}</div>
+                {att!=null&&<div title="Anwesenheit vergangener Termine" style={{textAlign:"right",flexShrink:0}}><div style={{fontWeight:800,fontSize:13,color:att>=70?"#16a34a":att>=50?"#d97706":"#dc2626",lineHeight:1}}>{att}%</div><div style={{fontSize:9.5,color:"#94a3b8"}}>dabei</div></div>}
+                <div style={{textAlign:"right",flexShrink:0,minWidth:34}}>{a!=null?<><div style={{fontWeight:900,fontSize:17,color:t.p,lineHeight:1}}>{a}</div><div style={{fontSize:10,color:"#94a3b8"}}>Ø Skill</div></>:<span style={{fontSize:11,color:"#cbd5e1"}}>–</span>}</div>
               </div>
             );})}
           </div>
