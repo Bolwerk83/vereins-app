@@ -21146,6 +21146,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const [delConf,setDelConf]=useState(null); const [viewEv,setViewEv]=useState(null); const [delConfVal,setDelConfVal]=useState(null);
   const [editConf,setEditConf]=useState(null);
   const [planFor,setPlanFor]=useState(null);
+  const [planQuickNew,setPlanQuickNew]=useState(false);
+  const openPlan = ev => { setPlanFor(ev); setPlanQuickNew(false); };
   const planTitleOf = ev => ev?.trainingId ? ((local.trainings||[]).find(t=>t.id===ev.trainingId)?.title||null) : null;
   const toastRef=useRef(null);
   const fire=m=>{setToast(m);clearTimeout(toastRef.current);toastRef.current=setTimeout(()=>setToast(null),2500);};
@@ -21321,10 +21323,10 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             </div>
             <div style={{width:32,height:32,borderRadius:10,background:"rgba(0,0,0,.15)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:18,fontWeight:700,flexShrink:0}}>{">"}</div>
           </div>
-          {up.length>0&&<><Divider label={`NÄCHSTE 10 TAGE (${soon.length})`}/>{soon.length>0?soon.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={selfName} onSelfVote={selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={()=>setPlanFor(ev)} planTitle={planTitleOf(ev)}/>):<p style={{textAlign:"center",color:"#94a3b8",fontSize:13.5,padding:"14px 10px"}}>Keine Termine in den nächsten 10 Tagen.</p>}
+          {up.length>0&&<><Divider label={`NÄCHSTE 10 TAGE (${soon.length})`}/>{soon.length>0?soon.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={selfName} onSelfVote={selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={()=>openPlan(ev)} planTitle={planTitleOf(ev)}/>):<p style={{textAlign:"center",color:"#94a3b8",fontSize:13.5,padding:"14px 10px"}}>Keine Termine in den nächsten 10 Tagen.</p>}
             {later.length>0&&<>
               <button onClick={()=>setShowLater(s=>!s)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",background:showLater?"#f1f5f9":"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,cursor:"pointer",margin:"6px 0 12px",padding:"11px 14px",fontWeight:800,fontSize:13,color:"#475569",fontFamily:"inherit"}}>{showLater?"▲ Weitere Termine ausblenden":"▼ Weitere "+later.length+" Termine anzeigen"}</button>
-              {showLater&&later.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={selfName} onSelfVote={selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={()=>setPlanFor(ev)} planTitle={planTitleOf(ev)}/>)}
+              {showLater&&later.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={selfName} onSelfVote={selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={()=>openPlan(ev)} planTitle={planTitleOf(ev)}/>)}
             </>}
           </>}
           {up.length===0&&<div style={{textAlign:"center",padding:"30px",background:"#fff",borderRadius:18,border:"1.5px dashed #e2e8f0",color:"#94a3b8"}}><Logo cl={myClub} sz={50} sx={{margin:"0 auto 12px"}}/><p style={{fontWeight:800,fontSize:15}}>Noch keine Termine</p><p style={{fontSize:13,marginTop:3}}>Klicke oben auf "Neuen Termin anlegen"</p></div>}
@@ -21404,7 +21406,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           <div style={{marginTop:16,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginBottom:10}}>
               <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:18}}>📋</span><span style={{fontWeight:800,fontSize:15,color:"#0f172a"}}>Trainingsplan</span></div>
-              {!isHelper&&<button onClick={()=>{setPlanFor(viewEv);setViewEv(null);}} style={{padding:"6px 11px",borderRadius:9,border:"none",background:"#eef2ff",color:"#4f46e5",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{pl?"Ändern":"Hinterlegen"}</button>}
+              {!isHelper&&<button onClick={()=>{openPlan(viewEv);setViewEv(null);}} style={{padding:"6px 11px",borderRadius:9,border:"none",background:"#eef2ff",color:"#4f46e5",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{pl?"Ändern":"Hinterlegen"}</button>}
             </div>
             {pl
               ? <div style={{display:"flex",flexDirection:"column",gap:6}}>
@@ -21516,18 +21518,27 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       </Drawer>}
 
       {}
-      {planFor&&<Drawer onClose={()=>setPlanFor(null)} title="Trainingsplan hinterlegen">
+      {planFor&&<Drawer onClose={()=>setPlanFor(null)} title={planQuickNew?"Neuen Trainingsplan erstellen":"Trainingsplan hinterlegen"}>
         {(()=>{
           const plans=(local.trainings||[]).filter(tr=>tr.cid===cid);
           const totalMin=tr=>(tr.blocks||[]).reduce((s,b)=>s+(Number(b.min)||0),0);
           const attach=tid=>{ save({...local,events:local.events.map(e=>e.id===planFor.id?{...e,trainingId:tid}:e)}); setPlanFor(null); fire(tid?"Trainingsplan verknüpft *":"Trainingsplan entfernt"); };
+          if(planQuickNew){
+            const ownerTid = (myTids||[]).includes(planFor.tid) ? planFor.tid : (myTids&&myTids[0]) || planFor.tid;
+            return <QuickPlanCreate cid={cid} ownerTid={ownerTid} t={TH(myClub)} onCancel={()=>setPlanQuickNew(false)}
+              onCreate={rec=>{
+                save({...local, trainings:[...(local.trainings||[]), rec], events:local.events.map(e=>e.id===planFor.id?{...e,trainingId:rec.id}:e)});
+                setPlanFor(null); setPlanQuickNew(false); fire("Trainingsplan erstellt & verknüpft *");
+              }}/>;
+          }
           return (
             <div>
               <div style={{background:"#eef2ff",borderRadius:14,padding:"12px 14px",marginBottom:14,border:"1.5px solid #c7d2fe"}}>
-                <p style={{fontSize:13,color:"#3730a3",fontWeight:600,lineHeight:1.5}}>Wähle einen gespeicherten Trainingsplan für „{planFor.title}". Er ist dann beim Termin sichtbar (Tab „Ansehen").</p>
+                <p style={{fontSize:13,color:"#3730a3",fontWeight:600,lineHeight:1.5}}>Wähle einen gespeicherten Trainingsplan für „{planFor.title}" – oder erstelle direkt hier einen neuen. Er ist dann beim Termin sichtbar (Tab „Ansehen").</p>
               </div>
+              <button onClick={()=>setPlanQuickNew(true)} style={{width:"100%",padding:"12px",borderRadius:12,border:"1.5px dashed #c7d2fe",background:"#f5f3ff",color:"#4f46e5",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit",marginBottom:14}}>+ Neuen Trainingsplan erstellen</button>
               {plans.length===0
-                ? <div style={{textAlign:"center",padding:"24px 12px"}}><p style={{fontWeight:700,color:"#475569"}}>Noch keine Trainingspläne</p><p style={{fontSize:13,marginTop:4,color:"#94a3b8"}}>Lege im Tab „Training" Pläne an – sie erscheinen dann hier zur Auswahl.</p></div>
+                ? <div style={{textAlign:"center",padding:"8px 12px 4px"}}><p style={{fontWeight:700,color:"#475569"}}>Noch keine gespeicherten Pläne</p><p style={{fontSize:13,marginTop:4,color:"#94a3b8"}}>Erstelle oben deinen ersten – oder lege sie im Tab „Training" an.</p></div>
                 : <div style={{display:"flex",flexDirection:"column",gap:9}}>
                     {plans.map(tr=>{ const sel=planFor.trainingId===tr.id; return (
                       <button key={tr.id} onClick={()=>attach(tr.id)} style={{textAlign:"left",padding:"12px 14px",borderRadius:12,border:`2px solid ${sel?"#4f46e5":"#e2e8f0"}`,background:sel?"#eef2ff":"#fff",cursor:"pointer",fontFamily:"inherit"}}>
@@ -21757,6 +21768,47 @@ function eventWarnings(ev, tod){
   return w;
 }
 
+// Kompaktes Formular, um direkt aus dem Termin heraus einen Trainingsplan
+// anzulegen (Titel, Schwerpunkt, Ablauf-Blöcke). Wird sofort verknüpft.
+function QuickPlanCreate({ cid, ownerTid, t, onCreate, onCancel }){
+  const [title,setTitle]=useState("");
+  const [focus,setFocus]=useState("");
+  const [blocks,setBlocks]=useState([{phase:"Aufwärmen",title:"",min:10}]);
+  const setBlock=(i,patch)=>setBlocks(bs=>bs.map((b,j)=>j===i?{...b,...patch}:b));
+  const valid=title.trim().length>0;
+  const create=()=>{
+    if(!valid) return;
+    const now2=new Date().toISOString();
+    onCreate({ id:"tr_"+uid(), cid, ownerTid, title:title.trim(), focus:focus.trim(),
+      blocks:blocks.map(b=>({...b,min:Number(b.min)||0})), vis:"team", sharedTids:[], createdAt:now2, updatedAt:now2 });
+  };
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:11}}>
+      <input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Titel (z. B. Passspiel & Abschluss)"
+        style={{width:"100%",padding:"12px 14px",fontSize:15,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
+      <input value={focus} onChange={e=>setFocus(e.target.value)} placeholder="Schwerpunkt (optional, z. B. Technik)"
+        style={{width:"100%",padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
+      <div style={{background:"#fff",borderRadius:12,padding:"12px 14px",border:"1.5px solid #e2e8f0"}}>
+        <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.4}}>ABLAUF</div>
+        {blocks.map((b,i)=>(
+          <div key={i} style={{display:"flex",gap:6,alignItems:"center",marginBottom:i<blocks.length-1?8:0}}>
+            <select value={b.phase} onChange={e=>setBlock(i,{phase:e.target.value})} style={{padding:"8px",borderRadius:9,border:"1.5px solid #e2e8f0",fontSize:13,fontFamily:"inherit",flexShrink:0}}>
+              {TRAIN_PHASES.map(p=><option key={p} value={p}>{p}</option>)}
+            </select>
+            <input value={b.title} onChange={e=>setBlock(i,{title:e.target.value})} placeholder="Übung / Inhalt"
+              style={{flex:1,minWidth:0,padding:"8px 10px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
+            <input type="number" value={b.min} onChange={e=>setBlock(i,{min:Number(e.target.value)||0})} style={{width:50,padding:"8px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
+            <span style={{fontSize:11,color:"#94a3b8",flexShrink:0}}>Min</span>
+            {blocks.length>1&&<button onClick={()=>setBlocks(bs=>bs.filter((_,j)=>j!==i))} style={{background:"none",border:"none",color:"#dc2626",fontWeight:800,fontSize:16,cursor:"pointer",flexShrink:0}}>×</button>}
+          </div>
+        ))}
+        <button onClick={()=>setBlocks(bs=>[...bs,{phase:"Hauptteil",title:"",min:10}])} style={{marginTop:8,background:"#f1f5f9",border:"none",borderRadius:9,padding:"8px 12px",fontSize:13,fontWeight:700,color:"#475569",cursor:"pointer",fontFamily:"inherit"}}>+ Block</button>
+      </div>
+      <button onClick={create} disabled={!valid} style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:valid?t.p:"#cbd5e1",color:valid?contrast(t.p):"#1e293b",fontWeight:800,fontSize:15,cursor:valid?"pointer":"default",fontFamily:"inherit"}}>Plan erstellen & verknüpfen</button>
+      <Btn v="gst" full ch="Zurück zur Auswahl" onClick={onCancel}/>
+    </div>
+  );
+}
 function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSelfVote,onRemind,onPlan,planTitle}) {
   const eT=ET[ev.type]||ET.training; const tF=ev.date===tod; const p=cl?.pri||"#16a34a";
   const warns=eventWarnings(ev,tod);
