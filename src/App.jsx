@@ -2591,7 +2591,7 @@ function affiliateUrl(aff) {
   try { return aff.url(id); } catch { return "#"; }
 }
 
-function AffiliateBanner({ trigger, style={} }) {
+function AffiliateBanner({ trigger, style={}, slim=false }) {
   const [dismissed, setDismissed] = useState(false);
   const aff = pickAffiliate(trigger);
   if (!aff || dismissed) return null;
@@ -2599,6 +2599,13 @@ function AffiliateBanner({ trigger, style={} }) {
     try { trackEventGeo&&trackEventGeo("affiliate_click", aff.id); } catch {}
     window.open(affiliateUrl(aff), "_blank", "noopener,noreferrer");
   };
+  if (slim) return (
+    <div style={{display:"flex",alignItems:"center",gap:8,background:"#f8fafc",border:"1px solid #eef2f7",borderRadius:10,padding:"7px 11px",...style}}>
+      <span style={{fontSize:8.5,fontWeight:800,color:"#cbd5e1",letterSpacing:.5,flexShrink:0}}>WERBUNG</span>
+      <span onClick={onClick} style={{flex:1,minWidth:0,fontSize:12,fontWeight:600,color:"#475569",cursor:"pointer",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{aff.text} <span style={{color:"#cbd5e1"}}>· Anzeige*</span></span>
+      <button onClick={()=>setDismissed(true)} aria-label="Werbung ausblenden" style={{width:20,height:20,borderRadius:5,background:"none",border:"none",color:"#cbd5e1",cursor:"pointer",fontSize:13,fontWeight:800,flexShrink:0}}>×</button>
+    </div>
+  );
   return (
     <div style={{background:"#f8fafc",borderRadius:13,padding:"12px 14px",border:"1px solid #e2e8f0",
       display:"flex",alignItems:"center",gap:12,marginBottom:14,...style}}>
@@ -3742,6 +3749,7 @@ function NewsTab({ data, cid, session, save, fire, cl }) {
         style={{width:"100%",padding:"13px",borderRadius:14,border:"none",background:t.p,color:"#fff",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit",marginBottom:14}}>
         + Neuigkeit veröffentlichen
       </button>}
+      <AffiliateBanner trigger="players" slim style={{marginBottom:14}}/>
 
       {news.length===0&&!showForm&&(
         <div style={{textAlign:"center",padding:"40px",background:"#f8fafc",borderRadius:14,border:"1.5px dashed #e2e8f0"}}>
@@ -5308,6 +5316,7 @@ function DrillLibrary({ cl, data, myTids, save, fire }) {
       <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Übung suchen (Name oder Inhalt)…"
         autoCapitalize="none" autoCorrect="off"
         style={{width:"100%",padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",marginBottom:10,boxSizing:"border-box"}}/>
+      <AffiliateBanner trigger="training" slim style={{marginBottom:10}}/>
       <div style={{display:"flex",gap:6,marginBottom:10,alignItems:"center"}}>
         <span style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.3}}>DARSTELLUNG:</span>
         <button onClick={()=>setStyle("grass")} style={{padding:"5px 12px",borderRadius:99,border:`1.5px solid ${style==="grass"?t.p:"#e2e8f0"}`,background:style==="grass"?t.p:"#fff",color:style==="grass"?"#fff":"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Rasen</button>
@@ -17655,6 +17664,7 @@ function TreasuryTab({ data, cid, save, fire, cl, myTids=[], teams=[], isAdmin=f
           <span style={{fontSize:16}}>+</span> Neue Kasse
         </button>
       </div>
+      <AffiliateBanner trigger="fields" slim style={{marginBottom:14}}/>
 
       {visible.length===0&&(
         <div style={{textAlign:"center",padding:"40px 20px",background:"#f8fafc",borderRadius:18,border:"1.5px dashed #e2e8f0"}}>
@@ -18257,6 +18267,7 @@ function ChatTab({data,cid,myTids,session,save,fire,cl}) {
         );})}
       </div>
 
+      <AffiliateBanner trigger="players" slim style={{marginBottom:8}}/>
       <div style={{fontSize:10.5,color:"#94a3b8",textAlign:"center",marginBottom:6}}>Nachrichten werden nach 30 Tagen automatisch gelöscht. Tippe auf deine eigene Nachricht zum Bearbeiten oder Löschen.</div>
       {}
       <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:10,paddingBottom:12}}>
@@ -23526,6 +23537,7 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
 
       <div style={{maxWidth:isDesktop?1080:520,margin:"0 auto",padding:isDesktop?"24px":"16px 14px",display:isDesktop?"grid":"block",gridTemplateColumns:isDesktop?"1fr 320px":"none",gap:isDesktop?24:0,alignItems:"start"}}>
         <div>
+        <AffiliateBanner trigger="events" slim style={{marginBottom:12}}/>
         {up.length>0&&<>
           <Divider label="NÄCHSTE 10 TAGE"/>
           {soon.length>0
