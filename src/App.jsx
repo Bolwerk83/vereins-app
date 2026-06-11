@@ -590,6 +590,19 @@ function LangSwitcher({ lang,setLang }) {
   );
 }
 
+// Schwebender Sprachumschalter – auf JEDER Seite verfügbar (eigene dunkle Pille,
+// damit DE/EN/NL auch auf hellen Hintergründen lesbar sind).
+function FloatingLangSwitcher({ lang,setLang }) {
+  if(!LANG_SWITCHER_ENABLED) return null;
+  return (
+    <div style={{position:"fixed",top:"calc(env(safe-area-inset-top) + 10px)",right:10,zIndex:1200,
+      background:"rgba(15,23,42,.82)",backdropFilter:"blur(8px)",border:"1px solid rgba(255,255,255,.16)",
+      borderRadius:99,padding:"4px 6px",boxShadow:"0 4px 16px rgba(0,0,0,.28)"}}>
+      <LangSwitcher lang={lang} setLang={setLang}/>
+    </div>
+  );
+}
+
 const SK  = "vereinsapp_v14";
 const SS  = "vereinsapp_v12_session";
 const CFG = "vereinsapp_config";
@@ -12580,7 +12593,7 @@ button:focus-visible, a:focus-visible, input:focus-visible {
    DESKTOP SIDEBAR
    Ersetzt BottomNav auf >1024px
 ----------------------------------------------------------------- */
-function DesktopSidebar({ tab, setTab, isAdmin, isHelper, unread, inboxUnread=0, cl, session, onLogout }) {
+function DesktopSidebar({ tab, setTab, isAdmin, isHelper, unread, inboxUnread=0, cl, session, onLogout, lang="de", setLang=()=>{} }) {
   const t = TH(cl);
   const [showDrawer, setShowDrawer] = React.useState(false);
   const isTrainer = !isAdmin && !isHelper;
@@ -12721,6 +12734,7 @@ function DesktopSidebar({ tab, setTab, isAdmin, isHelper, unread, inboxUnread=0,
         borderTop:"1px solid #1e293b",
         padding:"10px 8px",
       }}>
+        {LANG_SWITCHER_ENABLED&&<div style={{display:"flex",justifyContent:"center",padding:"4px 0 10px"}}><LangSwitcher lang={lang} setLang={setLang}/></div>}
         <button onClick={onLogout}
           style={{
             display:"flex", alignItems:"center", gap:10,
@@ -21220,7 +21234,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       {isDesktop&&<DesktopSidebar tab={tab} setTab={setTab}
         isAdmin={isAdmin} isHelper={isHelper}
         unread={unreadMsgs} inboxUnread={unreadInbox} cl={myClub}
-        session={session} onLogout={onLogout}/>}
+        session={session} onLogout={onLogout} lang={lang} setLang={setLang}/>}
       <div style={{minHeight:"100dvh",overflowY:"auto",background:"#f0f4f8"}}>
       <div style={{maxWidth:isDesktop?"900px":"100%",margin:"0 auto",padding:isDesktop?"24px":"0"}}>
       <ClubHeader cl={myClub} hide={isDesktop} sub={`${isAdmin?"** Admin":isHelper?"* Helfer":"**"} ${session.name||"Admin"}`}
@@ -23542,7 +23556,7 @@ function ShareTeamLink({ cl, team, t, compact }){
   );
 }
 
-function UserHome({data,session,onSave,onLogout,lang="de"}) {
+function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const tr = (k) => T[lang]?.[k] ?? T.de[k] ?? k;
   const {tid,user,cid}=session;
   const cl=data.clubs.find(c=>c.id===cid);
@@ -23712,9 +23726,11 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
       {isDesktop&&<DesktopSidebar tab={tab} setTab={setTab}
         isAdmin={isAdmin} isHelper={isHelper}
         unread={unreadMsgs} cl={myClub}
-        session={session} onLogout={onLogout}/>}
+        session={session} onLogout={onLogout} lang={lang} setLang={setLang}/>}
       <ClubHeader cl={cl} sub={`${myTeam?.icon||""} ${myTeam?.name||""}`}
         right={
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <LangSwitcher lang={lang} setLang={setLang}/>
           <div style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}} onClick={()=>setShowProfile(true)}>
             {photoLoading
               ? <div style={{width:34,height:34,borderRadius:"50%",background:"rgba(255,255,255,.2)",animation:"pulse 1.5s ease infinite"}}/>
@@ -23724,6 +23740,7 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
               <div style={{color:"#fff",fontSize:13,fontWeight:700}}>{user}</div>
               <div style={{color:"rgba(255,255,255,.5)",fontSize:11}}>Profil</div>
             </div>
+          </div>
           </div>
         }
       />
@@ -24222,6 +24239,9 @@ function AppInner({lang,setLang}) {
   return (
     <div>
       <style>{CSS}</style>
+      {/* Sprachumschalter auf den Auswahl-/Login-Seiten (oben rechts frei).
+          Start, Dashboard und Eltern-Ansicht haben einen eigenen im Header/Sidebar. */}
+      {!showLegal && !["dir","dash","user"].includes(screen) && <FloatingLangSwitcher lang={lang} setLang={setLang}/>}
       {}
       {saveStatus&&(
         <div style={{position:"fixed",bottom:20,right:16,zIndex:999,display:"flex",alignItems:"center",gap:7,background:saveStatus==="saved"?"#052e16":saveStatus==="saving"?"#0f172a":saveStatus==="error"?"#450a0a":"#451a03",borderRadius:99,padding:"8px 14px",boxShadow:"0 4px 20px rgba(0,0,0,.3)",border:`1px solid ${saveStatus==="saved"?"#16a34a":saveStatus==="saving"?"#334155":saveStatus==="error"?"#dc2626":"#d97706"}`,fontSize:12,fontWeight:700,color:saveStatus==="saved"?"#86efac":saveStatus==="saving"?"#94a3b8":saveStatus==="error"?"#fca5a5":"#fbbf24"}}>
@@ -24293,7 +24313,7 @@ function AppInner({lang,setLang}) {
       {screen==="tlogin"&&activeCl&&<TrainerLogin cl={activeCl} trainers={data.trainers.filter(t=>t.cid===cid&&isActive(t))} teams={(data.teams||[]).filter(tm=>tm.cid===cid)} onLogin={tr=>login("trainer",tr)} onSetTrainerPw={(trId,newHash)=>{ save({...data,trainers:(data.trainers||[]).map(t=>t.id===trId?{...t,pw:newHash,mustChangePw:false,sharedAt:t.sharedAt||new Date().toISOString()}:t)}); }} onBack={()=>setScr("role")}/>}
       {screen==="hlogin"&&activeCl&&<HelperLogin cl={activeCl} helpers={data.helpers||[]} onLogin={h=>login("helper",{...h,cid})} onBack={()=>setScr("role")}/>}
       {screen==="alogin"&&activeCl&&<AdminLogin cl={activeCl} onLogin={a=>login("admin",{...a,cid})} onBack={()=>setScr("role")}/>}
-      {screen==="user"  &&session&&activeCl&&<UserHome data={data} session={session} onSave={save} onLogout={logout} lang={lang}/>}
+      {screen==="user"  &&session&&activeCl&&<UserHome data={data} session={session} onSave={save} onLogout={logout} lang={lang} setLang={setLang}/>}
       {screen==="dash"  &&session&&activeCl&&<Dashboard data={data} session={session} onSave={save} onLogout={logout} lang={lang} setLang={setLang}/>}
     </div>
   );
