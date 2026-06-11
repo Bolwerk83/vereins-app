@@ -5046,23 +5046,66 @@ function TeamSkillAnalysis({ data, myTids, cl }) {
 }
 
 // Trainings-Übungsbibliothek mit Schwerpunkt-Filter und Diagrammen
-function DrillLibrary({ cl }) {
+function DrillLibrary({ cl, data, myTids, save, fire }) {
   const t = TH(cl);
   const [focus, setFocus] = useState("all");
   const [cat, setCat] = useState("all");
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(null);
   const [style, setStyle] = useState("grass"); // grass | chalk
+  const [kidsOnly, setKidsOnly] = useState(false);
+  const [dice, setDice] = useState(0);
   const allCats = CAT_ORDER.filter(c=>DRILL_LIB.some(d=>(d.cats||[]).includes(c)));
   const ql = q.trim().toLowerCase();
   const list = DRILL_LIB.filter(d=>
     (focus==="all" || d.focus===focus) &&
     (cat==="all" || (d.cats||[]).includes(cat)) &&
+    (!kidsOnly || !!d.kids) &&
     (!ql || d.title.toLowerCase().includes(ql) || (d.desc||"").toLowerCase().includes(ql))
   );
   const focusOf = id => DRILL_FOCUS.find(f=>f.id===id) || {label:id,col:"#64748b"};
+
+  // Regelmäßiger Vorschlag: kindgerechte Übungen, rotiert wöchentlich (+ Würfeln).
+  const kidPool = DRILL_LIB.filter(d=>!!d.kids);
+  const weekIdx = Math.floor(Date.now()/(7*864e5));
+  const sugg = kidPool.length ? kidPool[(weekIdx+dice)%kidPool.length] : null;
+  const today = now();
+  const nextTraining = (data?.events||[])
+    .filter(e=>(myTids||[]).includes(e.tid) && e.type==="training" && e.date>=today)
+    .sort((a,b)=>(a.date+(a.time||"")).localeCompare(b.date+(b.time||"")))[0] || null;
+  const drillText = d => `Übung: ${d.title} (${d.min} Min, ${d.players})\n${d.kids||d.desc||""}${d.coach?"\nCoaching: "+d.coach:""}`;
+  const adoptDrill = d => {
+    if(save && data && nextTraining){
+      const block = {phase:(focusOf(d.focus).label||"Übung"), id:d.id, title:d.title, min:d.min};
+      const tp = nextTraining.trainingPlan;
+      const plan = (tp && tp.sessions?.length)
+        ? {...tp, sessions: tp.sessions.map((s,i)=>i===0?{...s,blocks:[...(s.blocks||[]),block]}:s)}
+        : {cat:(d.cats||[])[0]||null, createdAt:now(), sessions:[{title:"Übungen", blocks:[block]}]};
+      save({...data, events:(data.events||[]).map(e=>e.id===nextTraining.id?{...e,trainingPlan:plan}:e)});
+      fire && fire(`„${d.title}" zu ${nextTraining.title} (${fmtD(nextTraining.date)}) hinzugefügt`);
+    } else {
+      navigator.clipboard?.writeText(drillText(d));
+      fire && fire("Übung kopiert");
+    }
+  };
   return (
     <div>
+      {sugg && (
+        <div style={{background:`linear-gradient(135deg,${t.s||"#052e16"},${t.p})`,borderRadius:16,padding:"15px 16px",marginBottom:14,color:"#fff"}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+            <span style={{fontSize:11,fontWeight:800,letterSpacing:.4,opacity:.75}}>🌟 SPIEL-VORSCHLAG FÜR DIE KINDER</span>
+            <button onClick={()=>{setDice(x=>x+1);setOpen(null);}} style={{background:"rgba(255,255,255,.18)",border:"none",borderRadius:9,padding:"5px 11px",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>🎲 Neuer</button>
+          </div>
+          <div style={{fontWeight:900,fontSize:18,marginBottom:3}}>{sugg.title}</div>
+          <div style={{fontSize:12.5,opacity:.85,marginBottom:8}}>{focusOf(sugg.focus).label} · {sugg.min} Min · {sugg.players} · {(sugg.cats||[]).slice(0,3).join(", ")}</div>
+          <div style={{fontSize:13,lineHeight:1.55,opacity:.95,marginBottom:11}}>{sugg.kids||sugg.desc}</div>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            <button onClick={()=>{setKidsOnly(false);setFocus("all");setCat("all");setQ("");setOpen(sugg.id);setTimeout(()=>document.getElementById("drill-"+sugg.id)?.scrollIntoView({behavior:"smooth",block:"center"}),60);}} style={{background:"rgba(255,255,255,.16)",border:"none",borderRadius:10,padding:"9px 14px",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Diagramm ansehen</button>
+            <button onClick={()=>adoptDrill(sugg)} style={{background:"#fff",border:"none",borderRadius:10,padding:"9px 16px",color:t.p,fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>{nextTraining?"Ins nächste Training übernehmen":"Übernehmen (kopieren)"}</button>
+          </div>
+          {nextTraining && <div style={{fontSize:11,opacity:.7,marginTop:7}}>Nächstes Training: {fmtD(nextTraining.date)}{nextTraining.time?" · "+nextTraining.time:""}</div>}
+        </div>
+      )}
       <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Übung suchen (Name oder Inhalt)…"
         autoCapitalize="none" autoCorrect="off"
         style={{width:"100%",padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",marginBottom:10,boxSizing:"border-box"}}/>
@@ -5074,6 +5117,7 @@ function DrillLibrary({ cl }) {
       </div>
       <div style={{display:"flex",gap:6,overflowX:"auto",marginBottom:8,scrollbarWidth:"none"}}>
         <button onClick={()=>setFocus("all")} style={{flex:"0 0 auto",padding:"7px 14px",borderRadius:99,border:`1.5px solid ${focus==="all"?t.p:"#e2e8f0"}`,background:focus==="all"?t.p:"#fff",color:focus==="all"?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>Alle ({DRILL_LIB.length})</button>
+        <button onClick={()=>setKidsOnly(v=>!v)} style={{flex:"0 0 auto",padding:"7px 14px",borderRadius:99,border:`1.5px solid ${kidsOnly?"#f59e0b":"#e2e8f0"}`,background:kidsOnly?"#f59e0b":"#fff",color:kidsOnly?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>🧒 Kinder ({kidPool.length})</button>
         {DRILL_FOCUS.map(f=>{
           const n=DRILL_LIB.filter(d=>d.focus===f.id).length;
           return (
@@ -5097,11 +5141,11 @@ function DrillLibrary({ cl }) {
           const f=focusOf(d.focus);
           const isOpen=open===d.id;
           return (
-            <div key={d.id} style={{background:"#fff",borderRadius:14,border:"1.5px solid #e2e8f0",overflow:"hidden"}}>
+            <div key={d.id} id={"drill-"+d.id} style={{background:"#fff",borderRadius:14,border:"1.5px solid #e2e8f0",overflow:"hidden"}}>
               <button onClick={()=>setOpen(isOpen?null:d.id)} style={{width:"100%",textAlign:"left",padding:"13px 15px",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:10}}>
                 <span style={{width:9,height:9,borderRadius:"50%",background:f.col,flexShrink:0}}/>
                 <span style={{flex:1,minWidth:0}}>
-                  <span style={{display:"block",fontWeight:800,fontSize:14.5,color:"#0f172a"}}>{d.title}</span>
+                  <span style={{display:"block",fontWeight:800,fontSize:14.5,color:"#0f172a"}}>{d.title}{d.kids&&<span style={{marginLeft:6,fontSize:11,color:"#f59e0b",fontWeight:800}}>🧒</span>}</span>
                   <span style={{display:"block",fontSize:12,color:"#94a3b8",marginTop:1}}>{f.label} · {d.min} Min · {d.players} Spieler</span>
                 </span>
                 <span style={{fontSize:18,color:"#cbd5e1",transform:isOpen?"rotate(90deg)":"none",transition:"transform .2s"}}>›</span>
@@ -5128,6 +5172,9 @@ function DrillLibrary({ cl }) {
                     </>
                   )}
                   <div style={{fontSize:11.5,color:"#94a3b8",marginTop:8}}>Geeignet für: {d.cats.join(", ")}</div>
+                  <button onClick={()=>adoptDrill(d)} style={{marginTop:10,width:"100%",padding:"10px",borderRadius:10,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+                    {nextTraining?`Ins nächste Training übernehmen (${fmtD(nextTraining.date)})`:"Übung kopieren"}
+                  </button>
                 </div>
               )}
             </div>
@@ -5554,7 +5601,7 @@ function suggestDrillsForSkill(skill, cat, n=4){
 
 // Förder-Assistent: kurzer Wizard – aktueller Skill in Zahlen, Einzelförderung
 // bei 2 Trainern und ein passender Übungsvorschlag pro Spieler + Skill.
-function FoerderAssistent({ data, myTids, cl }){
+function FoerderAssistent({ data, myTids, cl, save, fire }){
   const t=TH(cl); const sport=cl?.sport||"fussball"; const axes=skillAxesFor(sport);
   const teams=(data.teams||[]).filter(tm=>myTids.includes(tm.id));
   const [tid,setTid]=useState(teams[0]?.id||"");
@@ -5567,9 +5614,12 @@ function FoerderAssistent({ data, myTids, cl }){
   const [step,setStep]=useState(1);
   const [two,setTwo]=useState(false);
   const [focusSkill,setFocusSkill]=useState(null);
+  const [manualInd,setManualInd]=useState(null);   // Set<id> | null (=auto)
   const [selPid,setSelPid]=useState(null);
-  const [selSkill,setSelSkill]=useState(null);
+  const [selSkills,setSelSkills]=useState([]);       // Mehrfach-Auswahl
   const [openD,setOpenD]=useState(null);
+  const [station,setStation]=useState(null);
+  const [kidLang,setKidLang]=useState(false);
 
   const ratedVals=p=>axes.map(a=>p.skills?.[a]).filter(v=>typeof v==="number"&&v>0);
   const avgOf=p=>{const v=ratedVals(p);return v.length?Math.round(v.reduce((a,b)=>a+b,0)/v.length*10)/10:null;};
@@ -5577,14 +5627,41 @@ function FoerderAssistent({ data, myTids, cl }){
   const teamAxisAvg=a=>{const vs=players.map(p=>p.skills?.[a]).filter(v=>typeof v==="number"&&v>0);return vs.length?vs.reduce((x,y)=>x+y,0)/vs.length:null;};
   const ratedAxes=axes.map(a=>({a,avg:teamAxisAvg(a)})).filter(x=>x.avg!=null).sort((x,y)=>x.avg-y.avg);
   const effFocus=focusSkill||ratedAxes[0]?.a||axes[0];
-  // Einzelförderung: schwächste Spieler im Fokus-Skill -> kleine Gruppe (Trainer B)
+  // Einzelförderung: schwächste Spieler im Fokus-Skill -> kleine Gruppe (Trainer B), manuell anpassbar
   const ranked=players.filter(p=>typeof p.skills?.[effFocus]==="number"&&p.skills[effFocus]>0).sort((a,b)=>a.skills[effFocus]-b.skills[effFocus]);
   const nInd=Math.min(4,Math.max(1,Math.round(players.length/3)));
-  const indGroup=ranked.slice(0,nInd);
+  const autoInd=ranked.slice(0,nInd);
+  const indGroup = manualInd ? players.filter(p=>manualInd.has(p.id)) : autoInd;
   const mainGroup=players.filter(p=>!indGroup.some(x=>x.id===p.id));
+  const toggleInd=p=>{ const base=new Set(manualInd?[...manualInd]:autoInd.map(x=>x.id)); base.has(p.id)?base.delete(p.id):base.add(p.id); setManualInd(base); };
   const selPlayer=players.find(p=>p.id===selPid)||indGroup[0]||players[0]||null;
-  const effSelSkill=selSkill||(selPlayer&&weakOf(selPlayer)?.a)||effFocus;
+  const effSkills=selSkills.length?selSkills:[(selPlayer&&weakOf(selPlayer)?.a)||effFocus];
+  const effSelSkill=effSkills[0];
+  const toggleSkill=a=>setSelSkills(cur=>cur.includes(a)?cur.filter(x=>x!==a):[...cur,a]);
   const suggestions=suggestDrillsForSkill(effSelSkill,cat,4);
+
+  // Komplette Förderstation bauen: Aufwärmen + je Schwerpunkt eine Übung + Abschluss-Spiel.
+  const buildStation=()=>{
+    const inCat=d=>!cat||(d.cats||[]).includes(cat);
+    const used=new Set(); const blocks=[];
+    const take=(d,phase)=>{ if(d&&!used.has(d.id)){used.add(d.id);blocks.push({phase,d});} };
+    take(DRILL_LIB.filter(d=>d.focus==="aufwärmen"&&inCat(d)&&(d.axes||[]).includes(effSkills[0]))[0]||DRILL_LIB.filter(d=>d.focus==="aufwärmen"&&inCat(d))[0],"Aufwärmen");
+    effSkills.forEach(s=>take(suggestDrillsForSkill(s,cat,6).map(x=>x.d).find(d=>!used.has(d.id)),"Förderung: "+s));
+    take(DRILL_LIB.filter(d=>d.focus==="spielform"&&inCat(d)&&!used.has(d.id))[0],"Abschluss-Spiel");
+    setStation(blocks);
+  };
+  const stationMins=()=>(station||[]).reduce((a,b)=>a+(b.d.min||0),0);
+  const today=now();
+  const nextTraining=(data.events||[]).filter(e=>e.tid===tid&&e.type==="training"&&e.date>=today).sort((a,b)=>(a.date+(a.time||"")).localeCompare(b.date+(b.time||"")))[0]||null;
+  const stationText=()=>!station?"":["FÖRDERSTATION"+(cat?" – "+cat:"")+" (ca. "+stationMins()+" Min)","Schwerpunkt: "+effSkills.join(", "),"",...station.map(b=>`• [${b.phase}] ${b.d.title} (${b.d.min} Min)\n  ${(kidLang&&b.d.kids)||b.d.desc||""}${b.d.coach?"\n  Coaching: "+b.d.coach:""}`)].join("\n");
+  const adoptStation=()=>{
+    if(!station) return;
+    if(save&&nextTraining){
+      const plan={cat,createdAt:now(),sessions:[{title:"Förderstation ("+effSkills.join("/")+")",blocks:station.map(b=>({phase:b.phase,id:b.d.id,title:b.d.title,min:b.d.min}))}]};
+      save({...data,events:(data.events||[]).map(e=>e.id===nextTraining.id?{...e,trainingPlan:plan}:e)});
+      fire&&fire("Förderstation an "+nextTraining.title+" ("+fmtD(nextTraining.date)+") gehängt");
+    } else { navigator.clipboard?.writeText(stationText()); fire&&fire("Förderstation kopiert"); }
+  };
 
   const Bar=({v})=>(<div style={{display:"flex",gap:2}}>{[1,2,3,4,5].map(i=><div key={i} style={{width:8,height:8,borderRadius:2,background:i<=v?t.p:"#e2e8f0"}}/>)}</div>);
   const StepDot=({n,label})=>(<div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,flex:1}}><div style={{width:26,height:26,borderRadius:"50%",background:step>=n?t.p:"#e2e8f0",color:step>=n?"#fff":"#94a3b8",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:13}}>{n}</div><span style={{fontSize:10,fontWeight:700,color:step===n?t.p:"#94a3b8",textAlign:"center"}}>{label}</span></div>);
@@ -5647,17 +5724,23 @@ function FoerderAssistent({ data, myTids, cl }){
             <p style={{fontSize:11,color:"#94a3b8",marginTop:6}}>Vorausgewählt: größte Förderlücke des Teams.</p>
           </div>
           {two?(
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-              <div style={{background:"#fff",border:"2px solid #fca5a5",borderRadius:14,padding:"12px"}}>
-                <div style={{fontWeight:800,color:"#dc2626",fontSize:13,marginBottom:8}}>Einzelförderung · Trainer B <span style={{color:"#94a3b8",fontWeight:600}}>({indGroup.length})</span></div>
-                {indGroup.map(p=><div key={p.id} style={{display:"flex",alignItems:"center",gap:7,marginBottom:6}}><Av name={p.name} sz={22}/><span style={{flex:1,minWidth:0,fontSize:12.5,fontWeight:600,color:"#334155",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span><span style={{fontSize:11,fontWeight:800,color:"#dc2626"}}>{p.skills[effFocus]}/5</span></div>)}
-                <p style={{fontSize:10.5,color:"#94a3b8",marginTop:4}}>Schwächste {indGroup.length} in {effFocus} – gezielte Übung in Schritt 3.</p>
+            <>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+                <span style={{fontSize:11.5,color:"#94a3b8"}}>Tippe einen Spieler, um ihn zwischen den Gruppen zu verschieben.</span>
+                {manualInd&&<button onClick={()=>setManualInd(null)} style={{background:"#f1f5f9",border:"none",borderRadius:9,padding:"5px 10px",color:"#475569",fontSize:11.5,fontWeight:800,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>↺ Auto</button>}
               </div>
-              <div style={{background:"#fff",border:`2px solid ${t.p}`,borderRadius:14,padding:"12px"}}>
-                <div style={{fontWeight:800,color:t.p,fontSize:13,marginBottom:8}}>Hauptgruppe · Trainer A <span style={{color:"#94a3b8",fontWeight:600}}>({mainGroup.length})</span></div>
-                {mainGroup.map(p=><div key={p.id} style={{display:"flex",alignItems:"center",gap:7,marginBottom:6}}><Av name={p.name} sz={22}/><span style={{flex:1,minWidth:0,fontSize:12.5,fontWeight:600,color:"#334155",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span></div>)}
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                <div style={{background:"#fff",border:"2px solid #fca5a5",borderRadius:14,padding:"12px"}}>
+                  <div style={{fontWeight:800,color:"#dc2626",fontSize:13,marginBottom:8}}>Einzelförderung · Trainer B <span style={{color:"#94a3b8",fontWeight:600}}>({indGroup.length})</span></div>
+                  {indGroup.length===0&&<p style={{fontSize:11.5,color:"#cbd5e1"}}>Niemand – tippe rechts einen Spieler an.</p>}
+                  {indGroup.map(p=><button key={p.id} onClick={()=>toggleInd(p)} style={{display:"flex",alignItems:"center",gap:7,marginBottom:6,width:"100%",background:"none",border:"none",padding:0,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}><Av name={p.name} sz={22}/><span style={{flex:1,minWidth:0,fontSize:12.5,fontWeight:600,color:"#334155",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>{typeof p.skills?.[effFocus]==="number"&&<span style={{fontSize:11,fontWeight:800,color:"#dc2626"}}>{p.skills[effFocus]}/5</span>}<span style={{color:"#cbd5e1",fontSize:14}}>→</span></button>)}
+                </div>
+                <div style={{background:"#fff",border:`2px solid ${t.p}`,borderRadius:14,padding:"12px"}}>
+                  <div style={{fontWeight:800,color:t.p,fontSize:13,marginBottom:8}}>Hauptgruppe · Trainer A <span style={{color:"#94a3b8",fontWeight:600}}>({mainGroup.length})</span></div>
+                  {mainGroup.map(p=><button key={p.id} onClick={()=>toggleInd(p)} style={{display:"flex",alignItems:"center",gap:7,marginBottom:6,width:"100%",background:"none",border:"none",padding:0,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}><span style={{color:"#cbd5e1",fontSize:14}}>←</span><Av name={p.name} sz={22}/><span style={{flex:1,minWidth:0,fontSize:12.5,fontWeight:600,color:"#334155",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span></button>)}
+                </div>
               </div>
-            </div>
+            </>
           ):(
             <div style={{background:"#f8fafc",border:"1.5px dashed #e2e8f0",borderRadius:14,padding:"16px",fontSize:13,color:"#64748b",lineHeight:1.5}}>Als einzelner Trainer hältst du die Mannschaft zusammen. In Schritt 3 bekommst du pro Spieler den passenden Übungs-Vorschlag im gewählten Schwerpunkt – ideal für eine Förderstation im normalen Training.</div>
           )}
@@ -5670,18 +5753,18 @@ function FoerderAssistent({ data, myTids, cl }){
           <div style={{marginBottom:12}}>
             <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.3,marginBottom:8}}>SPIELER WÄHLEN</div>
             <div style={{display:"flex",gap:7,overflowX:"auto",scrollbarWidth:"none",paddingBottom:2}}>
-              {(two&&indGroup.length?indGroup:players).map(p=>(<button key={p.id} onClick={()=>{setSelPid(p.id);setSelSkill(null);}} style={{flexShrink:0,display:"flex",alignItems:"center",gap:6,padding:"7px 12px",borderRadius:99,border:`1.5px solid ${selPlayer?.id===p.id?t.p:"#e2e8f0"}`,background:selPlayer?.id===p.id?t.p+"12":"#fff",color:selPlayer?.id===p.id?t.p:"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}><Av name={p.name} sz={20}/>{p.name.split(" ")[0]}</button>))}
+              {(two&&indGroup.length?indGroup:players).map(p=>(<button key={p.id} onClick={()=>{setSelPid(p.id);setSelSkills([]);setStation(null);}} style={{flexShrink:0,display:"flex",alignItems:"center",gap:6,padding:"7px 12px",borderRadius:99,border:`1.5px solid ${selPlayer?.id===p.id?t.p:"#e2e8f0"}`,background:selPlayer?.id===p.id?t.p+"12":"#fff",color:selPlayer?.id===p.id?t.p:"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}><Av name={p.name} sz={20}/>{p.name.split(" ")[0]}</button>))}
             </div>
           </div>
           {selPlayer&&<div style={{marginBottom:12}}>
-            <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.3,marginBottom:8}}>SKILL FÖRDERN <span style={{color:"#cbd5e1"}}>· {selPlayer.name}</span></div>
+            <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.3,marginBottom:8}}>SKILLS FÖRDERN <span style={{color:"#cbd5e1"}}>· {selPlayer.name} · mehrere wählbar</span></div>
             <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-              {axes.map(a=>{const v=selPlayer.skills?.[a];return (<button key={a} onClick={()=>setSelSkill(a)} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 11px",borderRadius:10,border:`1.5px solid ${effSelSkill===a?t.p:"#e2e8f0"}`,background:effSelSkill===a?t.p+"12":"#fff",color:effSelSkill===a?t.p:"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{a}{typeof v==="number"&&v>0&&<span style={{fontSize:10.5,color:"#94a3b8",fontWeight:800}}>{v}/5</span>}</button>);})}
+              {axes.map(a=>{const v=selPlayer.skills?.[a];const on=effSkills.includes(a);return (<button key={a} onClick={()=>toggleSkill(a)} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 11px",borderRadius:10,border:`1.5px solid ${on?t.p:"#e2e8f0"}`,background:on?t.p+"12":"#fff",color:on?t.p:"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{on?"✓ ":""}{a}{typeof v==="number"&&v>0&&<span style={{fontSize:10.5,color:"#94a3b8",fontWeight:800}}>{v}/5</span>}</button>);})}
             </div>
           </div>}
           <div style={{background:`${t.p}0c`,border:`1.5px solid ${t.p}30`,borderRadius:12,padding:"11px 13px",marginBottom:12}}>
             <div style={{fontSize:11,fontWeight:800,color:t.p,letterSpacing:.3}}>VORSCHLAG FÜR {effSelSkill.toUpperCase()}</div>
-            <div style={{fontSize:12,color:"#64748b",marginTop:2}}>Passende Übungen aus der Bibliothek{cat?` (${cat})`:""}, beste zuerst.</div>
+            <div style={{fontSize:12,color:"#64748b",marginTop:2}}>Passende Übungen aus der Bibliothek{cat?` (${cat})`:""}, beste zuerst.{effSkills.length>1?" Weitere Skills fließen in die Förderstation unten ein.":""}</div>
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:9}}>
             {suggestions.length===0&&<div style={{color:"#94a3b8",fontSize:13,padding:"18px",textAlign:"center"}}>Keine passende Übung für diesen Skill gefunden.</div>}
@@ -5702,6 +5785,26 @@ function FoerderAssistent({ data, myTids, cl }){
                 </div>}
               </div>
             );})}
+          </div>
+
+          <div style={{marginTop:14,background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:14,padding:"14px"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,marginBottom:8}}>
+              <div style={{fontSize:13.5,fontWeight:800,color:"#0f172a"}}>⚡ Komplette Förderstation</div>
+              <label style={{display:"flex",alignItems:"center",gap:6,fontSize:11.5,color:"#64748b",fontWeight:700,cursor:"pointer"}}><input type="checkbox" checked={kidLang} onChange={e=>setKidLang(e.target.checked)}/>Kinder-Sprache</label>
+            </div>
+            <p style={{fontSize:12,color:"#94a3b8",marginBottom:10,lineHeight:1.5}}>Baut aus den gewählten Skills ({effSkills.join(", ")}) eine fertige Einheit: Aufwärmen + Förderübungen + Abschluss-Spiel.</p>
+            <button onClick={buildStation} style={{width:"100%",padding:"11px",borderRadius:11,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>Förderstation bauen</button>
+            {station&&<div style={{marginTop:12}}>
+              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6}}>ca. {stationMins()} Min</div>
+              {station.map((b,i)=>(<div key={i} style={{display:"flex",gap:9,padding:"8px 0",borderTop:i?"1px solid #f1f5f9":"none"}}>
+                <span style={{flexShrink:0,fontSize:10.5,fontWeight:800,color:t.p,width:82}}>{b.phase}</span>
+                <div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:700,color:"#0f172a"}}>{b.d.title} <span style={{color:"#94a3b8",fontWeight:600,fontSize:11.5}}>· {b.d.min} Min</span></div><div style={{fontSize:11.5,color:"#64748b",lineHeight:1.45,marginTop:2}}>{(kidLang&&b.d.kids)||b.d.desc}</div></div>
+              </div>))}
+              <div style={{display:"flex",gap:8,marginTop:12,flexWrap:"wrap"}}>
+                <button onClick={adoptStation} style={{flex:"1 1 auto",padding:"10px 14px",borderRadius:10,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{nextTraining?`An nächstes Training hängen (${fmtD(nextTraining.date)})`:"Kopieren"}</button>
+                <button onClick={()=>{navigator.clipboard?.writeText(stationText());fire&&fire("Förderstation kopiert");}} style={{flexShrink:0,padding:"10px 14px",borderRadius:10,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Kopieren</button>
+              </div>
+            </div>}
           </div>
           {navBtns}
         </div>
@@ -5833,7 +5936,7 @@ function TrainingPlanner({ data, myTids, cl, save, fire }) {
     {id:"torschuss",label:"Torschuss"},{id:"kondition",label:"Kondition"},
   ];
 
-  if(view==="foerder") return (<div><ViewTabs/><FoerderAssistent data={data} myTids={myTids} cl={cl}/></div>);
+  if(view==="foerder") return (<div><ViewTabs/><FoerderAssistent data={data} myTids={myTids} cl={cl} save={save} fire={fire}/></div>);
 
   return (
     <div>
@@ -6024,7 +6127,7 @@ function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false, initial
       {subTab==="insights"   && <TeamInsights data={data} myTids={myTids} cl={cl}/>}
       {subTab==="analysis"   && <TeamSkillAnalysis data={data} myTids={myTids} cl={cl}/>}
       {subTab==="ziele"      && <TrainerTrainingZiele data={data} cid={cl?.id} myTids={myTids} save={save} fire={fire} cl={cl}/>}
-      {subTab==="drills"     && <DrillLibrary cl={cl}/>}
+      {subTab==="drills"     && <DrillLibrary cl={cl} data={data} myTids={myTids} save={save} fire={fire}/>}
       {subTab==="planner"    && <TrainingPlanner data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
       {subTab==="trainings"  && <TrainingsLibrary data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
       {subTab==="taktik"     && <TacticBoard data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
@@ -14657,6 +14760,132 @@ const DRILL_LIB = [
     desc:"Mehrere Teams, kurze Spiele 4 gegen 4 auf zwei Tore mit Torhütern im Turniermodus. Krönung einer Trainingseinheit.",
     coach:"Faire Teams, kurze intensive Spiele, alle Themen anwenden lassen.", field:"full",
     el:[{type:"goal",x:4,y:50,w:18},{type:"goal",x:96,y:50,w:18},{type:"player",x:28,y:38,n:1},{type:"player",x:38,y:62,n:2},{type:"player",x:50,y:48,n:3},{type:"opp",x:62,y:42,n:1},{type:"opp",x:70,y:64,n:2},{type:"opp",x:55,y:70,n:3},{type:"ball",x:50,y:48}] },
+  // ==== KINDER & SPASS (Bambini / G / F / E) – große Auswahl spielerischer Übungen ====
+  // ---- Aufwärmen & Fangspiele ----
+  { id:"d81", focus:"aufwärmen", axes:["Schnelligkeit","Teamplay"], title:"Versteinerte Hexe", min:8, players:"6+", cats:["Bambinis","G-Jugend","F-Jugend"],
+    desc:"Eine Hexe fängt, wer berührt wird, bleibt wie versteinert stehen. Mitspieler befreien durch Durchkriechen unter den Beinen.",
+    kids:"Lauf vor der Hexe weg! Wenn sie dich tippt, bist du versteinert und musst still stehen. Erst wenn ein Freund unter deinen Beinen durchkrabbelt, darfst du wieder mitlaufen.",
+    coach:"Mehrere Hexen bei vielen Kindern. Auf Tempo und Ausweichen achten.", field:"half",
+    el:[{type:"opp",x:50,y:45,n:1,label:"Hexe"},{type:"player",x:25,y:30,n:1},{type:"player",x:70,y:35,n:2},{type:"player",x:40,y:70,n:3},{type:"runArrow",x1:25,y1:30,x2:18,y2:55}] },
+  { id:"d82", focus:"aufwärmen", axes:["Schnelligkeit","Ausdauer"], title:"Feuer – Wasser – Blitz", min:8, players:"beliebig", cats:["G-Jugend","F-Jugend","E-Jugend"],
+    desc:"Kinder dribbeln frei. Auf Zuruf: „Feuer“ = zum Zaun laufen, „Wasser“ = auf den Ball setzen, „Blitz“ = schnell hinlegen. Mit Ball am Fuß.",
+    kids:"Dribbel frei umher und hör gut zu! Bei „Feuer“ rennst du zum Rand, bei „Wasser“ setzt du dich auf den Ball, bei „Blitz“ legst du dich blitzschnell hin. Wer ist am schnellsten?",
+    coach:"Kommandos mischen, Tempo steigern. Ball bleibt immer in der Nähe.", field:"half",
+    el:[{type:"player",x:30,y:40,n:1},{type:"ball",x:30,y:43},{type:"player",x:60,y:55,n:2},{type:"ball",x:60,y:58},{type:"player",x:45,y:70,n:3},{type:"ball",x:45,y:73}] },
+  { id:"d83", focus:"aufwärmen", axes:["Schnelligkeit","Teamplay"], title:"Hütchen-Klau", min:8, players:"6+", cats:["G-Jugend","F-Jugend","E-Jugend"],
+    desc:"Zwei Teams, in der Mitte viele Hütchen. Jedes Kind holt einzeln ein Hütchen in die eigene Ecke. Welches Team hat am Ende mehr?",
+    kids:"In der Mitte liegen viele Hütchen. Renn los, schnapp dir EIN Hütchen und bring es in deine Ecke. Immer nur eins! Welches Team hat zum Schluss die meisten?",
+    coach:"Später mit Ball am Fuß holen. Auf faires Laufen achten.", field:"half",
+    el:[{type:"cone",x:48,y:48},{type:"cone",x:52,y:52},{type:"cone",x:50,y:45},{type:"player",x:20,y:50,n:1},{type:"player",x:80,y:50,n:2},{type:"runArrow",x1:24,y1:50,x2:46,y2:49},{type:"runArrow",x1:76,y1:50,x2:54,y2:51}] },
+  { id:"d84", focus:"aufwärmen", axes:["Schnelligkeit"], title:"Komm mit – lauf weg", min:6, players:"6+", cats:["F-Jugend","E-Jugend","D-Jugend"],
+    desc:"Paare stehen im Kreis. Trainer ruft „komm mit“ (hinterherlaufen) oder „lauf weg“ (wegrennen) – schnelle Reaktion und Antritt.",
+    kids:"Du stehst mit einem Partner da. Wenn der Trainer „komm mit“ ruft, jagst du ihm hinterher. Bei „lauf weg“ rennst du schnell weg, bevor er dich kriegt!",
+    coach:"Klares Signal, kurze Sprintwege, Seiten tauschen.", field:"half",
+    el:[{type:"player",x:40,y:50,n:1},{type:"player",x:50,y:50,n:2},{type:"runArrow",x1:50,y1:50,x2:70,y2:50}] },
+  { id:"d85", focus:"aufwärmen", axes:["Teamplay","Schnelligkeit"], title:"Drachenschwanz fangen", min:8, players:"6+", cats:["G-Jugend","F-Jugend","E-Jugend"],
+    desc:"In kleinen Ketten (3-4 Kinder) hält sich der Drache an den Schultern. Der Kopf versucht, den letzten („Schwanz“) zu fangen, ohne dass die Kette reißt.",
+    kids:"Haltet euch in einer Reihe fest – ihr seid ein Drache! Der Vorderste will den Letzten am Schwanz fangen. Bleibt zusammen, lasst nicht los!",
+    coach:"Kurze Ketten, viel Drehung. Auf Zusammenhalt achten.", field:"half",
+    el:[{type:"player",x:40,y:40,n:1},{type:"player",x:48,y:48,n:2},{type:"player",x:56,y:56,n:3},{type:"runArrow",x1:40,y1:40,x2:58,y2:58}] },
+  // ---- Ballgewöhnung & Technik (kindgerecht) ----
+  { id:"d86", focus:"technik", axes:["Technik"], title:"Ballschule: Sohle tippen", min:8, players:"beliebig", cats:["Bambinis","G-Jugend","F-Jugend"],
+    desc:"Jedes Kind mit Ball. Abwechselnd mit der Sohle auf den Ball tippen, dann kleine Rollbewegungen vor/zurück und seitlich.",
+    kids:"Jeder hat einen Ball! Tipp ganz sanft mit der Schuh-Sohle oben auf den Ball – links, rechts, links, rechts. Wie schnell schaffst du es, ohne dass der Ball wegrollt?",
+    coach:"Viele Ballkontakte, lockerer Fuß, Blick auch mal hoch.", field:"half",
+    el:[{type:"player",x:35,y:45,n:1},{type:"ball",x:35,y:49},{type:"player",x:60,y:55,n:2},{type:"ball",x:60,y:59}] },
+  { id:"d87", focus:"technik", axes:["Technik","Schnelligkeit"], title:"Dribbel-Zoo", min:10, players:"beliebig", cats:["Bambinis","G-Jugend","F-Jugend"],
+    desc:"Frei dribbeln und auf Zuruf eines Tiers die Bewegung nachmachen: Schlange (eng am Ball), Hase (kleine Sprünge), Elefant (langsam, große Schritte).",
+    kids:"Dein Ball ist dein Tier! Bei „Schlange“ schlängelst du eng am Ball, beim „Hasen“ hüpfst du, beim „Elefanten“ stapfst du langsam. Welches Tier bist du am liebsten?",
+    coach:"Tiere = Tempo-/Richtungswechsel. Viele Kontakte, Spaß vor Technik.", field:"half",
+    el:[{type:"player",x:30,y:40,n:1},{type:"ball",x:31,y:43},{type:"dribbleArrow",x1:31,y1:43,x2:60,y2:60,ball:true}] },
+  { id:"d88", focus:"technik", axes:["Technik","Übersicht"], title:"Dribbeln durch den Zauberwald", min:10, players:"beliebig", cats:["G-Jugend","F-Jugend","E-Jugend"],
+    desc:"Viele Hütchen-Tore (Bäume) im Feld verteilt. Die Kinder dribbeln und durchqueren möglichst viele kleine Tore. Wer schafft 10?",
+    kids:"Die Hütchen sind Zauberbäume. Dribbel mit deinem Ball durch die kleinen Tore zwischen den Bäumen. Zähl laut mit – schaffst du 10 Tore?",
+    coach:"Kopf hoch zum freien Tor, kleine Berührungen, beide Füße.", field:"half",
+    el:[{type:"cone",x:30,y:30},{type:"cone",x:38,y:30},{type:"cone",x:60,y:45},{type:"cone",x:68,y:45},{type:"cone",x:45,y:65},{type:"cone",x:53,y:65},{type:"player",x:20,y:75,n:1},{type:"ball",x:21,y:78},{type:"dribbleArrow",x1:21,y1:78,x2:34,y2:32,ball:true}] },
+  { id:"d89", focus:"technik", axes:["Technik","Teamplay"], title:"Roboter steuern", min:8, players:"2+", cats:["F-Jugend","E-Jugend"],
+    desc:"Ein Kind ist der „Roboter“ mit Ball, der Partner ruft Richtungen (links/rechts/stopp). Danach Rollen tauschen.",
+    kids:"Dein Partner ist ein Roboter mit Ball – DU steuerst ihn! Ruf „links“, „rechts“ oder „stopp“. Der Roboter hört nur auf dein Kommando. Dann seid ihr dran zu tauschen.",
+    coach:"Sanfte Kontakte, sofort auf Kommando reagieren, Blick hoch.", field:"half",
+    el:[{type:"player",x:45,y:55,n:1,label:"Robo"},{type:"ball",x:45,y:59},{type:"player",x:60,y:55,n:2},{type:"dribbleArrow",x1:45,y1:59,x2:35,y2:40,ball:true}] },
+  { id:"d90", focus:"technik", axes:["Technik"], title:"Pinguin-Watschelpass", min:8, players:"2+", cats:["Bambinis","G-Jugend","F-Jugend"],
+    desc:"Ball mit beiden Innenseiten führen wie ein Pinguin (Ball zwischen den Füßen), kleine Strecke watscheln, dann zum Partner passen.",
+    kids:"Klemm den Ball wie ein Pinguin sanft zwischen die Füße und watschel ein Stück. Dann schieb ihn deinem Freund zu. Watschel-watschel – nicht verlieren!",
+    coach:"Ganz kleine Kontakte, Ball nah am Körper, Spaß am Watscheln.", field:"half",
+    el:[{type:"player",x:35,y:55,n:1},{type:"ball",x:35,y:58},{type:"player",x:65,y:55,n:2},{type:"passArrow",x1:37,y1:58,x2:63,y2:56,ball:true}] },
+  { id:"d91", focus:"technik", axes:["Technik","Teamplay"], title:"Tunnel-Pass", min:10, players:"4+", cats:["G-Jugend","F-Jugend","E-Jugend"],
+    desc:"Partner steht breitbeinig (Tunnel). Der Passgeber muss den Ball flach durch den Tunnel spielen. Punkt für jeden Treffer.",
+    kids:"Dein Partner macht die Beine breit – das ist dein Tunnel! Schieb den Ball flach genau durch die Beine. Jeder Tunnel-Treffer gibt einen Punkt. Wie viele schaffst du?",
+    coach:"Innenseite, Ball flach und genau, Standbein zeigt zum Ziel.", field:"half",
+    el:[{type:"player",x:62,y:45,n:2,label:"Tunnel"},{type:"player",x:40,y:65,n:1},{type:"ball",x:40,y:68},{type:"passArrow",x1:41,y1:67,x2:61,y2:47,ball:true}] },
+  { id:"d92", focus:"technik", axes:["Technik","Schnelligkeit"], title:"Slalom-Schlange (Staffel)", min:10, players:"6+", cats:["G-Jugend","F-Jugend","E-Jugend"],
+    desc:"Zwei Teams als Staffel: mit Ball im Slalom um die Hütchen, am Ende zurückdribbeln und an den Nächsten übergeben.",
+    kids:"Dribbel wie eine Schlange um die Hütchen herum, komm zurück und übergib deinem Team-Freund den Ball. Wer ist als Team zuerst durch?",
+    coach:"Enge Kontakte am Hütchen, sauberes Übergeben, anfeuern erlaubt.", field:"half",
+    el:[{type:"cone",x:50,y:30},{type:"cone",x:50,y:45},{type:"cone",x:50,y:60},{type:"player",x:50,y:80,n:1},{type:"ball",x:48,y:78},{type:"dribbleArrow",x1:48,y1:78,x2:50,y2:28,ball:true}] },
+  // ---- Torschuss-Spiele ----
+  { id:"d93", focus:"torschuss", axes:["Abschluss","Technik"], title:"Dosen-Schießen", min:10, players:"2+", cats:["G-Jugend","F-Jugend","E-Jugend"],
+    desc:"Auf einer Bank/Stange stehen Hütchen („Dosen“). Aus kurzer Distanz mit dem Ball abschießen. Wie viele fallen?",
+    kids:"Auf der Linie stehen Hütchen-Dosen. Ziel genau und schieß sie mit dem Ball um! Jede umgefallene Dose ist ein Punkt. Triffst du alle?",
+    coach:"Innenseite oder Spann, ruhig zielen, kurze Distanz für Erfolg.", field:"half",
+    el:[{type:"cone",x:40,y:20},{type:"cone",x:50,y:20},{type:"cone",x:60,y:20},{type:"player",x:50,y:65,n:1},{type:"ball",x:48,y:62},{type:"passArrow",x1:48,y1:62,x2:50,y2:23,ball:true}] },
+  { id:"d94", focus:"torschuss", axes:["Abschluss","Zweikampf"], title:"Schatz verteidigen", min:12, players:"4+", cats:["F-Jugend","E-Jugend"],
+    desc:"In der Mitte ein „Schatz“ (Hütchen). Angreifer versuchen, den Schatz mit dem Ball zu treffen, ein Verteidiger blockt.",
+    kids:"In der Mitte liegt ein Schatz! Schieß den Ball so, dass du den Schatz triffst. Aber Achtung – ein Wächter passt auf. Findest du die Lücke?",
+    coach:"Zielgenauigkeit, Finten einbauen, Wächter aktiv verschieben.", field:"half",
+    el:[{type:"cone",x:50,y:45,color:"#f59e0b"},{type:"opp",x:50,y:58,n:1,label:"Wächter"},{type:"player",x:30,y:75,n:1},{type:"ball",x:30,y:78},{type:"player",x:70,y:75,n:2},{type:"passArrow",x1:30,y1:78,x2:48,y2:46,ball:true}] },
+  { id:"d95", focus:"torschuss", axes:["Abschluss","Übersicht"], title:"Tor-Lotto", min:12, players:"2+", cats:["F-Jugend","E-Jugend","D-Jugend"],
+    desc:"Das Tor ist in Zonen (Ecken = viele Punkte, Mitte = wenig). Der Trainer ruft eine Zahl, das Kind trifft die passende Zone.",
+    kids:"Das Tor ist ein Lottoschein: Ecken geben viele Punkte, die Mitte wenig. Triff genau die Ecke, die gerufen wird, und sammle Punkte!",
+    coach:"Zielen statt Ballern, beide Füße, Schuss aus dem Lauf.", field:"half",
+    el:[{type:"goal",x:50,y:4,w:20},{type:"zone",x:30,y:3,w:14,h:8,color:"#16a34a"},{type:"zone",x:56,y:3,w:14,h:8,color:"#16a34a"},{type:"player",x:50,y:55,n:1},{type:"ball",x:48,y:52},{type:"passArrow",x1:48,y1:52,x2:34,y2:7,ball:true}] },
+  { id:"d96", focus:"torschuss", axes:["Abschluss"], title:"Torwand-Schießen", min:10, players:"1+", cats:["F-Jugend","E-Jugend","D-Jugend"],
+    desc:"Zwei Reifen/Tore hängen im großen Tor. Reihum versuchen die Kinder, durch die kleinen Öffnungen zu treffen.",
+    kids:"Im großen Tor hängen zwei kleine Löcher. Schieß den Ball genau durch ein Loch – wie beim Sportstudio! Jeder Treffer wird laut bejubelt.",
+    coach:"Spannstoß, Ziel anvisieren, Erfolgserlebnisse schaffen.", field:"half",
+    el:[{type:"goal",x:50,y:4,w:22},{type:"zone",x:32,y:2,w:8,h:8,color:"#dc2626"},{type:"zone",x:60,y:2,w:8,h:8,color:"#dc2626"},{type:"player",x:50,y:60,n:1},{type:"ball",x:48,y:57},{type:"passArrow",x1:48,y1:57,x2:36,y2:6,ball:true}] },
+  // ---- Spielformen (klein & viel Ballkontakt) ----
+  { id:"d97", focus:"spielform", axes:["Teamplay","Abschluss"], title:"Funino 2-gegen-2 (4 Tore)", min:18, players:"4+", cats:["Bambinis","G-Jugend","F-Jugend"],
+    desc:"Kleines Feld, jedes Team verteidigt zwei Minitore und greift auf zwei an. Sehr viele Ballkontakte und Tore für jedes Kind.",
+    kids:"2 gegen 2 auf vier kleine Tore. Es gibt keinen Torwart – einfach Tore schießen und verteidigen! Ganz viele Bälle, ganz viel Spaß.",
+    coach:"Kleine Felder, kurze Spiele, oft wechseln. Kein Coaching-Stopp.", field:"half",
+    el:[{type:"goal",x:25,y:4,w:10},{type:"goal",x:75,y:4,w:10},{type:"goal",x:25,y:96,w:10},{type:"goal",x:75,y:96,w:10},{type:"player",x:40,y:40,n:1},{type:"player",x:60,y:60,n:2},{type:"opp",x:60,y:40,n:1},{type:"opp",x:40,y:60,n:2},{type:"ball",x:50,y:50}] },
+  { id:"d98", focus:"spielform", axes:["Teamplay","Übersicht"], title:"Linienfußball", min:15, players:"6+", cats:["F-Jugend","E-Jugend"],
+    desc:"Statt Toren gibt es Grundlinien. Ein Tor zählt, wenn der Ball kontrolliert auf der gegnerischen Linie gestoppt wird.",
+    kids:"Es gibt keine Tore – die ganze Linie ist das Tor! Dribbel oder pass den Ball über die Linie des anderen Teams und stopp ihn dort. Tor!",
+    coach:"Breite nutzen, Köpfe hoch, viele Abschlussmöglichkeiten.", field:"half",
+    el:[{type:"player",x:35,y:45,n:1},{type:"player",x:50,y:60,n:2},{type:"opp",x:55,y:45,n:1},{type:"opp",x:40,y:62,n:2},{type:"ball",x:48,y:58},{type:"runArrow",x1:48,y1:58,x2:50,y2:10}] },
+  { id:"d99", focus:"spielform", axes:["Schnelligkeit","Technik"], title:"Alle gegen den Trainer", min:10, players:"4+", cats:["Bambinis","G-Jugend","F-Jugend"],
+    desc:"Alle Kinder mit Ball, der Trainer versucht, die Bälle wegzuschießen. Wer noch einen Ball hat, hat gewonnen.",
+    kids:"Jeder hat einen Ball – und der Trainer will sie alle klauen! Beschütze deinen Ball, dribbel weg vom Trainer. Wer behält seinen Ball am längsten?",
+    coach:"Ball abschirmen, wegdrehen, Tempo. Trainer dosiert den Druck.", field:"half",
+    el:[{type:"opp",x:50,y:48,n:1,label:"Trainer"},{type:"player",x:25,y:30,n:1},{type:"ball",x:25,y:33},{type:"player",x:72,y:65,n:2},{type:"ball",x:72,y:68},{type:"dribbleArrow",x1:25,y1:33,x2:18,y2:55,ball:true}] },
+  { id:"d100", focus:"spielform", axes:["Technik","Teamplay"], title:"Schweinchen in der Mitte", min:10, players:"4+", cats:["F-Jugend","E-Jugend","D-Jugend"],
+    desc:"Im Kreis zugespielt, in der Mitte versucht ein Kind, den Ball zu erobern. Wer den Fehlpass spielt, geht in die Mitte.",
+    kids:"Spielt euch im Kreis den Ball zu – in der Mitte steht das „Schweinchen“ und will den Ball fangen. Pass genau, damit du nicht selbst in die Mitte musst!",
+    coach:"Flache, genaue Pässe, vor der Annahme schon schauen.", field:"half",
+    el:[{type:"player",x:30,y:30,n:1},{type:"player",x:70,y:30,n:2},{type:"player",x:70,y:70,n:3},{type:"player",x:30,y:70,n:4},{type:"opp",x:50,y:50,n:1},{type:"ball",x:30,y:30},{type:"passArrow",x1:32,y1:31,x2:68,y2:31,ball:true}] },
+  // ---- Kondition & Koordination spielerisch ----
+  { id:"d101", focus:"kondition", axes:["Schnelligkeit","Ausdauer"], title:"Tierlauf-Staffel", min:10, players:"6+", cats:["Bambinis","G-Jugend","F-Jugend"],
+    desc:"Staffel über kurze Distanz mit Tier-Fortbewegung: Krebsgang, Froschsprünge, Bärengang. Spielerische Kräftigung & Koordination.",
+    kids:"Lauf-Staffel mal anders: als Krebs rückwärts, als Frosch mit Sprüngen, als Bär auf Händen und Füßen. Welches Team-Tier ist zuerst durch?",
+    coach:"Saubere Bewegungen, kurze Wege, viel Lachen erlaubt.", field:"half",
+    el:[{type:"cone",x:50,y:25},{type:"player",x:50,y:80,n:1},{type:"runArrow",x1:50,y1:78,x2:50,y2:28}] },
+  { id:"d102", focus:"kondition", axes:["Schnelligkeit"], title:"Hampelmann-Parcours", min:10, players:"beliebig", cats:["G-Jugend","F-Jugend","E-Jugend"],
+    desc:"Parcours mit Stationen: Hampelmänner, durch die Leiter, über Hütchen springen, kurzer Sprint. Koordination & Tempo.",
+    kids:"Lauf von Station zu Station: erst fünf Hampelmänner, dann durch die Leiter tippeln, über die Hütchen hüpfen und am Ende ein kleiner Sprint. Schaff die ganze Runde!",
+    coach:"Technik vor Tempo, kurze Pausen, alle in Bewegung halten.", field:"half",
+    el:[{type:"cone",x:30,y:30},{type:"cone",x:50,y:50},{type:"cone",x:70,y:30},{type:"player",x:20,y:70,n:1},{type:"runArrow",x1:20,y1:70,x2:30,y2:34},{type:"runArrow",x1:34,y1:30,x2:50,y2:48}] },
+  { id:"d103", focus:"kondition", axes:["Technik","Schnelligkeit"], title:"Inselhüpfen mit Ball", min:10, players:"beliebig", cats:["Bambinis","G-Jugend","F-Jugend"],
+    desc:"Reifen/Hütchen sind „Inseln“. Mit Ball am Fuß von Insel zu Insel dribbeln, im „Wasser“ (dazwischen) nicht stehen bleiben.",
+    kids:"Die Reifen sind kleine Inseln im Meer. Dribbel deinen Ball von Insel zu Insel – aber bleib nicht im Wasser stehen, sonst kommt der Hai! Schnell zur nächsten Insel.",
+    coach:"Kontrolle vor Tempo, Ball nah führen, Kopf hoch zur nächsten Insel.", field:"half",
+    el:[{type:"zone",x:25,y:25,w:14,h:14,color:"#0891b2"},{type:"zone",x:55,y:45,w:14,h:14,color:"#0891b2"},{type:"zone",x:35,y:68,w:14,h:14,color:"#0891b2"},{type:"player",x:20,y:80,n:1},{type:"ball",x:21,y:83},{type:"dribbleArrow",x1:21,y1:83,x2:30,y2:30,ball:true}] },
+  { id:"d104", focus:"aufwärmen", axes:["Teamplay","Schnelligkeit"], title:"Ampelspiel mit Ball", min:8, players:"beliebig", cats:["Bambinis","G-Jugend","F-Jugend"],
+    desc:"Grün = dribbeln, Gelb = langsam mit Sohle rollen, Rot = Fuß auf den Ball und stoppen. Reaktion und Ballkontrolle.",
+    kids:"Wir spielen Ampel mit dem Ball! Grün heißt dribbeln, Gelb ganz langsam rollen, Rot sofort den Fuß auf den Ball und stehen bleiben. Pass gut auf die Farben auf!",
+    coach:"Farben/Tempo variieren, viele Ballkontakte, klare Signale.", field:"half",
+    el:[{type:"player",x:35,y:45,n:1},{type:"ball",x:35,y:48},{type:"player",x:62,y:60,n:2},{type:"ball",x:62,y:63},{type:"dribbleArrow",x1:35,y1:48,x2:55,y2:40,ball:true}] },
 ];
 const drillsByFocus = f => DRILL_LIB.filter(d=>d.focus===f);
 // Übungen, die eine bestimmte Skill-Achse trainieren (für Förderlücken-Vorschläge)
