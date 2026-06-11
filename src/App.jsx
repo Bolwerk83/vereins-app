@@ -1428,6 +1428,19 @@ function InfoHint({ text, col="#64748b" }){
 // ----------------------------------------------------------------
 const isActive = (entity) => !entity ? false : entity.active !== false;
 
+// Login-Modus je Mannschaft: melden sich die Spieler selbst an oder die Eltern?
+// "auto" leitet es vom Alter ab (Erwachsene/ältere Jugend = Spieler selbst),
+// sonst Vereins-Standard (seniorsMode). "players"/"parents" überschreiben.
+const SELFLOGIN_CATS = new Set(["Senioren","Alt-Herren","Damen","Herren","Frauen","A-Jugend","B-Jugend"]);
+function teamSelfLogin(tm, cs){
+  const m = tm && tm.loginMode;
+  if(m==="players") return true;
+  if(m==="parents") return false;
+  const cat=(tm&&(tm.cat||tm.name))||"";
+  if(SELFLOGIN_CATS.has(cat)) return true;
+  return !!(cs && cs.seniorsMode);
+}
+
 // ----------------------------------------------------------------
 // Event-Timing & Vote-Lock.
 //   eventStart(ev)      → Date-Objekt
@@ -4348,10 +4361,13 @@ function ManageTeams({ data, save, fire, cl }) {
   const [cat,setCat]   = useState(CATS[0]||"E-Jugend");
   const [pwd,setPwd]   = useState("");
   const [strength,setStrength] = useState(1);
+  const [loginMode,setLoginMode] = useState("auto");
   const [editId,setEditId] = useState(null);
   const [editName,setEditName] = useState("");
   const [showFmt,setShowFmt] = useState(null);
   const setTeamStrength = (id,s) => save({...data, teams:(data.teams||[]).map(tm=>tm.id===id?{...tm,strength:s}:tm)});
+  const setTeamLogin = (id,m) => save({...data, teams:(data.teams||[]).map(tm=>tm.id===id?{...tm,loginMode:m}:tm)});
+  const LOGIN_OPTS=[["auto","Automatisch"],["parents","Eltern"],["players","Spieler"]];
 
   const addTeam = () => {
     const nm = name.trim(); if(!nm) return;
@@ -4360,7 +4376,7 @@ function ManageTeams({ data, save, fire, cl }) {
       icon: nm.slice(0,2).toUpperCase(),
       col: TEAM_COLORS[teams.length % TEAM_COLORS.length],
       pub: true, pwd: hashPw((pwd||"team").trim()),
-      cat, years: CAT_YEARS[cat]||"", strength,
+      cat, years: CAT_YEARS[cat]||"", strength, loginMode,
     };
     save({...data, teams:[...(data.teams||[]), team]});
     fire&&fire("Mannschaft \""+nm+"\" angelegt");
@@ -4403,6 +4419,16 @@ function ManageTeams({ data, save, fire, cl }) {
           {TEAM_STRENGTHS.map(s=>(
             <button key={s.id} type="button" onClick={()=>setStrength(s.id)} title={s.desc}
               style={{flex:1,padding:"9px 6px",borderRadius:10,border:`2px solid ${strength===s.id?s.col:"#e2e8f0"}`,background:strength===s.id?s.col+"15":"#fff",color:strength===s.id?s.col:"#475569",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{s.label}</button>
+          ))}
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+          <span style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.4}}>ANMELDUNG</span>
+          <InfoHint text={"Wer meldet sich an / stimmt ab? 'Eltern' = Eltern-Login (für Kinder), 'Spieler' = die Spieler selbst. 'Automatisch' richtet sich nach dem Alter (ältere Jugend/Erwachsene = Spieler selbst)."}/>
+        </div>
+        <div style={{display:"flex",gap:6,marginBottom:12}}>
+          {LOGIN_OPTS.map(([k,l])=>(
+            <button key={k} type="button" onClick={()=>setLoginMode(k)}
+              style={{flex:1,padding:"9px 6px",borderRadius:10,border:`2px solid ${loginMode===k?t.p:"#e2e8f0"}`,background:loginMode===k?t.p+"15":"#fff",color:loginMode===k?t.p:"#475569",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
           ))}
         </div>
         <input value={pwd} onChange={e=>setPwd(e.target.value)} placeholder="Team-Passwort (optional, Standard: team)"
@@ -4455,6 +4481,15 @@ function ManageTeams({ data, save, fire, cl }) {
                     style={{padding:"4px 10px",borderRadius:8,border:`1.5px solid ${on?s.col:"#e2e8f0"}`,background:on?s.col+"15":"#fff",color:on?s.col:"#94a3b8",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>{s.label}</button>
                 );})}
                 <InfoHint text={TEAM_STRENGTHS.map(s=>s.label+": "+s.desc).join("  ·  ")}/>
+              </div>
+            )}
+            {editId!==tm.id && (
+              <div style={{display:"flex",alignItems:"center",gap:6,marginTop:6,flexWrap:"wrap"}}>
+                <span style={{fontSize:10.5,fontWeight:800,color:"#94a3b8",letterSpacing:.3}}>ANMELDUNG</span>
+                {LOGIN_OPTS.map(([k,l])=>{const on=(tm.loginMode||"auto")===k;return (
+                  <button key={k} onClick={()=>setTeamLogin(tm.id,k)} style={{padding:"4px 10px",borderRadius:8,border:`1.5px solid ${on?t.p:"#e2e8f0"}`,background:on?t.p+"15":"#fff",color:on?t.p:"#94a3b8",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
+                );})}
+                <span style={{fontSize:10.5,color:"#cbd5e1"}}>{teamSelfLogin(tm,cl?.clubSettings)?"→ Spieler":"→ Eltern"}</span>
               </div>
             )}
             {showFmt===tm.id && <div style={{marginTop:8}}><PlayFormatCard cat={tmCat} sport={cl?.sport||"fussball"} cl={cl} compact/></div>}
@@ -14007,6 +14042,8 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid}) 
 }
 
 function PollAttend({ev,user,onVote,cl,session=null,save=()=>{},data=null,fire=()=>{}}) {
+  const _team = data ? (data.teams||[]).find(tm=>tm.id===ev.tid) : null;
+  const selfLogin = ev.selfVote || teamSelfLogin(_team, cl?.clubSettings);
   const _v = ev.votes||{};
   const yes  = Object.entries(_v).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>n);
   const no   = Object.entries(_v).filter(([,v])=>(typeof v==="object"?v.val:v)==="no" ).map(([n])=>n);
@@ -14037,7 +14074,7 @@ function PollAttend({ev,user,onVote,cl,session=null,save=()=>{},data=null,fire=(
         style={{borderRadius:16,border:`2px solid ${uv==="yes"&&!myLate?p:"#e2e8f0"}`,background:uv==="yes"&&!myLate?mix(p,86):"#fafafa",padding:"14px 16px",cursor:"pointer",transition:"all .18s"}}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
           <div style={{width:22,height:22,borderRadius:"50%",border:`${uv==="yes"&&!myLate?"7px":"2px"} solid ${uv==="yes"&&!myLate?p:"#cbd5e1"}`,background:"#fff",flexShrink:0,transition:"all .15s"}}/>
-          <span style={{flex:1,fontSize:16,fontWeight:uv==="yes"&&!myLate?800:600,color:uv==="yes"&&!myLate?p:"#334155"}}>Mein Kind ist dabei</span>
+          <span style={{flex:1,fontSize:16,fontWeight:uv==="yes"&&!myLate?800:600,color:uv==="yes"&&!myLate?p:"#334155"}}>{selfLogin?"Ich bin dabei":"Mein Kind ist dabei"}</span>
           {yes.filter(n=>!late.find(l=>l.name===n)).length>0&&<div style={{display:"flex",alignItems:"center",gap:4}}>
             <div style={{display:"flex"}}>{yes.filter(n=>!late.find(l=>l.name===n)).slice(0,5).map((v,i)=><div key={v} style={{marginLeft:i?-8:0,zIndex:5-i}}><Av name={v} sz={24}/></div>)}</div>
             <span style={{fontSize:13,fontWeight:800,color:"#475569",marginLeft:5}}>{yes.filter(n=>!late.find(l=>l.name===n)).length}</span>
@@ -14154,7 +14191,7 @@ function PollAttend({ev,user,onVote,cl,session=null,save=()=>{},data=null,fire=(
       {(Object.values(ev.trainerPresence||{}).length>0&&session?.role==="user"&&data)&&<TrainerCheckin ev={ev} session={session} save={save} data={data} fire={fire}/>}
       {ev.note&&<div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:12,padding:"10px 13px",fontSize:13,color:"#92400e",fontWeight:500}}> {ev.note}</div>}
       {ev.deadline&&<div style={{background:dlPassed?"#fee2e2":"#fffbeb",border:`1.5px solid ${dlPassed?"#fca5a5":"#fde68a"}`,borderRadius:12,padding:"9px 13px",fontSize:13,fontWeight:700,color:dlPassed?"#dc2626":"#d97706"}}> {dlPassed?"Frist abgelaufen - Abstimmung wird trotzdem gezaehlt":"Abstimmungs-Frist: "+ev.deadline.date+(ev.deadline.time?" "+ev.deadline.time+" Uhr":"")}</div>}
-      {[{id:"yes",label:ev.selfVote?"Ich bin dabei":"Mein Kind ist dabei",color:p,bg:mix(p,86),voters:yes},{id:"no",label:"Leider nicht dabei",color:"#dc2626",bg:"#fee2e2",voters:no}].map(o=>{
+      {[{id:"yes",label:selfLogin?"Ich bin dabei":"Mein Kind ist dabei",color:p,bg:mix(p,86),voters:yes},{id:"no",label:"Leider nicht dabei",color:"#dc2626",bg:"#fee2e2",voters:no}].map(o=>{
         const sel=uv===o.id; const pct=tot>0?(o.voters.length/tot)*100:0;
         return (
           <div key={o.id} onClick={()=>onVote(ev.id,"att",o.id)}
