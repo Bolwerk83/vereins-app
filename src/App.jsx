@@ -12098,11 +12098,22 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
                   </button>
                   <button
                     disabled={deleteConfirm!==myClub.name}
-                    onClick={()=>{
-                      const next={...data,
-                        clubs:(data.clubs||[]).filter(x=>x.id!==cid),
-                        teams:(data.teams||[]).filter(x=>x.cid!==cid)};
-                      save(next); fire("Verein gelöscht");
+                    onClick={async ()=>{
+                      const clubId=cid;
+                      // Alle Datensätze des Vereins entfernen – nicht nur Teams.
+                      const nextData={...data,
+                        clubs:(data.clubs||[]).filter(x=>x.id!==clubId),
+                        teams:(data.teams||[]).filter(x=>x.cid!==clubId),
+                        trainers:(data.trainers||[]).filter(x=>x.cid!==clubId),
+                        events:(data.events||[]).filter(x=>x.cid!==clubId),
+                        playerProfiles:(data.playerProfiles||[]).filter(x=>x.cid!==clubId)};
+                      fire("Verein wird gelöscht …");
+                      // Echte Persistenz: globale Vereinsliste OHNE den Verein schreiben
+                      // (abwarten!) und die Shard-Zeile löschen. Erst danach neu laden,
+                      // sonst überschreibt der nächste Cloud-Read den Verein wieder zurück.
+                      try { await sb.set(nextData, clubId); } catch {}
+                      try { await sb.dbDelete(sb._clubKey(clubId)); } catch {}
+                      try { sess.del(); } catch {}
                       window.location.reload();
                     }}
                     style={{flex:1,padding:"10px",borderRadius:10,border:"none",
