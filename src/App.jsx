@@ -21223,6 +21223,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         {["heimspiel","auswarts","freundschaft","turnier"].includes(viewEv.type)&&<LineupBoard ev={viewEv}
           present={Object.entries(viewEv.votes||{}).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>n)}
           canEdit={!isHelper}
+          profiles={local.playerProfiles||[]}
           pub={viewEv.type==="turnier"?!!viewEv.lineupPublic:undefined}
           onPubChange={viewEv.type==="turnier"&&!isHelper?(val=>{
             const ev2={...viewEv,lineupPublic:val};
@@ -22999,7 +23000,7 @@ function DutyBoard({ ev, user, canManage, onChange }){
 // Mittelfeld/Angriff) stellen; Rest = Bank. Editierbar (Trainer/Admin) bzw.
 // read-only (Eltern sehen, ob sie in der Startelf stehen).
 const LINEUP_LINES = [["T","Tor"],["A","Abwehr"],["M","Mittelfeld"],["S","Angriff"]];
-function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChange=undefined }){
+function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChange=undefined, profiles=[] }){
   const lu = ev.lineup || {T:[],A:[],M:[],S:[]};
   const placed = [...(lu.T||[]),...(lu.A||[]),...(lu.M||[]),...(lu.S||[])];
   const bench = (present||[]).filter(n=>!placed.includes(n));
@@ -23007,9 +23008,27 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
   const place = (name, line) => { const next={T:[...(lu.T||[])],A:[...(lu.A||[])],M:[...(lu.M||[])],S:[...(lu.S||[])]}; for(const k of ["T","A","M","S"]) next[k]=next[k].filter(x=>x!==name); next[line]=[...next[line],name]; onChange&&onChange(next); };
   const remove = (name) => { const next={T:(lu.T||[]).filter(x=>x!==name),A:(lu.A||[]).filter(x=>x!==name),M:(lu.M||[]).filter(x=>x!==name),S:(lu.S||[]).filter(x=>x!==name)}; onChange&&onChange(next); };
   const lineColors={T:"#d97706",A:"#2563eb",M:"#16a34a",S:"#dc2626"};
+  // Auto-Vorschlag: zugesagte Spieler nach Position auf die Linien verteilen.
+  const autoFill = () => {
+    const posOf = name => { const pl=(profiles||[]).find(x=>(x.name||"").toLowerCase()===String(name).toLowerCase()); return String(pl?.position||"").toLowerCase(); };
+    const next={T:[],A:[],M:[],S:[]}; const rest=[];
+    (present||[]).forEach(n=>{ const pos=posOf(n);
+      if(/tor|keeper|tw|reflex/.test(pos)) next.T.push(n);
+      else if(/abwehr|vert|innen|aussen|defen|libero/.test(pos)) next.A.push(n);
+      else if(/mittel|\bmf\b|sechs|acht|zehn|spielmach/.test(pos)) next.M.push(n);
+      else if(/sturm|stürm|stuerm|angriff|fluegel|flügel|spitze|stoss/.test(pos)) next.S.push(n);
+      else rest.push(n);
+    });
+    if(next.T.length===0 && rest.length) next.T.push(rest.shift());
+    const order=["A","M","S","M","A"]; rest.forEach((n,i)=>next[order[i%order.length]].push(n));
+    onChange&&onChange(next);
+  };
   return (
     <div style={{marginTop:14,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
-      <div style={{fontWeight:800,fontSize:14,color:"#0f172a",marginBottom:10}}>Aufstellung <span style={{fontWeight:600,fontSize:12,color:"#94a3b8"}}>({placed.length})</span></div>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+        <span style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>Aufstellung <span style={{fontWeight:600,fontSize:12,color:"#94a3b8"}}>({placed.length})</span></span>
+        {canEdit&&(present||[]).length>0&&<button onClick={autoFill} style={{marginLeft:"auto",padding:"6px 12px",borderRadius:9,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>⚡ Vorschlag</button>}
+      </div>
       {onPubChange&&(
         <div onClick={()=>onPubChange(!pub)} style={{display:"flex",alignItems:"center",gap:10,background:pub?"#f0fdf4":"#f8fafc",border:`1.5px solid ${pub?"#bbf7d0":"#e2e8f0"}`,borderRadius:12,padding:"10px 12px",marginBottom:10,cursor:"pointer"}}>
           <div style={{flex:1,minWidth:0}}>
