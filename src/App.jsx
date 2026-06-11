@@ -11903,6 +11903,28 @@ function SkillTargetsEditor({ data, cid, save, fire, cl, sport="fussball", allow
   );
 }
 
+// Weiterempfehlung – neugierig machen, kein Druck, kostenlos testen, löschbar.
+const RECOMMEND_LINK = "https://verein.bolwerk24.de";
+const recommendMsg = () => `⚽ Kennst du einen Verein oder ein Team, das das WhatsApp-Chaos satt hat?\n\nMit der Vereins-App laufen Termine, Zu-/Absagen, Mannschaften, Fahrgemeinschaften und sogar Turniere an einem Ort zusammen – übersichtlich für Trainer und Eltern.\n\nKostenlos zum Ausprobieren, keine Verpflichtung. Wenn's nicht passt, lässt sich alles einfach wieder löschen.\n\nSchau's dir an: ${RECOMMEND_LINK}`;
+function RecommendCard({ theme="#16a34a", title="Gefällt dir die App?", sub="Zeig sie einem Verein oder Team, dem das auch helfen würde – kostenlos zum Testen, jederzeit wieder löschbar. Kein Druck. 🙂", style={} }){
+  const msg=recommendMsg();
+  const wa=()=>window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");
+  const native=async()=>{ if(navigator.share){try{await navigator.share({title:"Vereins-App",text:msg,url:RECOMMEND_LINK});}catch{}} else {navigator.clipboard?.writeText(msg);} };
+  const [copied,setCopied]=useState(false);
+  const copy=()=>{ navigator.clipboard?.writeText(msg); setCopied(true); setTimeout(()=>setCopied(false),2000); };
+  return (
+    <div style={{background:`linear-gradient(135deg,${theme},${mix(theme,-18)})`,borderRadius:16,padding:"15px 16px",color:"#fff",...style}}>
+      <div style={{fontWeight:900,fontSize:15,marginBottom:3}}>💚 {title}</div>
+      <div style={{fontSize:12.5,opacity:.92,lineHeight:1.5,marginBottom:12}}>{sub}</div>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+        <button onClick={wa} style={{flex:"1 1 auto",padding:"10px 14px",borderRadius:11,border:"none",background:"#fff",color:theme,fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Per WhatsApp empfehlen</button>
+        {typeof navigator!=="undefined"&&navigator.share&&<button onClick={native} style={{flexShrink:0,padding:"10px 14px",borderRadius:11,border:"1.5px solid rgba(255,255,255,.4)",background:"rgba(255,255,255,.14)",color:"#fff",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Teilen</button>}
+        <button onClick={copy} style={{flexShrink:0,padding:"10px 14px",borderRadius:11,border:"1.5px solid rgba(255,255,255,.4)",background:"rgba(255,255,255,.14)",color:"#fff",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{copied?"Kopiert!":"Link kopieren"}</button>
+      </div>
+    </div>
+  );
+}
+
 // Impressum-Editor (Pflichtangaben § 5 DDG) – Daten landen in clubSettings.impressum
 function ImpressumEditor({ value, t, clubName, onSave }){
   const [f,setF]=useState({ provider:value.provider||clubName||"", street:value.street||"", plzCity:value.plzCity||"", country:value.country||"Deutschland", represent:value.represent||"", phone:value.phone||"", email:value.email||"", register:value.register||"", registerNr:value.registerNr||"", ustId:value.ustId||"" });
@@ -12279,6 +12301,7 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
       {/* KONTO */}
       {section==="konto"&&(
         <>
+          <RecommendCard theme={t.p} style={{marginBottom:14}} title="Empfiehl uns weiter" sub="Kennst du einen Verein, dem die App auch hilft? Kostenlos zum Testen, jederzeit wieder löschbar – kein Druck."/>
           <div style={card}>
             <Row title="Vereinsname" sub={myClub.name}>
               <button onClick={()=>fire("Namens-Änderung kommt bald")}
@@ -13563,7 +13586,13 @@ function Directory({data,onPick,onNewClub,onVisitorOpen,lang,setLang}) {
           </div>
         )}
 
-        <p style={{color:"rgba(255,255,255,.15)",fontSize:11,textAlign:"center",marginTop:20}}>
+        <details style={{maxWidth:460,margin:"20px auto 0",background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.1)",borderRadius:12,padding:"10px 14px"}}>
+          <summary style={{cursor:"pointer",color:"rgba(255,255,255,.7)",fontSize:12.5,fontWeight:700,listStyle:"none"}}>💡 Wie finanziert sich das? Kostet das was?</summary>
+          <p style={{color:"rgba(255,255,255,.55)",fontSize:12,lineHeight:1.6,marginTop:8}}>
+            Die Vereins-App ist ein <strong style={{color:"rgba(255,255,255,.75)"}}>Hobby-Projekt</strong> – entstanden aus dem ganz normalen Vereinsalltag, um wiederkehrende Abläufe zu vereinfachen und zu automatisieren. Für Vereine ist die Nutzung <strong style={{color:"rgba(255,255,255,.75)"}}>kostenlos</strong>. Getragen wird das Projekt durch dezente, klar gekennzeichnete Empfehlungen (Affiliate) – eure Mitgliederdaten werden dabei nicht weitergegeben. Einfach ausprobieren; wenn es nicht passt, lässt sich alles wieder löschen.
+          </p>
+        </details>
+        <p style={{color:"rgba(255,255,255,.15)",fontSize:11,textAlign:"center",marginTop:16}}>
           Nur Vereine die zugestimmt haben werden angezeigt
         </p>
         <div style={{display:"flex",justifyContent:"center",gap:16,marginTop:12,paddingBottom:8}}>
@@ -21169,6 +21198,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           {up.length===0&&<div style={{textAlign:"center",padding:"30px",background:"#fff",borderRadius:18,border:"1.5px dashed #e2e8f0",color:"#94a3b8"}}><Logo cl={myClub} sz={50} sx={{margin:"0 auto 12px"}}/><p style={{fontWeight:800,fontSize:15}}>Noch keine Termine</p><p style={{fontSize:13,marginTop:3}}>Klicke oben auf "Neuen Termin anlegen"</p></div>}
           {past.length>0&&<><Divider label={`VERGANGENE (${past.length})`} light/><div style={{opacity:.72}}>{past.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{}} onCopyLink={()=>{}}/>)}</div></>}
           <AffiliateBanner trigger="events" style={{marginTop:14}}/>
+          <div style={{marginTop:14}}><RecommendCard theme={t.p}/></div>
         </>}
         {tab==="players"    &&<><PlayersTab data={local} myTids={myTids} save={save} fire={fire} cl={myClub}/><AffiliateBanner trigger="players" style={{marginTop:14}}/></> }
         {tab==="templates"  &&<TemplatesTab data={local} cid={cid} save={save} fire={fire} cl={myClub} myTids={myTids} teams={(local.teams||[]).filter(tm=>tm.cid===cid)}/>}
@@ -23515,6 +23545,7 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
           </button>
           {showPast&&past.map(ev=><div key={ev.id} style={{marginBottom:10}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user"/></div>)}
         </>}
+        <div style={{marginTop:16}}><RecommendCard theme={t.p}/></div>
         </div>
         {isDesktop&&(
           <aside style={{position:"sticky",top:24,display:"flex",flexDirection:"column",gap:16}}>
@@ -23797,6 +23828,21 @@ function AppInner({lang,setLang}) {
         const nowMs=Date.now();
         const keep=dir.liveEvents.filter(e=>{ const u=e&&e.until?Date.parse(e.until):NaN; return !isNaN(u)&&nowMs<=u; });
         if(keep.length!==dir.liveEvents.length){ dir={...dir, liveEvents:keep}; try{ await sb.set(dir); }catch{} }
+      }
+      // Ungenutzte Test-Vereine automatisch entfernen: NUR Vereine, die das
+      // Setup nie abgeschlossen haben (!setupCompleted), älter als 45 Tage sind
+      // und seit 45+ Tagen keine Aktivität hatten (oder nie). Echte (eingerichtete
+      // oder aktive) Vereine bleiben dadurch immer erhalten.
+      if (dir && !dir.__cloudEmpty && Array.isArray(dir.clubs) && dir.clubs.length) {
+        const nowMs=Date.now(); const GRACE=45*86400000;
+        const stale = iso => { const tt=iso?Date.parse(iso):NaN; return !isNaN(tt) && (nowMs-tt)>GRACE; };
+        const abandoned = dir.clubs.filter(c=> c && c.id!=="demo" && !c.setupCompleted && stale(c.createdAt) && (!c.lastActive || stale(c.lastActive)));
+        if(abandoned.length){
+          const ids=new Set(abandoned.map(c=>c.id));
+          dir={...dir, clubs:dir.clubs.filter(c=>!ids.has(c.id))};
+          try{ await sb.set(dir); }catch{}
+          for(const id of ids){ try{ await sb.dbDelete(sb._clubKey(id)); }catch{} }
+        }
       }
       // SuperAdmin braucht alle Daten -> voll laden
       if(new URLSearchParams(window.location.search).has("superadmin")){
