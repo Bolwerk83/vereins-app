@@ -13359,16 +13359,13 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
   const [sel,setSel]=useState(null);
   const [pw,setPw]=useState("");
   const [err,setErr]=useState(false);
-  const cats=[...new Set(
-    trainers.flatMap(tr=>(tr.tids||[]).map(tid=>{
-      const tm=teams?.find(x=>x.id===tid);
-      return tm?.cat||tm?.name||null;
-    }).filter(Boolean).filter(x=>!x.hidden))
-  )].sort();
-
-  const trainersInCat=cat
-    ? trainers.filter(tr=>(tr.tids||[]).some(tid=>{const tm=teams?.find(x=>x.id===tid);return(tm?.cat||tm?.name)===cat;}))
-    : [];
+  // Kategorie eines Trainers: erste auflösbare Mannschaft, sonst Sammelgruppe.
+  // So ist JEDER aktive Trainer erreichbar – auch ohne (aktive) Mannschaft.
+  const NO_TEAM = "Ohne feste Mannschaft";
+  const teamCat = tid => { const tm=teams?.find(x=>x.id===tid); return tm?(tm.cat||tm.name):null; };
+  const catOf = tr => { for(const tid of (tr.tids||[])){ const c=teamCat(tid); if(c) return c; } return NO_TEAM; };
+  const cats=[...new Set(trainers.map(catOf))].sort((a,b)=> a===NO_TEAM?1 : b===NO_TEAM?-1 : String(a).localeCompare(String(b)));
+  const trainersInCat = cat ? trainers.filter(tr=>catOf(tr)===cat) : [];
   const selTr=trainers.find(x=>x.id===sel);
 
   const go=()=>{
@@ -13396,8 +13393,8 @@ function TrainerLogin({cl,trainers,teams,onLogin,onBack}) {
       {cats.length===0
         ? <div style={{background:"rgba(255,255,255,.1)",borderRadius:18,padding:"22px",textAlign:"center",color:"rgba(255,255,255,.6)"}}>Keine Trainer gefunden</div>
         : cats.map((c,i)=>{
-            const trs=trainers.filter(tr=>(tr.tids||[]).some(tid=>{const tm=teams?.find(x=>x.id===tid);return(tm?.cat||tm?.name)===c;}));
-            const icons=[...new Set(trs.flatMap(tr=>(tr.tids||[]).map(tid=>teams?.find(x=>x.id===tid)?.icon).filter(Boolean).filter(x=>!x.hidden)))];
+            const trs=trainers.filter(tr=>catOf(tr)===c);
+            const icons=[...new Set(trs.flatMap(tr=>(tr.tids||[]).map(tid=>teams?.find(x=>x.id===tid)?.icon).filter(Boolean)))];
             return (
               <div key={c} className="up" onClick={()=>{setCat(c);if(trs.length===1){setSel(trs[0].id);setPw("");setStep("pwd");}else setStep("trainer");}}
                 style={{background:"rgba(255,255,255,.09)",border:"1.5px solid rgba(255,255,255,.13)",borderRadius:20,padding:"16px 20px",cursor:"pointer",marginBottom:12,animationDelay:`${i*.06}s`,display:"flex",alignItems:"center",gap:14}}>
@@ -18820,36 +18817,49 @@ function TrainerCard({ tr, data, onEdit, onDelete, onContact, onShare, onToggleA
 // Code gesetzt UND verschickt, damit das geteilte Passwort garantiert passt.
 function TrainerAccessShare({ tr, cl, data, save, fire, onClose }) {
   const link = window.location.origin + "?club=" + (cl?.slug||cl?.id);
+  const [setNewPw, setSetNewPw] = useState(true);
   const [code, setCode] = useState(()=>Math.random().toString(36).slice(2,6).toUpperCase());
   const [copied, setCopied] = useState(false);
-  const msg = `Hallo ${tr.name},\n\nhier dein Zugang zur Vereins-App von ${cl?.name||"unserem Verein"} als Trainer:\n\nLink: ${link}\nPasswort: ${code.trim()}\n\nSo geht's: Link oeffnen, "${cl?.name||"Verein"}" auswaehlen, Rolle "Trainer", deinen Namen antippen und das Passwort eingeben.`;
+  const pwLine = setNewPw ? `Passwort: ${code.trim()}` : `Passwort: dein bereits vergebenes Passwort (frag den Verein, falls unklar)`;
+  const msg = `Hallo ${tr.name},\n\nhier dein Zugang zur Vereins-App von ${cl?.name||"unserem Verein"} als Trainer:\n\nLink: ${link}\n${pwLine}\n\nSo geht's: Link oeffnen, "${cl?.name||"Verein"}" auswaehlen, Rolle "Trainer", deinen Namen antippen und das Passwort eingeben.`;
   const persist = () => {
+    if(!setNewPw) return true;                 // bestehendes Passwort unveraendert lassen
     const c = code.trim(); if(!c) return false;
     save({...data, trainers:(data.trainers||[]).map(x=>x.id===tr.id?{...x, pw:hashPw(c)}:x)});
     return true;
   };
-  const onWhatsApp = () => { if(!persist()) return; window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank"); fire("Passwort gesetzt & WhatsApp geoeffnet"); onClose(); };
+  const canSend = !setNewPw || !!code.trim();
+  const onWhatsApp = () => { if(!persist()) return; window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank"); fire(setNewPw?"Passwort gesetzt & WhatsApp geoeffnet":"WhatsApp geoeffnet"); onClose(); };
   const onShareNative = async () => {
     if(!persist()) return;
     if(navigator.share){ try{ await navigator.share({ title:cl?.name||"Vereins-App", text:msg }); }catch{} }
     else { navigator.clipboard?.writeText(msg); }
-    fire("Passwort gesetzt"); onClose();
+    fire(setNewPw?"Passwort gesetzt":"Zugang geteilt"); onClose();
   };
-  const onCopy = () => { if(!persist()) return; navigator.clipboard?.writeText(msg); setCopied(true); setTimeout(()=>setCopied(false),2000); fire("Passwort gesetzt & kopiert"); };
+  const onCopy = () => { if(!persist()) return; navigator.clipboard?.writeText(msg); setCopied(true); setTimeout(()=>setCopied(false),2000); fire(setNewPw?"Passwort gesetzt & kopiert":"Text kopiert"); };
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:850,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={onClose}>
       <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"90dvh",overflowY:"auto",padding:"20px 22px 40px"}}>
         <h3 style={{fontWeight:900,fontSize:18,color:"#0f172a",marginBottom:4}}>Zugang an {tr.name} senden</h3>
-        <p style={{fontSize:12.5,color:"#64748b",margin:"0 0 16px",lineHeight:1.5}}>Beim Senden wird das unten stehende Passwort fuer diesen Trainer gesetzt und zusammen mit dem Link verschickt. Ein evtl. altes Passwort wird damit ersetzt.</p>
+        <p style={{fontSize:12.5,color:"#64748b",margin:"0 0 16px",lineHeight:1.5}}>Du kannst hier ein neues Passwort setzen und mit dem Link verschicken – oder das bestehende Passwort behalten und nur den Link senden.</p>
         <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:5}}>LINK</div>
         <div style={{background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:11,padding:"10px 13px",fontSize:13,color:"#334155",wordBreak:"break-all",marginBottom:14}}>{link}</div>
-        <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:5}}>PASSWORT</div>
-        <input value={code} onChange={e=>setCode(e.target.value)} placeholder="Passwort"
-          style={{width:"100%",padding:"11px 14px",fontSize:15,fontWeight:700,letterSpacing:1,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",marginBottom:16,boxSizing:"border-box"}}/>
+        <div onClick={()=>setSetNewPw(v=>!v)} style={{display:"flex",alignItems:"center",gap:10,background:setNewPw?"#f0fdf4":"#f8fafc",border:`1.5px solid ${setNewPw?"#bbf7d0":"#e2e8f0"}`,borderRadius:11,padding:"10px 13px",cursor:"pointer",marginBottom:12}}>
+          <div style={{flex:1}}><div style={{fontSize:13,fontWeight:800,color:setNewPw?"#15803d":"#334155"}}>Neues Passwort setzen</div><div style={{fontSize:11,color:"#94a3b8",marginTop:1}}>{setNewPw?"Das alte Passwort wird ersetzt.":"Bestehendes Passwort bleibt unverändert."}</div></div>
+          <div style={{width:42,height:24,borderRadius:99,background:setNewPw?"#16a34a":"#cbd5e1",position:"relative",flexShrink:0}}><div style={{position:"absolute",top:3,left:setNewPw?21:3,width:18,height:18,borderRadius:"50%",background:"#fff",transition:"left .2s"}}/></div>
+        </div>
+        {setNewPw&&<>
+          <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:5}}>NEUES PASSWORT</div>
+          <div style={{display:"flex",gap:8,marginBottom:16}}>
+            <input value={code} onChange={e=>setCode(e.target.value)} placeholder="Passwort"
+              style={{flex:1,padding:"11px 14px",fontSize:15,fontWeight:700,letterSpacing:1,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",boxSizing:"border-box"}}/>
+            <button onClick={()=>setCode(Math.random().toString(36).slice(2,6).toUpperCase())} style={{flexShrink:0,padding:"0 14px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>🎲</button>
+          </div>
+        </>}
         <div style={{display:"flex",flexDirection:"column",gap:9}}>
-          <button onClick={onWhatsApp} disabled={!code.trim()} style={{width:"100%",padding:"12px",borderRadius:12,border:"none",background:code.trim()?"#25D366":"#e2e8f0",color:code.trim()?"#fff":"#64748b",fontWeight:800,cursor:code.trim()?"pointer":"not-allowed",fontFamily:"inherit"}}>Per WhatsApp senden</button>
-          {typeof navigator!=="undefined"&&navigator.share&&<button onClick={onShareNative} disabled={!code.trim()} style={{width:"100%",padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#334155",fontWeight:800,cursor:code.trim()?"pointer":"not-allowed",fontFamily:"inherit"}}>Teilen ...</button>}
-          <button onClick={onCopy} disabled={!code.trim()} style={{width:"100%",padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#334155",fontWeight:800,cursor:code.trim()?"pointer":"not-allowed",fontFamily:"inherit"}}>{copied?"Kopiert!":"Text kopieren"}</button>
+          <button onClick={onWhatsApp} disabled={!canSend} style={{width:"100%",padding:"12px",borderRadius:12,border:"none",background:canSend?"#25D366":"#e2e8f0",color:canSend?"#fff":"#64748b",fontWeight:800,cursor:canSend?"pointer":"not-allowed",fontFamily:"inherit"}}>Per WhatsApp senden</button>
+          {typeof navigator!=="undefined"&&navigator.share&&<button onClick={onShareNative} disabled={!canSend} style={{width:"100%",padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#334155",fontWeight:800,cursor:canSend?"pointer":"not-allowed",fontFamily:"inherit"}}>Teilen ...</button>}
+          <button onClick={onCopy} disabled={!canSend} style={{width:"100%",padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#334155",fontWeight:800,cursor:canSend?"pointer":"not-allowed",fontFamily:"inherit"}}>{copied?"Kopiert!":"Text kopieren"}</button>
           <button onClick={onClose} style={{width:"100%",padding:"11px",borderRadius:12,border:"none",background:"none",color:"#94a3b8",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Schliessen</button>
         </div>
       </div>
@@ -22928,7 +22938,7 @@ function AppInner({lang,setLang}) {
       {screen==="role"  &&activeCl&&<RolePicker cl={activeCl} onRole={r=>setScr(r==="user"?"flow":r==="trainer"?"tlogin":r==="helper"?"hlogin":"alogin")} onGuest={()=>setScr("guest")} onBack={()=>setScr("dir")}/>}
       {screen==="guest" &&activeCl&&<ClubGuestList cl={activeCl} liveEvents={data.liveEvents||[]} onOpen={(eid,club)=>setVisitor({eid,club})} onBack={()=>setScr("role")}/>}
       {screen==="flow"  &&activeCl&&<UserFlow cl={activeCl} teams={clTeams} players={data.players} playerProfiles={data.playerProfiles||[]} preselectTid={linkTeam} onDone={(tid,user)=>login("user",{tid,user})} onBack={()=>setScr(linkTeam?"role":"role")}/>}
-      {screen==="tlogin"&&activeCl&&<TrainerLogin cl={activeCl} trainers={data.trainers.filter(t=>t.cid===cid&&isActive(t))} teams={clTeams} onLogin={tr=>login("trainer",tr)} onBack={()=>setScr("role")}/>}
+      {screen==="tlogin"&&activeCl&&<TrainerLogin cl={activeCl} trainers={data.trainers.filter(t=>t.cid===cid&&isActive(t))} teams={(data.teams||[]).filter(tm=>tm.cid===cid)} onLogin={tr=>login("trainer",tr)} onBack={()=>setScr("role")}/>}
       {screen==="hlogin"&&activeCl&&<HelperLogin cl={activeCl} helpers={data.helpers||[]} onLogin={h=>login("helper",{...h,cid})} onBack={()=>setScr("role")}/>}
       {screen==="alogin"&&activeCl&&<AdminLogin cl={activeCl} onLogin={a=>login("admin",{...a,cid})} onBack={()=>setScr("role")}/>}
       {screen==="user"  &&session&&activeCl&&<UserHome data={data} session={session} onSave={save} onLogout={logout} lang={lang}/>}
