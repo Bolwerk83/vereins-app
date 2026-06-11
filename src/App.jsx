@@ -21042,7 +21042,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           {(()=>{
             const myCats=[...new Set((local.teams||[]).filter(tm=>myTids.includes(tm.id)).map(tm=>tm.cat||tm.name))];
             const mg=plzToGeo(myClub?.plz);
-            const rad=(local.tournamentOffers||[]).filter(o=>!o.closed && o.hostCid!==cid && myCats.includes(o.cat) && o.date>=tod && !(local.tournamentRegs||[]).some(r=>r.offerId===o.id&&r.byCid===cid)).map(o=>{const g=offerGeo(o);return {...o,_d:(mg&&g)?geoDistanceKm(mg,g):null};}).filter(o=>o._d==null||o._d<=50).sort((a,b)=>(a._d??999)-(b._d??999));
+            const pset=new Set(myClub?.partners||[]);
+            const rad=(local.tournamentOffers||[]).filter(o=>!o.closed && o.hostCid!==cid && myCats.includes(o.cat) && o.date>=tod && !(local.tournamentRegs||[]).some(r=>r.offerId===o.id&&r.byCid===cid)).map(o=>{const g=offerGeo(o);return {...o,_d:(mg&&g)?geoDistanceKm(mg,g):null,_partner:pset.has(o.hostCid)};}).filter(o=>o._partner||o._d==null||o._d<=50).sort((a,b)=>(b._partner?1:0)-(a._partner?1:0)||(a._d??999)-(b._d??999));
             if(rad.length===0) return null;
             return (
               <div onClick={goBoerse} style={{background:"linear-gradient(135deg,#f59e0b,#ea580c)",borderRadius:18,padding:"14px 16px",marginBottom:14,cursor:"pointer",color:"#fff",boxShadow:"0 8px 24px -8px rgba(234,88,12,.6)"}}>
@@ -21050,7 +21051,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
                   <div style={{fontSize:24}}>🔔</div>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontWeight:900,fontSize:15}}>Turnier-Radar: {rad.length} passende{rad.length===1?"s":""} Turnier{rad.length>1?"e":""} in der Nähe</div>
-                    <div style={{fontSize:12.5,opacity:.92,marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{rad.slice(0,2).map(o=>`${o.cat} · ${fmtD(o.date)}${o._d!=null?" · "+o._d+" km":""}`).join("   ·   ")}</div>
+                    <div style={{fontSize:12.5,opacity:.92,marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{rad.slice(0,2).map(o=>`${o._partner?"★ ":""}${o.cat} · ${fmtD(o.date)}${o._d!=null?" · "+o._d+" km":""}`).join("   ·   ")}</div>
                   </div>
                   <span style={{fontSize:20,opacity:.85,flexShrink:0}}>{">"}</span>
                 </div>
@@ -21667,10 +21668,12 @@ function TournBoerse({ data, cid, myTids, cl, save, fire }){
   const writeRegs   = arr => save({...data, tournamentRegs:arr});
 
   // ---------- FINDEN ----------
+  const partnerSet = new Set(myClub.partners||[]);
+  const togglePartner = clubId => save({...data, clubs:(data.clubs||[]).map(c=>c.id===cid?{...c, partners:(c.partners||[]).includes(clubId)?(c.partners||[]).filter(x=>x!==clubId):[...(c.partners||[]),clubId]}:c)});
   const withDist = offers.filter(o=>!o.closed && o.hostCid!==cid).map(o=>{
-    const g=offerGeo(o); const dist=(myGeo&&g)?geoDistanceKm(myGeo,g):null; return {...o,_dist:dist};
-  }).filter(o=> (fCat==="all"||o.cat===fCat) && (fStr===0||(o.strengths||[]).includes(fStr)) && (o._dist==null || o._dist<=radius))
-    .sort((a,b)=>(a._dist??9999)-(b._dist??9999));
+    const g=offerGeo(o); const dist=(myGeo&&g)?geoDistanceKm(myGeo,g):null; return {...o,_dist:dist,_partner:partnerSet.has(o.hostCid)};
+  }).filter(o=> (fCat==="all"||o.cat===fCat) && (fStr===0||(o.strengths||[]).includes(fStr)) && (o._partner || o._dist==null || o._dist<=radius))
+    .sort((a,b)=> (b._partner?1:0)-(a._partner?1:0) || (a._dist??9999)-(b._dist??9999));
 
   const myRegFor = oid => regs.find(r=>r.offerId===oid && r.byCid===cid);
   const doRegister = (offer, payload) => {
@@ -21721,7 +21724,7 @@ function TournBoerse({ data, cid, myTids, cl, save, fire }){
     <div>
       {!myClub.plz && <div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:12,padding:"11px 13px",fontSize:12.5,color:"#92400e",marginBottom:12,lineHeight:1.5}}>Für den Umkreis fehlt die PLZ deines Vereins. Trag sie unter <strong>Einstellungen → Sportart → Standort</strong> ein.</div>}
       <div style={{display:"flex",gap:6,marginBottom:14}}>
-        <Tab k="find" label="Finden"/><Tab k="mine" label={`Meine (${myOffers.length})`}/><Tab k="new" label="Ausschreiben"/>
+        <Tab k="find" label="Finden"/><Tab k="mine" label={`Meine (${myOffers.length})`}/><Tab k="new" label="Ausschreiben"/><Tab k="partner" label={`★ Partner`}/>
       </div>
 
       {view==="find"&&<>
@@ -21749,7 +21752,7 @@ function TournBoerse({ data, cid, myTids, cl, save, fire }){
             <div key={o.id} style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:14,padding:"13px 15px"}}>
               <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontWeight:900,fontSize:15,color:"#0f172a"}}>{o.title}</div>
+                  <div style={{fontWeight:900,fontSize:15,color:"#0f172a"}}>{o._partner&&<span style={{color:"#d97706",marginRight:4}}>★</span>}{o.title}{o._partner&&<span style={{marginLeft:6,fontSize:10,fontWeight:800,color:"#9a3412",background:"#ffedd5",borderRadius:6,padding:"1px 7px",verticalAlign:"middle"}}>PARTNER</span>}</div>
                   <div style={{fontSize:12,color:"#64748b",marginTop:2}}>{o.hostName} · {o.cat} · {fmtD(o.date)}{o.time?" "+o.time:""}</div>
                   <div style={{fontSize:12,color:"#94a3b8",marginTop:2}}>{o.loc||o.plz} · {o.minTeams}–{o.maxTeams} Teams</div>
                   <div style={{marginTop:6}}><StrBadges ids={o.strengths}/></div>
@@ -21841,6 +21844,25 @@ function TournBoerse({ data, cid, myTids, cl, save, fire }){
         <button onClick={createOffer} disabled={!nf.title.trim()||!nf.date} style={{padding:"13px",borderRadius:12,border:"none",background:(nf.title.trim()&&nf.date)?t.p:"#e2e8f0",color:"#fff",fontWeight:800,fontSize:15,cursor:(nf.title.trim()&&nf.date)?"pointer":"default",fontFamily:"inherit"}}>Turnier ausschreiben</button>
         {!myClub.plz && <p style={{fontSize:11,color:"#b45309",margin:0}}>Hinweis: Ohne PLZ deines Vereins erscheint die Ausschreibung nicht in der Umkreissuche anderer.</p>}
       </div>}
+
+      {view==="partner"&&(()=>{
+        const others=(data.clubs||[]).filter(c=>c.id!==cid);
+        return (
+          <div>
+            <div style={{background:"#fff7ed",border:"1.5px solid #fed7aa",borderRadius:12,padding:"11px 13px",fontSize:12.5,color:"#9a3412",marginBottom:12,lineHeight:1.5}}>Markiere befreundete Vereine als <strong>Partner</strong>. Ihre Ausschreibungen werden dir in „Finden" und im Turnier-Radar bevorzugt (★) angezeigt – auch außerhalb des km-Umkreises.</div>
+            {others.length===0&&<div style={{textAlign:"center",color:"#94a3b8",fontSize:13,padding:"20px"}}>Noch keine anderen Vereine im Verzeichnis.</div>}
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {others.map(c=>{const on=partnerSet.has(c.id);return (
+                <button key={c.id} onClick={()=>togglePartner(c.id)} style={{display:"flex",alignItems:"center",gap:11,padding:"11px 13px",borderRadius:12,border:`1.5px solid ${on?"#f59e0b":"#e2e8f0"}`,background:on?"#fff7ed":"#fff",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
+                  <span style={{fontSize:20,color:on?"#d97706":"#cbd5e1"}}>{on?"★":"☆"}</span>
+                  <span style={{flex:1,minWidth:0}}><span style={{display:"block",fontWeight:800,fontSize:14,color:"#0f172a"}}>{c.name}</span><span style={{display:"block",fontSize:11.5,color:"#94a3b8"}}>{c.sport||"Fußball"}{c.plz?" · "+c.plz:""}</span></span>
+                  {on&&<span style={{fontSize:11,fontWeight:800,color:"#9a3412"}}>Partner</span>}
+                </button>
+              );})}
+            </div>
+          </div>
+        );
+      })()}
 
       {regFor && <RegisterOfferModal offer={regFor} myTeams={myTeams} t={t} onClose={()=>setRegFor(null)} onRegister={p=>doRegister(regFor,p)}/>}
     </div>
