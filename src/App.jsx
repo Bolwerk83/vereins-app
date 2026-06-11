@@ -21913,9 +21913,9 @@ function RegisterOfferModalInline({ offer, register }){
 }
 
 const PICKUP_SUGGEST = ["Sportplatz","Marktplatz","Schule","Kirche","Zuhause","Bahnhof","Rewe","Aldi"];
-function PollCarpool({ev,user,onVote,cl}) {
+function PollCarpool({ entries={}, onSet, user, cl }) {
   const t=TH(cl);
-  const votes=ev.votes||{};
+  const votes=entries||{};
   const entryOf = name => { const v=votes[name]; return v&&typeof v==="object"&&v.mode?v:null; };
   const mine = entryOf(user);
   const myMode = mine?.mode || null;
@@ -21928,9 +21928,9 @@ function PollCarpool({ev,user,onVote,cl}) {
   const seatsTotal = drivers.reduce((s,n)=>s+(Number(entryOf(n).seats)||0),0);
   const unassigned = needers.filter(n=>{ const c=entryOf(n)?.car; return !c || !drivers.includes(c); });
 
-  const saveDriver = (s=seats,nt=note)=> onVote(ev.id,"carpool",{mode:"drive",seats:s,note:nt,ts:new Date().toISOString()});
-  const saveNeed   = (car=mine?.car||null,pk=pickup)=> onVote(ev.id,"carpool",{mode:"need",car,pickup:pk,ts:new Date().toISOString()});
-  const saveSelf   = ()=> onVote(ev.id,"carpool",{mode:"self",ts:new Date().toISOString()});
+  const saveDriver = (s=seats,nt=note)=> onSet&&onSet({mode:"drive",seats:s,note:nt,ts:new Date().toISOString()});
+  const saveNeed   = (car=mine?.car||null,pk=pickup)=> onSet&&onSet({mode:"need",car,pickup:pk,ts:new Date().toISOString()});
+  const saveSelf   = ()=> onSet&&onSet({mode:"self",ts:new Date().toISOString()});
   const joinCar = d => { const free=(Number(entryOf(d)?.seats)||0)-passengersOf(d).length; const inThis=mine?.car===d; if(!inThis&&free<=0) return; saveNeed(inThis?null:d, pickup); };
 
   const ModeBtn=({mode,label,col,onClick})=>(
@@ -22987,7 +22987,7 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
         )}
         {ev.type==="turnier"&&isTrainerOrHelper?<TournView ev={ev} user={user} onVote={onVote} cl={cl} players={players} isHelper={role==="helper"}/>
           :ev.type==="turnier"?<PollAttend ev={ev} user={user} onVote={onVote} cl={cl}/>
-          :ev.pt==="carpool"?<PollCarpool ev={ev} user={user} onVote={onVote} cl={cl}/>
+          :ev.pt==="carpool"?<PollCarpool entries={ev.votes||{}} onSet={v=>onVote(ev.id,"carpool",v)} user={user} cl={cl}/>
           :ev.pt==="list"?<PollList ev={ev} user={user} onVote={onVote}/>
           :<PollAttend ev={ev} user={user} onVote={onVote} cl={cl}/>}
         {(ev.extraPolls||[]).map(p=>(
@@ -22999,6 +22999,13 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
             <ExtraListPoll poll={p} user={user} onChange={arr=>onVote(ev.id,"extra:"+p.id,arr)}/>
           </div>
         ))}
+        {/* Termin-Cockpit: Fahrgemeinschaft auch bei Spielen (eigener Datentopf, nicht die Anwesenheit) */}
+        {ev.pt!=="carpool" && ["heimspiel","auswarts","freundschaft","turnier"].includes(ev.type) && (
+          <div style={{marginTop:16,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
+            <div style={{fontWeight:800,fontSize:14,color:"#0f172a",marginBottom:10}}>🚗 Fahrgemeinschaft</div>
+            <PollCarpool entries={ev.carpool||{}} onSet={v=>onVote(ev.id,"carpoolmap",v)} user={user} cl={cl}/>
+          </div>
+        )}
         <DutyBoard ev={ev} user={user} canManage={isTrainerOrHelper} onChange={arr=>onVote(ev.id,"duty",arr)}/>
         {["heimspiel","auswarts","freundschaft","turnier"].includes(ev.type)&&<LineupBoard ev={ev}
           present={Object.entries(ev.votes||{}).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>n)}
@@ -23150,6 +23157,7 @@ function UserHome({data,session,onSave,onLogout,lang="de"}) {
     const next={...data,events:data.events.map(e=>{
       if(e.id!==eid)return e;
       if(pt==="carpool")return {...e, votes:{...(e.votes||{}), [user]: val}};
+      if(pt==="carpoolmap")return {...e, carpool:{...(e.carpool||{}), [user]: val}};
       if(pt==="duty")return {...e, duties: val};
       if(pt==="lineup")return {...e, lineup: val};
       if(typeof pt==="string"&&pt.startsWith("extra:")){
