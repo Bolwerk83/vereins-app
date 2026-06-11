@@ -16574,32 +16574,41 @@ function OnbStep1Logo({ cl, data, cid, save, onNext }) {
 }
 
 function OnbStep2Teams({ cl, data, cid, save, teams, onNext, onBack }) {
-  const [name, setName] = useState("");
   const [cat, setCat] = useState(Object.keys(CAT_YEARS)[0]||"E-Jugend");
+  const [count, setCount] = useState(1);
   const [saving, setSaving] = useState(false);
   const TEAM_COLORS = ["#16a34a","#2563eb","#d97706","#7c3aed","#dc2626","#0891b2","#059669","#ea580c"];
   const CATS = Object.keys(CAT_YEARS);
-  const addTeam = async () => {
-    const nm = name.trim(); if (!nm) return;
+  // Automatische Namen je Altersklasse: bei 1 Team "F-Jugend", bei mehreren
+  // "F-Jugend 1", "F-Jugend 2" … – fortlaufend ab bereits vorhandenen Teams.
+  const existingInCat = () => (data.teams||[]).filter(t=>t.cid===cl.id && (t.cat||t.name)===cat).length;
+  const previewNames = () => {
+    const start = existingInCat(); const total = start + count;
+    return Array.from({length:count}, (_,i)=> total>1 ? `${cat} ${start+i+1}` : cat);
+  };
+  const addTeams = async () => {
     setSaving(true);
-    const team = {
-      id: uid(), cid: cl.id, name: nm,
-      icon: nm.slice(0,2).toUpperCase(),
-      col: TEAM_COLORS[teams.length % TEAM_COLORS.length],
-      pub: true, pwd: hashPw("team"),
-      cat, years: CAT_YEARS[cat]||"",
-    };
-    await save({...data, teams:[...(data.teams||[]),team]});
-    setSaving(false); setName("");
+    const start = existingInCat(); const total = start + count;
+    const letter = (cat[0]||"T").toUpperCase();
+    const made = Array.from({length:count}, (_,i)=>{
+      const num = start + i + 1; const numbered = total>1;
+      const nm = numbered ? `${cat} ${num}` : cat;
+      return { id: uid(), cid: cl.id, name: nm, icon: numbered ? letter+num : letter,
+        col: TEAM_COLORS[(teams.length+i) % TEAM_COLORS.length],
+        pub: true, pwd: hashPw("team"), cat, years: CAT_YEARS[cat]||"" };
+    });
+    await save({...data, teams:[...(data.teams||[]), ...made]});
+    setSaving(false); setCount(1);
   };
   const del = async (id) => {
     if (!window.confirm("Diese Mannschaft entfernen?")) return;
     await save({...data, teams:(data.teams||[]).filter(t=>t.id!==id)});
   };
+  const stepBtn = {width:38,height:38,borderRadius:11,border:"1.5px solid rgba(255,255,255,.18)",background:"rgba(255,255,255,.08)",color:"#fff",fontWeight:900,fontSize:20,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center"};
   return (
     <OnbCard
       title="Mannschaften anlegen"
-      sub="Trag deine Mannschaften ein. Du kannst Trikot-Farbe & Passwort später anpassen. Mindestens eine empfehlen wir – sonst wirken die Termine später leer.">
+      sub="Wähle die Altersklasse und die Anzahl – die Namen vergeben wir automatisch (z. B. „F-Jugend 1“). Umbenennen, Trikot-Farbe & Passwort kannst du später unter „Mannschaften“ anpassen.">
       <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:14}}>
         {teams.map(tm=>(
           <div key={tm.id} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 14px",borderRadius:13,background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.08)"}}>
@@ -16613,19 +16622,25 @@ function OnbStep2Teams({ cl, data, cid, save, teams, onNext, onBack }) {
         ))}
       </div>
       <div style={{background:"rgba(255,255,255,.04)",border:"1px dashed rgba(255,255,255,.18)",borderRadius:14,padding:"14px 14px"}}>
-        <input value={name} onChange={e=>setName(e.target.value)} placeholder="Name, z.B. E-Jugend 1"
-          onKeyDown={e=>e.key==="Enter"&&addTeam()}
-          style={{width:"100%",padding:"11px 13px",fontSize:14,background:"rgba(0,0,0,.25)",border:"1.5px solid rgba(255,255,255,.1)",borderRadius:11,outline:"none",color:"#fff",marginBottom:10,boxSizing:"border-box",fontFamily:"inherit"}}/>
         <div style={{fontSize:10,fontWeight:800,color:"rgba(255,255,255,.5)",letterSpacing:.5,marginBottom:6}}>ALTERSKLASSE</div>
-        <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:12}}>
+        <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:14}}>
           {CATS.map(c=>(
             <button key={c} type="button" onClick={()=>setCat(c)}
               style={{padding:"6px 11px",borderRadius:99,border:`1.5px solid ${cat===c?"#22c55e":"rgba(255,255,255,.12)"}`,background:cat===c?"rgba(34,197,94,.2)":"transparent",color:cat===c?"#86efac":"rgba(255,255,255,.6)",fontWeight:700,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>{c}</button>
           ))}
         </div>
-        <button onClick={addTeam} disabled={!name.trim()||saving}
-          style={{width:"100%",padding:"12px",borderRadius:11,border:"none",background:name.trim()&&!saving?"#16a34a":"rgba(255,255,255,.1)",color:name.trim()?"#fff":"rgba(255,255,255,.4)",fontWeight:800,fontSize:14,cursor:name.trim()&&!saving?"pointer":"default",fontFamily:"inherit"}}>
-          {saving?"Speichert…":"+ Mannschaft hinzufügen"}
+        <div style={{fontSize:10,fontWeight:800,color:"rgba(255,255,255,.5)",letterSpacing:.5,marginBottom:6}}>ANZAHL TEAMS</div>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
+          <button type="button" onClick={()=>setCount(c=>Math.max(1,c-1))} style={stepBtn}>−</button>
+          <span style={{minWidth:30,textAlign:"center",fontWeight:900,fontSize:20,color:"#fff"}}>{count}</span>
+          <button type="button" onClick={()=>setCount(c=>Math.min(8,c+1))} style={stepBtn}>+</button>
+        </div>
+        <div style={{fontSize:11.5,color:"rgba(255,255,255,.6)",marginBottom:12,lineHeight:1.5}}>
+          Wird angelegt: <span style={{color:"#86efac",fontWeight:700}}>{previewNames().join(", ")}</span>
+        </div>
+        <button onClick={addTeams} disabled={saving}
+          style={{width:"100%",padding:"12px",borderRadius:11,border:"none",background:!saving?"#16a34a":"rgba(255,255,255,.1)",color:"#fff",fontWeight:800,fontSize:14,cursor:!saving?"pointer":"default",fontFamily:"inherit"}}>
+          {saving?"Speichert…":count===1?"+ Mannschaft hinzufügen":`+ ${count} Mannschaften hinzufügen`}
         </button>
       </div>
       <OnbBtnRow back={onBack} nextLabel="Weiter" onNext={onNext}/>
