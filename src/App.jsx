@@ -3450,6 +3450,7 @@ const getFontSize = () => {
 ================================================================= */
 function AllTeamsOverview({ data, cid, cl, onSelectTeam }) {
   const t = TH(cl);
+  const [showSeason,setShowSeason] = useState(false);
   const myTeams = activeTeamsFor(data,cid);
   const today = new Date().toISOString().slice(0,10);
   const tomorrow = new Date(Date.now()+86400000).toISOString().slice(0,10);
@@ -3471,6 +3472,29 @@ function AllTeamsOverview({ data, cid, cl, onSelectTeam }) {
   const urgent = teamStats.filter(x=>x.isToday||x.isTomorrow);
   const thisWeek = teamStats.filter(x=>x.isThisWeek&&!x.isToday&&!x.isTomorrow);
   const rest = teamStats.filter(x=>!x.isThisWeek);
+
+  // Saison-Statistik je Team: wie viel gespielt, Zusage-Quote, Absagen.
+  const _sid = activeSid(data,cid);
+  const GAME_TYPES = ["heimspiel","auswarts","freundschaft"];
+  const seasonStats = myTeams.map(team=>{
+    const evs = (data.events||[]).filter(e=>e.tid===team.id && (!e.seasonId||e.seasonId===_sid));
+    const past = evs.filter(e=>e.date<today);
+    let yes=0,no=0,late=0;
+    past.forEach(e=>{
+      Object.values(e.votes||{}).forEach(v=>{ const val=(typeof v==="object"&&v)?v.val:v; if(val==="yes")yes++; else if(val==="no")no++; });
+      late += (e.lateCancellations||[]).length;
+    });
+    return {
+      team,
+      total: evs.length,
+      training: evs.filter(e=>e.type==="training").length,
+      games: evs.filter(e=>GAME_TYPES.includes(e.type)).length,
+      turnier: evs.filter(e=>e.type==="turnier").length,
+      quote: (yes+no)>0 ? Math.round(yes/(yes+no)*100) : null,
+      no, late,
+    };
+  });
+  const seasonLabel = (data.seasons||[]).find(s=>s.id===_sid)?.label || "";
 
   const TeamRow = ({ts}) => (
     <div onClick={()=>onSelectTeam&&onSelectTeam(ts.team.id)}
@@ -3516,6 +3540,45 @@ function AllTeamsOverview({ data, cid, cl, onSelectTeam }) {
           </div>
         ))}
       </div>
+
+      {/* Saison-Statistik (ausklappbar) */}
+      {myTeams.length>0 && (
+        <div style={{background:"#fff",borderRadius:14,border:"1.5px solid #e2e8f0",marginBottom:16,overflow:"hidden"}}>
+          <button onClick={()=>setShowSeason(s=>!s)} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"13px 15px",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
+            <span style={{flex:1}}>
+              <span style={{display:"block",fontWeight:800,fontSize:14,color:"#0f172a"}}>Saison-Statistik</span>
+              <span style={{display:"block",fontSize:11.5,color:"#94a3b8",marginTop:1}}>Wie viel jedes Team spielt · Zusage-Quote · Absagen{seasonLabel?" · "+seasonLabel:""}</span>
+            </span>
+            <span style={{fontSize:18,color:"#cbd5e1",transform:showSeason?"rotate(90deg)":"none",transition:"transform .2s"}}>›</span>
+          </button>
+          {showSeason && (
+            <div style={{padding:"0 12px 12px",overflowX:"auto"}}>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:12.5,minWidth:380}}>
+                <thead><tr style={{color:"#94a3b8",fontWeight:800,textAlign:"center"}}>
+                  <th style={{textAlign:"left",padding:"6px 6px"}}>Team</th>
+                  <th title="Termine gesamt">Σ</th><th>Training</th><th>Spiele</th><th>Turnier</th>
+                  <th title="Zusage-Quote vergangener Termine">Zusage</th><th title="Absagen gesamt">Absagen</th><th title="Späte Absagen (nach Frist)">spät</th>
+                </tr></thead>
+                <tbody>
+                  {seasonStats.map(s=>(
+                    <tr key={s.team.id} style={{borderTop:"1px solid #f1f5f9"}}>
+                      <td style={{padding:"7px 6px",fontWeight:700,color:"#0f172a",whiteSpace:"nowrap"}}><span style={{display:"inline-block",width:9,height:9,borderRadius:3,background:s.team.col||t.p,marginRight:6,verticalAlign:"middle"}}/>{s.team.name}</td>
+                      <td style={{textAlign:"center",fontWeight:800}}>{s.total}</td>
+                      <td style={{textAlign:"center"}}>{s.training}</td>
+                      <td style={{textAlign:"center"}}>{s.games}</td>
+                      <td style={{textAlign:"center"}}>{s.turnier}</td>
+                      <td style={{textAlign:"center",fontWeight:800,color:s.quote==null?"#cbd5e1":s.quote>=70?"#16a34a":s.quote>=50?"#d97706":"#dc2626"}}>{s.quote==null?"–":s.quote+"%"}</td>
+                      <td style={{textAlign:"center",color:s.no?"#dc2626":"#94a3b8"}}>{s.no}</td>
+                      <td style={{textAlign:"center",color:s.late?"#b45309":"#94a3b8"}}>{s.late}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p style={{fontSize:10.5,color:"#cbd5e1",marginTop:8,lineHeight:1.45}}>Zusage-Quote = Ja-Stimmen / (Ja+Nein) aller vergangenen Termine. „spät" = Absagen nach Ablauf der Frist.</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {urgent.length>0&&<>
         <div style={{fontSize:11,fontWeight:800,color:"#d97706",marginBottom:8,letterSpacing:.5}}>HEUTE & MORGEN</div>
@@ -21702,7 +21765,8 @@ function RegisterOfferModal({ offer, myTeams, t, onClose, onRegister, guest=fals
   const [strength,setStrength]=useState(fit?.strength||1);
   const [note,setNote]=useState("");
   const [contact,setContact]=useState({email:"",phone:"",whatsapp:""});
-  const ok = teamName.trim() && (!guest || (contact.email.trim()||contact.phone.trim()||contact.whatsapp.trim()));
+  const [consent,setConsent]=useState(false);
+  const ok = teamName.trim() && (!guest || ((contact.email.trim()||contact.phone.trim()||contact.whatsapp.trim()) && consent));
   return (
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:900,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
       <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"90dvh",overflowY:"auto",padding:"20px 22px 40px"}}>
@@ -21725,6 +21789,10 @@ function RegisterOfferModal({ offer, myTeams, t, onClose, onRegister, guest=fals
               <input value={contact.email} onChange={e=>setContact(c=>({...c,email:e.target.value}))} placeholder="E-Mail" style={{flex:1,padding:"10px 12px",fontSize:13.5,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none"}}/>
               <input value={contact.whatsapp} onChange={e=>setContact(c=>({...c,whatsapp:e.target.value}))} placeholder="WhatsApp/Tel." style={{flex:1,padding:"10px 12px",fontSize:13.5,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none"}}/>
             </div>
+            <label style={{display:"flex",alignItems:"flex-start",gap:9,background:consent?"#f0fdf4":"#fffbeb",border:`1.5px solid ${consent?"#bbf7d0":"#fde68a"}`,borderRadius:11,padding:"10px 12px",cursor:"pointer"}}>
+              <input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)} style={{width:17,height:17,accentColor:t.p,flexShrink:0,marginTop:1}}/>
+              <span style={{fontSize:11.5,color:"#334155",lineHeight:1.5}}>Ich bin einverstanden, dass meine Kontaktdaten an den ausrichtenden Verein übermittelt werden, damit dieser mir zur Turnier-Anmeldung antworten kann. Eine Weitergabe an Dritte erfolgt nicht.</span>
+            </label>
           </>}
           <button onClick={()=>ok&&onRegister({teamName:teamName.trim(),teams,strength,note:note.trim(),contact})} disabled={!ok} style={{padding:"13px",borderRadius:12,border:"none",background:ok?t.p:"#e2e8f0",color:"#fff",fontWeight:800,fontSize:15,cursor:ok?"pointer":"default",fontFamily:"inherit"}}>Anmeldung senden</button>
         </div>
