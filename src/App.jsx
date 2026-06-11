@@ -21214,6 +21214,11 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
                 fire("Frist gesetzt *");
               }}
             />}
+        {["heimspiel","auswarts","freundschaft"].includes(viewEv.type)&&!isHelper&&(
+          <MatchReportCard ev={viewEv}
+            roster={(local.playerProfiles||[]).filter(p=>p.mainTid===viewEv.tid&&!p.archived).map(p=>p.name)}
+            onSave={rep=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,report:rep}:e)}); setViewEv(prev=>({...prev,report:rep})); fire("Spielbericht gespeichert"); }}/>
+        )}
         {(viewEv.extraPolls||[]).map(p=>(
           <div key={p.id} style={{marginTop:16,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
@@ -23012,6 +23017,46 @@ function DutyBoard({ ev, user, canManage, onChange }){
 // Mittelfeld/Angriff) stellen; Rest = Bank. Editierbar (Trainer/Admin) bzw.
 // read-only (Eltern sehen, ob sie in der Startelf stehen).
 const LINEUP_LINES = [["T","Tor"],["A","Abwehr"],["M","Mittelfeld"],["S","Angriff"]];
+// Schnell-Spielbericht: Ergebnis + Torschützen + Notiz, in Sekunden nach dem Spiel.
+function MatchReportCard({ ev, roster, onSave }){
+  const r=ev.report||{};
+  const [gf,setGf]=useState(r.gf==null?"":String(r.gf));
+  const [ga,setGa]=useState(r.ga==null?"":String(r.ga));
+  const [scorers,setScorers]=useState(r.scorers||{});
+  const [note,setNote]=useState(r.note||"");
+  const home=ev.type!=="auswarts";
+  const addGoal=(n,d)=>setScorers(s=>{const v=Math.max(0,(s[n]||0)+d);const c={...s};if(v)c[n]=v;else delete c[n];return c;});
+  const totalScorer=Object.values(scorers).reduce((a,b)=>a+b,0);
+  const doSave=()=>onSave({gf:gf===""?null:Number(gf),ga:ga===""?null:Number(ga),scorers,note:note.trim(),ts:new Date().toISOString()});
+  const numIn={width:48,padding:"8px",fontSize:18,fontWeight:900,textAlign:"center",border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none"};
+  return (
+    <div style={{marginTop:16,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
+      <div style={{fontWeight:800,fontSize:14,color:"#0f172a",marginBottom:10}}>📋 Spielbericht{r.ts?<span style={{fontWeight:600,fontSize:11.5,color:"#16a34a",marginLeft:6}}>· gespeichert</span>:""}</div>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:12}}>
+        <span style={{fontSize:12,fontWeight:700,color:"#475569"}}>{home?"Wir":"Gegner"}</span>
+        <input value={home?gf:ga} onChange={e=>(home?setGf:setGa)(e.target.value.replace(/[^0-9]/g,"").slice(0,2))} inputMode="numeric" style={numIn}/>
+        <span style={{fontWeight:900,color:"#94a3b8"}}>:</span>
+        <input value={home?ga:gf} onChange={e=>(home?setGa:setGf)(e.target.value.replace(/[^0-9]/g,"").slice(0,2))} inputMode="numeric" style={numIn}/>
+        <span style={{fontSize:12,fontWeight:700,color:"#475569"}}>{home?"Gegner":"Wir"}</span>
+      </div>
+      <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6}}>TORSCHÜTZEN {totalScorer>0?`(${totalScorer})`:""}</div>
+      <div style={{display:"flex",flexDirection:"column",gap:5,maxHeight:210,overflowY:"auto",marginBottom:10}}>
+        {roster.length===0&&<div style={{fontSize:12,color:"#94a3b8"}}>Keine Spieler zugeordnet.</div>}
+        {roster.map(n=>{const g=scorers[n]||0;return (
+          <div key={n} style={{display:"flex",alignItems:"center",gap:8,background:g?"#f0fdf4":"#f8fafc",border:`1px solid ${g?"#bbf7d0":"#e2e8f0"}`,borderRadius:9,padding:"6px 10px"}}>
+            <Av name={n} sz={22}/><span style={{flex:1,minWidth:0,fontSize:13,fontWeight:600,color:"#334155",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{n}</span>
+            <button onClick={()=>addGoal(n,-1)} style={{width:26,height:26,borderRadius:7,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:900,cursor:"pointer"}}>−</button>
+            <span style={{minWidth:18,textAlign:"center",fontWeight:800,color:g?"#16a34a":"#cbd5e1"}}>{g}</span>
+            <button onClick={()=>addGoal(n,1)} style={{width:26,height:26,borderRadius:7,border:"1.5px solid #bbf7d0",background:"#f0fdf4",color:"#16a34a",fontWeight:900,cursor:"pointer"}}>+</button>
+          </div>
+        );})}
+      </div>
+      <input value={note} onChange={e=>setNote(e.target.value)} placeholder="Kurze Notiz (optional)" style={{width:"100%",padding:"10px 12px",fontSize:13.5,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",boxSizing:"border-box",marginBottom:10}}/>
+      <button onClick={doSave} style={{width:"100%",padding:"11px",borderRadius:11,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Spielbericht speichern</button>
+    </div>
+  );
+}
+
 function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChange=undefined, profiles=[] }){
   const lu = ev.lineup || {T:[],A:[],M:[],S:[]};
   const placed = [...(lu.T||[]),...(lu.A||[]),...(lu.M||[]),...(lu.S||[])];
