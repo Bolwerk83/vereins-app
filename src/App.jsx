@@ -14430,7 +14430,7 @@ function sollFor(cl, cat, axes) {
 // Empfohlene Spieleranzahl auf dem Feld je Altersklasse (DFB-Spielformen, Stand 2024/25)
 const SOLL_PLAYERS_BY_CAT = {
   "Bambinis":3,"G-Jugend":3,"F-Jugend":5,"E-Jugend":7,"D-Jugend":9,
-  "C-Jugend":11,"B-Jugend":11,"A-Jugend":11,"Senioren":11,"Alt-Herren":11,"Frauen":11,"Maedchen":7
+  "C-Jugend":11,"B-Jugend":11,"A-Jugend":11,"Senioren":11,"Alt-Herren":11,"Damen":11,"Mädchen":11,"Frauen":11,"Maedchen":7
 };
 const defaultSollPlayers = cat => SOLL_PLAYERS_BY_CAT[cat] ?? 7;
 
@@ -15214,8 +15214,10 @@ const AXIS_TO_FOCUS = {
 
 const CAT_YEARS = {
 
-  "Bambinis": [2019,2020,2021,2022],"G-Jugend": [2017,2018,2019],"F-Jugend": [2015,2016,2017],"E-Jugend": [2013,2014,2015],"D-Jugend": [2011,2012,2013],"C-Jugend": [2009,2010,2011],"B-Jugend": [2007,2008,2009],"A-Jugend": [2005,2006,2007],};
-const CAT_ORDER = ["Bambinis","G-Jugend","F-Jugend","E-Jugend","D-Jugend","C-Jugend","B-Jugend","A-Jugend"];
+  "Bambinis": [2019,2020,2021,2022],"G-Jugend": [2017,2018,2019],"F-Jugend": [2015,2016,2017],"E-Jugend": [2013,2014,2015],"D-Jugend": [2011,2012,2013],"C-Jugend": [2009,2010,2011],"B-Jugend": [2007,2008,2009],"A-Jugend": [2005,2006,2007],
+  // Erwachsene / weitere Mannschaften: keine festen Jahrgänge (manuelle Zuordnung).
+  "Senioren": [],"Alt-Herren": [],"Damen": [],"Mädchen": [],};
+const CAT_ORDER = ["Bambinis","G-Jugend","F-Jugend","E-Jugend","D-Jugend","C-Jugend","B-Jugend","A-Jugend","Senioren","Alt-Herren","Damen","Mädchen"];
 
 function eligibleCats(by,gender) {
   const boost = gender === "w" ? 2 : 0;
@@ -16907,7 +16909,7 @@ function OnbStep2Teams({ cl, data, cid, save, teams, onNext, onBack }) {
 function OnbStep3Trainers({ cl, data, cid, save, teams, trainers, onNext, onBack }) {
   const [f, setF] = useState({name:"",tids:[]});
   const [saving, setSaving] = useState(false);
-  const [genPwd, setGenPwd] = useState("");
+  const [lastInvite, setLastInvite] = useState(null); // {name, code, id}
   const u = p => setF(prev=>({...prev,...p}));
   const toggleTid = (id) => u({tids:f.tids.includes(id)?f.tids.filter(x=>x!==id):[...f.tids,id]});
 
@@ -16919,8 +16921,16 @@ function OnbStep3Trainers({ cl, data, cid, save, teams, trainers, onNext, onBack
     const rec = { id: uid(), cid, name: nm, role:"Trainer", tids:f.tids, pw: hashPw(pw), mustChangePw:true, sharedAt:null, phone:"", email:"" };
     await save({...data, trainers:[...(data.trainers||[]),rec]});
     setSaving(false); setF({name:"",tids:[]});
-    setGenPwd(`${nm}: ${pw}`);
-    setTimeout(()=>setGenPwd(""), 12000);
+    setLastInvite({name:nm, code:pw, id:rec.id});
+  };
+  const inviteLink = (typeof window!=="undefined"?window.location.origin:"") + "?club=" + (cl?.slug||cl?.id||"");
+  const inviteMsg = (name,code) => `Hallo ${name},\n\nhier dein Zugang zur Vereins-App von ${cl?.name||"unserem Verein"} als Trainer:\n\nLink: ${inviteLink}\nEinmal-Passwort: ${code}\n\nSo geht's: Link öffnen, "${cl?.name||"Verein"}" wählen, Rolle "Trainer", deinen Namen antippen, Einmal-Passwort eingeben. Beim ersten Login vergibst du dein eigenes Passwort (mind. 6 Zeichen, Buchstaben + Zahlen).`;
+  const markShared = (id) => save({...data, trainers:(data.trainers||[]).map(x=>x.id===id?{...x,sharedAt:new Date().toISOString()}:x)});
+  const shareInvite = (inv) => {
+    const msg=inviteMsg(inv.name,inv.code);
+    if(navigator.share){ navigator.share({title:cl?.name||"Vereins-App",text:msg}).catch(()=>{}); }
+    else { navigator.clipboard?.writeText(msg); }
+    markShared(inv.id);
   };
   const del = async (id) => {
     if (!window.confirm("Diesen Trainer entfernen?")) return;
@@ -16945,9 +16955,15 @@ function OnbStep3Trainers({ cl, data, cid, save, teams, trainers, onNext, onBack
           );
         })}
       </div>
-      {genPwd && (
-        <div style={{background:"rgba(34,197,94,.12)",border:"1px solid rgba(34,197,94,.35)",borderRadius:12,padding:"10px 14px",marginBottom:14,color:"#86efac",fontSize:13,fontWeight:700}}>
-          Login-Code: <span style={{fontFamily:"monospace",letterSpacing:1}}>{genPwd}</span> · weitergeben oder im Trainer-Tab neu setzen.
+      {lastInvite && (
+        <div style={{background:"rgba(34,197,94,.12)",border:"1px solid rgba(34,197,94,.35)",borderRadius:12,padding:"12px 14px",marginBottom:14}}>
+          <div style={{color:"#86efac",fontSize:13,fontWeight:700,marginBottom:8}}>{lastInvite.name} · Einmal-Passwort: <span style={{fontFamily:"monospace",letterSpacing:1}}>{lastInvite.code}</span></div>
+          <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
+            <button onClick={()=>{window.open(`https://wa.me/?text=${encodeURIComponent(inviteMsg(lastInvite.name,lastInvite.code))}`,"_blank");markShared(lastInvite.id);}} style={{flex:"1 1 auto",padding:"9px 12px",borderRadius:10,border:"none",background:"#25D366",color:"#fff",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>WhatsApp</button>
+            {typeof navigator!=="undefined"&&navigator.share&&<button onClick={()=>shareInvite(lastInvite)} style={{flex:"1 1 auto",padding:"9px 12px",borderRadius:10,border:"1px solid rgba(255,255,255,.25)",background:"rgba(255,255,255,.1)",color:"#fff",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Teilen</button>}
+            <button onClick={()=>{navigator.clipboard?.writeText(inviteMsg(lastInvite.name,lastInvite.code));markShared(lastInvite.id);}} style={{flex:"1 1 auto",padding:"9px 12px",borderRadius:10,border:"1px solid rgba(255,255,255,.25)",background:"rgba(255,255,255,.1)",color:"#fff",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Kopieren</button>
+            <button onClick={()=>setLastInvite(null)} style={{flexShrink:0,padding:"9px 12px",borderRadius:10,border:"none",background:"rgba(255,255,255,.08)",color:"rgba(255,255,255,.55)",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>✕</button>
+          </div>
         </div>
       )}
       <div style={{background:"rgba(255,255,255,.04)",border:"1px dashed rgba(255,255,255,.18)",borderRadius:14,padding:"14px 14px"}}>
