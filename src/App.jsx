@@ -21043,7 +21043,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             const myCats=[...new Set((local.teams||[]).filter(tm=>myTids.includes(tm.id)).map(tm=>tm.cat||tm.name))];
             const mg=plzToGeo(myClub?.plz);
             const pset=new Set(myClub?.partners||[]);
-            const rad=(local.tournamentOffers||[]).filter(o=>!o.closed && o.hostCid!==cid && myCats.includes(o.cat) && o.date>=tod && !(local.tournamentRegs||[]).some(r=>r.offerId===o.id&&r.byCid===cid)).map(o=>{const g=offerGeo(o);return {...o,_d:(mg&&g)?geoDistanceKm(mg,g):null,_partner:pset.has(o.hostCid)};}).filter(o=>o._partner||o._d==null||o._d<=50).sort((a,b)=>(b._partner?1:0)-(a._partner?1:0)||(a._d??999)-(b._d??999));
+            const rad=(local.tournamentOffers||[]).filter(o=>!o.closed && o.hostCid!==cid && o.date>=tod && !(local.tournamentRegs||[]).some(r=>r.offerId===o.id&&r.byCid===cid)).map(o=>{const g=offerGeo(o);return {...o,_d:(mg&&g)?geoDistanceKm(mg,g):null,_partner:pset.has(o.hostCid),_invited:(o.invitedCids||[]).includes(cid)};}).filter(o=>(o._invited||myCats.includes(o.cat))&&(o._invited||o._partner||o._d==null||o._d<=50)).sort((a,b)=>(b._invited?1:0)-(a._invited?1:0)||(b._partner?1:0)-(a._partner?1:0)||(a._d??999)-(b._d??999));
             if(rad.length===0) return null;
             return (
               <div onClick={goBoerse} style={{background:"linear-gradient(135deg,#f59e0b,#ea580c)",borderRadius:18,padding:"14px 16px",marginBottom:14,cursor:"pointer",color:"#fff",boxShadow:"0 8px 24px -8px rgba(234,88,12,.6)"}}>
@@ -21664,6 +21664,8 @@ function TournBoerse({ data, cid, myTids, cl, save, fire }){
   const [fCat,setFCat]=useState("all");
   const [fStr,setFStr]=useState(0);
   const [regFor,setRegFor]=useState(null);   // offer being registered to
+  const [inviteFor,setInviteFor]=useState(null);   // offer for directed invites
+  const setInvited = (oid,cids) => writeOffers(offers.map(o=>o.id===oid?{...o,invitedCids:cids}:o));
   const writeOffers = arr => save({...data, tournamentOffers:arr});
   const writeRegs   = arr => save({...data, tournamentRegs:arr});
 
@@ -21671,9 +21673,9 @@ function TournBoerse({ data, cid, myTids, cl, save, fire }){
   const partnerSet = new Set(myClub.partners||[]);
   const togglePartner = clubId => save({...data, clubs:(data.clubs||[]).map(c=>c.id===cid?{...c, partners:(c.partners||[]).includes(clubId)?(c.partners||[]).filter(x=>x!==clubId):[...(c.partners||[]),clubId]}:c)});
   const withDist = offers.filter(o=>!o.closed && o.hostCid!==cid).map(o=>{
-    const g=offerGeo(o); const dist=(myGeo&&g)?geoDistanceKm(myGeo,g):null; return {...o,_dist:dist,_partner:partnerSet.has(o.hostCid)};
-  }).filter(o=> (fCat==="all"||o.cat===fCat) && (fStr===0||(o.strengths||[]).includes(fStr)) && (o._partner || o._dist==null || o._dist<=radius))
-    .sort((a,b)=> (b._partner?1:0)-(a._partner?1:0) || (a._dist??9999)-(b._dist??9999));
+    const g=offerGeo(o); const dist=(myGeo&&g)?geoDistanceKm(myGeo,g):null; return {...o,_dist:dist,_partner:partnerSet.has(o.hostCid),_invited:(o.invitedCids||[]).includes(cid)};
+  }).filter(o=> (fCat==="all"||o.cat===fCat) && (fStr===0||(o.strengths||[]).includes(fStr)) && (o._invited || o._partner || o._dist==null || o._dist<=radius))
+    .sort((a,b)=> (b._invited?1:0)-(a._invited?1:0) || (b._partner?1:0)-(a._partner?1:0) || (a._dist??9999)-(b._dist??9999));
 
   const myRegFor = oid => regs.find(r=>r.offerId===oid && r.byCid===cid);
   const doRegister = (offer, payload) => {
@@ -21752,7 +21754,7 @@ function TournBoerse({ data, cid, myTids, cl, save, fire }){
             <div key={o.id} style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:14,padding:"13px 15px"}}>
               <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontWeight:900,fontSize:15,color:"#0f172a"}}>{o._partner&&<span style={{color:"#d97706",marginRight:4}}>★</span>}{o.title}{o._partner&&<span style={{marginLeft:6,fontSize:10,fontWeight:800,color:"#9a3412",background:"#ffedd5",borderRadius:6,padding:"1px 7px",verticalAlign:"middle"}}>PARTNER</span>}</div>
+                  <div style={{fontWeight:900,fontSize:15,color:"#0f172a"}}>{o._partner&&<span style={{color:"#d97706",marginRight:4}}>★</span>}{o.title}{o._invited&&<span style={{marginLeft:6,fontSize:10,fontWeight:800,color:"#1e40af",background:"#dbeafe",borderRadius:6,padding:"1px 7px",verticalAlign:"middle"}}>📨 EINGELADEN</span>}{o._partner&&<span style={{marginLeft:6,fontSize:10,fontWeight:800,color:"#9a3412",background:"#ffedd5",borderRadius:6,padding:"1px 7px",verticalAlign:"middle"}}>PARTNER</span>}</div>
                   <div style={{fontSize:12,color:"#64748b",marginTop:2}}>{o.hostName} · {o.cat} · {fmtD(o.date)}{o.time?" "+o.time:""}</div>
                   <div style={{fontSize:12,color:"#94a3b8",marginTop:2}}>{o.loc||o.plz} · {o.minTeams}–{o.maxTeams} Teams</div>
                   <div style={{marginTop:6}}><StrBadges ids={o.strengths}/></div>
@@ -21808,6 +21810,7 @@ function TournBoerse({ data, cid, myTids, cl, save, fire }){
               ))}
             </div>
             <div style={{display:"flex",gap:8,marginTop:10}}>
+              <button onClick={()=>setInviteFor(o)} style={{flex:1,padding:"8px",borderRadius:9,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>📨 Vereine einladen{(o.invitedCids||[]).length?` (${o.invitedCids.length})`:""}</button>
               <button onClick={()=>closeOffer(o.id,!o.closed)} style={{flex:1,padding:"8px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{o.closed?"Wieder öffnen":"Anmeldung schließen"}</button>
               <button onClick={()=>delOffer(o.id)} style={{flexShrink:0,padding:"8px 13px",borderRadius:9,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Löschen</button>
             </div>
@@ -21865,6 +21868,31 @@ function TournBoerse({ data, cid, myTids, cl, save, fire }){
       })()}
 
       {regFor && <RegisterOfferModal offer={regFor} myTeams={myTeams} t={t} onClose={()=>setRegFor(null)} onRegister={p=>doRegister(regFor,p)}/>}
+      {inviteFor && (()=>{
+        const o=offers.find(x=>x.id===inviteFor.id)||inviteFor;
+        const inv=o.invitedCids||[];
+        const others=(data.clubs||[]).filter(c=>c.id!==cid).sort((a,b)=>(partnerSet.has(b.id)?1:0)-(partnerSet.has(a.id)?1:0)||String(a.name).localeCompare(String(b.name)));
+        const shareInvite=c=>{ const txt=`Einladung zum Turnier: ${o.title}\n${o.hostName} · ${o.cat} · ${fmtD(o.date)}\nAnmeldung: ${offerRegLink(o)}`; if(navigator.share){navigator.share({title:o.title,text:txt}).catch(()=>{});} else {navigator.clipboard?.writeText(txt); fire("Einladungstext kopiert");} };
+        return (
+          <div onClick={()=>setInviteFor(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:900,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+            <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"90dvh",overflowY:"auto",padding:"20px 22px 40px"}}>
+              <h3 style={{fontWeight:900,fontSize:18,color:"#0f172a",margin:"0 0 4px"}}>Vereine einladen</h3>
+              <p style={{fontSize:12.5,color:"#64748b",margin:"0 0 14px",lineHeight:1.5}}>Eingeladene Vereine sehen „{o.title}" bevorzugt (📨) im Turnier-Radar und in „Finden" – unabhängig vom Umkreis. Zusätzlich kannst du jeden per Link teilen.</p>
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {others.length===0&&<div style={{textAlign:"center",color:"#94a3b8",fontSize:13,padding:"18px"}}>Keine anderen Vereine im Verzeichnis.</div>}
+                {others.map(c=>{const on=inv.includes(c.id);const part=partnerSet.has(c.id);return (
+                  <div key={c.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:12,border:`1.5px solid ${on?"#3b82f6":"#e2e8f0"}`,background:on?"#eff6ff":"#fff"}}>
+                    <span style={{flex:1,minWidth:0}}><span style={{display:"block",fontWeight:800,fontSize:13.5,color:"#0f172a"}}>{part&&<span style={{color:"#d97706"}}>★ </span>}{c.name}</span><span style={{display:"block",fontSize:11,color:"#94a3b8"}}>{c.sport||"Fußball"}{c.plz?" · "+c.plz:""}</span></span>
+                    <button onClick={()=>shareInvite(c)} style={{padding:"6px 10px",borderRadius:8,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Teilen</button>
+                    <button onClick={()=>setInvited(o.id, on?inv.filter(x=>x!==c.id):[...inv,c.id])} style={{padding:"6px 12px",borderRadius:8,border:"none",background:on?"#16a34a":t.p,color:"#fff",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{on?"✓ eingeladen":"Einladen"}</button>
+                  </div>
+                );})}
+              </div>
+              <button onClick={()=>setInviteFor(null)} style={{width:"100%",marginTop:14,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Fertig</button>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
