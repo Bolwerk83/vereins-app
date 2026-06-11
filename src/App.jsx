@@ -20949,6 +20949,17 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const [tab,setTab]=useState("events"); // BottomNav manages this
   const [teamSub,setTeamSub]=useState(null); // Sprungziel im Team-Bereich (z.B. Turnier-Börse)
   const goBoerse=()=>{ setTeamSub("boerse"); setTab("team"); };
+  const remindNonVoters=(ev)=>{
+    const roster=(local.playerProfiles||[]).filter(p=>p.mainTid===ev.tid && !p.archived).map(p=>p.name);
+    if(roster.length===0){ fire("Keine Spieler zugeordnet"); return; }
+    const voted=new Set(Object.keys(ev.votes||{}));
+    const missing=roster.filter(n=>!voted.has(n));
+    if(missing.length===0){ fire("Alle haben abgestimmt 🎉"); return; }
+    const link=(typeof window!=="undefined"?window.location.origin:"")+"/?club="+(myClub?.slug||cid);
+    const txt=`Erinnerung – bitte abstimmen für „${ev.title}" am ${fmtD(ev.date)}${ev.time?" "+ev.time+" Uhr":""}.\n\nEs fehlt noch von: ${missing.join(", ")}\n\n${link}`;
+    if(navigator.share){ navigator.share({title:ev.title,text:txt}).catch(()=>{}); } else { navigator.clipboard?.writeText(txt); }
+    fire(`${missing.length} noch offen – Erinnerung erstellt`);
+  };
   const [local,setLocal]=useState(()=>JSON.parse(JSON.stringify(data)));
   const [toast,setToast]=useState(null);
   const unreadMsgs = useMemo(()=>{
@@ -21125,10 +21136,10 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             </div>
             <div style={{width:32,height:32,borderRadius:10,background:"rgba(0,0,0,.15)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:18,fontWeight:700,flexShrink:0}}>{">"}</div>
           </div>
-          {up.length>0&&<><Divider label={`NÄCHSTE 10 TAGE (${soon.length})`}/>{soon.length>0?soon.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={selfName} onSelfVote={selfVote}/>):<p style={{textAlign:"center",color:"#94a3b8",fontSize:13.5,padding:"14px 10px"}}>Keine Termine in den nächsten 10 Tagen.</p>}
+          {up.length>0&&<><Divider label={`NÄCHSTE 10 TAGE (${soon.length})`}/>{soon.length>0?soon.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={selfName} onSelfVote={selfVote} onRemind={()=>remindNonVoters(ev)}/>):<p style={{textAlign:"center",color:"#94a3b8",fontSize:13.5,padding:"14px 10px"}}>Keine Termine in den nächsten 10 Tagen.</p>}
             {later.length>0&&<>
               <button onClick={()=>setShowLater(s=>!s)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",background:showLater?"#f1f5f9":"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,cursor:"pointer",margin:"6px 0 12px",padding:"11px 14px",fontWeight:800,fontSize:13,color:"#475569",fontFamily:"inherit"}}>{showLater?"▲ Weitere Termine ausblenden":"▼ Weitere "+later.length+" Termine anzeigen"}</button>
-              {showLater&&later.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={selfName} onSelfVote={selfVote}/>)}
+              {showLater&&later.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={selfName} onSelfVote={selfVote} onRemind={()=>remindNonVoters(ev)}/>)}
             </>}
           </>}
           {up.length===0&&<div style={{textAlign:"center",padding:"30px",background:"#fff",borderRadius:18,border:"1.5px dashed #e2e8f0",color:"#94a3b8"}}><Logo cl={myClub} sz={50} sx={{margin:"0 auto 12px"}}/><p style={{fontWeight:800,fontSize:15}}>Noch keine Termine</p><p style={{fontSize:13,marginTop:3}}>Klicke oben auf "Neuen Termin anlegen"</p></div>}
@@ -21504,7 +21515,7 @@ function eventWarnings(ev, tod){
   return w;
 }
 
-function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSelfVote}) {
+function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSelfVote,onRemind}) {
   const eT=ET[ev.type]||ET.training; const tF=ev.date===tod; const p=cl?.pri||"#16a34a";
   const warns=eventWarnings(ev,tod);
   const _v=ev.votes||{};
@@ -21585,6 +21596,7 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
       <div style={{display:"flex",gap:6,padding:"8px 12px 10px",borderTop:"1px solid #f1f5f9",flexWrap:"wrap"}}>
         <BtnSm onClick={onView}  icon="*" label="Ansehen"   bg="#f1f5f9" col="#475569"/>
         <BtnSm onClick={onEdit}  icon="**" label="Bearbeiten" bg="#f0fdf4" col="#16a34a"/>
+        {onRemind&&(ev.pt==="att"||!ev.pt)&&ev.date>=tod&&<BtnSm onClick={onRemind} icon="🔔" label="Erinnern" bg="#e0f2fe" col="#0369a1"/>}
         <BtnSm onClick={onReset} icon="*" label="Zurücksetzen" bg="#fff7ed" col="#d97706"/>
         {ev.open&&<BtnSm onClick={onCopyLink} icon="*" label="Link kopieren" bg="#ede9fe" col="#7c3aed"/>}
         <BtnSm onClick={onDel}   icon="*" label="Löschen"   bg="#fee2e2" col="#dc2626"/>
