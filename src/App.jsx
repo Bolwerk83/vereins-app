@@ -21420,8 +21420,33 @@ function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline}) {
   );
 }
 
+// Modulübergreifende Auto-Hinweise pro Termin (für Trainer/Admin).
+function eventWarnings(ev, tod){
+  const w=[];
+  if(!ev || isEventPast(ev)) return w;
+  const days = ev.date ? Math.round((new Date(ev.date+"T12:00:00")-new Date(tod+"T12:00:00"))/86400000) : 99;
+  const isGame = ["heimspiel","auswarts","freundschaft","turnier"].includes(ev.type);
+  const yes = Object.values(ev.votes||{}).filter(v=>(typeof v==="object"?v.val:v)==="yes").length;
+  if(isGame && days<=3){
+    const lu=ev.lineup||{}; const placed=[...(lu.T||[]),...(lu.A||[]),...(lu.M||[]),...(lu.S||[])].length;
+    if(placed===0) w.push({label:"Aufstellung fehlt",col:"#7c3aed",bg:"#ede9fe"});
+  }
+  if((ev.pt==="att"||!ev.pt) && days<=4 && ev.sollPlayers>0 && yes<ev.sollPlayers){
+    w.push({label:`nur ${yes}/${ev.sollPlayers} Zusagen`,col:"#dc2626",bg:"#fee2e2"});
+  }
+  if(ev.type==="auswarts" && days<=4){
+    const cp=ev.carpool||{};
+    const drivers=Object.values(cp).filter(e=>e&&e.mode==="drive");
+    const needers=Object.values(cp).filter(e=>e&&e.mode==="need");
+    const seats=drivers.reduce((s,d)=>s+(Number(d.seats)||0),0);
+    if(needers.length>0 && needers.length>seats) w.push({label:"Fahrer fehlt",col:"#b45309",bg:"#ffedd5"});
+  }
+  return w;
+}
+
 function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSelfVote}) {
   const eT=ET[ev.type]||ET.training; const tF=ev.date===tod; const p=cl?.pri||"#16a34a";
+  const warns=eventWarnings(ev,tod);
   const _v=ev.votes||{};
   const vc=Object.keys(_v).length;
   const yes=ev.pt==="att"?Object.values(_v).filter(v=>(typeof v==="object"?v.val:v)==="yes").length:0;
@@ -21456,6 +21481,7 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
         <div style={{flex:1,minWidth:0}}>
           <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}><span style={{fontWeight:800,fontSize:14,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ev.title}</span>{tF&&<Tag c={p} bg={p+"20"} ch="Heute"/>}{ev.open&&<Tag c="#7c3aed" bg="#ede9fe" ch="* Offen"/>}{ev.sid&&<Tag c="#94a3b8" bg="#f1f5f9" ch="* Serie"/>}</div>
           <div style={{fontSize:12,color:"#64748b",marginTop:3}}>{fmtDShort(ev.date)}{ev.time?" . "+ev.time:""}{ev.loc?" . *"+ev.loc:""}</div>
+          {warns.length>0&&<div style={{display:"flex",gap:5,marginTop:5,flexWrap:"wrap"}}>{warns.map((w,i)=><span key={i} style={{fontSize:11,fontWeight:800,color:w.col,background:w.bg,borderRadius:6,padding:"2px 8px"}}>⚠ {w.label}</span>)}</div>}
           {vc>0&&<div style={{display:"flex",gap:5,marginTop:4,flexWrap:"wrap"}}>{ev.pt==="att"?<><Tag c="#16a34a" ch={`* ${yes}`}/><Tag c="#dc2626" bg="#fee2e2" ch={`* ${no}`}/></>:<Tag c="#2563eb" ch={`* ${vc} Eintraege`}/>}</div>}
           {ev.deadline&&<div style={{marginTop:4}}><span style={{fontSize:11,fontWeight:700,color:dlPassed?"#dc2626":"#d97706",background:dlPassed?"#fee2e2":"#fef3c7",borderRadius:6,padding:"2px 8px"}}> {dlPassed?"Frist abgelaufen":"Frist: "}{!dlPassed&&ev.deadline.date}</span></div>}
           {upcoming5 && !votingLocked && msToStart>0 && (
