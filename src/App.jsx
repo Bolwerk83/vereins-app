@@ -13435,7 +13435,7 @@ function Directory({data,onPick,onNewClub,onVisitorOpen,lang,setLang}) {
       onMouseEnter={e=>{e.currentTarget.style.background="rgba(255,255,255,.1)";e.currentTarget.style.transform="translateY(-3px)";e.currentTarget.style.boxShadow="0 16px 32px -18px rgba(0,0,0,.75)";}}
       onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,.06)";e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="none";}}>
       <div style={{display:"flex",alignItems:"center",gap:11,marginBottom:12}}>
-        <div style={{width:44,height:44,borderRadius:13,background:(cl.pri||"#16a34a")+"26",border:`1px solid ${(cl.pri||"#16a34a")}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:19,flexShrink:0}}>{cl.em||"*"}</div>
+        <Logo cl={cl} sz={44}/>
         <div style={{minWidth:0,flex:1}}>
           <div style={{fontWeight:800,fontSize:14,color:"#fff",lineHeight:1.2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{cl.name}</div>
           <div style={{fontSize:11,color:"rgba(255,255,255,.42)",marginTop:2,textTransform:"capitalize"}}>{cl.sport||"Fußball"}</div>
@@ -13669,17 +13669,6 @@ function Directory({data,onPick,onNewClub,onVisitorOpen,lang,setLang}) {
                   {SPORT_LABELS[s]}
                 </button>
               ))}
-            </div>
-          </div>
-        )}
-
-        {/* Mobil: schlichter Trenner (Suche/Filter stehen mobil bereits oben) */}
-        {!isDesktop && !search && filtered.length>0 && (
-          <div style={{textAlign:"center",margin:"0 auto 16px",maxWidth:560}}>
-            <div style={{display:"flex",alignItems:"center",gap:12,justifyContent:"center"}}>
-              <div style={{flex:1,height:1,background:"rgba(255,255,255,.1)"}}/>
-              <span style={{fontSize:12,fontWeight:800,color:"rgba(255,255,255,.6)",whiteSpace:"nowrap"}}>Schon dabei? Finde deinen Verein</span>
-              <div style={{flex:1,height:1,background:"rgba(255,255,255,.1)"}}/>
             </div>
           </div>
         )}
