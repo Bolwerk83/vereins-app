@@ -16920,19 +16920,6 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
   const [showOpt,setShowOpt] = useState(false);
   const [skillCheck,setSkillCheck] = useState(null); // Team für Monats-Skill-Check
   const [wizardChild,setWizardChild] = useState(null); // Kind für Skill-Wizard (Erstbewertung)
-  const [adminNotified,setAdminNotified] = useState(false);
-  // Trainer/Helfer kann den Vereinsadmin bitten, Spieler anzulegen (landet im Posteingang).
-  const notifyAdminAddPlayers = () => {
-    const who = session?.name || (session?.role==="trainer"?"Ein Trainer":"Ein Helfer");
-    const teamName = selTeam?.name || "eine Mannschaft";
-    const dup = (data.contactRequests||[]).some(r=>r.cid===cid&&r.kind==="need_players"&&r.team===selTid&&!r.read);
-    if(!dup){
-      const req = { id:uid(), cid, fromName:who, fromEmail:"", msg:`Bitte Spieler für „${teamName}" anlegen – der Hauptkader ist noch leer.`, ts:new Date().toISOString(), read:false, blocked:false, internal:true, kind:"need_players", team:selTid };
-      save({...data, contactRequests:[...(data.contactRequests||[]), req]});
-    }
-    setAdminNotified(true);
-    fire("Vereinsadmin benachrichtigt *");
-  };
   const sport = cl?.sport || "fussball";
   const skillAxes = skillAxesFor(sport);
   const raterId = session?.id || session?.role || "trainer";
@@ -17119,11 +17106,6 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
               <div style={{fontSize:36,marginBottom:8}}></div>
               <p style={{fontWeight:700,color:"#334155"}}>Noch keine Spieler im Hauptkader</p>
               <p style={{fontSize:13,color:"#94a3b8",marginTop:4}}>+ Spieler oder wechsle zur Zuteilungs-Ansicht</p>
-              {session?.role!=="admin"&&(
-                adminNotified
-                  ? <div style={{marginTop:14,fontSize:13,fontWeight:700,color:"#16a34a"}}>✓ Vereinsadmin benachrichtigt</div>
-                  : <button onClick={notifyAdminAddPlayers} style={{marginTop:14,padding:"10px 16px",borderRadius:11,border:`1.5px solid ${t.p}`,background:t.p+"10",color:t.p,fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>📩 Vereinsadmin bitten, Spieler anzulegen</button>
-              )}
             </div>
           )}
 
