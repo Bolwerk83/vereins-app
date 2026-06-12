@@ -36,7 +36,7 @@ const APPS = [
     tags: ["Termine", "Abstimmungen", "Chat", "Push", "PWA"],
     color: "#16a34a",
     status: "live",
-    url: "https://vereinsapp.bolwerk24.de",
+    url: "https://verein.bolwerk24.de",
     rating: 4.9,
     reviews: 128,
     featured: true,
