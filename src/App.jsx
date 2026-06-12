@@ -24814,6 +24814,20 @@ function AppInner({lang,setLang}) {
       {screen==="alogin"&&activeCl&&<AdminLogin cl={activeCl} onLogin={a=>login("admin",{...a,cid})} onBack={()=>setScr("role")}/>}
       {screen==="user"  &&session&&activeCl&&<UserHome data={data} session={session} onSave={save} onLogout={logout} lang={lang} setLang={setLang}/>}
       {screen==="dash"  &&session&&activeCl&&<Dashboard data={data} session={session} onSave={save} onLogout={logout} lang={lang} setLang={setLang}/>}
+      {/* Sicherheitsnetz: eingeloggt, aber Vereinsdaten (noch) nicht geladen (z.B.
+          Cloud kurz nicht erreichbar beim Start). Statt leerer grauer Seite einen
+          klaren Hinweis zeigen; der 10s-Sync laedt die Daten automatisch nach. */}
+      {(screen==="dash"||screen==="user")&&session&&!activeCl&&(
+        <div style={{minHeight:"100dvh",display:"flex",alignItems:"center",justifyContent:"center",background:"#0f172a",padding:24}}>
+          <div style={{textAlign:"center",maxWidth:340}}>
+            <div style={{fontSize:50,marginBottom:12}}>📡</div>
+            <p style={{color:"#86efac",fontWeight:800,fontSize:17,marginBottom:8}}>Verbindung wird hergestellt…</p>
+            <p style={{color:"rgba(255,255,255,.55)",fontSize:13,lineHeight:1.5,marginBottom:18}}>Deine Vereinsdaten konnten gerade nicht geladen werden – das passiert kurz bei schwacher Verbindung. Es wird automatisch erneut versucht.</p>
+            <button onClick={()=>window.location.reload()} style={{padding:"11px 22px",borderRadius:11,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Neu laden</button>
+            <button onClick={logout} style={{display:"block",margin:"12px auto 0",padding:"8px 16px",borderRadius:10,border:"1px solid rgba(255,255,255,.2)",background:"transparent",color:"rgba(255,255,255,.6)",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Abmelden</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
