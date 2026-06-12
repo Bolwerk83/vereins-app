@@ -61,3 +61,41 @@ export const formatCountdown = (ms) => {
   if (hrs > 0)  return `${hrs} h ${mins} m`;
   return `${mins} m`;
 };
+
+// ----------------------------------------------------------------
+// Skill-Bewertung (monatlich) – reine Mathematik, isoliert testbar.
+// Werte laufen auf der Skala 1..5 mit bis zu 2 Nachkommastellen. Das
+// Spinnennetz zeigt sie gerundet (ganzzahlig), die Entwicklung exakt.
+// ----------------------------------------------------------------
+
+// Auf 2 Nachkommastellen runden (vermeidet Float-Artefakte wie 3.0000004).
+export const round2 = (x) => Math.round((Number(x) || 0) * 100) / 100;
+
+// Auf die Skala 1..5 begrenzen.
+export const clampSkill = (x) => Math.max(1, Math.min(5, Number(x) || 0));
+
+// Monatsschlüssel "YYYY-MM" (für Verlauf + "einmal pro Monat fällig").
+export const monthKey = (d = new Date()) => {
+  const dt = (d instanceof Date) ? d : new Date(d);
+  if (isNaN(dt.getTime())) return "";
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`;
+};
+
+// Durchschnitt der gesetzten Skills (Werte > 0) über die Achsenliste.
+// Leeres Profil -> 0. Auf 2 Nachkommastellen gerundet.
+export const skillsMean = (skills, axes) => {
+  const vals = (axes || []).map(a => Number(skills?.[a]) || 0).filter(v => v > 0);
+  if (!vals.length) return 0;
+  return round2(vals.reduce((s, v) => s + v, 0) / vals.length);
+};
+
+// Sanfte monatliche Anpassung: gleitender Mittelwert in Richtung der
+// Trainer-Einschätzung. alpha steuert, wie stark ein einzelner Monat zieht
+// (0.34 ≈ ein Drittel). Erster Wert (alt 0/leer) wird direkt übernommen.
+export const blendSkill = (old, assessed, alpha = 0.34) => {
+  const a = clampSkill(assessed);
+  const o = Number(old) || 0;
+  if (o <= 0) return round2(a);
+  return round2(clampSkill(o + (a - o) * alpha));
+};
+

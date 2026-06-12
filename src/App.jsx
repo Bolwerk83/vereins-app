@@ -1,6 +1,6 @@
 import React, { useState,useEffect,useCallback,useRef,useMemo,createContext } from "react";
 import { splitData, mergeData, merge3Obj } from "./data.js";
-import { eventStart, eventDeadline, isVotingLocked, isDeadlinePassed, isEventPast, daysUntil, isUpcoming5, formatCountdown } from "./logic.js";
+import { eventStart, eventDeadline, isVotingLocked, isDeadlinePassed, isEventPast, daysUntil, isUpcoming5, formatCountdown, round2, clampSkill, monthKey, skillsMean, blendSkill } from "./logic.js";
 import { ACOLORS, acol, inits, contrast, mix } from "./util.js";
 
 const LANG_KEY = "vereinsapp_lang";
@@ -14732,6 +14732,163 @@ function SpiderChart({ axes, values, compareValues=null, size=260, color="#16a34
   );
 }
 
+// Gezielte Trainer-Fragen je Skill-Achse (5 Stufen = Skill-Level 1..5).
+// [N] wird durch den Spielernamen ersetzt. Fallback für unbekannte Achsen.
+const SKILL_QUESTIONS = {
+  "Technik":       { q:"Wie sicher kontrolliert & führt [N] den Ball – auch unter Druck?", levels:["sehr unsicher, viele Verluste","oft unsicher","altersgerecht solide","sicher, wenig Verluste","sehr sicher, auch unter Druck"] },
+  "Schnelligkeit": { q:"Wie setzt sich [N] in Sprints & Antritten durch?", levels:["deutlich langsamer","etwas langsamer","altersgerecht","schnell","sehr schnell, oft erster am Ball"] },
+  "Zweikampf":     { q:"Wie konsequent gewinnt [N] Zweikämpfe?", levels:["weicht meist aus","selten erfolgreich","ausgeglichen","oft erfolgreich","dominant & griffig"] },
+  "Übersicht":     { q:"Wie gut erkennt [N] Räume & Anspielstationen?", levels:["sieht Mitspieler kaum","oft Tunnelblick","altersgerecht","gute Übersicht","liest das Spiel sehr gut"] },
+  "Abschluss":     { q:"Wie effektiv schließt [N] vor dem Tor ab?", levels:["sehr unsicher","selten gefährlich","altersgerecht","oft gefährlich","sehr abschlussstark"] },
+  "Ausdauer":      { q:"Wie hält [N] Tempo & Intensität über die Einheit?", levels:["lässt schnell nach","baut früh ab","altersgerecht","hält gut durch","stark bis zum Schluss"] },
+  "Teamplay":      { q:"Wie teamdienlich spielt & kommuniziert [N]?", levels:["sehr eigensinnig","selten teamdienlich","altersgerecht","teamdienlich","echter Teamplayer, coacht mit"] },
+  "Kraft":         { q:"Wie körperlich durchsetzungsstark ist [N]?", levels:["sehr schwach","eher schwach","altersgerecht","kräftig","sehr durchsetzungsstark"] },
+  "Koordination":  { q:"Wie sauber & koordiniert bewegt sich [N]?", levels:["sehr unkoordiniert","oft unsauber","altersgerecht","koordiniert","sehr geschmeidig"] },
+  "Wende":         { q:"Wie sauber & schnell sind die Wenden von [N]?", levels:["sehr unsauber","oft unsauber","altersgerecht","sauber","sehr schnell & technisch"] },
+  "Atmung":        { q:"Wie ökonomisch ist die Atmung/Technik von [N]?", levels:["sehr unrund","unrund","altersgerecht","ökonomisch","sehr ökonomisch"] },
+  "Aufschlag":     { q:"Wie sicher & platziert ist der Aufschlag von [N]?", levels:["sehr unsicher","unsicher","altersgerecht","sicher","sehr sicher & platziert"] },
+  "Block":         { q:"Wie stark blockt/verteidigt [N]?", levels:["sehr schwach","schwach","altersgerecht","stark","sehr stark"] },
+};
+function skillQuestion(axis, name){
+  const base = SKILL_QUESTIONS[axis] || { q:`Wie stark ist [N] bei „${axis}"?`, levels:["sehr schwach","schwach","altersgerecht","stark","sehr stark"] };
+  return { q: base.q.replace("[N]", name || "das Kind"), levels: base.levels };
+}
+const monthLabel = (m) => { if(!m||m.length<7) return m||""; const [y,mo]=m.split("-"); const N=["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"]; return `${N[(+mo)-1]||mo} ${y.slice(2)}`; };
+
+// Monatlicher Skill-Check: Trainer beantwortet je Spieler gezielte Fragen pro
+// Skill. Antworten passen die Werte gleitend an (2 Nachkommastellen) und legen
+// einen Monats-Snapshot im Verlauf an.
+function SkillCheckFlow({ team, players, axes, club, month, t, onApply, onClose }){
+  const list = players||[];
+  const tp = t?.p || "#16a34a";
+  const cat = team?.cat || team?.name || "";
+  const soll = sollFor(club, cat, axes);
+  const [idx,setIdx]=useState(0);
+  const [skipped,setSkipped]=useState(()=>new Set());
+  const initLevel = (p,a,i)=>{ const cur=Number(p.skills?.[a])||0; return cur>0?Math.round(clampSkill(cur)):(soll[i]||3); };
+  const [answers,setAnswers]=useState(()=>{ const m={}; list.forEach(p=>{ m[p.id]={}; axes.forEach((a,i)=>{ m[p.id][a]=initLevel(p,a,i); }); }); return m; });
+  if(list.length===0) return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:1300,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+      <div style={{background:"#fff",borderRadius:18,padding:"22px",maxWidth:380,textAlign:"center"}}>
+        <p style={{fontWeight:800,color:"#0f172a",marginBottom:6}}>Keine Spieler im Kader</p>
+        <p style={{fontSize:13,color:"#64748b",marginBottom:16}}>Lege zuerst Spieler in dieser Mannschaft an.</p>
+        <button onClick={onClose} style={{padding:"10px 20px",borderRadius:11,border:"none",background:tp,color:contrast(tp),fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Schließen</button>
+      </div>
+    </div>
+  );
+  const cur = list[idx];
+  const isLast = idx>=list.length-1;
+  const ans = answers[cur.id]||{};
+  const setAns=(a,lvl)=>setAnswers(m=>({...m,[cur.id]:{...m[cur.id],[a]:lvl}}));
+  const toggleSkip=()=>setSkipped(s=>{const n=new Set(s); n.has(cur.id)?n.delete(cur.id):n.add(cur.id); return n;});
+  const isSkipped=skipped.has(cur.id);
+  const finish=()=>{
+    const updated=list.filter(p=>!skipped.has(p.id)).map(p=>{
+      const a=answers[p.id]||{}; const oldSk=p.skills||{}; const newSk={...oldSk};
+      axes.forEach((ax,i)=>{
+        const lvl=a[ax]; const init=(Number(oldSk[ax])||0)>0?Math.round(clampSkill(oldSk[ax])):0;
+        if(lvl>0 && (init===0 || lvl!==init)) newSk[ax]=blendSkill(oldSk[ax]||0, lvl);
+      });
+      const snap={ month, skills:{...newSk}, avg:skillsMean(newSk,axes), ts:new Date().toISOString() };
+      const hist=[...(p.skillHistory||[]).filter(h=>h.month!==month), snap].sort((x,y)=>(x.month||"").localeCompare(y.month||""));
+      return {...p, skills:newSk, skillHistory:hist, lastSkillCheck:month};
+    });
+    onApply(updated);
+  };
+  return (
+    <div style={{position:"fixed",inset:0,background:"#0f172a",zIndex:1300,display:"flex",flexDirection:"column"}}>
+      <style>{CSS}</style>
+      <div style={{background:tp,color:contrast(tp),padding:"16px 18px",display:"flex",alignItems:"center",gap:12}}>
+        <button onClick={onClose} style={{background:"rgba(0,0,0,.18)",border:"none",borderRadius:10,padding:"7px 12px",color:contrast(tp),fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontWeight:900,fontSize:16}}>Skill-Check · {monthLabel(month)}</div>
+          <div style={{fontSize:12,opacity:.85}}>{team?.name} · Spieler {idx+1}/{list.length}</div>
+        </div>
+      </div>
+      <div style={{flex:1,overflowY:"auto",background:"#f0f4f8",padding:"16px 16px 24px"}}>
+        <div style={{maxWidth:560,margin:"0 auto"}}>
+          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
+            <Av name={cur.name} sz={44}/>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:900,fontSize:18,color:"#0f172a"}}>{cur.name}</div>
+              <div style={{fontSize:12,color:"#94a3b8"}}>{cur.position||"—"}{cur.by?` · Jg. ${cur.by}`:""}</div>
+            </div>
+            <button onClick={toggleSkip} style={{padding:"7px 12px",borderRadius:10,border:`1.5px solid ${isSkipped?"#dc2626":"#e2e8f0"}`,background:isSkipped?"#fee2e2":"#fff",color:isSkipped?"#dc2626":"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{isSkipped?"übersprungen":"Überspringen"}</button>
+          </div>
+          {isSkipped
+            ? <div style={{background:"#fff",borderRadius:14,padding:"24px",textAlign:"center",color:"#94a3b8",fontSize:14}}>Dieser Spieler wird in diesem Monat nicht bewertet.</div>
+            : axes.map((a,ai)=>{
+                const Q=skillQuestion(a,cur.name); const sel=ans[a]||0;
+                return (
+                  <div key={a} style={{background:"#fff",borderRadius:14,padding:"13px 14px",marginBottom:10,border:"1.5px solid #e2e8f0"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:9}}>
+                      <span style={{fontSize:11,fontWeight:800,color:tp,background:tp+"18",borderRadius:6,padding:"2px 8px"}}>{a}</span>
+                      <span style={{fontSize:11,color:"#cbd5e1",fontWeight:700}}>aktuell {(Number(cur.skills?.[a])||0)?round2(cur.skills[a]).toFixed(2):"–"} · Ziel {soll[ai]}</span>
+                    </div>
+                    <div style={{fontSize:13.5,color:"#334155",fontWeight:600,marginBottom:10,lineHeight:1.4}}>{Q.q}</div>
+                    <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                      {Q.levels.map((lab,li)=>{ const lvl=li+1; const on=sel===lvl; return (
+                        <button key={li} onClick={()=>setAns(a,lvl)} style={{display:"flex",alignItems:"center",gap:10,textAlign:"left",padding:"9px 11px",borderRadius:10,border:`1.5px solid ${on?tp:"#e2e8f0"}`,background:on?tp+"12":"#fff",cursor:"pointer",fontFamily:"inherit"}}>
+                          <span style={{width:24,height:24,flexShrink:0,borderRadius:7,background:on?tp:"#f1f5f9",color:on?contrast(tp):"#94a3b8",fontWeight:800,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center"}}>{lvl}</span>
+                          <span style={{fontSize:13,color:on?"#0f172a":"#475569",fontWeight:on?700:500}}>{lab}</span>
+                        </button>
+                      );})}
+                    </div>
+                  </div>
+                );
+              })}
+        </div>
+      </div>
+      <div style={{padding:"12px 16px",background:"#fff",borderTop:"1px solid #e2e8f0",display:"flex",gap:10,maxWidth:560,margin:"0 auto",width:"100%",boxSizing:"border-box"}}>
+        {idx>0&&<button onClick={()=>setIdx(i=>i-1)} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit",color:"#475569"}}>← Zurück</button>}
+        {isLast
+          ? <button onClick={finish} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:tp,color:contrast(tp),fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>Fertig & speichern</button>
+          : <button onClick={()=>setIdx(i=>i+1)} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:tp,color:contrast(tp),fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>Weiter →</button>}
+      </div>
+    </div>
+  );
+}
+
+// Entwicklungs-Ansicht eines Spielers über die Monate (Saisonverlauf).
+function SkillTrend({ player, axes, t }){
+  const tp = t?.p || "#16a34a";
+  const hist = (player.skillHistory||[]).slice().sort((a,b)=>(a.month||"").localeCompare(b.month||""));
+  if(hist.length===0) return <div style={{background:"#f8fafc",borderRadius:12,padding:"16px",fontSize:13,color:"#94a3b8",textAlign:"center"}}>Noch keine Verlaufsdaten. Nach dem ersten Monats-Skill-Check erscheint hier die Entwicklung über die Saison.</div>;
+  const pts = hist.map(h=>({ m:h.month, avg: (h.avg!=null?h.avg:skillsMean(h.skills,axes)) }));
+  const W=300,H=90,pad=8; const xs=i=>pad+(pts.length<=1?0:(W-2*pad)*i/(pts.length-1)); const ys=v=>H-pad-((H-2*pad)*(Math.max(1,Math.min(5,v))-1)/4);
+  const line=pts.map((p,i)=>`${xs(i)},${ys(p.avg)}`).join(" ");
+  const first=hist[0].skills||{}, last=hist[hist.length-1].skills||{};
+  const firstAvg=pts[0].avg, lastAvg=pts[pts.length-1].avg, dAvg=round2(lastAvg-firstAvg);
+  const arrow=d=> d>0.001?{c:"#16a34a",s:`▲ +${d.toFixed(2)}`}:d<-0.001?{c:"#dc2626",s:`▼ ${d.toFixed(2)}`}:{c:"#94a3b8",s:"– 0.00"};
+  return (
+    <div>
+      <div style={{display:"flex",alignItems:"baseline",gap:8,marginBottom:8}}>
+        <span style={{fontSize:13,fontWeight:700,color:"#475569"}}>Gesamt-Schnitt</span>
+        <span style={{fontSize:20,fontWeight:900,color:tp}}>{lastAvg.toFixed(2)}</span>
+        <span style={{fontSize:12,fontWeight:800,color:arrow(dAvg).c}}>{arrow(dAvg).s}</span>
+        <span style={{marginLeft:"auto",fontSize:11,color:"#94a3b8"}}>{hist.length} Monate</span>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{display:"block",background:"#f8fafc",borderRadius:10}}>
+        {[1,2,3,4,5].map(g=><line key={g} x1={pad} x2={W-pad} y1={ys(g)} y2={ys(g)} stroke="#e2e8f0" strokeWidth="1"/>)}
+        <polyline points={line} fill="none" stroke={tp} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round"/>
+        {pts.map((p,i)=><circle key={i} cx={xs(i)} cy={ys(p.avg)} r="3.2" fill={tp}/>)}
+      </svg>
+      <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#94a3b8",marginTop:3,padding:"0 2px"}}>
+        <span>{monthLabel(pts[0].m)}</span>{pts.length>1&&<span>{monthLabel(pts[pts.length-1].m)}</span>}
+      </div>
+      <div style={{marginTop:12,display:"flex",flexDirection:"column",gap:6}}>
+        {axes.map(a=>{ const f=Number(first[a])||0, l=Number(last[a])||0, d=round2(l-f); const ar=arrow(d); return (
+          <div key={a} style={{display:"flex",alignItems:"center",gap:8,fontSize:12.5}}>
+            <span style={{flex:1,color:"#334155",fontWeight:600}}>{a}</span>
+            <span style={{color:"#94a3b8",fontFamily:"monospace"}}>{f?f.toFixed(2):"–"} → {l?l.toFixed(2):"–"}</span>
+            <span style={{minWidth:62,textAlign:"right",fontWeight:800,color:ar.c}}>{ar.s}</span>
+          </div>
+        );})}
+      </div>
+    </div>
+  );
+}
+
 /* =================================================================
    TRAININGS-DIAGRAMM (reines SVG) — Feld, Spieler, Pfeile, Tore, Hütchen
    Koordinaten 0..100 (x) / 0..100 (y), Ursprung oben links.
@@ -15610,6 +15767,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
   const myTrainers = (trainers||[]).filter(tr=>(tr.tids||[]).includes(player.mainTid));
 
   const [p,setP] = useState({...player});
+  const [showTrend,setShowTrend] = useState(false);
   const up = f => setP(prev => ({...prev,...f}));
   const allTeams  = teams.filter(tm => tm.cid === cid);
   const eligCats  = eligibleCats(p.by||2014,p.gender||"m");
@@ -15728,7 +15886,8 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
                 const axes = skillAxesFor(sport);
                 const sk = p.skills||{};
                 const setSkill = (ax,val)=>up({skills:{...sk,[ax]:sk[ax]===val?0:val}});
-                const vals = axes.map(a=>sk[a]||0);
+                // Netz zeigt gerundet (ohne Nachkommastellen) – exakte Werte stehen daneben.
+                const vals = axes.map(a=>{const v=Number(sk[a])||0; return v>0?Math.round(clampSkill(v)):0;});
                 const myTeam = (teams||[]).find(tm=>tm.id===p.mainTid);
                 const cat = myTeam?.cat || myTeam?.name || "E-Jugend";
                 const soll = sollFor(club, cat, axes);
@@ -15738,7 +15897,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
                   <div>
                     {axes.map((ax,i)=>(
                       <div key={ax} style={{display:"flex",alignItems:"center",gap:8,marginBottom:7}}>
-                        <span style={{flex:1,fontSize:13,fontWeight:600,color:"#334155"}}>{ax} <span style={{color:"#cbd5e1",fontSize:11,fontWeight:700}}>Ziel {soll[i]}</span></span>
+                        <span style={{flex:1,fontSize:13,fontWeight:600,color:"#334155"}}>{ax} <span style={{color:(Number(sk[ax])||0)?(t.p||"#16a34a"):"#cbd5e1",fontSize:11,fontWeight:800}}>{(Number(sk[ax])||0)?round2(sk[ax]).toFixed(2):"–"}</span> <span style={{color:"#cbd5e1",fontSize:11,fontWeight:700}}>Ziel {soll[i]}</span></span>
                         <div style={{display:"flex",gap:3}}>
                           {[1,2,3,4,5].map(n=>(
                             <button key={n} type="button" onClick={()=>setSkill(ax,n)}
@@ -15754,9 +15913,13 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
                         <span><span style={{display:"inline-block",width:10,height:10,borderRadius:3,background:"#f59e0b",marginRight:4,verticalAlign:"middle"}}/>Ziel {cat}</span>
                       </div>
                     </div>}
+                    {(p.skillHistory||[]).length>0&&<div style={{marginTop:12}}>
+                      <button type="button" onClick={()=>setShowTrend(s=>!s)} style={{width:"100%",padding:"10px",borderRadius:11,border:"1.5px solid #c7d2fe",background:"#eef2ff",color:"#4f46e5",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{showTrend?"▲ Entwicklung ausblenden":"📈 Entwicklung über die Saison"}</button>
+                      {showTrend&&<div style={{marginTop:10,background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:14,padding:"14px"}}><SkillTrend player={p} axes={axes} t={t}/></div>}
+                    </div>}
                     {foerder.length>0&&<div style={{marginTop:12,background:"#fff7ed",border:"1px solid #fed7aa",borderRadius:11,padding:"10px 13px"}}>
                       <div style={{fontSize:11,fontWeight:800,color:"#9a3412",marginBottom:4,letterSpacing:.3}}>ENTWICKLUNGSZIELE ({cat})</div>
-                      <div style={{fontSize:13,color:"#9a3412",lineHeight:1.6}}>{foerder.map(x=>`${x.a} (${x.ist}→${x.soll})`).join(", ")}</div>
+                      <div style={{fontSize:13,color:"#9a3412",lineHeight:1.6}}>{foerder.map(x=>`${x.a} (${round2(x.ist)}→${x.soll})`).join(", ")}</div>
                     </div>}
                     {(()=>{
                       const fits = positionFit(sport, sk, club);
@@ -16717,6 +16880,18 @@ function PlayersTab({ data,myTids,save,fire,cl }) {
   const [showBulk,setShowBulk] = useState(false);
   const [search,setSearch]  = useState("");
   const [showOpt,setShowOpt] = useState(false);
+  const [skillCheck,setSkillCheck] = useState(null); // Team für Monats-Skill-Check
+  const sport = cl?.sport || "fussball";
+  const skillAxes = skillAxesFor(sport);
+  const applySkillCheck = (updatedPlayers) => {
+    const m = monthKey();
+    const byId = Object.fromEntries(updatedPlayers.map(pp=>[pp.id,pp]));
+    const nextProfiles = (data.playerProfiles||[]).map(pp=>byId[pp.id]||pp);
+    const nextTeams = (data.teams||[]).map(tm=>tm.id===(skillCheck?.id)?{...tm,lastSkillCheck:m}:tm);
+    save({...data, playerProfiles:nextProfiles, teams:nextTeams});
+    setSkillCheck(null);
+    fire(`Skill-Check ${monthLabel(m)} gespeichert *`);
+  };
 
   // WICHTIG: Schreibvorgaenge IMMER auf der vollen playerProfiles-Liste, nicht
   // auf der saisongefilterten Anzeige-Liste (allPlayers) - sonst werden bei jeder
@@ -16828,6 +17003,19 @@ function PlayersTab({ data,myTids,save,fire,cl }) {
           {showBulk && <BulkAddPlayers cid={cid} cl={cl} selTid={selTid} selTeam={selTeam} clubTeams={clubTeams} activeSeason={activeSeason} allPlayers={allPlayers} data={data} save={save} fire={fire} onClose={()=>setShowBulk(false)}/>}
 
           {}
+          {selTeam&&mainPlayers.length>0&&(()=>{ const due=monthKey()!==(selTeam.lastSkillCheck||""); return (
+            <button onClick={()=>setSkillCheck(selTeam)}
+              style={{width:"100%",marginBottom:14,padding:"12px 14px",borderRadius:13,border:`1.5px solid ${due?"#4f46e5":"#e2e8f0"}`,background:due?"#eef2ff":"#fff",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:10}}>
+              <span style={{fontSize:20}}>📊</span>
+              <div style={{flex:1,textAlign:"left"}}>
+                <div style={{fontWeight:800,fontSize:13.5,color:"#0f172a"}}>Monats-Skill-Check {due&&<span style={{fontSize:11,fontWeight:800,color:"#fff",background:"#4f46e5",borderRadius:6,padding:"1px 7px",marginLeft:4}}>fällig</span>}</div>
+                <div style={{fontSize:11.5,color:"#64748b",marginTop:1}}>{selTeam.lastSkillCheck?`Zuletzt: ${monthLabel(selTeam.lastSkillCheck)}`:"Noch nie durchgeführt"} · passt Skills gleitend an</div>
+              </div>
+              <span style={{color:"#4f46e5",fontSize:18}}>{">"}</span>
+            </button>
+          );})()}
+
+          {}
           <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5,display:"flex",justifyContent:"space-between"}}>
             <span>HAUPTKADER ({mainPlayers.length})</span>
             {selTeam&&<span style={{color:"#94a3b8"}}>{selTeam.cat}{selTeam.years?" . Jg. "+selTeam.years:""}</span>}
@@ -16885,6 +17073,18 @@ function PlayersTab({ data,myTids,save,fire,cl }) {
           onSave={savePlayer}
           onClose={()=>{setEditP(null);setShowNew(false);}}
           t={t}
+        />
+      )}
+      {skillCheck && (
+        <SkillCheckFlow
+          team={skillCheck}
+          players={allPlayers.filter(pp=>pp.mainTid===skillCheck.id&&!pp.archived)}
+          axes={skillAxes}
+          club={cl}
+          month={monthKey()}
+          t={t}
+          onApply={applySkillCheck}
+          onClose={()=>setSkillCheck(null)}
         />
       )}
     </div>

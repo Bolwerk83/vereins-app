@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   eventStart, eventDeadline, isVotingLocked, isDeadlinePassed,
   isEventPast, daysUntil, isUpcoming5, formatCountdown,
+  round2, clampSkill, monthKey, skillsMean, blendSkill,
 } from "./logic.js";
 
 const isoDaysFromNow = (n) => new Date(Date.now() + n*86400000).toISOString().slice(0,10);
@@ -70,4 +71,33 @@ test("formatCountdown: Formate Tage/Stunden/Minuten", () => {
   assert.equal(formatCountdown((2*24+14)*3600*1000), "2 T 14 h");
   assert.equal(formatCountdown((14*3600+7*60)*1000), "14 h 7 m");
   assert.equal(formatCountdown(23*60*1000), "23 m");
+});
+
+// ---- Skill-Bewertung ----
+test("round2: rundet auf 2 Nachkommastellen", () => {
+  assert.equal(round2(3.14159), 3.14);
+  assert.equal(round2(3.005), 3.01);
+  assert.equal(round2(3), 3);
+});
+test("clampSkill: begrenzt auf 1..5", () => {
+  assert.equal(clampSkill(0.4), 1);
+  assert.equal(clampSkill(7), 5);
+  assert.equal(clampSkill(3.2), 3.2);
+});
+test("monthKey: YYYY-MM", () => {
+  assert.equal(monthKey(new Date("2026-06-12T10:00:00")), "2026-06");
+  assert.equal(monthKey(new Date("2026-01-03")), "2026-01");
+});
+test("skillsMean: Schnitt der gesetzten Achsen, gerundet", () => {
+  const axes = ["A","B","C"];
+  assert.equal(skillsMean({A:3,B:4,C:0}, axes), 3.5); // C=0 ignoriert
+  assert.equal(skillsMean({}, axes), 0);
+  assert.equal(skillsMean({A:2,B:3,C:4}, axes), 3);
+});
+test("blendSkill: erster Wert direkt, danach gleitend + geclamptt", () => {
+  assert.equal(blendSkill(0, 4), 4);            // erstmalig -> direkt
+  assert.equal(blendSkill(3, 4, 0.5), 3.5);     // halber Schritt
+  assert.equal(blendSkill(3, 3, 0.34), 3);      // keine Aenderung
+  assert.ok(blendSkill(4.9, 5, 0.34) <= 5);     // bleibt <=5
+  assert.ok(blendSkill(1.1, 1, 0.34) >= 1);     // bleibt >=1
 });
