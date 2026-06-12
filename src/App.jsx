@@ -5635,6 +5635,7 @@ function TrainingsLibrary({ data, myTids, cl, save, fire }) {
   const [editing,setEditing]=useState(null); // null | {} (neu) | training (bearbeiten)
   const [sched,setSched]=useState(null);     // Training, das terminiert wird
   const [fullscreenTactic,setFullscreenTactic]=useState(null); // {tactic,title}
+  const [infoDrill,setInfoDrill]=useState(null); // Übung, deren Trainingskarte angezeigt wird
 
   const blank=()=>({ id:"tr_"+uid(), cid, ownerTid:myTeams[0]?.id||myTids[0], title:"", focus:"", blocks:[{phase:"Aufwärmen",title:"",min:10}], vis:"team", sharedTids:[] });
 
@@ -5657,6 +5658,7 @@ function TrainingsLibrary({ data, myTids, cl, save, fire }) {
     return (
       <div style={{display:"flex",flexDirection:"column",gap:14}}>
         {fullscreenTactic && <TacticFullscreen tactic={fullscreenTactic.tactic} title={fullscreenTactic.title} onClose={()=>setFullscreenTactic(null)}/>}
+        {infoDrill && <DrillInfoModal drill={infoDrill} t={t} onClose={()=>setInfoDrill(null)}/>}
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
           <h3 style={{margin:0,fontSize:17,fontWeight:900,color:"#0f172a"}}>{(data.trainings||[]).some(x=>x.id===e.id)?"Training bearbeiten":"Neues Training"}</h3>
           <button onClick={()=>setEditing(null)} style={{background:"none",border:"none",color:"#64748b",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
@@ -5702,7 +5704,10 @@ function TrainingsLibrary({ data, myTids, cl, save, fire }) {
                   </select>
                 : <input value={b.title} onChange={ev=>setBlock(i,{title:ev.target.value})} placeholder="Eigene Übung / Inhalt"
                     style={{width:"100%",padding:"9px 10px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>}
-              {mode==="lib"&&(b.axes||[]).length>0&&<div style={{display:"flex",gap:4,flexWrap:"wrap",marginTop:6}}>{b.axes.map(a=><span key={a} style={{fontSize:10.5,fontWeight:800,color:"#4f46e5",background:"#eef2ff",borderRadius:6,padding:"2px 7px"}}>{a}</span>)}</div>}
+              {mode==="lib"&&b.drillId&&<div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginTop:6}}>
+                {(b.axes||[]).map(a=><span key={a} style={{fontSize:10.5,fontWeight:800,color:"#4f46e5",background:"#eef2ff",borderRadius:6,padding:"2px 7px"}}>{a}</span>)}
+                <button onClick={()=>{const d=DRILL_LIB.find(x=>x.id===b.drillId); if(d)setInfoDrill(d);}} style={{marginLeft:"auto",background:"none",border:"none",color:"#4f46e5",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>ℹ️ Übung ansehen</button>
+              </div>}
               <TacticPicker
                 value={b.tactic}
                 onChange={(tactic)=>setBlock(i,{tactic})}
@@ -21803,6 +21808,32 @@ function eventWarnings(ev, tod){
   return w;
 }
 
+// Volle Trainingskarte einer Übung (Diagramm, Beschreibung, Coaching, Kinder-
+// Erklärung, Skills) – als Overlay, von den Plan-Editoren aus aufrufbar.
+function DrillInfoModal({ drill, t, onClose }){
+  if(!drill) return null;
+  const col = t?.p || "#16a34a";
+  return (
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:1300,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"90dvh",overflowY:"auto",animation:"down .22s ease"}}>
+        <div style={{display:"flex",justifyContent:"center",padding:"10px 0 2px"}}><div style={{width:36,height:4,borderRadius:99,background:"#e2e8f0"}}/></div>
+        <div style={{padding:"6px 20px 40px"}}>
+          <div style={{fontWeight:900,fontSize:18,color:"#0f172a",marginBottom:2}}>{drill.title}</div>
+          <div style={{fontSize:12.5,color:"#94a3b8",marginBottom:12}}>{drill.min} Min · {drill.players} Spieler</div>
+          {(drill.axes||[]).length>0&&<div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:12}}>{drill.axes.map(a=><span key={a} style={{fontSize:11,fontWeight:800,color:"#4f46e5",background:"#eef2ff",borderRadius:6,padding:"2px 8px"}}>{a}</span>)}</div>}
+          <div style={{display:"flex",justifyContent:"center",marginBottom:14}}>
+            <DrillDiagram field={drill.field} elements={drill.el} color={col} width={300} variant="grass"/>
+          </div>
+          {drill.desc&&<p style={{fontSize:13.5,color:"#334155",lineHeight:1.6,marginBottom:10}}>{drill.desc}</p>}
+          {drill.coach&&<div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:10,padding:"10px 12px",fontSize:12.5,color:"#166534",lineHeight:1.55,marginBottom:10}}><strong>Coaching:</strong> {drill.coach}</div>}
+          {drill.kids&&<div style={{background:"#fffbeb",border:"1px solid #fde68a",borderRadius:10,padding:"10px 12px",fontSize:13,color:"#78350f",lineHeight:1.6,marginBottom:10}}><strong>🧒 Für Kinder erklärt:</strong> {drill.kids}</div>}
+          {(drill.cats||[]).length>0&&<div style={{fontSize:11.5,color:"#94a3b8",marginBottom:14}}>Geeignet für: {drill.cats.join(", ")}</div>}
+          <button onClick={onClose} style={{width:"100%",padding:"12px",borderRadius:12,border:"none",background:"#f1f5f9",color:"#475569",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Schließen</button>
+        </div>
+      </div>
+    </div>
+  );
+}
 // Kompaktes Formular, um direkt aus dem Termin heraus einen Trainingsplan
 // anzulegen (Titel, Schwerpunkt, Ablauf-Blöcke). Wird sofort verknüpft.
 function QuickPlanCreate({ cid, ownerTid, t, onCreate, onCancel }){
@@ -21810,6 +21841,7 @@ function QuickPlanCreate({ cid, ownerTid, t, onCreate, onCancel }){
   const [focus,setFocus]=useState("");
   const [blocks,setBlocks]=useState([{phase:"Aufwärmen",title:"",min:10,mode:"lib"}]);
   const setBlock=(i,patch)=>setBlocks(bs=>bs.map((b,j)=>j===i?{...b,...patch}:b));
+  const [infoDrill,setInfoDrill]=useState(null);
   const valid=title.trim().length>0;
   const create=()=>{
     if(!valid) return;
@@ -21851,11 +21883,15 @@ function QuickPlanCreate({ cid, ownerTid, t, onCreate, onCancel }){
                 </select>
               : <input value={b.title} onChange={e=>setBlock(i,{title:e.target.value})} placeholder="Eigene Übung / Inhalt"
                   style={{width:"100%",padding:"9px 10px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>}
-            {mode==="lib"&&(b.axes||[]).length>0&&<div style={{display:"flex",gap:4,flexWrap:"wrap",marginTop:6}}>{b.axes.map(a=><span key={a} style={{fontSize:10.5,fontWeight:800,color:"#4f46e5",background:"#eef2ff",borderRadius:6,padding:"2px 7px"}}>{a}</span>)}</div>}
+            {mode==="lib"&&b.drillId&&<div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginTop:6}}>
+              {(b.axes||[]).map(a=><span key={a} style={{fontSize:10.5,fontWeight:800,color:"#4f46e5",background:"#eef2ff",borderRadius:6,padding:"2px 7px"}}>{a}</span>)}
+              <button onClick={()=>{const d=DRILL_LIB.find(x=>x.id===b.drillId); if(d)setInfoDrill(d);}} style={{marginLeft:"auto",background:"none",border:"none",color:"#4f46e5",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>ℹ️ Übung ansehen</button>
+            </div>}
           </div>
         );})}
         <button onClick={()=>setBlocks(bs=>[...bs,{phase:"Hauptteil",title:"",min:10,mode:"lib"}])} style={{marginTop:10,background:"#f1f5f9",border:"none",borderRadius:9,padding:"8px 12px",fontSize:13,fontWeight:700,color:"#475569",cursor:"pointer",fontFamily:"inherit"}}>+ Block</button>
       </div>
+      {infoDrill&&<DrillInfoModal drill={infoDrill} t={t} onClose={()=>setInfoDrill(null)}/>}
       <button onClick={create} disabled={!valid} style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:valid?t.p:"#cbd5e1",color:valid?contrast(t.p):"#1e293b",fontWeight:800,fontSize:15,cursor:valid?"pointer":"default",fontFamily:"inherit"}}>Plan erstellen & verknüpfen</button>
       <Btn v="gst" full ch="Zurück zur Auswahl" onClick={onCancel}/>
     </div>
