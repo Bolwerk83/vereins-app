@@ -4411,6 +4411,7 @@ function ManageTeams({ data, save, fire, cl }) {
   const [showFmt,setShowFmt] = useState(null);
   const setTeamStrength = (id,s) => save({...data, teams:(data.teams||[]).map(tm=>tm.id===id?{...tm,strength:s}:tm)});
   const setTeamLogin = (id,m) => save({...data, teams:(data.teams||[]).map(tm=>tm.id===id?{...tm,loginMode:m}:tm)});
+  const setTeamSkillCheck = (id,on) => save({...data, teams:(data.teams||[]).map(tm=>tm.id===id?{...tm,skillCheckEnabled:on}:tm)});
   const LOGIN_OPTS=[["auto","Automatisch"],["parents","Eltern"],["players","Spieler"]];
 
   const addTeam = () => {
@@ -4534,6 +4535,15 @@ function ManageTeams({ data, save, fire, cl }) {
                   <button key={k} onClick={()=>setTeamLogin(tm.id,k)} style={{padding:"4px 10px",borderRadius:8,border:`1.5px solid ${on?t.p:"#e2e8f0"}`,background:on?t.p+"15":"#fff",color:on?t.p:"#94a3b8",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
                 );})}
                 <span style={{fontSize:10.5,color:"#cbd5e1"}}>{teamSelfLogin(tm,cl?.clubSettings)?"→ Spieler":"→ Eltern"}</span>
+              </div>
+            )}
+            {editId!==tm.id && (
+              <div style={{display:"flex",alignItems:"center",gap:6,marginTop:6,flexWrap:"wrap"}}>
+                <span style={{fontSize:10.5,fontWeight:800,color:"#94a3b8",letterSpacing:.3}}>BEWERTUNG</span>
+                {[["on","An"],["off","Aus"]].map(([k,l])=>{const on=(tm.skillCheckEnabled!==false)===(k==="on");return (
+                  <button key={k} onClick={()=>setTeamSkillCheck(tm.id,k==="on")} style={{padding:"4px 10px",borderRadius:8,border:`1.5px solid ${on?t.p:"#e2e8f0"}`,background:on?t.p+"15":"#fff",color:on?t.p:"#94a3b8",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
+                );})}
+                <InfoHint text={"Monatlicher Skill-Check: Trainer beantworten 1×/Monat je Kind kurze Fragen pro Fähigkeit (ca. 1–2 Min pro Kind). Daraus entstehen Entwicklung & Förderhinweise. Aufwand lohnt sich v.a. im Leistungsbereich – im reinen Breitensport ruhig 'Aus'."}/>
               </div>
             )}
             {showFmt===tm.id && <div style={{marginTop:8}}><PlayFormatCard cat={tmCat} sport={cl?.sport||"fussball"} cl={cl} compact/></div>}
@@ -6391,7 +6401,7 @@ function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false, initial
           </button>
         ))}
       </div>
-      {subTab==="players"    && <PlayersTab    data={data} myTids={myTids} save={save} fire={fire} cl={cl}/>}
+      {subTab==="players"    && <PlayersTab    data={data} myTids={myTids} save={save} fire={fire} cl={cl} session={session}/>}
       {subTab==="attendance" && <AttendanceTab data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
       {subTab==="results"    && <LeagueTab     data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
       {subTab==="insights"   && <TeamInsights data={data} myTids={myTids} cl={cl}/>}
@@ -14799,18 +14809,11 @@ function SkillCheckFlow({ team, players, axes, club, month, t, events=[], traini
   const setAns=(a,lvl)=>setAnswers(m=>({...m,[cur.id]:{...m[cur.id],[a]:lvl}}));
   const toggleSkip=()=>setSkipped(s=>{const n=new Set(s); n.has(cur.id)?n.delete(cur.id):n.add(cur.id); return n;});
   const isSkipped=skipped.has(cur.id);
+  // Rohe Einschätzungen dieses Trainers übergeben – das Mitteln über mehrere
+  // Trainer & die Skill-Anpassung passiert beim Speichern (applySkillCheck).
   const finish=()=>{
-    const updated=roster.filter(p=>!skipped.has(p.id)).map(p=>{
-      const a=answers[p.id]||{}; const oldSk=p.skills||{}; const newSk={...oldSk};
-      axes.forEach((ax,i)=>{
-        const lvl=a[ax]; const init=(Number(oldSk[ax])||0)>0?Math.round(clampSkill(oldSk[ax])):0;
-        if(lvl>0 && (init===0 || lvl!==init)) newSk[ax]=blendSkill(oldSk[ax]||0, lvl);
-      });
-      const snap={ month, skills:{...newSk}, avg:skillsMean(newSk,axes), ts:new Date().toISOString() };
-      const hist=[...(p.skillHistory||[]).filter(h=>h.month!==month), snap].sort((x,y)=>(x.month||"").localeCompare(y.month||""));
-      return {...p, skills:newSk, skillHistory:hist, lastSkillCheck:month};
-    });
-    onApply(updated);
+    const submissions=roster.filter(p=>!skipped.has(p.id)).map(p=>({ id:p.id, answers:answers[p.id]||{} }));
+    onApply(submissions);
   };
   return (
     <div style={{position:"fixed",inset:0,background:"#0f172a",zIndex:1300,display:"flex",flexDirection:"column"}}>
@@ -16891,7 +16894,7 @@ Ben Fischer | 2016 | m`;
   );
 }
 
-function PlayersTab({ data,myTids,save,fire,cl }) {
+function PlayersTab({ data,myTids,save,fire,cl,session }) {
   const [showTeamCard, setShowTeamCard] = React.useState(null); // teamId
   const t        = TH(cl);
   const allTeams   = data.teams;
@@ -16911,11 +16914,29 @@ function PlayersTab({ data,myTids,save,fire,cl }) {
   const [skillCheck,setSkillCheck] = useState(null); // Team für Monats-Skill-Check
   const sport = cl?.sport || "fussball";
   const skillAxes = skillAxesFor(sport);
-  const applySkillCheck = (updatedPlayers) => {
+  const raterId = session?.id || session?.role || "trainer";
+  // Mehrere Trainer: Einschätzungen werden pro Monat gesammelt und GEMITTELT,
+  // bevor der Skill (von der Monats-Basis aus) gleitend angepasst wird. So zieht
+  // ein zweiter Trainer den Wert nicht doppelt – er verfeinert den Schnitt.
+  const applySkillCheck = (submissions) => {
     const m = monthKey();
-    const byId = Object.fromEntries(updatedPlayers.map(pp=>[pp.id,pp]));
-    const nextProfiles = (data.playerProfiles||[]).map(pp=>byId[pp.id]||pp);
-    const nextTeams = (data.teams||[]).map(tm=>tm.id===(skillCheck?.id)?{...tm,lastSkillCheck:m}:tm);
+    const subById = Object.fromEntries(submissions.map(s=>[s.id,s.answers||{}]));
+    const nextProfiles = (data.playerProfiles||[]).map(p=>{
+      const ans = subById[p.id]; if(!ans) return p;
+      const pend = p.skillPending?.[m] || { base:{...(p.skills||{})}, byTrainer:{} };
+      const base = pend.base || {};
+      const byTrainer = { ...(pend.byTrainer||{}), [raterId]: ans };
+      const newSkills = { ...(p.skills||{}) };
+      skillAxes.forEach(ax=>{
+        const lvls = Object.values(byTrainer).map(tt=>Number(tt[ax])||0).filter(v=>v>0);
+        if(lvls.length){ const avg = lvls.reduce((s,v)=>s+v,0)/lvls.length; newSkills[ax] = blendSkill(base[ax]||0, avg); }
+      });
+      const snap = { month:m, skills:{...newSkills}, avg:skillsMean(newSkills,skillAxes), ts:new Date().toISOString(), raters:Object.keys(byTrainer).length };
+      const hist = [...(p.skillHistory||[]).filter(h=>h.month!==m), snap].sort((a,b)=>(a.month||"").localeCompare(b.month||""));
+      return { ...p, skills:newSkills, skillHistory:hist, lastSkillCheck:m, skillPending:{ ...(p.skillPending||{}), [m]:{ base, byTrainer } } };
+    });
+    const nextTeams = (data.teams||[]).map(tm=>tm.id===(skillCheck?.id)
+      ? { ...tm, lastSkillCheck:m, skillCheckBy:{ ...(tm.skillCheckBy||{}), [m]:Array.from(new Set([...((tm.skillCheckBy?.[m])||[]), raterId])) } } : tm);
     save({...data, playerProfiles:nextProfiles, teams:nextTeams});
     setSkillCheck(null);
     fire(`Skill-Check ${monthLabel(m)} gespeichert *`);
@@ -17031,13 +17052,19 @@ function PlayersTab({ data,myTids,save,fire,cl }) {
           {showBulk && <BulkAddPlayers cid={cid} cl={cl} selTid={selTid} selTeam={selTeam} clubTeams={clubTeams} activeSeason={activeSeason} allPlayers={allPlayers} data={data} save={save} fire={fire} onClose={()=>setShowBulk(false)}/>}
 
           {}
-          {selTeam&&mainPlayers.length>0&&(()=>{ const due=monthKey()!==(selTeam.lastSkillCheck||""); return (
+          {selTeam&&selTeam.skillCheckEnabled!==false&&mainPlayers.length>0&&(()=>{
+            const m=monthKey();
+            const ratedBy=(selTeam.skillCheckBy?.[m])||[];
+            const iDid=ratedBy.includes(raterId);
+            const teamTrainers=(data.trainers||[]).filter(tr=>tr.cid===cid&&(tr.tids||[]).includes(selTid)&&isActive(tr));
+            const due=!iDid;
+            return (
             <button onClick={()=>setSkillCheck(selTeam)}
               style={{width:"100%",marginBottom:14,padding:"12px 14px",borderRadius:13,border:`1.5px solid ${due?"#4f46e5":"#e2e8f0"}`,background:due?"#eef2ff":"#fff",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:10}}>
               <span style={{fontSize:20}}>📊</span>
               <div style={{flex:1,textAlign:"left"}}>
-                <div style={{fontWeight:800,fontSize:13.5,color:"#0f172a"}}>Monats-Skill-Check {due&&<span style={{fontSize:11,fontWeight:800,color:"#fff",background:"#4f46e5",borderRadius:6,padding:"1px 7px",marginLeft:4}}>fällig</span>}</div>
-                <div style={{fontSize:11.5,color:"#64748b",marginTop:1}}>{selTeam.lastSkillCheck?`Zuletzt: ${monthLabel(selTeam.lastSkillCheck)}`:"Noch nie durchgeführt"} · passt Skills gleitend an</div>
+                <div style={{fontWeight:800,fontSize:13.5,color:"#0f172a"}}>Monats-Skill-Check {due?<span style={{fontSize:11,fontWeight:800,color:"#fff",background:"#4f46e5",borderRadius:6,padding:"1px 7px",marginLeft:4}}>fällig</span>:<span style={{fontSize:11,fontWeight:800,color:"#16a34a",background:"#dcfce7",borderRadius:6,padding:"1px 7px",marginLeft:4}}>von dir erledigt</span>}</div>
+                <div style={{fontSize:11.5,color:"#64748b",marginTop:1}}>{ratedBy.length>0?`${ratedBy.length}${teamTrainers.length>1?"/"+teamTrainers.length:""} Trainer bewertet (${monthLabel(m)}) · Schnitt`:(selTeam.lastSkillCheck?`Zuletzt: ${monthLabel(selTeam.lastSkillCheck)}`:"Noch nie durchgeführt")}{teamTrainers.length>1?" · mehrere Trainer werden gemittelt":""}</div>
               </div>
               <span style={{color:"#4f46e5",fontSize:18}}>{">"}</span>
             </button>
@@ -17269,6 +17296,10 @@ function OnbStep2Teams({ cl, data, cid, save, teams, onNext, onBack }) {
   const [cat, setCat] = useState(Object.keys(CAT_YEARS)[0]||"E-Jugend");
   const [count, setCount] = useState(1);
   const [saving, setSaving] = useState(false);
+  const [skillOn,setSkillOn] = useState(cl?.clubSettings?.skillCheckDefault!==false);
+  const setSkill = (on) => { setSkillOn(on); save({...data,
+    clubs:(data.clubs||[]).map(c=>c.id===cl.id?{...c,clubSettings:{...(c.clubSettings||{}),skillCheckDefault:on}}:c),
+    teams:(data.teams||[]).map(tm=>tm.cid===cl.id?{...tm,skillCheckEnabled:on}:tm)}); };
   const TEAM_COLORS = ["#16a34a","#2563eb","#d97706","#7c3aed","#dc2626","#0891b2","#059669","#ea580c"];
   const CATS = Object.keys(CAT_YEARS);
   // Automatische Namen je Altersklasse: bei 1 Team "F-Jugend", bei mehreren
@@ -17334,6 +17365,17 @@ function OnbStep2Teams({ cl, data, cid, save, teams, onNext, onBack }) {
           style={{width:"100%",padding:"12px",borderRadius:11,border:"none",background:!saving?"#16a34a":"rgba(255,255,255,.1)",color:"#fff",fontWeight:800,fontSize:14,cursor:!saving?"pointer":"default",fontFamily:"inherit"}}>
           {saving?"Speichert…":count===1?"+ Mannschaft hinzufügen":`+ ${count} Mannschaften hinzufügen`}
         </button>
+      </div>
+      <div style={{marginTop:16,background:"rgba(255,255,255,.04)",border:"1px solid rgba(255,255,255,.1)",borderRadius:14,padding:"14px"}}>
+        <div style={{fontWeight:800,fontSize:14,color:"#fff",marginBottom:4}}>📊 Monatliche Skill-Bewertung</div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,.6)",lineHeight:1.55,marginBottom:12}}>
+          Einmal im Monat beantwortest du je Kind kurze Fragen zu seinen Fähigkeiten (~1–2 Min/Kind, nur für anwesende Kinder). Daraus entstehen <b style={{color:"rgba(255,255,255,.8)"}}>Entwicklungskurven über die Saison</b> und Förderhinweise. <b style={{color:"rgba(255,255,255,.8)"}}>Aufwand:</b> lohnt sich v.a. im Leistungsbereich – im reinen Breitensport ruhig auslassen. Pro Mannschaft jederzeit umstellbar.
+        </div>
+        <div style={{display:"flex",gap:8}}>
+          {[["on","Nutzen"],["off","Erstmal aus"]].map(([k,l])=>{const on=skillOn===(k==="on");return (
+            <button key={k} type="button" onClick={()=>setSkill(k==="on")} style={{flex:1,padding:"10px",borderRadius:11,border:`1.5px solid ${on?"#22c55e":"rgba(255,255,255,.15)"}`,background:on?"rgba(34,197,94,.2)":"transparent",color:on?"#86efac":"rgba(255,255,255,.6)",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
+          );})}
+        </div>
       </div>
       <OnbBtnRow back={onBack} nextLabel="Weiter" onNext={onNext}/>
     </OnbCard>
@@ -21601,7 +21643,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           <AffiliateBanner trigger="events" style={{marginTop:14}}/>
           <div style={{marginTop:14}}><RecommendCard theme={t.p}/></div>
         </>}
-        {tab==="players"    &&<><PlayersTab data={local} myTids={myTids} save={save} fire={fire} cl={myClub}/><AffiliateBanner trigger="players" style={{marginTop:14}}/></> }
+        {tab==="players"    &&<><PlayersTab data={local} myTids={myTids} save={save} fire={fire} cl={myClub} session={session}/><AffiliateBanner trigger="players" style={{marginTop:14}}/></> }
         {tab==="templates"  &&<TemplatesTab data={local} cid={cid} save={save} fire={fire} cl={myClub} myTids={myTids} teams={(local.teams||[]).filter(tm=>tm.cid===cid)}/>}
         {tab==="treasury"   &&<TreasuryTab data={local} cid={cid} save={save} fire={fire} cl={myClub} myTids={myTids} teams={(local.teams||[]).filter(tm=>tm.cid===cid)} isAdmin={isAdmin}/>}
         {tab==="helpers"    &&<HelpersTab data={local} cid={cid} myTids={myTids} session={session} save={save} fire={fire} cl={myClub}/>}
