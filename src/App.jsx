@@ -16730,7 +16730,7 @@ function parseBulkPlayerLine(line) {
 
 function BulkAddPlayers({ cid, cl, selTid, selTeam, clubTeams, activeSeason, allPlayers, data, save, fire, onClose }) {
   const t = TH(cl);
-  const defaultBy = selTeam?.years ? parseInt(selTeam.years.split("/")[0]) || 2014 : 2014;
+  const defaultBy = selTeam?.years ? parseInt(String(selTeam.years).split("/")[0]) || 2014 : 2014;
   const [text, setText] = useState("");
   const [assignTid, setAssignTid] = useState(selTid || "");
   const [defaultGender, setDefaultGender] = useState("m");
@@ -16792,7 +16792,7 @@ Ben Fischer | 2016 | m`;
         <div style={{padding:"16px 20px 12px",borderBottom:"1px solid #f1f5f9"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12}}>
             <div>
-              <div style={{fontWeight:900,fontSize:18,color:"#0f172a"}}>⚡ Massenanlage Spieler</div>
+              <div style={{fontWeight:900,fontSize:18,color:"#0f172a"}}>⚡ Mehrere Spieler anlegen</div>
               <p style={{fontSize:12.5,color:"#64748b",margin:"3px 0 0",lineHeight:1.5}}>
                 Ein Spieler pro Zeile · Jahrgang + Geschlecht (m/w/d) optional, leer = Default-Werte unten.
               </p>
@@ -17068,14 +17068,14 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
               <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Spieler suchen..."
                 style={{width:"100%",padding:"10px 13px 10px 38px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",background:"#fff"}}/>
             </div>
-            <button onClick={()=>{setShowNew(true);setEditP(mkPlayer({mainTid:selTid,by:selTeam?.years?parseInt(selTeam.years.split("/")[0])||2014:2014}));}}
+            <button onClick={()=>{setShowNew(true);setEditP(mkPlayer({mainTid:selTid,by:selTeam?.years?parseInt(String(selTeam.years).split("/")[0])||2014:2014}));}}
               style={{padding:"0 16px",height:44,borderRadius:12,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",boxShadow:`0 3px 12px ${t.p}44`}}>
               + Spieler
             </button>
             <button onClick={()=>setShowBulk(true)}
               title="Mehrere Spieler auf einmal anlegen (z.B. ganzen Kader aus Liste reinkopieren)"
               style={{padding:"0 14px",height:44,borderRadius:12,border:`1.5px solid ${t.p}`,background:"#fff",color:t.p,fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>
-              ⚡ Massenanlage
+              ⚡ Mehrere anlegen
             </button>
           </div>
           {showBulk && <BulkAddPlayers cid={cid} cl={cl} selTid={selTid} selTeam={selTeam} clubTeams={clubTeams} activeSeason={activeSeason} allPlayers={allPlayers} data={data} save={save} fire={fire} onClose={()=>setShowBulk(false)}/>}
