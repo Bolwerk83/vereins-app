@@ -14758,32 +14758,49 @@ const monthLabel = (m) => { if(!m||m.length<7) return m||""; const [y,mo]=m.spli
 // Monatlicher Skill-Check: Trainer beantwortet je Spieler gezielte Fragen pro
 // Skill. Antworten passen die Werte gleitend an (2 Nachkommastellen) und legen
 // einen Monats-Snapshot im Verlauf an.
-function SkillCheckFlow({ team, players, axes, club, month, t, onApply, onClose }){
-  const list = players||[];
+function SkillCheckFlow({ team, players, axes, club, month, t, events=[], trainings=[], onApply, onClose }){
+  const all = players||[];
   const tp = t?.p || "#16a34a";
   const cat = team?.cat || team?.name || "";
   const soll = sollFor(club, cat, axes);
+  // Teilnahme-Zeitraum: vergangene Termine der Mannschaft der letzten ~6 Wochen.
+  const todayStr = new Date().toISOString().slice(0,10);
+  const cutoffStr = new Date(Date.now()-42*86400000).toISOString().slice(0,10);
+  const voteYes=(e,name)=>{ const v=e.votes?.[name]; const val=(typeof v==="object"&&v)?v.val:v; return val==="yes"; };
+  const teamEvents=(events||[]).filter(e=>e.tid===team?.id && (e.date||"")<=todayStr && (e.date||"")>=cutoffStr);
+  const partOf=(p)=>{
+    const att=teamEvents.filter(e=>voteYes(e,p.name));
+    const skills={};
+    att.forEach(e=>{ if(e.type==="training"&&e.trainingId){ const pl=(trainings||[]).find(tr=>tr.id===e.trainingId); (pl?.blocks||[]).forEach(b=>(b.axes||[]).forEach(ax=>{skills[ax]=(skills[ax]||0)+1;})); } });
+    return { att:att.length, total:teamEvents.length, skills };
+  };
+  const hasEventData = teamEvents.length>0;
+  // Nur Kinder mit mind. 1 Teilnahme – solange es überhaupt Anwesenheitsdaten gibt.
+  const roster = hasEventData ? all.filter(p=>partOf(p).att>0) : all;
+  const excluded = all.length - roster.length;
   const [idx,setIdx]=useState(0);
   const [skipped,setSkipped]=useState(()=>new Set());
   const initLevel = (p,a,i)=>{ const cur=Number(p.skills?.[a])||0; return cur>0?Math.round(clampSkill(cur)):(soll[i]||3); };
-  const [answers,setAnswers]=useState(()=>{ const m={}; list.forEach(p=>{ m[p.id]={}; axes.forEach((a,i)=>{ m[p.id][a]=initLevel(p,a,i); }); }); return m; });
-  if(list.length===0) return (
+  const [answers,setAnswers]=useState(()=>{ const m={}; all.forEach(p=>{ m[p.id]={}; axes.forEach((a,i)=>{ m[p.id][a]=initLevel(p,a,i); }); }); return m; });
+  if(roster.length===0) return (
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:1300,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
       <div style={{background:"#fff",borderRadius:18,padding:"22px",maxWidth:380,textAlign:"center"}}>
-        <p style={{fontWeight:800,color:"#0f172a",marginBottom:6}}>Keine Spieler im Kader</p>
-        <p style={{fontSize:13,color:"#64748b",marginBottom:16}}>Lege zuerst Spieler in dieser Mannschaft an.</p>
+        <p style={{fontWeight:800,color:"#0f172a",marginBottom:6}}>{all.length===0?"Keine Spieler im Kader":"Keine Teilnahmen im Zeitraum"}</p>
+        <p style={{fontSize:13,color:"#64748b",marginBottom:16}}>{all.length===0?"Lege zuerst Spieler in dieser Mannschaft an.":"In den letzten 6 Wochen hat noch niemand an einem Termin teilgenommen (Zusage). Sobald Kinder zusagen, erscheinen sie hier."}</p>
         <button onClick={onClose} style={{padding:"10px 20px",borderRadius:11,border:"none",background:tp,color:contrast(tp),fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Schließen</button>
       </div>
     </div>
   );
-  const cur = list[idx];
-  const isLast = idx>=list.length-1;
+  const cur = roster[idx];
+  const isLast = idx>=roster.length-1;
   const ans = answers[cur.id]||{};
+  const part = partOf(cur);
+  const trained = Object.entries(part.skills).sort((a,b)=>b[1]-a[1]);
   const setAns=(a,lvl)=>setAnswers(m=>({...m,[cur.id]:{...m[cur.id],[a]:lvl}}));
   const toggleSkip=()=>setSkipped(s=>{const n=new Set(s); n.has(cur.id)?n.delete(cur.id):n.add(cur.id); return n;});
   const isSkipped=skipped.has(cur.id);
   const finish=()=>{
-    const updated=list.filter(p=>!skipped.has(p.id)).map(p=>{
+    const updated=roster.filter(p=>!skipped.has(p.id)).map(p=>{
       const a=answers[p.id]||{}; const oldSk=p.skills||{}; const newSk={...oldSk};
       axes.forEach((ax,i)=>{
         const lvl=a[ax]; const init=(Number(oldSk[ax])||0)>0?Math.round(clampSkill(oldSk[ax])):0;
@@ -14802,7 +14819,7 @@ function SkillCheckFlow({ team, players, axes, club, month, t, onApply, onClose 
         <button onClick={onClose} style={{background:"rgba(0,0,0,.18)",border:"none",borderRadius:10,padding:"7px 12px",color:contrast(tp),fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontWeight:900,fontSize:16}}>Skill-Check · {monthLabel(month)}</div>
-          <div style={{fontSize:12,opacity:.85}}>{team?.name} · Spieler {idx+1}/{list.length}</div>
+          <div style={{fontSize:12,opacity:.85}}>{team?.name} · Spieler {idx+1}/{roster.length}{excluded>0?` · ${excluded} ohne Teilnahme`:""}</div>
         </div>
       </div>
       <div style={{flex:1,overflowY:"auto",background:"#f0f4f8",padding:"16px 16px 24px"}}>
@@ -14815,6 +14832,17 @@ function SkillCheckFlow({ team, players, axes, club, month, t, onApply, onClose 
             </div>
             <button onClick={toggleSkip} style={{padding:"7px 12px",borderRadius:10,border:`1.5px solid ${isSkipped?"#dc2626":"#e2e8f0"}`,background:isSkipped?"#fee2e2":"#fff",color:isSkipped?"#dc2626":"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{isSkipped?"übersprungen":"Überspringen"}</button>
           </div>
+          {hasEventData&&<div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"11px 13px",marginBottom:12}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:trained.length?8:0}}>
+              <span style={{fontSize:16}}>📅</span>
+              <span style={{fontSize:13,fontWeight:700,color:"#0f172a"}}>Anwesend: {part.att}/{part.total} Termine</span>
+              <span style={{marginLeft:"auto",fontSize:11,color:"#94a3b8",fontWeight:700}}>letzte 6 Wochen</span>
+            </div>
+            {trained.length>0
+              ? <div><div style={{fontSize:11,fontWeight:800,color:"#64748b",margin:"2px 0 5px",letterSpacing:.3}}>TRAINIERTE SKILLS</div>
+                  <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>{trained.map(([ax,c])=><span key={ax} style={{fontSize:11,fontWeight:800,color:"#4f46e5",background:"#eef2ff",borderRadius:6,padding:"2px 8px"}}>{ax} ×{c}</span>)}</div></div>
+              : <div style={{fontSize:11.5,color:"#94a3b8"}}>Keine getaggten Trainings-Skills im Zeitraum (Trainings ohne hinterlegten Plan zählen nicht mit).</div>}
+          </div>}
           {isSkipped
             ? <div style={{background:"#fff",borderRadius:14,padding:"24px",textAlign:"center",color:"#94a3b8",fontSize:14}}>Dieser Spieler wird in diesem Monat nicht bewertet.</div>
             : axes.map((a,ai)=>{
@@ -17083,6 +17111,8 @@ function PlayersTab({ data,myTids,save,fire,cl }) {
           club={cl}
           month={monthKey()}
           t={t}
+          events={data.events||[]}
+          trainings={data.trainings||[]}
           onApply={applySkillCheck}
           onClose={()=>setSkillCheck(null)}
         />
