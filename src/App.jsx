@@ -18373,6 +18373,16 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
           <Inp label="Ort" val={f.loc} set={v=>u({loc:v})} ph="Sportplatz" cl={cl}/>
           <SeriesWizard f={f} u={u} t={t} cl={cl}/>
           {f.recMode==="none"&&<Inp label="Datum" val={f.date} set={v=>u({date:v})} type="date" cl={cl}/>}
+          {f.recMode==="none"&&(
+            <div>
+              <div style={{fontSize:11,fontWeight:800,color:"#64748b",margin:"4px 0 6px",letterSpacing:.5}}>ABSTIMMUNGSFRIST (OPTIONAL)</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:11}}>
+                <Inp label="Datum" val={f.deadline?.date||""} set={v=>u({deadline:v?{date:v,time:f.deadline?.time||""}:undefined})} type="date" cl={cl}/>
+                <Inp label="Uhrzeit" val={f.deadline?.time||""} set={v=>u({deadline:f.deadline?.date?{date:f.deadline.date,time:v}:(v?{date:f.date||now(),time:v}:undefined)})} type="time" cl={cl}/>
+              </div>
+              <div style={{fontSize:11,color:"#94a3b8",marginTop:5}}>Bis wann darf abgestimmt werden? Spätere Antworten werden als „verspätet" markiert. Leer = keine feste Frist.</div>
+            </div>
+          )}
           {(()=>{
             const selCat = (teams.find(x=>x.id===f.tid)?.cat)||(teams.find(x=>x.id===f.tid)?.name)||"";
             const vorschlag = defaultSollPlayers(selCat);
