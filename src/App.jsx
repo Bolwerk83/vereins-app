@@ -5676,25 +5676,40 @@ function TrainingsLibrary({ data, myTids, cl, save, fire }) {
 
         <div style={{background:"#fff",borderRadius:12,padding:"12px 14px",border:"1.5px solid #e2e8f0"}}>
           <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.4}}>ABLAUF</div>
-          {e.blocks.map((b,i)=>(
+          {e.blocks.map((b,i)=>{
+            const mode=b.mode||(b.drillId?"lib":"free");
+            const pool=drillsForPhase(b.phase);
+            const segBtn=(on)=>({flex:1,padding:"6px",borderRadius:8,border:`1.5px solid ${on?"#4f46e5":"#e2e8f0"}`,background:on?"#eef2ff":"#fff",color:on?"#4f46e5":"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"});
+            return (
             <div key={i} style={{borderBottom:i<e.blocks.length-1?"1px solid #f1f5f9":"none",paddingBottom:8,marginBottom:8}}>
               <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                <select value={b.phase} onChange={ev=>setBlock(i,{phase:ev.target.value})} style={{padding:"8px",borderRadius:9,border:"1.5px solid #e2e8f0",fontSize:13,fontFamily:"inherit",flexShrink:0}}>
+                <select value={b.phase} onChange={ev=>setBlock(i,{phase:ev.target.value})} style={{padding:"8px",borderRadius:9,border:"1.5px solid #e2e8f0",fontSize:13,fontFamily:"inherit",flex:1,minWidth:0}}>
                   {TRAIN_PHASES.map(p=><option key={p} value={p}>{p}</option>)}
                 </select>
-                <input value={b.title} onChange={ev=>setBlock(i,{title:ev.target.value})} placeholder="Übung / Inhalt"
-                  style={{flex:1,minWidth:0,padding:"8px 10px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",boxSizing:"border-box"}}/>
                 <input type="number" value={b.min} onChange={ev=>setBlock(i,{min:Number(ev.target.value)||0})} style={{width:52,padding:"8px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",boxSizing:"border-box"}}/>
                 <span style={{fontSize:11,color:"#94a3b8",flexShrink:0}}>Min</span>
                 {e.blocks.length>1&&<button onClick={()=>set({blocks:e.blocks.filter((_,j)=>j!==i)})} style={{background:"none",border:"none",color:"#dc2626",fontWeight:800,fontSize:16,cursor:"pointer",flexShrink:0}}>×</button>}
               </div>
+              <div style={{display:"flex",gap:6,margin:"7px 0"}}>
+                <button onClick={()=>setBlock(i,{mode:"lib"})} style={segBtn(mode==="lib")}>📋 Vorlage</button>
+                <button onClick={()=>setBlock(i,{mode:"free",drillId:"",axes:[]})} style={segBtn(mode==="free")}>✎ Eigene Eingabe</button>
+              </div>
+              {mode==="lib"
+                ? <select value={b.drillId||""} onChange={ev=>{const d=DRILL_LIB.find(x=>x.id===ev.target.value); setBlock(i,{drillId:ev.target.value,title:d?d.title:"",axes:d?(d.axes||[]):[],min:d?d.min:b.min});}}
+                    style={{width:"100%",padding:"9px 10px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",boxSizing:"border-box",fontFamily:"inherit",background:"#fff"}}>
+                    <option value="">– Übungs-Vorlage wählen –</option>
+                    {pool.map(d=><option key={d.id} value={d.id}>{d.title} · {(d.axes||[]).join("/")}</option>)}
+                  </select>
+                : <input value={b.title} onChange={ev=>setBlock(i,{title:ev.target.value})} placeholder="Eigene Übung / Inhalt"
+                    style={{width:"100%",padding:"9px 10px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>}
+              {mode==="lib"&&(b.axes||[]).length>0&&<div style={{display:"flex",gap:4,flexWrap:"wrap",marginTop:6}}>{b.axes.map(a=><span key={a} style={{fontSize:10.5,fontWeight:800,color:"#4f46e5",background:"#eef2ff",borderRadius:6,padding:"2px 7px"}}>{a}</span>)}</div>}
               <TacticPicker
                 value={b.tactic}
                 onChange={(tactic)=>setBlock(i,{tactic})}
                 onFullscreen={(tpl)=>setFullscreenTactic({tactic:tpl,title:b.title||tpl.name})}/>
             </div>
-          ))}
-          <button onClick={()=>set({blocks:[...e.blocks,{phase:"Hauptteil",title:"",min:10}]})} style={{marginTop:4,background:"#f1f5f9",border:"none",borderRadius:9,padding:"8px 12px",fontSize:13,fontWeight:700,color:"#475569",cursor:"pointer",fontFamily:"inherit"}}>+ Block</button>
+          );})}
+          <button onClick={()=>set({blocks:[...e.blocks,{phase:"Hauptteil",title:"",min:10,mode:"free"}]})} style={{marginTop:4,background:"#f1f5f9",border:"none",borderRadius:9,padding:"8px 12px",fontSize:13,fontWeight:700,color:"#475569",cursor:"pointer",fontFamily:"inherit"}}>+ Block</button>
         </div>
 
         <div style={{background:"#fff",borderRadius:12,padding:"12px 14px",border:"1.5px solid #e2e8f0"}}>
@@ -15335,6 +15350,9 @@ const DRILL_LIB = [
 const drillsByFocus = f => DRILL_LIB.filter(d=>d.focus===f);
 // Übungen, die eine bestimmte Skill-Achse trainieren (für Förderlücken-Vorschläge)
 const drillsForAxis = axis => DRILL_LIB.filter(d=>(d.axes||[]).includes(axis));
+// Übungs-Vorlagen passend zur Trainingsphase (für die Vorlage/Frei-Umschaltung im Plan-Editor)
+const PHASE_DRILL_FOCUS = { "Aufwärmen":["aufwärmen"], "Hauptteil":["technik","taktik","torschuss"], "Abschluss":["spielform"], "Spielform":["spielform"], "Athletik":["kondition"] };
+const drillsForPhase = phase => { const fs=PHASE_DRILL_FOCUS[phase]||["technik","taktik"]; return DRILL_LIB.filter(d=>fs.includes(d.focus)); };
 
 // Dauer eines Termins in Minuten aus time + endTime (oder null wenn nicht bestimmbar)
 function eventDurationMin(ev) {
@@ -21792,9 +21810,6 @@ function QuickPlanCreate({ cid, ownerTid, t, onCreate, onCancel }){
   const [focus,setFocus]=useState("");
   const [blocks,setBlocks]=useState([{phase:"Aufwärmen",title:"",min:10,mode:"lib"}]);
   const setBlock=(i,patch)=>setBlocks(bs=>bs.map((b,j)=>j===i?{...b,...patch}:b));
-  // Übungs-Vorlagen passend zur Phase aus der Skill-getaggten DRILL_LIB.
-  const PHASE_FOCUS={ "Aufwärmen":["aufwärmen"], "Hauptteil":["technik","taktik","torschuss"], "Abschluss":["spielform"], "Spielform":["spielform"], "Athletik":["kondition"] };
-  const drillsForPhase=phase=>{ const fs=PHASE_FOCUS[phase]||["technik","taktik"]; return DRILL_LIB.filter(d=>fs.includes(d.focus)); };
   const valid=title.trim().length>0;
   const create=()=>{
     if(!valid) return;
