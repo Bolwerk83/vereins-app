@@ -1,0 +1,118 @@
+/* =====================================================================
+   bolwerk24 — SuperAdmin Styles (ergänzt styles.css)
+   ===================================================================== */
+.admin-body { min-height: 100vh; background: var(--bg, #0a0a0c); }
+
+/* ---------- Login ---------- */
+.admin-login { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+.login-card {
+  width: 100%; max-width: 380px; background: var(--bg-subtle, #16161a);
+  border: 1px solid var(--border, #26262c); border-radius: 20px; padding: 30px 26px;
+  box-shadow: 0 30px 80px -30px rgba(0,0,0,.6); display: flex; flex-direction: column; gap: 14px;
+}
+.login-brand { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 18px; }
+.login-brand b { color: var(--brand, #6366f1); }
+.login-card h1 { margin: 6px 0 0; font-size: 24px; }
+.login-sub { color: var(--text-3, #8a8a96); font-size: 14px; margin: 0 0 4px; }
+.login-card label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text-2, #b8b8c4); }
+.login-card input, .edit-card input, .edit-card select {
+  background: var(--bg, #0e0e12); border: 1px solid var(--border, #2a2a32); color: var(--text, #f2f2f5);
+  border-radius: 11px; padding: 11px 13px; font: inherit; font-weight: 500; outline: none;
+}
+.login-card input:focus, .edit-card input:focus, .edit-card select:focus { border-color: var(--brand, #6366f1); }
+.login-msg { color: #f87171; font-size: 13px; min-height: 18px; margin: 0; }
+.login-note { font-size: 12px; color: var(--text-3, #8a8a96); background: rgba(250,204,21,.08); border: 1px solid rgba(250,204,21,.25); padding: 10px 12px; border-radius: 10px; }
+.login-note code { background: rgba(255,255,255,.08); padding: 1px 5px; border-radius: 5px; }
+
+/* ---------- Dashboard-Layout ---------- */
+.admin-header {
+  position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; padding: 12px 20px; background: var(--bg-subtle, #131317); border-bottom: 1px solid var(--border, #26262c);
+}
+.admin-brand { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+.admin-brand b { color: var(--brand, #6366f1); }
+.admin-headright { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.admin-user { font-size: 13px; color: var(--text-3, #8a8a96); }
+
+.admin-tabs { display: flex; gap: 6px; padding: 12px 16px 0; max-width: 1080px; margin: 0 auto; flex-wrap: wrap; }
+.atab {
+  border: 1px solid var(--border, #2a2a32); background: transparent; color: var(--text-2, #b8b8c4);
+  padding: 9px 15px; border-radius: 10px; font: inherit; font-weight: 600; cursor: pointer; font-size: 14px;
+}
+.atab.active { background: var(--brand, #6366f1); border-color: var(--brand, #6366f1); color: #fff; }
+
+.admin-main { max-width: 1080px; margin: 0 auto; padding: 18px 16px 60px; }
+.panel { display: none; }
+.panel.active { display: block; animation: fade .25s ease; }
+@keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+.panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 6px 0 16px; flex-wrap: wrap; }
+.panel-head h2 { margin: 0; font-size: 20px; }
+.hint { color: var(--text-3, #8a8a96); font-size: 13px; margin: -6px 0 14px; }
+.hint code, .ph-actions code { background: rgba(255,255,255,.08); padding: 1px 5px; border-radius: 5px; }
+.ph-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ---------- Cards / KPIs ---------- */
+.card { background: var(--bg-subtle, #131317); border: 1px solid var(--border, #26262c); border-radius: 16px; padding: 18px; margin-bottom: 16px; }
+.card h3 { margin: 0 0 14px; font-size: 15px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 760px) { .grid-2 { grid-template-columns: 1fr; } }
+
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+@media (max-width: 760px) { .kpis { grid-template-columns: 1fr 1fr; } }
+.kpi { background: var(--bg-subtle, #131317); border: 1px solid var(--border, #26262c); border-radius: 14px; padding: 16px; }
+.kpi-n { font-size: 28px; font-weight: 800; line-height: 1; }
+.kpi-l { color: var(--text-3, #8a8a96); font-size: 13px; margin-top: 6px; }
+.kpi.loading { grid-column: 1 / -1; color: var(--text-3); }
+
+.range { display: flex; gap: 4px; }
+.range button { border: 1px solid var(--border, #2a2a32); background: transparent; color: var(--text-2, #b8b8c4); padding: 6px 11px; border-radius: 8px; font: inherit; font-size: 13px; cursor: pointer; }
+.range button.active { background: var(--brand, #6366f1); border-color: var(--brand, #6366f1); color: #fff; }
+
+/* ---------- Balkenlisten ---------- */
+.barlist { display: flex; flex-direction: column; gap: 10px; }
+.bar-row { display: grid; grid-template-columns: 130px 1fr auto; align-items: center; gap: 10px; font-size: 13px; }
+.bar-label { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar-track { background: rgba(255,255,255,.06); border-radius: 6px; height: 10px; overflow: hidden; }
+.bar-fill { height: 100%; background: linear-gradient(90deg, var(--brand, #6366f1), #22d3ee); border-radius: 6px; }
+.bar-val { color: var(--text-3, #8a8a96); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.bar-val span { font-size: 11px; }
+@media (max-width: 540px) { .bar-row { grid-template-columns: 90px 1fr; } .bar-val { grid-column: 2; justify-self: end; } }
+
+/* ---------- Sparkline ---------- */
+.spark { display: flex; align-items: flex-end; gap: 3px; height: 110px; }
+.spark-col { flex: 1; height: 100%; display: flex; align-items: flex-end; }
+.spark-bar { width: 100%; background: linear-gradient(180deg, var(--brand, #6366f1), #312e81); border-radius: 3px 3px 0 0; min-height: 3px; }
+
+/* ---------- Tabelle ---------- */
+.tablewrap { overflow-x: auto; }
+.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
+.tbl th, .tbl td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border, #26262c); white-space: nowrap; }
+.tbl th { color: var(--text-3, #8a8a96); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+.lnk-del { background: transparent; border: none; color: #f87171; cursor: pointer; font-size: 15px; }
+
+/* ---------- Editier-Listen (Affiliate / Katalog) ---------- */
+.editlist { display: flex; flex-direction: column; gap: 12px; }
+.edit-card { background: var(--bg-subtle, #131317); border: 1px solid var(--border, #26262c); border-radius: 14px; padding: 14px; }
+.edit-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 10px; }
+.edit-row:last-child { margin-bottom: 0; }
+.edit-card label { display: flex; flex-direction: column; gap: 5px; font-size: 12px; font-weight: 600; color: var(--text-2, #b8b8c4); flex: 1 1 140px; }
+.edit-card label.grow { flex: 3 1 220px; }
+.edit-card label.sm { flex: 0 0 92px; }
+.edit-card label.chk { flex: 0 0 auto; flex-direction: row; align-items: center; gap: 6px; }
+.edit-card input[type="color"] { padding: 3px; height: 40px; }
+.del-card { background: rgba(248,113,113,.1); border: 1px solid rgba(248,113,113,.3); color: #f87171; border-radius: 9px; padding: 8px 11px; cursor: pointer; height: 40px; }
+
+.save-row { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
+.save-msg { color: #34d399; font-size: 13px; font-weight: 600; }
+.empty { color: var(--text-3, #8a8a96); font-size: 14px; padding: 6px 0; }
+
+/* ---------- Affiliate-Anzeige auf der Startseite ---------- */
+.ad-rectangle.affiliate-filled { display: block; text-align: left; padding: 16px; }
+.aff-head { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-3, #8a8a96); margin-bottom: 10px; display: flex; justify-content: space-between; }
+.aff-head span { opacity: .7; }
+.aff-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--border, #26262c); border-radius: 10px; margin-bottom: 8px; text-decoration: none; color: inherit; transition: border-color .15s; }
+.aff-item:hover { border-color: var(--brand, #6366f1); }
+.aff-name { font-weight: 700; }
+.aff-note { color: var(--text-3, #8a8a96); font-size: 13px; }
+.aff-go { margin-left: auto; color: var(--brand, #6366f1); font-weight: 700; }

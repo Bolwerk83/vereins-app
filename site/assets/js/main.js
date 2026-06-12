@@ -3,7 +3,8 @@
    ===================================================================== */
 (function () {
   "use strict";
-  const { CATEGORIES, APPS, CONFIG } = window.BOLWERK || { CATEGORIES: [], APPS: [], CONFIG: {} };
+  const { CATEGORIES, CONFIG } = window.BOLWERK || { CATEGORIES: [], CONFIG: {} };
+  let APPS = (window.BOLWERK && window.BOLWERK.APPS) || [];
   const NL = (CONFIG && CONFIG.newsletter) || {};
   const $  = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -25,10 +26,10 @@
       ? `<div class="app-rating"><span class="stars">${"★".repeat(Math.round(a.rating))}</span> ${a.rating.toFixed(1)} <span style="color:var(--text-3);font-weight:500">· ${a.reviews} Bewertungen</span></div>`
       : `<div class="app-rating" style="color:var(--text-3)"><span class="stars" style="color:var(--text-3)">★★★★★</span> Demnächst bewertbar</div>`;
     const action = live
-      ? `<a class="btn btn-primary" href="${a.url}" target="_blank" rel="noopener" style="background:${a.color};box-shadow:0 8px 22px -8px ${shadow}">Öffnen ${ICON.arrow}</a>`
-      : `<button class="btn btn-soft notify-btn" data-app="${a.name}">Vormerken ${ICON.bell}</button>`;
+      ? `<a class="btn btn-primary" href="${a.url}" target="_blank" rel="noopener" data-app-open="${a.id}" style="background:${a.color};box-shadow:0 8px 22px -8px ${shadow}">Öffnen ${ICON.arrow}</a>`
+      : `<button class="btn btn-soft notify-btn" data-app="${a.name}" data-app-id="${a.id}">Vormerken ${ICON.bell}</button>`;
     return `
-    <article class="app-card reveal" data-cat="${a.category}" style="--app:${a.color};--app-soft:${soft};--app-shadow:${shadow}">
+    <article class="app-card reveal" data-cat="${a.category}" data-app-id="${a.id}" style="--app:${a.color};--app-soft:${soft};--app-shadow:${shadow}">
       <div class="app-top">
         <div class="app-icon">${a.icon}</div>
         <div class="app-meta">
@@ -45,7 +46,11 @@
 
   function renderApps() {
     const grid = $("#apps-grid");
-    if (grid) grid.innerHTML = APPS.map(appCard).join("");
+    if (grid) {
+      grid.innerHTML = APPS.map(appCard).join("");
+      // dem Tracking signalisieren, dass die Karten jetzt im DOM sind
+      window.dispatchEvent(new Event("bw24:apps-rendered"));
+    }
 
     const filters = $("#filters");
     if (filters) {
@@ -69,6 +74,7 @@
     document.addEventListener("click", (e) => {
       const b = e.target.closest(".notify-btn");
       if (!b) return;
+      if (window.bwTrack && b.dataset.appId) window.bwTrack("app_notify", { app_id: b.dataset.appId });
       const nl = $("#newsletter");
       const input = $("#nl-email");
       if (nl) nl.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -223,6 +229,9 @@
       }
       const app = input.dataset.app || "";
 
+      // Immer (zusätzlich) im SuperAdmin sichtbar machen, falls Supabase aktiv ist.
+      saveLeadToSupabase(email, app);
+
       if (NL.brevoFormUrl) {
         // An Brevo senden. sibforms erlaubt kein CORS-Auslesen -> no-cors:
         // Wir gehen bei erfolgreichem Absenden von Erfolg aus (DOI-Mail folgt).
@@ -271,6 +280,51 @@
     // Erst NACH Cookie-Einwilligung. Hier deinen Awin-/AdSense-Code einsetzen.
     // Beispiel AdSense: (adsbygoogle = window.adsbygoogle || []).push({});
     $$(".ad-slot").forEach((s) => s.setAttribute("data-consent", "granted"));
+    renderAffiliate(); // im SuperAdmin gepflegte Partner-Empfehlungen anzeigen
+  }
+
+  /* ---------- Affiliate-Partner aus dem SuperAdmin anzeigen ---------- */
+  async function renderAffiliate() {
+    const client = window.bwSupabase && window.bwSupabase();
+    if (!client) return;
+    let partners = [];
+    try {
+      const { data } = await client.from("site_config").select("value").eq("key", "affiliate").maybeSingle();
+      const list = data && data.value && Array.isArray(data.value.partners) ? data.value.partners : [];
+      partners = list.filter((p) => p && p.active && p.url);
+    } catch { return; }
+    if (!partners.length) return;
+    const slot = $(".ad-rectangle");
+    if (!slot) return;
+    slot.classList.add("affiliate-filled");
+    slot.innerHTML =
+      '<div class="aff-head">Partner-Empfehlungen <span>Anzeige</span></div>' +
+      partners.slice(0, 5).map((p) => `
+        <a class="aff-item" href="${p.url}" target="_blank" rel="sponsored noopener"
+           data-affiliate="${escapeAttr(p.id || p.name || "partner")}">
+          <span class="aff-name">${escapeHtml(p.name || "Partner")}</span>
+          ${p.note ? `<span class="aff-note">${escapeHtml(p.note)}</span>` : ""}
+          <span class="aff-go">→</span>
+        </a>`).join("");
+  }
+
+  /* ---------- Newsletter-Lead in Supabase ablegen (optional) ---------- */
+  async function saveLeadToSupabase(email, app) {
+    const client = window.bwSupabase && window.bwSupabase();
+    if (!client) return;
+    try {
+      await client.from("site_leads").insert([{ email, app: app || null, source: "landing" }]);
+    } catch { /* Tracking/Lead darf nie stören */ }
+  }
+
+  /* ---------- App-Katalog aus dem SuperAdmin laden (überschreibt apps.js) ---------- */
+  async function loadCatalogOverride() {
+    const client = window.bwSupabase && window.bwSupabase();
+    if (!client) return;
+    try {
+      const { data } = await client.from("site_config").select("value").eq("key", "apps").maybeSingle();
+      if (data && Array.isArray(data.value) && data.value.length) APPS = data.value;
+    } catch { /* Fallback: APPS aus apps.js */ }
   }
 
   /* ---------- Back-to-top ---------- */
@@ -281,18 +335,24 @@
     btn.addEventListener("click", () => scrollTo({ top: 0, behavior: "smooth" }));
   }
 
-  /* ---------- Hilfsfunktion ---------- */
+  /* ---------- Hilfsfunktionen ---------- */
   function hexToRgba(hex, a) {
-    const h = hex.replace("#", "");
+    const h = String(hex || "#888888").replace("#", "");
     const n = parseInt(h.length === 3 ? h.split("").map((c) => c + c).join("") : h, 16);
     return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
   }
+  function escapeHtml(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+  function escapeAttr(s) { return escapeHtml(s).replace(/\s+/g, "-"); }
 
   /* ---------- Jahr im Footer ---------- */
   function initYear() { const y = $("#year"); if (y) y.textContent = new Date().getFullYear(); }
 
   /* ---------- Start ---------- */
-  document.addEventListener("DOMContentLoaded", () => {
+  document.addEventListener("DOMContentLoaded", async () => {
+    await loadCatalogOverride(); // ggf. im SuperAdmin gepflegten Katalog laden
     renderApps();
     renderSpotlight();
     renderHeroMockup();

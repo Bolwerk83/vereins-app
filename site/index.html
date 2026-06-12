@@ -322,6 +322,7 @@
         <div class="legal">
           <a href="/impressum.html">Impressum</a>
           <a href="/datenschutz.html">Datenschutz</a>
+          <a href="/admin" rel="nofollow" style="opacity:.55">Admin</a>
         </div>
       </div>
     </div>
@@ -339,7 +340,13 @@
   <!-- ===== Back to top ===== -->
   <button class="to-top" id="to-top" aria-label="Nach oben"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg></button>
 
+  <!-- Supabase (für anonyme Statistik & vom SuperAdmin gepflegte Inhalte) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/assets/js/supabase-config.js"></script>
+  <script src="/assets/js/bw-supabase.js"></script>
+
   <script src="/assets/js/apps.js"></script>
+  <script src="/assets/js/analytics.js"></script>
   <script src="/assets/js/main.js"></script>
 </body>
 </html>
