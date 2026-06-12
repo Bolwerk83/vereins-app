@@ -7603,6 +7603,238 @@ const TRAINING_TEMPLATES = [
   material:[{id:"goal_small",qty:4,label:"Kleines Tor",cat:"Tore"},{id:"ball_fuss",qty:3,label:"Fußball",cat:"Bälle"},{id:"leibchen",qty:5,color:"gelb",label:"Leibchen",cat:"Leibchen"}],
   ageNote:"Alt-Herren verdienen einen eigenen Ansatz. Spass, Gemeinschaft und Gesundheit stehen vor Leistung.",
 },
+
+// ================================================================
+// TAKTIK FÜR JUNGE JAHRGÄNGE (spielerisch, ab G-/F-Jugend)
+// ================================================================
+{
+  id:"tky_01", cat:"taktik", name:"Anbieten & Freilaufen (kindgerecht)",
+  age:["g","f","e"],
+  duration:15, intensity:4,
+  skills:["raumaufteilung","spielintelligenz","passen"],
+  description:`Im kleinen Feld 3v1: Wer den Ball hat, ruft den Namen eines freien Mitspielers. Die anderen sollen sich aktiv "zeigen" (weg vom Gegner laufen). Tor zaehlt erst nach 3 Pässen.`,
+  coaching:`Einfache Sprache: "Mach dich frei!", "Lauf weg vom Gegner!". Loben wenn sich jemand anbietet, nicht nur wer das Tor schießt.`,
+  variations:`Mit zwei Mini-Toren. Punkte fuer Anbieten statt nur fuer Tore. 4v1 fuer ganz Junge.`,
+  minPlayers:4, fieldZone:"third_m",
+  material:[{id:"goal_small",qty:2,label:"Mini-Tor",cat:"Tore"},{id:"leibchen",qty:3,color:"gelb",label:"Leibchen",cat:"Leibchen"}],
+  ageNote:"Erstes Taktik-Verstaendnis ohne Theorie: Kinder erleben Freilaufen im Spiel statt es erklaert zu bekommen.",
+},
+{
+  id:"tky_02", cat:"taktik", name:"Tor breit machen – Raum nutzen",
+  age:["f","e","d"],
+  duration:18, intensity:5,
+  skills:["raumaufteilung","spielintelligenz","umschalten"],
+  description:`Spiel 4v4 auf zwei breite Tore (Hütchentore an den Seitenlinien). Tore lassen sich nur erzielen, wenn vorher die Seite gewechselt wurde. So lernen Kinder, das Spiel breit zu machen.`,
+  coaching:`Frage stellen statt vorgeben: "Wo ist viel Platz?". Den Spieler loben, der die freie Seite erkennt.`,
+  variations:`Drei Tore pro Seite. Joker an der Aussenlinie. Punkt fuer Seitenwechsel.`,
+  minPlayers:8, fieldZone:"half_l",
+  material:[{id:"huetchen",qty:8,color:"orange",label:"Hütchen",cat:"Markierung"},{id:"leibchen",qty:4,color:"blau",label:"Leibchen",cat:"Leibchen"}],
+  ageNote:"Spielerische Einfuehrung von Breite/Raum – ab F-Jugend gut greifbar.",
+},
+{
+  id:"tky_03", cat:"taktik", name:"Jäger & Beute – Pressing für Kinder",
+  age:["g","f","e"],
+  duration:12, intensity:6,
+  skills:["pressing","verteidigung","teamarbeit"],
+  description:`2 "Jäger" versuchen im kleinen Feld gemeinsam den Ball einer 4er-Gruppe zu erobern. Wichtig: Die Jäger sollen zusammen anlaufen, nicht einzeln. Nach Ballgewinn schnell zum Mini-Tor.`,
+  coaching:`"Gemeinsam jagen!" – auf gleichzeitiges Anlaufen achten. Erklaeren: einer stellt, einer klaut.`,
+  variations:`3 Jäger. Zeit stoppen bis Ballgewinn. Sieger-Team mit wenigsten Ballverlusten.`,
+  minPlayers:6, fieldZone:"third_m",
+  material:[{id:"goal_small",qty:2,label:"Mini-Tor",cat:"Tore"},{id:"leibchen",qty:2,color:"rot",label:"Leibchen",cat:"Leibchen"}],
+  ageNote:"Pressing als Fangspiel verpackt – schon mit den Kleinen moeglich, ganz ohne Taktik-Theorie.",
+},
+{
+  id:"tky_04", cat:"taktik", name:"Zwischen Ball und Tor – Verteidigen lernen",
+  age:["e","d","c"],
+  duration:16, intensity:5,
+  skills:["verteidigung","zweikampf","spielintelligenz"],
+  description:`1v1 auf ein Tor mit Torwart. Der Verteidiger startet aus Tornaehe und soll sich immer zwischen Ball und Tor stellen, den Angreifer auf den schwachen Fuss lenken und den Moment zum Zweikampf abpassen.`,
+  coaching:`Goldene Regel: "Immer zwischen Ball und Tor." Seitlich stellen, nicht frontal hineinlaufen. Geduld vor dem Tackling.`,
+  variations:`2v1. Verteidiger lenkt nach aussen. 1v1 mit Rueckpass-Option.`,
+  minPlayers:4, fieldZone:"third_m",
+  material:[{id:"goal_big",qty:1,label:"Großtor",cat:"Tore"},{id:"huetchen",qty:4,color:"gelb",label:"Hütchen",cat:"Markierung"}],
+  ageNote:"Grundprinzip des Verteidigens – ab E-Jugend altersgerecht vermittelbar.",
+},
+{
+  id:"tky_05", cat:"taktik", name:"Schnell umschalten – Ballgewinn nutzen",
+  age:["f","e","d"],
+  duration:18, intensity:6,
+  skills:["umschalten","spielintelligenz","schnelligkeit"],
+  description:`4v4 mit zwei kleinen Toren. Pfiff des Trainers = sofortiges Umschalten: Ballbesitzer-Team greift an, das andere verteidigt. Nach Ballgewinn so schnell wie moeglich Richtung gegnerisches Tor.`,
+  coaching:`"Ball gewonnen? Sofort nach vorn!" – die ersten 3 Sekunden nach Ballgewinn betonen. Erster Pass nach vorne.`,
+  variations:`Konter-Bonus: Tor binnen 5 Sek. zaehlt doppelt. Joker fuer Ballbesitz.`,
+  minPlayers:8, fieldZone:"half_l",
+  material:[{id:"goal_small",qty:2,label:"Mini-Tor",cat:"Tore"},{id:"leibchen",qty:4,color:"gelb",label:"Leibchen",cat:"Leibchen"}],
+  ageNote:"Umschalten als Schluesselmoment – schon ab F-Jugend spielnah erlebbar.",
+},
+{
+  id:"tky_06", cat:"taktik", name:"Breite und Tiefe – das Feld groß machen",
+  age:["e","d","c"],
+  duration:20, intensity:5,
+  skills:["raumaufteilung","spielintelligenz","passen"],
+  description:`Positionsspiel 6v4 in einem groesseren Raster mit markierten Zonen. Ziel: immer mindestens einen Spieler breit (aussen) und einen tief (vorne) anbieten. Der Ballbesitzer hat so stets mehrere Optionen.`,
+  coaching:`Fragen: "Wer steht breit? Wer tief?". Abstand halten – nicht alle zum Ball laufen.`,
+  variations:`Zonen-Pflicht (max. 2 pro Zone). Punkt fuer Pass in die Tiefe.`,
+  minPlayers:10, fieldZone:"half_l",
+  material:[{id:"huetchen",qty:12,color:"orange",label:"Hütchen",cat:"Markierung"},{id:"leibchen",qty:6,color:"blau",label:"Leibchen",cat:"Leibchen"}],
+  ageNote:"Raumaufteilung verstehen – Brücke von der E- zur C-Jugend.",
+},
+{
+  id:"tkm_01", cat:"taktik", name:"Spielverlagerung über den dritten Mann",
+  age:["d","c","ba","senioren"],
+  duration:22, intensity:6,
+  skills:["passen","raumaufteilung","spielintelligenz"],
+  description:`Positionsspiel 8v4 auf zwei Feldhaelften. Punkt nur, wenn der Ball kontrolliert von einer Seite zur anderen verlagert wird – idealerweise über einen dritten Mann (Klatschen-Hinterlaufen).`,
+  coaching:`Kopf hoch vor der Annahme. Offene Stellung zum freien Raum. Verlagerung als Waffe gegen ballorientiertes Verschieben.`,
+  variations:`Maximal 2 Kontakte. Verlagerung per Flugball erlaubt. Zwei Anspieler als Ziel.`,
+  minPlayers:12, fieldZone:"half_l",
+  material:[{id:"leibchen",qty:8,color:"gelb",label:"Leibchen",cat:"Leibchen"},{id:"huetchen",qty:10,color:"orange",label:"Hütchen",cat:"Markierung"}],
+  ageNote:"Ab D-Jugend. Spielverlagerung als Mittel gegen kompakte Defensive.",
+},
+{
+  id:"tkm_02", cat:"taktik", name:"Doppeln & Absichern in der Abwehr",
+  age:["c","ba","senioren"],
+  duration:20, intensity:6,
+  skills:["verteidigung","zweikampf","teamarbeit"],
+  description:`3v3 plus Torwart in einem engen Korridor. Verteidiger üben das Doppeln (zweiter Spieler sichert ab, sobald einer attackiert) und das Verschieben des Blocks zur Ballseite.`,
+  coaching:`Kommunikation: "Ich gehe – du sicherst!". Abstand zwischen den Verteidigern halten, nicht beide zum Ball.`,
+  variations:`Überzahl 4v3. Konter-Tor fuer die Angreifer. Zeitlimit zum Ballgewinn.`,
+  minPlayers:7, fieldZone:"third_m",
+  material:[{id:"goal_big",qty:1,label:"Großtor",cat:"Tore"},{id:"leibchen",qty:6,color:"rot",label:"Leibchen",cat:"Leibchen"}],
+  ageNote:"Ab C-Jugend. Defensives Zusammenspiel und Absicherung.",
+},
+
+// ================================================================
+// MEHR TECHNIK
+// ================================================================
+{
+  id:"tch_n1", cat:"technik", name:"Dribbel-Parcours mit Finten",
+  age:["f","e","d"],
+  duration:18, intensity:5,
+  skills:["dribbling","ballkontrolle","wendigkeit"],
+  description:`Parcours aus Stangen und Hütchen: enge Slalom-Passagen, eine Finte vor einem "Gegner-Hütchen" (z. B. Übersteiger), Tempodribbling auf der Geraden, Abschluss aufs Mini-Tor.`,
+  coaching:`Ball eng am Fuss in engen Passagen, langer Kontakt auf der Geraden. Nach der Finte explosiv beschleunigen.`,
+  variations:`Zwei Parcours als Staffel. Zeit stoppen. Schwacher Fuss erzwingen.`,
+  minPlayers:4, fieldZone:"third_m",
+  material:[{id:"huetchen",qty:10,color:"gelb",label:"Hütchen",cat:"Markierung"},{id:"stange",qty:4,label:"Stange",cat:"Markierung"},{id:"goal_small",qty:1,label:"Mini-Tor",cat:"Tore"}],
+  ageNote:"Finten spielerisch lernen – ab F-Jugend ideal.",
+},
+{
+  id:"tch_n2", cat:"technik", name:"Ballannahme in der offenen Stellung",
+  age:["d","c","ba"],
+  duration:20, intensity:4,
+  skills:["ballkontrolle","passen","spielintelligenz"],
+  description:`In Dreiecken: Anspiel von einer Seite, Annahme mit dem hinteren Fuss in die offene Stellung, direkte Weiterleitung in die andere Richtung. Beide Seiten und beide Fuesse üben.`,
+  coaching:`Vor der Annahme über die Schulter schauen. Erster Kontakt vom Druck weg, Richtung freier Raum.`,
+  variations:`Mit passivem Gegner. Direktes Weiterspielen. Annahme und Drehung.`,
+  minPlayers:6, fieldZone:"third_m",
+  material:[{id:"ball_fuss",qty:3,label:"Fußball",cat:"Bälle"},{id:"huetchen",qty:9,color:"orange",label:"Hütchen",cat:"Markierung"}],
+  ageNote:"Ab D-Jugend. Grundlage fuer schnelles, vororientiertes Spiel.",
+},
+{
+  id:"tch_n3", cat:"technik", name:"Torschuss aus dem Dribbling",
+  age:["e","d","c"],
+  duration:20, intensity:6,
+  skills:["schuss","dribbling","ballkontrolle"],
+  description:`Antritt mit Ball aus 15 m, ein Richtungswechsel an einem Hütchen, dann Abschluss aufs Großtor mit Torwart. Abwechselnd von rechts und links.`,
+  coaching:`Vor dem Schuss kurz Kopf heben (Torwartposition). Standbein neben den Ball, Spannfuss-Technik. Nachsetzen auf Abpraller.`,
+  variations:`Mit Gegner im Ruecken. Direktschuss nach Querpass. Schwacher Fuss.`,
+  minPlayers:4, fieldZone:"third_m",
+  material:[{id:"goal_big",qty:1,label:"Großtor",cat:"Tore"},{id:"ball_fuss",qty:6,label:"Fußball",cat:"Bälle"},{id:"huetchen",qty:4,color:"gelb",label:"Hütchen",cat:"Markierung"}],
+  ageNote:"Abschlusstraining mit Aktion davor – ab E-Jugend.",
+},
+{
+  id:"tch_n4", cat:"technik", name:"Jonglier-Challenge",
+  age:["g","f","e"],
+  duration:10, intensity:3,
+  skills:["ballkontrolle","koordination","konzentration"],
+  description:`Jedes Kind mit eigenem Ball: Hochhalten mit Fuss, Oberschenkel, Kopf. Persoenliche Rekorde aufstellen und verbessern. Fang-nach-einem-Kontakt-Spiele.`,
+  coaching:`Eigener Rekord zaehlt, kein Vergleich. Kleine Ziele setzen ("schaffst du 3?"). Viel loben.`,
+  variations:`Partner-Jonglieren. Mit Aufgaben (Drehung dazwischen). Team-Gesamtzahl.`,
+  minPlayers:1, fieldZone:"third_m",
+  material:[{id:"ball_fuss",qty:1,label:"Fußball (einer pro Kind)",cat:"Bälle"}],
+  ageNote:"Ballgefuehl fuer die Kleinsten – jederzeit als Einstieg nutzbar.",
+},
+
+// ================================================================
+// MEHR SPIELFORMEN
+// ================================================================
+{
+  id:"sf_n1", cat:"spielform", name:"Funino – 3 gegen 3 auf vier Tore",
+  age:["bambini","g","f"],
+  duration:25, intensity:6,
+  skills:["dribbling","spielintelligenz","teamarbeit"],
+  description:`Kleinfeld 3v3 ohne Torwart, je zwei kleine Tore pro Seite. Viele Ballkontakte, viele Torszenen, staendige Entscheidungen. Kurze Spiele, danach Teams neu mischen.`,
+  coaching:`Trainer haelt sich zurueck (Spiel als Lehrmeister). Nur kurze Impulse: "Wo ist das freie Tor?".`,
+  variations:`Turniermodus mit Auf-/Abstiegsfeldern. Tor nur per Dribbling. 2v2.`,
+  minPlayers:6, fieldZone:"third_m",
+  material:[{id:"goal_small",qty:4,label:"Mini-Tor",cat:"Tore"},{id:"leibchen",qty:3,color:"gelb",label:"Leibchen",cat:"Leibchen"}],
+  ageNote:"Das moderne Kinderfußball-Format (DFB). Maximale Ballkontakte und Entscheidungen.",
+},
+{
+  id:"sf_n2", cat:"spielform", name:"Vier-Tore-Spiel",
+  age:["f","e","d","c"],
+  duration:20, intensity:6,
+  skills:["raumaufteilung","umschalten","spielintelligenz"],
+  description:`Zwei Teams, jedes verteidigt zwei Tore und greift zwei an (über Eck verteilt). Zwingt zum Kopf-Heben und Erkennen des freien Tores.`,
+  coaching:`Spielfeld breit nutzen, schnell die Seite/das Tor wechseln. Orientierung vor der Annahme.`,
+  variations:`Tore unterschiedlich gross/punktewertig. Joker. Direktspiel-Zonen.`,
+  minPlayers:8, fieldZone:"half_l",
+  material:[{id:"goal_small",qty:4,label:"Mini-Tor",cat:"Tore"},{id:"leibchen",qty:5,color:"blau",label:"Leibchen",cat:"Leibchen"}],
+  ageNote:"Foerdert Spieluebersicht und Umschalten – breit einsetzbar.",
+},
+{
+  id:"sf_n3", cat:"spielform", name:"Überzahl-Spiel 4 gegen 2 mit Toren",
+  age:["e","d","c"],
+  duration:18, intensity:6,
+  skills:["passen","umschalten","spielintelligenz"],
+  description:`Im Mittelfeldraster 4v2 um Ballbesitz; nach drei sicheren Pässen darf auf eines von zwei Mini-Toren abgeschlossen werden. Bei Ballverlust schnelles Gegenpressing.`,
+  coaching:`Ueberzahl ausnutzen: anbieten in Dreiecken. Ruhe am Ball, dann Tempo beim Abschluss.`,
+  variations:`5v2. Kontaktbegrenzung. Verteidiger-Wechsel nach Ballgewinn.`,
+  minPlayers:6, fieldZone:"third_m",
+  material:[{id:"goal_small",qty:2,label:"Mini-Tor",cat:"Tore"},{id:"leibchen",qty:2,color:"rot",label:"Leibchen",cat:"Leibchen"}],
+  ageNote:"Ueberzahl erkennen und nutzen – ab E-Jugend.",
+},
+{
+  id:"sf_n4", cat:"spielform", name:"Linienfußball",
+  age:["g","f","e"],
+  duration:15, intensity:6,
+  skills:["dribbling","teamarbeit","schnelligkeit"],
+  description:`Statt Tore zaehlt das kontrollierte Stoppen des Balls auf der gegnerischen Grundlinie. Viele Dribbel- und Abschlussaktionen, kein Torwart noetig.`,
+  coaching:`Mut zum Dribbling belohnen. Breite nutzen, um Luecken zu finden.`,
+  variations:`Mehrere "Tor-Zonen". Punkt nur nach Pass. 2v2 bis 5v5.`,
+  minPlayers:6, fieldZone:"third_m",
+  material:[{id:"huetchen",qty:8,color:"orange",label:"Hütchen",cat:"Markierung"},{id:"leibchen",qty:5,color:"gelb",label:"Leibchen",cat:"Leibchen"}],
+  ageNote:"Ohne Tore/Torwart – ideal fuer junge Teams mit wenig Material.",
+},
+
+// ================================================================
+// MEHR AUFWÄRMEN & KONDITION
+// ================================================================
+{
+  id:"aw_n1", cat:"warmup", name:"Reaktions-Fangen mit Ball",
+  age:["g","f","e"],
+  duration:10, intensity:5,
+  skills:["schnelligkeit","koordination","konzentration"],
+  description:`Paare mit einem Ball, Partner liegen/sitzen Ruecken an Ruecken. Auf Signal (Farbe/Zahl) wird einer zum Fänger, der andere flieht mit Ball ins sichere Feld.`,
+  coaching:`Wach sein, schnell aufstehen, erste Schritte explosiv. Spass an der Ueberraschung.`,
+  variations:`Verschiedene Startpositionen (Bauchlage). Mit Dribbling fliehen.`,
+  minPlayers:6, fieldZone:"third_m",
+  material:[{id:"ball_fuss",qty:1,label:"Fußball (je Paar)",cat:"Bälle"},{id:"huetchen",qty:6,color:"gelb",label:"Hütchen",cat:"Markierung"}],
+  ageNote:"Aktivierendes Aufwaermen mit Reaktion – fuer junge Gruppen.",
+},
+{
+  id:"kon_n1", cat:"kondition", name:"Intervall-Dribbling",
+  age:["d","c","ba","senioren"],
+  duration:16, intensity:8,
+  skills:["ausdauer","dribbling","schnelligkeit"],
+  description:`Im Wechsel 30 Sek. intensives Tempodribbling durch einen Parcours, 30 Sek. lockeres Ausdribbeln. 4–6 Durchgänge je nach Alter.`,
+  coaching:`Auch unter Belastung sauber am Ball bleiben. Atmung bewusst, Pausen aktiv gestalten.`,
+  variations:`Ohne Ball als reines Intervall. Mit Abschluss am Ende jedes Intervalls.`,
+  minPlayers:1, fieldZone:"half_l",
+  material:[{id:"ball_fuss",qty:1,label:"Fußball (je Spieler)",cat:"Bälle"},{id:"huetchen",qty:10,color:"orange",label:"Hütchen",cat:"Markierung"}],
+  ageNote:"Ausdauer mit Ball – ab D-Jugend, Umfang altersgerecht steuern.",
+},
 ];
 
 
@@ -7791,10 +8023,19 @@ function TemplateBrowser({ onSelect, cid, myTids, data, cl, onClose }) {
             );
           })}
           {filtered.length===0&&(
-            <div style={{textAlign:"center",padding:"40px",background:"#f8fafc",
-              borderRadius:14,border:"1.5px dashed #e2e8f0"}}>
-              <p style={{fontWeight:700,color:"#334155",margin:"0 0 4px"}}>Keine Vorlagen gefunden</p>
-              <p style={{fontSize:13,color:"#94a3b8",margin:0}}>Filter anpassen oder eigene Vorlage erstellen.</p>
+            <div style={{textAlign:"center",padding:"34px 22px",background:"#f8fafc",
+              borderRadius:16,border:"1.5px dashed #e2e8f0"}}>
+              <div style={{fontSize:34,marginBottom:8}}>🔍</div>
+              <p style={{fontWeight:800,color:"#334155",margin:"0 0 4px",fontSize:15}}>Keine Vorlage für diese Auswahl</p>
+              <p style={{fontSize:13,color:"#94a3b8",margin:"0 0 16px",lineHeight:1.5}}>
+                {ageFilter!=="all"?`Für „${(AGE_OPTS.find(a=>a.id===ageFilter)||{}).label}" gibt es hier gerade nichts. `:""}Versuch eine andere Alters- oder Kategorie-Auswahl.
+              </p>
+              {(filter!=="all"||ageFilter!=="all"||search)&&(
+                <button onClick={()=>{setFilter("all");setAgeFilter("all");setSearch("");}}
+                  style={{padding:"10px 18px",borderRadius:11,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>
+                  Filter zurücksetzen
+                </button>
+              )}
             </div>
           )}
         </div>
