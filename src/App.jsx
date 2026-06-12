@@ -1487,6 +1487,7 @@ function seed() {
       {id:"de3",cid:"demo",tid:"demo_e",type:"auswarts",title:"Auswärts bei FC Löwen",date:addD(now(),6),time:"11:00",loc:"Sportzentrum Löwen, Auswärts",note:"Fahrgemeinschaften bitte im Chat absprechen",sollPlayers:7,votes:{"Felix Braun":"yes","Anna Richter":"yes","Tim Neumann":"no"},pt:"att",selType:"multi",li:[],fi:[],sc:[]},
       {id:"de4",cid:"demo",tid:"demo_g",type:"turnier",title:"Hallenturnier Pfingsten",date:addD(now(),12),time:"09:00",loc:"Stadthalle",note:"Ganztägig, Verpflegung wird gestellt",votes:{"Lukas Berger":"yes","Emma Wolf":"yes","Noah Schmidt":"yes","Mia Hoffmann":"maybe"},pt:"att",selType:"multi",li:[],fi:[],sc:[],
         published:true,pubFrom:new Date(Date.now()-3600000).toISOString(),pubUntil:new Date(Date.now()+30*86400000).toISOString(),
+        timer:[{base:200,running:true,startedAt:Date.now()},{base:480,running:false,startedAt:null}],
         setup:{ clubName:"Demo Verein", gameTime:8, fields:2, startTime:"09:00", pause:2, guestEnabled:true,
           clubs:["Demo G-Jugend","SV Adler","FC Löwen","TSV Falken","Blau-Weiß 04","SC Sterne"] },
         schedule:[
@@ -23864,6 +23865,13 @@ function TournamentPublic({ eid, clubParam, onBack }){
       // Vereinsadmin hat die Gaeste-Funktion komplett deaktiviert -> kein Zugang.
       if(club.clubSettings?.guestTournament===false){ setPhase("notfound"); return; }
       cidRef.current=club.id; setCid(club.id);
+      // Demo-Verein: Turnier immer vollstaendig aus dem Seed (Spielplan + laufender
+      // Timer), unabhaengig vom Cloud-Stand -> lebendiges Beispiel ohne Passwort.
+      if(club.id==="demo"){
+        const demo=refreshDemo({});
+        const e=(demo.events||[]).find(x=>x.id===eid);
+        if(e){ mirrorRef.current=false; setData(demo); setEv(e); setAuthed(true); setPhase("view"); return; }
+      }
       // 1) Bevorzugt aus dem oeffentlichen Spiegel (nur globale Zeile -> RLS-fest)
       const mirror=(dir?.liveEvents||[]).find(x=>x.eid===eid && x.pub);
       if(mirror){
@@ -23887,6 +23895,7 @@ function TournamentPublic({ eid, clubParam, onBack }){
     load();
     const iv=setInterval(async()=>{
       try{ if(sb._writing) return;
+        if(cidRef.current==="demo") return; // Demo bleibt auf dem Seed-Stand (laufender Timer)
         if(mirrorRef.current){
           const dir=await sb.getDirectory();
           const m=(dir?.liveEvents||[]).find(x=>x.eid===eid && x.pub);
