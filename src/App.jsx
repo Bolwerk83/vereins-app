@@ -21539,7 +21539,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const [planFor,setPlanFor]=useState(null);
   const [planQuickNew,setPlanQuickNew]=useState(false);
   const openPlan = ev => { setPlanFor(ev); setPlanQuickNew(false); };
-  const planTitleOf = ev => ev?.trainingId ? ((local.trainings||[]).find(t=>t.id===ev.trainingId)?.title||null) : null;
+  const planTitleOf = ev => ev?.trainingPlan ? (ev.trainingPlan.sessions?.[0]?.title||"Trainingsplan") : (ev?.trainingId ? ((local.trainings||[]).find(t=>t.id===ev.trainingId)?.title||null) : null);
   const toastRef=useRef(null);
   const fire=m=>{setToast(m);clearTimeout(toastRef.current);toastRef.current=setTimeout(()=>setToast(null),2500);};
   const save=next=>{setLocal(next);onSave(next);};
@@ -21669,7 +21669,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             (local.events||[]).filter(e=>myTids.includes(e.tid)).forEach(e=>{
               eventWarnings(e,tod).forEach(x=>todos.push({ev:e,label:x.label,col:x.col,bg:x.bg}));
               if(["heimspiel","auswarts","freundschaft"].includes(e.type)&&e.date<tod&&e.date>=addD(tod,-21)&&!(e.report&&e.report.ts)) todos.push({ev:e,label:"Spielbericht eintragen",col:"#2563eb",bg:"#eff6ff"});
-              if(trainingOn&&e.type==="training"&&e.date>=tod&&e.date<=addD(tod,10)&&!e.trainingId) todos.push({ev:e,label:"Trainingsplan fehlt",col:"#7c3aed",bg:"#ede9fe"});
+              if(trainingOn&&e.type==="training"&&e.date>=tod&&e.date<=addD(tod,10)&&!e.trainingId&&!e.trainingPlan) todos.push({ev:e,label:"Trainingsplan fehlt",col:"#7c3aed",bg:"#ede9fe"});
             });
             // Skill-Check fällig (pro Mannschaft, pro Trainer) + Kinder ohne Skill-Profil
             const mk=monthKey(); const raterId=session?.id||session?.role||"trainer";
@@ -21809,7 +21809,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
                 fire("Frist gesetzt *");
               }}
             />}
-        {viewEv.type==="training"&&(()=>{ const pl=(local.trainings||[]).find(tr=>tr.id===viewEv.trainingId); return (
+        {viewEv.type==="training"&&(()=>{ const emb=viewEv.trainingPlan; const pl=emb?{focus:emb.focus,blocks:(emb.sessions?.[0]?.blocks)||[]}:(local.trainings||[]).find(tr=>tr.id===viewEv.trainingId); return (
           <div style={{marginTop:16,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginBottom:10}}>
               <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:18}}>📋</span><span style={{fontWeight:800,fontSize:15,color:"#0f172a"}}>Trainingsplan</span></div>
@@ -21928,43 +21928,15 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       </Drawer>}
 
       {}
-      {planFor&&<Drawer onClose={()=>setPlanFor(null)} title={planQuickNew?"Neuen Trainingsplan erstellen":"Trainingsplan hinterlegen"}>
-        {(()=>{
-          const plans=(local.trainings||[]).filter(tr=>tr.cid===cid);
-          const totalMin=tr=>(tr.blocks||[]).reduce((s,b)=>s+(Number(b.min)||0),0);
-          const attach=tid=>{ save({...local,events:local.events.map(e=>e.id===planFor.id?{...e,trainingId:tid}:e)}); setPlanFor(null); fire(tid?"Trainingsplan verknüpft *":"Trainingsplan entfernt"); };
-          if(planQuickNew){
-            const ownerTid = (myTids||[]).includes(planFor.tid) ? planFor.tid : (myTids&&myTids[0]) || planFor.tid;
-            return <QuickPlanCreate cid={cid} ownerTid={ownerTid} t={TH(myClub)} onCancel={()=>setPlanQuickNew(false)}
-              onCreate={rec=>{
-                save({...local, trainings:[...(local.trainings||[]), rec], events:local.events.map(e=>e.id===planFor.id?{...e,trainingId:rec.id}:e)});
-                setPlanFor(null); setPlanQuickNew(false); fire("Trainingsplan erstellt & verknüpft *");
-              }}/>;
-          }
-          return (
-            <div>
-              <div style={{background:"#eef2ff",borderRadius:14,padding:"12px 14px",marginBottom:14,border:"1.5px solid #c7d2fe"}}>
-                <p style={{fontSize:13,color:"#3730a3",fontWeight:600,lineHeight:1.5}}>Wähle einen gespeicherten Trainingsplan für „{planFor.title}" – oder erstelle direkt hier einen neuen. Er ist dann beim Termin sichtbar (Tab „Ansehen").</p>
-              </div>
-              <button onClick={()=>setPlanQuickNew(true)} style={{width:"100%",padding:"12px",borderRadius:12,border:"1.5px dashed #c7d2fe",background:"#f5f3ff",color:"#4f46e5",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit",marginBottom:14}}>+ Neuen Trainingsplan erstellen</button>
-              {plans.length===0
-                ? <div style={{textAlign:"center",padding:"8px 12px 4px"}}><p style={{fontWeight:700,color:"#475569"}}>Noch keine gespeicherten Pläne</p><p style={{fontSize:13,marginTop:4,color:"#94a3b8"}}>Erstelle oben deinen ersten – oder lege sie im Tab „Training" an.</p></div>
-                : <div style={{display:"flex",flexDirection:"column",gap:9}}>
-                    {plans.map(tr=>{ const sel=planFor.trainingId===tr.id; return (
-                      <button key={tr.id} onClick={()=>attach(tr.id)} style={{textAlign:"left",padding:"12px 14px",borderRadius:12,border:`2px solid ${sel?"#4f46e5":"#e2e8f0"}`,background:sel?"#eef2ff":"#fff",cursor:"pointer",fontFamily:"inherit"}}>
-                        <div style={{display:"flex",alignItems:"center",gap:8}}>
-                          <span style={{fontWeight:800,fontSize:14,color:"#0f172a",flex:1}}>{tr.title}</span>
-                          {sel&&<span style={{fontSize:12,fontWeight:800,color:"#4f46e5"}}>✓ aktiv</span>}
-                        </div>
-                        <div style={{fontSize:12,color:"#64748b",marginTop:3}}>{tr.focus?tr.focus+" · ":""}{(tr.blocks||[]).length} Blöcke · {totalMin(tr)} Min</div>
-                      </button>
-                    );})}
-                  </div>}
-              {planFor.trainingId&&<Btn v="dng" full ch="Plan entfernen" onClick={()=>attach("")} sx={{marginTop:12}}/>}
-              <div style={{height:8}}/><Btn v="gst" full ch="Schließen" onClick={()=>setPlanFor(null)}/>
-            </div>
-          );
-        })()}
+      {planFor&&<Drawer onClose={()=>setPlanFor(null)} title={(planFor.trainingPlan||planFor.trainingId)?"Trainingsplan bearbeiten":"Trainingsplan erstellen"}>
+        <EventPlanEditor
+          ev={planFor}
+          vorlagen={(local.trainings||[]).filter(tr=>tr.cid===cid)}
+          t={TH(myClub)}
+          onSave={plan=>{ save({...local, events:local.events.map(e=>e.id===planFor.id?{...e, trainingPlan:plan, trainingId:""}:e)}); setPlanFor(null); fire("Trainingsplan gespeichert *"); }}
+          onRemove={()=>{ save({...local, events:local.events.map(e=>{ if(e.id!==planFor.id) return e; const {trainingPlan, ...rest}=e; return {...rest, trainingId:""}; })}); setPlanFor(null); fire("Trainingsplan entfernt"); }}
+          onCancel={()=>setPlanFor(null)}
+        />
       </Drawer>}
       </div>
     </div>
@@ -21976,6 +21948,83 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       {!isDesktop&&<BottomNav tab={tab} setTab={setTab} isAdmin={isAdmin} isHelper={isHelper}
         unread={unreadMsgs} inboxUnread={unreadInbox} cl={myClub} />}
       
+    </div>
+  );
+}
+
+// Inline-Trainingsplan pro Termin: editierbare Kopie (ev.trainingPlan). Eine Vorlage
+// kann uebernommen (kopiert) und frei angepasst werden, ohne die Vorlage zu aendern.
+function EventPlanEditor({ ev, vorlagen, t, onSave, onRemove, onCancel }) {
+  const PHASES=["Aufwärmen","Hauptteil","Abschluss","Sonstiges"];
+  const initBlocks=(()=>{
+    const emb=ev?.trainingPlan?.sessions?.[0]?.blocks;
+    if(emb&&emb.length) return emb.map(b=>({phase:b.phase||"Hauptteil",title:b.title||"",min:Number(b.min)||0}));
+    const vor=(vorlagen||[]).find(x=>x.id===ev?.trainingId);
+    if(vor) return (vor.blocks||[]).map(b=>({phase:b.phase||"Hauptteil",title:b.title||"",min:Number(b.min)||0}));
+    return [];
+  })();
+  const [title,setTitle]=useState(ev?.trainingPlan?.sessions?.[0]?.title||ev?.title||"Trainingseinheit");
+  const [blocks,setBlocks]=useState(initBlocks);
+  const [showV,setShowV]=useState(false);
+  const had=!!(ev?.trainingPlan||ev?.trainingId);
+  const setBlock=(i,patch)=>setBlocks(bs=>bs.map((b,j)=>j===i?{...b,...patch}:b));
+  const addBlock=()=>setBlocks(bs=>[...bs,{phase:bs.length?"Hauptteil":"Aufwärmen",title:"",min:10}]);
+  const delBlock=i=>setBlocks(bs=>bs.filter((_,j)=>j!==i));
+  const totalMin=blocks.reduce((s,b)=>s+(Number(b.min)||0),0);
+  const loadVorlage=tr=>{
+    if(blocks.length&&typeof window!=="undefined"&&window.confirm&&!window.confirm("Aktuelle Blöcke durch die Vorlage ersetzen?")) return;
+    setBlocks((tr.blocks||[]).map(b=>({phase:b.phase||"Hauptteil",title:b.title||"",min:Number(b.min)||0})));
+    setTitle(prev=>(!prev||prev==="Trainingseinheit")?(tr.title||prev):prev);
+    setShowV(false);
+  };
+  const doSave=()=>{
+    const clean=blocks.filter(b=>(b.title||"").trim()||Number(b.min)>0)
+      .map(b=>({phase:b.phase,title:(b.title||"").trim(),min:Number(b.min)||0}));
+    onSave({ title, createdAt:now(), sessions:[{ title, blocks:clean }] });
+  };
+  return (
+    <div>
+      <div style={{background:"#eef2ff",borderRadius:14,padding:"12px 14px",marginBottom:14,border:"1.5px solid #c7d2fe"}}>
+        <p style={{fontSize:13,color:"#3730a3",fontWeight:600,lineHeight:1.5}}>Stelle den Plan für <b>„{ev?.title||"dieses Training"}"</b> individuell zusammen. Eine Vorlage kannst du übernehmen und danach frei anpassen – die Vorlage selbst bleibt unverändert.</p>
+      </div>
+      {(vorlagen||[]).length>0&&<>
+        <button onClick={()=>setShowV(s=>!s)} style={{width:"100%",padding:"11px",borderRadius:12,border:"1.5px dashed #c7d2fe",background:"#f5f3ff",color:"#4f46e5",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit",marginBottom:showV?10:14}}>📋 Aus Vorlage übernehmen</button>
+        {showV&&<div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:14}}>
+          {vorlagen.map(tr=>(
+            <button key={tr.id} onClick={()=>loadVorlage(tr)} style={{textAlign:"left",padding:"11px 13px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",cursor:"pointer",fontFamily:"inherit"}}>
+              <div style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>{tr.title||"Plan"}</div>
+              <div style={{fontSize:12,color:"#64748b",marginTop:3}}>{tr.focus?tr.focus+" · ":""}{(tr.blocks||[]).length} Blöcke · {(tr.blocks||[]).reduce((s,b)=>s+(Number(b.min)||0),0)} Min</div>
+            </button>
+          ))}
+        </div>}
+      </>}
+      <div style={{marginBottom:12}}>
+        <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:5,letterSpacing:.4}}>TITEL</div>
+        <input value={title} onChange={e=>setTitle(e.target.value)} placeholder="z.B. Schwerpunkt Passspiel" style={{width:"100%",padding:"10px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
+      </div>
+      <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.4,display:"flex",justifyContent:"space-between"}}><span>ABLAUF</span><span style={{color:"#94a3b8"}}>{totalMin} Min</span></div>
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {blocks.map((b,i)=>(
+          <div key={i} style={{background:"#f8fafc",borderRadius:11,padding:"10px",border:"1.5px solid #e2e8f0"}}>
+            <div style={{display:"flex",gap:7,marginBottom:7}}>
+              <select value={b.phase} onChange={e=>setBlock(i,{phase:e.target.value})} style={{padding:"8px",borderRadius:9,border:"1.5px solid #e2e8f0",fontSize:13,fontFamily:"inherit",flex:1,minWidth:0,background:"#fff"}}>
+                {PHASES.map(p=><option key={p} value={p}>{p}</option>)}
+              </select>
+              <div style={{display:"flex",alignItems:"center",gap:4}}>
+                <input type="number" value={b.min} onChange={e=>setBlock(i,{min:e.target.value.replace(/[^0-9]/g,"")})} style={{width:54,padding:"8px",borderRadius:9,border:"1.5px solid #e2e8f0",fontSize:13,fontFamily:"inherit",textAlign:"center",boxSizing:"border-box"}}/>
+                <span style={{fontSize:12,color:"#94a3b8",fontWeight:700}}>Min</span>
+              </div>
+              <button onClick={()=>delBlock(i)} style={{width:34,borderRadius:9,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>✕</button>
+            </div>
+            <input value={b.title} onChange={e=>setBlock(i,{title:e.target.value})} placeholder="Übung / Inhalt" style={{width:"100%",padding:"9px 11px",fontSize:13.5,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
+          </div>
+        ))}
+      </div>
+      <button onClick={addBlock} style={{marginTop:8,background:"#f1f5f9",border:"none",borderRadius:10,padding:"10px 12px",fontSize:13,fontWeight:700,color:"#475569",cursor:"pointer",fontFamily:"inherit",width:"100%"}}>+ Block hinzufügen</button>
+      {blocks.length===0&&<p style={{fontSize:12.5,color:"#94a3b8",textAlign:"center",marginTop:10}}>Noch keine Blöcke – füge welche hinzu oder übernimm eine Vorlage.</p>}
+      <button onClick={doSave} disabled={blocks.length===0} style={{width:"100%",marginTop:16,padding:"12px",borderRadius:11,border:"none",background:blocks.length?t.p:"#e2e8f0",color:blocks.length?contrast(t.p):"#94a3b8",fontWeight:800,fontSize:14,cursor:blocks.length?"pointer":"default",fontFamily:"inherit"}}>Plan speichern</button>
+      {had&&<button onClick={onRemove} style={{width:"100%",marginTop:9,padding:"11px",borderRadius:11,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:700,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>Plan entfernen</button>}
+      <button onClick={onCancel} style={{width:"100%",marginTop:9,padding:"11px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
     </div>
   );
 }
