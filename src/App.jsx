@@ -2712,7 +2712,7 @@ function AdSenseSlot({ slot, format="auto", style={} }) {
    Reciprocity, Net Promoter Score, Referral Loops
  */
 
-const APP_URL = "https://vereinsapp.vercel.app"; // Deine echte Domain
+const APP_URL = "https://verein.bolwerk24.de"; // Deine echte Domain
 const APP_NAME = "Vereins-App";
 // Build-ID kommt von vite.config.js (define-Block). Bei jedem Build neu gesetzt.
 // Fallback "dev" wenn man die App ohne Vite-Build startet.
@@ -9288,7 +9288,7 @@ function SuperAdminDashboard({ data, onExit }) {
           fontWeight:900,fontSize:14,color:"#fff",flexShrink:0}}>SA</div>
         <div style={{flex:1}}>
           <div style={{fontWeight:800,fontSize:15,color:"#fff"}}>Super Admin</div>
-          <div style={{fontSize:11,color:"#64748b"}}>vereinsapp.vercel.app</div>
+          <div style={{fontSize:11,color:"#64748b"}}>verein.bolwerk24.de</div>
         </div>
         <button onClick={onExit}
           style={{padding:"6px 14px",borderRadius:9,border:"1px solid #334155",
