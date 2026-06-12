@@ -13518,60 +13518,49 @@ function Directory({data,onPick,onNewClub,onVisitorOpen,lang,setLang}) {
 
       {}
       {isDesktop ? (
-      <div style={{position:"relative",padding:"34px 28px 14px",maxWidth:1180,margin:"0 auto",
-        display:"grid",gridTemplateColumns:"1.05fr .95fr",gap:40,alignItems:"start"}}>
-        <div>
-          <div className="up" style={{display:"inline-flex",alignItems:"center",gap:6,background:"rgba(134,239,172,.12)",border:"1px solid rgba(134,239,172,.28)",color:"#86efac",fontSize:11.5,fontWeight:700,padding:"5px 12px",borderRadius:99,marginBottom:16}}>
-            &#9917; Für jeden Sportverein
-          </div>
-          <h1 className="up" style={{fontWeight:900,fontSize:46,lineHeight:1.04,letterSpacing:-1.6,margin:"0 0 14px"}}>
-            Schluss mit dem <span style={{color:"#4ade80"}}>WhatsApp-Chaos</span> im Verein.
-          </h1>
-          <p className="up" style={{color:"rgba(255,255,255,.72)",fontSize:15.5,lineHeight:1.55,fontWeight:500,margin:"0 0 22px",maxWidth:560,animationDelay:".1s"}}>
-            Termine, Anwesenheit, Mannschaften und Kommunikation &ndash; alles an einem Ort. Eltern stimmen mit einem Tipp ab, du planst die Saison in Minuten.
-          </p>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:11,maxWidth:560}}>
-            {[
-              ["&#127919;","Klare Termin&shy;Abstimmung","Zusagen, Absagen, Begründungen – alles auf einen Blick."],
-              ["&#128221;","Mannschaften & Saisons","Mehrere Teams, alle Trainer im selben System."],
-              ["&#128172;","Chat ohne 5 Gruppen","Pro Mannschaft, ohne private Nummern."],
-              ["&#128190;","Cloud-Speicherung","Verschlüsselt in Frankfurt – nichts liegt nur lokal."],
-            ].map(([ic,h,p])=>(
-              <div key={h} className="up" style={{background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.09)",borderRadius:14,padding:"13px 15px",transition:"background .16s, transform .16s"}}
-                onMouseEnter={e=>{e.currentTarget.style.background="rgba(255,255,255,.09)";e.currentTarget.style.transform="translateY(-2px)";}}
-                onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,.05)";e.currentTarget.style.transform="none";}}>
-                <div style={{display:"flex",alignItems:"center",gap:9,marginBottom:4}}>
-                  <span style={{fontSize:18}} dangerouslySetInnerHTML={{__html:ic}}/>
-                  <span style={{fontWeight:800,fontSize:13,color:"#fff"}} dangerouslySetInnerHTML={{__html:h}}/>
-                </div>
-                <div style={{fontSize:11.5,color:"rgba(255,255,255,.55)",lineHeight:1.5}}>{p}</div>
-              </div>
-            ))}
-          </div>
+      <div style={{position:"relative",padding:"42px 28px 14px",maxWidth:860,margin:"0 auto",textAlign:"center"}}>
+        <div className="up" style={{display:"inline-flex",alignItems:"center",gap:6,background:"rgba(134,239,172,.12)",border:"1px solid rgba(134,239,172,.28)",color:"#86efac",fontSize:12,fontWeight:700,padding:"5px 13px",borderRadius:99,marginBottom:18}}>
+          &#9917; Für jeden Sportverein
         </div>
-        <div className="up" style={{background:"linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,.05))",border:"1px solid rgba(255,255,255,.14)",borderRadius:20,padding:"20px 22px",boxShadow:"0 24px 60px -28px rgba(0,0,0,.7)",position:"sticky",top:18}}>
-          <div style={{textAlign:"center",marginBottom:14}}>
-            <div style={{fontSize:11,fontWeight:800,color:"#86efac",letterSpacing:.5,textTransform:"uppercase",marginBottom:3}}>Loslegen</div>
-            <div style={{fontWeight:900,fontSize:18,letterSpacing:-.3}}>In 2 Minuten startklar</div>
-          </div>
-          <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:12}}>
-            <button onClick={()=>setMode("setup")}
-              style={{padding:"13px",borderRadius:13,border:"none",background:"linear-gradient(135deg,#22c55e,#16a34a)",color:"#fff",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 6px 20px rgba(22,163,74,.5)"}}>
-              Verein anlegen &#8594;
-            </button>
-            <button onClick={()=>onPick("__demo__")}
-              style={{padding:"10px",borderRadius:13,border:"1.5px solid rgba(255,255,255,.18)",background:"rgba(255,255,255,.06)",color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
-              Erst die Demo ansehen
-            </button>
-          </div>
-          <div style={{height:1,background:"rgba(255,255,255,.1)",margin:"2px 0 10px"}}/>
-          <button onClick={()=>setShowPushHelp(true)}
-            style={{width:"100%",marginTop:10,padding:"8px",borderRadius:10,border:"1px solid rgba(255,255,255,.12)",background:"rgba(255,255,255,.05)",color:"rgba(255,255,255,.7)",fontWeight:700,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>
-            🔔 Benachrichtigungen einrichten
+        <h1 className="up" style={{fontWeight:900,fontSize:48,lineHeight:1.05,letterSpacing:-1.7,margin:"0 0 16px"}}>
+          Schluss mit dem <span style={{color:"#4ade80"}}>WhatsApp-Chaos</span> im Verein.
+        </h1>
+        <p className="up" style={{color:"rgba(255,255,255,.72)",fontSize:16.5,lineHeight:1.55,fontWeight:500,margin:"0 auto 26px",maxWidth:600,animationDelay:".1s"}}>
+          Termine, Anwesenheit, Mannschaften und Kommunikation &ndash; alles an einem Ort. Eltern stimmen mit einem Tipp ab, du planst die Saison in Minuten.
+        </p>
+        <div className="up" style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap",marginBottom:9,animationDelay:".15s"}}>
+          <button onClick={()=>setMode("setup")}
+            style={{padding:"14px 28px",borderRadius:14,border:"none",background:"linear-gradient(135deg,#22c55e,#16a34a)",color:"#fff",fontWeight:800,fontSize:16,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 8px 26px rgba(22,163,74,.5)"}}>
+            Verein anlegen &#8594;
           </button>
-          <div style={{marginTop:8,fontSize:10.5,color:"rgba(255,255,255,.4)",lineHeight:1.45,textAlign:"center"}}>
-            Beta-Test · verschlüsselt in Frankfurt · DSGVO-Verantwortung beim Verein
-          </div>
+          <button onClick={()=>onPick("__demo__")}
+            style={{padding:"14px 24px",borderRadius:14,border:"1.5px solid rgba(255,255,255,.2)",background:"rgba(255,255,255,.06)",color:"#fff",fontWeight:700,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>
+            Erst die Demo ansehen
+          </button>
+        </div>
+        <p className="up" style={{color:"rgba(255,255,255,.45)",fontSize:12.5,fontWeight:600,margin:"0 0 30px"}}>In 2 Minuten startklar · keine Verpflichtung</p>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,textAlign:"left",marginBottom:18}}>
+          {[
+            ["&#127919;","Klare Termin&shy;Abstimmung","Zusagen, Absagen, Begründungen – alles auf einen Blick."],
+            ["&#128221;","Mannschaften & Saisons","Mehrere Teams, alle Trainer im selben System."],
+            ["&#128172;","Chat ohne 5 Gruppen","Pro Mannschaft, ohne private Nummern."],
+            ["&#128190;","Cloud-Speicherung","Verschlüsselt in Frankfurt – nichts liegt nur lokal."],
+          ].map(([ic,h,p])=>(
+            <div key={h} className="up" style={{background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.09)",borderRadius:14,padding:"14px 15px",transition:"background .16s, transform .16s"}}
+              onMouseEnter={e=>{e.currentTarget.style.background="rgba(255,255,255,.09)";e.currentTarget.style.transform="translateY(-2px)";}}
+              onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,.05)";e.currentTarget.style.transform="none";}}>
+              <div style={{fontSize:20,marginBottom:6}} dangerouslySetInnerHTML={{__html:ic}}/>
+              <div style={{fontWeight:800,fontSize:13,color:"#fff",marginBottom:3}} dangerouslySetInnerHTML={{__html:h}}/>
+              <div style={{fontSize:11.5,color:"rgba(255,255,255,.55)",lineHeight:1.5}}>{p}</div>
+            </div>
+          ))}
+        </div>
+        <button onClick={()=>setShowPushHelp(true)}
+          style={{padding:"9px 16px",borderRadius:11,border:"1px dashed rgba(255,255,255,.2)",background:"transparent",color:"rgba(255,255,255,.7)",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
+          🔔 Benachrichtigungen einrichten
+        </button>
+        <div style={{marginTop:14,fontSize:11,color:"rgba(255,255,255,.4)",lineHeight:1.45}}>
+          Beta-Test · verschlüsselt in Frankfurt · DSGVO-Verantwortung beim Verein
         </div>
       </div>
       ) : (
