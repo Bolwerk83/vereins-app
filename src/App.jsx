@@ -13564,35 +13564,7 @@ function Directory({data,onPick,onNewClub,onVisitorOpen,lang,setLang}) {
               Erst die Demo ansehen
             </button>
           </div>
-          {/* Suchleiste direkt in die CTA-Karte */}
-          <div style={{position:"relative",marginBottom:8}}>
-            <span style={{position:"absolute",left:11,top:"50%",transform:"translateY(-50%)",fontSize:13,pointerEvents:"none",opacity:.5}}>&#128269;</span>
-            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Verein suchen…"
-              style={{width:"100%",padding:"9px 11px 9px 34px",fontSize:13,background:"rgba(0,0,0,.25)",border:"1.5px solid rgba(255,255,255,.1)",borderRadius:11,outline:"none",color:"#fff",boxSizing:"border-box"}}/>
-          </div>
-          <div style={{display:"flex",gap:5,overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch",paddingBottom:2,marginBottom:8}}>
-            {SPORTS.map(s=>(
-              <button key={s} onClick={()=>setSportFilter(s)}
-                style={{padding:"4px 10px",borderRadius:99,border:`1.5px solid ${sportFilter===s?(SPORT_COLS[s]||"#16a34a"):"rgba(255,255,255,.12)"}`,background:sportFilter===s?(SPORT_COLS[s]||"#16a34a")+"22":"transparent",color:sportFilter===s?"#fff":"rgba(255,255,255,.5)",fontWeight:700,fontSize:11,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit",flexShrink:0}}>
-                {SPORT_LABELS[s]}
-              </button>
-            ))}
-          </div>
-          <div style={{paddingTop:10,borderTop:"1px solid rgba(255,255,255,.08)",
-            display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,textAlign:"center"}}>
-            <div>
-              <div style={{fontWeight:900,fontSize:15,color:"#86efac"}}>{(data.clubs||[]).length}</div>
-              <div style={{fontSize:9,color:"rgba(255,255,255,.4)",fontWeight:700,letterSpacing:.4}}>VEREINE</div>
-            </div>
-            <div>
-              <div style={{fontWeight:900,fontSize:15,color:"#86efac"}}>{(data.teams||[]).length}</div>
-              <div style={{fontSize:9,color:"rgba(255,255,255,.4)",fontWeight:700,letterSpacing:.4}}>MANNSCHAFTEN</div>
-            </div>
-            <div>
-              <div style={{fontWeight:900,fontSize:15,color:"#86efac"}}>{(data.events||[]).length}</div>
-              <div style={{fontSize:9,color:"rgba(255,255,255,.4)",fontWeight:700,letterSpacing:.4}}>TERMINE</div>
-            </div>
-          </div>
+          <div style={{height:1,background:"rgba(255,255,255,.1)",margin:"2px 0 10px"}}/>
           <button onClick={()=>setShowPushHelp(true)}
             style={{width:"100%",marginTop:10,padding:"8px",borderRadius:10,border:"1px solid rgba(255,255,255,.12)",background:"rgba(255,255,255,.05)",color:"rgba(255,255,255,.7)",fontWeight:700,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>
             🔔 Benachrichtigungen einrichten
@@ -13688,12 +13660,36 @@ function Directory({data,onPick,onNewClub,onVisitorOpen,lang,setLang}) {
           </div>
         )}
 
-        {}
-        {!search && filtered.length>0 && (
-          <div style={{textAlign:"center",margin:isDesktop?"4px auto 22px":"0 auto 16px",maxWidth:560}}>
+        {/* Desktop: Suche + Sportfilter direkt bei der Vereinsliste (alles "Finde deinen Verein" an einem Ort) */}
+        {isDesktop && (
+          <div style={{maxWidth:600,margin:"0 auto 22px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:12,justifyContent:"center",marginBottom:14}}>
+              <div style={{flex:1,height:1,background:"rgba(255,255,255,.1)"}}/>
+              <span style={{fontSize:14,fontWeight:800,color:"rgba(255,255,255,.6)",whiteSpace:"nowrap"}}>Schon dabei? Finde deinen Verein</span>
+              <div style={{flex:1,height:1,background:"rgba(255,255,255,.1)"}}/>
+            </div>
+            <div style={{position:"relative",marginBottom:11}}>
+              <span style={{position:"absolute",left:13,top:"50%",transform:"translateY(-50%)",fontSize:15,pointerEvents:"none",opacity:.5}}>&#128269;</span>
+              <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Verein suchen…"
+                style={{width:"100%",padding:"11px 13px 11px 40px",fontSize:14,background:"rgba(255,255,255,.08)",border:"1.5px solid rgba(255,255,255,.12)",borderRadius:13,outline:"none",color:"#fff",boxSizing:"border-box"}}/>
+            </div>
+            <div style={{display:"flex",gap:7,flexWrap:"wrap",justifyContent:"center"}}>
+              {SPORTS.map(s=>(
+                <button key={s} onClick={()=>setSportFilter(s)}
+                  style={{padding:"6px 13px",borderRadius:99,border:`1.5px solid ${sportFilter===s?(SPORT_COLS[s]||"#16a34a"):"rgba(255,255,255,.12)"}`,background:sportFilter===s?(SPORT_COLS[s]||"#16a34a")+"22":"transparent",color:sportFilter===s?"#fff":"rgba(255,255,255,.5)",fontWeight:700,fontSize:12,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit"}}>
+                  {SPORT_LABELS[s]}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Mobil: schlichter Trenner (Suche/Filter stehen mobil bereits oben) */}
+        {!isDesktop && !search && filtered.length>0 && (
+          <div style={{textAlign:"center",margin:"0 auto 16px",maxWidth:560}}>
             <div style={{display:"flex",alignItems:"center",gap:12,justifyContent:"center"}}>
               <div style={{flex:1,height:1,background:"rgba(255,255,255,.1)"}}/>
-              <span style={{fontSize:isDesktop?14:12,fontWeight:800,color:"rgba(255,255,255,.6)",whiteSpace:"nowrap"}}>Schon dabei? Finde deinen Verein</span>
+              <span style={{fontSize:12,fontWeight:800,color:"rgba(255,255,255,.6)",whiteSpace:"nowrap"}}>Schon dabei? Finde deinen Verein</span>
               <div style={{flex:1,height:1,background:"rgba(255,255,255,.1)"}}/>
             </div>
           </div>
@@ -13701,8 +13697,8 @@ function Directory({data,onPick,onNewClub,onVisitorOpen,lang,setLang}) {
 
         {}
         {!search && isDesktop && (
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(210px,230px))",justifyContent:"center",gap:14,maxWidth:1040,margin:"0 auto"}}>
-            {filtered.map(cl=>clubCard(cl))}
+          <div style={{display:"flex",flexWrap:"wrap",justifyContent:"center",gap:14,maxWidth:1040,margin:"0 auto"}}>
+            {filtered.map(cl=>(<div key={cl.id} style={{width:220}}>{clubCard(cl)}</div>))}
           </div>
         )}
 
@@ -13718,9 +13714,13 @@ function Directory({data,onPick,onNewClub,onVisitorOpen,lang,setLang}) {
 
         {}
         {search && filtered.length>0&&(
-          <div style={{display:"grid",gridTemplateColumns:isDesktop?"repeat(auto-fill,minmax(210px,230px))":"1fr 1fr",justifyContent:isDesktop?"center":"stretch",gap:isDesktop?14:8,maxWidth:isDesktop?1040:"none",margin:isDesktop?"0 auto":undefined}}>
-            {filtered.map(cl=>clubCard(cl))}
-          </div>
+          isDesktop
+          ? <div style={{display:"flex",flexWrap:"wrap",justifyContent:"center",gap:14,maxWidth:1040,margin:"0 auto"}}>
+              {filtered.map(cl=>(<div key={cl.id} style={{width:220}}>{clubCard(cl)}</div>))}
+            </div>
+          : <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+              {filtered.map(cl=>clubCard(cl))}
+            </div>
         )}
 
         {}
@@ -13735,7 +13735,7 @@ function Directory({data,onPick,onNewClub,onVisitorOpen,lang,setLang}) {
           </div>
         )}
 
-        <details style={{maxWidth:460,margin:"20px auto 0",background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.1)",borderRadius:12,padding:"10px 14px"}}>
+        <details style={{maxWidth:isDesktop?600:460,margin:"20px auto 0",background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.1)",borderRadius:12,padding:"10px 14px"}}>
           <summary style={{cursor:"pointer",color:"rgba(255,255,255,.7)",fontSize:12.5,fontWeight:700,listStyle:"none"}}>💡 Wie finanziert sich das? Kostet das was?</summary>
           <p style={{color:"rgba(255,255,255,.55)",fontSize:12,lineHeight:1.6,marginTop:8}}>
             Die Vereins-App ist ein <strong style={{color:"rgba(255,255,255,.75)"}}>Hobby-Projekt</strong> – entstanden aus dem ganz normalen Vereinsalltag, um wiederkehrende Abläufe zu vereinfachen und zu automatisieren. Für Vereine ist die Nutzung <strong style={{color:"rgba(255,255,255,.75)"}}>kostenlos</strong>. Getragen wird das Projekt durch dezente, klar gekennzeichnete Empfehlungen (Affiliate) – eure Mitgliederdaten werden dabei nicht weitergegeben. Einfach ausprobieren; wenn es nicht passt, lässt sich alles wieder löschen.
