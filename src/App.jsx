@@ -18320,7 +18320,7 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
   const u=p=>setF(prev=>({...prev,...p}));
   const ok=()=>{if(step===1)return!!f.tid;if(step===2)return!!f.type;if(step===3)return f.title.trim().length>1;return true;};
   const finish=()=>{
-    const{_li,_fi,_sc,recMode,recDays,recStart,recUntil,recDates,...base}=f;
+    const{_li,_fi,_sc,recMode,recDays,recStart,recUntil,recDates,deadlineOffset,...base}=f;
     { const c=(teams.find(x=>x.id===base.tid)?.cat)||(teams.find(x=>x.id===base.tid)?.name)||""; if(base.sollPlayers==null) base.sollPlayers=defaultSollPlayers(c); }
     if(isEdit){onSave([{...base,id:editEv.id}]);return;}
     let eventDates=[];
@@ -18330,7 +18330,11 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
     }else if(recMode==="custom"&&recDates.length){eventDates=recDates;}
     else eventDates=[base.date||now()];
     const sid=eventDates.length>1?uid():null;
-    onSave(eventDates.map((date,i)=>({...base,id:uid(),date,votes:{},sid,sidx:i,extraPolls:(base.extraPolls||[]).map(p=>({...p,votes:{}}))})));
+    // Serie: freie relative Frist (z.B. "24 Stunden vor Termin") pro Termin in ein
+    // konkretes deadline-Datum umrechnen, damit Verspaetungs-Markierung & Badge greifen.
+    const offMs=(()=>{const n=parseInt(deadlineOffset?.value,10);if(!n||n<=0)return null;const un=deadlineOffset.unit||"h";return n*(un==="w"?7*86400000:un==="d"?86400000:3600000);})();
+    const dlFor=date=>{const s=new Date(`${date}T${(base.time||"12:00").padStart(5,"0")}:00`);if(isNaN(s.getTime()))return null;const d=new Date(s.getTime()-offMs);const p=x=>String(x).padStart(2,"0");return {date:`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`,time:`${p(d.getHours())}:${p(d.getMinutes())}`};};
+    onSave(eventDates.map((date,i)=>{const dl=offMs!=null?dlFor(date):base.deadline;return {...base,id:uid(),date,...(dl?{deadline:dl}:{}),votes:{},sid,sidx:i,extraPolls:(base.extraPolls||[]).map(p=>({...p,votes:{}}))};}));
   };
   const SL=["Mannschaft","Art","Details","Umfrage","Abschluss"];
   const teamsSel=teams.find(x=>x.id===f.tid);
@@ -18381,6 +18385,17 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
                 <Inp label="Uhrzeit" val={f.deadline?.time||""} set={v=>u({deadline:f.deadline?.date?{date:f.deadline.date,time:v}:(v?{date:f.date||now(),time:v}:undefined)})} type="time" cl={cl}/>
               </div>
               <div style={{fontSize:11,color:"#94a3b8",marginTop:5}}>Bis wann darf abgestimmt werden? Spätere Antworten werden als „verspätet" markiert. Leer = keine feste Frist.</div>
+            </div>
+          )}
+          {f.recMode!=="none"&&(
+            <div>
+              <div style={{fontSize:11,fontWeight:800,color:"#64748b",margin:"4px 0 6px",letterSpacing:.5}}>ABSTIMMUNGSFRIST (OPTIONAL)</div>
+              <div style={{display:"flex",gap:8,alignItems:"flex-end"}}>
+                <div style={{width:96}}><Inp val={f.deadlineOffset?.value||""} set={v=>u({deadlineOffset:{value:v.replace(/[^0-9]/g,""),unit:f.deadlineOffset?.unit||"h"}})} type="number" ph="z.B. 24" cl={cl}/></div>
+                <div style={{flex:1}}><Sel val={f.deadlineOffset?.unit||"h"} set={v=>u({deadlineOffset:{value:f.deadlineOffset?.value||"",unit:v}})} opts={[["h","Stunden"],["d","Tage"],["w","Wochen"]]}/></div>
+                <div style={{paddingBottom:13,fontSize:13,fontWeight:700,color:"#64748b",whiteSpace:"nowrap"}}>vor Termin</div>
+              </div>
+              <div style={{fontSize:11,color:"#94a3b8",marginTop:5}}>Gilt für jeden Termin der Serie. Spätere Antworten werden als „verspätet" markiert. Leer = keine feste Frist.</div>
             </div>
           )}
           {(()=>{
