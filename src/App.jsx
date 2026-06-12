@@ -1486,6 +1486,7 @@ function seed() {
       {id:"de2",cid:"demo",tid:"demo_f1",type:"heimspiel",title:"Heimspiel vs. SV Adler",date:addD(now(),5),time:"10:30",loc:"Hauptplatz",note:"Treffen 1 Stunde vorher zum Aufwärmen",sollPlayers:5,votes:{"Ben Fischer":"yes","Leon Weber":"yes","Sophie Klein":"yes","Paul Becker":"yes","Lina Schulz":"maybe"},pt:"att",selType:"multi",li:[],fi:[],sc:[]},
       {id:"de3",cid:"demo",tid:"demo_e",type:"auswarts",title:"Auswärts bei FC Löwen",date:addD(now(),6),time:"11:00",loc:"Sportzentrum Löwen, Auswärts",note:"Fahrgemeinschaften bitte im Chat absprechen",sollPlayers:7,votes:{"Felix Braun":"yes","Anna Richter":"yes","Tim Neumann":"no"},pt:"att",selType:"multi",li:[],fi:[],sc:[]},
       {id:"de4",cid:"demo",tid:"demo_g",type:"turnier",title:"Hallenturnier Pfingsten",date:addD(now(),12),time:"09:00",loc:"Stadthalle",note:"Ganztägig, Verpflegung wird gestellt",votes:{"Lukas Berger":"yes","Emma Wolf":"yes","Noah Schmidt":"yes","Mia Hoffmann":"maybe"},pt:"att",selType:"multi",li:[],fi:[],sc:[],
+        published:true,pubFrom:new Date(Date.now()-3600000).toISOString(),pubUntil:new Date(Date.now()+30*86400000).toISOString(),
         setup:{ clubName:"Demo Verein", gameTime:8, fields:2, startTime:"09:00", pause:2, guestEnabled:true,
           clubs:["Demo G-Jugend","SV Adler","FC Löwen","TSV Falken","Blau-Weiß 04","SC Sterne"] },
         schedule:[
@@ -1576,6 +1577,17 @@ function refreshDemo(d) {
     d.helpers        = [...(d.helpers||[]).filter(notDemo),        ...(f.helpers||[]).filter(isDemo)];
     d.trainers       = [...(d.trainers||[]).filter(notDemo),       ...(f.trainers||[]).filter(isDemo)];
     d.seasons        = [...(d.seasons||[]).filter(notDemo),        ...(f.seasons||[]).filter(isDemo)];
+    // Demo-Turnier dauerhaft fuer Gaeste freischalten: frisches Live-Fenster + Snapshot,
+    // damit die Besucher-Ansicht ("Turniere") nie leer ist und man es ohne Passwort ansehen kann.
+    const dt = (f.events||[]).find(e=>e.id==="de4");
+    if(dt){
+      const le = { id:"de4", eid:"de4", clubId:"demo", clubSlug:"demo-verein",
+        title:dt.title, date:dt.date,
+        from:new Date(Date.now()-3600000).toISOString(),
+        until:new Date(Date.now()+30*86400000).toISOString(),
+        pub:tournPubSnapshot(dt, (f.playerProfiles||[])) };
+      d.liveEvents = [...(d.liveEvents||[]).filter(x=>x && x.eid!=="de4" && x.clubId!=="demo" && x.clubSlug!=="demo-verein"), le];
+    }
   } catch {}
   return d;
 }
