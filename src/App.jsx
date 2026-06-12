@@ -21426,10 +21426,13 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               ? <div style={{display:"flex",flexDirection:"column",gap:6}}>
                   {pl.focus&&<div style={{fontSize:12,color:"#64748b",marginBottom:2}}>Schwerpunkt: {pl.focus}</div>}
                   {(pl.blocks||[]).map((b,i)=>(
-                    <div key={i} style={{display:"flex",gap:10,alignItems:"center",background:"#f8fafc",borderRadius:10,padding:"9px 12px"}}>
-                      <span style={{fontSize:11,fontWeight:800,color:"#4f46e5",minWidth:74}}>{b.phase}</span>
-                      <span style={{flex:1,fontSize:13,color:"#0f172a",fontWeight:600}}>{b.title}</span>
-                      <span style={{fontSize:12,color:"#64748b",fontWeight:700,whiteSpace:"nowrap"}}>{b.min} Min</span>
+                    <div key={i} style={{display:"flex",gap:10,alignItems:"flex-start",background:"#f8fafc",borderRadius:10,padding:"9px 12px"}}>
+                      <span style={{fontSize:11,fontWeight:800,color:"#4f46e5",minWidth:74,marginTop:1}}>{b.phase}</span>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:13,color:"#0f172a",fontWeight:600}}>{b.title||"—"}</div>
+                        {(b.axes||[]).length>0&&<div style={{display:"flex",gap:4,flexWrap:"wrap",marginTop:3}}>{b.axes.map(a=><span key={a} style={{fontSize:10,fontWeight:800,color:"#4f46e5",background:"#eef2ff",borderRadius:5,padding:"1px 6px"}}>{a}</span>)}</div>}
+                      </div>
+                      <span style={{fontSize:12,color:"#64748b",fontWeight:700,whiteSpace:"nowrap",marginTop:1}}>{b.min} Min</span>
                     </div>
                   ))}
                 </div>
@@ -21787,8 +21790,11 @@ function eventWarnings(ev, tod){
 function QuickPlanCreate({ cid, ownerTid, t, onCreate, onCancel }){
   const [title,setTitle]=useState("");
   const [focus,setFocus]=useState("");
-  const [blocks,setBlocks]=useState([{phase:"Aufwärmen",title:"",min:10}]);
+  const [blocks,setBlocks]=useState([{phase:"Aufwärmen",title:"",min:10,mode:"lib"}]);
   const setBlock=(i,patch)=>setBlocks(bs=>bs.map((b,j)=>j===i?{...b,...patch}:b));
+  // Übungs-Vorlagen passend zur Phase aus der Skill-getaggten DRILL_LIB.
+  const PHASE_FOCUS={ "Aufwärmen":["aufwärmen"], "Hauptteil":["technik","taktik","torschuss"], "Abschluss":["spielform"], "Spielform":["spielform"], "Athletik":["kondition"] };
+  const drillsForPhase=phase=>{ const fs=PHASE_FOCUS[phase]||["technik","taktik"]; return DRILL_LIB.filter(d=>fs.includes(d.focus)); };
   const valid=title.trim().length>0;
   const create=()=>{
     if(!valid) return;
@@ -21804,19 +21810,36 @@ function QuickPlanCreate({ cid, ownerTid, t, onCreate, onCancel }){
         style={{width:"100%",padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
       <div style={{background:"#fff",borderRadius:12,padding:"12px 14px",border:"1.5px solid #e2e8f0"}}>
         <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.4}}>ABLAUF</div>
-        {blocks.map((b,i)=>(
-          <div key={i} style={{display:"flex",gap:6,alignItems:"center",marginBottom:i<blocks.length-1?8:0}}>
-            <select value={b.phase} onChange={e=>setBlock(i,{phase:e.target.value})} style={{padding:"8px",borderRadius:9,border:"1.5px solid #e2e8f0",fontSize:13,fontFamily:"inherit",flexShrink:0}}>
-              {TRAIN_PHASES.map(p=><option key={p} value={p}>{p}</option>)}
-            </select>
-            <input value={b.title} onChange={e=>setBlock(i,{title:e.target.value})} placeholder="Übung / Inhalt"
-              style={{flex:1,minWidth:0,padding:"8px 10px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
-            <input type="number" value={b.min} onChange={e=>setBlock(i,{min:Number(e.target.value)||0})} style={{width:50,padding:"8px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
-            <span style={{fontSize:11,color:"#94a3b8",flexShrink:0}}>Min</span>
-            {blocks.length>1&&<button onClick={()=>setBlocks(bs=>bs.filter((_,j)=>j!==i))} style={{background:"none",border:"none",color:"#dc2626",fontWeight:800,fontSize:16,cursor:"pointer",flexShrink:0}}>×</button>}
+        {blocks.map((b,i)=>{
+          const mode=b.mode||"lib";
+          const pool=drillsForPhase(b.phase);
+          const segBtn=(on)=>({flex:1,padding:"6px",borderRadius:8,border:`1.5px solid ${on?"#4f46e5":"#e2e8f0"}`,background:on?"#eef2ff":"#fff",color:on?"#4f46e5":"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"});
+          return (
+          <div key={i} style={{borderBottom:i<blocks.length-1?"1px solid #f1f5f9":"none",paddingBottom:i<blocks.length-1?10:0,marginBottom:i<blocks.length-1?10:0}}>
+            <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:8}}>
+              <select value={b.phase} onChange={e=>setBlock(i,{phase:e.target.value})} style={{padding:"8px",borderRadius:9,border:"1.5px solid #e2e8f0",fontSize:13,fontFamily:"inherit",flex:1,minWidth:0}}>
+                {TRAIN_PHASES.map(p=><option key={p} value={p}>{p}</option>)}
+              </select>
+              <input type="number" value={b.min} onChange={e=>setBlock(i,{min:Number(e.target.value)||0})} style={{width:52,padding:"8px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
+              <span style={{fontSize:11,color:"#94a3b8",flexShrink:0}}>Min</span>
+              {blocks.length>1&&<button onClick={()=>setBlocks(bs=>bs.filter((_,j)=>j!==i))} style={{background:"none",border:"none",color:"#dc2626",fontWeight:800,fontSize:16,cursor:"pointer",flexShrink:0}}>×</button>}
+            </div>
+            <div style={{display:"flex",gap:6,marginBottom:7}}>
+              <button onClick={()=>setBlock(i,{mode:"lib"})} style={segBtn(mode==="lib")}>📋 Vorlage</button>
+              <button onClick={()=>setBlock(i,{mode:"free",drillId:"",axes:[]})} style={segBtn(mode==="free")}>✎ Eigene Eingabe</button>
+            </div>
+            {mode==="lib"
+              ? <select value={b.drillId||""} onChange={e=>{const d=DRILL_LIB.find(x=>x.id===e.target.value); setBlock(i,{drillId:e.target.value,title:d?d.title:"",axes:d?(d.axes||[]):[],min:d?d.min:b.min});}}
+                  style={{width:"100%",padding:"9px 10px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",boxSizing:"border-box",fontFamily:"inherit",background:"#fff"}}>
+                  <option value="">– Übungs-Vorlage wählen –</option>
+                  {pool.map(d=><option key={d.id} value={d.id}>{d.title} · {(d.axes||[]).join("/")}</option>)}
+                </select>
+              : <input value={b.title} onChange={e=>setBlock(i,{title:e.target.value})} placeholder="Eigene Übung / Inhalt"
+                  style={{width:"100%",padding:"9px 10px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>}
+            {mode==="lib"&&(b.axes||[]).length>0&&<div style={{display:"flex",gap:4,flexWrap:"wrap",marginTop:6}}>{b.axes.map(a=><span key={a} style={{fontSize:10.5,fontWeight:800,color:"#4f46e5",background:"#eef2ff",borderRadius:6,padding:"2px 7px"}}>{a}</span>)}</div>}
           </div>
-        ))}
-        <button onClick={()=>setBlocks(bs=>[...bs,{phase:"Hauptteil",title:"",min:10}])} style={{marginTop:8,background:"#f1f5f9",border:"none",borderRadius:9,padding:"8px 12px",fontSize:13,fontWeight:700,color:"#475569",cursor:"pointer",fontFamily:"inherit"}}>+ Block</button>
+        );})}
+        <button onClick={()=>setBlocks(bs=>[...bs,{phase:"Hauptteil",title:"",min:10,mode:"lib"}])} style={{marginTop:10,background:"#f1f5f9",border:"none",borderRadius:9,padding:"8px 12px",fontSize:13,fontWeight:700,color:"#475569",cursor:"pointer",fontFamily:"inherit"}}>+ Block</button>
       </div>
       <button onClick={create} disabled={!valid} style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:valid?t.p:"#cbd5e1",color:valid?contrast(t.p):"#1e293b",fontWeight:800,fontSize:15,cursor:valid?"pointer":"default",fontFamily:"inherit"}}>Plan erstellen & verknüpfen</button>
       <Btn v="gst" full ch="Zurück zur Auswahl" onClick={onCancel}/>
