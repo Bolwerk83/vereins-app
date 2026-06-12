@@ -14768,7 +14768,8 @@ const monthLabel = (m) => { if(!m||m.length<7) return m||""; const [y,mo]=m.spli
 // Monatlicher Skill-Check: Trainer beantwortet je Spieler gezielte Fragen pro
 // Skill. Antworten passen die Werte gleitend an (2 Nachkommastellen) und legen
 // einen Monats-Snapshot im Verlauf an.
-function SkillCheckFlow({ team, players, axes, club, month, t, events=[], trainings=[], onApply, onClose }){
+function SkillCheckFlow({ team, players, axes, club, month, t, events=[], trainings=[], mode="monthly", onApply, onClose }){
+  const initialMode = mode==="initial";
   const all = players||[];
   const tp = t?.p || "#16a34a";
   const cat = team?.cat || team?.name || "";
@@ -14785,8 +14786,9 @@ function SkillCheckFlow({ team, players, axes, club, month, t, events=[], traini
     return { att:att.length, total:teamEvents.length, skills };
   };
   const hasEventData = teamEvents.length>0;
-  // Nur Kinder mit mind. 1 Teilnahme – solange es überhaupt Anwesenheitsdaten gibt.
-  const roster = hasEventData ? all.filter(p=>partOf(p).att>0) : all;
+  // Initial-Modus (Skill-Wizard): alle übergebenen Kinder, keine Teilnahme-Pflicht.
+  // Monats-Modus: nur Kinder mit mind. 1 Teilnahme (Fallback: alle ohne Anwesenheitsdaten).
+  const roster = initialMode ? all : (hasEventData ? all.filter(p=>partOf(p).att>0) : all);
   const excluded = all.length - roster.length;
   const [idx,setIdx]=useState(0);
   const [skipped,setSkipped]=useState(()=>new Set());
@@ -14821,8 +14823,8 @@ function SkillCheckFlow({ team, players, axes, club, month, t, events=[], traini
       <div style={{background:tp,color:contrast(tp),padding:"16px 18px",display:"flex",alignItems:"center",gap:12}}>
         <button onClick={onClose} style={{background:"rgba(0,0,0,.18)",border:"none",borderRadius:10,padding:"7px 12px",color:contrast(tp),fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontWeight:900,fontSize:16}}>Skill-Check · {monthLabel(month)}</div>
-          <div style={{fontSize:12,opacity:.85}}>{team?.name} · Spieler {idx+1}/{roster.length}{excluded>0?` · ${excluded} ohne Teilnahme`:""}</div>
+          <div style={{fontWeight:900,fontSize:16}}>{initialMode?"Skill-Wizard · Erstbewertung":`Skill-Check · ${monthLabel(month)}`}</div>
+          <div style={{fontSize:12,opacity:.85}}>{team?.name} · {roster.length>1?`Spieler ${idx+1}/${roster.length}`:cur?.name}{!initialMode&&excluded>0?` · ${excluded} ohne Teilnahme`:""}</div>
         </div>
       </div>
       <div style={{flex:1,overflowY:"auto",background:"#f0f4f8",padding:"16px 16px 24px"}}>
@@ -14835,7 +14837,10 @@ function SkillCheckFlow({ team, players, axes, club, month, t, events=[], traini
             </div>
             <button onClick={toggleSkip} style={{padding:"7px 12px",borderRadius:10,border:`1.5px solid ${isSkipped?"#dc2626":"#e2e8f0"}`,background:isSkipped?"#fee2e2":"#fff",color:isSkipped?"#dc2626":"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{isSkipped?"übersprungen":"Überspringen"}</button>
           </div>
-          {hasEventData&&<div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"11px 13px",marginBottom:12}}>
+          {initialMode&&<div style={{background:"#eef2ff",border:"1.5px solid #c7d2fe",borderRadius:12,padding:"11px 13px",marginBottom:12}}>
+            <div style={{fontSize:13,color:"#3730a3",fontWeight:600,lineHeight:1.5}}>Erstbewertung: Beantworte die Fragen nach deinem Eindruck. Vorausgewählt ist ein <b>altersgerechter Startwert ({cat||"Altersklasse"})</b> – du kannst alles später beim Monats-Check feinjustieren.</div>
+          </div>}
+          {!initialMode&&hasEventData&&<div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"11px 13px",marginBottom:12}}>
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:trained.length?8:0}}>
               <span style={{fontSize:16}}>📅</span>
               <span style={{fontSize:13,fontWeight:700,color:"#0f172a"}}>Anwesend: {part.att}/{part.total} Termine</span>
@@ -16216,7 +16221,8 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
   );
 }
 
-function PlayerCard({ player: pl,onEdit,onDel,isMain,allTeams,allEvents }) {
+function PlayerCard({ player: pl,onEdit,onDel,isMain,allTeams,allEvents,onWizard }) {
+  const noSkills = !Object.values(pl.skills||{}).some(v=>(Number(v)||0)>0);
   const [exp,setExp] = useState(false);
   const allTids = [pl.mainTid,...(pl.optTids||[])].filter(Boolean).filter(x=>!x.hidden);
   const rawStats = playerStats(pl.name,allTids,allEvents||[]);
@@ -16245,6 +16251,7 @@ function PlayerCard({ player: pl,onEdit,onDel,isMain,allTeams,allEvents }) {
           {(pl.rating||0) > 0 && <span style={{fontSize:14}}>{pl.rating ? pl.rating+"/5" : "-"}</span>}
         </div>
         <div style={{display:"flex",gap:5,flexShrink:0}}>
+          {onWizard&&noSkills&&<button onClick={e=>{e.stopPropagation();onWizard();}} title="Skill-Wizard: Erstbewertung starten" style={{height:30,padding:"0 9px",borderRadius:9,background:"#eef2ff",border:"none",color:"#4f46e5",cursor:"pointer",display:"flex",alignItems:"center",gap:4,fontSize:12,fontWeight:800,fontFamily:"inherit"}}>🎯 Skills</button>}
           <button onClick={e=>{e.stopPropagation();onEdit();}} style={{width:30,height:30,borderRadius:9,background:"#eff6ff",border:"none",color:"#2563eb",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>✎</button>
           {onDel&&<button onClick={e=>{e.stopPropagation();onDel();}} style={{width:30,height:30,borderRadius:9,background:"#fee2e2",border:"none",color:"#dc2626",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>✕</button>}
         </div>
@@ -16912,9 +16919,27 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
   const [search,setSearch]  = useState("");
   const [showOpt,setShowOpt] = useState(false);
   const [skillCheck,setSkillCheck] = useState(null); // Team für Monats-Skill-Check
+  const [wizardChild,setWizardChild] = useState(null); // Kind für Skill-Wizard (Erstbewertung)
   const sport = cl?.sport || "fussball";
   const skillAxes = skillAxesFor(sport);
   const raterId = session?.id || session?.role || "trainer";
+  // Skill-Wizard: setzt die Skills eines Kindes erstmalig direkt (kein Mitteln),
+  // legt einen ersten Verlaufs-Snapshot an. Berührt keine Team-/Monats-Tracking.
+  const applyInitialSkill = (submissions) => {
+    const m = monthKey();
+    const subById = Object.fromEntries(submissions.map(s=>[s.id,s.answers||{}]));
+    const next = (data.playerProfiles||[]).map(p=>{
+      const ans = subById[p.id]; if(!ans) return p;
+      const newSkills = { ...(p.skills||{}) };
+      skillAxes.forEach(ax=>{ const lvl=Number(ans[ax])||0; if(lvl>0) newSkills[ax]=round2(clampSkill(lvl)); });
+      const snap = { month:m, skills:{...newSkills}, avg:skillsMean(newSkills,skillAxes), ts:new Date().toISOString(), initial:true };
+      const hist = [...(p.skillHistory||[]).filter(h=>h.month!==m), snap].sort((a,b)=>(a.month||"").localeCompare(b.month||""));
+      return { ...p, skills:newSkills, skillHistory:hist, lastSkillCheck:p.lastSkillCheck||m };
+    });
+    save({...data, playerProfiles:next});
+    setWizardChild(null);
+    fire("Skill-Profil angelegt *");
+  };
   // Mehrere Trainer: Einschätzungen werden pro Monat gesammelt und GEMITTELT,
   // bevor der Skill (von der Monats-Basis aus) gleitend angepasst wird. So zieht
   // ein zweiter Trainer den Wert nicht doppelt – er verfeinert den Schnitt.
@@ -17087,7 +17112,8 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
           <div style={{display:"flex",flexDirection:"column",gap:7,marginBottom:16}}>
             {mainPlayers.map(pl=>(
               <PlayerCard key={pl.id} player={pl} allTeams={allTeams} allEvents={allEvents}
-                onEdit={()=>setEditP(pl)} onDel={()=>delPlayer(pl.id)} isMain/>
+                onEdit={()=>setEditP(pl)} onDel={()=>delPlayer(pl.id)} isMain
+                onWizard={selTeam?.skillCheckEnabled!==false?()=>setWizardChild(pl):null}/>
             ))}
           </div>
 
@@ -17142,6 +17168,19 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
           trainings={data.trainings||[]}
           onApply={applySkillCheck}
           onClose={()=>setSkillCheck(null)}
+        />
+      )}
+      {wizardChild && (
+        <SkillCheckFlow
+          team={(data.teams||[]).find(tm=>tm.id===wizardChild.mainTid)||{name:"Skill-Wizard"}}
+          players={[wizardChild]}
+          axes={skillAxes}
+          club={cl}
+          month={monthKey()}
+          t={t}
+          mode="initial"
+          onApply={applyInitialSkill}
+          onClose={()=>setWizardChild(null)}
         />
       )}
     </div>
@@ -17300,6 +17339,9 @@ function OnbStep2Teams({ cl, data, cid, save, teams, onNext, onBack }) {
   const setSkill = (on) => { setSkillOn(on); save({...data,
     clubs:(data.clubs||[]).map(c=>c.id===cl.id?{...c,clubSettings:{...(c.clubSettings||{}),skillCheckDefault:on}}:c),
     teams:(data.teams||[]).map(tm=>tm.cid===cl.id?{...tm,skillCheckEnabled:on}:tm)}); };
+  const [trainOn,setTrainOn] = useState(cl?.clubSettings?.mod_training!==false);
+  const setTrain = (on) => { setTrainOn(on); save({...data,
+    clubs:(data.clubs||[]).map(c=>c.id===cl.id?{...c,clubSettings:{...(c.clubSettings||{}),mod_training:on}}:c)}); };
   const TEAM_COLORS = ["#16a34a","#2563eb","#d97706","#7c3aed","#dc2626","#0891b2","#059669","#ea580c"];
   const CATS = Object.keys(CAT_YEARS);
   // Automatische Namen je Altersklasse: bei 1 Team "F-Jugend", bei mehreren
@@ -17374,6 +17416,17 @@ function OnbStep2Teams({ cl, data, cid, save, teams, onNext, onBack }) {
         <div style={{display:"flex",gap:8}}>
           {[["on","Nutzen"],["off","Erstmal aus"]].map(([k,l])=>{const on=skillOn===(k==="on");return (
             <button key={k} type="button" onClick={()=>setSkill(k==="on")} style={{flex:1,padding:"10px",borderRadius:11,border:`1.5px solid ${on?"#22c55e":"rgba(255,255,255,.15)"}`,background:on?"rgba(34,197,94,.2)":"transparent",color:on?"#86efac":"rgba(255,255,255,.6)",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
+          );})}
+        </div>
+      </div>
+      <div style={{marginTop:12,background:"rgba(255,255,255,.04)",border:"1px solid rgba(255,255,255,.1)",borderRadius:14,padding:"14px"}}>
+        <div style={{fontWeight:800,fontSize:14,color:"#fff",marginBottom:4}}>🏃 Trainingsplanung</div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,.6)",lineHeight:1.55,marginBottom:12}}>
+          Trainingspläne mit Übungs-Vorlagen (Diagramme, Skill-Bezug) und Wochenplanung. <b style={{color:"rgba(255,255,255,.8)"}}>Aufwand:</b> optional – wer nur Termine & Zu-/Absagen will, kann es auslassen. Jederzeit in den Einstellungen umstellbar. Gilt für alle Trainer – stimmt euch im Team kurz ab.
+        </div>
+        <div style={{display:"flex",gap:8}}>
+          {[["on","Nutzen"],["off","Erstmal aus"]].map(([k,l])=>{const on=trainOn===(k==="on");return (
+            <button key={k} type="button" onClick={()=>setTrain(k==="on")} style={{flex:1,padding:"10px",borderRadius:11,border:`1.5px solid ${on?"#22c55e":"rgba(255,255,255,.15)"}`,background:on?"rgba(34,197,94,.2)":"transparent",color:on?"#86efac":"rgba(255,255,255,.6)",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
           );})}
         </div>
       </div>
@@ -21530,7 +21583,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         isAdmin={isAdmin} isHelper={isHelper}
         unread={unreadMsgs} inboxUnread={unreadInbox} cl={myClub}
         session={session} onLogout={onLogout} lang={lang} setLang={setLang}/>}
-      <div style={{minHeight:"100dvh",overflowY:"auto",background:"#f0f4f8"}}>
+      <div style={{minHeight:"100dvh",overflowY:"auto",WebkitOverflowScrolling:"touch",background:"#f0f4f8",paddingBottom:isDesktop?0:"calc(72px + env(safe-area-inset-bottom))"}}>
       <div style={{maxWidth:isDesktop?"900px":"100%",margin:"0 auto",padding:isDesktop?"24px":"0"}}>
       <ClubHeader cl={myClub} hide={isDesktop} sub={`${isAdmin?"** Admin":isHelper?"* Helfer":"**"} ${session.name||"Admin"}`}
         right={
@@ -21583,20 +21636,31 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           {/* Zu-erledigen-Hub: offene Aufgaben über alle Teams */}
           {(()=>{
             const todos=[];
+            const trainingOn=(myClub?.clubSettings?.mod_training)!==false;
             (local.events||[]).filter(e=>myTids.includes(e.tid)).forEach(e=>{
               eventWarnings(e,tod).forEach(x=>todos.push({ev:e,label:x.label,col:x.col,bg:x.bg}));
               if(["heimspiel","auswarts","freundschaft"].includes(e.type)&&e.date<tod&&e.date>=addD(tod,-21)&&!(e.report&&e.report.ts)) todos.push({ev:e,label:"Spielbericht eintragen",col:"#2563eb",bg:"#eff6ff"});
+              if(trainingOn&&e.type==="training"&&e.date>=tod&&e.date<=addD(tod,10)&&!e.trainingId) todos.push({ev:e,label:"Trainingsplan fehlt",col:"#7c3aed",bg:"#ede9fe"});
             });
+            // Skill-Check fällig (pro Mannschaft, pro Trainer) + Kinder ohne Skill-Profil
+            const mk=monthKey(); const raterId=session?.id||session?.role||"trainer";
+            const myEvalTeams=(local.teams||[]).filter(tm=>myTids.includes(tm.id)&&tm.skillCheckEnabled!==false);
+            myEvalTeams.forEach(tm=>{ const ratedBy=tm.skillCheckBy?.[mk]||[]; if(!ratedBy.includes(raterId)) todos.push({label:"Skill-Check fällig",col:"#4f46e5",bg:"#eef2ff",title:`${tm.name} · Monats-Bewertung`,sub:monthLabel(mk),onClick:()=>setTab("players")}); });
+            if(myEvalTeams.length>0){
+              const evalTids=new Set(myEvalTeams.map(tm=>tm.id));
+              const unrated=(local.playerProfiles||[]).filter(p=>evalTids.has(p.mainTid)&&!p.archived&&!Object.values(p.skills||{}).some(v=>(Number(v)||0)>0));
+              if(unrated.length>0) todos.push({label:"Ohne Skill-Profil",col:"#0891b2",bg:"#cffafe",title:`${unrated.length} Kind${unrated.length>1?"er":""} noch nicht bewertet`,sub:"Skill-Wizard im Kader starten",onClick:()=>setTab("players")});
+            }
             if(todos.length===0) return null;
             return (
               <div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:18,padding:"14px 16px",marginBottom:14}}>
                 <div style={{fontWeight:900,fontSize:15,color:"#0f172a",marginBottom:10}}>✅ Zu erledigen <span style={{color:"#94a3b8",fontWeight:700,fontSize:13}}>({todos.length})</span></div>
                 <div style={{display:"flex",flexDirection:"column",gap:7}}>
-                  {todos.slice(0,10).map((td,i)=>(
-                    <button key={i} onClick={()=>setViewEv(td.ev)} style={{display:"flex",alignItems:"center",gap:10,width:"100%",textAlign:"left",background:"#f8fafc",border:"1px solid #eef2f7",borderRadius:11,padding:"9px 11px",cursor:"pointer",fontFamily:"inherit"}}>
+                  {todos.slice(0,12).map((td,i)=>(
+                    <button key={i} onClick={()=>td.ev?setViewEv(td.ev):(td.onClick&&td.onClick())} style={{display:"flex",alignItems:"center",gap:10,width:"100%",textAlign:"left",background:"#f8fafc",border:"1px solid #eef2f7",borderRadius:11,padding:"9px 11px",cursor:"pointer",fontFamily:"inherit"}}>
                       <span style={{fontSize:10.5,fontWeight:800,color:td.col,background:td.bg,borderRadius:6,padding:"2px 8px",flexShrink:0,whiteSpace:"nowrap"}}>{td.label}</span>
-                      <span style={{flex:1,minWidth:0,fontSize:13,fontWeight:700,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{td.ev.title}</span>
-                      <span style={{fontSize:11.5,color:"#94a3b8",flexShrink:0}}>{fmtDShort(td.ev.date)}</span>
+                      <span style={{flex:1,minWidth:0,fontSize:13,fontWeight:700,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{td.ev?td.ev.title:td.title}</span>
+                      <span style={{fontSize:11.5,color:"#94a3b8",flexShrink:0}}>{td.ev?fmtDShort(td.ev.date):(td.sub||"")}</span>
                     </button>
                   ))}
                 </div>
@@ -24066,7 +24130,7 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
 
   return (
     <div style={{minHeight:"100dvh",background:"#f0f4f8",
-      paddingBottom:isDesktop?0:52,
+      paddingBottom:isDesktop?0:"calc(64px + env(safe-area-inset-bottom))",
       display:isDesktop?"grid":"block",
       gridTemplateColumns:isDesktop?"260px 1fr":"none"}}>
       {isDesktop&&<DesktopSidebar tab={tab} setTab={setTab}
