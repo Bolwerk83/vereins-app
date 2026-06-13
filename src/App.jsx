@@ -12944,6 +12944,14 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
             </Row>
           </div>
           <div style={card}>
+            <Row title="Hilfe-Intros zurücksetzen" sub="Zeigt die kurzen Erklär-Karten in allen Bereichen wieder an (auf diesem Gerät)." last>
+              <button onClick={()=>{ try{ Object.keys(localStorage).filter(k=>k.startsWith("va_intro_")).forEach(k=>localStorage.removeItem(k)); }catch{} fire("Hilfe-Intros werden wieder angezeigt"); }}
+                style={{padding:"6px 12px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#f8fafc",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",color:"#475569"}}>
+                Zurücksetzen
+              </button>
+            </Row>
+          </div>
+          <div style={card}>
             <Row title="Backup exportieren" sub="Alle Vereinsdaten als JSON">
               <button onClick={exportData}
                 style={{padding:"6px 14px",borderRadius:9,border:"none",
@@ -24843,6 +24851,7 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             <div style={{display:"flex",flexDirection:"column",gap:9}}>
               <div style={{marginBottom:4}}><ShareTeamLink cl={cl} team={myTeam} t={t} compact/></div>
               <button onClick={()=>setShowProfile(false)} style={{width:"100%",padding:"13px",borderRadius:13,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Schließen</button>
+              <button onClick={()=>{ try{ Object.keys(localStorage).filter(k=>k.startsWith("va_intro_")).forEach(k=>localStorage.removeItem(k)); }catch{} fire("Hilfe-Intros werden wieder angezeigt"); setShowProfile(false); }} style={{width:"100%",padding:"12px",borderRadius:13,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:13.5,cursor:"pointer",fontFamily:"inherit",marginBottom:10}}>Hilfe-Intros erneut anzeigen</button>
               <button onClick={()=>{setShowProfile(false);onLogout();}} style={{width:"100%",padding:"13px",borderRadius:13,border:"none",background:"#fee2e2",color:"#dc2626",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}> Team wechseln / Abmelden</button>
             </div>
           </div>
