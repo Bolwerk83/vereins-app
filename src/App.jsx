@@ -5644,8 +5644,8 @@ const DFB_FORMATS=[
   {age:"C-Jugend (U14–U15)", form:"11:11", players:"11", field:"Großfeld (bis ca. 68×105 m)", goals:"7,32×2,44 m", ball:"Größe 5", time:"2×35 min", focus:"Mannschaftstaktik, Positionsspiel, Pressing/Umschalten"},
   {age:"B-/A-Jugend (U16–U19)", form:"11:11", players:"11", field:"Großfeld", goals:"7,32×2,44 m", ball:"Größe 5", time:"2×40 / 2×45 min", focus:"komplexe Spielsysteme, Athletik, Spielintelligenz"},
 ];
-function DFBFormatsCard({ cl }){
-  const [open,setOpen]=useState(false);
+function DFBFormatsCard({ cl, defaultOpen=false }){
+  const [open,setOpen]=useState(defaultOpen);
   const c=cl?.pri||"#16a34a";
   return (
     <div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:13,overflow:"hidden"}}>
@@ -22301,6 +22301,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           {up.length===0&&<div style={{textAlign:"center",padding:"30px",background:"#fff",borderRadius:18,border:"1.5px dashed #e2e8f0",color:"#94a3b8"}}><Logo cl={myClub} sz={50} sx={{margin:"0 auto 12px"}}/><p style={{fontWeight:800,fontSize:15}}>Noch keine Termine</p><p style={{fontSize:13,marginTop:3}}>Klicke oben auf "Neuen Termin anlegen"</p></div>}
           {past.length>0&&<><Divider label={`VERGANGENE (${past.length})`} light/><div style={{opacity:.72}}>{past.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{}} onCopyLink={()=>{}}/>)}</div></>}
           <AffiliateBanner trigger="events" style={{marginTop:14}}/>
+          <div style={{marginTop:14}}><DFBFormatsCard cl={myClub}/></div>
           <div style={{marginTop:14}}><RecommendCard theme={t.p}/></div>
         </>}
         {tab==="players"    &&<><PlayersTab data={local} myTids={myTids} save={save} fire={fire} cl={myClub} session={session}/><AffiliateBanner trigger="players" style={{marginTop:14}}/></> }
@@ -23708,6 +23709,7 @@ function TournSetup({ setup, cl, t, onUpdate, fields=[], ev=null }){
   const [viewPw,setViewPw]=useState("");
   const [ctrlPw,setCtrlPw]=useState("");
   const [guestEnabled,setGuestEnabled]=useState(setup.guestEnabled!==false);
+  const [rules,setRules]=useState(setup.rules||"");
   const [copied,setCopied]=useState(false);
   const [saved,setSaved]=useState(false);
   const visitorLink = ev ? `${(typeof window!=="undefined"?window.location.origin:"")}/?tournament=${ev.id}&club=${encodeURIComponent(cl?.slug||cl?.id||"")}` : "";
@@ -23733,7 +23735,7 @@ function TournSetup({ setup, cl, t, onUpdate, fields=[], ev=null }){
   const save=()=>{
     const eff = pitches.length ? areasOf(pitches) : Number(nFields)||1;
     onUpdate({setup:{...setup, fields:eff, pitches, gameTime:Number(gameTime)||1, clubName:clubName.trim()||cl?.name, clubs:teams,
-      guestEnabled,
+      guestEnabled, rules:rules.trim(),
       viewPwHash: viewPw.trim()?hashPw(viewPw.trim()):setup.viewPwHash,
       ctrlPwHash: ctrlPw.trim()?hashPw(ctrlPw.trim()):setup.ctrlPwHash}});
     setViewPw(""); setCtrlPw("");
@@ -23827,6 +23829,13 @@ function TournSetup({ setup, cl, t, onUpdate, fields=[], ev=null }){
         {ev&&!setup.viewPwHash&&<p style={{fontSize:11,color:"#94a3b8"}}>Ansehen-Passwort setzen und speichern, dann erscheint hier der Teilen-Link.</p>}
       </div>
 
+      <div style={{background:"#fff",borderRadius:14,padding:"14px",border:"1.5px solid #e2e8f0"}}>
+        <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.4}}>REGELN / HINWEISE (OPTIONAL)</div>
+        <textarea value={rules} onChange={e=>{setRules(e.target.value);setSaved(false);}} rows={4}
+          placeholder="Eigene Turnier-Regeln/Hinweise (z. B. Spielzeit, Wechsel, Fair-Play). Leer lassen = DFB-Spielformen werden angezeigt."
+          style={{width:"100%",padding:"11px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",boxSizing:"border-box",fontFamily:"inherit",resize:"vertical"}}/>
+        <p style={{fontSize:11,color:"#94a3b8",marginTop:6}}>Wird Besuchern im Tab „Regeln" gezeigt. Ohne Eintrag erscheinen dort automatisch die DFB-Spielformen & Platzgrößen.</p>
+      </div>
       <button onClick={save} style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:saved?"#16a34a":t.p,color:"#fff",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>{saved?"Gespeichert ✓":"Setup speichern"}</button>
     </div>
   );
@@ -23995,6 +24004,7 @@ function tournPubSnapshot(ev, profiles=[]){
     pitches: ev.setup?.pitches||null,
     teams: (ev.setup?.clubs||[]).filter(Boolean),
     schedule: ev.schedule||[],
+    rules: ev.setup?.rules||"",
     lanes: tournLanes(ev),
     viewPwHash: ev.setup?.viewPwHash||"",
     ctrlPwHash: ev.setup?.ctrlPwHash||"",
@@ -24273,7 +24283,7 @@ function TournamentPublic({ eid, clubParam, onBack }){
     loc:p.loc||"", note:p.note||"", schedule:p.schedule||[], timer:Array.isArray(p.timer)?p.timer:[],
     lineupPublic:!!p.lineupPublic, squad:Array.isArray(p.squad)?p.squad:[],
     setup:{ clubName:p.clubName, gameTime:p.gameTime, fields:p.fields||0, pitches:p.pitches||null,
-            clubs:p.teams||[], viewPwHash:p.viewPwHash||"", ctrlPwHash:p.ctrlPwHash||"" },
+            clubs:p.teams||[], viewPwHash:p.viewPwHash||"", ctrlPwHash:p.ctrlPwHash||"", rules:p.rules||"" },
   });
   const load=async ()=>{
     try{
@@ -24386,7 +24396,7 @@ function TournamentPublic({ eid, clubParam, onBack }){
   return (
     <Shell>
       <div style={{display:"flex",gap:6,marginBottom:14,overflowX:"auto",scrollbarWidth:"none"}}>
-        {[["info","Info"],["plan","Spielplan"],...((ev?.lineupPublic&&(ev?.squad||[]).length)?[["squad","Mannschaft"]]:[]),["timer","Live-Timer"]].map(([id,lb])=>(
+        {[["info","Info"],["plan","Spielplan"],...((ev?.lineupPublic&&(ev?.squad||[]).length)?[["squad","Mannschaft"]]:[]),["regeln","Regeln"],["timer","Live-Timer"]].map(([id,lb])=>(
           <button key={id} onClick={()=>setTab(id)} style={{padding:"8px 15px",borderRadius:99,border:`2px solid ${tab===id?t.p:"#e2e8f0"}`,background:tab===id?t.p:"#fff",color:tab===id?"#fff":"#475569",fontWeight:700,fontSize:13,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit"}}>{lb}</button>
         ))}
       </div>
@@ -24408,6 +24418,15 @@ function TournamentPublic({ eid, clubParam, onBack }){
       {tab==="plan"&&<TournPlan ev={ev} setup={ev?.setup||{}} t={t} onUpdate={null} isHelper={true}/>}
 
       {tab==="squad"&&<PublicSquad squad={ev?.squad||[]} t={t}/>}
+
+      {tab==="regeln"&&(
+        ev?.setup?.rules
+          ? <div style={{background:"#fff",borderRadius:16,padding:"16px",border:"1.5px solid #e2e8f0",whiteSpace:"pre-wrap",fontSize:13.5,color:"#334155",lineHeight:1.65}}>
+              <div style={{fontWeight:800,fontSize:14,color:"#0f172a",marginBottom:8}}>Regeln & Hinweise</div>
+              {ev.setup.rules}
+            </div>
+          : <DFBFormatsCard cl={cl} defaultOpen/>
+      )}
 
       {tab==="timer"&&(
         <div>
@@ -24995,6 +25014,7 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             </div>
           </div>
         )}
+        <div style={{marginTop:16}}><DFBFormatsCard cl={cl}/></div>
         <div style={{marginTop:16}}><RecommendCard theme={t.p}/></div>
         </div>
         {isDesktop&&(
