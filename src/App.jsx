@@ -15536,6 +15536,11 @@ const DRILL_LIB = [
     coach:"Ruhe bewahren, Torwart abwarten lassen, früh Tempo variieren.", field:"half",
     el:[{type:"goal",x:50,y:4,w:16},{type:"opp",x:50,y:14,n:1,label:"TW"},{type:"player",x:50,y:70,n:1},{type:"ball",x:48,y:67},{type:"dribbleArrow",x1:48,y1:67,x2:48,y2:25,ball:true}] },
   // ---- KONDITION (weitere) ----
+  { id:"d_run", focus:"kondition", axes:["Ausdauer"], title:"Runden laufen (Tartanbahn)", min:15, players:"beliebig", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend","Senioren"],
+    desc:"Ganz einfach: mehrere Runden auf der Tartanbahn (Laufbahn) im gleichmäßigen Grundlagentempo. Ideal zum Ausdaueraufbau, zum Ein- oder Auslaufen. Tempo und Rundenzahl an Alter und Fitness anpassen.",
+    kids:"Wir laufen ein paar Runden auf der Bahn – ruhig und alle zusammen, so dass ihr euch dabei noch unterhalten könntet.",
+    coach:"Gleichmäßiges Tempo statt Sprint. Jüngere kürzer halten oder spielerisch verpacken (z. B. Partnerlauf). Nach intensiven Einheiten als ruhiges Auslaufen.", field:"full",
+    el:[{type:"cone",x:12,y:18},{type:"cone",x:88,y:18},{type:"cone",x:88,y:82},{type:"cone",x:12,y:82},{type:"player",x:12,y:18,n:1},{type:"runArrow",x1:16,y1:18,x2:84,y2:18},{type:"runArrow",x1:88,y1:23,x2:88,y2:77},{type:"runArrow",x1:84,y1:82,x2:16,y2:82}] },
   { id:"d44", focus:"kondition", axes:["Ausdauer"], title:"Rundenlauf mit Aufgaben", min:12, players:"beliebig", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
     desc:"Lockerer Dauerlauf um das Feld, an markierten Ecken kurze Zusatzaufgaben (Hopserlauf, Sidesteps, Sprints).",
     coach:"Gleichmäßiges Grundtempo, an den Ecken bewusst Technik.", field:"full",
@@ -21811,6 +21816,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const [delConf,setDelConf]=useState(null); const [viewEv,setViewEv]=useState(null); const [delConfVal,setDelConfVal]=useState(null);
   const [editConf,setEditConf]=useState(null);
   const [planFor,setPlanFor]=useState(null);
+  const [planDrill,setPlanDrill]=useState(null);   // Übungs-Detail aus dem Trainingsplan
+  const [showTaktik,setShowTaktik]=useState(false); // Taktiktafel-Overlay
   const [planQuickNew,setPlanQuickNew]=useState(false);
   const openPlan = ev => { setPlanFor(ev); setPlanQuickNew(false); };
   const planTitleOf = ev => ev?.trainingPlan ? (ev.trainingPlan.sessions?.[0]?.title||"Trainingsplan") : (ev?.trainingId ? ((local.trainings||[]).find(t=>t.id===ev.trainingId)?.title||null) : null);
@@ -22092,16 +22099,16 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             {pl
               ? <div style={{display:"flex",flexDirection:"column",gap:6}}>
                   {pl.focus&&<div style={{fontSize:12,color:"#64748b",marginBottom:2}}>Schwerpunkt: {pl.focus}</div>}
-                  {(pl.blocks||[]).map((b,i)=>(
-                    <div key={i} style={{display:"flex",gap:10,alignItems:"flex-start",background:"#f8fafc",borderRadius:10,padding:"9px 12px"}}>
+                  {(pl.blocks||[]).map((b,i)=>{ const d=b.drillId?DRILL_LIB.find(x=>x.id===b.drillId):null; return (
+                    <div key={i} onClick={d?()=>setPlanDrill(d):undefined} style={{display:"flex",gap:10,alignItems:"flex-start",background:"#f8fafc",borderRadius:10,padding:"9px 12px",cursor:d?"pointer":"default"}}>
                       <span style={{fontSize:11,fontWeight:800,color:"#4f46e5",minWidth:74,marginTop:1}}>{b.phase}</span>
                       <div style={{flex:1,minWidth:0}}>
-                        <div style={{fontSize:13,color:"#0f172a",fontWeight:600}}>{b.title||"—"}</div>
+                        <div style={{fontSize:13,color:"#0f172a",fontWeight:600}}>{b.title||"—"}{d&&<span style={{marginLeft:6,fontSize:11,color:"#4f46e5",fontWeight:800}}>ℹ️ ansehen</span>}</div>
                         {(b.axes||[]).length>0&&<div style={{display:"flex",gap:4,flexWrap:"wrap",marginTop:3}}>{b.axes.map(a=><span key={a} style={{fontSize:10,fontWeight:800,color:"#4f46e5",background:"#eef2ff",borderRadius:5,padding:"1px 6px"}}>{a}</span>)}</div>}
                       </div>
                       <span style={{fontSize:12,color:"#64748b",fontWeight:700,whiteSpace:"nowrap",marginTop:1}}>{b.min} Min</span>
                     </div>
-                  ))}
+                  );})}
                 </div>
               : <p style={{fontSize:13,color:"#94a3b8"}}>Noch kein Trainingsplan hinterlegt.</p>}
           </div>
@@ -22210,8 +22217,25 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           onSave={plan=>{ save({...local, events:local.events.map(e=>e.id===planFor.id?{...e, trainingPlan:plan, trainingId:""}:e)}); setPlanFor(null); fire("Trainingsplan gespeichert *"); }}
           onRemove={()=>{ save({...local, events:local.events.map(e=>{ if(e.id!==planFor.id) return e; const {trainingPlan, ...rest}=e; return {...rest, trainingId:""}; })}); setPlanFor(null); fire("Trainingsplan entfernt"); }}
           onCancel={()=>setPlanFor(null)}
+          onOpenTaktik={()=>{ setPlanFor(null); setShowTaktik(true); }}
         />
       </Drawer>}
+
+      {}
+      {planDrill&&<DrillInfoModal drill={planDrill} t={TH(myClub)} onClose={()=>setPlanDrill(null)}/>}
+
+      {}
+      {showTaktik&&(
+        <div style={{position:"fixed",inset:0,zIndex:1100,background:"#f0f4f8",overflowY:"auto"}}>
+          <div style={{position:"sticky",top:0,zIndex:5,background:`linear-gradient(135deg,${TH(myClub).s||"#052e16"},${TH(myClub).p}cc)`,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+            <button onClick={()=>setShowTaktik(false)} style={{background:"rgba(255,255,255,.18)",border:"none",borderRadius:10,padding:"8px 14px",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>← Zurück</button>
+            <span style={{color:"#fff",fontWeight:900,fontSize:17}}>Taktiktafel</span>
+          </div>
+          <div style={{maxWidth:1000,margin:"0 auto",padding:"16px 14px 40px"}}>
+            <TacticBoard data={local} myTids={myTids} cl={myClub} save={save} fire={fire}/>
+          </div>
+        </div>
+      )}
       </div>
     </div>
 
@@ -22228,39 +22252,43 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
 
 // Inline-Trainingsplan pro Termin: editierbare Kopie (ev.trainingPlan). Eine Vorlage
 // kann uebernommen (kopiert) und frei angepasst werden, ohne die Vorlage zu aendern.
-function EventPlanEditor({ ev, vorlagen, t, onSave, onRemove, onCancel }) {
-  const PHASES=["Aufwärmen","Hauptteil","Abschluss","Sonstiges"];
+function EventPlanEditor({ ev, vorlagen, t, onSave, onRemove, onCancel, onOpenTaktik }) {
+  const PHASES=["Aufwärmen","Hauptteil","Abschluss","Spielform","Athletik"];
+  const mapBlock=b=>({phase:b.phase||"Hauptteil",title:b.title||"",min:Number(b.min)||0,drillId:b.drillId||"",axes:b.axes||[],mode:b.drillId?"lib":(b.mode||"free")});
   const initBlocks=(()=>{
     const emb=ev?.trainingPlan?.sessions?.[0]?.blocks;
-    if(emb&&emb.length) return emb.map(b=>({phase:b.phase||"Hauptteil",title:b.title||"",min:Number(b.min)||0}));
+    if(emb&&emb.length) return emb.map(mapBlock);
     const vor=(vorlagen||[]).find(x=>x.id===ev?.trainingId);
-    if(vor) return (vor.blocks||[]).map(b=>({phase:b.phase||"Hauptteil",title:b.title||"",min:Number(b.min)||0}));
+    if(vor) return (vor.blocks||[]).map(mapBlock);
     return [];
   })();
   const [title,setTitle]=useState(ev?.trainingPlan?.sessions?.[0]?.title||ev?.title||"Trainingseinheit");
   const [blocks,setBlocks]=useState(initBlocks);
   const [showV,setShowV]=useState(false);
+  const [infoDrill,setInfoDrill]=useState(null);
   const had=!!(ev?.trainingPlan||ev?.trainingId);
   const setBlock=(i,patch)=>setBlocks(bs=>bs.map((b,j)=>j===i?{...b,...patch}:b));
-  const addBlock=()=>setBlocks(bs=>[...bs,{phase:bs.length?"Hauptteil":"Aufwärmen",title:"",min:10}]);
+  const addBlock=()=>setBlocks(bs=>[...bs,{phase:bs.length?"Hauptteil":"Aufwärmen",title:"",min:10,mode:"lib",drillId:"",axes:[]}]);
   const delBlock=i=>setBlocks(bs=>bs.filter((_,j)=>j!==i));
   const totalMin=blocks.reduce((s,b)=>s+(Number(b.min)||0),0);
   const loadVorlage=tr=>{
     if(blocks.length&&typeof window!=="undefined"&&window.confirm&&!window.confirm("Aktuelle Blöcke durch die Vorlage ersetzen?")) return;
-    setBlocks((tr.blocks||[]).map(b=>({phase:b.phase||"Hauptteil",title:b.title||"",min:Number(b.min)||0})));
+    setBlocks((tr.blocks||[]).map(mapBlock));
     setTitle(prev=>(!prev||prev==="Trainingseinheit")?(tr.title||prev):prev);
     setShowV(false);
   };
   const doSave=()=>{
-    const clean=blocks.filter(b=>(b.title||"").trim()||Number(b.min)>0)
-      .map(b=>({phase:b.phase,title:(b.title||"").trim(),min:Number(b.min)||0}));
+    const clean=blocks.filter(b=>(b.title||"").trim()||Number(b.min)>0||b.drillId)
+      .map(b=>({phase:b.phase,title:(b.title||"").trim(),min:Number(b.min)||0,...(b.drillId?{drillId:b.drillId,axes:b.axes||[]}:{})}));
     onSave({ title, createdAt:now(), sessions:[{ title, blocks:clean }] });
   };
+  const segBtn=on=>({flex:1,padding:"6px",borderRadius:8,border:`1.5px solid ${on?"#4f46e5":"#e2e8f0"}`,background:on?"#eef2ff":"#fff",color:on?"#4f46e5":"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"});
   return (
     <div>
-      <div style={{background:"#eef2ff",borderRadius:14,padding:"12px 14px",marginBottom:14,border:"1.5px solid #c7d2fe"}}>
-        <p style={{fontSize:13,color:"#3730a3",fontWeight:600,lineHeight:1.5}}>Stelle den Plan für <b>„{ev?.title||"dieses Training"}"</b> individuell zusammen. Eine Vorlage kannst du übernehmen und danach frei anpassen – die Vorlage selbst bleibt unverändert.</p>
+      <div style={{background:"#eef2ff",borderRadius:14,padding:"12px 14px",marginBottom:12,border:"1.5px solid #c7d2fe"}}>
+        <p style={{fontSize:13,color:"#3730a3",fontWeight:600,lineHeight:1.5}}>Stelle den Plan für <b>„{ev?.title||"dieses Training"}"</b> zusammen – wähle fertige Übungen aus der Bibliothek (mit Beschreibung & Diagramm) oder tippe eigene ein. Eine Vorlage bleibt beim Anpassen unverändert.</p>
       </div>
+      {onOpenTaktik&&<button onClick={onOpenTaktik} style={{width:"100%",padding:"11px",borderRadius:12,border:`1.5px solid ${t.p}`,background:t.p+"10",color:t.p,fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit",marginBottom:12}}>⚽ Taktiktafel öffnen</button>}
       {(vorlagen||[]).length>0&&<>
         <button onClick={()=>setShowV(s=>!s)} style={{width:"100%",padding:"11px",borderRadius:12,border:"1.5px dashed #c7d2fe",background:"#f5f3ff",color:"#4f46e5",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit",marginBottom:showV?10:14}}>📋 Aus Vorlage übernehmen</button>
         {showV&&<div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:14}}>
@@ -22278,7 +22306,10 @@ function EventPlanEditor({ ev, vorlagen, t, onSave, onRemove, onCancel }) {
       </div>
       <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.4,display:"flex",justifyContent:"space-between"}}><span>ABLAUF</span><span style={{color:"#94a3b8"}}>{totalMin} Min</span></div>
       <div style={{display:"flex",flexDirection:"column",gap:8}}>
-        {blocks.map((b,i)=>(
+        {blocks.map((b,i)=>{
+          const mode=b.mode||(b.drillId?"lib":"free");
+          const pool=drillsForPhase(b.phase);
+          return (
           <div key={i} style={{background:"#f8fafc",borderRadius:11,padding:"10px",border:"1.5px solid #e2e8f0"}}>
             <div style={{display:"flex",gap:7,marginBottom:7}}>
               <select value={b.phase} onChange={e=>setBlock(i,{phase:e.target.value})} style={{padding:"8px",borderRadius:9,border:"1.5px solid #e2e8f0",fontSize:13,fontFamily:"inherit",flex:1,minWidth:0,background:"#fff"}}>
@@ -22290,15 +22321,31 @@ function EventPlanEditor({ ev, vorlagen, t, onSave, onRemove, onCancel }) {
               </div>
               <button onClick={()=>delBlock(i)} style={{width:34,borderRadius:9,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>✕</button>
             </div>
-            <input value={b.title} onChange={e=>setBlock(i,{title:e.target.value})} placeholder="Übung / Inhalt" style={{width:"100%",padding:"9px 11px",fontSize:13.5,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
+            <div style={{display:"flex",gap:6,marginBottom:7}}>
+              <button onClick={()=>setBlock(i,{mode:"lib"})} style={segBtn(mode==="lib")}>📋 Bibliothek</button>
+              <button onClick={()=>setBlock(i,{mode:"free",drillId:"",axes:[]})} style={segBtn(mode==="free")}>✎ Eigene</button>
+            </div>
+            {mode==="lib"
+              ? <select value={b.drillId||""} onChange={e=>{const d=DRILL_LIB.find(x=>x.id===e.target.value); setBlock(i,{drillId:e.target.value,title:d?d.title:"",axes:d?(d.axes||[]):[],min:d?d.min:b.min});}}
+                  style={{width:"100%",padding:"9px 10px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",boxSizing:"border-box",fontFamily:"inherit",background:"#fff"}}>
+                  <option value="">– Übung aus Bibliothek wählen –</option>
+                  {pool.map(d=><option key={d.id} value={d.id}>{d.title} · {(d.axes||[]).join("/")}</option>)}
+                </select>
+              : <input value={b.title} onChange={e=>setBlock(i,{title:e.target.value})} placeholder="Eigene Übung / Inhalt" style={{width:"100%",padding:"9px 11px",fontSize:13.5,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>}
+            {mode==="lib"&&b.drillId&&<div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginTop:6}}>
+              {(b.axes||[]).map(a=><span key={a} style={{fontSize:10.5,fontWeight:800,color:"#4f46e5",background:"#eef2ff",borderRadius:6,padding:"2px 7px"}}>{a}</span>)}
+              <button onClick={()=>{const d=DRILL_LIB.find(x=>x.id===b.drillId); if(d)setInfoDrill(d);}} style={{marginLeft:"auto",background:"none",border:"none",color:"#4f46e5",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>ℹ️ Übung ansehen</button>
+            </div>}
           </div>
-        ))}
+          );
+        })}
       </div>
       <button onClick={addBlock} style={{marginTop:8,background:"#f1f5f9",border:"none",borderRadius:10,padding:"10px 12px",fontSize:13,fontWeight:700,color:"#475569",cursor:"pointer",fontFamily:"inherit",width:"100%"}}>+ Block hinzufügen</button>
       {blocks.length===0&&<p style={{fontSize:12.5,color:"#94a3b8",textAlign:"center",marginTop:10}}>Noch keine Blöcke – füge welche hinzu oder übernimm eine Vorlage.</p>}
       <button onClick={doSave} disabled={blocks.length===0} style={{width:"100%",marginTop:16,padding:"12px",borderRadius:11,border:"none",background:blocks.length?t.p:"#e2e8f0",color:blocks.length?contrast(t.p):"#94a3b8",fontWeight:800,fontSize:14,cursor:blocks.length?"pointer":"default",fontFamily:"inherit"}}>Plan speichern</button>
       {had&&<button onClick={onRemove} style={{width:"100%",marginTop:9,padding:"11px",borderRadius:11,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:700,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>Plan entfernen</button>}
       <button onClick={onCancel} style={{width:"100%",marginTop:9,padding:"11px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
+      {infoDrill&&<DrillInfoModal drill={infoDrill} t={t} onClose={()=>setInfoDrill(null)}/>}
     </div>
   );
 }
@@ -24214,6 +24261,7 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
 }
 function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
   const isTrainerOrHelper = role==="trainer"||role==="helper"||role==="admin";
+  const [infoDrill,setInfoDrill]=useState(null);
   const eT=ET[ev.type]||ET.training;const isToday=ev.date===now();const isPast=ev.date<now();
   const uv=(ev.votes||{})[user];const uvVal=typeof uv==="object"&&uv!==null?uv.val:uv;
   const p=cl?.pri||"#16a34a";
@@ -24264,17 +24312,21 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
             <div style={{fontSize:12,fontWeight:800,color:"#166534",marginBottom:8,letterSpacing:.3}}>TRAININGSPLAN{ev.trainingPlan.cat?" · "+ev.trainingPlan.cat:""}</div>
             {(ev.trainingPlan.sessions||[]).map((s,si)=>(
               <div key={si} style={{marginBottom:si<ev.trainingPlan.sessions.length-1?10:0}}>
-                {(s.blocks||[]).map((b,bi)=>(
-                  <div key={bi} style={{display:"flex",alignItems:"center",gap:8,padding:"4px 0",fontSize:13,color:"#334155"}}>
+                {(s.blocks||[]).map((b,bi)=>{
+                  const d=b.drillId?DRILL_LIB.find(x=>x.id===b.drillId):null;
+                  return (
+                  <div key={bi} onClick={d?()=>setInfoDrill(d):undefined} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",fontSize:13,color:"#334155",cursor:d?"pointer":"default"}}>
                     <span style={{fontSize:10,fontWeight:800,color:"#16a34a",width:58,flexShrink:0}}>{b.phase}</span>
-                    <span style={{flex:1,fontWeight:600}}>{b.title}</span>
-                    <span style={{fontSize:11,color:"#94a3b8"}}>{b.min} Min</span>
+                    <span style={{flex:1,fontWeight:600}}>{b.title}{d&&<span style={{marginLeft:6,fontSize:11,color:"#4f46e5",fontWeight:800}}>ℹ️ ansehen</span>}</span>
+                    <span style={{fontSize:11,color:"#94a3b8",flexShrink:0}}>{b.min} Min</span>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             ))}
           </div>
         )}
+        {infoDrill&&<DrillInfoModal drill={infoDrill} t={TH(cl)} onClose={()=>setInfoDrill(null)}/>}
         {ev.type==="turnier"&&isTrainerOrHelper?<TournView ev={ev} user={user} onVote={onVote} cl={cl} players={players} isHelper={role==="helper"}/>
           :ev.type==="turnier"?<PollAttend ev={ev} user={user} onVote={onVote} cl={cl}/>
           :ev.pt==="none"?(
