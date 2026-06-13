@@ -15536,7 +15536,7 @@ const DRILL_LIB = [
     coach:"Ruhe bewahren, Torwart abwarten lassen, früh Tempo variieren.", field:"half",
     el:[{type:"goal",x:50,y:4,w:16},{type:"opp",x:50,y:14,n:1,label:"TW"},{type:"player",x:50,y:70,n:1},{type:"ball",x:48,y:67},{type:"dribbleArrow",x1:48,y1:67,x2:48,y2:25,ball:true}] },
   // ---- KONDITION (weitere) ----
-  { id:"d_run", focus:"kondition", axes:["Ausdauer"], title:"Runden laufen (Tartanbahn)", min:15, players:"beliebig", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend","Senioren"],
+  { id:"d_run", focus:"kondition", diagram:"track", axes:["Ausdauer"], title:"Runden laufen (Tartanbahn)", min:15, players:"beliebig", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend","Senioren"],
     desc:"Ganz einfach: mehrere Runden auf der Tartanbahn (Laufbahn) im gleichmäßigen Grundlagentempo. Ideal zum Ausdaueraufbau, zum Ein- oder Auslaufen. Tempo und Rundenzahl an Alter und Fitness anpassen.",
     kids:"Wir laufen ein paar Runden auf der Bahn – ruhig und alle zusammen, so dass ihr euch dabei noch unterhalten könntet.",
     coach:"Gleichmäßiges Tempo statt Sprint. Jüngere kürzer halten oder spielerisch verpacken (z. B. Partnerlauf). Nach intensiven Einheiten als ruhiges Auslaufen.", field:"full",
@@ -22550,9 +22550,29 @@ function eventWarnings(ev, tod){
 
 // Volle Trainingskarte einer Übung (Diagramm, Beschreibung, Coaching, Kinder-
 // Erklärung, Skills) – als Overlay, von den Plan-Editoren aus aufrufbar.
+// Schematische Tartanbahn (Laufbahn) als SVG – fuer Lauf-/Ausdauer-Uebungen.
+function TrackDiagram({ width=300 }){
+  const h=Math.round(width*0.625);
+  return (
+    <svg viewBox="0 0 320 200" width={width} height={h} style={{borderRadius:14,boxShadow:"0 2px 10px rgba(0,0,0,.08)",background:"#eaf4ee"}}>
+      <rect x="0" y="0" width="320" height="200" fill="#eaf4ee"/>
+      <rect x="12" y="22" width="296" height="156" rx="78" fill="#c0492f"/>
+      <rect x="26" y="36" width="268" height="128" rx="64" fill="none" stroke="#fff" strokeWidth="1.4" opacity=".85"/>
+      <rect x="40" y="50" width="240" height="100" rx="50" fill="none" stroke="#fff" strokeWidth="1.4" opacity=".85"/>
+      <rect x="54" y="64" width="212" height="72" rx="36" fill="#3f9d5e"/>
+      <rect x="150" y="163" width="3" height="16" fill="#fff"/>
+      <circle cx="118" cy="171" r="5" fill="#0f172a"/>
+      <path d="M130 171 h24" stroke="#0f172a" strokeWidth="2.4" fill="none" strokeLinecap="round"/>
+      <path d="M150 167 l6 4 -6 4" fill="none" stroke="#0f172a" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
+      <text x="160" y="104" textAnchor="middle" fontSize="13" fontWeight="800" fill="#1e7a44" fontFamily="inherit">Tartanbahn</text>
+    </svg>
+  );
+}
 function DrillInfoModal({ drill, t, onClose }){
-  if(!drill) return null;
   const col = t?.p || "#16a34a";
+  const [view,setView] = useState(drill?.diagram==="track"?"track":"field");
+  if(!drill) return null;
+  const segBtn=on=>({flex:1,padding:"7px",borderRadius:9,border:`1.5px solid ${on?col:"#e2e8f0"}`,background:on?col+"12":"#fff",color:on?col:"#64748b",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"});
   return (
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:1300,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
       <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"90dvh",overflowY:"auto",animation:"down .22s ease"}}>
@@ -22561,8 +22581,14 @@ function DrillInfoModal({ drill, t, onClose }){
           <div style={{fontWeight:900,fontSize:18,color:"#0f172a",marginBottom:2}}>{drill.title}</div>
           <div style={{fontSize:12.5,color:"#94a3b8",marginBottom:12}}>{drill.min} Min · {drill.players} Spieler</div>
           {(drill.axes||[]).length>0&&<div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:12}}>{drill.axes.map(a=><span key={a} style={{fontSize:11,fontWeight:800,color:"#4f46e5",background:"#eef2ff",borderRadius:6,padding:"2px 8px"}}>{a}</span>)}</div>}
+          <div style={{display:"flex",gap:7,marginBottom:10}}>
+            <button onClick={()=>setView("field")} style={segBtn(view==="field")}>⚽ Feld</button>
+            <button onClick={()=>setView("track")} style={segBtn(view==="track")}>🏃 Tartanbahn</button>
+          </div>
           <div style={{display:"flex",justifyContent:"center",marginBottom:14}}>
-            <DrillDiagram field={drill.field} elements={drill.el} color={col} width={300} variant="grass"/>
+            {view==="track"
+              ? <TrackDiagram width={300}/>
+              : <DrillDiagram field={drill.field} elements={drill.el} color={col} width={300} variant="grass"/>}
           </div>
           {drill.desc&&<p style={{fontSize:13.5,color:"#334155",lineHeight:1.6,marginBottom:10}}>{drill.desc}</p>}
           {drill.coach&&<div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:10,padding:"10px 12px",fontSize:12.5,color:"#166534",lineHeight:1.55,marginBottom:10}}><strong>Coaching:</strong> {drill.coach}</div>}
