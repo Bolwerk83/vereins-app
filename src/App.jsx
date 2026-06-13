@@ -5581,7 +5581,7 @@ const TB_FORMATIONS = {
 const TB_SPORTS = [{id:"football",label:"Fußball"},{id:"handball",label:"Handball"},{id:"basketball",label:"Basketball"},{id:"generic",label:"Allgemein"}];
 function tbForms(sport,count){ return (TB_FORMATIONS[sport]||TB_FORMATIONS.generic)[count] || TB_FORMATIONS.generic[count] || []; }
 
-function TacticBoard({ data, myTids, cl, save, fire }) {
+function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAttachBoard=null }) {
   const t=TH(cl);
   const sportMap={fussball:"football",handball:"handball",basketball:"basketball"};
   const [sport,setSport]=useState(sportMap[cl?.sport]||"football");
@@ -5622,6 +5622,9 @@ function TacticBoard({ data, myTids, cl, save, fire }) {
     fire&&fire("Board geladen");
   };
   const delBoard=(id)=>{ if(typeof window!=="undefined"&&window.confirm&&!window.confirm("Board löschen?"))return; save({...data,clubs:(data.clubs||[]).map(c=>c.id===cl.id?{...c,boards:(c.boards||[]).filter(x=>x.id!==id)}:c)}); };
+  const curBoard=()=>({sport,count,formIdx,oppFormIdx,showOpp,tokens,oppTokens,arrows});
+  // Falls dieses Board an einem Termin haengt: beim Oeffnen den gespeicherten Stand laden.
+  useEffect(()=>{ if(eventCtx?.board){ loadBoard(eventCtx.board); } /* eslint-disable-next-line */ },[]);
   const stopAnim=()=>{ if(animRef.current) cancelAnimationFrame(animRef.current); animRef.current=null; };
   const resetAnim=()=>{ stopAnim(); setPlaying(false); setAnimOwn(null); setAnimOpp(null); };
   useEffect(()=>()=>stopAnim(),[]);
@@ -5768,6 +5771,12 @@ function TacticBoard({ data, myTids, cl, save, fire }) {
         <span><span style={{display:"inline-block",width:22,height:0,borderTop:"3px dashed #fb923c",verticalAlign:"middle",marginRight:5}}/>Passweg</span>
       </div>
       {/* Gespeicherte Boards (vereinsweit, jederzeit aufrufbar) */}
+      {eventCtx&&onAttachBoard&&(
+        <div style={{background:"#eff6ff",border:"1.5px solid #bfdbfe",borderRadius:13,padding:"12px 14px"}}>
+          <div style={{fontSize:12.5,color:"#1e40af",fontWeight:600,lineHeight:1.5,marginBottom:9}}>Dieses Board gehört zu <b>„{eventCtx.title}"</b>. Du kannst die aktuelle Aufstellung direkt an diesen Termin hängen – sie erscheint dann beim Termin.</div>
+          <button onClick={()=>onAttachBoard(curBoard())} style={{width:"100%",padding:"11px",borderRadius:11,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>📌 An „{eventCtx.title}" hängen</button>
+        </div>
+      )}
       <div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:13,padding:"13px 14px"}}>
         <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.4,marginBottom:9}}>GESPEICHERTE BOARDS</div>
         <div style={{display:"flex",gap:8,marginBottom:(cl?.boards||[]).length?12:0}}>
@@ -21981,6 +21990,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const [planFor,setPlanFor]=useState(null);
   const [planDrill,setPlanDrill]=useState(null);   // Übungs-Detail aus dem Trainingsplan
   const [showTaktik,setShowTaktik]=useState(false); // Taktiktafel-Overlay
+  const [taktikEv,setTaktikEv]=useState(null);      // optional: Termin, an den das Board gehängt wird
   const [planQuickNew,setPlanQuickNew]=useState(false);
   const openPlan = ev => { setPlanFor(ev); setPlanQuickNew(false); };
   const planTitleOf = ev => ev?.trainingPlan ? (ev.trainingPlan.sessions?.[0]?.title||"Trainingsplan") : (ev?.trainingId ? ((local.trainings||[]).find(t=>t.id===ev.trainingId)?.title||null) : null);
@@ -22277,7 +22287,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           </div>
         ); })()}
         {["heimspiel","auswarts","freundschaft","turnier"].includes(viewEv.type)&&!isHelper&&(
-          <button onClick={()=>{ setViewEv(null); setShowTaktik(true); }}
+          <button onClick={()=>{ setTaktikEv(viewEv); setViewEv(null); setShowTaktik(true); }}
             style={{width:"100%",marginTop:16,padding:"12px",borderRadius:12,border:`1.5px solid ${TH(myClub).p}`,background:TH(myClub).p+"10",color:TH(myClub).p,fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
             ⚽ Taktiktafel / Aufstellung zeigen
           </button>
@@ -22386,7 +22396,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           onSave={plan=>{ save({...local, events:local.events.map(e=>e.id===planFor.id?{...e, trainingPlan:plan, trainingId:""}:e)}); setPlanFor(null); fire("Trainingsplan gespeichert *"); }}
           onRemove={()=>{ save({...local, events:local.events.map(e=>{ if(e.id!==planFor.id) return e; const {trainingPlan, ...rest}=e; return {...rest, trainingId:""}; })}); setPlanFor(null); fire("Trainingsplan entfernt"); }}
           onCancel={()=>setPlanFor(null)}
-          onOpenTaktik={()=>{ setPlanFor(null); setShowTaktik(true); }}
+          onOpenTaktik={()=>{ setTaktikEv(planFor); setPlanFor(null); setShowTaktik(true); }}
         />
       </Drawer>}
 
@@ -22397,11 +22407,13 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       {showTaktik&&(
         <div style={{position:"fixed",inset:0,zIndex:1100,background:"#f0f4f8",overflowY:"auto"}}>
           <div style={{position:"sticky",top:0,zIndex:5,background:`linear-gradient(135deg,${TH(myClub).s||"#052e16"},${TH(myClub).p}cc)`,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
-            <button onClick={()=>setShowTaktik(false)} style={{background:"rgba(255,255,255,.18)",border:"none",borderRadius:10,padding:"8px 14px",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>← Zurück</button>
-            <span style={{color:"#fff",fontWeight:900,fontSize:17}}>Taktiktafel</span>
+            <button onClick={()=>{setShowTaktik(false);setTaktikEv(null);}} style={{background:"rgba(255,255,255,.18)",border:"none",borderRadius:10,padding:"8px 14px",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>← Zurück</button>
+            <span style={{color:"#fff",fontWeight:900,fontSize:17}}>Taktiktafel{taktikEv?" · "+taktikEv.title:""}</span>
           </div>
           <div style={{maxWidth:1000,margin:"0 auto",padding:"16px 14px 40px"}}>
-            <TacticBoard data={local} myTids={myTids} cl={myClub} save={save} fire={fire}/>
+            <TacticBoard data={local} myTids={myTids} cl={myClub} save={save} fire={fire}
+              eventCtx={taktikEv}
+              onAttachBoard={board=>{ if(!taktikEv)return; save({...local,events:local.events.map(e=>e.id===taktikEv.id?{...e,board}:e)}); setTaktikEv(p=>p?{...p,board}:p); fire("Board an Termin gehängt *"); }}/>
           </div>
         </div>
       )}
