@@ -1715,6 +1715,55 @@ function Tag({c="#64748b",bg,ch,sm}) {
 function Toast({msg}) {
   return msg?<div style={{position:"fixed",bottom:30,left:"50%",transform:"translateX(-50%)",background:"#0f172a",color:"#fff",borderRadius:99,padding:"11px 22px",fontSize:14,fontWeight:700,boxShadow:"0 8px 32px rgba(0,0,0,.35)",animation:"toast .26s ease",zIndex:9999,whiteSpace:"nowrap",pointerEvents:"none"}}>{msg}</div>:null;
 }
+// Einmaliges, ausblendbares Onboarding pro Bereich (gemerkt via localStorage).
+const AREA_INTROS = {
+  events:    {icon:"📅", title:"Termine", text:"Plane Trainings, Spiele & Turniere. Eltern/Spieler stimmen mit einem Tipp ab (Bin dabei / Sage ab). Tippe oben auf 'Neuen Termin anlegen' und folge dem Assistenten."},
+  fields:    {icon:"🏟️", title:"Platzbelegung", text:"Reserviere Plätze/Hallen für deine Mannschaft, damit es keine Doppelbelegung gibt. Die Plätze selbst legt der Vereinsadmin an."},
+  chat:      {icon:"💬", title:"Team-Chat", text:"Kommuniziere mit dem Team – pro Mannschaft, ohne private Handynummern. Links/Infos einfach reinschreiben."},
+  treasury:  {icon:"💶", title:"Kasse", text:"Behalte Mannschaftskasse & Beiträge im Blick: Einnahmen, Ausgaben und offene Beträge."},
+  jerseys:   {icon:"👕", title:"Trikots", text:"Verwalte Trikotnummern, Größen und den Bestellstatus deiner Spieler."},
+  helpers:   {icon:"🙋", title:"Helfer", text:"Lade Eltern als Helfer ein (Kuchen, Aufbau, Kasse) und vergib Aufgaben direkt pro Termin."},
+  templates: {icon:"🧩", title:"Vorlagen", text:"Speichere wiederkehrende Abstimmungen/Listen als Vorlage und hänge sie mit einem Klick an neue Termine."},
+  results:   {icon:"🏆", title:"Ergebnisse & Tabelle", text:"Trage Spielergebnisse ein und behalte Tabelle und Saisonverlauf im Blick."},
+  attendance:{icon:"✅", title:"Anwesenheit", text:"Sieh auf einen Blick, wer wie oft dabei war – inklusive Hinweisen zu verlässlichen und Risiko-Spielern."},
+  tinbox:    {icon:"📥", title:"Posteingang", text:"Nachrichten und Anfragen rund um deine Mannschaft an einer zentralen Stelle."},
+  news:      {icon:"📣", title:"Neuigkeiten", text:"Teile Vereins-News mit allen Mitgliedern. Wichtiges kannst du oben anpinnen."},
+  teams:     {icon:"👥", title:"Mannschaften", text:"Lege Mannschaften an und stelle Stärke, Anmeldung, Bewertung und die Aufteilung (1–3 Teams je nach Zusagen) ein."},
+  trainers:  {icon:"🧑‍🏫", title:"Trainer", text:"Lege Trainer an, vergib Zugänge und weise ihnen ihre Mannschaften zu."},
+  branding:  {icon:"🎨", title:"Design", text:"Hinterlege Logo und Vereinsfarben – die App erscheint dann komplett in eurem Look."},
+  settings:  {icon:"⚙️", title:"Einstellungen", text:"Module an/aus, Kommunikation, Sicherheit, Datenschutz sowie 'Infos & Links' für eure Mitglieder."},
+  team_players:    {icon:"🧒", title:"Kader / Spieler", text:"Lege Spieler an (einzeln oder mehrere auf einmal), teile sie Mannschaften zu und pflege die Profile."},
+  team_taktik:     {icon:"⚽", title:"Taktiktafel", text:"Stelle Aufstellung & Gegner auf, zeichne Lauf-/Passwege, spiele sie als Animation ab, markiere einen Spieler (⭐) und speichere Boards."},
+  team_attendance: {icon:"✅", title:"Anwesenheit", text:"Auswertung der Zu-/Absagen über die letzten Trainings – wer ist verlässlich dabei, wer fehlt oft?"},
+  team_results:    {icon:"🏆", title:"Ergebnisse", text:"Spielergebnisse eintragen und Tabelle verfolgen."},
+  team_drills:     {icon:"📚", title:"Übungs-Bibliothek", text:"Stöbere durch viele Übungen mit Diagramm, Beschreibung, Coaching-Tipps und 'für Kinder erklärt'."},
+  team_planner:    {icon:"🗓️", title:"Trainingsplaner", text:"Stelle ein komplettes Training aus Übungen zusammen – passend zu Alter und Schwerpunkt."},
+  team_trainings:  {icon:"📋", title:"Trainingspläne", text:"Deine gespeicherten Pläne als Vorlagen – am Termin kopierbar und frei anpassbar."},
+  team_insights:   {icon:"📈", title:"Team-Einblicke", text:"Kennzahlen zu deiner Mannschaft auf einen Blick."},
+  team_analysis:   {icon:"🧠", title:"Skill-Analyse", text:"Stärken/Schwächen des Teams je Fähigkeit – Basis für gezielte Förderung."},
+  team_ziele:      {icon:"🎯", title:"Trainingsziele", text:"Lege je Altersklasse die Schwerpunkte fest, an denen sich Übungsvorschläge orientieren."},
+  team_boerse:     {icon:"🤝", title:"Turnier-Börse", text:"Finde Gegner für Freundschaftsspiele/Turniere auf Augenhöhe."},
+  team_manage:     {icon:"👥", title:"Mannschaften verwalten", text:"Anlegen, umbenennen, Stärke/Anmeldung/Bewertung und Aufteilung in mehrere Mannschaften einstellen."},
+  parent_home:     {icon:"👋", title:"Willkommen!", text:"Hier siehst du die Termine eures Teams. Tippe 'Bin dabei' oder 'Sage ab'. Unten findest du Chat und unter 'Mehr' dein Profil."},
+};
+function AreaIntro({ id, cl }){
+  const info=AREA_INTROS[id]; if(!info) return null;
+  const key="va_intro_"+id;
+  const [open,setOpen]=useState(()=>{ try{return localStorage.getItem(key)!=="1";}catch{return true;} });
+  if(!open) return null;
+  const c=cl?.pri||"#16a34a";
+  return (
+    <div className="up" style={{background:c+"0f",border:`1.5px solid ${c}33`,borderRadius:14,padding:"12px 14px",marginBottom:14,display:"flex",gap:11,alignItems:"flex-start"}}>
+      <div style={{fontSize:22,lineHeight:1.1,flexShrink:0}}>{info.icon}</div>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontWeight:800,fontSize:14,color:"#0f172a",marginBottom:3}}>{info.title}</div>
+        <div style={{fontSize:12.5,color:"#475569",lineHeight:1.5}}>{info.text}</div>
+      </div>
+      <button onClick={()=>{ try{localStorage.setItem(key,"1");}catch{} setOpen(false); }} title="Verstanden"
+        style={{flexShrink:0,width:28,height:28,borderRadius:8,border:"none",background:c,color:contrast(c),fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>✓</button>
+    </div>
+  );
+}
 function Drawer({ch,children,onClose,title,maxH="92dvh"}) {
   return (
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:900,backdropFilter:"blur(8px)"}}>
@@ -6579,6 +6628,7 @@ function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false, initial
           </button>
         ))}
       </div>
+      <AreaIntro id={"team_"+subTab} cl={cl}/>
       {subTab==="players"    && <PlayersTab    data={data} myTids={myTids} save={save} fire={fire} cl={cl} session={session}/>}
       {subTab==="attendance" && <AttendanceTab data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
       {subTab==="results"    && <LeagueTab     data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
@@ -22108,6 +22158,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         {tabs.map(([id,label])=><button key={id} onClick={()=>setTab(id)} style={{background:"none",border:"none",padding:"12px 13px",fontSize:12,fontWeight:800,cursor:"pointer",whiteSpace:"nowrap",color:tab===id?t.p:"#94a3b8",borderBottom:tab===id?`3px solid ${t.p}`:"3px solid transparent",marginBottom:-2,flexShrink:0}}>{label}</button>)}
       </div>
       <div style={{maxWidth:560,margin:"0 auto",padding:"14px"}}>
+        <AreaIntro id={tab} cl={myClub}/>
         {tab==="events"&&<>
           {}
           {(local.seasons||[]).some(s=>s.status==="planning")&&(
@@ -24805,6 +24856,7 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       )}
       {tab!=="chat" && <div style={{maxWidth:isDesktop?1080:520,margin:"0 auto",padding:isDesktop?"24px":"16px 14px",display:isDesktop?"grid":"block",gridTemplateColumns:isDesktop?"1fr 320px":"none",gap:isDesktop?24:0,alignItems:"start"}}>
         <div>
+        <AreaIntro id="parent_home" cl={cl}/>
         <AffiliateBanner trigger="events" slim style={{marginBottom:12}}/>
         {up.length>0&&<>
           <Divider label="NÄCHSTE 10 TAGE"/>
