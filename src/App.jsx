@@ -22396,6 +22396,10 @@ function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline}) {
   const [showDeadlineForm,setShowDL]=useState(false);
   const [dlDate,setDlDate]=useState(ev.deadline?.date||"");
   const [dlTime,setDlTime]=useState(ev.deadline?.time||"");
+  const [dlMode,setDlMode]=useState("fixed");   // fixed | rel
+  const [dlOffN,setDlOffN]=useState("24");      // Anzahl
+  const [dlOffU,setDlOffU]=useState("h");       // h | d
+  const dlRelDate=()=>{ const s=eventStart(ev); if(!s) return null; const n=parseInt(dlOffN,10); if(!n||n<=0) return null; const d=new Date(s.getTime()-n*(dlOffU==="d"?86400000:3600000)); const pad=x=>String(x).padStart(2,"0"); return {date:`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`,time:`${pad(d.getHours())}:${pad(d.getMinutes())}`}; };
   const teamPlayers = (players[ev.tid]||[]);
   const totalPlayers = teamPlayers.length;
   const dlPassed = isDeadlinePassed(ev);
@@ -22499,16 +22503,36 @@ function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline}) {
         </div>
         {showDeadlineForm&&(
           <div style={{marginTop:12,paddingTop:12,borderTop:"1px solid #e2e8f0"}} className="in">
-            <div style={{display:"flex",gap:8,marginBottom:8}}>
-              <div style={{flex:1}}><Inp label="Datum" val={dlDate} set={setDlDate} type="date" cl={cl}/></div>
-              <div style={{flex:1}}><Inp label="Uhrzeit" val={dlTime} set={setDlTime} type="time" cl={cl}/></div>
+            <div style={{display:"flex",gap:7,marginBottom:10}}>
+              {[["fixed","📅 Festes Datum"],["rel","⏱ Vor dem Termin"]].map(([k,l])=>(
+                <button key={k} onClick={()=>setDlMode(k)} style={{flex:1,padding:"7px",borderRadius:9,border:`1.5px solid ${dlMode===k?p:"#e2e8f0"}`,background:dlMode===k?p+"12":"#fff",color:dlMode===k?p:"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
+              ))}
             </div>
+            {dlMode==="fixed"
+              ? <div style={{display:"flex",gap:8,marginBottom:8}}>
+                  <div style={{flex:1}}><Inp label="Datum" val={dlDate} set={setDlDate} type="date" cl={cl}/></div>
+                  <div style={{flex:1}}><Inp label="Uhrzeit" val={dlTime} set={setDlTime} type="time" cl={cl}/></div>
+                </div>
+              : <div style={{marginBottom:8}}>
+                  <div style={{display:"flex",gap:8,alignItems:"flex-end"}}>
+                    <div style={{width:90}}><Inp label="Vorlauf" val={dlOffN} set={v=>setDlOffN(v.replace(/[^0-9]/g,""))} type="number" cl={cl}/></div>
+                    <div style={{flex:1}}><Sel label="Einheit" val={dlOffU} set={setDlOffU} opts={[["h","Stunden"],["d","Tage"]]}/></div>
+                    <span style={{paddingBottom:13,fontSize:13,fontWeight:700,color:"#64748b",whiteSpace:"nowrap"}}>vor Termin</span>
+                  </div>
+                  {dlRelDate()&&<div style={{fontSize:11.5,color:"#94a3b8",marginTop:6}}>Frist: {dlRelDate().date} {dlRelDate().time} Uhr</div>}
+                </div>}
             <div style={{display:"flex",gap:8}}>
-              <button onClick={()=>{onSetDeadline({date:dlDate,time:dlTime});setShowDL(false);}}
-                disabled={!dlDate}
-                style={{flex:1,padding:"10px",borderRadius:10,border:"none",background:dlDate?p:"#e2e8f0",color:dlDate?"#fff":"#64748b",fontWeight:700,fontSize:13,cursor:dlDate?"pointer":"default",fontFamily:"inherit"}}>
-                 Speichern
-              </button>
+              {dlMode==="fixed"
+                ? <button onClick={()=>{onSetDeadline({date:dlDate,time:dlTime});setShowDL(false);}}
+                    disabled={!dlDate}
+                    style={{flex:1,padding:"10px",borderRadius:10,border:"none",background:dlDate?p:"#e2e8f0",color:dlDate?"#fff":"#64748b",fontWeight:700,fontSize:13,cursor:dlDate?"pointer":"default",fontFamily:"inherit"}}>
+                     Speichern
+                  </button>
+                : <button onClick={()=>{const d=dlRelDate(); if(!d)return; onSetDeadline(d); setShowDL(false);}}
+                    disabled={!dlRelDate()}
+                    style={{flex:1,padding:"10px",borderRadius:10,border:"none",background:dlRelDate()?p:"#e2e8f0",color:dlRelDate()?"#fff":"#64748b",fontWeight:700,fontSize:13,cursor:dlRelDate()?"pointer":"default",fontFamily:"inherit"}}>
+                     Speichern
+                  </button>}
               {dlLabel&&<button onClick={()=>{onSetDeadline(null);setShowDL(false);}}
                 style={{padding:"10px 14px",borderRadius:10,border:"1.5px solid #fecaca",background:"#fff7f7",color:"#dc2626",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
                 Entfernen
