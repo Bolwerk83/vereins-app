@@ -4267,21 +4267,25 @@ function EventIcon({ type, size=22, color="#16a34a" }) {
 }
 const EVENT_TYPE_ALIAS = { spiel:"heimspiel", heim:"heimspiel", ausw:"auswarts", freund:"freundschaft" };
 
-function BottomNav({ tab, setTab, isAdmin, isHelper, unread, inboxUnread=0, cl, hide=false }) {
+function BottomNav({ tab, setTab, isAdmin, isHelper, isParent=false, unread, inboxUnread=0, cl, hide=false }) {
   if(hide) return null;
   const t = TH(cl);
   const [showDrawer, setShowDrawer] = useState(false);
-  const isTrainer = !isAdmin && !isHelper;
+  const isTrainer = !isAdmin && !isHelper && !isParent;
 
   const cs = cl?.clubSettings||{};
   const clubFeat = (key, def=true) => cs[key]!==undefined ? cs[key] : def;
-  const mainTabs = [
+  const mainTabs = (isParent ? [
+    { id:"events",  label:"Termine",  icon:"K" },
+    { id:"chat",    label:"Chat",     icon:"C", badge: unread, hidden: !feat("chat_team") },
+    { id:"more",    label:"Mehr",     icon:"=" },
+  ] : [
     { id:"events",  label:"Termine",  icon:"K" },
     { id:"team",    label:"Team",     icon:"P", hidden: isHelper },
     { id:"fields",  label:"Platz",    icon:"F", hidden: isHelper||!feat("fields_booking")||!clubFeat("mod_fields") },
     { id:"chat",    label:"Chat",     icon:"C", badge: unread, hidden: !feat("chat_team") },
     { id:"more",    label:"Mehr",     icon:"=", badge: inboxUnread },
-  ].filter(x=>!x.hidden);
+  ]).filter(x=>!x.hidden);
 
   const drawerSections = [
     {
@@ -4370,11 +4374,11 @@ function BottomNav({ tab, setTab, isAdmin, isHelper, unread, inboxUnread=0, cl, 
         paddingBottom:"env(safe-area-inset-bottom)",
         boxShadow:"0 -4px 24px rgba(0,0,0,.08)"}}>
         {mainTabs.map(item=>{
-          const active = item.id==="more" ? showDrawer
+          const active = item.id==="more" ? (isParent ? tab==="more" : showDrawer)
             : tab===item.id || (item.id==="team" && ["players","attendance","stats"].includes(tab));
           return (
             <button key={item.id}
-              onClick={()=>{ if(item.id==="more"){ setShowDrawer(s=>!s); } else { setTab(item.id); setShowDrawer(false); }}}
+              onClick={()=>{ if(item.id==="more"&&!isParent){ setShowDrawer(s=>!s); } else { setTab(item.id); setShowDrawer(false); }}}
               style={{flex:1,padding:"10px 4px 8px",border:"none",background:"transparent",
                 cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",
                 gap:3,position:"relative",fontFamily:"inherit"}}>
@@ -24322,6 +24326,8 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       .filter(m=>m&&!m.system&&m.author!==user&&new Date(m.ts).getTime()>lastRead).length;
   },[data.chats, tab]);
   const [showProfile,setShowProfile]=useState(false);
+  // "Mehr" in der Eltern-Leiste oeffnet das Profil/Einstellungen-Sheet (kein Trainer-Drawer).
+  useEffect(()=>{ if(tab==="more"){ setShowProfile(true); setTab("events"); } },[tab]);
   const toastRef=useRef(null);
   const fire=m=>{setToast(m);clearTimeout(toastRef.current);toastRef.current=setTimeout(()=>setToast(null),2200);};
   const photoKey=`photo_${cid}_${user}`;
@@ -24525,7 +24531,12 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         </div>
       )}
 
-      <div style={{maxWidth:isDesktop?1080:520,margin:"0 auto",padding:isDesktop?"24px":"16px 14px",display:isDesktop?"grid":"block",gridTemplateColumns:isDesktop?"1fr 320px":"none",gap:isDesktop?24:0,alignItems:"start"}}>
+      {tab==="chat" && (
+        <div style={{maxWidth:isDesktop?1080:760,margin:"0 auto",padding:isDesktop?"20px 24px":"12px 12px"}}>
+          <ChatTab data={data} cid={cid} myTids={[tid]} session={{...session,name:user}} save={onSave} fire={fire} cl={myClub}/>
+        </div>
+      )}
+      {tab!=="chat" && <div style={{maxWidth:isDesktop?1080:520,margin:"0 auto",padding:isDesktop?"24px":"16px 14px",display:isDesktop?"grid":"block",gridTemplateColumns:isDesktop?"1fr 320px":"none",gap:isDesktop?24:0,alignItems:"start"}}>
         <div>
         <AffiliateBanner trigger="events" slim style={{marginBottom:12}}/>
         {up.length>0&&<>
@@ -24587,9 +24598,9 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             </div>
           </aside>
         )}
-      </div>
+      </div>}
       <Toast msg={toast}/>
-      <BottomNav tab={tab} setTab={setTab} isAdmin={isAdmin} isHelper={isHelper}
+      <BottomNav tab={tab} setTab={setTab} isAdmin={isAdmin} isHelper={isHelper} isParent={true}
         unread={unreadMsgs} cl={myClub} />
     </div>
   );
