@@ -22147,6 +22147,12 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               : <p style={{fontSize:13,color:"#94a3b8"}}>Noch kein Trainingsplan hinterlegt.</p>}
           </div>
         ); })()}
+        {["heimspiel","auswarts","freundschaft","turnier"].includes(viewEv.type)&&!isHelper&&(
+          <button onClick={()=>{ setViewEv(null); setShowTaktik(true); }}
+            style={{width:"100%",marginTop:16,padding:"12px",borderRadius:12,border:`1.5px solid ${TH(myClub).p}`,background:TH(myClub).p+"10",color:TH(myClub).p,fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
+            ⚽ Taktiktafel / Aufstellung zeigen
+          </button>
+        )}
         {["heimspiel","auswarts","freundschaft"].includes(viewEv.type)&&!isHelper&&(
           <MatchReportCard ev={viewEv}
             roster={(local.playerProfiles||[]).filter(p=>p.mainTid===viewEv.tid&&!p.archived).map(p=>p.name)}
@@ -22610,9 +22616,12 @@ function DrillInfoModal({ drill, t, onClose }){
   const segBtn=on=>({flex:1,padding:"7px",borderRadius:9,border:`1.5px solid ${on?col:"#e2e8f0"}`,background:on?col+"12":"#fff",color:on?col:"#64748b",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"});
   return (
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:1300,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
-      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"90dvh",overflowY:"auto",animation:"down .22s ease"}}>
-        <div style={{display:"flex",justifyContent:"center",padding:"10px 0 2px"}}><div style={{width:36,height:4,borderRadius:99,background:"#e2e8f0"}}/></div>
-        <div style={{padding:"6px 20px 40px"}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"90dvh",display:"flex",flexDirection:"column",animation:"down .22s ease"}}>
+        <div style={{flexShrink:0,position:"relative",padding:"10px 0 6px",borderBottom:"1px solid #f1f5f9"}}>
+          <div style={{width:36,height:4,borderRadius:99,background:"#e2e8f0",margin:"0 auto"}}/>
+          <button onClick={onClose} aria-label="Schließen" style={{position:"absolute",top:8,right:12,width:32,height:32,borderRadius:10,background:"#f1f5f9",border:"none",color:"#475569",fontWeight:800,fontSize:16,cursor:"pointer",fontFamily:"inherit"}}>✕</button>
+        </div>
+        <div style={{overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"12px 20px calc(28px + env(safe-area-inset-bottom))"}}>
           <div style={{fontWeight:900,fontSize:18,color:"#0f172a",marginBottom:2}}>{drill.title}</div>
           <div style={{fontSize:12.5,color:"#94a3b8",marginBottom:12}}>{drill.min} Min · {drill.players} Spieler</div>
           {(drill.axes||[]).length>0&&<div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:12}}>{drill.axes.map(a=><span key={a} style={{fontSize:11,fontWeight:800,color:"#4f46e5",background:"#eef2ff",borderRadius:6,padding:"2px 8px"}}>{a}</span>)}</div>}
