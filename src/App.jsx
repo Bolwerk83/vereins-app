@@ -4434,6 +4434,7 @@ function ManageTeams({ data, save, fire, cl }) {
   const setTeamStrength = (id,s) => save({...data, teams:(data.teams||[]).map(tm=>tm.id===id?{...tm,strength:s}:tm)});
   const setTeamLogin = (id,m) => save({...data, teams:(data.teams||[]).map(tm=>tm.id===id?{...tm,loginMode:m}:tm)});
   const setTeamSkillCheck = (id,on) => save({...data, teams:(data.teams||[]).map(tm=>tm.id===id?{...tm,skillCheckEnabled:on}:tm)});
+  const setTeamSquads = (id,squads) => save({...data, teams:(data.teams||[]).map(tm=>tm.id===id?{...tm,squads}:tm)});
   const LOGIN_OPTS=[["auto","Automatisch"],["parents","Eltern"],["players","Spieler"]];
 
   const addTeam = () => {
@@ -4566,6 +4567,36 @@ function ManageTeams({ data, save, fire, cl }) {
                   <button key={k} onClick={()=>setTeamSkillCheck(tm.id,k==="on")} style={{padding:"4px 10px",borderRadius:8,border:`1.5px solid ${on?t.p:"#e2e8f0"}`,background:on?t.p+"15":"#fff",color:on?t.p:"#94a3b8",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
                 );})}
                 <InfoHint text={"Monatlicher Skill-Check: Trainer beantworten 1×/Monat je Kind kurze Fragen pro Fähigkeit (ca. 1–2 Min pro Kind). Daraus entstehen Entwicklung & Förderhinweise. Aufwand lohnt sich v.a. im Leistungsbereich – im reinen Breitensport ruhig 'Aus'."}/>
+              </div>
+            )}
+            {editId!==tm.id && (
+              <div style={{marginTop:6}}>
+                <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                  <span style={{fontSize:10.5,fontWeight:800,color:"#94a3b8",letterSpacing:.3}}>AUFTEILUNG</span>
+                  {[1,2,3].map(n=>{ const cur=tm.squads?.length||1; const on=cur===n; return (
+                    <button key={n} onClick={()=>{
+                      if(n===1){ setTeamSquads(tm.id,[]); return; }
+                      const def=[{label:"Großfeld",need:5},{label:"Kleinfeld",need:3},{label:"3. Mannschaft",need:5}];
+                      const c=(tm.squads&&tm.squads.length)?tm.squads:[];
+                      setTeamSquads(tm.id, Array.from({length:n},(_,i)=>c[i]||def[i]));
+                    }} style={{padding:"4px 10px",borderRadius:8,border:`1.5px solid ${on?t.p:"#e2e8f0"}`,background:on?t.p+"15":"#fff",color:on?t.p:"#94a3b8",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>{n===1?"1 Team":n+" Teams"}</button>
+                  );})}
+                  <InfoHint text={"Wenn ihr je nach Anzahl mehrere Mannschaften stellt: lege je Mannschaft fest, wie viele Spieler nötig sind (inkl. Torwart, z.B. Großfeld 4+1=5). Beim Termin wird anhand der Zusagen angezeigt, wie viele Mannschaften ihr stellen könnt."}/>
+                </div>
+                {(tm.squads?.length>=2)&&(
+                  <div style={{display:"flex",flexDirection:"column",gap:6,marginTop:7}}>
+                    {tm.squads.map((sq,si)=>(
+                      <div key={si} style={{display:"flex",gap:7,alignItems:"center"}}>
+                        <input value={sq.label||""} onChange={e=>setTeamSquads(tm.id,tm.squads.map((x,j)=>j===si?{...x,label:e.target.value}:x))} placeholder={"Mannschaft "+(si+1)}
+                          style={{flex:1,padding:"7px 10px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:8,outline:"none",boxSizing:"border-box"}}/>
+                        <button onClick={()=>setTeamSquads(tm.id,tm.squads.map((x,j)=>j===si?{...x,need:Math.max(1,(Number(x.need)||0)-1)}:x))} style={{width:30,height:32,borderRadius:8,border:"1.5px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontWeight:800,fontSize:15}}>–</button>
+                        <span style={{minWidth:22,textAlign:"center",fontWeight:800,fontSize:14,color:"#0f172a"}}>{Number(sq.need)||0}</span>
+                        <button onClick={()=>setTeamSquads(tm.id,tm.squads.map((x,j)=>j===si?{...x,need:(Number(x.need)||0)+1}:x))} style={{width:30,height:32,borderRadius:8,border:"1.5px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontWeight:800,fontSize:15}}>+</button>
+                        <span style={{fontSize:11,color:"#94a3b8",whiteSpace:"nowrap"}}>Sp.</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
             {showFmt===tm.id && <div style={{marginTop:8}}><PlayFormatCard cat={tmCat} sport={cl?.sport||"fussball"} cl={cl} compact/></div>}
@@ -14591,6 +14622,27 @@ function PollAttend({ev,user,onVote,cl,session=null,save=()=>{},data=null,fire=(
       {(Object.values(ev.trainerPresence||{}).length>0&&session?.role==="user"&&data)&&<TrainerCheckin ev={ev} session={session} save={save} data={data} fire={fire}/>}
       {ev.note&&<div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:12,padding:"10px 13px",fontSize:13,color:"#92400e",fontWeight:500}}>{ev.note}</div>}
       {ev.deadline&&<div style={{background:dlPassed?"#fee2e2":"#fffbeb",border:`1.5px solid ${dlPassed?"#fca5a5":"#fde68a"}`,borderRadius:12,padding:"9px 13px",fontSize:13,fontWeight:700,color:dlPassed?"#dc2626":"#d97706"}}>{dlPassed?"Frist abgelaufen - Abstimmung wird trotzdem gezaehlt":"Abstimmungs-Frist: "+ev.deadline.date+(ev.deadline.time?" "+ev.deadline.time+" Uhr":"")}</div>}
+
+      {(()=>{ const squads=_team?.squads||[]; if(squads.length<2) return null;
+        const yesN=yes.length; let rem=yesN,filled=0,nextNeed=null,nextLabel=null;
+        for(let i=0;i<squads.length;i++){ const need=Number(squads[i].need)||0; if(need>0&&rem>=need){filled++;rem-=need;} else {nextNeed=Math.max(0,need-rem); nextLabel=squads[i].label||("Mannschaft "+(i+1)); break;} }
+        const allOk=filled===squads.length;
+        return (
+          <div style={{background:allOk?"#dcfce7":"#eff6ff",border:`1.5px solid ${allOk?"#bbf7d0":"#bfdbfe"}`,borderRadius:12,padding:"10px 13px"}}>
+            <div style={{fontSize:13,fontWeight:800,color:allOk?"#166534":"#1e40af",marginBottom:6}}>🧩 {filled} von {squads.length} Mannschaften möglich · {yesN} dabei</div>
+            <div style={{display:"flex",flexDirection:"column",gap:4}}>
+              {squads.map((sq,i)=>{ const need=Number(sq.need)||0; const ok=i<filled; return (
+                <div key={i} style={{display:"flex",alignItems:"center",gap:7,fontSize:12.5,color:"#334155"}}>
+                  <span style={{width:16,textAlign:"center"}}>{ok?"✅":"⬜"}</span>
+                  <span style={{flex:1,fontWeight:600}}>{sq.label||("Mannschaft "+(i+1))}</span>
+                  <span style={{color:"#94a3b8"}}>{need} Spieler</span>
+                </div>
+              );})}
+            </div>
+            {nextLabel&&<div style={{fontSize:11.5,color:"#1e40af",marginTop:6,fontWeight:700}}>Noch {nextNeed} {nextNeed===1?"Zusage":"Zusagen"} für „{nextLabel}"</div>}
+          </div>
+        );
+      })()}
 
       {/* Dabei */}
       <div onClick={()=>!myLate&&voteYes()}
