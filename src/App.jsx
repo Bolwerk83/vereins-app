@@ -1541,6 +1541,11 @@ function seed() {
       { id:"demo", slug:"demo-verein", name:"Demo Verein", short:"Demo", em:"D",
         logo:null, pri:"#16a34a", sec:"#052e16", adm:"h1j67nz",
         pub:false, dir:false, sport:"fussball",
+        links:[
+          {id:"dl1",title:"Vereins-Shop (Trikots & Fanartikel)",url:"https://example.com/shop"},
+          {id:"dl2",title:"Vereinsheft als PDF",url:"https://example.com/vereinsheft.pdf"},
+          {id:"dl3",title:"Vereins-Website",url:"https://example.com"},
+        ],
         createdAt:"2025-01-01T00:00:00.000Z" }
     ],
     teams: [
@@ -12358,6 +12363,8 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
     save({...data,clubs:(data.clubs||[]).map(x=>x.id===cid?updated:x)});
   };
   const S = (key, def) => cs[key]!==undefined ? cs[key] : def;
+  const [lkTitle,setLkTitle]=useState(""); const [lkUrl,setLkUrl]=useState("");
+  const saveLinks = (links) => save({...data,clubs:(data.clubs||[]).map(x=>x.id===cid?{...myClub,links}:x)});
 
   // Export
   const exportData = () => {
@@ -12374,6 +12381,7 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
     {id:"team",        label:"Team",          icon:"T"},
     {id:"ziele",       label:"Trainingsziele",icon:"Z"},
     {id:"komm",        label:"Kommunikation", icon:"K"},
+    {id:"infos",       label:"Infos & Links", icon:"L"},
     {id:"sicherheit",  label:"Sicherheit",    icon:"Si"},
     {id:"datenschutz", label:"Datenschutz",   icon:"D"},
     {id:"konto",       label:"Konto",         icon:"A"},
@@ -12686,6 +12694,29 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
       )}
 
       {/* KONTO */}
+      {section==="infos"&&(
+        <div style={card}>
+          <p style={{fontSize:13,color:"#64748b",marginBottom:14,lineHeight:1.55}}>Hinterlege Links & Infos für Eltern und Spieler – z. B. <b>Vereins-Shop</b>, Trikot-Bestellung, ein Vereinsheft als PDF-Link oder die Vereins-Website. Das erscheint bei allen übersichtlich unter „Vereins-Infos".</p>
+          {(myClub.links||[]).map(l=>(
+            <div key={l.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 0",borderBottom:"1px solid #f1f5f9"}}>
+              <div style={{width:34,height:34,borderRadius:10,background:t.p+"15",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>🔗</div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontWeight:700,fontSize:14,color:"#0f172a"}}>{l.title}</div>
+                <div style={{fontSize:11,color:"#94a3b8",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{l.url}</div>
+              </div>
+              <button onClick={()=>{ if(window.confirm("Diesen Link entfernen?")) saveLinks((myClub.links||[]).filter(x=>x.id!==l.id)); }} style={{width:30,height:30,borderRadius:8,background:"#fee2e2",border:"none",color:"#dc2626",cursor:"pointer",fontWeight:800,flexShrink:0}}>✕</button>
+            </div>
+          ))}
+          {(myClub.links||[]).length===0&&<p style={{fontSize:13,color:"#94a3b8",margin:"2px 0 14px"}}>Noch keine Links hinterlegt.</p>}
+          <div style={{marginTop:14,display:"flex",flexDirection:"column",gap:8}}>
+            <input value={lkTitle} onChange={e=>setLkTitle(e.target.value)} placeholder="Titel, z. B. Vereins-Shop" style={{width:"100%",padding:"11px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
+            <input value={lkUrl} onChange={e=>setLkUrl(e.target.value)} placeholder="https://… (Link oder PDF-Adresse)" style={{width:"100%",padding:"11px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
+            <button onClick={()=>{ const ti=lkTitle.trim(); let u=lkUrl.trim(); if(!ti||!u){fire("Bitte Titel und Link angeben");return;} if(!/^https?:\/\//i.test(u))u="https://"+u; saveLinks([...(myClub.links||[]),{id:uid(),title:ti,url:u}]); setLkTitle("");setLkUrl(""); fire("Link hinzugefügt *"); }}
+              style={{padding:"12px",borderRadius:11,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>+ Link hinzufügen</button>
+          </div>
+        </div>
+      )}
+
       {section==="konto"&&(
         <>
           <RecommendCard theme={t.p} style={{marginBottom:14}} title="Empfiehl uns weiter" sub="Kennst du einen Verein, dem die App auch hilft? Kostenlos zum Testen, jederzeit wieder löschbar – kein Druck."/>
@@ -14441,16 +14472,23 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid}) 
         ))}
         {list.length===0&&<div style={{textAlign:"center",padding:"32px",color:"#94a3b8"}}><div style={{fontSize:36,marginBottom:8}}></div><p style={{fontWeight:700}}>Niemanden gefunden</p></div>}
       </div>
+      {(()=>{
+        const allNames=(playerProfiles||[]).filter(p=>p.mainTid===tid&&!p.archived).map(p=>(p.name||"").toLowerCase());
+        const isDup=q.trim().length>1 && allNames.includes(q.trim().toLowerCase());
+        return (
       <div style={{padding:"12px 14px 36px",background:"#fff",borderTop:"1px solid #e2e8f0"}}>
-        <p style={{fontSize:11,fontWeight:800,color:"#94a3b8",marginBottom:8}}>NICHT IN DER LISTE?</p>
-        <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Namen manuell eingeben..."
-          style={{width:"100%",padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",marginBottom:8}}/>
+        <p style={{fontSize:11,fontWeight:800,color:"#94a3b8",marginBottom:8}}>NICHT IN DER LISTE? ALS GAST ABSTIMMEN</p>
+        <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Gast-Name eingeben (z.B. Tom Gast)..."
+          style={{width:"100%",padding:"11px 14px",fontSize:14,border:`1.5px solid ${isDup?"#fca5a5":"#e2e8f0"}`,borderRadius:12,outline:"none",marginBottom:8}}/>
+        {isDup&&<p style={{fontSize:12,color:"#dc2626",fontWeight:700,marginBottom:8}}>Dieser Name ist schon im Team – bitte einen eindeutigen Gast-Namen wählen (z.B. mit Zusatz).</p>}
         <div style={{marginBottom:8}}><PrivacyNote/></div>
-        {q.trim().length>1&&<button onClick={()=>onDone(tid,q.trim())}
+        {q.trim().length>1&&!isDup&&<button onClick={()=>onDone(tid,q.trim())}
           style={{width:"100%",padding:"11px",borderRadius:12,border:"none",background:cl.pri,color:contrast(cl.pri),fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
-           Als "{q.trim()}" einloggen
+           Als Gast „{q.trim()}" anmelden &amp; abstimmen
         </button>}
       </div>
+        );
+      })()}
     </div>
   );
 }
@@ -18890,13 +18928,13 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
   );
 }
 
-function ChatTab({data,cid,myTids,session,save,fire,cl}) {
+function ChatTab({data,cid,myTids,session,save,fire,cl,teamOnly=false}) {
   const [modWarning, setModWarning] = useState(null); // null | "warning" | "yellow" | "red"
   const t=TH(cl);
   const allTeams=data.teams.filter(tm=>tm.cid===cid);
   const isHelper=session.role==="helper";
   const scopes=[
-    {id:"club_"+cid,label:"Gesamter Verein",col:t.p,all:true},
+    ...(teamOnly?[]:[{id:"club_"+cid,label:"Gesamter Verein",col:t.p,all:true}]),
     ...myTids.map(tid=>{const tm=allTeams.find(x=>x.id===tid);return{id:"team_"+tid,label:tm?.name||tid,col:tm?.col||t.p};})
   ];
 
@@ -24533,7 +24571,7 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
 
       {tab==="chat" && (
         <div style={{maxWidth:isDesktop?1080:760,margin:"0 auto",padding:isDesktop?"20px 24px":"12px 12px"}}>
-          <ChatTab data={data} cid={cid} myTids={[tid]} session={{...session,name:user}} save={onSave} fire={fire} cl={myClub}/>
+          <ChatTab data={data} cid={cid} myTids={[tid]} session={{...session,name:user}} save={onSave} fire={fire} cl={myClub} teamOnly={true}/>
         </div>
       )}
       {tab!=="chat" && <div style={{maxWidth:isDesktop?1080:520,margin:"0 auto",padding:isDesktop?"24px":"16px 14px",display:isDesktop?"grid":"block",gridTemplateColumns:isDesktop?"1fr 320px":"none",gap:isDesktop?24:0,alignItems:"start"}}>
@@ -24558,6 +24596,21 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           </button>
           {showPast&&past.map(ev=><div key={ev.id} style={{marginBottom:10}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user"/></div>)}
         </>}
+        {(cl.links||[]).length>0&&(
+          <div style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",padding:"14px 16px",marginTop:16}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#94a3b8",letterSpacing:.5,marginBottom:10}}>VEREINS-INFOS &amp; LINKS</div>
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {(cl.links||[]).map(l=>(
+                <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer"
+                  style={{display:"flex",alignItems:"center",gap:11,textDecoration:"none",background:"#f8fafc",borderRadius:12,padding:"11px 13px",border:"1px solid #f1f5f9"}}>
+                  <div style={{width:34,height:34,borderRadius:10,background:t.p+"15",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>🔗</div>
+                  <span style={{flex:1,fontWeight:700,fontSize:14,color:"#0f172a"}}>{l.title}</span>
+                  <span style={{color:"#cbd5e1",fontSize:18}}>›</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
         <div style={{marginTop:16}}><RecommendCard theme={t.p}/></div>
         </div>
         {isDesktop&&(
