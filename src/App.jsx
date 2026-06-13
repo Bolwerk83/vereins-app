@@ -5656,6 +5656,7 @@ function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAttachBoar
   // Animation: Spieler entlang der eingezeichneten Laufwege bewegen.
   const [animOwn,setAnimOwn]=useState(null);
   const [animOpp,setAnimOpp]=useState(null);
+  const [animBall,setAnimBall]=useState(null);
   const [playing,setPlaying]=useState(false);
   const animRef=useRef(null);
   const [boardName,setBoardName]=useState("");
@@ -5680,19 +5681,24 @@ function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAttachBoar
   // Falls dieses Board an einem Termin haengt: beim Oeffnen den gespeicherten Stand laden.
   useEffect(()=>{ if(eventCtx?.board){ loadBoard(eventCtx.board); } /* eslint-disable-next-line */ },[]);
   const stopAnim=()=>{ if(animRef.current) cancelAnimationFrame(animRef.current); animRef.current=null; };
-  const resetAnim=()=>{ stopAnim(); setPlaying(false); setAnimOwn(null); setAnimOpp(null); };
+  const resetAnim=()=>{ stopAnim(); setPlaying(false); setAnimOwn(null); setAnimOpp(null); setAnimBall(null); };
   useEffect(()=>()=>stopAnim(),[]);
   const playAnim=()=>{
     const runs=arrows.filter(a=>a.type==="run");
-    if(!runs.length){ fire&&fire("Erst Laufwege einzeichnen (Werkzeug Laufweg)"); return; }
+    const passes=arrows.filter(a=>a.type==="pass");
+    if(!runs.length&&!passes.length){ fire&&fire("Erst Lauf-/Passwege einzeichnen"); return; }
     const thr=F.r*3.2;
     const assign=arr=>arr.map(tk=>{ let best=null,bd=thr; runs.forEach(a=>{const d=Math.hypot(a.x1-tk.x,a.y1-tk.y); if(d<bd){bd=d;best=a;}}); return {...tk,sx:tk.x,sy:tk.y,tx:best?best.x2:tk.x,ty:best?best.y2:tk.y}; });
     const ownA=assign(tokens), oppA=showOpp?assign(oppTokens):[];
+    // Ball laeuft die Passwege der Reihe nach ab (zeigt die zeitliche Abfolge).
+    const ballAt=k=>{ if(!passes.length) return null; const N=passes.length; const seg=Math.min(N-1,Math.floor(k*N)); const lp=(k*N)-seg; const a=passes[seg]; return {x:a.x1+(a.x2-a.x1)*lp,y:a.y1+(a.y2-a.y1)*lp}; };
     const DUR=2200, t0=performance.now();
     stopAnim(); setPlaying(true);
+    if(passes.length) setAnimBall(ballAt(0));
     const step=(t)=>{ const k=Math.min(1,(t-t0)/DUR); const e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
       setAnimOwn(ownA.map(o=>({...o,x:o.sx+(o.tx-o.sx)*e,y:o.sy+(o.ty-o.sy)*e})));
       if(showOpp) setAnimOpp(oppA.map(o=>({...o,x:o.sx+(o.tx-o.sx)*e,y:o.sy+(o.ty-o.sy)*e})));
+      if(passes.length) setAnimBall(ballAt(k));
       if(k<1){ animRef.current=requestAnimationFrame(step); } else { setPlaying(false); }
     };
     animRef.current=requestAnimationFrame(step);
@@ -5759,11 +5765,11 @@ function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAttachBoar
       </div>
       <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
         <span style={{fontSize:11,fontWeight:800,color:"#94a3b8",marginRight:2}}>ANIMATION</span>
-        <button onClick={playAnim} disabled={playing||!arrows.some(a=>a.type==="run")}
-          style={{padding:"7px 14px",borderRadius:9,border:"none",background:(playing||!arrows.some(a=>a.type==="run"))?"#e2e8f0":t.p,color:(playing||!arrows.some(a=>a.type==="run"))?"#94a3b8":"#fff",fontWeight:800,fontSize:12.5,cursor:(playing||!arrows.some(a=>a.type==="run"))?"default":"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{playing?"▶ läuft…":"▶ Abspielen"}</button>
+        <button onClick={playAnim} disabled={playing||!arrows.length}
+          style={{padding:"7px 14px",borderRadius:9,border:"none",background:(playing||!arrows.length)?"#e2e8f0":t.p,color:(playing||!arrows.length)?"#94a3b8":"#fff",fontWeight:800,fontSize:12.5,cursor:(playing||!arrows.length)?"default":"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{playing?"▶ läuft…":"▶ Abspielen"}</button>
         <button onClick={resetAnim} disabled={!animOwn&&!animOpp&&!playing}
           style={{padding:"7px 12px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:(animOwn||animOpp||playing)?"#475569":"#cbd5e1",fontWeight:700,fontSize:12.5,cursor:(animOwn||animOpp||playing)?"pointer":"default",fontFamily:"inherit",whiteSpace:"nowrap"}}>↺ Zurück</button>
-        <span style={{fontSize:11,color:"#94a3b8"}}>Laufwege (weiß) werden abgespielt</span>
+        <span style={{fontSize:11,color:"#94a3b8"}}>Spieler laufen die Laufwege, der Ball läuft die Passwege (zeigt die Abfolge)</span>
       </div>
 
       <div style={{background:F.bg,borderRadius:14,padding:8,boxShadow:"inset 0 0 0 1px rgba(255,255,255,.08)"}}>
@@ -5810,6 +5816,10 @@ function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAttachBoar
               {tk.marked&&<text x={tk.x} y={tk.y-F.r*1.45} textAnchor="middle" fontSize={F.fs*0.95} style={{pointerEvents:"none"}}>⭐</text>}
             </g>
           ))}
+          {animBall&&<g style={{pointerEvents:"none"}}>
+            <circle cx={animBall.x} cy={animBall.y} r={F.r*0.55} fill="#fff" stroke="#0f172a" strokeWidth={F.r*0.18}/>
+            <circle cx={animBall.x} cy={animBall.y} r={F.r*0.22} fill="#0f172a"/>
+          </g>}
         </svg>
       </div>
 
