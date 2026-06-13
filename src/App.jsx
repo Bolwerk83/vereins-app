@@ -5512,17 +5512,23 @@ const TB_FIELDS = {
 };
 const TB_FORMATIONS = {
   football: {
-    5:[ {name:"2-1-1",p:[[.5,.9],[.3,.72],[.7,.72],[.5,.5],[.5,.28]]},
-        {name:"1-2-1",p:[[.5,.9],[.5,.74],[.3,.52],[.7,.52],[.5,.28]]} ],
-    7:[ {name:"2-3-1",p:[[.5,.9],[.32,.73],[.68,.73],[.22,.5],[.5,.52],[.78,.5],[.5,.27]]},
-        {name:"3-2-1",p:[[.5,.9],[.25,.74],[.5,.76],[.75,.74],[.35,.5],[.65,.5],[.5,.27]]},
-        {name:"2-1-2-1",p:[[.5,.9],[.3,.76],[.7,.76],[.5,.6],[.3,.42],[.7,.42],[.5,.25]]} ],
-    9:[ {name:"3-3-2",p:[[.5,.92],[.22,.75],[.5,.77],[.78,.75],[.25,.52],[.5,.54],[.75,.52],[.38,.28],[.62,.28]]},
-        {name:"3-2-3",p:[[.5,.92],[.22,.75],[.5,.77],[.78,.75],[.38,.55],[.62,.55],[.22,.3],[.5,.28],[.78,.3]]},
-        {name:"2-4-2",p:[[.5,.92],[.32,.76],[.68,.76],[.18,.52],[.42,.54],[.58,.54],[.82,.52],[.38,.28],[.62,.28]]} ],
-    11:[ {name:"4-4-2",p:[[.5,.93],[.18,.76],[.4,.78],[.6,.78],[.82,.76],[.18,.52],[.4,.54],[.6,.54],[.82,.52],[.4,.28],[.6,.28]]},
-         {name:"4-3-3",p:[[.5,.93],[.18,.76],[.4,.78],[.6,.78],[.82,.76],[.3,.55],[.5,.57],[.7,.55],[.25,.3],[.5,.28],[.75,.3]]},
-         {name:"3-5-2",p:[[.5,.93],[.28,.77],[.5,.79],[.72,.77],[.15,.55],[.35,.57],[.5,.58],[.65,.57],[.85,.55],[.4,.3],[.6,.3]]} ],
+    5:[ {name:"2-1-1",p:[[.5,.9],[.3,.72],[.7,.72],[.5,.5],[.5,.28]],desc:"Vorteile: einfachste Ordnung, klare Aufgaben (2 hinten, 1 Mitte, 1 vorn). Nachteile: wenig Breite. Gegen: ideal für Einstieg/F-Jugend."},
+        {name:"1-2-1",p:[[.5,.9],[.5,.74],[.3,.52],[.7,.52],[.5,.28]],desc:"Vorteile: Raute, viele Anspielstationen, schult Verschieben. Nachteile: nur 1 echter Verteidiger. Gegen: gegen tief stehende Gegner, eigenes Kombinieren."} ],
+    7:[ {name:"2-3-1",p:[[.5,.9],[.32,.73],[.68,.73],[.22,.5],[.5,.52],[.78,.5],[.5,.27]],desc:"Vorteile: stabile Mitte, Breite über die Flügel. Nachteile: Einzelspitze isoliert. Gegen: ausgeglichener Allrounder."},
+        {name:"3-2-1",p:[[.5,.9],[.25,.74],[.5,.76],[.75,.74],[.35,.5],[.65,.5],[.5,.27]],desc:"Vorteile: defensiv sicher (3 hinten), gut zum Kontern. Nachteile: wenig Offensivdruck. Gegen: stärkere Gegner."},
+        {name:"2-1-2-1",p:[[.5,.9],[.3,.76],[.7,.76],[.5,.6],[.3,.42],[.7,.42],[.5,.25]],desc:"Vorteile: viele Dreiecke, Box-Mitte. Nachteile: anspruchsvolles Verschieben. Gegen: technisch starke eigene Teams."} ],
+    9:[ {name:"3-3-2",p:[[.5,.92],[.22,.75],[.5,.77],[.78,.75],[.25,.52],[.5,.54],[.75,.52],[.38,.28],[.62,.28]],desc:"Vorteile: ausgewogen, klare Reihen. Nachteile: Flügel müssen viel arbeiten. Gegen: solider Standard im 9er."},
+        {name:"3-2-3",p:[[.5,.92],[.22,.75],[.5,.77],[.78,.75],[.38,.55],[.62,.55],[.22,.3],[.5,.28],[.78,.3]],desc:"Vorteile: offensiv, starker Flügelangriff. Nachteile: konteranfällig. Gegen: tief stehende, schwächere Gegner."},
+        {name:"2-4-2",p:[[.5,.92],[.32,.76],[.68,.76],[.18,.52],[.42,.54],[.58,.54],[.82,.52],[.38,.28],[.62,.28]],desc:"Vorteile: starke Mittelfeldpräsenz. Nachteile: nur 2 hinten. Gegen: ballbesitzorientiert."} ],
+    11:[ {name:"4-4-2",p:[[.5,.93],[.18,.76],[.4,.78],[.6,.78],[.82,.76],[.18,.52],[.4,.54],[.6,.54],[.82,.52],[.4,.28],[.6,.28]],desc:"Vorteile: simpel, kompakt, klare Ketten, stark im Umschalten. Nachteile: zentrale Mitte kann überspielt werden. Gegen: gute Standardlösung, besonders gegen direkte Teams."},
+         {name:"4-3-3",p:[[.5,.93],[.18,.76],[.4,.78],[.6,.78],[.82,.76],[.3,.55],[.5,.57],[.7,.55],[.25,.3],[.5,.28],[.75,.3]],desc:"Vorteile: hoher Pressingdruck, Breite über Flügel, ballbesitzdominant. Nachteile: viel Laufarbeit, anfällig bei Kontern über außen. Gegen: tief stehende, schwächere Gegner, die man bespielen will."},
+         {name:"4-2-3-1",p:[[.5,.93],[.18,.77],[.4,.79],[.6,.79],[.82,.77],[.38,.6],[.62,.6],[.25,.42],[.5,.4],[.75,.42],[.5,.26]],desc:"Vorteile: sehr ausgewogen, Doppel-Sechs sichert ab, kreativer Zehner. Nachteile: Spitze oft allein. Gegen: ausgeglichene bis stärkere Gegner – das Allround-System der Profis."},
+         {name:"4-1-4-1",p:[[.5,.93],[.18,.77],[.4,.79],[.6,.79],[.82,.77],[.5,.63],[.18,.48],[.4,.5],[.6,.5],[.82,.48],[.5,.28]],desc:"Vorteile: kompakte Defensive, ein Sechser als Filter vor der Abwehr. Nachteile: wenig Tiefe vorn. Gegen: starke, ballbesitzorientierte Gegner abfangen."},
+         {name:"3-5-2",p:[[.5,.93],[.28,.77],[.5,.79],[.72,.77],[.15,.55],[.35,.57],[.5,.58],[.65,.57],[.85,.55],[.4,.3],[.6,.3]],desc:"Vorteile: Überzahl im Mittelfeld, zwei Spitzen. Nachteile: Flügelläufer müssen enorm viel laufen, außen konteranfällig. Gegen: Mittelfeld dominieren, gegen Teams mit schwachen Außenbahnen."},
+         {name:"5-3-2",p:[[.5,.93],[.12,.76],[.31,.78],[.5,.79],[.69,.78],[.88,.76],[.3,.54],[.5,.56],[.7,.54],[.4,.3],[.6,.3]],desc:"Vorteile: sehr defensivstabil, ideal zum Kontern. Nachteile: wenig Offensivpräsenz. Gegen: deutlich stärkere Gegner, Ergebnis verteidigen."},
+         {name:"3-4-3",p:[[.5,.93],[.28,.78],[.5,.8],[.72,.78],[.18,.55],[.42,.57],[.58,.57],[.82,.55],[.25,.3],[.5,.28],[.75,.3]],desc:"Vorteile: maximaler Offensivdruck, Breite und Tiefe. Nachteile: hinten riskant (nur 3). Gegen: schwächere Gegner, wenn unbedingt Tore her müssen."},
+         {name:"4-4-2 Raute",p:[[.5,.93],[.18,.77],[.4,.79],[.6,.79],[.82,.77],[.5,.62],[.3,.5],[.7,.5],[.5,.4],[.4,.27],[.6,.27]],desc:"Vorteile: zentrale Mittelfeld-Überzahl, klarer Zehner. Nachteile: kaum Breite, Flügel bleiben offen. Gegen: zentrumsstarke Gegner, eigenes Kombinationsspiel."},
+         {name:"4-5-1",p:[[.5,.93],[.18,.77],[.4,.79],[.6,.79],[.82,.77],[.15,.54],[.35,.56],[.5,.57],[.65,.56],[.85,.54],[.5,.3]],desc:"Vorteile: dichtes Mittelfeld, sehr schwer zu überspielen. Nachteile: Einzelspitze, wenig Torgefahr. Gegen: Favoriten ärgern / Unentschieden sichern."} ],
   },
   handball: { 7:[
     {name:"Angriff 3:3",p:[[.5,.93],[.12,.45],[.3,.62],[.5,.66],[.7,.62],[.88,.45],[.5,.32]]},
@@ -5579,9 +5585,11 @@ function TacticBoard({ data, myTids, cl, save, fire }) {
         <h3 style={{margin:"0 0 2px",fontSize:17,fontWeight:900,color:"#0f172a"}}>Taktikboard</h3>
         <p style={{fontSize:12.5,color:"#64748b",margin:0}}>Feld &amp; Aufstellung – Spieler verschieben und Lauf-/Passwege einzeichnen.</p>
       </div>
+      {(()=>{ const clSport=sportMap[cl?.sport]||"football"; const shown=TB_SPORTS.filter(s=>s.id===clSport||s.id==="generic"); return shown.length>1?(
       <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-        {TB_SPORTS.map(s=><Btn key={s.id} active={sport===s.id} onClick={()=>chSport(s.id)}>{s.label}</Btn>)}
+        {shown.map(s=><Btn key={s.id} active={sport===s.id} onClick={()=>chSport(s.id)}>{s.label}</Btn>)}
       </div>
+      ):null; })()}
       {F.counts.length>1&&(
         <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
           <span style={{fontSize:11,fontWeight:800,color:"#94a3b8",marginRight:2}}>SPIELER</span>
@@ -5592,6 +5600,11 @@ function TacticBoard({ data, myTids, cl, save, fire }) {
         <span style={{fontSize:11,fontWeight:800,color:"#94a3b8",marginRight:2}}>SYSTEM</span>
         {forms.map((f,i)=><Btn key={f.name} active={formIdx===i} onClick={()=>setFormIdx(i)}>{f.name}</Btn>)}
       </div>
+      {forms[formIdx]?.desc&&(
+        <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:11,padding:"10px 13px",fontSize:12.5,color:"#475569",lineHeight:1.55}}>
+          <b style={{color:"#0f172a"}}>{forms[formIdx].name}</b> – {forms[formIdx].desc}
+        </div>
+      )}
       <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
         <span style={{fontSize:11,fontWeight:800,color:"#94a3b8",marginRight:2}}>WERKZEUG</span>
         <Btn active={mode==="move"} onClick={()=>setMode("move")}>Bewegen</Btn>
@@ -22100,7 +22113,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               ? <div style={{display:"flex",flexDirection:"column",gap:6}}>
                   {pl.focus&&<div style={{fontSize:12,color:"#64748b",marginBottom:2}}>Schwerpunkt: {pl.focus}</div>}
                   {(pl.blocks||[]).map((b,i)=>{ const d=b.drillId?DRILL_LIB.find(x=>x.id===b.drillId):null; return (
-                    <div key={i} onClick={d?()=>setPlanDrill(d):undefined} style={{display:"flex",gap:10,alignItems:"flex-start",background:"#f8fafc",borderRadius:10,padding:"9px 12px",cursor:d?"pointer":"default"}}>
+                    <div key={i} onClick={d?()=>setPlanDrill({...d,diagram:b.diagram||d.diagram}):undefined} style={{display:"flex",gap:10,alignItems:"flex-start",background:"#f8fafc",borderRadius:10,padding:"9px 12px",cursor:d?"pointer":"default"}}>
                       <span style={{fontSize:11,fontWeight:800,color:"#4f46e5",minWidth:74,marginTop:1}}>{b.phase}</span>
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{fontSize:13,color:"#0f172a",fontWeight:600}}>{b.title||"—"}{d&&<span style={{marginLeft:6,fontSize:11,color:"#4f46e5",fontWeight:800}}>ℹ️ ansehen</span>}</div>
@@ -22254,7 +22267,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
 // kann uebernommen (kopiert) und frei angepasst werden, ohne die Vorlage zu aendern.
 function EventPlanEditor({ ev, vorlagen, t, onSave, onRemove, onCancel, onOpenTaktik }) {
   const PHASES=["Aufwärmen","Hauptteil","Abschluss","Spielform","Athletik"];
-  const mapBlock=b=>({phase:b.phase||"Hauptteil",title:b.title||"",min:Number(b.min)||0,drillId:b.drillId||"",axes:b.axes||[],mode:b.drillId?"lib":(b.mode||"free")});
+  const mapBlock=b=>({phase:b.phase||"Hauptteil",title:b.title||"",min:Number(b.min)||0,drillId:b.drillId||"",axes:b.axes||[],diagram:b.diagram||"",mode:b.drillId?"lib":(b.mode||"free")});
   const initBlocks=(()=>{
     const emb=ev?.trainingPlan?.sessions?.[0]?.blocks;
     if(emb&&emb.length) return emb.map(mapBlock);
@@ -22279,7 +22292,7 @@ function EventPlanEditor({ ev, vorlagen, t, onSave, onRemove, onCancel, onOpenTa
   };
   const doSave=()=>{
     const clean=blocks.filter(b=>(b.title||"").trim()||Number(b.min)>0||b.drillId)
-      .map(b=>({phase:b.phase,title:(b.title||"").trim(),min:Number(b.min)||0,...(b.drillId?{drillId:b.drillId,axes:b.axes||[]}:{})}));
+      .map(b=>({phase:b.phase,title:(b.title||"").trim(),min:Number(b.min)||0,...(b.drillId?{drillId:b.drillId,axes:b.axes||[],...(b.diagram?{diagram:b.diagram}:{})}:{})}));
     onSave({ title, createdAt:now(), sessions:[{ title, blocks:clean }] });
   };
   const segBtn=on=>({flex:1,padding:"6px",borderRadius:8,border:`1.5px solid ${on?"#4f46e5":"#e2e8f0"}`,background:on?"#eef2ff":"#fff",color:on?"#4f46e5":"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"});
@@ -22334,7 +22347,8 @@ function EventPlanEditor({ ev, vorlagen, t, onSave, onRemove, onCancel, onOpenTa
               : <input value={b.title} onChange={e=>setBlock(i,{title:e.target.value})} placeholder="Eigene Übung / Inhalt" style={{width:"100%",padding:"9px 11px",fontSize:13.5,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>}
             {mode==="lib"&&b.drillId&&<div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginTop:6}}>
               {(b.axes||[]).map(a=><span key={a} style={{fontSize:10.5,fontWeight:800,color:"#4f46e5",background:"#eef2ff",borderRadius:6,padding:"2px 7px"}}>{a}</span>)}
-              <button onClick={()=>{const d=DRILL_LIB.find(x=>x.id===b.drillId); if(d)setInfoDrill(d);}} style={{marginLeft:"auto",background:"none",border:"none",color:"#4f46e5",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>ℹ️ Übung ansehen</button>
+              <button onClick={()=>setBlock(i,{diagram:b.diagram==="track"?"field":"track"})} title="Darstellung im Detailfenster" style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:7,padding:"3px 8px",fontSize:11,fontWeight:700,color:"#475569",cursor:"pointer",fontFamily:"inherit"}}>{b.diagram==="track"?"🏃 Tartanbahn":"⚽ Feld"}</button>
+              <button onClick={()=>{const d=DRILL_LIB.find(x=>x.id===b.drillId); if(d)setInfoDrill({...d,diagram:b.diagram||d.diagram});}} style={{marginLeft:"auto",background:"none",border:"none",color:"#4f46e5",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>ℹ️ Übung ansehen</button>
             </div>}
           </div>
           );
@@ -22651,7 +22665,8 @@ function QuickPlanCreate({ cid, ownerTid, t, onCreate, onCancel }){
                   style={{width:"100%",padding:"9px 10px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>}
             {mode==="lib"&&b.drillId&&<div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginTop:6}}>
               {(b.axes||[]).map(a=><span key={a} style={{fontSize:10.5,fontWeight:800,color:"#4f46e5",background:"#eef2ff",borderRadius:6,padding:"2px 7px"}}>{a}</span>)}
-              <button onClick={()=>{const d=DRILL_LIB.find(x=>x.id===b.drillId); if(d)setInfoDrill(d);}} style={{marginLeft:"auto",background:"none",border:"none",color:"#4f46e5",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>ℹ️ Übung ansehen</button>
+              <button onClick={()=>setBlock(i,{diagram:b.diagram==="track"?"field":"track"})} title="Darstellung im Detailfenster" style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:7,padding:"3px 8px",fontSize:11,fontWeight:700,color:"#475569",cursor:"pointer",fontFamily:"inherit"}}>{b.diagram==="track"?"🏃 Tartanbahn":"⚽ Feld"}</button>
+              <button onClick={()=>{const d=DRILL_LIB.find(x=>x.id===b.drillId); if(d)setInfoDrill({...d,diagram:b.diagram||d.diagram});}} style={{marginLeft:"auto",background:"none",border:"none",color:"#4f46e5",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>ℹ️ Übung ansehen</button>
             </div>}
           </div>
         );})}
@@ -24341,7 +24356,7 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
                 {(s.blocks||[]).map((b,bi)=>{
                   const d=b.drillId?DRILL_LIB.find(x=>x.id===b.drillId):null;
                   return (
-                  <div key={bi} onClick={d?()=>setInfoDrill(d):undefined} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",fontSize:13,color:"#334155",cursor:d?"pointer":"default"}}>
+                  <div key={bi} onClick={d?()=>setInfoDrill({...d,diagram:b.diagram||d.diagram}):undefined} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",fontSize:13,color:"#334155",cursor:d?"pointer":"default"}}>
                     <span style={{fontSize:10,fontWeight:800,color:"#16a34a",width:58,flexShrink:0}}>{b.phase}</span>
                     <span style={{flex:1,fontWeight:600}}>{b.title}{d&&<span style={{marginLeft:6,fontSize:11,color:"#4f46e5",fontWeight:800}}>ℹ️ ansehen</span>}</span>
                     <span style={{fontSize:11,color:"#94a3b8",flexShrink:0}}>{b.min} Min</span>
