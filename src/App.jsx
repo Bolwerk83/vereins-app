@@ -5562,6 +5562,13 @@ function TacticBoard({ data, myTids, cl, save, fire }) {
   const buildTokens = (sp,cnt,fi)=>{ const FF=TB_FIELDS[sp]||TB_FIELDS.generic; const f=tbForms(sp,cnt)[fi]||tbForms(sp,cnt)[0]; return (f?.p||[]).map((pos,i)=>({id:"tk"+i,x:pos[0]*FF.vw,y:pos[1]*FF.vh,n:i+1})); };
   const [tokens,setTokens]=useState(()=>buildTokens(sport,count,formIdx));
   useEffect(()=>{ setTokens(buildTokens(sport,count,formIdx)); /* eslint-disable-next-line */ },[sport,count,formIdx]);
+  // Gegner-Team (gespiegelt auf der oberen Haelfte), eigene Aufstellung, verschiebbar.
+  const [showOpp,setShowOpp]=useState(false);
+  const [oppFormIdx,setOppFormIdx]=useState(0);
+  const buildOpp=(sp,cnt,fi)=>{ const FF=TB_FIELDS[sp]||TB_FIELDS.generic; const f=tbForms(sp,cnt)[fi]||tbForms(sp,cnt)[0]; return (f?.p||[]).map((pos,i)=>({id:"op"+i,x:pos[0]*FF.vw,y:(1-pos[1])*FF.vh,n:i+1})); };
+  const [oppTokens,setOppTokens]=useState(()=>buildOpp(sport,count,oppFormIdx));
+  useEffect(()=>{ setOppTokens(buildOpp(sport,count,oppFormIdx)); /* eslint-disable-next-line */ },[sport,count,oppFormIdx]);
+  const dragSetRef=useRef("own");
 
   const svgRef=useRef(null); const dragRef=useRef(null);
   const [mode,setMode]=useState("move");
@@ -5571,7 +5578,7 @@ function TacticBoard({ data, myTids, cl, save, fire }) {
   const ARR_COL={run:"#ffffff",pass:"#fb923c"};
   const toSvg=(e)=>{ const el=svgRef.current; if(!el) return null; const r=el.getBoundingClientRect(); const cx=(e.touches?e.touches[0].clientX:e.clientX); const cy=(e.touches?e.touches[0].clientY:e.clientY); return { x:(cx-r.left)/r.width*F.vw, y:(cy-r.top)/r.height*F.vh }; };
   const startDraw=(e)=>{ if(mode==="move") return; const p=toSvg(e); if(!p) return; if(e.preventDefault)e.preventDefault(); setDraw({type:mode,x1:p.x,y1:p.y,x2:p.x,y2:p.y}); };
-  const onMove=(e)=>{ const p=toSvg(e); if(!p) return; if(mode==="move"){ if(dragRef.current==null) return; const R=F.r; setTokens(ts=>ts.map(tk=>tk.id===dragRef.current?{...tk,x:Math.max(R,Math.min(F.vw-R,p.x)),y:Math.max(R,Math.min(F.vh-R,p.y))}:tk)); } else { if(!drawRef.current) return; setDraw(d=>d?{...d,x2:p.x,y2:p.y}:d); } };
+  const onMove=(e)=>{ const p=toSvg(e); if(!p) return; if(mode==="move"){ if(dragRef.current==null) return; const R=F.r; const setT=dragSetRef.current==="opp"?setOppTokens:setTokens; setT(ts=>ts.map(tk=>tk.id===dragRef.current?{...tk,x:Math.max(R,Math.min(F.vw-R,p.x)),y:Math.max(R,Math.min(F.vh-R,p.y))}:tk)); } else { if(!drawRef.current) return; setDraw(d=>d?{...d,x2:p.x,y2:p.y}:d); } };
   const endDrag=()=>{ if(mode==="move"){ dragRef.current=null; return; } const d=drawRef.current; if(d){ const len=Math.hypot(d.x2-d.x1,d.y2-d.y1); if(len>F.vw*0.04) setArrows(a=>[...a,{...d,id:"ar"+Date.now()+Math.round(Math.random()*999)}]); } setDraw(null); };
 
   const chSport=(sp)=>{ const FF=TB_FIELDS[sp]||TB_FIELDS.generic; const c=FF.counts.includes(11)?11:FF.counts[0]; setSport(sp); setCount(c); setFormIdx(0); setArrows([]); setDraw(null); };
@@ -5606,6 +5613,11 @@ function TacticBoard({ data, myTids, cl, save, fire }) {
         </div>
       )}
       <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
+        <span style={{fontSize:11,fontWeight:800,color:"#94a3b8",marginRight:2}}>GEGNER</span>
+        <Btn active={showOpp} onClick={()=>setShowOpp(s=>!s)}>{showOpp?"An":"Aus"}</Btn>
+        {showOpp&&forms.map((f,i)=><Btn key={"o"+f.name} active={oppFormIdx===i} onClick={()=>setOppFormIdx(i)}>{f.name}</Btn>)}
+      </div>
+      <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
         <span style={{fontSize:11,fontWeight:800,color:"#94a3b8",marginRight:2}}>WERKZEUG</span>
         <Btn active={mode==="move"} onClick={()=>setMode("move")}>Bewegen</Btn>
         <Btn active={mode==="run"} onClick={()=>setMode("run")}>Laufweg</Btn>
@@ -5638,10 +5650,19 @@ function TacticBoard({ data, myTids, cl, save, fire }) {
               stroke={ARR_COL[draw.type]} strokeWidth={F.vw*0.012} strokeLinecap="round"
               strokeDasharray={draw.type==="pass"?`${F.vw*0.03} ${F.vw*0.022}`:undefined}/>
           )}
+          {showOpp&&oppTokens.map(tk=>(
+            <g key={tk.id} style={{cursor:mode==="move"?"grab":"crosshair"}}
+               onPointerDown={(e)=>{ if(mode!=="move") return; e.preventDefault(); dragRef.current=tk.id; dragSetRef.current="opp";}}
+               onTouchStart={(e)=>{ if(mode!=="move") return; dragRef.current=tk.id; dragSetRef.current="opp";}}>
+              <circle cx={tk.x} cy={tk.y} r={F.r} fill={tk.n===1?"#0f172a":"#dc2626"} stroke="#fff" strokeWidth={F.r*0.16}/>
+              <text x={tk.x} y={tk.y+F.fs*0.36} textAnchor="middle" fontSize={F.fs} fontWeight="800"
+                    fill="#fff" style={{pointerEvents:"none",userSelect:"none"}}>{tk.n}</text>
+            </g>
+          ))}
           {tokens.map(tk=>(
             <g key={tk.id} style={{cursor:mode==="move"?"grab":"crosshair"}}
-               onPointerDown={(e)=>{ if(mode!=="move") return; e.preventDefault(); dragRef.current=tk.id;}}
-               onTouchStart={(e)=>{ if(mode!=="move") return; dragRef.current=tk.id;}}>
+               onPointerDown={(e)=>{ if(mode!=="move") return; e.preventDefault(); dragRef.current=tk.id; dragSetRef.current="own";}}
+               onTouchStart={(e)=>{ if(mode!=="move") return; dragRef.current=tk.id; dragSetRef.current="own";}}>
               <circle cx={tk.x} cy={tk.y} r={F.r} fill={tk.n===1?"#facc15":teamCol} stroke="#fff" strokeWidth={F.r*0.16}/>
               <text x={tk.x} y={tk.y+F.fs*0.36} textAnchor="middle" fontSize={F.fs} fontWeight="800"
                     fill={tk.n===1?"#1e293b":contrast(teamCol)} style={{pointerEvents:"none",userSelect:"none"}}>{tk.n}</text>
@@ -5651,8 +5672,8 @@ function TacticBoard({ data, myTids, cl, save, fire }) {
       </div>
 
       <div style={{display:"flex",gap:8,alignItems:"center",justifyContent:"space-between"}}>
-        <span style={{fontSize:12,color:"#94a3b8"}}>Spieler 1 = Torwart (gelb)</span>
-        <button onClick={()=>setTokens(buildTokens(sport,count,formIdx))}
+        <span style={{fontSize:12,color:"#94a3b8"}}>Eigenes Team {showOpp?"(farbig)":"(gelb = Torwart)"}{showOpp?" · Gegner rot":""}</span>
+        <button onClick={()=>{setTokens(buildTokens(sport,count,formIdx)); setOppTokens(buildOpp(sport,count,oppFormIdx));}}
           style={{padding:"8px 14px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
           Aufstellung zurücksetzen
         </button>
