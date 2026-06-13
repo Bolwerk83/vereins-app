@@ -5561,7 +5561,7 @@ function TacticBoard({ data, myTids, cl, save, fire }) {
   const teamCol = cl?.pri || "#16a34a";
   const buildTokens = (sp,cnt,fi)=>{ const FF=TB_FIELDS[sp]||TB_FIELDS.generic; const f=tbForms(sp,cnt)[fi]||tbForms(sp,cnt)[0]; return (f?.p||[]).map((pos,i)=>({id:"tk"+i,x:pos[0]*FF.vw,y:pos[1]*FF.vh,n:i+1})); };
   const [tokens,setTokens]=useState(()=>buildTokens(sport,count,formIdx));
-  useEffect(()=>{ setTokens(buildTokens(sport,count,formIdx)); /* eslint-disable-next-line */ },[sport,count,formIdx]);
+  useEffect(()=>{ setTokens(buildTokens(sport,count,formIdx)); resetAnim(); /* eslint-disable-next-line */ },[sport,count,formIdx]);
   // Gegner-Team (gespiegelt auf der oberen Haelfte), eigene Aufstellung, verschiebbar.
   const [showOpp,setShowOpp]=useState(false);
   const [oppFormIdx,setOppFormIdx]=useState(0);
@@ -5569,6 +5569,29 @@ function TacticBoard({ data, myTids, cl, save, fire }) {
   const [oppTokens,setOppTokens]=useState(()=>buildOpp(sport,count,oppFormIdx));
   useEffect(()=>{ setOppTokens(buildOpp(sport,count,oppFormIdx)); /* eslint-disable-next-line */ },[sport,count,oppFormIdx]);
   const dragSetRef=useRef("own");
+  // Animation: Spieler entlang der eingezeichneten Laufwege bewegen.
+  const [animOwn,setAnimOwn]=useState(null);
+  const [animOpp,setAnimOpp]=useState(null);
+  const [playing,setPlaying]=useState(false);
+  const animRef=useRef(null);
+  const stopAnim=()=>{ if(animRef.current) cancelAnimationFrame(animRef.current); animRef.current=null; };
+  const resetAnim=()=>{ stopAnim(); setPlaying(false); setAnimOwn(null); setAnimOpp(null); };
+  useEffect(()=>()=>stopAnim(),[]);
+  const playAnim=()=>{
+    const runs=arrows.filter(a=>a.type==="run");
+    if(!runs.length){ fire&&fire("Erst Laufwege einzeichnen (Werkzeug Laufweg)"); return; }
+    const thr=F.r*3.2;
+    const assign=arr=>arr.map(tk=>{ let best=null,bd=thr; runs.forEach(a=>{const d=Math.hypot(a.x1-tk.x,a.y1-tk.y); if(d<bd){bd=d;best=a;}}); return {...tk,sx:tk.x,sy:tk.y,tx:best?best.x2:tk.x,ty:best?best.y2:tk.y}; });
+    const ownA=assign(tokens), oppA=showOpp?assign(oppTokens):[];
+    const DUR=2200, t0=performance.now();
+    stopAnim(); setPlaying(true);
+    const step=(t)=>{ const k=Math.min(1,(t-t0)/DUR); const e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+      setAnimOwn(ownA.map(o=>({...o,x:o.sx+(o.tx-o.sx)*e,y:o.sy+(o.ty-o.sy)*e})));
+      if(showOpp) setAnimOpp(oppA.map(o=>({...o,x:o.sx+(o.tx-o.sx)*e,y:o.sy+(o.ty-o.sy)*e})));
+      if(k<1){ animRef.current=requestAnimationFrame(step); } else { setPlaying(false); }
+    };
+    animRef.current=requestAnimationFrame(step);
+  };
 
   const svgRef=useRef(null); const dragRef=useRef(null);
   const [mode,setMode]=useState("move");
@@ -5577,7 +5600,8 @@ function TacticBoard({ data, myTids, cl, save, fire }) {
   const setDraw=(v)=>{ const nv=typeof v==="function"?v(drawRef.current):v; drawRef.current=nv; setDraw0(nv); };
   const ARR_COL={run:"#ffffff",pass:"#fb923c"};
   const toSvg=(e)=>{ const el=svgRef.current; if(!el) return null; const r=el.getBoundingClientRect(); const cx=(e.touches?e.touches[0].clientX:e.clientX); const cy=(e.touches?e.touches[0].clientY:e.clientY); return { x:(cx-r.left)/r.width*F.vw, y:(cy-r.top)/r.height*F.vh }; };
-  const startDraw=(e)=>{ if(mode==="move") return; const p=toSvg(e); if(!p) return; if(e.preventDefault)e.preventDefault(); setDraw({type:mode,x1:p.x,y1:p.y,x2:p.x,y2:p.y}); };
+  const startDraw=(e)=>{ if(mode==="move"||mode==="mark") return; resetAnim(); const p=toSvg(e); if(!p) return; if(e.preventDefault)e.preventDefault(); setDraw({type:mode,x1:p.x,y1:p.y,x2:p.x,y2:p.y}); };
+  const toggleMark=(setT,id)=>{ resetAnim(); setT(ts=>ts.map(x=>x.id===id?{...x,marked:!x.marked}:x)); };
   const onMove=(e)=>{ const p=toSvg(e); if(!p) return; if(mode==="move"){ if(dragRef.current==null) return; const R=F.r; const setT=dragSetRef.current==="opp"?setOppTokens:setTokens; setT(ts=>ts.map(tk=>tk.id===dragRef.current?{...tk,x:Math.max(R,Math.min(F.vw-R,p.x)),y:Math.max(R,Math.min(F.vh-R,p.y))}:tk)); } else { if(!drawRef.current) return; setDraw(d=>d?{...d,x2:p.x,y2:p.y}:d); } };
   const endDrag=()=>{ if(mode==="move"){ dragRef.current=null; return; } const d=drawRef.current; if(d){ const len=Math.hypot(d.x2-d.x1,d.y2-d.y1); if(len>F.vw*0.04) setArrows(a=>[...a,{...d,id:"ar"+Date.now()+Math.round(Math.random()*999)}]); } setDraw(null); };
 
@@ -5620,12 +5644,21 @@ function TacticBoard({ data, myTids, cl, save, fire }) {
       <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
         <span style={{fontSize:11,fontWeight:800,color:"#94a3b8",marginRight:2}}>WERKZEUG</span>
         <Btn active={mode==="move"} onClick={()=>setMode("move")}>Bewegen</Btn>
+        <Btn active={mode==="mark"} onClick={()=>setMode("mark")}>⭐ Markieren</Btn>
         <Btn active={mode==="run"} onClick={()=>setMode("run")}>Laufweg</Btn>
         <Btn active={mode==="pass"} onClick={()=>setMode("pass")}>Passweg</Btn>
         <button onClick={()=>setArrows(a=>a.slice(0,-1))} disabled={!arrows.length}
           style={{padding:"7px 12px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:arrows.length?"#475569":"#cbd5e1",fontWeight:700,fontSize:12.5,cursor:arrows.length?"pointer":"default",fontFamily:"inherit",whiteSpace:"nowrap"}}>Rückgängig</button>
-        <button onClick={()=>{setArrows([]);setDraw(null);}} disabled={!arrows.length&&!draw}
+        <button onClick={()=>{resetAnim();setArrows([]);setDraw(null);}} disabled={!arrows.length&&!draw}
           style={{padding:"7px 12px",borderRadius:9,border:"1.5px solid #fecaca",background:"#fff",color:(arrows.length||draw)?"#dc2626":"#fca5a5",fontWeight:700,fontSize:12.5,cursor:(arrows.length||draw)?"pointer":"default",fontFamily:"inherit",whiteSpace:"nowrap"}}>Pfeile löschen</button>
+      </div>
+      <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
+        <span style={{fontSize:11,fontWeight:800,color:"#94a3b8",marginRight:2}}>ANIMATION</span>
+        <button onClick={playAnim} disabled={playing||!arrows.some(a=>a.type==="run")}
+          style={{padding:"7px 14px",borderRadius:9,border:"none",background:(playing||!arrows.some(a=>a.type==="run"))?"#e2e8f0":t.p,color:(playing||!arrows.some(a=>a.type==="run"))?"#94a3b8":"#fff",fontWeight:800,fontSize:12.5,cursor:(playing||!arrows.some(a=>a.type==="run"))?"default":"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{playing?"▶ läuft…":"▶ Abspielen"}</button>
+        <button onClick={resetAnim} disabled={!animOwn&&!animOpp&&!playing}
+          style={{padding:"7px 12px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:(animOwn||animOpp||playing)?"#475569":"#cbd5e1",fontWeight:700,fontSize:12.5,cursor:(animOwn||animOpp||playing)?"pointer":"default",fontFamily:"inherit",whiteSpace:"nowrap"}}>↺ Zurück</button>
+        <span style={{fontSize:11,color:"#94a3b8"}}>Laufwege (weiß) werden abgespielt</span>
       </div>
 
       <div style={{background:F.bg,borderRadius:14,padding:8,boxShadow:"inset 0 0 0 1px rgba(255,255,255,.08)"}}>
@@ -5650,22 +5683,26 @@ function TacticBoard({ data, myTids, cl, save, fire }) {
               stroke={ARR_COL[draw.type]} strokeWidth={F.vw*0.012} strokeLinecap="round"
               strokeDasharray={draw.type==="pass"?`${F.vw*0.03} ${F.vw*0.022}`:undefined}/>
           )}
-          {showOpp&&oppTokens.map(tk=>(
-            <g key={tk.id} style={{cursor:mode==="move"?"grab":"crosshair"}}
-               onPointerDown={(e)=>{ if(mode!=="move") return; e.preventDefault(); dragRef.current=tk.id; dragSetRef.current="opp";}}
-               onTouchStart={(e)=>{ if(mode!=="move") return; dragRef.current=tk.id; dragSetRef.current="opp";}}>
+          {showOpp&&(animOpp||oppTokens).map(tk=>(
+            <g key={tk.id} style={{cursor:mode==="move"?"grab":mode==="mark"?"pointer":"crosshair"}}
+               onPointerDown={(e)=>{ if(mode==="mark"){ e.preventDefault(); toggleMark(setOppTokens,tk.id); return;} if(mode!=="move") return; e.preventDefault(); resetAnim(); dragRef.current=tk.id; dragSetRef.current="opp";}}
+               onTouchStart={(e)=>{ if(mode==="mark"){ toggleMark(setOppTokens,tk.id); return;} if(mode!=="move") return; resetAnim(); dragRef.current=tk.id; dragSetRef.current="opp";}}>
+              {tk.marked&&<circle cx={tk.x} cy={tk.y} r={F.r*1.5} fill="none" stroke="#facc15" strokeWidth={F.r*0.22} strokeDasharray={`${F.r*0.5} ${F.r*0.35}`}/>}
               <circle cx={tk.x} cy={tk.y} r={F.r} fill={tk.n===1?"#0f172a":"#dc2626"} stroke="#fff" strokeWidth={F.r*0.16}/>
               <text x={tk.x} y={tk.y+F.fs*0.36} textAnchor="middle" fontSize={F.fs} fontWeight="800"
                     fill="#fff" style={{pointerEvents:"none",userSelect:"none"}}>{tk.n}</text>
+              {tk.marked&&<text x={tk.x} y={tk.y-F.r*1.45} textAnchor="middle" fontSize={F.fs*0.95} style={{pointerEvents:"none"}}>⭐</text>}
             </g>
           ))}
-          {tokens.map(tk=>(
-            <g key={tk.id} style={{cursor:mode==="move"?"grab":"crosshair"}}
-               onPointerDown={(e)=>{ if(mode!=="move") return; e.preventDefault(); dragRef.current=tk.id; dragSetRef.current="own";}}
-               onTouchStart={(e)=>{ if(mode!=="move") return; dragRef.current=tk.id; dragSetRef.current="own";}}>
+          {(animOwn||tokens).map(tk=>(
+            <g key={tk.id} style={{cursor:mode==="move"?"grab":mode==="mark"?"pointer":"crosshair"}}
+               onPointerDown={(e)=>{ if(mode==="mark"){ e.preventDefault(); toggleMark(setTokens,tk.id); return;} if(mode!=="move") return; e.preventDefault(); resetAnim(); dragRef.current=tk.id; dragSetRef.current="own";}}
+               onTouchStart={(e)=>{ if(mode==="mark"){ toggleMark(setTokens,tk.id); return;} if(mode!=="move") return; resetAnim(); dragRef.current=tk.id; dragSetRef.current="own";}}>
+              {tk.marked&&<circle cx={tk.x} cy={tk.y} r={F.r*1.5} fill="none" stroke="#facc15" strokeWidth={F.r*0.22} strokeDasharray={`${F.r*0.5} ${F.r*0.35}`}/>}
               <circle cx={tk.x} cy={tk.y} r={F.r} fill={tk.n===1?"#facc15":teamCol} stroke="#fff" strokeWidth={F.r*0.16}/>
               <text x={tk.x} y={tk.y+F.fs*0.36} textAnchor="middle" fontSize={F.fs} fontWeight="800"
                     fill={tk.n===1?"#1e293b":contrast(teamCol)} style={{pointerEvents:"none",userSelect:"none"}}>{tk.n}</text>
+              {tk.marked&&<text x={tk.x} y={tk.y-F.r*1.45} textAnchor="middle" fontSize={F.fs*0.95} style={{pointerEvents:"none"}}>⭐</text>}
             </g>
           ))}
         </svg>
