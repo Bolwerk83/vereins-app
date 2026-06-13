@@ -5592,19 +5592,36 @@ function TacticBoard({ data, myTids, cl, save, fire }) {
   const teamCol = cl?.pri || "#16a34a";
   const buildTokens = (sp,cnt,fi)=>{ const FF=TB_FIELDS[sp]||TB_FIELDS.generic; const f=tbForms(sp,cnt)[fi]||tbForms(sp,cnt)[0]; return (f?.p||[]).map((pos,i)=>({id:"tk"+i,x:pos[0]*FF.vw,y:pos[1]*FF.vh,n:i+1})); };
   const [tokens,setTokens]=useState(()=>buildTokens(sport,count,formIdx));
-  useEffect(()=>{ setTokens(buildTokens(sport,count,formIdx)); resetAnim(); /* eslint-disable-next-line */ },[sport,count,formIdx]);
+  useEffect(()=>{ if(skipRebuildRef.current) return; setTokens(buildTokens(sport,count,formIdx)); resetAnim(); /* eslint-disable-next-line */ },[sport,count,formIdx]);
   // Gegner-Team (gespiegelt auf der oberen Haelfte), eigene Aufstellung, verschiebbar.
   const [showOpp,setShowOpp]=useState(false);
   const [oppFormIdx,setOppFormIdx]=useState(0);
   const buildOpp=(sp,cnt,fi)=>{ const FF=TB_FIELDS[sp]||TB_FIELDS.generic; const f=tbForms(sp,cnt)[fi]||tbForms(sp,cnt)[0]; return (f?.p||[]).map((pos,i)=>({id:"op"+i,x:pos[0]*FF.vw,y:(1-pos[1])*FF.vh,n:i+1})); };
   const [oppTokens,setOppTokens]=useState(()=>buildOpp(sport,count,oppFormIdx));
-  useEffect(()=>{ setOppTokens(buildOpp(sport,count,oppFormIdx)); /* eslint-disable-next-line */ },[sport,count,oppFormIdx]);
+  useEffect(()=>{ if(skipRebuildRef.current) return; setOppTokens(buildOpp(sport,count,oppFormIdx)); /* eslint-disable-next-line */ },[sport,count,oppFormIdx]);
   const dragSetRef=useRef("own");
   // Animation: Spieler entlang der eingezeichneten Laufwege bewegen.
   const [animOwn,setAnimOwn]=useState(null);
   const [animOpp,setAnimOpp]=useState(null);
   const [playing,setPlaying]=useState(false);
   const animRef=useRef(null);
+  const [boardName,setBoardName]=useState("");
+  const skipRebuildRef=useRef(false);
+  const saveBoard=()=>{
+    const nm=(boardName.trim()||("Board "+((cl?.boards?.length||0)+1)));
+    const b={id:uid(),name:nm,sport,count,formIdx,oppFormIdx,showOpp,tokens,oppTokens,arrows,createdAt:new Date().toISOString()};
+    save({...data,clubs:(data.clubs||[]).map(c=>c.id===cl.id?{...c,boards:[...(c.boards||[]),b]}:c)});
+    setBoardName(""); fire&&fire("Board gespeichert *");
+  };
+  const loadBoard=(b)=>{
+    skipRebuildRef.current=true;
+    setSport(b.sport||sport); setCount(b.count||count); setFormIdx(b.formIdx||0); setOppFormIdx(b.oppFormIdx||0);
+    setShowOpp(!!b.showOpp); setTokens(b.tokens||[]); setOppTokens(b.oppTokens||[]); setArrows(b.arrows||[]);
+    resetAnim();
+    setTimeout(()=>{ skipRebuildRef.current=false; },0);
+    fire&&fire("Board geladen");
+  };
+  const delBoard=(id)=>{ if(typeof window!=="undefined"&&window.confirm&&!window.confirm("Board löschen?"))return; save({...data,clubs:(data.clubs||[]).map(c=>c.id===cl.id?{...c,boards:(c.boards||[]).filter(x=>x.id!==id)}:c)}); };
   const stopAnim=()=>{ if(animRef.current) cancelAnimationFrame(animRef.current); animRef.current=null; };
   const resetAnim=()=>{ stopAnim(); setPlaying(false); setAnimOwn(null); setAnimOpp(null); };
   useEffect(()=>()=>stopAnim(),[]);
@@ -5750,8 +5767,31 @@ function TacticBoard({ data, myTids, cl, save, fire }) {
         <span><span style={{display:"inline-block",width:22,height:0,borderTop:"3px solid #94a3b8",verticalAlign:"middle",marginRight:5}}/>Laufweg</span>
         <span><span style={{display:"inline-block",width:22,height:0,borderTop:"3px dashed #fb923c",verticalAlign:"middle",marginRight:5}}/>Passweg</span>
       </div>
+      {/* Gespeicherte Boards (vereinsweit, jederzeit aufrufbar) */}
+      <div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:13,padding:"13px 14px"}}>
+        <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.4,marginBottom:9}}>GESPEICHERTE BOARDS</div>
+        <div style={{display:"flex",gap:8,marginBottom:(cl?.boards||[]).length?12:0}}>
+          <input value={boardName} onChange={e=>setBoardName(e.target.value)} placeholder="Name, z.B. Pressing 4-4-2"
+            style={{flex:1,padding:"10px 12px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
+          <button onClick={saveBoard} style={{padding:"0 16px",borderRadius:10,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>💾 Speichern</button>
+        </div>
+        {(cl?.boards||[]).length>0
+          ? <div style={{display:"flex",flexDirection:"column",gap:7}}>
+              {(cl.boards||[]).map(b=>(
+                <div key={b.id} style={{display:"flex",alignItems:"center",gap:8,background:"#f8fafc",borderRadius:10,padding:"8px 11px",border:"1px solid #f1f5f9"}}>
+                  <button onClick={()=>loadBoard(b)} style={{flex:1,textAlign:"left",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",minWidth:0}}>
+                    <div style={{fontWeight:700,fontSize:13.5,color:"#0f172a"}}>{b.name}</div>
+                    <div style={{fontSize:11,color:"#94a3b8"}}>{(tbForms(b.sport,b.count)[b.formIdx]||{}).name||""}{b.showOpp?" · mit Gegner":""}{(b.arrows||[]).length?` · ${b.arrows.length} Pfeile`:""}</div>
+                  </button>
+                  <button onClick={()=>loadBoard(b)} style={{padding:"6px 11px",borderRadius:8,border:"none",background:t.p+"15",color:t.p,fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Laden</button>
+                  <button onClick={()=>delBoard(b.id)} style={{width:28,height:28,borderRadius:8,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:800,cursor:"pointer"}}>✕</button>
+                </div>
+              ))}
+            </div>
+          : <p style={{fontSize:12.5,color:"#94a3b8",margin:0}}>Noch keine Boards gespeichert. Aufstellung + Laufwege einrichten und oben einen Namen vergeben.</p>}
+      </div>
       <div style={{fontSize:12,color:"#64748b",background:"#f8fafc",borderRadius:10,padding:"10px 12px",lineHeight:1.5}}>
-        Tipp: Werkzeug auf <strong>Laufweg</strong> oder <strong>Passweg</strong> stellen, dann auf dem Feld vom Start- zum Zielpunkt ziehen. Nächste Ausbaustufen: Gegner-Formation in zweiter Farbe, eigene Tor-/Material-Varianten aufs Feld setzen, sowie Taktik speichern und teilen (wie bei den Trainings).
+        Tipp: Werkzeug auf <strong>Laufweg</strong> oder <strong>Passweg</strong> stellen, dann auf dem Feld vom Start- zum Zielpunkt ziehen. Gespeicherte Boards sind für alle Trainer des Vereins jederzeit abrufbar.
       </div>
     </div>
   );
