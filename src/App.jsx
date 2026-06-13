@@ -4431,6 +4431,7 @@ function ManageTeams({ data, save, fire, cl }) {
   const [editId,setEditId] = useState(null);
   const [editName,setEditName] = useState("");
   const [showFmt,setShowFmt] = useState(null);
+  const [labelDraft,setLabelDraft] = useState({}); // Squad-Labels lokal tippen, erst onBlur speichern
   const setTeamStrength = (id,s) => save({...data, teams:(data.teams||[]).map(tm=>tm.id===id?{...tm,strength:s}:tm)});
   const setTeamLogin = (id,m) => save({...data, teams:(data.teams||[]).map(tm=>tm.id===id?{...tm,loginMode:m}:tm)});
   const setTeamSkillCheck = (id,on) => save({...data, teams:(data.teams||[]).map(tm=>tm.id===id?{...tm,skillCheckEnabled:on}:tm)});
@@ -4575,7 +4576,7 @@ function ManageTeams({ data, save, fire, cl }) {
                   <span style={{fontSize:10.5,fontWeight:800,color:"#94a3b8",letterSpacing:.3}}>AUFTEILUNG</span>
                   {[1,2,3].map(n=>{ const cur=tm.squads?.length||1; const on=cur===n; return (
                     <button key={n} onClick={()=>{
-                      if(n===1){ setTeamSquads(tm.id,[]); return; }
+                      if(n===1){ if((tm.squads?.length||0)>0 && typeof window!=="undefined" && window.confirm && !window.confirm("Aufteilung entfernen? Die konfigurierten Mannschaften gehen verloren.")) return; setTeamSquads(tm.id,[]); return; }
                       const def=[{label:"Großfeld",need:5},{label:"Kleinfeld",need:3},{label:"3. Mannschaft",need:5}];
                       const c=(tm.squads&&tm.squads.length)?tm.squads:[];
                       setTeamSquads(tm.id, Array.from({length:n},(_,i)=>c[i]||def[i]));
@@ -4583,20 +4584,23 @@ function ManageTeams({ data, save, fire, cl }) {
                   );})}
                   <InfoHint text={"Wenn ihr je nach Anzahl mehrere Mannschaften stellt: lege je Mannschaft fest, wie viele Spieler nötig sind (inkl. Torwart, z.B. Großfeld 4+1=5). Beim Termin wird anhand der Zusagen angezeigt, wie viele Mannschaften ihr stellen könnt."}/>
                 </div>
-                {(tm.squads?.length>=2)&&(
+                {(tm.squads?.length>=2)&&(()=>{ const withDrafts=arr=>arr.map((x,j)=>({...x,label:(labelDraft[tm.id+":"+j]!==undefined?labelDraft[tm.id+":"+j]:x.label)})); return (
                   <div style={{display:"flex",flexDirection:"column",gap:6,marginTop:7}}>
-                    {tm.squads.map((sq,si)=>(
+                    {tm.squads.map((sq,si)=>{ const key=tm.id+":"+si; return (
                       <div key={si} style={{display:"flex",gap:7,alignItems:"center"}}>
-                        <input value={sq.label||""} onChange={e=>setTeamSquads(tm.id,tm.squads.map((x,j)=>j===si?{...x,label:e.target.value}:x))} placeholder={"Mannschaft "+(si+1)}
+                        <input value={labelDraft[key]!==undefined?labelDraft[key]:(sq.label||"")}
+                          onChange={e=>setLabelDraft(d=>({...d,[key]:e.target.value}))}
+                          onBlur={()=>{ setTeamSquads(tm.id,tm.squads.map((x,j)=>j===si?{...x,label:(labelDraft[key]!==undefined?labelDraft[key]:x.label)}:x)); setLabelDraft(d=>{const n2={...d};delete n2[key];return n2;}); }}
+                          placeholder={"Mannschaft "+(si+1)}
                           style={{flex:1,padding:"7px 10px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:8,outline:"none",boxSizing:"border-box"}}/>
-                        <button onClick={()=>setTeamSquads(tm.id,tm.squads.map((x,j)=>j===si?{...x,need:Math.max(1,(Number(x.need)||0)-1)}:x))} style={{width:30,height:32,borderRadius:8,border:"1.5px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontWeight:800,fontSize:15}}>–</button>
+                        <button onClick={()=>setTeamSquads(tm.id,withDrafts(tm.squads).map((x,j)=>j===si?{...x,need:Math.max(1,(Number(x.need)||0)-1)}:x))} style={{width:30,height:32,borderRadius:8,border:"1.5px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontWeight:800,fontSize:15}}>–</button>
                         <span style={{minWidth:22,textAlign:"center",fontWeight:800,fontSize:14,color:"#0f172a"}}>{Number(sq.need)||0}</span>
-                        <button onClick={()=>setTeamSquads(tm.id,tm.squads.map((x,j)=>j===si?{...x,need:(Number(x.need)||0)+1}:x))} style={{width:30,height:32,borderRadius:8,border:"1.5px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontWeight:800,fontSize:15}}>+</button>
+                        <button onClick={()=>setTeamSquads(tm.id,withDrafts(tm.squads).map((x,j)=>j===si?{...x,need:(Number(x.need)||0)+1}:x))} style={{width:30,height:32,borderRadius:8,border:"1.5px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontWeight:800,fontSize:15}}>+</button>
                         <span style={{fontSize:11,color:"#94a3b8",whiteSpace:"nowrap"}}>Sp.</span>
                       </div>
-                    ))}
+                    );})}
                   </div>
-                )}
+                ); })()}
               </div>
             )}
             {showFmt===tm.id && <div style={{marginTop:8}}><PlayFormatCard cat={tmCat} sport={cl?.sport||"fussball"} cl={cl} compact/></div>}
@@ -5607,10 +5611,11 @@ function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAttachBoar
   const animRef=useRef(null);
   const [boardName,setBoardName]=useState("");
   const skipRebuildRef=useRef(false);
+  const myBoards=(data.tacticBoards||[]).filter(b=>b.cid===cl.id);
   const saveBoard=()=>{
-    const nm=(boardName.trim()||("Board "+((cl?.boards?.length||0)+1)));
-    const b={id:uid(),name:nm,sport,count,formIdx,oppFormIdx,showOpp,tokens,oppTokens,arrows,createdAt:new Date().toISOString()};
-    save({...data,clubs:(data.clubs||[]).map(c=>c.id===cl.id?{...c,boards:[...(c.boards||[]),b]}:c)});
+    const nm=(boardName.trim()||("Board "+(myBoards.length+1)));
+    const b={id:uid(),cid:cl.id,name:nm,sport,count,formIdx,oppFormIdx,showOpp,tokens,oppTokens,arrows,createdAt:new Date().toISOString()};
+    save({...data,tacticBoards:[...(data.tacticBoards||[]),b]});
     setBoardName(""); fire&&fire("Board gespeichert *");
   };
   const loadBoard=(b)=>{
@@ -5621,7 +5626,7 @@ function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAttachBoar
     setTimeout(()=>{ skipRebuildRef.current=false; },0);
     fire&&fire("Board geladen");
   };
-  const delBoard=(id)=>{ if(typeof window!=="undefined"&&window.confirm&&!window.confirm("Board löschen?"))return; save({...data,clubs:(data.clubs||[]).map(c=>c.id===cl.id?{...c,boards:(c.boards||[]).filter(x=>x.id!==id)}:c)}); };
+  const delBoard=(id)=>{ if(typeof window!=="undefined"&&window.confirm&&!window.confirm("Board löschen?"))return; save({...data,tacticBoards:(data.tacticBoards||[]).filter(x=>x.id!==id)}); };
   const curBoard=()=>({sport,count,formIdx,oppFormIdx,showOpp,tokens,oppTokens,arrows});
   // Falls dieses Board an einem Termin haengt: beim Oeffnen den gespeicherten Stand laden.
   useEffect(()=>{ if(eventCtx?.board){ loadBoard(eventCtx.board); } /* eslint-disable-next-line */ },[]);
@@ -5779,14 +5784,14 @@ function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAttachBoar
       )}
       <div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:13,padding:"13px 14px"}}>
         <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.4,marginBottom:9}}>GESPEICHERTE BOARDS</div>
-        <div style={{display:"flex",gap:8,marginBottom:(cl?.boards||[]).length?12:0}}>
+        <div style={{display:"flex",gap:8,marginBottom:myBoards.length?12:0}}>
           <input value={boardName} onChange={e=>setBoardName(e.target.value)} placeholder="Name, z.B. Pressing 4-4-2"
             style={{flex:1,padding:"10px 12px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
           <button onClick={saveBoard} style={{padding:"0 16px",borderRadius:10,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>💾 Speichern</button>
         </div>
-        {(cl?.boards||[]).length>0
+        {myBoards.length>0
           ? <div style={{display:"flex",flexDirection:"column",gap:7}}>
-              {(cl.boards||[]).map(b=>(
+              {myBoards.map(b=>(
                 <div key={b.id} style={{display:"flex",alignItems:"center",gap:8,background:"#f8fafc",borderRadius:10,padding:"8px 11px",border:"1px solid #f1f5f9"}}>
                   <button onClick={()=>loadBoard(b)} style={{flex:1,textAlign:"left",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",minWidth:0}}>
                     <div style={{fontWeight:700,fontSize:13.5,color:"#0f172a"}}>{b.name}</div>
@@ -22806,70 +22811,6 @@ function DrillInfoModal({ drill, t, onClose }){
           <button onClick={onClose} style={{width:"100%",padding:"12px",borderRadius:12,border:"none",background:"#f1f5f9",color:"#475569",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Schließen</button>
         </div>
       </div>
-    </div>
-  );
-}
-// Kompaktes Formular, um direkt aus dem Termin heraus einen Trainingsplan
-// anzulegen (Titel, Schwerpunkt, Ablauf-Blöcke). Wird sofort verknüpft.
-function QuickPlanCreate({ cid, ownerTid, t, onCreate, onCancel }){
-  const [title,setTitle]=useState("");
-  const [focus,setFocus]=useState("");
-  const [blocks,setBlocks]=useState([{phase:"Aufwärmen",title:"",min:10,mode:"lib"}]);
-  const setBlock=(i,patch)=>setBlocks(bs=>bs.map((b,j)=>j===i?{...b,...patch}:b));
-  const [infoDrill,setInfoDrill]=useState(null);
-  const valid=title.trim().length>0;
-  const create=()=>{
-    if(!valid) return;
-    const now2=new Date().toISOString();
-    onCreate({ id:"tr_"+uid(), cid, ownerTid, title:title.trim(), focus:focus.trim(),
-      blocks:blocks.map(b=>({...b,min:Number(b.min)||0})), vis:"team", sharedTids:[], createdAt:now2, updatedAt:now2 });
-  };
-  return (
-    <div style={{display:"flex",flexDirection:"column",gap:11}}>
-      <input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Titel (z. B. Passspiel & Abschluss)"
-        style={{width:"100%",padding:"12px 14px",fontSize:15,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
-      <input value={focus} onChange={e=>setFocus(e.target.value)} placeholder="Schwerpunkt (optional, z. B. Technik)"
-        style={{width:"100%",padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
-      <div style={{background:"#fff",borderRadius:12,padding:"12px 14px",border:"1.5px solid #e2e8f0"}}>
-        <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.4}}>ABLAUF</div>
-        {blocks.map((b,i)=>{
-          const mode=b.mode||"lib";
-          const pool=drillsForPhase(b.phase);
-          const segBtn=(on)=>({flex:1,padding:"6px",borderRadius:8,border:`1.5px solid ${on?"#4f46e5":"#e2e8f0"}`,background:on?"#eef2ff":"#fff",color:on?"#4f46e5":"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"});
-          return (
-          <div key={i} style={{borderBottom:i<blocks.length-1?"1px solid #f1f5f9":"none",paddingBottom:i<blocks.length-1?10:0,marginBottom:i<blocks.length-1?10:0}}>
-            <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:8}}>
-              <select value={b.phase} onChange={e=>setBlock(i,{phase:e.target.value})} style={{padding:"8px",borderRadius:9,border:"1.5px solid #e2e8f0",fontSize:13,fontFamily:"inherit",flex:1,minWidth:0}}>
-                {TRAIN_PHASES.map(p=><option key={p} value={p}>{p}</option>)}
-              </select>
-              <input type="number" value={b.min} onChange={e=>setBlock(i,{min:Number(e.target.value)||0})} style={{width:52,padding:"8px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
-              <span style={{fontSize:11,color:"#94a3b8",flexShrink:0}}>Min</span>
-              {blocks.length>1&&<button onClick={()=>setBlocks(bs=>bs.filter((_,j)=>j!==i))} style={{background:"none",border:"none",color:"#dc2626",fontWeight:800,fontSize:16,cursor:"pointer",flexShrink:0}}>×</button>}
-            </div>
-            <div style={{display:"flex",gap:6,marginBottom:7}}>
-              <button onClick={()=>setBlock(i,{mode:"lib"})} style={segBtn(mode==="lib")}>📋 Vorlage</button>
-              <button onClick={()=>setBlock(i,{mode:"free",drillId:"",axes:[]})} style={segBtn(mode==="free")}>✎ Eigene Eingabe</button>
-            </div>
-            {mode==="lib"
-              ? <select value={b.drillId||""} onChange={e=>{const d=DRILL_LIB.find(x=>x.id===e.target.value); setBlock(i,{drillId:e.target.value,title:d?d.title:"",axes:d?(d.axes||[]):[],min:d?d.min:b.min});}}
-                  style={{width:"100%",padding:"9px 10px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",boxSizing:"border-box",fontFamily:"inherit",background:"#fff"}}>
-                  <option value="">– Übungs-Vorlage wählen –</option>
-                  {pool.map(d=><option key={d.id} value={d.id}>{d.title} · {(d.axes||[]).join("/")}</option>)}
-                </select>
-              : <input value={b.title} onChange={e=>setBlock(i,{title:e.target.value})} placeholder="Eigene Übung / Inhalt"
-                  style={{width:"100%",padding:"9px 10px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>}
-            {mode==="lib"&&b.drillId&&<div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginTop:6}}>
-              {(b.axes||[]).map(a=><span key={a} style={{fontSize:10.5,fontWeight:800,color:"#4f46e5",background:"#eef2ff",borderRadius:6,padding:"2px 7px"}}>{a}</span>)}
-              <button onClick={()=>setBlock(i,{diagram:b.diagram==="track"?"field":"track"})} title="Darstellung im Detailfenster" style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:7,padding:"3px 8px",fontSize:11,fontWeight:700,color:"#475569",cursor:"pointer",fontFamily:"inherit"}}>{b.diagram==="track"?"🏃 Tartanbahn":"⚽ Feld"}</button>
-              <button onClick={()=>{const d=DRILL_LIB.find(x=>x.id===b.drillId); if(d)setInfoDrill({...d,diagram:b.diagram||d.diagram});}} style={{marginLeft:"auto",background:"none",border:"none",color:"#4f46e5",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>ℹ️ Übung ansehen</button>
-            </div>}
-          </div>
-        );})}
-        <button onClick={()=>setBlocks(bs=>[...bs,{phase:"Hauptteil",title:"",min:10,mode:"lib"}])} style={{marginTop:10,background:"#f1f5f9",border:"none",borderRadius:9,padding:"8px 12px",fontSize:13,fontWeight:700,color:"#475569",cursor:"pointer",fontFamily:"inherit"}}>+ Block</button>
-      </div>
-      {infoDrill&&<DrillInfoModal drill={infoDrill} t={t} onClose={()=>setInfoDrill(null)}/>}
-      <button onClick={create} disabled={!valid} style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:valid?t.p:"#cbd5e1",color:valid?contrast(t.p):"#1e293b",fontWeight:800,fontSize:15,cursor:valid?"pointer":"default",fontFamily:"inherit"}}>Plan erstellen & verknüpfen</button>
-      <Btn v="gst" full ch="Zurück zur Auswahl" onClick={onCancel}/>
     </div>
   );
 }
