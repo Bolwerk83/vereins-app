@@ -5634,6 +5634,44 @@ const TB_FORMATIONS = {
 const TB_SPORTS = [{id:"football",label:"Fußball"},{id:"handball",label:"Handball"},{id:"basketball",label:"Basketball"},{id:"generic",label:"Allgemein"}];
 function tbForms(sport,count){ return (TB_FORMATIONS[sport]||TB_FORMATIONS.generic)[count] || TB_FORMATIONS.generic[count] || []; }
 
+// DFB-Spielformen & Platzgroessen je Altersklasse (Orientierungswerte nach der
+// Kinderfussball-Reform; Landes-/Kreisverbaende koennen abweichen).
+const DFB_FORMATS=[
+  {age:"Bambini / G-Jugend (U6–U7)", form:"2:2 und 3:3", players:"2–3 + viele Wechsel", field:"ca. 15×20 bis 20×25 m", goals:"Minitore (ca. 1–2 m)", ball:"Größe 3", time:"kurze Spiele, häufig wechseln", focus:"Ballgewöhnung, Dribbeln, zum Tor laufen – kein Abseits, keine Tabelle"},
+  {age:"F-Jugend (U8–U9)", form:"3:3 (Funino) & 5:5", players:"3 bzw. 5", field:"Funino ca. 25×35 m · 5:5 ca. 30×40 m", goals:"Minitore bzw. kleine Jugendtore", ball:"Größe 3/4", time:"mehrere kurze Spielzeiten", focus:"Dribbeln & 1-gegen-1, Anbieten/Freilaufen, viele Ballkontakte"},
+  {age:"E-Jugend (U10–U11)", form:"7:7", players:"7", field:"ca. 35×55 m (Großfeld quer / Hälfte)", goals:"5-m-Jugendtore", ball:"Größe 4", time:"2×25–30 min", focus:"Passspiel, Raum erkennen, Umschalten, erste Mannschaftstaktik"},
+  {age:"D-Jugend (U12–U13)", form:"9:9", players:"9", field:"ca. 50×70 m", goals:"2×5 m", ball:"Größe 4", time:"2×30 min", focus:"Spielaufbau, Breite/Tiefe, Verschieben, Standards"},
+  {age:"C-Jugend (U14–U15)", form:"11:11", players:"11", field:"Großfeld (bis ca. 68×105 m)", goals:"7,32×2,44 m", ball:"Größe 5", time:"2×35 min", focus:"Mannschaftstaktik, Positionsspiel, Pressing/Umschalten"},
+  {age:"B-/A-Jugend (U16–U19)", form:"11:11", players:"11", field:"Großfeld", goals:"7,32×2,44 m", ball:"Größe 5", time:"2×40 / 2×45 min", focus:"komplexe Spielsysteme, Athletik, Spielintelligenz"},
+];
+function DFBFormatsCard({ cl }){
+  const [open,setOpen]=useState(false);
+  const c=cl?.pri||"#16a34a";
+  return (
+    <div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:13,overflow:"hidden"}}>
+      <button onClick={()=>setOpen(o=>!o)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 14px",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit"}}>
+        <span style={{fontWeight:800,fontSize:13.5,color:"#0f172a"}}>📐 DFB-Spielformen &amp; Platzgrößen je Jugend</span>
+        <span style={{color:"#94a3b8",fontSize:16}}>{open?"▲":"▼"}</span>
+      </button>
+      {open&&<div style={{padding:"0 14px 14px"}}>
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {DFB_FORMATS.map((f,i)=>(
+            <div key={i} style={{background:"#f8fafc",border:"1px solid #f1f5f9",borderRadius:11,padding:"10px 12px"}}>
+              <div style={{fontWeight:800,fontSize:13,color:c}}>{f.age}</div>
+              <div style={{fontSize:12,color:"#334155",marginTop:4,lineHeight:1.6}}>
+                <b>Spielform:</b> {f.form} · <b>Spieler:</b> {f.players}<br/>
+                <b>Feld:</b> {f.field} · <b>Tore:</b> {f.goals}<br/>
+                <b>Ball:</b> {f.ball} · <b>Spielzeit:</b> {f.time}<br/>
+                <b>Schwerpunkt / Bewegung:</b> {f.focus}
+              </div>
+            </div>
+          ))}
+        </div>
+        <p style={{fontSize:11,color:"#94a3b8",marginTop:10,lineHeight:1.5}}>Orientierungswerte nach DFB-Empfehlung (Kinderfußball-Reform). Landes-/Kreisverbände können abweichen – im Zweifel beim eigenen Verband prüfen.</p>
+      </div>}
+    </div>
+  );
+}
 function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAttachBoard=null }) {
   const t=TH(cl);
   const sportMap={fussball:"football",handball:"handball",basketball:"basketball"};
@@ -5863,6 +5901,7 @@ function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAttachBoar
             </div>
           : <p style={{fontSize:12.5,color:"#94a3b8",margin:0}}>Noch keine Boards gespeichert. Aufstellung + Laufwege einrichten und oben einen Namen vergeben.</p>}
       </div>
+      <DFBFormatsCard cl={cl}/>
       <div style={{fontSize:12,color:"#64748b",background:"#f8fafc",borderRadius:10,padding:"10px 12px",lineHeight:1.5}}>
         Tipp: Werkzeug auf <strong>Laufweg</strong> oder <strong>Passweg</strong> stellen, dann auf dem Feld vom Start- zum Zielpunkt ziehen. Gespeicherte Boards sind für alle Trainer des Vereins jederzeit abrufbar.
       </div>
