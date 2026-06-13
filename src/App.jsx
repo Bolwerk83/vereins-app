@@ -22840,9 +22840,14 @@ function buildDrillAnim(el){
   const segs=el.filter(e=>e.type==="passArrow"||e.type==="dribbleArrow");
   const runs=el.filter(e=>e.type==="runArrow"||e.type==="dribbleArrow");
   const near=(ax,ay,bx,by)=>Math.hypot(ax-bx,ay-by)<7;
-  const used=new Set(); const chains=[];
+  const used=new Set(); let chains=[];
   segs.forEach(p=>{ if(used.has(p))return; const isHead=!segs.some(q=>q!==p&&near(q.x2,q.y2,p.x1,p.y1)); if(!isHead)return; const ch=[]; let cur=p,g=0; while(cur&&!used.has(cur)&&g++<24){ used.add(cur); ch.push(cur); cur=segs.find(q=>!used.has(q)&&near(q.x1,q.y1,cur.x2,cur.y2)); } chains.push(ch); });
   segs.forEach(p=>{ if(!used.has(p)){ used.add(p); chains.push([p]); } });
+  // Fallback: keine Pfeile hinterlegt -> Ball laeuft automatisch reihum zwischen den Spielern.
+  if(chains.length===0 && runs.length===0 && players.length>=2){
+    const synth=[]; for(let i=0;i<players.length;i++){ const a=players[i], b=players[(i+1)%players.length]; synth.push({x1:a.x,y1:a.y,x2:b.x,y2:b.y}); }
+    chains=[synth];
+  }
   const runAssign=runs.map(r=>{ let best=null,bd=10; players.forEach(pl=>{const d=Math.hypot(pl.x-r.x1,pl.y-r.y1); if(d<bd){bd=d;best=pl;}}); return {run:r,player:best}; });
   const hasAnim=chains.length>0||runs.length>0;
   const posAt=(k)=>{
