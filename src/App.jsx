@@ -15525,7 +15525,7 @@ function SkillTrend({ player, axes, t }){
    Koordinaten 0..100 (x) / 0..100 (y), Ursprung oben links.
    element-Typen: player, opp, ball, cone, goal, passArrow, runArrow, dribbleArrow, zone, label
 ================================================================= */
-function DrillDiagram({ field="half", elements=[], color="#16a34a", width=320, variant="grass" }) {
+function DrillDiagram({ field="half", elements=[], color="#16a34a", width=320, variant="grass", runColor=null }) {
   // Halbfeld: Hochformat (schmaler), Vollfeld: Querformat
   const ratio = field==="full" ? 0.64 : 1.3;   // h/w
   const W = 100, H = Math.round(100*ratio);
@@ -15594,10 +15594,11 @@ function DrillDiagram({ field="half", elements=[], color="#16a34a", width=320, v
       case "zone": return <rect key={i} x={px(el.x)} y={py(el.y)} width={px(el.w||20)} height={py(el.h||20)} fill={chalk?"none":(el.color||color)+"22"} stroke={chalk?"rgba(255,255,255,.5)":(el.color||color)+"66"} strokeWidth="0.6" strokeDasharray="2 1.5" rx="1"/>;
       case "passArrow": case "runArrow": case "dribbleArrow": {
         const dash = el.type==="passArrow" ? "3 2" : el.type==="dribbleArrow" ? "0.5 2" : "none";
-        const stroke = (el.ball&&!chalk) ? "#fde047" : "#fff";
-        const marker = (el.ball&&!chalk) ? "url(#dd-arrow-ball)" : "url(#dd-arrow)";
+        const isRun = el.type!=="passArrow";
+        const stroke = (isRun&&runColor&&!chalk) ? runColor : (el.ball&&!chalk) ? "#fde047" : "#fff";
+        const marker = (isRun&&runColor&&!chalk) ? "url(#dd-arrow)" : (el.ball&&!chalk) ? "url(#dd-arrow-ball)" : "url(#dd-arrow)";
         return <line key={i} x1={px(el.x1)} y1={py(el.y1)} x2={px(el.x2)} y2={py(el.y2)}
-          stroke={stroke} strokeWidth="1" strokeDasharray={dash} markerEnd={marker}/>;
+          stroke={stroke} strokeWidth={isRun&&runColor?"1.3":"1"} strokeDasharray={dash} markerEnd={marker}/>;
       }
       case "label": return <text key={i} x={px(el.x)} y={py(el.y)} fontSize="3.2" fontWeight="700" fill="#fff" textAnchor="middle">{el.text}</text>;
       default: return null;
@@ -23061,6 +23062,13 @@ function TrackDiagram({ width=300 }){
     </svg>
   );
 }
+// Lauf-Tempo einer Uebung aus den Skills ableiten (fuer Kinder verstaendlich).
+function drillPace(drill){
+  const ax=((drill?.axes||[]).join(" ")+" "+(drill?.focus||"")).toLowerCase();
+  if(ax.includes("schnell")) return {level:3,emoji:"🐆",label:"Sprint",color:"#dc2626",kid:"Vollgas – so schnell du kannst, wie ein Gepard!"};
+  if(ax.includes("ausdauer")||ax.includes("kondition")) return {level:1,emoji:"🐢",label:"locker & gleichmäßig",color:"#16a34a",kid:"Ruhig traben – langsam genug, dass du dabei noch reden könntest."};
+  return {level:2,emoji:"🐇",label:"zügig",color:"#f59e0b",kid:"Flott unterwegs: schnelles Joggen, aber noch kein Vollsprint."};
+}
 function DrillInfoModal({ drill, t, onClose }){
   const col = t?.p || "#16a34a";
   const [view,setView] = useState(drill?.diagram==="track"?"track":"field");
@@ -23070,10 +23078,11 @@ function DrillInfoModal({ drill, t, onClose }){
   const anim = useMemo(()=>buildDrillAnim(drill?.el||[], {title:drill?.title, focus:drill?.focus}),[drill]);
   useEffect(()=>()=>{ if(dref.current) cancelAnimationFrame(dref.current); },[]);
   if(!drill) return null;
+  const pace=drillPace(drill);
   const segBtn=on=>({flex:1,padding:"7px",borderRadius:9,border:`1.5px solid ${on?col:"#e2e8f0"}`,background:on?col+"12":"#fff",color:on?col:"#64748b",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"});
   const playDrill=()=>{
     if(pd){ setPd(false); setAnimK(null); if(dref.current)cancelAnimationFrame(dref.current); return; }
-    setPd(true); const DUR=3200; const t0=performance.now();
+    setPd(true); const DUR= pace.level===3?2000 : pace.level===1?4400 : 3200; const t0=performance.now();
     const loop=(tt)=>{ const k=((tt-t0)/DUR)%1; setAnimK(k); dref.current=requestAnimationFrame(loop); };
     dref.current=requestAnimationFrame(loop);
   };
@@ -23099,8 +23108,15 @@ function DrillInfoModal({ drill, t, onClose }){
           <div style={{display:"flex",justifyContent:"center",marginBottom:10}}>
             {view==="track"
               ? <TrackDiagram width={300}/>
-              : <DrillDiagram field={drill.field} elements={drillEl} color={col} width={300} variant="grass"/>}
+              : <DrillDiagram field={drill.field} elements={drillEl} color={col} width={300} variant="grass" runColor={pace.color}/>}
           </div>
+          {view==="field"&&(
+            <div style={{background:pace.color+"12",border:`1.5px solid ${pace.color}40`,borderRadius:12,padding:"10px 13px",marginBottom:10}}>
+              <div style={{fontSize:13,fontWeight:800,color:"#0f172a"}}>⏱ Lauf-Tempo: <span style={{color:pace.color}}>{pace.emoji} {pace.label}</span></div>
+              <div style={{fontSize:12.5,color:"#475569",lineHeight:1.5,marginTop:3}}>{pace.kid}</div>
+              <div style={{fontSize:11,color:"#94a3b8",marginTop:6}}>🐢 locker · 🐇 zügig · 🐆 Sprint — die <b>farbigen Laufwege</b> zeigen das Tempo, der Abspiel-Knopf läuft entsprechend schnell.</div>
+            </div>
+          )}
           {view==="field"&&anim.hasAnim&&(<>
             <button onClick={playDrill} style={{width:"100%",marginBottom:pd&&anim.catcher?6:14,padding:"10px",borderRadius:11,border:"none",background:pd?"#fee2e2":col,color:pd?"#dc2626":contrast(col),fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>{pd?"■ Stopp":"▶ Ablauf abspielen"}</button>
             {pd&&anim.catcher&&<p style={{fontSize:12,color:"#dc2626",fontWeight:700,textAlign:"center",marginBottom:14}}>🔴 Der Rote ist der Fänger – er jagt die anderen, die laufen weg!</p>}
