@@ -22444,6 +22444,11 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             roster={(local.playerProfiles||[]).filter(p=>p.mainTid===viewEv.tid&&!p.archived).map(p=>p.name)}
             onSave={rep=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,report:rep}:e)}); setViewEv(prev=>({...prev,report:rep})); fire("Spielbericht gespeichert"); }}/>
         )}
+        {["heimspiel","auswarts","freundschaft","turnier","training"].includes(viewEv.type)&&!isHelper&&(()=>{
+          const yes=Object.entries(viewEv.votes||{}).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>n);
+          const roster=yes.length?yes:(local.playerProfiles||[]).filter(p=>p.mainTid===viewEv.tid&&!p.archived).map(p=>p.name);
+          return <PlaytimeTracker ev={viewEv} roster={roster} t={TH(myClub)} onSave={pt=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,playtime:pt}:e)}); setViewEv(prev=>({...prev,playtime:pt})); }}/>;
+        })()}
         {(viewEv.extraPolls||[]).map(p=>(
           <div key={p.id} style={{marginTop:16,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
@@ -22679,6 +22684,54 @@ function EventPlanEditor({ ev, vorlagen, t, onSave, onRemove, onCancel, onOpenTa
   );
 }
 
+// Einsatzzeit-Tracker: faire Spielzeit live mitzaehlen (pro Termin gespeichert).
+function PlaytimeTracker({ ev, roster, onSave, t }){
+  const c=t?.p||"#16a34a";
+  const pt = ev.playtime || {running:false,startedAt:null,base:{},onField:{}};
+  const [,setTick]=useState(0);
+  const [open,setOpen]=useState(false);
+  useEffect(()=>{ if(!pt.running) return; const iv=setInterval(()=>setTick(x=>x+1),1000); return()=>clearInterval(iv); },[pt.running,pt.startedAt]);
+  const now=Date.now();
+  const secsOf=name=> (pt.base?.[name]||0) + ((pt.running&&pt.onField?.[name]&&pt.startedAt)?Math.max(0,Math.floor((now-pt.startedAt)/1000)):0);
+  const fmt=s=>`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,"0")}`;
+  const fold=p=>{ if(!p.running||!p.startedAt) return {...p,base:{...(p.base||{})},onField:{...(p.onField||{})}}; const add=Math.floor((Date.now()-p.startedAt)/1000); const base={...(p.base||{})}; Object.keys(p.onField||{}).forEach(n=>{ if(p.onField[n]) base[n]=(base[n]||0)+add; }); return {...p,base,onField:{...(p.onField||{})},startedAt:Date.now()}; };
+  const toggleRun=()=>{ if(pt.running){ const np=fold(pt); onSave({...np,running:false,startedAt:null}); } else { onSave({...pt,base:{...(pt.base||{})},onField:{...(pt.onField||{})},running:true,startedAt:Date.now()}); } };
+  const togglePlayer=name=>{ const p=fold(pt); onSave({...p,onField:{...p.onField,[name]:!p.onField[name]}}); };
+  const reset=()=>{ if(typeof window!=="undefined"&&window.confirm&&!window.confirm("Einsatzzeiten dieses Termins zurücksetzen?"))return; onSave({running:false,startedAt:null,base:{},onField:{}}); };
+  const onCount=roster.filter(n=>pt.onField?.[n]).length;
+  const times=roster.map(n=>({n,s:secsOf(n)}));
+  const minP=times.length?times.reduce((a,b)=>b.s<a.s?b:a):null;
+  return (
+    <div style={{marginTop:16,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
+      <div style={{display:"flex",alignItems:"center",gap:8}}>
+        <button onClick={()=>setOpen(o=>!o)} style={{flex:1,textAlign:"left",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:8}}>
+          <span style={{fontSize:18}}>⏱</span><span style={{fontWeight:800,fontSize:15,color:"#0f172a"}}>Einsatzzeit (faire Spielzeit)</span>
+          {pt.running&&<span style={{fontSize:11,fontWeight:800,color:"#16a34a"}}>● läuft</span>}
+        </button>
+        <span style={{color:"#cbd5e1",fontSize:16}}>{open?"▲":"▼"}</span>
+      </div>
+      {open&&<div style={{marginTop:10}}>
+        <div style={{display:"flex",gap:8,marginBottom:10}}>
+          <button onClick={toggleRun} style={{flex:1,padding:"10px",borderRadius:11,border:"none",background:pt.running?"#fee2e2":c,color:pt.running?"#dc2626":contrast(c),fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>{pt.running?"⏸ Pause":"▶ Start"}</button>
+          <button onClick={reset} style={{padding:"10px 14px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Zurücksetzen</button>
+        </div>
+        <div style={{fontSize:11.5,color:"#94a3b8",marginBottom:8,lineHeight:1.5}}>Auf dem Feld: {onCount} · Tippe einen Spieler für Feld/Bank. Die Zeit läuft bei „Start" nur für Feldspieler.</div>
+        {roster.length===0
+          ? <p style={{fontSize:13,color:"#94a3b8"}}>Noch keine Zusagen – sobald Spieler „dabei" sind, erscheinen sie hier.</p>
+          : <div style={{display:"flex",flexDirection:"column",gap:6}}>
+              {roster.map(n=>{ const on=!!pt.onField?.[n]; const s=secsOf(n); const isMin=minP&&minP.n===n&&onCount<roster.length&&roster.length>1; return (
+                <button key={n} onClick={()=>togglePlayer(n)} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",borderRadius:11,border:`1.5px solid ${on?"#16a34a":"#e2e8f0"}`,background:on?"#dcfce7":"#fff",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
+                  <span style={{width:10,height:10,borderRadius:"50%",background:on?"#16a34a":"#cbd5e1",flexShrink:0}}/>
+                  <span style={{flex:1,fontWeight:700,fontSize:14,color:"#0f172a"}}>{n}</span>
+                  {isMin&&<span style={{fontSize:10,fontWeight:800,color:"#d97706",background:"#fef3c7",borderRadius:5,padding:"1px 6px"}}>wenig</span>}
+                  <span style={{fontSize:13,fontWeight:800,color:on?"#15803d":"#64748b"}}>{fmt(s)}</span>
+                </button>
+              );})}
+            </div>}
+      </div>}
+    </div>
+  );
+}
 function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline}) {
   const p = cl?.pri||"#16a34a";
   const [showDeadlineForm,setShowDL]=useState(false);
