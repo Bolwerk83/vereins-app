@@ -15793,7 +15793,7 @@ const DRILL_LIB = [
   { id:"d30", focus:"spielform", axes:["Übersicht","Teamplay"], title:"Spiel mit Kontaktbegrenzung", min:18, players:"8+", cats:["C-Jugend","B-Jugend","A-Jugend"],
     desc:"Normales Spiel auf zwei Tore, aber maximal zwei Ballkontakte pro Spieler. Zwingt zu schnellem Spiel und gutem Stellungsspiel.",
     coach:"Vor der Annahme orientieren, Anspielstationen früh anbieten.", field:"full",
-    el:[{type:"goal",x:4,y:50,w:18},{type:"goal",x:96,y:50,w:18},{type:"player",x:30,y:40,n:1},{type:"player",x:42,y:60,n:2},{type:"player",x:55,y:45,n:3},{type:"opp",x:62,y:50,n:1},{type:"opp",x:70,y:38,n:2},{type:"ball",x:42,y:60}] },
+    el:[{type:"goal",x:4,y:50,w:18},{type:"goal",x:96,y:50,w:18},{type:"player",x:30,y:40,n:1},{type:"player",x:42,y:60,n:2},{type:"player",x:55,y:45,n:3},{type:"opp",x:62,y:50,n:1},{type:"opp",x:70,y:38,n:2},{type:"ball",x:42,y:60},{type:"passArrow",x1:42,y1:60,x2:54,y2:46,ball:true},{type:"passArrow",x1:55,y1:45,x2:72,y2:50,ball:true},{type:"dribbleArrow",x1:72,y1:50,x2:90,y2:50,ball:true},{type:"runArrow",x1:30,y1:40,x2:60,y2:42}] },
   // ---- AUFWÄRMEN (weitere) ----
   { id:"d31", focus:"aufwärmen", axes:["Technik","Schnelligkeit"], title:"Spiegel-Dribbeln", min:8, players:"2+", cats:["F-Jugend","E-Jugend","D-Jugend"],
     desc:"Zwei Spieler gegenüber, einer führt Bewegungen mit Ball aus, der andere spiegelt sie. Richtungswechsel, Tempowechsel, Finten.",
@@ -15886,7 +15886,7 @@ const DRILL_LIB = [
   { id:"d50", focus:"spielform", axes:["Abschluss","Teamplay"], title:"Pokalturnier im Training", min:25, players:"8+", cats:["F-Jugend","E-Jugend","D-Jugend"],
     desc:"Mehrere kleine Teams spielen kurze Spiele (je 4-5 Min) gegeneinander im Turniermodus. Hohe Motivation, viele Spielsituationen.",
     coach:"Faire Teams einteilen, kurze Spiele, alle kommen viel zum Einsatz.", field:"half",
-    el:[{type:"goal",x:50,y:4,w:14},{type:"goal",x:50,y:96,w:14},{type:"player",x:40,y:45,n:1},{type:"player",x:58,y:55,n:2},{type:"opp",x:50,y:50,n:1},{type:"opp",x:45,y:65,n:2},{type:"ball",x:50,y:50}] },
+    el:[{type:"goal",x:50,y:4,w:14},{type:"goal",x:50,y:96,w:14},{type:"player",x:40,y:45,n:1},{type:"player",x:58,y:55,n:2},{type:"opp",x:50,y:50,n:1},{type:"opp",x:45,y:65,n:2},{type:"ball",x:50,y:50},{type:"passArrow",x1:50,y1:50,x2:41,y2:45,ball:true},{type:"dribbleArrow",x1:40,y1:45,x2:49,y2:9,ball:true},{type:"runArrow",x1:58,y1:55,x2:55,y2:22}] },
   // ---- TECHNIK / TORSCHUSS Abschluss-Sammlung ----
   { id:"d51", focus:"technik", axes:["Technik","Teamplay"], title:"Vier-Ecken-Passspiel", min:12, players:"8+", cats:["D-Jugend","C-Jugend","B-Jugend"],
     desc:"An jeder Ecke eine Gruppe. Pass zur nächsten Ecke, dann selbst nachlaufen. Im Uhrzeigersinn, später Richtung wechseln.",
@@ -16017,7 +16017,7 @@ const DRILL_LIB = [
   { id:"d80", focus:"spielform", axes:["Abschluss","Übersicht","Teamplay"], title:"Abschlussturnier 4-gegen-4", min:25, players:"12+", cats:["D-Jugend","C-Jugend","B-Jugend","A-Jugend"],
     desc:"Mehrere Teams, kurze Spiele 4 gegen 4 auf zwei Tore mit Torhütern im Turniermodus. Krönung einer Trainingseinheit.",
     coach:"Faire Teams, kurze intensive Spiele, alle Themen anwenden lassen.", field:"full",
-    el:[{type:"goal",x:4,y:50,w:18},{type:"goal",x:96,y:50,w:18},{type:"player",x:28,y:38,n:1},{type:"player",x:38,y:62,n:2},{type:"player",x:50,y:48,n:3},{type:"opp",x:62,y:42,n:1},{type:"opp",x:70,y:64,n:2},{type:"opp",x:55,y:70,n:3},{type:"ball",x:50,y:48}] },
+    el:[{type:"goal",x:4,y:50,w:18},{type:"goal",x:96,y:50,w:18},{type:"player",x:28,y:38,n:1},{type:"player",x:38,y:62,n:2},{type:"player",x:50,y:48,n:3},{type:"opp",x:62,y:42,n:1},{type:"opp",x:70,y:64,n:2},{type:"opp",x:55,y:70,n:3},{type:"ball",x:50,y:48},{type:"passArrow",x1:50,y1:48,x2:39,y2:61,ball:true},{type:"passArrow",x1:38,y1:62,x2:65,y2:52,ball:true},{type:"dribbleArrow",x1:65,y1:52,x2:90,y2:50,ball:true},{type:"runArrow",x1:28,y1:38,x2:60,y2:44}] },
   // ==== KINDER & SPASS (Bambini / G / F / E) – große Auswahl spielerischer Übungen ====
   // ---- Aufwärmen & Fangspiele ----
   { id:"d81", focus:"aufwärmen", axes:["Schnelligkeit","Teamplay"], title:"Versteinerte Hexe", min:8, players:"6+", cats:["Bambinis","G-Jugend","F-Jugend"],
@@ -16029,7 +16029,7 @@ const DRILL_LIB = [
     desc:"Kinder dribbeln frei. Auf Zuruf: „Feuer“ = zum Zaun laufen, „Wasser“ = auf den Ball setzen, „Blitz“ = schnell hinlegen. Mit Ball am Fuß.",
     kids:"Dribbel frei umher und hör gut zu! Bei „Feuer“ rennst du zum Rand, bei „Wasser“ setzt du dich auf den Ball, bei „Blitz“ legst du dich blitzschnell hin. Wer ist am schnellsten?",
     coach:"Kommandos mischen, Tempo steigern. Ball bleibt immer in der Nähe.", field:"half",
-    el:[{type:"player",x:30,y:40,n:1},{type:"ball",x:30,y:43},{type:"player",x:60,y:55,n:2},{type:"ball",x:60,y:58},{type:"player",x:45,y:70,n:3},{type:"ball",x:45,y:73}] },
+    el:[{type:"player",x:30,y:40,n:1},{type:"ball",x:30,y:43},{type:"player",x:60,y:55,n:2},{type:"ball",x:60,y:58},{type:"player",x:45,y:70,n:3},{type:"ball",x:45,y:73},{type:"dribbleArrow",x1:30,y1:43,x2:30,y2:15,ball:true},{type:"dribbleArrow",x1:60,y1:58,x2:60,y2:85,ball:true},{type:"dribbleArrow",x1:45,y1:73,x2:80,y2:73,ball:true}] },
   { id:"d83", focus:"aufwärmen", axes:["Schnelligkeit","Teamplay"], title:"Hütchen-Klau", min:8, players:"6+", cats:["G-Jugend","F-Jugend","E-Jugend"],
     desc:"Zwei Teams, in der Mitte viele Hütchen. Jedes Kind holt einzeln ein Hütchen in die eigene Ecke. Welches Team hat am Ende mehr?",
     kids:"In der Mitte liegen viele Hütchen. Renn los, schnapp dir EIN Hütchen und bring es in deine Ecke. Immer nur eins! Welches Team hat zum Schluss die meisten?",
@@ -22585,6 +22585,40 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
 
 // Inline-Trainingsplan pro Termin: editierbare Kopie (ev.trainingPlan). Eine Vorlage
 // kann uebernommen (kopiert) und frei angepasst werden, ohne die Vorlage zu aendern.
+// Schöner, suchbarer Übungs-Picker (statt nativem Dropdown).
+function DrillPicker({ pool, onPick, onClose, t }){
+  const c=t?.p||"#16a34a";
+  const [q,setQ]=useState("");
+  const list=(pool||[]).filter(d=>!q||d.title.toLowerCase().includes(q.toLowerCase())||(d.axes||[]).join(" ").toLowerCase().includes(q.toLowerCase()));
+  return (
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:1350,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"85dvh",display:"flex",flexDirection:"column",animation:"down .22s ease"}}>
+        <div style={{flexShrink:0,padding:"12px 16px 10px",borderBottom:"1px solid #f1f5f9"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+            <span style={{fontWeight:900,fontSize:16,color:"#0f172a",flex:1}}>Übung wählen</span>
+            <button onClick={onClose} style={{width:30,height:30,borderRadius:9,background:"#f1f5f9",border:"none",fontWeight:800,cursor:"pointer",color:"#475569",fontFamily:"inherit"}}>✕</button>
+          </div>
+          <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Übung suchen…" autoFocus
+            style={{width:"100%",padding:"10px 12px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
+        </div>
+        <div style={{overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"10px 14px calc(20px + env(safe-area-inset-bottom))"}}>
+          {list.length===0&&<p style={{fontSize:13,color:"#94a3b8",textAlign:"center",padding:"20px"}}>Keine Übung gefunden.</p>}
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {list.map(d=>(
+              <button key={d.id} onClick={()=>onPick(d)} style={{textAlign:"left",background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"11px 13px",cursor:"pointer",fontFamily:"inherit"}}>
+                <div style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>{d.title}</div>
+                <div style={{display:"flex",gap:5,flexWrap:"wrap",marginTop:5,alignItems:"center"}}>
+                  {(d.axes||[]).map(a=><span key={a} style={{fontSize:10.5,fontWeight:800,color:c,background:c+"15",borderRadius:6,padding:"2px 7px"}}>{a}</span>)}
+                  <span style={{fontSize:11,color:"#94a3b8",marginLeft:"auto"}}>{d.min} Min{d.players?" · "+d.players:""}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 function EventPlanEditor({ ev, vorlagen, t, onSave, onRemove, onCancel, onOpenTaktik }) {
   const PHASES=["Aufwärmen","Hauptteil","Abschluss","Spielform","Athletik"];
   const mapBlock=b=>({phase:b.phase||"Hauptteil",title:b.title||"",min:Number(b.min)||0,drillId:b.drillId||"",axes:b.axes||[],diagram:b.diagram||"",mode:b.drillId?"lib":(b.mode||"free")});
@@ -22599,6 +22633,7 @@ function EventPlanEditor({ ev, vorlagen, t, onSave, onRemove, onCancel, onOpenTa
   const [blocks,setBlocks]=useState(initBlocks);
   const [showV,setShowV]=useState(false);
   const [infoDrill,setInfoDrill]=useState(null);
+  const [pickIdx,setPickIdx]=useState(null);
   const had=!!(ev?.trainingPlan||ev?.trainingId);
   const setBlock=(i,patch)=>setBlocks(bs=>bs.map((b,j)=>j===i?{...b,...patch}:b));
   const addBlock=()=>setBlocks(bs=>[...bs,{phase:bs.length?"Hauptteil":"Aufwärmen",title:"",min:10,mode:"lib",drillId:"",axes:[]}]);
@@ -22659,11 +22694,10 @@ function EventPlanEditor({ ev, vorlagen, t, onSave, onRemove, onCancel, onOpenTa
               <button onClick={()=>setBlock(i,{mode:"free",drillId:"",axes:[]})} style={segBtn(mode==="free")}>✎ Eigene</button>
             </div>
             {mode==="lib"
-              ? <select value={b.drillId||""} onChange={e=>{const d=DRILL_LIB.find(x=>x.id===e.target.value); setBlock(i,{drillId:e.target.value,title:d?d.title:"",axes:d?(d.axes||[]):[],min:d?d.min:b.min});}}
-                  style={{width:"100%",padding:"9px 10px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",boxSizing:"border-box",fontFamily:"inherit",background:"#fff"}}>
-                  <option value="">– Übung aus Bibliothek wählen –</option>
-                  {pool.map(d=><option key={d.id} value={d.id}>{d.title} · {(d.axes||[]).join("/")}</option>)}
-                </select>
+              ? <button onClick={()=>setPickIdx(i)} style={{width:"100%",textAlign:"left",padding:"10px 12px",fontSize:13.5,border:`1.5px solid ${b.drillId?"#c7d2fe":"#e2e8f0"}`,borderRadius:9,boxSizing:"border-box",fontFamily:"inherit",background:b.drillId?"#eef2ff":"#fff",color:b.drillId?"#0f172a":"#64748b",fontWeight:b.drillId?700:500,cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{b.drillId?(DRILL_LIB.find(x=>x.id===b.drillId)?.title||"Übung"):"＋ Übung aus Bibliothek wählen"}</span>
+                  <span style={{color:"#94a3b8",fontSize:12,flexShrink:0}}>{b.drillId?"ändern":"›"}</span>
+                </button>
               : <input value={b.title} onChange={e=>setBlock(i,{title:e.target.value})} placeholder="Eigene Übung / Inhalt" style={{width:"100%",padding:"9px 11px",fontSize:13.5,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>}
             {mode==="lib"&&b.drillId&&<div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginTop:6}}>
               {(b.axes||[]).map(a=><span key={a} style={{fontSize:10.5,fontWeight:800,color:"#4f46e5",background:"#eef2ff",borderRadius:6,padding:"2px 7px"}}>{a}</span>)}
@@ -22680,6 +22714,8 @@ function EventPlanEditor({ ev, vorlagen, t, onSave, onRemove, onCancel, onOpenTa
       {had&&<button onClick={onRemove} style={{width:"100%",marginTop:9,padding:"11px",borderRadius:11,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:700,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>Plan entfernen</button>}
       <button onClick={onCancel} style={{width:"100%",marginTop:9,padding:"11px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
       {infoDrill&&<DrillInfoModal drill={infoDrill} t={t} onClose={()=>setInfoDrill(null)}/>}
+      {pickIdx!=null&&<DrillPicker pool={drillsForPhase(blocks[pickIdx]?.phase)} t={t} onClose={()=>setPickIdx(null)}
+        onPick={d=>{ setBlock(pickIdx,{drillId:d.id,title:d.title,axes:d.axes||[],min:d.min,mode:"lib"}); setPickIdx(null); }}/>}
     </div>
   );
 }
