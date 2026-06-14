@@ -1767,10 +1767,12 @@ function AreaIntro({ id, cl }){
 function Drawer({ch,children,onClose,title,maxH="92dvh"}) {
   return (
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:900,backdropFilter:"blur(8px)"}}>
-      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:560,maxHeight:maxH,overflowY:"auto",boxShadow:"0 -16px 60px rgba(0,0,0,.2)",animation:"down .22s ease"}}>
-        <div style={{display:"flex",justifyContent:"center",padding:"10px 0 2px"}}><div style={{width:36,height:4,borderRadius:99,background:"#e2e8f0"}}/></div>
-        {title&&<div style={{padding:"6px 22px 14px",fontSize:18,fontWeight:800,color:"#0f172a"}}>{title}</div>}
-        <div style={{padding:"0 20px 48px"}}>{ch||children}</div>
+      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:560,maxHeight:maxH,display:"flex",flexDirection:"column",boxShadow:"0 -16px 60px rgba(0,0,0,.2)",animation:"down .22s ease"}}>
+        <div style={{flexShrink:0}}>
+          <div style={{display:"flex",justifyContent:"center",padding:"10px 0 2px"}}><div style={{width:36,height:4,borderRadius:99,background:"#e2e8f0"}}/></div>
+          {title&&<div style={{padding:"6px 22px 14px",fontSize:18,fontWeight:800,color:"#0f172a"}}>{title}</div>}
+        </div>
+        <div style={{flex:1,minHeight:0,overflowY:"auto",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain",padding:"0 20px calc(48px + env(safe-area-inset-bottom))"}}>{ch||children}</div>
       </div>
     </div>
   );
@@ -22415,8 +22417,20 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           <div style={{marginTop:16,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginBottom:10}}>
               <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:18}}>📋</span><span style={{fontWeight:800,fontSize:15,color:"#0f172a"}}>Trainingsplan</span></div>
-              {!isHelper&&<button onClick={()=>{openPlan(viewEv);setViewEv(null);}} style={{padding:"6px 11px",borderRadius:9,border:"none",background:"#eef2ff",color:"#4f46e5",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{pl?"Ändern":"Hinterlegen"}</button>}
+              {(!isHelper||viewEv.planHelpers)&&<button onClick={()=>{openPlan(viewEv);setViewEv(null);}} style={{padding:"6px 11px",borderRadius:9,border:"none",background:"#eef2ff",color:"#4f46e5",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{pl?"Ändern":"Hinterlegen"}</button>}
             </div>
+            {!isHelper&&(
+              <label style={{display:"flex",alignItems:"center",gap:9,background:viewEv.planHelpers?"#ecfdf5":"#f8fafc",border:`1.5px solid ${viewEv.planHelpers?"#a7f3d0":"#e2e8f0"}`,borderRadius:10,padding:"9px 12px",marginBottom:10,cursor:"pointer"}}>
+                <input type="checkbox" checked={!!viewEv.planHelpers} onChange={e=>{
+                  const val=e.target.checked;
+                  save({...local,events:local.events.map(x=>x.id===viewEv.id?{...x,planHelpers:val}:x)});
+                  setViewEv(prev=>({...prev,planHelpers:val}));
+                  fire(val?"Helfer für diesen Trainingsplan freigegeben *":"Freigabe für Helfer entfernt");
+                }} style={{width:18,height:18,accentColor:"#16a34a",flexShrink:0,cursor:"pointer"}}/>
+                <span style={{fontSize:12.5,color:"#475569",fontWeight:600,lineHeight:1.35}}>Helfer dürfen den Trainingsplan für diesen Termin erstellen/bearbeiten</span>
+              </label>
+            )}
+            {isHelper&&viewEv.planHelpers&&<div style={{fontSize:11.5,color:"#059669",fontWeight:700,marginBottom:8}}>✓ Vom Trainer für diesen Termin freigegeben</div>}
             {pl
               ? <div style={{display:"flex",flexDirection:"column",gap:6}}>
                   {pl.focus&&<div style={{fontSize:12,color:"#64748b",marginBottom:2}}>Schwerpunkt: {pl.focus}</div>}
