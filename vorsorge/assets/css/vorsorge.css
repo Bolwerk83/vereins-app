@@ -1,0 +1,44 @@
+/* =====================================================================
+   vorsorge.bolwerk24.de — App-Akzent (Sky/Teal)
+   Lädt NACH styles.css und überschreibt nur die Akzentfarben.
+   ===================================================================== */
+:root {
+  --accent:      #0ea5e9;
+  --accent-2:    #0284c7;
+  --accent-soft: rgba(14, 165, 233, .12);
+  --accent-grad: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 55%, #0284c7 100%);
+}
+[data-theme="dark"] {
+  --accent-soft: rgba(56, 189, 248, .18);
+}
+
+/* Vertrauens-/Sicherheits-Kacheln */
+.assure-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-top: 8px;
+}
+.assure {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-sm);
+}
+.assure .ico {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.assure .ico svg { width: 22px; height: 22px; }
+.assure h3 { font-size: 16px; margin-bottom: 4px; }
+.assure p { color: var(--text-2); font-size: 14.5px; }
