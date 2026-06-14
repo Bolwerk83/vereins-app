@@ -22960,29 +22960,53 @@ function eventWarnings(ev, tod){
 // Baut aus den Diagramm-Elementen einer Uebung eine Abspiel-Logik:
 // Baelle laufen die Pass-/Dribbelwege (verkettet -> ggf. mehrere Baelle),
 // Spieler laufen ihre Laufwege. posAt(k) liefert Positionen fuer Fortschritt k.
-function buildDrillAnim(el){
-  el=el||[];
+function buildDrillAnim(el, meta){
+  el=el||[]; meta=meta||{};
   const players=el.filter(e=>e.type==="player");
   const segs=el.filter(e=>e.type==="passArrow"||e.type==="dribbleArrow");
   const runs=el.filter(e=>e.type==="runArrow"||e.type==="dribbleArrow");
   const near=(ax,ay,bx,by)=>Math.hypot(ax-bx,ay-by)<7;
-  const used=new Set(); let chains=[];
-  segs.forEach(p=>{ if(used.has(p))return; const isHead=!segs.some(q=>q!==p&&near(q.x2,q.y2,p.x1,p.y1)); if(!isHead)return; const ch=[]; let cur=p,g=0; while(cur&&!used.has(cur)&&g++<24){ used.add(cur); ch.push(cur); cur=segs.find(q=>!used.has(q)&&near(q.x1,q.y1,cur.x2,cur.y2)); } chains.push(ch); });
-  segs.forEach(p=>{ if(!used.has(p)){ used.add(p); chains.push([p]); } });
-  // Fallback: keine Pfeile hinterlegt -> Ball laeuft automatisch reihum zwischen den Spielern.
-  if(chains.length===0 && runs.length===0 && players.length>=2){
-    const synth=[]; for(let i=0;i<players.length;i++){ const a=players[i], b=players[(i+1)%players.length]; synth.push({x1:a.x,y1:a.y,x2:b.x,y2:b.y}); }
-    chains=[synth];
+  const ease=x=>x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2;
+  // 1) Explizite Pfeile: Spieler laufen die Laufwege, Ball laeuft die Passwege.
+  if(segs.length||runs.length){
+    const used=new Set(); const chains=[];
+    segs.forEach(p=>{ if(used.has(p))return; const isHead=!segs.some(q=>q!==p&&near(q.x2,q.y2,p.x1,p.y1)); if(!isHead)return; const ch=[]; let cur=p,g=0; while(cur&&!used.has(cur)&&g++<24){ used.add(cur); ch.push(cur); cur=segs.find(q=>!used.has(q)&&near(q.x1,q.y1,cur.x2,cur.y2)); } chains.push(ch); });
+    segs.forEach(p=>{ if(!used.has(p)){ used.add(p); chains.push([p]); } });
+    const runAssign=runs.map(r=>{ let best=null,bd=10; players.forEach(pl=>{const d=Math.hypot(pl.x-r.x1,pl.y-r.y1); if(d<bd){bd=d;best=pl;}}); return {run:r,player:best}; });
+    const posAt=(k)=>{
+      const balls=chains.map(ch=>{ const N=ch.length||1; const seg=Math.min(N-1,Math.floor(k*N)); const lp=(k*N)-seg; const a=ch[seg]; return {x:a.x1+(a.x2-a.x1)*lp,y:a.y1+(a.y2-a.y1)*lp}; });
+      const moved=new Map();
+      runAssign.forEach(({run,player})=>{ if(!player)return; const e=ease(k); moved.set(player,{x:run.x1+(run.x2-run.x1)*e,y:run.y1+(run.y2-run.y1)*e}); });
+      return {balls,moved};
+    };
+    return {hasAnim:true,posAt};
   }
-  const runAssign=runs.map(r=>{ let best=null,bd=10; players.forEach(pl=>{const d=Math.hypot(pl.x-r.x1,pl.y-r.y1); if(d<bd){bd=d;best=pl;}}); return {run:r,player:best}; });
-  const hasAnim=chains.length>0||runs.length>0;
-  const posAt=(k)=>{
-    const balls=chains.map(ch=>{ const N=ch.length||1; const seg=Math.min(N-1,Math.floor(k*N)); const lp=(k*N)-seg; const a=ch[seg]; return {x:a.x1+(a.x2-a.x1)*lp,y:a.y1+(a.y2-a.y1)*lp}; });
-    const moved=new Map();
-    runAssign.forEach(({run,player})=>{ if(!player)return; const e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2; moved.set(player,{x:run.x1+(run.x2-run.x1)*e,y:run.y1+(run.y2-run.y1)*e}); });
-    return {balls,moved};
-  };
-  return {hasAnim,posAt};
+  // 2) Keine Pfeile: kindgerechte Bewegung je nach Uebungstyp.
+  if(players.length>=2){
+    const txt=((meta.title||"")+" "+(meta.focus||"")).toLowerCase();
+    const isCatch=/fang|jäg|jag|hasch|räub|fangen/.test(txt);
+    if(isCatch){
+      const c=players[0], prey=players[1], rest=players.slice(2);
+      const posAt=(k)=>{ const e=ease(k); const ang=k*Math.PI*2;
+        const px=prey.x+Math.cos(ang)*10, py=prey.y+Math.sin(ang)*8;
+        const moved=new Map();
+        moved.set(prey,{x:px,y:py});
+        moved.set(c,{x:c.x+(px-c.x)*e,y:c.y+(py-c.y)*e}); // Faenger jagt
+        rest.forEach((p,i)=>{ const a=k*Math.PI*2+i*1.7; moved.set(p,{x:p.x+Math.cos(a)*7,y:p.y+Math.sin(a)*6}); });
+        return {balls:[],moved};
+      };
+      return {hasAnim:true,posAt,catcher:c};
+    }
+    // generisch: Spieler laufen in kleinen Schleifen, Ball wandert reihum.
+    const posAt=(k)=>{
+      const moved=new Map();
+      players.forEach((p,i)=>{ const a=k*Math.PI*2+i*1.3; moved.set(p,{x:p.x+Math.cos(a)*6,y:p.y+Math.sin(a)*4}); });
+      const N=players.length; const seg=Math.min(N-1,Math.floor(k*N)); const lp=(k*N)-seg; const a=players[seg], b=players[(seg+1)%N];
+      return {balls:[{x:a.x+(b.x-a.x)*lp,y:a.y+(b.y-a.y)*lp}],moved};
+    };
+    return {hasAnim:true,posAt};
+  }
+  return {hasAnim:false,posAt:()=>({balls:[],moved:new Map()})};
 }
 function TrackDiagram({ width=300 }){
   const h=Math.round(width*0.625);
@@ -23007,7 +23031,7 @@ function DrillInfoModal({ drill, t, onClose }){
   const [animK,setAnimK] = useState(null);
   const [pd,setPd] = useState(false);
   const dref = useRef(null);
-  const anim = useMemo(()=>buildDrillAnim(drill?.el||[]),[drill]);
+  const anim = useMemo(()=>buildDrillAnim(drill?.el||[], {title:drill?.title, focus:drill?.focus}),[drill]);
   useEffect(()=>()=>{ if(dref.current) cancelAnimationFrame(dref.current); },[]);
   if(!drill) return null;
   const segBtn=on=>({flex:1,padding:"7px",borderRadius:9,border:`1.5px solid ${on?col:"#e2e8f0"}`,background:on?col+"12":"#fff",color:on?col:"#64748b",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"});
@@ -23018,7 +23042,7 @@ function DrillInfoModal({ drill, t, onClose }){
     dref.current=requestAnimationFrame(loop);
   };
   const drillEl = (pd&&animK!=null) ? (()=>{ const {balls,moved}=anim.posAt(animK);
-    const base=(drill.el||[]).map(e=>{ if(e.type==="ball") return balls.length?null:e; return moved.has(e)?{...e,x:moved.get(e).x,y:moved.get(e).y}:e; }).filter(Boolean);
+    const base=(drill.el||[]).map(e=>{ if(e.type==="ball") return balls.length?null:e; if(moved.has(e)){ const mv=moved.get(e); return {...e, x:mv.x, y:mv.y, ...(anim.catcher===e?{type:"opp"}:{})}; } return e; }).filter(Boolean);
     return [...base, ...balls.map(b=>({type:"ball",x:b.x,y:b.y}))];
   })() : drill.el;
   return (
@@ -23041,9 +23065,10 @@ function DrillInfoModal({ drill, t, onClose }){
               ? <TrackDiagram width={300}/>
               : <DrillDiagram field={drill.field} elements={drillEl} color={col} width={300} variant="grass"/>}
           </div>
-          {view==="field"&&anim.hasAnim&&(
-            <button onClick={playDrill} style={{width:"100%",marginBottom:14,padding:"10px",borderRadius:11,border:"none",background:pd?"#fee2e2":col,color:pd?"#dc2626":contrast(col),fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>{pd?"■ Stopp":"▶ Ablauf abspielen"}</button>
-          )}
+          {view==="field"&&anim.hasAnim&&(<>
+            <button onClick={playDrill} style={{width:"100%",marginBottom:pd&&anim.catcher?6:14,padding:"10px",borderRadius:11,border:"none",background:pd?"#fee2e2":col,color:pd?"#dc2626":contrast(col),fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>{pd?"■ Stopp":"▶ Ablauf abspielen"}</button>
+            {pd&&anim.catcher&&<p style={{fontSize:12,color:"#dc2626",fontWeight:700,textAlign:"center",marginBottom:14}}>🔴 Der Rote ist der Fänger – er jagt die anderen, die laufen weg!</p>}
+          </>)}
           {drill.desc&&<p style={{fontSize:13.5,color:"#334155",lineHeight:1.6,marginBottom:10}}>{drill.desc}</p>}
           {drill.coach&&<div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:10,padding:"10px 12px",fontSize:12.5,color:"#166534",lineHeight:1.55,marginBottom:10}}><strong>Coaching:</strong> {drill.coach}</div>}
           {drill.kids&&<div style={{background:"#fffbeb",border:"1px solid #fde68a",borderRadius:10,padding:"10px 12px",fontSize:13,color:"#78350f",lineHeight:1.6,marginBottom:10}}><strong>🧒 Für Kinder erklärt:</strong> {drill.kids}</div>}
