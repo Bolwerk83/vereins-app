@@ -5637,12 +5637,30 @@ function tbForms(sport,count){ return (TB_FORMATIONS[sport]||TB_FORMATIONS.gener
 // DFB-Spielformen & Platzgroessen je Altersklasse (Orientierungswerte nach der
 // Kinderfussball-Reform; Landes-/Kreisverbaende koennen abweichen).
 const DFB_FORMATS=[
-  {age:"Bambini / G-Jugend (U6–U7)", form:"2:2 und 3:3", players:"2–3 + viele Wechsel", field:"ca. 15×20 bis 20×25 m", goals:"Minitore (ca. 1–2 m)", ball:"Größe 3", time:"kurze Spiele, häufig wechseln", focus:"Ballgewöhnung, Dribbeln, zum Tor laufen – kein Abseits, keine Tabelle"},
-  {age:"F-Jugend (U8–U9)", form:"3:3 (Funino) & 5:5", players:"3 bzw. 5", field:"Funino ca. 25×35 m · 5:5 ca. 30×40 m", goals:"Minitore bzw. kleine Jugendtore", ball:"Größe 3/4", time:"mehrere kurze Spielzeiten", focus:"Dribbeln & 1-gegen-1, Anbieten/Freilaufen, viele Ballkontakte"},
-  {age:"E-Jugend (U10–U11)", form:"7:7", players:"7", field:"ca. 35×55 m (Großfeld quer / Hälfte)", goals:"5-m-Jugendtore", ball:"Größe 4", time:"2×25–30 min", focus:"Passspiel, Raum erkennen, Umschalten, erste Mannschaftstaktik"},
-  {age:"D-Jugend (U12–U13)", form:"9:9", players:"9", field:"ca. 50×70 m", goals:"2×5 m", ball:"Größe 4", time:"2×30 min", focus:"Spielaufbau, Breite/Tiefe, Verschieben, Standards"},
-  {age:"C-Jugend (U14–U15)", form:"11:11", players:"11", field:"Großfeld (bis ca. 68×105 m)", goals:"7,32×2,44 m", ball:"Größe 5", time:"2×35 min", focus:"Mannschaftstaktik, Positionsspiel, Pressing/Umschalten"},
-  {age:"B-/A-Jugend (U16–U19)", form:"11:11", players:"11", field:"Großfeld", goals:"7,32×2,44 m", ball:"Größe 5", time:"2×40 / 2×45 min", focus:"komplexe Spielsysteme, Athletik, Spielintelligenz"},
+  {age:"Bambini / G-Jugend (U6–U7)", form:"2:2 und 3:3", players:"2–3 + viele Wechsel", field:"ca. 15×20 bis 20×25 m", goals:"Minitore (ca. 1–2 m)", ball:"Größe 3", time:"kurze Spiele, häufig wechseln",
+    focus:"Ballgewöhnung, Dribbeln, zum Tor laufen",
+    rules:"Kein Abseits · keine Tabelle/kein Ergebnisdienst · oft ohne feste Torhüter · Einkicken/Eindribbeln statt Einwurf",
+    fair:"Schiedsrichterloses Spiel – Kinder klären Strittiges selbst, Trainer/Eltern begleiten nur. Jedes Kind spielt etwa gleich viel. Festival-Format: mehrere Mini-Felder parallel, Funino mit Auf-/Abstieg."},
+  {age:"F-Jugend (U8–U9)", form:"3:3 (Funino) & 5:5", players:"3 bzw. 5", field:"Funino ca. 25×35 m · 5:5 ca. 30×40 m", goals:"Minitore bzw. kleine Jugendtore", ball:"Größe 3/4", time:"mehrere kurze Spielzeiten",
+    focus:"Dribbeln & 1-gegen-1, Anbieten/Freilaufen, viele Ballkontakte",
+    rules:"Kein Abseits · keine Tabelle · Einkicken/Eindribbeln · Abstoß flach",
+    fair:"Möglichst ohne Schiri; faire Einsatzzeiten für alle. Funino-Festivals fördern Entscheidungen & viele Torabschlüsse."},
+  {age:"E-Jugend (U10–U11)", form:"7:7", players:"7", field:"ca. 35×55 m", goals:"5-m-Jugendtore", ball:"Größe 4", time:"2×25–30 min",
+    focus:"Passspiel, Raum erkennen, Umschalten, erste Mannschaftstaktik",
+    rules:"Abseits abgeschwächt/keins (verbandsabhängig) · Einwurf · Rückpass zum Torwart aufnehmbar · fortlaufendes Wechseln",
+    fair:"Jedes Kind sollte mind. die Hälfte spielen. Erste Spielbegleiter/Schiris."},
+  {age:"D-Jugend (U12–U13)", form:"9:9", players:"9", field:"ca. 50×70 m", goals:"2×5 m", ball:"Größe 4", time:"2×30 min",
+    focus:"Spielaufbau, Breite/Tiefe, Verschieben, Standards",
+    rules:"Abseits (verbandsabhängig) · normale Regeln, Rückpassregel greift zunehmend",
+    fair:"Faire Einsatzzeiten weiterhin wichtig; Leistungsgedanke langsam steigend."},
+  {age:"C-Jugend (U14–U15)", form:"11:11", players:"11", field:"Großfeld (bis ca. 68×105 m)", goals:"7,32×2,44 m", ball:"Größe 5", time:"2×35 min",
+    focus:"Mannschaftstaktik, Positionsspiel, Pressing/Umschalten",
+    rules:"Volle Wettkampfregeln (Abseits, Rückpass, Einwurf), Tabelle/Wettbewerb",
+    fair:"Leistungsorientierter – aber Ausbildung vor Ergebnis."},
+  {age:"B-/A-Jugend (U16–U19)", form:"11:11", players:"11", field:"Großfeld", goals:"7,32×2,44 m", ball:"Größe 5", time:"2×40 / 2×45 min",
+    focus:"komplexe Spielsysteme, Athletik, Spielintelligenz",
+    rules:"Volle Regeln; A-Jugend teils nach Erwachsenenregeln",
+    fair:"Wettkampf & individuelle Förderung Richtung Aktiven-Bereich."},
 ];
 function DFBFormatsCard({ cl, defaultOpen=false }){
   const [open,setOpen]=useState(defaultOpen);
@@ -5663,6 +5681,8 @@ function DFBFormatsCard({ cl, defaultOpen=false }){
                 <b>Feld:</b> {f.field} · <b>Tore:</b> {f.goals}<br/>
                 <b>Ball:</b> {f.ball} · <b>Spielzeit:</b> {f.time}<br/>
                 <b>Schwerpunkt / Bewegung:</b> {f.focus}
+                {f.rules&&<><br/><b>Regeln:</b> {f.rules}</>}
+                {f.fair&&<><br/><b>Fair-Play / Einsatzzeit:</b> {f.fair}</>}
               </div>
             </div>
           ))}
@@ -5672,6 +5692,18 @@ function DFBFormatsCard({ cl, defaultOpen=false }){
     </div>
   );
 }
+// Bewegungs-/Verhaltens-Empfehlung je Aufstellung (inkl. Hinweis gegen typische Gegnerformation).
+const FORMATION_MOVE={
+  "4-4-2":"Als zwei Viererketten ballorientiert verschieben; Stürmer lenken den Aufbau, Außen schieben zum Ball, Abstände eng. Gegen 4-3-3: Zentrum/Sechserraum zustellen, Flügel doppeln.",
+  "4-3-3":"Hoch anlaufen, Flügel binden die Außenverteidiger, Achter besetzen die Halbräume. Gegen tiefe Gegner: breit machen, schnell verlagern, Strafraum besetzen.",
+  "4-2-3-1":"Doppel-Sechs sichert ab, Zehner stört den gegnerischen Sechser, Außen hinterlaufen. Gegen 4-4-2: zentrale Überzahl (Sechser+Zehner) ausspielen.",
+  "4-1-4-1":"Kompakter Block, der Sechser verschiebt vor der Abwehr; bei Ballgewinn schnell über die Mittelfeld-Vier umschalten. Gegen ballbesitzstarke Teams: Mitte dichtmachen.",
+  "3-5-2":"Flügelläufer geben Breite, im Zentrum Überzahl; bei Ballverlust kippt ein Achter in die Kette. Gegen 4-4-2: Mittelfeld-Überzahl nutzen, Außenbahnen sind der Schlüssel.",
+  "5-3-2":"Tiefer Fünferblock, Außen rücken erst spät heraus; auf schnelles Umschalten mit zwei Spitzen spielen. Gegen Favoriten: kompakt bleiben, Räume eng.",
+  "3-4-3":"Maximaler Druck, Flügelstürmer + Wingbacks geben Breite und Tiefe; die Dreierkette muss sehr gut absichern. Gegen schwächere/tiefe Gegner.",
+  "4-4-2 Raute":"Zentrale Überzahl, Zehner agiert zwischen den Linien; die Außenverteidiger müssen die fehlende Breite geben. Gegen zentrumsstarke Teams.",
+  "4-5-1":"Sehr enges Mittelfeld, kaum zu bespielen; der Einzelstürmer hält Bälle fest, das Mittelfeld rückt nach. Gegen stärkere Gegner / Ergebnis halten.",
+};
 function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAttachBoard=null }) {
   const t=TH(cl);
   const sportMap={fussball:"football",handball:"handball",basketball:"basketball"};
@@ -5783,6 +5815,7 @@ function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAttachBoar
       {forms[formIdx]?.desc&&(
         <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:11,padding:"10px 13px",fontSize:12.5,color:"#475569",lineHeight:1.55}}>
           <b style={{color:"#0f172a"}}>{forms[formIdx].name}</b> – {forms[formIdx].desc}
+          {FORMATION_MOVE[forms[formIdx].name]&&<div style={{marginTop:6,paddingTop:6,borderTop:"1px dashed #e2e8f0"}}><b style={{color:"#0f172a"}}>↔ Bewegung:</b> {FORMATION_MOVE[forms[formIdx].name]}</div>}
         </div>
       )}
       <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
