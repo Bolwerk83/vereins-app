@@ -24200,13 +24200,78 @@ function TournSplit({ ev, t }){
     </div>
   );
 }
+// King-of-the-Court: aus den Ergebnissen einer Runde die naechste Paarung bilden
+// (Sieger Richtung Feld 1, Verlierer Richtung letztes Feld).
+function kotcNext(games){
+  const N=games.length;
+  const win=g=>(Number(g.sa)||0)>=(Number(g.sb)||0)?g.a:g.b;
+  const los=g=>(Number(g.sa)||0)>=(Number(g.sb)||0)?g.b:g.a;
+  const next=[];
+  for(let i=0;i<N;i++){ let a,b;
+    if(i===0){ a=win(games[0]); b=N>1?win(games[1]):los(games[0]); }
+    else if(i===N-1){ a=los(games[N-2]); b=los(games[N-1]); }
+    else { a=los(games[i-1]); b=win(games[i+1]); }
+    next.push({a,b,sa:0,sb:0});
+  }
+  return next;
+}
+function FestivalPanel({ ev, setup, t, onUpdate, isHelper }){
+  const teams=(setup.clubs||[]).filter(Boolean);
+  const fest=ev.festival;
+  const fieldsN=Math.max(1, Math.floor(teams.length/2));
+  const start=()=>{ const r=[]; for(let i=0;i<fieldsN;i++){ const a=teams[2*i], b=teams[2*i+1]; if(a&&b) r.push({a,b,sa:0,sb:0}); } onUpdate&&onUpdate({festival:{rounds:[r]}}); };
+  const setScore=(ri,gi,key,val)=> onUpdate&&onUpdate({festival:{...fest, rounds:fest.rounds.map((r,i)=>i===ri?r.map((g,j)=>j===gi?{...g,[key]:Math.max(0,val)}:g):r)}});
+  const nextRound=()=>{ const last=fest.rounds[fest.rounds.length-1]; onUpdate&&onUpdate({festival:{...fest, rounds:[...fest.rounds, kotcNext(last)]}}); };
+  const reset=()=>{ if(typeof window!=="undefined"&&window.confirm&&!window.confirm("Festival zurücksetzen?"))return; onUpdate&&onUpdate({festival:null}); };
+  const card={background:"#fff",borderRadius:14,padding:"14px",border:"1.5px solid #e2e8f0",marginBottom:12};
+  if(teams.length<2) return <div style={card}><p style={{fontSize:13,color:"#64748b"}}>Mindestens 2 Teams im Setup nötig.</p></div>;
+  if(!fest) return (
+    <div style={card}>
+      <div style={{fontWeight:800,fontSize:14,color:"#0f172a",marginBottom:6}}>🎉 Festival-Modus (King of the Court)</div>
+      <p style={{fontSize:13,color:"#475569",lineHeight:1.5,marginBottom:12}}>{fieldsN} Feld(er) · {teams.length} Teams. Pro Runde spielen alle Felder parallel; der Sieger steigt Richtung <b>Feld 1</b> auf, der Verlierer ab. Keine Tabelle – viele kurze Spiele, Spaß im Vordergrund (DFB-Funino-Idee).</p>
+      {!isHelper&&<button onClick={start} style={{width:"100%",padding:"12px",borderRadius:11,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Festival starten</button>}
+    </div>
+  );
+  const lastI=fest.rounds.length-1;
+  const Step=({v,on})=> <div style={{display:"flex",alignItems:"center",gap:4}}><button onClick={()=>on(v-1)} style={{width:26,height:28,borderRadius:7,border:"1.5px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontWeight:800}}>–</button><span style={{minWidth:18,textAlign:"center",fontWeight:800}}>{v}</span><button onClick={()=>on(v+1)} style={{width:26,height:28,borderRadius:7,border:"1.5px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontWeight:800}}>+</button></div>;
+  return (
+    <div>
+      {fest.rounds.map((r,ri)=>(
+        <div key={ri} style={card}>
+          <div style={{fontWeight:800,fontSize:13,color:t.p,marginBottom:8}}>Runde {ri+1}</div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {r.map((g,gi)=>(
+              <div key={gi} style={{display:"flex",alignItems:"center",gap:8,fontSize:13}}>
+                <span style={{fontSize:10.5,fontWeight:800,color:"#94a3b8",width:46,flexShrink:0}}>Feld {gi+1}</span>
+                <span style={{flex:1,textAlign:"right",fontWeight:700,color:"#0f172a",minWidth:0,overflow:"hidden",textOverflow:"ellipsis"}}>{g.a}</span>
+                {(!isHelper&&ri===lastI)
+                  ? <Step v={Number(g.sa)||0} on={v=>setScore(ri,gi,"sa",v)}/>
+                  : <span style={{fontWeight:800}}>{Number(g.sa)||0}</span>}
+                <span style={{color:"#94a3b8"}}>:</span>
+                {(!isHelper&&ri===lastI)
+                  ? <Step v={Number(g.sb)||0} on={v=>setScore(ri,gi,"sb",v)}/>
+                  : <span style={{fontWeight:800}}>{Number(g.sb)||0}</span>}
+                <span style={{flex:1,fontWeight:700,color:"#0f172a",minWidth:0,overflow:"hidden",textOverflow:"ellipsis"}}>{g.b}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+      {!isHelper&&<div style={{display:"flex",gap:8}}>
+        <button onClick={nextRound} style={{flex:1,padding:"12px",borderRadius:11,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Runde abschließen → nächste</button>
+        <button onClick={reset} style={{padding:"12px 14px",borderRadius:11,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Reset</button>
+      </div>}
+      <p style={{fontSize:11,color:"#94a3b8",marginTop:8,lineHeight:1.5}}>Sieger rückt Richtung Feld 1, Verlierer Richtung letztes Feld. Bei Gleichstand zählt das links genannte Team als Sieger.</p>
+    </div>
+  );
+}
 function TournView({ ev,user,onVote,onUpdate,cl,players,isHelper=false,fields=[],onPublish,onUnpublish }) {
   const t=TH(cl);
   const setup=ev.setup||{};
   const [stab,setStab]=useState("info");
   const TABS=isHelper
-    ?[["info","Info"],["plan","Plan"],["timer","Timer"],["split","Split"],["stats","Stats"]]
-    :[["info","Info"],["setup","Setup"],["plan","Plan"],["timer","Timer"],...(onPublish?[["publish","Freigabe"]]:[]),["split","Split"],["stats","Stats"]];
+    ?[["info","Info"],["plan","Plan"],["festival","Festival"],["timer","Timer"],["split","Split"],["stats","Stats"]]
+    :[["info","Info"],["setup","Setup"],["plan","Plan"],["festival","Festival"],["timer","Timer"],...(onPublish?[["publish","Freigabe"]]:[]),["split","Split"],["stats","Stats"]];
   return (
     <div>
       <div style={{display:"flex",gap:6,marginBottom:12,overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
@@ -24220,6 +24285,7 @@ function TournView({ ev,user,onVote,onUpdate,cl,players,isHelper=false,fields=[]
       {stab==="info"&&<PollAttend ev={ev} user={user} onVote={onVote} cl={cl}/>}
       {stab==="setup"&&!isHelper&&<TournSetup setup={setup} cl={cl} t={t} onUpdate={onUpdate} fields={fields} ev={ev}/>}
       {stab==="plan"&&<TournPlan ev={ev} setup={setup} t={t} onUpdate={onUpdate} isHelper={isHelper}/>}
+      {stab==="festival"&&<FestivalPanel ev={ev} setup={setup} t={t} onUpdate={onUpdate} isHelper={isHelper}/>}
       {stab==="timer"&&<CompactTimer ev={ev} cl={cl} canControl={!!onUpdate} onTimer={arr=>onUpdate&&onUpdate({timer:arr})}/>}
       {stab==="publish"&&!isHelper&&<PublishTournament ev={ev} cl={cl} onPublish={onPublish} onUnpublish={onUnpublish}/>}
       {stab==="split"&&<TournSplit ev={ev} t={t}/>}
