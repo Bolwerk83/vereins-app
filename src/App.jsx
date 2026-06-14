@@ -5758,16 +5758,19 @@ function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAttachBoar
     const passes=arrows.filter(a=>a.type==="pass");
     if(!runs.length&&!passes.length){ fire&&fire("Erst Lauf-/Passwege einzeichnen"); return; }
     const thr=F.r*3.2;
-    const assign=arr=>arr.map(tk=>{ let best=null,bd=thr; runs.forEach(a=>{const d=Math.hypot(a.x1-tk.x,a.y1-tk.y); if(d<bd){bd=d;best=a;}}); return {...tk,sx:tk.x,sy:tk.y,tx:best?best.x2:tk.x,ty:best?best.y2:tk.y}; });
+    const assign=arr=>arr.map(tk=>{ let best=null,bd=thr; runs.forEach(a=>{const d=Math.hypot(a.x1-tk.x,a.y1-tk.y); if(d<bd){bd=d;best=a;}}); return {...tk,sx:tk.x,sy:tk.y,tx:best?best.x2:tk.x,ty:best?best.y2:tk.y,pace:best?(best.pace||2):2}; });
     const ownA=assign(tokens), oppA=showOpp?assign(oppTokens):[];
     // Ball laeuft die Passwege der Reihe nach ab (zeigt die zeitliche Abfolge).
     const ballAt=k=>{ if(!passes.length) return null; const N=passes.length; const seg=Math.min(N-1,Math.floor(k*N)); const lp=(k*N)-seg; const a=passes[seg]; return {x:a.x1+(a.x2-a.x1)*lp,y:a.y1+(a.y2-a.y1)*lp}; };
     const DUR=2200, t0=performance.now();
     stopAnim(); setPlaying(true);
     if(passes.length) setAnimBall(ballAt(0));
-    const step=(t)=>{ const k=Math.min(1,(t-t0)/DUR); const e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
-      setAnimOwn(ownA.map(o=>({...o,x:o.sx+(o.tx-o.sx)*e,y:o.sy+(o.ty-o.sy)*e})));
-      if(showOpp) setAnimOpp(oppA.map(o=>({...o,x:o.sx+(o.tx-o.sx)*e,y:o.sy+(o.ty-o.sy)*e})));
+    const ez=x=>x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2;
+    const sf=p=>p===3?2:p===1?0.7:p===2?1.35:1;
+    const step=(t)=>{ const k=Math.min(1,(t-t0)/DUR);
+      const mv=o=>{ const e=ez(Math.min(1,k*sf(o.pace))); return {...o,x:o.sx+(o.tx-o.sx)*e,y:o.sy+(o.ty-o.sy)*e}; };
+      setAnimOwn(ownA.map(mv));
+      if(showOpp) setAnimOpp(oppA.map(mv));
       if(passes.length) setAnimBall(ballAt(k));
       if(k<1){ animRef.current=requestAnimationFrame(step); } else { setPlaying(false); }
     };
@@ -5776,12 +5779,15 @@ function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAttachBoar
 
   const svgRef=useRef(null); const dragRef=useRef(null);
   const [mode,setMode]=useState("move");
+  const [runPace,setRunPace]=useState(2);   // Tempo fuer neue Laufwege: 1 locker / 2 zuegig / 3 Sprint
   const [arrows,setArrows]=useState([]);
   const [draw,setDraw0]=useState(null); const drawRef=useRef(null);
   const setDraw=(v)=>{ const nv=typeof v==="function"?v(drawRef.current):v; drawRef.current=nv; setDraw0(nv); };
+  const PACE_COL={1:"#22c55e",2:"#f59e0b",3:"#ef4444"};
+  const runArrowCol=a=>PACE_COL[a.pace]||"#ffffff";
   const ARR_COL={run:"#ffffff",pass:"#fb923c"};
   const toSvg=(e)=>{ const el=svgRef.current; if(!el) return null; const r=el.getBoundingClientRect(); const cx=(e.touches?e.touches[0].clientX:e.clientX); const cy=(e.touches?e.touches[0].clientY:e.clientY); return { x:(cx-r.left)/r.width*F.vw, y:(cy-r.top)/r.height*F.vh }; };
-  const startDraw=(e)=>{ if(mode==="move"||mode==="mark") return; resetAnim(); const p=toSvg(e); if(!p) return; if(e.preventDefault)e.preventDefault(); setDraw({type:mode,x1:p.x,y1:p.y,x2:p.x,y2:p.y}); };
+  const startDraw=(e)=>{ if(mode==="move"||mode==="mark") return; resetAnim(); const p=toSvg(e); if(!p) return; if(e.preventDefault)e.preventDefault(); setDraw({type:mode,x1:p.x,y1:p.y,x2:p.x,y2:p.y,...(mode==="run"?{pace:runPace}:{})}); };
   const toggleMark=(setT,id)=>{ resetAnim(); setT(ts=>ts.map(x=>x.id===id?{...x,marked:!x.marked}:x)); };
   const onMove=(e)=>{ const p=toSvg(e); if(!p) return; if(mode==="move"){ if(dragRef.current==null) return; const R=F.r; const setT=dragSetRef.current==="opp"?setOppTokens:setTokens; setT(ts=>ts.map(tk=>tk.id===dragRef.current?{...tk,x:Math.max(R,Math.min(F.vw-R,p.x)),y:Math.max(R,Math.min(F.vh-R,p.y))}:tk)); } else { if(!drawRef.current) return; setDraw(d=>d?{...d,x2:p.x,y2:p.y}:d); } };
   const endDrag=()=>{ if(mode==="move"){ dragRef.current=null; return; } const d=drawRef.current; if(d){ const len=Math.hypot(d.x2-d.x1,d.y2-d.y1); if(len>F.vw*0.04) setArrows(a=>[...a,{...d,id:"ar"+Date.now()+Math.round(Math.random()*999)}]); } setDraw(null); };
@@ -5834,6 +5840,15 @@ function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAttachBoar
         <button onClick={()=>{resetAnim();setArrows([]);setDraw(null);}} disabled={!arrows.length&&!draw}
           style={{padding:"7px 12px",borderRadius:9,border:"1.5px solid #fecaca",background:"#fff",color:(arrows.length||draw)?"#dc2626":"#fca5a5",fontWeight:700,fontSize:12.5,cursor:(arrows.length||draw)?"pointer":"default",fontFamily:"inherit",whiteSpace:"nowrap"}}>Pfeile löschen</button>
       </div>
+      {mode==="run"&&(
+        <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
+          <span style={{fontSize:11,fontWeight:800,color:"#94a3b8",marginRight:2}}>TEMPO</span>
+          {[[1,"🐢 locker"],[2,"🐇 zügig"],[3,"🐆 Sprint"]].map(([p,l])=>(
+            <button key={p} onClick={()=>setRunPace(p)} style={{padding:"5px 11px",borderRadius:8,border:`1.5px solid ${runPace===p?PACE_COL[p]:"#e2e8f0"}`,background:runPace===p?PACE_COL[p]+"22":"#fff",color:runPace===p?"#0f172a":"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
+          ))}
+          <span style={{fontSize:11,color:"#94a3b8"}}>für den nächsten Laufweg</span>
+        </div>
+      )}
       <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
         <span style={{fontSize:11,fontWeight:800,color:"#94a3b8",marginRight:2}}>ANIMATION</span>
         <button onClick={playAnim} disabled={playing||!arrows.length}
@@ -5856,13 +5871,13 @@ function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAttachBoar
           {F.draw("rgba(255,255,255,.85)")}
           {arrows.map(a=>(
             <line key={a.id} x1={a.x1} y1={a.y1} x2={a.x2} y2={a.y2}
-              stroke={ARR_COL[a.type]} strokeWidth={F.vw*0.012} strokeLinecap="round"
+              stroke={a.type==="run"?runArrowCol(a):ARR_COL[a.type]} strokeWidth={F.vw*0.012} strokeLinecap="round"
               strokeDasharray={a.type==="pass"?`${F.vw*0.03} ${F.vw*0.022}`:undefined}
               markerEnd={`url(#tb-ar-${a.type})`}/>
           ))}
           {draw&&Math.hypot(draw.x2-draw.x1,draw.y2-draw.y1)>0.1&&(
             <line x1={draw.x1} y1={draw.y1} x2={draw.x2} y2={draw.y2} opacity={0.6}
-              stroke={ARR_COL[draw.type]} strokeWidth={F.vw*0.012} strokeLinecap="round"
+              stroke={draw.type==="run"?runArrowCol(draw):ARR_COL[draw.type]} strokeWidth={F.vw*0.012} strokeLinecap="round"
               strokeDasharray={draw.type==="pass"?`${F.vw*0.03} ${F.vw*0.022}`:undefined}/>
           )}
           {showOpp&&(animOpp||oppTokens).map(tk=>(
@@ -23013,7 +23028,7 @@ function buildDrillAnim(el, meta){
     const posAt=(k)=>{
       const balls=chains.map(ch=>{ const N=ch.length||1; const seg=Math.min(N-1,Math.floor(k*N)); const lp=(k*N)-seg; const a=ch[seg]; return {x:a.x1+(a.x2-a.x1)*lp,y:a.y1+(a.y2-a.y1)*lp}; });
       const moved=new Map();
-      runAssign.forEach(({run,player})=>{ if(!player)return; const e=ease(k); moved.set(player,{x:run.x1+(run.x2-run.x1)*e,y:run.y1+(run.y2-run.y1)*e}); });
+      runAssign.forEach(({run,player})=>{ if(!player)return; const sf=run.pace===3?2:run.pace===1?0.7:run.pace===2?1.35:1; const e=ease(Math.min(1,k*sf)); moved.set(player,{x:run.x1+(run.x2-run.x1)*e,y:run.y1+(run.y2-run.y1)*e}); });
       return {balls,moved};
     };
     return {hasAnim:true,posAt};
@@ -23079,6 +23094,7 @@ function DrillInfoModal({ drill, t, onClose }){
   useEffect(()=>()=>{ if(dref.current) cancelAnimationFrame(dref.current); },[]);
   if(!drill) return null;
   const pace=drillPace(drill);
+  const trackOk = drill.diagram==="track" || drill.focus==="kondition" || (drill.axes||[]).includes("Ausdauer") || /lauf|runden|bahn|sprint|tempo|intervall|pyramide|shuttle|kondition/i.test(drill.title||"");
   const segBtn=on=>({flex:1,padding:"7px",borderRadius:9,border:`1.5px solid ${on?col:"#e2e8f0"}`,background:on?col+"12":"#fff",color:on?col:"#64748b",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"});
   const playDrill=()=>{
     if(pd){ setPd(false); setAnimK(null); if(dref.current)cancelAnimationFrame(dref.current); return; }
@@ -23101,10 +23117,10 @@ function DrillInfoModal({ drill, t, onClose }){
           <div style={{fontWeight:900,fontSize:18,color:"#0f172a",marginBottom:2}}>{drill.title}</div>
           <div style={{fontSize:12.5,color:"#94a3b8",marginBottom:12}}>{drill.min} Min · {drill.players} Spieler</div>
           {(drill.axes||[]).length>0&&<div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:12}}>{drill.axes.map(a=><span key={a} style={{fontSize:11,fontWeight:800,color:"#4f46e5",background:"#eef2ff",borderRadius:6,padding:"2px 8px"}}>{a}</span>)}</div>}
-          <div style={{display:"flex",gap:7,marginBottom:10}}>
+          {trackOk&&<div style={{display:"flex",gap:7,marginBottom:10}}>
             <button onClick={()=>setView("field")} style={segBtn(view==="field")}>⚽ Feld</button>
             <button onClick={()=>setView("track")} style={segBtn(view==="track")}>🏃 Tartanbahn</button>
-          </div>
+          </div>}
           <div style={{display:"flex",justifyContent:"center",marginBottom:10}}>
             {view==="track"
               ? <TrackDiagram width={300}/>
