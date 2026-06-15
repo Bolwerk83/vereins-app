@@ -40,5 +40,22 @@
   color: var(--accent);
 }
 .assure .ico svg { width: 22px; height: 22px; }
-.assure h3 { font-size: 16px; margin-bottom: 4px; }
-.assure p { color: var(--text-2); font-size: 14.5px; }
+.assure h3 { font-size: 17px; margin-bottom: 4px; }
+.assure p { color: var(--text-2); font-size: 15.5px; }
+
+/* =====================================================================
+   Lesbarkeit für ältere Nutzer: größere Schrift, mehr Ruhe.
+   Nur auf der Vorsorge-Seite – bolwerk24 bleibt unverändert.
+   ===================================================================== */
+body { font-size: 17.5px; line-height: 1.65; }
+.lead { font-size: clamp(1.18rem, 1.8vw, 1.4rem); line-height: 1.6; }
+.section-head p { font-size: clamp(1.1rem, 1.7vw, 1.22rem); }
+.f-card h3 { font-size: 1.3rem; }
+.f-card p { font-size: 1.06rem; line-height: 1.55; }
+.faq-q { font-size: 1.18rem; }
+.faq-a-inner { font-size: 1.06rem; line-height: 1.6; }
+.assure { padding: 22px; }
+
+/* Größere, gut greifbare Schaltflächen */
+.btn { font-size: 1.02rem; }
+.btn-lg { padding: 16px 26px; font-size: 1.12rem; }
