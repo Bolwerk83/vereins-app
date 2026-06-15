@@ -1,0 +1,1794 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kennzahlen-Steuerung</title>
+<style>
+  :root{
+    --bg:#f4f6f9;--card:#fff;--ink:#1e293b;--mut:#64748b;--faint:#94a3b8;--line:#e3e8ef;--line2:#eef2f7;
+    --teal:#2f6fb0;--teal-bg:#eef4fb;--purple:#1e3a5f;
+    --ok:#15803d;--ok-bg:#ecfdf3;--warn:#b45309;--warn-bg:#fef6e7;--err:#b91c1c;--err-bg:#fdecec;
+    --sh:0 1px 2px rgba(15,23,42,.04),0 1px 3px rgba(15,23,42,.06);
+    --sh2:0 4px 14px rgba(15,23,42,.10);
+    --mono:"SFMono-Regular",ui-monospace,"Cascadia Mono",Consolas,monospace;
+    --sans:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5}
+  .page{max-width:1160px;margin:0 auto;padding:18px 20px 60px}
+  h1{font-size:20px;font-weight:600;margin:0}
+  .topnav{display:flex;gap:6px;margin:14px 0 4px;border-bottom:1px solid var(--line)}
+  .nav{padding:9px 16px;cursor:pointer;font-size:14px;color:var(--mut);border-bottom:2px solid transparent;margin-bottom:-1px}
+  .nav.on{color:var(--ink);font-weight:600;border-bottom-color:var(--teal)}
+  .view{display:none}.view.active{display:block}
+
+  /* Katalog */
+  .controls{position:sticky;top:0;background:var(--bg);padding:10px 0;z-index:5;border-bottom:1px solid var(--line)}
+  .search{width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:14px;font-family:var(--sans);background:var(--card)}
+  .search:focus{outline:none;border-color:var(--teal)}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+  .chip{font-size:12.5px;padding:4px 11px;border:1px solid var(--line);border-radius:20px;background:var(--card);cursor:pointer;color:var(--mut);user-select:none}
+  .chip:hover{border-color:var(--teal)}.chip.on{background:var(--teal);border-color:var(--teal);color:#fff;font-weight:500}
+  .chips.src .chip.on{background:var(--purple);border-color:var(--purple)}
+  .chips.abt .chip.on{background:#475569;border-color:#475569}
+  .flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:6px}
+  .flowbox{border:1px solid var(--line);border-radius:9px;background:var(--card);padding:8px 10px;flex:1;min-width:120px}
+  .flowkpi{border-width:2px}
+  .flowcap{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--mut);margin-bottom:4px}
+  .flowarr{display:flex;align-items:center;color:var(--mut);font-size:18px}
+  .flowinto{font-size:12.5px;color:var(--mut);margin-top:8px}
+  .onep tbody tr[data-open]:hover{background:#faf9f5}
+  .pk-wiz{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0 2px}
+  .pk-wiz .lbl2{font-size:12px;color:var(--mut);margin-right:2px}
+  .pk-phase{margin-top:18px}
+  .pk-phase h3{font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--mut);margin:0 0 10px;padding-left:2px}
+  .pk-step{display:grid;grid-template-columns:34px 1fr;gap:12px;position:relative;padding-bottom:12px}
+  .pk-step:before{content:"";position:absolute;left:16px;top:32px;bottom:-2px;width:2px;background:var(--line)}
+  .pk-step.last:before{display:none}
+  .pk-num{width:32px;height:32px;border-radius:50%;background:#7f77dd;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;z-index:1}
+  .pk-card{border:1px solid var(--line);border-radius:11px;background:var(--card);padding:11px 14px}
+  .pk-card .h{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .pk-card .h b{font-size:14.5px}
+  .pk-kpis{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+  .tabs{display:flex;gap:2px;margin-top:14px;flex-wrap:wrap}
+  .tab{padding:7px 12px;font-size:13px;color:var(--mut);cursor:pointer;border-bottom:2px solid transparent}
+  .tab.on{color:var(--ink);font-weight:600;border-bottom-color:var(--teal)}
+  .tabpane{display:none}
+  .tabpane.on{display:block}
+  .qfacts{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:14px 0 4px}
+  .qfacts>div{border:1px solid var(--line);border-radius:8px;padding:7px 10px;display:flex;flex-direction:column;gap:2px}
+  .qf-l{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--mut)}
+  .qf-v{font-size:13.5px;font-weight:500}
+  .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut);margin:11px 0 3px}
+  .count{font-size:12.5px;color:var(--mut);margin:12px 0 0}
+  .group{margin-top:16px}
+  .group h2{font-size:15px;font-weight:600;margin:0 0 2px;display:flex;align-items:center;gap:8px}
+  .group h2 .dot{width:10px;height:10px;border-radius:3px;display:inline-block}
+  .group h2 .gc{font-size:12px;color:var(--mut);font-weight:400}
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;margin-top:8px}
+  .kpi{border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:10px;background:var(--card);padding:13px 15px;cursor:pointer;box-shadow:var(--sh);transition:.14s}
+  .kpi:hover{box-shadow:var(--sh2);transform:translateY(-2px)}
+  .kpi .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .kpi .nm{font-weight:600;font-size:14.5px}
+  .kpi .qi{font-size:13px;color:#334155;margin:7px 0 9px;line-height:1.5}
+  .kpi .fm{font-family:var(--mono);font-size:11.5px;color:var(--teal);background:var(--line2);border-radius:6px;padding:7px 9px;margin:0}
+  .kpi .kfoot{display:flex;align-items:center;gap:8px;margin-top:9px}
+  .kpi .un{font-family:var(--mono);font-size:11px;color:var(--teal);background:var(--teal-bg);border-radius:5px;padding:2px 7px;white-space:nowrap}
+  .sbadge{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;padding:2px 9px;border-radius:20px;white-space:nowrap}
+  .sbadge .d{width:6px;height:6px;border-radius:50%;background:currentColor}
+  .sbadge.ok{background:var(--ok-bg);color:var(--ok)}.sbadge.warn{background:var(--warn-bg);color:var(--warn)}.sbadge.err{background:var(--err-bg);color:var(--err)}
+  .lead{background:var(--teal-bg);border:1px solid #d6e4f5;border-radius:10px;padding:12px 14px;font-size:14px;color:#22364a;line-height:1.55}
+  .lead b{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--teal);margin-bottom:4px;font-weight:700}
+  .empty{color:var(--mut);padding:30px 0;text-align:center}
+
+  /* Status-Punkt */
+  .st{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle}
+  .st.ok{background:var(--ok)}.st.warn{background:var(--warn)}.st.err{background:var(--err)}
+
+  /* Drawer */
+  .overlay{position:fixed;inset:0;background:rgba(20,28,40,.35);opacity:0;pointer-events:none;transition:.2s;z-index:20}
+  .overlay.open{opacity:1;pointer-events:auto}
+  .drawer{position:fixed;top:0;right:0;height:100%;width:min(560px,94vw);background:var(--bg);
+    border-left:1px solid var(--line);transform:translateX(100%);transition:.25s;z-index:21;overflow:auto}
+  .drawer.open{transform:translateX(0)}
+  .dh{position:sticky;top:0;background:var(--bg);padding:16px 20px 12px;border-bottom:1px solid var(--line)}
+  .dh .x{float:right;cursor:pointer;color:var(--mut);font-size:20px;line-height:1}
+  .dh .nm{font-size:18px;font-weight:600;margin:0 30px 4px 0}
+  .dh .meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .badge{font-size:11.5px;padding:2px 8px;border-radius:5px;font-weight:500}
+  .dbody{padding:6px 20px 40px}
+  .field{margin-top:16px}
+  .field h4{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--teal);margin:0 0 4px}
+  .field p{margin:0;font-size:13.5px}
+  .field .fm{font-family:var(--mono);font-size:12.5px;background:var(--line2);border-radius:6px;padding:8px 10px;display:block}
+  .srcrow{display:flex;flex-wrap:wrap;gap:5px;margin-top:3px}
+  .s{font-family:var(--mono);font-size:11px;background:var(--line2);border:1px solid var(--line);border-radius:4px;padding:1px 6px;color:var(--mut);cursor:help}
+  .relrow{display:flex;flex-wrap:wrap;gap:5px}
+  .rel{font-size:12px;border:1px solid var(--line);border-radius:14px;padding:2px 9px;background:var(--card);cursor:pointer}
+  .rel:hover{border-color:var(--teal)}
+  .skel{font-size:12.5px;color:var(--mut);font-style:italic}
+
+  /* Bereiche / OnePager */
+  .berpick{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0}
+  .onep{border:1px solid var(--line);border-radius:12px;background:var(--card);padding:18px 20px;max-width:840px}
+  .onep .oh{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;border-bottom:2px solid var(--teal);padding-bottom:10px;margin-bottom:12px}
+  .onep .oh h2{margin:0;font-size:18px}
+  .onep .oh .own{font-size:12.5px;color:var(--mut)}
+  .onep .oh .own b{color:var(--ink)}
+  .onep table{width:100%;border-collapse:collapse;font-size:13px}
+  .onep th,.onep td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line)}
+  .onep th{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--mut)}
+  .onep td.r{text-align:right;font-family:var(--mono)}
+  .dqline{margin-top:12px;font-size:12.5px;color:var(--mut)}
+  .printbtn{font-size:12.5px;padding:6px 12px;border:1px solid var(--line);border-radius:7px;background:var(--card);cursor:pointer}
+  .printbtn:hover{border-color:var(--teal)}
+
+  /* Qualität */
+  .rollup{border:1px solid var(--line);border-radius:12px;background:var(--card);padding:16px 18px;margin:14px 0}
+  .rollup h3{margin:0 0 8px;font-size:14px}
+  .bar{height:12px;border-radius:6px;background:#eee;overflow:hidden;display:flex}
+  .bar i{display:block;height:100%}
+  .bar .b-err{background:var(--err)}.bar .b-arb{background:var(--warn)}.bar .b-bea{background:#85b7eb}.bar .b-erl{background:var(--ok)}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:8px;font-size:12px;color:var(--mut)}
+  .legend i{width:10px;height:10px;border-radius:2px;display:inline-block;margin-right:4px;vertical-align:middle}
+  .qcard{border:1px solid var(--line);border-radius:12px;background:var(--card);margin-top:12px;overflow:hidden}
+  .qcard .qh{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 16px;background:#f8fafc;flex-wrap:wrap}
+  .qcard .qh .l{font-weight:600}.qcard .qh .own{font-size:12px;color:var(--mut)}
+  .qcard .qh .prog{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mut)}
+  .qcard .qh .prog .bar{width:120px}
+  .issue{display:grid;grid-template-columns:1fr auto;gap:8px;padding:9px 16px;border-top:1px solid var(--line);align-items:center}
+  .issue .ik{font-weight:500;font-size:13.5px}
+  .issue .ic{font-size:12.5px;color:var(--mut)}
+  .wf{font-size:11px;padding:2px 9px;border-radius:12px;font-weight:500;white-space:nowrap}
+  .wf.offen{background:var(--err-bg);color:var(--err)}
+  .wf.arbeit{background:var(--warn-bg);color:var(--warn)}
+  .wf.beantwortet{background:#e6f1fb;color:#185fa5}
+  .wf.erledigt{background:var(--ok-bg);color:var(--ok)}
+  .allok{padding:9px 16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--mut)}
+  .note{font-size:12px;color:var(--mut);margin-top:18px;border-top:1px solid var(--line);padding-top:10px}
+
+  .navtour{margin-left:auto;padding:9px 14px;cursor:pointer;color:var(--teal);font-weight:600;font-size:13.5px}
+  /* Filter kompakt + Quick */
+  .ctrl-top{display:flex;gap:8px;align-items:center}
+  .fbtn{flex:0 0 auto;font-size:13px;padding:9px 14px;border:1px solid var(--line);border-radius:8px;background:var(--card);cursor:pointer;color:var(--ink);white-space:nowrap}
+  .fbtn:hover{border-color:var(--teal)}
+  .fbtn span{color:var(--teal);font-weight:600}
+  .quick{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+  .filterpanel{display:none;margin-top:8px;padding:4px 13px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+  .filterpanel.open{display:block}
+  /* Intro-Streifen */
+  .intro{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
+    background:linear-gradient(90deg,var(--teal-bg),#fff);border:1px solid #d6e4f5;border-radius:10px;padding:11px 15px;margin:12px 0 2px;font-size:13.5px}
+  .intro b{color:var(--teal)}
+  .intro .r{display:flex;align-items:center;gap:6px}
+  .btn-tour{font-size:12.5px;font-weight:600;padding:7px 14px;border:none;border-radius:7px;background:var(--teal);color:#fff;cursor:pointer}
+  .intro .x{cursor:pointer;color:var(--mut);font-size:16px;padding:0 4px}
+  /* Tour / Onboarding */
+  .tour-ov{position:fixed;inset:0;background:rgba(15,23,42,.5);display:none;z-index:40}
+  .tour-ov.open{display:block}
+  .tour{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,94vw);max-height:88vh;overflow:auto;
+    background:var(--card);border-radius:16px;box-shadow:0 20px 60px rgba(15,23,42,.3);display:none;z-index:41}
+  .tour.open{display:block}
+  .tour .x{position:absolute;right:16px;top:14px;cursor:pointer;color:var(--mut);font-size:20px;line-height:1}
+  .tour .th{padding:24px 26px 0}
+  .tour .step-no{font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--teal);font-weight:700}
+  .tour h3{font-size:21px;margin:6px 0 4px}
+  .tour .tb{padding:6px 26px 0;color:#334155;font-size:14.5px;line-height:1.6}
+  .tour .tb p{margin:9px 0}
+  .tour .srcwrap{display:flex;flex-wrap:wrap;gap:7px;margin:14px 0}
+  .tour .srcbox{font-size:12px;border:1px solid var(--line);border-radius:8px;padding:7px 11px;background:#f8fafc}
+  .tour .chain{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:16px 0;justify-content:center}
+  .tour .cbox{border:1px solid var(--line);border-radius:10px;padding:10px 13px;background:#f8fafc;text-align:center;font-size:12.5px}
+  .tour .cbox.k{border-color:var(--teal);background:var(--teal-bg);color:var(--teal);font-weight:600}
+  .tour .carr{color:var(--mut);font-size:17px;font-weight:600}
+  .tour .levels{display:flex;flex-direction:column;gap:6px;margin:14px 0}
+  .tour .lv{display:flex;gap:9px;align-items:center;font-size:13.5px}
+  .tour .lv .n{width:22px;height:22px;border-radius:50%;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex:0 0 auto}
+  .tour .tf{display:flex;justify-content:space-between;align-items:center;padding:18px 26px 22px;margin-top:8px}
+  .tour .dots{display:flex;gap:6px}
+  .tour .dots i{width:8px;height:8px;border-radius:50%;background:var(--line)}
+  .tour .dots i.on{background:var(--teal)}
+  .tour .tnav{display:flex;gap:8px}
+  .tour .tbtn{font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+  .tour .tbtn.pri{background:var(--teal);border-color:var(--teal);color:#fff}
+  .navtour:hover{text-decoration:underline}
+  /* Dichte-Schalter */
+  .dens{display:flex;gap:4px;margin-top:12px;flex-wrap:wrap}
+  .dchip{font-size:12px;padding:6px 11px;border:1px solid var(--line);border-radius:20px;cursor:pointer;color:var(--mut);background:var(--card)}
+  .dchip.on{background:var(--teal);border-color:var(--teal);color:#fff;font-weight:600}
+  /* Rechner */
+  .calc{border:1px solid var(--line);border-radius:10px;background:#fbfcfe;padding:12px 13px}
+  .calc-h{font-size:12.5px;font-weight:600;margin-bottom:8px}
+  .ci-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .ci-lbl{flex:1;font-size:13px}
+  .ci{width:130px;max-width:48%;padding:6px 9px;border:1px solid var(--line);border-radius:7px;font-size:13px;font-family:var(--mono);text-align:right}
+  .ci:focus{outline:none;border-color:var(--teal)}
+  .ci-fix{font-size:11px;color:var(--mut);font-style:italic}
+  .calc-demo{font-size:12px;padding:5px 11px;border:1px solid var(--teal);color:var(--teal);background:#fff;border-radius:7px;cursor:pointer;margin:4px 0 10px}
+  .calc-out{background:#fff;border:1px solid var(--line);border-radius:8px;padding:9px 11px}
+  .calc-sub{font-family:var(--mono);font-size:12px;color:var(--mut);word-break:break-word}
+  .calc-res{font-size:15px;margin-top:4px}.calc-res b{font-size:18px;color:var(--teal)}
+  .calc-un{color:var(--mut);font-size:12px}
+  .calc-note{font-size:11.5px;color:var(--mut);margin-top:8px;line-height:1.5}
+  /* SMART To-dos */
+  .todo{display:flex;gap:9px;align-items:flex-start;font-size:13px;margin:6px 0;cursor:pointer}
+  .todo input{margin-top:3px;flex:0 0 auto}
+  .smart-tag{font-size:9.5px;background:var(--teal-bg);color:var(--teal);border-radius:10px;padding:1px 7px;font-weight:700;letter-spacing:.5px;vertical-align:middle}
+  .sub2{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--mut);margin:8px 0 3px}
+  /* KI-Bericht */
+  .ki-in{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-family:var(--sans);font-size:13.5px;margin-bottom:8px;resize:vertical;box-sizing:border-box}
+  .ki-spec{background:var(--teal-bg);border:1px solid #d6e4f5;border-radius:8px;padding:9px 11px;font-size:13px;margin:12px 0 8px}
+  .ki-tbl{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:8px}
+  .ki-tbl th,.ki-tbl td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+  .ki-tbl td.r,.ki-tbl th.r{text-align:right;font-family:var(--mono)}
+  /* Rollenleiste */
+  .rolebar{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--mut);padding:6px 0 6px 10px}
+  .rolebar select{font-size:12.5px;padding:5px 8px;border:1px solid var(--line);border-radius:7px;background:var(--card);color:var(--ink)}
+  /* Startseite */
+  .home-hi h1{font-size:22px;margin:16px 0 2px}
+  .home-sec{margin-top:22px}
+  .home-sec h2{font-size:15px;font-weight:600;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+  .home-sec h2 .cnt{font-size:12px;color:#fff;background:var(--teal);border-radius:20px;padding:1px 9px;font-weight:600}
+  .todo-list{display:flex;flex-direction:column;gap:8px}
+  .todo-item{display:grid;grid-template-columns:auto 1fr auto;gap:11px;align-items:center;background:var(--card);border:1px solid var(--line);border-left:3px solid var(--warn);border-radius:10px;padding:11px 14px;cursor:pointer;box-shadow:var(--sh)}
+  .todo-item:hover{box-shadow:var(--sh2)}
+  .todo-item .ti-c{font-size:12.5px;color:var(--mut);margin-top:2px}
+  .todo-item .ti-go{font-size:12.5px;color:var(--teal);white-space:nowrap}
+  /* Favoriten-Stern */
+  .topr{display:flex;align-items:center;gap:7px}
+  .favstar{cursor:pointer;font-size:16px;color:var(--faint);line-height:1;user-select:none}
+  .favstar.on,.favstar:hover{color:#e0a93f}
+  .dh .favstar{font-size:20px}
+  /* KI-Wizard */
+  .ki .tb select{font-size:13px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);width:100%;color:var(--ink)}
+  .kw-sec{margin:12px 0}
+  .kw-sec .lbl3{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut);margin-bottom:6px}
+  .kw-chips{display:flex;flex-wrap:wrap;gap:6px}
+  .kw-chip{font-size:12.5px;padding:5px 11px;border:1px solid var(--line);border-radius:20px;cursor:pointer;background:var(--card);color:var(--mut)}
+  .kw-chip.on{background:var(--teal);border-color:var(--teal);color:#fff;font-weight:600}
+  .kw-list{max-height:230px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:8px;display:flex;flex-wrap:wrap;gap:6px}
+  .kw-sel-count{font-size:12px;color:var(--teal);font-weight:600;text-transform:none;letter-spacing:0}
+  /* Datenkette / Lineage */
+  .lineage{display:flex;gap:6px;align-items:stretch;overflow-x:auto;padding-bottom:6px}
+  .ln-col{flex:1;min-width:115px;display:flex;flex-direction:column;gap:6px}
+  .ln-col .ch{font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--mut);text-align:center;margin-bottom:2px}
+  .ln-box{border:1px solid var(--line);border-radius:8px;background:var(--card);padding:7px 9px;font-size:12px;text-align:center;line-height:1.3}
+  .ln-box.click{cursor:pointer}
+  .ln-box.click:hover{border-color:var(--teal);color:var(--teal)}
+  .ln-box.kpi-this{border:2px solid var(--teal);background:var(--teal-bg);color:var(--teal);font-weight:700}
+  .ln-box.raw{background:#f8fafc;color:var(--mut);font-size:11px}
+  .ln-empty{font-size:10.5px;color:var(--faint);text-align:center;padding:8px 4px;font-style:italic}
+  .ln-arr{display:flex;align-items:center;color:var(--faint);font-size:17px}
+  .ln-big{margin-top:10px}
+  .ln-hint{font-size:12.5px;color:var(--mut);margin:0 0 10px}
+  .tour.tour-wide{width:min(940px,97vw)}
+  /* Aufgaben: Maßnahme / Mehrwert */
+  .ti-m,.ti-v{font-size:12.5px;margin-top:4px;line-height:1.45}
+  .ti-lbl{font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;color:var(--teal);background:var(--teal-bg);border-radius:5px;padding:1px 6px;margin-right:6px}
+  .ti-lbl.mv{color:var(--ok);background:var(--ok-bg)}
+  /* Rosa-Export */
+  .ki-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .ki-flash{font-size:12px;color:var(--ok);margin-top:6px;min-height:16px}
+  .ki-text{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-family:var(--sans);font-size:13px;resize:vertical;box-sizing:border-box;margin-bottom:6px}
+  /* Rosa-Einstieg + Hinweis */
+  .rosa-card{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-top:16px;cursor:pointer;
+    background:linear-gradient(90deg,#f6edf1,#fff);border:1px solid #e6d4de;border-radius:12px;padding:14px 17px;box-shadow:var(--sh)}
+  .rosa-card:hover{box-shadow:var(--sh2)}
+  .rc-h{font-size:15px;font-weight:600;color:#7a2e52}
+  .rc-s{font-size:13px;color:var(--mut);margin-top:3px;max-width:560px}
+  .rc-go{font-size:13px;font-weight:600;color:#fff;background:#7a2e52;border-radius:8px;padding:8px 15px;white-space:nowrap}
+  .ki-perm{font-size:12px;color:var(--mut);background:#fbf7f9;border:1px solid #ecdbe3;border-radius:8px;padding:8px 11px;margin-bottom:12px}
+  .rosa-think{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--mut);padding:18px 0}
+  .spin{width:16px;height:16px;border:2px solid var(--line);border-top-color:var(--teal);border-radius:50%;display:inline-block;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .rosa-note{margin-top:8px;padding-top:8px;border-top:1px solid #d6e4f5;color:#22364a}
+  .ki-eval{margin-top:12px;border:1px solid #d6e4f5;background:var(--teal-bg);border-radius:10px;padding:12px 14px}
+  .ki-eval-h{font-size:11px;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+  .ki-eval-b{font-size:13.5px;color:#22364a;line-height:1.6}
+  .art-tree{border:1px solid var(--line);border-radius:8px;padding:8px 10px;max-height:240px;overflow:auto;font-size:13px;background:#fbfcfe}
+  .art-det{margin:2px 0}
+  .art-det>summary{cursor:pointer;list-style:none;padding:2px 0;display:flex;align-items:center}
+  .art-det>summary::-webkit-details-marker{display:none}
+  .art-det>summary:before{content:"▸";color:var(--mut);display:inline-block;width:14px;flex:0 0 auto}
+  .art-det[open]>summary:before{content:"▾"}
+  .art-det .art-det,.art-det .art-leaf{margin-left:16px}
+  .art-leaf{padding:2px 0 2px 14px}
+  .art-node{cursor:pointer;padding:1px 7px;border-radius:5px}
+  .art-node:hover{background:var(--teal-bg)}
+  .art-node.on{background:var(--teal);color:#fff}
+  .art-node em{font-size:9px;color:var(--faint);font-style:normal;text-transform:uppercase;letter-spacing:.4px;margin-left:6px}
+  .art-node.on em{color:#dbe9f7}
+  .art-clear{cursor:pointer;color:var(--err);font-size:11px;margin-left:6px}
+  /* Dimensions-Designer */
+  .tbtn{font-size:13px;font-weight:600;padding:8px 15px;border-radius:8px;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+  .tbtn.pri{background:var(--teal);border-color:var(--teal);color:#fff}
+  .tbtn.mini{padding:4px 10px;font-size:12px;margin-right:5px}
+  .tbtn.ghost{color:var(--mut)}
+  .navbadge{display:inline-block;background:var(--err);color:#fff;font-size:10px;font-weight:700;border-radius:10px;padding:0 6px;margin-left:5px;vertical-align:top}
+  .dsg-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+  .dsg-bar select{font-size:13px;padding:6px 9px;border:1px solid var(--line);border-radius:7px;background:var(--card);color:var(--ink)}
+  .dim-tbl{width:100%;border-collapse:collapse;font-size:13px}
+  .dim-tbl th,.dim-tbl td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+  .dim-tbl th{font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--mut)}
+  .dim-tbl td.mono{font-family:var(--mono);font-size:12px;color:var(--mut)}
+  .row-new{background:#fff8ed}
+  .dim-st{font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;white-space:nowrap}
+  .dim-st.ok{background:var(--ok-bg);color:var(--ok)}
+  .dim-st.neu{background:var(--warn-bg);color:var(--warn)}
+  .row-hidden{opacity:.42}
+  .vtag{display:inline-block;background:var(--teal-bg);color:var(--teal);font-size:10px;padding:1px 7px;border-radius:10px;margin-left:4px}
+  .head3{font-size:13px;font-weight:700;color:var(--purple);margin:18px 0 8px}
+  .joinbar{background:#f3f7fc;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:13.5px}
+  .joinbar .jkey{font-weight:700;color:var(--teal)}
+  .joinbar select{margin:0 4px;font-size:13px;padding:4px 7px;border:1px solid var(--line);border-radius:6px;background:var(--card)}
+  .hgrid{display:flex;gap:12px;flex-wrap:wrap}
+  .hcard{flex:1 1 220px;min-width:200px;border:1.5px solid var(--line);border-radius:10px;padding:10px;background:var(--card);cursor:pointer}
+  .hcard.on{border-color:var(--teal);box-shadow:0 0 0 2px var(--teal-bg)}
+  .hcard-h{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+  .hcard-h .hdel{margin-left:auto;color:var(--err);cursor:pointer;font-weight:700}
+  .hlevels{display:flex;flex-direction:column;gap:5px}
+  .hlvl{display:flex;align-items:center;gap:6px;background:#f7f9fc;border:1px solid var(--line);border-radius:7px;padding:5px 8px;font-size:12.5px}
+  .hlvl.warn{background:#fff7ed;border-color:#f3c98b}
+  .hlvl-c{color:var(--faint);font-size:10.5px;margin-left:5px;font-weight:400}
+  .gwarn{color:var(--warn);cursor:help}
+  .hren{cursor:pointer;color:var(--mut);font-size:12px;margin-left:3px}
+  .hname-in{font-size:13.5px;font-weight:700;border:1px solid var(--teal);border-radius:6px;padding:2px 7px;width:170px;max-width:60%}
+  .addbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 12px;padding:10px;background:#f3f7fc;border:1px dashed var(--teal);border-radius:8px}
+  .addbar input,.addbar select{font-size:13px;padding:6px 9px;border:1px solid var(--line);border-radius:7px;background:var(--card);color:var(--ink)}
+  .hlvl-n{flex:1}
+  .hlvl-act button{border:none;background:transparent;cursor:pointer;font-size:12px;padding:0 3px;color:var(--mut)}
+  .hlvl-act button:disabled{opacity:.3;cursor:default}
+  .pool{display:flex;flex-wrap:wrap;gap:7px}
+  .pchip{background:var(--teal-bg);color:var(--teal);border:1px solid #cfe0f2;border-radius:16px;padding:4px 11px;font-size:12.5px;cursor:pointer;font-weight:600}
+  .pchip:hover{background:var(--teal);color:#fff}
+  .adm-grid{display:flex;flex-wrap:wrap;gap:10px}
+  .adm-mod{flex:1 1 220px;min-width:200px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--card)}
+  .adm-mod-h{font-weight:700;font-size:13px;margin-bottom:8px}
+  .rchips{display:flex;flex-wrap:wrap;gap:6px}
+  .rchip{font-size:11.5px;padding:3px 11px;border-radius:14px;border:1px solid var(--line);background:#f4f6f9;color:var(--mut);cursor:pointer;font-weight:600}
+  .rchip.on{background:var(--teal);border-color:var(--teal);color:#fff}
+  .rchip.ro{cursor:default;opacity:.65}
+  .srv-empty{border:1px dashed var(--line);border-radius:10px;padding:26px;text-align:center;color:var(--mut);font-size:13px}
+  .ctab{display:flex;gap:6px;margin-bottom:14px}
+  .ctab-i{font-size:13px;font-weight:700;padding:6px 14px;border-radius:8px;cursor:pointer;color:var(--mut);background:#eef2f7}
+  .ctab-i.on{background:var(--teal);color:#fff}
+  .cube-q{width:100%;max-width:420px;font-size:13px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;margin:8px 0}
+  .pchip .x{cursor:pointer;margin-left:3px;opacity:.8}
+  .star{display:flex;flex-wrap:wrap;align-items:center;gap:14px;background:#f3f7fc;border:1px solid var(--line);border-radius:10px;padding:14px}
+  .star-fact{background:var(--purple);color:#fff;border-radius:10px;padding:10px 16px;font-weight:700;text-align:center}
+  .star-fact .count{color:#cdd9e8}
+  .star-dims{display:flex;flex-wrap:wrap;gap:8px}
+  .star-dim{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:6px 12px;font-size:12.5px;font-weight:600}
+  .ds-grid{display:flex;flex-wrap:wrap;gap:10px}
+  .ds-card{flex:1 1 240px;min-width:220px;border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--card)}
+  .ds-card.on{border-color:var(--teal);box-shadow:0 0 0 2px var(--teal-bg)}
+  .ds-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:5px}
+  .ds-type{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--teal);background:var(--teal-bg);padding:2px 8px;border-radius:10px}
+  .ds-def{font-size:10.5px;font-weight:700;color:#fff;background:var(--teal);padding:2px 8px;border-radius:10px}
+  /* Responsive */
+  @media(max-width:760px){
+    .cards{grid-template-columns:1fr}
+    .qfacts{grid-template-columns:1fr 1fr}
+    .ctrl-top{flex-wrap:wrap}.search{flex:1 1 100%}
+    .topnav{overflow-x:auto;white-space:nowrap}
+  }
+  @media(max-width:520px){
+    .drawer{width:100vw}
+    .qfacts{grid-template-columns:1fr}
+    .page{padding:14px 14px 50px}
+    .tour{width:96vw}
+  }
+  @media print{.topnav,.controls,.berpick,.printbtn,.overlay,.drawer,.intro,.navtour{display:none!important}
+    .view:not(.active){display:none}.onep{border:none;max-width:none}}
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Kennzahlen-Steuerung</h1>
+  <div class="topnav">
+    <div class="nav on" data-v="start">Start</div>
+    <div class="nav" data-v="katalog">Katalog</div>
+    <div class="nav" data-v="bereiche">Bereiche · OnePager</div>
+    <div class="nav" data-v="qualitaet">Qualität</div>
+    <div class="nav" data-v="prozess">Prozesskette</div>
+    <div class="nav" data-v="designer">Cube · Modell<span class="navbadge" id="dimBadge" style="display:none"></span></div>
+    <div class="nav" data-v="datasources">Datenquellen</div>
+    <div class="nav" data-v="server">Berichtsserver</div>
+    <div class="nav" data-v="admin">Administration</div>
+    <div class="navtour" data-tour="1" title="Kurze Einführung">🧭 Tour</div>
+    <div class="navtour" id="kiBtn" data-ki="1" style="color:#7a2e52;margin-left:0">🤖 James · Berichte</div>
+    <div class="rolebar"><span>Angemeldet:</span>
+      <select id="role"><option value="gf">Geschäftsführung</option><option value="bearbeiter" selected>Bearbeiter</option><option value="entwickler">Entwickler</option><option value="power">Business Controller</option><option value="superadmin">Superadmin</option></select></div>
+  </div>
+
+  <!-- KATALOG -->
+  <div class="view active" id="v-start"><div id="home"></div></div>
+
+  <div class="view" id="v-katalog">
+    <div class="intro" id="intro">
+      <span><b>Neu hier?</b> In 30 Sekunden sehen, wie aus reinen Rohdaten fertige Kennzahlen werden.</span>
+      <span class="r"><button class="btn-tour" data-tour="1">Tour starten</button><span class="x" data-introclose="1">✕</span></span>
+    </div>
+    <div class="controls">
+      <div class="ctrl-top">
+        <input class="search" id="q" placeholder="Suchen: Name, Formel, Erklärung …">
+        <button class="fbtn" data-filtertoggle="1">Filter <span id="fcount"></span></button>
+      </div>
+      <div class="quick" id="quickChips"></div>
+      <div class="filterpanel" id="filterPanel">
+        <div class="lbl">Bereich</div><div class="chips" id="berChips"></div>
+        <div class="lbl">Abteilung</div><div class="chips abt" id="abtChips"></div>
+        <div class="lbl">Rohdaten-Quelle</div><div class="chips src" id="srcChips"></div>
+      </div>
+    </div>
+    <div class="count" id="count"></div>
+    <div id="out"></div>
+  </div>
+
+  <!-- BEREICHE -->
+  <div class="view" id="v-bereiche">
+    <div class="berpick" id="berpick"></div>
+    <div id="onepager"></div>
+  </div>
+
+  <!-- QUALITÄT -->
+  <div class="view" id="v-qualitaet">
+    <div id="rollup"></div>
+    <div id="qboard"></div>
+    <div class="note">Aggregation für die Ebenen darüber: oben der Gesamt-Bearbeitungsgrad, je Bereich der eigene.
+    Jeder Bereich „hat den Hut auf" für seine Kennzahlen und arbeitet offene Punkte ab — die GF sieht nur, <i>ob</i> abgearbeitet/beantwortet wird, nicht jeden Einzelfall. Werte hier sind Demo-Stände.</div>
+  </div>
+
+  <!-- PROZESSKETTE -->
+  <div class="view" id="v-prozess">
+    <p class="count" id="procnote"></p>
+    <div id="procflow"></div>
+  </div>
+
+  <div class="view" id="v-designer"><div id="designer"></div></div>
+
+  <div class="view" id="v-datasources"><div id="datasources"></div></div>
+
+  <div class="view" id="v-server"><div id="server"></div></div>
+
+  <div class="view" id="v-admin"><div id="admin"></div></div>
+</div>
+
+<div class="overlay" id="overlay"></div>
+<div class="drawer" id="drawer"></div>
+<div class="tour-ov" id="tourOv" data-tourclose="1"></div>
+<div class="tour" id="tour"></div>
+<div class="tour-ov" id="kiOv" data-kiclose="1"></div>
+<div class="tour" id="ki"></div>
+<div class="tour-ov" id="lnOv" data-lnclose="1"></div>
+<div class="tour tour-wide" id="ln"></div>
+
+<script>
+const BEREICH={
+  rent:["Rentabilität & Ertrag","#2a8a80","Leitung Controlling"],
+  liqui:["Liquidität & Cashflow","#185fa5","Treasury"],
+  kapital:["Kapital- & Vermögensstruktur","#534ab7","CFO / Bilanzierung"],
+  vertrieb:["Vertrieb & Umsatz","#d4537e","Vertriebsleitung"],
+  debitoren:["Forderungen (Debitoren)","#993c1d","Debitorenbuchhaltung"],
+  kreditoren:["Verbindlichkeiten (Kreditoren)","#854f0b","Kreditorenbuchhaltung"],
+  einkauf:["Einkauf & Beschaffung","#639922","Einkaufsleitung"],
+  lager:["Lager & Bestand","#0f6e56","Logistikleitung"],
+  produktion:["Produktion & Operations","#0c447c","Werkleitung"],
+  personal:["Personal (HR)","#993556","HR-Leitung"],
+  investition:["Investition & Anlagen","#3c3489","Anlagenbuchhaltung"],
+  kosten:["Kosten & Gemeinkosten","#a8650f","Kostenstellen-Controlling"],
+  planung:["Planung, Forecast & Abweichung","#5f5e5a","Planung & Forecast"],
+  esg:["ESG & Nachhaltigkeit","#3b6d11","Nachhaltigkeit"],
+  prozess:["Prozesskette & Durchlaufzeiten","#7f77dd","Prozess-/Logistik-Controlling"]
+};
+const QUELLE={J:"FiBu-Journal / Salden",M:"Konto-Mapping (GuV/Bilanz)",S:"Stamm/Struktur (Org, Periode)",
+  O:"Offene Posten (Fälligkeit)",P:"Plan",B:"Bestand",OP:"Operativ / Mengen (MES)",
+  CRM:"Vertrieb / CRM",HR:"Personal-System",EK:"Einkauf / Bestellwesen",EX:"Extern / Markt"};
+const ABT={gf:"Geschäftsführung",controlling:"Controlling",fibu:"Finanzbuchhaltung",treasury:"Treasury",vertrieb:"Vertrieb",einkauf:"Einkauf",logistik:"Logistik / Lager",produktion:"Produktion",hr:"Personal",qm:"Qualitätsmanagement",nachhaltigkeit:"Nachhaltigkeit",it:"IT / BI"};
+const BER2ABT={rent:"controlling",liqui:"treasury",kapital:"fibu",vertrieb:"vertrieb",debitoren:"fibu",kreditoren:"fibu",einkauf:"einkauf",lager:"logistik",produktion:"produktion",personal:"hr",investition:"controlling",kosten:"controlling",planung:"controlling",esg:"nachhaltigkeit",prozess:"logistik"};
+
+const K=[
+["Bruttoumsatz","rent","Σ Erlöse zum Listenpreis","Verkauf vor Abzügen.","J,M,S","EUR"],
+["Nettoumsatz","rent","Bruttoumsatz − Erlösschmälerung","Umsatz nach Rabatten/Gutschriften.","J,M,S","EUR"],
+["Rohertrag","rent","Nettoumsatz − Wareneinsatz","Was nach Materialkosten bleibt.","J,M,S","EUR"],
+["Deckungsbeitrag","rent","Nettoumsatz − variable Kosten","Beitrag zur Deckung der Fixkosten.","J,M,S","EUR"],
+["DB-Quote","rent","Deckungsbeitrag ÷ Nettoumsatz","Anteil je Umsatz-Euro für Fixkosten + Gewinn.","J,M,S","%"],
+["EBITDA","rent","Betriebsergebnis vor Zinsen/Steuern/Abschr.","Verdient das Kerngeschäft Geld?","J,M,S","EUR"],
+["EBITDA-Marge","rent","EBITDA ÷ Nettoumsatz","Operative Profitabilität in %.","J,M,S","%"],
+["EBIT","rent","EBITDA − Abschreibungen","Betriebsergebnis nach Abnutzung.","J,M,S","EUR"],
+["EBIT-Marge","rent","EBIT ÷ Nettoumsatz","Operatives Ergebnis je Umsatz-Euro.","J,M,S","%"],
+["EBT","rent","EBIT − Zinsergebnis","Ergebnis vor Steuern.","J,M,S","EUR"],
+["Jahresüberschuss","rent","EBT − Steuern","Gewinn nach allem.","J,M,S","EUR"],
+["Umsatzrendite","rent","Jahresüberschuss ÷ Nettoumsatz","Gewinn je Umsatz-Euro.","J,M,S","%"],
+["ROI","rent","Gewinn ÷ investiertes Kapital","Verzinsung des eingesetzten Kapitals.","J,M","%"],
+["ROCE","rent","EBIT ÷ (EK + verzinsl. FK)","Rendite auf eingesetztes Kapital.","J,M","%"],
+["Eigenkapitalrentabilität (ROE)","rent","Jahresüberschuss ÷ Eigenkapital","Verzinsung des Eigenkapitals.","J,M","%"],
+["Gesamtkapitalrentabilität (ROA)","rent","(Gewinn + Zinsen) ÷ Gesamtkapital","Rendite auf das gesamte Vermögen.","J,M","%"],
+["Liquidität 1. Grades","liqui","liquide Mittel ÷ kurzfr. Verb. ×100","Kann ich sofort zahlen?","J,M,O,B","%"],
+["Liquidität 2. Grades","liqui","(liquide + kurzfr. Ford.) ÷ kurzfr. Verb. ×100","Zahlungsfähig inkl. Forderungen.","J,M,O,B","%"],
+["Liquidität 3. Grades","liqui","Umlaufvermögen ÷ kurzfr. Verb. ×100","Zahlungsfähig inkl. Vorräte.","J,M,O,B","%"],
+["Working Capital","liqui","Umlaufvermögen − kurzfr. Verb.","Frei verfügbares Betriebskapital.","J,M,O,B","EUR"],
+["Net Working Capital","liqui","(Ford. + Vorräte) − Verb. LuL","Im Betrieb gebundenes Kapital.","J,M,O,B","EUR"],
+["Operativer Cashflow","liqui","Jahresüberschuss + Abschr. ± ΔWC","Geldfluss aus dem Geschäft.","J,M,B","EUR"],
+["Free Cashflow","liqui","operativer CF − Investitionen","Frei verfügbarer Geldfluss.","J,M,B","EUR"],
+["Cash Conversion Cycle","liqui","DSO + DIO − DPO","Tage, bis Geld zurückfließt.","J,M,O,B","Tage"],
+["Cashflow-Marge","liqui","operativer CF ÷ Nettoumsatz","Wie viel Umsatz wird zu Cash.","J,M","%"],
+["Current Ratio","liqui","Umlaufvermögen ÷ kurzfr. Verb.","Kurzfristige Deckung (Faktor).","J,M,O,B","x"],
+["Quick Ratio","liqui","(liquide + Ford.) ÷ kurzfr. Verb.","Deckung ohne Vorräte.","J,M,O","x"],
+["Schuldentilgungsdauer","liqui","Netto-FK ÷ operativer CF","Jahre bis schuldenfrei.","J,M","x"],
+["Eigenkapitalquote","kapital","EK ÷ Gesamtkapital ×100","Finanzielle Stabilität.","J,M","%"],
+["Fremdkapitalquote","kapital","FK ÷ Gesamtkapital ×100","Anteil fremder Finanzierung.","J,M","%"],
+["Verschuldungsgrad","kapital","FK ÷ EK","Hebel der Finanzierung.","J,M","x"],
+["Net Debt","kapital","verzinsl. FK − liquide Mittel","Nettoverschuldung.","J,M,B","EUR"],
+["Net Debt / EBITDA","kapital","Net Debt ÷ EBITDA","Wie schnell entschuldbar.","J,M","x"],
+["Anlagenintensität","kapital","Anlagevermögen ÷ Gesamtvermögen","Kapitalbindung im Anlagevermögen.","J,M","%"],
+["Anlagendeckung I","kapital","EK ÷ Anlagevermögen ×100","Langfristig finanziert?","J,M","%"],
+["Anlagendeckung II","kapital","(EK + langfr. FK) ÷ AV ×100","Goldene Bilanzregel.","J,M","%"],
+["Gearing","kapital","Net Debt ÷ EK","Netto-Verschuldungshebel.","J,M","x"],
+["Bilanzsumme","kapital","Σ Aktiva (= Σ Passiva)","Unternehmensgröße.","J,M","EUR"],
+["Zinsdeckungsgrad","kapital","EBIT ÷ Zinsaufwand","Kann das Ergebnis Zinsen tragen?","J,M","x"],
+["Selbstfinanzierungsgrad","kapital","Gewinnrücklagen ÷ EK","Aus eigener Kraft finanziert.","J,M","%"],
+["Auftragseingang","vertrieb","Σ neue Aufträge","Wie viel kommt rein.","CRM,S","EUR"],
+["Auftragsbestand","vertrieb","Σ offene Aufträge","Backlog / Sicherheit.","CRM,S","EUR"],
+["Book-to-Bill","vertrieb","Auftragseingang ÷ Umsatz","Wächst die Pipeline?","CRM,J","x"],
+["Umsatz je Kunde","vertrieb","Nettoumsatz ÷ Kundenzahl","Durchschnittlicher Kundenumsatz.","J,CRM","EUR"],
+["Ø Auftragswert","vertrieb","Umsatz ÷ Auftragszahl","Wie groß ist ein Auftrag.","J,CRM","EUR"],
+["Conversion Rate","vertrieb","Abschlüsse ÷ Angebote","Vertriebs-Trefferquote.","CRM","%"],
+["Neukundenquote","vertrieb","Neukunden ÷ Kunden gesamt","Wie viel Wachstum aus Neukunden.","CRM","%"],
+["Kundenabwanderung (Churn)","vertrieb","verlorene Kunden ÷ Kunden","Wie viele Kunden gehen.","CRM","%"],
+["Customer Lifetime Value","vertrieb","Ø DB je Kunde × Verweildauer","Wert eines Kunden über die Zeit.","CRM,J","EUR"],
+["Retourenquote","vertrieb","Retouren ÷ Umsatz","Anteil zurückgegebener Ware.","J,CRM","%"],
+["Umsatz je Vertriebs-FTE","vertrieb","Umsatz ÷ Außendienst-FTE","Vertriebsproduktivität.","J,HR","EUR"],
+["Marktanteil","vertrieb","eigener Umsatz ÷ Marktvolumen","Position im Markt.","J,EX","%"],
+["Reklamationsquote","vertrieb","Reklamationen ÷ Aufträge","Qualität aus Kundensicht.","CRM,OP","%"],
+["DSO (Forderungslaufzeit)","debitoren","Forderungen ÷ Umsatz ×365","Wie lange bis Kunde zahlt.","J,M,O","Tage"],
+["Überfälligkeitsquote","debitoren","überfällige ÷ offene Forderungen","Wie viel ist verspätet.","O","%"],
+["Forderungsausfallquote","debitoren","Ausfälle ÷ Umsatz","Wie viel Umsatz wird nie bezahlt.","J,M","%"],
+["Mahnquote","debitoren","gemahnte ÷ offene Posten","Wie viel muss angemahnt werden.","O","%"],
+["Forderungsumschlag","debitoren","Umsatz ÷ Ø Forderungen","Wie oft drehen die Forderungen.","J,M","x"],
+["Altersstruktur Forderungen","debitoren","Forderungen je Fälligkeitsband","Verteilung nach Überfälligkeit.","O","EUR"],
+["Ø gewährtes Zahlungsziel","debitoren","Σ vereinbarte Ziele ÷ Anzahl","Wie lange räumen wir Kunden ein.","O,S","Tage"],
+["Skontoabzug Kunden","debitoren","gewährtes Skonto ÷ Umsatz","Kosten der Skontogewährung.","J,M","%"],
+["DPO (Verbindlichkeitenlaufzeit)","kreditoren","Verb. LuL ÷ Wareneinsatz ×365","Wie lange zahlen wir Lieferanten.","J,M,O","Tage"],
+["Skontonutzungsgrad","kreditoren","genutztes ÷ mögliches Skonto","Sparen wir verfügbare Skonti?","J,O","%"],
+["Kreditorenumschlag","kreditoren","Wareneinsatz ÷ Ø Verbindlichkeiten","Wie oft drehen Verbindlichkeiten.","J,M","x"],
+["Anteil überfälliger Verb.","kreditoren","überfällige ÷ gesamte Verb.","Zahlungsdisziplin nach innen.","O","%"],
+["Lieferantenkonzentration","kreditoren","Top-5-Volumen ÷ Einkauf","Abhängigkeit von wenigen.","EK","%"],
+["Einkaufsvolumen","einkauf","Σ Bestellwert","Gesamtes Beschaffungsvolumen.","EK","EUR"],
+["Materialkostenquote","einkauf","Materialaufwand ÷ Nettoumsatz","Anteil Material am Umsatz.","J,M","%"],
+["Liefertreue Lieferant","einkauf","pünktliche ÷ alle Lieferungen","Verlässlichkeit der Lieferanten.","EK,OP","%"],
+["Lieferanten-Reklamationsquote","einkauf","beanstandet ÷ geliefert","Eingangsqualität.","EK,OP","%"],
+["Einsparquote Einkauf","einkauf","verhandelte Einsparung ÷ Volumen","Erfolg der Verhandlungen.","EK","%"],
+["Maverick-Buying-Quote","einkauf","Bestellungen ohne Vertrag ÷ alle","Wilde Beschaffung am Prozess vorbei.","EK","%"],
+["Preisabweichung Einkauf","einkauf","Ist-Preis − Plan-Preis","Abweichung vom Sollpreis.","EK,P","EUR"],
+["Aktive Lieferantenanzahl","einkauf","# Lieferanten mit Umsatz","Breite der Lieferantenbasis.","EK","Stück"],
+["Lagerumschlag","lager","Wareneinsatz ÷ Ø Bestand","Wie oft dreht das Lager.","J,B","x"],
+["Lagerreichweite","lager","Ø Bestand ÷ Verbrauch ×365","Tage Vorrat.","B,OP","Tage"],
+["DIO (Vorratsdauer)","lager","Vorräte ÷ Wareneinsatz ×365","Wie lange liegt Ware.","J,M,B","Tage"],
+["Bestandswert","lager","Σ Lagerwert","Gebundenes Kapital im Lager.","B","EUR"],
+["Lagerhüterquote","lager","Ladenhüter-Wert ÷ Bestand","Totes Kapital im Lager.","B","%"],
+["Inventurdifferenz","lager","Buchbestand − Zählbestand","Abweichung System vs. Realität.","B,OP","Stück"],
+["Lieferbereitschaftsgrad","lager","sofort lieferbar ÷ Bedarf","Servicegrad gegenüber Kunden.","OP,B","%"],
+["Kapitalbindung Lager","lager","Ø Bestand × Kapitalkostensatz","Zinskosten des Lagers.","B","EUR"],
+["OEE","produktion","Verfügbarkeit × Leistung × Qualität","Gesamteffektivität der Anlagen.","OP","%"],
+["Kapazitätsauslastung","produktion","Ist-Leistung ÷ Kapazität","Wie voll sind die Maschinen.","OP","%"],
+["Ausschussquote","produktion","Ausschuss ÷ produzierte Menge","Wie viel landet im Müll.","OP","%"],
+["First Pass Yield","produktion","i.O. beim 1. Durchlauf ÷ gesamt","Beim ersten Mal richtig.","OP","%"],
+["Durchlaufzeit","produktion","Zeit Start → fertig","Wie lange dauert die Fertigung.","OP","Tage"],
+["Rüstzeitanteil","produktion","Rüstzeit ÷ Maschinenzeit","Verlust durch Umrüsten.","OP","%"],
+["Stückkosten","produktion","Herstellkosten ÷ Stückzahl","Was ein Stück kostet.","J,OP","EUR"],
+["Nacharbeitsquote","produktion","Nacharbeit ÷ Produktion","Wie viel muss korrigiert werden.","OP","%"],
+["Termintreue Produktion","produktion","pünktlich fertig ÷ Aufträge","Liefern wir rechtzeitig.","OP","%"],
+["Produktivität","produktion","Output ÷ Arbeitsstunden","Leistung je Stunde.","OP,HR","x"],
+["Personalkostenquote","personal","Personalaufwand ÷ Nettoumsatz","Anteil Personal am Umsatz.","J,M,HR","%"],
+["Umsatz je Mitarbeiter","personal","Nettoumsatz ÷ FTE","Produktivität je Kopf.","J,HR","EUR"],
+["Fluktuationsrate","personal","Abgänge ÷ Ø Belegschaft","Wie viele gehen.","HR","%"],
+["Krankenstand","personal","Fehltage ÷ Solltage","Ausfallquote.","HR","%"],
+["FTE","personal","Σ gewichtete Stellen","Vollzeitäquivalente.","HR","Stück"],
+["Überstundenquote","personal","Überstunden ÷ Sollstunden","Belastung der Belegschaft.","HR","%"],
+["Personalkosten je FTE","personal","Personalaufwand ÷ FTE","Was ein Vollzeit-Kopf kostet.","J,HR","EUR"],
+["Wertschöpfung je MA","personal","(Umsatz − Vorleistungen) ÷ FTE","Beitrag je Kopf.","J,HR","EUR"],
+["Fortbildungsquote","personal","Schulungstage ÷ Mitarbeiter","Investition in Qualifikation.","HR","Tage"],
+["Investitionsquote","investition","Investitionen ÷ Nettoumsatz","Wie viel wird reinvestiert.","J,M","%"],
+["Abschreibungsquote","investition","Abschreibungen ÷ Anlagevermögen","Tempo der Abnutzung.","J,M","%"],
+["Anlagenabnutzungsgrad","investition","kum. Abschr. ÷ Anschaffungswert","Wie alt ist das Anlagevermögen.","J,M","%"],
+["Reinvestitionsquote","investition","Investitionen ÷ Abschreibungen","Wird Substanz erhalten?","J,M","x"],
+["Investitionsdeckung","investition","operativer CF ÷ Investitionen","Aus eigener Kraft investiert.","J,M","x"],
+["CapEx","investition","Σ Investitionen Sachanlagen","Investitionsausgaben.","J,M","EUR"],
+["Kapitalumschlag","investition","Nettoumsatz ÷ Gesamtkapital","Wie effizient arbeitet das Kapital.","J,M","x"],
+["Materialintensität","kosten","Materialaufwand ÷ Gesamtleistung","Materialgewicht in den Kosten.","J,M","%"],
+["Fixkostenanteil","kosten","Fixkosten ÷ Gesamtkosten","Wie starr ist die Kostenbasis.","J,M","%"],
+["Break-even-Umsatz","kosten","Fixkosten ÷ DB-Quote","Ab wann fängt Gewinn an.","J,M","EUR"],
+["Kostendeckungsgrad","kosten","Erlöse ÷ Kosten","Decken Erlöse die Kosten?","J,M","%"],
+["Gemeinkostenzuschlag","kosten","Gemeinkosten ÷ Einzelkosten","Aufschlag für Overhead.","J,M","%"],
+["Cost-Income-Ratio","kosten","Aufwand ÷ Ertrag","Aufwand je Ertrags-Euro.","J,M","%"],
+["Energiekostenquote","kosten","Energiekosten ÷ Nettoumsatz","Energiegewicht am Umsatz.","J,M","%"],
+["Verwaltungskostenquote","kosten","Verwaltungsaufwand ÷ Umsatz","Overhead Verwaltung.","J,M","%"],
+["Vertriebskostenquote","kosten","Vertriebsaufwand ÷ Umsatz","Kosten, um zu verkaufen.","J,M","%"],
+["Plan-Ist-Abweichung","planung","Ist − Plan","Wie weit weg vom Plan (EUR).","J,P","EUR"],
+["Plan-Ist-Abweichung %","planung","(Ist − Plan) ÷ Plan","Abweichung relativ.","J,P","%"],
+["Forecast-Genauigkeit","planung","1 − |Ist − FC| ÷ Ist","Wie gut war die Prognose.","J,P","%"],
+["Budgetausschöpfung","planung","Ist ÷ Budget","Wie viel Budget verbraucht.","J,P","%"],
+["Forecast-Bias","planung","Σ(FC − Ist) ÷ Σ Ist","Systematisch zu hoch/niedrig.","J,P","%"],
+["Hochrechnung Jahresende","planung","Ist YTD + Plan Restjahr","Wo landen wir voraussichtlich.","J,P","EUR"],
+["Run-Rate","planung","Ist-Periode × Perioden/Jahr","Hochgerechnetes Jahrestempo.","J","EUR"],
+["CO₂-Intensität","esg","CO₂-Emissionen ÷ Nettoumsatz","Emissionen je Umsatz-Euro.","OP,EX","x"],
+["Energieintensität","esg","Energieverbrauch ÷ Output","Energie je produzierter Einheit.","OP","x"],
+["Recyclingquote","esg","recycelt ÷ Abfall gesamt","Wie viel wird wiederverwertet.","OP","%"],
+["Anteil erneuerbare Energie","esg","erneuerbar ÷ Energie gesamt","Grüner Strom-Anteil.","OP","%"],
+["Unfallhäufigkeit (LTIF)","esg","Unfälle ×10⁶ ÷ Arbeitsstunden","Arbeitssicherheit.","HR,OP","x"],
+["Frauenquote Führung","esg","weibl. Führungskräfte ÷ Führung","Diversität in der Führung.","HR","%"],
+["Wasserintensität","esg","Wasserverbrauch ÷ Output","Wasser je Einheit.","OP","x"],
+["Angebotsanzahl","vertrieb","# erstellte Angebote","Wie viele Angebote rausgehen.","CRM","Stück"],
+["Angebotsvolumen","vertrieb","Σ offene Angebote","Wert der Angebots-Pipeline.","CRM","EUR"],
+["Ø Angebotswert","vertrieb","Angebotsvolumen ÷ Angebote","Durchschnittliche Angebotsgröße.","CRM","EUR"],
+["Angebotserfolgsquote (Hit Rate)","vertrieb","gewonnene ÷ abgegebene Angebote","Wie viele Angebote werden Auftrag.","CRM","%"],
+["Angebotsdurchlaufzeit","vertrieb","Zeit Anfrage → Angebot","Wie schnell wird angeboten.","CRM","Tage"],
+["Nachfassquote","vertrieb","nachgefasste ÷ offene Angebote","Konsequenz im Follow-up.","CRM","%"],
+["Auftragsdurchlaufzeit","vertrieb","Zeit Auftrag → Lieferung","Wie schnell wird geliefert.","CRM,OP","Tage"],
+["OTIF (On Time In Full)","vertrieb","vollständig+pünktlich ÷ Aufträge","Perfekt erfüllte Aufträge.","CRM,OP","%"],
+["Auftragsstornoquote","vertrieb","stornierte ÷ Aufträge","Wie viele Aufträge fallen weg.","CRM","%"],
+["Auftragsänderungsquote","vertrieb","geänderte ÷ Aufträge","Stabilität der Aufträge.","CRM","%"],
+["Teillieferquote","vertrieb","Teillieferungen ÷ Aufträge","Wie oft nicht in einem Rutsch.","CRM,OP","%"],
+["Rückstandsquote (Backorder)","vertrieb","rückständige ÷ Aufträge","Nicht erfüllte Nachfrage.","CRM,OP","%"],
+["Bestellzykluszeit","prozess","Zeit Bedarf → Bestellung","Wie schnell wird beschafft.","EK","Tage"],
+["Wareneingangszeit","prozess","Zeit Bestellung → Wareneingang","Lieferzeit des Lieferanten.","EK,OP","Tage"],
+["Liefermengentreue","prozess","gelieferte ÷ bestellte Menge","Stimmt die Liefermenge?","EK,OP","%"],
+["WE-Qualitätsquote","prozess","i.O. ÷ geprüfte Wareneingänge","Eingangsqualität.","OP","%"],
+["Einlagerzeit","prozess","Zeit Wareneingang → Einlagerung","Wie schnell ist Ware verfügbar.","OP","Tage"],
+["Umlagerquote","prozess","Umlagerungen ÷ Lagerbewegungen","Internes Hin-und-Her.","OP","%"],
+["Kommissionierzeit","prozess","Zeit Auftrag → Auslagerung","Pick-Geschwindigkeit.","OP","Tage"],
+["Pickfehlerquote","prozess","Fehlpicks ÷ Pickpositionen","Kommissionier-Qualität.","OP","%"],
+["Fakturierungszeit","prozess","Zeit Lieferung → Rechnung","Wie schnell wird fakturiert.","J,OP","Tage"],
+["Rechnungsfehlerquote","prozess","fehlerhafte ÷ Rechnungen","Faktura-Qualität.","J,CRM","%"],
+["Order-to-Cash-Zeit","prozess","Zeit Auftrag → Zahlungseingang","Gesamte O2C-Dauer.","J,M,O,CRM","Tage"],
+["Procure-to-Pay-Zeit","prozess","Zeit Bestellung → Zahlung","Gesamte P2P-Dauer.","J,M,O,EK","Tage"],
+["Durchlaufzeit gesamt","prozess","Zeit Bestellung → Auslieferung","End-to-end Lieferkette.","EK,OP,CRM","Tage"],
+["Perfect Order Rate","prozess","fehlerfreie ÷ alle Aufträge","Komplett fehlerfreie Abwicklung.","CRM,OP,J","%"],
+["Belegfluss-Vollständigkeit","prozess","verkettete ÷ alle Belege","Lückenlose Nachvollziehbarkeit.","J,OP,EK","%"],
+];
+
+// Tiefen-Steckbriefe für Leitkennzahlen (je Bereich eine). Rest erbt Basis + Vorlage-Hinweis.
+const DETAIL={
+ "EBITDA":{richtung:"höher besser",richtwert:"Marge je nach Branche grob 8–20 %",
+  zweck:"Operatives Ergebnis vor Finanzierung, Steuern und Abschreibungen — zeigt die Ertragskraft des reinen Kerngeschäfts, unabhängig von Kapitalstruktur und Abschreibungspolitik.",
+  berechnung:"Auf Buchungs-Grain je GuV-Position aggregiert: Erlöse minus operative Aufwände, Abschreibungen/Zinsen/Steuern bleiben außen vor. Aggregation nur nach oben (Position→Segment→GF).",
+  einsatz:"GF-Steuerung, Bankgespräche, Multiplikator für Unternehmenswert (Net Debt/EBITDA). Vergleich über Zeit und gegen Plan.",
+  ebenen:"E1: ein Wert + Trend. E2: je Segment. E3: nach GuV-Positionen zerlegt. E4: Einzelbuchungen. E5: Verlauf/Snapshot.",
+  beispiel:"Nettoumsatz 10 Mio − Material 5 − Personal 3 − sonst. operativ 0,5 = EBITDA 1,5 Mio (15 %).",
+  fehlerquellen:"Abgrenzung 'operativ vs. außerordentlich'; Periodenabgrenzung; nicht-einheitliches Kontomapping zwischen Gesellschaften.",
+  fallstrick:"EBITDA ist kein Cashflow — Working-Capital-Bindung und Investitionen fehlen völlig.",
+  verwandt:["EBIT","EBITDA-Marge","Net Debt / EBITDA","Operativer Cashflow"]},
+ "DB-Quote":{richtung:"höher besser",richtwert:"stark produktabhängig; Trend zählt mehr als Absolutwert",
+  zweck:"Anteil des Nettoumsatzes, der nach den variablen Kosten zur Deckung der Fixkosten und für Gewinn übrigbleibt.",
+  berechnung:"Deckungsbeitrag ÷ Nettoumsatz, gerechnet auf feinster Ebene (Auftrag/Position), dann gewichtet aggregiert — nie Durchschnitt von Durchschnitten.",
+  einsatz:"Produkt-/Kunden-Mix steuern, Preisuntergrenzen, Sortimentsbereinigung.",
+  ebenen:"E1: gesamt. E2: je Segment/PC. E3: je Produkt/Kunde. E4: je Auftrag. E5: Entwicklung.",
+  beispiel:"DB 40 € ÷ Nettoumsatz 90 € = 44 %.",
+  fehlerquellen:"Falsche Zuordnung variabler vs. fixer Kosten; Erlösschmälerung asymmetrisch erfasst (Phantomwerte).",
+  fallstrick:"Hohe DB-Quote bei geringem Volumen deckt evtl. die Fixkosten trotzdem nicht.",
+  verwandt:["Deckungsbeitrag","Nettoumsatz","Break-even-Umsatz"]},
+ "Liquidität 1. Grades":{richtung:"Zielband",richtwert:"oft 10–30 %; sehr branchen-/modellabhängig",
+  zweck:"Wie viel der kurzfristigen Verbindlichkeiten sofort aus liquiden Mitteln bezahlbar wäre — die schärfste Zahlungsfähigkeits-Kennzahl.",
+  berechnung:"Liquide Mittel (kumulierter Saldo zum Stichtag) ÷ kurzfristige Verbindlichkeiten ×100. Kurzfristig über OPOS-Fälligkeit ≤365 Tage.",
+  einsatz:"Treasury/Liquiditätssteuerung, Kreditlinien, Zahlungsfähigkeits-Frühwarnung.",
+  ebenen:"E1: Ampel. E2: je Gesellschaft. E3: Bilanzpositionen. E4: OP-Liste/Bankbuchungen. E5: Verlauf/Stichtags-Snapshot.",
+  beispiel:"Liquide 1,2 Mio ÷ kurzfr. Verb. 3,1 Mio ×100 = 38 %.",
+  fehlerquellen:"Netto/Brutto-Basis-Mismatch; Salden als Periodenbewegung statt kumuliert; Fälligkeit fehlt.",
+  fallstrick:"Sehr hoher Wert kann unproduktiv gebundenes Kapital bedeuten — mehr ist nicht automatisch besser.",
+  verwandt:["Liquidität 2. Grades","Working Capital","Cash Conversion Cycle"]},
+ "Eigenkapitalquote":{richtung:"höher besser",richtwert:"solide ab ~30 %; <10 % kritisch",
+  zweck:"Anteil des Eigenkapitals am Gesamtkapital — Maß für finanzielle Stabilität und Krisenfestigkeit.",
+  berechnung:"EK ÷ Bilanzsumme ×100, aus kumulierten Bilanzsalden zum Stichtag.",
+  einsatz:"Bonität/Rating, Verhandlungsbasis bei Banken, Risikotragfähigkeit.",
+  ebenen:"E1: Konzern. E2: je Gesellschaft. E3: Bilanzpositionen. E4: Konten. E5: Jahresverlauf.",
+  beispiel:"EK 4 Mio ÷ Bilanzsumme 10 Mio = 40 %.",
+  fehlerquellen:"Stichtagsabgrenzung; Behandlung von Gesellschafterdarlehen/Mezzanine.",
+  fallstrick:"Stichtagswert kann durch Jahresend-Effekte verzerrt sein.",
+  verwandt:["Verschuldungsgrad","Anlagendeckung II","Gearing"]},
+ "Customer Lifetime Value":{richtung:"höher besser",richtwert:"sinnvoll nur > 3× Akquisekosten (CAC)",
+  zweck:"Erwarteter Deckungsbeitrag, den ein Kunde über die gesamte Geschäftsbeziehung bringt.",
+  berechnung:"Ø DB je Kunde und Periode × erwartete Verweildauer; auf Kunden-Grain, dann segmentweise.",
+  einsatz:"Marketingbudget je Segment, Kundenpriorisierung, Retention-Investitionen.",
+  ebenen:"E1: Ø über alle. E2: je Segment. E3: je Kundengruppe. E4: Einzelkunde. E5: Kohortenverlauf.",
+  beispiel:"DB 500 €/Jahr × 6 Jahre = 3.000 € CLV.",
+  fehlerquellen:"Verweildauer geschätzt; DB-Zuordnung je Kunde aus mehreren Systemen.",
+  fallstrick:"Vergangenheits-DB sagt wenig über künftiges Verhalten.",
+  verwandt:["Kundenabwanderung (Churn)","Umsatz je Kunde","Neukundenquote"]},
+ "DSO (Forderungslaufzeit)":{richtung:"niedriger besser",richtwert:"nahe am gewährten Zahlungsziel + wenige Tage",
+  zweck:"Durchschnittliche Tage von Rechnung bis Zahlungseingang — Maß für die Geldbindung in Forderungen.",
+  berechnung:"Forderungsbestand ÷ Umsatz ×365, je Gesellschaft; kurzfristig über OPOS.",
+  einsatz:"Working-Capital-Steuerung, Mahnwesen, Liquiditätsprognose.",
+  ebenen:"E1: gesamt. E2: je Gesellschaft. E3: je Kundengruppe. E4: offene Posten. E5: Verlauf.",
+  beispiel:"Forderungen 1,0 Mio ÷ Umsatz 12 Mio ×365 ≈ 30 Tage.",
+  fehlerquellen:"Umsatzbasis (brutto/netto) inkonsistent; Stichtag vs. Durchschnittsbestand.",
+  fallstrick:"Sinkender DSO durch Factoring täuscht echte Verbesserung vor.",
+  verwandt:["Überfälligkeitsquote","Cash Conversion Cycle","Mahnquote"]},
+ "DPO (Verbindlichkeitenlaufzeit)":{richtung:"Zielband",richtwert:"so lang wie vereinbart, ohne Skonto zu verlieren",
+  zweck:"Durchschnittliche Tage bis zur Zahlung an Lieferanten — Hebel fürs Working Capital.",
+  berechnung:"Verb. LuL ÷ Wareneinsatz ×365.",
+  einsatz:"Liquiditätssteuerung, Skonto-vs-Laufzeit-Abwägung.",
+  ebenen:"E1: gesamt. E2: je Gesellschaft. E3: je Lieferantengruppe. E4: offene Posten. E5: Verlauf.",
+  beispiel:"Verb. LuL 0,8 Mio ÷ Wareneinsatz 7 Mio ×365 ≈ 42 Tage.",
+  fehlerquellen:"Wareneinsatz-Abgrenzung; Anzahlungen verzerren.",
+  fallstrick:"Zu hoher DPO = ausgereizte Skonti und genervte Lieferanten.",
+  verwandt:["Skontonutzungsgrad","Cash Conversion Cycle","Kreditorenumschlag"]},
+ "Materialkostenquote":{richtung:"niedriger besser",richtwert:"branchenabhängig; Trend zählt",
+  zweck:"Anteil des Materialaufwands am Nettoumsatz — zentraler Kostenhebel im produzierenden Gewerbe.",
+  berechnung:"Materialaufwand ÷ Nettoumsatz, GuV-Positionen.",
+  einsatz:"Einkaufsverhandlung, Make-or-Buy, Preiskalkulation.",
+  ebenen:"E1: gesamt. E2: je Werk. E3: je Materialgruppe. E4: Buchungen. E5: Verlauf.",
+  beispiel:"Material 5 Mio ÷ Umsatz 10 Mio = 50 %.",
+  fehlerquellen:"Bestandsveränderungen nicht sauber abgegrenzt; Skonto-/Bonusbehandlung.",
+  fallstrick:"Sinkende Quote durch Preiseffekt vs. echte Mengeneffizienz unterscheiden.",
+  verwandt:["Rohertrag","Einkaufsvolumen","Lagerumschlag"]},
+ "Lagerumschlag":{richtung:"höher besser",richtwert:"je höher, desto weniger gebundenes Kapital — Branchenmaß",
+  zweck:"Wie oft der Lagerbestand pro Jahr 'umgeschlagen' (verbraucht und ersetzt) wird.",
+  berechnung:"Wareneinsatz ÷ durchschnittlicher Bestand.",
+  einsatz:"Bestandsoptimierung, Kapitalbindung senken, Ladenhüter erkennen.",
+  ebenen:"E1: gesamt. E2: je Lager. E3: je Warengruppe. E4: je Artikel. E5: Verlauf.",
+  beispiel:"Wareneinsatz 6 Mio ÷ Ø Bestand 1,5 Mio = 4× pro Jahr.",
+  fehlerquellen:"Bestandsbewertung uneinheitlich; Durchschnittsbestand aus Stichtagen verzerrt.",
+  fallstrick:"Sehr hoher Umschlag kann Lieferengpässe verursachen.",
+  verwandt:["Lagerreichweite","DIO (Vorratsdauer)","Kapitalbindung Lager"]},
+ "OEE":{richtung:"höher besser",richtwert:"Weltklasse ~85 %; 60 % typisch",
+  zweck:"Gesamtanlageneffektivität = Verfügbarkeit × Leistung × Qualität — der Standard für Anlagenproduktivität.",
+  berechnung:"Drei Faktoren je Maschine/Linie aus MES-Daten, multipliziert.",
+  einsatz:"Engpass-Identifikation, Instandhaltung, Investitionsentscheidungen.",
+  ebenen:"E1: Werk gesamt. E2: je Linie. E3: je Maschine. E4: Stillstandsereignisse. E5: Verlauf.",
+  beispiel:"0,90 × 0,95 × 0,98 = 84 % OEE.",
+  fehlerquellen:"Stillstandszeiten/Mikrostopps im MES unvollständig erfasst; Plan-Taktzeit falsch.",
+  fallstrick:"Hohe OEE auf einer Nicht-Engpassmaschine bringt nichts.",
+  verwandt:["Kapazitätsauslastung","Ausschussquote","Termintreue Produktion"]},
+ "Personalkostenquote":{richtung:"niedriger besser",richtwert:"dienstleistungslastig höher; Trend zählt",
+  zweck:"Anteil des Personalaufwands am Nettoumsatz — Effizienz des Personaleinsatzes.",
+  berechnung:"Personalaufwand ÷ Nettoumsatz, GuV.",
+  einsatz:"Kapazitätsplanung, Outsourcing-Entscheidungen, Benchmarking.",
+  ebenen:"E1: gesamt. E2: je Bereich. E3: je Kostenstelle. E4: Buchungen. E5: Verlauf.",
+  beispiel:"Personal 3 Mio ÷ Umsatz 10 Mio = 30 %.",
+  fehlerquellen:"Leiharbeit/Rückstellungen nicht konsistent enthalten.",
+  fallstrick:"Niedrige Quote kann Unterbesetzung und Qualitätsrisiko bedeuten.",
+  verwandt:["Umsatz je Mitarbeiter","Wertschöpfung je MA","Personalkosten je FTE"]},
+ "Investitionsquote":{richtung:"Zielband",richtwert:"mindestens Höhe der Abschreibungen (Substanzerhalt)",
+  zweck:"Anteil der Investitionen am Umsatz — zeigt, ob ins Unternehmen investiert wird.",
+  berechnung:"Investitionen (CapEx) ÷ Nettoumsatz.",
+  einsatz:"Wachstums-/Substanzsteuerung, Budgetplanung.",
+  ebenen:"E1: gesamt. E2: je Bereich. E3: je Projekt. E4: Einzelinvestition. E5: Mehrjahresverlauf.",
+  beispiel:"CapEx 0,6 Mio ÷ Umsatz 10 Mio = 6 %.",
+  fehlerquellen:"Abgrenzung Instandhaltung vs. Investition; aktivierte Eigenleistungen.",
+  fallstrick:"Niedrige Quote zehrt langfristig die Substanz auf.",
+  verwandt:["Reinvestitionsquote","Abschreibungsquote","CapEx"]},
+ "Break-even-Umsatz":{richtung:"niedriger besser",richtwert:"deutlich unter dem Ist-Umsatz (Sicherheitsabstand)",
+  zweck:"Umsatz, ab dem die Fixkosten gedeckt sind und Gewinn entsteht.",
+  berechnung:"Fixkosten ÷ DB-Quote.",
+  einsatz:"Risikobewertung, Preis-/Mengenplanung, Sicherheitsabstand bestimmen.",
+  ebenen:"E1: gesamt. E2: je Segment. E3: je Produktlinie. E4: Kalkulation. E5: Verlauf.",
+  beispiel:"Fixkosten 2 Mio ÷ DB-Quote 0,4 = 5 Mio Break-even.",
+  fehlerquellen:"Fix/variabel-Trennung; Mischkalkulation bei mehreren Produkten.",
+  fallstrick:"Gilt streng nur bei konstantem Produktmix.",
+  verwandt:["DB-Quote","Fixkostenanteil","Deckungsbeitrag"]},
+ "Forecast-Genauigkeit":{richtung:"höher besser",richtwert:"reife Planung >90 %",
+  zweck:"Wie nah die Prognose am späteren Ist lag — Qualitätsmaß des Forecast-Prozesses.",
+  berechnung:"1 − |Ist − Forecast| ÷ Ist, je Periode und Position.",
+  einsatz:"Planungsprozess verbessern, Vertrauen in Forecasts, Bonität.",
+  ebenen:"E1: gesamt. E2: je Bereich. E3: je Position. E4: einzelne Forecasts. E5: Verlauf.",
+  beispiel:"|10,5 − 10,0| ÷ 10,5 = 4,8 % Fehler → 95,2 % Genauigkeit.",
+  fehlerquellen:"Forecast-Version/Stichtag uneindeutig; Ist nachträglich umgebucht.",
+  fallstrick:"Hohe Genauigkeit durch zu späten Forecast ist wertlos.",
+  verwandt:["Forecast-Bias","Plan-Ist-Abweichung %","Budgetausschöpfung"]},
+ "CO₂-Intensität":{richtung:"niedriger besser",richtwert:"Trend + Branchen-Benchmark",
+  zweck:"Treibhausgas-Emissionen je Umsatz-Euro — Effizienzmaß der Nachhaltigkeit.",
+  berechnung:"CO₂e (Scope 1–3) ÷ Nettoumsatz; Emissionsdaten aus Verbrauch × Faktoren.",
+  einsatz:"ESG-Reporting (CSRD), Reduktionsziele, Kundenanforderungen.",
+  ebenen:"E1: Konzern. E2: je Standort. E3: je Emissionsquelle. E4: Verbrauchsbelege. E5: Verlauf.",
+  beispiel:"5.000 t CO₂e ÷ 10 Mio € = 0,5 kg/€.",
+  fehlerquellen:"Scope-3-Daten lückenhaft; Emissionsfaktoren veraltet.",
+  fallstrick:"Sinkende Intensität bei steigenden Absolutemissionen täuscht.",
+  verwandt:["Energieintensität","Anteil erneuerbare Energie","Wasserintensität"]}
+};
+
+// Nachteile / Grenzen je Kennzahl (nur wo es einen echten gibt)
+const NACHTEIL={
+ "EBITDA":"Ignoriert Investitionsbedarf und Working-Capital-Bindung — ein hohes EBITDA kann trotz negativem Cashflow bestehen und ist über Abgrenzungen gestaltbar.",
+ "DB-Quote":"Sagt nichts über das Volumen: eine hohe Quote bei Kleinmengen deckt die Fixkosten womöglich trotzdem nicht.",
+ "Liquidität 1. Grades":"Reiner Stichtagswert und sehr volatil; ein sehr hoher Wert bedeutet unproduktiv gebundenes Kapital.",
+ "Eigenkapitalquote":"Stichtagsgröße, durch Jahresend-Bilanzpolitik gestaltbar; sagt nichts über die Ertragskraft.",
+ "DSO (Forderungslaufzeit)":"Durch Factoring oder Stichtagseffekte verzerrbar; der Durchschnitt verdeckt einzelne Großüberfällige.",
+ "DPO (Verbindlichkeitenlaufzeit)":"Ein hoher Wert sieht gut aus, kann aber ausgereizte Skonti und verärgerte Lieferanten verbergen.",
+ "Lagerumschlag":"Sehr hoher Umschlag riskiert Lieferengpässe; der Durchschnittsbestand aus Stichtagen verzerrt das Ergebnis.",
+ "OEE":"Auf einer Nicht-Engpassmaschine irreführend und verleitet zu Überproduktion, nur um die Zahl zu schönen.",
+ "Personalkostenquote":"Eine niedrige Quote kann Unterbesetzung und Qualitätsrisiko bedeuten; Leiharbeit verzerrt den Vergleich.",
+ "Materialkostenquote":"Preis- und Mengeneffekt sind nicht trennbar; nicht abgegrenzte Bestandsveränderungen verfälschen sie.",
+ "Forecast-Genauigkeit":"Ein spät erstellter Forecast ist trivial genau, aber wertlos; Über- und Unterschätzungen mitteln sich weg (deshalb Bias prüfen).",
+ "CO₂-Intensität":"Relativgröße: sinkt bei Umsatzwachstum, obwohl die absoluten Emissionen steigen.",
+ "ROI":"Durch hohen Fremdkapitalhebel künstlich steigerbar — mehr Risiko, aber bessere Kennzahl.",
+ "Eigenkapitalrentabilität (ROE)":"Steigt mechanisch mit der Verschuldung (Leverage-Effekt) — hohe Werte können erkauftes Risiko sein.",
+ "Conversion Rate":"Setzt Anreiz, nur einfache Angebote zu schreiben: Quote hoch, Volumen niedrig.",
+ "OTIF (On Time In Full)":"Alles-oder-nichts: schon kleine Teilmängel kippen die Kennzahl und demotivieren.",
+ "Marktanteil":"Das Marktvolumen ist oft geschätzt; ein hoher Anteil in einem schrumpfenden Markt ist wenig wert.",
+ "Krankenstand":"Kann Präsentismus fördern (krank zur Arbeit) statt echte Gesundheit abzubilden.",
+ "Fluktuationsrate":"Sehr niedrig ist nicht automatisch gut — kann Stillstand und fehlende Erneuerung bedeuten.",
+ "Auftragseingang":"Volatil und ohne Margenaussage: viel Eingang zu schlechten Konditionen schadet eher.",
+ "Cash Conversion Cycle":"Aggregiert drei Kennzahlen — ein guter Gesamtwert kann eine schlechte Einzelkomponente verstecken.",
+ "Break-even-Umsatz":"Gilt streng nur bei konstantem Produktmix und linearer Kostenfunktion.",
+ "Perfect Order Rate":"Sehr streng definiert; je nach Kriterienzahl kaum erreichbar und schwer vergleichbar.",
+ "Durchschnittskennzahlen":"Durchschnitte verdecken Ausreißer — immer auch Verteilung/Streuung ansehen."
+};
+
+// Qualität (Demo-Stände): Fehler/Warnungen je Bereich im Workflow
+const DQ=[
+ {b:"liqui",k:"Liquidität 1. Grades",st:"err",wf:"arbeit",c:"Netto/Brutto-Basis-Mismatch in Salden",since:"09.06."},
+ {b:"liqui",k:"DSO (Forderungslaufzeit)",st:"warn",wf:"beantwortet",c:"Umsatzbasis brutto/netto vereinheitlicht",since:"02.06."},
+ {b:"rent",k:"DB-Quote",st:"warn",wf:"beantwortet",c:"Schwellenregel Absatz_Relevant ausgesetzt (18.05.)",since:"18.05."},
+ {b:"rent",k:"EBITDA",st:"ok",wf:"erledigt",c:"Kontomapping je Gesellschaft abgeglichen",since:"28.05."},
+ {b:"debitoren",k:"DSO (Forderungslaufzeit)",st:"err",wf:"offen",c:"OPOS-Fälligkeiten unvollständig geliefert",since:"11.06."},
+ {b:"debitoren",k:"Überfälligkeitsquote",st:"warn",wf:"offen",c:"Mahnstufen-Mapping fehlt",since:"12.06."},
+ {b:"kreditoren",k:"DPO (Verbindlichkeitenlaufzeit)",st:"warn",wf:"arbeit",c:"Wareneinsatz-Abgrenzung prüfen",since:"05.06."},
+ {b:"lager",k:"Lagerumschlag",st:"warn",wf:"offen",c:"Bestandsbewertung uneinheitlich (FIFO/GLD)",since:"10.06."},
+ {b:"produktion",k:"OEE",st:"err",wf:"arbeit",c:"MES-Stillstandszeiten fehlen für Linie 3",since:"08.06."},
+ {b:"einkauf",k:"Materialkostenquote",st:"ok",wf:"erledigt",c:"Bestandsveränderung abgegrenzt",since:"30.05."},
+ {b:"personal",k:"Personalkostenquote",st:"warn",wf:"beantwortet",c:"Leiharbeit jetzt enthalten",since:"01.06."},
+ {b:"planung",k:"Forecast-Genauigkeit",st:"err",wf:"offen",c:"Forecast-Version nicht eindeutig getaggt",since:"13.06."},
+ {b:"esg",k:"CO₂-Intensität",st:"warn",wf:"offen",c:"Scope-3-Faktoren veraltet",since:"07.06."}
+];
+const WFLABEL={offen:"offen",arbeit:"in Arbeit",beantwortet:"beantwortet",erledigt:"erledigt"};
+
+/* ---------- State + Helpers ---------- */
+let fBer="alle",fAbt="alle",fSrc=new Set(),fQ="",favSet=new Set();
+const byName=n=>K.find(k=>k[0]===n);
+const esc=s=>(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+function herkunftText(qs){return qs.split(",").map(t=>QUELLE[t]||t).join(" · ");}
+function dqForKpi(n){return DQ.find(d=>d.k===n);}
+
+/* ---------- Views ---------- */
+let tStep=0;
+const TOUR=[
+ {no:"Schritt 1 von 4",h:"Am Anfang stehen nur Rohdaten",
+  html:`<p>Eine Kennzahl fällt nicht vom Himmel. Zuerst gibt es nur <b>Rohdaten</b> aus den Vorsystemen — noch keine einzige fertige Zahl:</p>
+   <div class="srcwrap">${Object.values(QUELLE).map(v=>`<span class="srcbox">${v}</span>`).join("")}</div>
+   <p>Buchungen, Konten-Zuordnung, offene Posten, Plan, Bestände, Mengen aus der Produktion, Vertrieb, Personal, Einkauf — mehr nicht.</p>`},
+ {no:"Schritt 2 von 4",h:"Daraus werden Kennzahlen",
+  html:`<p>Über fest definierte Regeln in den <b>Adapter-Views</b> werden Rohdaten zu Kennzahlen — einmal zentral festgelegt, nicht in zig Excel-Dateien:</p>
+   <div class="chain"><div class="cbox">Buchungen</div><span class="carr">+</span><div class="cbox">Konto-Mapping</div><span class="carr">→</span><div class="cbox k">Nettoumsatz</div></div>
+   <p>Das ist die <b>eine Quelle der Wahrheit</b>: jeder rechnet die Kennzahl gleich.</p>`},
+ {no:"Schritt 3 von 4",h:"Dieselbe Zahl auf 5 Ebenen",
+  html:`<p>Jede Kennzahl gibt es auf mehreren Flughöhen — von der Geschäftsführung bis zum einzelnen Beleg:</p>
+   <div class="levels">
+     <div class="lv"><span class="n">1</span> GF-Überblick — eine Zahl fürs ganze Unternehmen</div>
+     <div class="lv"><span class="n">2</span> Bereich / Profitcenter</div>
+     <div class="lv"><span class="n">3</span> Konto / Position</div>
+     <div class="lv"><span class="n">4</span> Einzelner Beleg</div>
+     <div class="lv"><span class="n">5</span> Historie / Zeitverlauf</div>
+   </div>
+   <p>Du klickst dich von oben nach unten — bis zur Buchung, die den Wert erzeugt hat.</p>`},
+ {no:"Schritt 4 von 4",h:"Qualität ist sichtbar",
+  html:`<p>Zahlen schaffen nur Vertrauen, wenn ihre Qualität offen liegt. Jede Kennzahl hat einen <b>Verantwortlichen</b> und einen Status:</p>
+   <div class="srcwrap">
+     <span class="srcbox" style="border-color:#bbf7d0">🟢 In Ordnung</span>
+     <span class="srcbox" style="border-color:#fde68a">🟡 Warnung</span>
+     <span class="srcbox" style="border-color:#fecaca">🔴 Fehler / in Klärung</span>
+   </div>
+   <p>Offene Punkte werden abgearbeitet — Schwächen werden gezeigt, nicht versteckt. Jetzt bist du dran.</p>`}
+];
+function openTour(){tStep=0;renderTour();document.getElementById("tourOv").classList.add("open");document.getElementById("tour").classList.add("open");}
+function closeTour(){document.getElementById("tourOv").classList.remove("open");document.getElementById("tour").classList.remove("open");}
+function stepTour(dir){if(dir==="next"){if(tStep>=TOUR.length-1){closeTour();return;}tStep++;}else if(dir==="prev"&&tStep>0){tStep--;}renderTour();}
+function renderTour(){
+  const s=TOUR[tStep], last=tStep===TOUR.length-1;
+  const dots=TOUR.map((_,i)=>`<i class="${i===tStep?'on':''}"></i>`).join("");
+  document.getElementById("tour").innerHTML=`
+    <span class="x" data-tourclose="1">✕</span>
+    <div class="th"><div class="step-no">${s.no}</div><h3>${s.h}</h3></div>
+    <div class="tb">${s.html}</div>
+    <div class="tf"><div class="dots">${dots}</div>
+      <div class="tnav">${tStep>0?`<span class="tbtn" data-tstep="prev">Zurück</span>`:""}<span class="tbtn pri" data-tstep="next">${last?"Los geht's":"Weiter"}</span></div></div>`;
+}
+
+/* ---------- Katalog ---------- */
+const QUICK=[["alle","Alle"],["rent","Rentabilität"],["liqui","Liquidität"],["vertrieb","Vertrieb"],["lager","Lager"],["kosten","Kosten"]];
+const RHELP={"höher besser":"Je höher der Wert, desto besser.","niedriger besser":"Je niedriger der Wert, desto besser.","Zielband":"Sollte in einem Korridor liegen — zu niedrig und zu hoch sind beide ungünstig."};
+function kpiCardHTML(k){
+  const col=BEREICH[k[1]][1], d=dqForKpi(k[0]);
+  const SBL={ok:"In Ordnung",warn:"Warnung",err:"Fehler"};
+  const badge=d?`<span class="sbadge ${d.st}" title="${WFLABEL[d.wf]}: ${esc(d.c)}"><span class="d"></span>${SBL[d.st]}</span>`:"";
+  const fav=favSet.has(k[0]);
+  return `<div class="kpi" style="border-left-color:${col}" data-open="${k[0]}">
+    <div class="top"><span class="nm">${k[0]}</span><span class="topr">${badge}<span class="favstar ${fav?'on':''}" data-fav="${k[0]}" title="Als Favorit merken">${fav?'★':'☆'}</span></span></div>
+    <div class="qi">${esc(k[3])}</div>
+    <div class="fm">${esc(k[2])}</div>
+    <div class="kfoot"><span class="un">${k[5]}</span></div></div>`;
+}
+function toggleFav(n){
+  if(favSet.has(n))favSet.delete(n); else favSet.add(n);
+  const on=favSet.has(n);
+  document.querySelectorAll('[data-fav="'+n+'"]').forEach(el=>{el.classList.toggle("on",on);el.textContent=on?"★":"☆";});
+  if(document.getElementById("v-start").classList.contains("active"))renderHome();
+}
+function taskFor(x){
+  const nm=x.k, owner=BEREICH[x.b]?BEREICH[x.b][2]:"";
+  if(userRole==="entwickler")return{m:`Daten/View für „${nm}" korrigieren (${x.c}) und gegen die FiBu reconcilen.`,v:`„${nm}" wird wieder belastbar und stimmt mit der Buchhaltung überein.`};
+  if(userRole==="gf")return{m:`Zielband bzw. Freigabe für „${nm}" bestätigen.`,v:`Klare Vorgabe, an der das Team steuern kann.`};
+  if(userRole==="power")return{m:`Bericht mit „${nm}" prüfen und die Definition ggf. mit ${ROSE_AI} abstimmen.`,v:`Konsistente Kennzahl in allen Berichten.`};
+  return{m:`„${nm}" prüfen, Ursache zu „${x.c}" dokumentieren und an ${owner} melden.`,v:`Verlässliche Zahl — keine Fehlentscheidung durch falsche Werte.`};
+}
+function smartBlockHint(dq){
+  return (dq&&(dq.wf==="offen"||dq.wf==="arbeit"))
+    ? `<div class="field"><p class="skel">Offene Aufgabe zu dieser Kennzahl → in deiner Aufgabenliste auf „Start".</p></div>` : "";
+}
+// ===== Dimensions-Designer =====
+const DIM_TABLES={
+ DimArtikel:[
+  {n:"ArtikelID",t:"int",role:"key",vis:true,s:"bestätigt"},
+  {n:"Warenbereich",t:"nvarchar(80)",role:"attr",vis:true,s:"bestätigt"},
+  {n:"Produktobergruppe",t:"nvarchar(80)",role:"attr",vis:true,s:"bestätigt"},
+  {n:"Produktgruppe",t:"nvarchar(80)",role:"attr",vis:true,s:"bestätigt"},
+  {n:"Modell",t:"nvarchar(80)",role:"attr",vis:true,s:"bestätigt"},
+  {n:"Produktnummer",t:"nvarchar(40)",role:"attr",vis:true,s:"bestätigt"},
+  {n:"Variante",t:"nvarchar(40)",role:"attr",vis:true,s:"bestätigt"},
+  {n:"Artikel",t:"nvarchar(120)",role:"attr",vis:true,s:"bestätigt"},
+  {n:"EAN",t:"nvarchar(13)",role:"attr",vis:true,s:"bestätigt"},
+  {n:"Farbe",t:"nvarchar(30)",role:"attr",vis:true,s:"bestätigt"},
+  {n:"Größe",t:"nvarchar(20)",role:"attr",vis:true,s:"bestätigt"}
+ ],
+ DimOrganisation:[
+  {n:"OrgID",t:"int",role:"key",vis:true,s:"bestätigt"},
+  {n:"Land",t:"nvarchar(60)",role:"attr",vis:true,s:"bestätigt"},
+  {n:"Region",t:"nvarchar(60)",role:"attr",vis:true,s:"bestätigt"},
+  {n:"Standort",t:"nvarchar(80)",role:"attr",vis:true,s:"bestätigt"},
+  {n:"Kostenstelle",t:"nvarchar(20)",role:"attr",vis:true,s:"bestätigt"}
+ ],
+ DimKunde:[
+  {n:"KundeID",t:"int",role:"key",vis:true,s:"bestätigt"},
+  {n:"Kundengruppe",t:"nvarchar(60)",role:"attr",vis:true,s:"bestätigt"},
+  {n:"Land",t:"nvarchar(60)",role:"attr",vis:true,s:"bestätigt"},
+  {n:"Kunde",t:"nvarchar(120)",role:"attr",vis:true,s:"bestätigt"},
+  {n:"Branche",t:"nvarchar(60)",role:"attr",vis:true,s:"bestätigt"}
+ ],
+ DimPeriode:[
+  {n:"DatumID",t:"int",role:"key",vis:true,s:"bestätigt"},
+  {n:"Jahr",t:"int",role:"attr",vis:true,s:"bestätigt"},
+  {n:"Quartal",t:"nvarchar(2)",role:"attr",vis:true,s:"bestätigt"},
+  {n:"Monat",t:"nvarchar(7)",role:"attr",vis:true,s:"bestätigt"},
+  {n:"Tag",t:"date",role:"attr",vis:true,s:"bestätigt"}
+ ]
+};
+// Spalten, die beim "Schema neu einlesen" als NEU in der DB auftauchen würden:
+const DIM_NEWPOOL={
+ DimArtikel:[{n:"Nachhaltigkeitsklasse",t:"nvarchar(20)",role:"attr",vis:true},{n:"Rahmenmaterial",t:"nvarchar(30)",role:"attr",vis:true}],
+ DimOrganisation:[{n:"Vertriebskanal",t:"nvarchar(40)",role:"attr",vis:true}],
+ DimKunde:[{n:"Kundensegment",t:"nvarchar(40)",role:"attr",vis:true}],
+ DimPeriode:[{n:"Geschäftsjahr",t:"int",role:"attr",vis:true}]
+};
+let curDim="DimArtikel";
+const FACTS=["fact.Buchung","fact.Bestand","fact.Plan"];
+const DIM_HIER={
+ DimArtikel:[{id:"a1",name:"Artikel-Hierarchie",levels:["Warenbereich","Produktobergruppe","Produktgruppe","Modell","Produktnummer","Variante","Artikel"]}],
+ DimOrganisation:[{id:"o1",name:"Organisations-Hierarchie",levels:["Land","Region","Standort"]}],
+ DimKunde:[{id:"k1",name:"Kunden-Hierarchie",levels:["Kundengruppe","Land","Kunde"]}],
+ DimPeriode:[{id:"p1",name:"Zeit-Hierarchie",levels:["Jahr","Quartal","Monat","Tag"]}]
+};
+const DIM_JOIN={DimArtikel:{facts:["fact.Buchung","fact.Bestand"]},DimOrganisation:{facts:["fact.Buchung"]},DimKunde:{facts:["fact.Buchung"]},DimPeriode:{facts:["fact.Buchung","fact.Bestand","fact.Plan"]}};
+let hierSeq=100, curHier="a1", dragSrc=null;
+let editingHier=null, addingDim=false, addingCol=false;
+const COLTYPES=["int","bigint","nvarchar(20)","nvarchar(40)","nvarchar(80)","nvarchar(120)","date","datetime2","decimal(18,2)","bit"];
+function createDim(){if(!canModel())return;const inp=document.getElementById("newDimInput");let name=((inp&&inp.value)||"").trim();if(!name){flashDim("Bitte Namen eingeben.");return;}if(!/^Dim/i.test(name))name="Dim"+name.charAt(0).toUpperCase()+name.slice(1);if(DIM_TABLES[name]){flashDim("Tabelle existiert bereits.");return;}const keyN=name.replace(/^Dim/i,"")+"ID";DIM_TABLES[name]=[{n:keyN,t:"int",role:"key",vis:true,s:"bestätigt"}];DIM_HIER[name]=[];DIM_JOIN[name]={facts:[FACTS[0]]};curDim=name;curHier=null;addingDim=false;addingCol=false;renderDesigner();flashDim("Dimension „"+name+"“ angelegt — jetzt Spalten hinzufügen.");}
+function delDim(){if(!canModel())return;if(Object.keys(DIM_TABLES).length<=1){flashDim("Mindestens eine Dimension muss bleiben.");return;}const old=curDim;delete DIM_TABLES[old];delete DIM_HIER[old];delete DIM_JOIN[old];curDim=Object.keys(DIM_TABLES)[0];curHier=((DIM_HIER[curDim]||[])[0]||{}).id||null;addingCol=false;renderDesigner();updateDimBadge();flashDim("Dimension „"+old+"“ gelöscht.");}
+function addCol(){if(!canModel())return;const name=(((document.getElementById("newColName")||{}).value)||"").trim();const t=((document.getElementById("newColType")||{}).value)||"nvarchar(80)";const role=((document.getElementById("newColRole")||{}).value)||"attr";if(!name){flashDim("Spaltenname fehlt.");return;}if(DIM_TABLES[curDim].some(c=>c.n===name)){flashDim("Spalte existiert bereits.");return;}if(role==="key")DIM_TABLES[curDim].forEach(c=>{if(c.role==="key")c.role="attr";});DIM_TABLES[curDim].push({n:name,t:t,role:role,vis:true,s:"bestätigt"});addingCol=false;renderDesigner();flashDim("Spalte „"+name+"“ hinzugefügt.");}
+function delCol(i){if(!canModel())return;const c=DIM_TABLES[curDim][i];if(!c)return;if(c.role==="key"){flashDim("Schlüssel kann nicht entfernt werden — erst andere Spalte als Schlüssel setzen.");return;}(DIM_HIER[curDim]||[]).forEach(h=>{h.levels=h.levels.filter(l=>l!==c.n);});DIM_TABLES[curDim].splice(i,1);renderDesigner();flashDim("Spalte „"+c.n+"“ entfernt.");}
+function toggleJoinFact(ff){if(!canModel())return;const j=DIM_JOIN[curDim]||(DIM_JOIN[curDim]={facts:[]});j.facts=j.facts||[];const i=j.facts.indexOf(ff);if(i>=0)j.facts.splice(i,1);else j.facts.push(ff);renderDesigner();}
+function setKey(i){if(!canModel())return;const cols=DIM_TABLES[curDim],c=cols[i];if(!c||c.role==="key")return;cols.forEach(x=>{if(x.role==="key")x.role="attr";});c.role="key";c.vis=true;renderDesigner();flashDim("„"+c.n+"“ ist jetzt Schlüssel.");}
+function lvlCount(level){
+  if(curDim!=="DimArtikel")return null;
+  const idx=ARTIKEL_LEVELS.indexOf(level);
+  if(idx<0){const m={Farbe:2,"Größe":3,EAN:7,Nachhaltigkeitsklasse:3,Rahmenmaterial:4};return m[level]!=null?m[level]:null;}
+  const acc=[];collectAt(ARTIKEL_TREE,0,idx,acc);return acc.length;
+}
+function startRename(id){if(!canModel())return;editingHier=id;renderDesigner();const inp=document.getElementById("hnameInput");if(inp){inp.focus();inp.select&&inp.select();}}
+function saveRename(id,val){const h=findHier(id);if(h){const v=(val||"").trim();if(v)h.name=v;}editingHier=null;renderDesigner();}
+function canModel(){return can("cube","model");}
+function curHiers(){return DIM_HIER[curDim]||(DIM_HIER[curDim]=[]);}
+function findHier(id){return curHiers().find(h=>h.id===id);}
+function visAttrs(){return DIM_TABLES[curDim].filter(c=>c.role!=="key"&&c.vis!==false&&c.s!=="neu");}
+function toggleVis(i){const c=DIM_TABLES[curDim][i];if(!c)return;if(c.role==="key"){flashDim("Schlüssel bleibt immer aktiv.");return;}c.vis=(c.vis===false);renderDesigner();}
+function addHier(){if(!canModel())return flashDim("Modell pflegt Business Controller / Entwickler.");const h={id:"h"+(++hierSeq),name:"Neue Hierarchie "+(curHiers().length+1),levels:[]};curHiers().push(h);curHier=h.id;renderDesigner();flashDim("Neue Hierarchie angelegt.");}
+function delHier(id){if(!canModel())return;DIM_HIER[curDim]=curHiers().filter(h=>h.id!==id);if(curHier===id)curHier=(curHiers()[0]||{}).id||null;renderDesigner();}
+function addLevel(id,col){if(!canModel())return flashDim("Modell pflegt Business Controller / Entwickler.");const h=findHier(id);if(!h)return;if(h.levels.includes(col)){flashDim("„"+col+"“ ist hier schon enthalten.");return;}h.levels.push(col);renderDesigner();flashDim("„"+col+"“ zu „"+h.name+"“ hinzugefügt.");}
+function moveLevel(id,idx,dir){const h=findHier(id);if(!h)return;const j=idx+dir;if(j<0||j>=h.levels.length)return;const t=h.levels[idx];h.levels[idx]=h.levels[j];h.levels[j]=t;renderDesigner();}
+function rmLevel(id,idx){const h=findHier(id);if(!h)return;h.levels.splice(idx,1);renderDesigner();}
+function dimPending(){return Object.values(DIM_TABLES).reduce((a,cols)=>a+cols.filter(c=>c.s==="neu").length,0);}
+function updateDimBadge(){const b=document.getElementById("dimBadge");if(!b)return;const n=dimPending();b.textContent=n||"";b.style.display=n?"":"none";}
+function flashDim(m){const f=document.getElementById("dimFlash");if(f)f.textContent=m;}
+const CUBES={Vertrieb:{src:"DWH-Prod (SQL Server)",fact:"fact.Buchung",dims:["DimArtikel","DimOrganisation","DimPeriode"],measures:["Bruttoumsatz","Nettoumsatz"]}};
+let curCube="Vertrieb", cubeTab="cubes", addingCube=false;
+const DIM2REP={DimPeriode:"Periode",DimArtikel:"Artikel",DimOrganisation:"Organisation",DimKunde:"Kunde"};
+const DS_TYPES={mssql:"SQL Server (T-SQL)",postgres:"PostgreSQL",clickhouse:"ClickHouse",bigquery:"BigQuery",snowflake:"Snowflake",duckdb:"DuckDB"};
+const DSRC={"DWH-Prod (SQL Server)":{type:"mssql",host:"sql01.intern",db:"DWH",schema:"dbo",dflt:true}};
+let addingDs=false;
+function defaultDsrc(){const k=Object.keys(DSRC);return k.find(n=>DSRC[n].dflt)||k[0]||"";}
+function dsFlash(m){const el=document.getElementById("dsFlash");if(el)el.textContent=m;}
+function setCubeSrc(v){if(!can("cube","model"))return;curCubeObj().src=v;renderCubes();}
+function createDsrc(){if(!can("datasources","manage"))return;const nm=(((document.getElementById("dsName")||{}).value)||"").trim();if(!nm){dsFlash("Name fehlt.");return;}if(DSRC[nm]){dsFlash("Verbindung existiert bereits.");return;}const type=((document.getElementById("dsType")||{}).value)||"mssql";const host=(((document.getElementById("dsHost")||{}).value)||"").trim();const db=(((document.getElementById("dsDb")||{}).value)||"").trim();const schema=((((document.getElementById("dsSchema")||{}).value)||"").trim())||(type==="mssql"?"dbo":"public");DSRC[nm]={type:type,host:host,db:db,schema:schema,dflt:Object.keys(DSRC).length===0};addingDs=false;renderDatasources();dsFlash("Verbindung „"+nm+"“ angelegt.");}
+function delDsrc(n){if(!can("datasources","manage"))return;const wasD=DSRC[n]&&DSRC[n].dflt;delete DSRC[n];if(wasD){const k=Object.keys(DSRC);if(k[0])DSRC[k[0]].dflt=true;}renderDatasources();}
+function setDefaultDsrc(n){if(!can("datasources","manage"))return;Object.keys(DSRC).forEach(x=>DSRC[x].dflt=(x===n));renderDatasources();}
+function renderDatasources(){
+  const manage=can("datasources","manage"), names=Object.keys(DSRC);
+  const cards=names.map(n=>{const ds=DSRC[n];return `<div class="ds-card ${ds.dflt?'on':''}"><div class="ds-h"><b>${n}</b> <span class="ds-type">${DS_TYPES[ds.type]||ds.type}</span>${ds.dflt?'<span class="ds-def">Standard</span>':''}</div><div class="count">${ds.host||'—'} · ${ds.db||'—'} · Schema ${ds.schema||'—'}</div>${manage?`<div style="margin-top:8px">${ds.dflt?'':`<button class="tbtn mini" data-dsdefault="${n}">Als Standard</button>`}<button class="tbtn mini ghost" data-dsdel="${n}">Löschen</button></div>`:''}</div>`;}).join("");
+  document.getElementById("datasources").innerHTML=`
+    <div class="head"><h2>Datenquellen</h2><span class="count">${names.length} Verbindung(en)</span></div>
+    <p class="count" style="max-width:680px;margin:0 0 14px">Verbindungen zu Datenbanken. Ein Cube zeigt auf eine Datenquelle — damit ist die DB austauschbar (SQL Server, PostgreSQL, ClickHouse …). Dialekt-Unterschiede übernimmt später die Semantik-Engine; Zugangsdaten liegen im Backend, hier nur die Verbindungsangaben.</p>
+    <div class="dsg-bar">${manage?`<button class="tbtn" data-dsnew="1">+ Verbindung</button>`:''}<span class="count" id="dsFlash"></span></div>
+    ${addingDs?`<div class="addbar"><input id="dsName" placeholder="Name z. B. DWH-Prod"><select id="dsType">${Object.entries(DS_TYPES).map(([k,v])=>`<option value="${k}">${v}</option>`).join("")}</select><input id="dsHost" placeholder="Host"><input id="dsDb" placeholder="Datenbank"><input id="dsSchema" placeholder="Schema (dbo)"><button class="tbtn mini pri" data-dscreate="1">Anlegen</button><button class="tbtn mini ghost" data-dscancel="1">Abbrechen</button></div>`:''}
+    <div class="ds-grid">${cards||'<span class="count">Keine Verbindung.</span>'}</div>
+    ${manage?'':'<p class="count" style="margin-top:12px">Verbindungen pflegen darf nur, wer „Verwalten“ im Datenquellen-Modul hat.</p>'}`;
+}
+function cubeFlash(m){const el=document.getElementById("cubeFlash");if(el)el.textContent=m;}
+function curCubeObj(){return CUBES[curCube]||(CUBES[curCube]={fact:FACTS[0],dims:[],measures:[]});}
+function cubeTabBar(){return `<div class="ctab">${[["cubes","🧊 Cubes"],["dims","📐 Dimensionen"]].map(t=>`<span class="ctab-i ${cubeTab===t[0]?'on':''}" data-cubetab="${t[0]}">${t[1]}</span>`).join("")}</div>`;}
+function renderCubeModule(){if(cubeTab==="dims")renderDesigner();else renderCubes();}
+function cubeMeasResults(qv){const q=(qv||"").toLowerCase(),cb=CUBES[curCube],have=new Set(cb?cb.measures:[]);
+  const list=K.filter(k=>!have.has(k[0])&&(!q||k[0].toLowerCase().includes(q))).slice(0,30);
+  return list.map(k=>`<span class="pchip" data-measadd="${k[0].replace(/"/g,'&quot;')}">+ ${k[0]}</span>`).join("")||'<span class="count">keine Treffer</span>';}
+function renderCubes(){
+  const editable=can("cube","model"), names=Object.keys(CUBES); if(!CUBES[curCube])curCube=names[0]||"";
+  const cb=CUBES[curCube]; if(cb&&!cb.src)cb.src=defaultDsrc();
+  const measChips=cb?(cb.measures.map(m=>`<span class="pchip on">${m}${editable?` <span class="x" data-measrm="${m}">✕</span>`:""}</span>`).join("")||'<span class="count">keine</span>'):"";
+  const dimChips=cb?(cb.dims.map(dn=>{const fjs=(DIM_JOIN[dn]||{}).facts||[],bad=!fjs.includes(cb.fact);return `<span class="pchip on">${dn}${bad?` <span class="gwarn" title="Dimension joint auf ${fjs.join(', ')||'—'}, Cube nutzt ${cb.fact}">⚠</span>`:""}${editable?` <span class="x" data-cubedimrm="${dn}">✕</span>`:""}</span>`;}).join("")||'<span class="count">keine</span>'):"";
+  const availDims=Object.keys(DIM_TABLES).filter(dn=>!cb||!cb.dims.includes(dn));
+  const inner=!cb?'<div class="srv-empty">Noch kein Cube — lege einen an.</div>':`
+    <div class="head3">🔌 Datenquelle (DB — austauschbar)</div>
+    <select id="cubeSrc" ${editable?"":"disabled"}>${Object.keys(DSRC).map(n=>`<option ${n===cb.src?"selected":""}>${n}</option>`).join("")||`<option>—</option>`}</select>
+    <div class="head3">🗄️ Faktentabelle (Grain des Cubes)</div>
+    <select id="cubeFact" ${editable?"":"disabled"}>${FACTS.map(ff=>`<option ${ff===cb.fact?"selected":""}>${ff}</option>`).join("")}</select>
+    <div class="head3">Kennzahlen (Measures)</div>
+    <div class="pool">${measChips}</div>
+    ${editable?`<input id="cubeMeasQ" class="cube-q" placeholder="Kennzahl suchen und hinzufügen …"><div class="pool" id="measRes">${cubeMeasResults("")}</div>`:""}
+    <div class="head3">Dimensionen</div>
+    <div class="pool">${dimChips}</div>
+    ${editable?`<div class="pool">${availDims.map(dn=>`<span class="pchip" data-cubedimadd="${dn}">+ ${dn}</span>`).join("")||'<span class="count">alle hinzugefügt</span>'}</div>`:""}
+    <div class="head3">Stern-Schema</div>
+    <div class="star"><div class="star-fact">${cb.fact}<div class="count">${cb.src?cb.src+" · ":""}${cb.measures.length} Measures</div></div><div class="star-dims">${cb.dims.map(dn=>`<span class="star-dim">${dn} <span class="count">${((DIM_JOIN[dn]||{}).facts||[]).includes(cb.fact)?'✓':'⚠'} Join</span></span>`).join("")||'<span class="count">keine Dimensionen</span>'}</div></div>`;
+  const html=`
+    <div class="head"><h2>Cube bauen</h2><span class="count">${names.length} Cube(s)</span></div>
+    <p class="count" style="max-width:680px;margin:0 0 12px">Ein Cube bündelt eine <b>Faktentabelle</b>, die <b>Kennzahlen</b> (Measures) und die <b>Dimensionen</b>, über die ausgewertet wird. Jede Dimension verbindet sich über ihren Schlüssel mit der Faktentabelle — stimmt das Fakt nicht, gibt es ⚠.</p>
+    <div class="dsg-bar"><div class="kw-chips">${names.map(n=>`<span class="kw-chip ${n===curCube?'on':''}" data-cubepick="${n}">${n}</span>`).join("")}</div>
+      ${editable?`<button class="tbtn" data-cubenew="1">+ Cube</button>`:""}
+      ${editable&&names.length>1?`<button class="tbtn ghost" data-cubedel="1">Cube löschen</button>`:""}
+      <span class="count" id="cubeFlash"></span></div>
+    ${addingCube?`<div class="addbar"><input id="cubeNameInput" placeholder="z. B. Vertrieb"><button class="tbtn mini pri" data-cubecreate="1">Anlegen</button><button class="tbtn mini ghost" data-cubecancel="1">Abbrechen</button></div>`:""}
+    ${inner}
+    ${editable?"":'<p class="count" style="margin-top:12px">Cubes bauen darf nur, wer „Modellieren“ im Cube-Modul hat.</p>'}`;
+  document.getElementById("designer").innerHTML=cubeTabBar()+html;
+}
+function createCube(){if(!can("cube","model"))return;const nm=(((document.getElementById("cubeNameInput")||{}).value)||"").trim();if(!nm){cubeFlash("Name fehlt.");return;}if(CUBES[nm]){cubeFlash("Cube existiert bereits.");return;}CUBES[nm]={src:defaultDsrc(),fact:FACTS[0],dims:[],measures:[]};curCube=nm;addingCube=false;renderCubes();cubeFlash("Cube „"+nm+"“ angelegt.");}
+function delCube(){if(!can("cube","model"))return;if(Object.keys(CUBES).length<=1){cubeFlash("Mindestens ein Cube muss bleiben.");return;}const o=curCube;delete CUBES[o];curCube=Object.keys(CUBES)[0];renderCubes();cubeFlash("Cube „"+o+"“ gelöscht.");}
+function setCubeFact(v){if(!can("cube","model"))return;curCubeObj().fact=v;renderCubes();}
+function addMeas(n){if(!can("cube","model"))return;const cb=curCubeObj();if(!cb.measures.includes(n))cb.measures.push(n);renderCubes();}
+function rmMeas(n){if(!can("cube","model"))return;const cb=curCubeObj();cb.measures=cb.measures.filter(x=>x!==n);renderCubes();}
+function addCubeDim(dn){if(!can("cube","model"))return;const cb=curCubeObj();if(!cb.dims.includes(dn))cb.dims.push(dn);renderCubes();}
+function rmCubeDim(dn){if(!can("cube","model"))return;const cb=curCubeObj();cb.dims=cb.dims.filter(x=>x!==dn);renderCubes();}
+function renderDesigner(){
+  const tables=Object.keys(DIM_TABLES), cols=DIM_TABLES[curDim], canConfirm=can("cube","confirm"), pend=cols.filter(c=>c.s==="neu").length;
+  const hiers=curHiers(); if(!findHier(curHier))curHier=(hiers[0]||{}).id||null;
+  const keyCol=(cols.find(c=>c.role==="key")||{}).n||"—";
+  const join=DIM_JOIN[curDim]||(DIM_JOIN[curDim]={facts:[FACTS[0]]});if(!join.facts)join.facts=join.fact?[join.fact]:[];
+  const body=cols.map((cc,i)=>{
+    const isNew=cc.s==="neu", hidden=cc.vis===false;
+    const inH=hiers.filter(h=>h.levels.includes(cc.n)).map(h=>h.name);
+    const verw=cc.role==="key"?"Schlüssel":("Attribut"+(inH.length?" "+inH.map(n=>`<span class="vtag">${n}</span>`).join(""):""));
+    const st=isNew?`<span class="dim-st neu">neu · ausstehend</span>`:`<span class="dim-st ok">bestätigt</span>`;
+    const vis=cc.role==="key"?`<span class="count">immer</span>`:`<button class="tbtn mini ghost" data-vis="${i}">${hidden?"🚫 aus":"👁 an"}</button>`;
+    const act=isNew?(canConfirm?`<button class="tbtn mini pri" data-colconfirm="${i}">Bestätigen</button><button class="tbtn mini ghost" data-colreject="${i}">Ablehnen</button>`:`<span class="count">nur BC</span>`):(canModel()?`${cc.role!=="key"?`<button class="tbtn mini ghost" data-setkey="${i}" title="Als Schlüssel setzen">🔑</button><button class="tbtn mini ghost" data-coldel="${i}" title="Spalte entfernen">🗑</button>`:""}`:"");
+    return `<tr class="${isNew?'row-new':''} ${hidden?'row-hidden':''}"><td><b>${cc.n}</b></td><td class="mono">${cc.t}</td><td>${verw}</td><td>${vis}</td><td>${st}</td><td>${act}</td></tr>`;
+  }).join("");
+  const activeName=(findHier(curHier)||{}).name||"—";
+  const hcards=hiers.map(h=>{
+    const nameH=(editingHier===h.id&&canModel())
+      ? `<input class="hname-in" id="hnameInput" data-hid="${h.id}" value="${h.name.replace(/"/g,'&quot;')}">`
+      : `<b>${h.name}</b>${canModel()?`<span class="hren" data-hierrename="${h.id}" title="Umbenennen">✎</span>`:""}`;
+    const lvlH=h.levels.length?h.levels.map((c,i)=>{
+      const cu=i>0?lvlCount(h.levels[i-1]):null, cd=lvlCount(c);
+      const warn=(i>0&&cu!=null&&cd!=null&&cd<cu);
+      const cnt=cd!=null?`<span class="hlvl-c">${cd} Mitgl.</span>`:"";
+      const wic=warn?` <span class="gwarn" title="Gröber als die übergeordnete Ebene „${h.levels[i-1]}“ (${cd} < ${cu} Mitglieder) — Reihenfolge prüfen.">⚠</span>`:"";
+      return `<div class="hlvl${warn?' warn':''}" draggable="true" data-drag="lvl:${h.id}:${i}" data-drophere="${h.id}:${i}"><span class="hlvl-n">${i+1}. ${c}${cnt}${wic}</span>${canModel()?`<span class="hlvl-act"><button data-lvlup="${h.id}:${i}" ${i===0?"disabled":""}>▲</button><button data-lvldown="${h.id}:${i}" ${i===h.levels.length-1?"disabled":""}>▼</button><button data-lvlrm="${h.id}:${i}">✕</button></span>`:""}</div>`;
+    }).join(""):`<div class="count" style="padding:6px 4px">leer — Attribut unten antippen</div>`;
+    return `<div class="hcard ${h.id===curHier?'on':''}" data-hpick="${h.id}" data-drop="${h.id}">
+      <div class="hcard-h">${nameH} <span class="count">${h.levels.length} Ebenen</span>${canModel()?`<span class="hdel" data-hierdel="${h.id}">✕</span>`:""}</div>
+      <div class="hlevels">${lvlH}</div></div>`;
+  }).join("");
+  document.getElementById("designer").innerHTML=cubeTabBar()+`
+    <div class="head"><h2>Dimensionen · Modell</h2><span class="count">${cols.length} Spalten${pend?` · ${pend} neu`:""}</span></div>
+    <div class="dsg-bar">
+      <label>Dimensionstabelle: <select id="dimSel">${tables.map(t=>`<option ${t===curDim?"selected":""}>${t}</option>`).join("")}</select></label>
+      ${canModel()?`<button class="tbtn" data-dimnew="1">+ Dimension</button>`:""}
+      <button class="tbtn" data-sync="1">🔄 Schema neu einlesen</button>
+      ${canModel()&&tables.length>1?`<button class="tbtn ghost" data-dimdel="1">Dimension löschen</button>`:""}
+      <span class="count" id="dimFlash"></span>
+    </div>
+    ${addingDim?`<div class="addbar"><input id="newDimInput" placeholder="z. B. DimRegion"><button class="tbtn mini pri" data-dimcreate="1">Anlegen</button><button class="tbtn mini ghost" data-dimcancel="1">Abbrechen</button><span class="count">Neue Tabelle — ein Schlüssel wird automatisch angelegt, Spalten danach hinzufügen.</span></div>`:""}
+    <div class="head3">🔑 Beziehung — so wird verbunden &amp; gefiltert</div>
+    <div class="joinbar"><span class="jkey">${keyCol}</span> &rarr; verbindet mit Faktentabelle(n):
+      <div class="kw-chips" style="margin-top:6px">${FACTS.map(ff=>`<span class="kw-chip ${(join.facts||[]).includes(ff)?'on':''}" ${canModel()?`data-joinfact="${ff}"`:""}>${ff}</span>`).join("")}</div>
+      <div class="count" style="margin-top:4px">Genau ein Schlüssel je Tabelle, aber Joins zu mehreren Fakten erlaubt. Jeder Filter — egal welche Ebene oder welches Attribut — läuft über diese Beziehung auf die Fakten.</div></div>
+    <table class="dim-tbl"><thead><tr><th>Spalte</th><th>Datentyp</th><th>Verwendung</th><th>Sichtbar</th><th>Status</th><th></th></tr></thead><tbody>${body}</tbody></table>
+    ${canModel()?(addingCol?`<div class="addbar"><input id="newColName" placeholder="Spaltenname"><select id="newColType">${COLTYPES.map(t=>`<option>${t}</option>`).join("")}</select><select id="newColRole"><option value="attr">Attribut</option><option value="key">Schlüssel</option></select><button class="tbtn mini pri" data-coladd="1">Hinzufügen</button><button class="tbtn mini ghost" data-coladdcancel="1">Abbrechen</button></div>`:`<div style="margin-top:10px"><button class="tbtn mini" data-colnew="1">+ Spalte</button></div>`):""}
+    ${canConfirm?"":`<p class="count" style="margin-top:10px">Bestätigen/Ablehnen nur als <b>Business Controller</b> (Rolle „PowerUser“).</p>`}
+    <div class="head3" style="display:flex;align-items:center;gap:10px">Hierarchien ${canModel()?`<button class="tbtn mini" data-hieradd="1">+ Hierarchie</button>`:`<span class="count">(pflegt Business Controller / Entwickler)</span>`}</div>
+    <div class="hgrid">${hcards||'<span class="count">Keine Hierarchie.</span>'}</div>
+    <div class="head3">Attribut-Pool <span class="count">— antippen fügt zu „${activeName}“ hinzu (Mehrfachnutzung erlaubt); ziehen geht am Desktop</span></div>
+    <div class="pool">${visAttrs().map(c=>`<span class="pchip" draggable="true" data-drag="pool:${c.n}" data-padd="${c.n}">+ ${c.n}</span>`).join("")||'<span class="count">Keine sichtbaren Attribute.</span>'}</div>`;
+}
+function syncSchema(){
+  const pool=DIM_NEWPOOL[curDim]||[], cols=DIM_TABLES[curDim], have=new Set(cols.map(c=>c.n));
+  const next=pool.find(p=>!have.has(p.n));
+  if(next){cols.push({...next,s:"neu"});renderDesigner();updateDimBadge();flashDim(`Neue Spalte erkannt: ${next.n} — Bestätigung ausstehend.`);}
+  else flashDim("Keine neuen Spalten gefunden.");
+}
+function confirmCol(i){if(!can("cube","confirm")){flashDim("Nur der Business Controller darf bestätigen.");return;}DIM_TABLES[curDim][i].s="bestätigt";renderDesigner();updateDimBadge();flashDim("Spalte bestätigt ✓ — jetzt in Berichten nutzbar.");}
+function rejectCol(i){if(!can("cube","confirm")){flashDim("Nur der Business Controller darf ablehnen.");return;}const nm=DIM_TABLES[curDim][i].n;DIM_TABLES[curDim].splice(i,1);renderDesigner();updateDimBadge();flashDim(`Spalte „${nm}" abgelehnt und verworfen.`);}
+
+function renderHome(){
+  const roleLab={gf:"Geschäftsführung",bearbeiter:"Bearbeiter",entwickler:"Entwickler",power:"PowerUser"}[userRole]||"Nutzer";
+  const todos=DQ.filter(x=>x.wf==="offen"||x.wf==="arbeit");
+  let html=`<div class="home-hi"><h1>Willkommen 👋</h1><p class="skel">Angemeldet als ${roleLab}</p></div>`;
+  html+=`<div class="rosa-card" data-ki="1"><div><div class="rc-h">🤖 ${ROSE_AI} — dein Berichtsassistent</div>
+    <div class="rc-s">Beschreibe einen Bericht in Worten oder wähle Kennzahlen — ${ROSE_AI} baut ihn, du kannst ihn exportieren und teilen.</div></div>
+    <span class="rc-go">Bericht bauen →</span></div>`;
+  if(todos.length){
+    html+=`<div class="home-sec"><h2>Meine Aufgaben <span class="cnt">${todos.length}</span></h2><div class="todo-list">`+
+      todos.map(x=>{const t=taskFor(x);return `<div class="todo-item" data-open="${x.k}"><span class="wf ${x.wf}">${WFLABEL[x.wf]}</span>
+        <div><b>${x.k}</b>
+          <div class="ti-m"><span class="ti-lbl">Maßnahme</span>${esc(t.m)}</div>
+          <div class="ti-v"><span class="ti-lbl mv">Mehrwert</span>${esc(t.v)}</div></div>
+        <span class="ti-go">öffnen →</span></div>`;}).join("")+`</div></div>`;
+  }
+  const favs=K.filter(k=>favSet.has(k[0]));
+  html+=`<div class="home-sec"><h2>Meine Favoriten <span class="cnt">${favs.length}</span></h2>`;
+  html+= favs.length? `<div class="cards">${favs.map(kpiCardHTML).join("")}</div>`
+    : `<p class="skel">Noch keine Favoriten. Tippe bei einer Kennzahl auf den Stern ☆ — dann erscheint sie hier für den schnellen Blick.</p>`;
+  html+=`</div>`;
+  document.getElementById("home").innerHTML=html;
+}
+function buildChips(){
+  document.getElementById("quickChips").innerHTML=QUICK.map(([k,lab])=>`<span class="chip" data-b="${k}">${lab}</span>`).join("");
+  document.getElementById("berChips").innerHTML='<span class="chip" data-b="alle">Alle</span>'+Object.entries(BEREICH).map(([k,v])=>`<span class="chip" data-b="${k}">${v[0]}</span>`).join("");
+  document.getElementById("abtChips").innerHTML='<span class="chip" data-a="alle">Alle</span>'+Object.entries(ABT).map(([k,v])=>`<span class="chip" data-a="${k}">${v}</span>`).join("");
+  document.getElementById("srcChips").innerHTML=Object.entries(QUELLE).map(([k,v])=>`<span class="chip" data-s="${k}" title="${v}">${k}</span>`).join("");
+  syncChips();
+}
+function syncChips(){
+  document.querySelectorAll('#quickChips [data-b],#berChips [data-b]').forEach(x=>x.classList.toggle("on",x.dataset.b===fBer));
+  document.querySelectorAll('#abtChips [data-a]').forEach(x=>x.classList.toggle("on",x.dataset.a===fAbt));
+  document.querySelectorAll('#srcChips [data-s]').forEach(x=>x.classList.toggle("on",fSrc.has(x.dataset.s)));
+  const n=(fBer!=="alle"?1:0)+(fAbt!=="alle"?1:0)+fSrc.size;
+  const fc=document.getElementById("fcount"); if(fc)fc.textContent=n?("· "+n):"";
+}
+function setBer(k){fBer=(k===fBer&&k!=="alle")?"alle":k;syncChips();renderCat();}
+function setAbt(k){fAbt=(k===fAbt&&k!=="alle")?"alle":k;syncChips();renderCat();}
+function toggleSrc(s){if(fSrc.has(s))fSrc.delete(s);else fSrc.add(s);syncChips();renderCat();}
+function pickBer(c){curBer=c.dataset.b;document.querySelectorAll("#berpick .chip").forEach(x=>x.classList.toggle("on",x===c));renderOne();}
+function switchView(v){
+  document.querySelectorAll(".nav").forEach(x=>x.classList.toggle("on",x.dataset.v===v));
+  document.querySelectorAll(".view").forEach(x=>x.classList.toggle("active",x.id==="v-"+v));
+  if(v==="start")renderHome();else if(v==="bereiche")renderBereiche();else if(v==="qualitaet")renderQualitaet();else if(v==="prozess")renderProzess();else if(v==="designer"){renderCubeModule();updateDimBadge();}else if(v==="datasources"){renderDatasources();}else if(v==="server"){renderServer();}else if(v==="admin"){renderAdmin();}
+}
+function renderCat(){
+  const out=document.getElementById("out"),q=fQ.trim().toLowerCase();
+  const rows=K.filter(k=>{
+    if(fBer!=="alle"&&k[1]!==fBer)return false;
+    if(fAbt!=="alle"&&BER2ABT[k[1]]!==fAbt)return false;
+    if(fSrc.size){const qs=k[4].split(",");if(![...fSrc].some(s=>qs.includes(s)))return false;}
+    if(q&&!(k[0]+" "+k[2]+" "+k[3]).toLowerCase().includes(q))return false;
+    return true;});
+  document.getElementById("count").textContent=`${rows.length} von ${K.length} Kennzahlen · auf eine Karte klicken für den Steckbrief`;
+  if(!rows.length){out.innerHTML='<div class="empty">Keine Kennzahl passt zum Filter.</div>';return;}
+  const byB={};rows.forEach(k=>(byB[k[1]]=byB[k[1]]||[]).push(k));
+  out.innerHTML=Object.keys(BEREICH).filter(b=>byB[b]).map(b=>{
+    const[label,col]=BEREICH[b];
+    const cards=byB[b].map(kpiCardHTML).join("");
+    return `<div class="group"><h2><span class="dot" style="background:${col}"></span>${label}<span class="gc">· ${byB[b].length}</span></h2><div class="cards">${cards}</div></div>`;
+  }).join("");
+}
+
+/* ---------- Drawer ---------- */
+/* Klickbare KPI-Namen in der Formel */
+function linkifyFormel(fm, self){
+  const names=K.map(x=>x[0]).filter(n=>n!==self).sort((a,b)=>b.length-a.length);
+  let html=esc(fm); const used=[];
+  names.forEach(n=>{const en=esc(n);
+    if(html.includes(en) && !used.some(u=>esc(u).includes(en))){
+      html=html.replace(en, `@@${used.length}@@`); used.push(n);}});
+  used.forEach((n,i)=>{html=html.replace(`@@${i}@@`,
+    `<span class="rel" style="padding:1px 6px" data-open="${n}">${esc(n)}</span>`);});
+  return html;
+}
+/* Mini-Ablaufdiagramm: Daten/Vorläufer -> Kennzahl -> Ergebnis */
+function neighbors(nm){const k=byName(nm);if(!k)return null;
+  const parents=K.filter(x=>x[0]!==nm&&x[0].length>2&&k[2].includes(x[0])).map(x=>x[0]);
+  const children=K.filter(x=>x[0]!==nm&&x[2].includes(nm)).map(x=>x[0]);
+  const raw=k[4].split(",").map(s=>QUELLE[s]||s);
+  return {k,parents,children,raw};}
+function lnBox(nm,big){return `<div class="ln-box click" ${big?`data-lineage="${nm}"`:`data-open="${nm}"`}>${nm}</div>`;}
+function lineageColumns(nm,big){
+  const n=neighbors(nm);if(!n)return"";
+  const rawCol=`<div class="ln-col"><div class="ch">Rohdaten</div>${n.raw.map(r=>`<div class="ln-box raw">${r}</div>`).join("")||'<div class="ln-empty">—</div>'}</div>`;
+  const parCol=`<div class="ln-col"><div class="ch">baut auf</div>${n.parents.length?n.parents.map(p=>lnBox(p,big)).join(""):'<div class="ln-empty">direkt aus Rohdaten</div>'}</div>`;
+  const thisCol=`<div class="ln-col"><div class="ch">diese Kennzahl</div><div class="ln-box kpi-this">${nm}</div></div>`;
+  const chiCol=`<div class="ln-col"><div class="ch">fließt ein in</div>${n.children.length?n.children.map(c=>lnBox(c,big)).join(""):'<div class="ln-empty">keine Folge-Kennzahl</div>'}</div>`;
+  const cols=[rawCol,parCol,thisCol,chiCol];
+  if(big){
+    const gc=[...new Set(n.children.flatMap(c=>K.filter(x=>x[0]!==c&&x[2].includes(c)).map(x=>x[0])))].filter(x=>x!==nm&&!n.children.includes(x));
+    cols.push(`<div class="ln-col"><div class="ch">und weiter in</div>${gc.length?gc.map(g=>lnBox(g,big)).join(""):'<div class="ln-empty">—</div>'}</div>`);
+  }
+  return `<div class="lineage">`+cols.join('<div class="ln-arr">→</div>')+`</div>`;
+}
+function buildFlow(k){return `${lineageColumns(k[0],false)}<button class="calc-demo ln-big" data-lineage-big="${k[0]}">🔍 Kette groß anzeigen</button>`;}
+let lnCur=null;
+function openLineage(nm){lnCur=nm;document.getElementById("lnOv").classList.add("open");document.getElementById("ln").classList.add("open");renderLineage();}
+function closeLineage(){const o=document.getElementById("lnOv"),m=document.getElementById("ln");if(o)o.classList.remove("open");if(m)m.classList.remove("open");}
+function renderLineage(){const nm=lnCur;
+  document.getElementById("ln").innerHTML=`<span class="x" data-lnclose="1">✕</span>
+    <div class="th"><div class="step-no">Datenkette</div><h3>${nm}</h3></div>
+    <div class="tb"><p class="ln-hint">Von den Rohdaten über die Vorläufer bis zu „${nm}" — und was daraus weiter entsteht. Auf eine Kennzahl-Box tippen zentriert die Kette dort.</p>
+      ${lineageColumns(nm,true)}</div>
+    <div class="tf"><span class="skel">Box antippen = Kette dort zentrieren</span><span class="tbtn pri" data-open="${nm}">Steckbrief öffnen</span></div>`;
+}
+/* ---------- Rollen / Dichte ---------- */
+const DENS_BY_ROLE={gf:"kompakt",bearbeiter:"normal",entwickler:"detail",power:"detail"};
+const ROSE_AI="James";
+let userRole="bearbeiter", dens="normal", curKpi=null;
+// ===== Module + Rechte pro Benutzergruppe =====
+const MODULES=[
+ {id:"start",label:"Start",icon:"🏠"},
+ {id:"katalog",label:"Katalog",icon:"📋"},
+ {id:"bereiche",label:"Bereiche",icon:"🗂️"},
+ {id:"cube",label:"Cube · Modell",icon:"🧊"},
+ {id:"datasources",label:"Datenquellen",icon:"🔌"},
+ {id:"reports",label:"Berichte (James)",icon:"🤖"},
+ {id:"server",label:"Berichtsserver",icon:"🗄️"},
+ {id:"qualitaet",label:"Qualität",icon:"✅"},
+ {id:"prozess",label:"Prozesskette",icon:"🔗"},
+ {id:"admin",label:"Administration",icon:"⚙️"}
+];
+const MOD_CAPS={start:["view"],katalog:["view"],bereiche:["view"],qualitaet:["view"],prozess:["view"],cube:["view","model","confirm"],datasources:["view","manage"],reports:["view","build","publish"],server:["view","manage"],admin:["view","manage"]};
+const CAP_LABEL={view:"Sichtbar",model:"Modellieren",confirm:"Freigeben",build:"Bauen",publish:"Veröffentlichen",manage:"Verwalten"};
+function R(o){return o;} // Hilfsidentität für Lesbarkeit
+const GROUPS={
+ gf:{label:"Geschäftsführung",dens:"kompakt",rights:{start:{view:1},katalog:{view:1},bereiche:{view:1},reports:{view:1},qualitaet:{view:1},prozess:{view:1},cube:{view:1},server:{view:1}}},
+ bearbeiter:{label:"Bearbeiter",dens:"normal",rights:{start:{view:1},katalog:{view:1},bereiche:{view:1},reports:{view:1,build:1},qualitaet:{view:1},prozess:{view:1},cube:{view:1},server:{view:1}}},
+ entwickler:{label:"Entwickler",dens:"detail",rights:{start:{view:1},katalog:{view:1},bereiche:{view:1},reports:{view:1,build:1},qualitaet:{view:1},prozess:{view:1},cube:{view:1,model:1},server:{view:1}}},
+ power:{label:"Business Controller",dens:"detail",rights:{start:{view:1},katalog:{view:1},bereiche:{view:1},reports:{view:1,build:1,publish:1},qualitaet:{view:1},prozess:{view:1},cube:{view:1,model:1,confirm:1},server:{view:1,manage:1}}},
+ superadmin:{label:"Superadmin",dens:"detail",rights:{start:{view:1},katalog:{view:1},bereiche:{view:1},reports:{view:1,build:1,publish:1},qualitaet:{view:1},prozess:{view:1},cube:{view:1,model:1,confirm:1},server:{view:1,manage:1},admin:{view:1,manage:1}}}
+};
+let activeGroup="bearbeiter", adminGroup="bearbeiter";
+Object.keys(GROUPS).forEach(g=>{GROUPS[g].rights.datasources=(g==="entwickler"||g==="power"||g==="superadmin")?{view:1,manage:1}:{view:1};});
+function can(mod,cap){const g=GROUPS[activeGroup];return !!(g&&g.rights[mod]&&g.rights[mod][cap]);}
+function moduleVisible(m){return can(m,"view");}
+const NAV2MOD={start:"start",katalog:"katalog",bereiche:"bereiche",qualitaet:"qualitaet",prozess:"prozess",designer:"cube",datasources:"datasources",server:"server",admin:"admin"};
+function applyModuleRights(){
+  document.querySelectorAll(".topnav .nav").forEach(el=>{const m=NAV2MOD[el.getAttribute("data-v")];el.style.display=(m&&!moduleVisible(m))?"none":"";});
+  const ki=document.getElementById("kiBtn");if(ki)ki.style.display=can("reports","view")?"":"none";
+}
+function toggleRight(gid,mod,cap){if(!can("admin","manage"))return;const g=GROUPS[gid];if(!g)return;g.rights[mod]=g.rights[mod]||{};
+  if(cap==="view"){const turnOff=!!g.rights[mod].view;if(turnOff){Object.keys(g.rights[mod]).forEach(k=>g.rights[mod][k]=0);}else{g.rights[mod].view=1;}}
+  else{g.rights[mod][cap]=g.rights[mod][cap]?0:1;if(g.rights[mod][cap])g.rights[mod].view=1;}
+  renderAdmin();if(gid===activeGroup)applyModuleRights();}
+function renderAdmin(){
+  const editable=can("admin","manage"), gids=Object.keys(GROUPS);
+  if(!GROUPS[adminGroup])adminGroup=gids[0];const g=GROUPS[adminGroup];
+  const cards=MODULES.filter(m=>m.id!=="start").map(m=>{
+    const caps=MOD_CAPS[m.id]||["view"];
+    const chips=caps.map(cap=>{const on=!!(g.rights[m.id]&&g.rights[m.id][cap]);return `<span class="rchip ${on?'on':''} ${editable?'':'ro'}" ${editable?`data-rtoggle="${adminGroup}:${m.id}:${cap}"`:""}>${CAP_LABEL[cap]||cap}</span>`;}).join("");
+    return `<div class="adm-mod"><div class="adm-mod-h">${m.icon} ${m.label}</div><div class="rchips">${chips}</div></div>`;
+  }).join("");
+  document.getElementById("admin").innerHTML=`
+    <div class="head"><h2>Administration · Rechte &amp; Gruppen</h2></div>
+    <p class="count" style="max-width:680px;margin:0 0 14px">Rechte gelten pro <b>Benutzergruppe</b>: je Modul Sichtbarkeit und Fähigkeiten. Die aktive Anmeldung (oben rechts) bestimmt, was du selbst siehst und darfst.</p>
+    <div class="kw-chips" style="margin-bottom:14px">${gids.map(id=>`<span class="kw-chip ${id===adminGroup?'on':''}" data-admingroup="${id}">${GROUPS[id].label}</span>`).join("")}</div>
+    ${editable?"":`<p class="count" style="margin-bottom:12px">Nur <b>Superadmin</b> darf Rechte ändern — Ansicht schreibgeschützt.</p>`}
+    <div class="adm-grid">${cards}</div>`;
+}
+function renderServer(){const manage=can("server","manage");
+  document.getElementById("server").innerHTML=`
+   <div class="head"><h2>Berichtsserver</h2><span class="count">Modul</span></div>
+   <p class="count" style="max-width:680px;margin:0 0 14px">Zentrale Ablage veröffentlichter Berichte: planen, teilen, abonnieren. Wird mit dem Backend scharf geschaltet (Speicherung, Zeitpläne, Verteilung, Berechtigung je Bericht).</p>
+   <div class="srv-empty">Noch keine veröffentlichten Berichte.${manage?" Baue einen in „Berichte (James)“ und veröffentliche ihn hier.":" Veröffentlichen ist der Gruppe „Business Controller“ vorbehalten."}</div>`;
+}
+function setRole(r){activeGroup=r;userRole=r;dens=(GROUPS[r]&&GROUPS[r].dens)||DENS_BY_ROLE[r]||"normal";
+  applyModuleRights();
+  if(curKpi&&document.getElementById("drawer").classList.contains("open"))openK(curKpi);
+  if(document.getElementById("ki").classList.contains("open"))renderKi();
+  if(document.getElementById("v-designer").classList.contains("active"))renderCubeModule();
+  if(document.getElementById("v-admin").classList.contains("active"))renderAdmin();
+  const act=document.querySelector(".view.active");
+  if(act){const m=NAV2MOD[act.id.replace("v-","")];if(m&&!moduleVisible(m)){switchView("start");return;}}
+  if(document.getElementById("v-start").classList.contains("active"))renderHome();
+}
+function setDens(d){dens=d; if(curKpi)openK(curKpi);}
+
+/* ---------- Rechner: Formel -> Eingabemaske ---------- */
+function parseFormula(fm){
+  let s=fm.replace(/·/g,"×").replace(/\*/g,"×"); const ops=[],operands=[]; let buf="";
+  for(const ch of s){ if("÷×+−-".includes(ch)){operands.push(buf.trim());ops.push(ch==="-"?"−":ch);buf="";} else buf+=ch; }
+  operands.push(buf.trim());
+  const ok=ops.length>=1 && operands.every(o=>o.length>0) && !/Σ|∑/.test(fm);
+  return {ops,operands,ok};
+}
+function isConst(l){return /^\d+([.,]\d+)?$/.test(l.trim());}
+function fmtNum(x){return isFinite(x)?x.toLocaleString("de-DE",{maximumFractionDigits:2}):"—";}
+function parseNum(v){v=(""+(v==null?"":v)).trim().replace(/\s/g,"").replace(/\./g,"").replace(",",".");return v===""?NaN:parseFloat(v);}
+function datenInputs(k){const p=parseFormula(k[2]); return p.ok?p.operands.filter(o=>!isConst(o)):[k[0]];}
+function slug(s){return s.normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^A-Za-z0-9]+/g,"_").replace(/^_|_$/g,"");}
+function calcWidget(k){
+  const fm=k[2],un=k[5],p=parseFormula(fm);
+  if(!p.ok)return `<div class="calc"><div class="calc-note">Diese Kennzahl ist eine zusammengefasste/aggregierte Größe (z. B. eine Summe). Sie entsteht direkt aus den Buchungen — dafür gibt es hier keinen Eingabe-Rechner.</div></div>`;
+  const inHtml=p.operands.map((o,i)=> isConst(o)
+    ? `<div class="ci-row"><span class="ci-lbl">${o}</span><span class="ci-fix">fester Faktor</span></div>`
+    : `<div class="ci-row"><span class="ci-lbl">${esc(o)}</span><input class="ci" data-i="${i}" inputmode="decimal" placeholder="Wert"></div>`).join("");
+  return `<div class="calc" id="calc" data-fm="${encodeURIComponent(fm)}">
+    <div class="calc-h">Selber ausprobieren — Roh-Eingaben eintragen:</div>${inHtml}
+    <button class="calc-demo" data-calcdemo="1">Beispielwerte einsetzen</button>
+    <div class="calc-out"><div class="calc-sub" id="calcsub">${esc(fm)}</div>
+      <div class="calc-res">Ergebnis: <b id="calcres">—</b> <span class="calc-un">${un}</span></div></div>
+    <div class="calc-note">Genau diese Eingaben muss eine Datenschnittstelle liefern. Der Rechner bildet die Formel 1:1 ab.</div></div>`;
+}
+function recalc(){
+  const c=document.getElementById("calc"); if(!c)return;
+  const fm=decodeURIComponent(c.dataset.fm),p=parseFormula(fm);
+  const vals=p.operands.map((o,i)=> isConst(o)?parseNum(o):parseNum((c.querySelector('.ci[data-i="'+i+'"]')||{}).value));
+  let acc=vals[0],sub=[fmtNum(vals[0])];
+  for(let i=0;i<p.ops.length;i++){const op=p.ops[i],b=vals[i+1];
+    if(op==="÷")acc/=b;else if(op==="×")acc*=b;else if(op==="−")acc-=b;else if(op==="+")acc+=b; sub.push(op+" "+fmtNum(b));}
+  const filled=vals.every(v=>!isNaN(v)), any=vals.some(v=>!isNaN(v));
+  document.getElementById("calcres").textContent=filled?fmtNum(acc):"—";
+  document.getElementById("calcsub").textContent=any?sub.join(" "):fm;
+}
+function calcDemo(){const c=document.getElementById("calc");if(!c)return;
+  [...c.querySelectorAll(".ci")].forEach((inp,idx)=>inp.value=idx===0?"750":"1000"); recalc();}
+
+/* ---------- SMART-Maßnahmen ---------- */
+function smartList(k,role){
+  const nm=k[0],qs=k[4],un=k[5],owner=BEREICH[k[1]][2];
+  const ins=datenInputs(k),qtext=qs.split(",").map(s=>QUELLE[s]||s).join(", ");
+  if(role==="bearbeiter")return[
+    `Bis zum 5. Werktag jedes Monats den Wert von „${nm}" prüfen und im Dashboard auf Grün bestätigen.`,
+    `Bei Abweichung über 10 % zum Vormonat innerhalb von 3 Arbeitstagen die Ursache dokumentieren und an ${owner} melden.`,
+    `Einmal je Quartal prüfen, ob „${nm}" im vereinbarten Zielband liegt; sonst bis Quartalsende eine Gegenmaßnahme vorschlagen.`];
+  if(role==="entwickler")return[
+    `Die Roh-Felder ${ins.map(x=>'„'+x+'"').join(", ")} aus der Quelle (${qtext}) bis Sprint-Ende im DWH bereitstellen — Grain: feinste Ebene, Vollständigkeit ≥ 99 %.`,
+    `View vw_${slug(nm)} bauen, die „${nm}" = ${k[2]} berechnet, und monatlich gegen die Quelle reconcilen (Abweichung < 1 %).`,
+    `Aktualisierung automatisieren (täglich 06:00) und Feld-Vollständigkeit überwachen; bei Lücken Alert ans BI-Team.`];
+  return[
+    `Bis Quartalsende ein Zielband bzw. einen Zielwert für „${nm}" (${un}) festlegen und freigeben.`,
+    `Verantwortlichen bestätigen (aktuell ${owner}) und Berichtsrhythmus festlegen (monatlich).`];
+}
+function smartBlock(title,role,k){
+  const items=smartList(k,role).map(t=>`<label class="todo"><input type="checkbox"><span>${t}</span></label>`).join("");
+  return `<div class="field"><h4>${title} <span class="smart-tag">SMART</span></h4>${items}</div>`;
+}
+
+/* ---------- Steckbrief ---------- */
+function openK(name){
+  const k=byName(name);if(!k)return;curKpi=name;closeLineage();
+  const[nm,b,fm,ex,qs,un]=k;const[blabel,bcol,owner]=BEREICH[b];
+  const d=DETAIL[nm],dq=dqForKpi(nm),nt=NACHTEIL[nm],dirTxt=d?d.richtung:"";
+  const parents=K.filter(x=>x[0]!==nm&&fm.includes(x[0])).map(x=>x[0]);
+  const children=K.filter(x=>x[0]!==nm&&x[2].includes(nm)).map(x=>x[0]);
+  const relChip=n=>byName(n)?`<span class="rel" data-open="${n}">${n}</span>`:`<span class="rel" style="cursor:default;opacity:.6">${n}</span>`;
+
+  let body=`<div class="lead"><b>Einfach erklärt</b>${esc(ex)}</div>
+    <div class="field"><h4>Datenkette — Herkunft &amp; Wirkung</h4>${buildFlow(k)}</div>
+    <div class="field"><h4>Selber ausprobieren</h4>${calcWidget(k)}</div>
+    <div class="field"><h4>Formel</h4><span class="fm">${linkifyFormel(fm,nm)}</span></div>
+    ${dirTxt?`<div class="field"><h4>Was bedeutet das Ergebnis?</h4><p>${RHELP[dirTxt]||dirTxt}</p></div>`:""}`;
+
+  if(dens!=="kompakt"){
+    body+=`<div class="qfacts">
+      <div><span class="qf-l">Einheit</span><span class="qf-v">${un}</span></div>
+      ${dirTxt?`<div><span class="qf-l">Richtung</span><span class="qf-v" title="${RHELP[dirTxt]||''}">${dirTxt}${RHELP[dirTxt]?' ⓘ':''}</span></div>`:""}
+      <div><span class="qf-l">Bereich</span><span class="qf-v">${blabel}</span></div>
+      <div><span class="qf-l">Hut auf</span><span class="qf-v">${owner}</span></div></div>`;
+    if(dq) body+=`<div class="field"><h4>Qualitätsstatus</h4><p><span class="wf ${dq.wf}">${WFLABEL[dq.wf]}</span> &nbsp;${esc(dq.c)}</p></div>`;
+    body+=smartBlockHint(dq);
+  }
+  if(dens==="detail"){
+    const ins=datenInputs(k);
+    body+=`<div class="field"><h4>Datenanlieferung — was & wie bereitstellen</h4>
+      <p>Benötigte Roh-Eingaben — genau diese Werte muss die Schnittstelle liefern:</p>
+      <div class="relrow">${ins.map(x=>`<span class="s">${esc(x)}</span>`).join("")}</div>
+      <p style="margin-top:8px">Quelle(n): ${qs.split(",").map(s=>QUELLE[s]||s).join(", ")}<br>
+      Granularität: feinste Ebene (Beleg / Periode / Organisation), monatlich aktualisiert<br>
+      Format: numerisch, je Periode und Organisationseinheit</p></div>`;
+    if(d) body+=`<div class="field"><h4>Berechnung & Grain</h4><p>${esc(d.berechnung)}</p></div>`;
+    if(d&&d.fehlerquellen) body+=`<div class="field"><h4>Typische Fehlerquellen</h4><p>${esc(d.fehlerquellen)}</p></div>`;
+    if(d&&d.fallstrick) body+=`<div class="field"><h4>Fallstrick</h4><p>${esc(d.fallstrick)}</p></div>`;
+    if(nt) body+=`<div class="field"><h4>Nachteile / Grenzen</h4><p>${esc(nt)}</p></div>`;
+  }
+  const dchip=(key,lab)=>`<span class="dchip ${dens===key?'on':''}" data-dens="${key}">${lab}</span>`;
+  document.getElementById("drawer").innerHTML=`
+    <div class="dh" style="border-top:4px solid ${bcol}"><span class="x" data-close="1">✕</span>
+      <p class="nm">${nm}</p>
+      <div class="meta">
+        <span class="badge" style="background:${bcol}22;color:${bcol}">${blabel}</span>
+        <span class="badge" style="background:var(--teal-bg);color:var(--teal)">${un}</span>
+        <span class="favstar ${favSet.has(nm)?'on':''}" data-fav="${nm}" title="Als Favorit merken">${favSet.has(nm)?'★':'☆'}</span>
+      </div>
+      <div class="dens">${dchip("kompakt","Kompakt · GF")}${dchip("normal","Normal · Bearbeiter")}${dchip("detail","Detailliert · Entwickler")}</div>
+    </div>
+    <div class="dbody">${body}</div>`;
+  document.getElementById("drawer").classList.add("open");
+  document.getElementById("overlay").classList.add("open");
+  recalc();
+}
+
+/* ---------- KI-Bericht-Wizard (PowerUser) ---------- */
+let kiStep=1, rosaHinweis="", kiData=null, kiEvalDone=false; const kiSel={ber:"alle",kpis:new Set(),dim:"Periode",zeit:"Letztes Quartal",q:"",cube:"",artHier:"",artLevel:"Warenbereich",artNode:""};
+function rptHier(){const hs=(DIM_HIER.DimArtikel||[]);return hs.find(h=>h.id===kiSel.artHier)||hs[0]||{id:"",name:"Artikel",levels:ARTIKEL_LEVELS};}
+function rptLevels(){const l=rptHier().levels;return l&&l.length?l:ARTIKEL_LEVELS;}
+function setArtHier(id){kiSel.artHier=id;const lv=rptLevels();kiSel.artLevel=lv[0];kiSel.artNode="";renderKi();}
+const ARTIKEL_LEVELS=["Warenbereich","Produktobergruppe","Produktgruppe","Modell","Produktnummer","Variante","Artikel"];
+const ARTIKEL_TREE=[
+ {n:"Fahrräder",c:[
+   {n:"Rennrad",c:[
+     {n:"Endurance",c:[{n:"Backroad",c:[{n:"BR-AL-105",c:[
+       {n:"56 / blau",c:[{n:"Backroad AL 105 · 56 · blau"}]},
+       {n:"56 / schwarz",c:[{n:"Backroad AL 105 · 56 · schwarz"}]}]}]}]},
+     {n:"Aero",c:[{n:"Reveal",c:[{n:"RV-CF-DI2",c:[{n:"54",c:[{n:"Reveal Six Disc · 54"}]}]}]}]}]},
+   {n:"Mountainbike",c:[{n:"Trail",c:[{n:"Ground Control",c:[{n:"GC-29",c:[{n:"L",c:[{n:"Ground Control 29 · L"}]}]}]}]}]}]},
+ {n:"Bekleidung",c:[{n:"Trikots",c:[{n:"Herren",c:[{n:"RC Jersey",c:[{n:"RCJ-26",c:[{n:"L / rot",c:[{n:"RC Jersey · L · rot"}]}]}]}]}]}]},
+ {n:"Komponenten",c:[{n:"Laufräder",c:[{n:"Carbon",c:[{n:"R-Wheel",c:[{n:"RW-50",c:[{n:"VR",c:[{n:"R-Wheel 50 · VR"}]}]}]}]}]}]}
+];
+function artTreeHtml(nodes,depth){return nodes.map(nd=>{
+  const lvl=ARTIKEL_LEVELS[depth]||"Artikel";
+  const lab=`<span class="art-node ${kiSel.artNode===nd.n?'on':''}" data-artnode="${nd.n}">${nd.n} <em>${lvl}</em></span>`;
+  return (nd.c&&nd.c.length)?`<details class="art-det"><summary>${lab}</summary>${artTreeHtml(nd.c,depth+1)}</details>`:`<div class="art-leaf">${lab}</div>`;
+}).join("");}
+function findArt(nodes,name){for(const nd of nodes){if(nd.n===name)return nd;if(nd.c){const f=findArt(nd.c,name);if(f)return f;}}return null;}
+function artNodeDepth(nodes,name,d){for(const nd of nodes){if(nd.n===name)return d;if(nd.c){const r=artNodeDepth(nd.c,name,d+1);if(r>=0)return r;}}return -1;}
+function collectAt(nodes,cur,target,acc){nodes.forEach(nd=>{if(cur===target)acc.push(nd.n);else if(nd.c)collectAt(nd.c,cur+1,target,acc);});}
+function artMembers(){const target=Math.max(0,ARTIKEL_LEVELS.indexOf(kiSel.artLevel||"Warenbereich"));const acc=[];
+  if(kiSel.artNode){const nd=findArt(ARTIKEL_TREE,kiSel.artNode),dep=artNodeDepth(ARTIKEL_TREE,kiSel.artNode,0);
+    if(nd){if(target<=dep)acc.push(nd.n);else if(nd.c)collectAt(nd.c,dep+1,target,acc);else acc.push(nd.n);}}
+  else collectAt(ARTIKEL_TREE,0,target,acc);
+  return acc.length?acc.slice(0,5):["—"];}
+function setArtLevel(v){kiSel.artLevel=v;document.querySelectorAll('[data-artlevel]').forEach(el=>el.classList.toggle('on',el.getAttribute('data-artlevel')===v));}
+function setArtNode(v){kiSel.artNode=v;
+  document.querySelectorAll('.art-node').forEach(el=>el.classList.toggle('on',v!==""&&el.getAttribute('data-artnode')===v));
+  const c=document.getElementById('artScope');if(c)c.textContent=v?v:"ganzer Katalog";}
+function openKiWizard(){kiStep=1;kiSel.kpis=new Set();kiSel.ber="alle";kiSel.q="";kiSel.cube=Object.keys(CUBES)[0]||"";kiSel.dim="Periode";kiSel.zeit="Letztes Quartal";kiSel.artHier="";kiSel.artLevel="Warenbereich";kiSel.artNode="";rosaHinweis="";kiData=null;kiEvalDone=false;
+  document.getElementById("kiOv").classList.add("open");document.getElementById("ki").classList.add("open");renderKi();}
+function closeKi(){document.getElementById("kiOv").classList.remove("open");document.getElementById("ki").classList.remove("open");}
+function stepKi(dir){if(dir==="next"){if(kiStep>=4){closeKi();return;}kiStep++;}else if(dir==="prev"&&kiStep>1){kiStep--;}if(kiStep!==4){kiData=null;kiEvalDone=false;}renderKi();}
+function toggleKpiSel(n){if(kiSel.kpis.has(n))kiSel.kpis.delete(n);else kiSel.kpis.add(n);renderKi();}
+function kiListHtml(){
+  const cb=CUBES[kiSel.cube], allow=cb?new Set(cb.measures):null;
+  const list=K.filter(k=>(!allow||allow.has(k[0]))&&(kiSel.ber==="alle"||k[1]===kiSel.ber)&&(!kiSel.q||k[0].toLowerCase().includes(kiSel.q.toLowerCase()))).slice(0,60);
+  return list.map(k=>`<span class="kw-chip ${kiSel.kpis.has(k[0])?'on':''}" data-kikpi="${k[0]}">${k[0]}</span>`).join("")||`<span class="skel">keine Treffer${allow?" im Cube":""}</span>`;
+}
+function kiSearchUpdate(v){kiSel.q=v;const el=document.querySelector(".kw-list");if(el)el.innerHTML=kiListHtml();}
+function renderKi(){
+  const perm = can("reports","publish")
+    ? ""
+    : `<div class="ki-perm">Demo: hier darf jeder bauen. In der Live-Version mit Login ist das Bauen von Berichten PowerUsern vorbehalten — andere Rollen nutzen die fertigen Berichte.</div>`;
+  const dots=[1,2,3,4].map(i=>`<i class="${i===kiStep?'on':''}"></i>`).join("");
+  const titel=["","Was auswerten?","Aufschlüsselung","Zeitraum","Vorschau"][kiStep];
+  let c="";
+  if(kiStep===1){
+    const cubes=Object.keys(CUBES);
+    c=`<div class="kw-sec"><div class="lbl3">Cube wählen — Grundlage des Berichts</div><div class="kw-chips">${cubes.map(cn=>`<span class="kw-chip ${kiSel.cube===cn?'on':''}" data-kicube="${cn}">🧊 ${cn}</span>`).join("")||'<span class="skel">kein Cube angelegt</span>'}</div></div>`+`<div class="kw-sec"><div class="lbl3">In Worten beschreiben — ${ROSE_AI} baut es</div>
+        <textarea id="kiText" class="ki-text" rows="2" placeholder="z. B. Nettoumsatz und DB-Quote für Vertrieb im letzten Quartal"></textarea>
+        <button class="tbtn" data-kiparse="1">🤖 ${ROSE_AI} bauen lassen →</button></div>
+       <div class="kw-sec"><div class="lbl3">… oder manuell — Bereich</div>
+        <select id="kiBer">${'<option value="alle">Alle Bereiche</option>'+Object.entries(BEREICH).map(([k,v])=>`<option value="${k}" ${kiSel.ber===k?'selected':''}>${v[0]}</option>`).join("")}</select></div>
+       <div class="kw-sec"><div class="lbl3">Kennzahlen wählen <span class="kw-sel-count">${kiSel.kpis.size} gewählt</span></div>
+        <input id="kiSearch" class="ki-in" placeholder="Kennzahl suchen …" value="${kiSel.q}">
+        <div class="kw-list">${kiListHtml()}</div></div>`;
+  } else if(kiStep===2){
+    const cbx=CUBES[kiSel.cube]; let dims=(cbx&&cbx.dims.length?cbx.dims.map(dn=>DIM2REP[dn]||dn.replace(/^Dim/,"")):["Periode"]); if(!dims.includes(kiSel.dim))kiSel.dim=dims[0];
+    c=`<div class="kw-sec"><div class="lbl3">Wonach aufschlüsseln?</div><div class="kw-chips">${dims.map(x=>`<span class="kw-chip ${kiSel.dim===x?'on':''}" data-kidim="${x}">${x}</span>`).join("")}</div></div>`;
+    if(kiSel.dim==="Artikel"){
+      const hs=(DIM_HIER.DimArtikel||[]); if(!hs.find(h=>h.id===kiSel.artHier))kiSel.artHier=(hs[0]||{}).id||"";
+      const lv=rptLevels(); if(!lv.includes(kiSel.artLevel))kiSel.artLevel=lv[0];
+      const hierPick=hs.length>1?`<div class="kw-sec"><div class="lbl3">Hierarchie (aus dem Designer)</div><div class="kw-chips">${hs.map(h=>`<span class="kw-chip ${kiSel.artHier===h.id?'on':''}" data-arthier="${h.id}">${h.name}</span>`).join("")}</div></div>`:"";
+      c+=hierPick+`<div class="kw-sec"><div class="lbl3">Hierarchie-Ebene (${rptHier().name}) — wonach gruppieren</div><div class="kw-chips">${lv.map(l=>`<span class="kw-chip ${kiSel.artLevel===l?'on':''}" data-artlevel="${l}">${l}</span>`).join("")}</div></div>
+         <div class="kw-sec"><div class="lbl3">Auf Zweig einschränken (optional): <span class="kw-sel-count" id="artScope">${kiSel.artNode||"ganzer Katalog"}</span> <span class="art-clear" data-artnode="">✕ zurücksetzen</span></div>
+          <div class="art-tree">${artTreeHtml(ARTIKEL_TREE,0)}</div></div>`;
+    }
+  } else if(kiStep===3){
+    c=`<div class="kw-sec"><div class="lbl3">Zeitraum</div><div class="kw-chips">${["Letzter Monat","Letztes Quartal","Laufendes Jahr","Letzte 12 Monate"].map(x=>`<span class="kw-chip ${kiSel.zeit===x?'on':''}" data-kizeit="${x}">${x}</span>`).join("")}</div></div>`;
+  } else {
+    const sel=[...kiSel.kpis];
+    const cols=kiSel.dim==="Periode"?["Jan","Feb","Mrz"]:kiSel.dim==="Artikel"?artMembers():["Wert A","Wert B","Wert C"];
+    if(!kiData){kiData=genKiData(sel,cols);kiEvalDone=false;}
+    const rows=(kiData.rows.length?kiData.rows.map(r=>`<tr><td>${r.nm}</td>${r.vals.map(v=>`<td class="r">${v.toLocaleString("de-DE")}</td>`).join("")}</tr>`):[`<tr><td class="skel" colspan="${kiData.cols.length+1}">Keine Kennzahl gewählt — zurück zu Schritt 1.</td></tr>`]).join("");
+    const aufschl=kiSel.dim==="Artikel"?`Artikel → ${kiSel.artLevel||"Warenbereich"}${kiSel.artNode?` (Zweig: ${kiSel.artNode})`:""}`:kiSel.dim;
+    c=`<div class="ki-spec"><b>Berichts-Spezifikation</b><br>Kennzahlen: ${sel.length?sel.join(", "):"—"}<br>Bereich: ${kiSel.ber==="alle"?"alle":BEREICH[kiSel.ber][0]} · Aufschlüsselung: ${aufschl} · Zeitraum: ${kiSel.zeit}${rosaHinweis?`<div class="rosa-note">🤖 ${esc(rosaHinweis)}</div>`:""}</div>
+       <table class="ki-tbl"><thead><tr><th>Kennzahl</th>${kiData.cols.map(x=>`<th class="r">${x}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table>
+       <div class="ki-actions"><button class="tbtn" data-kicopy="1">📋 Kopieren</button><button class="tbtn" data-kicsv="1">⬇ CSV</button><button class="tbtn" data-kieval="1">🤖 Neu bewerten</button></div>
+       <div class="ki-flash" id="kiFlash"></div>
+       <div class="ki-eval" id="kiEval"></div>
+       <div class="calc-note">Demo-Vorschau mit Zufallswerten — James bewertet diese Zahlen. Mit Datenbank bewertet er die echten Werte.</div>`;
+  }
+  document.getElementById("ki").innerHTML=`<span class="x" data-kiclose="1">✕</span>
+    <div class="th"><div class="step-no">🤖 ${ROSE_AI} · Schritt ${kiStep} von 4</div><h3>${titel}</h3></div>
+    <div class="tb">${perm}${c}</div>
+    <div class="tf"><div class="dots">${dots}</div>
+      <div class="tnav">${kiStep>1?`<span class="tbtn" data-kistep="prev">Zurück</span>`:""}<span class="tbtn pri" data-kistep="next">${kiStep===4?"Fertig":"Weiter"}</span></div></div>`;
+  if(kiStep===4 && kiData && kiData.rows.length && !kiEvalDone) rosaAnalyse();
+}
+function localParse(t){
+  t=(t||"").toLowerCase();
+  kiSel.kpis=new Set(K.filter(k=>t.includes(k[0].toLowerCase())).map(k=>k[0]));
+  for(const [key,v] of Object.entries(BEREICH)){const w=v[0].toLowerCase().split(/[ &/]+/)[0]; if(w.length>3&&t.includes(w)){kiSel.ber=key;break;}}
+  if(t.includes("quartal"))kiSel.zeit="Letztes Quartal"; else if(t.includes("jahr"))kiSel.zeit="Laufendes Jahr"; else if(t.includes("monat"))kiSel.zeit="Letzter Monat";
+  if(!kiSel.kpis.size&&kiSel.ber!=="alle")K.filter(k=>k[1]===kiSel.ber).slice(0,5).forEach(k=>kiSel.kpis.add(k[0]));
+}
+function bereichKeyFrom(s){ if(!s)return "alle"; s=(""+s).toLowerCase();
+  for(const [k,v] of Object.entries(BEREICH)){ if(k===s||v[0].toLowerCase()===s||v[0].toLowerCase().includes(s))return k; } return "alle"; }
+function applySpec(spec,text){
+  const names=new Set(K.map(k=>k[0]));
+  const sel=(spec&&Array.isArray(spec.kennzahlen)?spec.kennzahlen:[]).filter(n=>names.has(n));
+  kiSel.kpis=new Set(sel);
+  kiSel.ber=bereichKeyFrom(spec&&spec.bereich);
+  const dims=["Periode","Organisation","Konto","GuV-Position","Artikel"]; kiSel.dim=dims.includes(spec&&spec.dimension)?spec.dimension:"Periode";
+  if(kiSel.dim==="Artikel"){kiSel.artHier=((DIM_HIER.DimArtikel||[])[0]||{}).id||"";const lv=rptLevels();kiSel.artLevel=lv.includes(spec&&spec.artikelEbene)?spec.artikelEbene:lv[0]; kiSel.artNode="";}
+  const zs=["Letzter Monat","Letztes Quartal","Laufendes Jahr","Letzte 12 Monate"]; kiSel.zeit=zs.includes(spec&&spec.zeitraum)?spec.zeitraum:"Letztes Quartal";
+  if(!kiSel.kpis.size) localParse(text);
+}
+function rosaLoading(){
+  document.getElementById("ki").innerHTML=`<span class="x" data-kiclose="1">✕</span>
+    <div class="th"><div class="step-no">🤖 ${ROSE_AI}</div><h3>${ROSE_AI} baut deinen Bericht …</h3></div>
+    <div class="tb"><div class="rosa-think"><span class="spin"></span> Anfrage wird verstanden und auf die Kennzahlen abgebildet …</div></div>
+    <div class="tf"><span class="skel">einen Moment</span><span class="tbtn" data-kiclose="1">Abbrechen</span></div>`;
+}
+async function rosaBuild(text){
+  if(!text||!text.trim())return;
+  rosaLoading();
+  const katalog=K.map(k=>`${k[0]} | ${BEREICH[k[1]][0]} | ${k[5]}`).join("\n");
+  const prompt=`Du bist James, Berichtsassistent für Controlling bei ROSE Bikes.\n`+
+    `Kennzahlen-Katalog (Name | Bereich | Einheit):\n${katalog}\n\n`+
+    `Baue aus dieser Anfrage eine Berichts-Spezifikation.\nAnfrage: "${text}"\n\n`+
+    `Antworte AUSSCHLIESSLICH mit JSON, ohne Erklärung und ohne Code-Fences:\n`+
+    `{"kennzahlen":["exakte Namen aus dem Katalog"],"bereich":"Bereichsname oder leer","dimension":"Periode|Organisation|Konto|GuV-Position|Artikel","artikelEbene":"nur bei dimension=Artikel: Warenbereich|Produktobergruppe|Produktgruppe|Modell|Produktnummer|Variante|Artikel","zeitraum":"Letzter Monat|Letztes Quartal|Laufendes Jahr|Letzte 12 Monate","hinweis":"1-2 Sätze: was der Bericht zeigt und worauf zu achten ist"}\n`+
+    `Nimm nur Kennzahlen, die wörtlich im Katalog stehen.`;
+  let spec=null;
+  try{
+    const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1000,messages:[{role:"user",content:prompt}]})});
+    const data=await r.json();
+    let txt=(data.content||[]).filter(x=>x.type==="text").map(x=>x.text).join("\n").replace(/```json|```/g,"").trim();
+    try{spec=JSON.parse(txt);}catch(_){const m=txt.match(/\{[\s\S]*\}/);if(m)spec=JSON.parse(m[0]);}
+  }catch(e){spec=null;}
+  if(spec){applySpec(spec,text); rosaHinweis=spec.hinweis||"";}
+  else {localParse(text); rosaHinweis="Offline-Modus: lokale Erkennung — die James-KI ist hier nicht erreichbar (funktioniert in der Claude-Umgebung).";}
+  kiData=null; kiEvalDone=false; kiStep=4; renderKi();
+}
+function genKiData(sel,cols){return {cols, rows:sel.map(nm=>({nm, vals:cols.map(()=> (Math.random()*900+100|0))}))};}
+async function rosaAnalyse(){
+  kiEvalDone=true;
+  const el=document.getElementById("kiEval"); if(!el||!kiData||!kiData.rows.length)return;
+  el.innerHTML=`<div class="rosa-think"><span class="spin"></span> ${ROSE_AI} bewertet das Ergebnis …</div>`;
+  const rich=nm=>{const dd=DETAIL[nm]; return dd&&dd.richtung?dd.richtung:"unbekannt";};
+  const unit=nm=>{const k=byName(nm); return k?k[5]:"";};
+  const daten=kiData.rows.map(r=>`${r.nm}: ${r.vals.join(", ")} ${unit(r.nm)} (gut wenn: ${rich(r.nm)})`).join("\n");
+  const prompt=`Du bist James, Controlling-Analyst bei ROSE Bikes. Bewerte dieses Berichtsergebnis (Zeitraum ${kiSel.zeit}, Aufschlüsselung nach ${kiSel.dim}).\nDaten:\n${daten}\n\nGib eine knappe Analyse:\n- je Kennzahl eine kurze Einschätzung (gut oder kritisch + warum, beachte die Richtung)\n- ein Gesamtfazit\n- eine konkrete Handlungsempfehlung\nMaximal 120 Wörter, klare Stichpunkte mit "•". Die Zahlen sind Demowerte.`;
+  try{
+    const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1000,messages:[{role:"user",content:prompt}]})});
+    const data=await r.json();
+    const txt=(data.content||[]).filter(x=>x.type==="text").map(x=>x.text).join("\n").trim();
+    el.innerHTML=`<div class="ki-eval-h">🤖 ${ROSE_AI}s Analyse &amp; Bewertung</div><div class="ki-eval-b">${txt?esc(txt).replace(/\n/g,"<br>"):"(keine Antwort)"}</div>`;
+  }catch(e){
+    el.innerHTML=`<div class="ki-eval-h">🤖 ${ROSE_AI}s Analyse</div><div class="ki-eval-b skel">Die Bewertung läuft über die James-KI und ist nur in der Claude-Umgebung verfügbar (hier offline). Sobald angebunden, bewertet James das Ergebnis automatisch.</div>`;
+  }
+}
+function kiTable(){return document.querySelector(".ki-tbl");}
+function flashKi(msg){const f=document.getElementById("kiFlash"); if(f)f.textContent=msg;}
+function kiCsv(){const t=kiTable(); if(!t)return;
+  const csv=[...t.querySelectorAll("tr")].map(tr=>[...tr.children].map(td=>'"'+td.textContent.replace(/"/g,'""')+'"').join(";")).join("\n");
+  const a=document.createElement("a"); a.href="data:text/csv;charset=utf-8,"+encodeURIComponent("﻿"+csv); a.download="rosa_bericht.csv"; document.body.appendChild(a); a.click(); a.remove(); flashKi("CSV heruntergeladen ✓");}
+function kiCopy(){const t=kiTable(); if(!t)return;
+  const txt=[...t.querySelectorAll("tr")].map(tr=>[...tr.children].map(td=>td.textContent).join("\t")).join("\n");
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(()=>flashKi("In Zwischenablage kopiert ✓")).catch(()=>flashKi("Kopieren nicht möglich — bitte manuell markieren"));}
+  else flashKi("Kopieren in dieser Umgebung nicht verfügbar");}
+function closeK(){document.getElementById("drawer").classList.remove("open");document.getElementById("overlay").classList.remove("open");}
+document.getElementById("overlay").onclick=closeK;
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeK();});
+
+/* ---------- Bereiche / OnePager ---------- */
+let curBer=Object.keys(BEREICH)[0];
+function renderBereiche(){
+  const bp=document.getElementById("berpick");
+  bp.innerHTML=Object.entries(BEREICH).map(([k,v])=>`<span class="chip ${k===curBer?'on':''}" data-b="${k}">${v[0]}</span>`).join("")+
+    `<button class="printbtn" data-print="1" style="margin-left:auto">Drucken</button>`;
+  renderOne();
+}
+function renderOne(){
+  const[label,col,owner]=BEREICH[curBer];
+  const rows=K.filter(k=>k[1]===curBer);
+  const issues=DQ.filter(d=>d.b===curBer);
+  const offen=issues.filter(i=>i.wf==="offen"||i.wf==="arbeit").length;
+  const trs=rows.map(k=>{const d=dqForKpi(k[0]);const st=d?d.st:"ok";
+    return `<tr data-open="${k[0]}" style="cursor:pointer"><td><span class="st ${st}"></span>${k[0]}</td><td><span style="font-family:var(--mono);font-size:12px">${k[2]}</span></td><td class="r">${k[5]}</td></tr>`;}).join("");
+  document.getElementById("onepager").innerHTML=`<div class="onep">
+    <div class="oh"><div><h2>${label}</h2><div class="own">Verantwortlich (Hut auf): <b>${owner}</b></div></div>
+      <div class="own">${rows.length} Kennzahlen · offene Qualitätspunkte: <b style="color:${offen?'var(--err)':'var(--ok)'}">${offen}</b></div></div>
+    <table><thead><tr><th>Kennzahl</th><th>Formel</th><th style="text-align:right">Einheit</th></tr></thead><tbody>${trs}</tbody></table>
+    <div class="dqline">Zeile anklicken öffnet den Steckbrief. Status-Punkte spiegeln den Qualitätsstand (Demo); Fehler im Reiter „Qualität".</div>
+  </div>`;
+}
+
+/* ---------- Qualität: Roll-up + Board ---------- */
+function renderQualitaet(){
+  const total=DQ.length;
+  const cnt=w=>DQ.filter(d=>d.wf===w).length;
+  const erl=cnt("erledigt"),bea=cnt("beantwortet"),arb=cnt("arbeit"),off=cnt("offen");
+  const bearb=total?Math.round(100*(erl+bea)/total):0;
+  const pct=n=>total?100*n/total:0;
+  document.getElementById("rollup").innerHTML=`<div class="rollup">
+    <h3>Gesamt-Status · Bearbeitungsgrad ${bearb}% <span style="color:var(--mut);font-weight:400">(${erl+bea} von ${total} beantwortet/erledigt)</span></h3>
+    <div class="bar"><i class="b-err" style="width:${pct(off)}%"></i><i class="b-arb" style="width:${pct(arb)}%"></i><i class="b-bea" style="width:${pct(bea)}%"></i><i class="b-erl" style="width:${pct(erl)}%"></i></div>
+    <div class="legend"><span><i style="background:var(--err)"></i>offen ${off}</span><span><i style="background:var(--warn)"></i>in Arbeit ${arb}</span><span><i style="background:#85b7eb"></i>beantwortet ${bea}</span><span><i style="background:var(--ok)"></i>erledigt ${erl}</span></div>
+  </div>`;
+  const board=document.getElementById("qboard");
+  const bers=Object.keys(BEREICH).filter(b=>DQ.some(d=>d.b===b));
+  board.innerHTML=bers.map(b=>{
+    const[label,col,owner]=BEREICH[b];const items=DQ.filter(d=>d.b===b);
+    const t=items.length,e2=items.filter(i=>i.wf==="erledigt"||i.wf==="beantwortet").length;const bg=t?Math.round(100*e2/t):0;
+    const issues=items.map(i=>`<div class="issue"><div><div class="ik"><span class="st ${i.st}"></span>${i.k}</div><div class="ic">${esc(i.c)} · seit ${i.since}</div></div><span class="wf ${i.wf}">${WFLABEL[i.wf]}</span></div>`).join("");
+    return `<div class="qcard"><div class="qh">
+        <div><span class="l" style="border-left:3px solid ${col};padding-left:8px">${label}</span> <span class="own">· Hut auf: ${owner}</span></div>
+        <div class="prog">Bearbeitungsgrad ${bg}%<div class="bar" style="width:120px"><i class="b-erl" style="width:${bg}%"></i></div></div>
+      </div>${issues}</div>`;
+  }).join("");
+}
+
+/* ---------- Prozesskette ---------- */
+const STATIONS=[
+ {n:"Angebot",bel:"Angebot",kpis:["Angebotsvolumen","Angebotserfolgsquote (Hit Rate)","Angebotsdurchlaufzeit"]},
+ {n:"Auftrag",bel:"Auftrag",kpis:["Auftragseingang","Auftragsbestand","Book-to-Bill","Auftragsdurchlaufzeit","OTIF (On Time In Full)"]},
+ {n:"Bestellung",bel:"Bestellung",kpis:["Einkaufsvolumen","Bestellzykluszeit","Liefermengentreue"]},
+ {n:"Wareneingang",bel:"Wareneingang",kpis:["Wareneingangszeit","WE-Qualitätsquote","Liefertreue Lieferant"]},
+ {n:"Einlagerung",bel:"Einlagerung",kpis:["Einlagerzeit"]},
+ {n:"Lager",bel:"Bestand",kpis:["Lagerumschlag","Lagerreichweite","Bestandswert","Lagerhüterquote"]},
+ {n:"Umlagerung",bel:"Umlagerung",kpis:["Umlagerquote","Inventurdifferenz"]},
+ {n:"Auslagerung",bel:"Auslagerung",kpis:["Kommissionierzeit","Pickfehlerquote","Lieferbereitschaftsgrad"]},
+ {n:"Lieferung",bel:"Lieferung",kpis:["Termintreue Produktion","Teillieferquote","Rückstandsquote (Backorder)"]},
+ {n:"Rechnung",bel:"Rechnung",kpis:["Fakturierungszeit","Rechnungsfehlerquote","Nettoumsatz"]},
+ {n:"Zahlung",bel:"Zahlung",kpis:["DSO (Forderungslaufzeit)","Überfälligkeitsquote","Skontoabzug Kunden"]},
+ {n:"Übergreifend",bel:"Belegfluss",kpis:["Order-to-Cash-Zeit","Procure-to-Pay-Zeit","Cash Conversion Cycle","Perfect Order Rate","Belegfluss-Vollständigkeit","Durchlaufzeit gesamt"]}
+];
+const stByName=Object.fromEntries(STATIONS.map(s=>[s.n,s]));
+const SICHTEN={
+ gesamt:{label:"Gesamt (GF)",phasen:[
+   {t:"Verkauf anbahnen",st:["Angebot","Auftrag"]},
+   {t:"Beschaffen & einlagern",st:["Bestellung","Wareneingang","Einlagerung"]},
+   {t:"Lager bewegen",st:["Lager","Umlagerung","Auslagerung"]},
+   {t:"Liefern & kassieren",st:["Lieferung","Rechnung","Zahlung"]},
+   {t:"Übergreifend",st:["Übergreifend"]}]},
+ einkauf:{label:"Einkauf",phasen:[{t:"Beschaffung bis Lager",st:["Bestellung","Wareneingang","Einlagerung"]}]},
+ lager:{label:"Lager / Logistik",phasen:[{t:"Lagerprozess",st:["Einlagerung","Lager","Umlagerung","Auslagerung"]}]},
+ vertrieb:{label:"Vertrieb",phasen:[{t:"Auftragsabwicklung",st:["Angebot","Auftrag","Lieferung"]}]},
+ finanz:{label:"Finanz / Controlling",phasen:[{t:"Fakturieren & kassieren",st:["Rechnung","Zahlung","Übergreifend"]}]}
+};
+let curSicht="gesamt", pkDetail=true;
+function renderProzess(){
+  document.getElementById("procnote").textContent="Wähle die Sicht — jede Abteilung schaut anders auf die Kette. Von oben nach unten lesen; Kennzahlen sind anklickbar.";
+  const wizSicht=Object.entries(SICHTEN).map(([k,v])=>`<span class="chip ${k===curSicht?'on':''}" data-sicht="${k}">${v.label}</span>`).join("");
+  const wizDetail=`<span class="chip ${pkDetail?'on':''}" data-detail="1">Mit Kennzahlen</span><span class="chip ${!pkDetail?'on':''}" data-detail="0">Nur Stationen</span>`;
+  const sicht=SICHTEN[curSicht];
+  const flat=[];sicht.phasen.forEach(p=>p.st.forEach(n=>flat.push(n)));
+  let counter=0;
+  const phaseHtml=sicht.phasen.map(p=>{
+    const steps=p.st.map(n=>{
+      const s=stByName[n];if(!s)return"";
+      counter++;const last=counter===flat.length;
+      const kpis=pkDetail?`<div class="pk-kpis">${s.kpis.map(k=>byName(k)?`<span class="rel" data-open="${k}">${k}</span>`:`<span class="rel" style="cursor:default;opacity:.5">${k}</span>`).join("")}</div>`:"";
+      return `<div class="pk-step${last?' last':''}"><div class="pk-num">${counter}</div>
+        <div class="pk-card"><div class="h"><b>${s.n}</b><span class="s" title="Belegart">${s.bel}</span></div>${kpis}</div></div>`;
+    }).join("");
+    return `<div class="pk-phase"><h3>${p.t}</h3>${steps}</div>`;
+  }).join("");
+  document.getElementById("procflow").innerHTML=
+    `<div class="pk-wiz"><span class="lbl2">Sicht:</span>${wizSicht}</div>`+
+    `<div class="pk-wiz"><span class="lbl2">Detail:</span>${wizDetail}</div>${phaseHtml}`;
+  const pf=document.getElementById("procflow");
+  pf.onclick=e=>{const c=e.target.closest("[data-sicht],[data-detail]");if(!c)return;
+    if(c.dataset.sicht){curSicht=c.dataset.sicht;}
+    else if(c.dataset.detail){pkDetail=c.dataset.detail==="1";}
+    renderProzess();};
+}
+
+document.addEventListener("click",function(e){
+  var nav=e.target.closest("[data-v]"); if(nav){switchView(nav.dataset.v);return;}
+  if(e.target.closest("[data-tour]")){openTour();return;}
+  var ts=e.target.closest("[data-tstep]"); if(ts){stepTour(ts.dataset.tstep);return;}
+  if(e.target.closest("[data-tourclose]")){closeTour();return;}
+  if(e.target.closest("[data-introclose]")){var i=document.getElementById("intro");if(i)i.style.display="none";return;}
+  if(e.target.closest("[data-filtertoggle]")){document.getElementById("filterPanel").classList.toggle("open");return;}
+  var qb=e.target.closest('#quickChips [data-b],#berChips [data-b]'); if(qb){setBer(qb.dataset.b);return;}
+  var ab=e.target.closest('#abtChips [data-a]'); if(ab){setAbt(ab.dataset.a);return;}
+  var sb=e.target.closest('#srcChips [data-s]'); if(sb){toggleSrc(sb.dataset.s);return;}
+  var pb=e.target.closest('#berpick [data-b]'); if(pb){pickBer(pb);return;}
+  var dn=e.target.closest("[data-dens]"); if(dn){setDens(dn.dataset.dens);return;}
+  if(e.target.closest("[data-calcdemo]")){calcDemo();return;}
+  if(e.target.closest("[data-ki]")){openKiWizard();return;}
+  if(e.target.closest("[data-kiparse]")){var ta=document.getElementById("kiText");rosaBuild(ta?ta.value:"");return;}
+  if(e.target.closest("[data-kicsv]")){kiCsv();return;}
+  if(e.target.closest("[data-kicopy]")){kiCopy();return;}
+  if(e.target.closest("[data-kieval]")){kiEvalDone=false;rosaAnalyse();return;}
+  var kst=e.target.closest("[data-kistep]"); if(kst){stepKi(kst.dataset.kistep);return;}
+  var kk=e.target.closest("[data-kikpi]"); if(kk){toggleKpiSel(kk.dataset.kikpi);return;}
+  var kcu=e.target.closest("[data-kicube]"); if(kcu){kiSel.cube=kcu.getAttribute("data-kicube");const _cb=CUBES[kiSel.cube],_al=new Set(_cb?_cb.measures:[]);kiSel.kpis=new Set([...kiSel.kpis].filter(x=>_al.has(x)));renderKi();return;}
+  var kdm=e.target.closest("[data-kidim]"); if(kdm){kiSel.dim=kdm.dataset.kidim;renderKi();return;}
+  var syn=e.target.closest("[data-sync]"); if(syn){syncSchema();return;}
+  var cco=e.target.closest("[data-colconfirm]"); if(cco){confirmCol(+cco.getAttribute("data-colconfirm"));return;}
+  var cre=e.target.closest("[data-colreject]"); if(cre){rejectCol(+cre.getAttribute("data-colreject"));return;}
+  var vts=e.target.closest("[data-vis]"); if(vts){toggleVis(+vts.getAttribute("data-vis"));return;}
+  var dnw=e.target.closest("[data-dimnew]"); if(dnw){addingDim=true;renderDesigner();var di=document.getElementById("newDimInput");if(di)di.focus();return;}
+  var dcr=e.target.closest("[data-dimcreate]"); if(dcr){createDim();return;}
+  var dca=e.target.closest("[data-dimcancel]"); if(dca){addingDim=false;renderDesigner();return;}
+  var ddl=e.target.closest("[data-dimdel]"); if(ddl){delDim();return;}
+  var cnw=e.target.closest("[data-colnew]"); if(cnw){addingCol=true;renderDesigner();var ci=document.getElementById("newColName");if(ci)ci.focus();return;}
+  var cad=e.target.closest("[data-coladd]"); if(cad){addCol();return;}
+  var cac=e.target.closest("[data-coladdcancel]"); if(cac){addingCol=false;renderDesigner();return;}
+  var jfc=e.target.closest("[data-joinfact]"); if(jfc){toggleJoinFact(jfc.getAttribute("data-joinfact"));return;}
+  var sky=e.target.closest("[data-setkey]"); if(sky){setKey(+sky.getAttribute("data-setkey"));return;}
+  var cdl=e.target.closest("[data-coldel]"); if(cdl){delCol(+cdl.getAttribute("data-coldel"));return;}
+  var rtg=e.target.closest("[data-rtoggle]"); if(rtg){var rp=rtg.getAttribute("data-rtoggle").split(":");toggleRight(rp[0],rp[1],rp[2]);return;}
+  var amg=e.target.closest("[data-admingroup]"); if(amg){adminGroup=amg.getAttribute("data-admingroup");renderAdmin();return;}
+  var ctb=e.target.closest("[data-cubetab]"); if(ctb){cubeTab=ctb.getAttribute("data-cubetab");renderCubeModule();return;}
+  var cpk=e.target.closest("[data-cubepick]"); if(cpk){curCube=cpk.getAttribute("data-cubepick");addingCube=false;renderCubes();return;}
+  var cnw2=e.target.closest("[data-cubenew]"); if(cnw2){addingCube=true;renderCubes();var ci2=document.getElementById("cubeNameInput");if(ci2)ci2.focus();return;}
+  var ccr=e.target.closest("[data-cubecreate]"); if(ccr){createCube();return;}
+  var cca=e.target.closest("[data-cubecancel]"); if(cca){addingCube=false;renderCubes();return;}
+  var cdl2=e.target.closest("[data-cubedel]"); if(cdl2){delCube();return;}
+  var mar=e.target.closest("[data-measadd]"); if(mar){addMeas(mar.getAttribute("data-measadd"));return;}
+  var mrm=e.target.closest("[data-measrm]"); if(mrm){rmMeas(mrm.getAttribute("data-measrm"));return;}
+  var cda=e.target.closest("[data-cubedimadd]"); if(cda){addCubeDim(cda.getAttribute("data-cubedimadd"));return;}
+  var cdr=e.target.closest("[data-cubedimrm]"); if(cdr){rmCubeDim(cdr.getAttribute("data-cubedimrm"));return;}
+  var dsn=e.target.closest("[data-dsnew]"); if(dsn){addingDs=true;renderDatasources();var dni=document.getElementById("dsName");if(dni)dni.focus();return;}
+  var dscr=e.target.closest("[data-dscreate]"); if(dscr){createDsrc();return;}
+  var dsca=e.target.closest("[data-dscancel]"); if(dsca){addingDs=false;renderDatasources();return;}
+  var dsdl=e.target.closest("[data-dsdel]"); if(dsdl){delDsrc(dsdl.getAttribute("data-dsdel"));return;}
+  var dsdf=e.target.closest("[data-dsdefault]"); if(dsdf){setDefaultDsrc(dsdf.getAttribute("data-dsdefault"));return;}
+  var hia=e.target.closest("[data-hieradd]"); if(hia){addHier();return;}
+  var hde=e.target.closest("[data-hierdel]"); if(hde){delHier(hde.getAttribute("data-hierdel"));return;}
+  var luu=e.target.closest("[data-lvlup]"); if(luu){var pu=luu.getAttribute("data-lvlup").split(":");moveLevel(pu[0],+pu[1],-1);return;}
+  var ldd=e.target.closest("[data-lvldown]"); if(ldd){var pd=ldd.getAttribute("data-lvldown").split(":");moveLevel(pd[0],+pd[1],1);return;}
+  var lrr=e.target.closest("[data-lvlrm]"); if(lrr){var pr=lrr.getAttribute("data-lvlrm").split(":");rmLevel(pr[0],+pr[1]);return;}
+  var pad=e.target.closest("[data-padd]"); if(pad){addLevel(curHier,pad.getAttribute("data-padd"));return;}
+  var hrn=e.target.closest("[data-hierrename]"); if(hrn){startRename(hrn.getAttribute("data-hierrename"));return;}
+  var hpk=e.target.closest("[data-hpick]"); if(hpk){curHier=hpk.getAttribute("data-hpick");renderDesigner();return;}  var alv=e.target.closest("[data-artlevel]"); if(alv){setArtLevel(alv.getAttribute("data-artlevel"));return;}
+  var ahi=e.target.closest("[data-arthier]"); if(ahi){setArtHier(ahi.getAttribute("data-arthier"));return;}
+  var and=e.target.closest("[data-artnode]"); if(and){setArtNode(and.getAttribute("data-artnode"));return;}
+  var kzt=e.target.closest("[data-kizeit]"); if(kzt){kiSel.zeit=kzt.dataset.kizeit;renderKi();return;}
+  if(e.target.closest("[data-kiclose]")){closeKi();return;}
+  var lnb=e.target.closest("[data-lineage-big]"); if(lnb){openLineage(lnb.getAttribute("data-lineage-big"));return;}
+  var lnx=e.target.closest("[data-lineage]"); if(lnx){openLineage(lnx.getAttribute("data-lineage"));return;}
+  if(e.target.closest("[data-lnclose]")){closeLineage();return;}
+  var fv=e.target.closest("[data-fav]"); if(fv){toggleFav(fv.getAttribute("data-fav"));return;}
+  var o=e.target.closest("[data-open]"); if(o){openK(o.getAttribute("data-open"));return;}
+  if(e.target.closest("[data-close]")){closeK();return;}
+  if(e.target.closest("[data-print]")){window.print();return;}
+});
+/* init */
+document.addEventListener("input",e=>{if(e.target.classList&&e.target.classList.contains("ci"))recalc();if(e.target.id==="kiSearch")kiSearchUpdate(e.target.value);if(e.target.id==="cubeMeasQ"){const r=document.getElementById("measRes");if(r)r.innerHTML=cubeMeasResults(e.target.value);}});
+document.addEventListener("change",e=>{if(e.target.id==="role")setRole(e.target.value);if(e.target.id==="kiBer"){kiSel.ber=e.target.value;renderKi();}if(e.target.id==="dimSel"){curDim=e.target.value;curHier=((DIM_HIER[curDim]||[])[0]||{}).id||null;addingDim=false;addingCol=false;renderDesigner();}if(e.target.id==="hnameInput"){saveRename(e.target.getAttribute("data-hid"),e.target.value);}if(e.target.id==="cubeFact"){setCubeFact(e.target.value);}if(e.target.id==="cubeSrc"){setCubeSrc(e.target.value);}});
+document.addEventListener("dragstart",function(e){var el=e.target.closest("[data-drag]");if(!el)return;dragSrc=el.getAttribute("data-drag");try{e.dataTransfer.effectAllowed="move";}catch(_){}});
+document.addEventListener("dragover",function(e){if(e.target.closest("[data-drophere],[data-drop]"))e.preventDefault();});
+document.addEventListener("drop",function(e){if(!dragSrc)return;if(!e.target.closest("[data-drophere],[data-drop]"))return;e.preventDefault();if(!canModel()){dragSrc=null;return;}
+  var lvlT=e.target.closest("[data-drophere]"), zoneT=e.target.closest("[data-drop]");
+  if(dragSrc.indexOf("pool:")===0){var col=dragSrc.slice(5);
+    if(lvlT){var a=lvlT.getAttribute("data-drophere").split(":"),h=findHier(a[0]);if(h&&!h.levels.includes(col))h.levels.splice(+a[1],0,col);}
+    else if(zoneT){var h2=findHier(zoneT.getAttribute("data-drop"));if(h2&&!h2.levels.includes(col))h2.levels.push(col);}
+  }else if(dragSrc.indexOf("lvl:")===0){var sp=dragSrc.split(":"),hs=findHier(sp[1]);
+    if(hs&&lvlT){var b=lvlT.getAttribute("data-drophere").split(":");if(b[0]===sp[1]){var ci=+sp[2],cn=hs.levels[ci];hs.levels.splice(ci,1);var pos=+b[1];if(pos>ci)pos--;hs.levels.splice(pos,0,cn);}}}
+  dragSrc=null;renderDesigner();
+});
+document.getElementById("q").addEventListener("input",e=>{fQ=e.target.value;renderCat();});
+buildChips();renderCat();renderHome();updateDimBadge();applyModuleRights();
+</script>
+</body>
+</html>
