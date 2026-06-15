@@ -10,8 +10,9 @@
 - `src/App.jsx` – die komplette VereinsApp (React + Vite).
 - `site/` – Landingpage-Hub **bolwerk24.de** (statisch). App-Katalog in
   `site/assets/js/apps.js`.
-- `vorsorge/` – eigenständige Landingpage für **vorsorge.bolwerk24.de**
-  (statisch, teilt das Design-System mit `site/`).
+- **Vorsorge** (vorsorge.bolwerk24.de) liegt in einem **eigenen** Repo
+  `Bolwerk83/Vorsorge` – nicht mehr in diesem Repo. Hier nur der Katalog-Link
+  im Hub (`site/assets/js/apps.js`).
 
 ## Arbeitsregeln (aus docs/backlog.md)
 - Vor jedem Commit: `npm run build` UND `npm test` grün.
