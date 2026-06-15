@@ -13,8 +13,9 @@
      color     Akzentfarbe der App (Hex) — bringt Farbe in die neutrale Seite
      status    "live"  -> "Öffnen"-Button   |   "soon" -> "Vormerken"
      url       Live-URL der App (nur bei status "live")
-     rating    optionale Bewertung (Zahl) + reviews (Anzahl) für Social Proof
      featured  true => erscheint im großen Spotlight-Bereich
+   Bewertungen (Sterne + Kommentare) kommen aus Supabase und werden von
+   echten Nutzern erzeugt – siehe SuperAdmin. Keine Fake-Werte mehr hier.
    ===================================================================== */
 
 const CATEGORIES = [
@@ -37,8 +38,6 @@ const APPS = [
     color: "#16a34a",
     status: "live",
     url: "https://verein.bolwerk24.de",
-    rating: 4.9,
-    reviews: 128,
     featured: true,
     features: [
       "Termine & automatische Erinnerungen",
@@ -57,8 +56,6 @@ const APPS = [
     tags: ["Dokumente", "Notfall", "Sicherheit"],
     color: "#0ea5e9",
     status: "soon",
-    rating: null,
-    reviews: 0,
   },
   {
     id: "klartext",
@@ -70,8 +67,6 @@ const APPS = [
     tags: ["Übersetzen", "Vorlagen", "Fristen"],
     color: "#6366f1",
     status: "soon",
-    rating: null,
-    reviews: 0,
   },
   {
     id: "kochbuch",
@@ -83,8 +78,6 @@ const APPS = [
     tags: ["Rezepte", "Wochenplan", "Einkaufsliste"],
     color: "#f97316",
     status: "soon",
-    rating: null,
-    reviews: 0,
   },
 ];
 

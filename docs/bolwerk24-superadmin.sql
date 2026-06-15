@@ -40,6 +40,18 @@ create table if not exists public.site_config (
   updated_at  timestamptz not null default now()
 );
 
+-- 3b) Bewertungen (Sterne + Kommentare von Besuchern) --------------------
+create table if not exists public.site_reviews (
+  id          bigint generated always as identity primary key,
+  created_at  timestamptz not null default now(),
+  app_id      text not null,
+  rating      int  check (rating is null or rating between 1 and 5),
+  name        text,
+  comment     text,
+  session_id  text
+);
+create index if not exists site_reviews_app_idx on public.site_reviews (app_id);
+
 -- 4) Admin-Allowlist ------------------------------------------------------
 create table if not exists public.site_admins (
   email       text primary key,
@@ -118,11 +130,33 @@ begin
 end;
 $$;
 
+-- Öffentliche Bewertungs-Zusammenfassung (Durchschnitt + Anzahl je App) ---
+create or replace function public.site_review_summary()
+returns json
+language sql
+security definer
+set search_path = public
+as $$
+  select coalesce(json_agg(row_to_json(t)), '[]'::json) from (
+    select app_id,
+           round(avg(rating)::numeric, 1) as avg,
+           count(*) as count
+    from site_reviews
+    group by app_id
+  ) t;
+$$;
+
+-- Standard-Funktionsschalter (Sterne/Kommentare/Aufbau-Hinweis) -----------
+insert into public.site_config (key, value)
+values ('features', '{"ratings": true, "comments": true, "construction": true}'::jsonb)
+  on conflict (key) do nothing;
+
 -- Row Level Security ------------------------------------------------------
-alter table public.site_events enable row level security;
-alter table public.site_leads  enable row level security;
-alter table public.site_config enable row level security;
-alter table public.site_admins enable row level security;
+alter table public.site_events  enable row level security;
+alter table public.site_leads   enable row level security;
+alter table public.site_config  enable row level security;
+alter table public.site_admins  enable row level security;
+alter table public.site_reviews enable row level security;
 
 -- Tracking: jeder darf EINFÜGEN, nur Admin darf LESEN
 drop policy if exists site_events_insert on public.site_events;
@@ -151,6 +185,17 @@ drop policy if exists site_config_write on public.site_config;
 create policy site_config_write on public.site_config
   for all to authenticated using (public.is_site_admin()) with check (public.is_site_admin());
 
+-- Bewertungen: jeder darf LESEN & EINFÜGEN (gültige Sterne), nur Admin LÖSCHT
+drop policy if exists site_reviews_select on public.site_reviews;
+create policy site_reviews_select on public.site_reviews
+  for select to anon, authenticated using (true);
+drop policy if exists site_reviews_insert on public.site_reviews;
+create policy site_reviews_insert on public.site_reviews
+  for insert to anon, authenticated with check (rating is null or rating between 1 and 5);
+drop policy if exists site_reviews_delete on public.site_reviews;
+create policy site_reviews_delete on public.site_reviews
+  for delete to authenticated using (public.is_site_admin());
+
 -- Admin-Tabelle: nur Admins
 drop policy if exists site_admins_all on public.site_admins;
 create policy site_admins_all on public.site_admins
@@ -165,5 +210,8 @@ grant select, delete on public.site_leads to authenticated;
 grant select on public.site_config to anon, authenticated;
 grant insert, update, delete on public.site_config to authenticated;
 grant select, insert, update, delete on public.site_admins to authenticated;
-grant execute on function public.is_site_admin()    to anon, authenticated;
-grant execute on function public.site_stats(int)    to authenticated;
+grant select, insert on public.site_reviews to anon, authenticated;
+grant delete on public.site_reviews to authenticated;
+grant execute on function public.is_site_admin()        to anon, authenticated;
+grant execute on function public.site_stats(int)        to authenticated;
+grant execute on function public.site_review_summary()  to anon, authenticated;

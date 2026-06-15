@@ -79,6 +79,7 @@
       if (tab === "leads") loadLeads();
       if (tab === "affiliate") loadAffiliate();
       if (tab === "catalog") loadCatalog();
+      if (tab === "reviews") loadReviewsAdmin();
       if (tab === "stats") loadStats(currentDays);
     });
   }
@@ -301,6 +302,68 @@
     });
   }
 
+  /* ---------------- Bewertungen & Funktionsschalter ---------------- */
+  async function loadReviewsAdmin() {
+    const client = sb(); if (!client) return;
+    // 1) Funktionsschalter laden
+    let feat = { ratings: true, comments: true, construction: true };
+    try {
+      const { data } = await client.from("site_config").select("value").eq("key", "features").maybeSingle();
+      if (data && data.value) feat = Object.assign(feat, data.value);
+    } catch {}
+    $("#feat-ratings").checked = feat.ratings !== false;
+    $("#feat-comments").checked = feat.comments !== false;
+    $("#feat-construction").checked = feat.construction !== false;
+
+    // 2) Bewertungen laden
+    const wrap = $("#reviews-table");
+    wrap.innerHTML = "Lade …";
+    let rows = [];
+    try {
+      const { data, error } = await client.from("site_reviews")
+        .select("*").order("created_at", { ascending: false }).limit(500);
+      if (error) throw error;
+      rows = data || [];
+    } catch (err) { wrap.innerHTML = '<p class="empty">Fehler: ' + esc(err.message || err) + "</p>"; return; }
+    if (!rows.length) { wrap.innerHTML = '<p class="empty">Noch keine Bewertungen.</p>'; return; }
+    wrap.innerHTML = `
+      <table class="tbl">
+        <thead><tr><th>Datum</th><th>App</th><th>Sterne</th><th>Name</th><th>Kommentar</th><th></th></tr></thead>
+        <tbody>
+          ${rows.map((r) => `
+            <tr>
+              <td>${new Date(r.created_at).toLocaleDateString("de-DE")}</td>
+              <td>${esc(appName(r.app_id))}</td>
+              <td class="review-stars">${r.rating ? "★".repeat(r.rating) + "☆".repeat(5 - r.rating) : "—"}</td>
+              <td>${esc(r.name || "—")}</td>
+              <td>${esc(r.comment || "—")}</td>
+              <td><button class="lnk-del" data-id="${r.id}" title="Löschen">✕</button></td>
+            </tr>`).join("")}
+        </tbody>
+      </table>`;
+    $$(".lnk-del", wrap).forEach((b) => b.addEventListener("click", async () => {
+      if (!confirm("Diese Bewertung löschen?")) return;
+      await sb().from("site_reviews").delete().eq("id", b.dataset.id);
+      loadReviewsAdmin();
+    }));
+  }
+  function initReviewsAdmin() {
+    $("#feat-save").addEventListener("click", async () => {
+      const client = sb(); const msg = $("#feat-msg"); msg.textContent = "Speichere …";
+      const value = {
+        ratings: $("#feat-ratings").checked,
+        comments: $("#feat-comments").checked,
+        construction: $("#feat-construction").checked,
+      };
+      try {
+        const { error } = await client.from("site_config").upsert({ key: "features", value, updated_at: new Date().toISOString() });
+        if (error) throw error;
+        msg.textContent = "✓ Gespeichert – auf der Startseite sofort aktiv";
+      } catch (err) { msg.textContent = "Fehler: " + (err.message || err); }
+      setTimeout(() => (msg.textContent = ""), 5000);
+    });
+  }
+
   /* ---------------- gemeinsame Editier-Bindung ---------------- */
   function bindEditCards(sel, arr) {
     $$(sel + " .edit-card").forEach((card) => {
@@ -318,7 +381,7 @@
 
   /* ---------------- Start ---------------- */
   document.addEventListener("DOMContentLoaded", async () => {
-    initLogin(); initTabs(); initStatsRange(); initLeadsCsv(); initAffiliate(); initCatalog();
+    initLogin(); initTabs(); initStatsRange(); initLeadsCsv(); initAffiliate(); initCatalog(); initReviewsAdmin();
     // bereits eingeloggt?
     const client = sb();
     if (client) {

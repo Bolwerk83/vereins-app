@@ -9,6 +9,24 @@
   const $  = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
+  // Funktionsschalter (per SuperAdmin änderbar) + Bewertungs-Zusammenfassung
+  let FEATURES = { ratings: true, comments: true, construction: true };
+  let REVIEWS = {}; // app_id -> { avg, count }
+  let rateValue = 0; // aktuell im Modal gewählte Sterne
+
+  // Sterne-Block einer App-Karte (echte Daten statt Fake)
+  function ratingHtml(a) {
+    if (FEATURES.ratings === false) return "";
+    const s = REVIEWS[a.id];
+    const rateBtn = `<button class="rate-btn" data-rate="${a.id}">Bewerten</button>`;
+    if (s && s.count > 0 && s.avg != null) {
+      const full = Math.round(s.avg);
+      const word = s.count === 1 ? "Bewertung" : "Bewertungen";
+      return `<div class="app-rating"><span class="stars">${"★".repeat(full)}${"☆".repeat(5 - full)}</span> ${Number(s.avg).toFixed(1)} <span style="color:var(--text-3);font-weight:500">· ${s.count} ${word}</span>${rateBtn}</div>`;
+    }
+    return `<div class="app-rating"><span class="none">Noch keine Bewertungen</span>${rateBtn}</div>`;
+  }
+
   /* ---------- SVG-Icon-Helfer ---------- */
   const ICON = {
     arrow:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg>',
@@ -22,9 +40,7 @@
     const live = a.status === "live";
     const soft = hexToRgba(a.color, 0.12);
     const shadow = hexToRgba(a.color, 0.45);
-    const rating = a.rating
-      ? `<div class="app-rating"><span class="stars">${"★".repeat(Math.round(a.rating))}</span> ${a.rating.toFixed(1)} <span style="color:var(--text-3);font-weight:500">· ${a.reviews} Bewertungen</span></div>`
-      : `<div class="app-rating" style="color:var(--text-3)"><span class="stars" style="color:var(--text-3)">★★★★★</span> Demnächst bewertbar</div>`;
+    const rating = ratingHtml(a);
     const action = live
       ? `<a class="btn btn-primary" href="${a.url}" target="_blank" rel="noopener" data-app-open="${a.id}" style="background:${a.color};box-shadow:0 8px 22px -8px ${shadow}">Öffnen ${ICON.arrow}</a>`
       : `<button class="btn btn-soft notify-btn" data-app="${a.name}" data-app-id="${a.id}">Vormerken ${ICON.bell}</button>`;
@@ -327,6 +343,141 @@
     } catch { /* Fallback: APPS aus apps.js */ }
   }
 
+  /* ---------- Funktionsschalter (Sterne/Kommentare/Aufbau) laden ---------- */
+  async function loadSiteFeatures() {
+    const client = window.bwSupabase && window.bwSupabase();
+    if (!client) return;
+    try {
+      const { data } = await client.from("site_config").select("value").eq("key", "features").maybeSingle();
+      if (data && data.value && typeof data.value === "object") FEATURES = Object.assign(FEATURES, data.value);
+    } catch { /* Standardwerte behalten */ }
+  }
+  function applyConstructionBanner() {
+    const b = $("#construction-banner");
+    if (b && FEATURES.construction === false) b.style.display = "none";
+  }
+
+  /* ---------- Bewertungs-Übersicht (Sterne-Schnitt + Anzahl je App) ---------- */
+  async function loadReviewSummary() {
+    const client = window.bwSupabase && window.bwSupabase();
+    if (!client) return;
+    try {
+      const { data } = await client.rpc("site_review_summary");
+      (data || []).forEach((r) => { REVIEWS[r.app_id] = { avg: r.avg == null ? null : Number(r.avg), count: Number(r.count) }; });
+    } catch { /* keine Bewertungen */ }
+  }
+  function updateCardRating(appId) {
+    const a = APPS.find((x) => x.id === appId);
+    if (!a) return;
+    $$(`.app-card[data-app-id="${appId}"] .app-rating`).forEach((el) => { el.outerHTML = ratingHtml(a); });
+  }
+
+  /* ---------- Bewertungs-Dialog ---------- */
+  function ensureModal() {
+    let m = $("#bw-modal");
+    if (m) return m;
+    m = document.createElement("div");
+    m.className = "bw-modal"; m.id = "bw-modal";
+    m.innerHTML = `
+      <div class="bw-modal-overlay" data-close></div>
+      <div class="bw-modal-card">
+        <button class="bw-modal-close" data-close aria-label="Schließen">×</button>
+        <div class="bw-modal-head"><div class="mi" id="bwm-ico"></div><h3 id="bwm-title"></h3></div>
+        <p class="bw-modal-sub" id="bwm-sub"></p>
+        <div id="bwm-form"></div>
+        <div class="bw-reviews" id="bwm-reviews"></div>
+      </div>`;
+    document.body.appendChild(m);
+    m.addEventListener("click", (e) => { if (e.target.closest("[data-close]")) closeModal(); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
+    return m;
+  }
+  function closeModal() { const m = $("#bw-modal"); if (m) m.classList.remove("open"); }
+  function paintStars(box, v) { $$("[data-star]", box).forEach((b) => b.classList.toggle("on", +b.dataset.star <= v)); }
+
+  function openReviewModal(appId) {
+    const a = APPS.find((x) => x.id === appId);
+    if (!a) return;
+    const m = ensureModal();
+    const ico = $("#bwm-ico");
+    ico.textContent = a.icon; ico.style.background = a.color;
+    $("#bwm-title").textContent = a.name + " bewerten";
+    rateValue = 0;
+    const canRate = FEATURES.ratings !== false;
+    const canComment = FEATURES.comments !== false;
+    $("#bwm-sub").textContent = canRate
+      ? "Wie gefällt dir die App? Deine ehrliche Bewertung hilft anderen."
+      : "Hinterlasse einen Kommentar zu dieser App.";
+    $("#bwm-form").innerHTML = `
+      ${canRate ? `<div class="bw-field">Deine Sterne<div class="star-input" id="bw-stars">${[1,2,3,4,5].map((n) => `<button type="button" data-star="${n}">★</button>`).join("")}</div></div>` : ""}
+      ${canComment ? `
+        <div class="bw-field">Name (optional)<input id="bw-name" maxlength="40" placeholder="z. B. Max" /></div>
+        <div class="bw-field">Dein Kommentar (optional)<textarea id="bw-comment" maxlength="600" placeholder="Was gefällt dir? Was wünschst du dir?"></textarea></div>` : ""}
+      <button class="btn btn-primary" id="bw-submit" style="width:100%">Absenden</button>
+      <p class="bw-msg" id="bw-msg"></p>`;
+    if (canRate) {
+      const sBox = $("#bw-stars");
+      sBox.addEventListener("click", (e) => { const b = e.target.closest("[data-star]"); if (!b) return; rateValue = +b.dataset.star; paintStars(sBox, rateValue); });
+    }
+    $("#bw-submit").addEventListener("click", () => submitReview(a));
+    loadAppReviews(appId);
+    m.classList.add("open");
+  }
+
+  async function submitReview(a) {
+    const client = window.bwSupabase && window.bwSupabase();
+    const msg = $("#bw-msg"); msg.className = "bw-msg";
+    if (!client) { msg.textContent = "Bewertungen sind noch nicht eingerichtet."; msg.classList.add("err"); return; }
+    const canRate = FEATURES.ratings !== false;
+    const canComment = FEATURES.comments !== false;
+    if (canRate && !rateValue) { msg.textContent = "Bitte wähle 1–5 Sterne."; msg.classList.add("err"); return; }
+    const name = canComment ? (($("#bw-name") || {}).value || "").trim() || null : null;
+    const comment = canComment ? (($("#bw-comment") || {}).value || "").trim() || null : null;
+    if (!canRate && !comment) { msg.textContent = "Bitte schreibe einen Kommentar."; msg.classList.add("err"); return; }
+    let sid = null; try { sid = sessionStorage.getItem("bw24-sid"); } catch {}
+    const btn = $("#bw-submit"); btn.disabled = true; btn.textContent = "Sende …";
+    try {
+      const { error } = await client.from("site_reviews").insert([{ app_id: a.id, rating: rateValue || null, name, comment, session_id: sid }]);
+      if (error) throw error;
+    } catch (err) { msg.textContent = "Fehler: " + (err.message || err); msg.classList.add("err"); btn.disabled = false; btn.textContent = "Absenden"; return; }
+    msg.textContent = "✓ Danke für deine Bewertung!"; msg.classList.add("ok");
+    btn.disabled = false; btn.textContent = "Absenden";
+    if (window.bwTrack) window.bwTrack("app_review", { app_id: a.id });
+    rateValue = 0;
+    const sBox = $("#bw-stars"); if (sBox) paintStars(sBox, 0);
+    if ($("#bw-comment")) $("#bw-comment").value = "";
+    await loadReviewSummary(); updateCardRating(a.id); loadAppReviews(a.id);
+  }
+
+  async function loadAppReviews(appId) {
+    const box = $("#bwm-reviews"); if (!box) return;
+    const client = window.bwSupabase && window.bwSupabase();
+    if (!client) { box.innerHTML = ""; return; }
+    try {
+      const { data } = await client.from("site_reviews")
+        .select("rating,name,comment,created_at").eq("app_id", appId)
+        .not("comment", "is", null).order("created_at", { ascending: false }).limit(20);
+      const list = (data || []).filter((r) => r.comment);
+      if (!list.length) { box.innerHTML = `<h4>Kommentare</h4><p class="bw-empty">Noch keine Kommentare – sei der/die Erste!</p>`; return; }
+      box.innerHTML = `<h4>Kommentare (${list.length})</h4>` + list.map((r) => `
+        <div class="bw-review">
+          <div class="bw-review-top">
+            <span class="bw-review-name">${escapeHtml(r.name || "Anonym")}</span>
+            <span class="bw-review-date">${new Date(r.created_at).toLocaleDateString("de-DE")}</span>
+          </div>
+          ${r.rating ? `<div class="bw-review-stars">${"★".repeat(r.rating)}${"☆".repeat(5 - r.rating)}</div>` : ""}
+          <p class="bw-review-text">${escapeHtml(r.comment)}</p>
+        </div>`).join("");
+    } catch { box.innerHTML = ""; }
+  }
+
+  function initReviews() {
+    document.addEventListener("click", (e) => {
+      const r = e.target.closest("[data-rate]");
+      if (r) openReviewModal(r.dataset.rate);
+    });
+  }
+
   /* ---------- Back-to-top ---------- */
   function initTop() {
     const btn = $("#to-top");
@@ -353,6 +504,9 @@
   /* ---------- Start ---------- */
   document.addEventListener("DOMContentLoaded", async () => {
     await loadCatalogOverride(); // ggf. im SuperAdmin gepflegten Katalog laden
+    await loadSiteFeatures();    // Sterne/Kommentare/Aufbau an oder aus?
+    await loadReviewSummary();   // echte Sterne-Schnitte je App
+    applyConstructionBanner();
     renderApps();
     renderSpotlight();
     renderHeroMockup();
@@ -362,6 +516,7 @@
     initFaq();
     initCounters();
     initNewsletter();
+    initReviews();
     initCookies();
     initTop();
     initYear();

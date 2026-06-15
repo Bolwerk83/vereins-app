@@ -107,6 +107,12 @@
 .save-msg { color: #34d399; font-size: 13px; font-weight: 600; }
 .empty { color: var(--text-3, #8a8a96); font-size: 14px; padding: 6px 0; }
 
+/* Funktionsschalter */
+.toggle { display: flex; align-items: center; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--border, #26262c); cursor: pointer; font-size: 14px; }
+.toggle:last-of-type { border-bottom: none; }
+.toggle input { width: 20px; height: 20px; accent-color: var(--brand, #6366f1); cursor: pointer; flex: 0 0 auto; }
+.review-stars { color: #f59e0b; letter-spacing: 1px; white-space: nowrap; }
+
 /* ---------- Affiliate-Anzeige auf der Startseite ---------- */
 .ad-rectangle.affiliate-filled { display: block; text-align: left; padding: 16px; }
 .aff-head { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-3, #8a8a96); margin-bottom: 10px; display: flex; justify-content: space-between; }

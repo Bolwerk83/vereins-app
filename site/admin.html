@@ -51,6 +51,7 @@
       <button class="atab" data-tab="leads">✉️ Newsletter</button>
       <button class="atab" data-tab="affiliate">🤝 Affiliate</button>
       <button class="atab" data-tab="catalog">🧩 App-Katalog</button>
+      <button class="atab" data-tab="reviews">⭐ Bewertungen</button>
     </nav>
 
     <main class="admin-main">
@@ -114,6 +115,23 @@
         <p class="hint">Diese Liste überschreibt die Apps auf der Startseite. Solange du nichts speicherst, gilt der Standard aus <code>apps.js</code>.</p>
         <div id="cat-list" class="editlist"></div>
         <div class="save-row"><button class="btn btn-primary" id="cat-save">Speichern</button><span class="save-msg" id="cat-msg"></span></div>
+      </section>
+
+      <!-- Bewertungen -->
+      <section class="panel" id="panel-reviews">
+        <div class="panel-head"><h2>Bewertungen &amp; Funktionen</h2></div>
+        <div class="card">
+          <h3>Funktionen an- oder ausschalten</h3>
+          <p class="hint">Gilt sofort für die ganze Startseite – kein Code nötig.</p>
+          <label class="toggle"><input type="checkbox" id="feat-ratings" /> <span><b>Sterne-Bewertung</b> anzeigen &amp; zulassen</span></label>
+          <label class="toggle"><input type="checkbox" id="feat-comments" /> <span><b>Kommentare</b> zulassen (Text-Bewertungen)</span></label>
+          <label class="toggle"><input type="checkbox" id="feat-construction" /> <span><b>„Seite im Aufbau"-Hinweis</b> oben anzeigen</span></label>
+          <div class="save-row"><button class="btn btn-primary" id="feat-save">Speichern</button><span class="save-msg" id="feat-msg"></span></div>
+        </div>
+        <div class="card">
+          <h3>Abgegebene Bewertungen</h3>
+          <div id="reviews-table" class="tablewrap"></div>
+        </div>
       </section>
     </main>
   </section>

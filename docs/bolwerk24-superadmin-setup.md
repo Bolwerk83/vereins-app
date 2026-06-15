@@ -67,6 +67,12 @@ diese siehst du im Reiter „Newsletter“.
 | ✉️ Newsletter | Liste der Anmeldungen, CSV-Export, einzeln löschbar |
 | 🤝 Affiliate | Partner-Links pflegen (werden auf der Seite angezeigt, Klicks gezählt) |
 | 🧩 App-Katalog | Apps der Startseite bearbeiten (Name, Status, Link …) ohne Code |
+| ⭐ Bewertungen | echte Sterne/Kommentare der Besucher ansehen & löschen; Sterne, Kommentare und den „Seite im Aufbau"-Hinweis **an-/abschalten** |
+
+> **Bewertungen:** Besucher können Apps mit 1–5 Sternen und optional einem
+> Kommentar bewerten. Es werden **keine Fake-Werte** mehr angezeigt – die Sterne
+> entstehen aus echten Bewertungen. Über die Schalter im Reiter „Bewertungen"
+> kannst du Sterne und/oder Kommentare jederzeit deaktivieren.
 
 ## Weitere Admins hinzufügen
 

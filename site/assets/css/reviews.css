@@ -1,0 +1,71 @@
+/* =====================================================================
+   bolwerk24 — Aufbau-Hinweis & Bewertungen (Sterne + Kommentare)
+   ergänzt styles.css
+   ===================================================================== */
+
+/* ---------- "Seite im Aufbau"-Hinweis ---------- */
+.construction-banner {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  text-align: center; font-size: 14px; font-weight: 600; line-height: 1.4;
+  padding: 9px 16px; color: #7c2d12;
+  background: linear-gradient(90deg, #fde68a, #fcd34d);
+  border-bottom: 1px solid rgba(0,0,0,.08);
+}
+[data-theme="dark"] .construction-banner { color: #fde68a; background: rgba(180,120,10,.18); border-bottom-color: rgba(255,255,255,.08); }
+.construction-banner span.ico { font-size: 16px; }
+
+/* ---------- Sterne in der App-Karte ---------- */
+.app-rating .rate-btn {
+  background: none; border: none; padding: 0; margin-left: 8px; cursor: pointer;
+  color: var(--brand, #6366f1); font: inherit; font-weight: 600; font-size: 13px; text-decoration: underline;
+}
+.app-rating .rate-btn:hover { opacity: .8; }
+.app-rating .none { color: var(--text-3); font-weight: 500; }
+
+/* ---------- Modal (Bewerten / Bewertungen ansehen) ---------- */
+.bw-modal { position: fixed; inset: 0; z-index: 200; display: none; align-items: center; justify-content: center; padding: 18px; }
+.bw-modal.open { display: flex; }
+.bw-modal-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.55); backdrop-filter: blur(3px); }
+.bw-modal-card {
+  position: relative; width: 100%; max-width: 460px; max-height: 88vh; overflow-y: auto;
+  background: var(--bg, #fff); color: var(--text); border: 1px solid var(--border, #e5e7eb);
+  border-radius: 18px; padding: 22px; box-shadow: 0 30px 80px -25px rgba(0,0,0,.5);
+}
+.bw-modal-head { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+.bw-modal-head .mi { width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center; font-size: 20px; color: #fff; flex: 0 0 auto; }
+.bw-modal-head h3 { margin: 0; font-size: 19px; }
+.bw-modal-close { position: absolute; top: 12px; right: 12px; background: none; border: none; font-size: 22px; line-height: 1; cursor: pointer; color: var(--text-3); }
+.bw-modal-sub { color: var(--text-3); font-size: 14px; margin: 0 0 16px; }
+
+/* Sterne-Eingabe */
+.star-input { display: flex; gap: 4px; margin: 4px 0 14px; }
+.star-input button {
+  background: none; border: none; cursor: pointer; padding: 0; font-size: 34px; line-height: 1;
+  color: #d1d5db; transition: transform .08s;
+}
+[data-theme="dark"] .star-input button { color: #3f3f46; }
+.star-input button:hover { transform: scale(1.12); }
+.star-input button.on { color: #f59e0b; }
+
+.bw-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; font-size: 13px; font-weight: 600; color: var(--text-2, #555); }
+.bw-field input, .bw-field textarea {
+  background: var(--bg-subtle, #f7f7f9); border: 1px solid var(--border, #e5e7eb); color: var(--text);
+  border-radius: 11px; padding: 11px 13px; font: inherit; font-weight: 500; outline: none; width: 100%;
+}
+.bw-field textarea { min-height: 84px; resize: vertical; }
+.bw-field input:focus, .bw-field textarea:focus { border-color: var(--brand, #6366f1); }
+.bw-msg { font-size: 13px; font-weight: 600; min-height: 18px; }
+.bw-msg.ok { color: #16a34a; }
+.bw-msg.err { color: #dc2626; }
+
+/* Kommentar-Liste */
+.bw-reviews { margin-top: 18px; border-top: 1px solid var(--border, #e5e7eb); padding-top: 14px; }
+.bw-reviews h4 { margin: 0 0 12px; font-size: 14px; color: var(--text-2); }
+.bw-review { padding: 10px 0; border-bottom: 1px solid var(--border, #eee); }
+.bw-review:last-child { border-bottom: none; }
+.bw-review-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 3px; }
+.bw-review-name { font-weight: 700; font-size: 14px; }
+.bw-review-stars { color: #f59e0b; font-size: 13px; letter-spacing: 1px; }
+.bw-review-date { color: var(--text-3); font-size: 12px; }
+.bw-review-text { font-size: 14px; color: var(--text-2); margin: 0; }
+.bw-empty { color: var(--text-3); font-size: 14px; }
