@@ -22282,6 +22282,13 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           {(()=>{
             const todos=[];
             const trainingOn=(myClub?.clubSettings?.mod_training)!==false;
+            if(isAdmin){
+              // Admin sieht nur vereinsweite Aufgaben – nicht die Team-Aufgaben der Trainer.
+              const inbox=(local.contactRequests||[]).filter(r=>r.cid===cid&&!r.read&&!r.blocked).length;
+              if(inbox>0) todos.push({label:"Posteingang",col:"#2563eb",bg:"#eff6ff",title:`${inbox} neue Anfrage${inbox>1?"n":""}`,sub:"im Posteingang",onClick:()=>setTab("inbox")});
+              const sec=(local.securityLog||[]).filter(s=>s.cid===cid&&!s.read).length;
+              if(sec>0) todos.push({label:"Sicherheit",col:"#dc2626",bg:"#fee2e2",title:`${sec} Sicherheits-Hinweis${sec>1?"e":""}`,sub:"prüfen",onClick:()=>setTab("security")});
+            } else {
             (local.events||[]).filter(e=>myTids.includes(e.tid)).forEach(e=>{
               eventWarnings(e,tod).forEach(x=>todos.push({ev:e,label:x.label,col:x.col,bg:x.bg}));
               if(["heimspiel","auswarts","freundschaft"].includes(e.type)&&e.date<tod&&e.date>=addD(tod,-21)&&!(e.report&&e.report.ts)) todos.push({ev:e,label:"Spielbericht eintragen",col:"#2563eb",bg:"#eff6ff"});
@@ -22295,6 +22302,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               const evalTids=new Set(myEvalTeams.map(tm=>tm.id));
               const unrated=(local.playerProfiles||[]).filter(p=>evalTids.has(p.mainTid)&&!p.archived&&!Object.values(p.skills||{}).some(v=>(Number(v)||0)>0));
               if(unrated.length>0) todos.push({label:"Ohne Skill-Profil",col:"#0891b2",bg:"#cffafe",title:`${unrated.length} Kind${unrated.length>1?"er":""} noch nicht bewertet`,sub:"Skill-Wizard im Kader starten",onClick:()=>setTab("players")});
+            }
             }
             if(todos.length===0) return null;
             return (
