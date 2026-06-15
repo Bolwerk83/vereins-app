@@ -17324,15 +17324,20 @@ function parseBulkPlayerLine(line) {
   const tokens = parts.length === 1 ? raw.split(/\s+/) : parts;
   let by = null, gender = null;
   const nameParts = [];
+  const GW=/^(w|weiblich|m(ä|ae)dchen|f|female|girl|frau)$/i;
+  const GM=/^(m|männlich|maennlich|junge|male|boy|mann)$/i;
+  const GD=/^(d|divers|x)$/i;
   for (const tok of tokens) {
     const m = tok.match(/^(19|20)\d{2}$/);
     if (m && by == null) { by = parseInt(tok); continue; }
-    if (/^[mwdx]$/i.test(tok) && gender == null) { gender = tok.toLowerCase(); continue; }
+    if (gender == null && GW.test(tok)) { gender = "w"; continue; }
+    if (gender == null && GM.test(tok)) { gender = "m"; continue; }
+    if (gender == null && GD.test(tok)) { gender = "d"; continue; }
     nameParts.push(tok);
   }
   const name = nameParts.join(" ").trim();
   if (!name) return null;
-  return { name, by: by || null, gender: gender || "m" };
+  return { name, by: by || null, gender: gender };
 }
 
 function BulkAddPlayers({ cid, cl, selTid, selTeam, clubTeams, activeSeason, allPlayers, data, save, fire, onClose }) {
