@@ -36,6 +36,13 @@ als **eigenes** Projekt deployen (analog `site/`):
 Funktioniert ebenso auf jedem Static-Host (Netlify, GitHub Pages,
 Cloudflare Pages …) ohne Anpassung.
 
+## Zugriffsschutz (empfohlen)
+
+Das `noindex` (via `robots.txt` + `X-Robots-Tag`) hält nur Suchmaschinen fern —
+es ist **kein** Zugriffsschutz. Für ein internes Tool zusätzlich in Vercel unter
+**Settings → Deployment Protection** entweder **Vercel Authentication** (nur
+Team-Mitglieder) oder **Password Protection** aktivieren.
+
 ## Hinweis zum KI-Assistenten „James"
 
 `index.html` ruft für die KI-Berichte `https://api.anthropic.com/v1/messages`
