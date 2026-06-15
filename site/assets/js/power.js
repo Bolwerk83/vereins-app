@@ -12,6 +12,7 @@
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
   const sb = () => (window.bwSupabase ? window.bwSupabase() : null);
+  const safeHttp = (u) => /^https?:\/\//i.test(String(u || ""));
 
   /* ---------------- Login ---------------- */
   function initLogin() {
@@ -87,7 +88,7 @@
       return;
     }
 
-    const activeCount = partners.filter((p) => p && p.active && p.url).length;
+    const activeCount = partners.filter((p) => p && p.active && safeHttp(p.url)).length;
     statusEl.innerHTML =
       '<p><span class="badge ' + (enabled ? "ok" : "off") + '">' +
         (enabled ? "● Affiliate AKTIV" : "○ Affiliate deaktiviert") + "</span></p>" +
@@ -102,11 +103,11 @@
     tableEl.innerHTML =
       '<table class="tbl"><thead><tr><th>Name</th><th>Provision/Notiz</th><th>Link</th><th>Status</th></tr></thead><tbody>' +
       partners.map((p) => {
-        const live = enabled && p && p.active && p.url;
+        const live = enabled && p && p.active && safeHttp(p.url);
         return "<tr>" +
           "<td>" + esc(p.name || "—") + "</td>" +
           "<td>" + esc(p.note || "—") + "</td>" +
-          "<td>" + (p.url ? '<a href="' + esc(p.url) + '" target="_blank" rel="sponsored noopener">Link ↗</a>' : "—") + "</td>" +
+          "<td>" + (safeHttp(p.url) ? '<a href="' + esc(p.url) + '" target="_blank" rel="sponsored noopener">Link ↗</a>' : "—") + "</td>" +
           '<td><span class="badge ' + (live ? "ok" : "off") + '">' + (live ? "sichtbar" : (p.active ? "aktiv, aber aus" : "inaktiv")) + "</span></td>" +
           "</tr>";
       }).join("") +

@@ -309,7 +309,7 @@
       // Globaler Schalter aus dem SuperAdmin: nur anzeigen, wenn ausdrücklich aktiviert.
       if (!data || !data.value || data.value.enabled !== true) return;
       const list = Array.isArray(data.value.partners) ? data.value.partners : [];
-      partners = list.filter((p) => p && p.active && p.url);
+      partners = list.filter((p) => p && p.active && p.url && /^https?:\/\//i.test(p.url));
     } catch { return; }
     if (!partners.length) return;
     const slot = $(".ad-rectangle");
