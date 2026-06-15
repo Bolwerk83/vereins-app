@@ -1767,10 +1767,14 @@ function AreaIntro({ id, cl }){
 function Drawer({ch,children,onClose,title,maxH="92dvh"}) {
   return (
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:900,backdropFilter:"blur(8px)"}}>
-      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:560,maxHeight:maxH,overflowY:"auto",boxShadow:"0 -16px 60px rgba(0,0,0,.2)",animation:"down .22s ease"}}>
-        <div style={{display:"flex",justifyContent:"center",padding:"10px 0 2px"}}><div style={{width:36,height:4,borderRadius:99,background:"#e2e8f0"}}/></div>
-        {title&&<div style={{padding:"6px 22px 14px",fontSize:18,fontWeight:800,color:"#0f172a"}}>{title}</div>}
-        <div style={{padding:"0 20px 48px"}}>{ch||children}</div>
+      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:560,maxHeight:maxH,display:"flex",flexDirection:"column",boxShadow:"0 -16px 60px rgba(0,0,0,.2)",animation:"down .22s ease"}}>
+        {/* Fixer Kopf mit immer erreichbarem Schliessen-X; nur der Inhalt scrollt. */}
+        <div style={{flexShrink:0,position:"relative",paddingTop:10}}>
+          <div style={{width:36,height:4,borderRadius:99,background:"#e2e8f0",margin:"0 auto"}}/>
+          <button onClick={onClose} aria-label="Schließen" style={{position:"absolute",top:8,right:12,width:32,height:32,borderRadius:10,background:"#f1f5f9",border:"none",color:"#475569",fontWeight:800,fontSize:16,cursor:"pointer",fontFamily:"inherit",zIndex:2}}>✕</button>
+          {title&&<div style={{padding:"6px 56px 12px 22px",fontSize:18,fontWeight:800,color:"#0f172a"}}>{title}</div>}
+        </div>
+        <div style={{overflowY:"auto",WebkitOverflowScrolling:"touch",padding:title?"0 20px calc(28px + env(safe-area-inset-bottom))":"6px 20px calc(28px + env(safe-area-inset-bottom))"}}>{ch||children}</div>
       </div>
     </div>
   );
@@ -3789,7 +3793,7 @@ function BroadcastModal({ data, cid, session, save, fire, onClose }) {
 
   return (
     <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:900,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
-      <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,padding:"22px 22px 44px"}}>
+      <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"92dvh",overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"22px 22px calc(44px + env(safe-area-inset-bottom))"}}>
         <h3 style={{fontWeight:900,fontSize:18,marginBottom:4}}>Rundschreiben an Trainer</h3>
         <p style={{fontSize:13,color:"#64748b",marginBottom:16,lineHeight:1.5}}>
           Nachricht wird an alle oder ausgewählte Trainer gesendet.
@@ -3872,7 +3876,7 @@ function NewsTab({ data, cid, session, save, fire, cl }) {
 
       {showForm&&(
         <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:900,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
-          <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,padding:"22px 22px 44px"}}>
+          <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"92dvh",overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"22px 22px calc(44px + env(safe-area-inset-bottom))"}}>
             <h3 style={{fontWeight:900,fontSize:18,marginBottom:16}}>Neuigkeit veröffentlichen</h3>
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
               <input value={f.title} onChange={e=>setF(p=>({...p,title:e.target.value}))} placeholder="Titel (z.B. Saisonstart, Hauptversammlung)"
@@ -9135,7 +9139,7 @@ function ForgotPasswordHelp({ cl, teams, trainers, forRole, teamId, onBack }) {
       display:"flex",alignItems:"flex-end",justifyContent:"center",
       backdropFilter:"blur(8px)"}}>
       <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",
-        maxWidth:520,padding:"20px 22px 44px"}}>
+        maxWidth:520,maxHeight:"92dvh",overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"20px 22px calc(44px + env(safe-area-inset-bottom))"}}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
           <button onClick={onBack}
             style={{width:34,height:34,borderRadius:10,background:"#f1f5f9",
@@ -9277,7 +9281,7 @@ function TrainerContactSettings({ trainer, onSave, onClose, cl }) {
       display:"flex",alignItems:"flex-end",justifyContent:"center",
       backdropFilter:"blur(6px)"}}>
       <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",
-        maxWidth:520,padding:"22px 22px 44px"}}>
+        maxWidth:520,maxHeight:"92dvh",overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"22px 22px calc(44px + env(safe-area-inset-bottom))"}}>
         <h3 style={{fontWeight:900,fontSize:17,marginBottom:4}}>Kontakteinstellungen</h3>
         <p style={{fontSize:13,color:"#64748b",marginBottom:16,lineHeight:1.5}}>
           Wie sollen Eltern und Spieler dich bei Bedarf erreichen?
@@ -9411,7 +9415,7 @@ function SmartContactButton({ trainer, message, style={} }) {
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",zIndex:920,
           display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
           <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",
-            maxWidth:420,padding:"20px 20px 44px"}}>
+            maxWidth:420,maxHeight:"92dvh",overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"20px 20px calc(44px + env(safe-area-inset-bottom))"}}>
             <div style={{fontWeight:900,fontSize:17,marginBottom:4}}>
               {trainer.name} kontaktieren
             </div>
@@ -12855,16 +12859,7 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
               <Toggle val={S("guestTournament",true)} onChange={v=>saveSetting("guestTournament",v)}/>
             </Row>
           </div>
-          {/* Senioren-Modus */}
           <div style={card}>
-            <Row title="Senioren-Modus"
-              sub="Spieler stimmen selbst ab - kein Eltern-Login noetig">
-              <Toggle val={S("seniorsMode",false)} onChange={v=>saveSetting("seniorsMode",v)}/>
-            </Row>
-            <Row title="Eltern dürfen im Chat schreiben"
-              sub="Standardmäßig nur lesen">
-              <Toggle val={S("parentChat",false)} onChange={v=>saveSetting("parentChat",v)}/>
-            </Row>
             <Row title="Mehrere Teams pro Spieler" sub="Spieler in 2+ Teams gleichzeitig" last>
               <Toggle val={S("multiTeamPlayer",false)} onChange={v=>saveSetting("multiTeamPlayer",v)}/>
             </Row>
@@ -19328,6 +19323,7 @@ function ChatTab({data,cid,myTids,session,save,fire,cl,teamOnly=false}) {
 
   const send=async ()=>{
     if(!text.trim())return;
+    { const tid2=selScope.startsWith("team_")?selScope.slice(5):null; const tm2=tid2?allTeams.find(x=>x.id===tid2):null; if(session.role==="user"&&tm2&&tm2.parentChat===false){ return; } }
     const msg={id:uid(),author:session.name||"Unbekannt",role:session.role,text:text.trim(),ts:new Date().toISOString()};
     setText("");
     // Frischen Cloud-Stand der Chats als Basis nehmen und die neue Nachricht
@@ -19348,6 +19344,13 @@ function ChatTab({data,cid,myTids,session,save,fire,cl,teamOnly=false}) {
   const roleLabel={admin:"Admin",trainer:"Trainer",helper:"Helfer",user:"Elternteil"};
   const fmt=ts=>new Date(ts).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
   const fmtD=ts=>{const d=new Date(ts);const today=new Date();return d.toDateString()===today.toDateString()?"Heute":d.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"});};
+  const selTid = selScope.startsWith("team_") ? selScope.slice(5) : null;
+  const selTeam = selTid ? allTeams.find(x=>x.id===selTid) : null;
+  const isParent = session.role==="user";
+  const canModerate = session.role==="trainer"||session.role==="admin";
+  const parentWriteOn = !selTeam || selTeam.parentChat!==false;
+  const blockedForParent = isParent && !!selTeam && !parentWriteOn;
+  const setParentWrite = on => save({...data, teams:(data.teams||[]).map(tm=>tm.id===selTid?{...tm,parentChat:on}:tm)});
 
   return (
     <div style={{display:"flex",flexDirection:"column",height:"calc(100dvh - 200px)"}}>
@@ -19422,16 +19425,26 @@ function ChatTab({data,cid,myTids,session,save,fire,cl,teamOnly=false}) {
       </div>
 
       {}
-      <div style={{display:"flex",gap:8,paddingTop:8,borderTop:"1px solid #f1f5f9",background:"#f8fafc",borderRadius:14,padding:"10px 12px"}}>
-        <input value={text} onChange={e=>setText(e.target.value)}
-          onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}}
-          placeholder="Nachricht schreiben... (Enter = senden)"
-          style={{flex:1,padding:"10px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",background:"#fff"}}/>
-        <button onClick={send} disabled={!text.trim()}
-          style={{width:44,height:44,borderRadius:11,border:"none",background:text.trim()?t.p:"#e2e8f0",color:text.trim()?contrast(t.p):"#64748b",fontSize:18,cursor:text.trim()?"pointer":"default",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"}}>
-          
-        </button>
-      </div>
+      {canModerate&&selTeam&&(
+        <div style={{display:"flex",alignItems:"center",gap:8,padding:"4px 4px 8px"}}>
+          <span style={{fontSize:12,fontWeight:700,color:"#475569",flex:1}}>Eltern dürfen in diesem Team-Chat schreiben</span>
+          <div onClick={()=>setParentWrite(!parentWriteOn)} title="Eltern-Schreibrecht" style={{width:42,height:24,borderRadius:99,background:parentWriteOn?t.p:"#cbd5e1",cursor:"pointer",position:"relative",flexShrink:0,transition:"background .2s"}}>
+            <div style={{position:"absolute",top:3,left:parentWriteOn?21:3,width:18,height:18,borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/>
+          </div>
+        </div>
+      )}
+      {blockedForParent
+        ? <div style={{paddingTop:8,borderTop:"1px solid #f1f5f9",background:"#f8fafc",borderRadius:14,padding:"12px 14px",fontSize:13,color:"#64748b",textAlign:"center",fontWeight:600}}>🔒 Nur Lesen – der Trainer hat das Schreiben für Eltern in diesem Chat nicht freigeschaltet.</div>
+        : <div style={{display:"flex",gap:8,paddingTop:8,borderTop:"1px solid #f1f5f9",background:"#f8fafc",borderRadius:14,padding:"10px 12px"}}>
+            <input value={text} onChange={e=>setText(e.target.value)}
+              onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}}
+              placeholder="Nachricht schreiben... (Enter = senden)"
+              style={{flex:1,padding:"10px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",background:"#fff"}}/>
+            <button onClick={send} disabled={!text.trim()}
+              style={{width:44,height:44,borderRadius:11,border:"none",background:text.trim()?t.p:"#e2e8f0",color:text.trim()?contrast(t.p):"#64748b",fontSize:18,cursor:text.trim()?"pointer":"default",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"}}>
+              ➤
+            </button>
+          </div>}
     </div>
   );
 }
@@ -20779,7 +20792,7 @@ function FieldBookingModal({ field, myTeams, prefillFrom, t, onCancel, onBook })
   const setSize = cells => setSel(p=>({...p,cells,cellStart:0}));
   return (
     <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:910,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
-      <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,padding:"20px 22px 44px"}}>
+      <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"92dvh",overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"20px 22px calc(44px + env(safe-area-inset-bottom))"}}>
         <h3 style={{fontWeight:900,fontSize:18,marginBottom:16}}>Platz buchen – {field.name}</h3>
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
           <select value={sel.teamId} onChange={e=>setSel(p=>({...p,teamId:e.target.value}))} style={{padding:"10px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}>
@@ -20969,7 +20982,7 @@ function FieldConflictResolver({ conflict, myTeam, data, save, fire, onClose }) 
   };
   return (
     <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:920,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
-      <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,padding:"20px 22px 44px"}}>
+      <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"92dvh",overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"20px 22px calc(44px + env(safe-area-inset-bottom))"}}>
         <h3 style={{fontWeight:900,fontSize:17,marginBottom:4}}>Platz-Konflikt loesen</h3>
         <p style={{fontSize:13,color:"#64748b",marginBottom:16}}>
           {conflict.teamName} hat denselben Platz am {conflict.date} gebucht ({conflict.timeFrom}-{conflict.timeTo}).
@@ -25185,7 +25198,7 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       {}
       {showProfile&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:800,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(8px)"}} onClick={()=>setShowProfile(false)}>
-          <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,padding:"12px 22px 48px",animation:"down .24s ease"}}>
+          <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"92dvh",overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"12px 22px calc(48px + env(safe-area-inset-bottom))",animation:"down .24s ease"}}>
             <div style={{display:"flex",justifyContent:"center",marginBottom:16}}><div style={{width:44,height:4,borderRadius:99,background:"#e2e8f0"}}/></div>
             <h3 style={{fontWeight:900,fontSize:18,color:"#0f172a",marginBottom:20,textAlign:"center"}}> Mein Profil</h3>
             <div style={{display:"flex",justifyContent:"center",marginBottom:18}}>
