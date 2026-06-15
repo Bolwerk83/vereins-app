@@ -306,7 +306,9 @@
     let partners = [];
     try {
       const { data } = await client.from("site_config").select("value").eq("key", "affiliate").maybeSingle();
-      const list = data && data.value && Array.isArray(data.value.partners) ? data.value.partners : [];
+      // Globaler Schalter aus dem SuperAdmin: nur anzeigen, wenn ausdrücklich aktiviert.
+      if (!data || !data.value || data.value.enabled !== true) return;
+      const list = Array.isArray(data.value.partners) ? data.value.partners : [];
       partners = list.filter((p) => p && p.active && p.url);
     } catch { return; }
     if (!partners.length) return;

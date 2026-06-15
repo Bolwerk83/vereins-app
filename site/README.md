@@ -120,3 +120,42 @@ Da das Repo zusätzlich die Vereins-App enthält, dieses Verzeichnis als
 
 Alternativ funktioniert das Verzeichnis auf jedem Static-Host
 (Netlify, GitHub Pages, Cloudflare Pages …) ohne Anpassung.
+
+## Zentrales Backend, Rollen & Affiliate-Schalter
+
+Hub **und** Controlling-Tool nutzen dasselbe Supabase-Backend
+(`supabase/site.sql`). Es stellt bereit:
+
+- **`site_config`** – zentrale Konfiguration (u. a. `affiliate`, `apps`, `features`).
+  Lesen ist öffentlich (Frontend), Schreiben nur für Superadmins (RLS).
+- **`site_roles`** – zentrale Rollen pro E-Mail: `superadmin` oder `power`.
+- **RPCs** `is_site_admin()`, `is_site_power()`, `my_site_role()`.
+
+### Einrichtung (einmalig)
+
+1. **Schema einspielen:** `supabase/site.sql` im Supabase SQL-Editor ausführen
+   (idempotent, additiv – ändert keine bestehenden Tabellen).
+2. **anon-Key:** ist in `assets/js/supabase-config.js` bereits eingetragen
+   (öffentlich & durch RLS geschützt).
+3. **Login-Accounts anlegen:** in Supabase → **Authentication → Add user**
+   je eine E-Mail + Passwort anlegen. Die Rolle steuert `site_roles`:
+   - Superadmin ist bereits geseedet (`bolwerk@outlook.de`).
+   - Weitere Rollen per SQL:
+     ```sql
+     insert into public.site_roles(email, role) values
+       ('power-user@beispiel.de', 'power')
+     on conflict (email) do update set role = excluded.role;
+     ```
+
+### Oberflächen
+
+| Seite           | Wer            | Was                                                        |
+|-----------------|----------------|------------------------------------------------------------|
+| `/` (Startseite)| alle Besucher  | sieht Affiliate-Empfehlungen **nur, wenn aktiviert**       |
+| `/power.html`   | Power User     | **nur Lesen**: Affiliate-Status & Partnerliste (Auswertung)|
+| `/admin.html`   | Superadmin     | Affiliate **an/aus** schalten + Partner pflegen, Katalog … |
+
+Der **Affiliate-Schalter** liegt im SuperAdmin unter „🤝 Affiliate" oben
+(„Affiliate-Empfehlungen anzeigen"). Steht er aus, blendet die Startseite
+sämtliche Partner aus – unabhängig davon, wie viele aktiv sind. Power User
+sehen den Status, können ihn aber nicht ändern (serverseitig per RLS erzwungen).

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#0a0a0c" />
+  <title>Power User · bolwerk24</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/assets/css/styles.css?v=2" />
+  <link rel="stylesheet" href="/assets/css/admin.css?v=2" />
+</head>
+<body class="admin-body">
+
+  <!-- ===== Login ===== -->
+  <section id="login" class="admin-login">
+    <form class="login-card" id="login-form" autocomplete="on">
+      <div class="login-brand"><img src="/favicon.svg" alt="" width="34" height="34" /><span>bolwerk<b>24</b></span></div>
+      <h1>Power User</h1>
+      <p class="login-sub">Anmeldung für die Auswertungs-Ansicht (nur Lesen).</p>
+
+      <label>E-Mail
+        <input type="email" id="login-email" required autocomplete="username" placeholder="du@beispiel.de" />
+      </label>
+      <label>Passwort
+        <input type="password" id="login-pass" required autocomplete="current-password" placeholder="••••••••" />
+      </label>
+
+      <button type="submit" class="btn btn-primary btn-lg" id="login-btn">Anmelden</button>
+      <p class="login-msg" id="login-msg"></p>
+      <p class="login-note" id="login-config-warn" hidden>
+        ⚠️ Supabase ist noch nicht konfiguriert. Trage den <b>anon</b>-Key in
+        <code>assets/js/supabase-config.js</code> ein.
+      </p>
+    </form>
+  </section>
+
+  <!-- ===== Dashboard ===== -->
+  <section id="dash" class="admin-dash" hidden>
+    <header class="admin-header">
+      <div class="admin-brand"><img src="/favicon.svg" alt="" width="28" height="28" /><span>bolwerk<b>24</b> · Power User</span></div>
+      <div class="admin-headright">
+        <span class="admin-user" id="admin-user"></span>
+        <a class="btn btn-ghost btn-sm" href="/" target="_blank" rel="noopener">Seite ansehen ↗</a>
+        <button class="btn btn-soft btn-sm" id="logout-btn">Abmelden</button>
+      </div>
+    </header>
+
+    <main class="admin-main">
+      <section class="panel active" id="panel-affiliate">
+        <div class="panel-head"><h2>Affiliate – Auswertung</h2></div>
+        <p class="hint">Nur-Lese-Ansicht. Aktivieren/Deaktivieren und das Pflegen der Partner ist dem <b>SuperAdmin</b> vorbehalten.</p>
+
+        <div class="card">
+          <h3>Status</h3>
+          <div id="aff-status">Lade …</div>
+        </div>
+
+        <div class="card">
+          <h3>Partner</h3>
+          <div id="aff-table" class="tablewrap">Lade …</div>
+        </div>
+      </section>
+    </main>
+  </section>
+
+  <!-- Supabase + Logik -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/assets/js/supabase-config.js?v=2"></script>
+  <script src="/assets/js/bw-supabase.js?v=2"></script>
+  <script src="/assets/js/power.js?v=1"></script>
+</body>
+</html>

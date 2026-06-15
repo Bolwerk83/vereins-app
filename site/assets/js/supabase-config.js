@@ -14,5 +14,6 @@
    ===================================================================== */
 window.BW24_SUPABASE = {
   url: "https://phpkyzujpvrsypqqptlv.supabase.co",
-  anonKey: "", // <-- hier den "anon public"-Key einfügen
+  // "anon public"-Key: öffentlich & sicher im Browser – durch Row-Level-Security geschützt.
+  anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBocGt5enVqcHZyc3lwcXFwdGx2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0MjA2MjAsImV4cCI6MjA5NTk5NjYyMH0.t7wCh6Juzkn9cyshpy78ZfJ_G9ji8pko_v1hoOzui8w",
 };

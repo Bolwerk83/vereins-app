@@ -197,12 +197,15 @@
 
   /* ---------------- Affiliate ---------------- */
   let affPartners = [];
+  let affEnabled = false;
   async function loadAffiliate() {
     const client = sb(); if (!client) return;
     try {
       const { data } = await client.from("site_config").select("value").eq("key", "affiliate").maybeSingle();
       affPartners = (data && data.value && Array.isArray(data.value.partners)) ? data.value.partners : [];
-    } catch { affPartners = []; }
+      affEnabled = !!(data && data.value && data.value.enabled);
+    } catch { affPartners = []; affEnabled = false; }
+    const sw = $("#aff-enabled"); if (sw) sw.checked = affEnabled;
     renderAff();
   }
   function renderAff() {
@@ -224,14 +227,18 @@
   }
   function initAffiliate() {
     $("#aff-add").addEventListener("click", () => { affPartners.push({ name: "", url: "", note: "", active: true, id: "p" + Date.now() }); renderAff(); });
+    const sw = $("#aff-enabled");
+    if (sw) sw.addEventListener("change", () => { affEnabled = sw.checked; });
     $("#aff-save").addEventListener("click", async () => {
       const client = sb(); const msg = $("#aff-msg"); msg.textContent = "Speichere …";
       try {
         const { error } = await client.from("site_config").upsert({
-          key: "affiliate", value: { partners: affPartners }, updated_at: new Date().toISOString(),
+          key: "affiliate",
+          value: { enabled: !!(sw && sw.checked), partners: affPartners },
+          updated_at: new Date().toISOString(),
         });
         if (error) throw error;
-        msg.textContent = "✓ Gespeichert";
+        msg.textContent = (sw && sw.checked) ? "✓ Gespeichert – Affiliate ist aktiv" : "✓ Gespeichert – Affiliate ist deaktiviert";
       } catch (err) { msg.textContent = "Fehler: " + (err.message || err); }
       setTimeout(() => (msg.textContent = ""), 4000);
     });
