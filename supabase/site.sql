@@ -97,3 +97,132 @@ on conflict (email) do update set role = excluded.role;
 insert into public.site_config(key, value) values
   ('affiliate', jsonb_build_object('enabled', false, 'partners', '[]'::jsonb))
 on conflict (key) do nothing;
+
+-- =====================================================================
+-- Hub-Backend: Tracking, Newsletter-Leads, Bewertungen
+-- (macht die übrigen SuperAdmin-Tabs Statistik/Newsletter/Bewertungen
+--  sowie die Sterne/Kommentare auf der Startseite funktionsfähig)
+-- =====================================================================
+
+-- ---------- Anonymes First-Party-Tracking ---------------------------
+create table if not exists public.site_events (
+  id         bigint generated always as identity primary key,
+  type       text not null,
+  session_id text,
+  path       text,
+  device     text,
+  referrer   text,
+  app_id     text,
+  created_at timestamptz not null default now()
+);
+alter table public.site_events enable row level security;
+create index if not exists site_events_created_idx on public.site_events(created_at);
+create index if not exists site_events_type_idx    on public.site_events(type);
+
+-- Jeder darf Ereignisse schreiben; direktes Lesen ist gesperrt
+-- (Auswertung ausschliesslich ueber die RPC site_stats).
+drop policy if exists site_events_insert on public.site_events;
+create policy site_events_insert on public.site_events
+  for insert to anon, authenticated with check (true);
+
+-- ---------- Newsletter-Leads -----------------------------------------
+create table if not exists public.site_leads (
+  id         bigint generated always as identity primary key,
+  email      text not null,
+  app        text,
+  source     text,
+  created_at timestamptz not null default now()
+);
+alter table public.site_leads enable row level security;
+
+drop policy if exists site_leads_insert on public.site_leads;
+create policy site_leads_insert on public.site_leads
+  for insert to anon, authenticated with check (true);
+
+drop policy if exists site_leads_admin on public.site_leads;
+create policy site_leads_admin on public.site_leads
+  for all to authenticated using (public.is_site_admin()) with check (public.is_site_admin());
+
+-- ---------- Bewertungen ----------------------------------------------
+create table if not exists public.site_reviews (
+  id         bigint generated always as identity primary key,
+  app_id     text not null,
+  rating     int check (rating between 1 and 5),
+  name       text,
+  comment    text,
+  session_id text,
+  created_at timestamptz not null default now()
+);
+alter table public.site_reviews enable row level security;
+create index if not exists site_reviews_app_idx on public.site_reviews(app_id);
+
+-- Besucher duerfen bewerten; Lesen ist oeffentlich (Sterne/Kommentare);
+-- Loeschen nur Superadmin.
+drop policy if exists site_reviews_insert on public.site_reviews;
+create policy site_reviews_insert on public.site_reviews
+  for insert to anon, authenticated
+  with check (rating is null or rating between 1 and 5);
+
+drop policy if exists site_reviews_read on public.site_reviews;
+create policy site_reviews_read on public.site_reviews
+  for select using (true);
+
+drop policy if exists site_reviews_admin on public.site_reviews;
+create policy site_reviews_admin on public.site_reviews
+  for all to authenticated using (public.is_site_admin()) with check (public.is_site_admin());
+
+-- ---------- Auswertung: Bewertungs-Schnitt (oeffentlich) -------------
+create or replace function public.site_review_summary()
+returns table(app_id text, avg numeric, count bigint)
+language sql stable security definer set search_path = public, pg_temp as $$
+  select app_id, round(avg(rating)::numeric, 2) as avg, count(*)::bigint as count
+  from public.site_reviews
+  where rating is not null
+  group by app_id
+$$;
+grant execute on function public.site_review_summary() to anon, authenticated;
+
+-- ---------- Auswertung: Statistik (nur Superadmin) -------------------
+create or replace function public.site_stats(days int default 30)
+returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $$
+declare res jsonb; d int := greatest(coalesce(days, 30), 1);
+begin
+  if not public.is_site_admin() then
+    raise exception 'not authorized';
+  end if;
+  with ev as (
+    select * from public.site_events
+    where created_at >= now() - make_interval(days => d)
+  )
+  select jsonb_build_object(
+    'page_views', (select count(*) from ev where type = 'page_view'),
+    'sessions',   (select count(distinct session_id) from ev where session_id is not null),
+    'app_opens',  (select count(*) from ev where type = 'app_open'),
+    'leads',      (select count(*) from public.site_leads
+                    where created_at >= now() - make_interval(days => d)),
+    'by_app', coalesce((
+        select jsonb_agg(to_jsonb(x)) from (
+          select app_id,
+                 count(*) filter (where type = 'app_view') as views,
+                 count(*) filter (where type = 'app_open') as opens
+          from ev where app_id is not null
+          group by app_id order by opens desc, views desc limit 50
+        ) x), '[]'::jsonb),
+    'top_referrers', coalesce((
+        select jsonb_agg(to_jsonb(x)) from (
+          select referrer, count(*) as n from ev
+          where referrer is not null and referrer <> ''
+          group by referrer order by n desc limit 20
+        ) x), '[]'::jsonb),
+    'by_day', coalesce((
+        select jsonb_agg(to_jsonb(x)) from (
+          select to_char(date_trunc('day', created_at), 'YYYY-MM-DD') as day,
+                 count(*) filter (where type = 'page_view') as views,
+                 count(distinct session_id) as sessions
+          from ev group by 1 order by 1
+        ) x), '[]'::jsonb)
+  ) into res;
+  return res;
+end $$;
+revoke execute on function public.site_stats(int) from anon;
+grant execute on function public.site_stats(int) to authenticated;
