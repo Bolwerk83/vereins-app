@@ -6732,9 +6732,43 @@ function TrainingPlanner({ data, myTids, cl, save, fire }) {
   );
 }
 
+function TrainerGuide({ onClose, cl }){
+  const t = TH(cl);
+  const sections = [
+    {icon:"👋", title:"Keine Sorge – du musst nicht alles nutzen", text:"Für den Start reicht es, deine Spieler anzulegen und Termine zu planen. Statistiken, Skills & Auswertungen sind Extras – nützlich, aber freiwillig. Hier die Bereiche kurz erklärt."},
+    {icon:"🧒", title:"Spieler / Kader", text:"Lege deine Spieler an (einzeln oder mehrere auf einmal) und ordne sie der Mannschaft zu. Das ist die Grundlage für alles Weitere."},
+    {icon:"⭐", title:"Skills (Stärken-Profil)", text:"Optional kannst du je Spieler Fähigkeiten von 1–5 einschätzen (z. B. Technik, Schnelligkeit). Das dient nur DEINER Förderplanung – es ist nicht öffentlich, Eltern und Spieler sehen die Werte nicht. Einmal im Monat kannst du sie kurz aktualisieren (der monatliche Skill-Check)."},
+    {icon:"🧠", title:"Insights", text:"Kennzahlen deiner Mannschaft auf einen Blick (z. B. Kaderstärke, Anwesenheit). Nur zum schnellen Überblick – nichts, was du pflegen musst."},
+    {icon:"📈", title:"Analyse", text:"Zeigt Stärken und Schwächen des Teams je Fähigkeit – hilfreich, um Trainingsschwerpunkte zu setzen. Basiert auf den Skill-Werten."},
+    {icon:"✅", title:"Anwesenheit", text:"Wer war wie oft dabei? Du erkennst verlässliche Spieler und solche, die oft fehlen."},
+    {icon:"💡", title:"Mein Tipp zum Start", text:"Fang klein an: Spieler anlegen, Termine planen, abstimmen lassen. Skills & Statistik kannst du dir in Ruhe später ansehen. Diese Erklärung findest du jederzeit über das ❓ oben rechts wieder."},
+  ];
+  return (
+    <Drawer onClose={onClose} title="Statistiken & Skills – kurz erklärt">
+      <div style={{display:"flex",flexDirection:"column",gap:11}}>
+        {sections.map((s,i)=>(
+          <div key={i} style={{display:"flex",gap:11,alignItems:"flex-start",background:"#f8fafc",border:"1.5px solid #eef2f7",borderRadius:13,padding:"12px 13px"}}>
+            <div style={{fontSize:22,lineHeight:1.1,flexShrink:0}}>{s.icon}</div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontWeight:800,fontSize:14.5,color:"#0f172a",marginBottom:3}}>{s.title}</div>
+              <div style={{fontSize:13,color:"#475569",lineHeight:1.55}}>{s.text}</div>
+            </div>
+          </div>
+        ))}
+        <button onClick={onClose} style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Alles klar, los geht's</button>
+      </div>
+    </Drawer>
+  );
+}
+
 function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false, initialSubTab }) {
   const [subTab, setSubTab] = useState(initialSubTab || "players"); // players | attendance | stats
   const t = TH(cl);
+  const [showGuide, setShowGuide] = useState(false);
+  // Trainer-Onboarding einmalig automatisch zeigen; jederzeit über ❓ erneut aufrufbar.
+  // va_intro_-Präfix: wird auch vom "Hilfe-Intros erneut anzeigen"-Knopf zurückgesetzt.
+  useEffect(()=>{ try{ if(localStorage.getItem("va_intro_trainer_guide")!=="1") setShowGuide(true); }catch{} },[]);
+  const closeGuide = ()=>{ try{ localStorage.setItem("va_intro_trainer_guide","1"); }catch{} setShowGuide(false); };
   const subTabs = [
     ...(isAdmin ? [{ id:"manage", label:"Mannschaften", icon:"M" }] : []),
     { id:"players",    label:"Spieler",     icon:"P" },
@@ -6751,6 +6785,13 @@ function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false, initial
   ];
   return (
     <div>
+      {showGuide && <TrainerGuide onClose={closeGuide} cl={cl}/>}
+      <div style={{display:"flex",justifyContent:"flex-end",marginBottom:8}}>
+        <button onClick={()=>setShowGuide(true)}
+          style={{display:"inline-flex",alignItems:"center",gap:5,padding:"6px 11px",borderRadius:9,border:`1.5px solid ${t.p}`,background:"#fff",color:t.p,fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+          ❓ Erklärung
+        </button>
+      </div>
       <div style={{display:"flex",gap:6,marginBottom:14,overflowX:"auto",scrollbarWidth:"none"}}>
         {subTabs.map(st=>(
           <button key={st.id} onClick={()=>setSubTab(st.id)}
