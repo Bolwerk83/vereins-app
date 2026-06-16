@@ -2202,6 +2202,8 @@ function OnboardingWizard({ cl, data, save, fire, onDone }) {
   const [trainerPw, setTrainerPw] = useState("");
   const [fieldName, setFieldName] = useState("Hauptplatz");
   const [fieldSurface, setFieldSurface] = useState("Rasen");
+  const [fieldSplit, setFieldSplit] = useState(1);
+  const SURFACE_TPL = {Rasen:"rasen",Kunstrasen:"kunstrasen",Halle:"halle",Sand:"mehrzweck",Asche:"asche"};
 
   const toggleCat = id => {
     const n = selCats.includes(id) ? selCats.filter(x=>x!==id) : [...selCats,id];
@@ -2236,7 +2238,9 @@ function OnboardingWizard({ cl, data, save, fire, onDone }) {
     }] : [];
     const newFields = fieldName.trim() ? [{
       id: uid(), cid: cl.id, name: fieldName.trim(),
-      surface: fieldSurface, segments: 4
+      template: SURFACE_TPL[fieldSurface]||"rasen",
+      split: fieldSplit||1, weather: "any",
+      surface: fieldSurface, segments: fieldSplit||1
     }] : [];
     const updClubs = (data.clubs||[]).map(x=>x.id===cl.id?{...x,onboarded:true}:x);
     save({
@@ -2401,6 +2405,16 @@ function OnboardingWizard({ cl, data, save, fire, onDone }) {
                     </button>
                   ))}
                 </div>
+                <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.4,marginTop:6}}>FELDGRÖSSE / AUFTEILUNG</div>
+                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                  {SPLIT_OPTIONS.map(o=>(
+                    <button key={o.id} onClick={()=>setFieldSplit(o.id)}
+                      style={{padding:"8px 12px",borderRadius:10,border:`2px solid ${fieldSplit===o.id?t.p:"#e2e8f0"}`,background:fieldSplit===o.id?t.p:"#fff",color:fieldSplit===o.id?"#fff":"#334155",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+                <div style={{fontSize:11,color:"#94a3b8",lineHeight:1.5}}>Wie viele Teams können gleichzeitig spielen? Kannst du später unter „Platz" jederzeit ändern oder weitere Plätze anlegen.</div>
               </div>
               <div style={{background:"#f0fdf4",borderRadius:12,padding:"12px 14px",border:"1.5px solid #bbf7d0",marginTop:16,fontSize:12,color:"#166534",lineHeight:1.6}}>
                 Zusammenfassung:<br/>
@@ -18945,7 +18959,7 @@ function SeriesWizard({f,u,t}) {
   );
 }
 
-function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTemplate=null}) {
+function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTemplate=null,fields=[]}) {
   const t=TH(cl); const isEdit=!!editEv; const STEPS=5;
   const blank={tid:teams[0]?.id||"",type:"training",title:"",date:now(),time:"",endTime:"",loc:"",note:"",sollPlayers:null,maxPlayers:null,pt:"att",recMode:"none",recDays:[],recStart:now(),recUntil:"",recDates:[],li:[],fi:[],sc:[],extraPolls:[],selType:"multi",open:false,_li:{txt:"",max:""},_fi:{name:"",col:"#16a34a"},_sc:{fid:"",time:"",a:"",b:"",ref:""}};
   const [step,setStep]=useState(1);
@@ -19007,7 +19021,21 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
             <Inp label="Uhrzeit" val={f.time} set={v=>u({time:v})} type="time" ph="09:00" cl={cl}/>
             <Inp label="Ende (optional)" val={f.endTime} set={v=>u({endTime:v})} type="time" ph="" cl={cl}/>
           </div>
-          <Inp label="Ort" val={f.loc} set={v=>u({loc:v})} ph="Sportplatz" cl={cl}/>
+          {fields.length>0 ? (()=>{
+            const selF = fields.find(x=>x.id===f.fieldId);
+            return (
+              <div style={{display:"flex",flexDirection:"column",gap:11}}>
+                <Sel label="Platz" val={f.fieldId||""}
+                  set={v=>{ if(v){ const fl=fields.find(x=>x.id===v); u({fieldId:v,loc:fl?.name||"",fieldSplit:f.fieldSplit&&f.fieldSplit<=(fl?.split||1)?f.fieldSplit:1}); } else { u({fieldId:"",fieldSplit:undefined}); } }}
+                  opts={[["","✏️ Anderer Ort (Freitext)"],...fields.map(fl=>[fl.id,fl.icon?fl.icon+" "+fl.name:fl.name])]}/>
+                {selF
+                  ? ((selF.split||1)>1 && <Sel label="Feldgröße" val={String(f.fieldSplit||1)}
+                      set={v=>u({fieldSplit:parseInt(v)})}
+                      opts={SPLIT_OPTIONS.filter(o=>o.id<=(selF.split||1)).map(o=>[String(o.id),o.label])}/>)
+                  : <Inp label="Ort" val={f.loc} set={v=>u({loc:v})} ph="Sportplatz" cl={cl}/>}
+              </div>
+            );
+          })() : <Inp label="Ort" val={f.loc} set={v=>u({loc:v})} ph="Sportplatz" cl={cl}/>}
           <SeriesWizard f={f} u={u} t={t} cl={cl}/>
           {f.recMode==="none"&&<Inp label="Datum" val={f.date} set={v=>u({date:v})} type="date" cl={cl}/>}
           {f.recMode==="none"&&(
@@ -19149,7 +19177,7 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
         {step===5&&<div className="in">
           <div style={{background:"#0f172a",borderRadius:17,padding:"18px"}}>
             <p style={{color:"rgba(255,255,255,.45)",fontSize:11,fontWeight:800,marginBottom:13,letterSpacing:.5}}>ZUSAMMENFASSUNG</p>
-            {[[" Mannschaft",teamsSel?.icon+" "+teamsSel?.name],["Art",ET[f.type]?.icon+" "+ET[f.type]?.label],["Titel",f.title],["Uhrzeit",f.time||"-"],f.loc&&["Ort","* "+f.loc],f.note&&["Notiz","* "+f.note.slice(0,50)],["Umfrage",(f.pt==="att"?"* Anwesenheit":f.pt==="carpool"?"* Fahrtgemeinschaft":`* Liste (${(f.li||[]).length} Opt.)`)+((f.extraPolls||[]).length?` + ${f.extraPolls.length} Liste${f.extraPolls.length>1?"n":""}`:"")],["Termine",f.recMode==="weekly"?`* Woechentlich . ${f.recDays?.length||0} Tage`:f.recMode==="custom"?`* ${f.recDates?.length||0} Daten`:"1 Termin . "+fmtD(f.date)],f.open&&["Sichtbarkeit","* Offen für andere Vereine"]].filter(Boolean).filter(x=>!x.hidden).map(([k,v])=>(
+            {[[" Mannschaft",teamsSel?.icon+" "+teamsSel?.name],["Art",ET[f.type]?.icon+" "+ET[f.type]?.label],["Titel",f.title],["Uhrzeit",f.time||"-"],f.loc&&["Ort","* "+f.loc+(f.fieldId&&f.fieldSplit>1?" · "+(SPLIT_OPTIONS.find(o=>o.id===f.fieldSplit)?.label||""):"")],f.note&&["Notiz","* "+f.note.slice(0,50)],["Umfrage",(f.pt==="att"?"* Anwesenheit":f.pt==="carpool"?"* Fahrtgemeinschaft":`* Liste (${(f.li||[]).length} Opt.)`)+((f.extraPolls||[]).length?` + ${f.extraPolls.length} Liste${f.extraPolls.length>1?"n":""}`:"")],["Termine",f.recMode==="weekly"?`* Woechentlich . ${f.recDays?.length||0} Tage`:f.recMode==="custom"?`* ${f.recDates?.length||0} Daten`:"1 Termin . "+fmtD(f.date)],f.open&&["Sichtbarkeit","* Offen für andere Vereine"]].filter(Boolean).filter(x=>!x.hidden).map(([k,v])=>(
               <div key={k} style={{display:"flex",gap:10,marginBottom:9}}>
                 <span style={{color:"rgba(255,255,255,.4)",fontSize:12,fontWeight:700,minWidth:90}}>{k}</span>
                 <span style={{color:"#fff",fontSize:13,fontWeight:700,flex:1}}>{v}</span>
@@ -22218,6 +22246,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const [showLater,setShowLater]=useState(false);
 
   if(wizard||editEv) return <Wizard teams={local.teams.filter(x=>myTids.includes(x.id))} cl={myClub} editEv={editEv}
+    fields={(local.fields||[]).filter(x=>x.cid===cid)}
     onTemplates={(local.pollTemplates||[]).filter(t=>t.cid===cid&&!t.pending)}
     onSaveTemplate={tpl=>{save({...local,pollTemplates:[...(local.pollTemplates||[]),{...tpl,cid}]});fire("Vorlage gespeichert *");}}
     onSave={evs=>{
