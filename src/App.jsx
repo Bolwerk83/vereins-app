@@ -17405,6 +17405,32 @@ const loadTesseract = () => {
   return _tessPromise;
 };
 
+// Foto für OCR aufbereiten: hochskalieren, Graustufen, Kontrast anheben –
+// das verbessert die Erkennung von fotografierten Listen deutlich.
+const preprocessForOcr = (dataUrl) => new Promise((resolve) => {
+  try {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(2.5, Math.max(1, 1800 / (img.width || 1)));
+      const w = Math.round((img.width || 1) * scale), h = Math.round((img.height || 1) * scale);
+      const c = document.createElement("canvas"); c.width = w; c.height = h;
+      const ctx = c.getContext("2d");
+      ctx.drawImage(img, 0, 0, w, h);
+      const id = ctx.getImageData(0, 0, w, h); const d = id.data;
+      for (let i = 0; i < d.length; i += 4) {
+        let g = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+        g = (g - 128) * 1.45 + 128;            // Kontrast
+        g = g < 0 ? 0 : g > 255 ? 255 : g;
+        d[i] = d[i + 1] = d[i + 2] = g;
+      }
+      ctx.putImageData(id, 0, 0);
+      resolve(c.toDataURL("image/png"));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  } catch { resolve(dataUrl); }
+});
+
 function BulkAddPlayers({ cid, cl, selTid, selTeam, clubTeams, activeSeason, allPlayers, data, save, fire, onClose }) {
   const t = TH(cl);
   const defaultBy = selTeam?.years ? parseInt(String(selTeam.years).split("/")[0]) || 2014 : 2014;
@@ -17474,13 +17500,19 @@ function BulkAddPlayers({ cid, cl, selTid, selTeam, clubTeams, activeSeason, all
     try {
       setOcr({ pct: 0 });
       const Tess = await loadTesseract();
-      const { data: res } = await Tess.recognize(photo, "deu", {
+      const prepped = await preprocessForOcr(photo);
+      const { data: res } = await Tess.recognize(prepped, "deu", {
         logger: m => { if (m.status === "recognizing text") setOcr({ pct: Math.round((m.progress || 0) * 100) }); },
       });
-      const txt = ((res && res.text) || "").replace(/[ \t]+\n/g, "\n").trim();
+      // Zeilen säubern: nur Zeilen behalten, die mindestens einen Namen-tauglichen
+      // Wortteil (>=3 Buchstaben am Stück) enthalten – filtert OCR-Müll grob raus.
+      const lines = ((res && res.text) || "").split(/\n+/)
+        .map(l => l.replace(/\s+/g, " ").trim())
+        .filter(l => /[A-Za-zÀ-ÿ]{3,}/.test(l));
+      const txt = lines.join("\n").trim();
       setOcr(null);
-      if (txt) { setText(prev => prev.trim() ? prev.replace(/\s*$/, "") + "\n" + txt : txt); fire("Text aus Foto erkannt – bitte prüfen & korrigieren"); }
-      else fire("Keine Schrift erkannt – Foto schärfer/gerader fotografieren");
+      if (txt) { setText(prev => prev.trim() ? prev.replace(/\s*$/, "") + "\n" + txt : txt); fire("Text aus Foto erkannt – bitte genau prüfen & korrigieren"); }
+      else fire("Keine brauchbare Schrift erkannt – nimm den Live-Text-Weg (unten erklärt)");
     } catch {
       setOcr(null);
       fire("Foto-Erkennung nicht verfügbar (Internet nötig). Alternativ: Text im Bild markieren & „Einfügen“.");
@@ -17543,15 +17575,16 @@ Ben Fischer | 2016 | m`;
               <div>
                 <img src={photo} alt="Vorlage" style={{width:"100%",maxHeight:220,objectFit:"contain",borderRadius:10,border:"1px solid #e2e8f0",background:"#fff"}}/>
                 <button type="button" onClick={runOcr} disabled={!!ocr}
-                  style={{marginTop:8,width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:8,padding:"11px",borderRadius:10,border:"none",background:ocr?"#cbd5e1":t.p,color:"#fff",fontWeight:800,fontSize:13.5,cursor:ocr?"default":"pointer",fontFamily:"inherit"}}>
-                  {ocr ? `Lese Foto… ${ocr.pct}%` : "📸 Namen aus Foto auslesen"}
+                  style={{marginTop:8,width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:8,padding:"11px",borderRadius:10,border:`1.5px solid ${t.p}`,background:ocr?"#cbd5e1":"#fff",color:ocr?"#fff":t.p,fontWeight:800,fontSize:13.5,cursor:ocr?"default":"pointer",fontFamily:"inherit"}}>
+                  {ocr ? `Lese Foto… ${ocr.pct}%` : "📸 Auslesen versuchen (Beta)"}
                 </button>
                 <button type="button" onClick={()=>setPhoto(null)} disabled={!!ocr} style={{marginTop:6,background:"none",border:"none",color:"#dc2626",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",padding:0}}>Foto entfernen</button>
               </div>
             )}
-            <p style={{fontSize:11.5,color:"#64748b",lineHeight:1.5,marginTop:8}}>
-              <strong>„📸 Namen aus Foto auslesen"</strong> liest die Liste direkt aus dem Bild (läuft auf deinem Gerät, beim ersten Mal kurze Ladezeit, Internet nötig). Danach Namen prüfen/korrigieren. Klappt es nicht sauber, markiere den Text im Bild per iPhone-Live-Text / Android-Google-Lens und nutze „📋 Einfügen". Das Foto wird nicht gespeichert.
-            </p>
+            <div style={{fontSize:11.5,color:"#475569",lineHeight:1.55,marginTop:8,background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:9,padding:"9px 11px"}}>
+              <strong>Am zuverlässigsten (iPhone):</strong> Tippe lange auf das Foto oben → <strong>„Text auswählen"</strong> → ziehe über die Namen → <strong>Kopieren</strong> → dann unten auf <strong>„📋 Einfügen"</strong>. (Android: Google&nbsp;Lens.)<br/>
+              Der Knopf <strong>„📸 Auslesen versuchen"</strong> erkennt die Namen automatisch – das klappt gut bei klaren <strong>Screenshots</strong>, bei schräg abfotografierten Listen oft nur teilweise. Erkannte Namen immer prüfen. Das Foto wird nicht gespeichert.
+            </div>
           </div>
           {/* Eingabe */}
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginBottom:6}}>
