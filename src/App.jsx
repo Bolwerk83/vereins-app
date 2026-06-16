@@ -4525,6 +4525,7 @@ function ManageTeams({ data, save, fire, cl }) {
   const setTeamLogin = (id,m) => save({...data, teams:(data.teams||[]).map(tm=>tm.id===id?{...tm,loginMode:m}:tm)});
   const setTeamSkillCheck = (id,on) => save({...data, teams:(data.teams||[]).map(tm=>tm.id===id?{...tm,skillCheckEnabled:on}:tm)});
   const setTeamSquads = (id,squads) => save({...data, teams:(data.teams||[]).map(tm=>tm.id===id?{...tm,squads}:tm)});
+  const setTeamTrainerPwd = (id,v) => save({...data, teams:(data.teams||[]).map(tm=>tm.id===id?{...tm,trainerEditPwd:v}:tm)});
   const LOGIN_OPTS=[["auto","Automatisch"],["parents","Eltern"],["players","Spieler"]];
 
   const addTeam = () => {
@@ -4657,6 +4658,15 @@ function ManageTeams({ data, save, fire, cl }) {
                   <button key={k} onClick={()=>setTeamSkillCheck(tm.id,k==="on")} style={{padding:"4px 10px",borderRadius:8,border:`1.5px solid ${on?t.p:"#e2e8f0"}`,background:on?t.p+"15":"#fff",color:on?t.p:"#94a3b8",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
                 );})}
                 <InfoHint text={"Monatlicher Skill-Check: Trainer beantworten 1×/Monat je Kind kurze Fragen pro Fähigkeit (ca. 1–2 Min pro Kind). Daraus entstehen Entwicklung & Förderhinweise. Aufwand lohnt sich v.a. im Leistungsbereich – im reinen Breitensport ruhig 'Aus'."}/>
+              </div>
+            )}
+            {editId!==tm.id && (
+              <div style={{display:"flex",alignItems:"center",gap:6,marginTop:6,flexWrap:"wrap"}}>
+                <span style={{fontSize:10.5,fontWeight:800,color:"#94a3b8",letterSpacing:.3}}>PASSWORT (TRAINER)</span>
+                {[["std","Standard",undefined],["yes","Ja",true],["no","Nein",false]].map(([k,l,v])=>{const cur=tm.trainerEditPwd===true?"yes":tm.trainerEditPwd===false?"no":"std";const on=cur===k;return (
+                  <button key={k} onClick={()=>setTeamTrainerPwd(tm.id,v)} style={{padding:"4px 10px",borderRadius:8,border:`1.5px solid ${on?t.p:"#e2e8f0"}`,background:on?t.p+"15":"#fff",color:on?t.p:"#94a3b8",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
+                );})}
+                <InfoHint text={"Darf der Trainer dieser Mannschaft das Team-Passwort selbst ändern? 'Standard' übernimmt die Vereins-Einstellung (Einstellungen → Team)."}/>
               </div>
             )}
             {editId!==tm.id && (
@@ -12978,9 +12988,12 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
             <Row title="Anwesenheit sichtbar für Eltern" sub="Wer hat abgestimmt">
               <Toggle val={S("showAttendance",false)} onChange={v=>saveSetting("showAttendance",v)}/>
             </Row>
-            <Row title="Vergangene Termine anzeigen" sub="Wie viele Tage zurück" last>
+            <Row title="Vergangene Termine anzeigen" sub="Wie viele Tage zurück">
               <Select value={S("pastDays",30)} onChange={v=>saveSetting("pastDays",Number(v))}
                 opts={[["7","7 Tage"],["14","14 Tage"],["30","30 Tage"],["60","60 Tage"],["90","90 Tage"]]}/>
+            </Row>
+            <Row title="Trainer dürfen Team-Passwort ändern" sub="Standard für alle Teams – je Team unter Mannschaften überschreibbar" last>
+              <Toggle val={S("trainerEditTeamPwd",false)} onChange={v=>saveSetting("trainerEditTeamPwd",v)}/>
             </Row>
           </div>
         </>
@@ -17708,6 +17721,38 @@ Ben Fischer | 2016 | m`;
   );
 }
 
+// Team-Passwort ändern (Trainer) – nur sichtbar, wenn der Admin es erlaubt hat.
+function TeamPwdChanger({ team, data, save, fire, cl }){
+  const t=TH(cl);
+  const [open,setOpen]=useState(false);
+  const [p1,setP1]=useState(""); const [p2,setP2]=useState(""); const [err,setErr]=useState("");
+  if(!team) return null;
+  const doSave=()=>{
+    if(p1.length<4){setErr("Mindestens 4 Zeichen");return;}
+    if(p1!==p2){setErr("Passwörter stimmen nicht überein");return;}
+    save({...data, teams:(data.teams||[]).map(tm=>tm.id===team.id?{...tm,pwd:hashPw(p1)}:tm)});
+    fire("Team-Passwort geändert");
+    setOpen(false); setP1(""); setP2(""); setErr("");
+  };
+  return (
+    <div style={{background:"#fff",borderRadius:14,border:"1.5px solid #e2e8f0",padding:"15px 16px",marginTop:12}}>
+      <div style={{fontSize:13,fontWeight:800,color:"#334155",marginBottom:4}}>Team-Passwort</div>
+      <div style={{fontSize:12,color:"#64748b",lineHeight:1.5,marginBottom:10}}>Passwort, mit dem sich Eltern/Spieler bei <b>{team.name}</b> anmelden. Nach der Änderung brauchen neue Anmeldungen das neue Passwort.</div>
+      {!open
+        ? <button onClick={()=>{setOpen(true);setErr("");}} style={{padding:"9px 15px",borderRadius:10,border:`1.5px solid ${t.p}`,background:"#fff",color:t.p,fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Passwort ändern</button>
+        : <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            <input type="password" value={p1} onChange={e=>setP1(e.target.value)} placeholder="Neues Passwort (min. 4 Zeichen)" style={{padding:"10px 12px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",fontFamily:"inherit",boxSizing:"border-box"}}/>
+            <input type="password" value={p2} onChange={e=>setP2(e.target.value)} placeholder="Wiederholen" style={{padding:"10px 12px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",fontFamily:"inherit",boxSizing:"border-box"}}/>
+            {err&&<div style={{fontSize:12,color:"#dc2626",fontWeight:700}}>{err}</div>}
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>{setOpen(false);setP1("");setP2("");setErr("");}} style={{flex:1,padding:"10px",borderRadius:10,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
+              <button onClick={doSave} style={{flex:2,padding:"10px",borderRadius:10,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Speichern</button>
+            </div>
+          </div>}
+    </div>
+  );
+}
+
 function PlayersTab({ data,myTids,save,fire,cl,session }) {
   const [showTeamCard, setShowTeamCard] = React.useState(null); // teamId
   const t        = TH(cl);
@@ -17946,6 +17991,9 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
 
       {view==="list"&&selTeam&&(
         <div style={{marginTop:16}}><ShareTeamLink cl={cl} team={selTeam} t={t}/></div>
+      )}
+      {view==="list"&&selTeam&&(selTeam.trainerEditPwd ?? cl?.clubSettings?.trainerEditTeamPwd ?? false) && (
+        <TeamPwdChanger team={selTeam} data={data} save={save} fire={fire} cl={cl}/>
       )}
 
       {}
