@@ -148,7 +148,9 @@
       return;
     }
 
-    const activeCount = partners.filter((p) => p && p.active && safeHttp(p.url)).length;
+    const today = new Date().toISOString().slice(0, 10);
+    const inWindow = (p) => (!p.from || p.from <= today) && (!p.until || p.until >= today);
+    const activeCount = partners.filter((p) => p && p.active && safeHttp(p.url) && inWindow(p)).length;
     statusEl.innerHTML =
       '<p><span class="badge ' + (enabled ? "ok" : "off") + '">' +
         (enabled ? "● Affiliate AKTIV" : "○ Affiliate deaktiviert") + "</span></p>" +
@@ -160,15 +162,19 @@
       tableEl.innerHTML = '<p class="empty">Noch keine Partner hinterlegt.</p>';
       return;
     }
+    const zeitraum = (p) => (!p.from && !p.until) ? "unbegrenzt" : (esc(p.from || "…") + " – " + esc(p.until || "…"));
     tableEl.innerHTML =
-      '<table class="tbl"><thead><tr><th>Name</th><th>Provision/Notiz</th><th>Link</th><th>Status</th></tr></thead><tbody>' +
+      '<table class="tbl"><thead><tr><th>Name</th><th>Provision/Notiz</th><th>Zeitraum</th><th>Link</th><th>Status</th></tr></thead><tbody>' +
       partners.map((p) => {
-        const live = enabled && p && p.active && safeHttp(p.url);
+        const win = inWindow(p);
+        const live = enabled && p && p.active && safeHttp(p.url) && win;
+        const label = live ? "sichtbar" : (!p.active ? "inaktiv" : (!win ? "außerhalb Zeitraum" : "aktiv, aber aus"));
         return "<tr>" +
           "<td>" + esc(p.name || "—") + "</td>" +
           "<td>" + esc(p.note || "—") + "</td>" +
+          "<td>" + zeitraum(p) + "</td>" +
           "<td>" + (safeHttp(p.url) ? '<a href="' + esc(p.url) + '" target="_blank" rel="sponsored noopener">Link ↗</a>' : "—") + "</td>" +
-          '<td><span class="badge ' + (live ? "ok" : "off") + '">' + (live ? "sichtbar" : (p.active ? "aktiv, aber aus" : "inaktiv")) + "</span></td>" +
+          '<td><span class="badge ' + (live ? "ok" : "off") + '">' + label + "</span></td>" +
           "</tr>";
       }).join("") +
       "</tbody></table>";

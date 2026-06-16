@@ -233,6 +233,11 @@
             <label class="chk"><input type="checkbox" data-f="active" ${p.active ? "checked" : ""}/> Aktiv</label>
             <button class="del-card" title="Entfernen">🗑</button>
           </div>
+          <div class="edit-row">
+            <label class="sm">Aktiv ab<input type="date" data-f="from" value="${esc(p.from || "")}" /></label>
+            <label class="sm">Aktiv bis<input type="date" data-f="until" value="${esc(p.until || "")}" /></label>
+            <span class="hint" style="margin:0;align-self:center">leer = unbegrenzt</span>
+          </div>
         </div>`).join("")
       : '<p class="empty">Noch keine Partner. Füge oben einen hinzu.</p>';
     bindEditCards("#aff-list", affPartners);

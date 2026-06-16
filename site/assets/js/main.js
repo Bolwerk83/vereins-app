@@ -308,8 +308,10 @@
       const { data } = await client.from("site_config").select("value").eq("key", "affiliate").maybeSingle();
       // Globaler Schalter aus dem SuperAdmin: nur anzeigen, wenn ausdrücklich aktiviert.
       if (!data || !data.value || data.value.enabled !== true) return;
+      const today = new Date().toISOString().slice(0, 10);
       const list = Array.isArray(data.value.partners) ? data.value.partners : [];
-      partners = list.filter((p) => p && p.active && p.url && /^https?:\/\//i.test(p.url));
+      partners = list.filter((p) => p && p.active && p.url && /^https?:\/\//i.test(p.url)
+        && (!p.from || p.from <= today) && (!p.until || p.until >= today));
     } catch { return; }
     if (!partners.length) return;
     const slot = $(".ad-rectangle");
