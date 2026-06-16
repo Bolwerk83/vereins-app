@@ -235,3 +235,32 @@ begin
 end $$;
 revoke execute on function public.site_stats(int) from anon;
 grant execute on function public.site_stats(int) to authenticated;
+
+-- ---------- Schutz öffentlicher Inserts (Defense-in-depth) -----------
+-- Begrenzt Missbrauch über die öffentliche API (überlange Strings,
+-- ungültige E-Mails). Idempotent.
+alter table public.site_events  drop constraint if exists site_events_len;
+alter table public.site_events  add  constraint site_events_len check (
+  char_length(type) <= 40
+  and char_length(coalesce(session_id,'')) <= 64
+  and char_length(coalesce(path,''))      <= 200
+  and char_length(coalesce(device,''))    <= 20
+  and char_length(coalesce(referrer,''))  <= 200
+  and char_length(coalesce(app_id,''))    <= 80
+);
+
+alter table public.site_leads  drop constraint if exists site_leads_chk;
+alter table public.site_leads  add  constraint site_leads_chk check (
+  char_length(email) <= 200
+  and email ~ '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$'
+  and char_length(coalesce(app,''))    <= 80
+  and char_length(coalesce(source,'')) <= 40
+);
+
+alter table public.site_reviews drop constraint if exists site_reviews_len;
+alter table public.site_reviews add  constraint site_reviews_len check (
+  char_length(coalesce(comment,'')) <= 2000
+  and char_length(coalesce(name,'')) <= 120
+  and char_length(app_id) <= 80
+  and char_length(coalesce(session_id,'')) <= 64
+);
