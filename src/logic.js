@@ -172,3 +172,62 @@ export const DE_STATES = [
   ["DE-TH", "Thüringen"],
 ];
 
+// ── Listen-/OCR-Text in Spieler zerlegen ──────────────────────────────
+const _GW = /^(w|weiblich|m(ä|ae)dchen|f|female|girl|frau)$/i;
+const _GM = /^(m|männlich|maennlich|junge|male|boy|mann)$/i;
+const _GD = /^(d|divers|x)$/i;
+
+// Ein Segment (= ein Datensatz) auswerten. Erkennt Jahrgang, Geschlecht,
+// entfernt führende Listen-/Trikotnummern. surnameFirst=true dreht
+// "Nachname Vorname" zu "Vorname Nachname" für die Anzeige.
+const parseRosterEntry = (seg, surnameFirst) => {
+  if (!seg) return null;
+  const tokens = seg.split(/[,\s]+/).filter(Boolean);
+  let by = null, gender = null;
+  const nameParts = [];
+  for (const t0 of tokens) {
+    const tok = t0.replace(/[.,]+$/, "");
+    if (!tok) continue;
+    if (by == null && /^(19|20)\d{2}$/.test(tok)) { by = parseInt(tok, 10); continue; }
+    if (gender == null && _GW.test(tok)) { gender = "w"; continue; }
+    if (gender == null && _GM.test(tok)) { gender = "m"; continue; }
+    if (gender == null && _GD.test(tok)) { gender = "d"; continue; }
+    // Führende reine Zahl (Listen-/Trikotnummer) am Zeilenanfang ignorieren.
+    if (nameParts.length === 0 && /^\d{1,3}$/.test(tok)) continue;
+    // Tokens ohne Buchstaben überspringen.
+    if (!/[A-Za-zÀ-ÿ]/.test(tok)) continue;
+    nameParts.push(tok);
+  }
+  let parts = nameParts;
+  if (surnameFirst && nameParts.length >= 2) parts = [...nameParts.slice(1), nameParts[0]];
+  const name = parts.join(" ").trim();
+  // Rauschen aussortieren: braucht entweder Jahrgang oder ein "echtes" Wort (>=3 Buchstaben).
+  const realWord = nameParts.some(w => w.replace(/[^A-Za-zÀ-ÿ]/g, "").length >= 3);
+  if (!name || (by == null && !realWord)) return null;
+  return { name, by, gender };
+};
+
+// Mehrzeiligen Text zerlegen. Trennt mehrere Datensätze pro Zeile (zwei
+// Spalten nebeneinander -> mehrere Jahrgänge in einer Zeile).
+export const parseRosterText = (raw, opts = {}) => {
+  const surnameFirst = !!opts.surnameFirst;
+  const out = [];
+  for (let line of String(raw || "").split(/\r?\n/)) {
+    line = line.replace(/[|;\t]+/g, " ").replace(/\s+/g, " ").trim();
+    if (!line) continue;
+    const years = [...line.matchAll(/\b(19|20)\d{2}\b/g)];
+    let segments;
+    if (years.length >= 2) {
+      segments = [];
+      let start = 0;
+      for (const m of years) { const end = m.index + m[0].length; segments.push(line.slice(start, end)); start = end; }
+      const tail = line.slice(start).trim();
+      if (tail && /[A-Za-zÀ-ÿ]/.test(tail)) segments.push(tail);
+    } else {
+      segments = [line];
+    }
+    for (const seg of segments) { const p = parseRosterEntry(seg.trim(), surnameFirst); if (p) out.push(p); }
+  }
+  return out;
+};
+

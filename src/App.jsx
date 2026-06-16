@@ -1,6 +1,6 @@
 import React, { useState,useEffect,useCallback,useRef,useMemo,createContext,useContext } from "react";
 import { splitData, mergeData, merge3Obj } from "./data.js";
-import { eventStart, eventDeadline, isVotingLocked, isDeadlinePassed, isEventPast, daysUntil, isUpcoming5, formatCountdown, round2, clampSkill, monthKey, skillsMean, blendSkill, germanPublicHolidays, publicHolidayName, DE_STATES } from "./logic.js";
+import { eventStart, eventDeadline, isVotingLocked, isDeadlinePassed, isEventPast, daysUntil, isUpcoming5, formatCountdown, round2, clampSkill, monthKey, skillsMean, blendSkill, germanPublicHolidays, publicHolidayName, DE_STATES, parseRosterText } from "./logic.js";
 import { ACOLORS, acol, inits, contrast, mix } from "./util.js";
 
 const LANG_KEY = "vereinsapp_lang";
@@ -17440,17 +17440,18 @@ function BulkAddPlayers({ cid, cl, selTid, selTeam, clubTeams, activeSeason, all
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [shorten, setShorten] = useState(true);   // Nachnamen auf Initiale kürzen
+  const [surnameFirst, setSurnameFirst] = useState(false); // Liste: Nachname zuerst
   const [photo, setPhoto] = useState(null);        // Foto/Screenshot als Abtipp-Vorlage
 
-  // Live-Parser
+  // Live-Parser: robust gegen Listennummern, zwei Spalten je Zeile, Reihenfolge.
   const parsed = useMemo(() => {
-    return text.split(/\n+/).map(parseBulkPlayerLine).filter(Boolean).map(p => ({
+    return parseRosterText(text, { surnameFirst }).map(p => ({
       ...p,
       name: shorten ? shortenSurname(p.name) : p.name,
       by: p.by || defaultBy,
       gender: p.gender || defaultGender,
     }));
-  }, [text, defaultBy, defaultGender, shorten]);
+  }, [text, defaultBy, defaultGender, shorten, surnameFirst]);
 
   // Duplikat-Check gegen bestehende Spieler + Mehrdeutigkeits-Check innerhalb der Liste
   const existingKeys = new Set(allPlayers.map(p => `${(p.name||"").toLowerCase().trim()}|${p.by||""}`));
@@ -17602,6 +17603,10 @@ Ben Fischer | 2016 | m`;
             style={{marginTop:6,background:"none",border:"none",color:t.p,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",padding:0}}>
             Beispiel einfügen
           </button>
+          <label style={{display:"flex",alignItems:"center",gap:9,marginTop:10,cursor:"pointer"}}>
+            <input type="checkbox" checked={surnameFirst} onChange={e=>setSurnameFirst(e.target.checked)} style={{width:17,height:17,accentColor:t.p,flexShrink:0}}/>
+            <span style={{fontSize:12.5,color:"#334155",fontWeight:600}}>Liste hat <strong>Nachname zuerst</strong> (z. B. „Kaplan Adam 2018") → wird zu „Adam Kaplan"</span>
+          </label>
           <label style={{display:"flex",alignItems:"center",gap:9,marginTop:10,cursor:"pointer"}}>
             <input type="checkbox" checked={shorten} onChange={e=>setShorten(e.target.checked)} style={{width:17,height:17,accentColor:t.p,flexShrink:0}}/>
             <span style={{fontSize:12.5,color:"#334155",fontWeight:600}}>Nachnamen automatisch kürzen (Datenschutz): „Lukas Berger" → „Lukas B."</span>

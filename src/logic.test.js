@@ -5,6 +5,7 @@ import {
   isEventPast, daysUntil, isUpcoming5, formatCountdown,
   round2, clampSkill, monthKey, skillsMean, blendSkill,
   germanPublicHolidays, publicHolidayName, DE_STATES,
+  parseRosterText,
 } from "./logic.js";
 
 const isoDaysFromNow = (n) => new Date(Date.now() + n*86400000).toISOString().slice(0,10);
@@ -127,4 +128,34 @@ test("Feiertage: ohne Bundesland kein Treffer, Liste sortiert", () => {
   assert.ok(list.length >= 13);
   assert.deepEqual([...list].sort((a,b)=>a.date.localeCompare(b.date)).map(x=>x.date), list.map(x=>x.date));
   assert.equal(DE_STATES.length, 16);
+});
+
+// ---- parseRosterText (Listen-/OCR-Auswertung) ----
+test("parseRosterText: führende Listennummer wird entfernt", () => {
+  const r = parseRosterText("1 Kaplan Adam 2018");
+  assert.equal(r.length, 1);
+  assert.equal(r[0].name, "Kaplan Adam");
+  assert.equal(r[0].by, 2018);
+});
+test("parseRosterText: zwei Datensätze in einer Zeile (zwei Spalten)", () => {
+  const r = parseRosterText("1 Kaplan Adam 2018 13 Bormann Tjark 2018");
+  assert.equal(r.length, 2);
+  assert.equal(r[0].name, "Kaplan Adam");
+  assert.equal(r[1].name, "Bormann Tjark");
+  assert.equal(r[1].by, 2018);
+});
+test("parseRosterText: surnameFirst dreht zu Vorname Nachname", () => {
+  const r = parseRosterText("1 Kaplan Adam 2018", { surnameFirst: true });
+  assert.equal(r[0].name, "Adam Kaplan");
+});
+test("parseRosterText: Geschlecht-Wort erkannt, sonst null", () => {
+  const r = parseRosterText("Lena weiblich 2017\nMax 2018");
+  assert.equal(r[0].gender, "w");
+  assert.equal(r[1].gender, null);
+  assert.equal(r[1].by, 2018);
+});
+test("parseRosterText: OCR-Rauschen ohne echtes Wort/Jahr wird verworfen", () => {
+  const r = parseRosterText("ha ET an\nnn > Pd\nMia Hoffmann 2019");
+  assert.equal(r.length, 1);
+  assert.equal(r[0].name, "Mia Hoffmann");
 });
