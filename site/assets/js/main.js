@@ -330,10 +330,18 @@
 
   /* ---------- Newsletter-Lead in Supabase ablegen (optional) ---------- */
   async function saveLeadToSupabase(email, app) {
+    const payload = { email, app: app || null, source: "landing" };
+    // Bevorzugt über die Edge Function `intake` (Rate-Limit/IP).
+    try {
+      if (window.bwIntake) {
+        const res = await window.bwIntake("lead", payload);
+        if (res.handled) return;
+      }
+    } catch { /* -> Direkt-Fallback */ }
     const client = window.bwSupabase && window.bwSupabase();
     if (!client) return;
     try {
-      await client.from("site_leads").insert([{ email, app: app || null, source: "landing" }]);
+      await client.from("site_leads").insert([payload]);
     } catch { /* Tracking/Lead darf nie stören */ }
   }
 
@@ -440,9 +448,22 @@
     if (!canRate && !comment) { msg.textContent = "Bitte schreibe einen Kommentar."; msg.classList.add("err"); return; }
     let sid = null; try { sid = sessionStorage.getItem("bw24-sid"); } catch {}
     const btn = $("#bw-submit"); btn.disabled = true; btn.textContent = "Sende …";
+    const payload = { app_id: a.id, rating: rateValue || null, name, comment, session_id: sid };
     try {
-      const { error } = await client.from("site_reviews").insert([{ app_id: a.id, rating: rateValue || null, name, comment, session_id: sid }]);
-      if (error) throw error;
+      let done = false;
+      // Bevorzugt über die Edge Function `intake` (Rate-Limit/IP).
+      if (window.bwIntake) {
+        const res = await window.bwIntake("review", payload);
+        if (res.handled) {
+          if (res.status === 429) { msg.textContent = "Zu viele Bewertungen – bitte später erneut."; msg.classList.add("err"); btn.disabled = false; btn.textContent = "Absenden"; return; }
+          if (!res.ok) throw new Error("Bewertung wurde abgelehnt.");
+          done = true;
+        }
+      }
+      if (!done) { // Übergangs-Fallback (Function nicht deployed / vor Cutover)
+        const { error } = await client.from("site_reviews").insert([payload]);
+        if (error) throw error;
+      }
     } catch (err) { msg.textContent = "Fehler: " + (err.message || err); msg.classList.add("err"); btn.disabled = false; btn.textContent = "Absenden"; return; }
     msg.textContent = "✓ Danke für deine Bewertung!"; msg.classList.add("ok");
     btn.disabled = false; btn.textContent = "Absenden";

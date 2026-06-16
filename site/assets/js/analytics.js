@@ -47,10 +47,19 @@
 
   // Ereignis senden (Fehler werden bewusst verschluckt – Tracking darf nie stören)
   async function track(type, extra) {
+    const ev = { type, ...base(), ...(extra || {}) };
+    // Bevorzugt über die Edge Function `intake` (server-seitiges Rate-Limit).
+    try {
+      if (window.bwIntake) {
+        const res = await window.bwIntake("event", ev);
+        if (res.handled) return; // vom Backend angenommen/verworfen
+      }
+    } catch { /* -> Direkt-Fallback */ }
+    // Übergangs-Fallback (Function nicht deployed / vor Cutover):
     const client = sb();
     if (!client) return;
     try {
-      await client.from("site_events").insert([{ type, ...base(), ...(extra || {}) }]);
+      await client.from("site_events").insert([ev]);
     } catch { /* ignorieren */ }
   }
   window.bwTrack = track; // auch von main.js nutzbar

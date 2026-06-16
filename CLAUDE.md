@@ -42,10 +42,23 @@ Genutzt von **Hub und Controlling** (Projekt `phpkyzujpvrsypqqptlv`).
 3. Login-Accounts in **Supabase → Authentication → Add user** anlegen; Rolle über
    `site_roles` setzen (Superadmin `bolwerk@outlook.de` ist geseedet).
 
+## Edge Functions (`supabase/functions/`)
+
+Server-seitige Funktionen, Deploy + Secrets siehe `supabase/functions/README.md`.
+Voraussetzung: `site_rate` + `rl_hit` aus `supabase/site.sql` (Rate-Limit).
+
+- **`james`** — Proxy für den KI-Assistenten „James" (Controlling). Hält den
+  `ANTHROPIC_API_KEY` serverseitig; Modell-Allowlist, `max_tokens`-Deckel,
+  Rate-Limit pro IP. Ohne Key → `503` → Controlling läuft im Offline-Modus.
+- **`intake`** — nimmt die öffentlichen Inserts des Hubs (Tracking/Newsletter/
+  Bewertungen) entgegen und schreibt sie per `service_role` mit Rate-Limit pro
+  IP. Frontend nutzt `window.bwIntake(...)` mit Direkt-Insert als Übergangs-
+  Fallback; nach dem Vercel-Deploy `supabase/harden_inserts_cutover.sql`
+  ausführen, um den direkten anon-Insert zu schließen.
+
 ## Hinweise
-- **KI-Assistent „James"** (im Controlling-Tool) ruft `api.anthropic.com` direkt
-  aus dem Browser; produktiv über ein Backend mit API-Key proxen, keinen Key
-  in den Client einbetten.
-- Öffentliche Inserts (Tracking/Newsletter/Bewertungen) haben kein Rate-Limit —
-  bei Bedarf serverseitig (Edge Function / Captcha) härten. Moderation der
-  Bewertungen über den SuperAdmin.
+- **James** ruft Anthropic ausschließlich über die Edge Function `james` auf —
+  kein API-Key im Client.
+- Öffentliche Inserts sind über `intake` (Rate-Limit/IP) abgesichert; zusätzlich
+  greifen DB-Längen-/Format-Constraints. Moderation der Bewertungen über den
+  SuperAdmin.

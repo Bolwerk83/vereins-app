@@ -1552,6 +1552,18 @@ function rosaLoading(){
     <div class="tb"><div class="rosa-think"><span class="spin"></span> Anfrage wird verstanden und auf die Kennzahlen abgebildet …</div></div>
     <div class="tf"><span class="skel">einen Moment</span><span class="tbtn" data-kiclose="1">Abbrechen</span></div>`;
 }
+// James läuft über den server-seitigen Proxy (Edge Function `james`),
+// damit der Anthropic-Key NICHT im Browser liegt. Ist der Proxy nicht
+// erreichbar/konfiguriert, wirft die Funktion -> Offline-Modus greift.
+const JAMES_SUPA="https://phpkyzujpvrsypqqptlv.supabase.co";
+const JAMES_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBocGt5enVqcHZyc3lwcXFwdGx2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0MjA2MjAsImV4cCI6MjA5NTk5NjYyMH0.t7wCh6Juzkn9cyshpy78ZfJ_G9ji8pko_v1hoOzui8w";
+async function askJames(messages,max_tokens){
+  const r=await fetch(JAMES_SUPA+"/functions/v1/james",{method:"POST",
+    headers:{"Content-Type":"application/json","apikey":JAMES_ANON,"Authorization":"Bearer "+JAMES_ANON},
+    body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:max_tokens||1000,messages})});
+  if(!r.ok) throw new Error("james "+r.status);
+  return await r.json();
+}
 async function rosaBuild(text){
   if(!text||!text.trim())return;
   rosaLoading();
@@ -1564,9 +1576,7 @@ async function rosaBuild(text){
     `Nimm nur Kennzahlen, die wörtlich im Katalog stehen.`;
   let spec=null;
   try{
-    const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1000,messages:[{role:"user",content:prompt}]})});
-    const data=await r.json();
+    const data=await askJames([{role:"user",content:prompt}],1000);
     let txt=(data.content||[]).filter(x=>x.type==="text").map(x=>x.text).join("\n").replace(/```json|```/g,"").trim();
     try{spec=JSON.parse(txt);}catch(_){const m=txt.match(/\{[\s\S]*\}/);if(m)spec=JSON.parse(m[0]);}
   }catch(e){spec=null;}
@@ -1584,9 +1594,7 @@ async function rosaAnalyse(){
   const daten=kiData.rows.map(r=>`${r.nm}: ${r.vals.join(", ")} ${unit(r.nm)} (gut wenn: ${rich(r.nm)})`).join("\n");
   const prompt=`Du bist James, Controlling-Analyst bei ROSE Bikes. Bewerte dieses Berichtsergebnis (Zeitraum ${kiSel.zeit}, Aufschlüsselung nach ${kiSel.dim}).\nDaten:\n${daten}\n\nGib eine knappe Analyse:\n- je Kennzahl eine kurze Einschätzung (gut oder kritisch + warum, beachte die Richtung)\n- ein Gesamtfazit\n- eine konkrete Handlungsempfehlung\nMaximal 120 Wörter, klare Stichpunkte mit "•". Die Zahlen sind Demowerte.`;
   try{
-    const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1000,messages:[{role:"user",content:prompt}]})});
-    const data=await r.json();
+    const data=await askJames([{role:"user",content:prompt}],1000);
     const txt=(data.content||[]).filter(x=>x.type==="text").map(x=>x.text).join("\n").trim();
     el.innerHTML=`<div class="ki-eval-h">🤖 ${ROSE_AI}s Analyse &amp; Bewertung</div><div class="ki-eval-b">${txt?esc(txt).replace(/\n/g,"<br>"):"(keine Antwort)"}</div>`;
   }catch(e){

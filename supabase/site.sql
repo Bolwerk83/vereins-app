@@ -264,3 +264,50 @@ alter table public.site_reviews add  constraint site_reviews_len check (
   and char_length(app_id) <= 80
   and char_length(coalesce(session_id,'')) <= 64
 );
+
+-- =====================================================================
+-- Server-seitiges Rate-Limit (für Edge Functions: james, intake)
+-- =====================================================================
+-- Zählt Treffer je "bucket" (z. B. 'lead:1.2.3.4') in einem gleitenden
+-- Zeitfenster. Nur die Edge Functions (service_role) greifen darauf zu;
+-- anon/authenticated haben KEINEN Zugriff (RLS ohne Policy).
+create table if not exists public.site_rate (
+  bucket       text primary key,
+  hits         int  not null default 0,
+  window_start timestamptz not null default now()
+);
+alter table public.site_rate enable row level security;  -- keine Policy => nur service_role
+
+-- rl_hit: registriert einen Treffer und meldet, ob er noch erlaubt ist.
+--   p_bucket  Schlüssel (z. B. 'james:<ip>')
+--   p_max     erlaubte Treffer je Fenster
+--   p_window  Fensterlänge in Sekunden
+-- true = innerhalb des Limits, false = Limit überschritten.
+create or replace function public.rl_hit(p_bucket text, p_max int, p_window int)
+returns boolean
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare cur int;
+begin
+  insert into public.site_rate as r (bucket, hits, window_start)
+       values (p_bucket, 1, now())
+  on conflict (bucket) do update
+     set hits = case when r.window_start < now() - make_interval(secs => p_window)
+                     then 1 else r.hits + 1 end,
+         window_start = case when r.window_start < now() - make_interval(secs => p_window)
+                     then now() else r.window_start end
+  returning hits into cur;
+  return cur <= p_max;
+end $$;
+revoke all on function public.rl_hit(text, int, int) from public, anon, authenticated;
+grant  execute on function public.rl_hit(text, int, int) to service_role;
+
+-- Aufräumen alter Buckets (per Cron oder manuell aufrufbar).
+create or replace function public.rl_gc()
+returns void language sql security definer set search_path = public, pg_temp as $$
+  delete from public.site_rate where window_start < now() - interval '2 days';
+$$;
+revoke all on function public.rl_gc() from public, anon, authenticated;
+grant  execute on function public.rl_gc() to service_role;

@@ -21,6 +21,7 @@
 const CATEGORIES = [
   { id: "all",        label: "Alle Apps" },
   { id: "vereine",    label: "Vereine & Ehrenamt" },
+  { id: "business",   label: "Arbeit & Business" },
   { id: "finanzen",   label: "Finanzen & Vorsorge" },
   { id: "alltag",     label: "Alltag & Familie" },
   { id: "kommunikation", label: "Kommunikation" },
@@ -44,6 +45,24 @@ const APPS = [
       "Spieler-Aufstellung & Verfügbarkeitsabfrage",
       "Gruppen-Chat mit Push-Benachrichtigung",
       "Funktioniert offline – keine Installation nötig",
+    ],
+  },
+  {
+    id: "controlling",
+    name: "Kennzahlen-Steuerung",
+    icon: "📊",
+    category: "business",
+    tagline: "Controlling-Cockpit mit KI-Assistent.",
+    desc: "Kennzahlen-Katalog, Bereiche & OnePager, Qualitäts-Board und der KI-Berichtsassistent „James“ – dein Steuerungs-Cockpit fürs Controlling.",
+    tags: ["Kennzahlen", "Controlling", "KI", "Reports"],
+    color: "#0d9488",
+    status: "live",
+    url: "https://controlling.bolwerk24.de",
+    features: [
+      "Kennzahlen-Katalog & Bereichs-OnePager",
+      "KI-Berichtsassistent „James“",
+      "Qualitäts-Board & Prozesskette",
+      "Rollen & Rechte – zentral über bolwerk24",
     ],
   },
   {
