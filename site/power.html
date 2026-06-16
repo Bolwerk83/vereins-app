@@ -47,6 +47,23 @@
     </header>
 
     <main class="admin-main">
+      <section class="panel active" id="panel-stats">
+        <div class="panel-head">
+          <h2>Statistik</h2>
+          <div class="range" id="stats-range">
+            <button data-days="7">7 Tage</button>
+            <button data-days="30" class="active">30 Tage</button>
+            <button data-days="90">90 Tage</button>
+          </div>
+        </div>
+        <p class="hint">Aggregierte, anonyme Kennzahlen (nur Lesen).</p>
+        <div class="kpis" id="kpis"></div>
+        <div class="card">
+          <h3>Apps – angesehen &amp; geöffnet</h3>
+          <div id="by-app" class="barlist"></div>
+        </div>
+      </section>
+
       <section class="panel active" id="panel-affiliate">
         <div class="panel-head"><h2>Affiliate – Auswertung</h2></div>
         <p class="hint">Nur-Lese-Ansicht. Aktivieren/Deaktivieren und das Pflegen der Partner ist dem <b>SuperAdmin</b> vorbehalten.</p>
@@ -68,6 +85,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/assets/js/supabase-config.js?v=2"></script>
   <script src="/assets/js/bw-supabase.js?v=2"></script>
-  <script src="/assets/js/power.js?v=1"></script>
+  <script src="/assets/js/apps.js?v=2"></script>
+  <script src="/assets/js/power.js?v=2"></script>
 </body>
 </html>

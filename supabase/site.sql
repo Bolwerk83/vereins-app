@@ -182,12 +182,14 @@ language sql stable security definer set search_path = public, pg_temp as $$
 $$;
 grant execute on function public.site_review_summary() to anon, authenticated;
 
--- ---------- Auswertung: Statistik (nur Superadmin) -------------------
+-- ---------- Auswertung: Statistik (Superadmin + Power User) ----------
+-- Aggregierte, anonyme Kennzahlen. Newsletter-Leads (PII) bleiben dem
+-- Superadmin vorbehalten (eigene Tabelle/Policy).
 create or replace function public.site_stats(days int default 30)
 returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $$
 declare res jsonb; d int := greatest(coalesce(days, 30), 1);
 begin
-  if not public.is_site_admin() then
+  if not public.is_site_power() then
     raise exception 'not authorized';
   end if;
   with ev as (
@@ -198,6 +200,7 @@ begin
     'page_views', (select count(*) from ev where type = 'page_view'),
     'sessions',   (select count(distinct session_id) from ev where session_id is not null),
     'app_opens',  (select count(*) from ev where type = 'app_open'),
+    'affiliate_clicks', (select count(*) from ev where type = 'affiliate_click'),
     'leads',      (select count(*) from public.site_leads
                     where created_at >= now() - make_interval(days => d)),
     'by_app', coalesce((

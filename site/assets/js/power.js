@@ -13,6 +13,9 @@
 
   const sb = () => (window.bwSupabase ? window.bwSupabase() : null);
   const safeHttp = (u) => /^https?:\/\//i.test(String(u || ""));
+  const num = (n) => Number(n || 0).toLocaleString("de-DE");
+  const DEFAULT_APPS = (window.BOLWERK && window.BOLWERK.APPS) || [];
+  const appName = (id) => (DEFAULT_APPS.find((a) => a.id === id) || {}).name || id || "—";
 
   /* ---------------- Login ---------------- */
   function initLogin() {
@@ -65,7 +68,51 @@
     const email = (u && u.user && u.user.email) || "";
     $("#admin-user").textContent = email + (role === "superadmin" ? " · SuperAdmin" : " · Power User");
     showDash();
+    loadStats(currentDays);
     loadAffiliateView();
+  }
+
+  /* ---------------- Statistik (read-only) ---------------- */
+  let currentDays = 30;
+  function initStatsRange() {
+    const range = $("#stats-range"); if (!range) return;
+    range.addEventListener("click", (e) => {
+      const b = e.target.closest("button"); if (!b) return;
+      $$("#stats-range button").forEach((x) => x.classList.toggle("active", x === b));
+      currentDays = parseInt(b.dataset.days, 10) || 30;
+      loadStats(currentDays);
+    });
+  }
+  async function loadStats(days) {
+    const client = sb(); if (!client) return;
+    const kpis = $("#kpis"); if (kpis) kpis.innerHTML = '<div class="kpi loading">Lade …</div>';
+    let s;
+    try {
+      const { data, error } = await client.rpc("site_stats", { days });
+      if (error) throw error;
+      s = data || {};
+    } catch (err) {
+      if (kpis) kpis.innerHTML = '<div class="kpi"><div class="kpi-n">—</div><div class="kpi-l">Fehler: ' + esc(err.message || err) + "</div></div>";
+      return;
+    }
+    if (kpis) kpis.innerHTML = [
+      ["Seitenaufrufe", s.page_views],
+      ["Sitzungen", s.sessions],
+      ["App-Öffnungen", s.app_opens],
+      ["Affiliate-Klicks", s.affiliate_clicks],
+    ].map(([l, n]) => `<div class="kpi"><div class="kpi-n">${num(n)}</div><div class="kpi-l">${l}</div></div>`).join("");
+
+    const apps = s.by_app || [];
+    const maxApp = Math.max(1, ...apps.map((a) => Math.max(a.views || 0, a.opens || 0)));
+    const byApp = $("#by-app");
+    if (byApp) byApp.innerHTML = apps.length
+      ? apps.map((a) => `
+        <div class="bar-row">
+          <div class="bar-label">${esc(appName(a.app_id))}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${Math.round((a.opens || 0) / maxApp * 100)}%"></div></div>
+          <div class="bar-val">${num(a.opens)} <span>geöffnet</span> · ${num(a.views)} ges.</div>
+        </div>`).join("")
+      : '<p class="empty">Noch keine Daten.</p>';
   }
 
   function showDash() { $("#login").hidden = true; $("#dash").hidden = false; }
@@ -117,6 +164,7 @@
   /* ---------------- Start ---------------- */
   document.addEventListener("DOMContentLoaded", async () => {
     initLogin();
+    initStatsRange();
     const client = sb();
     if (client) {
       const { data } = await client.auth.getSession();
