@@ -17389,6 +17389,20 @@ function BulkAddPlayers({ cid, cl, selTid, selTeam, clubTeams, activeSeason, all
     onClose();
   };
 
+  const pasteClip = async () => {
+    try {
+      const clip = await navigator.clipboard.readText();
+      if (clip && clip.trim()) {
+        setText(prev => prev.trim() ? prev.replace(/\s*$/,"") + "\n" + clip.trim() : clip.trim());
+        fire("Aus Zwischenablage eingefuegt");
+      } else {
+        fire("Zwischenablage leer – erst Text im Foto markieren & kopieren");
+      }
+    } catch {
+      fire("Einfuegen vom Browser blockiert – tippe lang ins Feld und waehle Einsetzen");
+    }
+  };
+
   const example =
 `Lukas Berger, 2018, m
 Emma Wolf, 2019, w
@@ -17448,10 +17462,17 @@ Ben Fischer | 2016 | m`;
               </div>
             )}
             <p style={{fontSize:11.5,color:"#64748b",lineHeight:1.5,marginTop:8}}>
-              Tipp: Markiere den Text <strong>direkt im Bild</strong> (iPhone: „Text auswählen"/Live&nbsp;Text, Android: Google&nbsp;Lens), kopiere ihn und füge ihn unten ein – Namen und Jahrgang werden automatisch erkannt. Das Foto ist nur eine Abtipp-Vorlage und wird nicht gespeichert.
+              Tipp: Markiere den Text <strong>direkt im Bild</strong> (iPhone: „Text auswählen"/Live&nbsp;Text, Android: Google&nbsp;Lens) und kopiere ihn. Dann unten auf <strong>„📋 Einfügen"</strong> tippen – Namen und Jahrgang werden automatisch erkannt. Das Foto ist nur eine Abtipp-Vorlage und wird nicht gespeichert.
             </p>
           </div>
           {/* Eingabe */}
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginBottom:6}}>
+            <div style={{fontSize:10,fontWeight:800,color:"#64748b",letterSpacing:.4}}>NAMEN (eine pro Zeile)</div>
+            <button type="button" onClick={pasteClip}
+              style={{display:"inline-flex",alignItems:"center",gap:5,padding:"6px 11px",borderRadius:9,border:`1.5px solid ${t.p}`,background:t.p,color:"#fff",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+              📋 Einfügen
+            </button>
+          </div>
           <textarea value={text} onChange={e=>setText(e.target.value)}
             placeholder={`Beispiel:\n${example}`}
             rows={9}
@@ -21746,7 +21767,7 @@ function FieldsManagerTab({ data, cid, save, fire, cl }) {
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:900,
           display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
           <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",
-            maxWidth:520,maxHeight:"88dvh",overflowY:"auto",paddingBottom:44}}>
+            maxWidth:520,maxHeight:"88dvh",overflowY:"auto",WebkitOverflowScrolling:"touch",paddingBottom:"calc(44px + env(safe-area-inset-bottom))"}}>
 
             {/* Progress */}
             <div style={{background:t.p,padding:"16px 20px 14px"}}>
@@ -22245,7 +22266,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         isAdmin={isAdmin} isHelper={isHelper}
         unread={unreadMsgs} inboxUnread={unreadInbox} cl={myClub}
         session={session} onLogout={onLogout} lang={lang} setLang={setLang}/>}
-      <div style={{minHeight:"100dvh",overflowY:"auto",WebkitOverflowScrolling:"touch",background:"#f0f4f8",paddingBottom:isDesktop?0:"calc(72px + env(safe-area-inset-bottom))"}}>
+      <div style={{minHeight:"100dvh",background:"#f0f4f8",paddingBottom:isDesktop?0:"calc(72px + env(safe-area-inset-bottom))"}}>
       <div style={{maxWidth:isDesktop?"900px":"100%",margin:"0 auto",padding:isDesktop?"24px":"0"}}>
       <ClubHeader cl={myClub} hide={isDesktop} sub={`${isAdmin?"** Admin":isHelper?"* Helfer":"**"} ${session.name||"Admin"}`}
         right={
