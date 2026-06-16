@@ -2,5 +2,7 @@ User-agent: *
 Allow: /
 Disallow: /admin
 Disallow: /admin.html
+Disallow: /power
+Disallow: /power.html
 
 Sitemap: https://bolwerk24.de/sitemap.xml
