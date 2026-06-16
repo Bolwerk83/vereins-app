@@ -17387,6 +17387,24 @@ function parseBulkPlayerLine(line) {
   return { name, by: by || null, gender: gender };
 }
 
+// Tesseract.js bei Bedarf vom CDN nachladen (kein Bundle-Ballast). Läuft komplett
+// im Browser des Geräts – keine Kinder-Namen verlassen das Handy (DSGVO-freundlich).
+let _tessPromise = null;
+const loadTesseract = () => {
+  if (typeof window !== "undefined" && window.Tesseract) return Promise.resolve(window.Tesseract);
+  if (_tessPromise) return _tessPromise;
+  _tessPromise = new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
+    s.async = true;
+    s.onload = () => window.Tesseract ? resolve(window.Tesseract) : reject(new Error("no Tesseract"));
+    s.onerror = () => { _tessPromise = null; reject(new Error("load failed")); };
+    document.head.appendChild(s);
+    setTimeout(() => { if (!window.Tesseract) { _tessPromise = null; reject(new Error("timeout")); } }, 25000);
+  });
+  return _tessPromise;
+};
+
 function BulkAddPlayers({ cid, cl, selTid, selTeam, clubTeams, activeSeason, allPlayers, data, save, fire, onClose }) {
   const t = TH(cl);
   const defaultBy = selTeam?.years ? parseInt(String(selTeam.years).split("/")[0]) || 2014 : 2014;
@@ -17450,6 +17468,25 @@ function BulkAddPlayers({ cid, cl, selTid, selTeam, clubTeams, activeSeason, all
     }
   };
 
+  const [ocr, setOcr] = useState(null); // null | {pct}
+  const runOcr = async () => {
+    if (!photo || ocr) return;
+    try {
+      setOcr({ pct: 0 });
+      const Tess = await loadTesseract();
+      const { data: res } = await Tess.recognize(photo, "deu", {
+        logger: m => { if (m.status === "recognizing text") setOcr({ pct: Math.round((m.progress || 0) * 100) }); },
+      });
+      const txt = ((res && res.text) || "").replace(/[ \t]+\n/g, "\n").trim();
+      setOcr(null);
+      if (txt) { setText(prev => prev.trim() ? prev.replace(/\s*$/, "") + "\n" + txt : txt); fire("Text aus Foto erkannt – bitte prüfen & korrigieren"); }
+      else fire("Keine Schrift erkannt – Foto schärfer/gerader fotografieren");
+    } catch {
+      setOcr(null);
+      fire("Foto-Erkennung nicht verfügbar (Internet nötig). Alternativ: Text im Bild markieren & „Einfügen“.");
+    }
+  };
+
   const example =
 `Lukas Berger, 2018, m
 Emma Wolf, 2019, w
@@ -17505,11 +17542,15 @@ Ben Fischer | 2016 | m`;
             ) : (
               <div>
                 <img src={photo} alt="Vorlage" style={{width:"100%",maxHeight:220,objectFit:"contain",borderRadius:10,border:"1px solid #e2e8f0",background:"#fff"}}/>
-                <button type="button" onClick={()=>setPhoto(null)} style={{marginTop:6,background:"none",border:"none",color:"#dc2626",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",padding:0}}>Foto entfernen</button>
+                <button type="button" onClick={runOcr} disabled={!!ocr}
+                  style={{marginTop:8,width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:8,padding:"11px",borderRadius:10,border:"none",background:ocr?"#cbd5e1":t.p,color:"#fff",fontWeight:800,fontSize:13.5,cursor:ocr?"default":"pointer",fontFamily:"inherit"}}>
+                  {ocr ? `Lese Foto… ${ocr.pct}%` : "📸 Namen aus Foto auslesen"}
+                </button>
+                <button type="button" onClick={()=>setPhoto(null)} disabled={!!ocr} style={{marginTop:6,background:"none",border:"none",color:"#dc2626",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",padding:0}}>Foto entfernen</button>
               </div>
             )}
             <p style={{fontSize:11.5,color:"#64748b",lineHeight:1.5,marginTop:8}}>
-              Tipp: Markiere den Text <strong>direkt im Bild</strong> (iPhone: „Text auswählen"/Live&nbsp;Text, Android: Google&nbsp;Lens) und kopiere ihn. Dann unten auf <strong>„📋 Einfügen"</strong> tippen – Namen und Jahrgang werden automatisch erkannt. Das Foto ist nur eine Abtipp-Vorlage und wird nicht gespeichert.
+              <strong>„📸 Namen aus Foto auslesen"</strong> liest die Liste direkt aus dem Bild (läuft auf deinem Gerät, beim ersten Mal kurze Ladezeit, Internet nötig). Danach Namen prüfen/korrigieren. Klappt es nicht sauber, markiere den Text im Bild per iPhone-Live-Text / Android-Google-Lens und nutze „📋 Einfügen". Das Foto wird nicht gespeichert.
             </p>
           </div>
           {/* Eingabe */}
@@ -17564,9 +17605,12 @@ Ben Fischer | 2016 | m`;
             </div>
           )}
         </div>
-        <label style={{display:"flex",alignItems:"center",gap:10,margin:"0 20px",padding:"10px 12px",borderRadius:11,background:consent?"#f0fdf4":"#fffbeb",border:`1.5px solid ${consent?"#bbf7d0":"#fde68a"}`,cursor:"pointer"}}>
-          <input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)} style={{width:18,height:18,accentColor:t.p,flexShrink:0}}/>
-          <span style={{fontSize:12.5,fontWeight:600,color:"#334155"}}>Elterliche Einwilligung liegt für alle vor (Art. 8 DSGVO)</span>
+        <label style={{display:"flex",alignItems:"flex-start",gap:10,margin:"0 20px",padding:"10px 12px",borderRadius:11,background:consent?"#f0fdf4":"#f8fafc",border:`1.5px solid ${consent?"#bbf7d0":"#e2e8f0"}`,cursor:"pointer"}}>
+          <input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)} style={{width:18,height:18,accentColor:t.p,flexShrink:0,marginTop:1}}/>
+          <span style={{fontSize:12,color:"#334155",lineHeight:1.5}}>
+            <strong>Einwilligung der Eltern liegt bereits vor</strong> (optional, wird nur dokumentiert)
+            <span style={{display:"block",color:"#94a3b8",marginTop:2}}>Zum Anlegen <strong>nicht nötig</strong> – du kannst die Einwilligung auch später einholen. Für die Team-Orga reicht in der Regel die Mitgliedschaft als Grundlage; gespeichert wird ohnehin nur Vorname + Initiale.</span>
+          </span>
         </label>
         <div style={{padding:"12px 20px 16px",borderTop:"1px solid #f1f5f9",display:"flex",gap:8}}>
           <button onClick={onClose}
