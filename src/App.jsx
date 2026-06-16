@@ -1418,6 +1418,7 @@ const TEAM_STRENGTHS = [
   { id:1, label:"Entwicklung", col:"#16a34a", desc:"Junge oder neue Mannschaft – Spaß, Lernen und Spielpraxis stehen im Vordergrund. Gegner auf Augenhöhe, damit alle Kinder erfolgreich mitspielen." },
   { id:2, label:"Ambitioniert", col:"#2563eb", desc:"Eingespielte Mannschaft mit solidem Niveau – ausgeglichene, faire Spiele gegen ähnlich starke Teams." },
   { id:3, label:"Leistung", col:"#d97706", desc:"Leistungsorientierte Mannschaft – sucht anspruchsvolle, fordernde Gegner auf hohem Niveau." },
+  { id:4, label:"Spitze", col:"#dc2626", desc:"Leistungsstärkste Mannschaft – oberste Spielklasse bzw. Leistungszentrums-Niveau. Sucht ausschließlich Top-Gegner." },
 ];
 const strengthOf = id => TEAM_STRENGTHS.find(s=>s.id===id) || null;
 
@@ -23750,7 +23751,7 @@ function TournBoerse({ data, cid, myTids, cl, save, fire }){
           <input type="number" min="1" value={nf.maxTeams} onChange={e=>un({maxTeams:e.target.value})} style={{width:60,padding:"8px",fontSize:14,textAlign:"center",border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none"}}/>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.3}}>WILLKOMMENE SPIELSTÄRKE</span><InfoHint text={TEAM_STRENGTHS.map(s=>s.label+": "+s.desc).join("  ·  ")}/></div>
-        <div style={{display:"flex",gap:6}}>{TEAM_STRENGTHS.map(s=>{const on=nf.strengths.includes(s.id);return <button key={s.id} onClick={()=>toggleStr(s.id)} style={{flex:1,padding:"8px 6px",borderRadius:10,border:`2px solid ${on?s.col:"#e2e8f0"}`,background:on?s.col+"15":"#fff",color:on?s.col:"#94a3b8",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{on?"✓ ":""}{s.label}</button>;})}</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>{TEAM_STRENGTHS.map(s=>{const on=nf.strengths.includes(s.id);return <button key={s.id} onClick={()=>toggleStr(s.id)} style={{padding:"8px 6px",borderRadius:10,border:`2px solid ${on?s.col:"#e2e8f0"}`,background:on?s.col+"15":"#fff",color:on?s.col:"#94a3b8",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{on?"✓ ":""}{s.label}</button>;})}</div>
         {liveTourns.length>0 && <select value={nf.eid} onChange={e=>un({eid:e.target.value})} style={{padding:"11px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",fontFamily:"inherit",background:"#fff"}}>
           <option value="">– eigenes Turnier verknüpfen (Spielplan-Link, optional) –</option>
           {liveTourns.map(e=><option key={e.id} value={e.id}>{e.title} · {fmtD(e.date)}</option>)}
@@ -23836,7 +23837,7 @@ function RegisterOfferModal({ offer, myTeams, t, onClose, onRegister, guest=fals
             <span style={{fontWeight:900,fontSize:17,width:26,textAlign:"center"}}>{teams}</span>
             <button onClick={()=>setTeams(teams+1)} style={{width:34,height:34,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:900,fontSize:17,cursor:"pointer"}}>+</button>
           </div>
-          <div style={{display:"flex",gap:6}}>{TEAM_STRENGTHS.map(s=><button key={s.id} onClick={()=>setStrength(s.id)} title={s.desc} style={{flex:1,padding:"8px 6px",borderRadius:10,border:`2px solid ${strength===s.id?s.col:"#e2e8f0"}`,background:strength===s.id?s.col+"15":"#fff",color:strength===s.id?s.col:"#94a3b8",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{s.label}</button>)}</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>{TEAM_STRENGTHS.map(s=><button key={s.id} onClick={()=>setStrength(s.id)} title={s.desc} style={{padding:"8px 6px",borderRadius:10,border:`2px solid ${strength===s.id?s.col:"#e2e8f0"}`,background:strength===s.id?s.col+"15":"#fff",color:strength===s.id?s.col:"#94a3b8",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{s.label}</button>)}</div>
           <input value={note} onChange={e=>setNote(e.target.value)} placeholder="Nachricht an den Ausrichter (optional)" style={{padding:"11px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
           {guest && <>
             <div style={{fontSize:11,fontWeight:800,color:"#64748b"}}>KONTAKT (für die Rückmeldung) *</div>
