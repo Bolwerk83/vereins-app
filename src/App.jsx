@@ -1,4 +1,4 @@
-import React, { useState,useEffect,useCallback,useRef,useMemo,createContext } from "react";
+import React, { useState,useEffect,useCallback,useRef,useMemo,createContext,useContext } from "react";
 import { splitData, mergeData, merge3Obj } from "./data.js";
 import { eventStart, eventDeadline, isVotingLocked, isDeadlinePassed, isEventPast, daysUntil, isUpcoming5, formatCountdown, round2, clampSkill, monthKey, skillsMean, blendSkill, germanPublicHolidays, publicHolidayName, DE_STATES } from "./logic.js";
 import { ACOLORS, acol, inits, contrast, mix } from "./util.js";
@@ -118,6 +118,10 @@ const T = {
     send: "Senden",
     wholeClub:"Gesamter Verein",
     noMessages: "Noch keine Nachrichten",
+    navTeam:"Team", navMore:"Mehr", navTreasury:"Kasse", navTraining:"Trainingsplan",
+    navResults:"Ergebnisse", navAttendance:"Anwesenheit", navOverview:"Übersicht alle Teams",
+    navNews:"Neuigkeiten", navFieldsAdmin:"Plätze", navSecurity:"Sicherheitslog",
+    navAccess:"Zugänge & Passwörter", secManage:"VERWALTUNG", secAdmin:"ADMIN",
   },
   en: {
     back:"<- Back",
@@ -230,6 +234,10 @@ const T = {
     send:"Send",
     wholeClub:"Whole club",
     noMessages:"No messages yet",
+    navTeam:"Team", navMore:"More", navTreasury:"Treasury", navTraining:"Training plan",
+    navResults:"Results", navAttendance:"Attendance", navOverview:"All teams overview",
+    navNews:"News", navFieldsAdmin:"Pitches", navSecurity:"Security log",
+    navAccess:"Access & passwords", secManage:"MANAGEMENT", secAdmin:"ADMIN",
   },
   nl: {
     back:"<- Terug",
@@ -342,6 +350,10 @@ const T = {
     send:"Versturen",
     wholeClub:"Hele club",
     noMessages:"Nog geen berichten",
+    navTeam:"Team", navMore:"Meer", navTreasury:"Kas", navTraining:"Trainingsschema",
+    navResults:"Resultaten", navAttendance:"Aanwezigheid", navOverview:"Overzicht alle teams",
+    navNews:"Nieuws", navFieldsAdmin:"Velden", navSecurity:"Beveiligingslog",
+    navAccess:"Toegang & wachtwoorden", secManage:"BEHEER", secAdmin:"ADMIN",
   },
   ar: {
     back:"<- Khalf",
@@ -574,6 +586,11 @@ const T = {
 // verdrahteten deutschen Texten bleiben unabhängig von der Sprachwahl deutsch.
 // ar/tr liegen vollständig (transliteriert) im T-Table, sind aber bewusst nicht
 // als sichtbare Schalter-Option gelistet.
+// Globaler Sprach-Zugriff: jede Komponente kann per useT() den aktuellen
+// Übersetzer holen, ohne lang durch alle Props zu reichen. Baut auf dem
+// bereits vorhandenen LangCtx (liefert den Sprach-String) auf.
+const useT = () => { const lang = useContext(LangCtx); return { lang, tr: (k) => (T[lang]?.[k] ?? T.de[k] ?? k) }; };
+
 const LANG_SWITCHER_ENABLED = true;
 function LangSwitcher({ lang,setLang }) {
   if(!LANG_SWITCHER_ENABLED) return null;
@@ -4346,50 +4363,51 @@ const EVENT_TYPE_ALIAS = { spiel:"heimspiel", heim:"heimspiel", ausw:"auswarts",
 function BottomNav({ tab, setTab, isAdmin, isHelper, isParent=false, unread, inboxUnread=0, cl, hide=false }) {
   if(hide) return null;
   const t = TH(cl);
+  const { tr } = useT();
   const [showDrawer, setShowDrawer] = useState(false);
   const isTrainer = !isAdmin && !isHelper && !isParent;
 
   const cs = cl?.clubSettings||{};
   const clubFeat = (key, def=true) => cs[key]!==undefined ? cs[key] : def;
   const mainTabs = (isParent ? [
-    { id:"events",  label:"Termine",  icon:"K" },
-    { id:"chat",    label:"Chat",     icon:"C", badge: unread, hidden: !feat("chat_team") },
-    { id:"more",    label:"Mehr",     icon:"=" },
+    { id:"events",  label:tr("tabEvents"),  icon:"K" },
+    { id:"chat",    label:tr("tabChat"),     icon:"C", badge: unread, hidden: !feat("chat_team") },
+    { id:"more",    label:tr("navMore"),     icon:"=" },
   ] : [
-    { id:"events",  label:"Termine",  icon:"K" },
-    { id:"team",    label:"Team",     icon:"P", hidden: isHelper },
-    { id:"fields",  label:"Platz",    icon:"F", hidden: isHelper||!feat("fields_booking")||!clubFeat("mod_fields") },
-    { id:"chat",    label:"Chat",     icon:"C", badge: unread, hidden: !feat("chat_team") },
-    { id:"more",    label:"Mehr",     icon:"=", badge: inboxUnread },
+    { id:"events",  label:tr("tabEvents"),  icon:"K" },
+    { id:"team",    label:tr("navTeam"),     icon:"P", hidden: isHelper },
+    { id:"fields",  label:tr("tabFields"),    icon:"F", hidden: isHelper||!feat("fields_booking")||!clubFeat("mod_fields") },
+    { id:"chat",    label:tr("tabChat"),     icon:"C", badge: unread, hidden: !feat("chat_team") },
+    { id:"more",    label:tr("navMore"),     icon:"=", badge: inboxUnread },
   ]).filter(x=>!x.hidden);
 
   const drawerSections = [
     {
-      label: "VERWALTUNG",
+      label: tr("secManage"),
       items: [
-        { id:"tinbox",    label: inboxUnread>0?`Posteingang (${inboxUnread})`:"Posteingang", icon:"I", hidden: !isTrainer },
-        { id:"treasury",  label:"Kasse",        icon:"€", hidden: isHelper },
-        { id:"training",  label:"Trainingsplan", icon:"TP", hidden: isHelper||!feat("training_plans")||!clubFeat("mod_training") },
-        { id:"jerseys",    label:"Trikots",      icon:"T", hidden: isHelper||!feat("jerseys_tab")||!clubFeat("mod_jerseys") },
-        { id:"helpers",    label:"Helfer",       icon:"H", hidden: isHelper },
-        { id:"templates",  label:"Vorlagen",     icon:"V", hidden: isHelper },
-        { id:"results",    label:"Ergebnisse",   icon:"E", hidden: isHelper||!feat("results_tab")||!clubFeat("mod_results") },
-        { id:"attendance", label:"Anwesenheit",  icon:"S", hidden: isHelper||!feat("attendance_tab") },
+        { id:"tinbox",    label: inboxUnread>0?`${tr("tabInbox")} (${inboxUnread})`:tr("tabInbox"), icon:"I", hidden: !isTrainer },
+        { id:"treasury",  label:tr("navTreasury"),        icon:"€", hidden: isHelper },
+        { id:"training",  label:tr("navTraining"), icon:"TP", hidden: isHelper||!feat("training_plans")||!clubFeat("mod_training") },
+        { id:"jerseys",    label:tr("tabJerseys"),      icon:"T", hidden: isHelper||!feat("jerseys_tab")||!clubFeat("mod_jerseys") },
+        { id:"helpers",    label:tr("tabHelpers"),       icon:"H", hidden: isHelper },
+        { id:"templates",  label:tr("tabTemplates"),     icon:"V", hidden: isHelper },
+        { id:"results",    label:tr("navResults"),   icon:"E", hidden: isHelper||!feat("results_tab")||!clubFeat("mod_results") },
+        { id:"attendance", label:tr("navAttendance"),  icon:"S", hidden: isHelper||!feat("attendance_tab") },
       ].filter(x=>!x.hidden),
     },
     isAdmin && {
-      label: "ADMIN",
+      label: tr("secAdmin"),
       items: [
-        { id:"overview",    label:"Übersicht alle Teams", icon:"U" },
-        { id:"news",        label:"Neuigkeiten",           icon:"N", hidden: !feat("news_board") },
-        { id:"teams",       label:"Mannschaften",          icon:"M" },
-        { id:"trainers",    label:"Trainer",               icon:"T" },
-        { id:"fieldsadmin", label:"Plätze",               icon:"P", hidden: !feat("fields_manager") },
-        { id:"branding",    label:"Design",                icon:"D" },
-        { id:"inbox",       label:"Posteingang",           icon:"I" },
-        { id:"security",    label:"Sicherheitslog",         icon:"!" },
-        { id:"access",      label:"Zugänge & Passwörter",  icon:"PW" },
-        { id:"settings",    label:"Einstellungen",         icon:"+" },
+        { id:"overview",    label:tr("navOverview"), icon:"U" },
+        { id:"news",        label:tr("navNews"),           icon:"N", hidden: !feat("news_board") },
+        { id:"teams",       label:tr("tabTeams"),          icon:"M" },
+        { id:"trainers",    label:tr("tabTrainers"),               icon:"T" },
+        { id:"fieldsadmin", label:tr("navFieldsAdmin"),               icon:"P", hidden: !feat("fields_manager") },
+        { id:"branding",    label:tr("tabBranding"),                icon:"D" },
+        { id:"inbox",       label:tr("tabInbox"),           icon:"I" },
+        { id:"security",    label:tr("navSecurity"),         icon:"!" },
+        { id:"access",      label:tr("navAccess"),  icon:"PW" },
+        { id:"settings",    label:tr("tabSettings"),         icon:"+" },
       ],
     },
   ].filter(Boolean).filter(x=>!x.hidden);
