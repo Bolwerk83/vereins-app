@@ -50,3 +50,19 @@ Team-Mitglieder) oder **Password Protection** aktivieren.
 Endpoint läuft die App im **Offline-Modus** (lokale Erkennung, Demo-Werte).
 Für den produktiven Einsatz die KI-Aufrufe über ein Backend mit hinterlegtem
 API-Key leiten – keinen Schlüssel im Client einbetten.
+
+## Zentrale Anmeldung & Rollen (optional)
+
+Das Tool kann sich an dasselbe Supabase-Backend wie der bolwerk24-Hub binden
+(`supabase/site.sql`, Tabelle `site_roles`). Oben rechts neben dem Rollen-
+Umschalter gibt es **„Zentral anmelden"**:
+
+- Nach dem Login bestimmt die **zentrale Rolle** die Berechtigung
+  (`superadmin` → Superadmin, `power` → Business Controller, sonst Bearbeiter).
+  Der manuelle Demo-Umschalter ist dann gesperrt.
+- **Ohne Login** bleibt die Standalone-Demo unverändert: Rollen lassen sich
+  weiter frei umschalten (keine Anmeldung nötig).
+
+Voraussetzung: In Supabase einen Auth-User anlegen und die Rolle in
+`site_roles` setzen (siehe `site/README.md`). Der KI-Assistent „James" ist davon
+unabhängig.
