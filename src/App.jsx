@@ -18959,7 +18959,55 @@ function SeriesWizard({f,u,t}) {
   );
 }
 
-function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTemplate=null,fields=[]}) {
+// Vereinsweites Adressbuch für Auswärts-Spielorte (mit Suche, wenn es viele werden).
+function VenuePicker({venues=[],value,onPick,onClear,onAdd,cl}) {
+  const t=TH(cl);
+  const [q,setQ]=useState("");
+  const [adding,setAdding]=useState(false);
+  const [nName,setNName]=useState(""); const [nAddr,setNAddr]=useState("");
+  const sel=venues.find(v=>v.id===value);
+  const lbl=<div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.6,textTransform:"uppercase",marginBottom:5}}>Auswärts-Adresse (Spielort)</div>;
+  if(sel) return (
+    <div>{lbl}
+      <div style={{border:`2px solid ${t.p}`,borderRadius:13,padding:"12px 14px",background:t.p+"0e"}}>
+        <div style={{fontWeight:800,fontSize:15,color:"#0f172a"}}>{sel.name}</div>
+        {sel.address&&<div style={{fontSize:13,color:"#475569",marginTop:2,whiteSpace:"pre-line"}}>{sel.address}</div>}
+        <button type="button" onClick={onClear} style={{marginTop:8,background:"none",border:"none",color:t.p,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",padding:0}}>Andere Adresse wählen</button>
+      </div>
+    </div>
+  );
+  const s=(q||"").toLowerCase();
+  const filtered=venues.filter(v=>!s||(v.name||"").toLowerCase().includes(s)||(v.address||"").toLowerCase().includes(s));
+  return (
+    <div>{lbl}
+      {adding ? (
+        <div style={{display:"flex",flexDirection:"column",gap:8,border:"1.5px solid #e2e8f0",borderRadius:13,padding:"12px"}}>
+          <input value={nName} onChange={e=>setNName(e.target.value)} placeholder="Verein / Sportanlage (z.B. SV Adler)" style={{padding:"10px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",fontFamily:"inherit"}}/>
+          <textarea value={nAddr} onChange={e=>setNAddr(e.target.value)} placeholder={"Adresse (Straße, PLZ Ort)"} rows={2} style={{padding:"10px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",fontFamily:"inherit",resize:"vertical",boxSizing:"border-box"}}/>
+          <div style={{display:"flex",gap:8}}>
+            <button type="button" onClick={()=>setAdding(false)} style={{flex:1,padding:"10px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",color:"#475569"}}>Abbrechen</button>
+            <button type="button" disabled={!nName.trim()} onClick={()=>{const v=onAdd&&onAdd({name:nName.trim(),address:nAddr.trim()}); if(v)onPick(v); setAdding(false);}} style={{flex:2,padding:"10px",borderRadius:11,border:"none",background:nName.trim()?t.p:"#cbd5e1",color:nName.trim()?contrast(t.p):"#475569",fontWeight:800,fontSize:13,cursor:nName.trim()?"pointer":"default",fontFamily:"inherit"}}>Speichern & wählen</button>
+          </div>
+        </div>
+      ) : (
+        <>
+          {venues.length>4&&<input value={q} onChange={e=>setQ(e.target.value)} placeholder="Adresse suchen..." style={{width:"100%",padding:"10px 13px",fontSize:14,border:"2px solid #e2e8f0",borderRadius:12,outline:"none",boxSizing:"border-box",marginBottom:8,fontFamily:"inherit"}}/>}
+          {venues.length>0&&<div style={{display:"flex",flexDirection:"column",gap:7,maxHeight:200,overflowY:"auto"}}>
+            {filtered.map(v=>(
+              <button key={v.id} type="button" onClick={()=>onPick(v)} style={{textAlign:"left",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"10px 13px",background:"#fff",cursor:"pointer",fontFamily:"inherit"}}>
+                <div style={{fontWeight:700,fontSize:14,color:"#0f172a"}}>{v.name}</div>
+                {v.address&&<div style={{fontSize:12,color:"#94a3b8",marginTop:1,whiteSpace:"pre-line"}}>{v.address}</div>}
+              </button>
+            ))}
+            {filtered.length===0&&<div style={{fontSize:13,color:"#94a3b8",padding:"4px 2px"}}>Keine Adresse gefunden.</div>}
+          </div>}
+          <button type="button" onClick={()=>{setAdding(true);setNName("");setNAddr("");}} style={{marginTop:8,width:"100%",padding:"11px",borderRadius:12,border:`1.5px dashed ${t.p}`,background:"transparent",color:t.p,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>+ Neue Adresse anlegen</button>
+        </>
+      )}
+    </div>
+  );
+}
+function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTemplate=null,fields=[],venues=[],onAddVenue}) {
   const t=TH(cl); const isEdit=!!editEv; const STEPS=5;
   const blank={tid:teams[0]?.id||"",type:"training",title:"",date:now(),time:"",endTime:"",loc:"",note:"",sollPlayers:null,maxPlayers:null,pt:"att",recMode:"none",recDays:[],recStart:now(),recUntil:"",recDates:[],li:[],fi:[],sc:[],extraPolls:[],selType:"multi",open:false,_li:{txt:"",max:""},_fi:{name:"",col:"#16a34a"},_sc:{fid:"",time:"",a:"",b:"",ref:""}};
   const [step,setStep]=useState(1);
@@ -19021,7 +19069,12 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
             <Inp label="Uhrzeit" val={f.time} set={v=>u({time:v})} type="time" ph="09:00" cl={cl}/>
             <Inp label="Ende (optional)" val={f.endTime} set={v=>u({endTime:v})} type="time" ph="" cl={cl}/>
           </div>
-          {fields.length>0 ? (()=>{
+          {["auswarts","freundschaft","turnier"].includes(f.type) ? (
+            <VenuePicker venues={venues} value={f.venueId}
+              onPick={v=>u({venueId:v.id,loc:v.name,venueAddr:v.address||""})}
+              onClear={()=>u({venueId:undefined,loc:"",venueAddr:""})}
+              onAdd={onAddVenue} cl={cl}/>
+          ) : fields.length>0 ? (()=>{
             const selF = fields.find(x=>x.id===f.fieldId);
             return (
               <div style={{display:"flex",flexDirection:"column",gap:11}}>
@@ -22247,6 +22300,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
 
   if(wizard||editEv) return <Wizard teams={local.teams.filter(x=>myTids.includes(x.id))} cl={myClub} editEv={editEv}
     fields={(local.fields||[]).filter(x=>x.cid===cid)}
+    venues={(local.venues||[]).filter(x=>x.cid===cid)}
+    onAddVenue={v=>{ const nv={id:uid(),cid,name:v.name,address:v.address||""}; save({...local,venues:[...(local.venues||[]),nv]}); fire("Adresse im Vereins-Adressbuch gespeichert"); return nv; }}
     onTemplates={(local.pollTemplates||[]).filter(t=>t.cid===cid&&!t.pending)}
     onSaveTemplate={tpl=>{save({...local,pollTemplates:[...(local.pollTemplates||[]),{...tpl,cid}]});fire("Vorlage gespeichert *");}}
     onSave={evs=>{
@@ -22455,6 +22510,18 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
 
       {}
       {viewEv&&<Drawer onClose={()=>setViewEv(null)} title={viewEv.title}>
+        {viewEv.venueAddr && (
+          <a href={`https://maps.google.com/?q=${encodeURIComponent((viewEv.loc?viewEv.loc+", ":"")+viewEv.venueAddr)}`} target="_blank" rel="noreferrer"
+            style={{display:"flex",alignItems:"flex-start",gap:10,textDecoration:"none",background:"#eff6ff",border:"1.5px solid #bfdbfe",borderRadius:14,padding:"12px 14px",marginBottom:14}}>
+            <span style={{fontSize:18,flexShrink:0}}>📍</span>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:11,fontWeight:800,color:"#1d4ed8",letterSpacing:.3}}>SPIELORT</div>
+              {viewEv.loc&&<div style={{fontSize:14,fontWeight:800,color:"#0f172a",marginTop:2}}>{viewEv.loc}</div>}
+              <div style={{fontSize:13,color:"#475569",whiteSpace:"pre-line",marginTop:1}}>{viewEv.venueAddr}</div>
+              <div style={{fontSize:12,fontWeight:700,color:"#2563eb",marginTop:5}}>In Karte öffnen →</div>
+            </div>
+          </a>
+        )}
         {viewEv.type==="turnier"
           ? <TournView ev={viewEv} user={session.name||"Admin"} onVote={()=>{}} cl={myClub} players={local.players} isHelper={isHelper} fields={(data.fields||[]).filter(f=>f.cid===cid)}
               onUpdate={patch=>{
@@ -24977,6 +25044,18 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
       </div>
       {expanded&&<div style={{padding:"0 17px 20px",borderTop:"1px solid #f1f5f9"}}>
         <div style={{height:14}}/>
+        {ev.venueAddr && (
+          <a href={`https://maps.google.com/?q=${encodeURIComponent((ev.loc?ev.loc+", ":"")+ev.venueAddr)}`} target="_blank" rel="noreferrer"
+            style={{display:"flex",alignItems:"flex-start",gap:10,textDecoration:"none",background:"#eff6ff",border:"1.5px solid #bfdbfe",borderRadius:14,padding:"12px 14px",marginBottom:14}}>
+            <span style={{fontSize:18,flexShrink:0}}>📍</span>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:11,fontWeight:800,color:"#1d4ed8",letterSpacing:.3}}>SPIELORT</div>
+              {ev.loc&&<div style={{fontSize:14,fontWeight:800,color:"#0f172a",marginTop:2}}>{ev.loc}</div>}
+              <div style={{fontSize:13,color:"#475569",whiteSpace:"pre-line",marginTop:1}}>{ev.venueAddr}</div>
+              <div style={{fontSize:12,fontWeight:700,color:"#2563eb",marginTop:5}}>In Karte öffnen →</div>
+            </div>
+          </a>
+        )}
         {ev.trainingPlan && (
           <div style={{background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:14,padding:"13px 15px",marginBottom:14}}>
             <div style={{fontSize:12,fontWeight:800,color:"#166534",marginBottom:8,letterSpacing:.3}}>TRAININGSPLAN{ev.trainingPlan.cat?" · "+ev.trainingPlan.cat:""}</div>
