@@ -3778,7 +3778,7 @@ function AllTeamsOverview({ data, cid, cl, onSelectTeam }) {
    4. CSV-EXPORT ANWESENHEIT (Sandra, Rolf)
 ================================================================= */
 function exportAttendanceCSV(data, teamId, teamName) {
-  const players = (data.playerProfiles||[]).filter(p=>p.mainTid===teamId&&!p.archived);
+  const players = (data.playerProfiles||[]).filter(p=>p.mainTid===teamId&&!p.archived).sort((a,b)=>(a.name||"").localeCompare(b.name||""));
   const trainings = (data.events||[]).filter(e=>e.tid===teamId&&e.type==="training").sort((a,b)=>a.date.localeCompare(b.date));
   if(!players.length||!trainings.length) return;
 
@@ -5348,7 +5348,7 @@ function TeamSkillAnalysis({ data, myTids, cl }) {
   const [openDrill, setOpenDrill] = useState(null);
   const [diaStyle, setDiaStyle] = useState("grass");
   const team = teams.find(x=>x.id===tid) || teams[0];
-  const players = (data.playerProfiles||[]).filter(p=>p.mainTid===tid && !p.archived);
+  const players = (data.playerProfiles||[]).filter(p=>p.mainTid===tid && !p.archived).sort((a,b)=>(a.name||"").localeCompare(b.name||""));
   const withSkills = players.filter(p=>p.skills && Object.values(p.skills).some(v=>Number(v)>0));
   const avg = teamSkillAverages(withSkills, axes);
   const cat = team?.cat || team?.name || "E-Jugend";
@@ -17046,7 +17046,7 @@ function PoolView({ allPlayers,myTeams,allTeams,defaultScopeTids,cid,onAssign,on
       if (filter === "unassigned") return !p.mainTid;
       return p.mainTid === filter;
     })
-    .sort((a,b) => (!a.mainTid&&b.mainTid)?-1:(a.mainTid&&!b.mainTid)?1:a.name.localeCompare(b.name));
+    .sort((a,b) => (a.name||"").localeCompare(b.name||""));
 
   const unassigned    = allPlayers.filter(p => !p.mainTid).length;
   const countForTeam  = tid => allPlayers.filter(p => p.mainTid === tid).length;
@@ -20930,7 +20930,7 @@ function TrainerInboxTab({ data, cid, session, save, cl }) {
 function TrainersTab({data,cid,save,fire,session}) {
   const [showContactSetup, setShowContactSetup] = React.useState(null);
   const myTeams = (data.teams||[]).filter(x=>x.cid===cid);
-  const myTrs   = (data.trainers||[]).filter(x=>x.cid===cid);
+  const myTrs   = (data.trainers||[]).filter(x=>x.cid===cid).sort((a,b)=>(a.name||"").localeCompare(b.name||""));
   const [showForm, setShowForm] = useState(false);
   const [showBroadcast, setShowBroadcast] = useState(false);
   const [showAccessShare, setShowAccessShare] = useState(null);
@@ -22453,7 +22453,7 @@ function AttendanceTab({ data, myTids, cl, save, fire }) {
     const trainPct = pastTrain.length>0 ? Math.round(tYes/pastTrain.length*100) : null;
     const gamePct  = pastGames.length>0 ? Math.round(gYes/pastGames.length*100) : null;
     return { pl, tYes, gYes, trainPct, gamePct, totalT: pastTrain.length, totalG: pastGames.length };
-  }).sort((a,b)=>(b.trainPct??-1)-(a.trainPct??-1));
+  }).sort((a,b)=>(a.pl.name||"").localeCompare(b.pl.name||""));
 
   return (
     <div>
@@ -23225,10 +23225,11 @@ function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline}) {
     return voted > dl;
   };
 
+  const byName  = (a,b)=>(a||"").localeCompare(b||"");
   const voted   = Object.entries(ev.votes||{});
-  const yes     = voted.filter(([,v])=>getVal(v)==="yes").map(([n])=>n);
-  const no      = voted.filter(([,v])=>getVal(v)==="no" ).map(([n])=>n);
-  const missing = teamPlayers.filter(n=>!(ev.votes||{})[n]);
+  const yes     = voted.filter(([,v])=>getVal(v)==="yes").map(([n])=>n).sort(byName);
+  const no      = voted.filter(([,v])=>getVal(v)==="no" ).map(([n])=>n).sort(byName);
+  const missing = teamPlayers.filter(n=>!(ev.votes||{})[n]).sort(byName);
   const lateVoters = voted.filter(([n])=>isLate(n)).map(([n])=>n);
   // Late arrivals: yes votes with .late field
   const lateArrivals = voted.filter(([,v])=>typeof v==="object"&&v!==null&&v.val==="yes"&&v.late)
