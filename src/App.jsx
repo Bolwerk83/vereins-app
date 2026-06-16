@@ -18970,6 +18970,48 @@ function SeriesWizard({f,u,t}) {
   );
 }
 
+// Schulferien je Bundesland vom openHolidaysAPI laden (1x, dann 7 Tage gecacht
+// in localStorage). Offline/blockiert -> leere Liste, Feiertage bleiben offline.
+function useSchoolHolidays(stateCode) {
+  const [hols, setHols] = useState([]);
+  useEffect(() => {
+    if (!stateCode) { setHols([]); return; }
+    const cacheKey = "va_ferien_" + stateCode;
+    try {
+      const c = JSON.parse(localStorage.getItem(cacheKey) || "null");
+      if (c && c.ts && Date.now() - c.ts < 7 * 86400000 && Array.isArray(c.data)) { setHols(c.data); return; }
+    } catch {}
+    const from = new Date(); from.setDate(from.getDate() - 40);
+    const to = new Date(); to.setDate(to.getDate() + 420);
+    const f = from.toISOString().slice(0, 10), t = to.toISOString().slice(0, 10);
+    const url = `https://openholidaysapi.org/SchoolHolidays?countryIsoCode=DE&subdivisionCode=${stateCode}&languageIsoCode=DE&validFrom=${f}&validTo=${t}`;
+    let alive = true;
+    fetch(url, { headers: { accept: "application/json" } })
+      .then(r => r.ok ? r.json() : [])
+      .then(arr => {
+        if (!alive) return;
+        const data = (Array.isArray(arr) ? arr : []).map(x => ({
+          start: x.startDate, end: x.endDate,
+          name: (x.name && (x.name.find(n => n.language === "DE")?.text)) || (x.name && x.name[0]?.text) || "Ferien",
+        })).filter(x => x.start && x.end).sort((a, b) => a.start.localeCompare(b.start));
+        setHols(data);
+        try { localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data })); } catch {}
+      })
+      .catch(() => { if (alive) setHols([]); });
+    return () => { alive = false; };
+  }, [stateCode]);
+  return hols;
+}
+// Aktive oder nächste Ferien relativ zu einem Datum.
+const schoolHolidayInfo = (dateStr, list) => {
+  if (!dateStr || !list || !list.length) return null;
+  const active = list.find(h => dateStr >= h.start && dateStr <= h.end);
+  if (active) return { kind: "active", h: active };
+  const upcoming = list.filter(h => h.start > dateStr)[0];
+  if (upcoming) return { kind: "upcoming", h: upcoming };
+  return null;
+};
+
 // Vereinsweites Adressbuch für Auswärts-Spielorte (mit Suche, wenn es viele werden).
 function VenuePicker({venues=[],value,onPick,onClear,onAdd,cl}) {
   const t=TH(cl);
@@ -19044,6 +19086,7 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
   };
   const SL=["Mannschaft","Art","Details","Umfrage","Abschluss"];
   const teamsSel=teams.find(x=>x.id===f.tid);
+  const ferien=useSchoolHolidays(cl?.clubSettings?.holidayState);
   return (
     <div style={{minHeight:"100dvh",background:"#f0f4f8",display:"flex",flexDirection:"column"}}>
       <div style={{background:`linear-gradient(135deg,${t.s},${t.p}aa)`,padding:"16px 18px 20px"}}>
@@ -19105,6 +19148,14 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
           {f.recMode==="none"&&(()=>{ const hn=publicHolidayName(f.date,cl?.clubSettings?.holidayState); return hn?(
             <div style={{display:"flex",alignItems:"center",gap:8,background:"#fef3c7",border:"1.5px solid #fde68a",borderRadius:11,padding:"9px 12px",marginTop:-4,fontSize:12.5,color:"#92400e",fontWeight:600}}>
               <span style={{fontSize:15}}>🎉</span><span>Achtung: Dieser Tag ist ein Feiertag – <strong>{hn}</strong></span>
+            </div>
+          ):null; })()}
+          {f.recMode==="none"&&(()=>{ const fi=schoolHolidayInfo(f.date,ferien); return fi?(
+            <div style={{display:"flex",alignItems:"center",gap:8,background:"#eff6ff",border:"1.5px solid #bfdbfe",borderRadius:11,padding:"9px 12px",marginTop:-4,fontSize:12.5,color:"#1d4ed8",fontWeight:600}}>
+              <span style={{fontSize:15}}>🏖️</span>
+              <span>{fi.kind==="active"
+                ? <>An diesem Tag sind <strong>{fi.h.name}</strong> – noch bis <strong>{fmtD(fi.h.end)}</strong></>
+                : <>Nächste Ferien: <strong>{fi.h.name}</strong> ({fmtD(fi.h.start)} – {fmtD(fi.h.end)})</>}</span>
             </div>
           ):null; })()}
           {f.recMode==="none"&&(
