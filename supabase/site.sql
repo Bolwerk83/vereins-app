@@ -211,6 +211,12 @@ begin
           from ev where app_id is not null
           group by app_id order by opens desc, views desc limit 50
         ) x), '[]'::jsonb),
+    'by_affiliate', coalesce((
+        select jsonb_agg(to_jsonb(x)) from (
+          select app_id as partner, count(*) as clicks
+          from ev where type = 'affiliate_click' and app_id is not null
+          group by app_id order by clicks desc limit 50
+        ) x), '[]'::jsonb),
     'top_referrers', coalesce((
         select jsonb_agg(to_jsonb(x)) from (
           select referrer, count(*) as n from ev

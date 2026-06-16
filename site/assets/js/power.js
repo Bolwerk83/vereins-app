@@ -113,6 +113,19 @@
           <div class="bar-val">${num(a.opens)} <span>geöffnet</span> · ${num(a.views)} ges.</div>
         </div>`).join("")
       : '<p class="empty">Noch keine Daten.</p>';
+
+    // Affiliate-Klicks pro Partner
+    const aff = s.by_affiliate || [];
+    const maxAff = Math.max(1, ...aff.map((a) => a.clicks || 0));
+    const affClicks = $("#aff-clicks");
+    if (affClicks) affClicks.innerHTML = aff.length
+      ? aff.map((a) => `
+        <div class="bar-row">
+          <div class="bar-label">${esc(a.partner)}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${Math.round((a.clicks || 0) / maxAff * 100)}%"></div></div>
+          <div class="bar-val">${num(a.clicks)} <span>Klicks</span></div>
+        </div>`).join("")
+      : '<p class="empty">Noch keine Klicks.</p>';
   }
 
   function showDash() { $("#login").hidden = true; $("#dash").hidden = false; }

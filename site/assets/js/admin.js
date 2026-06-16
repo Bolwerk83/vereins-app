@@ -138,6 +138,18 @@
         </div>`).join("")
       : '<p class="empty">Noch keine Daten.</p>';
 
+    // Affiliate-Klicks pro Partner
+    const aff = s.by_affiliate || [];
+    const maxAff = Math.max(1, ...aff.map((a) => a.clicks || 0));
+    $("#by-affiliate").innerHTML = aff.length
+      ? aff.map((a) => `
+        <div class="bar-row">
+          <div class="bar-label">${esc(a.partner)}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${Math.round((a.clicks || 0) / maxAff * 100)}%"></div></div>
+          <div class="bar-val">${num(a.clicks)} <span>Klicks</span></div>
+        </div>`).join("")
+      : '<p class="empty">Noch keine Klicks.</p>';
+
     // Verlauf
     const days_ = s.by_day || [];
     const maxDay = Math.max(1, ...days_.map((d) => d.views || 0));
