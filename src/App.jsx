@@ -6753,19 +6753,33 @@ function TrainerGuide({ onClose, cl }){
     {icon:"✅", title:"Anwesenheit", text:"Wer war wie oft dabei? Du erkennst verlässliche Spieler und solche, die oft fehlen."},
     {icon:"💡", title:"Mein Tipp zum Start", text:"Fang klein an: Spieler anlegen, Termine planen, abstimmen lassen. Skills & Statistik kannst du dir in Ruhe später ansehen. Diese Erklärung findest du jederzeit über das ❓ oben rechts wieder."},
   ];
+  const [step,setStep]=useState(0);
+  const last=sections.length-1;
+  const sec=sections[step];
   return (
-    <Drawer onClose={onClose} title="Statistiken & Skills – kurz erklärt">
-      <div style={{display:"flex",flexDirection:"column",gap:11}}>
-        {sections.map((s,i)=>(
-          <div key={i} style={{display:"flex",gap:11,alignItems:"flex-start",background:"#f8fafc",border:"1.5px solid #eef2f7",borderRadius:13,padding:"12px 13px"}}>
-            <div style={{fontSize:22,lineHeight:1.1,flexShrink:0}}>{s.icon}</div>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{fontWeight:800,fontSize:14.5,color:"#0f172a",marginBottom:3}}>{s.title}</div>
-              <div style={{fontSize:13,color:"#475569",lineHeight:1.55}}>{s.text}</div>
-            </div>
-          </div>
-        ))}
-        <button onClick={onClose} style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Alles klar, los geht's</button>
+    <Drawer onClose={onClose} title={`Statistiken & Skills (${step+1}/${sections.length})`}>
+      <div style={{display:"flex",flexDirection:"column",gap:18,minHeight:300}}>
+        {/* Fortschritt */}
+        <div style={{display:"flex",gap:5}}>
+          {sections.map((_,i)=>(
+            <div key={i} style={{flex:1,height:5,borderRadius:99,background:i<=step?t.p:"#e2e8f0",transition:"background .2s"}}/>
+          ))}
+        </div>
+        {/* aktueller Schritt */}
+        <div style={{flex:1,textAlign:"center",padding:"10px 6px",display:"flex",flexDirection:"column",justifyContent:"center"}}>
+          <div style={{fontSize:48,lineHeight:1,marginBottom:14}}>{sec.icon}</div>
+          <div style={{fontWeight:900,fontSize:19,color:"#0f172a",marginBottom:10}}>{sec.title}</div>
+          <div style={{fontSize:14.5,color:"#475569",lineHeight:1.6}}>{sec.text}</div>
+        </div>
+        {/* Navigation */}
+        <div style={{display:"flex",gap:9}}>
+          {step>0
+            ? <button onClick={()=>setStep(x=>x-1)} style={{flex:1,padding:"13px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Zurück</button>
+            : <button onClick={onClose} style={{flex:1,padding:"13px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#94a3b8",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Überspringen</button>}
+          {step<last
+            ? <button onClick={()=>setStep(x=>x+1)} style={{flex:2,padding:"13px",borderRadius:12,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Weiter</button>
+            : <button onClick={onClose} style={{flex:2,padding:"13px",borderRadius:12,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Alles klar, los geht's</button>}
+        </div>
       </div>
     </Drawer>
   );
