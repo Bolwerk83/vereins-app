@@ -1,6 +1,6 @@
 import React, { useState,useEffect,useCallback,useRef,useMemo,createContext } from "react";
 import { splitData, mergeData, merge3Obj } from "./data.js";
-import { eventStart, eventDeadline, isVotingLocked, isDeadlinePassed, isEventPast, daysUntil, isUpcoming5, formatCountdown, round2, clampSkill, monthKey, skillsMean, blendSkill } from "./logic.js";
+import { eventStart, eventDeadline, isVotingLocked, isDeadlinePassed, isEventPast, daysUntil, isUpcoming5, formatCountdown, round2, clampSkill, monthKey, skillsMean, blendSkill, germanPublicHolidays, publicHolidayName, DE_STATES } from "./logic.js";
 import { ACOLORS, acol, inits, contrast, mix } from "./util.js";
 
 const LANG_KEY = "vereinsapp_lang";
@@ -12773,6 +12773,17 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
                 style={{flex:1,padding:"10px 12px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
             </div>
             {myClub.plz && (myClub.country||"DE")==="DE" && !plzToGeo(myClub.plz) && <div style={{fontSize:11,color:"#b45309",marginTop:6}}>PLZ-Region nicht erkannt – Umkreissuche evtl. ungenau.</div>}
+            {(myClub.country||"DE")==="DE" && (
+              <div style={{marginTop:12}}>
+                <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.5,display:"flex",alignItems:"center",gap:6}}>FERIEN- &amp; FEIERTAGSKALENDER <InfoHint text="Wähle dein Bundesland, dann werden Feiertage am Termin angezeigt und du siehst beim Anlegen die Schulferien. Optional – Kein Kalender lässt alles aus."/></div>
+                <select value={S("holidayState","")} onChange={e=>saveSetting("holidayState",e.target.value)}
+                  style={{width:"100%",padding:"10px 12px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:10,background:"#fff",fontFamily:"inherit"}}>
+                  <option value="">Kein Kalender</option>
+                  {DE_STATES.map(([v,l])=><option key={v} value={v}>{l}</option>)}
+                </select>
+                <div style={{fontSize:11,color:"#94a3b8",marginTop:5,lineHeight:1.5}}>Feiertage werden am Termin angezeigt. Schulferien siehst du beim Termin-Anlegen.</div>
+              </div>
+            )}
           </div>
           <div style={{background:"#f8fafc",borderRadius:14,padding:"12px 14px",
             marginBottom:14,border:"1.5px solid #e2e8f0"}}>
@@ -19091,6 +19102,11 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
           })() : <Inp label="Ort" val={f.loc} set={v=>u({loc:v})} ph="Sportplatz" cl={cl}/>}
           <SeriesWizard f={f} u={u} t={t} cl={cl}/>
           {f.recMode==="none"&&<Inp label="Datum" val={f.date} set={v=>u({date:v})} type="date" cl={cl}/>}
+          {f.recMode==="none"&&(()=>{ const hn=publicHolidayName(f.date,cl?.clubSettings?.holidayState); return hn?(
+            <div style={{display:"flex",alignItems:"center",gap:8,background:"#fef3c7",border:"1.5px solid #fde68a",borderRadius:11,padding:"9px 12px",marginTop:-4,fontSize:12.5,color:"#92400e",fontWeight:600}}>
+              <span style={{fontSize:15}}>🎉</span><span>Achtung: Dieser Tag ist ein Feiertag – <strong>{hn}</strong></span>
+            </div>
+          ):null; })()}
           {f.recMode==="none"&&(
             <div>
               <div style={{fontSize:11,fontWeight:800,color:"#64748b",margin:"4px 0 6px",letterSpacing:.5}}>ABSTIMMUNGSFRIST (OPTIONAL)</div>
@@ -23327,6 +23343,7 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
         <div style={{flex:1,minWidth:0}}>
           <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}><span style={{fontWeight:800,fontSize:14,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ev.title}</span>{tF&&<Tag c={p} bg={p+"20"} ch="Heute"/>}{ev.open&&<Tag c="#7c3aed" bg="#ede9fe" ch="* Offen"/>}{ev.sid&&<Tag c="#94a3b8" bg="#f1f5f9" ch="* Serie"/>}</div>
           <div style={{fontSize:12,color:"#64748b",marginTop:3}}>{fmtDShort(ev.date)}{ev.time?" . "+ev.time:""}{ev.loc?" . *"+ev.loc:""}</div>
+          {(()=>{ const hn=publicHolidayName(ev.date,cl?.clubSettings?.holidayState); return hn?<div style={{marginTop:5}}><span style={{fontSize:11,fontWeight:800,color:"#92400e",background:"#fef3c7",border:"1px solid #fde68a",borderRadius:6,padding:"2px 8px"}}>🎉 Feiertag: {hn}</span></div>:null; })()}
           {ev.type==="training"&&planTitle&&<div style={{marginTop:5}}><span style={{fontSize:11,fontWeight:700,color:"#4f46e5",background:"#eef2ff",borderRadius:6,padding:"2px 8px"}}>📋 {planTitle}</span></div>}
           {warns.length>0&&<div style={{display:"flex",gap:5,marginTop:5,flexWrap:"wrap"}}>{warns.map((w,i)=><span key={i} style={{fontSize:11,fontWeight:800,color:w.col,background:w.bg,borderRadius:6,padding:"2px 8px"}}>⚠ {w.label}</span>)}</div>}
           {vc>0&&<div style={{display:"flex",gap:5,marginTop:4,flexWrap:"wrap"}}>{ev.pt==="att"?<><Tag c="#16a34a" ch={`* ${yes}`}/><Tag c="#dc2626" bg="#fee2e2" ch={`* ${no}`}/></>:<Tag c="#2563eb" ch={`* ${vc} Eintraege`}/>}</div>}
@@ -25034,6 +25051,7 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
           <div style={{display:"flex",alignItems:"center",gap:8,marginTop:4,flexWrap:"wrap"}}>
             <span style={{fontSize:13,color:"#64748b",fontWeight:600}}>{fmtD(ev.date)}{ev.time?" . "+ev.time+(ev.endTime?"–"+ev.endTime:""):""}</span>
             {ev.loc&&<span style={{fontSize:12,color:"#94a3b8"}}> {ev.loc}</span>}
+            {(()=>{ const hn=publicHolidayName(ev.date,cl?.clubSettings?.holidayState); return hn?<span style={{fontSize:11,fontWeight:800,color:"#92400e",background:"#fef3c7",border:"1px solid #fde68a",borderRadius:7,padding:"2px 7px"}}>🎉 {hn}</span>:null; })()}
           </div>
           {status&&<div style={{marginTop:6,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
             <span style={{display:"inline-flex",alignItems:"center",gap:4,background:status.bg,color:status.color,borderRadius:8,padding:"3px 9px",fontSize:12,fontWeight:700}}>{status.icon} {status.label}</span>

@@ -4,6 +4,7 @@ import {
   eventStart, eventDeadline, isVotingLocked, isDeadlinePassed,
   isEventPast, daysUntil, isUpcoming5, formatCountdown,
   round2, clampSkill, monthKey, skillsMean, blendSkill,
+  germanPublicHolidays, publicHolidayName, DE_STATES,
 } from "./logic.js";
 
 const isoDaysFromNow = (n) => new Date(Date.now() + n*86400000).toISOString().slice(0,10);
@@ -100,4 +101,30 @@ test("blendSkill: erster Wert direkt, danach gleitend + geclamptt", () => {
   assert.equal(blendSkill(3, 3, 0.34), 3);      // keine Aenderung
   assert.ok(blendSkill(4.9, 5, 0.34) <= 5);     // bleibt <=5
   assert.ok(blendSkill(1.1, 1, 0.34) >= 1);     // bleibt >=1
+});
+
+// ---- germanPublicHolidays / publicHolidayName ----
+test("Feiertage: bundesweite Feiertage 2026 (Ostern 05.04.2026)", () => {
+  assert.equal(publicHolidayName("2026-01-01", "DE-NW"), "Neujahr");
+  assert.equal(publicHolidayName("2026-04-03", "DE-NW"), "Karfreitag");      // Ostern -2
+  assert.equal(publicHolidayName("2026-04-06", "DE-NW"), "Ostermontag");     // Ostern +1
+  assert.equal(publicHolidayName("2026-05-14", "DE-NW"), "Christi Himmelfahrt"); // +39
+  assert.equal(publicHolidayName("2026-05-25", "DE-NW"), "Pfingstmontag");   // +50
+  assert.equal(publicHolidayName("2026-10-03", "DE-NW"), "Tag der Deutschen Einheit");
+  assert.equal(publicHolidayName("2026-12-26", "DE-NW"), "2. Weihnachtstag");
+});
+test("Feiertage: länderspezifisch greift nur im richtigen Bundesland", () => {
+  assert.equal(publicHolidayName("2026-01-06", "DE-BY"), "Heilige Drei Könige");
+  assert.equal(publicHolidayName("2026-01-06", "DE-NW"), null);
+  assert.equal(publicHolidayName("2026-06-04", "DE-BY"), "Fronleichnam");     // Ostern +60
+  assert.equal(publicHolidayName("2026-06-04", "DE-BE"), null);
+  assert.equal(publicHolidayName("2026-10-31", "DE-SN"), "Reformationstag");
+});
+test("Feiertage: ohne Bundesland kein Treffer, Liste sortiert", () => {
+  assert.equal(publicHolidayName("2026-01-01", ""), null);
+  assert.equal(publicHolidayName("2026-05-02", "DE-BY"), null);
+  const list = germanPublicHolidays(2026, "DE-BY");
+  assert.ok(list.length >= 13);
+  assert.deepEqual([...list].sort((a,b)=>a.date.localeCompare(b.date)).map(x=>x.date), list.map(x=>x.date));
+  assert.equal(DE_STATES.length, 16);
 });

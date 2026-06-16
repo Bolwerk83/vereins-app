@@ -99,3 +99,76 @@ export const blendSkill = (old, assessed, alpha = 0.34) => {
   return round2(clampSkill(o + (a - o) * alpha));
 };
 
+// ── Deutsche Feiertage (offline berechnet, je Bundesland) ─────────────
+// Ostersonntag nach dem Algorithmus von Gauß/Meeus (in UTC, damit keine
+// Zeitzonen-Verschiebungen das Datum kippen).
+const easterSundayUTC = (year) => {
+  const a = year % 19, b = Math.floor(year / 100), c = year % 100;
+  const d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(Date.UTC(year, month - 1, day));
+};
+
+// Buß- und Bettag: Mittwoch vor dem 23. November.
+const bussUndBettag = (year) => {
+  const d = new Date(Date.UTC(year, 10, 23));
+  do { d.setUTCDate(d.getUTCDate() - 1); } while (d.getUTCDay() !== 3);
+  return d.toISOString().slice(0, 10);
+};
+
+// Liefert alle gesetzlichen Feiertage eines Jahres für ein Bundesland.
+// stateCode darf "BY" oder "DE-BY" sein. Rückgabe: [{date:"YYYY-MM-DD", name}].
+export const germanPublicHolidays = (year, stateCode) => {
+  const st = String(stateCode || "").split("-").pop().toUpperCase();
+  const E = easterSundayUTC(year);
+  const iso = (dt) => dt.toISOString().slice(0, 10);
+  const off = (n) => { const d = new Date(E); d.setUTCDate(d.getUTCDate() + n); return iso(d); };
+  const fix = (mo, da) => `${year}-${String(mo).padStart(2, "0")}-${String(da).padStart(2, "0")}`;
+  const has = (...codes) => codes.includes(st);
+  const list = [
+    { date: fix(1, 1),  name: "Neujahr" },
+    { date: off(-2),    name: "Karfreitag" },
+    { date: off(1),     name: "Ostermontag" },
+    { date: fix(5, 1),  name: "Tag der Arbeit" },
+    { date: off(39),    name: "Christi Himmelfahrt" },
+    { date: off(50),    name: "Pfingstmontag" },
+    { date: fix(10, 3), name: "Tag der Deutschen Einheit" },
+    { date: fix(12, 25),name: "1. Weihnachtstag" },
+    { date: fix(12, 26),name: "2. Weihnachtstag" },
+  ];
+  if (has("BW", "BY", "ST")) list.push({ date: fix(1, 6), name: "Heilige Drei Könige" });
+  if (has("BE", "MV")) list.push({ date: fix(3, 8), name: "Internationaler Frauentag" });
+  if (has("BB")) { list.push({ date: off(0), name: "Ostersonntag" }); list.push({ date: off(49), name: "Pfingstsonntag" }); }
+  if (has("BW", "BY", "HE", "NW", "RP", "SL")) list.push({ date: off(60), name: "Fronleichnam" });
+  if (has("SL", "BY")) list.push({ date: fix(8, 15), name: "Mariä Himmelfahrt" });
+  if (has("TH")) list.push({ date: fix(9, 20), name: "Weltkindertag" });
+  if (has("BB", "HB", "HH", "MV", "NI", "SN", "ST", "SH", "TH")) list.push({ date: fix(10, 31), name: "Reformationstag" });
+  if (has("BW", "BY", "NW", "RP", "SL")) list.push({ date: fix(11, 1), name: "Allerheiligen" });
+  if (has("SN")) list.push({ date: bussUndBettag(year), name: "Buß- und Bettag" });
+  return list.sort((a, b) => a.date.localeCompare(b.date));
+};
+
+// Name des Feiertags an einem Datum (oder null), für ein Bundesland.
+export const publicHolidayName = (dateStr, stateCode) => {
+  if (!dateStr || !stateCode) return null;
+  const y = parseInt(String(dateStr).slice(0, 4), 10);
+  if (!y) return null;
+  const h = germanPublicHolidays(y, stateCode).find(x => x.date === dateStr);
+  return h ? h.name : null;
+};
+
+// Liste der 16 Bundesländer (Code = openHolidaysAPI-Subdivision für späteren
+// Ferien-Abruf). "" = kein Kalender.
+export const DE_STATES = [
+  ["DE-BW", "Baden-Württemberg"], ["DE-BY", "Bayern"], ["DE-BE", "Berlin"],
+  ["DE-BB", "Brandenburg"], ["DE-HB", "Bremen"], ["DE-HH", "Hamburg"],
+  ["DE-HE", "Hessen"], ["DE-MV", "Mecklenburg-Vorpommern"], ["DE-NI", "Niedersachsen"],
+  ["DE-NW", "Nordrhein-Westfalen"], ["DE-RP", "Rheinland-Pfalz"], ["DE-SL", "Saarland"],
+  ["DE-SN", "Sachsen"], ["DE-ST", "Sachsen-Anhalt"], ["DE-SH", "Schleswig-Holstein"],
+  ["DE-TH", "Thüringen"],
+];
+
