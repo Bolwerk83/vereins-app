@@ -1783,7 +1783,7 @@ function Btn({ch,onClick,v="pri",full,sm,dis,load,icon,cl,sx={}}) {
   const p=cl?.pri||"#16a34a";
   const V={
     pri:{
-      background:dis?"#cbd5e1":`linear-gradient(135deg,${p} 0%,${mix(p,-12)} 100%)`,color:dis?"#1e293b":contrast(p),boxShadow:dis?"none":`0 2px 8px ${p}40,0 1px 2px ${p}30`,border:"none",},drk:{
+      background:dis?"#e2e8f0":`linear-gradient(135deg,${p} 0%,${mix(p,-12)} 100%)`,color:dis?"#0f172a":contrast(p),boxShadow:dis?"none":`0 2px 8px ${p}40,0 1px 2px ${p}30`,border:dis?"1.5px solid #cbd5e1":"none",},drk:{
       background:"linear-gradient(135deg,#1e293b 0%,#0f172a 100%)",color:"#fff",boxShadow:"0 2px 8px rgba(0,0,0,.25),0 1px 2px rgba(0,0,0,.15)",border:"none",},red:{
       background:"linear-gradient(135deg,#ef4444 0%,#dc2626 100%)",color:"#fff",boxShadow:"0 2px 8px rgba(239,68,68,.3)",border:"none",},gst:{
       background:"#fff",color:"#475569",boxShadow:"0 1px 3px rgba(0,0,0,.08),0 0 0 1.5px #e2e8f0",border:"none",},out:{
@@ -2792,11 +2792,11 @@ const BUILD_ID = (typeof __BUILD_ID__ !== "undefined") ? __BUILD_ID__ : "dev";
 function VersionBadge() {
   return (
     <div title={"Build: "+BUILD_ID}
-      style={{position:"fixed",bottom:6,right:8,zIndex:100,
+      style={{position:"fixed",bottom:6,right:8,zIndex:90,
         fontSize:9.5,fontWeight:600,color:"rgba(0,0,0,.32)",
         background:"rgba(255,255,255,.55)",backdropFilter:"blur(4px)",
         padding:"2px 7px",borderRadius:6,fontFamily:"monospace",
-        pointerEvents:"auto",userSelect:"text",lineHeight:1.2,
+        pointerEvents:"none",userSelect:"none",lineHeight:1.2,
         boxShadow:"0 1px 3px rgba(0,0,0,.08)"}}>
       v {BUILD_ID}
     </div>
@@ -19162,7 +19162,7 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
         </div>}
       </div>
       {}
-      <div style={{padding:"12px 16px",background:"#fff",borderTop:"1px solid #f1f5f9",display:"flex",gap:10,position:"sticky",bottom:0}}>
+      <div style={{padding:"12px 16px calc(12px + env(safe-area-inset-bottom))",background:"#fff",borderTop:"1px solid #f1f5f9",display:"flex",gap:10,position:"sticky",bottom:0,zIndex:100}}>
         {step>1?<Btn ch="<- Zurück" onClick={()=>setStep(s=>s-1)} v="gst" sx={{flex:1}}/>:<Btn ch="Abbrechen" onClick={onClose} v="gst" sx={{flex:1}}/>}
         {step<STEPS?<Btn ch="Weiter ->" onClick={()=>setStep(s=>s+1)} dis={!ok()} cl={cl} sx={{flex:2}}/>:<Btn ch={isEdit?"Speichern":f.recMode==="weekly"?"Serie erstellen":f.recMode==="custom"?`${(f.recDates||[]).length} Termine erstellen`:"Termin erstellen"} onClick={finish} cl={cl} sx={{flex:2}}/>}
       </div>
