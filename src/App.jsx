@@ -1415,11 +1415,14 @@ const geoDistanceKm = (a,b) => {
 
 // Mannschafts-Stärke (neutral benannt) – für faires Turnier-Matchmaking.
 const TEAM_STRENGTHS = [
-  { id:1, label:"Entwicklung", col:"#16a34a", desc:"Junge oder neue Mannschaft – Spaß, Lernen und Spielpraxis stehen im Vordergrund. Gegner auf Augenhöhe, damit alle Kinder erfolgreich mitspielen." },
-  { id:2, label:"Ambitioniert", col:"#2563eb", desc:"Eingespielte Mannschaft mit solidem Niveau – ausgeglichene, faire Spiele gegen ähnlich starke Teams." },
-  { id:3, label:"Leistung", col:"#d97706", desc:"Leistungsorientierte Mannschaft – sucht anspruchsvolle, fordernde Gegner auf hohem Niveau." },
-  { id:4, label:"Spitze", col:"#dc2626", desc:"Leistungsstärkste Mannschaft – oberste Spielklasse bzw. Leistungszentrums-Niveau. Sucht ausschließlich Top-Gegner." },
+  { id:1, label:"Entwicklung", col:"#16a34a", desc:"Junge oder neue Mannschaft – Spaß, Lernen und Spielpraxis stehen im Vordergrund. Gegner auf Augenhöhe, damit alle Kinder erfolgreich mitspielen.", dfb:"Kinderfußball / Funino-Festival, Breitensport (keine Tabellen)" },
+  { id:2, label:"Ambitioniert", col:"#2563eb", desc:"Eingespielte Mannschaft mit solidem Niveau – ausgeglichene, faire Spiele gegen ähnlich starke Teams.", dfb:"Breitensport / Kreisklasse" },
+  { id:3, label:"Leistung", col:"#d97706", desc:"Leistungsorientierte Mannschaft – sucht anspruchsvolle, fordernde Gegner auf hohem Niveau.", dfb:"Kreis-/Bezirksliga, Leistungs-/Förderstaffel" },
+  { id:4, label:"Spitze", col:"#dc2626", desc:"Leistungsstärkste Mannschaft – oberste Spielklasse bzw. Leistungszentrums-Niveau. Sucht ausschließlich Top-Gegner.", dfb:"Landes-/Verbandsliga, Leistungszentrum (NLZ)" },
 ];
+// Info-Text für die ℹ️-Hints inkl. DFB-Einordnung (es gibt keine offizielle
+// DFB-Stärke-Benennung; das ist eine grobe Orientierung an Spielformen/Spielklassen).
+const strengthInfoText = (prefix="") => prefix + TEAM_STRENGTHS.map(s=>`${s.label}: ${s.desc} (DFB-Einordnung: ${s.dfb})`).join("  ·  ");
 const strengthOf = id => TEAM_STRENGTHS.find(s=>s.id===id) || null;
 
 // Kleiner Info-Punkt: zeigt Erklärung per Hover (title) und per Tipp (Bubble).
@@ -4550,7 +4553,7 @@ function ManageTeams({ data, save, fire, cl }) {
         </div>
         <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
           <span style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.4}}>SPIELSTÄRKE</span>
-          <InfoHint text={"Für faire Turniere: Gegner auf Augenhöhe finden. "+TEAM_STRENGTHS.map(s=>s.label+" = "+s.desc).join("  ·  ")}/>
+          <InfoHint text={strengthInfoText("Für faire Turniere: Gegner auf Augenhöhe finden. ")}/>
         </div>
         <div style={{display:"flex",gap:6,marginBottom:12}}>
           {TEAM_STRENGTHS.map(s=>(
@@ -4617,7 +4620,7 @@ function ManageTeams({ data, save, fire, cl }) {
                   <button key={s.id} onClick={()=>setTeamStrength(tm.id,s.id)} title={s.desc}
                     style={{padding:"4px 10px",borderRadius:8,border:`1.5px solid ${on?s.col:"#e2e8f0"}`,background:on?s.col+"15":"#fff",color:on?s.col:"#94a3b8",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>{s.label}</button>
                 );})}
-                <InfoHint text={TEAM_STRENGTHS.map(s=>s.label+": "+s.desc).join("  ·  ")}/>
+                <InfoHint text={strengthInfoText()}/>
               </div>
             )}
             {editId!==tm.id && (
@@ -23661,7 +23664,7 @@ function TournBoerse({ data, cid, myTids, cl, save, fire }){
             <span style={{fontSize:11,fontWeight:800,color:"#64748b"}}>Stärke</span>
             <button onClick={()=>setFStr(0)} style={{padding:"4px 10px",borderRadius:8,border:`1.5px solid ${fStr===0?t.p:"#e2e8f0"}`,background:fStr===0?t.p+"15":"#fff",color:fStr===0?t.p:"#94a3b8",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>Alle</button>
             {TEAM_STRENGTHS.map(s=><button key={s.id} onClick={()=>setFStr(s.id)} style={{padding:"4px 10px",borderRadius:8,border:`1.5px solid ${fStr===s.id?s.col:"#e2e8f0"}`,background:fStr===s.id?s.col+"15":"#fff",color:fStr===s.id?s.col:"#94a3b8",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>{s.label}</button>)}
-            <InfoHint text={TEAM_STRENGTHS.map(s=>s.label+": "+s.desc).join("  ·  ")}/>
+            <InfoHint text={strengthInfoText()}/>
           </div>
         </div>
         <AffiliateBanner trigger="events" style={{marginBottom:12}}/>
@@ -23750,7 +23753,7 @@ function TournBoerse({ data, cid, myTids, cl, save, fire }){
           <span style={{color:"#94a3b8"}}>–</span>
           <input type="number" min="1" value={nf.maxTeams} onChange={e=>un({maxTeams:e.target.value})} style={{width:60,padding:"8px",fontSize:14,textAlign:"center",border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none"}}/>
         </div>
-        <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.3}}>WILLKOMMENE SPIELSTÄRKE</span><InfoHint text={TEAM_STRENGTHS.map(s=>s.label+": "+s.desc).join("  ·  ")}/></div>
+        <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.3}}>WILLKOMMENE SPIELSTÄRKE</span><InfoHint text={strengthInfoText()}/></div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>{TEAM_STRENGTHS.map(s=>{const on=nf.strengths.includes(s.id);return <button key={s.id} onClick={()=>toggleStr(s.id)} style={{padding:"8px 6px",borderRadius:10,border:`2px solid ${on?s.col:"#e2e8f0"}`,background:on?s.col+"15":"#fff",color:on?s.col:"#94a3b8",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{on?"✓ ":""}{s.label}</button>;})}</div>
         {liveTourns.length>0 && <select value={nf.eid} onChange={e=>un({eid:e.target.value})} style={{padding:"11px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",fontFamily:"inherit",background:"#fff"}}>
           <option value="">– eigenes Turnier verknüpfen (Spielplan-Link, optional) –</option>
