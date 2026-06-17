@@ -5833,25 +5833,53 @@ function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAttachBoar
   const resetAnim=()=>{ stopAnim(); setPlaying(false); setAnimOwn(null); setAnimOpp(null); setAnimBall(null); };
   useEffect(()=>()=>stopAnim(),[]);
   const playAnim=()=>{
-    const runs=arrows.filter(a=>a.type==="run");
-    const passes=arrows.filter(a=>a.type==="pass");
-    if(!runs.length&&!passes.length){ fire&&fire("Erst Lauf-/Passwege einzeichnen"); return; }
-    const thr=F.r*3.2;
-    const assign=arr=>arr.map(tk=>{ let best=null,bd=thr; runs.forEach(a=>{const d=Math.hypot(a.x1-tk.x,a.y1-tk.y); if(d<bd){bd=d;best=a;}}); return {...tk,sx:tk.x,sy:tk.y,tx:best?best.x2:tk.x,ty:best?best.y2:tk.y,pace:best?(best.pace||2):2}; });
-    const ownA=assign(tokens), oppA=showOpp?assign(oppTokens):[];
-    // Ball laeuft die Passwege der Reihe nach ab (zeigt die zeitliche Abfolge).
-    const ballAt=k=>{ if(!passes.length) return null; const N=passes.length; const seg=Math.min(N-1,Math.floor(k*N)); const lp=(k*N)-seg; const a=passes[seg]; return {x:a.x1+(a.x2-a.x1)*lp,y:a.y1+(a.y2-a.y1)*lp}; };
-    const DUR=2200, t0=performance.now();
-    stopAnim(); setPlaying(true);
-    if(passes.length) setAnimBall(ballAt(0));
+    // Reihenfolge = Zeichen-Reihenfolge der Pfeile -> echte Abfolge:
+    // Lauf, dann Pass in den Lauf, dann nächster Lauf/Abschluss usw.
+    const seq=arrows.filter(a=>a.type==="run"||a.type==="pass"||a.type==="dribble");
+    if(!seq.length){ fire&&fire("Erst Lauf-/Passwege einzeichnen"); return; }
+    resetAnim();
+    const runs=seq.filter(a=>a.type==="run");
+    // Jeden Lauf dem nächstgelegenen Spieler zuordnen (jeder Lauf nur einmal).
+    const thr=F.r*3.6; const usedRun=new Set();
+    const withRun=(list)=>list.map(tk=>{
+      let best=null,bd=thr,bi=-1;
+      runs.forEach((a,idx)=>{ if(usedRun.has(idx))return; const d=Math.hypot(a.x1-tk.x,a.y1-tk.y); if(d<bd){bd=d;best=a;bi=idx;} });
+      if(bi>=0) usedRun.add(bi);
+      return {...tk,sx:tk.x,sy:tk.y,run:best};
+    });
+    const ownA=withRun(tokens);
+    const oppA=showOpp?withRun(oppTokens):[];
+    // Tempo in SVG-Einheiten/Sekunde: Pass schneller als Lauf, Dribbling langsam.
+    const spd=a=>{ if(a.type==="pass")return 560; if(a.type==="dribble")return 150; return a.pace===3?330:a.pace===1?150:230; };
+    const durOf=a=>{ const d=Math.hypot(a.x2-a.x1,a.y2-a.y1); return Math.max(300,Math.min(2800, d/spd(a)*1000)); };
+    // Sequenzieller Zeitplan; ein Pass direkt nach einem Lauf wird als Steckpass
+    // in den Lauf gespielt (überlappt, damit der Ball ankommt, wenn der Spieler ankommt).
+    let tEnd=0; const sched=new Map();
+    seq.forEach((a,i)=>{ const d=durOf(a); const prev=seq[i-1]; let start=tEnd;
+      if(a.type==="pass"&&prev&&prev.type==="run") start=Math.max(0,tEnd-durOf(prev)*0.5);
+      const ph={start,end:start+d,dur:d}; sched.set(a,ph); tEnd=Math.max(tEnd,ph.end);
+    });
+    const TOTAL=tEnd+400;
+    const ballEv=seq.filter(a=>a.type==="pass"||a.type==="dribble");
+    const clamp=x=>x<0?0:x>1?1:x;
     const ez=x=>x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2;
-    const sf=p=>p===3?2:p===1?0.7:p===2?1.35:1;
-    const step=(t)=>{ const k=Math.min(1,(t-t0)/DUR);
-      const mv=o=>{ const e=ez(Math.min(1,k*sf(o.pace))); return {...o,x:o.sx+(o.tx-o.sx)*e,y:o.sy+(o.ty-o.sy)*e}; };
-      setAnimOwn(ownA.map(mv));
-      if(showOpp) setAnimOpp(oppA.map(mv));
-      if(passes.length) setAnimBall(ballAt(k));
-      if(k<1){ animRef.current=requestAnimationFrame(step); } else { setPlaying(false); }
+    const tokAt=(tk,T)=>{ const r=tk.run; if(!r) return {...tk,x:tk.sx,y:tk.sy}; const ph=sched.get(r); const e=ez(clamp((T-ph.start)/ph.dur)); return {...tk,x:tk.sx+(r.x2-tk.sx)*e,y:tk.sy+(r.y2-tk.sy)*e}; };
+    const ballAt=(T)=>{ if(!ballEv.length) return null;
+      const first=ballEv[0]; if(T<sched.get(first).start) return {x:first.x1,y:first.y1};
+      let cur=null;
+      for(const a of ballEv){ const ph=sched.get(a); if(T>=ph.start&&T<=ph.end){ cur={a,ph,live:true}; break; } if(T>ph.end) cur={a,ph,live:false}; }
+      if(!cur) return {x:first.x1,y:first.y1};
+      if(cur.live){ const e=ez(clamp((T-cur.ph.start)/cur.ph.dur)); return {x:cur.a.x1+(cur.a.x2-cur.a.x1)*e,y:cur.a.y1+(cur.a.y2-cur.a.y1)*e}; }
+      return {x:cur.a.x2,y:cur.a.y2};
+    };
+    const t0=performance.now();
+    setPlaying(true);
+    if(ballEv.length) setAnimBall(ballAt(0));
+    const step=(t)=>{ const T=Math.min(t-t0,TOTAL);
+      setAnimOwn(ownA.map(tk=>tokAt(tk,T)));
+      if(showOpp) setAnimOpp(oppA.map(tk=>tokAt(tk,T)));
+      if(ballEv.length) setAnimBall(ballAt(T));
+      if((t-t0)<TOTAL){ animRef.current=requestAnimationFrame(step); } else { setPlaying(false); }
     };
     animRef.current=requestAnimationFrame(step);
   };
