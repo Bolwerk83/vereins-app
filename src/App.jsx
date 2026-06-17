@@ -5810,6 +5810,7 @@ function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAttachBoar
   const [animGoal,setAnimGoal]=useState(null);    // Torjubel-Blitz {x,y}
   const [animSpeed,setAnimSpeed]=useState(1);      // 0.6 langsam / 1 normal / 1.6 schnell
   const [loopAnim,setLoopAnim]=useState(false);
+  const [reactDef,setReactDef]=useState(true);     // Verteidiger verschieben zum Ball
   const trailRef=useRef([]);
   const [playing,setPlaying]=useState(false);
   const animRef=useRef(null);
@@ -5864,11 +5865,16 @@ function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAttachBoar
     const durOf=a=>{ const d=Math.hypot(a.x2-a.x1,a.y2-a.y1); return Math.max(260,Math.min(2800, d/spd(a)*1000)); };
     // Sequenzieller Zeitplan; Pass direkt nach Lauf = Steckpass in den Lauf (überlappt),
     // dazwischen kurze Ballannahme (Settle), damit jede Aktion lesbar bleibt.
-    let tEnd=0; const sched=new Map();
+    let tEnd=0; const sched=new Map(); let prevPass=null;
     seq.forEach((a,i)=>{ const d=durOf(a); const prev=seq[i-1]; let start=tEnd;
+      // Doppelpass (One-Two): Pass kommt von dort, wo der vorige Pass ankam, und geht
+      // wieder zum vorigen Passgeber zurück -> schneller Rückpass (kurzer Kontakt).
+      const oneTwo = a.type==="pass" && prevPass && Math.hypot(a.x1-prevPass.x2,a.y1-prevPass.y2)<F.r*3.2 && Math.hypot(a.x2-prevPass.x1,a.y2-prevPass.y1)<F.vw*0.24;
       if(a.type==="pass"&&prev&&prev.type==="run") start=Math.max(0,tEnd-durOf(prev)*0.5);
-      else if(i>0) start=tEnd+170; // Ballannahme/Settle
-      const ph={start,end:start+d,dur:d}; sched.set(a,ph); tEnd=Math.max(tEnd,ph.end);
+      else if(oneTwo) start=tEnd+60;      // Doppelpass: direkt klatschen lassen
+      else if(i>0) start=tEnd+170;         // Ballannahme/Settle
+      const ph={start,end:start+d,dur:d,oneTwo}; sched.set(a,ph); tEnd=Math.max(tEnd,ph.end);
+      if(a.type==="pass") prevPass=a;
     });
     const TOTAL=tEnd+700;
     const ballEv=seq.filter(a=>a.type==="pass"||a.type==="dribble");
@@ -5885,8 +5891,10 @@ function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAttachBoar
       for(const a of ballEv){ const ph=sched.get(a); if(T>=ph.start&&T<=ph.end){ cur={a,ph,live:true}; break; } if(T>ph.end) cur={a,ph,live:false}; }
       if(!cur) return {x:first.x1,y:first.y1,rot:0,shot:false};
       const len=Math.hypot(cur.a.x2-cur.a.x1,cur.a.y2-cur.a.y1);
-      if(cur.live){ const raw=clamp((T-cur.ph.start)/cur.ph.dur); const e=cur.a.type==="pass"?ezOut(raw):raw; const p=bezPt(cur.a,e); return {...p,rot:(cur.ph.start+raw*len)*0.7,shot:cur.a.type==="pass"&&isGoalShot(cur.a)}; }
-      return {x:cur.a.x2,y:cur.a.y2,rot:len*0.7,shot:cur.a.type==="pass"&&isGoalShot(cur.a)};
+      // Hoher Ball/Flanke: langer Pass (kein flacher Torschuss) steigt und fällt.
+      const lob=cur.a.type==="pass"&&len>F.vw*0.45&&!isGoalShot(cur.a);
+      if(cur.live){ const raw=clamp((T-cur.ph.start)/cur.ph.dur); const e=cur.a.type==="pass"?ezOut(raw):raw; const p=bezPt(cur.a,e); const height=lob?Math.sin(Math.PI*raw)*F.r*1.8:0; return {...p,rot:(cur.ph.start+raw*len)*0.7,shot:cur.a.type==="pass"&&isGoalShot(cur.a),height}; }
+      return {x:cur.a.x2,y:cur.a.y2,rot:len*0.7,shot:cur.a.type==="pass"&&isGoalShot(cur.a),height:0};
     };
     // letzter Abschluss aufs Tor?
     const lastShot=[...ballEv].reverse().find(a=>a.type==="pass");
@@ -5896,11 +5904,19 @@ function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAttachBoar
     if(ballEv.length) setAnimBall(ballAt(0));
     let goalShown=false;
     const step=(t)=>{ const T=Math.min((t-t0Ref.current)*animSpeed,TOTAL);
+      const b = ballEv.length ? ballAt(T) : null;
       setAnimOwn(ownA.map(tk=>tokAt(tk,T)));
-      if(showOpp) setAnimOpp(oppA.map(tk=>tokAt(tk,T)));
-      if(ballEv.length){ const b=ballAt(T); setAnimBall(b);
-        if(b){ const tr=trailRef.current; tr.push({x:b.x,y:b.y}); if(tr.length>10) tr.shift(); setAnimTrail(tr.slice()); }
+      if(showOpp){
+        const pr=Math.min(1,T/(TOTAL*0.45));   // Press-Intensität rampt hoch
+        let nearId=null,nd=1e9;
+        if(reactDef&&b) oppA.forEach(tk=>{ if(tk.run||tk.n===1)return; const dd=Math.hypot(b.x-tk.sx,b.y-tk.sy); if(dd<nd){nd=dd;nearId=tk.id;} });
+        setAnimOpp(oppA.map(tk=>{
+          if(tk.run) return tokAt(tk,T);
+          if(reactDef&&b&&tk.n!==1){ const dx=b.x-tk.sx,dy=b.y-tk.sy,dist=Math.hypot(dx,dy)||1; const press=pr*(tk.id===nearId?0.85:0.36); const shift=Math.min(F.vw*0.13,dist*0.45)*press; return {...tk,x:tk.sx+dx/dist*shift,y:tk.sy+dy/dist*shift}; }
+          return {...tk,x:tk.sx,y:tk.sy};
+        }));
       }
+      if(b){ setAnimBall(b); const tr=trailRef.current; tr.push({x:b.x,y:b.y}); if(tr.length>10) tr.shift(); setAnimTrail(tr.slice()); }
       if(goalAt&&!goalShown&&T>=goalAt.t-30){ goalShown=true; setAnimGoal({x:goalAt.x,y:goalAt.y}); }
       if((t-t0Ref.current)*animSpeed<TOTAL){ animRef.current=requestAnimationFrame(step); }
       else { setPlaying(false); animRef.current=null; if(loopAnim) setTimeout(()=>playAnim(),650); }
@@ -5920,6 +5936,32 @@ function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAttachBoar
   const bezPt=(a,e)=>{ const c=arrCtrl(a),u=1-e; return { x:u*u*a.x1+2*u*e*c.cx+e*e*a.x2, y:u*u*a.y1+2*u*e*c.cy+e*e*a.y2 }; };
 
   const svgRef=useRef(null); const dragRef=useRef(null);
+  // Szene als Bild teilen/speichern (Standbild der aktuellen Tafel inkl. Wege).
+  // Ein echtes Animations-Video ist im Browser (v.a. iOS) nicht zuverlässig möglich.
+  const shareScene=async()=>{
+    const svg=svgRef.current; if(!svg) return;
+    try{
+      const clone=svg.cloneNode(true);
+      clone.setAttribute("width",F.vw); clone.setAttribute("height",F.vh);
+      clone.setAttribute("xmlns","http://www.w3.org/2000/svg");
+      const xml=new XMLSerializer().serializeToString(clone);
+      const src="data:image/svg+xml;base64,"+btoa(unescape(encodeURIComponent(xml)));
+      const img=new Image();
+      img.onload=()=>{
+        const sc=2; const c=document.createElement("canvas"); c.width=F.vw*sc; c.height=F.vh*sc;
+        const ctx=c.getContext("2d"); ctx.fillStyle="#0b3d20"; ctx.fillRect(0,0,c.width,c.height);
+        ctx.drawImage(img,0,0,c.width,c.height);
+        c.toBlob(async(blob)=>{ if(!blob){ fire&&fire("Teilen nicht möglich"); return; }
+          const file=new File([blob],"taktik.png",{type:"image/png"});
+          if(navigator.canShare&&navigator.canShare({files:[file]})){ try{ await navigator.share({files:[file],title:"Taktik-Szene"}); return; }catch{} }
+          const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download="taktik-szene.png"; a.click(); setTimeout(()=>URL.revokeObjectURL(url),4000);
+          fire&&fire("Bild gespeichert");
+        },"image/png");
+      };
+      img.onerror=()=>fire&&fire("Teilen nicht möglich");
+      img.src=src;
+    }catch{ fire&&fire("Teilen nicht möglich"); }
+  };
   const [mode,setMode]=useState("move");
   const [runPace,setRunPace]=useState(2);   // Tempo fuer neue Laufwege: 1 locker / 2 zuegig / 3 Sprint
   const [arrows,setArrows]=useState([]);
@@ -6006,6 +6048,10 @@ function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAttachBoar
         ))}
         <button onClick={()=>setLoopAnim(v=>!v)} title="Wiederholen"
           style={{padding:"6px 10px",borderRadius:8,border:`1.5px solid ${loopAnim?t.p:"#e2e8f0"}`,background:loopAnim?t.p+"15":"#fff",color:loopAnim?t.p:"#64748b",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>🔁</button>
+        {showOpp&&<button onClick={()=>setReactDef(v=>!v)} title="Verteidiger verschieben zum Ball"
+          style={{padding:"6px 10px",borderRadius:8,border:`1.5px solid ${reactDef?t.p:"#e2e8f0"}`,background:reactDef?t.p+"15":"#fff",color:reactDef?t.p:"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>🛡️ Abwehr</button>}
+        <button onClick={shareScene} title="Szene als Bild teilen"
+          style={{padding:"6px 10px",borderRadius:8,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>📤 Teilen</button>
       </div>
       <div style={{fontSize:11,color:"#94a3b8"}}>Abfolge = Zeichen-Reihenfolge: erst Laufweg, dann Pass in den Lauf, dann Abschluss. Pass aufs Tor löst „TOR!" aus.</div>
 
@@ -6056,13 +6102,16 @@ function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAttachBoar
           {animTrail.length>1&&<g style={{pointerEvents:"none"}}>
             {animTrail.map((p,i)=>(<circle key={i} cx={p.x} cy={p.y} r={F.r*0.5*((i+1)/animTrail.length)} fill="#fff" opacity={0.05*(i+1)}/>))}
           </g>}
-          {animBall&&<g style={{pointerEvents:"none"}} transform={`rotate(${(animBall.rot||0)%360} ${animBall.x} ${animBall.y})`}>
-            {animBall.shot&&<circle cx={animBall.x} cy={animBall.y} r={F.r*0.95} fill="none" stroke="#fde047" strokeWidth={F.r*0.12} opacity={0.7}/>}
-            <circle cx={animBall.x} cy={animBall.y} r={F.r*0.55} fill="#fff" stroke="#0f172a" strokeWidth={F.r*0.16}/>
-            <circle cx={animBall.x} cy={animBall.y} r={F.r*0.17} fill="#0f172a"/>
-            <line x1={animBall.x-F.r*0.5} y1={animBall.y} x2={animBall.x+F.r*0.5} y2={animBall.y} stroke="#0f172a" strokeWidth={F.r*0.07} opacity={0.45}/>
-            <line x1={animBall.x} y1={animBall.y-F.r*0.5} x2={animBall.x} y2={animBall.y+F.r*0.5} stroke="#0f172a" strokeWidth={F.r*0.07} opacity={0.45}/>
-          </g>}
+          {animBall&&(animBall.height>0.5)&&<ellipse cx={animBall.x} cy={animBall.y} rx={F.r*0.5} ry={F.r*0.2} fill="rgba(0,0,0,.30)" style={{pointerEvents:"none"}}/>}
+          {animBall&&(()=>{ const by=animBall.y-(animBall.height||0); return (
+            <g style={{pointerEvents:"none"}} transform={`rotate(${(animBall.rot||0)%360} ${animBall.x} ${by})`}>
+              {animBall.shot&&<circle cx={animBall.x} cy={by} r={F.r*0.95} fill="none" stroke="#fde047" strokeWidth={F.r*0.12} opacity={0.7}/>}
+              <circle cx={animBall.x} cy={by} r={F.r*0.55} fill="#fff" stroke="#0f172a" strokeWidth={F.r*0.16}/>
+              <circle cx={animBall.x} cy={by} r={F.r*0.17} fill="#0f172a"/>
+              <line x1={animBall.x-F.r*0.5} y1={by} x2={animBall.x+F.r*0.5} y2={by} stroke="#0f172a" strokeWidth={F.r*0.07} opacity={0.45}/>
+              <line x1={animBall.x} y1={by-F.r*0.5} x2={animBall.x} y2={by+F.r*0.5} stroke="#0f172a" strokeWidth={F.r*0.07} opacity={0.45}/>
+            </g>
+          ); })()}
           {animGoal&&<g style={{pointerEvents:"none"}}>
             <circle cx={animGoal.x} cy={animGoal.y} r={F.r*0.6} fill="none" stroke="#22c55e" strokeWidth={F.r*0.2}>
               <animate attributeName="r" from={F.r*0.6} to={F.r*2.6} dur="0.7s" fill="freeze"/>
