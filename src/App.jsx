@@ -22453,7 +22453,7 @@ function AttendanceTab({ data, myTids, cl, save, fire }) {
     const trainPct = pastTrain.length>0 ? Math.round(tYes/pastTrain.length*100) : null;
     const gamePct  = pastGames.length>0 ? Math.round(gYes/pastGames.length*100) : null;
     return { pl, tYes, gYes, trainPct, gamePct, totalT: pastTrain.length, totalG: pastGames.length };
-  }).sort((a,b)=>(a.pl.name||"").localeCompare(b.pl.name||""));
+  }).sort((a,b)=>(b.trainPct??-1)-(a.trainPct??-1));
 
   return (
     <div>
