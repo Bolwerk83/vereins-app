@@ -8632,9 +8632,15 @@ function TemplateBrowser({ onSelect, cid, myTids, data, cl, onClose }) {
 function DrillAutoAnim({ drill, color="#16a34a" }){
   const vw=100, vh=64;
   const s=((drill?.name||"")+" "+((drill?.skills||[]).join(" "))+" "+(drill?.description||"")+" "+(drill?.cat||"")).toLowerCase();
+  const mat=((drill?.material||[]).map(m=>(m.label||m.id||"")).join(" ")).toLowerCase();
+  const all=s+" "+mat;
   const hasBall=/ball|dribbl|pass|tippen|jonglier|hochhalt|innenseite|ballführ|ballkontrolle|technik|schuss|kombinat|rondo|zuspiel|flanke|finten/.test(s);
+  const hasGoal=/\btor\b|tore|minitor|abschluss|schuss|torschuss/.test(all);
+  const usePole=/stange|pylon|pilon|slalomstange|stab/.test(all);   // Stangen statt Hütchen
   const type =
       /fang|abschlag|freilös|freiloes|jäger|jaeger|versteiner|hasche|nachlauf|kettenfang|reaktion/.test(s) ? "tag"
+    : /staffel|positionswechsel|nachrück|nachrueck|rotation|durchlauf|folge deinem|pass.?und.?lauf|laufstaffel/.test(s) ? "relay"
+    : (/dribbl|slalom|parcours|hindernis/.test(s) && /abschluss|schuss|\btor\b|finish|torschuss/.test(s)) ? "dribshot"
     : /schuss|abschluss|torschuss|finish|\btor\b|volley/.test(s) ? "shot"
     : /dribbl|slalom|finten|1 ?gegen ?1|tempodrib|hindernis|parcours/.test(s) ? "dribble"
     : /pass|kombination|ballzirk|rondo|doppelpass|zuspiel|positionsspiel|spielform/.test(s) ? "pass"
@@ -8642,6 +8648,7 @@ function DrillAutoAnim({ drill, color="#16a34a" }){
     : "free";
   const Pitch=({children})=>(
     <svg viewBox={`0 0 ${vw} ${vh}`} style={{width:"100%",height:"auto",display:"block",borderRadius:12,background:"linear-gradient(#2f8050,#246a42)"}}>
+      <defs><marker id="dah" markerUnits="userSpaceOnUse" markerWidth="6" markerHeight="6" refX="3" refY="2.2" orient="auto"><path d="M0,0 L4.5,2.2 L0,4.4 Z" fill="#fde047"/></marker></defs>
       <rect x="1" y="1" width={vw-2} height={vh-2} rx="2" fill="none" stroke="rgba(255,255,255,.45)" strokeWidth="0.5"/>
       <line x1="1" y1={vh/2} x2={vw-1} y2={vh/2} stroke="rgba(255,255,255,.28)" strokeWidth="0.4"/>
       <circle cx={vw/2} cy={vh/2} r="7" fill="none" stroke="rgba(255,255,255,.28)" strokeWidth="0.4"/>
@@ -8649,15 +8656,19 @@ function DrillAutoAnim({ drill, color="#16a34a" }){
     </svg>
   );
   const P=({x,y,n,fill})=>(<g><circle cx={x} cy={y} r="3.2" fill={fill||color} stroke="#fff" strokeWidth="0.6"/>{n!=null&&<text x={x} y={y+1.15} textAnchor="middle" fontSize="3.2" fontWeight="800" fill="#fff">{n}</text>}</g>);
-  const Cone=({x,y})=>(<polygon points={`${x},${y-2} ${x-1.7},${y+1.7} ${x+1.7},${y+1.7}`} fill="#f59e0b" stroke="#b45309" strokeWidth="0.2"/>);
-  const Ball=({path,dur})=>(<g><animateMotion dur={`${dur}s`} repeatCount="indefinite" path={path} calcMode="linear"/><circle cx="0" cy="0" r="1.9" fill="#fff" stroke="#0f172a" strokeWidth="0.5"/><circle cx="0" cy="0" r="0.7" fill="#0f172a"/></g>);
+  // Hütchen/Pylone (orange Kegel) bzw. Slalomstange (rote Stange mit Fuß).
+  const Cone=({x,y})=>(<polygon points={`${x},${y-2.4} ${x-1.9},${y+1.8} ${x+1.9},${y+1.8}`} fill="#f59e0b" stroke="#b45309" strokeWidth="0.25"/>);
+  const Pole=({x,y})=>(<g><ellipse cx={x} cy={y+0.4} rx="1.6" ry="0.7" fill="rgba(0,0,0,.3)"/><line x1={x} y1={y} x2={x} y2={y-6.5} stroke="#dc2626" strokeWidth="1" strokeLinecap="round"/><line x1={x} y1={y-2.2} x2={x} y2={y-3.6} stroke="#fff" strokeWidth="1" strokeLinecap="round"/></g>);
+  const Goal=({x=40,w=20})=>(<g><rect x={x} y="2" width={w} height="3" fill="none" stroke="#fff" strokeWidth="0.7"/><line x1={x} y1="2" x2={x} y2="5" stroke="#fff" strokeWidth="0.7"/><line x1={x+w} y1="2" x2={x+w} y2="5" stroke="#fff" strokeWidth="0.7"/></g>);
+  const Ball=({path,dur,begin})=>(<g><animateMotion dur={`${dur}s`} repeatCount="indefinite" path={path} calcMode="linear" begin={begin||"0s"}/><circle cx="0" cy="0" r="1.9" fill="#fff" stroke="#0f172a" strokeWidth="0.5"/><circle cx="0" cy="0" r="0.7" fill="#0f172a"/></g>);
   // Bewegte Figur entlang eines Pfads (optional mit Ball am Fuß).
-  const Mover=({path,dur,n,fill,ball})=>(<g>
-    <animateMotion dur={`${dur}s`} repeatCount="indefinite" path={path} calcMode="linear"/>
+  const Mover=({path,dur,n,fill,ball,begin})=>(<g>
+    <animateMotion dur={`${dur}s`} repeatCount="indefinite" path={path} calcMode="linear" begin={begin||"0s"}/>
     <circle cx="0" cy="0" r="3.2" fill={fill||color} stroke="#fff" strokeWidth="0.6"/>
     <text x="0" y="1.15" textAnchor="middle" fontSize="3.2" fontWeight="800" fill="#fff">{n}</text>
-    {ball&&<><circle cx="2.5" cy="2.5" r="1.6" fill="#fff" stroke="#0f172a" strokeWidth="0.5"/><circle cx="2.5" cy="2.5" r="0.6" fill="#0f172a"/></>}
+    {ball&&<><circle cx="2.6" cy="2.6" r="1.6" fill="#fff" stroke="#0f172a" strokeWidth="0.5"/><circle cx="2.6" cy="2.6" r="0.6" fill="#0f172a"/></>}
   </g>);
+  const Gate=usePole?Pole:Cone;          // Slalom-Hindernis je nach Material
   let scene=null;
   if(type==="tag"){            // Fangspiel: Fänger (rot) jagt, andere laufen frei – ohne Ball
     scene=<>
@@ -8666,23 +8677,38 @@ function DrillAutoAnim({ drill, color="#16a34a" }){
       <Mover path="M52,14 L72,34 L46,52 L30,30 L52,14" dur={5.4} n={3}/>
       <Mover path="M50,32 L28,24 L55,46 L78,30 L40,40 L50,32" dur={3.8} n="F" fill="#dc2626"/>
     </>;
-  } else if(type==="run"){     // Lauf/Tempo: Shuttle zwischen Markierungen – ohne Ball
+  } else if(type==="relay"){   // Passstaffel/Positionswechsel: Pass spielen und dem Pass nachlaufen
+    const A=[20,49],B=[50,13],C=[80,49];
+    const p=(a,b,c)=>`M${a[0]},${a[1]} L${b[0]},${b[1]} L${c[0]},${c[1]} L${a[0]},${a[1]}`;
     scene=<>
-      <Cone x={30} y={14}/><Cone x={50} y={14}/><Cone x={70} y={14}/>
-      <Cone x={30} y={52}/><Cone x={50} y={52}/><Cone x={70} y={52}/>
-      <Mover path="M30,52 L30,16 L30,52" dur={3.2} n={1}/>
-      <Mover path="M50,52 L50,16 L50,52" dur={3.9} n={2}/>
-      <Mover path="M70,52 L70,16 L70,52" dur={3.5} n={3}/>
+      <line x1={A[0]} y1={A[1]} x2={B[0]} y2={B[1]} stroke="#fde047" strokeWidth="0.55" strokeDasharray="2 1.6" opacity="0.55" markerEnd="url(#dah)"/>
+      <line x1={B[0]} y1={B[1]} x2={C[0]} y2={C[1]} stroke="#fde047" strokeWidth="0.55" strokeDasharray="2 1.6" opacity="0.55" markerEnd="url(#dah)"/>
+      <line x1={C[0]} y1={C[1]} x2={A[0]} y2={A[1]} stroke="#fde047" strokeWidth="0.55" strokeDasharray="2 1.6" opacity="0.55" markerEnd="url(#dah)"/>
+      <Cone x={A[0]} y={A[1]+4}/><Cone x={B[0]} y={B[1]-4}/><Cone x={C[0]} y={C[1]+4}/>
+      <Mover path={p(A,B,C)} dur={6} n={1}/>
+      <Mover path={p(B,C,A)} dur={6} n={2}/>
+      <Mover path={p(C,A,B)} dur={6} n={3}/>
+      <Ball path={p(A,B,C)} dur={6} begin="-1.3s"/>
+    </>;
+  } else if(type==="dribshot"){ // Dribbling-Parcours mit Abschluss: Slalom durch Stangen, dann Tor
+    scene=<>
+      <Goal/>
+      <Gate x={40} y={47}/><Gate x={58} y={39}/><Gate x={42} y={31}/><Gate x={54} y={23}/>
+      <line x1="54" y1="23" x2="50" y2="6" stroke="#fde047" strokeWidth="0.55" strokeDasharray="2 1.6" opacity="0.6" markerEnd="url(#dah)"/>
+      <Mover path="M50,55 L40,47 L58,39 L42,31 L54,23 L54,30 L50,55" dur={6} n={9}/>
+      <Ball  path="M50,55 L40,47 L58,39 L42,31 L54,23 L50,5  L50,55" dur={6}/>
     </>;
   } else if(type==="pass"){
     scene=<>
+      <Cone x={16} y={50}/><Cone x={50} y={9}/><Cone x={84} y={50}/>
       <P x={18} y={48} n={1}/><P x={50} y={12} n={2}/><P x={82} y={48} n={3}/>
       <P x={50} y={40} n="V" fill="#dc2626"/>
       <Ball path="M18,48 L50,12 L82,48 Z" dur={5}/>
     </>;
   } else if(type==="shot"){
     scene=<>
-      <rect x="40" y="2" width="20" height="3" fill="none" stroke="#fff" strokeWidth="0.7"/>
+      <Goal/>
+      <Cone x={26} y={54}/>
       <P x={50} y={6} n={1} fill="#0f172a"/>
       <P x={26} y={50} n={7}/>
       <Mover path="M52,46 L52,22 L52,46" dur={4} n={9}/>
@@ -8690,7 +8716,7 @@ function DrillAutoAnim({ drill, color="#16a34a" }){
     </>;
   } else if(type==="dribble"){
     scene=<>
-      <Cone x={35} y={16}/><Cone x={50} y={32}/><Cone x={65} y={16}/><Cone x={78} y={32}/>
+      <Gate x={35} y={16}/><Gate x={50} y={32}/><Gate x={65} y={16}/><Gate x={78} y={32}/>
       <Mover path="M16,48 L35,22 L50,38 L65,22 L78,38 L16,48" dur={5.5} n={1} ball/>
     </>;
   } else {                     // freie Bewegung / Koordination – Ball nur wenn ballbasiert
@@ -8701,12 +8727,15 @@ function DrillAutoAnim({ drill, color="#16a34a" }){
       <Mover path="M34,30 L66,30 L50,50 L34,30" dur={4.6} n={4} ball={hasBall}/>
     </>;
   }
+  const gw=usePole?"Stangen":"Hütchen";
   const label={
     tag:"Fangspiel – der Fänger (rot) jagt, die anderen laufen frei",
+    relay:"Passstaffel: Pass spielen und dem Pass nachlaufen (Positionswechsel)",
+    dribshot:`Dribbling-Parcours durch ${gw} → Abschluss aufs Tor`,
     run:"Lauf/Tempo – Shuttle zwischen den Markierungen",
     pass:"Pass-Zirkulation (Rondo) – Ball läuft, Mitte verteidigt",
     shot:"Lauf → Steckpass → Torabschluss",
-    dribble:"Dribbling-Parcours mit Ball am Fuß",
+    dribble:`Dribbling-Parcours (Slalom durch ${gw})`,
     free:hasBall?"Freies Bewegen & Dribbeln mit Ball":"Freie Bewegung & Koordination ohne Ball"
   }[type];
   return (
