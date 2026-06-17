@@ -620,6 +620,31 @@ function FloatingLangSwitcher({ lang,setLang }) {
   );
 }
 
+// Globale Schriftgröße (Lesbarkeit für ältere Nutzer). Wir skalieren die ganze
+// Oberfläche per CSS-zoom, weil Schriftgrößen in der App in px hinterlegt sind.
+const FONT_KEY = "va_fontscale";
+const FONT_STEPS = [["A", 1], ["A⁺", 1.15], ["A⁺⁺", 1.3]];
+const getFontScale = () => { try { const v = parseFloat(localStorage.getItem(FONT_KEY)); return [1, 1.15, 1.3].includes(v) ? v : 1; } catch { return 1; } };
+const applyFontScale = (s) => { try { document.documentElement.style.zoom = s === 1 ? "" : String(s); localStorage.setItem(FONT_KEY, String(s)); } catch {} };
+function FontScaleControl({ dark = false }) {
+  const [cur, setCur] = useState(getFontScale);
+  const set = (s) => { setCur(s); applyFontScale(s); };
+  const idle = dark ? "rgba(255,255,255,.7)" : "#475569";
+  const idleBd = dark ? "rgba(255,255,255,.25)" : "#e2e8f0";
+  return (
+    <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+      <span style={{ fontSize: 13, fontWeight: 700, color: dark ? "rgba(255,255,255,.75)" : "#64748b", marginRight: 2 }}>Schriftgröße</span>
+      {FONT_STEPS.map(([l, s], i) => {
+        const on = cur === s;
+        return (
+          <button key={s} onClick={() => set(s)} aria-label={"Schrift "+l}
+            style={{ padding: "7px 14px", borderRadius: 10, border: `1.5px solid ${on ? "#16a34a" : idleBd}`, background: on ? "#16a34a" : "transparent", color: on ? "#fff" : idle, fontWeight: 800, fontSize: 13 + i * 3, cursor: "pointer", fontFamily: "inherit", lineHeight: 1 }}>{l}</button>
+        );
+      })}
+    </div>
+  );
+}
+
 const SK  = "vereinsapp_v14";
 const SS  = "vereinsapp_v12_session";
 const CFG = "vereinsapp_config";
@@ -4456,6 +4481,10 @@ function BottomNav({ tab, setTab, isAdmin, isHelper, isParent=false, unread, inb
                 </div>
               </div>
             ))}
+            <div style={{padding:"12px 20px 4px",borderTop:"1px solid #f1f5f9",marginTop:6}}>
+              <div style={{fontSize:10,fontWeight:800,color:"#94a3b8",letterSpacing:1,marginBottom:8}}>ANSICHT</div>
+              <FontScaleControl/>
+            </div>
           </div>
         </div>
       )}
@@ -14479,6 +14508,9 @@ function RolePicker({cl,onRole,onBack,onGuest}) {
             </div>
           </div>
         ))}
+        <div style={{display:"flex",justifyContent:"center",padding:"18px 0 34px"}}>
+          <FontScaleControl dark/>
+        </div>
       </div>
     </div>
   );
@@ -25639,6 +25671,7 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               </div>
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:9}}>
+              <div style={{background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"12px 14px",marginBottom:4}}><FontScaleControl/></div>
               <div style={{marginBottom:4}}><ShareTeamLink cl={cl} team={myTeam} t={t} compact/></div>
               <button onClick={()=>setShowProfile(false)} style={{width:"100%",padding:"13px",borderRadius:13,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Schließen</button>
               <button onClick={()=>{ try{ Object.keys(localStorage).filter(k=>k.startsWith("va_intro_")).forEach(k=>localStorage.removeItem(k)); }catch{} fire("Hilfe-Intros werden wieder angezeigt"); setShowProfile(false); }} style={{width:"100%",padding:"12px",borderRadius:13,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:13.5,cursor:"pointer",fontFamily:"inherit",marginBottom:10}}>Hilfe-Intros erneut anzeigen</button>
@@ -25755,6 +25788,7 @@ function AppRoot() {
   // aktiv gewählte Sprache (im localStorage) überschreibt das – NICHT die Browser-
   // sprache, sonst springt die App auf englisch-eingestellten Geräten auf Englisch.
   const [lang,setLang] = useState(()=> LANG_SWITCHER_ENABLED ? (localStorage.getItem(LANG_KEY)||"de") : "de");
+  useEffect(()=>{ applyFontScale(getFontScale()); },[]);
   return (
     <LangCtx.Provider value={lang in T ? lang : "de"}>
       <AppInner lang={lang} setLang={setLang}/>
