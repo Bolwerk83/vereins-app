@@ -23843,6 +23843,7 @@ function VenuePicker({venues=[],value,onPick,onClear,onAdd,cl}) {
       ) : (
         <>
           {venues.length>4&&<input value={q} onChange={e=>setQ(e.target.value)} placeholder="Adresse suchen..." style={{width:"100%",padding:"10px 13px",fontSize:14,border:"2px solid #e2e8f0",borderRadius:12,outline:"none",boxSizing:"border-box",marginBottom:8,fontFamily:"inherit"}}/>}
+          {venues.length===0&&<div style={{fontSize:12.5,color:"#64748b",lineHeight:1.5,background:"#f8fafc",border:"1.5px dashed #e2e8f0",borderRadius:12,padding:"10px 13px"}}>Noch keine Spielorte im Vereins-Adressbuch. Lege unten den ersten an – danach kannst du ihn hier bei jedem Auswärtsspiel direkt aus der Liste auswählen.</div>}
           {venues.length>0&&<div style={{display:"flex",flexDirection:"column",gap:7,maxHeight:200,overflowY:"auto"}}>
             {filtered.map(v=>(
               <button key={v.id} type="button" onClick={()=>onPick(v)} style={{textAlign:"left",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"10px 13px",background:"#fff",cursor:"pointer",fontFamily:"inherit"}}>
@@ -23941,6 +23942,17 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
               </div>
             );
           })() : <Inp label="Ort" val={f.loc} set={v=>u({loc:v})} ph="Sportplatz" cl={cl}/>}
+          {["heimspiel","auswarts","freundschaft","turnier"].includes(f.type)&&(()=>{ const on=f.carpoolEnabled!==false; return (
+            <div style={{border:"1.5px solid #e2e8f0",borderRadius:13,padding:"12px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+              <div>
+                <div style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>🚗 Fahrgemeinschaft</div>
+                <div style={{fontSize:12,color:"#94a3b8",marginTop:2,lineHeight:1.45}}>Fahrer / brauche Mitnahme / freie Sitzplätze – die Mitglieder tragen sich anschließend direkt im Termin ein.</div>
+              </div>
+              <button type="button" onClick={()=>u({carpoolEnabled:!on})} aria-label="Fahrgemeinschaft aktivieren" style={{width:46,height:27,borderRadius:99,border:"none",background:on?t.p:"#cbd5e1",position:"relative",cursor:"pointer",flexShrink:0,transition:"background .15s"}}>
+                <span style={{position:"absolute",top:3,left:on?22:3,width:21,height:21,borderRadius:"50%",background:"#fff",boxShadow:"0 1px 3px rgba(0,0,0,.25)",transition:"left .15s"}}/>
+              </button>
+            </div>
+          );})()}
           <SeriesWizard f={f} u={u} t={t} cl={cl}/>
           {f.recMode==="none"&&<Inp label="Datum" val={f.date} set={v=>u({date:v})} type="date" cl={cl}/>}
           {f.recMode==="none"&&(()=>{ const hn=publicHolidayName(f.date,cl?.clubSettings?.holidayState); return hn?(
@@ -29982,7 +29994,7 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
           </div>
         ))}
         {/* Termin-Cockpit: Fahrgemeinschaft auch bei Spielen (eigener Datentopf, nicht die Anwesenheit) */}
-        {ev.pt!=="carpool" && ["heimspiel","auswarts","freundschaft","turnier"].includes(ev.type) && (
+        {ev.pt!=="carpool" && ev.carpoolEnabled!==false && ["heimspiel","auswarts","freundschaft","turnier"].includes(ev.type) && (
           <div style={{marginTop:16,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
             <div style={{fontWeight:800,fontSize:14,color:"#0f172a",marginBottom:10}}>🚗 Fahrgemeinschaft</div>
             <PollCarpool entries={ev.carpool||{}} onSet={v=>onVote(ev.id,"carpoolmap",v)} user={user} cl={cl}/>
