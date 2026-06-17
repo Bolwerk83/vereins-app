@@ -8626,6 +8626,67 @@ function TemplateBrowser({ onSelect, cid, myTids, data, cl, onClose }) {
 }
 
 // Template Detail-Ansicht
+// Automatische Schema-Animation für Übungen ohne gezeichnetes Diagramm.
+// Läuft per SVG-SMIL in Endlosschleife (kein Play-Button nötig).
+function DrillAutoAnim({ drill, color="#16a34a" }){
+  const vw=100, vh=64;
+  const s=((drill?.name||"")+" "+((drill?.skills||[]).join(" "))+" "+(drill?.cat||"")).toLowerCase();
+  const type = /schuss|abschluss|torschuss|finish|\btor\b|volley/.test(s) ? "shot"
+    : /dribbl|slalom|finten|1 ?gegen ?1|tempodrib|hindernis/.test(s) ? "dribble"
+    : /pass|kombination|ballzirk|rondo|doppelpass|zuspiel|spielform|positionsspiel/.test(s) ? "pass"
+    : "free";
+  const Pitch=({children})=>(
+    <svg viewBox={`0 0 ${vw} ${vh}`} style={{width:"100%",height:"auto",display:"block",borderRadius:12,background:"linear-gradient(#2f8050,#246a42)"}}>
+      <rect x="1" y="1" width={vw-2} height={vh-2} rx="2" fill="none" stroke="rgba(255,255,255,.45)" strokeWidth="0.5"/>
+      <line x1="1" y1={vh/2} x2={vw-1} y2={vh/2} stroke="rgba(255,255,255,.28)" strokeWidth="0.4"/>
+      <circle cx={vw/2} cy={vh/2} r="7" fill="none" stroke="rgba(255,255,255,.28)" strokeWidth="0.4"/>
+      {children}
+    </svg>
+  );
+  const P=({x,y,n,fill})=>(<g><circle cx={x} cy={y} r="3.2" fill={fill||color} stroke="#fff" strokeWidth="0.6"/>{n!=null&&<text x={x} y={y+1.15} textAnchor="middle" fontSize="3.4" fontWeight="800" fill="#fff">{n}</text>}</g>);
+  const Cone=({x,y})=>(<polygon points={`${x},${y-2} ${x-1.7},${y+1.7} ${x+1.7},${y+1.7}`} fill="#f59e0b" stroke="#b45309" strokeWidth="0.2"/>);
+  const Ball=({path,dur,off=[0,0]})=>(<g><animateMotion dur={`${dur}s`} repeatCount="indefinite" path={path} calcMode="linear"/><circle cx={off[0]} cy={off[1]} r="1.9" fill="#fff" stroke="#0f172a" strokeWidth="0.5"/><circle cx={off[0]} cy={off[1]} r="0.7" fill="#0f172a"/></g>);
+  let scene=null;
+  if(type==="pass"){
+    scene=<>
+      <P x={18} y={48} n={1}/><P x={50} y={12} n={2}/><P x={82} y={48} n={3}/>
+      <P x={50} y={40} n={4} fill="#dc2626"/>
+      <Ball path="M18,48 L50,12 L82,48 Z" dur={5}/>
+    </>;
+  } else if(type==="shot"){
+    scene=<>
+      <rect x="40" y="2" width="20" height="3" fill="none" stroke="#fff" strokeWidth="0.7"/>
+      <P x={50} y={6} n={1} fill="#0f172a"/>
+      <P x={26} y={50} n={7}/>
+      <g><animateMotion dur="4s" repeatCount="indefinite" path="M52,46 L52,22 L52,46" calcMode="linear"/><circle cx="0" cy="0" r="3.2" fill={color} stroke="#fff" strokeWidth="0.6"/><text x="0" y="1.15" textAnchor="middle" fontSize="3.4" fontWeight="800" fill="#fff">9</text></g>
+      <Ball path="M26,50 L52,24 L50,5 L26,50" dur={4}/>
+    </>;
+  } else if(type==="dribble"){
+    scene=<>
+      <Cone x={35} y={16}/><Cone x={50} y={32}/><Cone x={65} y={16}/><Cone x={78} y={32}/>
+      <g><animateMotion dur="5.5s" repeatCount="indefinite" path="M16,48 L35,22 L50,38 L65,22 L78,38 L16,48" calcMode="linear"/>
+        <circle cx="0" cy="0" r="3.2" fill={color} stroke="#fff" strokeWidth="0.6"/><text x="0" y="1.15" textAnchor="middle" fontSize="3.4" fontWeight="800" fill="#fff">1</text>
+        <circle cx="2.4" cy="2.4" r="1.7" fill="#fff" stroke="#0f172a" strokeWidth="0.5"/><circle cx="2.4" cy="2.4" r="0.6" fill="#0f172a"/></g>
+    </>;
+  } else {
+    const spots=[[25,20,3],[70,22,3.6],[30,48,3.2],[72,46,4.2]];
+    scene=<>{spots.map(([x,y,d],i)=>(
+      <g key={i}>
+        <animateMotion dur={`${d}s`} repeatCount="indefinite" path={`M${x-6},${y} a6,4 0 1,0 12,0 a6,4 0 1,0 -12,0`} calcMode="linear"/>
+        <circle cx="0" cy="0" r="3.2" fill={color} stroke="#fff" strokeWidth="0.6"/><text x="0" y="1.15" textAnchor="middle" fontSize="3.4" fontWeight="800" fill="#fff">{i+1}</text>
+        <circle cx="2.3" cy="2.3" r="1.6" fill="#fff" stroke="#0f172a" strokeWidth="0.5"/><circle cx="2.3" cy="2.3" r="0.6" fill="#0f172a"/>
+      </g>
+    ))}</>;
+  }
+  const label={pass:"Pass-Zirkulation (Rondo) – schematisch",shot:"Lauf → Steckpass → Torabschluss – schematisch",dribble:"Dribbling-Parcours – schematisch",free:"Freie Bewegung mit Ball – schematisch"}[type];
+  return (
+    <div>
+      <Pitch>{scene}</Pitch>
+      <div style={{fontSize:11,color:"#94a3b8",marginTop:6,lineHeight:1.4}}>{label}. Vereinfachte Darstellung des Ablaufs.</div>
+    </div>
+  );
+}
+
 function TemplateDetail({ tpl, onBack, onUse, cl }) {
   const t = TH(cl);
   const cc = ["warmup","technik","taktik","kondition","spielform","spezial"].includes(tpl.cat)
@@ -8672,6 +8733,12 @@ function TemplateDetail({ tpl, onBack, onUse, cl }) {
         </div>
 
         <div style={{padding:"18px 20px 0"}}>
+
+          {/* Schema-Animation */}
+          <div style={{marginBottom:14}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5}}>ABLAUF (ANIMATION)</div>
+            <DrillAutoAnim drill={tpl} color={cc}/>
+          </div>
 
           {/* Intensität */}
           <div style={{background:"#f8fafc",borderRadius:13,padding:"13px 15px",marginBottom:14}}>
