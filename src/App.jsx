@@ -8626,6 +8626,28 @@ function TemplateBrowser({ onSelect, cid, myTids, data, cl, onClose }) {
 }
 
 // Template Detail-Ansicht
+// Explizite Animations-Zuordnung pro Übung (zuverlässig statt Schlagwort-Raten).
+// Fällt eine Übung hier raus, greift die Heuristik in DrillAutoAnim als Fallback.
+const DRILL_ANIM = {
+  aw_01:"free", aw_02:"tag", aw_03:"ladder", aw_04:"pass",
+  tech_01:"relay", tech_02:"dribshot", tech_03:"pass", tech_04:"shot", tech_05:"header", tech_06:"shot",
+  takt_01:"press", takt_02:"tactic", takt_03:"corner", takt_04:"defend",
+  kond_01:"run", kond_02:"run", kond_03:"run",
+  spiel_01:"duel", spiel_02:"game", spiel_03:"pass",
+  spez_01:"keeper", spez_02:"dribshot", spez_03:"defend", spez_04:"tactic",
+  bam_01:"tag", bam_02:"free", ah_01:"game",
+  tky_01:"tactic", tky_02:"tactic", tky_03:"press", tky_04:"defend", tky_05:"tactic", tky_06:"tactic",
+  tkm_01:"tactic", tkm_02:"defend",
+};
+
+// App-eigenes Empfehlungs-Siegel (KEINE DFB-Marke): markiert vielseitige,
+// breit einsetzbare Grundlagen-Übungen mit geringer/mittlerer Belastung.
+const isTrainerTip = (d) => !!d && (d.tip===true || ((d.age?.length||0)>=3 && (d.intensity||5)<=5));
+const TrainerTipBadge = ({ small }) => (
+  <span title="App-Empfehlung: vielseitig einsetzbare Übung – keine offizielle DFB-Empfehlung"
+    style={{background:"#fde047",color:"#713f12",borderRadius:99,padding:small?"2px 7px":"3px 10px",fontSize:small?10.5:12,fontWeight:800,display:"inline-flex",alignItems:"center",gap:4,whiteSpace:"nowrap"}}>⭐ Trainer-Tipp</span>
+);
+
 // Automatische Schema-Animation für Übungen ohne gezeichnetes Diagramm.
 // Läuft per SVG-SMIL in Endlosschleife (kein Play-Button nötig). Erkennt den
 // Übungstyp und zeigt einen sinnvollen Ablauf – Ball nur, wenn die Übung einen nutzt.
@@ -8637,15 +8659,19 @@ function DrillAutoAnim({ drill, color="#16a34a" }){
   const hasBall=/ball|dribbl|pass|tippen|jonglier|hochhalt|innenseite|ballführ|ballkontrolle|technik|schuss|kombinat|rondo|zuspiel|flanke|finten/.test(s);
   const hasGoal=/\btor\b|tore|minitor|abschluss|schuss|torschuss/.test(all);
   const usePole=/stange|pylon|pilon|slalomstange|stab/.test(all);   // Stangen statt Hütchen
-  const type =
-      /fang|abschlag|freilös|freiloes|jäger|jaeger|versteiner|hasche|nachlauf|kettenfang|reaktion/.test(s) ? "tag"
+  const isShot=/torschuss|torabschluss|abschluss|abschlüsse|abschluesse|finish|distanzschuss|volley|\bschuss\b|\bschüsse\b|schiess|aufs tor/.test(s);
+  const isTactic=(drill?.cat==="taktik") || /raumauf|raum nutzen|breit machen|breite nutzen|verschieb|verlager|umschalt|spielaufbau|spielintelligenz|überzahl|ueberzahl|unterzahl|freilaufen|anbieten|gegenpress|kompakt|staffelung/.test(s);
+  const type = DRILL_ANIM[drill?.id] || (
+      /fang|abschlag|freilös|freiloes|jäger|jaeger|versteiner|hasche|nachlauf|kettenfang/.test(s) ? "tag"
     : /staffel|positionswechsel|nachrück|nachrueck|rotation|durchlauf|folge deinem|pass.?und.?lauf|laufstaffel/.test(s) ? "relay"
-    : (/dribbl|slalom|parcours|hindernis/.test(s) && /abschluss|schuss|\btor\b|finish|torschuss/.test(s)) ? "dribshot"
-    : /schuss|abschluss|torschuss|finish|\btor\b|volley/.test(s) ? "shot"
+    : (/dribbl|slalom|parcours|hindernis/.test(s) && isShot) ? "dribshot"
+    : /\d ?gegen ?\d|kleinfeld|spielform|abschlussspiel|funino/.test(s) ? "game"
+    : isTactic ? "tactic"
+    : isShot ? "shot"
     : /dribbl|slalom|finten|1 ?gegen ?1|tempodrib|hindernis|parcours/.test(s) ? "dribble"
-    : /pass|kombination|ballzirk|rondo|doppelpass|zuspiel|positionsspiel|spielform/.test(s) ? "pass"
+    : /pass|kombination|ballzirk|rondo|doppelpass|zuspiel/.test(s) ? "pass"
     : /lauf|sprint|ausdauer|intervall|tempolauf|shuttle|pendel|kondition|antritt|wendigkeit/.test(s) ? "run"
-    : "free";
+    : "free");
   const Pitch=({children})=>(
     <svg viewBox={`0 0 ${vw} ${vh}`} style={{width:"100%",height:"auto",display:"block",borderRadius:12,background:"linear-gradient(#2f8050,#246a42)"}}>
       <defs><marker id="dah" markerUnits="userSpaceOnUse" markerWidth="6" markerHeight="6" refX="3" refY="2.2" orient="auto"><path d="M0,0 L4.5,2.2 L0,4.4 Z" fill="#fde047"/></marker></defs>
@@ -8659,7 +8685,9 @@ function DrillAutoAnim({ drill, color="#16a34a" }){
   // Hütchen/Pylone (orange Kegel) bzw. Slalomstange (rote Stange mit Fuß).
   const Cone=({x,y})=>(<polygon points={`${x},${y-2.4} ${x-1.9},${y+1.8} ${x+1.9},${y+1.8}`} fill="#f59e0b" stroke="#b45309" strokeWidth="0.25"/>);
   const Pole=({x,y})=>(<g><ellipse cx={x} cy={y+0.4} rx="1.6" ry="0.7" fill="rgba(0,0,0,.3)"/><line x1={x} y1={y} x2={x} y2={y-6.5} stroke="#dc2626" strokeWidth="1" strokeLinecap="round"/><line x1={x} y1={y-2.2} x2={x} y2={y-3.6} stroke="#fff" strokeWidth="1" strokeLinecap="round"/></g>);
-  const Goal=({x=40,w=20})=>(<g><rect x={x} y="2" width={w} height="3" fill="none" stroke="#fff" strokeWidth="0.7"/><line x1={x} y1="2" x2={x} y2="5" stroke="#fff" strokeWidth="0.7"/><line x1={x+w} y1="2" x2={x+w} y2="5" stroke="#fff" strokeWidth="0.7"/></g>);
+  const Goal=({x=40,w=20,y=2,flip})=>(<g><rect x={x} y={flip?y-3:y} width={w} height="3" fill="none" stroke="#fff" strokeWidth="0.7"/><line x1={x} y1={y} x2={x} y2={flip?y-3:y+3} stroke="#fff" strokeWidth="0.7"/><line x1={x+w} y1={y} x2={x+w} y2={flip?y-3:y+3} stroke="#fff" strokeWidth="0.7"/></g>);
+  const Flag=({x,y})=>(<g><line x1={x} y1={y} x2={x} y2={y-5} stroke="#fff" strokeWidth="0.5"/><polygon points={`${x},${y-5} ${x+3},${y-4} ${x},${y-3}`} fill="#ef4444"/></g>);
+  const FootBall=({x,y})=>(<g><circle cx={x} cy={y} r="1.9" fill="#fff" stroke="#0f172a" strokeWidth="0.5"/><circle cx={x} cy={y} r="0.7" fill="#0f172a"/></g>);
   const Ball=({path,dur,begin})=>(<g><animateMotion dur={`${dur}s`} repeatCount="indefinite" path={path} calcMode="linear" begin={begin||"0s"}/><circle cx="0" cy="0" r="1.9" fill="#fff" stroke="#0f172a" strokeWidth="0.5"/><circle cx="0" cy="0" r="0.7" fill="#0f172a"/></g>);
   // Bewegte Figur entlang eines Pfads (optional mit Ball am Fuß).
   const Mover=({path,dur,n,fill,ball,begin})=>(<g>
@@ -8678,17 +8706,33 @@ function DrillAutoAnim({ drill, color="#16a34a" }){
       <Mover path="M50,32 L28,24 L55,46 L78,30 L40,40 L50,32" dur={3.8} n="F" fill="#dc2626"/>
     </>;
   } else if(type==="relay"){   // Passstaffel/Positionswechsel: Pass spielen und dem Pass nachlaufen
+    // Wichtig: NICHT alle gleichzeitig. Stationen warten, immer nur EIN Spieler
+    // läuft – zeitversetzt seinem Pass hinterher (Ball voraus, Läufer trabt nach).
     const A=[20,49],B=[50,13],C=[80,49];
-    const p=(a,b,c)=>`M${a[0]},${a[1]} L${b[0]},${b[1]} L${c[0]},${c[1]} L${a[0]},${a[1]}`;
+    const path=`M${A[0]},${A[1]} L${B[0]},${B[1]} L${C[0]},${C[1]} L${A[0]},${A[1]}`;
     scene=<>
-      <line x1={A[0]} y1={A[1]} x2={B[0]} y2={B[1]} stroke="#fde047" strokeWidth="0.55" strokeDasharray="2 1.6" opacity="0.55" markerEnd="url(#dah)"/>
-      <line x1={B[0]} y1={B[1]} x2={C[0]} y2={C[1]} stroke="#fde047" strokeWidth="0.55" strokeDasharray="2 1.6" opacity="0.55" markerEnd="url(#dah)"/>
-      <line x1={C[0]} y1={C[1]} x2={A[0]} y2={A[1]} stroke="#fde047" strokeWidth="0.55" strokeDasharray="2 1.6" opacity="0.55" markerEnd="url(#dah)"/>
+      <line x1={A[0]} y1={A[1]} x2={B[0]} y2={B[1]} stroke="#fde047" strokeWidth="0.55" strokeDasharray="2 1.6" opacity="0.5" markerEnd="url(#dah)"/>
+      <line x1={B[0]} y1={B[1]} x2={C[0]} y2={C[1]} stroke="#fde047" strokeWidth="0.55" strokeDasharray="2 1.6" opacity="0.5" markerEnd="url(#dah)"/>
+      <line x1={C[0]} y1={C[1]} x2={A[0]} y2={A[1]} stroke="#fde047" strokeWidth="0.55" strokeDasharray="2 1.6" opacity="0.5" markerEnd="url(#dah)"/>
       <Cone x={A[0]} y={A[1]+4}/><Cone x={B[0]} y={B[1]-4}/><Cone x={C[0]} y={C[1]+4}/>
-      <Mover path={p(A,B,C)} dur={6} n={1}/>
-      <Mover path={p(B,C,A)} dur={6} n={2}/>
-      <Mover path={p(C,A,B)} dur={6} n={3}/>
-      <Ball path={p(A,B,C)} dur={6} begin="-1.3s"/>
+      {/* Stationen / Warteschlange – stehen, bis sie an der Reihe sind */}
+      <P x={A[0]} y={A[1]} n={1}/><P x={B[0]} y={B[1]} n={2}/><P x={C[0]} y={C[1]} n={3}/>
+      {/* genau EIN Läufer, leicht hinter dem Ball (Zeitversatz) */}
+      <Mover path={path} dur={6} n="" fill="#0ea5e9" begin="0.5s"/>
+      <Ball path={path} dur={6}/>
+    </>;
+  } else if(type==="tactic"){  // Taktik/Raum nutzen: breit machen & Seitenverlagerung über die Breite
+    scene=<>
+      <Goal/>
+      {/* Pfeile: Außenspieler ziehen in die Breite */}
+      <line x1="44" y1="34" x2="22" y2="29" stroke="#fde047" strokeWidth="0.5" strokeDasharray="2 1.6" opacity="0.55" markerEnd="url(#dah)"/>
+      <line x1="56" y1="34" x2="78" y2="29" stroke="#fde047" strokeWidth="0.5" strokeDasharray="2 1.6" opacity="0.55" markerEnd="url(#dah)"/>
+      <P x={50} y={52} n={6}/>                                   {/* Aufbauspieler */}
+      <P x={50} y={20} n={9}/>                                   {/* zentral vorn */}
+      <Mover path="M44,34 L22,29 L44,34" dur={5} n={7}/>          {/* macht links breit */}
+      <Mover path="M56,34 L78,29 L56,34" dur={5} n={11}/>         {/* macht rechts breit */}
+      {/* Ball wird über die Breite verlagert (Seitenwechsel) */}
+      <Ball path="M50,52 L22,29 L50,40 L78,29 L50,52" dur={6}/>
     </>;
   } else if(type==="dribshot"){ // Dribbling-Parcours mit Abschluss: Slalom durch Stangen, dann Tor
     scene=<>
@@ -8719,6 +8763,64 @@ function DrillAutoAnim({ drill, color="#16a34a" }){
       <Gate x={35} y={16}/><Gate x={50} y={32}/><Gate x={65} y={16}/><Gate x={78} y={32}/>
       <Mover path="M16,48 L35,22 L50,38 L65,22 L78,38 L16,48" dur={5.5} n={1} ball/>
     </>;
+  } else if(type==="game"){    // Spielform/Kleinfeldspiel: zwei Teams, zwei Tore
+    scene=<>
+      <Goal/>
+      <Goal y={59} flip/>
+      <P x={36} y={40} n={1}/><P x={62} y={34} n={2}/>
+      <P x={42} y={26} n={1} fill="#dc2626"/><P x={64} y={44} n={2} fill="#dc2626"/>
+      <Ball path="M36,40 L62,34 L50,9 L50,42 L40,52 L36,40" dur={6}/>
+    </>;
+  } else if(type==="duel"){    // 1 gegen 1: Angreifer dribbelt am Verteidiger vorbei zum Tor
+    scene=<>
+      <Goal/>
+      <Mover path="M50,55 L43,40 L50,29 L58,19 L50,55" dur={5} n={9} ball/>
+      <Mover path="M50,31 L44,31 L56,31 L50,31" dur={3} n={4} fill="#dc2626"/>
+    </>;
+  } else if(type==="press"){   // Pressing: Verteidiger rücken zum Ball (ballorientiert), zeitversetzt
+    scene=<>
+      <P x={50} y={40} n={10} fill="#dc2626"/><FootBall x={52.6} y={42}/>
+      <Mover path="M24,18 L43,36 L24,18" dur={3} n={4}/>
+      <Mover path="M76,20 L57,36 L76,20" dur={3.6} n={5}/>
+      <Mover path="M50,12 L50,33 L50,12" dur={4.2} n={6}/>
+    </>;
+  } else if(type==="defend"){  // Verteidigen: Verteidiger bleibt zwischen Ball und Tor (goalside)
+    scene=<>
+      <Goal/>
+      <Mover path="M30,53 L42,28 L30,53" dur={5.2} n={9} ball/>
+      <Mover path="M44,40 L46,18 L44,40" dur={5.2} n={4} fill="#dc2626"/>
+    </>;
+  } else if(type==="header"){  // Kopfball: Flanke von außen, Kopfball aufs Tor
+    scene=<>
+      <Goal/>
+      <P x={18} y={42} n={7}/>
+      <Mover path="M54,32 L50,14 L54,32" dur={4} n={9}/>
+      <Ball path="M18,42 L50,13 L50,4 L18,42" dur={4}/>
+    </>;
+  } else if(type==="corner"){  // Standard/Ecke: Flanke von der Eckfahne in den Strafraum
+    scene=<>
+      <Goal/>
+      <Flag x={6} y={9}/>
+      <Mover path="M40,32 L47,14 L40,32" dur={4} n={9}/>
+      <Mover path="M62,32 L54,15 L62,32" dur={4} n={10}/>
+      <Ball path="M7,8 L50,13 L50,4 L7,8" dur={4}/>
+    </>;
+  } else if(type==="keeper"){  // Torwart: Stellungsspiel/Reflexe – TW bewegt sich auf der Linie zu den Ecken
+    scene=<>
+      <Goal/>
+      <Mover path="M43,5 L57,5 L43,5" dur={2.8} n={1} fill="#0f172a"/>
+      <P x={50} y={42} n={9}/>
+      <Ball path="M50,42 L43,5 L50,42 L57,5 L50,42" dur={4}/>
+    </>;
+  } else if(type==="ladder"){  // Koordinationsleiter: schnelle Schritte durch die Leiter
+    scene=<>
+      <g stroke="#fde047" strokeWidth="0.4" opacity="0.8">
+        <line x1="45" y1="12" x2="45" y2="52"/><line x1="55" y1="12" x2="55" y2="52"/>
+        {[12,18,24,30,36,42,48,52].map(yy=><line key={yy} x1="45" y1={yy} x2="55" y2={yy}/>)}
+      </g>
+      <Cone x={50} y={9}/><Cone x={50} y={55}/>
+      <Mover path="M50,55 L50,12 L50,55" dur={2.6} n={1}/>
+    </>;
   } else {                     // freie Bewegung / Koordination – Ball nur wenn ballbasiert
     scene=<>
       <Mover path="M18,20 L45,46 L18,48 L45,18 L18,20" dur={5.4} n={1} ball={hasBall}/>
@@ -8730,12 +8832,21 @@ function DrillAutoAnim({ drill, color="#16a34a" }){
   const gw=usePole?"Stangen":"Hütchen";
   const label={
     tag:"Fangspiel – der Fänger (rot) jagt, die anderen laufen frei",
-    relay:"Passstaffel: Pass spielen und dem Pass nachlaufen (Positionswechsel)",
+    tactic:"Raum nutzen / breit machen – über die Breite spielen und verlagern",
+    relay:"Passstaffel: immer nur EINER läuft – dem eigenen Pass hinterher (Positionswechsel)",
     dribshot:`Dribbling-Parcours durch ${gw} → Abschluss aufs Tor`,
     run:"Lauf/Tempo – Shuttle zwischen den Markierungen",
     pass:"Pass-Zirkulation (Rondo) – Ball läuft, Mitte verteidigt",
     shot:"Lauf → Steckpass → Torabschluss",
     dribble:`Dribbling-Parcours (Slalom durch ${gw})`,
+    game:"Spielform: zwei Teams, zwei Tore – frei spielen",
+    duel:"1 gegen 1: Angreifer dribbelt am Verteidiger (rot) vorbei zum Tor",
+    press:"Pressing: Verteidiger rücken ballorientiert zum Ball",
+    defend:"Verteidigen: zwischen Ball und Tor bleiben (goalside)",
+    header:"Kopfball: Flanke von außen → Kopfball aufs Tor",
+    corner:"Ecke: Flanke von der Eckfahne in den Strafraum",
+    keeper:"Torwart: Stellungsspiel/Reflexe – Ecken abdecken",
+    ladder:"Koordinationsleiter: schnelle Schritte durch die Leiter",
     free:hasBall?"Freies Bewegen & Dribbeln mit Ball":"Freie Bewegung & Koordination ohne Ball"
   }[type];
   return (
@@ -8780,6 +8891,7 @@ function TemplateDetail({ tpl, onBack, onUse, cl }) {
           </button>
           <div style={{color:"#fff",fontWeight:900,fontSize:20,marginBottom:4}}>{tpl.name}</div>
           <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+            {isTrainerTip(tpl) && <TrainerTipBadge/>}
             <span style={{background:"rgba(255,255,255,.15)",color:"#fff",
               borderRadius:99,padding:"3px 10px",fontSize:12,fontWeight:600}}>
               {tpl.duration} Min.
