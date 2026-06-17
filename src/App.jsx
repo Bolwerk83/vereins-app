@@ -28024,10 +28024,40 @@ function eventWarnings(ev, tod){
 function buildDrillAnim(el, meta){
   el=el||[]; meta=meta||{};
   const players=el.filter(e=>e.type==="player");
+  const opps=el.filter(e=>e.type==="opp");
   const segs=el.filter(e=>e.type==="passArrow"||e.type==="dribbleArrow");
   const runs=el.filter(e=>e.type==="runArrow"||e.type==="dribbleArrow");
+  const hasBall=el.some(e=>e.type==="ball");
   const near=(ax,ay,bx,by)=>Math.hypot(ax-bx,ay-by)<7;
   const ease=x=>x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2;
+  const txt=((meta.title||"")+" "+(meta.focus||"")).toLowerCase();
+  const isCatch=/fang|fänger|jäg|jag|hasch|räub|hexe|versteiner|drache|krokodil|schwänz|kette|komm mit/.test(txt);
+  // 0) Fangspiele zuerst: Faenger/Hexe (rot) jagt, die anderen laufen weg – KEIN Ball.
+  // (Hat Vorrang vor evtl. vorhandenen Lauf-Pfeilen, die hier nur Deko sind.)
+  if(isCatch && players.length>=1){
+    const c = opps[0] || players[0];                 // Faenger/Hexe (opp bevorzugt)
+    const flee = players.filter(p=>p!==c);
+    const fleers = flee.length?flee:players;
+    const cx0=c.x, cy0=c.y;
+    const posAt=(k)=>{
+      const moved=new Map();
+      // Fluechtende laufen in Schleifen, leicht vom Faenger weggebogen.
+      const fp=fleers.map((p,i)=>{
+        const a=k*Math.PI*2 + i*(Math.PI*2/fleers.length);
+        const dx=p.x-cx0, dy=p.y-cy0, nrm=Math.hypot(dx,dy)||1;
+        const bx=p.x+(dx/nrm)*4, by=p.y+(dy/nrm)*4;
+        return {p, x:bx+Math.cos(a)*12, y:by+Math.sin(a)*9};
+      });
+      fp.forEach(o=>moved.set(o.p,{x:o.x,y:o.y}));
+      // Faenger jagt die aktuell naechste fluechtende Person.
+      let tx=fp[0].x, ty=fp[0].y, bd=1e9;
+      fp.forEach(o=>{const d=Math.hypot(o.x-cx0,o.y-cy0); if(d<bd){bd=d;tx=o.x;ty=o.y;}});
+      const e=ease(k);
+      moved.set(c,{x:cx0+(tx-cx0)*e, y:cy0+(ty-cy0)*e});
+      return {balls:[],moved};
+    };
+    return {hasAnim:true,posAt,catcher:c};
+  }
   // 1) Explizite Pfeile: Spieler laufen die Laufwege, Ball laeuft die Passwege.
   if(segs.length||runs.length){
     const used=new Set(); const chains=[];
@@ -28042,26 +28072,13 @@ function buildDrillAnim(el, meta){
     };
     return {hasAnim:true,posAt};
   }
-  // 2) Keine Pfeile: kindgerechte Bewegung je nach Uebungstyp.
+  // 2) Keine Pfeile: kindgerechte Bewegung. Spieler laufen in kleinen Schleifen;
+  //    ein Ball wandert nur dann reihum, wenn die Uebung ueberhaupt einen Ball hat.
   if(players.length>=2){
-    const txt=((meta.title||"")+" "+(meta.focus||"")).toLowerCase();
-    const isCatch=/fang|jäg|jag|hasch|räub|fangen/.test(txt);
-    if(isCatch){
-      const c=players[0], prey=players[1], rest=players.slice(2);
-      const posAt=(k)=>{ const e=ease(k); const ang=k*Math.PI*2;
-        const px=prey.x+Math.cos(ang)*10, py=prey.y+Math.sin(ang)*8;
-        const moved=new Map();
-        moved.set(prey,{x:px,y:py});
-        moved.set(c,{x:c.x+(px-c.x)*e,y:c.y+(py-c.y)*e}); // Faenger jagt
-        rest.forEach((p,i)=>{ const a=k*Math.PI*2+i*1.7; moved.set(p,{x:p.x+Math.cos(a)*7,y:p.y+Math.sin(a)*6}); });
-        return {balls:[],moved};
-      };
-      return {hasAnim:true,posAt,catcher:c};
-    }
-    // generisch: Spieler laufen in kleinen Schleifen, Ball wandert reihum.
     const posAt=(k)=>{
       const moved=new Map();
       players.forEach((p,i)=>{ const a=k*Math.PI*2+i*1.3; moved.set(p,{x:p.x+Math.cos(a)*6,y:p.y+Math.sin(a)*4}); });
+      if(!hasBall) return {balls:[],moved};
       const N=players.length; const seg=Math.min(N-1,Math.floor(k*N)); const lp=(k*N)-seg; const a=players[seg], b=players[(seg+1)%N];
       return {balls:[{x:a.x+(b.x-a.x)*lp,y:a.y+(b.y-a.y)*lp}],moved};
     };
