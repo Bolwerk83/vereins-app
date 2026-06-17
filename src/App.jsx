@@ -5813,6 +5813,8 @@ function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAttachBoar
   const trailRef=useRef([]);
   const [playing,setPlaying]=useState(false);
   const animRef=useRef(null);
+  const t0Ref=useRef(0); const elapsedRef=useRef(0); const stepRef=useRef(null);
+  const [paused,setPaused]=useState(false);
   const [boardName,setBoardName]=useState("");
   const skipRebuildRef=useRef(false);
   const myBoards=(data.tacticBoards||[]).filter(b=>b.cid===cl.id);
@@ -5835,7 +5837,9 @@ function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAttachBoar
   // Falls dieses Board an einem Termin haengt: beim Oeffnen den gespeicherten Stand laden.
   useEffect(()=>{ if(eventCtx?.board){ loadBoard(eventCtx.board); } /* eslint-disable-next-line */ },[]);
   const stopAnim=()=>{ if(animRef.current) cancelAnimationFrame(animRef.current); animRef.current=null; };
-  const resetAnim=()=>{ stopAnim(); setPlaying(false); setAnimOwn(null); setAnimOpp(null); setAnimBall(null); setAnimTrail([]); setAnimGoal(null); trailRef.current=[]; };
+  const resetAnim=()=>{ stopAnim(); setPlaying(false); setPaused(false); setAnimOwn(null); setAnimOpp(null); setAnimBall(null); setAnimTrail([]); setAnimGoal(null); trailRef.current=[]; };
+  const pauseAnim=()=>{ if(!playing||paused) return; elapsedRef.current=(performance.now()-t0Ref.current)*animSpeed; stopAnim(); setPaused(true); };
+  const resumeAnim=()=>{ if(!paused||!stepRef.current) return; setPaused(false); t0Ref.current=performance.now()-elapsedRef.current/animSpeed; animRef.current=requestAnimationFrame(stepRef.current); };
   useEffect(()=>()=>stopAnim(),[]);
   // Tor-Erkennung: Endpunkt im mittleren Drittel und nah an Ober-/Unterkante.
   const isGoalShot=(a)=> (a.x2>F.vw*0.28&&a.x2<F.vw*0.72) && (a.y2<F.vh*0.12||a.y2>F.vh*0.88);
@@ -5868,45 +5872,52 @@ function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAttachBoar
     });
     const TOTAL=tEnd+700;
     const ballEv=seq.filter(a=>a.type==="pass"||a.type==="dribble");
-    // Gekrümmte Pässe (Steckpass/Flanke wirkt natürlicher): Kontrollpunkt seitlich versetzt.
-    const ctrl=(a)=>{ const mx=(a.x1+a.x2)/2,my=(a.y1+a.y2)/2,dx=a.x2-a.x1,dy=a.y2-a.y1,len=Math.hypot(dx,dy)||1;
-      if(a.type!=="pass"||len<F.vw*0.22) return {cx:mx,cy:my};
-      const nx=-dy/len,ny=dx/len; const sign=((a.x1+a.y1)%2<1)?1:-1; const amt=Math.min(len*0.14,F.vw*0.09)*sign;
-      return {cx:mx+nx*amt,cy:my+ny*amt}; };
-    const bez=(a,e)=>{ const {cx,cy}=ctrl(a); const u=1-e; return { x:u*u*a.x1+2*u*e*cx+e*e*a.x2, y:u*u*a.y1+2*u*e*cy+e*e*a.y2 }; };
     const clamp=x=>x<0?0:x>1?1:x;
     const ez=x=>x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2;   // Lauf: weich an/aus
     const ezOut=x=>1-Math.pow(1-x,2);                  // Pass: schnell, dann Ballannahme
     const accel=x=>x*x;                                // Sprint: beschleunigt
-    const tokAt=(tk,T)=>{ const r=tk.run; if(!r) return {...tk,x:tk.sx,y:tk.sy}; const ph=sched.get(r); const raw=clamp((T-ph.start)/ph.dur); const e=(r.pace===3?accel(raw)*0.5+ez(raw)*0.5:ez(raw)); return {...tk,x:tk.sx+(r.x2-tk.sx)*e,y:tk.sy+(r.y2-tk.sy)*e}; };
+    // Spieler folgt der (evtl. gebogenen) Laufkurve; Start-Offset, falls Token nicht
+    // exakt am Lauf-Start steht, damit es keinen Sprung gibt.
+    const tokAt=(tk,T)=>{ const r=tk.run; if(!r) return {...tk,x:tk.sx,y:tk.sy}; const ph=sched.get(r); const raw=clamp((T-ph.start)/ph.dur); const e=(r.pace===3?accel(raw)*0.5+ez(raw)*0.5:ez(raw)); const p=bezPt(r,e); const off=1-e; return {...tk,x:p.x+(tk.sx-r.x1)*off,y:p.y+(tk.sy-r.y1)*off}; };
     const ballAt=(T)=>{ if(!ballEv.length) return null;
       const first=ballEv[0]; if(T<sched.get(first).start) return {x:first.x1,y:first.y1,rot:0,shot:false};
       let cur=null;
       for(const a of ballEv){ const ph=sched.get(a); if(T>=ph.start&&T<=ph.end){ cur={a,ph,live:true}; break; } if(T>ph.end) cur={a,ph,live:false}; }
       if(!cur) return {x:first.x1,y:first.y1,rot:0,shot:false};
       const len=Math.hypot(cur.a.x2-cur.a.x1,cur.a.y2-cur.a.y1);
-      if(cur.live){ const raw=clamp((T-cur.ph.start)/cur.ph.dur); const e=cur.a.type==="pass"?ezOut(raw):raw; const p=bez(cur.a,e); return {...p,rot:(cur.ph.start+raw*len)*0.7,shot:cur.a.type==="pass"&&isGoalShot(cur.a)}; }
+      if(cur.live){ const raw=clamp((T-cur.ph.start)/cur.ph.dur); const e=cur.a.type==="pass"?ezOut(raw):raw; const p=bezPt(cur.a,e); return {...p,rot:(cur.ph.start+raw*len)*0.7,shot:cur.a.type==="pass"&&isGoalShot(cur.a)}; }
       return {x:cur.a.x2,y:cur.a.y2,rot:len*0.7,shot:cur.a.type==="pass"&&isGoalShot(cur.a)};
     };
     // letzter Abschluss aufs Tor?
     const lastShot=[...ballEv].reverse().find(a=>a.type==="pass");
     const goalAt = lastShot&&isGoalShot(lastShot) ? {x:lastShot.x2,y:lastShot.y2,t:sched.get(lastShot).end} : null;
-    const t0=performance.now();
-    setPlaying(true); trailRef.current=[];
+    t0Ref.current=performance.now(); elapsedRef.current=0;
+    setPlaying(true); setPaused(false); trailRef.current=[];
     if(ballEv.length) setAnimBall(ballAt(0));
     let goalShown=false;
-    const step=(t)=>{ const T=Math.min((t-t0)*animSpeed,TOTAL);
+    const step=(t)=>{ const T=Math.min((t-t0Ref.current)*animSpeed,TOTAL);
       setAnimOwn(ownA.map(tk=>tokAt(tk,T)));
       if(showOpp) setAnimOpp(oppA.map(tk=>tokAt(tk,T)));
       if(ballEv.length){ const b=ballAt(T); setAnimBall(b);
         if(b){ const tr=trailRef.current; tr.push({x:b.x,y:b.y}); if(tr.length>10) tr.shift(); setAnimTrail(tr.slice()); }
       }
       if(goalAt&&!goalShown&&T>=goalAt.t-30){ goalShown=true; setAnimGoal({x:goalAt.x,y:goalAt.y}); }
-      if((t-t0)*animSpeed<TOTAL){ animRef.current=requestAnimationFrame(step); }
+      if((t-t0Ref.current)*animSpeed<TOTAL){ animRef.current=requestAnimationFrame(step); }
       else { setPlaying(false); animRef.current=null; if(loopAnim) setTimeout(()=>playAnim(),650); }
     };
+    stepRef.current=step;
     animRef.current=requestAnimationFrame(step);
   };
+
+  // Gebogene Pfeile/Wege (Pass-Bogen, Bogenlauf) – gerendert UND animiert auf
+  // derselben Kurve, damit gezeichneter Weg und Bewegung übereinstimmen.
+  const arrCtrl=(a)=>{ const mx=(a.x1+a.x2)/2,my=(a.y1+a.y2)/2,dx=a.x2-a.x1,dy=a.y2-a.y1,len=Math.hypot(dx,dy)||1;
+    const minF=a.type==="pass"?0.22:0.34, maxF=a.type==="pass"?0.09:0.05;
+    if((a.type!=="pass"&&a.type!=="run")||len<F.vw*minF) return {cx:mx,cy:my};
+    const nx=-dy/len,ny=dx/len,sign=(Math.round(a.x1+a.y1)%2===0)?1:-1,amt=Math.min(len*0.13,F.vw*maxF)*sign;
+    return {cx:mx+nx*amt,cy:my+ny*amt}; };
+  const arrPath=(a)=>{ const c=arrCtrl(a); return `M ${a.x1} ${a.y1} Q ${c.cx} ${c.cy} ${a.x2} ${a.y2}`; };
+  const bezPt=(a,e)=>{ const c=arrCtrl(a),u=1-e; return { x:u*u*a.x1+2*u*e*c.cx+e*e*a.x2, y:u*u*a.y1+2*u*e*c.cy+e*e*a.y2 }; };
 
   const svgRef=useRef(null); const dragRef=useRef(null);
   const [mode,setMode]=useState("move");
@@ -5984,6 +5995,8 @@ function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAttachBoar
         <span style={{fontSize:11,fontWeight:800,color:"#94a3b8",marginRight:2}}>ANIMATION</span>
         <button onClick={playAnim} disabled={playing||!arrows.length}
           style={{padding:"7px 14px",borderRadius:9,border:"none",background:(playing||!arrows.length)?"#e2e8f0":t.p,color:(playing||!arrows.length)?"#94a3b8":"#fff",fontWeight:800,fontSize:12.5,cursor:(playing||!arrows.length)?"default":"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{playing?"▶ läuft…":"▶ Abspielen"}</button>
+        {playing&&<button onClick={paused?resumeAnim:pauseAnim}
+          style={{padding:"7px 12px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{paused?"▶ Weiter":"⏸ Pause"}</button>}
         <button onClick={resetAnim} disabled={!animOwn&&!animOpp&&!playing}
           style={{padding:"7px 12px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:(animOwn||animOpp||playing)?"#475569":"#cbd5e1",fontWeight:700,fontSize:12.5,cursor:(animOwn||animOpp||playing)?"pointer":"default",fontFamily:"inherit",whiteSpace:"nowrap"}}>↺ Zurück</button>
         <span style={{width:1,height:18,background:"#e2e8f0"}}/>
@@ -6008,7 +6021,7 @@ function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAttachBoar
           </defs>
           {F.draw("rgba(255,255,255,.85)")}
           {arrows.map(a=>(
-            <line key={a.id} x1={a.x1} y1={a.y1} x2={a.x2} y2={a.y2}
+            <path key={a.id} d={arrPath(a)} fill="none"
               stroke={a.type==="run"?runArrowCol(a):ARR_COL[a.type]} strokeWidth={F.vw*0.012} strokeLinecap="round"
               strokeDasharray={a.type==="pass"?`${F.vw*0.03} ${F.vw*0.022}`:undefined}
               markerEnd={`url(#tb-ar-${a.type})`}/>
