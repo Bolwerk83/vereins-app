@@ -5806,6 +5806,11 @@ function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAttachBoar
   const [animOwn,setAnimOwn]=useState(null);
   const [animOpp,setAnimOpp]=useState(null);
   const [animBall,setAnimBall]=useState(null);
+  const [animTrail,setAnimTrail]=useState([]);   // Ball-Spur (Komet)
+  const [animGoal,setAnimGoal]=useState(null);    // Torjubel-Blitz {x,y}
+  const [animSpeed,setAnimSpeed]=useState(1);      // 0.6 langsam / 1 normal / 1.6 schnell
+  const [loopAnim,setLoopAnim]=useState(false);
+  const trailRef=useRef([]);
   const [playing,setPlaying]=useState(false);
   const animRef=useRef(null);
   const [boardName,setBoardName]=useState("");
@@ -5830,16 +5835,17 @@ function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAttachBoar
   // Falls dieses Board an einem Termin haengt: beim Oeffnen den gespeicherten Stand laden.
   useEffect(()=>{ if(eventCtx?.board){ loadBoard(eventCtx.board); } /* eslint-disable-next-line */ },[]);
   const stopAnim=()=>{ if(animRef.current) cancelAnimationFrame(animRef.current); animRef.current=null; };
-  const resetAnim=()=>{ stopAnim(); setPlaying(false); setAnimOwn(null); setAnimOpp(null); setAnimBall(null); };
+  const resetAnim=()=>{ stopAnim(); setPlaying(false); setAnimOwn(null); setAnimOpp(null); setAnimBall(null); setAnimTrail([]); setAnimGoal(null); trailRef.current=[]; };
   useEffect(()=>()=>stopAnim(),[]);
+  // Tor-Erkennung: Endpunkt im mittleren Drittel und nah an Ober-/Unterkante.
+  const isGoalShot=(a)=> (a.x2>F.vw*0.28&&a.x2<F.vw*0.72) && (a.y2<F.vh*0.12||a.y2>F.vh*0.88);
   const playAnim=()=>{
     // Reihenfolge = Zeichen-Reihenfolge der Pfeile -> echte Abfolge:
-    // Lauf, dann Pass in den Lauf, dann nächster Lauf/Abschluss usw.
+    // Lauf, dann Pass in den Lauf, dann Abschluss usw.
     const seq=arrows.filter(a=>a.type==="run"||a.type==="pass"||a.type==="dribble");
     if(!seq.length){ fire&&fire("Erst Lauf-/Passwege einzeichnen"); return; }
     resetAnim();
     const runs=seq.filter(a=>a.type==="run");
-    // Jeden Lauf dem nächstgelegenen Spieler zuordnen (jeder Lauf nur einmal).
     const thr=F.r*3.6; const usedRun=new Set();
     const withRun=(list)=>list.map(tk=>{
       let best=null,bd=thr,bi=-1;
@@ -5849,37 +5855,55 @@ function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAttachBoar
     });
     const ownA=withRun(tokens);
     const oppA=showOpp?withRun(oppTokens):[];
-    // Tempo in SVG-Einheiten/Sekunde: Pass schneller als Lauf, Dribbling langsam.
-    const spd=a=>{ if(a.type==="pass")return 560; if(a.type==="dribble")return 150; return a.pace===3?330:a.pace===1?150:230; };
-    const durOf=a=>{ const d=Math.hypot(a.x2-a.x1,a.y2-a.y1); return Math.max(300,Math.min(2800, d/spd(a)*1000)); };
-    // Sequenzieller Zeitplan; ein Pass direkt nach einem Lauf wird als Steckpass
-    // in den Lauf gespielt (überlappt, damit der Ball ankommt, wenn der Spieler ankommt).
+    // Tempo in SVG-Einheiten/Sekunde: Schuss am schnellsten, Pass schnell, Dribbling langsam.
+    const spd=a=>{ if(a.type==="pass")return isGoalShot(a)?900:560; if(a.type==="dribble")return 150; return a.pace===3?330:a.pace===1?150:230; };
+    const durOf=a=>{ const d=Math.hypot(a.x2-a.x1,a.y2-a.y1); return Math.max(260,Math.min(2800, d/spd(a)*1000)); };
+    // Sequenzieller Zeitplan; Pass direkt nach Lauf = Steckpass in den Lauf (überlappt),
+    // dazwischen kurze Ballannahme (Settle), damit jede Aktion lesbar bleibt.
     let tEnd=0; const sched=new Map();
     seq.forEach((a,i)=>{ const d=durOf(a); const prev=seq[i-1]; let start=tEnd;
       if(a.type==="pass"&&prev&&prev.type==="run") start=Math.max(0,tEnd-durOf(prev)*0.5);
+      else if(i>0) start=tEnd+170; // Ballannahme/Settle
       const ph={start,end:start+d,dur:d}; sched.set(a,ph); tEnd=Math.max(tEnd,ph.end);
     });
-    const TOTAL=tEnd+400;
+    const TOTAL=tEnd+700;
     const ballEv=seq.filter(a=>a.type==="pass"||a.type==="dribble");
+    // Gekrümmte Pässe (Steckpass/Flanke wirkt natürlicher): Kontrollpunkt seitlich versetzt.
+    const ctrl=(a)=>{ const mx=(a.x1+a.x2)/2,my=(a.y1+a.y2)/2,dx=a.x2-a.x1,dy=a.y2-a.y1,len=Math.hypot(dx,dy)||1;
+      if(a.type!=="pass"||len<F.vw*0.22) return {cx:mx,cy:my};
+      const nx=-dy/len,ny=dx/len; const sign=((a.x1+a.y1)%2<1)?1:-1; const amt=Math.min(len*0.14,F.vw*0.09)*sign;
+      return {cx:mx+nx*amt,cy:my+ny*amt}; };
+    const bez=(a,e)=>{ const {cx,cy}=ctrl(a); const u=1-e; return { x:u*u*a.x1+2*u*e*cx+e*e*a.x2, y:u*u*a.y1+2*u*e*cy+e*e*a.y2 }; };
     const clamp=x=>x<0?0:x>1?1:x;
-    const ez=x=>x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2;
-    const tokAt=(tk,T)=>{ const r=tk.run; if(!r) return {...tk,x:tk.sx,y:tk.sy}; const ph=sched.get(r); const e=ez(clamp((T-ph.start)/ph.dur)); return {...tk,x:tk.sx+(r.x2-tk.sx)*e,y:tk.sy+(r.y2-tk.sy)*e}; };
+    const ez=x=>x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2;   // Lauf: weich an/aus
+    const ezOut=x=>1-Math.pow(1-x,2);                  // Pass: schnell, dann Ballannahme
+    const accel=x=>x*x;                                // Sprint: beschleunigt
+    const tokAt=(tk,T)=>{ const r=tk.run; if(!r) return {...tk,x:tk.sx,y:tk.sy}; const ph=sched.get(r); const raw=clamp((T-ph.start)/ph.dur); const e=(r.pace===3?accel(raw)*0.5+ez(raw)*0.5:ez(raw)); return {...tk,x:tk.sx+(r.x2-tk.sx)*e,y:tk.sy+(r.y2-tk.sy)*e}; };
     const ballAt=(T)=>{ if(!ballEv.length) return null;
-      const first=ballEv[0]; if(T<sched.get(first).start) return {x:first.x1,y:first.y1};
+      const first=ballEv[0]; if(T<sched.get(first).start) return {x:first.x1,y:first.y1,rot:0,shot:false};
       let cur=null;
       for(const a of ballEv){ const ph=sched.get(a); if(T>=ph.start&&T<=ph.end){ cur={a,ph,live:true}; break; } if(T>ph.end) cur={a,ph,live:false}; }
-      if(!cur) return {x:first.x1,y:first.y1};
-      if(cur.live){ const e=ez(clamp((T-cur.ph.start)/cur.ph.dur)); return {x:cur.a.x1+(cur.a.x2-cur.a.x1)*e,y:cur.a.y1+(cur.a.y2-cur.a.y1)*e}; }
-      return {x:cur.a.x2,y:cur.a.y2};
+      if(!cur) return {x:first.x1,y:first.y1,rot:0,shot:false};
+      const len=Math.hypot(cur.a.x2-cur.a.x1,cur.a.y2-cur.a.y1);
+      if(cur.live){ const raw=clamp((T-cur.ph.start)/cur.ph.dur); const e=cur.a.type==="pass"?ezOut(raw):raw; const p=bez(cur.a,e); return {...p,rot:(cur.ph.start+raw*len)*0.7,shot:cur.a.type==="pass"&&isGoalShot(cur.a)}; }
+      return {x:cur.a.x2,y:cur.a.y2,rot:len*0.7,shot:cur.a.type==="pass"&&isGoalShot(cur.a)};
     };
+    // letzter Abschluss aufs Tor?
+    const lastShot=[...ballEv].reverse().find(a=>a.type==="pass");
+    const goalAt = lastShot&&isGoalShot(lastShot) ? {x:lastShot.x2,y:lastShot.y2,t:sched.get(lastShot).end} : null;
     const t0=performance.now();
-    setPlaying(true);
+    setPlaying(true); trailRef.current=[];
     if(ballEv.length) setAnimBall(ballAt(0));
-    const step=(t)=>{ const T=Math.min(t-t0,TOTAL);
+    let goalShown=false;
+    const step=(t)=>{ const T=Math.min((t-t0)*animSpeed,TOTAL);
       setAnimOwn(ownA.map(tk=>tokAt(tk,T)));
       if(showOpp) setAnimOpp(oppA.map(tk=>tokAt(tk,T)));
-      if(ballEv.length) setAnimBall(ballAt(T));
-      if((t-t0)<TOTAL){ animRef.current=requestAnimationFrame(step); } else { setPlaying(false); }
+      if(ballEv.length){ const b=ballAt(T); setAnimBall(b);
+        if(b){ const tr=trailRef.current; tr.push({x:b.x,y:b.y}); if(tr.length>10) tr.shift(); setAnimTrail(tr.slice()); }
+      }
+      if(goalAt&&!goalShown&&T>=goalAt.t-30){ goalShown=true; setAnimGoal({x:goalAt.x,y:goalAt.y}); }
+      if((t-t0)*animSpeed<TOTAL){ animRef.current=requestAnimationFrame(step); }
+      else { setPlaying(false); animRef.current=null; if(loopAnim) setTimeout(()=>playAnim(),650); }
     };
     animRef.current=requestAnimationFrame(step);
   };
@@ -5962,8 +5986,15 @@ function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAttachBoar
           style={{padding:"7px 14px",borderRadius:9,border:"none",background:(playing||!arrows.length)?"#e2e8f0":t.p,color:(playing||!arrows.length)?"#94a3b8":"#fff",fontWeight:800,fontSize:12.5,cursor:(playing||!arrows.length)?"default":"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{playing?"▶ läuft…":"▶ Abspielen"}</button>
         <button onClick={resetAnim} disabled={!animOwn&&!animOpp&&!playing}
           style={{padding:"7px 12px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:(animOwn||animOpp||playing)?"#475569":"#cbd5e1",fontWeight:700,fontSize:12.5,cursor:(animOwn||animOpp||playing)?"pointer":"default",fontFamily:"inherit",whiteSpace:"nowrap"}}>↺ Zurück</button>
-        <span style={{fontSize:11,color:"#94a3b8"}}>Spieler laufen die Laufwege, der Ball läuft die Passwege (zeigt die Abfolge)</span>
+        <span style={{width:1,height:18,background:"#e2e8f0"}}/>
+        {[[0.6,"🐢"],[1,"▶"],[1.6,"⏩"]].map(([s,l])=>(
+          <button key={s} onClick={()=>setAnimSpeed(s)} title={s===0.6?"Langsam":s===1?"Normal":"Schnell"}
+            style={{padding:"6px 10px",borderRadius:8,border:`1.5px solid ${animSpeed===s?t.p:"#e2e8f0"}`,background:animSpeed===s?t.p+"15":"#fff",color:animSpeed===s?t.p:"#64748b",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
+        ))}
+        <button onClick={()=>setLoopAnim(v=>!v)} title="Wiederholen"
+          style={{padding:"6px 10px",borderRadius:8,border:`1.5px solid ${loopAnim?t.p:"#e2e8f0"}`,background:loopAnim?t.p+"15":"#fff",color:loopAnim?t.p:"#64748b",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>🔁</button>
       </div>
+      <div style={{fontSize:11,color:"#94a3b8"}}>Abfolge = Zeichen-Reihenfolge: erst Laufweg, dann Pass in den Lauf, dann Abschluss. Pass aufs Tor löst „TOR!" aus.</div>
 
       <div style={{background:F.bg,borderRadius:14,padding:8,boxShadow:"inset 0 0 0 1px rgba(255,255,255,.08)"}}>
         <svg ref={svgRef} viewBox={`0 0 ${F.vw} ${F.vh}`} preserveAspectRatio="xMidYMid meet"
@@ -6009,9 +6040,22 @@ function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAttachBoar
               {tk.marked&&<text x={tk.x} y={tk.y-F.r*1.45} textAnchor="middle" fontSize={F.fs*0.95} style={{pointerEvents:"none"}}>⭐</text>}
             </g>
           ))}
-          {animBall&&<g style={{pointerEvents:"none"}}>
-            <circle cx={animBall.x} cy={animBall.y} r={F.r*0.55} fill="#fff" stroke="#0f172a" strokeWidth={F.r*0.18}/>
-            <circle cx={animBall.x} cy={animBall.y} r={F.r*0.22} fill="#0f172a"/>
+          {animTrail.length>1&&<g style={{pointerEvents:"none"}}>
+            {animTrail.map((p,i)=>(<circle key={i} cx={p.x} cy={p.y} r={F.r*0.5*((i+1)/animTrail.length)} fill="#fff" opacity={0.05*(i+1)}/>))}
+          </g>}
+          {animBall&&<g style={{pointerEvents:"none"}} transform={`rotate(${(animBall.rot||0)%360} ${animBall.x} ${animBall.y})`}>
+            {animBall.shot&&<circle cx={animBall.x} cy={animBall.y} r={F.r*0.95} fill="none" stroke="#fde047" strokeWidth={F.r*0.12} opacity={0.7}/>}
+            <circle cx={animBall.x} cy={animBall.y} r={F.r*0.55} fill="#fff" stroke="#0f172a" strokeWidth={F.r*0.16}/>
+            <circle cx={animBall.x} cy={animBall.y} r={F.r*0.17} fill="#0f172a"/>
+            <line x1={animBall.x-F.r*0.5} y1={animBall.y} x2={animBall.x+F.r*0.5} y2={animBall.y} stroke="#0f172a" strokeWidth={F.r*0.07} opacity={0.45}/>
+            <line x1={animBall.x} y1={animBall.y-F.r*0.5} x2={animBall.x} y2={animBall.y+F.r*0.5} stroke="#0f172a" strokeWidth={F.r*0.07} opacity={0.45}/>
+          </g>}
+          {animGoal&&<g style={{pointerEvents:"none"}}>
+            <circle cx={animGoal.x} cy={animGoal.y} r={F.r*0.6} fill="none" stroke="#22c55e" strokeWidth={F.r*0.2}>
+              <animate attributeName="r" from={F.r*0.6} to={F.r*2.6} dur="0.7s" fill="freeze"/>
+              <animate attributeName="opacity" from="0.9" to="0" dur="0.7s" fill="freeze"/>
+            </circle>
+            <text x={animGoal.x} y={animGoal.y-F.r*2} textAnchor="middle" fontSize={F.fs*1.5} fontWeight="900" fill="#16a34a" stroke="#fff" strokeWidth={F.r*0.05}>TOR!</text>
           </g>}
         </svg>
       </div>
