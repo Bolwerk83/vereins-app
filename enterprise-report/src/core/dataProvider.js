@@ -53,5 +53,17 @@ export async function ladeDetail(detailKey) {
   return MOCK.details[detailKey] ?? null
 }
 
+/** Verbindungsstatus des Backends (nur relevant bei QUELLE='mssql'). */
+export async function pruefeVerbindung() {
+  if (QUELLE !== 'mssql') return { status: 'mock' }
+  try {
+    const r = await fetch('/api/health')
+    const j = await r.json()
+    return r.ok ? { status: 'ok', ...j } : { status: 'fehler', ...j }
+  } catch (e) {
+    return { status: 'fehler', fehler: String(e) }
+  }
+}
+
 export const PERIODEN = MOCK.perioden
 export const AKTUELLE_PERIODE = MOCK.aktuellePeriode

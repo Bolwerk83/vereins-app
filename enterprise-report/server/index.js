@@ -1,28 +1,28 @@
 // =========================================================================
-//  MSSQL-BACKEND (Stub) — führt die SQL-Dateien aus sql/ gegen den
-//  Microsoft-SQL-Server aus und liefert das, was der dataProvider erwartet.
+//  REPORTING-BACKEND — bedient den dataProvider-Vertrag (mssql) und das BI.
 //
-//  Aktivieren:  npm install   (im Ordner server/)   und  node index.js
-//  Verbindung:  über .env  (siehe .env.example)
+//  Start:  cd server && npm install && npm start        (Port 3001)
+//  Test:   npm run test:db                              (Verbindung prüfen)
+//  Konfig: server/.env  (siehe .env.example)
 //
-//  Vertrag (vom Frontend genutzt):
-//    GET /api/kpi?periode=2025            -> { kpiId: wert, ... }  (rohe KPIs)
-//    GET /api/kpi/:id/historie            -> [ { periode, wert }, ... ]
-//    GET /api/detail/:key                 -> { titel, spalten[], zeilen[][] }
+//  Endpunkte:
+//    GET  /api/health           -> Verbindungsstatus (SELECT 1)
+//    GET  /api/kpi?periode=2025  -> { kpiId: wert, ... }   (vorhandene SQL-Dateien)
+//    GET  /api/kpi/:id/historie  -> [ { periode, wert }, ... ]
+//    GET  /api/detail/:key       -> { titel, spalten[], zeilen[][] }
+//    POST /api/bi                -> Self-Service-BI-Bericht (Claude)
 // =========================================================================
 import express from 'express'
-import sql from 'mssql'
-import { beiratAuswertung } from './biAgents.js'
 import { readFileSync, existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
-import 'dotenv/config'
+import { getPool, pingDb, configBeschreibung, sql } from './db.js'
+import { beiratAuswertung } from './biAgents.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const SQL_DIR = join(__dirname, '..', 'sql')
 
-// Welche rohen KPIs gibt es? (sqlRef -> kpiId). Spiegelt kpiRegistry.js.
-// In einer echten Integration aus einer gemeinsamen Manifest-Datei lesen.
+// sqlRef -> kpiId (spiegelt src/core/kpiRegistry.js, Feld sqlRef).
 const ROHE_KPIS = {
   nettoumsatz: 'nettoumsatz', bruttoumsatz: 'bruttoumsatz', erloesschmaelerung: 'erloesschmaelerung',
   wareneinsatz: 'wareneinsatz', ebitda: 'ebitda', ebit: 'ebit',
@@ -34,34 +34,34 @@ const ROHE_KPIS = {
   shop_verfuegbarkeit: 'shopVerfuegbarkeit', cash_conversion: 'cashConversion'
 }
 
-const dbConfig = {
-  server: process.env.MSSQL_SERVER,
-  database: process.env.MSSQL_DATABASE,
-  user: process.env.MSSQL_USER,
-  password: process.env.MSSQL_PASSWORD,
-  options: { encrypt: true, trustServerCertificate: true }
-}
-
-let pool
-async function getPool() { return pool ??= await sql.connect(dbConfig) }
-
-function ladeSql(ref) {
-  const p = join(SQL_DIR, `${ref}.kpi.sql`)
-  if (!existsSync(p)) throw new Error(`SQL fehlt: ${ref}.kpi.sql`)
-  return readFileSync(p, 'utf8')
-}
+const sqlPfad = (ref) => join(SQL_DIR, `${ref}.kpi.sql`)
+const hatSql = (ref) => existsSync(sqlPfad(ref))
 
 async function runKpi(ref, periode) {
   const r = await (await getPool()).request()
     .input('periode', sql.NVarChar, periode ?? null)
-    .query(ladeSql(ref))
+    .query(readFileSync(sqlPfad(ref), 'utf8'))
   return r.recordset // [{ periode, wert, dimension? }]
 }
 
 const app = express()
 app.use(express.json())
 
-// Self-Service BI: Controller-Lead + Berater-Beirat (Claude).
+// --- Health / Verbindungstest -------------------------------------------
+app.get('/api/health', async (_req, res) => {
+  const cfg = configBeschreibung()
+  try {
+    const info = await pingDb()
+    const fehlend = Object.keys(ROHE_KPIS).filter((ref) => !hatSql(ref))
+    res.json({ status: 'ok', verbindung: cfg, server: info,
+      sql_vorhanden: Object.keys(ROHE_KPIS).length - fehlend.length,
+      sql_fehlend: fehlend })
+  } catch (e) {
+    res.status(503).json({ status: 'fehler', verbindung: cfg, fehler: String(e.message || e) })
+  }
+})
+
+// --- Self-Service BI (Claude) -------------------------------------------
 app.post('/api/bi', async (req, res) => {
   try {
     const { anforderung, werte } = req.body || {}
@@ -70,36 +70,45 @@ app.post('/api/bi', async (req, res) => {
   } catch (e) { res.status(500).json({ error: String(e) }) }
 })
 
-// Alle rohen KPI-Werte einer Periode (für die KPI-Kacheln/Report).
+// --- Rohe KPI-Werte einer Periode (überspringt fehlende SQL-Dateien) -----
 app.get('/api/kpi', async (req, res) => {
   try {
-    const out = {}
+    const out = {}, fehlend = []
     for (const [ref, kpiId] of Object.entries(ROHE_KPIS)) {
+      if (!hatSql(ref)) { fehlend.push(ref); continue }
       const rows = await runKpi(ref, req.query.periode)
-      // dimension-Zeilen zur KPI-Summe aggregieren:
-      out[kpiId] = rows.reduce((s, x) => s + Number(x.wert), 0)
+      out[kpiId] = rows.reduce((s, x) => s + Number(x.wert), 0) // dimension-Zeilen aggregieren
     }
+    res.set('X-KPI-Fehlend', fehlend.join(','))
     res.json(out)
   } catch (e) { res.status(500).json({ error: String(e) }) }
 })
 
-// Historie einer KPI (Ebene 5).
+// --- Historie einer KPI (Ebene 5) ---------------------------------------
 app.get('/api/kpi/:id/historie', async (req, res) => {
   try {
     const ref = Object.entries(ROHE_KPIS).find(([, id]) => id === req.params.id)?.[0]
     if (!ref) return res.status(404).json({ error: 'unbekannte KPI' })
+    if (!hatSql(ref)) return res.status(404).json({ error: `SQL fehlt: ${ref}.kpi.sql` })
     res.json(await runKpi(ref, null))
   } catch (e) { res.status(500).json({ error: String(e) }) }
 })
 
-// Detailbericht (Ebene 4).
+// --- Detailbericht (Ebene 4) --------------------------------------------
 app.get('/api/detail/:key', async (req, res) => {
   try {
-    const r = await (await getPool()).request().query(ladeSql(`detail_${req.params.key}`))
-    const spalten = r.recordset.columns ? Object.keys(r.recordset.columns) : Object.keys(r.recordset[0] ?? {})
+    const p = join(SQL_DIR, `detail_${req.params.key}.sql`)
+    if (!existsSync(p)) return res.status(404).json({ error: `SQL fehlt: detail_${req.params.key}.sql` })
+    const r = await (await getPool()).request().query(readFileSync(p, 'utf8'))
+    const spalten = Object.keys(r.recordset[0] ?? {})
     res.json({ titel: req.params.key, spalten, zeilen: r.recordset.map((row) => spalten.map((c) => row[c])) })
   } catch (e) { res.status(500).json({ error: String(e) }) }
 })
 
 const PORT = process.env.PORT || 3001
-app.listen(PORT, () => console.log(`MSSQL-Backend auf :${PORT} (Quelle: ${dbConfig.server || 'nicht konfiguriert'})`))
+app.listen(PORT, () => {
+  const c = configBeschreibung()
+  console.log(`Reporting-Backend auf :${PORT}`)
+  console.log(`MSSQL: ${c.konfiguriert ? `${c.server}/${c.datenbank} (auth=${c.auth}, encrypt=${c.encrypt})` : 'NICHT konfiguriert — server/.env ausfüllen'}`)
+  console.log(`Health-Check:  http://localhost:${PORT}/api/health`)
+})

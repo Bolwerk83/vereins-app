@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { ROLLEN } from './core/rbac.js'
-import { ladeKpiWerte, PERIODEN, AKTUELLE_PERIODE, QUELLE } from './core/dataProvider.js'
+import { ladeKpiWerte, pruefeVerbindung, PERIODEN, AKTUELLE_PERIODE, QUELLE } from './core/dataProvider.js'
 import TreeNavigator from './modules/tree-navigator/TreeNavigator.jsx'
 import ManagementReport from './modules/management-report/ManagementReport.jsx'
 import SetupWizard from './modules/wizard/SetupWizard.jsx'
@@ -14,9 +14,11 @@ export default function App() {
   const [rolleId, setRolleId] = useState('gf')
   const [periode, setPeriode] = useState(AKTUELLE_PERIODE)
   const [werte, setWerte] = useState({})
+  const [verbindung, setVerbindung] = useState(null)
   const rolle = ROLLEN[rolleId]
 
   useEffect(() => { ladeKpiWerte(periode).then(setWerte) }, [periode])
+  useEffect(() => { pruefeVerbindung().then(setVerbindung) }, [])
 
   const topBtn = (aktiv) => ({ padding: '6px 10px', borderRadius: 'var(--radius-sm)', fontSize: 12,
     border: '1px solid var(--line)', background: aktiv ? 'var(--accent)' : 'var(--panel)', color: aktiv ? '#fff' : 'var(--ink)' })
@@ -30,7 +32,16 @@ export default function App() {
           <div style={{ width: 26, height: 26, borderRadius: 7, background: 'var(--accent)' }} />
           <div>
             <div style={{ fontWeight: 700 }}>Enterprise Report</div>
-            <div className="mono" style={{ fontSize: 10, color: 'var(--muted)' }}>Quelle: {QUELLE.toUpperCase()}</div>
+            <div className="mono" style={{ fontSize: 10, color: 'var(--muted)' }}>
+              Quelle: {QUELLE.toUpperCase()}
+              {verbindung && (
+                <span style={{ marginLeft: 6,
+                  color: verbindung.status === 'ok' ? 'var(--amp-g)' : verbindung.status === 'fehler' ? 'var(--amp-r)' : 'var(--muted)' }}>
+                  ● {verbindung.status === 'ok' ? `verbunden (${verbindung.server?.db || 'MSSQL'})`
+                    : verbindung.status === 'fehler' ? 'keine Verbindung' : 'Mock-Daten'}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 

@@ -23,6 +23,29 @@ Beim ersten Start erscheint der **Wizard**. Danach: Berichtsbaum links,
 oben **Rolle** und **Periode** umschalten, im Konzernknoten den
 **Management Report** öffnen.
 
+## SQL Server verbinden
+
+```bash
+cd enterprise-report/server
+npm install
+cp .env.example .env      # dann ausfüllen: MSSQL_SERVER, MSSQL_DATABASE, MSSQL_USER/PASSWORD, MSSQL_AUTH
+npm run test:db           # Verbindung prüfen (SELECT 1 + Servername/Version)
+npm start                 # Backend auf :3001, Health: /api/health
+```
+
+Dann das Frontend gegen echte Quellen starten (zweites Terminal):
+
+```bash
+cd enterprise-report
+VITE_DATA_SOURCE=mssql VITE_BI_SOURCE=claude npm run dev
+```
+
+Der Vite-Dev-Proxy leitet `/api` an das Backend; oben links zeigt die App
+**● verbunden / keine Verbindung**. KPIs ohne hinterlegte `sql/<kpi>.kpi.sql`
+werden übersprungen (Header `X-KPI-Fehlend`) — du füllst die SQL-Dateien
+schrittweise. **Hinweis:** Windows-Integrated-Auth funktioniert von einem
+Linux-Backend nicht — nutze SQL-Login (`MSSQL_AUTH=sql`) oder Azure AD.
+
 ## Die 5 Ebenen
 
 | Ebene | Name | Beispiel | Im Code |
