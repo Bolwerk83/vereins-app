@@ -1,0 +1,91 @@
+// Gemeinsame UI-Bausteine — von ALLEN Modulen genutzt -> einheitliches Design.
+import React from 'react'
+import { KPI } from '../core/kpiRegistry.js'
+import { ampelStatus, trendAusHistorie } from '../core/ampel.js'
+import { AMPEL_FARBE, AMPEL_SOFT, AMPEL_LABEL, formatWert, TREND_ICON } from '../design/theme.js'
+
+export function AmpelPunkt({ status, size = 10 }) {
+  return <span style={{ display: 'inline-block', width: size, height: size, borderRadius: '50%',
+    background: AMPEL_FARBE[status] || AMPEL_FARBE.n }} />
+}
+
+export function Badge({ children, status = 'n' }) {
+  return <span className="mono" style={{ fontSize: 11, padding: '2px 7px', borderRadius: 999,
+    color: AMPEL_FARBE[status], background: AMPEL_SOFT[status], border: `1px solid ${AMPEL_FARBE[status]}22` }}>{children}</span>
+}
+
+/** KPI-Kachel: Wert + Ziel + Ampel + Trend. Berechnet Status zentral. */
+export function KpiCard({ kpiId, wert, historie, onClick }) {
+  const k = KPI[kpiId]
+  if (!k) return null
+  const status = ampelStatus({ wert, ziel: k.ziel, richtung: k.richtung, warn: k.warn })
+  const t = historie ? trendAusHistorie(historie.map((h) => h.wert), k.richtung) : null
+  return (
+    <button onClick={onClick} style={{ textAlign: 'left', background: 'var(--panel)', border: '1px solid var(--line)',
+      borderLeft: `3px solid ${AMPEL_FARBE[status]}`, borderRadius: 'var(--radius)', padding: 14, minWidth: 150,
+      flex: '1 1 0', boxShadow: 'var(--shadow)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span className="mono" style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em' }}>{k.name}</span>
+        <AmpelPunkt status={status} />
+      </div>
+      <div className="mono" style={{ fontSize: 24, fontWeight: 600, marginTop: 6 }}>{formatWert(wert, k.einheit)}</div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+        <span style={{ fontSize: 11, color: 'var(--muted)' }}>{k.ziel != null ? `Ziel ${formatWert(k.ziel, k.einheit)}` : '—'}</span>
+        {t && <span className="mono" style={{ fontSize: 11, color: t.istGut ? 'var(--amp-g)' : 'var(--amp-r)' }}>
+          {TREND_ICON[t.trend]} {t.deltaPct >= 0 ? '+' : ''}{t.deltaPct.toFixed(1)} %</span>}
+      </div>
+    </button>
+  )
+}
+
+/** Geschützte KPI (Object-Level-Security greift). */
+export function KpiGesperrt({ kpiId }) {
+  const k = KPI[kpiId]
+  return (
+    <div style={{ background: 'var(--panel)', border: '1px dashed var(--line)', borderRadius: 'var(--radius)',
+      padding: 14, minWidth: 150, flex: '1 1 0', color: 'var(--muted)' }}>
+      <div className="mono" style={{ fontSize: 11, textTransform: 'uppercase' }}>{k?.name}</div>
+      <div style={{ fontSize: 13, marginTop: 10 }}>🔒 Keine Berechtigung</div>
+      <div style={{ fontSize: 11, marginTop: 4 }}>nur {k?.security?.join(' / ')}</div>
+    </div>
+  )
+}
+
+export function DetailTabelle({ daten }) {
+  if (!daten) return <div style={{ color: 'var(--muted)' }}>Keine Detaildaten.</div>
+  return (
+    <div style={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
+      <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--line)', fontWeight: 600 }}>{daten.titel}</div>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+        <thead><tr>{daten.spalten.map((s, i) => (
+          <th key={i} style={{ textAlign: i === 0 ? 'left' : 'right', padding: '8px 14px', color: 'var(--muted)',
+            fontWeight: 500, fontSize: 11, textTransform: 'uppercase', borderBottom: '1px solid var(--line)' }}>{s}</th>))}</tr></thead>
+        <tbody>{daten.zeilen.map((z, ri) => (
+          <tr key={ri}>{z.map((c, ci) => (
+            <td key={ci} className={ci === 0 ? '' : 'mono'} style={{ textAlign: ci === 0 ? 'left' : 'right',
+              padding: '8px 14px', borderBottom: '1px solid var(--line)' }}>{c}</td>))}</tr>))}</tbody>
+      </table>
+    </div>
+  )
+}
+
+/** Mini-Sparkline für die Historisierung (Ebene 5). */
+export function Sparkline({ reihe, richtung = 'hoch_gut', w = 220, h = 56 }) {
+  const werte = reihe.map((r) => r.wert).filter((v) => v != null)
+  if (werte.length < 2) return <div style={{ color: 'var(--muted)' }}>Zu wenig Historie.</div>
+  const min = Math.min(...werte), max = Math.max(...werte), span = max - min || 1
+  const pts = reihe.map((r, i) => {
+    const x = (i / (reihe.length - 1)) * (w - 8) + 4
+    const y = h - 4 - ((r.wert - min) / span) * (h - 12)
+    return [x, y]
+  })
+  const d = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ')
+  const t = trendAusHistorie(werte, richtung)
+  const farbe = t.istGut ? 'var(--amp-g)' : 'var(--amp-r)'
+  return (
+    <svg width={w} height={h} style={{ overflow: 'visible' }}>
+      <path d={d} fill="none" stroke={farbe} strokeWidth="2" />
+      {pts.map((p, i) => <circle key={i} cx={p[0]} cy={p[1]} r="2.5" fill={farbe} />)}
+    </svg>
+  )
+}

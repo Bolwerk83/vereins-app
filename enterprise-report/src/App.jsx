@@ -1,0 +1,70 @@
+import React, { useState, useEffect } from 'react'
+import { ROLLEN } from './core/rbac.js'
+import { ladeKpiWerte, PERIODEN, AKTUELLE_PERIODE, QUELLE } from './core/dataProvider.js'
+import TreeNavigator from './modules/tree-navigator/TreeNavigator.jsx'
+import ManagementReport from './modules/management-report/ManagementReport.jsx'
+import SetupWizard from './modules/wizard/SetupWizard.jsx'
+
+const SETUP_KEY = 'er_setup_done'
+
+export default function App() {
+  // Erststart -> Wizard, sonst Baum.
+  const [ansicht, setAnsicht] = useState(localStorage.getItem(SETUP_KEY) ? 'baum' : 'wizard')
+  const [rolleId, setRolleId] = useState('gf')
+  const [periode, setPeriode] = useState(AKTUELLE_PERIODE)
+  const [werte, setWerte] = useState({})
+  const rolle = ROLLEN[rolleId]
+
+  useEffect(() => { ladeKpiWerte(periode).then(setWerte) }, [periode])
+
+  const topBtn = (aktiv) => ({ padding: '6px 10px', borderRadius: 'var(--radius-sm)', fontSize: 12,
+    border: '1px solid var(--line)', background: aktiv ? 'var(--accent)' : 'var(--panel)', color: aktiv ? '#fff' : 'var(--ink)' })
+
+  return (
+    <div>
+      {/* Topbar */}
+      <header style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--panel)', borderBottom: '1px solid var(--line)',
+        padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 26, height: 26, borderRadius: 7, background: 'var(--accent)' }} />
+          <div>
+            <div style={{ fontWeight: 700 }}>Enterprise Report</div>
+            <div className="mono" style={{ fontSize: 10, color: 'var(--muted)' }}>Quelle: {QUELLE.toUpperCase()}</div>
+          </div>
+        </div>
+
+        <div style={{ flex: 1 }} />
+
+        {ansicht !== 'wizard' && (
+          <>
+            <label style={{ fontSize: 12, color: 'var(--muted)' }}>Rolle&nbsp;
+              <select value={rolleId} onChange={(e) => setRolleId(e.target.value)} style={{ font: 'inherit', padding: '5px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)' }}>
+                {Object.values(ROLLEN).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+              </select>
+            </label>
+            <label style={{ fontSize: 12, color: 'var(--muted)' }}>Periode&nbsp;
+              <select value={periode} onChange={(e) => setPeriode(e.target.value)} style={{ font: 'inherit', padding: '5px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)' }}>
+                {PERIODEN.map((p) => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </label>
+            <button style={topBtn(false)} onClick={() => setAnsicht('wizard')}>⚙ Wizard</button>
+          </>
+        )}
+      </header>
+
+      <main style={{ padding: '22px 20px', maxWidth: 1240, margin: '0 auto' }}>
+        {ansicht === 'wizard' && (
+          <SetupWizard
+            onFertig={() => { localStorage.setItem(SETUP_KEY, '1'); setAnsicht('baum') }}
+            onAbbruch={() => setAnsicht(localStorage.getItem(SETUP_KEY) ? 'baum' : 'wizard')} />
+        )}
+        {ansicht === 'baum' && (
+          <TreeNavigator rolle={rolle} werte={werte} onOpenReport={() => setAnsicht('report')} />
+        )}
+        {ansicht === 'report' && (
+          <ManagementReport rolle={rolle} werte={werte} periode={periode} onClose={() => setAnsicht('baum')} />
+        )}
+      </main>
+    </div>
+  )
+}
