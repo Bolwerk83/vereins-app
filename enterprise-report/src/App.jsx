@@ -4,6 +4,7 @@ import { ladeKpiWerte, PERIODEN, AKTUELLE_PERIODE, QUELLE } from './core/dataPro
 import TreeNavigator from './modules/tree-navigator/TreeNavigator.jsx'
 import ManagementReport from './modules/management-report/ManagementReport.jsx'
 import SetupWizard from './modules/wizard/SetupWizard.jsx'
+import SelfServiceBI from './modules/self-service-bi/SelfServiceBI.jsx'
 
 const SETUP_KEY = 'er_setup_done'
 
@@ -37,6 +38,8 @@ export default function App() {
 
         {ansicht !== 'wizard' && (
           <>
+            <button style={topBtn(ansicht === 'baum' || ansicht === 'report')} onClick={() => setAnsicht('baum')}>Berichtsbaum</button>
+            <button style={topBtn(ansicht === 'bi')} onClick={() => setAnsicht('bi')}>Self-Service BI</button>
             <label style={{ fontSize: 12, color: 'var(--muted)' }}>Rolle&nbsp;
               <select value={rolleId} onChange={(e) => setRolleId(e.target.value)} style={{ font: 'inherit', padding: '5px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)' }}>
                 {Object.values(ROLLEN).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
@@ -63,6 +66,9 @@ export default function App() {
         )}
         {ansicht === 'report' && (
           <ManagementReport rolle={rolle} werte={werte} periode={periode} onClose={() => setAnsicht('baum')} />
+        )}
+        {ansicht === 'bi' && (
+          <SelfServiceBI rolle={rolle} werte={werte} />
         )}
       </main>
     </div>

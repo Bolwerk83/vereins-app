@@ -38,6 +38,9 @@ oben **Rolle** und **Periode** umschalten, im Konzernknoten den
 - `src/modules/tree-navigator` — Berichtsbaum + Knotenansicht
 - `src/modules/management-report` — Executive-Bericht (druckbar, A4)
 - `src/modules/wizard` — Erststart-Assistent → Konfiguration + SQL-Liste
+- `src/modules/self-service-bi` — Anforderung in natürlicher Sprache →
+  Controller-geführter **Beirat aus Berater-Bots** → Bericht mit Maßnahmen
+  (offline-Heuristik **oder** Claude `claude-opus-4-8`)
 
 Jedes Modul nutzt denselben **Kern** (`src/core`) und dieselben
 **Design-Tokens** (`src/design`) → garantiert einheitliches Aussehen.
@@ -63,6 +66,7 @@ Jedes Modul nutzt denselben **Kern** (`src/core`) und dieselben
 | Rollen & Object-Level-Security | `src/core/rbac.js` |
 | **SQL je Kennzahl (dein Hauptjob)** | `sql/<kpi>.kpi.sql` |
 | MSSQL-Verbindung | `server/.env` |
+| Beirat / KI-Berater | `src/core/agentBoard.js`, `server/biAgents.js` |
 
 Mehr in `docs/` — Konzept, Architektur, 5 Ebenen, KPI-Logik, Rollen,
 SQL-Vertrag, Wizard und **Roadmap (wie wir vorgehen)**.

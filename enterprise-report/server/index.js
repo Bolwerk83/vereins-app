@@ -12,6 +12,7 @@
 // =========================================================================
 import express from 'express'
 import sql from 'mssql'
+import { beiratAuswertung } from './biAgents.js'
 import { readFileSync, existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
@@ -58,6 +59,16 @@ async function runKpi(ref, periode) {
 }
 
 const app = express()
+app.use(express.json())
+
+// Self-Service BI: Controller-Lead + Berater-Beirat (Claude).
+app.post('/api/bi', async (req, res) => {
+  try {
+    const { anforderung, werte } = req.body || {}
+    if (!anforderung) return res.status(400).json({ error: 'anforderung fehlt' })
+    res.json(await beiratAuswertung(anforderung, werte || {}))
+  } catch (e) { res.status(500).json({ error: String(e) }) }
+})
 
 // Alle rohen KPI-Werte einer Periode (für die KPI-Kacheln/Report).
 app.get('/api/kpi', async (req, res) => {
