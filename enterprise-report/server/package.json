@@ -6,7 +6,8 @@
   "description": "MSSQL-Backend: führt sql/*.kpi.sql aus und bedient den dataProvider-Vertrag.",
   "scripts": {
     "start": "node index.js",
-    "test:db": "node testConnection.js"
+    "test:db": "node testConnection.js",
+    "apply:sql": "node applySql.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.70.0",

@@ -30,8 +30,19 @@ cd enterprise-report/server
 npm install
 cp .env.example .env      # dann ausfüllen: MSSQL_SERVER, MSSQL_DATABASE, MSSQL_USER/PASSWORD, MSSQL_AUTH
 npm run test:db           # Verbindung prüfen (SELECT 1 + Servername/Version)
+npm run apply:sql -- ../sql/_setup_readonly_login.sql   # SQL-Skript ausführen (GO-fähig)
 npm start                 # Backend auf :3001, Health: /api/health
 ```
+
+> **SQL-Skripte ausführen lassen:** `npm run apply:sql -- <datei.sql>` führt
+> beliebige `.sql`-Dateien (mit `GO`-Batches) gegen den Server aus — z. B. den
+> Login-Setup oder spätere Reporting-Views. Reine KPI-Selects (`sql/*.kpi.sql`)
+> müssen NICHT installiert werden; die führt das Backend zur Laufzeit aus.
+>
+> **Damit Claude die Skripte selbst ausführt:** Claude Code **lokal** auf einem
+> Rechner im Firmennetz starten (CLI/Desktop). Dort hat Claude Netzwerkzugriff
+> auf den SQL Server und kann `npm run apply:sql`/`test:db` direkt aufrufen.
+> Aus der Cloud-Sandbox ist der Server (private IP) nicht erreichbar.
 
 Dann das Frontend gegen echte Quellen starten (zweites Terminal):
 
