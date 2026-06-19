@@ -61,15 +61,33 @@ export function configBeschreibung() {
   }
 }
 
+// Windows-Auth (LocalDB / lokale Instanz) über den nativen Treiber msnodesqlv8.
+// Nutzt eine ODBC-Verbindungszeichenfolge mit Trusted_Connection (Windows-Login).
+async function windowsPool() {
+  const server = process.env.MSSQL_SERVER
+  const database = process.env.MSSQL_DATABASE
+  const driver = process.env.MSSQL_ODBC_DRIVER || 'ODBC Driver 17 for SQL Server'
+  let mssqlWin
+  try {
+    ;({ default: mssqlWin } = await import('mssql/msnodesqlv8.js'))
+  } catch {
+    throw new Error('Windows-Auth braucht das Paket msnodesqlv8 — im Ordner server/ ausführen: npm install msnodesqlv8')
+  }
+  const connStr = `Driver={${driver}};Server=${server};Database=${database};Trusted_Connection=Yes;TrustServerCertificate=Yes;`
+  return new mssqlWin.ConnectionPool(connStr).connect()
+}
+
 let poolPromise
 export async function getPool() {
   if (!poolPromise) {
-    const cfg = buildConfig()
-    if (!cfg.server || !cfg.database) {
+    const auth = (process.env.MSSQL_AUTH || 'sql').toLowerCase()
+    if (!process.env.MSSQL_SERVER || !process.env.MSSQL_DATABASE) {
       throw new Error('MSSQL nicht konfiguriert — MSSQL_SERVER und MSSQL_DATABASE in server/.env setzen.')
     }
-    poolPromise = new sql.ConnectionPool(cfg).connect()
-      .catch((e) => { poolPromise = null; throw e })
+    const build = auth === 'windows'
+      ? windowsPool()
+      : new sql.ConnectionPool(buildConfig()).connect()
+    poolPromise = Promise.resolve(build).catch((e) => { poolPromise = null; throw e })
   }
   return poolPromise
 }
