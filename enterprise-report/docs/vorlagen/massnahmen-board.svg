@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="560" viewBox="0 0 860 560" font-family="Segoe UI, Arial, sans-serif">
+  <rect width="860" height="560" fill="#F4F6F9"/>
+  <text x="32" y="40" font-size="20" font-weight="700" fill="#1F2A37">Maßnahmen · KI-Empfehlung (SMART) &amp; Tracking</text>
+
+  <!-- KI-Empfehlungskarten -->
+  <rect x="32" y="60" width="796" height="190" rx="10" fill="#FFFFFF" stroke="#D7DEE6"/>
+  <text x="50" y="84" font-size="13" font-weight="700" fill="#1F2A37">Controller-Auswertung → SMART-Maßnahmen</text>
+  <rect x="640" y="68" width="172" height="24" rx="12" fill="#0F766E"/><text x="726" y="84" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">🎯 Auswerten</text>
+
+  <!-- Karte 1 -->
+  <rect x="50" y="100" width="378" height="134" rx="8" fill="#FFFFFF" stroke="#D7DEE6"/><rect x="50" y="100" width="3" height="134" fill="#B91C1C"/>
+  <text x="66" y="122" font-size="13" font-weight="700" fill="#1F2A37">Wareneinsatzquote senken</text>
+  <text x="66" y="144" font-size="11.5" fill="#475569"><tspan font-weight="700" fill="#0F766E">S</tspan> Preisgleitklausel + Ausschuss ↓</text>
+  <text x="66" y="162" font-size="11.5" fill="#475569"><tspan font-weight="700" fill="#0F766E">M</tspan> Wareneinsatzquote → Ziel 60 % (Ist 61,9 %)</text>
+  <text x="66" y="180" font-size="11.5" fill="#475569"><tspan font-weight="700" fill="#0F766E">A</tspan> Rahmenverträge, Zweitquelle Antrieb</text>
+  <text x="66" y="198" font-size="11.5" fill="#475569"><tspan font-weight="700" fill="#0F766E">R</tspan> Ergebnis &amp; Marge · <tspan font-weight="700" fill="#0F766E">T</tspan> Q2–Q4</text>
+  <text x="66" y="220" font-size="11" fill="#0F766E" font-weight="700">+0,5–0,8 Mio € DB   [ übernehmen → ]</text>
+
+  <!-- Karte 2 -->
+  <rect x="442" y="100" width="370" height="134" rx="8" fill="#FFFFFF" stroke="#D7DEE6"/><rect x="442" y="100" width="3" height="134" fill="#B91C1C"/>
+  <text x="458" y="122" font-size="13" font-weight="700" fill="#1F2A37">Überbestände abbauen</text>
+  <text x="458" y="144" font-size="11.5" fill="#475569"><tspan font-weight="700" fill="#0F766E">S</tspan> Bestellmengen an Reichweite koppeln</text>
+  <text x="458" y="162" font-size="11.5" fill="#475569"><tspan font-weight="700" fill="#0F766E">M</tspan> Lagerbestand → Ziel 7,5 Mio € (Ist 11,2)</text>
+  <text x="458" y="180" font-size="11.5" fill="#475569"><tspan font-weight="700" fill="#0F766E">A</tspan> Outlet, Lieferantenrückgabe</text>
+  <text x="458" y="198" font-size="11.5" fill="#475569"><tspan font-weight="700" fill="#0F766E">R</tspan> Liquidität · <tspan font-weight="700" fill="#0F766E">T</tspan> sofort–Q3</text>
+  <text x="458" y="220" font-size="11" fill="#0F766E" font-weight="700">≈ 3,5 Mio € frei   [ übernehmen → ]</text>
+
+  <!-- Verwaltung/Tracking -->
+  <rect x="32" y="266" width="796" height="262" rx="10" fill="#FFFFFF" stroke="#D7DEE6"/>
+  <text x="50" y="292" font-size="13" font-weight="700" fill="#1F2A37">Maßnahmenverwaltung &amp; Tracking</text>
+  <rect x="600" y="276" width="60" height="22" rx="11" fill="#F4F6F9" stroke="#D7DEE6"/><text x="630" y="291" font-size="11" fill="#475569" text-anchor="middle">2 offen</text>
+  <rect x="666" y="276" width="74" height="22" rx="11" fill="#FBF1E5"/><text x="703" y="291" font-size="11" fill="#B45309" text-anchor="middle">1 in Arbeit</text>
+  <rect x="746" y="276" width="66" height="22" rx="11" fill="#FBEAEA"/><text x="779" y="291" font-size="11" fill="#B91C1C" text-anchor="middle">1 überfällig</text>
+
+  <g font-size="12">
+    <line x1="50" y1="308" x2="810" y2="308" stroke="#D7DEE6"/>
+    <text x="50" y="326" fill="#64748B">MASSNAHME</text><text x="430" y="326" fill="#64748B">OWNER</text><text x="540" y="326" fill="#64748B">FÄLLIG</text><text x="650" y="326" fill="#64748B">FORTSCHRITT</text><text x="770" y="326" fill="#64748B">STATUS</text>
+
+    <text x="50" y="354" fill="#1F2A37">Online-Retouren auf 7 % senken</text><text x="430" y="354" fill="#475569">Vertrieb</text><text x="540" y="354" fill="#475569">Q3</text>
+    <rect x="650" y="346" width="100" height="8" rx="4" fill="#F4F6F9"/><rect x="650" y="346" width="60" height="8" rx="4" fill="#0F766E"/><text x="770" y="354" fill="#B45309">in Arbeit</text>
+
+    <text x="50" y="386" fill="#1F2A37">Reservelager Nord kündigen</text><text x="430" y="386" fill="#475569">Logistik</text><text x="540" y="386" fill="#B91C1C">30.04. ⚠</text>
+    <rect x="650" y="378" width="100" height="8" rx="4" fill="#F4F6F9"/><rect x="650" y="378" width="25" height="8" rx="4" fill="#0F766E"/><text x="770" y="386" fill="#475569">offen</text>
+
+    <text x="50" y="418" fill="#1F2A37">Preisgleitklausel Antrieb</text><text x="430" y="418" fill="#475569">Einkauf</text><text x="540" y="418" fill="#475569">Q4</text>
+    <rect x="650" y="410" width="100" height="8" rx="4" fill="#F4F6F9"/><rect x="650" y="410" width="15" height="8" rx="4" fill="#0F766E"/><text x="770" y="418" fill="#475569">offen</text>
+
+    <text x="50" y="450" fill="#1F2A37">Ausschuss ≤ 1,5 %</text><text x="430" y="450" fill="#475569">Produktion</text><text x="540" y="450" fill="#475569">laufend</text>
+    <rect x="650" y="442" width="100" height="8" rx="4" fill="#F4F6F9"/><rect x="650" y="442" width="100" height="8" rx="4" fill="#15803D"/><text x="770" y="450" fill="#15803D">erledigt</text>
+  </g>
+  <text x="50" y="500" font-size="11.5" fill="#64748B">⚠ Fälligkeits-Alert · Fortschritt &amp; realisierte Wirkung je Maßnahme · Quelle KI/manuell · Object-Level-Security aktiv</text>
+</svg>

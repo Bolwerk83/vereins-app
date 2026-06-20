@@ -10,6 +10,7 @@ import { ampelStatus } from './ampel.js'
 import { formatWert } from '../design/theme.js'
 import { CONTROLLER_LEAD, BERATER, relevanteBerater } from './agentBoard.js'
 import { darfKpi } from './rbac.js'
+import { kpiInsight } from './insights.js'
 
 // Stichwort -> KPI-IDs. Bewusst schlicht; das LLM kann es später semantisch.
 const STICHWORTE = [
@@ -62,11 +63,8 @@ export function biHeuristik(anforderung, werte, rolle = null) {
   }))
 
   const befunde = kpiIds.map((id) => {
-    const k = KPI[id], w = werte[id]
-    const status = ampelStatus({ wert: w, ziel: k.ziel, richtung: k.richtung, warn: k.warn })
-    const zielTxt = k.ziel != null ? ` (Ziel ${formatWert(k.ziel, k.einheit)})` : ''
-    const lage = status === 'r' ? 'liegt deutlich außerhalb des Ziels' : status === 'a' ? 'ist beobachtungsbedürftig' : status === 'g' ? 'liegt im Ziel' : 'hat kein hinterlegtes Ziel'
-    return { aussage: `${k.name} = ${formatWert(w, k.einheit)}${zielTxt} — ${lage}.`, bewertung: status }
+    const ins = kpiInsight(id, werte[id])
+    return { aussage: `${KPI[id].name}: ${ins.aussage}`, bewertung: ins.status }
   })
 
   // Maßnahmen aus den bekannten Hebeln ableiten, gefiltert nach Relevanz.

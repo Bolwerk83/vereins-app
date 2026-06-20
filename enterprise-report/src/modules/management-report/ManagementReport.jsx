@@ -7,10 +7,14 @@ import React from 'react'
 import { MGMT_REPORT } from './reportContent.js'
 import { KPI } from '../../core/kpiRegistry.js'
 import { darfKpi } from '../../core/rbac.js'
+import { kpiInsight, knotenBewertung } from '../../core/insights.js'
 import { KpiCard, KpiGesperrt, Badge } from '../../components/ui.jsx'
+import { AMPEL_FARBE } from '../../design/theme.js'
 
 export default function ManagementReport({ rolle, werte, periode, onClose, onEmpfehlung }) {
   const r = MGMT_REPORT
+  const bw = knotenBewertung(r.kpis.filter((id) => darfKpi(rolle, KPI[id])).map((id) => kpiInsight(id, werte[id])))
+  const v = bw.verteilung, total = Math.max(1, v.g + v.a + v.r + v.n)
   return (
     <div style={{ maxWidth: 900, margin: '0 auto', background: 'var(--panel)', border: '1px solid var(--line)',
       borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
@@ -44,6 +48,17 @@ export default function ManagementReport({ rolle, werte, periode, onClose, onEmp
           {r.kpis.map((id) => darfKpi(rolle, KPI[id])
             ? <KpiCard key={id} kpiId={id} wert={werte[id]} />
             : <KpiGesperrt key={id} kpiId={id} />)}
+        </div>
+
+        {/* Automatische Lagebewertung aus den KPIs */}
+        <div style={{ border: '1px solid var(--line)', borderRadius: 'var(--radius)', padding: 12, background: 'var(--bg)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span className="mono" style={{ fontSize: 10.5, color: 'var(--muted)', textTransform: 'uppercase' }}>Datenlage (automatisch)</span>
+            <div style={{ display: 'flex', width: 150, height: 8, borderRadius: 4, overflow: 'hidden', border: '1px solid var(--line)' }}>
+              {['g', 'a', 'r', 'n'].map((s) => v[s] ? <div key={s} style={{ width: `${(v[s] / total) * 100}%`, background: AMPEL_FARBE[s] }} /> : null)}
+            </div>
+          </div>
+          <div style={{ fontSize: 13.5, fontWeight: 600, marginTop: 4, color: v.r ? 'var(--amp-r)' : v.a ? 'var(--amp-a)' : 'var(--amp-g)' }}>{bw.kernaussage}</div>
         </div>
 
         {/* Analyse: 4 Rubriken */}
