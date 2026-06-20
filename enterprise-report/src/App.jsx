@@ -8,7 +8,9 @@ import SelfServiceBI from './modules/self-service-bi/SelfServiceBI.jsx'
 import Datenqualitaet from './modules/datenqualitaet/Datenqualitaet.jsx'
 import Massnahmen from './modules/massnahmen/Massnahmen.jsx'
 import ControllingInstrumente from './modules/controlling-instrumente/ControllingInstrumente.jsx'
+import Alerts from './modules/alerts/Alerts.jsx'
 import { validierungsZusammenfassung } from './core/validierung.js'
+import { alertAnzahl } from './core/alerts.js'
 
 const SETUP_KEY = 'er_setup_done'
 
@@ -61,6 +63,9 @@ export default function App() {
             </button>
             <button style={topBtn(ansicht === 'massnahmen')} onClick={() => setAnsicht('massnahmen')}>Maßnahmen</button>
             <button style={topBtn(ansicht === 'instrumente')} onClick={() => setAnsicht('instrumente')}>Instrumente</button>
+            {(() => { const n = alertAnzahl(werte, rolle); return (
+              <button style={{ ...topBtn(ansicht === 'alerts'), ...(n ? { borderColor: 'var(--amp-r)', color: ansicht === 'alerts' ? '#fff' : 'var(--amp-r)' } : {}) }} onClick={() => setAnsicht('alerts')}>
+                ⚠ Alerts{n ? ` (${n})` : ''}</button>) })()}
             <label style={{ fontSize: 12, color: 'var(--muted)' }}>Rolle&nbsp;
               <select value={rolleId} onChange={(e) => setRolleId(e.target.value)} style={{ font: 'inherit', padding: '5px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)' }}>
                 {Object.values(ROLLEN).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
@@ -101,6 +106,9 @@ export default function App() {
         )}
         {ansicht === 'instrumente' && (
           <ControllingInstrumente werte={werte} />
+        )}
+        {ansicht === 'alerts' && (
+          <Alerts werte={werte} rolle={rolle} periode={periode} />
         )}
       </main>
     </div>
