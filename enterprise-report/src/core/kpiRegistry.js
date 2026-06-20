@@ -709,6 +709,72 @@ export const KPI = {
     beschreibung: 'IC-Volumen in % vom Nettoumsatz (Konsolidierungsumfang). Abgeleitet.',
     sqlRef: null, abhaengig: ['intercompanyVolumen', 'nettoumsatz'],
     berechne: (v) => (v.intercompanyVolumen / v.nettoumsatz) * 100, security: null
+  },
+
+  // ---- After-Sales- & Servicecontrolling (SVC) -------------------------
+  serviceumsatz: {
+    id: 'serviceumsatz', name: 'Serviceumsatz', einheit: 'eur_mio',
+    bereich: 'SVC', ziel: 6.0, richtung: 'hoch_gut', warn: 0.9,
+    beschreibung: 'Umsatz aus Service, Reparatur, Ersatzteilen (wiederkehrend).',
+    sqlRef: 'serviceumsatz', abhaengig: [], security: null
+  },
+  ersatzteilverfuegbarkeit: {
+    id: 'ersatzteilverfuegbarkeit', name: 'Ersatzteilverfügbarkeit', einheit: 'percent0',
+    bereich: 'SVC', ziel: 95, richtung: 'hoch_gut', warn: 0.95,
+    beschreibung: 'Ab-Lager-Verfügbarkeit kritischer Ersatzteile.',
+    sqlRef: 'ersatzteilverfuegbarkeit', abhaengig: [], security: null
+  },
+  reparaturdurchlaufzeit: {
+    id: 'reparaturdurchlaufzeit', name: 'Reparatur-Durchlaufzeit', einheit: 'days',
+    bereich: 'SVC', ziel: 5, richtung: 'tief_gut', warn: 0.85,
+    beschreibung: 'Ø Durchlaufzeit Werkstatt/Reparatur.',
+    sqlRef: 'reparaturdurchlaufzeit', abhaengig: [], security: null
+  },
+  nps: {
+    id: 'nps', name: 'Net Promoter Score', einheit: 'count',
+    bereich: 'SVC', ziel: 50, richtung: 'hoch_gut', warn: 0.9,
+    beschreibung: 'Kundenzufriedenheit/Weiterempfehlung (NPS).',
+    sqlRef: 'nps', abhaengig: [], security: null
+  },
+  serviceanteil: {
+    id: 'serviceanteil', name: 'Serviceanteil', einheit: 'percent',
+    bereich: 'SVC', ziel: 12, richtung: 'hoch_gut', warn: 0.9,
+    beschreibung: 'Serviceumsatz in % vom Nettoumsatz. Abgeleitet.',
+    sqlRef: null, abhaengig: ['serviceumsatz', 'nettoumsatz'],
+    berechne: (v) => (v.serviceumsatz / v.nettoumsatz) * 100, security: null
+  },
+
+  // ---- F&E-/Innovationscontrolling (FE) --------------------------------
+  fuekosten: {
+    id: 'fuekosten', name: 'F&E-Kosten', einheit: 'eur_mio',
+    bereich: 'FE', ziel: null, richtung: 'hoch_gut',
+    beschreibung: 'Aufwand für Forschung & Entwicklung.',
+    sqlRef: 'fuekosten', abhaengig: [], security: null
+  },
+  neuproduktumsatzanteil: {
+    id: 'neuproduktumsatzanteil', name: 'Neuprodukt-Umsatzanteil', einheit: 'percent0',
+    bereich: 'FE', ziel: 30, richtung: 'hoch_gut', warn: 0.9,
+    beschreibung: 'Umsatzanteil mit Produkten jünger als 3 Jahre (Innovationskraft).',
+    sqlRef: 'neuproduktumsatzanteil', abhaengig: [], security: null
+  },
+  entwicklungsprojekte: {
+    id: 'entwicklungsprojekte', name: 'Entwicklungsprojekte', einheit: 'count',
+    bereich: 'FE', ziel: null, richtung: 'hoch_gut',
+    beschreibung: 'Aktive Entwicklungsprojekte in der Pipeline.',
+    sqlRef: 'entwicklungsprojekte', abhaengig: [], security: null
+  },
+  timeToMarket: {
+    id: 'timeToMarket', name: 'Time-to-Market', einheit: 'monate',
+    bereich: 'FE', ziel: 12, richtung: 'tief_gut', warn: 0.85,
+    beschreibung: 'Ø Entwicklungsdauer von Idee bis Markteinführung.',
+    sqlRef: 'time_to_market', abhaengig: [], security: null
+  },
+  fueQuote: {
+    id: 'fueQuote', name: 'F&E-Quote', einheit: 'percent',
+    bereich: 'FE', ziel: 4, richtung: 'hoch_gut', warn: 0.9,
+    beschreibung: 'F&E-Kosten in % vom Nettoumsatz. Abgeleitet.',
+    sqlRef: null, abhaengig: ['fuekosten', 'nettoumsatz'],
+    berechne: (v) => (v.fuekosten / v.nettoumsatz) * 100, security: null
   }
 }
 

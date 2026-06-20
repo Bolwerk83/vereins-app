@@ -25,6 +25,7 @@ export function formatWert(wert, format) {
     case 'kg':       return nf({ maximumFractionDigits: 0 }).format(wert) + ' kg'
     case 'kwh':      return nf({ maximumFractionDigits: 0 }).format(wert) + ' kWh'
     case 'tonnen':   return nf({ maximumFractionDigits: 0 }).format(wert) + ' t'
+    case 'monate':   return nf({ maximumFractionDigits: 0 }).format(wert) + ' Mon.'
     case 'count':    return nf({ maximumFractionDigits: 0 }).format(wert)
     default:         return String(wert)
   }

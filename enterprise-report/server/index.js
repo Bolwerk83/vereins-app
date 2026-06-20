@@ -71,7 +71,13 @@ const ROHE_KPIS = {
   // Marketing-/Kampagnencontrolling
   marketingkosten: 'marketingkosten', roas: 'roas', cac: 'cac', conversion_rate: 'conversionRate',
   // Beteiligungs-/Konzerncontrolling
-  roce: 'roce', auslandsanteil: 'auslandsanteil', intercompany_volumen: 'intercompanyVolumen'
+  roce: 'roce', auslandsanteil: 'auslandsanteil', intercompany_volumen: 'intercompanyVolumen',
+  // After-Sales- & Servicecontrolling
+  serviceumsatz: 'serviceumsatz', ersatzteilverfuegbarkeit: 'ersatzteilverfuegbarkeit',
+  reparaturdurchlaufzeit: 'reparaturdurchlaufzeit', nps: 'nps',
+  // F&E-/Innovationscontrolling
+  fuekosten: 'fuekosten', neuproduktumsatzanteil: 'neuproduktumsatzanteil',
+  entwicklungsprojekte: 'entwicklungsprojekte', time_to_market: 'timeToMarket'
 }
 
 const sqlPfad = (ref) => join(SQL_DIR, `${ref}.kpi.sql`)

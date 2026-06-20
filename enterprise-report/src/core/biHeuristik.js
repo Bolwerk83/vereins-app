@@ -41,7 +41,9 @@ const STICHWORTE = [
   [/treasury|zins|verschuldung|leverage|hedge|währung|waehrung|fx|liquidität|finanzierung/i, ['nettoverschuldungEbitda', 'zinsdeckung', 'hedgeQuote', 'durchschnittszins']],
   [/qualität|qualitaet|reklamation|nacharbeit|garantie|fehlerkosten|copq|ausschuss/i, ['reklamationsquote', 'nacharbeitsquote', 'firstPassYield', 'qualitaetskostenquote']],
   [/marketing|kampagne|roas|conversion|werbung|cac|funnel|kundengewinnung/i, ['roas', 'cac', 'conversionRate', 'marketingkostenquote']],
-  [/konzern|beteiligung|segment|roce|intercompany|konsolidier|gesellschaft|tochter|ausland/i, ['roce', 'eigenkapitalrendite', 'auslandsanteil', 'intercompanyQuote']]
+  [/konzern|beteiligung|segment|roce|intercompany|konsolidier|gesellschaft|tochter|ausland/i, ['roce', 'eigenkapitalrendite', 'auslandsanteil', 'intercompanyQuote']],
+  [/service|after.?sales|werkstatt|reparatur|ersatzteil|nps|zufriedenheit/i, ['serviceanteil', 'ersatzteilverfuegbarkeit', 'reparaturdurchlaufzeit', 'nps']],
+  [/f&e|f.?e|forschung|entwicklung|innovation|neuprodukt|time.?to.?market|pipeline/i, ['fueQuote', 'neuproduktumsatzanteil', 'timeToMarket']]
 ]
 
 function gematchteKpis(text) {

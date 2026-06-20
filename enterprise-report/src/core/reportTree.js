@@ -393,6 +393,44 @@ export const BERICHTSBAUM = n('konzern', 1, 'VeloWerk Gruppe · Management Repor
           kinder: [ n('kon-intercompany-det', 4, 'IC-Abstimmung', { bereich: 'KON', detail: 'ic_abstimmung' }) ]
         })
       ]
+    }),
+
+    // ---- E2 Fachbereich: After-Sales- & Servicecontrolling --------------
+    n('svc', 2, 'After-Sales- & Servicecontrolling', {
+      bereich: 'SVC', kpis: ['serviceanteil', 'ersatzteilverfuegbarkeit', 'reparaturdurchlaufzeit', 'nps'],
+      kinder: [
+        n('svc-umsatz', 3, 'After-Sales-Umsatz', {
+          bereich: 'SVC', kpis: ['serviceanteil', 'serviceumsatz'],
+          kinder: [ n('svc-umsatz-det', 4, 'Serviceumsatz je Leistung', { bereich: 'SVC', detail: 'serviceumsatz_leistung' }) ]
+        }),
+        n('svc-werkstatt', 3, 'Werkstatt & Reparatur', {
+          bereich: 'SVC', kpis: ['reparaturdurchlaufzeit', 'ersatzteilverfuegbarkeit'],
+          kinder: [ n('svc-werkstatt-det', 4, 'Werkstattkennzahlen', { bereich: 'SVC', detail: 'werkstatt' }) ]
+        }),
+        n('svc-zufriedenheit', 3, 'Kundenzufriedenheit', {
+          bereich: 'SVC', kpis: ['nps'],
+          kinder: [ n('svc-zufriedenheit-det', 4, 'NPS & Beschwerden', { bereich: 'SVC', detail: 'nps_beschwerden' }) ]
+        })
+      ]
+    }),
+
+    // ---- E2 Fachbereich: F&E-/Innovationscontrolling --------------------
+    n('fe', 2, 'F&E-/Innovationscontrolling', {
+      bereich: 'FE', kpis: ['fueQuote', 'neuproduktumsatzanteil', 'timeToMarket', 'entwicklungsprojekte'],
+      kinder: [
+        n('fe-budget', 3, 'F&E-Budget & Projekte', {
+          bereich: 'FE', kpis: ['fueQuote', 'fuekosten', 'entwicklungsprojekte'],
+          kinder: [ n('fe-budget-det', 4, 'F&E-Projektportfolio', { bereich: 'FE', detail: 'fe_projekte' }) ]
+        }),
+        n('fe-innovation', 3, 'Innovationskraft', {
+          bereich: 'FE', kpis: ['neuproduktumsatzanteil'],
+          kinder: [ n('fe-innovation-det', 4, 'Neuprodukt-Umsatz', { bereich: 'FE', detail: 'neuprodukt' }) ]
+        }),
+        n('fe-pipeline', 3, 'Pipeline & Time-to-Market', {
+          bereich: 'FE', kpis: ['timeToMarket'],
+          kinder: [ n('fe-pipeline-det', 4, 'Entwicklungspipeline', { bereich: 'FE', detail: 'fe_pipeline' }) ]
+        })
+      ]
     })
   ]
 })

@@ -35,7 +35,9 @@ export const MOCK = {
       nettoverschuldung: 7.8, zinsaufwand: 0.32, durchschnittszins: 3.1, hedgeQuote: 70, fxExposureOffen: 1.2,
       reklamationsquote: 1.0, nacharbeitsquote: 3.0, firstPassYield: 95, garantiekosten: 0.5,
       marketingkosten: 2.2, roas: 4.6, cac: 40, conversionRate: 2.4,
-      roce: 10.2, auslandsanteil: 21, intercompanyVolumen: 7.4
+      roce: 10.2, auslandsanteil: 21, intercompanyVolumen: 7.4,
+      serviceumsatz: 5.0, ersatzteilverfuegbarkeit: 93, reparaturdurchlaufzeit: 6, nps: 44,
+      fuekosten: 1.6, neuproduktumsatzanteil: 26, entwicklungsprojekte: 7, timeToMarket: 15
     },
     '2024': {
       bruttoumsatz: 53.0, erloesschmaelerung: 3.3, nettoumsatz: 48.1,
@@ -61,7 +63,9 @@ export const MOCK = {
       nettoverschuldung: 8.4, zinsaufwand: 0.38, durchschnittszins: 3.6, hedgeQuote: 72, fxExposureOffen: 1.4,
       reklamationsquote: 1.1, nacharbeitsquote: 3.2, firstPassYield: 94.5, garantiekosten: 0.55,
       marketingkosten: 2.4, roas: 4.4, cac: 43, conversionRate: 2.5,
-      roce: 9.8, auslandsanteil: 22, intercompanyVolumen: 7.8
+      roce: 9.8, auslandsanteil: 22, intercompanyVolumen: 7.8,
+      serviceumsatz: 5.5, ersatzteilverfuegbarkeit: 94, reparaturdurchlaufzeit: 5.5, nps: 46,
+      fuekosten: 1.8, neuproduktumsatzanteil: 28, entwicklungsprojekte: 8, timeToMarket: 14
     },
     '2025': {
       bruttoumsatz: 55.8, erloesschmaelerung: 3.8, nettoumsatz: 52.0,
@@ -87,7 +91,9 @@ export const MOCK = {
       nettoverschuldung: 9.1, zinsaufwand: 0.45, durchschnittszins: 3.9, hedgeQuote: 74, fxExposureOffen: 1.6,
       reklamationsquote: 1.2, nacharbeitsquote: 3.4, firstPassYield: 94, garantiekosten: 0.6,
       marketingkosten: 2.6, roas: 4.2, cac: 46, conversionRate: 2.6,
-      roce: 9.5, auslandsanteil: 22, intercompanyVolumen: 8.2
+      roce: 9.5, auslandsanteil: 22, intercompanyVolumen: 8.2,
+      serviceumsatz: 6.0, ersatzteilverfuegbarkeit: 94, reparaturdurchlaufzeit: 5.2, nps: 47,
+      fuekosten: 2.0, neuproduktumsatzanteil: 30, entwicklungsprojekte: 9, timeToMarket: 13
     }
   },
 
@@ -230,7 +236,23 @@ export const MOCK = {
     rendite: { titel: 'Kapitalrendite je Gesellschaft', spalten: ['Gesellschaft','ROCE','EK-Rendite','Capital Empl. Mio'],
       zeilen: [['VeloWerk DE','9,1 %','9,4 %','9,9'],['VeloWerk CH','13,2 %','12,1 %','2,3'],['VeloWerk NL','7,8 %','8,0 %','1,3'],['Konzern','9,5 %','9,8 %','14,7']] },
     ic_abstimmung: { titel: 'Intercompany-Abstimmung (Mio €)', spalten: ['Beziehung','Lieferung','Forderung','Differenz'],
-      zeilen: [['DE → CH','3,1','3,1','0,0'],['DE → NL','2,6','2,5','0,1'],['DE → B2B','2,5','2,5','0,0'],['Summe IC','8,2','8,1','0,1']] }
+      zeilen: [['DE → CH','3,1','3,1','0,0'],['DE → NL','2,6','2,5','0,1'],['DE → B2B','2,5','2,5','0,0'],['Summe IC','8,2','8,1','0,1']] },
+
+    // --- After-Sales- & Servicecontrolling ---
+    serviceumsatz_leistung: { titel: 'Serviceumsatz je Leistung (Mio €)', spalten: ['Leistung','Umsatz','DB-Quote','Trend'],
+      zeilen: [['Ersatzteile','2,6','48 %','▲'],['Inspektion/Wartung','1,8','41 %','▲'],['Reparatur','1,1','35 %','▬'],['Garantie-Reparatur','0,5','—','▼'],['Gesamt','6,0','43 %','▲']] },
+    werkstatt: { titel: 'Werkstattkennzahlen', spalten: ['Kennzahl','Wert','Ziel'],
+      zeilen: [['Reparatur-Durchlaufzeit','5,2 Tg','5,0'],['Ersatzteilverfügbarkeit','94 %','95 %'],['Auslastung Werkstatt','82 %','85 %'],['Wiederholreparaturen','3,1 %','2,0 %'],['Termintreue','89 %','95 %']] },
+    nps_beschwerden: { titel: 'Kundenzufriedenheit', spalten: ['Kennzahl','Wert','Trend'],
+      zeilen: [['Net Promoter Score','47','▲'],['Beschwerdequote','2,3 %','▼'],['Ø Bearbeitungszeit Beschwerde','4,1 Tg','▬'],['Lösungsquote 1st Contact','71 %','▲'],['Wiederkaufrate','58 %','▲']] },
+
+    // --- F&E-/Innovationscontrolling ---
+    fe_projekte: { titel: 'F&E-Projektportfolio', spalten: ['Projekt','Budget','Fortschritt','Status'],
+      zeilen: [['E-Bike-Antrieb Gen.3','0,7','55 %','im Plan'],['Leichtbau-Rahmen','0,5','40 %','im Plan'],['Connected-Bike App','0,4','30 %','verzögert'],['Akku-Reichweite +20 %','0,4','25 %','im Plan']] },
+    neuprodukt: { titel: 'Neuprodukt-Umsatz (Produkte < 3 Jahre)', spalten: ['Jahr','Anteil','Umsatz Mio €'],
+      zeilen: [['2023','26 %','12,3'],['2024','28 %','13,5'],['2025','30 %','15,6']] },
+    fe_pipeline: { titel: 'Entwicklungspipeline', spalten: ['Phase','Projekte','Ø Dauer'],
+      zeilen: [['Idee/Konzept','4','3 Mon.'],['Entwicklung','3','9 Mon.'],['Prototyp/Test','1','4 Mon.'],['Markteinführung','1','2 Mon.'],['Ø Time-to-Market','—','13 Mon.']] }
   },
 
   // Investitionsrechnung — Projekte (t0-Auszahlung negativ, danach Cashflows).
