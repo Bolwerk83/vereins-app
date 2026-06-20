@@ -8,6 +8,7 @@ import { BERICHTSBAUM, EBENEN, baumFuerRolle, findeKnoten, pfadZu } from '../../
 import { KPI } from '../../core/kpiRegistry.js'
 import { darfBereich, darfKpi } from '../../core/rbac.js'
 import { ladeDetail, ladeHistorie } from '../../core/dataProvider.js'
+import { downloadCsv, druckePdf, knotenAlsCsv } from '../../core/export.js'
 import { KpiCard, KpiGesperrt, DetailTabelle, Sparkline, Badge } from '../../components/ui.jsx'
 import KnotenBewertung from './KnotenBewertung.jsx'
 
@@ -56,7 +57,7 @@ function HistorieBlock({ kpiId }) {
   )
 }
 
-export default function TreeNavigator({ rolle, werte, onOpenReport }) {
+export default function TreeNavigator({ rolle, werte, periode, onOpenReport }) {
   const baum = useMemo(() => baumFuerRolle(BERICHTSBAUM, (b) => darfBereich(rolle, b)) || BERICHTSBAUM, [rolle])
   const [aktiv, setAktiv] = useState(baum.id)
   const knoten = findeKnoten(baum, aktiv) || baum
@@ -69,7 +70,7 @@ export default function TreeNavigator({ rolle, werte, onOpenReport }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: 20, alignItems: 'start' }}>
       {/* Baum */}
-      <aside style={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', padding: 10, position: 'sticky', top: 16 }}>
+      <aside className="no-print" style={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', padding: 10, position: 'sticky', top: 16 }}>
         <div className="mono" style={{ fontSize: 11, color: 'var(--muted)', padding: '4px 8px', textTransform: 'uppercase' }}>Berichtsbaum</div>
         <Zweig knoten={baum} aktiv={aktiv} onSelect={setAktiv} />
       </aside>
@@ -91,12 +92,18 @@ export default function TreeNavigator({ rolle, werte, onOpenReport }) {
             <h2 style={{ fontSize: 20 }}>{knoten.titel}</h2>
             <div style={{ marginTop: 6 }}><EbeneTag stufe={knoten.ebene} /></div>
           </div>
-          {knoten.bericht && (
-            <button onClick={() => onOpenReport(knoten.bericht)} style={{ padding: '9px 14px', border: 'none',
-              borderRadius: 'var(--radius-sm)', background: 'var(--accent)', color: '#fff', fontWeight: 600 }}>
-              Management Report öffnen →
-            </button>
-          )}
+          <div className="no-print" style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => downloadCsv(`${knoten.id}_${periode}`,
+              knotenAlsCsv({ titel: knoten.titel, periode, kpiIds: (knoten.kpis || []).filter((id) => darfKpi(rolle, KPI[id])), werte, rolle, detail }))}
+              style={{ padding: '9px 12px', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', background: 'var(--panel)' }}>⤓ Excel/CSV</button>
+            <button onClick={druckePdf} style={{ padding: '9px 12px', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', background: 'var(--panel)' }}>🖨 PDF</button>
+            {knoten.bericht && (
+              <button onClick={() => onOpenReport(knoten.bericht)} style={{ padding: '9px 14px', border: 'none',
+                borderRadius: 'var(--radius-sm)', background: 'var(--accent)', color: '#fff', fontWeight: 600 }}>
+                Management Report →
+              </button>
+            )}
+          </div>
         </div>
 
         {/* KPIs des Knotens: Lagebewertung + angereicherte Karten (Object-Level-Security) */}

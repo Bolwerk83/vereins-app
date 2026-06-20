@@ -48,3 +48,11 @@ body {
 h1,h2,h3,h4 { margin: 0; font-weight: 600; letter-spacing: -.01em; }
 a { color: var(--accent); text-decoration: none; }
 button { font-family: var(--font-text); cursor: pointer; }
+
+/* Druck/PDF: Chrome (Topbar, Baum, Buttons) ausblenden, weiße Fläche */
+@media print {
+  body { background: #fff; }
+  .no-print { display: none !important; }
+  main { padding: 0 !important; max-width: 100% !important; }
+  @page { margin: 14mm; }
+}

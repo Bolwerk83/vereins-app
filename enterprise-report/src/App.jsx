@@ -31,7 +31,7 @@ export default function App() {
   return (
     <div>
       {/* Topbar */}
-      <header style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--panel)', borderBottom: '1px solid var(--line)',
+      <header className="no-print" style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--panel)', borderBottom: '1px solid var(--line)',
         padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ width: 26, height: 26, borderRadius: 7, background: 'var(--accent)' }} />
@@ -83,7 +83,7 @@ export default function App() {
             onAbbruch={() => setAnsicht(localStorage.getItem(SETUP_KEY) ? 'baum' : 'wizard')} />
         )}
         {ansicht === 'baum' && (
-          <TreeNavigator rolle={rolle} werte={werte} onOpenReport={() => setAnsicht('report')} />
+          <TreeNavigator rolle={rolle} werte={werte} periode={periode} onOpenReport={() => setAnsicht('report')} />
         )}
         {ansicht === 'report' && (
           <ManagementReport rolle={rolle} werte={werte} periode={periode}
