@@ -32,7 +32,10 @@ export const MOCK = {
       mitarbeiterFTE: 352, ueberstundenquote: 3.5, krankenstand: 4.6,
       offeneForderungen: 4.0, ueberfaelligeForderungen: 0.50, dso: 34, forderungsausfall: 0.6, klumpenrisikoTop3: 30,
       co2ProRad: 110, co2Gesamt: 3100, energieJeRad: 48, oekostromanteil: 55, recyclingquote: 70,
-      nettoverschuldung: 7.8, zinsaufwand: 0.32, durchschnittszins: 3.1, hedgeQuote: 70, fxExposureOffen: 1.2
+      nettoverschuldung: 7.8, zinsaufwand: 0.32, durchschnittszins: 3.1, hedgeQuote: 70, fxExposureOffen: 1.2,
+      reklamationsquote: 1.0, nacharbeitsquote: 3.0, firstPassYield: 95, garantiekosten: 0.5,
+      marketingkosten: 2.2, roas: 4.6, cac: 40, conversionRate: 2.4,
+      roce: 10.2, auslandsanteil: 21, intercompanyVolumen: 7.4
     },
     '2024': {
       bruttoumsatz: 53.0, erloesschmaelerung: 3.3, nettoumsatz: 48.1,
@@ -55,7 +58,10 @@ export const MOCK = {
       mitarbeiterFTE: 364, ueberstundenquote: 3.8, krankenstand: 4.7,
       offeneForderungen: 4.1, ueberfaelligeForderungen: 0.55, dso: 36, forderungsausfall: 0.7, klumpenrisikoTop3: 32,
       co2ProRad: 104, co2Gesamt: 3050, energieJeRad: 46, oekostromanteil: 62, recyclingquote: 74,
-      nettoverschuldung: 8.4, zinsaufwand: 0.38, durchschnittszins: 3.6, hedgeQuote: 72, fxExposureOffen: 1.4
+      nettoverschuldung: 8.4, zinsaufwand: 0.38, durchschnittszins: 3.6, hedgeQuote: 72, fxExposureOffen: 1.4,
+      reklamationsquote: 1.1, nacharbeitsquote: 3.2, firstPassYield: 94.5, garantiekosten: 0.55,
+      marketingkosten: 2.4, roas: 4.4, cac: 43, conversionRate: 2.5,
+      roce: 9.8, auslandsanteil: 22, intercompanyVolumen: 7.8
     },
     '2025': {
       bruttoumsatz: 55.8, erloesschmaelerung: 3.8, nettoumsatz: 52.0,
@@ -78,7 +84,10 @@ export const MOCK = {
       mitarbeiterFTE: 372, ueberstundenquote: 4.1, krankenstand: 4.9,
       offeneForderungen: 4.1, ueberfaelligeForderungen: 0.62, dso: 38, forderungsausfall: 0.8, klumpenrisikoTop3: 34,
       co2ProRad: 98, co2Gesamt: 2980, energieJeRad: 44, oekostromanteil: 68, recyclingquote: 77,
-      nettoverschuldung: 9.1, zinsaufwand: 0.45, durchschnittszins: 3.9, hedgeQuote: 74, fxExposureOffen: 1.6
+      nettoverschuldung: 9.1, zinsaufwand: 0.45, durchschnittszins: 3.9, hedgeQuote: 74, fxExposureOffen: 1.6,
+      reklamationsquote: 1.2, nacharbeitsquote: 3.4, firstPassYield: 94, garantiekosten: 0.6,
+      marketingkosten: 2.6, roas: 4.2, cac: 46, conversionRate: 2.6,
+      roce: 9.5, auslandsanteil: 22, intercompanyVolumen: 8.2
     }
   },
 
@@ -197,7 +206,31 @@ export const MOCK = {
     zinsbindung: { titel: 'Zinsbindung & Sensitivität', spalten: ['Tranche','Typ','Volumen','Effekt +1 %'],
       zeilen: [['Darlehen A','fest','4,5','—'],['Darlehen B','variabel','2,6','−26 T€'],['Kontokorrent','variabel','1,2','−12 T€'],['Variabel gesamt','—','3,8','−38 T€ p. a.']] },
     fx_exposure: { titel: 'FX-Exposure je Währung (Mio €)', spalten: ['Währung','Exposure','gehedged','offen'],
-      zeilen: [['CHF (Schweiz)','4,8','3,6','1,2'],['USD (Beschaffung)','1,2','0,8','0,4'],['Gesamt','6,0','4,4','1,6']] }
+      zeilen: [['CHF (Schweiz)','4,8','3,6','1,2'],['USD (Beschaffung)','1,2','0,8','0,4'],['Gesamt','6,0','4,4','1,6']] },
+
+    // --- Qualitäts- & Reklamationscontrolling ---
+    reklamationen: { titel: 'Reklamationen je Warengruppe', spalten: ['Warengruppe','Quote','Top-Ursache','Trend'],
+      zeilen: [['E-Bikes','1,5 %','Antrieb/Elektronik','▲'],['City/Trekking','0,9 %','Bremsen/Schaltung','▬'],['Teile','0,8 %','Passung','▬'],['Zubehör','0,5 %','—','▼'],['Bekleidung','0,4 %','—','▼']] },
+    fertigungsqualitaet: { titel: 'Fertigungsqualität', spalten: ['Kennzahl','Wert','Ziel'],
+      zeilen: [['First Pass Yield','94 %','97 %'],['Nacharbeitsquote Endmontage','3,4 %','2,0 %'],['Ausschuss','2,1 %','1,5 %'],['Durchlaufzeit Montage','3,2 Tg','3,0'],['Prüfumfang','100 %','—']] },
+    fehlerkosten: { titel: 'Fehlerkosten (Cost of Poor Quality, Mio €)', spalten: ['Kategorie','Mio €','Hinweis'],
+      zeilen: [['Garantie/Gewährleistung','0,60','Feldausfälle'],['Nacharbeit intern','0,42','Endmontage'],['Ausschuss','0,33','Material'],['Prüf-/Kontrollkosten','0,18','Eingangs-/Endprüfung'],['Summe CoPQ','1,53','2,9 % vom Umsatz']] },
+
+    // --- Marketing-/Kampagnencontrolling ---
+    kampagnen: { titel: 'Kampagnen-ROI', spalten: ['Kampagne','Spend T€','Umsatz T€','ROAS'],
+      zeilen: [['Frühjahr E-Bike','420','2.310','5,5'],['Performance Search','310','1.395','4,5'],['Social Awareness','180','540','3,0'],['Retargeting','150','975','6,5'],['Print/Messe','120','300','2,5']] },
+    funnel: { titel: 'Conversion-Funnel Onlineshop', spalten: ['Stufe','Wert','Conversion'],
+      zeilen: [['Besuche','3,9 Mio','—'],['Produktansichten','1,8 Mio','46 %'],['Warenkorb','312.000','17 %'],['Checkout','148.000','47 %'],['Bestellung','101.000','2,6 %']] },
+    cac_clv: { titel: 'CAC & CLV je Kanal (€)', spalten: ['Kanal','CAC','CLV','CLV/CAC'],
+      zeilen: [['Performance Search','52','410','7,9'],['Social','61','330','5,4'],['Retargeting','28','395','14,1'],['Organisch/SEO','12','420','35,0'],['Ø gesamt','46','390','8,5']] },
+
+    // --- Beteiligungs-/Konzerncontrolling ---
+    segment_guv: { titel: 'Segment-GuV je Gesellschaft (Mio €)', spalten: ['Gesellschaft','Umsatz','EBIT','EBIT-Marge'],
+      zeilen: [['VeloWerk DE','36,4','0,9','2,5 %'],['VeloWerk CH','6,2','0,3','4,8 %'],['VeloWerk NL','5,2','0,1','1,9 %'],['B2B/Leasing','4,2','0,1','2,4 %'],['Konzern (kons.)','52,0','1,4','2,7 %']] },
+    rendite: { titel: 'Kapitalrendite je Gesellschaft', spalten: ['Gesellschaft','ROCE','EK-Rendite','Capital Empl. Mio'],
+      zeilen: [['VeloWerk DE','9,1 %','9,4 %','9,9'],['VeloWerk CH','13,2 %','12,1 %','2,3'],['VeloWerk NL','7,8 %','8,0 %','1,3'],['Konzern','9,5 %','9,8 %','14,7']] },
+    ic_abstimmung: { titel: 'Intercompany-Abstimmung (Mio €)', spalten: ['Beziehung','Lieferung','Forderung','Differenz'],
+      zeilen: [['DE → CH','3,1','3,1','0,0'],['DE → NL','2,6','2,5','0,1'],['DE → B2B','2,5','2,5','0,0'],['Summe IC','8,2','8,1','0,1']] }
   },
 
   // Investitionsrechnung — Projekte (t0-Auszahlung negativ, danach Cashflows).

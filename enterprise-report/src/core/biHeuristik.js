@@ -37,7 +37,10 @@ const STICHWORTE = [
   [/personalcontrolling|produktivit|umsatz je|überstund|ueberstund|krankenstand|fte/i, ['personalkostenquote', 'umsatzJeFTE', 'krankenstand', 'fluktuation']],
   [/risiko|forderung|dso|überfällig|ueberfaellig|ausfall|mahn|klumpen|konzentration|debitor/i, ['dso', 'ueberfaelligkeitsquote', 'forderungsausfall', 'klumpenrisikoTop3']],
   [/nachhaltig|esg|co2|co₂|emission|energie|ökostrom|oekostrom|recycling|klima|kreislauf/i, ['co2ProRad', 'recyclingquote', 'oekostromanteil', 'energieJeRad']],
-  [/treasury|zins|verschuldung|leverage|hedge|währung|waehrung|fx|liquidität|finanzierung/i, ['nettoverschuldungEbitda', 'zinsdeckung', 'hedgeQuote', 'durchschnittszins']]
+  [/treasury|zins|verschuldung|leverage|hedge|währung|waehrung|fx|liquidität|finanzierung/i, ['nettoverschuldungEbitda', 'zinsdeckung', 'hedgeQuote', 'durchschnittszins']],
+  [/qualität|qualitaet|reklamation|nacharbeit|garantie|fehlerkosten|copq|ausschuss/i, ['reklamationsquote', 'nacharbeitsquote', 'firstPassYield', 'qualitaetskostenquote']],
+  [/marketing|kampagne|roas|conversion|werbung|cac|funnel|kundengewinnung/i, ['roas', 'cac', 'conversionRate', 'marketingkostenquote']],
+  [/konzern|beteiligung|segment|roce|intercompany|konsolidier|gesellschaft|tochter|ausland/i, ['roce', 'eigenkapitalrendite', 'auslandsanteil', 'intercompanyQuote']]
 ]
 
 function gematchteKpis(text) {

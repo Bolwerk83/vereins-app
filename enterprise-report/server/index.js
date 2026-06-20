@@ -64,7 +64,14 @@ const ROHE_KPIS = {
   oekostromanteil: 'oekostromanteil', recyclingquote: 'recyclingquote',
   // Treasury & Zins-/Währungsrisiko
   nettoverschuldung: 'nettoverschuldung', zinsaufwand: 'zinsaufwand', durchschnittszins: 'durchschnittszins',
-  hedge_quote: 'hedgeQuote', fx_exposure_offen: 'fxExposureOffen'
+  hedge_quote: 'hedgeQuote', fx_exposure_offen: 'fxExposureOffen',
+  // Qualitäts- & Reklamationscontrolling
+  reklamationsquote: 'reklamationsquote', nacharbeitsquote: 'nacharbeitsquote',
+  first_pass_yield: 'firstPassYield', garantiekosten: 'garantiekosten',
+  // Marketing-/Kampagnencontrolling
+  marketingkosten: 'marketingkosten', roas: 'roas', cac: 'cac', conversion_rate: 'conversionRate',
+  // Beteiligungs-/Konzerncontrolling
+  roce: 'roce', auslandsanteil: 'auslandsanteil', intercompany_volumen: 'intercompanyVolumen'
 }
 
 const sqlPfad = (ref) => join(SQL_DIR, `${ref}.kpi.sql`)

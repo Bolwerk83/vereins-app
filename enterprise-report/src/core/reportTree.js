@@ -336,6 +336,63 @@ export const BERICHTSBAUM = n('konzern', 1, 'VeloWerk Gruppe · Management Repor
           kinder: [ n('tre-fx-det', 4, 'FX-Exposure je Währung', { bereich: 'TRE', detail: 'fx_exposure' }) ]
         })
       ]
+    }),
+
+    // ---- E2 Fachbereich: Qualitäts- & Reklamationscontrolling -----------
+    n('qm', 2, 'Qualitäts- & Reklamationscontrolling', {
+      bereich: 'QM', kpis: ['reklamationsquote', 'nacharbeitsquote', 'firstPassYield', 'qualitaetskostenquote'],
+      kinder: [
+        n('qm-reklamationen', 3, 'Reklamationen', {
+          bereich: 'QM', kpis: ['reklamationsquote'],
+          kinder: [ n('qm-reklamationen-det', 4, 'Reklamationen je Warengruppe', { bereich: 'QM', detail: 'reklamationen' }) ]
+        }),
+        n('qm-fertigung', 3, 'Nacharbeit & FPY', {
+          bereich: 'QM', kpis: ['nacharbeitsquote', 'firstPassYield'],
+          kinder: [ n('qm-fertigung-det', 4, 'Fertigungsqualität', { bereich: 'QM', detail: 'fertigungsqualitaet' }) ]
+        }),
+        n('qm-fehlerkosten', 3, 'Garantie & Fehlerkosten (CoPQ)', {
+          bereich: 'QM', kpis: ['qualitaetskostenquote', 'garantiekosten'],
+          kinder: [ n('qm-fehlerkosten-det', 4, 'Fehlerkosten (CoPQ)', { bereich: 'QM', detail: 'fehlerkosten' }) ]
+        })
+      ]
+    }),
+
+    // ---- E2 Fachbereich: Marketing-/Kampagnencontrolling ----------------
+    n('mkt', 2, 'Marketing-/Kampagnencontrolling', {
+      bereich: 'MKT', kpis: ['roas', 'cac', 'conversionRate', 'marketingkostenquote'],
+      kinder: [
+        n('mkt-kampagnen', 3, 'Kampagnen-ROI', {
+          bereich: 'MKT', kpis: ['roas', 'marketingkostenquote'],
+          kinder: [ n('mkt-kampagnen-det', 4, 'Kampagnen-ROI', { bereich: 'MKT', detail: 'kampagnen' }) ]
+        }),
+        n('mkt-funnel', 3, 'Funnel & Conversion', {
+          bereich: 'MKT', kpis: ['conversionRate'],
+          kinder: [ n('mkt-funnel-det', 4, 'Conversion-Funnel', { bereich: 'MKT', detail: 'funnel' }) ]
+        }),
+        n('mkt-cac', 3, 'Kundengewinnung (CAC/CLV)', {
+          bereich: 'MKT', kpis: ['cac'],
+          kinder: [ n('mkt-cac-det', 4, 'CAC & CLV je Kanal', { bereich: 'MKT', detail: 'cac_clv' }) ]
+        })
+      ]
+    }),
+
+    // ---- E2 Fachbereich: Beteiligungs-/Konzerncontrolling ---------------
+    n('kon', 2, 'Beteiligungs-/Konzerncontrolling', {
+      bereich: 'KON', kpis: ['roce', 'eigenkapitalrendite', 'auslandsanteil', 'intercompanyQuote'],
+      kinder: [
+        n('kon-segmente', 3, 'Gesellschaften & Segmente', {
+          bereich: 'KON', kpis: ['auslandsanteil'],
+          kinder: [ n('kon-segmente-det', 4, 'Segment-GuV je Gesellschaft', { bereich: 'KON', detail: 'segment_guv' }) ]
+        }),
+        n('kon-rendite', 3, 'Kapitalrendite (ROCE/ROE)', {
+          bereich: 'KON', kpis: ['roce', 'eigenkapitalrendite'],
+          kinder: [ n('kon-rendite-det', 4, 'Kapitalrendite je Gesellschaft', { bereich: 'KON', detail: 'rendite' }) ]
+        }),
+        n('kon-intercompany', 3, 'Intercompany & Konsolidierung', {
+          bereich: 'KON', kpis: ['intercompanyQuote', 'intercompanyVolumen'],
+          kinder: [ n('kon-intercompany-det', 4, 'IC-Abstimmung', { bereich: 'KON', detail: 'ic_abstimmung' }) ]
+        })
+      ]
     })
   ]
 })

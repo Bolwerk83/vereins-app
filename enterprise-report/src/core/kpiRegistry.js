@@ -609,6 +609,106 @@ export const KPI = {
     beschreibung: 'EBIT ÷ Zinsaufwand (Interest Coverage). Abgeleitet.',
     sqlRef: null, abhaengig: ['ebit', 'zinsaufwand'],
     berechne: (v) => v.ebit / v.zinsaufwand, security: null
+  },
+
+  // ---- Qualitäts- & Reklamationscontrolling (QM) -----------------------
+  reklamationsquote: {
+    id: 'reklamationsquote', name: 'Reklamationsquote', einheit: 'percent',
+    bereich: 'QM', ziel: 1.0, richtung: 'tief_gut', warn: 0.8,
+    beschreibung: 'Feld-Reklamationen in % der ausgelieferten Räder.',
+    sqlRef: 'reklamationsquote', abhaengig: [], security: null
+  },
+  nacharbeitsquote: {
+    id: 'nacharbeitsquote', name: 'Nacharbeitsquote', einheit: 'percent',
+    bereich: 'QM', ziel: 2.0, richtung: 'tief_gut', warn: 0.8,
+    beschreibung: 'Nacharbeit in % der Fertigungsmenge (Endmontage).',
+    sqlRef: 'nacharbeitsquote', abhaengig: [], security: null
+  },
+  firstPassYield: {
+    id: 'firstPassYield', name: 'First Pass Yield', einheit: 'percent',
+    bereich: 'QM', ziel: 97, richtung: 'hoch_gut', warn: 0.97,
+    beschreibung: 'Anteil fehlerfrei im ersten Durchlauf gefertigter Räder.',
+    sqlRef: 'first_pass_yield', abhaengig: [], security: null
+  },
+  garantiekosten: {
+    id: 'garantiekosten', name: 'Garantiekosten', einheit: 'eur_mio',
+    bereich: 'QM', ziel: null, richtung: 'tief_gut',
+    beschreibung: 'Aufwand für Garantie-/Gewährleistungsfälle.',
+    sqlRef: 'garantiekosten', abhaengig: [], security: null
+  },
+  qualitaetskostenquote: {
+    id: 'qualitaetskostenquote', name: 'Fehlerkostenquote (CoPQ)', einheit: 'percent',
+    bereich: 'QM', ziel: 1.0, richtung: 'tief_gut', warn: 0.85,
+    beschreibung: 'Garantiekosten in % vom Nettoumsatz (Cost of Poor Quality). Abgeleitet.',
+    sqlRef: null, abhaengig: ['garantiekosten', 'nettoumsatz'],
+    berechne: (v) => (v.garantiekosten / v.nettoumsatz) * 100, security: null
+  },
+
+  // ---- Marketing-/Kampagnencontrolling (MKT) ---------------------------
+  marketingkosten: {
+    id: 'marketingkosten', name: 'Marketingkosten', einheit: 'eur_mio',
+    bereich: 'MKT', ziel: null, richtung: 'tief_gut',
+    beschreibung: 'Mediabudget + Kampagnenkosten (Teil der Vertriebskosten).',
+    sqlRef: 'marketingkosten', abhaengig: [], security: null
+  },
+  roas: {
+    id: 'roas', name: 'ROAS', einheit: 'faktor',
+    bereich: 'MKT', ziel: 5, richtung: 'hoch_gut', warn: 0.85,
+    beschreibung: 'Return on Ad Spend — Umsatz je € Mediabudget.',
+    sqlRef: 'roas', abhaengig: [], security: null
+  },
+  cac: {
+    id: 'cac', name: 'CAC', einheit: 'eur',
+    bereich: 'MKT', ziel: 40, richtung: 'tief_gut', warn: 0.85,
+    beschreibung: 'Customer Acquisition Cost — Kosten je gewonnenem Neukunden.',
+    sqlRef: 'cac', abhaengig: [], security: null
+  },
+  conversionRate: {
+    id: 'conversionRate', name: 'Conversion-Rate', einheit: 'percent',
+    bereich: 'MKT', ziel: 3.0, richtung: 'hoch_gut', warn: 0.9,
+    beschreibung: 'Bestellungen je Shop-Besuch (Onlineshop).',
+    sqlRef: 'conversion_rate', abhaengig: [], security: null
+  },
+  marketingkostenquote: {
+    id: 'marketingkostenquote', name: 'Marketingkostenquote', einheit: 'percent',
+    bereich: 'MKT', ziel: 5, richtung: 'tief_gut', warn: 0.95,
+    beschreibung: 'Marketingkosten in % vom Nettoumsatz. Abgeleitet.',
+    sqlRef: null, abhaengig: ['marketingkosten', 'nettoumsatz'],
+    berechne: (v) => (v.marketingkosten / v.nettoumsatz) * 100, security: null
+  },
+
+  // ---- Beteiligungs-/Konzerncontrolling (KON) --------------------------
+  roce: {
+    id: 'roce', name: 'ROCE', einheit: 'percent',
+    bereich: 'KON', ziel: 12, richtung: 'hoch_gut', warn: 0.85,
+    beschreibung: 'Return on Capital Employed — EBIT ÷ eingesetztes Kapital.',
+    sqlRef: 'roce', abhaengig: [], security: null
+  },
+  auslandsanteil: {
+    id: 'auslandsanteil', name: 'Auslandsanteil', einheit: 'percent0',
+    bereich: 'KON', ziel: 25, richtung: 'hoch_gut', warn: 0.85,
+    beschreibung: 'Umsatzanteil der Auslandsgesellschaften (CH, NL).',
+    sqlRef: 'auslandsanteil', abhaengig: [], security: null
+  },
+  intercompanyVolumen: {
+    id: 'intercompanyVolumen', name: 'Intercompany-Volumen', einheit: 'eur_mio',
+    bereich: 'KON', ziel: null, richtung: 'tief_gut',
+    beschreibung: 'Konzerninterne Lieferungen/Leistungen (zu konsolidieren).',
+    sqlRef: 'intercompany_volumen', abhaengig: [], security: null
+  },
+  eigenkapitalrendite: {
+    id: 'eigenkapitalrendite', name: 'Eigenkapitalrendite', einheit: 'percent',
+    bereich: 'KON', ziel: 10, richtung: 'hoch_gut', warn: 0.9,
+    beschreibung: 'Jahresergebnis ÷ Eigenkapital (ROE). Abgeleitet.',
+    sqlRef: null, abhaengig: ['handelsrechtlichesErgebnis', 'eigenkapital'],
+    berechne: (v) => (v.handelsrechtlichesErgebnis / v.eigenkapital) * 100, security: null
+  },
+  intercompanyQuote: {
+    id: 'intercompanyQuote', name: 'Intercompany-Quote', einheit: 'percent',
+    bereich: 'KON', ziel: 15, richtung: 'tief_gut', warn: 0.9,
+    beschreibung: 'IC-Volumen in % vom Nettoumsatz (Konsolidierungsumfang). Abgeleitet.',
+    sqlRef: null, abhaengig: ['intercompanyVolumen', 'nettoumsatz'],
+    berechne: (v) => (v.intercompanyVolumen / v.nettoumsatz) * 100, security: null
   }
 }
 
