@@ -19,6 +19,7 @@ Rückgrat, mit dem das Controlling (fast) jede Frage beantworten kann.
 
 | Risiko- & Forderungscontrolling | `RIS` | DSO/Aging, Ausfall, Klumpenrisiko | DSO, Überfälligkeitsquote, Forderungsausfall |
 | Nachhaltigkeits- & ESG-Controlling | `ESG` | CO₂, Energie, Kreislauf/Soziales | CO₂/Rad, Recyclingquote, Ökostromanteil |
+| Treasury & Zins-/Währungsrisiko | `TRE` | Verschuldung, Zins-, FX-Risiko | Net Debt/EBITDA, Zinsdeckung, Hedge-Quote |
 
 *Personalkostenquote ist per Object-Level-Security auf GF/HR/FIN beschränkt (greift auch im Self-Service-BI).
 
@@ -34,9 +35,21 @@ Rückgrat, mit dem das Controlling (fast) jede Frage beantworten kann.
 - **Direkt aus dem Bericht:** Im Management Report startet der Knopf
   „🎯 Controller-Auswertung (SMART)" die Bewertung für genau diesen Bericht.
 - **Eingabe:** eigene Maßnahmen erfassen (Titel, Bereich, Hebel, Owner, Frist, Aufwand).
-- **Verwaltung:** Liste mit Owner und Status (offen · in_arbeit · erledigt · verworfen),
-  persistent (LocalStorage; später MSSQL-Tabelle). Object-Level-Security greift —
-  geschützte KPIs erzeugen für unberechtigte Rollen keine Empfehlung.
+- **Verwaltung & Tracking:** Liste mit Owner, **Fälligkeit**, **Fortschritt %**,
+  **realisierter Wirkung** und Status (offen · in_arbeit · erledigt · verworfen);
+  **Fälligkeits-Alerts** für überfällige Maßnahmen. Persistent (LocalStorage; später
+  MSSQL-Tabelle). Object-Level-Security greift — geschützte KPIs erzeugen für
+  unberechtigte Rollen keine Empfehlung.
+
+## Controlling-Instrumente (Reiter „Instrumente")
+
+`src/modules/controlling-instrumente` + `src/core/instrumente.js`:
+- **BCG-Portfolio** — Produktgruppen nach Marktwachstum × relativem Marktanteil
+  als Star / Cash Cow / Question Mark / Poor Dog, mit Strategieempfehlung.
+- **Break-even-Analyse** — Fixkosten ÷ DB-Quote → Gewinnschwelle + Sicherheitsstrecke.
+- **Deckungsbeitrags-Ranking** je Produktgruppe.
+- **Investitionsrechnung** — Kapitalwert (NPV @ WACC), interner Zinsfuß (IRR) und
+  statische Amortisation je Projekt, mit Vorteilhaftigkeits-Entscheidung.
 
 Jeder Bereich hat Themenbereiche (E3), Detailberichte (E4) und Historie (E5)
 wie der Rest des Baums — gleiche Engine, gleiche Rechte, gleiches Design.

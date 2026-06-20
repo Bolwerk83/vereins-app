@@ -563,6 +563,52 @@ export const KPI = {
     bereich: 'ESG', ziel: 80, richtung: 'hoch_gut', warn: 0.9,
     beschreibung: 'Recycling-/Verwertungsquote von Material und Verpackung.',
     sqlRef: 'recyclingquote', abhaengig: [], security: null
+  },
+
+  // ---- Treasury & Zins-/Währungsrisiko (TRE) ---------------------------
+  nettoverschuldung: {
+    id: 'nettoverschuldung', name: 'Nettoverschuldung', einheit: 'eur_mio',
+    bereich: 'TRE', ziel: null, richtung: 'tief_gut',
+    beschreibung: 'Verzinsliche Verbindlichkeiten − liquide Mittel.',
+    sqlRef: 'nettoverschuldung', abhaengig: [], security: null
+  },
+  zinsaufwand: {
+    id: 'zinsaufwand', name: 'Zinsaufwand', einheit: 'eur_mio',
+    bereich: 'TRE', ziel: null, richtung: 'tief_gut',
+    beschreibung: 'Zinsaufwand der Periode.',
+    sqlRef: 'zinsaufwand', abhaengig: [], security: null
+  },
+  durchschnittszins: {
+    id: 'durchschnittszins', name: 'Ø Zinssatz', einheit: 'percent',
+    bereich: 'TRE', ziel: 3.5, richtung: 'tief_gut', warn: 0.9,
+    beschreibung: 'Durchschnittlicher Finanzierungszins über alle Tranchen.',
+    sqlRef: 'durchschnittszins', abhaengig: [], security: null
+  },
+  hedgeQuote: {
+    id: 'hedgeQuote', name: 'Hedge-Quote (FX)', einheit: 'percent0',
+    bereich: 'TRE', ziel: 80, richtung: 'hoch_gut', warn: 0.9,
+    beschreibung: 'Gegen Währungsrisiko abgesicherter Anteil des Exposures (v. a. CHF).',
+    sqlRef: 'hedge_quote', abhaengig: [], security: null
+  },
+  fxExposureOffen: {
+    id: 'fxExposureOffen', name: 'Offenes FX-Exposure', einheit: 'eur_mio',
+    bereich: 'TRE', ziel: null, richtung: 'tief_gut',
+    beschreibung: 'Nicht abgesichertes Währungsexposure (Wechselkursrisiko).',
+    sqlRef: 'fx_exposure_offen', abhaengig: [], security: null
+  },
+  nettoverschuldungEbitda: {
+    id: 'nettoverschuldungEbitda', name: 'Net Debt / EBITDA', einheit: 'faktor',
+    bereich: 'TRE', ziel: 3, richtung: 'tief_gut', warn: 0.85,
+    beschreibung: 'Verschuldungsgrad (Leverage). Abgeleitet. >3 gilt als hoch.',
+    sqlRef: null, abhaengig: ['nettoverschuldung', 'ebitda'],
+    berechne: (v) => v.nettoverschuldung / v.ebitda, security: null
+  },
+  zinsdeckung: {
+    id: 'zinsdeckung', name: 'Zinsdeckungsgrad', einheit: 'faktor',
+    bereich: 'TRE', ziel: 5, richtung: 'hoch_gut', warn: 0.8,
+    beschreibung: 'EBIT ÷ Zinsaufwand (Interest Coverage). Abgeleitet.',
+    sqlRef: null, abhaengig: ['ebit', 'zinsaufwand'],
+    berechne: (v) => v.ebit / v.zinsaufwand, security: null
   }
 }
 

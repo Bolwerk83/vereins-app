@@ -35,4 +35,44 @@ export function breakEven(werte) {
   return { fixkosten, dbQuote: werte.dbQuote, breakEvenUmsatz, nettoumsatz: werte.nettoumsatz, sicherheitsstrecke }
 }
 
+// --- Investitionsrechnung: Kapitalwert (NPV), IRR, Amortisation ----------
+/** Kapitalwert: −invest + Σ cf_t/(1+i)^t.  zins in % */
+export function kapitalwert(invest, cashflows, zinsProzent) {
+  const i = zinsProzent / 100
+  return cashflows.reduce((npv, cf, t) => npv + cf / Math.pow(1 + i, t + 1), -invest)
+}
+
+/** Interner Zinsfuß (IRR) per Bisektion; gibt % oder null zurück. */
+export function irr(invest, cashflows) {
+  const f = (r) => kapitalwert(invest, cashflows, r)
+  let lo = -0.9, hi = 100, flo = f(lo)
+  if (flo * f(hi) > 0) return null            // kein Vorzeichenwechsel
+  for (let k = 0; k < 100; k++) {
+    const mid = (lo + hi) / 2, fm = f(mid)
+    if (Math.abs(fm) < 1e-6) return mid
+    if (flo * fm < 0) hi = mid; else { lo = mid; flo = fm }
+  }
+  return (lo + hi) / 2
+}
+
+/** Statische Amortisationsdauer in Jahren (kumulierte Cashflows decken Invest). */
+export function amortisation(invest, cashflows) {
+  let kum = 0
+  for (let t = 0; t < cashflows.length; t++) {
+    const vorher = kum; kum += cashflows[t]
+    if (kum >= invest) return t + (invest - vorher) / cashflows[t]
+  }
+  return null
+}
+
+export function investitionsrechnung(projekte = [], wacc = 8) {
+  return projekte.map((p) => {
+    const npv = kapitalwert(p.invest, p.cashflows, wacc)
+    return {
+      ...p, npv, irr: irr(p.invest, p.cashflows), amortisation: amortisation(p.invest, p.cashflows),
+      entscheidung: npv > 0 ? 'vorteilhaft' : 'unvorteilhaft'
+    }
+  }).sort((a, b) => b.npv - a.npv)
+}
+
 export { WACHSTUM_SCHWELLE, ANTEIL_SCHWELLE }

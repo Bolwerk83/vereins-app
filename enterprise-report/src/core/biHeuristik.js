@@ -36,7 +36,8 @@ const STICHWORTE = [
   [/vertriebscontrolling|rabatt|kundenprofitab|vertriebskost|kanalprofitab|neukunden/i, ['vertriebskostenquote', 'rabattquote', 'neukundenanteil', 'dbQuote']],
   [/personalcontrolling|produktivit|umsatz je|überstund|ueberstund|krankenstand|fte/i, ['personalkostenquote', 'umsatzJeFTE', 'krankenstand', 'fluktuation']],
   [/risiko|forderung|dso|überfällig|ueberfaellig|ausfall|mahn|klumpen|konzentration|debitor/i, ['dso', 'ueberfaelligkeitsquote', 'forderungsausfall', 'klumpenrisikoTop3']],
-  [/nachhaltig|esg|co2|co₂|emission|energie|ökostrom|oekostrom|recycling|klima|kreislauf/i, ['co2ProRad', 'recyclingquote', 'oekostromanteil', 'energieJeRad']]
+  [/nachhaltig|esg|co2|co₂|emission|energie|ökostrom|oekostrom|recycling|klima|kreislauf/i, ['co2ProRad', 'recyclingquote', 'oekostromanteil', 'energieJeRad']],
+  [/treasury|zins|verschuldung|leverage|hedge|währung|waehrung|fx|liquidität|finanzierung/i, ['nettoverschuldungEbitda', 'zinsdeckung', 'hedgeQuote', 'durchschnittszins']]
 ]
 
 function gematchteKpis(text) {

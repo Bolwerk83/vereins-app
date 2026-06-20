@@ -5,7 +5,7 @@
 // =========================================================================
 import React from 'react'
 import { MOCK } from '../../data/mock.js'
-import { bcgPortfolio, BCG_KLASSEN, breakEven, WACHSTUM_SCHWELLE, ANTEIL_SCHWELLE } from '../../core/instrumente.js'
+import { bcgPortfolio, BCG_KLASSEN, breakEven, investitionsrechnung, WACHSTUM_SCHWELLE, ANTEIL_SCHWELLE } from '../../core/instrumente.js'
 import { formatWert } from '../../design/theme.js'
 import { Badge } from '../../components/ui.jsx'
 
@@ -53,6 +53,7 @@ export default function ControllingInstrumente({ werte }) {
   const daten = bcgPortfolio(MOCK.portfolio)
   const be = breakEven(werte)
   const dbRang = [...MOCK.portfolio].sort((a, b) => b.db - a.db)
+  const invest = investitionsrechnung(MOCK.investitionen, MOCK.wacc)
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gap: 18 }}>
       <div style={card}>
@@ -112,6 +113,30 @@ export default function ControllingInstrumente({ werte }) {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Investitionsrechnung */}
+      <div style={card}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+          <h3 style={{ fontSize: 15 }}>Investitionsrechnung (Kapitalwert / IRR)</h3>
+          <span className="mono" style={{ fontSize: 11, color: 'var(--muted)' }}>WACC {MOCK.wacc}% · 5 Jahre</span>
+        </div>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginTop: 8 }}>
+          <thead><tr>{['Projekt', 'Investition', 'Kapitalwert (NPV)', 'IRR', 'Amortisation', 'Entscheidung'].map((h, i) => (
+            <th key={h} style={{ textAlign: i === 0 ? 'left' : 'right', padding: '6px 10px', color: 'var(--muted)', fontSize: 11, textTransform: 'uppercase', borderBottom: '1px solid var(--line)' }}>{h}</th>))}</tr></thead>
+          <tbody>{invest.map((p) => (
+            <tr key={p.projekt}>
+              <td style={{ padding: '7px 10px', borderBottom: '1px solid var(--line)' }}>{p.projekt}</td>
+              <td className="mono" style={{ textAlign: 'right', padding: '7px 10px', borderBottom: '1px solid var(--line)' }}>{formatWert(p.invest, 'eur_mio')}</td>
+              <td className="mono" style={{ textAlign: 'right', padding: '7px 10px', borderBottom: '1px solid var(--line)', color: p.npv > 0 ? 'var(--amp-g)' : 'var(--amp-r)', fontWeight: 600 }}>{formatWert(p.npv, 'eur_mio')}</td>
+              <td className="mono" style={{ textAlign: 'right', padding: '7px 10px', borderBottom: '1px solid var(--line)' }}>{p.irr != null ? formatWert(p.irr, 'percent') : '–'}</td>
+              <td className="mono" style={{ textAlign: 'right', padding: '7px 10px', borderBottom: '1px solid var(--line)' }}>{p.amortisation != null ? p.amortisation.toFixed(1).replace('.', ',') + ' J' : '> Laufzeit'}</td>
+              <td style={{ textAlign: 'right', padding: '7px 10px', borderBottom: '1px solid var(--line)' }}><Badge status={p.npv > 0 ? 'g' : 'r'}>{p.entscheidung}</Badge></td>
+            </tr>))}</tbody>
+        </table>
+        <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 6 }}>
+          Kapitalwert &gt; 0 ⇒ Projekt verzinst sich über dem Kapitalkostensatz (WACC). IRR = interner Zinsfuß; Amortisation = statische Wiedergewinnungszeit.
+        </p>
       </div>
     </div>
   )

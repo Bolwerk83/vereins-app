@@ -317,6 +317,25 @@ export const BERICHTSBAUM = n('konzern', 1, 'VeloWerk Gruppe · Management Repor
           kinder: [ n('esg-kreislauf-det', 4, 'Recycling & Sozial-Kennzahlen', { bereich: 'ESG', detail: 'kreislauf_sozial' }) ]
         })
       ]
+    }),
+
+    // ---- E2 Fachbereich: Treasury & Zins-/Währungsrisiko ----------------
+    n('tre', 2, 'Treasury & Zins-/Währungsrisiko', {
+      bereich: 'TRE', kpis: ['nettoverschuldungEbitda', 'zinsdeckung', 'hedgeQuote', 'durchschnittszins'],
+      kinder: [
+        n('tre-finanzierung', 3, 'Finanzierung & Verschuldung', {
+          bereich: 'TRE', kpis: ['nettoverschuldung', 'nettoverschuldungEbitda', 'zinsdeckung'],
+          kinder: [ n('tre-finanzierung-det', 4, 'Finanzierungsstruktur', { bereich: 'TRE', detail: 'finanzierung' }) ]
+        }),
+        n('tre-zins', 3, 'Zinsrisiko', {
+          bereich: 'TRE', kpis: ['durchschnittszins', 'zinsaufwand'],
+          kinder: [ n('tre-zins-det', 4, 'Zinsbindung & Sensitivität', { bereich: 'TRE', detail: 'zinsbindung' }) ]
+        }),
+        n('tre-fx', 3, 'Währungsrisiko', {
+          bereich: 'TRE', kpis: ['hedgeQuote', 'fxExposureOffen'],
+          kinder: [ n('tre-fx-det', 4, 'FX-Exposure je Währung', { bereich: 'TRE', detail: 'fx_exposure' }) ]
+        })
+      ]
     })
   ]
 })

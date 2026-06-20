@@ -31,7 +31,8 @@ export const MOCK = {
       vertriebskosten: 5.6, neukundenanteil: 24, rabattquote: 6.5,
       mitarbeiterFTE: 352, ueberstundenquote: 3.5, krankenstand: 4.6,
       offeneForderungen: 4.0, ueberfaelligeForderungen: 0.50, dso: 34, forderungsausfall: 0.6, klumpenrisikoTop3: 30,
-      co2ProRad: 110, co2Gesamt: 3100, energieJeRad: 48, oekostromanteil: 55, recyclingquote: 70
+      co2ProRad: 110, co2Gesamt: 3100, energieJeRad: 48, oekostromanteil: 55, recyclingquote: 70,
+      nettoverschuldung: 7.8, zinsaufwand: 0.32, durchschnittszins: 3.1, hedgeQuote: 70, fxExposureOffen: 1.2
     },
     '2024': {
       bruttoumsatz: 53.0, erloesschmaelerung: 3.3, nettoumsatz: 48.1,
@@ -53,7 +54,8 @@ export const MOCK = {
       vertriebskosten: 6.0, neukundenanteil: 26, rabattquote: 6.8,
       mitarbeiterFTE: 364, ueberstundenquote: 3.8, krankenstand: 4.7,
       offeneForderungen: 4.1, ueberfaelligeForderungen: 0.55, dso: 36, forderungsausfall: 0.7, klumpenrisikoTop3: 32,
-      co2ProRad: 104, co2Gesamt: 3050, energieJeRad: 46, oekostromanteil: 62, recyclingquote: 74
+      co2ProRad: 104, co2Gesamt: 3050, energieJeRad: 46, oekostromanteil: 62, recyclingquote: 74,
+      nettoverschuldung: 8.4, zinsaufwand: 0.38, durchschnittszins: 3.6, hedgeQuote: 72, fxExposureOffen: 1.4
     },
     '2025': {
       bruttoumsatz: 55.8, erloesschmaelerung: 3.8, nettoumsatz: 52.0,
@@ -75,7 +77,8 @@ export const MOCK = {
       vertriebskosten: 6.4, neukundenanteil: 28, rabattquote: 7.2,
       mitarbeiterFTE: 372, ueberstundenquote: 4.1, krankenstand: 4.9,
       offeneForderungen: 4.1, ueberfaelligeForderungen: 0.62, dso: 38, forderungsausfall: 0.8, klumpenrisikoTop3: 34,
-      co2ProRad: 98, co2Gesamt: 2980, energieJeRad: 44, oekostromanteil: 68, recyclingquote: 77
+      co2ProRad: 98, co2Gesamt: 2980, energieJeRad: 44, oekostromanteil: 68, recyclingquote: 77,
+      nettoverschuldung: 9.1, zinsaufwand: 0.45, durchschnittszins: 3.9, hedgeQuote: 74, fxExposureOffen: 1.6
     }
   },
 
@@ -186,8 +189,25 @@ export const MOCK = {
     energie_material: { titel: 'Energie & Material je Rad', spalten: ['Kennzahl','Wert','Ziel'],
       zeilen: [['Energie je Rad','44 kWh','42'],['Ökostromanteil','68 %','100 %'],['Aluminium-Rezyklat','41 %','60 %'],['Verpackung recycelt','82 %','90 %'],['Ausschussmaterial','2,1 %','1,5 %']] },
     kreislauf_sozial: { titel: 'Kreislauf & Soziales', spalten: ['Kennzahl','Wert','Trend'],
-      zeilen: [['Recyclingquote','77 %','▲'],['Reparaturquote (Leasing-Rückläufer)','64 %','▲'],['Betriebszugehörigkeit Ø','6,8 J','▬'],['Frauenanteil Führung','28 %','▲'],['Ausbildungsquote','5,1 %','▬']] }
+      zeilen: [['Recyclingquote','77 %','▲'],['Reparaturquote (Leasing-Rückläufer)','64 %','▲'],['Betriebszugehörigkeit Ø','6,8 J','▬'],['Frauenanteil Führung','28 %','▲'],['Ausbildungsquote','5,1 %','▬']] },
+
+    // --- Treasury & Zins-/Währungsrisiko ---
+    finanzierung: { titel: 'Finanzierungsstruktur (Mio €)', spalten: ['Instrument','Volumen','Zins','Laufzeit'],
+      zeilen: [['Bankdarlehen A (fest)','4,5','3,4 %','2028'],['Bankdarlehen B (variabel)','2,6','4,8 %','2027'],['Kontokorrent','1,2','5,5 %','revolv.'],['Leasingverbindlichkeiten','0,8','3,1 %','div.'],['Summe Finanzschulden','9,1','3,9 %','—']] },
+    zinsbindung: { titel: 'Zinsbindung & Sensitivität', spalten: ['Tranche','Typ','Volumen','Effekt +1 %'],
+      zeilen: [['Darlehen A','fest','4,5','—'],['Darlehen B','variabel','2,6','−26 T€'],['Kontokorrent','variabel','1,2','−12 T€'],['Variabel gesamt','—','3,8','−38 T€ p. a.']] },
+    fx_exposure: { titel: 'FX-Exposure je Währung (Mio €)', spalten: ['Währung','Exposure','gehedged','offen'],
+      zeilen: [['CHF (Schweiz)','4,8','3,6','1,2'],['USD (Beschaffung)','1,2','0,8','0,4'],['Gesamt','6,0','4,4','1,6']] }
   },
+
+  // Investitionsrechnung — Projekte (t0-Auszahlung negativ, danach Cashflows).
+  wacc: 8,
+  investitionen: [
+    { projekt: 'Lagerautomatisierung', invest: 0.8, cashflows: [0.18, 0.22, 0.25, 0.25, 0.25] },
+    { projekt: 'Lackiererei-Umstellung', invest: 1.0, cashflows: [0.30, 0.32, 0.34, 0.34, 0.30] },
+    { projekt: 'PV-Anlage (ESG)', invest: 0.6, cashflows: [0.09, 0.10, 0.11, 0.12, 0.13] },
+    { projekt: 'Onlineshop-Replatforming', invest: 0.5, cashflows: [0.20, 0.22, 0.18, 0.12, 0.08] }
+  ],
 
   // Portfolio (Produktgruppen) für Controlling-Instrumente (BCG-Matrix).
   // wachstum = Marktwachstum %, marktanteil = relativer Marktanteil (>1 = Marktführer)
