@@ -1,0 +1,77 @@
+# 10 · Controlling-Suite & digitales Controlling
+
+Ausbau des Berichtsbaums um sechs Controlling-Hauptbereiche — das fachliche
+Rückgrat, mit dem das Controlling (fast) jede Frage beantworten kann.
+
+## Die neuen Hauptbereiche (Ebene 2)
+
+| Bereich | Code | Schwerpunkt | Leit-KPIs |
+|---------|------|-------------|-----------|
+| Kosten- & Leistungsrechnung | `KLR` | Kostenarten/-stellen/-träger, Stückkosten | Herstellkosten/Rad, Gemeinkostenquote, Gesamtkosten |
+| Absatz- & Umsatzprognose | `FC` | rollierender Forecast, Prognosegüte, Orderbuch | Absatz-/Umsatzprognose, Prognosegüte |
+| Umsatz-, Kosten- & Erfolgsplanung | `PLAN` | Budget & Plan/Ist | Umsatz-/EBIT-Zielerreichung, Kostendisziplin |
+| Produktionsplanung | `PP` | Kapazität, Schichtplan, Programmabgleich | Kapazitätsauslastung, Plan-Erfüllung, Liefertermintreue |
+| Bestands- & Supply-Chain-Controlling | `SCC` | Bestände im Zusammenspiel EK/PR/VK | Lagerumschlag, Lieferfähigkeit, Überbestand |
+| Finanzbuchhaltung & Abschluss | `FIBU` | Monats-/Jahresabschluss, Bilanz, Rückstellungen | Betriebsergebnis, EK-Quote, Abschlussdauer |
+
+Jeder Bereich hat Themenbereiche (E3), Detailberichte (E4) und Historie (E5)
+wie der Rest des Baums — gleiche Engine, gleiche Rechte, gleiches Design.
+
+## Abgeleitete KPIs & bereichsübergreifende Abhängigkeiten
+
+Der rote Faden zieht sich durch die ganze Suite — abgeleitete Kennzahlen
+verknüpfen die Bereiche **explizit** (dokumentiert in `kpiRegistry.js`):
+
+```
+herstellkostenJeRad   = herstellkosten ÷ produktionsmenge        (KLR)
+gemeinkostenquote     = gemeinkosten ÷ gesamtkosten              (KLR)
+umsatzZielerreichung  = nettoumsatz ÷ umsatzplan                 (PLAN ← VK)
+ergebnisZielerreichung= ebit ÷ ebitPlan                          (PLAN ← FIN)
+kostendisziplin       = kostenplan ÷ gesamtkosten                (PLAN ← KLR)
+kapazitaetsauslastung = produktionsplan ÷ kapazität             (PP)
+planErfuellung        = produktionsmenge ÷ produktionsplan       (PP ← KLR)
+lagerumschlag         = wareneinsatz ÷ lagerbestand              (SCC ← FIN/LOG)
+betrieblichesErgebnis = handelsr. Ergebnis − neutrales Ergebnis  (FIBU, Abgrenzung)
+```
+
+Die **abweichende Controlling-Darstellung** ist als echte
+**Abgrenzungsrechnung** abgebildet: Die FiBu liefert das handelsrechtliche
+Ergebnis, das Controlling bereinigt um neutrale Posten → Betriebsergebnis
+(= EBIT). Sichtbar im Detailbericht „Abgrenzungsrechnung".
+
+## Querchecks — die Vertrauensschicht (`core/validierung.js`)
+
+Bereichsübergreifende Abstimm- und Plausibilitätsregeln, sichtbar im Reiter
+**Querchecks** (Topbar zeigt die Zahl harter Abstimmfehler):
+
+- **hart** (muss aufgehen): `Gesamtkosten = Nettoumsatz − EBIT`,
+  `Betriebsergebnis = EBIT`, `DB I = Umsatz − Wareneinsatz`,
+  `Produktionsplan ≤ Kapazität`, `Eigenkapital ≤ Bilanzsumme` …
+- **weich** (Plausibilität): Wareneinsatzquote im Band 50–70 %,
+  Umsatzprognose ≥ Auftragsbestand …
+
+So beantwortet das Tool automatisch: *„Stimmen die Zahlen untereinander?"*
+und *„Wo muss ich hinschauen?"* — die Grundlage, um Zahlen zu verantworten.
+
+## Fahrplan: vom altmodischen zum digitalen Controlling
+
+| Stufe | Was es bringt | Status |
+|-------|---------------|--------|
+| **Single Source** | Alle KPIs einmal definiert, eine Wahrheit, ein Design | ✅ |
+| **Drill-down 5 Ebenen** | Von GF bis Beleg, mit Historie | ✅ |
+| **Plan/Ist/Forecast** | Abgleiche über KLR/PLAN/PP/FC | ✅ |
+| **Querchecks** | Automatische Datenvalidierung & Abstimmung | ✅ |
+| **Self-Service BI** | Frage in Sprache → Maßnahmen aus Controller-Sicht | ✅ |
+| **Echte Daten (MSSQL)** | SQL je KPI, Backend angebunden | ⏳ du lieferst SQL |
+| **Maßnahmen-Tracking** | Maßnahme → Owner → Termin → Wirkung verfolgen | geplant |
+| **Kommentar/Storyline** | je KPI Kommentar + Management-Narrativ | geplant |
+| **Alerts** | rote Ampel/Quercheck-Fehler proaktiv melden | geplant |
+
+### Wie dich das zum „Head of Controlling" trägt
+- **Fast jede Frage** ist im Baum oder per Self-Service-BI beantwortbar.
+- **Maßnahmen** kommen mit Wirkung (Ergebnis & Liquidität) und Aufwand.
+- **Erklärungen** liefern KPI-Beschreibung + Abhängigkeit + Abgrenzung.
+- **Validierung & Querchecks** sichern ab, dass die Zahlen tragen.
+
+Nächste sinnvolle Schritte: echte MSSQL-Daten anbinden, dann
+Maßnahmen-Tracking + Alerts als eigene Module ergänzen.

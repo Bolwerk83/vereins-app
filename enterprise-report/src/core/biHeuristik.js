@@ -23,7 +23,14 @@ const STICHWORTE = [
   [/personal|mitarbeiter|fluktuation|hr/i, ['personalkosten', 'fluktuation']],
   [/it|shop-?verfügbar|system|pim/i, ['shopVerfuegbarkeit']],
   [/ebit|ergebnis|gewinn|profitab/i, ['ebit', 'dbQuote']],
-  [/leasing|restwert|flotte/i, ['nettoumsatz']]
+  [/leasing|restwert|flotte/i, ['nettoumsatz']],
+  // Controlling-Bereiche
+  [/kostenrechnung|klr|gemeinkost|herstellkost|kostenstelle|kostentr(ä|ae)ger|stückkost|stueckkost/i, ['herstellkostenJeRad', 'gemeinkostenquote', 'gesamtkosten']],
+  [/prognose|forecast|absatzprognose|vorhersage|orderbuch|auftragsbestand/i, ['absatzprognose', 'umsatzprognose', 'forecastGenauigkeit']],
+  [/planung|budget|plan-?ist|zielerreichung|erfolgsplan|soll-?ist/i, ['umsatzZielerreichung', 'kostendisziplin', 'ergebnisZielerreichung']],
+  [/produktionsplan|kapazit(ä|ae)t|schicht|fertigungsprogramm|auslastung/i, ['kapazitaetsauslastung', 'planErfuellungProduktion', 'schichtauslastung']],
+  [/lagercontrolling|bestandscontrolling|supply.?chain|lagerumschlag|lieferf(ä|ae)hig|servicegrad|überbestand|ueberbestand|abc/i, ['lagerumschlag', 'lieferfaehigkeit', 'ueberbestand', 'reichweite']],
+  [/fibu|finanzbuchhalt|abschluss|bilanz|rückstellung|rueckstellung|eigenkapital|abgrenzung|hgb/i, ['betrieblichesErgebnis', 'eigenkapitalquote', 'abschlussdauer', 'rueckstellungen']]
 ]
 
 function gematchteKpis(text) {

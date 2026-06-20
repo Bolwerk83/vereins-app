@@ -19,7 +19,14 @@ export const MOCK = {
       ausschuss: 1.8, auslastung: 84,
       lagerbestand: 8.9, reichweite: 52,
       personalkosten: 9.6, fluktuation: 8.4,
-      shopVerfuegbarkeit: 99.88, cashConversion: 48
+      shopVerfuegbarkeit: 99.88, cashConversion: 48,
+      produktionsmenge: 22100, herstellkosten: 28.2, gemeinkosten: 12.4, gesamtkosten: 45.5,
+      absatzprognose: 24000, umsatzprognose: 49.0, forecastGenauigkeit: 84, auftragsbestand: 5.4,
+      umsatzplan: 46.5, kostenplan: 44.0, ebitPlan: 2.0,
+      produktionsplan: 22500, kapazitaet: 26000, schichtauslastung: 82, liefertermintreue: 93,
+      lieferfaehigkeit: 95, ueberbestand: 2.4,
+      abschlussdauer: 10, rueckstellungen: 2.9, bilanzsumme: 24.5, eigenkapital: 9.6,
+      handelsrechtlichesErgebnis: 1.5, neutralesErgebnis: -0.2
     },
     '2024': {
       bruttoumsatz: 53.0, erloesschmaelerung: 3.3, nettoumsatz: 48.1,
@@ -29,7 +36,14 @@ export const MOCK = {
       ausschuss: 2.0, auslastung: 86,
       lagerbestand: 9.4, reichweite: 57,
       personalkosten: 10.0, fluktuation: 9.1,
-      shopVerfuegbarkeit: 99.85, cashConversion: 53
+      shopVerfuegbarkeit: 99.85, cashConversion: 53,
+      produktionsmenge: 23200, herstellkosten: 29.0, gemeinkosten: 13.0, gesamtkosten: 46.5,
+      absatzprognose: 25000, umsatzprognose: 51.5, forecastGenauigkeit: 86, auftragsbestand: 6.0,
+      umsatzplan: 49.0, kostenplan: 46.0, ebitPlan: 2.2,
+      produktionsplan: 23800, kapazitaet: 27000, schichtauslastung: 85, liefertermintreue: 92,
+      lieferfaehigkeit: 94, ueberbestand: 3.0,
+      abschlussdauer: 9, rueckstellungen: 3.2, bilanzsumme: 26.0, eigenkapital: 10.2,
+      handelsrechtlichesErgebnis: 1.4, neutralesErgebnis: -0.2
     },
     '2025': {
       bruttoumsatz: 55.8, erloesschmaelerung: 3.8, nettoumsatz: 52.0,
@@ -39,7 +53,14 @@ export const MOCK = {
       ausschuss: 2.1, auslastung: 88,
       lagerbestand: 11.2, reichweite: 64,
       personalkosten: 10.5, fluktuation: 9.8,
-      shopVerfuegbarkeit: 99.82, cashConversion: 58
+      shopVerfuegbarkeit: 99.82, cashConversion: 58,
+      produktionsmenge: 24800, herstellkosten: 31.5, gemeinkosten: 14.6, gesamtkosten: 50.6,
+      absatzprognose: 26500, umsatzprognose: 55.0, forecastGenauigkeit: 88, auftragsbestand: 6.8,
+      umsatzplan: 54.0, kostenplan: 51.0, ebitPlan: 2.0,
+      produktionsplan: 25500, kapazitaet: 28000, schichtauslastung: 88, liefertermintreue: 91,
+      lieferfaehigkeit: 93, ueberbestand: 3.5,
+      abschlussdauer: 8, rueckstellungen: 3.6, bilanzsumme: 28.5, eigenkapital: 11.2,
+      handelsrechtlichesErgebnis: 1.1, neutralesErgebnis: -0.3
     }
   },
 
@@ -62,6 +83,56 @@ export const MOCK = {
     projekte: { titel: 'IT-Projektportfolio', spalten: ['Projekt','Budget','Fortschritt','Status'],
       zeilen: [['Onlineshop-Replatforming','0,45 Mio','60 %','im Plan'],['PIM (Artikeldaten)','0,12 Mio','35 %','verzögert']] },
     guv: { titel: 'GuV-Staffel (2025)', spalten: ['Position','Mio €','Hinweis'],
-      zeilen: [['Bruttoumsatz','55,8','E-Bikes treiben Schnitt'],['− Erlösschmälerung','−3,8','Online-Retouren'],['= Nettoumsatz','52,0','+8,1 %'],['− Wareneinsatz','−32,2','über Plan'],['= DB I','19,8','38,1 %'],['− Personal','−10,5','Filialnetz'],['− übrige OpEx','−7,05','Marketing/Logistik'],['= EBITDA','2,1','4,0 %'],['= EBIT','1,4','2,7 %']] }
+      zeilen: [['Bruttoumsatz','55,8','E-Bikes treiben Schnitt'],['− Erlösschmälerung','−3,8','Online-Retouren'],['= Nettoumsatz','52,0','+8,1 %'],['− Wareneinsatz','−32,2','über Plan'],['= DB I','19,8','38,1 %'],['− Personal','−10,5','Filialnetz'],['− übrige OpEx','−7,05','Marketing/Logistik'],['= EBITDA','2,1','4,0 %'],['= EBIT','1,4','2,7 %']] },
+
+    // --- Kosten- & Leistungsrechnung ---
+    kostenarten: { titel: 'Kostenartenübersicht (2025)', spalten: ['Kostenart','Mio €','% Gesamt'],
+      zeilen: [['Materialkosten','24,8','49 %'],['Personalkosten','10,5','21 %'],['Abschreibungen','0,7','1 %'],['Energie/Raum','3,1','6 %'],['Marketing/Vertrieb','4,9','10 %'],['Logistik','2,3','5 %'],['Sonstige','4,3','8 %'],['Gesamtkosten','50,6','100 %']] },
+    kostenstellen: { titel: 'Kostenstellen Plan/Ist (BAB, Mio €)', spalten: ['Kostenstelle','Plan','Ist','Abw.'],
+      zeilen: [['Fertigung','18,2','18,9','+0,7'],['Montage','6,4','6,6','+0,2'],['Logistik','2,2','2,3','+0,1'],['Vertrieb','9,8','9,6','−0,2'],['Verwaltung','5,1','5,0','−0,1'],['IT','1,1','1,1','0,0']] },
+    kostentraeger: { titel: 'Deckungsbeitrag je Produktgruppe', spalten: ['Produktgruppe','Erlös Mio €','HK Mio €','DB %'],
+      zeilen: [['E-Bikes','30,1','18,9','37 %'],['City/Trekking','9,6','6,3','34 %'],['Teile','8,8','5,4','39 %'],['Zubehör','5,7','3,2','44 %'],['Bekleidung','3,7','2,5','32 %']] },
+
+    // --- Absatz- & Umsatzprognose ---
+    absatz_forecast: { titel: 'Prognose je Warengruppe (Stück, nächste Periode)', spalten: ['Warengruppe','Ist','Prognose','Δ %'],
+      zeilen: [['E-Bikes','14.300','15.600','+9 %'],['City/Trekking','7.200','7.500','+4 %'],['Kinder/Sonstige','3.300','3.400','+3 %'],['Gesamt Räder','24.800','26.500','+7 %']] },
+    forecast_guete: { titel: 'Prognosegüte (Plan vs. Ist Umsatz, Mio €)', spalten: ['Periode','Prognose','Ist','Abw. %'],
+      zeilen: [['2023','49,0','47,2','−3,7 %'],['2024','51,5','48,1','−6,6 %'],['2025','55,0','52,0','−5,5 %']] },
+    auftragsbestand_kanal: { titel: 'Orderbuch je Kanal (Mio €)', spalten: ['Kanal','Auftragsbestand','Reichweite'],
+      zeilen: [['Onlineshop','2,6','21 Tg'],['Filialen','1,9','17 Tg'],['B2B/Leasing','2,3','46 Tg'],['Gesamt','6,8','—']] },
+
+    // --- Umsatz-, Kosten- & Erfolgsplanung ---
+    umsatzplan_kanal: { titel: 'Umsatzplan je Kanal 2025 (Mio €)', spalten: ['Kanal','Plan','Ist','Erfüllung'],
+      zeilen: [['Onlineshop','24,5','23,4','96 %'],['Filialen DE','13,2','13,0','98 %'],['Filialen CH','6,4','6,2','97 %'],['Filialen NL','5,5','5,2','95 %'],['B2B','4,4','4,2','95 %'],['Gesamt','54,0','52,0','96 %']] },
+    kostenplan_bereich: { titel: 'Kostenbudget je Bereich 2025 (Mio €)', spalten: ['Bereich','Plan','Ist','Abw.'],
+      zeilen: [['Material/Einkauf','25,5','24,8','−0,7'],['Produktion','7,1','7,4','+0,3'],['Personal','10,4','10,5','+0,1'],['Marketing/Vertrieb','4,8','4,9','+0,1'],['Logistik','2,1','2,3','+0,2'],['Verwaltung/IT','1,1','1,1','0,0'],['Gesamt','51,0','50,6','−0,4']] },
+    plan_guv: { titel: 'Plan-GuV 2025 (Plan/Ist, Mio €)', spalten: ['Position','Plan','Ist','Abw.'],
+      zeilen: [['Nettoumsatz','54,0','52,0','−2,0'],['− Wareneinsatz','−31,5','−32,2','−0,7'],['= DB I','22,5','19,8','−2,7'],['− Fixkosten','−20,5','−18,4','+2,1'],['= EBIT','2,0','1,4','−0,6']] },
+
+    // --- Produktionsplanung ---
+    kapazitaet_linien: { titel: 'Kapazität je Fertigungslinie (Räder/Periode)', spalten: ['Linie','Kapazität','Plan','Auslastung'],
+      zeilen: [['Rahmenbau','9.500','8.900','94 %'],['Lackiererei','11.000','9.800','89 %'],['Endmontage E-Bike','12.500','11.700','94 %'],['Endmontage City','8.000','6.900','86 %'],['Gesamt','28.000','25.500','91 %']] },
+    schichtplan: { titel: 'Schichtplan KW (Endmontage)', spalten: ['Schicht','Tage','MA','Kap./Tag','Status'],
+      zeilen: [['Frühschicht','Mo–Fr','24','110','besetzt'],['Spätschicht','Mo–Fr','22','100','besetzt'],['Nachtschicht','Mo–Do','12','55','Engpass'],['Samstag-Sonderschicht','Sa','10','45','optional']] },
+    prod_abgleich: { titel: 'Programmabgleich Forecast↔Plan↔Ist (Räder)', spalten: ['Warengruppe','Forecast','Plan','Ist','Δ Plan/Ist'],
+      zeilen: [['E-Bikes','15.600','15.000','14.300','−700'],['City/Trekking','7.500','7.300','7.200','−100'],['Kinder/Sonstige','3.400','3.200','3.300','+100'],['Gesamt','26.500','25.500','24.800','−700']] },
+
+    // --- Bestands- & Supply-Chain-Controlling ---
+    abc_analyse: { titel: 'ABC/XYZ-Analyse Bestand', spalten: ['Klasse','Artikel-Anteil','Wert-Anteil','Ø Reichweite'],
+      zeilen: [['A / X','8 %','62 %','34 Tg'],['A / Y','6 %','14 %','41 Tg'],['B','22 %','18 %','58 Tg'],['C / Z','64 %','6 %','120 Tg']] },
+    lieferfaehigkeit_gruppe: { titel: 'Servicegrad je Warengruppe', spalten: ['Warengruppe','Servicegrad','Fehlmengen','Ziel'],
+      zeilen: [['E-Bikes','96 %','niedrig','98 %'],['Teile','89 %','mittel','95 %'],['Zubehör','95 %','niedrig','97 %'],['Bekleidung','91 %','Saisonlücken','95 %']] },
+    ueberbestand_massnahmen: { titel: 'Überbestände & Maßnahmen', spalten: ['Warengruppe','Überbestand Mio €','Treiber','Maßnahme'],
+      zeilen: [['Teile','1,4','Sicherheitsbestand (↔ Einkauf)','Lieferantenrückgabe'],['Bekleidung','1,1','Saisonrest (↔ Vertrieb)','Outlet-Abverkauf'],['E-Bikes','0,6','Modellwechsel (↔ Produktion)','Abverkaufsaktion'],['Zubehör','0,4','Langsamdreher','Sortiment straffen']] },
+
+    // --- Finanzbuchhaltung & Abschluss ---
+    abschluss_status: { titel: 'Monatsabschluss — Status', spalten: ['Aufgabe','Verantwortlich','Status','Termin'],
+      zeilen: [['Abgrenzungen gebucht','FiBu','erledigt','WT 3'],['Bestandsbewertung','KLR/SCC','offen','WT 5'],['Rückstellungen aktualisiert','FiBu','in Arbeit','WT 5'],['Intercompany-Abstimmung','FiBu','offen','WT 6'],['Reporting freigegeben','Controlling','wartet','WT 8']] },
+    rueckstellungsspiegel: { titel: 'Rückstellungsspiegel (Mio €)', spalten: ['Art','Stand VJ','Zuführung','Verbrauch','Stand'],
+      zeilen: [['Garantie/Gewährleistung','1,2','0,6','−0,4','1,4'],['Personal (Urlaub/Boni)','1,1','0,5','−0,3','1,3'],['Drohende Verluste','0,5','0,2','−0,1','0,6'],['Sonstige','0,4','0,1','−0,2','0,3'],['Gesamt','3,2','1,4','−1,0','3,6']] },
+    bilanz: { titel: 'Bilanz kompakt 2025 (Mio €)', spalten: ['Position','Mio €','Seite'],
+      zeilen: [['Anlagevermögen','9,8','Aktiva'],['Vorräte','11,2','Aktiva'],['Forderungen','4,1','Aktiva'],['Liquide Mittel','3,4','Aktiva'],['Eigenkapital','11,2','Passiva'],['Rückstellungen','3,6','Passiva'],['Verbindlichkeiten','13,7','Passiva'],['Bilanzsumme','28,5','—']] },
+    abgrenzungsrechnung: { titel: 'Abgrenzungsrechnung — FiBu → Controlling (Mio €)', spalten: ['Position','FiBu','Abgrenzung','Controlling'],
+      zeilen: [['Ergebnis lt. GuV (HGB)','1,1','—','—'],['− neutrale Erträge','—','−0,1','—'],['+ neutrale Aufwendungen','—','+0,4','—'],['= Betriebsergebnis','—','—','1,4'],['Hinweis','periodengerecht','betriebsfremd/außerord.','operativ steuerbar']] }
   }
 }

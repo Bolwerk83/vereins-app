@@ -104,6 +104,124 @@ export const BERICHTSBAUM = n('konzern', 1, 'VeloWerk Gruppe · Management Repor
           kinder: [ n('fin-guv-det', 4, 'GuV-Staffel', { bereich: 'FIN', detail: 'guv' }) ]
         })
       ]
+    }),
+
+    // ---- E2 Fachbereich: Kosten- & Leistungsrechnung --------------------
+    n('klr', 2, 'Kosten- & Leistungsrechnung', {
+      bereich: 'KLR', kpis: ['herstellkostenJeRad', 'gemeinkostenquote', 'gesamtkosten', 'produktionsmenge'],
+      kinder: [
+        n('klr-kostenarten', 3, 'Kostenarten', {
+          bereich: 'KLR', kpis: ['gemeinkostenquote', 'gesamtkosten'],
+          kinder: [ n('klr-kostenarten-det', 4, 'Kostenartenübersicht', { bereich: 'KLR', detail: 'kostenarten' }) ]
+        }),
+        n('klr-kostenstellen', 3, 'Kostenstellen (BAB)', {
+          bereich: 'KLR', kpis: ['gesamtkosten'],
+          kinder: [ n('klr-kostenstellen-det', 4, 'Kostenstellen Plan/Ist', { bereich: 'KLR', detail: 'kostenstellen' }) ]
+        }),
+        n('klr-kostentraeger', 3, 'Kostenträger', {
+          bereich: 'KLR', kpis: ['herstellkostenJeRad'],
+          kinder: [ n('klr-kostentraeger-det', 4, 'Deckungsbeitrag je Produktgruppe', { bereich: 'KLR', detail: 'kostentraeger' }) ]
+        })
+      ]
+    }),
+
+    // ---- E2 Fachbereich: Absatz- & Umsatzprognose -----------------------
+    n('fc', 2, 'Absatz- & Umsatzprognose', {
+      bereich: 'FC', kpis: ['absatzprognose', 'umsatzprognose', 'forecastGenauigkeit', 'prognoseWachstum'],
+      kinder: [
+        n('fc-absatz', 3, 'Absatzprognose', {
+          bereich: 'FC', kpis: ['absatzprognose', 'umsatzprognose'],
+          kinder: [ n('fc-absatz-det', 4, 'Prognose je Warengruppe', { bereich: 'FC', detail: 'absatz_forecast' }) ]
+        }),
+        n('fc-guete', 3, 'Prognosegüte', {
+          bereich: 'FC', kpis: ['forecastGenauigkeit'],
+          kinder: [ n('fc-guete-det', 4, 'Plan/Ist-Historie', { bereich: 'FC', detail: 'forecast_guete' }) ]
+        }),
+        n('fc-auftrag', 3, 'Auftragsbestand', {
+          bereich: 'FC', kpis: ['auftragsbestand'],
+          kinder: [ n('fc-auftrag-det', 4, 'Orderbuch je Kanal', { bereich: 'FC', detail: 'auftragsbestand_kanal' }) ]
+        })
+      ]
+    }),
+
+    // ---- E2 Fachbereich: Umsatz-, Kosten- & Erfolgsplanung --------------
+    n('plan', 2, 'Umsatz-, Kosten- & Erfolgsplanung', {
+      bereich: 'PLAN', kpis: ['umsatzZielerreichung', 'kostendisziplin', 'ergebnisZielerreichung', 'ebitPlan'],
+      kinder: [
+        n('plan-umsatz', 3, 'Umsatzplanung', {
+          bereich: 'PLAN', kpis: ['umsatzZielerreichung', 'umsatzplan'],
+          kinder: [ n('plan-umsatz-det', 4, 'Umsatzplan je Kanal', { bereich: 'PLAN', detail: 'umsatzplan_kanal' }) ]
+        }),
+        n('plan-kosten', 3, 'Kostenplanung', {
+          bereich: 'PLAN', kpis: ['kostendisziplin', 'kostenplan'],
+          kinder: [ n('plan-kosten-det', 4, 'Kostenbudget je Bereich', { bereich: 'PLAN', detail: 'kostenplan_bereich' }) ]
+        }),
+        n('plan-erfolg', 3, 'Erfolgsplanung', {
+          bereich: 'PLAN', kpis: ['ergebnisZielerreichung', 'ebitPlan'],
+          kinder: [ n('plan-erfolg-det', 4, 'Plan-GuV (Plan/Ist)', { bereich: 'PLAN', detail: 'plan_guv' }) ]
+        })
+      ]
+    }),
+
+    // ---- E2 Fachbereich: Produktionsplanung -----------------------------
+    n('pp', 2, 'Produktionsplanung', {
+      bereich: 'PP', kpis: ['kapazitaetsauslastung', 'planErfuellungProduktion', 'schichtauslastung', 'liefertermintreue'],
+      kinder: [
+        n('pp-kapazitaet', 3, 'Kapazität & Auslastung', {
+          bereich: 'PP', kpis: ['kapazitaetsauslastung', 'kapazitaet', 'produktionsplan'],
+          kinder: [ n('pp-kapazitaet-det', 4, 'Kapazität je Fertigungslinie', { bereich: 'PP', detail: 'kapazitaet_linien' }) ]
+        }),
+        n('pp-schicht', 3, 'Schichtplanung', {
+          bereich: 'PP', kpis: ['schichtauslastung', 'liefertermintreue'],
+          kinder: [ n('pp-schicht-det', 4, 'Schichtplan', { bereich: 'PP', detail: 'schichtplan' }) ]
+        }),
+        n('pp-abgleich', 3, 'Plan/Ist/Forecast-Abgleich', {
+          bereich: 'PP', kpis: ['planErfuellungProduktion'],
+          kinder: [ n('pp-abgleich-det', 4, 'Programmabgleich (Forecast↔Plan↔Ist)', { bereich: 'PP', detail: 'prod_abgleich' }) ]
+        })
+      ]
+    }),
+
+    // ---- E2 Fachbereich: Bestands- & Supply-Chain-Controlling -----------
+    n('scc', 2, 'Bestands- & Supply-Chain-Controlling', {
+      bereich: 'SCC', kpis: ['lagerumschlag', 'lieferfaehigkeit', 'ueberbestand', 'reichweite'],
+      kinder: [
+        n('scc-struktur', 3, 'Bestandsstruktur (ABC/XYZ)', {
+          bereich: 'SCC', kpis: ['lagerumschlag', 'reichweite'],
+          kinder: [ n('scc-struktur-det', 4, 'ABC/XYZ-Analyse', { bereich: 'SCC', detail: 'abc_analyse' }) ]
+        }),
+        n('scc-service', 3, 'Lieferfähigkeit & Service (↔ Vertrieb)', {
+          bereich: 'SCC', kpis: ['lieferfaehigkeit'],
+          kinder: [ n('scc-service-det', 4, 'Servicegrad je Warengruppe', { bereich: 'SCC', detail: 'lieferfaehigkeit_gruppe' }) ]
+        }),
+        n('scc-ueberbestand', 3, 'Überbestände (↔ Einkauf/Produktion)', {
+          bereich: 'SCC', kpis: ['ueberbestand'],
+          kinder: [ n('scc-ueberbestand-det', 4, 'Überbestände & Maßnahmen', { bereich: 'SCC', detail: 'ueberbestand_massnahmen' }) ]
+        })
+      ]
+    }),
+
+    // ---- E2 Fachbereich: Finanzbuchhaltung & Abschluss ------------------
+    n('fibu', 2, 'Finanzbuchhaltung & Abschluss', {
+      bereich: 'FIBU', kpis: ['betrieblichesErgebnis', 'eigenkapitalquote', 'abschlussdauer', 'rueckstellungen'],
+      kinder: [
+        n('fibu-abschluss', 3, 'Monats- & Jahresabschluss', {
+          bereich: 'FIBU', kpis: ['abschlussdauer'],
+          kinder: [ n('fibu-abschluss-det', 4, 'Abschluss-Status', { bereich: 'FIBU', detail: 'abschluss_status' }) ]
+        }),
+        n('fibu-rueckstellungen', 3, 'Rückstellungen', {
+          bereich: 'FIBU', kpis: ['rueckstellungen'],
+          kinder: [ n('fibu-rueckstellungen-det', 4, 'Rückstellungsspiegel', { bereich: 'FIBU', detail: 'rueckstellungsspiegel' }) ]
+        }),
+        n('fibu-bilanz', 3, 'GuV & Bilanz', {
+          bereich: 'FIBU', kpis: ['eigenkapitalquote', 'bilanzsumme'],
+          kinder: [ n('fibu-bilanz-det', 4, 'Bilanz kompakt', { bereich: 'FIBU', detail: 'bilanz' }) ]
+        }),
+        n('fibu-abgrenzung', 3, 'Abgrenzung FiBu ↔ Controlling', {
+          bereich: 'FIBU', kpis: ['betrieblichesErgebnis', 'neutralesErgebnis', 'handelsrechtlichesErgebnis'],
+          kinder: [ n('fibu-abgrenzung-det', 4, 'Abgrenzungsrechnung (Überleitung)', { bereich: 'FIBU', detail: 'abgrenzungsrechnung' }) ]
+        })
+      ]
     })
   ]
 })

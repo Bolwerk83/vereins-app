@@ -31,7 +31,24 @@ const ROHE_KPIS = {
   ausschuss: 'ausschuss', auslastung: 'auslastung',
   lagerbestand: 'lagerbestand', reichweite: 'reichweite',
   personalkosten: 'personalkosten', fluktuation: 'fluktuation',
-  shop_verfuegbarkeit: 'shopVerfuegbarkeit', cash_conversion: 'cashConversion'
+  shop_verfuegbarkeit: 'shopVerfuegbarkeit', cash_conversion: 'cashConversion',
+  // Kosten- & Leistungsrechnung
+  produktionsmenge: 'produktionsmenge', herstellkosten: 'herstellkosten',
+  gemeinkosten: 'gemeinkosten', gesamtkosten: 'gesamtkosten',
+  // Absatz- & Umsatzprognose
+  absatzprognose: 'absatzprognose', umsatzprognose: 'umsatzprognose',
+  forecast_genauigkeit: 'forecastGenauigkeit', auftragsbestand: 'auftragsbestand',
+  // Umsatz-, Kosten- & Erfolgsplanung
+  umsatzplan: 'umsatzplan', kostenplan: 'kostenplan', ebit_plan: 'ebitPlan',
+  // Produktionsplanung
+  produktionsplan: 'produktionsplan', kapazitaet: 'kapazitaet',
+  schichtauslastung: 'schichtauslastung', liefertermintreue: 'liefertermintreue',
+  // Bestands- & Supply-Chain-Controlling
+  lieferfaehigkeit: 'lieferfaehigkeit', ueberbestand: 'ueberbestand',
+  // Finanzbuchhaltung & Abschluss
+  abschlussdauer: 'abschlussdauer', rueckstellungen: 'rueckstellungen',
+  bilanzsumme: 'bilanzsumme', eigenkapital: 'eigenkapital',
+  handelsrechtliches_ergebnis: 'handelsrechtlichesErgebnis', neutrales_ergebnis: 'neutralesErgebnis'
 }
 
 const sqlPfad = (ref) => join(SQL_DIR, `${ref}.kpi.sql`)

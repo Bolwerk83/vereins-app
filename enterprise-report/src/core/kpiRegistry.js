@@ -157,6 +157,233 @@ export const KPI = {
     bereich: 'FIN', ziel: 40, richtung: 'tief_gut', warn: 0.8,
     beschreibung: 'Kapitalbindungsdauer. Wird durch Bestandsreichweite getrieben.',
     sqlRef: 'cash_conversion', abhaengig: ['reichweite'], security: null
+  },
+
+  // ---- Kosten- & Leistungsrechnung (KLR) -------------------------------
+  produktionsmenge: {
+    id: 'produktionsmenge', name: 'Produktionsmenge', einheit: 'count',
+    bereich: 'KLR', ziel: 24800, richtung: 'hoch_gut',
+    beschreibung: 'Gefertigte Räder p. a. — Bezugsgröße der Stückkostenrechnung.',
+    sqlRef: 'produktionsmenge', abhaengig: [], security: null
+  },
+  herstellkosten: {
+    id: 'herstellkosten', name: 'Herstellkosten', einheit: 'eur_mio',
+    bereich: 'KLR', ziel: 31.5, richtung: 'tief_gut',
+    beschreibung: 'Herstellkosten gesamt (Material + Fertigung), Kostenträgerrechnung.',
+    sqlRef: 'herstellkosten', abhaengig: [], security: null
+  },
+  gemeinkosten: {
+    id: 'gemeinkosten', name: 'Gemeinkosten', einheit: 'eur_mio',
+    bereich: 'KLR', ziel: null, richtung: 'tief_gut',
+    beschreibung: 'Nicht direkt zurechenbare Kosten (Verwaltung, Vertrieb, …).',
+    sqlRef: 'gemeinkosten', abhaengig: [], security: null
+  },
+  gesamtkosten: {
+    id: 'gesamtkosten', name: 'Gesamtkosten', einheit: 'eur_mio',
+    bereich: 'KLR', ziel: 50.6, richtung: 'tief_gut',
+    beschreibung: 'Gesamte Periodenkosten der KLR (Einzel- + Gemeinkosten).',
+    sqlRef: 'gesamtkosten', abhaengig: [], security: null
+  },
+  herstellkostenJeRad: {
+    id: 'herstellkostenJeRad', name: 'Herstellkosten / Rad', einheit: 'eur',
+    bereich: 'KLR', ziel: 1280, richtung: 'tief_gut', warn: 0.97,
+    beschreibung: 'Herstellkosten je gefertigtem Rad. Abgeleitet (Herstellkosten ÷ Menge).',
+    sqlRef: null, abhaengig: ['herstellkosten', 'produktionsmenge'],
+    berechne: (v) => (v.herstellkosten * 1e6) / v.produktionsmenge, security: null
+  },
+  gemeinkostenquote: {
+    id: 'gemeinkostenquote', name: 'Gemeinkostenquote', einheit: 'percent',
+    bereich: 'KLR', ziel: 28, richtung: 'tief_gut', warn: 0.97,
+    beschreibung: 'Gemeinkosten in % der Gesamtkosten. Abgeleitet.',
+    sqlRef: null, abhaengig: ['gemeinkosten', 'gesamtkosten'],
+    berechne: (v) => (v.gemeinkosten / v.gesamtkosten) * 100, security: null
+  },
+
+  // ---- Absatz- & Umsatzprognose (FC) -----------------------------------
+  absatzprognose: {
+    id: 'absatzprognose', name: 'Absatzprognose', einheit: 'count',
+    bereich: 'FC', ziel: 26500, richtung: 'hoch_gut',
+    beschreibung: 'Prognostizierte Absatzmenge (rollierend, nächste Periode).',
+    sqlRef: 'absatzprognose', abhaengig: [], security: null
+  },
+  umsatzprognose: {
+    id: 'umsatzprognose', name: 'Umsatzprognose', einheit: 'eur_mio',
+    bereich: 'FC', ziel: 55.0, richtung: 'hoch_gut',
+    beschreibung: 'Prognostizierter Nettoumsatz (rollierend).',
+    sqlRef: 'umsatzprognose', abhaengig: [], security: null
+  },
+  forecastGenauigkeit: {
+    id: 'forecastGenauigkeit', name: 'Prognosegüte', einheit: 'percent',
+    bereich: 'FC', ziel: 90, richtung: 'hoch_gut', warn: 0.95,
+    beschreibung: 'Prognosegüte (100 − MAPE) der letzten Perioden.',
+    sqlRef: 'forecast_genauigkeit', abhaengig: [], security: null
+  },
+  auftragsbestand: {
+    id: 'auftragsbestand', name: 'Auftragsbestand', einheit: 'eur_mio',
+    bereich: 'FC', ziel: null, richtung: 'hoch_gut',
+    beschreibung: 'Orderbuch als Frühindikator für den künftigen Umsatz.',
+    sqlRef: 'auftragsbestand', abhaengig: [], security: null
+  },
+  prognoseWachstum: {
+    id: 'prognoseWachstum', name: 'Prognost. Wachstum', einheit: 'percent',
+    bereich: 'FC', ziel: 5, richtung: 'hoch_gut',
+    beschreibung: 'Erwartetes Umsatzwachstum ggü. Ist. Abgeleitet (Umsatzprognose vs. Nettoumsatz).',
+    sqlRef: null, abhaengig: ['umsatzprognose', 'nettoumsatz'],
+    berechne: (v) => (v.umsatzprognose / v.nettoumsatz - 1) * 100, security: null
+  },
+
+  // ---- Umsatz-, Kosten- & Erfolgsplanung (PLAN) ------------------------
+  umsatzplan: {
+    id: 'umsatzplan', name: 'Umsatzplan', einheit: 'eur_mio',
+    bereich: 'PLAN', ziel: null, richtung: 'hoch_gut',
+    beschreibung: 'Geplanter Nettoumsatz der Periode (Budget).',
+    sqlRef: 'umsatzplan', abhaengig: [], security: null
+  },
+  kostenplan: {
+    id: 'kostenplan', name: 'Kostenplan', einheit: 'eur_mio',
+    bereich: 'PLAN', ziel: null, richtung: 'tief_gut',
+    beschreibung: 'Geplante Gesamtkosten der Periode (Budget).',
+    sqlRef: 'kostenplan', abhaengig: [], security: null
+  },
+  ebitPlan: {
+    id: 'ebitPlan', name: 'EBIT-Plan', einheit: 'eur_mio',
+    bereich: 'PLAN', ziel: null, richtung: 'hoch_gut',
+    beschreibung: 'Geplantes operatives Ergebnis (Budget).',
+    sqlRef: 'ebit_plan', abhaengig: [], security: null
+  },
+  umsatzZielerreichung: {
+    id: 'umsatzZielerreichung', name: 'Umsatz-Zielerreichung', einheit: 'percent',
+    bereich: 'PLAN', ziel: 100, richtung: 'hoch_gut', warn: 0.95,
+    beschreibung: 'Ist-Nettoumsatz in % vom Plan. Abgeleitet.',
+    sqlRef: null, abhaengig: ['nettoumsatz', 'umsatzplan'],
+    berechne: (v) => (v.nettoumsatz / v.umsatzplan) * 100, security: null
+  },
+  ergebnisZielerreichung: {
+    id: 'ergebnisZielerreichung', name: 'EBIT-Zielerreichung', einheit: 'percent',
+    bereich: 'PLAN', ziel: 100, richtung: 'hoch_gut', warn: 0.9,
+    beschreibung: 'Ist-EBIT in % vom Plan. Abgeleitet — zeigt die Ergebnislücke.',
+    sqlRef: null, abhaengig: ['ebit', 'ebitPlan'],
+    berechne: (v) => (v.ebit / v.ebitPlan) * 100, security: null
+  },
+  kostendisziplin: {
+    id: 'kostendisziplin', name: 'Kostendisziplin', einheit: 'percent',
+    bereich: 'PLAN', ziel: 100, richtung: 'hoch_gut', warn: 0.98,
+    beschreibung: 'Kostenplan in % der Ist-Gesamtkosten (≥100 = im Budget). Abgeleitet.',
+    sqlRef: null, abhaengig: ['kostenplan', 'gesamtkosten'],
+    berechne: (v) => (v.kostenplan / v.gesamtkosten) * 100, security: null
+  },
+
+  // ---- Produktionsplanung (PP) -----------------------------------------
+  produktionsplan: {
+    id: 'produktionsplan', name: 'Produktionsplan', einheit: 'count',
+    bereich: 'PP', ziel: null, richtung: 'hoch_gut',
+    beschreibung: 'Geplante Fertigungsmenge der Periode (Programmplanung).',
+    sqlRef: 'produktionsplan', abhaengig: [], security: null
+  },
+  kapazitaet: {
+    id: 'kapazitaet', name: 'Kapazität', einheit: 'count',
+    bereich: 'PP', ziel: null, richtung: 'hoch_gut',
+    beschreibung: 'Verfügbare Fertigungskapazität (Räder/Periode) aus dem Schichtmodell.',
+    sqlRef: 'kapazitaet', abhaengig: [], security: null
+  },
+  schichtauslastung: {
+    id: 'schichtauslastung', name: 'Schichtauslastung', einheit: 'percent0',
+    bereich: 'PP', ziel: 85, richtung: 'hoch_gut',
+    beschreibung: 'Ist-Auslastung der geplanten Schichten.',
+    sqlRef: 'schichtauslastung', abhaengig: [], security: null
+  },
+  liefertermintreue: {
+    id: 'liefertermintreue', name: 'Liefertermintreue', einheit: 'percent0',
+    bereich: 'PP', ziel: 95, richtung: 'hoch_gut', warn: 0.95,
+    beschreibung: 'Termingerecht fertiggestellte Fertigungsaufträge.',
+    sqlRef: 'liefertermintreue', abhaengig: [], security: null
+  },
+  kapazitaetsauslastung: {
+    id: 'kapazitaetsauslastung', name: 'Kapazitätsauslastung (Plan)', einheit: 'percent',
+    bereich: 'PP', ziel: 90, richtung: 'hoch_gut', warn: 0.9,
+    beschreibung: 'Produktionsplan in % der Kapazität. Abgeleitet — Engpass-/Leerstands-Anzeige.',
+    sqlRef: null, abhaengig: ['produktionsplan', 'kapazitaet'],
+    berechne: (v) => (v.produktionsplan / v.kapazitaet) * 100, security: null
+  },
+  planErfuellungProduktion: {
+    id: 'planErfuellungProduktion', name: 'Plan-Erfüllung Produktion', einheit: 'percent',
+    bereich: 'PP', ziel: 100, richtung: 'hoch_gut', warn: 0.97,
+    beschreibung: 'Ist-Menge in % vom Produktionsplan. Abgeleitet (Abgleich Plan↔Ist).',
+    sqlRef: null, abhaengig: ['produktionsmenge', 'produktionsplan'],
+    berechne: (v) => (v.produktionsmenge / v.produktionsplan) * 100, security: null
+  },
+
+  // ---- Bestands- & Supply-Chain-Controlling (SCC) ----------------------
+  lieferfaehigkeit: {
+    id: 'lieferfaehigkeit', name: 'Lieferfähigkeit', einheit: 'percent',
+    bereich: 'SCC', ziel: 97, richtung: 'hoch_gut', warn: 0.95,
+    beschreibung: 'Servicegrad ab Lager (Abstimmung mit Vertrieb). Verfügbarkeit zugesagter Ware.',
+    sqlRef: 'lieferfaehigkeit', abhaengig: [], security: null
+  },
+  ueberbestand: {
+    id: 'ueberbestand', name: 'Überbestand', einheit: 'eur_mio',
+    bereich: 'SCC', ziel: 2.0, richtung: 'tief_gut', warn: 0.8,
+    beschreibung: 'Bestand über Ziel-Reichweite (Abstimmung mit Einkauf/Produktion).',
+    sqlRef: 'ueberbestand', abhaengig: [], security: null
+  },
+  lagerumschlag: {
+    id: 'lagerumschlag', name: 'Lagerumschlag', einheit: 'faktor',
+    bereich: 'SCC', ziel: 5, richtung: 'hoch_gut', warn: 0.9,
+    beschreibung: 'Umschlagshäufigkeit p. a. Abgeleitet (Wareneinsatz ÷ Lagerbestand).',
+    sqlRef: null, abhaengig: ['wareneinsatz', 'lagerbestand'],
+    berechne: (v) => v.wareneinsatz / v.lagerbestand, security: null
+  },
+
+  // ---- Finanzbuchhaltung & Abschluss (FIBU) ----------------------------
+  abschlussdauer: {
+    id: 'abschlussdauer', name: 'Abschlussdauer', einheit: 'days',
+    bereich: 'FIBU', ziel: 5, richtung: 'tief_gut', warn: 0.7,
+    beschreibung: 'Arbeitstage bis zum fertigen Monatsabschluss (Fast Close).',
+    sqlRef: 'abschlussdauer', abhaengig: [], security: null
+  },
+  rueckstellungen: {
+    id: 'rueckstellungen', name: 'Rückstellungen', einheit: 'eur_mio',
+    bereich: 'FIBU', ziel: null, richtung: 'tief_gut',
+    beschreibung: 'Summe der Rückstellungen (Garantie, Personal, drohende Verluste …).',
+    sqlRef: 'rueckstellungen', abhaengig: [], security: null
+  },
+  bilanzsumme: {
+    id: 'bilanzsumme', name: 'Bilanzsumme', einheit: 'eur_mio',
+    bereich: 'FIBU', ziel: null, richtung: 'hoch_gut',
+    beschreibung: 'Summe Aktiva = Summe Passiva zum Stichtag.',
+    sqlRef: 'bilanzsumme', abhaengig: [], security: null
+  },
+  eigenkapital: {
+    id: 'eigenkapital', name: 'Eigenkapital', einheit: 'eur_mio',
+    bereich: 'FIBU', ziel: null, richtung: 'hoch_gut',
+    beschreibung: 'Bilanzielles Eigenkapital zum Stichtag.',
+    sqlRef: 'eigenkapital', abhaengig: [], security: null
+  },
+  handelsrechtlichesErgebnis: {
+    id: 'handelsrechtlichesErgebnis', name: 'Ergebnis (FiBu/HGB)', einheit: 'eur_mio',
+    bereich: 'FIBU', ziel: null, richtung: 'hoch_gut',
+    beschreibung: 'Handelsrechtliches Jahresergebnis aus der Finanzbuchhaltung.',
+    sqlRef: 'handelsrechtliches_ergebnis', abhaengig: [], security: null
+  },
+  neutralesErgebnis: {
+    id: 'neutralesErgebnis', name: 'Neutrales Ergebnis', einheit: 'eur_mio',
+    bereich: 'FIBU', ziel: null, richtung: 'tief_gut',
+    beschreibung: 'Betriebsfremde/periodenfremde/außerordentliche Posten (Abgrenzung).',
+    sqlRef: 'neutrales_ergebnis', abhaengig: [], security: null
+  },
+  eigenkapitalquote: {
+    id: 'eigenkapitalquote', name: 'Eigenkapitalquote', einheit: 'percent',
+    bereich: 'FIBU', ziel: 40, richtung: 'hoch_gut', warn: 0.95,
+    beschreibung: 'Eigenkapital in % der Bilanzsumme. Abgeleitet.',
+    sqlRef: null, abhaengig: ['eigenkapital', 'bilanzsumme'],
+    berechne: (v) => (v.eigenkapital / v.bilanzsumme) * 100, security: null
+  },
+  betrieblichesErgebnis: {
+    id: 'betrieblichesErgebnis', name: 'Betriebsergebnis (Controlling)', einheit: 'eur_mio',
+    bereich: 'FIBU', ziel: 1.8, richtung: 'hoch_gut',
+    beschreibung: 'Controlling-Sicht: FiBu-Ergebnis bereinigt um neutrale Posten (Abgrenzungsrechnung).',
+    sqlRef: null, abhaengig: ['handelsrechtlichesErgebnis', 'neutralesErgebnis'],
+    berechne: (v) => v.handelsrechtlichesErgebnis - v.neutralesErgebnis, security: null
   }
 }
 

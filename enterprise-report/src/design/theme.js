@@ -21,6 +21,7 @@ export function formatWert(wert, format) {
     case 'percent':  return nf({ minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(wert) + ' %'
     case 'percent0': return nf({ maximumFractionDigits: 0 }).format(wert) + ' %'
     case 'days':     return nf({ maximumFractionDigits: 0 }).format(wert) + ' Tg'
+    case 'faktor':   return nf({ minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(wert) + '×'
     case 'count':    return nf({ maximumFractionDigits: 0 }).format(wert)
     default:         return String(wert)
   }
