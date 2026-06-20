@@ -9,6 +9,7 @@ import { KPI } from '../../core/kpiRegistry.js'
 import { darfBereich, darfKpi } from '../../core/rbac.js'
 import { ladeDetail, ladeHistorie } from '../../core/dataProvider.js'
 import { KpiCard, KpiGesperrt, DetailTabelle, Sparkline, Badge } from '../../components/ui.jsx'
+import KnotenBewertung from './KnotenBewertung.jsx'
 
 function EbeneTag({ stufe }) {
   const e = EBENEN.find((x) => x.stufe === stufe)
@@ -98,27 +99,13 @@ export default function TreeNavigator({ rolle, werte, onOpenReport }) {
           )}
         </div>
 
-        {/* KPIs des Knotens (mit Object-Level-Security) */}
+        {/* KPIs des Knotens: Lagebewertung + angereicherte Karten (Object-Level-Security) */}
         {knoten.kpis?.length > 0 && (
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            {knoten.kpis.map((id) => darfKpi(rolle, KPI[id])
-              ? <KpiCard key={id} kpiId={id} wert={werte[id]} />
-              : <KpiGesperrt key={id} kpiId={id} />)}
-          </div>
+          <KnotenBewertung kpiIds={knoten.kpis} werte={werte} rolle={rolle} />
         )}
 
         {/* Ebene 4: Detailtabelle */}
         {detailKey && <DetailTabelle daten={detail} />}
-
-        {/* Ebene 5: Historisierung je KPI des Knotens */}
-        {knoten.kpis?.length > 0 && (
-          <div>
-            <div className="mono" style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', margin: '4px 0 8px' }}>Historisierung (Ebene 5)</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
-              {knoten.kpis.filter((id) => darfKpi(rolle, KPI[id])).map((id) => <HistorieBlock key={id} kpiId={id} />)}
-            </div>
-          </div>
-        )}
 
         {/* Hinweis Drill-down */}
         {knoten.kinder?.length > 0 && (
