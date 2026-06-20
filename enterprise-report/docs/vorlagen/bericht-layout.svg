@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="680" viewBox="0 0 860 680" font-family="Segoe UI, Arial, sans-serif">
+  <rect width="860" height="680" fill="#F4F6F9"/>
+
+  <!-- Kopf -->
+  <text x="32" y="40" font-size="12" fill="#64748B">VeloWerk Gruppe · Berichtsbaum › Finanzen › GuV &amp; Marge · 2025</text>
+  <text x="32" y="66" font-size="22" font-weight="700" fill="#1F2A37">Finanzen — GuV &amp; Marge</text>
+  <rect x="700" y="44" width="128" height="24" rx="12" fill="#FFFFFF" stroke="#D7DEE6"/>
+  <text x="764" y="60" font-size="11" fill="#475569" text-anchor="middle">E3 · Themenbereich</text>
+
+  <!-- Lagebewertung -->
+  <rect x="32" y="84" width="796" height="92" rx="10" fill="#FFFFFF" stroke="#D7DEE6"/>
+  <text x="50" y="106" font-size="10.5" letter-spacing="0.5" fill="#64748B">LAGEBEWERTUNG (AUTOMATISCH)</text>
+  <!-- Ampelverteilung -->
+  <rect x="640" y="98" width="160" height="9" rx="4" fill="#15803D"/>
+  <rect x="704" y="98" width="56" height="9" fill="#B45309"/>
+  <rect x="748" y="98" width="52" height="9" fill="#B91C1C"/>
+  <text x="50" y="132" font-size="15" font-weight="700" fill="#B91C1C">Handlungsbedarf: 1 Kennzahl deutlich außerhalb des Ziels — v. a. EBIT.</text>
+  <text x="50" y="156" font-size="12" fill="#475569">● EBIT 1,4 Mio € — deutlich außerhalb des Ziels, unter Ziel 1,8 Mio €. Verschlechterung ggü. Vorjahr (−12,5 %).</text>
+
+  <!-- KPI-Karten -->
+  <g>
+    <!-- Card 1 grün -->
+    <rect x="32" y="192" width="192" height="118" rx="10" fill="#FFFFFF" stroke="#D7DEE6"/>
+    <rect x="32" y="192" width="3" height="118" fill="#15803D"/>
+    <text x="48" y="214" font-size="10.5" fill="#64748B">NETTOUMSATZ</text>
+    <circle cx="206" cy="210" r="5" fill="#15803D"/>
+    <text x="48" y="244" font-size="22" font-weight="700" fill="#1F2A37">52,0 Mio €</text>
+    <text x="48" y="264" font-size="10.5" fill="#64748B">Ziel +0,0 (0,0 %)</text>
+    <text x="120" y="264" font-size="10.5" fill="#15803D">▲ VJ +8,1 %</text>
+    <polyline points="48,298 90,292 132,286 174,276 206,270" fill="none" stroke="#15803D" stroke-width="2"/>
+
+    <!-- Card 2 amber -->
+    <rect x="236" y="192" width="192" height="118" rx="10" fill="#FFFFFF" stroke="#D7DEE6"/>
+    <rect x="236" y="192" width="3" height="118" fill="#B45309"/>
+    <text x="252" y="214" font-size="10.5" fill="#64748B">DB-QUOTE</text>
+    <circle cx="410" cy="210" r="5" fill="#B45309"/>
+    <text x="252" y="244" font-size="22" font-weight="700" fill="#1F2A37">38,1 %</text>
+    <text x="252" y="264" font-size="10.5" fill="#B45309">Ziel −1,9 (−4,8 %)</text>
+    <text x="330" y="264" font-size="10.5" fill="#B91C1C">▼ VJ −1,1 %</text>
+    <polyline points="252,290 294,288 336,292 378,296 410,300" fill="none" stroke="#B91C1C" stroke-width="2"/>
+
+    <!-- Card 3 rot -->
+    <rect x="440" y="192" width="192" height="118" rx="10" fill="#FFFFFF" stroke="#D7DEE6"/>
+    <rect x="440" y="192" width="3" height="118" fill="#B91C1C"/>
+    <text x="456" y="214" font-size="10.5" fill="#64748B">EBIT</text>
+    <circle cx="614" cy="210" r="5" fill="#B91C1C"/>
+    <text x="456" y="244" font-size="22" font-weight="700" fill="#1F2A37">1,4 Mio €</text>
+    <text x="456" y="264" font-size="10.5" fill="#B91C1C">Ziel −0,4 (−22,2 %)</text>
+    <text x="534" y="264" font-size="10.5" fill="#B91C1C">▼ VJ −12,5 %</text>
+    <polyline points="456,288 498,290 540,294 582,298 614,302" fill="none" stroke="#B91C1C" stroke-width="2"/>
+
+    <!-- Card 4 rot -->
+    <rect x="644" y="192" width="184" height="118" rx="10" fill="#FFFFFF" stroke="#D7DEE6"/>
+    <rect x="644" y="192" width="3" height="118" fill="#B91C1C"/>
+    <text x="660" y="214" font-size="10.5" fill="#64748B">CASH CONVERSION</text>
+    <circle cx="810" cy="210" r="5" fill="#B91C1C"/>
+    <text x="660" y="244" font-size="22" font-weight="700" fill="#1F2A37">58 Tg</text>
+    <text x="660" y="264" font-size="10.5" fill="#B91C1C">Ziel +18 (+45 %)</text>
+    <text x="735" y="264" font-size="10.5" fill="#B91C1C">▼ VJ +9,4 %</text>
+    <polyline points="660,288 702,292 744,296 786,300 810,304" fill="none" stroke="#B91C1C" stroke-width="2"/>
+  </g>
+
+  <!-- Detailtabelle (E4) -->
+  <rect x="32" y="326" width="796" height="266" rx="10" fill="#FFFFFF" stroke="#D7DEE6"/>
+  <text x="50" y="352" font-size="13" font-weight="700" fill="#1F2A37">GuV-Staffel (Detail · Ebene 4)</text>
+  <line x1="48" y1="364" x2="812" y2="364" stroke="#D7DEE6"/>
+  <g font-size="12.5">
+    <text x="50" y="386" fill="#64748B">POSITION</text><text x="600" y="386" fill="#64748B" text-anchor="end">MIO €</text><text x="800" y="386" fill="#64748B" text-anchor="end">HINWEIS</text>
+    <text x="50" y="412" fill="#1F2A37">Bruttoumsatz</text><text x="600" y="412" text-anchor="end" fill="#1F2A37">55,8</text><text x="800" y="412" text-anchor="end" fill="#475569">E-Bikes treiben Schnitt</text>
+    <text x="50" y="436" fill="#1F2A37">− Erlösschmälerung</text><text x="600" y="436" text-anchor="end" fill="#1F2A37">−3,8</text><text x="800" y="436" text-anchor="end" fill="#475569">Online-Retouren</text>
+    <text x="50" y="460" fill="#1F2A37" font-weight="700">= Nettoumsatz</text><text x="600" y="460" text-anchor="end" font-weight="700">52,0</text><text x="800" y="460" text-anchor="end" fill="#475569">+8,1 %</text>
+    <text x="50" y="484" fill="#1F2A37">− Wareneinsatz</text><text x="600" y="484" text-anchor="end">−32,2</text><text x="800" y="484" text-anchor="end" fill="#B91C1C">über Plan</text>
+    <text x="50" y="508" fill="#1F2A37" font-weight="700">= DB I</text><text x="600" y="508" text-anchor="end" font-weight="700">19,8</text><text x="800" y="508" text-anchor="end" fill="#475569">38,1 %</text>
+    <text x="50" y="532" fill="#1F2A37">− Personal / OpEx</text><text x="600" y="532" text-anchor="end">−17,6</text><text x="800" y="532" text-anchor="end" fill="#475569">Filialnetz</text>
+    <text x="50" y="556" fill="#1F2A37" font-weight="700">= EBIT</text><text x="600" y="556" text-anchor="end" font-weight="700">1,4</text><text x="800" y="556" text-anchor="end" fill="#B91C1C">2,7 % Marge</text>
+  </g>
+
+  <!-- Fuß -->
+  <text x="32" y="624" font-size="11" fill="#64748B">Vertraulich · konsolidiert in EUR · Quelle: Reporting-Engine</text>
+  <rect x="610" y="610" width="218" height="28" rx="6" fill="#0F766E"/>
+  <text x="719" y="629" font-size="12" font-weight="700" fill="#FFFFFF" text-anchor="middle">🎯 Controller-Auswertung (SMART)</text>
+</svg>

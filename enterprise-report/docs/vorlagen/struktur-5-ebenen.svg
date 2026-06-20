@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="520" viewBox="0 0 900 520" font-family="Segoe UI, Arial, sans-serif">
+  <rect width="900" height="520" fill="#F4F6F9"/>
+  <text x="40" y="44" font-size="22" font-weight="700" fill="#1F2A37">Berichtsstruktur · 5 Ebenen (Drill-down)</text>
+  <text x="40" y="68" font-size="13" fill="#64748B">Von der Geschäftsführung bis zum Beleg — Historisierung wirkt quer zu allen Ebenen.</text>
+
+  <!-- Ebenen-Bänder -->
+  <g>
+    <!-- E1 -->
+    <rect x="40" y="92" width="700" height="64" rx="10" fill="#0F766E"/>
+    <text x="60" y="120" font-size="13" font-weight="700" fill="#E6F2F0">E1 · GF / KONZERN</text>
+    <text x="60" y="142" font-size="13" fill="#FFFFFF">Executive-Sicht · "Wie steht das Unternehmen?" · Management Report</text>
+
+    <!-- E2 -->
+    <rect x="70" y="168" width="700" height="64" rx="10" fill="#1F2A37"/>
+    <text x="90" y="196" font-size="13" font-weight="700" fill="#9DBFBA">E2 · FACHBEREICH</text>
+    <text x="90" y="218" font-size="13" fill="#FFFFFF">Verkauf · Einkauf · Produktion · Logistik · KLR · Planung · Treasury · ESG …</text>
+
+    <!-- E3 -->
+    <rect x="100" y="244" width="700" height="64" rx="10" fill="#334155"/>
+    <text x="120" y="272" font-size="13" font-weight="700" fill="#A7B4C4">E3 · THEMENBEREICH</text>
+    <text x="120" y="294" font-size="13" fill="#FFFFFF">z. B. Logistik › Bestände · Treasury › Währungsrisiko · KLR › Kostenstellen</text>
+
+    <!-- E4 -->
+    <rect x="130" y="320" width="700" height="64" rx="10" fill="#475569"/>
+    <text x="150" y="348" font-size="13" font-weight="700" fill="#B8C2D0">E4 · DETAILS</text>
+    <text x="150" y="370" font-size="13" fill="#FFFFFF">Detailtabellen · Positionen · z. B. Bestände je Warenbereich, GuV-Staffel</text>
+
+    <!-- E5 quer -->
+    <rect x="788" y="92" width="72" height="292" rx="10" fill="#B45309"/>
+    <text x="824" y="232" font-size="13" font-weight="700" fill="#FFFFFF" text-anchor="middle" transform="rotate(90 824 232)">E5 · HISTORISIERUNG (Zeitreihe, quer)</text>
+  </g>
+
+  <!-- Drill-down Pfeile -->
+  <g fill="#0F766E">
+    <path d="M390 156 l8 0 -4 10 z"/>
+    <path d="M420 232 l8 0 -4 10 z"/>
+    <path d="M450 308 l8 0 -4 10 z"/>
+  </g>
+
+  <!-- Auswertung-Fußnote -->
+  <rect x="40" y="408" width="820" height="84" rx="10" fill="#FFFFFF" stroke="#D7DEE6"/>
+  <text x="58" y="434" font-size="13" font-weight="700" fill="#1F2A37">Jeder Knoten zeigt automatisch:</text>
+  <text x="58" y="456" font-size="12.5" fill="#475569">Lagebewertung (Kernaussage + Ampel-Verteilung) · KPI-Karten mit Ist / Ziel-Abweichung / Vorjahr / Trend / Klartext</text>
+  <text x="58" y="476" font-size="12.5" fill="#475569">Detailtabelle (E4) · Sparkline-Historie (E5) · Top-Handlungsbedarf · Drill-down in die Unterknoten</text>
+</svg>
