@@ -187,5 +187,15 @@ export const MOCK = {
       zeilen: [['Energie je Rad','44 kWh','42'],['Ökostromanteil','68 %','100 %'],['Aluminium-Rezyklat','41 %','60 %'],['Verpackung recycelt','82 %','90 %'],['Ausschussmaterial','2,1 %','1,5 %']] },
     kreislauf_sozial: { titel: 'Kreislauf & Soziales', spalten: ['Kennzahl','Wert','Trend'],
       zeilen: [['Recyclingquote','77 %','▲'],['Reparaturquote (Leasing-Rückläufer)','64 %','▲'],['Betriebszugehörigkeit Ø','6,8 J','▬'],['Frauenanteil Führung','28 %','▲'],['Ausbildungsquote','5,1 %','▬']] }
-  }
+  },
+
+  // Portfolio (Produktgruppen) für Controlling-Instrumente (BCG-Matrix).
+  // wachstum = Marktwachstum %, marktanteil = relativer Marktanteil (>1 = Marktführer)
+  portfolio: [
+    { gruppe: 'E-Bikes', umsatz: 30.1, wachstum: 13, marktanteil: 1.6, db: 37 },
+    { gruppe: 'Zubehör', umsatz: 5.7, wachstum: 9, marktanteil: 0.6, db: 44 },
+    { gruppe: 'City/Trekking', umsatz: 9.6, wachstum: 2, marktanteil: 1.3, db: 34 },
+    { gruppe: 'Teile', umsatz: 8.8, wachstum: 1, marktanteil: 1.1, db: 39 },
+    { gruppe: 'Bekleidung', umsatz: 3.7, wachstum: -3, marktanteil: 0.5, db: 32 }
+  ]
 }

@@ -41,6 +41,23 @@ export function removeMassnahme(id) {
   return speichere(ladeMassnahmen().filter((m) => m.id !== id))
 }
 
+// --- Tracking: Fälligkeit & Alerts ---------------------------------------
+const heute = () => new Date().toISOString().slice(0, 10)
+export function istUeberfaellig(m) {
+  return m.faelligkeit && m.faelligkeit < heute() && m.status !== 'erledigt' && m.status !== 'verworfen'
+}
+export function trackingZusammenfassung(liste = ladeMassnahmen()) {
+  const z = { offen: 0, in_arbeit: 0, erledigt: 0, verworfen: 0, ueberfaellig: 0, fortschrittSchnitt: 0 }
+  let n = 0
+  for (const m of liste) {
+    z[m.status] = (z[m.status] || 0) + 1
+    if (istUeberfaellig(m)) z.ueberfaellig++
+    if (m.status !== 'verworfen') { z.fortschrittSchnitt += Number(m.fortschritt || 0); n++ }
+  }
+  z.fortschrittSchnitt = n ? Math.round(z.fortschrittSchnitt / n) : 0
+  return z
+}
+
 // --- SMART-Katalog: spezifische Vorschläge je problematischer KPI --------
 const KATALOG = {
   wareneinsatzquote: { titel: 'Wareneinsatzquote senken (Preisgleitklausel + Ausschuss ↓)', hebel: 'Marge (Hebel #1)', erreichbarkeit: 'Rahmenverträge statt Spot-Einkauf, Zweitquelle Antrieb, Ausschuss ≤1,5 %.', frist: 'Q2–Q4', wirkungErgebnis: '+0,5–0,8 Mio € DB', wirkungLiquiditaet: 'neutral', aufwand: 'mittel' },

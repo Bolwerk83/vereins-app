@@ -4,7 +4,7 @@
 //  werden verwaltet (Owner, Frist, Status). Object-Level-Security greift.
 // =========================================================================
 import React, { useState, useEffect } from 'react'
-import { ladeMassnahmen, addMassnahme, updateMassnahme, removeMassnahme, STATUS } from '../../core/massnahmen.js'
+import { ladeMassnahmen, addMassnahme, updateMassnahme, removeMassnahme, STATUS, istUeberfaellig, trackingZusammenfassung } from '../../core/massnahmen.js'
 import { empfehleMassnahmen, BI_QUELLE } from '../../core/biProvider.js'
 import { KPI } from '../../core/kpiRegistry.js'
 import { formatWert } from '../../design/theme.js'
@@ -105,27 +105,57 @@ export default function Massnahmen({ werte, rolle, autoKontext, onVerbraucht }) 
           </div>
         </div>
 
-        {/* Verwaltung */}
+        {/* Verwaltung + Tracking */}
         <div style={card}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 style={{ fontSize: 15 }}>Maßnahmenverwaltung</h3>
-            <span className="mono" style={{ fontSize: 11, color: 'var(--muted)' }}>{liste.length} Einträge</span>
-          </div>
+          {(() => { const z = trackingZusammenfassung(liste); return (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+              <h3 style={{ fontSize: 15 }}>Maßnahmenverwaltung & Tracking</h3>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                <Badge status="n">{z.offen} offen</Badge><Badge status="a">{z.in_arbeit} in Arbeit</Badge>
+                <Badge status="g">{z.erledigt} erledigt</Badge>
+                {z.ueberfaellig > 0 && <Badge status="r">{z.ueberfaellig} überfällig</Badge>}
+                <span className="mono" style={{ fontSize: 11, color: 'var(--muted)' }}>Ø {z.fortschrittSchnitt}%</span>
+              </div>
+            </div>
+          ) })()}
+
+          {trackingZusammenfassung(liste).ueberfaellig > 0 && (
+            <div style={{ background: 'var(--amp-r-soft)', color: 'var(--amp-r)', borderRadius: 'var(--radius-sm)', padding: '8px 10px', fontSize: 12.5, marginTop: 8 }}>
+              ⚠ {liste.filter(istUeberfaellig).length} Maßnahme(n) überfällig — Fälligkeit prüfen oder Status aktualisieren.
+            </div>
+          )}
+
           <div style={{ marginTop: 8 }}>
             {liste.map((m) => (
-              <div key={m.id} style={{ borderTop: '1px solid var(--line)', padding: '10px 0', display: 'grid', gridTemplateColumns: '1fr 130px 130px 26px', gap: 8, alignItems: 'center' }}>
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: 13.5 }}>{m.titel}</div>
-                  <div style={{ fontSize: 11, color: 'var(--muted)' }}>
-                    {m.bereich || '—'} · {m.hebel || '—'} · Frist {m.frist || '—'} · {m.quelle === 'ki' ? 'KI' : 'manuell'}
-                    {m.kpi && KPI[m.kpi] ? ` · ${KPI[m.kpi].name} → ${formatWert(m.zielwert, m.einheit)}` : ''}
+              <div key={m.id} style={{ borderTop: '1px solid var(--line)', padding: '10px 0', borderLeft: istUeberfaellig(m) ? '3px solid var(--amp-r)' : 'none', paddingLeft: istUeberfaellig(m) ? 8 : 0 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600, fontSize: 13.5 }}>{m.titel}</div>
+                    <div style={{ fontSize: 11, color: 'var(--muted)' }}>
+                      {m.bereich || '—'} · {m.hebel || '—'} · {m.quelle === 'ki' ? 'KI' : 'manuell'}
+                      {m.kpi && KPI[m.kpi] ? ` · ${KPI[m.kpi].name} → ${formatWert(m.zielwert, m.einheit)}` : ''}
+                      {m.wirkungErgebnis ? ` · erwartet: ${m.wirkungErgebnis}` : ''}
+                    </div>
                   </div>
+                  <button title="löschen" onClick={() => { removeMassnahme(m.id); aktualisieren() }} style={{ border: '1px solid var(--line)', borderRadius: 6, background: 'var(--panel)', color: 'var(--amp-r)', width: 26, height: 26 }}>✕</button>
                 </div>
-                <input placeholder="Owner" style={{ ...inp, marginTop: 0 }} value={m.owner || ''} onChange={(e) => { updateMassnahme(m.id, { owner: e.target.value }); aktualisieren() }} />
-                <select style={{ ...inp, marginTop: 0 }} value={m.status} onChange={(e) => { updateMassnahme(m.id, { status: e.target.value }); aktualisieren() }}>
-                  {STATUS.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
-                <button title="löschen" onClick={() => { removeMassnahme(m.id); aktualisieren() }} style={{ border: '1px solid var(--line)', borderRadius: 6, background: 'var(--panel)', color: 'var(--amp-r)' }}>✕</button>
+                {/* Tracking-Zeile */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6, marginTop: 6 }}>
+                  <label style={{ fontSize: 10, color: 'var(--muted)' }}>Owner
+                    <input style={{ ...inp, marginTop: 2 }} value={m.owner || ''} onChange={(e) => { updateMassnahme(m.id, { owner: e.target.value }); aktualisieren() }} /></label>
+                  <label style={{ fontSize: 10, color: 'var(--muted)' }}>Fällig bis
+                    <input type="date" style={{ ...inp, marginTop: 2 }} value={m.faelligkeit || ''} onChange={(e) => { updateMassnahme(m.id, { faelligkeit: e.target.value }); aktualisieren() }} /></label>
+                  <label style={{ fontSize: 10, color: 'var(--muted)' }}>Fortschritt %
+                    <input type="number" min="0" max="100" style={{ ...inp, marginTop: 2 }} value={m.fortschritt ?? ''} onChange={(e) => { updateMassnahme(m.id, { fortschritt: e.target.value }); aktualisieren() }} /></label>
+                  <label style={{ fontSize: 10, color: 'var(--muted)' }}>Wirkung realisiert
+                    <input placeholder="z. B. +0,3 Mio €" style={{ ...inp, marginTop: 2 }} value={m.wirkungRealisiert || ''} onChange={(e) => { updateMassnahme(m.id, { wirkungRealisiert: e.target.value }); aktualisieren() }} /></label>
+                  <label style={{ fontSize: 10, color: 'var(--muted)' }}>Status
+                    <select style={{ ...inp, marginTop: 2 }} value={m.status} onChange={(e) => { updateMassnahme(m.id, { status: e.target.value }); aktualisieren() }}>
+                      {STATUS.map((s) => <option key={s} value={s}>{s}</option>)}</select></label>
+                </div>
+                <div style={{ height: 6, background: 'var(--bg)', borderRadius: 3, marginTop: 6, overflow: 'hidden' }}>
+                  <div style={{ width: `${Math.min(100, Number(m.fortschritt || 0))}%`, height: '100%', background: m.status === 'erledigt' ? 'var(--amp-g)' : 'var(--accent)' }} />
+                </div>
               </div>
             ))}
             {!liste.length && <div style={{ color: 'var(--muted)', fontSize: 13, paddingTop: 8 }}>Noch keine Maßnahmen erfasst.</div>}
