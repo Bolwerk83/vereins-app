@@ -9,8 +9,21 @@
 //  Umschalten über VITE_BI_SOURCE. Die UI kennt nur diese Funktion.
 // =========================================================================
 import { biHeuristik } from './biHeuristik.js'
+import { KPI } from './kpiRegistry.js'
+import { darfKpi } from './rbac.js'
 
 export const BI_QUELLE = import.meta.env?.VITE_BI_SOURCE || 'heuristik'
+
+// Geschützte KPI-Werte entfernen, die die Rolle nicht sehen darf —
+// damit weder Heuristik noch Claude-Backend sie zu Gesicht bekommen.
+function sichtbareWerte(werte, rolle) {
+  if (!rolle) return werte
+  const out = {}
+  for (const [id, v] of Object.entries(werte)) {
+    if (!KPI[id] || darfKpi(rolle, KPI[id])) out[id] = v
+  }
+  return out
+}
 
 /**
  * Erzeugt aus einer natürlichsprachlichen Anforderung einen BI-Bericht
@@ -18,17 +31,18 @@ export const BI_QUELLE = import.meta.env?.VITE_BI_SOURCE || 'heuristik'
  * @param {string} anforderung  Freitext des Anwenders
  * @param {object} werte        aktuelle KPI-Werte (aus dataProvider)
  */
-export async function erzeugeBiBericht(anforderung, werte) {
+export async function erzeugeBiBericht(anforderung, werte, rolle = null) {
+  const werteSicht = sichtbareWerte(werte, rolle)
   if (BI_QUELLE === 'claude') {
     const r = await fetch('/api/bi', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ anforderung, werte })
+      body: JSON.stringify({ anforderung, werte: werteSicht })
     })
     if (!r.ok) throw new Error('BI-Backend (Claude) nicht erreichbar')
     return r.json()
   }
   // Offline: kleine künstliche Verzögerung für realistisches UX.
   await new Promise((res) => setTimeout(res, 350))
-  return biHeuristik(anforderung, werte)
+  return biHeuristik(anforderung, werteSicht, rolle)
 }

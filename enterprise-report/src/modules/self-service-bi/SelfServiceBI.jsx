@@ -48,7 +48,7 @@ export default function SelfServiceBI({ rolle, werte }) {
     const a = (anforderung ?? text).trim()
     if (!a) return
     setText(a); setLaedt(true); setFehler(null); setBericht(null)
-    try { setBericht(await erzeugeBiBericht(a, werte)) }
+    try { setBericht(await erzeugeBiBericht(a, werte, rolle)) }
     catch (e) { setFehler(String(e.message || e)) }
     finally { setLaedt(false) }
   }

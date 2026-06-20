@@ -13,6 +13,11 @@ Rückgrat, mit dem das Controlling (fast) jede Frage beantworten kann.
 | Produktionsplanung | `PP` | Kapazität, Schichtplan, Programmabgleich | Kapazitätsauslastung, Plan-Erfüllung, Liefertermintreue |
 | Bestands- & Supply-Chain-Controlling | `SCC` | Bestände im Zusammenspiel EK/PR/VK | Lagerumschlag, Lieferfähigkeit, Überbestand |
 | Finanzbuchhaltung & Abschluss | `FIBU` | Monats-/Jahresabschluss, Bilanz, Rückstellungen | Betriebsergebnis, EK-Quote, Abschlussdauer |
+| Investitions- & Liquiditätsplanung | `LIQ` | CapEx, Liquiditätsvorschau, Cashflow | Operativer Cashflow, Freie Liquidität, Budgettreue |
+| Vertriebscontrolling | `VC` | Kanal-/Kundenprofitabilität, Rabatte, Vertriebskosten | Vertriebskostenquote, Rabattquote, Neukundenanteil |
+| Personalcontrolling | `PC` | Produktivität, Fluktuation, Arbeitszeit (OLS) | Personalkostenquote*, Umsatz/FTE, Krankenstand |
+
+*Personalkostenquote ist per Object-Level-Security auf GF/HR/FIN beschränkt (greift auch im Self-Service-BI).
 
 Jeder Bereich hat Themenbereiche (E3), Detailberichte (E4) und Historie (E5)
 wie der Rest des Baums — gleiche Engine, gleiche Rechte, gleiches Design.

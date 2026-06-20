@@ -9,6 +9,7 @@ import { KPI } from './kpiRegistry.js'
 import { ampelStatus } from './ampel.js'
 import { formatWert } from '../design/theme.js'
 import { CONTROLLER_LEAD, BERATER, relevanteBerater } from './agentBoard.js'
+import { darfKpi } from './rbac.js'
 
 // Stichwort -> KPI-IDs. Bewusst schlicht; das LLM kann es später semantisch.
 const STICHWORTE = [
@@ -30,7 +31,10 @@ const STICHWORTE = [
   [/planung|budget|plan-?ist|zielerreichung|erfolgsplan|soll-?ist/i, ['umsatzZielerreichung', 'kostendisziplin', 'ergebnisZielerreichung']],
   [/produktionsplan|kapazit(ä|ae)t|schicht|fertigungsprogramm|auslastung/i, ['kapazitaetsauslastung', 'planErfuellungProduktion', 'schichtauslastung']],
   [/lagercontrolling|bestandscontrolling|supply.?chain|lagerumschlag|lieferf(ä|ae)hig|servicegrad|überbestand|ueberbestand|abc/i, ['lagerumschlag', 'lieferfaehigkeit', 'ueberbestand', 'reichweite']],
-  [/fibu|finanzbuchhalt|abschluss|bilanz|rückstellung|rueckstellung|eigenkapital|abgrenzung|hgb/i, ['betrieblichesErgebnis', 'eigenkapitalquote', 'abschlussdauer', 'rueckstellungen']]
+  [/fibu|finanzbuchhalt|abschluss|bilanz|rückstellung|rueckstellung|eigenkapital|abgrenzung|hgb/i, ['betrieblichesErgebnis', 'eigenkapitalquote', 'abschlussdauer', 'rueckstellungen']],
+  [/investition|capex|liquidit|cashflow|cash.?flow|kreditlinie|zahlungsf/i, ['operativerCashflow', 'freieLiquiditaet', 'investBudgettreue']],
+  [/vertriebscontrolling|rabatt|kundenprofitab|vertriebskost|kanalprofitab|neukunden/i, ['vertriebskostenquote', 'rabattquote', 'neukundenanteil', 'dbQuote']],
+  [/personalcontrolling|produktivit|umsatz je|überstund|ueberstund|krankenstand|fte/i, ['personalkostenquote', 'umsatzJeFTE', 'krankenstand', 'fluktuation']]
 ]
 
 function gematchteKpis(text) {
@@ -41,8 +45,9 @@ function gematchteKpis(text) {
   return [...ids].filter((id) => KPI[id])
 }
 
-export function biHeuristik(anforderung, werte) {
-  const kpiIds = gematchteKpis(anforderung)
+export function biHeuristik(anforderung, werte, rolle = null) {
+  // Object-Level-Security: geschützte KPIs ohne Berechtigung gar nicht erst aufnehmen.
+  const kpiIds = gematchteKpis(anforderung).filter((id) => !rolle || darfKpi(rolle, KPI[id]))
   const bereiche = [...new Set(kpiIds.map((id) => KPI[id].bereich))]
   const berater = relevanteBerater(bereiche)
 

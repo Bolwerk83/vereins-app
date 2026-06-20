@@ -95,6 +95,33 @@ export const REGELN = [
       ist: `${w.umsatzprognose.toFixed(1)} Mio €`, soll: `≥ ${w.auftragsbestand.toFixed(1)} Mio €`,
       hinweis: 'Das Orderbuch ist ein Teil der erwarteten Umsätze.'
     }
+  },
+  {
+    id: 'personalkosten_check', titel: 'Personalkosten ≤ Gesamtkosten',
+    bereich: 'PC', schwere: 'hart',
+    pruef: (w) => da(w, 'personalkosten', 'gesamtkosten') && {
+      ok: w.personalkosten <= w.gesamtkosten,
+      ist: `${w.personalkosten.toFixed(1)} Mio €`, soll: `≤ ${w.gesamtkosten.toFixed(1)} Mio €`,
+      hinweis: 'Personalkosten sind ein Teil der Gesamtkosten.'
+    }
+  },
+  {
+    id: 'liquiditaet_check', titel: 'Freie Liquidität = Liquide Mittel + Kreditlinie',
+    bereich: 'LIQ', schwere: 'hart',
+    pruef: (w) => da(w, 'freieLiquiditaet', 'liquideMittel', 'kreditlinie') && {
+      ok: nah(w.freieLiquiditaet, w.liquideMittel + w.kreditlinie, 0.01),
+      ist: `${w.freieLiquiditaet.toFixed(1)} Mio €`, soll: `${(w.liquideMittel + w.kreditlinie).toFixed(1)} Mio €`,
+      hinweis: 'Liquiditätsreserve = Kasse + freie Linie.'
+    }
+  },
+  {
+    id: 'cashflow_plausibel', titel: 'Operativer Cashflow plausibel (≤ EBITDA + Bestandsabbau)',
+    bereich: 'LIQ', schwere: 'weich',
+    pruef: (w) => da(w, 'operativerCashflow', 'ebitda') && {
+      ok: w.operativerCashflow <= w.ebitda + 4.0,
+      ist: `${w.operativerCashflow.toFixed(1)} Mio €`, soll: `≈ EBITDA ${w.ebitda.toFixed(1)} ± WC`,
+      hinweis: 'Operativer Cashflow folgt grob dem EBITDA, korrigiert um Working Capital.'
+    }
   }
 ]
 

@@ -222,6 +222,63 @@ export const BERICHTSBAUM = n('konzern', 1, 'VeloWerk Gruppe · Management Repor
           kinder: [ n('fibu-abgrenzung-det', 4, 'Abgrenzungsrechnung (Überleitung)', { bereich: 'FIBU', detail: 'abgrenzungsrechnung' }) ]
         })
       ]
+    }),
+
+    // ---- E2 Fachbereich: Investitions- & Liquiditätsplanung -------------
+    n('liq', 2, 'Investitions- & Liquiditätsplanung', {
+      bereich: 'LIQ', kpis: ['operativerCashflow', 'freieLiquiditaet', 'investBudgettreue', 'investitionsvolumen'],
+      kinder: [
+        n('liq-invest', 3, 'Investitionen (CapEx)', {
+          bereich: 'LIQ', kpis: ['investitionsvolumen', 'investBudgettreue'],
+          kinder: [ n('liq-invest-det', 4, 'Investitionsprojekte', { bereich: 'LIQ', detail: 'invest_projekte' }) ]
+        }),
+        n('liq-vorschau', 3, 'Liquiditätsvorschau', {
+          bereich: 'LIQ', kpis: ['liquideMittel', 'freieLiquiditaet'],
+          kinder: [ n('liq-vorschau-det', 4, 'Liquiditätsvorschau (Monate)', { bereich: 'LIQ', detail: 'liquiditaetsvorschau' }) ]
+        }),
+        n('liq-cashflow', 3, 'Cashflow', {
+          bereich: 'LIQ', kpis: ['operativerCashflow'],
+          kinder: [ n('liq-cashflow-det', 4, 'Cashflow-Rechnung', { bereich: 'LIQ', detail: 'cashflow' }) ]
+        })
+      ]
+    }),
+
+    // ---- E2 Fachbereich: Vertriebscontrolling ---------------------------
+    n('vc', 2, 'Vertriebscontrolling', {
+      bereich: 'VC', kpis: ['vertriebskostenquote', 'rabattquote', 'neukundenanteil', 'dbQuote'],
+      kinder: [
+        n('vc-profitabilitaet', 3, 'Kanal- & Kundenprofitabilität', {
+          bereich: 'VC', kpis: ['dbQuote', 'neukundenanteil'],
+          kinder: [ n('vc-profitabilitaet-det', 4, 'DB je Kanal/Segment', { bereich: 'VC', detail: 'kanal_profitabilitaet' }) ]
+        }),
+        n('vc-rabatte', 3, 'Preise & Rabatte', {
+          bereich: 'VC', kpis: ['rabattquote'],
+          kinder: [ n('vc-rabatte-det', 4, 'Rabattanalyse je Warengruppe', { bereich: 'VC', detail: 'rabattanalyse' }) ]
+        }),
+        n('vc-kosten', 3, 'Vertriebskosten', {
+          bereich: 'VC', kpis: ['vertriebskostenquote', 'vertriebskosten'],
+          kinder: [ n('vc-kosten-det', 4, 'Vertriebskostenstruktur', { bereich: 'VC', detail: 'vertriebskosten_struktur' }) ]
+        })
+      ]
+    }),
+
+    // ---- E2 Fachbereich: Personalcontrolling (Object-Level-Security) ----
+    n('pc', 2, 'Personalcontrolling', {
+      bereich: 'PC', kpis: ['personalkostenquote', 'umsatzJeFTE', 'krankenstand', 'fluktuation'],
+      kinder: [
+        n('pc-produktivitaet', 3, 'Kosten & Produktivität', {
+          bereich: 'PC', kpis: ['personalkostenquote', 'umsatzJeFTE', 'mitarbeiterFTE'],
+          kinder: [ n('pc-produktivitaet-det', 4, 'Kosten/Produktivität je Bereich', { bereich: 'PC', detail: 'personal_produktivitaet' }) ]
+        }),
+        n('pc-bindung', 3, 'Fluktuation & Bindung', {
+          bereich: 'PC', kpis: ['fluktuation'],
+          kinder: [ n('pc-bindung-det', 4, 'Belegschaft je Bereich', { bereich: 'PC', detail: 'belegschaft' }) ]
+        }),
+        n('pc-arbeitszeit', 3, 'Arbeitszeit & Fehlzeiten', {
+          bereich: 'PC', kpis: ['ueberstundenquote', 'krankenstand'],
+          kinder: [ n('pc-arbeitszeit-det', 4, 'Überstunden/Krankenstand je Bereich', { bereich: 'PC', detail: 'arbeitszeit' }) ]
+        })
+      ]
     })
   ]
 })

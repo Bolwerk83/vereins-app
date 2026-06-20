@@ -48,7 +48,14 @@ const ROHE_KPIS = {
   // Finanzbuchhaltung & Abschluss
   abschlussdauer: 'abschlussdauer', rueckstellungen: 'rueckstellungen',
   bilanzsumme: 'bilanzsumme', eigenkapital: 'eigenkapital',
-  handelsrechtliches_ergebnis: 'handelsrechtlichesErgebnis', neutrales_ergebnis: 'neutralesErgebnis'
+  handelsrechtliches_ergebnis: 'handelsrechtlichesErgebnis', neutrales_ergebnis: 'neutralesErgebnis',
+  // Investitions- & Liquiditätsplanung
+  investitionsvolumen: 'investitionsvolumen', investitionsbudget: 'investitionsbudget',
+  liquide_mittel: 'liquideMittel', kreditlinie: 'kreditlinie', operativer_cashflow: 'operativerCashflow',
+  // Vertriebscontrolling
+  vertriebskosten: 'vertriebskosten', rabattquote: 'rabattquote', neukundenanteil: 'neukundenanteil',
+  // Personalcontrolling
+  mitarbeiter_fte: 'mitarbeiterFTE', ueberstundenquote: 'ueberstundenquote', krankenstand: 'krankenstand'
 }
 
 const sqlPfad = (ref) => join(SQL_DIR, `${ref}.kpi.sql`)

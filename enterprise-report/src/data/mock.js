@@ -26,7 +26,10 @@ export const MOCK = {
       produktionsplan: 22500, kapazitaet: 26000, schichtauslastung: 82, liefertermintreue: 93,
       lieferfaehigkeit: 95, ueberbestand: 2.4,
       abschlussdauer: 10, rueckstellungen: 2.9, bilanzsumme: 24.5, eigenkapital: 9.6,
-      handelsrechtlichesErgebnis: 1.5, neutralesErgebnis: -0.2
+      handelsrechtlichesErgebnis: 1.5, neutralesErgebnis: -0.2,
+      investitionsvolumen: 2.1, investitionsbudget: 2.5, liquideMittel: 5.4, kreditlinie: 4.0, operativerCashflow: 2.0,
+      vertriebskosten: 5.6, neukundenanteil: 24, rabattquote: 6.5,
+      mitarbeiterFTE: 352, ueberstundenquote: 3.5, krankenstand: 4.6
     },
     '2024': {
       bruttoumsatz: 53.0, erloesschmaelerung: 3.3, nettoumsatz: 48.1,
@@ -43,7 +46,10 @@ export const MOCK = {
       produktionsplan: 23800, kapazitaet: 27000, schichtauslastung: 85, liefertermintreue: 92,
       lieferfaehigkeit: 94, ueberbestand: 3.0,
       abschlussdauer: 9, rueckstellungen: 3.2, bilanzsumme: 26.0, eigenkapital: 10.2,
-      handelsrechtlichesErgebnis: 1.4, neutralesErgebnis: -0.2
+      handelsrechtlichesErgebnis: 1.4, neutralesErgebnis: -0.2,
+      investitionsvolumen: 2.4, investitionsbudget: 2.6, liquideMittel: 5.9, kreditlinie: 4.0, operativerCashflow: 1.9,
+      vertriebskosten: 6.0, neukundenanteil: 26, rabattquote: 6.8,
+      mitarbeiterFTE: 364, ueberstundenquote: 3.8, krankenstand: 4.7
     },
     '2025': {
       bruttoumsatz: 55.8, erloesschmaelerung: 3.8, nettoumsatz: 52.0,
@@ -60,7 +66,10 @@ export const MOCK = {
       produktionsplan: 25500, kapazitaet: 28000, schichtauslastung: 88, liefertermintreue: 91,
       lieferfaehigkeit: 93, ueberbestand: 3.5,
       abschlussdauer: 8, rueckstellungen: 3.6, bilanzsumme: 28.5, eigenkapital: 11.2,
-      handelsrechtlichesErgebnis: 1.1, neutralesErgebnis: -0.3
+      handelsrechtlichesErgebnis: 1.1, neutralesErgebnis: -0.3,
+      investitionsvolumen: 2.8, investitionsbudget: 2.6, liquideMittel: 6.3, kreditlinie: 4.0, operativerCashflow: 1.8,
+      vertriebskosten: 6.4, neukundenanteil: 28, rabattquote: 7.2,
+      mitarbeiterFTE: 372, ueberstundenquote: 4.1, krankenstand: 4.9
     }
   },
 
@@ -133,6 +142,28 @@ export const MOCK = {
     bilanz: { titel: 'Bilanz kompakt 2025 (Mio €)', spalten: ['Position','Mio €','Seite'],
       zeilen: [['Anlagevermögen','9,8','Aktiva'],['Vorräte','11,2','Aktiva'],['Forderungen','4,1','Aktiva'],['Liquide Mittel','3,4','Aktiva'],['Eigenkapital','11,2','Passiva'],['Rückstellungen','3,6','Passiva'],['Verbindlichkeiten','13,7','Passiva'],['Bilanzsumme','28,5','—']] },
     abgrenzungsrechnung: { titel: 'Abgrenzungsrechnung — FiBu → Controlling (Mio €)', spalten: ['Position','FiBu','Abgrenzung','Controlling'],
-      zeilen: [['Ergebnis lt. GuV (HGB)','1,1','—','—'],['− neutrale Erträge','—','−0,1','—'],['+ neutrale Aufwendungen','—','+0,4','—'],['= Betriebsergebnis','—','—','1,4'],['Hinweis','periodengerecht','betriebsfremd/außerord.','operativ steuerbar']] }
+      zeilen: [['Ergebnis lt. GuV (HGB)','1,1','—','—'],['− neutrale Erträge','—','−0,1','—'],['+ neutrale Aufwendungen','—','+0,4','—'],['= Betriebsergebnis','—','—','1,4'],['Hinweis','periodengerecht','betriebsfremd/außerord.','operativ steuerbar']] },
+
+    // --- Investitions- & Liquiditätsplanung ---
+    invest_projekte: { titel: 'Investitionsprojekte 2025 (Mio €)', spalten: ['Projekt','Budget','Ist','Status','ROI'],
+      zeilen: [['Lackiererei-Umstellung','0,9','1,0','aktiv','3,1 J'],['Onlineshop-Replatforming','0,45','0,5','aktiv','2,4 J'],['Lagerautomatisierung','0,7','0,8','verzögert','3,8 J'],['Fuhrpark/Leasing-Flotte','0,55','0,5','geplant','—'],['Gesamt','2,6','2,8','—','—']] },
+    liquiditaetsvorschau: { titel: 'Liquiditätsvorschau (rollierend, Mio €)', spalten: ['Monat','Einzahlung','Auszahlung','Saldo','Bestand'],
+      zeilen: [['M+1','4,6','4,3','+0,3','6,6'],['M+2','4,2','4,5','−0,3','6,3'],['M+3','5,1','4,4','+0,7','7,0'],['M+4','4,8','4,9','−0,1','6,9']] },
+    cashflow: { titel: 'Cashflow-Rechnung 2025 (Mio €)', spalten: ['Position','Mio €','Hinweis'],
+      zeilen: [['Operativer Cashflow','1,8','vor Working-Capital-Abbau'],['− Investitionen','−2,8','CapEx'],['+ Bestandsabbau (Potenzial)','+3,5','Hebel #2'],['− Finanzierung/Tilgung','−0,4',''],['= Veränderung Liquidität','+2,1','']] },
+
+    // --- Vertriebscontrolling ---
+    kanal_profitabilitaet: { titel: 'DB je Kanal/Segment', spalten: ['Kanal/Segment','Netto Mio €','DB-Quote','Neukunden'],
+      zeilen: [['Onlineshop','23,4','39 %','31 %'],['Filialen DE','13,0','37 %','22 %'],['Filialen CH','6,2','40 %','19 %'],['B2B/Gewerbe','4,2','30 %','28 %'],['Leasing','2,6','34 %','35 %']] },
+    rabattanalyse: { titel: 'Rabattanalyse je Warengruppe', spalten: ['Warengruppe','Rabattquote','Effekt Mio €','Bewertung'],
+      zeilen: [['E-Bikes','5,1 %','−1,5','vertretbar'],['City/Trekking','7,8 %','−0,7','prüfen'],['Teile','9,4 %','−0,8','hoch'],['Bekleidung','12,2 %','−0,5','Abverkauf']] },
+    vertriebskosten_struktur: { titel: 'Vertriebskostenstruktur (Mio €)', spalten: ['Kostenart','Mio €','% Umsatz'],
+      zeilen: [['Online-Marketing','2,1','4,0 %'],['Filial-/Flächenkosten','1,9','3,7 %'],['Provisionen','1,0','1,9 %'],['Messen/Promotion','0,8','1,5 %'],['Sonstige','0,6','1,2 %'],['Gesamt','6,4','12,3 %']] },
+
+    // --- Personalcontrolling ---
+    personal_produktivitaet: { titel: 'Kosten & Produktivität je Bereich', spalten: ['Bereich','FTE','Kosten Mio €','Umsatz/FTE T€'],
+      zeilen: [['Filialen DE/CH/NL','186','5,2','—'],['Onlineshop & Service','64','2,1','365'],['Produktion & Logistik','96','2,4','—'],['Verwaltung/IT/Finanzen','26','0,8','—'],['Gesamt','372','10,5','140']] },
+    arbeitszeit: { titel: 'Arbeitszeit & Fehlzeiten je Bereich', spalten: ['Bereich','Überstundenquote','Krankenstand'],
+      zeilen: [['Filialen','3,1 %','5,2 %'],['Onlineshop & Service','4,8 %','4,1 %'],['Produktion','5,4 %','5,6 %'],['Logistik','4,6 %','4,9 %'],['Verwaltung','1,9 %','3,2 %']] }
   }
 }

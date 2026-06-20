@@ -384,6 +384,114 @@ export const KPI = {
     beschreibung: 'Controlling-Sicht: FiBu-Ergebnis bereinigt um neutrale Posten (Abgrenzungsrechnung).',
     sqlRef: null, abhaengig: ['handelsrechtlichesErgebnis', 'neutralesErgebnis'],
     berechne: (v) => v.handelsrechtlichesErgebnis - v.neutralesErgebnis, security: null
+  },
+
+  // ---- Investitions- & Liquiditätsplanung (LIQ) ------------------------
+  investitionsvolumen: {
+    id: 'investitionsvolumen', name: 'Investitionsvolumen', einheit: 'eur_mio',
+    bereich: 'LIQ', ziel: null, richtung: 'hoch_gut',
+    beschreibung: 'Getätigte Investitionen (CapEx) der Periode.',
+    sqlRef: 'investitionsvolumen', abhaengig: [], security: null
+  },
+  investitionsbudget: {
+    id: 'investitionsbudget', name: 'Investitionsbudget', einheit: 'eur_mio',
+    bereich: 'LIQ', ziel: null, richtung: 'hoch_gut',
+    beschreibung: 'Freigegebenes CapEx-Budget der Periode.',
+    sqlRef: 'investitionsbudget', abhaengig: [], security: null
+  },
+  liquideMittel: {
+    id: 'liquideMittel', name: 'Liquide Mittel', einheit: 'eur_mio',
+    bereich: 'LIQ', ziel: 5.0, richtung: 'hoch_gut',
+    beschreibung: 'Kassenbestand + Bankguthaben zum Stichtag.',
+    sqlRef: 'liquide_mittel', abhaengig: [], security: null
+  },
+  kreditlinie: {
+    id: 'kreditlinie', name: 'Freie Kreditlinie', einheit: 'eur_mio',
+    bereich: 'LIQ', ziel: null, richtung: 'hoch_gut',
+    beschreibung: 'Noch nicht in Anspruch genommene Kreditlinie (Reserve).',
+    sqlRef: 'kreditlinie', abhaengig: [], security: null
+  },
+  operativerCashflow: {
+    id: 'operativerCashflow', name: 'Operativer Cashflow', einheit: 'eur_mio',
+    bereich: 'LIQ', ziel: 2.5, richtung: 'hoch_gut', warn: 0.9,
+    beschreibung: 'Cashflow aus laufender Geschäftstätigkeit.',
+    sqlRef: 'operativer_cashflow', abhaengig: [], security: null
+  },
+  investBudgettreue: {
+    id: 'investBudgettreue', name: 'Investitions-Budgettreue', einheit: 'percent',
+    bereich: 'LIQ', ziel: 100, richtung: 'hoch_gut', warn: 0.95,
+    beschreibung: 'Budget in % des Ist (≥100 = im Rahmen). Abgeleitet.',
+    sqlRef: null, abhaengig: ['investitionsbudget', 'investitionsvolumen'],
+    berechne: (v) => (v.investitionsbudget / v.investitionsvolumen) * 100, security: null
+  },
+  freieLiquiditaet: {
+    id: 'freieLiquiditaet', name: 'Freie Liquidität', einheit: 'eur_mio',
+    bereich: 'LIQ', ziel: 8.0, richtung: 'hoch_gut', warn: 0.9,
+    beschreibung: 'Liquide Mittel + freie Kreditlinie. Abgeleitet.',
+    sqlRef: null, abhaengig: ['liquideMittel', 'kreditlinie'],
+    berechne: (v) => v.liquideMittel + v.kreditlinie, security: null
+  },
+
+  // ---- Vertriebscontrolling (VC) ---------------------------------------
+  vertriebskosten: {
+    id: 'vertriebskosten', name: 'Vertriebskosten', einheit: 'eur_mio',
+    bereich: 'VC', ziel: null, richtung: 'tief_gut',
+    beschreibung: 'Marketing-, Vertriebs- und Provisionskosten.',
+    sqlRef: 'vertriebskosten', abhaengig: [], security: null
+  },
+  rabattquote: {
+    id: 'rabattquote', name: 'Rabattquote', einheit: 'percent',
+    bereich: 'VC', ziel: 6, richtung: 'tief_gut', warn: 0.85,
+    beschreibung: 'Gewährte Rabatte in % vom Bruttoumsatz.',
+    sqlRef: 'rabattquote', abhaengig: [], security: null
+  },
+  neukundenanteil: {
+    id: 'neukundenanteil', name: 'Neukundenanteil', einheit: 'percent0',
+    bereich: 'VC', ziel: 25, richtung: 'hoch_gut',
+    beschreibung: 'Umsatzanteil neu gewonnener Kunden.',
+    sqlRef: 'neukundenanteil', abhaengig: [], security: null
+  },
+  vertriebskostenquote: {
+    id: 'vertriebskostenquote', name: 'Vertriebskostenquote', einheit: 'percent',
+    bereich: 'VC', ziel: 12, richtung: 'tief_gut', warn: 0.97,
+    beschreibung: 'Vertriebskosten in % vom Nettoumsatz. Abgeleitet.',
+    sqlRef: null, abhaengig: ['vertriebskosten', 'nettoumsatz'],
+    berechne: (v) => (v.vertriebskosten / v.nettoumsatz) * 100, security: null
+  },
+
+  // ---- Personalcontrolling (PC) — z. T. Object-Level-Security ----------
+  mitarbeiterFTE: {
+    id: 'mitarbeiterFTE', name: 'Belegschaft (FTE)', einheit: 'count',
+    bereich: 'PC', ziel: null, richtung: 'hoch_gut',
+    beschreibung: 'Vollzeitäquivalente zum Stichtag.',
+    sqlRef: 'mitarbeiter_fte', abhaengig: [], security: null
+  },
+  ueberstundenquote: {
+    id: 'ueberstundenquote', name: 'Überstundenquote', einheit: 'percent',
+    bereich: 'PC', ziel: 3, richtung: 'tief_gut', warn: 0.8,
+    beschreibung: 'Überstunden in % der Soll-Arbeitszeit (Kapazitätsindikator).',
+    sqlRef: 'ueberstundenquote', abhaengig: [], security: null
+  },
+  krankenstand: {
+    id: 'krankenstand', name: 'Krankenstand', einheit: 'percent',
+    bereich: 'PC', ziel: 4.2, richtung: 'tief_gut', warn: 0.85,
+    beschreibung: 'Krankheitsbedingte Fehlzeitenquote.',
+    sqlRef: 'krankenstand', abhaengig: [], security: null
+  },
+  umsatzJeFTE: {
+    id: 'umsatzJeFTE', name: 'Umsatz je FTE', einheit: 'eur',
+    bereich: 'PC', ziel: 140000, richtung: 'hoch_gut', warn: 0.97,
+    beschreibung: 'Produktivität: Nettoumsatz je Vollzeitkraft. Abgeleitet.',
+    sqlRef: null, abhaengig: ['nettoumsatz', 'mitarbeiterFTE'],
+    berechne: (v) => (v.nettoumsatz * 1e6) / v.mitarbeiterFTE, security: null
+  },
+  personalkostenquote: {
+    id: 'personalkostenquote', name: 'Personalkostenquote', einheit: 'percent',
+    bereich: 'PC', ziel: 20, richtung: 'tief_gut', warn: 0.97,
+    beschreibung: 'Personalkosten in % vom Nettoumsatz. Abgeleitet. Sichtbar nur GF/HR/FIN.',
+    sqlRef: null, abhaengig: ['personalkosten', 'nettoumsatz'],
+    berechne: (v) => (v.personalkosten / v.nettoumsatz) * 100,
+    security: ['GF', 'HR', 'FIN']
   }
 }
 
