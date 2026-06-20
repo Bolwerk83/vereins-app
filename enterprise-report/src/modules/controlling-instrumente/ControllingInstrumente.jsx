@@ -5,7 +5,7 @@
 // =========================================================================
 import React from 'react'
 import { MOCK } from '../../data/mock.js'
-import { bcgPortfolio, BCG_KLASSEN, breakEven, investitionsrechnung, WACHSTUM_SCHWELLE, ANTEIL_SCHWELLE } from '../../core/instrumente.js'
+import { bcgPortfolio, BCG_KLASSEN, breakEven, investitionsrechnung, szenarien, abweichungsbruecke, WACHSTUM_SCHWELLE, ANTEIL_SCHWELLE } from '../../core/instrumente.js'
 import { formatWert } from '../../design/theme.js'
 import { Badge } from '../../components/ui.jsx'
 
@@ -54,6 +54,8 @@ export default function ControllingInstrumente({ werte }) {
   const be = breakEven(werte)
   const dbRang = [...MOCK.portfolio].sort((a, b) => b.db - a.db)
   const invest = investitionsrechnung(MOCK.investitionen, MOCK.wacc)
+  const szen = szenarien(werte)
+  const bruecke = abweichungsbruecke(werte)
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gap: 18 }}>
       <div style={card}>
@@ -137,6 +139,47 @@ export default function ControllingInstrumente({ werte }) {
         <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 6 }}>
           Kapitalwert &gt; 0 ⇒ Projekt verzinst sich über dem Kapitalkostensatz (WACC). IRR = interner Zinsfuß; Amortisation = statische Wiedergewinnungszeit.
         </p>
+      </div>
+
+      {/* Szenarioanalyse + Soll-Ist-Abweichungsbrücke */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
+        <div style={card}>
+          <h3 style={{ fontSize: 15, marginBottom: 8 }}>Szenarioanalyse (EBIT)</h3>
+          {szen ? <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+            {szen.map((s) => {
+              const farbe = s.name === 'Best Case' ? 'var(--amp-g)' : s.name === 'Worst Case' ? 'var(--amp-r)' : 'var(--slate)'
+              return (
+                <div key={s.name} style={{ border: '1px solid var(--line)', borderTop: `3px solid ${farbe}`, borderRadius: 'var(--radius-sm)', padding: 10, textAlign: 'center' }}>
+                  <div className="mono" style={{ fontSize: 11, color: 'var(--muted)' }}>{s.name}</div>
+                  <div className="mono" style={{ fontSize: 20, fontWeight: 700, color: farbe }}>{formatWert(s.ebit, 'eur_mio')}</div>
+                  <div className="mono" style={{ fontSize: 11, color: s.delta >= 0 ? 'var(--amp-g)' : 'var(--amp-r)' }}>{s.delta >= 0 ? '+' : ''}{formatWert(s.delta, 'eur_mio')}</div>
+                  <div style={{ fontSize: 10.5, color: 'var(--muted)', marginTop: 4 }}>{s.annahme}</div>
+                </div>
+              )
+            })}
+          </div> : <div style={{ color: 'var(--muted)' }}>Daten unvollständig.</div>}
+          <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 8 }}>Sensitivität des EBIT auf die beiden Haupthebel (Volumen, Wareneinsatzquote) bei ± Variation.</p>
+        </div>
+
+        <div style={card}>
+          <h3 style={{ fontSize: 15, marginBottom: 8 }}>Soll-Ist-Abweichungsbrücke (EBIT)</h3>
+          {bruecke ? <div style={{ display: 'grid', gap: 4 }}>
+            {bruecke.komponenten.map((k, i) => {
+              const istDelta = k.typ === 'delta'
+              const val = istDelta ? k.delta : k.wert
+              const farbe = istDelta ? (k.delta >= 0 ? 'var(--amp-g)' : 'var(--amp-r)') : 'var(--ink)'
+              return (
+                <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px', gap: 8, alignItems: 'center',
+                  padding: '6px 8px', borderRadius: 'var(--radius-sm)', background: k.typ === 'start' || k.typ === 'ende' ? 'var(--bg)' : 'transparent', fontWeight: istDelta ? 400 : 600 }}>
+                  <span style={{ fontSize: 13 }}>{k.label}</span>
+                  <span className="mono" style={{ textAlign: 'right', fontSize: 13, color: farbe }}>{istDelta ? (k.delta >= 0 ? '+' : '') : ''}{formatWert(val, 'eur_mio')}</span>
+                  <span className="mono" style={{ textAlign: 'right', fontSize: 12, color: 'var(--muted)' }}>{formatWert(k.lauf, 'eur_mio')}</span>
+                </div>
+              )
+            })}
+          </div> : <div style={{ color: 'var(--muted)' }}>Plan-/Ist-Daten unvollständig.</div>}
+          <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 8 }}>Überleitung Plan-EBIT → Ist-EBIT: Umsatz-/Mengeneffekt (zur Plan-Marge) und Kosten-/Margeneffekt (Rest).</p>
+        </div>
       </div>
     </div>
   )

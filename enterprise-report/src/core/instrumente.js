@@ -75,4 +75,40 @@ export function investitionsrechnung(projekte = [], wacc = 8) {
   }).sort((a, b) => b.npv - a.npv)
 }
 
+// --- Szenarioanalyse: EBIT bei Umsatz-/Wareneinsatz-Variation ------------
+export function szenarioEbit(w, umsatzDeltaPct, wesDeltaPP) {
+  const netto = w.nettoumsatz * (1 + umsatzDeltaPct / 100)
+  const wesQuote = w.wareneinsatz / w.nettoumsatz + wesDeltaPP / 100
+  const wareneinsatz = netto * wesQuote
+  const fix = w.gesamtkosten - w.wareneinsatz       // Fixkosten ≈ konstant
+  return netto - wareneinsatz - fix
+}
+
+export function szenarien(w) {
+  if (w.nettoumsatz == null || w.wareneinsatz == null || w.gesamtkosten == null) return null
+  const base = szenarioEbit(w, 0, 0)
+  const defs = [
+    { name: 'Best Case', u: 5, wes: -1.5, annahme: 'Umsatz +5 %, Wareneinsatzquote −1,5 Pp' },
+    { name: 'Base Case', u: 0, wes: 0, annahme: 'Plan-Annahmen (Ist)' },
+    { name: 'Worst Case', u: -5, wes: 1.5, annahme: 'Umsatz −5 %, Wareneinsatzquote +1,5 Pp' }
+  ]
+  return defs.map((d) => { const ebit = szenarioEbit(w, d.u, d.wes); return { ...d, ebit, delta: ebit - base } })
+}
+
+// --- Soll-Ist-Abweichungsbrücke (Plan-EBIT -> Ist-EBIT) ------------------
+export function abweichungsbruecke(w) {
+  if (w.ebitPlan == null || w.ebit == null || w.umsatzplan == null || w.nettoumsatz == null || w.dbQuote == null) return null
+  const start = w.ebitPlan, end = w.ebit
+  const umsatzeffekt = (w.nettoumsatz - w.umsatzplan) * (w.dbQuote / 100)   // Mengen-/Umsatzeffekt zur Plan-Marge
+  const resteffekt = (end - start) - umsatzeffekt                          // Kosten-/Margeneffekt (Residuum)
+  let lauf = start
+  const komponenten = [
+    { label: 'Plan-EBIT', wert: start, typ: 'start', lauf: (lauf) },
+    { label: 'Umsatz/Menge', delta: umsatzeffekt, typ: 'delta', lauf: (lauf += umsatzeffekt) },
+    { label: 'Kosten/Marge', delta: resteffekt, typ: 'delta', lauf: (lauf += resteffekt) },
+    { label: 'Ist-EBIT', wert: end, typ: 'ende', lauf: end }
+  ]
+  return { start, end, komponenten }
+}
+
 export { WACHSTUM_SCHWELLE, ANTEIL_SCHWELLE }

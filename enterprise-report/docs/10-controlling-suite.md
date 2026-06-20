@@ -50,6 +50,10 @@ Rückgrat, mit dem das Controlling (fast) jede Frage beantworten kann.
 - **Deckungsbeitrags-Ranking** je Produktgruppe.
 - **Investitionsrechnung** — Kapitalwert (NPV @ WACC), interner Zinsfuß (IRR) und
   statische Amortisation je Projekt, mit Vorteilhaftigkeits-Entscheidung.
+- **Szenarioanalyse** — Best/Base/Worst-EBIT bei ± Variation der zwei Haupthebel
+  (Volumen, Wareneinsatzquote).
+- **Soll-Ist-Abweichungsbrücke** — Überleitung Plan-EBIT → Ist-EBIT
+  (Umsatz-/Mengeneffekt + Kosten-/Margeneffekt).
 
 Jeder Bereich hat Themenbereiche (E3), Detailberichte (E4) und Historie (E5)
 wie der Rest des Baums — gleiche Engine, gleiche Rechte, gleiches Design.
