@@ -11,6 +11,7 @@ import ControllingInstrumente from './modules/controlling-instrumente/Controllin
 import Alerts from './modules/alerts/Alerts.jsx'
 import { validierungsZusammenfassung } from './core/validierung.js'
 import { alertAnzahl } from './core/alerts.js'
+import { useT, SPRACHEN } from './core/i18n.jsx'
 
 const SETUP_KEY = 'er_setup_done'
 
@@ -23,6 +24,7 @@ export default function App() {
   const [verbindung, setVerbindung] = useState(null)
   const [mnKontext, setMnKontext] = useState(null)
   const rolle = ROLLEN[rolleId]
+  const { t, lang, setLang } = useT()
 
   useEffect(() => { ladeKpiWerte(periode).then(setWerte) }, [periode])
   useEffect(() => { pruefeVerbindung().then(setVerbindung) }, [])
@@ -40,12 +42,12 @@ export default function App() {
           <div>
             <div style={{ fontWeight: 700 }}>Enterprise Report</div>
             <div className="mono" style={{ fontSize: 10, color: 'var(--muted)' }}>
-              Quelle: {QUELLE.toUpperCase()}
+              {t('lbl.source')}: {QUELLE.toUpperCase()}
               {verbindung && (
                 <span style={{ marginLeft: 6,
                   color: verbindung.status === 'ok' ? 'var(--amp-g)' : verbindung.status === 'fehler' ? 'var(--amp-r)' : 'var(--muted)' }}>
-                  ● {verbindung.status === 'ok' ? `verbunden (${verbindung.server?.db || 'MSSQL'})`
-                    : verbindung.status === 'fehler' ? 'keine Verbindung' : 'Mock-Daten'}
+                  ● {verbindung.status === 'ok' ? `${t('conn.ok')} (${verbindung.server?.db || 'MSSQL'})`
+                    : verbindung.status === 'fehler' ? t('conn.none') : t('conn.mock')}
                 </span>
               )}
             </div>
@@ -56,27 +58,33 @@ export default function App() {
 
         {ansicht !== 'wizard' && (
           <>
-            <button style={topBtn(ansicht === 'baum' || ansicht === 'report')} onClick={() => setAnsicht('baum')}>Berichtsbaum</button>
-            <button style={topBtn(ansicht === 'bi')} onClick={() => setAnsicht('bi')}>Self-Service BI</button>
+            <button style={topBtn(ansicht === 'baum' || ansicht === 'report')} onClick={() => setAnsicht('baum')}>{t('nav.tree')}</button>
+            <button style={topBtn(ansicht === 'bi')} onClick={() => setAnsicht('bi')}>{t('nav.bi')}</button>
             <button style={topBtn(ansicht === 'qc')} onClick={() => setAnsicht('qc')}>
-              Querchecks{(() => { const f = validierungsZusammenfassung(werte).fehler; return f ? ` (${f})` : '' })()}
+              {t('nav.qc')}{(() => { const f = validierungsZusammenfassung(werte).fehler; return f ? ` (${f})` : '' })()}
             </button>
-            <button style={topBtn(ansicht === 'massnahmen')} onClick={() => setAnsicht('massnahmen')}>Maßnahmen</button>
-            <button style={topBtn(ansicht === 'instrumente')} onClick={() => setAnsicht('instrumente')}>Instrumente</button>
+            <button style={topBtn(ansicht === 'massnahmen')} onClick={() => setAnsicht('massnahmen')}>{t('nav.massnahmen')}</button>
+            <button style={topBtn(ansicht === 'instrumente')} onClick={() => setAnsicht('instrumente')}>{t('nav.instrumente')}</button>
             {(() => { const n = alertAnzahl(werte, rolle); return (
               <button style={{ ...topBtn(ansicht === 'alerts'), ...(n ? { borderColor: 'var(--amp-r)', color: ansicht === 'alerts' ? '#fff' : 'var(--amp-r)' } : {}) }} onClick={() => setAnsicht('alerts')}>
-                ⚠ Alerts{n ? ` (${n})` : ''}</button>) })()}
-            <label style={{ fontSize: 12, color: 'var(--muted)' }}>Rolle&nbsp;
+                ⚠ {t('nav.alerts')}{n ? ` (${n})` : ''}</button>) })()}
+            <label style={{ fontSize: 12, color: 'var(--muted)' }}>{t('lbl.role')}&nbsp;
               <select value={rolleId} onChange={(e) => setRolleId(e.target.value)} style={{ font: 'inherit', padding: '5px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)' }}>
                 {Object.values(ROLLEN).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
               </select>
             </label>
-            <label style={{ fontSize: 12, color: 'var(--muted)' }}>Periode&nbsp;
+            <label style={{ fontSize: 12, color: 'var(--muted)' }}>{t('lbl.period')}&nbsp;
               <select value={periode} onChange={(e) => setPeriode(e.target.value)} style={{ font: 'inherit', padding: '5px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)' }}>
                 {PERIODEN.map((p) => <option key={p} value={p}>{p}</option>)}
               </select>
             </label>
-            <button style={topBtn(false)} onClick={() => setAnsicht('wizard')}>⚙ Wizard</button>
+            <button style={topBtn(false)} onClick={() => setAnsicht('wizard')}>⚙ {t('nav.wizard')}</button>
+            <div style={{ display: 'flex', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
+              {SPRACHEN.map((s) => (
+                <button key={s.id} onClick={() => setLang(s.id)} style={{ padding: '5px 8px', border: 'none', fontSize: 11, fontWeight: 600,
+                  background: lang === s.id ? 'var(--accent)' : 'var(--panel)', color: lang === s.id ? '#fff' : 'var(--muted)' }}>{s.label}</button>
+              ))}
+            </div>
           </>
         )}
       </header>

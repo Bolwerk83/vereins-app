@@ -1,0 +1,34 @@
+// =========================================================================
+//  i18n — leichte Mehrsprachigkeit (DE/EN) für die App-Bedienoberfläche.
+//  Erweiterbar: weitere Schlüssel/Module ergänzen; Fachinhalte (KPI-Namen)
+//  können später über name_en in der Registry folgen.
+// =========================================================================
+import React, { createContext, useContext, useState, useCallback } from 'react'
+
+const KEY = 'er_lang'
+export const SPRACHEN = [{ id: 'de', label: 'DE' }, { id: 'en', label: 'EN' }]
+
+const DICT = {
+  de: {
+    'nav.tree': 'Berichtsbaum', 'nav.bi': 'Self-Service BI', 'nav.qc': 'Querchecks',
+    'nav.massnahmen': 'Maßnahmen', 'nav.instrumente': 'Instrumente', 'nav.alerts': 'Alerts',
+    'nav.wizard': 'Wizard', 'lbl.role': 'Rolle', 'lbl.period': 'Periode', 'lbl.source': 'Quelle',
+    'conn.ok': 'verbunden', 'conn.none': 'keine Verbindung', 'conn.mock': 'Mock-Daten'
+  },
+  en: {
+    'nav.tree': 'Report tree', 'nav.bi': 'Self-service BI', 'nav.qc': 'Cross-checks',
+    'nav.massnahmen': 'Measures', 'nav.instrumente': 'Instruments', 'nav.alerts': 'Alerts',
+    'nav.wizard': 'Wizard', 'lbl.role': 'Role', 'lbl.period': 'Period', 'lbl.source': 'Source',
+    'conn.ok': 'connected', 'conn.none': 'no connection', 'conn.mock': 'mock data'
+  }
+}
+
+const Ctx = createContext({ lang: 'de', t: (k, f) => f ?? k, setLang: () => {} })
+
+export function SpracheProvider({ children }) {
+  const [lang, setLangState] = useState(() => localStorage.getItem(KEY) || 'de')
+  const setLang = useCallback((l) => { localStorage.setItem(KEY, l); setLangState(l) }, [])
+  const t = useCallback((k, f) => (DICT[lang] && DICT[lang][k]) || DICT.de[k] || f || k, [lang])
+  return <Ctx.Provider value={{ lang, t, setLang }}>{children}</Ctx.Provider>
+}
+export const useT = () => useContext(Ctx)
