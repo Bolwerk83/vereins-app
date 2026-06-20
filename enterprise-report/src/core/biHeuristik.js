@@ -34,7 +34,9 @@ const STICHWORTE = [
   [/fibu|finanzbuchhalt|abschluss|bilanz|rückstellung|rueckstellung|eigenkapital|abgrenzung|hgb/i, ['betrieblichesErgebnis', 'eigenkapitalquote', 'abschlussdauer', 'rueckstellungen']],
   [/investition|capex|liquidit|cashflow|cash.?flow|kreditlinie|zahlungsf/i, ['operativerCashflow', 'freieLiquiditaet', 'investBudgettreue']],
   [/vertriebscontrolling|rabatt|kundenprofitab|vertriebskost|kanalprofitab|neukunden/i, ['vertriebskostenquote', 'rabattquote', 'neukundenanteil', 'dbQuote']],
-  [/personalcontrolling|produktivit|umsatz je|überstund|ueberstund|krankenstand|fte/i, ['personalkostenquote', 'umsatzJeFTE', 'krankenstand', 'fluktuation']]
+  [/personalcontrolling|produktivit|umsatz je|überstund|ueberstund|krankenstand|fte/i, ['personalkostenquote', 'umsatzJeFTE', 'krankenstand', 'fluktuation']],
+  [/risiko|forderung|dso|überfällig|ueberfaellig|ausfall|mahn|klumpen|konzentration|debitor/i, ['dso', 'ueberfaelligkeitsquote', 'forderungsausfall', 'klumpenrisikoTop3']],
+  [/nachhaltig|esg|co2|co₂|emission|energie|ökostrom|oekostrom|recycling|klima|kreislauf/i, ['co2ProRad', 'recyclingquote', 'oekostromanteil', 'energieJeRad']]
 ]
 
 function gematchteKpis(text) {

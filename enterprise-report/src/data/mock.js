@@ -29,7 +29,9 @@ export const MOCK = {
       handelsrechtlichesErgebnis: 1.5, neutralesErgebnis: -0.2,
       investitionsvolumen: 2.1, investitionsbudget: 2.5, liquideMittel: 5.4, kreditlinie: 4.0, operativerCashflow: 2.0,
       vertriebskosten: 5.6, neukundenanteil: 24, rabattquote: 6.5,
-      mitarbeiterFTE: 352, ueberstundenquote: 3.5, krankenstand: 4.6
+      mitarbeiterFTE: 352, ueberstundenquote: 3.5, krankenstand: 4.6,
+      offeneForderungen: 4.0, ueberfaelligeForderungen: 0.50, dso: 34, forderungsausfall: 0.6, klumpenrisikoTop3: 30,
+      co2ProRad: 110, co2Gesamt: 3100, energieJeRad: 48, oekostromanteil: 55, recyclingquote: 70
     },
     '2024': {
       bruttoumsatz: 53.0, erloesschmaelerung: 3.3, nettoumsatz: 48.1,
@@ -49,7 +51,9 @@ export const MOCK = {
       handelsrechtlichesErgebnis: 1.4, neutralesErgebnis: -0.2,
       investitionsvolumen: 2.4, investitionsbudget: 2.6, liquideMittel: 5.9, kreditlinie: 4.0, operativerCashflow: 1.9,
       vertriebskosten: 6.0, neukundenanteil: 26, rabattquote: 6.8,
-      mitarbeiterFTE: 364, ueberstundenquote: 3.8, krankenstand: 4.7
+      mitarbeiterFTE: 364, ueberstundenquote: 3.8, krankenstand: 4.7,
+      offeneForderungen: 4.1, ueberfaelligeForderungen: 0.55, dso: 36, forderungsausfall: 0.7, klumpenrisikoTop3: 32,
+      co2ProRad: 104, co2Gesamt: 3050, energieJeRad: 46, oekostromanteil: 62, recyclingquote: 74
     },
     '2025': {
       bruttoumsatz: 55.8, erloesschmaelerung: 3.8, nettoumsatz: 52.0,
@@ -69,7 +73,9 @@ export const MOCK = {
       handelsrechtlichesErgebnis: 1.1, neutralesErgebnis: -0.3,
       investitionsvolumen: 2.8, investitionsbudget: 2.6, liquideMittel: 6.3, kreditlinie: 4.0, operativerCashflow: 1.8,
       vertriebskosten: 6.4, neukundenanteil: 28, rabattquote: 7.2,
-      mitarbeiterFTE: 372, ueberstundenquote: 4.1, krankenstand: 4.9
+      mitarbeiterFTE: 372, ueberstundenquote: 4.1, krankenstand: 4.9,
+      offeneForderungen: 4.1, ueberfaelligeForderungen: 0.62, dso: 38, forderungsausfall: 0.8, klumpenrisikoTop3: 34,
+      co2ProRad: 98, co2Gesamt: 2980, energieJeRad: 44, oekostromanteil: 68, recyclingquote: 77
     }
   },
 
@@ -164,6 +170,22 @@ export const MOCK = {
     personal_produktivitaet: { titel: 'Kosten & Produktivität je Bereich', spalten: ['Bereich','FTE','Kosten Mio €','Umsatz/FTE T€'],
       zeilen: [['Filialen DE/CH/NL','186','5,2','—'],['Onlineshop & Service','64','2,1','365'],['Produktion & Logistik','96','2,4','—'],['Verwaltung/IT/Finanzen','26','0,8','—'],['Gesamt','372','10,5','140']] },
     arbeitszeit: { titel: 'Arbeitszeit & Fehlzeiten je Bereich', spalten: ['Bereich','Überstundenquote','Krankenstand'],
-      zeilen: [['Filialen','3,1 %','5,2 %'],['Onlineshop & Service','4,8 %','4,1 %'],['Produktion','5,4 %','5,6 %'],['Logistik','4,6 %','4,9 %'],['Verwaltung','1,9 %','3,2 %']] }
+      zeilen: [['Filialen','3,1 %','5,2 %'],['Onlineshop & Service','4,8 %','4,1 %'],['Produktion','5,4 %','5,6 %'],['Logistik','4,6 %','4,9 %'],['Verwaltung','1,9 %','3,2 %']] },
+
+    // --- Risiko- & Forderungscontrolling ---
+    forderungs_aging: { titel: 'Forderungs-Aging (Mio €)', spalten: ['Fälligkeit','Mio €','Anteil','Risiko'],
+      zeilen: [['nicht fällig','3,48','85 %','—'],['1–30 Tage','0,33','8 %','gering'],['31–60 Tage','0,16','4 %','mittel'],['61–90 Tage','0,08','2 %','hoch'],['> 90 Tage','0,05','1 %','kritisch'],['Gesamt','4,10','100 %','—']] },
+    ausfaelle: { titel: 'Ausfälle & Wertberichtigungen', spalten: ['Position','Mio €','Hinweis'],
+      zeilen: [['Pauschalwertberichtigung','0,18','1 % der Forderungen'],['Einzelwertberichtigung','0,22','3 Großfälle'],['Realisierter Ausfall','0,42','0,8 % vom Umsatz'],['Inkasso/Recht','0,06','laufend']] },
+    konzentration: { titel: 'Konzentrationsrisiko Top-Partner', spalten: ['Partner','Typ','Umsatz/Volumen','Anteil'],
+      zeilen: [['Leasing-Partner A','Kunde','7,8 Mio','15 %'],['B2B-Händler B','Kunde','5,2 Mio','10 %'],['Filialkette C','Kunde','4,7 Mio','9 %'],['Antrieb/Schaltung X','Lieferant','9,8 Mio','31 % EK'],['Rahmen-Rohmaterial Y','Lieferant','6,4 Mio','20 % EK']] },
+
+    // --- Nachhaltigkeits-/ESG-Controlling ---
+    co2_scope: { titel: 'CO₂-Bilanz nach Scope (t CO₂e)', spalten: ['Scope','Quelle','t CO₂e','Anteil'],
+      zeilen: [['Scope 1','eigene Verbrennung/Fuhrpark','420','14 %'],['Scope 2','Strom/Wärme','610','20 %'],['Scope 3','Vorprodukte/Logistik','1.950','66 %'],['Gesamt','—','2.980','100 %']] },
+    energie_material: { titel: 'Energie & Material je Rad', spalten: ['Kennzahl','Wert','Ziel'],
+      zeilen: [['Energie je Rad','44 kWh','42'],['Ökostromanteil','68 %','100 %'],['Aluminium-Rezyklat','41 %','60 %'],['Verpackung recycelt','82 %','90 %'],['Ausschussmaterial','2,1 %','1,5 %']] },
+    kreislauf_sozial: { titel: 'Kreislauf & Soziales', spalten: ['Kennzahl','Wert','Trend'],
+      zeilen: [['Recyclingquote','77 %','▲'],['Reparaturquote (Leasing-Rückläufer)','64 %','▲'],['Betriebszugehörigkeit Ø','6,8 J','▬'],['Frauenanteil Führung','28 %','▲'],['Ausbildungsquote','5,1 %','▬']] }
   }
 }

@@ -91,3 +91,48 @@ export async function beiratAuswertung(anforderung, werte, kpiKatalog = {}) {
   bericht.quelle = 'claude'
   return bericht
 }
+
+// --- SMART-Maßnahmenempfehlung (Controller-Auswertung eines Berichts) ----
+const MASSNAHME_ITEM = {
+  type: 'object', additionalProperties: false,
+  required: ['titel', 'kpi', 'zielwert', 'bereich', 'hebel', 'erreichbarkeit', 'relevanz', 'frist', 'wirkungErgebnis', 'wirkungLiquiditaet', 'aufwand'],
+  properties: {
+    titel: { type: 'string' },                 // S — spezifisch
+    kpi: { type: 'string' },                    // M — messbar: KPI-id
+    zielwert: { type: 'number' },               // M — Zielwert
+    bereich: { type: 'string' },
+    hebel: { type: 'string' },
+    erreichbarkeit: { type: 'string' },         // A
+    relevanz: { type: 'string' },               // R — Bezug Unternehmensziel
+    frist: { type: 'string' },                  // T
+    wirkungErgebnis: { type: 'string' },
+    wirkungLiquiditaet: { type: 'string' },
+    aufwand: { type: 'string', enum: ['gering', 'mittel', 'hoch'] }
+  }
+}
+const MASSNAHMEN_SCHEMA = {
+  type: 'object', additionalProperties: false, required: ['massnahmen'],
+  properties: { massnahmen: { type: 'array', items: MASSNAHME_ITEM } }
+}
+
+export async function smartMassnahmen(kontext, werte, kpiKatalog = {}) {
+  const k = Object.entries(werte)
+    .map(([id, w]) => `- ${id} (${(kpiKatalog[id] || {}).name || id}): ${w}`).join('\n')
+  const response = await client.messages.create({
+    model: 'claude-opus-4-8',
+    max_tokens: 16000,
+    thinking: { type: 'adaptive' },
+    system: SYSTEM + '\n\nDeine Aufgabe hier: Werte einen Bericht aus wie ein Controller und ' +
+      'leite konkrete Maßnahmen ab. JEDE Maßnahme MUSS SMART sein: spezifisch (titel), messbar ' +
+      '(kpi + zielwert), erreichbar (erreichbarkeit), relevant (relevanz = Bezug zum Unternehmensziel), ' +
+      'terminiert (frist). Priorisiere die auffälligen KPIs (rot/amber). Erfinde keine Zahlen.',
+    output_config: { format: { type: 'json_schema', schema: MASSNAHMEN_SCHEMA } },
+    messages: [{
+      role: 'user',
+      content: `Kontext/Bericht: "${kontext}"\n\nKPI-Werte:\n${k}\n\n` +
+        `Erzeuge 4–6 SMART-Maßnahmen, rot vor amber, mit kpi-id aus den obigen Werten.`
+    }]
+  })
+  const text = response.content.find((b) => b.type === 'text')?.text || '{"massnahmen":[]}'
+  return (JSON.parse(text).massnahmen || []).map((m) => ({ ...m, quelle: 'ki' }))
+}

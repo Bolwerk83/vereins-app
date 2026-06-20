@@ -279,6 +279,44 @@ export const BERICHTSBAUM = n('konzern', 1, 'VeloWerk Gruppe · Management Repor
           kinder: [ n('pc-arbeitszeit-det', 4, 'Überstunden/Krankenstand je Bereich', { bereich: 'PC', detail: 'arbeitszeit' }) ]
         })
       ]
+    }),
+
+    // ---- E2 Fachbereich: Risiko- & Forderungscontrolling ----------------
+    n('ris', 2, 'Risiko- & Forderungscontrolling', {
+      bereich: 'RIS', kpis: ['dso', 'ueberfaelligkeitsquote', 'forderungsausfall', 'klumpenrisikoTop3'],
+      kinder: [
+        n('ris-forderungen', 3, 'Forderungsmanagement (DSO/Aging)', {
+          bereich: 'RIS', kpis: ['dso', 'ueberfaelligkeitsquote', 'offeneForderungen'],
+          kinder: [ n('ris-forderungen-det', 4, 'Forderungs-Aging', { bereich: 'RIS', detail: 'forderungs_aging' }) ]
+        }),
+        n('ris-ausfall', 3, 'Ausfallrisiko', {
+          bereich: 'RIS', kpis: ['forderungsausfall'],
+          kinder: [ n('ris-ausfall-det', 4, 'Ausfälle & Wertberichtigungen', { bereich: 'RIS', detail: 'ausfaelle' }) ]
+        }),
+        n('ris-klumpen', 3, 'Klumpen-/Konzentrationsrisiko', {
+          bereich: 'RIS', kpis: ['klumpenrisikoTop3'],
+          kinder: [ n('ris-klumpen-det', 4, 'Top-Kunden & Lieferanten', { bereich: 'RIS', detail: 'konzentration' }) ]
+        })
+      ]
+    }),
+
+    // ---- E2 Fachbereich: Nachhaltigkeits-/ESG-Controlling ---------------
+    n('esg', 2, 'Nachhaltigkeits- & ESG-Controlling', {
+      bereich: 'ESG', kpis: ['co2ProRad', 'recyclingquote', 'oekostromanteil', 'energieJeRad'],
+      kinder: [
+        n('esg-emissionen', 3, 'Emissionen (CO₂)', {
+          bereich: 'ESG', kpis: ['co2ProRad', 'co2Gesamt'],
+          kinder: [ n('esg-emissionen-det', 4, 'CO₂-Bilanz nach Scope', { bereich: 'ESG', detail: 'co2_scope' }) ]
+        }),
+        n('esg-energie', 3, 'Energie & Material', {
+          bereich: 'ESG', kpis: ['energieJeRad', 'oekostromanteil'],
+          kinder: [ n('esg-energie-det', 4, 'Energie/Material je Rad', { bereich: 'ESG', detail: 'energie_material' }) ]
+        }),
+        n('esg-kreislauf', 3, 'Kreislauf & Soziales', {
+          bereich: 'ESG', kpis: ['recyclingquote'],
+          kinder: [ n('esg-kreislauf-det', 4, 'Recycling & Sozial-Kennzahlen', { bereich: 'ESG', detail: 'kreislauf_sozial' }) ]
+        })
+      ]
     })
   ]
 })

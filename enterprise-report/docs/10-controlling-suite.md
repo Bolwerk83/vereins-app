@@ -17,7 +17,26 @@ Rückgrat, mit dem das Controlling (fast) jede Frage beantworten kann.
 | Vertriebscontrolling | `VC` | Kanal-/Kundenprofitabilität, Rabatte, Vertriebskosten | Vertriebskostenquote, Rabattquote, Neukundenanteil |
 | Personalcontrolling | `PC` | Produktivität, Fluktuation, Arbeitszeit (OLS) | Personalkostenquote*, Umsatz/FTE, Krankenstand |
 
+| Risiko- & Forderungscontrolling | `RIS` | DSO/Aging, Ausfall, Klumpenrisiko | DSO, Überfälligkeitsquote, Forderungsausfall |
+| Nachhaltigkeits- & ESG-Controlling | `ESG` | CO₂, Energie, Kreislauf/Soziales | CO₂/Rad, Recyclingquote, Ökostromanteil |
+
 *Personalkostenquote ist per Object-Level-Security auf GF/HR/FIN beschränkt (greift auch im Self-Service-BI).
+
+## Maßnahmen-Modul (Eingabe · KI-Empfehlung · Verwaltung)
+
+`src/modules/massnahmen` + `src/core/massnahmen.js`. Drei Funktionen:
+
+- **KI-Empfehlung (SMART):** Knopf „Auswerten (wie ein Controller)" — wertet die
+  auffälligen KPIs (rot/amber) aus und schlägt Maßnahmen nach **SMART** vor:
+  **S**pezifisch (Titel), **M**essbar (KPI + Zielwert), **A**chievable
+  (Weg/Begründung), **R**elevant (Bezug zum Unternehmensziel), **T**erminiert
+  (Frist). Engine wie beim BI: `heuristik` offline / `claude` via `/api/massnahmen`.
+- **Direkt aus dem Bericht:** Im Management Report startet der Knopf
+  „🎯 Controller-Auswertung (SMART)" die Bewertung für genau diesen Bericht.
+- **Eingabe:** eigene Maßnahmen erfassen (Titel, Bereich, Hebel, Owner, Frist, Aufwand).
+- **Verwaltung:** Liste mit Owner und Status (offen · in_arbeit · erledigt · verworfen),
+  persistent (LocalStorage; später MSSQL-Tabelle). Object-Level-Security greift —
+  geschützte KPIs erzeugen für unberechtigte Rollen keine Empfehlung.
 
 Jeder Bereich hat Themenbereiche (E3), Detailberichte (E4) und Historie (E5)
 wie der Rest des Baums — gleiche Engine, gleiche Rechte, gleiches Design.

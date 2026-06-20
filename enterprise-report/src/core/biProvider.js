@@ -9,6 +9,7 @@
 //  Umschalten über VITE_BI_SOURCE. Die UI kennt nur diese Funktion.
 // =========================================================================
 import { biHeuristik } from './biHeuristik.js'
+import { empfehleHeuristik } from './massnahmen.js'
 import { KPI } from './kpiRegistry.js'
 import { darfKpi } from './rbac.js'
 
@@ -45,4 +46,25 @@ export async function erzeugeBiBericht(anforderung, werte, rolle = null) {
   // Offline: kleine künstliche Verzögerung für realistisches UX.
   await new Promise((res) => setTimeout(res, 350))
   return biHeuristik(anforderung, werteSicht, rolle)
+}
+
+/**
+ * KI-Auswertung „wie ein Controller": liefert SMART-Maßnahmen zu einem
+ * Bericht/Kontext. heuristik = offline; claude = Backend /api/massnahmen.
+ * @param {string} kontext  z. B. Berichtstitel / Bereich
+ * @param {object} werte    aktuelle KPI-Werte
+ * @param {object} rolle    fürs Object-Level-Security
+ */
+export async function empfehleMassnahmen(kontext, werte, rolle = null) {
+  const werteSicht = sichtbareWerte(werte, rolle)
+  if (BI_QUELLE === 'claude') {
+    const r = await fetch('/api/massnahmen', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kontext, werte: werteSicht })
+    })
+    if (!r.ok) throw new Error('Maßnahmen-Backend (Claude) nicht erreichbar')
+    return r.json()
+  }
+  await new Promise((res) => setTimeout(res, 300))
+  return empfehleHeuristik(werteSicht, rolle)
 }

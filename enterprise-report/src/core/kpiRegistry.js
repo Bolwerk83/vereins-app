@@ -492,6 +492,77 @@ export const KPI = {
     sqlRef: null, abhaengig: ['personalkosten', 'nettoumsatz'],
     berechne: (v) => (v.personalkosten / v.nettoumsatz) * 100,
     security: ['GF', 'HR', 'FIN']
+  },
+
+  // ---- Risiko- & Forderungscontrolling (RIS) ---------------------------
+  offeneForderungen: {
+    id: 'offeneForderungen', name: 'Offene Forderungen', einheit: 'eur_mio',
+    bereich: 'RIS', ziel: null, richtung: 'tief_gut',
+    beschreibung: 'Summe offener Kundenforderungen zum Stichtag.',
+    sqlRef: 'offene_forderungen', abhaengig: [], security: null
+  },
+  ueberfaelligeForderungen: {
+    id: 'ueberfaelligeForderungen', name: 'Überfällige Forderungen', einheit: 'eur_mio',
+    bereich: 'RIS', ziel: null, richtung: 'tief_gut',
+    beschreibung: 'Forderungen über Fälligkeit (>0 Tage überfällig).',
+    sqlRef: 'ueberfaellige_forderungen', abhaengig: [], security: null
+  },
+  dso: {
+    id: 'dso', name: 'DSO (Forderungslaufzeit)', einheit: 'days',
+    bereich: 'RIS', ziel: 30, richtung: 'tief_gut', warn: 0.8,
+    beschreibung: 'Days Sales Outstanding — durchschnittliche Forderungslaufzeit.',
+    sqlRef: 'dso', abhaengig: [], security: null
+  },
+  forderungsausfall: {
+    id: 'forderungsausfall', name: 'Forderungsausfallquote', einheit: 'percent',
+    bereich: 'RIS', ziel: 0.5, richtung: 'tief_gut', warn: 0.7,
+    beschreibung: 'Abgeschriebene Forderungen in % vom Umsatz.',
+    sqlRef: 'forderungsausfall', abhaengig: [], security: null
+  },
+  klumpenrisikoTop3: {
+    id: 'klumpenrisikoTop3', name: 'Klumpenrisiko Top-3', einheit: 'percent0',
+    bereich: 'RIS', ziel: 30, richtung: 'tief_gut', warn: 0.85,
+    beschreibung: 'Umsatzanteil der drei größten Kunden (Konzentrationsrisiko).',
+    sqlRef: 'klumpenrisiko_top3', abhaengig: [], security: null
+  },
+  ueberfaelligkeitsquote: {
+    id: 'ueberfaelligkeitsquote', name: 'Überfälligkeitsquote', einheit: 'percent',
+    bereich: 'RIS', ziel: 10, richtung: 'tief_gut', warn: 0.8,
+    beschreibung: 'Überfällige in % der offenen Forderungen. Abgeleitet.',
+    sqlRef: null, abhaengig: ['ueberfaelligeForderungen', 'offeneForderungen'],
+    berechne: (v) => (v.ueberfaelligeForderungen / v.offeneForderungen) * 100, security: null
+  },
+
+  // ---- Nachhaltigkeits-/ESG-Controlling (ESG) --------------------------
+  co2ProRad: {
+    id: 'co2ProRad', name: 'CO₂ je Rad', einheit: 'kg',
+    bereich: 'ESG', ziel: 95, richtung: 'tief_gut', warn: 0.9,
+    beschreibung: 'CO₂-Fußabdruck je gefertigtem Rad (Scope 1–3, kg CO₂e).',
+    sqlRef: 'co2_pro_rad', abhaengig: [], security: null
+  },
+  co2Gesamt: {
+    id: 'co2Gesamt', name: 'CO₂ gesamt', einheit: 'tonnen',
+    bereich: 'ESG', ziel: null, richtung: 'tief_gut',
+    beschreibung: 'Gesamtemissionen der Gruppe (t CO₂e).',
+    sqlRef: 'co2_gesamt', abhaengig: [], security: null
+  },
+  energieJeRad: {
+    id: 'energieJeRad', name: 'Energie je Rad', einheit: 'kwh',
+    bereich: 'ESG', ziel: 42, richtung: 'tief_gut', warn: 0.9,
+    beschreibung: 'Energieeinsatz je Rad in Fertigung & Montage.',
+    sqlRef: 'energie_je_rad', abhaengig: [], security: null
+  },
+  oekostromanteil: {
+    id: 'oekostromanteil', name: 'Ökostromanteil', einheit: 'percent0',
+    bereich: 'ESG', ziel: 100, richtung: 'hoch_gut', warn: 0.85,
+    beschreibung: 'Anteil erneuerbarer Energie am Stromverbrauch.',
+    sqlRef: 'oekostromanteil', abhaengig: [], security: null
+  },
+  recyclingquote: {
+    id: 'recyclingquote', name: 'Recyclingquote', einheit: 'percent0',
+    bereich: 'ESG', ziel: 80, richtung: 'hoch_gut', warn: 0.9,
+    beschreibung: 'Recycling-/Verwertungsquote von Material und Verpackung.',
+    sqlRef: 'recyclingquote', abhaengig: [], security: null
   }
 }
 

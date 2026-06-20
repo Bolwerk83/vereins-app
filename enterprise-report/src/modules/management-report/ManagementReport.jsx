@@ -9,7 +9,7 @@ import { KPI } from '../../core/kpiRegistry.js'
 import { darfKpi } from '../../core/rbac.js'
 import { KpiCard, KpiGesperrt, Badge } from '../../components/ui.jsx'
 
-export default function ManagementReport({ rolle, werte, periode, onClose }) {
+export default function ManagementReport({ rolle, werte, periode, onClose, onEmpfehlung }) {
   const r = MGMT_REPORT
   return (
     <div style={{ maxWidth: 900, margin: '0 auto', background: 'var(--panel)', border: '1px solid var(--line)',
@@ -23,8 +23,13 @@ export default function ManagementReport({ rolle, werte, periode, onClose }) {
         </div>
         <div style={{ textAlign: 'right' }}>
           <Badge status="n">{r.audienz}</Badge>
-          <div><button onClick={onClose} style={{ marginTop: 8, background: 'transparent', border: '1px solid var(--line)',
-            borderRadius: 'var(--radius-sm)', padding: '6px 12px' }}>← Zurück zum Baum</button></div>
+          <div style={{ marginTop: 8, display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            {onEmpfehlung && <button onClick={() => onEmpfehlung(`${r.titel} · ${periode}`)}
+              style={{ background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 'var(--radius-sm)', padding: '6px 12px', fontWeight: 600 }}>
+              🎯 Controller-Auswertung (SMART)</button>}
+            <button onClick={onClose} style={{ background: 'transparent', border: '1px solid var(--line)',
+              borderRadius: 'var(--radius-sm)', padding: '6px 12px' }}>← Zurück</button>
+          </div>
         </div>
       </div>
 

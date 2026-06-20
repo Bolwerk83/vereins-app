@@ -22,6 +22,9 @@ export function formatWert(wert, format) {
     case 'percent0': return nf({ maximumFractionDigits: 0 }).format(wert) + ' %'
     case 'days':     return nf({ maximumFractionDigits: 0 }).format(wert) + ' Tg'
     case 'faktor':   return nf({ minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(wert) + '×'
+    case 'kg':       return nf({ maximumFractionDigits: 0 }).format(wert) + ' kg'
+    case 'kwh':      return nf({ maximumFractionDigits: 0 }).format(wert) + ' kWh'
+    case 'tonnen':   return nf({ maximumFractionDigits: 0 }).format(wert) + ' t'
     case 'count':    return nf({ maximumFractionDigits: 0 }).format(wert)
     default:         return String(wert)
   }

@@ -17,7 +17,7 @@ import { readFileSync, existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 import { getPool, pingDb, configBeschreibung, sql } from './db.js'
-import { beiratAuswertung } from './biAgents.js'
+import { beiratAuswertung, smartMassnahmen } from './biAgents.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const SQL_DIR = join(__dirname, '..', 'sql')
@@ -55,7 +55,13 @@ const ROHE_KPIS = {
   // Vertriebscontrolling
   vertriebskosten: 'vertriebskosten', rabattquote: 'rabattquote', neukundenanteil: 'neukundenanteil',
   // Personalcontrolling
-  mitarbeiter_fte: 'mitarbeiterFTE', ueberstundenquote: 'ueberstundenquote', krankenstand: 'krankenstand'
+  mitarbeiter_fte: 'mitarbeiterFTE', ueberstundenquote: 'ueberstundenquote', krankenstand: 'krankenstand',
+  // Risiko- & Forderungscontrolling
+  offene_forderungen: 'offeneForderungen', ueberfaellige_forderungen: 'ueberfaelligeForderungen',
+  dso: 'dso', forderungsausfall: 'forderungsausfall', klumpenrisiko_top3: 'klumpenrisikoTop3',
+  // Nachhaltigkeits-/ESG-Controlling
+  co2_pro_rad: 'co2ProRad', co2_gesamt: 'co2Gesamt', energie_je_rad: 'energieJeRad',
+  oekostromanteil: 'oekostromanteil', recyclingquote: 'recyclingquote'
 }
 
 const sqlPfad = (ref) => join(SQL_DIR, `${ref}.kpi.sql`)
@@ -91,6 +97,14 @@ app.post('/api/bi', async (req, res) => {
     const { anforderung, werte } = req.body || {}
     if (!anforderung) return res.status(400).json({ error: 'anforderung fehlt' })
     res.json(await beiratAuswertung(anforderung, werte || {}))
+  } catch (e) { res.status(500).json({ error: String(e) }) }
+})
+
+// Controller-Auswertung eines Berichts -> SMART-Maßnahmen (Claude).
+app.post('/api/massnahmen', async (req, res) => {
+  try {
+    const { kontext, werte } = req.body || {}
+    res.json(await smartMassnahmen(kontext || 'Bericht', werte || {}))
   } catch (e) { res.status(500).json({ error: String(e) }) }
 })
 

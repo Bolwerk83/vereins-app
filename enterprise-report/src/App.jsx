@@ -6,6 +6,7 @@ import ManagementReport from './modules/management-report/ManagementReport.jsx'
 import SetupWizard from './modules/wizard/SetupWizard.jsx'
 import SelfServiceBI from './modules/self-service-bi/SelfServiceBI.jsx'
 import Datenqualitaet from './modules/datenqualitaet/Datenqualitaet.jsx'
+import Massnahmen from './modules/massnahmen/Massnahmen.jsx'
 import { validierungsZusammenfassung } from './core/validierung.js'
 
 const SETUP_KEY = 'er_setup_done'
@@ -17,6 +18,7 @@ export default function App() {
   const [periode, setPeriode] = useState(AKTUELLE_PERIODE)
   const [werte, setWerte] = useState({})
   const [verbindung, setVerbindung] = useState(null)
+  const [mnKontext, setMnKontext] = useState(null)
   const rolle = ROLLEN[rolleId]
 
   useEffect(() => { ladeKpiWerte(periode).then(setWerte) }, [periode])
@@ -56,6 +58,7 @@ export default function App() {
             <button style={topBtn(ansicht === 'qc')} onClick={() => setAnsicht('qc')}>
               Querchecks{(() => { const f = validierungsZusammenfassung(werte).fehler; return f ? ` (${f})` : '' })()}
             </button>
+            <button style={topBtn(ansicht === 'massnahmen')} onClick={() => setAnsicht('massnahmen')}>Maßnahmen</button>
             <label style={{ fontSize: 12, color: 'var(--muted)' }}>Rolle&nbsp;
               <select value={rolleId} onChange={(e) => setRolleId(e.target.value)} style={{ font: 'inherit', padding: '5px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)' }}>
                 {Object.values(ROLLEN).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
@@ -81,13 +84,18 @@ export default function App() {
           <TreeNavigator rolle={rolle} werte={werte} onOpenReport={() => setAnsicht('report')} />
         )}
         {ansicht === 'report' && (
-          <ManagementReport rolle={rolle} werte={werte} periode={periode} onClose={() => setAnsicht('baum')} />
+          <ManagementReport rolle={rolle} werte={werte} periode={periode}
+            onClose={() => setAnsicht('baum')}
+            onEmpfehlung={(k) => { setMnKontext(k); setAnsicht('massnahmen') }} />
         )}
         {ansicht === 'bi' && (
           <SelfServiceBI rolle={rolle} werte={werte} />
         )}
         {ansicht === 'qc' && (
           <Datenqualitaet werte={werte} periode={periode} />
+        )}
+        {ansicht === 'massnahmen' && (
+          <Massnahmen werte={werte} rolle={rolle} autoKontext={mnKontext} onVerbraucht={() => setMnKontext(null)} />
         )}
       </main>
     </div>
