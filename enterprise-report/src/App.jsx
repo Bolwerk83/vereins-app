@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { ladeGruppen, ladeGruppenAsync, istAdmin, effektiveRolleAsync } from './core/gruppen.js'
 import RollenRechte from './modules/rollen-rechte/RollenRechte.jsx'
 import BenutzerLeiste from './modules/benutzer/BenutzerLeiste.jsx'
+import HilfePanel from './modules/hilfe/HilfePanel.jsx'
 import { ladeKpiWerte, pruefeVerbindung, PERIODEN, AKTUELLE_PERIODE, QUELLE } from './core/dataProvider.js'
 import TreeNavigator from './modules/tree-navigator/TreeNavigator.jsx'
 import ManagementReport from './modules/management-report/ManagementReport.jsx'
@@ -19,6 +20,7 @@ import { useT, SPRACHEN } from './core/i18n.jsx'
 
 const SETUP_KEY = 'er_setup_done'
 const BENUTZER_KEY = 'er_benutzer'
+const HILFE_KEY = 'er_hilfe_gesehen'
 
 export default function App() {
   // Erststart -> Wizard, sonst Baum.
@@ -33,6 +35,8 @@ export default function App() {
   const [baumStart, setBaumStart] = useState(null)
   const [designerStart, setDesignerStart] = useState(null)
   const [benutzerRolle, setBenutzerRolle] = useState(null)
+  const [hilfeAuf, setHilfeAuf] = useState(false)
+  const [hilfeErstmalig, setHilfeErstmalig] = useState(false)
   // Aktive "Rolle": angemeldeter Benutzer -> Vereinigung seiner Gruppen.
   // Ohne Anmeldung -> manuell gewählte Gruppe (Demo-/Admin-Modus).
   const rolle = benutzer
@@ -43,6 +47,12 @@ export default function App() {
 
   function anmelden(name) { localStorage.setItem(BENUTZER_KEY, name); setBenutzer(name) }
   function abmelden() { localStorage.removeItem(BENUTZER_KEY); setBenutzer(null) }
+  function hilfeSchliessen() { localStorage.setItem(HILFE_KEY, '1'); setHilfeAuf(false); setHilfeErstmalig(false) }
+
+  // Ersthilfe beim ersten Betreten der Anwendung (nicht im Wizard) zeigen.
+  useEffect(() => {
+    if (ansicht !== 'wizard' && !localStorage.getItem(HILFE_KEY)) { setHilfeErstmalig(true); setHilfeAuf(true) }
+  }, [ansicht])
 
   useEffect(() => { ladeKpiWerte(periode).then(setWerte) }, [periode])
   useEffect(() => { pruefeVerbindung().then(setVerbindung) }, [])
@@ -120,9 +130,14 @@ export default function App() {
                   background: lang === s.id ? 'var(--accent)' : 'var(--panel)', color: lang === s.id ? '#fff' : 'var(--muted)' }}>{s.label}</button>
               ))}
             </div>
+            <button title={t('nav.hilfe')} onClick={() => { setHilfeErstmalig(false); setHilfeAuf(true) }}
+              style={{ width: 30, height: 30, borderRadius: '50%', border: '1px solid var(--line)', background: 'var(--panel)',
+                color: 'var(--accent)', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>?</button>
           </>
         )}
       </header>
+
+      <HilfePanel offen={hilfeAuf} erstmalig={hilfeErstmalig} onSchliessen={hilfeSchliessen} />
 
       <main style={{ padding: '22px 20px', maxWidth: 1240, margin: '0 auto' }}>
         {ansicht === 'wizard' && (
