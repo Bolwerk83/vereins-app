@@ -18,6 +18,7 @@ import Abstimmung from './modules/abstimmung/Abstimmung.jsx'
 import ControllingStruktur from './modules/controlling/ControllingStruktur.jsx'
 import KLR from './modules/klr/KLR.jsx'
 import Kostenartenrechnung from './modules/kostenarten/Kostenartenrechnung.jsx'
+import Kalkulatorik from './modules/kalkulatorik/Kalkulatorik.jsx'
 import { AKTUELLE_STAGE, stageInfo } from './core/stage.js'
 import { autoSeed } from './core/designerSeed.js'
 import TreeNavigator from './modules/tree-navigator/TreeNavigator.jsx'
@@ -267,6 +268,9 @@ export default function App() {
         )}
         {ansicht === 'kostenarten' && (
           <Kostenartenrechnung onGeh={geh} />
+        )}
+        {ansicht === 'kalkulatorik' && (
+          <Kalkulatorik werte={werte} onGeh={geh} />
         )}
         {ansicht === 'transport' && (
           <Transport benutzer={benutzer} />
