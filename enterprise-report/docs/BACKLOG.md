@@ -18,17 +18,18 @@ Stand: laufend.
 - Auftrags-Lebenszyklus (Order-to-Cash) mit Engpass
 - Kostenstellenrechnung (BAB, Umlage, Zuschlagssätze, Plan/Ist, Center-Typen)
 
-## 🆕 Neue Wünsche (offen)
-- [ ] **Globale Suche oben rechts** nach Berichten/KPIs mit Sprung dorthin
-- [ ] **Admin-Bereich** (eigener verwalteter Bereich): Logo hinterlegen/jederzeit
-      tauschen (Themes: Black Week, Weihnachten, Ferien …), App-Branding
-- [ ] **Events/Aktionen** mit Zeitraum, betroffene Produkte, Mechanik & Kosten →
-      **Wirksamkeitsanalyse** (Mehrumsatz, Ladenhüter-Abbau, ROI der Werbung)
+## 🆕 Neue Wünsche
+- [x] **Globale Suche oben rechts** nach Berichten/KPIs mit Sprung dorthin ✅
+- [x] **Admin-Bereich** (eigener verwalteter Bereich): Logo hinterlegen/jederzeit
+      tauschen (Themes: Black Week, Weihnachten, Ferien …), App-Branding ✅
+- [x] **Events/Aktionen** mit Zeitraum, Produkten, Mechanik & Kosten →
+      **Wirksamkeitsanalyse** (Mehrumsatz, Ladenhüter-Abbau, ROI der Werbung) ✅
 - [x] Dezenter „Business Controller"-Urheberhinweis (Footer) ✅
+- [x] **Beispielberichte** als HTML-Übersicht (9 echte Berichte) ✅
 
 ## 🔜 Offen / geplant (priorisiert)
 - [x] **Kostenträgerrechnung / Kalkulation** — Division, Äquivalenzziffern, Zuschlag; Selbstkosten + Produktergebnis ✅
-- [ ] **Maschinenstundensatz & Kuppelkalkulation** (restliche Verfahren ergänzen)
+- [x] **Maschinenstundensatz & Kuppelkalkulation** (Tabs in der Kalkulation, getestet) ✅
 - [ ] **Ergebniskonto / GuV als Konten-Darstellung** (T-Konten, Gesamtkostenverfahren)
       mit unseren Werten — reportingtauglich, nicht überfrachtet. (Bild 0832)
 - [ ] **Prozess-/Ablaufdarstellung der KLR** mit Werten als „roter Faden"/Inhaltsverzeichnis. (Bild 7d83)
