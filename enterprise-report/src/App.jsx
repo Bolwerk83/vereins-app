@@ -21,6 +21,7 @@ import Kostenartenrechnung from './modules/kostenarten/Kostenartenrechnung.jsx'
 import Kalkulatorik from './modules/kalkulatorik/Kalkulatorik.jsx'
 import Lebenszyklus from './modules/lebenszyklus/Lebenszyklus.jsx'
 import EinzelGemein from './modules/einzelgemein/EinzelGemein.jsx'
+import AuftragsLebenszyklus from './modules/auftrag/AuftragsLebenszyklus.jsx'
 import { AKTUELLE_STAGE, stageInfo } from './core/stage.js'
 import { autoSeed } from './core/designerSeed.js'
 import TreeNavigator from './modules/tree-navigator/TreeNavigator.jsx'
@@ -116,6 +117,7 @@ export default function App() {
       { label: t('nav.qc'), icon: '✅', aktiv: ansicht === 'qc', onClick: () => geh('qc'), badge: qcFehler || null },
       { label: t('nav.abstimmung'), icon: '🔗', aktiv: ansicht === 'abstimmung', onClick: () => geh('abstimmung') },
       { label: t('nav.lebenszyklus'), icon: '🔄', aktiv: ansicht === 'lebenszyklus', onClick: () => geh('lebenszyklus') },
+      { label: t('nav.auftrag'), icon: '📦', aktiv: ansicht === 'auftrag', onClick: () => geh('auftrag') },
       { label: t('nav.instrumente'), icon: '📐', aktiv: ansicht === 'instrumente', onClick: () => geh('instrumente') },
       { label: t('nav.alerts'), icon: '⚠', aktiv: ansicht === 'alerts', onClick: () => geh('alerts'), badge: alertN || null }
     ] },
@@ -281,6 +283,9 @@ export default function App() {
         )}
         {ansicht === 'einzelgemein' && (
           <EinzelGemein onGeh={geh} />
+        )}
+        {ansicht === 'auftrag' && (
+          <AuftragsLebenszyklus />
         )}
         {ansicht === 'transport' && (
           <Transport benutzer={benutzer} />
