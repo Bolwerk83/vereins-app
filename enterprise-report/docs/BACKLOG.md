@@ -19,9 +19,8 @@ Stand: laufend.
 - Kostenstellenrechnung (BAB, Umlage, Zuschlagssätze, Plan/Ist, Center-Typen)
 
 ## 🔜 Offen / geplant (priorisiert)
-- [ ] **Kostenträgerrechnung / Kalkulationsverfahren** — Divisionskalkulation,
-      Äquivalenzziffernrechnung, Zuschlagskalkulation, Maschinenstundensatz;
-      Selbstkosten je Produkt + Produkt-/Betriebsergebnis (Kostenträgerzeitrechnung). (Bilder f394/9c45/a00409)
+- [x] **Kostenträgerrechnung / Kalkulation** — Division, Äquivalenzziffern, Zuschlag; Selbstkosten + Produktergebnis ✅
+- [ ] **Maschinenstundensatz & Kuppelkalkulation** (restliche Verfahren ergänzen)
 - [ ] **Ergebniskonto / GuV als Konten-Darstellung** (T-Konten, Gesamtkostenverfahren)
       mit unseren Werten — reportingtauglich, nicht überfrachtet. (Bild 0832)
 - [ ] **Prozess-/Ablaufdarstellung der KLR** mit Werten als „roter Faden"/Inhaltsverzeichnis. (Bild 7d83)
