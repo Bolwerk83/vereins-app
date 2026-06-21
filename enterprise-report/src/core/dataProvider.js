@@ -13,6 +13,24 @@ import { berechneAlle } from './kpiRegistry.js'
 
 export const QUELLE = import.meta.env?.VITE_DATA_SOURCE || 'mock'
 
+// =========================================================================
+//  CLIENT-CACHE — Ladezeit-Optimierung. Identische Abfragen (gleicher
+//  Schlüssel) werden nicht erneut geholt. Schlüssel berücksichtigt Periode,
+//  Datumssicht und Granularität, damit Umschalten korrekt nachlädt.
+//  cacheKontext() wird von der App gesetzt (aus dem Periodenmodell).
+// =========================================================================
+const _cache = new Map()
+let _kontext = ''   // z. B. "belegdatum|monat"
+export function setCacheKontext(s) { if (s !== _kontext) { _kontext = s; _cache.clear() } }
+export function leereCache() { _cache.clear() }
+async function memo(schluessel, fn) {
+  const k = `${_kontext}::${schluessel}`
+  if (_cache.has(k)) return _cache.get(k)
+  const wert = await fn()
+  _cache.set(k, wert)
+  return wert
+}
+
 /** Rohe (gemessene) KPI-Werte für eine Periode holen. */
 async function holeRoheWerte(periode) {
   if (QUELLE === 'mssql') {
@@ -26,41 +44,46 @@ async function holeRoheWerte(periode) {
 
 /** Alle (rohe + abgeleitete) KPI-Werte einer Periode. */
 export async function ladeKpiWerte(periode = MOCK.aktuellePeriode) {
-  const roh = await holeRoheWerte(periode)
-  return berechneAlle(roh)
+  return memo(`kpi:${periode}`, async () => berechneAlle(await holeRoheWerte(periode)))
 }
 
 /** Historie (Zeitreihe) einer KPI über alle Perioden — Ebene 5. */
 export async function ladeHistorie(kpiId) {
-  if (QUELLE === 'mssql') {
-    const r = await fetch(`/api/kpi/${encodeURIComponent(kpiId)}/historie`)
-    if (!r.ok) throw new Error('MSSQL-Backend nicht erreichbar')
-    return r.json()
-  }
-  return MOCK.perioden.map((p) => {
-    const werte = berechneAlle(MOCK.roheWerte[p])
-    return { periode: p, wert: werte[kpiId] ?? null }
+  return memo(`hist:${kpiId}`, async () => {
+    if (QUELLE === 'mssql') {
+      const r = await fetch(`/api/kpi/${encodeURIComponent(kpiId)}/historie`)
+      if (!r.ok) throw new Error('MSSQL-Backend nicht erreichbar')
+      return r.json()
+    }
+    return MOCK.perioden.map((p) => {
+      const werte = berechneAlle(MOCK.roheWerte[p])
+      return { periode: p, wert: werte[kpiId] ?? null }
+    })
   })
 }
 
 /** Detail-Perspektive (Ebene-4-Sprungpunkt), key = <bereich>_<objekt>. */
 export async function ladePerspektive(key) {
-  if (QUELLE === 'mssql') {
-    const r = await fetch(`/api/perspektive/${encodeURIComponent(key)}`)
-    if (!r.ok) throw new Error('MSSQL-Backend nicht erreichbar')
-    return r.json()
-  }
-  return MOCK.perspektiven?.[key] ?? null
+  return memo(`persp:${key}`, async () => {
+    if (QUELLE === 'mssql') {
+      const r = await fetch(`/api/perspektive/${encodeURIComponent(key)}`)
+      if (!r.ok) throw new Error('MSSQL-Backend nicht erreichbar')
+      return r.json()
+    }
+    return MOCK.perspektiven?.[key] ?? null
+  })
 }
 
 /** Detail-Datensatz (Tabelle) für einen E4-Knoten. */
 export async function ladeDetail(detailKey) {
-  if (QUELLE === 'mssql') {
-    const r = await fetch(`/api/detail/${encodeURIComponent(detailKey)}`)
-    if (!r.ok) throw new Error('MSSQL-Backend nicht erreichbar')
-    return r.json()
-  }
-  return MOCK.details[detailKey] ?? null
+  return memo(`detail:${detailKey}`, async () => {
+    if (QUELLE === 'mssql') {
+      const r = await fetch(`/api/detail/${encodeURIComponent(detailKey)}`)
+      if (!r.ok) throw new Error('MSSQL-Backend nicht erreichbar')
+      return r.json()
+    }
+    return MOCK.details[detailKey] ?? null
+  })
 }
 
 /** Verbindungsstatus des Backends (nur relevant bei QUELLE='mssql'). */

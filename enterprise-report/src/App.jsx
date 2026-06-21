@@ -6,7 +6,9 @@ import HilfePanel from './modules/hilfe/HilfePanel.jsx'
 import { KpiDefProvider } from './modules/kennzahlen/KpiDefContext.jsx'
 import Kennzahlen from './modules/kennzahlen/Kennzahlen.jsx'
 import BurgerMenu from './components/BurgerMenu.jsx'
-import { ladeKpiWerte, pruefeVerbindung, PERIODEN, AKTUELLE_PERIODE, QUELLE } from './core/dataProvider.js'
+import { ladeKpiWerte, pruefeVerbindung, setCacheKontext, PERIODEN, AKTUELLE_PERIODE, QUELLE } from './core/dataProvider.js'
+import { ladeModell } from './core/periodenmodell.js'
+import ZeitDatenart from './modules/zeit-datenart/ZeitDatenart.jsx'
 import TreeNavigator from './modules/tree-navigator/TreeNavigator.jsx'
 import ManagementReport from './modules/management-report/ManagementReport.jsx'
 import SetupWizard from './modules/wizard/SetupWizard.jsx'
@@ -38,6 +40,7 @@ export default function App() {
   const [baumStart, setBaumStart] = useState(null)
   const [designerStart, setDesignerStart] = useState(null)
   const [benutzerRolle, setBenutzerRolle] = useState(null)
+  const [zeitModell, setZeitModell] = useState(ladeModell())
   const [hilfeAuf, setHilfeAuf] = useState(false)
   const [hilfeErstmalig, setHilfeErstmalig] = useState(false)
   // Aktive "Rolle": angemeldeter Benutzer -> Vereinigung seiner Gruppen.
@@ -57,7 +60,12 @@ export default function App() {
     if (ansicht !== 'wizard' && !localStorage.getItem(HILFE_KEY)) { setHilfeErstmalig(true); setHilfeAuf(true) }
   }, [ansicht])
 
-  useEffect(() => { ladeKpiWerte(periode).then(setWerte) }, [periode])
+  // Cache-Kontext aus dem Periodenmodell (Datumssicht + Granularität). Ändert
+  // er sich, wird der Cache geleert und die Werte werden neu geladen.
+  useEffect(() => {
+    setCacheKontext(`${zeitModell.datumssicht}|${zeitModell.granularitaet}`)
+    ladeKpiWerte(periode).then(setWerte)
+  }, [zeitModell, periode])
   useEffect(() => { pruefeVerbindung().then(setVerbindung) }, [])
   // Gruppen aus der Quelle laden (mssql -> DB, sonst localStorage).
   useEffect(() => { ladeGruppenAsync().then(setGruppen) }, [])
@@ -91,6 +99,7 @@ export default function App() {
     ] },
     { titel: 'Steuerung', eintraege: [
       { label: t('nav.massnahmen'), icon: '🎯', aktiv: ansicht === 'massnahmen', onClick: () => geh('massnahmen') },
+      { label: t('nav.zeit'), icon: '🗓', aktiv: ansicht === 'zeit', onClick: () => geh('zeit') },
       ...(istAdmin(rolle) ? [{ label: t('nav.rechte'), icon: '👥', aktiv: ansicht === 'rechte', onClick: () => geh('rechte') }] : []),
       { label: t('nav.wizard'), icon: '⚙', aktiv: ansicht === 'wizard', onClick: () => geh('wizard') },
       { label: t('nav.hilfe'), icon: '❓', aktiv: false, onClick: () => { setHilfeErstmalig(false); setHilfeAuf(true) } }
@@ -210,6 +219,9 @@ export default function App() {
         )}
         {ansicht === 'kennzahlen' && (
           <Kennzahlen rolle={rolle} werte={werte} />
+        )}
+        {ansicht === 'zeit' && (
+          <ZeitDatenart onChange={setZeitModell} />
         )}
         {ansicht === 'rechte' && (
           <RollenRechte onChange={(list) => {
