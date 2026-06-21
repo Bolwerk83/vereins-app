@@ -3,7 +3,7 @@
 //  (T-Konto) mit unseren Werten, dynamisch nach Datenart.
 // =========================================================================
 import React, { useState } from 'react'
-import { DATENARTEN, ergebnis, tKonto } from '../../core/ergebnis.js'
+import { DATENARTEN, ergebnis, tKonto, ukv } from '../../core/ergebnis.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
@@ -11,8 +11,10 @@ const m = (v) => v.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFr
 
 export default function Ergebnisrechnung({ onGeh }) {
   const [da, setDa] = useState('ist')
+  const [verfahren, setVerfahren] = useState('gkv')
   const e = ergebnis(da)
   const t = tKonto(da)
+  const u = ukv(da)
   const chip = (aktiv) => ({ padding: '5px 12px', borderRadius: 999, fontSize: 12.5, cursor: 'pointer', fontWeight: 600,
     border: `1px solid ${aktiv ? 'var(--accent)' : 'var(--line)'}`, background: aktiv ? 'var(--accent)' : 'var(--panel)', color: aktiv ? '#fff' : 'var(--ink)' })
   const row = (name, wert, opt = {}) => (
@@ -34,13 +36,31 @@ export default function Ergebnisrechnung({ onGeh }) {
         {onGeh && <button onClick={() => onGeh('klr')} style={{ ...card, padding: '7px 12px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>← zur KLR</button>}
       </div>
 
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 14 }}>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 10 }}>
         <span style={cap}>Datenart:</span>
         {DATENARTEN.map((d) => <button key={d.id} style={chip(da === d.id)} onClick={() => setDa(d.id)}>{d.name}</button>)}
-        <span style={{ marginLeft: 'auto', fontSize: 13 }}>Betriebsergebnis: <b style={{ color: t.gewinn ? 'var(--amp-g)' : 'var(--amp-r)', fontSize: 18 }}>{m(e.betriebsergebnis)} Mio €</b></span>
+        <span style={{ marginLeft: 'auto', fontSize: 13 }}>Betriebsergebnis: <b style={{ color: e.betriebsergebnis >= 0 ? 'var(--amp-g)' : 'var(--amp-r)', fontSize: 18 }}>{m(e.betriebsergebnis)} Mio €</b></span>
+      </div>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 14 }}>
+        <span style={cap}>Verfahren:</span>
+        <button style={chip(verfahren === 'gkv')} onClick={() => setVerfahren('gkv')}>Gesamtkostenverfahren</button>
+        <button style={chip(verfahren === 'ukv')} onClick={() => setVerfahren('ukv')}>Umsatzkostenverfahren</button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }} className="raster-2">
+      {verfahren === 'ukv' && (
+        <div style={{ ...card, padding: 16, marginBottom: 14, maxWidth: 520 }}>
+          <div style={{ ...cap, marginBottom: 8 }}>Umsatzkostenverfahren (Staffel)</div>
+          {row('Umsatzerlöse', u.umsatz)}
+          {row('Herstellkosten der verkauften Erzeugnisse', u.hku, { prefix: '− ' })}
+          {row('= Bruttoergebnis vom Umsatz', u.brutto, { bold: true })}
+          {row('Verwaltungskosten', u.verwaltung, { prefix: '− ' })}
+          {row('Vertriebskosten', u.vertrieb, { prefix: '− ' })}
+          {row('= Betriebsergebnis', u.betriebsergebnis, { bold: true, farbe: u.betriebsergebnis >= 0 ? 'var(--amp-g)' : 'var(--amp-r)' })}
+          <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 8 }}>UKV stellt dem Umsatz die Herstellkosten der <b>verkauften</b> Produkte gegenüber (keine Bestandsveränderung) — gleiches Betriebsergebnis wie das GKV.</div>
+        </div>
+      )}
+
+      <div style={{ display: verfahren === 'gkv' ? 'grid' : 'none', gridTemplateColumns: '1fr 1fr', gap: 14 }} className="raster-2">
         {/* Staffel */}
         <div style={{ ...card, padding: 16 }}>
           <div style={{ ...cap, marginBottom: 8 }}>Staffelform (GuV)</div>

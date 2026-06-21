@@ -24,3 +24,17 @@ test('Zuschlagskalkulation: Selbstkosten â‰¥ Herstellkosten, Ergebnis = Preis âˆ
     assert.equal(p.ergebnis, +(p.preis - p.selbstkosten).toFixed(2))
   }
 })
+
+import { maschinenstundensatz, kuppelVerteilung } from '../src/core/kalkulation.js'
+
+test('Maschinenstundensatz = FGK / Stunden', () => {
+  assert.equal(maschinenstundensatz(2.4, 28000), Math.round(2.4e6 / 28000 * 100) / 100)
+  assert.equal(maschinenstundensatz(1, 0), 0)
+})
+
+test('Kuppelkalkulation: Kostenanteile summieren auf Gesamtkosten', () => {
+  const k = kuppelVerteilung(100000)
+  const summe = k.rows.reduce((n, r) => n + r.kostenanteil, 0)
+  assert.ok(Math.abs(summe - 100000) <= 1)
+  for (const r of k.rows) assert.equal(r.stueckkosten, Math.round(r.kostenanteil / r.menge * 100) / 100)
+})

@@ -25,3 +25,11 @@ test('Gewinn steht im Soll', () => {
 test('Datenart wirkt (Plan ≠ Ist)', () => {
   assert.notEqual(ergebnis('plan').summeAufwand, ergebnis('ist').summeAufwand)
 })
+
+import { ukv } from '../src/core/ergebnis.js'
+
+test('UKV: Betriebsergebnis = Umsatz − HK(Umsatz) − Verwaltung − Vertrieb', () => {
+  const u = ukv('ist')
+  assert.equal(u.brutto, +(u.umsatz - u.hku).toFixed(2))
+  assert.equal(u.betriebsergebnis, +(u.brutto - u.verwaltung - u.vertrieb).toFixed(2))
+})

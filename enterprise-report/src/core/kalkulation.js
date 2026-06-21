@@ -72,3 +72,39 @@ export function zuschlagKalkulation(datenart = 'ist', produkte = PRODUKTE_STD) {
 }
 
 export function zuschlagSaetze(datenart = 'ist') { return bab(datenart).zuschlag }
+
+// --- Maschinenstundensatzrechnung ---------------------------------------
+// Maschinenabhängige Fertigungsgemeinkosten (Mio €) ÷ Maschinenstunden = €/h.
+export const MASCHINE_STD = { fgkMio: 2.4, stunden: 28000 }
+export const MASCHINE_PRODUKTE = [
+  { id: 'ebike', name: 'E-Bike Urban 500', zeit: 1.2 },   // Maschinenstunden/Stück
+  { id: 'city',  name: 'City/Trekking 7',  zeit: 0.8 },
+  { id: 'cargo', name: 'E-Cargo Family',   zeit: 2.0 }
+]
+export function maschinenstundensatz(fgkMio, stunden) { return stunden > 0 ? r2(fgkMio * 1e6 / stunden) : 0 }
+export function maschinenKalkulation(fgkMio = MASCHINE_STD.fgkMio, stunden = MASCHINE_STD.stunden, produkte = MASCHINE_PRODUKTE) {
+  const satz = maschinenstundensatz(fgkMio, stunden)
+  return { satz, rows: produkte.map((p) => ({ ...p, maschinenkosten: r2(p.zeit * satz) })) }
+}
+
+// --- Kuppelkalkulation (Marktwert-/Verteilungsmethode) ------------------
+export const KUPPEL_STD = {
+  gesamtkosten: 100000, // €
+  produkte: [
+    { id: 'haupt', name: 'Hauptprodukt', menge: 8000, preis: 12 },
+    { id: 'neben1', name: 'Nebenprodukt A', menge: 3000, preis: 6 },
+    { id: 'neben2', name: 'Nebenprodukt B', menge: 1500, preis: 3 }
+  ]
+}
+export function kuppelVerteilung(gesamtkosten = KUPPEL_STD.gesamtkosten, produkte = KUPPEL_STD.produkte) {
+  const rows = produkte.map((p) => ({ ...p, marktwert: p.menge * p.preis }))
+  const summeMW = rows.reduce((n, r) => n + r.marktwert, 0) || 1
+  return {
+    gesamtkosten, summeMW,
+    rows: rows.map((r) => {
+      const anteil = r.marktwert / summeMW
+      const kostenanteil = r2(gesamtkosten * anteil)
+      return { ...r, anteil: r2(anteil * 100), kostenanteil, stueckkosten: r.menge ? r2(kostenanteil / r.menge) : 0 }
+    })
+  }
+}

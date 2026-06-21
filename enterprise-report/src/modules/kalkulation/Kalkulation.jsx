@@ -3,7 +3,7 @@
 //  Divisions- und Äquivalenzziffernkalkulation, inkl. Produktergebnis.
 // =========================================================================
 import React, { useState } from 'react'
-import { VERFAHREN, division, aequivalenz, SORTEN_STD, AEQUIVALENZ_GESAMTKOSTEN, zuschlagKalkulation, zuschlagSaetze, PRODUKTE_STD } from '../../core/kalkulation.js'
+import { VERFAHREN, division, aequivalenz, SORTEN_STD, AEQUIVALENZ_GESAMTKOSTEN, zuschlagKalkulation, zuschlagSaetze, PRODUKTE_STD, MASCHINE_STD, maschinenKalkulation, KUPPEL_STD, kuppelVerteilung } from '../../core/kalkulation.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
@@ -30,7 +30,7 @@ export default function Kalkulation({ onGeh }) {
       </div>
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
-        {[['uebersicht', 'Übersicht'], ['zuschlag', 'Zuschlagskalkulation'], ['division', 'Divisionskalkulation'], ['aequivalenz', 'Äquivalenzziffern']].map(([id, n]) => (
+        {[['uebersicht', 'Übersicht'], ['zuschlag', 'Zuschlagskalkulation'], ['division', 'Divisionskalkulation'], ['aequivalenz', 'Äquivalenzziffern'], ['maschine', 'Maschinenstundensatz'], ['kuppel', 'Kuppelkalkulation']].map(([id, n]) => (
           <button key={id} style={chip(tab === id)} onClick={() => setTab(id)}>{n}</button>
         ))}
       </div>
@@ -51,6 +51,69 @@ export default function Kalkulation({ onGeh }) {
       {tab === 'zuschlag' && <Zuschlag />}
       {tab === 'division' && <Division />}
       {tab === 'aequivalenz' && <Aequivalenz />}
+      {tab === 'maschine' && <Maschine />}
+      {tab === 'kuppel' && <Kuppel />}
+    </div>
+  )
+}
+
+function Maschine() {
+  const [fgk, setFgk] = useState(MASCHINE_STD.fgkMio)
+  const [stunden, setStunden] = useState(MASCHINE_STD.stunden)
+  const k = maschinenKalkulation(fgk, stunden)
+  const inp = { width: 130, padding: '7px 9px', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', font: 'inherit', marginTop: 3 }
+  return (
+    <div style={{ ...card, padding: 16 }}>
+      <div style={{ ...cap, marginBottom: 8 }}>Maschinenstundensatzrechnung</div>
+      <div style={{ display: 'flex', gap: 14, alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: 12 }}>
+        <label style={{ fontSize: 11, color: 'var(--muted)' }}>Maschinen-FGK (Mio €)<br /><input type="number" step="0.1" style={inp} value={fgk} onChange={(e) => setFgk(Number(e.target.value) || 0)} /></label>
+        <label style={{ fontSize: 11, color: 'var(--muted)' }}>Maschinenstunden / Jahr<br /><input type="number" style={inp} value={stunden} onChange={(e) => setStunden(Number(e.target.value) || 0)} /></label>
+        <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
+          <div style={cap}>Maschinenstundensatz</div>
+          <div style={{ fontSize: 24, fontWeight: 700 }}>{eur(k.satz)}/h</div>
+        </div>
+      </div>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+        <thead><tr>{['Produkt', 'Maschinenzeit', 'Maschinenkosten/Stück'].map((h, i) => <th key={i} style={th(i === 0 ? 'left' : 'right')}>{h}</th>)}</tr></thead>
+        <tbody>
+          {k.rows.map((p) => (
+            <tr key={p.id}><td style={td('left', true)}>{p.name}</td>
+              <td className="mono" style={td('right')}>{p.zeit} h</td>
+              <td className="mono" style={td('right', true)}>{eur(p.maschinenkosten)}</td></tr>
+          ))}
+        </tbody>
+      </table>
+      <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 8 }}>Satz = maschinenabhängige Fertigungsgemeinkosten ÷ Maschinenstunden. Maschinenkosten/Stück = Maschinenzeit × Satz — genauer als ein reiner Lohnzuschlag bei maschinenintensiver Fertigung.</div>
+    </div>
+  )
+}
+
+function Kuppel() {
+  const [gk, setGk] = useState(KUPPEL_STD.gesamtkosten)
+  const k = kuppelVerteilung(gk)
+  return (
+    <div style={{ ...card, padding: 16, overflowX: 'auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
+        <div style={cap}>Kuppelkalkulation (Marktwert-/Verteilungsmethode)</div>
+        <label style={{ fontSize: 11, color: 'var(--muted)', marginLeft: 'auto' }}>Gesamtkosten (€): <input type="number" style={{ width: 110, padding: '4px 6px', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', font: 'inherit' }} value={gk} onChange={(e) => setGk(Number(e.target.value) || 0)} /></label>
+      </div>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 620 }}>
+        <thead><tr>{['Kuppelprodukt', 'Menge', 'Preis', 'Marktwert', 'Anteil', 'Kostenanteil', 'Stückkosten'].map((h, i) => <th key={i} style={th(i === 0 ? 'left' : 'right')}>{h}</th>)}</tr></thead>
+        <tbody>
+          {k.rows.map((p) => (
+            <tr key={p.id}>
+              <td style={td('left', true)}>{p.name}</td>
+              <td className="mono" style={td('right')}>{p.menge.toLocaleString('de-DE')}</td>
+              <td className="mono" style={td('right')}>{eur(p.preis)}</td>
+              <td className="mono" style={td('right')}>{p.marktwert.toLocaleString('de-DE')} €</td>
+              <td className="mono" style={td('right')}>{p.anteil} %</td>
+              <td className="mono" style={td('right', true)}>{p.kostenanteil.toLocaleString('de-DE')} €</td>
+              <td className="mono" style={td('right')}>{eur(p.stueckkosten)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 8 }}>Die Gesamtkosten der Kuppelproduktion werden nach dem Marktwert (Menge × Preis) auf die zwangsweise zusammen entstehenden Produkte verteilt.</div>
     </div>
   )
 }

@@ -37,6 +37,25 @@ export function ergebnis(datenart = 'ist') {
   return { datenart, ertraege, aufwendungen, summeErtrag, summeAufwand, betriebsergebnis }
 }
 
+// Umsatzkostenverfahren (UKV): Umsatz − Herstellkosten der verkauften
+// Erzeugnisse − Verwaltung − Vertrieb = Betriebsergebnis.
+export const UKV_POSITIONEN = [
+  { id: 'umsatz', name: 'Umsatzerlöse',                       wert: 52.0, pf: 0.96, ff: 1.03, typ: 'ertrag' },
+  { id: 'hku',    name: 'Herstellkosten der verkauften Erz.', wert: 38.0, pf: 0.95, ff: 1.04, typ: 'aufwand' },
+  { id: 'verwaltung', name: 'Verwaltungskosten',              wert: 7.0,  pf: 0.98, ff: 1.01, typ: 'aufwand' },
+  { id: 'vertrieb',   name: 'Vertriebskosten',                wert: 5.0,  pf: 0.97, ff: 1.03, typ: 'aufwand' }
+]
+export function ukv(datenart = 'ist') {
+  const p = UKV_POSITIONEN.map((x) => ({ ...x, wert: r2(x.wert * faktor(x, datenart)) }))
+  const umsatz = p.find((x) => x.id === 'umsatz').wert
+  const hku = p.find((x) => x.id === 'hku').wert
+  const brutto = r2(umsatz - hku)
+  const verwaltung = p.find((x) => x.id === 'verwaltung').wert
+  const vertrieb = p.find((x) => x.id === 'vertrieb').wert
+  const betriebsergebnis = r2(brutto - verwaltung - vertrieb)
+  return { datenart, umsatz, hku, brutto, verwaltung, vertrieb, betriebsergebnis }
+}
+
 /** Ergebniskonto (T-Konto): Soll/Haben inkl. Saldo, Bilanzsumme. */
 export function tKonto(datenart = 'ist') {
   const e = ergebnis(datenart)
