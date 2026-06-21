@@ -22,6 +22,10 @@ import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 import { getPool, pingDb, configBeschreibung, sql } from './db.js'
 import { beiratAuswertung, smartMassnahmen } from './biAgents.js'
+import { ladeVerteiler as ladeVerteilerStore, speichereVerteiler } from './verteiler.store.js'
+import { versende, paketBauen } from './versand.js'
+import { starteScheduler, planeNeu, feuereEreignis } from './scheduler.js'
+import { mailKonfiguriert } from './mailer.js'
 import { KPI } from '../src/core/kpiRegistry.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -172,10 +176,37 @@ app.get('/api/periodenherkunft', async (_req, res) => {
   } catch (e) { res.status(500).json({ error: String(e.message || e) }) }
 })
 
+// --- Verteiler (automatischer Versand) -----------------------------------
+app.get('/api/verteiler', (_req, res) => res.json(ladeVerteilerStore()))
+
+app.put('/api/verteiler', (req, res) => {           // Frontend synchronisiert seine Liste
+  const list = speichereVerteiler(req.body)
+  planeNeu()                                        // Zeitpläne neu aufsetzen
+  res.json({ status: 'ok', anzahl: list.length, mail: mailKonfiguriert() ? 'konfiguriert' : 'dry-run' })
+})
+
+app.post('/api/verteiler/:id/test', (req, res) => { // Vorschau ohne Versand
+  const v = ladeVerteilerStore().find((x) => x.id === req.params.id)
+  if (!v) return res.status(404).json({ error: 'Verteiler nicht gefunden' })
+  res.json({ ...paketBauen(v), mail: mailKonfiguriert() ? 'konfiguriert' : 'dry-run' })
+})
+
+app.post('/api/verteiler/:id/send', async (req, res) => { // realer (oder dry-run) Versand
+  const v = ladeVerteilerStore().find((x) => x.id === req.params.id)
+  if (!v) return res.status(404).json({ error: 'Verteiler nicht gefunden' })
+  try { res.json(await versende(v, 'manuell')) } catch (e) { res.status(500).json({ error: String(e.message || e) }) }
+})
+
+app.post('/api/ereignis/:typ', async (req, res) => { // Ereignis-Trigger (z. B. Abschluss-Freigabe)
+  try { res.json({ ausgeloest: await feuereEreignis(req.params.typ) }) } catch (e) { res.status(500).json({ error: String(e.message || e) }) }
+})
+
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
   const c = configBeschreibung()
   console.log(`Reporting-Backend auf :${PORT}`)
   console.log(`MSSQL: ${c.konfiguriert ? `${c.server}/${c.datenbank} (auth=${c.auth}, encrypt=${c.encrypt})` : 'NICHT konfiguriert — server/.env ausfüllen'}`)
+  console.log(`Verteiler/Mail: ${mailKonfiguriert() ? 'SMTP konfiguriert' : 'dry-run (SMTP in server/.env setzen)'}`)
   console.log(`Health-Check:  http://localhost:${PORT}/api/health`)
+  starteScheduler()   // Zeitpläne aktivieren (falls node-cron installiert)
 })

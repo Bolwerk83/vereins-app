@@ -6,7 +6,7 @@
 import React, { useState } from 'react'
 import {
   MODI, FORMATE, RHYTHMEN, EREIGNISSE, BERICHT_OPTIONEN,
-  ladeVerteiler, neuerVerteiler, aktualisiere, loesche, versandPaket, datenstandStempel
+  ladeVerteiler, neuerVerteiler, aktualisiere, loesche, versandPaket, datenstandStempel, imBackendAktivieren
 } from '../../core/verteiler.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
@@ -18,6 +18,12 @@ export default function Verteiler() {
   const [aktivId, setAktivId] = useState(liste[0]?.id || null)
   const [mail, setMail] = useState('')
   const [vorschau, setVorschau] = useState(null)
+  const [backend, setBackend] = useState(null)
+
+  async function aktivieren() {
+    try { const r = await imBackendAktivieren(); setBackend(`✓ ${r.anzahl} Verteiler geplant · Mail: ${r.mail === 'konfiguriert' ? 'SMTP aktiv' : 'dry-run (SMTP fehlt)'}`) }
+    catch (e) { setBackend(`✗ ${e.message}`) }
+  }
 
   const v = liste.find((x) => x.id === aktivId) || null
   const refresh = (l) => setListe(l)
@@ -26,12 +32,18 @@ export default function Verteiler() {
 
   return (
     <div>
-      <div style={{ marginBottom: 14 }}>
-        <h2 style={{ margin: '0 0 4px' }}>Verteiler — automatischer Versand</h2>
-        <div style={{ color: 'var(--muted)', fontSize: 13, maxWidth: 740 }}>
-          Berichte automatisch verschicken — per <b>Zeitplan</b> und/oder <b>Ereignis</b>. Standard ist <b>Hybrid</b>:
-          ein reproduzierbarer Datenstand wird als PDF/Excel angehängt und um einen Live-Link ergänzt, jeweils mit
-          Datenstand-Stempel.
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
+        <div>
+          <h2 style={{ margin: '0 0 4px' }}>Verteiler — automatischer Versand</h2>
+          <div style={{ color: 'var(--muted)', fontSize: 13, maxWidth: 740 }}>
+            Berichte automatisch verschicken — per <b>Zeitplan</b> und/oder <b>Ereignis</b>. Standard ist <b>Hybrid</b>:
+            ein reproduzierbarer Datenstand wird als PDF/Excel angehängt und um einen Live-Link ergänzt, jeweils mit
+            Datenstand-Stempel.
+          </div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <button onClick={aktivieren} style={{ ...inp, cursor: 'pointer', background: 'var(--accent)', color: '#fff', border: 'none', fontWeight: 600 }}>⟳ Im Backend aktivieren (planen)</button>
+          {backend && <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6, maxWidth: 240 }}>{backend}</div>}
         </div>
       </div>
 

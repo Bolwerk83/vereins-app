@@ -16,6 +16,9 @@
     "dotenv": "^16.4.0"
   },
   "optionalDependencies": {
-    "msnodesqlv8": "^4.2.1"
+    "msnodesqlv8": "^4.2.1",
+    "node-cron": "^3.0.3",
+    "nodemailer": "^6.9.0",
+    "exceljs": "^4.4.0"
   }
 }

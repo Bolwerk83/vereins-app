@@ -49,3 +49,29 @@ MAIL_FROM=Controlling <reporting@firma.de>
 Bis SMTP eingerichtet ist, dient der **Testlauf** im Tool als Vorschau: er zeigt
 das vollständige Versand-Paket (Empfänger, Betreff, Anhänge, Link, Stempel),
 ohne real zu versenden.
+
+## Status: umgesetzt (Backend)
+
+Der Scheduler ist im `server/` eingebaut und läuft mit **graceful degradation**:
+
+- `starteScheduler()` plant aktive Verteiler per **node-cron** (optionalDependency).
+  Fehlt das Paket, bleibt der Zeitplan inaktiv — manueller/Ereignis-Versand
+  über die API geht trotzdem.
+- **Mailversand** via **nodemailer** (optionalDependency). Ohne `SMTP_*`/`MAIL_FROM`
+  in `server/.env` läuft alles als **dry-run** (kein realer Versand).
+- **Excel-Anhang** via **exceljs** (optionalDependency); PDF deckt der Live-Link ab.
+
+Endpunkte:
+
+| Methode | Pfad | Zweck |
+|---|---|---|
+| GET  | `/api/verteiler` | gespeicherte Verteiler |
+| PUT  | `/api/verteiler` | Liste übernehmen + Zeitpläne neu setzen |
+| POST | `/api/verteiler/:id/test` | Versand-Paket (Vorschau) |
+| POST | `/api/verteiler/:id/send` | realer (oder dry-run) Versand |
+| POST | `/api/ereignis/:typ` | Ereignis-Trigger (z. B. `abschluss_freigabe`) |
+
+Im Tool aktivierst du die Zeitpläne über **„⟳ Im Backend aktivieren (planen)"** —
+das synchronisiert die Liste und meldet, ob SMTP aktiv oder dry-run ist.
+Aktivierung der optionalen Pakete im Ordner `server`:
+`npm install node-cron nodemailer exceljs`.
