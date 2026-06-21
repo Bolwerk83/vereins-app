@@ -55,7 +55,7 @@ Stand: laufend.
 - [x] Quizfragen / Wissens-Check je Lektion (mit Fortschritt) ✅
 - [ ] Mehr Lektionen je Kapitel
 - [ ] Interaktive Ablaufdiagramme (klickbare Prozessgrafik der Zusammenhänge)
-- [ ] Rollthe-basierte Lernpfade (je Rolle anderer Schwerpunkt)
+- [x] Rollenbasierte Lernpfade (je Rolle anderer Schwerpunkt, Fokus-Filter) ✅
 - [x] Zertifikat/Abschluss bei 100 % (Lektionen + Wissens-Checks, druckbar) ✅
 
 ## Hinweise

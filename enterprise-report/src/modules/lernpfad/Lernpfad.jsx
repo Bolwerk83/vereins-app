@@ -5,6 +5,7 @@
 import React, { useState } from 'react'
 import { KAPITEL, LEKTIONEN, lektionenVon, istAbgeschlossen, markiere, fortschritt } from '../../core/lernpfad.js'
 import { quizFortschritt, quizBestanden, hatQuiz } from '../../core/quiz.js'
+import { LERN_ROLLEN, rolleInfo, imFokus, ladeLernRolle, setzeLernRolle, fokusLektionen } from '../../core/lernpfadRollen.js'
 import WissensCheck from './WissensCheck.jsx'
 import Zertifikat from './Zertifikat.jsx'
 
@@ -14,7 +15,16 @@ const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', l
 export default function Lernpfad({ onGeh }) {
   const [aktivId, setAktivId] = useState(LEKTIONEN[0].id)
   const [, setTick] = useState(0)
+  const [lernRolle, setLernRolle] = useState(ladeLernRolle())
+  const [nurFokus, setNurFokus] = useState(false)
   const refresh = () => setTick((t) => t + 1)
+  const rolleInf = rolleInfo(lernRolle)
+
+  function waehleRolle(id) {
+    setzeLernRolle(id); setLernRolle(id)
+    const fokus = fokusLektionen(id)
+    if (id !== 'alle' && fokus.length && !fokus.includes(aktivId)) setAktivId(fokus[0])
+  }
   const l = LEKTIONEN.find((x) => x.id === aktivId)
   const idx = LEKTIONEN.findIndex((x) => x.id === aktivId)
   const fp = fortschritt()
@@ -39,22 +49,49 @@ export default function Lernpfad({ onGeh }) {
           <span style={{ fontSize: 12, color: 'var(--muted)' }}>{fp.fertig} / {fp.gesamt} Lektionen ({fp.prozent} %)</span>
           <span style={{ fontSize: 12, color: 'var(--muted)', marginLeft: 6 }}>· 🧠 {qfp.fertig} / {qfp.gesamt} Wissens-Checks</span>
         </div>
+
+        {/* Rollenbasierter Schwerpunkt */}
+        <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <span style={{ ...cap }}>Schwerpunkt</span>
+          {LERN_ROLLEN.map((r) => {
+            const aktiv = r.id === lernRolle
+            return (
+              <button key={r.id} onClick={() => waehleRolle(r.id)} title={r.intro}
+                style={{ padding: '5px 11px', borderRadius: 999, cursor: 'pointer', fontSize: 12.5, fontWeight: aktiv ? 700 : 400,
+                  border: `1px solid ${aktiv ? 'var(--accent)' : 'var(--line)'}`, background: aktiv ? 'var(--accent-soft)' : 'var(--panel)', color: aktiv ? 'var(--accent)' : 'var(--ink)' }}>
+                {r.icon} {r.name}
+              </button>
+            )
+          })}
+          {lernRolle !== 'alle' && (
+            <label style={{ fontSize: 12, color: 'var(--muted)', marginLeft: 4, display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer' }}>
+              <input type="checkbox" checked={nurFokus} onChange={(e) => setNurFokus(e.target.checked)} /> nur Schwerpunkt
+            </label>
+          )}
+        </div>
+        {lernRolle !== 'alle' && <div style={{ marginTop: 6, fontSize: 12.5, color: 'var(--muted)' }}>{rolleInf.intro}</div>}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '290px 1fr', gap: 16, alignItems: 'start' }} className="raster-2">
         {/* Inhaltsverzeichnis */}
         <div style={{ ...card, padding: 12, position: 'sticky', top: 16 }}>
-          {KAPITEL.map((k) => (
+          {KAPITEL.map((k) => {
+            const fokusRolle = lernRolle !== 'alle'
+            const lektionen = lektionenVon(k.id).filter((le) => !(fokusRolle && nurFokus) || imFokus(lernRolle, le.id))
+            if (!lektionen.length) return null
+            return (
             <div key={k.id} style={{ marginBottom: 10 }}>
               <div style={{ ...cap, marginBottom: 6 }}>{k.name}</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                {lektionenVon(k.id).map((le) => {
+                {lektionen.map((le) => {
                   const fertig = istAbgeschlossen(le.id); const aktiv = le.id === aktivId
+                  const fokus = fokusRolle && imFokus(lernRolle, le.id)
                   return (
                     <button key={le.id} onClick={() => setAktivId(le.id)} style={{ textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8, padding: '6px 9px', borderRadius: 'var(--radius-sm)', cursor: 'pointer',
-                      border: `1px solid ${aktiv ? 'var(--accent)' : 'transparent'}`, background: aktiv ? 'var(--accent-soft)' : 'transparent', fontSize: 13 }}>
+                      border: `1px solid ${aktiv ? 'var(--accent)' : 'transparent'}`, background: aktiv ? 'var(--accent-soft)' : 'transparent', fontSize: 13, opacity: fokusRolle && !fokus && !nurFokus ? 0.55 : 1 }}>
                       <span style={{ width: 16, color: fertig ? 'var(--amp-g)' : 'var(--line)' }}>{fertig ? '✓' : '○'}</span>
                       <span style={{ flex: 1, color: aktiv ? 'var(--accent)' : 'var(--ink)', fontWeight: aktiv ? 600 : 400 }}>{le.titel}</span>
+                      {fokus && <span title="Schwerpunkt deiner Rolle" style={{ fontSize: 10, color: 'var(--accent)' }}>★</span>}
                       {hatQuiz(le.id) && <span title="Wissens-Check" style={{ fontSize: 10, color: quizBestanden(le.id) ? 'var(--amp-g)' : 'var(--muted)' }}>🧠</span>}
                       <span style={{ fontSize: 10, color: 'var(--muted)' }}>{le.dauer}′</span>
                     </button>
@@ -62,7 +99,7 @@ export default function Lernpfad({ onGeh }) {
                 })}
               </div>
             </div>
-          ))}
+          )})}
         </div>
 
         {/* Lektion */}
