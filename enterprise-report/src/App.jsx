@@ -13,6 +13,8 @@ import DatenartBadge from './modules/zeit-datenart/DatenartBadge.jsx'
 import Versionsvergleich from './modules/versionsvergleich/Versionsvergleich.jsx'
 import Verteiler from './modules/verteiler/Verteiler.jsx'
 import Abschluss from './modules/abschluss/Abschluss.jsx'
+import Transport from './modules/transport/Transport.jsx'
+import { AKTUELLE_STAGE, stageInfo } from './core/stage.js'
 import TreeNavigator from './modules/tree-navigator/TreeNavigator.jsx'
 import ManagementReport from './modules/management-report/ManagementReport.jsx'
 import SetupWizard from './modules/wizard/SetupWizard.jsx'
@@ -107,6 +109,7 @@ export default function App() {
       { label: t('nav.zeit'), icon: '🗓', aktiv: ansicht === 'zeit', onClick: () => geh('zeit') },
       { label: t('nav.abschluss'), icon: '🔒', aktiv: ansicht === 'abschluss', onClick: () => geh('abschluss') },
       { label: t('nav.verteiler'), icon: '📤', aktiv: ansicht === 'verteiler', onClick: () => geh('verteiler') },
+      { label: t('nav.transport'), icon: '🚚', aktiv: ansicht === 'transport', onClick: () => geh('transport') },
       ...(istAdmin(rolle) ? [{ label: t('nav.rechte'), icon: '👥', aktiv: ansicht === 'rechte', onClick: () => geh('rechte') }] : []),
       { label: t('nav.wizard'), icon: '⚙', aktiv: ansicht === 'wizard', onClick: () => geh('wizard') },
       { label: t('nav.hilfe'), icon: '❓', aktiv: false, onClick: () => { setHilfeErstmalig(false); setHilfeAuf(true) } }
@@ -122,7 +125,10 @@ export default function App() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ width: 26, height: 26, borderRadius: 7, background: 'var(--accent)' }} />
           <div>
-            <div style={{ fontWeight: 700 }}>Enterprise Report</div>
+            <div style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 7 }}>Enterprise Report
+              <span title={`Instanz: ${stageInfo(AKTUELLE_STAGE).name}`} style={{ fontSize: 10, fontWeight: 700, padding: '1px 7px', borderRadius: 999,
+                color: '#fff', background: stageInfo(AKTUELLE_STAGE).farbe }}>{stageInfo(AKTUELLE_STAGE).kurz}</span>
+            </div>
             <div className="mono" style={{ fontSize: 10, color: 'var(--muted)' }}>
               {t('lbl.source')}: {QUELLE.toUpperCase()}
               {verbindung && (
@@ -239,6 +245,9 @@ export default function App() {
         )}
         {ansicht === 'abschluss' && (
           <Abschluss />
+        )}
+        {ansicht === 'transport' && (
+          <Transport benutzer={benutzer} />
         )}
         {ansicht === 'rechte' && (
           <RollenRechte onChange={(list) => {

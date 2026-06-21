@@ -803,3 +803,16 @@ export function abhaengigkeitsGraph() {
     quelle: k.sqlRef ? `sql/${k.sqlRef}.kpi.sql` : 'berechnet'
   }))
 }
+
+// --- Transportierte KPI-Definitionsanpassungen --------------------------
+// Über das Transportwesen importierte KPI-Definitionen (er_kpi_overrides)
+// überschreiben hier die Metadaten-Felder, sodass sie in der ganzen App
+// wirken. Nur im Browser; der Server (kein localStorage) bleibt unberührt.
+try {
+  if (typeof localStorage !== 'undefined') {
+    const ov = JSON.parse(localStorage.getItem('er_kpi_overrides') || '{}')
+    for (const [id, patch] of Object.entries(ov)) {
+      KPI[id] = KPI[id] ? { ...KPI[id], ...patch } : { id, abhaengig: [], security: null, ...patch }
+    }
+  }
+} catch { /* defekte Overrides ignorieren */ }

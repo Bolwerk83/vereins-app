@@ -26,6 +26,8 @@ import { ladeVerteiler as ladeVerteilerStore, speichereVerteiler } from './verte
 import { versende, paketBauen } from './versand.js'
 import { starteScheduler, planeNeu, feuereEreignis } from './scheduler.js'
 import { mailKonfiguriert } from './mailer.js'
+import { speichereBundle, ladeAlle as ladeTransporte, ladeBundle } from './transport.store.js'
+import { promote, AKTUELLE_STAGE } from './transport.js'
 import { KPI } from '../src/core/kpiRegistry.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -199,6 +201,20 @@ app.post('/api/verteiler/:id/send', async (req, res) => { // realer (oder dry-ru
 
 app.post('/api/ereignis/:typ', async (req, res) => { // Ereignis-Trigger (z. B. Abschluss-Freigabe)
   try { res.json({ ausgeloest: await feuereEreignis(req.params.typ) }) } catch (e) { res.status(500).json({ error: String(e.message || e) }) }
+})
+
+// --- Transportwesen (dev/test/prod) --------------------------------------
+app.get('/api/stage', (_req, res) => res.json({ aktuell: AKTUELLE_STAGE }))
+app.get('/api/transport', (_req, res) => res.json(ladeTransporte()))
+app.post('/api/transport', (req, res) => res.json(speichereBundle(req.body)))
+app.post('/api/transport/:id/promote', (req, res) => {
+  const b = ladeBundle(req.params.id)
+  if (!b) return res.status(404).json({ error: 'Transportauftrag nicht gefunden' })
+  try {
+    const erg = promote(b)
+    speichereBundle({ ...b, ...erg, promotedAt: new Date().toISOString() })
+    res.json(erg)
+  } catch (e) { res.status(500).json({ status: 'fehler', grund: String(e.message || e) }) }
 })
 
 const PORT = process.env.PORT || 3001
