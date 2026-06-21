@@ -5,11 +5,12 @@
 import React, { useState, useMemo } from 'react'
 import { berichtIndex, EBENEN } from '../../core/reportTree.js'
 import { clusterFuer } from '../../core/bereiche.js'
+import { eigeneBerichtsItems } from '../../core/designer.js'
 import { Badge } from '../../components/ui.jsx'
 
 export default function Berichtskatalog({ onOpen }) {
   const [q, setQ] = useState('')
-  const alle = useMemo(() => berichtIndex().filter((b) => b.nummer), [])
+  const alle = useMemo(() => [...berichtIndex().filter((b) => b.nummer), ...eigeneBerichtsItems()], [])
   const treffer = alle.filter((b) => {
     const s = q.trim().toLowerCase()
     return !s || b.nummer.toLowerCase().includes(s) || b.titel.toLowerCase().includes(s) || (b.bereich || '').toLowerCase().includes(s)
@@ -17,7 +18,9 @@ export default function Berichtskatalog({ onOpen }) {
   // nach Cluster gruppieren
   const gruppen = {}
   treffer.forEach((b) => {
-    const c = b.ebene === 1 ? { id: 'gf', name: 'Konzern / GF' } : (clusterFuer(b.bereich) || { id: 'x', name: 'Weitere' })
+    const c = b.typ === 'designer' ? { id: 'eigene', name: 'Eigene Berichte (Designer)' }
+      : b.ebene === 1 ? { id: 'gf', name: 'Konzern / GF' }
+      : (clusterFuer(b.bereich) || { id: 'x', name: 'Weitere' })
     ;(gruppen[c.id] ||= { name: c.name, items: [] }).items.push(b)
   })
 
@@ -37,13 +40,13 @@ export default function Berichtskatalog({ onOpen }) {
           {g.items.map((b) => {
             const e = EBENEN.find((x) => x.stufe === b.ebene)
             return (
-              <div key={b.id} onClick={() => onOpen(b.id)} style={{ display: 'grid', gridTemplateColumns: '90px 1fr 150px', gap: 10, alignItems: 'center',
+              <div key={b.id} onClick={() => onOpen(b.id, b.typ)} style={{ display: 'grid', gridTemplateColumns: '90px 1fr 150px', gap: 10, alignItems: 'center',
                 padding: '8px 14px', borderTop: '1px solid var(--line)', cursor: 'pointer' }}
                 onMouseEnter={(ev) => ev.currentTarget.style.background = 'var(--accent-soft)'}
                 onMouseLeave={(ev) => ev.currentTarget.style.background = 'transparent'}>
                 <span className="mono" style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}>{b.nummer}</span>
-                <span style={{ fontSize: 13.5, paddingLeft: (b.ebene - 1) * 12 }}>{b.titel}</span>
-                <Badge status="n">E{b.ebene} · {e?.name}</Badge>
+                <span style={{ fontSize: 13.5, paddingLeft: (Number(b.ebene) > 0 ? (b.ebene - 1) * 12 : 0) }}>{b.titel}</span>
+                <Badge status="n">{b.typ === 'designer' ? 'Eigen · Designer' : `E${b.ebene} · ${e?.name}`}</Badge>
               </div>
             )
           })}

@@ -26,6 +26,7 @@ export default function App() {
   const [verbindung, setVerbindung] = useState(null)
   const [mnKontext, setMnKontext] = useState(null)
   const [baumStart, setBaumStart] = useState(null)
+  const [designerStart, setDesignerStart] = useState(null)
   const rolle = ROLLEN[rolleId]
   const { t, lang, setLang } = useT()
 
@@ -104,10 +105,13 @@ export default function App() {
           <TreeNavigator rolle={rolle} werte={werte} periode={periode} startId={baumStart} onOpenReport={() => setAnsicht('report')} />
         )}
         {ansicht === 'katalog' && (
-          <Berichtskatalog onOpen={(id) => { setBaumStart(id); setAnsicht('baum') }} />
+          <Berichtskatalog onOpen={(id, typ) => {
+            if (typ === 'designer') { setDesignerStart(id); setAnsicht('designer') }
+            else { setBaumStart(id); setAnsicht('baum') }
+          }} />
         )}
         {ansicht === 'designer' && (
-          <ReportDesigner rolle={rolle} werte={werte} />
+          <ReportDesigner rolle={rolle} werte={werte} startId={designerStart} />
         )}
         {ansicht === 'report' && (
           <ManagementReport rolle={rolle} werte={werte} periode={periode}

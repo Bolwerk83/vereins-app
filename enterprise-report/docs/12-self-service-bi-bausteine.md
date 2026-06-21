@@ -41,8 +41,21 @@ Lagebewertung, **Speichern** (mehrere Reports), **PDF-Druck** und **CSV-Export**
 Object-Level-Security greift (geschützte KPIs nicht wählbar). Store:
 `src/core/designer.js` (LocalStorage; später MSSQL-Tabelle).
 
+## Erweiterungen
+
+- **Perspektiven ausgerollt** auf Produktion (Artikel/Auftrag/Maschine),
+  Logistik externe Läger, Vertriebscontrolling (Kunde/Kanal), Marketing
+  (Kampagne/Kanal), Risiko (Kunde/Verkaufsrechnung), Personalcontrolling
+  (Kostenstelle/Mitarbeiter), Supply-Chain (Artikel/Lagerort).
+- **Echte Feldfilter:** Datensätze markieren kategorische Spalten über
+  `filterSpalten`; die Filtermaske bietet dafür Dropdowns (Status, Segment,
+  Typ, ABC, Risiko …) — kombiniert mit Volltext und Top-N.
+- **Eigene Berichte im Katalog:** gespeicherte Designer-Reports erscheinen im
+  Berichtskatalog mit fortlaufender Nummer **`EIG-001`** und öffnen direkt
+  im Designer.
+
 ## Wirkung
-- **Eindeutige Kommunikation** über Berichtsnummern.
+- **Eindeutige Kommunikation** über Berichtsnummern (inkl. eigener `EIG-*`).
 - **Tiefe Detailanalyse** über kontextabhängige Sprungpunkte — performant
   dank Filtermaske.
 - **Eigene Berichte** ohne Entwicklung — der Anwender baut sich sein Cockpit.

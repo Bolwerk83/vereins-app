@@ -3,7 +3,7 @@
 //  Links Editor (KPIs/Text/Maßnahmen, sortierbar), rechts Live-Vorschau.
 //  Vorschau ist druckbar (PDF) und als CSV exportierbar.
 // =========================================================================
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { KPI } from '../../core/kpiRegistry.js'
 import { darfKpi } from '../../core/rbac.js'
 import { clusterFuer } from '../../core/bereiche.js'
@@ -14,11 +14,13 @@ import { formatWert, AMPEL_FARBE } from '../../design/theme.js'
 import { downloadCsv, druckePdf } from '../../core/export.js'
 import { Badge, AmpelPunkt } from '../../components/ui.jsx'
 
-export default function ReportDesigner({ rolle, werte }) {
+export default function ReportDesigner({ rolle, werte, startId }) {
   const [reports, setReports] = useState(ladeReports())
   const [r, setR] = useState(() => ladeReports()[0] || neuerReport())
   const set = (patch) => setR((x) => ({ ...x, ...patch }))
   const refresh = () => setReports(ladeReports())
+  // aus dem Katalog geöffneten Report laden
+  useEffect(() => { if (startId) { const x = ladeReports().find((y) => y.id === startId); if (x) setR(x) } }, [startId])
 
   // KPI-Auswahl gruppiert (rechtegeprüft)
   const kpiGruppen = {}

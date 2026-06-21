@@ -18,6 +18,14 @@ export function saveReport(r) {
 }
 export function removeReport(id) { return speichere(ladeReports().filter((x) => x.id !== id)) }
 
+// Katalog-Einträge der eigenen Reports mit fortlaufender Nummer EIG-00N.
+export function eigeneBerichtsItems() {
+  return ladeReports().map((r, i) => ({
+    id: r.id, nummer: `EIG-${String(i + 1).padStart(3, '0')}`,
+    titel: r.titel, ebene: '—', typ: 'designer'
+  }))
+}
+
 export function neuerReport() {
   return {
     id: 'r_' + Date.now().toString(36),
