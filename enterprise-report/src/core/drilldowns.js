@@ -19,7 +19,9 @@ export const DRILL = {
   kanal:            { name: 'Kanal', icon: '🛒' },
   kampagne:         { name: 'Kampagne', icon: '📣' },
   mitarbeiter:      { name: 'Mitarbeiter', icon: '👥' },
-  maschine:         { name: 'Maschine/Linie', icon: '🛠' }
+  maschine:         { name: 'Maschine/Linie', icon: '🛠' },
+  tranche:          { name: 'Finanztranche', icon: '🏦' },
+  standort:         { name: 'Standort', icon: '📍' }
 }
 
 export const drillName = (code) => DRILL[code]?.name || code

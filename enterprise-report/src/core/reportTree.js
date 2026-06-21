@@ -87,6 +87,7 @@ export const BERICHTSBAUM = n('konzern', 1, 'VeloWerk Gruppe · Management Repor
       kinder: [
         n('hr-fluktuation', 3, 'Bindung & Fluktuation', {
           bereich: 'HR', kpis: ['fluktuation'],
+          perspektiven: ['kostenstelle', 'mitarbeiter'],
           kinder: [ n('hr-fluktuation-det', 4, 'Belegschaft je Bereich', { bereich: 'HR', detail: 'belegschaft' }) ]
         })
       ]
@@ -123,6 +124,7 @@ export const BERICHTSBAUM = n('konzern', 1, 'VeloWerk Gruppe · Management Repor
         }),
         n('klr-kostenstellen', 3, 'Kostenstellen (BAB)', {
           bereich: 'KLR', kpis: ['gesamtkosten'],
+          perspektiven: ['kostenstelle', 'konto', 'produkt'],
           kinder: [ n('klr-kostenstellen-det', 4, 'Kostenstellen Plan/Ist', { bereich: 'KLR', detail: 'kostenstellen' }) ]
         }),
         n('klr-kostentraeger', 3, 'Kostenträger', {
@@ -223,6 +225,7 @@ export const BERICHTSBAUM = n('konzern', 1, 'VeloWerk Gruppe · Management Repor
         }),
         n('fibu-bilanz', 3, 'GuV & Bilanz', {
           bereich: 'FIBU', kpis: ['eigenkapitalquote', 'bilanzsumme'],
+          perspektiven: ['konto', 'kostenstelle', 'profitcenter'],
           kinder: [ n('fibu-bilanz-det', 4, 'Bilanz kompakt', { bereich: 'FIBU', detail: 'bilanz' }) ]
         }),
         n('fibu-abgrenzung', 3, 'Abgrenzung FiBu ↔ Controlling', {
@@ -317,6 +320,7 @@ export const BERICHTSBAUM = n('konzern', 1, 'VeloWerk Gruppe · Management Repor
       kinder: [
         n('esg-emissionen', 3, 'Emissionen (CO₂)', {
           bereich: 'ESG', kpis: ['co2ProRad', 'co2Gesamt'],
+          perspektiven: ['standort', 'produkt'],
           kinder: [ n('esg-emissionen-det', 4, 'CO₂-Bilanz nach Scope', { bereich: 'ESG', detail: 'co2_scope' }) ]
         }),
         n('esg-energie', 3, 'Energie & Material', {
@@ -340,6 +344,7 @@ export const BERICHTSBAUM = n('konzern', 1, 'VeloWerk Gruppe · Management Repor
         }),
         n('tre-zins', 3, 'Zinsrisiko', {
           bereich: 'TRE', kpis: ['durchschnittszins', 'zinsaufwand'],
+          perspektiven: ['tranche'],
           kinder: [ n('tre-zins-det', 4, 'Zinsbindung & Sensitivität', { bereich: 'TRE', detail: 'zinsbindung' }) ]
         }),
         n('tre-fx', 3, 'Währungsrisiko', {
@@ -355,6 +360,7 @@ export const BERICHTSBAUM = n('konzern', 1, 'VeloWerk Gruppe · Management Repor
       kinder: [
         n('qm-reklamationen', 3, 'Reklamationen', {
           bereich: 'QM', kpis: ['reklamationsquote'],
+          perspektiven: ['artikel', 'lieferant', 'auftrag'],
           kinder: [ n('qm-reklamationen-det', 4, 'Reklamationen je Warengruppe', { bereich: 'QM', detail: 'reklamationen' }) ]
         }),
         n('qm-fertigung', 3, 'Nacharbeit & FPY', {

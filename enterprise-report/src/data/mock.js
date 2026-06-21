@@ -343,6 +343,46 @@ export const MOCK = {
     scc_artikel: { titel: 'Bestand/Umschlag je Artikel', spalten: ['Artikel-Nr', 'Bezeichnung', 'Bestand €', 'Reichw.', 'ABC'], filterSpalten: [4],
       zeilen: [['10042','E-Bike Urban 500','831.800','42 Tg','A'],['R-2201','Antriebseinheit M3','592.800','96 Tg','A'],['20155','Trekking City 7','448.000','58 Tg','B'],['40455','Schloss Faltschloss','37.800','120 Tg','C']] },
     scc_lager: { titel: 'Bestand je Lagerort', spalten: ['Lagerort', 'Wert Mio €', 'Auslastung', 'Typ'], filterSpalten: [3],
-      zeilen: [['Zentrallager DE','7,8','88 %','eigen'],['Reservelager Nord','1,4','62 %','extern'],['Saisonlager Süd','1,1','55 %','extern'],['Hub Schweiz','0,9','71 %','extern']] }
+      zeilen: [['Zentrallager DE','7,8','88 %','eigen'],['Reservelager Nord','1,4','62 %','extern'],['Saisonlager Süd','1,1','55 %','extern'],['Hub Schweiz','0,9','71 %','extern']] },
+
+    // Kosten- & Leistungsrechnung
+    klr_kostenstelle: { titel: 'Kostenstellen Plan/Ist', spalten: ['Kostenstelle', 'Plan T€', 'Ist T€', 'Abw.', 'Verantwortl.'], filterSpalten: [4],
+      zeilen: [['Fertigung','18.200','18.900','+700','Schmidt'],['Montage','6.400','6.600','+200','Weber'],['Vertrieb','9.800','9.600','−200','Klein'],['Verwaltung','5.100','5.000','−100','Braun'],['IT','1.100','1.100','0','Lang']] },
+    klr_konto: { titel: 'Kostenarten (Konten)', spalten: ['Konto', 'Kostenart', 'Ist T€', 'Typ'], filterSpalten: [3],
+      zeilen: [['6000','Materialaufwand','24.800','Einzelkosten'],['6200','Personalaufwand','10.500','Gemeinkosten'],['6500','Energie/Raum','3.100','Gemeinkosten'],['6700','Marketing','4.900','Gemeinkosten'],['6900','Sonstige','4.300','Gemeinkosten']] },
+    klr_produkt: { titel: 'Kostenträger (Produktgruppen)', spalten: ['Produktgruppe', 'HK T€', 'Erlös T€', 'DB %'], filterSpalten: [],
+      zeilen: [['E-Bikes','18.900','30.100','37 %'],['City/Trekking','6.300','9.600','34 %'],['Teile','5.400','8.800','39 %'],['Zubehör','3.200','5.700','44 %']] },
+
+    // Finanzbuchhaltung & Abschluss
+    fibu_konto: { titel: 'Salden je Sachkonto', spalten: ['Konto', 'Bezeichnung', 'Saldo €', 'Klasse'], filterSpalten: [3],
+      zeilen: [['0200','Sachanlagen','9.800.000','Aktiva'],['1400','Vorräte','11.200.000','Aktiva'],['1200','Bank','6.300.000','Aktiva'],['0800','Eigenkapital','11.200.000','Passiva'],['3000','Rückstellungen','3.600.000','Passiva'],['1600','Verbindl. LuL','13.700.000','Passiva']] },
+    fibu_kostenstelle: { titel: 'Abschluss je Kostenstelle', spalten: ['Kostenstelle', 'Aufwand T€', 'Abgrenzung T€', 'Status'], filterSpalten: [3],
+      zeilen: [['Fertigung','18.900','120','gebucht'],['Vertrieb','9.600','85','gebucht'],['Verwaltung','5.000','40','offen'],['IT','1.100','10','gebucht']] },
+    fibu_profitcenter: { titel: 'Ergebnis je Profit-Center', spalten: ['Profit-Center', 'Umsatz Mio €', 'EBIT Mio €', 'Marge'], filterSpalten: [],
+      zeilen: [['PC Online','23,4','0,9','3,8 %'],['PC Filialen DE','13,0','0,2','1,5 %'],['PC Filialen CH','6,2','0,3','4,8 %'],['PC B2B/Leasing','6,8','0,1','1,5 %'],['PC Service','6,0','0,2','3,3 %']] },
+
+    // Treasury
+    tre_tranche: { titel: 'Finanztranchen', spalten: ['Instrument', 'Volumen Mio €', 'Zins', 'Bindung', 'Typ'], filterSpalten: [4],
+      zeilen: [['Bankdarlehen A','4,5','3,4 %','fest','fest'],['Bankdarlehen B','2,6','4,8 %','variabel','variabel'],['Kontokorrent','1,2','5,5 %','variabel','variabel'],['Leasing','0,8','3,1 %','fest','fest']] },
+
+    // Nachhaltigkeits-/ESG
+    esg_standort: { titel: 'CO₂ je Standort (t)', spalten: ['Standort', 'Scope 1', 'Scope 2', 'Gesamt', 'Land'], filterSpalten: [4],
+      zeilen: [['Werk DE','310','420','1.980','DE'],['Filialen DE','40','90','420','DE'],['Filialen CH','30','40','280','CH'],['Filialen NL','40','60','300','NL']] },
+    esg_produkt: { titel: 'CO₂ je Produktgruppe (kg/Stück)', spalten: ['Produktgruppe', 'CO₂/Stück', 'Rezyklat %', 'Trend'], filterSpalten: [],
+      zeilen: [['E-Bikes','142','38 %','▼'],['City/Trekking','96','41 %','▼'],['Teile','24','52 %','▬'],['Zubehör','11','60 %','▼']] },
+
+    // Qualität
+    qm_artikel: { titel: 'Reklamationen je Artikel', spalten: ['Artikel-Nr', 'Bezeichnung', 'Quote', 'Top-Ursache'], filterSpalten: [3],
+      zeilen: [['10088','E-MTB Trail Pro','1,9 %','Antrieb/Elektronik'],['10042','E-Bike Urban 500','1,4 %','Display'],['20155','Trekking City 7','0,9 %','Bremsen'],['R-2201','Antriebseinheit M3','2,2 %','Lager']] },
+    qm_lieferant: { titel: 'Reklamationen je Lieferant', spalten: ['Lieferant', 'Quote', 'Fälle', 'Bewertung'], filterSpalten: [3],
+      zeilen: [['Antrieb & Schaltung AG','2,1 %','142','kritisch'],['RahmenStahl GmbH','0,8 %','38','ok'],['Handelsware Süd','1,1 %','61','beobachten'],['Zubehör Import','1,4 %','54','beobachten']] },
+    qm_auftrag: { titel: 'Nacharbeit je Auftrag', spalten: ['FA-Nr', 'Artikel', 'Nacharbeit %', 'Status'], filterSpalten: [3],
+      zeilen: [['FA-77120','E-Bike Urban 500','3,1 %','geschlossen'],['FA-77135','E-MTB Trail Pro','4,2 %','offen'],['FA-77150','Trekking City 7','2,4 %','geschlossen']] },
+
+    // HR
+    hr_kostenstelle: { titel: 'Belegschaft je Kostenstelle', spalten: ['Kostenstelle', 'FTE', 'Fluktuation', 'Offene Stellen'], filterSpalten: [],
+      zeilen: [['Filialen DE/CH/NL','186','12,4 %','9'],['Onlineshop & Service','64','8,1 %','3'],['Produktion & Logistik','96','6,5 %','2'],['Verwaltung/IT/Finanzen','26','4,2 %','0']] },
+    hr_mitarbeiter: { titel: 'Kennzahlen je Mitarbeitergruppe', spalten: ['Gruppe', 'FTE', 'Ø Zugehörigkeit', 'Krankenstand'], filterSpalten: [],
+      zeilen: [['Filialverkauf','176','4,2 J','5,2 %'],['Werkstatt/Service','58','6,1 J','4,1 %'],['Produktion','82','8,4 J','5,6 %'],['Verwaltung','24','9,8 J','3,2 %']] }
   }
 }
