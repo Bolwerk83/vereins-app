@@ -54,3 +54,18 @@ Vereinigung aller seiner Gruppen auf — identisch zur Tool-Logik
   Gruppen noch aus dem Browser (localStorage), der Übergang ist nahtlos.
 
 Ausführen im SSMS gegen `ERP_DWH` (idempotent, mehrfach lauffähig).
+
+## Zeit & Datenart (DimDatenart, Periodenherkunft)
+
+`_zeit_datenart.sql` legt die Dimensionen **dim.DimDatenart**
+(Ist/Tagesreporting/Plan/Forecast) und **dim.DimDatumssicht**
+(Beleg-/Bestell-/Liefer-/Zahldatum inkl. Faktspalte) sowie die
+Steuertabellen **ctrl.PeriodenHerkunft** (je Monat → Datenart) und
+**ctrl.PlanKonto** (Planauffüllung im Tagesreporting) an. Die View
+`ctrl.vw_PeriodenHerkunft` liefert Monat + Datenart im Klartext.
+
+So **verankerst** du die Datenart im Reporting: jede KPI-SQL joint auf
+`ctrl.vw_PeriodenHerkunft` (Beispiel im Skript) und bildet die Periode über
+die `FaktSpalte` der gewählten `dim.DimDatumssicht`. Das Backend liest die
+Dimension über `GET /api/dimension/datenart` und die Zuweisung über
+`GET /api/periodenherkunft`.

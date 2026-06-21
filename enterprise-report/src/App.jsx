@@ -9,6 +9,7 @@ import BurgerMenu from './components/BurgerMenu.jsx'
 import { ladeKpiWerte, pruefeVerbindung, setCacheKontext, PERIODEN, AKTUELLE_PERIODE, QUELLE } from './core/dataProvider.js'
 import { ladeModell } from './core/periodenmodell.js'
 import ZeitDatenart from './modules/zeit-datenart/ZeitDatenart.jsx'
+import DatenartBadge from './modules/zeit-datenart/DatenartBadge.jsx'
 import TreeNavigator from './modules/tree-navigator/TreeNavigator.jsx'
 import ManagementReport from './modules/management-report/ManagementReport.jsx'
 import SetupWizard from './modules/wizard/SetupWizard.jsx'
@@ -162,6 +163,7 @@ export default function App() {
                 {PERIODEN.map((p) => <option key={p} value={p}>{p}</option>)}
               </select>
             </label>
+            <DatenartBadge modell={zeitModell} onClick={() => setAnsicht('zeit')} />
             <button style={topBtn(false)} onClick={() => setAnsicht('wizard')}>⚙ {t('nav.wizard')}</button>
             <div style={{ display: 'flex', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
               {SPRACHEN.map((s) => (

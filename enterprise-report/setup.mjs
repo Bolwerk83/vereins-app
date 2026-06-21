@@ -134,11 +134,13 @@ async function main() {
     }
 
     // ---- SQL einspielen -------------------------------------------------
-    if (await jaNein('Rollen-/Rechte-Tabellen jetzt in der Datenbank anlegen?', true)) {
-      const skript = join(ROOT, 'sql', '_rollen_rechte.sql')
-      const r = spawnSync('npm', ['run', 'apply:sql', '--', skript], { cwd: SERVER, stdio: 'inherit', shell: true })
-      if (r.status === 0) ok('Tabellen angelegt (Schema sec).')
-      else warn('Konnte nicht eingespielt werden — du kannst sql/_rollen_rechte.sql später im SSMS ausführen.')
+    if (await jaNein('Steuertabellen jetzt in der Datenbank anlegen (Rollen/Rechte + Zeit/Datenart)?', true)) {
+      for (const datei of ['_rollen_rechte.sql', '_zeit_datenart.sql']) {
+        const skript = join(ROOT, 'sql', datei)
+        const r = spawnSync('npm', ['run', 'apply:sql', '--', skript], { cwd: SERVER, stdio: 'inherit', shell: true })
+        if (r.status === 0) ok(`Eingespielt: ${datei}`)
+        else warn(`Konnte ${datei} nicht einspielen — später im SSMS ausführen.`)
+      }
     }
   } else {
     sag(`\n${c.dim}Schritt 4 entfällt im Demo-Modus — es wird keine Datenbank gebraucht.${c.reset}`)

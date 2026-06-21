@@ -12,6 +12,8 @@
 //    GET  /api/detail/:key       -> { titel, spalten[], zeilen[][] }
 //    GET  /api/benutzer/:login/rechte -> effektive Rechte (sec.vw_BenutzerRechte)
 //    GET  /api/gruppen           -> Gruppen inkl. Bereiche/Kontext/Mitglieder
+//    GET  /api/dimension/datenart-> DimDatenart (Ist/Tagesreporting/Plan/FC)
+//    GET  /api/periodenherkunft  -> Zuweisungstabelle Monat -> Datenart
 //    POST /api/bi                -> Self-Service-BI-Bericht (Claude)
 // =========================================================================
 import express from 'express'
@@ -153,6 +155,20 @@ app.get('/api/gruppen', async (_req, res) => {
       kontext: k.filter((x) => x.GruppeId === row.GruppeId).map((x) => x.KontextTag),
       mitglieder: m.filter((x) => x.GruppeId === row.GruppeId).map((x) => x.Login)
     })))
+  } catch (e) { res.status(500).json({ error: String(e.message || e) }) }
+})
+
+// --- Zeit & Datenart: Dimension + Periodenherkunft (Zuweisungstabelle) ----
+app.get('/api/dimension/datenart', async (_req, res) => {
+  try {
+    const r = await (await getPool()).request().query('SELECT Code, Name, Kurz, Reihenfolge, AmpelStatus, IstFinal, Beschreibung FROM dim.DimDatenart ORDER BY Reihenfolge')
+    res.json(r.recordset)
+  } catch (e) { res.status(500).json({ error: String(e.message || e) }) }
+})
+app.get('/api/periodenherkunft', async (_req, res) => {
+  try {
+    const r = await (await getPool()).request().query('SELECT Periode, DatenartCode, Datenart, Kurz, AmpelStatus FROM ctrl.vw_PeriodenHerkunft ORDER BY Periode')
+    res.json(r.recordset)
   } catch (e) { res.status(500).json({ error: String(e.message || e) }) }
 })
 
