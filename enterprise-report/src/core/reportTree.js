@@ -511,3 +511,14 @@ export function findeNummer(nr) {
   const s = String(nr).trim().toLowerCase()
   return berichtIndex().find((x) => (x.nummer || '').toLowerCase() === s)
 }
+
+// Rückwärtssuche: in welchen Berichtsknoten ist eine KPI eingebaut?
+// Liefert je Fundstelle { id, nummer, titel, bereich, ebene } — für den
+// Sprung "von der Definition zurück dorthin, wo die Kennzahl verwendet wird".
+export function kpiVerwendung(kpiId, root = BERICHTSBAUM, acc = []) {
+  if ((root.kpis || []).includes(kpiId)) {
+    acc.push({ id: root.id, nummer: root.nummer, titel: root.titel, bereich: root.bereich, ebene: root.ebene })
+  }
+  ;(root.kinder || []).forEach((k) => kpiVerwendung(kpiId, k, acc))
+  return acc
+}

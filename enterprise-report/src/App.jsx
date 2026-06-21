@@ -3,6 +3,8 @@ import { ladeGruppen, ladeGruppenAsync, istAdmin, effektiveRolleAsync } from './
 import RollenRechte from './modules/rollen-rechte/RollenRechte.jsx'
 import BenutzerLeiste from './modules/benutzer/BenutzerLeiste.jsx'
 import HilfePanel from './modules/hilfe/HilfePanel.jsx'
+import { KpiDefProvider } from './modules/kennzahlen/KpiDefContext.jsx'
+import Kennzahlen from './modules/kennzahlen/Kennzahlen.jsx'
 import { ladeKpiWerte, pruefeVerbindung, PERIODEN, AKTUELLE_PERIODE, QUELLE } from './core/dataProvider.js'
 import TreeNavigator from './modules/tree-navigator/TreeNavigator.jsx'
 import ManagementReport from './modules/management-report/ManagementReport.jsx'
@@ -97,6 +99,7 @@ export default function App() {
           <>
             <button style={topBtn(ansicht === 'baum' || ansicht === 'report')} onClick={() => setAnsicht('baum')}>{t('nav.tree')}</button>
             <button style={topBtn(ansicht === 'katalog')} onClick={() => setAnsicht('katalog')}>{t('nav.katalog')}</button>
+            <button style={topBtn(ansicht === 'kennzahlen')} onClick={() => setAnsicht('kennzahlen')}>{t('nav.kennzahlen')}</button>
             <button style={topBtn(ansicht === 'bi')} onClick={() => setAnsicht('bi')}>{t('nav.bi')}</button>
             <button style={topBtn(ansicht === 'qc')} onClick={() => setAnsicht('qc')}>
               {t('nav.qc')}{(() => { const f = validierungsZusammenfassung(werte).fehler; return f ? ` (${f})` : '' })()}
@@ -139,6 +142,7 @@ export default function App() {
 
       <HilfePanel offen={hilfeAuf} erstmalig={hilfeErstmalig} onSchliessen={hilfeSchliessen} />
 
+      <KpiDefProvider rolle={rolle} werte={werte} onSpringe={(id) => { setBaumStart(id); setAnsicht('baum') }}>
       <main style={{ padding: '22px 20px', maxWidth: 1240, margin: '0 auto' }}>
         {ansicht === 'wizard' && (
           <SetupWizard
@@ -177,6 +181,9 @@ export default function App() {
         {ansicht === 'alerts' && (
           <Alerts werte={werte} rolle={rolle} periode={periode} />
         )}
+        {ansicht === 'kennzahlen' && (
+          <Kennzahlen rolle={rolle} werte={werte} />
+        )}
         {ansicht === 'rechte' && (
           <RollenRechte onChange={(list) => {
             setGruppen(list)
@@ -184,6 +191,7 @@ export default function App() {
           }} />
         )}
       </main>
+      </KpiDefProvider>
     </div>
   )
 }

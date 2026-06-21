@@ -3,6 +3,7 @@ import React from 'react'
 import { KPI } from '../core/kpiRegistry.js'
 import { ampelStatus, trendAusHistorie } from '../core/ampel.js'
 import { AMPEL_FARBE, AMPEL_SOFT, AMPEL_LABEL, formatWert, TREND_ICON } from '../design/theme.js'
+import { useKpiDef } from '../modules/kennzahlen/KpiDefContext.jsx'
 
 export function AmpelPunkt({ status, size = 10 }) {
   return <span style={{ display: 'inline-block', width: size, height: size, borderRadius: '50%',
@@ -17,6 +18,7 @@ export function Badge({ children, status = 'n' }) {
 /** KPI-Kachel: Wert + Ziel + Ampel + Trend. Berechnet Status zentral. */
 export function KpiCard({ kpiId, wert, historie, onClick }) {
   const k = KPI[kpiId]
+  const def = useKpiDef()
   if (!k) return null
   const status = ampelStatus({ wert, ziel: k.ziel, richtung: k.richtung, warn: k.warn })
   const t = historie ? trendAusHistorie(historie.map((h) => h.wert), k.richtung) : null
@@ -24,9 +26,14 @@ export function KpiCard({ kpiId, wert, historie, onClick }) {
     <button onClick={onClick} style={{ textAlign: 'left', background: 'var(--panel)', border: '1px solid var(--line)',
       borderLeft: `3px solid ${AMPEL_FARBE[status]}`, borderRadius: 'var(--radius)', padding: 14, minWidth: 150,
       flex: '1 1 0', boxShadow: 'var(--shadow)' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
         <span className="mono" style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em' }}>{k.name}</span>
-        <AmpelPunkt status={status} />
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          {def && <span role="button" title="Kennzahlen-Definition öffnen"
+            onClick={(e) => { e.stopPropagation(); def.oeffne(kpiId) }}
+            style={{ cursor: 'pointer', color: 'var(--muted)', fontSize: 13, fontWeight: 700, lineHeight: 1 }}>ⓘ</span>}
+          <AmpelPunkt status={status} />
+        </span>
       </div>
       <div className="mono" style={{ fontSize: 24, fontWeight: 600, marginTop: 6 }}>{formatWert(wert, k.einheit)}</div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
