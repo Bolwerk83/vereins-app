@@ -47,7 +47,8 @@ export const NAV_ZIELE = [
   { ziel: 'verteiler', gruppe: 'Steuerung', schluessel: 'nav.verteiler' },
   { ziel: 'transport', gruppe: 'Steuerung', schluessel: 'nav.transport' },
   { ziel: 'admin', gruppe: 'Steuerung', schluessel: 'nav.admin' },
-  { ziel: 'lernpfad', gruppe: 'Steuerung', schluessel: 'nav.lernpfad' }
+  { ziel: 'lernpfad', gruppe: 'Steuerung', schluessel: 'nav.lernpfad' },
+  { ziel: 'doku', gruppe: 'Steuerung', schluessel: 'nav.doku' }
 ]
 
 const norm = (s) => String(s || '').toLowerCase().trim()

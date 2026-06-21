@@ -44,6 +44,7 @@ import Lernpfad from './modules/lernpfad/Lernpfad.jsx'
 import GlobalSuche from './modules/suche/GlobalSuche.jsx'
 import Admin from './modules/admin/Admin.jsx'
 import Events from './modules/events/Events.jsx'
+import Doku from './modules/doku/Doku.jsx'
 import { ladeBranding, applyBranding, themeById } from './core/admin.js'
 import { AKTUELLE_STAGE, stageInfo } from './core/stage.js'
 import { autoSeed } from './core/designerSeed.js'
@@ -184,6 +185,7 @@ export default function App() {
       ] : []),
       { label: t('nav.wizard'), icon: '⚙', aktiv: ansicht === 'wizard', onClick: () => geh('wizard') },
       { label: t('nav.lernpfad'), icon: '🎓', aktiv: ansicht === 'lernpfad', onClick: () => geh('lernpfad') },
+      { label: t('nav.doku'), icon: '📚', aktiv: ansicht === 'doku', onClick: () => geh('doku') },
       { label: t('nav.onboarding'), icon: '🚀', aktiv: false, onClick: () => setOnbAuf(true) },
       { label: t('nav.hilfe'), icon: '❓', aktiv: false, onClick: () => { setHilfeErstmalig(false); setHilfeAuf(true) } }
     ] }
@@ -410,6 +412,9 @@ export default function App() {
         )}
         {ansicht === 'lernpfad' && (
           <Lernpfad onGeh={geh} />
+        )}
+        {ansicht === 'doku' && (
+          <Doku onGeh={geh} />
         )}
         {ansicht === 'transport' && (
           <Transport benutzer={benutzer} />
