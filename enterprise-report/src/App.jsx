@@ -12,6 +12,7 @@ import ZeitDatenart from './modules/zeit-datenart/ZeitDatenart.jsx'
 import DatenartBadge from './modules/zeit-datenart/DatenartBadge.jsx'
 import Versionsvergleich from './modules/versionsvergleich/Versionsvergleich.jsx'
 import Verteiler from './modules/verteiler/Verteiler.jsx'
+import Abschluss from './modules/abschluss/Abschluss.jsx'
 import TreeNavigator from './modules/tree-navigator/TreeNavigator.jsx'
 import ManagementReport from './modules/management-report/ManagementReport.jsx'
 import SetupWizard from './modules/wizard/SetupWizard.jsx'
@@ -104,6 +105,7 @@ export default function App() {
     { titel: 'Steuerung', eintraege: [
       { label: t('nav.massnahmen'), icon: '🎯', aktiv: ansicht === 'massnahmen', onClick: () => geh('massnahmen') },
       { label: t('nav.zeit'), icon: '🗓', aktiv: ansicht === 'zeit', onClick: () => geh('zeit') },
+      { label: t('nav.abschluss'), icon: '🔒', aktiv: ansicht === 'abschluss', onClick: () => geh('abschluss') },
       { label: t('nav.verteiler'), icon: '📤', aktiv: ansicht === 'verteiler', onClick: () => geh('verteiler') },
       ...(istAdmin(rolle) ? [{ label: t('nav.rechte'), icon: '👥', aktiv: ansicht === 'rechte', onClick: () => geh('rechte') }] : []),
       { label: t('nav.wizard'), icon: '⚙', aktiv: ansicht === 'wizard', onClick: () => geh('wizard') },
@@ -234,6 +236,9 @@ export default function App() {
         )}
         {ansicht === 'verteiler' && (
           <Verteiler />
+        )}
+        {ansicht === 'abschluss' && (
+          <Abschluss />
         )}
         {ansicht === 'rechte' && (
           <RollenRechte onChange={(list) => {
