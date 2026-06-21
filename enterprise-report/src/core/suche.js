@@ -18,6 +18,7 @@ export const NAV_ZIELE = [
   { ziel: 'ablaufdiagramm', gruppe: 'Berichte', schluessel: 'nav.ablauf' },
   { ziel: 'klr', gruppe: 'Berichte', schluessel: 'nav.klr' },
   { ziel: 'einzelgemein', gruppe: 'Berichte', schluessel: 'nav.einzelgemein' },
+  { ziel: 'abgrenzung', gruppe: 'Berichte', schluessel: 'nav.abgrenzung' },
   { ziel: 'kostenstellen', gruppe: 'Berichte', schluessel: 'nav.kostenstellen' },
   { ziel: 'bab', gruppe: 'Berichte', schluessel: 'nav.bab' },
   { ziel: 'profitcenter', gruppe: 'Berichte', schluessel: 'nav.profitcenter' },

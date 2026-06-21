@@ -97,6 +97,8 @@ export default function Kalkulatorik({ werte = {}, onGeh }) {
               <b> Mehrbetrag</b> gegenüber dem bilanziellen Aufwand, Zusatzkosten voll.
             </div>
             {z('Bilanzielles Betriebsergebnis (GuV)', u.bilanziellesErgebnis, { bold: true })}
+            {z('Neutrales Ergebnis (betriebsfremd/periodenfremd/ao)', u.neutralesErgebnis, { prefix: '− ', farbe: 'var(--muted)' })}
+            {z('= Zweckergebnis (rein betrieblich)', u.zweckergebnis, { bold: true })}
             <div style={{ height: 6 }} />
             {u.anders.map((a) => z(`${a.name}: kalk. ${mio(a.kalk)} − bilanziell ${mio(a.bilanz)}`, a.mehrbetrag, { prefix: '− ', farbe: 'var(--muted)' }))}
             {z('Σ Anderskosten-Mehrbetrag', u.summeAnders, { prefix: '− ', bold: true })}

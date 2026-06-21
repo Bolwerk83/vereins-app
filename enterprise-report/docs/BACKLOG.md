@@ -34,7 +34,8 @@ Stand: laufend.
       mit unseren Werten — reportingtauglich, nicht überfrachtet. (Bild 0832)
 - [ ] **Prozess-/Ablaufdarstellung der KLR** mit Werten als „roter Faden"/Inhaltsverzeichnis. (Bild 7d83)
 - [x] **Anwender-Doku in der App** ("Wissen/Doku"-Seite, durchsuchbar, Sprung in Berichte) ✅
-- [ ] **Kalkulatorik echt verbuchen**: kalk. Kosten in Kostenarten/Abgrenzung/Betriebsergebnis einrechnen
+- [x] **Kalkulatorik echt verbuchen**: vollständige Abgrenzungsrechnung (BÜB) — neutrale
+      Abgrenzung + kalk. Kosten in KLR/Betriebsergebnis; Überleitung konsistent gemacht ✅
 - [x] **Weitere Lebenszyklen**: Anlagen/Asset, Lieferant, Bestands-/Artikel-Gängigkeit,
       Mitarbeiter (HR), Forderungs-Aging, Technologie-Reifegrad/F&E-Portfolio ✅
 - [ ] **Lebenszyklus → Strategie-Empfehlungen** automatisch + Maßnahmen-Verknüpfung (Produktseite)

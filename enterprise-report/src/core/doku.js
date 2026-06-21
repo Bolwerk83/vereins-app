@@ -35,6 +35,16 @@ export const DOKU = [
     ]
   },
   {
+    id: 'abgrenzung', kat: 'kostenrechnung', titel: 'Abgrenzungsrechnung (Aufwand → Kosten)', ziel: 'abgrenzung',
+    kurz: 'Der Betriebsüberleitungsbogen führt von der GuV zur KLR: neutrale Posten raus, kalkulatorische Kosten rein.',
+    punkte: [
+      'Neutraler Aufwand/Ertrag (betriebsfremd, periodenfremd, außerordentlich) wird abgegrenzt.',
+      'Zweckaufwand = GuV-Aufwand − neutral; daraus Grundkosten.',
+      'Anderskosten ersetzen das bilanzielle Pendant (z. B. kalk. statt bilanzielle Abschreibung).',
+      'Unternehmensergebnis (GuV) = neutrales Ergebnis + Betriebsergebnis (KLR).'
+    ]
+  },
+  {
     id: 'kostenarten', kat: 'kostenrechnung', titel: 'Kostenartenrechnung', ziel: 'kostenarten',
     kurz: 'Welche Kosten sind angefallen? Material, Personal, Abschreibungen, kalkulatorische Kosten …',
     punkte: [

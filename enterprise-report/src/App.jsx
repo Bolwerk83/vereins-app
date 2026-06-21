@@ -46,6 +46,7 @@ import Admin from './modules/admin/Admin.jsx'
 import Events from './modules/events/Events.jsx'
 import Doku from './modules/doku/Doku.jsx'
 import Technologie from './modules/technologie/Technologie.jsx'
+import Abgrenzungsrechnung from './modules/abgrenzung/Abgrenzungsrechnung.jsx'
 import { ladeBranding, applyBranding, themeById } from './core/admin.js'
 import { AKTUELLE_STAGE, stageInfo } from './core/stage.js'
 import { autoSeed } from './core/designerSeed.js'
@@ -148,6 +149,7 @@ export default function App() {
       { label: t('nav.ablauf'), icon: '🗺', aktiv: ansicht === 'ablaufdiagramm', onClick: () => geh('ablaufdiagramm') },
       { label: t('nav.klr'), icon: '🧮', aktiv: ansicht === 'klr' || ansicht === 'kostenarten' || ansicht === 'kalkulatorik', onClick: () => geh('klr') },
       { label: t('nav.einzelgemein'), icon: '➗', aktiv: ansicht === 'einzelgemein', onClick: () => geh('einzelgemein') },
+      { label: t('nav.abgrenzung'), icon: '🔀', aktiv: ansicht === 'abgrenzung', onClick: () => geh('abgrenzung') },
       { label: t('nav.kostenstellen'), icon: '🏢', aktiv: ansicht === 'kostenstellen', onClick: () => geh('kostenstellen') },
       { label: t('nav.bab'), icon: '🧾', aktiv: ansicht === 'bab', onClick: () => geh('bab') },
       { label: t('nav.profitcenter'), icon: '🏦', aktiv: ansicht === 'profitcenter', onClick: () => geh('profitcenter') },
@@ -360,6 +362,9 @@ export default function App() {
         )}
         {ansicht === 'kalkulatorik' && (
           <Kalkulatorik werte={werte} onGeh={geh} />
+        )}
+        {ansicht === 'abgrenzung' && (
+          <Abgrenzungsrechnung onGeh={geh} />
         )}
         {ansicht === 'lebenszyklus' && (
           <Lebenszyklus />
