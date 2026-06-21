@@ -10,6 +10,8 @@
 //    GET  /api/kpi?periode=2025  -> { kpiId: wert, ... }   (vorhandene SQL-Dateien)
 //    GET  /api/kpi/:id/historie  -> [ { periode, wert }, ... ]
 //    GET  /api/detail/:key       -> { titel, spalten[], zeilen[][] }
+//    GET  /api/benutzer/:login/rechte -> effektive Rechte (sec.vw_BenutzerRechte)
+//    GET  /api/gruppen           -> Gruppen inkl. Bereiche/Kontext/Mitglieder
 //    POST /api/bi                -> Self-Service-BI-Bericht (Claude)
 // =========================================================================
 import express from 'express'
@@ -117,6 +119,41 @@ app.get('/api/detail/:key', async (req, res) => {
     const spalten = Object.keys(r.recordset[0] ?? {})
     res.json({ titel: req.params.key, spalten, zeilen: r.recordset.map((row) => spalten.map((c) => row[c])) })
   } catch (e) { res.status(500).json({ error: String(e) }) }
+})
+
+// --- Rollen & Rechte: effektive Rechte eines Benutzers (sec.vw_BenutzerRechte)
+//     Liefert ein rolle-kompatibles Objekt wie effektiveRolleFuerName() im Tool.
+app.get('/api/benutzer/:login/rechte', async (req, res) => {
+  try {
+    const r = await (await getPool()).request()
+      .input('login', sql.NVarChar, req.params.login)
+      .query('SELECT AlleBereiche, Bereiche, Kontext, Gruppen FROM sec.vw_BenutzerRechte WHERE Login = @login')
+    const row = r.recordset[0]
+    if (!row) return res.status(404).json({ error: 'kein Mitglied dieses Namens' })
+    res.json({
+      name: req.params.login,
+      bereiche: row.AlleBereiche ? '*' : (row.Bereiche ? row.Bereiche.split(',') : []),
+      kontext: row.Kontext ? row.Kontext.split(',') : [],
+      gruppen: row.Gruppen ? row.Gruppen.split(' + ') : []
+    })
+  } catch (e) { res.status(500).json({ error: String(e.message || e) }) }
+})
+
+// --- Alle Gruppen inkl. Bereiche/Kontext/Mitglieder (für DB-gestützte Verwaltung)
+app.get('/api/gruppen', async (_req, res) => {
+  try {
+    const pool = await getPool()
+    const g = (await pool.request().query('SELECT GruppeId, Code, Name, Beschreibung, AlleBereiche, IstVorlage FROM sec.Gruppe ORDER BY GruppeId')).recordset
+    const b = (await pool.request().query('SELECT GruppeId, BereichCode FROM sec.GruppeBereich')).recordset
+    const k = (await pool.request().query('SELECT GruppeId, KontextTag FROM sec.GruppeKontext')).recordset
+    const m = (await pool.request().query('SELECT GruppeId, Login FROM sec.GruppeMitglied')).recordset
+    res.json(g.map((row) => ({
+      id: row.Code, name: row.Name, beschreibung: row.Beschreibung, system: !!row.IstVorlage,
+      bereiche: row.AlleBereiche ? '*' : b.filter((x) => x.GruppeId === row.GruppeId).map((x) => x.BereichCode),
+      kontext: k.filter((x) => x.GruppeId === row.GruppeId).map((x) => x.KontextTag),
+      mitglieder: m.filter((x) => x.GruppeId === row.GruppeId).map((x) => x.Login)
+    })))
+  } catch (e) { res.status(500).json({ error: String(e.message || e) }) }
 })
 
 const PORT = process.env.PORT || 3001

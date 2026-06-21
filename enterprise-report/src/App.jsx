@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
-import { ladeGruppen, istAdmin } from './core/gruppen.js'
+import { ladeGruppen, istAdmin, effektiveRolleFuerName } from './core/gruppen.js'
 import RollenRechte from './modules/rollen-rechte/RollenRechte.jsx'
+import BenutzerLeiste from './modules/benutzer/BenutzerLeiste.jsx'
 import { ladeKpiWerte, pruefeVerbindung, PERIODEN, AKTUELLE_PERIODE, QUELLE } from './core/dataProvider.js'
 import TreeNavigator from './modules/tree-navigator/TreeNavigator.jsx'
 import ManagementReport from './modules/management-report/ManagementReport.jsx'
@@ -17,21 +18,31 @@ import { alertAnzahl } from './core/alerts.js'
 import { useT, SPRACHEN } from './core/i18n.jsx'
 
 const SETUP_KEY = 'er_setup_done'
+const BENUTZER_KEY = 'er_benutzer'
 
 export default function App() {
   // Erststart -> Wizard, sonst Baum.
   const [ansicht, setAnsicht] = useState(localStorage.getItem(SETUP_KEY) ? 'baum' : 'wizard')
   const [gruppen, setGruppen] = useState(ladeGruppen())
   const [rolleId, setRolleId] = useState(gruppen[0]?.id || null)
+  const [benutzer, setBenutzer] = useState(localStorage.getItem(BENUTZER_KEY) || null)
   const [periode, setPeriode] = useState(AKTUELLE_PERIODE)
   const [werte, setWerte] = useState({})
   const [verbindung, setVerbindung] = useState(null)
   const [mnKontext, setMnKontext] = useState(null)
   const [baumStart, setBaumStart] = useState(null)
   const [designerStart, setDesignerStart] = useState(null)
-  // Aktive "Rolle" = ausgewählte Gruppe (rechte-kompatibel: bereiche + kontext).
-  const rolle = gruppen.find((g) => g.id === rolleId) || gruppen[0]
+  // Aktive "Rolle": angemeldeter Benutzer -> Vereinigung seiner Gruppen.
+  // Ohne Anmeldung -> manuell gewählte Gruppe (Demo-/Admin-Modus).
+  const benutzerRolle = benutzer ? effektiveRolleFuerName(benutzer) : null
+  const rolle = benutzer
+    // Angemeldet, aber (noch) in keiner Gruppe -> least privilege: nichts sichtbar.
+    ? (benutzerRolle || { id: 'user:' + benutzer, name: benutzer, bereiche: [], kontext: [], gruppen: [] })
+    : (gruppen.find((g) => g.id === rolleId) || gruppen[0])
   const { t, lang, setLang } = useT()
+
+  function anmelden(name) { localStorage.setItem(BENUTZER_KEY, name); setBenutzer(name) }
+  function abmelden() { localStorage.removeItem(BENUTZER_KEY); setBenutzer(null) }
 
   useEffect(() => { ladeKpiWerte(periode).then(setWerte) }, [periode])
   useEffect(() => { pruefeVerbindung().then(setVerbindung) }, [])
@@ -80,11 +91,14 @@ export default function App() {
             {istAdmin(rolle) && (
               <button style={topBtn(ansicht === 'rechte')} onClick={() => setAnsicht('rechte')}>{t('nav.rechte')}</button>
             )}
-            <label style={{ fontSize: 12, color: 'var(--muted)' }}>{t('lbl.role')}&nbsp;
-              <select value={rolle?.id || ''} onChange={(e) => setRolleId(e.target.value)} style={{ font: 'inherit', padding: '5px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)' }}>
-                {gruppen.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
-              </select>
-            </label>
+            <BenutzerLeiste benutzer={benutzer} rolle={rolle} gruppen={gruppen} onLogin={anmelden} onLogout={abmelden} />
+            {!benutzer && (
+              <label style={{ fontSize: 12, color: 'var(--muted)' }}>{t('lbl.role')}&nbsp;
+                <select value={rolle?.id || ''} onChange={(e) => setRolleId(e.target.value)} style={{ font: 'inherit', padding: '5px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)' }}>
+                  {gruppen.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+                </select>
+              </label>
+            )}
             <label style={{ fontSize: 12, color: 'var(--muted)' }}>{t('lbl.period')}&nbsp;
               <select value={periode} onChange={(e) => setPeriode(e.target.value)} style={{ font: 'inherit', padding: '5px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)' }}>
                 {PERIODEN.map((p) => <option key={p} value={p}>{p}</option>)}

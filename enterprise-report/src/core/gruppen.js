@@ -144,6 +144,27 @@ export function istAdmin(gruppe) {
   return !!gruppe && gruppe.bereiche === '*' && (gruppe.kontext || []).includes('GF')
 }
 
+/** Alle Gruppen, in denen ein Name (Login) Mitglied ist (Groß-/Kleinschreibung egal). */
+export function findeGruppenFuerName(name) {
+  const n = (name || '').trim().toLowerCase()
+  if (!n) return []
+  return ladeGruppen().filter((g) => g.mitglieder.some((m) => m.toLowerCase() === n))
+}
+
+/**
+ * Effektive Rolle eines angemeldeten Benutzers: die VEREINIGUNG der Rechte
+ * aller seiner Gruppen (ein Benutzer kann in mehreren Gruppen sein).
+ * Liefert ein rolle-kompatibles Objekt { bereiche, kontext } oder null.
+ */
+export function effektiveRolleFuerName(name) {
+  const treffer = findeGruppenFuerName(name)
+  if (!treffer.length) return null
+  const alle = treffer.some((g) => g.bereiche === '*')
+  const bereiche = alle ? '*' : [...new Set(treffer.flatMap((g) => g.bereiche))]
+  const kontext = [...new Set(treffer.flatMap((g) => g.kontext))]
+  return { id: 'user:' + name, name, bereiche, kontext, gruppen: treffer.map((g) => g.name) }
+}
+
 /** Kurze Klartext-Zusammenfassung der Bereichsrechte. */
 export function bereichZusammenfassung(gruppe) {
   if (!gruppe) return '—'

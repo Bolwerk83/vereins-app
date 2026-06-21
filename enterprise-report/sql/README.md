@@ -37,3 +37,20 @@ aus dem Berichtsbaum (`detail:`-Feld in `src/core/reportTree.js`).
 1. `_template.kpi.sql` kopieren → `sql/<sqlRef>.kpi.sql`.
 2. `SELECT` gegen die echten ERP/DWH-Tabellen schreiben, Vertrag einhalten.
 3. Backend (`server/`) verbinden → fertig. Kein Frontend-Code nötig.
+
+## Rollen & Rechte (Gruppen, Mitglieder)
+
+`_rollen_rechte.sql` legt im Schema `sec` die Tabellen **Gruppe**,
+**GruppeBereich**, **GruppeKontext** und **GruppeMitglied** an und befüllt
+die vordefinierten Gruppen (Vorlagen, ohne Mitglieder). Die View
+`sec.vw_BenutzerRechte` löst je Benutzer die **effektiven Rechte** als
+Vereinigung aller seiner Gruppen auf — identisch zur Tool-Logik
+(`effektiveRolleFuerName()` in `src/core/gruppen.js`).
+
+- Mitglieder pflegst du im Tool (Reiter **Rollen & Rechte**) oder per
+  `INSERT INTO sec.GruppeMitglied`.
+- Das Backend liest später über `GET /api/benutzer/:login/rechte` bzw.
+  `GET /api/gruppen` direkt aus diesen Tabellen — heute liefert das Tool die
+  Gruppen noch aus dem Browser (localStorage), der Übergang ist nahtlos.
+
+Ausführen im SSMS gegen `ERP_DWH` (idempotent, mehrfach lauffähig).
