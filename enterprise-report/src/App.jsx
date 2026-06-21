@@ -43,6 +43,7 @@ import Deckungsbeitrag from './modules/deckungsbeitrag/Deckungsbeitrag.jsx'
 import Lernpfad from './modules/lernpfad/Lernpfad.jsx'
 import GlobalSuche from './modules/suche/GlobalSuche.jsx'
 import Admin from './modules/admin/Admin.jsx'
+import Events from './modules/events/Events.jsx'
 import { ladeBranding, applyBranding, themeById } from './core/admin.js'
 import { AKTUELLE_STAGE, stageInfo } from './core/stage.js'
 import { autoSeed } from './core/designerSeed.js'
@@ -164,6 +165,7 @@ export default function App() {
       { label: t('nav.anlagen'), icon: '🏗', aktiv: ansicht === 'anlagen', onClick: () => geh('anlagen') },
       { label: t('nav.lieferant'), icon: '🚚', aktiv: ansicht === 'lieferant', onClick: () => geh('lieferant') },
       { label: t('nav.marketing'), icon: '📣', aktiv: ansicht === 'marketing', onClick: () => geh('marketing') },
+      { label: t('nav.events'), icon: '🎉', aktiv: ansicht === 'events', onClick: () => geh('events') },
       { label: t('nav.bestand'), icon: '📦', aktiv: ansicht === 'bestand', onClick: () => geh('bestand') },
       { label: t('nav.forderungen'), icon: '💶', aktiv: ansicht === 'forderungen', onClick: () => geh('forderungen') },
       { label: t('nav.mitarbeiter'), icon: '🧑‍🤝‍🧑', aktiv: ansicht === 'mitarbeiter', onClick: () => geh('mitarbeiter') },
@@ -372,6 +374,9 @@ export default function App() {
         )}
         {ansicht === 'marketing' && (
           <Marketing />
+        )}
+        {ansicht === 'events' && (
+          <Events onGeh={geh} />
         )}
         {ansicht === 'bestand' && (
           <Bestand />
