@@ -38,7 +38,8 @@ Stand: laufend.
       Abgrenzung + kalk. Kosten in KLR/Betriebsergebnis; Überleitung konsistent gemacht ✅
 - [x] **Weitere Lebenszyklen**: Anlagen/Asset, Lieferant, Bestands-/Artikel-Gängigkeit,
       Mitarbeiter (HR), Forderungs-Aging, Technologie-Reifegrad/F&E-Portfolio ✅
-- [ ] **Lebenszyklus → Strategie-Empfehlungen** automatisch + Maßnahmen-Verknüpfung (Produktseite)
+- [x] **Lebenszyklus → Strategie-Empfehlungen** automatisch (Produkt & Kunde) + Übernahme
+      als Maßnahme mit quelle-Tag/Nachverfolgung ✅
 - [ ] **Deckungsbeitragsrechnung** mehrstufig (Fixkostendeckung)
 - [ ] **KPI-Editor: Formel/Abhängigkeiten** (abgeleitete KPIs im Tool anlegen)
 - [ ] **Profitcenter-Ergebnisrechnung**, Abweichungsanalysen (DB/Erlös), Segmentbericht

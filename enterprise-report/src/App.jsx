@@ -47,6 +47,7 @@ import Events from './modules/events/Events.jsx'
 import Doku from './modules/doku/Doku.jsx'
 import Technologie from './modules/technologie/Technologie.jsx'
 import Abgrenzungsrechnung from './modules/abgrenzung/Abgrenzungsrechnung.jsx'
+import LebenszyklusEmpfehlungen from './modules/lebenszyklus/Empfehlungen.jsx'
 import { ladeBranding, applyBranding, themeById } from './core/admin.js'
 import { AKTUELLE_STAGE, stageInfo } from './core/stage.js'
 import { autoSeed } from './core/designerSeed.js'
@@ -165,6 +166,7 @@ export default function App() {
       { label: t('nav.qc'), icon: '✅', aktiv: ansicht === 'qc', onClick: () => geh('qc'), badge: qcFehler || null },
       { label: t('nav.abstimmung'), icon: '🔗', aktiv: ansicht === 'abstimmung', onClick: () => geh('abstimmung') },
       { label: t('nav.lebenszyklus'), icon: '🔄', aktiv: ansicht === 'lebenszyklus', onClick: () => geh('lebenszyklus') },
+      { label: t('nav.lzempfehlung'), icon: '🧭', aktiv: ansicht === 'lzempfehlung', onClick: () => geh('lzempfehlung') },
       { label: t('nav.auftrag'), icon: '📦', aktiv: ansicht === 'auftrag', onClick: () => geh('auftrag') },
       { label: t('nav.anlagen'), icon: '🏗', aktiv: ansicht === 'anlagen', onClick: () => geh('anlagen') },
       { label: t('nav.lieferant'), icon: '🚚', aktiv: ansicht === 'lieferant', onClick: () => geh('lieferant') },
@@ -368,6 +370,9 @@ export default function App() {
         )}
         {ansicht === 'lebenszyklus' && (
           <Lebenszyklus />
+        )}
+        {ansicht === 'lzempfehlung' && (
+          <LebenszyklusEmpfehlungen onGeh={geh} />
         )}
         {ansicht === 'einzelgemein' && (
           <EinzelGemein onGeh={geh} />
