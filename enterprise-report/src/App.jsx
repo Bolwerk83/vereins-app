@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { ROLLEN } from './core/rbac.js'
+import { ladeGruppen, istAdmin } from './core/gruppen.js'
+import RollenRechte from './modules/rollen-rechte/RollenRechte.jsx'
 import { ladeKpiWerte, pruefeVerbindung, PERIODEN, AKTUELLE_PERIODE, QUELLE } from './core/dataProvider.js'
 import TreeNavigator from './modules/tree-navigator/TreeNavigator.jsx'
 import ManagementReport from './modules/management-report/ManagementReport.jsx'
@@ -20,14 +21,16 @@ const SETUP_KEY = 'er_setup_done'
 export default function App() {
   // Erststart -> Wizard, sonst Baum.
   const [ansicht, setAnsicht] = useState(localStorage.getItem(SETUP_KEY) ? 'baum' : 'wizard')
-  const [rolleId, setRolleId] = useState('gf')
+  const [gruppen, setGruppen] = useState(ladeGruppen())
+  const [rolleId, setRolleId] = useState(gruppen[0]?.id || null)
   const [periode, setPeriode] = useState(AKTUELLE_PERIODE)
   const [werte, setWerte] = useState({})
   const [verbindung, setVerbindung] = useState(null)
   const [mnKontext, setMnKontext] = useState(null)
   const [baumStart, setBaumStart] = useState(null)
   const [designerStart, setDesignerStart] = useState(null)
-  const rolle = ROLLEN[rolleId]
+  // Aktive "Rolle" = ausgewählte Gruppe (rechte-kompatibel: bereiche + kontext).
+  const rolle = gruppen.find((g) => g.id === rolleId) || gruppen[0]
   const { t, lang, setLang } = useT()
 
   useEffect(() => { ladeKpiWerte(periode).then(setWerte) }, [periode])
@@ -74,9 +77,12 @@ export default function App() {
             {(() => { const n = alertAnzahl(werte, rolle); return (
               <button style={{ ...topBtn(ansicht === 'alerts'), ...(n ? { borderColor: 'var(--amp-r)', color: ansicht === 'alerts' ? '#fff' : 'var(--amp-r)' } : {}) }} onClick={() => setAnsicht('alerts')}>
                 ⚠ {t('nav.alerts')}{n ? ` (${n})` : ''}</button>) })()}
+            {istAdmin(rolle) && (
+              <button style={topBtn(ansicht === 'rechte')} onClick={() => setAnsicht('rechte')}>{t('nav.rechte')}</button>
+            )}
             <label style={{ fontSize: 12, color: 'var(--muted)' }}>{t('lbl.role')}&nbsp;
-              <select value={rolleId} onChange={(e) => setRolleId(e.target.value)} style={{ font: 'inherit', padding: '5px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)' }}>
-                {Object.values(ROLLEN).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+              <select value={rolle?.id || ''} onChange={(e) => setRolleId(e.target.value)} style={{ font: 'inherit', padding: '5px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)' }}>
+                {gruppen.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
               </select>
             </label>
             <label style={{ fontSize: 12, color: 'var(--muted)' }}>{t('lbl.period')}&nbsp;
@@ -132,6 +138,12 @@ export default function App() {
         )}
         {ansicht === 'alerts' && (
           <Alerts werte={werte} rolle={rolle} periode={periode} />
+        )}
+        {ansicht === 'rechte' && (
+          <RollenRechte onChange={(list) => {
+            setGruppen(list)
+            if (!list.find((g) => g.id === rolleId)) setRolleId(list[0]?.id || null)
+          }} />
         )}
       </main>
     </div>

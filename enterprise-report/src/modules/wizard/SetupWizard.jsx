@@ -101,7 +101,7 @@ export default function SetupWizard({ onFertig, onAbbruch }) {
         {schritt === 3 && (
           <div style={{ display: 'grid', gap: 12 }}>
             <h2>Rollen & Rechte</h2>
-            <p style={{ color: 'var(--muted)', margin: 0, fontSize: 13 }}>Object-Level-Security (z. B. Personalkosten) bleibt unabhängig davon aktiv.</p>
+            <p style={{ color: 'var(--muted)', margin: 0, fontSize: 13 }}>Object-Level-Security (z. B. Personalkosten) bleibt unabhängig davon aktiv. Vordefinierte Gruppen sind bereits angelegt — Mitglieder (Namen) und Feinrechte pflegst du später unter <b>„Rollen &amp; Rechte"</b> in der Kopfzeile.</p>
             {Object.entries({ gf: 'Geschäftsführung (alles)', controlling: 'Controlling (alles, Finanzkontext)', bereichsleiter: 'Bereichsleiter (eigener Bereich + GF)', mitarbeiter: 'Mitarbeiter (eingeschränkte Lesesicht)' }).map(([k, label]) => (
               <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14 }}>
                 <input type="checkbox" checked={cfg.rollen[k]} onChange={(e) => set({ rollen: { ...cfg.rollen, [k]: e.target.checked } })} />
