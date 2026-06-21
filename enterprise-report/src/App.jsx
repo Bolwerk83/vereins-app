@@ -15,6 +15,7 @@ import Verteiler from './modules/verteiler/Verteiler.jsx'
 import Abschluss from './modules/abschluss/Abschluss.jsx'
 import Transport from './modules/transport/Transport.jsx'
 import { AKTUELLE_STAGE, stageInfo } from './core/stage.js'
+import { autoSeed } from './core/designerSeed.js'
 import TreeNavigator from './modules/tree-navigator/TreeNavigator.jsx'
 import ManagementReport from './modules/management-report/ManagementReport.jsx'
 import SetupWizard from './modules/wizard/SetupWizard.jsx'
@@ -73,6 +74,8 @@ export default function App() {
     ladeKpiWerte(periode).then(setWerte)
   }, [zeitModell, periode])
   useEffect(() => { pruefeVerbindung().then(setVerbindung) }, [])
+  // Erster Start: 20 Beispiel-Berichte einmalig anlegen (s. core/designerSeed).
+  useEffect(() => { autoSeed() }, [])
   // Gruppen aus der Quelle laden (mssql -> DB, sonst localStorage).
   useEffect(() => { ladeGruppenAsync().then(setGruppen) }, [])
   // Effektive Rechte des angemeldeten Benutzers auflösen (async-fähig für DB).

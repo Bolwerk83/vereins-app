@@ -55,3 +55,17 @@ export function seedBeispielReports() {
   reports.forEach(saveReport)
   return { erstellt: reports.length, gesamt: ladeReports().length }
 }
+
+/**
+ * Einmaliger Auto-Seed beim ersten Start: nur wenn noch keine Berichte da
+ * sind UND noch nie geseedet wurde (Flag er_seed_done). So werden bewusst
+ * gelöschte Berichte nicht wieder angelegt.
+ */
+export function autoSeed() {
+  try {
+    if (localStorage.getItem('er_seed_done')) return false
+    if (ladeReports().length === 0) seedBeispielReports()
+    localStorage.setItem('er_seed_done', '1')
+    return true
+  } catch { return false }
+}
