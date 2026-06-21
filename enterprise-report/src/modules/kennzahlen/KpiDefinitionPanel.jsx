@@ -10,9 +10,11 @@ import { darfKpi, darfBereich } from '../../core/rbac.js'
 import { kpiVerwendung } from '../../core/reportTree.js'
 import { ampelStatus } from '../../core/ampel.js'
 import { formatWert, AMPEL_FARBE, AMPEL_LABEL } from '../../design/theme.js'
+import { horizontInfo, artInfo } from '../../core/klassifikation.js'
 import { AmpelPunkt } from '../../components/ui.jsx'
 
 const RICHTUNG = { hoch_gut: 'höher ist besser', tief_gut: 'niedriger ist besser' }
+const klassTag = (farbe) => ({ fontSize: 11, fontWeight: 700, color: farbe || 'var(--muted)', border: `1px solid ${farbe || 'var(--line)'}`, padding: '1px 8px', borderRadius: 999 })
 
 function Zeile({ label, children }) {
   return (
@@ -84,6 +86,10 @@ export default function KpiDefinitionPanel({ kpiId, rolle, werte = {}, onClose, 
               {k.ziel != null && <span style={{ color: 'var(--muted)' }}> · Ampel: ab Ziel grün, ab {Math.round((k.warn ?? 0.95) * 100)} % Zielerreichung gelb, darunter rot</span>}
             </Zeile>
             <Zeile label="Einheit">{k.einheit}</Zeile>
+            <Zeile label="Klassifikation">
+              <span style={klassTag(horizontInfo(k)?.farbe)}>{horizontInfo(k)?.name}</span>
+              <span style={{ ...klassTag(artInfo(k)?.farbe), marginLeft: 6 }}>{artInfo(k)?.name}</span>
+            </Zeile>
             {k.security && <Zeile label="Vertraulichkeit">🔒 nur {k.security.join(' / ')}</Zeile>}
 
             {/* Verwendet in — Sprung dorthin, wo die Kennzahl eingebaut ist */}

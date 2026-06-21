@@ -810,7 +810,7 @@ export function abhaengigkeitsGraph() {
 // wirken. KPI_BASIS hält die Code-Originalwerte der überschriebenen Felder
 // für ein sauberes „Zurücksetzen". Nur im Browser; der Server bleibt unberührt.
 export const KPI_BASIS = {}
-export const OVERRIDE_FELDER = ['name', 'einheit', 'bereich', 'ziel', 'richtung', 'beschreibung', 'sqlRef', 'warn']
+export const OVERRIDE_FELDER = ['name', 'einheit', 'bereich', 'ziel', 'richtung', 'beschreibung', 'sqlRef', 'warn', 'horizont', 'monetaer']
 try {
   if (typeof localStorage !== 'undefined') {
     const ov = JSON.parse(localStorage.getItem('er_kpi_overrides') || '{}')

@@ -7,6 +7,7 @@
 //  „Zurücksetzen" den Code-Stand wiederherstellt (ohne Reload).
 // =========================================================================
 import { KPI, KPI_BASIS, OVERRIDE_FELDER } from './kpiRegistry.js'
+import { horizontId, istMonetaer } from './klassifikation.js'
 
 const KEY = 'er_kpi_overrides'
 const ORIGINAL = {} // Session-Snapshots vor der ersten Bearbeitung
@@ -55,5 +56,9 @@ export function resetKpiOverride(id) {
 /** Aktuelle (ggf. überschriebene) editierbare Felder einer KPI. */
 export function kpiFelder(id) {
   const k = KPI[id] || {}
-  return { name: k.name || '', einheit: k.einheit || 'count', ziel: k.ziel ?? '', richtung: k.richtung || 'hoch_gut', beschreibung: k.beschreibung || '' }
+  return {
+    name: k.name || '', einheit: k.einheit || 'count', ziel: k.ziel ?? '',
+    richtung: k.richtung || 'hoch_gut', beschreibung: k.beschreibung || '',
+    horizont: horizontId(k), monetaer: istMonetaer(k) ? 'ja' : 'nein'
+  }
 }
