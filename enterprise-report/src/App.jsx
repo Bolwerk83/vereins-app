@@ -29,6 +29,7 @@ import Kostenstellenrechnung from './modules/kostenstellen/Kostenstellenrechnung
 import BAB from './modules/bab/BAB.jsx'
 import Kalkulation from './modules/kalkulation/Kalkulation.jsx'
 import Ergebnisrechnung from './modules/ergebnis/Ergebnisrechnung.jsx'
+import Deckungsbeitrag from './modules/deckungsbeitrag/Deckungsbeitrag.jsx'
 import { AKTUELLE_STAGE, stageInfo } from './core/stage.js'
 import { autoSeed } from './core/designerSeed.js'
 import TreeNavigator from './modules/tree-navigator/TreeNavigator.jsx'
@@ -129,7 +130,8 @@ export default function App() {
       { label: t('nav.kostenstellen'), icon: '🏢', aktiv: ansicht === 'kostenstellen', onClick: () => geh('kostenstellen') },
       { label: t('nav.bab'), icon: '🧾', aktiv: ansicht === 'bab', onClick: () => geh('bab') },
       { label: t('nav.kalkulation'), icon: '🎯', aktiv: ansicht === 'kalkulation', onClick: () => geh('kalkulation') },
-      { label: t('nav.ergebnis'), icon: '📕', aktiv: ansicht === 'ergebnis', onClick: () => geh('ergebnis') }
+      { label: t('nav.ergebnis'), icon: '📕', aktiv: ansicht === 'ergebnis', onClick: () => geh('ergebnis') },
+      { label: t('nav.db'), icon: '📐', aktiv: ansicht === 'deckungsbeitrag', onClick: () => geh('deckungsbeitrag') }
     ] },
     { titel: 'Analyse', eintraege: [
       { label: t('nav.bi'), icon: '💬', aktiv: ansicht === 'bi', onClick: () => geh('bi') },
@@ -326,6 +328,9 @@ export default function App() {
         )}
         {ansicht === 'ergebnis' && (
           <Ergebnisrechnung onGeh={geh} />
+        )}
+        {ansicht === 'deckungsbeitrag' && (
+          <Deckungsbeitrag onGeh={geh} />
         )}
         {ansicht === 'transport' && (
           <Transport benutzer={benutzer} />
