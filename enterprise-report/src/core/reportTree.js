@@ -60,6 +60,7 @@ export const BERICHTSBAUM = n('konzern', 1, 'VeloWerk Gruppe · Management Repor
       kinder: [
         n('pr-fertigung', 3, 'Fertigung & Qualität', {
           bereich: 'PR', kpis: ['ausschuss', 'auslastung'],
+          perspektiven: ['artikel', 'auftrag', 'maschine'],
           kinder: [ n('pr-fertigung-det', 4, 'Fertigungskennzahlen', { bereich: 'PR', detail: 'fertigung' }) ]
         })
       ]
@@ -75,6 +76,7 @@ export const BERICHTSBAUM = n('konzern', 1, 'VeloWerk Gruppe · Management Repor
         }),
         n('log-extern', 3, 'Externe Läger', {
           bereich: 'LOG', kpis: ['lagerbestand'],
+          perspektiven: ['lager', 'artikel'],
           kinder: [ n('log-extern-det', 4, 'Standorte & Kosten', { bereich: 'LOG', detail: 'externe_laeger' }) ]
         })
       ]
@@ -193,6 +195,7 @@ export const BERICHTSBAUM = n('konzern', 1, 'VeloWerk Gruppe · Management Repor
       kinder: [
         n('scc-struktur', 3, 'Bestandsstruktur (ABC/XYZ)', {
           bereich: 'SCC', kpis: ['lagerumschlag', 'reichweite'],
+          perspektiven: ['artikel', 'lager'],
           kinder: [ n('scc-struktur-det', 4, 'ABC/XYZ-Analyse', { bereich: 'SCC', detail: 'abc_analyse' }) ]
         }),
         n('scc-service', 3, 'Lieferfähigkeit & Service (↔ Vertrieb)', {
@@ -254,6 +257,7 @@ export const BERICHTSBAUM = n('konzern', 1, 'VeloWerk Gruppe · Management Repor
       kinder: [
         n('vc-profitabilitaet', 3, 'Kanal- & Kundenprofitabilität', {
           bereich: 'VC', kpis: ['dbQuote', 'neukundenanteil'],
+          perspektiven: ['kunde', 'kanal'],
           kinder: [ n('vc-profitabilitaet-det', 4, 'DB je Kanal/Segment', { bereich: 'VC', detail: 'kanal_profitabilitaet' }) ]
         }),
         n('vc-rabatte', 3, 'Preise & Rabatte', {
@@ -273,6 +277,7 @@ export const BERICHTSBAUM = n('konzern', 1, 'VeloWerk Gruppe · Management Repor
       kinder: [
         n('pc-produktivitaet', 3, 'Kosten & Produktivität', {
           bereich: 'PC', kpis: ['personalkostenquote', 'umsatzJeFTE', 'mitarbeiterFTE'],
+          perspektiven: ['kostenstelle', 'mitarbeiter'],
           kinder: [ n('pc-produktivitaet-det', 4, 'Kosten/Produktivität je Bereich', { bereich: 'PC', detail: 'personal_produktivitaet' }) ]
         }),
         n('pc-bindung', 3, 'Fluktuation & Bindung', {
@@ -292,6 +297,7 @@ export const BERICHTSBAUM = n('konzern', 1, 'VeloWerk Gruppe · Management Repor
       kinder: [
         n('ris-forderungen', 3, 'Forderungsmanagement (DSO/Aging)', {
           bereich: 'RIS', kpis: ['dso', 'ueberfaelligkeitsquote', 'offeneForderungen'],
+          perspektiven: ['kunde', 'verkaufsrechnung'],
           kinder: [ n('ris-forderungen-det', 4, 'Forderungs-Aging', { bereich: 'RIS', detail: 'forderungs_aging' }) ]
         }),
         n('ris-ausfall', 3, 'Ausfallrisiko', {
@@ -368,6 +374,7 @@ export const BERICHTSBAUM = n('konzern', 1, 'VeloWerk Gruppe · Management Repor
       kinder: [
         n('mkt-kampagnen', 3, 'Kampagnen-ROI', {
           bereich: 'MKT', kpis: ['roas', 'marketingkostenquote'],
+          perspektiven: ['kampagne', 'kanal'],
           kinder: [ n('mkt-kampagnen-det', 4, 'Kampagnen-ROI', { bereich: 'MKT', detail: 'kampagnen' }) ]
         }),
         n('mkt-funnel', 3, 'Funnel & Conversion', {

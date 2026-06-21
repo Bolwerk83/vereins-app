@@ -15,7 +15,11 @@ export const DRILL = {
   profitcenter:     { name: 'Profit-Center', icon: '◉' },
   kostenstelle:     { name: 'Kostenstelle', icon: '◈' },
   konto:            { name: 'Konto', icon: '№' },
-  lager:            { name: 'Lagerort', icon: '🏬' }
+  lager:            { name: 'Lagerort', icon: '🏬' },
+  kanal:            { name: 'Kanal', icon: '🛒' },
+  kampagne:         { name: 'Kampagne', icon: '📣' },
+  mitarbeiter:      { name: 'Mitarbeiter', icon: '👥' },
+  maschine:         { name: 'Maschine/Linie', icon: '🛠' }
 }
 
 export const drillName = (code) => DRILL[code]?.name || code
