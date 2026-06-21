@@ -10,6 +10,7 @@ import { clusterFuer } from '../../core/bereiche.js'
 import { kpiInsight, knotenBewertung } from '../../core/insights.js'
 import { ladeMassnahmen } from '../../core/massnahmen.js'
 import { ladeReports, saveReport, removeReport, neuerReport } from '../../core/designer.js'
+import { seedBeispielReports } from '../../core/designerSeed.js'
 import { formatWert, AMPEL_FARBE } from '../../design/theme.js'
 import { downloadCsv, druckePdf } from '../../core/export.js'
 import { Badge, AmpelPunkt } from '../../components/ui.jsx'
@@ -36,6 +37,12 @@ export default function ReportDesigner({ rolle, werte, startId }) {
 
   function speichern() { saveReport(r); refresh() }
   function neu() { const x = neuerReport(); setR(x) }
+  function beispieleLaden() {
+    if (!confirm('20 Beispiel-Berichte aus dem Berichtsbaum anlegen? (vorhandene Beispiele werden aktualisiert)')) return
+    const { erstellt } = seedBeispielReports()
+    const rest = ladeReports(); setReports(rest); setR(rest[0] || neuerReport())
+    alert(`${erstellt} Berichte angelegt. Jetzt im Katalog und im Transport auswählbar.`)
+  }
   function laden(id) { setR(ladeReports().find((x) => x.id === id) || neuerReport()) }
   function loeschen() { removeReport(r.id); const rest = ladeReports(); setReports(rest); setR(rest[0] || neuerReport()) }
 
@@ -62,6 +69,7 @@ export default function ReportDesigner({ rolle, werte, startId }) {
             {reports.map((x) => <option key={x.id} value={x.id}>{x.titel}</option>)}
           </select>
           <button style={btn} onClick={neu}>+ Neu</button>
+          <button style={{ ...btn, whiteSpace: 'nowrap' }} title="20 Berichte aus dem Berichtsbaum anlegen" onClick={beispieleLaden}>✨ 20 Beispiele</button>
         </div>
 
         <div><input style={inp} value={r.titel} onChange={(e) => set({ titel: e.target.value })} placeholder="Berichtstitel" /></div>
