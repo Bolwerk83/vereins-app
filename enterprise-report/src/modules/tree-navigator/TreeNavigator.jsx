@@ -5,6 +5,7 @@
 // =========================================================================
 import React, { useState, useMemo, useEffect } from 'react'
 import { BERICHTSBAUM, EBENEN, baumFuerRolle, findeKnoten, pfadZu } from '../../core/reportTree.js'
+import { gruppiereNachCluster } from '../../core/bereiche.js'
 import { KPI } from '../../core/kpiRegistry.js'
 import { darfBereich, darfKpi } from '../../core/rbac.js'
 import { ladeDetail, ladeHistorie } from '../../core/dataProvider.js'
@@ -65,14 +66,37 @@ export default function TreeNavigator({ rolle, werte, periode, onOpenReport }) {
   const detailKey = knoten.detail
 
   const [detail, setDetail] = useState(null)
+  const [zu, setZu] = useState({}) // eingeklappte Cluster
   useEffect(() => { if (detailKey) ladeDetail(detailKey).then(setDetail); else setDetail(null) }, [detailKey])
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: 20, alignItems: 'start' }}>
-      {/* Baum */}
-      <aside className="no-print" style={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', padding: 10, position: 'sticky', top: 16 }}>
+      {/* Baum — Wurzel + nach Clustern gruppierte Fachbereiche */}
+      <aside className="no-print" style={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', padding: 10, position: 'sticky', top: 16, maxHeight: 'calc(100vh - 90px)', overflow: 'auto' }}>
         <div className="mono" style={{ fontSize: 11, color: 'var(--muted)', padding: '4px 8px', textTransform: 'uppercase' }}>Berichtsbaum</div>
-        <Zweig knoten={baum} aktiv={aktiv} onSelect={setAktiv} />
+        {/* Wurzel (GF / Konzern) */}
+        <div onClick={() => setAktiv(baum.id)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 8px', cursor: 'pointer',
+          borderRadius: 'var(--radius-sm)', fontSize: 13, fontWeight: aktiv === baum.id ? 600 : 600,
+          background: aktiv === baum.id ? 'var(--accent-soft)' : 'transparent', color: aktiv === baum.id ? 'var(--accent)' : 'var(--ink)' }}>
+          <span className="mono" style={{ width: 12, color: 'var(--muted)' }}>★</span>
+          <span style={{ flex: 1 }}>{baum.titel}</span>
+          <span className="mono" style={{ fontSize: 10, color: 'var(--muted)' }}>E1</span>
+        </div>
+        {/* Cluster */}
+        {gruppiereNachCluster(baum.kinder).map((g) => (
+          <div key={g.cluster.id} style={{ marginTop: 6 }}>
+            <div onClick={() => setZu((s) => ({ ...s, [g.cluster.id]: !s[g.cluster.id] }))}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 8px', cursor: 'pointer',
+                fontSize: 11, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em' }}>
+              <span className="mono" style={{ width: 12 }}>{zu[g.cluster.id] ? '▸' : '▾'}</span>
+              <span style={{ flex: 1 }}>{g.cluster.name}</span>
+              <span className="mono" style={{ fontSize: 10 }}>{g.knoten.length}</span>
+            </div>
+            {!zu[g.cluster.id] && g.knoten.map((k) => (
+              <Zweig key={k.id} knoten={k} aktiv={aktiv} onSelect={setAktiv} tiefe={1} />
+            ))}
+          </div>
+        ))}
       </aside>
 
       {/* Knotenansicht */}

@@ -18,67 +18,16 @@ import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 import { getPool, pingDb, configBeschreibung, sql } from './db.js'
 import { beiratAuswertung, smartMassnahmen } from './biAgents.js'
+import { KPI } from '../src/core/kpiRegistry.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const SQL_DIR = join(__dirname, '..', 'sql')
 
-// sqlRef -> kpiId (spiegelt src/core/kpiRegistry.js, Feld sqlRef).
-const ROHE_KPIS = {
-  nettoumsatz: 'nettoumsatz', bruttoumsatz: 'bruttoumsatz', erloesschmaelerung: 'erloesschmaelerung',
-  wareneinsatz: 'wareneinsatz', ebitda: 'ebitda', ebit: 'ebit',
-  online_anteil: 'onlineAnteil', retourenquote: 'retourenquote',
-  einkaufsvolumen: 'einkaufsvolumen', liefertreue: 'liefertreue',
-  ausschuss: 'ausschuss', auslastung: 'auslastung',
-  lagerbestand: 'lagerbestand', reichweite: 'reichweite',
-  personalkosten: 'personalkosten', fluktuation: 'fluktuation',
-  shop_verfuegbarkeit: 'shopVerfuegbarkeit', cash_conversion: 'cashConversion',
-  // Kosten- & Leistungsrechnung
-  produktionsmenge: 'produktionsmenge', herstellkosten: 'herstellkosten',
-  gemeinkosten: 'gemeinkosten', gesamtkosten: 'gesamtkosten',
-  // Absatz- & Umsatzprognose
-  absatzprognose: 'absatzprognose', umsatzprognose: 'umsatzprognose',
-  forecast_genauigkeit: 'forecastGenauigkeit', auftragsbestand: 'auftragsbestand',
-  // Umsatz-, Kosten- & Erfolgsplanung
-  umsatzplan: 'umsatzplan', kostenplan: 'kostenplan', ebit_plan: 'ebitPlan',
-  // Produktionsplanung
-  produktionsplan: 'produktionsplan', kapazitaet: 'kapazitaet',
-  schichtauslastung: 'schichtauslastung', liefertermintreue: 'liefertermintreue',
-  // Bestands- & Supply-Chain-Controlling
-  lieferfaehigkeit: 'lieferfaehigkeit', ueberbestand: 'ueberbestand',
-  // Finanzbuchhaltung & Abschluss
-  abschlussdauer: 'abschlussdauer', rueckstellungen: 'rueckstellungen',
-  bilanzsumme: 'bilanzsumme', eigenkapital: 'eigenkapital',
-  handelsrechtliches_ergebnis: 'handelsrechtlichesErgebnis', neutrales_ergebnis: 'neutralesErgebnis',
-  // Investitions- & Liquiditätsplanung
-  investitionsvolumen: 'investitionsvolumen', investitionsbudget: 'investitionsbudget',
-  liquide_mittel: 'liquideMittel', kreditlinie: 'kreditlinie', operativer_cashflow: 'operativerCashflow',
-  // Vertriebscontrolling
-  vertriebskosten: 'vertriebskosten', rabattquote: 'rabattquote', neukundenanteil: 'neukundenanteil',
-  // Personalcontrolling
-  mitarbeiter_fte: 'mitarbeiterFTE', ueberstundenquote: 'ueberstundenquote', krankenstand: 'krankenstand',
-  // Risiko- & Forderungscontrolling
-  offene_forderungen: 'offeneForderungen', ueberfaellige_forderungen: 'ueberfaelligeForderungen',
-  dso: 'dso', forderungsausfall: 'forderungsausfall', klumpenrisiko_top3: 'klumpenrisikoTop3',
-  // Nachhaltigkeits-/ESG-Controlling
-  co2_pro_rad: 'co2ProRad', co2_gesamt: 'co2Gesamt', energie_je_rad: 'energieJeRad',
-  oekostromanteil: 'oekostromanteil', recyclingquote: 'recyclingquote',
-  // Treasury & Zins-/Währungsrisiko
-  nettoverschuldung: 'nettoverschuldung', zinsaufwand: 'zinsaufwand', durchschnittszins: 'durchschnittszins',
-  hedge_quote: 'hedgeQuote', fx_exposure_offen: 'fxExposureOffen',
-  // Qualitäts- & Reklamationscontrolling
-  reklamationsquote: 'reklamationsquote', nacharbeitsquote: 'nacharbeitsquote',
-  first_pass_yield: 'firstPassYield', garantiekosten: 'garantiekosten',
-  // Marketing-/Kampagnencontrolling
-  marketingkosten: 'marketingkosten', roas: 'roas', cac: 'cac', conversion_rate: 'conversionRate',
-  // Beteiligungs-/Konzerncontrolling
-  roce: 'roce', auslandsanteil: 'auslandsanteil', intercompany_volumen: 'intercompanyVolumen',
-  // After-Sales- & Servicecontrolling
-  serviceumsatz: 'serviceumsatz', ersatzteilverfuegbarkeit: 'ersatzteilverfuegbarkeit',
-  reparaturdurchlaufzeit: 'reparaturdurchlaufzeit', nps: 'nps',
-  // F&E-/Innovationscontrolling
-  fuekosten: 'fuekosten', neuproduktumsatzanteil: 'neuproduktumsatzanteil',
-  entwicklungsprojekte: 'entwicklungsprojekte', time_to_market: 'timeToMarket'
-}
+// sqlRef -> kpiId — SINGLE SOURCE OF TRUTH: direkt aus der KPI-Registry
+// abgeleitet (jede gemessene KPI hat ein sqlRef). Keine Doppelpflege mehr.
+const ROHE_KPIS = Object.fromEntries(
+  Object.values(KPI).filter((k) => k.sqlRef).map((k) => [k.sqlRef, k.id])
+)
 
 const sqlPfad = (ref) => join(SQL_DIR, `${ref}.kpi.sql`)
 const hatSql = (ref) => existsSync(sqlPfad(ref))
