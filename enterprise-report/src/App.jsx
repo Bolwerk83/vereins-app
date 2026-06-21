@@ -30,6 +30,7 @@ import BAB from './modules/bab/BAB.jsx'
 import Kalkulation from './modules/kalkulation/Kalkulation.jsx'
 import Ergebnisrechnung from './modules/ergebnis/Ergebnisrechnung.jsx'
 import Deckungsbeitrag from './modules/deckungsbeitrag/Deckungsbeitrag.jsx'
+import Lernpfad from './modules/lernpfad/Lernpfad.jsx'
 import { AKTUELLE_STAGE, stageInfo } from './core/stage.js'
 import { autoSeed } from './core/designerSeed.js'
 import TreeNavigator from './modules/tree-navigator/TreeNavigator.jsx'
@@ -151,6 +152,7 @@ export default function App() {
       { label: t('nav.transport'), icon: '🚚', aktiv: ansicht === 'transport', onClick: () => geh('transport') },
       ...(istAdmin(rolle) ? [{ label: t('nav.rechte'), icon: '👥', aktiv: ansicht === 'rechte', onClick: () => geh('rechte') }] : []),
       { label: t('nav.wizard'), icon: '⚙', aktiv: ansicht === 'wizard', onClick: () => geh('wizard') },
+      { label: t('nav.lernpfad'), icon: '🎓', aktiv: ansicht === 'lernpfad', onClick: () => geh('lernpfad') },
       { label: t('nav.onboarding'), icon: '🚀', aktiv: false, onClick: () => setOnbAuf(true) },
       { label: t('nav.hilfe'), icon: '❓', aktiv: false, onClick: () => { setHilfeErstmalig(false); setHilfeAuf(true) } }
     ] }
@@ -331,6 +333,9 @@ export default function App() {
         )}
         {ansicht === 'deckungsbeitrag' && (
           <Deckungsbeitrag onGeh={geh} />
+        )}
+        {ansicht === 'lernpfad' && (
+          <Lernpfad onGeh={geh} />
         )}
         {ansicht === 'transport' && (
           <Transport benutzer={benutzer} />

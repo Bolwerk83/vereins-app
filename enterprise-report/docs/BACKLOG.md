@@ -35,8 +35,16 @@ Stand: laufend.
 - [ ] **CI-Lauf grün halten** / ggf. PR eröffnen und überwachen
 
 ## Zuletzt ergänzt
-- BAB (ganze Firma) + Verteilungstabellen (manuell/automatisch) ✅
-- Rollenbasiertes Onboarding ✅
+- Lernpfad (modulare Lektionen, Fortschritt, Zusammenhänge) ✅
+- Deckungsbeitragsrechnung (ein-/mehrstufig + Typologie) ✅
+- Ergebnisrechnung (GKV, Staffel + T-Konto) ✅
+- Kostenträgerrechnung/Kalkulation, KLR-Ablauf, BAB (Datenarten), Onboarding ✅
+
+## Lernpfad — Ausbauideen (offen)
+- [ ] Mehr Lektionen + kleine Quizfragen / Wissens-Check je Kapitel
+- [ ] Interaktive Ablaufdiagramme (klickbare Prozessgrafik der Zusammenhänge)
+- [ ] Rollthe-basierte Lernpfade (je Rolle anderer Schwerpunkt)
+- [ ] Zertifikat/Abschluss bei 100 %
 
 ## Hinweise
 - Jede Funktion: Build grün + Tests; Persistenz via localStorage, später DWH/Backend.
