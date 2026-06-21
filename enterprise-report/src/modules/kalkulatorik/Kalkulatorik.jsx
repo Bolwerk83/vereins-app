@@ -4,6 +4,7 @@
 // =========================================================================
 import React, { useState } from 'react'
 import { BAUSTEINE, baustein, felderVon, setFelder, wertVon, gesamt } from '../../core/kalkulatorik.js'
+import { ueberleitung } from '../../core/verbuchung.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
@@ -79,6 +80,32 @@ export default function Kalkulatorik({ werte = {}, onGeh }) {
           )
         })}
       </div>
+
+      {/* Verbuchung: Überleitung ins Betriebsergebnis */}
+      {(() => {
+        const u = ueberleitung('ist')
+        const z = (label, wert, opt = {}) => (
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--line)', fontWeight: opt.bold ? 700 : 400, color: opt.farbe || 'var(--ink)' }}>
+            <span>{opt.prefix || ''}{label}</span><span className="mono">{mio(wert)}</span>
+          </div>
+        )
+        return (
+          <div style={{ ...card, padding: 16, marginTop: 14 }}>
+            <div style={cap}>Verbuchung — Überleitung zum kalkulatorischen Betriebsergebnis</div>
+            <div style={{ fontSize: 12.5, color: 'var(--slate)', margin: '4px 0 10px' }}>
+              Die konfigurierten kalkulatorischen Kosten werden ins Ergebnis eingerechnet: Anderskosten nur mit ihrem
+              <b> Mehrbetrag</b> gegenüber dem bilanziellen Aufwand, Zusatzkosten voll.
+            </div>
+            {z('Bilanzielles Betriebsergebnis (GuV)', u.bilanziellesErgebnis, { bold: true })}
+            <div style={{ height: 6 }} />
+            {u.anders.map((a) => z(`${a.name}: kalk. ${mio(a.kalk)} − bilanziell ${mio(a.bilanz)}`, a.mehrbetrag, { prefix: '− ', farbe: 'var(--muted)' }))}
+            {z('Σ Anderskosten-Mehrbetrag', u.summeAnders, { prefix: '− ', bold: true })}
+            {z('Zusatzkosten (Unternehmerlohn)', u.zusatz, { prefix: '− ', farbe: 'var(--muted)' })}
+            <div style={{ height: 6 }} />
+            {z('= Kalkulatorisches Betriebsergebnis', u.kalkErgebnis, { bold: true, farbe: u.kalkErgebnis >= 0 ? 'var(--amp-g)' : 'var(--amp-r)' })}
+          </div>
+        )
+      })()}
     </div>
   )
 }
