@@ -50,6 +50,21 @@ Bis SMTP eingerichtet ist, dient der **Testlauf** im Tool als Vorschau: er zeigt
 das vollständige Versand-Paket (Empfänger, Betreff, Anhänge, Link, Stempel),
 ohne real zu versenden.
 
+## Echter Report-Anhang (statt Platzhalter)
+
+Ein Verteiler kann einen **konkreten Designer-Report** als Anhang führen
+(Feld „Report-Anhang"). Beim **„Im Backend aktivieren"** rendert der Client
+den Report über die geteilten, DOM-freien Renderer
+(`renderReportHtml` / `renderReportExcelHtml` in `core/reportExport.js`) zu
+einem **reproduzierbaren Inhalts-Schnappschuss** (HTML + Excel) und schickt
+ihn mit der Verteiler-Definition an den Server.
+
+Der Server (`server/versand.js`) hängt diesen Schnappschuss als echten Anhang
+an die Mail (`<Report>.html` für PDF/Druck, `<Report>.xls` für Excel) — statt
+der früheren Platzhalter-Datei. Ohne Schnappschuss greift weiterhin die
+schlanke exceljs-Übersicht als Fallback. Echtes PDF (Headless-Chrome) bleibt
+optional; die HTML-Variante ist im Browser/Word direkt druckbar.
+
 ## Status: umgesetzt (Backend)
 
 Der Scheduler ist im `server/` eingebaut und läuft mit **graceful degradation**:

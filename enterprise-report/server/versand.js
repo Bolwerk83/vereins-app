@@ -21,8 +21,22 @@ function appUrl() {
 
 async function baueAnhaenge(v, paket) {
   const anhaenge = []
+  const willPdf = paket.anhaenge.includes('pdf')
   const willExcel = paket.anhaenge.includes('excel')
-  if (willExcel) {
+  const basis = (v.inhalt?.reportTitel || v.bericht || 'bericht').replace(/[^\w\d]+/g, '_')
+
+  // 1) Echter Report-Inhalt aus dem Client-Schnappschuss (reproduzierbar).
+  if (v.inhalt?.html && willPdf) {
+    // HTML-Report (im Browser/Word öffenbar; druckbar als PDF). Echter Inhalt
+    // statt Platzhalter — true-PDF nur mit Headless-Chrome (optional).
+    anhaenge.push({ filename: `${basis}.html`, content: v.inhalt.html })
+  }
+  if (v.inhalt?.excelHtml && willExcel) {
+    anhaenge.push({ filename: `${basis}.xls`, content: '﻿' + v.inhalt.excelHtml })
+  }
+
+  // 2) Fallback ohne Inhalts-Schnappschuss: schlanke Excel-Übersicht (exceljs).
+  if (!v.inhalt && willExcel) {
     try {
       const ExcelJS = (await import('exceljs')).default
       const wb = new ExcelJS.Workbook()
@@ -35,7 +49,6 @@ async function baueAnhaenge(v, paket) {
       anhaenge.push({ filename: `${v.bericht}.xlsx`, content: Buffer.from(await wb.xlsx.writeBuffer()) })
     } catch { /* exceljs fehlt -> ohne Excel weiter */ }
   }
-  // PDF bewusst optional gelassen (Headless-Chrome) — Live-Link deckt es ab.
   return anhaenge
 }
 

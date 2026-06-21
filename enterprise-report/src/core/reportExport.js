@@ -40,13 +40,12 @@ function tabelleHtml(ds, klasse = '') {
   </table>`
 }
 
-// --- Gemeinsames Bericht-HTML (für PDF) ----------------------------------
-function berichtKoerper(report, werte, tabellen) {
+// --- Gemeinsames Bericht-HTML (rein, ohne DOM; von Client & Server nutzbar) -
+function berichtKoerper(report, werte, tabellen, massnahmen = []) {
   const kpiBloecke = (report.bloecke || []).filter((b) => b.typ === 'kpi' && KPI[b.kpiId])
   const bw = knotenBewertung(kpiBloecke.map((b) => kpiInsight(b.kpiId, werte[b.kpiId])))
   const v = bw.verteilung, total = Math.max(1, v.g + v.a + v.r + v.n)
   const kernfarbe = v.r ? AMP.r : v.a ? AMP.a : AMP.g
-  const massnahmen = (() => { try { return ladeMassnahmen().filter((m) => m.status === 'offen' || m.status === 'in_arbeit') } catch { return [] } })()
 
   const lage = kpiBloecke.length ? `<div class="lage">
     <div class="lage-top"><span class="cap">Lagebewertung</span>
@@ -96,44 +95,66 @@ const DRUCK_CSS = `
   @media print{ a{display:none} thead{display:table-header-group} }
 `
 
-/** Bericht als PDF: Druckfenster öffnen und drucken (Browser -> „Als PDF speichern"). */
-export async function exportReportPdf(report, werte, periode = '') {
-  const tabellen = await ladeTabellen(report)
-  const { lage, bloecke } = berichtKoerper(report, werte, tabellen)
-  const html = `<!doctype html><html lang="de"><head><meta charset="utf-8"><title>${esc(report.titel)}</title>
+// === REINE RENDERER (kein DOM) — von Client UND Server nutzbar ============
+
+/** Vollständiges Druck-HTML eines Berichts. tabellen/massnahmen vorab geladen. */
+export function renderReportHtml(report, werte, { tabellen = {}, massnahmen = [], periode = '', druck = false } = {}) {
+  const { lage, bloecke } = berichtKoerper(report, werte, tabellen, massnahmen)
+  const druckScript = druck ? '<script>window.onload=function(){setTimeout(function(){window.print()},250)}<\/script>' : ''
+  return `<!doctype html><html lang="de"><head><meta charset="utf-8"><title>${esc(report.titel)}</title>
     <style>${DRUCK_CSS}</style></head><body><div class="wrap">
     <div class="head"><div class="cap">Management Report${periode ? ` · Datenstand ${esc(periode)}` : ''}</div>
       <h1>${esc(report.titel)}</h1>${report.beschreibung ? `<div class="sub">${esc(report.beschreibung)}</div>` : ''}</div>
-    ${lage}${bloecke}</div>
-    <script>window.onload=function(){setTimeout(function(){window.print()},250)}<\/script>
-    </body></html>`
-  const w = window.open('', '_blank')
-  if (!w) { alert('Bitte Pop-ups erlauben, um das PDF zu erzeugen.'); return }
-  w.document.write(html); w.document.close()
+    ${lage}${bloecke}</div>${druckScript}</body></html>`
 }
 
-/** Bericht als Excel (HTML/.xls): KPI-Übersicht + alle eingebetteten Tabellen. */
-export async function exportReportExcel(report, werte, periode = '') {
-  const tabellen = await ladeTabellen(report)
+/** Excel-kompatibles HTML (.xls): KPI-Übersicht + eingebettete Tabellen. */
+export function renderReportExcelHtml(report, werte, { tabellen = {}, periode = '' } = {}) {
   const kpiRows = (report.bloecke || []).filter((b) => b.typ === 'kpi' && KPI[b.kpiId]).map((b) => {
     const k = KPI[b.kpiId], ins = kpiInsight(b.kpiId, werte[b.kpiId])
     return `<tr><td>${esc(k.name)}</td><td class="r">${esc(formatWert(werte[b.kpiId], k.einheit))}</td>
       <td class="r">${k.ziel != null ? esc(formatWert(k.ziel, k.einheit)) : '–'}</td><td>${esc(ins.aussage)}</td></tr>`
   }).join('')
-
   const tabSektionen = (report.bloecke || []).map((b, i) => b.typ === 'tabelle'
     ? `<h3>${esc(b.titel)}</h3>${tabelleHtml(tabellen[i])}` : '').join('')
-
-  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
+  return `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
     <head><meta charset="utf-8">
     <style>table{border-collapse:collapse} th,td{border:1px solid #ccc;padding:4px 7px;font-size:12px} th{background:#eef2ff} .r{text-align:right} h1{font-size:16px} h3{font-size:13px;margin:14px 0 4px}</style>
     </head><body>
     <h1>${esc(report.titel)}</h1>
     <div>${esc(report.beschreibung || '')}${periode ? ` · Datenstand ${esc(periode)}` : ''}</div>
     ${kpiRows ? `<h3>Kennzahlen</h3><table><thead><tr><th>Kennzahl</th><th>Ist</th><th>Ziel</th><th>Bewertung</th></tr></thead><tbody>${kpiRows}</tbody></table>` : ''}
-    ${tabSektionen}
-    </body></html>`
+    ${tabSektionen}</body></html>`
+}
 
+// Hilfsfunktionen: Tabellen + offene Maßnahmen clientseitig laden.
+const offeneMassnahmen = () => { try { return ladeMassnahmen().filter((m) => m.status === 'offen' || m.status === 'in_arbeit') } catch { return [] } }
+
+/** Reproduzierbares Inhalts-Bundle (HTML + Excel) — für den Verteiler-Versand. */
+export async function berichtBundle(report, werte, periode = '') {
+  const tabellen = await ladeTabellen(report)
+  const massnahmen = offeneMassnahmen()
+  return {
+    html: renderReportHtml(report, werte, { tabellen, massnahmen, periode }),
+    excelHtml: renderReportExcelHtml(report, werte, { tabellen, periode })
+  }
+}
+
+// === CLIENT-EXPORTE (DOM) =================================================
+
+/** Bericht als PDF: Druckfenster öffnen (Browser -> „Als PDF speichern"). */
+export async function exportReportPdf(report, werte, periode = '') {
+  const tabellen = await ladeTabellen(report)
+  const html = renderReportHtml(report, werte, { tabellen, massnahmen: offeneMassnahmen(), periode, druck: true })
+  const w = window.open('', '_blank')
+  if (!w) { alert('Bitte Pop-ups erlauben, um das PDF zu erzeugen.'); return }
+  w.document.write(html); w.document.close()
+}
+
+/** Bericht als Excel (HTML/.xls) herunterladen. */
+export async function exportReportExcel(report, werte, periode = '') {
+  const tabellen = await ladeTabellen(report)
+  const html = renderReportExcelHtml(report, werte, { tabellen, periode })
   const blob = new Blob(['﻿' + html], { type: 'application/vnd.ms-excel;charset=utf-8;' })
   const a = document.createElement('a')
   a.href = URL.createObjectURL(blob)

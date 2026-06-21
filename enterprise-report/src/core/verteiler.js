@@ -48,7 +48,7 @@ function speichere(arr) { localStorage.setItem(KEY, JSON.stringify(arr)); return
 export function neuerVerteiler() {
   const v = {
     id: 'v_' + Date.now().toString(36),
-    name: 'Neuer Verteiler', bericht: 'management-report',
+    name: 'Neuer Verteiler', bericht: 'management-report', reportId: '',
     empfaenger: [], formate: ['pdf', 'link'], modus: 'hybrid',
     rhythmus: 'monatlich', zeit: '07:00', tag: '5. Werktag',
     ereignisse: [], aktiv: true, letzterVersand: null
@@ -58,10 +58,11 @@ export function neuerVerteiler() {
 export function aktualisiere(id, patch) { return speichere(ladeVerteiler().map((v) => (v.id === id ? { ...v, ...patch } : v))) }
 export function loesche(id) { return speichere(ladeVerteiler().filter((v) => v.id !== id)) }
 
-/** Liste ins Backend übernehmen (aktiviert die Zeitpläne). Best-effort. */
-export async function imBackendAktivieren() {
+/** Liste ins Backend übernehmen (aktiviert die Zeitpläne). Best-effort.
+ *  Optional eine angereicherte Liste (z. B. mit Inhalts-Bundles) übergeben. */
+export async function imBackendAktivieren(liste = ladeVerteiler()) {
   const r = await fetch('/api/verteiler', {
-    method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(ladeVerteiler())
+    method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(liste)
   })
   if (!r.ok) throw new Error('Backend nicht erreichbar (läuft der Server?)')
   return r.json() // { status, anzahl, mail: 'konfiguriert'|'dry-run' }

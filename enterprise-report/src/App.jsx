@@ -246,7 +246,7 @@ export default function App() {
           <Versionsvergleich />
         )}
         {ansicht === 'verteiler' && (
-          <Verteiler />
+          <Verteiler werte={werte} periode={periode} />
         )}
         {ansicht === 'abschluss' && (
           <Abschluss werte={werte} />

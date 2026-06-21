@@ -8,21 +8,36 @@ import {
   MODI, FORMATE, RHYTHMEN, EREIGNISSE, BERICHT_OPTIONEN,
   ladeVerteiler, neuerVerteiler, aktualisiere, loesche, versandPaket, datenstandStempel, imBackendAktivieren
 } from '../../core/verteiler.js'
+import { ladeReports } from '../../core/designer.js'
+import { berichtBundle } from '../../core/reportExport.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const inp = { padding: '7px 9px', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', font: 'inherit' }
 const istMail = (s) => /\S+@\S+\.\S+/.test(s)
 
-export default function Verteiler() {
+export default function Verteiler({ werte = {}, periode = '' }) {
   const [liste, setListe] = useState(ladeVerteiler())
   const [aktivId, setAktivId] = useState(liste[0]?.id || null)
   const [mail, setMail] = useState('')
   const [vorschau, setVorschau] = useState(null)
   const [backend, setBackend] = useState(null)
+  const reports = ladeReports()
 
+  // Aktivieren: je Verteiler mit konkretem Report einen reproduzierbaren
+  // Inhalts-Schnappschuss (HTML + Excel) erzeugen und mitschicken -> der
+  // Server verschickt diesen als echten Anhang.
   async function aktivieren() {
-    try { const r = await imBackendAktivieren(); setBackend(`✓ ${r.anzahl} Verteiler geplant · Mail: ${r.mail === 'konfiguriert' ? 'SMTP aktiv' : 'dry-run (SMTP fehlt)'}`) }
-    catch (e) { setBackend(`✗ ${e.message}`) }
+    try {
+      const angereichert = await Promise.all(ladeVerteiler().map(async (vt) => {
+        const rep = vt.reportId && reports.find((r) => r.id === vt.reportId)
+        if (!rep) return { ...vt, inhalt: null }
+        const bundle = await berichtBundle(rep, werte, periode)
+        return { ...vt, inhalt: { reportTitel: rep.titel, ...bundle } }
+      }))
+      const r = await imBackendAktivieren(angereichert)
+      const mitInhalt = angereichert.filter((x) => x.inhalt).length
+      setBackend(`✓ ${r.anzahl} Verteiler geplant · ${mitInhalt} mit Report-Anhang · Mail: ${r.mail === 'konfiguriert' ? 'SMTP aktiv' : 'dry-run (SMTP fehlt)'}`)
+    } catch (e) { setBackend(`✗ ${e.message}`) }
   }
 
   const v = liste.find((x) => x.id === aktivId) || null
@@ -75,9 +90,13 @@ export default function Verteiler() {
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
                 <label style={{ fontSize: 11, color: 'var(--muted)', flex: 1, minWidth: 180 }}>Name<br />
                   <input style={{ ...inp, marginTop: 3, width: '100%' }} value={v.name} onChange={(e) => set({ name: e.target.value })} /></label>
-                <label style={{ fontSize: 11, color: 'var(--muted)' }}>Bericht<br />
+                <label style={{ fontSize: 11, color: 'var(--muted)' }}>Bericht (Typ)<br />
                   <select style={{ ...inp, marginTop: 3 }} value={v.bericht} onChange={(e) => set({ bericht: e.target.value })}>
                     {BERICHT_OPTIONEN.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</select></label>
+                <label style={{ fontSize: 11, color: 'var(--muted)' }} title="Konkreter Designer-Report als echter Anhang (PDF/Excel)">Report-Anhang<br />
+                  <select style={{ ...inp, marginTop: 3 }} value={v.reportId || ''} onChange={(e) => set({ reportId: e.target.value })}>
+                    <option value="">— kein konkreter Report —</option>
+                    {reports.map((r) => <option key={r.id} value={r.id}>{r.titel}</option>)}</select></label>
                 <label style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
                   <input type="checkbox" checked={v.aktiv} onChange={(e) => set({ aktiv: e.target.checked })} /> aktiv</label>
                 <button onClick={() => { if (confirm(`Verteiler „${v.name}" löschen?`)) { const l = loesche(v.id); refresh(l); setAktivId(l[0]?.id || null) } }}
