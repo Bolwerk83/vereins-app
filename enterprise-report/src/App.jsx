@@ -20,6 +20,7 @@ import Abstimmung from './modules/abstimmung/Abstimmung.jsx'
 import ControllingStruktur from './modules/controlling/ControllingStruktur.jsx'
 import KLR from './modules/klr/KLR.jsx'
 import KLRAblauf from './modules/klr/KLRAblauf.jsx'
+import Ablaufdiagramm from './modules/ablauf/Ablaufdiagramm.jsx'
 import Kostenartenrechnung from './modules/kostenarten/Kostenartenrechnung.jsx'
 import Kalkulatorik from './modules/kalkulatorik/Kalkulatorik.jsx'
 import Lebenszyklus from './modules/lebenszyklus/Lebenszyklus.jsx'
@@ -126,6 +127,7 @@ export default function App() {
       { label: t('nav.designer'), icon: '🧩', aktiv: ansicht === 'designer', onClick: () => geh('designer') },
       { label: t('nav.controlling'), icon: '🧭', aktiv: ansicht === 'controlling', onClick: () => geh('controlling') },
       { label: t('nav.klrablauf'), icon: '🧵', aktiv: ansicht === 'klrablauf', onClick: () => geh('klrablauf') },
+      { label: t('nav.ablauf'), icon: '🗺', aktiv: ansicht === 'ablaufdiagramm', onClick: () => geh('ablaufdiagramm') },
       { label: t('nav.klr'), icon: '🧮', aktiv: ansicht === 'klr' || ansicht === 'kostenarten' || ansicht === 'kalkulatorik', onClick: () => geh('klr') },
       { label: t('nav.einzelgemein'), icon: '➗', aktiv: ansicht === 'einzelgemein', onClick: () => geh('einzelgemein') },
       { label: t('nav.kostenstellen'), icon: '🏢', aktiv: ansicht === 'kostenstellen', onClick: () => geh('kostenstellen') },
@@ -300,6 +302,9 @@ export default function App() {
         )}
         {ansicht === 'klrablauf' && (
           <KLRAblauf onGeh={geh} />
+        )}
+        {ansicht === 'ablaufdiagramm' && (
+          <Ablaufdiagramm onGeh={geh} />
         )}
         {ansicht === 'klr' && (
           <KLR werte={werte} rolle={rolle} periode={periode} onGeh={geh} />
