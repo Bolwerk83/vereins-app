@@ -97,6 +97,17 @@ app.get('/api/kpi/:id/historie', async (req, res) => {
   } catch (e) { res.status(500).json({ error: String(e) }) }
 })
 
+// --- Detail-Perspektive (Ebene-4-Sprungpunkt) ---------------------------
+app.get('/api/perspektive/:key', async (req, res) => {
+  try {
+    const p = join(SQL_DIR, `perspektive_${req.params.key}.sql`)
+    if (!existsSync(p)) return res.status(404).json({ error: `SQL fehlt: perspektive_${req.params.key}.sql` })
+    const r = await (await getPool()).request().query(readFileSync(p, 'utf8'))
+    const spalten = Object.keys(r.recordset[0] ?? {})
+    res.json({ titel: req.params.key, spalten, zeilen: r.recordset.map((row) => spalten.map((c) => row[c])) })
+  } catch (e) { res.status(500).json({ error: String(e) }) }
+})
+
 // --- Detailbericht (Ebene 4) --------------------------------------------
 app.get('/api/detail/:key', async (req, res) => {
   try {

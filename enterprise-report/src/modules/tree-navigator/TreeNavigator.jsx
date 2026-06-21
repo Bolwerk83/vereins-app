@@ -12,6 +12,7 @@ import { ladeDetail, ladeHistorie } from '../../core/dataProvider.js'
 import { downloadCsv, druckePdf, knotenAlsCsv } from '../../core/export.js'
 import { KpiCard, KpiGesperrt, DetailTabelle, Sparkline, Badge } from '../../components/ui.jsx'
 import KnotenBewertung from './KnotenBewertung.jsx'
+import DetailPerspektiven from './DetailPerspektiven.jsx'
 
 function EbeneTag({ stufe }) {
   const e = EBENEN.find((x) => x.stufe === stufe)
@@ -141,6 +142,11 @@ export default function TreeNavigator({ rolle, werte, periode, onOpenReport, sta
 
         {/* Ebene 4: Detailtabelle */}
         {detailKey && <DetailTabelle daten={detail} />}
+
+        {/* Ebene 4: mehrere Detail-Perspektiven (kontextabhängig) + Filtermaske */}
+        {knoten.perspektiven?.length > 0 && (
+          <DetailPerspektiven bereich={knoten.bereich} perspektiven={knoten.perspektiven} />
+        )}
 
         {/* Hinweis Drill-down */}
         {knoten.kinder?.length > 0 && (

@@ -43,6 +43,16 @@ export async function ladeHistorie(kpiId) {
   })
 }
 
+/** Detail-Perspektive (Ebene-4-Sprungpunkt), key = <bereich>_<objekt>. */
+export async function ladePerspektive(key) {
+  if (QUELLE === 'mssql') {
+    const r = await fetch(`/api/perspektive/${encodeURIComponent(key)}`)
+    if (!r.ok) throw new Error('MSSQL-Backend nicht erreichbar')
+    return r.json()
+  }
+  return MOCK.perspektiven?.[key] ?? null
+}
+
 /** Detail-Datensatz (Tabelle) für einen E4-Knoten. */
 export async function ladeDetail(detailKey) {
   if (QUELLE === 'mssql') {

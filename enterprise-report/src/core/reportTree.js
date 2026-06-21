@@ -33,10 +33,12 @@ export const BERICHTSBAUM = n('konzern', 1, 'VeloWerk Gruppe · Management Repor
       kinder: [
         n('vk-kanaele', 3, 'Kanäle & Marktplätze', {
           bereich: 'VK', kpis: ['onlineAnteil', 'nettoumsatz'],
+          perspektiven: ['artikel', 'produkt', 'kunde', 'verkaufsrechnung', 'auftrag'],
           kinder: [ n('vk-kanaele-det', 4, 'Umsatz je Kanal', { bereich: 'VK', detail: 'kanaele' }) ]
         }),
         n('vk-retouren', 3, 'Retouren', {
           bereich: 'VK', kpis: ['retourenquote'],
+          perspektiven: ['artikel', 'kunde', 'verkaufsrechnung'],
           kinder: [ n('vk-retouren-det', 4, 'Retouren je Warengruppe', { bereich: 'VK', detail: 'retouren' }) ]
         })
       ]
@@ -47,6 +49,7 @@ export const BERICHTSBAUM = n('konzern', 1, 'VeloWerk Gruppe · Management Repor
       kinder: [
         n('ek-lieferanten', 3, 'Lieferantenstruktur', {
           bereich: 'EK', kpis: ['liefertreue'],
+          perspektiven: ['lieferant', 'artikel', 'einkaufsrechnung', 'bestellung'],
           kinder: [ n('ek-lieferanten-det', 4, 'Lieferantengruppen & Klumpenrisiko', { bereich: 'EK', detail: 'lieferanten' }) ]
         })
       ]
@@ -67,6 +70,7 @@ export const BERICHTSBAUM = n('konzern', 1, 'VeloWerk Gruppe · Management Repor
       kinder: [
         n('log-bestaende', 3, 'Bestände & Reichweite', {
           bereich: 'LOG', kpis: ['lagerbestand', 'reichweite'],
+          perspektiven: ['artikel', 'produkt', 'lager'],
           kinder: [ n('log-bestaende-det', 4, 'Bestände je Warenbereich', { bereich: 'LOG', detail: 'bestaende' }) ]
         }),
         n('log-extern', 3, 'Externe Läger', {
@@ -101,6 +105,7 @@ export const BERICHTSBAUM = n('konzern', 1, 'VeloWerk Gruppe · Management Repor
       kinder: [
         n('fin-guv', 3, 'GuV & Marge', {
           bereich: 'FIN', kpis: ['ebit', 'dbQuote'],
+          perspektiven: ['profitcenter', 'kostenstelle', 'konto'],
           kinder: [ n('fin-guv-det', 4, 'GuV-Staffel', { bereich: 'FIN', detail: 'guv' }) ]
         })
       ]
