@@ -3,6 +3,8 @@ import { ladeGruppen, ladeGruppenAsync, istAdmin, effektiveRolleAsync } from './
 import RollenRechte from './modules/rollen-rechte/RollenRechte.jsx'
 import BenutzerLeiste from './modules/benutzer/BenutzerLeiste.jsx'
 import HilfePanel from './modules/hilfe/HilfePanel.jsx'
+import Onboarding from './modules/onboarding/Onboarding.jsx'
+import { schonGesehen } from './core/onboarding.js'
 import { KpiDefProvider } from './modules/kennzahlen/KpiDefContext.jsx'
 import Kennzahlen from './modules/kennzahlen/Kennzahlen.jsx'
 import BurgerMenu from './components/BurgerMenu.jsx'
@@ -59,6 +61,7 @@ export default function App() {
   const [zeitModell, setZeitModell] = useState(ladeModell())
   const [hilfeAuf, setHilfeAuf] = useState(false)
   const [hilfeErstmalig, setHilfeErstmalig] = useState(false)
+  const [onbAuf, setOnbAuf] = useState(false)
   // Aktive "Rolle": angemeldeter Benutzer -> Vereinigung seiner Gruppen.
   // Ohne Anmeldung -> manuell gewählte Gruppe (Demo-/Admin-Modus).
   const rolle = benutzer
@@ -75,6 +78,13 @@ export default function App() {
   useEffect(() => {
     if (ansicht !== 'wizard' && !localStorage.getItem(HILFE_KEY)) { setHilfeErstmalig(true); setHilfeAuf(true) }
   }, [ansicht])
+
+  // Rollenbasiertes Onboarding einmal je Rolle automatisch zeigen
+  // (erst nach Ersthilfe/Setup, nicht im Wizard).
+  useEffect(() => {
+    if (ansicht === 'wizard' || !localStorage.getItem(HILFE_KEY) || !rolle) return
+    if (!schonGesehen(rolle.id)) setOnbAuf(true)
+  }, [rolle?.id, ansicht]) // eslint-disable-line
 
   // Cache-Kontext aus dem Periodenmodell (Datumssicht + Granularität). Ändert
   // er sich, wird der Cache geleert und die Werte werden neu geladen.
@@ -131,6 +141,7 @@ export default function App() {
       { label: t('nav.transport'), icon: '🚚', aktiv: ansicht === 'transport', onClick: () => geh('transport') },
       ...(istAdmin(rolle) ? [{ label: t('nav.rechte'), icon: '👥', aktiv: ansicht === 'rechte', onClick: () => geh('rechte') }] : []),
       { label: t('nav.wizard'), icon: '⚙', aktiv: ansicht === 'wizard', onClick: () => geh('wizard') },
+      { label: t('nav.onboarding'), icon: '🚀', aktiv: false, onClick: () => setOnbAuf(true) },
       { label: t('nav.hilfe'), icon: '❓', aktiv: false, onClick: () => { setHilfeErstmalig(false); setHilfeAuf(true) } }
     ] }
   ]
@@ -202,6 +213,9 @@ export default function App() {
                   background: lang === s.id ? 'var(--accent)' : 'var(--panel)', color: lang === s.id ? '#fff' : 'var(--muted)' }}>{s.label}</button>
               ))}
             </div>
+            <button title={t('nav.onboarding')} onClick={() => setOnbAuf(true)}
+              style={{ width: 30, height: 30, borderRadius: '50%', border: '1px solid var(--line)', background: 'var(--panel)',
+                cursor: 'pointer', fontSize: 14 }}>🚀</button>
             <button title={t('nav.hilfe')} onClick={() => { setHilfeErstmalig(false); setHilfeAuf(true) }}
               style={{ width: 30, height: 30, borderRadius: '50%', border: '1px solid var(--line)', background: 'var(--panel)',
                 color: 'var(--accent)', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>?</button>
@@ -210,6 +224,7 @@ export default function App() {
       </header>
 
       <HilfePanel offen={hilfeAuf} erstmalig={hilfeErstmalig} onSchliessen={hilfeSchliessen} />
+      {onbAuf && <Onboarding rolle={rolle} istAdmin={istAdmin(rolle)} onGeh={geh} onClose={() => setOnbAuf(false)} />}
 
       <KpiDefProvider rolle={rolle} werte={werte} onSpringe={(id) => { setBaumStart(id); setAnsicht('baum') }}>
       <main style={{ padding: '22px 20px', maxWidth: 1240, margin: '0 auto' }}>
