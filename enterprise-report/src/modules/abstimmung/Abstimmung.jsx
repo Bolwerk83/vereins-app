@@ -5,6 +5,7 @@
 // =========================================================================
 import React, { useState, useEffect } from 'react'
 import { bruecken, setNotiz, STATUS, statusInfo, abstimmZusammenfassung, ladeHauptbuch } from '../../core/abstimmung.js'
+import { addMassnahme, ladeMassnahmen } from '../../core/massnahmen.js'
 import { formatWert } from '../../design/theme.js'
 import { AMPEL_FARBE } from '../../design/theme.js'
 
@@ -24,6 +25,24 @@ export default function Abstimmung({ werte, periode }) {
   const quelleText = !hb ? 'lokal simuliert (kein Backend)' : hb.quelle === 'fibu' ? 'FiBu (MSSQL)' : hbWerte ? 'Hauptbuch-Mock (Backend)' : 'lokal simuliert'
 
   const set = (posId, patch) => { setNotiz(periode, posId, patch); refresh() }
+
+  const [mnId, setMnId] = useState(null)            // Position mit offenem Maßnahmen-Formular
+  const [mnForm, setMnForm] = useState({ owner: '', frist: '' })
+  const massnahmen = ladeMassnahmen()
+  const hatMassnahme = (posId) => massnahmen.some((m) => m.positionId === posId && m.periode === periode)
+
+  function legeMassnahmeAn(r) {
+    addMassnahme({
+      titel: `Abstimmdifferenz „${r.name}" klären (${r.diff > 0 ? '+' : ''}${r.diff} Mio €)`,
+      owner: mnForm.owner, faelligkeit: mnForm.frist || null, frist: mnForm.frist || 'offen',
+      quelle: 'abstimmung', positionId: r.id, periode,
+      kpi: r.kpiId, bereich: 'FIN', hebel: 'Datenqualität',
+      relevanz: `Reporting ↔ Buchhaltung (${r.konto}) — Voraussetzung für die Abschluss-Freigabe.`,
+      erreichbarkeit: 'Ursache je Konto prüfen (Abgrenzung/Buchung/Bewertung), korrigieren, erneut abstimmen.'
+    })
+    setNotiz(periode, r.id, { status: 'klaerung' })
+    setMnId(null); setMnForm({ owner: '', frist: '' }); refresh()
+  }
 
   return (
     <div style={{ maxWidth: 1040, margin: '0 auto', display: 'grid', gap: 16 }}>
@@ -54,25 +73,43 @@ export default function Abstimmung({ werte, periode }) {
         {zeilen.map((r, i) => {
           const si = statusInfo(r.status)
           const diffFarbe = r.diff == null ? 'var(--muted)' : r.imRahmen ? 'var(--amp-g)' : 'var(--amp-r)'
+          const offen = !r.imRahmen
+          const hat = hatMassnahme(r.id)
           return (
-            <div key={r.id} style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr 1fr 150px 1.4fr', gap: 10, padding: '11px 16px',
-              borderTop: i ? '1px solid var(--line)' : 'none', alignItems: 'center', background: r.imRahmen ? 'transparent' : 'var(--amp-r-soft)' }}>
-              <div>
-                <div style={{ fontWeight: 600, fontSize: 14 }}>{r.name}</div>
-                <div className="mono" style={{ fontSize: 11, color: 'var(--muted)' }}>{r.konto} · Toleranz {mio(r.toleranz)}</div>
+            <div key={r.id} style={{ borderTop: i ? '1px solid var(--line)' : 'none', background: r.imRahmen ? 'transparent' : 'var(--amp-r-soft)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr 1fr 150px 1.4fr', gap: 10, padding: '11px 16px', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: 14 }}>{r.name}</div>
+                  <div className="mono" style={{ fontSize: 11, color: 'var(--muted)' }}>{r.konto} · Toleranz {mio(r.toleranz)}</div>
+                </div>
+                <span className="mono" style={{ textAlign: 'right' }}>{mio(r.ist)}</span>
+                <span className="mono" style={{ textAlign: 'right' }}>{mio(r.buchhaltung)}</span>
+                <span className="mono" style={{ textAlign: 'right', color: diffFarbe, fontWeight: 600 }}>
+                  {r.diff == null ? '–' : `${r.diff > 0 ? '+' : ''}${mio(r.diff)}`}
+                  {r.diffPct != null && Math.abs(r.diff) > 0 ? <span style={{ fontSize: 11, opacity: .8 }}> ({r.diffPct > 0 ? '+' : ''}{r.diffPct.toFixed(1)} %)</span> : null}
+                </span>
+                <select value={r.status} onChange={(e) => set(r.id, { status: e.target.value })} style={{ ...inp,
+                  borderColor: AMPEL_FARBE[si.ampel], color: AMPEL_FARBE[si.ampel], fontWeight: 600 }}>
+                  {STATUS.map((s) => <option key={s.id} value={s.id} style={{ color: 'var(--ink)' }}>{s.name}{!r.gesetzt && s.id === r.status ? ' (auto)' : ''}</option>)}
+                </select>
+                <input value={r.kommentar} onChange={(e) => set(r.id, { kommentar: e.target.value })} style={inp}
+                  placeholder={r.imRahmen ? 'im Rahmen' : 'Ursache/Maßnahme …'} />
               </div>
-              <span className="mono" style={{ textAlign: 'right' }}>{mio(r.ist)}</span>
-              <span className="mono" style={{ textAlign: 'right' }}>{mio(r.buchhaltung)}</span>
-              <span className="mono" style={{ textAlign: 'right', color: diffFarbe, fontWeight: 600 }}>
-                {r.diff == null ? '–' : `${r.diff > 0 ? '+' : ''}${mio(r.diff)}`}
-                {r.diffPct != null && Math.abs(r.diff) > 0 ? <span style={{ fontSize: 11, opacity: .8 }}> ({r.diffPct > 0 ? '+' : ''}{r.diffPct.toFixed(1)} %)</span> : null}
-              </span>
-              <select value={r.status} onChange={(e) => set(r.id, { status: e.target.value })} style={{ ...inp,
-                borderColor: AMPEL_FARBE[si.ampel], color: AMPEL_FARBE[si.ampel], fontWeight: 600 }}>
-                {STATUS.map((s) => <option key={s.id} value={s.id} style={{ color: 'var(--ink)' }}>{s.name}{!r.gesetzt && s.id === r.status ? ' (auto)' : ''}</option>)}
-              </select>
-              <input value={r.kommentar} onChange={(e) => set(r.id, { kommentar: e.target.value })} style={inp}
-                placeholder={r.imRahmen ? 'im Rahmen' : 'Ursache/Maßnahme …'} />
+              {offen && (
+                <div style={{ padding: '0 16px 10px', display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                  {hat ? <span style={{ fontSize: 12, color: 'var(--amp-g)', fontWeight: 600 }}>✓ Maßnahme angelegt</span>
+                  : mnId === r.id ? (
+                    <>
+                      <input style={{ ...inp, width: 150 }} value={mnForm.owner} onChange={(e) => setMnForm({ ...mnForm, owner: e.target.value })} placeholder="Verantwortlich" />
+                      <input style={{ ...inp, width: 140 }} type="date" value={mnForm.frist} onChange={(e) => setMnForm({ ...mnForm, frist: e.target.value })} />
+                      <button onClick={() => legeMassnahmeAn(r)} style={{ ...inp, cursor: 'pointer', background: 'var(--accent)', color: '#fff', border: 'none', fontWeight: 600 }}>Maßnahme anlegen</button>
+                      <button onClick={() => setMnId(null)} style={{ ...inp, cursor: 'pointer' }}>Abbrechen</button>
+                    </>
+                  ) : (
+                    <button onClick={() => { setMnId(r.id); setMnForm({ owner: '', frist: '' }) }} style={{ ...inp, cursor: 'pointer', color: 'var(--accent)', borderColor: 'var(--accent)', fontWeight: 600 }}>→ Maßnahme aus Differenz</button>
+                  )}
+                </div>
+              )}
             </div>
           )
         })}
