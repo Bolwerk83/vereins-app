@@ -36,6 +36,7 @@ import Marketing from './modules/marketing/Marketing.jsx'
 import Bestand from './modules/bestand/Bestand.jsx'
 import Forderungen from './modules/forderungen/Forderungen.jsx'
 import Mitarbeiter from './modules/mitarbeiter/Mitarbeiter.jsx'
+import Segmentbericht from './modules/segment/Segmentbericht.jsx'
 import Kalkulation from './modules/kalkulation/Kalkulation.jsx'
 import Ergebnisrechnung from './modules/ergebnis/Ergebnisrechnung.jsx'
 import Deckungsbeitrag from './modules/deckungsbeitrag/Deckungsbeitrag.jsx'
@@ -148,6 +149,7 @@ export default function App() {
     { titel: 'Analyse', eintraege: [
       { label: t('nav.bi'), icon: '💬', aktiv: ansicht === 'bi', onClick: () => geh('bi') },
       { label: t('nav.vergleich'), icon: '⚖', aktiv: ansicht === 'vergleich', onClick: () => geh('vergleich') },
+      { label: t('nav.segment'), icon: '🏛', aktiv: ansicht === 'segment', onClick: () => geh('segment') },
       { label: t('nav.abweichung'), icon: '📊', aktiv: ansicht === 'abweichung', onClick: () => geh('abweichung') },
       { label: t('nav.qc'), icon: '✅', aktiv: ansicht === 'qc', onClick: () => geh('qc'), badge: qcFehler || null },
       { label: t('nav.abstimmung'), icon: '🔗', aktiv: ansicht === 'abstimmung', onClick: () => geh('abstimmung') },
@@ -301,6 +303,9 @@ export default function App() {
         {ansicht === 'zeit' && (
           <ZeitDatenart onChange={setZeitModell} />
         )}
+        {ansicht === 'segment' && (
+          <Segmentbericht />
+        )}
         {ansicht === 'vergleich' && (
           <Versionsvergleich />
         )}
@@ -393,6 +398,11 @@ export default function App() {
         )}
       </main>
       </KpiDefProvider>
+
+      {/* Dezenter, aber unmissverständlicher Urheberhinweis. */}
+      <footer className="no-print" style={{ textAlign: 'center', padding: '14px 20px 22px', color: 'var(--muted)', fontSize: 11.5 }}>
+        Erstellt mit dem <b style={{ color: 'var(--ink)' }}>Business Controller</b> · Konzeption &amp; Umsetzung: Business Controller
+      </footer>
     </div>
   )
 }

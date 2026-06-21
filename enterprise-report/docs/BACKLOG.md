@@ -18,6 +18,14 @@ Stand: laufend.
 - Auftrags-Lebenszyklus (Order-to-Cash) mit Engpass
 - Kostenstellenrechnung (BAB, Umlage, Zuschlagssätze, Plan/Ist, Center-Typen)
 
+## 🆕 Neue Wünsche (offen)
+- [ ] **Globale Suche oben rechts** nach Berichten/KPIs mit Sprung dorthin
+- [ ] **Admin-Bereich** (eigener verwalteter Bereich): Logo hinterlegen/jederzeit
+      tauschen (Themes: Black Week, Weihnachten, Ferien …), App-Branding
+- [ ] **Events/Aktionen** mit Zeitraum, betroffene Produkte, Mechanik & Kosten →
+      **Wirksamkeitsanalyse** (Mehrumsatz, Ladenhüter-Abbau, ROI der Werbung)
+- [x] Dezenter „Business Controller"-Urheberhinweis (Footer) ✅
+
 ## 🔜 Offen / geplant (priorisiert)
 - [x] **Kostenträgerrechnung / Kalkulation** — Division, Äquivalenzziffern, Zuschlag; Selbstkosten + Produktergebnis ✅
 - [ ] **Maschinenstundensatz & Kuppelkalkulation** (restliche Verfahren ergänzen)
