@@ -19,6 +19,8 @@ import { segmentbericht } from '../src/core/segment.js'
 import { webKennzahlen, funnel, kanaele, kampagnen, marketingKpis } from '../src/core/marketing.js'
 import { aging } from '../src/core/forderungen.js'
 import { auswertung as bestandAuswertung } from '../src/core/bestand.js'
+import { alleWirksamkeit } from '../src/core/events.js'
+import { auswertung as techAuswertung } from '../src/core/technologie.js'
 
 const periode = MOCK.aktuellePeriode
 const werte = berechneAlle(MOCK.roheWerte[periode])
@@ -260,8 +262,47 @@ const bestand = bericht({
     </tbody></table>`
 })
 
+// ============================================================ 10) EVENTS & AKTIONEN
+const ev = alleWirksamkeit()
+const events = bericht({
+  nr: 'B-10', gruppe: 'Analyse › Marketing', titel: 'Events & Aktionen — Wirksamkeit',
+  sub: `Mehrumsatz ${eur(ev.summe.mehrumsatz)} · Netto-Mehrergebnis ${eur(ev.summe.ergebnisEffekt)} · ROI ${ev.summe.roi} % · Ladenhüter abgebaut ${eur(ev.summe.ladenhueterAbbau)}.`,
+  klass: [{ l: 'operativ', k: 'op' }, { l: 'monetär', k: 'mon' }],
+  body: `<table>
+    <thead><tr><th>Aktion</th><th class="r">Mehrumsatz</th><th class="r">Zusatz-DB</th><th class="r">Kosten</th><th class="r">Netto</th><th class="r">ROI</th></tr></thead>
+    <tbody>${ev.rows.map((e) => `<tr>
+      <td><b>${esc(e.name)}</b> ${e.erfolg ? '<span class="chip" style="color:#16a34a">erfolgreich</span>' : '<span class="chip" style="color:#dc2626">unwirtschaftlich</span>'}</td>
+      <td class="r mono" style="color:${AMP.g}">${eur(e.mehrumsatz)}</td>
+      <td class="r mono">${eur(e.zusatzDB)}</td>
+      <td class="r mono">${eur(e.kosten)}</td>
+      <td class="r mono" style="color:${e.ergebnisEffekt >= 0 ? AMP.g : AMP.r}">${eur(e.ergebnisEffekt)}</td>
+      <td class="r mono" style="color:${e.roi >= 0 ? AMP.g : AMP.r}">${e.roi != null ? e.roi + ' %' : '—'}</td></tr>`).join('')}
+      <tr class="terg"><td>Σ Aktionen</td><td class="r mono">${eur(ev.summe.mehrumsatz)}</td><td class="r mono">${eur(ev.summe.zusatzDB)}</td>
+        <td class="r mono">${eur(ev.summe.kosten)}</td><td class="r mono">${eur(ev.summe.ergebnisEffekt)}</td><td class="r mono">${ev.summe.roi} %</td></tr>
+    </tbody></table>`
+})
+
+// ============================================================ 11) TECHNOLOGIE / F&E
+const tc = techAuswertung()
+const maxTw = Math.max(...tc.rows.map((p) => p.erwarteterWert), 1)
+const technologie = bericht({
+  nr: 'B-11', gruppe: 'Analyse › Innovation', titel: 'Technologie-Reifegrad & F&E-Portfolio',
+  sub: `F&E-Budget ${mio(tc.budget)} Mio € · Pipeline-Wert (gewichtet) ${mio(tc.pipelineWert)} Mio € · ${tc.nahAmMarkt} Projekte nah am Markt.`,
+  klass: [{ l: 'strategisch', k: 'strat' }, { l: 'monetär', k: 'mon' }],
+  body: `<table>
+    <thead><tr><th>Projekt</th><th>Reifegrad</th><th class="r">Budget</th><th class="r">Erfolg</th><th class="r">Erw. Wert</th><th></th></tr></thead>
+    <tbody>${tc.rows.map((p) => `<tr>
+      <td><b>${esc(p.name)}</b></td>
+      <td><span class="chip" style="color:#fff;background:${p.farbe};border-color:${p.farbe}">${esc(p.reifegradName)}</span></td>
+      <td class="r mono">${mio(p.budget)}</td>
+      <td class="r mono">${p.erfolg} %</td>
+      <td class="r mono"><b>${mio(p.erwarteterWert)}</b></td>
+      <td style="width:80px">${balken(p.erwarteterWert / maxTw * 100, p.farbe)}</td></tr>`).join('')}
+    </tbody></table>`
+})
+
 // =================================================================== ZUSAMMENBAU
-const reports = [cockpit, guv, profitcenter, deckungsbeitrag, abweichung, segment, marketing, forderungen, bestand]
+const reports = [cockpit, guv, profitcenter, deckungsbeitrag, abweichung, segment, marketing, events, forderungen, bestand, technologie]
 
 const html = `<!doctype html><html lang="de"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
