@@ -20,6 +20,7 @@ import KLR from './modules/klr/KLR.jsx'
 import Kostenartenrechnung from './modules/kostenarten/Kostenartenrechnung.jsx'
 import Kalkulatorik from './modules/kalkulatorik/Kalkulatorik.jsx'
 import Lebenszyklus from './modules/lebenszyklus/Lebenszyklus.jsx'
+import EinzelGemein from './modules/einzelgemein/EinzelGemein.jsx'
 import { AKTUELLE_STAGE, stageInfo } from './core/stage.js'
 import { autoSeed } from './core/designerSeed.js'
 import TreeNavigator from './modules/tree-navigator/TreeNavigator.jsx'
@@ -106,7 +107,8 @@ export default function App() {
       { label: t('nav.katalog'), icon: '🗂', aktiv: ansicht === 'katalog', onClick: () => geh('katalog') },
       { label: t('nav.designer'), icon: '🧩', aktiv: ansicht === 'designer', onClick: () => geh('designer') },
       { label: t('nav.controlling'), icon: '🧭', aktiv: ansicht === 'controlling', onClick: () => geh('controlling') },
-      { label: t('nav.klr'), icon: '🧮', aktiv: ansicht === 'klr' || ansicht === 'kostenarten' || ansicht === 'kalkulatorik', onClick: () => geh('klr') }
+      { label: t('nav.klr'), icon: '🧮', aktiv: ansicht === 'klr' || ansicht === 'kostenarten' || ansicht === 'kalkulatorik', onClick: () => geh('klr') },
+      { label: t('nav.einzelgemein'), icon: '➗', aktiv: ansicht === 'einzelgemein', onClick: () => geh('einzelgemein') }
     ] },
     { titel: 'Analyse', eintraege: [
       { label: t('nav.bi'), icon: '💬', aktiv: ansicht === 'bi', onClick: () => geh('bi') },
@@ -276,6 +278,9 @@ export default function App() {
         )}
         {ansicht === 'lebenszyklus' && (
           <Lebenszyklus />
+        )}
+        {ansicht === 'einzelgemein' && (
+          <EinzelGemein onGeh={geh} />
         )}
         {ansicht === 'transport' && (
           <Transport benutzer={benutzer} />

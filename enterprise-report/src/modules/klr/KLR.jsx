@@ -168,6 +168,11 @@ export default function KLR({ werte = {}, rolle, periode, onGeh }) {
             → Kostenartenrechnung im Detail (mehrdimensional)
           </button>
         )}
+        {aktiv === 'kostentraeger' && onGeh && (
+          <button onClick={() => onGeh('einzelgemein')} style={{ marginTop: 10, fontSize: 12.5, cursor: 'pointer', border: 'none', background: 'var(--accent)', color: '#fff', borderRadius: 'var(--radius-sm)', padding: '7px 12px', fontWeight: 600 }}>
+            → Einzel-/Gemeinkosten &amp; Zuschlagskalkulation
+          </button>
+        )}
       </div>
 
       {/* Aufgaben & Zwecke + Kostenarten */}
