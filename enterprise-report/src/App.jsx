@@ -10,6 +10,7 @@ import { ladeKpiWerte, pruefeVerbindung, setCacheKontext, PERIODEN, AKTUELLE_PER
 import { ladeModell } from './core/periodenmodell.js'
 import ZeitDatenart from './modules/zeit-datenart/ZeitDatenart.jsx'
 import DatenartBadge from './modules/zeit-datenart/DatenartBadge.jsx'
+import Versionsvergleich from './modules/versionsvergleich/Versionsvergleich.jsx'
 import TreeNavigator from './modules/tree-navigator/TreeNavigator.jsx'
 import ManagementReport from './modules/management-report/ManagementReport.jsx'
 import SetupWizard from './modules/wizard/SetupWizard.jsx'
@@ -94,6 +95,7 @@ export default function App() {
     ] },
     { titel: 'Analyse', eintraege: [
       { label: t('nav.bi'), icon: '💬', aktiv: ansicht === 'bi', onClick: () => geh('bi') },
+      { label: t('nav.vergleich'), icon: '⚖', aktiv: ansicht === 'vergleich', onClick: () => geh('vergleich') },
       { label: t('nav.qc'), icon: '✅', aktiv: ansicht === 'qc', onClick: () => geh('qc'), badge: qcFehler || null },
       { label: t('nav.instrumente'), icon: '📐', aktiv: ansicht === 'instrumente', onClick: () => geh('instrumente') },
       { label: t('nav.alerts'), icon: '⚠', aktiv: ansicht === 'alerts', onClick: () => geh('alerts'), badge: alertN || null }
@@ -224,6 +226,9 @@ export default function App() {
         )}
         {ansicht === 'zeit' && (
           <ZeitDatenart onChange={setZeitModell} />
+        )}
+        {ansicht === 'vergleich' && (
+          <Versionsvergleich />
         )}
         {ansicht === 'rechte' && (
           <RollenRechte onChange={(list) => {
