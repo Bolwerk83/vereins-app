@@ -43,19 +43,31 @@ export default function DetailPerspektiven({ bereich, perspektiven = [] }) {
   function anzeigen() {
     if (!roh) return
     let zeilen = roh.zeilen || []
-    // Feld-Filter (AND)
     for (const [idx, wert] of Object.entries(feld)) {
       if (wert) zeilen = zeilen.filter((z) => String(z[idx]) === wert)
     }
-    // Volltext
     const s = suche.trim().toLowerCase()
     if (s) zeilen = zeilen.filter((z) => z.some((c) => String(c).toLowerCase().includes(s)))
     if (top) zeilen = zeilen.slice(0, top)
     setDaten({ ...roh, zeilen })
   }
 
+  // Drill-Through: aus einer Zeile in den zugehörigen Beleg/Unterbericht springen.
+  async function drill(targetP, keyValue) {
+    setAktiv(targetP); setFeld({}); setSuche(String(keyValue)); setSortIdx(null); setSpaltenAuf(false)
+    setLaedt(true)
+    const r = await ladePerspektive(`${bereich.toLowerCase()}_${targetP}`)
+    setRoh(r); setSichtbar(r ? new Set(r.spalten.map((_, i) => i)) : null)
+    let zeilen = (r?.zeilen || []).filter((z) => z.some((c) => String(c).toLowerCase().includes(String(keyValue).toLowerCase())))
+    if (top) zeilen = zeilen.slice(0, top)
+    setDaten(r ? { ...r, zeilen } : null)
+    setLaedt(false)
+  }
+
   // Sicht = gefiltertes Ergebnis + Sortierung + Spaltenauswahl (sofort wirksam)
-  let view = null
+  // sortedRows hält die vollständigen (ungekürzten) Zeilen in Anzeige-Reihenfolge,
+  // damit der Zeilen-Klick (Drill-Through) den richtigen Schlüsselwert findet.
+  let view = null, sortedRows = null
   if (daten && sichtbar) {
     const cols = daten.spalten.map((_, i) => i).filter((i) => sichtbar.has(i))
     let zeilen = daten.zeilen
@@ -66,8 +78,11 @@ export default function DetailPerspektiven({ bereich, perspektiven = [] }) {
         return sortDir === 'asc' ? c : -c
       })
     }
+    sortedRows = zeilen
     view = { titel: daten.titel, spalten: cols.map((i) => daten.spalten[i]), zeilen: zeilen.map((z) => cols.map((i) => z[i])) }
   }
+  // Drill-Through nur, wenn der Datensatz ein Ziel definiert und das Ziel angeboten wird.
+  const drillZiel = roh?.drillTo && perspektiven.includes(roh.drillTo.perspektive) ? roh.drillTo : null
 
   const inp = { padding: '7px 9px', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', font: 'inherit' }
 
@@ -133,7 +148,8 @@ export default function DetailPerspektiven({ bereich, perspektiven = [] }) {
           )}
 
           {view && <div style={{ marginTop: 12 }}>
-            <DetailTabelle daten={view} />
+            {drillZiel && <div style={{ fontSize: 12, color: 'var(--accent)', marginBottom: 6 }}>↳ Klick auf eine Zeile öffnet {DRILL[drillZiel.perspektive]?.name || drillZiel.perspektive}{drillZiel.label ? ` (${drillZiel.label})` : ''}.</div>}
+            <DetailTabelle daten={view} onZeileKlick={drillZiel && sortedRows ? (i) => drill(drillZiel.perspektive, sortedRows[i][drillZiel.keySpalte]) : undefined} />
             <div className="mono" style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>{view.zeilen.length} Zeile(n){top ? ` (Top ${top})` : ''}{sortIdx != null ? ` · sortiert nach ${daten.spalten[sortIdx]}` : ''}</div>
           </div>}
         </div>

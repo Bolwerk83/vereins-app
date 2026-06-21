@@ -51,7 +51,7 @@ export function KpiGesperrt({ kpiId }) {
   )
 }
 
-export function DetailTabelle({ daten }) {
+export function DetailTabelle({ daten, onZeileKlick }) {
   if (!daten) return <div style={{ color: 'var(--muted)' }}>Keine Detaildaten.</div>
   return (
     <div style={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
@@ -61,7 +61,11 @@ export function DetailTabelle({ daten }) {
           <th key={i} style={{ textAlign: i === 0 ? 'left' : 'right', padding: '8px 14px', color: 'var(--muted)',
             fontWeight: 500, fontSize: 11, textTransform: 'uppercase', borderBottom: '1px solid var(--line)' }}>{s}</th>))}</tr></thead>
         <tbody>{daten.zeilen.map((z, ri) => (
-          <tr key={ri}>{z.map((c, ci) => (
+          <tr key={ri} onClick={onZeileKlick ? () => onZeileKlick(ri) : undefined}
+            style={onZeileKlick ? { cursor: 'pointer' } : undefined}
+            onMouseEnter={onZeileKlick ? (e) => e.currentTarget.style.background = 'var(--accent-soft)' : undefined}
+            onMouseLeave={onZeileKlick ? (e) => e.currentTarget.style.background = 'transparent' : undefined}>
+            {z.map((c, ci) => (
             <td key={ci} className={ci === 0 ? '' : 'mono'} style={{ textAlign: ci === 0 ? 'left' : 'right',
               padding: '8px 14px', borderBottom: '1px solid var(--line)' }}>{c}</td>))}</tr>))}</tbody>
       </table>

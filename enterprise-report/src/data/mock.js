@@ -280,13 +280,13 @@ export const MOCK = {
       zeilen: [['10042','E-Bike Urban 500','1.240','3.348.000','38 %'],['10088','E-MTB Trail Pro','680','2.992.000','41 %'],['20155','Trekking City 7','910','1.456.000','34 %'],['30219','Pendix Nachrüstsatz','420','546.000','46 %'],['40310','Helm Air Pro','3.120','312.000','52 %'],['40455','Schloss Faltschloss','2.430','170.100','49 %']] },
     vk_produkt: { titel: 'Umsatz je Produktgruppe', spalten: ['Produktgruppe', 'Umsatz Mio €', 'Anteil', 'DB %'],
       zeilen: [['E-Bikes','30,1','58 %','37 %'],['City/Trekking','9,6','18 %','34 %'],['Teile','8,8','17 %','39 %'],['Zubehör','5,7','11 %','44 %'],['Bekleidung','3,7','7 %','32 %']] },
-    vk_kunde: { titel: 'Umsatz je Kunde', spalten: ['Kunden-Nr', 'Kunde', 'Umsatz €', 'DB %', 'Segment'], filterSpalten: [4],
+    vk_kunde: { titel: 'Umsatz je Kunde', spalten: ['Kunden-Nr', 'Kunde', 'Umsatz €', 'DB %', 'Segment'], filterSpalten: [4], drillTo: { perspektive: 'verkaufsrechnung', keySpalte: 1, label: 'Verkaufsrechnungen' },
       zeilen: [['K-1003','Stadtwerke Leasing GmbH','780.000','34 %','B2B'],['K-2210','Radhaus Müller e.K.','512.000','30 %','Händler'],['K-0098','Onlineshop (Privatkunden)','23.400.000','39 %','B2C'],['K-3320','Velo Schweiz AG','620.000','40 %','B2B'],['K-4407','Stadtflotte NL','410.000','31 %','B2B']] },
     vk_verkaufsrechnung: { titel: 'Verkaufsrechnungen', spalten: ['Rechnung-Nr', 'Datum', 'Kunde', 'Betrag €', 'Status'], filterSpalten: [4],
       zeilen: [['AR-2025-04412','12.05.2025','Stadtwerke Leasing GmbH','46.800','bezahlt'],['AR-2025-04418','13.05.2025','Radhaus Müller e.K.','12.340','offen'],['AR-2025-04501','19.05.2025','Velo Schweiz AG','58.900','bezahlt'],['AR-2025-04533','21.05.2025','Stadtflotte NL','31.200','überfällig'],['AR-2025-04560','24.05.2025','Onlineshop Sammelrg.','118.450','bezahlt']] },
     vk_auftrag: { titel: 'Aufträge', spalten: ['Auftrag-Nr', 'Kunde', 'Wert €', 'Liefertermin', 'Status'], filterSpalten: [4],
       zeilen: [['SO-88231','Stadtwerke Leasing GmbH','46.800','30.06.2025','in Fertigung'],['SO-88245','Velo Schweiz AG','58.900','15.06.2025','versandbereit'],['SO-88260','Stadtflotte NL','31.200','10.07.2025','offen'],['SO-88277','Radhaus Müller e.K.','12.340','05.06.2025','geliefert']] },
-    ek_lieferant: { titel: 'Einkaufsvolumen je Lieferant', spalten: ['Lieferant-Nr', 'Lieferant', 'Volumen €', 'Liefertreue', 'Risiko'], filterSpalten: [4],
+    ek_lieferant: { titel: 'Einkaufsvolumen je Lieferant', spalten: ['Lieferant-Nr', 'Lieferant', 'Volumen €', 'Liefertreue', 'Risiko'], filterSpalten: [4], drillTo: { perspektive: 'bestellung', keySpalte: 1, label: 'Bestellungen' },
       zeilen: [['L-0012','Antrieb & Schaltung AG','9.800.000','91 %','Klumpen'],['L-0034','RahmenStahl GmbH','6.400.000','94 %','Preisdruck'],['L-0050','Handelsware Süd','7.200.000','96 %','ok'],['L-0071','Zubehör Import','4.800.000','89 %','ok']] },
     ek_artikel: { titel: 'Einkauf je Artikel', spalten: ['Artikel-Nr', 'Bezeichnung', 'Menge', 'Einstand €', 'Δ Preis VJ'],
       zeilen: [['R-2201','Antriebseinheit M3','24.800','312','+6,1 %'],['R-3310','Schaltwerk 12s','24.800','88','+4,8 %'],['R-1102','Rahmen Alu 6061','18.000','142','+7,2 %'],['R-5500','Akku 625Wh','19.200','410','+3,9 %']] },
@@ -308,7 +308,7 @@ export const MOCK = {
       zeilen: [['8400','Erlöse 19% USt','52.000.000','Ertrag'],['3400','Wareneingang','32.200.000','Aufwand'],['4100','Löhne/Gehälter','10.500.000','Aufwand'],['1200','Bank','6.300.000','Aktiva'],['1600','Verbindlichkeiten LuL','13.700.000','Passiva']] },
 
     // Produktion
-    pr_artikel: { titel: 'Fertigung je Artikel', spalten: ['Artikel-Nr', 'Bezeichnung', 'Menge', 'Ausschuss %', 'Linie'], filterSpalten: [4],
+    pr_artikel: { titel: 'Fertigung je Artikel', spalten: ['Artikel-Nr', 'Bezeichnung', 'Menge', 'Ausschuss %', 'Linie'], filterSpalten: [4], drillTo: { perspektive: 'auftrag', keySpalte: 1, label: 'Fertigungsauftraege' },
       zeilen: [['10042','E-Bike Urban 500','12.400','2,1 %','Endmontage E-Bike'],['10088','E-MTB Trail Pro','6.800','2,6 %','Endmontage E-Bike'],['20155','Trekking City 7','9.100','1,7 %','Endmontage City'],['R-1102','Rahmen Alu 6061','18.000','1,9 %','Rahmenbau']] },
     pr_auftrag: { titel: 'Fertigungsaufträge', spalten: ['FA-Nr', 'Artikel', 'Menge', 'Termin', 'Status'], filterSpalten: [4],
       zeilen: [['FA-77120','E-Bike Urban 500','500','12.06.2025','läuft'],['FA-77135','E-MTB Trail Pro','300','18.06.2025','geplant'],['FA-77150','Trekking City 7','450','10.06.2025','fertig'],['FA-77166','Rahmen Alu 6061','800','08.06.2025','läuft']] },
@@ -328,7 +328,7 @@ export const MOCK = {
       zeilen: [['Search','730','5,1','52'],['Social','180','3,0','61'],['Display','150','6,5','28'],['Offline','120','2,5','—']] },
 
     // Risiko-/Forderungscontrolling
-    ris_kunde: { titel: 'Offene Posten je Kunde', spalten: ['Kunde', 'Offen €', 'davon >60 Tg', 'Bonität'], filterSpalten: [3],
+    ris_kunde: { titel: 'Offene Posten je Kunde', spalten: ['Kunde', 'Offen €', 'davon >60 Tg', 'Bonität'], filterSpalten: [3], drillTo: { perspektive: 'verkaufsrechnung', keySpalte: 0, label: 'Verkaufsrechnungen' },
       zeilen: [['Stadtflotte NL','31.200','12.000','B'],['Radhaus Müller e.K.','12.340','0','A'],['Velo Schweiz AG','58.900','0','A'],['Bike Discount X','42.500','22.000','C']] },
     ris_verkaufsrechnung: { titel: 'Überfällige Verkaufsrechnungen', spalten: ['Rechnung-Nr', 'Kunde', 'Betrag €', 'Überfällig', 'Status'], filterSpalten: [4],
       zeilen: [['AR-2025-04533','Stadtflotte NL','31.200','24 Tg','1. Mahnung'],['AR-2025-04188','Bike Discount X','42.500','71 Tg','Inkasso'],['AR-2025-04402','Radhaus Müller e.K.','12.340','5 Tg','offen']] },
