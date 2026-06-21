@@ -12,7 +12,7 @@
 import { KPI } from './kpiRegistry.js'
 import { kpiInsight, knotenBewertung } from './insights.js'
 import { ladeMassnahmen } from './massnahmen.js'
-import { ladeDatensatz } from './datensaetze.js'
+import { ladeDatensatz, tabellenSicht } from './datensaetze.js'
 import { formatWert } from '../design/theme.js'
 
 const AMP = { g: '#10b981', a: '#f59e0b', r: '#ef4444', n: '#94a3b8' }
@@ -23,7 +23,11 @@ async function ladeTabellen(report) {
   const map = {}
   await Promise.all((report.bloecke || []).map(async (b, i) => {
     if (b.typ !== 'tabelle') return
-    try { map[i] = await ladeDatensatz(b.kind, b.key) } catch { map[i] = null }
+    try {
+      const ds = await ladeDatensatz(b.kind, b.key)
+      // Gespeicherte Sicht des Blocks (Filter/Sortierung/Top-N) anwenden.
+      map[i] = tabellenSicht(ds, { feld: b.feld, suche: b.suche, sortIdx: b.sortIdx, sortDir: b.sortDir, top: b.top ?? 25 })
+    } catch { map[i] = null }
   }))
   return map
 }

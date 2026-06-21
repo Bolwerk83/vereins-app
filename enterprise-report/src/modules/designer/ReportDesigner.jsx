@@ -11,7 +11,7 @@ import { kpiInsight, knotenBewertung } from '../../core/insights.js'
 import { ladeMassnahmen } from '../../core/massnahmen.js'
 import { ladeReports, saveReport, removeReport, neuerReport } from '../../core/designer.js'
 import { seedBeispielReports } from '../../core/designerSeed.js'
-import { datensatzKatalog, datensatzInfo, ladeDatensatz } from '../../core/datensaetze.js'
+import { datensatzKatalog, datensatzInfo, ladeDatensatz, tabellenSicht, distinktWerte } from '../../core/datensaetze.js'
 import { formatWert, AMPEL_FARBE } from '../../design/theme.js'
 import { exportReportPdf, exportReportExcel } from '../../core/reportExport.js'
 import { Badge, AmpelPunkt, DetailTabelle } from '../../components/ui.jsx'
@@ -117,30 +117,64 @@ export default function ReportDesigner({ rolle, werte, startId }) {
       </div>
 
       {/* Vorschau */}
-      <Vorschau r={r} werte={werte} rolle={rolle} />
+      <Vorschau r={r} werte={werte} rolle={rolle} onEditBlock={editBlock} />
     </div>
   )
 }
 
-// Tabellen-Block: lädt den Datensatz quellenrein und rendert ihn
-// (DetailTabelle virtualisiert große Tabellen automatisch).
-function TabellenBlock({ block }) {
+// Tabellen-Block: lädt den Datensatz quellenrein und rendert ihn mit
+// Steuerung (Suche · Spaltenfilter · Sortierung · Top-N). Die Einstellungen
+// werden über onCfg im Block gespeichert (persistiert mit dem Bericht und
+// gelten so auch im Export). DetailTabelle virtualisiert große Tabellen.
+const TOPN = [10, 25, 100, 0]
+function TabellenBlock({ block, onCfg }) {
   const [daten, setDaten] = useState(null)
   const [fehler, setFehler] = useState(false)
   useEffect(() => { let aktiv = true
     ladeDatensatz(block.kind, block.key).then((d) => aktiv && setDaten(d)).catch(() => aktiv && setFehler(true))
     return () => { aktiv = false }
   }, [block.kind, block.key])
+
+  const view = { feld: block.feld || {}, suche: block.suche || '', sortIdx: block.sortIdx ?? null, sortDir: block.sortDir || 'asc', top: block.top ?? 25 }
+  const setView = (patch) => onCfg && onCfg(patch)
+  const sicht = daten ? tabellenSicht(daten, view) : null
+  const inp = { padding: '5px 8px', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', font: 'inherit', fontSize: 12 }
+
   return (
     <div>
       <div className="mono" style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 6 }}>{block.titel}</div>
       {fehler ? <div style={{ color: 'var(--muted)', fontSize: 13 }}>Datensatz nicht verfügbar.</div>
-        : daten ? <DetailTabelle daten={daten} /> : <div style={{ color: 'var(--muted)', fontSize: 13 }}>Lädt …</div>}
+      : !daten ? <div style={{ color: 'var(--muted)', fontSize: 13 }}>Lädt …</div>
+      : (
+        <>
+          <div className="no-print" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 8 }}>
+            <input style={{ ...inp, flex: 1, minWidth: 140 }} value={view.suche} onChange={(e) => setView({ suche: e.target.value })} placeholder="Suche in der Tabelle …" />
+            {(daten.filterSpalten || []).map((idx) => (
+              <select key={idx} style={inp} value={view.feld[idx] || ''} onChange={(e) => setView({ feld: { ...view.feld, [idx]: e.target.value } })}>
+                <option value="">{daten.spalten[idx]}: alle</option>
+                {distinktWerte(daten, idx).map((w) => <option key={w} value={w}>{w}</option>)}
+              </select>
+            ))}
+            <select style={inp} value={view.sortIdx ?? ''} onChange={(e) => setView({ sortIdx: e.target.value === '' ? null : Number(e.target.value) })}>
+              <option value="">Sortierung …</option>
+              {daten.spalten.map((s, i) => <option key={i} value={i}>{s}</option>)}
+            </select>
+            {view.sortIdx != null && <button style={{ ...inp, cursor: 'pointer' }} onClick={() => setView({ sortDir: view.sortDir === 'asc' ? 'desc' : 'asc' })}>{view.sortDir === 'asc' ? '↑' : '↓'}</button>}
+            <select style={inp} value={view.top} onChange={(e) => setView({ top: Number(e.target.value) })}>
+              {TOPN.map((n) => <option key={n} value={n}>{n ? `Top ${n}` : 'Alle'}</option>)}
+            </select>
+          </div>
+          <DetailTabelle daten={sicht} />
+          <div className="mono" style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
+            {sicht.zeilen.length} von {sicht._gesamt} Zeile(n){view.top ? ` · Top ${view.top}` : ''}{view.sortIdx != null ? ` · sortiert nach ${daten.spalten[view.sortIdx]}` : ''}
+          </div>
+        </>
+      )}
     </div>
   )
 }
 
-function Vorschau({ r, werte, rolle }) {
+function Vorschau({ r, werte, rolle, onEditBlock }) {
   const kpiBloecke = r.bloecke.filter((b) => b.typ === 'kpi' && KPI[b.kpiId] && darfKpi(rolle, KPI[b.kpiId]))
   const bw = knotenBewertung(kpiBloecke.map((b) => kpiInsight(b.kpiId, werte[b.kpiId])))
   const v = bw.verteilung, total = Math.max(1, v.g + v.a + v.r + v.n)
@@ -186,7 +220,7 @@ function Vorschau({ r, werte, rolle }) {
               <p style={{ margin: 0, color: 'var(--slate)', fontSize: 14, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{b.text}</p>
             </div>
           )
-          if (b.typ === 'tabelle') return <TabellenBlock key={i} block={b} />
+          if (b.typ === 'tabelle') return <TabellenBlock key={i} block={b} onCfg={onEditBlock ? (patch) => onEditBlock(i, patch) : null} />
           if (b.typ === 'massnahmen') return (
             <div key={i}>
               <div className="mono" style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 6 }}>Maßnahmen (offen / in Arbeit)</div>
