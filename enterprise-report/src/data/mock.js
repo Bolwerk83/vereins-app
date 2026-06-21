@@ -284,7 +284,7 @@ export const MOCK = {
       zeilen: [['K-1003','Stadtwerke Leasing GmbH','780.000','34 %','B2B'],['K-2210','Radhaus Müller e.K.','512.000','30 %','Händler'],['K-0098','Onlineshop (Privatkunden)','23.400.000','39 %','B2C'],['K-3320','Velo Schweiz AG','620.000','40 %','B2B'],['K-4407','Stadtflotte NL','410.000','31 %','B2B']] },
     vk_verkaufsrechnung: { titel: 'Verkaufsrechnungen', spalten: ['Rechnung-Nr', 'Datum', 'Kunde', 'Betrag €', 'Status'], filterSpalten: [4],
       zeilen: [['AR-2025-04412','12.05.2025','Stadtwerke Leasing GmbH','46.800','bezahlt'],['AR-2025-04418','13.05.2025','Radhaus Müller e.K.','12.340','offen'],['AR-2025-04501','19.05.2025','Velo Schweiz AG','58.900','bezahlt'],['AR-2025-04533','21.05.2025','Stadtflotte NL','31.200','überfällig'],['AR-2025-04560','24.05.2025','Onlineshop Sammelrg.','118.450','bezahlt']] },
-    vk_auftrag: { titel: 'Aufträge', spalten: ['Auftrag-Nr', 'Kunde', 'Wert €', 'Liefertermin', 'Status'], filterSpalten: [4],
+    vk_auftrag: { titel: 'Aufträge', spalten: ['Auftrag-Nr', 'Kunde', 'Wert €', 'Liefertermin', 'Status'], filterSpalten: [4], drillTo: { perspektive: 'verkaufsrechnung', keySpalte: 1, label: 'Verkaufsrechnungen' },
       zeilen: [['SO-88231','Stadtwerke Leasing GmbH','46.800','30.06.2025','in Fertigung'],['SO-88245','Velo Schweiz AG','58.900','15.06.2025','versandbereit'],['SO-88260','Stadtflotte NL','31.200','10.07.2025','offen'],['SO-88277','Radhaus Müller e.K.','12.340','05.06.2025','geliefert']] },
     ek_lieferant: { titel: 'Einkaufsvolumen je Lieferant', spalten: ['Lieferant-Nr', 'Lieferant', 'Volumen €', 'Liefertreue', 'Risiko'], filterSpalten: [4], drillTo: { perspektive: 'bestellung', keySpalte: 1, label: 'Bestellungen' },
       zeilen: [['L-0012','Antrieb & Schaltung AG','9.800.000','91 %','Klumpen'],['L-0034','RahmenStahl GmbH','6.400.000','94 %','Preisdruck'],['L-0050','Handelsware Süd','7.200.000','96 %','ok'],['L-0071','Zubehör Import','4.800.000','89 %','ok']] },
@@ -292,7 +292,7 @@ export const MOCK = {
       zeilen: [['R-2201','Antriebseinheit M3','24.800','312','+6,1 %'],['R-3310','Schaltwerk 12s','24.800','88','+4,8 %'],['R-1102','Rahmen Alu 6061','18.000','142','+7,2 %'],['R-5500','Akku 625Wh','19.200','410','+3,9 %']] },
     ek_einkaufsrechnung: { titel: 'Einkaufsrechnungen', spalten: ['Rechnung-Nr', 'Datum', 'Lieferant', 'Betrag €', 'Status'], filterSpalten: [4],
       zeilen: [['AP-2025-2231','08.05.2025','Antrieb & Schaltung AG','248.000','geprüft'],['AP-2025-2240','10.05.2025','RahmenStahl GmbH','156.400','zur Zahlung'],['AP-2025-2255','14.05.2025','Handelsware Süd','92.300','offen'],['AP-2025-2261','18.05.2025','Zubehör Import','61.200','Klärfall']] },
-    ek_bestellung: { titel: 'Bestellungen', spalten: ['Bestell-Nr', 'Lieferant', 'Wert €', 'Liefertermin', 'Status'], filterSpalten: [4],
+    ek_bestellung: { titel: 'Bestellungen', spalten: ['Bestell-Nr', 'Lieferant', 'Wert €', 'Liefertermin', 'Status'], filterSpalten: [4], drillTo: { perspektive: 'einkaufsrechnung', keySpalte: 1, label: 'Einkaufsrechnungen' },
       zeilen: [['PO-55120','Antrieb & Schaltung AG','248.000','20.06.2025','bestätigt'],['PO-55133','RahmenStahl GmbH','156.400','12.06.2025','teilgeliefert'],['PO-55149','Handelsware Süd','92.300','25.06.2025','offen'],['PO-55160','Zubehör Import','61.200','08.07.2025','angefragt']] },
     log_artikel: { titel: 'Bestand je Artikel', spalten: ['Artikel-Nr', 'Bezeichnung', 'Bestand', 'Wert €', 'Reichw.'],
       zeilen: [['10042','E-Bike Urban 500','310','831.800','42 Tg'],['20155','Trekking City 7','280','448.000','58 Tg'],['R-2201','Antriebseinheit M3','1.900','592.800','96 Tg'],['40455','Schloss Faltschloss','5.400','37.800','120 Tg']] },
@@ -310,7 +310,7 @@ export const MOCK = {
     // Produktion
     pr_artikel: { titel: 'Fertigung je Artikel', spalten: ['Artikel-Nr', 'Bezeichnung', 'Menge', 'Ausschuss %', 'Linie'], filterSpalten: [4], drillTo: { perspektive: 'auftrag', keySpalte: 1, label: 'Fertigungsauftraege' },
       zeilen: [['10042','E-Bike Urban 500','12.400','2,1 %','Endmontage E-Bike'],['10088','E-MTB Trail Pro','6.800','2,6 %','Endmontage E-Bike'],['20155','Trekking City 7','9.100','1,7 %','Endmontage City'],['R-1102','Rahmen Alu 6061','18.000','1,9 %','Rahmenbau']] },
-    pr_auftrag: { titel: 'Fertigungsaufträge', spalten: ['FA-Nr', 'Artikel', 'Menge', 'Termin', 'Status'], filterSpalten: [4],
+    pr_auftrag: { titel: 'Fertigungsaufträge', spalten: ['FA-Nr', 'Artikel', 'Menge', 'Termin', 'Status'], filterSpalten: [4], drillTo: { perspektive: 'artikel', keySpalte: 1, label: 'Artikeldetails' },
       zeilen: [['FA-77120','E-Bike Urban 500','500','12.06.2025','läuft'],['FA-77135','E-MTB Trail Pro','300','18.06.2025','geplant'],['FA-77150','Trekking City 7','450','10.06.2025','fertig'],['FA-77166','Rahmen Alu 6061','800','08.06.2025','läuft']] },
     pr_maschine: { titel: 'Auslastung je Linie/Maschine', spalten: ['Linie', 'Auslastung', 'Ausschuss %', 'Status'], filterSpalten: [3],
       zeilen: [['Rahmenbau','94 %','1,9 %','ok'],['Lackiererei','89 %','2,4 %','Engpass'],['Endmontage E-Bike','94 %','2,3 %','ok'],['Endmontage City','86 %','1,7 %','ok']] },
@@ -372,7 +372,7 @@ export const MOCK = {
       zeilen: [['E-Bikes','142','38 %','▼'],['City/Trekking','96','41 %','▼'],['Teile','24','52 %','▬'],['Zubehör','11','60 %','▼']] },
 
     // Qualität
-    qm_artikel: { titel: 'Reklamationen je Artikel', spalten: ['Artikel-Nr', 'Bezeichnung', 'Quote', 'Top-Ursache'], filterSpalten: [3],
+    qm_artikel: { titel: 'Reklamationen je Artikel', spalten: ['Artikel-Nr', 'Bezeichnung', 'Quote', 'Top-Ursache'], filterSpalten: [3], drillTo: { perspektive: 'auftrag', keySpalte: 1, label: 'Nacharbeit je Auftrag' },
       zeilen: [['10088','E-MTB Trail Pro','1,9 %','Antrieb/Elektronik'],['10042','E-Bike Urban 500','1,4 %','Display'],['20155','Trekking City 7','0,9 %','Bremsen'],['R-2201','Antriebseinheit M3','2,2 %','Lager']] },
     qm_lieferant: { titel: 'Reklamationen je Lieferant', spalten: ['Lieferant', 'Quote', 'Fälle', 'Bewertung'], filterSpalten: [3],
       zeilen: [['Antrieb & Schaltung AG','2,1 %','142','kritisch'],['RahmenStahl GmbH','0,8 %','38','ok'],['Handelsware Süd','1,1 %','61','beobachten'],['Zubehör Import','1,4 %','54','beobachten']] },
