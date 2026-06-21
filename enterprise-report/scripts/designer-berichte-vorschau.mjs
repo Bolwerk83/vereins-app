@@ -48,6 +48,15 @@ function vorschau(r, idx) {
         <span class="kpi-aus">${esc(ins.aussage)}</span>
       </div>`
     }
+    if (b.typ === 'tabelle') {
+      const ds = b.kind === 'detail' ? MOCK.details?.[b.key] : MOCK.perspektiven?.[b.key]
+      if (!ds) return ''
+      const zeilen = ds.zeilen.slice(0, 8)
+      return `<div class="text"><div class="cap">${esc(b.titel)}</div>
+        <table><thead><tr>${ds.spalten.map((s, i) => `<th class="${i ? 'r' : ''}">${esc(s)}</th>`).join('')}</tr></thead>
+        <tbody>${zeilen.map((z) => `<tr>${z.map((c, i) => `<td class="${i ? 'r mono' : ''}">${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>
+        ${ds.zeilen.length > 8 ? `<div class="mehr">… und ${ds.zeilen.length - 8} weitere Zeile(n)${ds.zeilen.length > 60 ? ' · in der App virtualisiert' : ''}</div>` : ''}</div>`
+    }
     if (b.typ === 'text') return `<div class="text"><div class="cap accent">${esc(b.titel)}</div><p>${esc(b.text)}</p></div>`
     if (b.typ === 'massnahmen') return `<div class="text"><div class="cap">Maßnahmen (offen / in Arbeit)</div>
       ${massnahmen.map((m) => `<div class="mn"><span>${esc(m.titel)}</span><span class="mn-meta">${esc(m.owner || '—')} · ${esc(m.frist || '—')} · ${esc(m.status)}</span></div>`).join('')}</div>`
@@ -94,6 +103,10 @@ const html = `<!doctype html><html lang="de"><head><meta charset="utf-8">
   .kpi-name{font-weight:600;flex:1} .kpi-wert{font-family:ui-monospace,monospace;font-size:18px;font-weight:700}
   .kpi-aus{font-size:12px;color:var(--muted);width:46%;min-width:200px}
   .text p{margin:4px 0 0;font-size:14px;line-height:1.55}
+  .text table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:8px}
+  .text th{font-size:10px;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+  .text td{padding:6px 8px;border-bottom:1px solid var(--line)} .r{text-align:right}
+  .mono{font-variant-numeric:tabular-nums} .mehr{font-size:11px;color:var(--muted);margin-top:6px}
   .mn{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:5px 0;border-top:1px solid var(--line)}
   .mn-meta{color:var(--muted);font-size:12px;white-space:nowrap}
   @media(max-width:620px){.kpi{flex-wrap:wrap}.kpi-aus{width:100%}}

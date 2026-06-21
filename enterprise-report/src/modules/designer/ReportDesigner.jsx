@@ -11,9 +11,10 @@ import { kpiInsight, knotenBewertung } from '../../core/insights.js'
 import { ladeMassnahmen } from '../../core/massnahmen.js'
 import { ladeReports, saveReport, removeReport, neuerReport } from '../../core/designer.js'
 import { seedBeispielReports } from '../../core/designerSeed.js'
+import { datensatzKatalog, datensatzInfo, ladeDatensatz } from '../../core/datensaetze.js'
 import { formatWert, AMPEL_FARBE } from '../../design/theme.js'
 import { downloadCsv, druckePdf } from '../../core/export.js'
-import { Badge, AmpelPunkt } from '../../components/ui.jsx'
+import { Badge, AmpelPunkt, DetailTabelle } from '../../components/ui.jsx'
 
 export default function ReportDesigner({ rolle, werte, startId }) {
   const [reports, setReports] = useState(ladeReports())
@@ -84,6 +85,10 @@ export default function ReportDesigner({ rolle, werte, startId }) {
               <optgroup key={g} label={g}>{ks.map((k) => <option key={k.id} value={k.id}>{k.name} ({k.bereich})</option>)}</optgroup>
             ))}
           </select>
+          <select style={inp} value="" onChange={(e) => { if (e.target.value) { const [kind, key] = e.target.value.split('::'); const d = datensatzInfo(kind, key); addBlock({ typ: 'tabelle', kind, key, titel: d?.titel || key }) } }}>
+            <option value="">+ Tabelle (Detail-/Perspektivdatensatz) …</option>
+            {datensatzKatalog().map((d) => <option key={d.kind + d.key} value={`${d.kind}::${d.key}`}>{d.titel} ({d.zeilen} Zeilen)</option>)}
+          </select>
           <div style={{ display: 'flex', gap: 8 }}>
             <button style={{ ...btn, flex: 1 }} onClick={() => addBlock({ typ: 'text', titel: 'Überschrift', text: 'Analysetext …' })}>+ Textblock</button>
             <button style={{ ...btn, flex: 1 }} onClick={() => addBlock({ typ: 'massnahmen' })}>+ Maßnahmen</button>
@@ -95,8 +100,8 @@ export default function ReportDesigner({ rolle, werte, startId }) {
           {r.bloecke.map((b, i) => (
             <div key={i} style={{ border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', padding: 8 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Badge status="n">{b.typ === 'kpi' ? 'KPI' : b.typ === 'text' ? 'Text' : 'Maßnahmen'}</Badge>
-                <span style={{ flex: 1, fontSize: 12.5 }}>{b.typ === 'kpi' ? KPI[b.kpiId]?.name : b.typ === 'text' ? b.titel : 'Offene Maßnahmen'}</span>
+                <Badge status="n">{b.typ === 'kpi' ? 'KPI' : b.typ === 'text' ? 'Text' : b.typ === 'tabelle' ? 'Tabelle' : 'Maßnahmen'}</Badge>
+                <span style={{ flex: 1, fontSize: 12.5 }}>{b.typ === 'kpi' ? KPI[b.kpiId]?.name : b.typ === 'text' ? b.titel : b.typ === 'tabelle' ? b.titel : 'Offene Maßnahmen'}</span>
                 <button style={{ ...btn, padding: '2px 7px' }} onClick={() => move(i, -1)}>↑</button>
                 <button style={{ ...btn, padding: '2px 7px' }} onClick={() => move(i, 1)}>↓</button>
                 <button style={{ ...btn, padding: '2px 7px', color: 'var(--amp-r)' }} onClick={() => del(i)}>✕</button>
@@ -122,6 +127,24 @@ export default function ReportDesigner({ rolle, werte, startId }) {
 
       {/* Vorschau */}
       <Vorschau r={r} werte={werte} rolle={rolle} />
+    </div>
+  )
+}
+
+// Tabellen-Block: lädt den Datensatz quellenrein und rendert ihn
+// (DetailTabelle virtualisiert große Tabellen automatisch).
+function TabellenBlock({ block }) {
+  const [daten, setDaten] = useState(null)
+  const [fehler, setFehler] = useState(false)
+  useEffect(() => { let aktiv = true
+    ladeDatensatz(block.kind, block.key).then((d) => aktiv && setDaten(d)).catch(() => aktiv && setFehler(true))
+    return () => { aktiv = false }
+  }, [block.kind, block.key])
+  return (
+    <div>
+      <div className="mono" style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 6 }}>{block.titel}</div>
+      {fehler ? <div style={{ color: 'var(--muted)', fontSize: 13 }}>Datensatz nicht verfügbar.</div>
+        : daten ? <DetailTabelle daten={daten} /> : <div style={{ color: 'var(--muted)', fontSize: 13 }}>Lädt …</div>}
     </div>
   )
 }
@@ -172,6 +195,7 @@ function Vorschau({ r, werte, rolle }) {
               <p style={{ margin: 0, color: 'var(--slate)', fontSize: 14, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{b.text}</p>
             </div>
           )
+          if (b.typ === 'tabelle') return <TabellenBlock key={i} block={b} />
           if (b.typ === 'massnahmen') return (
             <div key={i}>
               <div className="mono" style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 6 }}>Maßnahmen (offen / in Arbeit)</div>
