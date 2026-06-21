@@ -3,3 +3,5 @@ dist/
 .env
 *.local
 server/data/
+
+berichte-vorschau.html
