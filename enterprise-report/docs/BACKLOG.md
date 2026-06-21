@@ -25,7 +25,8 @@ Stand: laufend.
 - [x] **Events/Aktionen** mit Zeitraum, Produkten, Mechanik & Kosten →
       **Wirksamkeitsanalyse** (Mehrumsatz, Ladenhüter-Abbau, ROI der Werbung) ✅
 - [x] Dezenter „Business Controller"-Urheberhinweis (Footer) ✅
-- [x] **Beispielberichte** als HTML-Übersicht (9 echte Berichte) ✅
+- [x] **Beispielberichte** als HTML-Übersicht (11 echte Berichte) ✅
+- [x] **Nutzungs-Statistik** (Klick-Tracking je Bericht, Ranking/Verlauf) — nur Admin ✅
 
 ## 🔜 Offen / geplant (priorisiert)
 - [x] **Kostenträgerrechnung / Kalkulation** — Division, Äquivalenzziffern, Zuschlag; Selbstkosten + Produktergebnis ✅

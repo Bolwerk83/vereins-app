@@ -49,6 +49,8 @@ import Technologie from './modules/technologie/Technologie.jsx'
 import Abgrenzungsrechnung from './modules/abgrenzung/Abgrenzungsrechnung.jsx'
 import LebenszyklusEmpfehlungen from './modules/lebenszyklus/Empfehlungen.jsx'
 import KpiEditor from './modules/kpi-editor/KpiEditor.jsx'
+import Nutzung from './modules/nutzung/Nutzung.jsx'
+import { trackOeffnung } from './core/nutzung.js'
 import { ladeBranding, applyBranding, themeById } from './core/admin.js'
 import { AKTUELLE_STAGE, stageInfo } from './core/stage.js'
 import { autoSeed } from './core/designerSeed.js'
@@ -123,6 +125,8 @@ export default function App() {
   useEffect(() => { autoSeed() }, [])
   // Branding (Logo/Theme) beim Start anwenden (Akzentfarbe, Tab-Titel).
   useEffect(() => { applyBranding(branding) }, [branding])
+  // Klick-/Nutzungs-Tracking: jede geöffnete Ansicht zählen (nur Admin wertet aus).
+  useEffect(() => { if (ansicht && ansicht !== 'wizard') trackOeffnung(ansicht) }, [ansicht])
   // Gruppen aus der Quelle laden (mssql -> DB, sonst localStorage).
   useEffect(() => { ladeGruppenAsync().then(setGruppen) }, [])
   // Effektive Rechte des angemeldeten Benutzers auflösen (async-fähig für DB).
@@ -189,6 +193,7 @@ export default function App() {
       { label: t('nav.transport'), icon: '🚚', aktiv: ansicht === 'transport', onClick: () => geh('transport') },
       ...(istAdmin(rolle) ? [
         { label: t('nav.admin'), icon: '🛠', aktiv: ansicht === 'admin', onClick: () => geh('admin') },
+        { label: t('nav.nutzung'), icon: '📈', aktiv: ansicht === 'nutzung', onClick: () => geh('nutzung') },
         { label: t('nav.rechte'), icon: '👥', aktiv: ansicht === 'rechte', onClick: () => geh('rechte') }
       ] : []),
       { label: t('nav.wizard'), icon: '⚙', aktiv: ansicht === 'wizard', onClick: () => geh('wizard') },
@@ -441,6 +446,9 @@ export default function App() {
         )}
         {ansicht === 'admin' && (
           <Admin istAdmin={istAdmin(rolle)} onChange={setBranding} />
+        )}
+        {ansicht === 'nutzung' && (
+          <Nutzung istAdmin={istAdmin(rolle)} />
         )}
         {ansicht === 'rechte' && (
           <RollenRechte onChange={(list) => {

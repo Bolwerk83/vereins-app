@@ -1,0 +1,110 @@
+// =========================================================================
+//  NUTZUNGS-STATISTIK (Admin) — wie oft werden Berichte geöffnet? Ranking,
+//  Tagesverlauf und Summen. Nur für den Admin sichtbar und auswertbar.
+// =========================================================================
+import React, { useState } from 'react'
+import { auswertung, verlauf, reset } from '../../core/nutzung.js'
+import { NAV_ZIELE } from '../../core/suche.js'
+import { useT } from '../../core/i18n.jsx'
+
+const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
+const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
+const th = (al) => ({ textAlign: al, padding: '6px 10px', borderBottom: '2px solid var(--line)', fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase' })
+const td = (al, bold) => ({ textAlign: al, padding: '7px 10px', borderBottom: '1px solid var(--line)', fontWeight: bold ? 700 : 400 })
+
+export default function Nutzung({ istAdmin = false }) {
+  const { t } = useT()
+  const [tick, setTick] = useState(0)
+
+  if (!istAdmin) {
+    return (
+      <div style={{ ...card, maxWidth: 560, margin: '0 auto', padding: 24, textAlign: 'center', color: 'var(--muted)' }}>
+        <div style={{ fontSize: 30, marginBottom: 8 }}>🔒</div>
+        Die Nutzungs-Statistik ist dem <b>Admin</b> vorbehalten.
+      </div>
+    )
+  }
+
+  const a = auswertung()
+  const v = verlauf(14)
+  const maxV = Math.max(...v.map((x) => x.count), 1)
+  const maxC = Math.max(...a.rows.map((r) => r.count), 1)
+  // View-ID → lesbares Label.
+  const label = (id) => {
+    const z = NAV_ZIELE.find((x) => x.ziel === id)
+    if (z) return t(z.schluessel)
+    return ({ report: 'Management-Report', baum: 'Berichtsbaum', rechte: 'Rollen & Rechte', nutzung: 'Nutzungs-Statistik' }[id]) || id
+  }
+  const wann = (iso) => iso ? new Date(iso).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'
+
+  return (
+    <div style={{ maxWidth: 980, margin: '0 auto' }} key={tick}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
+        <div>
+          <h2 style={{ margin: '0 0 4px' }}>Nutzungs-Statistik</h2>
+          <div style={{ color: 'var(--muted)', fontSize: 13, maxWidth: 680 }}>
+            Wie oft werden welche Berichte geöffnet? Lokale Aufrufzähler — hilft, die gefragtesten und die kaum
+            genutzten Berichte zu erkennen.
+          </div>
+        </div>
+        <button onClick={() => { if (confirm('Nutzungs-Statistik wirklich zurücksetzen?')) { reset(); setTick((x) => x + 1) } }}
+          style={{ padding: '8px 13px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: 'var(--panel)', color: 'var(--muted)', cursor: 'pointer', fontSize: 13 }}>
+          Zurücksetzen
+        </button>
+      </div>
+
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
+        <Kpi label="Aufrufe gesamt" wert={a.gesamt} />
+        <Kpi label="Heute" wert={a.heuteGesamt} farbe="var(--accent)" />
+        <Kpi label="Letzte 7 Tage" wert={a.wocheGesamt} />
+        <Kpi label="Genutzte Berichte" wert={a.aktiveBerichte} />
+      </div>
+
+      {/* Tagesverlauf */}
+      <div style={{ ...card, padding: 16, marginBottom: 14 }}>
+        <div style={{ ...cap, marginBottom: 10 }}>Aufrufe — letzte 14 Tage</div>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 90 }}>
+          {v.map((x) => (
+            <div key={x.tag} title={`${x.tag}: ${x.count}`} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center', gap: 3 }}>
+              <div style={{ width: '100%', height: `${x.count / maxV * 70}px`, minHeight: x.count ? 3 : 0, background: 'var(--accent)', borderRadius: '3px 3px 0 0' }} />
+              <div style={{ fontSize: 9, color: 'var(--muted)' }}>{x.tag.slice(8)}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Ranking */}
+      <div style={{ ...card, padding: 16, overflowX: 'auto' }}>
+        <div style={{ ...cap, marginBottom: 10 }}>Ranking der Berichte</div>
+        {a.rows.length === 0 && <div style={{ fontSize: 13, color: 'var(--muted)' }}>Noch keine Aufrufe erfasst.</div>}
+        {a.rows.length > 0 && (
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 600 }}>
+            <thead><tr>{['#', 'Bericht', 'Aufrufe', '', 'Heute', '7 Tage', 'Zuletzt'].map((h, i) => <th key={i} style={th(i <= 1 ? 'left' : 'right')}>{h}</th>)}</tr></thead>
+            <tbody>
+              {a.rows.map((r, i) => (
+                <tr key={r.id}>
+                  <td style={{ ...td('left'), color: 'var(--muted)' }}>{i + 1}</td>
+                  <td style={td('left', true)}>{label(r.id)} <span style={{ fontSize: 10, color: 'var(--muted)' }}>{r.id}</span></td>
+                  <td className="mono" style={td('right', true)}>{r.count}</td>
+                  <td style={{ padding: '7px 10px', borderBottom: '1px solid var(--line)', width: 110 }}>
+                    <div style={{ height: 8, background: 'var(--bg)', borderRadius: 4, overflow: 'hidden' }}><div style={{ width: `${r.count / maxC * 100}%`, height: '100%', background: 'var(--accent)' }} /></div>
+                  </td>
+                  <td className="mono" style={td('right')}>{r.heute}</td>
+                  <td className="mono" style={td('right')}>{r.woche}</td>
+                  <td className="mono" style={{ ...td('right'), color: 'var(--muted)', fontSize: 11.5 }}>{wann(r.last)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function Kpi({ label, wert, farbe }) {
+  return <div style={{ ...card, padding: '10px 13px', flex: 1, minWidth: 130 }}>
+    <div style={cap}>{label}</div>
+    <div style={{ fontSize: 22, fontWeight: 700, color: farbe || 'var(--ink)' }}>{wert}</div>
+  </div>
+}
