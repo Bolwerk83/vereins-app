@@ -22,6 +22,7 @@ import Kalkulatorik from './modules/kalkulatorik/Kalkulatorik.jsx'
 import Lebenszyklus from './modules/lebenszyklus/Lebenszyklus.jsx'
 import EinzelGemein from './modules/einzelgemein/EinzelGemein.jsx'
 import AuftragsLebenszyklus from './modules/auftrag/AuftragsLebenszyklus.jsx'
+import Kostenstellenrechnung from './modules/kostenstellen/Kostenstellenrechnung.jsx'
 import { AKTUELLE_STAGE, stageInfo } from './core/stage.js'
 import { autoSeed } from './core/designerSeed.js'
 import TreeNavigator from './modules/tree-navigator/TreeNavigator.jsx'
@@ -109,7 +110,8 @@ export default function App() {
       { label: t('nav.designer'), icon: '🧩', aktiv: ansicht === 'designer', onClick: () => geh('designer') },
       { label: t('nav.controlling'), icon: '🧭', aktiv: ansicht === 'controlling', onClick: () => geh('controlling') },
       { label: t('nav.klr'), icon: '🧮', aktiv: ansicht === 'klr' || ansicht === 'kostenarten' || ansicht === 'kalkulatorik', onClick: () => geh('klr') },
-      { label: t('nav.einzelgemein'), icon: '➗', aktiv: ansicht === 'einzelgemein', onClick: () => geh('einzelgemein') }
+      { label: t('nav.einzelgemein'), icon: '➗', aktiv: ansicht === 'einzelgemein', onClick: () => geh('einzelgemein') },
+      { label: t('nav.kostenstellen'), icon: '🏢', aktiv: ansicht === 'kostenstellen', onClick: () => geh('kostenstellen') }
     ] },
     { titel: 'Analyse', eintraege: [
       { label: t('nav.bi'), icon: '💬', aktiv: ansicht === 'bi', onClick: () => geh('bi') },
@@ -286,6 +288,9 @@ export default function App() {
         )}
         {ansicht === 'auftrag' && (
           <AuftragsLebenszyklus />
+        )}
+        {ansicht === 'kostenstellen' && (
+          <Kostenstellenrechnung onGeh={geh} />
         )}
         {ansicht === 'transport' && (
           <Transport benutzer={benutzer} />
