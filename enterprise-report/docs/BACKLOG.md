@@ -50,7 +50,8 @@ Stand: laufend.
 - Kostenträgerrechnung/Kalkulation, KLR-Ablauf, BAB (Datenarten), Onboarding ✅
 
 ## Lernpfad — Ausbauideen (offen)
-- [ ] Mehr Lektionen + kleine Quizfragen / Wissens-Check je Kapitel
+- [x] Quizfragen / Wissens-Check je Lektion (mit Fortschritt) ✅
+- [ ] Mehr Lektionen je Kapitel
 - [ ] Interaktive Ablaufdiagramme (klickbare Prozessgrafik der Zusammenhänge)
 - [ ] Rollthe-basierte Lernpfade (je Rolle anderer Schwerpunkt)
 - [ ] Zertifikat/Abschluss bei 100 %

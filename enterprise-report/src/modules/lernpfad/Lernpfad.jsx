@@ -4,6 +4,8 @@
 // =========================================================================
 import React, { useState } from 'react'
 import { KAPITEL, LEKTIONEN, lektionenVon, istAbgeschlossen, markiere, fortschritt } from '../../core/lernpfad.js'
+import { quizFortschritt, quizBestanden, hatQuiz } from '../../core/quiz.js'
+import WissensCheck from './WissensCheck.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
@@ -15,6 +17,7 @@ export default function Lernpfad({ onGeh }) {
   const l = LEKTIONEN.find((x) => x.id === aktivId)
   const idx = LEKTIONEN.findIndex((x) => x.id === aktivId)
   const fp = fortschritt()
+  const qfp = quizFortschritt()
 
   function toggle(id) { markiere(id, !istAbgeschlossen(id)); refresh() }
   function weiter() { if (idx < LEKTIONEN.length - 1) setAktivId(LEKTIONEN[idx + 1].id) }
@@ -33,6 +36,7 @@ export default function Lernpfad({ onGeh }) {
             <div style={{ width: `${fp.prozent}%`, height: '100%', background: 'var(--amp-g)' }} />
           </div>
           <span style={{ fontSize: 12, color: 'var(--muted)' }}>{fp.fertig} / {fp.gesamt} Lektionen ({fp.prozent} %)</span>
+          <span style={{ fontSize: 12, color: 'var(--muted)', marginLeft: 6 }}>· 🧠 {qfp.fertig} / {qfp.gesamt} Wissens-Checks</span>
         </div>
       </div>
 
@@ -50,6 +54,7 @@ export default function Lernpfad({ onGeh }) {
                       border: `1px solid ${aktiv ? 'var(--accent)' : 'transparent'}`, background: aktiv ? 'var(--accent-soft)' : 'transparent', fontSize: 13 }}>
                       <span style={{ width: 16, color: fertig ? 'var(--amp-g)' : 'var(--line)' }}>{fertig ? '✓' : '○'}</span>
                       <span style={{ flex: 1, color: aktiv ? 'var(--accent)' : 'var(--ink)', fontWeight: aktiv ? 600 : 400 }}>{le.titel}</span>
+                      {hatQuiz(le.id) && <span title="Wissens-Check" style={{ fontSize: 10, color: quizBestanden(le.id) ? 'var(--amp-g)' : 'var(--muted)' }}>🧠</span>}
                       <span style={{ fontSize: 10, color: 'var(--muted)' }}>{le.dauer}′</span>
                     </button>
                   )
@@ -85,6 +90,8 @@ export default function Lernpfad({ onGeh }) {
               <button onClick={weiter} disabled={idx === LEKTIONEN.length - 1} style={{ padding: '8px 12px', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', background: 'var(--panel)', cursor: idx === LEKTIONEN.length - 1 ? 'default' : 'pointer', opacity: idx === LEKTIONEN.length - 1 ? .5 : 1 }}>Weiter →</button>
             </div>
           </div>
+
+          <WissensCheck lektionId={l.id} onChange={refresh} />
         </div>
       </div>
     </div>
