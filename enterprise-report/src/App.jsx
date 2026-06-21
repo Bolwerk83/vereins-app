@@ -32,6 +32,7 @@ import Profitcenter from './modules/profitcenter/Profitcenter.jsx'
 import Abweichungsanalyse from './modules/abweichung/Abweichungsanalyse.jsx'
 import Anlagen from './modules/anlagen/Anlagen.jsx'
 import LieferantenLebenszyklus from './modules/lieferant/LieferantenLebenszyklus.jsx'
+import Marketing from './modules/marketing/Marketing.jsx'
 import Kalkulation from './modules/kalkulation/Kalkulation.jsx'
 import Ergebnisrechnung from './modules/ergebnis/Ergebnisrechnung.jsx'
 import Deckungsbeitrag from './modules/deckungsbeitrag/Deckungsbeitrag.jsx'
@@ -151,6 +152,7 @@ export default function App() {
       { label: t('nav.auftrag'), icon: '📦', aktiv: ansicht === 'auftrag', onClick: () => geh('auftrag') },
       { label: t('nav.anlagen'), icon: '🏗', aktiv: ansicht === 'anlagen', onClick: () => geh('anlagen') },
       { label: t('nav.lieferant'), icon: '🚚', aktiv: ansicht === 'lieferant', onClick: () => geh('lieferant') },
+      { label: t('nav.marketing'), icon: '📣', aktiv: ansicht === 'marketing', onClick: () => geh('marketing') },
       { label: t('nav.instrumente'), icon: '📐', aktiv: ansicht === 'instrumente', onClick: () => geh('instrumente') },
       { label: t('nav.alerts'), icon: '⚠', aktiv: ansicht === 'alerts', onClick: () => geh('alerts'), badge: alertN || null }
     ] },
@@ -337,6 +339,9 @@ export default function App() {
         )}
         {ansicht === 'lieferant' && (
           <LieferantenLebenszyklus />
+        )}
+        {ansicht === 'marketing' && (
+          <Marketing />
         )}
         {ansicht === 'kostenstellen' && (
           <Kostenstellenrechnung onGeh={geh} />
