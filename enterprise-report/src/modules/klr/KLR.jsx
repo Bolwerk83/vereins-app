@@ -174,9 +174,14 @@ export default function KLR({ werte = {}, rolle, periode, onGeh }) {
           </button>
         )}
         {aktiv === 'kostentraeger' && onGeh && (
-          <button onClick={() => onGeh('einzelgemein')} style={{ marginTop: 10, fontSize: 12.5, cursor: 'pointer', border: 'none', background: 'var(--accent)', color: '#fff', borderRadius: 'var(--radius-sm)', padding: '7px 12px', fontWeight: 600 }}>
-            → Einzel-/Gemeinkosten &amp; Zuschlagskalkulation
-          </button>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
+            <button onClick={() => onGeh('kalkulation')} style={{ fontSize: 12.5, cursor: 'pointer', border: 'none', background: 'var(--accent)', color: '#fff', borderRadius: 'var(--radius-sm)', padding: '7px 12px', fontWeight: 600 }}>
+              → Kostenträgerrechnung &amp; Kalkulation
+            </button>
+            <button onClick={() => onGeh('einzelgemein')} style={{ fontSize: 12.5, cursor: 'pointer', border: '1px solid var(--accent)', background: 'var(--panel)', color: 'var(--accent)', borderRadius: 'var(--radius-sm)', padding: '7px 12px', fontWeight: 600 }}>
+              Einzel-/Gemeinkosten
+            </button>
+          </div>
         )}
       </div>
 
