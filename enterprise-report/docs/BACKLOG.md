@@ -18,18 +18,26 @@ Stand: laufend.
 - Auftrags-Lebenszyklus (Order-to-Cash) mit Engpass
 - Kostenstellenrechnung (BAB, Umlage, Zuschlagssätze, Plan/Ist, Center-Typen)
 
-## 🔜 Offen / geplant
+## 🔜 Offen / geplant (priorisiert)
+- [ ] **Kostenträgerrechnung / Kalkulationsverfahren** — Divisionskalkulation,
+      Äquivalenzziffernrechnung, Zuschlagskalkulation, Maschinenstundensatz;
+      Selbstkosten je Produkt + Produkt-/Betriebsergebnis (Kostenträgerzeitrechnung). (Bilder f394/9c45/a00409)
+- [ ] **Ergebniskonto / GuV als Konten-Darstellung** (T-Konten, Gesamtkostenverfahren)
+      mit unseren Werten — reportingtauglich, nicht überfrachtet. (Bild 0832)
+- [ ] **Prozess-/Ablaufdarstellung der KLR** mit Werten als „roter Faden"/Inhaltsverzeichnis. (Bild 7d83)
 - [ ] **Anwender-Doku in der App** ("Wissen/Doku"-Seite, die alle Themen erklärt) — angefragt
-- [ ] **Kostenträgerrechnung / Kalkulation** je Produkt (Selbstkosten + Produkt-Betriebsergebnis, Kostenträgerzeitrechnung)
 - [ ] **Kalkulatorik echt verbuchen**: kalk. Kosten in Kostenarten/Abgrenzung/Betriebsergebnis einrechnen
-- [ ] **Weitere Lebenszyklen** (vorgeschlagen):
-  - [ ] Anlagen-/Asset-Lebenszyklus (Beschaffung→Nutzung→Ersatz, + kalk. Abschreibung)
-  - [ ] Lieferanten-Lebenszyklus (Einkauf, Spiegel zum Kunden-Zyklus)
-  - [ ] Bestands-/Artikel-Gängigkeit (Vorratscontrolling)
-  - [ ] Mitarbeiter-Lebenszyklus (HR), Forderungs-Aging, Technologie-Reifegrad (F&E)
+- [ ] **Weitere Lebenszyklen**: Anlagen/Asset (+ kalk. Abschreibung), Lieferant,
+      Bestands-/Artikel-Gängigkeit, Mitarbeiter (HR), Forderungs-Aging, Technologie-Reifegrad (F&E)
 - [ ] **Lebenszyklus → Strategie-Empfehlungen** automatisch + Maßnahmen-Verknüpfung (Produktseite)
 - [ ] **Deckungsbeitragsrechnung** mehrstufig (Fixkostendeckung)
+- [ ] **KPI-Editor: Formel/Abhängigkeiten** (abgeleitete KPIs im Tool anlegen)
+- [ ] **Profitcenter-Ergebnisrechnung**, Abweichungsanalysen (DB/Erlös), Segmentbericht
 - [ ] **CI-Lauf grün halten** / ggf. PR eröffnen und überwachen
+
+## Zuletzt ergänzt
+- BAB (ganze Firma) + Verteilungstabellen (manuell/automatisch) ✅
+- Rollenbasiertes Onboarding ✅
 
 ## Hinweise
 - Jede Funktion: Build grün + Tests; Persistenz via localStorage, später DWH/Backend.

@@ -23,7 +23,10 @@ export default function Kostenstellenrechnung({ onGeh }) {
             umgelegt — daraus ergeben sich die <b>Zuschlagssätze</b>. Plus Plan/Ist-Kontrolle je Stelle.
           </div>
         </div>
-        {onGeh && <button onClick={() => onGeh('klr')} style={{ ...card, padding: '7px 12px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>← zur KLR</button>}
+        {onGeh && <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={() => onGeh('bab')} style={{ ...card, padding: '7px 12px', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--accent)' }}>Voller BAB →</button>
+          <button onClick={() => onGeh('klr')} style={{ ...card, padding: '7px 12px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>← zur KLR</button>
+        </div>}
       </div>
 
       {/* Center-Typen */}
