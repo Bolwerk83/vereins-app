@@ -12,13 +12,15 @@ const DICT = {
   de: {
     'nav.tree': 'Berichtsbaum', 'nav.bi': 'Self-Service BI', 'nav.qc': 'Querchecks',
     'nav.massnahmen': 'Maßnahmen', 'nav.instrumente': 'Instrumente', 'nav.alerts': 'Alerts',
-    'nav.wizard': 'Wizard', 'lbl.role': 'Rolle', 'lbl.period': 'Periode', 'lbl.source': 'Quelle',
+    'nav.wizard': 'Wizard', 'nav.katalog': 'Katalog', 'nav.designer': 'Designer',
+    'lbl.role': 'Rolle', 'lbl.period': 'Periode', 'lbl.source': 'Quelle',
     'conn.ok': 'verbunden', 'conn.none': 'keine Verbindung', 'conn.mock': 'Mock-Daten'
   },
   en: {
     'nav.tree': 'Report tree', 'nav.bi': 'Self-service BI', 'nav.qc': 'Cross-checks',
     'nav.massnahmen': 'Measures', 'nav.instrumente': 'Instruments', 'nav.alerts': 'Alerts',
-    'nav.wizard': 'Wizard', 'lbl.role': 'Role', 'lbl.period': 'Period', 'lbl.source': 'Source',
+    'nav.wizard': 'Wizard', 'nav.katalog': 'Catalogue', 'nav.designer': 'Designer',
+    'lbl.role': 'Role', 'lbl.period': 'Period', 'lbl.source': 'Source',
     'conn.ok': 'connected', 'conn.none': 'no connection', 'conn.mock': 'mock data'
   }
 }

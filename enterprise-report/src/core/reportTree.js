@@ -462,3 +462,34 @@ export function pfadZu(baum, id, acc = []) {
   }
   return null
 }
+
+// =========================================================================
+//  BERICHTSNUMMERN (Glossar) — feste, sprechende Nummern je Bericht.
+//  Schema: <BEREICH>-<NNN>  ·  E2 = B-100, E3 = B-110/120…, E4 = B-111/112…
+//  So referenzierbar: "VK-111" = Verkauf › Kanäle › Umsatz je Kanal.
+// =========================================================================
+export function nummeriereBaum(root) {
+  root.nummer = 'GF-000'
+  ;(root.kinder || []).forEach((e2) => {
+    const b = e2.bereich || 'XX'
+    e2.nummer = `${b}-100`
+    ;(e2.kinder || []).forEach((e3, i) => {
+      const base = 110 + i * 10
+      e3.nummer = `${b}-${base}`
+      ;(e3.kinder || []).forEach((e4, j) => { e4.nummer = `${b}-${base + 1 + j}` })
+    })
+  })
+  return root
+}
+nummeriereBaum(BERICHTSBAUM)
+
+// Flacher Index aller Berichte (für Katalog/Suche).
+export function berichtIndex(root = BERICHTSBAUM, acc = []) {
+  acc.push({ id: root.id, nummer: root.nummer, titel: root.titel, ebene: root.ebene, bereich: root.bereich })
+  ;(root.kinder || []).forEach((k) => berichtIndex(k, acc))
+  return acc
+}
+export function findeNummer(nr) {
+  const s = String(nr).trim().toLowerCase()
+  return berichtIndex().find((x) => (x.nummer || '').toLowerCase() === s)
+}

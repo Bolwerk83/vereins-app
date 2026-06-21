@@ -9,6 +9,7 @@ import Datenqualitaet from './modules/datenqualitaet/Datenqualitaet.jsx'
 import Massnahmen from './modules/massnahmen/Massnahmen.jsx'
 import ControllingInstrumente from './modules/controlling-instrumente/ControllingInstrumente.jsx'
 import Alerts from './modules/alerts/Alerts.jsx'
+import Berichtskatalog from './modules/katalog/Berichtskatalog.jsx'
 import { validierungsZusammenfassung } from './core/validierung.js'
 import { alertAnzahl } from './core/alerts.js'
 import { useT, SPRACHEN } from './core/i18n.jsx'
@@ -23,6 +24,7 @@ export default function App() {
   const [werte, setWerte] = useState({})
   const [verbindung, setVerbindung] = useState(null)
   const [mnKontext, setMnKontext] = useState(null)
+  const [baumStart, setBaumStart] = useState(null)
   const rolle = ROLLEN[rolleId]
   const { t, lang, setLang } = useT()
 
@@ -59,6 +61,7 @@ export default function App() {
         {ansicht !== 'wizard' && (
           <>
             <button style={topBtn(ansicht === 'baum' || ansicht === 'report')} onClick={() => setAnsicht('baum')}>{t('nav.tree')}</button>
+            <button style={topBtn(ansicht === 'katalog')} onClick={() => setAnsicht('katalog')}>{t('nav.katalog')}</button>
             <button style={topBtn(ansicht === 'bi')} onClick={() => setAnsicht('bi')}>{t('nav.bi')}</button>
             <button style={topBtn(ansicht === 'qc')} onClick={() => setAnsicht('qc')}>
               {t('nav.qc')}{(() => { const f = validierungsZusammenfassung(werte).fehler; return f ? ` (${f})` : '' })()}
@@ -96,7 +99,10 @@ export default function App() {
             onAbbruch={() => setAnsicht(localStorage.getItem(SETUP_KEY) ? 'baum' : 'wizard')} />
         )}
         {ansicht === 'baum' && (
-          <TreeNavigator rolle={rolle} werte={werte} periode={periode} onOpenReport={() => setAnsicht('report')} />
+          <TreeNavigator rolle={rolle} werte={werte} periode={periode} startId={baumStart} onOpenReport={() => setAnsicht('report')} />
+        )}
+        {ansicht === 'katalog' && (
+          <Berichtskatalog onOpen={(id) => { setBaumStart(id); setAnsicht('baum') }} />
         )}
         {ansicht === 'report' && (
           <ManagementReport rolle={rolle} werte={werte} periode={periode}

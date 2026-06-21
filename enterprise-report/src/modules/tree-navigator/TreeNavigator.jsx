@@ -58,7 +58,7 @@ function HistorieBlock({ kpiId }) {
   )
 }
 
-export default function TreeNavigator({ rolle, werte, periode, onOpenReport }) {
+export default function TreeNavigator({ rolle, werte, periode, onOpenReport, startId }) {
   const baum = useMemo(() => baumFuerRolle(BERICHTSBAUM, (b) => darfBereich(rolle, b)) || BERICHTSBAUM, [rolle])
   const [aktiv, setAktiv] = useState(baum.id)
   const knoten = findeKnoten(baum, aktiv) || baum
@@ -67,6 +67,7 @@ export default function TreeNavigator({ rolle, werte, periode, onOpenReport }) {
 
   const [detail, setDetail] = useState(null)
   const [zu, setZu] = useState({}) // eingeklappte Cluster
+  useEffect(() => { if (startId && findeKnoten(baum, startId)) setAktiv(startId) }, [startId]) // eslint-disable-line
   useEffect(() => { if (detailKey) ladeDetail(detailKey).then(setDetail); else setDetail(null) }, [detailKey])
 
   return (
@@ -114,7 +115,10 @@ export default function TreeNavigator({ rolle, werte, periode, onOpenReport }) {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           <div>
             <h2 style={{ fontSize: 20 }}>{knoten.titel}</h2>
-            <div style={{ marginTop: 6 }}><EbeneTag stufe={knoten.ebene} /></div>
+            <div style={{ marginTop: 6, display: 'flex', gap: 6, alignItems: 'center' }}>
+              {knoten.nummer && <span className="mono" style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', background: 'var(--accent-soft)', padding: '2px 8px', borderRadius: 999 }}>{knoten.nummer}</span>}
+              <EbeneTag stufe={knoten.ebene} />
+            </div>
           </div>
           <div className="no-print" style={{ display: 'flex', gap: 8 }}>
             <button onClick={() => downloadCsv(`${knoten.id}_${periode}`,
