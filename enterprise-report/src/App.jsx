@@ -11,6 +11,7 @@ import { ladeModell } from './core/periodenmodell.js'
 import ZeitDatenart from './modules/zeit-datenart/ZeitDatenart.jsx'
 import DatenartBadge from './modules/zeit-datenart/DatenartBadge.jsx'
 import Versionsvergleich from './modules/versionsvergleich/Versionsvergleich.jsx'
+import Verteiler from './modules/verteiler/Verteiler.jsx'
 import TreeNavigator from './modules/tree-navigator/TreeNavigator.jsx'
 import ManagementReport from './modules/management-report/ManagementReport.jsx'
 import SetupWizard from './modules/wizard/SetupWizard.jsx'
@@ -103,6 +104,7 @@ export default function App() {
     { titel: 'Steuerung', eintraege: [
       { label: t('nav.massnahmen'), icon: '🎯', aktiv: ansicht === 'massnahmen', onClick: () => geh('massnahmen') },
       { label: t('nav.zeit'), icon: '🗓', aktiv: ansicht === 'zeit', onClick: () => geh('zeit') },
+      { label: t('nav.verteiler'), icon: '📤', aktiv: ansicht === 'verteiler', onClick: () => geh('verteiler') },
       ...(istAdmin(rolle) ? [{ label: t('nav.rechte'), icon: '👥', aktiv: ansicht === 'rechte', onClick: () => geh('rechte') }] : []),
       { label: t('nav.wizard'), icon: '⚙', aktiv: ansicht === 'wizard', onClick: () => geh('wizard') },
       { label: t('nav.hilfe'), icon: '❓', aktiv: false, onClick: () => { setHilfeErstmalig(false); setHilfeAuf(true) } }
@@ -229,6 +231,9 @@ export default function App() {
         )}
         {ansicht === 'vergleich' && (
           <Versionsvergleich />
+        )}
+        {ansicht === 'verteiler' && (
+          <Verteiler />
         )}
         {ansicht === 'rechte' && (
           <RollenRechte onChange={(list) => {
