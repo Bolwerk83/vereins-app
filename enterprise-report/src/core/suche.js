@@ -38,6 +38,7 @@ export const NAV_ZIELE = [
   { ziel: 'bestand', gruppe: 'Analyse', schluessel: 'nav.bestand' },
   { ziel: 'forderungen', gruppe: 'Analyse', schluessel: 'nav.forderungen' },
   { ziel: 'mitarbeiter', gruppe: 'Analyse', schluessel: 'nav.mitarbeiter' },
+  { ziel: 'technologie', gruppe: 'Analyse', schluessel: 'nav.technologie' },
   { ziel: 'instrumente', gruppe: 'Analyse', schluessel: 'nav.instrumente' },
   { ziel: 'alerts', gruppe: 'Analyse', schluessel: 'nav.alerts' },
   { ziel: 'events', gruppe: 'Analyse', schluessel: 'nav.events' },

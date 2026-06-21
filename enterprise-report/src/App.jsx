@@ -45,6 +45,7 @@ import GlobalSuche from './modules/suche/GlobalSuche.jsx'
 import Admin from './modules/admin/Admin.jsx'
 import Events from './modules/events/Events.jsx'
 import Doku from './modules/doku/Doku.jsx'
+import Technologie from './modules/technologie/Technologie.jsx'
 import { ladeBranding, applyBranding, themeById } from './core/admin.js'
 import { AKTUELLE_STAGE, stageInfo } from './core/stage.js'
 import { autoSeed } from './core/designerSeed.js'
@@ -170,6 +171,7 @@ export default function App() {
       { label: t('nav.bestand'), icon: '📦', aktiv: ansicht === 'bestand', onClick: () => geh('bestand') },
       { label: t('nav.forderungen'), icon: '💶', aktiv: ansicht === 'forderungen', onClick: () => geh('forderungen') },
       { label: t('nav.mitarbeiter'), icon: '🧑‍🤝‍🧑', aktiv: ansicht === 'mitarbeiter', onClick: () => geh('mitarbeiter') },
+      { label: t('nav.technologie'), icon: '🔬', aktiv: ansicht === 'technologie', onClick: () => geh('technologie') },
       { label: t('nav.instrumente'), icon: '📐', aktiv: ansicht === 'instrumente', onClick: () => geh('instrumente') },
       { label: t('nav.alerts'), icon: '⚠', aktiv: ansicht === 'alerts', onClick: () => geh('alerts'), badge: alertN || null }
     ] },
@@ -388,6 +390,9 @@ export default function App() {
         )}
         {ansicht === 'mitarbeiter' && (
           <Mitarbeiter />
+        )}
+        {ansicht === 'technologie' && (
+          <Technologie onGeh={geh} />
         )}
         {ansicht === 'kostenstellen' && (
           <Kostenstellenrechnung onGeh={geh} />

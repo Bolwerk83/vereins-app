@@ -35,8 +35,8 @@ Stand: laufend.
 - [ ] **Prozess-/Ablaufdarstellung der KLR** mit Werten als „roter Faden"/Inhaltsverzeichnis. (Bild 7d83)
 - [x] **Anwender-Doku in der App** ("Wissen/Doku"-Seite, durchsuchbar, Sprung in Berichte) ✅
 - [ ] **Kalkulatorik echt verbuchen**: kalk. Kosten in Kostenarten/Abgrenzung/Betriebsergebnis einrechnen
-- [ ] **Weitere Lebenszyklen**: Anlagen/Asset (+ kalk. Abschreibung), Lieferant,
-      Bestands-/Artikel-Gängigkeit, Mitarbeiter (HR), Forderungs-Aging, Technologie-Reifegrad (F&E)
+- [x] **Weitere Lebenszyklen**: Anlagen/Asset, Lieferant, Bestands-/Artikel-Gängigkeit,
+      Mitarbeiter (HR), Forderungs-Aging, Technologie-Reifegrad/F&E-Portfolio ✅
 - [ ] **Lebenszyklus → Strategie-Empfehlungen** automatisch + Maßnahmen-Verknüpfung (Produktseite)
 - [ ] **Deckungsbeitragsrechnung** mehrstufig (Fixkostendeckung)
 - [ ] **KPI-Editor: Formel/Abhängigkeiten** (abgeleitete KPIs im Tool anlegen)
