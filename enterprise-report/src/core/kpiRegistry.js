@@ -804,14 +804,18 @@ export function abhaengigkeitsGraph() {
   }))
 }
 
-// --- Transportierte KPI-Definitionsanpassungen --------------------------
-// Über das Transportwesen importierte KPI-Definitionen (er_kpi_overrides)
+// --- Transportierte/lokale KPI-Definitionsanpassungen -------------------
+// Importierte oder im Tool bearbeitete KPI-Definitionen (er_kpi_overrides)
 // überschreiben hier die Metadaten-Felder, sodass sie in der ganzen App
-// wirken. Nur im Browser; der Server (kein localStorage) bleibt unberührt.
+// wirken. KPI_BASIS hält die Code-Originalwerte der überschriebenen Felder
+// für ein sauberes „Zurücksetzen". Nur im Browser; der Server bleibt unberührt.
+export const KPI_BASIS = {}
+export const OVERRIDE_FELDER = ['name', 'einheit', 'bereich', 'ziel', 'richtung', 'beschreibung', 'sqlRef', 'warn']
 try {
   if (typeof localStorage !== 'undefined') {
     const ov = JSON.parse(localStorage.getItem('er_kpi_overrides') || '{}')
     for (const [id, patch] of Object.entries(ov)) {
+      if (KPI[id]) { KPI_BASIS[id] = {}; for (const f of OVERRIDE_FELDER) KPI_BASIS[id][f] = KPI[id][f] }
       KPI[id] = KPI[id] ? { ...KPI[id], ...patch } : { id, abhaengig: [], security: null, ...patch }
     }
   }
