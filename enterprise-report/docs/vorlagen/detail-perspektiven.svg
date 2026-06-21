@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="600" viewBox="0 0 880 600" font-family="Segoe UI, Arial, sans-serif">
+  <rect width="880" height="600" fill="#F4F6F9"/>
+
+  <!-- Kopf mit Berichtsnummer -->
+  <text x="32" y="40" font-size="12" fill="#64748B">VeloWerk Gruppe · Verkauf › Kanäle &amp; Marktplätze</text>
+  <text x="32" y="66" font-size="22" font-weight="700" fill="#1F2A37">Umsatz je Kanal</text>
+  <rect x="700" y="44" width="148" height="26" rx="13" fill="#E6F2F0"/>
+  <text x="774" y="61" font-size="12" font-weight="700" fill="#0F766E" text-anchor="middle">Bericht VK-110</text>
+
+  <!-- Detail-Sprungpunkte -->
+  <rect x="32" y="86" width="816" height="118" rx="10" fill="#FFFFFF" stroke="#D7DEE6"/>
+  <text x="50" y="110" font-size="10.5" letter-spacing="0.4" fill="#64748B">DETAIL-SPRUNGPUNKTE (EBENE 4) — AUSWERTUNG NACH …</text>
+  <g font-size="12.5">
+    <rect x="50" y="122" width="96" height="30" rx="15" fill="#E6F2F0" stroke="#0F766E"/><text x="98" y="141" fill="#0F766E" font-weight="700" text-anchor="middle">▦ Artikel</text>
+    <rect x="156" y="122" width="118" height="30" rx="15" fill="#FFFFFF" stroke="#D7DEE6"/><text x="215" y="141" fill="#1F2A37" text-anchor="middle">▣ Produktgruppe</text>
+    <rect x="284" y="122" width="84" height="30" rx="15" fill="#FFFFFF" stroke="#D7DEE6"/><text x="326" y="141" fill="#1F2A37" text-anchor="middle">☺ Kunde</text>
+    <rect x="378" y="122" width="150" height="30" rx="15" fill="#FFFFFF" stroke="#D7DEE6"/><text x="453" y="141" fill="#1F2A37" text-anchor="middle">🧾 Verkaufsrechnung</text>
+    <rect x="538" y="122" width="92" height="30" rx="15" fill="#FFFFFF" stroke="#D7DEE6"/><text x="584" y="141" fill="#1F2A37" text-anchor="middle">▤ Auftrag</text>
+  </g>
+  <text x="50" y="182" font-size="11" fill="#94A3B8">Nur fachlich sinnvolle Objekte — Verkauf bietet bewusst keine Einkaufsrechnung.</text>
+
+  <!-- Filtermaske -->
+  <rect x="32" y="218" width="816" height="92" rx="10" fill="#FFFFFF" stroke="#D7DEE6"/>
+  <text x="50" y="242" font-size="10.5" fill="#64748B">FILTERMASKE — erst nach „Anzeigen" laden (schnell)</text>
+  <g font-size="11">
+    <text x="50" y="266" fill="#64748B">Von</text><rect x="50" y="272" width="80" height="28" rx="6" fill="#F4F6F9" stroke="#D7DEE6"/><text x="62" y="290" fill="#1F2A37">2023</text>
+    <text x="146" y="266" fill="#64748B">Bis</text><rect x="146" y="272" width="80" height="28" rx="6" fill="#F4F6F9" stroke="#D7DEE6"/><text x="158" y="290" fill="#1F2A37">2025</text>
+    <text x="242" y="266" fill="#64748B">Suche (Nr./Name)</text><rect x="242" y="272" width="300" height="28" rx="6" fill="#F4F6F9" stroke="#D7DEE6"/><text x="254" y="290" fill="#94A3B8">E-Bike</text>
+    <text x="558" y="266" fill="#64748B">Anzeige</text><rect x="558" y="272" width="90" height="28" rx="6" fill="#F4F6F9" stroke="#D7DEE6"/><text x="570" y="290" fill="#1F2A37">Top 25</text>
+  </g>
+  <rect x="730" y="272" width="100" height="28" rx="6" fill="#0F766E"/><text x="780" y="291" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">Anzeigen</text>
+
+  <!-- Ergebnistabelle -->
+  <rect x="32" y="324" width="816" height="252" rx="10" fill="#FFFFFF" stroke="#D7DEE6"/>
+  <text x="50" y="350" font-size="13" font-weight="700" fill="#1F2A37">Umsatz je Artikel</text>
+  <line x1="48" y1="362" x2="832" y2="362" stroke="#D7DEE6"/>
+  <g font-size="12.5">
+    <text x="50" y="384" fill="#64748B">ARTIKEL-NR</text><text x="170" y="384" fill="#64748B">BEZEICHNUNG</text><text x="560" y="384" fill="#64748B" text-anchor="end">MENGE</text><text x="700" y="384" fill="#64748B" text-anchor="end">UMSATZ €</text><text x="820" y="384" fill="#64748B" text-anchor="end">DB %</text>
+    <text x="50" y="410" fill="#1F2A37" font-family="Consolas,monospace">10042</text><text x="170" y="410" fill="#1F2A37">E-Bike Urban 500</text><text x="560" y="410" text-anchor="end">1.240</text><text x="700" y="410" text-anchor="end">3.348.000</text><text x="820" y="410" text-anchor="end">38 %</text>
+    <text x="50" y="436" fill="#1F2A37" font-family="Consolas,monospace">10088</text><text x="170" y="436" fill="#1F2A37">E-MTB Trail Pro</text><text x="560" y="436" text-anchor="end">680</text><text x="700" y="436" text-anchor="end">2.992.000</text><text x="820" y="436" text-anchor="end">41 %</text>
+    <text x="50" y="462" fill="#1F2A37" font-family="Consolas,monospace">20155</text><text x="170" y="462" fill="#1F2A37">Trekking City 7</text><text x="560" y="462" text-anchor="end">910</text><text x="700" y="462" text-anchor="end">1.456.000</text><text x="820" y="462" text-anchor="end">34 %</text>
+    <text x="50" y="488" fill="#1F2A37" font-family="Consolas,monospace">30219</text><text x="170" y="488" fill="#1F2A37">Pendix Nachrüstsatz</text><text x="560" y="488" text-anchor="end">420</text><text x="700" y="488" text-anchor="end">546.000</text><text x="820" y="488" text-anchor="end">46 %</text>
+    <text x="50" y="514" fill="#1F2A37" font-family="Consolas,monospace">40310</text><text x="170" y="514" fill="#1F2A37">Helm Air Pro</text><text x="560" y="514" text-anchor="end">3.120</text><text x="700" y="514" text-anchor="end">312.000</text><text x="820" y="514" text-anchor="end">52 %</text>
+    <line x1="48" y1="396" x2="832" y2="396" stroke="#EEF2F6"/><line x1="48" y1="422" x2="832" y2="422" stroke="#EEF2F6"/><line x1="48" y1="448" x2="832" y2="448" stroke="#EEF2F6"/><line x1="48" y1="474" x2="832" y2="474" stroke="#EEF2F6"/><line x1="48" y1="500" x2="832" y2="500" stroke="#EEF2F6"/>
+  </g>
+  <text x="50" y="552" font-size="11" fill="#64748B">⤓ Excel/CSV · 🖨 PDF · Datenweg: dataProvider.ladePerspektive(„vk_artikel") → Mock / MSSQL</text>
+</svg>
