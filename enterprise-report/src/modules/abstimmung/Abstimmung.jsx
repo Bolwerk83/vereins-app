@@ -3,8 +3,8 @@
 //  Differenz (abs/%), Toleranz-Ampel, Status setzen, Kommentar erfassen.
 //  Persistiert je Periode; speist die Abschluss-Freigabe.
 // =========================================================================
-import React, { useState } from 'react'
-import { bruecken, setNotiz, STATUS, statusInfo, abstimmZusammenfassung } from '../../core/abstimmung.js'
+import React, { useState, useEffect } from 'react'
+import { bruecken, setNotiz, STATUS, statusInfo, abstimmZusammenfassung, ladeHauptbuch } from '../../core/abstimmung.js'
 import { formatWert } from '../../design/theme.js'
 import { AMPEL_FARBE } from '../../design/theme.js'
 
@@ -14,9 +14,14 @@ const mio = (v) => v == null ? '–' : formatWert(v, 'eur_mio')
 
 export default function Abstimmung({ werte, periode }) {
   const [tick, setTick] = useState(0)
+  const [hb, setHb] = useState(null)   // { quelle, werte } vom Backend
   const refresh = () => setTick((t) => t + 1)
-  const zeilen = bruecken(werte, periode)
-  const z = abstimmZusammenfassung(werte, periode)
+  useEffect(() => { let aktiv = true; ladeHauptbuch(periode).then((h) => aktiv && setHb(h)); return () => { aktiv = false } }, [periode])
+
+  const hbWerte = hb?.werte && Object.keys(hb.werte).length ? hb.werte : null
+  const zeilen = bruecken(werte, periode, hbWerte)
+  const z = abstimmZusammenfassung(werte, periode, hbWerte)
+  const quelleText = !hb ? 'lokal simuliert (kein Backend)' : hb.quelle === 'fibu' ? 'FiBu (MSSQL)' : hbWerte ? 'Hauptbuch-Mock (Backend)' : 'lokal simuliert'
 
   const set = (posId, patch) => { setNotiz(periode, posId, patch); refresh() }
 
@@ -30,6 +35,7 @@ export default function Abstimmung({ werte, periode }) {
               Reporting-Ist gegen das Hauptbuch je Position abstimmen. Differenzen über Toleranz brauchen Klärung;
               abgestimmte Positionen sind die Grundlage für die <b>Abschluss-Freigabe</b>.
             </p>
+            <div className="mono" style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>Buchhaltungsquelle: {quelleText}</div>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <span style={{ ...badge('g') }}>{z.abgestimmt} abgestimmt</span>

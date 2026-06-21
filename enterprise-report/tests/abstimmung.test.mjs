@@ -29,6 +29,17 @@ test('Zusammenfassung zählt offen/abgestimmt korrekt', () => {
   assert.ok(z.diffSumme > 0)
 })
 
+test('Hauptbuch (absolute Salden) überschreibt das Mock-Delta', () => {
+  const hb = { umsatz: 50.0 } // bewusste Differenz zum Ist (52.0)
+  const b = bruecken(w, '2025', hb)
+  const um = b.find((x) => x.id === 'umsatz')
+  assert.equal(um.buchhaltung, 50.0)
+  assert.equal(um.diff, +(um.ist - 50.0).toFixed(2))
+  // Positionen ohne Hauptbuch-Wert fallen auf das Delta zurück
+  const wa = b.find((x) => x.id === 'wareneinsatz')
+  assert.equal(wa.buchhaltung, +(wa.ist + wa.delta).toFixed(2))
+})
+
 test('Notiz wird je Periode persistiert und überschreibt Auto-Status', () => {
   setNotiz('2025-TEST', 'wareneinsatz', { status: 'abgestimmt', kommentar: 'geklärt' })
   const n = ladeNotiz('2025-TEST', 'wareneinsatz')

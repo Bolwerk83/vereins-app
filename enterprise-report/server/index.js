@@ -28,6 +28,7 @@ import { starteScheduler, planeNeu, feuereEreignis } from './scheduler.js'
 import { mailKonfiguriert } from './mailer.js'
 import { speichereBundle, ladeAlle as ladeTransporte, ladeBundle } from './transport.store.js'
 import { promote, AKTUELLE_STAGE } from './transport.js'
+import { ladeHauptbuch } from './hauptbuch.js'
 import { KPI } from '../src/core/kpiRegistry.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -201,6 +202,12 @@ app.post('/api/verteiler/:id/send', async (req, res) => { // realer (oder dry-ru
 
 app.post('/api/ereignis/:typ', async (req, res) => { // Ereignis-Trigger (z. B. Abschluss-Freigabe)
   try { res.json({ ausgeloest: await feuereEreignis(req.params.typ) }) } catch (e) { res.status(500).json({ error: String(e.message || e) }) }
+})
+
+// --- Hauptbuch (FiBu-Salden für Abstimmbrücken) --------------------------
+app.get('/api/hauptbuch/:periode', async (req, res) => {
+  try { res.json(await ladeHauptbuch(req.params.periode)) }
+  catch (e) { res.status(500).json({ error: String(e.message || e) }) }
 })
 
 // --- Transportwesen (dev/test/prod) --------------------------------------

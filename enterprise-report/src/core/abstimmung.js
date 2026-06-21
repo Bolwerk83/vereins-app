@@ -48,11 +48,26 @@ export function setNotiz(periode, posId, patch) {
   return speichere(s)
 }
 
-/** Eine Brückenzeile je Position für die aktuelle Periode. */
-export function bruecken(werte = {}, periode = '') {
+/** Hauptbuch-Salden vom Backend laden (MSSQL/Mock). null = nicht erreichbar. */
+export async function ladeHauptbuch(periode) {
+  try {
+    const r = await fetch(`/api/hauptbuch/${encodeURIComponent(periode)}`)
+    if (!r.ok) return null
+    return r.json() // { quelle: 'fibu'|'mock', werte: { posId: saldo } }
+  } catch { return null }
+}
+
+/**
+ * Eine Brückenzeile je Position. hauptbuch (optional, vom Backend) liefert
+ * ABSOLUTE FiBu-Salden; fehlt es, wird der Buchhaltungswert lokal aus dem
+ * hinterlegten Delta simuliert.
+ */
+export function bruecken(werte = {}, periode = '', hauptbuch = null) {
   return POSITIONEN.map((p) => {
     const ist = p.kpiId && werte[p.kpiId] != null ? werte[p.kpiId] : null
-    const buchhaltung = ist != null ? +(ist + (p.delta || 0)).toFixed(2) : null
+    const buchhaltung = hauptbuch && hauptbuch[p.id] != null
+      ? +(+hauptbuch[p.id]).toFixed(2)
+      : (ist != null ? +(ist + (p.delta || 0)).toFixed(2) : null)
     const diff = ist != null && buchhaltung != null ? +(ist - buchhaltung).toFixed(2) : null
     const diffPct = diff != null && buchhaltung ? (diff / Math.abs(buchhaltung)) * 100 : null
     const imRahmen = diff != null && Math.abs(diff) <= (p.toleranz ?? 0)
@@ -64,8 +79,8 @@ export function bruecken(werte = {}, periode = '') {
 }
 
 /** Zusammenfassung für Badges und die Abschluss-Kopplung. */
-export function abstimmZusammenfassung(werte, periode) {
-  const b = bruecken(werte, periode)
+export function abstimmZusammenfassung(werte, periode, hauptbuch = null) {
+  const b = bruecken(werte, periode, hauptbuch)
   const offen = b.filter((x) => x.status !== 'abgestimmt').length
   const diffSumme = b.reduce((n, x) => n + Math.abs(x.diff || 0), 0)
   return { gesamt: b.length, offen, abgestimmt: b.length - offen, diffSumme: +diffSumme.toFixed(2) }
