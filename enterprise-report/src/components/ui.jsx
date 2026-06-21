@@ -61,9 +61,9 @@ export function KpiGesperrt({ kpiId }) {
 export function DetailTabelle({ daten, onZeileKlick }) {
   if (!daten) return <div style={{ color: 'var(--muted)' }}>Keine Detaildaten.</div>
   return (
-    <div style={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
+    <div className="tabelle-scroll" style={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', overflow: 'auto' }}>
       <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--line)', fontWeight: 600 }}>{daten.titel}</div>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 480 }}>
         <thead><tr>{daten.spalten.map((s, i) => (
           <th key={i} style={{ textAlign: i === 0 ? 'left' : 'right', padding: '8px 14px', color: 'var(--muted)',
             fontWeight: 500, fontSize: 11, textTransform: 'uppercase', borderBottom: '1px solid var(--line)' }}>{s}</th>))}</tr></thead>

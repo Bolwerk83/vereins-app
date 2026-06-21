@@ -49,6 +49,26 @@ h1,h2,h3,h4 { margin: 0; font-weight: 600; letter-spacing: -.01em; }
 a { color: var(--accent); text-decoration: none; }
 button { font-family: var(--font-text); cursor: pointer; }
 
+/* Tabellen auf schmalen Geräten horizontal scrollbar */
+.tabelle-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* =========================================================================
+   RESPONSIVE — PC / Tablet / Handy.  Topbar und Kachelreihen sind flex-wrap
+   und brechen automatisch um; hier die Feinheiten je Geräteklasse.
+   ========================================================================= */
+@media (max-width: 1024px) {           /* Tablet */
+  main { padding: 16px 14px !important; }
+  .raster-2 { grid-template-columns: 1fr !important; }
+}
+@media (max-width: 640px) {            /* Handy */
+  body { font-size: 13px; }
+  main { padding: 12px 10px !important; }
+  .kpi-reihe > * { flex: 1 1 100% !important; min-width: 0 !important; }
+  header { gap: 10px !important; padding: 8px 12px !important; }
+  table { font-size: 12px; }
+  table th, table td { padding: 6px 8px !important; }
+}
+
 /* Druck/PDF: Chrome (Topbar, Baum, Buttons) ausblenden, weiße Fläche */
 @media print {
   body { background: #fff; }

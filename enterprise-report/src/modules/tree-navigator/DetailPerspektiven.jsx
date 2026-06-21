@@ -9,6 +9,8 @@ import { DRILL } from '../../core/drilldowns.js'
 import { ladePerspektive, PERIODEN, AKTUELLE_PERIODE } from '../../core/dataProvider.js'
 import { DetailTabelle } from '../../components/ui.jsx'
 import SteuerLeiste from '../../components/SteuerLeiste.jsx'
+import SpaltenDesigner from './SpaltenDesigner.jsx'
+import { ladeLayout, speichereLayout, setzeLayoutZurueck, wendeLayoutAn } from '../../core/tabellenLayout.js'
 
 const TOPN = [10, 25, 100, 0]
 const distinct = (zeilen, idx) => [...new Set(zeilen.map((z) => z[idx]))]
@@ -31,14 +33,15 @@ export default function DetailPerspektiven({ bereich, perspektiven = [] }) {
   const [feld, setFeld] = useState({})        // { spaltenIndex: wert }
   const [sortIdx, setSortIdx] = useState(null)
   const [sortDir, setSortDir] = useState('asc')
-  const [sichtbar, setSichtbar] = useState(null) // Set sichtbarer Spaltenindizes
-  const [spaltenAuf, setSpaltenAuf] = useState(false)
+  const [layout, setLayout] = useState(null)       // Spalten-Layout (Designer)
+  const [designerAuf, setDesignerAuf] = useState(false)
 
   async function waehle(p) {
-    setAktiv(p); setDaten(null); setFeld({}); setSuche(''); setSortIdx(null); setSpaltenAuf(false)
+    setAktiv(p); setDaten(null); setFeld({}); setSuche(''); setSortIdx(null); setDesignerAuf(false)
+    setLayout(ladeLayout(`${bereich.toLowerCase()}_${p}`))
     setLaedt(true)
     const r = await ladePerspektive(`${bereich.toLowerCase()}_${p}`)
-    setRoh(r); setSichtbar(r ? new Set(r.spalten.map((_, i) => i)) : null); setLaedt(false)
+    setRoh(r); setLaedt(false)
   }
 
   function anzeigen() {
@@ -55,22 +58,23 @@ export default function DetailPerspektiven({ bereich, perspektiven = [] }) {
 
   // Drill-Through: aus einer Zeile in den zugehörigen Beleg/Unterbericht springen.
   async function drill(targetP, keyValue) {
-    setAktiv(targetP); setFeld({}); setSuche(String(keyValue)); setSortIdx(null); setSpaltenAuf(false)
+    setAktiv(targetP); setFeld({}); setSuche(String(keyValue)); setSortIdx(null); setDesignerAuf(false)
+    setLayout(ladeLayout(`${bereich.toLowerCase()}_${targetP}`))
     setLaedt(true)
     const r = await ladePerspektive(`${bereich.toLowerCase()}_${targetP}`)
-    setRoh(r); setSichtbar(r ? new Set(r.spalten.map((_, i) => i)) : null)
+    setRoh(r)
     let zeilen = (r?.zeilen || []).filter((z) => z.some((c) => String(c).toLowerCase().includes(String(keyValue).toLowerCase())))
     if (top) zeilen = zeilen.slice(0, top)
     setDaten(r ? { ...r, zeilen } : null)
     setLaedt(false)
   }
 
-  // Sicht = gefiltertes Ergebnis + Sortierung + Spaltenauswahl (sofort wirksam)
-  // sortedRows hält die vollständigen (ungekürzten) Zeilen in Anzeige-Reihenfolge,
-  // damit der Zeilen-Klick (Drill-Through) den richtigen Schlüsselwert findet.
+  // Sicht = gefiltertes + sortiertes Ergebnis, danach Spalten-Layout (Designer).
+  // sortedRows hält die vollständigen Originalzeilen in Anzeige-Reihenfolge,
+  // damit Drill-Through (Klick) den richtigen Schlüsselwert findet — unabhängig
+  // davon, wie der Designer Spalten umbenennt/umsortiert/ausblendet.
   let view = null, sortedRows = null
-  if (daten && sichtbar) {
-    const cols = daten.spalten.map((_, i) => i).filter((i) => sichtbar.has(i))
+  if (daten) {
     let zeilen = daten.zeilen
     if (sortIdx != null) {
       zeilen = [...zeilen].sort((a, b) => {
@@ -80,10 +84,13 @@ export default function DetailPerspektiven({ bereich, perspektiven = [] }) {
       })
     }
     sortedRows = zeilen
-    view = { titel: daten.titel, spalten: cols.map((i) => daten.spalten[i]), zeilen: zeilen.map((z) => cols.map((i) => z[i])) }
+    view = { titel: daten.titel, ...wendeLayoutAn(layout, daten.spalten, zeilen) }
   }
   // Drill-Through nur, wenn der Datensatz ein Ziel definiert und das Ziel angeboten wird.
   const drillZiel = roh?.drillTo && perspektiven.includes(roh.drillTo.perspektive) ? roh.drillTo : null
+  const aktivKey = aktiv ? `${bereich.toLowerCase()}_${aktiv}` : null
+  function layoutAendern(neu) { setLayout(neu); speichereLayout(aktivKey, neu) }
+  function layoutReset() { setLayout(null); setzeLayoutZurueck(aktivKey) }
 
   const inp = { padding: '7px 9px', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', font: 'inherit' }
 
@@ -143,7 +150,7 @@ export default function DetailPerspektiven({ bereich, perspektiven = [] }) {
           </SteuerLeiste>
           {!daten && !laedt && <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 8 }}>Schnellsuche oder Zusatzfilter setzen und „Anzeigen" — so bleibt das Laden schnell.</div>}
 
-          {/* Sortierung & Spaltenwahl (sofort wirksam) */}
+          {/* Sortierung & Spalten-Designer */}
           {daten && (
             <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginTop: 12 }}>
               <label style={{ fontSize: 11, color: 'var(--muted)' }}>Sortieren nach&nbsp;
@@ -153,17 +160,11 @@ export default function DetailPerspektiven({ bereich, perspektiven = [] }) {
                 </select>
               </label>
               {sortIdx != null && <button style={{ ...inp, padding: '5px 9px' }} onClick={() => setSortDir((d) => d === 'asc' ? 'desc' : 'asc')}>{sortDir === 'asc' ? '↑ aufsteigend' : '↓ absteigend'}</button>}
-              <button style={{ ...inp, padding: '5px 9px' }} onClick={() => setSpaltenAuf((v) => !v)}>▦ Spalten ({sichtbar?.size}/{daten.spalten.length})</button>
+              <button style={{ ...inp, padding: '5px 9px', borderColor: layout ? 'var(--accent)' : 'var(--line)', color: layout ? 'var(--accent)' : 'var(--ink)' }} onClick={() => setDesignerAuf((v) => !v)}>🧱 Spalten-Designer{layout ? ' (angepasst)' : ''}</button>
             </div>
           )}
-          {daten && spaltenAuf && (
-            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 8, padding: 10, border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', background: 'var(--bg)' }}>
-              {daten.spalten.map((s, i) => (
-                <label key={i} style={{ fontSize: 12, display: 'flex', gap: 5, alignItems: 'center' }}>
-                  <input type="checkbox" checked={sichtbar?.has(i)} onChange={() => setSichtbar((prev) => { const n = new Set(prev); n.has(i) ? n.delete(i) : n.add(i); return n.size ? n : prev })} />{s}
-                </label>
-              ))}
-            </div>
+          {daten && designerAuf && (
+            <SpaltenDesigner spalten={daten.spalten} layout={layout} onChange={layoutAendern} onReset={layoutReset} />
           )}
 
           {view && <div style={{ marginTop: 12 }}>
