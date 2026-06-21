@@ -386,3 +386,27 @@ export const MOCK = {
       zeilen: [['Filialverkauf','176','4,2 J','5,2 %'],['Werkstatt/Service','58','6,1 J','4,1 %'],['Produktion','82','8,4 J','5,6 %'],['Verwaltung','24','9,8 J','3,2 %']] }
   }
 }
+
+// -------------------------------------------------------------------------
+//  Großdatensatz für die Verkaufsrechnungen — deterministisch generiert,
+//  damit die Tabellen-Virtualisierung an realistischer Zeilenzahl greift.
+//  (Im Echtbetrieb liefert das MSSQL-Backend die Belegliste.)
+// -------------------------------------------------------------------------
+;(function belegeAuffuellen() {
+  const liste = MOCK.perspektiven?.vk_verkaufsrechnung
+  if (!liste) return
+  const kunden = ['Stadtwerke Leasing GmbH', 'Radhaus Müller e.K.', 'Velo Schweiz AG', 'Stadtflotte NL',
+    'Onlineshop Sammelrg.', 'BikeWorld B2B', 'CityRad Hamburg', 'Alpentour AG', 'PedalPower e.K.', 'Leasing Nord']
+  const status = ['bezahlt', 'offen', 'überfällig', 'bezahlt', 'bezahlt', 'offen']
+  let seed = 4242
+  const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff
+  const zusatz = []
+  for (let i = 0; i < 640; i++) {
+    const nr = `AR-2025-${String(5000 + i).padStart(5, '0')}`
+    const tag = String(1 + Math.floor(rnd() * 27)).padStart(2, '0')
+    const monat = String(1 + Math.floor(rnd() * 5)).padStart(2, '0')
+    const betrag = (800 + Math.floor(rnd() * 149000)).toLocaleString('de-DE')
+    zusatz.push([nr, `${tag}.${monat}.2025`, kunden[Math.floor(rnd() * kunden.length)], betrag, status[Math.floor(rnd() * status.length)]])
+  }
+  liste.zeilen = [...liste.zeilen, ...zusatz]
+})()

@@ -4,6 +4,7 @@ import { KPI } from '../core/kpiRegistry.js'
 import { ampelStatus, trendAusHistorie } from '../core/ampel.js'
 import { AMPEL_FARBE, AMPEL_SOFT, AMPEL_LABEL, formatWert, TREND_ICON } from '../design/theme.js'
 import { useKpiDef } from '../modules/kennzahlen/KpiDefContext.jsx'
+import { useFenster } from '../core/useFenster.js'
 
 export function AmpelPunkt({ status, size = 10 }) {
   return <span style={{ display: 'inline-block', width: size, height: size, borderRadius: '50%',
@@ -60,22 +61,60 @@ export function KpiGesperrt({ kpiId }) {
 
 export function DetailTabelle({ daten, onZeileKlick }) {
   if (!daten) return <div style={{ color: 'var(--muted)' }}>Keine Detaildaten.</div>
+  const zeilen = daten.zeilen || []
+  // Virtualisierung greift erst ab vielen Zeilen; kleine Tabellen bleiben unverändert.
+  const f = useFenster({ anzahl: zeilen.length })
+
+  const zelle = (c, ci) => (
+    <td key={ci} className={ci === 0 ? '' : 'mono'} style={{ textAlign: ci === 0 ? 'left' : 'right',
+      padding: '8px 14px', borderBottom: '1px solid var(--line)',
+      ...(f.aktiv ? { height: f.zeilenHoehe, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 } : null) }}>{c}</td>
+  )
+  const zeile = (z, ri) => (
+    <tr key={ri} onClick={onZeileKlick ? () => onZeileKlick(ri) : undefined}
+      style={onZeileKlick ? { cursor: 'pointer' } : undefined}
+      onMouseEnter={onZeileKlick ? (e) => e.currentTarget.style.background = 'var(--accent-soft)' : undefined}
+      onMouseLeave={onZeileKlick ? (e) => e.currentTarget.style.background = 'transparent' : undefined}>
+      {z.map(zelle)}</tr>
+  )
+
+  const kopf = (
+    <thead><tr>{daten.spalten.map((s, i) => (
+      <th key={i} style={{ textAlign: i === 0 ? 'left' : 'right', padding: '8px 14px', color: 'var(--muted)',
+        fontWeight: 500, fontSize: 11, textTransform: 'uppercase', borderBottom: '1px solid var(--line)',
+        ...(f.aktiv ? { position: 'sticky', top: 0, background: 'var(--panel)', zIndex: 1 } : null) }}>{s}</th>))}</tr></thead>
+  )
+
+  // Kleine Tabelle: unverändertes Verhalten (volle Liste, frei wachsend).
+  if (!f.aktiv) {
+    return (
+      <div className="tabelle-scroll" style={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', overflow: 'auto' }}>
+        <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--line)', fontWeight: 600 }}>{daten.titel}</div>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 480 }}>
+          {kopf}<tbody>{zeilen.map(zeile)}</tbody>
+        </table>
+      </div>
+    )
+  }
+
+  // Große Tabelle: nur sichtbare Zeilen rendern, Höhe über Platzhalterzeilen halten.
+  const spaltenZahl = daten.spalten.length
   return (
-    <div className="tabelle-scroll" style={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', overflow: 'auto' }}>
-      <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--line)', fontWeight: 600 }}>{daten.titel}</div>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 480 }}>
-        <thead><tr>{daten.spalten.map((s, i) => (
-          <th key={i} style={{ textAlign: i === 0 ? 'left' : 'right', padding: '8px 14px', color: 'var(--muted)',
-            fontWeight: 500, fontSize: 11, textTransform: 'uppercase', borderBottom: '1px solid var(--line)' }}>{s}</th>))}</tr></thead>
-        <tbody>{daten.zeilen.map((z, ri) => (
-          <tr key={ri} onClick={onZeileKlick ? () => onZeileKlick(ri) : undefined}
-            style={onZeileKlick ? { cursor: 'pointer' } : undefined}
-            onMouseEnter={onZeileKlick ? (e) => e.currentTarget.style.background = 'var(--accent-soft)' : undefined}
-            onMouseLeave={onZeileKlick ? (e) => e.currentTarget.style.background = 'transparent' : undefined}>
-            {z.map((c, ci) => (
-            <td key={ci} className={ci === 0 ? '' : 'mono'} style={{ textAlign: ci === 0 ? 'left' : 'right',
-              padding: '8px 14px', borderBottom: '1px solid var(--line)' }}>{c}</td>))}</tr>))}</tbody>
-      </table>
+    <div style={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)' }}>
+      <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--line)', fontWeight: 600, display: 'flex', justifyContent: 'space-between' }}>
+        <span>{daten.titel}</span>
+        <span className="mono" style={{ fontSize: 11, color: 'var(--muted)' }}>{zeilen.length.toLocaleString('de-DE')} Zeilen · virtualisiert</span>
+      </div>
+      <div ref={f.refContainer} onScroll={f.onScroll} style={{ maxHeight: f.hoehe, overflow: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 480 }}>
+          {kopf}
+          <tbody>
+            {f.vorHoehe > 0 && <tr style={{ height: f.vorHoehe }}><td colSpan={spaltenZahl} style={{ padding: 0, border: 'none' }} /></tr>}
+            {zeilen.slice(f.start, f.ende).map((z, i) => zeile(z, f.start + i))}
+            {f.nachHoehe > 0 && <tr style={{ height: f.nachHoehe }}><td colSpan={spaltenZahl} style={{ padding: 0, border: 'none' }} /></tr>}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }
