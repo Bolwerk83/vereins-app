@@ -15,6 +15,7 @@ import Verteiler from './modules/verteiler/Verteiler.jsx'
 import Abschluss from './modules/abschluss/Abschluss.jsx'
 import Transport from './modules/transport/Transport.jsx'
 import Abstimmung from './modules/abstimmung/Abstimmung.jsx'
+import ControllingStruktur from './modules/controlling/ControllingStruktur.jsx'
 import { AKTUELLE_STAGE, stageInfo } from './core/stage.js'
 import { autoSeed } from './core/designerSeed.js'
 import TreeNavigator from './modules/tree-navigator/TreeNavigator.jsx'
@@ -99,7 +100,8 @@ export default function App() {
       { label: t('nav.tree'), icon: '🌳', aktiv: ansicht === 'baum' || ansicht === 'report', onClick: () => geh('baum') },
       { label: t('nav.kennzahlen'), icon: '📖', aktiv: ansicht === 'kennzahlen', onClick: () => geh('kennzahlen') },
       { label: t('nav.katalog'), icon: '🗂', aktiv: ansicht === 'katalog', onClick: () => geh('katalog') },
-      { label: t('nav.designer'), icon: '🧩', aktiv: ansicht === 'designer', onClick: () => geh('designer') }
+      { label: t('nav.designer'), icon: '🧩', aktiv: ansicht === 'designer', onClick: () => geh('designer') },
+      { label: t('nav.controlling'), icon: '🧭', aktiv: ansicht === 'controlling', onClick: () => geh('controlling') }
     ] },
     { titel: 'Analyse', eintraege: [
       { label: t('nav.bi'), icon: '💬', aktiv: ansicht === 'bi', onClick: () => geh('bi') },
@@ -253,6 +255,9 @@ export default function App() {
         )}
         {ansicht === 'abstimmung' && (
           <Abstimmung werte={werte} periode={periode} />
+        )}
+        {ansicht === 'controlling' && (
+          <ControllingStruktur werte={werte} rolle={rolle} />
         )}
         {ansicht === 'transport' && (
           <Transport benutzer={benutzer} />
