@@ -5,7 +5,7 @@
 // =========================================================================
 import React, { useState } from 'react'
 import { BEREICHE, ENDBEREICHE, ladeSchluessel, schluessel, setSchluessel, gewichte } from '../../core/verteilung.js'
-import { bab, ladeKostenarten, setZuordnung } from '../../core/babVoll.js'
+import { bab, ladeKostenarten, setZuordnung, DATENARTEN } from '../../core/babVoll.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
@@ -17,9 +17,12 @@ export default function BAB({ onGeh }) {
   const [, setTick] = useState(0)
   const refresh = () => setTick((t) => t + 1)
   const [editSchluessel, setEditSchluessel] = useState(null)
-  const b = bab()
+  const [datenart, setDatenart] = useState('ist')
+  const b = bab(datenart)
   const kostenarten = ladeKostenarten()
   const schluesselListe = ladeSchluessel()
+  const daChip = (aktiv) => ({ padding: '5px 12px', borderRadius: 999, fontSize: 12.5, cursor: 'pointer', fontWeight: 600,
+    border: `1px solid ${aktiv ? 'var(--accent)' : 'var(--line)'}`, background: aktiv ? 'var(--accent)' : 'var(--panel)', color: aktiv ? '#fff' : 'var(--ink)' })
 
   function aendereMenge(sid, bereich, val) {
     const s = schluessel(sid)
@@ -39,6 +42,13 @@ export default function BAB({ onGeh }) {
           </div>
         </div>
         {onGeh && <button onClick={() => onGeh('kostenstellen')} style={{ ...card, padding: '7px 12px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>← Kostenstellen</button>}
+      </div>
+
+      {/* Datenart-Umschaltung (dynamisch) */}
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
+        <span style={{ ...cap }}>Datenart:</span>
+        {DATENARTEN.map((d) => <button key={d.id} style={daChip(datenart === d.id)} onClick={() => setDatenart(d.id)}>{d.name}</button>)}
+        <span style={{ fontSize: 12, color: 'var(--muted)' }}>Σ {m(b.summe)} Mio € · dynamisch neu gerechnet</span>
       </div>
 
       {/* BAB-Matrix */}
@@ -92,7 +102,7 @@ export default function BAB({ onGeh }) {
           </tbody>
         </table>
         <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 8 }}>
-          Bezug: Fertigungsmaterial {m(26.8)} · Fertigungslohn {m(5.2)} · Herstellkosten {m(b.hk)} Mio €. Die Sätze fließen in die Zuschlagskalkulation.
+          Bezug: Fertigungsmaterial {m(b.fm)} · Fertigungslohn {m(b.fl)} · Herstellkosten {m(b.hk)} Mio €. Die Sätze fließen in die Zuschlagskalkulation.
         </div>
       </div>
 

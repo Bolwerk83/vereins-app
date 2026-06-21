@@ -26,6 +26,12 @@ test('Umlage verteilt den Allgemein-Bereich vollständig', () => {
 
 test('Zuschlagssätze: Material auf FM, Fertigung auf FL', () => {
   const b = bab()
-  assert.equal(b.zuschlag.material, +(b.nachUmlage.material / FM * 100).toFixed(1))
-  assert.equal(b.zuschlag.fertigung, +(b.nachUmlage.fertigung / FL * 100).toFixed(1))
+  assert.equal(b.zuschlag.material, +(b.nachUmlage.material / b.fm * 100).toFixed(1))
+  assert.equal(b.zuschlag.fertigung, +(b.nachUmlage.fertigung / b.fl * 100).toFixed(1))
+})
+
+test('Datenart wirkt: Plan-Summe < Ist-Summe < Forecast-Summe', () => {
+  const ist = bab('ist').summe, plan = bab('plan').summe, fc = bab('forecast').summe
+  assert.ok(plan < ist, `plan ${plan} < ist ${ist}`)
+  assert.ok(fc > ist, `fc ${fc} > ist ${ist}`)
 })
