@@ -5,6 +5,8 @@
   "type": "module",
   "description": "Metadaten-getriebenes Enterprise-Reporting (Berichtsbaum, 5 Ebenen, KPI-Logik, Rollen/Rechte, MSSQL)",
   "scripts": {
+    "setup": "node setup.mjs",
+    "start:local": "node start.mjs",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
