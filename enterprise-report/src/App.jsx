@@ -17,6 +17,7 @@ import Transport from './modules/transport/Transport.jsx'
 import Abstimmung from './modules/abstimmung/Abstimmung.jsx'
 import ControllingStruktur from './modules/controlling/ControllingStruktur.jsx'
 import KLR from './modules/klr/KLR.jsx'
+import Kostenartenrechnung from './modules/kostenarten/Kostenartenrechnung.jsx'
 import { AKTUELLE_STAGE, stageInfo } from './core/stage.js'
 import { autoSeed } from './core/designerSeed.js'
 import TreeNavigator from './modules/tree-navigator/TreeNavigator.jsx'
@@ -263,6 +264,9 @@ export default function App() {
         )}
         {ansicht === 'klr' && (
           <KLR werte={werte} rolle={rolle} periode={periode} onGeh={geh} />
+        )}
+        {ansicht === 'kostenarten' && (
+          <Kostenartenrechnung onGeh={geh} />
         )}
         {ansicht === 'transport' && (
           <Transport benutzer={benutzer} />

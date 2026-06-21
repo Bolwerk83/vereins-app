@@ -163,6 +163,11 @@ export default function KLR({ werte = {}, rolle, periode, onGeh }) {
 
         <div style={{ ...cap, margin: '14px 0 6px' }}>Datengrundlage</div>
         <StufenTabelle datensatz={s.datensatz} />
+        {aktiv === 'kostenarten' && onGeh && (
+          <button onClick={() => onGeh('kostenarten')} style={{ marginTop: 10, fontSize: 12.5, cursor: 'pointer', border: 'none', background: 'var(--accent)', color: '#fff', borderRadius: 'var(--radius-sm)', padding: '7px 12px', fontWeight: 600 }}>
+            → Kostenartenrechnung im Detail (mehrdimensional)
+          </button>
+        )}
       </div>
 
       {/* Aufgaben & Zwecke + Kostenarten */}
