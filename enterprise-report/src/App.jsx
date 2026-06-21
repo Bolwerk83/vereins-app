@@ -29,6 +29,7 @@ import AuftragsLebenszyklus from './modules/auftrag/AuftragsLebenszyklus.jsx'
 import Kostenstellenrechnung from './modules/kostenstellen/Kostenstellenrechnung.jsx'
 import BAB from './modules/bab/BAB.jsx'
 import Profitcenter from './modules/profitcenter/Profitcenter.jsx'
+import Abweichungsanalyse from './modules/abweichung/Abweichungsanalyse.jsx'
 import Kalkulation from './modules/kalkulation/Kalkulation.jsx'
 import Ergebnisrechnung from './modules/ergebnis/Ergebnisrechnung.jsx'
 import Deckungsbeitrag from './modules/deckungsbeitrag/Deckungsbeitrag.jsx'
@@ -141,6 +142,7 @@ export default function App() {
     { titel: 'Analyse', eintraege: [
       { label: t('nav.bi'), icon: '💬', aktiv: ansicht === 'bi', onClick: () => geh('bi') },
       { label: t('nav.vergleich'), icon: '⚖', aktiv: ansicht === 'vergleich', onClick: () => geh('vergleich') },
+      { label: t('nav.abweichung'), icon: '📊', aktiv: ansicht === 'abweichung', onClick: () => geh('abweichung') },
       { label: t('nav.qc'), icon: '✅', aktiv: ansicht === 'qc', onClick: () => geh('qc'), badge: qcFehler || null },
       { label: t('nav.abstimmung'), icon: '🔗', aktiv: ansicht === 'abstimmung', onClick: () => geh('abstimmung') },
       { label: t('nav.lebenszyklus'), icon: '🔄', aktiv: ansicht === 'lebenszyklus', onClick: () => geh('lebenszyklus') },
@@ -334,6 +336,9 @@ export default function App() {
         )}
         {ansicht === 'profitcenter' && (
           <Profitcenter onGeh={geh} />
+        )}
+        {ansicht === 'abweichung' && (
+          <Abweichungsanalyse onGeh={geh} />
         )}
         {ansicht === 'kalkulation' && (
           <Kalkulation onGeh={geh} />
