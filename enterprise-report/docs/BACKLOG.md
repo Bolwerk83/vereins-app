@@ -55,7 +55,7 @@ Stand: laufend.
 - [ ] Mehr Lektionen je Kapitel
 - [ ] Interaktive Ablaufdiagramme (klickbare Prozessgrafik der Zusammenhänge)
 - [ ] Rollthe-basierte Lernpfade (je Rolle anderer Schwerpunkt)
-- [ ] Zertifikat/Abschluss bei 100 %
+- [x] Zertifikat/Abschluss bei 100 % (Lektionen + Wissens-Checks, druckbar) ✅
 
 ## Hinweise
 - Jede Funktion: Build grün + Tests; Persistenz via localStorage, später DWH/Backend.

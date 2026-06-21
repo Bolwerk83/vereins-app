@@ -6,6 +6,7 @@ import React, { useState } from 'react'
 import { KAPITEL, LEKTIONEN, lektionenVon, istAbgeschlossen, markiere, fortschritt } from '../../core/lernpfad.js'
 import { quizFortschritt, quizBestanden, hatQuiz } from '../../core/quiz.js'
 import WissensCheck from './WissensCheck.jsx'
+import Zertifikat from './Zertifikat.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
@@ -94,6 +95,8 @@ export default function Lernpfad({ onGeh }) {
           <WissensCheck lektionId={l.id} onChange={refresh} />
         </div>
       </div>
+
+      <Zertifikat />
     </div>
   )
 }
