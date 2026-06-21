@@ -8,6 +8,7 @@ import React, { useState } from 'react'
 import { DRILL } from '../../core/drilldowns.js'
 import { ladePerspektive, PERIODEN, AKTUELLE_PERIODE } from '../../core/dataProvider.js'
 import { DetailTabelle } from '../../components/ui.jsx'
+import SteuerLeiste from '../../components/SteuerLeiste.jsx'
 
 const TOPN = [10, 25, 100, 0]
 const distinct = (zeilen, idx) => [...new Set(zeilen.map((z) => z[idx]))]
@@ -86,6 +87,13 @@ export default function DetailPerspektiven({ bereich, perspektiven = [] }) {
 
   const inp = { padding: '7px 9px', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', font: 'inherit' }
 
+  // Welche Zusatzfilter gibt es (Hinweis) und welche sind gesetzt (Aktiv-Anzeige)?
+  const zusatzNamen = ['Zeitraum (Von/Bis)', ...((roh?.filterSpalten || []).map((i) => roh.spalten[i])), 'Anzahl (Top-N)']
+  const aktiveFilter = []
+  if (von !== PERIODEN[0] || bis !== AKTUELLE_PERIODE) aktiveFilter.push(`Zeitraum ${von}–${bis}`)
+  for (const [idx, wert] of Object.entries(feld)) if (wert) aktiveFilter.push(`${roh?.spalten?.[idx] || idx}: ${wert}`)
+  if (top !== 25) aktiveFilter.push(`Anzeige: ${top ? 'Top ' + top : 'Alle'}`)
+
   return (
     <div style={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', padding: 14, boxShadow: 'var(--shadow)' }}>
       <div className="mono" style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 8 }}>Detail-Sprungpunkte (Ebene 4) — Auswertung nach …</div>
@@ -101,28 +109,39 @@ export default function DetailPerspektiven({ bereich, perspektiven = [] }) {
 
       {aktiv && (
         <div style={{ marginTop: 12, borderTop: '1px solid var(--line)', paddingTop: 12 }}>
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-            <label style={{ fontSize: 11, color: 'var(--muted)' }}>Von<br />
-              <select style={{ ...inp, marginTop: 2 }} value={von} onChange={(e) => setVon(e.target.value)}>{PERIODEN.map((p) => <option key={p}>{p}</option>)}</select></label>
-            <label style={{ fontSize: 11, color: 'var(--muted)' }}>Bis<br />
-              <select style={{ ...inp, marginTop: 2 }} value={bis} onChange={(e) => setBis(e.target.value)}>{PERIODEN.map((p) => <option key={p}>{p}</option>)}</select></label>
-            {/* Feld-Filter aus filterSpalten */}
-            {(roh?.filterSpalten || []).map((idx) => (
-              <label key={idx} style={{ fontSize: 11, color: 'var(--muted)' }}>{roh.spalten[idx]}<br />
-                <select style={{ ...inp, marginTop: 2 }} value={feld[idx] || ''} onChange={(e) => setFeld((f) => ({ ...f, [idx]: e.target.value }))}>
-                  <option value="">Alle</option>
-                  {distinct(roh.zeilen, idx).map((w) => <option key={w} value={w}>{w}</option>)}
-                </select></label>
-            ))}
-            <label style={{ fontSize: 11, color: 'var(--muted)', flex: 1, minWidth: 140 }}>Suche<br />
-              <input style={{ ...inp, marginTop: 2, width: '100%' }} value={suche} onChange={(e) => setSuche(e.target.value)} placeholder="Nr./Name …" /></label>
-            <label style={{ fontSize: 11, color: 'var(--muted)' }}>Anzeige<br />
-              <select style={{ ...inp, marginTop: 2 }} value={top} onChange={(e) => setTop(Number(e.target.value))}>
-                {TOPN.map((n) => <option key={n} value={n}>{n ? `Top ${n}` : 'Alle'}</option>)}</select></label>
-            <button onClick={anzeigen} disabled={laedt || !roh} style={{ padding: '9px 16px', border: 'none', borderRadius: 'var(--radius-sm)', background: 'var(--accent)', color: '#fff', fontWeight: 600, opacity: (laedt || !roh) ? .6 : 1 }}>
-              {laedt ? 'Lädt …' : 'Anzeigen'}</button>
-          </div>
-          {!daten && !laedt && <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 8 }}>Filter setzen und „Anzeigen" — so bleibt das Laden schnell.</div>}
+          <SteuerLeiste
+            zusatzNamen={zusatzNamen}
+            aktiveFilter={aktiveFilter}
+            highlight={
+              <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                <label style={{ fontSize: 11, color: 'var(--muted)', flex: 1, minWidth: 160 }}>Schnellsuche (Highlight-Filter)<br />
+                  <input style={{ ...inp, marginTop: 2, width: '100%' }} value={suche}
+                    onChange={(e) => setSuche(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') anzeigen() }}
+                    placeholder="Nr./Name …" /></label>
+                <button onClick={anzeigen} disabled={laedt || !roh} style={{ padding: '9px 16px', border: 'none', borderRadius: 'var(--radius-sm)', background: 'var(--accent)', color: '#fff', fontWeight: 600, opacity: (laedt || !roh) ? .6 : 1 }}>
+                  {laedt ? 'Lädt …' : 'Anzeigen'}</button>
+              </div>
+            }>
+            {/* Zusatzfilter (aufklappbar) */}
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+              <label style={{ fontSize: 11, color: 'var(--muted)' }}>Von<br />
+                <select style={{ ...inp, marginTop: 2 }} value={von} onChange={(e) => setVon(e.target.value)}>{PERIODEN.map((p) => <option key={p}>{p}</option>)}</select></label>
+              <label style={{ fontSize: 11, color: 'var(--muted)' }}>Bis<br />
+                <select style={{ ...inp, marginTop: 2 }} value={bis} onChange={(e) => setBis(e.target.value)}>{PERIODEN.map((p) => <option key={p}>{p}</option>)}</select></label>
+              {(roh?.filterSpalten || []).map((idx) => (
+                <label key={idx} style={{ fontSize: 11, color: 'var(--muted)' }}>{roh.spalten[idx]}<br />
+                  <select style={{ ...inp, marginTop: 2 }} value={feld[idx] || ''} onChange={(e) => setFeld((f) => ({ ...f, [idx]: e.target.value }))}>
+                    <option value="">Alle</option>
+                    {distinct(roh.zeilen, idx).map((w) => <option key={w} value={w}>{w}</option>)}
+                  </select></label>
+              ))}
+              <label style={{ fontSize: 11, color: 'var(--muted)' }}>Anzahl<br />
+                <select style={{ ...inp, marginTop: 2 }} value={top} onChange={(e) => setTop(Number(e.target.value))}>
+                  {TOPN.map((n) => <option key={n} value={n}>{n ? `Top ${n}` : 'Alle'}</option>)}</select></label>
+              <button onClick={anzeigen} disabled={laedt || !roh} style={{ ...inp, cursor: 'pointer', background: 'var(--accent)', color: '#fff', border: 'none', fontWeight: 600 }}>Anwenden</button>
+            </div>
+          </SteuerLeiste>
+          {!daten && !laedt && <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 8 }}>Schnellsuche oder Zusatzfilter setzen und „Anzeigen" — so bleibt das Laden schnell.</div>}
 
           {/* Sortierung & Spaltenwahl (sofort wirksam) */}
           {daten && (

@@ -5,6 +5,7 @@ import BenutzerLeiste from './modules/benutzer/BenutzerLeiste.jsx'
 import HilfePanel from './modules/hilfe/HilfePanel.jsx'
 import { KpiDefProvider } from './modules/kennzahlen/KpiDefContext.jsx'
 import Kennzahlen from './modules/kennzahlen/Kennzahlen.jsx'
+import BurgerMenu from './components/BurgerMenu.jsx'
 import { ladeKpiWerte, pruefeVerbindung, PERIODEN, AKTUELLE_PERIODE, QUELLE } from './core/dataProvider.js'
 import TreeNavigator from './modules/tree-navigator/TreeNavigator.jsx'
 import ManagementReport from './modules/management-report/ManagementReport.jsx'
@@ -71,11 +72,37 @@ export default function App() {
   const topBtn = (aktiv) => ({ padding: '6px 10px', borderRadius: 'var(--radius-sm)', fontSize: 12,
     border: '1px solid var(--line)', background: aktiv ? 'var(--accent)' : 'var(--panel)', color: aktiv ? '#fff' : 'var(--ink)' })
 
+  // Navigation fürs Burger-Menü (gruppiert) — von jeder Seite aus steuerbar.
+  const geh = (a) => setAnsicht(a)
+  const qcFehler = validierungsZusammenfassung(werte).fehler
+  const alertN = alertAnzahl(werte, rolle)
+  const menuGruppen = [
+    { titel: 'Berichte', eintraege: [
+      { label: t('nav.tree'), icon: '🌳', aktiv: ansicht === 'baum' || ansicht === 'report', onClick: () => geh('baum') },
+      { label: t('nav.kennzahlen'), icon: '📖', aktiv: ansicht === 'kennzahlen', onClick: () => geh('kennzahlen') },
+      { label: t('nav.katalog'), icon: '🗂', aktiv: ansicht === 'katalog', onClick: () => geh('katalog') },
+      { label: t('nav.designer'), icon: '🧩', aktiv: ansicht === 'designer', onClick: () => geh('designer') }
+    ] },
+    { titel: 'Analyse', eintraege: [
+      { label: t('nav.bi'), icon: '💬', aktiv: ansicht === 'bi', onClick: () => geh('bi') },
+      { label: t('nav.qc'), icon: '✅', aktiv: ansicht === 'qc', onClick: () => geh('qc'), badge: qcFehler || null },
+      { label: t('nav.instrumente'), icon: '📐', aktiv: ansicht === 'instrumente', onClick: () => geh('instrumente') },
+      { label: t('nav.alerts'), icon: '⚠', aktiv: ansicht === 'alerts', onClick: () => geh('alerts'), badge: alertN || null }
+    ] },
+    { titel: 'Steuerung', eintraege: [
+      { label: t('nav.massnahmen'), icon: '🎯', aktiv: ansicht === 'massnahmen', onClick: () => geh('massnahmen') },
+      ...(istAdmin(rolle) ? [{ label: t('nav.rechte'), icon: '👥', aktiv: ansicht === 'rechte', onClick: () => geh('rechte') }] : []),
+      { label: t('nav.wizard'), icon: '⚙', aktiv: ansicht === 'wizard', onClick: () => geh('wizard') },
+      { label: t('nav.hilfe'), icon: '❓', aktiv: false, onClick: () => { setHilfeErstmalig(false); setHilfeAuf(true) } }
+    ] }
+  ]
+
   return (
     <div>
       {/* Topbar */}
       <header className="no-print" style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--panel)', borderBottom: '1px solid var(--line)',
         padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+        {ansicht !== 'wizard' && <BurgerMenu gruppen={menuGruppen} />}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ width: 26, height: 26, borderRadius: 7, background: 'var(--accent)' }} />
           <div>
