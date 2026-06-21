@@ -42,6 +42,8 @@ import Ergebnisrechnung from './modules/ergebnis/Ergebnisrechnung.jsx'
 import Deckungsbeitrag from './modules/deckungsbeitrag/Deckungsbeitrag.jsx'
 import Lernpfad from './modules/lernpfad/Lernpfad.jsx'
 import GlobalSuche from './modules/suche/GlobalSuche.jsx'
+import Admin from './modules/admin/Admin.jsx'
+import { ladeBranding, applyBranding, themeById } from './core/admin.js'
 import { AKTUELLE_STAGE, stageInfo } from './core/stage.js'
 import { autoSeed } from './core/designerSeed.js'
 import TreeNavigator from './modules/tree-navigator/TreeNavigator.jsx'
@@ -79,6 +81,7 @@ export default function App() {
   const [hilfeAuf, setHilfeAuf] = useState(false)
   const [hilfeErstmalig, setHilfeErstmalig] = useState(false)
   const [onbAuf, setOnbAuf] = useState(false)
+  const [branding, setBranding] = useState(ladeBranding())
   // Aktive "Rolle": angemeldeter Benutzer -> Vereinigung seiner Gruppen.
   // Ohne Anmeldung -> manuell gewählte Gruppe (Demo-/Admin-Modus).
   const rolle = benutzer
@@ -112,6 +115,8 @@ export default function App() {
   useEffect(() => { pruefeVerbindung().then(setVerbindung) }, [])
   // Erster Start: 20 Beispiel-Berichte einmalig anlegen (s. core/designerSeed).
   useEffect(() => { autoSeed() }, [])
+  // Branding (Logo/Theme) beim Start anwenden (Akzentfarbe, Tab-Titel).
+  useEffect(() => { applyBranding(branding) }, [branding])
   // Gruppen aus der Quelle laden (mssql -> DB, sonst localStorage).
   useEffect(() => { ladeGruppenAsync().then(setGruppen) }, [])
   // Effektive Rechte des angemeldeten Benutzers auflösen (async-fähig für DB).
@@ -171,7 +176,10 @@ export default function App() {
       { label: t('nav.abschluss'), icon: '🔒', aktiv: ansicht === 'abschluss', onClick: () => geh('abschluss') },
       { label: t('nav.verteiler'), icon: '📤', aktiv: ansicht === 'verteiler', onClick: () => geh('verteiler') },
       { label: t('nav.transport'), icon: '🚚', aktiv: ansicht === 'transport', onClick: () => geh('transport') },
-      ...(istAdmin(rolle) ? [{ label: t('nav.rechte'), icon: '👥', aktiv: ansicht === 'rechte', onClick: () => geh('rechte') }] : []),
+      ...(istAdmin(rolle) ? [
+        { label: t('nav.admin'), icon: '🛠', aktiv: ansicht === 'admin', onClick: () => geh('admin') },
+        { label: t('nav.rechte'), icon: '👥', aktiv: ansicht === 'rechte', onClick: () => geh('rechte') }
+      ] : []),
       { label: t('nav.wizard'), icon: '⚙', aktiv: ansicht === 'wizard', onClick: () => geh('wizard') },
       { label: t('nav.lernpfad'), icon: '🎓', aktiv: ansicht === 'lernpfad', onClick: () => geh('lernpfad') },
       { label: t('nav.onboarding'), icon: '🚀', aktiv: false, onClick: () => setOnbAuf(true) },
@@ -186,9 +194,11 @@ export default function App() {
         padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
         {ansicht !== 'wizard' && <BurgerMenu gruppen={menuGruppen} />}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 26, height: 26, borderRadius: 7, background: 'var(--accent)' }} />
+          {branding.logoDataUrl
+            ? <img src={branding.logoDataUrl} alt="Logo" style={{ width: 26, height: 26, borderRadius: 7, objectFit: 'contain' }} />
+            : <div style={{ width: 26, height: 26, borderRadius: 7, background: 'var(--accent)' }} />}
           <div>
-            <div style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 7 }}>Enterprise Report
+            <div style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 7 }}>{branding.appName || 'Enterprise Report'}
               <span title={`Instanz: ${stageInfo(AKTUELLE_STAGE).name}`} style={{ fontSize: 10, fontWeight: 700, padding: '1px 7px', borderRadius: 999,
                 color: '#fff', background: stageInfo(AKTUELLE_STAGE).farbe }}>{stageInfo(AKTUELLE_STAGE).kurz}</span>
             </div>
@@ -256,6 +266,13 @@ export default function App() {
           </>
         )}
       </header>
+
+      {ansicht !== 'wizard' && themeById(branding.themeId).banner && (
+        <div className="no-print" style={{ background: themeById(branding.themeId).accent, color: '#fff', textAlign: 'center',
+          padding: '5px 16px', fontSize: 12, fontWeight: 600, letterSpacing: '.02em' }}>
+          {themeById(branding.themeId).emoji} {themeById(branding.themeId).banner}
+        </div>
+      )}
 
       <HilfePanel offen={hilfeAuf} erstmalig={hilfeErstmalig} onSchliessen={hilfeSchliessen} />
       {onbAuf && <Onboarding rolle={rolle} istAdmin={istAdmin(rolle)} onGeh={geh} onClose={() => setOnbAuf(false)} />}
@@ -391,6 +408,9 @@ export default function App() {
         )}
         {ansicht === 'transport' && (
           <Transport benutzer={benutzer} />
+        )}
+        {ansicht === 'admin' && (
+          <Admin istAdmin={istAdmin(rolle)} onChange={setBranding} />
         )}
         {ansicht === 'rechte' && (
           <RollenRechte onChange={(list) => {
