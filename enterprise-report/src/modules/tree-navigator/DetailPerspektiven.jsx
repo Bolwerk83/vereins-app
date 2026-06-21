@@ -11,6 +11,12 @@ import { DetailTabelle } from '../../components/ui.jsx'
 
 const TOPN = [10, 25, 100, 0]
 const distinct = (zeilen, idx) => [...new Set(zeilen.map((z) => z[idx]))]
+// Deutsche Zahl ("1.240" / "38 %" / "−0,3") parsen — sonst NaN.
+function parseNum(v) {
+  const s = String(v).replace(/[^\d,.\-−]/g, '').replace(/−/g, '-').replace(/\./g, '').replace(',', '.')
+  const n = parseFloat(s)
+  return Number.isNaN(n) ? null : n
+}
 
 export default function DetailPerspektiven({ bereich, perspektiven = [] }) {
   const [aktiv, setAktiv] = useState(null)
@@ -22,12 +28,16 @@ export default function DetailPerspektiven({ bereich, perspektiven = [] }) {
   const [suche, setSuche] = useState('')
   const [top, setTop] = useState(25)
   const [feld, setFeld] = useState({})        // { spaltenIndex: wert }
+  const [sortIdx, setSortIdx] = useState(null)
+  const [sortDir, setSortDir] = useState('asc')
+  const [sichtbar, setSichtbar] = useState(null) // Set sichtbarer Spaltenindizes
+  const [spaltenAuf, setSpaltenAuf] = useState(false)
 
   async function waehle(p) {
-    setAktiv(p); setDaten(null); setFeld({}); setSuche('')
+    setAktiv(p); setDaten(null); setFeld({}); setSuche(''); setSortIdx(null); setSpaltenAuf(false)
     setLaedt(true)
     const r = await ladePerspektive(`${bereich.toLowerCase()}_${p}`)
-    setRoh(r); setLaedt(false)
+    setRoh(r); setSichtbar(r ? new Set(r.spalten.map((_, i) => i)) : null); setLaedt(false)
   }
 
   function anzeigen() {
@@ -42,6 +52,21 @@ export default function DetailPerspektiven({ bereich, perspektiven = [] }) {
     if (s) zeilen = zeilen.filter((z) => z.some((c) => String(c).toLowerCase().includes(s)))
     if (top) zeilen = zeilen.slice(0, top)
     setDaten({ ...roh, zeilen })
+  }
+
+  // Sicht = gefiltertes Ergebnis + Sortierung + Spaltenauswahl (sofort wirksam)
+  let view = null
+  if (daten && sichtbar) {
+    const cols = daten.spalten.map((_, i) => i).filter((i) => sichtbar.has(i))
+    let zeilen = daten.zeilen
+    if (sortIdx != null) {
+      zeilen = [...zeilen].sort((a, b) => {
+        const na = parseNum(a[sortIdx]), nb = parseNum(b[sortIdx])
+        const c = (na != null && nb != null) ? na - nb : String(a[sortIdx]).localeCompare(String(b[sortIdx]), 'de')
+        return sortDir === 'asc' ? c : -c
+      })
+    }
+    view = { titel: daten.titel, spalten: cols.map((i) => daten.spalten[i]), zeilen: zeilen.map((z) => cols.map((i) => z[i])) }
   }
 
   const inp = { padding: '7px 9px', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', font: 'inherit' }
@@ -83,9 +108,33 @@ export default function DetailPerspektiven({ bereich, perspektiven = [] }) {
               {laedt ? 'Lädt …' : 'Anzeigen'}</button>
           </div>
           {!daten && !laedt && <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 8 }}>Filter setzen und „Anzeigen" — so bleibt das Laden schnell.</div>}
-          {daten && <div style={{ marginTop: 12 }}>
-            <DetailTabelle daten={daten} />
-            <div className="mono" style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>{daten.zeilen.length} Zeile(n){top ? ` (Top ${top})` : ''}</div>
+
+          {/* Sortierung & Spaltenwahl (sofort wirksam) */}
+          {daten && (
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginTop: 12 }}>
+              <label style={{ fontSize: 11, color: 'var(--muted)' }}>Sortieren nach&nbsp;
+                <select style={{ ...inp, padding: '5px 8px' }} value={sortIdx ?? ''} onChange={(e) => setSortIdx(e.target.value === '' ? null : Number(e.target.value))}>
+                  <option value="">—</option>
+                  {daten.spalten.map((s, i) => <option key={i} value={i}>{s}</option>)}
+                </select>
+              </label>
+              {sortIdx != null && <button style={{ ...inp, padding: '5px 9px' }} onClick={() => setSortDir((d) => d === 'asc' ? 'desc' : 'asc')}>{sortDir === 'asc' ? '↑ aufsteigend' : '↓ absteigend'}</button>}
+              <button style={{ ...inp, padding: '5px 9px' }} onClick={() => setSpaltenAuf((v) => !v)}>▦ Spalten ({sichtbar?.size}/{daten.spalten.length})</button>
+            </div>
+          )}
+          {daten && spaltenAuf && (
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 8, padding: 10, border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', background: 'var(--bg)' }}>
+              {daten.spalten.map((s, i) => (
+                <label key={i} style={{ fontSize: 12, display: 'flex', gap: 5, alignItems: 'center' }}>
+                  <input type="checkbox" checked={sichtbar?.has(i)} onChange={() => setSichtbar((prev) => { const n = new Set(prev); n.has(i) ? n.delete(i) : n.add(i); return n.size ? n : prev })} />{s}
+                </label>
+              ))}
+            </div>
+          )}
+
+          {view && <div style={{ marginTop: 12 }}>
+            <DetailTabelle daten={view} />
+            <div className="mono" style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>{view.zeilen.length} Zeile(n){top ? ` (Top ${top})` : ''}{sortIdx != null ? ` · sortiert nach ${daten.spalten[sortIdx]}` : ''}</div>
           </div>}
         </div>
       )}
