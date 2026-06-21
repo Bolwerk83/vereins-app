@@ -13,7 +13,7 @@ import { ladeReports, saveReport, removeReport, neuerReport } from '../../core/d
 import { seedBeispielReports } from '../../core/designerSeed.js'
 import { datensatzKatalog, datensatzInfo, ladeDatensatz } from '../../core/datensaetze.js'
 import { formatWert, AMPEL_FARBE } from '../../design/theme.js'
-import { downloadCsv, druckePdf } from '../../core/export.js'
+import { exportReportPdf, exportReportExcel } from '../../core/reportExport.js'
 import { Badge, AmpelPunkt, DetailTabelle } from '../../components/ui.jsx'
 
 export default function ReportDesigner({ rolle, werte, startId }) {
@@ -47,16 +47,7 @@ export default function ReportDesigner({ rolle, werte, startId }) {
   function laden(id) { setR(ladeReports().find((x) => x.id === id) || neuerReport()) }
   function loeschen() { removeReport(r.id); const rest = ladeReports(); setReports(rest); setR(rest[0] || neuerReport()) }
 
-  function exportCsv() {
-    const rows = [[r.titel], [r.beschreibung], []]
-    r.bloecke.filter((b) => b.typ === 'kpi' && KPI[b.kpiId]).forEach((b) => {
-      const k = KPI[b.kpiId], ins = kpiInsight(b.kpiId, werte[b.kpiId])
-      rows.push([k.name, formatWert(werte[b.kpiId], k.einheit), k.ziel != null ? formatWert(k.ziel, k.einheit) : '–', ins.zielText])
-    })
-    downloadCsv(r.titel.replace(/\s+/g, '_'), rows)
-  }
-
-  const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', padding: 16, boxShadow: 'var(--shadow)' }
+  const card ={ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', padding: 16, boxShadow: 'var(--shadow)' }
   const inp = { width: '100%', padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', font: 'inherit' }
   const btn = { padding: '8px 12px', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', background: 'var(--panel)', fontSize: 13 }
 
@@ -119,8 +110,8 @@ export default function ReportDesigner({ rolle, werte, startId }) {
 
         <div style={{ display: 'flex', gap: 8, borderTop: '1px solid var(--line)', paddingTop: 12 }}>
           <button onClick={speichern} style={{ ...btn, background: 'var(--accent)', color: '#fff', border: 'none', fontWeight: 600, flex: 1 }}>Speichern</button>
-          <button onClick={exportCsv} style={btn}>⤓ CSV</button>
-          <button onClick={druckePdf} style={btn}>🖨 PDF</button>
+          <button onClick={() => exportReportExcel(r, werte)} style={btn} title="Bericht inkl. Tabellen als Excel">⤓ Excel</button>
+          <button onClick={() => exportReportPdf(r, werte)} style={btn} title="Bericht sauber als PDF (Druckfenster)">🖨 PDF</button>
           {reports.find((x) => x.id === r.id) && <button onClick={loeschen} style={{ ...btn, color: 'var(--amp-r)' }}>Löschen</button>}
         </div>
       </div>
