@@ -173,6 +173,11 @@ export default function KLR({ werte = {}, rolle, periode, onGeh }) {
             → Kostenstellenrechnung (BAB) im Detail
           </button>
         )}
+        {aktiv === 'ergebnis' && onGeh && (
+          <button onClick={() => onGeh('ergebnis')} style={{ marginTop: 10, fontSize: 12.5, cursor: 'pointer', border: 'none', background: 'var(--accent)', color: '#fff', borderRadius: 'var(--radius-sm)', padding: '7px 12px', fontWeight: 600 }}>
+            → Ergebnisrechnung (GuV / T-Konto)
+          </button>
+        )}
         {aktiv === 'kostentraeger' && onGeh && (
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
             <button onClick={() => onGeh('kalkulation')} style={{ fontSize: 12.5, cursor: 'pointer', border: 'none', background: 'var(--accent)', color: '#fff', borderRadius: 'var(--radius-sm)', padding: '7px 12px', fontWeight: 600 }}>
