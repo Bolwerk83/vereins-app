@@ -19,6 +19,7 @@
     "msnodesqlv8": "^4.2.1",
     "node-cron": "^3.0.3",
     "nodemailer": "^6.9.0",
-    "exceljs": "^4.4.0"
+    "exceljs": "^4.4.0",
+    "puppeteer": "^23.0.0"
   }
 }

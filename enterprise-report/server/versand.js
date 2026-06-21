@@ -5,6 +5,7 @@
 // =========================================================================
 import { sendeMail } from './mailer.js'
 import { protokolliere } from './verteiler.store.js'
+import { htmlZuPdf } from './pdf.js'
 
 const BERICHT_NAME = {
   'management-report': 'Management Report', 'versionsvergleich': 'Versionsvergleich',
@@ -27,9 +28,11 @@ async function baueAnhaenge(v, paket) {
 
   // 1) Echter Report-Inhalt aus dem Client-Schnappschuss (reproduzierbar).
   if (v.inhalt?.html && willPdf) {
-    // HTML-Report (im Browser/Word öffenbar; druckbar als PDF). Echter Inhalt
-    // statt Platzhalter — true-PDF nur mit Headless-Chrome (optional).
-    anhaenge.push({ filename: `${basis}.html`, content: v.inhalt.html })
+    // Bevorzugt echtes PDF (Headless-Chrome); sonst HTML (im Browser/Word
+    // öffenbar, druckbar als PDF).
+    const pdf = await htmlZuPdf(v.inhalt.html)
+    if (pdf) anhaenge.push({ filename: `${basis}.pdf`, content: pdf })
+    else anhaenge.push({ filename: `${basis}.html`, content: v.inhalt.html })
   }
   if (v.inhalt?.excelHtml && willExcel) {
     anhaenge.push({ filename: `${basis}.xls`, content: '﻿' + v.inhalt.excelHtml })

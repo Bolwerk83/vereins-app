@@ -60,10 +60,15 @@ einem **reproduzierbaren Inhalts-Schnappschuss** (HTML + Excel) und schickt
 ihn mit der Verteiler-Definition an den Server.
 
 Der Server (`server/versand.js`) hängt diesen Schnappschuss als echten Anhang
-an die Mail (`<Report>.html` für PDF/Druck, `<Report>.xls` für Excel) — statt
-der früheren Platzhalter-Datei. Ohne Schnappschuss greift weiterhin die
-schlanke exceljs-Übersicht als Fallback. Echtes PDF (Headless-Chrome) bleibt
-optional; die HTML-Variante ist im Browser/Word direkt druckbar.
+an die Mail an — statt der früheren Platzhalter-Datei:
+
+- **PDF**: ist **puppeteer** installiert (`server`-Ordner: `npm install puppeteer`),
+  rendert `server/pdf.js` aus dem HTML ein **echtes `<Report>.pdf`** (A4,
+  Hintergrundfarben). Fehlt puppeteer, wird automatisch `<Report>.html`
+  angehängt (im Browser/Word druckbar).
+- **Excel**: `<Report>.xls` aus dem Excel-HTML.
+
+Ohne Schnappschuss greift weiterhin die schlanke exceljs-Übersicht als Fallback.
 
 ## Status: umgesetzt (Backend)
 
