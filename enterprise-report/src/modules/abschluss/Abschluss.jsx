@@ -8,12 +8,13 @@ import { MONATE, AKTUELLER_MONAT, datenart, ladeModell } from '../../core/period
 import {
   STATUS, statusInfo, periode, setStatus, sichereVersion, freigeben, wiedereroeffnen
 } from '../../core/abschluss.js'
+import { abstimmZusammenfassung } from '../../core/abstimmung.js'
 import { AMPEL_FARBE, AMPEL_SOFT } from '../../design/theme.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const inp = { padding: '7px 9px', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', font: 'inherit' }
 
-export default function Abschluss() {
+export default function Abschluss({ werte = {} }) {
   const modell = ladeModell()
   const [tick, setTick] = useState(0)
   const refresh = () => setTick((t) => t + 1)
@@ -25,6 +26,8 @@ export default function Abschluss() {
   const s = statusInfo(z.status)
 
   async function tuFreigeben() {
+    const az = abstimmZusammenfassung(werte, sel)
+    if (az.offen > 0 && !confirm(`Achtung: ${az.offen} von ${az.gesamt} Abstimmbrücken sind noch nicht abgestimmt (Σ Differenz ${az.diffSumme} Mio €).\n\nTrotzdem freigeben?`)) return
     if (!confirm(`Periode ${sel} freigeben? Sie wird auf „Ist" gesperrt und der Verteiler ausgelöst.`)) return
     const { ereignis } = await freigeben(sel, kommentar)
     setKommentar(''); refresh()

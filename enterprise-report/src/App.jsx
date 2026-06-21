@@ -14,6 +14,7 @@ import Versionsvergleich from './modules/versionsvergleich/Versionsvergleich.jsx
 import Verteiler from './modules/verteiler/Verteiler.jsx'
 import Abschluss from './modules/abschluss/Abschluss.jsx'
 import Transport from './modules/transport/Transport.jsx'
+import Abstimmung from './modules/abstimmung/Abstimmung.jsx'
 import { AKTUELLE_STAGE, stageInfo } from './core/stage.js'
 import { autoSeed } from './core/designerSeed.js'
 import TreeNavigator from './modules/tree-navigator/TreeNavigator.jsx'
@@ -104,6 +105,7 @@ export default function App() {
       { label: t('nav.bi'), icon: '💬', aktiv: ansicht === 'bi', onClick: () => geh('bi') },
       { label: t('nav.vergleich'), icon: '⚖', aktiv: ansicht === 'vergleich', onClick: () => geh('vergleich') },
       { label: t('nav.qc'), icon: '✅', aktiv: ansicht === 'qc', onClick: () => geh('qc'), badge: qcFehler || null },
+      { label: t('nav.abstimmung'), icon: '🔗', aktiv: ansicht === 'abstimmung', onClick: () => geh('abstimmung') },
       { label: t('nav.instrumente'), icon: '📐', aktiv: ansicht === 'instrumente', onClick: () => geh('instrumente') },
       { label: t('nav.alerts'), icon: '⚠', aktiv: ansicht === 'alerts', onClick: () => geh('alerts'), badge: alertN || null }
     ] },
@@ -247,7 +249,10 @@ export default function App() {
           <Verteiler />
         )}
         {ansicht === 'abschluss' && (
-          <Abschluss />
+          <Abschluss werte={werte} />
+        )}
+        {ansicht === 'abstimmung' && (
+          <Abstimmung werte={werte} periode={periode} />
         )}
         {ansicht === 'transport' && (
           <Transport benutzer={benutzer} />
