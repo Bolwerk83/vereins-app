@@ -10,6 +10,7 @@ import Massnahmen from './modules/massnahmen/Massnahmen.jsx'
 import ControllingInstrumente from './modules/controlling-instrumente/ControllingInstrumente.jsx'
 import Alerts from './modules/alerts/Alerts.jsx'
 import Berichtskatalog from './modules/katalog/Berichtskatalog.jsx'
+import ReportDesigner from './modules/designer/ReportDesigner.jsx'
 import { validierungsZusammenfassung } from './core/validierung.js'
 import { alertAnzahl } from './core/alerts.js'
 import { useT, SPRACHEN } from './core/i18n.jsx'
@@ -67,6 +68,7 @@ export default function App() {
               {t('nav.qc')}{(() => { const f = validierungsZusammenfassung(werte).fehler; return f ? ` (${f})` : '' })()}
             </button>
             <button style={topBtn(ansicht === 'massnahmen')} onClick={() => setAnsicht('massnahmen')}>{t('nav.massnahmen')}</button>
+            <button style={topBtn(ansicht === 'designer')} onClick={() => setAnsicht('designer')}>{t('nav.designer')}</button>
             <button style={topBtn(ansicht === 'instrumente')} onClick={() => setAnsicht('instrumente')}>{t('nav.instrumente')}</button>
             {(() => { const n = alertAnzahl(werte, rolle); return (
               <button style={{ ...topBtn(ansicht === 'alerts'), ...(n ? { borderColor: 'var(--amp-r)', color: ansicht === 'alerts' ? '#fff' : 'var(--amp-r)' } : {}) }} onClick={() => setAnsicht('alerts')}>
@@ -103,6 +105,9 @@ export default function App() {
         )}
         {ansicht === 'katalog' && (
           <Berichtskatalog onOpen={(id) => { setBaumStart(id); setAnsicht('baum') }} />
+        )}
+        {ansicht === 'designer' && (
+          <ReportDesigner rolle={rolle} werte={werte} />
         )}
         {ansicht === 'report' && (
           <ManagementReport rolle={rolle} werte={werte} periode={periode}
