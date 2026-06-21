@@ -28,6 +28,7 @@ import EinzelGemein from './modules/einzelgemein/EinzelGemein.jsx'
 import AuftragsLebenszyklus from './modules/auftrag/AuftragsLebenszyklus.jsx'
 import Kostenstellenrechnung from './modules/kostenstellen/Kostenstellenrechnung.jsx'
 import BAB from './modules/bab/BAB.jsx'
+import Profitcenter from './modules/profitcenter/Profitcenter.jsx'
 import Kalkulation from './modules/kalkulation/Kalkulation.jsx'
 import Ergebnisrechnung from './modules/ergebnis/Ergebnisrechnung.jsx'
 import Deckungsbeitrag from './modules/deckungsbeitrag/Deckungsbeitrag.jsx'
@@ -132,6 +133,7 @@ export default function App() {
       { label: t('nav.einzelgemein'), icon: '➗', aktiv: ansicht === 'einzelgemein', onClick: () => geh('einzelgemein') },
       { label: t('nav.kostenstellen'), icon: '🏢', aktiv: ansicht === 'kostenstellen', onClick: () => geh('kostenstellen') },
       { label: t('nav.bab'), icon: '🧾', aktiv: ansicht === 'bab', onClick: () => geh('bab') },
+      { label: t('nav.profitcenter'), icon: '🏦', aktiv: ansicht === 'profitcenter', onClick: () => geh('profitcenter') },
       { label: t('nav.kalkulation'), icon: '🎯', aktiv: ansicht === 'kalkulation', onClick: () => geh('kalkulation') },
       { label: t('nav.ergebnis'), icon: '📕', aktiv: ansicht === 'ergebnis', onClick: () => geh('ergebnis') },
       { label: t('nav.db'), icon: '📐', aktiv: ansicht === 'deckungsbeitrag', onClick: () => geh('deckungsbeitrag') }
@@ -329,6 +331,9 @@ export default function App() {
         )}
         {ansicht === 'bab' && (
           <BAB onGeh={geh} />
+        )}
+        {ansicht === 'profitcenter' && (
+          <Profitcenter onGeh={geh} />
         )}
         {ansicht === 'kalkulation' && (
           <Kalkulation onGeh={geh} />
