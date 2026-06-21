@@ -8,7 +8,7 @@ import { schonGesehen } from './core/onboarding.js'
 import { KpiDefProvider } from './modules/kennzahlen/KpiDefContext.jsx'
 import Kennzahlen from './modules/kennzahlen/Kennzahlen.jsx'
 import BurgerMenu from './components/BurgerMenu.jsx'
-import { ladeKpiWerte, pruefeVerbindung, setCacheKontext, PERIODEN, AKTUELLE_PERIODE, QUELLE } from './core/dataProvider.js'
+import { ladeKpiWerte, pruefeVerbindung, setCacheKontext, leereCache, PERIODEN, AKTUELLE_PERIODE, QUELLE } from './core/dataProvider.js'
 import { ladeModell } from './core/periodenmodell.js'
 import ZeitDatenart from './modules/zeit-datenart/ZeitDatenart.jsx'
 import DatenartBadge from './modules/zeit-datenart/DatenartBadge.jsx'
@@ -337,7 +337,7 @@ export default function App() {
           <Kennzahlen rolle={rolle} werte={werte} />
         )}
         {ansicht === 'kpieditor' && (
-          <KpiEditor werte={werte} />
+          <KpiEditor werte={werte} onChange={() => { leereCache(); ladeKpiWerte(periode).then(setWerte) }} />
         )}
         {ansicht === 'zeit' && (
           <ZeitDatenart onChange={setZeitModell} />

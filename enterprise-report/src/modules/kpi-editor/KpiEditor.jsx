@@ -15,7 +15,7 @@ const EINHEITEN = [['faktor', 'Faktor (×)'], ['percent', 'Prozent (%)'], ['eur_
 
 const LEER = { id: null, name: '', formel: '', einheit: 'percent', richtung: 'hoch_gut', ziel: '', beschreibung: '' }
 
-export default function KpiEditor({ werte = {} }) {
+export default function KpiEditor({ werte = {}, onChange }) {
   const [form, setForm] = useState(LEER)
   const [tick, setTick] = useState(0)
   const [filter, setFilter] = useState('')
@@ -35,9 +35,9 @@ export default function KpiEditor({ werte = {} }) {
     const id = form.id || eindeutig(slug(form.name), custom.map((c) => c.id))
     const def = { id, name: form.name.trim(), formel: form.formel.trim(), einheit: form.einheit, richtung: form.richtung,
       ziel: form.ziel === '' ? null : Number(form.ziel), beschreibung: form.beschreibung.trim() }
-    speichereCustomKpi(def); registerCustomKpis(); setForm(LEER); setTick((t) => t + 1)
+    speichereCustomKpi(def); registerCustomKpis(); onChange?.(); setForm(LEER); setTick((t) => t + 1)
   }
-  function loeschen(id) { entferneCustomKpi(id); registerCustomKpis(); if (form.id === id) setForm(LEER); setTick((t) => t + 1) }
+  function loeschen(id) { entferneCustomKpi(id); registerCustomKpis(); onChange?.(); if (form.id === id) setForm(LEER); setTick((t) => t + 1) }
   function insert(id) { setForm((f) => ({ ...f, formel: (f.formel + (f.formel && !/[\s(]$/.test(f.formel) ? ' ' : '') + id) })) }
 
   const gefilterteIds = basisIds.filter((id) => !filter || id.toLowerCase().includes(filter.toLowerCase()) || (KPI[id]?.name || '').toLowerCase().includes(filter.toLowerCase())).slice(0, 40)
@@ -48,7 +48,7 @@ export default function KpiEditor({ werte = {} }) {
         <h2 style={{ margin: '0 0 4px' }}>KPI-Editor — eigene Kennzahlen</h2>
         <div style={{ color: 'var(--muted)', fontSize: 13, maxWidth: 720 }}>
           Definiere abgeleitete KPIs aus einer Formel über bestehende Kennzahlen (z. B. <code>db1 / nettoumsatz * 100</code>).
-          Gespeicherte KPIs werden mitberechnet und stehen überall zur Verfügung.
+          Gespeicherte KPIs werden sofort mitberechnet und stehen ohne Neuladen in allen Berichten zur Verfügung.
         </div>
       </div>
 
