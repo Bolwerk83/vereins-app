@@ -11,6 +11,8 @@
 //                              So sind Abhängigkeiten EXPLIZIT & dokumentiert.
 // =========================================================================
 
+import { evaluate as formelEvaluate, extractIds as formelIds, ladeCustomKpis } from './kpiFormel.js'
+
 export const KPI = {
   // ---- Konzern / GF -----------------------------------------------------
   nettoumsatz: {
@@ -820,3 +822,28 @@ try {
     }
   }
 } catch { /* defekte Overrides ignorieren */ }
+
+// --- Eigene, abgeleitete KPIs aus Formeln (er_kpi_custom) ---------------
+// Werden als vollwertige (abgeleitete) KPIs registriert und überall genutzt.
+const CUSTOM_REGISTRIERT = new Set()
+export function registerCustomKpis() {
+  for (const id of CUSTOM_REGISTRIERT) delete KPI[id]
+  CUSTOM_REGISTRIERT.clear()
+  let defs = []
+  try { defs = ladeCustomKpis() } catch { defs = [] }
+  for (const def of defs) {
+    if (!def || !def.id || !def.formel) continue
+    let ids = []
+    try { ids = formelIds(def.formel) } catch { continue }
+    KPI[def.id] = {
+      id: def.id, name: def.name || def.id, einheit: def.einheit || 'faktor',
+      bereich: def.bereich || 'CUSTOM', ziel: def.ziel ?? null, richtung: def.richtung || 'hoch_gut',
+      warn: def.warn, beschreibung: def.beschreibung || ('Eigene Formel: ' + def.formel),
+      sqlRef: null, abhaengig: ids, custom: true, formel: def.formel,
+      berechne: (v) => { try { return formelEvaluate(def.formel, v) } catch { return null } }, security: null
+    }
+    CUSTOM_REGISTRIERT.add(def.id)
+  }
+  return defs
+}
+try { if (typeof localStorage !== 'undefined') registerCustomKpis() } catch { /* ignore */ }

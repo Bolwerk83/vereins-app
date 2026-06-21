@@ -48,6 +48,7 @@ import Doku from './modules/doku/Doku.jsx'
 import Technologie from './modules/technologie/Technologie.jsx'
 import Abgrenzungsrechnung from './modules/abgrenzung/Abgrenzungsrechnung.jsx'
 import LebenszyklusEmpfehlungen from './modules/lebenszyklus/Empfehlungen.jsx'
+import KpiEditor from './modules/kpi-editor/KpiEditor.jsx'
 import { ladeBranding, applyBranding, themeById } from './core/admin.js'
 import { AKTUELLE_STAGE, stageInfo } from './core/stage.js'
 import { autoSeed } from './core/designerSeed.js'
@@ -143,6 +144,7 @@ export default function App() {
     { titel: 'Berichte', eintraege: [
       { label: t('nav.tree'), icon: '🌳', aktiv: ansicht === 'baum' || ansicht === 'report', onClick: () => geh('baum') },
       { label: t('nav.kennzahlen'), icon: '📖', aktiv: ansicht === 'kennzahlen', onClick: () => geh('kennzahlen') },
+      { label: t('nav.kpieditor'), icon: '🧪', aktiv: ansicht === 'kpieditor', onClick: () => geh('kpieditor') },
       { label: t('nav.katalog'), icon: '🗂', aktiv: ansicht === 'katalog', onClick: () => geh('katalog') },
       { label: t('nav.designer'), icon: '🧩', aktiv: ansicht === 'designer', onClick: () => geh('designer') },
       { label: t('nav.controlling'), icon: '🧭', aktiv: ansicht === 'controlling', onClick: () => geh('controlling') },
@@ -328,6 +330,9 @@ export default function App() {
         )}
         {ansicht === 'kennzahlen' && (
           <Kennzahlen rolle={rolle} werte={werte} />
+        )}
+        {ansicht === 'kpieditor' && (
+          <KpiEditor werte={werte} />
         )}
         {ansicht === 'zeit' && (
           <ZeitDatenart onChange={setZeitModell} />

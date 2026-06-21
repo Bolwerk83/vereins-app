@@ -41,7 +41,8 @@ Stand: laufend.
 - [x] **Lebenszyklus → Strategie-Empfehlungen** automatisch (Produkt & Kunde) + Übernahme
       als Maßnahme mit quelle-Tag/Nachverfolgung ✅
 - [ ] **Deckungsbeitragsrechnung** mehrstufig (Fixkostendeckung)
-- [ ] **KPI-Editor: Formel/Abhängigkeiten** (abgeleitete KPIs im Tool anlegen)
+- [x] **KPI-Editor: Formel/Abhängigkeiten** — abgeleitete KPIs aus Formeln (sicherer
+      Parser, Live-Vorschau), werden mitberechnet & überall nutzbar ✅
 - [ ] **Profitcenter-Ergebnisrechnung**, Abweichungsanalysen (DB/Erlös), Segmentbericht
 - [ ] **CI-Lauf grün halten** / ggf. PR eröffnen und überwachen
 
