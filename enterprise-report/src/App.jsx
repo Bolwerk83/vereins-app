@@ -41,6 +41,7 @@ import Kalkulation from './modules/kalkulation/Kalkulation.jsx'
 import Ergebnisrechnung from './modules/ergebnis/Ergebnisrechnung.jsx'
 import Deckungsbeitrag from './modules/deckungsbeitrag/Deckungsbeitrag.jsx'
 import Lernpfad from './modules/lernpfad/Lernpfad.jsx'
+import GlobalSuche from './modules/suche/GlobalSuche.jsx'
 import { AKTUELLE_STAGE, stageInfo } from './core/stage.js'
 import { autoSeed } from './core/designerSeed.js'
 import TreeNavigator from './modules/tree-navigator/TreeNavigator.jsx'
@@ -208,6 +209,7 @@ export default function App() {
 
         {ansicht !== 'wizard' && (
           <>
+            <GlobalSuche onGeh={geh} onKpi={(id) => { setBaumStart(id); setAnsicht('baum') }} />
             <button style={topBtn(ansicht === 'baum' || ansicht === 'report')} onClick={() => setAnsicht('baum')}>{t('nav.tree')}</button>
             <button style={topBtn(ansicht === 'katalog')} onClick={() => setAnsicht('katalog')}>{t('nav.katalog')}</button>
             <button style={topBtn(ansicht === 'kennzahlen')} onClick={() => setAnsicht('kennzahlen')}>{t('nav.kennzahlen')}</button>
