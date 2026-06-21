@@ -8,7 +8,7 @@ import React, { useState } from 'react'
 import {
   ladeGruppen, neueGruppe, aktualisiereGruppe, loescheGruppe, toggleBereich,
   setzeAlleBereiche, toggleKontext, mitgliedHinzu, mitgliedWeg, setzeZurueck,
-  bereicheNachCluster, KONTEXTE, bereichZusammenfassung
+  bereicheNachCluster, KONTEXTE, bereichZusammenfassung, GRUPPEN_QUELLE
 } from '../../core/gruppen.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
@@ -37,6 +37,14 @@ export default function RollenRechte({ onChange }) {
           Vordefinierte Gruppen sind angelegt — Namen (Mitglieder) und Feinrechte pflegst du hier.
           Änderungen wirken sofort im ganzen Tool.
         </div>
+        {GRUPPEN_QUELLE === 'mssql' && (
+          <div style={{ marginTop: 10, padding: '9px 12px', borderRadius: 'var(--radius-sm)', fontSize: 12,
+            background: 'var(--amp-amber-soft, #fff7ed)', border: '1px solid var(--amp-a, #d97706)', color: 'var(--amp-a, #b45309)' }}>
+            Quelle <b>MSSQL</b>: Gruppen und Mitglieder werden aus der Datenbank gelesen (<span className="mono">sec.*</span>).
+            Änderungen hier wirken nur lokal in dieser Sitzung — pflege sie dauerhaft in der DB
+            (<span className="mono">sec.GruppeMitglied</span>) bzw. über das Setup-Skript.
+          </div>
+        )}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: 16, alignItems: 'start' }}>

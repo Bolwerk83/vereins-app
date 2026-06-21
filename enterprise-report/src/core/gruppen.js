@@ -16,6 +16,7 @@
 // =========================================================================
 import { BERICHTSBAUM } from './reportTree.js'
 import { CLUSTER, clusterFuer } from './bereiche.js'
+import { QUELLE } from './dataProvider.js'
 
 const KEY = 'er_gruppen'
 
@@ -142,6 +143,45 @@ export function mitgliedWeg(id, name) {
 /** Darf eine Gruppe die Rechteverwaltung bedienen? (Vollzugriff + GF-Freigabe) */
 export function istAdmin(gruppe) {
   return !!gruppe && gruppe.bereiche === '*' && (gruppe.kontext || []).includes('GF')
+}
+
+// =========================================================================
+//  SEAM mock | mssql  — analog zum dataProvider.
+//   mock  -> Gruppen aus localStorage (im Tool voll editierbar)
+//   mssql -> Gruppen/Rechte aus der DB (server: /api/gruppen,
+//            /api/benutzer/:login/rechte). Fällt bei Fehlern auf lokal zurück,
+//            damit das Tool immer nutzbar bleibt.
+// =========================================================================
+
+/** Ist die Gruppenquelle die Datenbank? (dann ist die Verwaltung lesend) */
+export const GRUPPEN_QUELLE = QUELLE
+
+/** Gruppen laden — aus DB (mssql) oder localStorage (mock). */
+export async function ladeGruppenAsync() {
+  if (QUELLE === 'mssql') {
+    try {
+      const r = await fetch('/api/gruppen')
+      if (r.ok) {
+        const a = await r.json()
+        if (Array.isArray(a) && a.length) return a.map((g) => ({ ...g, system: g.system ?? true }))
+      }
+    } catch { /* Fallback auf lokale Vorlagen */ }
+  }
+  return ladeGruppen()
+}
+
+/** Effektive Rolle eines Benutzers — aus DB-View (mssql) oder lokal (mock). */
+export async function effektiveRolleAsync(name) {
+  const n = (name || '').trim()
+  if (!n) return null
+  if (QUELLE === 'mssql') {
+    try {
+      const r = await fetch(`/api/benutzer/${encodeURIComponent(n)}/rechte`)
+      if (r.status === 404) return null
+      if (r.ok) return await r.json()
+    } catch { /* Fallback lokal */ }
+  }
+  return effektiveRolleFuerName(n)
 }
 
 /** Alle Gruppen, in denen ein Name (Login) Mitglied ist (Groß-/Kleinschreibung egal). */

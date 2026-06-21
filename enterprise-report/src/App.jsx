@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { ladeGruppen, istAdmin, effektiveRolleFuerName } from './core/gruppen.js'
+import { ladeGruppen, ladeGruppenAsync, istAdmin, effektiveRolleAsync } from './core/gruppen.js'
 import RollenRechte from './modules/rollen-rechte/RollenRechte.jsx'
 import BenutzerLeiste from './modules/benutzer/BenutzerLeiste.jsx'
 import { ladeKpiWerte, pruefeVerbindung, PERIODEN, AKTUELLE_PERIODE, QUELLE } from './core/dataProvider.js'
@@ -32,9 +32,9 @@ export default function App() {
   const [mnKontext, setMnKontext] = useState(null)
   const [baumStart, setBaumStart] = useState(null)
   const [designerStart, setDesignerStart] = useState(null)
+  const [benutzerRolle, setBenutzerRolle] = useState(null)
   // Aktive "Rolle": angemeldeter Benutzer -> Vereinigung seiner Gruppen.
   // Ohne Anmeldung -> manuell gewählte Gruppe (Demo-/Admin-Modus).
-  const benutzerRolle = benutzer ? effektiveRolleFuerName(benutzer) : null
   const rolle = benutzer
     // Angemeldet, aber (noch) in keiner Gruppe -> least privilege: nichts sichtbar.
     ? (benutzerRolle || { id: 'user:' + benutzer, name: benutzer, bereiche: [], kontext: [], gruppen: [] })
@@ -46,6 +46,15 @@ export default function App() {
 
   useEffect(() => { ladeKpiWerte(periode).then(setWerte) }, [periode])
   useEffect(() => { pruefeVerbindung().then(setVerbindung) }, [])
+  // Gruppen aus der Quelle laden (mssql -> DB, sonst localStorage).
+  useEffect(() => { ladeGruppenAsync().then(setGruppen) }, [])
+  // Effektive Rechte des angemeldeten Benutzers auflösen (async-fähig für DB).
+  useEffect(() => {
+    if (!benutzer) { setBenutzerRolle(null); return }
+    let aktiv = true
+    effektiveRolleAsync(benutzer).then((r) => { if (aktiv) setBenutzerRolle(r) })
+    return () => { aktiv = false }
+  }, [benutzer, gruppen])
 
   const topBtn = (aktiv) => ({ padding: '6px 10px', borderRadius: 'var(--radius-sm)', fontSize: 12,
     border: '1px solid var(--line)', background: aktiv ? 'var(--accent)' : 'var(--panel)', color: aktiv ? '#fff' : 'var(--ink)' })
