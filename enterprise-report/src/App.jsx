@@ -33,6 +33,7 @@ import Abweichungsanalyse from './modules/abweichung/Abweichungsanalyse.jsx'
 import Anlagen from './modules/anlagen/Anlagen.jsx'
 import LieferantenLebenszyklus from './modules/lieferant/LieferantenLebenszyklus.jsx'
 import Marketing from './modules/marketing/Marketing.jsx'
+import Bestand from './modules/bestand/Bestand.jsx'
 import Kalkulation from './modules/kalkulation/Kalkulation.jsx'
 import Ergebnisrechnung from './modules/ergebnis/Ergebnisrechnung.jsx'
 import Deckungsbeitrag from './modules/deckungsbeitrag/Deckungsbeitrag.jsx'
@@ -153,6 +154,7 @@ export default function App() {
       { label: t('nav.anlagen'), icon: '🏗', aktiv: ansicht === 'anlagen', onClick: () => geh('anlagen') },
       { label: t('nav.lieferant'), icon: '🚚', aktiv: ansicht === 'lieferant', onClick: () => geh('lieferant') },
       { label: t('nav.marketing'), icon: '📣', aktiv: ansicht === 'marketing', onClick: () => geh('marketing') },
+      { label: t('nav.bestand'), icon: '📦', aktiv: ansicht === 'bestand', onClick: () => geh('bestand') },
       { label: t('nav.instrumente'), icon: '📐', aktiv: ansicht === 'instrumente', onClick: () => geh('instrumente') },
       { label: t('nav.alerts'), icon: '⚠', aktiv: ansicht === 'alerts', onClick: () => geh('alerts'), badge: alertN || null }
     ] },
@@ -342,6 +344,9 @@ export default function App() {
         )}
         {ansicht === 'marketing' && (
           <Marketing />
+        )}
+        {ansicht === 'bestand' && (
+          <Bestand />
         )}
         {ansicht === 'kostenstellen' && (
           <Kostenstellenrechnung onGeh={geh} />
