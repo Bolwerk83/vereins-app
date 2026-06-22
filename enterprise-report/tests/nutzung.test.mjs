@@ -1,7 +1,7 @@
 import './_setup.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { trackOeffnung, auswertung, verlauf, reset } from '../src/core/nutzung.js'
+import { trackOeffnung, auswertung, verlauf, reset, aufraeumen, alsCsv } from '../src/core/nutzung.js'
 
 test('Öffnungen werden gezählt und sortiert', () => {
   reset()
@@ -39,4 +39,22 @@ test('Verlauf liefert n Tage, heutiger Tag enthält die Öffnung', () => {
 test('reset leert die Statistik', () => {
   trackOeffnung('x'); reset()
   assert.equal(auswertung().gesamt, 0)
+})
+
+test('aufraeumen findet nie und kaum genutzte Berichte', () => {
+  reset()
+  trackOeffnung('marketing'); trackOeffnung('marketing'); trackOeffnung('marketing') // 3x = genutzt
+  trackOeffnung('bestand') // 1x = kaum
+  const a = aufraeumen(['marketing', 'bestand', 'segment', 'forderungen'])
+  assert.deepEqual(a.nie.sort(), ['forderungen', 'segment'])
+  assert.deepEqual(a.kaum, [{ id: 'bestand', count: 1 }])
+})
+
+test('alsCsv liefert Kopfzeile und Datenzeilen mit Label', () => {
+  reset()
+  trackOeffnung('marketing')
+  const csv = alsCsv((id) => id === 'marketing' ? 'Marketing & Analytics' : id)
+  const zeilen = csv.split('\n')
+  assert.match(zeilen[0], /^Bericht;ID;Aufrufe/)
+  assert.match(zeilen[1], /Marketing & Analytics;marketing;1/)
 })

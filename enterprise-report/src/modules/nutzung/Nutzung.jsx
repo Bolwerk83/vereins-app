@@ -3,7 +3,7 @@
 //  Tagesverlauf und Summen. Nur für den Admin sichtbar und auswertbar.
 // =========================================================================
 import React, { useState } from 'react'
-import { auswertung, verlauf, reset } from '../../core/nutzung.js'
+import { auswertung, verlauf, reset, aufraeumen, alsCsv } from '../../core/nutzung.js'
 import { NAV_ZIELE } from '../../core/suche.js'
 import { useT } from '../../core/i18n.jsx'
 
@@ -27,6 +27,7 @@ export default function Nutzung({ istAdmin = false }) {
 
   const a = auswertung()
   const v = verlauf(14)
+  const auf = aufraeumen(NAV_ZIELE.map((z) => z.ziel))
   const maxV = Math.max(...v.map((x) => x.count), 1)
   const maxC = Math.max(...a.rows.map((r) => r.count), 1)
   // View-ID → lesbares Label.
@@ -36,6 +37,14 @@ export default function Nutzung({ istAdmin = false }) {
     return ({ report: 'Management-Report', baum: 'Berichtsbaum', rechte: 'Rollen & Rechte', nutzung: 'Nutzungs-Statistik' }[id]) || id
   }
   const wann = (iso) => iso ? new Date(iso).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'
+
+  function exportCsv() {
+    const csv = '﻿' + alsCsv(label) // BOM für Excel-Umlaute
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
+    const a2 = document.createElement('a')
+    a2.href = url; a2.download = `nutzung_${new Date().toISOString().slice(0, 10)}.csv`
+    document.body.appendChild(a2); a2.click(); a2.remove(); URL.revokeObjectURL(url)
+  }
 
   return (
     <div style={{ maxWidth: 980, margin: '0 auto' }} key={tick}>
@@ -47,10 +56,16 @@ export default function Nutzung({ istAdmin = false }) {
             genutzten Berichte zu erkennen.
           </div>
         </div>
-        <button onClick={() => { if (confirm('Nutzungs-Statistik wirklich zurücksetzen?')) { reset(); setTick((x) => x + 1) } }}
-          style={{ padding: '8px 13px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: 'var(--panel)', color: 'var(--muted)', cursor: 'pointer', fontSize: 13 }}>
-          Zurücksetzen
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={exportCsv} disabled={a.rows.length === 0}
+            style={{ padding: '8px 13px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: 'var(--panel)', cursor: a.rows.length ? 'pointer' : 'not-allowed', fontSize: 13, opacity: a.rows.length ? 1 : 0.5 }}>
+            ⭳ CSV-Export
+          </button>
+          <button onClick={() => { if (confirm('Nutzungs-Statistik wirklich zurücksetzen?')) { reset(); setTick((x) => x + 1) } }}
+            style={{ padding: '8px 13px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: 'var(--panel)', color: 'var(--muted)', cursor: 'pointer', fontSize: 13 }}>
+            Zurücksetzen
+          </button>
+        </div>
       </div>
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
@@ -97,6 +112,30 @@ export default function Nutzung({ istAdmin = false }) {
             </tbody>
           </table>
         )}
+      </div>
+
+      {/* Aufräum-Sicht */}
+      <div style={{ ...card, padding: 16, marginTop: 14 }}>
+        <div style={{ ...cap, marginBottom: 8 }}>Aufräum-Kandidaten</div>
+        <div style={{ fontSize: 12.5, color: 'var(--muted)', marginBottom: 10 }}>
+          Berichte, die kaum oder nie geöffnet werden — Kandidaten zum Verschlanken des Menüs.
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 6 }}>Nie geöffnet ({auf.nie.length})</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+              {auf.nie.length === 0 && <span style={{ fontSize: 12.5, color: 'var(--muted)' }}>Alle bekannten Berichte wurden mindestens einmal geöffnet. 👍</span>}
+              {auf.nie.map((id) => <span key={id} style={{ fontSize: 12, padding: '3px 8px', borderRadius: 999, border: '1px solid var(--line)', background: 'var(--bg)' }}>{label(id)}</span>)}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 6 }}>Kaum genutzt (1–2 Aufrufe)</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+              {auf.kaum.length === 0 && <span style={{ fontSize: 12.5, color: 'var(--muted)' }}>—</span>}
+              {auf.kaum.map((k) => <span key={k.id} style={{ fontSize: 12, padding: '3px 8px', borderRadius: 999, border: '1px solid var(--amp-a)', color: 'var(--amp-a)' }}>{label(k.id)} · {k.count}×</span>)}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )

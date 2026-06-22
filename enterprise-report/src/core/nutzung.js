@@ -64,3 +64,27 @@ export function verlauf(n = 14) {
 }
 
 export function reset() { try { localStorage.removeItem(KEY) } catch {} }
+
+/**
+ * Aufräum-Sicht: welche der bekannten Berichte wurden NIE geöffnet?
+ * @param alleIds  Liste aller verfügbaren Ansichts-IDs (z. B. aus NAV_ZIELE)
+ * @returns { nie:[ids], kaum:[{id,count}] }  kaum = 1–2 Aufrufe gesamt
+ */
+export function aufraeumen(alleIds = []) {
+  const d = lade()
+  const nie = alleIds.filter((id) => !d[id] || !d[id].count)
+  const kaum = Object.entries(d)
+    .filter(([, e]) => (e.count || 0) > 0 && (e.count || 0) <= 2)
+    .map(([id, e]) => ({ id, count: e.count }))
+    .sort((a, b) => a.count - b.count)
+  return { nie, kaum }
+}
+
+/** Auswertung als CSV (für Export). Spalten: Bericht-ID, Aufrufe, Heute, 7 Tage, Zuletzt. */
+export function alsCsv(labelFn = (id) => id) {
+  const a = auswertung()
+  const head = ['Bericht', 'ID', 'Aufrufe', 'Heute', '7 Tage', 'Zuletzt']
+  const esc = (s) => { const v = String(s ?? ''); return /[";\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v }
+  const zeilen = a.rows.map((r) => [labelFn(r.id), r.id, r.count, r.heute, r.woche, r.last || ''].map(esc).join(';'))
+  return [head.join(';'), ...zeilen].join('\n')
+}
