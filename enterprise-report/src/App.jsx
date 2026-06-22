@@ -86,8 +86,10 @@ export default function App() {
   // Demo-Startlink (?demo) überspringt den Wizard und startet direkt mit Mock-Daten.
   const demoStart = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('demo')
   if (demoStart && typeof localStorage !== 'undefined') localStorage.setItem(SETUP_KEY, '1')
-  // Erststart -> Wizard, sonst Baum.
-  const [ansicht, setAnsicht] = useState(localStorage.getItem(SETUP_KEY) || demoStart ? 'baum' : 'wizard')
+  // Optionale Demo-Startansicht (z. B. Standalone-Build landet in den Detailberichten).
+  const demoView = typeof localStorage !== 'undefined' ? localStorage.getItem('er_demo_view') : null
+  // Erststart -> Wizard, sonst Baum (bzw. Demo-Startansicht).
+  const [ansicht, setAnsicht] = useState(localStorage.getItem(SETUP_KEY) || demoStart ? (demoView || 'baum') : 'wizard')
   const [gruppen, setGruppen] = useState(ladeGruppen())
   const [rolleId, setRolleId] = useState(gruppen[0]?.id || null)
   const [benutzer, setBenutzer] = useState(localStorage.getItem(BENUTZER_KEY) || null)
