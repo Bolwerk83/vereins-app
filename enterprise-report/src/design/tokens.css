@@ -1,0 +1,78 @@
+/* =========================================================================
+   Design-Tokens — EIN einheitliches System für ALLE Module.
+   Übernommen aus der VeloWerk-Berichtsvorlage (docs/design.md).
+   Module dürfen NUR diese Variablen verwenden, keine Hex-Werte hart codieren.
+   ========================================================================= */
+:root {
+  /* Flächen & Text */
+  --ink:    #1F2A37;   /* Haupttext / Headlines           */
+  --slate:  #475569;   /* Sekundärtext                    */
+  --muted:  #64748B;   /* Labels, Hinweise                */
+  --line:   #D7DEE6;   /* Hairlines, Rahmen               */
+  --bg:     #F4F6F9;   /* App-Hintergrund                 */
+  --panel:  #FFFFFF;   /* Karten / Panels                 */
+  --accent: #0F766E;   /* Akzent (Teal) — Marke           */
+  --accent-soft: #E6F2F0;
+
+  /* Ampel (Statuslogik) */
+  --amp-g: #15803D;    /* grün  – im Ziel                 */
+  --amp-a: #B45309;    /* amber – Beobachtung             */
+  --amp-r: #B91C1C;    /* rot   – Handlung nötig          */
+  --amp-n: #64748B;    /* neutral – kein Ziel definiert   */
+  --amp-g-soft: #E7F3EC;
+  --amp-a-soft: #FBF1E5;
+  --amp-r-soft: #FBEAEA;
+
+  /* Schrift */
+  --font-text: 'Archivo', system-ui, -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  /* Raster */
+  --radius: 10px;
+  --radius-sm: 6px;
+  --gap: 16px;
+  --shadow: 0 1px 2px rgba(31,42,55,.06), 0 8px 24px rgba(31,42,55,.05);
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+body {
+  font-family: var(--font-text);
+  color: var(--ink);
+  background: var(--bg);
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+h1,h2,h3,h4 { margin: 0; font-weight: 600; letter-spacing: -.01em; }
+a { color: var(--accent); text-decoration: none; }
+button { font-family: var(--font-text); cursor: pointer; }
+
+/* Tabellen auf schmalen Geräten horizontal scrollbar */
+.tabelle-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* =========================================================================
+   RESPONSIVE — PC / Tablet / Handy.  Topbar und Kachelreihen sind flex-wrap
+   und brechen automatisch um; hier die Feinheiten je Geräteklasse.
+   ========================================================================= */
+@media (max-width: 1024px) {           /* Tablet */
+  main { padding: 16px 14px !important; }
+  .raster-2 { grid-template-columns: 1fr !important; }
+}
+@media (max-width: 640px) {            /* Handy */
+  body { font-size: 13px; }
+  main { padding: 12px 10px !important; }
+  .kpi-reihe > * { flex: 1 1 100% !important; min-width: 0 !important; }
+  header { gap: 10px !important; padding: 8px 12px !important; }
+  table { font-size: 12px; }
+  table th, table td { padding: 6px 8px !important; }
+}
+
+/* Druck/PDF: Chrome (Topbar, Baum, Buttons) ausblenden, weiße Fläche */
+@media print {
+  body { background: #fff; }
+  .no-print { display: none !important; }
+  main { padding: 0 !important; max-width: 100% !important; }
+  @page { margin: 14mm; }
+}

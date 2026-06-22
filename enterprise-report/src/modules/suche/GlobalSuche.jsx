@@ -1,0 +1,112 @@
+// =========================================================================
+//  GLOBALE SUCHE (oben rechts) — tippen und direkt in Bericht/KPI springen.
+//  Tastatur: ↑/↓ navigieren, Enter öffnet, Esc schließt, "/" fokussiert.
+// =========================================================================
+import React, { useState, useMemo, useRef, useEffect } from 'react'
+import { useT } from '../../core/i18n.jsx'
+import { KPI } from '../../core/kpiRegistry.js'
+import { baueIndex, suchen } from '../../core/suche.js'
+import { darfBereich } from '../../core/rbac.js'
+import { bereichVon } from '../../core/navMeta.js'
+
+export default function GlobalSuche({ onGeh, onKpi, onInfo, rolle }) {
+  const { t } = useT()
+  const [q, setQ] = useState('')
+  const [offen, setOffen] = useState(false)
+  const [aktiv, setAktiv] = useState(0)
+  const boxRef = useRef(null)
+  const inputRef = useRef(null)
+
+  const index = useMemo(() => baueIndex(t, KPI), [t])
+  const treffer = useMemo(() => suchen(index, q, 8), [index, q])
+
+  // "/" fokussiert die Suche (wenn nicht in einem Eingabefeld).
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === '/' && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName)) {
+        e.preventDefault(); inputRef.current?.focus()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
+  // Klick außerhalb schließt das Dropdown.
+  useEffect(() => {
+    const onClick = (e) => { if (boxRef.current && !boxRef.current.contains(e.target)) setOffen(false) }
+    document.addEventListener('mousedown', onClick)
+    return () => document.removeEventListener('mousedown', onClick)
+  }, [])
+
+  useEffect(() => { setAktiv(0) }, [q])
+
+  function springe(tr) {
+    if (!tr) return
+    setOffen(false); setQ('')
+    if (tr.typ === 'kpi') onKpi?.(tr.ziel)
+    else onGeh?.(tr.ziel)
+  }
+
+  function onKeyDown(e) {
+    if (!offen && treffer.length) setOffen(true)
+    if (e.key === 'ArrowDown') { e.preventDefault(); setAktiv((i) => Math.min(i + 1, treffer.length - 1)) }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setAktiv((i) => Math.max(i - 1, 0)) }
+    else if (e.key === 'Enter') { e.preventDefault(); springe(treffer[aktiv]) }
+    else if (e.key === 'Escape') { setOffen(false); inputRef.current?.blur() }
+  }
+
+  const gruppenFarbe = { Berichte: 'var(--accent)', Analyse: '#7c3aed', Steuerung: '#0891b2', KPI: '#16a34a' }
+
+  return (
+    <div ref={boxRef} style={{ position: 'relative', minWidth: 180 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)',
+        padding: '5px 9px', background: 'var(--panel)' }}>
+        <span style={{ color: 'var(--muted)', fontSize: 13 }}>🔎</span>
+        <input
+          ref={inputRef}
+          value={q}
+          placeholder={t('suche.platzhalter')}
+          onChange={(e) => { setQ(e.target.value); setOffen(true) }}
+          onFocus={() => setOffen(true)}
+          onKeyDown={onKeyDown}
+          style={{ border: 'none', outline: 'none', background: 'transparent', font: 'inherit', fontSize: 12, width: 150, color: 'var(--ink)' }} />
+        {q && <button onClick={() => { setQ(''); inputRef.current?.focus() }}
+          style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--muted)', fontSize: 13 }}>×</button>}
+      </div>
+
+      {offen && q && (
+        <div style={{ position: 'absolute', top: 'calc(100% + 4px)', right: 0, width: 320, maxWidth: '80vw', background: 'var(--panel)',
+          border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)', zIndex: 50, overflow: 'hidden' }}>
+          {treffer.length === 0 && (
+            <div style={{ padding: '12px 14px', color: 'var(--muted)', fontSize: 13 }}>{t('suche.leer')}</div>
+          )}
+          {treffer.map((tr, i) => {
+            const gesperrt = tr.typ === 'bericht' && rolle && !darfBereich(rolle, bereichVon(tr.ziel))
+            return (
+            <div
+              key={tr.typ + tr.ziel}
+              onMouseEnter={() => setAktiv(i)}
+              onClick={() => springe(tr)}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left', cursor: 'pointer',
+                padding: '9px 12px', background: i === aktiv ? 'var(--bg)' : 'transparent', borderBottom: '1px solid var(--line)' }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: gruppenFarbe[tr.gruppe] || 'var(--muted)', flex: '0 0 auto' }} />
+              <span style={{ flex: 1, fontSize: 13, color: gesperrt ? 'var(--muted)' : 'var(--ink)' }}>{gesperrt ? '🔒 ' : ''}{tr.label}</span>
+              {tr.typ === 'bericht' && onInfo && (
+                <button onClick={(ev) => { ev.stopPropagation(); onInfo(tr.ziel); setOffen(false) }} title="Bericht-Info"
+                  style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: 12, color: 'var(--muted)' }}>ⓘ</button>
+              )}
+              <span style={{ fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em' }}>
+                {tr.typ === 'kpi' ? 'KPI' : tr.gruppe}
+              </span>
+            </div>
+          )})}
+          {treffer.length > 0 && (
+            <div style={{ padding: '6px 12px', fontSize: 10.5, color: 'var(--muted)', background: 'var(--bg)' }}>
+              ↑↓ wählen · ⏎ öffnen · Esc schließen
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}

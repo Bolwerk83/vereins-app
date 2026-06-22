@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Berichtsvorlage · Enterprise Report</title>
+<style>
+  :root{
+    --ink:#1F2A37;--slate:#475569;--muted:#64748B;--line:#D7DEE6;--bg:#F4F6F9;--panel:#fff;
+    --accent:#0F766E;--accent-soft:#E6F2F0;--g:#15803D;--a:#B45309;--r:#B91C1C;
+    --g-soft:#E7F3EC;--a-soft:#FBF1E5;--r-soft:#FBEAEA;
+  }
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:'Segoe UI',Arial,sans-serif;font-size:14px;line-height:1.45}
+  .wrap{max-width:900px;margin:24px auto;padding:0 16px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;
+    box-shadow:0 1px 2px rgba(31,42,55,.06),0 8px 24px rgba(31,42,55,.05);margin-bottom:16px}
+  .crumb{font-size:12px;color:var(--muted)}
+  h1{font-size:22px;margin:4px 0 0} h2{font-size:16px;margin:0 0 8px}
+  .tag{font-size:11px;color:var(--slate);border:1px solid var(--line);border-radius:999px;padding:3px 9px}
+  .mono{font-family:'Consolas',monospace;font-variant-numeric:tabular-nums}
+  .upper{font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+  .kern{font-size:16px;font-weight:700;color:var(--r);margin-top:8px}
+  .ampbar{display:flex;width:160px;height:9px;border-radius:4px;overflow:hidden;border:1px solid var(--line)}
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;position:relative;overflow:hidden}
+  .card .bar{position:absolute;left:0;top:0;bottom:0;width:3px}
+  .big{font-size:22px;font-weight:700;margin-top:6px}
+  .dot{width:10px;height:10px;border-radius:50%;display:inline-block;float:right}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:right}
+  th:first-child,td:first-child{text-align:left}
+  th{color:var(--muted);font-weight:500;font-size:11px;text-transform:uppercase}
+  .btn{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:8px 14px;font-weight:700}
+  .muted{color:var(--muted)} .red{color:var(--r)} .green{color:var(--g)} .amber{color:var(--a)}
+  @media print{body{background:#fff}.panel{box-shadow:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Kopf -->
+  <div class="panel">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div>
+        <div class="crumb">VeloWerk Gruppe · Berichtsbaum › Finanzen › GuV &amp; Marge · 2025</div>
+        <h1>Finanzen — GuV &amp; Marge</h1>
+      </div>
+      <span class="tag">E3 · Themenbereich</span>
+    </div>
+  </div>
+
+  <!-- Lagebewertung -->
+  <div class="panel">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span class="upper">Lagebewertung (automatisch)</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="ampbar"><div style="flex:2;background:var(--g)"></div><div style="flex:1;background:var(--a)"></div><div style="flex:1;background:var(--r)"></div></div>
+        <span class="mono muted" style="font-size:11px">2/1/1</span>
+      </div>
+    </div>
+    <div class="kern">Handlungsbedarf: 1 Kennzahl deutlich außerhalb des Ziels — v. a. EBIT.</div>
+    <div style="margin-top:8px;font-size:13px;color:var(--slate)">● EBIT 1,4 Mio € — deutlich außerhalb des Ziels, unter Ziel 1,8 Mio €. Verschlechterung ggü. Vorjahr (−12,5 %).</div>
+  </div>
+
+  <!-- KPI-Karten -->
+  <div class="cards" style="margin-bottom:16px">
+    <div class="card"><span class="bar" style="background:var(--g)"></span>
+      <span class="dot" style="background:var(--g)"></span><span class="upper">Nettoumsatz</span>
+      <div class="big mono">52,0 Mio €</div><div style="font-size:11px" class="muted">Ziel +0,0 (0,0 %)</div>
+      <div style="font-size:11px" class="green">▲ VJ +8,1 %</div></div>
+    <div class="card"><span class="bar" style="background:var(--a)"></span>
+      <span class="dot" style="background:var(--a)"></span><span class="upper">DB-Quote</span>
+      <div class="big mono">38,1 %</div><div style="font-size:11px" class="amber">Ziel −1,9 (−4,8 %)</div>
+      <div style="font-size:11px" class="red">▼ VJ −1,1 %</div></div>
+    <div class="card"><span class="bar" style="background:var(--r)"></span>
+      <span class="dot" style="background:var(--r)"></span><span class="upper">EBIT</span>
+      <div class="big mono">1,4 Mio €</div><div style="font-size:11px" class="red">Ziel −0,4 (−22,2 %)</div>
+      <div style="font-size:11px" class="red">▼ VJ −12,5 %</div></div>
+    <div class="card"><span class="bar" style="background:var(--r)"></span>
+      <span class="dot" style="background:var(--r)"></span><span class="upper">Cash Conversion</span>
+      <div class="big mono">58 Tg</div><div style="font-size:11px" class="red">Ziel +18 (+45 %)</div>
+      <div style="font-size:11px" class="red">▼ VJ +9,4 %</div></div>
+  </div>
+
+  <!-- Detail (E4) -->
+  <div class="panel">
+    <h2>GuV-Staffel (Detail · Ebene 4)</h2>
+    <table>
+      <thead><tr><th>Position</th><th>Mio €</th><th>Hinweis</th></tr></thead>
+      <tbody>
+        <tr><td>Bruttoumsatz</td><td class="mono">55,8</td><td class="muted">E-Bikes treiben Schnitt</td></tr>
+        <tr><td>− Erlösschmälerung</td><td class="mono">−3,8</td><td class="muted">Online-Retouren</td></tr>
+        <tr><td><b>= Nettoumsatz</b></td><td class="mono"><b>52,0</b></td><td class="muted">+8,1 %</td></tr>
+        <tr><td>− Wareneinsatz</td><td class="mono">−32,2</td><td class="red">über Plan</td></tr>
+        <tr><td><b>= DB I</b></td><td class="mono"><b>19,8</b></td><td class="muted">38,1 %</td></tr>
+        <tr><td>− Personal / OpEx</td><td class="mono">−17,6</td><td class="muted">Filialnetz</td></tr>
+        <tr><td><b>= EBIT</b></td><td class="mono"><b>1,4</b></td><td class="red">2,7 % Marge</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <span class="muted" style="font-size:11px">Vertraulich · konsolidiert in EUR · Quelle: Reporting-Engine</span>
+    <button class="btn">🎯 Controller-Auswertung (SMART)</button>
+  </div>
+
+</div>
+</body>
+</html>

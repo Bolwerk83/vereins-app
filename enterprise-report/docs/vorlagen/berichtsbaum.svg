@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="700" viewBox="0 0 1040 700" font-family="Segoe UI, Arial, sans-serif">
+  <rect width="1040" height="700" fill="#F4F6F9"/>
+  <text x="40" y="44" font-size="22" font-weight="700" fill="#1F2A37">Berichtsbaum · Fachbereiche (Ebene 2)</text>
+  <text x="40" y="68" font-size="13" fill="#64748B">22 Bereiche unter der GF-Wurzel — 7 operativ, 15 Controlling. Jeder mit Themen, Details, Historie.</text>
+
+  <!-- Wurzel -->
+  <rect x="420" y="92" width="200" height="52" rx="10" fill="#0F766E"/>
+  <text x="520" y="118" font-size="14" font-weight="700" fill="#FFFFFF" text-anchor="middle">GF · Management Report</text>
+  <text x="520" y="135" font-size="11" fill="#CFE6E2" text-anchor="middle">VeloWerk Gruppe · Ebene 1</text>
+
+  <line x1="520" y1="144" x2="250" y2="184" stroke="#94A3B8"/>
+  <line x1="520" y1="144" x2="790" y2="184" stroke="#94A3B8"/>
+
+  <!-- Operative Bereiche -->
+  <rect x="40" y="184" width="420" height="300" rx="10" fill="#FFFFFF" stroke="#D7DEE6"/>
+  <rect x="40" y="184" width="420" height="34" rx="10" fill="#1F2A37"/>
+  <text x="58" y="206" font-size="13" font-weight="700" fill="#FFFFFF">Operative Bereiche (7)</text>
+  <g font-size="13" fill="#1F2A37">
+    <text x="58" y="246">› Verkauf</text>
+    <text x="58" y="272">› Einkauf</text>
+    <text x="58" y="298">› Produktion</text>
+    <text x="58" y="324">› Logistik &amp; Lager</text>
+    <text x="58" y="350">› Human Resources</text>
+    <text x="58" y="376">› Informationstechnologie</text>
+    <text x="58" y="402">› Finanzen</text>
+  </g>
+  <text x="58" y="446" font-size="11.5" fill="#64748B">je Bereich: KPI-Karten · Lagebewertung ·</text>
+  <text x="58" y="464" font-size="11.5" fill="#64748B">Themenbereiche (E3) · Details (E4) · Historie (E5)</text>
+
+  <!-- Controlling-Bereiche -->
+  <rect x="500" y="184" width="500" height="430" rx="10" fill="#FFFFFF" stroke="#D7DEE6"/>
+  <rect x="500" y="184" width="500" height="34" rx="10" fill="#0F766E"/>
+  <text x="518" y="206" font-size="13" font-weight="700" fill="#FFFFFF">Controlling-Bereiche (15)</text>
+  <g font-size="12.5" fill="#1F2A37">
+    <text x="518" y="244">› Kosten- &amp; Leistungsrechnung</text>
+    <text x="518" y="268">› Absatz- &amp; Umsatzprognose</text>
+    <text x="518" y="292">› Umsatz-, Kosten- &amp; Erfolgsplanung</text>
+    <text x="518" y="316">› Produktionsplanung</text>
+    <text x="518" y="340">› Bestands- &amp; Supply-Chain-Controlling</text>
+    <text x="518" y="364">› Finanzbuchhaltung &amp; Abschluss</text>
+    <text x="518" y="388">› Investitions- &amp; Liquiditätsplanung</text>
+    <text x="518" y="412">› Vertriebscontrolling</text>
+    <text x="768" y="244">› Personalcontrolling 🔒</text>
+    <text x="768" y="268">› Risiko- &amp; Forderungscontrolling</text>
+    <text x="768" y="292">› Nachhaltigkeits- &amp; ESG-Controlling</text>
+    <text x="768" y="316">› Treasury &amp; Zins-/Währungsrisiko</text>
+    <text x="768" y="340">› Qualitäts- &amp; Reklamationscontrolling</text>
+    <text x="768" y="364">› Marketing-/Kampagnencontrolling</text>
+    <text x="768" y="388">› Beteiligungs-/Konzerncontrolling</text>
+  </g>
+  <line x1="518" y1="430" x2="982" y2="430" stroke="#D7DEE6"/>
+  <text x="518" y="454" font-size="11.5" fill="#64748B">🔒 = Object-Level-Security (z. B. Personalkosten nur GF/HR/FIN)</text>
+  <text x="518" y="476" font-size="11.5" fill="#64748B">abgeleitete KPIs verknüpfen Bereiche (z. B. Lagerumschlag = Wareneinsatz ÷ Lagerbestand)</text>
+
+  <!-- Querschnitt-Module -->
+  <rect x="40" y="636" width="960" height="44" rx="10" fill="#E6F2F0" stroke="#0F766E"/>
+  <text x="58" y="663" font-size="12.5" font-weight="700" fill="#0F766E">Querschnitt:
+    <tspan font-weight="400" fill="#1F2A37">  Self-Service BI (KI-Beirat) · Maßnahmen (SMART, Tracking) · Querchecks · Controlling-Instrumente · Wizard</tspan>
+  </text>
+</svg>

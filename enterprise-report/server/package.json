@@ -1,0 +1,25 @@
+{
+  "name": "enterprise-report-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "MSSQL-Backend: führt sql/*.kpi.sql aus und bedient den dataProvider-Vertrag.",
+  "scripts": {
+    "start": "node index.js",
+    "test:db": "node testConnection.js",
+    "apply:sql": "node applySql.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.70.0",
+    "express": "^4.19.0",
+    "mssql": "^11.0.0",
+    "dotenv": "^16.4.0"
+  },
+  "optionalDependencies": {
+    "msnodesqlv8": "^4.2.1",
+    "node-cron": "^3.0.3",
+    "nodemailer": "^6.9.0",
+    "exceljs": "^4.4.0",
+    "puppeteer": "^23.0.0"
+  }
+}
