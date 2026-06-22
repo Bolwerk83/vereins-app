@@ -35,6 +35,7 @@ import LieferantenLebenszyklus from './modules/lieferant/LieferantenLebenszyklus
 import Marketing from './modules/marketing/Marketing.jsx'
 import Bestand from './modules/bestand/Bestand.jsx'
 import Lagerverwaltung from './modules/lager/Lagerverwaltung.jsx'
+import WMS from './modules/wms/WMS.jsx'
 import Forderungen from './modules/forderungen/Forderungen.jsx'
 import Mitarbeiter from './modules/mitarbeiter/Mitarbeiter.jsx'
 import Segmentbericht from './modules/segment/Segmentbericht.jsx'
@@ -206,6 +207,7 @@ export default function App() {
       ] },
       { titel: 'Bestand & Beschaffung', eintraege: [
         E('lager', 'nav.lager', '🏬'),
+        E('wms', 'nav.wms', '🗄'),
         E('bestand', 'nav.bestand', '📦'),
         E('lieferant', 'nav.lieferant', '🚚'),
         E('auftrag', 'nav.auftrag', '📦')
@@ -483,6 +485,9 @@ export default function App() {
         )}
         {ansicht === 'lager' && (
           <Lagerverwaltung onGeh={geh} />
+        )}
+        {ansicht === 'wms' && (
+          <WMS />
         )}
         {ansicht === 'forderungen' && (
           <Forderungen />
