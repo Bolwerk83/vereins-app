@@ -1,7 +1,7 @@
 import './_setup.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { artikelliste, auftragsliste, pruefeArtikel, pruefeAuftrag, ARTIKEL, LISTEN, historie, warenverbrauchliste, pruefeWarenverbrauch, WARENVERBRAUCH, leasingliste, fuehrenderBeleg, LEASING, retourenliste, rechnungsliste, kundenliste, detailFuerBereich, produktliste, rechnungsposliste, bestellkanalliste, chargenliste, auftragsbestandliste } from '../src/core/detailberichte.js'
+import { artikelliste, auftragsliste, pruefeArtikel, pruefeAuftrag, ARTIKEL, LISTEN, historie, warenverbrauchliste, pruefeWarenverbrauch, WARENVERBRAUCH, leasingliste, fuehrenderBeleg, LEASING, retourenliste, rechnungsliste, kundenliste, detailFuerBereich, produktliste, rechnungsposliste, bestellkanalliste, chargenliste, auftragsbestandliste, sammelBefunde, befundStatistik, REGISTRY } from '../src/core/detailberichte.js'
 
 test('Negativer Verfügbarbestand wird als Fehler erkannt', () => {
   const a = ARTIKEL.find((x) => x.sku === '231052006') // lbVerf -1
@@ -146,6 +146,26 @@ test('Auftragsbestandsliste: Inkonsistenz & Übermenge', () => {
 
 test('Alle Katalog-Listen sind jetzt verfügbar', () => {
   assert.ok(LISTEN.every((l) => l.verfuegbar), 'es sollten alle Listen verfügbar sein')
+})
+
+test('Sammel-Plausi: Befunde aller Listen gebündelt & sortiert', () => {
+  const items = sammelBefunde()
+  assert.ok(items.length > 10)
+  // jede verfügbare Liste ist in der Registry abgebildet
+  assert.equal(REGISTRY.length, LISTEN.filter((l) => l.verfuegbar).length)
+  // Sortierung: Fehler stehen vor Hinweisen
+  const ersteHinweis = items.findIndex((i) => i.schwere === 'hinweis')
+  const letzterFehler = items.map((i) => i.schwere).lastIndexOf('fehler')
+  if (ersteHinweis >= 0 && letzterFehler >= 0) assert.ok(letzterFehler < ersteHinweis)
+  // Einträge tragen Liste + Datensatzbezug
+  assert.ok(items.every((i) => i.listId && i.id != null && i.text))
+})
+
+test('Befund-Statistik: Summen je Schwere und je Liste', () => {
+  const s = befundStatistik()
+  assert.equal(s.gesamt, s.proSchwere.fehler + s.proSchwere.warnung + s.proSchwere.hinweis)
+  assert.ok(s.proListe.length > 0)
+  assert.equal(s.proListe.reduce((n, l) => n + l.gesamt, 0), s.gesamt)
 })
 
 test('LISTEN-Katalog enthält die Kernlisten', () => {

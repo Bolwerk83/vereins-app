@@ -441,6 +441,51 @@ export const LISTEN = [
   { id: 'auftragsbestand', name: 'Auftragsbestandsliste', verfuegbar: true }
 ]
 
+// ---- Zentrale Registry + Sammel-Plausi (alle Listen gebündelt) ----------
+// Map je Liste: Lade-Funktion + Schlüssel-/Titelfeld. Basis für Cockpit & Export.
+export const REGISTRY = [
+  { id: 'auftrag', name: 'Auftragsliste', lade: auftragsliste, idKey: 'auftrag', titelKey: 'kunde' },
+  { id: 'artikel', name: 'Artikelliste', lade: artikelliste, idKey: 'sku', titelKey: 'artikel' },
+  { id: 'produkt', name: 'Produktliste', lade: produktliste, idKey: 'sku', titelKey: 'name' },
+  { id: 'rechnung', name: 'Rechnungsliste', lade: rechnungsliste, idKey: 'rechnung', titelKey: 'kunde' },
+  { id: 'rechnungpos', name: 'Rechnungspositionsliste', lade: rechnungsposliste, idKey: 'rechnung', titelKey: 'artikel' },
+  { id: 'bestellkanal', name: 'Bestellkanalliste', lade: bestellkanalliste, idKey: 'kanal', titelKey: 'kanal' },
+  { id: 'leasing', name: 'Leasingliste', lade: leasingliste, idKey: 'vorgang', titelKey: 'kunde' },
+  { id: 'charge', name: 'Chargenliste', lade: chargenliste, idKey: 'charge', titelKey: 'artikel' },
+  { id: 'kunde', name: 'Kundenliste', lade: kundenliste, idKey: 'kundennr', titelKey: 'name' },
+  { id: 'plausiwv', name: 'Plausi: Warenverbrauch', lade: warenverbrauchliste, idKey: 'sku', titelKey: 'artikel' },
+  { id: 'retoure', name: 'Retourenliste', lade: retourenliste, idKey: 'retoure', titelKey: 'kunde' },
+  { id: 'auftragsbestand', name: 'Auftragsbestandsliste', lade: auftragsbestandliste, idKey: 'auftrag', titelKey: 'kunde' }
+]
+
+/** Alle Befunde aller Listen als flache Liste (ein Eintrag je Befund). */
+export function sammelBefunde() {
+  const items = []
+  for (const l of REGISTRY) {
+    for (const r of l.lade().rows) {
+      for (const b of (r.befunde || [])) {
+        items.push({ listId: l.id, listName: l.name, id: r[l.idKey], titel: r[l.titelKey], schwere: b.schwere, text: b.text, feld: b.feld })
+      }
+    }
+  }
+  const rang = { fehler: 0, warnung: 1, hinweis: 2 }
+  return items.sort((a, b) => rang[a.schwere] - rang[b.schwere] || a.listName.localeCompare(b.listName))
+}
+
+/** Kennzahlen: Anzahl je Schwere insgesamt und je Liste. */
+export function befundStatistik() {
+  const items = sammelBefunde()
+  const proSchwere = { fehler: 0, warnung: 0, hinweis: 0 }
+  const proListe = {}
+  for (const it of items) {
+    proSchwere[it.schwere]++
+    proListe[it.listId] = proListe[it.listId] || { id: it.listId, name: it.listName, fehler: 0, warnung: 0, hinweis: 0, gesamt: 0 }
+    proListe[it.listId][it.schwere]++
+    proListe[it.listId].gesamt++
+  }
+  return { gesamt: items.length, proSchwere, proListe: Object.values(proListe).sort((a, b) => b.gesamt - a.gesamt) }
+}
+
 // Drill-Down E3 → E4: welcher Fachbereich (E2-Code) führt in welche Detailliste?
 export const BEREICH_DETAIL = {
   VK: 'auftrag', VC: 'kunde', MKT: 'kunde', SVC: 'retoure',

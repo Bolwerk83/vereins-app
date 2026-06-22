@@ -5,7 +5,7 @@
 //  eine Zeile öffnet die Befund-Karte (Sprung in die Detailprüfung).
 // =========================================================================
 import React, { useState, useEffect } from 'react'
-import { LISTEN, LEGENDE, artikelliste, auftragsliste, warenverbrauchliste, leasingliste, retourenliste, rechnungsliste, kundenliste, produktliste, rechnungsposliste, bestellkanalliste, chargenliste, auftragsbestandliste, historie } from '../../core/detailberichte.js'
+import { LISTEN, LEGENDE, artikelliste, auftragsliste, warenverbrauchliste, leasingliste, retourenliste, rechnungsliste, kundenliste, produktliste, rechnungsposliste, bestellkanalliste, chargenliste, auftragsbestandliste, historie, sammelBefunde, befundStatistik } from '../../core/detailberichte.js'
 import { downloadCsv } from '../../core/export.js'
 import { ladeBookmarks, addBookmark, loescheBookmark, ladeLetzte, merkeLetzte } from '../../core/bookmarks.js'
 
@@ -59,7 +59,7 @@ const inp = { padding: '8px 10px', borderRadius: 'var(--radius-sm)', border: '1p
 const eur = (v) => v == null ? '' : v.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const pct = (v) => v == null ? '' : v.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%'
 const datum = (s) => s ? s.split('-').reverse().join('.') : ''
-const SCHWERE = { fehler: { farbe: 'var(--amp-r)', soft: 'var(--amp-r-soft)', icon: '🔴' }, warnung: { farbe: 'var(--amp-a)', soft: 'var(--amp-a-soft)', icon: '🟠' }, hinweis: { farbe: 'var(--muted)', soft: 'var(--bg)', icon: '🔵' } }
+const SCHWERE = { fehler: { farbe: 'var(--amp-r)', soft: 'var(--amp-r-soft)', icon: '🔴', label: 'Fehler' }, warnung: { farbe: 'var(--amp-a)', soft: 'var(--amp-a-soft)', icon: '🟠', label: 'Warnung' }, hinweis: { farbe: 'var(--muted)', soft: 'var(--bg)', icon: '🔵', label: 'Hinweis' } }
 
 const ART_COLS = [
   { key: 'sku', label: 'SKU', al: 'left', mono: true },
@@ -225,6 +225,74 @@ const ABEST_COLS = [
 ]
 const ABEST_SUM = ['bestellt', 'geliefert', 'offen', 'wert']
 
+// Sammel-Plausi-Cockpit: alle Befunde aller Listen gebündelt, filterbar, mit Absprung.
+function Cockpit({ onBack, onOpen }) {
+  const [fSchwere, setFSchwere] = useState(null)
+  const [fListe, setFListe] = useState(null)
+  const stat = befundStatistik()
+  let items = sammelBefunde()
+  if (fSchwere) items = items.filter((i) => i.schwere === fSchwere)
+  if (fListe) items = items.filter((i) => i.listId === fListe)
+
+  return (
+    <div style={{ maxWidth: 980, margin: '0 auto' }}>
+      <button onClick={onBack} style={{ ...inp, cursor: 'pointer', marginBottom: 12 }}>← Detailberichte</button>
+      <h2 style={{ margin: '0 0 4px' }}>🩺 Sammel-Plausi-Cockpit</h2>
+      <div style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 14 }}>Alle Befunde aus {stat.proListe.length} Listen an einem Ort. Klick auf eine Zeile springt in die jeweilige Liste.</div>
+
+      {/* Kennzahl-Kacheln je Schwere (klickbar als Filter) */}
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
+        {['fehler', 'warnung', 'hinweis'].map((s) => {
+          const an = fSchwere === s
+          return (
+            <button key={s} onClick={() => setFSchwere(an ? null : s)}
+              style={{ ...card, padding: '12px 16px', cursor: 'pointer', minWidth: 130, textAlign: 'left', borderColor: an ? SCHWERE[s].farbe : 'var(--line)', background: an ? SCHWERE[s].soft : 'var(--panel)' }}>
+              <div style={{ fontSize: 22, fontWeight: 800, color: SCHWERE[s].farbe }}>{stat.proSchwere[s]}</div>
+              <div style={{ fontSize: 12, color: 'var(--muted)' }}>{SCHWERE[s].icon} {SCHWERE[s].label}</div>
+            </button>
+          )
+        })}
+        <div style={{ ...card, padding: '12px 16px', minWidth: 110 }}>
+          <div style={{ fontSize: 22, fontWeight: 800 }}>{stat.gesamt}</div>
+          <div style={{ fontSize: 12, color: 'var(--muted)' }}>gesamt</div>
+        </div>
+      </div>
+
+      {/* Filter je Liste */}
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
+        <button onClick={() => setFListe(null)} style={{ fontSize: 12, padding: '4px 11px', borderRadius: 999, cursor: 'pointer', border: `1px solid ${!fListe ? 'var(--accent)' : 'var(--line)'}`, background: !fListe ? 'var(--accent-soft)' : 'var(--panel)', color: !fListe ? 'var(--accent)' : 'var(--ink)' }}>Alle Listen</button>
+        {stat.proListe.map((l) => {
+          const an = fListe === l.id
+          return (
+            <button key={l.id} onClick={() => setFListe(an ? null : l.id)} style={{ fontSize: 12, padding: '4px 11px', borderRadius: 999, cursor: 'pointer', border: `1px solid ${an ? 'var(--accent)' : 'var(--line)'}`, background: an ? 'var(--accent-soft)' : 'var(--panel)', color: an ? 'var(--accent)' : 'var(--ink)' }}>
+              {l.name} <b>{l.gesamt}</b>
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Befundtabelle */}
+      <div style={{ ...card, overflow: 'hidden' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <thead><tr>{['Schwere', 'Liste', 'Datensatz', 'Befund'].map((h) => <th key={h} style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '2px solid var(--line)', fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase' }}>{h}</th>)}</tr></thead>
+          <tbody>
+            {items.length === 0 && <tr><td colSpan={4} style={{ padding: 20, textAlign: 'center', color: 'var(--muted)' }}>Keine Befunde für diesen Filter. 👍</td></tr>}
+            {items.map((it, i) => (
+              <tr key={i} onClick={() => onOpen(it.listId)} title={`In ${it.listName} öffnen`} style={{ cursor: 'pointer', borderLeft: `3px solid ${SCHWERE[it.schwere].farbe}` }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--accent-soft)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+                <td style={{ padding: '7px 10px', borderBottom: '1px solid var(--line)', whiteSpace: 'nowrap', color: SCHWERE[it.schwere].farbe, fontWeight: 700 }}>{SCHWERE[it.schwere].icon} {SCHWERE[it.schwere].label}</td>
+                <td style={{ padding: '7px 10px', borderBottom: '1px solid var(--line)', whiteSpace: 'nowrap' }}>{it.listName}</td>
+                <td className="mono" style={{ padding: '7px 10px', borderBottom: '1px solid var(--line)', whiteSpace: 'nowrap' }}>{it.id}<span style={{ color: 'var(--muted)' }}>{it.titel ? ' · ' + it.titel : ''}</span></td>
+                <td style={{ padding: '7px 10px', borderBottom: '1px solid var(--line)' }}>{it.text}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
 export default function Detailberichte({ startListe = null }) {
   const [aktiv, setAktiv] = useState(startListe)
   if (aktiv === 'artikel') return <Liste typ="artikel" titel="Artikelliste" sub="Zeigt die SKU in einer Listen-Übersicht. Klick auf eine Zeile → Befund-Karte (inkl. E5-Historie)." cols={ART_COLS} sumKeys={ART_SUM} lade={artikelliste} onBack={() => setAktiv(null)} idKey="sku" titelKey="artikel" />
@@ -241,7 +309,10 @@ export default function Detailberichte({ startListe = null }) {
   if (aktiv === 'charge') return <Liste typ="charge" titel="Chargenliste" sub="Chargen/MHD mit Plausi (MHD überschritten/bald, QS-Sperre, leere Charge)." cols={CHARGE_COLS} sumKeys={CHARGE_SUM} lade={chargenliste} onBack={() => setAktiv(null)} idKey="charge" titelKey="artikel" />
   if (aktiv === 'auftragsbestand') return <Liste typ="auftragsbestand" titel="Auftragsbestandsliste" sub="Offener Auftragsbestand mit Plausi (offene Menge inkonsistent, Liefertermin überschritten, Übermenge)." cols={ABEST_COLS} sumKeys={ABEST_SUM} lade={auftragsbestandliste} onBack={() => setAktiv(null)} idKey="auftrag" titelKey="kunde" />
 
+  if (aktiv === 'cockpit') return <Cockpit onBack={() => setAktiv(null)} onOpen={(id) => setAktiv(id)} />
+
   // Hub
+  const stat = befundStatistik()
   return (
     <div style={{ maxWidth: 760, margin: '0 auto' }}>
       <div style={{ marginBottom: 14 }}>
@@ -251,6 +322,23 @@ export default function Detailberichte({ startListe = null }) {
           (z. B. negativer Verfügbarbestand, negative Marge, gesperrte Bestände).
         </div>
       </div>
+
+      {/* Einstieg ins Sammel-Plausi-Cockpit (alle Befunde gebündelt) */}
+      <button onClick={() => setAktiv('cockpit')} style={{ ...card, width: '100%', textAlign: 'left', padding: '14px 16px', marginBottom: 14, cursor: 'pointer',
+        borderColor: stat.proSchwere.fehler ? SCHWERE.fehler.farbe : 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <div>
+          <div style={{ fontWeight: 700, fontSize: 15 }}>🩺 Sammel-Plausi-Cockpit</div>
+          <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 3 }}>Alle {stat.gesamt} Befunde aus allen Listen gebündelt — öffnen →</div>
+        </div>
+        <div style={{ display: 'flex', gap: 6 }}>
+          {['fehler', 'warnung', 'hinweis'].map((s) => (
+            <span key={s} title={SCHWERE[s].label} style={{ fontSize: 12.5, fontWeight: 700, padding: '4px 9px', borderRadius: 999, color: SCHWERE[s].farbe, background: SCHWERE[s].soft, whiteSpace: 'nowrap' }}>
+              {SCHWERE[s].icon} {stat.proSchwere[s]}
+            </span>
+          ))}
+        </div>
+      </button>
+
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         {LISTEN.map((l) => (
           <button key={l.id} disabled={!l.verfuegbar} onClick={() => l.verfuegbar && setAktiv(l.id)}
