@@ -2,7 +2,7 @@ import './_setup.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  PROFITCENTER, pcMitKostenstellen, gesamt, verschiebe, setzeZurueck, pcVon, istVerschoben, anzahlVerschoben, kostenstellen
+  PROFITCENTER, STRUKTUREN, gruppiereNach, pcMitKostenstellen, gesamt, verschiebe, setzeZurueck, pcVon, istVerschoben, anzahlVerschoben, kostenstellen
 } from '../src/core/pcKostenstellen.js'
 
 function reset() { setzeZurueck() }
@@ -52,6 +52,41 @@ test('Zurück auf Default = kein Override mehr', () => {
   verschiebe('ks-perfmkt', 'pc-ecom') // = Default
   assert.equal(istVerschoben('ks-perfmkt'), false)
   assert.equal(anzahlVerschoben(), 0)
+})
+
+test('Jede Struktur partitioniert alle Kostenstellen (gleiche Summen)', () => {
+  reset()
+  const ges = gesamt()
+  for (const s of STRUKTUREN) {
+    const g = gruppiereNach(s.id)
+    assert.equal(g.reduce((n, x) => n + x.anzahl, 0), kostenstellen().length, `${s.id}: alle KS zugeordnet`)
+    assert.equal(g.reduce((n, x) => n + x.erloes, 0), ges.erloes, `${s.id}: Erlöse identisch`)
+    assert.equal(g.reduce((n, x) => n + x.kosten, 0), ges.kosten, `${s.id}: Kosten identisch`)
+  }
+})
+
+test('Kanal-Struktur enthält Shop-in-Shop (Partner) mit Erlös', () => {
+  const partner = gruppiereNach('kanal').find((g) => g.id === 'partner')
+  assert.ok(partner.anzahl >= 2 && partner.erloes > 0)
+})
+
+test('Land-Struktur trennt DE/AT/CH/NL', () => {
+  const land = gruppiereNach('land')
+  for (const code of ['DE', 'AT', 'CH', 'NL']) assert.ok(land.find((g) => g.id === code).anzahl >= 1)
+})
+
+test('nur Geschäftsbereich-Struktur ist beweglich', () => {
+  assert.equal(STRUKTUREN.find((s) => s.id === 'geschaeftsbereich').beweglich, true)
+  assert.ok(STRUKTUREN.filter((s) => s.beweglich).length === 1)
+})
+
+test('Verschieben wirkt nur in der Geschäftsbereich-Struktur', () => {
+  reset()
+  const vorherKanal = gruppiereNach('kanal').find((g) => g.id === 'online').anzahl
+  verschiebe('ks-perfmkt', 'pc-bike') // Geschäftsbereich-Override
+  const nachherKanal = gruppiereNach('kanal').find((g) => g.id === 'online').anzahl
+  assert.equal(vorherKanal, nachherKanal) // Kanal unverändert (Attribut bleibt online)
+  reset()
 })
 
 test('setzeZurueck entfernt alle Overrides', () => {
