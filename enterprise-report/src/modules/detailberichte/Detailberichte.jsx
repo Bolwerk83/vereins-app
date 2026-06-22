@@ -685,6 +685,8 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, onDrill, startSuc
   const [bmTick, setBmTick] = useState(0)
   const [hov, setHov] = useState(null)        // Spaltenkopf-Tooltip {key,x,y}
   const [infoKey, setInfoKey] = useState(null) // ausführliche KPI-Beschreibung
+  const [visuals, setVisuals] = useState(() => localStorage.getItem('er_visuals') !== '0') // Daten-Balken (global, Standard an)
+  useEffect(() => { try { localStorage.setItem('er_visuals', visuals ? '1' : '0') } catch {} }, [visuals])
   const hideTimer = React.useRef(null)
   const zeigeHov = (e, key) => { if (!glossarFuer(key)) return; clearTimeout(hideTimer.current); const r = e.currentTarget.getBoundingClientRect(); setHov({ key, x: r.left, y: r.bottom }) }
   const planeHide = () => { clearTimeout(hideTimer.current); hideTimer.current = setTimeout(() => setHov(null), 160) }
@@ -702,6 +704,12 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, onDrill, startSuc
   const speichereAnsicht = () => { const name = prompt('Name für diese Ansicht (Bookmark):'); if (name && name.trim()) { addBookmark(typ, name, [...sichtbar]); setBmTick((t) => t + 1) } }
   const loesche = (id) => { loescheBookmark(typ, id); setBmTick((t) => t + 1) }
   const sichtCols = cols.filter((c) => sichtbar.has(c.key))
+  // Spalten-Maxima für Daten-Balken (nur rechtsbündige Zahlenspalten).
+  const colMax = {}
+  if (visuals) for (const c of sichtCols) if (c.al === 'right') {
+    const m = Math.max(0, ...data.rows.map((r) => (typeof r[c.key] === 'number' ? Math.abs(r[c.key]) : 0)))
+    if (m > 0) colMax[c.key] = m
+  }
   // CSV-Export der aktuellen Ansicht: nur sichtbare Spalten + Befundspalte.
   const exportCsv = () => {
     const kopf = [...sichtCols.map((c) => c.label), 'Befund']
@@ -716,16 +724,21 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, onDrill, startSuc
     const befund = !dimmed && row.befunde.find((b) => b.feld === c.key)
     const v = row[c.key]
     const text = c.fmt ? c.fmt(v) : v
+    // Daten-Balken: proportional zum Spalten-Maximum; Befunde/negativ farbig.
+    const balken = !dimmed && colMax[c.key] && typeof v === 'number' && v !== 0
+    const pct = balken ? Math.max(2, Math.round(Math.abs(v) / colMax[c.key] * 100)) : 0
+    const balkenFarbe = befund ? SCHWERE[befund.schwere].farbe : v < 0 ? 'var(--amp-r)' : 'var(--accent)'
     return (
       <td key={c.key} title={dimmed ? 'ignoriert (Dublette – nicht führend)' : befund ? befund.text : undefined}
         className={c.mono || c.al === 'right' ? 'mono' : undefined}
-        style={{ padding: '6px 9px', borderBottom: '1px solid var(--line)', textAlign: c.al, whiteSpace: c.key === 'artikel' || c.key === 'kunde' ? 'normal' : 'nowrap',
+        style={{ position: 'relative', padding: '6px 9px', borderBottom: '1px solid var(--line)', textAlign: c.al, whiteSpace: c.key === 'artikel' || c.key === 'kunde' ? 'normal' : 'nowrap',
           maxWidth: c.key === 'artikel' ? 280 : undefined, overflow: 'hidden', textOverflow: 'ellipsis',
           background: befund ? SCHWERE[befund.schwere].soft : undefined,
           color: dimmed ? 'var(--muted)' : befund ? SCHWERE[befund.schwere].farbe : undefined,
           textDecoration: dimmed ? 'line-through' : undefined, opacity: dimmed ? 0.55 : 1,
           fontWeight: befund || c.key === 'anzeigeWert' ? 700 : 400 }}>
-        {text}{befund ? ' ⚠' : ''}
+        {balken && <span aria-hidden style={{ position: 'absolute', left: 0, top: 4, bottom: 4, width: pct + '%', background: balkenFarbe, opacity: befund ? 0.22 : 0.14, borderRadius: 3 }} />}
+        <span style={{ position: 'relative' }}>{text}{befund ? ' ⚠' : ''}</span>
       </td>
     )
   }
@@ -774,6 +787,8 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, onDrill, startSuc
           style={{ ...inp, cursor: 'pointer', fontSize: 12, fontWeight: 600, borderColor: panelAuf ? 'var(--accent)' : 'var(--line)', color: panelAuf ? 'var(--accent)' : 'var(--ink)' }}>
           🔖 Spalten &amp; Ansichten ({sichtCols.length}/{cols.length})
         </button>
+        <button onClick={() => setVisuals((v) => !v)} title="Daten-Balken in Zahlenspalten ein-/ausblenden"
+          style={{ ...inp, cursor: 'pointer', fontSize: 12, fontWeight: 600, borderColor: visuals ? 'var(--accent)' : 'var(--line)', color: visuals ? 'var(--accent)' : 'var(--ink)' }}>📊 Visuals {visuals ? 'an' : 'aus'}</button>
         <button onClick={exportCsv} title="Aktuelle Ansicht als CSV/Excel exportieren" style={{ ...inp, cursor: 'pointer', fontSize: 12 }}>⤓ CSV</button>
       </div>
 
