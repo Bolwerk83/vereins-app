@@ -41,6 +41,7 @@ import Produktionscontrolling from './modules/produktion/Produktionscontrolling.
 import Planung from './modules/planung/Planung.jsx'
 import Gutschriften from './modules/gutschriften/Gutschriften.jsx'
 import AbgleichAbsatz from './modules/abgleich/AbgleichAbsatz.jsx'
+import VertriebKennzahlen from './modules/vertrieb-kennzahlen/VertriebKennzahlen.jsx'
 import WMS from './modules/wms/WMS.jsx'
 import Detailberichte from './modules/detailberichte/Detailberichte.jsx'
 import Forderungen from './modules/forderungen/Forderungen.jsx'
@@ -221,6 +222,7 @@ export default function App() {
       { titel: 'Vertrieb & Markt', eintraege: [
         E('marketing', 'nav.marketing', '📣'),
         E('gutschriften', 'nav.gutschriften', '🧾'),
+        E('vertriebkpi', 'nav.vertriebkpi', '📈'),
         E('events', 'nav.events', '🎉')
       ] },
       { titel: 'Bestand & Beschaffung', eintraege: [
@@ -522,6 +524,9 @@ export default function App() {
         )}
         {ansicht === 'abgleichabsatz' && (
           <AbgleichAbsatz />
+        )}
+        {ansicht === 'vertriebkpi' && (
+          <VertriebKennzahlen />
         )}
         {ansicht === 'wms' && (
           <WMS />

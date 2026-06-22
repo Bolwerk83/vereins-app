@@ -40,7 +40,7 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
 - Monat: **nicht** eintippen, sondern **automatisch verteilen** (Default linear /12,
   optional Verteilungsschlüssel, Einzel-Override). Gemeinsames Periodenmodell mit A.
 
-### C. Vertriebskennzahlen-Taxonomie übernehmen + Berichtslogik anpassen
+### C. Vertriebskennzahlen-Taxonomie übernehmen + Berichtslogik anpassen — DONE
 - Phasen: **ANGE** (Angebot), **AE** (Auftragseingang), **AER** (Verwertung),
   **AU** (Bearbeitung), **Q** (Qualität/Verluste), **UM** (Umsatz/Absatz).
 - Neue/zu prüfende KPIs: ANGE, OANG, VANGE; AE, AEB, AEOA, STORAE, SAEOA;

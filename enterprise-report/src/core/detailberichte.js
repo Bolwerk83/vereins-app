@@ -9,7 +9,7 @@
 export const LEGENDE = [
   ['AE', 'Auftragseingang'], ['STOR', 'Storniert'], ['AEB', 'Auftragseingang bereinigt'],
   ['AB', 'Auftragsbestand'], ['GEL', 'Geliefert'], ['OFF ANGE', 'offene Angebote'],
-  ['AEW', 'Auftragseingang wirksam'], ['RET', 'Retoure'], ['AET', 'Auftragseingang tatsächlich'],
+  ['RET', 'Retoure'], ['AET', 'Auftragseingang tatsächlich'],
   ['ABS', 'Absatz'], ['BE', 'Bestellmenge'], ['FC', 'Forecast'],
   ['LB', 'Lagerbestand'], ['GESP', 'Gesperrt'], ['KOM', 'Kommissioniert'],
   ['RES', 'Reserviert'], ['VK', 'Verkaufspreis'], ['UVP', 'unverb. Preisempf.'],

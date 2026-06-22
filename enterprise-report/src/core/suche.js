@@ -45,6 +45,7 @@ export const NAV_ZIELE = [
   { ziel: 'wms', gruppe: 'Operativ', schluessel: 'nav.wms' },
   { ziel: 'planung', gruppe: 'Steuerung', schluessel: 'nav.planung' },
   { ziel: 'gutschriften', gruppe: 'Operativ', schluessel: 'nav.gutschriften' },
+  { ziel: 'vertriebkpi', gruppe: 'Berichte', schluessel: 'nav.vertriebkpi' },
   { ziel: 'abgleichabsatz', gruppe: 'Analyse', schluessel: 'nav.abgleichabsatz' },
   { ziel: 'forderungen', gruppe: 'Analyse', schluessel: 'nav.forderungen' },
   { ziel: 'mitarbeiter', gruppe: 'Analyse', schluessel: 'nav.mitarbeiter' },
