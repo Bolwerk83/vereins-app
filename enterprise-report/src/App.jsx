@@ -107,6 +107,7 @@ export default function App() {
   const [branding, setBranding] = useState(ladeBranding())
   const [infoView, setInfoView] = useState(null)   // Bericht-Info-Panel (Schaufenster)
   const [detailStart, setDetailStart] = useState(null) // Drill E3→E4: vorgewählte Detailliste
+  const [detailSuche, setDetailSuche] = useState('')   // optionaler Vorfilter (z. B. aus BCG-Drill)
   // Aktive "Rolle": angemeldeter Benutzer -> Vereinigung seiner Gruppen.
   // Ohne Anmeldung -> manuell gewählte Gruppe (Demo-/Admin-Modus).
   const rolle = benutzer
@@ -170,9 +171,9 @@ export default function App() {
   // Navigation — von jeder Seite aus steuerbar. Fehlt die Berechtigung für den
   // Fachbereich des Ziels, wird statt des Berichts sein Info-Panel geöffnet
   // (Schaufenster: sehen, was es gibt — aber nicht aufrufen).
-  const geh = (a) => { if (a && !darfBereich(rolle, bereichVon(a))) { setInfoView(a); return } if (a === 'detailberichte') setDetailStart(null); setAnsicht(a) }
+  const geh = (a) => { if (a && !darfBereich(rolle, bereichVon(a))) { setInfoView(a); return } if (a === 'detailberichte') { setDetailStart(null); setDetailSuche('') } setAnsicht(a) }
   // Drill E3 → E4: gezielt eine Detailliste öffnen.
-  const gehDetail = (listId) => { setDetailStart(listId); setAnsicht('detailberichte') }
+  const gehDetail = (listId, suche = '') => { setDetailStart(listId); setDetailSuche(suche); setAnsicht('detailberichte') }
   const zeigeInfo = (a) => setInfoView(a)
   const qcFehler = validierungsZusammenfassung(werte).fehler
   const alertN = alertAnzahl(werte, rolle)
@@ -428,7 +429,7 @@ export default function App() {
           <KpiEditor werte={werte} onChange={() => { leereCache(); ladeKpiWerte(periode).then(setWerte) }} />
         )}
         {ansicht === 'detailberichte' && (
-          <Detailberichte startListe={detailStart} werte={werte} />
+          <Detailberichte startListe={detailStart} startSuche={detailSuche} werte={werte} />
         )}
         {ansicht === 'zeit' && (
           <ZeitDatenart onChange={setZeitModell} />
@@ -470,7 +471,7 @@ export default function App() {
           <Abgrenzungsrechnung onGeh={geh} />
         )}
         {ansicht === 'lebenszyklus' && (
-          <Lebenszyklus />
+          <Lebenszyklus onDrill={(o) => gehDetail('artikel', o.gruppe || o.name)} />
         )}
         {ansicht === 'lzempfehlung' && (
           <LebenszyklusEmpfehlungen onGeh={geh} />

@@ -637,9 +637,9 @@ const KATEGORIEN = [
   { name: 'Stammdaten', ids: ['kunde'] }
 ]
 
-export default function Detailberichte({ startListe = null, werte = {} }) {
+export default function Detailberichte({ startListe = null, startSuche = '', werte = {} }) {
   const [aktiv, setAktiv] = useState(startListe)
-  const [drillSuche, setDrillSuche] = useState('')
+  const [drillSuche, setDrillSuche] = useState(startSuche)
   // Liste öffnen (optional mit Vorfilter) — Basis für Cross-Drill & Cockpit.
   const oeffneListe = (t, s = '') => { setDrillSuche(s); setAktiv(t) }
   if (aktiv === 'artikel') return <Liste key={aktiv} typ="artikel" titel="Artikelliste" sub="Zeigt die SKU in einer Listen-Übersicht. Klick auf eine Zeile → Befund-Karte (inkl. E5-Historie)." cols={ART_COLS} sumKeys={ART_SUM} lade={artikelliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="sku" titelKey="artikel" />

@@ -14,7 +14,7 @@ import { addMassnahme, ladeMassnahmen } from '../../core/massnahmen.js'
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
 
-function Portfolio({ objekte, info }) {
+function Portfolio({ objekte, info, onDrill }) {
   const W = 720, H = 340, pad = 44
   const xs = objekte.map((o) => o.wachstum), ys = objekte.map((o) => o.db)
   const xMin = Math.min(-10, ...xs), xMax = Math.max(40, ...xs)
@@ -33,9 +33,10 @@ function Portfolio({ objekte, info }) {
       <text x={W - 12} y={H - pad + 16} fontSize="10" fill="var(--muted)" textAnchor="end">Wachstum % →</text>
       <text x={pad - 6} y={20} fontSize="10" fill="var(--muted)" textAnchor="end">DB %</text>
       {objekte.map((o) => (
-        <g key={o.id}>
+        <g key={o.id} onClick={onDrill ? () => onDrill(o) : undefined} style={{ cursor: onDrill ? 'pointer' : 'default' }}>
+          <title>{onDrill ? `In die Detailliste springen (gefiltert auf „${o.gruppe || o.name}")` : o.name}</title>
           <circle cx={px(o.wachstum)} cy={py(o.db)} r={rad(o.umsatz)} fill={info(o.phase).farbe} fillOpacity="0.30" stroke={info(o.phase).farbe} />
-          <text x={px(o.wachstum)} y={py(o.db) + 3} fontSize="10" textAnchor="middle" fill="var(--ink)">{o.name}</text>
+          <text x={px(o.wachstum)} y={py(o.db) + 3} fontSize="10" textAnchor="middle" fill="var(--ink)" style={{ pointerEvents: 'none' }}>{o.name}</text>
         </g>
       ))}
     </svg>
@@ -60,7 +61,7 @@ function PhasenKacheln({ vert }) {
   )
 }
 
-function Produkte() {
+function Produkte({ onDrill }) {
   const [ebene, setEbene] = useState('produkt')
   const [auf, setAuf] = useState({})
   const objekte = produkte(ebene)
@@ -74,7 +75,8 @@ function Produkte() {
       <PhasenKacheln vert={produktPhaseVerteilung(ebene)} />
       <div style={{ ...card, padding: 16, marginBottom: 14 }}>
         <div style={{ ...cap, marginBottom: 6 }}>Portfolio — Wachstum × Deckungsbeitrag (Blasengröße = Umsatz)</div>
-        <Portfolio objekte={objekte} info={produktPhaseInfo} />
+        <Portfolio objekte={objekte} info={produktPhaseInfo} onDrill={onDrill} />
+        {onDrill && <div style={{ fontSize: 12, color: 'var(--accent)', marginTop: 6 }}>↳ Blase anklicken: in die Artikelliste springen (gefiltert), um den Wert im Detail wiederzufinden.</div>}
         <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 8 }}>
           {PRODUKT_PHASEN.map((p) => (
             <span key={p.id} style={{ fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
@@ -102,7 +104,11 @@ function Produkte() {
                   <td className="mono" style={{ textAlign: 'right', padding: '5px 10px', borderBottom: '1px solid var(--line)', color: x.wachstum < 0 ? 'var(--amp-r)' : x.wachstum >= 6 ? 'var(--amp-g)' : 'var(--ink)' }}>{x.wachstum > 0 ? '+' : ''}{x.wachstum} %</td>
                   <td className="mono" style={{ textAlign: 'right', padding: '5px 10px', borderBottom: '1px solid var(--line)', color: x.dbTrend < 0 ? 'var(--amp-r)' : 'var(--muted)' }}>{x.dbTrend > 0 ? '+' : ''}{x.dbTrend}</td>
                   <td style={{ padding: '5px 10px', borderBottom: '1px solid var(--line)' }}><span style={badge(produktPhaseInfo(x.phase).farbe)}>{produktPhaseInfo(x.phase).name}</span></td>
-                  <td style={{ padding: '5px 10px', borderBottom: '1px solid var(--line)', fontSize: 12, color: 'var(--slate)' }}>{produktPhaseInfo(x.phase).strategie}</td>
+                  <td style={{ padding: '5px 10px', borderBottom: '1px solid var(--line)', fontSize: 12, color: 'var(--slate)' }}>
+                    {produktPhaseInfo(x.phase).strategie}
+                    {onDrill && <button onClick={(e) => { e.stopPropagation(); onDrill(sub ? { name: x.name } : x) }} title="In die Artikelliste springen (gefiltert)"
+                      style={{ marginLeft: 8, fontSize: 11, cursor: 'pointer', border: '1px solid var(--accent)', color: 'var(--accent)', background: 'var(--panel)', borderRadius: 999, padding: '1px 8px', whiteSpace: 'nowrap' }}>→ Details</button>}
+                  </td>
                 </tr>
               )
               return <React.Fragment key={o.id}>{zeile(o, false)}{kids.map((k) => zeile(k, true))}</React.Fragment>
@@ -162,7 +168,7 @@ function Kunden() {
   )
 }
 
-export default function Lebenszyklus() {
+export default function Lebenszyklus({ onDrill }) {
   const [tab, setTab] = useState('produkt')
   return (
     <div style={{ maxWidth: 1000, margin: '0 auto' }}>
@@ -178,7 +184,7 @@ export default function Lebenszyklus() {
           <button style={chipStyle(tab === 'kunde')} onClick={() => setTab('kunde')}>Kunden</button>
         </div>
       </div>
-      {tab === 'produkt' ? <Produkte /> : <Kunden />}
+      {tab === 'produkt' ? <Produkte onDrill={onDrill} /> : <Kunden />}
     </div>
   )
 }
