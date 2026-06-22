@@ -17,6 +17,7 @@ export default function KnotenBewertung({ kpiIds, werte, rolle }) {
   const gesperrt = kpiIds.filter((id) => KPI[id] && !darfKpi(rolle, KPI[id]))
   const [hist, setHist] = useState({})
   const [drill, setDrill] = useState(null)
+  const [ansicht, setAnsicht] = useState('karten') // 'karten' | 'tabelle'
 
   useEffect(() => {
     let ab = false
@@ -27,6 +28,9 @@ export default function KnotenBewertung({ kpiIds, werte, rolle }) {
 
   const insights = sichtbar.map((id) => kpiInsight(id, werte[id], hist[id] || []))
   const bewertung = knotenBewertung(insights)
+  // Kritischste zuerst (rot → amber → neutral → grün).
+  const SR = { r: 0, a: 1, n: 2, g: 3 }
+  const sortiert = [...insights].sort((a, b) => (SR[a.status] ?? 9) - (SR[b.status] ?? 9))
   const v = bewertung.verteilung
   const total = Math.max(1, v.g + v.a + v.r + v.n)
 
@@ -36,12 +40,23 @@ export default function KnotenBewertung({ kpiIds, werte, rolle }) {
       <div style={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', padding: 16, boxShadow: 'var(--shadow)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <div className="mono" style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase' }}>Lagebewertung (automatisch)</div>
-          {/* Ampel-Verteilung */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ display: 'flex', width: 160, height: 8, borderRadius: 4, overflow: 'hidden', border: '1px solid var(--line)' }}>
-              {['g', 'a', 'r', 'n'].map((s) => v[s] ? <div key={s} style={{ width: `${(v[s] / total) * 100}%`, background: AMPEL_FARBE[s] }} /> : null)}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {/* Ampel-Verteilung */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ display: 'flex', width: 160, height: 8, borderRadius: 4, overflow: 'hidden', border: '1px solid var(--line)' }}>
+                {['g', 'a', 'r', 'n'].map((s) => v[s] ? <div key={s} style={{ width: `${(v[s] / total) * 100}%`, background: AMPEL_FARBE[s] }} /> : null)}
+              </div>
+              <span className="mono" style={{ fontSize: 11, color: 'var(--muted)' }}>{v.g}/{v.a}/{v.r}</span>
             </div>
-            <span className="mono" style={{ fontSize: 11, color: 'var(--muted)' }}>{v.g}/{v.a}/{v.r}</span>
+            {/* Visual-/Tabellen-Umschalter */}
+            {insights.length > 0 && (
+              <div style={{ display: 'flex', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
+                {[['karten', '▦ Karten'], ['tabelle', '☰ Tabelle']].map(([id, lbl]) => (
+                  <button key={id} onClick={() => setAnsicht(id)} style={{ padding: '4px 9px', border: 'none', fontSize: 11.5, fontWeight: 600, cursor: 'pointer',
+                    background: ansicht === id ? 'var(--accent)' : 'var(--panel)', color: ansicht === id ? '#fff' : 'var(--muted)' }}>{lbl}</button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
         <div style={{ fontSize: 16, fontWeight: 600, marginTop: 8,
@@ -61,9 +76,33 @@ export default function KnotenBewertung({ kpiIds, werte, rolle }) {
         )}
       </div>
 
-      {/* Angereicherte KPI-Karten */}
+      {/* Kompakte Tabellensicht (kritischste zuerst) */}
+      {ansicht === 'tabelle' && insights.length > 0 && (
+        <div style={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)', overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
+            <thead><tr>{['', 'Kennzahl', 'Ist', 'Budget %', 'VJ %', 'Aussage'].map((h, j) => (
+              <th key={j} style={{ textAlign: j >= 2 && j <= 4 ? 'right' : 'left', padding: '7px 10px', borderBottom: '2px solid var(--line)', fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase' }}>{h}</th>
+            ))}</tr></thead>
+            <tbody>
+              {sortiert.map((i) => (
+                <tr key={i.id}>
+                  <td style={{ padding: '6px 10px', borderBottom: '1px solid var(--line)', width: 16 }}><AmpelPunkt status={i.status} /></td>
+                  <td style={{ padding: '6px 10px', borderBottom: '1px solid var(--line)', fontWeight: 600 }}>{i.k.name}</td>
+                  <td className="mono" style={{ padding: '6px 10px', borderBottom: '1px solid var(--line)', textAlign: 'right', fontWeight: 700 }}>{kpiSymbol(i.k.einheit) ? kpiSymbol(i.k.einheit) + ' ' : ''}{formatWert(i.wert, i.k.einheit)}</td>
+                  <td className="mono" style={{ padding: '6px 10px', borderBottom: '1px solid var(--line)', textAlign: 'right', color: i.abwZielPct == null ? 'var(--muted)' : i.status === 'r' ? 'var(--amp-r)' : i.status === 'a' ? 'var(--amp-a)' : 'var(--amp-g)' }}>{i.abwZielPct != null ? `${i.abwZielPct >= 0 ? '+' : ''}${i.abwZielPct.toFixed(1)} %` : '—'}</td>
+                  <td className="mono" style={{ padding: '6px 10px', borderBottom: '1px solid var(--line)', textAlign: 'right', color: i.deltaVjPct == null ? 'var(--muted)' : i.istGutTrend ? 'var(--amp-g)' : 'var(--amp-r)' }}>{i.deltaVjPct != null ? `${i.deltaVjPct >= 0 ? '+' : ''}${i.deltaVjPct.toFixed(1)} %` : '—'}</td>
+                  <td style={{ padding: '6px 10px', borderBottom: '1px solid var(--line)', color: 'var(--slate)' }}>{i.aussage}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Angereicherte KPI-Karten (kritischste zuerst) */}
+      {ansicht === 'karten' && (
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
-        {insights.map((i) => {
+        {sortiert.map((i) => {
           const reihe = hist[i.id] || []
           return (
             <div key={i.id} style={{ background: 'var(--panel)', border: '1px solid var(--line)', borderLeft: `3px solid ${AMPEL_FARBE[i.status]}`, borderRadius: 'var(--radius)', padding: 14, boxShadow: 'var(--shadow)' }}>
@@ -94,6 +133,7 @@ export default function KnotenBewertung({ kpiIds, werte, rolle }) {
         })}
         {gesperrt.map((id) => <KpiGesperrt key={id} kpiId={id} />)}
       </div>
+      )}
       {drill && <KpiDrillModal startId={drill} werte={werte} onClose={() => setDrill(null)} />}
     </div>
   )

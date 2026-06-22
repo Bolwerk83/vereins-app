@@ -115,7 +115,7 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
 - Produktionsbereich kommt zu kurz: eigene Berichte/Kennzahlen (Auslastung, OEE,
   Ausschuss/Nacharbeit, Durchlaufzeit, Engpässe), ggf. eigenes Modul.
 
-### 6. Reichere Berichte je Knoten
+### 6. Reichere Berichte je Knoten — DONE
 - Mehr als 2–3 KPIs je Bericht; **kritischste zuerst** sortiert.
 - **Visual-/Tabellen-Umschalter**; kompakte „Was sticht heraus"-Zeile.
 
