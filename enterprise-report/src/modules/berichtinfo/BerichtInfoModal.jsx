@@ -62,8 +62,17 @@ export default function BerichtInfoModal({ view, label, icon, pfad, bereich, dar
         {/* Inhalt */}
         <div style={{ padding: 18 }}>
           <Feld titel="Was sagt mir der Bericht?" text={info.zweck} />
+          {info.inhalt && <Feld titel="Was steckt drin?" text={info.inhalt} />}
           <Feld titel="Für wen ist er gedacht?" text={info.zielgruppe} />
           <Feld titel="Welchen Mehrwert bringt er?" text={info.mehrwert} />
+          {info.fragen?.length > 0 && (
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700, marginBottom: 3 }}>Typische Fragen</div>
+              <ul style={{ margin: '2px 0 0', paddingLeft: 18, fontSize: 13.5, lineHeight: 1.6 }}>{info.fragen.map((f, i) => <li key={i}>{f}</li>)}</ul>
+            </div>
+          )}
+          {info.lesehilfe && <Feld titel="Lesehilfe" text={info.lesehilfe} />}
+          {info.quelle && <Feld titel="Datenquelle" text={info.quelle} />}
 
           {!darf && !angefragt && (
             <div style={{ marginTop: 6, padding: '10px 12px', borderRadius: 'var(--radius-sm)', background: 'var(--amp-a-soft)', color: 'var(--amp-a)', fontSize: 13 }}>
