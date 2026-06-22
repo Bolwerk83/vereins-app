@@ -7,6 +7,48 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
 
 ## Offen — priorisiert
 
+> **Neu eingegangen (zuerst, eins nach dem anderen abarbeiten):**
+
+### A. Eigener Planungsbereich (Budget / Forecast / Szenarien) — GROSS
+- Eigener Bereich; Pläne **selbst anlegen** und **„kopieren von"** (Vorlage).
+- Planung **Top-Down UND Bottom-Up**; der **Controller steuert/vermittelt** dazwischen.
+  Leitgedanke: *alle haben dieselbe Vorstellung von den Werten.*
+- Eingabe wahlweise **Artikelpreis × Menge** (hochrechnen) ODER **Betrag von oben**
+  → über den Artikelpreis (Einkauf/Verkauf) **runterbrechen**.
+- Wirkungssicht je Abteilung:
+  - **Einkauf:** wann muss spätestens bestellt werden (Puffer-Modus, z. B. +1 Monat)?
+  - **Produktion:** wann muss das Bike eingeplant werden? Was passiert bei Änderung?
+  - **Vertrieb:** Auftragseingang, **prozentual hochgerechnet** AE→Umsatzerlöse (Historie).
+- **Liquiditätsvorschau** aus Zahlungsfluss Einkauf/Verkauf (z. B. Sattel-Bestellung
+  in 2 Wochen zahlbar; Fahrrad im Schnitt 2 Monate nach Produktion verkauft/bezahlt).
+- „so simpel und doch so detailliert wie möglich" — weitere sinnvolle Stellhebel ergänzen.
+
+### B. Kalkulatorische Kosten je Wirtschaftsjahr versionieren (+ Monat)
+- Parameter (Wiederbeschaffungswert, Zinssatz, betr.notw. Kapital, Marktmiete,
+  GF-Gehalt, Wagnissatz …) **pro Geschäftsjahr** pflegbar; **„Vorjahr kopieren"**.
+- Monat: **nicht** eintippen, sondern **automatisch verteilen** (Default linear /12,
+  optional Verteilungsschlüssel, Einzel-Override). Gemeinsames Periodenmodell mit A.
+
+### C. Vertriebskennzahlen-Taxonomie übernehmen + Berichtslogik anpassen
+- Phasen: **ANGE** (Angebot), **AE** (Auftragseingang), **AER** (Verwertung),
+  **AU** (Bearbeitung), **Q** (Qualität/Verluste), **UM** (Umsatz/Absatz).
+- Neue/zu prüfende KPIs: ANGE, OANG, VANGE; AE, AEB, AEOA, STORAE, SAEOA;
+  AET, NFA; RET; Storno %, Angebotsverlust %, Auftragsstorno %;
+  ABS, VKM, VUMS, KGUT, UMS, ARTUMS, KG; Umsatz/Auftrag Ø, Umsatz/Artikel Ø.
+- **AEW (Auftragseingang wirksam) entfällt.** **„Offene Aufträge (OAU)" = Auftragsbestand.**
+- Einzel-/Summen-/Ø-Kennzahlen + Legende (Σ Wert, ◊ Menge, % Verhältnis, Ø Schnitt).
+
+### D. Performance/Skalierung bei Millionen Datensätzen (über Jahre) — OHNE Aggregation
+- Anforderung: Rohdaten bleiben granular (nicht wegaggregieren), trotzdem schnell.
+- Architektur-Bausteine: **Server-seitige Filterung/Paginierung** (Detaillisten nie
+  komplett in den Browser laden), **Tabellen-Virtualisierung** (nur sichtbare Zeilen),
+  **Zeit-Partitionierung/Indizes** in der Quelle, **Spaltenspeicher/Pre-Indizes**,
+  **Lazy-Drill** (erst auf Klick nachladen), **Cursor-Streaming statt OFFSET**,
+  Caching der KPI-Schicht. Entkopplung „Anzeige (gefiltert)" vs. „Drill bis
+  Einzelbeleg (on-demand)" — Granularität bleibt, nur die geladene Menge wird begrenzt.
+
+---
+
 ### 1. BCG-/Portfolio-Matrix drill-down
 - Bubbles **anklickbar**; Sprung in den passenden Detailbereich **mit passenden
   Filtern** (z. B. Artikel-/Produktliste gefiltert auf die Warengruppe), damit man
@@ -138,3 +180,11 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
 - Admin: eigene Designs anlegen; Onboarding neugierig/wechselnd.
 - Hierarchie-Matrix (Power-BI-Stil) im Strukturbericht.
 - KPI-Kaltstart-Crash behoben; Standalone-Build (`?demo` / `er_demo_view`).
+- Hub „Berichte & Analysen" neu (ampelrichtige Status); Legende berichtsspezifisch;
+  Spalten-Toggle eingeklappt, Bookmarks sichtbar/ausblendbar.
+- Globale Suche: Vorauswahl beim Reinklicken (rollen-relevanteste Treffer).
+- Rechnungsliste + Positionen zusammengelegt (aufklappbare Master-Detail-Liste).
+- KPI-Freigabe-Workflow (freigegeben/Entwurf/deaktiviert; „Aktuell nicht verfügbar";
+  Steuerung nur Controlling/Admin).
+- Lagerverwaltung: anklickbare Artikel, KI-Empfehlungen, schleichende Lieferanten-
+  Signale, Eskalation/Rückfrage-Workflow an die Abteilungsleitung Einkauf.
