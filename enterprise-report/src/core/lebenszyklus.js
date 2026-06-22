@@ -61,14 +61,16 @@ const PRODUKT_ROH = [
   { ebene: 'produkt', id: 'bekleidung', name: 'Bekleidung',   umsatz: 3.7,  db: 32, wachstum: -6, dbTrend: -1.0, alter: 9 },
   { ebene: 'produkt', id: 'cargo',     name: 'E-Cargo',       umsatz: 1.2,  db: 20, wachstum: 35, dbTrend: 2.0,  alter: 1 },
   // Artikel (parent = Produktgruppe)
-  { ebene: 'artikel', id: 'a-emtb',  name: 'E-MTB Trail Pro', parent: 'ebike', umsatz: 12.4, db: 38, wachstum: 12, dbTrend: 1.0, alter: 4 },
+  { ebene: 'artikel', id: 'a-emtb',  name: 'E-MTB Trail Pro (2025)', parent: 'ebike', umsatz: 12.4, db: 38, wachstum: 12, dbTrend: 1.0, alter: 4, vorgaenger: 'a-emtb-g1' },
+  { ebene: 'artikel', id: 'a-emtb-g1', name: 'E-MTB Trail Pro (2023)', parent: 'ebike', umsatz: 2.8, db: 34, wachstum: -34, dbTrend: -1.8, alter: 3 },
   { ebene: 'artikel', id: 'a-urban', name: 'E-Bike Urban 500', parent: 'ebike', umsatz: 10.2, db: 36, wachstum: 7, dbTrend: 0.5, alter: 5 },
   { ebene: 'artikel', id: 'a-etrek', name: 'E-Trekking 700', parent: 'ebike', umsatz: 7.5, db: 37, wachstum: 2, dbTrend: 0.0, alter: 6 },
   { ebene: 'artikel', id: 'a-city7', name: 'City 7',  parent: 'city', umsatz: 5.1, db: 34, wachstum: 3, dbTrend: -0.1, alter: 7 },
   { ebene: 'artikel', id: 'a-trek5', name: 'Trekking 5', parent: 'city', umsatz: 4.5, db: 33, wachstum: 5, dbTrend: -0.3, alter: 9 },
   { ebene: 'artikel', id: 'a-antrieb', name: 'Antriebseinheit M3', parent: 'teile', umsatz: 4.2, db: 40, wachstum: -1, dbTrend: -2.0, alter: 11 },
   { ebene: 'artikel', id: 'a-schalt', name: 'Schaltwerk 12s', parent: 'teile', umsatz: 2.6, db: 38, wachstum: -5, dbTrend: -1.5, alter: 12 },
-  { ebene: 'artikel', id: 'a-akku', name: 'Akku 625Wh', parent: 'teile', umsatz: 2.0, db: 39, wachstum: 6, dbTrend: 0.6, alter: 3 },
+  { ebene: 'artikel', id: 'a-akku', name: 'Akku 625Wh', parent: 'teile', umsatz: 2.0, db: 39, wachstum: 6, dbTrend: 0.6, alter: 3, vorgaenger: 'a-akku-g1' },
+  { ebene: 'artikel', id: 'a-akku-g1', name: 'Akku 500Wh (Vorgänger)', parent: 'teile', umsatz: 0.6, db: 37, wachstum: -28, dbTrend: -1.2, alter: 5 },
   { ebene: 'artikel', id: 'a-helm', name: 'Helme', parent: 'zubehoer', umsatz: 2.1, db: 46, wachstum: 2, dbTrend: 0.2, alter: 8 },
   { ebene: 'artikel', id: 'a-tasche', name: 'Taschen', parent: 'zubehoer', umsatz: 1.8, db: 43, wachstum: 0, dbTrend: 0.1, alter: 8 },
   { ebene: 'artikel', id: 'a-lampe', name: 'Lampen', parent: 'zubehoer', umsatz: 1.8, db: 42, wachstum: 1, dbTrend: 0.0, alter: 7 },
@@ -139,9 +141,8 @@ export function quadrantVon(o, schwellen) {
   const hw = o.wachstum >= schwellen.wachstum, hd = o.db >= schwellen.db
   return (BCG_QUADRANTEN.find((q) => q.hochWachstum === hw && q.hochDb === hd) || {}).id
 }
-/** Verteilung je Quadrant (Anzahl, Umsatz, Anteil, Ø DB, Objekte). */
-export function bcgVerteilung(ebene, opt = {}) {
-  const objekte = produkte(ebene)
+/** Verteilung je Quadrant aus einer beliebigen Objektliste. */
+export function bcgFelder(objekte, opt = {}) {
   const schwellen = bcgSchwellen(objekte, opt)
   const ges = objekte.reduce((n, x) => n + x.umsatz, 0) || 1
   const felder = BCG_QUADRANTEN.map((q) => {
@@ -152,6 +153,8 @@ export function bcgVerteilung(ebene, opt = {}) {
   })
   return { schwellen, felder }
 }
+/** Verteilung je Quadrant für eine Produkt-Ebene (Default-Stammdaten). */
+export function bcgVerteilung(ebene, opt = {}) { return bcgFelder(produkte(ebene), opt) }
 
 // ---------- Lebenszyklus-Kurve (Phasenprofil + Objektpositionen) ---------
 // Ordnet Objekte ihren Phasen zu und verteilt sie als Punkte entlang einer

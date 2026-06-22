@@ -8,8 +8,9 @@ import React, { useState } from 'react'
 import {
   PRODUKT_PHASEN, produktPhaseInfo, produkte, kinderProdukt, produktPhaseVerteilung,
   KUNDE_PHASEN, kundePhaseInfo, kunden, kundePhaseVerteilung,
-  bcgVerteilung, quadrantVon, phasenKurve
+  bcgFelder, quadrantVon, phasenKurve
 } from '../../core/lebenszyklus.js'
+import { mitLinien, offeneVorschlaege, bestaetigeMatch, loeseMatch, ladeMatches } from '../../core/produktlinie.js'
 import { addMassnahme, ladeMassnahmen } from '../../core/massnahmen.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
@@ -158,22 +159,86 @@ function PhasenKacheln({ vert }) {
   )
 }
 
+// Nachfolger-Verkettung: validierte Matches verwalten + Vorschläge bestätigen.
+function ProduktlinienPanel({ onChange }) {
+  const [auf, setAuf] = useState(false)
+  const namen = Object.fromEntries(produkte('artikel').map((a) => [a.id, a.name]))
+  const matches = ladeMatches()
+  const offen = offeneVorschlaege()
+  const aendern = (fn) => { fn(); onChange() }
+  return (
+    <div style={{ ...card, padding: 14, marginBottom: 14, borderLeft: '3px solid var(--accent)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, cursor: 'pointer' }} onClick={() => setAuf((v) => !v)}>
+        <div style={cap}>⛓ Produktlinien & Nachfolger — {matches.length} validiert{offen.length ? `, ${offen.length} Vorschlag${offen.length > 1 ? '·e' : ''} offen` : ''}</div>
+        <span style={{ color: 'var(--muted)' }}>{auf ? '▾' : '▸'}</span>
+      </div>
+      {auf && (
+        <div style={{ marginTop: 10, display: 'grid', gap: 10 }}>
+          <div style={{ fontSize: 12.5, color: 'var(--slate)', lineHeight: 1.5 }}>
+            Bei einem Modellwechsel bekommt das Nachfolgemodell eine neue Artikelnummer. Einmal als Nachfolger
+            <b> validiert</b>, bleibt die Zuordnung dauerhaft bestehen und beide Generationen werden zu einer
+            durchgängigen Produktlinie kombiniert (Umsatz summiert, Lebenszyklus-Position des aktuellen Modells).
+          </div>
+          {matches.length > 0 && (
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>Validierte Linien</div>
+              {matches.map((m) => (
+                <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 0', borderBottom: '1px solid var(--line)', fontSize: 13 }}>
+                  <span style={{ color: 'var(--amp-g)' }}>✓</span>
+                  <span style={{ flex: 1 }}><b>{namen[m.vorgaenger] || m.vorgaenger}</b> → <b>{namen[m.nachfolger] || m.nachfolger}</b>
+                    <span style={{ color: 'var(--muted)', fontSize: 11 }}> · {m.von}, {m.am}</span></span>
+                  <button onClick={() => aendern(() => loeseMatch(m.id))} title="Validierung aufheben"
+                    style={{ fontSize: 11, cursor: 'pointer', border: '1px solid var(--line)', background: 'var(--panel)', borderRadius: 999, padding: '1px 9px', color: 'var(--muted)' }}>aufheben</button>
+                </div>
+              ))}
+            </div>
+          )}
+          {offen.length > 0 && (
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>Vorschläge (aus Stammdaten)</div>
+              {offen.map((k) => (
+                <div key={k.vorgaenger + k.nachfolger} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 0', borderBottom: '1px solid var(--line)', fontSize: 13 }}>
+                  <span style={{ color: 'var(--amp-a)' }}>?</span>
+                  <span style={{ flex: 1 }}><b>{k.vName}</b> → <b>{k.nName}</b></span>
+                  <button onClick={() => aendern(() => bestaetigeMatch({ vorgaenger: k.vorgaenger, nachfolger: k.nachfolger, von: 'Controller' }))}
+                    style={{ fontSize: 11, cursor: 'pointer', border: '1px solid var(--accent)', background: 'var(--accent)', color: '#fff', borderRadius: 999, padding: '2px 10px', fontWeight: 600 }}>✓ als Nachfolger validieren</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function Produkte({ onDrill }) {
   const [ebene, setEbene] = useState('produkt')
   const [auf, setAuf] = useState({})
   const [quadrant, setQuadrant] = useState(null) // BCG-Feld als Filter/Einstieg
   const [sicht, setSicht] = useState('matrix')    // 'matrix' (BCG) | 'kurve' (Lebenszyklus)
-  const alle = produkte(ebene)
-  const { schwellen, felder } = bcgVerteilung(ebene)
+  const [linienAn, setLinienAn] = useState(true)  // Nachfolger zu Produktlinien kombinieren
+  const [, setMatchTick] = useState(0)            // Re-Render nach Match-Änderung
+  const istArtikel = ebene === 'artikel'
+  const alle = istArtikel && linienAn ? mitLinien() : produkte(ebene)
+  const { schwellen, felder } = bcgFelder(alle)
   const objekte = quadrant ? alle.filter((o) => quadrantVon(o, schwellen) === quadrant) : alle
   const quadName = quadrant ? felder.find((f) => f.id === quadrant)?.name : null
   return (
     <>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center', flexWrap: 'wrap' }}>
         {[['produkt', 'Produktgruppe'], ['artikel', 'Artikel']].map(([id, n]) => (
           <button key={id} style={chipStyle(ebene === id)} onClick={() => { setEbene(id); setAuf({}); setQuadrant(null) }}>{n}</button>
         ))}
+        {istArtikel && (
+          <label title="Vorgänger-/Nachfolgemodelle (Modellwechsel) zu einer durchgängigen Produktlinie zusammenfassen"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer', marginLeft: 4 }}>
+            <input type="checkbox" checked={linienAn} onChange={(e) => { setLinienAn(e.target.checked); setQuadrant(null) }} />
+            ⛓ Nachfolger kombinieren
+          </label>
+        )}
       </div>
+      {istArtikel && <ProduktlinienPanel onChange={() => { setMatchTick((t) => t + 1); setQuadrant(null) }} />}
       <PhasenKacheln vert={produktPhaseVerteilung(ebene)} />
       <div style={{ ...card, padding: 16, marginBottom: 14 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
@@ -225,7 +290,10 @@ function Produkte({ onDrill }) {
               const zeile = (x, sub) => (
                 <tr key={x.id} style={sub ? { background: 'var(--bg)' } : { cursor: drill ? 'pointer' : 'default' }} onClick={!sub && drill ? () => setAuf((a) => ({ ...a, [o.id]: !a[o.id] })) : undefined}>
                   <td style={{ padding: '5px 10px', borderBottom: '1px solid var(--line)', color: 'var(--muted)', width: 18 }}>{sub ? '' : drill ? (offen ? '▾' : '▸') : ''}</td>
-                  <td style={{ padding: sub ? '5px 10px 5px 24px' : '6px 10px', borderBottom: '1px solid var(--line)', fontWeight: sub ? 400 : 600, fontSize: sub ? 12.5 : 13 }}>{sub ? '↳ ' : ''}{x.name}</td>
+                  <td style={{ padding: sub ? '5px 10px 5px 24px' : '6px 10px', borderBottom: '1px solid var(--line)', fontWeight: sub ? 400 : 600, fontSize: sub ? 12.5 : 13 }}>{sub ? '↳ ' : ''}{x.name}
+                    {x.kombiniert && <span title={`Produktlinie aus ${x.members.length} Generationen: ${x.members.map((m) => m.name).join(' → ')}`}
+                      style={{ marginLeft: 6, fontSize: 11, color: 'var(--accent)', border: '1px solid var(--accent)', borderRadius: 999, padding: '0 7px', fontWeight: 600, whiteSpace: 'nowrap' }}>⛓ {x.members.length} Gen.</span>}
+                  </td>
                   <td className="mono" style={{ textAlign: 'right', padding: '5px 10px', borderBottom: '1px solid var(--line)' }}>{x.umsatz.toFixed(1)}</td>
                   <td className="mono" style={{ textAlign: 'right', padding: '5px 10px', borderBottom: '1px solid var(--line)' }}>{x.db}</td>
                   <td className="mono" style={{ textAlign: 'right', padding: '5px 10px', borderBottom: '1px solid var(--line)', color: x.wachstum < 0 ? 'var(--amp-r)' : x.wachstum >= 6 ? 'var(--amp-g)' : 'var(--ink)' }}>{x.wachstum > 0 ? '+' : ''}{x.wachstum} %</td>

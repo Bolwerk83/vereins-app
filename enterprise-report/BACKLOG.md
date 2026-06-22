@@ -145,6 +145,16 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
 - Clean & modern: klare Top-Navigation, viel Weißraum, kräftiger roter Akzent,
   große Karten/Bilder, ruhige Typografie (eigenständig, kein 1:1-Klon).
 
+### 13b. Nachfolger-Verkettung / Produktlinien im Lebenszyklus — DONE
+- Modellwechsel = neue Artikelnummer: Vorgänger→Nachfolger einmalig zuordnen und
+  **dauerhaft validieren** (persistent, Wer/Wann). Validierte Matches werden zu
+  einer durchgängigen Produktlinie kombiniert (Umsatz summiert, Lebenszyklus-
+  Position des aktuellen Modells) und in Matrix/Kurve/Liste als eine Linie gezeigt.
+- Vorschläge aus Stammdaten-Feld `vorgaenger` (WaWi „Nachfolgeartikel"); Panel zum
+  Bestätigen/Aufheben; Toggle „⛓ Nachfolger kombinieren".
+  Core: `core/produktlinie.js` (kandidaten, ladeMatches, bestaetigeMatch, loeseMatch,
+  offeneVorschlaege, produktLinien, mitLinien) + Tests.
+
 ### 13. Lebenszyklus grafisch — DONE
 - Klassische Lebenszyklus-Kurve (Aufstieg → Peak → Abfall) mit Phasenbändern,
   Objekte als Blasen je Phase (Größe = Umsatz). Produkte: Matrix/Kurve-Umschalter
