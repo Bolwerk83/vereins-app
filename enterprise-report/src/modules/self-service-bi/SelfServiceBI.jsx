@@ -108,7 +108,7 @@ function BerichtAnsicht({ bericht, rolle, werte }) {
           <div className="mono" style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 8 }}>Relevante Kennzahlen</div>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             {bericht.relevanteKpis.filter((r) => KPI[r.id]).map((r) => darfKpi(rolle, KPI[r.id])
-              ? <KpiCard key={r.id} kpiId={r.id} wert={werte[r.id]} />
+              ? <KpiCard key={r.id} kpiId={r.id} wert={werte[r.id]} alleWerte={werte} />
               : <KpiGesperrt key={r.id} kpiId={r.id} />)}
           </div>
         </div>

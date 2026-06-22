@@ -9,13 +9,14 @@ import { KPI } from '../../core/kpiRegistry.js'
 import { darfKpi } from '../../core/rbac.js'
 import { ladeHistorie } from '../../core/dataProvider.js'
 import { kpiInsight, knotenBewertung } from '../../core/insights.js'
-import { formatWert, AMPEL_FARBE, TREND_ICON } from '../../design/theme.js'
-import { AmpelPunkt, KpiGesperrt, Sparkline } from '../../components/ui.jsx'
+import { formatWert, AMPEL_FARBE, TREND_ICON, kpiSymbol } from '../../design/theme.js'
+import { AmpelPunkt, KpiGesperrt, Sparkline, KpiDrillModal } from '../../components/ui.jsx'
 
 export default function KnotenBewertung({ kpiIds, werte, rolle }) {
   const sichtbar = kpiIds.filter((id) => KPI[id] && darfKpi(rolle, KPI[id]))
   const gesperrt = kpiIds.filter((id) => KPI[id] && !darfKpi(rolle, KPI[id]))
   const [hist, setHist] = useState({})
+  const [drill, setDrill] = useState(null)
 
   useEffect(() => {
     let ab = false
@@ -68,15 +69,21 @@ export default function KnotenBewertung({ kpiIds, werte, rolle }) {
             <div key={i.id} style={{ background: 'var(--panel)', border: '1px solid var(--line)', borderLeft: `3px solid ${AMPEL_FARBE[i.status]}`, borderRadius: 'var(--radius)', padding: 14, boxShadow: 'var(--shadow)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span className="mono" style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase' }}>{i.k.name}</span>
-                <AmpelPunkt status={i.status} />
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <span role="button" title="Logik & Herkunft (Drill durch die Ebenen)" onClick={() => setDrill(i.id)}
+                    style={{ cursor: 'pointer', color: 'var(--accent)', fontSize: 13, fontWeight: 700, lineHeight: 1 }}>⛓</span>
+                  <AmpelPunkt status={i.status} />
+                </span>
               </div>
-              <div className="mono" style={{ fontSize: 24, fontWeight: 600, marginTop: 4 }}>{formatWert(i.wert, i.k.einheit)}</div>
+              <div className="mono" style={{ fontSize: 24, fontWeight: 600, marginTop: 4 }}>
+                {kpiSymbol(i.k.einheit) && <span style={{ color: 'var(--muted)', fontWeight: 500, marginRight: 5 }}>{kpiSymbol(i.k.einheit)}</span>}{formatWert(i.wert, i.k.einheit)}
+              </div>
               <div style={{ display: 'flex', gap: 12, marginTop: 4, fontSize: 11 }}>
                 <span style={{ color: i.status === 'r' ? 'var(--amp-r)' : i.status === 'a' ? 'var(--amp-a)' : 'var(--muted)' }}>
                   Ziel {i.k.ziel != null ? `${i.zielText}` : '—'}
                 </span>
                 {i.deltaVj != null && <span className="mono" style={{ color: i.istGutTrend ? 'var(--amp-g)' : 'var(--amp-r)' }}>
-                  {TREND_ICON[i.trend.trend]} VJ {i.vjText}</span>}
+                  Δ {TREND_ICON[i.trend.trend]} VJ {i.vjText}</span>}
               </div>
               {reihe.length >= 2 && <div style={{ marginTop: 6 }}><Sparkline reihe={reihe} richtung={i.k.richtung} w={210} h={40} /></div>}
               <div style={{ fontSize: 11.5, color: 'var(--slate)', marginTop: 6, lineHeight: 1.4 }}>{i.aussage}</div>
@@ -85,6 +92,7 @@ export default function KnotenBewertung({ kpiIds, werte, rolle }) {
         })}
         {gesperrt.map((id) => <KpiGesperrt key={id} kpiId={id} />)}
       </div>
+      {drill && <KpiDrillModal startId={drill} werte={werte} onClose={() => setDrill(null)} />}
     </div>
   )
 }

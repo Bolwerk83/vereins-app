@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react'
 import { KPI } from '../core/kpiRegistry.js'
 import { ampelStatus, trendAusHistorie } from '../core/ampel.js'
-import { AMPEL_FARBE, AMPEL_SOFT, AMPEL_LABEL, formatWert, TREND_ICON } from '../design/theme.js'
+import { AMPEL_FARBE, AMPEL_SOFT, AMPEL_LABEL, formatWert, TREND_ICON, kpiSymbol } from '../design/theme.js'
+import { kpiInsight } from '../core/insights.js'
 import { useKpiDef } from '../modules/kennzahlen/KpiDefContext.jsx'
 import { useFenster } from '../core/useFenster.js'
 import { ladeBookmarks, addBookmark, loescheBookmark, ladeLetzte, merkeLetzte } from '../core/bookmarks.js'
@@ -17,33 +18,115 @@ export function Badge({ children, status = 'n' }) {
     color: AMPEL_FARBE[status], background: AMPEL_SOFT[status], border: `1px solid ${AMPEL_FARBE[status]}22` }}>{children}</span>
 }
 
-/** KPI-Kachel: Wert + Ziel + Ampel + Trend. Berechnet Status zentral. */
-export function KpiCard({ kpiId, wert, historie, onClick }) {
+/** KPI-Kachel: Wert + Ziel + Ampel + Trend. Berechnet Status zentral.
+ *  Mit `alleWerte` wird ein Logik-Drill (Herkunft über Abhängigkeiten) angeboten. */
+export function KpiCard({ kpiId, wert, historie, onClick, alleWerte }) {
   const k = KPI[kpiId]
   const def = useKpiDef()
+  const [drill, setDrill] = useState(null)
   if (!k) return null
   const status = ampelStatus({ wert, ziel: k.ziel, richtung: k.richtung, warn: k.warn })
   const t = historie ? trendAusHistorie(historie.map((h) => h.wert), k.richtung) : null
+  const sym = kpiSymbol(k.einheit)
   return (
+    <>
     <button onClick={onClick} style={{ textAlign: 'left', background: 'var(--panel)', border: '1px solid var(--line)',
       borderLeft: `3px solid ${AMPEL_FARBE[status]}`, borderRadius: 'var(--radius)', padding: 14, minWidth: 150,
       flex: '1 1 0', boxShadow: 'var(--shadow)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
         <span className="mono" style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em' }}>{k.name}</span>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          {alleWerte && <span role="button" title="Logik & Herkunft (Drill durch die Ebenen)"
+            onClick={(e) => { e.stopPropagation(); setDrill(kpiId) }}
+            style={{ cursor: 'pointer', color: 'var(--accent)', fontSize: 13, fontWeight: 700, lineHeight: 1 }}>⛓</span>}
           {def && <span role="button" title="Kennzahlen-Definition öffnen"
             onClick={(e) => { e.stopPropagation(); def.oeffne(kpiId) }}
             style={{ cursor: 'pointer', color: 'var(--muted)', fontSize: 13, fontWeight: 700, lineHeight: 1 }}>ⓘ</span>}
           <AmpelPunkt status={status} />
         </span>
       </div>
-      <div className="mono" style={{ fontSize: 24, fontWeight: 600, marginTop: 6 }}>{formatWert(wert, k.einheit)}</div>
+      <div className="mono" style={{ fontSize: 24, fontWeight: 600, marginTop: 6 }}>
+        {sym && <span style={{ color: 'var(--muted)', fontWeight: 500, marginRight: 5 }}>{sym}</span>}{formatWert(wert, k.einheit)}
+      </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
-        <span style={{ fontSize: 11, color: 'var(--muted)' }}>{k.ziel != null ? `Ziel ${formatWert(k.ziel, k.einheit)}` : '—'}</span>
+        <span style={{ fontSize: 11, color: 'var(--muted)' }}>{k.ziel != null ? `Ziel ${sym ? sym + ' ' : ''}${formatWert(k.ziel, k.einheit)}` : '—'}</span>
         {t && t.deltaPct != null && <span className="mono" style={{ fontSize: 11, color: t.istGut ? 'var(--amp-g)' : 'var(--amp-r)' }}>
-          {TREND_ICON[t.trend]} {t.deltaPct >= 0 ? '+' : ''}{t.deltaPct.toFixed(1)} %</span>}
+          Δ {TREND_ICON[t.trend]} {t.deltaPct >= 0 ? '+' : ''}{t.deltaPct.toFixed(1)} %</span>}
       </div>
     </button>
+    {drill && <KpiDrillModal startId={drill} werte={alleWerte} onClose={() => setDrill(null)} />}
+    </>
+  )
+}
+
+/** Logik-Drill: eine Kennzahl auswählen, KI-Klartext lesen und über die
+ *  Abhängigkeiten Ebene für Ebene tiefer gehen (volle Transparenz der Herkunft). */
+export function KpiDrillModal({ startId, werte = {}, onClose }) {
+  const [pfad, setPfad] = useState([startId])
+  const id = pfad[pfad.length - 1]
+  const k = KPI[id]
+  if (!k) return null
+  const wert = werte[id]
+  const sym = kpiSymbol(k.einheit)
+  const status = ampelStatus({ wert, ziel: k.ziel, richtung: k.richtung, warn: k.warn })
+  const ins = kpiInsight(id, wert)
+  const deps = (k.abhaengig || []).filter((d) => KPI[d])
+  const tief = (i) => setPfad((p) => [...p, i])
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 95, background: 'rgba(15,23,42,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ width: 560, maxWidth: '94vw', maxHeight: '88vh', overflowY: 'auto', background: 'var(--panel)', borderRadius: 'var(--radius)', boxShadow: '0 20px 60px rgba(0,0,0,.3)', border: '1px solid var(--line)' }}>
+        <div style={{ padding: '14px 18px', borderBottom: '2px solid var(--accent)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+          <div style={{ minWidth: 0 }}>
+            <div className="mono" style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase' }}>⛓ Logik & Herkunft</div>
+            {/* Drill-Pfad (Ebenen) */}
+            <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+              {pfad.map((p, i) => (
+                <span key={p + i}>
+                  <a onClick={() => setPfad(pfad.slice(0, i + 1))} style={{ cursor: 'pointer', color: i === pfad.length - 1 ? 'var(--accent)' : 'var(--muted)', fontWeight: i === pfad.length - 1 ? 700 : 400 }}>{KPI[p]?.name}</a>
+                  {i < pfad.length - 1 && <span> › </span>}
+                </span>
+              ))}
+            </div>
+            <h2 style={{ margin: '4px 0 0', fontSize: 19 }}>{k.name}</h2>
+          </div>
+          <button onClick={onClose} style={{ border: 'none', background: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--muted)' }}>×</button>
+        </div>
+        <div style={{ padding: 18 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
+            <span className="mono" style={{ fontSize: 26, fontWeight: 700 }}>{sym && <span style={{ color: 'var(--muted)', fontWeight: 500 }}>{sym} </span>}{formatWert(wert, k.einheit)}</span>
+            <Badge status={status}>{AMPEL_LABEL[status]}</Badge>
+            {k.ziel != null && <span style={{ fontSize: 12, color: 'var(--muted)' }}>Ziel {sym ? sym + ' ' : ''}{formatWert(k.ziel, k.einheit)}</span>}
+          </div>
+          <div style={{ marginTop: 8, fontSize: 11.5, color: 'var(--muted)' }}>{k.beschreibung}</div>
+          {ins?.aussage && (
+            <div style={{ marginTop: 12, padding: '11px 13px', borderRadius: 'var(--radius-sm)', background: 'var(--accent-soft)', border: '1px solid var(--line)' }}>
+              <div className="mono" style={{ fontSize: 10, color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 4 }}>🤖 KI-Einschätzung</div>
+              <div style={{ fontSize: 13 }}>{ins.aussage}</div>
+            </div>
+          )}
+          <div style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700, margin: '16px 0 8px' }}>
+            {deps.length ? 'Setzt sich zusammen aus — tiefer drillen:' : 'Basiskennzahl'}
+          </div>
+          {deps.length === 0
+            ? <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>Direkt gemessene Kennzahl — kommt aus der Quelle (SQL/Mock), keine weitere Herleitung.</div>
+            : (
+              <div style={{ display: 'grid', gap: 8 }}>
+                {deps.map((d) => {
+                  const kd = KPI[d], wd = werte[d]
+                  const sd = ampelStatus({ wert: wd, ziel: kd.ziel, richtung: kd.richtung, warn: kd.warn })
+                  const symd = kpiSymbol(kd.einheit)
+                  return (
+                    <button key={d} onClick={() => tief(d)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, textAlign: 'left', cursor: 'pointer', border: '1px solid var(--line)', background: 'var(--panel)', borderRadius: 'var(--radius-sm)', padding: '9px 12px' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}><AmpelPunkt status={sd} /><span style={{ fontSize: 13, fontWeight: 600 }}>{kd.name}</span></span>
+                      <span className="mono" style={{ fontSize: 13 }}>{symd && <span style={{ color: 'var(--muted)' }}>{symd} </span>}{formatWert(wd, kd.einheit)} <span style={{ color: 'var(--accent)' }}>→</span></span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+        </div>
+      </div>
+    </div>
   )
 }
 

@@ -46,7 +46,7 @@ export default function ManagementReport({ rolle, werte, periode, onClose, onEmp
         {/* KPI-Leiste */}
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           {r.kpis.map((id) => darfKpi(rolle, KPI[id])
-            ? <KpiCard key={id} kpiId={id} wert={werte[id]} />
+            ? <KpiCard key={id} kpiId={id} wert={werte[id]} alleWerte={werte} />
             : <KpiGesperrt key={id} kpiId={id} />)}
         </div>
 

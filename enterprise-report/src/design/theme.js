@@ -32,3 +32,11 @@ export function formatWert(wert, format) {
 }
 
 export const TREND_ICON = { up: '▲', down: '▼', flat: '▬' }
+
+// Symbol je Kennzahlen-Art (sauberer visueller Hinweis VOR dem Wert):
+//   #  Stückzahl/Anzahl   ·   Σ  Geldsumme/Aggregat   ·   Δ  Veränderung
+export function kpiSymbol(einheit) {
+  if (einheit === 'count') return '#'
+  if (einheit === 'eur_mio' || einheit === 'eur') return 'Σ'
+  return ''
+}
