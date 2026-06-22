@@ -669,7 +669,15 @@ export default function Detailberichte({ startListe = null, startSuche = '', wer
   // Hub
   const stat = befundStatistik()
   const q = qualitaetStats().gesamt
-  const cnt = Object.fromEntries(stat.proListe.map((l) => [l.id, l.gesamt]))
+  const pl = Object.fromEntries(stat.proListe.map((l) => [l.id, l]))
+  // Ampelrichtiger Status je Liste: rot=Fehler, gelb=Warnung, blau=Hinweis, grün=sauber.
+  const listStatus = (id) => {
+    const s = pl[id]
+    if (!s || s.gesamt === 0) return { rang: 0, farbe: 'var(--amp-g)', soft: 'var(--amp-g-soft)', n: 0, label: 'sauber', icon: '✓' }
+    if (s.fehler) return { rang: 3, farbe: SCHWERE.fehler.farbe, soft: SCHWERE.fehler.soft, n: s.fehler, label: `${s.fehler} Fehler`, icon: '●' }
+    if (s.warnung) return { rang: 2, farbe: SCHWERE.warnung.farbe, soft: SCHWERE.warnung.soft, n: s.warnung, label: `${s.warnung} Warnung(en)`, icon: '●' }
+    return { rang: 1, farbe: SCHWERE.hinweis.farbe, soft: SCHWERE.hinweis.soft, n: s.hinweis, label: `${s.hinweis} Hinweis(e)`, icon: '●' }
+  }
   const Tool = ({ on, titel, sub, kinder, primary }) => (
     <button onClick={on} style={{ ...card, padding: '13px 14px', textAlign: 'left', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 4,
       borderColor: primary ? 'var(--accent)' : 'var(--line)', background: primary ? 'var(--accent-soft)' : 'var(--panel)' }}>
@@ -697,28 +705,46 @@ export default function Detailberichte({ startListe = null, startSuche = '', wer
           kinder={<span style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 600 }}>Matrix öffnen →</span>} />
       </div>
 
-      {/* Listen nach Bereich gruppiert */}
-      {KATEGORIEN.map((kat) => (
-        <div key={kat.name} style={{ marginBottom: 18 }}>
-          <div style={{ ...cap, marginBottom: 8 }}>{kat.name}</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 8 }}>
-            {kat.ids.map((id) => {
-              const l = LISTEN.find((x) => x.id === id)
-              if (!l) return null
-              const n = cnt[l.id] || 0
-              return (
-                <button key={id} disabled={!l.verfuegbar} onClick={() => l.verfuegbar && oeffneListe(l.id)}
-                  style={{ ...card, padding: '10px 13px', textAlign: 'left', cursor: l.verfuegbar ? 'pointer' : 'not-allowed', opacity: l.verfuegbar ? 1 : 0.5,
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+      {/* Listen nach Bereich — ruhige Status-Zeilen, auffällige zuerst */}
+      {KATEGORIEN.map((kat) => {
+        const eintraege = kat.ids.map((id) => LISTEN.find((x) => x.id === id)).filter(Boolean)
+          .map((l) => ({ l, st: listStatus(l.id) }))
+          .sort((a, b) => b.st.rang - a.st.rang || a.l.name.localeCompare(b.l.name))
+        const fehlerSum = eintraege.reduce((n, e) => n + (pl[e.l.id]?.fehler || 0), 0)
+        const warnSum = eintraege.reduce((n, e) => n + (pl[e.l.id]?.warnung || 0), 0)
+        return (
+          <div key={kat.name} style={{ marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <div style={{ ...cap, margin: 0 }}>{kat.name}</div>
+              <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
+              <span style={{ fontSize: 10.5, color: 'var(--muted)' }}>
+                {fehlerSum ? <b style={{ color: 'var(--amp-r)' }}>{fehlerSum} Fehler</b> : null}
+                {fehlerSum && warnSum ? ' · ' : ''}
+                {warnSum ? <span style={{ color: 'var(--amp-a)' }}>{warnSum} Warnung(en)</span> : null}
+                {!fehlerSum && !warnSum ? <span style={{ color: 'var(--amp-g)' }}>✓ alles sauber</span> : null}
+              </span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 6 }}>
+              {eintraege.map(({ l, st }) => (
+                <button key={l.id} disabled={!l.verfuegbar} onClick={() => l.verfuegbar && oeffneListe(l.id)} title={st.label}
+                  onMouseEnter={(e) => { if (l.verfuegbar) e.currentTarget.style.background = 'var(--accent-soft)' }}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'var(--panel)'}
+                  style={{ background: 'var(--panel)', border: '1px solid var(--line)', borderLeft: `3px solid ${st.farbe}`, borderRadius: 'var(--radius-sm)',
+                    padding: '9px 12px', textAlign: 'left', cursor: l.verfuegbar ? 'pointer' : 'not-allowed', opacity: l.verfuegbar ? 1 : 0.5,
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, transition: 'background .12s' }}>
                   <span style={{ fontWeight: 500, fontSize: 13.5 }}>{l.name}</span>
-                  {n > 0 ? <span title={`${n} Auffälligkeit(en)`} style={{ fontSize: 11, fontWeight: 700, color: SCHWERE.fehler.farbe, background: SCHWERE.fehler.soft, borderRadius: 999, padding: '2px 8px' }}>{n}</span>
-                    : <span style={{ fontSize: 13, color: 'var(--muted)' }}>→</span>}
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    {st.rang === 0
+                      ? <span style={{ fontSize: 12, color: 'var(--amp-g)', fontWeight: 700 }}>✓</span>
+                      : <span style={{ fontSize: 11, fontWeight: 700, color: st.farbe, background: st.soft, borderRadius: 999, padding: '1px 8px', minWidth: 18, textAlign: 'center' }}>{st.n}</span>}
+                    <span style={{ fontSize: 13, color: 'var(--muted)' }}>›</span>
+                  </span>
                 </button>
-              )
-            })}
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
