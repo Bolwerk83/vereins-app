@@ -4,9 +4,9 @@
 //  auffällige Werte werden markiert, „nur Auffälligkeiten" filtert, Klick auf
 //  eine Zeile öffnet die Befund-Karte (Sprung in die Detailprüfung).
 // =========================================================================
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { LISTEN, LEGENDE, artikelliste, auftragsliste, warenverbrauchliste, leasingliste, retourenliste, rechnungsliste, kundenliste, historie } from '../../core/detailberichte.js'
-import { ladeBookmarks, addBookmark, loescheBookmark } from '../../core/bookmarks.js'
+import { ladeBookmarks, addBookmark, loescheBookmark, ladeLetzte, merkeLetzte } from '../../core/bookmarks.js'
 
 // Eingebaute Spalten-Ansichten (Fokus-Presets) je Liste.
 const PRESETS = {
@@ -191,9 +191,15 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, idKey, titelKey, 
   const [legendeAuf, setLegendeAuf] = useState(false)
   const [detail, setDetail] = useState(null)
   const [opts, setOpts] = useState(() => Object.fromEntries(optionen.map((o) => [o.key, o.default])))
-  const [sichtbar, setSichtbar] = useState(() => new Set(cols.map((c) => c.key)))
+  const [sichtbar, setSichtbar] = useState(() => {
+    const gemerkt = ladeLetzte(typ)
+    const gueltig = gemerkt && gemerkt.filter((k) => cols.some((c) => c.key === k))
+    return new Set(gueltig && gueltig.length ? gueltig : cols.map((c) => c.key))
+  })
   const [panelAuf, setPanelAuf] = useState(false)
   const [bmTick, setBmTick] = useState(0)
+  // Zuletzt genutzte Ansicht je Liste merken (Wiederherstellung beim Öffnen).
+  useEffect(() => { merkeLetzte(typ, sichtbar) }, [sichtbar, typ])
   const data = lade({ suche, nurAuffaellig, ...opts })
 
   // Eingebaute + benutzerdefinierte Ansichten (Bookmarks).
@@ -303,6 +309,7 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, idKey, titelKey, 
               )
             })}
           </div>
+          <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 10 }}>Deine Spaltenauswahl wird je Liste gemerkt und beim nächsten Öffnen wiederhergestellt.</div>
         </div>
       )}
 

@@ -26,3 +26,18 @@ export function loescheBookmark(listId, id) {
   speichere(o)
   return o[listId]
 }
+
+// --- Zuletzt genutzte Spaltenansicht je Liste merken ---------------------
+const LETZTE_KEY = 'er_bookmarks_last'
+function ladeAlleLetzte() { try { const o = JSON.parse(localStorage.getItem(LETZTE_KEY) || '{}'); return o && typeof o === 'object' ? o : {} } catch { return {} } }
+
+/** Zuletzt genutzte Spaltenauswahl einer Liste (oder null). */
+export function ladeLetzte(listId) { const a = ladeAlleLetzte()[listId]; return Array.isArray(a) ? a : null }
+
+/** Aktuelle Spaltenauswahl als „zuletzt genutzt" merken. */
+export function merkeLetzte(listId, sichtbar) {
+  const o = ladeAlleLetzte()
+  o[listId] = [...sichtbar]
+  try { localStorage.setItem(LETZTE_KEY, JSON.stringify(o)) } catch {}
+  return o[listId]
+}

@@ -1,7 +1,7 @@
 import './_setup.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { ladeBookmarks, addBookmark, loescheBookmark } from '../src/core/bookmarks.js'
+import { ladeBookmarks, addBookmark, loescheBookmark, ladeLetzte, merkeLetzte } from '../src/core/bookmarks.js'
 
 test('Bookmark speichern und laden je Liste', () => {
   localStorage.removeItem('er_bookmarks')
@@ -19,6 +19,14 @@ test('Bookmarks sind je Liste getrennt', () => {
   addBookmark('auftrag', 'B', ['auftrag'])
   assert.equal(ladeBookmarks('artikel').length, 1)
   assert.equal(ladeBookmarks('auftrag').length, 1)
+})
+
+test('Zuletzt genutzte Ansicht merken/laden je Liste', () => {
+  localStorage.removeItem('er_bookmarks_last')
+  assert.equal(ladeLetzte('artikel'), null)
+  merkeLetzte('artikel', ['sku', 'vk', 'ek'])
+  assert.deepEqual(ladeLetzte('artikel'), ['sku', 'vk', 'ek'])
+  assert.equal(ladeLetzte('auftrag'), null) // getrennt je Liste
 })
 
 test('Bookmark löschen', () => {
