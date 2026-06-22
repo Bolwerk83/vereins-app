@@ -14,6 +14,7 @@ import { erkenntnisse } from '../../core/erkenntnisse.js'
 import { preisvergleich } from '../../core/preisvergleich.js'
 import { qualitaetUebersicht, qualitaetStats, setStatus, statusVon, ZUSTAND_LABEL } from '../../core/qualitaet.js'
 import { radar } from '../../core/controllerRadar.js'
+import { STRUKTUR, aggregiere, flach, alleIds } from '../../core/hierarchie.js'
 
 // Eingebaute Spalten-Ansichten (Fokus-Presets) je Liste.
 const PRESETS = {
@@ -483,6 +484,58 @@ function Qualitaet({ onBack, onOpen }) {
   )
 }
 
+// Hierarchie-/Strukturbericht: auf-/zuklappbare Matrix (wie Power BI).
+function Hierarchie({ onBack }) {
+  const root = React.useMemo(() => aggregiere(STRUKTUR), [])
+  const [offen, setOffen] = useState(() => new Set(['gesamt']))
+  const [visuals, setVisuals] = useState(true)
+  const rows = flach(root, offen)
+  const toggle = (id) => setOffen((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n })
+  const cols = [
+    { key: 'umsatz', label: 'Umsatz €', fmt: eur }, { key: 'db', label: 'DB €', fmt: eur },
+    { key: 'dbProzent', label: 'DB %', fmt: (v) => pct(v) }, { key: 'anteil', label: 'Anteil %', fmt: (v) => pct(v), bar: true }, { key: 'menge', label: 'Menge', fmt: (v) => v.toLocaleString('de-DE') }
+  ]
+  return (
+    <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+      <button onClick={onBack} style={{ ...inp, cursor: 'pointer', marginBottom: 12 }}>← Detailberichte</button>
+      <h2 style={{ margin: '0 0 4px' }}>📂 Strukturbericht — Umsatz & Deckungsbeitrag</h2>
+      <div style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 12 }}>Warenbereich → Warengruppe → Artikel. Zeilen mit ▸ auf-/zuklappen (wie eine Power-BI-Matrix); Elternwerte sind aggregiert.</div>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+        <button onClick={() => setOffen(new Set(alleIds(STRUKTUR)))} style={{ ...inp, cursor: 'pointer', fontSize: 12 }}>⊞ Alle aufklappen</button>
+        <button onClick={() => setOffen(new Set(['gesamt']))} style={{ ...inp, cursor: 'pointer', fontSize: 12 }}>⊟ Alle zuklappen</button>
+        <button onClick={() => setVisuals((v) => !v)} style={{ ...inp, cursor: 'pointer', fontSize: 12, borderColor: visuals ? 'var(--accent)' : 'var(--line)', color: visuals ? 'var(--accent)' : 'var(--ink)' }}>📊 Visuals {visuals ? 'an' : 'aus'}</button>
+      </div>
+      <div style={{ ...card, overflow: 'hidden' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <thead><tr>
+            <th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '2px solid var(--line)', fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase' }}>Struktur</th>
+            {cols.map((c) => <th key={c.key} style={{ textAlign: 'right', padding: '8px 10px', borderBottom: '2px solid var(--line)', fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{c.label}</th>)}
+          </tr></thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.id} onClick={() => r.hatKinder && toggle(r.id)} style={{ cursor: r.hatKinder ? 'pointer' : 'default', background: r.tiefe === 0 ? 'var(--bg)' : undefined }}>
+                <td style={{ padding: '7px 10px', borderBottom: '1px solid var(--line)', whiteSpace: 'nowrap', paddingLeft: 10 + r.tiefe * 20, fontWeight: r.hatKinder ? 700 : 400 }}>
+                  <span style={{ display: 'inline-block', width: 16, color: 'var(--accent)' }}>{r.hatKinder ? (r.offen ? '▾' : '▸') : ''}</span>{r.name}
+                </td>
+                {cols.map((c) => {
+                  const v = r[c.key]
+                  const bar = visuals && c.bar
+                  return (
+                    <td key={c.key} className="mono" style={{ position: 'relative', padding: '7px 10px', borderBottom: '1px solid var(--line)', textAlign: 'right', whiteSpace: 'nowrap', fontWeight: r.hatKinder ? 600 : 400 }}>
+                      {bar && <span aria-hidden style={{ position: 'absolute', left: 0, top: 4, bottom: 4, width: Math.max(2, v) + '%', background: 'var(--accent)', opacity: 0.13, borderRadius: 3 }} />}
+                      <span style={{ position: 'relative' }}>{c.fmt(v)}</span>
+                    </td>
+                  )
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
 // Controller-Radar: Ein-Klick-Analyse über alle Berichte, kritisch zuerst,
 // mit Folgefehler-Erkennung (nur die Ursache wird gemeldet).
 function Radar({ werte, onBack, onOpen }) {
@@ -611,6 +664,7 @@ export default function Detailberichte({ startListe = null, werte = {} }) {
   if (aktiv === 'cockpit') return <Cockpit onBack={() => setAktiv(null)} onOpen={(id, suche) => oeffneListe(id, suche)} />
   if (aktiv === 'qualitaet') return <Qualitaet onBack={() => setAktiv(null)} onOpen={(id, suche) => oeffneListe(id, suche)} />
   if (aktiv === 'radar') return <Radar werte={werte} onBack={() => setAktiv(null)} onOpen={(id, suche) => oeffneListe(id, suche)} />
+  if (aktiv === 'hierarchie') return <Hierarchie onBack={() => setAktiv(null)} />
 
   // Hub
   const stat = befundStatistik()
@@ -632,13 +686,15 @@ export default function Detailberichte({ startListe = null, werte = {} }) {
       </div>
 
       {/* Analyse-Werkzeuge — kompakt */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, marginBottom: 24 }}>
         <Tool on={() => setAktiv('radar')} titel="Controller-Radar" sub="Ein-Klick-Analyse · kritisch zuerst" primary
           kinder={<span style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)' }}>Analyse starten →</span>} />
         <Tool on={() => setAktiv('cockpit')} titel="Plausi-Cockpit" sub="Alle Befunde gebündelt"
           kinder={<span style={{ display: 'inline-flex', gap: 8 }}>{['fehler', 'warnung', 'hinweis'].map((s) => <span key={s} style={{ fontSize: 11.5, fontWeight: 700, color: SCHWERE[s].farbe }}>{stat.proSchwere[s]}</span>)}</span>} />
         <Tool on={() => setAktiv('qualitaet')} titel="Qualitätsdashboard" sub="Status-Workflow je Bereich"
           kinder={<span style={{ fontSize: 11, color: 'var(--muted)' }}>{q.offen} offen · {q.bearbeitung} in Arbeit · {q.erledigt} erledigt</span>} />
+        <Tool on={() => setAktiv('hierarchie')} titel="Strukturbericht" sub="Umsatz/DB als auf-/zuklappbare Hierarchie"
+          kinder={<span style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 600 }}>Matrix öffnen →</span>} />
       </div>
 
       {/* Listen nach Bereich gruppiert */}
