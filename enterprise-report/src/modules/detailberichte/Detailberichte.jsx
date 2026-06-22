@@ -8,6 +8,7 @@ import React, { useState, useEffect } from 'react'
 import { LISTEN, LEGENDE, artikelliste, auftragsliste, warenverbrauchliste, leasingliste, retourenliste, rechnungsliste, kundenliste, produktliste, rechnungsposliste, bestellkanalliste, chargenliste, auftragsbestandliste, lieferantenliste, bestellliste, offenepostenliste, inventurliste, historie, sammelBefunde, befundStatistik, verknuepfungenFuer } from '../../core/detailberichte.js'
 import { downloadCsv } from '../../core/export.js'
 import { ladeBookmarks, addBookmark, loescheBookmark, ladeLetzte, merkeLetzte } from '../../core/bookmarks.js'
+import { glossarFuer, ausfuehrlich } from '../../core/kpiGlossar.js'
 
 // Eingebaute Spalten-Ansichten (Fokus-Presets) je Liste.
 const PRESETS = {
@@ -441,6 +442,11 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, onDrill, startSuc
   })
   const [panelAuf, setPanelAuf] = useState(true) // Auswahlfenster immer anzeigen (einklappbar)
   const [bmTick, setBmTick] = useState(0)
+  const [hov, setHov] = useState(null)        // Spaltenkopf-Tooltip {key,x,y}
+  const [infoKey, setInfoKey] = useState(null) // ausführliche KPI-Beschreibung
+  const hideTimer = React.useRef(null)
+  const zeigeHov = (e, key) => { if (!glossarFuer(key)) return; clearTimeout(hideTimer.current); const r = e.currentTarget.getBoundingClientRect(); setHov({ key, x: r.left, y: r.bottom }) }
+  const planeHide = () => { clearTimeout(hideTimer.current); hideTimer.current = setTimeout(() => setHov(null), 160) }
   // Zuletzt genutzte Ansicht je Liste merken (Wiederherstellung beim Öffnen).
   useEffect(() => { merkeLetzte(typ, sichtbar) }, [sichtbar, typ])
   const data = lade({ suche, nurAuffaellig, ...opts })
@@ -574,7 +580,15 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, onDrill, startSuc
       {/* Tabelle */}
       <div style={{ ...card, padding: 0, overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5, minWidth: 1000 }}>
-          <thead><tr>{sichtCols.map((c) => <th key={c.key} style={{ position: 'sticky', top: 0, background: 'var(--panel)', textAlign: c.al, padding: '8px 9px', borderBottom: '2px solid var(--line)', fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{c.label}</th>)}<th style={{ padding: '8px 9px', borderBottom: '2px solid var(--line)' }} /></tr></thead>
+          <thead><tr>{sichtCols.map((c) => {
+            const g = glossarFuer(c.key)
+            return (
+              <th key={c.key} onMouseEnter={(e) => zeigeHov(e, c.key)} onMouseLeave={planeHide}
+                style={{ position: 'sticky', top: 0, background: 'var(--panel)', textAlign: c.al, padding: '8px 9px', borderBottom: '2px solid var(--line)', fontSize: 10, color: g ? 'var(--accent)' : 'var(--muted)', textTransform: 'uppercase', whiteSpace: 'nowrap', cursor: g ? 'help' : 'default' }}>
+                {c.label}{g ? <span style={{ marginLeft: 3, fontSize: 9, opacity: 0.8 }}>ⓘ</span> : ''}
+              </th>
+            )
+          })}<th style={{ padding: '8px 9px', borderBottom: '2px solid var(--line)' }} /></tr></thead>
           <tbody>
             {data.rows.length === 0 && <tr><td colSpan={sichtCols.length + 1} style={{ padding: 20, textAlign: 'center', color: 'var(--muted)' }}>Keine Treffer.</td></tr>}
             {data.rows.map((row, i) => (
@@ -601,6 +615,55 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, onDrill, startSuc
       <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 8 }}>{data.rows.length} von {data.gesamt} Zeilen · {data.auffaellig} auffällig · Klick auf eine Zeile öffnet die Befund-Karte.</div>
 
       {detail && <BefundModal typ={typ} row={detail} cols={cols} idKey={idKey} titelKey={titelKey} onClose={() => setDetail(null)} onDrill={onDrill} />}
+
+      {/* KPI-Tooltip am Spaltenkopf: Vollname + Kurzerläuterung + Link */}
+      {hov && glossarFuer(hov.key) && (
+        <div onMouseEnter={() => clearTimeout(hideTimer.current)} onMouseLeave={planeHide}
+          style={{ position: 'fixed', left: Math.min(hov.x, window.innerWidth - 320), top: hov.y + 6, zIndex: 95, width: 300, background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', boxShadow: '0 10px 30px rgba(0,0,0,.18)', padding: '11px 13px' }}>
+          <div style={{ fontWeight: 700, fontSize: 13 }}>{glossarFuer(hov.key).name}</div>
+          <div style={{ fontSize: 12, color: 'var(--muted)', margin: '4px 0 8px' }}>{glossarFuer(hov.key).kurz}</div>
+          {glossarFuer(hov.key).formelText && <div className="mono" style={{ fontSize: 11, background: 'var(--bg)', borderRadius: 4, padding: '4px 7px', marginBottom: 8 }}>{glossarFuer(hov.key).formelText}</div>}
+          <button onClick={() => { setInfoKey(hov.key); setHov(null) }} style={{ border: 'none', background: 'none', color: 'var(--accent)', fontWeight: 600, fontSize: 12, cursor: 'pointer', padding: 0 }}>Ausführliche Beschreibung →</button>
+        </div>
+      )}
+      {infoKey && <GlossarModal eintrag={ausfuehrlich(infoKey)} onBack={() => setInfoKey(null)} />}
+    </div>
+  )
+}
+
+// Ausführliche KPI-/Spaltenbeschreibung mit Rücksprung.
+function GlossarModal({ eintrag, onBack }) {
+  if (!eintrag) return null
+  const e = eintrag
+  return (
+    <div onClick={onBack} style={{ position: 'fixed', inset: 0, zIndex: 96, background: 'rgba(15,23,42,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <div onClick={(ev) => ev.stopPropagation()} style={{ width: 520, maxWidth: '94vw', maxHeight: '88vh', overflowY: 'auto', background: 'var(--panel)', borderRadius: 'var(--radius)', boxShadow: '0 20px 60px rgba(0,0,0,.3)', border: '1px solid var(--line)' }}>
+        <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button onClick={onBack} title="Zurück" style={{ ...inp, cursor: 'pointer', padding: '5px 10px' }}>←</button>
+          <div>
+            <div style={{ ...cap }}>KPI-Beschreibung</div>
+            <h3 style={{ margin: '2px 0 0', fontSize: 17 }}>{e.name}</h3>
+          </div>
+        </div>
+        <div style={{ padding: 18, fontSize: 13.5, lineHeight: 1.55 }}>
+          <div style={{ marginBottom: 12 }}>{e.lang}</div>
+          {e.formelText && <div style={{ marginBottom: 12 }}><div style={{ ...cap, marginBottom: 4 }}>Berechnung</div><div className="mono" style={{ background: 'var(--bg)', borderRadius: 6, padding: '8px 11px' }}>{e.formelText}</div></div>}
+          {e.kpi && (
+            <div style={{ marginTop: 6, padding: '12px 14px', borderRadius: 'var(--radius-sm)', background: 'var(--accent-soft)', border: '1px solid var(--line)' }}>
+              <div style={{ ...cap, marginBottom: 4, color: 'var(--accent)' }}>Verknüpfte Kennzahl · {e.kpi.id}</div>
+              <div style={{ fontWeight: 600, marginBottom: 2 }}>{e.kpi.name}</div>
+              <div style={{ marginBottom: 8 }}>{e.kpi.beschreibung}</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, fontSize: 12, color: 'var(--muted)' }}>
+                <span>Einheit: <b>{e.kpi.einheit}</b></span>
+                {e.kpi.ziel != null && <span>Ziel: <b>{e.kpi.ziel}</b></span>}
+                <span>Richtung: <b>{e.kpi.richtung === 'hoch_gut' ? 'höher = besser' : e.kpi.richtung === 'tief_gut' ? 'niedriger = besser' : '—'}</b></span>
+                {e.kpi.abhaengig.length > 0 && <span>Abhängig von: <b>{e.kpi.abhaengig.join(', ')}</b></span>}
+              </div>
+            </div>
+          )}
+          <button onClick={onBack} style={{ marginTop: 16, ...inp, cursor: 'pointer', fontWeight: 600 }}>← Zurück zur Liste</button>
+        </div>
+      </div>
     </div>
   )
 }
