@@ -319,16 +319,12 @@ export default function App() {
         {ansicht !== 'wizard' && (
           <>
             <GlobalSuche onGeh={geh} onKpi={(id) => { setBaumStart(id); setAnsicht('baum') }} onInfo={zeigeInfo} rolle={rolle} />
+            {/* Nur Primär-Einstiege oben; die vollständige Navigation steckt im ☰-Menü. */}
             <button style={topBtn(ansicht === 'baum' || ansicht === 'report')} onClick={() => geh('baum')}>{t('nav.tree')}</button>
-            <button style={topBtn(ansicht === 'katalog')} onClick={() => geh('katalog')}>{t('nav.katalog')}</button>
             <button style={topBtn(ansicht === 'kennzahlen')} onClick={() => geh('kennzahlen')}>{t('nav.kennzahlen')}</button>
-            <button style={topBtn(ansicht === 'bi')} onClick={() => geh('bi')}>{t('nav.bi')}</button>
             <button style={topBtn(ansicht === 'qc')} onClick={() => geh('qc')}>
               {t('nav.qc')}{(() => { const f = validierungsZusammenfassung(werte).fehler; return f ? ` (${f})` : '' })()}
             </button>
-            <button style={topBtn(ansicht === 'massnahmen')} onClick={() => geh('massnahmen')}>{t('nav.massnahmen')}</button>
-            <button style={topBtn(ansicht === 'designer')} onClick={() => geh('designer')}>{t('nav.designer')}</button>
-            <button style={topBtn(ansicht === 'instrumente')} onClick={() => geh('instrumente')}>{t('nav.instrumente')}</button>
             {(() => { const n = alertAnzahl(werte, rolle); return (
               <button style={{ ...topBtn(ansicht === 'alerts'), ...(n ? { borderColor: 'var(--amp-r)', color: ansicht === 'alerts' ? '#fff' : 'var(--amp-r)' } : {}) }} onClick={() => geh('alerts')}>
                 ⚠ {t('nav.alerts')}{n ? ` (${n})` : ''}</button>) })()}
