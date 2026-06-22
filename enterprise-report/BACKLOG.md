@@ -102,7 +102,7 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
 - Berichts-**Beschreibungen deutlich ausführlicher** (Zweck, Inhalt, typische Fragen,
   Quelle, Lesehilfe).
 
-### 3. Szenarienplanung (eigener Bereich)
+### 3. Szenarienplanung (eigener Bereich) — DONE (What-if-Simulator)
 - What-if: Kennzahlen-Werte **prozentual ODER absolut** ändern, Auswirkung auf
   abgeleitete KPIs live sehen (nutzt KPI-Abhängigkeitsgraph).
 - Szenarien speichern/vergleichen (Basis/Best/Worst), mehr Stellhebel.

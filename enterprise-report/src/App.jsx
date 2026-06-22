@@ -45,6 +45,7 @@ import VertriebKennzahlen from './modules/vertrieb-kennzahlen/VertriebKennzahlen
 import Prozesskette from './modules/prozesskette/Prozesskette.jsx'
 import Tagesreporting from './modules/tagesreporting/Tagesreporting.jsx'
 import MarketingKarte from './modules/marketing-karte/MarketingKarte.jsx'
+import Szenario from './modules/szenario/Szenario.jsx'
 import WMS from './modules/wms/WMS.jsx'
 import Detailberichte from './modules/detailberichte/Detailberichte.jsx'
 import Forderungen from './modules/forderungen/Forderungen.jsx'
@@ -247,6 +248,7 @@ export default function App() {
       { titel: 'Analyse', eintraege: [
         E('bi', 'nav.bi', '💬'),
         E('planung', 'nav.planung', '🎯'),
+        E('szenario', 'nav.szenario', '🔮'),
         E('abweichung', 'nav.abweichung', '📊'),
         E('vergleich', 'nav.vergleich', '⚖'),
         E('qc', 'nav.qc', '✅', { badge: qcFehler || null }),
@@ -542,6 +544,9 @@ export default function App() {
         )}
         {ansicht === 'marketingkarte' && (
           <MarketingKarte />
+        )}
+        {ansicht === 'szenario' && (
+          <Szenario periode={periode} />
         )}
         {ansicht === 'wms' && (
           <WMS />
