@@ -47,6 +47,14 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
   Caching der KPI-Schicht. Entkopplung „Anzeige (gefiltert)" vs. „Drill bis
   Einzelbeleg (on-demand)" — Granularität bleibt, nur die geladene Menge wird begrenzt.
 
+### E. Standard-Dimensionsfilter je Bericht (Button wie Burger)
+- Im Bericht ein **Filter-Button** (Stil/Verhalten wie der Burger-Button) öffnet ein
+  Panel zum Setzen der **Standard-Dimensionsfilter** (war schon gewünscht, aktuell
+  nicht auffindbar → klar sichtbar machen).
+- Auch **nach Bereichen filtern**.
+- **Nur sinnvolle Dimensionen** anzeigen: Dimensionen, die für den jeweiligen Bericht
+  keinen Sinn ergeben, werden ausgeblendet (kontextabhängige Filterliste).
+
 ---
 
 ### 1. BCG-/Portfolio-Matrix drill-down
