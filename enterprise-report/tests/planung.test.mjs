@@ -123,3 +123,25 @@ test('Alle Verteilungsschlüssel haben 12 Gewichte', () => {
   for (const s of VERTEILSCHLUESSEL) assert.equal(s.gewichte.length, 12)
   assert.equal(schluesselVon('gibtsnicht').id, 'gleich') // Fallback
 })
+
+import { vergleiche, neuerPlan as np2, kopierePlan as kp2 } from '../src/core/planung.js'
+
+test('vergleiche: Szenarien nebeneinander mit Kennzahlen', () => {
+  localStorage.removeItem('er_plaene')
+  const a = np2('Basis', 'budget', 2026)
+  const b = kp2(a.id, 'Best')
+  const v = vergleiche([a.id, b.id])
+  assert.equal(v.spalten.length, 2)
+  assert.equal(v.basis.id, a.id)
+  assert.ok(v.kennzahlen.some((k) => k.key === 'db'))
+  for (const s of v.spalten) {
+    assert.ok('umsatz' in s && 'db' in s && 'liqEnde' in s && 'liqTief' in s)
+  }
+})
+
+test('vergleiche: ignoriert unbekannte IDs', () => {
+  localStorage.removeItem('er_plaene')
+  const a = np2('Basis', 'budget', 2026)
+  const v = vergleiche([a.id, 'gibtsnicht'])
+  assert.equal(v.spalten.length, 1)
+})

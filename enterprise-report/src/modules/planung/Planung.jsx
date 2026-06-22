@@ -6,7 +6,7 @@
 import React, { useState } from 'react'
 import {
   PLAN_PRODUKTE, PLAN_TYPEN, AE_UMSATZ_FAKTOR, VERTEILSCHLUESSEL, ladePlaene, planVon, neuerPlan,
-  kopierePlan, speicherePlan, loeschePlan, rechnePlan, topDownVerteilung, mengeAusBetrag, liquiditaet, monatsVerteilung
+  kopierePlan, speicherePlan, loeschePlan, rechnePlan, topDownVerteilung, mengeAusBetrag, liquiditaet, monatsVerteilung, vergleiche
 } from '../../core/planung.js'
 import { EBENEN, verteile as verteileArtikel, flach as flachArtikel } from '../../core/artikelHierarchie.js'
 
@@ -25,6 +25,7 @@ export default function Planung({ onGeh }) {
   const [aktivId, setAktivId] = useState(() => ladePlaene()[0]?.id)
   const [zielUmsatz, setZielUmsatz] = useState('')
   const [maxTiefe, setMaxTiefe] = useState(2) // bis zu welcher Hierarchie-Ebene anzeigen
+  const [vglIds, setVglIds] = useState([]) // ausgewählte Szenarien für den Vergleich
   const [tick, setTick] = useState(0)
   const plan = planVon(aktivId) || plaene[0]
   const refresh = () => { setPlaene(ladePlaene()); setTick((t) => t + 1) }
@@ -210,6 +211,53 @@ export default function Planung({ onGeh }) {
           wann das Geld wirklich fließt. {liqMin < 0 ? <b style={{ color: 'var(--amp-r)' }}>Achtung: Liquidität wird zwischenzeitlich negativ ({eur0(liqMin)} €).</b> : 'Liquidität bleibt durchgehend positiv.'}
           {onGeh && <> Mehr unter <a style={{ color: 'var(--accent)', cursor: 'pointer' }} onClick={() => onGeh('forderungen')}>Forderungs-Aging</a>.</>}
         </div>
+      </div>
+
+      {/* Szenarienvergleich (Basis/Best/Worst nebeneinander) */}
+      <div style={{ ...card, padding: 16, marginTop: 14, overflowX: 'auto' }}>
+        <div style={{ ...cap, marginBottom: 8 }}>Szenarienvergleich</div>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
+          {plaene.map((p) => {
+            const an = vglIds.includes(p.id)
+            return (
+              <button key={p.id} onClick={() => setVglIds((ids) => an ? ids.filter((x) => x !== p.id) : [...ids, p.id])}
+                style={{ fontSize: 12, padding: '4px 10px', borderRadius: 999, cursor: 'pointer', fontWeight: 600,
+                  border: `1px solid ${an ? 'var(--accent)' : 'var(--line)'}`, background: an ? 'var(--accent-soft)' : 'var(--panel)', color: an ? 'var(--accent)' : 'var(--muted)' }}>
+                {an ? '✓ ' : ''}{p.name}
+              </button>
+            )
+          })}
+        </div>
+        {vglIds.length < 2
+          ? <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>Mindestens zwei Szenarien auswählen (z. B. Budget, Best Case, Worst Case) — der erste gilt als <b>Basis</b>, die anderen zeigen das Delta dazu.</div>
+          : (() => {
+              const v = vergleiche(vglIds)
+              const fmt = (val, e) => e === 'pct' ? `${val} %` : `${eur0(val)} €`
+              return (
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5, minWidth: 520 }}>
+                  <thead><tr>
+                    <th style={th('left')}>Kennzahl</th>
+                    {v.spalten.map((s, i) => <th key={s.id} style={th('right')}>{s.name}{i === 0 ? ' (Basis)' : ''}<div style={{ fontWeight: 400, fontSize: 10, color: 'var(--muted)' }}>{PLAN_TYPEN.find((t) => t.id === s.typ)?.name}</div></th>)}
+                  </tr></thead>
+                  <tbody>
+                    {v.kennzahlen.map((k) => (
+                      <tr key={k.key}>
+                        <td style={td('left', true)}>{k.name}</td>
+                        {v.spalten.map((s, i) => {
+                          const d = i > 0 ? s[k.key] - v.basis[k.key] : null
+                          return (
+                            <td key={s.id} className="mono" style={td('right')}>
+                              {fmt(s[k.key], k.einheit)}
+                              {d != null && Math.abs(d) > 0.0001 && <div style={{ fontSize: 10.5, color: d >= 0 ? 'var(--amp-g)' : 'var(--amp-r)' }}>{d >= 0 ? '+' : ''}{fmt(d, k.einheit)}</div>}
+                            </td>
+                          )
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )
+            })()}
       </div>
     </div>
   )

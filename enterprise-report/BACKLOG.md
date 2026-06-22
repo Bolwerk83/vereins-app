@@ -14,8 +14,7 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
 > Top-Down-Verteilung, Menge↔Betrag, Schwund-Aufschlag, Produktion ohne Umsatz,
 > AE→Umsatz-Hochrechnung, Liquiditätsvorschau mit Zahlungszielen.
 > Offen (v2): abteilungsspezifische Drilldowns — Einkauf „wann spätestens bestellen"
-> (Puffer-Modus), Produktion „wann einplanen / Was-wäre-wenn", Szenarienvergleich
-> (Basis/Best/Worst nebeneinander), gemeinsames Periodenmodell mit B (Monatsraster).
+> (Puffer-Modus), Produktion „wann einplanen / Was-wäre-wenn", Szenarienvergleich (erledigt), gemeinsames Periodenmodell mit B (Monatsraster, erledigt).
 - Eigener Bereich; Pläne **selbst anlegen** und **„kopieren von"** (Vorlage).
 - Planung **Top-Down UND Bottom-Up**; der **Controller steuert/vermittelt** dazwischen.
   Leitgedanke: *alle haben dieselbe Vorstellung von den Werten.*

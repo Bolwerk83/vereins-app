@@ -197,3 +197,28 @@ export function liquiditaet(plan) {
     return { monat: m + 1, ein: r0(e), aus: r0(aus[m]), netto: r0(netto), kumuliert: r0(kum) }
   })
 }
+
+/** Mehrere Pläne (Szenarien) nebeneinander vergleichen — Kennzahlen + Delta zur Basis. */
+export function vergleiche(planIds = []) {
+  const plaene = ladePlaene()
+  const spalten = planIds.map((id) => plaene.find((p) => p.id === id)).filter(Boolean).map((plan) => {
+    const erg = rechnePlan(plan)
+    const liq = liquiditaet(plan)
+    return {
+      id: plan.id, name: plan.name, typ: plan.typ, jahr: plan.jahr,
+      umsatz: erg.umsatz, wareneinsatz: erg.wareneinsatz, db: erg.db, dbQuote: erg.dbQuote,
+      ae: erg.ae, liqEnde: liq[11]?.kumuliert || 0, liqTief: Math.min(...liq.map((m) => m.kumuliert))
+    }
+  })
+  const basis = spalten[0] || null
+  const kennzahlen = [
+    { key: 'umsatz', name: 'Umsatzerlöse', einheit: 'eur' },
+    { key: 'wareneinsatz', name: 'Wareneinsatz', einheit: 'eur' },
+    { key: 'db', name: 'Deckungsbeitrag', einheit: 'eur' },
+    { key: 'dbQuote', name: 'DB-Quote', einheit: 'pct' },
+    { key: 'ae', name: 'Nötiger Auftragseingang', einheit: 'eur' },
+    { key: 'liqEnde', name: 'Liquidität Jahresende', einheit: 'eur' },
+    { key: 'liqTief', name: 'Liquiditäts-Tief', einheit: 'eur' }
+  ]
+  return { spalten, basis, kennzahlen }
+}
