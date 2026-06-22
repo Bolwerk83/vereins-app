@@ -85,6 +85,16 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
 - Baut auf `periodenmodell.js` + `ZeitDatenart` auf; in allen passenden Berichten
   wirksam (Filter/Aggregation).
 
+### 17. Von jeder Kennzahl in Themenbericht/Details springen
+- An **jeder KPI** direkt: Sprung in den passenden **Themenbericht (E3)** oder die
+  **Details (E4)** — mit Auswahl **unterschiedlicher Ansichten** (Tabelle, Visual,
+  Hierarchie, Zeitreihe …). Einheitliches „Öffnen in …"-Menü an der Karte/im Drill.
+
+### 18. KPI als Standard-Vorlage beim Berichtsbau
+- Beim Bauen eines Berichts ist die Kennzahl bereits als **Standard-Vorlage** für
+  viele **Visuals** hinterlegt (Karte, Balken, Linie, Tabelle, Donut, Hierarchie …),
+  sodass man **nur die Kennzahl tauschen** muss und alle Visuals automatisch passen.
+
 ## Kleinere / Querschnitt
 - Visualisierungen (Daten-Balken etc.) auch **im Berichtsbaum** und weiteren
   Berichten anbieten (bisher nur Detaillisten).
