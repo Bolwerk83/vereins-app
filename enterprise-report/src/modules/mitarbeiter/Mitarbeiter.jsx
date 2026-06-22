@@ -3,7 +3,7 @@
 //  Maßnahme bei hoher Fluktuation.
 // =========================================================================
 import React, { useState } from 'react'
-import { PHASEN, phaseInfo, phaseVerteilung, BEREICHE, kennzahlen } from '../../core/mitarbeiter.js'
+import { PHASEN, phaseInfo, phaseVerteilung, BEREICHE, kennzahlen, gruppiereNach, DIMENSIONEN } from '../../core/mitarbeiter.js'
 import { addMassnahme, ladeMassnahmen } from '../../core/massnahmen.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
@@ -13,14 +13,17 @@ const td = (al, bold) => ({ textAlign: al, padding: '6px 9px', borderBottom: '1p
 
 export default function Mitarbeiter() {
   const [, setTick] = useState(0)
+  const [dim, setDim] = useState('bereich') // Gruppierungs-Dimension
   const v = phaseVerteilung()
   const k = kennzahlen()
   const max = Math.max(...v.map((p) => p.koepfe), 1)
   const massn = ladeMassnahmen()
   const hat = (id) => massn.some((m) => m.bereichId === id)
+  const dimName = DIMENSIONEN.find((d) => d.key === dim)?.name || 'Bereich'
+  const zeilen = gruppiereNach(dim)
 
   function massnahme(b) {
-    addMassnahme({ titel: `Fluktuation senken: ${b.name} (${b.fluktuation} %)`, owner: 'HR', quelle: 'mitarbeiter', bereichId: b.id, bereich: 'HR', hebel: 'Personal',
+    addMassnahme({ titel: `Fluktuation senken: ${b.dimension} (${b.fluktuation} %)`, owner: 'HR', quelle: 'mitarbeiter', bereichId: dim + ':' + b.dimension, bereich: 'HR', hebel: 'Personal',
       relevanz: `Fluktuation ${b.fluktuation} %, Krankenstand ${b.krankenstand} %, ${b.offen} offene Stellen.` })
     setTick((t) => t + 1)
   }
@@ -60,25 +63,34 @@ export default function Mitarbeiter() {
       </div>
 
       <div style={{ ...card, padding: 16, overflowX: 'auto' }}>
-        <div style={{ ...cap, marginBottom: 10 }}>Personalkennzahlen je Bereich</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+          <div style={cap}>Personalkennzahlen je {dimName}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 11, color: 'var(--muted)' }}>Dimension:</span>
+            {DIMENSIONEN.map((d) => (
+              <button key={d.key} onClick={() => setDim(d.key)} style={{ fontSize: 12, padding: '4px 10px', borderRadius: 999, cursor: 'pointer', fontWeight: 600,
+                border: `1px solid ${dim === d.key ? 'var(--accent)' : 'var(--line)'}`, background: dim === d.key ? 'var(--accent-soft)' : 'var(--panel)', color: dim === d.key ? 'var(--accent)' : 'var(--muted)' }}>{d.name}</button>
+            ))}
+          </div>
+        </div>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 660 }}>
-          <thead><tr>{['Bereich', 'FTE', 'Fluktuation', 'Krankenstand', 'Ø Zugehörigkeit', 'Offen', ''].map((h, i) => <th key={i} style={th(i === 0 ? 'left' : 'right')}>{h}</th>)}</tr></thead>
+          <thead><tr>{[dimName, 'FTE', 'Fluktuation', 'Krankenstand', 'Ø Zugehörigkeit', 'Offen', ''].map((h, i) => <th key={i} style={th(i === 0 ? 'left' : 'right')}>{h}</th>)}</tr></thead>
           <tbody>
-            {BEREICHE.map((b) => (
-              <tr key={b.id}>
-                <td style={td('left', true)}>{b.name}</td>
+            {zeilen.map((b) => (
+              <tr key={b.dimension}>
+                <td style={td('left', true)}>{b.dimension}</td>
                 <td className="mono" style={td('right')}>{b.fte}</td>
                 <td className="mono" style={{ ...td('right'), color: b.fluktuation > 10 ? 'var(--amp-r)' : b.fluktuation > 7 ? 'var(--amp-a)' : 'var(--ink)' }}>{b.fluktuation} %</td>
                 <td className="mono" style={{ ...td('right'), color: b.krankenstand > 5 ? 'var(--amp-a)' : 'var(--ink)' }}>{b.krankenstand} %</td>
                 <td className="mono" style={td('right')}>{b.zugehoerigkeit} J</td>
                 <td className="mono" style={td('right')}>{b.offen}</td>
-                <td style={td('right')}>{b.fluktuation > 10 && (hat(b.id) ? <span style={{ fontSize: 12, color: 'var(--amp-g)' }}>✓ Maßnahme</span>
+                <td style={td('right')}>{b.fluktuation > 10 && (hat(dim + ':' + b.dimension) ? <span style={{ fontSize: 12, color: 'var(--amp-g)' }}>✓ Maßnahme</span>
                   : <button onClick={() => massnahme(b)} style={{ fontSize: 12, cursor: 'pointer', border: '1px solid var(--accent)', color: 'var(--accent)', background: 'var(--panel)', borderRadius: 999, padding: '3px 10px' }}>→ Maßnahme</button>)}</td>
               </tr>
             ))}
           </tbody>
         </table>
-        <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 8 }}>Hohe Fluktuation (rot) treibt Recruiting- und Einarbeitungskosten — Bindung lohnt sich.</div>
+        <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 8 }}>Dimension oben umschaltbar (Bereich / Profit-Center / Region). Hohe Fluktuation (rot) treibt Recruiting- und Einarbeitungskosten — Bindung lohnt sich.</div>
       </div>
     </div>
   )

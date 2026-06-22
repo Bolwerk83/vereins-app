@@ -75,6 +75,13 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
 - **Wertgutschriften zum tatsächlichen Auftrag**: in **EUR und %** ausweisen.
 - Retourenübersicht je Kunde (Quote, Wert, Gründe), Auffälligkeiten markieren.
 
+### H. Dimensions-Umschalter in allen sinnvollen Berichten — v1 (Personal) DONE
+- Gruppierung je Bericht umschaltbar (z. B. Bereich → Profit-Center → Region →
+  Kanal → Warenbereich …), nicht nur Filtern. Basis: `core/pivot.js` (gruppiere,
+  sinnvolleDimensionen). v1 im Personalbericht umgesetzt.
+- Offen: Rollout auf weitere Berichte (Vertrieb, Kosten/Profitcenter, Lager,
+  Produktion) — jeweils die fachlich sinnvollen Dimensionen anbieten.
+
 ### G. Abgleichsbericht Absatzmenge vs. Auftragseingang tatsächlich — NEU
 - **Absatzmenge (aus Rechnungspositionen)** gegen **Auftragseingang tatsächlich
   (AET, WaWi)** je Produkt/Kunde abgleichen; Differenz (abs/%) und Ursachen
