@@ -41,6 +41,7 @@ export const NAV_ZIELE = [
   { ziel: 'finanzcockpit', gruppe: 'Kosten & Ergebnis', schluessel: 'nav.finanzcockpit' },
   { ziel: 'pckostenstellen', gruppe: 'Kosten & Ergebnis', schluessel: 'nav.pckostenstellen' },
   { ziel: 'kontenstrukturen', gruppe: 'Kosten & Ergebnis', schluessel: 'nav.kontenstrukturen' },
+  { ziel: 'leasing', gruppe: 'Kosten & Ergebnis', schluessel: 'nav.leasing' },
   { ziel: 'lzempfehlung', gruppe: 'Analyse', schluessel: 'nav.lzempfehlung' },
   { ziel: 'auftrag', gruppe: 'Analyse', schluessel: 'nav.auftrag' },
   { ziel: 'anlagen', gruppe: 'Analyse', schluessel: 'nav.anlagen' },
