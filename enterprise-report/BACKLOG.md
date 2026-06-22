@@ -145,10 +145,11 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
 - Clean & modern: klare Top-Navigation, viel Weißraum, kräftiger roter Akzent,
   große Karten/Bilder, ruhige Typografie (eigenständig, kein 1:1-Klon).
 
-### 13. Lebenszyklus grafisch
-- Den Produkt-/Kunden-Lebenszyklus zusätzlich **grafisch** zeigen (Phasenkurve/
-  Timeline „Einführung → Wachstum → Reife → Rückgang" mit Position der Objekte),
-  nicht nur Tabelle + Bubble-Matrix.
+### 13. Lebenszyklus grafisch — DONE
+- Klassische Lebenszyklus-Kurve (Aufstieg → Peak → Abfall) mit Phasenbändern,
+  Objekte als Blasen je Phase (Größe = Umsatz). Produkte: Matrix/Kurve-Umschalter
+  im Portfolio-Panel; Kunden: eigene Beziehungs-Kurve (5 Phasen) über der Tabelle.
+  Core: `phasenKurve(phasen, objekte)` (Höhenprofil + Objektpositionen, + Tests).
 
 ### 14. Navigation entwirren (zwei Leisten)
 - Obere Leiste (Shortcuts) und Burger-Menü (volle Navigation) überschneiden sich →
