@@ -5,6 +5,7 @@ import { ampelStatus, trendAusHistorie } from '../core/ampel.js'
 import { AMPEL_FARBE, AMPEL_SOFT, AMPEL_LABEL, formatWert, TREND_ICON, kpiSymbol } from '../design/theme.js'
 import { kpiInsight } from '../core/insights.js'
 import { renderText, istVeraltet, ladeText, speichereText, loescheText, VORLAGEN, kiVorschlaege } from '../core/textbausteine.js'
+import { kpiAnzeige, statusVon, darfFreigeben, FREIGABE_STATUS, FREIGABE_LABEL, NICHT_VERFUEGBAR } from '../core/kpiFreigabe.js'
 import { useNav } from './NavContext.jsx'
 import { useKpiDef } from '../modules/kennzahlen/KpiDefContext.jsx'
 import { useFenster } from '../core/useFenster.js'
@@ -27,17 +28,37 @@ export function KpiCard({ kpiId, wert, historie, onClick, alleWerte }) {
   const def = useKpiDef()
   const [drill, setDrill] = useState(null)
   if (!k) return null
+  // Freigabe-Governance: erst freigegebene KPIs sind für alle sichtbar.
+  const rolle = def?.rolle
+  const darfSteuern = darfFreigeben(rolle)
+  const anzeige = kpiAnzeige(kpiId, rolle) // hängt über def.freigabeTick an Re-Render
+  if (anzeige.modus === 'versteckt') return null
+  if (anzeige.modus === 'nichtVerfuegbar') {
+    return (
+      <div style={{ background: 'var(--panel)', border: '1px dashed var(--line)', borderRadius: 'var(--radius)',
+        padding: 14, minWidth: 150, flex: '1 1 0', color: 'var(--muted)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
+          <span className="mono" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '.04em' }}>{k.name}</span>
+          {darfSteuern && def && <FreigabeChip kpiId={kpiId} def={def} />}
+        </div>
+        <div style={{ fontSize: 14, marginTop: 12, fontWeight: 600 }}>{NICHT_VERFUEGBAR}</div>
+      </div>
+    )
+  }
+  const entwurf = anzeige.modus === 'entwurf'
   const status = ampelStatus({ wert, ziel: k.ziel, richtung: k.richtung, warn: k.warn })
   const t = historie ? trendAusHistorie(historie.map((h) => h.wert), k.richtung) : null
   const sym = kpiSymbol(k.einheit)
   return (
     <>
     <button onClick={onClick} style={{ textAlign: 'left', background: 'var(--panel)', border: '1px solid var(--line)',
-      borderLeft: `3px solid ${AMPEL_FARBE[status]}`, borderRadius: 'var(--radius)', padding: 14, minWidth: 150,
+      borderLeft: `3px solid ${entwurf ? 'var(--amp-a)' : AMPEL_FARBE[status]}`, borderRadius: 'var(--radius)', padding: 14, minWidth: 150,
       flex: '1 1 0', boxShadow: 'var(--shadow)' }}>
+      {entwurf && <div style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--amp-a)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 4 }}>✎ Entwurf · noch nicht freigegeben</div>}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
         <span className="mono" style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em' }}>{k.name}</span>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          {darfSteuern && def && <FreigabeChip kpiId={kpiId} def={def} />}
           {alleWerte && <span role="button" title="Logik & Herkunft (Drill durch die Ebenen)"
             onClick={(e) => { e.stopPropagation(); setDrill(kpiId) }}
             style={{ cursor: 'pointer', color: 'var(--accent)', fontSize: 13, fontWeight: 700, lineHeight: 1 }}>⛓</span>}
@@ -58,6 +79,32 @@ export function KpiCard({ kpiId, wert, historie, onClick, alleWerte }) {
     </button>
     {drill && <KpiDrillModal startId={drill} werte={alleWerte} onClose={() => setDrill(null)} />}
     </>
+  )
+}
+
+/** Freigabe-Steuerung an der Karte (nur Controlling/Admin): Status umschalten. */
+export function FreigabeChip({ kpiId, def }) {
+  const [auf, setAuf] = useState(false)
+  const status = statusVon(kpiId)
+  const stil = { freigegeben: { i: '✓', f: 'var(--amp-g)' }, entwurf: { i: '✎', f: 'var(--amp-a)' }, deaktiviert: { i: '⊘', f: 'var(--amp-r)' } }[status]
+  return (
+    <span style={{ position: 'relative', display: 'inline-flex' }}>
+      <span role="button" title={`Freigabe: ${FREIGABE_LABEL[status]} — ändern`}
+        onClick={(e) => { e.stopPropagation(); setAuf((v) => !v) }}
+        style={{ cursor: 'pointer', color: stil.f, fontSize: 12, fontWeight: 700, lineHeight: 1, border: `1px solid ${stil.f}55`, borderRadius: 999, padding: '1px 5px' }}>{stil.i}</span>
+      {auf && (
+        <span onClick={(e) => e.stopPropagation()} style={{ position: 'absolute', top: '120%', right: 0, zIndex: 60, background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', boxShadow: 'var(--shadow)', padding: 4, minWidth: 180 }}>
+          <div style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', padding: '4px 8px' }}>Freigabe steuern</div>
+          {FREIGABE_STATUS.map((s) => (
+            <button key={s} onClick={(e) => { e.stopPropagation(); def.setFreigabe(kpiId, s); setAuf(false) }}
+              style={{ display: 'block', width: '100%', textAlign: 'left', border: 'none', cursor: 'pointer', fontSize: 12, padding: '6px 8px', borderRadius: 6,
+                background: s === status ? 'var(--accent-soft)' : 'transparent', color: s === status ? 'var(--accent)' : 'var(--ink)', fontWeight: s === status ? 700 : 400 }}>
+              {s === status ? '● ' : '○ '}{FREIGABE_LABEL[s]}
+            </button>
+          ))}
+        </span>
+      )}
+    </span>
   )
 }
 
