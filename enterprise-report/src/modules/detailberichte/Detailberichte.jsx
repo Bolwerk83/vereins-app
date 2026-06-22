@@ -6,6 +6,37 @@
 // =========================================================================
 import React, { useState } from 'react'
 import { LISTEN, LEGENDE, artikelliste, auftragsliste, warenverbrauchliste, leasingliste, retourenliste, rechnungsliste, kundenliste, historie } from '../../core/detailberichte.js'
+import { ladeBookmarks, addBookmark, loescheBookmark } from '../../core/bookmarks.js'
+
+// Eingebaute Spalten-Ansichten (Fokus-Presets) je Liste.
+const PRESETS = {
+  artikel: [
+    { name: 'Bestände', sichtbar: ['sku', 'artikel', 'status', 'lbEff', 'gesp', 'kom', 'lbVerf', 'aktiv'] },
+    { name: 'Preise & Marge', sichtbar: ['sku', 'artikel', 'vk', 'ek', 'marge', 'margePct'] },
+    { name: 'Einkauf', sichtbar: ['sku', 'artikel', 'gruppe', 'ek', 'einkaeufer'] }
+  ],
+  auftrag: [
+    { name: 'Mengen', sichtbar: ['datum', 'kunde', 'auftrag', 'ab', 'ae', 'aeb', 'aet', 'abs'] },
+    { name: 'Werte', sichtbar: ['datum', 'kunde', 'auftrag', 'vk', 'mek', 'ue'] }
+  ],
+  warenverbrauch: [
+    { name: 'Bestandsfluss', sichtbar: ['sku', 'artikel', 'anfangsbestand', 'zugang', 'abgang', 'endbestand'] },
+    { name: 'Verbrauch vs. Umsatz', sichtbar: ['sku', 'artikel', 'abgang', 'verbrauch', 'umsatzMenge'] }
+  ],
+  leasing: [
+    { name: 'Nur Anzeigewert', sichtbar: ['vorgang', 'kunde', 'auftrag', 'anzeigeWert', 'fuehrend'] },
+    { name: 'Alle Belege', sichtbar: ['vorgang', 'kunde', 'angebotW', 'kundeW', 'gesellW', 'anzeigeWert', 'fuehrend'] }
+  ],
+  retoure: [{ name: 'Kompakt', sichtbar: ['retoure', 'datum', 'kunde', 'wert', 'grund'] }],
+  rechnung: [
+    { name: 'Beträge', sichtbar: ['rechnung', 'datum', 'kunde', 'netto', 'mwst', 'brutto'] },
+    { name: 'Zahlung', sichtbar: ['rechnung', 'kunde', 'brutto', 'bezahlt', 'status'] }
+  ],
+  kunde: [
+    { name: 'Risiko', sichtbar: ['kundennr', 'name', 'offeneForderung', 'kreditlimit', 'status'] },
+    { name: 'Kontakt', sichtbar: ['kundennr', 'name', 'email', 'land'] }
+  ]
+}
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
@@ -160,7 +191,21 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, idKey, titelKey, 
   const [legendeAuf, setLegendeAuf] = useState(false)
   const [detail, setDetail] = useState(null)
   const [opts, setOpts] = useState(() => Object.fromEntries(optionen.map((o) => [o.key, o.default])))
+  const [sichtbar, setSichtbar] = useState(() => new Set(cols.map((c) => c.key)))
+  const [panelAuf, setPanelAuf] = useState(false)
+  const [bmTick, setBmTick] = useState(0)
   const data = lade({ suche, nurAuffaellig, ...opts })
+
+  // Eingebaute + benutzerdefinierte Ansichten (Bookmarks).
+  const builtin = [{ id: 'voll', name: 'Vollansicht', sichtbar: cols.map((c) => c.key), system: true }, ...(PRESETS[typ] || []).map((p, i) => ({ id: 'p' + i, ...p, system: true }))]
+  const userBm = ladeBookmarks(typ)
+  const bookmarks = [...builtin, ...userBm]
+  const gleich = (arr) => arr.length === sichtbar.size && arr.every((k) => sichtbar.has(k))
+  const wendeAn = (arr) => setSichtbar(new Set(arr.filter((k) => cols.some((c) => c.key === k))))
+  const toggleSpalte = (key) => setSichtbar((s) => { const n = new Set(s); n.has(key) ? n.delete(key) : n.add(key); if (n.size === 0) n.add(key); return n })
+  const speichereAnsicht = () => { const name = prompt('Name für diese Ansicht (Bookmark):'); if (name && name.trim()) { addBookmark(typ, name, [...sichtbar]); setBmTick((t) => t + 1) } }
+  const loesche = (id) => { loescheBookmark(typ, id); setBmTick((t) => t + 1) }
+  const sichtCols = cols.filter((c) => sichtbar.has(c.key))
 
   const zelle = (row, c) => {
     const dimmed = row._dim?.includes(c.key)
@@ -221,7 +266,45 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, idKey, titelKey, 
           ⚠ nur Auffälligkeiten ({data.auffaellig})
         </label>
         <button onClick={() => setLegendeAuf((v) => !v)} style={{ ...inp, cursor: 'pointer', fontSize: 12 }}>Legende {legendeAuf ? '▴' : '▾'}</button>
+        <button onClick={() => setPanelAuf((v) => !v)} title="Spalten ein-/ausblenden & Ansichten (Bookmarks)"
+          style={{ ...inp, cursor: 'pointer', fontSize: 12, fontWeight: 600, borderColor: panelAuf ? 'var(--accent)' : 'var(--line)', color: panelAuf ? 'var(--accent)' : 'var(--ink)' }}>
+          🔖 Spalten &amp; Ansichten ({sichtCols.length}/{cols.length})
+        </button>
       </div>
+
+      {/* Bookmark-/Spalten-Panel (auf-/zuklappbar wie das Burger-Menü) */}
+      {panelAuf && (
+        <div style={{ ...card, padding: 14, marginBottom: 12 }}>
+          <div style={{ ...cap, marginBottom: 8 }}>Ansichten (Bookmarks)</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
+            {bookmarks.map((b) => {
+              const aktiv = gleich(b.sichtbar)
+              return (
+                <span key={b.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12.5, padding: '4px 6px 4px 11px', borderRadius: 999, cursor: 'pointer',
+                  border: `1px solid ${aktiv ? 'var(--accent)' : 'var(--line)'}`, background: aktiv ? 'var(--accent-soft)' : 'var(--panel)', color: aktiv ? 'var(--accent)' : 'var(--ink)' }}>
+                  <span onClick={() => wendeAn(b.sichtbar)}>{b.system ? '' : '🔖 '}{b.name}</span>
+                  {!b.system && <button onClick={() => loesche(b.id)} title="Bookmark löschen" style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 13, lineHeight: 1 }}>×</button>}
+                </span>
+              )
+            })}
+            <button onClick={speichereAnsicht} style={{ ...inp, padding: '4px 11px', cursor: 'pointer', fontSize: 12.5, borderStyle: 'dashed' }}>＋ Aktuelle Ansicht speichern</button>
+          </div>
+
+          <div style={{ ...cap, margin: '12px 0 8px' }}>Spalten ein-/ausblenden</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {cols.map((c) => {
+              const an = sichtbar.has(c.key)
+              return (
+                <button key={c.key} onClick={() => toggleSpalte(c.key)}
+                  style={{ fontSize: 12, padding: '4px 9px', borderRadius: 999, cursor: 'pointer',
+                    border: `1px solid ${an ? 'var(--accent)' : 'var(--line)'}`, background: an ? 'var(--accent-soft)' : 'var(--panel)', color: an ? 'var(--accent)' : 'var(--muted)' }}>
+                  {an ? '✓ ' : '＋ '}{c.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {legendeAuf && (
         <div style={{ ...card, padding: 12, marginBottom: 12, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '2px 16px' }}>
@@ -234,22 +317,22 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, idKey, titelKey, 
       {/* Tabelle */}
       <div style={{ ...card, padding: 0, overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5, minWidth: 1000 }}>
-          <thead><tr>{cols.map((c) => <th key={c.key} style={{ position: 'sticky', top: 0, background: 'var(--panel)', textAlign: c.al, padding: '8px 9px', borderBottom: '2px solid var(--line)', fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{c.label}</th>)}<th style={{ padding: '8px 9px', borderBottom: '2px solid var(--line)' }} /></tr></thead>
+          <thead><tr>{sichtCols.map((c) => <th key={c.key} style={{ position: 'sticky', top: 0, background: 'var(--panel)', textAlign: c.al, padding: '8px 9px', borderBottom: '2px solid var(--line)', fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{c.label}</th>)}<th style={{ padding: '8px 9px', borderBottom: '2px solid var(--line)' }} /></tr></thead>
           <tbody>
-            {data.rows.length === 0 && <tr><td colSpan={cols.length + 1} style={{ padding: 20, textAlign: 'center', color: 'var(--muted)' }}>Keine Treffer.</td></tr>}
+            {data.rows.length === 0 && <tr><td colSpan={sichtCols.length + 1} style={{ padding: 20, textAlign: 'center', color: 'var(--muted)' }}>Keine Treffer.</td></tr>}
             {data.rows.map((row, i) => (
               <tr key={row[idKey] + i} onClick={() => setDetail(row)} style={{ cursor: 'pointer',
                 borderLeft: `3px solid ${row.schwere ? SCHWERE[row.schwere].farbe : 'transparent'}` }}
                 onMouseEnter={(e) => e.currentTarget.style.background = 'var(--accent-soft)'}
                 onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
-                {cols.map((c) => zelle(row, c))}
+                {sichtCols.map((c) => zelle(row, c))}
                 <td style={{ padding: '6px 9px', borderBottom: '1px solid var(--line)', textAlign: 'center' }}>{row.schwere ? SCHWERE[row.schwere].icon : ''}</td>
               </tr>
             ))}
           </tbody>
           <tfoot>
             <tr style={{ fontWeight: 700, background: 'var(--bg)' }}>
-              {cols.map((c, i) => (
+              {sichtCols.map((c, i) => (
                 <td key={c.key} className={c.al === 'right' ? 'mono' : undefined} style={{ padding: '8px 9px', borderTop: '2px solid var(--line)', textAlign: c.al }}>
                   {i === 0 ? 'Gesamt' : sumKeys.includes(c.key) ? (data.summe[c.key]?.toLocaleString('de-DE')) : ''}
                 </td>
