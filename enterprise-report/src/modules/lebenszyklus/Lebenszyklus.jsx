@@ -8,7 +8,7 @@ import React, { useState } from 'react'
 import {
   PRODUKT_PHASEN, produktPhaseInfo, produkte, kinderProdukt, produktPhaseVerteilung,
   KUNDE_PHASEN, kundePhaseInfo, kunden, kundePhaseVerteilung,
-  bcgVerteilung, quadrantVon
+  bcgVerteilung, quadrantVon, phasenKurve
 } from '../../core/lebenszyklus.js'
 import { addMassnahme, ladeMassnahmen } from '../../core/massnahmen.js'
 
@@ -99,6 +99,47 @@ function QuadrantKacheln({ felder, quadrant, onQuadrant, onDrill }) {
   )
 }
 
+// Lebenszyklus-Kurve: Aufstieg → Peak → Abfall, Objekte als Blasen je Phase.
+function PhasenKurve({ phasen, objekte, onDrill }) {
+  const { profil, punkte } = phasenKurve(phasen, objekte)
+  const n = phasen.length
+  const W = 720, H = 300, padL = 40, padB = 48, padT = 18
+  const px = (t) => padL + t * (W - padL - 14)
+  const py = (h) => padT + (1 - h) * (H - padT - padB)
+  const rmax = Math.max(...punkte.map((p) => p.umsatz), 1)
+  const rad = (u) => 6 + Math.sqrt(u / rmax) * 22
+  // Kurvenpunkte durch die Phasenmitten, an den Rändern leicht angesetzt.
+  const stuetz = [[0, profil[0] * 0.55], ...profil.map((h, i) => [(i + 0.5) / n, h]), [1, profil[n - 1] * 0.8]]
+  const pfad = stuetz.map(([t, h], i) => `${i ? 'L' : 'M'}${px(t).toFixed(1)},${py(h).toFixed(1)}`).join(' ')
+  const flaeche = `${pfad} L${px(1).toFixed(1)},${py(0)} L${px(0).toFixed(1)},${py(0)} Z`
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto' }}>
+      <line x1={padL} y1={py(0)} x2={W - 10} y2={py(0)} stroke="var(--line)" />
+      {/* Phasenbänder + Beschriftung */}
+      {phasen.map((p, i) => (
+        <g key={p.id}>
+          {i > 0 && <line x1={px(i / n)} y1={padT} x2={px(i / n)} y2={py(0)} stroke="var(--line)" strokeDasharray="3 4" />}
+          <rect x={px(i / n)} y={padT} width={px((i + 1) / n) - px(i / n)} height={py(0) - padT} fill={p.farbe} fillOpacity="0.05" />
+          <text x={px((i + 0.5) / n)} y={H - padB + 18} textAnchor="middle" fontSize="11" fontWeight="700" fill={p.farbe}>{p.name}</text>
+        </g>
+      ))}
+      {/* Hüllkurve */}
+      <path d={flaeche} fill="var(--accent)" fillOpacity="0.05" />
+      <path d={pfad} fill="none" stroke="var(--accent)" strokeWidth="2" />
+      {/* Objekte als Blasen */}
+      {punkte.map((p) => (
+        <g key={p.id} onClick={onDrill ? () => onDrill(p) : undefined} style={{ cursor: onDrill ? 'pointer' : 'default' }}>
+          <title>{p.name} · {p.umsatz} Mio €{onDrill ? ' — in die Artikelliste springen' : ''}</title>
+          <circle cx={px(p.x)} cy={py(p.hoehe)} r={rad(p.umsatz)} fill={p.farbe} fillOpacity="0.32" stroke={p.farbe} />
+          <text x={px(p.x)} y={py(p.hoehe) - rad(p.umsatz) - 3} textAnchor="middle" fontSize="9.5" fill="var(--slate)" style={{ pointerEvents: 'none' }}>{p.name}</text>
+        </g>
+      ))}
+      <text x={padL - 4} y={padT + 4} textAnchor="end" fontSize="10" fill="var(--muted)">Niveau</text>
+      <text x={px((n - 0.5) / n)} y={H - padB + 30} textAnchor="middle" fontSize="9" fill="var(--muted)">Zeit →</text>
+    </svg>
+  )
+}
+
 const chipStyle = (aktiv) => ({ padding: '6px 13px', borderRadius: 999, fontSize: 13, cursor: 'pointer', fontWeight: 600,
   border: `1px solid ${aktiv ? 'var(--accent)' : 'var(--line)'}`, background: aktiv ? 'var(--accent)' : 'var(--panel)', color: aktiv ? '#fff' : 'var(--ink)' })
 const badge = (farbe) => ({ fontSize: 11, fontWeight: 700, color: '#fff', background: farbe, padding: '1px 8px', borderRadius: 999 })
@@ -121,6 +162,7 @@ function Produkte({ onDrill }) {
   const [ebene, setEbene] = useState('produkt')
   const [auf, setAuf] = useState({})
   const [quadrant, setQuadrant] = useState(null) // BCG-Feld als Filter/Einstieg
+  const [sicht, setSicht] = useState('matrix')    // 'matrix' (BCG) | 'kurve' (Lebenszyklus)
   const alle = produkte(ebene)
   const { schwellen, felder } = bcgVerteilung(ebene)
   const objekte = quadrant ? alle.filter((o) => quadrantVon(o, schwellen) === quadrant) : alle
@@ -135,14 +177,33 @@ function Produkte({ onDrill }) {
       <PhasenKacheln vert={produktPhaseVerteilung(ebene)} />
       <div style={{ ...card, padding: 16, marginBottom: 14 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
-          <div style={cap}>Portfolio (BCG) — Wachstum × Deckungsbeitrag (Blasengröße = Umsatz)</div>
-          {quadrant && <button onClick={() => setQuadrant(null)} style={{ fontSize: 12, cursor: 'pointer', border: '1px solid var(--line)', background: 'var(--panel)', borderRadius: 999, padding: '2px 10px', color: 'var(--muted)' }}>Filter „{quadName}" ✕</button>}
+          <div style={cap}>{sicht === 'matrix' ? 'Portfolio (BCG) — Wachstum × Deckungsbeitrag (Blasengröße = Umsatz)' : 'Lebenszyklus-Kurve — Einführung → Wachstum → Reife → Rückgang (Blasengröße = Umsatz)'}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {sicht === 'matrix' && quadrant && <button onClick={() => setQuadrant(null)} style={{ fontSize: 12, cursor: 'pointer', border: '1px solid var(--line)', background: 'var(--panel)', borderRadius: 999, padding: '2px 10px', color: 'var(--muted)' }}>Filter „{quadName}" ✕</button>}
+            <div style={{ display: 'flex', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
+              {[['matrix', '▦ Matrix'], ['kurve', '◠ Kurve']].map(([id, lbl]) => (
+                <button key={id} onClick={() => setSicht(id)} style={{ padding: '4px 10px', border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                  background: sicht === id ? 'var(--accent)' : 'var(--panel)', color: sicht === id ? '#fff' : 'var(--muted)' }}>{lbl}</button>
+              ))}
+            </div>
+          </div>
         </div>
-        <QuadrantKacheln felder={felder} quadrant={quadrant} onQuadrant={setQuadrant} onDrill={onDrill} />
-        <Portfolio objekte={alle} info={produktPhaseInfo} onDrill={onDrill} schwellen={schwellen} felder={felder} quadrant={quadrant} onQuadrant={setQuadrant} />
-        <div style={{ fontSize: 12, color: 'var(--accent)', marginTop: 6 }}>
-          ↳ Quadrant anklicken: Portfolio + Liste auf das Feld (Stars / Cash Cows / Question Marks / Poor Dogs) eingrenzen.{onDrill ? ' Blase/Objekt anklicken: in die Artikelliste springen (gefiltert).' : ''}
-        </div>
+        {sicht === 'matrix' ? (
+          <>
+            <QuadrantKacheln felder={felder} quadrant={quadrant} onQuadrant={setQuadrant} onDrill={onDrill} />
+            <Portfolio objekte={alle} info={produktPhaseInfo} onDrill={onDrill} schwellen={schwellen} felder={felder} quadrant={quadrant} onQuadrant={setQuadrant} />
+            <div style={{ fontSize: 12, color: 'var(--accent)', marginTop: 6 }}>
+              ↳ Quadrant anklicken: Portfolio + Liste auf das Feld (Stars / Cash Cows / Question Marks / Poor Dogs) eingrenzen.{onDrill ? ' Blase/Objekt anklicken: in die Artikelliste springen (gefiltert).' : ''}
+            </div>
+          </>
+        ) : (
+          <>
+            <PhasenKurve phasen={PRODUKT_PHASEN} objekte={alle} onDrill={onDrill} />
+            <div style={{ fontSize: 12, color: 'var(--accent)', marginTop: 6 }}>
+              ↳ Klassische Lebenszyklus-Kurve: jedes Produkt sitzt in seiner Phase auf der Kurve (Größe = Umsatz).{onDrill ? ' Blase anklicken: in die Artikelliste springen.' : ''}
+            </div>
+          </>
+        )}
         <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 8 }}>
           {PRODUKT_PHASEN.map((p) => (
             <span key={p.id} style={{ fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
@@ -201,6 +262,11 @@ function Kunden() {
   return (
     <>
       <PhasenKacheln vert={kundePhaseVerteilung()} />
+      <div style={{ ...card, padding: 16, marginBottom: 14 }}>
+        <div style={{ ...cap, marginBottom: 8 }}>Beziehungs-Lebenszyklus — Akquise → Entwicklung → Bestand → Gefährdet → Verloren (Blasengröße = Umsatz)</div>
+        <PhasenKurve phasen={KUNDE_PHASEN} objekte={liste} />
+        <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 6 }}>Jeder Kunde sitzt in seiner Beziehungsphase auf der Kurve — Spätphasen (gefährdet/verloren) brauchen Rückgewinnung.</div>
+      </div>
       <div style={{ ...card, padding: 16 }}>
         <div style={{ ...cap, marginBottom: 10 }}>Kunden ({liste.length}) — Beziehungsphasen</div>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>

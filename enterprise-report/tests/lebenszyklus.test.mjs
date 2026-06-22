@@ -2,7 +2,8 @@ import './_setup.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { phaseProdukt, phaseKunde, produkte, kinderProdukt, kunden, produktPhaseVerteilung,
-  bcgVerteilung, quadrantVon, bcgSchwellen, BCG_QUADRANTEN } from '../src/core/lebenszyklus.js'
+  bcgVerteilung, quadrantVon, bcgSchwellen, BCG_QUADRANTEN,
+  phasenKurve, PRODUKT_PHASEN, KUNDE_PHASEN } from '../src/core/lebenszyklus.js'
 
 test('Produktphase aus Wachstum, Alter und Margentrend', () => {
   assert.equal(phaseProdukt({ alter: 1, wachstum: 40 }), 'einfuehrung')
@@ -43,6 +44,28 @@ test('BCG-Schwelle nimmt den Median der DB-Werte', () => {
   const s = bcgSchwellen(produkte('produkt'))
   assert.equal(s.wachstum, 0)
   assert.ok(s.db > 0)
+})
+
+test('Lebenszyklus-Kurve: jedes Objekt einmal, x normiert, Profil steigt dann fällt', () => {
+  const { profil, punkte } = phasenKurve(PRODUKT_PHASEN, produkte('produkt'))
+  assert.equal(profil.length, PRODUKT_PHASEN.length)
+  // jedes Produkt genau einmal als Punkt
+  assert.equal(punkte.length, produkte('produkt').length)
+  for (const p of punkte) {
+    assert.ok(p.x > 0 && p.x < 1, 'x im Einheitsintervall')
+    assert.ok(p.hoehe >= 0 && p.hoehe <= 1, 'Höhe normiert')
+    assert.ok(p.farbe && p.phase, 'trägt Phase & Farbe')
+  }
+  // Profil: erst aufsteigend bis zum Peak, danach abfallend
+  const peakIdx = profil.indexOf(Math.max(...profil))
+  for (let i = 1; i <= peakIdx; i++) assert.ok(profil[i] >= profil[i - 1], 'Aufstieg bis Peak')
+  for (let i = peakIdx + 1; i < profil.length; i++) assert.ok(profil[i] <= profil[i - 1], 'Abfall nach Peak')
+})
+
+test('Lebenszyklus-Kurve funktioniert auch für die 5 Kundenphasen', () => {
+  const { profil, punkte } = phasenKurve(KUNDE_PHASEN, kunden())
+  assert.equal(profil.length, 5)
+  assert.equal(punkte.length, kunden().length)
 })
 
 test('BCG-Verteilung deckt alle Objekte ab und summiert auf Gesamtumsatz', () => {

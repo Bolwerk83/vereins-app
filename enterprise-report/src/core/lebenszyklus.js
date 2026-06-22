@@ -152,3 +152,27 @@ export function bcgVerteilung(ebene, opt = {}) {
   })
   return { schwellen, felder }
 }
+
+// ---------- Lebenszyklus-Kurve (Phasenprofil + Objektpositionen) ---------
+// Ordnet Objekte ihren Phasen zu und verteilt sie als Punkte entlang einer
+// Lebenszyklus-Kurve (Aufstieg → Peak → Abfall). Rein für die grafische Sicht.
+export function phasenKurve(phasen, objekte) {
+  const n = phasen.length
+  const peak = 0.58 // Position des Hochpunkts auf der normierten x-Achse
+  // Höhenprofil 0..1 je Phase: steigt bis zum Peak, fällt danach ab.
+  const profil = phasen.map((_, i) => {
+    const t = n <= 1 ? peak : i / (n - 1)
+    const h = t <= peak ? 0.25 + 0.75 * (t / peak) : 1 - 0.72 * ((t - peak) / (1 - peak))
+    return +Math.max(0.12, Math.min(1, h)).toFixed(3)
+  })
+  const punkte = []
+  phasen.forEach((p, i) => {
+    const grp = objekte.filter((o) => o.phase === p.id)
+    grp.forEach((o, j) => {
+      const frac = (j + 1) / (grp.length + 1) // gleichmäßig im Phasenband verteilen
+      punkte.push({ id: o.id, name: o.name, umsatz: o.umsatz, gruppe: o.gruppe,
+        phase: p.id, farbe: p.farbe, x: +((i + frac) / n).toFixed(4), hoehe: profil[i] })
+    })
+  })
+  return { profil, punkte }
+}
