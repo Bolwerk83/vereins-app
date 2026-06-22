@@ -55,6 +55,7 @@ import { nutzerId } from './core/identitaet.js'
 import { heartbeat } from './core/praesenz.js'
 import { darfBereich } from './core/rbac.js'
 import { bereichVon } from './core/navMeta.js'
+import BerichtInfoModal from './modules/berichtinfo/BerichtInfoModal.jsx'
 import { ladeBranding, applyBranding, themeById } from './core/admin.js'
 import { AKTUELLE_STAGE, stageInfo } from './core/stage.js'
 import { autoSeed } from './core/designerSeed.js'
@@ -94,6 +95,7 @@ export default function App() {
   const [hilfeErstmalig, setHilfeErstmalig] = useState(false)
   const [onbAuf, setOnbAuf] = useState(false)
   const [branding, setBranding] = useState(ladeBranding())
+  const [infoView, setInfoView] = useState(null)   // Bericht-Info-Panel (Schaufenster)
   // Aktive "Rolle": angemeldeter Benutzer -> Vereinigung seiner Gruppen.
   // Ohne Anmeldung -> manuell gewählte Gruppe (Demo-/Admin-Modus).
   const rolle = benutzer
@@ -154,8 +156,11 @@ export default function App() {
   const topBtn = (aktiv) => ({ padding: '6px 10px', borderRadius: 'var(--radius-sm)', fontSize: 12,
     border: '1px solid var(--line)', background: aktiv ? 'var(--accent)' : 'var(--panel)', color: aktiv ? '#fff' : 'var(--ink)' })
 
-  // Navigation fürs Burger-Menü (gruppiert) — von jeder Seite aus steuerbar.
-  const geh = (a) => setAnsicht(a)
+  // Navigation — von jeder Seite aus steuerbar. Fehlt die Berechtigung für den
+  // Fachbereich des Ziels, wird statt des Berichts sein Info-Panel geöffnet
+  // (Schaufenster: sehen, was es gibt — aber nicht aufrufen).
+  const geh = (a) => { if (a && !darfBereich(rolle, bereichVon(a))) { setInfoView(a); return } setAnsicht(a) }
+  const zeigeInfo = (a) => setInfoView(a)
   const qcFehler = validierungsZusammenfassung(werte).fehler
   const alertN = alertAnzahl(werte, rolle)
   // Eintrags-Helfer: label/icon/aktiv/onClick + Bereich/Relevanz (für Rollenfilter).
@@ -255,13 +260,18 @@ export default function App() {
       ] }] : [])
     ] }
   ]
+  // Flacher Index view → { label, icon, bereich, relevant, pfad } für das Info-Panel.
+  const eintragIndex = {}
+  for (const g of menuGruppen) for (const u of (g.untergruppen || [])) for (const e of u.eintraege)
+    if (e.view) eintragIndex[e.view] = { ...e, pfad: `${g.titel} › ${u.titel}` }
+  const infoMeta = infoView ? (eintragIndex[infoView] || { label: infoView, bereich: bereichVon(infoView), relevant: darfBereich(rolle, bereichVon(infoView)), pfad: null }) : null
 
   return (
     <div>
       {/* Topbar */}
       <header className="no-print" style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--panel)', borderBottom: '1px solid var(--line)',
         padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-        {ansicht !== 'wizard' && <BurgerMenu gruppen={menuGruppen} />}
+        {ansicht !== 'wizard' && <BurgerMenu gruppen={menuGruppen} onInfo={zeigeInfo} />}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {branding.logoDataUrl
             ? <img src={branding.logoDataUrl} alt="Logo" style={{ width: 26, height: 26, borderRadius: 7, objectFit: 'contain' }} />
@@ -289,21 +299,21 @@ export default function App() {
         {ansicht !== 'wizard' && (
           <>
             <GlobalSuche onGeh={geh} onKpi={(id) => { setBaumStart(id); setAnsicht('baum') }} />
-            <button style={topBtn(ansicht === 'baum' || ansicht === 'report')} onClick={() => setAnsicht('baum')}>{t('nav.tree')}</button>
-            <button style={topBtn(ansicht === 'katalog')} onClick={() => setAnsicht('katalog')}>{t('nav.katalog')}</button>
-            <button style={topBtn(ansicht === 'kennzahlen')} onClick={() => setAnsicht('kennzahlen')}>{t('nav.kennzahlen')}</button>
-            <button style={topBtn(ansicht === 'bi')} onClick={() => setAnsicht('bi')}>{t('nav.bi')}</button>
-            <button style={topBtn(ansicht === 'qc')} onClick={() => setAnsicht('qc')}>
+            <button style={topBtn(ansicht === 'baum' || ansicht === 'report')} onClick={() => geh('baum')}>{t('nav.tree')}</button>
+            <button style={topBtn(ansicht === 'katalog')} onClick={() => geh('katalog')}>{t('nav.katalog')}</button>
+            <button style={topBtn(ansicht === 'kennzahlen')} onClick={() => geh('kennzahlen')}>{t('nav.kennzahlen')}</button>
+            <button style={topBtn(ansicht === 'bi')} onClick={() => geh('bi')}>{t('nav.bi')}</button>
+            <button style={topBtn(ansicht === 'qc')} onClick={() => geh('qc')}>
               {t('nav.qc')}{(() => { const f = validierungsZusammenfassung(werte).fehler; return f ? ` (${f})` : '' })()}
             </button>
-            <button style={topBtn(ansicht === 'massnahmen')} onClick={() => setAnsicht('massnahmen')}>{t('nav.massnahmen')}</button>
-            <button style={topBtn(ansicht === 'designer')} onClick={() => setAnsicht('designer')}>{t('nav.designer')}</button>
-            <button style={topBtn(ansicht === 'instrumente')} onClick={() => setAnsicht('instrumente')}>{t('nav.instrumente')}</button>
+            <button style={topBtn(ansicht === 'massnahmen')} onClick={() => geh('massnahmen')}>{t('nav.massnahmen')}</button>
+            <button style={topBtn(ansicht === 'designer')} onClick={() => geh('designer')}>{t('nav.designer')}</button>
+            <button style={topBtn(ansicht === 'instrumente')} onClick={() => geh('instrumente')}>{t('nav.instrumente')}</button>
             {(() => { const n = alertAnzahl(werte, rolle); return (
-              <button style={{ ...topBtn(ansicht === 'alerts'), ...(n ? { borderColor: 'var(--amp-r)', color: ansicht === 'alerts' ? '#fff' : 'var(--amp-r)' } : {}) }} onClick={() => setAnsicht('alerts')}>
+              <button style={{ ...topBtn(ansicht === 'alerts'), ...(n ? { borderColor: 'var(--amp-r)', color: ansicht === 'alerts' ? '#fff' : 'var(--amp-r)' } : {}) }} onClick={() => geh('alerts')}>
                 ⚠ {t('nav.alerts')}{n ? ` (${n})` : ''}</button>) })()}
             {istAdmin(rolle) && (
-              <button style={topBtn(ansicht === 'rechte')} onClick={() => setAnsicht('rechte')}>{t('nav.rechte')}</button>
+              <button style={topBtn(ansicht === 'rechte')} onClick={() => geh('rechte')}>{t('nav.rechte')}</button>
             )}
             <BenutzerLeiste benutzer={benutzer} rolle={rolle} gruppen={gruppen} onLogin={anmelden} onLogout={abmelden} />
             {!benutzer && (
@@ -345,6 +355,11 @@ export default function App() {
 
       <HilfePanel offen={hilfeAuf} erstmalig={hilfeErstmalig} onSchliessen={hilfeSchliessen} />
       {onbAuf && <Onboarding rolle={rolle} istAdmin={istAdmin(rolle)} onGeh={geh} onClose={() => setOnbAuf(false)} />}
+      {infoView && infoMeta && (
+        <BerichtInfoModal view={infoView} label={infoMeta.label} icon={infoMeta.icon} pfad={infoMeta.pfad}
+          bereich={infoMeta.bereich} darf={infoMeta.relevant !== false}
+          onClose={() => setInfoView(null)} onOpen={(v) => setAnsicht(v)} />
+      )}
 
       <KpiDefProvider rolle={rolle} werte={werte} onSpringe={(id) => { setBaumStart(id); setAnsicht('baum') }}>
       <main style={{ padding: '22px 20px', maxWidth: 1240, margin: '0 auto' }}>

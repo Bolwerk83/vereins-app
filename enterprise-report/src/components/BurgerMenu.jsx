@@ -12,20 +12,24 @@ const untergruppenVon = (g) => g.untergruppen || (g.eintraege ? [{ titel: null, 
 const rel = (e) => e.relevant !== false                 // undefined = übergreifend = relevant
 const sortRel = (a, b) => (rel(b) ? 1 : 0) - (rel(a) ? 1 : 0)
 
-function Eintrag({ e, onNav, fav, onFav, dim }) {
+function Eintrag({ e, onNav, fav, onFav, onInfo, dim, locked }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'stretch', gap: 4, opacity: dim ? 0.5 : 1 }}>
-      <button onClick={() => { e.onClick(); onNav() }}
+    <div style={{ display: 'flex', alignItems: 'stretch', gap: 2, opacity: dim ? 0.55 : 1 }}>
+      <button onClick={() => { e.onClick(); onNav() }} title={locked ? 'Keine Berechtigung – Info anzeigen' : undefined}
         style={{ flex: 1, textAlign: 'left', padding: '8px 10px', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: 13.5,
           border: `1px solid ${e.aktiv ? 'var(--accent)' : 'transparent'}`,
           background: e.aktiv ? 'var(--accent-soft)' : 'transparent', color: e.aktiv ? 'var(--accent)' : 'var(--ink)',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, fontWeight: e.aktiv ? 600 : 400 }}>
-        <span>{e.icon ? `${e.icon} ` : ''}{e.label}</span>
+        <span>{locked ? '🔒 ' : (e.icon ? `${e.icon} ` : '')}{e.label}</span>
         {e.badge ? <span className="mono" style={{ fontSize: 11, color: 'var(--amp-r)' }}>{e.badge}</span> : null}
       </button>
       {e.view && (
+        <button onClick={(ev) => { ev.stopPropagation(); onInfo(e.view) }} title="Bericht-Info"
+          style={{ width: 26, border: 'none', background: 'none', cursor: 'pointer', fontSize: 13, color: 'var(--muted)' }}>ⓘ</button>
+      )}
+      {e.view && !locked && (
         <button onClick={(ev) => { ev.stopPropagation(); onFav(e.view) }} title={fav ? 'Aus Favoriten entfernen' : 'Zu Favoriten'}
-          style={{ width: 30, border: 'none', background: 'none', cursor: 'pointer', fontSize: 14, color: fav ? 'var(--amp-a)' : 'var(--line)' }}>
+          style={{ width: 26, border: 'none', background: 'none', cursor: 'pointer', fontSize: 14, color: fav ? 'var(--amp-a)' : 'var(--line)' }}>
           {fav ? '★' : '☆'}
         </button>
       )}
@@ -33,9 +37,10 @@ function Eintrag({ e, onNav, fav, onFav, dim }) {
   )
 }
 
-export default function BurgerMenu({ gruppen = [] }) {
+export default function BurgerMenu({ gruppen = [], onInfo }) {
   const [auf, setAuf] = useState(false)
   const [tick, setTick] = useState(0)
+  const info = (view) => { onInfo?.(view); setAuf(false) }
   const [nurRelevant, setNurRelevant] = useState(() => { try { return localStorage.getItem(NUR_KEY) === '1' } catch { return false } })
   const [offen, setOffen] = useState(() => {
     const s = new Set(gruppen.filter((g) => untergruppenVon(g).some((u) => (u.eintraege || []).some((e) => e.aktiv))).map((g) => g.titel))
@@ -80,7 +85,7 @@ export default function BurgerMenu({ gruppen = [] }) {
               <div style={{ marginBottom: 8, border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
                 <div style={{ padding: '9px 12px', background: 'var(--bg)', fontWeight: 700, fontSize: 13.5 }}>⭐ Favoriten</div>
                 <div style={{ padding: '4px 8px 8px', display: 'flex', flexDirection: 'column', gap: 3 }}>
-                  {favEintraege.map((e) => <Eintrag key={'fav-' + e.view} e={e} onNav={schliessen} fav onFav={onFav} />)}
+                  {favEintraege.map((e) => <Eintrag key={'fav-' + e.view} e={e} onNav={schliessen} fav onFav={onFav} onInfo={info} locked={!rel(e)} />)}
                 </div>
               </div>
             )}
@@ -108,7 +113,7 @@ export default function BurgerMenu({ gruppen = [] }) {
                           {u.titel && <div className="mono" style={{ fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.05em', margin: '2px 4px 5px' }}>{u.titel}</div>}
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                             {[...u.eintraege].sort(sortRel).map((e) => (
-                              <Eintrag key={e.label} e={e} onNav={schliessen} fav={favSet.has(e.view)} onFav={onFav} dim={!nurRelevant && !rel(e)} />
+                              <Eintrag key={e.label} e={e} onNav={schliessen} fav={favSet.has(e.view)} onFav={onFav} onInfo={info} dim={!nurRelevant && !rel(e)} locked={!rel(e)} />
                             ))}
                           </div>
                         </div>
