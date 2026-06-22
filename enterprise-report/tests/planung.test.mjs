@@ -145,3 +145,27 @@ test('vergleiche: ignoriert unbekannte IDs', () => {
   const v = vergleiche([a.id, 'gibtsnicht'])
   assert.equal(v.spalten.length, 1)
 })
+
+import { terminplanung } from '../src/core/planung.js'
+
+test('terminplanung: Bestelltermin liegt vor dem Produktionsstart, beide vor Bedarf', () => {
+  localStorage.removeItem('er_plaene')
+  const plan = { id: 't', name: 'T', typ: 'budget', jahr: 2026, schwundPct: 0, schluessel: 'saison_bike',
+    zeilen: { ebike: { menge: 24000, ohneUmsatz: 0 }, akku: { menge: 0, ohneUmsatz: 0 },
+      zubehoer: { menge: 0, ohneUmsatz: 0 }, bekleidung: { menge: 0, ohneUmsatz: 0 } } }
+  const t = terminplanung(plan, 30)
+  const ebike = t.find((x) => x.id === 'ebike')
+  assert.ok(ebike.bestellBis < ebike.produktionsStart)       // Einkauf vor Produktion
+  assert.ok(ebike.produktionsStart < ebike.bedarfDatum)      // Produktion vor Bedarf
+  assert.ok(['Mai', 'Jun'].includes(ebike.peakMonat))        // Saison-Spitze Frühjahr/Sommer
+  assert.equal(ebike.eigenfertigung, true)
+})
+
+test('terminplanung: höherer Puffer zieht den Bestelltermin nach vorn', () => {
+  const plan = { id: 't', name: 'T', typ: 'budget', jahr: 2026, schwundPct: 0, schluessel: 'gleich',
+    zeilen: { ebike: { menge: 12000, ohneUmsatz: 0 }, akku: { menge: 0, ohneUmsatz: 0 },
+      zubehoer: { menge: 0, ohneUmsatz: 0 }, bekleidung: { menge: 0, ohneUmsatz: 0 } } }
+  const t0 = terminplanung(plan, 0).find((x) => x.id === 'ebike')
+  const t60 = terminplanung(plan, 60).find((x) => x.id === 'ebike')
+  assert.ok(t60.bestellBis < t0.bestellBis)
+})

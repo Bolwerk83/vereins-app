@@ -6,7 +6,7 @@
 import React, { useState } from 'react'
 import {
   PLAN_PRODUKTE, PLAN_TYPEN, AE_UMSATZ_FAKTOR, VERTEILSCHLUESSEL, ladePlaene, planVon, neuerPlan,
-  kopierePlan, speicherePlan, loeschePlan, rechnePlan, topDownVerteilung, mengeAusBetrag, liquiditaet, monatsVerteilung, vergleiche
+  kopierePlan, speicherePlan, loeschePlan, rechnePlan, topDownVerteilung, mengeAusBetrag, liquiditaet, monatsVerteilung, vergleiche, terminplanung
 } from '../../core/planung.js'
 import { EBENEN, verteile as verteileArtikel, flach as flachArtikel } from '../../core/artikelHierarchie.js'
 
@@ -26,6 +26,7 @@ export default function Planung({ onGeh }) {
   const [zielUmsatz, setZielUmsatz] = useState('')
   const [maxTiefe, setMaxTiefe] = useState(2) // bis zu welcher Hierarchie-Ebene anzeigen
   const [vglIds, setVglIds] = useState([]) // ausgewählte Szenarien für den Vergleich
+  const [puffer, setPuffer] = useState(30) // Sicherheits-Puffer (Tage) für die Termin-/Beschaffungssicht
   const [tick, setTick] = useState(0)
   const plan = planVon(aktivId) || plaene[0]
   const refresh = () => { setPlaene(ladePlaene()); setTick((t) => t + 1) }
@@ -210,6 +211,41 @@ export default function Planung({ onGeh }) {
           Beträge in Tsd €. Einzahlungen folgen dem VK-Zahlungsziel, Auszahlungen dem EK-Zahlungsziel — so wird sichtbar,
           wann das Geld wirklich fließt. {liqMin < 0 ? <b style={{ color: 'var(--amp-r)' }}>Achtung: Liquidität wird zwischenzeitlich negativ ({eur0(liqMin)} €).</b> : 'Liquidität bleibt durchgehend positiv.'}
           {onGeh && <> Mehr unter <a style={{ color: 'var(--accent)', cursor: 'pointer' }} onClick={() => onGeh('forderungen')}>Forderungs-Aging</a>.</>}
+        </div>
+      </div>
+
+      {/* Termin-/Beschaffungssicht: wann bestellen / produzieren? */}
+      <div style={{ ...card, padding: 16, marginTop: 14, overflowX: 'auto' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+          <div style={cap}>Termin- & Beschaffungssicht — wann spätestens bestellen / produzieren?</div>
+          <label style={lbl}>Sicherheits-Puffer (Tage)
+            <input type="number" value={puffer} onChange={(e) => setPuffer(Math.max(0, Number(e.target.value)))} style={{ ...inp, width: 80, marginLeft: 6 }} />
+          </label>
+        </div>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5, minWidth: 820 }}>
+          <thead><tr>{['Produkt', 'Bedarfs-Spitze', 'Menge (Monat)', 'WBZ', 'Produktion', 'Spätester Bestelltermin', 'Spätester Produktionsstart'].map((h, i) => <th key={i} style={th(i === 0 ? 'left' : i <= 1 ? 'left' : 'right')}>{h}</th>)}</tr></thead>
+          <tbody>
+            {terminplanung(plan, puffer).map((t) => {
+              const heute = new Date().toISOString().slice(0, 10)
+              const knapp = t.bestellBis < heute
+              return (
+                <tr key={t.id} style={{ background: knapp ? 'var(--amp-r-soft)' : undefined }}>
+                  <td style={td('left', true)}>{t.name}{!t.eigenfertigung && <span style={{ fontSize: 10, color: 'var(--muted)' }}> (Handelsware)</span>}</td>
+                  <td style={td('left')}>{t.peakMonat} {plan.jahr}</td>
+                  <td className="mono" style={td('right')}>{n0(t.peakMenge)}</td>
+                  <td className="mono" style={td('right')}>{t.wbzTage} Tg</td>
+                  <td className="mono" style={td('right')}>{t.eigenfertigung ? `${t.produktionsTage} Tg` : '—'}</td>
+                  <td className="mono" style={{ ...td('right', true), color: knapp ? 'var(--amp-r)' : 'var(--ink)' }}>{t.bestellBis}{knapp ? ' ⚠' : ''}</td>
+                  <td className="mono" style={td('right')}>{t.eigenfertigung ? t.produktionsStart : '—'}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+        <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 10 }}>
+          Rückwärtsterminierung von der saisonalen Bedarfsspitze: <b>Bestelltermin</b> = Bedarf − (Wiederbeschaffung + Produktion + Puffer),
+          <b> Produktionsstart</b> = Bedarf − (Produktion + Puffer). Rot ⚠ = Termin liegt bereits in der Vergangenheit (zu knapp).
+          {onGeh && <> Details unter <a style={{ color: 'var(--accent)', cursor: 'pointer' }} onClick={() => onGeh('produktion')}>Produktionscontrolling</a> und <a style={{ color: 'var(--accent)', cursor: 'pointer' }} onClick={() => onGeh('lager')}>Lagerverwaltung</a>.</>}
         </div>
       </div>
 

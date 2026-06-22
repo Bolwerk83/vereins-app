@@ -18,12 +18,13 @@
 const r0 = (x) => Math.round(x)
 const r2 = (x) => Math.round(x * 100) / 100
 
-// Stammdaten der planbaren Produkte (VK/EK-Preis, Zahlungsziele in Tagen).
+// Stammdaten der planbaren Produkte (VK/EK-Preis, Zahlungsziele in Tagen,
+// wbzTage = Wiederbeschaffungszeit Material/Einkauf, produktionsTage = Fertigung).
 export const PLAN_PRODUKTE = [
-  { id: 'ebike',      name: 'E-Bikes',     vkPreis: 1499, ekPreis: 980, zahlzielVk: 30, zahlzielEk: 14 },
-  { id: 'akku',       name: 'Akkus 625Wh', vkPreis: 749,  ekPreis: 210, zahlzielVk: 30, zahlzielEk: 14 },
-  { id: 'zubehoer',   name: 'Zubehör',     vkPreis: 49,   ekPreis: 28,  zahlzielVk: 14, zahlzielEk: 21 },
-  { id: 'bekleidung', name: 'Bekleidung',  vkPreis: 79,   ekPreis: 35,  zahlzielVk: 14, zahlzielEk: 30 }
+  { id: 'ebike',      name: 'E-Bikes',     vkPreis: 1499, ekPreis: 980, zahlzielVk: 30, zahlzielEk: 14, wbzTage: 28, produktionsTage: 21 },
+  { id: 'akku',       name: 'Akkus 625Wh', vkPreis: 749,  ekPreis: 210, zahlzielVk: 30, zahlzielEk: 14, wbzTage: 28, produktionsTage: 7 },
+  { id: 'zubehoer',   name: 'Zubehör',     vkPreis: 49,   ekPreis: 28,  zahlzielVk: 14, zahlzielEk: 21, wbzTage: 21, produktionsTage: 0 },
+  { id: 'bekleidung', name: 'Bekleidung',  vkPreis: 79,   ekPreis: 35,  zahlzielVk: 14, zahlzielEk: 30, wbzTage: 30, produktionsTage: 0 }
 ]
 export const produktVon = (id) => PLAN_PRODUKTE.find((p) => p.id === id) || null
 
@@ -221,4 +222,34 @@ export function vergleiche(planIds = []) {
     { key: 'liqTief', name: 'Liquiditäts-Tief', einheit: 'eur' }
   ]
   return { spalten, basis, kennzahlen }
+}
+
+const MONNAMEN = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']
+const isoMinusTage = (datum, tage) => { const d = new Date(datum); d.setDate(d.getDate() - tage); return d.toISOString().slice(0, 10) }
+
+/**
+ * Termin-/Beschaffungssicht: aus der saisonalen Planmenge je Produkt den
+ * Bedarfs-Spitzenmonat bestimmen und rückwärts die spätesten Termine rechnen:
+ *  - spätester Produktionsstart = Bedarf − (Produktionszeit + Puffer)
+ *  - spätester Bestelltermin (Einkauf) = Bedarf − (WBZ + Produktionszeit + Puffer)
+ */
+export function terminplanung(plan, pufferTage = 30) {
+  const sId = plan?.schluessel || 'gleich'
+  return PLAN_PRODUKTE.map((p) => {
+    const jahresMenge = Math.max(0, plan?.zeilen?.[p.id]?.menge || 0)
+    const monatlich = verteile(jahresMenge, sId)
+    let peak = 0; for (let i = 1; i < 12; i++) if (monatlich[i] > monatlich[peak]) peak = i
+    const peakMenge = r0(monatlich[peak])
+    const bedarfDatum = `${plan.jahr}-${String(peak + 1).padStart(2, '0')}-01`
+    const vorlaufEinkauf = (p.wbzTage || 0) + (p.produktionsTage || 0) + pufferTage
+    const vorlaufProd = (p.produktionsTage || 0) + pufferTage
+    return {
+      id: p.id, name: p.name, peakMonat: MONNAMEN[peak], peakMenge,
+      wbzTage: p.wbzTage || 0, produktionsTage: p.produktionsTage || 0, pufferTage,
+      bedarfDatum,
+      bestellBis: isoMinusTage(bedarfDatum, vorlaufEinkauf),
+      produktionsStart: isoMinusTage(bedarfDatum, vorlaufProd),
+      eigenfertigung: (p.produktionsTage || 0) > 0
+    }
+  })
 }
