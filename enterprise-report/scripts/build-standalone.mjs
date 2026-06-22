@@ -1,8 +1,15 @@
 // =========================================================================
 //  STANDALONE-DEMO — packt den Vite-Build (dist/) in EINE HTML-Datei.
-//  JS wird base64-kodiert und per Blob-Modulimport geladen (UTF-8-sicher,
-//  keine </script>-Probleme), CSS inline. Ergebnis läuft ohne Server/Install
-//  direkt im Browser (file://) mit Mock-Daten im Demo-Modus.
+//  JS wird direkt als klassisches <script> inline eingebettet, CSS inline.
+//  Ergebnis läuft ohne Server/Install direkt im Browser (file://, auch auf
+//  dem Handy) mit Mock-Daten im Demo-Modus.
+//
+//  Wichtig (Handy-Fix): KEIN Blob-URL + dynamisches import() mehr. Mobile
+//  Safari blockiert/unterstützt dynamic import() von blob:-URLs (opaque
+//  origin) nicht zuverlässig → weiße Seite. Der Vite-Bundle ist ein reines
+//  IIFE (kein export/import.meta/dynamic import), also lässt es sich gefahrlos
+//  als normales Script direkt einbetten. UTF-8 sichert <meta charset>, und
+//  evtl. "</script>" im Code wird defensiv escaped.
 //
 //  Aufruf:  npm run build:standalone   (baut zuerst dist/ mit --base ./)
 //  Ausgabe: enterprise-report-demo.html  (gitignored)
@@ -15,9 +22,11 @@ if (!existsSync(dist + '/index.html')) {
   process.exit(1)
 }
 const assets = readdirSync(dist + '/assets')
-const js = readFileSync(`${dist}/assets/${assets.find((f) => f.endsWith('.js'))}`)
+const js = readFileSync(`${dist}/assets/${assets.find((f) => f.endsWith('.js'))}`, 'utf8')
 const css = readFileSync(`${dist}/assets/${assets.find((f) => f.endsWith('.css'))}`, 'utf8')
-const b64 = js.toString('base64')
+// Nur das schließende Script-Tag im JS-Text neutralisieren, damit das Inline-
+// Script nicht vorzeitig endet. (</script> als <\/script>; auch <!-- absichern.)
+const jsSafe = js.replace(/<\/script>/gi, '<\\/script>').replace(/<!--/g, '<\\!--')
 
 // Demo-Modus: Wizard/Overlays überspringen, direkt in die Detailberichte starten.
 const boot = `try{
@@ -39,16 +48,16 @@ const html = `<!doctype html>
 </head>
 <body>
 <div id="root"></div>
+<script>${boot}
+window.addEventListener('error', function (e) {
+  var r = document.getElementById('root');
+  if (r && !r.firstChild) r.innerHTML = '<pre style="padding:20px;color:#b00;white-space:pre-wrap">Fehler beim Laden: ' + (e.message || e.error || e) + '</pre>';
+});</script>
 <script>
-${boot}
-var bin = atob("${b64}");
-var bytes = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-var code = new TextDecoder('utf-8').decode(bytes);
-var url = URL.createObjectURL(new Blob([code], { type: 'text/javascript' }));
-import(url).catch(function (e) { document.getElementById('root').innerHTML = '<pre style=\\'padding:20px;color:#b00\\'>Fehler beim Laden: ' + e + '</pre>'; });
+${jsSafe}
 </script>
 </body>
 </html>`
 
 writeFileSync('enterprise-report-demo.html', html)
-console.log('✓ enterprise-report-demo.html erstellt (' + (html.length / 1024 / 1024).toFixed(2) + ' MB) — im Browser öffnen.')
+console.log('✓ enterprise-report-demo.html erstellt (' + (html.length / 1024 / 1024).toFixed(2) + ' MB) — im Browser öffnen (Desktop & Handy).')
