@@ -18,12 +18,17 @@
 // Klassisches 5-Phasen-Modell (Umsatzkurve): Einführung → Wachstum → Reife →
 // Sättigung → Rückgang. `niveau` = Höhe der Umsatzkurve in dieser Phase (0..1),
 // Peak in der Sättigung.
+// `niveau` = Höhe der Umsatzkurve (Peak Sättigung), `gewinn` = Höhe der
+// Gewinnkurve im selben Koordinatensystem (Null-Linie = GEWINN_NULL). Der
+// Gewinn ist in der Einführung negativ (unter der Null-Linie), kreuzt sie am
+// Break-even und gipfelt früher als der Umsatz (in der Reife).
+export const GEWINN_NULL = 0.2
 export const PRODUKT_PHASEN = [
-  { id: 'einfuehrung', name: 'Einführung', farbe: '#7c3aed', niveau: 0.22, laie: 'Neu am Markt: hohes Wachstum, dünne Marge.', strategie: 'Investieren – Markt & Bekanntheit aufbauen' },
-  { id: 'wachstum',    name: 'Wachstum',   farbe: '#2563eb', niveau: 0.6,  laie: 'Setzt sich durch: Umsatz und Marge steigen.', strategie: 'Investieren – Kapazität & Vertrieb skalieren' },
-  { id: 'reife',       name: 'Reife',      farbe: '#10b981', niveau: 0.85, laie: 'Wächst noch, aber langsamer; höchste Marge.', strategie: 'Halten – Position & Marge sichern' },
-  { id: 'saettigung',  name: 'Sättigung',  farbe: '#f59e0b', niveau: 1.0,  laie: 'Umsatz am Plateau, Wachstum ~0; Gewinn beginnt zu sinken.', strategie: 'Ausschöpfen & differenzieren – Relaunch/Nachfolge vorbereiten' },
-  { id: 'rueckgang',   name: 'Rückgang',   farbe: '#ef4444', niveau: 0.4,  laie: 'Schrumpfend oder Margenverfall.', strategie: 'Bereinigen – Auslauf/Nachfolge, Abverkauf' }
+  { id: 'einfuehrung', name: 'Einführung', farbe: '#7c3aed', niveau: 0.22, gewinn: 0.07, laie: 'Neu am Markt: hohes Wachstum, dünne Marge; Gewinn noch negativ.', strategie: 'Investieren – Markt & Bekanntheit aufbauen' },
+  { id: 'wachstum',    name: 'Wachstum',   farbe: '#2563eb', niveau: 0.6,  gewinn: 0.42, laie: 'Setzt sich durch: Umsatz und Marge steigen, Gewinnschwelle überschritten.', strategie: 'Investieren – Kapazität & Vertrieb skalieren' },
+  { id: 'reife',       name: 'Reife',      farbe: '#10b981', niveau: 0.85, gewinn: 0.6,  laie: 'Wächst noch, aber langsamer; höchste Marge, Gewinn am Hochpunkt.', strategie: 'Halten – Position & Marge sichern' },
+  { id: 'saettigung',  name: 'Sättigung',  farbe: '#f59e0b', niveau: 1.0,  gewinn: 0.42, laie: 'Umsatz am Plateau, Wachstum ~0; Gewinn sinkt bereits.', strategie: 'Ausschöpfen & differenzieren – Relaunch/Nachfolge vorbereiten' },
+  { id: 'rueckgang',   name: 'Rückgang',   farbe: '#ef4444', niveau: 0.4,  gewinn: 0.16, laie: 'Schrumpfend oder Margenverfall; Gewinn fällt Richtung Null.', strategie: 'Bereinigen – Auslauf/Nachfolge, Abverkauf' }
 ]
 export const produktPhaseInfo = (id) => PRODUKT_PHASEN.find((p) => p.id === id)
 
@@ -187,6 +192,18 @@ export function phasenKurve(phasen, objekte) {
     }
     return stuetz[stuetz.length - 1][1]
   }
+  // Optionale Gewinnkurve (nur Phasen mit `gewinn`) + Break-even (erstes
+  // Aufwärts-Kreuzen der Null-Linie GEWINN_NULL).
+  let gewinnStuetz = null, breakEvenX = null
+  if (phasen.some((p) => p.gewinn != null)) {
+    const g = phasen.map((p) => p.gewinn ?? 0)
+    gewinnStuetz = [[0, g[0]], ...g.map((h, i) => [(i + 0.5) / n, h]), [1, g[n - 1]]]
+    for (let k = 1; k < gewinnStuetz.length; k++) {
+      const [x0, h0] = gewinnStuetz[k - 1], [x1, h1] = gewinnStuetz[k]
+      if (h0 < GEWINN_NULL && h1 >= GEWINN_NULL) { const f = (GEWINN_NULL - h0) / ((h1 - h0) || 1); breakEvenX = +(x0 + (x1 - x0) * f).toFixed(4); break }
+    }
+  }
+
   const punkte = []
   phasen.forEach((p, i) => {
     // Innerhalb der Phase nach Reifegrad sortiert (früh → spät) und kontinuierlich
@@ -200,5 +217,5 @@ export function phasenKurve(phasen, objekte) {
         phase: p.id, farbe: p.farbe, x: +x.toFixed(4), hoehe: +hoeheBei(x).toFixed(4), vy: 0 })
     })
   })
-  return { profil, stuetz, punkte }
+  return { profil, stuetz, gewinnStuetz, breakEvenX, punkte }
 }

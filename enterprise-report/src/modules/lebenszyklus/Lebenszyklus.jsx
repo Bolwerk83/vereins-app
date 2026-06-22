@@ -8,7 +8,7 @@ import React, { useState } from 'react'
 import {
   PRODUKT_PHASEN, produktPhaseInfo, produkte, kinderProdukt, produktPhaseVerteilung,
   KUNDE_PHASEN, kundePhaseInfo, kunden, kundePhaseVerteilung,
-  bcgFelder, quadrantVon, phasenKurve
+  bcgFelder, quadrantVon, phasenKurve, GEWINN_NULL
 } from '../../core/lebenszyklus.js'
 import { mitLinien, offeneVorschlaege, bestaetigeMatch, loeseMatch, ladeMatches } from '../../core/produktlinie.js'
 import { addMassnahme, ladeMassnahmen } from '../../core/massnahmen.js'
@@ -103,7 +103,7 @@ function QuadrantKacheln({ felder, quadrant, onQuadrant, onDrill }) {
 // Lebenszyklus-Kurve: Aufstieg → Peak → Abfall, Objekte als Blasen je Phase.
 // verbindungen: [{von, nach, label}] zieht einen Übergangspfeil (Modellwechsel).
 function PhasenKurve({ phasen, objekte, onDrill, verbindungen = [] }) {
-  const { profil, punkte } = phasenKurve(phasen, objekte)
+  const { profil, punkte, gewinnStuetz, breakEvenX } = phasenKurve(phasen, objekte)
   const n = phasen.length
   const W = 720, H = 300, padL = 40, padB = 48, padT = 18
   const px = (t) => padL + t * (W - padL - 14)
@@ -133,9 +133,30 @@ function PhasenKurve({ phasen, objekte, onDrill, verbindungen = [] }) {
           <text x={px((i + 0.5) / n)} y={H - padB + 18} textAnchor="middle" fontSize="11" fontWeight="700" fill={p.farbe}>{p.name}</text>
         </g>
       ))}
-      {/* Hüllkurve */}
+      {/* Umsatz-Hüllkurve */}
       <path d={flaeche} fill="var(--accent)" fillOpacity="0.05" />
       <path d={pfad} fill="none" stroke="var(--accent)" strokeWidth="2" />
+      <text x={W - 12} y={py(profil[profil.length - 1]) - 6} textAnchor="end" fontSize="10" fontWeight="700" fill="var(--accent)">Umsatz</text>
+      {/* Gewinnkurve + Null-Linie + Break-even (nur Produktlebenszyklus) */}
+      {gewinnStuetz && (() => {
+        const gPfad = gewinnStuetz.map(([t, h], i) => `${i ? 'L' : 'M'}${px(t).toFixed(1)},${py(h).toFixed(1)}`).join(' ')
+        const zeroY = py(GEWINN_NULL)
+        return (
+          <g>
+            <line x1={padL} y1={zeroY} x2={W - 10} y2={zeroY} stroke="var(--muted)" strokeDasharray="2 4" />
+            <text x={padL + 2} y={zeroY - 3} fontSize="8.5" fill="var(--muted)">Gewinn = 0</text>
+            <path d={gPfad} fill="none" stroke="var(--amp-g)" strokeWidth="2" />
+            <text x={W - 12} y={py(gewinnStuetz[gewinnStuetz.length - 1][1]) + 12} textAnchor="end" fontSize="10" fontWeight="700" fill="var(--amp-g)">Gewinn</text>
+            {breakEvenX != null && (
+              <g>
+                <line x1={px(breakEvenX)} y1={zeroY} x2={px(breakEvenX)} y2={py(0)} stroke="var(--muted)" strokeDasharray="2 3" />
+                <circle cx={px(breakEvenX)} cy={zeroY} r="4" fill="#fff" stroke="var(--amp-g)" strokeWidth="2" />
+                <text x={px(breakEvenX) + 6} y={zeroY - 5} fontSize="9.5" fontWeight="700" fill="var(--amp-g)">Break-even</text>
+              </g>
+            )}
+          </g>
+        )
+      })()}
       {/* Übergangspfeile (Modellwechsel: Vorgänger → Nachfolger) */}
       {verbindungen.map((v, k) => {
         const a = pos[v.von], b = pos[v.nach]; if (!a || !b) return null

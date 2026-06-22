@@ -68,9 +68,18 @@ test('Lebenszyklus-Kurve: jedes Objekt einmal, x normiert, Profil steigt dann f�
 })
 
 test('Lebenszyklus-Kurve funktioniert auch für die 5 Kundenphasen', () => {
-  const { profil, punkte } = phasenKurve(KUNDE_PHASEN, kunden())
+  const { profil, punkte, gewinnStuetz } = phasenKurve(KUNDE_PHASEN, kunden())
   assert.equal(profil.length, 5)
   assert.equal(punkte.length, kunden().length)
+  assert.equal(gewinnStuetz, null, 'Kundenkurve hat keine Gewinnkurve')
+})
+
+test('Produktkurve hat Gewinnkurve + Break-even im Wachstumsbereich', () => {
+  const { breakEvenX, gewinnStuetz } = phasenKurve(PRODUKT_PHASEN, produkte('produkt'))
+  assert.ok(Array.isArray(gewinnStuetz) && gewinnStuetz.length === PRODUKT_PHASEN.length + 2)
+  assert.ok(breakEvenX != null, 'Break-even gefunden')
+  // Break-even liegt früh (Einführung → Wachstum), also im linken Drittel.
+  assert.ok(breakEvenX > 0 && breakEvenX < 0.4, `Break-even ${breakEvenX} im linken Bereich`)
 })
 
 test('BCG-Verteilung deckt alle Objekte ab und summiert auf Gesamtumsatz', () => {
