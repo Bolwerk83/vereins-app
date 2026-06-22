@@ -39,6 +39,7 @@ export const NAV_ZIELE = [
   { ziel: 'portfoliobcg', gruppe: 'Analyse', schluessel: 'nav.portfoliobcg' },
   { ziel: 'quartalsbericht', gruppe: 'Cockpit', schluessel: 'nav.quartalsbericht' },
   { ziel: 'finanzcockpit', gruppe: 'Kosten & Ergebnis', schluessel: 'nav.finanzcockpit' },
+  { ziel: 'pckostenstellen', gruppe: 'Kosten & Ergebnis', schluessel: 'nav.pckostenstellen' },
   { ziel: 'lzempfehlung', gruppe: 'Analyse', schluessel: 'nav.lzempfehlung' },
   { ziel: 'auftrag', gruppe: 'Analyse', schluessel: 'nav.auftrag' },
   { ziel: 'anlagen', gruppe: 'Analyse', schluessel: 'nav.anlagen' },
