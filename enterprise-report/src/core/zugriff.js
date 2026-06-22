@@ -14,11 +14,15 @@ function speichere(a) { try { localStorage.setItem(KEY, JSON.stringify(a)) } cat
 export const anfrageOffen = (view, uid) => ladeAnfragen().some((r) => r.view === view && r.uid === uid)
 
 /** Zugriff auf einen Bericht anfordern (dedupliziert je View+Nutzer). */
-export function anfrageStellen({ view, bereich, uid, name }) {
+export function anfrageStellen({ view, bereich, uid, name, begruendung, bezugsperson }) {
   if (!view) return ladeAnfragen()
   const a = ladeAnfragen()
   if (a.some((r) => r.view === view && r.uid === uid)) return a // schon angefragt
-  return speichere([{ view, bereich: bereich || null, uid: uid || null, name: name || null, zeit: new Date().toISOString() }, ...a])
+  return speichere([{
+    view, bereich: bereich || null, uid: uid || null, name: name || null,
+    begruendung: (begruendung || '').trim(), bezugsperson: (bezugsperson || '').trim(),
+    zeit: new Date().toISOString()
+  }, ...a])
 }
 
 export function loescheAnfrage(view, uid) {

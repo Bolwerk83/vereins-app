@@ -57,6 +57,7 @@ import { darfBereich } from './core/rbac.js'
 import { bereichVon } from './core/navMeta.js'
 import BerichtInfoModal from './modules/berichtinfo/BerichtInfoModal.jsx'
 import BerichtInfoBanner from './modules/berichtinfo/BerichtInfoBanner.jsx'
+import { anzahlAnfragen } from './core/zugriff.js'
 import { ladeBranding, applyBranding, themeById } from './core/admin.js'
 import { AKTUELLE_STAGE, stageInfo } from './core/stage.js'
 import { autoSeed } from './core/designerSeed.js'
@@ -164,6 +165,7 @@ export default function App() {
   const zeigeInfo = (a) => setInfoView(a)
   const qcFehler = validierungsZusammenfassung(werte).fehler
   const alertN = alertAnzahl(werte, rolle)
+  const anfragenN = istAdmin(rolle) ? anzahlAnfragen() : 0
   // Eintrags-Helfer: label/icon/aktiv/onClick + Bereich/Relevanz (für Rollenfilter).
   const E = (view, key, icon, extra = {}) => {
     const bereich = bereichVon(view)
@@ -257,7 +259,7 @@ export default function App() {
       ...(istAdmin(rolle) ? [{ titel: 'Administration', eintraege: [
         E('admin', 'nav.admin', '🛠'),
         E('nutzung', 'nav.nutzung', '📈'),
-        E('rechte', 'nav.rechte', '👥')
+        E('rechte', 'nav.rechte', '👥', { badge: anfragenN || null })
       ] }] : [])
     ] }
   ]
@@ -314,7 +316,8 @@ export default function App() {
               <button style={{ ...topBtn(ansicht === 'alerts'), ...(n ? { borderColor: 'var(--amp-r)', color: ansicht === 'alerts' ? '#fff' : 'var(--amp-r)' } : {}) }} onClick={() => geh('alerts')}>
                 ⚠ {t('nav.alerts')}{n ? ` (${n})` : ''}</button>) })()}
             {istAdmin(rolle) && (
-              <button style={topBtn(ansicht === 'rechte')} onClick={() => geh('rechte')}>{t('nav.rechte')}</button>
+              <button style={{ ...topBtn(ansicht === 'rechte'), ...(anfragenN ? { borderColor: 'var(--amp-a)' } : {}) }} onClick={() => geh('rechte')}>
+                {t('nav.rechte')}{anfragenN ? ` 🔔${anfragenN}` : ''}</button>
             )}
             <BenutzerLeiste benutzer={benutzer} rolle={rolle} gruppen={gruppen} onLogin={anmelden} onLogout={abmelden} />
             {!benutzer && (
@@ -522,7 +525,7 @@ export default function App() {
           <Nutzung istAdmin={istAdmin(rolle)} />
         )}
         {ansicht === 'rechte' && (
-          <RollenRechte onChange={(list) => {
+          <RollenRechte benutzer={benutzer} onChange={(list) => {
             setGruppen(list)
             if (!list.find((g) => g.id === rolleId)) setRolleId(list[0]?.id || null)
           }} />
