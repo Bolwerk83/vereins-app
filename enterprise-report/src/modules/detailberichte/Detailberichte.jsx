@@ -5,7 +5,7 @@
 //  eine Zeile öffnet die Befund-Karte (Sprung in die Detailprüfung).
 // =========================================================================
 import React, { useState, useEffect } from 'react'
-import { LISTEN, LEGENDE, artikelliste, auftragsliste, warenverbrauchliste, leasingliste, retourenliste, rechnungsliste, kundenliste, produktliste, rechnungsposliste, bestellkanalliste, chargenliste, auftragsbestandliste, historie, sammelBefunde, befundStatistik, verknuepfungenFuer } from '../../core/detailberichte.js'
+import { LISTEN, LEGENDE, artikelliste, auftragsliste, warenverbrauchliste, leasingliste, retourenliste, rechnungsliste, kundenliste, produktliste, rechnungsposliste, bestellkanalliste, chargenliste, auftragsbestandliste, lieferantenliste, bestellliste, offenepostenliste, inventurliste, historie, sammelBefunde, befundStatistik, verknuepfungenFuer } from '../../core/detailberichte.js'
 import { downloadCsv } from '../../core/export.js'
 import { ladeBookmarks, addBookmark, loescheBookmark, ladeLetzte, merkeLetzte } from '../../core/bookmarks.js'
 
@@ -50,6 +50,22 @@ const PRESETS = {
   auftragsbestand: [
     { name: 'Offene Mengen', sichtbar: ['auftrag', 'kunde', 'bestellt', 'geliefert', 'offen', 'liefertermin'] },
     { name: 'Werte', sichtbar: ['auftrag', 'kunde', 'offen', 'wert'] }
+  ],
+  lieferant: [
+    { name: 'Qualität', sichtbar: ['lieferantNr', 'name', 'reklamationsQuote', 'lieferzeitTage', 'bewertung'] },
+    { name: 'Status', sichtbar: ['lieferantNr', 'name', 'land', 'offeneBestellungen', 'status'] }
+  ],
+  bestellung: [
+    { name: 'Status & Termin', sichtbar: ['bestellung', 'lieferant', 'artikel', 'status', 'liefertermin'] },
+    { name: 'Werte', sichtbar: ['bestellung', 'sku', 'menge', 'ekPreis', 'wert'] }
+  ],
+  offeneposten: [
+    { name: 'Mahnwesen', sichtbar: ['beleg', 'kunde', 'betrag', 'faellig', 'mahnstufe', 'status'] },
+    { name: 'Bezug', sichtbar: ['beleg', 'kunde', 'rechnung', 'betrag'] }
+  ],
+  inventur: [
+    { name: 'Differenzen', sichtbar: ['zaehlung', 'artikel', 'buchbestand', 'zaehlbestand', 'differenz'] },
+    { name: 'Wert', sichtbar: ['zaehlung', 'artikel', 'lagerort', 'wertDifferenz'] }
   ]
 }
 
@@ -225,6 +241,56 @@ const ABEST_COLS = [
 ]
 const ABEST_SUM = ['bestellt', 'geliefert', 'offen', 'wert']
 
+const LIEF_COLS = [
+  { key: 'lieferantNr', label: 'Lief.-Nr', al: 'left', mono: true },
+  { key: 'name', label: 'Name', al: 'left' },
+  { key: 'land', label: 'Land', al: 'left' },
+  { key: 'lieferzeitTage', label: 'Lieferzeit (Tage)', al: 'right' },
+  { key: 'reklamationsQuote', label: 'Reklamation %', al: 'right', fmt: pct },
+  { key: 'offeneBestellungen', label: 'Offene Best.', al: 'right' },
+  { key: 'bewertung', label: 'Bewertung', al: 'center' },
+  { key: 'status', label: 'Status', al: 'left' }
+]
+const LIEF_SUM = ['offeneBestellungen']
+
+const BEST_COLS = [
+  { key: 'bestellung', label: 'Bestellung', al: 'left', mono: true },
+  { key: 'datum', label: 'Datum', al: 'left', fmt: datum },
+  { key: 'lieferant', label: 'Lieferant', al: 'left' },
+  { key: 'sku', label: 'SKU', al: 'left', mono: true },
+  { key: 'artikel', label: 'Artikel', al: 'left' },
+  { key: 'menge', label: 'Menge', al: 'right' },
+  { key: 'ekPreis', label: 'EK-Preis €', al: 'right', fmt: eur },
+  { key: 'wert', label: 'Wert €', al: 'right', fmt: eur },
+  { key: 'status', label: 'Status', al: 'left' },
+  { key: 'liefertermin', label: 'Liefertermin', al: 'left', fmt: datum }
+]
+const BEST_SUM = ['menge', 'wert']
+
+const OP_COLS = [
+  { key: 'beleg', label: 'Beleg', al: 'left', mono: true },
+  { key: 'kunde', label: 'Kunde', al: 'left' },
+  { key: 'rechnung', label: 'Rechnung', al: 'left', mono: true },
+  { key: 'betrag', label: 'Betrag €', al: 'right', fmt: eur },
+  { key: 'faellig', label: 'Fällig', al: 'left', fmt: datum },
+  { key: 'bezahltAm', label: 'Bezahlt am', al: 'left', fmt: datum },
+  { key: 'mahnstufe', label: 'Mahnstufe', al: 'right' },
+  { key: 'status', label: 'Status', al: 'left' }
+]
+const OP_SUM = ['betrag']
+
+const INV_COLS = [
+  { key: 'zaehlung', label: 'Zählung', al: 'left', mono: true },
+  { key: 'sku', label: 'SKU', al: 'left', mono: true },
+  { key: 'artikel', label: 'Artikel', al: 'left' },
+  { key: 'lagerort', label: 'Lagerort', al: 'left', mono: true },
+  { key: 'buchbestand', label: 'Buchbestand', al: 'right' },
+  { key: 'zaehlbestand', label: 'Zählbestand', al: 'right' },
+  { key: 'differenz', label: 'Differenz', al: 'right' },
+  { key: 'wertDifferenz', label: 'Wert-Diff. €', al: 'right', fmt: eur }
+]
+const INV_SUM = ['buchbestand', 'zaehlbestand', 'differenz', 'wertDifferenz']
+
 // Sammel-Plausi-Cockpit: alle Befunde aller Listen gebündelt, filterbar, mit Absprung.
 function Cockpit({ onBack, onOpen }) {
   const [fSchwere, setFSchwere] = useState(null)
@@ -311,6 +377,10 @@ export default function Detailberichte({ startListe = null }) {
   if (aktiv === 'bestellkanal') return <Liste key={aktiv} typ="bestellkanal" titel="Bestellkanalliste" sub="Kanäle mit Plausi (hohe Retouren-/Stornoquote, Kanal ohne Bestellungen)." cols={KANAL_COLS} sumKeys={KANAL_SUM} lade={bestellkanalliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="kanal" titelKey="kanal" />
   if (aktiv === 'charge') return <Liste key={aktiv} typ="charge" titel="Chargenliste" sub="Chargen/MHD mit Plausi (MHD überschritten/bald, QS-Sperre, leere Charge)." cols={CHARGE_COLS} sumKeys={CHARGE_SUM} lade={chargenliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="charge" titelKey="artikel" />
   if (aktiv === 'auftragsbestand') return <Liste key={aktiv} typ="auftragsbestand" titel="Auftragsbestandsliste" sub="Offener Auftragsbestand mit Plausi (offene Menge inkonsistent, Liefertermin überschritten, Übermenge)." cols={ABEST_COLS} sumKeys={ABEST_SUM} lade={auftragsbestandliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="auftrag" titelKey="kunde" />
+  if (aktiv === 'lieferant') return <Liste key={aktiv} typ="lieferant" titel="Lieferantenliste" sub="Lieferanten mit Plausi (hohe Reklamationsquote, lange Lieferzeit, gesperrt)." cols={LIEF_COLS} sumKeys={LIEF_SUM} lade={lieferantenliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="lieferantNr" titelKey="name" />
+  if (aktiv === 'bestellung') return <Liste key={aktiv} typ="bestellung" titel="Bestellliste (Einkauf)" sub="Bestellungen mit Plausi (Menge ≤ 0, Bestellwert ≠ Menge×EK, Liefertermin überschritten)." cols={BEST_COLS} sumKeys={BEST_SUM} lade={bestellliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="bestellung" titelKey="artikel" />
+  if (aktiv === 'offeneposten') return <Liste key={aktiv} typ="offeneposten" titel="Offene-Posten-Liste" sub="Debitoren-OP mit Plausi (höchste Mahnstufe, überfällig, Gutschrift)." cols={OP_COLS} sumKeys={OP_SUM} lade={offenepostenliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="beleg" titelKey="kunde" />
+  if (aktiv === 'inventur') return <Liste key={aktiv} typ="inventur" titel="Inventurliste" sub="Inventur mit Plausi (negativer Buchbestand, Differenz inkonsistent, Inventurdifferenz)." cols={INV_COLS} sumKeys={INV_SUM} lade={inventurliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="zaehlung" titelKey="artikel" />
 
   if (aktiv === 'cockpit') return <Cockpit onBack={() => setAktiv(null)} onOpen={(id, suche) => oeffneListe(id, suche)} />
 

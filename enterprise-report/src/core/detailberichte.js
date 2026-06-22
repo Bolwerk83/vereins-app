@@ -168,6 +168,26 @@ export function historie(typ, row) {
     const o = offset(row.sku)
     return { kind: 'chart', einheit: 'Menge (Stk)', punkte: MON.map((m, i) => ({ label: m, wert: Math.max(0, Math.round((row.menge || 1) + Math.cos(i + o) * 3)) })) }
   }
+  if (typ === 'lieferant') {
+    const o = offset(row.lieferantNr || row.name)
+    return { kind: 'chart', einheit: 'Liefertreue (%)', punkte: MON.map((m, i) => ({ label: m, wert: Math.min(100, Math.max(60, Math.round(95 - row.reklamationsQuote + Math.sin(i + o) * 4))) })) }
+  }
+  if (typ === 'bestellung') {
+    return { kind: 'timeline', punkte: [
+      { label: 'Bestellt', datum: row.datum },
+      { label: row.status === 'geliefert' ? 'Geliefert' : 'erwartet', datum: row.liefertermin, warn: row.status === 'offen' && tageBis(row.liefertermin) < 0 }
+    ] }
+  }
+  if (typ === 'offeneposten') {
+    return { kind: 'timeline', punkte: [
+      { label: 'Fällig', datum: row.faellig, warn: !row.bezahltAm && tageBis(row.faellig) < 0 },
+      row.bezahltAm ? { label: 'Bezahlt', datum: row.bezahltAm } : { label: `offen (Mahnstufe ${row.mahnstufe})`, datum: row.faellig, warn: row.mahnstufe >= 3 }
+    ] }
+  }
+  if (typ === 'inventur') {
+    const o = offset(row.sku)
+    return { kind: 'chart', einheit: 'Buchbestand (Stk)', punkte: MON.map((m, i) => ({ label: m, wert: Math.max(0, Math.round((row.buchbestand || 0) + Math.sin(i + o) * 3)) })) }
+  }
   // Auftrag: Status-Zeitstrahl bis zum aktuellen Stand.
   let stufen = row.status === 'Offen' ? ['Angelegt', 'Bestätigt'] : ['Angelegt', 'Bestätigt', 'Kommissioniert', 'Geliefert']
   if (row.ret > 0 || row.ue < 0) stufen = [...stufen, 'Retoure']
@@ -415,6 +435,73 @@ export function pruefeAuftragsbestand(a) {
 }
 export function auftragsbestandliste(o = {}) { return generischListe(AUFTRAGSBESTAND, pruefeAuftragsbestand, o, ['bestellt', 'geliefert', 'offen', 'wert'], (a, q) => norm(a.auftrag).includes(q) || norm(a.kunde).includes(q) || norm(a.artikel).includes(q)) }
 
+// ---- Lieferanten-, Bestell- (Einkauf), Offene-Posten-, Inventurliste -----
+export const LIEFERANTEN = [
+  { lieferantNr: 'L-100', name: 'PowerBar GmbH', land: 'DE', lieferzeitTage: 7, reklamationsQuote: 2.1, offeneBestellungen: 1, bewertung: 'A', status: 'aktiv' },
+  { lieferantNr: 'L-200', name: 'Bosch AG', land: 'DE', lieferzeitTage: 14, reklamationsQuote: 0.8, offeneBestellungen: 2, bewertung: 'A', status: 'aktiv' },
+  { lieferantNr: 'L-300', name: 'Castelli S.p.A', land: 'IT', lieferzeitTage: 24, reklamationsQuote: 9.5, offeneBestellungen: 1, bewertung: 'C', status: 'aktiv' },
+  { lieferantNr: 'L-400', name: 'Eigenfertigung', land: 'DE', lieferzeitTage: 0, reklamationsQuote: 0, offeneBestellungen: 0, bewertung: 'B', status: 'aktiv' },
+  { lieferantNr: 'L-500', name: 'Alt-Lieferant', land: 'DE', lieferzeitTage: 30, reklamationsQuote: 0, offeneBestellungen: 0, bewertung: 'C', status: 'gesperrt' }
+]
+export function pruefeLieferant(l) {
+  const b = []
+  if (l.reklamationsQuote > 5) b.push({ feld: 'reklamationsQuote', schwere: 'warnung', text: 'Hohe Reklamationsquote (> 5 %)' })
+  if (l.lieferzeitTage > 21) b.push({ feld: 'lieferzeitTage', schwere: 'warnung', text: 'Lange Lieferzeit (> 21 Tage)' })
+  if (l.status === 'gesperrt') b.push({ feld: 'status', schwere: 'hinweis', text: 'Lieferant gesperrt' })
+  if (l.lieferzeitTage === 0 && l.status === 'aktiv') b.push({ feld: 'lieferzeitTage', schwere: 'hinweis', text: 'Keine Lieferzeit hinterlegt' })
+  return b
+}
+export function lieferantenliste(o = {}) { return generischListe(LIEFERANTEN, pruefeLieferant, o, ['offeneBestellungen'], (l, q) => norm(l.lieferantNr).includes(q) || norm(l.name).includes(q) || norm(l.land).includes(q)) }
+
+export const BESTELLUNGEN = [
+  { bestellung: 'B-7001', datum: '2026-05-10', lieferant: 'PowerBar GmbH', sku: '4456712', artikel: 'Energieriegel Box', menge: 240, ekPreis: 16.0, wert: 3840.0, status: 'geliefert', liefertermin: '2026-05-20' },
+  { bestellung: 'B-7002', datum: '2026-06-01', lieferant: 'Bosch AG', sku: '2087431', artikel: 'E-Bike Akku 625Wh', menge: 30, ekPreis: 520.0, wert: 15600.0, status: 'offen', liefertermin: '2026-06-15' },
+  { bestellung: 'B-7003', datum: '2026-06-05', lieferant: 'Castelli S.p.A', sku: '3312900', artikel: 'Trikot Pro M', menge: 0, ekPreis: 79.0, wert: 0, status: 'offen', liefertermin: '2026-07-01' },
+  { bestellung: 'B-7004', datum: '2026-06-08', lieferant: 'PowerBar GmbH', sku: '4456712', artikel: 'Energieriegel Box', menge: 60, ekPreis: 17.5, wert: 1050.0, status: 'geliefert', liefertermin: '2026-06-12' },
+  { bestellung: 'B-7005', datum: '2026-06-10', lieferant: 'Bosch AG', sku: '2087431', artikel: 'E-Bike Akku 625Wh', menge: 12, ekPreis: 999.0, wert: 12000.0, status: 'offen', liefertermin: '2026-07-20' }
+]
+export function pruefeBestellung(o) {
+  const b = []
+  if (o.menge <= 0) b.push({ feld: 'menge', schwere: 'fehler', text: 'Bestellmenge ≤ 0' })
+  else if (Math.abs(r2(o.menge * o.ekPreis) - o.wert) > 0.02) b.push({ feld: 'wert', schwere: 'fehler', text: `Bestellwert stimmt nicht (Soll ${r2(o.menge * o.ekPreis).toFixed(2)})` })
+  if (o.status === 'offen' && tageBis(o.liefertermin) < 0) b.push({ feld: 'liefertermin', schwere: 'warnung', text: `Liefertermin überschritten (${-tageBis(o.liefertermin)} Tage)` })
+  return b
+}
+export function bestellliste(o = {}) { return generischListe(BESTELLUNGEN, pruefeBestellung, o, ['menge', 'wert'], (x, q) => norm(x.bestellung).includes(q) || norm(x.lieferant).includes(q) || norm(x.sku).includes(q) || norm(x.artikel).includes(q)) }
+
+export const OFFENEPOSTEN = [
+  { beleg: 'OP-1', kunde: 'Stadtwerke Köln', rechnung: 'RE-9002', betrag: 3200.0, faellig: '2026-06-20', bezahltAm: '', mahnstufe: 1, status: 'offen' },
+  { beleg: 'OP-2', kunde: 'Hotel Seeblick', rechnung: 'RE-9003', betrag: 1100.0, faellig: '2026-06-25', bezahltAm: '', mahnstufe: 0, status: 'offen' },
+  { beleg: 'OP-3', kunde: 'Markus Skarics', rechnung: 'RE-9001', betrag: 117.81, faellig: '2026-06-19', bezahltAm: '2026-06-15', mahnstufe: 0, status: 'bezahlt' },
+  { beleg: 'OP-4', kunde: 'Logistik AG', rechnung: 'RE-9009', betrag: 9800.0, faellig: '2026-05-01', bezahltAm: '', mahnstufe: 3, status: 'offen' },
+  { beleg: 'OP-5', kunde: 'B2B Händler', rechnung: 'RE-9005', betrag: -249.90, faellig: '2026-06-09', bezahltAm: '', mahnstufe: 0, status: 'offen' }
+]
+export function pruefeOffenerPosten(p) {
+  const b = []
+  if (p.mahnstufe >= 3) b.push({ feld: 'mahnstufe', schwere: 'fehler', text: 'Höchste Mahnstufe erreicht' })
+  if (!p.bezahltAm && tageBis(p.faellig) < 0) b.push({ feld: 'faellig', schwere: 'warnung', text: `Überfällig (${-tageBis(p.faellig)} Tage)` })
+  if (p.betrag < 0) b.push({ feld: 'betrag', schwere: 'hinweis', text: 'Negativer Posten (Gutschrift)' })
+  return b
+}
+export function offenepostenliste(o = {}) { return generischListe(OFFENEPOSTEN, pruefeOffenerPosten, o, ['betrag'], (p, q) => norm(p.beleg).includes(q) || norm(p.kunde).includes(q) || norm(p.rechnung).includes(q)) }
+
+export const INVENTUR = [
+  { zaehlung: 'INV-01', sku: '4456712', artikel: 'Energieriegel Box', lagerort: 'L1-A', buchbestand: 330, zaehlbestand: 330, differenz: 0, wertDifferenz: 0 },
+  { zaehlung: 'INV-02', sku: '2087431', artikel: 'E-Bike Akku 625Wh', lagerort: 'L2-C', buchbestand: 12, zaehlbestand: 9, differenz: -3, wertDifferenz: -1560 },
+  { zaehlung: 'INV-03', sku: '1453766', artikel: 'GRAVEL 22 BACKROAD', lagerort: 'L1-B', buchbestand: 5, zaehlbestand: 7, differenz: 2, wertDifferenz: 2519 },
+  { zaehlung: 'INV-04', sku: '3312900', artikel: 'Trikot Pro M', lagerort: 'L3-A', buchbestand: 20, zaehlbestand: 0, differenz: -20, wertDifferenz: -1580 },
+  { zaehlung: 'INV-05', sku: '5590018', artikel: 'Vintage Rahmen XL', lagerort: 'L4', buchbestand: -1, zaehlbestand: 0, differenz: 1, wertDifferenz: 299 }
+]
+export function pruefeInventur(i) {
+  const b = []
+  if (i.buchbestand < 0) b.push({ feld: 'buchbestand', schwere: 'fehler', text: 'Negativer Buchbestand' })
+  if (i.differenz !== i.zaehlbestand - i.buchbestand) b.push({ feld: 'differenz', schwere: 'fehler', text: `Differenz inkonsistent (Soll ${i.zaehlbestand - i.buchbestand})` })
+  else if (Math.abs(i.differenz) > 1) b.push({ feld: 'differenz', schwere: 'warnung', text: 'Inventurdifferenz' })
+  else if (i.differenz !== 0) b.push({ feld: 'differenz', schwere: 'hinweis', text: 'Geringe Inventurdifferenz' })
+  return b
+}
+export function inventurliste(o = {}) { return generischListe(INVENTUR, pruefeInventur, o, ['buchbestand', 'zaehlbestand', 'differenz', 'wertDifferenz'], (i, q) => norm(i.zaehlung).includes(q) || norm(i.sku).includes(q) || norm(i.artikel).includes(q) || norm(i.lagerort).includes(q)) }
+
 // Generischer Listen-Helfer (Befunde + Filter + Summen).
 function generischListe(daten, pruef, { suche = '', nurAuffaellig = false } = {}, sumKeys = [], match) {
   const q = norm(suche)
@@ -438,7 +525,11 @@ export const LISTEN = [
   { id: 'kunde', name: 'Kundenliste', verfuegbar: true },
   { id: 'plausiwv', name: 'Plausi: Warenverbrauch', verfuegbar: true },
   { id: 'retoure', name: 'Retourenliste', verfuegbar: true },
-  { id: 'auftragsbestand', name: 'Auftragsbestandsliste', verfuegbar: true }
+  { id: 'auftragsbestand', name: 'Auftragsbestandsliste', verfuegbar: true },
+  { id: 'lieferant', name: 'Lieferantenliste', verfuegbar: true },
+  { id: 'bestellung', name: 'Bestellliste (Einkauf)', verfuegbar: true },
+  { id: 'offeneposten', name: 'Offene-Posten-Liste', verfuegbar: true },
+  { id: 'inventur', name: 'Inventurliste', verfuegbar: true }
 ]
 
 // ---- Zentrale Registry + Sammel-Plausi (alle Listen gebündelt) ----------
@@ -455,7 +546,11 @@ export const REGISTRY = [
   { id: 'kunde', name: 'Kundenliste', lade: kundenliste, idKey: 'kundennr', titelKey: 'name' },
   { id: 'plausiwv', name: 'Plausi: Warenverbrauch', lade: warenverbrauchliste, idKey: 'sku', titelKey: 'artikel' },
   { id: 'retoure', name: 'Retourenliste', lade: retourenliste, idKey: 'retoure', titelKey: 'kunde' },
-  { id: 'auftragsbestand', name: 'Auftragsbestandsliste', lade: auftragsbestandliste, idKey: 'auftrag', titelKey: 'kunde' }
+  { id: 'auftragsbestand', name: 'Auftragsbestandsliste', lade: auftragsbestandliste, idKey: 'auftrag', titelKey: 'kunde' },
+  { id: 'lieferant', name: 'Lieferantenliste', lade: lieferantenliste, idKey: 'lieferantNr', titelKey: 'name' },
+  { id: 'bestellung', name: 'Bestellliste (Einkauf)', lade: bestellliste, idKey: 'bestellung', titelKey: 'artikel' },
+  { id: 'offeneposten', name: 'Offene-Posten-Liste', lade: offenepostenliste, idKey: 'beleg', titelKey: 'kunde' },
+  { id: 'inventur', name: 'Inventurliste', lade: inventurliste, idKey: 'zaehlung', titelKey: 'artikel' }
 ]
 
 /** Alle Befunde aller Listen als flache Liste (ein Eintrag je Befund). */
@@ -491,17 +586,21 @@ export function befundStatistik() {
 // als Filter (Suche) in die Zielliste übergeben. Verknüpfungen ohne Treffer
 // werden zur Laufzeit ausgeblendet (anzahl > 0).
 export const VERKNUEPFUNGEN = {
-  rechnung: [{ ziel: 'rechnungpos', label: 'Positionen', feld: 'rechnung' }, { ziel: 'kunde', label: 'Kunde', feld: 'kunde' }],
+  rechnung: [{ ziel: 'rechnungpos', label: 'Positionen', feld: 'rechnung' }, { ziel: 'offeneposten', label: 'Offene Posten', feld: 'rechnung' }, { ziel: 'kunde', label: 'Kunde', feld: 'kunde' }],
   rechnungpos: [{ ziel: 'rechnung', label: 'Rechnung', feld: 'rechnung' }, { ziel: 'produkt', label: 'Produkt', feld: 'sku' }, { ziel: 'artikel', label: 'Artikel/Bestand', feld: 'sku' }, { ziel: 'charge', label: 'Chargen', feld: 'sku' }],
-  produkt: [{ ziel: 'artikel', label: 'Artikel/Bestand', feld: 'sku' }, { ziel: 'charge', label: 'Chargen', feld: 'sku' }, { ziel: 'rechnungpos', label: 'Verkäufe', feld: 'sku' }],
-  artikel: [{ ziel: 'produkt', label: 'Produkt', feld: 'sku' }, { ziel: 'charge', label: 'Chargen', feld: 'sku' }, { ziel: 'auftragsbestand', label: 'Auftragsbestand', feld: 'sku' }],
-  charge: [{ ziel: 'produkt', label: 'Produkt', feld: 'sku' }, { ziel: 'artikel', label: 'Artikel/Bestand', feld: 'sku' }],
+  produkt: [{ ziel: 'artikel', label: 'Artikel/Bestand', feld: 'sku' }, { ziel: 'charge', label: 'Chargen', feld: 'sku' }, { ziel: 'rechnungpos', label: 'Verkäufe', feld: 'sku' }, { ziel: 'bestellung', label: 'Bestellungen', feld: 'sku' }, { ziel: 'inventur', label: 'Inventur', feld: 'sku' }],
+  artikel: [{ ziel: 'produkt', label: 'Produkt', feld: 'sku' }, { ziel: 'charge', label: 'Chargen', feld: 'sku' }, { ziel: 'auftragsbestand', label: 'Auftragsbestand', feld: 'sku' }, { ziel: 'bestellung', label: 'Bestellungen', feld: 'sku' }, { ziel: 'inventur', label: 'Inventur', feld: 'sku' }],
+  charge: [{ ziel: 'produkt', label: 'Produkt', feld: 'sku' }, { ziel: 'artikel', label: 'Artikel/Bestand', feld: 'sku' }, { ziel: 'lieferant', label: 'Lieferant', feld: 'lieferant' }, { ziel: 'bestellung', label: 'Bestellungen', feld: 'sku' }],
   warenverbrauch: [{ ziel: 'produkt', label: 'Produkt', feld: 'sku' }, { ziel: 'charge', label: 'Chargen', feld: 'sku' }],
   leasing: [{ ziel: 'auftragsbestand', label: 'Auftragsbestand', feld: 'auftrag' }, { ziel: 'kunde', label: 'Kunde', feld: 'kunde' }, { ziel: 'auftrag', label: 'Auftrag', feld: 'auftrag' }],
   auftragsbestand: [{ ziel: 'leasing', label: 'Leasing', feld: 'auftrag' }, { ziel: 'produkt', label: 'Produkt', feld: 'sku' }, { ziel: 'charge', label: 'Chargen', feld: 'sku' }, { ziel: 'kunde', label: 'Kunde', feld: 'kunde' }],
-  kunde: [{ ziel: 'rechnung', label: 'Rechnungen', feld: 'name' }, { ziel: 'leasing', label: 'Leasing', feld: 'name' }, { ziel: 'auftragsbestand', label: 'Auftragsbestand', feld: 'name' }],
+  kunde: [{ ziel: 'rechnung', label: 'Rechnungen', feld: 'name' }, { ziel: 'offeneposten', label: 'Offene Posten', feld: 'name' }, { ziel: 'leasing', label: 'Leasing', feld: 'name' }, { ziel: 'auftragsbestand', label: 'Auftragsbestand', feld: 'name' }],
   retoure: [{ ziel: 'auftrag', label: 'Auftrag', feld: 'auftrag' }],
-  auftrag: [{ ziel: 'leasing', label: 'Leasing', feld: 'auftrag' }, { ziel: 'auftragsbestand', label: 'Auftragsbestand', feld: 'auftrag' }, { ziel: 'retoure', label: 'Retouren', feld: 'auftrag' }]
+  auftrag: [{ ziel: 'leasing', label: 'Leasing', feld: 'auftrag' }, { ziel: 'auftragsbestand', label: 'Auftragsbestand', feld: 'auftrag' }, { ziel: 'retoure', label: 'Retouren', feld: 'auftrag' }],
+  lieferant: [{ ziel: 'bestellung', label: 'Bestellungen', feld: 'name' }, { ziel: 'charge', label: 'Chargen', feld: 'name' }],
+  bestellung: [{ ziel: 'lieferant', label: 'Lieferant', feld: 'lieferant' }, { ziel: 'produkt', label: 'Produkt', feld: 'sku' }, { ziel: 'artikel', label: 'Artikel/Bestand', feld: 'sku' }, { ziel: 'charge', label: 'Chargen', feld: 'sku' }],
+  offeneposten: [{ ziel: 'rechnung', label: 'Rechnung', feld: 'rechnung' }, { ziel: 'rechnungpos', label: 'Positionen', feld: 'rechnung' }, { ziel: 'kunde', label: 'Kunde', feld: 'kunde' }],
+  inventur: [{ ziel: 'produkt', label: 'Produkt', feld: 'sku' }, { ziel: 'artikel', label: 'Artikel/Bestand', feld: 'sku' }, { ziel: 'charge', label: 'Chargen', feld: 'sku' }]
 }
 
 /** Auflösbare Verknüpfungen eines Datensatzes (nur Ziele mit Treffern). */

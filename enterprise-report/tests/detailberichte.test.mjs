@@ -1,7 +1,7 @@
 import './_setup.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { artikelliste, auftragsliste, pruefeArtikel, pruefeAuftrag, ARTIKEL, LISTEN, historie, warenverbrauchliste, pruefeWarenverbrauch, WARENVERBRAUCH, leasingliste, fuehrenderBeleg, LEASING, retourenliste, rechnungsliste, kundenliste, detailFuerBereich, produktliste, rechnungsposliste, bestellkanalliste, chargenliste, auftragsbestandliste, sammelBefunde, befundStatistik, REGISTRY, verknuepfungenFuer } from '../src/core/detailberichte.js'
+import { artikelliste, auftragsliste, pruefeArtikel, pruefeAuftrag, ARTIKEL, LISTEN, historie, warenverbrauchliste, pruefeWarenverbrauch, WARENVERBRAUCH, leasingliste, fuehrenderBeleg, LEASING, retourenliste, rechnungsliste, kundenliste, detailFuerBereich, produktliste, rechnungsposliste, bestellkanalliste, chargenliste, auftragsbestandliste, sammelBefunde, befundStatistik, REGISTRY, verknuepfungenFuer, lieferantenliste, bestellliste, offenepostenliste, inventurliste } from '../src/core/detailberichte.js'
 
 test('Negativer Verfügbarbestand wird als Fehler erkannt', () => {
   const a = ARTIKEL.find((x) => x.sku === '231052006') // lbVerf -1
@@ -189,6 +189,40 @@ test('Cross-Drill: nur Ziele mit Treffern werden zurückgegeben', () => {
   const links = verknuepfungenFuer('produkt', p)
   assert.ok(!links.some((l) => l.ziel === 'charge'))
   assert.ok(links.every((l) => l.anzahl > 0))
+})
+
+test('Lieferantenliste: Reklamation/Lieferzeit/Sperre', () => {
+  const rows = lieferantenliste().rows
+  assert.ok(rows.find((l) => l.lieferantNr === 'L-300').befunde.some((b) => b.text.includes('Reklamationsquote')))
+  assert.ok(rows.find((l) => l.lieferantNr === 'L-500').befunde.some((b) => b.text.includes('gesperrt')))
+})
+
+test('Bestellliste: Menge/Bestellwert/Liefertermin', () => {
+  const rows = bestellliste().rows
+  assert.ok(rows.find((o) => o.bestellung === 'B-7003').befunde.some((b) => b.text.includes('Bestellmenge')))
+  assert.ok(rows.find((o) => o.bestellung === 'B-7005').befunde.some((b) => b.text.includes('Bestellwert')))
+  assert.ok(rows.find((o) => o.bestellung === 'B-7002').befunde.some((b) => b.text.includes('Liefertermin')))
+})
+
+test('Offene-Posten-Liste: Mahnstufe/überfällig/Gutschrift', () => {
+  const rows = offenepostenliste().rows
+  assert.ok(rows.find((p) => p.beleg === 'OP-4').befunde.some((b) => b.text.includes('Mahnstufe')))
+  assert.ok(rows.find((p) => p.beleg === 'OP-1').befunde.some((b) => b.text.includes('Überfällig')))
+  assert.ok(rows.find((p) => p.beleg === 'OP-5').befunde.some((b) => b.text.includes('Gutschrift')))
+})
+
+test('Inventurliste: negativer Buchbestand & Differenz', () => {
+  const rows = inventurliste().rows
+  assert.ok(rows.find((i) => i.zaehlung === 'INV-05').befunde.some((b) => b.text.includes('Negativer Buchbestand')))
+  assert.ok(rows.find((i) => i.zaehlung === 'INV-02').befunde.some((b) => b.text.includes('Inventurdifferenz')))
+  assert.ok(!rows.find((i) => i.zaehlung === 'INV-01').befunde.length)
+})
+
+test('Cross-Drill: Rechnung → Offene Posten, Lieferant → Bestellungen', () => {
+  const re = rechnungsliste().rows.find((r) => r.rechnung === 'RE-9002')
+  assert.ok(verknuepfungenFuer('rechnung', re).some((l) => l.ziel === 'offeneposten'))
+  const lf = lieferantenliste().rows.find((l) => l.name === 'PowerBar GmbH')
+  assert.ok(verknuepfungenFuer('lieferant', lf).some((l) => l.ziel === 'bestellung'))
 })
 
 test('LISTEN-Katalog enthält die Kernlisten', () => {
