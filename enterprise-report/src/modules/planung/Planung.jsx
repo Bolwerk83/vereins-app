@@ -8,6 +8,7 @@ import {
   PLAN_PRODUKTE, PLAN_TYPEN, AE_UMSATZ_FAKTOR, VERTEILSCHLUESSEL, ladePlaene, planVon, neuerPlan,
   kopierePlan, speicherePlan, loeschePlan, rechnePlan, topDownVerteilung, mengeAusBetrag, liquiditaet, monatsVerteilung
 } from '../../core/planung.js'
+import { EBENEN, verteile as verteileArtikel, flach as flachArtikel } from '../../core/artikelHierarchie.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
@@ -23,6 +24,7 @@ export default function Planung({ onGeh }) {
   const [plaene, setPlaene] = useState(() => ladePlaene())
   const [aktivId, setAktivId] = useState(() => ladePlaene()[0]?.id)
   const [zielUmsatz, setZielUmsatz] = useState('')
+  const [maxTiefe, setMaxTiefe] = useState(2) // bis zu welcher Hierarchie-Ebene anzeigen
   const [tick, setTick] = useState(0)
   const plan = planVon(aktivId) || plaene[0]
   const refresh = () => { setPlaene(ladePlaene()); setTick((t) => t + 1) }
@@ -134,6 +136,43 @@ export default function Planung({ onGeh }) {
           Ausstellung/Muster (verursachen Wareneinsatz, aber keinen Umsatz). Wareneinsatz enthält den <b>Schwund-Aufschlag</b>.
         </div>
       </div>
+
+      {/* Artikelverteilung über die Produkthierarchie */}
+      {(() => {
+        const baum = verteileArtikel(erg.umsatz)
+        const knoten = flachArtikel(baum).filter((k) => k.tiefe <= maxTiefe)
+        return (
+          <div style={{ ...card, padding: 16, overflowX: 'auto', marginBottom: 14 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+              <div style={cap}>Artikelverteilung — Plan-Umsatz über die Produkthierarchie</div>
+              <label style={lbl}>bis Ebene
+                <select value={maxTiefe} onChange={(e) => setMaxTiefe(Number(e.target.value))} style={{ ...inp, marginLeft: 4 }}>
+                  {EBENEN.map((e, i) => <option key={i} value={i}>{e}</option>)}
+                </select>
+              </label>
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5, minWidth: 620 }}>
+              <thead><tr><th style={th('left')}>Ebene / Knoten</th><th style={th('right')}>Anteil</th><th style={th('right')}>Plan-Umsatz €</th></tr></thead>
+              <tbody>
+                {knoten.map((k) => (
+                  <tr key={k.id}>
+                    <td style={{ ...td('left'), paddingLeft: 9 + k.tiefe * 18, fontWeight: k.tiefe === 0 ? 700 : 400 }}>
+                      <span style={{ fontSize: 10, color: 'var(--muted)', marginRight: 6 }}>{EBENEN[k.tiefe]?.slice(0, 3)}</span>{k.name}
+                    </td>
+                    <td className="mono" style={td('right')}>{k.anteilPct} %</td>
+                    <td className="mono" style={td('right', k.tiefe === 0)}>{eur0(k.wert)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 10 }}>
+              Der Plan-Umsatz wird über die <b>Anteils-Schlüssel</b> der Hierarchie verteilt:
+              Warenbereich → Produktobergruppe → Produktgruppe → Modell → Produkt → Variante → Artikel (SKU).
+              So lässt sich ein Top-Down-Ziel bis auf SKU-Ebene herunterbrechen (jede Ebene summiert sich auf den Gesamtwert).
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Monatsverteilung („Splash" über den Verteilungsschlüssel) */}
       <div style={{ ...card, padding: 16, overflowX: 'auto', marginBottom: 14 }}>

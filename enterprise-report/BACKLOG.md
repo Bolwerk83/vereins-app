@@ -66,6 +66,20 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
 - **Nur sinnvolle Dimensionen** anzeigen: Dimensionen, die für den jeweiligen Bericht
   keinen Sinn ergeben, werden ausgeblendet (kontextabhängige Filterliste).
 
+### F. Vertriebsqualität: Gutschriften & Retouren (kundenbasiert) — NEU
+- **Kundenbasierte Übersicht** (besserer Name, z. B. „Gutschriften- & Retouren-Cockpit"):
+  je Kunde alle Belege verknüpfen — heute sind bei mehreren Versendungen die
+  zugehörigen Belege NICHT verknüpft. Ziel: „sind wir beim Kunden sauber?".
+- Unterscheiden: **Retourengutschriften** (mit Absatzänderung) — Quote teils > 55 % —
+  und **Wertgutschriften** (ohne Absatzänderung).
+- **Wertgutschriften zum tatsächlichen Auftrag**: in **EUR und %** ausweisen.
+- Retourenübersicht je Kunde (Quote, Wert, Gründe), Auffälligkeiten markieren.
+
+### G. Abgleichsbericht Absatzmenge vs. Auftragseingang tatsächlich — NEU
+- **Absatzmenge (aus Rechnungspositionen)** gegen **Auftragseingang tatsächlich
+  (AET, WaWi)** je Produkt/Kunde abgleichen; Differenz (abs/%) und Ursachen
+  (Teillieferung, Storno, Verschiebung) sichtbar machen.
+
 ---
 
 ### 1. BCG-/Portfolio-Matrix drill-down
