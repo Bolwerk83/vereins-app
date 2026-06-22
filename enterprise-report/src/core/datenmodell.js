@@ -20,6 +20,10 @@ export const QUELLEN = [
   { id: 'FactUmsatz', typ: 'fact', spalten: ['PeriodenID', 'ArtikelID', 'KundeID', 'PCID', 'UmsatzIst', 'UmsatzPlan', 'UmsatzVorjahr', 'Menge', 'Kategorie'] },
   { id: 'FactKosten', typ: 'fact', spalten: ['PeriodenID', 'KontoNr', 'PCID', 'Betrag'] },
   { id: 'FactVersand', typ: 'fact', spalten: ['PeriodenID', 'Carrier', 'Gewichtsklasse', 'Region', 'Anzahl', 'Versanderloes', 'Versandkosten'] },
+  // Google-Marketing-Quellen
+  { id: 'DimKampagne', typ: 'dim', spalten: ['KampagneID', 'Kampagne', 'Kanal', 'Typ'] },
+  { id: 'FactGoogleAds', typ: 'fact', spalten: ['PeriodenID', 'KampagneID', 'Impressionen', 'Klicks', 'Kosten', 'Conversions', 'ConversionWert'] },
+  { id: 'FactGoogleAnalytics', typ: 'fact', spalten: ['PeriodenID', 'Kanal', 'Sessions', 'Produktaufrufe', 'Warenkorb', 'Checkout', 'Kauf'] },
   // Normalisierte Unter-Dimensionen (Outrigger) für Snowflake-Modellierung.
   { id: 'DimProduktgruppe', typ: 'dim', rolle: 'outrigger', spalten: ['ProduktgruppeID', 'Produktgruppe', 'WarenbereichID'] },
   { id: 'DimWarenbereich', typ: 'dim', rolle: 'outrigger', spalten: ['WarenbereichID', 'Warenbereich', 'Sortiment'] },

@@ -82,6 +82,7 @@ import DatenschutzAdmin from './modules/datenschutz/DatenschutzAdmin.jsx'
 import KiSteuerung from './modules/ki-steuerung/KiSteuerung.jsx'
 import KiBuilder from './modules/ki-builder/KiBuilder.jsx'
 import BerichtLogAdmin from './modules/berichtlog/BerichtLogAdmin.jsx'
+import GoogleReporting from './modules/google/GoogleReporting.jsx'
 import { gesamtStand } from './core/datenstand.js'
 import { bereichVon } from './core/navMeta.js'
 import BerichtInfoModal from './modules/berichtinfo/BerichtInfoModal.jsx'
@@ -259,6 +260,7 @@ export default function App() {
       { titel: 'Vertrieb & Markt', eintraege: [
         E('marketing', 'nav.marketing', '📣'),
         E('marketingkarte', 'nav.marketingkarte', '🗺'),
+        E('google', 'nav.google', '🔎'),
         E('gutschriften', 'nav.gutschriften', '🧾'),
         E('vertriebkpi', 'nav.vertriebkpi', '📈'),
         E('prozesskette', 'nav.prozesskette', '🔻'),
@@ -579,6 +581,9 @@ export default function App() {
         )}
         {ansicht === 'berichtlog' && (
           <BerichtLogAdmin istAdmin={istAdmin(rolle)} />
+        )}
+        {ansicht === 'google' && (
+          <GoogleReporting />
         )}
         {ansicht === 'lzempfehlung' && (
           <LebenszyklusEmpfehlungen onGeh={geh} />
