@@ -10,6 +10,8 @@ import {
   setzeAlleBereiche, toggleKontext, mitgliedHinzu, mitgliedWeg, setzeZurueck,
   bereicheNachCluster, KONTEXTE, bereichZusammenfassung, GRUPPEN_QUELLE
 } from '../../core/gruppen.js'
+import { ladeAnfragen, loescheAnfrage } from '../../core/zugriff.js'
+import { infoVon } from '../../core/berichtInfo.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const inp = { padding: '7px 9px', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', font: 'inherit' }
@@ -27,6 +29,8 @@ export default function RollenRechte({ onChange }) {
   function set(fn) { refresh(fn()) }
 
   const clusterBlocks = bereicheNachCluster()
+  const [anfTick, setAnfTick] = useState(0)
+  const anfragen = ladeAnfragen()
 
   return (
     <div>
@@ -46,6 +50,31 @@ export default function RollenRechte({ onChange }) {
           </div>
         )}
       </div>
+
+      {anfragen.length > 0 && (
+        <div style={{ ...card, padding: 14, marginBottom: 14, borderLeft: '3px solid var(--amp-a)' }} key={anfTick}>
+          <div className="mono" style={{ fontSize: 11, color: 'var(--amp-a)', textTransform: 'uppercase', fontWeight: 700, marginBottom: 8 }}>
+            🔔 Offene Zugriffsanfragen ({anfragen.length})
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {anfragen.map((a) => (
+              <div key={a.view + a.uid} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, padding: '7px 10px', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)' }}>
+                <span style={{ flex: 1 }}>
+                  <b>{a.name || a.uid || 'Gast'}</b> möchte Zugriff auf <b className="mono">{a.view}</b>
+                  {a.bereich && <span style={{ color: 'var(--muted)' }}> · Bereich {a.bereich}</span>}
+                  {infoVon(a.view) && <span style={{ color: 'var(--muted)' }}> — {infoVon(a.view).zweck}</span>}
+                </span>
+                <span style={{ fontSize: 11, color: 'var(--muted)' }}>{new Date(a.zeit).toLocaleDateString('de-DE')}</span>
+                <button onClick={() => { loescheAnfrage(a.view, a.uid); setAnfTick((t) => t + 1) }}
+                  style={{ ...inp, padding: '4px 10px', cursor: 'pointer', fontSize: 12 }}>Erledigt</button>
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 8 }}>
+            Vergib den passenden Bereich in der zuständigen Gruppe unten, dann markiere die Anfrage als erledigt.
+          </div>
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: 16, alignItems: 'start' }}>
         {/* ---- Gruppenliste ---- */}

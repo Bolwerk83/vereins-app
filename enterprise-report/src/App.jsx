@@ -56,6 +56,7 @@ import { heartbeat } from './core/praesenz.js'
 import { darfBereich } from './core/rbac.js'
 import { bereichVon } from './core/navMeta.js'
 import BerichtInfoModal from './modules/berichtinfo/BerichtInfoModal.jsx'
+import BerichtInfoBanner from './modules/berichtinfo/BerichtInfoBanner.jsx'
 import { ladeBranding, applyBranding, themeById } from './core/admin.js'
 import { AKTUELLE_STAGE, stageInfo } from './core/stage.js'
 import { autoSeed } from './core/designerSeed.js'
@@ -357,12 +358,15 @@ export default function App() {
       {onbAuf && <Onboarding rolle={rolle} istAdmin={istAdmin(rolle)} onGeh={geh} onClose={() => setOnbAuf(false)} />}
       {infoView && infoMeta && (
         <BerichtInfoModal view={infoView} label={infoMeta.label} icon={infoMeta.icon} pfad={infoMeta.pfad}
-          bereich={infoMeta.bereich} darf={infoMeta.relevant !== false}
+          bereich={infoMeta.bereich} darf={infoMeta.relevant !== false} uid={uid} name={benutzer || 'Gast'}
           onClose={() => setInfoView(null)} onOpen={(v) => setAnsicht(v)} />
       )}
 
       <KpiDefProvider rolle={rolle} werte={werte} onSpringe={(id) => { setBaumStart(id); setAnsicht('baum') }}>
       <main style={{ padding: '22px 20px', maxWidth: 1240, margin: '0 auto' }}>
+        {ansicht !== 'wizard' && eintragIndex[ansicht] && (
+          <BerichtInfoBanner view={ansicht} label={eintragIndex[ansicht].label} icon={eintragIndex[ansicht].icon} pfad={eintragIndex[ansicht].pfad} />
+        )}
         {ansicht === 'wizard' && (
           <SetupWizard
             onFertig={() => { localStorage.setItem(SETUP_KEY, '1'); setAnsicht('baum') }}

@@ -3,9 +3,10 @@
 //  Mehrwert, Pfad im Menü und Berechtigungsstatus. Berechtigte können öffnen,
 //  Nicht-Berechtigte sehen nur die Info (Bericht bleibt gesperrt).
 // =========================================================================
-import React from 'react'
+import React, { useState } from 'react'
 import { infoVon } from '../../core/berichtInfo.js'
 import { alleBereiche } from '../../core/gruppen.js'
+import { anfrageStellen, anfrageOffen } from '../../core/zugriff.js'
 
 let BEREICH_NAME = null
 function bereichName(code) {
@@ -14,10 +15,12 @@ function bereichName(code) {
   return BEREICH_NAME[code] || code
 }
 
-export default function BerichtInfoModal({ view, label, icon, pfad, bereich, darf, onClose, onOpen }) {
+export default function BerichtInfoModal({ view, label, icon, pfad, bereich, darf, uid, name, onClose, onOpen }) {
+  const [angefragt, setAngefragt] = useState(() => (view ? anfrageOffen(view, uid) : false))
   if (!view) return null
   const info = infoVon(view) || { zweck: '—', zielgruppe: '—', mehrwert: '—' }
   const bName = bereichName(bereich)
+  const anfordern = () => { anfrageStellen({ view, bereich, uid, name }); setAngefragt(true) }
 
   const Feld = ({ titel, text }) => (
     <div style={{ marginBottom: 12 }}>
@@ -66,7 +69,9 @@ export default function BerichtInfoModal({ view, label, icon, pfad, bereich, dar
           <button onClick={onClose} style={{ padding: '8px 14px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: 'var(--panel)', cursor: 'pointer', fontSize: 13 }}>Schließen</button>
           {darf
             ? <button onClick={() => { onOpen?.(view); onClose() }} style={{ padding: '8px 16px', borderRadius: 'var(--radius-sm)', border: 'none', background: 'var(--accent)', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>Bericht öffnen →</button>
-            : <button disabled title="Keine Berechtigung" style={{ padding: '8px 16px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: 'var(--bg)', color: 'var(--muted)', cursor: 'not-allowed', fontSize: 13, fontWeight: 600 }}>🔒 Gesperrt</button>}
+            : angefragt
+              ? <button disabled style={{ padding: '8px 16px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--amp-g)', background: 'var(--amp-g-soft)', color: 'var(--amp-g)', fontSize: 13, fontWeight: 600 }}>✓ Zugriff angefragt</button>
+              : <button onClick={anfordern} style={{ padding: '8px 16px', borderRadius: 'var(--radius-sm)', border: 'none', background: 'var(--accent)', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>Zugriff anfordern</button>}
         </div>
       </div>
     </div>
