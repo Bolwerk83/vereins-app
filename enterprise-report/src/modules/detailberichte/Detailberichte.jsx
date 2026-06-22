@@ -13,6 +13,7 @@ import { ladeBemerkungen, addBemerkung, toggleErledigt, loescheBemerkung, aufgab
 import { erkenntnisse } from '../../core/erkenntnisse.js'
 import { preisvergleich } from '../../core/preisvergleich.js'
 import { qualitaetUebersicht, qualitaetStats, setStatus, ZUSTAND_LABEL } from '../../core/qualitaet.js'
+import { radar } from '../../core/controllerRadar.js'
 
 // Eingebaute Spalten-Ansichten (Fokus-Presets) je Liste.
 const PRESETS = {
@@ -482,7 +483,68 @@ function Qualitaet({ onBack, onOpen }) {
   )
 }
 
-export default function Detailberichte({ startListe = null }) {
+// Controller-Radar: Ein-Klick-Analyse über alle Berichte, kritisch zuerst,
+// mit Folgefehler-Erkennung (nur die Ursache wird gemeldet).
+function Radar({ werte, onBack, onOpen }) {
+  const [erg, setErg] = useState(null)
+  const Item = ({ x }) => (
+    <div style={{ display: 'flex', gap: 12, padding: '11px 13px', borderBottom: '1px solid var(--line)', borderLeft: `4px solid ${SCHWERE[x.schwere].farbe}`, alignItems: 'flex-start' }}>
+      <span style={{ fontSize: 16 }}>{x.art === 'KPI' ? '🎯' : SCHWERE[x.schwere].icon}</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
+          <b style={{ fontSize: 13.5 }}>{x.titel}</b>
+          <span style={{ fontSize: 11, color: 'var(--muted)' }}>{x.bereich} · {x.art}</span>
+        </div>
+        {x.text && <div style={{ fontSize: 12.5, marginTop: 2 }}>{x.text}</div>}
+        {x.gruende && <ul style={{ margin: '4px 0 0', paddingLeft: 18, fontSize: 12.5 }}>{x.gruende.map((g, i) => <li key={i} style={{ color: SCHWERE[g.schwere].farbe }}>{g.text}</li>)}</ul>}
+        {x.wirktAuf?.length > 0 && <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 4 }}>↳ wirkt auf (Folgefehler): <b>{x.wirktAuf.join(', ')}</b></div>}
+      </div>
+      {x.art === 'Detailliste' && <button onClick={() => onOpen(x.listId, String(x.id))} style={{ ...inp, padding: '4px 9px', cursor: 'pointer', fontSize: 12, whiteSpace: 'nowrap' }}>👁 Übeltäter</button>}
+    </div>
+  )
+  return (
+    <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+      <button onClick={onBack} style={{ ...inp, cursor: 'pointer', marginBottom: 12 }}>← Detailberichte</button>
+      <h2 style={{ margin: '0 0 4px' }}>🎯 Controller-Radar</h2>
+      <div style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 16 }}>Ein Klick wertet alle Berichte aus (Detaillisten + Kennzahlen), priorisiert die Auffälligkeiten — kritische zuerst — und erkennt Folgefehler über den Kennzahlen-Abhängigkeitsgraphen: gemeldet wird nur die Ursache.</div>
+
+      {!erg ? (
+        <div style={{ ...card, padding: 36, textAlign: 'center' }}>
+          <div style={{ fontSize: 40, marginBottom: 10 }}>🧭</div>
+          <button onClick={() => setErg(radar(werte))} style={{ padding: '13px 26px', border: 'none', borderRadius: 'var(--radius-sm)', background: 'var(--accent)', color: '#fff', fontWeight: 700, fontSize: 15, cursor: 'pointer' }}>
+            Analyse starten →
+          </button>
+          <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 10 }}>Regelbasierte „KI"-Auswertung · erklärbar · der echte BI-Agent ist andockbar.</div>
+        </div>
+      ) : (
+        <>
+          <div style={{ ...card, padding: 14, marginBottom: 14, borderLeft: '4px solid var(--accent)', background: 'var(--accent-soft)' }}>
+            <div style={{ ...cap, marginBottom: 4, color: 'var(--accent)' }}>🤖 KI-Zusammenfassung · Stand {datum(erg.stand)}</div>
+            <div style={{ fontSize: 13.5 }}>{erg.zusammenfassung}</div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: SCHWERE.fehler.farbe, background: 'var(--panel)', borderRadius: 999, padding: '3px 10px' }}>{erg.statistik.kritisch} kritisch</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: SCHWERE.warnung.farbe, background: 'var(--panel)', borderRadius: 999, padding: '3px 10px' }}>{erg.statistik.weitere} weitere</span>
+              {erg.statistik.unterdrueckt > 0 && <span style={{ fontSize: 12, color: 'var(--muted)', background: 'var(--panel)', borderRadius: 999, padding: '3px 10px' }}>{erg.statistik.unterdrueckt} Folgefehler ausgeblendet</span>}
+              <button onClick={() => setErg(radar(werte))} style={{ ...inp, padding: '3px 10px', cursor: 'pointer', fontSize: 12 }}>↻ Neu auswerten</button>
+            </div>
+          </div>
+
+          <div style={{ ...cap, margin: '0 0 6px', color: SCHWERE.fehler.farbe }}>🔴 Kritisch — zuerst prüfen ({erg.kritisch.length})</div>
+          <div style={{ ...card, overflow: 'hidden', marginBottom: 16 }}>
+            {erg.kritisch.length === 0 ? <div style={{ padding: 18, textAlign: 'center', color: 'var(--amp-g)', fontWeight: 600 }}>✓ Keine kritischen Punkte.</div> : erg.kritisch.map((x) => <Item key={x.key} x={x} />)}
+          </div>
+
+          <div style={{ ...cap, margin: '0 0 6px' }}>Weitere nach Priorität ({erg.weitere.length})</div>
+          <div style={{ ...card, overflow: 'hidden' }}>
+            {erg.weitere.map((x) => <Item key={x.key} x={x} />)}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+export default function Detailberichte({ startListe = null, werte = {} }) {
   const [aktiv, setAktiv] = useState(startListe)
   const [drillSuche, setDrillSuche] = useState('')
   // Liste öffnen (optional mit Vorfilter) — Basis für Cross-Drill & Cockpit.
@@ -508,6 +570,7 @@ export default function Detailberichte({ startListe = null }) {
 
   if (aktiv === 'cockpit') return <Cockpit onBack={() => setAktiv(null)} onOpen={(id, suche) => oeffneListe(id, suche)} />
   if (aktiv === 'qualitaet') return <Qualitaet onBack={() => setAktiv(null)} onOpen={(id, suche) => oeffneListe(id, suche)} />
+  if (aktiv === 'radar') return <Radar werte={werte} onBack={() => setAktiv(null)} onOpen={(id, suche) => oeffneListe(id, suche)} />
 
   // Hub
   const stat = befundStatistik()
@@ -521,6 +584,15 @@ export default function Detailberichte({ startListe = null }) {
           (z. B. negativer Verfügbarbestand, negative Marge, gesperrte Bestände).
         </div>
       </div>
+
+      {/* Controller-Radar: Ein-Klick-Analyse aller Berichte */}
+      <button onClick={() => setAktiv('radar')} style={{ ...card, width: '100%', textAlign: 'left', padding: '16px', marginBottom: 14, cursor: 'pointer', borderColor: 'var(--accent)', background: 'var(--accent-soft)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <div>
+          <div style={{ fontWeight: 700, fontSize: 16 }}>🎯 Controller-Radar — Ein-Klick-Analyse</div>
+          <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3 }}>Wertet alle Berichte aus, priorisiert (kritisch zuerst) und blendet Folgefehler aus — nur die Ursache. Mit KI-Zusammenfassung.</div>
+        </div>
+        <span style={{ fontSize: 13, fontWeight: 700, color: '#fff', background: 'var(--accent)', borderRadius: 'var(--radius-sm)', padding: '9px 16px', whiteSpace: 'nowrap' }}>Analyse starten →</span>
+      </button>
 
       {/* Einstieg ins Sammel-Plausi-Cockpit (alle Befunde gebündelt) */}
       <button onClick={() => setAktiv('cockpit')} style={{ ...card, width: '100%', textAlign: 'left', padding: '14px 16px', marginBottom: 14, cursor: 'pointer',

@@ -426,7 +426,7 @@ export default function App() {
           <KpiEditor werte={werte} onChange={() => { leereCache(); ladeKpiWerte(periode).then(setWerte) }} />
         )}
         {ansicht === 'detailberichte' && (
-          <Detailberichte startListe={detailStart} />
+          <Detailberichte startListe={detailStart} werte={werte} />
         )}
         {ansicht === 'zeit' && (
           <ZeitDatenart onChange={setZeitModell} />
