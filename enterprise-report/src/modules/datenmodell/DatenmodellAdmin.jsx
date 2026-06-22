@@ -15,6 +15,7 @@ import {
   addEbene as dimAddEbene, removeEbene as dimRemoveEbene, verschiebeEbene as dimVerschiebe
 } from '../../core/dimHierarchie.js'
 import { EINHEITEN, RICHTUNGEN, ladeMeasures, speichereMeasure, loescheMeasure as mLoesche, toggleAktiv as mToggle, neueMeasure } from '../../core/measures.js'
+import { factListe as bzFacts, dimListe as bzDims, beziehung as bzVon, toggleBeziehung as bzToggle, modellHealth as bzHealth } from '../../core/beziehungen.js'
 const dimListe = () => dimListeRaw
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
@@ -261,7 +262,65 @@ function MeasuresTab() {
   )
 }
 
-const TABS = [{ id: 'mapping', name: '🔗 Feld-Mapping' }, { id: 'dim', name: '🌲 Dimensionen & Hierarchien' }, { id: 'measure', name: '📐 Measures' }]
+// =========================================================================
+//  TAB: Beziehungen / Sternschema
+// =========================================================================
+function BeziehungenTab() {
+  const [, setTick] = useState(0)
+  const refresh = () => setTick((t) => t + 1)
+  const facts = bzFacts(); const dims = bzDims()
+  const health = bzHealth()
+  return (
+    <>
+      <div style={{ ...card, padding: 14, marginBottom: 14, borderLeft: `3px solid ${health.ok ? 'var(--amp-g)' : 'var(--amp-a)'}`, fontSize: 13.5, lineHeight: 1.5 }}>
+        <b>Sternschema:</b> jede Faktentabelle über Fremdschlüssel mit ihren Dimensionen verbinden. In der Matrix
+        eine Zelle anklicken, um den Join an-/abzuschalten (Schlüssel werden aus den Spaltennamen vorgeschlagen).
+        <span style={{ marginLeft: 6, color: health.ok ? 'var(--amp-g)' : 'var(--amp-a)', fontWeight: 700 }}>
+          {health.ok ? '✓ Modell vollständig' : 'Empfohlene Joins fehlen'} ({health.aktivAnzahl}/{health.empfohlenAnzahl})
+        </span>
+      </div>
+      <div style={{ ...card, padding: 16, overflowX: 'auto', marginBottom: 14 }}>
+        <table style={{ borderCollapse: 'collapse', fontSize: 12 }}>
+          <thead><tr>
+            <th style={{ padding: '6px 10px', textAlign: 'left', borderBottom: '2px solid var(--line)', fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase' }}>Fact \ Dim</th>
+            {dims.map((d) => <th key={d.id} style={{ padding: '6px 8px', borderBottom: '2px solid var(--line)', fontSize: 10, color: 'var(--muted)', writingMode: 'vertical-rl', transform: 'rotate(180deg)', height: 90 }}>{d.id}</th>)}
+          </tr></thead>
+          <tbody>
+            {facts.map((f) => (
+              <tr key={f.id}>
+                <td style={{ padding: '6px 10px', borderBottom: '1px solid var(--line)', fontWeight: 700 }}>{f.id}</td>
+                {dims.map((d) => {
+                  const b = bzVon(f.id, d.id); const an = b && b.aktiv
+                  const empfohlen = bzHealth().facts.find((x) => x.fact === f.id)?.soll.includes(d.id)
+                  return (
+                    <td key={d.id} onClick={() => { bzToggle(f.id, d.id); refresh() }} title={an ? `${b.factKey} → ${b.dimKey}` : empfohlen ? 'empfohlen – klick zum Verbinden' : 'klick zum Verbinden'}
+                      style={{ padding: '6px 8px', borderBottom: '1px solid var(--line)', textAlign: 'center', cursor: 'pointer',
+                        background: an ? 'var(--amp-g-soft)' : empfohlen ? 'var(--amp-a-soft)' : 'transparent' }}>
+                      <span style={{ fontSize: 14, color: an ? 'var(--amp-g)' : empfohlen ? 'var(--amp-a)' : 'var(--line)' }}>{an ? '✓' : empfohlen ? '○' : '·'}</span>
+                    </td>
+                  )
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8 }}>✓ verbunden · ○ empfohlen (noch offen) · Hover zeigt die Schlüssel.</div>
+      </div>
+      <div style={{ ...card, padding: 16 }}>
+        <div style={{ ...cap, marginBottom: 8 }}>Modell-Health je Faktentabelle</div>
+        {health.facts.map((f) => (
+          <div key={f.fact} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', borderBottom: '1px solid var(--line)', fontSize: 13 }}>
+            <span style={{ color: f.ok ? 'var(--amp-g)' : 'var(--amp-a)' }}>{f.ok ? '✓' : '!'}</span>
+            <span style={{ fontWeight: 600, minWidth: 120 }}>{f.fact}</span>
+            <span style={{ color: 'var(--muted)', flex: 1 }}>{f.verbunden.length} Dim verbunden{f.fehlend.length ? ` · fehlt: ${f.fehlend.join(', ')}` : ''}</span>
+          </div>
+        ))}
+      </div>
+    </>
+  )
+}
+
+const TABS = [{ id: 'mapping', name: '🔗 Feld-Mapping' }, { id: 'dim', name: '🌲 Dimensionen & Hierarchien' }, { id: 'bez', name: '✴ Beziehungen' }, { id: 'measure', name: '📐 Measures' }]
 
 export default function DatenmodellAdmin({ istAdmin }) {
   const [tab, setTab] = useState('mapping')
@@ -280,6 +339,7 @@ export default function DatenmodellAdmin({ istAdmin }) {
       </div>
       {tab === 'mapping' && <MappingTab />}
       {tab === 'dim' && <DimensionenTab />}
+      {tab === 'bez' && <BeziehungenTab />}
       {tab === 'measure' && <MeasuresTab />}
     </div>
   )
