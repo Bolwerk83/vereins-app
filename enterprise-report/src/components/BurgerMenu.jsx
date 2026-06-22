@@ -7,7 +7,7 @@
 import React, { useState } from 'react'
 import { ladeFavoriten, toggleFavorit } from '../core/favoriten.js'
 
-const NUR_KEY = 'er_nav_nur_relevant'
+const ALLE_KEY = 'er_nav_alle' // false (Standard) = nur eigene Bereiche; true = alles zeigen
 const untergruppenVon = (g) => g.untergruppen || (g.eintraege ? [{ titel: null, eintraege: g.eintraege }] : [])
 const rel = (e) => e.relevant !== false                 // undefined = übergreifend = relevant
 const sortRel = (a, b) => (rel(b) ? 1 : 0) - (rel(a) ? 1 : 0)
@@ -41,7 +41,8 @@ export default function BurgerMenu({ gruppen = [], onInfo }) {
   const [auf, setAuf] = useState(false)
   const [tick, setTick] = useState(0)
   const info = (view) => { onInfo?.(view); setAuf(false) }
-  const [nurRelevant, setNurRelevant] = useState(() => { try { return localStorage.getItem(NUR_KEY) === '1' } catch { return false } })
+  // Standard: nur die Berichte der eigenen Rolle. Haken „Alle anzeigen" als Override.
+  const [alleAnzeigen, setAlleAnzeigen] = useState(() => { try { return localStorage.getItem(ALLE_KEY) === '1' } catch { return false } })
   const [offen, setOffen] = useState(() => {
     const s = new Set(gruppen.filter((g) => untergruppenVon(g).some((u) => (u.eintraege || []).some((e) => e.aktiv))).map((g) => g.titel))
     if (s.size === 0 && gruppen[0]) s.add(gruppen[0].titel)
@@ -49,13 +50,13 @@ export default function BurgerMenu({ gruppen = [], onInfo }) {
   })
   const toggle = (titel) => setOffen((s) => { const n = new Set(s); n.has(titel) ? n.delete(titel) : n.add(titel); return n })
   const schliessen = () => setAuf(false)
-  const setNur = (v) => { setNurRelevant(v); try { localStorage.setItem(NUR_KEY, v ? '1' : '0') } catch {} }
+  const setAlle = (v) => { setAlleAnzeigen(v); try { localStorage.setItem(ALLE_KEY, v ? '1' : '0') } catch {} }
   const onFav = (view) => { toggleFavorit(view); setTick((t) => t + 1) }
 
   const favSet = new Set(ladeFavoriten())
   const alleEintraege = gruppen.flatMap((g) => untergruppenVon(g).flatMap((u) => u.eintraege || []))
   const favEintraege = ladeFavoriten().map((v) => alleEintraege.find((e) => e.view === v)).filter(Boolean)
-  const sichtbar = (e) => !nurRelevant || rel(e)
+  const sichtbar = (e) => alleAnzeigen || rel(e)
 
   return (
     <>
@@ -74,10 +75,10 @@ export default function BurgerMenu({ gruppen = [], onInfo }) {
               <button onClick={schliessen} title="Schließen" style={{ border: 'none', background: 'none', fontSize: 22, cursor: 'pointer', color: 'var(--muted)', lineHeight: 1 }}>×</button>
             </div>
 
-            {/* Rollenfilter */}
+            {/* Rollenfilter: standardmäßig nur eigene Bereiche; Haken zeigt alles */}
             <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12.5, color: 'var(--muted)', marginBottom: 12, cursor: 'pointer' }}>
-              <input type="checkbox" checked={nurRelevant} onChange={(e) => setNur(e.target.checked)} />
-              Nur meine Bereiche (Rolle)
+              <input type="checkbox" checked={alleAnzeigen} onChange={(e) => setAlle(e.target.checked)} />
+              Alle Berichte anzeigen (auch fremde Bereiche)
             </label>
 
             {/* Favoriten */}
@@ -113,7 +114,7 @@ export default function BurgerMenu({ gruppen = [], onInfo }) {
                           {u.titel && <div className="mono" style={{ fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.05em', margin: '2px 4px 5px' }}>{u.titel}</div>}
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                             {[...u.eintraege].sort(sortRel).map((e) => (
-                              <Eintrag key={e.label} e={e} onNav={schliessen} fav={favSet.has(e.view)} onFav={onFav} onInfo={info} dim={!nurRelevant && !rel(e)} locked={!rel(e)} />
+                              <Eintrag key={e.label} e={e} onNav={schliessen} fav={favSet.has(e.view)} onFav={onFav} onInfo={info} dim={alleAnzeigen && !rel(e)} locked={!rel(e)} />
                             ))}
                           </div>
                         </div>
