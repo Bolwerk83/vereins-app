@@ -9,7 +9,13 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
 
 > **Neu eingegangen (zuerst, eins nach dem anderen abarbeiten):**
 
-### A. Eigener Planungsbereich (Budget / Forecast / Szenarien) — GROSS
+### A. Eigener Planungsbereich (Budget / Forecast / Szenarien) — v1 DONE, Rest offen
+> v1 erledigt: eigener Bereich, Pläne anlegen/kopieren, Bottom-Up-Mengen +
+> Top-Down-Verteilung, Menge↔Betrag, Schwund-Aufschlag, Produktion ohne Umsatz,
+> AE→Umsatz-Hochrechnung, Liquiditätsvorschau mit Zahlungszielen.
+> Offen (v2): abteilungsspezifische Drilldowns — Einkauf „wann spätestens bestellen"
+> (Puffer-Modus), Produktion „wann einplanen / Was-wäre-wenn", Szenarienvergleich
+> (Basis/Best/Worst nebeneinander), gemeinsames Periodenmodell mit B (Monatsraster).
 - Eigener Bereich; Pläne **selbst anlegen** und **„kopieren von"** (Vorlage).
 - Planung **Top-Down UND Bottom-Up**; der **Controller steuert/vermittelt** dazwischen.
   Leitgedanke: *alle haben dieselbe Vorstellung von den Werten.*

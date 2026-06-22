@@ -14,7 +14,7 @@ export const VIEW_BEREICH = {
   // Operativ
   marketing: 'MKT', events: 'MKT', bestand: 'SCC', lager: 'LOG', wms: 'LOG', produktion: 'PR', lieferant: 'EK', auftrag: 'VK', forderungen: 'RIS',
   // Analyse & Steuerung
-  bi: null, abweichung: 'FIN', vergleich: null, qc: null, abstimmung: 'FIN',
+  bi: null, planung: 'FIN', abweichung: 'FIN', vergleich: null, qc: null, abstimmung: 'FIN',
   lebenszyklus: 'VK', lzempfehlung: 'VK', anlagen: 'LIQ', technologie: 'FE', mitarbeiter: 'PC',
   massnahmen: null, instrumente: null, alerts: null, zeit: null,
   // Lernen & Wissen – übergreifend

@@ -43,6 +43,7 @@ export const NAV_ZIELE = [
   { ziel: 'lager', gruppe: 'Operativ', schluessel: 'nav.lager' },
   { ziel: 'produktion', gruppe: 'Operativ', schluessel: 'nav.produktion' },
   { ziel: 'wms', gruppe: 'Operativ', schluessel: 'nav.wms' },
+  { ziel: 'planung', gruppe: 'Steuerung', schluessel: 'nav.planung' },
   { ziel: 'forderungen', gruppe: 'Analyse', schluessel: 'nav.forderungen' },
   { ziel: 'mitarbeiter', gruppe: 'Analyse', schluessel: 'nav.mitarbeiter' },
   { ziel: 'technologie', gruppe: 'Analyse', schluessel: 'nav.technologie' },

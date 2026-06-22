@@ -38,6 +38,7 @@ import Marketing from './modules/marketing/Marketing.jsx'
 import Bestand from './modules/bestand/Bestand.jsx'
 import Lagerverwaltung from './modules/lager/Lagerverwaltung.jsx'
 import Produktionscontrolling from './modules/produktion/Produktionscontrolling.jsx'
+import Planung from './modules/planung/Planung.jsx'
 import WMS from './modules/wms/WMS.jsx'
 import Detailberichte from './modules/detailberichte/Detailberichte.jsx'
 import Forderungen from './modules/forderungen/Forderungen.jsx'
@@ -234,6 +235,7 @@ export default function App() {
     { titel: 'Analyse & Steuerung', icon: '🔭', untergruppen: [
       { titel: 'Analyse', eintraege: [
         E('bi', 'nav.bi', '💬'),
+        E('planung', 'nav.planung', '🎯'),
         E('abweichung', 'nav.abweichung', '📊'),
         E('vergleich', 'nav.vergleich', '⚖'),
         E('qc', 'nav.qc', '✅', { badge: qcFehler || null }),
@@ -507,6 +509,9 @@ export default function App() {
         )}
         {ansicht === 'produktion' && (
           <Produktionscontrolling onGeh={geh} onDetail={gehDetail} />
+        )}
+        {ansicht === 'planung' && (
+          <Planung onGeh={geh} />
         )}
         {ansicht === 'wms' && (
           <WMS />
