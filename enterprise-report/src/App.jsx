@@ -75,6 +75,8 @@ import { trackOeffnung } from './core/nutzung.js'
 import { nutzerId } from './core/identitaet.js'
 import { heartbeat } from './core/praesenz.js'
 import { darfBereich } from './core/rbac.js'
+import { istSichtbar as berichtSichtbar, statusVon as berichtStatusVon } from './core/berichtStatus.js'
+import Berichtfreigabe from './modules/berichtfreigabe/Berichtfreigabe.jsx'
 import { bereichVon } from './core/navMeta.js'
 import BerichtInfoModal from './modules/berichtinfo/BerichtInfoModal.jsx'
 import BerichtInfoBanner from './modules/berichtinfo/BerichtInfoBanner.jsx'
@@ -189,7 +191,12 @@ export default function App() {
   // Navigation — von jeder Seite aus steuerbar. Fehlt die Berechtigung für den
   // Fachbereich des Ziels, wird statt des Berichts sein Info-Panel geöffnet
   // (Schaufenster: sehen, was es gibt — aber nicht aufrufen).
-  const geh = (a) => { if (a && !darfBereich(rolle, bereichVon(a))) { setInfoView(a); return } if (a === 'detailberichte') { setDetailStart(null); setDetailSuche('') } setAnsicht(a) }
+  const adminAktiv = istAdmin(rolle)
+  const geh = (a) => {
+    if (a && !adminAktiv && !berichtSichtbar(a, { admin: false, uid })) { setInfoView(a); return }
+    if (a && !darfBereich(rolle, bereichVon(a))) { setInfoView(a); return }
+    if (a === 'detailberichte') { setDetailStart(null); setDetailSuche('') } setAnsicht(a)
+  }
   // Drill E3 → E4: gezielt eine Detailliste öffnen.
   const gehDetail = (listId, suche = '') => { setDetailStart(listId); setDetailSuche(suche); setAnsicht('detailberichte') }
   const zeigeInfo = (a) => setInfoView(a)
@@ -199,7 +206,11 @@ export default function App() {
   // Eintrags-Helfer: label/icon/aktiv/onClick + Bereich/Relevanz (für Rollenfilter).
   const E = (view, key, icon, extra = {}) => {
     const bereich = bereichVon(view)
-    return { label: t(key), icon, view, bereich, relevant: darfBereich(rolle, bereich), aktiv: ansicht === view, onClick: () => geh(view), ...extra }
+    const status = berichtStatusVon(view)
+    // Status-Sichtbarkeit (Admin sieht alles, mit Kennzeichnung).
+    const versteckt = !adminAktiv && !berichtSichtbar(view, { admin: false, uid })
+    const marker = adminAktiv && status === 'test' ? '  🧪' : adminAktiv && status === 'deaktiviert' ? '  ⏸' : ''
+    return { label: t(key) + marker, icon, view, bereich, relevant: darfBereich(rolle, bereich), versteckt, aktiv: ansicht === view, onClick: () => geh(view), ...extra }
   }
   // Mehrstufige Navigation: Gruppe → Untergruppe (Bereich) → Eintrag.
   const menuGruppen = [
@@ -307,11 +318,19 @@ export default function App() {
       { titel: 'Einrichtung', eintraege: [ E('wizard', 'nav.wizard', '⚙') ] },
       ...(istAdmin(rolle) ? [{ titel: 'Administration', eintraege: [
         E('admin', 'nav.admin', '🛠'),
+        E('berichtfreigabe', 'nav.berichtfreigabe', '🚦'),
         E('nutzung', 'nav.nutzung', '📈'),
         E('rechte', 'nav.rechte', '👥', { badge: anfragenN || null })
       ] }] : [])
     ] }
   ]
+  // Status-Sichtbarkeit anwenden: deaktivierte/Test-Berichte für normale Nutzer
+  // ausblenden (leere Untergruppen/Gruppen entfernen). Admin sieht alles.
+  const menuSichtbar = menuGruppen
+    .map((g) => ({ ...g, untergruppen: (g.untergruppen || [])
+      .map((u) => ({ ...u, eintraege: u.eintraege.filter((e) => !e.versteckt) }))
+      .filter((u) => u.eintraege.length) }))
+    .filter((g) => g.untergruppen.length)
   // Flacher Index view → { label, icon, bereich, relevant, pfad } für das Info-Panel.
   const eintragIndex = {}
   for (const g of menuGruppen) for (const u of (g.untergruppen || [])) for (const e of u.eintraege)
@@ -323,7 +342,7 @@ export default function App() {
       {/* Topbar */}
       <header className="no-print" style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--panel)', borderBottom: '1px solid var(--line)',
         padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-        {ansicht !== 'wizard' && <BurgerMenu gruppen={menuGruppen} onInfo={zeigeInfo} />}
+        {ansicht !== 'wizard' && <BurgerMenu gruppen={menuSichtbar} onInfo={zeigeInfo} />}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {branding.logoDataUrl
             ? <img src={branding.logoDataUrl} alt="Logo" style={{ width: 26, height: 26, borderRadius: 7, objectFit: 'contain' }} />
@@ -528,6 +547,9 @@ export default function App() {
         )}
         {ansicht === 'versand' && (
           <Versand />
+        )}
+        {ansicht === 'berichtfreigabe' && (
+          <Berichtfreigabe istAdmin={istAdmin(rolle)} />
         )}
         {ansicht === 'lzempfehlung' && (
           <LebenszyklusEmpfehlungen onGeh={geh} />
