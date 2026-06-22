@@ -87,6 +87,42 @@ export function profilFuer(rolle, admin = false) {
   return { ...basis, schritte }
 }
 
+// ---- Neugier-Hooks: wechselnde "Entdecke"-Fragen, die zum Klicken anregen --
+export const NEUGIER = [
+  { frage: 'Wo versteckt sich gerade die größte negative Marge?', hinweis: 'Der Controller-Radar findet sie in einem Klick — kritische Punkte zuerst.', ziel: 'detailberichte' },
+  { frage: 'Welche Rechnung wurde mit einer Artikelnummer statt einer Rechnungsnummer erfasst?', hinweis: 'Das Qualitätsdashboard zeigt dir den Übeltäter — anklicken, bereinigen, abhaken.', ziel: 'detailberichte' },
+  { frage: 'Welche Charge läuft als Nächstes ab?', hinweis: 'Chargenliste, Spalte MHD — rot heißt: überschritten.', ziel: 'detailberichte' },
+  { frage: 'Welcher Kunde kratzt am Kreditlimit?', hinweis: 'Kundenliste, Ansicht „Risiko" — ein Klick genügt.', ziel: 'detailberichte' },
+  { frage: 'Ursache oder Folgefehler?', hinweis: 'Der Radar erkennt Abhängigkeiten und meldet nur die Wurzel — nicht den ganzen Rattenschwanz.', ziel: 'detailberichte' },
+  { frage: 'Welcher Lieferant fällt durch Reklamationen auf?', hinweis: 'Lieferantenliste, Ansicht „Qualität".', ziel: 'detailberichte' },
+  { frage: 'Stimmen Reporting und Hauptbuch wirklich überein?', hinweis: 'Die Abstimmbrücken zeigen jede Differenz auf den Cent.', ziel: 'abstimmung' },
+  { frage: 'Star, Cash Cow oder Auslaufkandidat?', hinweis: 'Der Lebenszyklus sortiert dein ganzes Portfolio.', ziel: 'lebenszyklus' },
+  { frage: 'Wie sieht deine App in deinen Firmenfarben aus?', hinweis: 'Im Admin-Bereich legst du eigene Designs an — mit Logo.', ziel: 'admin' }
+]
+
+// Motivierende, wechselnde Aufmacher.
+export const MOTIVATION = [
+  'Bereit für ein paar Aha-Momente? 👀',
+  'Heute schon eine Auffälligkeit entdeckt? 🔍',
+  'Lust, dem Controlling auf den Zahn zu fühlen? 🦷',
+  'Drei Klicks bis zum nächsten Insight. 🚀',
+  'Was würde dir auffallen, wenn du genau hinschaust? 🧐'
+]
+
+const ROT_KEY = 'er_neugier_idx'
+function rotIndex(step) {
+  let i = 0
+  try { i = parseInt(localStorage.getItem(ROT_KEY) || '0', 10) || 0 } catch {}
+  try { localStorage.setItem(ROT_KEY, String(i + step)) } catch {}
+  return i
+}
+/** Wechselnde Neugier-Hooks (jedes Öffnen andere) + ein Aufmacher. */
+export function naechsteNeugier(anzahl = 2) {
+  const i = rotIndex(anzahl)
+  const hooks = Array.from({ length: Math.min(anzahl, NEUGIER.length) }, (_, k) => NEUGIER[(i + k) % NEUGIER.length])
+  return { motto: MOTIVATION[i % MOTIVATION.length], hooks }
+}
+
 // Merker: pro Rolle nur einmal automatisch zeigen.
 const KEY = 'er_onboarding_gesehen'
 function gesehenSet() { try { return new Set(JSON.parse(localStorage.getItem(KEY) || '[]')) } catch { return new Set() } }
