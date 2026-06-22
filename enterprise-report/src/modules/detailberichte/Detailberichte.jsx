@@ -5,7 +5,7 @@
 //  eine Zeile öffnet die Befund-Karte (Sprung in die Detailprüfung).
 // =========================================================================
 import React, { useState } from 'react'
-import { LISTEN, LEGENDE, artikelliste, auftragsliste, historie } from '../../core/detailberichte.js'
+import { LISTEN, LEGENDE, artikelliste, auftragsliste, warenverbrauchliste, historie } from '../../core/detailberichte.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
@@ -52,10 +52,25 @@ const AUF_COLS = [
 ]
 const AUF_SUM = ['ab', 'vk', 'ae', 'aeb', 'ret', 'aet', 'mek', 'abs', 'ue']
 
+const WV_COLS = [
+  { key: 'sku', label: 'SKU', al: 'left', mono: true },
+  { key: 'artikel', label: 'Artikel', al: 'left' },
+  { key: 'gruppe', label: 'Gruppe', al: 'left' },
+  { key: 'anfangsbestand', label: 'Anf.-Bestand', al: 'right' },
+  { key: 'zugang', label: 'Zugang', al: 'right' },
+  { key: 'abgang', label: 'Abgang', al: 'right' },
+  { key: 'endbestand', label: 'End-Bestand', al: 'right' },
+  { key: 'verbrauch', label: 'Verbrauch', al: 'right' },
+  { key: 'umsatzMenge', label: 'Ums.-Menge', al: 'right' },
+  { key: 'einkaeufer', label: 'Einkäufer', al: 'left' }
+]
+const WV_SUM = ['anfangsbestand', 'zugang', 'abgang', 'endbestand', 'verbrauch', 'umsatzMenge']
+
 export default function Detailberichte() {
   const [aktiv, setAktiv] = useState(null)
   if (aktiv === 'artikel') return <Liste typ="artikel" titel="Artikelliste" sub="Zeigt die SKU in einer Listen-Übersicht. Klick auf eine Zeile → Befund-Karte (inkl. E5-Historie)." cols={ART_COLS} sumKeys={ART_SUM} lade={artikelliste} onBack={() => setAktiv(null)} idKey="sku" titelKey="artikel" />
   if (aktiv === 'auftrag') return <Liste typ="auftrag" titel="Auftragsliste" sub="Zeigt die Aufträge in einer Listen-Übersicht." cols={AUF_COLS} sumKeys={AUF_SUM} lade={auftragsliste} onBack={() => setAktiv(null)} idKey="auftrag" titelKey="kunde" />
+  if (aktiv === 'plausiwv') return <Liste typ="warenverbrauch" titel="Plausi: Warenverbrauch" sub="Prüft die Bestandsgleichung (Anfang + Zugang − Abgang = Ende) und findet unplausible Warenbewegungen." cols={WV_COLS} sumKeys={WV_SUM} lade={warenverbrauchliste} onBack={() => setAktiv(null)} idKey="sku" titelKey="artikel" />
 
   // Hub
   return (

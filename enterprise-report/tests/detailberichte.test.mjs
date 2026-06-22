@@ -1,7 +1,7 @@
 import './_setup.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { artikelliste, auftragsliste, pruefeArtikel, pruefeAuftrag, ARTIKEL, LISTEN, historie } from '../src/core/detailberichte.js'
+import { artikelliste, auftragsliste, pruefeArtikel, pruefeAuftrag, ARTIKEL, LISTEN, historie, warenverbrauchliste, pruefeWarenverbrauch, WARENVERBRAUCH } from '../src/core/detailberichte.js'
 
 test('Negativer Verfügbarbestand wird als Fehler erkannt', () => {
   const a = ARTIKEL.find((x) => x.sku === '231052006') // lbVerf -1
@@ -52,6 +52,20 @@ test('Ebene 5: Historie je Datensatz (Artikel-Chart, Auftrags-Zeitstrahl)', () =
   const ho = historie('auftrag', o)
   assert.equal(ho.kind, 'timeline')
   assert.ok(ho.punkte.some((x) => x.label === 'Geliefert'))
+})
+
+test('Plausi Warenverbrauch: Bestandsgleichung, negativer Verbrauch, Abgang ohne Umsatz', () => {
+  // akku: 40+30-50=20 ≠ 18 → Gleichung verletzt
+  const akku = pruefeWarenverbrauch(WARENVERBRAUCH.find((w) => w.artikel === 'Akku 625Wh'))
+  assert.ok(akku.some((x) => x.feld === 'endbestand' && x.schwere === 'fehler'))
+  // jacke: abgang -5 → negativer Verbrauch
+  const jacke = pruefeWarenverbrauch(WARENVERBRAUCH.find((w) => w.gruppe === 'Bekleidung'))
+  assert.ok(jacke.some((x) => x.feld === 'verbrauch' && x.schwere === 'fehler'))
+  // REVEAL: endbestand -1 → negativer Endbestand
+  const reveal = pruefeWarenverbrauch(WARENVERBRAUCH.find((w) => w.endbestand === -1))
+  assert.ok(reveal.some((x) => x.text === 'Negativer Endbestand'))
+  const l = warenverbrauchliste({ nurAuffaellig: true })
+  assert.ok(l.rows.length > 0 && l.rows.every((r) => r.befunde.length))
 })
 
 test('LISTEN-Katalog hat verfügbare und geplante Listen', () => {

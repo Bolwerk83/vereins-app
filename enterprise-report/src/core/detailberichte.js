@@ -143,6 +143,44 @@ export function historie(typ, row) {
   return { kind: 'timeline', punkte: stufen.map((s, i) => ({ label: s, datum: addTage(row.datum, i * 2), warn: s === 'Retoure' })) }
 }
 
+// ---- Plausi: Warenverbrauch ---------------------------------------------
+// Bestandsgleichung: Anfangsbestand + Zugang − Abgang = Endbestand.
+export const WARENVERBRAUCH = [
+  { sku: '230543002', artikel: 'E-GRAVEL 21 BACKROAD+ GRX RX810 Di2', gruppe: 'E-Bikes', anfangsbestand: 10, zugang: 20, abgang: 25, endbestand: 5, verbrauch: 25, umsatzMenge: 25, einkaeufer: 'FELIX.METTERNICH' },
+  { sku: '1650590001', artikel: 'Akku 625Wh', gruppe: 'Teile', anfangsbestand: 40, zugang: 30, abgang: 50, endbestand: 18, verbrauch: 50, umsatzMenge: 48, einkaeufer: 'JANNE.DITTERS' },
+  { sku: '231047806', artikel: 'GRAVEL 22 BACKROAD AL GRX RX600', gruppe: 'Fahrräder', anfangsbestand: 60, zugang: 10, abgang: 70, endbestand: 0, verbrauch: 70, umsatzMenge: 0, einkaeufer: 'FELIX.METTERNICH' },
+  { sku: '231058204', artikel: 'Zubehör-Set Gravel', gruppe: 'Zubehör', anfangsbestand: 100, zugang: 50, abgang: 40, endbestand: 110, verbrauch: 35, umsatzMenge: 40, einkaeufer: 'FELIX.METTERNICH' },
+  { sku: '230591702', artikel: 'Bekleidung Jacke', gruppe: 'Bekleidung', anfangsbestand: 30, zugang: 0, abgang: -5, endbestand: 35, verbrauch: -5, umsatzMenge: 0, einkaeufer: 'JANNE.DITTERS' },
+  { sku: '231052006', artikel: 'RR 22 REVEAL SIX DISC Ultegra', gruppe: 'Fahrräder', anfangsbestand: 8, zugang: 0, abgang: 9, endbestand: -1, verbrauch: 9, umsatzMenge: 9, einkaeufer: 'FELIX.METTERNICH' },
+  { sku: '230762904', artikel: 'Fitness 21 Backroad Multicross', gruppe: 'Fahrräder', anfangsbestand: 12, zugang: 6, abgang: 8, endbestand: 10, verbrauch: 8, umsatzMenge: 8, einkaeufer: 'FELIX.METTERNICH' }
+]
+
+export function pruefeWarenverbrauch(w) {
+  const b = []
+  const soll = w.anfangsbestand + w.zugang - w.abgang
+  if (soll !== w.endbestand) b.push({ feld: 'endbestand', schwere: 'fehler', text: `Bestandsgleichung verletzt (Soll ${soll}, Ist ${w.endbestand})` })
+  if (w.endbestand < 0) b.push({ feld: 'endbestand', schwere: 'fehler', text: 'Negativer Endbestand' })
+  if (w.verbrauch < 0) b.push({ feld: 'verbrauch', schwere: 'fehler', text: 'Negativer Warenverbrauch' })
+  if (w.abgang > 0 && w.umsatzMenge === 0) b.push({ feld: 'umsatzMenge', schwere: 'warnung', text: 'Abgang ohne Umsatz (Schwund/Korrektur prüfen)' })
+  if (w.umsatzMenge > w.abgang) b.push({ feld: 'umsatzMenge', schwere: 'warnung', text: 'Umsatzmenge größer als Abgang' })
+  if (w.verbrauch !== w.abgang) b.push({ feld: 'verbrauch', schwere: 'hinweis', text: 'Verbrauch ≠ Abgang' })
+  return b
+}
+
+export function warenverbrauchliste({ suche = '', nurAuffaellig = false } = {}) {
+  const q = norm(suche)
+  let rows = WARENVERBRAUCH.map((w) => { const befunde = pruefeWarenverbrauch(w); return { ...w, befunde, schwere: maxSchwere(befunde) } })
+  if (q) rows = rows.filter((w) => norm(w.sku).includes(q) || norm(w.artikel).includes(q) || norm(w.einkaeufer).includes(q) || norm(w.gruppe).includes(q))
+  if (nurAuffaellig) rows = rows.filter((w) => w.befunde.length)
+  const sum = (k) => r2(rows.reduce((n, w) => n + (w[k] || 0), 0))
+  return {
+    rows,
+    summe: { anfangsbestand: sum('anfangsbestand'), zugang: sum('zugang'), abgang: sum('abgang'), endbestand: sum('endbestand'), verbrauch: sum('verbrauch'), umsatzMenge: sum('umsatzMenge') },
+    auffaellig: WARENVERBRAUCH.filter((w) => pruefeWarenverbrauch(w).length).length,
+    gesamt: WARENVERBRAUCH.length
+  }
+}
+
 // ---- Katalog der Detailberichte -----------------------------------------
 export const LISTEN = [
   { id: 'auftrag', name: 'Auftragsliste', verfuegbar: true },
@@ -154,7 +192,7 @@ export const LISTEN = [
   { id: 'leasing', name: 'Leasingliste', verfuegbar: false },
   { id: 'charge', name: 'Chargenliste', verfuegbar: false },
   { id: 'kunde', name: 'Kundenliste', verfuegbar: false },
-  { id: 'plausiwv', name: 'Plausi: Warenverbrauch', verfuegbar: false },
+  { id: 'plausiwv', name: 'Plausi: Warenverbrauch', verfuegbar: true },
   { id: 'retoure', name: 'Retourenliste', verfuegbar: false },
   { id: 'auftragsbestand', name: 'Auftragsbestandsliste', verfuegbar: false }
 ]
