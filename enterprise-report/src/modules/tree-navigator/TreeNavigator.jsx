@@ -148,7 +148,7 @@ export default function TreeNavigator({ rolle, werte, periode, onOpenReport, onD
         )}
 
         {/* Ebene 4: Detailtabelle */}
-        {detailKey && <DetailTabelle daten={detail} />}
+        {detailKey && <DetailTabelle daten={detail} spaltenWahl />}
 
         {/* Ebene 4: mehrere Detail-Perspektiven (kontextabhängig) + Filtermaske */}
         {knoten.perspektiven?.length > 0 && (

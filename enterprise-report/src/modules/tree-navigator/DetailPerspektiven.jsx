@@ -169,7 +169,7 @@ export default function DetailPerspektiven({ bereich, perspektiven = [] }) {
 
           {view && <div style={{ marginTop: 12 }}>
             {drillZiel && <div style={{ fontSize: 12, color: 'var(--accent)', marginBottom: 6 }}>↳ Klick auf eine Zeile öffnet {DRILL[drillZiel.perspektive]?.name || drillZiel.perspektive}{drillZiel.label ? ` (${drillZiel.label})` : ''}.</div>}
-            <DetailTabelle daten={view} onZeileKlick={drillZiel && sortedRows ? (i) => drill(drillZiel.perspektive, sortedRows[i][drillZiel.keySpalte]) : undefined} />
+            <DetailTabelle daten={view} spaltenWahl onZeileKlick={drillZiel && sortedRows ? (i) => drill(drillZiel.perspektive, sortedRows[i][drillZiel.keySpalte]) : undefined} />
             <div className="mono" style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>{view.zeilen.length} Zeile(n){top ? ` (Top ${top})` : ''}{sortIdx != null ? ` · sortiert nach ${daten.spalten[sortIdx]}` : ''}</div>
           </div>}
         </div>
