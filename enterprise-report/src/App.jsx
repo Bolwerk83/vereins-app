@@ -156,63 +156,98 @@ export default function App() {
   const geh = (a) => setAnsicht(a)
   const qcFehler = validierungsZusammenfassung(werte).fehler
   const alertN = alertAnzahl(werte, rolle)
+  // Eintrags-Helfer: label/icon/aktiv/onClick aus View-Key + i18n-Key.
+  const E = (view, key, icon, extra = {}) => ({ label: t(key), icon, aktiv: ansicht === view, onClick: () => geh(view), ...extra })
+  // Mehrstufige Navigation: Gruppe → Untergruppe (Bereich) → Eintrag.
   const menuGruppen = [
-    { titel: 'Berichte', eintraege: [
-      { label: t('nav.tree'), icon: '🌳', aktiv: ansicht === 'baum' || ansicht === 'report', onClick: () => geh('baum') },
-      { label: t('nav.kennzahlen'), icon: '📖', aktiv: ansicht === 'kennzahlen', onClick: () => geh('kennzahlen') },
-      { label: t('nav.kpieditor'), icon: '🧪', aktiv: ansicht === 'kpieditor', onClick: () => geh('kpieditor') },
-      { label: t('nav.katalog'), icon: '🗂', aktiv: ansicht === 'katalog', onClick: () => geh('katalog') },
-      { label: t('nav.designer'), icon: '🧩', aktiv: ansicht === 'designer', onClick: () => geh('designer') },
-      { label: t('nav.controlling'), icon: '🧭', aktiv: ansicht === 'controlling', onClick: () => geh('controlling') },
-      { label: t('nav.klrablauf'), icon: '🧵', aktiv: ansicht === 'klrablauf', onClick: () => geh('klrablauf') },
-      { label: t('nav.ablauf'), icon: '🗺', aktiv: ansicht === 'ablaufdiagramm', onClick: () => geh('ablaufdiagramm') },
-      { label: t('nav.klr'), icon: '🧮', aktiv: ansicht === 'klr' || ansicht === 'kostenarten' || ansicht === 'kalkulatorik', onClick: () => geh('klr') },
-      { label: t('nav.einzelgemein'), icon: '➗', aktiv: ansicht === 'einzelgemein', onClick: () => geh('einzelgemein') },
-      { label: t('nav.abgrenzung'), icon: '🔀', aktiv: ansicht === 'abgrenzung', onClick: () => geh('abgrenzung') },
-      { label: t('nav.kostenstellen'), icon: '🏢', aktiv: ansicht === 'kostenstellen', onClick: () => geh('kostenstellen') },
-      { label: t('nav.bab'), icon: '🧾', aktiv: ansicht === 'bab', onClick: () => geh('bab') },
-      { label: t('nav.profitcenter'), icon: '🏦', aktiv: ansicht === 'profitcenter', onClick: () => geh('profitcenter') },
-      { label: t('nav.kalkulation'), icon: '🎯', aktiv: ansicht === 'kalkulation', onClick: () => geh('kalkulation') },
-      { label: t('nav.ergebnis'), icon: '📕', aktiv: ansicht === 'ergebnis', onClick: () => geh('ergebnis') },
-      { label: t('nav.db'), icon: '📐', aktiv: ansicht === 'deckungsbeitrag', onClick: () => geh('deckungsbeitrag') }
+    { titel: 'Cockpit & Berichte', icon: '📊', untergruppen: [
+      { titel: 'Überblick', eintraege: [
+        E('baum', 'nav.tree', '🌳', { aktiv: ansicht === 'baum' || ansicht === 'report' }),
+        E('kennzahlen', 'nav.kennzahlen', '📖'),
+        E('katalog', 'nav.katalog', '🗂'),
+        E('kpieditor', 'nav.kpieditor', '🧪')
+      ] },
+      { titel: 'Eigene Berichte', eintraege: [ E('designer', 'nav.designer', '🧩') ] }
     ] },
-    { titel: 'Analyse', eintraege: [
-      { label: t('nav.bi'), icon: '💬', aktiv: ansicht === 'bi', onClick: () => geh('bi') },
-      { label: t('nav.vergleich'), icon: '⚖', aktiv: ansicht === 'vergleich', onClick: () => geh('vergleich') },
-      { label: t('nav.segment'), icon: '🏛', aktiv: ansicht === 'segment', onClick: () => geh('segment') },
-      { label: t('nav.abweichung'), icon: '📊', aktiv: ansicht === 'abweichung', onClick: () => geh('abweichung') },
-      { label: t('nav.qc'), icon: '✅', aktiv: ansicht === 'qc', onClick: () => geh('qc'), badge: qcFehler || null },
-      { label: t('nav.abstimmung'), icon: '🔗', aktiv: ansicht === 'abstimmung', onClick: () => geh('abstimmung') },
-      { label: t('nav.lebenszyklus'), icon: '🔄', aktiv: ansicht === 'lebenszyklus', onClick: () => geh('lebenszyklus') },
-      { label: t('nav.lzempfehlung'), icon: '🧭', aktiv: ansicht === 'lzempfehlung', onClick: () => geh('lzempfehlung') },
-      { label: t('nav.auftrag'), icon: '📦', aktiv: ansicht === 'auftrag', onClick: () => geh('auftrag') },
-      { label: t('nav.anlagen'), icon: '🏗', aktiv: ansicht === 'anlagen', onClick: () => geh('anlagen') },
-      { label: t('nav.lieferant'), icon: '🚚', aktiv: ansicht === 'lieferant', onClick: () => geh('lieferant') },
-      { label: t('nav.marketing'), icon: '📣', aktiv: ansicht === 'marketing', onClick: () => geh('marketing') },
-      { label: t('nav.events'), icon: '🎉', aktiv: ansicht === 'events', onClick: () => geh('events') },
-      { label: t('nav.bestand'), icon: '📦', aktiv: ansicht === 'bestand', onClick: () => geh('bestand') },
-      { label: t('nav.forderungen'), icon: '💶', aktiv: ansicht === 'forderungen', onClick: () => geh('forderungen') },
-      { label: t('nav.mitarbeiter'), icon: '🧑‍🤝‍🧑', aktiv: ansicht === 'mitarbeiter', onClick: () => geh('mitarbeiter') },
-      { label: t('nav.technologie'), icon: '🔬', aktiv: ansicht === 'technologie', onClick: () => geh('technologie') },
-      { label: t('nav.instrumente'), icon: '📐', aktiv: ansicht === 'instrumente', onClick: () => geh('instrumente') },
-      { label: t('nav.alerts'), icon: '⚠', aktiv: ansicht === 'alerts', onClick: () => geh('alerts'), badge: alertN || null }
+    { titel: 'Kosten & Ergebnis', icon: '🧮', untergruppen: [
+      { titel: 'Kostenrechnung', eintraege: [
+        E('klr', 'nav.klr', '🧮', { aktiv: ansicht === 'klr' || ansicht === 'kostenarten' || ansicht === 'kalkulatorik' }),
+        E('einzelgemein', 'nav.einzelgemein', '➗'),
+        E('abgrenzung', 'nav.abgrenzung', '🔀'),
+        E('kostenstellen', 'nav.kostenstellen', '🏢'),
+        E('bab', 'nav.bab', '🧾')
+      ] },
+      { titel: 'Kalkulation & Ergebnis', eintraege: [
+        E('kalkulation', 'nav.kalkulation', '🎯'),
+        E('ergebnis', 'nav.ergebnis', '📕'),
+        E('deckungsbeitrag', 'nav.db', '📐'),
+        E('profitcenter', 'nav.profitcenter', '🏦')
+      ] },
+      { titel: 'Konzern', eintraege: [ E('segment', 'nav.segment', '🏛') ] }
     ] },
-    { titel: 'Steuerung', eintraege: [
-      { label: t('nav.massnahmen'), icon: '🎯', aktiv: ansicht === 'massnahmen', onClick: () => geh('massnahmen') },
-      { label: t('nav.zeit'), icon: '🗓', aktiv: ansicht === 'zeit', onClick: () => geh('zeit') },
-      { label: t('nav.abschluss'), icon: '🔒', aktiv: ansicht === 'abschluss', onClick: () => geh('abschluss') },
-      { label: t('nav.verteiler'), icon: '📤', aktiv: ansicht === 'verteiler', onClick: () => geh('verteiler') },
-      { label: t('nav.transport'), icon: '🚚', aktiv: ansicht === 'transport', onClick: () => geh('transport') },
-      ...(istAdmin(rolle) ? [
-        { label: t('nav.admin'), icon: '🛠', aktiv: ansicht === 'admin', onClick: () => geh('admin') },
-        { label: t('nav.nutzung'), icon: '📈', aktiv: ansicht === 'nutzung', onClick: () => geh('nutzung') },
-        { label: t('nav.rechte'), icon: '👥', aktiv: ansicht === 'rechte', onClick: () => geh('rechte') }
-      ] : []),
-      { label: t('nav.wizard'), icon: '⚙', aktiv: ansicht === 'wizard', onClick: () => geh('wizard') },
-      { label: t('nav.lernpfad'), icon: '🎓', aktiv: ansicht === 'lernpfad', onClick: () => geh('lernpfad') },
-      { label: t('nav.doku'), icon: '📚', aktiv: ansicht === 'doku', onClick: () => geh('doku') },
-      { label: t('nav.onboarding'), icon: '🚀', aktiv: false, onClick: () => setOnbAuf(true) },
-      { label: t('nav.hilfe'), icon: '❓', aktiv: false, onClick: () => { setHilfeErstmalig(false); setHilfeAuf(true) } }
+    { titel: 'Operativ', icon: '📈', untergruppen: [
+      { titel: 'Vertrieb & Markt', eintraege: [
+        E('marketing', 'nav.marketing', '📣'),
+        E('events', 'nav.events', '🎉')
+      ] },
+      { titel: 'Bestand & Beschaffung', eintraege: [
+        E('bestand', 'nav.bestand', '📦'),
+        E('lieferant', 'nav.lieferant', '🚚'),
+        E('auftrag', 'nav.auftrag', '📦')
+      ] },
+      { titel: 'Finanzen & Risiko', eintraege: [
+        E('forderungen', 'nav.forderungen', '💶')
+      ] }
+    ] },
+    { titel: 'Analyse & Steuerung', icon: '🔭', untergruppen: [
+      { titel: 'Analyse', eintraege: [
+        E('bi', 'nav.bi', '💬'),
+        E('abweichung', 'nav.abweichung', '📊'),
+        E('vergleich', 'nav.vergleich', '⚖'),
+        E('qc', 'nav.qc', '✅', { badge: qcFehler || null }),
+        E('abstimmung', 'nav.abstimmung', '🔗')
+      ] },
+      { titel: 'Lebenszyklen', eintraege: [
+        E('lebenszyklus', 'nav.lebenszyklus', '🔄'),
+        E('lzempfehlung', 'nav.lzempfehlung', '🧭'),
+        E('anlagen', 'nav.anlagen', '🏗'),
+        E('technologie', 'nav.technologie', '🔬'),
+        E('mitarbeiter', 'nav.mitarbeiter', '🧑‍🤝‍🧑')
+      ] },
+      { titel: 'Steuerung', eintraege: [
+        E('massnahmen', 'nav.massnahmen', '🎯'),
+        E('instrumente', 'nav.instrumente', '📐'),
+        E('alerts', 'nav.alerts', '⚠', { badge: alertN || null }),
+        E('zeit', 'nav.zeit', '🗓')
+      ] }
+    ] },
+    { titel: 'Lernen & Wissen', icon: '📚', untergruppen: [
+      { titel: 'Lernen', eintraege: [
+        E('lernpfad', 'nav.lernpfad', '🎓'),
+        E('doku', 'nav.doku', '📚')
+      ] },
+      { titel: 'Konzepte', eintraege: [
+        E('controlling', 'nav.controlling', '🧭'),
+        E('klrablauf', 'nav.klrablauf', '🧵'),
+        E('ablaufdiagramm', 'nav.ablauf', '🗺')
+      ] },
+      { titel: 'Hilfe', eintraege: [
+        { label: t('nav.onboarding'), icon: '🚀', aktiv: false, onClick: () => setOnbAuf(true) },
+        { label: t('nav.hilfe'), icon: '❓', aktiv: false, onClick: () => { setHilfeErstmalig(false); setHilfeAuf(true) } }
+      ] }
+    ] },
+    { titel: 'Verwaltung', icon: '🛠', untergruppen: [
+      { titel: 'Prozesse', eintraege: [
+        E('abschluss', 'nav.abschluss', '🔒'),
+        E('verteiler', 'nav.verteiler', '📤'),
+        E('transport', 'nav.transport', '🚚')
+      ] },
+      { titel: 'Einrichtung', eintraege: [ E('wizard', 'nav.wizard', '⚙') ] },
+      ...(istAdmin(rolle) ? [{ titel: 'Administration', eintraege: [
+        E('admin', 'nav.admin', '🛠'),
+        E('nutzung', 'nav.nutzung', '📈'),
+        E('rechte', 'nav.rechte', '👥')
+      ] }] : [])
     ] }
   ]
 
