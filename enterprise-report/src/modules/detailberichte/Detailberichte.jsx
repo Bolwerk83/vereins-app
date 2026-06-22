@@ -326,7 +326,7 @@ function Cockpit({ onBack, onOpen }) {
   if (fListe) items = items.filter((i) => i.listId === fListe)
 
   return (
-    <div style={{ maxWidth: 980, margin: '0 auto' }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <button onClick={onBack} style={{ ...inp, cursor: 'pointer', marginBottom: 12 }}>← Detailberichte</button>
       <h2 style={{ margin: '0 0 4px' }}>🩺 Sammel-Plausi-Cockpit</h2>
       <div style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 14 }}>Alle Befunde aus {stat.proListe.length} Listen an einem Ort. Klick auf eine Zeile springt in die jeweilige Liste.</div>
@@ -410,7 +410,7 @@ function Qualitaet({ onBack, onOpen }) {
   const setze = (id, z) => { setStatus(id, z, {}); refresh() }
 
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <button onClick={onBack} style={{ ...inp, cursor: 'pointer', marginBottom: 12 }}>← Detailberichte</button>
       <h2 style={{ margin: '0 0 4px' }}>✅ Qualitätsdashboard</h2>
       <div style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 14 }}>Alles grün = Daten sauber. Bei Auffälligkeiten (z. B. Artikelnummer statt Rechnung, extreme Abweichung) anklicken, Übeltäter im Vorsystem bereinigen oder Korrektur buchen, dann mit Kommentar abhaken. Am Folgetag wird neu geprüft — taucht der Fall erneut auf, zeigt das Log die Historie.</div>
@@ -496,7 +496,7 @@ function Hierarchie({ onBack }) {
     { key: 'dbProzent', label: 'DB %', fmt: (v) => pct(v) }, { key: 'anteil', label: 'Anteil %', fmt: (v) => pct(v), bar: true }, { key: 'menge', label: 'Menge', fmt: (v) => v.toLocaleString('de-DE') }
   ]
   return (
-    <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <button onClick={onBack} style={{ ...inp, cursor: 'pointer', marginBottom: 12 }}>← Detailberichte</button>
       <h2 style={{ margin: '0 0 4px' }}>📂 Strukturbericht — Umsatz & Deckungsbeitrag</h2>
       <div style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 12 }}>Warenbereich → Warengruppe → Artikel. Zeilen mit ▸ auf-/zuklappen (wie eine Power-BI-Matrix); Elternwerte sind aggregiert.</div>
@@ -587,7 +587,7 @@ function Radar({ werte, onBack, onOpen }) {
     )
   }
   return (
-    <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <button onClick={onBack} style={{ ...inp, cursor: 'pointer', marginBottom: 12 }}>← Detailberichte</button>
       <h2 style={{ margin: '0 0 4px' }}>🎯 Controller-Radar</h2>
       <div style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 16 }}>Ein Klick wertet alle Berichte aus (Detaillisten + Kennzahlen), priorisiert die Auffälligkeiten — kritische zuerst — und erkennt Folgefehler über den Kennzahlen-Abhängigkeitsgraphen: gemeldet wird nur die Ursache.</div>
@@ -679,10 +679,10 @@ export default function Detailberichte({ startListe = null, startSuche = '', wer
     </button>
   )
   return (
-    <div style={{ maxWidth: 880, margin: '0 auto' }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ marginBottom: 18 }}>
-        <h2 style={{ margin: '0 0 4px' }}>Detailberichte</h2>
-        <div style={{ color: 'var(--muted)', fontSize: 13 }}>Einzelfallprüfung & Datenqualität — Analyse-Werkzeuge oben, Listen nach Bereich gruppiert.</div>
+        <h2 style={{ margin: '0 0 4px' }}>Berichte &amp; Analysen</h2>
+        <div style={{ color: 'var(--muted)', fontSize: 13 }}>Analyse-Werkzeuge (Radar, Cockpit, Qualität, Struktur) und Detaillisten für die Einzelfallprüfung — nach Bereich gruppiert.</div>
       </div>
 
       {/* Analyse-Werkzeuge — kompakt */}
@@ -800,7 +800,7 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, onDrill, startSuc
   }
 
   return (
-    <div style={{ maxWidth: 1180, margin: '0 auto' }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
         <button onClick={onBack} title="Zurück" style={{ ...inp, cursor: 'pointer', padding: '6px 11px' }}>←</button>
         <div>
@@ -968,7 +968,7 @@ function Vollansicht({ typ, row, cols, idKey, titelKey, titel, onBack, onDrill }
   )
 
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
         <button onClick={onBack} title="Zurück zur Liste" style={{ ...inp, cursor: 'pointer', padding: '6px 11px' }}>←</button>
         <div style={{ flex: 1 }}>

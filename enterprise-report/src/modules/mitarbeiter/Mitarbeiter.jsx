@@ -26,7 +26,7 @@ export default function Mitarbeiter() {
   }
 
   return (
-    <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ marginBottom: 14 }}>
         <h2 style={{ margin: '0 0 4px' }}>Mitarbeiter-Lebenszyklus</h2>
         <div style={{ color: 'var(--muted)', fontSize: 13, maxWidth: 740 }}>

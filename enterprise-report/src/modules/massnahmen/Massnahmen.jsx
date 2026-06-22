@@ -48,7 +48,7 @@ export default function Massnahmen({ werte, rolle, autoKontext, onVerbraucht }) 
   }
 
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gap: 18 }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto', display: 'grid', gap: 18 }}>
       {/* KI-Empfehlung */}
       <div style={card}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>

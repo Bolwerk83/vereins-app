@@ -171,7 +171,7 @@ function Kunden() {
 export default function Lebenszyklus({ onDrill }) {
   const [tab, setTab] = useState('produkt')
   return (
-    <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ marginBottom: 14 }}>
         <h2 style={{ margin: '0 0 4px' }}>Lebenszyklus &amp; Portfolio</h2>
         <div style={{ color: 'var(--muted)', fontSize: 13, maxWidth: 760 }}>

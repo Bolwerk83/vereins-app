@@ -79,6 +79,12 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
   **Stand/Frische der Daten**, Verbindungsstatus, letzte Aktualisierung je Quelle,
   Fehler/Warnungen beim Laden.
 
+### 16. Flexible Zeitraumsdefinition
+- Granularitäten wählbar: **Jahr/Monat/Tag**, **Jahr/KW/Tag** usw.,
+  jeweils **nach Datumsart** (Belegdatum, Bestelldatum, Lieferdatum …).
+- Baut auf `periodenmodell.js` + `ZeitDatenart` auf; in allen passenden Berichten
+  wirksam (Filter/Aggregation).
+
 ## Kleinere / Querschnitt
 - Visualisierungen (Daten-Balken etc.) auch **im Berichtsbaum** und weiteren
   Berichten anbieten (bisher nur Detaillisten).

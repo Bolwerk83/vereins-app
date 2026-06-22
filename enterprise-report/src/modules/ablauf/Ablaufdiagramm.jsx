@@ -43,7 +43,7 @@ export default function Ablaufdiagramm({ onGeh }) {
   ]
 
   return (
-    <div style={{ maxWidth: 940, margin: '0 auto' }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ marginBottom: 12 }}>
         <h2 style={{ margin: '0 0 4px' }}>Ablaufdiagramm — wie alles zusammenhängt</h2>
         <div style={{ color: 'var(--muted)', fontSize: 13, maxWidth: 720 }}>

@@ -45,7 +45,7 @@ export default function Abstimmung({ werte, periode }) {
   }
 
   return (
-    <div style={{ maxWidth: 1040, margin: '0 auto', display: 'grid', gap: 16 }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto', display: 'grid', gap: 16 }}>
       <div style={{ ...card, padding: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
           <div>

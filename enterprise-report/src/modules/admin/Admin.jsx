@@ -41,7 +41,7 @@ export default function Admin({ istAdmin = false, onChange }) {
   }
 
   return (
-    <div style={{ maxWidth: 880, margin: '0 auto' }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ marginBottom: 14 }}>
         <h2 style={{ margin: '0 0 4px' }}>Admin-Bereich</h2>
         <div style={{ color: 'var(--muted)', fontSize: 13 }}>

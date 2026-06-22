@@ -50,7 +50,7 @@ export default function KLR({ werte = {}, rolle, periode, onGeh }) {
   const tag = (farbe) => ({ fontSize: 11.5, color: farbe, border: `1px solid ${farbe}`, borderRadius: 6, padding: '2px 7px', background: 'var(--panel)' })
 
   return (
-    <div style={{ maxWidth: 1080, margin: '0 auto' }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ marginBottom: 14 }}>
         <h2 style={{ margin: '0 0 4px' }}>Kosten- und Leistungsrechnung <span className="mono" style={{ fontSize: 12, color: 'var(--muted)' }}>· {periode}</span></h2>
         <div style={{ color: 'var(--muted)', fontSize: 13, maxWidth: 780 }}>

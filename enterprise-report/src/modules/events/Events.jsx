@@ -44,7 +44,7 @@ export default function Events({ onGeh }) {
   }
 
   return (
-    <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14, marginBottom: 14, flexWrap: 'wrap' }}>
         <div>
           <h2 style={{ margin: '0 0 4px' }}>Events &amp; Aktionen</h2>

@@ -39,7 +39,7 @@ export default function Kostenartenrechnung({ onGeh, rolle }) {
   )
 
   return (
-    <div style={{ maxWidth: 1080, margin: '0 auto' }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
         <div>
           <h2 style={{ margin: '0 0 4px' }}>Kostenartenrechnung</h2>

@@ -43,7 +43,7 @@ export default function KpiEditor({ werte = {}, onChange }) {
   const gefilterteIds = basisIds.filter((id) => !filter || id.toLowerCase().includes(filter.toLowerCase()) || (KPI[id]?.name || '').toLowerCase().includes(filter.toLowerCase())).slice(0, 40)
 
   return (
-    <div style={{ maxWidth: 1000, margin: '0 auto' }} key={tick}>
+    <div style={{ maxWidth: '100%', margin: '0 auto' }} key={tick}>
       <div style={{ marginBottom: 14 }}>
         <h2 style={{ margin: '0 0 4px' }}>KPI-Editor — eigene Kennzahlen</h2>
         <div style={{ color: 'var(--muted)', fontSize: 13, maxWidth: 720 }}>

@@ -57,7 +57,7 @@ export default function ControllingInstrumente({ werte }) {
   const szen = szenarien(werte)
   const bruecke = abweichungsbruecke(werte)
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gap: 18 }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto', display: 'grid', gap: 18 }}>
       <div style={card}>
         <h2 style={{ fontSize: 18 }}>Controlling-Instrumente</h2>
         <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4 }}>Portfolio-, Break-even- und Deckungsbeitragsanalyse auf dem aktuellen Datenbestand.</p>

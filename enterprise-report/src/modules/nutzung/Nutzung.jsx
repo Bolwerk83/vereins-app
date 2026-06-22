@@ -54,7 +54,7 @@ export default function Nutzung({ istAdmin = false }) {
   }
 
   return (
-    <div style={{ maxWidth: 980, margin: '0 auto' }} key={tick}>
+    <div style={{ maxWidth: '100%', margin: '0 auto' }} key={tick}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
         <div>
           <h2 style={{ margin: '0 0 4px' }}>Nutzungs-Statistik</h2>

@@ -16,7 +16,7 @@ export default function Anlagen({ onGeh }) {
   const badge = (id) => { const p = phaseInfo(id); return { fontSize: 11, fontWeight: 700, color: '#fff', background: p.farbe, padding: '1px 8px', borderRadius: 999 } }
 
   return (
-    <div style={{ maxWidth: 1020, margin: '0 auto' }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
         <div>
           <h2 style={{ margin: '0 0 4px' }}>Anlagen-Lebenszyklus</h2>

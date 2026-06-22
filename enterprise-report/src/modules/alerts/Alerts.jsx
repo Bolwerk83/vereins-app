@@ -12,7 +12,7 @@ const head = { padding: '10px 14px', borderBottom: '1px solid var(--line)', font
 export default function Alerts({ werte, rolle, periode }) {
   const a = sammleAlerts(werte, rolle)
   return (
-    <div style={{ maxWidth: 1000, margin: '0 auto', display: 'grid', gap: 16 }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto', display: 'grid', gap: 16 }}>
       <div style={{ ...card, padding: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
           <h2 style={{ fontSize: 18 }}>Alerts · Frühwarnung <span className="mono" style={{ fontSize: 12, color: 'var(--muted)' }}>· {periode}</span></h2>

@@ -16,7 +16,7 @@ export default function ManagementReport({ rolle, werte, periode, onClose, onEmp
   const bw = knotenBewertung(r.kpis.filter((id) => darfKpi(rolle, KPI[id])).map((id) => kpiInsight(id, werte[id])))
   const v = bw.verteilung, total = Math.max(1, v.g + v.a + v.r + v.n)
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto', background: 'var(--panel)', border: '1px solid var(--line)',
+    <div style={{ maxWidth: '100%', margin: '0 auto', background: 'var(--panel)', border: '1px solid var(--line)',
       borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
       {/* Kopf */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 24px',

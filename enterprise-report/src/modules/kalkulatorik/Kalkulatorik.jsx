@@ -29,7 +29,7 @@ export default function Kalkulatorik({ werte = {}, onGeh }) {
   const tag = (farbe) => ({ fontSize: 10.5, fontWeight: 700, color: farbe, border: `1px solid ${farbe}`, padding: '1px 7px', borderRadius: 999 })
 
   return (
-    <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
         <div>
           <h2 style={{ margin: '0 0 4px' }}>Kalkulatorische Kosten aufbauen</h2>

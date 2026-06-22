@@ -381,7 +381,7 @@ export default function App() {
       )}
 
       <KpiDefProvider rolle={rolle} werte={werte} onSpringe={(id) => { setBaumStart(id); setAnsicht('baum') }}>
-      <main style={{ padding: '22px 20px', maxWidth: 1240, margin: '0 auto' }}>
+      <main style={{ padding: '22px 24px', maxWidth: 'none', margin: 0 }}>
         {ansicht !== 'wizard' && eintragIndex[ansicht] && (
           <BerichtInfoBanner view={ansicht} label={eintragIndex[ansicht].label} icon={eintragIndex[ansicht].icon} pfad={eintragIndex[ansicht].pfad} />
         )}

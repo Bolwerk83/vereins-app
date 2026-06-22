@@ -14,7 +14,7 @@ export default function Kostenstellenrechnung({ onGeh }) {
   const w = wirtschaftlichkeit()
 
   return (
-    <div style={{ maxWidth: 1020, margin: '0 auto' }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
         <div>
           <h2 style={{ margin: '0 0 4px' }}>Kostenstellenrechnung (BAB)</h2>

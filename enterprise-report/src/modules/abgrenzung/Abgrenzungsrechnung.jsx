@@ -26,7 +26,7 @@ export default function Abgrenzungsrechnung({ onGeh }) {
   const grundTag = (g) => <span style={{ fontSize: 10, color: 'var(--amp-a)', border: '1px solid var(--amp-a)', borderRadius: 999, padding: '0 6px', marginLeft: 6 }}>{GRUND_LABEL[g] || g}</span>
 
   return (
-    <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ marginBottom: 14 }}>
         <h2 style={{ margin: '0 0 4px' }}>Abgrenzungsrechnung (Betriebsüberleitungsbogen)</h2>
         <div style={{ color: 'var(--muted)', fontSize: 13, maxWidth: 740 }}>

@@ -19,7 +19,7 @@ export default function Datenqualitaet({ werte, periode }) {
     fehler: ergebnisse.filter((e) => e.status === 'fehler').length
   }
   return (
-    <div style={{ maxWidth: 980, margin: '0 auto', display: 'grid', gap: 16 }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto', display: 'grid', gap: 16 }}>
       <div style={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', padding: 16, boxShadow: 'var(--shadow)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 style={{ fontSize: 18 }}>Datenqualität & Querchecks <span className="mono" style={{ fontSize: 12, color: 'var(--muted)' }}>· {periode}</span></h2>

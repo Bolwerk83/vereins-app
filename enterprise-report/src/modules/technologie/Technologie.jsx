@@ -16,7 +16,7 @@ export default function Technologie({ onGeh }) {
   const maxWert = Math.max(...a.rows.map((p) => p.erwarteterWert), 1)
 
   return (
-    <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ marginBottom: 14 }}>
         <h2 style={{ margin: '0 0 4px' }}>Technologie-Reifegrad &amp; F&amp;E-Portfolio</h2>
         <div style={{ color: 'var(--muted)', fontSize: 13, maxWidth: 720 }}>

@@ -35,7 +35,7 @@ export default function KLRAblauf({ onGeh }) {
   ]
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto' }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ marginBottom: 16 }}>
         <h2 style={{ margin: '0 0 4px' }}>KLR-Ablauf — der rote Faden</h2>
         <div style={{ color: 'var(--muted)', fontSize: 13, maxWidth: 720 }}>

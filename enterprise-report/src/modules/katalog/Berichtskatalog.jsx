@@ -26,7 +26,7 @@ export default function Berichtskatalog({ onOpen, rolle }) {
   })
 
   return (
-    <div style={{ maxWidth: 1000, margin: '0 auto', display: 'grid', gap: 16 }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto', display: 'grid', gap: 16 }}>
       <div style={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', padding: 16, boxShadow: 'var(--shadow)' }}>
         <h2 style={{ fontSize: 18 }}>Berichtskatalog · Glossar</h2>
         <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4 }}>Jeder Bericht hat eine feste Nummer (z. B. <b>VK-111</b>). Such- oder Nummern-Eingabe → öffnen.</p>
