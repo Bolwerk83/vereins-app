@@ -77,6 +77,7 @@ import { heartbeat } from './core/praesenz.js'
 import { darfBereich } from './core/rbac.js'
 import { istSichtbar as berichtSichtbar, statusVon as berichtStatusVon } from './core/berichtStatus.js'
 import Berichtfreigabe from './modules/berichtfreigabe/Berichtfreigabe.jsx'
+import DatenmodellAdmin from './modules/datenmodell/DatenmodellAdmin.jsx'
 import { bereichVon } from './core/navMeta.js'
 import BerichtInfoModal from './modules/berichtinfo/BerichtInfoModal.jsx'
 import BerichtInfoBanner from './modules/berichtinfo/BerichtInfoBanner.jsx'
@@ -318,6 +319,7 @@ export default function App() {
       { titel: 'Einrichtung', eintraege: [ E('wizard', 'nav.wizard', '⚙') ] },
       ...(istAdmin(rolle) ? [{ titel: 'Administration', eintraege: [
         E('admin', 'nav.admin', '🛠'),
+        E('datenmodell', 'nav.datenmodell', '🧷'),
         E('berichtfreigabe', 'nav.berichtfreigabe', '🚦'),
         E('nutzung', 'nav.nutzung', '📈'),
         E('rechte', 'nav.rechte', '👥', { badge: anfragenN || null })
@@ -550,6 +552,9 @@ export default function App() {
         )}
         {ansicht === 'berichtfreigabe' && (
           <Berichtfreigabe istAdmin={istAdmin(rolle)} />
+        )}
+        {ansicht === 'datenmodell' && (
+          <DatenmodellAdmin istAdmin={istAdmin(rolle)} />
         )}
         {ansicht === 'lzempfehlung' && (
           <LebenszyklusEmpfehlungen onGeh={geh} />

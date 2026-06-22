@@ -72,6 +72,7 @@ export const NAV_ZIELE = [
   { ziel: 'transport', gruppe: 'Steuerung', schluessel: 'nav.transport' },
   { ziel: 'admin', gruppe: 'Steuerung', schluessel: 'nav.admin' },
   { ziel: 'berichtfreigabe', gruppe: 'Administration', schluessel: 'nav.berichtfreigabe' },
+  { ziel: 'datenmodell', gruppe: 'Administration', schluessel: 'nav.datenmodell' },
   { ziel: 'lernpfad', gruppe: 'Steuerung', schluessel: 'nav.lernpfad' },
   { ziel: 'doku', gruppe: 'Steuerung', schluessel: 'nav.doku' }
 ]
