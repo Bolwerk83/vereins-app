@@ -26,6 +26,7 @@ import Ablaufdiagramm from './modules/ablauf/Ablaufdiagramm.jsx'
 import Kostenartenrechnung from './modules/kostenarten/Kostenartenrechnung.jsx'
 import Kalkulatorik from './modules/kalkulatorik/Kalkulatorik.jsx'
 import Lebenszyklus from './modules/lebenszyklus/Lebenszyklus.jsx'
+import PortfolioBcg from './modules/portfolio-bcg/PortfolioBcg.jsx'
 import EinzelGemein from './modules/einzelgemein/EinzelGemein.jsx'
 import AuftragsLebenszyklus from './modules/auftrag/AuftragsLebenszyklus.jsx'
 import Kostenstellenrechnung from './modules/kostenstellen/Kostenstellenrechnung.jsx'
@@ -251,6 +252,7 @@ export default function App() {
         E('szenario', 'nav.szenario', '🔮'),
         E('abweichung', 'nav.abweichung', '📊'),
         E('vergleich', 'nav.vergleich', '⚖'),
+        E('portfoliobcg', 'nav.portfoliobcg', '🧩'),
         E('qc', 'nav.qc', '✅', { badge: qcFehler || null }),
         E('abstimmung', 'nav.abstimmung', '🔗'),
         E('abgleichabsatz', 'nav.abgleichabsatz', '🔀')
@@ -493,6 +495,9 @@ export default function App() {
         )}
         {ansicht === 'lebenszyklus' && (
           <Lebenszyklus onDrill={(o) => gehDetail('artikel', o.gruppe || o.name)} />
+        )}
+        {ansicht === 'portfoliobcg' && (
+          <PortfolioBcg />
         )}
         {ansicht === 'lzempfehlung' && (
           <LebenszyklusEmpfehlungen onGeh={geh} />
