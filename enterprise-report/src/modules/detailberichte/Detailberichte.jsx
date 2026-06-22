@@ -5,7 +5,8 @@
 //  eine Zeile öffnet die Befund-Karte (Sprung in die Detailprüfung).
 // =========================================================================
 import React, { useState, useEffect } from 'react'
-import { LISTEN, LEGENDE, artikelliste, auftragsliste, warenverbrauchliste, leasingliste, retourenliste, rechnungsliste, kundenliste, historie } from '../../core/detailberichte.js'
+import { LISTEN, LEGENDE, artikelliste, auftragsliste, warenverbrauchliste, leasingliste, retourenliste, rechnungsliste, kundenliste, produktliste, rechnungsposliste, bestellkanalliste, chargenliste, auftragsbestandliste, historie } from '../../core/detailberichte.js'
+import { downloadCsv } from '../../core/export.js'
 import { ladeBookmarks, addBookmark, loescheBookmark, ladeLetzte, merkeLetzte } from '../../core/bookmarks.js'
 
 // Eingebaute Spalten-Ansichten (Fokus-Presets) je Liste.
@@ -35,6 +36,20 @@ const PRESETS = {
   kunde: [
     { name: 'Risiko', sichtbar: ['kundennr', 'name', 'offeneForderung', 'kreditlimit', 'status'] },
     { name: 'Kontakt', sichtbar: ['kundennr', 'name', 'email', 'land'] }
+  ],
+  produkt: [
+    { name: 'Stammdaten', sichtbar: ['sku', 'name', 'gruppe', 'marke', 'status'] },
+    { name: 'Preis & Versand', sichtbar: ['sku', 'name', 'vkBrutto', 'steuersatz', 'gewicht'] }
+  ],
+  rechnungpos: [{ name: 'Beträge', sichtbar: ['rechnung', 'pos', 'artikel', 'menge', 'einzelpreis', 'netto'] }],
+  bestellkanal: [
+    { name: 'Quoten', sichtbar: ['kanal', 'retourenQuote', 'stornoQuote'] },
+    { name: 'Umsatz', sichtbar: ['kanal', 'bestellungen', 'umsatz', 'avgWarenkorb'] }
+  ],
+  charge: [{ name: 'MHD-Fokus', sichtbar: ['charge', 'artikel', 'menge', 'mhd', 'gesperrt'] }],
+  auftragsbestand: [
+    { name: 'Offene Mengen', sichtbar: ['auftrag', 'kunde', 'bestellt', 'geliefert', 'offen', 'liefertermin'] },
+    { name: 'Werte', sichtbar: ['auftrag', 'kunde', 'offen', 'wert'] }
   ]
 }
 
@@ -148,6 +163,68 @@ const KUND_COLS = [
 ]
 const KUND_SUM = ['umsatzJahr', 'offeneForderung', 'kreditlimit']
 
+const PROD_COLS = [
+  { key: 'sku', label: 'SKU', al: 'left', mono: true },
+  { key: 'name', label: 'Bezeichnung', al: 'left' },
+  { key: 'gruppe', label: 'Gruppe', al: 'left' },
+  { key: 'marke', label: 'Marke', al: 'left' },
+  { key: 'ean', label: 'EAN', al: 'left', mono: true },
+  { key: 'status', label: 'Status', al: 'left' },
+  { key: 'vkBrutto', label: 'VK brutto €', al: 'right', fmt: eur },
+  { key: 'steuersatz', label: 'USt %', al: 'right' },
+  { key: 'gewicht', label: 'Gewicht kg', al: 'right' }
+]
+const PROD_SUM = ['vkBrutto', 'gewicht']
+
+const RPOS_COLS = [
+  { key: 'rechnung', label: 'Rechnung', al: 'left', mono: true },
+  { key: 'pos', label: 'Pos', al: 'right' },
+  { key: 'sku', label: 'SKU', al: 'left', mono: true },
+  { key: 'artikel', label: 'Artikel', al: 'left' },
+  { key: 'menge', label: 'Menge', al: 'right' },
+  { key: 'einzelpreis', label: 'Einzelpreis €', al: 'right', fmt: eur },
+  { key: 'rabattPct', label: 'Rabatt %', al: 'right' },
+  { key: 'netto', label: 'Netto €', al: 'right', fmt: eur },
+  { key: 'mwst', label: 'MwSt €', al: 'right', fmt: eur }
+]
+const RPOS_SUM = ['menge', 'netto', 'mwst']
+
+const KANAL_COLS = [
+  { key: 'kanal', label: 'Kanal', al: 'left' },
+  { key: 'bestellungen', label: 'Bestellungen', al: 'right' },
+  { key: 'umsatz', label: 'Umsatz €', al: 'right', fmt: eur },
+  { key: 'retourenQuote', label: 'Retouren %', al: 'right', fmt: pct },
+  { key: 'stornoQuote', label: 'Storno %', al: 'right', fmt: pct },
+  { key: 'avgWarenkorb', label: 'Ø Warenkorb €', al: 'right', fmt: eur }
+]
+const KANAL_SUM = ['bestellungen', 'umsatz']
+
+const CHARGE_COLS = [
+  { key: 'charge', label: 'Charge', al: 'left', mono: true },
+  { key: 'sku', label: 'SKU', al: 'left', mono: true },
+  { key: 'artikel', label: 'Artikel', al: 'left' },
+  { key: 'menge', label: 'Menge', al: 'right' },
+  { key: 'mhd', label: 'MHD', al: 'left', fmt: datum },
+  { key: 'wareneingang', label: 'Wareneingang', al: 'left', fmt: datum },
+  { key: 'lieferant', label: 'Lieferant', al: 'left' },
+  { key: 'gesperrt', label: 'QS-Sperre', al: 'center', fmt: (v) => (v ? 'gesperrt' : '') }
+]
+const CHARGE_SUM = ['menge']
+
+const ABEST_COLS = [
+  { key: 'auftrag', label: 'Auftrag', al: 'left', mono: true },
+  { key: 'kunde', label: 'Kunde', al: 'left' },
+  { key: 'datum', label: 'Datum', al: 'left', fmt: datum },
+  { key: 'sku', label: 'SKU', al: 'left', mono: true },
+  { key: 'artikel', label: 'Artikel', al: 'left' },
+  { key: 'bestellt', label: 'Bestellt', al: 'right' },
+  { key: 'geliefert', label: 'Geliefert', al: 'right' },
+  { key: 'offen', label: 'Offen', al: 'right' },
+  { key: 'wert', label: 'Offen-Wert €', al: 'right', fmt: eur },
+  { key: 'liefertermin', label: 'Liefertermin', al: 'left', fmt: datum }
+]
+const ABEST_SUM = ['bestellt', 'geliefert', 'offen', 'wert']
+
 export default function Detailberichte({ startListe = null }) {
   const [aktiv, setAktiv] = useState(startListe)
   if (aktiv === 'artikel') return <Liste typ="artikel" titel="Artikelliste" sub="Zeigt die SKU in einer Listen-Übersicht. Klick auf eine Zeile → Befund-Karte (inkl. E5-Historie)." cols={ART_COLS} sumKeys={ART_SUM} lade={artikelliste} onBack={() => setAktiv(null)} idKey="sku" titelKey="artikel" />
@@ -158,6 +235,11 @@ export default function Detailberichte({ startListe = null }) {
   if (aktiv === 'retoure') return <Liste typ="retoure" titel="Retourenliste" sub="Retouren mit Plausi-Prüfung (Grund fehlt, Wert > Original, ohne Auftrag …)." cols={RET_COLS} sumKeys={RET_SUM} lade={retourenliste} onBack={() => setAktiv(null)} idKey="retoure" titelKey="kunde" />
   if (aktiv === 'rechnung') return <Liste typ="rechnung" titel="Rechnungsliste" sub="Rechnungen mit Plausi-Prüfung (Brutto ≠ Netto + MwSt, ohne Position, unbezahlt …)." cols={RECH_COLS} sumKeys={RECH_SUM} lade={rechnungsliste} onBack={() => setAktiv(null)} idKey="rechnung" titelKey="kunde" />
   if (aktiv === 'kunde') return <Liste typ="kunde" titel="Kundenliste" sub="Kunden mit Plausi-Prüfung (Kreditlimit überschritten, E-Mail, Umsatz …)." cols={KUND_COLS} sumKeys={KUND_SUM} lade={kundenliste} onBack={() => setAktiv(null)} idKey="kundennr" titelKey="name" />
+  if (aktiv === 'produkt') return <Liste typ="produkt" titel="Produktliste" sub="Produktstammdaten mit Plausi (kein VK-Preis, EAN ungültig, gesperrt, Gewicht fehlt)." cols={PROD_COLS} sumKeys={PROD_SUM} lade={produktliste} onBack={() => setAktiv(null)} idKey="sku" titelKey="name" />
+  if (aktiv === 'rechnungpos') return <Liste typ="rechnungpos" titel="Rechnungspositionsliste" sub="Einzelpositionen mit Plausi (Positionsnetto, Menge, hoher Rabatt)." cols={RPOS_COLS} sumKeys={RPOS_SUM} lade={rechnungsposliste} onBack={() => setAktiv(null)} idKey="rechnung" titelKey="artikel" />
+  if (aktiv === 'bestellkanal') return <Liste typ="bestellkanal" titel="Bestellkanalliste" sub="Kanäle mit Plausi (hohe Retouren-/Stornoquote, Kanal ohne Bestellungen)." cols={KANAL_COLS} sumKeys={KANAL_SUM} lade={bestellkanalliste} onBack={() => setAktiv(null)} idKey="kanal" titelKey="kanal" />
+  if (aktiv === 'charge') return <Liste typ="charge" titel="Chargenliste" sub="Chargen/MHD mit Plausi (MHD überschritten/bald, QS-Sperre, leere Charge)." cols={CHARGE_COLS} sumKeys={CHARGE_SUM} lade={chargenliste} onBack={() => setAktiv(null)} idKey="charge" titelKey="artikel" />
+  if (aktiv === 'auftragsbestand') return <Liste typ="auftragsbestand" titel="Auftragsbestandsliste" sub="Offener Auftragsbestand mit Plausi (offene Menge inkonsistent, Liefertermin überschritten, Übermenge)." cols={ABEST_COLS} sumKeys={ABEST_SUM} lade={auftragsbestandliste} onBack={() => setAktiv(null)} idKey="auftrag" titelKey="kunde" />
 
   // Hub
   return (
@@ -212,6 +294,12 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, idKey, titelKey, 
   const speichereAnsicht = () => { const name = prompt('Name für diese Ansicht (Bookmark):'); if (name && name.trim()) { addBookmark(typ, name, [...sichtbar]); setBmTick((t) => t + 1) } }
   const loesche = (id) => { loescheBookmark(typ, id); setBmTick((t) => t + 1) }
   const sichtCols = cols.filter((c) => sichtbar.has(c.key))
+  // CSV-Export der aktuellen Ansicht: nur sichtbare Spalten + Befundspalte.
+  const exportCsv = () => {
+    const kopf = [...sichtCols.map((c) => c.label), 'Befund']
+    const zeilen = data.rows.map((r) => [...sichtCols.map((c) => (c.fmt ? c.fmt(r[c.key]) : r[c.key] ?? '')), r.befunde.map((b) => b.text).join(' | ')])
+    downloadCsv(`${typ}_${nurAuffaellig ? 'auffaellig' : 'ansicht'}`, [kopf, ...zeilen])
+  }
 
   const zelle = (row, c) => {
     const dimmed = row._dim?.includes(c.key)
@@ -276,6 +364,7 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, idKey, titelKey, 
           style={{ ...inp, cursor: 'pointer', fontSize: 12, fontWeight: 600, borderColor: panelAuf ? 'var(--accent)' : 'var(--line)', color: panelAuf ? 'var(--accent)' : 'var(--ink)' }}>
           🔖 Spalten &amp; Ansichten ({sichtCols.length}/{cols.length})
         </button>
+        <button onClick={exportCsv} title="Aktuelle Ansicht als CSV/Excel exportieren" style={{ ...inp, cursor: 'pointer', fontSize: 12 }}>⤓ CSV</button>
       </div>
 
       {/* Bookmark-/Spalten-Panel (auf-/zuklappbar wie das Burger-Menü) */}

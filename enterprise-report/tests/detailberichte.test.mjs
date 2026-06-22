@@ -1,7 +1,7 @@
 import './_setup.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { artikelliste, auftragsliste, pruefeArtikel, pruefeAuftrag, ARTIKEL, LISTEN, historie, warenverbrauchliste, pruefeWarenverbrauch, WARENVERBRAUCH, leasingliste, fuehrenderBeleg, LEASING, retourenliste, rechnungsliste, kundenliste, detailFuerBereich } from '../src/core/detailberichte.js'
+import { artikelliste, auftragsliste, pruefeArtikel, pruefeAuftrag, ARTIKEL, LISTEN, historie, warenverbrauchliste, pruefeWarenverbrauch, WARENVERBRAUCH, leasingliste, fuehrenderBeleg, LEASING, retourenliste, rechnungsliste, kundenliste, detailFuerBereich, produktliste, rechnungsposliste, bestellkanalliste, chargenliste, auftragsbestandliste } from '../src/core/detailberichte.js'
 
 test('Negativer Verfügbarbestand wird als Fehler erkannt', () => {
   const a = ARTIKEL.find((x) => x.sku === '231052006') // lbVerf -1
@@ -108,7 +108,47 @@ test('Drill E3→E4: Fachbereich → passende Detailliste', () => {
   assert.equal(detailFuerBereich(undefined), null)
 })
 
-test('LISTEN-Katalog hat verfügbare und geplante Listen', () => {
+test('Produktliste: Plausi (kein VK-Preis, EAN, gesperrt)', () => {
+  const rows = produktliste().rows
+  assert.ok(rows.find((p) => p.sku === '3312900').befunde.some((b) => b.text.includes('Kein VK-Preis')))
+  assert.ok(rows.find((p) => p.sku === '2087431').befunde.some((b) => b.feld === 'ean'))
+  assert.ok(rows.find((p) => p.sku === '5590018').befunde.some((b) => b.text.includes('Gesperrt')))
+})
+
+test('Rechnungspositionsliste: Positionsnetto & Menge', () => {
+  const rows = rechnungsposliste().rows
+  assert.ok(rows.find((p) => p.rechnung === 'RE-9003').befunde.some((b) => b.text === 'Menge ≤ 0'))
+  assert.ok(rows.find((p) => p.rechnung === 'RE-9005').befunde.some((b) => b.text.includes('hoher Rabatt')))
+  // korrekte Position erzeugt keinen Netto-Fehler
+  assert.ok(!rows.find((p) => p.rechnung === 'RE-9001').befunde.some((b) => b.feld === 'netto'))
+})
+
+test('Bestellkanalliste: hohe Quoten & leerer Kanal', () => {
+  const rows = bestellkanalliste().rows
+  assert.ok(rows.find((k) => k.kanal === 'Amazon').befunde.some((b) => b.text.includes('Retourenquote')))
+  assert.ok(rows.find((k) => k.kanal === 'eBay').befunde.some((b) => b.text.includes('Stornoquote')))
+  assert.ok(rows.find((k) => k.kanal === 'B2B Direkt').befunde.some((b) => b.schwere === 'hinweis'))
+})
+
+test('Chargenliste: MHD überschritten/bald & QS-Sperre', () => {
+  const rows = chargenliste().rows
+  assert.ok(rows.find((c) => c.charge === 'CH-2025-221').befunde.some((b) => b.text.includes('überschritten')))
+  assert.ok(rows.find((c) => c.charge === 'CH-2026-009').befunde.some((b) => b.text.includes('bald')))
+  assert.ok(rows.find((c) => c.charge === 'CH-2026-040').befunde.some((b) => b.text.includes('gesperrt')))
+})
+
+test('Auftragsbestandsliste: Inkonsistenz & Übermenge', () => {
+  const rows = auftragsbestandliste().rows
+  assert.ok(rows.find((a) => a.auftrag === '2654499002').befunde.some((b) => b.text.includes('Übermenge')))
+  assert.ok(rows.find((a) => a.auftrag === '2654500771').befunde.some((b) => b.text.includes('Liefertermin')))
+  assert.ok(!rows.find((a) => a.auftrag === '2654500002').befunde.length) // sauber
+})
+
+test('Alle Katalog-Listen sind jetzt verfügbar', () => {
+  assert.ok(LISTEN.every((l) => l.verfuegbar), 'es sollten alle Listen verfügbar sein')
+})
+
+test('LISTEN-Katalog enthält die Kernlisten', () => {
   assert.ok(LISTEN.find((l) => l.id === 'artikel').verfuegbar)
-  assert.ok(LISTEN.some((l) => !l.verfuegbar))
+  assert.ok(LISTEN.length >= 12)
 })

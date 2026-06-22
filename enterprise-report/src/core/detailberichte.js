@@ -144,6 +144,30 @@ export function historie(typ, row) {
       .sort((a, b) => (a.datum < b.datum ? -1 : 1))
     return { kind: 'timeline', punkte: pts.length ? pts : [{ label: 'kein Beleg', datum: '', warn: true }] }
   }
+  if (typ === 'charge') {
+    return { kind: 'timeline', punkte: [
+      { label: 'Wareneingang', datum: row.wareneingang },
+      { label: 'MHD', datum: row.mhd, warn: tageBis(row.mhd) < 0 }
+    ] }
+  }
+  if (typ === 'auftragsbestand') {
+    return { kind: 'timeline', punkte: [
+      { label: 'Bestellt', datum: row.datum },
+      { label: row.offen <= 0 ? 'Komplett geliefert' : `noch ${row.offen} offen`, datum: row.liefertermin, warn: row.offen > 0 && tageBis(row.liefertermin) < 0 }
+    ] }
+  }
+  if (typ === 'bestellkanal') {
+    const o = offset(row.kanal)
+    return { kind: 'chart', einheit: 'Umsatz (T€)', punkte: MON.map((m, i) => ({ label: m, wert: Math.max(0, Math.round((row.umsatz || 0) / 6000 + Math.sin(i + o) * 5)) })) }
+  }
+  if (typ === 'produkt') {
+    const o = offset(row.sku)
+    return { kind: 'chart', einheit: 'Absatz (Stk)', punkte: MON.map((m, i) => ({ label: m, wert: Math.max(0, Math.round(20 + Math.sin(i + o) * 10)) })) }
+  }
+  if (typ === 'rechnungpos') {
+    const o = offset(row.sku)
+    return { kind: 'chart', einheit: 'Menge (Stk)', punkte: MON.map((m, i) => ({ label: m, wert: Math.max(0, Math.round((row.menge || 1) + Math.cos(i + o) * 3)) })) }
+  }
   // Auftrag: Status-Zeitstrahl bis zum aktuellen Stand.
   let stufen = row.status === 'Offen' ? ['Angelegt', 'Bestätigt'] : ['Angelegt', 'Bestätigt', 'Kommissioniert', 'Geliefert']
   if (row.ret > 0 || row.ue < 0) stufen = [...stufen, 'Retoure']
@@ -303,6 +327,94 @@ export function pruefeKunde(k) {
 }
 export function kundenliste(o = {}) { return generischListe(KUNDEN, pruefeKunde, o, ['umsatzJahr', 'offeneForderung', 'kreditlimit'], (k, q) => norm(k.kundennr).includes(q) || norm(k.name).includes(q) || norm(k.email).includes(q)) }
 
+// ---- Produkt-, Rechnungspos-, Bestellkanal-, Chargen-, Auftragsbestand ---
+const HEUTE = '2026-06-22'
+const tageBis = (d) => Math.round((new Date(d) - new Date(HEUTE)) / 86400000)
+
+export const PRODUKTE = [
+  { sku: '1453766', name: 'GRAVEL 22 BACKROAD', gruppe: 'Fahrrad', marke: 'Cube', ean: '4054571012345', status: 'aktiv', vkBrutto: 1499.0, steuersatz: 19, gewicht: 11.2 },
+  { sku: '2087431', name: 'E-Bike Akku 625Wh', gruppe: 'Zubehör', marke: 'Bosch', ean: '', status: 'aktiv', vkBrutto: 749.0, steuersatz: 19, gewicht: 3.5 },
+  { sku: '3312900', name: 'Trikot Pro M', gruppe: 'Bekleidung', marke: 'Castelli', ean: '8059654712345', status: 'auslauf', vkBrutto: 0, steuersatz: 19, gewicht: 0.2 },
+  { sku: '4456712', name: 'Energieriegel Box', gruppe: 'Nahrung', marke: 'PowerBar', ean: '4017934112345', status: 'aktiv', vkBrutto: 24.9, steuersatz: 7, gewicht: 0.6 },
+  { sku: '5590018', name: 'Vintage Rahmen XL', gruppe: 'Fahrrad', marke: 'Eigen', ean: '4054571099999', status: 'gesperrt', vkBrutto: 299.0, steuersatz: 19, gewicht: 0 }
+]
+export function pruefeProdukt(p) {
+  const b = []
+  if (p.vkBrutto <= 0) b.push({ feld: 'vkBrutto', schwere: 'fehler', text: 'Kein VK-Preis hinterlegt' })
+  if (!p.ean || p.ean.length !== 13) b.push({ feld: 'ean', schwere: 'warnung', text: 'EAN fehlt oder ungültig (13 Stellen)' })
+  if (p.status === 'gesperrt') b.push({ feld: 'status', schwere: 'hinweis', text: 'Gesperrtes Produkt (nicht verkaufbar)' })
+  if (p.gewicht <= 0) b.push({ feld: 'gewicht', schwere: 'hinweis', text: 'Gewicht fehlt (Versandberechnung)' })
+  return b
+}
+export function produktliste(o = {}) { return generischListe(PRODUKTE, pruefeProdukt, o, ['vkBrutto', 'gewicht'], (p, q) => norm(p.sku).includes(q) || norm(p.name).includes(q) || norm(p.marke).includes(q)) }
+
+export const RECHNUNGSPOS = [
+  { rechnung: 'RE-9001', pos: 1, sku: '8758017', artikel: 'GIANT TCR', menge: 1, einzelpreis: 99.0, rabattPct: 0, netto: 99.0, mwst: 18.81 },
+  { rechnung: 'RE-9002', pos: 1, sku: '1453766', artikel: 'GRAVEL 22', menge: 2, einzelpreis: 1259.66, rabattPct: 0, netto: 2519.32, mwst: 478.67 },
+  { rechnung: 'RE-9002', pos: 2, sku: '4456712', artikel: 'Energieriegel', menge: 10, einzelpreis: 18.93, rabattPct: 10, netto: 200.0, mwst: 14.0 },
+  { rechnung: 'RE-9003', pos: 1, sku: '3312900', artikel: 'Trikot Pro M', menge: 0, einzelpreis: 79.0, rabattPct: 0, netto: 0, mwst: 0 },
+  { rechnung: 'RE-9005', pos: 1, sku: '2087431', artikel: 'Akku 625Wh', menge: 1, einzelpreis: 210.0, rabattPct: 60, netto: 84.0, mwst: 15.96 }
+]
+export function pruefeRechnungpos(p) {
+  const b = []
+  const soll = r2(p.menge * p.einzelpreis * (1 - p.rabattPct / 100))
+  if (p.menge <= 0) b.push({ feld: 'menge', schwere: 'fehler', text: 'Menge ≤ 0' })
+  else if (Math.abs(soll - p.netto) > 0.02) b.push({ feld: 'netto', schwere: 'fehler', text: `Positionsnetto stimmt nicht (Soll ${soll.toFixed(2)})` })
+  if (p.rabattPct > 50) b.push({ feld: 'rabattPct', schwere: 'warnung', text: 'Sehr hoher Rabatt (> 50 %)' })
+  return b
+}
+export function rechnungsposliste(o = {}) { return generischListe(RECHNUNGSPOS, pruefeRechnungpos, o, ['menge', 'netto', 'mwst'], (p, q) => norm(p.rechnung).includes(q) || norm(p.sku).includes(q) || norm(p.artikel).includes(q)) }
+
+export const BESTELLKANAELE = [
+  { kanal: 'Onlineshop', bestellungen: 1284, umsatz: 312400, retourenQuote: 12.4, stornoQuote: 3.1, avgWarenkorb: 243.3 },
+  { kanal: 'Amazon', bestellungen: 842, umsatz: 168200, retourenQuote: 34.8, stornoQuote: 5.2, avgWarenkorb: 199.8 },
+  { kanal: 'eBay', bestellungen: 311, umsatz: 54800, retourenQuote: 18.0, stornoQuote: 18.5, avgWarenkorb: 176.2 },
+  { kanal: 'Filiale', bestellungen: 2050, umsatz: 487300, retourenQuote: 4.1, stornoQuote: 0.8, avgWarenkorb: 237.7 },
+  { kanal: 'B2B Direkt', bestellungen: 0, umsatz: 0, retourenQuote: 0, stornoQuote: 0, avgWarenkorb: 0 }
+]
+export function pruefeBestellkanal(k) {
+  const b = []
+  if (k.retourenQuote > 30) b.push({ feld: 'retourenQuote', schwere: 'warnung', text: 'Hohe Retourenquote (> 30 %)' })
+  if (k.stornoQuote > 15) b.push({ feld: 'stornoQuote', schwere: 'warnung', text: 'Hohe Stornoquote (> 15 %)' })
+  if (k.bestellungen === 0) b.push({ feld: 'bestellungen', schwere: 'hinweis', text: 'Kanal ohne Bestellungen' })
+  return b
+}
+export function bestellkanalliste(o = {}) { return generischListe(BESTELLKANAELE, pruefeBestellkanal, o, ['bestellungen', 'umsatz'], (k, q) => norm(k.kanal).includes(q)) }
+
+export const CHARGEN = [
+  { charge: 'CH-2026-014', sku: '4456712', artikel: 'Energieriegel Box', menge: 240, mhd: '2026-12-01', wareneingang: '2026-03-10', lieferant: 'PowerBar GmbH', gesperrt: false },
+  { charge: 'CH-2026-009', sku: '4456712', artikel: 'Energieriegel Box', menge: 60, mhd: '2026-07-05', wareneingang: '2025-12-02', lieferant: 'PowerBar GmbH', gesperrt: false },
+  { charge: 'CH-2025-221', sku: '4456712', artikel: 'Energieriegel Box', menge: 30, mhd: '2026-05-30', wareneingang: '2025-09-15', lieferant: 'PowerBar GmbH', gesperrt: false },
+  { charge: 'CH-2026-031', sku: '2087431', artikel: 'E-Bike Akku 625Wh', menge: 0, mhd: '2028-01-01', wareneingang: '2026-04-01', lieferant: 'Bosch AG', gesperrt: false },
+  { charge: 'CH-2026-040', sku: '2087431', artikel: 'E-Bike Akku 625Wh', menge: 12, mhd: '2027-06-01', wareneingang: '2026-05-20', lieferant: 'Bosch AG', gesperrt: true }
+]
+export function pruefeCharge(c) {
+  const b = []
+  const rest = tageBis(c.mhd)
+  if (rest < 0) b.push({ feld: 'mhd', schwere: 'fehler', text: `MHD überschritten (${-rest} Tage)` })
+  else if (rest <= 45) b.push({ feld: 'mhd', schwere: 'warnung', text: `MHD bald erreicht (${rest} Tage)` })
+  if (c.gesperrt) b.push({ feld: 'gesperrt', schwere: 'hinweis', text: 'Charge gesperrt (Qualitätssicherung)' })
+  if (c.menge <= 0) b.push({ feld: 'menge', schwere: 'hinweis', text: 'Charge ohne Bestand' })
+  return b
+}
+export function chargenliste(o = {}) { return generischListe(CHARGEN, pruefeCharge, o, ['menge'], (c, q) => norm(c.charge).includes(q) || norm(c.sku).includes(q) || norm(c.artikel).includes(q) || norm(c.lieferant).includes(q)) }
+
+export const AUFTRAGSBESTAND = [
+  { auftrag: '2654500001', kunde: 'Stadtwerke Köln', datum: '2026-05-28', sku: '1453766', artikel: 'GRAVEL 22', bestellt: 5, geliefert: 2, offen: 3, wert: 3779.0, liefertermin: '2026-07-10' },
+  { auftrag: '2654500002', kunde: 'Lieferdienst Bonn', datum: '2026-06-05', sku: '2087431', artikel: 'Akku 625Wh', bestellt: 10, geliefert: 10, offen: 0, wert: 0, liefertermin: '2026-06-20' },
+  { auftrag: '2654500771', kunde: 'Onlineshop', datum: '2026-05-30', sku: '4456712', artikel: 'Energieriegel', bestellt: 100, geliefert: 40, offen: 60, wert: 1494.0, liefertermin: '2026-06-10' },
+  { auftrag: '2654499002', kunde: 'B2B Händler', datum: '2026-06-08', sku: '3312900', artikel: 'Trikot Pro M', bestellt: 20, geliefert: 25, offen: -5, wert: -395.0, liefertermin: '2026-07-01' },
+  { auftrag: '2654500004', kunde: 'Logistik AG', datum: '2026-05-22', sku: '1453766', artikel: 'GRAVEL 22', bestellt: 8, geliefert: 3, offen: 4, wert: 5036.0, liefertermin: '2026-08-15' }
+]
+export function pruefeAuftragsbestand(a) {
+  const b = []
+  if (a.offen < 0) b.push({ feld: 'offen', schwere: 'fehler', text: 'Übermenge geliefert (offen < 0)' })
+  else if (a.offen !== a.bestellt - a.geliefert) b.push({ feld: 'offen', schwere: 'fehler', text: `Offene Menge inkonsistent (Soll ${a.bestellt - a.geliefert})` })
+  if (a.offen > 0 && tageBis(a.liefertermin) < 0) b.push({ feld: 'liefertermin', schwere: 'warnung', text: `Liefertermin überschritten (${-tageBis(a.liefertermin)} Tage)` })
+  return b
+}
+export function auftragsbestandliste(o = {}) { return generischListe(AUFTRAGSBESTAND, pruefeAuftragsbestand, o, ['bestellt', 'geliefert', 'offen', 'wert'], (a, q) => norm(a.auftrag).includes(q) || norm(a.kunde).includes(q) || norm(a.artikel).includes(q)) }
+
 // Generischer Listen-Helfer (Befunde + Filter + Summen).
 function generischListe(daten, pruef, { suche = '', nurAuffaellig = false } = {}, sumKeys = [], match) {
   const q = norm(suche)
@@ -317,16 +429,16 @@ function generischListe(daten, pruef, { suche = '', nurAuffaellig = false } = {}
 export const LISTEN = [
   { id: 'auftrag', name: 'Auftragsliste', verfuegbar: true },
   { id: 'artikel', name: 'Artikelliste', verfuegbar: true },
-  { id: 'produkt', name: 'Produktliste', verfuegbar: false },
+  { id: 'produkt', name: 'Produktliste', verfuegbar: true },
   { id: 'rechnung', name: 'Rechnungsliste', verfuegbar: true },
-  { id: 'rechnungpos', name: 'Rechnungspositionsliste', verfuegbar: false },
-  { id: 'bestellkanal', name: 'Bestellkanalliste', verfuegbar: false },
+  { id: 'rechnungpos', name: 'Rechnungspositionsliste', verfuegbar: true },
+  { id: 'bestellkanal', name: 'Bestellkanalliste', verfuegbar: true },
   { id: 'leasing', name: 'Leasingliste', verfuegbar: true },
-  { id: 'charge', name: 'Chargenliste', verfuegbar: false },
+  { id: 'charge', name: 'Chargenliste', verfuegbar: true },
   { id: 'kunde', name: 'Kundenliste', verfuegbar: true },
   { id: 'plausiwv', name: 'Plausi: Warenverbrauch', verfuegbar: true },
   { id: 'retoure', name: 'Retourenliste', verfuegbar: true },
-  { id: 'auftragsbestand', name: 'Auftragsbestandsliste', verfuegbar: false }
+  { id: 'auftragsbestand', name: 'Auftragsbestandsliste', verfuegbar: true }
 ]
 
 // Drill-Down E3 → E4: welcher Fachbereich (E2-Code) führt in welche Detailliste?
