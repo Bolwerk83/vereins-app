@@ -124,7 +124,7 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
   → Aufteilung in **Lieferkette** (ab hier angestoßen) und **Wertschöpfungskette**
   bis zu den **Umsatzerlösen** (bessere Begriffe gern).
 
-### 8. Marketing-Landkarten
+### 8. Marketing-Landkarten — DONE
 - Choropleth: **Welt → Europa → Deutschland → Bundesländer → PLZ-Gebiet**.
 - Mehrere wählbare Metriken (Umsatzerlöse, Marktanteil, DB %, Verteilung nach
   Warenbereichen …), **Bookmarks** + ein-/ausblenden (wie bei den Listen).

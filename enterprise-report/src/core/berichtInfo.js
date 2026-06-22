@@ -27,6 +27,7 @@ export const BERICHT_INFO = {
   segment: { zweck: 'Segment-/Konzernbericht mit Intercompany-Konsolidierung.', zielgruppe: 'GF / Konzern.', mehrwert: 'Konzernsicht ohne Doppelzählung.' },
   // ---- Operativ ----
   marketing: { zweck: 'Digital-Analytics: Funnel, Conversion, Kanäle, ROAS.', zielgruppe: 'Marketing / Vertrieb.', mehrwert: 'Kanäle & Kampagnen datenbasiert steuern.' },
+  marketingkarte: { zweck: 'Geografische Verteilung mit Drilldown (Welt → Europa → Deutschland → Bundesland → PLZ-Gebiet) als Choropleth-Kachelkarte; wählbare Metrik (Umsatz, Marktanteil, DB %, Online-Anteil) und Warenbereichs-Split je Region.', zielgruppe: 'Marketing / Vertrieb / GF.', mehrwert: 'Stärkste/schwächste Regionen und Marktpotenziale auf einen Blick.' },
   events: { zweck: 'Aktionen mit Zeitraum/Kosten und ihre Wirksamkeit.', zielgruppe: 'Marketing / Vertrieb.', mehrwert: 'Werbe-ROI, Mehrumsatz und Ladenhüter-Abbau messen.' },
   bestand: { zweck: 'Bestands-Gängigkeit (ABC/XYZ, Renner/Ladenhüter).', zielgruppe: 'Logistik / Einkauf.', mehrwert: 'Kapitalbindung senken, Ladenhüter erkennen.' },
   lager: { zweck: 'Lagerverwaltung aus Controlling-Sicht: Kapitalbindung, Lagerhaltungskosten, Standortkosten, Bestandsoptimierung (EOQ).', zielgruppe: 'Logistik / Controlling.', mehrwert: 'Lagerkosten transparent machen und Bestände/Bestellmengen optimieren.' },

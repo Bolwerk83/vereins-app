@@ -41,6 +41,7 @@ export const NAV_ZIELE = [
   { ziel: 'anlagen', gruppe: 'Analyse', schluessel: 'nav.anlagen' },
   { ziel: 'lieferant', gruppe: 'Analyse', schluessel: 'nav.lieferant' },
   { ziel: 'marketing', gruppe: 'Analyse', schluessel: 'nav.marketing' },
+  { ziel: 'marketingkarte', gruppe: 'Analyse', schluessel: 'nav.marketingkarte' },
   { ziel: 'bestand', gruppe: 'Analyse', schluessel: 'nav.bestand' },
   { ziel: 'lager', gruppe: 'Operativ', schluessel: 'nav.lager' },
   { ziel: 'produktion', gruppe: 'Operativ', schluessel: 'nav.produktion' },

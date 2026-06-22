@@ -44,6 +44,7 @@ import AbgleichAbsatz from './modules/abgleich/AbgleichAbsatz.jsx'
 import VertriebKennzahlen from './modules/vertrieb-kennzahlen/VertriebKennzahlen.jsx'
 import Prozesskette from './modules/prozesskette/Prozesskette.jsx'
 import Tagesreporting from './modules/tagesreporting/Tagesreporting.jsx'
+import MarketingKarte from './modules/marketing-karte/MarketingKarte.jsx'
 import WMS from './modules/wms/WMS.jsx'
 import Detailberichte from './modules/detailberichte/Detailberichte.jsx'
 import Forderungen from './modules/forderungen/Forderungen.jsx'
@@ -224,6 +225,7 @@ export default function App() {
     { titel: 'Operativ', icon: '📈', untergruppen: [
       { titel: 'Vertrieb & Markt', eintraege: [
         E('marketing', 'nav.marketing', '📣'),
+        E('marketingkarte', 'nav.marketingkarte', '🗺'),
         E('gutschriften', 'nav.gutschriften', '🧾'),
         E('vertriebkpi', 'nav.vertriebkpi', '📈'),
         E('prozesskette', 'nav.prozesskette', '🔻'),
@@ -537,6 +539,9 @@ export default function App() {
         )}
         {ansicht === 'tagesreporting' && (
           <Tagesreporting onGeh={geh} />
+        )}
+        {ansicht === 'marketingkarte' && (
+          <MarketingKarte />
         )}
         {ansicht === 'wms' && (
           <WMS />
