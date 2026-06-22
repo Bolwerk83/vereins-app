@@ -137,6 +137,13 @@ export function historie(typ, row) {
       { label: 'Eingegangen', datum: addTage(row.datum, 0) }, { label: 'Geprüft', datum: addTage(row.datum, 2) }, { label: 'Erstattet', datum: addTage(row.datum, 5) }
     ] }
   }
+  if (typ === 'leasing') {
+    const src = row._row || row
+    const pts = [['angebot', 'Angebot Leasing'], ['kundeL', 'Kundenleasing'], ['gesellschaft', 'Leasinggesellschaft']]
+      .filter(([k]) => src[k]).map(([k, label]) => ({ label, datum: src[k].datum }))
+      .sort((a, b) => (a.datum < b.datum ? -1 : 1))
+    return { kind: 'timeline', punkte: pts.length ? pts : [{ label: 'kein Beleg', datum: '', warn: true }] }
+  }
   // Auftrag: Status-Zeitstrahl bis zum aktuellen Stand.
   let stufen = row.status === 'Offen' ? ['Angelegt', 'Bestätigt'] : ['Angelegt', 'Bestätigt', 'Kommissioniert', 'Geliefert']
   if (row.ret > 0 || row.ue < 0) stufen = [...stufen, 'Retoure']
@@ -181,18 +188,143 @@ export function warenverbrauchliste({ suche = '', nurAuffaellig = false } = {}) 
   }
 }
 
+// ---- Leasingliste (Entdopplung der 3 Belegtypen) ------------------------
+// Je Vorgang bis zu 3 Belege: Angebot Leasing, Kundenleasing, Leasinggesellschaft.
+// Damit Werte NICHT doppelt/dreifach zählen, wird je Sicht genau EIN führender
+// Beleg gewählt:
+//   Auftragssicht:  Kundenleasing → (sonst) Leasinggesellschaft → Angebot
+//   Rechnungssicht: Leasinggesellschaft → (sonst) Kundenleasing → Angebot
+// So ist immer ein Wert sichtbar, aber nie mehrfach.
+export const BELEG_NAME = { angebot: 'Angebot Leasing', kundeL: 'Kundenleasing', gesellschaft: 'Leasinggesellschaft' }
+
+export const LEASING = [
+  { vorgang: 'LS-1001', kunde: 'Stadtwerke Köln', auftrag: '2654500001', angebot: { wert: 3200, datum: '2026-05-20' }, kundeL: { wert: 3200, datum: '2026-05-28' }, gesellschaft: { wert: 3200, datum: '2026-06-02' } },
+  { vorgang: 'LS-1002', kunde: 'Lieferdienst Bonn', auftrag: '2654500002', angebot: { wert: 1850, datum: '2026-06-01' }, kundeL: { wert: 1850, datum: '2026-06-05' }, gesellschaft: null },
+  { vorgang: 'LS-1003', kunde: 'Hotel Seeblick', auftrag: '2654500003', angebot: { wert: 990, datum: '2026-06-10' }, kundeL: null, gesellschaft: null },
+  { vorgang: 'LS-1004', kunde: 'Logistik AG', auftrag: '2654500004', angebot: { wert: 4200, datum: '2026-05-15' }, kundeL: { wert: 4500, datum: '2026-05-22' }, gesellschaft: { wert: 4200, datum: '2026-05-30' } },
+  { vorgang: 'LS-1005', kunde: 'Reha-Zentrum', auftrag: '2654500005', angebot: null, kundeL: null, gesellschaft: null }
+]
+
+const BELEGE = ['angebot', 'kundeL', 'gesellschaft']
+
+/** Führenden Beleg je Sicht ermitteln (Entdopplung). */
+export function fuehrenderBeleg(row, sicht = 'auftrag') {
+  const reihenfolge = sicht === 'rechnung' ? ['gesellschaft', 'kundeL', 'angebot'] : ['kundeL', 'gesellschaft', 'angebot']
+  for (const k of reihenfolge) if (row[k]) return { feld: k, wert: row[k].wert, datum: row[k].datum }
+  return null
+}
+
+export function pruefeLeasing(row) {
+  const b = []
+  const vorhanden = BELEGE.filter((k) => row[k])
+  if (vorhanden.length === 0) { b.push({ feld: 'anzeigeWert', schwere: 'fehler', text: 'Kein Leasingbeleg vorhanden' }); return b }
+  const werte = vorhanden.map((k) => row[k].wert)
+  const max = Math.max(...werte), min = Math.min(...werte)
+  if (max > 0 && (max - min) / max > 0.02) b.push({ feld: 'anzeigeWert', schwere: 'warnung', text: 'Belegwerte weichen ab (Dublette/Erfassung prüfen)' })
+  if (!row.gesellschaft && (row.kundeL || row.angebot)) b.push({ feld: 'gesellW', schwere: 'hinweis', text: 'Leasinggesellschaft fehlt (Rechnungspartner noch offen)' })
+  if (row.angebot && !row.kundeL && !row.gesellschaft) b.push({ feld: 'angebotW', schwere: 'hinweis', text: 'Nur Angebot vorhanden (Zeitversatz – noch nicht final)' })
+  return b
+}
+
+export function leasingliste({ suche = '', nurAuffaellig = false, sicht = 'auftrag' } = {}) {
+  const q = norm(suche)
+  let rows = LEASING.map((row) => {
+    const f = fuehrenderBeleg(row, sicht)
+    const dimFelder = { angebot: 'angebotW', kundeL: 'kundeW', gesellschaft: 'gesellW' }
+    const _dim = BELEGE.filter((k) => row[k] && k !== f?.feld).map((k) => dimFelder[k]) // nicht-führende Belege dimmen
+    const befunde = pruefeLeasing(row)
+    return {
+      vorgang: row.vorgang, kunde: row.kunde, auftrag: row.auftrag,
+      angebotW: row.angebot?.wert ?? null, kundeW: row.kundeL?.wert ?? null, gesellW: row.gesellschaft?.wert ?? null,
+      anzeigeWert: f?.wert ?? null, fuehrend: f ? BELEG_NAME[f.feld] : '—',
+      _row: row, _dim, befunde, schwere: maxSchwere(befunde)
+    }
+  })
+  if (q) rows = rows.filter((r) => norm(r.vorgang).includes(q) || norm(r.kunde).includes(q) || norm(r.auftrag).includes(q))
+  if (nurAuffaellig) rows = rows.filter((r) => r.befunde.length)
+  return {
+    rows,
+    // Summe NUR über den Anzeigewert -> kein Doppel-/Dreifachzählen.
+    summe: { anzeigeWert: r2(rows.reduce((n, r) => n + (r.anzeigeWert || 0), 0)) },
+    auffaellig: LEASING.filter((r) => pruefeLeasing(r).length).length,
+    gesamt: LEASING.length
+  }
+}
+
+// ---- Retouren-, Rechnungs-, Kundenliste ---------------------------------
+export const RETOUREN = [
+  { retoure: 'RET-5001', datum: '2026-06-03', kunde: 'Markus Birkner', auftrag: '2654484814', artikel: 'GRAVEL 22 BACKROAD', menge: 1, wert: 117.61, originalWert: 117.61, grund: 'Nichtgefallen' },
+  { retoure: 'RET-5002', datum: '2026-06-07', kunde: 'Lena Vogt', auftrag: '', artikel: 'Helm M', menge: 1, wert: 49.0, originalWert: 49.0, grund: '' },
+  { retoure: 'RET-5003', datum: '2026-06-09', kunde: 'Onlineshop', auftrag: '2654500771', artikel: 'Jacke L', menge: 1, wert: 145.0, originalWert: 120.0, grund: 'Defekt' },
+  { retoure: 'RET-5004', datum: '2026-06-10', kunde: 'B2B Händler', auftrag: '2654499002', artikel: 'Akku 625Wh', menge: 0, wert: 0, originalWert: 210.0, grund: 'Storno' }
+]
+export function pruefeRetoure(r) {
+  const b = []
+  if (!r.grund) b.push({ feld: 'grund', schwere: 'warnung', text: 'Retourengrund fehlt' })
+  if (r.wert > r.originalWert) b.push({ feld: 'wert', schwere: 'fehler', text: 'Retourenwert größer als Originalwert' })
+  if (r.menge <= 0) b.push({ feld: 'menge', schwere: 'fehler', text: 'Menge ≤ 0' })
+  if (!r.auftrag) b.push({ feld: 'auftrag', schwere: 'warnung', text: 'Retoure ohne Originalauftrag' })
+  return b
+}
+export function retourenliste(o = {}) { return generischListe(RETOUREN, pruefeRetoure, o, ['wert', 'originalWert', 'menge'], (r, q) => norm(r.retoure).includes(q) || norm(r.kunde).includes(q) || norm(r.artikel).includes(q)) }
+
+export const RECHNUNGEN = [
+  { rechnung: 'RE-9001', datum: '2026-06-05', kunde: 'Markus Skarics', auftrag: '2654583388', netto: 99.0, mwst: 18.81, brutto: 117.81, positionen: 1, bezahlt: true, status: 'Abgeschlossen' },
+  { rechnung: 'RE-9002', datum: '2026-06-06', kunde: 'Stadtwerke Köln', auftrag: '2654500001', netto: 2689.08, mwst: 510.92, brutto: 3200.0, positionen: 3, bezahlt: false, status: 'Offen' },
+  { rechnung: 'RE-9003', datum: '2026-06-07', kunde: 'Hotel Seeblick', auftrag: '2654500003', netto: 990.0, mwst: 158.40, brutto: 1100.0, positionen: 1, bezahlt: false, status: 'Abgeschlossen' },
+  { rechnung: 'RE-9004', datum: '2026-06-08', kunde: 'Reha-Zentrum', auftrag: '2654500005', netto: 500.0, mwst: 95.0, brutto: 595.0, positionen: 0, bezahlt: true, status: 'Abgeschlossen' },
+  { rechnung: 'RE-9005', datum: '2026-06-09', kunde: 'B2B Händler', auftrag: '2654499002', netto: -210.0, mwst: -39.90, brutto: -249.90, positionen: 1, bezahlt: true, status: 'Gutschrift' }
+]
+export function pruefeRechnung(r) {
+  const b = []
+  if (Math.round((r.netto + r.mwst) * 100) / 100 !== r.brutto) b.push({ feld: 'brutto', schwere: 'fehler', text: `Brutto ≠ Netto + MwSt (${(r.netto + r.mwst).toFixed(2)})` })
+  if (r.positionen === 0) b.push({ feld: 'positionen', schwere: 'fehler', text: 'Rechnung ohne Positionen' })
+  if (r.netto < 0 && r.status !== 'Gutschrift') b.push({ feld: 'netto', schwere: 'warnung', text: 'Negativer Betrag ohne Gutschrift-Status' })
+  if (!r.bezahlt && r.status === 'Abgeschlossen') b.push({ feld: 'bezahlt', schwere: 'warnung', text: 'Abgeschlossen, aber unbezahlt' })
+  const satz = r.netto ? Math.round(r.mwst / r.netto * 100) : 0
+  if (r.netto > 0 && satz !== 19 && satz !== 7) b.push({ feld: 'mwst', schwere: 'hinweis', text: `Ungewöhnlicher Steuersatz (${satz} %)` })
+  return b
+}
+export function rechnungsliste(o = {}) { return generischListe(RECHNUNGEN, pruefeRechnung, o, ['netto', 'mwst', 'brutto'], (r, q) => norm(r.rechnung).includes(q) || norm(r.kunde).includes(q) || norm(r.auftrag).includes(q)) }
+
+export const KUNDEN = [
+  { kundennr: '1300256', name: 'Markus Birkner', email: 'm.birkner@example.com', land: 'DE', umsatzJahr: 1240, offeneForderung: 0, kreditlimit: 2000, status: 'aktiv' },
+  { kundennr: '8758017', name: 'Markus Skarics', email: 'skarics(at)example.com', land: 'AT', umsatzJahr: 8900, offeneForderung: 1200, kreditlimit: 5000, status: 'aktiv' },
+  { kundennr: '4412009', name: 'Lena Vogt', email: 'l.vogt@example.com', land: 'DE', umsatzJahr: 0, offeneForderung: 0, kreditlimit: 1000, status: 'aktiv' },
+  { kundennr: '2200111', name: 'Logistik AG', email: 'einkauf@logistik-ag.de', land: 'DE', umsatzJahr: 64000, offeneForderung: 9800, kreditlimit: 8000, status: 'aktiv' },
+  { kundennr: '9900222', name: 'Alt-Konto', email: '', land: 'DE', umsatzJahr: 0, offeneForderung: 0, kreditlimit: 0, status: 'inaktiv' }
+]
+export function pruefeKunde(k) {
+  const b = []
+  if (k.offeneForderung > k.kreditlimit) b.push({ feld: 'offeneForderung', schwere: 'fehler', text: `Kreditlimit überschritten (Limit ${k.kreditlimit})` })
+  if (!k.email.includes('@')) b.push({ feld: 'email', schwere: 'warnung', text: 'E-Mail ungültig/fehlt' })
+  if (k.umsatzJahr === 0 && k.status === 'aktiv') b.push({ feld: 'umsatzJahr', schwere: 'hinweis', text: 'Aktiver Kunde ohne Jahresumsatz' })
+  return b
+}
+export function kundenliste(o = {}) { return generischListe(KUNDEN, pruefeKunde, o, ['umsatzJahr', 'offeneForderung', 'kreditlimit'], (k, q) => norm(k.kundennr).includes(q) || norm(k.name).includes(q) || norm(k.email).includes(q)) }
+
+// Generischer Listen-Helfer (Befunde + Filter + Summen).
+function generischListe(daten, pruef, { suche = '', nurAuffaellig = false } = {}, sumKeys = [], match) {
+  const q = norm(suche)
+  let rows = daten.map((d) => { const befunde = pruef(d); return { ...d, befunde, schwere: maxSchwere(befunde) } })
+  if (q && match) rows = rows.filter((d) => match(d, q))
+  if (nurAuffaellig) rows = rows.filter((d) => d.befunde.length)
+  const summe = {}; for (const k of sumKeys) summe[k] = r2(rows.reduce((n, d) => n + (d[k] || 0), 0))
+  return { rows, summe, auffaellig: daten.filter((d) => pruef(d).length).length, gesamt: daten.length }
+}
+
 // ---- Katalog der Detailberichte -----------------------------------------
 export const LISTEN = [
   { id: 'auftrag', name: 'Auftragsliste', verfuegbar: true },
   { id: 'artikel', name: 'Artikelliste', verfuegbar: true },
   { id: 'produkt', name: 'Produktliste', verfuegbar: false },
-  { id: 'rechnung', name: 'Rechnungsliste', verfuegbar: false },
+  { id: 'rechnung', name: 'Rechnungsliste', verfuegbar: true },
   { id: 'rechnungpos', name: 'Rechnungspositionsliste', verfuegbar: false },
   { id: 'bestellkanal', name: 'Bestellkanalliste', verfuegbar: false },
-  { id: 'leasing', name: 'Leasingliste', verfuegbar: false },
+  { id: 'leasing', name: 'Leasingliste', verfuegbar: true },
   { id: 'charge', name: 'Chargenliste', verfuegbar: false },
-  { id: 'kunde', name: 'Kundenliste', verfuegbar: false },
+  { id: 'kunde', name: 'Kundenliste', verfuegbar: true },
   { id: 'plausiwv', name: 'Plausi: Warenverbrauch', verfuegbar: true },
-  { id: 'retoure', name: 'Retourenliste', verfuegbar: false },
+  { id: 'retoure', name: 'Retourenliste', verfuegbar: true },
   { id: 'auftragsbestand', name: 'Auftragsbestandsliste', verfuegbar: false }
 ]

@@ -5,7 +5,7 @@
 //  eine Zeile öffnet die Befund-Karte (Sprung in die Detailprüfung).
 // =========================================================================
 import React, { useState } from 'react'
-import { LISTEN, LEGENDE, artikelliste, auftragsliste, warenverbrauchliste, historie } from '../../core/detailberichte.js'
+import { LISTEN, LEGENDE, artikelliste, auftragsliste, warenverbrauchliste, leasingliste, retourenliste, rechnungsliste, kundenliste, historie } from '../../core/detailberichte.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
@@ -66,11 +66,67 @@ const WV_COLS = [
 ]
 const WV_SUM = ['anfangsbestand', 'zugang', 'abgang', 'endbestand', 'verbrauch', 'umsatzMenge']
 
+const LEAS_COLS = [
+  { key: 'vorgang', label: 'Vorgang', al: 'left', mono: true },
+  { key: 'kunde', label: 'Kunde', al: 'left' },
+  { key: 'auftrag', label: 'Auftrag', al: 'left', mono: true },
+  { key: 'angebotW', label: 'Angebot Leasing', al: 'right', fmt: eur },
+  { key: 'kundeW', label: 'Kundenleasing', al: 'right', fmt: eur },
+  { key: 'gesellW', label: 'Leasinggesellschaft', al: 'right', fmt: eur },
+  { key: 'anzeigeWert', label: 'Anzeigewert (führend)', al: 'right', fmt: eur },
+  { key: 'fuehrend', label: 'Führender Beleg', al: 'left' }
+]
+const LEAS_SUM = ['anzeigeWert']
+
+const RET_COLS = [
+  { key: 'retoure', label: 'Retoure', al: 'left', mono: true },
+  { key: 'datum', label: 'Datum', al: 'left', fmt: datum },
+  { key: 'kunde', label: 'Kunde', al: 'left' },
+  { key: 'auftrag', label: 'Auftrag', al: 'left', mono: true },
+  { key: 'artikel', label: 'Artikel', al: 'left' },
+  { key: 'menge', label: 'Menge', al: 'right' },
+  { key: 'wert', label: 'Wert €', al: 'right', fmt: eur },
+  { key: 'originalWert', label: 'Orig.-Wert €', al: 'right', fmt: eur },
+  { key: 'grund', label: 'Grund', al: 'left' }
+]
+const RET_SUM = ['menge', 'wert', 'originalWert']
+
+const RECH_COLS = [
+  { key: 'rechnung', label: 'Rechnung', al: 'left', mono: true },
+  { key: 'datum', label: 'Datum', al: 'left', fmt: datum },
+  { key: 'kunde', label: 'Kunde', al: 'left' },
+  { key: 'auftrag', label: 'Auftrag', al: 'left', mono: true },
+  { key: 'netto', label: 'Netto €', al: 'right', fmt: eur },
+  { key: 'mwst', label: 'MwSt €', al: 'right', fmt: eur },
+  { key: 'brutto', label: 'Brutto €', al: 'right', fmt: eur },
+  { key: 'positionen', label: 'Pos.', al: 'right' },
+  { key: 'bezahlt', label: 'Bezahlt', al: 'center', fmt: (v) => (v ? 'Ja' : 'Nein') },
+  { key: 'status', label: 'Status', al: 'left' }
+]
+const RECH_SUM = ['netto', 'mwst', 'brutto']
+
+const KUND_COLS = [
+  { key: 'kundennr', label: 'Kunden-Nr', al: 'left', mono: true },
+  { key: 'name', label: 'Name', al: 'left' },
+  { key: 'email', label: 'E-Mail', al: 'left' },
+  { key: 'land', label: 'Land', al: 'left' },
+  { key: 'umsatzJahr', label: 'Umsatz/J €', al: 'right', fmt: eur },
+  { key: 'offeneForderung', label: 'Offen €', al: 'right', fmt: eur },
+  { key: 'kreditlimit', label: 'Limit €', al: 'right', fmt: eur },
+  { key: 'status', label: 'Status', al: 'left' }
+]
+const KUND_SUM = ['umsatzJahr', 'offeneForderung', 'kreditlimit']
+
 export default function Detailberichte() {
   const [aktiv, setAktiv] = useState(null)
   if (aktiv === 'artikel') return <Liste typ="artikel" titel="Artikelliste" sub="Zeigt die SKU in einer Listen-Übersicht. Klick auf eine Zeile → Befund-Karte (inkl. E5-Historie)." cols={ART_COLS} sumKeys={ART_SUM} lade={artikelliste} onBack={() => setAktiv(null)} idKey="sku" titelKey="artikel" />
   if (aktiv === 'auftrag') return <Liste typ="auftrag" titel="Auftragsliste" sub="Zeigt die Aufträge in einer Listen-Übersicht." cols={AUF_COLS} sumKeys={AUF_SUM} lade={auftragsliste} onBack={() => setAktiv(null)} idKey="auftrag" titelKey="kunde" />
   if (aktiv === 'plausiwv') return <Liste typ="warenverbrauch" titel="Plausi: Warenverbrauch" sub="Prüft die Bestandsgleichung (Anfang + Zugang − Abgang = Ende) und findet unplausible Warenbewegungen." cols={WV_COLS} sumKeys={WV_SUM} lade={warenverbrauchliste} onBack={() => setAktiv(null)} idKey="sku" titelKey="artikel" />
+  if (aktiv === 'leasing') return <Liste typ="leasing" titel="Leasingliste" sub="Entdopplung der 3 Belege (Angebot / Kundenleasing / Leasinggesellschaft): es zählt je Sicht genau EIN führender Wert — nie doppelt oder dreifach." cols={LEAS_COLS} sumKeys={LEAS_SUM} lade={leasingliste} onBack={() => setAktiv(null)} idKey="vorgang" titelKey="kunde"
+    optionen={[{ key: 'sicht', label: 'Sicht', default: 'auftrag', werte: [['auftrag', 'Auftragssicht (Kundenleasing führt)'], ['rechnung', 'Rechnungssicht (Leasinggesellschaft führt)']] }]} />
+  if (aktiv === 'retoure') return <Liste typ="retoure" titel="Retourenliste" sub="Retouren mit Plausi-Prüfung (Grund fehlt, Wert > Original, ohne Auftrag …)." cols={RET_COLS} sumKeys={RET_SUM} lade={retourenliste} onBack={() => setAktiv(null)} idKey="retoure" titelKey="kunde" />
+  if (aktiv === 'rechnung') return <Liste typ="rechnung" titel="Rechnungsliste" sub="Rechnungen mit Plausi-Prüfung (Brutto ≠ Netto + MwSt, ohne Position, unbezahlt …)." cols={RECH_COLS} sumKeys={RECH_SUM} lade={rechnungsliste} onBack={() => setAktiv(null)} idKey="rechnung" titelKey="kunde" />
+  if (aktiv === 'kunde') return <Liste typ="kunde" titel="Kundenliste" sub="Kunden mit Plausi-Prüfung (Kreditlimit überschritten, E-Mail, Umsatz …)." cols={KUND_COLS} sumKeys={KUND_SUM} lade={kundenliste} onBack={() => setAktiv(null)} idKey="kundennr" titelKey="name" />
 
   // Hub
   return (
@@ -98,23 +154,28 @@ export default function Detailberichte() {
 
 const EBENEN_PFAD = ['E1 · Geschäftsführung', 'E2 · Fachbereich', 'E3 · Themenbereich', 'E4 · Details', 'E5 · Historisierung']
 
-function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, idKey, titelKey }) {
+function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, idKey, titelKey, optionen = [] }) {
   const [suche, setSuche] = useState('')
   const [nurAuffaellig, setNurAuffaellig] = useState(false)
   const [legendeAuf, setLegendeAuf] = useState(false)
   const [detail, setDetail] = useState(null)
-  const data = lade({ suche, nurAuffaellig })
+  const [opts, setOpts] = useState(() => Object.fromEntries(optionen.map((o) => [o.key, o.default])))
+  const data = lade({ suche, nurAuffaellig, ...opts })
 
   const zelle = (row, c) => {
-    const befund = row.befunde.find((b) => b.feld === c.key)
+    const dimmed = row._dim?.includes(c.key)
+    const befund = !dimmed && row.befunde.find((b) => b.feld === c.key)
     const v = row[c.key]
     const text = c.fmt ? c.fmt(v) : v
     return (
-      <td key={c.key} title={befund ? befund.text : undefined}
+      <td key={c.key} title={dimmed ? 'ignoriert (Dublette – nicht führend)' : befund ? befund.text : undefined}
         className={c.mono || c.al === 'right' ? 'mono' : undefined}
         style={{ padding: '6px 9px', borderBottom: '1px solid var(--line)', textAlign: c.al, whiteSpace: c.key === 'artikel' || c.key === 'kunde' ? 'normal' : 'nowrap',
           maxWidth: c.key === 'artikel' ? 280 : undefined, overflow: 'hidden', textOverflow: 'ellipsis',
-          background: befund ? SCHWERE[befund.schwere].soft : undefined, color: befund ? SCHWERE[befund.schwere].farbe : undefined, fontWeight: befund ? 700 : 400 }}>
+          background: befund ? SCHWERE[befund.schwere].soft : undefined,
+          color: dimmed ? 'var(--muted)' : befund ? SCHWERE[befund.schwere].farbe : undefined,
+          textDecoration: dimmed ? 'line-through' : undefined, opacity: dimmed ? 0.55 : 1,
+          fontWeight: befund || c.key === 'anzeigeWert' ? 700 : 400 }}>
         {text}{befund ? ' ⚠' : ''}
       </td>
     )
@@ -137,6 +198,20 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, idKey, titelKey }
             color: i === 3 ? '#fff' : i === 4 ? 'var(--accent)' : 'var(--muted)', border: '1px solid var(--line)' }}>{e}</span>
         ))}
       </div>
+
+      {/* Sichten-Umschalter (z. B. Leasing: Auftrag/Rechnung) */}
+      {optionen.map((o) => (
+        <div key={o.key} style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '4px 0' }}>
+          <span style={{ fontSize: 12, color: 'var(--muted)' }}>{o.label}:</span>
+          <div style={{ display: 'flex', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
+            {o.werte.map(([val, lbl]) => (
+              <button key={val} onClick={() => setOpts((s) => ({ ...s, [o.key]: val }))}
+                style={{ padding: '6px 11px', border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                  background: opts[o.key] === val ? 'var(--accent)' : 'var(--panel)', color: opts[o.key] === val ? '#fff' : 'var(--muted)' }}>{lbl}</button>
+            ))}
+          </div>
+        </div>
+      ))}
 
       {/* Filterleiste */}
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', margin: '12px 0' }}>
