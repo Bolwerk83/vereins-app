@@ -10,7 +10,7 @@ export const VIEW_BEREICH = {
   // Kosten & Ergebnis
   klr: 'KLR', kostenarten: 'KLR', kalkulatorik: 'KLR', einzelgemein: 'KLR', // kalkulatorik direkt anwaehlbar
   abgrenzung: 'KLR', kostenstellen: 'KLR', bab: 'KLR', kalkulation: 'KLR', deckungsbeitrag: 'KLR',
-  ergebnis: 'FIN', profitcenter: 'FIN', pckostenstellen: 'FIN', finanzcockpit: 'FIN', segment: 'KON',
+  ergebnis: 'FIN', profitcenter: 'FIN', pckostenstellen: 'FIN', kontenstrukturen: 'FIN', finanzcockpit: 'FIN', segment: 'KON',
   // Operativ
   marketing: 'MKT', marketingkarte: 'MKT', gutschriften: 'VC', vertriebkpi: 'VK', prozesskette: 'VK', events: 'MKT', bestand: 'SCC', lager: 'LOG', wms: 'LOG', produktion: 'PR', lieferant: 'EK', auftrag: 'VK', forderungen: 'RIS',
   // Analyse & Steuerung

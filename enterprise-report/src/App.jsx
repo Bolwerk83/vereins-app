@@ -30,6 +30,7 @@ import PortfolioBcg from './modules/portfolio-bcg/PortfolioBcg.jsx'
 import Quartalsbericht from './modules/quartalsbericht/Quartalsbericht.jsx'
 import FinanzCockpit from './modules/finanzcockpit/FinanzCockpit.jsx'
 import PcKostenstellen from './modules/pc-kostenstellen/PcKostenstellen.jsx'
+import Kontenstrukturen from './modules/kontenstrukturen/Kontenstrukturen.jsx'
 import EinzelGemein from './modules/einzelgemein/EinzelGemein.jsx'
 import AuftragsLebenszyklus from './modules/auftrag/AuftragsLebenszyklus.jsx'
 import Kostenstellenrechnung from './modules/kostenstellen/Kostenstellenrechnung.jsx'
@@ -226,6 +227,7 @@ export default function App() {
         E('deckungsbeitrag', 'nav.db', '📐'),
         E('profitcenter', 'nav.profitcenter', '🏦'),
         E('pckostenstellen', 'nav.pckostenstellen', '🗂'),
+        E('kontenstrukturen', 'nav.kontenstrukturen', '🌲'),
         E('finanzcockpit', 'nav.finanzcockpit', '🛡')
       ] },
       { titel: 'Konzern', eintraege: [ E('segment', 'nav.segment', '🏛') ] }
@@ -513,6 +515,9 @@ export default function App() {
         )}
         {ansicht === 'pckostenstellen' && (
           <PcKostenstellen />
+        )}
+        {ansicht === 'kontenstrukturen' && (
+          <Kontenstrukturen />
         )}
         {ansicht === 'lzempfehlung' && (
           <LebenszyklusEmpfehlungen onGeh={geh} />
