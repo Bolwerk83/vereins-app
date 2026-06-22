@@ -29,13 +29,27 @@ export function sichtbareBerichte(uid) {
 
 export function speichereBericht(uid, { titel, items, summary, privat = false }) {
   const o = lade(); const ord = ordnerVon(o, uid)
-  const b = { id: 'b-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), titel, items, summary, privat, erstellt: new Date().toISOString().slice(0, 10), geteiltMit: [] }
+  const heute = new Date().toISOString().slice(0, 10)
+  const b = { id: 'b-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), titel, items, summary, privat,
+    ersteller: uid, erstellt: heute, bearbeitetVon: uid, bearbeitetAm: heute, geteiltMit: [] }
   ord.berichte.unshift(b); speichere(o); return b
 }
+function markiereBearbeitung(b, vonUid) { b.bearbeitetVon = vonUid; b.bearbeitetAm = new Date().toISOString().slice(0, 10) }
 export function togglePrivat(uid, id) {
   const o = lade(); const ord = ordnerVon(o, uid)
-  const b = ord.berichte.find((x) => x.id === id); if (b) b.privat = !b.privat
+  const b = ord.berichte.find((x) => x.id === id); if (b) { b.privat = !b.privat; markiereBearbeitung(b, uid) }
   return speichere(o)
+}
+/** Alle Berichte aller Nutzer (flach) — für die Admin-Statistik. */
+export function alleBerichte() {
+  const o = lade(); const out = []
+  for (const [besitzer, ord] of Object.entries(o)) for (const b of (ord.berichte || [])) out.push({ ...b, besitzer })
+  return out
+}
+export function findeBericht(id) { return alleBerichte().find((b) => b.id === id) || ladeGlobale().find((g) => g.id === id) || null }
+/** Direkter Aufruf-Link auf einen Bericht. */
+export function berichtLink(id) {
+  try { return `${location.origin}${location.pathname}?bericht=${id}` } catch { return `?bericht=${id}` }
 }
 /** Entdecken: von ANDEREN angelegte, nicht private Berichte (Community).
  *  Berechtigungen (RBAC/OLS) greifen zusätzlich beim Öffnen serverseitig. */

@@ -8,6 +8,8 @@ import React, { useState } from 'react'
 import { KATALOG, vorschlag, generiereBericht } from '../../core/kiBuilder.js'
 import { kiAktiv, ladeKi, modusInfo } from '../../core/kiEinstellungen.js'
 import { nutzerId, nutzerLabel } from '../../core/identitaet.js'
+import { protokolliereZugriff } from '../../core/berichtLog.js'
+import { datenstandText } from '../../core/datenstand.js'
 import {
   eigeneBerichte, sichtbareBerichte, speichereBericht, loescheBericht, teileBericht, teileOrdner, aehnlicheBerichte,
   ladeGlobale, alsGlobalSpeichern, loescheGlobal, togglePrivat, entdeckbareBerichte
@@ -33,7 +35,7 @@ export default function KiBuilder({ benutzer, istAdmin }) {
   const speichern = () => { if (entwurf && sel.length) { speichereBericht(uid, { titel: entwurf.titel, items: sel, summary: entwurf.summary, privat }); setEntwurf(null); setSel([]); refresh() } }
   const teilenMit = (id) => { const n = prompt('Bericht teilen mit (Benutzername):'); if (n) { teileBericht(uid, id, nutzerId(n)); refresh() } }
   const ordnerTeilen = () => { const n = prompt('Ganzen Ordner teilen mit (Benutzername):'); if (n) { teileOrdner(uid, nutzerId(n)); refresh() } }
-  const oeffnen = (b) => { setSel(b.items || []); setEntwurf(generiereBericht(b.items || [])) }
+  const oeffnen = (b) => { protokolliereZugriff(b.id, uid, istAdmin); setSel(b.items || []); setEntwurf(generiereBericht(b.items || [])) }
   const globalSpeichern = (b) => { alsGlobalSpeichern({ titel: b.titel, items: b.items, summary: b.summary, vonUid: b.besitzer || uid }); refresh() }
   const globale = ladeGlobale()
 
@@ -43,6 +45,7 @@ export default function KiBuilder({ benutzer, istAdmin }) {
         <div>
           <div style={cap}>Berichte · KI-gestützt erstellen</div>
           <h2 style={{ margin: '4px 0 0' }}>KI-Report-Builder</h2>
+          <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 2 }}>📅 {datenstandText()}</div>
         </div>
         <span style={{ fontSize: 12, fontWeight: 700, color: an ? 'var(--amp-g)' : 'var(--muted)' }}>
           {an ? `✨ KI aktiv · ${modusInfo(ki.modus).kurz}` : '○ KI deaktiviert (Admin)'}

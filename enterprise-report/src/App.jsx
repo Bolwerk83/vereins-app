@@ -81,6 +81,8 @@ import DatenmodellAdmin from './modules/datenmodell/DatenmodellAdmin.jsx'
 import DatenschutzAdmin from './modules/datenschutz/DatenschutzAdmin.jsx'
 import KiSteuerung from './modules/ki-steuerung/KiSteuerung.jsx'
 import KiBuilder from './modules/ki-builder/KiBuilder.jsx'
+import BerichtLogAdmin from './modules/berichtlog/BerichtLogAdmin.jsx'
+import { gesamtStand } from './core/datenstand.js'
 import { bereichVon } from './core/navMeta.js'
 import BerichtInfoModal from './modules/berichtinfo/BerichtInfoModal.jsx'
 import BerichtInfoBanner from './modules/berichtinfo/BerichtInfoBanner.jsx'
@@ -329,6 +331,7 @@ export default function App() {
         E('datenschutz', 'nav.datenschutz', '🔐'),
         E('kisteuerung', 'nav.kisteuerung', '🤖'),
         E('berichtfreigabe', 'nav.berichtfreigabe', '🚦'),
+        E('berichtlog', 'nav.berichtlog', '📊'),
         E('nutzung', 'nav.nutzung', '📈'),
         E('rechte', 'nav.rechte', '👥', { badge: anfragenN || null })
       ] }] : [])
@@ -371,6 +374,7 @@ export default function App() {
                     : verbindung.status === 'fehler' ? t('conn.none') : t('conn.mock')}
                 </span>
               )}
+              <span title="Stand der Daten (ältester relevanter Import)" style={{ marginLeft: 6, color: 'var(--muted)' }}>· 📅 {gesamtStand()}</span>
             </div>
           </div>
         </div>
@@ -572,6 +576,9 @@ export default function App() {
         )}
         {ansicht === 'kibuilder' && (
           <KiBuilder benutzer={benutzer} istAdmin={istAdmin(rolle)} />
+        )}
+        {ansicht === 'berichtlog' && (
+          <BerichtLogAdmin istAdmin={istAdmin(rolle)} />
         )}
         {ansicht === 'lzempfehlung' && (
           <LebenszyklusEmpfehlungen onGeh={geh} />
