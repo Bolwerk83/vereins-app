@@ -767,6 +767,8 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, onDrill, startSuc
   })
   const [panelAuf, setPanelAuf] = useState(true) // Bookmarks immer anzeigen (einklappbar)
   const [spaltenAuf, setSpaltenAuf] = useState(false) // Spalten-Ein/Ausblenden standardmäßig zugeklappt
+  const [filterAuf, setFilterAuf] = useState(false) // Dimensionsfilter-Panel
+  const [dimFilter, setDimFilter] = useState({})     // { spalten-key: Set(ausgewählte Werte) }
   const [bmTick, setBmTick] = useState(0)
   const [hov, setHov] = useState(null)        // Spaltenkopf-Tooltip {key,x,y}
   const [infoKey, setInfoKey] = useState(null) // ausführliche KPI-Beschreibung
@@ -779,6 +781,28 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, onDrill, startSuc
   // Zuletzt genutzte Ansicht je Liste merken (Wiederherstellung beim Öffnen).
   useEffect(() => { merkeLetzte(typ, sichtbar) }, [sichtbar, typ])
   const data = lade({ suche, nurAuffaellig, ...opts })
+
+  // --- Standard-Dimensionsfilter ------------------------------------------
+  // Nur SINNVOLLE Dimensionen anbieten: kategoriale Spalten (keine Zahlen,
+  // keine hochkardinalen IDs/Namen). Heuristik: 2–12 verschiedene Werte.
+  const dimBasis = lade({ ...opts }).rows
+  const dimensionen = cols.filter((c) => c.al !== 'right' && c.key !== idKey).map((c) => {
+    const werte = [...new Set(dimBasis.map((r) => r[c.key]).filter((v) => v !== '' && v != null))]
+    return { key: c.key, label: c.label, fmt: c.fmt, werte }
+  }).filter((d) => d.werte.length >= 2 && d.werte.length <= 12)
+  const aktiveDims = Object.entries(dimFilter).filter(([, s]) => s && s.size)
+  const dimAktivN = aktiveDims.reduce((n, [, s]) => n + s.size, 0)
+  const toggleDim = (key, val) => setDimFilter((f) => {
+    const s = new Set(f[key]); s.has(val) ? s.delete(val) : s.add(val)
+    return { ...f, [key]: s }
+  })
+  // Zeilen nach aktiven Dimensionen filtern (UND zwischen Dimensionen, ODER innerhalb).
+  const zeilen = aktiveDims.length
+    ? data.rows.filter((r) => aktiveDims.every(([k, s]) => s.has(String(r[k]))))
+    : data.rows
+  const summeGefiltert = {}
+  for (const k of sumKeys) summeGefiltert[k] = Math.round(zeilen.reduce((n, r) => n + (r[k] || 0), 0) * 100) / 100
+  const auffaelligGefiltert = zeilen.filter((r) => r.befunde?.length).length
 
   // Aufklappbare Unterliste (Master-Detail, z. B. Rechnung → Positionen).
   const unterData = unterListe ? unterListe.lade({}) : null
@@ -811,14 +835,14 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, onDrill, startSuc
   // Spalten-Maxima für Daten-Balken (nur rechtsbündige Zahlenspalten).
   const colMax = {}
   if (visuals) for (const c of sichtCols) if (c.al === 'right') {
-    const m = Math.max(0, ...data.rows.map((r) => (typeof r[c.key] === 'number' ? Math.abs(r[c.key]) : 0)))
+    const m = Math.max(0, ...zeilen.map((r) => (typeof r[c.key] === 'number' ? Math.abs(r[c.key]) : 0)))
     if (m > 0) colMax[c.key] = m
   }
   // CSV-Export der aktuellen Ansicht: nur sichtbare Spalten + Befundspalte.
   const exportCsv = () => {
     const kopf = [...sichtCols.map((c) => c.label), 'Befund']
-    const zeilen = data.rows.map((r) => [...sichtCols.map((c) => (c.fmt ? c.fmt(r[c.key]) : r[c.key] ?? '')), r.befunde.map((b) => b.text).join(' | ')])
-    downloadCsv(`${typ}_${nurAuffaellig ? 'auffaellig' : 'ansicht'}`, [kopf, ...zeilen])
+    const csvZeilen = zeilen.map((r) => [...sichtCols.map((c) => (c.fmt ? c.fmt(r[c.key]) : r[c.key] ?? '')), r.befunde.map((b) => b.text).join(' | ')])
+    downloadCsv(`${typ}_${nurAuffaellig ? 'auffaellig' : 'ansicht'}`, [kopf, ...csvZeilen])
   }
 
   if (voll) return <Vollansicht typ={typ} row={voll} cols={cols} idKey={idKey} titelKey={titelKey} titel={titel} onBack={() => setVoll(null)} onDrill={onDrill} />
@@ -886,6 +910,10 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, onDrill, startSuc
           <input type="checkbox" checked={nurAuffaellig} onChange={(e) => setNurAuffaellig(e.target.checked)} />
           ⚠ nur Auffälligkeiten ({data.auffaellig})
         </label>
+        <button onClick={() => setFilterAuf((v) => !v)} title="Standard-Dimensionsfilter setzen (nur sinnvolle Dimensionen)"
+          style={{ ...inp, cursor: 'pointer', fontSize: 12, fontWeight: 600, borderColor: (filterAuf || dimAktivN) ? 'var(--accent)' : 'var(--line)', color: (filterAuf || dimAktivN) ? 'var(--accent)' : 'var(--ink)' }}>
+          ☰ Filter{dimAktivN ? ` (${dimAktivN})` : ''}
+        </button>
         <button onClick={() => setLegendeAuf((v) => !v)} style={{ ...inp, cursor: 'pointer', fontSize: 12 }}>Legende {legendeAuf ? '▴' : '▾'}</button>
         <button onClick={() => setPanelAuf((v) => !v)} title="Spalten ein-/ausblenden & Ansichten (Bookmarks)"
           style={{ ...inp, cursor: 'pointer', fontSize: 12, fontWeight: 600, borderColor: panelAuf ? 'var(--accent)' : 'var(--line)', color: panelAuf ? 'var(--accent)' : 'var(--ink)' }}>
@@ -895,6 +923,38 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, onDrill, startSuc
           style={{ ...inp, cursor: 'pointer', fontSize: 12, fontWeight: 600, borderColor: visuals ? 'var(--accent)' : 'var(--line)', color: visuals ? 'var(--accent)' : 'var(--ink)' }}>📊 Visuals {visuals ? 'an' : 'aus'}</button>
         <button onClick={exportCsv} title="Aktuelle Ansicht als CSV/Excel exportieren" style={{ ...inp, cursor: 'pointer', fontSize: 12 }}>⤓ CSV</button>
       </div>
+
+      {/* Dimensionsfilter-Panel — nur sinnvolle (kategoriale) Dimensionen */}
+      {filterAuf && (
+        <div style={{ ...card, padding: 14, marginBottom: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <div style={cap}>Dimensionsfilter{dimAktivN ? ` — ${dimAktivN} aktiv` : ''}</div>
+            {dimAktivN > 0 && <button onClick={() => setDimFilter({})} style={{ ...inp, padding: '3px 10px', cursor: 'pointer', fontSize: 12 }}>Alle zurücksetzen</button>}
+          </div>
+          {dimensionen.length === 0
+            ? <div style={{ fontSize: 12, color: 'var(--muted)' }}>Für diesen Bericht gibt es keine sinnvollen Dimensionsfilter (zu viele Einzelwerte oder reine Kennzahlen).</div>
+            : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
+                {dimensionen.map((d) => (
+                  <div key={d.key}>
+                    <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink)', marginBottom: 5 }}>{d.label}</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                      {d.werte.map((v) => {
+                        const sv = String(v); const an = dimFilter[d.key]?.has(sv)
+                        return (
+                          <button key={sv} onClick={() => toggleDim(d.key, sv)}
+                            style={{ fontSize: 11.5, padding: '3px 9px', borderRadius: 999, cursor: 'pointer',
+                              border: `1px solid ${an ? 'var(--accent)' : 'var(--line)'}`, background: an ? 'var(--accent-soft)' : 'var(--panel)', color: an ? 'var(--accent)' : 'var(--muted)' }}>
+                            {an ? '✓ ' : ''}{d.fmt ? d.fmt(v) : sv}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>}
+          <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 10 }}>Mehrere Werte einer Dimension wirken als ODER, verschiedene Dimensionen als UND. Nicht sinnvolle Dimensionen werden automatisch ausgeblendet.</div>
+        </div>
+      )}
 
       {/* Bookmark-/Spalten-Panel (auf-/zuklappbar wie das Burger-Menü) */}
       {panelAuf && (
@@ -970,8 +1030,8 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, onDrill, startSuc
             )
           })}<th style={{ padding: '8px 9px', borderBottom: '2px solid var(--line)' }} /></tr></thead>
           <tbody>
-            {data.rows.length === 0 && <tr><td colSpan={sichtCols.length + 1 + (unterListe ? 1 : 0)} style={{ padding: 20, textAlign: 'center', color: 'var(--muted)' }}>Keine Treffer.</td></tr>}
-            {data.rows.map((row, i) => {
+            {zeilen.length === 0 && <tr><td colSpan={sichtCols.length + 1 + (unterListe ? 1 : 0)} style={{ padding: 20, textAlign: 'center', color: 'var(--muted)' }}>Keine Treffer.</td></tr>}
+            {zeilen.map((row, i) => {
               const auf = unterListe && aufgeklappt.has(row[idKey])
               const kinder = unterListe ? kinderVon(row) : []
               return (
@@ -1041,14 +1101,14 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, onDrill, startSuc
               {unterListe && <td style={{ borderTop: '2px solid var(--line)' }} />}
               {sichtCols.map((c, i) => (
                 <td key={c.key} className={c.al === 'right' ? 'mono' : undefined} style={{ padding: '8px 9px', borderTop: '2px solid var(--line)', textAlign: c.al }}>
-                  {i === 0 ? 'Gesamt' : sumKeys.includes(c.key) ? (data.summe[c.key]?.toLocaleString('de-DE')) : ''}
+                  {i === 0 ? 'Gesamt' : sumKeys.includes(c.key) ? (summeGefiltert[c.key]?.toLocaleString('de-DE')) : ''}
                 </td>
               ))}<td style={{ borderTop: '2px solid var(--line)' }} />
             </tr>
           </tfoot>
         </table>
       </div>
-      <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 8 }}>{data.rows.length} von {data.gesamt} Zeilen · {data.auffaellig} auffällig · Klick auf eine Zeile öffnet die Befund-Karte.</div>
+      <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 8 }}>{zeilen.length} von {data.gesamt} Zeilen{dimAktivN ? ` (Dimensionsfilter aktiv)` : ''} · {auffaelligGefiltert} auffällig · Klick auf eine Zeile öffnet die Befund-Karte.</div>
 
       {detail && <BefundModal typ={typ} row={detail} cols={cols} idKey={idKey} titelKey={titelKey} onClose={() => setDetail(null)} onDrill={onDrill} onVoll={() => { const r = detail; setDetail(null); setVoll(r) }} />}
 
