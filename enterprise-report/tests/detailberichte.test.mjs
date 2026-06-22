@@ -1,7 +1,7 @@
 import './_setup.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { artikelliste, auftragsliste, pruefeArtikel, pruefeAuftrag, ARTIKEL, LISTEN, historie, warenverbrauchliste, pruefeWarenverbrauch, WARENVERBRAUCH, leasingliste, fuehrenderBeleg, LEASING, retourenliste, rechnungsliste, kundenliste, detailFuerBereich, produktliste, rechnungsposliste, bestellkanalliste, chargenliste, auftragsbestandliste, sammelBefunde, befundStatistik, REGISTRY, verknuepfungenFuer, lieferantenliste, bestellliste, offenepostenliste, inventurliste } from '../src/core/detailberichte.js'
+import { artikelliste, auftragsliste, pruefeArtikel, pruefeAuftrag, ARTIKEL, LISTEN, historie, warenverbrauchliste, pruefeWarenverbrauch, WARENVERBRAUCH, leasingliste, fuehrenderBeleg, LEASING, retourenliste, rechnungsliste, kundenliste, detailFuerBereich, produktliste, rechnungsposliste, bestellkanalliste, chargenliste, auftragsbestandliste, sammelBefunde, befundStatistik, REGISTRY, verknuepfungenFuer, lieferantenliste, bestellliste, offenepostenliste, inventurliste, kontenliste } from '../src/core/detailberichte.js'
 
 test('Negativer Verfügbarbestand wird als Fehler erkannt', () => {
   const a = ARTIKEL.find((x) => x.sku === '231052006') // lbVerf -1
@@ -223,6 +223,18 @@ test('Cross-Drill: Rechnung → Offene Posten, Lieferant → Bestellungen', () =
   assert.ok(verknuepfungenFuer('rechnung', re).some((l) => l.ziel === 'offeneposten'))
   const lf = lieferantenliste().rows.find((l) => l.name === 'PowerBar GmbH')
   assert.ok(verknuepfungenFuer('lieferant', lf).some((l) => l.ziel === 'bestellung'))
+})
+
+test('Kontenliste (DimKonto): Zuweisungen + Plausi', () => {
+  const rows = kontenliste().rows
+  // Klassenkonflikt: Eigenkapital (Klasse 2) als GuV markiert
+  assert.ok(rows.find((k) => k.kontoNr === '2000').befunde.some((b) => b.text.includes('Klassenkonflikt')))
+  // Aufwandskonto ohne Kostenart-Zuordnung
+  assert.ok(rows.find((k) => k.kontoNr === '4100').befunde.some((b) => b.text.includes('Kostenart')))
+  // gesperrtes Konto mit Saldo
+  assert.ok(rows.find((k) => k.kontoNr === '8500').befunde.some((b) => b.text.includes('Gesperrtes Konto')))
+  // sauberes Erlöskonto ohne Befund
+  assert.ok(!rows.find((k) => k.kontoNr === '8400').befunde.length)
 })
 
 test('LISTEN-Katalog enthält die Kernlisten', () => {

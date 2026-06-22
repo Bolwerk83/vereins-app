@@ -8,8 +8,8 @@ import { KPI } from './kpiRegistry.js'
 import { ampelStatus, trendAusHistorie } from './ampel.js'
 import { formatWert } from '../design/theme.js'
 
-const signed = (v, einheit) => (v >= 0 ? '+' : '') + formatWert(v, einheit)
-const signedPct = (v) => (v >= 0 ? '+' : '') + v.toFixed(1) + ' %'
+const signed = (v, einheit) => (v == null ? '–' : (v >= 0 ? '+' : '') + formatWert(v, einheit))
+const signedPct = (v) => (v == null || Number.isNaN(v) ? '–' : (v >= 0 ? '+' : '') + v.toFixed(1) + ' %')
 
 /** Insight zu einer KPI: Status, Ziel-/VJ-Abweichung, Trend, Klartext. */
 export function kpiInsight(kpiId, wert, reihe = []) {

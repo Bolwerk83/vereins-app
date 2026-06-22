@@ -40,7 +40,7 @@ export function KpiCard({ kpiId, wert, historie, onClick }) {
       <div className="mono" style={{ fontSize: 24, fontWeight: 600, marginTop: 6 }}>{formatWert(wert, k.einheit)}</div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
         <span style={{ fontSize: 11, color: 'var(--muted)' }}>{k.ziel != null ? `Ziel ${formatWert(k.ziel, k.einheit)}` : '—'}</span>
-        {t && <span className="mono" style={{ fontSize: 11, color: t.istGut ? 'var(--amp-g)' : 'var(--amp-r)' }}>
+        {t && t.deltaPct != null && <span className="mono" style={{ fontSize: 11, color: t.istGut ? 'var(--amp-g)' : 'var(--amp-r)' }}>
           {TREND_ICON[t.trend]} {t.deltaPct >= 0 ? '+' : ''}{t.deltaPct.toFixed(1)} %</span>}
       </div>
     </button>

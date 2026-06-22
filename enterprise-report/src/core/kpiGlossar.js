@@ -32,7 +32,13 @@ export const GLOSSAR = {
   retourenQuote: { name: 'Retourenquote', kurz: 'Anteil retournierter Bestellungen je Kanal.', lang: 'Kanalabhängig stark unterschiedlich (online > stationär); Treiber für Erlösschmälerung und Prozesskosten.' },
   stornoQuote: { name: 'Stornoquote', kurz: 'Anteil stornierter Bestellungen je Kanal.', lang: 'Hohe Stornoquoten deuten auf Verfügbarkeits-, Preis- oder Prozessprobleme hin.' },
   mahnstufe: { name: 'Mahnstufe', kurz: 'Eskalationsstufe im Forderungsmanagement (0–3).', lang: 'Stufe 3 ist die höchste Mahnstufe vor Inkasso/Wertberichtigung – Risiko für den Zahlungseingang.' },
-  mhd: { name: 'Mindesthaltbarkeitsdatum', kurz: 'Datum, bis zu dem die Charge verkäuflich ist.', lang: 'Abgelaufene Chargen müssen gesperrt/abgeschrieben werden; bald ablaufende benötigen Abverkaufssteuerung.' }
+  mhd: { name: 'Mindesthaltbarkeitsdatum', kurz: 'Datum, bis zu dem die Charge verkäuflich ist.', lang: 'Abgelaufene Chargen müssen gesperrt/abgeschrieben werden; bald ablaufende benötigen Abverkaufssteuerung.' },
+  // Kontenstamm (DimKonto)
+  klasse: { name: 'Kontenklasse', kurz: 'SKR-Klasse 0–9 des Sachkontos.', lang: 'Die Kontenklasse ordnet das Konto grob ein: 0–2 Bilanz (Anlagen/Kapital/Umlauf), 3 Wareneingang/Bestand, 4–7 Aufwand, 8 Erlöse, 9 Abschluss. Sie muss zur GuV-/Bilanz-Zuordnung passen.' },
+  guvBilanz: { name: 'GuV-/Bilanz-Zuordnung', kurz: 'Gehört das Konto in die GuV oder in die Bilanz (Aktiv/Passiv)?', lang: 'Steuert, in welchem Abschlussteil der Saldo erscheint. Ein Widerspruch zwischen Zuordnung und Kontenklasse ist ein Datenfehler.' },
+  kostenart: { name: 'Kostenart-Zuordnung', kurz: 'Verknüpfung des Kontos zur Kostenartenrechnung.', lang: 'GuV-Aufwandskonten ohne Kostenart-Zuordnung fehlen in der KLR — die Kostenartenrechnung wird dadurch unvollständig.' },
+  abstimmposition: { name: 'Abstimmposition', kurz: 'Mapping des Kontos auf eine Position der Abstimmbrücke.', lang: 'Verbindet FiBu-Salden mit der Controlling-Abstimmung (MapKontoPosition). Ohne Zuordnung kann das Konto nicht gegen die KPIs abgestimmt werden.' },
+  steuerschluessel: { name: 'Steuerschlüssel', kurz: 'USt-/VSt-Kennzeichen des Kontos.', lang: 'Bestimmt die automatische Steuerermittlung bei der Buchung; bei Erlös-/Aufwandskonten i. d. R. zwingend.' }
 }
 
 /** Glossareintrag zu einer Spalte (oder null). */

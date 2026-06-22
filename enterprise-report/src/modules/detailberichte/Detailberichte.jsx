@@ -5,7 +5,7 @@
 //  eine Zeile öffnet die Befund-Karte (Sprung in die Detailprüfung).
 // =========================================================================
 import React, { useState, useEffect } from 'react'
-import { LISTEN, LEGENDE, artikelliste, auftragsliste, warenverbrauchliste, leasingliste, retourenliste, rechnungsliste, kundenliste, produktliste, rechnungsposliste, bestellkanalliste, chargenliste, auftragsbestandliste, lieferantenliste, bestellliste, offenepostenliste, inventurliste, historie, sammelBefunde, befundStatistik, verknuepfungenFuer } from '../../core/detailberichte.js'
+import { LISTEN, LEGENDE, artikelliste, auftragsliste, warenverbrauchliste, leasingliste, retourenliste, rechnungsliste, kundenliste, produktliste, rechnungsposliste, bestellkanalliste, chargenliste, auftragsbestandliste, lieferantenliste, bestellliste, offenepostenliste, inventurliste, kontenliste, historie, sammelBefunde, befundStatistik, verknuepfungenFuer } from '../../core/detailberichte.js'
 import { downloadCsv } from '../../core/export.js'
 import { ladeBookmarks, addBookmark, loescheBookmark, ladeLetzte, merkeLetzte } from '../../core/bookmarks.js'
 import { glossarFuer, ausfuehrlich } from '../../core/kpiGlossar.js'
@@ -71,6 +71,10 @@ const PRESETS = {
   inventur: [
     { name: 'Differenzen', sichtbar: ['zaehlung', 'artikel', 'buchbestand', 'zaehlbestand', 'differenz'] },
     { name: 'Wert', sichtbar: ['zaehlung', 'artikel', 'lagerort', 'wertDifferenz'] }
+  ],
+  konto: [
+    { name: 'Zuweisungen', sichtbar: ['kontoNr', 'bezeichnung', 'kostenart', 'kostenstelle', 'abstimmposition'] },
+    { name: 'Abschluss', sichtbar: ['kontoNr', 'bezeichnung', 'klasse', 'guvBilanz', 'steuerschluessel', 'status'] }
   ]
 }
 
@@ -296,6 +300,20 @@ const INV_COLS = [
 ]
 const INV_SUM = ['buchbestand', 'zaehlbestand', 'differenz', 'wertDifferenz']
 
+const KONTO_COLS = [
+  { key: 'kontoNr', label: 'Konto-Nr', al: 'left', mono: true },
+  { key: 'bezeichnung', label: 'Bezeichnung', al: 'left' },
+  { key: 'klasse', label: 'Klasse', al: 'right' },
+  { key: 'guvBilanz', label: 'GuV/Bilanz', al: 'left' },
+  { key: 'kostenart', label: 'Kostenart', al: 'left' },
+  { key: 'kostenstelle', label: 'Kostenstelle', al: 'left', mono: true },
+  { key: 'abstimmposition', label: 'Abstimmposition', al: 'left' },
+  { key: 'steuerschluessel', label: 'Steuer', al: 'left' },
+  { key: 'status', label: 'Status', al: 'left' },
+  { key: 'saldo', label: 'Saldo €', al: 'right', fmt: eur }
+]
+const KONTO_SUM = ['saldo']
+
 // Sammel-Plausi-Cockpit: alle Befunde aller Listen gebündelt, filterbar, mit Absprung.
 function Cockpit({ onBack, onOpen }) {
   const [fSchwere, setFSchwere] = useState(null)
@@ -486,6 +504,7 @@ export default function Detailberichte({ startListe = null }) {
   if (aktiv === 'bestellung') return <Liste key={aktiv} typ="bestellung" titel="Bestellliste (Einkauf)" sub="Bestellungen mit Plausi (Menge ≤ 0, Bestellwert ≠ Menge×EK, Liefertermin überschritten)." cols={BEST_COLS} sumKeys={BEST_SUM} lade={bestellliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="bestellung" titelKey="artikel" />
   if (aktiv === 'offeneposten') return <Liste key={aktiv} typ="offeneposten" titel="Offene-Posten-Liste" sub="Debitoren-OP mit Plausi (höchste Mahnstufe, überfällig, Gutschrift)." cols={OP_COLS} sumKeys={OP_SUM} lade={offenepostenliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="beleg" titelKey="kunde" />
   if (aktiv === 'inventur') return <Liste key={aktiv} typ="inventur" titel="Inventurliste" sub="Inventur mit Plausi (negativer Buchbestand, Differenz inkonsistent, Inventurdifferenz)." cols={INV_COLS} sumKeys={INV_SUM} lade={inventurliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="zaehlung" titelKey="artikel" />
+  if (aktiv === 'konto') return <Liste key={aktiv} typ="konto" titel="Kontenliste (DimKonto)" sub="Kontenstamm mit Zuweisungen (Kostenart, Kostenstelle, Abstimmposition, Steuer) + Plausi (Klassenkonflikt, fehlende Zuordnung, gesperrt mit Saldo)." cols={KONTO_COLS} sumKeys={KONTO_SUM} lade={kontenliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="kontoNr" titelKey="bezeichnung" />
 
   if (aktiv === 'cockpit') return <Cockpit onBack={() => setAktiv(null)} onOpen={(id, suche) => oeffneListe(id, suche)} />
   if (aktiv === 'qualitaet') return <Qualitaet onBack={() => setAktiv(null)} onOpen={(id, suche) => oeffneListe(id, suche)} />

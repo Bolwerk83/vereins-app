@@ -188,6 +188,10 @@ export function historie(typ, row) {
     const o = offset(row.sku)
     return { kind: 'chart', einheit: 'Buchbestand (Stk)', punkte: MON.map((m, i) => ({ label: m, wert: Math.max(0, Math.round((row.buchbestand || 0) + Math.sin(i + o) * 3)) })) }
   }
+  if (typ === 'konto') {
+    const o = offset(row.kontoNr); const basis = Math.abs(row.saldo || 0) / 1000
+    return { kind: 'chart', einheit: 'Saldo (T€)', punkte: MON.map((m, i) => ({ label: m, wert: Math.max(0, Math.round(basis + Math.sin(i + o) * basis * 0.06)) })) }
+  }
   // Auftrag: Status-Zeitstrahl bis zum aktuellen Stand.
   let stufen = row.status === 'Offen' ? ['Angelegt', 'Bestätigt'] : ['Angelegt', 'Bestätigt', 'Kommissioniert', 'Geliefert']
   if (row.ret > 0 || row.ue < 0) stufen = [...stufen, 'Retoure']
@@ -502,6 +506,28 @@ export function pruefeInventur(i) {
 }
 export function inventurliste(o = {}) { return generischListe(INVENTUR, pruefeInventur, o, ['buchbestand', 'zaehlbestand', 'differenz', 'wertDifferenz'], (i, q) => norm(i.zaehlung).includes(q) || norm(i.sku).includes(q) || norm(i.artikel).includes(q) || norm(i.lagerort).includes(q)) }
 
+// ---- Kontenliste (DimKonto): Kontenstamm + Zuweisungen je Spalte ---------
+export const KONTEN = [
+  { kontoNr: '8400', bezeichnung: 'Erlöse Inland 19%', klasse: 8, guvBilanz: 'GuV', kostenart: 'Umsatzerlöse', kostenstelle: '', abstimmposition: 'umsatz', steuerschluessel: 'USt19', status: 'aktiv', saldo: 52000000 },
+  { kontoNr: '3400', bezeichnung: 'Wareneinsatz / Materialaufwand', klasse: 3, guvBilanz: 'GuV', kostenart: 'Materialaufwand', kostenstelle: 'KST-300', abstimmposition: 'wareneinsatz', steuerschluessel: 'VSt19', status: 'aktiv', saldo: 31200000 },
+  { kontoNr: '4100', bezeichnung: 'Löhne und Gehälter', klasse: 4, guvBilanz: 'GuV', kostenart: '', kostenstelle: 'KST-400', abstimmposition: 'personal', steuerschluessel: '—', status: 'aktiv', saldo: 9800000 },
+  { kontoNr: '1200', bezeichnung: 'Bank / Kasse', klasse: 1, guvBilanz: 'Bilanz-Aktiv', kostenart: '', kostenstelle: '', abstimmposition: 'liquide', steuerschluessel: '—', status: 'aktiv', saldo: 4100000 },
+  { kontoNr: '2000', bezeichnung: 'Eigenkapital', klasse: 2, guvBilanz: 'GuV', kostenart: '', kostenstelle: '', abstimmposition: '', steuerschluessel: '—', status: 'aktiv', saldo: 12000000 },
+  { kontoNr: '5900', bezeichnung: 'Sonstige betriebl. Aufwendungen', klasse: 5, guvBilanz: 'GuV', kostenart: 'Sonstige Kosten', kostenstelle: 'KST-500', abstimmposition: '', steuerschluessel: 'VSt19', status: 'aktiv', saldo: 2400000 },
+  { kontoNr: '8500', bezeichnung: 'Alt-Erlöskonto (Migration)', klasse: 8, guvBilanz: 'GuV', kostenart: 'Umsatzerlöse', kostenstelle: '', abstimmposition: 'umsatz', steuerschluessel: '—', status: 'gesperrt', saldo: 1200 }
+]
+export function pruefeKonto(k) {
+  const b = []
+  if (k.guvBilanz === 'GuV' && k.klasse <= 2) b.push({ feld: 'guvBilanz', schwere: 'fehler', text: 'Klassenkonflikt: GuV-Konto in Bilanzklasse (0–2)' })
+  if (k.guvBilanz.startsWith('Bilanz') && k.klasse >= 4) b.push({ feld: 'guvBilanz', schwere: 'fehler', text: 'Klassenkonflikt: Bilanzkonto in GuV-Klasse (4–8)' })
+  if (k.status === 'gesperrt' && k.saldo !== 0) b.push({ feld: 'status', schwere: 'fehler', text: 'Gesperrtes Konto mit Saldo ≠ 0' })
+  if (k.guvBilanz === 'GuV' && k.klasse >= 3 && !k.kostenart) b.push({ feld: 'kostenart', schwere: 'warnung', text: 'Keine Kostenart-Zuordnung' })
+  if (k.guvBilanz === 'GuV' && !k.abstimmposition) b.push({ feld: 'abstimmposition', schwere: 'hinweis', text: 'Keine Abstimmposition zugeordnet' })
+  if (k.klasse === 8 && k.steuerschluessel === '—') b.push({ feld: 'steuerschluessel', schwere: 'hinweis', text: 'Erlöskonto ohne Steuerschlüssel' })
+  return b
+}
+export function kontenliste(o = {}) { return generischListe(KONTEN, pruefeKonto, o, ['saldo'], (k, q) => norm(k.kontoNr).includes(q) || norm(k.bezeichnung).includes(q) || norm(k.kostenart).includes(q) || norm(k.abstimmposition).includes(q)) }
+
 // Generischer Listen-Helfer (Befunde + Filter + Summen).
 function generischListe(daten, pruef, { suche = '', nurAuffaellig = false } = {}, sumKeys = [], match) {
   const q = norm(suche)
@@ -529,7 +555,8 @@ export const LISTEN = [
   { id: 'lieferant', name: 'Lieferantenliste', verfuegbar: true },
   { id: 'bestellung', name: 'Bestellliste (Einkauf)', verfuegbar: true },
   { id: 'offeneposten', name: 'Offene-Posten-Liste', verfuegbar: true },
-  { id: 'inventur', name: 'Inventurliste', verfuegbar: true }
+  { id: 'inventur', name: 'Inventurliste', verfuegbar: true },
+  { id: 'konto', name: 'Kontenliste (DimKonto)', verfuegbar: true }
 ]
 
 // ---- Zentrale Registry + Sammel-Plausi (alle Listen gebündelt) ----------
@@ -550,7 +577,8 @@ export const REGISTRY = [
   { id: 'lieferant', name: 'Lieferantenliste', lade: lieferantenliste, idKey: 'lieferantNr', titelKey: 'name' },
   { id: 'bestellung', name: 'Bestellliste (Einkauf)', lade: bestellliste, idKey: 'bestellung', titelKey: 'artikel' },
   { id: 'offeneposten', name: 'Offene-Posten-Liste', lade: offenepostenliste, idKey: 'beleg', titelKey: 'kunde' },
-  { id: 'inventur', name: 'Inventurliste', lade: inventurliste, idKey: 'zaehlung', titelKey: 'artikel' }
+  { id: 'inventur', name: 'Inventurliste', lade: inventurliste, idKey: 'zaehlung', titelKey: 'artikel' },
+  { id: 'konto', name: 'Kontenliste (DimKonto)', lade: kontenliste, idKey: 'kontoNr', titelKey: 'bezeichnung' }
 ]
 
 /** Alle Befunde aller Listen als flache Liste (ein Eintrag je Befund). */

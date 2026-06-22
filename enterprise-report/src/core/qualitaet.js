@@ -33,7 +33,7 @@ export function setStatus(id, status, { aktor = 'Du', kommentar = '' } = {}) {
 
 // Welcher Fachbereich bündelt welche Liste? (für das Dashboard je Bereich)
 export const BEREICH_VON_LISTE = {
-  rechnung: 'Finanzen / FiBu', rechnungpos: 'Finanzen / FiBu', offeneposten: 'Finanzen / FiBu',
+  rechnung: 'Finanzen / FiBu', rechnungpos: 'Finanzen / FiBu', offeneposten: 'Finanzen / FiBu', konto: 'Finanzen / FiBu',
   artikel: 'Bestand / Logistik', produkt: 'Bestand / Logistik', charge: 'Bestand / Logistik', inventur: 'Bestand / Logistik', warenverbrauch: 'Bestand / Logistik',
   auftrag: 'Vertrieb / Auftrag', auftragsbestand: 'Vertrieb / Auftrag', leasing: 'Vertrieb / Auftrag', retoure: 'Vertrieb / Auftrag', bestellkanal: 'Vertrieb / Auftrag',
   bestellung: 'Einkauf', lieferant: 'Einkauf',
