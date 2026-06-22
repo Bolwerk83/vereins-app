@@ -43,6 +43,7 @@ import Gutschriften from './modules/gutschriften/Gutschriften.jsx'
 import AbgleichAbsatz from './modules/abgleich/AbgleichAbsatz.jsx'
 import VertriebKennzahlen from './modules/vertrieb-kennzahlen/VertriebKennzahlen.jsx'
 import Prozesskette from './modules/prozesskette/Prozesskette.jsx'
+import Tagesreporting from './modules/tagesreporting/Tagesreporting.jsx'
 import WMS from './modules/wms/WMS.jsx'
 import Detailberichte from './modules/detailberichte/Detailberichte.jsx'
 import Forderungen from './modules/forderungen/Forderungen.jsx'
@@ -196,6 +197,7 @@ export default function App() {
     { titel: 'Cockpit & Berichte', icon: '📊', untergruppen: [
       { titel: 'Überblick', eintraege: [
         E('baum', 'nav.tree', '🌳', { aktiv: ansicht === 'baum' || ansicht === 'report' }),
+        E('tagesreporting', 'nav.tagesreporting', '📅'),
         E('kennzahlen', 'nav.kennzahlen', '📖'),
         E('katalog', 'nav.katalog', '🗂'),
         E('detailberichte', 'nav.detailberichte', '🔬'),
@@ -532,6 +534,9 @@ export default function App() {
         )}
         {ansicht === 'prozesskette' && (
           <Prozesskette onGeh={geh} />
+        )}
+        {ansicht === 'tagesreporting' && (
+          <Tagesreporting onGeh={geh} />
         )}
         {ansicht === 'wms' && (
           <WMS />

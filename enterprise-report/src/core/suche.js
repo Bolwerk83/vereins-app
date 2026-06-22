@@ -11,6 +11,7 @@
 export const NAV_ZIELE = [
   { ziel: 'baum', gruppe: 'Berichte', schluessel: 'nav.tree' },
   { ziel: 'kennzahlen', gruppe: 'Berichte', schluessel: 'nav.kennzahlen' },
+  { ziel: 'tagesreporting', gruppe: 'Berichte', schluessel: 'nav.tagesreporting' },
   { ziel: 'kpieditor', gruppe: 'Berichte', schluessel: 'nav.kpieditor' },
   { ziel: 'katalog', gruppe: 'Berichte', schluessel: 'nav.katalog' },
   { ziel: 'detailberichte', gruppe: 'Berichte', schluessel: 'nav.detailberichte' },

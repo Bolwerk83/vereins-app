@@ -107,7 +107,7 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
   abgeleitete KPIs live sehen (nutzt KPI-Abhängigkeitsgraph).
 - Szenarien speichern/vergleichen (Basis/Best/Worst), mehr Stellhebel.
 
-### 4. Tagesreporting auffindbar machen
+### 4. Tagesreporting auffindbar machen — DONE
 - Das „Tag-Rep" (Tagesreporting) ist aktuell schwer zu finden — eigener,
   klar sichtbarer Einstieg + Inhalt.
 

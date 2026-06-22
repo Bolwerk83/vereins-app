@@ -8,6 +8,7 @@ export const BERICHT_INFO = {
   // ---- Cockpit & Berichte ----
   baum: { zweck: 'Zentraler Einstieg: alle Berichte hierarchisch von der Geschäftsführung bis zum Detail.', zielgruppe: 'Alle Rollen.', mehrwert: 'Schneller Überblick und Drill-down bis zur Einzelkennzahl.' },
   kennzahlen: { zweck: 'Nachschlagewerk aller KPIs mit Definition, Ziel und Abhängigkeiten.', zielgruppe: 'Alle, v. a. Controlling.', mehrwert: 'Einheitliches Verständnis der Kennzahlen.' },
+  tagesreporting: { zweck: 'Täglicher Blick: operative Kernkennzahlen heute vs. gestern mit „seit gestern"-Delta und dem Verlauf der letzten 14 Tage.', zielgruppe: 'Alle operativen Rollen / Vertrieb / Leitung.', mehrwert: 'Schneller Start in den Tag; Auffälligkeiten sofort sehen.' },
   katalog: { zweck: 'Durchsuchbarer Katalog aller verfügbaren Berichte.', zielgruppe: 'Alle.', mehrwert: 'Den passenden Bericht schnell finden.' },
   kpieditor: { zweck: 'Eigene, abgeleitete KPIs aus Formeln definieren.', zielgruppe: 'Controlling / Power-User.', mehrwert: 'Individuelle Kennzahlen ohne IT.' },
   designer: { zweck: 'Eigene Berichte aus KPIs zusammenstellen.', zielgruppe: 'Power-User / Controlling.', mehrwert: 'Flexible, wiederverwendbare Auswertungen.' },
