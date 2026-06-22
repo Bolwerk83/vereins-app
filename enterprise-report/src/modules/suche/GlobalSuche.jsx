@@ -20,6 +20,22 @@ export default function GlobalSuche({ onGeh, onKpi, onInfo, rolle }) {
   const index = useMemo(() => baueIndex(t, KPI), [t])
   const treffer = useMemo(() => suchen(index, q, 8), [index, q])
 
+  // Vorauswahl beim Reinklicken (leere Eingabe): die für die Rolle passendsten Einträge.
+  const bereichOf = (e) => (e.typ === 'kpi' ? KPI[e.ziel]?.bereich : bereichVon(e.ziel))
+  const erlaubt = (e) => (e.typ === 'kpi'
+    ? (!rolle || rolle.bereiche === '*' || (KPI[e.ziel] && rolle.bereiche.includes(KPI[e.ziel].bereich)))
+    : (!rolle || darfBereich(rolle, bereichVon(e.ziel))))
+  const vorauswahl = useMemo(() => {
+    const score = (e) => {
+      const ber = bereichOf(e)
+      if (rolle && rolle.bereiche !== '*' && ber && rolle.bereiche.includes(ber)) return 3 // genau meine Rolle
+      if (e.typ === 'bericht' && ['baum', 'kennzahlen', 'katalog'].includes(e.ziel)) return 2 // Kern-Einstiege
+      return e.typ === 'kpi' ? 1 : 1.5
+    }
+    return index.filter(erlaubt).sort((a, b) => score(b) - score(a)).slice(0, 7)
+  }, [index, rolle]) // eslint-disable-line
+  const liste = q ? treffer : vorauswahl
+
   // "/" fokussiert die Suche (wenn nicht in einem Eingabefeld).
   useEffect(() => {
     const onKey = (e) => {
@@ -48,10 +64,10 @@ export default function GlobalSuche({ onGeh, onKpi, onInfo, rolle }) {
   }
 
   function onKeyDown(e) {
-    if (!offen && treffer.length) setOffen(true)
-    if (e.key === 'ArrowDown') { e.preventDefault(); setAktiv((i) => Math.min(i + 1, treffer.length - 1)) }
+    if (!offen && liste.length) setOffen(true)
+    if (e.key === 'ArrowDown') { e.preventDefault(); setAktiv((i) => Math.min(i + 1, liste.length - 1)) }
     else if (e.key === 'ArrowUp') { e.preventDefault(); setAktiv((i) => Math.max(i - 1, 0)) }
-    else if (e.key === 'Enter') { e.preventDefault(); springe(treffer[aktiv]) }
+    else if (e.key === 'Enter') { e.preventDefault(); springe(liste[aktiv]) }
     else if (e.key === 'Escape') { setOffen(false); inputRef.current?.blur() }
   }
 
@@ -74,13 +90,18 @@ export default function GlobalSuche({ onGeh, onKpi, onInfo, rolle }) {
           style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--muted)', fontSize: 13 }}>×</button>}
       </div>
 
-      {offen && q && (
+      {offen && (
         <div style={{ position: 'absolute', top: 'calc(100% + 4px)', right: 0, width: 320, maxWidth: '80vw', background: 'var(--panel)',
           border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)', zIndex: 50, overflow: 'hidden' }}>
-          {treffer.length === 0 && (
+          {!q && (
+            <div style={{ padding: '8px 12px', fontSize: 10.5, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', background: 'var(--bg)', borderBottom: '1px solid var(--line)' }}>
+              Empfohlen für deine Rolle{rolle?.name ? ` · ${rolle.name}` : ''}
+            </div>
+          )}
+          {q && treffer.length === 0 && (
             <div style={{ padding: '12px 14px', color: 'var(--muted)', fontSize: 13 }}>{t('suche.leer')}</div>
           )}
-          {treffer.map((tr, i) => {
+          {liste.map((tr, i) => {
             const gesperrt = tr.typ === 'bericht' && rolle && !darfBereich(rolle, bereichVon(tr.ziel))
             return (
             <div
@@ -100,9 +121,9 @@ export default function GlobalSuche({ onGeh, onKpi, onInfo, rolle }) {
               </span>
             </div>
           )})}
-          {treffer.length > 0 && (
+          {liste.length > 0 && (
             <div style={{ padding: '6px 12px', fontSize: 10.5, color: 'var(--muted)', background: 'var(--bg)' }}>
-              ↑↓ wählen · ⏎ öffnen · Esc schließen
+              {q ? '' : 'Tippen zum Suchen · '}↑↓ wählen · ⏎ öffnen · Esc schließen
             </div>
           )}
         </div>
