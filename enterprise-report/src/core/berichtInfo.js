@@ -11,6 +11,7 @@ export const BERICHT_INFO = {
   katalog: { zweck: 'Durchsuchbarer Katalog aller verfügbaren Berichte.', zielgruppe: 'Alle.', mehrwert: 'Den passenden Bericht schnell finden.' },
   kpieditor: { zweck: 'Eigene, abgeleitete KPIs aus Formeln definieren.', zielgruppe: 'Controlling / Power-User.', mehrwert: 'Individuelle Kennzahlen ohne IT.' },
   designer: { zweck: 'Eigene Berichte aus KPIs zusammenstellen.', zielgruppe: 'Power-User / Controlling.', mehrwert: 'Flexible, wiederverwendbare Auswertungen.' },
+  detailberichte: { zweck: 'Granulare Listen (Artikel, Aufträge …) für die Einzelfallprüfung mit Plausibilitätskontrolle.', zielgruppe: 'Controlling / Stammdaten / Fachbereiche.', mehrwert: 'Falscheingaben und unplausible Datenvorgänge gezielt finden und validieren.' },
   // ---- Kosten & Ergebnis ----
   klr: { zweck: 'Grundlagen und Fluss der Kosten- & Leistungsrechnung.', zielgruppe: 'Controlling, Rechnungswesen.', mehrwert: 'Verstehen, welche Kosten wofür entstehen.' },
   einzelgemein: { zweck: 'Einzel- vs. Gemeinkosten und Zuschlagskalkulation.', zielgruppe: 'Kalkulation / Controlling.', mehrwert: 'Saubere Gemeinkostenverrechnung.' },

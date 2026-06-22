@@ -13,6 +13,7 @@ export const NAV_ZIELE = [
   { ziel: 'kennzahlen', gruppe: 'Berichte', schluessel: 'nav.kennzahlen' },
   { ziel: 'kpieditor', gruppe: 'Berichte', schluessel: 'nav.kpieditor' },
   { ziel: 'katalog', gruppe: 'Berichte', schluessel: 'nav.katalog' },
+  { ziel: 'detailberichte', gruppe: 'Berichte', schluessel: 'nav.detailberichte' },
   { ziel: 'designer', gruppe: 'Berichte', schluessel: 'nav.designer' },
   { ziel: 'controlling', gruppe: 'Berichte', schluessel: 'nav.controlling' },
   { ziel: 'klrablauf', gruppe: 'Berichte', schluessel: 'nav.klrablauf' },

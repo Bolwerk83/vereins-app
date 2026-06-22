@@ -36,6 +36,7 @@ import Marketing from './modules/marketing/Marketing.jsx'
 import Bestand from './modules/bestand/Bestand.jsx'
 import Lagerverwaltung from './modules/lager/Lagerverwaltung.jsx'
 import WMS from './modules/wms/WMS.jsx'
+import Detailberichte from './modules/detailberichte/Detailberichte.jsx'
 import Forderungen from './modules/forderungen/Forderungen.jsx'
 import Mitarbeiter from './modules/mitarbeiter/Mitarbeiter.jsx'
 import Segmentbericht from './modules/segment/Segmentbericht.jsx'
@@ -180,6 +181,7 @@ export default function App() {
         E('baum', 'nav.tree', '🌳', { aktiv: ansicht === 'baum' || ansicht === 'report' }),
         E('kennzahlen', 'nav.kennzahlen', '📖'),
         E('katalog', 'nav.katalog', '🗂'),
+        E('detailberichte', 'nav.detailberichte', '🔬'),
         E('kpieditor', 'nav.kpieditor', '🧪')
       ] },
       { titel: 'Eigene Berichte', eintraege: [ E('designer', 'nav.designer', '🧩') ] }
@@ -416,6 +418,9 @@ export default function App() {
         )}
         {ansicht === 'kpieditor' && (
           <KpiEditor werte={werte} onChange={() => { leereCache(); ladeKpiWerte(periode).then(setWerte) }} />
+        )}
+        {ansicht === 'detailberichte' && (
+          <Detailberichte />
         )}
         {ansicht === 'zeit' && (
           <ZeitDatenart onChange={setZeitModell} />
