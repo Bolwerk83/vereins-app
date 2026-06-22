@@ -9,6 +9,9 @@ import { LISTEN, LEGENDE, artikelliste, auftragsliste, warenverbrauchliste, leas
 import { downloadCsv } from '../../core/export.js'
 import { ladeBookmarks, addBookmark, loescheBookmark, ladeLetzte, merkeLetzte } from '../../core/bookmarks.js'
 import { glossarFuer, ausfuehrlich } from '../../core/kpiGlossar.js'
+import { ladeBemerkungen, addBemerkung, toggleErledigt, loescheBemerkung, aufgaben, PERSONEN } from '../../core/bemerkungen.js'
+import { erkenntnisse } from '../../core/erkenntnisse.js'
+import { preisvergleich } from '../../core/preisvergleich.js'
 
 // Eingebaute Spalten-Ansichten (Fokus-Presets) je Liste.
 const PRESETS = {
@@ -434,6 +437,7 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, onDrill, startSuc
   const [nurAuffaellig, setNurAuffaellig] = useState(false)
   const [legendeAuf, setLegendeAuf] = useState(false)
   const [detail, setDetail] = useState(null)
+  const [voll, setVoll] = useState(null)
   const [opts, setOpts] = useState(() => Object.fromEntries(optionen.map((o) => [o.key, o.default])))
   const [sichtbar, setSichtbar] = useState(() => {
     const gemerkt = ladeLetzte(typ)
@@ -467,6 +471,8 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, onDrill, startSuc
     const zeilen = data.rows.map((r) => [...sichtCols.map((c) => (c.fmt ? c.fmt(r[c.key]) : r[c.key] ?? '')), r.befunde.map((b) => b.text).join(' | ')])
     downloadCsv(`${typ}_${nurAuffaellig ? 'auffaellig' : 'ansicht'}`, [kopf, ...zeilen])
   }
+
+  if (voll) return <Vollansicht typ={typ} row={voll} cols={cols} idKey={idKey} titelKey={titelKey} titel={titel} onBack={() => setVoll(null)} onDrill={onDrill} />
 
   const zelle = (row, c) => {
     const dimmed = row._dim?.includes(c.key)
@@ -614,7 +620,7 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, onDrill, startSuc
       </div>
       <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 8 }}>{data.rows.length} von {data.gesamt} Zeilen · {data.auffaellig} auffällig · Klick auf eine Zeile öffnet die Befund-Karte.</div>
 
-      {detail && <BefundModal typ={typ} row={detail} cols={cols} idKey={idKey} titelKey={titelKey} onClose={() => setDetail(null)} onDrill={onDrill} />}
+      {detail && <BefundModal typ={typ} row={detail} cols={cols} idKey={idKey} titelKey={titelKey} onClose={() => setDetail(null)} onDrill={onDrill} onVoll={() => { const r = detail; setDetail(null); setVoll(r) }} />}
 
       {/* KPI-Tooltip am Spaltenkopf: Vollname + Kurzerläuterung + Link */}
       {hov && glossarFuer(hov.key) && (
@@ -627,6 +633,163 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, onDrill, startSuc
         </div>
       )}
       {infoKey && <GlossarModal eintrag={ausfuehrlich(infoKey)} onBack={() => setInfoKey(null)} />}
+    </div>
+  )
+}
+
+const ERK_STIL = { positiv: { farbe: 'var(--amp-g)', soft: 'var(--amp-g-soft)', icon: '✅' }, risiko: { farbe: 'var(--amp-r)', soft: 'var(--amp-r-soft)', icon: '⚠️' }, hinweis: { farbe: 'var(--accent)', soft: 'var(--accent-soft)', icon: '💡' } }
+
+// Vollansicht eines Datensatzes: Grafik, KI-Erkenntnisse, Stammdaten,
+// Bemerkungen mit Personen-Zuweisung (Aufgaben), Artikelkarte + Preisvergleich.
+function Vollansicht({ typ, row, cols, idKey, titelKey, titel, onBack, onDrill }) {
+  const [bem, setBem] = useState(() => ladeBemerkungen(typ, row[idKey]))
+  const [text, setText] = useState('')
+  const [person, setPerson] = useState('')
+  const hist = historie(typ, row)
+  const maxB = hist.kind === 'chart' ? Math.max(...hist.punkte.map((h) => h.wert), 1) : 0
+  const erk = erkenntnisse(typ, row)
+  const links = verknuepfungenFuer(typ, row)
+  const istArtikel = typ === 'artikel' || typ === 'produkt'
+  const pv = istArtikel ? preisvergleich({ sku: row.sku, vk: row.vk ?? row.vkBrutto }) : null
+  const speichern = () => { if (!text.trim()) return; setBem(addBemerkung(typ, row[idKey], { text, zuweisung: person })); setText(''); setPerson('') }
+
+  const Karte = ({ titel: t, children, span }) => (
+    <div style={{ ...card, padding: 16, gridColumn: span ? '1 / -1' : undefined }}>
+      <div style={{ ...cap, marginBottom: 10 }}>{t}</div>{children}
+    </div>
+  )
+
+  return (
+    <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+        <button onClick={onBack} title="Zurück zur Liste" style={{ ...inp, cursor: 'pointer', padding: '6px 11px' }}>←</button>
+        <div style={{ flex: 1 }}>
+          <div className="mono" style={{ fontSize: 11, color: 'var(--muted)' }}>{titel} · {row[idKey]}</div>
+          <h2 style={{ margin: '2px 0 0' }}>{row[titelKey]}</h2>
+        </div>
+        <span style={{ fontSize: 10.5, padding: '3px 9px', borderRadius: 999, background: 'var(--accent)', color: '#fff' }}>VOLLANSICHT</span>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        {/* KI-Erkenntnisse */}
+        <Karte titel="🤖 Automatische Erkenntnisse" span>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 8 }}>
+            {erk.map((e, i) => (
+              <div key={i} style={{ display: 'flex', gap: 9, alignItems: 'flex-start', padding: '9px 11px', borderRadius: 'var(--radius-sm)', background: ERK_STIL[e.art].soft }}>
+                <span>{ERK_STIL[e.art].icon}</span><span style={{ fontSize: 12.5, color: ERK_STIL[e.art].farbe, fontWeight: 600 }}>{e.text}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize: 10.5, color: 'var(--muted)', marginTop: 8 }}>Regelbasierte Analyse aus Plausi-Befunden und Fachheuristiken — erklärbar und nachvollziehbar.</div>
+        </Karte>
+
+        {/* Artikelkarte mit Bild (falls vorhanden) */}
+        {istArtikel && (
+          <Karte titel="🖼️ Artikelkarte">
+            <div style={{ display: 'flex', gap: 14 }}>
+              <div style={{ width: 92, height: 92, borderRadius: 'var(--radius-sm)', background: 'var(--bg)', border: '1px dashed var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 30 }}>📦</div>
+              <div style={{ fontSize: 12.5 }}>
+                <div style={{ fontWeight: 600 }}>{row.name || row.artikel}</div>
+                <div style={{ color: 'var(--muted)', marginTop: 2 }}>{row.gruppe}{row.marke ? ' · ' + row.marke : ''}</div>
+                <div style={{ color: 'var(--muted)', fontSize: 11, marginTop: 6 }}>Kein Produktbild hinterlegt — Bild-Upload folgt in einer späteren Iteration.</div>
+              </div>
+            </div>
+          </Karte>
+        )}
+
+        {/* Konkurrenz-Preisvergleich (Preispiranha) */}
+        {pv && (
+          <Karte titel="🐟 Konkurrenz-Preisvergleich">
+            <div style={{ fontSize: 12, marginBottom: 8 }}>
+              Eigener VK <b className="mono">{eur(pv.eigenerVk)} €</b> · Marktposition <b>{pv.position}/{pv.anzahl}</b>
+              {pv.unterbietetUns > 0 ? <span style={{ color: 'var(--amp-r)' }}> · {pv.unterbietetUns} Anbieter günstiger</span> : <span style={{ color: 'var(--amp-g)' }}> · günstigster Anbieter</span>}
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}><tbody>
+              {pv.wettbewerber.map((w) => (
+                <tr key={w.haendler}>
+                  <td style={{ padding: '4px 0', borderBottom: '1px solid var(--line)' }}>{w.haendler}</td>
+                  <td className="mono" style={{ padding: '4px 0', borderBottom: '1px solid var(--line)', textAlign: 'right' }}>{eur(w.preis)} €</td>
+                  <td className="mono" style={{ padding: '4px 0 4px 10px', borderBottom: '1px solid var(--line)', textAlign: 'right', color: w.delta < 0 ? 'var(--amp-r)' : 'var(--amp-g)' }}>{w.delta > 0 ? '+' : ''}{w.delta} %</td>
+                </tr>
+              ))}
+            </tbody></table>
+            <div style={{ fontSize: 10.5, color: 'var(--muted)', marginTop: 8 }}>Quelle: {pv.quelle} · Stand {datum(pv.stand)}</div>
+          </Karte>
+        )}
+
+        {/* Grafik / Historie */}
+        <Karte titel="📈 Verlauf (E5)" span={!istArtikel}>
+          {hist.kind === 'chart' ? (
+            <>
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 90 }}>
+                {hist.punkte.map((h) => (
+                  <div key={h.label} title={`${h.label}: ${h.wert}`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', gap: 3 }}>
+                    <div style={{ fontSize: 9, color: 'var(--muted)' }}>{h.wert}</div>
+                    <div style={{ width: '100%', height: `${h.wert / maxB * 64}px`, minHeight: 2, background: 'var(--accent)', borderRadius: '3px 3px 0 0' }} />
+                    <div style={{ fontSize: 9, color: 'var(--muted)' }}>{h.label}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6 }}>{hist.einheit} · letzte 6 Monate.</div>
+            </>
+          ) : (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+              {hist.punkte.map((h, i) => (
+                <React.Fragment key={h.label + i}>
+                  <span style={{ fontSize: 12, padding: '4px 10px', borderRadius: 999, background: h.warn ? 'var(--amp-r-soft)' : 'var(--accent-soft)', color: h.warn ? 'var(--amp-r)' : 'var(--accent)', fontWeight: 600 }}>{h.label}<span style={{ color: 'var(--muted)', fontWeight: 400 }}> · {datum(h.datum)}</span></span>
+                  {i < hist.punkte.length - 1 && <span style={{ alignSelf: 'center', color: 'var(--muted)' }}>→</span>}
+                </React.Fragment>
+              ))}
+            </div>
+          )}
+        </Karte>
+
+        {/* Stammdaten */}
+        <Karte titel="Stammdaten (E4)" span={istArtikel}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px 14px' }}>
+            {cols.map((c) => (
+              <div key={c.key} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, padding: '3px 0', borderBottom: '1px solid var(--line)' }}>
+                <span style={{ color: 'var(--muted)' }}>{c.label}</span>
+                <span className="mono">{c.fmt ? c.fmt(row[c.key]) : String(row[c.key])}</span>
+              </div>
+            ))}
+          </div>
+          {links.length > 0 && onDrill && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
+              {links.map((l) => <button key={l.ziel + l.label} onClick={() => onDrill(l.ziel, l.suche)} style={{ fontSize: 12, padding: '4px 10px', borderRadius: 999, cursor: 'pointer', border: '1px solid var(--accent)', background: 'var(--panel)', color: 'var(--accent)', fontWeight: 600 }}>🔗 {l.label} {l.anzahl} →</button>)}
+            </div>
+          )}
+        </Karte>
+
+        {/* Bemerkungen mit Personen-Zuweisung */}
+        <Karte titel="📝 Bemerkungen & Zuweisungen" span>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-start', marginBottom: 12 }}>
+            <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Bemerkung erfassen … (wird der zugewiesenen Person als Aufgabe angezeigt)"
+              style={{ ...inp, flex: 1, minWidth: 260, minHeight: 38, resize: 'vertical' }} />
+            <select value={person} onChange={(e) => setPerson(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
+              <option value="">— ohne Zuweisung —</option>
+              {PERSONEN.map((p) => <option key={p} value={p}>{p}</option>)}
+            </select>
+            <button onClick={speichern} disabled={!text.trim()} style={{ padding: '9px 14px', border: 'none', borderRadius: 'var(--radius-sm)', background: text.trim() ? 'var(--accent)' : 'var(--line)', color: '#fff', fontWeight: 600, cursor: text.trim() ? 'pointer' : 'not-allowed' }}>Speichern</button>
+          </div>
+          {bem.length === 0 ? <div style={{ color: 'var(--muted)', fontSize: 12.5 }}>Noch keine Bemerkungen.</div> : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+              {bem.map((n) => (
+                <div key={n.nid} style={{ display: 'flex', gap: 9, alignItems: 'flex-start', padding: '9px 11px', borderRadius: 'var(--radius-sm)', background: 'var(--bg)', opacity: n.erledigt ? 0.55 : 1 }}>
+                  <input type="checkbox" checked={n.erledigt} onChange={() => setBem(toggleErledigt(typ, row[idKey], n.nid))} title="erledigt" style={{ marginTop: 3, cursor: 'pointer' }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 12.5, textDecoration: n.erledigt ? 'line-through' : undefined }}>{n.text}</div>
+                    <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
+                      {n.zuweisung ? <span style={{ color: 'var(--accent)', fontWeight: 600 }}>👤 {n.zuweisung}</span> : 'nicht zugewiesen'} · {new Date(n.erstellt).toLocaleDateString('de-DE')}
+                    </div>
+                  </div>
+                  <button onClick={() => setBem(loescheBemerkung(typ, row[idKey], n.nid))} title="löschen" style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 15 }}>×</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </Karte>
+      </div>
     </div>
   )
 }
@@ -668,7 +831,7 @@ function GlossarModal({ eintrag, onBack }) {
   )
 }
 
-function BefundModal({ typ, row, cols, idKey, titelKey, onClose, onDrill }) {
+function BefundModal({ typ, row, cols, idKey, titelKey, onClose, onDrill, onVoll }) {
   const hist = historie(typ, row)
   const links = verknuepfungenFuer(typ, row)
   const maxB = hist.kind === 'chart' ? Math.max(...hist.punkte.map((h) => h.wert), 1) : 0
@@ -682,6 +845,13 @@ function BefundModal({ typ, row, cols, idKey, titelKey, onClose, onDrill }) {
           </div>
           <button onClick={onClose} style={{ border: 'none', background: 'none', fontSize: 22, cursor: 'pointer', color: 'var(--muted)' }}>×</button>
         </div>
+        {onVoll && (
+          <div style={{ padding: '10px 18px', borderBottom: '1px solid var(--line)' }}>
+            <button onClick={onVoll} style={{ width: '100%', padding: '9px 14px', border: 'none', borderRadius: 'var(--radius-sm)', background: 'var(--accent)', color: '#fff', fontWeight: 600, cursor: 'pointer' }}>
+              📋 Vollansicht öffnen — Grafiken · KI-Erkenntnisse · Bemerkungen →
+            </button>
+          </div>
+        )}
         <div style={{ padding: 18 }}>
           {row.befunde.length === 0
             ? <div style={{ padding: '10px 12px', borderRadius: 'var(--radius-sm)', background: 'var(--amp-g-soft)', color: 'var(--amp-g)', fontSize: 13, fontWeight: 600 }}>✓ Keine Auffälligkeiten — Daten plausibel.</div>
