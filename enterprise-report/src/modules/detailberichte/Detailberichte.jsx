@@ -117,8 +117,8 @@ const KUND_COLS = [
 ]
 const KUND_SUM = ['umsatzJahr', 'offeneForderung', 'kreditlimit']
 
-export default function Detailberichte() {
-  const [aktiv, setAktiv] = useState(null)
+export default function Detailberichte({ startListe = null }) {
+  const [aktiv, setAktiv] = useState(startListe)
   if (aktiv === 'artikel') return <Liste typ="artikel" titel="Artikelliste" sub="Zeigt die SKU in einer Listen-Übersicht. Klick auf eine Zeile → Befund-Karte (inkl. E5-Historie)." cols={ART_COLS} sumKeys={ART_SUM} lade={artikelliste} onBack={() => setAktiv(null)} idKey="sku" titelKey="artikel" />
   if (aktiv === 'auftrag') return <Liste typ="auftrag" titel="Auftragsliste" sub="Zeigt die Aufträge in einer Listen-Übersicht." cols={AUF_COLS} sumKeys={AUF_SUM} lade={auftragsliste} onBack={() => setAktiv(null)} idKey="auftrag" titelKey="kunde" />
   if (aktiv === 'plausiwv') return <Liste typ="warenverbrauch" titel="Plausi: Warenverbrauch" sub="Prüft die Bestandsgleichung (Anfang + Zugang − Abgang = Ende) und findet unplausible Warenbewegungen." cols={WV_COLS} sumKeys={WV_SUM} lade={warenverbrauchliste} onBack={() => setAktiv(null)} idKey="sku" titelKey="artikel" />

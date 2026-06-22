@@ -10,6 +10,7 @@ import { KPI } from '../../core/kpiRegistry.js'
 import { darfBereich, darfKpi } from '../../core/rbac.js'
 import { ladeDetail, ladeHistorie } from '../../core/dataProvider.js'
 import { downloadCsv, druckePdf, knotenAlsCsv } from '../../core/export.js'
+import { detailFuerBereich } from '../../core/detailberichte.js'
 import { KpiCard, KpiGesperrt, DetailTabelle, Sparkline, Badge } from '../../components/ui.jsx'
 import KnotenBewertung from './KnotenBewertung.jsx'
 import DetailPerspektiven from './DetailPerspektiven.jsx'
@@ -59,7 +60,7 @@ function HistorieBlock({ kpiId }) {
   )
 }
 
-export default function TreeNavigator({ rolle, werte, periode, onOpenReport, startId }) {
+export default function TreeNavigator({ rolle, werte, periode, onOpenReport, onDetail, startId }) {
   const baum = useMemo(() => baumFuerRolle(BERICHTSBAUM, (b) => darfBereich(rolle, b)) || BERICHTSBAUM, [rolle])
   const [aktiv, setAktiv] = useState(baum.id)
   const knoten = findeKnoten(baum, aktiv) || baum
@@ -126,6 +127,12 @@ export default function TreeNavigator({ rolle, werte, periode, onOpenReport, sta
               knotenAlsCsv({ titel: knoten.titel, periode, kpiIds: (knoten.kpis || []).filter((id) => darfKpi(rolle, KPI[id])), werte, rolle, detail }))}
               style={{ padding: '9px 12px', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', background: 'var(--panel)' }}>⤓ Excel/CSV</button>
             <button onClick={druckePdf} style={{ padding: '9px 12px', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', background: 'var(--panel)' }}>🖨 PDF</button>
+            {onDetail && (() => { const d = detailFuerBereich(knoten.bereich); return d ? (
+              <button onClick={() => onDetail(d.id)} title={`Einzelfälle prüfen: ${d.name} (Ebene 4)`}
+                style={{ padding: '9px 14px', border: '1px solid var(--accent)', borderRadius: 'var(--radius-sm)', background: 'var(--panel)', color: 'var(--accent)', fontWeight: 600 }}>
+                🔬 {d.name} (E4) →
+              </button>
+            ) : null })()}
             {knoten.bericht && (
               <button onClick={() => onOpenReport(knoten.bericht)} style={{ padding: '9px 14px', border: 'none',
                 borderRadius: 'var(--radius-sm)', background: 'var(--accent)', color: '#fff', fontWeight: 600 }}>

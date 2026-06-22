@@ -1,7 +1,7 @@
 import './_setup.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { artikelliste, auftragsliste, pruefeArtikel, pruefeAuftrag, ARTIKEL, LISTEN, historie, warenverbrauchliste, pruefeWarenverbrauch, WARENVERBRAUCH, leasingliste, fuehrenderBeleg, LEASING, retourenliste, rechnungsliste, kundenliste } from '../src/core/detailberichte.js'
+import { artikelliste, auftragsliste, pruefeArtikel, pruefeAuftrag, ARTIKEL, LISTEN, historie, warenverbrauchliste, pruefeWarenverbrauch, WARENVERBRAUCH, leasingliste, fuehrenderBeleg, LEASING, retourenliste, rechnungsliste, kundenliste, detailFuerBereich } from '../src/core/detailberichte.js'
 
 test('Negativer Verfügbarbestand wird als Fehler erkannt', () => {
   const a = ARTIKEL.find((x) => x.sku === '231052006') // lbVerf -1
@@ -98,6 +98,14 @@ test('Retouren/Rechnungen/Kunden: Plausi-Befunde', () => {
   assert.ok(retourenliste().rows.find((r) => r.retoure === 'RET-5003').befunde.some((b) => b.text.includes('Originalwert')))
   assert.ok(rechnungsliste().rows.find((r) => r.rechnung === 'RE-9004').befunde.some((b) => b.text === 'Rechnung ohne Positionen'))
   assert.ok(kundenliste().rows.find((k) => k.kundennr === '2200111').befunde.some((b) => b.text.includes('Kreditlimit')))
+})
+
+test('Drill E3→E4: Fachbereich → passende Detailliste', () => {
+  assert.equal(detailFuerBereich('VK').id, 'auftrag')
+  assert.equal(detailFuerBereich('KLR').id, 'plausiwv')
+  assert.equal(detailFuerBereich('KON').id, 'leasing')
+  assert.equal(detailFuerBereich('IT'), null)       // kein Mapping
+  assert.equal(detailFuerBereich(undefined), null)
 })
 
 test('LISTEN-Katalog hat verfügbare und geplante Listen', () => {

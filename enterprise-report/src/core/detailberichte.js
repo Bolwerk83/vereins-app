@@ -328,3 +328,16 @@ export const LISTEN = [
   { id: 'retoure', name: 'Retourenliste', verfuegbar: true },
   { id: 'auftragsbestand', name: 'Auftragsbestandsliste', verfuegbar: false }
 ]
+
+// Drill-Down E3 → E4: welcher Fachbereich (E2-Code) führt in welche Detailliste?
+export const BEREICH_DETAIL = {
+  VK: 'auftrag', VC: 'kunde', MKT: 'kunde', SVC: 'retoure',
+  RIS: 'rechnung', FIN: 'rechnung', FIBU: 'rechnung', KON: 'leasing',
+  LOG: 'artikel', SCC: 'artikel', EK: 'artikel', KLR: 'plausiwv'
+}
+/** Passende, verfügbare Detailliste zu einem Fachbereich (oder null). */
+export function detailFuerBereich(bereich) {
+  const id = BEREICH_DETAIL[bereich]
+  const l = id && LISTEN.find((x) => x.id === id && x.verfuegbar)
+  return l ? { id: l.id, name: l.name } : null
+}

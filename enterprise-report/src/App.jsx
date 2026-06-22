@@ -101,6 +101,7 @@ export default function App() {
   const [onbAuf, setOnbAuf] = useState(false)
   const [branding, setBranding] = useState(ladeBranding())
   const [infoView, setInfoView] = useState(null)   // Bericht-Info-Panel (Schaufenster)
+  const [detailStart, setDetailStart] = useState(null) // Drill E3→E4: vorgewählte Detailliste
   // Aktive "Rolle": angemeldeter Benutzer -> Vereinigung seiner Gruppen.
   // Ohne Anmeldung -> manuell gewählte Gruppe (Demo-/Admin-Modus).
   const rolle = benutzer
@@ -164,7 +165,9 @@ export default function App() {
   // Navigation — von jeder Seite aus steuerbar. Fehlt die Berechtigung für den
   // Fachbereich des Ziels, wird statt des Berichts sein Info-Panel geöffnet
   // (Schaufenster: sehen, was es gibt — aber nicht aufrufen).
-  const geh = (a) => { if (a && !darfBereich(rolle, bereichVon(a))) { setInfoView(a); return } setAnsicht(a) }
+  const geh = (a) => { if (a && !darfBereich(rolle, bereichVon(a))) { setInfoView(a); return } if (a === 'detailberichte') setDetailStart(null); setAnsicht(a) }
+  // Drill E3 → E4: gezielt eine Detailliste öffnen.
+  const gehDetail = (listId) => { setDetailStart(listId); setAnsicht('detailberichte') }
   const zeigeInfo = (a) => setInfoView(a)
   const qcFehler = validierungsZusammenfassung(werte).fehler
   const alertN = alertAnzahl(werte, rolle)
@@ -382,7 +385,7 @@ export default function App() {
             onAbbruch={() => setAnsicht(localStorage.getItem(SETUP_KEY) ? 'baum' : 'wizard')} />
         )}
         {ansicht === 'baum' && (
-          <TreeNavigator rolle={rolle} werte={werte} periode={periode} startId={baumStart} onOpenReport={() => setAnsicht('report')} />
+          <TreeNavigator rolle={rolle} werte={werte} periode={periode} startId={baumStart} onOpenReport={() => setAnsicht('report')} onDetail={gehDetail} />
         )}
         {ansicht === 'katalog' && (
           <Berichtskatalog rolle={rolle} onOpen={(id, typ) => {
@@ -420,7 +423,7 @@ export default function App() {
           <KpiEditor werte={werte} onChange={() => { leereCache(); ladeKpiWerte(periode).then(setWerte) }} />
         )}
         {ansicht === 'detailberichte' && (
-          <Detailberichte />
+          <Detailberichte startListe={detailStart} />
         )}
         {ansicht === 'zeit' && (
           <ZeitDatenart onChange={setZeitModell} />
