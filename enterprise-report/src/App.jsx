@@ -83,8 +83,11 @@ const BENUTZER_KEY = 'er_benutzer'
 const HILFE_KEY = 'er_hilfe_gesehen'
 
 export default function App() {
+  // Demo-Startlink (?demo) überspringt den Wizard und startet direkt mit Mock-Daten.
+  const demoStart = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('demo')
+  if (demoStart && typeof localStorage !== 'undefined') localStorage.setItem(SETUP_KEY, '1')
   // Erststart -> Wizard, sonst Baum.
-  const [ansicht, setAnsicht] = useState(localStorage.getItem(SETUP_KEY) ? 'baum' : 'wizard')
+  const [ansicht, setAnsicht] = useState(localStorage.getItem(SETUP_KEY) || demoStart ? 'baum' : 'wizard')
   const [gruppen, setGruppen] = useState(ladeGruppen())
   const [rolleId, setRolleId] = useState(gruppen[0]?.id || null)
   const [benutzer, setBenutzer] = useState(localStorage.getItem(BENUTZER_KEY) || null)
