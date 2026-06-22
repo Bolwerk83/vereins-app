@@ -34,6 +34,7 @@ import Anlagen from './modules/anlagen/Anlagen.jsx'
 import LieferantenLebenszyklus from './modules/lieferant/LieferantenLebenszyklus.jsx'
 import Marketing from './modules/marketing/Marketing.jsx'
 import Bestand from './modules/bestand/Bestand.jsx'
+import Lagerverwaltung from './modules/lager/Lagerverwaltung.jsx'
 import Forderungen from './modules/forderungen/Forderungen.jsx'
 import Mitarbeiter from './modules/mitarbeiter/Mitarbeiter.jsx'
 import Segmentbericht from './modules/segment/Segmentbericht.jsx'
@@ -204,6 +205,7 @@ export default function App() {
         E('events', 'nav.events', '🎉')
       ] },
       { titel: 'Bestand & Beschaffung', eintraege: [
+        E('lager', 'nav.lager', '🏬'),
         E('bestand', 'nav.bestand', '📦'),
         E('lieferant', 'nav.lieferant', '🚚'),
         E('auftrag', 'nav.auftrag', '📦')
@@ -478,6 +480,9 @@ export default function App() {
         )}
         {ansicht === 'bestand' && (
           <Bestand />
+        )}
+        {ansicht === 'lager' && (
+          <Lagerverwaltung onGeh={geh} />
         )}
         {ansicht === 'forderungen' && (
           <Forderungen />

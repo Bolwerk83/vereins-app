@@ -145,6 +145,16 @@ export const DOKU = [
     ]
   },
   {
+    id: 'lager', kat: 'lebenszyklen', titel: 'Lagerverwaltung (Controlling)', ziel: 'lager',
+    kurz: 'Was kostet uns das Lager? Kapitalbindung, Lagerhaltungskosten und die optimale Bestellmenge.',
+    punkte: [
+      'Lagerhaltungskostensatz = Kapitalbindung + Raum + Personal + Versicherung + Schwund (in % des Bestands).',
+      'Kapitalbindung: jeder Euro Bestand kostet kalkulatorische Zinsen.',
+      'Optimale Bestellmenge (Andler): Minimum aus Bestell- und Lagerkosten.',
+      'Meldebestand = Tagesbedarf × Wiederbeschaffungszeit + Sicherheitsbestand.'
+    ]
+  },
+  {
     id: 'marketing', kat: 'markt', titel: 'Marketing & Digital-Analytics', ziel: 'marketing',
     kurz: 'Wie effektiv sind Kanäle und Kampagnen? Funnel, Conversion, ROAS, Cross-Selling.',
     punkte: [
