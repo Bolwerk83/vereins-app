@@ -1,7 +1,7 @@
 import './_setup.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { artikelliste, auftragsliste, pruefeArtikel, pruefeAuftrag, ARTIKEL, LISTEN, historie, warenverbrauchliste, pruefeWarenverbrauch, WARENVERBRAUCH, leasingliste, fuehrenderBeleg, LEASING, retourenliste, rechnungsliste, kundenliste, detailFuerBereich, produktliste, rechnungsposliste, bestellkanalliste, chargenliste, auftragsbestandliste, sammelBefunde, befundStatistik, REGISTRY } from '../src/core/detailberichte.js'
+import { artikelliste, auftragsliste, pruefeArtikel, pruefeAuftrag, ARTIKEL, LISTEN, historie, warenverbrauchliste, pruefeWarenverbrauch, WARENVERBRAUCH, leasingliste, fuehrenderBeleg, LEASING, retourenliste, rechnungsliste, kundenliste, detailFuerBereich, produktliste, rechnungsposliste, bestellkanalliste, chargenliste, auftragsbestandliste, sammelBefunde, befundStatistik, REGISTRY, verknuepfungenFuer } from '../src/core/detailberichte.js'
 
 test('Negativer Verfügbarbestand wird als Fehler erkannt', () => {
   const a = ARTIKEL.find((x) => x.sku === '231052006') // lbVerf -1
@@ -166,6 +166,29 @@ test('Befund-Statistik: Summen je Schwere und je Liste', () => {
   assert.equal(s.gesamt, s.proSchwere.fehler + s.proSchwere.warnung + s.proSchwere.hinweis)
   assert.ok(s.proListe.length > 0)
   assert.equal(s.proListe.reduce((n, l) => n + l.gesamt, 0), s.gesamt)
+})
+
+test('Cross-Drill: Rechnung verlinkt auf ihre Positionen', () => {
+  const re = rechnungsliste().rows.find((r) => r.rechnung === 'RE-9002')
+  const links = verknuepfungenFuer('rechnung', re)
+  const pos = links.find((l) => l.ziel === 'rechnungpos')
+  assert.ok(pos, 'Positionen-Verknüpfung sollte existieren')
+  assert.equal(pos.suche, 'RE-9002')
+  assert.equal(pos.anzahl, 2) // RE-9002 hat 2 Positionen
+})
+
+test('Cross-Drill: Auftragsbestand ↔ Leasing über Auftragsnummer', () => {
+  const ab = auftragsbestandliste().rows.find((a) => a.auftrag === '2654500001')
+  const links = verknuepfungenFuer('auftragsbestand', ab)
+  assert.ok(links.find((l) => l.ziel === 'leasing'), 'Leasing-Verknüpfung erwartet')
+})
+
+test('Cross-Drill: nur Ziele mit Treffern werden zurückgegeben', () => {
+  // Produkt 5590018 existiert nicht in Chargen -> keine Chargen-Verknüpfung
+  const p = produktliste().rows.find((x) => x.sku === '5590018')
+  const links = verknuepfungenFuer('produkt', p)
+  assert.ok(!links.some((l) => l.ziel === 'charge'))
+  assert.ok(links.every((l) => l.anzahl > 0))
 })
 
 test('LISTEN-Katalog enthält die Kernlisten', () => {

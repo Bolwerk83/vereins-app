@@ -5,7 +5,7 @@
 //  eine Zeile öffnet die Befund-Karte (Sprung in die Detailprüfung).
 // =========================================================================
 import React, { useState, useEffect } from 'react'
-import { LISTEN, LEGENDE, artikelliste, auftragsliste, warenverbrauchliste, leasingliste, retourenliste, rechnungsliste, kundenliste, produktliste, rechnungsposliste, bestellkanalliste, chargenliste, auftragsbestandliste, historie, sammelBefunde, befundStatistik } from '../../core/detailberichte.js'
+import { LISTEN, LEGENDE, artikelliste, auftragsliste, warenverbrauchliste, leasingliste, retourenliste, rechnungsliste, kundenliste, produktliste, rechnungsposliste, bestellkanalliste, chargenliste, auftragsbestandliste, historie, sammelBefunde, befundStatistik, verknuepfungenFuer } from '../../core/detailberichte.js'
 import { downloadCsv } from '../../core/export.js'
 import { ladeBookmarks, addBookmark, loescheBookmark, ladeLetzte, merkeLetzte } from '../../core/bookmarks.js'
 
@@ -278,7 +278,7 @@ function Cockpit({ onBack, onOpen }) {
           <tbody>
             {items.length === 0 && <tr><td colSpan={4} style={{ padding: 20, textAlign: 'center', color: 'var(--muted)' }}>Keine Befunde für diesen Filter. 👍</td></tr>}
             {items.map((it, i) => (
-              <tr key={i} onClick={() => onOpen(it.listId)} title={`In ${it.listName} öffnen`} style={{ cursor: 'pointer', borderLeft: `3px solid ${SCHWERE[it.schwere].farbe}` }}
+              <tr key={i} onClick={() => onOpen(it.listId, String(it.id))} title={`In ${it.listName} öffnen`} style={{ cursor: 'pointer', borderLeft: `3px solid ${SCHWERE[it.schwere].farbe}` }}
                 onMouseEnter={(e) => e.currentTarget.style.background = 'var(--accent-soft)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
                 <td style={{ padding: '7px 10px', borderBottom: '1px solid var(--line)', whiteSpace: 'nowrap', color: SCHWERE[it.schwere].farbe, fontWeight: 700 }}>{SCHWERE[it.schwere].icon} {SCHWERE[it.schwere].label}</td>
                 <td style={{ padding: '7px 10px', borderBottom: '1px solid var(--line)', whiteSpace: 'nowrap' }}>{it.listName}</td>
@@ -295,21 +295,24 @@ function Cockpit({ onBack, onOpen }) {
 
 export default function Detailberichte({ startListe = null }) {
   const [aktiv, setAktiv] = useState(startListe)
-  if (aktiv === 'artikel') return <Liste typ="artikel" titel="Artikelliste" sub="Zeigt die SKU in einer Listen-Übersicht. Klick auf eine Zeile → Befund-Karte (inkl. E5-Historie)." cols={ART_COLS} sumKeys={ART_SUM} lade={artikelliste} onBack={() => setAktiv(null)} idKey="sku" titelKey="artikel" />
-  if (aktiv === 'auftrag') return <Liste typ="auftrag" titel="Auftragsliste" sub="Zeigt die Aufträge in einer Listen-Übersicht." cols={AUF_COLS} sumKeys={AUF_SUM} lade={auftragsliste} onBack={() => setAktiv(null)} idKey="auftrag" titelKey="kunde" />
-  if (aktiv === 'plausiwv') return <Liste typ="warenverbrauch" titel="Plausi: Warenverbrauch" sub="Prüft die Bestandsgleichung (Anfang + Zugang − Abgang = Ende) und findet unplausible Warenbewegungen." cols={WV_COLS} sumKeys={WV_SUM} lade={warenverbrauchliste} onBack={() => setAktiv(null)} idKey="sku" titelKey="artikel" />
-  if (aktiv === 'leasing') return <Liste typ="leasing" titel="Leasingliste" sub="Entdopplung der 3 Belege (Angebot / Kundenleasing / Leasinggesellschaft): es zählt je Sicht genau EIN führender Wert — nie doppelt oder dreifach." cols={LEAS_COLS} sumKeys={LEAS_SUM} lade={leasingliste} onBack={() => setAktiv(null)} idKey="vorgang" titelKey="kunde"
+  const [drillSuche, setDrillSuche] = useState('')
+  // Liste öffnen (optional mit Vorfilter) — Basis für Cross-Drill & Cockpit.
+  const oeffneListe = (t, s = '') => { setDrillSuche(s); setAktiv(t) }
+  if (aktiv === 'artikel') return <Liste key={aktiv} typ="artikel" titel="Artikelliste" sub="Zeigt die SKU in einer Listen-Übersicht. Klick auf eine Zeile → Befund-Karte (inkl. E5-Historie)." cols={ART_COLS} sumKeys={ART_SUM} lade={artikelliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="sku" titelKey="artikel" />
+  if (aktiv === 'auftrag') return <Liste key={aktiv} typ="auftrag" titel="Auftragsliste" sub="Zeigt die Aufträge in einer Listen-Übersicht." cols={AUF_COLS} sumKeys={AUF_SUM} lade={auftragsliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="auftrag" titelKey="kunde" />
+  if (aktiv === 'plausiwv') return <Liste key={aktiv} typ="warenverbrauch" titel="Plausi: Warenverbrauch" sub="Prüft die Bestandsgleichung (Anfang + Zugang − Abgang = Ende) und findet unplausible Warenbewegungen." cols={WV_COLS} sumKeys={WV_SUM} lade={warenverbrauchliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="sku" titelKey="artikel" />
+  if (aktiv === 'leasing') return <Liste key={aktiv} typ="leasing" titel="Leasingliste" sub="Entdopplung der 3 Belege (Angebot / Kundenleasing / Leasinggesellschaft): es zählt je Sicht genau EIN führender Wert — nie doppelt oder dreifach." cols={LEAS_COLS} sumKeys={LEAS_SUM} lade={leasingliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="vorgang" titelKey="kunde"
     optionen={[{ key: 'sicht', label: 'Sicht', default: 'auftrag', werte: [['auftrag', 'Auftragssicht (Kundenleasing führt)'], ['rechnung', 'Rechnungssicht (Leasinggesellschaft führt)']] }]} />
-  if (aktiv === 'retoure') return <Liste typ="retoure" titel="Retourenliste" sub="Retouren mit Plausi-Prüfung (Grund fehlt, Wert > Original, ohne Auftrag …)." cols={RET_COLS} sumKeys={RET_SUM} lade={retourenliste} onBack={() => setAktiv(null)} idKey="retoure" titelKey="kunde" />
-  if (aktiv === 'rechnung') return <Liste typ="rechnung" titel="Rechnungsliste" sub="Rechnungen mit Plausi-Prüfung (Brutto ≠ Netto + MwSt, ohne Position, unbezahlt …)." cols={RECH_COLS} sumKeys={RECH_SUM} lade={rechnungsliste} onBack={() => setAktiv(null)} idKey="rechnung" titelKey="kunde" />
-  if (aktiv === 'kunde') return <Liste typ="kunde" titel="Kundenliste" sub="Kunden mit Plausi-Prüfung (Kreditlimit überschritten, E-Mail, Umsatz …)." cols={KUND_COLS} sumKeys={KUND_SUM} lade={kundenliste} onBack={() => setAktiv(null)} idKey="kundennr" titelKey="name" />
-  if (aktiv === 'produkt') return <Liste typ="produkt" titel="Produktliste" sub="Produktstammdaten mit Plausi (kein VK-Preis, EAN ungültig, gesperrt, Gewicht fehlt)." cols={PROD_COLS} sumKeys={PROD_SUM} lade={produktliste} onBack={() => setAktiv(null)} idKey="sku" titelKey="name" />
-  if (aktiv === 'rechnungpos') return <Liste typ="rechnungpos" titel="Rechnungspositionsliste" sub="Einzelpositionen mit Plausi (Positionsnetto, Menge, hoher Rabatt)." cols={RPOS_COLS} sumKeys={RPOS_SUM} lade={rechnungsposliste} onBack={() => setAktiv(null)} idKey="rechnung" titelKey="artikel" />
-  if (aktiv === 'bestellkanal') return <Liste typ="bestellkanal" titel="Bestellkanalliste" sub="Kanäle mit Plausi (hohe Retouren-/Stornoquote, Kanal ohne Bestellungen)." cols={KANAL_COLS} sumKeys={KANAL_SUM} lade={bestellkanalliste} onBack={() => setAktiv(null)} idKey="kanal" titelKey="kanal" />
-  if (aktiv === 'charge') return <Liste typ="charge" titel="Chargenliste" sub="Chargen/MHD mit Plausi (MHD überschritten/bald, QS-Sperre, leere Charge)." cols={CHARGE_COLS} sumKeys={CHARGE_SUM} lade={chargenliste} onBack={() => setAktiv(null)} idKey="charge" titelKey="artikel" />
-  if (aktiv === 'auftragsbestand') return <Liste typ="auftragsbestand" titel="Auftragsbestandsliste" sub="Offener Auftragsbestand mit Plausi (offene Menge inkonsistent, Liefertermin überschritten, Übermenge)." cols={ABEST_COLS} sumKeys={ABEST_SUM} lade={auftragsbestandliste} onBack={() => setAktiv(null)} idKey="auftrag" titelKey="kunde" />
+  if (aktiv === 'retoure') return <Liste key={aktiv} typ="retoure" titel="Retourenliste" sub="Retouren mit Plausi-Prüfung (Grund fehlt, Wert > Original, ohne Auftrag …)." cols={RET_COLS} sumKeys={RET_SUM} lade={retourenliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="retoure" titelKey="kunde" />
+  if (aktiv === 'rechnung') return <Liste key={aktiv} typ="rechnung" titel="Rechnungsliste" sub="Rechnungen mit Plausi-Prüfung (Brutto ≠ Netto + MwSt, ohne Position, unbezahlt …)." cols={RECH_COLS} sumKeys={RECH_SUM} lade={rechnungsliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="rechnung" titelKey="kunde" />
+  if (aktiv === 'kunde') return <Liste key={aktiv} typ="kunde" titel="Kundenliste" sub="Kunden mit Plausi-Prüfung (Kreditlimit überschritten, E-Mail, Umsatz …)." cols={KUND_COLS} sumKeys={KUND_SUM} lade={kundenliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="kundennr" titelKey="name" />
+  if (aktiv === 'produkt') return <Liste key={aktiv} typ="produkt" titel="Produktliste" sub="Produktstammdaten mit Plausi (kein VK-Preis, EAN ungültig, gesperrt, Gewicht fehlt)." cols={PROD_COLS} sumKeys={PROD_SUM} lade={produktliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="sku" titelKey="name" />
+  if (aktiv === 'rechnungpos') return <Liste key={aktiv} typ="rechnungpos" titel="Rechnungspositionsliste" sub="Einzelpositionen mit Plausi (Positionsnetto, Menge, hoher Rabatt)." cols={RPOS_COLS} sumKeys={RPOS_SUM} lade={rechnungsposliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="rechnung" titelKey="artikel" />
+  if (aktiv === 'bestellkanal') return <Liste key={aktiv} typ="bestellkanal" titel="Bestellkanalliste" sub="Kanäle mit Plausi (hohe Retouren-/Stornoquote, Kanal ohne Bestellungen)." cols={KANAL_COLS} sumKeys={KANAL_SUM} lade={bestellkanalliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="kanal" titelKey="kanal" />
+  if (aktiv === 'charge') return <Liste key={aktiv} typ="charge" titel="Chargenliste" sub="Chargen/MHD mit Plausi (MHD überschritten/bald, QS-Sperre, leere Charge)." cols={CHARGE_COLS} sumKeys={CHARGE_SUM} lade={chargenliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="charge" titelKey="artikel" />
+  if (aktiv === 'auftragsbestand') return <Liste key={aktiv} typ="auftragsbestand" titel="Auftragsbestandsliste" sub="Offener Auftragsbestand mit Plausi (offene Menge inkonsistent, Liefertermin überschritten, Übermenge)." cols={ABEST_COLS} sumKeys={ABEST_SUM} lade={auftragsbestandliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="auftrag" titelKey="kunde" />
 
-  if (aktiv === 'cockpit') return <Cockpit onBack={() => setAktiv(null)} onOpen={(id) => setAktiv(id)} />
+  if (aktiv === 'cockpit') return <Cockpit onBack={() => setAktiv(null)} onOpen={(id, suche) => oeffneListe(id, suche)} />
 
   // Hub
   const stat = befundStatistik()
@@ -341,7 +344,7 @@ export default function Detailberichte({ startListe = null }) {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         {LISTEN.map((l) => (
-          <button key={l.id} disabled={!l.verfuegbar} onClick={() => l.verfuegbar && setAktiv(l.id)}
+          <button key={l.id} disabled={!l.verfuegbar} onClick={() => l.verfuegbar && oeffneListe(l.id)}
             style={{ ...card, padding: '16px 14px', textAlign: 'left', cursor: l.verfuegbar ? 'pointer' : 'not-allowed', opacity: l.verfuegbar ? 1 : 0.5,
               borderColor: l.verfuegbar ? 'var(--accent)' : 'var(--line)' }}>
             <div style={{ fontWeight: 600, fontSize: 15 }}>{l.name}</div>
@@ -355,8 +358,8 @@ export default function Detailberichte({ startListe = null }) {
 
 const EBENEN_PFAD = ['E1 · Geschäftsführung', 'E2 · Fachbereich', 'E3 · Themenbereich', 'E4 · Details', 'E5 · Historisierung']
 
-function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, idKey, titelKey, optionen = [] }) {
-  const [suche, setSuche] = useState('')
+function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, onDrill, startSuche = '', idKey, titelKey, optionen = [] }) {
+  const [suche, setSuche] = useState(startSuche)
   const [nurAuffaellig, setNurAuffaellig] = useState(false)
   const [legendeAuf, setLegendeAuf] = useState(false)
   const [detail, setDetail] = useState(null)
@@ -527,13 +530,14 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, idKey, titelKey, 
       </div>
       <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 8 }}>{data.rows.length} von {data.gesamt} Zeilen · {data.auffaellig} auffällig · Klick auf eine Zeile öffnet die Befund-Karte.</div>
 
-      {detail && <BefundModal typ={typ} row={detail} cols={cols} idKey={idKey} titelKey={titelKey} onClose={() => setDetail(null)} />}
+      {detail && <BefundModal typ={typ} row={detail} cols={cols} idKey={idKey} titelKey={titelKey} onClose={() => setDetail(null)} onDrill={onDrill} />}
     </div>
   )
 }
 
-function BefundModal({ typ, row, cols, idKey, titelKey, onClose }) {
+function BefundModal({ typ, row, cols, idKey, titelKey, onClose, onDrill }) {
   const hist = historie(typ, row)
+  const links = verknuepfungenFuer(typ, row)
   const maxB = hist.kind === 'chart' ? Math.max(...hist.punkte.map((h) => h.wert), 1) : 0
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'rgba(15,23,42,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
@@ -562,6 +566,22 @@ function BefundModal({ typ, row, cols, idKey, titelKey, onClose }) {
                 </div>
               </>
             )}
+          {/* Referenzielle Verknüpfungen (Cross-Drill in verwandte Listen) */}
+          {onDrill && links.length > 0 && (
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ ...cap, marginBottom: 6 }}>🔗 Verknüpfungen</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {links.map((l) => (
+                  <button key={l.ziel + l.label} onClick={() => { onClose(); onDrill(l.ziel, l.suche) }}
+                    title={`${l.anzahl} Treffer in ${l.zielName} (gefiltert auf „${l.suche}")`}
+                    style={{ fontSize: 12.5, padding: '5px 11px', borderRadius: 999, cursor: 'pointer', border: '1px solid var(--accent)', background: 'var(--panel)', color: 'var(--accent)', fontWeight: 600 }}>
+                    {l.label} <span style={{ background: 'var(--accent-soft)', borderRadius: 999, padding: '0 6px', fontSize: 11 }}>{l.anzahl}</span> →
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Ebene 5 · Historisierung */}
           <div style={{ ...cap, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ fontSize: 9, background: 'var(--accent-soft)', color: 'var(--accent)', borderRadius: 4, padding: '1px 6px' }}>E5</span> Historisierung

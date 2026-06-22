@@ -486,6 +486,38 @@ export function befundStatistik() {
   return { gesamt: items.length, proSchwere, proListe: Object.values(proListe).sort((a, b) => b.gesamt - a.gesamt) }
 }
 
+// ---- Referenzielle Verknüpfung (Cross-Drill zwischen Listen) -------------
+// Je Liste: welche Felder verweisen in welche andere Liste? Der Feldwert wird
+// als Filter (Suche) in die Zielliste übergeben. Verknüpfungen ohne Treffer
+// werden zur Laufzeit ausgeblendet (anzahl > 0).
+export const VERKNUEPFUNGEN = {
+  rechnung: [{ ziel: 'rechnungpos', label: 'Positionen', feld: 'rechnung' }, { ziel: 'kunde', label: 'Kunde', feld: 'kunde' }],
+  rechnungpos: [{ ziel: 'rechnung', label: 'Rechnung', feld: 'rechnung' }, { ziel: 'produkt', label: 'Produkt', feld: 'sku' }, { ziel: 'artikel', label: 'Artikel/Bestand', feld: 'sku' }, { ziel: 'charge', label: 'Chargen', feld: 'sku' }],
+  produkt: [{ ziel: 'artikel', label: 'Artikel/Bestand', feld: 'sku' }, { ziel: 'charge', label: 'Chargen', feld: 'sku' }, { ziel: 'rechnungpos', label: 'Verkäufe', feld: 'sku' }],
+  artikel: [{ ziel: 'produkt', label: 'Produkt', feld: 'sku' }, { ziel: 'charge', label: 'Chargen', feld: 'sku' }, { ziel: 'auftragsbestand', label: 'Auftragsbestand', feld: 'sku' }],
+  charge: [{ ziel: 'produkt', label: 'Produkt', feld: 'sku' }, { ziel: 'artikel', label: 'Artikel/Bestand', feld: 'sku' }],
+  warenverbrauch: [{ ziel: 'produkt', label: 'Produkt', feld: 'sku' }, { ziel: 'charge', label: 'Chargen', feld: 'sku' }],
+  leasing: [{ ziel: 'auftragsbestand', label: 'Auftragsbestand', feld: 'auftrag' }, { ziel: 'kunde', label: 'Kunde', feld: 'kunde' }, { ziel: 'auftrag', label: 'Auftrag', feld: 'auftrag' }],
+  auftragsbestand: [{ ziel: 'leasing', label: 'Leasing', feld: 'auftrag' }, { ziel: 'produkt', label: 'Produkt', feld: 'sku' }, { ziel: 'charge', label: 'Chargen', feld: 'sku' }, { ziel: 'kunde', label: 'Kunde', feld: 'kunde' }],
+  kunde: [{ ziel: 'rechnung', label: 'Rechnungen', feld: 'name' }, { ziel: 'leasing', label: 'Leasing', feld: 'name' }, { ziel: 'auftragsbestand', label: 'Auftragsbestand', feld: 'name' }],
+  retoure: [{ ziel: 'auftrag', label: 'Auftrag', feld: 'auftrag' }],
+  auftrag: [{ ziel: 'leasing', label: 'Leasing', feld: 'auftrag' }, { ziel: 'auftragsbestand', label: 'Auftragsbestand', feld: 'auftrag' }, { ziel: 'retoure', label: 'Retouren', feld: 'auftrag' }]
+}
+
+/** Auflösbare Verknüpfungen eines Datensatzes (nur Ziele mit Treffern). */
+export function verknuepfungenFuer(typ, row) {
+  const out = []
+  for (const d of (VERKNUEPFUNGEN[typ] || [])) {
+    const wert = row[d.feld]
+    if (wert == null || wert === '') continue
+    const ziel = REGISTRY.find((r) => r.id === d.ziel)
+    if (!ziel) continue
+    const anzahl = ziel.lade({ suche: String(wert) }).rows.length
+    if (anzahl > 0) out.push({ ziel: d.ziel, zielName: ziel.name, label: d.label, suche: String(wert), anzahl })
+  }
+  return out
+}
+
 // Drill-Down E3 → E4: welcher Fachbereich (E2-Code) führt in welche Detailliste?
 export const BEREICH_DETAIL = {
   VK: 'auftrag', VC: 'kunde', MKT: 'kunde', SVC: 'retoure',
