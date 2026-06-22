@@ -12,7 +12,7 @@ export const VIEW_BEREICH = {
   abgrenzung: 'KLR', kostenstellen: 'KLR', bab: 'KLR', kalkulation: 'KLR', deckungsbeitrag: 'KLR',
   ergebnis: 'FIN', profitcenter: 'FIN', segment: 'KON',
   // Operativ
-  marketing: 'MKT', events: 'MKT', bestand: 'SCC', lager: 'LOG', wms: 'LOG', produktion: 'PR', lieferant: 'EK', auftrag: 'VK', forderungen: 'RIS',
+  marketing: 'MKT', gutschriften: 'VC', events: 'MKT', bestand: 'SCC', lager: 'LOG', wms: 'LOG', produktion: 'PR', lieferant: 'EK', auftrag: 'VK', forderungen: 'RIS',
   // Analyse & Steuerung
   bi: null, planung: 'FIN', abweichung: 'FIN', vergleich: null, qc: null, abstimmung: 'FIN',
   lebenszyklus: 'VK', lzempfehlung: 'VK', anlagen: 'LIQ', technologie: 'FE', mitarbeiter: 'PC',

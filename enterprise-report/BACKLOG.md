@@ -66,7 +66,7 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
 - **Nur sinnvolle Dimensionen** anzeigen: Dimensionen, die für den jeweiligen Bericht
   keinen Sinn ergeben, werden ausgeblendet (kontextabhängige Filterliste).
 
-### F. Vertriebsqualität: Gutschriften & Retouren (kundenbasiert) — NEU
+### F. Vertriebsqualität: Gutschriften & Retouren (kundenbasiert) — DONE
 - **Kundenbasierte Übersicht** (besserer Name, z. B. „Gutschriften- & Retouren-Cockpit"):
   je Kunde alle Belege verknüpfen — heute sind bei mehreren Versendungen die
   zugehörigen Belege NICHT verknüpft. Ziel: „sind wir beim Kunden sauber?".

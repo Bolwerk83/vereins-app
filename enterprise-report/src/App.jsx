@@ -39,6 +39,7 @@ import Bestand from './modules/bestand/Bestand.jsx'
 import Lagerverwaltung from './modules/lager/Lagerverwaltung.jsx'
 import Produktionscontrolling from './modules/produktion/Produktionscontrolling.jsx'
 import Planung from './modules/planung/Planung.jsx'
+import Gutschriften from './modules/gutschriften/Gutschriften.jsx'
 import WMS from './modules/wms/WMS.jsx'
 import Detailberichte from './modules/detailberichte/Detailberichte.jsx'
 import Forderungen from './modules/forderungen/Forderungen.jsx'
@@ -218,6 +219,7 @@ export default function App() {
     { titel: 'Operativ', icon: '📈', untergruppen: [
       { titel: 'Vertrieb & Markt', eintraege: [
         E('marketing', 'nav.marketing', '📣'),
+        E('gutschriften', 'nav.gutschriften', '🧾'),
         E('events', 'nav.events', '🎉')
       ] },
       { titel: 'Bestand & Beschaffung', eintraege: [
@@ -512,6 +514,9 @@ export default function App() {
         )}
         {ansicht === 'planung' && (
           <Planung onGeh={geh} />
+        )}
+        {ansicht === 'gutschriften' && (
+          <Gutschriften />
         )}
         {ansicht === 'wms' && (
           <WMS />
