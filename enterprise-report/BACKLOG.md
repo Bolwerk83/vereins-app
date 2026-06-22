@@ -21,6 +21,11 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
   - **Vertrieb:** Auftragseingang, **prozentual hochgerechnet** AE→Umsatzerlöse (Historie).
 - **Liquiditätsvorschau** aus Zahlungsfluss Einkauf/Verkauf (z. B. Sattel-Bestellung
   in 2 Wochen zahlbar; Fahrrad im Schnitt 2 Monate nach Produktion verkauft/bezahlt).
+- **Mehrbedarf einplanen:** Aufschlag für **Bruch/Schwund** (Teile/Räder gehen kaputt
+  oder verschwinden) — Planmenge = Bedarf × (1 + Schwundquote).
+- **Produktion ohne Umsatz:** Räder für **Sponsoren, Ausstellungen, Muster, Tests** —
+  verursachen Kosten, aber keinen Umsatz; als eigene Plan-Kategorie führen (Menge +
+  Kosten, kein Erlös), damit Deckungsbeitrag/Ergebnis nicht verzerrt wird.
 - „so simpel und doch so detailliert wie möglich" — weitere sinnvolle Stellhebel ergänzen.
 
 ### B. Kalkulatorische Kosten je Wirtschaftsjahr versionieren (+ Monat)
@@ -196,3 +201,6 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
   Steuerung nur Controlling/Admin).
 - Lagerverwaltung: anklickbare Artikel, KI-Empfehlungen, schleichende Lieferanten-
   Signale, Eskalation/Rückfrage-Workflow an die Abteilungsleitung Einkauf.
+- Standard-Dimensionsfilter-Button (☰ Filter) je Bericht (nur sinnvolle Dimensionen).
+- Produktionscontrolling (#5): Werke/Linien-Live + OEE, EPQ-Losgrößen, Fehlteile,
+  Qualität (FPY/Ausschuss), Output je Zeitraum, Abgleich Produktion↔Lager↔Auftragsbestand.

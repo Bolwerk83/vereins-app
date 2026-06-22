@@ -29,6 +29,7 @@ export const BERICHT_INFO = {
   bestand: { zweck: 'Bestands-Gängigkeit (ABC/XYZ, Renner/Ladenhüter).', zielgruppe: 'Logistik / Einkauf.', mehrwert: 'Kapitalbindung senken, Ladenhüter erkennen.' },
   lager: { zweck: 'Lagerverwaltung aus Controlling-Sicht: Kapitalbindung, Lagerhaltungskosten, Standortkosten, Bestandsoptimierung (EOQ).', zielgruppe: 'Logistik / Controlling.', mehrwert: 'Lagerkosten transparent machen und Bestände/Bestellmengen optimieren.' },
   wms: { zweck: 'Operatives Lager: Lagerplätze, Wareneingang, Kommissionierung, Umlagern und Bewegungsprotokoll.', zielgruppe: 'Lager / Logistik.', mehrwert: 'Bestände platzgenau führen und Buchungen nachvollziehen.' },
+  produktion: { zweck: 'Produktionscontrolling strategisch & operativ: Werke/Linien (Live-Status, OEE), optimale Losgrößen (EPQ), Fehlteile, Qualität (FPY/Ausschuss) und Abgleich Produktion ↔ Lager ↔ Auftragsbestand.', zielgruppe: 'Produktion / Supply Chain / Controlling.', mehrwert: 'Engpässe, Fehlteile und Qualitätsprobleme früh erkennen, Losgrößen und Output optimal steuern.' },
   lieferant: { zweck: 'Lieferanten-Lebenszyklus und -Risiken.', zielgruppe: 'Einkauf.', mehrwert: 'Lieferantenbasis aktiv steuern.' },
   auftrag: { zweck: 'Order-to-Cash-Prozess mit Engpassanalyse.', zielgruppe: 'Vertrieb / Finanzen.', mehrwert: 'Durchlaufzeiten verkürzen, Cash beschleunigen.' },
   forderungen: { zweck: 'Forderungs-Aging, DSO und Ausfallrisiko.', zielgruppe: 'Finanzen / Risiko.', mehrwert: 'Liquidität sichern, Ausfälle vermeiden.' },
