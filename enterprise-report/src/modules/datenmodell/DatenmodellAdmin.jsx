@@ -6,7 +6,8 @@
 // =========================================================================
 import React, { useState } from 'react'
 import {
-  QUELLEN, quelleInfo, REPORT_FELDER, REPORT_IDS, ladeMapping, mappingVon, setzeMapping, setzeZurueck, validierung, bereiteReports
+  QUELLEN, quelleInfo, REPORT_FELDER, REPORT_IDS, ladeMapping, mappingVon, setzeMapping, setzeZurueck, validierung, bereiteReports,
+  spaltenTyp, mappingTypStatus, autoVorschlag, wendeAutoAn
 } from '../../core/datenmodell.js'
 import { statusVon, setzeStatus } from '../../core/berichtStatus.js'
 import {
@@ -14,7 +15,7 @@ import {
   neueHierarchie as dimNeu, loescheHierarchie as dimLoesche, benenneHierarchie as dimBenenne,
   addEbene as dimAddEbene, removeEbene as dimRemoveEbene, verschiebeEbene as dimVerschiebe
 } from '../../core/dimHierarchie.js'
-import { EINHEITEN, RICHTUNGEN, ladeMeasures, speichereMeasure, loescheMeasure as mLoesche, toggleAktiv as mToggle, neueMeasure } from '../../core/measures.js'
+import { EINHEITEN, RICHTUNGEN, SKALEN, ladeMeasures, speichereMeasure, loescheMeasure as mLoesche, toggleAktiv as mToggle, neueMeasure, formatWert } from '../../core/measures.js'
 import { factListe as bzFacts, dimListe as bzDims, beziehung as bzVon, toggleBeziehung as bzToggle, modellHealth as bzHealth,
   outriggerListe as bzOutrigger, empfohleneSnowflake as bzSfEmpf, snowflakeVon as bzSfVon, toggleSnowflake as bzSfToggle, snowflakeKetten as bzSfKetten, schemaTyp as bzSchemaTyp } from '../../core/beziehungen.js'
 const dimListe = () => dimListeRaw
@@ -22,12 +23,13 @@ const dimListe = () => dimListeRaw
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700 }
 
+const TYP_KUERZEL = { zahl: '#', text: 'A', schluessel: '🔑', datum: '📅', periode: '📅' }
 function QuellSpalte({ quelle, spalte }) {
-  const ref = `${quelle}.${spalte}`
+  const ref = `${quelle}.${spalte}`; const tp = spaltenTyp(spalte)
   return (
-    <div draggable onDragStart={(e) => e.dataTransfer.setData('text/plain', ref)}
+    <div draggable onDragStart={(e) => e.dataTransfer.setData('text/plain', ref)} title={`Typ: ${tp}`}
       style={{ fontSize: 12, padding: '3px 9px', borderRadius: 999, border: '1px solid var(--line)', background: 'var(--bg)', cursor: 'grab', whiteSpace: 'nowrap' }}>
-      {spalte}
+      <span style={{ color: 'var(--muted)', marginRight: 4 }}>{TYP_KUERZEL[tp]}</span>{spalte}
     </div>
   )
 }
@@ -36,19 +38,26 @@ function FeldSlot({ reportId, feld, onChange }) {
   const [ueber, setUeber] = useState(false)
   const wert = mappingVon(reportId, feld.id)
   const fehltPflicht = feld.pflicht && !wert
+  const typStatus = mappingTypStatus(reportId, feld.id)
   const drop = (e) => { e.preventDefault(); setUeber(false); const ref = e.dataTransfer.getData('text/plain'); if (ref) { setzeMapping(reportId, feld.id, ref); onChange() } }
   return (
     <div onDragOver={(e) => { e.preventDefault(); setUeber(true) }} onDragLeave={() => setUeber(false)} onDrop={drop}
       style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 'var(--radius-sm)',
         border: `1.5px ${ueber ? 'solid' : 'dashed'} ${ueber ? 'var(--accent)' : fehltPflicht ? 'var(--amp-r)' : wert ? 'var(--amp-g)' : 'var(--line)'}`,
         background: ueber ? 'var(--amp-a-soft)' : 'var(--panel)', marginBottom: 6 }}>
-      <span style={{ fontSize: 13, fontWeight: 600, minWidth: 140 }}>
+      <span style={{ fontSize: 13, fontWeight: 600, minWidth: 150 }}>
         {feld.name}
+        <span title="erwarteter Datentyp" style={{ fontSize: 10, color: 'var(--muted)', border: '1px solid var(--line)', borderRadius: 4, padding: '0 5px', marginLeft: 5 }}>{TYP_KUERZEL[feld.typ]} {feld.typ}</span>
         {feld.pflicht ? <span style={{ color: 'var(--amp-r)' }}> *</span> : <span style={{ color: 'var(--muted)', fontSize: 11 }}> (optional)</span>}
       </span>
       <div style={{ flex: 1 }}>
         {wert
-          ? <span className="mono" style={{ fontSize: 12, background: 'var(--amp-g-soft)', color: 'var(--amp-g)', padding: '2px 8px', borderRadius: 6, fontWeight: 600 }}>{wert}</span>
+          ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <span className="mono" style={{ fontSize: 12, background: typStatus && !typStatus.ok ? 'var(--amp-a-soft)' : 'var(--amp-g-soft)', color: typStatus && !typStatus.ok ? 'var(--amp-a)' : 'var(--amp-g)', padding: '2px 8px', borderRadius: 6, fontWeight: 600 }}>{wert}</span>
+              {typStatus && (typStatus.ok
+                ? <span title="Typ passt" style={{ color: 'var(--amp-g)', fontSize: 12 }}>✓ Typ</span>
+                : <span title={typStatus.hinweis} style={{ color: 'var(--amp-a)', fontSize: 11.5, fontWeight: 600 }}>⚠ {typStatus.hinweis}</span>)}
+            </span>
           : <span style={{ fontSize: 12, color: fehltPflicht ? 'var(--amp-r)' : 'var(--muted)' }}>{fehltPflicht ? 'Pflichtfeld – Spalte hierher ziehen' : feld.hinweis || 'optional – leer = Kennzahl ausgeblendet'}</span>}
       </div>
       {wert && <button onClick={() => { setzeMapping(reportId, feld.id, null); onChange() }} title="Zuordnung entfernen"
@@ -114,10 +123,17 @@ function MappingTab() {
           <div style={{ ...card, padding: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
               <div style={cap}>{def.name} — Felder</div>
-              <span style={{ fontSize: 12.5, fontWeight: 700, color: val.gruen ? 'var(--amp-g)' : 'var(--amp-a)' }}>
-                {val.gruen ? '✓ bereit' : `${val.pflichtGemappt}/${val.pflichtGesamt} Pflichtfelder`} · {val.fortschritt} %
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <button onClick={() => { wendeAutoAn(reportId); refresh() }} title="Passende Spalten automatisch zuordnen (nur bei passendem Typ)"
+                  style={{ fontSize: 12, cursor: 'pointer', border: '1px solid var(--accent)', color: 'var(--accent)', background: 'var(--panel)', borderRadius: 999, padding: '3px 11px', fontWeight: 600 }}>✨ Auto-Mapping</button>
+                <span style={{ fontSize: 12.5, fontWeight: 700, color: val.gruen ? 'var(--amp-g)' : 'var(--amp-a)' }}>
+                  {val.gruen ? '✓ bereit' : `${val.pflichtGemappt}/${val.pflichtGesamt} Pflichtfelder`} · {val.fortschritt} %
+                </span>
+              </div>
             </div>
+            {Object.keys(autoVorschlag(reportId)).length > 0 && (
+              <div style={{ fontSize: 11.5, color: 'var(--accent)', marginBottom: 6 }}>✨ {Object.keys(autoVorschlag(reportId)).length} Vorschlag/Vorschläge verfügbar — „Auto-Mapping" übernimmt sie (typgeprüft).</div>
+            )}
             {def.felder.map((f) => <FeldSlot key={f.id} reportId={reportId} feld={f} onChange={refresh} />)}
             {!val.gruen && <div style={{ fontSize: 12, color: 'var(--amp-r)', marginTop: 6 }}>Es fehlen: {val.fehlend.join(', ')}</div>}
           </div>
@@ -222,6 +238,9 @@ function DimensionenTab() {
 // =========================================================================
 function MeasureKarte({ m, onChange }) {
   const upd = (patch) => { speichereMeasure({ ...m, ...patch }); onChange() }
+  const fmt = m.format || {}
+  const updFmt = (patch) => upd({ format: { ...fmt, ...patch } })
+  const beispiel = m.einheit === '€' ? 1234567.89 : m.einheit === 'Tage' ? 104 : m.einheit === '×' ? 3.44 : 1234.5
   const inp = { font: 'inherit', fontSize: 12.5, padding: '4px 7px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)' }
   return (
     <div style={{ ...card, padding: 12, marginBottom: 10, opacity: m.aktiv ? 1 : 0.55 }}>
@@ -234,11 +253,21 @@ function MeasureKarte({ m, onChange }) {
       </div>
       <input value={m.formel} onChange={(e) => upd({ formel: e.target.value })} placeholder="Formel, z. B. EBIT / Capital Employed * 100"
         className="mono" style={{ ...inp, width: '100%', marginBottom: 6 }} />
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 6 }}>
         <span style={{ fontSize: 11, color: 'var(--muted)' }}>Zielband:</span>
-        <label style={{ fontSize: 12 }}>gut {m.richtung === 'tief' ? '≤' : '≥'} <input type="number" value={m.zielGut} onChange={(e) => upd({ zielGut: +e.target.value })} style={{ ...inp, width: 64 }} /></label>
-        <label style={{ fontSize: 12 }}>ok {m.richtung === 'tief' ? '≤' : '≥'} <input type="number" value={m.zielOk} onChange={(e) => upd({ zielOk: +e.target.value })} style={{ ...inp, width: 64 }} /></label>
+        <label style={{ fontSize: 12 }}>gut {m.richtung === 'tief' ? '≤' : '≥'} <input type="number" value={m.zielGut} onChange={(e) => upd({ zielGut: +e.target.value })} style={{ ...inp, width: 80 }} /></label>
+        <label style={{ fontSize: 12 }}>ok {m.richtung === 'tief' ? '≤' : '≥'} <input type="number" value={m.zielOk} onChange={(e) => upd({ zielOk: +e.target.value })} style={{ ...inp, width: 80 }} /></label>
         <input value={m.beschreibung} onChange={(e) => upd({ beschreibung: e.target.value })} placeholder="Beschreibung" style={{ ...inp, flex: 1, minWidth: 160 }} />
+      </div>
+      {/* Formatierung */}
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', borderTop: '1px dashed var(--line)', paddingTop: 6 }}>
+        <span style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 700 }}>Format</span>
+        <label style={{ fontSize: 12 }} title="Nachkommastellen">Nachkomma <select value={fmt.nachkomma} onChange={(e) => updFmt({ nachkomma: +e.target.value })} style={inp}>{[0, 1, 2, 3].map((n) => <option key={n}>{n}</option>)}</select></label>
+        <label style={{ fontSize: 12 }} title="Skalierung">Skala <select value={fmt.skala} onChange={(e) => updFmt({ skala: e.target.value })} style={inp}>{SKALEN.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
+        <label style={{ fontSize: 12, display: 'inline-flex', gap: 4, alignItems: 'center', cursor: 'pointer' }} title="Tausendertrennzeichen"><input type="checkbox" checked={fmt.tausender !== false} onChange={(e) => updFmt({ tausender: e.target.checked })} />Tausender</label>
+        <label style={{ fontSize: 12, display: 'inline-flex', gap: 4, alignItems: 'center', cursor: 'pointer' }} title="immer + bei positiven Werten (für Abweichungen)"><input type="checkbox" checked={!!fmt.vorzeichen} onChange={(e) => updFmt({ vorzeichen: e.target.checked })} />± Vorzeichen</label>
+        <label style={{ fontSize: 12, display: 'inline-flex', gap: 4, alignItems: 'center', cursor: 'pointer' }} title="Negativ in Klammern (buchhalterisch)"><input type="checkbox" checked={!!fmt.klammerNegativ} onChange={(e) => updFmt({ klammerNegativ: e.target.checked })} />(Negativ)</label>
+        <span style={{ marginLeft: 'auto', fontSize: 12 }}>Beispiel: <b className="mono" style={{ color: 'var(--accent)' }}>{formatWert(m, beispiel)}</b> · <span className="mono" style={{ color: 'var(--amp-r)' }}>{formatWert(m, -beispiel)}</span></span>
       </div>
     </div>
   )

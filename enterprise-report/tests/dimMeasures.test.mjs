@@ -50,3 +50,13 @@ test('Measure-Ampel respektiert Richtung', () => {
   assert.equal(ampel({ richtung: 'tief', zielGut: 3, zielOk: 4 }, 2), 'g')
   assert.equal(ampel({ richtung: 'tief', zielGut: 3, zielOk: 4 }, 5), 'r')
 })
+
+import { formatWert as fmtW, SKALEN as SK } from '../src/core/measures.js'
+test('Measure-Formatierung: Nachkomma, Währung, Skala, Vorzeichen, Klammern', () => {
+  assert.equal(fmtW({ einheit: '€', format: { nachkomma: 1, tausender: true, skala: 'million' } }, 205000000), '205,0 Mio €')
+  assert.equal(fmtW({ einheit: '%', format: { nachkomma: 1, tausender: false } }, 5.37), '5,4 %')
+  assert.equal(fmtW({ einheit: '€', format: { nachkomma: 2, tausender: true, klammerNegativ: true } }, -1234.5), '(1.234,50 €)')
+  assert.equal(fmtW({ einheit: '%', format: { nachkomma: 1, vorzeichen: true } }, 7.7), '+7,7 %')
+  assert.equal(fmtW({ einheit: '×', format: { nachkomma: 2 } }, 3.44), '3,44×')
+  assert.ok(SK.length >= 3)
+})
