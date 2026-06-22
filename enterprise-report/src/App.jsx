@@ -501,7 +501,7 @@ export default function App() {
           <Bestand />
         )}
         {ansicht === 'lager' && (
-          <Lagerverwaltung onGeh={geh} />
+          <Lagerverwaltung onGeh={geh} rolle={rolle} onDetail={gehDetail} />
         )}
         {ansicht === 'wms' && (
           <WMS />
