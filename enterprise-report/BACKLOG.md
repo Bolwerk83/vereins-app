@@ -48,7 +48,7 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
 - **AEW (Auftragseingang wirksam) entfällt.** **„Offene Aufträge (OAU)" = Auftragsbestand.**
 - Einzel-/Summen-/Ø-Kennzahlen + Legende (Σ Wert, ◊ Menge, % Verhältnis, Ø Schnitt).
 
-### D. Performance/Skalierung bei Millionen Datensätzen (über Jahre) — OHNE Aggregation
+### D. Performance/Skalierung bei Millionen Datensätzen — KONZEPT DOKUMENTIERT (PERFORMANCE.md)
 - Anforderung: Rohdaten bleiben granular (nicht wegaggregieren), trotzdem schnell.
 - Architektur-Bausteine: **Server-seitige Filterung/Paginierung** (Detaillisten nie
   komplett in den Browser laden), **Tabellen-Virtualisierung** (nur sichtbare Zeilen),
