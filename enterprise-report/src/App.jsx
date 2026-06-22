@@ -83,6 +83,7 @@ import KiSteuerung from './modules/ki-steuerung/KiSteuerung.jsx'
 import KiBuilder from './modules/ki-builder/KiBuilder.jsx'
 import BerichtLogAdmin from './modules/berichtlog/BerichtLogAdmin.jsx'
 import GoogleReporting from './modules/google/GoogleReporting.jsx'
+import Datenquellen from './modules/datenquellen/Datenquellen.jsx'
 import { gesamtStand } from './core/datenstand.js'
 import { bereichVon } from './core/navMeta.js'
 import BerichtInfoModal from './modules/berichtinfo/BerichtInfoModal.jsx'
@@ -308,7 +309,8 @@ export default function App() {
     { titel: 'Lernen & Wissen', icon: '📚', untergruppen: [
       { titel: 'Lernen', eintraege: [
         E('lernpfad', 'nav.lernpfad', '🎓'),
-        E('doku', 'nav.doku', '📚')
+        E('doku', 'nav.doku', '📚'),
+        E('datenquellen', 'nav.datenquellen', '🔗')
       ] },
       { titel: 'Konzepte', eintraege: [
         E('controlling', 'nav.controlling', '🧭'),
@@ -584,6 +586,9 @@ export default function App() {
         )}
         {ansicht === 'google' && (
           <GoogleReporting />
+        )}
+        {ansicht === 'datenquellen' && (
+          <Datenquellen />
         )}
         {ansicht === 'lzempfehlung' && (
           <LebenszyklusEmpfehlungen onGeh={geh} />

@@ -18,7 +18,7 @@ export const VIEW_BEREICH = {
   lebenszyklus: 'VK', lzempfehlung: 'VK', anlagen: 'LIQ', technologie: 'FE', mitarbeiter: 'PC',
   massnahmen: null, instrumente: null, alerts: null, zeit: null,
   // Lernen & Wissen – übergreifend
-  lernpfad: null, doku: null, controlling: null, klrablauf: null, ablaufdiagramm: null,
+  lernpfad: null, doku: null, datenquellen: null, controlling: null, klrablauf: null, ablaufdiagramm: null,
   // Verwaltung
   abschluss: 'FIBU', verteiler: null, transport: null, wizard: null, admin: null, datenmodell: null, datenschutz: null, kisteuerung: null, berichtfreigabe: null, berichtlog: null, nutzung: null, rechte: null
 }

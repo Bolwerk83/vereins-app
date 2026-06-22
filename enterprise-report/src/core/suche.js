@@ -44,6 +44,7 @@ export const NAV_ZIELE = [
   { ziel: 'leasing', gruppe: 'Kosten & Ergebnis', schluessel: 'nav.leasing' },
   { ziel: 'versand', gruppe: 'Operativ', schluessel: 'nav.versand' },
   { ziel: 'google', gruppe: 'Operativ', schluessel: 'nav.google' },
+  { ziel: 'datenquellen', gruppe: 'Wissen', schluessel: 'nav.datenquellen' },
   { ziel: 'lzempfehlung', gruppe: 'Analyse', schluessel: 'nav.lzempfehlung' },
   { ziel: 'auftrag', gruppe: 'Analyse', schluessel: 'nav.auftrag' },
   { ziel: 'anlagen', gruppe: 'Analyse', schluessel: 'nav.anlagen' },
