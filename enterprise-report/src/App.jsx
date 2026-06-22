@@ -42,6 +42,7 @@ import Planung from './modules/planung/Planung.jsx'
 import Gutschriften from './modules/gutschriften/Gutschriften.jsx'
 import AbgleichAbsatz from './modules/abgleich/AbgleichAbsatz.jsx'
 import VertriebKennzahlen from './modules/vertrieb-kennzahlen/VertriebKennzahlen.jsx'
+import Prozesskette from './modules/prozesskette/Prozesskette.jsx'
 import WMS from './modules/wms/WMS.jsx'
 import Detailberichte from './modules/detailberichte/Detailberichte.jsx'
 import Forderungen from './modules/forderungen/Forderungen.jsx'
@@ -223,6 +224,7 @@ export default function App() {
         E('marketing', 'nav.marketing', '📣'),
         E('gutschriften', 'nav.gutschriften', '🧾'),
         E('vertriebkpi', 'nav.vertriebkpi', '📈'),
+        E('prozesskette', 'nav.prozesskette', '🔻'),
         E('events', 'nav.events', '🎉')
       ] },
       { titel: 'Bestand & Beschaffung', eintraege: [
@@ -527,6 +529,9 @@ export default function App() {
         )}
         {ansicht === 'vertriebkpi' && (
           <VertriebKennzahlen />
+        )}
+        {ansicht === 'prozesskette' && (
+          <Prozesskette onGeh={geh} />
         )}
         {ansicht === 'wms' && (
           <WMS />
