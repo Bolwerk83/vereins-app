@@ -12,6 +12,7 @@ import { glossarFuer, ausfuehrlich } from '../../core/kpiGlossar.js'
 import { ladeBemerkungen, addBemerkung, toggleErledigt, loescheBemerkung, aufgaben, PERSONEN } from '../../core/bemerkungen.js'
 import { erkenntnisse } from '../../core/erkenntnisse.js'
 import { preisvergleich } from '../../core/preisvergleich.js'
+import { qualitaetUebersicht, qualitaetStats, setStatus, ZUSTAND_LABEL } from '../../core/qualitaet.js'
 
 // Eingebaute Spalten-Ansichten (Fokus-Presets) je Liste.
 const PRESETS = {
@@ -363,6 +364,106 @@ function Cockpit({ onBack, onOpen }) {
   )
 }
 
+const AMPEL = { rot: 'var(--amp-r)', gelb: 'var(--amp-a)', blau: 'var(--accent)', gruen: 'var(--amp-g)' }
+
+// Qualitätsdashboard: Datenqualität je Bereich + Status-Workflow je Befund
+// (offen rot/gelb · in Bearbeitung blau · erledigt grün · Wiedervorlage) mit Log.
+function Qualitaet({ onBack, onOpen }) {
+  const [fBereich, setFBereich] = useState(null)
+  const [fZustand, setFZustand] = useState(null)
+  const [expand, setExpand] = useState(null)
+  const [, setTick] = useState(0)
+  const refresh = () => setTick((t) => t + 1)
+  const stats = qualitaetStats()
+
+  const zInfo = (it) => {
+    if (it.wiedervorlage) return { key: 'wiedervorlage', label: 'Wiedervorlage', farbe: AMPEL.rot }
+    if (it.zustand === 'bearbeitung') return { key: 'bearbeitung', label: 'In Bearbeitung', farbe: AMPEL.blau }
+    if (it.zustand === 'erledigt') return { key: 'erledigt', label: 'Erledigt', farbe: AMPEL.gruen }
+    return { key: 'offen', label: it.schwere === 'fehler' ? 'Offen (Fehler)' : 'Offen', farbe: it.schwere === 'fehler' ? AMPEL.rot : AMPEL.gelb }
+  }
+  let items = qualitaetUebersicht()
+  if (fBereich) items = items.filter((i) => i.bereich === fBereich)
+  if (fZustand) items = items.filter((i) => zInfo(i).key === fZustand)
+
+  const erledigen = (id) => { const k = prompt('Erledigt — kurz kommentieren: Ursache / eingeleitete Maßnahme / Abschluss?'); if (k === null) return; setStatus(id, 'erledigt', { kommentar: k }); refresh() }
+  const setze = (id, z) => { setStatus(id, z, {}); refresh() }
+
+  return (
+    <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+      <button onClick={onBack} style={{ ...inp, cursor: 'pointer', marginBottom: 12 }}>← Detailberichte</button>
+      <h2 style={{ margin: '0 0 4px' }}>✅ Qualitätsdashboard</h2>
+      <div style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 14 }}>Alles grün = Daten sauber. Bei Auffälligkeiten (z. B. Artikelnummer statt Rechnung, extreme Abweichung) anklicken, Übeltäter im Vorsystem bereinigen oder Korrektur buchen, dann mit Kommentar abhaken. Am Folgetag wird neu geprüft — taucht der Fall erneut auf, zeigt das Log die Historie.</div>
+
+      {/* Bereichskarten mit Ampel */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10, marginBottom: 16 }}>
+        {stats.proBereich.map((b) => {
+          const an = fBereich === b.bereich
+          return (
+            <button key={b.bereich} onClick={() => setFBereich(an ? null : b.bereich)}
+              style={{ ...card, padding: 14, cursor: 'pointer', textAlign: 'left', borderLeft: `4px solid ${AMPEL[b.ampel]}`, borderColor: an ? 'var(--accent)' : 'var(--line)', background: an ? 'var(--accent-soft)' : 'var(--panel)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                <span style={{ width: 11, height: 11, borderRadius: '50%', background: AMPEL[b.ampel], display: 'inline-block' }} />
+                <span style={{ fontWeight: 700, fontSize: 13.5 }}>{b.bereich}</span>
+              </div>
+              <div style={{ fontSize: 11.5, color: 'var(--muted)', display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {b.offenFehler + b.offenWarnung > 0 && <span style={{ color: AMPEL.rot }}>{b.offenFehler + b.offenWarnung} offen</span>}
+                {b.bearbeitung > 0 && <span style={{ color: AMPEL.blau }}>{b.bearbeitung} in Arbeit</span>}
+                {b.wiedervorlage > 0 && <span style={{ color: AMPEL.rot }}>{b.wiedervorlage} Wiedervorl.</span>}
+                {b.erledigt > 0 && <span style={{ color: AMPEL.gruen }}>{b.erledigt} erledigt</span>}
+                {b.ampel === 'gruen' && b.bearbeitung === 0 && <span style={{ color: AMPEL.gruen }}>✓ sauber</span>}
+              </div>
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Zustandsfilter */}
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+        {[['', 'Alle'], ['offen', 'Offen'], ['bearbeitung', 'In Bearbeitung'], ['wiedervorlage', 'Wiedervorlage'], ['erledigt', 'Erledigt']].map(([k, l]) => {
+          const an = (fZustand || '') === k
+          return <button key={k} onClick={() => setFZustand(k || null)} style={{ fontSize: 12, padding: '4px 11px', borderRadius: 999, cursor: 'pointer', border: `1px solid ${an ? 'var(--accent)' : 'var(--line)'}`, background: an ? 'var(--accent-soft)' : 'var(--panel)', color: an ? 'var(--accent)' : 'var(--ink)' }}>{l}</button>
+        })}
+        {fBereich && <button onClick={() => setFBereich(null)} style={{ fontSize: 12, padding: '4px 11px', borderRadius: 999, cursor: 'pointer', border: '1px dashed var(--line)', background: 'var(--panel)', color: 'var(--muted)' }}>Bereich „{fBereich}" ✕</button>}
+      </div>
+
+      {/* Befundliste mit Workflow */}
+      <div style={{ ...card, overflow: 'hidden' }}>
+        {items.length === 0 ? <div style={{ padding: 24, textAlign: 'center', color: 'var(--amp-g)', fontWeight: 600 }}>✓ Keine Qualitätsthemen für diesen Filter — alles sauber.</div> : items.map((it) => {
+          const z = zInfo(it)
+          const auf = expand === it.id
+          return (
+            <div key={it.id} style={{ borderBottom: '1px solid var(--line)', borderLeft: `4px solid ${z.farbe}` }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: z.farbe, minWidth: 110 }}>● {z.label}</span>
+                <span style={{ fontSize: 12, color: 'var(--muted)', minWidth: 130 }}>{it.bereich}</span>
+                <span className="mono" style={{ fontSize: 12 }}>{it.listName} · {it.id}</span>
+                <span style={{ fontSize: 12.5, flex: 1, minWidth: 200 }}>{it.text}</span>
+                <span style={{ display: 'flex', gap: 6 }}>
+                  <button onClick={() => onOpen(it.listId, String(it.id))} title="Übeltäter ansehen" style={{ ...inp, padding: '4px 9px', cursor: 'pointer', fontSize: 12 }}>👁 Übeltäter</button>
+                  {z.key !== 'bearbeitung' && z.key !== 'erledigt' && <button onClick={() => setze(it.id, 'bearbeitung')} style={{ padding: '4px 9px', border: '1px solid var(--accent)', borderRadius: 'var(--radius-sm)', background: 'var(--panel)', color: 'var(--accent)', cursor: 'pointer', fontSize: 12 }}>▶ In Arbeit</button>}
+                  {z.key !== 'erledigt' && <button onClick={() => erledigen(it.id)} style={{ padding: '4px 9px', border: 'none', borderRadius: 'var(--radius-sm)', background: 'var(--amp-g)', color: '#fff', cursor: 'pointer', fontSize: 12 }}>✓ Erledigt</button>}
+                  {(z.key === 'erledigt' || z.key === 'bearbeitung') && <button onClick={() => setze(it.id, 'offen')} title="wieder öffnen" style={{ ...inp, padding: '4px 9px', cursor: 'pointer', fontSize: 12 }}>↺</button>}
+                  {it.log.length > 0 && <button onClick={() => setExpand(auf ? null : it.id)} style={{ ...inp, padding: '4px 9px', cursor: 'pointer', fontSize: 12 }}>Log {it.log.length} {auf ? '▴' : '▾'}</button>}
+                </span>
+              </div>
+              {auf && it.log.length > 0 && (
+                <div style={{ padding: '4px 12px 12px 24px', background: 'var(--bg)' }}>
+                  {it.log.map((g, i) => (
+                    <div key={i} style={{ fontSize: 12, padding: '4px 0', borderBottom: '1px solid var(--line)' }}>
+                      <span className="mono" style={{ color: 'var(--muted)' }}>{new Date(g.ts).toLocaleString('de-DE')}</span> · <b>{g.aktor}</b> · {g.aktion}{g.kommentar ? <span style={{ color: 'var(--muted)' }}> — „{g.kommentar}"</span> : ''}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 export default function Detailberichte({ startListe = null }) {
   const [aktiv, setAktiv] = useState(startListe)
   const [drillSuche, setDrillSuche] = useState('')
@@ -387,9 +488,11 @@ export default function Detailberichte({ startListe = null }) {
   if (aktiv === 'inventur') return <Liste key={aktiv} typ="inventur" titel="Inventurliste" sub="Inventur mit Plausi (negativer Buchbestand, Differenz inkonsistent, Inventurdifferenz)." cols={INV_COLS} sumKeys={INV_SUM} lade={inventurliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="zaehlung" titelKey="artikel" />
 
   if (aktiv === 'cockpit') return <Cockpit onBack={() => setAktiv(null)} onOpen={(id, suche) => oeffneListe(id, suche)} />
+  if (aktiv === 'qualitaet') return <Qualitaet onBack={() => setAktiv(null)} onOpen={(id, suche) => oeffneListe(id, suche)} />
 
   // Hub
   const stat = befundStatistik()
+  const qstat = qualitaetStats().gesamt
   return (
     <div style={{ maxWidth: 760, margin: '0 auto' }}>
       <div style={{ marginBottom: 14 }}>
@@ -412,6 +515,20 @@ export default function Detailberichte({ startListe = null }) {
             <span key={s} title={SCHWERE[s].label} style={{ fontSize: 12.5, fontWeight: 700, padding: '4px 9px', borderRadius: 999, color: SCHWERE[s].farbe, background: SCHWERE[s].soft, whiteSpace: 'nowrap' }}>
               {SCHWERE[s].icon} {stat.proSchwere[s]}
             </span>
+          ))}
+        </div>
+      </button>
+
+      {/* Qualitätsdashboard (Status-Workflow je Bereich) */}
+      <button onClick={() => setAktiv('qualitaet')} style={{ ...card, width: '100%', textAlign: 'left', padding: '14px 16px', marginBottom: 14, cursor: 'pointer',
+        borderColor: qstat.offen + qstat.wiedervorlage ? 'var(--amp-r)' : 'var(--amp-g)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <div>
+          <div style={{ fontWeight: 700, fontSize: 15 }}>✅ Qualitätsdashboard</div>
+          <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 3 }}>Datenqualität je Bereich · anklicken, Übeltäter bereinigen, abhaken (mit Log) — öffnen →</div>
+        </div>
+        <div style={{ display: 'flex', gap: 6 }}>
+          {[['offen', 'var(--amp-r)', qstat.offen], ['in Arbeit', 'var(--accent)', qstat.bearbeitung], ['Wiedervorl.', 'var(--amp-a)', qstat.wiedervorlage], ['erledigt', 'var(--amp-g)', qstat.erledigt]].map(([l, f, n]) => (
+            <span key={l} style={{ fontSize: 12, fontWeight: 700, padding: '4px 9px', borderRadius: 999, color: f, background: 'var(--bg)', border: '1px solid var(--line)', whiteSpace: 'nowrap' }}>{n} {l}</span>
           ))}
         </div>
       </button>
