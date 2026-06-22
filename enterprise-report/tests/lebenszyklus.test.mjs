@@ -5,12 +5,17 @@ import { phaseProdukt, phaseKunde, produkte, kinderProdukt, kunden, produktPhase
   bcgVerteilung, quadrantVon, bcgSchwellen, BCG_QUADRANTEN,
   phasenKurve, PRODUKT_PHASEN, KUNDE_PHASEN } from '../src/core/lebenszyklus.js'
 
-test('Produktphase aus Wachstum, Alter und Margentrend', () => {
+test('Produktphase aus Wachstum, Alter und Margentrend (5 Phasen)', () => {
   assert.equal(phaseProdukt({ alter: 1, wachstum: 40 }), 'einfuehrung')
   assert.equal(phaseProdukt({ alter: 6, wachstum: 9, dbTrend: 0.8 }), 'wachstum')
-  assert.equal(phaseProdukt({ alter: 8, wachstum: 1, dbTrend: 0.3 }), 'reife')
-  // Margenverfall zieht trotz leicht positivem Wachstum in den Rückgang:
+  assert.equal(phaseProdukt({ alter: 7, wachstum: 4, dbTrend: 0.1 }), 'reife')
+  // Plateau (~0 % Wachstum) bei gesunder Marge = Sättigung:
+  assert.equal(phaseProdukt({ alter: 8, wachstum: 1, dbTrend: 0.3 }), 'saettigung')
+  // Reife mit Margenverfall kippt in die Sättigung:
+  assert.equal(phaseProdukt({ alter: 9, wachstum: 3, dbTrend: -1.8 }), 'saettigung')
+  // Klar negatives Wachstum bzw. Margenverfall im Plateau = Rückgang:
   assert.equal(phaseProdukt({ alter: 12, wachstum: -2, dbTrend: -1.8 }), 'rueckgang')
+  assert.equal(phaseProdukt({ alter: 11, wachstum: 0, dbTrend: -1.8 }), 'rueckgang')
 })
 
 test('Kundenphase aus Beziehungsalter, Wachstum, letzter Bestellung', () => {

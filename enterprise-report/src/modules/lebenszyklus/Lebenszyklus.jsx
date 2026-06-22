@@ -109,7 +109,9 @@ function PhasenKurve({ phasen, objekte, onDrill, verbindungen = [] }) {
   const px = (t) => padL + t * (W - padL - 14)
   const py = (h) => padT + (1 - h) * (H - padT - padB)
   const rmax = Math.max(...punkte.map((p) => p.umsatz), 1)
-  const rad = (u) => 6 + Math.sqrt(u / rmax) * 22
+  const rad = (u) => 6 + Math.sqrt(u / rmax) * 18
+  const hy = (p) => Math.max(0.06, Math.min(1.02, p.hoehe + (p.vy || 0))) // Kurvenhöhe + Staffelung
+  const kurz = (s) => (s && s.length > 16 ? s.slice(0, 15) + '…' : s)
   const pos = Object.fromEntries(punkte.map((p) => [p.id, p]))
   // Kurvenpunkte durch die Phasenmitten, an den Rändern leicht angesetzt.
   const stuetz = [[0, profil[0] * 0.55], ...profil.map((h, i) => [(i + 0.5) / n, h]), [1, profil[n - 1] * 0.8]]
@@ -137,7 +139,7 @@ function PhasenKurve({ phasen, objekte, onDrill, verbindungen = [] }) {
       {/* Übergangspfeile (Modellwechsel: Vorgänger → Nachfolger) */}
       {verbindungen.map((v, k) => {
         const a = pos[v.von], b = pos[v.nach]; if (!a || !b) return null
-        const ax = px(a.x), ay = py(a.hoehe), bx = px(b.x), by = py(b.hoehe)
+        const ax = px(a.x), ay = py(hy(a)), bx = px(b.x), by = py(hy(b))
         const mx = (ax + bx) / 2, my = Math.min(ay, by) - 26 // Bogen nach oben
         return (
           <g key={'v' + k}>
@@ -147,14 +149,17 @@ function PhasenKurve({ phasen, objekte, onDrill, verbindungen = [] }) {
           </g>
         )
       })}
-      {/* Objekte als Blasen */}
-      {punkte.map((p) => (
-        <g key={p.id} onClick={onDrill ? () => onDrill(p) : undefined} style={{ cursor: onDrill ? 'pointer' : 'default' }}>
-          <title>{p.name} · {p.umsatz} Mio €{onDrill ? ' — in die Artikelliste springen' : ''}</title>
-          <circle cx={px(p.x)} cy={py(p.hoehe)} r={rad(p.umsatz)} fill={p.farbe} fillOpacity="0.32" stroke={p.farbe} />
-          <text x={px(p.x)} y={py(p.hoehe) - rad(p.umsatz) - 3} textAnchor="middle" fontSize="9.5" fill="var(--slate)" style={{ pointerEvents: 'none' }}>{p.name}</text>
-        </g>
-      ))}
+      {/* Objekte sitzen auf der Kurve; Labels wechselseitig ober-/unterhalb. */}
+      {punkte.map((p, k) => {
+        const cy = py(hy(p)), r = rad(p.umsatz), oben = k % 2 === 0
+        return (
+          <g key={p.id} onClick={onDrill ? () => onDrill(p) : undefined} style={{ cursor: onDrill ? 'pointer' : 'default' }}>
+            <title>{p.name} · {p.umsatz} Mio €{onDrill ? ' — in die Artikelliste springen' : ''}</title>
+            <circle cx={px(p.x)} cy={cy} r={r} fill={p.farbe} fillOpacity="0.32" stroke={p.farbe} />
+            <text x={px(p.x)} y={oben ? cy - r - 3 : cy + r + 9} textAnchor="middle" fontSize="9" fill="var(--slate)" style={{ pointerEvents: 'none' }}>{kurz(p.name)}</text>
+          </g>
+        )
+      })}
       <text x={padL - 4} y={padT + 4} textAnchor="end" fontSize="10" fill="var(--muted)">Niveau</text>
       <text x={px((n - 0.5) / n)} y={H - padB + 30} textAnchor="middle" fontSize="9" fill="var(--muted)">Zeit →</text>
     </svg>

@@ -15,30 +15,38 @@
 // =========================================================================
 
 // ---------- A) Produkt ---------------------------------------------------
+// Klassisches 5-Phasen-Modell (Umsatzkurve): Einführung → Wachstum → Reife →
+// Sättigung → Rückgang. `niveau` = Höhe der Umsatzkurve in dieser Phase (0..1),
+// Peak in der Sättigung.
 export const PRODUKT_PHASEN = [
-  { id: 'einfuehrung', name: 'Einführung', farbe: '#7c3aed', laie: 'Neu am Markt: hohes Wachstum, dünne Marge.', strategie: 'Investieren – Markt & Bekanntheit aufbauen' },
-  { id: 'wachstum',    name: 'Wachstum',   farbe: '#2563eb', laie: 'Setzt sich durch: Umsatz und Marge steigen.', strategie: 'Investieren – Kapazität & Vertrieb skalieren' },
-  { id: 'reife',       name: 'Reife',      farbe: '#10b981', laie: 'Stabil & ertragsstark: geringes Wachstum, hohe Marge.', strategie: 'Halten – Effizienz sichern, Cash ernten' },
-  { id: 'rueckgang',   name: 'Rückgang',   farbe: '#ef4444', laie: 'Schrumpfend oder Margenverfall.', strategie: 'Bereinigen – Auslauf/Nachfolge, Abverkauf' }
+  { id: 'einfuehrung', name: 'Einführung', farbe: '#7c3aed', niveau: 0.22, laie: 'Neu am Markt: hohes Wachstum, dünne Marge.', strategie: 'Investieren – Markt & Bekanntheit aufbauen' },
+  { id: 'wachstum',    name: 'Wachstum',   farbe: '#2563eb', niveau: 0.6,  laie: 'Setzt sich durch: Umsatz und Marge steigen.', strategie: 'Investieren – Kapazität & Vertrieb skalieren' },
+  { id: 'reife',       name: 'Reife',      farbe: '#10b981', niveau: 0.85, laie: 'Wächst noch, aber langsamer; höchste Marge.', strategie: 'Halten – Position & Marge sichern' },
+  { id: 'saettigung',  name: 'Sättigung',  farbe: '#f59e0b', niveau: 1.0,  laie: 'Umsatz am Plateau, Wachstum ~0; Gewinn beginnt zu sinken.', strategie: 'Ausschöpfen & differenzieren – Relaunch/Nachfolge vorbereiten' },
+  { id: 'rueckgang',   name: 'Rückgang',   farbe: '#ef4444', niveau: 0.4,  laie: 'Schrumpfend oder Margenverfall.', strategie: 'Bereinigen – Auslauf/Nachfolge, Abverkauf' }
 ]
 export const produktPhaseInfo = (id) => PRODUKT_PHASEN.find((p) => p.id === id)
 
-/** Produktphase aus Alter, Wachstum und Margentrend (DB-Punkte YoY). */
+/** Produktphase aus Alter, Wachstum und Margentrend (DB-Punkte YoY).
+ *  5 Phasen: hohes Wachstum=Einführung, kräftiges=Wachstum, moderates=Reife,
+ *  Plateau (~0)=Sättigung, negatives bzw. Margenverfall=Rückgang. */
 export function phaseProdukt({ alter = null, wachstum = 0, dbTrend = 0 }) {
   if (alter != null && alter <= 1) return 'einfuehrung'
   if (wachstum >= 20) return 'einfuehrung'
   if (wachstum >= 6) return 'wachstum'
-  if (wachstum >= -3) return dbTrend <= -1.5 ? 'rueckgang' : 'reife' // Margenverfall = faktischer Rückgang
+  if (wachstum >= 2) return dbTrend <= -1.5 ? 'saettigung' : 'reife'
+  if (wachstum >= -1) return dbTrend <= -1.5 ? 'rueckgang' : 'saettigung' // Plateau, Marge entscheidet
   return 'rueckgang'
 }
 
 // ---------- B) Kunde -----------------------------------------------------
+// Beziehungswert über die Zeit: Peak im Bestand, Abfall bei gefährdet/verloren.
 export const KUNDE_PHASEN = [
-  { id: 'akquise',     name: 'Akquise',     farbe: '#7c3aed', laie: 'Neu gewonnen, erste Bestellungen.', empfehlung: 'Onboarding & Erstbindung' },
-  { id: 'entwicklung', name: 'Entwicklung', farbe: '#2563eb', laie: 'Wachsende Beziehung, steigender Umsatz.', empfehlung: 'Up-/Cross-Selling, Potenzial heben' },
-  { id: 'bestand',     name: 'Bestand',     farbe: '#10b981', laie: 'Stabiler Stammkunde.', empfehlung: 'Pflegen & binden' },
-  { id: 'gefaehrdet',  name: 'Gefährdet',   farbe: '#f59e0b', laie: 'Rückläufig oder länger inaktiv — Abwanderungsrisiko.', empfehlung: 'Rückgewinnung – aktiv ansprechen' },
-  { id: 'verloren',    name: 'Verloren',    farbe: '#ef4444', laie: 'Seit über einem Jahr keine Bestellung.', empfehlung: 'Reaktivieren oder bewusst abschließen' }
+  { id: 'akquise',     name: 'Akquise',     farbe: '#7c3aed', niveau: 0.3,  laie: 'Neu gewonnen, erste Bestellungen.', empfehlung: 'Onboarding & Erstbindung' },
+  { id: 'entwicklung', name: 'Entwicklung', farbe: '#2563eb', niveau: 0.7,  laie: 'Wachsende Beziehung, steigender Umsatz.', empfehlung: 'Up-/Cross-Selling, Potenzial heben' },
+  { id: 'bestand',     name: 'Bestand',     farbe: '#10b981', niveau: 1.0,  laie: 'Stabiler Stammkunde.', empfehlung: 'Pflegen & binden' },
+  { id: 'gefaehrdet',  name: 'Gefährdet',   farbe: '#f59e0b', niveau: 0.55, laie: 'Rückläufig oder länger inaktiv — Abwanderungsrisiko.', empfehlung: 'Rückgewinnung – aktiv ansprechen' },
+  { id: 'verloren',    name: 'Verloren',    farbe: '#ef4444', niveau: 0.25, laie: 'Seit über einem Jahr keine Bestellung.', empfehlung: 'Reaktivieren oder bewusst abschließen' }
 ]
 export const kundePhaseInfo = (id) => KUNDE_PHASEN.find((p) => p.id === id)
 
@@ -161,21 +169,36 @@ export function bcgVerteilung(ebene, opt = {}) { return bcgFelder(produkte(ebene
 // Lebenszyklus-Kurve (Aufstieg → Peak → Abfall). Rein für die grafische Sicht.
 export function phasenKurve(phasen, objekte) {
   const n = phasen.length
-  const peak = 0.58 // Position des Hochpunkts auf der normierten x-Achse
-  // Höhenprofil 0..1 je Phase: steigt bis zum Peak, fällt danach ab.
-  const profil = phasen.map((_, i) => {
+  const peak = 0.58 // Fallback-Hochpunkt, falls eine Phase kein `niveau` trägt
+  // Höhenprofil 0..1 je Phase: bevorzugt das fachliche `niveau` der Phase
+  // (Umsatz-/Wertkurve), sonst eine generische Glockenform.
+  const profil = phasen.map((p, i) => {
+    if (p.niveau != null) return +Math.max(0.12, Math.min(1, p.niveau)).toFixed(3)
     const t = n <= 1 ? peak : i / (n - 1)
     const h = t <= peak ? 0.25 + 0.75 * (t / peak) : 1 - 0.72 * ((t - peak) / (1 - peak))
     return +Math.max(0.12, Math.min(1, h)).toFixed(3)
   })
+  // Stützpunkte der Hüllkurve (x in [0,1]); Objekte sitzen interpoliert darauf.
+  const stuetz = [[0, profil[0] * 0.55], ...profil.map((h, i) => [(i + 0.5) / n, h]), [1, profil[n - 1] * 0.8]]
+  const hoeheBei = (t) => {
+    for (let k = 1; k < stuetz.length; k++) {
+      const [x0, h0] = stuetz[k - 1], [x1, h1] = stuetz[k]
+      if (t <= x1) { const f = (t - x0) / (x1 - x0 || 1); return h0 + (h1 - h0) * f }
+    }
+    return stuetz[stuetz.length - 1][1]
+  }
   const punkte = []
   phasen.forEach((p, i) => {
-    const grp = objekte.filter((o) => o.phase === p.id)
+    // Innerhalb der Phase nach Reifegrad sortiert (früh → spät) und kontinuierlich
+    // über das Band verteilt — die Objekte sitzen auf der Kurve statt in Spalten.
+    const grp = objekte.filter((o) => o.phase === p.id).slice().sort((a, b) => b.wachstum - a.wachstum)
+    const m = grp.length
+    const lo = (i + 0.14) / n, hi = (i + 0.86) / n
     grp.forEach((o, j) => {
-      const frac = (j + 1) / (grp.length + 1) // gleichmäßig im Phasenband verteilen
+      const x = m === 1 ? (i + 0.5) / n : lo + (hi - lo) * (j / (m - 1))
       punkte.push({ id: o.id, name: o.name, umsatz: o.umsatz, gruppe: o.gruppe,
-        phase: p.id, farbe: p.farbe, x: +((i + frac) / n).toFixed(4), hoehe: profil[i] })
+        phase: p.id, farbe: p.farbe, x: +x.toFixed(4), hoehe: +hoeheBei(x).toFixed(4), vy: 0 })
     })
   })
-  return { profil, punkte }
+  return { profil, stuetz, punkte }
 }

@@ -19,6 +19,8 @@ const PRODUKT_REGEL = {
     titelFn: (o) => `${o.name}: Wachstum skalieren`, weg: 'Vertrieb & Kapazität ausbauen, Lieferfähigkeit sichern, Sortiment vertiefen.', wirkung: 'Umsatz & DB ↑' },
   reife: { art: 'halten', prio: 3, hebel: 'Effizienz', frist: 'laufend',
     titelFn: (o) => `${o.name}: Position halten & Cash ernten`, weg: 'Effizienz sichern, Preis-/Konditionenpflege, selektive Pflegeinvestitionen.', wirkung: 'DB stabil halten' },
+  saettigung: { art: 'halten', prio: 2, hebel: 'Differenzierung/Relaunch', frist: 'Q2–Q4',
+    titelFn: (o) => `${o.name}: Ausschöpfen & Nachfolge vorbereiten`, weg: 'Plateau ausschöpfen, Differenzierung/Relaunch prüfen, Nachfolgemodell anstoßen, Marge gegen Verfall sichern.', wirkung: 'Umsatz halten, Gewinn schützen' },
   rueckgang: { art: 'risiko', prio: 1, hebel: 'Portfolio-Bereinigung', frist: 'sofort–Q3',
     titelFn: (o) => `${o.name}: Auslauf/Abverkauf einleiten`, weg: 'Nachfolge/Relaunch prüfen, Restbestände abverkaufen, Komplexität reduzieren.', wirkung: 'Kapital & Marge schützen' }
 }
