@@ -630,7 +630,7 @@ function Radar({ werte, onBack, onOpen }) {
 
 // Detaillisten nach Fachbereich gruppiert (Unterordner im Hub).
 const KATEGORIEN = [
-  { name: 'Finanzen & FiBu', ids: ['rechnung', 'rechnungpos', 'offeneposten', 'konto'] },
+  { name: 'Finanzen & FiBu', ids: ['rechnung', 'offeneposten', 'konto'] },
   { name: 'Bestand & Logistik', ids: ['artikel', 'produkt', 'charge', 'inventur', 'plausiwv'] },
   { name: 'Vertrieb & Auftrag', ids: ['auftrag', 'auftragsbestand', 'leasing', 'retoure', 'bestellkanal'] },
   { name: 'Einkauf', ids: ['bestellung', 'lieferant'] },
@@ -648,7 +648,8 @@ export default function Detailberichte({ startListe = null, startSuche = '', wer
   if (aktiv === 'leasing') return <Liste key={aktiv} typ="leasing" titel="Leasingliste" sub="Entdopplung der 3 Belege (Angebot / Kundenleasing / Leasinggesellschaft): es zählt je Sicht genau EIN führender Wert — nie doppelt oder dreifach." cols={LEAS_COLS} sumKeys={LEAS_SUM} lade={leasingliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="vorgang" titelKey="kunde"
     optionen={[{ key: 'sicht', label: 'Sicht', default: 'auftrag', werte: [['auftrag', 'Auftragssicht (Kundenleasing führt)'], ['rechnung', 'Rechnungssicht (Leasinggesellschaft führt)']] }]} />
   if (aktiv === 'retoure') return <Liste key={aktiv} typ="retoure" titel="Retourenliste" sub="Retouren mit Plausi-Prüfung (Grund fehlt, Wert > Original, ohne Auftrag …)." cols={RET_COLS} sumKeys={RET_SUM} lade={retourenliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="retoure" titelKey="kunde" />
-  if (aktiv === 'rechnung') return <Liste key={aktiv} typ="rechnung" titel="Rechnungsliste" sub="Rechnungen mit Plausi-Prüfung (Brutto ≠ Netto + MwSt, ohne Position, unbezahlt …)." cols={RECH_COLS} sumKeys={RECH_SUM} lade={rechnungsliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="rechnung" titelKey="kunde" />
+  if (aktiv === 'rechnung') return <Liste key={aktiv} typ="rechnung" titel="Rechnungsliste" sub="Rechnungen mit Plausi-Prüfung (Brutto ≠ Netto + MwSt, ohne Position, unbezahlt …). Zeile mit ▶ aufklappen zeigt die Rechnungspositionen." cols={RECH_COLS} sumKeys={RECH_SUM} lade={rechnungsliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="rechnung" titelKey="kunde"
+    unterListe={{ id: 'rechnungpos', name: 'Rechnungspositionen', lade: rechnungsposliste, cols: RPOS_COLS, koppelKey: 'rechnung', idKey: 'pos', titelKey: 'artikel' }} />
   if (aktiv === 'kunde') return <Liste key={aktiv} typ="kunde" titel="Kundenliste" sub="Kunden mit Plausi-Prüfung (Kreditlimit überschritten, E-Mail, Umsatz …)." cols={KUND_COLS} sumKeys={KUND_SUM} lade={kundenliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="kundennr" titelKey="name" />
   if (aktiv === 'produkt') return <Liste key={aktiv} typ="produkt" titel="Produktliste" sub="Produktstammdaten mit Plausi (kein VK-Preis, EAN ungültig, gesperrt, Gewicht fehlt)." cols={PROD_COLS} sumKeys={PROD_SUM} lade={produktliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="sku" titelKey="name" />
   if (aktiv === 'rechnungpos') return <Liste key={aktiv} typ="rechnungpos" titel="Rechnungspositionsliste" sub="Einzelpositionen mit Plausi (Positionsnetto, Menge, hoher Rabatt)." cols={RPOS_COLS} sumKeys={RPOS_SUM} lade={rechnungsposliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="rechnung" titelKey="artikel" />
@@ -751,12 +752,13 @@ export default function Detailberichte({ startListe = null, startSuche = '', wer
 
 const EBENEN_PFAD = ['E1 · Geschäftsführung', 'E2 · Fachbereich', 'E3 · Themenbereich', 'E4 · Details', 'E5 · Historisierung']
 
-function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, onDrill, startSuche = '', idKey, titelKey, optionen = [] }) {
+function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, onDrill, startSuche = '', idKey, titelKey, optionen = [], unterListe = null }) {
   const [suche, setSuche] = useState(startSuche)
   const [nurAuffaellig, setNurAuffaellig] = useState(false)
   const [legendeAuf, setLegendeAuf] = useState(false)
   const [detail, setDetail] = useState(null)
   const [voll, setVoll] = useState(null)
+  const [aufgeklappt, setAufgeklappt] = useState(() => new Set()) // ausgeklappte Master-Zeilen (Detail-Positionen)
   const [opts, setOpts] = useState(() => Object.fromEntries(optionen.map((o) => [o.key, o.default])))
   const [sichtbar, setSichtbar] = useState(() => {
     const gemerkt = ladeLetzte(typ)
@@ -777,6 +779,12 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, onDrill, startSuc
   // Zuletzt genutzte Ansicht je Liste merken (Wiederherstellung beim Öffnen).
   useEffect(() => { merkeLetzte(typ, sichtbar) }, [sichtbar, typ])
   const data = lade({ suche, nurAuffaellig, ...opts })
+
+  // Aufklappbare Unterliste (Master-Detail, z. B. Rechnung → Positionen).
+  const unterData = unterListe ? unterListe.lade({}) : null
+  const unterCols = unterListe ? unterListe.cols.filter((c) => c.key !== unterListe.koppelKey) : []
+  const kinderVon = (row) => (unterData ? unterData.rows.filter((r) => r[unterListe.koppelKey] === row[unterListe.koppelKey]) : [])
+  const toggleAuf = (key) => setAufgeklappt((s) => { const n = new Set(s); n.has(key) ? n.delete(key) : n.add(key); return n })
 
   // Eingebaute + benutzerdefinierte Ansichten (Bookmarks).
   const builtin = [{ id: 'voll', name: 'Vollansicht', sichtbar: cols.map((c) => c.key), system: true }, ...(PRESETS[typ] || []).map((p, i) => ({ id: 'p' + i, ...p, system: true }))]
@@ -949,8 +957,8 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, onDrill, startSuc
       {/* Tabelle */}
       <div style={{ ...card, padding: 0, overflowX: 'auto' }}>
         <table style={{ tableLayout: 'fixed', width: tabBreite, borderCollapse: 'collapse', fontSize: 12.5 }}>
-          <colgroup>{sichtCols.map((c) => <col key={c.key} style={{ width: colW(c) }} />)}<col style={{ width: 36 }} /></colgroup>
-          <thead><tr>{sichtCols.map((c) => {
+          <colgroup>{unterListe && <col style={{ width: 30 }} />}{sichtCols.map((c) => <col key={c.key} style={{ width: colW(c) }} />)}<col style={{ width: 36 }} /></colgroup>
+          <thead><tr>{unterListe && <th style={{ position: 'sticky', top: 0, background: 'var(--panel)', borderBottom: '2px solid var(--line)' }} />}{sichtCols.map((c) => {
             const g = glossarFuer(c.key)
             return (
               <th key={c.key} onMouseEnter={(e) => zeigeHov(e, c.key)} onMouseLeave={planeHide}
@@ -962,19 +970,75 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, onDrill, startSuc
             )
           })}<th style={{ padding: '8px 9px', borderBottom: '2px solid var(--line)' }} /></tr></thead>
           <tbody>
-            {data.rows.length === 0 && <tr><td colSpan={sichtCols.length + 1} style={{ padding: 20, textAlign: 'center', color: 'var(--muted)' }}>Keine Treffer.</td></tr>}
-            {data.rows.map((row, i) => (
-              <tr key={row[idKey] + i} onClick={() => setDetail(row)} style={{ cursor: 'pointer',
+            {data.rows.length === 0 && <tr><td colSpan={sichtCols.length + 1 + (unterListe ? 1 : 0)} style={{ padding: 20, textAlign: 'center', color: 'var(--muted)' }}>Keine Treffer.</td></tr>}
+            {data.rows.map((row, i) => {
+              const auf = unterListe && aufgeklappt.has(row[idKey])
+              const kinder = unterListe ? kinderVon(row) : []
+              return (
+              <React.Fragment key={row[idKey] + i}>
+              <tr onClick={() => setDetail(row)} style={{ cursor: 'pointer',
                 borderLeft: `3px solid ${row.schwere ? SCHWERE[row.schwere].farbe : 'transparent'}` }}
                 onMouseEnter={(e) => e.currentTarget.style.background = 'var(--accent-soft)'}
                 onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+                {unterListe && (
+                  <td style={{ padding: '0', borderBottom: '1px solid var(--line)', textAlign: 'center' }}>
+                    {kinder.length > 0 && (
+                      <button onClick={(e) => { e.stopPropagation(); toggleAuf(row[idKey]) }}
+                        title={auf ? 'Positionen zuklappen' : `${kinder.length} Position(en) anzeigen`}
+                        style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 11, width: '100%', padding: '6px 0' }}>
+                        <span style={{ display: 'inline-block', transform: auf ? 'rotate(90deg)' : 'none', transition: 'transform .12s' }}>▶</span>
+                      </button>
+                    )}
+                  </td>
+                )}
                 {sichtCols.map((c) => zelle(row, c))}
                 <td style={{ padding: '6px 9px', borderBottom: '1px solid var(--line)', textAlign: 'center' }}>{row.schwere ? SCHWERE[row.schwere].icon : ''}</td>
               </tr>
-            ))}
+              {auf && (
+                <tr>
+                  <td />
+                  <td colSpan={sichtCols.length + 1} style={{ padding: '4px 9px 12px', borderBottom: '1px solid var(--line)', background: 'var(--bg)' }}>
+                    <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', margin: '4px 0 6px' }}>
+                      {unterListe.name} ({kinder.length})
+                    </div>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                      <thead><tr>{unterCols.map((c) => (
+                        <th key={c.key} style={{ textAlign: c.al, padding: '4px 8px', borderBottom: '1px solid var(--line)', fontSize: 9.5, color: 'var(--muted)', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{c.label}</th>
+                      ))}<th style={{ width: 28, borderBottom: '1px solid var(--line)' }} /></tr></thead>
+                      <tbody>
+                        {kinder.map((kr, ki) => (
+                          <tr key={(kr[unterListe.idKey] ?? ki) + '-' + ki}
+                            onClick={(e) => { e.stopPropagation(); onDrill?.(unterListe.id, String(kr[unterListe.koppelKey])) }}
+                            title={`In ${unterListe.name} öffnen`}
+                            style={{ cursor: onDrill ? 'pointer' : 'default' }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--accent-soft)'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+                            {unterCols.map((c) => {
+                              const befund = kr.befunde?.find((b) => b.feld === c.key)
+                              const v = kr[c.key]
+                              return (
+                                <td key={c.key} title={befund ? befund.text : undefined} className={c.mono || c.al === 'right' ? 'mono' : undefined}
+                                  style={{ padding: '4px 8px', borderBottom: '1px solid var(--line)', textAlign: c.al, whiteSpace: 'nowrap',
+                                    background: befund ? SCHWERE[befund.schwere].soft : undefined, color: befund ? SCHWERE[befund.schwere].farbe : undefined, fontWeight: befund ? 700 : 400 }}>
+                                  {c.fmt ? c.fmt(v) : v}{befund ? ' ⚠' : ''}
+                                </td>
+                              )
+                            })}
+                            <td style={{ padding: '4px 8px', borderBottom: '1px solid var(--line)', textAlign: 'center' }}>{kr.schwere ? SCHWERE[kr.schwere].icon : ''}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </td>
+                  <td />
+                </tr>
+              )}
+              </React.Fragment>
+            )})}
           </tbody>
           <tfoot>
             <tr style={{ fontWeight: 700, background: 'var(--bg)' }}>
+              {unterListe && <td style={{ borderTop: '2px solid var(--line)' }} />}
               {sichtCols.map((c, i) => (
                 <td key={c.key} className={c.al === 'right' ? 'mono' : undefined} style={{ padding: '8px 9px', borderTop: '2px solid var(--line)', textAlign: c.al }}>
                   {i === 0 ? 'Gesamt' : sumKeys.includes(c.key) ? (data.summe[c.key]?.toLocaleString('de-DE')) : ''}

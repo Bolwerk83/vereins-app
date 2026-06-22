@@ -151,8 +151,10 @@ test('Alle Katalog-Listen sind jetzt verfügbar', () => {
 test('Sammel-Plausi: Befunde aller Listen gebündelt & sortiert', () => {
   const items = sammelBefunde()
   assert.ok(items.length > 10)
-  // jede verfügbare Liste ist in der Registry abgebildet
-  assert.equal(REGISTRY.length, LISTEN.filter((l) => l.verfuegbar).length)
+  // jede verfügbare Katalog-Liste ist in der Registry abgebildet (Registry darf
+  // zusätzlich genestete Sub-Listen wie 'rechnungpos' für Cross-Drill enthalten)
+  assert.ok(LISTEN.filter((l) => l.verfuegbar).every((l) => REGISTRY.some((r) => r.id === l.id)))
+  assert.ok(REGISTRY.length >= LISTEN.filter((l) => l.verfuegbar).length)
   // Sortierung: Fehler stehen vor Hinweisen
   const ersteHinweis = items.findIndex((i) => i.schwere === 'hinweis')
   const letzterFehler = items.map((i) => i.schwere).lastIndexOf('fehler')
