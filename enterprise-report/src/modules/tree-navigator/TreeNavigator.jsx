@@ -11,7 +11,7 @@ import { darfBereich, darfKpi } from '../../core/rbac.js'
 import { ladeDetail, ladeHistorie } from '../../core/dataProvider.js'
 import { downloadCsv, druckePdf, knotenAlsCsv } from '../../core/export.js'
 import { detailFuerBereich } from '../../core/detailberichte.js'
-import { KpiCard, KpiGesperrt, DetailTabelle, Sparkline, Badge } from '../../components/ui.jsx'
+import { KpiCard, KpiGesperrt, DetailTabelle, Sparkline, Badge, Textbox } from '../../components/ui.jsx'
 import KnotenBewertung from './KnotenBewertung.jsx'
 import DetailPerspektiven from './DetailPerspektiven.jsx'
 
@@ -145,6 +145,13 @@ export default function TreeNavigator({ rolle, werte, periode, onOpenReport, onD
         {/* KPIs des Knotens: Lagebewertung + angereicherte Karten (Object-Level-Security) */}
         {knoten.kpis?.length > 0 && (
           <KnotenBewertung kpiIds={knoten.kpis} werte={werte} rolle={rolle} />
+        )}
+
+        {/* Controller-Kommentar (editierbar, mit @KPI-Variablen) */}
+        {knoten.kpis?.length > 0 && (
+          <div style={{ marginTop: 16 }}>
+            <Textbox id={'knoten:' + knoten.id} werte={werte} periode={periode} titel={`Kommentar · ${knoten.titel}`} />
+          </div>
         )}
 
         {/* Ebene 4: Detailtabelle */}

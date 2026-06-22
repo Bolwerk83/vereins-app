@@ -559,7 +559,9 @@ export default function App() {
 
       {/* Dezenter, aber unmissverständlicher Urheberhinweis. */}
       <footer className="no-print" style={{ textAlign: 'center', padding: '14px 20px 22px', color: 'var(--muted)', fontSize: 11.5 }}>
-        Erstellt mit dem <b style={{ color: 'var(--ink)' }}>Business Controller</b> · Konzeption &amp; Umsetzung: Business Controller
+        Bei Rückfragen wende dich ans <b style={{ color: 'var(--ink)' }}>Business Controlling</b> ·{' '}
+        <a href="https://servicedesk.example.com/controlling" target="_blank" rel="noreferrer"
+          style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>🎫 Ticket erstellen</a>
       </footer>
     </div>
   )

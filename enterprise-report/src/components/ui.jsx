@@ -4,6 +4,7 @@ import { KPI } from '../core/kpiRegistry.js'
 import { ampelStatus, trendAusHistorie } from '../core/ampel.js'
 import { AMPEL_FARBE, AMPEL_SOFT, AMPEL_LABEL, formatWert, TREND_ICON, kpiSymbol } from '../design/theme.js'
 import { kpiInsight } from '../core/insights.js'
+import { renderText, istVeraltet, ladeText, speichereText, loescheText, VORLAGEN, kiVorschlaege } from '../core/textbausteine.js'
 import { useKpiDef } from '../modules/kennzahlen/KpiDefContext.jsx'
 import { useFenster } from '../core/useFenster.js'
 import { ladeBookmarks, addBookmark, loescheBookmark, ladeLetzte, merkeLetzte } from '../core/bookmarks.js'
@@ -126,6 +127,101 @@ export function KpiDrillModal({ startId, werte = {}, onClose }) {
             )}
         </div>
       </div>
+    </div>
+  )
+}
+
+/** Editierbarer Controller-Kommentar mit @KPI-Variablen, Bedingungen,
+ *  Vorlagen, KI-Vorschlägen und Veraltet-Hinweis. */
+export function Textbox({ id, werte = {}, periode = null, titel = 'Controller-Kommentar', editierbar = true }) {
+  const [meta, setMeta] = useState(() => ladeText(id))
+  const [edit, setEdit] = useState(false)
+  const [draft, setDraft] = useState('')
+  const [kiKpi, setKiKpi] = useState('')
+  const [vorschl, setVorschl] = useState([])
+  const ref = useRef(null)
+  const kpiOpt = Object.values(KPI).map((k) => [k.id, k.name]).sort((a, b) => a[1].localeCompare(b[1]))
+
+  const starten = () => { setDraft(meta?.text || ''); setVorschl([]); setEdit(true) }
+  const speichern = () => { setMeta(speichereText(id, { text: draft, periode, werte })); setEdit(false) }
+  const entfernen = () => { loescheText(id); setMeta(null); setEdit(false) }
+  const insert = (s) => {
+    const el = ref.current
+    if (!el) { setDraft((d) => d + s); return }
+    const a = el.selectionStart, b = el.selectionEnd
+    setDraft((d) => d.slice(0, a) + s + d.slice(b))
+    requestAnimationFrame(() => { el.focus(); el.selectionStart = el.selectionEnd = a + s.length })
+  }
+  const ver = istVeraltet(meta, werte, periode)
+  const btn = { fontSize: 11.5, padding: '4px 9px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: 'var(--panel)', cursor: 'pointer' }
+
+  return (
+    <div style={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', padding: 14, boxShadow: 'var(--shadow)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+        <span className="mono" style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase' }}>📝 {titel}</span>
+        <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+          {meta && ver.veraltet && <span title={ver.grund} style={{ fontSize: 11, fontWeight: 700, color: 'var(--amp-a)', background: 'var(--amp-a-soft)', borderRadius: 999, padding: '2px 8px' }}>⚠ prüfen</span>}
+          {editierbar && !edit && <button onClick={starten} style={btn}>✎ {meta ? 'Bearbeiten' : 'Kommentieren'}</button>}
+        </span>
+      </div>
+
+      {!edit ? (
+        meta?.text ? <div style={{ fontSize: 13.5, lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{renderText(meta.text, werte)}</div>
+          : <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>Noch kein Kommentar.{editierbar ? ' Auf „Kommentieren" klicken.' : ''}</div>
+      ) : (
+        <div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8, alignItems: 'center' }}>
+            <select onChange={(e) => { const v = VORLAGEN.find((x) => x.name === e.target.value); if (v) setDraft(v.text); e.target.value = '' }} defaultValue="" style={btn}>
+              <option value="" disabled>Vorlage …</option>
+              {VORLAGEN.map((v) => <option key={v.name} value={v.name}>{v.bereich} · {v.name}</option>)}
+            </select>
+            <select onChange={(e) => { if (e.target.value) { insert('@' + e.target.value + ' '); e.target.value = '' } }} defaultValue="" style={btn}>
+              <option value="" disabled>＋ @Kennzahl …</option>
+              {kpiOpt.map(([k, n]) => <option key={k} value={k}>{n}</option>)}
+            </select>
+            <select onChange={(e) => { if (e.target.value) { insert('@' + e.target.value + '[positiv …|negativ …]'); e.target.value = '' } }} defaultValue="" style={btn}>
+              <option value="" disabled>＋ Bedingt (positiv/negativ) …</option>
+              {kpiOpt.map(([k, n]) => <option key={k} value={k}>{n}</option>)}
+            </select>
+            <span style={{ display: 'inline-flex', gap: 4, alignItems: 'center' }}>
+              <select value={kiKpi} onChange={(e) => { setKiKpi(e.target.value); setVorschl(e.target.value ? kiVorschlaege(e.target.value, werte) : []) }} style={btn}>
+                <option value="">🤖 KI-Vorschlag zu …</option>
+                {kpiOpt.map(([k, n]) => <option key={k} value={k}>{n}</option>)}
+              </select>
+            </span>
+          </div>
+
+          {vorschl.length > 0 && (
+            <div style={{ display: 'grid', gap: 5, marginBottom: 8 }}>
+              {vorschl.map((s, i) => (
+                <button key={i} onClick={() => insert((draft && !draft.endsWith('\n') ? '\n' : '') + s)} style={{ textAlign: 'left', cursor: 'pointer', fontSize: 12, border: '1px solid var(--accent)', background: 'var(--accent-soft)', color: 'var(--ink)', borderRadius: 'var(--radius-sm)', padding: '7px 9px' }}>
+                  🤖 {renderText(s, werte)} <span style={{ color: 'var(--accent)', fontWeight: 600 }}>· einfügen</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          <textarea ref={ref} value={draft} onChange={(e) => setDraft(e.target.value)} rows={4}
+            placeholder="Text … @nettoumsatz fügt den Wert ein; @ebit[positiv …|negativ …] schaltet die Formulierung um."
+            style={{ width: '100%', boxSizing: 'border-box', padding: '9px 11px', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', font: 'inherit', fontSize: 13, resize: 'vertical' }} />
+
+          {draft && (
+            <div style={{ marginTop: 8, padding: '9px 11px', borderRadius: 'var(--radius-sm)', background: 'var(--bg)', border: '1px solid var(--line)' }}>
+              <div className="mono" style={{ fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 4 }}>Vorschau (mit aktuellen Werten)</div>
+              <div style={{ fontSize: 13, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{renderText(draft, werte)}</div>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, gap: 8, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 11, color: 'var(--muted)' }}>Zahlen & Bedingungen aktualisieren sich automatisch mit den Daten.</span>
+            <span style={{ display: 'flex', gap: 6 }}>
+              {meta && <button onClick={entfernen} style={{ ...btn, color: 'var(--amp-r)' }}>Löschen</button>}
+              <button onClick={() => setEdit(false)} style={btn}>Abbrechen</button>
+              <button onClick={speichern} style={{ ...btn, border: 'none', background: 'var(--accent)', color: '#fff', fontWeight: 600 }}>Speichern</button>
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
