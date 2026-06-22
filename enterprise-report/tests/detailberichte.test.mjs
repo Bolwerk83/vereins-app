@@ -4,21 +4,21 @@ import assert from 'node:assert/strict'
 import { artikelliste, auftragsliste, pruefeArtikel, pruefeAuftrag, ARTIKEL, LISTEN, historie, warenverbrauchliste, pruefeWarenverbrauch, WARENVERBRAUCH, leasingliste, fuehrenderBeleg, LEASING, retourenliste, rechnungsliste, kundenliste, detailFuerBereich, produktliste, rechnungsposliste, bestellkanalliste, chargenliste, auftragsbestandliste, sammelBefunde, befundStatistik, REGISTRY, verknuepfungenFuer, lieferantenliste, bestellliste, offenepostenliste, inventurliste, kontenliste } from '../src/core/detailberichte.js'
 
 test('Negativer Verfügbarbestand wird als Fehler erkannt', () => {
-  const a = ARTIKEL.find((x) => x.sku === '231052006') // lbVerf -1
+  const a = ARTIKEL.find((x) => x.sku === 'ART-1005') // lbVerf -1
   const b = pruefeArtikel(a)
   assert.ok(b.some((x) => x.feld === 'lbVerf' && x.schwere === 'fehler'))
 })
 
 test('Negative Marge (EK > VK) wird als Fehler erkannt', () => {
-  const a = ARTIKEL.find((x) => x.sku === '1650590001') // vk<ek
+  const a = ARTIKEL.find((x) => x.sku === 'ART-1001') // vk<ek
   const b = pruefeArtikel(a)
   assert.ok(b.some((x) => x.feld === 'marge' && x.schwere === 'fehler'))
 })
 
 test('Gesperrter Bestand und EK-ohne-VK werden gemeldet', () => {
-  const gesp = pruefeArtikel(ARTIKEL.find((x) => x.sku === '230591702'))
+  const gesp = pruefeArtikel(ARTIKEL.find((x) => x.sku === 'ART-1004'))
   assert.ok(gesp.some((x) => x.feld === 'gesp'))
-  const ohneVk = pruefeArtikel(ARTIKEL.find((x) => x.sku === '231058204'))
+  const ohneVk = pruefeArtikel(ARTIKEL.find((x) => x.sku === 'ART-1010'))
   assert.ok(ohneVk.some((x) => x.feld === 'vk' && x.schwere === 'warnung'))
 })
 
@@ -32,14 +32,14 @@ test('artikelliste: Filter „nur Auffällige" und Summen', () => {
 })
 
 test('artikelliste: Suche nach SKU/Einkäufer', () => {
-  assert.equal(artikelliste({ suche: '1650590001' }).rows.length, 1)
-  assert.ok(artikelliste({ suche: 'janne' }).rows.length >= 1)
+  assert.equal(artikelliste({ suche: 'ART-1001' }).rows.length, 1)
+  assert.ok(artikelliste({ suche: 'demo.einkauf' }).rows.length >= 1)
 })
 
 test('Auftragsliste: negativer MEK und negativer UE bei Geliefert', () => {
-  const skarics = pruefeAuftrag(auftragsliste().rows.find((o) => o.auftrag === '2654583388'))
+  const skarics = pruefeAuftrag(auftragsliste().rows.find((o) => o.auftrag === 'AUF-1002'))
   assert.ok(skarics.some((x) => x.feld === 'mek' && x.schwere === 'fehler'))
-  const birkner = pruefeAuftrag(auftragsliste().rows.find((o) => o.auftrag === '2654484814'))
+  const birkner = pruefeAuftrag(auftragsliste().rows.find((o) => o.auftrag === 'AUF-1001'))
   assert.ok(birkner.some((x) => x.feld === 'ue'))
 })
 
@@ -97,7 +97,7 @@ test('Leasing: kein Beleg = Fehler, abweichende Werte = Warnung', () => {
 test('Retouren/Rechnungen/Kunden: Plausi-Befunde', () => {
   assert.ok(retourenliste().rows.find((r) => r.retoure === 'RET-5003').befunde.some((b) => b.text.includes('Originalwert')))
   assert.ok(rechnungsliste().rows.find((r) => r.rechnung === 'RE-9004').befunde.some((b) => b.text === 'Rechnung ohne Positionen'))
-  assert.ok(kundenliste().rows.find((k) => k.kundennr === '2200111').befunde.some((b) => b.text.includes('Kreditlimit')))
+  assert.ok(kundenliste().rows.find((k) => k.kundennr === 'KD-1004').befunde.some((b) => b.text.includes('Kreditlimit')))
 })
 
 test('Drill E3→E4: Fachbereich → passende Detailliste', () => {
@@ -110,9 +110,9 @@ test('Drill E3→E4: Fachbereich → passende Detailliste', () => {
 
 test('Produktliste: Plausi (kein VK-Preis, EAN, gesperrt)', () => {
   const rows = produktliste().rows
-  assert.ok(rows.find((p) => p.sku === '3312900').befunde.some((b) => b.text.includes('Kein VK-Preis')))
-  assert.ok(rows.find((p) => p.sku === '2087431').befunde.some((b) => b.feld === 'ean'))
-  assert.ok(rows.find((p) => p.sku === '5590018').befunde.some((b) => b.text.includes('Gesperrt')))
+  assert.ok(rows.find((p) => p.sku === 'ART-2003').befunde.some((b) => b.text.includes('Kein VK-Preis')))
+  assert.ok(rows.find((p) => p.sku === 'ART-2002').befunde.some((b) => b.feld === 'ean'))
+  assert.ok(rows.find((p) => p.sku === 'ART-2005').befunde.some((b) => b.text.includes('Gesperrt')))
 })
 
 test('Rechnungspositionsliste: Positionsnetto & Menge', () => {
@@ -139,9 +139,9 @@ test('Chargenliste: MHD überschritten/bald & QS-Sperre', () => {
 
 test('Auftragsbestandsliste: Inkonsistenz & Übermenge', () => {
   const rows = auftragsbestandliste().rows
-  assert.ok(rows.find((a) => a.auftrag === '2654499002').befunde.some((b) => b.text.includes('Übermenge')))
-  assert.ok(rows.find((a) => a.auftrag === '2654500771').befunde.some((b) => b.text.includes('Liefertermin')))
-  assert.ok(!rows.find((a) => a.auftrag === '2654500002').befunde.length) // sauber
+  assert.ok(rows.find((a) => a.auftrag === 'AUF-1010').befunde.some((b) => b.text.includes('Übermenge')))
+  assert.ok(rows.find((a) => a.auftrag === 'AUF-1009').befunde.some((b) => b.text.includes('Liefertermin')))
+  assert.ok(!rows.find((a) => a.auftrag === 'AUF-1005').befunde.length) // sauber
 })
 
 test('Alle Katalog-Listen sind jetzt verfügbar', () => {
@@ -178,14 +178,14 @@ test('Cross-Drill: Rechnung verlinkt auf ihre Positionen', () => {
 })
 
 test('Cross-Drill: Auftragsbestand ↔ Leasing über Auftragsnummer', () => {
-  const ab = auftragsbestandliste().rows.find((a) => a.auftrag === '2654500001')
+  const ab = auftragsbestandliste().rows.find((a) => a.auftrag === 'AUF-1004')
   const links = verknuepfungenFuer('auftragsbestand', ab)
   assert.ok(links.find((l) => l.ziel === 'leasing'), 'Leasing-Verknüpfung erwartet')
 })
 
 test('Cross-Drill: nur Ziele mit Treffern werden zurückgegeben', () => {
-  // Produkt 5590018 existiert nicht in Chargen -> keine Chargen-Verknüpfung
-  const p = produktliste().rows.find((x) => x.sku === '5590018')
+  // Produkt ART-2005 existiert nicht in Chargen -> keine Chargen-Verknüpfung
+  const p = produktliste().rows.find((x) => x.sku === 'ART-2005')
   const links = verknuepfungenFuer('produkt', p)
   assert.ok(!links.some((l) => l.ziel === 'charge'))
   assert.ok(links.every((l) => l.anzahl > 0))
@@ -221,7 +221,7 @@ test('Inventurliste: negativer Buchbestand & Differenz', () => {
 test('Cross-Drill: Rechnung → Offene Posten, Lieferant → Bestellungen', () => {
   const re = rechnungsliste().rows.find((r) => r.rechnung === 'RE-9002')
   assert.ok(verknuepfungenFuer('rechnung', re).some((l) => l.ziel === 'offeneposten'))
-  const lf = lieferantenliste().rows.find((l) => l.name === 'PowerBar GmbH')
+  const lf = lieferantenliste().rows.find((l) => l.name === 'Muster Riegel GmbH')
   assert.ok(verknuepfungenFuer('lieferant', lf).some((l) => l.ziel === 'bestellung'))
 })
 

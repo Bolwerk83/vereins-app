@@ -544,6 +544,15 @@ function Radar({ werte, onBack, onOpen }) {
   )
 }
 
+// Detaillisten nach Fachbereich gruppiert (Unterordner im Hub).
+const KATEGORIEN = [
+  { name: 'Finanzen & FiBu', ids: ['rechnung', 'rechnungpos', 'offeneposten', 'konto'] },
+  { name: 'Bestand & Logistik', ids: ['artikel', 'produkt', 'charge', 'inventur', 'plausiwv'] },
+  { name: 'Vertrieb & Auftrag', ids: ['auftrag', 'auftragsbestand', 'leasing', 'retoure', 'bestellkanal'] },
+  { name: 'Einkauf', ids: ['bestellung', 'lieferant'] },
+  { name: 'Stammdaten', ids: ['kunde'] }
+]
+
 export default function Detailberichte({ startListe = null, werte = {} }) {
   const [aktiv, setAktiv] = useState(startListe)
   const [drillSuche, setDrillSuche] = useState('')
@@ -574,66 +583,55 @@ export default function Detailberichte({ startListe = null, werte = {} }) {
 
   // Hub
   const stat = befundStatistik()
-  const qstat = qualitaetStats().gesamt
+  const q = qualitaetStats().gesamt
+  const cnt = Object.fromEntries(stat.proListe.map((l) => [l.id, l.gesamt]))
+  const Tool = ({ on, titel, sub, kinder, primary }) => (
+    <button onClick={on} style={{ ...card, padding: '13px 14px', textAlign: 'left', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 4,
+      borderColor: primary ? 'var(--accent)' : 'var(--line)', background: primary ? 'var(--accent-soft)' : 'var(--panel)' }}>
+      <div style={{ fontWeight: 600, fontSize: 13.5 }}>{titel}</div>
+      <div style={{ fontSize: 11, color: 'var(--muted)' }}>{sub}</div>
+      <div style={{ marginTop: 2 }}>{kinder}</div>
+    </button>
+  )
   return (
-    <div style={{ maxWidth: 760, margin: '0 auto' }}>
-      <div style={{ marginBottom: 14 }}>
+    <div style={{ maxWidth: 880, margin: '0 auto' }}>
+      <div style={{ marginBottom: 18 }}>
         <h2 style={{ margin: '0 0 4px' }}>Detailberichte</h2>
-        <div style={{ color: 'var(--muted)', fontSize: 13, maxWidth: 640 }}>
-          Granulare Listen für die Einzelfallprüfung — hier suchst du nach Falscheingaben und validierst Datenvorgänge
-          (z. B. negativer Verfügbarbestand, negative Marge, gesperrte Bestände).
-        </div>
+        <div style={{ color: 'var(--muted)', fontSize: 13 }}>Einzelfallprüfung & Datenqualität — Analyse-Werkzeuge oben, Listen nach Bereich gruppiert.</div>
       </div>
 
-      {/* Controller-Radar: Ein-Klick-Analyse aller Berichte */}
-      <button onClick={() => setAktiv('radar')} style={{ ...card, width: '100%', textAlign: 'left', padding: '16px', marginBottom: 14, cursor: 'pointer', borderColor: 'var(--accent)', background: 'var(--accent-soft)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-        <div>
-          <div style={{ fontWeight: 700, fontSize: 16 }}>🎯 Controller-Radar — Ein-Klick-Analyse</div>
-          <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3 }}>Wertet alle Berichte aus, priorisiert (kritisch zuerst) und blendet Folgefehler aus — nur die Ursache. Mit KI-Zusammenfassung.</div>
-        </div>
-        <span style={{ fontSize: 13, fontWeight: 700, color: '#fff', background: 'var(--accent)', borderRadius: 'var(--radius-sm)', padding: '9px 16px', whiteSpace: 'nowrap' }}>Analyse starten →</span>
-      </button>
-
-      {/* Einstieg ins Sammel-Plausi-Cockpit (alle Befunde gebündelt) */}
-      <button onClick={() => setAktiv('cockpit')} style={{ ...card, width: '100%', textAlign: 'left', padding: '14px 16px', marginBottom: 14, cursor: 'pointer',
-        borderColor: stat.proSchwere.fehler ? SCHWERE.fehler.farbe : 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-        <div>
-          <div style={{ fontWeight: 700, fontSize: 15 }}>🩺 Sammel-Plausi-Cockpit</div>
-          <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 3 }}>Alle {stat.gesamt} Befunde aus allen Listen gebündelt — öffnen →</div>
-        </div>
-        <div style={{ display: 'flex', gap: 6 }}>
-          {['fehler', 'warnung', 'hinweis'].map((s) => (
-            <span key={s} title={SCHWERE[s].label} style={{ fontSize: 12.5, fontWeight: 700, padding: '4px 9px', borderRadius: 999, color: SCHWERE[s].farbe, background: SCHWERE[s].soft, whiteSpace: 'nowrap' }}>
-              {SCHWERE[s].icon} {stat.proSchwere[s]}
-            </span>
-          ))}
-        </div>
-      </button>
-
-      {/* Qualitätsdashboard (Status-Workflow je Bereich) */}
-      <button onClick={() => setAktiv('qualitaet')} style={{ ...card, width: '100%', textAlign: 'left', padding: '14px 16px', marginBottom: 14, cursor: 'pointer',
-        borderColor: qstat.offen + qstat.wiedervorlage ? 'var(--amp-r)' : 'var(--amp-g)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-        <div>
-          <div style={{ fontWeight: 700, fontSize: 15 }}>✅ Qualitätsdashboard</div>
-          <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 3 }}>Datenqualität je Bereich · anklicken, Übeltäter bereinigen, abhaken (mit Log) — öffnen →</div>
-        </div>
-        <div style={{ display: 'flex', gap: 6 }}>
-          {[['offen', 'var(--amp-r)', qstat.offen], ['in Arbeit', 'var(--accent)', qstat.bearbeitung], ['Wiedervorl.', 'var(--amp-a)', qstat.wiedervorlage], ['erledigt', 'var(--amp-g)', qstat.erledigt]].map(([l, f, n]) => (
-            <span key={l} style={{ fontSize: 12, fontWeight: 700, padding: '4px 9px', borderRadius: 999, color: f, background: 'var(--bg)', border: '1px solid var(--line)', whiteSpace: 'nowrap' }}>{n} {l}</span>
-          ))}
-        </div>
-      </button>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        {LISTEN.map((l) => (
-          <button key={l.id} disabled={!l.verfuegbar} onClick={() => l.verfuegbar && oeffneListe(l.id)}
-            style={{ ...card, padding: '16px 14px', textAlign: 'left', cursor: l.verfuegbar ? 'pointer' : 'not-allowed', opacity: l.verfuegbar ? 1 : 0.5,
-              borderColor: l.verfuegbar ? 'var(--accent)' : 'var(--line)' }}>
-            <div style={{ fontWeight: 600, fontSize: 15 }}>{l.name}</div>
-            <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 3 }}>{l.verfuegbar ? 'Öffnen →' : 'in Vorbereitung'}</div>
-          </button>
-        ))}
+      {/* Analyse-Werkzeuge — kompakt */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 24 }}>
+        <Tool on={() => setAktiv('radar')} titel="Controller-Radar" sub="Ein-Klick-Analyse · kritisch zuerst" primary
+          kinder={<span style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)' }}>Analyse starten →</span>} />
+        <Tool on={() => setAktiv('cockpit')} titel="Plausi-Cockpit" sub="Alle Befunde gebündelt"
+          kinder={<span style={{ display: 'inline-flex', gap: 8 }}>{['fehler', 'warnung', 'hinweis'].map((s) => <span key={s} style={{ fontSize: 11.5, fontWeight: 700, color: SCHWERE[s].farbe }}>{stat.proSchwere[s]}</span>)}</span>} />
+        <Tool on={() => setAktiv('qualitaet')} titel="Qualitätsdashboard" sub="Status-Workflow je Bereich"
+          kinder={<span style={{ fontSize: 11, color: 'var(--muted)' }}>{q.offen} offen · {q.bearbeitung} in Arbeit · {q.erledigt} erledigt</span>} />
       </div>
+
+      {/* Listen nach Bereich gruppiert */}
+      {KATEGORIEN.map((kat) => (
+        <div key={kat.name} style={{ marginBottom: 18 }}>
+          <div style={{ ...cap, marginBottom: 8 }}>{kat.name}</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 8 }}>
+            {kat.ids.map((id) => {
+              const l = LISTEN.find((x) => x.id === id)
+              if (!l) return null
+              const n = cnt[l.id] || 0
+              return (
+                <button key={id} disabled={!l.verfuegbar} onClick={() => l.verfuegbar && oeffneListe(l.id)}
+                  style={{ ...card, padding: '10px 13px', textAlign: 'left', cursor: l.verfuegbar ? 'pointer' : 'not-allowed', opacity: l.verfuegbar ? 1 : 0.5,
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                  <span style={{ fontWeight: 500, fontSize: 13.5 }}>{l.name}</span>
+                  {n > 0 ? <span title={`${n} Auffälligkeit(en)`} style={{ fontSize: 11, fontWeight: 700, color: SCHWERE.fehler.farbe, background: SCHWERE.fehler.soft, borderRadius: 999, padding: '2px 8px' }}>{n}</span>
+                    : <span style={{ fontSize: 13, color: 'var(--muted)' }}>→</span>}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      ))}
     </div>
   )
 }

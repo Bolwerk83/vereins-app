@@ -22,18 +22,18 @@ const norm = (s) => String(s || '').toLowerCase()
 // ---- Artikelliste (SKU) --------------------------------------------------
 // lbVerf = verfügbarer Lagerbestand; gesp = gesperrt; vk/uvp/ek = € je Stück.
 export const ARTIKEL = [
-  { sku: '1650590001', artikel: 'E-Bike 22 Sneak Plus EQ MidStep Testbike (B-Ware) (all black / M)', status: 'Ausgelaufen intern', gruppe: 'E-Bikes', lbEff: 0, gesp: 0, kom: 0, res: 0, lbVerf: 0, ae: 1, aeb: 1, ab: 0, fc: 0, vk: 1176.47, uvp: 0, ek: 1378.24, einkaeufer: 'JANNE.DITTERS', aktiv: true },
-  { sku: '232538401', artikel: 'Gravel 23 HOBO GRX 810 (pine green / S)', status: 'Ausgelaufen intern', gruppe: 'Fahrräder', lbEff: 2, gesp: 1, kom: 1, res: 0, lbVerf: 1, ae: 1, aeb: 1, ab: 0, fc: 0, vk: 1007.56, uvp: 0, ek: 777.47, einkaeufer: 'FELIX.METTERNICH', aktiv: true },
-  { sku: '230543002', artikel: 'E-GRAVEL 21 BACKROAD+ GRX RX810 Di2 (matt-black / M)', status: 'Ausgelaufen intern', gruppe: 'E-Bikes', lbEff: 3, gesp: 0, kom: 3, res: 0, lbVerf: 25, ae: 0, aeb: 0, ab: 0, fc: 22, vk: 4200.84, uvp: 0, ek: 2454.48, einkaeufer: 'FELIX.METTERNICH', aktiv: true },
-  { sku: '230591702', artikel: 'E-Bike 21 Backroad+ Flatbar E-Urban Herren (matt-black / M)', status: 'Ausgelaufen intern', gruppe: 'E-Bikes', lbEff: 5, gesp: 2, kom: 3, res: 0, lbVerf: 0, ae: 0, aeb: 0, ab: 0, fc: 0, vk: 3696.64, uvp: 0, ek: 1991.50, einkaeufer: 'FELIX.METTERNICH', aktiv: true },
-  { sku: '231052006', artikel: 'RR 22 REVEAL SIX DISC Ultegra (Matt Carbon / 61cm)', status: 'Ausgelaufen intern', gruppe: 'Fahrräder', lbEff: 1, gesp: 0, kom: 1, res: 0, lbVerf: -1, ae: 0, aeb: 0, ab: 0, fc: 0, vk: 2940.34, uvp: 0, ek: 1561.24, einkaeufer: 'FELIX.METTERNICH', aktiv: true },
-  { sku: '230467505', artikel: 'GRAVEL 21 BACKROAD GRX RX810 Di2 Limited 1X11 (midnight laser grey / 59cm)', status: 'Ausgelaufen intern', gruppe: 'Fahrräder', lbEff: 1, gesp: 0, kom: 1, res: 0, lbVerf: 1, ae: 0, aeb: 0, ab: 0, fc: 0, vk: 3528.57, uvp: 0, ek: 2056.28, einkaeufer: 'FELIX.METTERNICH', aktiv: true },
-  { sku: '230762904', artikel: 'Fitness 21 Backroad Multicross GRX 810 (evil pepper green / 57cm)', status: 'Ausgelaufen intern', gruppe: 'Fahrräder', lbEff: 1, gesp: 0, kom: 1, res: 0, lbVerf: 1, ae: 0, aeb: 0, ab: 0, fc: 0, vk: 2015.97, uvp: 0, ek: 1594.42, einkaeufer: 'FELIX.METTERNICH', aktiv: true },
-  { sku: '231047806', artikel: 'GRAVEL 22 BACKROAD AL GRX RX600 (roasted olive / 57cm)', status: 'Ausgelaufen intern', gruppe: 'Fahrräder', lbEff: 1, gesp: 0, kom: 1, res: 0, lbVerf: 1, ae: 0, aeb: 0, ab: 0, fc: 0, vk: 1679.83, uvp: 0, ek: 916.44, einkaeufer: 'FELIX.METTERNICH', aktiv: true },
-  { sku: '230612603', artikel: 'HT 22, Bonero 1 (Sandy Taco / M)', status: 'Ausgelaufen intern', gruppe: 'Fahrräder', lbEff: 0, gesp: 0, kom: 0, res: 0, lbVerf: 0, ae: 1, aeb: 0, ab: 0, fc: 0, vk: 713.45, uvp: 0, ek: 749.68, einkaeufer: 'FELIX.METTERNICH', aktiv: true },
-  { sku: '231058204', artikel: 'GRAVEL 22 BACKROAD Force eTap AXS 1X12 (blue haze / 55cm)', status: 'Ausgelaufen intern', gruppe: 'Fahrräder', lbEff: 0, gesp: 0, kom: 0, res: 0, lbVerf: 0, ae: 0, aeb: 0, ab: 0, fc: 0, vk: 0, uvp: 0, ek: 1757.95, einkaeufer: 'FELIX.METTERNICH', aktiv: true },
-  { sku: '230599604', artikel: 'E-Bike 21 Xtra Watt Evo Plus 1 MidStep (matt silver-grey / 23")', status: 'Ausgelaufen intern', gruppe: 'E-Bikes', lbEff: 0, gesp: 0, kom: 0, res: 0, lbVerf: 0, ae: 0, aeb: 0, ab: 0, fc: 0, vk: 3696.64, uvp: 0, ek: 2044.37, einkaeufer: 'FELIX.METTERNICH', aktiv: false },
-  { sku: '231051704', artikel: 'RR 22 REVEAL FOUR DISC Force eTap AXS (Shiny Aurora / 57cm)', status: 'Ausgelaufen intern', gruppe: 'Fahrräder', lbEff: 0, gesp: 0, kom: 0, res: 0, lbVerf: 0, ae: 0, aeb: 0, ab: 0, fc: 0, vk: 2772.27, uvp: 0, ek: 1839.95, einkaeufer: 'FELIX.METTERNICH', aktiv: true }
+  { sku: 'ART-1001', artikel: 'E-Bike 22 Sneak Plus EQ MidStep Testbike (B-Ware) (all black / M)', status: 'Ausgelaufen intern', gruppe: 'E-Bikes', lbEff: 0, gesp: 0, kom: 0, res: 0, lbVerf: 0, ae: 1, aeb: 1, ab: 0, fc: 0, vk: 1176.47, uvp: 0, ek: 1378.24, einkaeufer: 'DEMO.EINKAUF1', aktiv: true },
+  { sku: 'ART-1002', artikel: 'Gravel 23 HOBO GRX 810 (pine green / S)', status: 'Ausgelaufen intern', gruppe: 'Fahrräder', lbEff: 2, gesp: 1, kom: 1, res: 0, lbVerf: 1, ae: 1, aeb: 1, ab: 0, fc: 0, vk: 1007.56, uvp: 0, ek: 777.47, einkaeufer: 'DEMO.EINKAUF2', aktiv: true },
+  { sku: 'ART-1003', artikel: 'E-GRAVEL 21 BACKROAD+ GRX RX810 Di2 (matt-black / M)', status: 'Ausgelaufen intern', gruppe: 'E-Bikes', lbEff: 3, gesp: 0, kom: 3, res: 0, lbVerf: 25, ae: 0, aeb: 0, ab: 0, fc: 22, vk: 4200.84, uvp: 0, ek: 2454.48, einkaeufer: 'DEMO.EINKAUF2', aktiv: true },
+  { sku: 'ART-1004', artikel: 'E-Bike 21 Backroad+ Flatbar E-Urban Herren (matt-black / M)', status: 'Ausgelaufen intern', gruppe: 'E-Bikes', lbEff: 5, gesp: 2, kom: 3, res: 0, lbVerf: 0, ae: 0, aeb: 0, ab: 0, fc: 0, vk: 3696.64, uvp: 0, ek: 1991.50, einkaeufer: 'DEMO.EINKAUF2', aktiv: true },
+  { sku: 'ART-1005', artikel: 'RR 22 REVEAL SIX DISC Ultegra (Matt Carbon / 61cm)', status: 'Ausgelaufen intern', gruppe: 'Fahrräder', lbEff: 1, gesp: 0, kom: 1, res: 0, lbVerf: -1, ae: 0, aeb: 0, ab: 0, fc: 0, vk: 2940.34, uvp: 0, ek: 1561.24, einkaeufer: 'DEMO.EINKAUF2', aktiv: true },
+  { sku: 'ART-1006', artikel: 'GRAVEL 21 BACKROAD GRX RX810 Di2 Limited 1X11 (midnight laser grey / 59cm)', status: 'Ausgelaufen intern', gruppe: 'Fahrräder', lbEff: 1, gesp: 0, kom: 1, res: 0, lbVerf: 1, ae: 0, aeb: 0, ab: 0, fc: 0, vk: 3528.57, uvp: 0, ek: 2056.28, einkaeufer: 'DEMO.EINKAUF2', aktiv: true },
+  { sku: 'ART-1007', artikel: 'Fitness 21 Backroad Multicross GRX 810 (evil pepper green / 57cm)', status: 'Ausgelaufen intern', gruppe: 'Fahrräder', lbEff: 1, gesp: 0, kom: 1, res: 0, lbVerf: 1, ae: 0, aeb: 0, ab: 0, fc: 0, vk: 2015.97, uvp: 0, ek: 1594.42, einkaeufer: 'DEMO.EINKAUF2', aktiv: true },
+  { sku: 'ART-1008', artikel: 'GRAVEL 22 BACKROAD AL GRX RX600 (roasted olive / 57cm)', status: 'Ausgelaufen intern', gruppe: 'Fahrräder', lbEff: 1, gesp: 0, kom: 1, res: 0, lbVerf: 1, ae: 0, aeb: 0, ab: 0, fc: 0, vk: 1679.83, uvp: 0, ek: 916.44, einkaeufer: 'DEMO.EINKAUF2', aktiv: true },
+  { sku: 'ART-1009', artikel: 'HT 22, Bonero 1 (Sandy Taco / M)', status: 'Ausgelaufen intern', gruppe: 'Fahrräder', lbEff: 0, gesp: 0, kom: 0, res: 0, lbVerf: 0, ae: 1, aeb: 0, ab: 0, fc: 0, vk: 713.45, uvp: 0, ek: 749.68, einkaeufer: 'DEMO.EINKAUF2', aktiv: true },
+  { sku: 'ART-1010', artikel: 'GRAVEL 22 BACKROAD Force eTap AXS 1X12 (blue haze / 55cm)', status: 'Ausgelaufen intern', gruppe: 'Fahrräder', lbEff: 0, gesp: 0, kom: 0, res: 0, lbVerf: 0, ae: 0, aeb: 0, ab: 0, fc: 0, vk: 0, uvp: 0, ek: 1757.95, einkaeufer: 'DEMO.EINKAUF2', aktiv: true },
+  { sku: 'ART-1011', artikel: 'E-Bike 21 Xtra Watt Evo Plus 1 MidStep (matt silver-grey / 23")', status: 'Ausgelaufen intern', gruppe: 'E-Bikes', lbEff: 0, gesp: 0, kom: 0, res: 0, lbVerf: 0, ae: 0, aeb: 0, ab: 0, fc: 0, vk: 3696.64, uvp: 0, ek: 2044.37, einkaeufer: 'DEMO.EINKAUF2', aktiv: false },
+  { sku: 'ART-1012', artikel: 'RR 22 REVEAL FOUR DISC Force eTap AXS (Shiny Aurora / 57cm)', status: 'Ausgelaufen intern', gruppe: 'Fahrräder', lbEff: 0, gesp: 0, kom: 0, res: 0, lbVerf: 0, ae: 0, aeb: 0, ab: 0, fc: 0, vk: 2772.27, uvp: 0, ek: 1839.95, einkaeufer: 'DEMO.EINKAUF2', aktiv: true }
 ]
 
 /** Plausibilitätsprüfung einer Artikelzeile → Liste von Befunden. */
@@ -72,10 +72,10 @@ export function artikelliste({ suche = '', nurAuffaellig = false } = {}) {
 
 // ---- Auftragsliste -------------------------------------------------------
 export const AUFTRAEGE = [
-  { datum: '2026-05-17', kunde: 'Markus Birkner (1300256)', art: 'Auftrag', unterart: 'Bestellung', auftrag: '2654484814', status: 'Geliefert', waehrung: 'EUR', ab: 0, vk: 0, ae: 0, aeb: 0, ret: 1, aet: 0, mek: 0, abs: -1, ue: -117.61 },
-  { datum: '2026-06-06', kunde: 'Markus Skarics (8758017)', art: 'Auftrag', unterart: 'Bestellung', auftrag: '2654583388', status: 'Geliefert', waehrung: 'EUR', ab: 0, vk: 118, ae: 118, aeb: 118, ret: 0, aet: 118, mek: -84, abs: 1, ue: 117.67 },
-  { datum: '2026-06-04', kunde: 'Lena Vogt (4412009)', art: 'Auftrag', unterart: 'Bestellung', auftrag: '2654511990', status: 'Offen', waehrung: 'EUR', ab: 320, vk: 320, ae: 320, aeb: 320, ret: 0, aet: 0, mek: 140, abs: 0, ue: 0 },
-  { datum: '2026-06-02', kunde: 'Onlineshop (Gast)', art: 'Auftrag', unterart: 'Sofortkauf', auftrag: '2654500771', status: 'Geliefert', waehrung: 'EUR', ab: 0, vk: 890, ae: 890, aeb: 890, ret: 0, aet: 890, mek: 410, abs: 1, ue: 890.0 }
+  { datum: '2026-05-17', kunde: 'Max Mustermann (KD-1001)', art: 'Auftrag', unterart: 'Bestellung', auftrag: 'AUF-1001', status: 'Geliefert', waehrung: 'EUR', ab: 0, vk: 0, ae: 0, aeb: 0, ret: 1, aet: 0, mek: 0, abs: -1, ue: -117.61 },
+  { datum: '2026-06-06', kunde: 'Erika Musterfrau (KD-1002)', art: 'Auftrag', unterart: 'Bestellung', auftrag: 'AUF-1002', status: 'Geliefert', waehrung: 'EUR', ab: 0, vk: 118, ae: 118, aeb: 118, ret: 0, aet: 118, mek: -84, abs: 1, ue: 117.67 },
+  { datum: '2026-06-04', kunde: 'Tom Beispiel (KD-1003)', art: 'Auftrag', unterart: 'Bestellung', auftrag: 'AUF-1003', status: 'Offen', waehrung: 'EUR', ab: 320, vk: 320, ae: 320, aeb: 320, ret: 0, aet: 0, mek: 140, abs: 0, ue: 0 },
+  { datum: '2026-06-02', kunde: 'Beispiel Onlineshop (Gast)', art: 'Auftrag', unterart: 'Sofortkauf', auftrag: 'AUF-1009', status: 'Geliefert', waehrung: 'EUR', ab: 0, vk: 890, ae: 890, aeb: 890, ret: 0, aet: 890, mek: 410, abs: 1, ue: 890.0 }
 ]
 
 /** Plausibilitätsprüfung einer Auftragszeile. */
@@ -201,13 +201,13 @@ export function historie(typ, row) {
 // ---- Plausi: Warenverbrauch ---------------------------------------------
 // Bestandsgleichung: Anfangsbestand + Zugang − Abgang = Endbestand.
 export const WARENVERBRAUCH = [
-  { sku: '230543002', artikel: 'E-GRAVEL 21 BACKROAD+ GRX RX810 Di2', gruppe: 'E-Bikes', anfangsbestand: 10, zugang: 20, abgang: 25, endbestand: 5, verbrauch: 25, umsatzMenge: 25, einkaeufer: 'FELIX.METTERNICH' },
-  { sku: '1650590001', artikel: 'Akku 625Wh', gruppe: 'Teile', anfangsbestand: 40, zugang: 30, abgang: 50, endbestand: 18, verbrauch: 50, umsatzMenge: 48, einkaeufer: 'JANNE.DITTERS' },
-  { sku: '231047806', artikel: 'GRAVEL 22 BACKROAD AL GRX RX600', gruppe: 'Fahrräder', anfangsbestand: 60, zugang: 10, abgang: 70, endbestand: 0, verbrauch: 70, umsatzMenge: 0, einkaeufer: 'FELIX.METTERNICH' },
-  { sku: '231058204', artikel: 'Zubehör-Set Gravel', gruppe: 'Zubehör', anfangsbestand: 100, zugang: 50, abgang: 40, endbestand: 110, verbrauch: 35, umsatzMenge: 40, einkaeufer: 'FELIX.METTERNICH' },
-  { sku: '230591702', artikel: 'Bekleidung Jacke', gruppe: 'Bekleidung', anfangsbestand: 30, zugang: 0, abgang: -5, endbestand: 35, verbrauch: -5, umsatzMenge: 0, einkaeufer: 'JANNE.DITTERS' },
-  { sku: '231052006', artikel: 'RR 22 REVEAL SIX DISC Ultegra', gruppe: 'Fahrräder', anfangsbestand: 8, zugang: 0, abgang: 9, endbestand: -1, verbrauch: 9, umsatzMenge: 9, einkaeufer: 'FELIX.METTERNICH' },
-  { sku: '230762904', artikel: 'Fitness 21 Backroad Multicross', gruppe: 'Fahrräder', anfangsbestand: 12, zugang: 6, abgang: 8, endbestand: 10, verbrauch: 8, umsatzMenge: 8, einkaeufer: 'FELIX.METTERNICH' }
+  { sku: 'ART-1003', artikel: 'E-GRAVEL 21 BACKROAD+ GRX RX810 Di2', gruppe: 'E-Bikes', anfangsbestand: 10, zugang: 20, abgang: 25, endbestand: 5, verbrauch: 25, umsatzMenge: 25, einkaeufer: 'DEMO.EINKAUF2' },
+  { sku: 'ART-1001', artikel: 'Akku 625Wh', gruppe: 'Teile', anfangsbestand: 40, zugang: 30, abgang: 50, endbestand: 18, verbrauch: 50, umsatzMenge: 48, einkaeufer: 'DEMO.EINKAUF1' },
+  { sku: 'ART-1008', artikel: 'GRAVEL 22 BACKROAD AL GRX RX600', gruppe: 'Fahrräder', anfangsbestand: 60, zugang: 10, abgang: 70, endbestand: 0, verbrauch: 70, umsatzMenge: 0, einkaeufer: 'DEMO.EINKAUF2' },
+  { sku: 'ART-1010', artikel: 'Zubehör-Set Gravel', gruppe: 'Zubehör', anfangsbestand: 100, zugang: 50, abgang: 40, endbestand: 110, verbrauch: 35, umsatzMenge: 40, einkaeufer: 'DEMO.EINKAUF2' },
+  { sku: 'ART-1004', artikel: 'Bekleidung Jacke', gruppe: 'Bekleidung', anfangsbestand: 30, zugang: 0, abgang: -5, endbestand: 35, verbrauch: -5, umsatzMenge: 0, einkaeufer: 'DEMO.EINKAUF1' },
+  { sku: 'ART-1005', artikel: 'RR 22 REVEAL SIX DISC Ultegra', gruppe: 'Fahrräder', anfangsbestand: 8, zugang: 0, abgang: 9, endbestand: -1, verbrauch: 9, umsatzMenge: 9, einkaeufer: 'DEMO.EINKAUF2' },
+  { sku: 'ART-1007', artikel: 'Fitness 21 Backroad Multicross', gruppe: 'Fahrräder', anfangsbestand: 12, zugang: 6, abgang: 8, endbestand: 10, verbrauch: 8, umsatzMenge: 8, einkaeufer: 'DEMO.EINKAUF2' }
 ]
 
 export function pruefeWarenverbrauch(w) {
@@ -246,11 +246,11 @@ export function warenverbrauchliste({ suche = '', nurAuffaellig = false } = {}) 
 export const BELEG_NAME = { angebot: 'Angebot Leasing', kundeL: 'Kundenleasing', gesellschaft: 'Leasinggesellschaft' }
 
 export const LEASING = [
-  { vorgang: 'LS-1001', kunde: 'Stadtwerke Köln', auftrag: '2654500001', angebot: { wert: 3200, datum: '2026-05-20' }, kundeL: { wert: 3200, datum: '2026-05-28' }, gesellschaft: { wert: 3200, datum: '2026-06-02' } },
-  { vorgang: 'LS-1002', kunde: 'Lieferdienst Bonn', auftrag: '2654500002', angebot: { wert: 1850, datum: '2026-06-01' }, kundeL: { wert: 1850, datum: '2026-06-05' }, gesellschaft: null },
-  { vorgang: 'LS-1003', kunde: 'Hotel Seeblick', auftrag: '2654500003', angebot: { wert: 990, datum: '2026-06-10' }, kundeL: null, gesellschaft: null },
-  { vorgang: 'LS-1004', kunde: 'Logistik AG', auftrag: '2654500004', angebot: { wert: 4200, datum: '2026-05-15' }, kundeL: { wert: 4500, datum: '2026-05-22' }, gesellschaft: { wert: 4200, datum: '2026-05-30' } },
-  { vorgang: 'LS-1005', kunde: 'Reha-Zentrum', auftrag: '2654500005', angebot: null, kundeL: null, gesellschaft: null }
+  { vorgang: 'LS-1001', kunde: 'Muster Stadtwerke', auftrag: 'AUF-1004', angebot: { wert: 3200, datum: '2026-05-20' }, kundeL: { wert: 3200, datum: '2026-05-28' }, gesellschaft: { wert: 3200, datum: '2026-06-02' } },
+  { vorgang: 'LS-1002', kunde: 'Beispiel Lieferdienst', auftrag: 'AUF-1005', angebot: { wert: 1850, datum: '2026-06-01' }, kundeL: { wert: 1850, datum: '2026-06-05' }, gesellschaft: null },
+  { vorgang: 'LS-1003', kunde: 'Hotel Beispielsee', auftrag: 'AUF-1006', angebot: { wert: 990, datum: '2026-06-10' }, kundeL: null, gesellschaft: null },
+  { vorgang: 'LS-1004', kunde: 'Demo Logistik AG', auftrag: 'AUF-1007', angebot: { wert: 4200, datum: '2026-05-15' }, kundeL: { wert: 4500, datum: '2026-05-22' }, gesellschaft: { wert: 4200, datum: '2026-05-30' } },
+  { vorgang: 'LS-1005', kunde: 'Muster Reha-Zentrum', auftrag: 'AUF-1008', angebot: null, kundeL: null, gesellschaft: null }
 ]
 
 const BELEGE = ['angebot', 'kundeL', 'gesellschaft']
@@ -301,10 +301,10 @@ export function leasingliste({ suche = '', nurAuffaellig = false, sicht = 'auftr
 
 // ---- Retouren-, Rechnungs-, Kundenliste ---------------------------------
 export const RETOUREN = [
-  { retoure: 'RET-5001', datum: '2026-06-03', kunde: 'Markus Birkner', auftrag: '2654484814', artikel: 'GRAVEL 22 BACKROAD', menge: 1, wert: 117.61, originalWert: 117.61, grund: 'Nichtgefallen' },
-  { retoure: 'RET-5002', datum: '2026-06-07', kunde: 'Lena Vogt', auftrag: '', artikel: 'Helm M', menge: 1, wert: 49.0, originalWert: 49.0, grund: '' },
-  { retoure: 'RET-5003', datum: '2026-06-09', kunde: 'Onlineshop', auftrag: '2654500771', artikel: 'Jacke L', menge: 1, wert: 145.0, originalWert: 120.0, grund: 'Defekt' },
-  { retoure: 'RET-5004', datum: '2026-06-10', kunde: 'B2B Händler', auftrag: '2654499002', artikel: 'Akku 625Wh', menge: 0, wert: 0, originalWert: 210.0, grund: 'Storno' }
+  { retoure: 'RET-5001', datum: '2026-06-03', kunde: 'Max Mustermann', auftrag: 'AUF-1001', artikel: 'GRAVEL 22 BACKROAD', menge: 1, wert: 117.61, originalWert: 117.61, grund: 'Nichtgefallen' },
+  { retoure: 'RET-5002', datum: '2026-06-07', kunde: 'Tom Beispiel', auftrag: '', artikel: 'Helm M', menge: 1, wert: 49.0, originalWert: 49.0, grund: '' },
+  { retoure: 'RET-5003', datum: '2026-06-09', kunde: 'Beispiel Onlineshop', auftrag: 'AUF-1009', artikel: 'Jacke L', menge: 1, wert: 145.0, originalWert: 120.0, grund: 'Defekt' },
+  { retoure: 'RET-5004', datum: '2026-06-10', kunde: 'Demo B2B Handel', auftrag: 'AUF-1010', artikel: 'Akku 625Wh', menge: 0, wert: 0, originalWert: 210.0, grund: 'Storno' }
 ]
 export function pruefeRetoure(r) {
   const b = []
@@ -317,11 +317,11 @@ export function pruefeRetoure(r) {
 export function retourenliste(o = {}) { return generischListe(RETOUREN, pruefeRetoure, o, ['wert', 'originalWert', 'menge'], (r, q) => norm(r.retoure).includes(q) || norm(r.kunde).includes(q) || norm(r.artikel).includes(q)) }
 
 export const RECHNUNGEN = [
-  { rechnung: 'RE-9001', datum: '2026-06-05', kunde: 'Markus Skarics', auftrag: '2654583388', netto: 99.0, mwst: 18.81, brutto: 117.81, positionen: 1, bezahlt: true, status: 'Abgeschlossen' },
-  { rechnung: 'RE-9002', datum: '2026-06-06', kunde: 'Stadtwerke Köln', auftrag: '2654500001', netto: 2689.08, mwst: 510.92, brutto: 3200.0, positionen: 3, bezahlt: false, status: 'Offen' },
-  { rechnung: 'RE-9003', datum: '2026-06-07', kunde: 'Hotel Seeblick', auftrag: '2654500003', netto: 990.0, mwst: 158.40, brutto: 1100.0, positionen: 1, bezahlt: false, status: 'Abgeschlossen' },
-  { rechnung: 'RE-9004', datum: '2026-06-08', kunde: 'Reha-Zentrum', auftrag: '2654500005', netto: 500.0, mwst: 95.0, brutto: 595.0, positionen: 0, bezahlt: true, status: 'Abgeschlossen' },
-  { rechnung: 'RE-9005', datum: '2026-06-09', kunde: 'B2B Händler', auftrag: '2654499002', netto: -210.0, mwst: -39.90, brutto: -249.90, positionen: 1, bezahlt: true, status: 'Gutschrift' }
+  { rechnung: 'RE-9001', datum: '2026-06-05', kunde: 'Erika Musterfrau', auftrag: 'AUF-1002', netto: 99.0, mwst: 18.81, brutto: 117.81, positionen: 1, bezahlt: true, status: 'Abgeschlossen' },
+  { rechnung: 'RE-9002', datum: '2026-06-06', kunde: 'Muster Stadtwerke', auftrag: 'AUF-1004', netto: 2689.08, mwst: 510.92, brutto: 3200.0, positionen: 3, bezahlt: false, status: 'Offen' },
+  { rechnung: 'RE-9003', datum: '2026-06-07', kunde: 'Hotel Beispielsee', auftrag: 'AUF-1006', netto: 990.0, mwst: 158.40, brutto: 1100.0, positionen: 1, bezahlt: false, status: 'Abgeschlossen' },
+  { rechnung: 'RE-9004', datum: '2026-06-08', kunde: 'Muster Reha-Zentrum', auftrag: 'AUF-1008', netto: 500.0, mwst: 95.0, brutto: 595.0, positionen: 0, bezahlt: true, status: 'Abgeschlossen' },
+  { rechnung: 'RE-9005', datum: '2026-06-09', kunde: 'Demo B2B Handel', auftrag: 'AUF-1010', netto: -210.0, mwst: -39.90, brutto: -249.90, positionen: 1, bezahlt: true, status: 'Gutschrift' }
 ]
 export function pruefeRechnung(r) {
   const b = []
@@ -336,11 +336,11 @@ export function pruefeRechnung(r) {
 export function rechnungsliste(o = {}) { return generischListe(RECHNUNGEN, pruefeRechnung, o, ['netto', 'mwst', 'brutto'], (r, q) => norm(r.rechnung).includes(q) || norm(r.kunde).includes(q) || norm(r.auftrag).includes(q)) }
 
 export const KUNDEN = [
-  { kundennr: '1300256', name: 'Markus Birkner', email: 'm.birkner@example.com', land: 'DE', umsatzJahr: 1240, offeneForderung: 0, kreditlimit: 2000, status: 'aktiv' },
-  { kundennr: '8758017', name: 'Markus Skarics', email: 'skarics(at)example.com', land: 'AT', umsatzJahr: 8900, offeneForderung: 1200, kreditlimit: 5000, status: 'aktiv' },
-  { kundennr: '4412009', name: 'Lena Vogt', email: 'l.vogt@example.com', land: 'DE', umsatzJahr: 0, offeneForderung: 0, kreditlimit: 1000, status: 'aktiv' },
-  { kundennr: '2200111', name: 'Logistik AG', email: 'einkauf@logistik-ag.de', land: 'DE', umsatzJahr: 64000, offeneForderung: 9800, kreditlimit: 8000, status: 'aktiv' },
-  { kundennr: '9900222', name: 'Alt-Konto', email: '', land: 'DE', umsatzJahr: 0, offeneForderung: 0, kreditlimit: 0, status: 'inaktiv' }
+  { kundennr: 'KD-1001', name: 'Max Mustermann', email: 'm.birkner@example.com', land: 'DE', umsatzJahr: 1240, offeneForderung: 0, kreditlimit: 2000, status: 'aktiv' },
+  { kundennr: 'KD-1002', name: 'Erika Musterfrau', email: 'skarics(at)example.com', land: 'AT', umsatzJahr: 8900, offeneForderung: 1200, kreditlimit: 5000, status: 'aktiv' },
+  { kundennr: 'KD-1003', name: 'Tom Beispiel', email: 'l.vogt@example.com', land: 'DE', umsatzJahr: 0, offeneForderung: 0, kreditlimit: 1000, status: 'aktiv' },
+  { kundennr: 'KD-1004', name: 'Demo Logistik AG', email: 'einkauf@logistik-ag.de', land: 'DE', umsatzJahr: 64000, offeneForderung: 9800, kreditlimit: 8000, status: 'aktiv' },
+  { kundennr: 'KD-1005', name: 'Muster Inaktiv-Konto', email: '', land: 'DE', umsatzJahr: 0, offeneForderung: 0, kreditlimit: 0, status: 'inaktiv' }
 ]
 export function pruefeKunde(k) {
   const b = []
@@ -356,11 +356,11 @@ const HEUTE = '2026-06-22'
 const tageBis = (d) => Math.round((new Date(d) - new Date(HEUTE)) / 86400000)
 
 export const PRODUKTE = [
-  { sku: '1453766', name: 'GRAVEL 22 BACKROAD', gruppe: 'Fahrrad', marke: 'Cube', ean: '4054571012345', status: 'aktiv', vkBrutto: 1499.0, steuersatz: 19, gewicht: 11.2 },
-  { sku: '2087431', name: 'E-Bike Akku 625Wh', gruppe: 'Zubehör', marke: 'Bosch', ean: '', status: 'aktiv', vkBrutto: 749.0, steuersatz: 19, gewicht: 3.5 },
-  { sku: '3312900', name: 'Trikot Pro M', gruppe: 'Bekleidung', marke: 'Castelli', ean: '8059654712345', status: 'auslauf', vkBrutto: 0, steuersatz: 19, gewicht: 0.2 },
-  { sku: '4456712', name: 'Energieriegel Box', gruppe: 'Nahrung', marke: 'PowerBar', ean: '4017934112345', status: 'aktiv', vkBrutto: 24.9, steuersatz: 7, gewicht: 0.6 },
-  { sku: '5590018', name: 'Vintage Rahmen XL', gruppe: 'Fahrrad', marke: 'Eigen', ean: '4054571099999', status: 'gesperrt', vkBrutto: 299.0, steuersatz: 19, gewicht: 0 }
+  { sku: 'ART-2001', name: 'GRAVEL 22 BACKROAD', gruppe: 'Fahrrad', marke: 'DemoBike', ean: '4000000000017', status: 'aktiv', vkBrutto: 1499.0, steuersatz: 19, gewicht: 11.2 },
+  { sku: 'ART-2002', name: 'E-Bike Akku 625Wh', gruppe: 'Zubehör', marke: 'DemoPower', ean: '', status: 'aktiv', vkBrutto: 749.0, steuersatz: 19, gewicht: 3.5 },
+  { sku: 'ART-2003', name: 'Trikot Pro M', gruppe: 'Bekleidung', marke: 'DemoWear', ean: '4000000000031', status: 'auslauf', vkBrutto: 0, steuersatz: 19, gewicht: 0.2 },
+  { sku: 'ART-2004', name: 'Energieriegel Box', gruppe: 'Nahrung', marke: 'DemoFood', ean: '4000000000048', status: 'aktiv', vkBrutto: 24.9, steuersatz: 7, gewicht: 0.6 },
+  { sku: 'ART-2005', name: 'Vintage Rahmen XL', gruppe: 'Fahrrad', marke: 'Eigen', ean: '4000000000055', status: 'gesperrt', vkBrutto: 299.0, steuersatz: 19, gewicht: 0 }
 ]
 export function pruefeProdukt(p) {
   const b = []
@@ -373,11 +373,11 @@ export function pruefeProdukt(p) {
 export function produktliste(o = {}) { return generischListe(PRODUKTE, pruefeProdukt, o, ['vkBrutto', 'gewicht'], (p, q) => norm(p.sku).includes(q) || norm(p.name).includes(q) || norm(p.marke).includes(q)) }
 
 export const RECHNUNGSPOS = [
-  { rechnung: 'RE-9001', pos: 1, sku: '8758017', artikel: 'GIANT TCR', menge: 1, einzelpreis: 99.0, rabattPct: 0, netto: 99.0, mwst: 18.81 },
-  { rechnung: 'RE-9002', pos: 1, sku: '1453766', artikel: 'GRAVEL 22', menge: 2, einzelpreis: 1259.66, rabattPct: 0, netto: 2519.32, mwst: 478.67 },
-  { rechnung: 'RE-9002', pos: 2, sku: '4456712', artikel: 'Energieriegel', menge: 10, einzelpreis: 18.93, rabattPct: 10, netto: 200.0, mwst: 14.0 },
-  { rechnung: 'RE-9003', pos: 1, sku: '3312900', artikel: 'Trikot Pro M', menge: 0, einzelpreis: 79.0, rabattPct: 0, netto: 0, mwst: 0 },
-  { rechnung: 'RE-9005', pos: 1, sku: '2087431', artikel: 'Akku 625Wh', menge: 1, einzelpreis: 210.0, rabattPct: 60, netto: 84.0, mwst: 15.96 }
+  { rechnung: 'RE-9001', pos: 1, sku: 'ART-2006', artikel: 'GIANT TCR', menge: 1, einzelpreis: 99.0, rabattPct: 0, netto: 99.0, mwst: 18.81 },
+  { rechnung: 'RE-9002', pos: 1, sku: 'ART-2001', artikel: 'GRAVEL 22', menge: 2, einzelpreis: 1259.66, rabattPct: 0, netto: 2519.32, mwst: 478.67 },
+  { rechnung: 'RE-9002', pos: 2, sku: 'ART-2004', artikel: 'Energieriegel', menge: 10, einzelpreis: 18.93, rabattPct: 10, netto: 200.0, mwst: 14.0 },
+  { rechnung: 'RE-9003', pos: 1, sku: 'ART-2003', artikel: 'Trikot Pro M', menge: 0, einzelpreis: 79.0, rabattPct: 0, netto: 0, mwst: 0 },
+  { rechnung: 'RE-9005', pos: 1, sku: 'ART-2002', artikel: 'Akku 625Wh', menge: 1, einzelpreis: 210.0, rabattPct: 60, netto: 84.0, mwst: 15.96 }
 ]
 export function pruefeRechnungpos(p) {
   const b = []
@@ -390,7 +390,7 @@ export function pruefeRechnungpos(p) {
 export function rechnungsposliste(o = {}) { return generischListe(RECHNUNGSPOS, pruefeRechnungpos, o, ['menge', 'netto', 'mwst'], (p, q) => norm(p.rechnung).includes(q) || norm(p.sku).includes(q) || norm(p.artikel).includes(q)) }
 
 export const BESTELLKANAELE = [
-  { kanal: 'Onlineshop', bestellungen: 1284, umsatz: 312400, retourenQuote: 12.4, stornoQuote: 3.1, avgWarenkorb: 243.3 },
+  { kanal: 'Beispiel Onlineshop', bestellungen: 1284, umsatz: 312400, retourenQuote: 12.4, stornoQuote: 3.1, avgWarenkorb: 243.3 },
   { kanal: 'Amazon', bestellungen: 842, umsatz: 168200, retourenQuote: 34.8, stornoQuote: 5.2, avgWarenkorb: 199.8 },
   { kanal: 'eBay', bestellungen: 311, umsatz: 54800, retourenQuote: 18.0, stornoQuote: 18.5, avgWarenkorb: 176.2 },
   { kanal: 'Filiale', bestellungen: 2050, umsatz: 487300, retourenQuote: 4.1, stornoQuote: 0.8, avgWarenkorb: 237.7 },
@@ -406,11 +406,11 @@ export function pruefeBestellkanal(k) {
 export function bestellkanalliste(o = {}) { return generischListe(BESTELLKANAELE, pruefeBestellkanal, o, ['bestellungen', 'umsatz'], (k, q) => norm(k.kanal).includes(q)) }
 
 export const CHARGEN = [
-  { charge: 'CH-2026-014', sku: '4456712', artikel: 'Energieriegel Box', menge: 240, mhd: '2026-12-01', wareneingang: '2026-03-10', lieferant: 'PowerBar GmbH', gesperrt: false },
-  { charge: 'CH-2026-009', sku: '4456712', artikel: 'Energieriegel Box', menge: 60, mhd: '2026-07-05', wareneingang: '2025-12-02', lieferant: 'PowerBar GmbH', gesperrt: false },
-  { charge: 'CH-2025-221', sku: '4456712', artikel: 'Energieriegel Box', menge: 30, mhd: '2026-05-30', wareneingang: '2025-09-15', lieferant: 'PowerBar GmbH', gesperrt: false },
-  { charge: 'CH-2026-031', sku: '2087431', artikel: 'E-Bike Akku 625Wh', menge: 0, mhd: '2028-01-01', wareneingang: '2026-04-01', lieferant: 'Bosch AG', gesperrt: false },
-  { charge: 'CH-2026-040', sku: '2087431', artikel: 'E-Bike Akku 625Wh', menge: 12, mhd: '2027-06-01', wareneingang: '2026-05-20', lieferant: 'Bosch AG', gesperrt: true }
+  { charge: 'CH-2026-014', sku: 'ART-2004', artikel: 'Energieriegel Box', menge: 240, mhd: '2026-12-01', wareneingang: '2026-03-10', lieferant: 'Muster Riegel GmbH', gesperrt: false },
+  { charge: 'CH-2026-009', sku: 'ART-2004', artikel: 'Energieriegel Box', menge: 60, mhd: '2026-07-05', wareneingang: '2025-12-02', lieferant: 'Muster Riegel GmbH', gesperrt: false },
+  { charge: 'CH-2025-221', sku: 'ART-2004', artikel: 'Energieriegel Box', menge: 30, mhd: '2026-05-30', wareneingang: '2025-09-15', lieferant: 'Muster Riegel GmbH', gesperrt: false },
+  { charge: 'CH-2026-031', sku: 'ART-2002', artikel: 'E-Bike Akku 625Wh', menge: 0, mhd: '2028-01-01', wareneingang: '2026-04-01', lieferant: 'Demo Akku AG', gesperrt: false },
+  { charge: 'CH-2026-040', sku: 'ART-2002', artikel: 'E-Bike Akku 625Wh', menge: 12, mhd: '2027-06-01', wareneingang: '2026-05-20', lieferant: 'Demo Akku AG', gesperrt: true }
 ]
 export function pruefeCharge(c) {
   const b = []
@@ -424,11 +424,11 @@ export function pruefeCharge(c) {
 export function chargenliste(o = {}) { return generischListe(CHARGEN, pruefeCharge, o, ['menge'], (c, q) => norm(c.charge).includes(q) || norm(c.sku).includes(q) || norm(c.artikel).includes(q) || norm(c.lieferant).includes(q)) }
 
 export const AUFTRAGSBESTAND = [
-  { auftrag: '2654500001', kunde: 'Stadtwerke Köln', datum: '2026-05-28', sku: '1453766', artikel: 'GRAVEL 22', bestellt: 5, geliefert: 2, offen: 3, wert: 3779.0, liefertermin: '2026-07-10' },
-  { auftrag: '2654500002', kunde: 'Lieferdienst Bonn', datum: '2026-06-05', sku: '2087431', artikel: 'Akku 625Wh', bestellt: 10, geliefert: 10, offen: 0, wert: 0, liefertermin: '2026-06-20' },
-  { auftrag: '2654500771', kunde: 'Onlineshop', datum: '2026-05-30', sku: '4456712', artikel: 'Energieriegel', bestellt: 100, geliefert: 40, offen: 60, wert: 1494.0, liefertermin: '2026-06-10' },
-  { auftrag: '2654499002', kunde: 'B2B Händler', datum: '2026-06-08', sku: '3312900', artikel: 'Trikot Pro M', bestellt: 20, geliefert: 25, offen: -5, wert: -395.0, liefertermin: '2026-07-01' },
-  { auftrag: '2654500004', kunde: 'Logistik AG', datum: '2026-05-22', sku: '1453766', artikel: 'GRAVEL 22', bestellt: 8, geliefert: 3, offen: 4, wert: 5036.0, liefertermin: '2026-08-15' }
+  { auftrag: 'AUF-1004', kunde: 'Muster Stadtwerke', datum: '2026-05-28', sku: 'ART-2001', artikel: 'GRAVEL 22', bestellt: 5, geliefert: 2, offen: 3, wert: 3779.0, liefertermin: '2026-07-10' },
+  { auftrag: 'AUF-1005', kunde: 'Beispiel Lieferdienst', datum: '2026-06-05', sku: 'ART-2002', artikel: 'Akku 625Wh', bestellt: 10, geliefert: 10, offen: 0, wert: 0, liefertermin: '2026-06-20' },
+  { auftrag: 'AUF-1009', kunde: 'Beispiel Onlineshop', datum: '2026-05-30', sku: 'ART-2004', artikel: 'Energieriegel', bestellt: 100, geliefert: 40, offen: 60, wert: 1494.0, liefertermin: '2026-06-10' },
+  { auftrag: 'AUF-1010', kunde: 'Demo B2B Handel', datum: '2026-06-08', sku: 'ART-2003', artikel: 'Trikot Pro M', bestellt: 20, geliefert: 25, offen: -5, wert: -395.0, liefertermin: '2026-07-01' },
+  { auftrag: 'AUF-1007', kunde: 'Demo Logistik AG', datum: '2026-05-22', sku: 'ART-2001', artikel: 'GRAVEL 22', bestellt: 8, geliefert: 3, offen: 4, wert: 5036.0, liefertermin: '2026-08-15' }
 ]
 export function pruefeAuftragsbestand(a) {
   const b = []
@@ -441,9 +441,9 @@ export function auftragsbestandliste(o = {}) { return generischListe(AUFTRAGSBES
 
 // ---- Lieferanten-, Bestell- (Einkauf), Offene-Posten-, Inventurliste -----
 export const LIEFERANTEN = [
-  { lieferantNr: 'L-100', name: 'PowerBar GmbH', land: 'DE', lieferzeitTage: 7, reklamationsQuote: 2.1, offeneBestellungen: 1, bewertung: 'A', status: 'aktiv' },
-  { lieferantNr: 'L-200', name: 'Bosch AG', land: 'DE', lieferzeitTage: 14, reklamationsQuote: 0.8, offeneBestellungen: 2, bewertung: 'A', status: 'aktiv' },
-  { lieferantNr: 'L-300', name: 'Castelli S.p.A', land: 'IT', lieferzeitTage: 24, reklamationsQuote: 9.5, offeneBestellungen: 1, bewertung: 'C', status: 'aktiv' },
+  { lieferantNr: 'L-100', name: 'Muster Riegel GmbH', land: 'DE', lieferzeitTage: 7, reklamationsQuote: 2.1, offeneBestellungen: 1, bewertung: 'A', status: 'aktiv' },
+  { lieferantNr: 'L-200', name: 'Demo Akku AG', land: 'DE', lieferzeitTage: 14, reklamationsQuote: 0.8, offeneBestellungen: 2, bewertung: 'A', status: 'aktiv' },
+  { lieferantNr: 'L-300', name: 'Beispiel Textil GmbH', land: 'IT', lieferzeitTage: 24, reklamationsQuote: 9.5, offeneBestellungen: 1, bewertung: 'C', status: 'aktiv' },
   { lieferantNr: 'L-400', name: 'Eigenfertigung', land: 'DE', lieferzeitTage: 0, reklamationsQuote: 0, offeneBestellungen: 0, bewertung: 'B', status: 'aktiv' },
   { lieferantNr: 'L-500', name: 'Alt-Lieferant', land: 'DE', lieferzeitTage: 30, reklamationsQuote: 0, offeneBestellungen: 0, bewertung: 'C', status: 'gesperrt' }
 ]
@@ -458,11 +458,11 @@ export function pruefeLieferant(l) {
 export function lieferantenliste(o = {}) { return generischListe(LIEFERANTEN, pruefeLieferant, o, ['offeneBestellungen'], (l, q) => norm(l.lieferantNr).includes(q) || norm(l.name).includes(q) || norm(l.land).includes(q)) }
 
 export const BESTELLUNGEN = [
-  { bestellung: 'B-7001', datum: '2026-05-10', lieferant: 'PowerBar GmbH', sku: '4456712', artikel: 'Energieriegel Box', menge: 240, ekPreis: 16.0, wert: 3840.0, status: 'geliefert', liefertermin: '2026-05-20' },
-  { bestellung: 'B-7002', datum: '2026-06-01', lieferant: 'Bosch AG', sku: '2087431', artikel: 'E-Bike Akku 625Wh', menge: 30, ekPreis: 520.0, wert: 15600.0, status: 'offen', liefertermin: '2026-06-15' },
-  { bestellung: 'B-7003', datum: '2026-06-05', lieferant: 'Castelli S.p.A', sku: '3312900', artikel: 'Trikot Pro M', menge: 0, ekPreis: 79.0, wert: 0, status: 'offen', liefertermin: '2026-07-01' },
-  { bestellung: 'B-7004', datum: '2026-06-08', lieferant: 'PowerBar GmbH', sku: '4456712', artikel: 'Energieriegel Box', menge: 60, ekPreis: 17.5, wert: 1050.0, status: 'geliefert', liefertermin: '2026-06-12' },
-  { bestellung: 'B-7005', datum: '2026-06-10', lieferant: 'Bosch AG', sku: '2087431', artikel: 'E-Bike Akku 625Wh', menge: 12, ekPreis: 999.0, wert: 12000.0, status: 'offen', liefertermin: '2026-07-20' }
+  { bestellung: 'B-7001', datum: '2026-05-10', lieferant: 'Muster Riegel GmbH', sku: 'ART-2004', artikel: 'Energieriegel Box', menge: 240, ekPreis: 16.0, wert: 3840.0, status: 'geliefert', liefertermin: '2026-05-20' },
+  { bestellung: 'B-7002', datum: '2026-06-01', lieferant: 'Demo Akku AG', sku: 'ART-2002', artikel: 'E-Bike Akku 625Wh', menge: 30, ekPreis: 520.0, wert: 15600.0, status: 'offen', liefertermin: '2026-06-15' },
+  { bestellung: 'B-7003', datum: '2026-06-05', lieferant: 'Beispiel Textil GmbH', sku: 'ART-2003', artikel: 'Trikot Pro M', menge: 0, ekPreis: 79.0, wert: 0, status: 'offen', liefertermin: '2026-07-01' },
+  { bestellung: 'B-7004', datum: '2026-06-08', lieferant: 'Muster Riegel GmbH', sku: 'ART-2004', artikel: 'Energieriegel Box', menge: 60, ekPreis: 17.5, wert: 1050.0, status: 'geliefert', liefertermin: '2026-06-12' },
+  { bestellung: 'B-7005', datum: '2026-06-10', lieferant: 'Demo Akku AG', sku: 'ART-2002', artikel: 'E-Bike Akku 625Wh', menge: 12, ekPreis: 999.0, wert: 12000.0, status: 'offen', liefertermin: '2026-07-20' }
 ]
 export function pruefeBestellung(o) {
   const b = []
@@ -474,11 +474,11 @@ export function pruefeBestellung(o) {
 export function bestellliste(o = {}) { return generischListe(BESTELLUNGEN, pruefeBestellung, o, ['menge', 'wert'], (x, q) => norm(x.bestellung).includes(q) || norm(x.lieferant).includes(q) || norm(x.sku).includes(q) || norm(x.artikel).includes(q)) }
 
 export const OFFENEPOSTEN = [
-  { beleg: 'OP-1', kunde: 'Stadtwerke Köln', rechnung: 'RE-9002', betrag: 3200.0, faellig: '2026-06-20', bezahltAm: '', mahnstufe: 1, status: 'offen' },
-  { beleg: 'OP-2', kunde: 'Hotel Seeblick', rechnung: 'RE-9003', betrag: 1100.0, faellig: '2026-06-25', bezahltAm: '', mahnstufe: 0, status: 'offen' },
-  { beleg: 'OP-3', kunde: 'Markus Skarics', rechnung: 'RE-9001', betrag: 117.81, faellig: '2026-06-19', bezahltAm: '2026-06-15', mahnstufe: 0, status: 'bezahlt' },
-  { beleg: 'OP-4', kunde: 'Logistik AG', rechnung: 'RE-9009', betrag: 9800.0, faellig: '2026-05-01', bezahltAm: '', mahnstufe: 3, status: 'offen' },
-  { beleg: 'OP-5', kunde: 'B2B Händler', rechnung: 'RE-9005', betrag: -249.90, faellig: '2026-06-09', bezahltAm: '', mahnstufe: 0, status: 'offen' }
+  { beleg: 'OP-1', kunde: 'Muster Stadtwerke', rechnung: 'RE-9002', betrag: 3200.0, faellig: '2026-06-20', bezahltAm: '', mahnstufe: 1, status: 'offen' },
+  { beleg: 'OP-2', kunde: 'Hotel Beispielsee', rechnung: 'RE-9003', betrag: 1100.0, faellig: '2026-06-25', bezahltAm: '', mahnstufe: 0, status: 'offen' },
+  { beleg: 'OP-3', kunde: 'Erika Musterfrau', rechnung: 'RE-9001', betrag: 117.81, faellig: '2026-06-19', bezahltAm: '2026-06-15', mahnstufe: 0, status: 'bezahlt' },
+  { beleg: 'OP-4', kunde: 'Demo Logistik AG', rechnung: 'RE-9009', betrag: 9800.0, faellig: '2026-05-01', bezahltAm: '', mahnstufe: 3, status: 'offen' },
+  { beleg: 'OP-5', kunde: 'Demo B2B Handel', rechnung: 'RE-9005', betrag: -249.90, faellig: '2026-06-09', bezahltAm: '', mahnstufe: 0, status: 'offen' }
 ]
 export function pruefeOffenerPosten(p) {
   const b = []
@@ -490,11 +490,11 @@ export function pruefeOffenerPosten(p) {
 export function offenepostenliste(o = {}) { return generischListe(OFFENEPOSTEN, pruefeOffenerPosten, o, ['betrag'], (p, q) => norm(p.beleg).includes(q) || norm(p.kunde).includes(q) || norm(p.rechnung).includes(q)) }
 
 export const INVENTUR = [
-  { zaehlung: 'INV-01', sku: '4456712', artikel: 'Energieriegel Box', lagerort: 'L1-A', buchbestand: 330, zaehlbestand: 330, differenz: 0, wertDifferenz: 0 },
-  { zaehlung: 'INV-02', sku: '2087431', artikel: 'E-Bike Akku 625Wh', lagerort: 'L2-C', buchbestand: 12, zaehlbestand: 9, differenz: -3, wertDifferenz: -1560 },
-  { zaehlung: 'INV-03', sku: '1453766', artikel: 'GRAVEL 22 BACKROAD', lagerort: 'L1-B', buchbestand: 5, zaehlbestand: 7, differenz: 2, wertDifferenz: 2519 },
-  { zaehlung: 'INV-04', sku: '3312900', artikel: 'Trikot Pro M', lagerort: 'L3-A', buchbestand: 20, zaehlbestand: 0, differenz: -20, wertDifferenz: -1580 },
-  { zaehlung: 'INV-05', sku: '5590018', artikel: 'Vintage Rahmen XL', lagerort: 'L4', buchbestand: -1, zaehlbestand: 0, differenz: 1, wertDifferenz: 299 }
+  { zaehlung: 'INV-01', sku: 'ART-2004', artikel: 'Energieriegel Box', lagerort: 'L1-A', buchbestand: 330, zaehlbestand: 330, differenz: 0, wertDifferenz: 0 },
+  { zaehlung: 'INV-02', sku: 'ART-2002', artikel: 'E-Bike Akku 625Wh', lagerort: 'L2-C', buchbestand: 12, zaehlbestand: 9, differenz: -3, wertDifferenz: -1560 },
+  { zaehlung: 'INV-03', sku: 'ART-2001', artikel: 'GRAVEL 22 BACKROAD', lagerort: 'L1-B', buchbestand: 5, zaehlbestand: 7, differenz: 2, wertDifferenz: 2519 },
+  { zaehlung: 'INV-04', sku: 'ART-2003', artikel: 'Trikot Pro M', lagerort: 'L3-A', buchbestand: 20, zaehlbestand: 0, differenz: -20, wertDifferenz: -1580 },
+  { zaehlung: 'INV-05', sku: 'ART-2005', artikel: 'Vintage Rahmen XL', lagerort: 'L4', buchbestand: -1, zaehlbestand: 0, differenz: 1, wertDifferenz: 299 }
 ]
 export function pruefeInventur(i) {
   const b = []
