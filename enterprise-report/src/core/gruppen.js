@@ -140,6 +140,30 @@ export function mitgliedWeg(id, name) {
     g.id === id ? { ...g, mitglieder: g.mitglieder.filter((m) => m !== name) } : g))
 }
 
+/** Gruppen, in denen ein Name Mitglied ist. */
+export function gruppenMitMitglied(name, liste = ladeGruppen()) {
+  const n = (name || '').trim()
+  return n ? liste.filter((g) => (g.mitglieder || []).includes(n)) : []
+}
+
+/**
+ * Rechte „kopieren": den Ziel-Nutzer in alle Gruppen aufnehmen, in denen die
+ * Quelle Mitglied ist (→ identische Sichtbarkeit/Rechte über die Gruppen).
+ * @returns { list, gruppen:[Namen], quelleGefunden }
+ */
+export function kopiereRechte(vonName, nachName) {
+  const von = (vonName || '').trim(); const nach = (nachName || '').trim()
+  const ziele = gruppenMitMitglied(von)
+  let list = ladeGruppen()
+  const geaendert = []
+  if (nach) {
+    for (const g of ziele) {
+      if (!g.mitglieder.includes(nach)) { list = mitgliedHinzu(g.id, nach); geaendert.push(g.name) }
+    }
+  }
+  return { list, gruppen: geaendert, quelleGefunden: ziele.length > 0 }
+}
+
 /** Darf eine Gruppe die Rechteverwaltung bedienen? (Vollzugriff + GF-Freigabe) */
 export function istAdmin(gruppe) {
   return !!gruppe && gruppe.bereiche === '*' && (gruppe.kontext || []).includes('GF')

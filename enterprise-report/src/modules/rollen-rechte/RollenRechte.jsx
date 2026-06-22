@@ -8,7 +8,7 @@ import React, { useState } from 'react'
 import {
   ladeGruppen, neueGruppe, aktualisiereGruppe, loescheGruppe, toggleBereich,
   setzeAlleBereiche, toggleKontext, mitgliedHinzu, mitgliedWeg, setzeZurueck,
-  bereicheNachCluster, KONTEXTE, bereichZusammenfassung, GRUPPEN_QUELLE
+  bereicheNachCluster, KONTEXTE, bereichZusammenfassung, GRUPPEN_QUELLE, kopiereRechte
 } from '../../core/gruppen.js'
 import { ladeAnfragen, loescheAnfrage } from '../../core/zugriff.js'
 import { infoVon } from '../../core/berichtInfo.js'
@@ -63,6 +63,15 @@ export default function RollenRechte({ onChange, benutzer }) {
     protokolliere({ aktion: 'anfrage.erledigt', ziel: req.view, detail: `Anfrage von ${req.name || req.uid} abgeschlossen`, akteur })
     setAnfTick((t) => t + 1); setLogTick((t) => t + 1)
   }
+  // Rechte 1:1 von der Bezugsperson kopieren (Antragsteller in deren Gruppen aufnehmen).
+  function kopiere(req) {
+    const res = kopiereRechte(req.bezugsperson, req.name)
+    if (!res.quelleGefunden) { alert(`„${req.bezugsperson}" ist in keiner Gruppe gefunden — bitte manuell zuordnen.`); return }
+    res.gruppen.forEach((gn) => protokolliere({ aktion: 'mitglied.add', ziel: gn, detail: `${req.name} (Rechte kopiert von ${req.bezugsperson})`, akteur }))
+    loescheAnfrage(req.view, req.uid)
+    protokolliere({ aktion: 'anfrage.gewaehrt', ziel: req.view, detail: `Rechte von ${req.bezugsperson} kopiert für ${req.name || req.uid} (${res.gruppen.join(', ') || 'bereits identisch'})`, akteur })
+    refresh(res.list); setAnfTick((t) => t + 1); setLogTick((t) => t + 1)
+  }
 
   return (
     <div>
@@ -90,7 +99,7 @@ export default function RollenRechte({ onChange, benutzer }) {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {anfragen.map((a) => (
-              <AnfrageRow key={a.view + a.uid} a={a} gruppen={gruppen} onGewaehren={gewaehren} onAblehnen={ablehnen} />
+              <AnfrageRow key={a.view + a.uid} a={a} gruppen={gruppen} onGewaehren={gewaehren} onAblehnen={ablehnen} onKopieren={kopiere} />
             ))}
           </div>
         </div>
@@ -257,7 +266,7 @@ export default function RollenRechte({ onChange, benutzer }) {
 }
 
 // --- Eine Zugriffsanfrage als To-do-Karte mit Freigabe-Aktion ------------
-function AnfrageRow({ a, gruppen, onGewaehren, onAblehnen }) {
+function AnfrageRow({ a, gruppen, onGewaehren, onAblehnen, onKopieren }) {
   const card2 = { padding: '10px 12px', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)' }
   const inpS = { padding: '6px 9px', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', font: 'inherit', fontSize: 13 }
   // Vorauswahl: Gruppe, die den Bereich schon hat (oder „alle"), sonst erste.
@@ -281,6 +290,10 @@ function AnfrageRow({ a, gruppen, onGewaehren, onAblehnen }) {
         </select>
         <button onClick={() => onGewaehren(a, groupId)} disabled={!groupId}
           style={{ ...inpS, cursor: 'pointer', background: 'var(--accent)', color: '#fff', border: 'none', fontWeight: 600 }}>✓ Freigeben</button>
+        {a.bezugsperson && (
+          <button onClick={() => onKopieren(a)} title={`${a.name} in alle Gruppen von ${a.bezugsperson} aufnehmen`}
+            style={{ ...inpS, cursor: 'pointer', border: '1px solid var(--accent)', color: 'var(--accent)', fontWeight: 600 }}>⧉ Rechte von {a.bezugsperson} kopieren</button>
+        )}
         <button onClick={() => onAblehnen(a)} style={{ ...inpS, cursor: 'pointer', color: 'var(--muted)' }}>Erledigt / Ablehnen</button>
       </div>
     </div>
