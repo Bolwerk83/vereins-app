@@ -1,7 +1,7 @@
 import './_setup.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { artikelliste, auftragsliste, pruefeArtikel, pruefeAuftrag, ARTIKEL, LISTEN } from '../src/core/detailberichte.js'
+import { artikelliste, auftragsliste, pruefeArtikel, pruefeAuftrag, ARTIKEL, LISTEN, historie } from '../src/core/detailberichte.js'
 
 test('Negativer Verfügbarbestand wird als Fehler erkannt', () => {
   const a = ARTIKEL.find((x) => x.sku === '231052006') // lbVerf -1
@@ -41,6 +41,15 @@ test('Auftragsliste: negativer MEK und negativer UE bei Geliefert', () => {
   assert.ok(skarics.some((x) => x.feld === 'mek' && x.schwere === 'fehler'))
   const birkner = pruefeAuftrag(auftragsliste().rows.find((o) => o.auftrag === '2654484814'))
   assert.ok(birkner.some((x) => x.feld === 'ue'))
+})
+
+test('Ebene 5: Historie je Datensatz (Artikel-Verlauf, Auftrags-Zeitstrahl)', () => {
+  const h = historie('artikel', ARTIKEL[0])
+  assert.equal(h.length, 6)
+  assert.ok(h.every((x) => typeof x.bestand === 'number'))
+  const o = auftragsliste().rows.find((x) => x.status === 'Geliefert')
+  const ho = historie('auftrag', o)
+  assert.ok(ho.some((x) => x.label === 'Geliefert'))
 })
 
 test('LISTEN-Katalog hat verfügbare und geplante Listen', () => {

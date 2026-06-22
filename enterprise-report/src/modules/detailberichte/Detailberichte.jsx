@@ -5,7 +5,7 @@
 //  eine Zeile öffnet die Befund-Karte (Sprung in die Detailprüfung).
 // =========================================================================
 import React, { useState } from 'react'
-import { LISTEN, LEGENDE, artikelliste, auftragsliste } from '../../core/detailberichte.js'
+import { LISTEN, LEGENDE, artikelliste, auftragsliste, historie } from '../../core/detailberichte.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
@@ -54,8 +54,8 @@ const AUF_SUM = ['ab', 'vk', 'ae', 'aeb', 'ret', 'aet', 'mek', 'abs', 'ue']
 
 export default function Detailberichte() {
   const [aktiv, setAktiv] = useState(null)
-  if (aktiv === 'artikel') return <Liste titel="Artikelliste" sub="Zeigt die SKU in einer Listen-Übersicht. Klick auf eine Zeile → Befund-Karte." cols={ART_COLS} sumKeys={ART_SUM} lade={artikelliste} onBack={() => setAktiv(null)} idKey="sku" titelKey="artikel" />
-  if (aktiv === 'auftrag') return <Liste titel="Auftragsliste" sub="Zeigt die Aufträge in einer Listen-Übersicht." cols={AUF_COLS} sumKeys={AUF_SUM} lade={auftragsliste} onBack={() => setAktiv(null)} idKey="auftrag" titelKey="kunde" />
+  if (aktiv === 'artikel') return <Liste typ="artikel" titel="Artikelliste" sub="Zeigt die SKU in einer Listen-Übersicht. Klick auf eine Zeile → Befund-Karte (inkl. E5-Historie)." cols={ART_COLS} sumKeys={ART_SUM} lade={artikelliste} onBack={() => setAktiv(null)} idKey="sku" titelKey="artikel" />
+  if (aktiv === 'auftrag') return <Liste typ="auftrag" titel="Auftragsliste" sub="Zeigt die Aufträge in einer Listen-Übersicht." cols={AUF_COLS} sumKeys={AUF_SUM} lade={auftragsliste} onBack={() => setAktiv(null)} idKey="auftrag" titelKey="kunde" />
 
   // Hub
   return (
@@ -81,7 +81,9 @@ export default function Detailberichte() {
   )
 }
 
-function Liste({ titel, sub, cols, sumKeys, lade, onBack, idKey, titelKey }) {
+const EBENEN_PFAD = ['E1 · Geschäftsführung', 'E2 · Fachbereich', 'E3 · Themenbereich', 'E4 · Details', 'E5 · Historisierung']
+
+function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, idKey, titelKey }) {
   const [suche, setSuche] = useState('')
   const [nurAuffaellig, setNurAuffaellig] = useState(false)
   const [legendeAuf, setLegendeAuf] = useState(false)
@@ -111,6 +113,14 @@ function Liste({ titel, sub, cols, sumKeys, lade, onBack, idKey, titelKey }) {
           <h2 style={{ margin: 0 }}>Business Report — {titel}</h2>
           <div style={{ color: 'var(--muted)', fontSize: 12.5 }}>{sub}</div>
         </div>
+      </div>
+      {/* 5-Ebenen-Transparenz: diese Liste ist Ebene 4, E5-Historie je Zeile. */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, margin: '6px 0 2px' }}>
+        {EBENEN_PFAD.map((e, i) => (
+          <span key={e} style={{ fontSize: 10.5, padding: '2px 8px', borderRadius: 999,
+            background: i === 3 ? 'var(--accent)' : i === 4 ? 'var(--accent-soft)' : 'var(--bg)',
+            color: i === 3 ? '#fff' : i === 4 ? 'var(--accent)' : 'var(--muted)', border: '1px solid var(--line)' }}>{e}</span>
+        ))}
       </div>
 
       {/* Filterleiste */}
@@ -160,12 +170,14 @@ function Liste({ titel, sub, cols, sumKeys, lade, onBack, idKey, titelKey }) {
       </div>
       <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 8 }}>{data.rows.length} von {data.gesamt} Zeilen · {data.auffaellig} auffällig · Klick auf eine Zeile öffnet die Befund-Karte.</div>
 
-      {detail && <BefundModal row={detail} cols={cols} idKey={idKey} titelKey={titelKey} onClose={() => setDetail(null)} />}
+      {detail && <BefundModal typ={typ} row={detail} cols={cols} idKey={idKey} titelKey={titelKey} onClose={() => setDetail(null)} />}
     </div>
   )
 }
 
-function BefundModal({ row, cols, idKey, titelKey, onClose }) {
+function BefundModal({ typ, row, cols, idKey, titelKey, onClose }) {
+  const hist = historie(typ, row)
+  const maxB = typ === 'artikel' ? Math.max(...hist.map((h) => h.bestand), 1) : 0
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'rgba(15,23,42,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
       <div onClick={(e) => e.stopPropagation()} style={{ width: 560, maxWidth: '94vw', maxHeight: '88vh', overflowY: 'auto', background: 'var(--panel)', borderRadius: 'var(--radius)', boxShadow: '0 20px 60px rgba(0,0,0,.3)', border: '1px solid var(--line)' }}>
@@ -193,7 +205,37 @@ function BefundModal({ row, cols, idKey, titelKey, onClose }) {
                 </div>
               </>
             )}
-          <div style={{ ...cap, marginBottom: 6 }}>Alle Werte</div>
+          {/* Ebene 5 · Historisierung */}
+          <div style={{ ...cap, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 9, background: 'var(--accent-soft)', color: 'var(--accent)', borderRadius: 4, padding: '1px 6px' }}>E5</span> Historisierung
+          </div>
+          {typ === 'artikel' ? (
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 70 }}>
+                {hist.map((h) => (
+                  <div key={h.label} title={`${h.label}: Bestand ${h.bestand}, AE ${h.ae}`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', gap: 3 }}>
+                    <div style={{ fontSize: 9, color: 'var(--muted)' }}>{h.bestand}</div>
+                    <div style={{ width: '100%', height: `${h.bestand / maxB * 48}px`, minHeight: 2, background: 'var(--accent)', borderRadius: '3px 3px 0 0' }} />
+                    <div style={{ fontSize: 9, color: 'var(--muted)' }}>{h.label}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>Bestandsverlauf (Stück) · Balken = Lagerbestand, Tooltip mit Auftragseingang.</div>
+            </div>
+          ) : (
+            <div style={{ marginBottom: 14, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+              {hist.map((h, i) => (
+                <React.Fragment key={h.label}>
+                  <span style={{ fontSize: 12, padding: '4px 10px', borderRadius: 999, background: h.label === 'Retoure' ? 'var(--amp-r-soft)' : 'var(--accent-soft)', color: h.label === 'Retoure' ? 'var(--amp-r)' : 'var(--accent)', fontWeight: 600 }}>
+                    {h.label}<span style={{ color: 'var(--muted)', fontWeight: 400 }}> · {datum(h.datum)}</span>
+                  </span>
+                  {i < hist.length - 1 && <span style={{ alignSelf: 'center', color: 'var(--muted)' }}>→</span>}
+                </React.Fragment>
+              ))}
+            </div>
+          )}
+
+          <div style={{ ...cap, marginBottom: 6 }}>Alle Werte (E4)</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px 14px' }}>
             {cols.map((c) => (
               <div key={c.key} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, padding: '3px 0', borderBottom: '1px solid var(--line)' }}>

@@ -102,6 +102,27 @@ export function auftragsliste({ suche = '', nurAuffaellig = false } = {}) {
   }
 }
 
+// ---- Ebene 5: Historisierung je Datensatz --------------------------------
+function addTage(iso, tage) { const d = new Date(iso); d.setDate(d.getDate() + tage); return d.toISOString().slice(0, 10) }
+
+/** Verlauf/Verlaufsereignisse eines Detail-Datensatzes (E5). */
+export function historie(typ, row) {
+  if (typ === 'artikel') {
+    const monate = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun']
+    const base = (row.lbEff || 0) + (row.kom || 0) + 4
+    const off = String(row.sku).length
+    return monate.map((m, i) => ({
+      label: m,
+      bestand: Math.max(0, Math.round(base - i * 0.5 + Math.sin(i + off) * 2)),
+      ae: Math.max(0, Math.round(1 + (Math.cos(i * 1.1 + off) + 1) * 1.5))
+    }))
+  }
+  // Auftrag: Status-Zeitstrahl bis zum aktuellen Stand.
+  let stufen = row.status === 'Offen' ? ['Angelegt', 'Bestätigt'] : ['Angelegt', 'Bestätigt', 'Kommissioniert', 'Geliefert']
+  if (row.ret > 0 || row.ue < 0) stufen = [...stufen, 'Retoure']
+  return stufen.map((s, i) => ({ label: s, datum: addTage(row.datum, i * 2) }))
+}
+
 // ---- Katalog der Detailberichte -----------------------------------------
 export const LISTEN = [
   { id: 'auftrag', name: 'Auftragsliste', verfuegbar: true },
