@@ -108,3 +108,47 @@ function verteilung(objekte, phasen) {
 }
 export function produktPhaseVerteilung(ebene) { return verteilung(produkte(ebene), PRODUKT_PHASEN) }
 export function kundePhaseVerteilung() { return verteilung(kunden(), KUNDE_PHASEN) }
+
+// ---------- BCG-/Portfolio-Quadranten (Wachstum × DB) --------------------
+// Die Portfolio-Matrix hat zwei Achsen: Wachstum (x, Schwelle 0 %) und
+// Deckungsbeitrag (y, Schwelle = Median DB). Daraus vier Felder mit den
+// klassischen BCG-Begriffen — als Einstieg/Filter über das Portfolio.
+export const BCG_QUADRANTEN = [
+  { id: 'star',     name: 'Stars',          kurz: 'Wachstumsträger',   farbe: '#2563eb', hochWachstum: true,  hochDb: true,
+    these: 'Hohes Wachstum bei hoher Marge — Zugpferde des Portfolios.', strategie: 'Investieren – Kapazität & Vertrieb skalieren' },
+  { id: 'cashcow',  name: 'Cash Cows',      kurz: 'Ertragsbringer',    farbe: '#10b981', hochWachstum: false, hochDb: true,
+    these: 'Reife Melkkühe: wenig Wachstum, aber starke Marge.', strategie: 'Halten – Cash ernten, Effizienz sichern' },
+  { id: 'question', name: 'Question Marks', kurz: 'Nachwuchs',         farbe: '#f59e0b', hochWachstum: true,  hochDb: false,
+    these: 'Wachsen stark, verdienen aber (noch) wenig.', strategie: 'Selektiv investieren – Marge entwickeln oder einstellen' },
+  { id: 'dog',      name: 'Poor Dogs',      kurz: 'Auslaufkandidaten', farbe: '#ef4444', hochWachstum: false, hochDb: false,
+    these: 'Wenig Wachstum, schwache Marge — Ballast.', strategie: 'Bereinigen – Auslauf/Abverkauf prüfen' }
+]
+export const bcgQuadrantInfo = (id) => BCG_QUADRANTEN.find((q) => q.id === id)
+
+function median(arr) {
+  if (!arr.length) return 0
+  const s = [...arr].sort((a, b) => a - b); const m = Math.floor(s.length / 2)
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2
+}
+/** Achsenschwellen: Wachstum fix 0 %, DB als Median der Objekte. */
+export function bcgSchwellen(objekte, { wachstum = 0 } = {}) {
+  return { wachstum, db: +median(objekte.map((o) => o.db)).toFixed(1) }
+}
+/** Quadrant eines Objekts anhand der Achsenschwellen. */
+export function quadrantVon(o, schwellen) {
+  const hw = o.wachstum >= schwellen.wachstum, hd = o.db >= schwellen.db
+  return (BCG_QUADRANTEN.find((q) => q.hochWachstum === hw && q.hochDb === hd) || {}).id
+}
+/** Verteilung je Quadrant (Anzahl, Umsatz, Anteil, Ø DB, Objekte). */
+export function bcgVerteilung(ebene, opt = {}) {
+  const objekte = produkte(ebene)
+  const schwellen = bcgSchwellen(objekte, opt)
+  const ges = objekte.reduce((n, x) => n + x.umsatz, 0) || 1
+  const felder = BCG_QUADRANTEN.map((q) => {
+    const grp = objekte.filter((o) => quadrantVon(o, schwellen) === q.id)
+    const umsatz = +grp.reduce((n, x) => n + x.umsatz, 0).toFixed(1)
+    return { ...q, anzahl: grp.length, umsatz, anteil: +(umsatz / ges * 100).toFixed(1),
+      dbSchnitt: grp.length ? +(grp.reduce((n, x) => n + x.db, 0) / grp.length).toFixed(1) : 0, objekte: grp }
+  })
+  return { schwellen, felder }
+}

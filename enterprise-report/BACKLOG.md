@@ -88,13 +88,14 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
 
 ---
 
-### 1. BCG-/Portfolio-Matrix drill-down
+### 1. BCG-/Portfolio-Matrix drill-down — DONE
 - Bubbles **anklickbar**; Sprung in den passenden Detailbereich **mit passenden
   Filtern** (z. B. Artikel-/Produktliste gefiltert auf die Warengruppe), damit man
-  den Wert „im Gesamt" wiederfindet.
-- Auch Quadranten (Stars / Cash Cows / Question Marks / Poor Dogs) als Einstieg.
-- Mechanik: `onDrill(objekt)` aus Lebenszyklus → App → Detailberichte mit Vorfilter
-  (`startSuche`).
+  den Wert „im Gesamt" wiederfindet. (onDrill → gehDetail('artikel', name))
+- Quadranten (Stars / Cash Cows / Question Marks / Poor Dogs) als Einstieg:
+  Achsen Wachstum × DB (DB-Schwelle = Median), vier getönte/anklickbare Felder
+  im Chart + Karten; Klick filtert Chart & Liste auf das Feld, je Objekt Drill.
+  Core: `bcgVerteilung`/`quadrantVon`/`BCG_QUADRANTEN` (+ Tests).
 
 ### 2. Instrumente / Berichtsbaum aufräumen
 - Alle Berichte unter **Instrumente** in sinnvolle Bereiche einsortieren.

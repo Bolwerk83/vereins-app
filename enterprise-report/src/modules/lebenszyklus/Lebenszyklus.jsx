@@ -7,14 +7,15 @@
 import React, { useState } from 'react'
 import {
   PRODUKT_PHASEN, produktPhaseInfo, produkte, kinderProdukt, produktPhaseVerteilung,
-  KUNDE_PHASEN, kundePhaseInfo, kunden, kundePhaseVerteilung
+  KUNDE_PHASEN, kundePhaseInfo, kunden, kundePhaseVerteilung,
+  bcgVerteilung, quadrantVon
 } from '../../core/lebenszyklus.js'
 import { addMassnahme, ladeMassnahmen } from '../../core/massnahmen.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
 
-function Portfolio({ objekte, info, onDrill }) {
+function Portfolio({ objekte, info, onDrill, schwellen, felder, quadrant, onQuadrant }) {
   const W = 720, H = 340, pad = 44
   const xs = objekte.map((o) => o.wachstum), ys = objekte.map((o) => o.db)
   const xMin = Math.min(-10, ...xs), xMax = Math.max(40, ...xs)
@@ -23,23 +24,78 @@ function Portfolio({ objekte, info, onDrill }) {
   const py = (y) => H - pad - (y - yMin) / (yMax - yMin) * (H - pad - 14)
   const rmax = Math.max(...objekte.map((o) => o.umsatz), 1)
   const rad = (u) => 7 + Math.sqrt(u / rmax) * 26
-  const x0 = px(0)
+  const x0 = px(schwellen.wachstum), y0 = py(schwellen.db)
+  const li = pad, re = W - 14, ob = 14, un = H - pad
+  // Bildschirm-Rechteck je Quadrant (für Tönung + Klickfläche).
+  const rect = { star: [x0, ob, re, y0], cashcow: [li, ob, x0, y0], question: [x0, y0, re, un], dog: [li, y0, x0, un] }
+  const von = (id) => felder.find((f) => f.id === id) || {}
   return (
     <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto' }}>
+      {/* Quadranten-Felder: Tönung + anklickbar als Einstieg/Filter */}
+      {Object.entries(rect).map(([id, [a, b, c, d]]) => {
+        const f = von(id); const aktiv = quadrant === id
+        return (
+          <g key={id} onClick={onQuadrant ? () => onQuadrant(aktiv ? null : id) : undefined} style={{ cursor: onQuadrant ? 'pointer' : 'default' }}>
+            <title>{`${f.name} — ${f.anzahl} Objekte, ${f.umsatz} Mio €${onQuadrant ? ' (klick: filtern)' : ''}`}</title>
+            <rect x={a} y={b} width={c - a} height={d - b} fill={f.farbe} fillOpacity={aktiv ? 0.16 : 0.05} />
+            {aktiv && <rect x={a} y={b} width={c - a} height={d - b} fill="none" stroke={f.farbe} strokeWidth="2" />}
+            <text x={id === 'cashcow' || id === 'dog' ? a + 6 : c - 6} y={id === 'star' || id === 'cashcow' ? b + 15 : d - 8}
+              textAnchor={id === 'cashcow' || id === 'dog' ? 'start' : 'end'} fontSize="11" fontWeight="700" fill={f.farbe} fillOpacity={aktiv ? 1 : 0.7} style={{ pointerEvents: 'none' }}>
+              {f.name} ({f.anzahl})
+            </text>
+          </g>
+        )
+      })}
       <line x1={pad} y1={H - pad} x2={W - 10} y2={H - pad} stroke="var(--line)" />
       <line x1={pad} y1={14} x2={pad} y2={H - pad} stroke="var(--line)" />
       <line x1={x0} y1={14} x2={x0} y2={H - pad} stroke="var(--line)" strokeDasharray="4 4" />
-      <text x={x0 + 4} y={22} fontSize="10" fill="var(--muted)">Wachstum 0 %</text>
+      <line x1={pad} y1={y0} x2={W - 10} y2={y0} stroke="var(--line)" strokeDasharray="4 4" />
+      <text x={x0 + 4} y={H - pad - 4} fontSize="10" fill="var(--muted)">Wachstum {schwellen.wachstum} %</text>
+      <text x={pad + 4} y={y0 - 4} fontSize="10" fill="var(--muted)">DB {schwellen.db} %</text>
       <text x={W - 12} y={H - pad + 16} fontSize="10" fill="var(--muted)" textAnchor="end">Wachstum % →</text>
       <text x={pad - 6} y={20} fontSize="10" fill="var(--muted)" textAnchor="end">DB %</text>
-      {objekte.map((o) => (
-        <g key={o.id} onClick={onDrill ? () => onDrill(o) : undefined} style={{ cursor: onDrill ? 'pointer' : 'default' }}>
-          <title>{onDrill ? `In die Detailliste springen (gefiltert auf „${o.gruppe || o.name}")` : o.name}</title>
-          <circle cx={px(o.wachstum)} cy={py(o.db)} r={rad(o.umsatz)} fill={info(o.phase).farbe} fillOpacity="0.30" stroke={info(o.phase).farbe} />
-          <text x={px(o.wachstum)} y={py(o.db) + 3} fontSize="10" textAnchor="middle" fill="var(--ink)" style={{ pointerEvents: 'none' }}>{o.name}</text>
-        </g>
-      ))}
+      {objekte.map((o) => {
+        const imQuad = !quadrant || quadrantVon(o, schwellen) === quadrant
+        return (
+          <g key={o.id} onClick={onDrill ? () => onDrill(o) : undefined} style={{ cursor: onDrill ? 'pointer' : 'default', opacity: imQuad ? 1 : 0.18 }}>
+            <title>{onDrill ? `In die Detailliste springen (gefiltert auf „${o.gruppe || o.name}")` : o.name}</title>
+            <circle cx={px(o.wachstum)} cy={py(o.db)} r={rad(o.umsatz)} fill={info(o.phase).farbe} fillOpacity="0.30" stroke={info(o.phase).farbe} />
+            <text x={px(o.wachstum)} y={py(o.db) + 3} fontSize="10" textAnchor="middle" fill="var(--ink)" style={{ pointerEvents: 'none' }}>{o.name}</text>
+          </g>
+        )
+      })}
     </svg>
+  )
+}
+
+function QuadrantKacheln({ felder, quadrant, onQuadrant, onDrill }) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(165px, 1fr))', gap: 10, marginBottom: 14 }}>
+      {felder.map((f) => {
+        const aktiv = quadrant === f.id
+        return (
+          <div key={f.id} onClick={() => onQuadrant(aktiv ? null : f.id)} title={f.these}
+            style={{ ...card, padding: '10px 12px', cursor: 'pointer', borderTop: `3px solid ${f.farbe}`,
+              outline: aktiv ? `2px solid ${f.farbe}` : 'none', background: aktiv ? 'var(--bg)' : 'var(--panel)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 6 }}>
+              <span style={{ fontWeight: 700, fontSize: 13, color: f.farbe }}>{f.name}</span>
+              <span style={{ fontSize: 10.5, color: 'var(--muted)' }}>{f.kurz}</span>
+            </div>
+            <div style={{ fontSize: 17, fontWeight: 700, marginTop: 2 }}>{f.umsatz} Mio €</div>
+            <div style={{ fontSize: 11, color: 'var(--muted)' }}>{f.anzahl} Obj. · {f.anteil} % Umsatz · Ø DB {f.dbSchnitt} %</div>
+            <div style={{ fontSize: 11, color: 'var(--slate)', marginTop: 4, lineHeight: 1.35 }}>{f.strategie}</div>
+            {aktiv && onDrill && f.objekte.length > 0 && (
+              <div style={{ marginTop: 6, display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                {f.objekte.map((o) => (
+                  <button key={o.id} onClick={(e) => { e.stopPropagation(); onDrill(o) }} title="In die Artikelliste springen (gefiltert)"
+                    style={{ fontSize: 11, cursor: 'pointer', border: `1px solid ${f.farbe}`, color: f.farbe, background: 'var(--panel)', borderRadius: 999, padding: '1px 8px' }}>{o.name} →</button>
+                ))}
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </div>
   )
 }
 
@@ -64,19 +120,29 @@ function PhasenKacheln({ vert }) {
 function Produkte({ onDrill }) {
   const [ebene, setEbene] = useState('produkt')
   const [auf, setAuf] = useState({})
-  const objekte = produkte(ebene)
+  const [quadrant, setQuadrant] = useState(null) // BCG-Feld als Filter/Einstieg
+  const alle = produkte(ebene)
+  const { schwellen, felder } = bcgVerteilung(ebene)
+  const objekte = quadrant ? alle.filter((o) => quadrantVon(o, schwellen) === quadrant) : alle
+  const quadName = quadrant ? felder.find((f) => f.id === quadrant)?.name : null
   return (
     <>
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
         {[['produkt', 'Produktgruppe'], ['artikel', 'Artikel']].map(([id, n]) => (
-          <button key={id} style={chipStyle(ebene === id)} onClick={() => { setEbene(id); setAuf({}) }}>{n}</button>
+          <button key={id} style={chipStyle(ebene === id)} onClick={() => { setEbene(id); setAuf({}); setQuadrant(null) }}>{n}</button>
         ))}
       </div>
       <PhasenKacheln vert={produktPhaseVerteilung(ebene)} />
       <div style={{ ...card, padding: 16, marginBottom: 14 }}>
-        <div style={{ ...cap, marginBottom: 6 }}>Portfolio — Wachstum × Deckungsbeitrag (Blasengröße = Umsatz)</div>
-        <Portfolio objekte={objekte} info={produktPhaseInfo} onDrill={onDrill} />
-        {onDrill && <div style={{ fontSize: 12, color: 'var(--accent)', marginTop: 6 }}>↳ Blase anklicken: in die Artikelliste springen (gefiltert), um den Wert im Detail wiederzufinden.</div>}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+          <div style={cap}>Portfolio (BCG) — Wachstum × Deckungsbeitrag (Blasengröße = Umsatz)</div>
+          {quadrant && <button onClick={() => setQuadrant(null)} style={{ fontSize: 12, cursor: 'pointer', border: '1px solid var(--line)', background: 'var(--panel)', borderRadius: 999, padding: '2px 10px', color: 'var(--muted)' }}>Filter „{quadName}" ✕</button>}
+        </div>
+        <QuadrantKacheln felder={felder} quadrant={quadrant} onQuadrant={setQuadrant} onDrill={onDrill} />
+        <Portfolio objekte={alle} info={produktPhaseInfo} onDrill={onDrill} schwellen={schwellen} felder={felder} quadrant={quadrant} onQuadrant={setQuadrant} />
+        <div style={{ fontSize: 12, color: 'var(--accent)', marginTop: 6 }}>
+          ↳ Quadrant anklicken: Portfolio + Liste auf das Feld (Stars / Cash Cows / Question Marks / Poor Dogs) eingrenzen.{onDrill ? ' Blase/Objekt anklicken: in die Artikelliste springen (gefiltert).' : ''}
+        </div>
         <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 8 }}>
           {PRODUKT_PHASEN.map((p) => (
             <span key={p.id} style={{ fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
@@ -86,7 +152,7 @@ function Produkte({ onDrill }) {
         </div>
       </div>
       <div style={{ ...card, padding: 16 }}>
-        <div style={{ ...cap, marginBottom: 10 }}>{ebene === 'produkt' ? 'Produktgruppen' : 'Artikel'} ({objekte.length})</div>
+        <div style={{ ...cap, marginBottom: 10 }}>{ebene === 'produkt' ? 'Produktgruppen' : 'Artikel'} ({objekte.length}){quadName ? ` · Feld „${quadName}"` : ''}</div>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead><tr>{['', 'Name', 'Umsatz', 'DB %', 'Wachstum', 'Margentrend', 'Phase', 'Normstrategie'].map((h, i) => (
             <th key={i} style={{ textAlign: i >= 2 && i <= 5 ? 'right' : 'left', padding: '6px 10px', borderBottom: '1px solid var(--line)', fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase' }}>{h}</th>
