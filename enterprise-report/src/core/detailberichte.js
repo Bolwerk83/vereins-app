@@ -105,22 +105,42 @@ export function auftragsliste({ suche = '', nurAuffaellig = false } = {}) {
 // ---- Ebene 5: Historisierung je Datensatz --------------------------------
 function addTage(iso, tage) { const d = new Date(iso); d.setDate(d.getDate() + tage); return d.toISOString().slice(0, 10) }
 
-/** Verlauf/Verlaufsereignisse eines Detail-Datensatzes (E5). */
+const MON = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun']
+const offset = (s) => String(s || '').length
+
+/**
+ * Historisierung eines Detail-Datensatzes (E5).
+ * @returns { kind:'chart', einheit, punkte:[{label,wert}] }  ODER
+ *          { kind:'timeline', punkte:[{label,datum,warn}] }
+ */
 export function historie(typ, row) {
   if (typ === 'artikel') {
-    const monate = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun']
-    const base = (row.lbEff || 0) + (row.kom || 0) + 4
-    const off = String(row.sku).length
-    return monate.map((m, i) => ({
-      label: m,
-      bestand: Math.max(0, Math.round(base - i * 0.5 + Math.sin(i + off) * 2)),
-      ae: Math.max(0, Math.round(1 + (Math.cos(i * 1.1 + off) + 1) * 1.5))
-    }))
+    const base = (row.lbEff || 0) + (row.kom || 0) + 4, o = offset(row.sku)
+    return { kind: 'chart', einheit: 'Bestand (Stk)', punkte: MON.map((m, i) => ({ label: m, wert: Math.max(0, Math.round(base - i * 0.5 + Math.sin(i + o) * 2)) })) }
+  }
+  if (typ === 'warenverbrauch') {
+    const o = offset(row.sku)
+    return { kind: 'chart', einheit: 'Verbrauch (Stk)', punkte: MON.map((m, i) => ({ label: m, wert: Math.max(0, Math.round((row.verbrauch || 12) / 6 + Math.sin(i + o) * 3)) })) }
+  }
+  if (typ === 'kunde') {
+    const o = offset(row.kundennr || row.name)
+    return { kind: 'chart', einheit: 'Umsatz (T€)', punkte: MON.map((m, i) => ({ label: m, wert: Math.max(0, Math.round((row.umsatzJahr || 60) / 6 + Math.cos(i + o) * 8)) })) }
+  }
+  if (typ === 'rechnung') {
+    return { kind: 'timeline', punkte: [
+      { label: 'Erstellt', datum: addTage(row.datum, 0) }, { label: 'Versendet', datum: addTage(row.datum, 1) },
+      row.bezahlt ? { label: 'Bezahlt', datum: addTage(row.datum, 12) } : { label: 'offen', datum: addTage(row.datum, 30), warn: true }
+    ] }
+  }
+  if (typ === 'retoure') {
+    return { kind: 'timeline', punkte: [
+      { label: 'Eingegangen', datum: addTage(row.datum, 0) }, { label: 'Geprüft', datum: addTage(row.datum, 2) }, { label: 'Erstattet', datum: addTage(row.datum, 5) }
+    ] }
   }
   // Auftrag: Status-Zeitstrahl bis zum aktuellen Stand.
   let stufen = row.status === 'Offen' ? ['Angelegt', 'Bestätigt'] : ['Angelegt', 'Bestätigt', 'Kommissioniert', 'Geliefert']
   if (row.ret > 0 || row.ue < 0) stufen = [...stufen, 'Retoure']
-  return stufen.map((s, i) => ({ label: s, datum: addTage(row.datum, i * 2) }))
+  return { kind: 'timeline', punkte: stufen.map((s, i) => ({ label: s, datum: addTage(row.datum, i * 2), warn: s === 'Retoure' })) }
 }
 
 // ---- Katalog der Detailberichte -----------------------------------------

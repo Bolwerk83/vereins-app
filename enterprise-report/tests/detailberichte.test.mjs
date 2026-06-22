@@ -43,13 +43,15 @@ test('Auftragsliste: negativer MEK und negativer UE bei Geliefert', () => {
   assert.ok(birkner.some((x) => x.feld === 'ue'))
 })
 
-test('Ebene 5: Historie je Datensatz (Artikel-Verlauf, Auftrags-Zeitstrahl)', () => {
+test('Ebene 5: Historie je Datensatz (Artikel-Chart, Auftrags-Zeitstrahl)', () => {
   const h = historie('artikel', ARTIKEL[0])
-  assert.equal(h.length, 6)
-  assert.ok(h.every((x) => typeof x.bestand === 'number'))
+  assert.equal(h.kind, 'chart')
+  assert.equal(h.punkte.length, 6)
+  assert.ok(h.punkte.every((x) => typeof x.wert === 'number'))
   const o = auftragsliste().rows.find((x) => x.status === 'Geliefert')
   const ho = historie('auftrag', o)
-  assert.ok(ho.some((x) => x.label === 'Geliefert'))
+  assert.equal(ho.kind, 'timeline')
+  assert.ok(ho.punkte.some((x) => x.label === 'Geliefert'))
 })
 
 test('LISTEN-Katalog hat verfügbare und geplante Listen', () => {

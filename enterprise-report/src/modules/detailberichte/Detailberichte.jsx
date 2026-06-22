@@ -177,7 +177,7 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, idKey, titelKey }
 
 function BefundModal({ typ, row, cols, idKey, titelKey, onClose }) {
   const hist = historie(typ, row)
-  const maxB = typ === 'artikel' ? Math.max(...hist.map((h) => h.bestand), 1) : 0
+  const maxB = hist.kind === 'chart' ? Math.max(...hist.punkte.map((h) => h.wert), 1) : 0
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'rgba(15,23,42,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
       <div onClick={(e) => e.stopPropagation()} style={{ width: 560, maxWidth: '94vw', maxHeight: '88vh', overflowY: 'auto', background: 'var(--panel)', borderRadius: 'var(--radius)', boxShadow: '0 20px 60px rgba(0,0,0,.3)', border: '1px solid var(--line)' }}>
@@ -209,27 +209,27 @@ function BefundModal({ typ, row, cols, idKey, titelKey, onClose }) {
           <div style={{ ...cap, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ fontSize: 9, background: 'var(--accent-soft)', color: 'var(--accent)', borderRadius: 4, padding: '1px 6px' }}>E5</span> Historisierung
           </div>
-          {typ === 'artikel' ? (
+          {hist.kind === 'chart' ? (
             <div style={{ marginBottom: 14 }}>
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 70 }}>
-                {hist.map((h) => (
-                  <div key={h.label} title={`${h.label}: Bestand ${h.bestand}, AE ${h.ae}`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', gap: 3 }}>
-                    <div style={{ fontSize: 9, color: 'var(--muted)' }}>{h.bestand}</div>
-                    <div style={{ width: '100%', height: `${h.bestand / maxB * 48}px`, minHeight: 2, background: 'var(--accent)', borderRadius: '3px 3px 0 0' }} />
+                {hist.punkte.map((h) => (
+                  <div key={h.label} title={`${h.label}: ${h.wert}`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', gap: 3 }}>
+                    <div style={{ fontSize: 9, color: 'var(--muted)' }}>{h.wert}</div>
+                    <div style={{ width: '100%', height: `${h.wert / maxB * 48}px`, minHeight: 2, background: 'var(--accent)', borderRadius: '3px 3px 0 0' }} />
                     <div style={{ fontSize: 9, color: 'var(--muted)' }}>{h.label}</div>
                   </div>
                 ))}
               </div>
-              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>Bestandsverlauf (Stück) · Balken = Lagerbestand, Tooltip mit Auftragseingang.</div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>{hist.einheit} · letzte 6 Monate.</div>
             </div>
           ) : (
             <div style={{ marginBottom: 14, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-              {hist.map((h, i) => (
-                <React.Fragment key={h.label}>
-                  <span style={{ fontSize: 12, padding: '4px 10px', borderRadius: 999, background: h.label === 'Retoure' ? 'var(--amp-r-soft)' : 'var(--accent-soft)', color: h.label === 'Retoure' ? 'var(--amp-r)' : 'var(--accent)', fontWeight: 600 }}>
+              {hist.punkte.map((h, i) => (
+                <React.Fragment key={h.label + i}>
+                  <span style={{ fontSize: 12, padding: '4px 10px', borderRadius: 999, background: h.warn ? 'var(--amp-r-soft)' : 'var(--accent-soft)', color: h.warn ? 'var(--amp-r)' : 'var(--accent)', fontWeight: 600 }}>
                     {h.label}<span style={{ color: 'var(--muted)', fontWeight: 400 }}> · {datum(h.datum)}</span>
                   </span>
-                  {i < hist.length - 1 && <span style={{ alignSelf: 'center', color: 'var(--muted)' }}>→</span>}
+                  {i < hist.punkte.length - 1 && <span style={{ alignSelf: 'center', color: 'var(--muted)' }}>→</span>}
                 </React.Fragment>
               ))}
             </div>
