@@ -40,6 +40,7 @@ import Lagerverwaltung from './modules/lager/Lagerverwaltung.jsx'
 import Produktionscontrolling from './modules/produktion/Produktionscontrolling.jsx'
 import Planung from './modules/planung/Planung.jsx'
 import Gutschriften from './modules/gutschriften/Gutschriften.jsx'
+import AbgleichAbsatz from './modules/abgleich/AbgleichAbsatz.jsx'
 import WMS from './modules/wms/WMS.jsx'
 import Detailberichte from './modules/detailberichte/Detailberichte.jsx'
 import Forderungen from './modules/forderungen/Forderungen.jsx'
@@ -241,7 +242,8 @@ export default function App() {
         E('abweichung', 'nav.abweichung', '📊'),
         E('vergleich', 'nav.vergleich', '⚖'),
         E('qc', 'nav.qc', '✅', { badge: qcFehler || null }),
-        E('abstimmung', 'nav.abstimmung', '🔗')
+        E('abstimmung', 'nav.abstimmung', '🔗'),
+        E('abgleichabsatz', 'nav.abgleichabsatz', '🔀')
       ] },
       { titel: 'Lebenszyklen', eintraege: [
         E('lebenszyklus', 'nav.lebenszyklus', '🔄'),
@@ -517,6 +519,9 @@ export default function App() {
         )}
         {ansicht === 'gutschriften' && (
           <Gutschriften />
+        )}
+        {ansicht === 'abgleichabsatz' && (
+          <AbgleichAbsatz />
         )}
         {ansicht === 'wms' && (
           <WMS />

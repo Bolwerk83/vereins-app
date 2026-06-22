@@ -82,7 +82,7 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
 - Offen: Rollout auf weitere Berichte (Vertrieb, Kosten/Profitcenter, Lager,
   Produktion) — jeweils die fachlich sinnvollen Dimensionen anbieten.
 
-### G. Abgleichsbericht Absatzmenge vs. Auftragseingang tatsächlich — NEU
+### G. Abgleichsbericht Absatzmenge vs. Auftragseingang tatsächlich — DONE
 - **Absatzmenge (aus Rechnungspositionen)** gegen **Auftragseingang tatsächlich
   (AET, WaWi)** je Produkt/Kunde abgleichen; Differenz (abs/%) und Ursachen
   (Teillieferung, Storno, Verschiebung) sichtbar machen.
