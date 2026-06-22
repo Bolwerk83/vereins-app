@@ -95,6 +95,27 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
   viele **Visuals** hinterlegt (Karte, Balken, Linie, Tabelle, Donut, Hierarchie …),
   sodass man **nur die Kennzahl tauschen** muss und alle Visuals automatisch passen.
 
+### 19. Detailanalyse-Berichte für operative Erfasser:innen
+- Zielgruppe: die täglich Daten **erfassen & bewerten** — sehr granular, nicht „Overall".
+- Mehrwerte:
+  - **Entwicklungen/Trends** je Artikel/Kunde/Charge/Konto über Zeit (Mini-Zeitreihen,
+    „seit gestern"-Delta, Wochen-/Monatsverlauf).
+  - **„Was hat sich geändert"** seit letztem Stand (Bewegungen, Korrekturen).
+  - **Pivot/Kreuztabelle** mit frei wählbaren Dimensionen & Maßen.
+  - **Eingabequalität/Vollständigkeit** je Erfasser:in (Fehlerquote, offene Felder).
+  - **Ausreißer/Anomalien** über Zeit (nicht nur statische Plausi).
+  - schneller Wechsel Tabelle ↔ Visual ↔ Hierarchie, Drill bis Einzelbeleg.
+
+## Eigene Themen-Ideen (Vorschläge)
+- **Schwellwert-Alerts** konfigurierbar + Benachrichtigung/Abo (Alerts ausbauen).
+- **Textbox → Maßnahme**: aus Kommentar direkt SMART-Maßnahme erzeugen & nachverfolgen.
+- **Audit-Trail global**: wer hat wann was geändert/bewertet (über alle Module).
+- **Forecast/Trend-Projektion** (einfache Fortschreibung + Szenariokopplung, vgl. #3).
+- **Benchmark/Vergleich** (Vorjahr/Plan/Peer) als eigene Vergleichsansicht.
+- **Export/Verteilung** je Bericht (PDF, geplanter Versand — Verteiler nutzen).
+- **Mobile/Responsive** Feinschliff für unterwegs.
+- **Datenherkunft/Lineage** bis zur SQL-Quelle sichtbar machen.
+
 ## Kleinere / Querschnitt
 - Visualisierungen (Daten-Balken etc.) auch **im Berichtsbaum** und weiteren
   Berichten anbieten (bisher nur Detaillisten).
