@@ -38,6 +38,24 @@ export const PLAN_TYPEN = [
 // (Rest: Stornos, Verschiebungen). Für die Vertriebs-Hochrechnung.
 export const AE_UMSATZ_FAKTOR = 0.92
 
+// Verteilungsschlüssel („splashen"): wie ein Jahreswert auf 12 Monate verteilt
+// wird. gewichte werden intern normiert (Summe = 1).
+export const VERTEILSCHLUESSEL = [
+  { id: 'gleich',      name: 'Gleichmäßig',         gewichte: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] },
+  { id: 'saison_bike', name: 'Saison (Bike-Frühjahr/Sommer)', gewichte: [3, 4, 7, 10, 12, 12, 11, 9, 7, 5, 4, 3] },
+  { id: 'quartalsende',name: 'Quartalslastig (Mär/Jun/Sep/Dez)', gewichte: [1, 1, 3, 1, 1, 3, 1, 1, 3, 1, 1, 3] },
+  { id: 'wachstum',    name: 'Wachsend (Hochlauf)', gewichte: [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16] },
+  { id: 'jahresende',  name: 'Jahresendlastig (Q4)', gewichte: [4, 4, 5, 5, 6, 6, 7, 8, 10, 13, 16, 16] }
+]
+export const schluesselVon = (id) => VERTEILSCHLUESSEL.find((s) => s.id === id) || VERTEILSCHLUESSEL[0]
+
+/** Jahreswert über einen Verteilungsschlüssel auf 12 Monate „splashen". */
+export function verteile(jahreswert, schluesselId = 'gleich') {
+  const g = schluesselVon(schluesselId).gewichte
+  const summe = g.reduce((a, b) => a + b, 0) || 1
+  return g.map((w) => jahreswert * w / summe)
+}
+
 const KEY = 'er_plaene'
 function ladeAlle() { try { return JSON.parse(localStorage.getItem(KEY) || '[]') } catch { return [] } }
 function speichereAlle(arr) { try { localStorage.setItem(KEY, JSON.stringify(arr)) } catch {}; return arr }
@@ -54,7 +72,7 @@ export function ladePlaene() {
   if (arr.length) return arr
   // Seed: ein Beispiel-Budget, damit der Bereich nicht leer startet.
   const seed = [{
-    id: 'plan-basis', name: 'Budget 2026', typ: 'budget', jahr: 2026, schwundPct: 3,
+    id: 'plan-basis', name: 'Budget 2026', typ: 'budget', jahr: 2026, schwundPct: 3, schluessel: 'saison_bike',
     zeilen: { ebike: { menge: 24000, ohneUmsatz: 120 }, akku: { menge: 31000, ohneUmsatz: 60 },
       zubehoer: { menge: 90000, ohneUmsatz: 0 }, bekleidung: { menge: 40000, ohneUmsatz: 200 } }
   }]
@@ -63,7 +81,7 @@ export function ladePlaene() {
 export function planVon(id) { return ladePlaene().find((p) => p.id === id) || null }
 
 export function neuerPlan(name = 'Neuer Plan', typ = 'budget', jahr = 2026) {
-  const plan = { id: 'plan-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name, typ, jahr, schwundPct: 3, zeilen: leereZeilen() }
+  const plan = { id: 'plan-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name, typ, jahr, schwundPct: 3, schluessel: 'saison_bike', zeilen: leereZeilen() }
   speichereAlle([...ladePlaene(), plan])
   return plan
 }
@@ -134,22 +152,43 @@ export function mengeAusBetrag(prodId, betrag) {
 }
 
 /**
- * Liquiditätsvorschau (12 Monate): Umsatz/Wareneinsatz gleichmäßig über das
- * Jahr verteilt, aber um die Zahlungsziele verschoben (Geld kommt/geht später).
- * Liefert je Monat Einzahlung, Auszahlung, Netto und kumuliert.
+ * Monatsverteilung („Splash"): Jahres-Plan je Produkt über den gewählten
+ * Verteilungsschlüssel auf 12 Monate verteilen. Liefert je Monat die Summen
+ * über alle Produkte (Menge, Umsatz, Wareneinsatz, DB).
+ */
+export function monatsVerteilung(plan) {
+  const sId = plan?.schluessel || 'gleich'
+  const monate = Array.from({ length: 12 }, (_, m) => ({ monat: m + 1, menge: 0, umsatz: 0, wareneinsatz: 0, db: 0 }))
+  for (const p of PLAN_PRODUKTE) {
+    const z = rechneZeile(p.id, plan.zeilen?.[p.id], plan.schwundPct || 0)
+    const mMenge = verteile(z.menge, sId)
+    const mUms = verteile(z.umsatz, sId)
+    const mWe = verteile(z.wareneinsatz, sId)
+    for (let m = 0; m < 12; m++) {
+      monate[m].menge += mMenge[m]; monate[m].umsatz += mUms[m]; monate[m].wareneinsatz += mWe[m]
+    }
+  }
+  return monate.map((x) => ({ monat: x.monat, menge: r0(x.menge), umsatz: r0(x.umsatz), wareneinsatz: r0(x.wareneinsatz), db: r0(x.umsatz - x.wareneinsatz) }))
+}
+
+/**
+ * Liquiditätsvorschau (12 Monate): Umsatz/Wareneinsatz über den Verteilungs-
+ * schlüssel „gesplasht" und um die Zahlungsziele verschoben (Geld kommt/geht
+ * später). Liefert je Monat Einzahlung, Auszahlung, Netto und kumuliert.
  */
 export function liquiditaet(plan) {
+  const sId = plan?.schluessel || 'gleich'
   const ein = new Array(12).fill(0)
   const aus = new Array(12).fill(0)
   for (const p of PLAN_PRODUKTE) {
     const z = rechneZeile(p.id, plan.zeilen?.[p.id], plan.schwundPct || 0)
-    const umMonat = z.umsatz / 12
-    const weMonat = z.wareneinsatz / 12
+    const mUms = verteile(z.umsatz, sId)
+    const mWe = verteile(z.wareneinsatz, sId)
     const shiftVk = Math.round((p.zahlzielVk || 0) / 30) // Zahlungsziel in Monaten (gerundet)
     const shiftEk = Math.round((p.zahlzielEk || 0) / 30)
     for (let m = 0; m < 12; m++) {
-      if (m + shiftVk < 12) ein[m + shiftVk] += umMonat
-      if (m + shiftEk < 12) aus[m + shiftEk] += weMonat
+      if (m + shiftVk < 12) ein[m + shiftVk] += mUms[m]
+      if (m + shiftEk < 12) aus[m + shiftEk] += mWe[m]
     }
   }
   let kum = 0

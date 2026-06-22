@@ -5,8 +5,8 @@
 // =========================================================================
 import React, { useState } from 'react'
 import {
-  PLAN_PRODUKTE, PLAN_TYPEN, AE_UMSATZ_FAKTOR, ladePlaene, planVon, neuerPlan,
-  kopierePlan, speicherePlan, loeschePlan, rechnePlan, topDownVerteilung, mengeAusBetrag, liquiditaet
+  PLAN_PRODUKTE, PLAN_TYPEN, AE_UMSATZ_FAKTOR, VERTEILSCHLUESSEL, ladePlaene, planVon, neuerPlan,
+  kopierePlan, speicherePlan, loeschePlan, rechnePlan, topDownVerteilung, mengeAusBetrag, liquiditaet, monatsVerteilung
 } from '../../core/planung.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
@@ -29,6 +29,8 @@ export default function Planung({ onGeh }) {
 
   if (!plan) return <div style={{ padding: 20 }}>Kein Plan vorhanden.</div>
   const erg = rechnePlan(plan)
+  const mv = monatsVerteilung(plan)
+  const mvMax = Math.max(1, ...mv.map((m) => m.umsatz))
   const liq = liquiditaet(plan)
   const liqEnde = liq[11]?.kumuliert || 0
   const liqMin = Math.min(...liq.map((m) => m.kumuliert))
@@ -68,6 +70,11 @@ export default function Planung({ onGeh }) {
         <label style={lbl}>Typ <select value={plan.typ} onChange={(e) => setFeld('typ', e.target.value)} style={{ ...inp, marginLeft: 4 }}>{PLAN_TYPEN.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select></label>
         <label style={lbl}>Jahr <input type="number" value={plan.jahr} onChange={(e) => setFeld('jahr', Number(e.target.value))} style={{ ...inp, width: 80, marginLeft: 4 }} /></label>
         <label style={lbl} title="Mehrbedarf, weil Teile/Räder kaputtgehen oder verschwinden">Schwund % <input type="number" step="0.5" value={plan.schwundPct} onChange={(e) => setFeld('schwundPct', Number(e.target.value))} style={{ ...inp, width: 70, marginLeft: 4 }} /></label>
+        <label style={lbl} title="Verteilungsschlüssel: wie der Jahreswert auf die Monate gesplasht wird (Saisongeschäft berücksichtigen)">Verteilung
+          <select value={plan.schluessel || 'gleich'} onChange={(e) => setFeld('schluessel', e.target.value)} style={{ ...inp, marginLeft: 4 }}>
+            {VERTEILSCHLUESSEL.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+        </label>
       </div>
 
       {/* Ergebnis-KPIs */}
@@ -125,6 +132,26 @@ export default function Planung({ onGeh }) {
         <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 10 }}>
           <b>Menge ODER Umsatz</b> eingeben — das jeweils andere wird über den VK-Preis berechnet. <b>ohne Umsatz</b> = Sponsoren/
           Ausstellung/Muster (verursachen Wareneinsatz, aber keinen Umsatz). Wareneinsatz enthält den <b>Schwund-Aufschlag</b>.
+        </div>
+      </div>
+
+      {/* Monatsverteilung („Splash" über den Verteilungsschlüssel) */}
+      <div style={{ ...card, padding: 16, overflowX: 'auto', marginBottom: 14 }}>
+        <div style={{ ...cap, marginBottom: 10 }}>Monatsverteilung (Splash) — Schlüssel „{VERTEILSCHLUESSEL.find((s) => s.id === (plan.schluessel || 'gleich'))?.name}"</div>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 90, padding: '0 4px' }}>
+          {mv.map((m) => (
+            <div key={m.monat} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+              <span className="mono" style={{ fontSize: 9.5, color: 'var(--muted)' }}>{eur0(m.umsatz / 1000)}k</span>
+              <div title={`${MON[m.monat - 1]}: Umsatz ${eur0(m.umsatz)} € · DB ${eur0(m.db)} €`}
+                style={{ width: '100%', maxWidth: 42, height: `${Math.max(2, m.umsatz / mvMax * 60)}px`, background: 'var(--accent)', borderRadius: '3px 3px 0 0' }} />
+              <span style={{ fontSize: 10, color: 'var(--muted)' }}>{MON[m.monat - 1]}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 10 }}>
+          Der Jahres-Plan wird über den Verteilungsschlüssel auf die Monate verteilt („splashen"). Für das
+          <b> Saisongeschäft</b> z. B. „Saison (Bike-Frühjahr/Sommer)" wählen — die Spitzen liegen dann im Frühjahr/Sommer.
+          Die Liquiditätsvorschau nutzt dieselbe Verteilung.
         </div>
       </div>
 

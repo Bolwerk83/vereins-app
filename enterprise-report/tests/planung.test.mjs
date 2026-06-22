@@ -89,3 +89,37 @@ test('Seed-Plan vorhanden, wenn noch keine Pläne existieren', () => {
   assert.ok(plaene.length >= 1)
   assert.ok(plaene[0].zeilen)
 })
+
+import { verteile, monatsVerteilung, VERTEILSCHLUESSEL, schluesselVon } from '../src/core/planung.js'
+
+test('verteile: Jahreswert summiert sich (fast) exakt über 12 Monate', () => {
+  const v = verteile(120000, 'gleich')
+  assert.equal(v.length, 12)
+  assert.ok(Math.abs(v.reduce((a, b) => a + b, 0) - 120000) < 0.001)
+  v.forEach((x) => assert.ok(Math.abs(x - 10000) < 0.001)) // gleichmäßig
+})
+
+test('Saison-Schlüssel: Sommer-Monate höher gewichtet als Winter', () => {
+  const v = verteile(120000, 'saison_bike')
+  // Juni (Index 5) > Dezember (Index 11)
+  assert.ok(v[5] > v[11])
+  // Mai/Juni gehören zu den stärksten Monaten
+  assert.ok(v[4] > v[0] && v[5] > v[0])
+})
+
+test('monatsVerteilung: 12 Monate, Summe = Jahres-Umsatz/Wareneinsatz', () => {
+  localStorage.removeItem('er_plaene')
+  const plan = { id: 't', name: 'T', typ: 'budget', jahr: 2026, schwundPct: 0, schluessel: 'saison_bike',
+    zeilen: { ebike: { menge: 1200, ohneUmsatz: 0 }, akku: { menge: 0, ohneUmsatz: 0 },
+      zubehoer: { menge: 0, ohneUmsatz: 0 }, bekleidung: { menge: 0, ohneUmsatz: 0 } } }
+  const mv = monatsVerteilung(plan)
+  assert.equal(mv.length, 12)
+  const r = rechnePlan(plan)
+  const summeUms = mv.reduce((n, m) => n + m.umsatz, 0)
+  assert.ok(Math.abs(summeUms - r.umsatz) / r.umsatz < 0.01) // Rundungstoleranz
+})
+
+test('Alle Verteilungsschlüssel haben 12 Gewichte', () => {
+  for (const s of VERTEILSCHLUESSEL) assert.equal(s.gewichte.length, 12)
+  assert.equal(schluesselVon('gibtsnicht').id, 'gleich') // Fallback
+})
