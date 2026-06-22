@@ -742,6 +742,7 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, onDrill, startSuc
   const [hov, setHov] = useState(null)        // Spaltenkopf-Tooltip {key,x,y}
   const [infoKey, setInfoKey] = useState(null) // ausführliche KPI-Beschreibung
   const [visuals, setVisuals] = useState(() => localStorage.getItem('er_visuals') !== '0') // Daten-Balken (global, Standard an)
+  const [breiten, setBreiten] = useState({}) // ziehbare Spaltenbreiten je Spalte
   useEffect(() => { try { localStorage.setItem('er_visuals', visuals ? '1' : '0') } catch {} }, [visuals])
   const hideTimer = React.useRef(null)
   const zeigeHov = (e, key) => { if (!glossarFuer(key)) return; clearTimeout(hideTimer.current); const r = e.currentTarget.getBoundingClientRect(); setHov({ key, x: r.left, y: r.bottom }) }
@@ -760,6 +761,18 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, onDrill, startSuc
   const speichereAnsicht = () => { const name = prompt('Name für diese Ansicht (Bookmark):'); if (name && name.trim()) { addBookmark(typ, name, [...sichtbar]); setBmTick((t) => t + 1) } }
   const loesche = (id) => { loescheBookmark(typ, id); setBmTick((t) => t + 1) }
   const sichtCols = cols.filter((c) => sichtbar.has(c.key))
+  // Spaltenbreiten (ziehbar). Standardbreite je Spaltentyp; Override per Drag.
+  const defW = (c) => (['artikel', 'kunde', 'name', 'bezeichnung', 'lieferant', 'grund', 'email'].includes(c.key) ? 220 : c.al === 'right' ? 110 : c.al === 'center' ? 90 : 130)
+  const colW = (c) => breiten[c.key] || defW(c)
+  const starteResize = (e, key) => {
+    e.preventDefault(); e.stopPropagation()
+    const startX = e.clientX, th = e.currentTarget.parentElement
+    const startW = breiten[key] || th.offsetWidth
+    const move = (ev) => setBreiten((b) => ({ ...b, [key]: Math.max(56, startW + (ev.clientX - startX)) }))
+    const up = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up) }
+    document.addEventListener('mousemove', move); document.addEventListener('mouseup', up)
+  }
+  const tabBreite = sichtCols.reduce((n, c) => n + colW(c), 0) + 36
   // Spalten-Maxima für Daten-Balken (nur rechtsbündige Zahlenspalten).
   const colMax = {}
   if (visuals) for (const c of sichtCols) if (c.al === 'right') {
@@ -893,13 +906,16 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, onDrill, startSuc
 
       {/* Tabelle */}
       <div style={{ ...card, padding: 0, overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5, minWidth: 1000 }}>
+        <table style={{ tableLayout: 'fixed', width: tabBreite, borderCollapse: 'collapse', fontSize: 12.5 }}>
+          <colgroup>{sichtCols.map((c) => <col key={c.key} style={{ width: colW(c) }} />)}<col style={{ width: 36 }} /></colgroup>
           <thead><tr>{sichtCols.map((c) => {
             const g = glossarFuer(c.key)
             return (
               <th key={c.key} onMouseEnter={(e) => zeigeHov(e, c.key)} onMouseLeave={planeHide}
-                style={{ position: 'sticky', top: 0, background: 'var(--panel)', textAlign: c.al, padding: '8px 9px', borderBottom: '2px solid var(--line)', fontSize: 10, color: g ? 'var(--accent)' : 'var(--muted)', textTransform: 'uppercase', whiteSpace: 'nowrap', cursor: g ? 'help' : 'default' }}>
+                style={{ position: 'sticky', top: 0, background: 'var(--panel)', textAlign: c.al, padding: '8px 9px', borderBottom: '2px solid var(--line)', fontSize: 10, color: g ? 'var(--accent)' : 'var(--muted)', textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', cursor: g ? 'help' : 'default' }}>
                 {c.label}{g ? <span style={{ marginLeft: 3, fontSize: 9, opacity: 0.8 }}>ⓘ</span> : ''}
+                <span onMouseDown={(e) => starteResize(e, c.key)} title="Spaltenbreite ziehen"
+                  style={{ position: 'absolute', top: 0, right: 0, width: 7, height: '100%', cursor: 'col-resize', userSelect: 'none' }} />
               </th>
             )
           })}<th style={{ padding: '8px 9px', borderBottom: '2px solid var(--line)' }} /></tr></thead>
