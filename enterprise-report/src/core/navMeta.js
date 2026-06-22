@@ -6,7 +6,7 @@
 // =========================================================================
 export const VIEW_BEREICH = {
   // Cockpit & Berichte – übergreifend
-  baum: null, tagesreporting: null, quartalsbericht: null, kennzahlen: null, katalog: null, kpieditor: null, designer: null, detailberichte: null,
+  baum: null, tagesreporting: null, quartalsbericht: null, kennzahlen: null, katalog: null, kpieditor: null, designer: null, kibuilder: null, detailberichte: null,
   // Kosten & Ergebnis
   klr: 'KLR', kostenarten: 'KLR', kalkulatorik: 'KLR', einzelgemein: 'KLR', // kalkulatorik direkt anwaehlbar
   abgrenzung: 'KLR', kostenstellen: 'KLR', bab: 'KLR', kalkulation: 'KLR', deckungsbeitrag: 'KLR',
@@ -20,7 +20,7 @@ export const VIEW_BEREICH = {
   // Lernen & Wissen – übergreifend
   lernpfad: null, doku: null, controlling: null, klrablauf: null, ablaufdiagramm: null,
   // Verwaltung
-  abschluss: 'FIBU', verteiler: null, transport: null, wizard: null, admin: null, datenmodell: null, datenschutz: null, berichtfreigabe: null, nutzung: null, rechte: null
+  abschluss: 'FIBU', verteiler: null, transport: null, wizard: null, admin: null, datenmodell: null, datenschutz: null, kisteuerung: null, berichtfreigabe: null, nutzung: null, rechte: null
 }
 
 export const bereichVon = (view) => (view in VIEW_BEREICH ? VIEW_BEREICH[view] : null)

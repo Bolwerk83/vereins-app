@@ -74,6 +74,8 @@ export const NAV_ZIELE = [
   { ziel: 'berichtfreigabe', gruppe: 'Administration', schluessel: 'nav.berichtfreigabe' },
   { ziel: 'datenmodell', gruppe: 'Administration', schluessel: 'nav.datenmodell' },
   { ziel: 'datenschutz', gruppe: 'Administration', schluessel: 'nav.datenschutz' },
+  { ziel: 'kisteuerung', gruppe: 'Administration', schluessel: 'nav.kisteuerung' },
+  { ziel: 'kibuilder', gruppe: 'Berichte', schluessel: 'nav.kibuilder' },
   { ziel: 'lernpfad', gruppe: 'Steuerung', schluessel: 'nav.lernpfad' },
   { ziel: 'doku', gruppe: 'Steuerung', schluessel: 'nav.doku' }
 ]

@@ -79,6 +79,8 @@ import { istSichtbar as berichtSichtbar, statusVon as berichtStatusVon } from '.
 import Berichtfreigabe from './modules/berichtfreigabe/Berichtfreigabe.jsx'
 import DatenmodellAdmin from './modules/datenmodell/DatenmodellAdmin.jsx'
 import DatenschutzAdmin from './modules/datenschutz/DatenschutzAdmin.jsx'
+import KiSteuerung from './modules/ki-steuerung/KiSteuerung.jsx'
+import KiBuilder from './modules/ki-builder/KiBuilder.jsx'
 import { bereichVon } from './core/navMeta.js'
 import BerichtInfoModal from './modules/berichtinfo/BerichtInfoModal.jsx'
 import BerichtInfoBanner from './modules/berichtinfo/BerichtInfoBanner.jsx'
@@ -226,7 +228,10 @@ export default function App() {
         E('detailberichte', 'nav.detailberichte', '🔬'),
         E('kpieditor', 'nav.kpieditor', '🧪')
       ] },
-      { titel: 'Eigene Berichte', eintraege: [ E('designer', 'nav.designer', '🧩') ] }
+      { titel: 'Eigene Berichte', eintraege: [
+        E('kibuilder', 'nav.kibuilder', '✨'),
+        E('designer', 'nav.designer', '🧩')
+      ] }
     ] },
     { titel: 'Kosten & Ergebnis', icon: '🧮', untergruppen: [
       { titel: 'Kostenrechnung', eintraege: [
@@ -322,6 +327,7 @@ export default function App() {
         E('admin', 'nav.admin', '🛠'),
         E('datenmodell', 'nav.datenmodell', '🧷'),
         E('datenschutz', 'nav.datenschutz', '🔐'),
+        E('kisteuerung', 'nav.kisteuerung', '🤖'),
         E('berichtfreigabe', 'nav.berichtfreigabe', '🚦'),
         E('nutzung', 'nav.nutzung', '📈'),
         E('rechte', 'nav.rechte', '👥', { badge: anfragenN || null })
@@ -560,6 +566,12 @@ export default function App() {
         )}
         {ansicht === 'datenschutz' && (
           <DatenschutzAdmin istAdmin={istAdmin(rolle)} />
+        )}
+        {ansicht === 'kisteuerung' && (
+          <KiSteuerung istAdmin={istAdmin(rolle)} />
+        )}
+        {ansicht === 'kibuilder' && (
+          <KiBuilder benutzer={benutzer} istAdmin={istAdmin(rolle)} />
         )}
         {ansicht === 'lzempfehlung' && (
           <LebenszyklusEmpfehlungen onGeh={geh} />
