@@ -32,6 +32,7 @@ import FinanzCockpit from './modules/finanzcockpit/FinanzCockpit.jsx'
 import PcKostenstellen from './modules/pc-kostenstellen/PcKostenstellen.jsx'
 import Kontenstrukturen from './modules/kontenstrukturen/Kontenstrukturen.jsx'
 import Leasing from './modules/leasing/Leasing.jsx'
+import Versand from './modules/versand/Versand.jsx'
 import EinzelGemein from './modules/einzelgemein/EinzelGemein.jsx'
 import AuftragsLebenszyklus from './modules/auftrag/AuftragsLebenszyklus.jsx'
 import Kostenstellenrechnung from './modules/kostenstellen/Kostenstellenrechnung.jsx'
@@ -249,7 +250,8 @@ export default function App() {
         E('wms', 'nav.wms', '🗄'),
         E('bestand', 'nav.bestand', '📦'),
         E('lieferant', 'nav.lieferant', '🚚'),
-        E('auftrag', 'nav.auftrag', '📦')
+        E('auftrag', 'nav.auftrag', '📦'),
+        E('versand', 'nav.versand', '📮')
       ] },
       { titel: 'Finanzen & Risiko', eintraege: [
         E('forderungen', 'nav.forderungen', '💶')
@@ -523,6 +525,9 @@ export default function App() {
         )}
         {ansicht === 'leasing' && (
           <Leasing />
+        )}
+        {ansicht === 'versand' && (
+          <Versand />
         )}
         {ansicht === 'lzempfehlung' && (
           <LebenszyklusEmpfehlungen onGeh={geh} />

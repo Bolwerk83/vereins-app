@@ -42,6 +42,7 @@ export const NAV_ZIELE = [
   { ziel: 'pckostenstellen', gruppe: 'Kosten & Ergebnis', schluessel: 'nav.pckostenstellen' },
   { ziel: 'kontenstrukturen', gruppe: 'Kosten & Ergebnis', schluessel: 'nav.kontenstrukturen' },
   { ziel: 'leasing', gruppe: 'Kosten & Ergebnis', schluessel: 'nav.leasing' },
+  { ziel: 'versand', gruppe: 'Operativ', schluessel: 'nav.versand' },
   { ziel: 'lzempfehlung', gruppe: 'Analyse', schluessel: 'nav.lzempfehlung' },
   { ziel: 'auftrag', gruppe: 'Analyse', schluessel: 'nav.auftrag' },
   { ziel: 'anlagen', gruppe: 'Analyse', schluessel: 'nav.anlagen' },
