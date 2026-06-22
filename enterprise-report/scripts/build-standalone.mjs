@@ -28,6 +28,15 @@ const css = readFileSync(`${dist}/assets/${assets.find((f) => f.endsWith('.css')
 // Script nicht vorzeitig endet. (</script> als <\/script>; auch <!-- absichern.)
 const jsSafe = js.replace(/<\/script>/gi, '<\\/script>').replace(/<!--/g, '<\\!--')
 
+// localStorage-Schutz: in sandboxed Vorschauen (z. B. In-App-Viewer) kann der
+// Zugriff eine SecurityException werfen → die App würde beim Start crashen.
+// Wirft er, ersetzen wir localStorage durch einen In-Memory-Ersatz.
+const lsShim = `try{var __t='__ls_test__';window.localStorage.setItem(__t,'1');window.localStorage.removeItem(__t);}catch(e){
+  var __m={};var __ls={getItem:function(k){return Object.prototype.hasOwnProperty.call(__m,k)?__m[k]:null},setItem:function(k,v){__m[k]=String(v)},removeItem:function(k){delete __m[k]},clear:function(){__m={}},key:function(i){return Object.keys(__m)[i]||null}};
+  Object.defineProperty(__ls,'length',{get:function(){return Object.keys(__m).length}});
+  try{Object.defineProperty(window,'localStorage',{configurable:true,value:__ls});}catch(_){}
+}`
+
 // Demo-Modus: Wizard/Overlays überspringen, direkt in die Detailberichte starten.
 const boot = `try{
   localStorage.setItem('er_setup_done','1');
@@ -47,11 +56,20 @@ const html = `<!doctype html>
 <style>${css}</style>
 </head>
 <body>
-<div id="root"></div>
-<script>${boot}
+<div id="root">
+  <div id="er-fallback" style="max-width:560px;margin:14vh auto 0;padding:0 24px;font-family:system-ui,-apple-system,sans-serif;color:#334155;line-height:1.55;text-align:center">
+    <div style="font-size:42px">📊</div>
+    <h2 style="margin:8px 0 4px;color:#0f172a">Enterprise Report — Demo</h2>
+    <p style="margin:4px 0">Anwendung wird geladen …</p>
+    <p style="margin:14px 0 0;font-size:14px;color:#64748b">Bleibt diese Seite weiß, führt die aktuelle <b>Vorschau kein JavaScript</b> aus.
+    Bitte die Datei <b>herunterladen</b> (Symbol ↓ oben) und in <b>Safari</b> oder <b>Chrome</b> öffnen.</p>
+  </div>
+</div>
+<script>${lsShim}
+${boot}
 window.addEventListener('error', function (e) {
-  var r = document.getElementById('root');
-  if (r && !r.firstChild) r.innerHTML = '<pre style="padding:20px;color:#b00;white-space:pre-wrap">Fehler beim Laden: ' + (e.message || e.error || e) + '</pre>';
+  var r = document.getElementById('root'); var f = document.getElementById('er-fallback');
+  if (r && (!r.firstChild || f)) r.innerHTML = '<pre style="padding:20px;color:#b00;white-space:pre-wrap;font:13px/1.5 monospace">Fehler beim Laden:\\n' + (e.message || e.error || e) + '</pre>';
 });</script>
 <script>
 ${jsSafe}
