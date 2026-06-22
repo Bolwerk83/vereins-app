@@ -12,18 +12,20 @@ function lade() {
 }
 function speichere(o) { try { localStorage.setItem(KEY, JSON.stringify(o)) } catch {} return o }
 
-/** Eine Bericht-/Ansichts-Öffnung zählen. */
-export function trackOeffnung(id) {
+/** Eine Bericht-/Ansichts-Öffnung zählen (optional mit Nutzer-Kennung). */
+export function trackOeffnung(id, uid = null) {
   if (!id) return
   const d = lade()
-  const e = d[id] || { count: 0, last: null, tage: {} }
+  const e = d[id] || { count: 0, last: null, tage: {}, nutzer: {} }
+  if (!e.nutzer) e.nutzer = {}
   const t = heute()
   e.count += 1
   e.last = new Date().toISOString()
   e.tage[t] = (e.tage[t] || 0) + 1
-  // Tagesverlauf auf 60 Tage begrenzen.
+  if (uid) { const set = new Set(e.nutzer[t] || []); set.add(uid); e.nutzer[t] = [...set] }
+  // Tagesverlauf (Aufrufe + Nutzer) auf 60 Tage begrenzen.
   const tage = Object.keys(e.tage).sort()
-  while (tage.length > 60) delete e.tage[tage.shift()]
+  while (tage.length > 60) { const alt = tage.shift(); delete e.tage[alt]; delete e.nutzer[alt] }
   d[id] = e
   speichere(d)
   return d
@@ -44,13 +46,18 @@ export function auswertung() {
   const rows = Object.entries(d).map(([id, e]) => ({
     id, count: e.count || 0, last: e.last || null,
     heute: e.tage?.[t] || 0,
-    woche: w.reduce((n, tag) => n + (e.tage?.[tag] || 0), 0)
+    woche: w.reduce((n, tag) => n + (e.tage?.[tag] || 0), 0),
+    userHeute: (e.nutzer?.[t] || []).length,
+    userWoche: new Set(w.flatMap((tag) => e.nutzer?.[tag] || [])).size
   })).sort((a, b) => b.count - a.count)
+  // Eindeutige Nutzer heute über ALLE Berichte hinweg.
+  const userHeuteGesamt = new Set(Object.values(d).flatMap((e) => e.nutzer?.[t] || [])).size
   return {
     rows,
     gesamt: rows.reduce((n, r) => n + r.count, 0),
     heuteGesamt: rows.reduce((n, r) => n + r.heute, 0),
     wocheGesamt: rows.reduce((n, r) => n + r.woche, 0),
+    userHeuteGesamt,
     aktiveBerichte: rows.length
   }
 }
@@ -83,8 +90,8 @@ export function aufraeumen(alleIds = []) {
 /** Auswertung als CSV (für Export). Spalten: Bericht-ID, Aufrufe, Heute, 7 Tage, Zuletzt. */
 export function alsCsv(labelFn = (id) => id) {
   const a = auswertung()
-  const head = ['Bericht', 'ID', 'Aufrufe', 'Heute', '7 Tage', 'Zuletzt']
+  const head = ['Bericht', 'ID', 'Aufrufe', 'Aufrufe heute', 'Aufrufe 7 Tage', 'User heute', 'User 7 Tage', 'Zuletzt']
   const esc = (s) => { const v = String(s ?? ''); return /[";\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v }
-  const zeilen = a.rows.map((r) => [labelFn(r.id), r.id, r.count, r.heute, r.woche, r.last || ''].map(esc).join(';'))
+  const zeilen = a.rows.map((r) => [labelFn(r.id), r.id, r.count, r.heute, r.woche, r.userHeute, r.userWoche, r.last || ''].map(esc).join(';'))
   return [head.join(';'), ...zeilen].join('\n')
 }

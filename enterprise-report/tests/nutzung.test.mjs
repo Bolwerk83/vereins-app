@@ -52,9 +52,29 @@ test('aufraeumen findet nie und kaum genutzte Berichte', () => {
 
 test('alsCsv liefert Kopfzeile und Datenzeilen mit Label', () => {
   reset()
-  trackOeffnung('marketing')
+  trackOeffnung('marketing', 'user:anna')
   const csv = alsCsv((id) => id === 'marketing' ? 'Marketing & Analytics' : id)
   const zeilen = csv.split('\n')
-  assert.match(zeilen[0], /^Bericht;ID;Aufrufe/)
+  assert.match(zeilen[0], /^Bericht;ID;Aufrufe;Aufrufe heute/)
   assert.match(zeilen[1], /Marketing & Analytics;marketing;1/)
+})
+
+test('unique User pro Bericht/Tag werden gezählt (nicht Aufrufe)', () => {
+  reset()
+  trackOeffnung('marketing', 'user:anna')
+  trackOeffnung('marketing', 'user:anna') // gleicher User, 2. Aufruf
+  trackOeffnung('marketing', 'user:bob')
+  const a = auswertung()
+  const m = a.rows.find((r) => r.id === 'marketing')
+  assert.equal(m.count, 3)        // 3 Aufrufe
+  assert.equal(m.userHeute, 2)    // aber nur 2 unterschiedliche User
+  assert.equal(a.userHeuteGesamt, 2)
+})
+
+test('userHeuteGesamt zählt User über mehrere Berichte eindeutig', () => {
+  reset()
+  trackOeffnung('marketing', 'user:anna')
+  trackOeffnung('bestand', 'user:anna') // gleicher User, anderer Bericht
+  trackOeffnung('bestand', 'user:bob')
+  assert.equal(auswertung().userHeuteGesamt, 2)
 })

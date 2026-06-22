@@ -51,6 +51,8 @@ import LebenszyklusEmpfehlungen from './modules/lebenszyklus/Empfehlungen.jsx'
 import KpiEditor from './modules/kpi-editor/KpiEditor.jsx'
 import Nutzung from './modules/nutzung/Nutzung.jsx'
 import { trackOeffnung } from './core/nutzung.js'
+import { nutzerId } from './core/identitaet.js'
+import { heartbeat } from './core/praesenz.js'
 import { ladeBranding, applyBranding, themeById } from './core/admin.js'
 import { AKTUELLE_STAGE, stageInfo } from './core/stage.js'
 import { autoSeed } from './core/designerSeed.js'
@@ -125,8 +127,18 @@ export default function App() {
   useEffect(() => { autoSeed() }, [])
   // Branding (Logo/Theme) beim Start anwenden (Akzentfarbe, Tab-Titel).
   useEffect(() => { applyBranding(branding) }, [branding])
-  // Klick-/Nutzungs-Tracking: jede geöffnete Ansicht zählen (nur Admin wertet aus).
-  useEffect(() => { if (ansicht && ansicht !== 'wizard') trackOeffnung(ansicht) }, [ansicht])
+  // Klick-/Nutzungs-Tracking + Präsenz: Ansicht zählen (mit Nutzer-Kennung),
+  // Lebenszeichen senden (nur Admin wertet aus).
+  const uid = nutzerId(benutzer)
+  useEffect(() => {
+    if (ansicht && ansicht !== 'wizard') trackOeffnung(ansicht, uid)
+    heartbeat(uid)
+  }, [ansicht, uid])
+  // Heartbeat alle 60 s, solange die App offen ist (hält „aktiv in letzter Stunde").
+  useEffect(() => {
+    const id = setInterval(() => heartbeat(uid), 60000)
+    return () => clearInterval(id)
+  }, [uid])
   // Gruppen aus der Quelle laden (mssql -> DB, sonst localStorage).
   useEffect(() => { ladeGruppenAsync().then(setGruppen) }, [])
   // Effektive Rechte des angemeldeten Benutzers auflösen (async-fähig für DB).

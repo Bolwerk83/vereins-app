@@ -2,8 +2,9 @@
 //  NUTZUNGS-STATISTIK (Admin) — wie oft werden Berichte geöffnet? Ranking,
 //  Tagesverlauf und Summen. Nur für den Admin sichtbar und auswertbar.
 // =========================================================================
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { auswertung, verlauf, reset, aufraeumen, alsCsv } from '../../core/nutzung.js'
+import { aktiveListe, aktiveNutzer, aktiveProTag, aktiveZeitraum, FENSTER_MIN } from '../../core/praesenz.js'
 import { NAV_ZIELE } from '../../core/suche.js'
 import { useT } from '../../core/i18n.jsx'
 
@@ -15,6 +16,8 @@ const td = (al, bold) => ({ textAlign: al, padding: '7px 10px', borderBottom: '1
 export default function Nutzung({ istAdmin = false }) {
   const { t } = useT()
   const [tick, setTick] = useState(0)
+  // Live-Ansicht alle 20 s aktualisieren.
+  useEffect(() => { const id = setInterval(() => setTick((x) => x + 1), 20000); return () => clearInterval(id) }, [])
 
   if (!istAdmin) {
     return (
@@ -28,6 +31,10 @@ export default function Nutzung({ istAdmin = false }) {
   const a = auswertung()
   const v = verlauf(14)
   const auf = aufraeumen(NAV_ZIELE.map((z) => z.ziel))
+  const live = aktiveListe(FENSTER_MIN)
+  const aktivProTag = aktiveProTag(14)
+  const maxAktiv = Math.max(...aktivProTag.map((x) => x.anzahl), 1)
+  const zr = aktiveZeitraum()
   const maxV = Math.max(...v.map((x) => x.count), 1)
   const maxC = Math.max(...a.rows.map((r) => r.count), 1)
   // View-ID → lesbares Label.
@@ -68,11 +75,49 @@ export default function Nutzung({ istAdmin = false }) {
         </div>
       </div>
 
+      {/* Live: gerade aktive Nutzer */}
+      <div style={{ ...card, padding: 16, marginBottom: 14, borderLeft: '4px solid var(--amp-g)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--amp-g)', boxShadow: '0 0 0 4px color-mix(in srgb, var(--amp-g) 25%, transparent)' }} />
+            <div>
+              <div style={{ fontSize: 30, fontWeight: 800, lineHeight: 1 }}>{live.length}</div>
+              <div style={{ ...cap, marginTop: 2 }}>Jetzt aktiv (≤ {FENSTER_MIN} Min.)</div>
+            </div>
+          </div>
+          <div style={{ flex: 1, minWidth: 200, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {live.length === 0 && <span style={{ fontSize: 13, color: 'var(--muted)' }}>Niemand aktiv.</span>}
+            {live.map((u) => (
+              <span key={u.uid} title={`zuletzt vor ${u.minutenHer} Min.`}
+                style={{ fontSize: 12, padding: '4px 10px', borderRadius: 999, border: '1px solid var(--line)', background: 'var(--bg)' }}>
+                <span style={{ color: 'var(--amp-g)' }}>●</span> {u.name} · {u.minutenHer === 0 ? 'gerade eben' : `vor ${u.minutenHer} Min.`}
+              </span>
+            ))}
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--muted)', textAlign: 'right' }}>aktualisiert automatisch</div>
+        </div>
+      </div>
+
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
+        <Kpi label="Eindeutige User heute" wert={a.userHeuteGesamt} farbe="var(--accent)" />
+        <Kpi label="Eindeutige User 7 Tage" wert={zr.woche} />
+        <Kpi label="Eindeutige User 30 Tage" wert={zr.monat} />
         <Kpi label="Aufrufe gesamt" wert={a.gesamt} />
-        <Kpi label="Heute" wert={a.heuteGesamt} farbe="var(--accent)" />
-        <Kpi label="Letzte 7 Tage" wert={a.wocheGesamt} />
         <Kpi label="Genutzte Berichte" wert={a.aktiveBerichte} />
+      </div>
+
+      {/* Eindeutige aktive Nutzer je Tag */}
+      <div style={{ ...card, padding: 16, marginBottom: 14 }}>
+        <div style={{ ...cap, marginBottom: 10 }}>Eindeutige Nutzer — letzte 14 Tage</div>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 90 }}>
+          {aktivProTag.map((x) => (
+            <div key={x.tag} title={`${x.tag}: ${x.anzahl} User`} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center', gap: 3 }}>
+              <div style={{ fontSize: 9, color: 'var(--muted)' }}>{x.anzahl || ''}</div>
+              <div style={{ width: '100%', height: `${x.anzahl / maxAktiv * 60}px`, minHeight: x.anzahl ? 3 : 0, background: 'var(--amp-g)', borderRadius: '3px 3px 0 0' }} />
+              <div style={{ fontSize: 9, color: 'var(--muted)' }}>{x.tag.slice(8)}</div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Tagesverlauf */}
@@ -94,7 +139,7 @@ export default function Nutzung({ istAdmin = false }) {
         {a.rows.length === 0 && <div style={{ fontSize: 13, color: 'var(--muted)' }}>Noch keine Aufrufe erfasst.</div>}
         {a.rows.length > 0 && (
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 600 }}>
-            <thead><tr>{['#', 'Bericht', 'Aufrufe', '', 'Heute', '7 Tage', 'Zuletzt'].map((h, i) => <th key={i} style={th(i <= 1 ? 'left' : 'right')}>{h}</th>)}</tr></thead>
+            <thead><tr>{['#', 'Bericht', 'Aufrufe', '', 'User heute', 'User 7T', 'Aufr. heute', 'Zuletzt'].map((h, i) => <th key={i} style={th(i <= 1 ? 'left' : 'right')}>{h}</th>)}</tr></thead>
             <tbody>
               {a.rows.map((r, i) => (
                 <tr key={r.id}>
@@ -104,8 +149,9 @@ export default function Nutzung({ istAdmin = false }) {
                   <td style={{ padding: '7px 10px', borderBottom: '1px solid var(--line)', width: 110 }}>
                     <div style={{ height: 8, background: 'var(--bg)', borderRadius: 4, overflow: 'hidden' }}><div style={{ width: `${r.count / maxC * 100}%`, height: '100%', background: 'var(--accent)' }} /></div>
                   </td>
-                  <td className="mono" style={td('right')}>{r.heute}</td>
-                  <td className="mono" style={td('right')}>{r.woche}</td>
+                  <td className="mono" style={{ ...td('right', true), color: r.userHeute ? 'var(--accent)' : 'var(--muted)' }}>{r.userHeute}</td>
+                  <td className="mono" style={td('right')}>{r.userWoche}</td>
+                  <td className="mono" style={{ ...td('right'), color: 'var(--muted)' }}>{r.heute}</td>
                   <td className="mono" style={{ ...td('right'), color: 'var(--muted)', fontSize: 11.5 }}>{wann(r.last)}</td>
                 </tr>
               ))}
