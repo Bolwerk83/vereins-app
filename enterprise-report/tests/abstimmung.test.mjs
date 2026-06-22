@@ -48,3 +48,36 @@ test('Notiz wird je Periode persistiert und überschreibt Auto-Status', () => {
   const b = bruecken(w, '2025-TEST')
   assert.equal(b.find((x) => x.id === 'wareneinsatz').status, 'abgestimmt')
 })
+
+test('Erledigt/Frisch: auto-abgestimmt gilt sofort als erledigt', () => {
+  localStorage.removeItem('er_abstimmung')
+  const b = bruecken(w, '2025')
+  const umsatz = b.find((x) => x.id === 'umsatz') // delta 0 → im Rahmen → auto-abgestimmt
+  assert.equal(umsatz.status, 'abgestimmt')
+  assert.equal(umsatz.erledigt, true)  // ohne Zeitstempel (auto) → erledigt
+  assert.equal(umsatz.frisch, false)
+})
+
+test('Manuell abgestimmt ist frisch (nicht erledigt), Zeitstempel wird gesetzt', () => {
+  localStorage.removeItem('er_abstimmung')
+  setNotiz('2025', 'wareneinsatz', { status: 'abgestimmt' })
+  const n = ladeNotiz('2025', 'wareneinsatz')
+  assert.ok(n.am, 'Zeitstempel am muss gesetzt sein')
+  const wa = bruecken(w, '2025').find((x) => x.id === 'wareneinsatz')
+  assert.equal(wa.status, 'abgestimmt')
+  assert.equal(wa.frisch, true)
+  assert.equal(wa.erledigt, false)
+})
+
+test('Lang zurückliegend abgestimmt gilt als erledigt', () => {
+  localStorage.removeItem('er_abstimmung')
+  // Zeitstempel manuell weit in die Vergangenheit setzen
+  setNotiz('2025', 'wareneinsatz', { status: 'abgestimmt' })
+  const raw = JSON.parse(localStorage.getItem('er_abstimmung'))
+  raw['2025']['wareneinsatz'].am = '2020-01-01'
+  localStorage.setItem('er_abstimmung', JSON.stringify(raw))
+  const wa = bruecken(w, '2025').find((x) => x.id === 'wareneinsatz')
+  assert.equal(wa.erledigt, true)
+  assert.equal(wa.frisch, false)
+  localStorage.removeItem('er_abstimmung')
+})
