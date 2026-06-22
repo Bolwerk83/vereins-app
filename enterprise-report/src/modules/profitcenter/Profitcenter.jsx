@@ -2,8 +2,8 @@
 //  PROFITCENTER-ERGEBNISRECHNUNG — Ergebnis je Center, ROCE und Beitrag
 //  zum Gesamtergebnis.
 // =========================================================================
-import React from 'react'
-import { auswertung, centerTypInfo, CENTER_TYPEN } from '../../core/profitcenter.js'
+import React, { useState } from 'react'
+import { auswertung, auswertungNach, centerTypInfo, CENTER_TYPEN, DIMENSIONEN } from '../../core/profitcenter.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
@@ -12,8 +12,11 @@ const th = (al) => ({ textAlign: al, padding: '6px 9px', borderBottom: '1px soli
 const td = (al, bold) => ({ textAlign: al, padding: '6px 9px', borderBottom: '1px solid var(--line)', fontWeight: bold ? 700 : 400 })
 
 export default function Profitcenter({ onGeh }) {
-  const a = auswertung()
+  const [dim, setDim] = useState('name')
+  const a = auswertungNach(dim)
   const maxAbs = Math.max(...a.rows.map((r) => Math.abs(r.ergebnis)), 1)
+  const dimName = DIMENSIONEN.find((d) => d.key === dim)?.name || 'Center'
+  const zeigeTyp = dim === 'name'
 
   return (
     <div style={{ maxWidth: '100%', margin: '0 auto' }}>
@@ -34,13 +37,20 @@ export default function Profitcenter({ onGeh }) {
       </div>
 
       <div style={{ ...card, padding: 16, overflowX: 'auto' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+          <span style={{ fontSize: 11, color: 'var(--muted)' }}>Gruppieren nach:</span>
+          {DIMENSIONEN.map((d) => (
+            <button key={d.key} onClick={() => setDim(d.key)} style={{ fontSize: 12, padding: '4px 10px', borderRadius: 999, cursor: 'pointer', fontWeight: 600,
+              border: `1px solid ${dim === d.key ? 'var(--accent)' : 'var(--line)'}`, background: dim === d.key ? 'var(--accent-soft)' : 'var(--panel)', color: dim === d.key ? 'var(--accent)' : 'var(--muted)' }}>{d.name}</button>
+          ))}
+        </div>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 720 }}>
-          <thead><tr>{['Profitcenter', 'Typ', 'Umsatz', 'DB', 'Fixkosten', 'Ergebnis', 'ROCE', 'Beitrag'].map((h, i) => <th key={i} style={th(i <= 1 ? 'left' : 'right')}>{h}</th>)}</tr></thead>
+          <thead><tr>{[dimName, ...(zeigeTyp ? ['Typ'] : []), 'Umsatz', 'DB', 'Fixkosten', 'Ergebnis', 'ROCE', 'Beitrag'].map((h, i) => <th key={i} style={th(i <= (zeigeTyp ? 1 : 0) ? 'left' : 'right')}>{h}</th>)}</tr></thead>
           <tbody>
             {a.rows.map((r) => (
               <tr key={r.id}>
                 <td style={td('left', true)}>{r.name}</td>
-                <td style={td('left')}><span style={{ fontSize: 11, color: r.typ === 'profit' ? 'var(--amp-g)' : r.typ === 'investment' ? 'var(--accent)' : 'var(--muted)' }}>{centerTypInfo(r.typ).name}</span></td>
+                {zeigeTyp && <td style={td('left')}><span style={{ fontSize: 11, color: r.typ === 'profit' ? 'var(--amp-g)' : r.typ === 'investment' ? 'var(--accent)' : 'var(--muted)' }}>{centerTypInfo(r.typ).name}</span></td>}
                 <td className="mono" style={td('right')}>{r.umsatz ? m(r.umsatz) : '–'}</td>
                 <td className="mono" style={td('right')}>{r.umsatz ? m(r.db) : '–'}</td>
                 <td className="mono" style={{ ...td('right'), color: 'var(--muted)' }}>− {m(r.fixKosten)}</td>
@@ -57,7 +67,7 @@ export default function Profitcenter({ onGeh }) {
               </tr>
             ))}
             <tr style={{ background: 'var(--bg)' }}>
-              <td style={td('left', true)}>Gesamt</td><td />
+              <td style={td('left', true)}>Gesamt</td>{zeigeTyp && <td />}
               <td className="mono" style={td('right', true)}>{m(a.umsatz)}</td><td /><td />
               <td className="mono" style={{ ...td('right', true), color: a.gesamt >= 0 ? 'var(--amp-g)' : 'var(--amp-r)' }}>{m(a.gesamt)}</td><td /><td />
             </tr>
