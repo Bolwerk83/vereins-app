@@ -37,6 +37,7 @@ export const NAV_ZIELE = [
   { ziel: 'abstimmung', gruppe: 'Analyse', schluessel: 'nav.abstimmung' },
   { ziel: 'lebenszyklus', gruppe: 'Analyse', schluessel: 'nav.lebenszyklus' },
   { ziel: 'portfoliobcg', gruppe: 'Analyse', schluessel: 'nav.portfoliobcg' },
+  { ziel: 'quartalsbericht', gruppe: 'Cockpit', schluessel: 'nav.quartalsbericht' },
   { ziel: 'lzempfehlung', gruppe: 'Analyse', schluessel: 'nav.lzempfehlung' },
   { ziel: 'auftrag', gruppe: 'Analyse', schluessel: 'nav.auftrag' },
   { ziel: 'anlagen', gruppe: 'Analyse', schluessel: 'nav.anlagen' },

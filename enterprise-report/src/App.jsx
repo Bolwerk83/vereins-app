@@ -27,6 +27,7 @@ import Kostenartenrechnung from './modules/kostenarten/Kostenartenrechnung.jsx'
 import Kalkulatorik from './modules/kalkulatorik/Kalkulatorik.jsx'
 import Lebenszyklus from './modules/lebenszyklus/Lebenszyklus.jsx'
 import PortfolioBcg from './modules/portfolio-bcg/PortfolioBcg.jsx'
+import Quartalsbericht from './modules/quartalsbericht/Quartalsbericht.jsx'
 import EinzelGemein from './modules/einzelgemein/EinzelGemein.jsx'
 import AuftragsLebenszyklus from './modules/auftrag/AuftragsLebenszyklus.jsx'
 import Kostenstellenrechnung from './modules/kostenstellen/Kostenstellenrechnung.jsx'
@@ -201,6 +202,7 @@ export default function App() {
       { titel: 'Überblick', eintraege: [
         E('baum', 'nav.tree', '🌳', { aktiv: ansicht === 'baum' || ansicht === 'report' }),
         E('tagesreporting', 'nav.tagesreporting', '📅'),
+        E('quartalsbericht', 'nav.quartalsbericht', '📑'),
         E('kennzahlen', 'nav.kennzahlen', '📖'),
         E('katalog', 'nav.katalog', '🗂'),
         E('detailberichte', 'nav.detailberichte', '🔬'),
@@ -498,6 +500,9 @@ export default function App() {
         )}
         {ansicht === 'portfoliobcg' && (
           <PortfolioBcg />
+        )}
+        {ansicht === 'quartalsbericht' && (
+          <Quartalsbericht />
         )}
         {ansicht === 'lzempfehlung' && (
           <LebenszyklusEmpfehlungen onGeh={geh} />

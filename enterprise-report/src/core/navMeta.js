@@ -6,7 +6,7 @@
 // =========================================================================
 export const VIEW_BEREICH = {
   // Cockpit & Berichte – übergreifend
-  baum: null, tagesreporting: null, kennzahlen: null, katalog: null, kpieditor: null, designer: null, detailberichte: null,
+  baum: null, tagesreporting: null, quartalsbericht: null, kennzahlen: null, katalog: null, kpieditor: null, designer: null, detailberichte: null,
   // Kosten & Ergebnis
   klr: 'KLR', kostenarten: 'KLR', kalkulatorik: 'KLR', einzelgemein: 'KLR', // kalkulatorik direkt anwaehlbar
   abgrenzung: 'KLR', kostenstellen: 'KLR', bab: 'KLR', kalkulation: 'KLR', deckungsbeitrag: 'KLR',
