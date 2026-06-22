@@ -298,7 +298,7 @@ export default function App() {
 
         {ansicht !== 'wizard' && (
           <>
-            <GlobalSuche onGeh={geh} onKpi={(id) => { setBaumStart(id); setAnsicht('baum') }} />
+            <GlobalSuche onGeh={geh} onKpi={(id) => { setBaumStart(id); setAnsicht('baum') }} onInfo={zeigeInfo} rolle={rolle} />
             <button style={topBtn(ansicht === 'baum' || ansicht === 'report')} onClick={() => geh('baum')}>{t('nav.tree')}</button>
             <button style={topBtn(ansicht === 'katalog')} onClick={() => geh('katalog')}>{t('nav.katalog')}</button>
             <button style={topBtn(ansicht === 'kennzahlen')} onClick={() => geh('kennzahlen')}>{t('nav.kennzahlen')}</button>
@@ -372,7 +372,7 @@ export default function App() {
           <TreeNavigator rolle={rolle} werte={werte} periode={periode} startId={baumStart} onOpenReport={() => setAnsicht('report')} />
         )}
         {ansicht === 'katalog' && (
-          <Berichtskatalog onOpen={(id, typ) => {
+          <Berichtskatalog rolle={rolle} onOpen={(id, typ) => {
             if (typ === 'designer') { setDesignerStart(id); setAnsicht('designer') }
             else { setBaumStart(id); setAnsicht('baum') }
           }} />

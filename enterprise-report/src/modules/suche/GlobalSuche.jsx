@@ -6,8 +6,10 @@ import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { useT } from '../../core/i18n.jsx'
 import { KPI } from '../../core/kpiRegistry.js'
 import { baueIndex, suchen } from '../../core/suche.js'
+import { darfBereich } from '../../core/rbac.js'
+import { bereichVon } from '../../core/navMeta.js'
 
-export default function GlobalSuche({ onGeh, onKpi }) {
+export default function GlobalSuche({ onGeh, onKpi, onInfo, rolle }) {
   const { t } = useT()
   const [q, setQ] = useState('')
   const [offen, setOffen] = useState(false)
@@ -78,20 +80,26 @@ export default function GlobalSuche({ onGeh, onKpi }) {
           {treffer.length === 0 && (
             <div style={{ padding: '12px 14px', color: 'var(--muted)', fontSize: 13 }}>{t('suche.leer')}</div>
           )}
-          {treffer.map((tr, i) => (
-            <button
+          {treffer.map((tr, i) => {
+            const gesperrt = tr.typ === 'bericht' && rolle && !darfBereich(rolle, bereichVon(tr.ziel))
+            return (
+            <div
               key={tr.typ + tr.ziel}
               onMouseEnter={() => setAktiv(i)}
               onClick={() => springe(tr)}
-              style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left', border: 'none', cursor: 'pointer',
+              style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left', cursor: 'pointer',
                 padding: '9px 12px', background: i === aktiv ? 'var(--bg)' : 'transparent', borderBottom: '1px solid var(--line)' }}>
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: gruppenFarbe[tr.gruppe] || 'var(--muted)', flex: '0 0 auto' }} />
-              <span style={{ flex: 1, fontSize: 13, color: 'var(--ink)' }}>{tr.label}</span>
+              <span style={{ flex: 1, fontSize: 13, color: gesperrt ? 'var(--muted)' : 'var(--ink)' }}>{gesperrt ? '🔒 ' : ''}{tr.label}</span>
+              {tr.typ === 'bericht' && onInfo && (
+                <button onClick={(ev) => { ev.stopPropagation(); onInfo(tr.ziel); setOffen(false) }} title="Bericht-Info"
+                  style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: 12, color: 'var(--muted)' }}>ⓘ</button>
+              )}
               <span style={{ fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em' }}>
                 {tr.typ === 'kpi' ? 'KPI' : tr.gruppe}
               </span>
-            </button>
-          ))}
+            </div>
+          )})}
           {treffer.length > 0 && (
             <div style={{ padding: '6px 12px', fontSize: 10.5, color: 'var(--muted)', background: 'var(--bg)' }}>
               ↑↓ wählen · ⏎ öffnen · Esc schließen

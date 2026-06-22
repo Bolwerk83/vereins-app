@@ -7,8 +7,9 @@ import { berichtIndex, EBENEN } from '../../core/reportTree.js'
 import { clusterFuer } from '../../core/bereiche.js'
 import { eigeneBerichtsItems } from '../../core/designer.js'
 import { Badge } from '../../components/ui.jsx'
+import { darfBereich } from '../../core/rbac.js'
 
-export default function Berichtskatalog({ onOpen }) {
+export default function Berichtskatalog({ onOpen, rolle }) {
   const [q, setQ] = useState('')
   const alle = useMemo(() => [...berichtIndex().filter((b) => b.nummer), ...eigeneBerichtsItems()], [])
   const treffer = alle.filter((b) => {
@@ -39,13 +40,16 @@ export default function Berichtskatalog({ onOpen }) {
           <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--line)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', color: 'var(--muted)' }}>{g.name}</div>
           {g.items.map((b) => {
             const e = EBENEN.find((x) => x.stufe === b.ebene)
+            const darf = !rolle || b.typ === 'designer' || darfBereich(rolle, b.bereich)
             return (
-              <div key={b.id} onClick={() => onOpen(b.id, b.typ)} style={{ display: 'grid', gridTemplateColumns: '90px 1fr 150px', gap: 10, alignItems: 'center',
-                padding: '8px 14px', borderTop: '1px solid var(--line)', cursor: 'pointer' }}
-                onMouseEnter={(ev) => ev.currentTarget.style.background = 'var(--accent-soft)'}
+              <div key={b.id} onClick={() => darf && onOpen(b.id, b.typ)}
+                title={darf ? undefined : `Keine Berechtigung für Bereich ${b.bereich}`}
+                style={{ display: 'grid', gridTemplateColumns: '90px 1fr 150px', gap: 10, alignItems: 'center',
+                  padding: '8px 14px', borderTop: '1px solid var(--line)', cursor: darf ? 'pointer' : 'not-allowed', opacity: darf ? 1 : 0.55 }}
+                onMouseEnter={(ev) => { if (darf) ev.currentTarget.style.background = 'var(--accent-soft)' }}
                 onMouseLeave={(ev) => ev.currentTarget.style.background = 'transparent'}>
                 <span className="mono" style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}>{b.nummer}</span>
-                <span style={{ fontSize: 13.5, paddingLeft: (Number(b.ebene) > 0 ? (b.ebene - 1) * 12 : 0) }}>{b.titel}</span>
+                <span style={{ fontSize: 13.5, paddingLeft: (Number(b.ebene) > 0 ? (b.ebene - 1) * 12 : 0) }}>{darf ? '' : '🔒 '}{b.titel}</span>
                 <Badge status="n">{b.typ === 'designer' ? 'Eigen · Designer' : `E${b.ebene} · ${e?.name}`}</Badge>
               </div>
             )
