@@ -101,7 +101,8 @@ function QuadrantKacheln({ felder, quadrant, onQuadrant, onDrill }) {
 }
 
 // Lebenszyklus-Kurve: Aufstieg → Peak → Abfall, Objekte als Blasen je Phase.
-function PhasenKurve({ phasen, objekte, onDrill }) {
+// verbindungen: [{von, nach, label}] zieht einen Übergangspfeil (Modellwechsel).
+function PhasenKurve({ phasen, objekte, onDrill, verbindungen = [] }) {
   const { profil, punkte } = phasenKurve(phasen, objekte)
   const n = phasen.length
   const W = 720, H = 300, padL = 40, padB = 48, padT = 18
@@ -109,12 +110,18 @@ function PhasenKurve({ phasen, objekte, onDrill }) {
   const py = (h) => padT + (1 - h) * (H - padT - padB)
   const rmax = Math.max(...punkte.map((p) => p.umsatz), 1)
   const rad = (u) => 6 + Math.sqrt(u / rmax) * 22
+  const pos = Object.fromEntries(punkte.map((p) => [p.id, p]))
   // Kurvenpunkte durch die Phasenmitten, an den Rändern leicht angesetzt.
   const stuetz = [[0, profil[0] * 0.55], ...profil.map((h, i) => [(i + 0.5) / n, h]), [1, profil[n - 1] * 0.8]]
   const pfad = stuetz.map(([t, h], i) => `${i ? 'L' : 'M'}${px(t).toFixed(1)},${py(h).toFixed(1)}`).join(' ')
   const flaeche = `${pfad} L${px(1).toFixed(1)},${py(0)} L${px(0).toFixed(1)},${py(0)} Z`
   return (
     <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto' }}>
+      <defs>
+        <marker id="lz-pfeil" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="var(--accent)" />
+        </marker>
+      </defs>
       <line x1={padL} y1={py(0)} x2={W - 10} y2={py(0)} stroke="var(--line)" />
       {/* Phasenbänder + Beschriftung */}
       {phasen.map((p, i) => (
@@ -127,6 +134,19 @@ function PhasenKurve({ phasen, objekte, onDrill }) {
       {/* Hüllkurve */}
       <path d={flaeche} fill="var(--accent)" fillOpacity="0.05" />
       <path d={pfad} fill="none" stroke="var(--accent)" strokeWidth="2" />
+      {/* Übergangspfeile (Modellwechsel: Vorgänger → Nachfolger) */}
+      {verbindungen.map((v, k) => {
+        const a = pos[v.von], b = pos[v.nach]; if (!a || !b) return null
+        const ax = px(a.x), ay = py(a.hoehe), bx = px(b.x), by = py(b.hoehe)
+        const mx = (ax + bx) / 2, my = Math.min(ay, by) - 26 // Bogen nach oben
+        return (
+          <g key={'v' + k}>
+            <path d={`M${ax.toFixed(1)},${ay.toFixed(1)} Q${mx.toFixed(1)},${my.toFixed(1)} ${bx.toFixed(1)},${by.toFixed(1)}`}
+              fill="none" stroke="var(--accent)" strokeWidth="1.6" strokeDasharray="5 4" markerEnd="url(#lz-pfeil)" />
+            <text x={mx} y={my - 3} textAnchor="middle" fontSize="9.5" fontWeight="600" fill="var(--accent)">Modellwechsel</text>
+          </g>
+        )
+      })}
       {/* Objekte als Blasen */}
       {punkte.map((p) => (
         <g key={p.id} onClick={onDrill ? () => onDrill(p) : undefined} style={{ cursor: onDrill ? 'pointer' : 'default' }}>
@@ -223,6 +243,12 @@ function Produkte({ onDrill }) {
   const alle = istArtikel && linienAn ? mitLinien() : produkte(ebene)
   const { schwellen, felder } = bcgFelder(alle)
   const objekte = quadrant ? alle.filter((o) => quadrantVon(o, schwellen) === quadrant) : alle
+  // Kurve zeigt den Modellwechsel: bei aktiver Verkettung alle Generationen
+  // einzeln + Übergangspfeil (Vorgänger→Nachfolger); sonst die kombinierte Sicht.
+  const kurveObjekte = istArtikel && linienAn ? produkte('artikel') : alle
+  const verbindungen = istArtikel && linienAn
+    ? mitLinien().filter((l) => l.kombiniert).flatMap((l) => l.members.slice(1).map((m, i) => ({ von: l.members[i].id, nach: m.id, label: l.name })))
+    : []
   const quadName = quadrant ? felder.find((f) => f.id === quadrant)?.name : null
   return (
     <>
@@ -263,9 +289,11 @@ function Produkte({ onDrill }) {
           </>
         ) : (
           <>
-            <PhasenKurve phasen={PRODUKT_PHASEN} objekte={alle} onDrill={onDrill} />
+            <PhasenKurve phasen={PRODUKT_PHASEN} objekte={kurveObjekte} onDrill={onDrill} verbindungen={verbindungen} />
             <div style={{ fontSize: 12, color: 'var(--accent)', marginTop: 6 }}>
-              ↳ Klassische Lebenszyklus-Kurve: jedes Produkt sitzt in seiner Phase auf der Kurve (Größe = Umsatz).{onDrill ? ' Blase anklicken: in die Artikelliste springen.' : ''}
+              ↳ Klassische Lebenszyklus-Kurve: jedes Produkt sitzt in seiner Phase auf der Kurve (Größe = Umsatz).
+              {verbindungen.length > 0 ? ' Der gestrichelte Pfeil zeigt den Modellwechsel: Vorgänger (Rückgang) übergibt an Nachfolger (Anlauf).' : ''}
+              {onDrill ? ' Blase anklicken: in die Artikelliste springen.' : ''}
             </div>
           </>
         )}
