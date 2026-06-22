@@ -453,7 +453,7 @@ export default function App() {
           <KLR werte={werte} rolle={rolle} periode={periode} onGeh={geh} />
         )}
         {ansicht === 'kostenarten' && (
-          <Kostenartenrechnung onGeh={geh} />
+          <Kostenartenrechnung onGeh={geh} rolle={rolle} />
         )}
         {ansicht === 'kalkulatorik' && (
           <Kalkulatorik werte={werte} onGeh={geh} />

@@ -5,18 +5,27 @@
 // =========================================================================
 import React, { useState } from 'react'
 import { DIMENSIONEN, dimension, STAMM, summe, verteilung, kreuztabelle, strukturKennzahlen } from '../../core/kostenarten.js'
+import { darfDimension } from '../../core/rbac.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
 const mio = (v) => v.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' Mio €'
 const FARBEN = ['#2563eb', '#0f766e', '#7c3aed', '#f59e0b', '#ef4444', '#0891b2', '#65a30d']
 
-export default function Kostenartenrechnung({ onGeh }) {
-  const [dim, setDim] = useState('art')
-  const [spalteDim, setSpalteDim] = useState('fixvar')
+export default function Kostenartenrechnung({ onGeh, rolle }) {
+  // Nur Dimensionen, die für die Rolle freigegeben sind (Aufriss-Sperre).
+  const sichtDim = DIMENSIONEN.filter((d) => darfDimension(rolle, d.id))
+  const erste = sichtDim[0]?.id || 'art'
+  const [dim, setDimState] = useState(erste)
+  const [spalteDim, setSpalteDimState] = useState(sichtDim.find((d) => d.id !== erste)?.id || erste)
+  // Falls die aktive Dimension gesperrt wurde: auf erste sichtbare zurückfallen.
+  const setDim = (id) => setDimState(darfDimension(rolle, id) ? id : erste)
+  const setSpalteDim = (id) => setSpalteDimState(darfDimension(rolle, id) ? id : erste)
+  const aktivDim = darfDimension(rolle, dim) ? dim : erste
+  const aktivSpalte = darfDimension(rolle, spalteDim) && spalteDim !== aktivDim ? spalteDim : (sichtDim.find((d) => d.id !== aktivDim)?.id || aktivDim)
   const k = strukturKennzahlen()
-  const vert = verteilung(dim)
-  const kreuz = kreuztabelle(dim, spalteDim)
+  const vert = verteilung(aktivDim)
+  const kreuz = kreuztabelle(aktivDim, aktivSpalte)
   const maxA = Math.max(...vert.map((v) => v.anteil), 1)
 
   const chip = (aktiv) => ({ padding: '6px 12px', borderRadius: 999, fontSize: 13, cursor: 'pointer', fontWeight: 600,
@@ -53,7 +62,8 @@ export default function Kostenartenrechnung({ onGeh }) {
       {/* Verteilung über eine Dimension */}
       <div style={{ ...card, padding: 16, marginBottom: 14 }}>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-          {DIMENSIONEN.map((d) => <button key={d.id} title={d.laie} style={chip(dim === d.id)} onClick={() => setDim(d.id)}>{d.name}</button>)}
+          {sichtDim.map((d) => <button key={d.id} title={d.laie} style={chip(aktivDim === d.id)} onClick={() => setDim(d.id)}>{d.name}</button>)}
+          {sichtDim.length < DIMENSIONEN.length && <span style={{ fontSize: 11, color: 'var(--muted)', alignSelf: 'center' }}>🔒 {DIMENSIONEN.length - sichtDim.length} Dimension(en) für deine Rolle gesperrt</span>}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {vert.map((v, i) => (
@@ -72,15 +82,15 @@ export default function Kostenartenrechnung({ onGeh }) {
       <div style={{ ...card, padding: 16, marginBottom: 14 }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 10 }}>
           <span style={cap}>Kreuztabelle:</span>
-          <b style={{ fontSize: 13 }}>{dimension(dim).name}</b><span style={{ color: 'var(--muted)' }}>×</span>
-          <select value={spalteDim} onChange={(e) => setSpalteDim(e.target.value)} style={{ padding: '5px 8px', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', font: 'inherit', fontSize: 13 }}>
-            {DIMENSIONEN.filter((d) => d.id !== dim).map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+          <b style={{ fontSize: 13 }}>{dimension(aktivDim).name}</b><span style={{ color: 'var(--muted)' }}>×</span>
+          <select value={aktivSpalte} onChange={(e) => setSpalteDim(e.target.value)} style={{ padding: '5px 8px', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', font: 'inherit', fontSize: 13 }}>
+            {sichtDim.filter((d) => d.id !== aktivDim).map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
           </select>
         </div>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead><tr>
-              <th style={{ textAlign: 'left', padding: '6px 10px', borderBottom: '1px solid var(--line)', fontSize: 11, color: 'var(--muted)' }}>{dimension(dim).name}</th>
+              <th style={{ textAlign: 'left', padding: '6px 10px', borderBottom: '1px solid var(--line)', fontSize: 11, color: 'var(--muted)' }}>{dimension(aktivDim).name}</th>
               {kreuz.spalten.map((s) => <th key={s.key} style={{ textAlign: 'right', padding: '6px 10px', borderBottom: '1px solid var(--line)', fontSize: 11, color: 'var(--muted)' }}>{s.label}</th>)}
               <th style={{ textAlign: 'right', padding: '6px 10px', borderBottom: '1px solid var(--line)', fontSize: 11, color: 'var(--muted)' }}>Σ</th>
             </tr></thead>

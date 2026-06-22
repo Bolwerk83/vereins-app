@@ -8,8 +8,11 @@ import React, { useState } from 'react'
 import {
   ladeGruppen, neueGruppe, aktualisiereGruppe, loescheGruppe, toggleBereich,
   setzeAlleBereiche, toggleKontext, mitgliedHinzu, mitgliedWeg, setzeZurueck,
-  bereicheNachCluster, KONTEXTE, bereichZusammenfassung, GRUPPEN_QUELLE, kopiereRechte
+  bereicheNachCluster, KONTEXTE, bereichZusammenfassung, GRUPPEN_QUELLE, kopiereRechte,
+  toggleKpiSperre, toggleKpiFrei, toggleDimSperre
 } from '../../core/gruppen.js'
+import { KPI } from '../../core/kpiRegistry.js'
+import { DIMENSIONEN } from '../../core/kostenarten.js'
 import { ladeAnfragen, loescheAnfrage } from '../../core/zugriff.js'
 import { infoVon } from '../../core/berichtInfo.js'
 import { protokolliere, ladeLog, leereLog } from '../../core/rollenLog.js'
@@ -34,6 +37,13 @@ export default function RollenRechte({ onChange, benutzer }) {
   const log = (aktion, ziel, detail) => { protokolliere({ aktion, ziel, detail, akteur }); setLogTick((t) => t + 1) }
 
   const clusterBlocks = bereicheNachCluster()
+  const [kpiSuche, setKpiSuche] = useState('')
+  const alleKpi = Object.values(KPI)
+  const geschuetzteKpi = alleKpi.filter((k) => k.security)
+  // Feingranulare Freigaben mit Audit-Log.
+  const sperreKpi = (kpiId) => { const an = (aktiv.kpiGesperrt || []).includes(kpiId); setLog(() => toggleKpiSperre(aktiv.id, kpiId), { aktion: an ? 'kpi.entsperrt' : 'kpi.gesperrt', ziel: aktiv.name, detail: KPI[kpiId]?.name || kpiId }) }
+  const freiKpi = (kpiId) => { const an = (aktiv.kpiFrei || []).includes(kpiId); setLog(() => toggleKpiFrei(aktiv.id, kpiId), { aktion: an ? 'kpi.freigabe.weg' : 'kpi.freigegeben', ziel: aktiv.name, detail: KPI[kpiId]?.name || kpiId }) }
+  const sperreDim = (dimId, dimName) => { const an = (aktiv.dimGesperrt || []).includes(dimId); setLog(() => toggleDimSperre(aktiv.id, dimId), { aktion: an ? 'dim.entsperrt' : 'dim.gesperrt', ziel: aktiv.name, detail: dimName }) }
   const [anfTick, setAnfTick] = useState(0)
   const [logTick, setLogTick] = useState(0)
   const [logAuf, setLogAuf] = useState(false)
@@ -226,6 +236,55 @@ export default function RollenRechte({ onChange, benutzer }) {
                       </div>
                     </label>
                   )
+                })}
+              </div>
+            </div>
+
+            {/* Einzelne Kennzahlen sperren */}
+            <div style={{ ...card, padding: 16 }}>
+              <div className="mono" style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 4 }}>Einzelne Kennzahlen sperren</div>
+              <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 10 }}>Diese Kennzahlen werden für die Gruppe in <b>allen Berichten ausgeblendet</b> — auch sonst sichtbare. ({(aktiv.kpiGesperrt || []).length} gesperrt)</div>
+              {(aktiv.kpiGesperrt || []).length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+                  {(aktiv.kpiGesperrt || []).map((id) => (
+                    <span key={id} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '3px 6px 3px 10px', borderRadius: 999, background: 'var(--amp-r-soft)', color: 'var(--amp-r)', border: '1px solid var(--amp-r)' }}>
+                      {KPI[id]?.name || id}
+                      <button onClick={() => sperreKpi(id)} title="Sperre aufheben" style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--amp-r)', fontSize: 14, lineHeight: 1 }}>×</button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <input value={kpiSuche} onChange={(e) => setKpiSuche(e.target.value)} placeholder="🔎 Kennzahl suchen und sperren …" style={{ ...inp, width: '100%', marginBottom: 8 }} />
+              {kpiSuche.trim() && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, maxHeight: 170, overflowY: 'auto' }}>
+                  {alleKpi.filter((k) => (k.name + ' ' + k.id).toLowerCase().includes(kpiSuche.toLowerCase())).slice(0, 30).map((k) => {
+                    const an = (aktiv.kpiGesperrt || []).includes(k.id)
+                    return <button key={k.id} onClick={() => sperreKpi(k.id)} style={{ fontSize: 12, padding: '4px 9px', borderRadius: 999, cursor: 'pointer', border: `1px solid ${an ? 'var(--amp-r)' : 'var(--line)'}`, background: an ? 'var(--amp-r-soft)' : 'var(--panel)', color: an ? 'var(--amp-r)' : 'var(--ink)' }}>{an ? '🚫 ' : ''}{k.name}</button>
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Geschützte Kennzahlen einzeln freigeben */}
+            <div style={{ ...card, padding: 16 }}>
+              <div className="mono" style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 4 }}>Geschützte Kennzahlen einzeln freigeben</div>
+              <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 10 }}>Zusätzliche Einzelfreigabe für besonders geschützte KPIs — auch ohne die volle Datenfreigabe oben.</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {geschuetzteKpi.map((k) => {
+                  const an = (aktiv.kpiFrei || []).includes(k.id)
+                  return <button key={k.id} onClick={() => freiKpi(k.id)} title={k.beschreibung} style={{ fontSize: 12, padding: '4px 9px', borderRadius: 999, cursor: 'pointer', border: `1px solid ${an ? 'var(--amp-g)' : 'var(--line)'}`, background: an ? 'var(--amp-g-soft)' : 'var(--panel)', color: an ? 'var(--amp-g)' : 'var(--ink)' }}>{an ? '✓ ' : '＋ '}{k.name}</button>
+                })}
+              </div>
+            </div>
+
+            {/* Dimensionen sperren */}
+            <div style={{ ...card, padding: 16 }}>
+              <div className="mono" style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 4 }}>Dimensionen (Aufriss) sperren</div>
+              <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 10 }}>Gesperrte Dimensionen stehen der Gruppe in mehrdimensionalen Auswertungen nicht zur Verfügung.</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {DIMENSIONEN.map((d) => {
+                  const an = (aktiv.dimGesperrt || []).includes(d.id)
+                  return <button key={d.id} onClick={() => sperreDim(d.id, d.name)} title={d.laie} style={{ fontSize: 12, padding: '4px 9px', borderRadius: 999, cursor: 'pointer', border: `1px solid ${an ? 'var(--amp-r)' : 'var(--line)'}`, background: an ? 'var(--amp-r-soft)' : 'var(--panel)', color: an ? 'var(--amp-r)' : 'var(--ink)' }}>{an ? '🚫 ' : ''}{d.name}</button>
                 })}
               </div>
             </div>

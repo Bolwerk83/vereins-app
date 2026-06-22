@@ -164,6 +164,22 @@ export function kopiereRechte(vonName, nachName) {
   return { list, gruppen: geaendert, quelleGefunden: ziele.length > 0 }
 }
 
+// --- Feingranulare Freigaben: einzelne Kennzahlen / Dimensionen ----------
+function toggleInListe(id, feld, wert) {
+  return speichere(ladeGruppen().map((g) => {
+    if (g.id !== id) return g
+    const liste = g[feld] || []
+    const hat = liste.includes(wert)
+    return { ...g, [feld]: hat ? liste.filter((x) => x !== wert) : [...liste, wert] }
+  }))
+}
+/** Einzelne Kennzahl für die Gruppe sperren/entsperren (auch ungeschützte). */
+export const toggleKpiSperre = (id, kpiId) => toggleInListe(id, 'kpiGesperrt', kpiId)
+/** Geschützte Kennzahl einzeln freigeben/zurücknehmen (überschreibt security). */
+export const toggleKpiFrei = (id, kpiId) => toggleInListe(id, 'kpiFrei', kpiId)
+/** Dimension (Aufriss) für die Gruppe sperren/entsperren. */
+export const toggleDimSperre = (id, dimId) => toggleInListe(id, 'dimGesperrt', dimId)
+
 /** Darf eine Gruppe die Rechteverwaltung bedienen? (Vollzugriff + GF-Freigabe) */
 export function istAdmin(gruppe) {
   return !!gruppe && gruppe.bereiche === '*' && (gruppe.kontext || []).includes('GF')

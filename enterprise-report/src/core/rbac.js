@@ -28,9 +28,25 @@ export function darfBereich(rolle, bereich) {
   return rolle.bereiche.includes(bereich)
 }
 
-/** Object-Level-Security: darf die Rolle diese KPI sehen? */
+/**
+ * Object-Level-Security: darf die Rolle diese KPI sehen?
+ *   1) explizite Einzelsperre (kpiGesperrt) -> nie sichtbar (auch ungeschützte)
+ *   2) ungeschützte KPI -> sichtbar
+ *   3) explizite Einzelfreigabe (kpiFrei) -> sichtbar (überschreibt security)
+ *   4) sonst nach kontext/bereich der Schutz-Liste
+ */
 export function darfKpi(rolle, kpi) {
-  if (!kpi?.security) return true            // kein Schutz -> sichtbar
+  if (!rolle) return true
+  const id = kpi?.id
+  if (id && (rolle.kpiGesperrt || []).includes(id)) return false
+  if (!kpi?.security) return true
+  if (id && (rolle.kpiFrei || []).includes(id)) return true
   if (rolle.bereiche === '*' && rolle.kontext.length === 0) return false
   return kpi.security.some((s) => rolle.kontext.includes(s) || (rolle.bereiche !== '*' && rolle.bereiche.includes(s)))
+}
+
+/** Darf die Rolle diese Dimension (Aufriss) sehen? Standard: ja, außer gesperrt. */
+export function darfDimension(rolle, dimId) {
+  if (!rolle || !dimId) return true
+  return !(rolle.dimGesperrt || []).includes(dimId)
 }
