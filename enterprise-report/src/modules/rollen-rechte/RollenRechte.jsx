@@ -119,6 +119,8 @@ export default function RollenRechte({ onChange }) {
             <div style={{ ...card, padding: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                 <div className="mono" style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase' }}>Sichtbare Fachbereiche</div>
+                <div style={{ flex: 1 }} />
+                <span title="Diese Bereiche steuern Berichtsbaum UND Menü-Filter „Nur meine Bereiche“." style={{ fontSize: 10.5, color: 'var(--muted)', marginRight: 8 }}>steuert Baum + Menü</span>
                 <label style={{ fontSize: 13, display: 'flex', gap: 6, alignItems: 'center', fontWeight: 600 }}>
                   <input type="checkbox" checked={aktiv.bereiche === '*'} onChange={(e) => set(() => setzeAlleBereiche(aktiv.id, e.target.checked))} />
                   Alle Bereiche

@@ -53,6 +53,8 @@ import Nutzung from './modules/nutzung/Nutzung.jsx'
 import { trackOeffnung } from './core/nutzung.js'
 import { nutzerId } from './core/identitaet.js'
 import { heartbeat } from './core/praesenz.js'
+import { darfBereich } from './core/rbac.js'
+import { bereichVon } from './core/navMeta.js'
 import { ladeBranding, applyBranding, themeById } from './core/admin.js'
 import { AKTUELLE_STAGE, stageInfo } from './core/stage.js'
 import { autoSeed } from './core/designerSeed.js'
@@ -156,8 +158,11 @@ export default function App() {
   const geh = (a) => setAnsicht(a)
   const qcFehler = validierungsZusammenfassung(werte).fehler
   const alertN = alertAnzahl(werte, rolle)
-  // Eintrags-Helfer: label/icon/aktiv/onClick aus View-Key + i18n-Key.
-  const E = (view, key, icon, extra = {}) => ({ label: t(key), icon, aktiv: ansicht === view, onClick: () => geh(view), ...extra })
+  // Eintrags-Helfer: label/icon/aktiv/onClick + Bereich/Relevanz (für Rollenfilter).
+  const E = (view, key, icon, extra = {}) => {
+    const bereich = bereichVon(view)
+    return { label: t(key), icon, view, bereich, relevant: darfBereich(rolle, bereich), aktiv: ansicht === view, onClick: () => geh(view), ...extra }
+  }
   // Mehrstufige Navigation: Gruppe → Untergruppe (Bereich) → Eintrag.
   const menuGruppen = [
     { titel: 'Cockpit & Berichte', icon: '📊', untergruppen: [
