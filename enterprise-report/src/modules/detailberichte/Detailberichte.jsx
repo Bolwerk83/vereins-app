@@ -5,7 +5,7 @@
 //  eine Zeile öffnet die Befund-Karte (Sprung in die Detailprüfung).
 // =========================================================================
 import React, { useState, useEffect } from 'react'
-import { LISTEN, LEGENDE, artikelliste, auftragsliste, warenverbrauchliste, leasingliste, retourenliste, rechnungsliste, kundenliste, produktliste, rechnungsposliste, bestellkanalliste, chargenliste, auftragsbestandliste, lieferantenliste, bestellliste, offenepostenliste, inventurliste, kontenliste, historie, sammelBefunde, befundStatistik, verknuepfungenFuer } from '../../core/detailberichte.js'
+import { LISTEN, artikelliste, auftragsliste, warenverbrauchliste, leasingliste, retourenliste, rechnungsliste, kundenliste, produktliste, rechnungsposliste, bestellkanalliste, chargenliste, auftragsbestandliste, lieferantenliste, bestellliste, offenepostenliste, inventurliste, kontenliste, historie, sammelBefunde, befundStatistik, verknuepfungenFuer } from '../../core/detailberichte.js'
 import { downloadCsv } from '../../core/export.js'
 import { ladeBookmarks, addBookmark, loescheBookmark, ladeLetzte, merkeLetzte } from '../../core/bookmarks.js'
 import { glossarFuer, ausfuehrlich } from '../../core/kpiGlossar.js'
@@ -763,7 +763,8 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, onDrill, startSuc
     const gueltig = gemerkt && gemerkt.filter((k) => cols.some((c) => c.key === k))
     return new Set(gueltig && gueltig.length ? gueltig : cols.map((c) => c.key))
   })
-  const [panelAuf, setPanelAuf] = useState(true) // Auswahlfenster immer anzeigen (einklappbar)
+  const [panelAuf, setPanelAuf] = useState(true) // Bookmarks immer anzeigen (einklappbar)
+  const [spaltenAuf, setSpaltenAuf] = useState(false) // Spalten-Ein/Ausblenden standardmäßig zugeklappt
   const [bmTick, setBmTick] = useState(0)
   const [hov, setHov] = useState(null)        // Spaltenkopf-Tooltip {key,x,y}
   const [infoKey, setInfoKey] = useState(null) // ausführliche KPI-Beschreibung
@@ -905,30 +906,45 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, onDrill, startSuc
             <button onClick={speichereAnsicht} style={{ ...inp, padding: '4px 11px', cursor: 'pointer', fontSize: 12.5, borderStyle: 'dashed' }}>＋ Aktuelle Ansicht speichern</button>
           </div>
 
-          <div style={{ ...cap, margin: '12px 0 8px' }}>Spalten ein-/ausblenden</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {cols.map((c) => {
-              const an = sichtbar.has(c.key)
-              return (
-                <button key={c.key} onClick={() => toggleSpalte(c.key)}
-                  style={{ fontSize: 12, padding: '4px 9px', borderRadius: 999, cursor: 'pointer',
-                    border: `1px solid ${an ? 'var(--accent)' : 'var(--line)'}`, background: an ? 'var(--accent-soft)' : 'var(--panel)', color: an ? 'var(--accent)' : 'var(--muted)' }}>
-                  {an ? '✓ ' : '＋ '}{c.label}
-                </button>
-              )
-            })}
-          </div>
-          <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 10 }}>Deine Spaltenauswahl wird je Liste gemerkt und beim nächsten Öffnen wiederhergestellt.</div>
+          {/* Spalten ein-/ausblenden — standardmäßig zugeklappt */}
+          <button onClick={() => setSpaltenAuf((v) => !v)} style={{ ...cap, margin: '12px 0 0', display: 'flex', alignItems: 'center', gap: 6, border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}>
+            Spalten ein-/ausblenden ({sichtCols.length}/{cols.length}) <span style={{ color: 'var(--muted)' }}>{spaltenAuf ? '▴' : '▾'}</span>
+          </button>
+          {spaltenAuf && (
+            <>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                {cols.map((c) => {
+                  const an = sichtbar.has(c.key)
+                  return (
+                    <button key={c.key} onClick={() => toggleSpalte(c.key)}
+                      style={{ fontSize: 12, padding: '4px 9px', borderRadius: 999, cursor: 'pointer',
+                        border: `1px solid ${an ? 'var(--accent)' : 'var(--line)'}`, background: an ? 'var(--accent-soft)' : 'var(--panel)', color: an ? 'var(--accent)' : 'var(--muted)' }}>
+                      {an ? '✓ ' : '＋ '}{c.label}
+                    </button>
+                  )
+                })}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 10 }}>Deine Spaltenauswahl wird je Liste gemerkt und beim nächsten Öffnen wiederhergestellt.</div>
+            </>
+          )}
         </div>
       )}
 
-      {legendeAuf && (
-        <div style={{ ...card, padding: 12, marginBottom: 12, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '2px 16px' }}>
-          {LEGENDE.map(([abk, text]) => (
-            <div key={abk} style={{ fontSize: 12 }}><b className="mono">{abk}</b> <span style={{ color: 'var(--muted)' }}>= {text}</span></div>
-          ))}
-        </div>
-      )}
+      {/* Legende — nur die Kürzel, die in DIESEM Bericht vorkommen */}
+      {legendeAuf && (() => {
+        const eintraege = cols.filter((c) => glossarFuer(c.key))
+        return (
+          <div style={{ ...card, padding: 12, marginBottom: 12 }}>
+            {eintraege.length === 0
+              ? <div style={{ fontSize: 12, color: 'var(--muted)' }}>In diesem Bericht gibt es keine erklärungsbedürftigen Kürzel.</div>
+              : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '3px 16px' }}>
+                  {eintraege.map((c) => (
+                    <div key={c.key} style={{ fontSize: 12 }}><b className="mono">{c.label}</b> <span style={{ color: 'var(--muted)' }}>= {glossarFuer(c.key).name}</span></div>
+                  ))}
+                </div>}
+          </div>
+        )
+      })()}
 
       {/* Tabelle */}
       <div style={{ ...card, padding: 0, overflowX: 'auto' }}>
