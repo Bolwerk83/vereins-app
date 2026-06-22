@@ -13,13 +13,18 @@
 // --- Quelltabellen (Dimensionen & Fakten) ---------------------------------
 export const QUELLEN = [
   { id: 'DimPeriode', typ: 'dim', spalten: ['PeriodenID', 'Jahr', 'Quartal', 'Monat', 'Datum', 'Arbeitstage'] },
-  { id: 'DimArtikel', typ: 'dim', spalten: ['ArtikelID', 'SKU', 'Bezeichnung', 'Warenbereich', 'Produktgruppe', 'Kategorie'] },
-  { id: 'DimKunde', typ: 'dim', spalten: ['KundeID', 'Name', 'Land', 'Region', 'Kanal', 'Segment'] },
+  { id: 'DimArtikel', typ: 'dim', spalten: ['ArtikelID', 'SKU', 'Bezeichnung', 'Warenbereich', 'Produktgruppe', 'ProduktgruppeID', 'Kategorie'] },
+  { id: 'DimKunde', typ: 'dim', spalten: ['KundeID', 'Name', 'Land', 'Region', 'RegionID', 'Kanal', 'Segment'] },
   { id: 'DimProfitcenter', typ: 'dim', spalten: ['PCID', 'Name', 'Kanal', 'Land', 'Funktion'] },
   { id: 'DimKonto', typ: 'dim', spalten: ['KontoNr', 'Bezeichnung', 'Kontoart', 'GuVGruppe'] },
   { id: 'FactUmsatz', typ: 'fact', spalten: ['PeriodenID', 'ArtikelID', 'KundeID', 'PCID', 'UmsatzIst', 'UmsatzPlan', 'UmsatzVorjahr', 'Menge', 'Kategorie'] },
   { id: 'FactKosten', typ: 'fact', spalten: ['PeriodenID', 'KontoNr', 'PCID', 'Betrag'] },
-  { id: 'FactVersand', typ: 'fact', spalten: ['PeriodenID', 'Carrier', 'Gewichtsklasse', 'Region', 'Anzahl', 'Versanderloes', 'Versandkosten'] }
+  { id: 'FactVersand', typ: 'fact', spalten: ['PeriodenID', 'Carrier', 'Gewichtsklasse', 'Region', 'Anzahl', 'Versanderloes', 'Versandkosten'] },
+  // Normalisierte Unter-Dimensionen (Outrigger) für Snowflake-Modellierung.
+  { id: 'DimProduktgruppe', typ: 'dim', rolle: 'outrigger', spalten: ['ProduktgruppeID', 'Produktgruppe', 'WarenbereichID'] },
+  { id: 'DimWarenbereich', typ: 'dim', rolle: 'outrigger', spalten: ['WarenbereichID', 'Warenbereich', 'Sortiment'] },
+  { id: 'DimRegion', typ: 'dim', rolle: 'outrigger', spalten: ['RegionID', 'Region', 'LandID'] },
+  { id: 'DimLand', typ: 'dim', rolle: 'outrigger', spalten: ['LandID', 'Land', 'Waehrung'] }
 ]
 export const quelleInfo = (id) => QUELLEN.find((q) => q.id === id)
 

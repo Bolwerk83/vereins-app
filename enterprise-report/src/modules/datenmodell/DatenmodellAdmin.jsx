@@ -15,7 +15,8 @@ import {
   addEbene as dimAddEbene, removeEbene as dimRemoveEbene, verschiebeEbene as dimVerschiebe
 } from '../../core/dimHierarchie.js'
 import { EINHEITEN, RICHTUNGEN, ladeMeasures, speichereMeasure, loescheMeasure as mLoesche, toggleAktiv as mToggle, neueMeasure } from '../../core/measures.js'
-import { factListe as bzFacts, dimListe as bzDims, beziehung as bzVon, toggleBeziehung as bzToggle, modellHealth as bzHealth } from '../../core/beziehungen.js'
+import { factListe as bzFacts, dimListe as bzDims, beziehung as bzVon, toggleBeziehung as bzToggle, modellHealth as bzHealth,
+  outriggerListe as bzOutrigger, empfohleneSnowflake as bzSfEmpf, snowflakeVon as bzSfVon, toggleSnowflake as bzSfToggle, snowflakeKetten as bzSfKetten, schemaTyp as bzSchemaTyp } from '../../core/beziehungen.js'
 const dimListe = () => dimListeRaw
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
@@ -306,7 +307,7 @@ function BeziehungenTab() {
         </table>
         <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8 }}>✓ verbunden · ○ empfohlen (noch offen) · Hover zeigt die Schlüssel.</div>
       </div>
-      <div style={{ ...card, padding: 16 }}>
+      <div style={{ ...card, padding: 16, marginBottom: 14 }}>
         <div style={{ ...cap, marginBottom: 8 }}>Modell-Health je Faktentabelle</div>
         {health.facts.map((f) => (
           <div key={f.fact} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', borderBottom: '1px solid var(--line)', fontSize: 13 }}>
@@ -315,6 +316,39 @@ function BeziehungenTab() {
             <span style={{ color: 'var(--muted)', flex: 1 }}>{f.verbunden.length} Dim verbunden{f.fehlend.length ? ` · fehlt: ${f.fehlend.join(', ')}` : ''}</span>
           </div>
         ))}
+      </div>
+
+      {/* Snowflake-Verzweigungen (Dim → Dim) */}
+      <div style={{ ...card, padding: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
+          <div style={cap}>Snowflake-Verzweigungen (Dimension → Unter-Dimension)</div>
+          <span style={{ fontSize: 12, fontWeight: 700, color: bzSchemaTyp() === 'snowflake' ? 'var(--accent)' : 'var(--amp-g)' }}>
+            Aktuelles Modell: {bzSchemaTyp() === 'snowflake' ? '❄ Snowflake' : '★ Star'}
+          </span>
+        </div>
+        <div style={{ fontSize: 12.5, color: 'var(--slate)', marginBottom: 10, lineHeight: 1.5 }}>
+          Normalisiert eine Dimension in Unter-Tabellen. Aus = denormalisiert (Star, schneller); An = normalisiert
+          (Snowflake, weniger Redundanz). Klick schaltet die Verzweigung.
+        </div>
+        {bzSfEmpf().map((j) => {
+          const an = (bzSfVon(j.child, j.parent) || { aktiv: false }).aktiv
+          return (
+            <div key={j.id} onClick={() => { bzSfToggle(j.child, j.parent); refresh() }}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 8px', borderBottom: '1px solid var(--line)', cursor: 'pointer', fontSize: 13 }}>
+              <span style={{ fontSize: 14, color: an ? 'var(--accent)' : 'var(--line)' }}>{an ? '✓' : '○'}</span>
+              <span style={{ fontWeight: 600 }}>{j.child}</span>
+              <span style={{ color: 'var(--muted)' }}>→</span>
+              <span style={{ fontWeight: 600 }}>{j.parent}</span>
+              <span className="mono" style={{ fontSize: 11, color: 'var(--muted)', marginLeft: 'auto' }}>über {j.key}</span>
+            </div>
+          )
+        })}
+        {bzSfKetten().length > 0 && (
+          <div style={{ marginTop: 10, fontSize: 12.5 }}>
+            <span style={cap}>Aktive Ketten: </span>
+            {bzSfKetten().map((k, i) => <div key={i} style={{ color: 'var(--accent)', fontWeight: 600, marginTop: 3 }}>{k.join(' → ')}</div>)}
+          </div>
+        )}
       </div>
     </>
   )
