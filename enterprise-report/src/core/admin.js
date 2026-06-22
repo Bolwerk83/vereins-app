@@ -16,7 +16,37 @@ export const THEMES = [
   { id: 'fruehling',  name: 'Frühling',     accent: '#16a34a', accent2: '#15803d', emoji: '🌱', banner: 'Frühjahrsaktion läuft' }
 ]
 
-export const themeById = (id) => THEMES.find((t) => t.id === id) || THEMES[0]
+// Eigene (Admin-)Designs zusätzlich zu den Vorlagen, in localStorage.
+const CKEY = 'er_custom_themes'
+export function ladeCustomThemes() {
+  try { const r = JSON.parse(localStorage.getItem(CKEY) || '[]'); return Array.isArray(r) ? r : [] } catch { return [] }
+}
+/** Alle wählbaren Designs: Vorlagen + eigene. */
+export function alleThemes() { return [...THEMES, ...ladeCustomThemes()] }
+
+/** Eigenes Design anlegen (Name + Farben) und zurückgeben. */
+export function addCustomTheme({ name, accent, accent2, banner = null } = {}) {
+  const list = ladeCustomThemes()
+  const t = { id: 'custom_' + Date.now().toString(36), name: (name || 'Eigenes Design').trim(), accent: accent || '#2563eb', accent2: accent2 || accent || '#1e40af', emoji: '🎨', banner: banner || null, custom: true }
+  list.push(t)
+  localStorage.setItem(CKEY, JSON.stringify(list))
+  return t
+}
+
+/** Eigenes Design ändern (Teil-Update). */
+export function aktualisiereCustomTheme(id, patch) {
+  const list = ladeCustomThemes().map((t) => (t.id === id ? { ...t, ...patch } : t))
+  localStorage.setItem(CKEY, JSON.stringify(list))
+  return list
+}
+
+export function loescheCustomTheme(id) {
+  const list = ladeCustomThemes().filter((t) => t.id !== id)
+  localStorage.setItem(CKEY, JSON.stringify(list))
+  return list
+}
+
+export const themeById = (id) => alleThemes().find((t) => t.id === id) || THEMES[0]
 
 const DEFAULT = { appName: 'Enterprise Report', logoDataUrl: null, themeId: 'standard' }
 
@@ -49,6 +79,7 @@ export function applyBranding(branding = ladeBranding()) {
     const root = document.documentElement.style
     root.setProperty('--accent', theme.accent)
     root.setProperty('--accent-soft', theme.accent + '1a') // ~10 % Deckkraft
+    if (theme.accent2) root.setProperty('--accent2', theme.accent2)
     if (document.title !== undefined) document.title = branding.appName || DEFAULT.appName
   }
   return theme

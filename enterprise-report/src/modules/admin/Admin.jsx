@@ -4,7 +4,7 @@
 //  Änderungen wirken sofort (CSS-Variablen + Topbar-Logo via onChange).
 // =========================================================================
 import React, { useState, useRef } from 'react'
-import { ladeBranding, speichereBranding, applyBranding, THEMES } from '../../core/admin.js'
+import { ladeBranding, speichereBranding, applyBranding, THEMES, alleThemes, addCustomTheme, loescheCustomTheme } from '../../core/admin.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)', padding: 18 }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700, marginBottom: 8 }
@@ -13,6 +13,8 @@ export default function Admin({ istAdmin = false, onChange }) {
   const [b, setB] = useState(ladeBranding())
   const [gespeichert, setGespeichert] = useState(false)
   const fileRef = useRef(null)
+  const [neu, setNeu] = useState({ name: '', accent: '#7c3aed', accent2: '#5b21b6' })
+  const [, setTick] = useState(0)
 
   if (!istAdmin) {
     return (
@@ -90,28 +92,46 @@ export default function Admin({ istAdmin = false, onChange }) {
         </div>
       </div>
 
-      {/* Themes */}
+      {/* Themes / Designs */}
       <div style={{ ...card, marginTop: 14 }}>
-        <div style={cap}>Motto / Theme</div>
+        <div style={cap}>Designs</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 10 }}>
-          {THEMES.map((t) => {
+          {alleThemes().map((t) => {
             const aktiv = b.themeId === t.id
             return (
               <button key={t.id} onClick={() => aktualisiere({ themeId: t.id })}
-                style={{ textAlign: 'left', cursor: 'pointer', borderRadius: 'var(--radius-sm)', padding: '12px 13px',
+                style={{ position: 'relative', textAlign: 'left', cursor: 'pointer', borderRadius: 'var(--radius-sm)', padding: '12px 13px',
                   border: aktiv ? `2px solid ${t.accent}` : '1px solid var(--line)', background: aktiv ? t.accent + '14' : 'var(--panel)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ width: 16, height: 16, borderRadius: 5, background: t.accent, flex: '0 0 auto' }} />
+                  <span style={{ width: 16, height: 16, borderRadius: 5, background: `linear-gradient(135deg, ${t.accent}, ${t.accent2 || t.accent})`, flex: '0 0 auto' }} />
                   <span style={{ fontSize: 14 }}>{t.emoji} {t.name}</span>
                 </div>
                 {t.banner && <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6 }}>{t.banner}</div>}
                 {aktiv && <div style={{ fontSize: 11, color: t.accent, fontWeight: 700, marginTop: 6 }}>aktiv</div>}
+                {t.custom && <span onClick={(e) => { e.stopPropagation(); loescheCustomTheme(t.id); if (b.themeId === t.id) aktualisiere({ themeId: 'standard' }); setTick((x) => x + 1) }}
+                  title="Eigenes Design löschen" style={{ position: 'absolute', top: 6, right: 8, color: 'var(--muted)', fontSize: 15 }}>×</span>}
               </button>
             )
           })}
         </div>
-        <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 12 }}>
-          Das Theme setzt die Akzentfarbe der gesamten Anwendung — passend zu Aktionen wie Black Week oder Weihnachten.
+
+        {/* Eigenes Design anlegen */}
+        <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--line)' }}>
+          <div style={{ ...cap, marginBottom: 8 }}>Eigenes Design anlegen</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-end' }}>
+            <label style={{ fontSize: 12, color: 'var(--muted)' }}>Name<br />
+              <input value={neu.name} onChange={(e) => setNeu({ ...neu, name: e.target.value })} placeholder="z. B. Firmenfarben"
+                style={{ marginTop: 4, padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', font: 'inherit', fontSize: 13, minWidth: 200 }} /></label>
+            <label style={{ fontSize: 12, color: 'var(--muted)' }}>Akzent<br />
+              <input type="color" value={neu.accent} onChange={(e) => setNeu({ ...neu, accent: e.target.value })} style={{ marginTop: 4, width: 48, height: 36, border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', cursor: 'pointer' }} /></label>
+            <label style={{ fontSize: 12, color: 'var(--muted)' }}>Sekundär<br />
+              <input type="color" value={neu.accent2} onChange={(e) => setNeu({ ...neu, accent2: e.target.value })} style={{ marginTop: 4, width: 48, height: 36, border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', cursor: 'pointer' }} /></label>
+            <button onClick={() => { const t = addCustomTheme(neu); setNeu({ name: '', accent: '#7c3aed', accent2: '#5b21b6' }); aktualisiere({ themeId: t.id }); setTick((x) => x + 1) }}
+              style={{ padding: '9px 16px', border: 'none', borderRadius: 'var(--radius-sm)', background: 'var(--accent)', color: '#fff', fontWeight: 600, cursor: 'pointer' }}>＋ Anlegen & aktivieren</button>
+          </div>
+          <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 10 }}>
+            Eigene Designs werden gespeichert und stehen wie die Vorlagen zur Auswahl. Das aktive Design setzt die Akzentfarbe der gesamten Anwendung — passend zu Marke oder Aktion.
+          </div>
         </div>
       </div>
     </div>

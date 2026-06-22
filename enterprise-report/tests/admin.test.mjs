@@ -1,7 +1,7 @@
 import './_setup.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { ladeBranding, speichereBranding, themeById, THEMES, applyBranding } from '../src/core/admin.js'
+import { ladeBranding, speichereBranding, themeById, THEMES, applyBranding, addCustomTheme, alleThemes, loescheCustomTheme } from '../src/core/admin.js'
 
 test('Default-Branding ohne gespeicherte Daten', () => {
   localStorage.removeItem('er_admin_branding')
@@ -30,4 +30,15 @@ test('Jedes Theme hat Akzentfarbe', () => {
 test('applyBranding liefert das aktive Theme zurück', () => {
   const theme = applyBranding({ appName: 'X', themeId: 'ferien' })
   assert.equal(theme.id, 'ferien')
+})
+
+test('Eigenes Design anlegen, auswählbar und löschbar', () => {
+  localStorage.removeItem('er_custom_themes')
+  const t = addCustomTheme({ name: 'Firmenfarben', accent: '#7c3aed', accent2: '#5b21b6' })
+  assert.ok(t.id.startsWith('custom_'))
+  assert.ok(t.custom)
+  assert.ok(alleThemes().some((x) => x.id === t.id))
+  assert.equal(themeById(t.id).name, 'Firmenfarben') // über eigene Designs auflösbar
+  loescheCustomTheme(t.id)
+  assert.ok(!alleThemes().some((x) => x.id === t.id))
 })
