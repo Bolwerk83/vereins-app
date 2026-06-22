@@ -5,6 +5,7 @@ import { ampelStatus, trendAusHistorie } from '../core/ampel.js'
 import { AMPEL_FARBE, AMPEL_SOFT, AMPEL_LABEL, formatWert, TREND_ICON, kpiSymbol } from '../design/theme.js'
 import { kpiInsight } from '../core/insights.js'
 import { renderText, istVeraltet, ladeText, speichereText, loescheText, VORLAGEN, kiVorschlaege } from '../core/textbausteine.js'
+import { useNav } from './NavContext.jsx'
 import { useKpiDef } from '../modules/kennzahlen/KpiDefContext.jsx'
 import { useFenster } from '../core/useFenster.js'
 import { ladeBookmarks, addBookmark, loescheBookmark, ladeLetzte, merkeLetzte } from '../core/bookmarks.js'
@@ -63,6 +64,7 @@ export function KpiCard({ kpiId, wert, historie, onClick, alleWerte }) {
 /** Logik-Drill: eine Kennzahl auswählen, KI-Klartext lesen und über die
  *  Abhängigkeiten Ebene für Ebene tiefer gehen (volle Transparenz der Herkunft). */
 export function KpiDrillModal({ startId, werte = {}, onClose }) {
+  const nav = useNav()
   const [pfad, setPfad] = useState([startId])
   const id = pfad[pfad.length - 1]
   const k = KPI[id]
@@ -96,9 +98,20 @@ export function KpiDrillModal({ startId, werte = {}, onClose }) {
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
             <span className="mono" style={{ fontSize: 26, fontWeight: 700 }}>{sym && <span style={{ color: 'var(--muted)', fontWeight: 500 }}>{sym} </span>}{formatWert(wert, k.einheit)}</span>
             <Badge status={status}>{AMPEL_LABEL[status]}</Badge>
-            {k.ziel != null && <span style={{ fontSize: 12, color: 'var(--muted)' }}>Ziel {sym ? sym + ' ' : ''}{formatWert(k.ziel, k.einheit)}</span>}
+            {k.ziel != null && <span style={{ fontSize: 12, color: 'var(--muted)' }}>Budget {sym ? sym + ' ' : ''}{formatWert(k.ziel, k.einheit)}</span>}
+            {ins?.abwZielPct != null && <span style={{ fontSize: 12.5, fontWeight: 700, color: status === 'r' ? 'var(--amp-r)' : status === 'a' ? 'var(--amp-a)' : 'var(--amp-g)' }}>Budget-Abw. {ins.abwZielPct >= 0 ? '+' : ''}{ins.abwZielPct.toFixed(1)} %</span>}
           </div>
           <div style={{ marginTop: 8, fontSize: 11.5, color: 'var(--muted)' }}>{k.beschreibung}</div>
+
+          {/* Öffnen in … (von jeder Kennzahl in Themenbericht/Details/Struktur) */}
+          {nav && (
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 12, alignItems: 'center' }}>
+              <span style={{ fontSize: 11, color: 'var(--muted)' }}>Öffnen in:</span>
+              <button onClick={() => { onClose(); nav.imBaum(id) }} style={{ fontSize: 12, padding: '4px 10px', borderRadius: 999, cursor: 'pointer', border: '1px solid var(--accent)', background: 'var(--panel)', color: 'var(--accent)', fontWeight: 600 }}>📂 Themenbericht</button>
+              <button onClick={() => { onClose(); nav.details(k.bereich) }} style={{ fontSize: 12, padding: '4px 10px', borderRadius: 999, cursor: 'pointer', border: '1px solid var(--accent)', background: 'var(--panel)', color: 'var(--accent)', fontWeight: 600 }}>🔎 Details</button>
+              <button onClick={() => { onClose(); nav.struktur() }} style={{ fontSize: 12, padding: '4px 10px', borderRadius: 999, cursor: 'pointer', border: '1px solid var(--accent)', background: 'var(--panel)', color: 'var(--accent)', fontWeight: 600 }}>📐 Struktur</button>
+            </div>
+          )}
           {ins?.aussage && (
             <div style={{ marginTop: 12, padding: '11px 13px', borderRadius: 'var(--radius-sm)', background: 'var(--accent-soft)', border: '1px solid var(--line)' }}>
               <div className="mono" style={{ fontSize: 10, color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 4 }}>🤖 KI-Einschätzung</div>

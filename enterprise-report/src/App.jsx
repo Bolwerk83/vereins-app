@@ -6,6 +6,8 @@ import HilfePanel from './modules/hilfe/HilfePanel.jsx'
 import Onboarding from './modules/onboarding/Onboarding.jsx'
 import { schonGesehen } from './core/onboarding.js'
 import { KpiDefProvider } from './modules/kennzahlen/KpiDefContext.jsx'
+import { NavProvider } from './components/NavContext.jsx'
+import { detailFuerBereich } from './core/detailberichte.js'
 import Kennzahlen from './modules/kennzahlen/Kennzahlen.jsx'
 import BurgerMenu from './components/BurgerMenu.jsx'
 import { ladeKpiWerte, pruefeVerbindung, setCacheKontext, leereCache, PERIODEN, AKTUELLE_PERIODE, QUELLE } from './core/dataProvider.js'
@@ -381,6 +383,11 @@ export default function App() {
       )}
 
       <KpiDefProvider rolle={rolle} werte={werte} onSpringe={(id) => { setBaumStart(id); setAnsicht('baum') }}>
+      <NavProvider value={{
+        imBaum: (kpiId) => { setBaumStart(kpiId); geh('baum') },
+        details: (bereich) => { const d = detailFuerBereich(bereich); if (d) gehDetail(d.id); else geh('detailberichte') },
+        struktur: () => gehDetail('hierarchie')
+      }}>
       <main style={{ padding: '22px 24px', maxWidth: 'none', margin: 0 }}>
         {ansicht !== 'wizard' && eintragIndex[ansicht] && (
           <BerichtInfoBanner view={ansicht} label={eintragIndex[ansicht].label} icon={eintragIndex[ansicht].icon} pfad={eintragIndex[ansicht].pfad} />
@@ -555,6 +562,7 @@ export default function App() {
           }} />
         )}
       </main>
+      </NavProvider>
       </KpiDefProvider>
 
       {/* Dezenter, aber unmissverständlicher Urheberhinweis. */}

@@ -78,12 +78,14 @@ export default function KnotenBewertung({ kpiIds, werte, rolle }) {
               <div className="mono" style={{ fontSize: 24, fontWeight: 600, marginTop: 4 }}>
                 {kpiSymbol(i.k.einheit) && <span style={{ color: 'var(--muted)', fontWeight: 500, marginRight: 5 }}>{kpiSymbol(i.k.einheit)}</span>}{formatWert(i.wert, i.k.einheit)}
               </div>
-              <div style={{ display: 'flex', gap: 12, marginTop: 4, fontSize: 11 }}>
-                <span style={{ color: i.status === 'r' ? 'var(--amp-r)' : i.status === 'a' ? 'var(--amp-a)' : 'var(--muted)' }}>
-                  Ziel {i.k.ziel != null ? `${i.zielText}` : '—'}
-                </span>
-                {i.deltaVj != null && <span className="mono" style={{ color: i.istGutTrend ? 'var(--amp-g)' : 'var(--amp-r)' }}>
-                  Δ {TREND_ICON[i.trend.trend]} VJ {i.vjText}</span>}
+              <div style={{ display: 'flex', gap: 12, marginTop: 4, fontSize: 11, flexWrap: 'wrap' }}>
+                {i.k.ziel != null && i.abwZielPct != null
+                  ? <span title={`Budget/Ziel ${formatWert(i.k.ziel, i.k.einheit)}`} style={{ color: i.status === 'r' ? 'var(--amp-r)' : i.status === 'a' ? 'var(--amp-a)' : 'var(--amp-g)' }}>
+                      Budget {i.abwZielPct >= 0 ? '+' : ''}{i.abwZielPct.toFixed(1)} %
+                    </span>
+                  : <span style={{ color: 'var(--muted)' }}>kein Budget</span>}
+                {i.deltaVjPct != null && <span className="mono" style={{ color: i.istGutTrend ? 'var(--amp-g)' : 'var(--amp-r)' }}>
+                  VJ {i.deltaVjPct >= 0 ? '+' : ''}{i.deltaVjPct.toFixed(1)} % {TREND_ICON[i.trend.trend]}</span>}
               </div>
               {reihe.length >= 2 && <div style={{ marginTop: 6 }}><Sparkline reihe={reihe} richtung={i.k.richtung} w={210} h={40} /></div>}
               <div style={{ fontSize: 11.5, color: 'var(--slate)', marginTop: 6, lineHeight: 1.4 }}>{i.aussage}</div>
