@@ -34,7 +34,7 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
   Kosten, kein Erlös), damit Deckungsbeitrag/Ergebnis nicht verzerrt wird.
 - „so simpel und doch so detailliert wie möglich" — weitere sinnvolle Stellhebel ergänzen.
 
-### B. Kalkulatorische Kosten je Wirtschaftsjahr versionieren (+ Monat)
+### B. Kalkulatorische Kosten je Wirtschaftsjahr versionieren (+ Monat) — DONE
 - Parameter (Wiederbeschaffungswert, Zinssatz, betr.notw. Kapital, Marktmiete,
   GF-Gehalt, Wagnissatz …) **pro Geschäftsjahr** pflegbar; **„Vorjahr kopieren"**.
 - Monat: **nicht** eintippen, sondern **automatisch verteilen** (Default linear /12,

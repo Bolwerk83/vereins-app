@@ -27,6 +27,7 @@ export const NAV_ZIELE = [
   { ziel: 'kalkulation', gruppe: 'Berichte', schluessel: 'nav.kalkulation' },
   { ziel: 'ergebnis', gruppe: 'Berichte', schluessel: 'nav.ergebnis' },
   { ziel: 'deckungsbeitrag', gruppe: 'Berichte', schluessel: 'nav.db' },
+  { ziel: 'kalkulatorik', gruppe: 'Berichte', schluessel: 'nav.kalkulatorik' },
   { ziel: 'bi', gruppe: 'Analyse', schluessel: 'nav.bi' },
   { ziel: 'vergleich', gruppe: 'Analyse', schluessel: 'nav.vergleich' },
   { ziel: 'segment', gruppe: 'Analyse', schluessel: 'nav.segment' },

@@ -3,27 +3,36 @@
 //  Vorschlägen aus den Unternehmenszahlen. Anders- und Zusatzkosten.
 // =========================================================================
 import React, { useState } from 'react'
-import { BAUSTEINE, baustein, felderVon, setFelder, wertVon, gesamt } from '../../core/kalkulatorik.js'
+import { BAUSTEINE, baustein, felderVon, setFelder, wertVon, gesamt,
+  verfuegbareJahre, kopiereJahr, monatsVerteilung, VERTEILSCHLUESSEL, DEFAULT_JAHR } from '../../core/kalkulatorik.js'
 import { ueberleitung } from '../../core/verbuchung.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
 const mio = (v) => v.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' Mio €'
+const MON = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']
 
 export default function Kalkulatorik({ werte = {}, onGeh }) {
   const [, setTick] = useState(0)
   const [hinweis, setHinweis] = useState({})   // id -> Vorschlagstext
+  const [jahr, setJahr] = useState(DEFAULT_JAHR)
+  const [schluessel, setSchluessel] = useState('gleich')
   const refresh = () => setTick((t) => t + 1)
-  const g = gesamt()
+  const g = gesamt(jahr)
+  const jahre = verfuegbareJahre()
+  const jahrAuswahl = [...new Set([...jahre, jahr, jahr + 1])].sort((a, b) => a - b)
 
   function aendere(id, key, val) {
-    const f = { ...felderVon(id), [key]: val === '' ? 0 : Number(val) }
-    setFelder(id, f); refresh()
+    const f = { ...felderVon(id, jahr), [key]: val === '' ? 0 : Number(val) }
+    setFelder(id, f, jahr); refresh()
   }
   function vorschlag(id) {
     const v = baustein(id).vorschlag(werte)
-    setFelder(id, { ...felderVon(id), ...v.patch })
+    setFelder(id, { ...felderVon(id, jahr), ...v.patch }, jahr)
     setHinweis((h) => ({ ...h, [id]: v.text })); refresh()
+  }
+  function vorjahrKopieren() {
+    if (confirm(`Werte aus ${jahr - 1} in ${jahr} übernehmen (überschreibt ${jahr})?`)) { kopiereJahr(jahr, jahr - 1); refresh() }
   }
 
   const tag = (farbe) => ({ fontSize: 10.5, fontWeight: 700, color: farbe, border: `1px solid ${farbe}`, padding: '1px 7px', borderRadius: 999 })
@@ -41,16 +50,35 @@ export default function Kalkulatorik({ werte = {}, onGeh }) {
         {onGeh && <button onClick={() => onGeh('klr')} style={{ ...inpBtn, whiteSpace: 'nowrap' }}>← zur KLR</button>}
       </div>
 
+      {/* Wirtschaftsjahr + Verteilung */}
+      <div style={{ ...card, padding: 12, marginBottom: 14, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+        <label style={{ fontSize: 12, color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 6 }}>Wirtschaftsjahr
+          <select value={jahr} onChange={(e) => setJahr(Number(e.target.value))} style={inpBtn}>
+            {jahrAuswahl.map((j) => <option key={j} value={j}>{j}{jahre.includes(j) ? '' : ' (neu)'}</option>)}
+          </select>
+        </label>
+        <button onClick={vorjahrKopieren} style={{ ...inpBtn, cursor: 'pointer' }} title={`Werte aus ${jahr - 1} übernehmen`}>⧉ Vorjahr ({jahr - 1}) kopieren</button>
+        <span style={{ width: 1, height: 22, background: 'var(--line)' }} />
+        <label style={{ fontSize: 12, color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 6 }}>Monatsverteilung
+          <select value={schluessel} onChange={(e) => setSchluessel(e.target.value)} style={inpBtn}>
+            {VERTEILSCHLUESSEL.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+        </label>
+        <span style={{ fontSize: 11.5, color: 'var(--muted)' }}>Jahreswerte werden je Monat verteilt (Default linear /12).</span>
+      </div>
+
       {/* Summen */}
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
         {kachel('Anderskosten', mio(g.anders))}
         {kachel('Zusatzkosten', mio(g.zusatz))}
-        {kachel('Kalkulatorisch gesamt', mio(g.summe), 'fließt in Kostenarten/Abgrenzung')}
+        {kachel('Kalkulatorisch gesamt', mio(g.summe), `Jahr ${jahr} · fließt in Kostenarten/Abgrenzung`)}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(440px, 1fr))', gap: 14 }} className="raster-2">
         {BAUSTEINE.map((b) => {
-          const f = felderVon(b.id)
+          const f = felderVon(b.id, jahr)
+          const mv = monatsVerteilung(b.id, jahr, schluessel)
+          const mvMax = Math.max(...mv, 0.0001)
           return (
             <div key={b.id} style={{ ...card, padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -67,9 +95,21 @@ export default function Kalkulatorik({ werte = {}, onGeh }) {
                   </label>
                 ))}
                 <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-                  <div style={cap}>= Ergebnis</div>
-                  <div style={{ fontSize: 20, fontWeight: 700 }}>{mio(wertVon(b.id))}</div>
+                  <div style={cap}>= Ergebnis {jahr}</div>
+                  <div style={{ fontSize: 20, fontWeight: 700 }}>{mio(wertVon(b.id, jahr))}</div>
                 </div>
+              </div>
+
+              {/* Monatsverteilung (Splash) */}
+              <div>
+                <div style={{ ...cap, marginBottom: 4 }}>Monatsverteilung</div>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 30 }}>
+                  {mv.map((v, i) => (
+                    <div key={i} title={`${MON[i]}: ${(v * 1000).toLocaleString('de-DE', { maximumFractionDigits: 0 })} Tsd €`}
+                      style={{ flex: 1, height: `${Math.max(2, v / mvMax * 30)}px`, background: 'var(--accent)', opacity: 0.7, borderRadius: '2px 2px 0 0' }} />
+                  ))}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: 'var(--muted)', marginTop: 2 }}><span>{MON[0]}</span><span>{MON[11]}</span></div>
               </div>
 
               <div>

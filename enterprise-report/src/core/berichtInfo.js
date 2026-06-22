@@ -16,6 +16,7 @@ export const BERICHT_INFO = {
   klr: { zweck: 'Grundlagen und Fluss der Kosten- & Leistungsrechnung.', zielgruppe: 'Controlling, Rechnungswesen.', mehrwert: 'Verstehen, welche Kosten wofür entstehen.' },
   einzelgemein: { zweck: 'Einzel- vs. Gemeinkosten und Zuschlagskalkulation.', zielgruppe: 'Kalkulation / Controlling.', mehrwert: 'Saubere Gemeinkostenverrechnung.' },
   abgrenzung: { zweck: 'Überleitung GuV → KLR inkl. neutraler Abgrenzung und kalkulatorischer Kosten.', zielgruppe: 'Rechnungswesen / Controlling.', mehrwert: 'Betriebsergebnis korrekt abgegrenzt.' },
+  kalkulatorik: { zweck: 'Kalkulatorische Kosten (Abschreibung, Zinsen, Wagnisse, Miete, Unternehmerlohn) je Wirtschaftsjahr aufbauen — mit begründeten Vorschlägen, „Vorjahr kopieren" und Monatsverteilung.', zielgruppe: 'Controlling / Rechnungswesen.', mehrwert: 'Anders-/Zusatzkosten je Jahr pflegen und sauber ins Betriebsergebnis überleiten.' },
   kostenstellen: { zweck: 'Kostenstellenrechnung mit Umlage und Zuschlagssätzen.', zielgruppe: 'Controlling.', mehrwert: 'Wo entstehen Gemeinkosten – und wie teuer ist jede Stelle.' },
   bab: { zweck: 'Betriebsabrechnungsbogen über die ganze Firma (Plan/Ist).', zielgruppe: 'Controlling.', mehrwert: 'Gemeinkostenverteilung & Wirtschaftlichkeit je Stelle.' },
   kalkulation: { zweck: 'Kostenträgerrechnung: Selbstkosten je Produkt (Division/Äquivalenz/Zuschlag/Maschine/Kuppel).', zielgruppe: 'Kalkulation / Vertrieb.', mehrwert: 'Preisuntergrenzen & Produktergebnis.' },

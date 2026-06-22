@@ -86,25 +86,66 @@ export const BAUSTEINE = [
 ]
 export const baustein = (id) => BAUSTEINE.find((b) => b.id === id)
 
-const KEY = 'er_kalkulatorik'
-export function ladeKonfig() { try { return JSON.parse(localStorage.getItem(KEY) || '{}') } catch { return {} } }
-function speichere(o) { localStorage.setItem(KEY, JSON.stringify(o)); return o }
+import { verteile, VERTEILSCHLUESSEL } from './planung.js'
+export { VERTEILSCHLUESSEL }
 
-/** Feldwerte eines Bausteins (gespeicherte, sonst Defaults). */
-export function felderVon(id) {
-  const b = baustein(id); const gespeichert = ladeKonfig()[id] || {}
+const KEY = 'er_kalkulatorik'
+export const DEFAULT_JAHR = 2026
+const istBausteinId = (k) => BAUSTEINE.some((b) => b.id === k)
+
+// Speicher: { [jahr]: { [bausteinId]: felder } }. Altes flaches Format
+// ({ bausteinId: felder }) wird beim Laden unter DEFAULT_JAHR migriert.
+function ladeAlle() {
+  let o
+  try { o = JSON.parse(localStorage.getItem(KEY) || '{}') } catch { return {} }
+  if (o && typeof o === 'object' && Object.keys(o).some(istBausteinId)) {
+    o = { [DEFAULT_JAHR]: o } // Legacy-Migration
+  }
+  return o || {}
+}
+function speichereAlle(o) { localStorage.setItem(KEY, JSON.stringify(o)); return o }
+
+/** Konfig eines Jahres ({ bausteinId: felder }). */
+export function ladeKonfig(jahr = DEFAULT_JAHR) { return ladeAlle()[jahr] || {} }
+
+/** Jahre mit gepflegter Konfiguration (mind. das Default-Jahr). */
+export function verfuegbareJahre() {
+  const jahre = Object.keys(ladeAlle()).map(Number).filter((n) => !Number.isNaN(n))
+  if (!jahre.includes(DEFAULT_JAHR)) jahre.push(DEFAULT_JAHR)
+  return [...new Set(jahre)].sort((a, b) => a - b)
+}
+
+/** Feldwerte eines Bausteins im Jahr (gespeicherte, sonst Defaults). */
+export function felderVon(id, jahr = DEFAULT_JAHR) {
+  const b = baustein(id); const gespeichert = ladeKonfig(jahr)[id] || {}
   const f = {}
   for (const fe of b.felder) f[fe.key] = gespeichert[fe.key] != null ? gespeichert[fe.key] : fe.default
   return f
 }
-export function setFelder(id, felder) { return speichere({ ...ladeKonfig(), [id]: felder }) }
+export function setFelder(id, felder, jahr = DEFAULT_JAHR) {
+  const alle = ladeAlle()
+  alle[jahr] = { ...(alle[jahr] || {}), [id]: felder }
+  return speichereAlle(alle)
+}
 
-/** Wert eines Bausteins (Mio €/Jahr). */
-export function wertVon(id) { return baustein(id).berechne(felderVon(id)) }
+/** Konfiguration eines Quelljahres in ein Zieljahr kopieren („Vorjahr kopieren"). */
+export function kopiereJahr(zielJahr, quellJahr = zielJahr - 1) {
+  const alle = ladeAlle()
+  alle[zielJahr] = JSON.parse(JSON.stringify(alle[quellJahr] || {}))
+  return speichereAlle(alle)
+}
 
-/** Gesamt-Kalkulatorik: je Baustein + Summen nach Anders/Zusatz. */
-export function gesamt() {
-  const zeilen = BAUSTEINE.map((b) => ({ id: b.id, name: b.name, typ: b.typ, wert: wertVon(b.id) }))
+/** Wert eines Bausteins (Mio €/Jahr) im Jahr. */
+export function wertVon(id, jahr = DEFAULT_JAHR) { return baustein(id).berechne(felderVon(id, jahr)) }
+
+/** Monatsverteilung des Jahreswerts über einen Verteilungsschlüssel (Default linear /12). */
+export function monatsVerteilung(id, jahr = DEFAULT_JAHR, schluessel = 'gleich') {
+  return verteile(wertVon(id, jahr), schluessel).map((x) => Math.round(x * 1000) / 1000)
+}
+
+/** Gesamt-Kalkulatorik: je Baustein + Summen nach Anders/Zusatz (für ein Jahr). */
+export function gesamt(jahr = DEFAULT_JAHR) {
+  const zeilen = BAUSTEINE.map((b) => ({ id: b.id, name: b.name, typ: b.typ, wert: wertVon(b.id, jahr) }))
   const summe = (typ) => r2(zeilen.filter((z) => !typ || z.typ === typ).reduce((n, z) => n + z.wert, 0))
   return { zeilen, anders: summe('anders'), zusatz: summe('zusatz'), summe: summe() }
 }
