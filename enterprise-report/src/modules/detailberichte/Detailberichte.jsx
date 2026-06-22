@@ -12,7 +12,7 @@ import { glossarFuer, ausfuehrlich } from '../../core/kpiGlossar.js'
 import { ladeBemerkungen, addBemerkung, toggleErledigt, loescheBemerkung, aufgaben, PERSONEN } from '../../core/bemerkungen.js'
 import { erkenntnisse } from '../../core/erkenntnisse.js'
 import { preisvergleich } from '../../core/preisvergleich.js'
-import { qualitaetUebersicht, qualitaetStats, setStatus, ZUSTAND_LABEL } from '../../core/qualitaet.js'
+import { qualitaetUebersicht, qualitaetStats, setStatus, statusVon, ZUSTAND_LABEL } from '../../core/qualitaet.js'
 import { radar } from '../../core/controllerRadar.js'
 
 // Eingebaute Spalten-Ansichten (Fokus-Presets) je Liste.
@@ -487,21 +487,52 @@ function Qualitaet({ onBack, onOpen }) {
 // mit Folgefehler-Erkennung (nur die Ursache wird gemeldet).
 function Radar({ werte, onBack, onOpen }) {
   const [erg, setErg] = useState(null)
-  const Item = ({ x }) => (
-    <div style={{ display: 'flex', gap: 12, padding: '11px 13px', borderBottom: '1px solid var(--line)', borderLeft: `4px solid ${SCHWERE[x.schwere].farbe}`, alignItems: 'flex-start' }}>
-      <span style={{ fontSize: 16 }}>{x.art === 'KPI' ? '🎯' : SCHWERE[x.schwere].icon}</span>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
-          <b style={{ fontSize: 13.5 }}>{x.titel}</b>
-          <span style={{ fontSize: 11, color: 'var(--muted)' }}>{x.bereich} · {x.art}</span>
+  const [openLog, setOpenLog] = useState(null)
+  const [, setTick] = useState(0)
+  const refresh = () => setTick((t) => t + 1)
+  const erledige = (key) => { const k = prompt('Erledigt — kurz begründen: Ursache / Maßnahme / Abschluss?'); if (k === null) return; setStatus(key, 'erledigt', { kommentar: k }); refresh() }
+  const setze = (key, z) => { let k = ''; if (z === 'bearbeitung') { k = prompt('In Bearbeitung — kurze Notiz (wer/was/warum):'); if (k === null) return } setStatus(key, z, { kommentar: k || '' }); refresh() }
+  const mini = { ...inp, padding: '4px 9px', cursor: 'pointer', fontSize: 12, whiteSpace: 'nowrap' }
+  const Item = ({ x }) => {
+    const st = statusVon(x.key)
+    const zustand = st?.status || 'offen'
+    const zf = zustand === 'erledigt' ? 'var(--amp-g)' : zustand === 'bearbeitung' ? 'var(--accent)' : SCHWERE[x.schwere].farbe
+    const zl = zustand === 'erledigt' ? 'Erledigt' : zustand === 'bearbeitung' ? 'In Bearbeitung' : 'Offen'
+    const auf = openLog === x.key
+    return (
+      <div style={{ borderBottom: '1px solid var(--line)', borderLeft: `4px solid ${zustand === 'erledigt' ? 'var(--amp-g)' : SCHWERE[x.schwere].farbe}`, opacity: zustand === 'erledigt' ? 0.72 : 1 }}>
+        <div style={{ display: 'flex', gap: 12, padding: '11px 13px', alignItems: 'flex-start' }}>
+          <span style={{ fontSize: 16 }}>{x.art === 'KPI' ? '🎯' : SCHWERE[x.schwere].icon}</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
+              <b style={{ fontSize: 13.5 }}>{x.titel}</b>
+              <span style={{ fontSize: 11, color: 'var(--muted)' }}>{x.bereich} · {x.art}</span>
+              <span style={{ fontSize: 10.5, fontWeight: 700, color: zf, background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 999, padding: '1px 8px' }}>{zl}</span>
+            </div>
+            {x.text && <div style={{ fontSize: 12.5, marginTop: 2 }}>{x.text}</div>}
+            {x.gruende && <ul style={{ margin: '4px 0 0', paddingLeft: 18, fontSize: 12.5 }}>{x.gruende.map((g, i) => <li key={i} style={{ color: SCHWERE[g.schwere].farbe }}>{g.text}</li>)}</ul>}
+            {x.wirktAuf?.length > 0 && <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 4 }}>↳ wirkt auf (Folgefehler): <b>{x.wirktAuf.join(', ')}</b></div>}
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+              {x.art === 'Detailliste' && <button onClick={() => onOpen(x.listId, String(x.id))} style={mini}>👁 Übeltäter</button>}
+              {zustand !== 'bearbeitung' && zustand !== 'erledigt' && <button onClick={() => setze(x.key, 'bearbeitung')} style={{ ...mini, borderColor: 'var(--accent)', color: 'var(--accent)' }}>▶ In Arbeit</button>}
+              {zustand !== 'erledigt' && <button onClick={() => erledige(x.key)} style={{ padding: '4px 9px', border: 'none', borderRadius: 'var(--radius-sm)', background: 'var(--amp-g)', color: '#fff', cursor: 'pointer', fontSize: 12 }}>✓ Erledigt</button>}
+              {(zustand === 'erledigt' || zustand === 'bearbeitung') && <button onClick={() => setze(x.key, 'offen')} style={mini}>↺ Wieder öffnen</button>}
+              {st?.log?.length > 0 && <button onClick={() => setOpenLog(auf ? null : x.key)} style={mini}>Log {st.log.length} {auf ? '▴' : '▾'}</button>}
+            </div>
+          </div>
         </div>
-        {x.text && <div style={{ fontSize: 12.5, marginTop: 2 }}>{x.text}</div>}
-        {x.gruende && <ul style={{ margin: '4px 0 0', paddingLeft: 18, fontSize: 12.5 }}>{x.gruende.map((g, i) => <li key={i} style={{ color: SCHWERE[g.schwere].farbe }}>{g.text}</li>)}</ul>}
-        {x.wirktAuf?.length > 0 && <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 4 }}>↳ wirkt auf (Folgefehler): <b>{x.wirktAuf.join(', ')}</b></div>}
+        {auf && st?.log?.length > 0 && (
+          <div style={{ padding: '4px 12px 12px 40px', background: 'var(--bg)' }}>
+            {st.log.map((g, i) => (
+              <div key={i} style={{ fontSize: 12, padding: '4px 0', borderBottom: '1px solid var(--line)' }}>
+                <span className="mono" style={{ color: 'var(--muted)' }}>{new Date(g.ts).toLocaleString('de-DE')}</span> · <b>{g.aktor}</b> · {g.aktion}{g.kommentar ? <span style={{ color: 'var(--muted)' }}> — „{g.kommentar}"</span> : ''}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
-      {x.art === 'Detailliste' && <button onClick={() => onOpen(x.listId, String(x.id))} style={{ ...inp, padding: '4px 9px', cursor: 'pointer', fontSize: 12, whiteSpace: 'nowrap' }}>👁 Übeltäter</button>}
-    </div>
-  )
+    )
+  }
   return (
     <div style={{ maxWidth: 1000, margin: '0 auto' }}>
       <button onClick={onBack} style={{ ...inp, cursor: 'pointer', marginBottom: 12 }}>← Detailberichte</button>
