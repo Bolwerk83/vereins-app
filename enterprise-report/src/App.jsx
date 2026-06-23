@@ -4,7 +4,7 @@ import RollenRechte from './modules/rollen-rechte/RollenRechte.jsx'
 import BenutzerLeiste from './modules/benutzer/BenutzerLeiste.jsx'
 import HilfePanel from './modules/hilfe/HilfePanel.jsx'
 import Onboarding from './modules/onboarding/Onboarding.jsx'
-import { schonGesehen } from './core/onboarding.js'
+import { schonGesehen, merkeGesehen } from './core/onboarding.js'
 import { KpiDefProvider } from './modules/kennzahlen/KpiDefContext.jsx'
 import { NavProvider } from './components/NavContext.jsx'
 import { detailFuerBereich } from './core/detailberichte.js'
@@ -164,7 +164,9 @@ export default function App() {
   // (erst nach Ersthilfe/Setup, nicht im Wizard).
   useEffect(() => {
     if (ansicht === 'wizard' || !localStorage.getItem(HILFE_KEY) || !rolle) return
-    if (!schonGesehen(rolle.id)) setOnbAuf(true)
+    // Genau EINMAL je Rolle automatisch zeigen: sofort als gesehen merken, damit
+    // es nicht bei jeder Navigation erneut aufpoppt (über 🚀 jederzeit erneut).
+    if (!schonGesehen(rolle.id)) { merkeGesehen(rolle.id); setOnbAuf(true) }
   }, [rolle?.id, ansicht]) // eslint-disable-line
 
   // Cache-Kontext aus dem Periodenmodell (Datumssicht + Granularität). Ändert
