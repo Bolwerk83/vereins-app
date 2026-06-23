@@ -5,6 +5,7 @@ import * as vk from '../src/core/verkaufsstatistik.js'
 import * as fr from '../src/core/fahrradstatistik.js'
 import * as ek from '../src/core/einkaufsstatistik.js'
 import * as ps from '../src/core/produktionsstatistik.js'
+import * as sf from '../src/core/statistikFilter.js'
 
 test('Verkaufsstatistik: Summen & Anteile konsistent', () => {
   const wg = vk.warengruppen()
@@ -47,6 +48,41 @@ test('Einkauf: Warengruppen aggregieren alle Lieferanten', () => {
   const k = ek.kennzahlen()
   assert.equal(wg.reduce((n, g) => n + g.volumen, 0), k.volumen)
   assert.equal(wg.reduce((n, g) => n + g.lieferanten, 0), ek.lieferanten().length)
+})
+
+test('Filter: Gesamtjahr = 100 %, Quartale summieren auf, Profit-Center skaliert', () => {
+  // Volles Jahr ohne PC/Datumsart-Verschiebung = Faktor 1
+  assert.equal(sf.zeitraumAnteil('jahr'), 1)
+  const qSum = ['q1', 'q2', 'q3', 'q4'].reduce((n, q) => n + sf.zeitraumAnteil(q), 0)
+  assert.ok(Math.abs(qSum - 1) < 0.01)
+  assert.ok(Math.abs(sf.zeitraumAnteil('h1') + sf.zeitraumAnteil('h2') - 1) < 0.01)
+  // Profit-Center halbiert grob die absoluten Werte
+  const voll = vk.kennzahlen(sf.faktor('jahr', 'alle'))
+  const ecom = vk.kennzahlen(sf.faktor('jahr', 'pc-ecom'))
+  assert.ok(ecom.umsatz < voll.umsatz)
+  assert.ok(Math.abs(ecom.umsatz / voll.umsatz - 0.586) < 0.02)
+  // Ratios (DB-%) bleiben unter Skalierung gleich
+  assert.equal(voll.dbProzent, ecom.dbProzent)
+})
+
+test('Zeitdimension: Lieferdatum verschiebt Quartalsanteile & senkt Jahresvolumen', () => {
+  const beleg = sf.datumsartInfo('verkauf', 'beleg')
+  const liefer = sf.datumsartInfo('verkauf', 'liefer')
+  // Volles Jahr: Lieferdatum hat kleinere Magnitude (noch nicht Geliefertes fehlt)
+  assert.ok(sf.faktor('jahr', 'alle', liefer) < sf.faktor('jahr', 'alle', beleg))
+  // Quartalsanteil verschiebt sich je nach Datumsart
+  assert.notEqual(sf.zeitraumAnteil('q1', liefer.shift), sf.zeitraumAnteil('q1', beleg.shift))
+  // Bereich-spezifische Datumsarten vorhanden
+  assert.equal(sf.datumsartenFuer('einkauf').length, 3)
+  assert.ok(sf.datumsartenFuer('produktion').some((d) => d.id === 'fertig'))
+})
+
+test('Produktion: Zeitraum grenzt auf vorhandene Monate ein (Q3 ohne Ist-Daten)', () => {
+  const q1 = ps.kennzahlen({ monate: sf.monateVon('q1') })
+  const q3 = ps.kennzahlen({ monate: sf.monateVon('q3') })
+  assert.ok(q1.stueck > 0)         // Jan–Mär vorhanden
+  assert.equal(q3.stueck, 0)       // Jul–Sep noch keine Ist-Daten
+  assert.equal(q1.monateN, 3)
 })
 
 test('Produktionsstatistik: Mengen & Werte konsistent', () => {

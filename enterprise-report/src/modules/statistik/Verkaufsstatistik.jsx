@@ -2,8 +2,10 @@
 //  VERKAUFSSTATISTIK — schneller Verkaufsüberblick: KPI-Band, Umsatz nach
 //  Warengruppe (mit VJ & DB), Top-Artikel, Vertriebskanal, Monatsverlauf.
 // =========================================================================
-import React from 'react'
+import React, { useState } from 'react'
 import { warengruppen, topArtikel, kanaele, verlauf, kennzahlen } from '../../core/verkaufsstatistik.js'
+import { monateVon, faktor, pcFaktor, datumsartInfo, filterLabel } from '../../core/statistikFilter.js'
+import StatistikFilter, { ladeFilter, speichereFilter } from './StatistikFilter.jsx'
 import { datenstandText } from '../../core/datenstand.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
@@ -33,17 +35,23 @@ function Verlauf({ daten }) {
 }
 
 export default function Verkaufsstatistik() {
-  const k = kennzahlen(); const wg = warengruppen(); const art = topArtikel(); const kan = kanaele(); const vl = verlauf()
+  const [f, setF] = useState(() => ladeFilter('verkauf', 'beleg'))
+  const aendern = (v) => { setF(v); speichereFilter('verkauf', v) }
+  const dat = datumsartInfo('verkauf', f.datumsart)
+  const fk = faktor(f.zeitraum, f.pc, dat)
+  const vlFaktor = pcFaktor(f.pc) * dat.mag
+  const k = kennzahlen(fk); const wg = warengruppen(fk); const art = topArtikel(7, fk); const kan = kanaele(fk); const vl = verlauf(monateVon(f.zeitraum), vlFaktor)
   return (
     <div style={{ maxWidth: 1080, margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
         <div>
           <div style={cap}>Vertrieb · Schneller Verkaufsüberblick</div>
           <h2 style={{ margin: '4px 0 0' }}>Verkaufsstatistik</h2>
-          <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 2 }}>📅 {datenstandText()} · laufendes Jahr vs. Vorjahr</div>
+          <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 2 }}>📅 {datenstandText()} · 🗓 Periode nach <b>{dat.name}</b> · {filterLabel(f.zeitraum, f.pc)} · vs. Vorjahr</div>
         </div>
         <button className="no-print" onClick={() => window.print()} style={{ padding: '7px 13px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: 'var(--panel)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>🖨 Drucken / PDF</button>
       </div>
+      <StatistikFilter bereich="verkauf" wert={f} onChange={aendern} />
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
         {[['Umsatz', mio(k.umsatz)], ['Wachstum z. Vorjahr', (k.wachstumPct >= 0 ? '+' : '') + k.wachstumPct + ' %', k.wachstumPct >= 0 ? 'var(--amp-g)' : 'var(--amp-r)'], ['Absatzmenge', stk(k.menge) + ' Stk'], ['Ø Auftragswert', eur(k.avgBon)], ['DB-Marge', k.dbProzent + ' %'], ['Online-Anteil', k.onlineAnteilPct + ' %']].map(([l, v, c]) => (

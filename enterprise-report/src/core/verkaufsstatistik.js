@@ -43,37 +43,41 @@ const VERLAUF_VJ = [1900000, 1850000, 2400000, 2700000, 3150000, 3300000, 305000
 
 const wachstum = (ist, vj) => (vj ? r1((ist - vj) / vj * 100) : 0)
 
-export function warengruppen() {
+export function warengruppen(faktor = 1) {
   const ges = WARENGRUPPEN.reduce((n, w) => n + w.umsatz, 0)
   return WARENGRUPPEN.map((w) => ({
-    ...w, anteilPct: r1(w.umsatz / ges * 100), wachstumPct: wachstum(w.umsatz, w.vorjahr),
-    db: r0(w.umsatz * w.dbProzent / 100), avgPreis: w.menge ? r0(w.umsatz / w.menge) : 0
+    ...w, umsatz: r0(w.umsatz * faktor), vorjahr: r0(w.vorjahr * faktor), menge: r0(w.menge * faktor),
+    anteilPct: r1(w.umsatz / ges * 100), wachstumPct: wachstum(w.umsatz, w.vorjahr),
+    db: r0(w.umsatz * faktor * w.dbProzent / 100), avgPreis: w.menge ? r0(w.umsatz / w.menge) : 0
   })).sort((a, b) => b.umsatz - a.umsatz)
 }
 
-export function topArtikel(n = 7) {
-  return TOP_ARTIKEL.map((a) => ({ ...a, avgPreis: a.menge ? r0(a.umsatz / a.menge) : 0, db: r0(a.umsatz * a.dbProzent / 100) }))
+export function topArtikel(n = 7, faktor = 1) {
+  return TOP_ARTIKEL.map((a) => ({ ...a, umsatz: r0(a.umsatz * faktor), menge: r0(a.menge * faktor), avgPreis: a.menge ? r0(a.umsatz / a.menge) : 0, db: r0(a.umsatz * faktor * a.dbProzent / 100) }))
     .sort((a, b) => b.umsatz - a.umsatz).slice(0, n)
 }
 
-export function kanaele() {
+export function kanaele(faktor = 1) {
   const ges = KANAELE.reduce((n, k) => n + k.umsatz, 0)
   return KANAELE.map((k) => ({
-    ...k, anteilPct: r1(k.umsatz / ges * 100), wachstumPct: wachstum(k.umsatz, k.vorjahr),
+    ...k, umsatz: r0(k.umsatz * faktor), vorjahr: r0(k.vorjahr * faktor), auftraege: r0(k.auftraege * faktor),
+    anteilPct: r1(k.umsatz / ges * 100), wachstumPct: wachstum(k.umsatz, k.vorjahr),
     avgBon: k.auftraege ? r0(k.umsatz / k.auftraege) : 0
   })).sort((a, b) => b.umsatz - a.umsatz)
 }
 
-export function verlauf() {
-  return MONATE.map((m, i) => ({ monat: m, ist: VERLAUF_IST[i], vorjahr: VERLAUF_VJ[i] }))
+/** Monatsverlauf, optional auf ausgewählte Monatsindizes beschränkt und skaliert. */
+export function verlauf(monate = null, faktor = 1) {
+  const idx = monate || MONATE.map((_, i) => i)
+  return idx.map((i) => ({ monat: MONATE[i], ist: r0(VERLAUF_IST[i] * faktor), vorjahr: r0(VERLAUF_VJ[i] * faktor) }))
 }
 
-export function kennzahlen() {
-  const wg = warengruppen()
-  const k = kanaele()
+export function kennzahlen(faktor = 1) {
+  const wg = warengruppen(faktor)
+  const k = kanaele(faktor)
   const umsatz = wg.reduce((n, w) => n + w.umsatz, 0)
-  const vorjahr = WARENGRUPPEN.reduce((n, w) => n + w.vorjahr, 0)
-  const menge = WARENGRUPPEN.reduce((n, w) => n + w.menge, 0)
+  const vorjahr = wg.reduce((n, w) => n + w.vorjahr, 0)
+  const menge = wg.reduce((n, w) => n + w.menge, 0)
   const db = wg.reduce((n, w) => n + w.db, 0)
   const auftraege = k.reduce((n, x) => n + x.auftraege, 0)
   return {

@@ -2,8 +2,10 @@
 //  FAHRRADSTATISTIK — verkaufte Räder nach Kategorie, Antriebsart (E-Bike vs.
 //  Bio), Preisklasse und Ø-Verkaufspreis/Marge mit Vorjahresvergleich.
 // =========================================================================
-import React from 'react'
+import React, { useState } from 'react'
 import { kategorien, antrieb, preisklassen, kennzahlen } from '../../core/fahrradstatistik.js'
+import { faktor, datumsartInfo, filterLabel } from '../../core/statistikFilter.js'
+import StatistikFilter, { ladeFilter, speichereFilter } from './StatistikFilter.jsx'
 import { datenstandText } from '../../core/datenstand.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
@@ -16,7 +18,11 @@ const stk = (n) => Math.round(n).toLocaleString('de-DE')
 const Wachs = ({ v }) => <span style={{ color: v >= 0 ? 'var(--amp-g)' : 'var(--amp-r)', fontWeight: 600 }}>{v >= 0 ? '▲' : '▼'} {Math.abs(v)} %</span>
 
 export default function Fahrradstatistik() {
-  const k = kennzahlen(); const kat = kategorien(); const a = antrieb(); const pk = preisklassen()
+  const [f, setF] = useState(() => ladeFilter('fahrrad', 'beleg'))
+  const aendern = (v) => { setF(v); speichereFilter('fahrrad', v) }
+  const dat = datumsartInfo('verkauf', f.datumsart)
+  const fk = faktor(f.zeitraum, f.pc, dat)
+  const k = kennzahlen(fk); const kat = kategorien(fk); const a = antrieb(fk); const pk = preisklassen(fk)
   const maxKat = Math.max(...kat.map((x) => x.stueck))
   return (
     <div style={{ maxWidth: 1080, margin: '0 auto' }}>
@@ -24,10 +30,11 @@ export default function Fahrradstatistik() {
         <div>
           <div style={cap}>Vertrieb · Komplette Räder</div>
           <h2 style={{ margin: '4px 0 0' }}>Fahrradstatistik</h2>
-          <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 2 }}>📅 {datenstandText()} · nur Kompletträder (ohne Zubehör/Teile)</div>
+          <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 2 }}>📅 {datenstandText()} · 🗓 Periode nach <b>{dat.name}</b> · {filterLabel(f.zeitraum, f.pc)} · nur Kompletträder</div>
         </div>
         <button className="no-print" onClick={() => window.print()} style={{ padding: '7px 13px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: 'var(--panel)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>🖨 Drucken / PDF</button>
       </div>
+      <StatistikFilter bereich="verkauf" wert={f} onChange={aendern} />
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
         {[['Verkaufte Räder', stk(k.stueck) + ' Stk'], ['Wachstum z. Vorjahr', (k.wachstumPct >= 0 ? '+' : '') + k.wachstumPct + ' %', k.wachstumPct >= 0 ? 'var(--amp-g)' : 'var(--amp-r)'], ['Umsatz', mio(k.umsatz)], ['Ø Verkaufspreis', eur(k.avgPreis)], ['E-Bike-Anteil', k.eBikeAnteilPct + ' %', 'var(--accent)'], ['Ø Marge', k.margeProzent + ' %']].map(([l, v, c]) => (

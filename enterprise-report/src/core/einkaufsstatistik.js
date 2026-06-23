@@ -22,31 +22,32 @@ const LIEFERANTEN = [
 const wachstum = (ist, vj) => (vj ? r1((ist - vj) / vj * 100) : 0)
 
 /** Lieferanten angereichert (Anteil, Wachstum, Skonto-Potenzial), nach Volumen. */
-export function lieferanten() {
+export function lieferanten(faktor = 1) {
   const ges = LIEFERANTEN.reduce((n, l) => n + l.volumen, 0)
   return LIEFERANTEN.map((l) => ({
-    ...l, anteilPct: r1(l.volumen / ges * 100), wachstumPct: wachstum(l.volumen, l.vorjahr),
-    skontoPotenzial: r0(l.volumen * l.skonto / 100),
+    ...l, volumen: r0(l.volumen * faktor), vorjahr: r0(l.vorjahr * faktor), bestellungen: r0(l.bestellungen * faktor),
+    anteilPct: r1(l.volumen / ges * 100), wachstumPct: wachstum(l.volumen, l.vorjahr),
+    skontoPotenzial: r0(l.volumen * faktor * l.skonto / 100),
     risiko: l.liefertreue < 90 || l.qualitaet < 92 ? (l.liefertreue < 89 ? 'r' : 'a') : 'g'
   })).sort((a, b) => b.volumen - a.volumen)
 }
 
 /** Einkaufsvolumen je Warengruppe. */
-export function warengruppen() {
+export function warengruppen(faktor = 1) {
   const map = {}
   for (const l of LIEFERANTEN) {
     const g = (map[l.warengruppe] ||= { name: l.warengruppe, volumen: 0, vorjahr: 0, lieferanten: 0, bestellungen: 0 })
-    g.volumen += l.volumen; g.vorjahr += l.vorjahr; g.lieferanten += 1; g.bestellungen += l.bestellungen
+    g.volumen += l.volumen * faktor; g.vorjahr += l.vorjahr * faktor; g.lieferanten += 1; g.bestellungen += r0(l.bestellungen * faktor)
   }
   const ges = Object.values(map).reduce((n, g) => n + g.volumen, 0)
   return Object.values(map).map((g) => ({
-    ...g, anteilPct: r1(g.volumen / ges * 100), wachstumPct: wachstum(g.volumen, g.vorjahr)
+    ...g, volumen: r0(g.volumen), vorjahr: r0(g.vorjahr), anteilPct: r1(g.volumen / ges * 100), wachstumPct: wachstum(g.volumen, g.vorjahr)
   })).sort((a, b) => b.volumen - a.volumen)
 }
 
 /** ABC-Analyse: A bis 80 % kumuliert, B bis 95 %, sonst C. */
-export function abcAnalyse() {
-  const sorted = lieferanten()
+export function abcAnalyse(faktor = 1) {
+  const sorted = lieferanten(faktor)
   const ges = sorted.reduce((n, l) => n + l.volumen, 0)
   let kum = 0
   const rows = sorted.map((l) => {
@@ -62,10 +63,10 @@ export function abcAnalyse() {
   return { rows, klassen }
 }
 
-export function kennzahlen() {
-  const l = lieferanten()
+export function kennzahlen(faktor = 1) {
+  const l = lieferanten(faktor)
   const volumen = l.reduce((n, x) => n + x.volumen, 0)
-  const vorjahr = LIEFERANTEN.reduce((n, x) => n + x.vorjahr, 0)
+  const vorjahr = l.reduce((n, x) => n + x.vorjahr, 0)
   const bestellungen = l.reduce((n, x) => n + x.bestellungen, 0)
   const skontoPot = l.reduce((n, x) => n + x.skontoPotenzial, 0)
   const wAvg = (sel) => r1(l.reduce((n, x) => n + sel(x) * x.volumen, 0) / volumen)

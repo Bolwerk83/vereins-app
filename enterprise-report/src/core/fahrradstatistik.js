@@ -29,23 +29,24 @@ const PREISKLASSEN = [
 
 const wachstum = (ist, vj) => (vj ? r1((ist - vj) / vj * 100) : 0)
 
-export function kategorien() {
+export function kategorien(faktor = 1) {
   const ges = KATEGORIEN.reduce((n, k) => n + k.stueck, 0)
   const gesU = KATEGORIEN.reduce((n, k) => n + k.umsatz, 0)
   return KATEGORIEN.map((k) => ({
-    ...k, avgPreis: k.stueck ? r0(k.umsatz / k.stueck) : 0, anteilPct: r1(k.stueck / ges * 100),
+    ...k, stueck: r0(k.stueck * faktor), vorjahrStueck: r0(k.vorjahrStueck * faktor), umsatz: r0(k.umsatz * faktor),
+    avgPreis: k.stueck ? r0(k.umsatz / k.stueck) : 0, anteilPct: r1(k.stueck / ges * 100),
     umsatzAnteilPct: r1(k.umsatz / gesU * 100), wachstumPct: wachstum(k.stueck, k.vorjahrStueck),
-    db: r0(k.umsatz * k.marge / 100)
+    db: r0(k.umsatz * faktor * k.marge / 100)
   })).sort((a, b) => b.umsatz - a.umsatz)
 }
 
 /** Antriebsart-Split: E-Bike vs. Bio (ohne Motor). */
-export function antrieb() {
+export function antrieb(faktor = 1) {
   const split = (flag) => {
     const ks = KATEGORIEN.filter((k) => k.eBike === flag)
-    const stueck = ks.reduce((n, k) => n + k.stueck, 0)
-    const umsatz = ks.reduce((n, k) => n + k.umsatz, 0)
-    const vj = ks.reduce((n, k) => n + k.vorjahrStueck, 0)
+    const stueck = r0(ks.reduce((n, k) => n + k.stueck, 0) * faktor)
+    const umsatz = r0(ks.reduce((n, k) => n + k.umsatz, 0) * faktor)
+    const vj = ks.reduce((n, k) => n + k.vorjahrStueck, 0) * faktor
     return { stueck, umsatz, avgPreis: stueck ? r0(umsatz / stueck) : 0, wachstumPct: wachstum(stueck, vj) }
   }
   const e = split(true), b = split(false)
@@ -56,16 +57,16 @@ export function antrieb() {
   }
 }
 
-export function preisklassen() {
+export function preisklassen(faktor = 1) {
   const ges = PREISKLASSEN.reduce((n, p) => n + p.stueck, 0)
-  return PREISKLASSEN.map((p) => ({ ...p, anteilPct: r1(p.stueck / ges * 100) }))
+  return PREISKLASSEN.map((p) => ({ ...p, stueck: r0(p.stueck * faktor), anteilPct: r1(p.stueck / ges * 100) }))
 }
 
-export function kennzahlen() {
-  const ks = kategorien()
-  const a = antrieb()
+export function kennzahlen(faktor = 1) {
+  const ks = kategorien(faktor)
+  const a = antrieb(faktor)
   const stueck = ks.reduce((n, k) => n + k.stueck, 0)
-  const vj = KATEGORIEN.reduce((n, k) => n + k.vorjahrStueck, 0)
+  const vj = ks.reduce((n, k) => n + k.vorjahrStueck, 0)
   const umsatz = ks.reduce((n, k) => n + k.umsatz, 0)
   const db = ks.reduce((n, k) => n + k.db, 0)
   return {

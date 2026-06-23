@@ -2,8 +2,10 @@
 //  EINKAUFSSTATISTIK — Beschaffungsüberblick: Volumen nach Lieferant &
 //  Warengruppe, ABC-Analyse, Liefertreue/Qualität, Bestellungen, Konditionen.
 // =========================================================================
-import React from 'react'
+import React, { useState } from 'react'
 import { lieferanten, warengruppen, abcAnalyse, kennzahlen } from '../../core/einkaufsstatistik.js'
+import { faktor, datumsartInfo, filterLabel } from '../../core/statistikFilter.js'
+import StatistikFilter, { ladeFilter, speichereFilter } from './StatistikFilter.jsx'
 import { datenstandText } from '../../core/datenstand.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
@@ -17,17 +19,22 @@ const eur = (n) => Math.round(n).toLocaleString('de-DE') + ' €'
 const Wachs = ({ v }) => <span style={{ color: v >= 0 ? 'var(--amp-r)' : 'var(--amp-g)', fontWeight: 600 }}>{v >= 0 ? '▲' : '▼'} {Math.abs(v)} %</span>
 
 export default function Einkaufsstatistik() {
-  const k = kennzahlen(); const lf = lieferanten(); const wg = warengruppen(); const abc = abcAnalyse()
+  const [f, setF] = useState(() => ladeFilter('einkauf', 'wareneingang'))
+  const aendern = (v) => { setF(v); speichereFilter('einkauf', v) }
+  const dat = datumsartInfo('einkauf', f.datumsart)
+  const fk = faktor(f.zeitraum, f.pc, dat)
+  const k = kennzahlen(fk); const lf = lieferanten(fk); const wg = warengruppen(fk); const abc = abcAnalyse(fk)
   return (
     <div style={{ maxWidth: 1080, margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
         <div>
           <div style={cap}>Einkauf · Beschaffungsüberblick</div>
           <h2 style={{ margin: '4px 0 0' }}>Einkaufsstatistik</h2>
-          <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 2 }}>📅 {datenstandText()} · Einkaufsvolumen laufendes Jahr vs. Vorjahr</div>
+          <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 2 }}>📅 {datenstandText()} · 🗓 Periode nach <b>{dat.name}</b> · {filterLabel(f.zeitraum, f.pc)} · vs. Vorjahr</div>
         </div>
         <button className="no-print" onClick={() => window.print()} style={{ padding: '7px 13px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: 'var(--panel)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>🖨 Drucken / PDF</button>
       </div>
+      <StatistikFilter bereich="einkauf" wert={f} onChange={aendern} />
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
         {[['Einkaufsvolumen', mio(k.volumen)], ['vs. Vorjahr', (k.wachstumPct >= 0 ? '+' : '') + k.wachstumPct + ' %'], ['Bestellungen', k.bestellungen.toLocaleString('de-DE')], ['Ø Bestellwert', eur(k.avgBestellwert)], ['Ø Liefertreue', k.liefertreue + ' %', k.liefertreue >= 92 ? 'var(--amp-g)' : 'var(--amp-a)'], ['Skonto-Potenzial', eur(k.skontoPotenzial), 'var(--amp-g)']].map(([l, v, c]) => (

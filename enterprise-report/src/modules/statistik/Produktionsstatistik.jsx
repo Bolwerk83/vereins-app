@@ -2,8 +2,10 @@
 //  PRODUKTIONSSTATISTIK — Output je Produkt & Werk, Monatsverlauf, Ausschuss/
 //  FPY und Stückkosten. Kompakte Statistik aus dem Produktionscontrolling.
 // =========================================================================
-import React from 'react'
-import { produkte, monatsOutput, werke, kennzahlen, MONATE } from '../../core/produktionsstatistik.js'
+import React, { useState } from 'react'
+import { produkte, monatsOutput, werke, kennzahlen } from '../../core/produktionsstatistik.js'
+import { monateVon, pcFaktor, datumsartInfo, filterLabel } from '../../core/statistikFilter.js'
+import StatistikFilter, { ladeFilter, speichereFilter } from './StatistikFilter.jsx'
 import { datenstandText } from '../../core/datenstand.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
@@ -16,18 +18,29 @@ const ampAus = (v) => v <= 2 ? 'var(--amp-g)' : v <= 3.5 ? 'var(--amp-a)' : 'var
 const Trend = ({ v }) => <span style={{ color: v >= 0 ? 'var(--amp-g)' : 'var(--amp-r)', fontWeight: 600 }}>{v >= 0 ? '▲' : '▼'} {Math.abs(v)} %</span>
 
 export default function Produktionsstatistik() {
-  const k = kennzahlen(); const pr = produkte(); const mo = monatsOutput(); const wk = werke()
-  const maxMo = Math.max(...mo.map((m) => m.stueck))
+  const [f, setF] = useState(() => ladeFilter('produktion', 'fertig'))
+  const aendern = (v) => { setF(v); speichereFilter('produktion', v) }
+  const dat = datumsartInfo('produktion', f.datumsart)
+  const opts = { monate: monateVon(f.zeitraum), faktor: pcFaktor(f.pc) * dat.mag, shift: dat.shift }
+  const k = kennzahlen(opts); const pr = produkte(opts); const mo = monatsOutput(opts); const wk = werke(opts)
+  const maxMo = mo.length ? Math.max(...mo.map((m) => m.stueck)) : 0
+  const leer = k.stueck === 0
   return (
     <div style={{ maxWidth: 1080, margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
         <div>
           <div style={cap}>Produktion · Output-Statistik</div>
           <h2 style={{ margin: '4px 0 0' }}>Produktionsstatistik</h2>
-          <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 2 }}>📅 {datenstandText()} · letzte {k.monate} Monate ({MONATE[0]}–{MONATE[MONATE.length - 1]})</div>
+          <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 2 }}>📅 {datenstandText()} · 🗓 Periode nach <b>{dat.name}</b> · {filterLabel(f.zeitraum, f.pc)}</div>
         </div>
         <button className="no-print" onClick={() => window.print()} style={{ padding: '7px 13px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: 'var(--panel)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>🖨 Drucken / PDF</button>
       </div>
+      <StatistikFilter bereich="produktion" wert={f} onChange={aendern} />
+      {leer && (
+        <div style={{ ...card, padding: '16px 18px', borderLeft: '3px solid var(--amp-a)', marginBottom: 14, fontSize: 13 }}>
+          ⚠ Für den gewählten Zeitraum liegen noch keine Produktions-Ist-Daten vor (Output-Historie reicht bis Juni). Bitte ein Halbjahr/Quartal aus H1 wählen.
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
         {[['Produzierte Menge', stk(k.stueck) + ' Stk'], ['Ø / Monat', stk(k.schnittMonat) + ' Stk'], ['Produktionswert', mio(k.wert)], ['Ø OEE', k.oee + ' %', k.oee >= 75 ? 'var(--amp-g)' : 'var(--amp-a)'], ['Ausschuss', k.ausschussPct + ' %', ampAus(k.ausschussPct)], ['Ø First-Pass-Yield', k.fpy + ' %']].map(([l, v, c]) => (
