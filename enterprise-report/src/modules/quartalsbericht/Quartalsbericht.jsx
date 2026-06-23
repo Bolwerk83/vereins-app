@@ -8,8 +8,9 @@ import {
   MONATE, QUARTALE, SERIEN, SERIEN_IDS, letzterIstMonat, kennzahlen, quartalKennzahlen,
   kennzahlenMonate, kumuliert, headline, ampel, PREIS_JAHRE, PREISE, PREIS_BEMERKUNG_DEFAULT,
   AUFTRAG, avgWertProBike, ladeBemerkungen, speichereBemerkung, bemerkungVorschlag,
-  BERICHTSTYPEN, perioden, arbeitstage, PROFITCENTER, pcFaktor, kanalSplit, LAENDER, inlandAusland, MARKT
+  BERICHTSTYPEN, perioden, arbeitstage, kanalSplit, LAENDER, inlandAusland, MARKT
 } from '../../core/quartalsbericht.js'
+import { pcBaum, pcFaktor, pcName } from '../../core/statistikFilter.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700 }
@@ -292,7 +293,7 @@ function KanalSektion() {
   return (
     <section style={{ ...card, padding: 18, marginBottom: 16 }}>
       <h3 style={{ margin: '0 0 2px', fontSize: 17 }}>Online ↔ Stationär (Vertriebskanal)</h3>
-      <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 12 }}>Verschiebung zum Online-Geschäft: Online wächst und liegt über Plan, der stationäre Handel verliert.</div>
+      <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 12 }}>Verschiebung zum Online-Geschäft: Online wächst und liegt über Plan, der stationäre Handel verliert. <span style={{ fontStyle: 'italic' }}>Einzelne Kanäle lassen sich oben im Profit-Center-Filter (Zweig „Vertriebskanal") für den ganzen Bericht auswählen.</span></div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12 }}>
         {split.map((k) => (
           <div key={k.id} style={{ ...card, padding: 14, borderTop: `3px solid ${k.farbe}` }}>
@@ -412,7 +413,7 @@ export default function Quartalsbericht() {
   const kGes = kennzahlenMonate('gesamt', periode.monate, { faktor: ctx.faktor })
   const [summe, setSumme] = useState(() => ladeBemerkungen()['summary'] ?? '')
   const typName = BERICHTSTYPEN.find((t) => t.id === typ)?.name || 'Bericht'
-  const pcName = PROFITCENTER.find((p) => p.id === pc)?.name
+  const pcLabel = pcName(pc)
   const wechsleTyp = (t) => {
     setTyp(t)
     const np = perioden(t).filter((p) => p.monate.some((i) => SERIEN.gesamt.ist[i] > 0))
@@ -450,9 +451,14 @@ export default function Quartalsbericht() {
           </select>
         </label>
         <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5 }}>
-          <span style={{ color: 'var(--muted)', fontWeight: 600 }}>Profit-Center</span>
+          <span style={{ color: 'var(--muted)', fontWeight: 600 }}>Profit-Center <span style={{ fontWeight: 400 }}>(inkl. Kanal)</span></span>
           <select value={pc} onChange={(e) => setPc(e.target.value)} style={sel}>
-            {PROFITCENTER.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            <option value="alle">Gesamtunternehmen</option>
+            {pcBaum().map((gr) => (
+              <optgroup key={gr.id} label={gr.name}>
+                {gr.knoten.map((kn) => <option key={kn.id} value={kn.id}>{kn.name}</option>)}
+              </optgroup>
+            ))}
           </select>
         </label>
         <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, cursor: 'pointer' }} title="Umsatz je Arbeitstag — macht kurze/lange Monate vergleichbar">
@@ -463,13 +469,13 @@ export default function Quartalsbericht() {
 
       {/* Kernaussage / Hero */}
       <div style={{ ...card, padding: 18, marginBottom: 16, borderLeft: `4px solid ${AMP[ampel(kGes.abwPct)]}`, background: 'linear-gradient(90deg, var(--bg), var(--panel))' }}>
-        <div style={cap}>Kernaussage · {periode.name}{pc !== 'alle' ? ` · ${pcName}` : ''}</div>
+        <div style={cap}>Kernaussage · {periode.name}{pc !== 'alle' ? ` · ${pcLabel}` : ''}</div>
         <div style={{ fontSize: 23, fontWeight: 700, margin: '4px 0 2px' }}>
           Wir liegen {(Math.abs(kGes.abw) / 1e6).toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} Mio € {kGes.abw < 0 ? 'unter' : 'über'} dem Umsatzplan
         </div>
         <div style={{ fontSize: 13.5, color: 'var(--muted)' }}>
           Ist {mio(kGes.ist)} vs. Plan {mio(kGes.plan)} ({pct(kGes.abwPct)}) · Vorjahr {pct(kGes.abwVjPct)}
-          {pc !== 'alle' && <span> · gefiltert auf <b>{pcName}</b></span>}
+          {pc !== 'alle' && <span> · gefiltert auf <b>{pcLabel}</b></span>}
           {jeAt && <span> · Normierung je Arbeitstag aktiv</span>}
         </div>
         <div style={{ marginTop: 12 }}>
