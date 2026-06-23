@@ -5,6 +5,8 @@
 // =========================================================================
 import React, { useState } from 'react'
 import { segmente, aggregiere, summe, ueberblick } from '../../core/versand.js'
+import { pcFaktor } from '../../core/statistikFilter.js'
+import PcFilter, { ladePc, speicherePc, pcHinweis } from '../shared/PcFilter.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700 }
@@ -79,9 +81,9 @@ function DeckTabelle({ rows, dimKey, label }) {
   )
 }
 
-function Uebersicht() {
-  const u = ueberblick()
-  const klassen = aggregiere('klasse', 'Versand')
+function Uebersicht({ fk }) {
+  const u = ueberblick(fk)
+  const klassen = aggregiere('klasse', 'Versand', fk)
   return (
     <>
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
@@ -118,29 +120,33 @@ const VIEWS = [
 
 export default function Versand() {
   const [view, setView] = useState('uebersicht')
+  const [pc, setPc] = useState(() => ladePc('versand'))
+  const aenderePc = (v) => { setPc(v); speicherePc('versand', v) }
+  const fk = pcFaktor(pc)
   return (
     <div style={{ maxWidth: 1040, margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
         <div>
           <div style={cap}>Versand-Controlling · Erlöse ↔ tatsächliche Kosten</div>
-          <h2 style={{ margin: '4px 0 0' }}>Versand-Cockpit</h2>
+          <h2 style={{ margin: '4px 0 0' }}>Versand-Cockpit{pcHinweis(pc)}</h2>
         </div>
         <button className="no-print" onClick={() => window.print()} style={{ padding: '7px 13px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: 'var(--panel)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>🖨 Drucken / PDF</button>
       </div>
+      <PcFilter pc={pc} onChange={aenderePc} hinweis="Sendungen/Erlöse/Kosten anteilig je Profit-Center; Deckungsquoten bleiben unverändert." />
       <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
         {VIEWS.map((v) => <button key={v.id} style={chip(view === v.id)} onClick={() => setView(v.id)}>{v.name}</button>)}
       </div>
 
-      {view === 'uebersicht' && <Uebersicht />}
-      {view === 'carrier' && <DeckTabelle rows={aggregiere('carrier')} dimKey="carrier" label="Carrier" />}
-      {view === 'region' && <DeckTabelle rows={aggregiere('region')} dimKey="region" label="Region" />}
+      {view === 'uebersicht' && <Uebersicht fk={fk} />}
+      {view === 'carrier' && <DeckTabelle rows={aggregiere('carrier', undefined, fk)} dimKey="carrier" label="Carrier" />}
+      {view === 'region' && <DeckTabelle rows={aggregiere('region', undefined, fk)} dimKey="region" label="Region" />}
       {view === 'retoure' && (
         <>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
-            <Tile label="Retouren-Versandkosten" value={teur(summe('Retoure').kosten)} sub={`${summe('Retoure').anzahl.toLocaleString('de-DE')} Retouren`} color="#f59e0b" />
-            <Tile label="Ø Kosten je Retoure" value={eur(summe('Retoure').kosten / summe('Retoure').anzahl)} />
+            <Tile label="Retouren-Versandkosten" value={teur(summe('Retoure', fk).kosten)} sub={`${summe('Retoure', fk).anzahl.toLocaleString('de-DE')} Retouren`} color="#f59e0b" />
+            <Tile label="Ø Kosten je Retoure" value={eur(summe('Retoure', fk).kosten / (summe('Retoure', fk).anzahl || 1))} />
           </div>
-          <DeckTabelle rows={aggregiere('carrier', 'Retoure')} dimKey="carrier" label="Carrier (Retoure)" />
+          <DeckTabelle rows={aggregiere('carrier', 'Retoure', fk)} dimKey="carrier" label="Carrier (Retoure)" />
         </>
       )}
 

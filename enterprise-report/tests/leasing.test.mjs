@@ -48,3 +48,13 @@ test('Dienstrad: Jahreserlös = aktive × Rate × 12', () => {
   assert.equal(d.jahreserloes, d.aktiveVertraege * d.oRate * 12)
   assert.ok(d.ausfallVertraege >= 1)
 })
+
+test('Profit-Center-Umlage skaliert Kosten-Aggregate; Vertragsliste bleibt', () => {
+  const voll = leasingKennzahlen(1)
+  const teil = leasingKennzahlen(0.4)
+  assert.ok(Math.abs(teil.jahresgebuehr - voll.jahresgebuehr * 0.4) <= 2)
+  assert.equal(teil.anzahl, voll.anzahl) // Anzahl unverändert
+  assert.equal(vertraege().length, voll.anzahl) // Faktenliste unberührt
+  const f1 = ifrs16(1), f2 = ifrs16(0.5)
+  assert.ok(Math.abs(f2.rouAsset - f1.rouAsset * 0.5) <= 2)
+})

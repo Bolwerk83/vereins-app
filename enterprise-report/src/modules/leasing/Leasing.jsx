@@ -6,6 +6,8 @@ import React, { useState } from 'react'
 import {
   vertraege, leasingKennzahlen, kategorieVerteilung, leasingVsKauf, ifrs16, dienstradKennzahlen, DIENSTRAD, HEUTE
 } from '../../core/leasing.js'
+import { pcFaktor } from '../../core/statistikFilter.js'
+import PcFilter, { ladePc, speicherePc, pcHinweis } from '../shared/PcFilter.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700 }
@@ -25,10 +27,10 @@ function Tile({ label, value, sub, color }) {
   )
 }
 
-function Gebuehren() {
-  const k = leasingKennzahlen()
+function Gebuehren({ fk }) {
+  const k = leasingKennzahlen(fk)
   const v = vertraege()
-  const kat = kategorieVerteilung()
+  const kat = kategorieVerteilung(fk)
   const maxKat = Math.max(...kat.map((x) => x.jahresgebuehr), 1)
   return (
     <>
@@ -119,8 +121,8 @@ function Vergleich() {
   )
 }
 
-function Ifrs() {
-  const f = ifrs16()
+function Ifrs({ fk }) {
+  const f = ifrs16(fk)
   return (
     <>
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
@@ -195,21 +197,26 @@ const VIEWS = [
 
 export default function Leasing() {
   const [view, setView] = useState('gebuehren')
+  const [pc, setPc] = useState(() => ladePc('leasing'))
+  const aenderePc = (v) => { setPc(v); speicherePc('leasing', v) }
+  const fk = pcFaktor(pc)
+  const umlageView = view === 'gebuehren' || view === 'ifrs'
   return (
     <div style={{ maxWidth: 1080, margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
         <div>
           <div style={cap}>Leasing-Controlling</div>
-          <h2 style={{ margin: '4px 0 0' }}>Leasing-Cockpit</h2>
+          <h2 style={{ margin: '4px 0 0' }}>Leasing-Cockpit{umlageView ? pcHinweis(pc) : ''}</h2>
         </div>
         <button className="no-print" onClick={() => window.print()} style={{ padding: '7px 13px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: 'var(--panel)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>🖨 Drucken / PDF</button>
       </div>
+      {umlageView && <PcFilter pc={pc} onChange={aenderePc} hinweis="Kostenumlage: Leasingkosten anteilig je Profit-Center; Vertragsliste & Leasing-vs.-Kauf bleiben als Faktenbasis unverändert." />}
       <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
         {VIEWS.map((v) => <button key={v.id} style={chip(view === v.id)} onClick={() => setView(v.id)}>{v.name}</button>)}
       </div>
-      {view === 'gebuehren' && <Gebuehren />}
+      {view === 'gebuehren' && <Gebuehren fk={fk} />}
       {view === 'vergleich' && <Vergleich />}
-      {view === 'ifrs' && <Ifrs />}
+      {view === 'ifrs' && <Ifrs fk={fk} />}
       {view === 'dienstrad' && <Dienstrad />}
       <div style={{ fontSize: 11, color: 'var(--muted)', textAlign: 'center', padding: '14px 0 20px' }}>Demo-Daten (Mock) · Stichtag {HEUTE}.</div>
     </div>

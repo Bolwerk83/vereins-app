@@ -50,25 +50,29 @@ export function vertraege() {
 
 export const LEASING_KATEGORIEN = ['Fuhrpark', 'Maschinen', 'IT', 'Immobilie']
 
-export function leasingKennzahlen() {
+// faktor = Profit-Center-Umlageschlüssel (Anteil der Leasingkosten, die diesem
+// PC zugerechnet werden). Skaliert die Kosten-Aggregate; Anzahl/Laufzeiten und
+// die Vertragsliste selbst bleiben unverändert (Faktenbasis).
+export function leasingKennzahlen(faktor = 1) {
   const v = vertraege()
+  const s = (x) => Math.round(x * faktor)
   return {
     anzahl: v.length,
-    jahresgebuehr: v.reduce((n, x) => n + x.jahresgebuehr, 0),
-    monatsrate: v.reduce((n, x) => n + x.rate, 0),
-    bisherGezahlt: v.reduce((n, x) => n + x.bisherGezahlt, 0),
-    restzahlung: v.reduce((n, x) => n + x.restzahlung, 0),
-    restwerte: v.reduce((n, x) => n + x.restwert, 0),
+    jahresgebuehr: s(v.reduce((n, x) => n + x.jahresgebuehr, 0)),
+    monatsrate: s(v.reduce((n, x) => n + x.rate, 0)),
+    bisherGezahlt: s(v.reduce((n, x) => n + x.bisherGezahlt, 0)),
+    restzahlung: s(v.reduce((n, x) => n + x.restzahlung, 0)),
+    restwerte: s(v.reduce((n, x) => n + x.restwert, 0)),
     oRestlaufzeit: Math.round(v.reduce((n, x) => n + x.restlaufzeit, 0) / v.length),
     laufenAus: v.filter((x) => x.laeuftAus).length
   }
 }
 
-export function kategorieVerteilung() {
+export function kategorieVerteilung(faktor = 1) {
   const v = vertraege()
   return LEASING_KATEGORIEN.map((kat) => {
     const grp = v.filter((x) => x.kategorie === kat)
-    return { kategorie: kat, anzahl: grp.length, jahresgebuehr: grp.reduce((n, x) => n + x.jahresgebuehr, 0) }
+    return { kategorie: kat, anzahl: grp.length, jahresgebuehr: Math.round(grp.reduce((n, x) => n + x.jahresgebuehr, 0) * faktor) }
   }).filter((g) => g.anzahl > 0)
 }
 
@@ -86,16 +90,17 @@ export function leasingVsKauf() {
 }
 
 // --- 3) IFRS 16 (vereinfacht) ---------------------------------------------
-export function ifrs16() {
+export function ifrs16(faktor = 1) {
   const v = vertraege()
+  const s = (x) => Math.round(x * faktor)
   // Leasingverbindlichkeit ≈ Barwert der Restraten (vereinfacht mit Faktor)
-  const verbindlichkeit = Math.round(v.reduce((n, x) => n + x.restzahlung, 0) * 0.95)
+  const verbindlichkeit = s(Math.round(v.reduce((n, x) => n + x.restzahlung, 0) * 0.95))
   // Right-of-Use-Asset ≈ linear abgeschriebener Anfangswert
-  const rouAsset = Math.round(v.reduce((n, x) => n + x.gesamtkosten * (x.restlaufzeit / x.laufzeit), 0))
-  const jahresgebuehr = v.reduce((n, x) => n + x.jahresgebuehr, 0)        // HGB: Aufwand p. a.
-  const zinsaufwand = Math.round(verbindlichkeit * ZINS)                  // IFRS: Zinsanteil
-  const abschreibung = Math.round(v.reduce((n, x) => n + x.gesamtkosten / x.laufzeit * 12, 0)) // IFRS: RoU-AfA p. a.
-  const kurzfristig = Math.round(v.reduce((n, x) => n + Math.min(12, x.restlaufzeit) * x.rate, 0) * 0.97)
+  const rouAsset = s(Math.round(v.reduce((n, x) => n + x.gesamtkosten * (x.restlaufzeit / x.laufzeit), 0)))
+  const jahresgebuehr = s(v.reduce((n, x) => n + x.jahresgebuehr, 0))     // HGB: Aufwand p. a.
+  const zinsaufwand = s(Math.round(Math.round(v.reduce((n, x) => n + x.restzahlung, 0) * 0.95) * ZINS)) // IFRS: Zinsanteil
+  const abschreibung = s(Math.round(v.reduce((n, x) => n + x.gesamtkosten / x.laufzeit * 12, 0))) // IFRS: RoU-AfA p. a.
+  const kurzfristig = s(Math.round(v.reduce((n, x) => n + Math.min(12, x.restlaufzeit) * x.rate, 0) * 0.97))
   return {
     rouAsset, verbindlichkeit, kurzfristig, langfristig: verbindlichkeit - kurzfristig,
     hgbAufwand: jahresgebuehr, ifrsAbschreibung: abschreibung, ifrsZins: zinsaufwand,

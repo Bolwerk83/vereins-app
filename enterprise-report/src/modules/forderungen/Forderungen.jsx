@@ -4,6 +4,8 @@
 import React, { useState } from 'react'
 import { aging } from '../../core/forderungen.js'
 import { addMassnahme, ladeMassnahmen } from '../../core/massnahmen.js'
+import { pcFaktor } from '../../core/statistikFilter.js'
+import PcFilter, { ladePc, speicherePc, pcHinweis } from '../shared/PcFilter.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
@@ -14,7 +16,9 @@ const RISIKO_FARBE = { kein: 'var(--muted)', gering: 'var(--amp-g)', mittel: 'va
 
 export default function Forderungen() {
   const [, setTick] = useState(0)
-  const a = aging()
+  const [pc, setPc] = useState(() => ladePc('forderungen'))
+  const aenderePc = (v) => { setPc(v); speicherePc('forderungen', v); setTick((t) => t + 1) }
+  const a = aging(pcFaktor(pc))
   const massn = ladeMassnahmen()
   const hatInkasso = massn.some((x) => x.quelle === 'forderungen')
   const max = Math.max(...a.rows.map((r) => r.betrag), 0.01)
@@ -28,12 +32,13 @@ export default function Forderungen() {
   return (
     <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ marginBottom: 14 }}>
-        <h2 style={{ margin: '0 0 4px' }}>Forderungs-Aging</h2>
+        <h2 style={{ margin: '0 0 4px' }}>Forderungs-Aging{pcHinweis(pc)}</h2>
         <div style={{ color: 'var(--muted)', fontSize: 13, maxWidth: 740 }}>
           Altersstruktur der offenen Forderungen mit Mahnstufen und Wertberichtigung. Je älter, desto höher das
           Ausfallrisiko — und desto wichtiger das konsequente Mahnwesen.
         </div>
       </div>
+      <PcFilter pc={pc} onChange={aenderePc} hinweis="Forderungen anteilig je Profit-Center; Quoten/DSO bleiben unverändert." />
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
         <div style={{ ...card, padding: '12px 14px', flex: 1, minWidth: 150 }}><div style={cap}>Forderungen gesamt</div><div style={{ fontSize: 22, fontWeight: 700 }}>{m(a.gesamt)} Mio €</div></div>

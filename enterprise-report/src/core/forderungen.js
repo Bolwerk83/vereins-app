@@ -18,19 +18,25 @@ export const BUCKETS = [
 const r2 = (x) => Math.round(x * 100) / 100
 const r1 = (x) => Math.round(x * 10) / 10
 
-export function aging() {
-  const gesamt = r2(BUCKETS.reduce((n, b) => n + b.betrag, 0))
+export function aging(faktor = 1) {
+  // Quoten exakt aus der unskalierten Basis (faktor-invariant); nur die
+  // absoluten Beträge werden mit dem Profit-Center-Anteil skaliert.
+  const gesamtRoh = BUCKETS.reduce((n, b) => n + b.betrag, 0)
+  const ausfallRoh = BUCKETS.reduce((n, b) => n + b.betrag * b.wbSatz / 100, 0)
+  const ueberfaelligRoh = BUCKETS.filter((b) => b.id !== 'nf').reduce((n, b) => n + b.betrag, 0)
   const rows = BUCKETS.map((b) => ({
     ...b,
-    anteil: r1(b.betrag / gesamt * 100),
-    ausfall: r2(b.betrag * b.wbSatz / 100)
+    betrag: r2(b.betrag * faktor),
+    anteil: r1(b.betrag / gesamtRoh * 100),
+    ausfall: r2(b.betrag * faktor * b.wbSatz / 100)
   }))
-  const ueberfaellig = r2(rows.filter((b) => b.id !== 'nf').reduce((n, b) => n + b.betrag, 0))
-  const erwarteterAusfall = r2(rows.reduce((n, b) => n + b.ausfall, 0))
   return {
-    rows, gesamt, ueberfaellig,
-    ueberfaelligkeitsquote: r1(ueberfaellig / gesamt * 100),
-    erwarteterAusfall, ausfallquote: r1(erwarteterAusfall / gesamt * 100),
+    rows,
+    gesamt: r2(gesamtRoh * faktor),
+    ueberfaellig: r2(ueberfaelligRoh * faktor),
+    ueberfaelligkeitsquote: r1(ueberfaelligRoh / gesamtRoh * 100),
+    erwarteterAusfall: r2(ausfallRoh * faktor),
+    ausfallquote: r1(ausfallRoh / gesamtRoh * 100),
     dso: DSO
   }
 }

@@ -38,3 +38,13 @@ test('Retouren tragen keinen Erlös, nur Kosten', () => {
   assert.equal(r.erloes, 0)
   assert.ok(r.kosten > 0)
 })
+
+test('Profit-Center-Faktor skaliert Werte, Deckungsquote bleibt', () => {
+  const voll = ueberblick(1)
+  const halb = ueberblick(0.5)
+  assert.ok(Math.abs(halb.versand.kosten - voll.versand.kosten * 0.5) <= voll.versand.kosten * 0.01)
+  assert.ok(Math.abs(halb.versand.deckungsquote - voll.versand.deckungsquote) < 0.5) // Ratio ~ gleich
+  const aggVoll = aggregiere('carrier', 'Versand', 1)
+  const aggHalb = aggregiere('carrier', 'Versand', 0.5)
+  assert.ok(aggHalb[0].kosten < aggVoll[0].kosten)
+})

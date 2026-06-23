@@ -28,17 +28,18 @@ const SEGMENTE = [
   { typ: 'Retoure', carrier: 'Spedition', klasse: 'Bike', region: 'DE', anzahl: 1100, erloesProSdg: 0.00, kostenProSdg: 41.00 }
 ]
 
-function mit(s) {
-  const erloes = s.anzahl * s.erloesProSdg
-  const kosten = s.anzahl * s.kostenProSdg
-  return { ...s, erloes, kosten, deckung: erloes - kosten, deckungsquote: kosten ? erloes / kosten * 100 : 0 }
+function mit(s, faktor = 1) {
+  const anzahl = Math.round(s.anzahl * faktor)
+  const erloes = anzahl * s.erloesProSdg
+  const kosten = anzahl * s.kostenProSdg
+  return { ...s, anzahl, erloes, kosten, deckung: erloes - kosten, deckungsquote: kosten ? erloes / kosten * 100 : 0 }
 }
-export function segmente(typ) { return SEGMENTE.filter((s) => !typ || s.typ === typ).map(mit) }
+export function segmente(typ, faktor = 1) { return SEGMENTE.filter((s) => !typ || s.typ === typ).map((s) => mit(s, faktor)) }
 
 /** Aggregat über einen beliebigen Schlüssel (carrier/klasse/region), optional je typ. */
-export function aggregiere(dimKey, typ) {
+export function aggregiere(dimKey, typ, faktor = 1) {
   const map = new Map()
-  for (const s of segmente(typ)) {
+  for (const s of segmente(typ, faktor)) {
     const k = s[dimKey]
     const a = map.get(k) || { [dimKey]: k, anzahl: 0, erloes: 0, kosten: 0 }
     a.anzahl += s.anzahl; a.erloes += s.erloes; a.kosten += s.kosten
@@ -48,8 +49,8 @@ export function aggregiere(dimKey, typ) {
     .sort((x, y) => y.kosten - x.kosten)
 }
 
-export function summe(typ) {
-  const s = segmente(typ)
+export function summe(typ, faktor = 1) {
+  const s = segmente(typ, faktor)
   const erloes = s.reduce((n, x) => n + x.erloes, 0)
   const kosten = s.reduce((n, x) => n + x.kosten, 0)
   const anzahl = s.reduce((n, x) => n + x.anzahl, 0)
@@ -57,13 +58,13 @@ export function summe(typ) {
 }
 
 /** Überblick: Versand, Retouren und Netto (alles zusammen). */
-export function ueberblick() {
-  const versand = summe('Versand')
-  const retoure = summe('Retoure')
+export function ueberblick(faktor = 1) {
+  const versand = summe('Versand', faktor)
+  const retoure = summe('Retoure', faktor)
   const netto = { erloes: versand.erloes, kosten: versand.kosten + retoure.kosten }
   netto.deckung = netto.erloes - netto.kosten
   netto.deckungsquote = netto.kosten ? netto.erloes / netto.kosten * 100 : 0
   // Gratis-Versand-Kosten = Versandsegmente ohne Erlös
-  const gratis = segmente('Versand').filter((s) => s.erloesProSdg === 0).reduce((n, s) => n + s.kosten, 0)
+  const gratis = segmente('Versand', faktor).filter((s) => s.erloesProSdg === 0).reduce((n, s) => n + s.kosten, 0)
   return { versand, retoure, netto, gratisVersandKosten: gratis }
 }
