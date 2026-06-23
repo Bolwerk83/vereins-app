@@ -8,9 +8,10 @@ import {
   MONATE, QUARTALE, SERIEN, SERIEN_IDS, letzterIstMonat, kennzahlen, quartalKennzahlen,
   kennzahlenMonate, kumuliert, headline, ampel, PREIS_JAHRE, PREISE, PREIS_BEMERKUNG_DEFAULT,
   AUFTRAG, avgWertProBike, ladeBemerkungen, speichereBemerkung, bemerkungVorschlag,
-  BERICHTSTYPEN, perioden, arbeitstage, kanalSplit, LAENDER, inlandAusland, MARKT
+  arbeitstage, kanalSplit, LAENDER, inlandAusland, MARKT
 } from '../../core/quartalsbericht.js'
-import { pcBaum, pcFaktor, pcName } from '../../core/statistikFilter.js'
+import { pcFaktor, pcName, zeitraumVon } from '../../core/statistikFilter.js'
+import { useGlobalFilter, GlobalFilterLeiste } from '../../core/filterKontext.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700 }
@@ -400,27 +401,16 @@ function BenchmarkSektion() {
 }
 
 export default function Quartalsbericht() {
-  const bis = letzterIstMonat('gesamt')
-  const [typ, setTyp] = useState('quartal')
-  const [pc, setPc] = useState('alle')
+  const g = useGlobalFilter()
   const [jeAt, setJeAt] = useState(false)
-  // verfügbare Perioden = solche mit Ist-Daten
-  const alle = perioden(typ).filter((p) => p.monate.some((i) => SERIEN.gesamt.ist[i] > 0))
-  const standardP = alle.find((p) => p.monate.includes(bis)) || alle[alle.length - 1]
-  const [periodeId, setPeriodeId] = useState(standardP.id)
-  const periode = alle.find((p) => p.id === periodeId) || standardP
-  const ctx = { monate: periode.monate, jeArbeitstag: jeAt, faktor: pcFaktor(pc), periodeName: periode.name }
-  const kGes = kennzahlenMonate('gesamt', periode.monate, { faktor: ctx.faktor })
+  const zr = zeitraumVon(g.zeitraum)
+  const pc = g.pc
+  const ctx = { monate: zr.monate, jeArbeitstag: jeAt, faktor: pcFaktor(pc), periodeName: zr.name }
+  const kGes = kennzahlenMonate('gesamt', zr.monate, { faktor: ctx.faktor })
   const [summe, setSumme] = useState(() => ladeBemerkungen()['summary'] ?? '')
-  const typName = BERICHTSTYPEN.find((t) => t.id === typ)?.name || 'Bericht'
+  // Berichtstyp-Titel aus dem globalen Zeitraum ableiten
+  const typName = g.zeitraum === 'jahr' ? 'Jahresbericht' : (g.zeitraum === 'h1' || g.zeitraum === 'h2') ? 'Halbjahresbericht' : 'Quartalsbericht'
   const pcLabel = pcName(pc)
-  const wechsleTyp = (t) => {
-    setTyp(t)
-    const np = perioden(t).filter((p) => p.monate.some((i) => SERIEN.gesamt.ist[i] > 0))
-    const sel = np.find((p) => p.monate.includes(bis)) || np[np.length - 1]
-    setPeriodeId(sel.id)
-  }
-  const sel = { padding: '6px 9px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: 'var(--panel)', font: 'inherit', fontSize: 12.5, cursor: 'pointer' }
 
   return (
     <div style={{ maxWidth: '100%', margin: '0 auto' }}>
@@ -428,48 +418,26 @@ export default function Quartalsbericht() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
         <div>
           <div style={cap}>Management-Report · Wirtschaftsjahr {MONATE[0]}–{MONATE[11]}</div>
-          <h2 style={{ margin: '4px 0 0' }}>{typName} <span style={{ color: 'var(--muted)', fontWeight: 400, fontSize: 16 }}>· {periode.name}</span></h2>
+          <h2 style={{ margin: '4px 0 0' }}>{typName} <span style={{ color: 'var(--muted)', fontWeight: 400, fontSize: 16 }}>· {zr.name}</span></h2>
         </div>
         <button className="no-print" onClick={() => window.print()} style={{ padding: '7px 13px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: 'var(--panel)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>🖨 Drucken / PDF</button>
       </div>
 
-      {/* Filterleiste */}
-      <div className="no-print" style={{ ...card, padding: '10px 14px', marginBottom: 14, display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5 }}>
-          <span style={{ color: 'var(--muted)', fontWeight: 600 }}>Berichtstyp</span>
-          <div style={{ display: 'flex', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
-            {BERICHTSTYPEN.map((t) => (
-              <button key={t.id} onClick={() => wechsleTyp(t.id)} style={{ padding: '5px 10px', border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                background: typ === t.id ? 'var(--accent)' : 'var(--panel)', color: typ === t.id ? '#fff' : 'var(--muted)' }}>{t.name.replace('bericht', '')}</button>
-            ))}
-          </div>
-        </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5 }}>
-          <span style={{ color: 'var(--muted)', fontWeight: 600 }}>Zeitraum</span>
-          <select value={periodeId} onChange={(e) => setPeriodeId(e.target.value)} style={sel}>
-            {alle.map((p) => <option key={p.id} value={p.id}>{p.kurz}</option>)}
-          </select>
-        </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5 }}>
-          <span style={{ color: 'var(--muted)', fontWeight: 600 }}>Profit-Center <span style={{ fontWeight: 400 }}>(inkl. Kanal)</span></span>
-          <select value={pc} onChange={(e) => setPc(e.target.value)} style={sel}>
-            <option value="alle">Gesamtunternehmen</option>
-            {pcBaum().map((gr) => (
-              <optgroup key={gr.id} label={gr.name}>
-                {gr.knoten.map((kn) => <option key={kn.id} value={kn.id}>{kn.name}</option>)}
-              </optgroup>
-            ))}
-          </select>
-        </label>
+      {/* Globaler Filter (Zeitraum + Profit-Center) — gilt für alle Berichte */}
+      <GlobalFilterLeiste />
+
+      {/* Berichtsspezifische Option */}
+      <div className="no-print" style={{ ...card, padding: '8px 14px', marginBottom: 14, display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
         <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, cursor: 'pointer' }} title="Umsatz je Arbeitstag — macht kurze/lange Monate vergleichbar">
           <input type="checkbox" checked={jeAt} onChange={(e) => setJeAt(e.target.checked)} />
-          <span style={{ fontWeight: 600 }}>je Arbeitstag</span>
+          <span style={{ fontWeight: 600 }}>je Arbeitstag normieren</span>
         </label>
+        <span style={{ fontSize: 11, color: 'var(--muted)' }}>Macht kurze/lange Monate vergleichbar (Umsatz ÷ Arbeitstage).</span>
       </div>
 
       {/* Kernaussage / Hero */}
       <div style={{ ...card, padding: 18, marginBottom: 16, borderLeft: `4px solid ${AMP[ampel(kGes.abwPct)]}`, background: 'linear-gradient(90deg, var(--bg), var(--panel))' }}>
-        <div style={cap}>Kernaussage · {periode.name}{pc !== 'alle' ? ` · ${pcLabel}` : ''}</div>
+        <div style={cap}>Kernaussage · {zr.name}{pc !== 'alle' ? ` · ${pcLabel}` : ''}</div>
         <div style={{ fontSize: 23, fontWeight: 700, margin: '4px 0 2px' }}>
           Wir liegen {(Math.abs(kGes.abw) / 1e6).toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} Mio € {kGes.abw < 0 ? 'unter' : 'über'} dem Umsatzplan
         </div>

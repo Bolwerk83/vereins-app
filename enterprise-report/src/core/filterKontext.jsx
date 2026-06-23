@@ -65,8 +65,8 @@ export function GlobalFilterLeiste() {
           ))}
         </select>
       </label>
-      <span style={{ fontSize: 11, color: 'var(--muted)', marginLeft: 'auto', alignSelf: 'center', maxWidth: 300, lineHeight: 1.4 }}>
-        Gilt für alle Statistik-Berichte: <b>{filterLabel(g.zeitraum, g.pc)}</b>. Die Zeitdimension stellst du je Bericht ein.
+      <span style={{ fontSize: 11, color: 'var(--muted)', marginLeft: 'auto', alignSelf: 'center', maxWidth: 320, lineHeight: 1.4 }}>
+        Gilt für alle Berichte mit dieser Sicht: <b>{filterLabel(g.zeitraum, g.pc)}</b>. Bericht-spezifische Optionen stellst du je Bericht ein.
       </span>
     </div>
   )
