@@ -7435,6 +7435,62 @@ function FieldPlanView({ exercises, cl }) {
 /* =================================================================
    PLAN EDITOR
 ================================================================= */
+// Team-Kategorie -> Altersschlüssel der Übungsbibliothek (TRAINING_TEMPLATES.age).
+const CAT_TO_AGEKEY = {
+  "Bambinis":"bambini","G-Jugend":"g","F-Jugend":"f","E-Jugend":"e","D-Jugend":"d",
+  "C-Jugend":"c","B-Jugend":"ba","A-Jugend":"ba","Senioren":"senioren","Alt-Herren":"altherren",
+  "Damen":"senioren","Frauen":"senioren","Herren":"senioren","Mädchen":"e","Maedchen":"e",
+};
+// Baut automatisch eine ausgewogene Trainingseinheit aus TRAINING_TEMPLATES:
+// Aufwärmen -> Hauptteil (nach Schwerpunkt) -> Spielform, passend zu Alter & Zieldauer,
+// mit Belastungsaufbau und möglichst ohne Übungen der zuletzt gespeicherten Einheit.
+function generateTrainingPlan({ ageKey="all", targetMin=90, focus="auto", avoidIds=[] }){
+  const lib = TRAINING_TEMPLATES;
+  const ageOk = d => ageKey==="all" || (d.age||[]).includes(ageKey);
+  let pool = lib.filter(ageOk);
+  if(pool.length < 6) pool = lib.slice();          // zu wenig fürs Alter -> ganze Bibliothek
+  const used = new Set(); const avoid = new Set(avoidIds);
+  const pick = (pred) => {
+    const cand = pool.filter(d=>pred(d) && !used.has(d.id));
+    const fresh = cand.filter(d=>!avoid.has(d.id));
+    const arr = fresh.length ? fresh : cand;
+    if(!arr.length) return null;
+    const d = arr[Math.floor(Math.random()*arr.length)];
+    used.add(d.id); return d;
+  };
+  const toEx = d => ({ name:d.name, cat:d.cat||"technik", duration:d.duration||15,
+    zone:d.fieldZone||"full", intensity:d.intensity||5, skills:d.skills||[],
+    description:d.description||"", material:d.material||[], fromTemplate:d.id });
+  const out=[]; const total=()=>out.reduce((s,e)=>s+(e.duration||0),0);
+  const isShot = d => (d.skills||[]).includes("schuss") || d.cat==="spezial";
+  // 1) Aufwärmen
+  const w = pick(d=>d.cat==="warmup"); if(w) out.push(toEx(w));
+  // 2) Hauptteil – Schwerpunkt zuerst, dann ergänzend
+  const seq = ({
+    technik:   [d=>d.cat==="technik", d=>d.cat==="taktik", isShot],
+    taktik:    [d=>d.cat==="taktik", d=>d.cat==="technik", d=>d.cat==="kondition"],
+    torschuss: [isShot, d=>d.cat==="technik", d=>d.cat==="taktik"],
+    kondition: [d=>d.cat==="kondition", d=>d.cat==="technik", d=>d.cat==="taktik"],
+    spielform: [d=>d.cat==="taktik", d=>d.cat==="technik", d=>d.cat==="kondition"],
+    auto:      [d=>d.cat==="technik", d=>d.cat==="taktik", isShot],
+  }[focus]) || [d=>d.cat==="technik", d=>d.cat==="taktik", isShot];
+  let gi=0, guard=0;
+  while(total() < targetMin*0.62 && guard++<14){
+    const d = pick(seq[gi%seq.length]) || pick(x=>["technik","taktik","kondition","spezial"].includes(x.cat));
+    gi++; if(!d) break; out.push(toEx(d));
+  }
+  // 3) Abschluss: Spielform(en) bis ~Zieldauer
+  guard=0;
+  while(total() < targetMin-6 && guard++<6){
+    const d = pick(x=>x.cat==="spielform") || pick(x=>["spielform","taktik"].includes(x.cat));
+    if(!d) break; out.push(toEx(d));
+  }
+  // Belastungskurve: Aufwärmen vorn, Hauptteil nach Intensität aufsteigend, Spielform hinten.
+  const wu  = out.filter(e=>e.cat==="warmup");
+  const game= out.filter(e=>e.cat==="spielform");
+  const mid = out.filter(e=>e.cat!=="warmup" && e.cat!=="spielform").sort((a,b)=>(a.intensity||5)-(b.intensity||5));
+  return [...wu, ...mid, ...game];
+}
 function PlanEditor({ plan, cid, myTids, data, save, fire, cl, onClose }) {
   const t = TH(cl);
   const [name, setName] = useState(plan?.name||"");
@@ -7443,7 +7499,25 @@ function PlanEditor({ plan, cid, myTids, data, save, fire, cl, onClose }) {
   const [showAddEx, setShowAddEx] = useState(false);
   const [editExIdx, setEditExIdx] = useState(null);
   const [showTplBrowser, setShowTplBrowser] = useState(false);
+  const [showGen, setShowGen] = useState(false);
+  const [genDur, setGenDur] = useState(90);
+  const [genFocus, setGenFocus] = useState("auto");
   const myTeams = (data.teams||[]).filter(tm=>myTids.includes(tm.id));
+  const GEN_FOCI = [["auto","Ausgewogen"],["technik","Technik"],["taktik","Taktik"],["torschuss","Torschuss"],["spielform","Spielformen"],["kondition","Kondition"]];
+  const doGenerate = () => {
+    const tm = (data.teams||[]).find(x=>x.id===tid);
+    const ageKey = CAT_TO_AGEKEY[tm?.cat] || CAT_TO_AGEKEY[tm?.name] || "all";
+    const last = (data.trainingPlans||[]).filter(p=>p.tid===tid && p.id!==plan?.id && !p.isTemplate)
+      .sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""))[0];
+    const avoidIds = (last?.exercises||[]).map(e=>e.fromTemplate).filter(Boolean);
+    const gen = generateTrainingPlan({ ageKey, targetMin:genDur, focus:genFocus, avoidIds });
+    if(!gen.length){ fire("Keine passenden Übungen gefunden"); return; }
+    if(exercises.length && typeof window!=="undefined" && !window.confirm("Bestehende Übungen durch den generierten Plan ersetzen?")) return;
+    setExercises(gen);
+    if(!name.trim()){ const fl=GEN_FOCI.find(f=>f[0]===genFocus)?.[1]||"Auto"; setName(`Auto-Plan · ${fl} · ${genDur} Min.`); }
+    setShowGen(false);
+    fire(`Plan generiert: ${gen.length} Übungen · ${gen.reduce((s,e)=>s+(e.duration||0),0)} Min.`);
+  };
 
   const savePlan = () => {
     if(!name.trim()) return;
@@ -7505,9 +7579,13 @@ function PlanEditor({ plan, cid, myTids, data, save, fire, cl, onClose }) {
               {exercises.length} Übungen  {totalMins} Min.
             </div>
             <div style={{display:"flex",gap:7}}>
+              <button onClick={()=>setShowGen(s=>!s)}
+                style={{padding:"7px 12px",borderRadius:9,border:`1.5px solid ${t.p}`,background:showGen?t.p:t.p+"12",color:showGen?"#fff":t.p,fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+                ✨ Auto-Plan
+              </button>
               <button onClick={()=>setShowTplBrowser(true)}
                 style={{padding:"7px 12px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#f8fafc",color:"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
-                Aus Bibliothek
+                Bibliothek
               </button>
               <button onClick={()=>{setEditExIdx(null);setShowAddEx(true);}}
                 style={{padding:"7px 14px",borderRadius:9,border:"none",background:t.p,
@@ -7516,6 +7594,26 @@ function PlanEditor({ plan, cid, myTids, data, save, fire, cl, onClose }) {
               </button>
             </div>
           </div>
+
+          {showGen&&(
+            <div style={{border:`1.5px solid ${t.p}55`,background:t.p+"08",borderRadius:13,padding:"13px",marginBottom:12}}>
+              <div style={{fontWeight:800,fontSize:13.5,color:"#0f172a",marginBottom:9}}>✨ Trainingsplan automatisch erstellen</div>
+              <div style={{fontSize:11.5,fontWeight:700,color:"#64748b",marginBottom:6}}>Dauer</div>
+              <div style={{display:"flex",gap:6,marginBottom:11}}>
+                {[60,75,90,105].map(m=>(
+                  <button key={m} onClick={()=>setGenDur(m)} style={{flex:1,padding:"8px 0",borderRadius:9,border:`1.5px solid ${genDur===m?t.p:"#e2e8f0"}`,background:genDur===m?t.p:"#fff",color:genDur===m?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{m} Min</button>
+                ))}
+              </div>
+              <div style={{fontSize:11.5,fontWeight:700,color:"#64748b",marginBottom:6}}>Schwerpunkt</div>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
+                {GEN_FOCI.map(([id,lbl])=>(
+                  <button key={id} onClick={()=>setGenFocus(id)} style={{padding:"6px 12px",borderRadius:99,border:`1.5px solid ${genFocus===id?t.p:"#e2e8f0"}`,background:genFocus===id?t.p+"16":"#fff",color:genFocus===id?t.p:"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{lbl}</button>
+                ))}
+              </div>
+              <button onClick={doGenerate} style={{width:"100%",padding:"11px",borderRadius:11,border:"none",background:t.p,color:"#fff",fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>✨ Plan generieren</button>
+              <div style={{fontSize:10.5,color:"#94a3b8",marginTop:8,lineHeight:1.45}}>Aufwärmen → Hauptteil (Schwerpunkt) → Spielform – passend zum Alter des Teams und mit Belastungsaufbau. Alles bleibt danach frei anpassbar.</div>
+            </div>
+          )}
 
           {exercises.length===0&&(
             <div style={{textAlign:"center",padding:"28px",background:"#f8fafc",
