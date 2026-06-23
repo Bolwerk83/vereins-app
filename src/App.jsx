@@ -27263,6 +27263,15 @@ function AttendanceTab({ data, myTids, cl, save, fire }) {
     return { pl, tYes, gYes, trainPct, gamePct, totalT: pastTrain.length, totalG: pastGames.length };
   }).sort((a,b)=>(b.trainPct??-1)-(a.trainPct??-1));
 
+  // Spielzeit-Fairness: aufsummierte Einsatzminuten aus vergangenen Spielen (PlaytimeTracker).
+  const ptGames = pastGames.filter(e=>e.playtime&&e.playtime.base&&Object.keys(e.playtime.base).length>0);
+  const ptStats = players.map(pl=>{
+    let secs=0, gc=0;
+    ptGames.forEach(e=>{ const b=e.playtime.base?.[pl.name]; if(typeof b==="number"&&b>0){ secs+=b; gc++; } });
+    return { pl, mins:Math.round(secs/60), games:gc };
+  }).filter(x=>x.games>0).sort((a,b)=>a.mins-b.mins);
+  const ptAvg = ptStats.length ? Math.round(ptStats.reduce((s,x)=>s+x.mins,0)/ptStats.length) : 0;
+
   return (
     <div>
       {myTeams.length>1&&<div style={{display:"flex",gap:6,marginBottom:14,overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
@@ -27302,6 +27311,34 @@ function AttendanceTab({ data, myTids, cl, save, fire }) {
           </div>
         ))}
       </div>}
+      {ptGames.length>0&&(
+        <div style={{marginTop:18}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+            <span style={{fontSize:18}}>⏱</span>
+            <span style={{fontWeight:800,fontSize:15,color:"#0f172a",flex:1}}>Spielzeit (faire Einsatzzeiten)</span>
+            <span style={{fontSize:11.5,color:"#94a3b8",fontWeight:700}}>{ptGames.length} Spiele · Ø {ptAvg} Min</span>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {ptStats.map(({pl,mins,games})=>{ const low=ptAvg>0&&mins<ptAvg*0.7; const pct=ptAvg>0?Math.min(100,Math.round(mins/(ptAvg*1.5)*100)):0; return (
+              <div key={pl.id} style={{background:"#fff",borderRadius:13,padding:"12px 14px",border:`1.5px solid ${low?"#fed7aa":"#e2e8f0"}`,display:"flex",alignItems:"center",gap:12}}>
+                <Av name={pl.name} sz={36}/>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontWeight:700,fontSize:14,color:"#0f172a",marginBottom:4,display:"flex",alignItems:"center",gap:6}}>{pl.name}{low&&<span style={{fontSize:10,fontWeight:800,color:"#9a3412",background:"#fef3c7",borderRadius:5,padding:"1px 6px"}}>wenig Spielzeit</span>}</div>
+                  <div style={{height:6,background:"#f1f5f9",borderRadius:99,overflow:"hidden"}}>
+                    <div style={{height:"100%",borderRadius:99,background:low?"#d97706":"#2563eb",width:`${pct}%`,transition:"width .4s"}}/>
+                  </div>
+                  <div style={{fontSize:11,color:"#64748b",marginTop:4}}>{games} {games===1?"Spiel":"Spiele"} · Ø {games?Math.round(mins/games):0} Min/Spiel</div>
+                </div>
+                <div style={{textAlign:"right",minWidth:54}}>
+                  <div style={{fontWeight:900,fontSize:16,color:low?"#d97706":"#2563eb"}}>{mins}</div>
+                  <div style={{fontSize:11,color:"#94a3b8"}}>Min gesamt</div>
+                </div>
+              </div>
+            );})}
+          </div>
+          <div style={{fontSize:11,color:"#94a3b8",marginTop:8,lineHeight:1.45}}>Summiert aus der Einsatzzeit-Erfassung der Spiele. „Wenig Spielzeit" = unter 70 % des Durchschnitts – im nächsten Spiel bevorzugt einsetzen.</div>
+        </div>
+      )}
     </div>
   );
 }
