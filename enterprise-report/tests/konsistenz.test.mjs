@@ -13,6 +13,7 @@ import * as qb from '../src/core/quartalsbericht.js'
 import * as pc from '../src/core/profitcenter.js'
 import * as fk from '../src/core/finanzkennzahlen.js'
 import * as sf from '../src/core/statistikFilter.js'
+import { konsistenzReport, ZIEL_UMSATZ } from '../src/core/berichtskonsistenz.js'
 
 const ZIEL = 52e6        // harmonisierter Jahresumsatz
 const TOL = 0.04         // 4 % Toleranz (Rundung/Saison/Plan-vs-Ist)
@@ -46,6 +47,19 @@ test('Globaler Profit-Center-Filter wirkt in allen Statistik-Berichten gleich', 
   // Verhaeltniskennzahl (DB-Marge) ist filterinvariant
   assert.equal(vk.kennzahlen(sf.faktor('jahr', 'alle')).dbProzent,
                vk.kennzahlen(sf.faktor('jahr', 'kanal:online')).dbProzent)
+})
+
+test('konsistenzReport: alle Berichte im Ziel, Gesamtstatus ok', () => {
+  const r = konsistenzReport()
+  assert.equal(r.ziel, ZIEL_UMSATZ)
+  assert.equal(r.rows.length, 4)
+  // Jede Quelle innerhalb der Toleranz und Gesamtstatus gruen
+  for (const row of r.rows) {
+    assert.ok(Math.abs(row.abwPct) <= 5, `${row.bericht}: ${row.abwPct} % > 5 %`)
+    assert.ok(['ok', 'warnung'].includes(row.status))
+  }
+  assert.notEqual(r.gesamt, 'fehler')
+  assert.ok(r.maxAbwPct <= 5 && r.spannePct <= 5)
 })
 
 test('Quartalsbericht-Berichtstyp ist aus dem globalen Zeitraum ableitbar', () => {

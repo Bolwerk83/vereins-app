@@ -6,10 +6,52 @@
 // =========================================================================
 import React from 'react'
 import { pruefeAlle } from '../../core/validierung.js'
+import { konsistenzReport, ZIEL_UMSATZ } from '../../core/berichtskonsistenz.js'
 import { Badge } from '../../components/ui.jsx'
 
 const FARBE = { ok: 'var(--amp-g)', warnung: 'var(--amp-a)', fehler: 'var(--amp-r)', na: 'var(--muted)' }
 const LABEL = { ok: 'OK', warnung: 'Plausibilität', fehler: 'Abstimmfehler', na: 'keine Daten' }
+const mio = (n) => (n / 1e6).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' Mio €'
+
+// Berichtsuebergreifender Quercheck: derselbe Jahresumsatz in jedem Bericht?
+function KonsistenzPanel() {
+  const r = konsistenzReport()
+  const kopf = r.gesamt === 'ok' ? '✓ Zahlen berichtsübergreifend stimmig' : r.gesamt === 'warnung' ? '⚠ Leichte Streuung zwischen Berichten' : '✗ Berichte weichen voneinander ab'
+  return (
+    <div style={{ background: 'var(--panel)', border: `1px solid ${FARBE[r.gesamt]}`, borderRadius: 'var(--radius)', overflow: 'hidden', boxShadow: 'var(--shadow)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '14px 16px', borderBottom: '1px solid var(--line)', background: r.gesamt === 'ok' ? 'var(--amp-g-soft)' : r.gesamt === 'warnung' ? 'var(--amp-a-soft)' : 'var(--amp-r-soft)' }}>
+        <div>
+          <div style={{ fontWeight: 700, fontSize: 15, color: FARBE[r.gesamt] }}>{kopf}</div>
+          <div style={{ fontSize: 12.5, color: 'var(--slate)', marginTop: 2 }}>
+            Jahresumsatz aus jedem Bericht unabhängig berechnet vs. gemeinsame Basis <b>{mio(ZIEL_UMSATZ)}</b> · max. Abweichung <b>{r.maxAbwPct.toLocaleString('de-DE')} %</b> · Spannweite <b>{r.spannePct.toLocaleString('de-DE')} %</b>
+          </div>
+        </div>
+        <span style={{ fontSize: 11, fontWeight: 700, color: FARBE[r.gesamt], border: `1px solid ${FARBE[r.gesamt]}`, borderRadius: 999, padding: '3px 10px', whiteSpace: 'nowrap' }}>
+          {r.rows.filter((x) => x.status === 'ok').length}/{r.rows.length} im Ziel
+        </span>
+      </div>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+        <thead><tr>{['Bericht', 'Basis der Berechnung', 'Jahresumsatz', 'Δ zur Basis', ''].map((h, i) => (
+          <th key={i} style={{ textAlign: i >= 2 && i < 4 ? 'right' : 'left', padding: '8px 16px', borderBottom: '1px solid var(--line)', fontSize: 10.5, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em' }}>{h}</th>
+        ))}</tr></thead>
+        <tbody>
+          {r.rows.map((x) => (
+            <tr key={x.id}>
+              <td style={{ padding: '9px 16px', borderTop: '1px solid var(--line)', fontWeight: 600 }}>{x.bericht}</td>
+              <td style={{ padding: '9px 16px', borderTop: '1px solid var(--line)', color: 'var(--muted)', fontSize: 12 }}>{x.basis}</td>
+              <td className="mono" style={{ padding: '9px 16px', borderTop: '1px solid var(--line)', textAlign: 'right' }}>{mio(x.wert)}</td>
+              <td className="mono" style={{ padding: '9px 16px', borderTop: '1px solid var(--line)', textAlign: 'right', fontWeight: 600, color: FARBE[x.status] }}>{x.abwPct >= 0 ? '+' : ''}{x.abwPct.toLocaleString('de-DE')} %</td>
+              <td style={{ padding: '9px 16px', borderTop: '1px solid var(--line)' }}><span style={{ width: 9, height: 9, borderRadius: '50%', background: FARBE[x.status], display: 'inline-block' }} /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div style={{ fontSize: 11, color: 'var(--muted)', padding: '8px 16px' }}>
+        Toleranz: bis 2 % = im Ziel, 2–5 % = beobachten, &gt; 5 % = Abstimmfehler. Rundung & Plan-vs-Ist erklären kleine Differenzen.
+      </div>
+    </div>
+  )
+}
 
 export default function Datenqualitaet({ werte, periode }) {
   const ergebnisse = pruefeAlle(werte)
@@ -33,6 +75,8 @@ export default function Datenqualitaet({ werte, periode }) {
           Bereichsübergreifende Abstimmung: Stimmen die Zahlen untereinander? Wo muss ich hinschauen?
         </p>
       </div>
+
+      <KonsistenzPanel />
 
       <div style={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
         {ergebnisse.map((e, i) => (
