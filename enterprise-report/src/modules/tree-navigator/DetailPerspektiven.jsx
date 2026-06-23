@@ -4,7 +4,7 @@
 //  Felder-Filter (Status/Segment/Typ …) kommen aus dataset.filterSpalten.
 //  Geladen/gerendert wird die Tabelle erst nach "Anzeigen".
 // =========================================================================
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { DRILL } from '../../core/drilldowns.js'
 import { ladePerspektive, PERIODEN, AKTUELLE_PERIODE } from '../../core/dataProvider.js'
 import { DetailTabelle } from '../../components/ui.jsx'
@@ -22,7 +22,7 @@ function parseNum(v) {
   return Number.isNaN(n) ? null : n
 }
 
-export default function DetailPerspektiven({ bereich, perspektiven = [] }) {
+export default function DetailPerspektiven({ bereich, perspektiven = [], startP = null }) {
   const nav = useNav()
   const [aktiv, setAktiv] = useState(null)
   const [roh, setRoh] = useState(null)        // geladener Datensatz (für Filteroptionen)
@@ -37,6 +37,9 @@ export default function DetailPerspektiven({ bereich, perspektiven = [] }) {
   const [sortDir, setSortDir] = useState('asc')
   const [layout, setLayout] = useState(null)       // Spalten-Layout (Designer)
   const [designerAuf, setDesignerAuf] = useState(false)
+
+  // Aus dem Baum verlinkte Sicht direkt öffnen (Klick auf eine Sicht im Baum).
+  useEffect(() => { if (startP && perspektiven.includes(startP) && startP !== aktiv) waehle(startP) }, [startP]) // eslint-disable-line
 
   async function waehle(p) {
     setAktiv(p); setDaten(null); setFeld({}); setSuche(''); setSortIdx(null); setDesignerAuf(false)

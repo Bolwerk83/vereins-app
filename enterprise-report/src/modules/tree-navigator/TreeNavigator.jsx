@@ -5,6 +5,7 @@
 // =========================================================================
 import React, { useState, useMemo, useEffect } from 'react'
 import { BERICHTSBAUM, EBENEN, baumFuerRolle, findeKnoten, pfadZu } from '../../core/reportTree.js'
+import { DRILL } from '../../core/drilldowns.js'
 import { gruppiereNachCluster } from '../../core/bereiche.js'
 import { KPI } from '../../core/kpiRegistry.js'
 import { darfBereich, darfKpi } from '../../core/rbac.js'
@@ -20,9 +21,10 @@ function EbeneTag({ stufe }) {
   return <Badge status="n">E{stufe} · {e?.name}</Badge>
 }
 
-function Zweig({ knoten, aktiv, onSelect, tiefe = 0 }) {
+function Zweig({ knoten, aktiv, onSelect, onSicht, tiefe = 0 }) {
   const [offen, setOffen] = useState(tiefe < 1)
   const hatKinder = knoten.kinder?.length > 0
+  const sichten = knoten.perspektiven || []
   return (
     <div>
       <div onClick={() => { onSelect(knoten.id); if (hatKinder) setOffen(!offen) }}
@@ -34,8 +36,19 @@ function Zweig({ knoten, aktiv, onSelect, tiefe = 0 }) {
         <span style={{ flex: 1 }}>{knoten.titel}</span>
         <span className="mono" style={{ fontSize: 10, color: 'var(--muted)' }}>E{knoten.ebene}</span>
       </div>
+      {/* Verlinkte Sichten (Perspektiven) direkt im Baum — Klick öffnet die Sicht */}
+      {sichten.length > 0 && (
+        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', padding: `0 8px 5px ${8 + tiefe * 14 + 18}px` }}>
+          {sichten.map((code) => (
+            <span key={code} title={`Sicht: ${DRILL[code]?.name || code}`} onClick={(e) => { e.stopPropagation(); onSicht?.(knoten.id, code) }}
+              style={{ fontSize: 11, lineHeight: 1.6, padding: '0 6px', borderRadius: 999, border: '1px solid var(--line)', background: 'var(--panel)', color: 'var(--muted)', cursor: 'pointer' }}>
+              {DRILL[code]?.icon} {DRILL[code]?.name || code}
+            </span>
+          ))}
+        </div>
+      )}
       {offen && hatKinder && knoten.kinder.map((k) => (
-        <Zweig key={k.id} knoten={k} aktiv={aktiv} onSelect={onSelect} tiefe={tiefe + 1} />
+        <Zweig key={k.id} knoten={k} aktiv={aktiv} onSelect={onSelect} onSicht={onSicht} tiefe={tiefe + 1} />
       ))}
     </div>
   )
@@ -69,6 +82,9 @@ export default function TreeNavigator({ rolle, werte, periode, onOpenReport, onD
 
   const [detail, setDetail] = useState(null)
   const [zu, setZu] = useState({}) // eingeklappte Cluster
+  const [wunschP, setWunschP] = useState(null) // aus dem Baum verlinkte Sicht
+  const waehle = (id) => { setAktiv(id); setWunschP(null) }
+  const sichtKlick = (id, code) => { setAktiv(id); setWunschP(code) }
   useEffect(() => { if (startId && findeKnoten(baum, startId)) setAktiv(startId) }, [startId]) // eslint-disable-line
   useEffect(() => { if (detailKey) ladeDetail(detailKey).then(setDetail); else setDetail(null) }, [detailKey])
 
@@ -96,7 +112,7 @@ export default function TreeNavigator({ rolle, werte, periode, onOpenReport, onD
               <span className="mono" style={{ fontSize: 10 }}>{g.knoten.length}</span>
             </div>
             {!zu[g.cluster.id] && g.knoten.map((k) => (
-              <Zweig key={k.id} knoten={k} aktiv={aktiv} onSelect={setAktiv} tiefe={1} />
+              <Zweig key={k.id} knoten={k} aktiv={aktiv} onSelect={waehle} onSicht={sichtKlick} tiefe={1} />
             ))}
           </div>
         ))}
@@ -159,7 +175,7 @@ export default function TreeNavigator({ rolle, werte, periode, onOpenReport, onD
 
         {/* Ebene 4: mehrere Detail-Perspektiven (kontextabhängig) + Filtermaske */}
         {knoten.perspektiven?.length > 0 && (
-          <DetailPerspektiven bereich={knoten.bereich} perspektiven={knoten.perspektiven} />
+          <DetailPerspektiven bereich={knoten.bereich} perspektiven={knoten.perspektiven} startP={wunschP} />
         )}
 
         {/* Hinweis Drill-down */}
