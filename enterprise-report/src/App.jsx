@@ -23,6 +23,7 @@ import ControllingStruktur from './modules/controlling/ControllingStruktur.jsx'
 import KLR from './modules/klr/KLR.jsx'
 import KLRAblauf from './modules/klr/KLRAblauf.jsx'
 import Ablaufdiagramm from './modules/ablauf/Ablaufdiagramm.jsx'
+import Datenarchitektur from './modules/datenarchitektur/Datenarchitektur.jsx'
 import Kostenartenrechnung from './modules/kostenarten/Kostenartenrechnung.jsx'
 import Kalkulatorik from './modules/kalkulatorik/Kalkulatorik.jsx'
 import Lebenszyklus from './modules/lebenszyklus/Lebenszyklus.jsx'
@@ -327,7 +328,8 @@ export default function App() {
       { titel: 'Konzepte', eintraege: [
         E('controlling', 'nav.controlling', '🧭'),
         E('klrablauf', 'nav.klrablauf', '🧵'),
-        E('ablaufdiagramm', 'nav.ablauf', '🗺')
+        E('ablaufdiagramm', 'nav.ablauf', '🗺'),
+        E('datenarchitektur', 'nav.datenarchitektur', '✳️')
       ] },
       { titel: 'Hilfe', eintraege: [
         { label: t('nav.onboarding'), icon: '🚀', aktiv: false, onClick: () => setOnbAuf(true) },
@@ -541,6 +543,9 @@ export default function App() {
         )}
         {ansicht === 'ablaufdiagramm' && (
           <Ablaufdiagramm onGeh={geh} />
+        )}
+        {ansicht === 'datenarchitektur' && (
+          <Datenarchitektur />
         )}
         {ansicht === 'klr' && (
           <KLR werte={werte} rolle={rolle} periode={periode} onGeh={geh} />

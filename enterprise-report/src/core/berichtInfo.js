@@ -132,6 +132,10 @@ export const BERICHT_INFO = {
   controlling: { zweck: 'Controlling-Struktur & Teilgebiete.', zielgruppe: 'Alle / Einarbeitung.', mehrwert: 'Das Big Picture verstehen.' },
   klrablauf: { zweck: 'KLR-Ablauf als roter Faden mit echten Werten.', zielgruppe: 'Einarbeitung / Controlling.', mehrwert: 'Zusammenhänge der Kostenrechnung nachvollziehen.' },
   ablaufdiagramm: { zweck: 'Interaktives Prozess-/Ablaufdiagramm.', zielgruppe: 'Alle.', mehrwert: 'Prozesse klickbar verstehen.' },
+  datenarchitektur: { zweck: 'Daten- & Performance-Architektur des Reportings: Schichten von der Quelle bis zum Browser, Sternschema, Profit-Center-Baum als Dimension, RLS/OLS-Sicherheit und ELT externer Daten.', zielgruppe: 'IT / Controlling-Leitung / Architektur.', mehrwert: 'Verstehen, wie das System über Millionen Datensätze schnell, konsistent und sicher bleibt — Begleitseite zu PERFORMANCE.md.',
+    inhalt: 'Pipeline (Quellen → ELT → Sternschema → Pre-Aggregate → Sicherheit → Auslieferung → Browser), Sternschema-Visual mit conformten Dimensionen, tragende Prinzipien (Anzeige ≠ Datenmenge, eine Dimension/ein Filter, additiv vs. nicht-additiv, RLS-Pushdown, granulare Rohdaten) und Richtwerte.',
+    fragen: ['Wie skaliert das auf Millionen Datensätze?', 'Wie wird über alle Berichte konsistent gefiltert und abgesichert?', 'Wie kommen Google-/Geo-/Marktdaten sauber hinein?'],
+    lesehilfe: 'Von links nach rechts = Datenfluss; die zentrale Faktentabelle ist von ihren Dimensionen umgeben. DimProfitCenter ist derselbe Baum wie im PC-Filter.', quelle: 'Architektur-Leitlinie (Konzept), ausführlich in PERFORMANCE.md.' },
   // ---- Verwaltung ----
   abschluss: { zweck: 'Abschluss & Versionierung der Berichte.', zielgruppe: 'Rechnungswesen.', mehrwert: 'Sauberer, nachvollziehbarer Periodenabschluss.' },
   verteiler: { zweck: 'Geplanter, automatischer Versand von Berichten.', zielgruppe: 'Controlling / Assistenz.', mehrwert: 'Die richtigen Berichte automatisch verteilen.' },

@@ -19,6 +19,7 @@ export const NAV_ZIELE = [
   { ziel: 'controlling', gruppe: 'Berichte', schluessel: 'nav.controlling' },
   { ziel: 'klrablauf', gruppe: 'Berichte', schluessel: 'nav.klrablauf' },
   { ziel: 'ablaufdiagramm', gruppe: 'Berichte', schluessel: 'nav.ablauf' },
+  { ziel: 'datenarchitektur', gruppe: 'Wissen', schluessel: 'nav.datenarchitektur' },
   { ziel: 'klr', gruppe: 'Berichte', schluessel: 'nav.klr' },
   { ziel: 'einzelgemein', gruppe: 'Berichte', schluessel: 'nav.einzelgemein' },
   { ziel: 'abgrenzung', gruppe: 'Berichte', schluessel: 'nav.abgrenzung' },
