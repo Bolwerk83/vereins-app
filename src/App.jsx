@@ -6423,7 +6423,14 @@ function FoerderAssistent({ data, myTids, cl, save, fire }){
   // wir zeigen nur den aktuellen Kader -> keine Vorsaison-Daten vermischt.
   const players=(data.playerProfiles||[]).filter(p=>p.mainTid===tid && !p.archived && (!p.seasonId||p.seasonId===sid));
   const [step,setStep]=useState(1);
-  const [trainerCount,setTrainerCount]=useState(1);   // wie viele Trainer heute da sind
+  const _today=now();
+  const nextTraining=(data.events||[]).filter(e=>e.tid===tid&&e.type==="training"&&e.date>=_today).sort((a,b)=>(a.date+(a.time||"")).localeCompare(b.date+(b.time||"")))[0]||null;
+  // Trainer-Anzahl aus den Zusagen ableiten: Trainer-Check-in des nächsten Trainings (wie bei den Helfern).
+  const presentTrainerCount=Object.values(nextTraining?.trainerPresence||{}).length;
+  const detectedTrainers=Math.max(1,presentTrainerCount);
+  const [trainerCount,setTrainerCount]=useState(detectedTrainers);
+  const [tcManual,setTcManual]=useState(false);
+  useEffect(()=>{ if(!tcManual) setTrainerCount(detectedTrainers); },[detectedTrainers,tcManual]);
   const two = trainerCount>=2;
   const [focusSkill,setFocusSkill]=useState(null);
   const [manualInd,setManualInd]=useState(null);   // Set<id> | null (=auto)
@@ -6481,8 +6488,6 @@ function FoerderAssistent({ data, myTids, cl, save, fire }){
     setStation(blocks);
   };
   const stationMins=()=>(station||[]).reduce((a,b)=>a+(b.d.min||0),0);
-  const today=now();
-  const nextTraining=(data.events||[]).filter(e=>e.tid===tid&&e.type==="training"&&e.date>=today).sort((a,b)=>(a.date+(a.time||"")).localeCompare(b.date+(b.time||"")))[0]||null;
   const stationText=()=>!station?"":["FÖRDERSTATION"+(cat?" – "+cat:"")+" (ca. "+stationMins()+" Min)","Schwerpunkt: "+effSkills.join(", "),"",...station.map(b=>`• [${b.phase}] ${b.d.title} (${b.d.min} Min)\n  ${(kidLang&&b.d.kids)||b.d.desc||""}${b.d.coach?"\n  Coaching: "+b.d.coach:""}`)].join("\n");
   const adoptStation=()=>{
     if(!station) return;
@@ -6554,11 +6559,21 @@ function FoerderAssistent({ data, myTids, cl, save, fire }){
       {players.length>0&&step===2&&(
         <div>
           <div style={{background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:14,padding:"13px 15px",marginBottom:14}}>
-            <div style={{fontSize:14,fontWeight:800,color:"#334155",marginBottom:8}}>Wie viele Trainer sind heute da?</div>
-            <div style={{display:"flex",gap:7}}>
-              {[1,2,3,4].map(n=>(<button key={n} onClick={()=>{setTrainerCount(n);setManualInd(null);}} style={{flex:1,padding:"9px 0",borderRadius:11,border:`1.5px solid ${trainerCount===n?t.p:"#e2e8f0"}`,background:trainerCount===n?t.p:"#fff",color:trainerCount===n?"#fff":"#475569",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>{n}</button>))}
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+              <div style={{fontSize:14,fontWeight:800,color:"#334155",flex:1}}>Wie viele Trainer sind heute da?</div>
+              {tcManual&&<button onClick={()=>setTcManual(false)} style={{background:"#f1f5f9",border:"none",borderRadius:9,padding:"5px 10px",color:"#475569",fontSize:11.5,fontWeight:800,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>↺ aus Zusagen</button>}
             </div>
-            <div style={{fontSize:11.5,color:"#94a3b8",marginTop:7,lineHeight:1.45}}>{two?`${trainerCount-1} Trainer übernehmen parallel die Einzel-/Kleingruppen-Förderung, 1 hält die Hauptgruppe zusammen.`:"Als einzelner Trainer empfehle ich, wer im Training besonders gefördert werden sollte – faire Rotation, damit jeder mal drankommt."}</div>
+            <div style={{display:"flex",gap:7}}>
+              {[1,2,3,4].map(n=>(<button key={n} onClick={()=>{setTrainerCount(n);setTcManual(true);setManualInd(null);}} style={{flex:1,padding:"9px 0",borderRadius:11,border:`1.5px solid ${trainerCount===n?t.p:"#e2e8f0"}`,background:trainerCount===n?t.p:"#fff",color:trainerCount===n?"#fff":"#475569",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>{n}</button>))}
+            </div>
+            <div style={{fontSize:11.5,color:"#94a3b8",marginTop:7,lineHeight:1.45}}>
+              {tcManual
+                ? "Manuell gewählt."
+                : (presentTrainerCount>0
+                    ? `Automatisch aus den Trainer-Zusagen ${nextTraining?`für „${nextTraining.title}" (${fmtD(nextTraining.date)})`:""} erkannt: ${presentTrainerCount} ${presentTrainerCount===1?"Trainer":"Trainer"}.`
+                    : "Noch keine Trainer-Zusage zum nächsten Training – Standard 1 (anpassbar).")}
+              {" "}{two?`${trainerCount-1} übernehmen parallel die Einzel-/Kleingruppen-Förderung, 1 hält die Hauptgruppe.`:"Einzelner Trainer: ich empfehle, wer gefördert werden soll (faire Rotation)."}
+            </div>
           </div>
           <div style={{marginBottom:14}}>
             <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.3,marginBottom:8}}>FÖRDER-SCHWERPUNKT</div>
@@ -29976,22 +29991,38 @@ function recommendLineup(present, profiles, pastLineups){
   const posRe={T:/tor|keeper|tw|reflex/,A:/abwehr|vert|innen|aussen|defen|libero/,M:/mittel|\bmf\b|sechs|acht|zehn|spielmach/,S:/sturm|stürm|stuerm|angriff|fluegel|flügel|spitze|stoss/};
   const pr=name=>lineupProfByName(name,profiles);
   const posOf=name=>String(pr(name)?.position||"").toLowerCase();
+  const inSq=new Set(names);
+  // "Gute Freunde" / "muss zusammen spielen": IDs -> Namen (nur anwesende zählen).
+  const nameById={}; (profiles||[]).forEach(p=>{ if(p?.id&&p?.name) nameById[p.id]=p.name; });
+  const relOf=name=>{ const p=pr(name); const toN=ids=>new Set((ids||[]).map(id=>nameById[id]).filter(n=>n&&inSq.has(n)));
+    return {friends:toN(p?.friends), must:toN(p?.mustWith)}; };
+  // Bonus, wenn jemand in derselben Linie schon einen Freund (2) / Muss-Partner (4) hat – beidseitig.
+  const friendBonus=(name,line)=>{ let b=0; const r=relOf(name);
+    (lineup[line]||[]).forEach(o=>{ if(r.must.has(o))b+=4; else if(r.friends.has(o))b+=2; const ro=relOf(o); if(ro.must.has(name))b+=4; else if(ro.friends.has(name))b+=2; });
+    return b; };
   const assigned=new Set(); const lineup={T:[],A:[],M:[],S:[]};
   if(shape.T){ let gk=names.find(nm=>posRe.T.test(posOf(nm)));
     if(!gk) gk=[...names].sort((a,b)=>(fit.S(pr(a))+fit.A(pr(a)))-(fit.S(pr(b))+fit.A(pr(b))))[0];
     if(gk){lineup.T.push(gk);assigned.add(gk);} }
-  ["A","S","M"].forEach(line=>{ const need=shape[line]||0;
-    names.filter(nm=>!assigned.has(nm)&&posRe[line].test(posOf(nm)))
-      .sort((a,b)=>fit[line](pr(b))-fit[line](pr(a))).slice(0,need)
-      .forEach(nm=>{lineup[line].push(nm);assigned.add(nm);}); });
-  ["A","M","S"].forEach(line=>{ let need=(shape[line]||0)-lineup[line].length;
-    while(need-->0){ const c=names.filter(nm=>!assigned.has(nm)).sort((a,b)=>fit[line](pr(b))-fit[line](pr(a)))[0]; if(!c)break; lineup[line].push(c);assigned.add(c);} });
+  // Linien Slot für Slot füllen: natürliche Position (Bonus) + Stärken-Fit + Freundes-Bonus.
+  const fillLine=line=>{ let need=shape[line]||0;
+    while(need-->0){
+      const best=names.filter(nm=>!assigned.has(nm)).map(nm=>({nm, s:fit[line](pr(nm)) + (posRe[line].test(posOf(nm))?6:0) + friendBonus(nm,line)}))
+        .sort((a,b)=>b.s-a.s)[0];
+      if(!best) break; lineup[line].push(best.nm); assigned.add(best.nm);
+    } };
+  ["A","S","M"].forEach(fillLine);
   const bench=names.filter(nm=>!assigned.has(nm));
   const formation=[shape.A,shape.M,shape.S].filter(x=>x>0).join("-");
   const pc={}; (pastLineups||[]).forEach(lu=>{const all=[...(lu.T||[]),...(lu.A||[]),...(lu.M||[]),...(lu.S||[])];for(let i=0;i<all.length;i++)for(let j=i+1;j<all.length;j++){const key=[all[i],all[j]].sort().join("|||");pc[key]=(pc[key]||0)+1;}});
-  const inSq=new Set(names);
   const pairs=Object.entries(pc).map(([k,c])=>{const[a,b]=k.split("|||");return{a,b,c};}).filter(p=>inSq.has(p.a)&&inSq.has(p.b)&&p.c>=2).sort((x,y)=>y.c-x.c).slice(0,3);
-  return {lineup,bench,formation,pairs,count:n};
+  // Freundes-Paare (anwesend) + ob sie in derselben Linie gelandet sind.
+  const sameLine=(a,b)=>["T","A","M","S"].some(k=>lineup[k].includes(a)&&lineup[k].includes(b));
+  const fp=[]; const seenF=new Set();
+  names.forEach(a=>{ const r=relOf(a); [...r.must].map(b=>[b,true]).concat([...r.friends].map(b=>[b,false])).forEach(([b,must])=>{
+    const key=[a,b].sort().join("|"); if(seenF.has(key))return; seenF.add(key); fp.push({a,b,must,together:sameLine(a,b)}); }); });
+  const friends=fp.sort((x,y)=>(y.must-x.must)).slice(0,4);
+  return {lineup,bench,formation,pairs,friends,count:n};
 }
 function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChange=undefined, profiles=[], pastLineups=[] }){
   const lu = ev.lineup || {T:[],A:[],M:[],S:[]};
@@ -30015,7 +30046,8 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
         <div style={{background:"#eef2ff",border:"1.5px solid #c7d2fe",borderRadius:12,padding:"9px 12px",marginBottom:10,fontSize:12,color:"#3730a3",lineHeight:1.5}}>
           <b>🤖 Für {tip.count} Spieler:</b> Formation <b>{tip.formation||"—"}</b>{tip.lineup.T.length?" (mit Torwart)":""}{tip.bench.length?` · ${tip.bench.length} auf der Bank`:""}.
           {tip.pairs.length>0&&<div style={{marginTop:3}}>🤝 Eingespielt: {tip.pairs.map(p=>`${p.a.split(" ")[0]} & ${p.b.split(" ")[0]} (${p.c}×)`).join(", ")}</div>}
-          <div style={{marginTop:3,color:"#6366f1"}}>Besetzung nach Position & Stärken – frei anpassbar (× entfernen, von der Bank zuordnen).</div>
+          {tip.friends&&tip.friends.length>0&&<div style={{marginTop:3}}>👫 Freunde: {tip.friends.map(f=>`${f.a.split(" ")[0]} & ${f.b.split(" ")[0]}${f.together?"":" (getrennt)"}`).join(", ")}</div>}
+          <div style={{marginTop:3,color:"#6366f1"}}>Besetzung nach Position, Stärken & Freundschaften – frei anpassbar (× entfernen, von der Bank zuordnen).</div>
         </div>
       )}
       {onPubChange&&(
