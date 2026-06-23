@@ -6996,6 +6996,81 @@ function TrainerGuide({ onClose, cl }){
   );
 }
 
+// Saisonbericht: Anwesenheit + Spielzeit + Skill-Stand + Empfehlung je Spieler – als Text teilbar.
+function SeasonReportTab({ data, myTids, cl, fire }){
+  const t=TH(cl); const sport=cl?.sport||"fussball"; const axes=skillAxesFor(sport);
+  const teams=(data.teams||[]).filter(tm=>myTids.includes(tm.id));
+  const [tid,setTid]=useState(teams[0]?.id||"");
+  const team=teams.find(x=>x.id===tid);
+  const sid=activeSid(data,team?.cid);
+  const players=(data.playerProfiles||[]).filter(p=>p.mainTid===tid&&!p.archived&&(!p.seasonId||p.seasonId===sid)).sort((a,b)=>(a.name||"").localeCompare(b.name||""));
+  const tod=now();
+  const vval=v=>(typeof v==="object"&&v)?v.val:v;
+  const evs=(data.events||[]).filter(e=>e.tid===tid);
+  const pastTrain=evs.filter(e=>e.type==="training"&&e.date<tod);
+  const pastGames=evs.filter(e=>e.type!=="training"&&e.date<tod);
+  const ptGames=pastGames.filter(e=>e.playtime&&e.playtime.base);
+  const rows=players.map(p=>{
+    const tY=pastTrain.filter(e=>vval(e.votes?.[p.name])==="yes").length;
+    const gY=pastGames.filter(e=>vval(e.votes?.[p.name])==="yes").length;
+    const trainPct=pastTrain.length?Math.round(tY/pastTrain.length*100):null;
+    const gamePct=pastGames.length?Math.round(gY/pastGames.length*100):null;
+    let secs=0,gc=0; ptGames.forEach(e=>{const b=e.playtime.base?.[p.name]; if(typeof b==="number"&&b>0){secs+=b;gc++;}});
+    const rated=axes.map(a=>p.skills?.[a]).filter(v=>typeof v==="number"&&v>0);
+    const avg=rated.length?Math.round(rated.reduce((x,y)=>x+y,0)/rated.length*10)/10:null;
+    let weak=null; axes.forEach(a=>{const v=p.skills?.[a]; if(typeof v==="number"&&v>0&&(!weak||v<weak.v))weak={a,v};});
+    return {p,trainPct,gamePct,tY,gY,mins:Math.round(secs/60),gc,avg,weak};
+  });
+  const reportText=()=>{
+    const L=[`Saisonbericht – ${team?.name||""}`,`Stand: ${fmtD(tod)}`,`Trainings: ${pastTrain.length} · Spiele: ${pastGames.length} · Spieler: ${players.length}`,""];
+    rows.forEach(r=>{
+      L.push(`• ${r.p.name}${r.p.position?` (${r.p.position})`:""}`);
+      L.push(`   Anwesenheit Training: ${r.trainPct??"–"}%${r.gamePct!=null?` · Spiele: ${r.gamePct}%`:""}`);
+      if(r.gc) L.push(`   Spielzeit: ${r.mins} Min in ${r.gc} ${r.gc===1?"Spiel":"Spielen"}`);
+      if(r.avg!=null) L.push(`   Ø Skill: ${r.avg}/5${r.weak?` · schwächster Bereich: ${r.weak.a} (${r.weak.v}/5)`:""}`);
+      if(r.p.recommend) L.push(`   Empfehlung: ${r.p.recommend}`);
+      L.push("");
+    });
+    return L.join("\n");
+  };
+  const doCopy=()=>{ navigator.clipboard?.writeText(reportText()); fire&&fire("Bericht kopiert"); };
+  const doShare=()=>{ const text=reportText(); if(navigator.share){ navigator.share({title:`Saisonbericht ${team?.name||""}`,text}).catch(()=>{}); } else { navigator.clipboard?.writeText(text); fire&&fire("Bericht kopiert"); } };
+  if(teams.length===0) return <p style={{color:"#94a3b8",fontSize:13,padding:20}}>Keine Mannschaft.</p>;
+  return (
+    <div>
+      {teams.length>1&&<div style={{display:"flex",gap:6,marginBottom:14,overflowX:"auto",scrollbarWidth:"none"}}>
+        {teams.map(tm=>(<button key={tm.id} onClick={()=>setTid(tm.id)} style={{padding:"7px 13px",borderRadius:99,border:`2px solid ${tid===tm.id?tm.col:"#e2e8f0"}`,background:tid===tm.id?tm.col:"#fff",color:tid===tm.id?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit",flexShrink:0}}>{tm.name}</button>))}
+      </div>}
+      <div style={{display:"flex",gap:8,marginBottom:14}}>
+        <button onClick={doShare} style={{flex:2,padding:"11px",borderRadius:11,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>📄 Bericht teilen</button>
+        <button onClick={doCopy} style={{flex:1,padding:"11px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>Kopieren</button>
+      </div>
+      <div style={{fontSize:11.5,color:"#94a3b8",marginBottom:12,lineHeight:1.45}}>Ideal fürs Elterngespräch: Anwesenheit, Spielzeit, Skill-Stand und deine Empfehlung je Spieler. Über „Teilen" als Text (z. B. in WhatsApp oder als PDF aus dem Teilen-Menü).</div>
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {rows.length===0&&<p style={{fontSize:13,color:"#94a3b8",textAlign:"center",padding:20}}>Keine Spieler in dieser Saison.</p>}
+        {rows.map(r=>(
+          <div key={r.p.id} style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:13,padding:"12px 14px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+              <Av name={r.p.name} sz={34}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>{r.p.name}</div>
+                {r.p.position&&<div style={{fontSize:11.5,color:"#94a3b8"}}>{r.p.position}</div>}
+              </div>
+              {r.avg!=null&&<div style={{textAlign:"right"}}><div style={{fontWeight:900,fontSize:17,color:t.p}}>{r.avg}</div><div style={{fontSize:10,color:"#94a3b8"}}>Ø Skill</div></div>}
+            </div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+              <span style={{fontSize:11.5,fontWeight:700,color:"#15803d",background:"#dcfce7",borderRadius:99,padding:"3px 9px"}}>Training {r.trainPct??"–"}%</span>
+              {r.gamePct!=null&&<span style={{fontSize:11.5,fontWeight:700,color:"#1d4ed8",background:"#dbeafe",borderRadius:99,padding:"3px 9px"}}>Spiele {r.gamePct}%</span>}
+              {r.gc>0&&<span style={{fontSize:11.5,fontWeight:700,color:"#0f172a",background:"#f1f5f9",borderRadius:99,padding:"3px 9px"}}>{r.mins} Min Spielzeit</span>}
+              {r.weak&&<span style={{fontSize:11.5,fontWeight:700,color:"#9a3412",background:"#fff7ed",borderRadius:99,padding:"3px 9px"}}>Fokus: {r.weak.a}</span>}
+            </div>
+            {r.p.recommend&&<div style={{fontSize:12,color:"#4f46e5",fontWeight:600,marginTop:6}}>Empfehlung: {r.p.recommend}</div>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 // Mannschaftskasse: Beiträge, Strafen, Einnahmen/Ausgaben mit laufendem Saldo.
 function CashbookTab({ data, myTids, save, fire, cl }){
   const t=TH(cl);
@@ -7088,6 +7163,7 @@ function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false, initial
     { id:"insights",   label:"🧠 Insights", icon:"I" },
     { id:"results",    label:"Ergebnisse",  icon:"E" },
     { id:"kasse",      label:"💰 Kasse",    icon:"K" },
+    { id:"bericht",    label:"📄 Bericht",  icon:"R" },
     { id:"analysis",   label:"Analyse",     icon:"A" },
     { id:"ziele",      label:"Ziele",       icon:"Z" },
     { id:"drills",     label:"Übungen",     icon:"U" },
@@ -7124,6 +7200,7 @@ function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false, initial
       {subTab==="attendance" && <AttendanceTab data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
       {subTab==="results"    && <LeagueTab     data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
       {subTab==="kasse"      && <CashbookTab   data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
+      {subTab==="bericht"    && <SeasonReportTab data={data} myTids={myTids} cl={cl} fire={fire}/>}
       {subTab==="insights"   && <TeamInsights data={data} myTids={myTids} cl={cl}/>}
       {subTab==="analysis"   && <TeamSkillAnalysis data={data} myTids={myTids} cl={cl}/>}
       {subTab==="ziele"      && <TrainerTrainingZiele data={data} cid={cl?.id} myTids={myTids} save={save} fire={fire} cl={cl}/>}
