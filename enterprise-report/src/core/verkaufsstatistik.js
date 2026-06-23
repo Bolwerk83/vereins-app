@@ -9,6 +9,11 @@ const r1 = (x) => Math.round(x * 10) / 10
 
 export const MONATE = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']
 
+// Normierung auf operative Unternehmensgröße (~52 Mio € Umsatz), damit die
+// Summen berichtsübergreifend stimmig sind. Anteile/Quoten bleiben unverändert.
+const SKALA = 52 / 35.4
+const sM = (v) => Math.round(v * SKALA)
+
 // Warengruppen: umsatz/vorjahr in €, menge in Stück, dbProzent = DB-Marge %.
 const WARENGRUPPEN = [
   { id: 'ebike', name: 'E-Bikes', umsatz: 18600000, vorjahr: 16100000, menge: 7100, dbProzent: 32 },
@@ -17,7 +22,7 @@ const WARENGRUPPEN = [
   { id: 'bekleidung', name: 'Bekleidung', umsatz: 2700000, vorjahr: 2500000, menge: 41000, dbProzent: 40 },
   { id: 'teile', name: 'Teile & Ersatzteile', umsatz: 2350000, vorjahr: 2050000, menge: 96000, dbProzent: 38 },
   { id: 'service', name: 'Werkstatt & Service', umsatz: 1150000, vorjahr: 980000, menge: 19000, dbProzent: 58 }
-]
+].map((w) => ({ ...w, umsatz: sM(w.umsatz), vorjahr: sM(w.vorjahr), menge: sM(w.menge) }))
 
 // Top-Artikel: umsatz €, menge Stück, dbProzent.
 const TOP_ARTIKEL = [
@@ -28,18 +33,18 @@ const TOP_ARTIKEL = [
   { id: 'a5', name: 'City Lite 7', gruppe: 'Fahrräder', umsatz: 980000, menge: 1900, dbProzent: 29 },
   { id: 'a6', name: 'Helm Aero MIPS', gruppe: 'Zubehör', umsatz: 620000, menge: 8200, dbProzent: 48 },
   { id: 'a7', name: 'Pendler-Tasche 25L', gruppe: 'Zubehör', umsatz: 410000, menge: 13600, dbProzent: 46 }
-]
+].map((a) => ({ ...a, umsatz: sM(a.umsatz), menge: sM(a.menge) }))
 
 // Kanal: umsatz/vorjahr €, auftraege = Anzahl.
 const KANAELE = [
   { id: 'filiale', name: 'Filiale / stationär', umsatz: 20300000, vorjahr: 19200000, auftraege: 41000 },
   { id: 'online', name: 'Online-Shop', umsatz: 11800000, vorjahr: 9100000, auftraege: 58000 },
   { id: 'grosshandel', name: 'Groß-/Fachhandel (B2B)', umsatz: 3300000, vorjahr: 3640000, auftraege: 2100 }
-]
+].map((k) => ({ ...k, umsatz: sM(k.umsatz), vorjahr: sM(k.vorjahr), auftraege: sM(k.auftraege) }))
 
 // Umsatzverlauf gesamt (€) Ist / Vorjahr, Monat Jan–Dez.
-const VERLAUF_IST = [2100000, 2050000, 2600000, 3050000, 3550000, 3700000, 3450000, 3100000, 3050000, 2800000, 4200000, 2700000]
-const VERLAUF_VJ = [1900000, 1850000, 2400000, 2700000, 3150000, 3300000, 3050000, 2800000, 2750000, 2600000, 3650000, 2450000]
+const VERLAUF_IST = [2100000, 2050000, 2600000, 3050000, 3550000, 3700000, 3450000, 3100000, 3050000, 2800000, 4200000, 2700000].map(sM)
+const VERLAUF_VJ = [1900000, 1850000, 2400000, 2700000, 3150000, 3300000, 3050000, 2800000, 2750000, 2600000, 3650000, 2450000].map(sM)
 
 const wachstum = (ist, vj) => (vj ? r1((ist - vj) / vj * 100) : 0)
 

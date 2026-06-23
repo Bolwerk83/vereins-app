@@ -11,12 +11,17 @@
 //  Plus Typologie der Kostenrechnungssysteme (Voll-/Teilkosten) als Kontext.
 // =========================================================================
 
+// Normierung auf operative Unternehmensgröße (~52 Mio € Umsatz), damit die
+// Summen berichtsübergreifend stimmig sind. DB-Quoten bleiben unverändert.
+const SKALA = 52 / 57.9
+const sM = (x) => Math.round(x * SKALA * 10) / 10
+
 export const BEREICHE = [
-  { id: 'raeder',    name: 'Räder',            bereichsfix: 1.5 },
-  { id: 'teile_zub', name: 'Teile & Zubehör',  bereichsfix: 0.8 },
-  { id: 'bekleidung', name: 'Bekleidung',      bereichsfix: 0.4 }
+  { id: 'raeder',    name: 'Räder',            bereichsfix: sM(1.5) },
+  { id: 'teile_zub', name: 'Teile & Zubehör',  bereichsfix: sM(0.8) },
+  { id: 'bekleidung', name: 'Bekleidung',      bereichsfix: sM(0.4) }
 ]
-export const UNTERNEHMENSFIX = 6.0
+export const UNTERNEHMENSFIX = sM(6.0)
 
 // Produkte (Mio €): Umsatz, variable Kosten, Produktfixkosten.
 export const PRODUKTE = [
@@ -25,7 +30,7 @@ export const PRODUKTE = [
   { id: 'teile', name: 'Teile',         bereich: 'teile_zub',  umsatz: 8.8,  varKosten: 5.4,  produktfix: 0.9 },
   { id: 'zubehoer', name: 'Zubehör',    bereich: 'teile_zub',  umsatz: 5.7,  varKosten: 3.2,  produktfix: 0.5 },
   { id: 'bekleidung', name: 'Bekleidung', bereich: 'bekleidung', umsatz: 3.7, varKosten: 2.5, produktfix: 0.6 }
-]
+].map((p) => ({ ...p, umsatz: sM(p.umsatz), varKosten: sM(p.varKosten), produktfix: sM(p.produktfix) }))
 
 const r2 = (x) => Math.round(x * 100) / 100
 const pct = (z, n) => (n ? r2(z / n * 100) : 0)

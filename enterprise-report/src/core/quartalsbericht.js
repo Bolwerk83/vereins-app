@@ -16,16 +16,25 @@ export const QUARTALE = [
 ]
 
 // --- Umsatzserien (€). Ist nur bis Stand April (danach 0 = Zukunft). --------
-const FAHRRAEDER = {
+// Normierung auf die operative Unternehmensgröße (~52 Mio € Jahresplan), damit
+// die Summen berichtsübergreifend stimmig sind. SKALA ändert nur die Absolut-
+// beträge; Anteile, Abweichungen und Quoten bleiben unverändert.
+const SKALA = 52 / 217.1
+const skalaSerie = (s) => ({
+  ist: s.ist.map((v) => Math.round(v * SKALA)),
+  plan: s.plan.map((v) => Math.round(v * SKALA)),
+  vj: s.vj.map((v) => Math.round(v * SKALA))
+})
+const FAHRRAEDER = skalaSerie({
   ist:  [9420000, 6560000, 7310000, 9620000, 15550000, 20050000, 0, 0, 0, 0, 0, 0],
   plan: [9420000, 7840000, 9420000, 15590000, 15550000, 16990000, 16980000, 14800000, 13040000, 11270000, 9500000, 7050000],
   vj:   [8940000, 7300000, 7840000, 14060000, 15550000, 17200000, 16500000, 14000000, 12500000, 10800000, 9000000, 6800000]
-}
-const TBZ = {
+})
+const TBZ = skalaSerie({
   ist:  [4360000, 4410000, 3710000, 4490000, 6120000, 8000000, 0, 0, 0, 0, 0, 0],
   plan: [4720000, 4170000, 4720000, 6310000, 7320000, 6750000, 6750000, 7860000, 7000000, 5000000, 4500000, 4520000],
   vj:   [4500000, 4000000, 4400000, 5800000, 6500000, 6400000, 6400000, 7500000, 6800000, 4800000, 4300000, 4300000]
-}
+})
 const add = (a, b) => a.map((x, i) => x + b[i])
 const GESAMT = { ist: add(FAHRRAEDER.ist, TBZ.ist), plan: add(FAHRRAEDER.plan, TBZ.plan), vj: add(FAHRRAEDER.vj, TBZ.vj) }
 
@@ -145,10 +154,12 @@ export const avgWertProBike = () => Math.round(AUFTRAG.wert / AUFTRAG.anzahl)
 // PC-Knoten. Die frühere flache PROFITCENTER-Liste entfällt.
 
 // Kanal-Split (YTD): Online wächst & liegt über Plan, stationär bricht ein.
+// Beträge mit derselben SKALA wie die Umsatzserien normiert.
+const sk = (x) => Math.round(x * SKALA)
 export const KANAELE = [
   { id: 'gesamt',     name: 'Alle Kanäle' },
-  { id: 'online',     name: 'Online (E-Commerce)', ist: 58400000, plan: 55000000, vj: 53500000, farbe: '#2563eb' },
-  { id: 'stationaer', name: 'Stationär (Store)',   ist: 41200000, plan: 53800000, vj: 42600000, farbe: '#f59e0b' }
+  { id: 'online',     name: 'Online (E-Commerce)', ist: sk(58400000), plan: sk(55000000), vj: sk(53500000), farbe: '#2563eb' },
+  { id: 'stationaer', name: 'Stationär (Store)',   ist: sk(41200000), plan: sk(53800000), vj: sk(42600000), farbe: '#f59e0b' }
 ]
 export const kanalSplit = () => KANAELE.filter((k) => k.id !== 'gesamt').map((k) => {
   const ges = KANAELE.filter((x) => x.ist).reduce((n, x) => n + x.ist, 0)
@@ -156,14 +167,15 @@ export const kanalSplit = () => KANAELE.filter((k) => k.id !== 'gesamt').map((k)
 })
 
 // --- Internationalisierung (YTD je Land) -----------------------------------
+// Umsätze mit derselben SKALA wie die Umsatzserien normiert.
 export const LAENDER = [
-  { land: 'Deutschland',  code: 'DE',  umsatz: 62000000, wachstum: 3,  marktanteil: 14 },
-  { land: 'Niederlande',  code: 'NL',  umsatz: 9500000,  wachstum: 20, marktanteil: 8 },
-  { land: 'Schweiz',      code: 'CH',  umsatz: 8500000,  wachstum: 2,  marktanteil: 11 },
-  { land: 'Österreich',   code: 'AT',  umsatz: 7000000,  wachstum: 7,  marktanteil: 9 },
-  { land: 'Skandinavien', code: 'SCA', umsatz: 5000000,  wachstum: 25, marktanteil: 5 },
-  { land: 'Frankreich',   code: 'FR',  umsatz: 4000000,  wachstum: -8, marktanteil: 3 },
-  { land: 'Übrige EU',    code: 'EU',  umsatz: 3600000,  wachstum: 12, marktanteil: 2 }
+  { land: 'Deutschland',  code: 'DE',  umsatz: sk(62000000), wachstum: 3,  marktanteil: 14 },
+  { land: 'Niederlande',  code: 'NL',  umsatz: sk(9500000),  wachstum: 20, marktanteil: 8 },
+  { land: 'Schweiz',      code: 'CH',  umsatz: sk(8500000),  wachstum: 2,  marktanteil: 11 },
+  { land: 'Österreich',   code: 'AT',  umsatz: sk(7000000),  wachstum: 7,  marktanteil: 9 },
+  { land: 'Skandinavien', code: 'SCA', umsatz: sk(5000000),  wachstum: 25, marktanteil: 5 },
+  { land: 'Frankreich',   code: 'FR',  umsatz: sk(4000000),  wachstum: -8, marktanteil: 3 },
+  { land: 'Übrige EU',    code: 'EU',  umsatz: sk(3600000),  wachstum: 12, marktanteil: 2 }
 ]
 export function inlandAusland() {
   const inland = LAENDER.find((l) => l.code === 'DE')

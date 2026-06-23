@@ -8,6 +8,12 @@ const r0 = (x) => Math.round(x)
 const r1 = (x) => Math.round(x * 10) / 10
 
 // Kategorien: stueck/vorjahrStueck = verkaufte Räder, umsatz €, marge %, eBike true/false.
+// Normierung auf den Rad-Anteil der operativen Unternehmensgröße (~36,7 Mio €
+// Komplettrad-Umsatz, konsistent mit der Verkaufsstatistik). Quoten/Ø-Preise
+// bleiben unverändert.
+const SKALA = 36.7 / 34.8
+const sM = (v) => Math.round(v * SKALA)
+
 const KATEGORIEN = [
   { id: 'emtb', name: 'E-Mountainbike', eBike: true, stueck: 2100, vorjahrStueck: 1700, umsatz: 9450000, marge: 35 },
   { id: 'etrek', name: 'E-Trekking', eBike: true, stueck: 2600, vorjahrStueck: 2300, umsatz: 9620000, marge: 33 },
@@ -16,7 +22,7 @@ const KATEGORIEN = [
   { id: 'gravel', name: 'Gravel / Rennrad', eBike: false, stueck: 1500, vorjahrStueck: 1450, umsatz: 2700000, marge: 32 },
   { id: 'trek', name: 'Trekking / City', eBike: false, stueck: 3900, vorjahrStueck: 4200, umsatz: 2730000, marge: 28 },
   { id: 'kinder', name: 'Kinder & Jugend', eBike: false, stueck: 2600, vorjahrStueck: 2500, umsatz: 1040000, marge: 27 }
-]
+].map((k) => ({ ...k, stueck: sM(k.stueck), vorjahrStueck: sM(k.vorjahrStueck), umsatz: sM(k.umsatz) }))
 
 // Preisklassen (€): verkaufte Räder je Spanne.
 const PREISKLASSEN = [
@@ -25,7 +31,7 @@ const PREISKLASSEN = [
   { id: 'p3', name: '2.000–3.500 €', von: 2000, bis: 3500, stueck: 5400 },
   { id: 'p4', name: '3.500–5.000 €', von: 3500, bis: 5000, stueck: 1700 },
   { id: 'p5', name: 'über 5.000 €', von: 5000, bis: 99999, stueck: 500 }
-]
+].map((p) => ({ ...p, stueck: sM(p.stueck) }))
 
 const wachstum = (ist, vj) => (vj ? r1((ist - vj) / vj * 100) : 0)
 

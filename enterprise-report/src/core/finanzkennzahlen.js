@@ -10,19 +10,25 @@
 // =========================================================================
 
 // --- Datenbasis (Geschäftsjahr, Mio €) -------------------------------------
+// Normierung auf die operative Unternehmensgröße (~52 Mio € Umsatz), damit die
+// Summen berichtsübergreifend stimmig sind. Strukturkennzahlen (Quoten) sind
+// skalierungsinvariant und bleiben unverändert; nur die Absolutbeträge sinken.
+const SKALA = 52 / 205
+const scB = (x) => x * SKALA
+
 export const BILANZ = {
   // Aktiva
-  anlagevermoegen: 78.0,        // Sachanlagen 60, immateriell 8, Finanzanlagen 10
-  vorraete: 48.0,
-  forderungen: 28.0,
-  sonstigesUV: 4.0,
-  liquideMittel: 12.0,
+  anlagevermoegen: scB(78.0),        // Sachanlagen 60, immateriell 8, Finanzanlagen 10
+  vorraete: scB(48.0),
+  forderungen: scB(28.0),
+  sonstigesUV: scB(4.0),
+  liquideMittel: scB(12.0),
   // Passiva
-  eigenkapital: 59.5,
-  langfristFK: 55.0,            // Bankdarlehen 45, Pensionsrückstellungen 10
-  kurzfristFK: 55.5,            // Verb. LuL 30, kurzfr. Bank 12, sonstige 13.5
-  verbindlLuL: 30.0,
-  verzinslichesFK: 57.0         // 45 langfr. Bank + 12 kurzfr. Bank
+  eigenkapital: scB(59.5),
+  langfristFK: scB(55.0),            // Bankdarlehen 45, Pensionsrückstellungen 10
+  kurzfristFK: scB(55.5),            // Verb. LuL 30, kurzfr. Bank 12, sonstige 13.5
+  verbindlLuL: scB(30.0),
+  verzinslichesFK: scB(57.0)         // 45 langfr. Bank + 12 kurzfr. Bank
 }
 BILANZ.umlaufvermoegen = +(BILANZ.vorraete + BILANZ.forderungen + BILANZ.sonstigesUV + BILANZ.liquideMittel).toFixed(2)
 BILANZ.summe = +(BILANZ.anlagevermoegen + BILANZ.umlaufvermoegen).toFixed(2)
@@ -30,12 +36,12 @@ BILANZ.fremdkapital = +(BILANZ.langfristFK + BILANZ.kurzfristFK).toFixed(2)
 BILANZ.nettofinanzschulden = +(BILANZ.verzinslichesFK - BILANZ.liquideMittel).toFixed(2)
 
 export const GUV = {
-  umsatz: 205.0,
-  materialaufwand: 120.0,
-  personalaufwand: 45.0,
-  abschreibungen: 9.0,
-  sonstigerAufwand: 20.0,
-  zinsaufwand: 3.2,
+  umsatz: scB(205.0),
+  materialaufwand: scB(120.0),
+  personalaufwand: scB(45.0),
+  abschreibungen: scB(9.0),
+  sonstigerAufwand: scB(20.0),
+  zinsaufwand: scB(3.2),
   steuersatz: 0.30
 }
 GUV.ebit = +(GUV.umsatz - GUV.materialaufwand - GUV.personalaufwand - GUV.abschreibungen - GUV.sonstigerAufwand).toFixed(2)
@@ -45,8 +51,8 @@ GUV.steuern = +(GUV.ebt * GUV.steuersatz).toFixed(2)
 GUV.jahresueberschuss = +(GUV.ebt - GUV.steuern).toFixed(2)
 
 export const CASHFLOW = {
-  operativ: 18.0,
-  investition: -10.0
+  operativ: scB(18.0),
+  investition: scB(-10.0)
 }
 CASHFLOW.freeCashflow = +(CASHFLOW.operativ + CASHFLOW.investition).toFixed(2)
 
