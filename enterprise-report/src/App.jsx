@@ -85,6 +85,7 @@ import BerichtLogAdmin from './modules/berichtlog/BerichtLogAdmin.jsx'
 import GoogleReporting from './modules/google/GoogleReporting.jsx'
 import Datenquellen from './modules/datenquellen/Datenquellen.jsx'
 import Bestandsentwicklung from './modules/bestandsentwicklung/Bestandsentwicklung.jsx'
+import Marktpotenzial from './modules/marktpotenzial/Marktpotenzial.jsx'
 import { gesamtStand } from './core/datenstand.js'
 import { bereichVon } from './core/navMeta.js'
 import BerichtInfoModal from './modules/berichtinfo/BerichtInfoModal.jsx'
@@ -262,6 +263,7 @@ export default function App() {
       { titel: 'Vertrieb & Markt', eintraege: [
         E('marketing', 'nav.marketing', '📣'),
         E('marketingkarte', 'nav.marketingkarte', '🗺'),
+        E('marktpotenzial', 'nav.marktpotenzial', '🎯'),
         E('google', 'nav.google', '🔎'),
         E('gutschriften', 'nav.gutschriften', '🧾'),
         E('vertriebkpi', 'nav.vertriebkpi', '📈'),
@@ -594,6 +596,9 @@ export default function App() {
         )}
         {ansicht === 'bestandsentwicklung' && (
           <Bestandsentwicklung />
+        )}
+        {ansicht === 'marktpotenzial' && (
+          <Marktpotenzial />
         )}
         {ansicht === 'lzempfehlung' && (
           <LebenszyklusEmpfehlungen onGeh={geh} />
