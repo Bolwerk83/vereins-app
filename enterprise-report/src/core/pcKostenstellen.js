@@ -22,7 +22,11 @@ export const pcInfo = (id) => PROFITCENTER.find((p) => p.id === id)
 
 // Einzelkostenstellen mit Standard-Zuordnung (defaultPc) und Dimensions-
 // Attributen (kanal/land/funktion) für die alternativen Strukturen.
-const KOSTENSTELLEN = [
+// Rohwerte werden auf die operative Unternehmensgröße (~52 Mio € Erlös, wie
+// GuV-Staffel/Marketing) normiert, damit die Summen berichtsübergreifend
+// stimmig sind. SKALA ändert nur die Absolutbeträge — Anteile/Quoten (PC-Baum-
+// Faktoren) bleiben unberührt.
+const KOSTENSTELLEN_RAW = [
   // Fahrräder (Großhandel/B2B)
   { id: 'ks-we-bike', name: 'Wareneinsatz Fahrräder', gruppe: 'Material', erloes: 0, kosten: 62000, defaultPc: 'pc-bike', kanal: 'grosshandel', land: 'DE', funktion: 'beschaffung' },
   { id: 'ks-rahmen',  name: 'Rahmen-/Montagefertigung', gruppe: 'Produktion', erloes: 0, kosten: 14600, defaultPc: 'pc-bike', kanal: 'grosshandel', land: 'DE', funktion: 'produktion' },
@@ -52,6 +56,12 @@ const KOSTENSTELLEN = [
   { id: 'ks-fibu', name: 'Finanzbuchhaltung', gruppe: 'Verwaltung', erloes: 0, kosten: 1600, defaultPc: 'pc-zentral', kanal: 'zentral', land: 'zentral', funktion: 'verwaltung' },
   { id: 'ks-hr', name: 'Personal / HR', gruppe: 'Verwaltung', erloes: 0, kosten: 1800, defaultPc: 'pc-zentral', kanal: 'zentral', land: 'zentral', funktion: 'verwaltung' }
 ]
+
+// Normierung auf operative Unternehmensgröße (~52 Mio € Erlös). Auf 100 T€
+// gerundet für saubere Demo-Beträge. Quotienten/PC-Anteile bleiben gleich.
+export const SKALA = 52000 / KOSTENSTELLEN_RAW.reduce((n, k) => n + k.erloes, 0)
+const skal = (x) => Math.round(x * SKALA / 100) * 100
+const KOSTENSTELLEN = KOSTENSTELLEN_RAW.map((k) => ({ ...k, erloes: skal(k.erloes), kosten: skal(k.kosten) }))
 
 // Alternative Profit-Center-Strukturen über dieselben Kostenstellen.
 // `geschaeftsbereich` ist beweglich (manuelles Verschieben), die anderen

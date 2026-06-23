@@ -1,7 +1,8 @@
 import './_setup.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { auswertung } from '../src/core/profitcenter.js'
+import { auswertung, auswertungNach, DIMENSIONEN } from '../src/core/profitcenter.js'
+import { gesamt as pcGesamt } from '../src/core/pcKostenstellen.js'
 
 test('Ergebnis = Umsatz − variable Kosten − Fixkosten; DB korrekt', () => {
   for (const r of auswertung().rows) {
@@ -24,26 +25,27 @@ test('ROCE nur bei Investment Centern', () => {
   }
 })
 
-import { auswertungNach, CENTER, DIMENSIONEN } from '../src/core/profitcenter.js'
-
-test('auswertungNach: Gruppierung nach Region summiert Umsatz konstant', () => {
-  const proCenter = auswertungNach('name')
-  const proRegion = auswertungNach('region')
-  const proTyp = auswertungNach('typ')
-  const u = (x) => Math.round(x.umsatz * 100) / 100
-  assert.equal(u(proRegion), u(proCenter))
-  assert.equal(u(proTyp), u(proCenter))
-  // Gesamtergebnis bleibt über alle Gruppierungen gleich
-  assert.equal(Math.round(proRegion.gesamt * 100) / 100, Math.round(proCenter.gesamt * 100) / 100)
+test('DIMENSIONEN = Strukturen des PC-Baums (Geschäftsbereich/Kanal/Land)', () => {
+  assert.deepEqual(DIMENSIONEN.map((d) => d.key), ['geschaeftsbereich', 'kanal', 'land'])
 })
 
-test('auswertungNach region: DACH bündelt Filialen + Service', () => {
-  const dach = auswertungNach('region').rows.find((r) => r.id === 'DACH')
-  assert.ok(dach)
-  // Umsatz DACH = Filialen 19.2 + Service 2.6 = 21.8
-  assert.equal(Math.round(dach.umsatz * 10) / 10, 21.8)
+test('Umsatz ist über alle Gruppierungen konstant (dieselbe Datenbasis)', () => {
+  const gb = auswertungNach('geschaeftsbereich')
+  const kanal = auswertungNach('kanal')
+  const land = auswertungNach('land')
+  assert.ok(Math.abs(gb.umsatz - kanal.umsatz) < 0.05)
+  assert.ok(Math.abs(gb.umsatz - land.umsatz) < 0.05)
+  assert.ok(Math.abs(gb.gesamt - kanal.gesamt) < 0.05)
 })
 
-test('DIMENSIONEN bietet Center/Region/Typ', () => {
-  assert.deepEqual(DIMENSIONEN.map((d) => d.key), ['name', 'region', 'typ'])
+test('Einheitliche PC-Wahrheit: Summen = pcKostenstellen-Aggregat (Mio €)', () => {
+  const a = auswertung()
+  const g = pcGesamt()
+  assert.ok(Math.abs(a.umsatz - g.erloes / 1000) < 0.05)
+  assert.ok(Math.abs(a.gesamt - (g.erloes - g.kosten) / 1000) < 0.05)
+})
+
+test('Vertriebskanal-Gruppierung enthält Online & Filiale als Center', () => {
+  const ids = auswertungNach('kanal').rows.map((r) => r.id)
+  assert.ok(ids.includes('online') && ids.includes('filiale'))
 })

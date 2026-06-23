@@ -12,11 +12,11 @@ const th = (al) => ({ textAlign: al, padding: '6px 9px', borderBottom: '1px soli
 const td = (al, bold) => ({ textAlign: al, padding: '6px 9px', borderBottom: '1px solid var(--line)', fontWeight: bold ? 700 : 400 })
 
 export default function Profitcenter({ onGeh }) {
-  const [dim, setDim] = useState('name')
+  const [dim, setDim] = useState('geschaeftsbereich')
   const a = auswertungNach(dim)
   const maxAbs = Math.max(...a.rows.map((r) => Math.abs(r.ergebnis)), 1)
   const dimName = DIMENSIONEN.find((d) => d.key === dim)?.name || 'Center'
-  const zeigeTyp = dim === 'name'
+  const zeigeTyp = dim === 'geschaeftsbereich'
 
   return (
     <div style={{ maxWidth: '100%', margin: '0 auto' }}>
