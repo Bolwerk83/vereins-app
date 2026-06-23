@@ -6996,6 +6996,83 @@ function TrainerGuide({ onClose, cl }){
   );
 }
 
+// Mannschaftskasse: Beiträge, Strafen, Einnahmen/Ausgaben mit laufendem Saldo.
+function CashbookTab({ data, myTids, save, fire, cl }){
+  const t=TH(cl);
+  const teams=(data.teams||[]).filter(tm=>myTids.includes(tm.id));
+  const [tid,setTid]=useState(teams[0]?.id||"");
+  const cid=teams.find(x=>x.id===tid)?.cid;
+  const entries=(data.cashbook||[]).filter(e=>e.tid===tid).sort((a,b)=>String(b.date||"").localeCompare(String(a.date||""))||String(b.ts||"").localeCompare(String(a.ts||"")));
+  const players=(data.playerProfiles||[]).filter(p=>p.mainTid===tid&&!p.archived).map(p=>p.name).sort((a,b)=>a.localeCompare(b));
+  const KINDS=[["strafe","Strafe","#d97706"],["beitrag","Beitrag","#16a34a"],["einnahme","Einnahme","#2563eb"],["ausgabe","Ausgabe","#dc2626"]];
+  const kindConf=k=>KINDS.find(x=>x[0]===k)||KINDS[0];
+  const [kind,setKind]=useState("strafe");
+  const [amount,setAmount]=useState("");
+  const [player,setPlayer]=useState("");
+  const [note,setNote]=useState("");
+  const [date,setDate]=useState(now());
+  const sign=k=>k==="ausgabe"?-1:1;
+  const balance=entries.reduce((s,e)=>s+sign(e.kind)*(Number(e.amount)||0),0);
+  const finesByPlayer={}; entries.filter(e=>e.kind==="strafe"&&e.player).forEach(e=>{finesByPlayer[e.player]=(finesByPlayer[e.player]||0)+(Number(e.amount)||0);});
+  const fineList=Object.entries(finesByPlayer).sort((a,b)=>b[1]-a[1]);
+  const eur=n=>(Number(n)||0).toLocaleString("de-DE",{style:"currency",currency:"EUR"});
+  const withPlayer=kind==="beitrag"||kind==="strafe";
+  const add=()=>{ const amt=Number(String(amount).replace(",","."))||0; if(amt<=0){fire&&fire("Bitte Betrag eingeben");return;}
+    const entry={id:uid(),cid,tid,date,kind,amount:Math.round(amt*100)/100,player:withPlayer?(player||""):"",note:note.trim(),ts:new Date().toISOString()};
+    save({...data,cashbook:[...(data.cashbook||[]),entry]}); setAmount("");setNote("");setPlayer(""); fire&&fire("Eintrag gespeichert");
+  };
+  const del=id=>{ if(typeof window!=="undefined"&&window.confirm&&!window.confirm("Eintrag löschen?"))return; save({...data,cashbook:(data.cashbook||[]).filter(e=>e.id!==id)}); fire&&fire("Eintrag gelöscht"); };
+  const inp={padding:"10px 12px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",fontFamily:"inherit",boxSizing:"border-box",width:"100%"};
+  if(teams.length===0) return <p style={{color:"#94a3b8",fontSize:13,padding:20}}>Keine Mannschaft.</p>;
+  return (
+    <div>
+      {teams.length>1&&<div style={{display:"flex",gap:6,marginBottom:14,overflowX:"auto",scrollbarWidth:"none"}}>
+        {teams.map(tm=>(<button key={tm.id} onClick={()=>setTid(tm.id)} style={{padding:"7px 13px",borderRadius:99,border:`2px solid ${tid===tm.id?tm.col:"#e2e8f0"}`,background:tid===tm.id?tm.col:"#fff",color:tid===tm.id?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit",flexShrink:0}}>{tm.name}</button>))}
+      </div>}
+      <div style={{background:balance>=0?"#f0fdf4":"#fef2f2",border:`1.5px solid ${balance>=0?"#bbf7d0":"#fecaca"}`,borderRadius:16,padding:"16px",marginBottom:14,textAlign:"center"}}>
+        <div style={{fontSize:12,fontWeight:700,color:"#64748b",letterSpacing:.4}}>KASSENSTAND</div>
+        <div style={{fontWeight:900,fontSize:30,color:balance>=0?"#15803d":"#dc2626",marginTop:2}}>{eur(balance)}</div>
+        <div style={{fontSize:11.5,color:"#94a3b8",marginTop:3}}>{entries.length} Buchungen</div>
+      </div>
+      <div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:14,padding:"13px",marginBottom:14}}>
+        <div style={{fontWeight:800,fontSize:14,color:"#0f172a",marginBottom:9}}>Neue Buchung</div>
+        <div style={{display:"flex",gap:6,marginBottom:9,flexWrap:"wrap"}}>
+          {KINDS.map(([k,l,c])=>(<button key={k} onClick={()=>setKind(k)} style={{flex:"1 0 auto",padding:"7px 12px",borderRadius:99,border:`1.5px solid ${kind===k?c:"#e2e8f0"}`,background:kind===k?c+"15":"#fff",color:kind===k?c:"#64748b",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>))}
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+          <input value={amount} onChange={e=>setAmount(e.target.value)} inputMode="decimal" placeholder="Betrag €" style={inp}/>
+          <input value={date} onChange={e=>setDate(e.target.value)} type="date" style={inp}/>
+        </div>
+        {withPlayer&&<select value={player} onChange={e=>setPlayer(e.target.value)} style={{...inp,marginBottom:8}}>
+          <option value="">{kind==="strafe"?"Spieler (wer zahlt)":"Spieler (optional)"}</option>
+          {players.map(n=><option key={n} value={n}>{n}</option>)}
+        </select>}
+        <input value={note} onChange={e=>setNote(e.target.value)} placeholder={kind==="strafe"?"Grund (z.B. zu spät)":"Notiz (optional)"} style={{...inp,marginBottom:10}}/>
+        <button onClick={add} style={{width:"100%",padding:"11px",borderRadius:11,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>+ Buchung speichern</button>
+      </div>
+      {fineList.length>0&&<div style={{background:"#fff",border:"1.5px solid #fed7aa",borderRadius:14,padding:"12px 14px",marginBottom:14}}>
+        <div style={{fontWeight:800,fontSize:13,color:"#9a3412",marginBottom:8}}>Strafen je Spieler</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+          {fineList.map(([n,sum])=>(<span key={n} style={{background:"#fff7ed",border:"1px solid #fed7aa",borderRadius:99,padding:"4px 11px",fontSize:12.5,fontWeight:700,color:"#9a3412"}}>{n}: {eur(sum)}</span>))}
+        </div>
+      </div>}
+      <div style={{display:"flex",flexDirection:"column",gap:7}}>
+        {entries.length===0&&<p style={{fontSize:13,color:"#94a3b8",textAlign:"center",padding:"20px"}}>Noch keine Buchungen.</p>}
+        {entries.map(e=>{ const c=kindConf(e.kind); return (
+          <div key={e.id} style={{display:"flex",alignItems:"center",gap:10,background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"10px 12px"}}>
+            <span style={{width:8,height:8,borderRadius:"50%",background:c[2],flexShrink:0}}/>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:13,fontWeight:700,color:"#0f172a"}}>{c[1]}{e.player?` · ${e.player}`:""}</div>
+              <div style={{fontSize:11,color:"#94a3b8"}}>{fmtD(e.date)}{e.note?` · ${e.note}`:""}</div>
+            </div>
+            <span style={{fontWeight:800,fontSize:14,color:c[2]}}>{sign(e.kind)<0?"−":"+"}{eur(e.amount)}</span>
+            <button onClick={()=>del(e.id)} style={{width:24,height:24,borderRadius:7,background:"#fee2e2",border:"none",color:"#dc2626",cursor:"pointer",fontWeight:800,fontSize:12,flexShrink:0}}>×</button>
+          </div>
+        );})}
+      </div>
+    </div>
+  );
+}
 function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false, initialSubTab }) {
   const [subTab, setSubTab] = useState(initialSubTab || "players"); // players | attendance | stats
   const t = TH(cl);
@@ -7010,6 +7087,7 @@ function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false, initial
     { id:"attendance", label:"Anwesenheit", icon:"S" },
     { id:"insights",   label:"🧠 Insights", icon:"I" },
     { id:"results",    label:"Ergebnisse",  icon:"E" },
+    { id:"kasse",      label:"💰 Kasse",    icon:"K" },
     { id:"analysis",   label:"Analyse",     icon:"A" },
     { id:"ziele",      label:"Ziele",       icon:"Z" },
     { id:"drills",     label:"Übungen",     icon:"U" },
@@ -7045,6 +7123,7 @@ function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false, initial
       {subTab==="players"    && <PlayersTab    data={data} myTids={myTids} save={save} fire={fire} cl={cl} session={session}/>}
       {subTab==="attendance" && <AttendanceTab data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
       {subTab==="results"    && <LeagueTab     data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
+      {subTab==="kasse"      && <CashbookTab   data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
       {subTab==="insights"   && <TeamInsights data={data} myTids={myTids} cl={cl}/>}
       {subTab==="analysis"   && <TeamSkillAnalysis data={data} myTids={myTids} cl={cl}/>}
       {subTab==="ziele"      && <TrainerTrainingZiele data={data} cid={cl?.id} myTids={myTids} save={save} fire={fire} cl={cl}/>}
