@@ -84,6 +84,7 @@ import KiBuilder from './modules/ki-builder/KiBuilder.jsx'
 import BerichtLogAdmin from './modules/berichtlog/BerichtLogAdmin.jsx'
 import GoogleReporting from './modules/google/GoogleReporting.jsx'
 import Datenquellen from './modules/datenquellen/Datenquellen.jsx'
+import Bestandsentwicklung from './modules/bestandsentwicklung/Bestandsentwicklung.jsx'
 import { gesamtStand } from './core/datenstand.js'
 import { bereichVon } from './core/navMeta.js'
 import BerichtInfoModal from './modules/berichtinfo/BerichtInfoModal.jsx'
@@ -269,6 +270,7 @@ export default function App() {
       ] },
       { titel: 'Bestand & Beschaffung', eintraege: [
         E('lager', 'nav.lager', '🏬'),
+        E('bestandsentwicklung', 'nav.bestandsentwicklung', '📉'),
         E('produktion', 'nav.produktion', '🏭'),
         E('wms', 'nav.wms', '🗄'),
         E('bestand', 'nav.bestand', '📦'),
@@ -589,6 +591,9 @@ export default function App() {
         )}
         {ansicht === 'datenquellen' && (
           <Datenquellen />
+        )}
+        {ansicht === 'bestandsentwicklung' && (
+          <Bestandsentwicklung />
         )}
         {ansicht === 'lzempfehlung' && (
           <LebenszyklusEmpfehlungen onGeh={geh} />
