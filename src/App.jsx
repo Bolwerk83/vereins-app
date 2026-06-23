@@ -29981,7 +29981,7 @@ const LINEUP_SHAPE={3:{T:0,A:1,M:1,S:1},4:{T:1,A:1,M:1,S:1},5:{T:1,A:2,M:1,S:1},
 const lineupProfByName=(name,profiles)=>(profiles||[]).find(x=>(x.name||"").toLowerCase()===String(name).toLowerCase())||null;
 // KI-Vorschlag: Formation aus der Teilnehmerzahl, Besetzung nach Position + Stärken,
 // Bank für Überzählige, Chemie-Auswertung (wer spielt oft zusammen) aus der Historie.
-function recommendLineup(present, profiles, pastLineups){
+function recommendLineup(present, profiles, pastLineups, friendWeight=1){
   const names=(present||[]).slice(); const n=names.length;
   const shape=LINEUP_SHAPE[Math.max(3,Math.min(11,n))]||LINEUP_SHAPE[11];
   const sk=(p,a)=>{const v=p?.skills?.[a];return typeof v==="number"&&v>0?v:3;};
@@ -30007,7 +30007,7 @@ function recommendLineup(present, profiles, pastLineups){
   // Linien Slot für Slot füllen: natürliche Position (Bonus) + Stärken-Fit + Freundes-Bonus.
   const fillLine=line=>{ let need=shape[line]||0;
     while(need-->0){
-      const best=names.filter(nm=>!assigned.has(nm)).map(nm=>({nm, s:fit[line](pr(nm)) + (posRe[line].test(posOf(nm))?6:0) + friendBonus(nm,line)}))
+      const best=names.filter(nm=>!assigned.has(nm)).map(nm=>({nm, s:fit[line](pr(nm)) + (posRe[line].test(posOf(nm))?6:0) + friendBonus(nm,line)*friendWeight}))
         .sort((a,b)=>b.s-a.s)[0];
       if(!best) break; lineup[line].push(best.nm); assigned.add(best.nm);
     } };
@@ -30029,25 +30029,34 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
   const placed = [...(lu.T||[]),...(lu.A||[]),...(lu.M||[]),...(lu.S||[])];
   const bench = (present||[]).filter(n=>!placed.includes(n));
   const [tip,setTip]=useState(null);
+  const [friendW,setFriendW]=useState(1);   // 0=aus, 1=normal, 2=stark – pro Aufstellung wählbar
   const topStrength=name=>{const p=lineupProfByName(name,profiles);if(!p?.skills)return"";const e=Object.entries(p.skills).filter(([,v])=>typeof v==="number"&&v>0).sort((a,b)=>b[1]-a[1])[0];return e?`Stärke: ${e[0]} ${e[1]}/5`:"";};
   if(placed.length===0 && !canEdit) return null;
   const place = (name, line) => { const next={T:[...(lu.T||[])],A:[...(lu.A||[])],M:[...(lu.M||[])],S:[...(lu.S||[])]}; for(const k of ["T","A","M","S"]) next[k]=next[k].filter(x=>x!==name); next[line]=[...next[line],name]; onChange&&onChange(next); };
   const remove = (name) => { const next={T:(lu.T||[]).filter(x=>x!==name),A:(lu.A||[]).filter(x=>x!==name),M:(lu.M||[]).filter(x=>x!==name),S:(lu.S||[]).filter(x=>x!==name)}; onChange&&onChange(next); };
   const lineColors={T:"#d97706",A:"#2563eb",M:"#16a34a",S:"#dc2626"};
   // KI-Vorschlag: Formation nach Teilnehmerzahl + Besetzung nach Position/Stärken.
-  const autoFill = () => { const rec=recommendLineup(present,profiles,pastLineups); onChange&&onChange(rec.lineup); setTip(rec); };
+  const autoFill = () => { const rec=recommendLineup(present,profiles,pastLineups,friendW); onChange&&onChange(rec.lineup); setTip({...rec,friendW}); };
   return (
     <div style={{marginTop:14,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
         <span style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>Aufstellung <span style={{fontWeight:600,fontSize:12,color:"#94a3b8"}}>({placed.length})</span></span>
         {canEdit&&(present||[]).length>0&&<button onClick={autoFill} style={{marginLeft:"auto",padding:"6px 12px",borderRadius:9,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>🤖 Vorschlag</button>}
       </div>
+      {canEdit&&(present||[]).length>0&&(
+        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10,flexWrap:"wrap"}}>
+          <span style={{fontSize:11,fontWeight:700,color:"#64748b"}}>👫 Freunde gewichten:</span>
+          {[[0,"Aus"],[1,"Normal"],[2,"Stark"]].map(([v,l])=>(
+            <button key={v} onClick={()=>setFriendW(v)} style={{padding:"4px 11px",borderRadius:99,border:`1.5px solid ${friendW===v?"#16a34a":"#e2e8f0"}`,background:friendW===v?"#16a34a14":"#fff",color:friendW===v?"#15803d":"#64748b",fontWeight:700,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
+          ))}
+        </div>
+      )}
       {canEdit&&tip&&(
         <div style={{background:"#eef2ff",border:"1.5px solid #c7d2fe",borderRadius:12,padding:"9px 12px",marginBottom:10,fontSize:12,color:"#3730a3",lineHeight:1.5}}>
           <b>🤖 Für {tip.count} Spieler:</b> Formation <b>{tip.formation||"—"}</b>{tip.lineup.T.length?" (mit Torwart)":""}{tip.bench.length?` · ${tip.bench.length} auf der Bank`:""}.
           {tip.pairs.length>0&&<div style={{marginTop:3}}>🤝 Eingespielt: {tip.pairs.map(p=>`${p.a.split(" ")[0]} & ${p.b.split(" ")[0]} (${p.c}×)`).join(", ")}</div>}
-          {tip.friends&&tip.friends.length>0&&<div style={{marginTop:3}}>👫 Freunde: {tip.friends.map(f=>`${f.a.split(" ")[0]} & ${f.b.split(" ")[0]}${f.together?"":" (getrennt)"}`).join(", ")}</div>}
-          <div style={{marginTop:3,color:"#6366f1"}}>Besetzung nach Position, Stärken & Freundschaften – frei anpassbar (× entfernen, von der Bank zuordnen).</div>
+          {tip.friendW>0&&tip.friends&&tip.friends.length>0&&<div style={{marginTop:3}}>👫 Freunde{tip.friendW===2?" (stark)":""}: {tip.friends.map(f=>`${f.a.split(" ")[0]} & ${f.b.split(" ")[0]}${f.together?"":" (getrennt)"}`).join(", ")}</div>}
+          <div style={{marginTop:3,color:"#6366f1"}}>Besetzung nach Position, Stärken{tip.friendW>0?" & Freundschaften":""} – frei anpassbar (× entfernen, von der Bank zuordnen).</div>
         </div>
       )}
       {onPubChange&&(
