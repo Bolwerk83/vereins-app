@@ -106,25 +106,31 @@ function hasVoted(v: any): boolean {
   return true;
 }
 
-async function loadEvents(): Promise<Ev[]> {
+type HelperEntry = { name: string, tids: string[] };
+async function loadAll(): Promise<{ events: Ev[], helpersByCid: Record<string, HelperEntry[]> }> {
   const { data } = await admin
     .from("app_data")
     .select("key, value")
     .like("key", `${SK}__club_%`);
   const out: Ev[] = [];
+  const helpersByCid: Record<string, HelperEntry[]> = {};
   for (const row of data || []) {
     const value: any = row.value;
     const cid = String(row.key).slice((SK + "__club_").length);
     const evs: any[] = Array.isArray(value?.events) ? value.events : [];
     for (const e of evs) out.push({ ...e, cid: e.cid || cid });
+    const hs: any[] = Array.isArray(value?.helpers) ? value.helpers : [];
+    helpersByCid[cid] = hs
+      .map((h: any) => ({ name: String(h?.name || "").toLowerCase(), tids: Array.isArray(h?.tids) ? h.tids : [] }))
+      .filter((h: HelperEntry) => h.name);
   }
-  return out;
+  return { events: out, helpersByCid };
 }
 
 // --- Modus "cron" -------------------------------------------
 async function runCron(): Promise<Response> {
   const today = berlinISO();
-  const allEvents = await loadEvents();
+  const { events: allEvents, helpersByCid } = await loadAll();
   const { data: subs } = await admin
     .from("push_subscriptions")
     .select("*")
@@ -162,6 +168,36 @@ async function runCron(): Promise<Response> {
           body: quoteFor(ev.id),
           tag: `morn_${ev.id}`,
           url: `/?event=${ev.id}`, icon: "/icon-192.png",
+        });
+        if (ok) sent++; if (g) gone.push(sub.endpoint);
+      }
+    }
+    // c) Betreuer gesucht: nur an Vereins-Helfer (ueber cid, fuer ihre Teams),
+    //    wenn ein Training heute/morgen den Soll-Betreuerwert nicht erreicht.
+    const helperEntry = (helpersByCid[sub.cid || ""] || []).find(h => h.name === String(sub.player_name || "").toLowerCase());
+    if (helperEntry && !(sub.disabled_types || []).includes("training")) {
+      for (const ev of allEvents) {
+        if (ev.cid !== sub.cid || ev.type !== "training") continue;
+        if (helperEntry.tids.length && ev.tid && !helperEntry.tids.includes(ev.tid)) continue;
+        if ((sub.muted_events || []).includes(ev.id)) continue;
+        const diff = daysBetween(today, ev.date);
+        if (diff < 0 || diff > 1) continue;
+        const e: any = ev;
+        const yesC = Object.values(e.votes || {}).filter((v: any) => isAttending(v)).length;
+        const size = yesC || e.sollPlayers || 7;
+        const target = e.staffTarget || (size > 10 ? 3 : 2);
+        const tc = Object.keys(e.trainerPresence || {}).length;
+        const offers: any[] = Array.isArray(e.helperOffers) ? e.helperOffers : [];
+        const ist = tc + Math.min(offers.length, Math.max(0, target - tc));
+        const mine = offers.some((o: any) => String(o?.name || "").toLowerCase() === helperEntry.name);
+        if (ist >= target || mine) continue;
+        const need = target - ist;
+        const { ok, gone: g } = await send(sub, {
+          title: `Betreuer gesucht: ${e.title || "Training"}`,
+          body: `${diff === 0 ? "Heute" : "Morgen"}${e.time ? " " + e.time : ""}: noch ${need} Betreuer fehlen. Kannst du einspringen?`,
+          tag: `staff_${e.id}`,
+          url: `/?event=${e.id}`, icon: "/icon-192.png",
+          requireInteraction: true,
         });
         if (ok) sent++; if (g) gone.push(sub.endpoint);
       }
