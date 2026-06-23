@@ -5,7 +5,7 @@
 //  Auswahl wird je Bericht in localStorage gemerkt.
 // =========================================================================
 import React from 'react'
-import { ZEITRAEUME, PROFITCENTER, datumsartenFuer } from '../../core/statistikFilter.js'
+import { ZEITRAEUME, pcBaum, datumsartenFuer } from '../../core/statistikFilter.js'
 
 const cap = { fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700 }
 const sel = { padding: '5px 8px', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', background: 'var(--panel)', color: 'var(--ink)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }
@@ -35,9 +35,14 @@ export default function StatistikFilter({ bereich, wert, onChange }) {
         </select>
       </label>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-        <span style={cap}>Profit-Center</span>
+        <span style={cap}>Profit-Center (inkl. Kanal)</span>
         <select style={sel} value={wert.pc} onChange={(e) => set('pc', e.target.value)}>
-          {PROFITCENTER.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          <option value="alle">Gesamtunternehmen</option>
+          {pcBaum().map((gr) => (
+            <optgroup key={gr.id} label={gr.name}>
+              {gr.knoten.map((k) => <option key={k.id} value={k.id}>{k.name}</option>)}
+            </optgroup>
+          ))}
         </select>
       </label>
       <span style={{ fontSize: 11, color: 'var(--muted)', marginLeft: 'auto', maxWidth: 240, lineHeight: 1.4 }}>

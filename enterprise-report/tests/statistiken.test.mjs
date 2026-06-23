@@ -56,13 +56,32 @@ test('Filter: Gesamtjahr = 100 %, Quartale summieren auf, Profit-Center skaliert
   const qSum = ['q1', 'q2', 'q3', 'q4'].reduce((n, q) => n + sf.zeitraumAnteil(q), 0)
   assert.ok(Math.abs(qSum - 1) < 0.01)
   assert.ok(Math.abs(sf.zeitraumAnteil('h1') + sf.zeitraumAnteil('h2') - 1) < 0.01)
-  // Profit-Center halbiert grob die absoluten Werte
+  // Profit-Center skaliert absolute Werte mit seinem (aus der PC-Struktur
+  // abgeleiteten) Anteil; Verhältniskennzahlen bleiben gleich.
   const voll = vk.kennzahlen(sf.faktor('jahr', 'alle'))
   const ecom = vk.kennzahlen(sf.faktor('jahr', 'pc-ecom'))
   assert.ok(ecom.umsatz < voll.umsatz)
-  assert.ok(Math.abs(ecom.umsatz / voll.umsatz - 0.586) < 0.02)
-  // Ratios (DB-%) bleiben unter Skalierung gleich
+  assert.ok(Math.abs(ecom.umsatz / voll.umsatz - sf.pcFaktor('pc-ecom')) < 0.01)
   assert.equal(voll.dbProzent, ecom.dbProzent)
+})
+
+test('Profit-Center-Baum: Kanäle sind PC-Knoten (keine separate Dimension)', () => {
+  const baum = sf.pcBaum()
+  const struktur = baum.map((g) => g.id)
+  assert.ok(struktur.includes('geschaeftsbereich') && struktur.includes('kanal') && struktur.includes('land'))
+  // Vertriebskanal-Knoten existiert und ist über den Baum filterbar
+  const kanalGruppe = baum.find((g) => g.id === 'kanal')
+  assert.ok(kanalGruppe.knoten.some((k) => k.id === 'kanal:online'))
+  assert.ok(sf.pcFaktor('kanal:online') > 0 && sf.pcFaktor('kanal:online') < 1)
+  assert.equal(sf.pcName('kanal:online'), 'Online')
+  // Summe der Geschäftsbereich-Anteile ≈ 1 (vollständige Zerlegung)
+  const gb = baum.find((g) => g.id === 'geschaeftsbereich')
+  const sum = gb.knoten.reduce((n, k) => n + k.faktor, 0)
+  assert.ok(Math.abs(sum - 1) < 0.02)
+  // Filtern auf einen Kanal skaliert die Statistik
+  const online = ek.kennzahlen(sf.faktor('jahr', 'kanal:online'))
+  const alle = ek.kennzahlen(sf.faktor('jahr', 'alle'))
+  assert.ok(online.volumen < alle.volumen)
 })
 
 test('Zeitdimension: Lieferdatum verschiebt Quartalsanteile & senkt Jahresvolumen', () => {

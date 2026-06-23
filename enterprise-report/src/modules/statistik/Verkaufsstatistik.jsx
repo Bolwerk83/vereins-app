@@ -3,8 +3,8 @@
 //  Warengruppe (mit VJ & DB), Top-Artikel, Vertriebskanal, Monatsverlauf.
 // =========================================================================
 import React, { useState } from 'react'
-import { warengruppen, topArtikel, kanaele, verlauf, kennzahlen } from '../../core/verkaufsstatistik.js'
-import { monateVon, faktor, pcFaktor, datumsartInfo, filterLabel } from '../../core/statistikFilter.js'
+import { warengruppen, topArtikel, verlauf, kennzahlen } from '../../core/verkaufsstatistik.js'
+import { monateVon, faktor, pcFaktor, datumsartInfo, filterLabel, pcBaum } from '../../core/statistikFilter.js'
 import StatistikFilter, { ladeFilter, speichereFilter } from './StatistikFilter.jsx'
 import { datenstandText } from '../../core/datenstand.js'
 
@@ -40,7 +40,7 @@ export default function Verkaufsstatistik() {
   const dat = datumsartInfo('verkauf', f.datumsart)
   const fk = faktor(f.zeitraum, f.pc, dat)
   const vlFaktor = pcFaktor(f.pc) * dat.mag
-  const k = kennzahlen(fk); const wg = warengruppen(fk); const art = topArtikel(7, fk); const kan = kanaele(fk); const vl = verlauf(monateVon(f.zeitraum), vlFaktor)
+  const k = kennzahlen(fk); const wg = warengruppen(fk); const art = topArtikel(7, fk); const vl = verlauf(monateVon(f.zeitraum), vlFaktor)
   return (
     <div style={{ maxWidth: 1080, margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
@@ -112,18 +112,29 @@ export default function Verkaufsstatistik() {
           </table>
         </div>
         <div style={{ ...card, overflow: 'hidden' }}>
-          <div style={{ ...cap, padding: '12px 14px 6px' }}>Vertriebskanäle</div>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <tbody>
-              {kan.map((c) => (
-                <tr key={c.id} style={{ borderBottom: '1px solid var(--line)' }}>
-                  <td style={{ ...td }}><div style={{ fontWeight: 600 }}>{c.name}</div><div style={{ fontSize: 11, color: 'var(--muted)' }}>{stk(c.auftraege)} Aufträge · Ø Bon {eur(c.avgBon)}</div></td>
-                  <td style={{ ...td, textAlign: 'right' }} className="mono">{mio(c.umsatz)}<div style={{ fontSize: 11 }}><Wachs v={c.wachstumPct} /></div></td>
-                  <td style={{ ...td, textAlign: 'right', width: 52 }} className="mono">{c.anteilPct} %</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div style={{ ...cap, padding: '12px 14px 6px' }}>Profit-Center · Geschäftsbereich & Kanal</div>
+          {pcBaum().filter((g) => g.id === 'geschaeftsbereich' || g.id === 'kanal').map((g) => (
+            <div key={g.id}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', padding: '8px 14px 2px', textTransform: 'uppercase', letterSpacing: '.03em' }}>{g.id === 'kanal' ? 'Vertriebskanal' : 'Geschäftsbereich'}</div>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <tbody>
+                  {g.knoten.map((kn) => (
+                    <tr key={kn.id} style={{ borderBottom: '1px solid var(--line)' }}>
+                      <td style={{ ...td }}>{kn.name}</td>
+                      <td style={{ ...td, textAlign: 'right' }} className="mono">{mio(k.umsatz * kn.faktor)}</td>
+                      <td style={{ ...td, textAlign: 'right', width: 56 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
+                          <div style={{ width: 40, height: 6, background: 'var(--line)', borderRadius: 999, overflow: 'hidden' }}><div style={{ width: (kn.faktor * 100) + '%', height: '100%', background: 'var(--accent)' }} /></div>
+                          <span className="mono" style={{ width: 38, textAlign: 'right' }}>{Math.round(kn.faktor * 1000) / 10} %</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ))}
+          <div style={{ fontSize: 10.5, color: 'var(--muted)', padding: '8px 14px 12px' }}>Kanäle sind Teil des Profit-Center-Baums — derselbe Filter oben deckt beide Sichten ab.</div>
         </div>
       </div>
       <div style={{ fontSize: 11, color: 'var(--muted)', textAlign: 'center', padding: '14px 0 20px' }}>Demo-Daten (Mock). Umsatz netto; DB-Marge = Deckungsbeitrag I.</div>

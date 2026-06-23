@@ -1,10 +1,14 @@
 // =========================================================================
-//  STATISTIK-FILTER — gemeinsamer Zeitraum- & Profit-Center-Filter für die
-//  Statistik-Berichte (Verkauf, Fahrrad, Einkauf, Produktion), analog zum
-//  Quartalsbericht. Zeitraum wirkt über Saison-Monatsgewichte als Anteil am
-//  Jahr; Profit-Center als Anteilsfaktor. Absolute Werte (€, Stück) werden
-//  skaliert; Verhältnis-/Durchschnittskennzahlen bleiben unverändert.
+//  STATISTIK-FILTER — gemeinsamer Zeitraum-, Zeitdimensions- & Profit-Center-
+//  Filter für die Statistik-Berichte. Das Profit-Center wird als BAUM aus der
+//  echten PC-Struktur (pcKostenstellen) geführt — inkl. des Vertriebskanal-
+//  Zweigs; eine separate „Kanäle"-Dimension entfällt, Kanäle sind PC-Knoten.
+//  Zeitraum wirkt über Saison-Monatsgewichte; Profit-Center & Zeitdimension
+//  als Anteils-/Magnitude-Faktor. Absolute Werte (€, Stück) werden skaliert;
+//  Verhältnis-/Durchschnittskennzahlen bleiben unverändert.
 // =========================================================================
+import { STRUKTUREN, gruppiereNach, gesamt as pcGesamt } from './pcKostenstellen.js'
+
 export const MONATE = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']
 
 // Saisongewichte des Fahrradgeschäfts (Frühjahr/Sommer stark), Summe = 1.
@@ -62,15 +66,36 @@ export function datumsartInfo(bereich, id) {
   return liste.find((d) => d.id === id) || liste.find((d) => d.shift === 0) || liste[0]
 }
 
-// Profit-Center als Anteilsfaktor (wie Quartalsbericht).
-export const PROFITCENTER = [
-  { id: 'alle', name: 'Gesamtunternehmen', faktor: 1 },
-  { id: 'pc-bike', name: 'PC Fahrräder', faktor: 0.69 },
-  { id: 'pc-tbz', name: 'PC Teile/Zubehör', faktor: 0.31 },
-  { id: 'pc-ecom', name: 'PC E-Commerce', faktor: 0.586 },
-  { id: 'pc-store', name: 'PC Stationär', faktor: 0.414 }
-]
-export const pcFaktor = (id) => (PROFITCENTER.find((p) => p.id === id) || PROFITCENTER[0]).faktor
+// --- Profit-Center-Baum -----------------------------------------------------
+// Statt einer parallelen „Kanäle"-Dimension liefert der PC-Baum die wählbaren
+// Knoten direkt aus der PC-Struktur: Geschäftsbereich, Vertriebskanal und
+// Land/Region. Anteilsfaktoren werden aus den Erlösen der PC-Struktur
+// abgeleitet (gruppiereNach), damit Filter und PC-Baum dieselbe Wahrheit haben.
+const FILTER_STRUKTUREN = ['geschaeftsbereich', 'kanal', 'land']
+const knotenId = (sid, gid) => (sid === 'geschaeftsbereich' ? gid : `${sid}:${gid}`)
+
+/** PC-Baum als Gruppen (Struktur) mit Knoten {id, name, faktor}. */
+export function pcBaum() {
+  const ges = pcGesamt().erloes || 1
+  return FILTER_STRUKTUREN.map((sid) => {
+    const s = STRUKTUREN.find((x) => x.id === sid) || { id: sid, name: sid }
+    const knoten = gruppiereNach(sid).filter((g) => g.erloes > 0).map((g) => ({
+      id: knotenId(sid, g.id), name: g.name, faktor: Math.round(g.erloes / ges * 1000) / 1000
+    }))
+    return { id: sid, name: s.name, knoten }
+  })
+}
+function faktorMap() {
+  const m = { alle: 1 }
+  for (const gr of pcBaum()) for (const k of gr.knoten) m[k.id] = k.faktor
+  return m
+}
+export const pcFaktor = (id) => { const f = faktorMap()[id]; return f == null ? 1 : f }
+export function pcName(id) {
+  if (id === 'alle' || id == null) return 'Gesamtunternehmen'
+  for (const gr of pcBaum()) { const k = gr.knoten.find((x) => x.id === id); if (k) return k.name }
+  return id
+}
 
 /** Gesamt-Skalierungsfaktor für absolute Werte (Zeitraum × Profit-Center ×
  *  Zeitdimension-Magnitude). `dat` ist ein Datumsart-Objekt {shift, mag}. */
@@ -78,6 +103,6 @@ export function faktor(zeitraumId = 'jahr', pcId = 'alle', dat = null) {
   return zeitraumAnteil(zeitraumId, dat?.shift || 0) * pcFaktor(pcId) * (dat?.mag || 1)
 }
 export function filterLabel(zeitraumId, pcId) {
-  const z = zeitraumVon(zeitraumId); const p = PROFITCENTER.find((x) => x.id === pcId) || PROFITCENTER[0]
-  return p.id === 'alle' ? z.name : `${z.name} · ${p.name}`
+  const z = zeitraumVon(zeitraumId)
+  return !pcId || pcId === 'alle' ? z.name : `${z.name} · ${pcName(pcId)}`
 }
