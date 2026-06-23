@@ -17,6 +17,7 @@ const VAPID_PUB    = Deno.env.get("VAPID_PUBLIC_KEY")!;
 const VAPID_PRIV   = Deno.env.get("VAPID_PRIVATE_KEY")!;
 const VAPID_EMAIL  = Deno.env.get("VAPID_EMAIL") || "mailto:admin@example.com";
 const SK           = Deno.env.get("APP_DATA_KEY") || "vereinsapp_v14";
+const STAFF_LEAD_HOURS = Number(Deno.env.get("STAFF_LEAD_HOURS") || "8"); // Helfer-Anfrage so viele Stunden vor Trainingsbeginn
 
 webpush.setVapidDetails(VAPID_EMAIL, VAPID_PUB, VAPID_PRIV);
 const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
@@ -182,6 +183,14 @@ async function runCron(): Promise<Response> {
         if ((sub.muted_events || []).includes(ev.id)) continue;
         const diff = daysBetween(today, ev.date);
         if (diff < 0 || diff > 1) continue;
+        // Nur kurz vor Beginn anpingen: bis STAFF_LEAD_HOURS vorher (bei bekannter Uhrzeit).
+        let withinLead = diff === 0;
+        if (ev.time) {
+          const startMs = new Date(`${ev.date}T${ev.time}:00+02:00`).getTime();
+          const h = (startMs - Date.now()) / 3600000;
+          withinLead = h > -1 && h <= STAFF_LEAD_HOURS;
+        }
+        if (!withinLead) continue;
         const e: any = ev;
         const yesC = Object.values(e.votes || {}).filter((v: any) => isAttending(v)).length;
         const size = yesC || e.sollPlayers || 7;
@@ -194,7 +203,7 @@ async function runCron(): Promise<Response> {
         const need = target - ist;
         const { ok, gone: g } = await send(sub, {
           title: `Betreuer gesucht: ${e.title || "Training"}`,
-          body: `${diff === 0 ? "Heute" : "Morgen"}${e.time ? " " + e.time : ""}: noch ${need} Betreuer fehlen. Kannst du einspringen?`,
+          body: `${diff === 0 ? "Heute" : "Morgen"}${e.time ? " " + e.time : ""}: noch ${need} Betreuer fehlen. Kannst du einspringen?`.trim(),
           tag: `staff_${e.id}`,
           url: `/?event=${e.id}`, icon: "/icon-192.png",
           requireInteraction: true,
