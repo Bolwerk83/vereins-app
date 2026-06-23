@@ -453,10 +453,13 @@ export const BERICHTSBAUM = n('konzern', 1, 'VeloWerk Gruppe · Management Repor
   ]
 })
 
-// Baum nach Rolle filtern (Bereichssichtbarkeit, s. rbac.js).
-export function baumFuerRolle(baum, darfBereich) {
-  if (!darfBereich(baum.bereich)) return null
-  const kinder = (baum.kinder || []).map((k) => baumFuerRolle(k, darfBereich)).filter(Boolean)
+// Baum nach Rolle filtern (Bereichssichtbarkeit, s. rbac.js). Die Wurzel (E1
+// Management-Report) bleibt für ALLE Rollen der Einstieg; nur die Unterknoten
+// werden nach Bereich gefiltert — sonst würde z. B. eine Rolle ohne „GF" an der
+// GF-Wurzel scheitern und (über den Fallback) versehentlich alles sehen.
+export function baumFuerRolle(baum, darfBereich, istWurzel = true) {
+  if (!istWurzel && !darfBereich(baum.bereich)) return null
+  const kinder = (baum.kinder || []).map((k) => baumFuerRolle(k, darfBereich, false)).filter(Boolean)
   return { ...baum, kinder }
 }
 
