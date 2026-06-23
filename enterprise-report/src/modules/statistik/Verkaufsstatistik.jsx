@@ -17,19 +17,51 @@ const eur = (n) => Math.round(n).toLocaleString('de-DE') + ' €'
 const stk = (n) => Math.round(n).toLocaleString('de-DE')
 const Wachs = ({ v }) => <span style={{ color: v >= 0 ? 'var(--amp-g)' : 'var(--amp-r)', fontWeight: 600 }}>{v >= 0 ? '▲' : '▼'} {Math.abs(v)} %</span>
 
+const ACC_BAR = 'linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 42%, transparent))'
+const ACC_PEAK = 'linear-gradient(180deg, color-mix(in srgb, var(--accent) 80%, #000), var(--accent))'
+
 function Verlauf({ daten }) {
-  const max = Math.max(...daten.flatMap((d) => [d.ist, d.vorjahr]))
+  const H = 132
+  const max = Math.max(...daten.flatMap((d) => [d.ist, d.vorjahr])) || 1
+  const peak = Math.max(...daten.map((d) => d.ist))
+  const gl = [0.25, 0.5, 0.75]
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 110, padding: '0 4px' }}>
-      {daten.map((d) => (
-        <div key={d.monat} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 90, width: '100%', justifyContent: 'center' }}>
-            <div title={'Vorjahr ' + mio(d.vorjahr)} style={{ width: 7, height: d.vorjahr / max * 90, background: 'var(--line)', borderRadius: '2px 2px 0 0' }} />
-            <div title={'Ist ' + mio(d.ist)} style={{ width: 7, height: d.ist / max * 90, background: 'var(--accent)', borderRadius: '2px 2px 0 0' }} />
-          </div>
-          <div style={{ fontSize: 9.5, color: 'var(--muted)' }}>{d.monat}</div>
-        </div>
-      ))}
+    <div style={{ position: 'relative', paddingLeft: 4 }}>
+      <div className="mono" style={{ fontSize: 10, color: 'var(--muted)', marginBottom: 2 }}>max {mio(max)}</div>
+      {/* Gitterlinien */}
+      <div style={{ position: 'absolute', left: 4, right: 0, top: 16, height: H, pointerEvents: 'none' }}>
+        {gl.map((g) => <div key={g} style={{ position: 'absolute', left: 0, right: 0, bottom: g * H, borderTop: '1px dashed var(--line)', opacity: 0.6 }} />)}
+      </div>
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'flex-end', gap: 8, height: H, borderBottom: '1px solid var(--line)' }}>
+        {daten.map((d) => {
+          const istH = Math.max(2, d.ist / max * H)
+          const vjH = Math.max(2, d.vorjahr / max * H)
+          const isPeak = d.ist === peak && d.ist > 0
+          return (
+            <div key={d.monat} style={{ flex: 1, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 3, height: H, minWidth: 0 }}>
+              <div title={'Vorjahr ' + mio(d.vorjahr)} style={{ width: '38%', maxWidth: 13, height: vjH, background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: '3px 3px 0 0' }} />
+              <div title={'Ist ' + mio(d.ist)} style={{ position: 'relative', width: '38%', maxWidth: 13, height: istH, borderRadius: '3px 3px 0 0', background: isPeak ? ACC_PEAK : ACC_BAR, boxShadow: isPeak ? '0 0 0 1.5px color-mix(in srgb, var(--accent) 35%, transparent)' : 'none' }}>
+                {isPeak && <span className="mono" style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: 3, fontSize: 9.5, fontWeight: 700, color: 'var(--accent)', whiteSpace: 'nowrap' }}>{(d.ist / 1e6).toLocaleString('de-DE', { maximumFractionDigits: 1 })}</span>}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginTop: 5 }}>
+        {daten.map((d) => <div key={d.monat} style={{ flex: 1, textAlign: 'center', fontSize: 9.5, color: 'var(--muted)' }}>{d.monat}</div>)}
+      </div>
+    </div>
+  )
+}
+
+// Anteil-Zelle: Balken + Prozent (umbruchsicher), für Tabellen.
+function AnteilZelle({ pct, w = 56 }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'flex-end' }}>
+      <div style={{ width: w, height: 8, background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 999, overflow: 'hidden' }}>
+        <div style={{ width: Math.min(100, pct) + '%', height: '100%', background: ACC_BAR, borderRadius: 999 }} />
+      </div>
+      <span className="mono" style={{ minWidth: 46, textAlign: 'right', whiteSpace: 'nowrap' }}>{pct} %</span>
     </div>
   )
 }
@@ -79,12 +111,7 @@ export default function Verkaufsstatistik() {
                 <tr key={w.id} style={{ borderBottom: '1px solid var(--line)' }}>
                   <td style={{ ...td, fontWeight: 600 }}>{w.name}</td>
                   <td style={{ ...td, textAlign: 'right' }} className="mono">{mio(w.umsatz)}</td>
-                  <td style={{ ...td, textAlign: 'right' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
-                      <div style={{ width: 50, height: 6, background: 'var(--line)', borderRadius: 999, overflow: 'hidden' }}><div style={{ width: w.anteilPct + '%', height: '100%', background: 'var(--accent)' }} /></div>
-                      <span className="mono" style={{ width: 38, textAlign: 'right' }}>{w.anteilPct} %</span>
-                    </div>
-                  </td>
+                  <td style={{ ...td, textAlign: 'right' }}><AnteilZelle pct={w.anteilPct} /></td>
                   <td style={{ ...td, textAlign: 'right' }} className="mono">{stk(w.menge)}</td>
                   <td style={{ ...td, textAlign: 'right' }} className="mono">{eur(w.avgPreis)}</td>
                   <td style={{ ...td, textAlign: 'right' }}><Wachs v={w.wachstumPct} /></td>
@@ -122,12 +149,7 @@ export default function Verkaufsstatistik() {
                     <tr key={kn.id} style={{ borderBottom: '1px solid var(--line)' }}>
                       <td style={{ ...td }}>{kn.name}</td>
                       <td style={{ ...td, textAlign: 'right' }} className="mono">{mio(k.umsatz * kn.faktor)}</td>
-                      <td style={{ ...td, textAlign: 'right', width: 56 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
-                          <div style={{ width: 40, height: 6, background: 'var(--line)', borderRadius: 999, overflow: 'hidden' }}><div style={{ width: (kn.faktor * 100) + '%', height: '100%', background: 'var(--accent)' }} /></div>
-                          <span className="mono" style={{ width: 38, textAlign: 'right' }}>{Math.round(kn.faktor * 1000) / 10} %</span>
-                        </div>
-                      </td>
+                      <td style={{ ...td, textAlign: 'right' }}><AnteilZelle pct={Math.round(kn.faktor * 1000) / 10} w={44} /></td>
                     </tr>
                   ))}
                 </tbody>
