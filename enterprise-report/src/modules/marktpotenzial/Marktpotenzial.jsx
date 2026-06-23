@@ -37,7 +37,7 @@ export default function Marktpotenzial() {
   const uebernehmen = (e, ort) => { addMassnahme({ titel: e.titel, owner: 'Vertrieb/Marketing', quelle: 'marktpotenzial', bereich: ort, hebel: 'Geomarketing', relevanz: e.text }); refresh() }
 
   return (
-    <div style={{ maxWidth: 1080, margin: '0 auto' }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
         <div>
           <div style={cap}>Geomarketing · Potenzial & White Spots</div>

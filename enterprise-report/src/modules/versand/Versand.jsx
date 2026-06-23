@@ -124,7 +124,7 @@ export default function Versand() {
   const aenderePc = (v) => { setPc(v); speicherePc('versand', v) }
   const fk = pcFaktor(pc)
   return (
-    <div style={{ maxWidth: 1040, margin: '0 auto' }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
         <div>
           <div style={cap}>Versand-Controlling · Erlöse ↔ tatsächliche Kosten</div>

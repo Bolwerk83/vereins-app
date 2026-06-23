@@ -69,7 +69,7 @@ export default function Berichtfreigabe({ istAdmin }) {
   const zaehlung = STATUS_LISTE.map((s) => ({ ...s, n: ziele.filter((z) => statusVon(z.ziel) === s.id).length }))
 
   return (
-    <div style={{ maxWidth: 920, margin: '0 auto' }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ marginBottom: 12 }}>
         <div style={cap}>Administration · Sichtbarkeit der Berichte</div>
         <h2 style={{ margin: '4px 0 0' }}>Bericht-Freigabe</h2>

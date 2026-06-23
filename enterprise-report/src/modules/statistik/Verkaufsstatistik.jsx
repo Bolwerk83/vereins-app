@@ -42,7 +42,7 @@ export default function Verkaufsstatistik() {
   const vlFaktor = pcFaktor(f.pc) * dat.mag
   const k = kennzahlen(fk); const wg = warengruppen(fk); const art = topArtikel(7, fk); const vl = verlauf(monateVon(f.zeitraum), vlFaktor)
   return (
-    <div style={{ maxWidth: 1080, margin: '0 auto' }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
         <div>
           <div style={cap}>Vertrieb · Schneller Verkaufsüberblick</div>

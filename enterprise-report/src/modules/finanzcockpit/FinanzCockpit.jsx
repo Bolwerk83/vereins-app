@@ -88,7 +88,7 @@ export default function FinanzCockpit() {
   const total = Math.max(1, rb.total)
 
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
         <div>
           <div style={cap}>Finanzcontrolling · Geschäftsjahr · HGB / IFRS</div>

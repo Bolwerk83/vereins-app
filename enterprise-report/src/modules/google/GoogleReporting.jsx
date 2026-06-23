@@ -178,7 +178,7 @@ const VIEWS = [
 export default function GoogleReporting() {
   const [view, setView] = useState('ads')
   return (
-    <div style={{ maxWidth: 1060, margin: '0 auto' }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
         <div>
           <div style={cap}>Marketing · Google Ads &amp; Analytics</div>

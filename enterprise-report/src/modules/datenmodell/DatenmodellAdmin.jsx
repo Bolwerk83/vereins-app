@@ -389,7 +389,7 @@ export default function DatenmodellAdmin({ istAdmin }) {
   const [tab, setTab] = useState('mapping')
   if (!istAdmin) return <div style={{ padding: 24, color: 'var(--muted)' }}>Nur für Administratoren.</div>
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ marginBottom: 12 }}>
         <div style={cap}>Administration · Datenmodell (Tabular-Bausteine)</div>
         <h2 style={{ margin: '4px 0 0' }}>Datenmodell &amp; Mapping</h2>

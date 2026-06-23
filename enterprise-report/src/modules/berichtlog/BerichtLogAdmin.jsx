@@ -19,7 +19,7 @@ export default function BerichtLogAdmin({ istAdmin }) {
   const kopiere = (id) => { try { navigator.clipboard?.writeText(berichtLink(id)) } catch {} setKopiert(id); setTimeout(() => setKopiert(null), 1200) }
 
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ marginBottom: 12 }}>
         <div style={cap}>Administration · Nutzung der Berichte</div>
         <h2 style={{ margin: '4px 0 0' }}>Bericht-Zugriffs-Log</h2>

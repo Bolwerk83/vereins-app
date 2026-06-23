@@ -164,7 +164,7 @@ export default function DatenschutzAdmin({ istAdmin }) {
   const refresh = () => setTick((t) => t + 1)
   if (!istAdmin) return <div style={{ padding: 24, color: 'var(--muted)' }}>Nur für Administratoren.</div>
   return (
-    <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ marginBottom: 12 }}>
         <div style={cap}>Administration · Recht &amp; Sicherheit</div>
         <h2 style={{ margin: '4px 0 0' }}>Datenschutz &amp; Sicherheit</h2>

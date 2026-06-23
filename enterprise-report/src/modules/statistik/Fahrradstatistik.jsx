@@ -25,7 +25,7 @@ export default function Fahrradstatistik() {
   const k = kennzahlen(fk); const kat = kategorien(fk); const a = antrieb(fk); const pk = preisklassen(fk)
   const maxKat = Math.max(...kat.map((x) => x.stueck))
   return (
-    <div style={{ maxWidth: 1080, margin: '0 auto' }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
         <div>
           <div style={cap}>Vertrieb · Komplette Räder</div>

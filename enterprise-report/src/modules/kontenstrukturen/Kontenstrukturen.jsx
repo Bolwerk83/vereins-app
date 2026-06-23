@@ -73,7 +73,7 @@ export default function Kontenstrukturen() {
   const [auf, setAuf] = useState({})
   const b = baum(id)
   return (
-    <div style={{ maxWidth: 920, margin: '0 auto' }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
         <div>
           <div style={cap}>Sachkonto-Dimension · mehrere Hierarchien</div>

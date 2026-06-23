@@ -80,7 +80,7 @@ export default function PcKostenstellen() {
   const move = (ksId, pcId) => { verschiebe(ksId, pcId); refresh() }
 
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
         <div>
           <div style={cap}>Profit-Center-Rechnung · bis auf Einzelkostenstellen</div>

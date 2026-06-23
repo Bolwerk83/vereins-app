@@ -35,7 +35,7 @@ export default function Bestandsentwicklung() {
   const uebernehmen = (m, bereich) => { addMassnahme({ titel: m.titel, owner: 'Disposition', quelle: 'bestandsentwicklung', bereich, hebel: m.hebel, relevanz: m.erwartet }); setTick((t) => t + 1) }
 
   return (
-    <div style={{ maxWidth: 1080, margin: '0 auto' }}>
+    <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
         <div>
           <div style={cap}>Bestand · Entwicklung & Gegensteuerung</div>
