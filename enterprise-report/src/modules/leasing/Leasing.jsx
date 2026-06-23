@@ -7,7 +7,8 @@ import {
   vertraege, leasingKennzahlen, kategorieVerteilung, leasingVsKauf, ifrs16, dienstradKennzahlen, DIENSTRAD, HEUTE
 } from '../../core/leasing.js'
 import { pcFaktor } from '../../core/statistikFilter.js'
-import PcFilter, { ladePc, speicherePc, pcHinweis } from '../shared/PcFilter.jsx'
+import PcFilter, { pcHinweis } from '../shared/PcFilter.jsx'
+import { useGlobalFilter } from '../../core/filterKontext.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700 }
@@ -197,8 +198,9 @@ const VIEWS = [
 
 export default function Leasing() {
   const [view, setView] = useState('gebuehren')
-  const [pc, setPc] = useState(() => ladePc('leasing'))
-  const aenderePc = (v) => { setPc(v); speicherePc('leasing', v) }
+  const g = useGlobalFilter()
+  const pc = g.pc
+  const aenderePc = g.setPc
   const fk = pcFaktor(pc)
   const umlageView = view === 'gebuehren' || view === 'ifrs'
   return (

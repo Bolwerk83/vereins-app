@@ -5,7 +5,8 @@
 import React, { useState } from 'react'
 import { DATENARTEN, ergebnis, tKonto, ukv } from '../../core/ergebnis.js'
 import { pcFaktor } from '../../core/statistikFilter.js'
-import PcFilter, { ladePc, speicherePc, pcHinweis } from '../shared/PcFilter.jsx'
+import PcFilter, { pcHinweis } from '../shared/PcFilter.jsx'
+import { useGlobalFilter } from '../../core/filterKontext.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
@@ -14,8 +15,9 @@ const m = (v) => v.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFr
 export default function Ergebnisrechnung({ onGeh }) {
   const [da, setDa] = useState('ist')
   const [verfahren, setVerfahren] = useState('gkv')
-  const [pc, setPc] = useState(() => ladePc('ergebnis'))
-  const aenderePc = (v) => { setPc(v); speicherePc('ergebnis', v) }
+  const g = useGlobalFilter()
+  const pc = g.pc
+  const aenderePc = g.setPc
   const fk = pcFaktor(pc)
   const e = ergebnis(da, fk)
   const t = tKonto(da, fk)

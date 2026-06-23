@@ -5,7 +5,8 @@
 import React, { useState } from 'react'
 import { direktCosting, stufenweise, SYSTEME } from '../../core/deckungsbeitrag.js'
 import { pcFaktor } from '../../core/statistikFilter.js'
-import PcFilter, { ladePc, speicherePc, pcHinweis } from '../shared/PcFilter.jsx'
+import PcFilter, { pcHinweis } from '../shared/PcFilter.jsx'
+import { useGlobalFilter } from '../../core/filterKontext.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
@@ -15,8 +16,9 @@ const td = (al, bold) => ({ textAlign: al, padding: '6px 9px', borderBottom: '1p
 
 export default function Deckungsbeitrag({ onGeh }) {
   const [tab, setTab] = useState('mehrstufig')
-  const [pc, setPc] = useState(() => ladePc('deckungsbeitrag'))
-  const aenderePc = (v) => { setPc(v); speicherePc('deckungsbeitrag', v) }
+  const g = useGlobalFilter()
+  const pc = g.pc
+  const aenderePc = g.setPc
   const fk = pcFaktor(pc)
   const chip = (aktiv) => ({ padding: '6px 12px', borderRadius: 999, fontSize: 13, cursor: 'pointer', fontWeight: 600,
     border: `1px solid ${aktiv ? 'var(--accent)' : 'var(--line)'}`, background: aktiv ? 'var(--accent)' : 'var(--panel)', color: aktiv ? '#fff' : 'var(--ink)' })

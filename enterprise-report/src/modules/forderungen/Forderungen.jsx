@@ -5,7 +5,8 @@ import React, { useState } from 'react'
 import { aging } from '../../core/forderungen.js'
 import { addMassnahme, ladeMassnahmen } from '../../core/massnahmen.js'
 import { pcFaktor } from '../../core/statistikFilter.js'
-import PcFilter, { ladePc, speicherePc, pcHinweis } from '../shared/PcFilter.jsx'
+import PcFilter, { pcHinweis } from '../shared/PcFilter.jsx'
+import { useGlobalFilter } from '../../core/filterKontext.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
@@ -16,8 +17,9 @@ const RISIKO_FARBE = { kein: 'var(--muted)', gering: 'var(--amp-g)', mittel: 'va
 
 export default function Forderungen() {
   const [, setTick] = useState(0)
-  const [pc, setPc] = useState(() => ladePc('forderungen'))
-  const aenderePc = (v) => { setPc(v); speicherePc('forderungen', v); setTick((t) => t + 1) }
+  const g = useGlobalFilter()
+  const pc = g.pc
+  const aenderePc = g.setPc
   const a = aging(pcFaktor(pc))
   const massn = ladeMassnahmen()
   const hatInkasso = massn.some((x) => x.quelle === 'forderungen')

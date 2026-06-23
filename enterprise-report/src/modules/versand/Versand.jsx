@@ -6,7 +6,8 @@
 import React, { useState } from 'react'
 import { segmente, aggregiere, summe, ueberblick } from '../../core/versand.js'
 import { pcFaktor } from '../../core/statistikFilter.js'
-import PcFilter, { ladePc, speicherePc, pcHinweis } from '../shared/PcFilter.jsx'
+import PcFilter, { pcHinweis } from '../shared/PcFilter.jsx'
+import { useGlobalFilter } from '../../core/filterKontext.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700 }
@@ -120,8 +121,9 @@ const VIEWS = [
 
 export default function Versand() {
   const [view, setView] = useState('uebersicht')
-  const [pc, setPc] = useState(() => ladePc('versand'))
-  const aenderePc = (v) => { setPc(v); speicherePc('versand', v) }
+  const g = useGlobalFilter()
+  const pc = g.pc
+  const aenderePc = g.setPc
   const fk = pcFaktor(pc)
   return (
     <div style={{ maxWidth: '100%', margin: '0 auto' }}>

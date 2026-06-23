@@ -9,7 +9,8 @@ import {
   GRUPPEN, kennzahlenGruppe, ampelKennzahl, risikoBild, TAGE, basis
 } from '../../core/finanzkennzahlen.js'
 import { pcFaktor } from '../../core/statistikFilter.js'
-import PcFilter, { ladePc, speicherePc, pcHinweis } from '../shared/PcFilter.jsx'
+import PcFilter, { pcHinweis } from '../shared/PcFilter.jsx'
+import { useGlobalFilter } from '../../core/filterKontext.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700 }
@@ -69,8 +70,9 @@ function StrukturBalken({ titel, posten }) {
 
 export default function FinanzCockpit() {
   const [note, setNote] = useState(() => { try { return localStorage.getItem(KEY) || '' } catch { return '' } })
-  const [pc, setPc] = useState(() => ladePc('finanzcockpit'))
-  const aenderePc = (v) => { setPc(v); speicherePc('finanzcockpit', v) }
+  const g = useGlobalFilter()
+  const pc = g.pc
+  const aenderePc = g.setPc
   const fk = pcFaktor(pc)
   const { BILANZ, GUV } = basis(fk)
   const rb = risikoBild(fk)
