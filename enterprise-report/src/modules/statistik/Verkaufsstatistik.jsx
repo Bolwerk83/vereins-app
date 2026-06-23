@@ -7,6 +7,7 @@ import { warengruppen, topArtikel, verlauf, kennzahlen } from '../../core/verkau
 import { monateVon, faktor, pcFaktor, datumsartInfo, filterLabel, pcBaum } from '../../core/statistikFilter.js'
 import StatistikFilter, { ladeFilter, speichereFilter } from './StatistikFilter.jsx'
 import { VerlaufChart, AnteilZelle } from '../../components/charts.jsx'
+import ExportButton from '../../components/ExportButton.jsx'
 import { datenstandText } from '../../core/datenstand.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
@@ -34,7 +35,10 @@ export default function Verkaufsstatistik() {
           <h2 style={{ margin: '4px 0 0' }}>Verkaufsstatistik</h2>
           <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 2 }}>📅 {datenstandText()} · 🗓 Periode nach <b>{dat.name}</b> · {filterLabel(f.zeitraum, f.pc)} · vs. Vorjahr</div>
         </div>
-        <button className="no-print" onClick={() => window.print()} style={{ padding: '7px 13px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: 'var(--panel)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>🖨 Drucken / PDF</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <ExportButton filename="Verkaufsstatistik" rows={[['Warengruppe', 'Umsatz (€)', 'Anteil %', 'Menge', 'Ø Preis (€)', 'vs VJ %', 'DB %'], ...wg.map((w) => [w.name, Math.round(w.umsatz), w.anteilPct, w.menge, w.avgPreis, w.wachstumPct, w.dbProzent])]} />
+          <button className="no-print" onClick={() => window.print()} style={{ padding: '7px 13px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: 'var(--panel)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>🖨 Drucken / PDF</button>
+        </div>
       </div>
       <StatistikFilter bereich="verkauf" wert={f} onChange={aendern} />
 

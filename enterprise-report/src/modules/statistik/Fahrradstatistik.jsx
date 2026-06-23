@@ -7,6 +7,7 @@ import { kategorien, antrieb, preisklassen, kennzahlen } from '../../core/fahrra
 import { faktor, datumsartInfo, filterLabel } from '../../core/statistikFilter.js'
 import StatistikFilter, { ladeFilter, speichereFilter } from './StatistikFilter.jsx'
 import { BalkenChart } from '../../components/charts.jsx'
+import ExportButton from '../../components/ExportButton.jsx'
 import { datenstandText } from '../../core/datenstand.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
@@ -33,7 +34,10 @@ export default function Fahrradstatistik() {
           <h2 style={{ margin: '4px 0 0' }}>Fahrradstatistik</h2>
           <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 2 }}>📅 {datenstandText()} · 🗓 Periode nach <b>{dat.name}</b> · {filterLabel(f.zeitraum, f.pc)} · nur Kompletträder</div>
         </div>
-        <button className="no-print" onClick={() => window.print()} style={{ padding: '7px 13px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: 'var(--panel)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>🖨 Drucken / PDF</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <ExportButton filename="Fahrradstatistik" rows={[['Kategorie', 'Antrieb', 'Räder', 'Anteil %', 'Umsatz (€)', 'Ø Preis (€)', 'Marge %', 'vs VJ %'], ...kat.map((c) => [c.name, c.eBike ? 'E-Bike' : 'Bio', c.stueck, c.anteilPct, Math.round(c.umsatz), c.avgPreis, c.marge, c.wachstumPct])]} />
+          <button className="no-print" onClick={() => window.print()} style={{ padding: '7px 13px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: 'var(--panel)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>🖨 Drucken / PDF</button>
+        </div>
       </div>
       <StatistikFilter bereich="verkauf" wert={f} onChange={aendern} />
 

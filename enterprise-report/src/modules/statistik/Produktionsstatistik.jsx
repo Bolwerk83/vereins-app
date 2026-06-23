@@ -7,6 +7,7 @@ import { produkte, monatsOutput, werke, kennzahlen } from '../../core/produktion
 import { monateVon, pcFaktor, datumsartInfo, filterLabel } from '../../core/statistikFilter.js'
 import StatistikFilter, { ladeFilter, speichereFilter } from './StatistikFilter.jsx'
 import { BalkenChart } from '../../components/charts.jsx'
+import ExportButton from '../../components/ExportButton.jsx'
 import { datenstandText } from '../../core/datenstand.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
@@ -33,7 +34,10 @@ export default function Produktionsstatistik() {
           <h2 style={{ margin: '4px 0 0' }}>Produktionsstatistik</h2>
           <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 2 }}>📅 {datenstandText()} · 🗓 Periode nach <b>{dat.name}</b> · {filterLabel(f.zeitraum, f.pc)}</div>
         </div>
-        <button className="no-print" onClick={() => window.print()} style={{ padding: '7px 13px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: 'var(--panel)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>🖨 Drucken / PDF</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <ExportButton filename="Produktionsstatistik" rows={[['Produkt', 'Menge', 'Ø/Monat', 'Trend %', 'Ausschuss %', 'FPY %', 'Stückkosten (€)', 'Wert (€)'], ...pr.map((p) => [p.name, p.summe, p.schnitt, p.trendPct, p.ausschussPct, p.fpy, p.stueckkosten, p.produzierterWert])]} />
+          <button className="no-print" onClick={() => window.print()} style={{ padding: '7px 13px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: 'var(--panel)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>🖨 Drucken / PDF</button>
+        </div>
       </div>
       <StatistikFilter bereich="produktion" wert={f} onChange={aendern} />
       {leer && (
