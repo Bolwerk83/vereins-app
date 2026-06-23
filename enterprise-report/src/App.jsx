@@ -139,6 +139,7 @@ export default function App() {
   const [hilfeAuf, setHilfeAuf] = useState(false)
   const [hilfeErstmalig, setHilfeErstmalig] = useState(false)
   const [onbAuf, setOnbAuf] = useState(false)
+  const [menuAuf, setMenuAuf] = useState(false)   // ⚙ Einstellungen-Menü (Topbar)
   const [branding, setBranding] = useState(ladeBranding())
   const [infoView, setInfoView] = useState(null)   // Bericht-Info-Panel (Schaufenster)
   const [detailStart, setDetailStart] = useState(null) // Drill E3→E4: vorgewählte Detailliste
@@ -425,25 +426,39 @@ export default function App() {
                 </select>
               </label>
             )}
-            <label style={{ fontSize: 12, color: 'var(--muted)' }}>{t('lbl.period')}&nbsp;
-              <select value={periode} onChange={(e) => setPeriode(e.target.value)} style={{ font: 'inherit', padding: '5px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)' }}>
-                {PERIODEN.map((p) => <option key={p} value={p}>{p}</option>)}
-              </select>
-            </label>
             <DatenartBadge modell={zeitModell} onClick={() => setAnsicht('zeit')} />
-            <button style={topBtn(false)} onClick={() => setAnsicht('wizard')}>⚙ {t('nav.wizard')}</button>
-            <div style={{ display: 'flex', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
-              {SPRACHEN.map((s) => (
-                <button key={s.id} onClick={() => setLang(s.id)} style={{ padding: '5px 8px', border: 'none', fontSize: 11, fontWeight: 600,
-                  background: lang === s.id ? 'var(--accent)' : 'var(--panel)', color: lang === s.id ? '#fff' : 'var(--muted)' }}>{s.label}</button>
-              ))}
+            {/* ⚙ Einstellungen — bündelt Periode, Sprache, Wizard, Onboarding, Hilfe */}
+            <div style={{ position: 'relative' }}>
+              <button title="Einstellungen & Hilfe" aria-haspopup="true" aria-expanded={menuAuf} onClick={() => setMenuAuf((v) => !v)}
+                style={{ width: 32, height: 32, borderRadius: '50%', border: `1px solid ${menuAuf ? 'var(--accent)' : 'var(--line)'}`, background: menuAuf ? 'var(--accent-soft)' : 'var(--panel)', cursor: 'pointer', fontSize: 15 }}>⚙</button>
+              {menuAuf && (
+                <>
+                  <div onClick={() => setMenuAuf(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
+                  <div style={{ position: 'absolute', right: 0, top: 38, zIndex: 41, width: 230, background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: '0 14px 40px rgba(0,0,0,.18)', padding: 10, display: 'grid', gap: 10 }}>
+                    <label style={{ fontSize: 11, color: 'var(--muted)', display: 'block' }}>{t('lbl.period')}
+                      <select value={periode} onChange={(e) => setPeriode(e.target.value)} style={{ font: 'inherit', fontSize: 13, padding: '6px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', width: '100%', marginTop: 3, background: 'var(--panel)', color: 'var(--ink)' }}>
+                        {PERIODEN.map((p) => <option key={p} value={p}>{p}</option>)}
+                      </select>
+                    </label>
+                    <div>
+                      <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 3 }}>Sprache</div>
+                      <div style={{ display: 'flex', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
+                        {SPRACHEN.map((s) => (
+                          <button key={s.id} onClick={() => setLang(s.id)} style={{ flex: 1, padding: '6px 8px', border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                            background: lang === s.id ? 'var(--accent)' : 'var(--panel)', color: lang === s.id ? '#fff' : 'var(--muted)' }}>{s.label}</button>
+                        ))}
+                      </div>
+                    </div>
+                    <div style={{ borderTop: '1px solid var(--line)', paddingTop: 8, display: 'grid', gap: 4 }}>
+                      {[['⚙ ' + t('nav.wizard'), () => setAnsicht('wizard')], ['🚀 ' + t('nav.onboarding'), () => setOnbAuf(true)], ['❓ ' + t('nav.hilfe'), () => { setHilfeErstmalig(false); setHilfeAuf(true) }]].map(([label, fn]) => (
+                        <button key={label} onClick={() => { setMenuAuf(false); fn() }} style={{ textAlign: 'left', padding: '7px 8px', border: 'none', background: 'none', cursor: 'pointer', fontSize: 13, borderRadius: 'var(--radius-sm)', color: 'var(--ink)' }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg)' }} onMouseLeave={(e) => { e.currentTarget.style.background = 'none' }}>{label}</button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
-            <button title={t('nav.onboarding')} onClick={() => setOnbAuf(true)}
-              style={{ width: 30, height: 30, borderRadius: '50%', border: '1px solid var(--line)', background: 'var(--panel)',
-                cursor: 'pointer', fontSize: 14 }}>🚀</button>
-            <button title={t('nav.hilfe')} onClick={() => { setHilfeErstmalig(false); setHilfeAuf(true) }}
-              style={{ width: 30, height: 30, borderRadius: '50%', border: '1px solid var(--line)', background: 'var(--panel)',
-                color: 'var(--accent)', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>?</button>
           </>
         )}
       </header>
