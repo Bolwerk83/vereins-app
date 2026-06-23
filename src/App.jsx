@@ -21324,6 +21324,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
               <Inp label="Geburtsjahr" val={String(p.by||"")} set={v=>up({by:parseInt(v)||p.by})} type="number" ph="z.B. 2014" cl={{pri:t.p}}/>
               <Sel label="Geschlecht" val={p.gender||"m"} set={v=>up({gender:v})} opts={[["m","* Männlich"],["w","* Weiblich"]]}/>
             </div>
+            <Inp label="Geburtsdatum (optional – für Geburtstags-Hinweise)" val={p.bday||""} set={v=>up(v?{bday:v,by:parseInt(v.slice(0,4))||p.by}:{bday:""})} type="date" cl={{pri:t.p}}/>
             {p.by && (
               <div style={{background:"#f0fdf4",borderRadius:10,padding:"9px 13px",fontSize:12,color:"#15803d",fontWeight:600}}>
                  Passt altersmäßig in: {eligibleCats(p.by,p.gender||"m").join(",")||"Keine Kategorie"}
@@ -22541,6 +22542,35 @@ function TeamPwdChanger({ team, data, save, fire, cl }){
   );
 }
 
+// Anstehende Geburtstage (nächste 30 Tage) – braucht das optionale Geburtsdatum am Spieler.
+function BirthdaysCard({ players }){
+  const today=new Date(); const y=today.getFullYear();
+  const todayMs=new Date(y,today.getMonth(),today.getDate()).getTime();
+  const list=(players||[]).filter(p=>p.bday).map(p=>{
+    const d=new Date(p.bday+"T12:00:00"); if(isNaN(d.getTime())) return null;
+    let yr=y; let nextMs=new Date(y,d.getMonth(),d.getDate()).getTime();
+    if(nextMs<todayMs){ yr=y+1; nextMs=new Date(y+1,d.getMonth(),d.getDate()).getTime(); }
+    return { p, inDays:Math.round((nextMs-todayMs)/86400000), turning:yr-d.getFullYear(), d };
+  }).filter(Boolean).filter(x=>x.inDays<=30).sort((a,b)=>a.inDays-b.inDays);
+  if(list.length===0) return null;
+  return (
+    <div style={{background:"#fff",border:"1.5px solid #fde68a",borderRadius:14,padding:"12px 14px",marginBottom:14}}>
+      <div style={{fontWeight:800,fontSize:14,color:"#92400e",marginBottom:8}}>🎂 Geburtstage <span style={{fontWeight:600,color:"#b45309"}}>· nächste 30 Tage</span></div>
+      <div style={{display:"flex",flexDirection:"column",gap:7}}>
+        {list.map(({p,inDays,turning,d})=>(
+          <div key={p.id} style={{display:"flex",alignItems:"center",gap:10}}>
+            <Av name={p.name} sz={28}/>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:13.5,fontWeight:700,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</div>
+              <div style={{fontSize:11.5,color:"#94a3b8"}}>{String(d.getDate()).padStart(2,"0")}.{String(d.getMonth()+1).padStart(2,"0")}. · wird {turning}</div>
+            </div>
+            <span style={{fontSize:12,fontWeight:800,color:inDays===0?"#15803d":"#b45309",background:inDays===0?"#dcfce7":"#fef3c7",borderRadius:99,padding:"3px 10px",flexShrink:0}}>{inDays===0?"heute! 🎉":inDays===1?"morgen":`in ${inDays} T`}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 function PlayersTab({ data,myTids,save,fire,cl,session }) {
   const [showTeamCard, setShowTeamCard] = React.useState(null); // teamId
   const t        = TH(cl);
@@ -22684,7 +22714,7 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
       {}
       {view==="list" && (
         <>
-          {}
+          <BirthdaysCard players={mainPlayers}/>
           <div style={{overflowX:"auto",display:"flex",gap:7,marginBottom:14,scrollbarWidth:"none"}}>
             {myTeams.map(tm=>(
               <button key={tm.id} onClick={()=>setSelTid(tm.id)}

@@ -108,13 +108,15 @@ function hasVoted(v: any): boolean {
 }
 
 type HelperEntry = { name: string, tids: string[] };
-async function loadAll(): Promise<{ events: Ev[], helpersByCid: Record<string, HelperEntry[]> }> {
+type Birthday = { name: string, bday: string };
+async function loadAll(): Promise<{ events: Ev[], helpersByCid: Record<string, HelperEntry[]>, birthdaysByTid: Record<string, Birthday[]> }> {
   const { data } = await admin
     .from("app_data")
     .select("key, value")
     .like("key", `${SK}__club_%`);
   const out: Ev[] = [];
   const helpersByCid: Record<string, HelperEntry[]> = {};
+  const birthdaysByTid: Record<string, Birthday[]> = {};
   for (const row of data || []) {
     const value: any = row.value;
     const cid = String(row.key).slice((SK + "__club_").length);
@@ -124,14 +126,19 @@ async function loadAll(): Promise<{ events: Ev[], helpersByCid: Record<string, H
     helpersByCid[cid] = hs
       .map((h: any) => ({ name: String(h?.name || "").toLowerCase(), tids: Array.isArray(h?.tids) ? h.tids : [] }))
       .filter((h: HelperEntry) => h.name);
+    const pps: any[] = Array.isArray(value?.playerProfiles) ? value.playerProfiles : [];
+    for (const p of pps) {
+      if (!p?.mainTid || !p?.bday || p?.archived) continue;
+      (birthdaysByTid[p.mainTid] ||= []).push({ name: p.name, bday: String(p.bday) });
+    }
   }
-  return { events: out, helpersByCid };
+  return { events: out, helpersByCid, birthdaysByTid };
 }
 
 // --- Modus "cron" -------------------------------------------
 async function runCron(): Promise<Response> {
   const today = berlinISO();
-  const { events: allEvents, helpersByCid } = await loadAll();
+  const { events: allEvents, helpersByCid, birthdaysByTid } = await loadAll();
   const { data: subs } = await admin
     .from("push_subscriptions")
     .select("*")
@@ -207,6 +214,23 @@ async function runCron(): Promise<Response> {
           tag: `staff_${e.id}`,
           url: `/?event=${e.id}`, icon: "/icon-192.png",
           requireInteraction: true,
+        });
+        if (ok) sent++; if (g) gone.push(sub.endpoint);
+      }
+    }
+    // d) Geburtstags-Gratulation: heute Geburtstag im Team -> an die Teammitglieder.
+    if (sub.tid) {
+      const md = today.slice(5); // MM-DD
+      const others = (birthdaysByTid[sub.tid] || [])
+        .filter(p => String(p.bday || "").slice(5) === md && p.name)
+        .filter(p => String(p.name).toLowerCase() !== String(sub.player_name || "").toLowerCase());
+      if (others.length) {
+        const names = others.map(p => p.name).join(", ");
+        const { ok, gone: g } = await send(sub, {
+          title: "🎂 Geburtstag im Team!",
+          body: `${names} hat heute Geburtstag. Gratuliert doch kurz! 🎉`,
+          tag: `bday_${today}_${sub.tid}`,
+          url: "/", icon: "/icon-192.png",
         });
         if (ok) sent++; if (g) gone.push(sub.endpoint);
       }
