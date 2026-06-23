@@ -24,3 +24,9 @@ export const VIEW_BEREICH = {
 }
 
 export const bereichVon = (view) => (view in VIEW_BEREICH ? VIEW_BEREICH[view] : null)
+
+// Reine Admin-Sichten: nur mit Admin-Rechten erreichbar (auch nicht über die
+// Suche). Die Bereichssichtbarkeit (bereichVon) reicht hier nicht, da diese
+// Sichten „übergreifend" (null) sind und sonst für alle sichtbar wären.
+export const ADMIN_VIEWS = new Set(['admin', 'datenmodell', 'datenschutz', 'kisteuerung', 'berichtfreigabe', 'berichtlog', 'nutzung', 'rechte'])
+export const istAdminView = (view) => ADMIN_VIEWS.has(view)

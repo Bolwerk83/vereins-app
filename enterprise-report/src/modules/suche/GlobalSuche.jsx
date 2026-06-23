@@ -7,9 +7,9 @@ import { useT } from '../../core/i18n.jsx'
 import { KPI } from '../../core/kpiRegistry.js'
 import { baueIndex, suchen } from '../../core/suche.js'
 import { darfBereich } from '../../core/rbac.js'
-import { bereichVon } from '../../core/navMeta.js'
+import { bereichVon, istAdminView } from '../../core/navMeta.js'
 
-export default function GlobalSuche({ onGeh, onKpi, onInfo, rolle }) {
+export default function GlobalSuche({ onGeh, onKpi, onInfo, rolle, istAdmin = false }) {
   const { t } = useT()
   const [q, setQ] = useState('')
   const [offen, setOffen] = useState(false)
@@ -22,9 +22,12 @@ export default function GlobalSuche({ onGeh, onKpi, onInfo, rolle }) {
 
   // Vorauswahl beim Reinklicken (leere Eingabe): die für die Rolle passendsten Einträge.
   const bereichOf = (e) => (e.typ === 'kpi' ? KPI[e.ziel]?.bereich : bereichVon(e.ziel))
-  const erlaubt = (e) => (e.typ === 'kpi'
-    ? (!rolle || rolle.bereiche === '*' || (KPI[e.ziel] && rolle.bereiche.includes(KPI[e.ziel].bereich)))
-    : (!rolle || darfBereich(rolle, bereichVon(e.ziel))))
+  const erlaubt = (e) => {
+    if (e.typ !== 'kpi' && istAdminView(e.ziel) && !istAdmin) return false // Admin-Sichten nur für Admins
+    return e.typ === 'kpi'
+      ? (!rolle || rolle.bereiche === '*' || (KPI[e.ziel] && rolle.bereiche.includes(KPI[e.ziel].bereich)))
+      : (!rolle || darfBereich(rolle, bereichVon(e.ziel)))
+  }
   const vorauswahl = useMemo(() => {
     const score = (e) => {
       const ber = bereichOf(e)

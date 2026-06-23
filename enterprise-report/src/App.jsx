@@ -92,7 +92,7 @@ import Fahrradstatistik from './modules/statistik/Fahrradstatistik.jsx'
 import Einkaufsstatistik from './modules/statistik/Einkaufsstatistik.jsx'
 import Produktionsstatistik from './modules/statistik/Produktionsstatistik.jsx'
 import { gesamtStand } from './core/datenstand.js'
-import { bereichVon } from './core/navMeta.js'
+import { bereichVon, istAdminView } from './core/navMeta.js'
 import BerichtInfoModal from './modules/berichtinfo/BerichtInfoModal.jsx'
 import BerichtInfoBanner from './modules/berichtinfo/BerichtInfoBanner.jsx'
 import { anzahlAnfragen } from './core/zugriff.js'
@@ -216,6 +216,7 @@ export default function App() {
   // (Schaufenster: sehen, was es gibt — aber nicht aufrufen).
   const adminAktiv = istAdmin(rolle)
   const geh = (a) => {
+    if (a && !adminAktiv && istAdminView(a)) { setInfoView(a); return } // Admin-Sichten nur für Admins (auch nicht über die Suche)
     if (a && !adminAktiv && !berichtSichtbar(a, { admin: false, uid })) { setInfoView(a); return }
     if (a && !darfBereich(rolle, bereichVon(a))) { setInfoView(a); return }
     if (a === 'detailberichte') { setDetailStart(null); setDetailSuche('') } setAnsicht(a)
@@ -409,7 +410,7 @@ export default function App() {
 
         {ansicht !== 'wizard' && (
           <>
-            <GlobalSuche onGeh={geh} onKpi={(id) => { setBaumStart(id); setAnsicht('baum') }} onInfo={zeigeInfo} rolle={rolle} />
+            <GlobalSuche onGeh={geh} onKpi={(id) => { setBaumStart(id); setAnsicht('baum') }} onInfo={zeigeInfo} rolle={rolle} istAdmin={adminAktiv} />
             {/* Nur Primär-Einstiege oben; die vollständige Navigation steckt im ☰-Menü. */}
             <button style={topBtn(ansicht === 'baum' || ansicht === 'report')} onClick={() => geh('baum')}>{t('nav.tree')}</button>
             <button style={topBtn(ansicht === 'kennzahlen')} onClick={() => geh('kennzahlen')}>{t('nav.kennzahlen')}</button>
