@@ -27656,6 +27656,11 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             }}/>
           </div>
         ))}
+        {viewEv.type==="training"&&(
+          <StaffingBoard ev={viewEv} team={(local.teams||[]).find(tm=>tm.id===viewEv.tid)} session={session} isHelper={isHelper}
+            onPatch={patch=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,...patch}:e)}); setViewEv(prev=>({...prev,...patch})); }}
+            fire={fire}/>
+        )}
         <DutyBoard ev={viewEv} user={session.name||"Trainer"} canManage={!isHelper} onChange={arr=>{
           save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,duties:arr}:e)});
           setViewEv(prev=>({...prev,duties:arr}));
@@ -28175,6 +28180,12 @@ function eventWarnings(ev, tod){
   }
   if((ev.pt==="att"||!ev.pt) && days<=4 && ev.sollPlayers>0 && yes<ev.sollPlayers){
     w.push({label:`nur ${yes}/${ev.sollPlayers} Zusagen`,col:"#dc2626",bg:"#fee2e2"});
+  }
+  if(ev.type==="training" && days<=2){
+    const size=yes||ev.sollPlayers||7; const target=ev.staffTarget||(size>10?3:2);
+    const tc=Object.keys(ev.trainerPresence||{}).length;
+    const ist=tc+Math.min((ev.helperOffers||[]).length, Math.max(0,target-tc));
+    if(ist<target) w.push({label:`Betreuer ${ist}/${target}`,col:"#d97706",bg:"#fef3c7"});
   }
   if(ev.type==="auswarts" && days<=4){
     const cp=ev.carpool||{};
@@ -29937,6 +29948,72 @@ function DutyBoard({ ev, user, canManage, onChange }){
 // read-only (Eltern sehen, ob sie in der Startelf stehen).
 const LINEUP_LINES = [["T","Tor"],["A","Abwehr"],["M","Mittelfeld"],["S","Angriff"]];
 // Schnell-Spielbericht: Ergebnis + Torschützen + Notiz, in Sekunden nach dem Spiel.
+// Betreuung/Staffing fürs Training: Soll 2–3 je nach Größe, Trainer haben Vorrang,
+// Helfer füllen nur die Lücke (wer zuerst kommt) – Rest auf die Warteliste.
+function StaffingBoard({ ev, team, session, isHelper, onPatch, fire, onRequestHelpers }){
+  const role=session?.role; const isManager=role==="trainer"||role==="admin";
+  const yes=Object.entries(ev.votes||{}).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").length;
+  const size=yes||ev.sollPlayers||defaultSollPlayers(team?.cat)||7;
+  const target=ev.staffTarget||(size>10?3:2);
+  const trainers=Object.values(ev.trainerPresence||{});
+  const trainerCount=trainers.length;
+  const offers=(ev.helperOffers||[]).slice().sort((a,b)=>(a.ts||"").localeCompare(b.ts||""));
+  const gap=Math.max(0,target-trainerCount);
+  const confirmed=offers.slice(0,gap);
+  const waitlist=offers.slice(gap);
+  const ist=trainerCount+confirmed.length;
+  const enough=ist>=target;
+  const myId=session?.id||session?.name;
+  const myOffer=offers.find(o=>o.id===myId);
+  const slotsFree=Math.max(0,gap-confirmed.length);
+  const setTarget=d=>onPatch({staffTarget:Math.max(1,Math.min(5,target+d))});
+  const join=()=>{ if(myOffer)return; const willLead=slotsFree>0; onPatch({helperOffers:[...(ev.helperOffers||[]),{id:myId,name:session?.name||"Helfer",ts:new Date().toISOString()}]}); fire&&fire(willLead?"Du leitest mit – danke!":"Auf die Warteliste gesetzt"); };
+  const leave=()=>onPatch({helperOffers:(ev.helperOffers||[]).filter(o=>o.id!==myId)});
+  const removeOffer=id=>onPatch({helperOffers:(ev.helperOffers||[]).filter(o=>o.id!==id)});
+  const Chip=({name,sub,col})=>(<span style={{display:"flex",alignItems:"center",gap:5,background:"#fff",borderRadius:99,padding:"3px 10px 3px 3px",border:`1.5px solid ${col}`}}>
+    <Av name={name} sz={20}/><span style={{fontSize:12.5,fontWeight:700,color:"#0f172a"}}>{name}{sub?<span style={{fontWeight:600,color:"#94a3b8"}}> · {sub}</span>:""}</span></span>);
+  return (
+    <div style={{marginTop:16,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+        <span style={{fontSize:18}}>👥</span>
+        <span style={{fontWeight:800,fontSize:15,color:"#0f172a",flex:1}}>Betreuung</span>
+        <span style={{fontSize:12.5,fontWeight:800,color:enough?"#15803d":"#b45309",background:enough?"#dcfce7":"#fef3c7",borderRadius:99,padding:"3px 10px"}}>{ist}/{target}</span>
+      </div>
+      {isManager&&(
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+          <span style={{fontSize:12,color:"#64748b",fontWeight:600,flex:1}}>Soll-Betreuer (je nach Größe)</span>
+          <button onClick={()=>setTarget(-1)} style={{width:28,height:28,borderRadius:8,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:900,cursor:"pointer"}}>−</button>
+          <span style={{minWidth:20,textAlign:"center",fontWeight:900,fontSize:15}}>{target}</span>
+          <button onClick={()=>setTarget(1)} style={{width:28,height:28,borderRadius:8,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:900,cursor:"pointer"}}>+</button>
+        </div>
+      )}
+      <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:8}}>
+        {trainers.map((tr,i)=><Chip key={"t"+i} name={tr.name||"Trainer"} sub="Trainer" col="#16a34a"/>)}
+        {confirmed.map(o=><span key={o.id} style={{display:"flex",alignItems:"center",gap:5,background:"#fff",borderRadius:99,padding:"3px 9px 3px 3px",border:"1.5px solid #d97706"}}><Av name={o.name} sz={20}/><span style={{fontSize:12.5,fontWeight:700,color:"#0f172a"}}>{o.name} <span style={{fontWeight:600,color:"#94a3b8"}}>· Helfer</span></span>{isManager&&<span onClick={()=>removeOffer(o.id)} style={{color:"#dc2626",fontWeight:800,fontSize:12,cursor:"pointer"}}>×</span>}</span>)}
+        {trainerCount+confirmed.length===0&&<span style={{fontSize:12.5,color:"#94a3b8"}}>Noch niemand eingeteilt.</span>}
+      </div>
+      {!enough&&<div style={{fontSize:12.5,color:"#b45309",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:10,padding:"8px 11px",marginBottom:8,fontWeight:600}}>Noch {target-ist} Betreuer gesucht. Trainer haben Vorrang – Helfer rücken nur nach, wenn Trainer fehlen.</div>}
+      {waitlist.length>0&&(
+        <div style={{marginBottom:8}}>
+          <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.3,marginBottom:5}}>WARTELISTE ({waitlist.length}) – springt bei Absage ein</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+            {waitlist.map(o=><span key={o.id} style={{display:"flex",alignItems:"center",gap:5,background:"#f8fafc",borderRadius:99,padding:"3px 9px 3px 3px",border:"1.5px dashed #cbd5e1"}}><Av name={o.name} sz={18}/><span style={{fontSize:12,fontWeight:600,color:"#475569"}}>{o.name}</span>{isManager&&<span onClick={()=>removeOffer(o.id)} style={{color:"#dc2626",fontWeight:800,fontSize:12,cursor:"pointer"}}>×</span>}</span>)}
+          </div>
+        </div>
+      )}
+      {isHelper&&(myOffer
+        ? <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <span style={{flex:1,fontSize:12.5,fontWeight:700,color:slotsFree<0||confirmed.some(o=>o.id===myId)?"#15803d":"#b45309"}}>{confirmed.some(o=>o.id===myId)?"✓ Du leitest mit":"⏳ Du stehst auf der Warteliste"}</span>
+            <button onClick={leave} style={{padding:"8px 13px",borderRadius:10,border:"1.5px solid #e2e8f0",background:"#fff",color:"#dc2626",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Zurückziehen</button>
+          </div>
+        : <button onClick={join} style={{width:"100%",padding:"11px",borderRadius:11,border:"none",background:slotsFree>0?"#16a34a":"#64748b",color:"#fff",fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>{slotsFree>0?"🙋 Ich leite mit":"🙋 Auf die Warteliste"}</button>
+      )}
+      {isManager&&!enough&&onRequestHelpers&&(
+        <button onClick={onRequestHelpers} style={{width:"100%",marginTop:8,padding:"10px",borderRadius:11,border:"1.5px solid #16a34a",background:"#16a34a10",color:"#15803d",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>🔔 Helfer per Push anfragen</button>
+      )}
+    </div>
+  );
+}
 function MatchReportCard({ ev, roster, onSave }){
   const r=ev.report||{};
   const [gf,setGf]=useState(r.gf==null?"":String(r.gf));
