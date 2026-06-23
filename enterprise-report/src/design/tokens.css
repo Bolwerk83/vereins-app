@@ -34,6 +34,23 @@
   --shadow: 0 1px 2px rgba(31,42,55,.06), 0 8px 24px rgba(31,42,55,.05);
 }
 
+/* Dunkelmodus — nur Farb-Tokens überschrieben; alle Module nutzen Variablen
+   und passen sich automatisch an (auch Charts). Umschaltung via data-theme. */
+:root[data-theme="dark"] {
+  --ink:    #E6EBF2;
+  --slate:  #B4C0CE;
+  --muted:  #8593A4;
+  --line:   #2A3340;
+  --bg:     #0E141B;
+  --panel:  #161D26;
+  --accent: #2DD4BF;
+  --accent-soft: #15302C;
+  --amp-g: #34D399;  --amp-a: #FBBF24;  --amp-r: #F87171;  --amp-n: #8593A4;
+  --amp-g-soft: #122A1F;  --amp-a-soft: #2C2410;  --amp-r-soft: #2C1717;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+  color-scheme: dark;
+}
+
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; margin: 0; }
 body {

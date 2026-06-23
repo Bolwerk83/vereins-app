@@ -140,6 +140,11 @@ export default function App() {
   const [hilfeErstmalig, setHilfeErstmalig] = useState(false)
   const [onbAuf, setOnbAuf] = useState(false)
   const [menuAuf, setMenuAuf] = useState(false)   // ⚙ Einstellungen-Menü (Topbar)
+  const [theme, setTheme] = useState(() => { try { return localStorage.getItem('er_theme') || 'light' } catch { return 'light' } })
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'dark' : 'light')
+    try { localStorage.setItem('er_theme', theme) } catch {}
+  }, [theme])
   const [branding, setBranding] = useState(ladeBranding())
   const [infoView, setInfoView] = useState(null)   // Bericht-Info-Panel (Schaufenster)
   const [detailStart, setDetailStart] = useState(null) // Drill E3→E4: vorgewählte Detailliste
@@ -446,6 +451,15 @@ export default function App() {
                         {SPRACHEN.map((s) => (
                           <button key={s.id} onClick={() => setLang(s.id)} style={{ flex: 1, padding: '6px 8px', border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer',
                             background: lang === s.id ? 'var(--accent)' : 'var(--panel)', color: lang === s.id ? '#fff' : 'var(--muted)' }}>{s.label}</button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 3 }}>Darstellung</div>
+                      <div style={{ display: 'flex', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
+                        {[['light', '☀ Hell'], ['dark', '🌙 Dunkel']].map(([id, label]) => (
+                          <button key={id} onClick={() => setTheme(id)} style={{ flex: 1, padding: '6px 8px', border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                            background: theme === id ? 'var(--accent)' : 'var(--panel)', color: theme === id ? '#fff' : 'var(--muted)' }}>{label}</button>
                         ))}
                       </div>
                     </div>
