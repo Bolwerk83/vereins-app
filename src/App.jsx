@@ -21404,6 +21404,15 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
                 const soll = sollFor(club, cat, axes);
                 const foerder = axes.map((a,i)=>({a,ist:sk[a]||0,soll:soll[i]})).filter(x=>x.ist>0&&x.ist<x.soll);
                 const hasAny = axes.some(a=>(sk[a]||0)>0);
+                const MEASURE_TIPS={
+                  Technik:{train:"2× Ball-/Passübung je Einheit, bewusst beidfüßig",game:"Ruhige erste Berührung – erst sichern, dann spielen"},
+                  Schnelligkeit:{train:"Kurze Antritts-Sprints mit voller Pause",game:"In die Tiefe starten, Lücken attackieren"},
+                  Zweikampf:{train:"1-gegen-1-Duelle, Körper richtig einsetzen",game:"Früh Druck machen, Gegner aktiv stellen"},
+                  Übersicht:{train:"Vor der Annahme Schulterblick einüben",game:"Kopf hoch, früh nach der Anspielstation schauen"},
+                  Abschluss:{train:"Torschuss-Serien aus dem Dribbling",game:"Strafraum besetzen, schnell und platziert abschließen"},
+                  Ausdauer:{train:"Intervallläufe – auch mit Ball",game:"Tempo über die ganze Spielzeit halten"},
+                  Teamplay:{train:"Kombinations- und Spielformen",game:"Anbieten, kommunizieren, für andere mitarbeiten"},
+                };
                 return (
                   <div>
                     {axes.map((ax,i)=>(
@@ -21428,9 +21437,25 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
                       <button type="button" onClick={()=>setShowTrend(s=>!s)} style={{width:"100%",padding:"10px",borderRadius:11,border:"1.5px solid #c7d2fe",background:"#eef2ff",color:"#4f46e5",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{showTrend?"▲ Entwicklung ausblenden":"📈 Entwicklung über die Saison"}</button>
                       {showTrend&&<div style={{marginTop:10,background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:14,padding:"14px"}}><SkillTrend player={p} axes={axes} t={t}/></div>}
                     </div>}
-                    {foerder.length>0&&<div style={{marginTop:12,background:"#fff7ed",border:"1px solid #fed7aa",borderRadius:11,padding:"10px 13px"}}>
-                      <div style={{fontSize:11,fontWeight:800,color:"#9a3412",marginBottom:4,letterSpacing:.3}}>ENTWICKLUNGSZIELE ({cat})</div>
-                      <div style={{fontSize:13,color:"#9a3412",lineHeight:1.6}}>{foerder.map(x=>`${x.a} (${round2(x.ist)}→${x.soll})`).join(", ")}</div>
+                    {hasAny&&<div style={{marginTop:12}}>
+                      <div style={{fontSize:11,fontWeight:800,color:"#9a3412",marginBottom:6,letterSpacing:.3}}>🎯 KI-MASSNAHMEN ({cat})</div>
+                      {foerder.length===0
+                        ? <div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:11,padding:"10px 13px",fontSize:12.5,color:"#166534",lineHeight:1.5}}>Alle Zielwerte erreicht 👏 – Stärken weiter ausbauen und mehr Verantwortung im Team geben.</div>
+                        : <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                            {[...foerder].sort((a,b)=>(b.soll-b.ist)-(a.soll-a.ist)).slice(0,3).map(x=>{
+                              const tip=MEASURE_TIPS[x.a]||{train:"Gezielte Übung im Schwerpunkt",game:"Im Spiel bewusst anwenden"};
+                              const drill=suggestDrillsForSkill(x.a,cat,1)[0]?.d;
+                              return (
+                                <div key={x.a} style={{background:"#fff7ed",border:"1px solid #fed7aa",borderRadius:11,padding:"10px 12px"}}>
+                                  <div style={{fontWeight:800,fontSize:13,color:"#9a3412"}}>{x.a} <span style={{fontWeight:700,color:"#c2410c"}}>{round2(x.ist)} → {x.soll}</span></div>
+                                  <div style={{fontSize:12,color:"#7c2d12",lineHeight:1.55,marginTop:3}}>
+                                    <div>🏋️ Training: {tip.train}{drill?` – z. B. „${drill.title}"`:""}</div>
+                                    <div>⚽ Spiel: {tip.game}</div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>}
                     </div>}
                     {(()=>{
                       const fits = positionFit(sport, sk, club);
