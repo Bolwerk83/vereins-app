@@ -51,21 +51,37 @@ export function snapshot(text, werte = {}) {
   return s
 }
 
-/** Ist der gespeicherte Text gegenüber den aktuellen Daten womöglich veraltet? */
+/** Ist der gespeicherte Text gegenüber den aktuellen Daten womöglich veraltet?
+ *  Liefert zusätzlich `aenderungen` (alle abweichenden Kennzahlen mit „damals → heute")
+ *  und ggf. `periode`, damit die UI einen konkreten Diff zeigen kann. */
 export function istVeraltet(meta, werte = {}, periode = null) {
-  if (!meta) return { veraltet: false }
-  if (meta.periode && periode && meta.periode !== periode) {
-    return { veraltet: true, grund: `Verfasst für Periode ${meta.periode} (aktuell ${periode}).` }
-  }
+  if (!meta) return { veraltet: false, aenderungen: [] }
   const snap = meta.snapshot || {}
+  const aenderungen = []
   for (const id of Object.keys(snap)) {
     const alt = snap[id], neu = werte?.[id]
     if (alt == null || neu == null) continue
-    if ((alt >= 0) !== (neu >= 0)) return { veraltet: true, grund: `${KPI[id]?.name || id}: Vorzeichen gewechselt — Aussage prüfen.` }
+    const vz = (alt >= 0) !== (neu >= 0)
     const rel = Math.abs(alt) > 1e-9 ? Math.abs((neu - alt) / alt) : (neu !== alt ? 1 : 0)
-    if (rel > 0.05) return { veraltet: true, grund: `${KPI[id]?.name || id}: Wert hat sich um ${Math.round(rel * 100)} % geändert.` }
+    if (vz || rel > 0.05) {
+      const k = KPI[id]
+      aenderungen.push({
+        id, name: k?.name || id, einheit: k?.einheit, alt, neu, vorzeichen: vz,
+        deltaPct: Math.round(rel * 100) * (neu >= alt ? 1 : -1),
+        altFmt: k ? formatWert(alt, k.einheit) : String(alt),
+        neuFmt: k ? formatWert(neu, k.einheit) : String(neu)
+      })
+    }
   }
-  return { veraltet: false }
+  if (meta.periode && periode && meta.periode !== periode) {
+    return { veraltet: true, grund: `Verfasst für Periode ${meta.periode} (aktuell ${periode}).`, periode: { alt: meta.periode, neu: periode }, aenderungen }
+  }
+  if (aenderungen.length) {
+    const a = aenderungen[0]
+    const grund = a.vorzeichen ? `${a.name}: Vorzeichen gewechselt — Aussage prüfen.` : `${a.name}: Wert hat sich um ${Math.abs(a.deltaPct)} % geändert.`
+    return { veraltet: true, grund, aenderungen }
+  }
+  return { veraltet: false, aenderungen: [] }
 }
 
 // ---- Persistenz ----------------------------------------------------------
@@ -79,6 +95,18 @@ export function speichereText(id, { text, periode = null, autor = 'Du', werte = 
   return o[id]
 }
 export function loescheText(id) { const o = lade(); delete o[id]; try { localStorage.setItem(KEY, JSON.stringify(o)) } catch {} }
+
+/** Snapshot (referenzierte Werte + Periode) auf den aktuellen Stand heben, ohne
+ *  den Text zu ändern. Der vorherige Stand wandert mit Zeitstempel in `verlauf`,
+ *  damit nachvollziehbar bleibt, auf welche Zahlen sich der Kommentar bezog. */
+export function aktualisiereSnapshot(id, { werte = {}, periode = null, autor = 'Du' } = {}) {
+  const o = lade(); const m = o[id]; if (!m) return null
+  const verlauf = Array.isArray(m.verlauf) ? m.verlauf : []
+  verlauf.unshift({ snapshot: m.snapshot || {}, periode: m.periode ?? null, bis: Date.now(), autor })
+  o[id] = { ...m, snapshot: snapshot(m.text, werte), periode: periode ?? m.periode, aktualisiert: Date.now(), verlauf: verlauf.slice(0, 10) }
+  try { localStorage.setItem(KEY, JSON.stringify(o)) } catch {}
+  return o[id]
+}
 
 // ---- Vorlagen & KI-Formulierungshilfe ------------------------------------
 export const VORLAGEN = [

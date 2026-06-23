@@ -4,7 +4,7 @@ import { KPI } from '../core/kpiRegistry.js'
 import { ampelStatus, trendAusHistorie } from '../core/ampel.js'
 import { AMPEL_FARBE, AMPEL_SOFT, AMPEL_LABEL, formatWert, TREND_ICON, kpiSymbol } from '../design/theme.js'
 import { kpiInsight } from '../core/insights.js'
-import { renderText, istVeraltet, ladeText, speichereText, loescheText, VORLAGEN, kiVorschlaege } from '../core/textbausteine.js'
+import { renderText, istVeraltet, ladeText, speichereText, loescheText, aktualisiereSnapshot, VORLAGEN, kiVorschlaege } from '../core/textbausteine.js'
 import { kpiAnzeige, statusVon, darfFreigeben, FREIGABE_STATUS, FREIGABE_LABEL, NICHT_VERFUEGBAR } from '../core/kpiFreigabe.js'
 import { useNav } from './NavContext.jsx'
 import { useKpiDef } from '../modules/kennzahlen/KpiDefContext.jsx'
@@ -236,6 +236,7 @@ export function Textbox({ id, werte = {}, periode = null, titel = 'Controller-Ko
   const starten = () => { setDraft(meta?.text || ''); setVorschl([]); setEdit(true) }
   const speichern = () => { setMeta(speichereText(id, { text: draft, periode, werte })); setEdit(false) }
   const entfernen = () => { loescheText(id); setMeta(null); setEdit(false) }
+  const snapshotAktualisieren = () => { const m = aktualisiereSnapshot(id, { werte, periode }); if (m) setMeta({ ...m }) }
   const insert = (s) => {
     const el = ref.current
     if (!el) { setDraft((d) => d + s); return }
@@ -257,8 +258,40 @@ export function Textbox({ id, werte = {}, periode = null, titel = 'Controller-Ko
       </div>
 
       {!edit ? (
-        meta?.text ? <div style={{ fontSize: 13.5, lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{renderText(meta.text, werte)}</div>
-          : <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>Noch kein Kommentar.{editierbar ? ' Auf „Kommentieren" klicken.' : ''}</div>
+        <div>
+          {meta?.text ? <div style={{ fontSize: 13.5, lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{renderText(meta.text, werte)}</div>
+            : <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>Noch kein Kommentar.{editierbar ? ' Auf „Kommentieren" klicken.' : ''}</div>}
+
+          {meta && ver.veraltet && (
+            <div style={{ marginTop: 10, padding: '9px 11px', borderRadius: 'var(--radius-sm)', background: 'var(--amp-a-soft)', border: '1px solid var(--amp-a)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--amp-a)' }}>⚠ Zahlen haben sich seit dem Kommentar geändert</span>
+                {editierbar && <button onClick={snapshotAktualisieren} title="Den Kommentar auf den aktuellen Datenstand heben (Text bleibt, Vergleichswerte werden aktualisiert)."
+                  style={{ ...btn, borderColor: 'var(--amp-a)', color: 'var(--amp-a)' }}>↻ Snapshot aktualisieren</button>}
+              </div>
+              {ver.periode && (
+                <div style={{ fontSize: 12, marginTop: 6, color: 'var(--ink)' }}>
+                  Periode: <b>{ver.periode.alt}</b> <span style={{ color: 'var(--muted)' }}>→</span> <b>{ver.periode.neu}</b>
+                </div>
+              )}
+              {ver.aenderungen?.length > 0 && (
+                <div style={{ display: 'grid', gap: 4, marginTop: 6 }}>
+                  {ver.aenderungen.map((a) => (
+                    <div key={a.id} style={{ fontSize: 12, display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' }}>
+                      <span style={{ color: 'var(--slate)' }}>{a.name}:</span>
+                      <span className="mono" style={{ color: 'var(--muted)' }}>damals {a.altFmt}</span>
+                      <span style={{ color: 'var(--muted)' }}>→</span>
+                      <span className="mono" style={{ fontWeight: 700 }}>heute {a.neuFmt}</span>
+                      <span className="mono" style={{ color: a.deltaPct >= 0 ? 'var(--amp-g)' : 'var(--amp-r)' }}>
+                        ({a.deltaPct >= 0 ? '+' : ''}{a.deltaPct} %)
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       ) : (
         <div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8, alignItems: 'center' }}>
