@@ -4,7 +4,7 @@
 //  und Ladenhüter-Abbau. Beträge in €.
 // =========================================================================
 import React, { useState } from 'react'
-import { ladeEvents, addEvent, loescheEvent, alleWirksamkeit, MECHANIKEN, mechanikName } from '../../core/events.js'
+import { ladeEvents, addEvent, loescheEvent, alleWirksamkeit, MECHANIKEN, mechanikName, ZIELTYPEN, zielTypInfo, schwerpunktAbgleich, addSchwerpunkt, loescheSchwerpunkt } from '../../core/events.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
@@ -145,6 +145,8 @@ export default function Events({ onGeh }) {
               {e.ladenhueterAbbau > 0 && <Stat label="Ladenhüter abgebaut" wert={eur0(e.ladenhueterAbbau)} farbe="var(--accent)" />}
             </div>
 
+            <Schwerpunkte event={e} onChange={neu} />
+
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5, minWidth: 560 }}>
                 <thead><tr>{['Produkt', 'Normal', 'Ist', 'Mehr', 'Uplift', 'Zusatz-DB', ''].map((h, i) => <th key={i} style={th(i === 0 ? 'left' : 'right')}>{h}</th>)}</tr></thead>
@@ -188,4 +190,43 @@ function Stat({ label, wert, sub, farbe }) {
 }
 function Feld({ label, children }) {
   return <label style={{ fontSize: 11, color: 'var(--muted)' }}><div style={{ marginBottom: 3 }}>{label}</div>{children}</label>
+}
+
+const AMP = { g: 'var(--amp-g)', a: 'var(--amp-a)', r: 'var(--amp-r)' }
+function fmtZiel(wert, einheit) { return einheit === '%' ? wert + ' %' : Math.round(wert).toLocaleString('de-DE') + ' €' }
+
+function Schwerpunkte({ event, onChange }) {
+  const [auf, setAuf] = useState(false)
+  const [sp, setSp] = useState({ fokus: 'gesamt', zielTyp: 'mehrumsatz', zielwert: '', frist: event.bis || '' })
+  const rows = schwerpunktAbgleich(event)
+  const fokusOpt = ['gesamt', ...(event.produkte || []).map((p) => p.name)]
+  const hinzu = () => { if (!sp.zielwert) return; addSchwerpunkt(event.id, { ...sp, zielwert: +sp.zielwert }); setSp({ ...sp, zielwert: '' }); setAuf(false); onChange() }
+  return (
+    <div style={{ background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', padding: 12, margin: '0 0 12px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: rows.length ? 8 : 0 }}>
+        <div style={cap}>🎯 Schwerpunkte — Soll/Ist-Abgleich</div>
+        <button onClick={() => setAuf((v) => !v)} style={{ fontSize: 11.5, cursor: 'pointer', border: '1px solid var(--accent)', color: 'var(--accent)', background: 'var(--panel)', borderRadius: 999, padding: '2px 10px', fontWeight: 600 }}>{auf ? '× abbrechen' : '+ Schwerpunkt'}</button>
+      </div>
+      {rows.length === 0 && !auf && <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 6 }}>Noch kein Schwerpunkt definiert — Ziel-KPI mit Soll-Wert eintragen, um den Soll/Ist-Abgleich zu sehen.</div>}
+      {rows.map((s) => (
+        <div key={s.id} style={{ display: 'grid', gridTemplateColumns: '180px 1fr 150px 26px', alignItems: 'center', gap: 10, padding: '4px 0' }}>
+          <span style={{ fontSize: 12.5 }}><b>{s.fokus === 'gesamt' ? 'Gesamt' : s.fokus}</b> · {s.zielName}</span>
+          <div style={{ background: 'var(--panel)', borderRadius: 4, height: 14, border: '1px solid var(--line)', overflow: 'hidden' }}>
+            <div style={{ width: `${Math.min(100, s.erreichungPct)}%`, height: '100%', background: AMP[s.ampel] }} />
+          </div>
+          <span className="mono" style={{ fontSize: 12, textAlign: 'right', color: AMP[s.ampel], fontWeight: 700 }}>{fmtZiel(s.ist, s.einheit)} / {fmtZiel(s.zielwert, s.einheit)} · {s.erreichungPct}%</span>
+          <button onClick={() => { loescheSchwerpunkt(event.id, s.id); onChange() }} title="löschen" style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--muted)' }}>×</button>
+        </div>
+      ))}
+      {auf && (
+        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap', marginTop: 8 }}>
+          <Feld label="Fokus"><select style={{ ...inp, width: 160 }} value={sp.fokus} onChange={(e) => setSp({ ...sp, fokus: e.target.value })}>{fokusOpt.map((o) => <option key={o} value={o}>{o === 'gesamt' ? 'Gesamt (Aktion)' : o}</option>)}</select></Feld>
+          <Feld label="Ziel-KPI"><select style={{ ...inp, width: 180 }} value={sp.zielTyp} onChange={(e) => setSp({ ...sp, zielTyp: e.target.value })}>{ZIELTYPEN.map((z) => <option key={z.id} value={z.id}>{z.name} ({z.einheit})</option>)}</select></Feld>
+          <Feld label={`Soll (${zielTypInfo(sp.zielTyp).einheit})`}><input style={{ ...inp, width: 110 }} type="number" value={sp.zielwert} onChange={(e) => setSp({ ...sp, zielwert: e.target.value })} /></Feld>
+          <Feld label="Frist"><input style={{ ...inp, width: 150 }} type="date" value={sp.frist} onChange={(e) => setSp({ ...sp, frist: e.target.value })} /></Feld>
+          <button onClick={hinzu} disabled={!sp.zielwert} style={{ padding: '7px 13px', borderRadius: 'var(--radius-sm)', border: 'none', background: sp.zielwert ? 'var(--accent)' : 'var(--line)', color: '#fff', cursor: sp.zielwert ? 'pointer' : 'not-allowed', fontSize: 12.5, fontWeight: 600 }}>Eintragen</button>
+        </div>
+      )}
+    </div>
+  )
 }

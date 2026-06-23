@@ -19,6 +19,15 @@ export const MECHANIKEN = [
 ]
 export const mechanikName = (id) => (MECHANIKEN.find((m) => m.id === id) || {}).name || id
 
+// Schwerpunkt-Ziele je Event: worauf zielt die Aktion, mit Soll-Wert & Frist.
+export const ZIELTYPEN = [
+  { id: 'mehrumsatz', name: 'Mehrumsatz', einheit: '€', quelle: 'mehrumsatz' },
+  { id: 'abbau', name: 'Ladenhüter-/Bestandsabbau', einheit: '€', quelle: 'ladenhueterAbbau' },
+  { id: 'uplift', name: 'Umsatz-Uplift', einheit: '%', quelle: 'upliftPct' },
+  { id: 'db', name: 'Zusätzlicher Deckungsbeitrag', einheit: '€', quelle: 'zusatzDB' }
+]
+export const zielTypInfo = (id) => ZIELTYPEN.find((z) => z.id === id) || ZIELTYPEN[0]
+
 // Seed-Aktionen. produkte[]: baseUmsatz = erwarteter Normalumsatz im Zeitraum,
 // istUmsatz = tatsächlich mit Aktion; dbMarge = Deckungsbeitrags-% des Produkts.
 // ladenhueter + bestandVorher/-Nachher (€) für den Abverkauf-Effekt.
@@ -26,6 +35,10 @@ export const EVENTS_SEED = [
   {
     id: 'blackweek25', name: 'Black Week 2025', mechanik: 'rabatt', rabatt: 20,
     von: '2025-11-24', bis: '2025-11-30', kosten: 60000,
+    schwerpunkte: [
+      { id: 'sp-bw-ebike', fokus: 'E-Bikes', zielTyp: 'mehrumsatz', zielwert: 500000, frist: '2025-11-30' },
+      { id: 'sp-bw-auslauf', fokus: 'Auslaufmodell 2023', zielTyp: 'abbau', zielwert: 150000, frist: '2025-11-30' }
+    ],
     produkte: [
       { name: 'E-Bikes', baseUmsatz: 900000, istUmsatz: 1480000, dbMarge: 32, ladenhueter: false },
       { name: 'Zubehör', baseUmsatz: 120000, istUmsatz: 210000, dbMarge: 45, ladenhueter: false },
@@ -35,6 +48,9 @@ export const EVENTS_SEED = [
   {
     id: 'weihnachten25', name: 'Weihnachtsaktion 2025', mechanik: 'bundle', rabatt: 10,
     von: '2025-12-08', bis: '2025-12-24', kosten: 28000,
+    schwerpunkte: [
+      { id: 'sp-wh-bekl', fokus: 'Bekleidung', zielTyp: 'uplift', zielwert: 60, frist: '2025-12-24' }
+    ],
     produkte: [
       { name: 'Bekleidung', baseUmsatz: 90000, istUmsatz: 165000, dbMarge: 40, ladenhueter: false },
       { name: 'Zubehör-Bundle', baseUmsatz: 60000, istUmsatz: 138000, dbMarge: 38, ladenhueter: false }
@@ -43,6 +59,10 @@ export const EVENTS_SEED = [
   {
     id: 'sommer25', name: 'Ferien-Special 2025', mechanik: 'werbung', rabatt: 0,
     von: '2025-07-15', bis: '2025-08-15', kosten: 42000,
+    schwerpunkte: [
+      { id: 'sp-so-helme', fokus: 'Lagerware Helme 2024', zielTyp: 'abbau', zielwert: 50000, frist: '2025-08-15' },
+      { id: 'sp-so-city', fokus: 'City/Trekking', zielTyp: 'mehrumsatz', zielwert: 180000, frist: '2025-08-15' }
+    ],
     produkte: [
       { name: 'City/Trekking', baseUmsatz: 320000, istUmsatz: 470000, dbMarge: 30, ladenhueter: false },
       { name: 'Lagerware Helme 2024', baseUmsatz: 18000, istUmsatz: 56000, dbMarge: 15, ladenhueter: true, bestandVorher: 95000, bestandNachher: 52000 }
@@ -116,4 +136,34 @@ export function alleWirksamkeit(events = ladeEvents()) {
   }
   summe.roi = summe.kosten ? r0(summe.ergebnisEffekt / summe.kosten * 100) : null
   return { rows, summe }
+}
+
+/** Soll/Ist-Abgleich je Schwerpunkt einer Aktion. Ist-Wert kommt aus der
+ *  Wirksamkeit des fokussierten Produkts (oder „gesamt"). */
+export function schwerpunktAbgleich(event) {
+  const w = wirksamkeit(event)
+  const istVon = (sp) => {
+    const z = zielTypInfo(sp.zielTyp)
+    if (sp.fokus === 'gesamt') return w[z.quelle] || 0
+    const p = w.produkte.find((x) => x.name === sp.fokus)
+    return p ? (p[z.quelle] || 0) : 0
+  }
+  return (event.schwerpunkte || []).map((sp) => {
+    const z = zielTypInfo(sp.zielTyp)
+    const ist = r2(istVon(sp))
+    const erreichungPct = sp.zielwert ? r0(ist / sp.zielwert * 100) : 0
+    const ampel = erreichungPct >= 100 ? 'g' : erreichungPct >= 80 ? 'a' : 'r'
+    return { ...sp, einheit: z.einheit, zielName: z.name, ist, erreichungPct, ampel }
+  })
+}
+
+export function addSchwerpunkt(eventId, sp) {
+  const events = ladeEvents().map((e) => e.id === eventId
+    ? { ...e, schwerpunkte: [...(e.schwerpunkte || []), { ...sp, id: sp.id || 'sp_' + Date.now().toString(36) }] } : e)
+  return speichereEvents(events)
+}
+export function loescheSchwerpunkt(eventId, spId) {
+  const events = ladeEvents().map((e) => e.id === eventId
+    ? { ...e, schwerpunkte: (e.schwerpunkte || []).filter((s) => s.id !== spId) } : e)
+  return speichereEvents(events)
 }
