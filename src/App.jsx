@@ -27649,6 +27649,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           present={Object.entries(viewEv.votes||{}).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>n)}
           canEdit={!isHelper}
           profiles={local.playerProfiles||[]}
+          pastLineups={(local.events||[]).filter(e=>e.tid===viewEv.tid&&e.id!==viewEv.id&&e.lineup&&[...(e.lineup.T||[]),...(e.lineup.A||[]),...(e.lineup.M||[]),...(e.lineup.S||[])].length>0).map(e=>e.lineup)}
           pub={viewEv.type==="turnier"?!!viewEv.lineupPublic:undefined}
           onPubChange={viewEv.type==="turnier"&&!isHelper?(val=>{
             const ev2={...viewEv,lineupPublic:val};
@@ -29960,35 +29961,63 @@ function MatchReportCard({ ev, roster, onSave }){
   );
 }
 
-function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChange=undefined, profiles=[] }){
+// Formation je Teilnehmerzahl (inkl. Torwart). Summe = Anzahl, also spielen alle.
+const LINEUP_SHAPE={3:{T:0,A:1,M:1,S:1},4:{T:1,A:1,M:1,S:1},5:{T:1,A:2,M:1,S:1},6:{T:1,A:2,M:2,S:1},7:{T:1,A:2,M:3,S:1},8:{T:1,A:3,M:3,S:1},9:{T:1,A:3,M:3,S:2},10:{T:1,A:4,M:3,S:2},11:{T:1,A:4,M:4,S:2}};
+const lineupProfByName=(name,profiles)=>(profiles||[]).find(x=>(x.name||"").toLowerCase()===String(name).toLowerCase())||null;
+// KI-Vorschlag: Formation aus der Teilnehmerzahl, Besetzung nach Position + Stärken,
+// Bank für Überzählige, Chemie-Auswertung (wer spielt oft zusammen) aus der Historie.
+function recommendLineup(present, profiles, pastLineups){
+  const names=(present||[]).slice(); const n=names.length;
+  const shape=LINEUP_SHAPE[Math.max(3,Math.min(11,n))]||LINEUP_SHAPE[11];
+  const sk=(p,a)=>{const v=p?.skills?.[a];return typeof v==="number"&&v>0?v:3;};
+  const fit={A:p=>sk(p,"Zweikampf")*1.2+sk(p,"Ausdauer")+sk(p,"Übersicht")*0.6,
+             M:p=>sk(p,"Übersicht")*1.2+sk(p,"Teamplay")+sk(p,"Ausdauer")*0.8,
+             S:p=>sk(p,"Abschluss")*1.3+sk(p,"Schnelligkeit")+sk(p,"Technik")*0.5};
+  const posRe={T:/tor|keeper|tw|reflex/,A:/abwehr|vert|innen|aussen|defen|libero/,M:/mittel|\bmf\b|sechs|acht|zehn|spielmach/,S:/sturm|stürm|stuerm|angriff|fluegel|flügel|spitze|stoss/};
+  const pr=name=>lineupProfByName(name,profiles);
+  const posOf=name=>String(pr(name)?.position||"").toLowerCase();
+  const assigned=new Set(); const lineup={T:[],A:[],M:[],S:[]};
+  if(shape.T){ let gk=names.find(nm=>posRe.T.test(posOf(nm)));
+    if(!gk) gk=[...names].sort((a,b)=>(fit.S(pr(a))+fit.A(pr(a)))-(fit.S(pr(b))+fit.A(pr(b))))[0];
+    if(gk){lineup.T.push(gk);assigned.add(gk);} }
+  ["A","S","M"].forEach(line=>{ const need=shape[line]||0;
+    names.filter(nm=>!assigned.has(nm)&&posRe[line].test(posOf(nm)))
+      .sort((a,b)=>fit[line](pr(b))-fit[line](pr(a))).slice(0,need)
+      .forEach(nm=>{lineup[line].push(nm);assigned.add(nm);}); });
+  ["A","M","S"].forEach(line=>{ let need=(shape[line]||0)-lineup[line].length;
+    while(need-->0){ const c=names.filter(nm=>!assigned.has(nm)).sort((a,b)=>fit[line](pr(b))-fit[line](pr(a)))[0]; if(!c)break; lineup[line].push(c);assigned.add(c);} });
+  const bench=names.filter(nm=>!assigned.has(nm));
+  const formation=[shape.A,shape.M,shape.S].filter(x=>x>0).join("-");
+  const pc={}; (pastLineups||[]).forEach(lu=>{const all=[...(lu.T||[]),...(lu.A||[]),...(lu.M||[]),...(lu.S||[])];for(let i=0;i<all.length;i++)for(let j=i+1;j<all.length;j++){const key=[all[i],all[j]].sort().join("|||");pc[key]=(pc[key]||0)+1;}});
+  const inSq=new Set(names);
+  const pairs=Object.entries(pc).map(([k,c])=>{const[a,b]=k.split("|||");return{a,b,c};}).filter(p=>inSq.has(p.a)&&inSq.has(p.b)&&p.c>=2).sort((x,y)=>y.c-x.c).slice(0,3);
+  return {lineup,bench,formation,pairs,count:n};
+}
+function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChange=undefined, profiles=[], pastLineups=[] }){
   const lu = ev.lineup || {T:[],A:[],M:[],S:[]};
   const placed = [...(lu.T||[]),...(lu.A||[]),...(lu.M||[]),...(lu.S||[])];
   const bench = (present||[]).filter(n=>!placed.includes(n));
+  const [tip,setTip]=useState(null);
+  const topStrength=name=>{const p=lineupProfByName(name,profiles);if(!p?.skills)return"";const e=Object.entries(p.skills).filter(([,v])=>typeof v==="number"&&v>0).sort((a,b)=>b[1]-a[1])[0];return e?`Stärke: ${e[0]} ${e[1]}/5`:"";};
   if(placed.length===0 && !canEdit) return null;
   const place = (name, line) => { const next={T:[...(lu.T||[])],A:[...(lu.A||[])],M:[...(lu.M||[])],S:[...(lu.S||[])]}; for(const k of ["T","A","M","S"]) next[k]=next[k].filter(x=>x!==name); next[line]=[...next[line],name]; onChange&&onChange(next); };
   const remove = (name) => { const next={T:(lu.T||[]).filter(x=>x!==name),A:(lu.A||[]).filter(x=>x!==name),M:(lu.M||[]).filter(x=>x!==name),S:(lu.S||[]).filter(x=>x!==name)}; onChange&&onChange(next); };
   const lineColors={T:"#d97706",A:"#2563eb",M:"#16a34a",S:"#dc2626"};
-  // Auto-Vorschlag: zugesagte Spieler nach Position auf die Linien verteilen.
-  const autoFill = () => {
-    const posOf = name => { const pl=(profiles||[]).find(x=>(x.name||"").toLowerCase()===String(name).toLowerCase()); return String(pl?.position||"").toLowerCase(); };
-    const next={T:[],A:[],M:[],S:[]}; const rest=[];
-    (present||[]).forEach(n=>{ const pos=posOf(n);
-      if(/tor|keeper|tw|reflex/.test(pos)) next.T.push(n);
-      else if(/abwehr|vert|innen|aussen|defen|libero/.test(pos)) next.A.push(n);
-      else if(/mittel|\bmf\b|sechs|acht|zehn|spielmach/.test(pos)) next.M.push(n);
-      else if(/sturm|stürm|stuerm|angriff|fluegel|flügel|spitze|stoss/.test(pos)) next.S.push(n);
-      else rest.push(n);
-    });
-    if(next.T.length===0 && rest.length) next.T.push(rest.shift());
-    const order=["A","M","S","M","A"]; rest.forEach((n,i)=>next[order[i%order.length]].push(n));
-    onChange&&onChange(next);
-  };
+  // KI-Vorschlag: Formation nach Teilnehmerzahl + Besetzung nach Position/Stärken.
+  const autoFill = () => { const rec=recommendLineup(present,profiles,pastLineups); onChange&&onChange(rec.lineup); setTip(rec); };
   return (
     <div style={{marginTop:14,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
         <span style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>Aufstellung <span style={{fontWeight:600,fontSize:12,color:"#94a3b8"}}>({placed.length})</span></span>
-        {canEdit&&(present||[]).length>0&&<button onClick={autoFill} style={{marginLeft:"auto",padding:"6px 12px",borderRadius:9,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>⚡ Vorschlag</button>}
+        {canEdit&&(present||[]).length>0&&<button onClick={autoFill} style={{marginLeft:"auto",padding:"6px 12px",borderRadius:9,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>🤖 Vorschlag</button>}
       </div>
+      {canEdit&&tip&&(
+        <div style={{background:"#eef2ff",border:"1.5px solid #c7d2fe",borderRadius:12,padding:"9px 12px",marginBottom:10,fontSize:12,color:"#3730a3",lineHeight:1.5}}>
+          <b>🤖 Für {tip.count} Spieler:</b> Formation <b>{tip.formation||"—"}</b>{tip.lineup.T.length?" (mit Torwart)":""}{tip.bench.length?` · ${tip.bench.length} auf der Bank`:""}.
+          {tip.pairs.length>0&&<div style={{marginTop:3}}>🤝 Eingespielt: {tip.pairs.map(p=>`${p.a.split(" ")[0]} & ${p.b.split(" ")[0]} (${p.c}×)`).join(", ")}</div>}
+          <div style={{marginTop:3,color:"#6366f1"}}>Besetzung nach Position & Stärken – frei anpassbar (× entfernen, von der Bank zuordnen).</div>
+        </div>
+      )}
       {onPubChange&&(
         <div onClick={()=>onPubChange(!pub)} style={{display:"flex",alignItems:"center",gap:10,background:pub?"#f0fdf4":"#f8fafc",border:`1.5px solid ${pub?"#bbf7d0":"#e2e8f0"}`,borderRadius:12,padding:"10px 12px",marginBottom:10,cursor:"pointer"}}>
           <div style={{flex:1,minWidth:0}}>
@@ -30007,7 +30036,7 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
             <div style={{flex:1,display:"flex",flexWrap:"wrap",gap:5}}>
               {(lu[k]||[]).length===0 && <span style={{fontSize:12,color:"#94a3b8"}}>–</span>}
               {(lu[k]||[]).map(n=>(
-                <span key={n} onClick={()=>canEdit&&remove(n)} style={{display:"flex",alignItems:"center",gap:5,background:"#fff",borderRadius:99,padding:"3px 9px 3px 3px",border:`1.5px solid ${lineColors[k]}`,cursor:canEdit?"pointer":"default"}}>
+                <span key={n} title={topStrength(n)} onClick={()=>canEdit&&remove(n)} style={{display:"flex",alignItems:"center",gap:5,background:"#fff",borderRadius:99,padding:"3px 9px 3px 3px",border:`1.5px solid ${lineColors[k]}`,cursor:canEdit?"pointer":"default"}}>
                   <Av name={n} sz={20}/><span style={{fontSize:12.5,fontWeight:700,color:"#0f172a"}}>{n}</span>{canEdit&&<span style={{color:"#dc2626",fontWeight:800,fontSize:12}}>×</span>}
                 </span>
               ))}
