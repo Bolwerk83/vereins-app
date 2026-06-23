@@ -92,6 +92,24 @@ export async function unsubscribePush() {
   setLocalPref({});
 }
 
+// Testpush an genau dieses Geraet (ruft die notify-Edge-Function im Modus "test").
+export async function testPush() {
+  const c = getConfig();
+  if (!c.url || !c.key) throw new Error("Supabase ist nicht verbunden.");
+  let { endpoint } = getLocalPref();
+  if (!endpoint && "serviceWorker" in navigator) {
+    try { const reg = await navigator.serviceWorker.ready; const sub = await reg.pushManager.getSubscription(); endpoint = sub?.endpoint; } catch {}
+  }
+  if (!endpoint) throw new Error("Erst Benachrichtigungen aktivieren.");
+  const r = await fetch(`${c.url}/functions/v1/notify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "apikey": c.key, "Authorization": "Bearer " + c.key },
+    body: JSON.stringify({ mode: "test", endpoint }),
+  });
+  if (!r.ok) throw new Error("Test fehlgeschlagen (" + r.status + ")");
+  return await r.json().catch(() => ({}));
+}
+
 export async function updatePrefs(prefs) {
   const { endpoint } = getLocalPref();
   if (!endpoint) return;
@@ -180,6 +198,12 @@ export function NotifMount() {
     catch (e) { fire(String(e.message || e)); }
     finally { setBusy(false); }
   };
+  const onTest = async () => {
+    setBusy(true);
+    try { const j = await testPush(); fire(j?.sent ? "Test gesendet – sollte gleich ankommen." : "Gesendet, aber 0 Empfaenger. Push wirklich aktiviert?"); }
+    catch (e) { fire(String(e.message || e)); }
+    finally { setBusy(false); }
+  };
   const togglePref = async (key, val) => {
     const next = { ...prefs, [key]: val };
     setPrefs(next);
@@ -251,11 +275,17 @@ export function NotifMount() {
               </Info>
             )}
 
-            <div style={{display:"flex",gap:8,marginTop:6,marginBottom:14}}>
+            <div style={{display:"flex",gap:8,marginTop:6,marginBottom:subbed?8:14}}>
               {subbed
                 ? <Btn label="Auf diesem Geraet ausschalten" onClick={onDisable} busy={busy} kind="ghost"/>
                 : <Btn label="Auf diesem Geraet aktivieren"  onClick={onEnable}  busy={busy} kind="primary"/>}
             </div>
+            {subbed && (
+              <div style={{marginBottom:14}}>
+                <Btn label="🔔 Test-Benachrichtigung an dieses Geraet" onClick={onTest} busy={busy} kind="primary"/>
+                <p style={{fontSize:11.5,color:"#94a3b8",margin:"6px 2px 0",lineHeight:1.4}}>Schickt dir sofort eine Push, um zu pruefen ob alles funktioniert.</p>
+              </div>
+            )}
 
             <Section title="Was soll mich erreichen?">
               <Sw label="Erinnerungen wenn ich noch nicht abgestimmt habe"
