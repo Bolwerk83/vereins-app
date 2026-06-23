@@ -165,8 +165,35 @@ export function KpiDrillModal({ startId, werte = {}, onClose }) {
               <div style={{ fontSize: 13 }}>{ins.aussage}</div>
             </div>
           )}
+          {/* Warum ist der Wert so? — Treiber-Herleitung aus den Bestandteilen */}
+          {(() => {
+            const sp = (x) => (x == null ? '—' : (x >= 0 ? '+' : '') + x.toFixed(1) + ' %')
+            const treiber = deps.map((d) => {
+              const insd = kpiInsight(d, werte[d])
+              return { d, name: KPI[d].name, abwPct: insd?.abwZielPct, status: ampelStatus({ wert: werte[d], ziel: KPI[d].ziel, richtung: KPI[d].richtung, warn: KPI[d].warn }) }
+            }).filter((x) => x.abwPct != null).sort((a, b) => Math.abs(b.abwPct) - Math.abs(a.abwPct))
+            const top = treiber[0]
+            const richtungTxt = ins?.abwZielPct == null ? '' : (ins.abwZielPct >= 0 ? 'über' : 'unter') + ' Budget'
+            let warum
+            if (deps.length === 0) {
+              warum = ins?.abwZiel != null
+                ? `Direkt gemessene Kennzahl — die Abweichung (${sp(ins.abwZielPct)} ${richtungTxt}) kommt unmittelbar aus der Quelle (SQL/Mock), keine weitere Zerlegung.`
+                : 'Direkt gemessene Kennzahl aus der Quelle — kein Ziel hinterlegt.'
+            } else if (top) {
+              warum = `${k.name} liegt ${sp(ins?.abwZielPct)} ${richtungTxt}. Stärkster Abweichungstreiber unter den Bestandteilen: ${top.name} (${sp(top.abwPct)} ggü. eigenem Budget)` + (treiber[1] ? `, gefolgt von ${treiber[1].name} (${sp(treiber[1].abwPct)}).` : '.')
+            } else {
+              warum = `${k.name} setzt sich aus ${deps.length} Bestandteilen zusammen — tiefer drillen für die Herleitung.`
+            }
+            return (
+              <div style={{ marginTop: 16, padding: '11px 13px', borderRadius: 'var(--radius-sm)', background: 'var(--bg)', border: '1px solid var(--line)' }}>
+                <div className="mono" style={{ fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 4 }}>🔍 Warum ist der Wert so?</div>
+                <div style={{ fontSize: 12.5, lineHeight: 1.5 }}>{warum}</div>
+              </div>
+            )
+          })()}
+
           <div style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700, margin: '16px 0 8px' }}>
-            {deps.length ? 'Setzt sich zusammen aus — tiefer drillen:' : 'Basiskennzahl'}
+            {deps.length ? 'Bestandteile — tiefer drillen (Abweichung ggü. eigenem Budget):' : 'Basiskennzahl'}
           </div>
           {deps.length === 0
             ? <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>Direkt gemessene Kennzahl — kommt aus der Quelle (SQL/Mock), keine weitere Herleitung.</div>
@@ -176,10 +203,14 @@ export function KpiDrillModal({ startId, werte = {}, onClose }) {
                   const kd = KPI[d], wd = werte[d]
                   const sd = ampelStatus({ wert: wd, ziel: kd.ziel, richtung: kd.richtung, warn: kd.warn })
                   const symd = kpiSymbol(kd.einheit)
+                  const insd = kpiInsight(d, wd)
+                  const abw = insd?.abwZielPct
                   return (
                     <button key={d} onClick={() => tief(d)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, textAlign: 'left', cursor: 'pointer', border: '1px solid var(--line)', background: 'var(--panel)', borderRadius: 'var(--radius-sm)', padding: '9px 12px' }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}><AmpelPunkt status={sd} /><span style={{ fontSize: 13, fontWeight: 600 }}>{kd.name}</span></span>
-                      <span className="mono" style={{ fontSize: 13 }}>{symd && <span style={{ color: 'var(--muted)' }}>{symd} </span>}{formatWert(wd, kd.einheit)} <span style={{ color: 'var(--accent)' }}>→</span></span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, minWidth: 0 }}><AmpelPunkt status={sd} /><span style={{ fontSize: 13, fontWeight: 600 }}>{kd.name}</span></span>
+                      <span className="mono" style={{ fontSize: 13, whiteSpace: 'nowrap' }}>
+                        {abw != null && <span style={{ fontSize: 11, color: sd === 'r' ? 'var(--amp-r)' : sd === 'a' ? 'var(--amp-a)' : 'var(--amp-g)', marginRight: 8 }}>{abw >= 0 ? '+' : ''}{abw.toFixed(1)} %</span>}
+                        {symd && <span style={{ color: 'var(--muted)' }}>{symd} </span>}{formatWert(wd, kd.einheit)} <span style={{ color: 'var(--accent)' }}>→</span></span>
                     </button>
                   )
                 })}
