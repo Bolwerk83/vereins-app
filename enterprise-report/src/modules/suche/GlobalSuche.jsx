@@ -71,7 +71,7 @@ export default function GlobalSuche({ onGeh, onKpi, onInfo, rolle }) {
     else if (e.key === 'Escape') { setOffen(false); inputRef.current?.blur() }
   }
 
-  const gruppenFarbe = { Berichte: 'var(--accent)', Analyse: '#7c3aed', Steuerung: '#0891b2', KPI: '#16a34a' }
+  const gruppenFarbe = { Berichte: 'var(--accent)', Analyse: '#7c3aed', Steuerung: '#0891b2', KPI: '#16a34a', Visual: '#db2777' }
 
   return (
     <div ref={boxRef} style={{ position: 'relative', minWidth: 180 }}>

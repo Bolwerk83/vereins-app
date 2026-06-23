@@ -97,6 +97,40 @@ const norm = (s) => String(s || '').toLowerCase().trim()
  * @param {(k:string)=>string} t  i18n-Funktion (Label-Übersetzung)
  * @param {Record<string,{id,name,einheit?}>} kpis  KPI-Registry (KPI)
  */
+// Benannte Visualisierungen (Charts/Diagramme/Sektionen) → Zielbericht. Damit
+// findet man ein Visual auch über seinen Namen und springt direkt dorthin.
+export const VISUALS = [
+  { name: 'Umsatzverlauf je Monat', ziel: 'verkaufsstatistik' },
+  { name: 'Umsatz nach Warengruppe', ziel: 'verkaufsstatistik' },
+  { name: 'Top-Artikel nach Umsatz', ziel: 'verkaufsstatistik' },
+  { name: 'Profit-Center · Geschäftsbereich & Kanal', ziel: 'verkaufsstatistik' },
+  { name: 'E-Bike vs. Bio (Antriebsart)', ziel: 'fahrradstatistik' },
+  { name: 'Verteilung nach Preisklasse', ziel: 'fahrradstatistik' },
+  { name: 'Verkaufte Räder nach Kategorie', ziel: 'fahrradstatistik' },
+  { name: 'ABC-Analyse (Pareto)', ziel: 'einkaufsstatistik' },
+  { name: 'Einkaufsvolumen nach Lieferant', ziel: 'einkaufsstatistik' },
+  { name: 'Gesamt-Output je Monat', ziel: 'produktionsstatistik' },
+  { name: 'Output nach Werk', ziel: 'produktionsstatistik' },
+  { name: 'Bilanzstruktur (Aktiva/Passiva)', ziel: 'finanzcockpit' },
+  { name: 'Risikobild', ziel: 'finanzcockpit' },
+  { name: 'Online ↔ Stationär (Vertriebskanal)', ziel: 'quartalsbericht' },
+  { name: 'Kumulierter Umsatzverlauf', ziel: 'quartalsbericht' },
+  { name: 'Durchschnittliche Verkaufspreise', ziel: 'quartalsbericht' },
+  { name: 'Marktanteil & Benchmark', ziel: 'quartalsbericht' },
+  { name: 'Marktpotenzial je PLZ · White Spots', ziel: 'marktpotenzial' },
+  { name: 'Lagerbestandsentwicklung', ziel: 'bestandsentwicklung' },
+  { name: 'Sternschema-Diagramm', ziel: 'datenarchitektur' },
+  { name: 'BCG-Portfolio-Matrix', ziel: 'portfoliobcg' },
+  { name: 'Produkt-Lebenszyklus-Kurve', ziel: 'lebenszyklus' },
+  { name: 'Deckungsbeitrag (stufenweise)', ziel: 'deckungsbeitrag' },
+  { name: 'GuV / Ergebniskonto (T-Konto)', ziel: 'ergebnis' },
+  { name: 'Profitcenter-Ergebnis (ROCE)', ziel: 'profitcenter' },
+  { name: 'Leasinggebühren nach Kategorie', ziel: 'leasing' },
+  { name: 'Versand: Erlös ↔ Kosten je Klasse', ziel: 'versand' },
+  { name: 'Forderungs-Aging', ziel: 'forderungen' },
+  { name: 'Marketing-Landkarte (Choropleth)', ziel: 'marketingkarte' }
+]
+
 export function baueIndex(t = (k) => k, kpis = {}) {
   const nav = NAV_ZIELE.map((z) => ({
     typ: 'bericht', ziel: z.ziel, gruppe: z.gruppe, label: t(z.schluessel)
@@ -104,7 +138,10 @@ export function baueIndex(t = (k) => k, kpis = {}) {
   const kpi = Object.values(kpis).map((k) => ({
     typ: 'kpi', ziel: k.id, gruppe: 'KPI', label: k.name, sub: k.einheit || null
   }))
-  return [...nav, ...kpi]
+  const visual = VISUALS.map((v) => ({
+    typ: 'visual', ziel: v.ziel, gruppe: 'Visual', label: v.name, sub: '📊 Visual'
+  }))
+  return [...nav, ...kpi, ...visual]
 }
 
 /**
