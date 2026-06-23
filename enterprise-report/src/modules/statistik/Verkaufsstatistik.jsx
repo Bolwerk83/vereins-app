@@ -6,6 +6,7 @@ import React, { useState } from 'react'
 import { warengruppen, topArtikel, verlauf, kennzahlen } from '../../core/verkaufsstatistik.js'
 import { monateVon, faktor, pcFaktor, datumsartInfo, filterLabel, pcBaum } from '../../core/statistikFilter.js'
 import StatistikFilter, { ladeFilter, speichereFilter } from './StatistikFilter.jsx'
+import { useGlobalFilter } from '../../core/filterKontext.jsx'
 import { VerlaufChart, AnteilZelle } from '../../components/charts.jsx'
 import ExportButton from '../../components/ExportButton.jsx'
 import { datenstandText } from '../../core/datenstand.js'
@@ -21,9 +22,11 @@ const Wachs = ({ v }) => <span style={{ color: v >= 0 ? 'var(--amp-g)' : 'var(--
 const mioKurz = (n) => (n / 1e6).toLocaleString('de-DE', { maximumFractionDigits: 1 })
 
 export default function Verkaufsstatistik() {
-  const [f, setF] = useState(() => ladeFilter('verkauf', 'beleg'))
-  const aendern = (v) => { setF(v); speichereFilter('verkauf', v) }
-  const dat = datumsartInfo('verkauf', f.datumsart)
+  const g = useGlobalFilter()
+  const [datumsart, setDatumsart] = useState(() => ladeFilter('verkauf', 'beleg').datumsart)
+  const setD = (d) => { setDatumsart(d); speichereFilter('verkauf', { datumsart: d }) }
+  const f = { zeitraum: g.zeitraum, pc: g.pc, datumsart }
+  const dat = datumsartInfo('verkauf', datumsart)
   const fk = faktor(f.zeitraum, f.pc, dat)
   const vlFaktor = pcFaktor(f.pc) * dat.mag
   const k = kennzahlen(fk); const wg = warengruppen(fk); const art = topArtikel(7, fk); const vl = verlauf(monateVon(f.zeitraum), vlFaktor)
@@ -40,7 +43,7 @@ export default function Verkaufsstatistik() {
           <button className="no-print" onClick={() => window.print()} style={{ padding: '7px 13px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: 'var(--panel)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>🖨 Drucken / PDF</button>
         </div>
       </div>
-      <StatistikFilter bereich="verkauf" wert={f} onChange={aendern} />
+      <StatistikFilter bereich="verkauf" datumsart={datumsart} onDatumsart={setD} />
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
         {[['Umsatz', mio(k.umsatz)], ['Wachstum z. Vorjahr', (k.wachstumPct >= 0 ? '+' : '') + k.wachstumPct + ' %', k.wachstumPct >= 0 ? 'var(--amp-g)' : 'var(--amp-r)'], ['Absatzmenge', stk(k.menge) + ' Stk'], ['Ø Auftragswert', eur(k.avgBon)], ['DB-Marge', k.dbProzent + ' %'], ['Online-Anteil', k.onlineAnteilPct + ' %']].map(([l, v, c]) => (

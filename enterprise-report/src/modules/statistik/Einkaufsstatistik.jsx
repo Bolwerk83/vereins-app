@@ -6,6 +6,7 @@ import React, { useState } from 'react'
 import { lieferanten, warengruppen, abcAnalyse, kennzahlen } from '../../core/einkaufsstatistik.js'
 import { faktor, datumsartInfo, filterLabel } from '../../core/statistikFilter.js'
 import StatistikFilter, { ladeFilter, speichereFilter } from './StatistikFilter.jsx'
+import { useGlobalFilter } from '../../core/filterKontext.jsx'
 import ExportButton from '../../components/ExportButton.jsx'
 import { datenstandText } from '../../core/datenstand.js'
 
@@ -20,9 +21,11 @@ const eur = (n) => Math.round(n).toLocaleString('de-DE') + ' €'
 const Wachs = ({ v }) => <span style={{ color: v >= 0 ? 'var(--amp-r)' : 'var(--amp-g)', fontWeight: 600 }}>{v >= 0 ? '▲' : '▼'} {Math.abs(v)} %</span>
 
 export default function Einkaufsstatistik() {
-  const [f, setF] = useState(() => ladeFilter('einkauf', 'wareneingang'))
-  const aendern = (v) => { setF(v); speichereFilter('einkauf', v) }
-  const dat = datumsartInfo('einkauf', f.datumsart)
+  const g = useGlobalFilter()
+  const [datumsart, setDatumsart] = useState(() => ladeFilter('einkauf', 'wareneingang').datumsart)
+  const setD = (d) => { setDatumsart(d); speichereFilter('einkauf', { datumsart: d }) }
+  const f = { zeitraum: g.zeitraum, pc: g.pc, datumsart }
+  const dat = datumsartInfo('einkauf', datumsart)
   const fk = faktor(f.zeitraum, f.pc, dat)
   const k = kennzahlen(fk); const lf = lieferanten(fk); const wg = warengruppen(fk); const abc = abcAnalyse(fk)
   return (
@@ -38,7 +41,7 @@ export default function Einkaufsstatistik() {
           <button className="no-print" onClick={() => window.print()} style={{ padding: '7px 13px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: 'var(--panel)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>🖨 Drucken / PDF</button>
         </div>
       </div>
-      <StatistikFilter bereich="einkauf" wert={f} onChange={aendern} />
+      <StatistikFilter bereich="einkauf" datumsart={datumsart} onDatumsart={setD} />
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
         {[['Einkaufsvolumen', mio(k.volumen)], ['vs. Vorjahr', (k.wachstumPct >= 0 ? '+' : '') + k.wachstumPct + ' %'], ['Bestellungen', k.bestellungen.toLocaleString('de-DE')], ['Ø Bestellwert', eur(k.avgBestellwert)], ['Ø Liefertreue', k.liefertreue + ' %', k.liefertreue >= 92 ? 'var(--amp-g)' : 'var(--amp-a)'], ['Skonto-Potenzial', eur(k.skontoPotenzial), 'var(--amp-g)']].map(([l, v, c]) => (

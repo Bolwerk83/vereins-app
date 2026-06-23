@@ -6,6 +6,7 @@ import React, { useState } from 'react'
 import { produkte, monatsOutput, werke, kennzahlen } from '../../core/produktionsstatistik.js'
 import { monateVon, pcFaktor, datumsartInfo, filterLabel } from '../../core/statistikFilter.js'
 import StatistikFilter, { ladeFilter, speichereFilter } from './StatistikFilter.jsx'
+import { useGlobalFilter } from '../../core/filterKontext.jsx'
 import { BalkenChart } from '../../components/charts.jsx'
 import ExportButton from '../../components/ExportButton.jsx'
 import { datenstandText } from '../../core/datenstand.js'
@@ -20,9 +21,11 @@ const ampAus = (v) => v <= 2 ? 'var(--amp-g)' : v <= 3.5 ? 'var(--amp-a)' : 'var
 const Trend = ({ v }) => <span style={{ color: v >= 0 ? 'var(--amp-g)' : 'var(--amp-r)', fontWeight: 600 }}>{v >= 0 ? '▲' : '▼'} {Math.abs(v)} %</span>
 
 export default function Produktionsstatistik() {
-  const [f, setF] = useState(() => ladeFilter('produktion', 'fertig'))
-  const aendern = (v) => { setF(v); speichereFilter('produktion', v) }
-  const dat = datumsartInfo('produktion', f.datumsart)
+  const g = useGlobalFilter()
+  const [datumsart, setDatumsart] = useState(() => ladeFilter('produktion', 'fertig').datumsart)
+  const setD = (d) => { setDatumsart(d); speichereFilter('produktion', { datumsart: d }) }
+  const f = { zeitraum: g.zeitraum, pc: g.pc, datumsart }
+  const dat = datumsartInfo('produktion', datumsart)
   const opts = { monate: monateVon(f.zeitraum), faktor: pcFaktor(f.pc) * dat.mag, shift: dat.shift }
   const k = kennzahlen(opts); const pr = produkte(opts); const mo = monatsOutput(opts); const wk = werke(opts)
   const leer = k.stueck === 0
@@ -39,7 +42,7 @@ export default function Produktionsstatistik() {
           <button className="no-print" onClick={() => window.print()} style={{ padding: '7px 13px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: 'var(--panel)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>🖨 Drucken / PDF</button>
         </div>
       </div>
-      <StatistikFilter bereich="produktion" wert={f} onChange={aendern} />
+      <StatistikFilter bereich="produktion" datumsart={datumsart} onDatumsart={setD} />
       {leer && (
         <div style={{ ...card, padding: '16px 18px', borderLeft: '3px solid var(--amp-a)', marginBottom: 14, fontSize: 13 }}>
           ⚠ Für den gewählten Zeitraum liegen noch keine Produktions-Ist-Daten vor (Output-Historie reicht bis Juni). Bitte ein Halbjahr/Quartal aus H1 wählen.

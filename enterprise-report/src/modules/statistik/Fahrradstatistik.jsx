@@ -6,6 +6,7 @@ import React, { useState } from 'react'
 import { kategorien, antrieb, preisklassen, kennzahlen } from '../../core/fahrradstatistik.js'
 import { faktor, datumsartInfo, filterLabel } from '../../core/statistikFilter.js'
 import StatistikFilter, { ladeFilter, speichereFilter } from './StatistikFilter.jsx'
+import { useGlobalFilter } from '../../core/filterKontext.jsx'
 import { BalkenChart } from '../../components/charts.jsx'
 import ExportButton from '../../components/ExportButton.jsx'
 import { datenstandText } from '../../core/datenstand.js'
@@ -20,9 +21,11 @@ const stk = (n) => Math.round(n).toLocaleString('de-DE')
 const Wachs = ({ v }) => <span style={{ color: v >= 0 ? 'var(--amp-g)' : 'var(--amp-r)', fontWeight: 600 }}>{v >= 0 ? '▲' : '▼'} {Math.abs(v)} %</span>
 
 export default function Fahrradstatistik() {
-  const [f, setF] = useState(() => ladeFilter('fahrrad', 'beleg'))
-  const aendern = (v) => { setF(v); speichereFilter('fahrrad', v) }
-  const dat = datumsartInfo('verkauf', f.datumsart)
+  const g = useGlobalFilter()
+  const [datumsart, setDatumsart] = useState(() => ladeFilter('fahrrad', 'beleg').datumsart)
+  const setD = (d) => { setDatumsart(d); speichereFilter('fahrrad', { datumsart: d }) }
+  const f = { zeitraum: g.zeitraum, pc: g.pc, datumsart }
+  const dat = datumsartInfo('verkauf', datumsart)
   const fk = faktor(f.zeitraum, f.pc, dat)
   const k = kennzahlen(fk); const kat = kategorien(fk); const a = antrieb(fk); const pk = preisklassen(fk)
   const maxKat = Math.max(...kat.map((x) => x.stueck))
@@ -39,7 +42,7 @@ export default function Fahrradstatistik() {
           <button className="no-print" onClick={() => window.print()} style={{ padding: '7px 13px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: 'var(--panel)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>🖨 Drucken / PDF</button>
         </div>
       </div>
-      <StatistikFilter bereich="verkauf" wert={f} onChange={aendern} />
+      <StatistikFilter bereich="verkauf" datumsart={datumsart} onDatumsart={setD} />
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
         {[['Verkaufte Räder', stk(k.stueck) + ' Stk'], ['Wachstum z. Vorjahr', (k.wachstumPct >= 0 ? '+' : '') + k.wachstumPct + ' %', k.wachstumPct >= 0 ? 'var(--amp-g)' : 'var(--amp-r)'], ['Umsatz', mio(k.umsatz)], ['Ø Verkaufspreis', eur(k.avgPreis)], ['E-Bike-Anteil', k.eBikeAnteilPct + ' %', 'var(--accent)'], ['Ø Marge', k.margeProzent + ' %']].map(([l, v, c]) => (

@@ -7,6 +7,7 @@ import Onboarding from './modules/onboarding/Onboarding.jsx'
 import { schonGesehen, merkeGesehen } from './core/onboarding.js'
 import { KpiDefProvider } from './modules/kennzahlen/KpiDefContext.jsx'
 import { NavProvider } from './components/NavContext.jsx'
+import { FilterProvider, GlobalFilterLeiste } from './core/filterKontext.jsx'
 import { detailFuerBereich } from './core/detailberichte.js'
 import Kennzahlen from './modules/kennzahlen/Kennzahlen.jsx'
 import BurgerMenu from './components/BurgerMenu.jsx'
@@ -378,6 +379,7 @@ export default function App() {
   const infoMeta = infoView ? (eintragIndex[infoView] || { label: infoView, bereich: bereichVon(infoView), relevant: darfBereich(rolle, bereichVon(infoView)), pfad: null }) : null
 
   return (
+    <FilterProvider>
     <div>
       {/* Topbar */}
       <header className="no-print" style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--panel)', borderBottom: '1px solid var(--line)',
@@ -645,6 +647,9 @@ export default function App() {
         {ansicht === 'marktpotenzial' && (
           <Marktpotenzial />
         )}
+        {['verkaufsstatistik', 'fahrradstatistik', 'einkaufsstatistik', 'produktionsstatistik'].includes(ansicht) && (
+          <GlobalFilterLeiste />
+        )}
         {ansicht === 'verkaufsstatistik' && (
           <Verkaufsstatistik />
         )}
@@ -776,5 +781,6 @@ export default function App() {
           style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>🎫 Ticket erstellen</a>
       </footer>
     </div>
+    </FilterProvider>
   )
 }
