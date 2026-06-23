@@ -467,7 +467,7 @@ export default function App() {
         details: (bereich) => { const d = detailFuerBereich(bereich); if (d) gehDetail(d.id); else geh('detailberichte') },
         struktur: () => gehDetail('hierarchie')
       }}>
-      <main style={{ padding: '22px 24px', maxWidth: 'none', margin: 0 }}>
+      <main style={{ padding: '22px 24px', maxWidth: 1800, margin: '0 auto' }}>
         {ansicht !== 'wizard' && eintragIndex[ansicht] && (
           <BerichtInfoBanner view={ansicht} label={eintragIndex[ansicht].label} icon={eintragIndex[ansicht].icon} pfad={eintragIndex[ansicht].pfad} />
         )}
