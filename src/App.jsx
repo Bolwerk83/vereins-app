@@ -7500,10 +7500,18 @@ function PlanEditor({ plan, cid, myTids, data, save, fire, cl, onClose }) {
   const [editExIdx, setEditExIdx] = useState(null);
   const [showTplBrowser, setShowTplBrowser] = useState(false);
   const [showGen, setShowGen] = useState(false);
-  const [genDur, setGenDur] = useState(90);
+  // Dauer aus dem verknüpften – sonst dem nächsten – Trainingstermin des Teams ablesen.
+  const evMinutes = e => { if(!e?.time||!e?.endTime) return null; const [h1,m1]=String(e.time).split(":").map(Number); const [h2,m2]=String(e.endTime).split(":").map(Number); const d=(h2*60+m2)-(h1*60+m1); return d>0?d:null; };
+  const linkedEv = (plan?.id && (data.events||[]).find(e=>e.planId===plan.id))
+    || (data.events||[]).filter(e=>e.type==="training"&&e.tid===tid&&e.date>=now())
+        .sort((a,b)=>((a.date||"")+(a.time||"")).localeCompare((b.date||"")+(b.time||"")))[0]
+    || null;
+  const evDur = evMinutes(linkedEv);
+  const [genDur, setGenDur] = useState(evDur||90);
   const [genFocus, setGenFocus] = useState("auto");
   const myTeams = (data.teams||[]).filter(tm=>myTids.includes(tm.id));
   const GEN_FOCI = [["auto","Ausgewogen"],["technik","Technik"],["taktik","Taktik"],["torschuss","Torschuss"],["spielform","Spielformen"],["kondition","Kondition"]];
+  const durOpts = Array.from(new Set([...(evDur?[evDur]:[]),60,75,90,105])).sort((a,b)=>a-b);
   const doGenerate = () => {
     const tm = (data.teams||[]).find(x=>x.id===tid);
     const ageKey = CAT_TO_AGEKEY[tm?.cat] || CAT_TO_AGEKEY[tm?.name] || "all";
@@ -7579,7 +7587,7 @@ function PlanEditor({ plan, cid, myTids, data, save, fire, cl, onClose }) {
               {exercises.length} Übungen  {totalMins} Min.
             </div>
             <div style={{display:"flex",gap:7}}>
-              <button onClick={()=>setShowGen(s=>!s)}
+              <button onClick={()=>{ const nx=!showGen; setShowGen(nx); if(nx&&evDur) setGenDur(evDur); }}
                 style={{padding:"7px 12px",borderRadius:9,border:`1.5px solid ${t.p}`,background:showGen?t.p:t.p+"12",color:showGen?"#fff":t.p,fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
                 ✨ Auto-Plan
               </button>
@@ -7598,10 +7606,14 @@ function PlanEditor({ plan, cid, myTids, data, save, fire, cl, onClose }) {
           {showGen&&(
             <div style={{border:`1.5px solid ${t.p}55`,background:t.p+"08",borderRadius:13,padding:"13px",marginBottom:12}}>
               <div style={{fontWeight:800,fontSize:13.5,color:"#0f172a",marginBottom:9}}>✨ Trainingsplan automatisch erstellen</div>
-              <div style={{fontSize:11.5,fontWeight:700,color:"#64748b",marginBottom:6}}>Dauer</div>
-              <div style={{display:"flex",gap:6,marginBottom:11}}>
-                {[60,75,90,105].map(m=>(
-                  <button key={m} onClick={()=>setGenDur(m)} style={{flex:1,padding:"8px 0",borderRadius:9,border:`1.5px solid ${genDur===m?t.p:"#e2e8f0"}`,background:genDur===m?t.p:"#fff",color:genDur===m?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{m} Min</button>
+              {linkedEv&&(evDur
+                ? <div style={{fontSize:11.5,color:"#3730a3",background:"#eef2ff",border:"1px solid #c7d2fe",borderRadius:9,padding:"7px 10px",marginBottom:9,fontWeight:600,lineHeight:1.45}}>🗓️ Dauer aus Termin {fmtD(linkedEv.date)}{linkedEv.time?`, ${linkedEv.time}–${linkedEv.endTime}`:""}: <b>{evDur} Min</b> übernommen – unten anpassbar.</div>
+                : <div style={{fontSize:11.5,color:"#92400e",background:"#fef3c7",border:"1px solid #fde68a",borderRadius:9,padding:"7px 10px",marginBottom:9,fontWeight:600,lineHeight:1.45}}>🗓️ Termin {fmtD(linkedEv.date)} hat keine Endzeit – bitte Dauer wählen.</div>
+              )}
+              <div style={{fontSize:11.5,fontWeight:700,color:"#64748b",marginBottom:6}}>Dauer{evDur?" (🗓️ = aus Termin)":""}</div>
+              <div style={{display:"flex",gap:6,marginBottom:11,flexWrap:"wrap"}}>
+                {durOpts.map(m=>(
+                  <button key={m} onClick={()=>setGenDur(m)} style={{flex:"1 0 60px",padding:"8px 0",borderRadius:9,border:`1.5px solid ${genDur===m?t.p:"#e2e8f0"}`,background:genDur===m?t.p:"#fff",color:genDur===m?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{evDur===m?"🗓️ ":""}{m} Min</button>
                 ))}
               </div>
               <div style={{fontSize:11.5,fontWeight:700,color:"#64748b",marginBottom:6}}>Schwerpunkt</div>
