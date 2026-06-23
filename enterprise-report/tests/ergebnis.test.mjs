@@ -33,3 +33,13 @@ test('UKV: Betriebsergebnis = Umsatz − HK(Umsatz) − Verwaltung − Vertrieb'
   assert.equal(u.brutto, +(u.umsatz - u.hku).toFixed(2))
   assert.equal(u.betriebsergebnis, +(u.brutto - u.verwaltung - u.vertrieb).toFixed(2))
 })
+
+test('Profit-Center-Segment-GuV: Positionen skalieren, Marge bleibt', () => {
+  const voll = ergebnis('ist', 1)
+  const teil = ergebnis('ist', 0.4)
+  assert.ok(Math.abs(teil.summeErtrag - voll.summeErtrag * 0.4) < 0.05)
+  assert.ok(Math.abs(teil.betriebsergebnis - voll.betriebsergebnis * 0.4) < 0.05)
+  const margeVoll = voll.betriebsergebnis / voll.summeErtrag
+  const margeTeil = teil.betriebsergebnis / teil.summeErtrag
+  assert.ok(Math.abs(margeVoll - margeTeil) < 0.005)
+})

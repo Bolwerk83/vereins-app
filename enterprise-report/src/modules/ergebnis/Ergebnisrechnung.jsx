@@ -4,6 +4,8 @@
 // =========================================================================
 import React, { useState } from 'react'
 import { DATENARTEN, ergebnis, tKonto, ukv } from '../../core/ergebnis.js'
+import { pcFaktor } from '../../core/statistikFilter.js'
+import PcFilter, { ladePc, speicherePc, pcHinweis } from '../shared/PcFilter.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
@@ -12,9 +14,12 @@ const m = (v) => v.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFr
 export default function Ergebnisrechnung({ onGeh }) {
   const [da, setDa] = useState('ist')
   const [verfahren, setVerfahren] = useState('gkv')
-  const e = ergebnis(da)
-  const t = tKonto(da)
-  const u = ukv(da)
+  const [pc, setPc] = useState(() => ladePc('ergebnis'))
+  const aenderePc = (v) => { setPc(v); speicherePc('ergebnis', v) }
+  const fk = pcFaktor(pc)
+  const e = ergebnis(da, fk)
+  const t = tKonto(da, fk)
+  const u = ukv(da, fk)
   const chip = (aktiv) => ({ padding: '5px 12px', borderRadius: 999, fontSize: 12.5, cursor: 'pointer', fontWeight: 600,
     border: `1px solid ${aktiv ? 'var(--accent)' : 'var(--line)'}`, background: aktiv ? 'var(--accent)' : 'var(--panel)', color: aktiv ? '#fff' : 'var(--ink)' })
   const row = (name, wert, opt = {}) => (
@@ -27,7 +32,7 @@ export default function Ergebnisrechnung({ onGeh }) {
     <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
         <div>
-          <h2 style={{ margin: '0 0 4px' }}>Ergebnisrechnung — Gesamtkostenverfahren</h2>
+          <h2 style={{ margin: '0 0 4px' }}>Ergebnisrechnung — Gesamtkostenverfahren{pcHinweis(pc)}</h2>
           <div style={{ color: 'var(--muted)', fontSize: 13, maxWidth: 720 }}>
             Erträge − Aufwendungen = Betriebsergebnis. Einmal als <b>Staffel</b> und einmal als <b>Ergebniskonto</b>
             (T-Konto, Soll/Haben) — kompakt für das Reporting.
@@ -35,6 +40,7 @@ export default function Ergebnisrechnung({ onGeh }) {
         </div>
         {onGeh && <button onClick={() => onGeh('klr')} style={{ ...card, padding: '7px 12px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>← zur KLR</button>}
       </div>
+      <PcFilter pc={pc} onChange={aenderePc} hinweis="Segment-GuV: Erträge/Aufwendungen anteilig je Profit-Center; Margen bleiben unverändert." />
 
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 10 }}>
         <span style={cap}>Datenart:</span>

@@ -4,6 +4,8 @@
 // =========================================================================
 import React, { useState } from 'react'
 import { direktCosting, stufenweise, SYSTEME } from '../../core/deckungsbeitrag.js'
+import { pcFaktor } from '../../core/statistikFilter.js'
+import PcFilter, { ladePc, speicherePc, pcHinweis } from '../shared/PcFilter.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
@@ -13,6 +15,9 @@ const td = (al, bold) => ({ textAlign: al, padding: '6px 9px', borderBottom: '1p
 
 export default function Deckungsbeitrag({ onGeh }) {
   const [tab, setTab] = useState('mehrstufig')
+  const [pc, setPc] = useState(() => ladePc('deckungsbeitrag'))
+  const aenderePc = (v) => { setPc(v); speicherePc('deckungsbeitrag', v) }
+  const fk = pcFaktor(pc)
   const chip = (aktiv) => ({ padding: '6px 12px', borderRadius: 999, fontSize: 13, cursor: 'pointer', fontWeight: 600,
     border: `1px solid ${aktiv ? 'var(--accent)' : 'var(--line)'}`, background: aktiv ? 'var(--accent)' : 'var(--panel)', color: aktiv ? '#fff' : 'var(--ink)' })
 
@@ -20,7 +25,7 @@ export default function Deckungsbeitrag({ onGeh }) {
     <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
         <div>
-          <h2 style={{ margin: '0 0 4px' }}>Deckungsbeitragsrechnung</h2>
+          <h2 style={{ margin: '0 0 4px' }}>Deckungsbeitragsrechnung{pcHinweis(pc)}</h2>
           <div style={{ color: 'var(--muted)', fontSize: 13, maxWidth: 740 }}>
             Teilkostensicht: Was bleibt vom Umsatz nach den variablen Kosten, um die Fixkosten zu decken? Einstufig
             (Direct Costing) und mehrstufig (stufenweise Fixkostendeckung).
@@ -29,21 +34,23 @@ export default function Deckungsbeitrag({ onGeh }) {
         {onGeh && <button onClick={() => onGeh('ergebnis')} style={{ ...card, padding: '7px 12px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>Ergebnisrechnung →</button>}
       </div>
 
+      {tab !== 'systeme' && <PcFilter pc={pc} onChange={aenderePc} hinweis="Umsätze/Kosten/Fixkosten anteilig je Profit-Center; DB-Quoten bleiben unverändert." />}
+
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
         {[['mehrstufig', 'Mehrstufig (Fixkostendeckung)'], ['einstufig', 'Einstufig (Direct Costing)'], ['systeme', 'Systeme der Kostenrechnung']].map(([id, n]) => (
           <button key={id} style={chip(tab === id)} onClick={() => setTab(id)}>{n}</button>
         ))}
       </div>
 
-      {tab === 'einstufig' && <Einstufig />}
-      {tab === 'mehrstufig' && <Mehrstufig />}
+      {tab === 'einstufig' && <Einstufig fk={fk} />}
+      {tab === 'mehrstufig' && <Mehrstufig fk={fk} />}
       {tab === 'systeme' && <Systeme />}
     </div>
   )
 }
 
-function Einstufig() {
-  const d = direktCosting()
+function Einstufig({ fk = 1 }) {
+  const d = direktCosting(undefined, fk)
   return (
     <div style={{ ...card, padding: 16, overflowX: 'auto' }}>
       <div style={{ ...cap, marginBottom: 10 }}>Direct Costing — DB I je Produkt</div>
@@ -72,8 +79,8 @@ function Einstufig() {
   )
 }
 
-function Mehrstufig() {
-  const s = stufenweise()
+function Mehrstufig({ fk = 1 }) {
+  const s = stufenweise(undefined, undefined, undefined, fk)
   const zeile = (label, wert, opt = {}) => (
     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', fontWeight: opt.bold ? 700 : 400, color: opt.farbe || 'var(--ink)', paddingLeft: opt.indent || 0 }}>
       <span>{opt.prefix || ''}{label}</span><span className="mono">{m(wert)}</span>

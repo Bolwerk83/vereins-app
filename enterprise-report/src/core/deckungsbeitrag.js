@@ -30,11 +30,13 @@ export const PRODUKTE = [
 const r2 = (x) => Math.round(x * 100) / 100
 const pct = (z, n) => (n ? r2(z / n * 100) : 0)
 
-/** Einstufige DB-Rechnung je Produkt (Direct Costing). */
-export function direktCosting(produkte = PRODUKTE) {
+/** Einstufige DB-Rechnung je Produkt (Direct Costing). faktor = Profit-Center-
+ *  Anteil (skaliert absolute Werte; DB-Quoten bleiben unverändert). */
+export function direktCosting(produkte = PRODUKTE, faktor = 1) {
   const rows = produkte.map((p) => {
-    const db1 = r2(p.umsatz - p.varKosten)
-    return { ...p, db1, db1Quote: pct(db1, p.umsatz) }
+    const umsatz = r2(p.umsatz * faktor), varKosten = r2(p.varKosten * faktor)
+    const db1 = r2(umsatz - varKosten)
+    return { ...p, umsatz, varKosten, db1, db1Quote: pct(db1, umsatz) }
   })
   const umsatz = r2(rows.reduce((n, p) => n + p.umsatz, 0))
   const db1 = r2(rows.reduce((n, p) => n + p.db1, 0))
@@ -42,22 +44,24 @@ export function direktCosting(produkte = PRODUKTE) {
 }
 
 /** Mehrstufige DB-Rechnung (stufenweise Fixkostendeckung). */
-export function stufenweise(produkte = PRODUKTE, bereiche = BEREICHE, unternehmensfix = UNTERNEHMENSFIX) {
+export function stufenweise(produkte = PRODUKTE, bereiche = BEREICHE, unternehmensfix = UNTERNEHMENSFIX, faktor = 1) {
   const prod = produkte.map((p) => {
-    const db1 = r2(p.umsatz - p.varKosten)
-    const db2 = r2(db1 - p.produktfix)
-    return { ...p, db1, db2 }
+    const umsatz = r2(p.umsatz * faktor), varKosten = r2(p.varKosten * faktor), produktfix = r2(p.produktfix * faktor)
+    const db1 = r2(umsatz - varKosten)
+    const db2 = r2(db1 - produktfix)
+    return { ...p, umsatz, varKosten, produktfix, db1, db2 }
   })
   const bereicheErg = bereiche.map((b) => {
     const ps = prod.filter((p) => p.bereich === b.id)
     const summeDB2 = r2(ps.reduce((n, p) => n + p.db2, 0))
-    const db3 = r2(summeDB2 - b.bereichsfix)
-    return { ...b, produkte: ps, summeDB2, db3 }
+    const db3 = r2(summeDB2 - r2(b.bereichsfix * faktor))
+    return { ...b, bereichsfix: r2(b.bereichsfix * faktor), produkte: ps, summeDB2, db3 }
   })
   const summeDB3 = r2(bereicheErg.reduce((n, b) => n + b.db3, 0))
-  const betriebsergebnis = r2(summeDB3 - unternehmensfix)
+  const ufix = r2(unternehmensfix * faktor)
+  const betriebsergebnis = r2(summeDB3 - ufix)
   const umsatz = r2(prod.reduce((n, p) => n + p.umsatz, 0))
-  return { bereiche: bereicheErg, summeDB3, unternehmensfix, betriebsergebnis, umsatz }
+  return { bereiche: bereicheErg, summeDB3, unternehmensfix: ufix, betriebsergebnis, umsatz }
 }
 
 // Typologie der Kostenrechnungssysteme (Abb. 2.12) — für Kontext/Lernen.

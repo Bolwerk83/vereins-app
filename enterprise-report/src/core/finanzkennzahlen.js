@@ -72,10 +72,48 @@ function K(gruppe, name, wert, einheit, formel, ziel, richtung, standard, deutun
   return { gruppe, name, wert: p1(wert), einheit, formel, ziel, richtung, standard, deutung }
 }
 
-/** Alle Kennzahlen aus der Datenbasis. */
-export function kennzahlen() {
-  const B = BILANZ, G = GUV, C = CASHFLOW
+// --- Profit-Center-Segmentsicht: absolute Basis skalieren ------------------
+// Strukturelle Verhältniskennzahlen sind größenunabhängig und bleiben gleich;
+// der Faktor skaliert nur die absolute Segmentgröße (Bilanz/GuV/Cashflow).
+const sc = (x, f) => +(x * f).toFixed(2)
+export function scaleBilanz(f = 1) {
+  if (f === 1) return BILANZ
+  const b = {}
+  for (const k of ['anlagevermoegen', 'vorraete', 'forderungen', 'sonstigesUV', 'liquideMittel', 'eigenkapital', 'langfristFK', 'kurzfristFK', 'verbindlLuL', 'verzinslichesFK']) b[k] = sc(BILANZ[k], f)
+  b.umlaufvermoegen = +(b.vorraete + b.forderungen + b.sonstigesUV + b.liquideMittel).toFixed(2)
+  b.summe = +(b.anlagevermoegen + b.umlaufvermoegen).toFixed(2)
+  b.fremdkapital = +(b.langfristFK + b.kurzfristFK).toFixed(2)
+  b.nettofinanzschulden = +(b.verzinslichesFK - b.liquideMittel).toFixed(2)
+  return b
+}
+export function scaleGuv(f = 1) {
+  if (f === 1) return GUV
+  const g = { steuersatz: GUV.steuersatz }
+  for (const k of ['umsatz', 'materialaufwand', 'personalaufwand', 'abschreibungen', 'sonstigerAufwand', 'zinsaufwand']) g[k] = sc(GUV[k], f)
+  g.ebit = +(g.umsatz - g.materialaufwand - g.personalaufwand - g.abschreibungen - g.sonstigerAufwand).toFixed(2)
+  g.ebitda = +(g.ebit + g.abschreibungen).toFixed(2)
+  g.ebt = +(g.ebit - g.zinsaufwand).toFixed(2)
+  g.steuern = +(g.ebt * g.steuersatz).toFixed(2)
+  g.jahresueberschuss = +(g.ebt - g.steuern).toFixed(2)
+  return g
+}
+export function scaleCashflow(f = 1) {
+  if (f === 1) return CASHFLOW
+  const c = { operativ: sc(CASHFLOW.operativ, f), investition: sc(CASHFLOW.investition, f) }
+  c.freeCashflow = +(c.operativ + c.investition).toFixed(2)
+  return c
+}
+/** Skalierte Basis (Bilanz/GuV/Cashflow + Working Capital) für die Segmentsicht. */
+export function basis(faktor = 1) {
+  const B = scaleBilanz(faktor)
+  return { BILANZ: B, GUV: scaleGuv(faktor), CASHFLOW: scaleCashflow(faktor), TAGE, workingCapital: +(B.umlaufvermoegen - B.kurzfristFK).toFixed(1) }
+}
+
+/** Alle Kennzahlen aus der Datenbasis. faktor = Profit-Center-Segmentanteil. */
+export function kennzahlen(faktor = 1) {
+  const B = scaleBilanz(faktor), G = scaleGuv(faktor), C = scaleCashflow(faktor)
   const capEmployed = B.eigenkapital + B.langfristFK
+  const wc = +(B.umlaufvermoegen - B.kurzfristFK).toFixed(1)
   return [
     // --- Vermögens-/Kapitalstruktur ---
     K('bilanz', 'Eigenkapitalquote', B.eigenkapital / B.summe * 100, '%',
@@ -90,7 +128,7 @@ export function kennzahlen() {
     K('bilanz', 'Anlagenintensität', B.anlagevermoegen / B.summe * 100, '%',
       'Anlagevermögen ÷ Bilanzsumme', { gut: 50, ok: 60 }, 'tief', 'HGB',
       'Kapitalbindung im Anlagevermögen; beeinflusst die Flexibilität.'),
-    K('bilanz', 'Working Capital', workingCapital, 'Mio €',
+    K('bilanz', 'Working Capital', wc, 'Mio €',
       'Umlaufvermögen − kurzfristiges FK', { gut: 20, ok: 0 }, 'hoch', 'Working-Capital-Mgmt',
       'Positiver Puffer für das laufende Geschäft.'),
 
@@ -154,11 +192,11 @@ export function ampelKennzahl(k) {
   return wert >= ziel.gut ? 'g' : wert >= ziel.ok ? 'a' : 'r'
 }
 
-export function kennzahlenGruppe(gruppeId) { return kennzahlen().filter((k) => k.gruppe === gruppeId) }
+export function kennzahlenGruppe(gruppeId, faktor = 1) { return kennzahlen(faktor).filter((k) => k.gruppe === gruppeId) }
 
 /** Risiko-Score: Anteil grün/gelb/rot über alle Kennzahlen. */
-export function risikoBild() {
-  const alle = kennzahlen()
+export function risikoBild(faktor = 1) {
+  const alle = kennzahlen(faktor)
   const z = { g: 0, a: 0, r: 0 }
   alle.forEach((k) => { z[ampelKennzahl(k)]++ })
   return { ...z, total: alle.length }

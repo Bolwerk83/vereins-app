@@ -6,8 +6,10 @@
 // =========================================================================
 import React, { useState } from 'react'
 import {
-  BILANZ, GUV, GRUPPEN, kennzahlenGruppe, ampelKennzahl, risikoBild, TAGE
+  GRUPPEN, kennzahlenGruppe, ampelKennzahl, risikoBild, TAGE, basis
 } from '../../core/finanzkennzahlen.js'
+import { pcFaktor } from '../../core/statistikFilter.js'
+import PcFilter, { ladePc, speicherePc, pcHinweis } from '../shared/PcFilter.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700 }
@@ -67,7 +69,11 @@ function StrukturBalken({ titel, posten }) {
 
 export default function FinanzCockpit() {
   const [note, setNote] = useState(() => { try { return localStorage.getItem(KEY) || '' } catch { return '' } })
-  const rb = risikoBild()
+  const [pc, setPc] = useState(() => ladePc('finanzcockpit'))
+  const aenderePc = (v) => { setPc(v); speicherePc('finanzcockpit', v) }
+  const fk = pcFaktor(pc)
+  const { BILANZ, GUV } = basis(fk)
+  const rb = risikoBild(fk)
   const aktiva = [
     { name: 'Anlagevermögen', kurz: 'AV', wert: BILANZ.anlagevermoegen, farbe: '#1e3a8a' },
     { name: 'Vorräte', kurz: 'Vorräte', wert: BILANZ.vorraete, farbe: '#2563eb' },
@@ -86,10 +92,11 @@ export default function FinanzCockpit() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
         <div>
           <div style={cap}>Finanzcontrolling · Geschäftsjahr · HGB / IFRS</div>
-          <h2 style={{ margin: '4px 0 0' }}>Finanz- &amp; Risiko-Cockpit</h2>
+          <h2 style={{ margin: '4px 0 0' }}>Finanz- &amp; Risiko-Cockpit{pcHinweis(pc)}</h2>
         </div>
         <button className="no-print" onClick={() => window.print()} style={{ padding: '7px 13px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: 'var(--panel)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>🖨 Drucken / PDF</button>
       </div>
+      <PcFilter pc={pc} onChange={aenderePc} hinweis="Segmentsicht: skaliert die absolute Bilanz/GuV-Größe je Profit-Center. Strukturkennzahlen (Quoten/Renditen) sind größenunabhängig und bleiben gleich." />
 
       {/* Überblick: Risikobild + Bilanzstruktur */}
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1.4fr)', gap: 14, marginBottom: 16 }}>
@@ -120,7 +127,7 @@ export default function FinanzCockpit() {
         <section key={g.id} style={{ marginBottom: 18 }}>
           <h3 style={{ margin: '0 0 10px', fontSize: 16 }}>{g.icon} {g.name}</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
-            {kennzahlenGruppe(g.id).map((k) => <KennzahlKarte key={k.name} k={k} />)}
+            {kennzahlenGruppe(g.id, fk).map((k) => <KennzahlKarte key={k.name} k={k} />)}
           </div>
         </section>
       ))}
