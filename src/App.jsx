@@ -24423,6 +24423,18 @@ function ChatTab({data,cid,myTids,session,save,fire,cl,teamOnly=false}) {
   const chats=data.chats||[];
   const chat=chats.find(c=>c.id===selScope);
   const msgs=chat?.messages||[];
+  const [showSeen,setShowSeen]=useState(null);
+  const myName=session.name;
+  // Lesebestätigung: beim Öffnen markieren, dass ich bis zur letzten Nachricht gesehen habe.
+  useEffect(()=>{
+    if(!chat || msgs.length===0 || !myName) return;
+    const latest=msgs[msgs.length-1]?.ts; if(!latest) return;
+    if((chat.seen?.[myName]||"")>=latest) return;
+    const iso=new Date().toISOString();
+    save({...data,chats:(data.chats||[]).map(c=>c.id===selScope?{...c,seen:{...(c.seen||{}),[myName]:iso}}:c)});
+  },[selScope,msgs.length]); // eslint-disable-line
+  const lastMineIdx=(()=>{ for(let i=msgs.length-1;i>=0;i--){ if(!msgs[i].system&&msgs[i].author===myName) return i; } return -1; })();
+  const seersFor=ts=>Object.entries(chat?.seen||{}).filter(([n,s])=>n!==myName&&s&&s>=ts).sort((a,b)=>String(a[1]).localeCompare(String(b[1])));
 
   const delMsg=(id)=>{
     const next=chats.map(c=>c.id===selScope?{...c,messages:c.messages.filter(m=>m.id!==id)}:c);
@@ -24558,6 +24570,16 @@ function ChatTab({data,cid,myTids,session,save,fire,cl,teamOnly=false}) {
                     </div>
                   )}
                   <div style={{fontSize:10,color:"#94a3b8",marginTop:3,textAlign:isMe?"right":"left",marginLeft:isMe?0:4}}>{fmt(msg.ts)}</div>
+                  {isMe&&i===lastMineIdx&&(()=>{ const seers=seersFor(msg.ts); return (
+                    <div style={{textAlign:"right",marginTop:2}}>
+                      <span onClick={()=>setShowSeen(s=>s===msg.id?null:msg.id)} style={{fontSize:10.5,color:seers.length?"#16a34a":"#94a3b8",fontWeight:700,cursor:"pointer"}}>{seers.length?`👁 gesehen von ${seers.length}`:"✓ gesendet"}</span>
+                      {showSeen===msg.id&&seers.length>0&&(
+                        <div style={{marginTop:3,background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:8,padding:"6px 9px",display:"inline-block",textAlign:"left",maxWidth:"100%"}}>
+                          {seers.map(([n,s])=><div key={n} style={{fontSize:11,color:"#475569"}}>{n} · {fmt(s)}</div>)}
+                        </div>
+                      )}
+                    </div>
+                  ); })()}
                 </div>
               </div>
             </div>
