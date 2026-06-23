@@ -6423,7 +6423,8 @@ function FoerderAssistent({ data, myTids, cl, save, fire }){
   // wir zeigen nur den aktuellen Kader -> keine Vorsaison-Daten vermischt.
   const players=(data.playerProfiles||[]).filter(p=>p.mainTid===tid && !p.archived && (!p.seasonId||p.seasonId===sid));
   const [step,setStep]=useState(1);
-  const [two,setTwo]=useState(false);
+  const [trainerCount,setTrainerCount]=useState(1);   // wie viele Trainer heute da sind
+  const two = trainerCount>=2;
   const [focusSkill,setFocusSkill]=useState(null);
   const [manualInd,setManualInd]=useState(null);   // Set<id> | null (=auto)
   const [selPid,setSelPid]=useState(null);
@@ -6442,11 +6443,25 @@ function FoerderAssistent({ data, myTids, cl, save, fire }){
   const teamAxisAvg=a=>{const vs=players.map(p=>p.skills?.[a]).filter(v=>typeof v==="number"&&v>0);return vs.length?vs.reduce((x,y)=>x+y,0)/vs.length:null;};
   const ratedAxes=axes.map(a=>({a,avg:teamAxisAvg(a)})).filter(x=>x.avg!=null).sort((x,y)=>x.avg-y.avg);
   const effFocus=focusSkill||ratedAxes[0]?.a||axes[0];
-  // Einzelförderung: schwächste Spieler im Fokus-Skill -> kleine Gruppe (Trainer B), manuell anpassbar
-  const ranked=players.filter(p=>typeof p.skills?.[effFocus]==="number"&&p.skills[effFocus]>0).sort((a,b)=>a.skills[effFocus]-b.skills[effFocus]);
-  const nInd=Math.min(4,Math.max(1,Math.round(players.length/3)));
+  // Einzelförderung: faire Rotation – wer Bedarf hat (schwacher Fokus-Skill) UND
+  // selten dran war, kommt zuerst; Anwesende werden leicht bevorzugt. Manuell anpassbar.
+  const maxFocusCnt=Math.max(0,...players.map(p=>p.focusCount||0));
+  const scoreOf=p=>{
+    const sk=(typeof p.skills?.[effFocus]==="number"&&p.skills[effFocus]>0)?p.skills[effFocus]:3;
+    const need=5-sk;                              // schwächer => mehr Förderbedarf (0..4)
+    const fair=maxFocusCnt-(p.focusCount||0);     // selten gefördert => Vorrang (Rotation)
+    const att=attOf(p); const attBonus=att!=null?att/100:0.5;
+    return need*1.0 + fair*1.3 + attBonus*0.6;
+  };
+  const ranked=[...players].sort((a,b)=>scoreOf(b)-scoreOf(a));
+  // Kapazität für Einzel-/Kleingruppen: jeder Zusatz-Trainer betreut ~3 Spieler.
+  const nInd = two
+    ? Math.min(Math.max(1,players.length-1), (trainerCount-1)*3)
+    : Math.min(4,Math.max(1,Math.round(players.length/3)));
   const autoInd=ranked.slice(0,nInd);
   const indGroup = manualInd ? players.filter(p=>manualInd.has(p.id)) : autoInd;
+  // Empfohlene Einzel-Zeit je Spieler (im Wechsel, je nach Trainerzahl & Gruppengröße).
+  const perPlayerMin = indGroup.length ? Math.max(5,Math.min(12,Math.round(((trainerCount-1)||1)*18/indGroup.length))) : 0;
   const mainGroup=players.filter(p=>!indGroup.some(x=>x.id===p.id));
   const toggleInd=p=>{ const base=new Set(manualInd?[...manualInd]:autoInd.map(x=>x.id)); base.has(p.id)?base.delete(p.id):base.add(p.id); setManualInd(base); };
   const selPlayer=players.find(p=>p.id===selPid)||indGroup[0]||players[0]||null;
@@ -6471,11 +6486,21 @@ function FoerderAssistent({ data, myTids, cl, save, fire }){
   const stationText=()=>!station?"":["FÖRDERSTATION"+(cat?" – "+cat:"")+" (ca. "+stationMins()+" Min)","Schwerpunkt: "+effSkills.join(", "),"",...station.map(b=>`• [${b.phase}] ${b.d.title} (${b.d.min} Min)\n  ${(kidLang&&b.d.kids)||b.d.desc||""}${b.d.coach?"\n  Coaching: "+b.d.coach:""}`)].join("\n");
   const adoptStation=()=>{
     if(!station) return;
+    const ts=now();
+    // Fairness-Rotation: geförderte Spieler bekommen +1 Zähler & Datum (persistiert).
+    const bumpProfiles = arr => indGroup.length
+      ? (arr||[]).map(p=>indGroup.some(x=>x.id===p.id)?{...p,focusCount:(p.focusCount||0)+1,lastFocus:ts}:p)
+      : (arr||[]);
     if(save&&nextTraining){
-      const plan={cat,createdAt:now(),sessions:[{title:"Förderstation ("+effSkills.join("/")+")",blocks:station.map(b=>({phase:b.phase,id:b.d.id,title:b.d.title,min:b.d.min}))}]};
-      save({...data,events:(data.events||[]).map(e=>e.id===nextTraining.id?{...e,trainingPlan:plan}:e)});
+      const plan={cat,createdAt:ts,sessions:[{title:"Förderstation ("+effSkills.join("/")+")",blocks:station.map(b=>({phase:b.phase,id:b.d.id,title:b.d.title,min:b.d.min}))}]};
+      save({...data,
+        events:(data.events||[]).map(e=>e.id===nextTraining.id?{...e,trainingPlan:plan}:e),
+        playerProfiles:bumpProfiles(data.playerProfiles)});
       fire&&fire("Förderstation an "+nextTraining.title+" ("+fmtD(nextTraining.date)+") gehängt");
-    } else { navigator.clipboard?.writeText(stationText()); fire&&fire("Förderstation kopiert"); }
+    } else {
+      if(save&&indGroup.length) save({...data,playerProfiles:bumpProfiles(data.playerProfiles)});
+      navigator.clipboard?.writeText(stationText()); fire&&fire("Förderstation kopiert");
+    }
   };
 
   const Bar=({v})=>(<div style={{display:"flex",gap:2}}>{[1,2,3,4,5].map(i=><div key={i} style={{width:8,height:8,borderRadius:2,background:i<=v?t.p:"#e2e8f0"}}/>)}</div>);
@@ -6489,7 +6514,7 @@ function FoerderAssistent({ data, myTids, cl, save, fire }){
     <div>
       {teams.length>1&&(
         <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
-          {teams.map(tm=>(<button key={tm.id} onClick={()=>{setTid(tm.id);setStep(1);setFocusSkill(null);setSelPid(null);setSelSkill(null);}} style={{padding:"7px 13px",borderRadius:99,border:`1.5px solid ${tid===tm.id?t.p:"#e2e8f0"}`,background:tid===tm.id?t.p:"#fff",color:tid===tm.id?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{tm.name}</button>))}
+          {teams.map(tm=>(<button key={tm.id} onClick={()=>{setTid(tm.id);setStep(1);setFocusSkill(null);setSelPid(null);setSelSkills([]);}} style={{padding:"7px 13px",borderRadius:99,border:`1.5px solid ${tid===tm.id?t.p:"#e2e8f0"}`,background:tid===tm.id?t.p:"#fff",color:tid===tm.id?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{tm.name}</button>))}
         </div>
       )}
       <div style={{display:"flex",alignItems:"flex-start",marginBottom:16}}>
@@ -6528,9 +6553,12 @@ function FoerderAssistent({ data, myTids, cl, save, fire }){
 
       {players.length>0&&step===2&&(
         <div>
-          <div onClick={()=>setTwo(v=>!v)} style={{display:"flex",alignItems:"center",gap:12,background:two?"#f0fdf4":"#f8fafc",border:`1.5px solid ${two?"#bbf7d0":"#e2e8f0"}`,borderRadius:14,padding:"13px 15px",cursor:"pointer",marginBottom:14}}>
-            <div style={{flex:1}}><div style={{fontSize:14,fontWeight:800,color:two?"#15803d":"#334155"}}>Wir sind zu zweit (2 Trainer)</div><div style={{fontSize:11.5,color:"#94a3b8",marginTop:1}}>Dann schlage ich eine Einzel-/Kleingruppen-Förderung vor.</div></div>
-            <div style={{width:46,height:26,borderRadius:99,background:two?"#16a34a":"#cbd5e1",position:"relative",flexShrink:0}}><div style={{position:"absolute",top:3,left:two?22:3,width:20,height:20,borderRadius:"50%",background:"#fff",transition:"left .2s"}}/></div>
+          <div style={{background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:14,padding:"13px 15px",marginBottom:14}}>
+            <div style={{fontSize:14,fontWeight:800,color:"#334155",marginBottom:8}}>Wie viele Trainer sind heute da?</div>
+            <div style={{display:"flex",gap:7}}>
+              {[1,2,3,4].map(n=>(<button key={n} onClick={()=>{setTrainerCount(n);setManualInd(null);}} style={{flex:1,padding:"9px 0",borderRadius:11,border:`1.5px solid ${trainerCount===n?t.p:"#e2e8f0"}`,background:trainerCount===n?t.p:"#fff",color:trainerCount===n?"#fff":"#475569",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>{n}</button>))}
+            </div>
+            <div style={{fontSize:11.5,color:"#94a3b8",marginTop:7,lineHeight:1.45}}>{two?`${trainerCount-1} Trainer übernehmen parallel die Einzel-/Kleingruppen-Förderung, 1 hält die Hauptgruppe zusammen.`:"Als einzelner Trainer empfehle ich, wer im Training besonders gefördert werden sollte – faire Rotation, damit jeder mal drankommt."}</div>
           </div>
           <div style={{marginBottom:14}}>
             <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.3,marginBottom:8}}>FÖRDER-SCHWERPUNKT</div>
@@ -6547,9 +6575,10 @@ function FoerderAssistent({ data, myTids, cl, save, fire }){
               </div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
                 <div style={{background:"#fff",border:"2px solid #fca5a5",borderRadius:14,padding:"12px"}}>
-                  <div style={{fontWeight:800,color:"#dc2626",fontSize:13,marginBottom:8}}>Einzelförderung · Trainer B <span style={{color:"#94a3b8",fontWeight:600}}>({indGroup.length})</span></div>
+                  <div style={{fontWeight:800,color:"#dc2626",fontSize:13,marginBottom:2}}>Einzelförderung <span style={{color:"#94a3b8",fontWeight:600}}>({indGroup.length})</span></div>
+                  {perPlayerMin>0&&<div style={{fontSize:11,color:"#94a3b8",marginBottom:8}}>≈ {perPlayerMin} Min je Spieler im Wechsel</div>}
                   {indGroup.length===0&&<p style={{fontSize:11.5,color:"#cbd5e1"}}>Niemand – tippe rechts einen Spieler an.</p>}
-                  {indGroup.map(p=><button key={p.id} onClick={()=>toggleInd(p)} style={{display:"flex",alignItems:"center",gap:7,marginBottom:6,width:"100%",background:"none",border:"none",padding:0,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}><Av name={p.name} sz={22}/><span style={{flex:1,minWidth:0,fontSize:12.5,fontWeight:600,color:"#334155",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>{typeof p.skills?.[effFocus]==="number"&&<span style={{fontSize:11,fontWeight:800,color:"#dc2626"}}>{p.skills[effFocus]}/5</span>}<span style={{color:"#cbd5e1",fontSize:14}}>→</span></button>)}
+                  {indGroup.map(p=><button key={p.id} onClick={()=>toggleInd(p)} style={{display:"flex",alignItems:"center",gap:7,marginBottom:6,width:"100%",background:"none",border:"none",padding:0,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}><Av name={p.name} sz={22}/><span style={{flex:1,minWidth:0,fontSize:12.5,fontWeight:600,color:"#334155",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>{(p.focusCount||0)>0&&<span title="schon so oft gefördert" style={{fontSize:10,fontWeight:800,color:"#94a3b8"}}>{p.focusCount}×</span>}{typeof p.skills?.[effFocus]==="number"&&<span style={{fontSize:11,fontWeight:800,color:"#dc2626"}}>{p.skills[effFocus]}/5</span>}<span style={{color:"#cbd5e1",fontSize:14}}>→</span></button>)}
                 </div>
                 <div style={{background:"#fff",border:`2px solid ${t.p}`,borderRadius:14,padding:"12px"}}>
                   <div style={{fontWeight:800,color:t.p,fontSize:13,marginBottom:8}}>Hauptgruppe · Trainer A <span style={{color:"#94a3b8",fontWeight:600}}>({mainGroup.length})</span></div>
@@ -6558,7 +6587,11 @@ function FoerderAssistent({ data, myTids, cl, save, fire }){
               </div>
             </>
           ):(
-            <div style={{background:"#f8fafc",border:"1.5px dashed #e2e8f0",borderRadius:14,padding:"16px",fontSize:13,color:"#64748b",lineHeight:1.5}}>Als einzelner Trainer hältst du die Mannschaft zusammen. In Schritt 3 bekommst du pro Spieler den passenden Übungs-Vorschlag im gewählten Schwerpunkt – ideal für eine Förderstation im normalen Training.</div>
+            <div style={{background:"#fff",border:"2px solid #fca5a5",borderRadius:14,padding:"12px"}}>
+              <div style={{fontWeight:800,color:"#dc2626",fontSize:13,marginBottom:2}}>Diese Spieler sind dran <span style={{color:"#94a3b8",fontWeight:600}}>· faire Rotation</span></div>
+              <div style={{fontSize:11,color:"#94a3b8",marginBottom:8,lineHeight:1.45}}>Förderbedarf im Schwerpunkt + wer selten dran war{perPlayerMin>0?` · ≈ ${perPlayerMin} Min je Spieler`:""}. Über „Übernehmen" (Schritt 3) werden sie als gefördert vermerkt.</div>
+              {indGroup.map(p=>(<div key={p.id} style={{display:"flex",alignItems:"center",gap:7,marginBottom:6}}><Av name={p.name} sz={22}/><span style={{flex:1,minWidth:0,fontSize:12.5,fontWeight:600,color:"#334155",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>{(p.focusCount||0)>0&&<span title="schon so oft gefördert" style={{fontSize:10,fontWeight:800,color:"#94a3b8"}}>{p.focusCount}×</span>}{typeof p.skills?.[effFocus]==="number"&&<span style={{fontSize:11,fontWeight:800,color:"#dc2626"}}>{p.skills[effFocus]}/5</span>}</div>))}
+            </div>
           )}
           {navBtns}
         </div>
