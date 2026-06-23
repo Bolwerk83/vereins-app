@@ -86,6 +86,10 @@ import GoogleReporting from './modules/google/GoogleReporting.jsx'
 import Datenquellen from './modules/datenquellen/Datenquellen.jsx'
 import Bestandsentwicklung from './modules/bestandsentwicklung/Bestandsentwicklung.jsx'
 import Marktpotenzial from './modules/marktpotenzial/Marktpotenzial.jsx'
+import Verkaufsstatistik from './modules/statistik/Verkaufsstatistik.jsx'
+import Fahrradstatistik from './modules/statistik/Fahrradstatistik.jsx'
+import Einkaufsstatistik from './modules/statistik/Einkaufsstatistik.jsx'
+import Produktionsstatistik from './modules/statistik/Produktionsstatistik.jsx'
 import { gesamtStand } from './core/datenstand.js'
 import { bereichVon } from './core/navMeta.js'
 import BerichtInfoModal from './modules/berichtinfo/BerichtInfoModal.jsx'
@@ -261,6 +265,8 @@ export default function App() {
     ] },
     { titel: 'Operativ', icon: '📈', untergruppen: [
       { titel: 'Vertrieb & Markt', eintraege: [
+        E('verkaufsstatistik', 'nav.verkaufsstatistik', '🧾'),
+        E('fahrradstatistik', 'nav.fahrradstatistik', '🚲'),
         E('marketing', 'nav.marketing', '📣'),
         E('marketingkarte', 'nav.marketingkarte', '🗺'),
         E('marktpotenzial', 'nav.marktpotenzial', '🎯'),
@@ -271,9 +277,11 @@ export default function App() {
         E('events', 'nav.events', '🎉')
       ] },
       { titel: 'Bestand & Beschaffung', eintraege: [
+        E('einkaufsstatistik', 'nav.einkaufsstatistik', '🛒'),
         E('lager', 'nav.lager', '🏬'),
         E('bestandsentwicklung', 'nav.bestandsentwicklung', '📉'),
         E('produktion', 'nav.produktion', '🏭'),
+        E('produktionsstatistik', 'nav.produktionsstatistik', '📐'),
         E('wms', 'nav.wms', '🗄'),
         E('bestand', 'nav.bestand', '📦'),
         E('lieferant', 'nav.lieferant', '🚚'),
@@ -599,6 +607,18 @@ export default function App() {
         )}
         {ansicht === 'marktpotenzial' && (
           <Marktpotenzial />
+        )}
+        {ansicht === 'verkaufsstatistik' && (
+          <Verkaufsstatistik />
+        )}
+        {ansicht === 'fahrradstatistik' && (
+          <Fahrradstatistik />
+        )}
+        {ansicht === 'einkaufsstatistik' && (
+          <Einkaufsstatistik />
+        )}
+        {ansicht === 'produktionsstatistik' && (
+          <Produktionsstatistik />
         )}
         {ansicht === 'lzempfehlung' && (
           <LebenszyklusEmpfehlungen onGeh={geh} />
