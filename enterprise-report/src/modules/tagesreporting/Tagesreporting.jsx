@@ -3,6 +3,9 @@
 // =========================================================================
 import React from 'react'
 import { tageskennzahlen, tagesHighlights, HEUTE } from '../../core/tagesreporting.js'
+import AutoSummary from '../../components/AutoSummary.jsx'
+import { useGlobalFilter } from '../../core/filterKontext.jsx'
+import { zeitraumVon, pcFaktor, pcName } from '../../core/statistikFilter.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
@@ -20,6 +23,8 @@ function Spark({ reihe, gut }) {
 export default function Tagesreporting({ onGeh }) {
   const k = tageskennzahlen()
   const hl = tagesHighlights()
+  const g = useGlobalFilter()
+  const zr = zeitraumVon(g.zeitraum)
 
   return (
     <div style={{ maxWidth: '100%', margin: '0 auto' }}>
@@ -30,6 +35,10 @@ export default function Tagesreporting({ onGeh }) {
           14 Tage. Für den schnellen Start in den Tag.
         </div>
       </div>
+
+      {/* Strategische Gesamtlage (regelbasiert, ohne KI) — Kontext zum Tagesstart */}
+      <AutoSummary monate={zr.monate} faktor={pcFaktor(g.pc)} periodeName={zr.name}
+        pcLabel={g.pc !== 'alle' ? pcName(g.pc) : ''} titelZusatz="Gesamtlage zum Tagesstart" />
 
       {/* Highlights */}
       {hl.length > 0 && (
