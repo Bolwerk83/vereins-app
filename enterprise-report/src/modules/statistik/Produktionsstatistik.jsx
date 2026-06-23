@@ -6,6 +6,7 @@ import React, { useState } from 'react'
 import { produkte, monatsOutput, werke, kennzahlen } from '../../core/produktionsstatistik.js'
 import { monateVon, pcFaktor, datumsartInfo, filterLabel } from '../../core/statistikFilter.js'
 import StatistikFilter, { ladeFilter, speichereFilter } from './StatistikFilter.jsx'
+import { BalkenChart } from '../../components/charts.jsx'
 import { datenstandText } from '../../core/datenstand.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
@@ -23,7 +24,6 @@ export default function Produktionsstatistik() {
   const dat = datumsartInfo('produktion', f.datumsart)
   const opts = { monate: monateVon(f.zeitraum), faktor: pcFaktor(f.pc) * dat.mag, shift: dat.shift }
   const k = kennzahlen(opts); const pr = produkte(opts); const mo = monatsOutput(opts); const wk = werke(opts)
-  const maxMo = mo.length ? Math.max(...mo.map((m) => m.stueck)) : 0
   const leer = k.stueck === 0
   return (
     <div style={{ maxWidth: '100%', margin: '0 auto' }}>
@@ -52,18 +52,12 @@ export default function Produktionsstatistik() {
       </div>
 
       {/* Monatsverlauf */}
-      <div style={{ ...card, padding: 14, marginBottom: 14 }}>
-        <div style={{ ...cap, marginBottom: 10 }}>Gesamt-Output je Monat (Stück)</div>
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 14, height: 120 }}>
-          {mo.map((m) => (
-            <div key={m.monat} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-              <div className="mono" style={{ fontSize: 11 }}>{stk(m.stueck)}</div>
-              <div style={{ width: '100%', maxWidth: 60, height: m.stueck / maxMo * 80, background: 'linear-gradient(var(--accent), color-mix(in srgb, var(--accent) 60%, transparent))', borderRadius: '4px 4px 0 0' }} />
-              <div style={{ fontSize: 11, color: 'var(--muted)' }}>{m.monat}</div>
-            </div>
-          ))}
+      {mo.length > 0 && (
+        <div style={{ ...card, padding: 14, marginBottom: 14 }}>
+          <div style={{ ...cap, marginBottom: 10 }}>Gesamt-Output je Monat (Stück)</div>
+          <BalkenChart daten={mo.map((m) => ({ label: m.monat, wert: m.stueck }))} fmt={stk} />
         </div>
-      </div>
+      )}
 
       {/* Produkte */}
       <div style={{ ...card, overflow: 'hidden', marginBottom: 14 }}>

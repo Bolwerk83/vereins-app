@@ -6,6 +6,7 @@ import React, { useState } from 'react'
 import { kategorien, antrieb, preisklassen, kennzahlen } from '../../core/fahrradstatistik.js'
 import { faktor, datumsartInfo, filterLabel } from '../../core/statistikFilter.js'
 import StatistikFilter, { ladeFilter, speichereFilter } from './StatistikFilter.jsx'
+import { BalkenChart } from '../../components/charts.jsx'
 import { datenstandText } from '../../core/datenstand.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
@@ -89,19 +90,7 @@ export default function Fahrradstatistik() {
       {/* Preisklassen */}
       <div style={{ ...card, padding: 14 }}>
         <div style={{ ...cap, marginBottom: 10 }}>Verteilung nach Preisklasse</div>
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 14, height: 130 }}>
-          {pk.map((p) => {
-            const maxP = Math.max(...pk.map((x) => x.stueck))
-            return (
-              <div key={p.id} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                <div className="mono" style={{ fontSize: 12, fontWeight: 700 }}>{p.anteilPct} %</div>
-                <div style={{ width: '100%', maxWidth: 70, height: p.stueck / maxP * 80, background: 'linear-gradient(var(--accent), color-mix(in srgb, var(--accent) 60%, transparent))', borderRadius: '4px 4px 0 0' }} />
-                <div style={{ fontSize: 10.5, color: 'var(--muted)', textAlign: 'center' }}>{p.name}</div>
-                <div className="mono" style={{ fontSize: 10.5, color: 'var(--muted)' }}>{stk(p.stueck)}</div>
-              </div>
-            )
-          })}
-        </div>
+        <BalkenChart daten={pk.map((p) => ({ label: p.name, wert: p.stueck, sub: p.anteilPct + ' %' }))} fmt={stk} />
       </div>
       <div style={{ fontSize: 11, color: 'var(--muted)', textAlign: 'center', padding: '14px 0 20px' }}>Demo-Daten (Mock). „Bio" = Fahrrad ohne elektrischen Antrieb.</div>
     </div>
