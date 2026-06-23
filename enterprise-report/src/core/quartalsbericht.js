@@ -139,16 +139,10 @@ export const AUFTRAG = {
 }
 export const avgWertProBike = () => Math.round(AUFTRAG.wert / AUFTRAG.anzahl)
 
-// --- Filter: Profit-Center & Kanal -----------------------------------------
-// Profit-Center wirken als Anteilsfaktor auf die (Demo-)Umsatzzahlen.
-export const PROFITCENTER = [
-  { id: 'alle',     name: 'Gesamtunternehmen', faktor: 1 },
-  { id: 'pc-bike',  name: 'PC Fahrräder',      faktor: 0.69 },
-  { id: 'pc-tbz',   name: 'PC Teile/Zubehör',  faktor: 0.31 },
-  { id: 'pc-ecom',  name: 'PC E-Commerce',     faktor: 0.586 },
-  { id: 'pc-store', name: 'PC Stationär',      faktor: 0.414 }
-]
-export const pcFaktor = (id) => (PROFITCENTER.find((p) => p.id === id) || PROFITCENTER[0]).faktor
+// --- Filter: Vertriebskanal-Split (Online ↔ Stationär) ---------------------
+// Hinweis: Der Profit-Center-Filter wird zentral über den PC-Baum
+// (core/statistikFilter.js → pcBaum/pcFaktor) geführt; Kanäle sind dort
+// PC-Knoten. Die frühere flache PROFITCENTER-Liste entfällt.
 
 // Kanal-Split (YTD): Online wächst & liegt über Plan, stationär bricht ein.
 export const KANAELE = [

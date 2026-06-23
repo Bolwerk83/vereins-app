@@ -3,7 +3,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   SERIEN, SERIEN_IDS, letzterIstMonat, kennzahlen, kennzahlenMonate, quartalKennzahlen,
-  headline, ampel, perioden, arbeitstage, ARBEITSTAGE, pcFaktor, kanalSplit, inlandAusland, MARKT, avgWertProBike
+  headline, ampel, perioden, arbeitstage, ARBEITSTAGE, kanalSplit, inlandAusland, MARKT, avgWertProBike
 } from '../src/core/quartalsbericht.js'
 
 test('Gesamt = Fahrräder + TBZ je Monat', () => {
