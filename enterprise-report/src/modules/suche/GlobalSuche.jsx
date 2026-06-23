@@ -82,16 +82,18 @@ export default function GlobalSuche({ onGeh, onKpi, onInfo, rolle }) {
           ref={inputRef}
           value={q}
           placeholder={t('suche.platzhalter')}
+          aria-label={t('suche.platzhalter')}
+          role="combobox" aria-expanded={offen} aria-controls="suche-treffer"
           onChange={(e) => { setQ(e.target.value); setOffen(true) }}
           onFocus={() => setOffen(true)}
           onKeyDown={onKeyDown}
           style={{ border: 'none', outline: 'none', background: 'transparent', font: 'inherit', fontSize: 12, width: 150, color: 'var(--ink)' }} />
-        {q && <button onClick={() => { setQ(''); inputRef.current?.focus() }}
+        {q && <button onClick={() => { setQ(''); inputRef.current?.focus() }} aria-label="Suche leeren"
           style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--muted)', fontSize: 13 }}>×</button>}
       </div>
 
       {offen && (
-        <div style={{ position: 'absolute', top: 'calc(100% + 4px)', right: 0, width: 320, maxWidth: '80vw', background: 'var(--panel)',
+        <div id="suche-treffer" role="listbox" style={{ position: 'absolute', top: 'calc(100% + 4px)', right: 0, width: 320, maxWidth: '80vw', background: 'var(--panel)',
           border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)', zIndex: 50, overflow: 'hidden' }}>
           {!q && (
             <div style={{ padding: '8px 12px', fontSize: 10.5, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', background: 'var(--bg)', borderBottom: '1px solid var(--line)' }}>
