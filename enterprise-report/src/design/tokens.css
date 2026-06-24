@@ -104,6 +104,19 @@ select:focus, input:focus, textarea:focus {
 .er-bar:hover .er-bar-val { opacity: 1; }
 .er-bar-val-on { opacity: 1; }
 
+/* =========================================================================
+   PRÄSENTATIONSMODUS — ablenkungsfrei & großformatig zum Vorstellen.
+   Topbar/Banner/Fußzeile aus, Inhalt zentriert & größer, mehr Luft.
+   ========================================================================= */
+:root[data-praesentation="1"] header,
+:root[data-praesentation="1"] footer { display: none !important; }
+:root[data-praesentation="1"] body { font-size: 16px; }
+:root[data-praesentation="1"] main { max-width: 1500px !important; padding: 34px 48px !important; }
+:root[data-praesentation="1"] h2 { font-size: 27px; }
+:root[data-praesentation="1"] h3 { font-size: 20px; }
+:root[data-praesentation="1"] table { font-size: 14px; }
+:root[data-praesentation="1"] table th, :root[data-praesentation="1"] table td { padding: 9px 13px; }
+
 /* Tabellen auf schmalen Geräten horizontal scrollbar */
 .tabelle-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 

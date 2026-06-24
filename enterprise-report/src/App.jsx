@@ -146,6 +146,16 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'dark' : 'light')
     try { localStorage.setItem('er_theme', theme) } catch {}
   }, [theme])
+  const [praesentation, setPraesentation] = useState(false) // ablenkungsfreier Vollbild-/Präsentationsmodus
+  useEffect(() => {
+    document.documentElement.setAttribute('data-praesentation', praesentation ? '1' : '0')
+    if (praesentation) { try { document.documentElement.requestFullscreen?.() } catch {} }
+    else if (document.fullscreenElement) { try { document.exitFullscreen?.() } catch {} }
+    if (!praesentation) return
+    const onKey = (e) => { if (e.key === 'Escape') setPraesentation(false) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [praesentation])
   const [branding, setBranding] = useState(ladeBranding())
   const [infoView, setInfoView] = useState(null)   // Bericht-Info-Panel (Schaufenster)
   const [detailStart, setDetailStart] = useState(null) // Drill E3→E4: vorgewählte Detailliste
@@ -465,6 +475,8 @@ export default function App() {
                             background: theme === id ? 'var(--accent)' : 'var(--panel)', color: theme === id ? '#fff' : 'var(--muted)' }}>{label}</button>
                         ))}
                       </div>
+                      <button onClick={() => { setMenuAuf(false); setPraesentation(true) }} title="Vollbild, ablenkungsfrei, große Schrift — ideal zum Vorstellen"
+                        style={{ width: '100%', marginTop: 6, padding: '7px 8px', border: '1px solid var(--accent)', borderRadius: 'var(--radius-sm)', background: 'var(--accent-soft)', color: 'var(--accent)', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}>🖥 Präsentationsmodus</button>
                     </div>
                     <div style={{ borderTop: '1px solid var(--line)', paddingTop: 8, display: 'grid', gap: 4 }}>
                       {[['⚙ ' + t('nav.wizard'), () => setAnsicht('wizard')], ['🚀 ' + t('nav.onboarding'), () => setOnbAuf(true)], ['❓ ' + t('nav.hilfe'), () => { setHilfeErstmalig(false); setHilfeAuf(true) }]].map(([label, fn]) => (
@@ -780,6 +792,12 @@ export default function App() {
         <a href="https://servicedesk.example.com/controlling" target="_blank" rel="noreferrer"
           style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>🎫 Ticket erstellen</a>
       </footer>
+
+      {praesentation && (
+        <button onClick={() => setPraesentation(false)} title="Präsentationsmodus verlassen (Esc)"
+          style={{ position: 'fixed', top: 14, right: 16, zIndex: 200, padding: '8px 14px', borderRadius: 999, border: '1px solid var(--line)',
+            background: 'var(--panel)', color: 'var(--ink)', fontSize: 13, fontWeight: 600, cursor: 'pointer', boxShadow: 'var(--shadow)' }}>✕ Präsentation verlassen</button>
+      )}
     </div>
     </FilterProvider>
   )
