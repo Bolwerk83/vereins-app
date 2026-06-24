@@ -1,12 +1,13 @@
 // =========================================================================
 //  TAGESREPORTING — täglicher Blick: heute vs. gestern + Verlauf (14 Tage).
 // =========================================================================
-import React from 'react'
+import React, { useState } from 'react'
 import { tageskennzahlen, tagesHighlights, HEUTE } from '../../core/tagesreporting.js'
 import AutoSummary from '../../components/AutoSummary.jsx'
 import ExecKopf, { ampelVon } from '../../components/ExecKopf.jsx'
 import { useGlobalFilter } from '../../core/filterKontext.jsx'
 import { zeitraumVon, pcFaktor, pcName } from '../../core/statistikFilter.js'
+import Plankalender from './Plankalender.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
@@ -32,6 +33,7 @@ export default function Tagesreporting({ onGeh }) {
   const execAussage = umsatzKpi
     ? `Tagesumsatz ${fmt(umsatzKpi.heute, umsatzKpi.einheit)} (${umsatzKpi.deltaPct >= 0 ? '+' : ''}${umsatzKpi.deltaPct} % vs. gestern, Ø 14 Tg ${fmt(umsatzKpi.schnitt, umsatzKpi.einheit)} · ${umsatzKpi.ueberSchnitt ? 'über' : 'unter'} Ø).`
     : 'Tageskennzahlen siehe Karten.'
+  const [tab, setTab] = useState('tag')
   const groessteAbw = hl[0]
   const execEmpf = groessteAbw
     ? `Größte Bewegung: ${groessteAbw.name} ${groessteAbw.deltaPct >= 0 ? '+' : ''}${groessteAbw.deltaPct} % vs. gestern — ${groessteAbw.gut ? 'Treiber sichern' : 'Ursache prüfen und gegensteuern'}.`
@@ -47,6 +49,14 @@ export default function Tagesreporting({ onGeh }) {
         </div>
       </div>
 
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+        {[['tag', 'Tagesüberblick'], ['plankalender', '📅 Plankalender (taggenau)']].map(([id, n]) => (
+          <button key={id} onClick={() => setTab(id)} style={{ padding: '6px 12px', borderRadius: 999, fontSize: 13, cursor: 'pointer', fontWeight: 600, border: `1px solid ${tab === id ? 'var(--accent)' : 'var(--line)'}`, background: tab === id ? 'var(--accent)' : 'var(--panel)', color: tab === id ? '#fff' : 'var(--ink)' }}>{n}</button>
+        ))}
+      </div>
+
+      {tab === 'plankalender' && <Plankalender />}
+      {tab === 'tag' && <>
       <ExecKopf status={execStatus} kennzahl={umsatzKpi ? fmt(umsatzKpi.heute, umsatzKpi.einheit) : undefined} kennzahlLabel="Tagesumsatz" kernaussage={execAussage} empfehlung={execEmpf} />
 
       {/* Strategische Gesamtlage (regelbasiert, ohne KI) — Kontext zum Tagesstart */}
@@ -89,6 +99,7 @@ export default function Tagesreporting({ onGeh }) {
         Bewertung in Richtung der Kennzahl (bei Retouren ist weniger besser).
         {onGeh && <> Tiefer einsteigen über <a style={{ color: 'var(--accent)', cursor: 'pointer' }} onClick={() => onGeh('detailberichte')}>Detailberichte</a> oder die <a style={{ color: 'var(--accent)', cursor: 'pointer' }} onClick={() => onGeh('vertriebkpi')}>Vertriebskennzahlen</a>.</>}
       </div>
+      </>}
     </div>
   )
 }

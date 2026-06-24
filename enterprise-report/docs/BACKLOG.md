@@ -47,6 +47,53 @@ Stand: laufend.
 - [ ] **Profitcenter-Ergebnisrechnung**, Abweichungsanalysen (DB/Erlös), Segmentbericht
 - [ ] **CI-Lauf grün halten** / ggf. PR eröffnen und überwachen
 
+## 🧭 Session-Themen (Simulation, Szenario, Planung, Designer) — offen
+**Szenario-Planung** (Engine `core/szenarioEngine.js` steht, UI offen)
+- [ ] UI mit mehreren Stellhebeln + **Kernaussage** (Größen & wichtigste Auswirkungen erklärt, je Effekt)
+- [ ] Szenarien **speichern · vergleichen · Best-/Worst-Range**
+- [ ] **Kumuliert-Haken** (Effekt über N Perioden, nur Stromgrößen)
+
+**Designer — Kennzahl-Ansichten (Phase 2)**
+- [ ] Ansichten je Kennzahl in den Eigenschaften: Menge/Summe · YTD/MTD/QTD · VJ · Δ VJ (abs/%) · Ø · kumuliert · Forecast · Plan/Abweichung · Anteil — **Label passt sich an**
+- [ ] **Gleitender Ø**: Default 3 Monate, einstellbar in Eigenschaften ODER Filter
+- [ ] **„Seiten-Filter ignorieren"** pro Kennzahl in den Eigenschaften
+
+**Plankalender / DimKalender** (in Arbeit)
+- [ ] Per-Kategorie-Tageskalender (Fixkosten/Filiale/Onlineshop …): Wochentagsmuster, Feiertage (0), kurze Tage (0,5)
+- [ ] Monats-Planwert taggenau verteilen; Integration Tagesreporting (taggenaue Ist + Monatshochrechnung)
+
+**Warenfluss / Vorschau** (Grundgerüst steht)
+- [ ] Echte Orderbuch-/Auftragsdaten (Einkauf/Vertrieb nach Lieferdatum) statt synthetisch
+- [ ] Liquidität an Forderungs-Fälligkeiten & Bestell-Zahlungen koppeln; Plan vs. Orderbuch trennen
+
+**Faire DB / Sponsoring** (Bericht steht)
+- [ ] Assistent-Anbindung „bereinigter DB ohne Sponsoring"; **Sponsoring-Budget-Tracking** (verbraucht/Limit/Ampel); Sonderfälle in Verkaufsstatistik-DB-Spalte
+
+**Assistent / Lokale KI**
+- [ ] Optionaler lokaler LLM-Modus (Ollama, abschaltbar); globalen Filter respektieren; Synonyme erweitern
+
+**Besucherdaten / Filial-Frequenz** (neuer Wunsch)
+- [ ] Besucher-/Frequenzdaten je Filiale erfassen und im Reporting analysieren
+- [ ] Mehrwerte: **Conversion (Käufe ÷ Besucher)**, **Umsatz je Besucher**, Bon-Quote, Stoßzeiten/Heatmap (Tag/Stunde), **Personalbedarf vs. Frequenz**, Wetter-/Aktions-Korrelation, Vergleich Filialen & vs. Onlineshop-Traffic
+- [ ] An Plankalender koppeln (Frequenz je Öffnungstag) und in die Kausal-/Szenario-Logik aufnehmen (Frequenz → Umsatz)
+
+**Diagramme**
+- [x] Farbwechsel Ist→Plan im Warenfluss-Chart
+- [ ] Farbwechsel Ist→Plan auf weitere Charts (Forecast-Brücke, Verlauf)
+
+## 💡 Claudes Empfehlungen (eigene Ideen, würde ich später umsetzen)
+Priorisiert nach Nutzen/Aufwand — alle lokal/ohne KI machbar:
+- [ ] **Treiberbaum-Visualisierung** des Kausalmodells: interaktiver Wirkungsbaum, Klick auf eine Kennzahl zeigt Treiber & Effekte (macht die 80+ Verkettungen sichtbar/prüfbar).
+- [ ] **Sensitivität / Tornado-Diagramm**: jeder Stellhebel ±10 % → gerankt, welcher das EBIT am stärksten bewegt. Top-Hebel auf einen Blick.
+- [ ] **Bandbreiten-/Monte-Carlo-Simulation**: Verteilungen auf den Schlüsseltreibern → Konfidenzband für den EBIT-/Stichtags-Landepunkt (deckt „Best/Worst-Range" datenbasiert ab).
+- [ ] **Forecast-Alerts**: Stichtags-Hochrechnung unter Plan → automatischer Alert + Vorschlag passender Gegenmaßnahmen (nutzt Maßnahmen-Engine).
+- [ ] **Kalibrierung der Kausalfaktoren aus der Historie** (einfache Regression) statt Schätzwerte; je Kante Quelle/Verantwortlicher + Versionierung (Audit der Annahmen).
+- [ ] **Rollierender 12-Monats-Forecast** (nicht nur bis Jahresende/Stichtag).
+- [ ] **Szenario-/Vergleichs-Export** (Excel/PDF) und Teilen mit Berechtigung.
+- [ ] **Kommentar-/Annotations-Layer** auf Berichten (Controller-Notizen, mit Verlauf).
+- [ ] **Echte Datenanbindung** (MSSQL/DWH) über den vorhandenen SQL-Vertrag; Daten-Qualitäts-Gate vor jeder Hochrechnung.
+- [ ] **Konsistente Zeitintelligenz-Schicht** (eine Engine für YTD/MTD/VJ/Ø/kumuliert/gleitender Ø), die Designer, Tagesreporting und Forecast gemeinsam nutzen.
+
 ## Zuletzt ergänzt
 - Lernpfad (modulare Lektionen, Fortschritt, Zusammenhänge) ✅
 - Deckungsbeitragsrechnung (ein-/mehrstufig + Typologie) ✅

@@ -37,8 +37,12 @@ function FlussChart({ zeilen, einheit, stichtagIdx }) {
       {stichtagBucket >= 0 && <line x1={x(stichtagBucket)} y1={pad} x2={x(stichtagBucket)} y2={H - pad} stroke="var(--amp-a)" strokeWidth="1.5" />}
       {stichtagBucket >= 0 && <text x={x(stichtagBucket) - 2} y={pad + 9} textAnchor="end" style={{ fontSize: 9, fill: 'var(--amp-a)', fontWeight: 700 }}>{STICHTAG_LABEL}</text>}
       <path d={istLinie} fill="none" stroke="var(--accent)" strokeWidth="2.2" />
-      {planLinie && <path d={planLinie} fill="none" stroke="var(--accent)" strokeWidth="2" strokeDasharray="5 4" opacity=".8" />}
-      {stichtagBucket >= 0 && <circle cx={x(stichtagBucket)} cy={y(zeilen[stichtagBucket].ende)} r="3.5" fill="var(--amp-a)" />}
+      {planLinie && <path d={planLinie} fill="none" stroke="#7c3aed" strokeWidth="2.2" strokeDasharray="5 4" />}
+      {stichtagBucket >= 0 && <circle cx={x(stichtagBucket)} cy={y(zeilen[stichtagBucket].ende)} r="3.5" fill="#7c3aed" />}
+      <g transform={`translate(${W - 150}, ${pad + 2})`} style={{ fontSize: 9 }}>
+        <line x1="0" y1="4" x2="16" y2="4" stroke="var(--accent)" strokeWidth="2.2" /><text x="20" y="7" style={{ fill: 'var(--muted)' }}>Ist</text>
+        <line x1="52" y1="4" x2="68" y2="4" stroke="#7c3aed" strokeWidth="2.2" strokeDasharray="5 4" /><text x="72" y="7" style={{ fill: 'var(--muted)' }}>Plan</text>
+      </g>
     </svg>
   )
 }
