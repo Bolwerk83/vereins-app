@@ -17,6 +17,7 @@ import { formatWert } from '../design/theme.js'
 import { darfKpi } from './rbac.js'
 import { empfehleHeuristik } from './massnahmen.js'
 import { STICHWORTE } from './biHeuristik.js'
+import { KAUSAL } from './kausalmodell.js'
 
 const norm = (s) => (s || '').toLowerCase().replace(/[’']/g, '').trim()
 const AMP_WORT = { g: 'grün (auf Kurs)', a: 'gelb (beobachten)', r: 'rot (Handlungsbedarf)' }
@@ -175,23 +176,35 @@ function clusterKpis(frage, rolle) {
 }
 
 // --- Was-wäre-wenn: Override propagieren -------------------------------
-// Setzt eine Kennzahl fix auf neuerWert und rechnet alle ABGELEITETEN
-// Kennzahlen (berechne + abhaengig) bis zur Stabilität neu. Die override-
-// Kennzahl selbst bleibt fix (auch wenn sie sonst berechnet würde).
+// Setzt eine Kennzahl fix auf neuerWert und rechnet bis zur Stabilität neu:
+//  (a) die KAUSAL-Kanten (Delta-Wirkungsketten zwischen Roh-Kennzahlen,
+//      z. B. Retouren -> Erlösschmälerung -> Nettoumsatz -> EBIT) und
+//  (b) den strukturellen berechne()-Graph der Registry (Quoten/Ratios).
+// Die override-Kennzahl bleibt fix. Liefert zusätzlich, ob Kausal-Kanten
+// (= Modellannahmen) gegriffen haben.
 function simuliere(werte, overrideId, neuerWert) {
+  const basis = werte
   const sim = { ...werte, [overrideId]: neuerWert }
-  const abgeleitet = Object.values(KPI).filter((k) => typeof k.berechne === 'function' && k.id !== overrideId)
-  for (let runde = 0; runde < 12; runde++) {
+  const struktur = Object.values(KPI).filter((k) => typeof k.berechne === 'function' && k.id !== overrideId)
+  const kausal = KAUSAL.filter((e) => e.id !== overrideId)
+  let kausalGenutzt = false
+  for (let runde = 0; runde < 20; runde++) {
     let geaendert = false
-    for (const k of abgeleitet) {
+    for (const e of kausal) {
+      if (basis[e.id] != null && e.von.every((d) => sim[d] != null && basis[d] != null)) {
+        const nv = e.f(sim, basis)
+        if (Math.abs(nv - (sim[e.id] ?? 0)) > 1e-9) { sim[e.id] = nv; geaendert = true; kausalGenutzt = true }
+      }
+    }
+    for (const k of struktur) {
       if (k.abhaengig.every((d) => sim[d] != null)) {
         const nv = k.berechne(sim)
-        if (nv !== sim[k.id]) { sim[k.id] = nv; geaendert = true }
+        if (Math.abs(nv - (sim[k.id] ?? 0)) > 1e-9) { sim[k.id] = nv; geaendert = true }
       }
     }
     if (!geaendert) break
   }
-  return sim
+  return { sim, kausalGenutzt }
 }
 
 // Liest aus „… auf X", „… um X %", „… um X", „+/- X %" den Zielwert.
@@ -280,20 +293,30 @@ export async function beantworte(frage, { werte = {}, rolle = null, ladeHistorie
     if (neu == null && /halbier/.test(f) && cur != null) neu = cur / 2
     if (neu == null && /verdoppel/.test(f) && cur != null) neu = cur * 2
     if (neu == null) return out('wenn', `Sag mir einen Zielwert für **${top.name}** — z. B. „Was wäre, wenn ${top.name} auf … geht?" oder „… um 10 % sinkt?".`, [top], TIPPS)
-    const sim = simuliere(werte, top.id, neu)
+    const { sim, kausalGenutzt } = simuliere(werte, top.id, neu)
     const amp = (k, w) => ampelStatus({ wert: w, ziel: k.ziel, richtung: k.richtung, warn: k.warn })
     const changes = Object.values(KPI)
       .filter((k) => k.id !== top.id && (!rolle || darfKpi(rolle, k)) && sim[k.id] != null && werte[k.id] != null && Math.abs(sim[k.id] - werte[k.id]) > 1e-9)
-      .map((k) => ({ k, alt: werte[k.id], neu: sim[k.id], aAlt: amp(k, werte[k.id]), aNeu: amp(k, sim[k.id]) }))
-      .sort((a, b) => Math.abs(b.neu - b.alt) - Math.abs(a.neu - a.alt))
-      .slice(0, 6)
+      .map((k) => {
+        const aAlt = amp(k, werte[k.id]), aNeu = amp(k, sim[k.id])
+        const rel = Math.abs((sim[k.id] - werte[k.id]) / (werte[k.id] || 1))
+        // Bedeutung: Ampel-Wechsel zuerst, dann relative Änderung (gedeckelt,
+        // damit Ratio-Explosionen bei Nenner≈0 nicht die Liste dominieren).
+        const score = (aAlt !== aNeu && k.ziel != null ? 1000 : 0) + Math.min(rel, 5) * 100
+        return { k, alt: werte[k.id], neu: sim[k.id], aAlt, aNeu, score }
+      })
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 7)
     let text = `**Szenario:** ${top.name} ${cur != null ? `von ${formatWert(cur, top.einheit)} ` : ''}→ **${formatWert(neu, top.einheit)}**.`
     if (!changes.length) text += `\n\n${top.name} ist eine Eingangsgröße — im hinterlegten Modell hängen keine weiteren Kennzahlen direkt davon ab.`
-    else text += '\n\nAuswirkung auf abhängige Kennzahlen:' + changes.map((c) => {
-      const pfeil = c.neu > c.alt ? '▲' : '▼'
-      const flip = c.k.ziel != null && c.aAlt !== c.aNeu ? ` — Ampel ${AMP_WORT[c.aAlt]} → ${AMP_WORT[c.aNeu]}` : ''
-      return `\n• **${c.k.name}**: ${formatWert(c.alt, c.k.einheit)} ${pfeil} **${formatWert(c.neu, c.k.einheit)}**${flip}`
-    }).join('')
+    else {
+      text += '\n\nAuswirkung auf abhängige Kennzahlen:' + changes.map((c) => {
+        const pfeil = c.neu > c.alt ? '▲' : '▼'
+        const flip = c.k.ziel != null && c.aAlt !== c.aNeu ? ` — Ampel ${AMP_WORT[c.aAlt]} → ${AMP_WORT[c.aNeu]}` : ''
+        return `\n• **${c.k.name}**: ${formatWert(c.alt, c.k.einheit)} ${pfeil} **${formatWert(c.neu, c.k.einheit)}**${flip}`
+      }).join('')
+      if (kausalGenutzt) text += '\n\n_Wirkungsketten gemäß hinterlegtem Kausalmodell (teils Annahmen, z. B. Retouren → Erlösschmälerung → Umsatz → EBIT)._'
+    }
     return out('wenn', text, [top, ...changes.map((c) => c.k)].slice(0, 4), [`Was tun für ${top.name}?`, `Trend von ${top.name}?`])
   }
 

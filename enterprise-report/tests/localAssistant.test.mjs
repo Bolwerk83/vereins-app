@@ -78,7 +78,7 @@ test('Was-wäre-wenn: Override schlägt auf abhängige Kennzahlen durch', async 
   const a = await beantworte('Was wäre, wenn der Wareneinsatz auf 30 Mio € sinkt?', { werte: echte })
   assert.equal(a.intent, 'wenn')
   assert.match(a.text, /30,0 Mio/)
-  assert.match(a.text, /Wareneinsatzquote|DB-Quote/) // abgeleitete Kennzahl ändert sich
+  assert.match(a.text, /EBIT|DB I|Deckungsbeitrag|Wareneinsatzquote|DB-Quote/) // abgeleitete Kennzahl(en) ändern sich
 })
 
 test('Was-wäre-wenn: Eingangsgröße ohne Abhängige wird benannt', async () => {
@@ -93,6 +93,15 @@ test('Was-wäre-wenn: relative Änderung (um 10 %)', async () => {
   const a = await beantworte('Was wäre, wenn der Umsatz um 10 % steigt?', { werte: echte })
   assert.equal(a.intent, 'wenn')
   assert.match(a.text, /57,2 Mio|57,/) // 52 * 1,1
+})
+
+test('Was-wäre-wenn: Kausalkette Retouren -> EBIT greift', async () => {
+  const echte = await ladeKpiWerte()
+  const a = await beantworte('Was wäre, wenn die Retourenquote auf 7 % sinkt?', { werte: echte })
+  assert.equal(a.intent, 'wenn')
+  // Retouren -> Erlösschmälerung -> Nettoumsatz -> EBIT muss durchschlagen
+  assert.match(a.text, /EBIT/)
+  assert.match(a.text, /Kausalmodell/)
 })
 
 test('Hilfe erklärt die Fähigkeiten', async () => {
