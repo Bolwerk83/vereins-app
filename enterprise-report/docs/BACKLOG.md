@@ -96,6 +96,21 @@ Stand: laufend.
 - [ ] **Event-Planung**: geplante Events, Vorher-Wirkung (Wirksamkeitsanalyse `events` ausbauen) und Erwartung/Forecast
 - [ ] **GA-Berichte** ausbauen + **Webshop-Analyse** (Funnel, AOV, Warenkorbabbruch, Onsite-Suche, neu/wiederkehrend) — Schema (FactWebSession/FactWebFunnel) steht bereits
 
+## 🛟 Service-/Retoure-Cockpit & Zoll-Traceability (neuer Wunsch, hoher Wert)
+**Service-/Retoure-Cockpit (360°-Sicht für den Telefon-Support)**
+- [ ] Suche nach **BikeID / Rahmennummer / Gabelnummer / Auftrag / Kunde**
+- [ ] Zeigt: Modell + alle **Seriennummern** (Rahmen/Gabel/Motor/Akku), Kaufdatum,
+      **Garantie/Gewährleistung-Restlaufzeit**, Kunde/Händler, Status (aus Status-Journal),
+      Service-/Reklamations-/Retouren-Historie, Ersatzteilverfügbarkeit
+- [ ] Schnellaktionen: Retoure/Reklamation/Serviceauftrag anlegen
+
+**Zoll / Serien-Traceability (Nachweis für Zollvergünstigung)**
+- [ ] Bewegungsjournal auf **Serien-/Chargen-Ebene** mit **Wareneingangs-/Zollnummer + Ort + Status**
+- [ ] Pro Zoll-/WE-Nummer (z. B. 100 Rahmen) **Mengen-Verbleib**: X auf Lager (Fach), Y in Produktion,
+      Z beim Kunden, W verschrottet, V retour — lückenlos, Summe = Eingangsmenge
+- [ ] **Audit-Trail** je Stück/Charge für den Zollnachweis (aktive Veredelung/Präferenz/Zolllager)
+- [ ] DWH: FactSerienbewegung (Serie/Charge, Zollnummer, OrtKey, Status, Datum) + DimOrt/Fach
+
 ## 💡 Claudes Empfehlungen (eigene Ideen, würde ich später umsetzen)
 Priorisiert nach Nutzen/Aufwand — alle lokal/ohne KI machbar:
 - [ ] **Treiberbaum-Visualisierung** des Kausalmodells: interaktiver Wirkungsbaum, Klick auf eine Kennzahl zeigt Treiber & Effekte (macht die 80+ Verkettungen sichtbar/prüfbar).
