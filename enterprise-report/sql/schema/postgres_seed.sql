@@ -1,4 +1,4 @@
--- Seed / Demo-Befüllung (postgres) · Schema 1.0.0
+-- Seed / Demo-Befüllung (postgres) · Schema 1.1.0
 
 INSERT INTO dimkanal (kanalkey, kanalid, kanal, kanalgruppe) VALUES
   (1, 'organic', 'Organische Suche', 'organic'),

@@ -1,5 +1,5 @@
 -- ============================================================
--- Enterprise Report — DWH-Setup (postgres) · Schema 1.0.0
+-- Enterprise Report — DWH-Setup (postgres) · Schema 1.1.0
 -- Reihenfolge: Dimensionen, dann Fakten, dann Beziehungen.
 -- ============================================================
 
@@ -18,6 +18,9 @@ CREATE TABLE IF NOT EXISTS dimdatum (
   istfeiertag boolean NOT NULL,
   feiertagname varchar(40),
   tagimjahr smallint NOT NULL,
+  rowversion bigint,
+  geaendertvon varchar(80),
+  geaendertam timestamptz,
   CONSTRAINT pk_dimdatum PRIMARY KEY (datumkey)
 );
 
@@ -28,6 +31,9 @@ CREATE TABLE IF NOT EXISTS dimkalender (
   kalendername varchar(60) NOT NULL,
   datumkey integer NOT NULL,
   gewicht numeric(4,2) NOT NULL,
+  rowversion bigint,
+  geaendertvon varchar(80),
+  geaendertam timestamptz,
   CONSTRAINT pk_dimkalender PRIMARY KEY (kalenderkey)
 );
 
@@ -37,6 +43,9 @@ CREATE TABLE IF NOT EXISTS dimwarengruppe (
   warengruppeid varchar(30) NOT NULL,
   bezeichnung varchar(80) NOT NULL,
   bereich varchar(20) NOT NULL,
+  rowversion bigint,
+  geaendertvon varchar(80),
+  geaendertam timestamptz,
   CONSTRAINT pk_dimwarengruppe PRIMARY KEY (warengruppekey)
 );
 
@@ -50,6 +59,10 @@ CREATE TABLE IF NOT EXISTS dimprodukt (
   istebike boolean NOT NULL,
   listenpreis numeric(18,2),
   standardkosten numeric(18,2),
+  bildurl varchar(300),
+  rowversion bigint,
+  geaendertvon varchar(80),
+  geaendertam timestamptz,
   CONSTRAINT pk_dimprodukt PRIMARY KEY (produktkey)
 );
 
@@ -62,6 +75,9 @@ CREATE TABLE IF NOT EXISTS dimstandort (
   region varchar(40),
   flaecheqm integer,
   oeffnungkalenderid varchar(30),
+  rowversion bigint,
+  geaendertvon varchar(80),
+  geaendertam timestamptz,
   CONSTRAINT pk_dimstandort PRIMARY KEY (standortkey)
 );
 
@@ -71,6 +87,9 @@ CREATE TABLE IF NOT EXISTS dimkanal (
   kanalid varchar(30) NOT NULL,
   kanal varchar(60) NOT NULL,
   kanalgruppe varchar(30) NOT NULL,
+  rowversion bigint,
+  geaendertvon varchar(80),
+  geaendertam timestamptz,
   CONSTRAINT pk_dimkanal PRIMARY KEY (kanalkey)
 );
 
@@ -83,6 +102,9 @@ CREATE TABLE IF NOT EXISTS dimkunde (
   land varchar(40),
   istneukunde boolean NOT NULL,
   bonitaet varchar(10),
+  rowversion bigint,
+  geaendertvon varchar(80),
+  geaendertam timestamptz,
   CONSTRAINT pk_dimkunde PRIMARY KEY (kundekey)
 );
 
@@ -93,6 +115,9 @@ CREATE TABLE IF NOT EXISTS dimlieferant (
   name varchar(80) NOT NULL,
   land varchar(40),
   zahlungszieltage smallint,
+  rowversion bigint,
+  geaendertvon varchar(80),
+  geaendertam timestamptz,
   CONSTRAINT pk_dimlieferant PRIMARY KEY (lieferantkey)
 );
 
@@ -103,6 +128,9 @@ CREATE TABLE IF NOT EXISTS dimkonditionsart (
   bezeichnung varchar(80) NOT NULL,
   istsonderfall boolean NOT NULL,
   rabattprozent numeric(5,2),
+  rowversion bigint,
+  geaendertvon varchar(80),
+  geaendertam timestamptz,
   CONSTRAINT pk_dimkonditionsart PRIMARY KEY (konditionsartkey)
 );
 
@@ -115,6 +143,9 @@ CREATE TABLE IF NOT EXISTS dimkpi (
   bereich varchar(20) NOT NULL,
   richtung varchar(12) NOT NULL,
   ziel numeric(18,4),
+  rowversion bigint,
+  geaendertvon varchar(80),
+  geaendertam timestamptz,
   CONSTRAINT pk_dimkpi PRIMARY KEY (kpikey)
 );
 
@@ -139,6 +170,9 @@ CREATE TABLE IF NOT EXISTS factverkauf (
   quellesystem varchar(40),
   ladebatchkey bigint,
   aktualisiertam timestamptz,
+  rowversion bigint,
+  geaendertvon varchar(80),
+  geaendertam timestamptz,
   CONSTRAINT pk_factverkauf PRIMARY KEY (verkaufkey)
 );
 
@@ -157,6 +191,9 @@ CREATE TABLE IF NOT EXISTS factwareneingang (
   quellesystem varchar(40),
   ladebatchkey bigint,
   aktualisiertam timestamptz,
+  rowversion bigint,
+  geaendertvon varchar(80),
+  geaendertam timestamptz,
   CONSTRAINT pk_factwareneingang PRIMARY KEY (wareneingangkey)
 );
 
@@ -175,6 +212,9 @@ CREATE TABLE IF NOT EXISTS factauftrag (
   quellesystem varchar(40),
   ladebatchkey bigint,
   aktualisiertam timestamptz,
+  rowversion bigint,
+  geaendertvon varchar(80),
+  geaendertam timestamptz,
   CONSTRAINT pk_factauftrag PRIMARY KEY (auftragkey)
 );
 
@@ -190,6 +230,9 @@ CREATE TABLE IF NOT EXISTS factbestand (
   quellesystem varchar(40),
   ladebatchkey bigint,
   aktualisiertam timestamptz,
+  rowversion bigint,
+  geaendertvon varchar(80),
+  geaendertam timestamptz,
   CONSTRAINT pk_factbestand PRIMARY KEY (bestandkey)
 );
 
@@ -207,6 +250,9 @@ CREATE TABLE IF NOT EXISTS factforderung (
   quellesystem varchar(40),
   ladebatchkey bigint,
   aktualisiertam timestamptz,
+  rowversion bigint,
+  geaendertvon varchar(80),
+  geaendertam timestamptz,
   CONSTRAINT pk_factforderung PRIMARY KEY (forderungkey)
 );
 
@@ -222,6 +268,9 @@ CREATE TABLE IF NOT EXISTS factzahlung (
   quellesystem varchar(40),
   ladebatchkey bigint,
   aktualisiertam timestamptz,
+  rowversion bigint,
+  geaendertvon varchar(80),
+  geaendertam timestamptz,
   CONSTRAINT pk_factzahlung PRIMARY KEY (zahlungkey)
 );
 
@@ -237,6 +286,9 @@ CREATE TABLE IF NOT EXISTS factbesuch (
   quellesystem varchar(40),
   ladebatchkey bigint,
   aktualisiertam timestamptz,
+  rowversion bigint,
+  geaendertvon varchar(80),
+  geaendertam timestamptz,
   CONSTRAINT pk_factbesuch PRIMARY KEY (besuchkey)
 );
 
@@ -255,6 +307,9 @@ CREATE TABLE IF NOT EXISTS factwebsession (
   quellesystem varchar(40),
   ladebatchkey bigint,
   aktualisiertam timestamptz,
+  rowversion bigint,
+  geaendertvon varchar(80),
+  geaendertam timestamptz,
   CONSTRAINT pk_factwebsession PRIMARY KEY (websessionkey)
 );
 
@@ -273,6 +328,9 @@ CREATE TABLE IF NOT EXISTS factwebfunnel (
   quellesystem varchar(40),
   ladebatchkey bigint,
   aktualisiertam timestamptz,
+  rowversion bigint,
+  geaendertvon varchar(80),
+  geaendertam timestamptz,
   CONSTRAINT pk_factwebfunnel PRIMARY KEY (webfunnelkey)
 );
 
@@ -288,6 +346,9 @@ CREATE TABLE IF NOT EXISTS factplan (
   quellesystem varchar(40),
   ladebatchkey bigint,
   aktualisiertam timestamptz,
+  rowversion bigint,
+  geaendertvon varchar(80),
+  geaendertam timestamptz,
   CONSTRAINT pk_factplan PRIMARY KEY (plankey)
 );
 
@@ -301,6 +362,9 @@ CREATE TABLE IF NOT EXISTS factkpiwert (
   quellesystem varchar(40),
   ladebatchkey bigint,
   aktualisiertam timestamptz,
+  rowversion bigint,
+  geaendertvon varchar(80),
+  geaendertam timestamptz,
   CONSTRAINT pk_factkpiwert PRIMARY KEY (kpiwertkey)
 );
 

@@ -3,8 +3,9 @@
 //  Einzelartikel ODER über die Stückliste (kritischer Pfad). Mit fehlenden-
 //  Werte-Erfassung, Ersatzartikel und Lieferanten-Anfragevorlage.
 // =========================================================================
-import React, { useState } from 'react'
-import { ARTIKEL_BASIS, artikelListe, artikelVon, lieferantVon, rueckwaerts, stuecklisteTerminierung, hatStueckliste, setzeArtikelWert, anfrageVorlage, fmtDatum, REAKTION_STD, HEUTE } from '../../core/beschaffung.js'
+import React, { useState, useEffect } from 'react'
+import { ARTIKEL_BASIS, artikelListe, artikelVon, lieferantVon, rueckwaerts, stuecklisteTerminierung, hatStueckliste, speichereArtikelWert, ladeArtikelVersion, anfrageVorlage, fmtDatum, REAKTION_STD, HEUTE } from '../../core/beschaffung.js'
+import KonfliktDialog from '../../components/KonfliktDialog.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700 }
@@ -32,10 +33,31 @@ export default function Beschaffung() {
   const t = rueckwaerts(artId, bedarf, opts)
   const bom = hatStueckliste(artId) ? stuecklisteTerminierung(artId, bedarf, opts) : null
   const [vorlageAuf, setVorlageAuf] = useState(false)
+  // Optimistisches Sperren: die beim Öffnen gesehene Version festhalten.
+  const [basisV, setBasisV] = useState(0)
+  const [konflikt, setKonflikt] = useState(null) // { id, patch, autor, konflikt }
+  const [meldung, setMeldung] = useState(null)
+  useEffect(() => { setBasisV(ladeArtikelVersion(artId).version); setKonflikt(null); setMeldung(null) }, [artId])
+  const aktVers = ladeArtikelVersion(artId)
   if (!t) return null
   const st = STATUS[t.status]
+  const AUTOR = 'Du'
 
-  const setWert = (id, key, val) => { setzeArtikelWert(id, { [key]: val === '' ? null : Number(val) }); refresh() }
+  const speichern = (id, patch, strategie) => {
+    const r = speichereArtikelWert(id, patch, { basisVersion: basisV, autor: AUTOR, strategie })
+    if (r.status === 'konflikt') { setKonflikt({ id, patch, konflikt: r.konflikt }); return }
+    if (r.status === 'gespeichert') { setBasisV(r.datensatz.version); setMeldung(`Gespeichert (Version ${r.datensatz.version}).`) }
+    setKonflikt(null); refresh()
+  }
+  const setWert = (id, key, val) => speichern(id, { [key]: val === '' ? null : Number(val) })
+  // Demo: ein Kollege ändert denselben Artikel — danach kollidiert das eigene Speichern.
+  const simuliereKollege = () => {
+    const v = ladeArtikelVersion(artId).version
+    const aktuell = artikelVon(artId)?.lieferzeitTage ?? 60
+    speichereArtikelWert(artId, { lieferzeitTage: Number(aktuell) + 5 }, { basisVersion: v, autor: 'Kollegin Müller' })
+    setMeldung('Kollegin Müller hat den Artikel gerade geändert (im Hintergrund). Dein nächstes Speichern erkennt das.')
+    refresh() // basisV bewusst NICHT aktualisieren → eigener Stand ist nun veraltet
+  }
 
   return (
     <div style={{ display: 'grid', gap: 14 }}>
@@ -47,6 +69,17 @@ export default function Beschaffung() {
         <label style={{ fontSize: 12, color: 'var(--muted)' }}>Menge<br /><input type="number" value={menge} onChange={(e) => setMenge(e.target.value)} style={{ ...feld, marginTop: 3, width: 90 }} /></label>
         <label style={{ fontSize: 12, color: 'var(--muted)' }}>Reaktionszeit Kollegen (Tg)<br /><input type="number" value={reaktion} onChange={(e) => setReaktion(e.target.value)} style={{ ...feld, marginTop: 3, width: 90 }} /></label>
         <div style={{ fontSize: 11.5, color: 'var(--muted)', flex: 1, minWidth: 160 }}>Hauptlieferant: <b>{t.lieferant?.name || '—'}</b>{t.lieferant?.verzugTage ? ` (Ø Verzug ${t.lieferant.verzugTage} Tg)` : ''} · heute {fmtDatum(HEUTE)}</div>
+      </div>
+
+      {/* Bearbeitungsstand (optimistisches Sperren) */}
+      <div style={{ ...card, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', fontSize: 12 }}>
+        <span style={cap}>Bearbeitungsstand</span>
+        <span style={{ color: 'var(--muted)' }}>
+          {aktVers.version === 0 ? 'Noch nicht bearbeitet' : <>Version <b>{aktVers.version}</b>{aktVers.geaendertVon ? <> · zuletzt von <b>{aktVers.geaendertVon}</b></> : ''}{aktVers.geaendertAm ? ` · ${new Date(aktVers.geaendertAm).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}` : ''}</>}
+          {basisV < aktVers.version && <span style={{ color: 'var(--amp-a)', fontWeight: 700 }}> · ⚠ neuer Stand als beim Öffnen</span>}
+        </span>
+        <button onClick={simuliereKollege} title="Demo: simuliert eine parallele Änderung durch einen Kollegen" style={{ marginLeft: 'auto', padding: '5px 10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: 'var(--panel)', cursor: 'pointer', fontSize: 12 }}>👥 Kollege ändert (Demo)</button>
+        {meldung && <span style={{ flexBasis: '100%', fontSize: 11.5, color: 'var(--muted)' }}>{meldung}</span>}
       </div>
 
       {/* Status + Termine */}
@@ -122,6 +155,14 @@ export default function Beschaffung() {
           </div>
         ) })()}
       </div>
+
+      <KonfliktDialog
+        titel={t.artikel.name}
+        konflikt={konflikt?.konflikt}
+        onUeberschreiben={() => speichern(konflikt.id, konflikt.patch, 'ueberschreiben')}
+        onMergen={() => speichern(konflikt.id, konflikt.patch, 'mergen')}
+        onAbbrechen={() => { setKonflikt(null); setBasisV(ladeArtikelVersion(artId).version); setMeldung('Abgebrochen — aktueller Stand übernommen.'); refresh() }}
+      />
     </div>
   )
 }

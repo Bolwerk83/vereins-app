@@ -1,5 +1,5 @@
 -- ============================================================
--- Enterprise Report — DWH-Setup (mssql) · Schema 1.0.0
+-- Enterprise Report — DWH-Setup (mssql) · Schema 1.1.0
 -- Reihenfolge: Dimensionen, dann Fakten, dann Beziehungen.
 -- ============================================================
 
@@ -19,6 +19,9 @@ CREATE TABLE DimDatum (
   IstFeiertag bit NOT NULL,
   FeiertagName nvarchar(40),
   TagImJahr smallint NOT NULL,
+  RowVersion bigint,
+  GeaendertVon nvarchar(80),
+  GeaendertAm datetime2,
   CONSTRAINT PK_DimDatum PRIMARY KEY (DatumKey)
 );
 
@@ -30,6 +33,9 @@ CREATE TABLE DimKalender (
   KalenderName nvarchar(60) NOT NULL,
   DatumKey int NOT NULL,
   Gewicht decimal(4,2) NOT NULL,
+  RowVersion bigint,
+  GeaendertVon nvarchar(80),
+  GeaendertAm datetime2,
   CONSTRAINT PK_DimKalender PRIMARY KEY (KalenderKey)
 );
 
@@ -40,6 +46,9 @@ CREATE TABLE DimWarengruppe (
   WarengruppeId nvarchar(30) NOT NULL,
   Bezeichnung nvarchar(80) NOT NULL,
   Bereich nvarchar(20) NOT NULL,
+  RowVersion bigint,
+  GeaendertVon nvarchar(80),
+  GeaendertAm datetime2,
   CONSTRAINT PK_DimWarengruppe PRIMARY KEY (WarengruppeKey)
 );
 
@@ -54,6 +63,10 @@ CREATE TABLE DimProdukt (
   IstEBike bit NOT NULL,
   Listenpreis decimal(18,2),
   Standardkosten decimal(18,2),
+  BildUrl nvarchar(300),
+  RowVersion bigint,
+  GeaendertVon nvarchar(80),
+  GeaendertAm datetime2,
   CONSTRAINT PK_DimProdukt PRIMARY KEY (ProduktKey)
 );
 
@@ -67,6 +80,9 @@ CREATE TABLE DimStandort (
   Region nvarchar(40),
   FlaecheQm int,
   OeffnungKalenderId nvarchar(30),
+  RowVersion bigint,
+  GeaendertVon nvarchar(80),
+  GeaendertAm datetime2,
   CONSTRAINT PK_DimStandort PRIMARY KEY (StandortKey)
 );
 
@@ -77,6 +93,9 @@ CREATE TABLE DimKanal (
   KanalId nvarchar(30) NOT NULL,
   Kanal nvarchar(60) NOT NULL,
   Kanalgruppe nvarchar(30) NOT NULL,
+  RowVersion bigint,
+  GeaendertVon nvarchar(80),
+  GeaendertAm datetime2,
   CONSTRAINT PK_DimKanal PRIMARY KEY (KanalKey)
 );
 
@@ -90,6 +109,9 @@ CREATE TABLE DimKunde (
   Land nvarchar(40),
   IstNeukunde bit NOT NULL,
   Bonitaet nvarchar(10),
+  RowVersion bigint,
+  GeaendertVon nvarchar(80),
+  GeaendertAm datetime2,
   CONSTRAINT PK_DimKunde PRIMARY KEY (KundeKey)
 );
 
@@ -101,6 +123,9 @@ CREATE TABLE DimLieferant (
   Name nvarchar(80) NOT NULL,
   Land nvarchar(40),
   ZahlungszielTage smallint,
+  RowVersion bigint,
+  GeaendertVon nvarchar(80),
+  GeaendertAm datetime2,
   CONSTRAINT PK_DimLieferant PRIMARY KEY (LieferantKey)
 );
 
@@ -112,6 +137,9 @@ CREATE TABLE DimKonditionsart (
   Bezeichnung nvarchar(80) NOT NULL,
   IstSonderfall bit NOT NULL,
   RabattProzent decimal(5,2),
+  RowVersion bigint,
+  GeaendertVon nvarchar(80),
+  GeaendertAm datetime2,
   CONSTRAINT PK_DimKonditionsart PRIMARY KEY (KonditionsartKey)
 );
 
@@ -125,6 +153,9 @@ CREATE TABLE DimKPI (
   Bereich nvarchar(20) NOT NULL,
   Richtung nvarchar(12) NOT NULL,
   Ziel decimal(18,4),
+  RowVersion bigint,
+  GeaendertVon nvarchar(80),
+  GeaendertAm datetime2,
   CONSTRAINT PK_DimKPI PRIMARY KEY (KPIKey)
 );
 
@@ -150,6 +181,9 @@ CREATE TABLE FactVerkauf (
   QuelleSystem nvarchar(40),
   LadeBatchKey bigint,
   AktualisiertAm datetime2,
+  RowVersion bigint,
+  GeaendertVon nvarchar(80),
+  GeaendertAm datetime2,
   CONSTRAINT PK_FactVerkauf PRIMARY KEY (VerkaufKey)
 );
 
@@ -169,6 +203,9 @@ CREATE TABLE FactWareneingang (
   QuelleSystem nvarchar(40),
   LadeBatchKey bigint,
   AktualisiertAm datetime2,
+  RowVersion bigint,
+  GeaendertVon nvarchar(80),
+  GeaendertAm datetime2,
   CONSTRAINT PK_FactWareneingang PRIMARY KEY (WareneingangKey)
 );
 
@@ -188,6 +225,9 @@ CREATE TABLE FactAuftrag (
   QuelleSystem nvarchar(40),
   LadeBatchKey bigint,
   AktualisiertAm datetime2,
+  RowVersion bigint,
+  GeaendertVon nvarchar(80),
+  GeaendertAm datetime2,
   CONSTRAINT PK_FactAuftrag PRIMARY KEY (AuftragKey)
 );
 
@@ -204,6 +244,9 @@ CREATE TABLE FactBestand (
   QuelleSystem nvarchar(40),
   LadeBatchKey bigint,
   AktualisiertAm datetime2,
+  RowVersion bigint,
+  GeaendertVon nvarchar(80),
+  GeaendertAm datetime2,
   CONSTRAINT PK_FactBestand PRIMARY KEY (BestandKey)
 );
 
@@ -222,6 +265,9 @@ CREATE TABLE FactForderung (
   QuelleSystem nvarchar(40),
   LadeBatchKey bigint,
   AktualisiertAm datetime2,
+  RowVersion bigint,
+  GeaendertVon nvarchar(80),
+  GeaendertAm datetime2,
   CONSTRAINT PK_FactForderung PRIMARY KEY (ForderungKey)
 );
 
@@ -238,6 +284,9 @@ CREATE TABLE FactZahlung (
   QuelleSystem nvarchar(40),
   LadeBatchKey bigint,
   AktualisiertAm datetime2,
+  RowVersion bigint,
+  GeaendertVon nvarchar(80),
+  GeaendertAm datetime2,
   CONSTRAINT PK_FactZahlung PRIMARY KEY (ZahlungKey)
 );
 
@@ -254,6 +303,9 @@ CREATE TABLE FactBesuch (
   QuelleSystem nvarchar(40),
   LadeBatchKey bigint,
   AktualisiertAm datetime2,
+  RowVersion bigint,
+  GeaendertVon nvarchar(80),
+  GeaendertAm datetime2,
   CONSTRAINT PK_FactBesuch PRIMARY KEY (BesuchKey)
 );
 
@@ -273,6 +325,9 @@ CREATE TABLE FactWebSession (
   QuelleSystem nvarchar(40),
   LadeBatchKey bigint,
   AktualisiertAm datetime2,
+  RowVersion bigint,
+  GeaendertVon nvarchar(80),
+  GeaendertAm datetime2,
   CONSTRAINT PK_FactWebSession PRIMARY KEY (WebSessionKey)
 );
 
@@ -292,6 +347,9 @@ CREATE TABLE FactWebFunnel (
   QuelleSystem nvarchar(40),
   LadeBatchKey bigint,
   AktualisiertAm datetime2,
+  RowVersion bigint,
+  GeaendertVon nvarchar(80),
+  GeaendertAm datetime2,
   CONSTRAINT PK_FactWebFunnel PRIMARY KEY (WebFunnelKey)
 );
 
@@ -308,6 +366,9 @@ CREATE TABLE FactPlan (
   QuelleSystem nvarchar(40),
   LadeBatchKey bigint,
   AktualisiertAm datetime2,
+  RowVersion bigint,
+  GeaendertVon nvarchar(80),
+  GeaendertAm datetime2,
   CONSTRAINT PK_FactPlan PRIMARY KEY (PlanKey)
 );
 
@@ -322,6 +383,9 @@ CREATE TABLE FactKPIWert (
   QuelleSystem nvarchar(40),
   LadeBatchKey bigint,
   AktualisiertAm datetime2,
+  RowVersion bigint,
+  GeaendertVon nvarchar(80),
+  GeaendertAm datetime2,
   CONSTRAINT PK_FactKPIWert PRIMARY KEY (KPIWertKey)
 );
 

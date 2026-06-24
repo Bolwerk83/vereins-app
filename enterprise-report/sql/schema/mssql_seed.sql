@@ -1,4 +1,4 @@
--- Seed / Demo-Befüllung (mssql) · Schema 1.0.0
+-- Seed / Demo-Befüllung (mssql) · Schema 1.1.0
 
 INSERT INTO DimKanal (KanalKey, KanalId, Kanal, Kanalgruppe) VALUES
   (1, N'organic', N'Organische Suche', N'organic'),

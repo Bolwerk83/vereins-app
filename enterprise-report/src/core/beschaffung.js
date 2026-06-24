@@ -8,9 +8,12 @@
 //  Fehlende Lieferzeiten werden gemeldet (am Artikel/Lieferanten erfassen);
 //  Ersatzartikel als Alternative. Plus eine Lieferanten-Anfragevorlage.
 // =========================================================================
+import { speichere, localStorageStore } from './versionierung.js'
+
 export const HEUTE = '2026-06-24'
 export const REAKTION_STD = 5    // Reaktionszeit Kollegen (Tage), editierbar
 const OV_KEY = 'er_beschaffung_overrides'
+const VERSION_KEY = 'er_artikel_versionen' // versionierter Store (optimistisches Sperren)
 
 export const LIEFERANTEN = [
   { id: 'velo', name: 'Velo Components GmbH', land: 'DE', standardLieferzeitTage: 60, verzugTage: 0, kontakt: 'einkauf@velo-components.example' },
@@ -49,10 +52,33 @@ export const STUECKLISTE = {
 }
 
 function ladeOverrides() { try { return JSON.parse(localStorage.getItem(OV_KEY) || '{}') } catch { return {} } }
+
+// Einfacher Pfad (ohne Konfliktprüfung) — bleibt für interne Nutzung erhalten.
 export function setzeArtikelWert(artikelId, patch) {
   const o = ladeOverrides(); o[artikelId] = { ...o[artikelId], ...patch }
   try { localStorage.setItem(OV_KEY, JSON.stringify(o)) } catch {}
   return o
+}
+
+// --- Versionierte Artikel-Bearbeitung (optimistisches Sperren) -----------
+const artikelStore = () => localStorageStore(VERSION_KEY)
+
+/** Aktuelle Version + Audit eines Artikels (für „basisVersion" beim Öffnen). */
+export function ladeArtikelVersion(artikelId) {
+  const ds = artikelStore().lade(artikelId)
+  return ds ? { version: ds.version, geaendertVon: ds.geaendertVon, geaendertAm: ds.geaendertAm, werte: ds.werte, historie: ds.historie }
+            : { version: 0, geaendertVon: null, geaendertAm: null, werte: {}, historie: [] }
+}
+
+/**
+ * Speichert Artikel-Felder mit Konfliktprüfung. Gibt das Ergebnis von
+ * versionierung.speichere() zurück (status: gespeichert|unveraendert|konflikt|abgebrochen).
+ * Bei Erfolg wird der einfache Override gespiegelt, damit artikelListe() greift.
+ */
+export function speichereArtikelWert(artikelId, patch, { basisVersion = null, autor = null, strategie } = {}) {
+  const r = speichere(artikelStore(), artikelId, { basisVersion, patch, autor, strategie })
+  if (r.status === 'gespeichert') setzeArtikelWert(artikelId, r.datensatz.werte) // Lese-Pfad synchron halten
+  return r
 }
 export function artikelListe() {
   const ov = ladeOverrides()

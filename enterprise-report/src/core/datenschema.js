@@ -17,6 +17,16 @@ const audit = [
   { n: 'AktualisiertAm', t: 'datetime2', null: true }, // Wasserzeichen für Delta-Beladung
 ]
 
+// Versions-/Bearbeitungsspalten für OPTIMISTISCHES SPERREN — in JEDER Tabelle.
+// RowVersion wird bei jeder Änderung hochgezählt; wer speichert, muss die beim
+// Lesen gesehene Version mitschicken (Konflikt, wenn inzwischen erhöht).
+// GeaendertVon/-Am dokumentieren wer/wann (das „Was" steckt in der Historie).
+const versionierung = [
+  { n: 'RowVersion', t: 'bigint', null: true },        // optimistic-lock Stempel (Start 1, +1 je Update)
+  { n: 'GeaendertVon', t: 'nvarchar(80)', null: true },
+  { n: 'GeaendertAm', t: 'datetime2', null: true },
+]
+
 export const DIMENSIONEN = [
   { name: 'DimDatum', beschreibung: 'Kalendertag mit Zeitintelligenz (Jahr/Quartal/Monat/Woche, Feiertag, YTD).', spalten: [
     { n: 'DatumKey', t: 'int', pk: true }, { n: 'Datum', t: 'date', biz: true },
@@ -35,6 +45,7 @@ export const DIMENSIONEN = [
     { n: 'ProduktKey', t: 'int', pk: true }, { n: 'ArtikelNr', t: 'nvarchar(40)', biz: true }, { n: 'Bezeichnung', t: 'nvarchar(120)' },
     { n: 'WarengruppeKey', t: 'int', fk: 'DimWarengruppe.WarengruppeKey' }, { n: 'Marke', t: 'nvarchar(60)', null: true }, { n: 'IstEBike', t: 'bit' },
     { n: 'Listenpreis', t: 'decimal(18,2)', null: true }, { n: 'Standardkosten', t: 'decimal(18,2)', null: true },
+    { n: 'BildUrl', t: 'nvarchar(300)', null: true }, // Artikelbild für die Artikelkarte (falls hinterlegt)
   ] },
   { name: 'DimStandort', beschreibung: 'Filialen, Onlineshop, Zentrale (Profit-Center).', spalten: [
     { n: 'StandortKey', t: 'int', pk: true }, { n: 'StandortId', t: 'nvarchar(30)', biz: true }, { n: 'Name', t: 'nvarchar(80)' },
@@ -108,8 +119,14 @@ export const FAKTEN = [
   ] },
 ]
 
-// Audit-Spalten an jede Faktentabelle anhängen.
+// Audit-Spalten an jede Faktentabelle anhängen (Delta-Beladung).
 FAKTEN.forEach((f) => { f.spalten = [...f.spalten, ...audit] })
 
+// Versions-/Bearbeitungsspalten an ALLE Tabellen (Dimensionen + Fakten)
+// anhängen — optimistisches Sperren gilt durchgängig, nicht nur beim Artikel.
+;[...DIMENSIONEN, ...FAKTEN].forEach((t) => { t.spalten = [...t.spalten, ...versionierung] })
+
 export const TABELLEN = [...DIMENSIONEN, ...FAKTEN]
-export const SCHEMA_VERSION = '1.0.0'
+export const SCHEMA_VERSION = '1.1.0' // +RowVersion/GeaendertVon/-Am in allen Tabellen, DimProdukt.BildUrl
+export const AUDIT_SPALTEN = audit.map((s) => s.n)
+export const VERSIONS_SPALTEN = versionierung.map((s) => s.n)
