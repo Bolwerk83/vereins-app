@@ -82,7 +82,8 @@ Stand: laufend.
 - [ ] Farbwechsel Ist→Plan auf weitere Charts (Forecast-Brücke, Verlauf)
 
 ## 🎯 Vision: vollständiges Reporting (Budget · Kommentierung · OnePager bis Ebene 5)
-- [ ] **Einheitliche Kommentierung** auf ALLEN Berichten/Ebenen (heute nur Detailberichte via `bemerkungen.js`) — Notiz/Owner/Status je Bericht & KPI, sichtbar im OnePager
+- [x] **Einheitliche Kommentierung** auf allen Berichten mit Exec-Kopf (`<Kommentar>` im ExecKopf, Bericht-ID via Nav-Kontext). Offen: Kommentar je KPI/Knoten & im Roten Faden, Aufgaben-Rollup
+- [x] **Engine-Vereinheitlichung**: whatif.js → szenarioEngine.js (eine Wahrheit)
 - [ ] **OnePager je Ebene** (1–5) mit Kernaussage, Ampel, Qualitätskennzahlen und Drill bis Ebene 5 — einheitliche Vorlage
 - [ ] **Budgetierung end-to-end**: FactPlan füllen, **alle KPIs vom Budget ableiten**, Plan/Ist/Forecast je KPI
 - [ ] **Rolling Forecast** (rollierend 12M) + dessen Auswirkungen auf alle Plan-KPIs (nutzt Kausalmodell/Szenario)

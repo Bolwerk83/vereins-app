@@ -10,6 +10,8 @@
 //  Ampel ('g'|'a'|'r') ableitet — spart Wiederholung in den Berichten.
 // =========================================================================
 import React from 'react'
+import Kommentar from './Kommentar.jsx'
+import { useNav } from './NavContext.jsx'
 
 const AMP = {
   g: { f: 'var(--amp-g)', label: 'Auf Kurs' },
@@ -25,12 +27,14 @@ export function ampelVon(wert, { gut, schlecht, invert = false } = {}) {
   return wert >= gut ? 'g' : wert <= schlecht ? 'r' : 'a'
 }
 
-export default function ExecKopf({ status = 'a', kernaussage, kennzahl, kennzahlLabel, empfehlung, statusLabel }) {
+export default function ExecKopf({ status = 'a', kernaussage, kennzahl, kennzahlLabel, empfehlung, statusLabel, kommentar }) {
   const amp = AMP[status] || AMP.a
+  const nav = useNav()
+  const komId = kommentar || nav?.ansicht || null
   return (
-    <div style={{ display: 'flex', alignItems: 'stretch', gap: 14, marginBottom: 14, flexWrap: 'wrap',
-      background: 'var(--panel)', border: '1px solid var(--line)', borderLeft: `5px solid ${amp.f}`,
+    <div style={{ marginBottom: 14, background: 'var(--panel)', border: '1px solid var(--line)', borderLeft: `5px solid ${amp.f}`,
       borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)', padding: '13px 16px' }}>
+    <div style={{ display: 'flex', alignItems: 'stretch', gap: 14, flexWrap: 'wrap' }}>
       {kennzahl != null && (
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingRight: 14,
           borderRight: '1px solid var(--line)', minWidth: 120 }}>
@@ -50,6 +54,8 @@ export default function ExecKopf({ status = 'a', kernaussage, kennzahl, kennzahl
           <div style={{ fontSize: 12.5, color: 'var(--slate)', lineHeight: 1.45 }}><b style={{ color: 'var(--ink)' }}>✓ Empfehlung:</b> {empfehlung}</div>
         )}
       </div>
+    </div>
+    {komId && <Kommentar typ="bericht" id={komId} />}
     </div>
   )
 }

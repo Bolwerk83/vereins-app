@@ -514,6 +514,7 @@ export default function App() {
 
       <KpiDefProvider rolle={rolle} werte={werte} onSpringe={(id) => { setBaumStart(id); setAnsicht('baum') }}>
       <NavProvider value={{
+        ansicht,
         imBaum: (kpiId) => { setBaumStart(kpiId); geh('baum') },
         details: (bereich, suche = '') => { const d = detailFuerBereich(bereich); if (d) gehDetail(d.id, suche); else geh('detailberichte') },
         struktur: () => gehDetail('hierarchie')
