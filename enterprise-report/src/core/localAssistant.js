@@ -63,7 +63,7 @@ const SYN = {
   vertriebskostenquote: ['vertriebskostenquote', 'vertriebskostenanteil'],
   vertriebskosten: ['vertriebskosten'],
   marketingkostenquote: ['marketingkostenquote', 'marketingquote', 'werbekostenquote'],
-  marketingkosten: ['marketingkosten', 'werbekosten', 'werbebudget', 'marketingbudget'],
+  marketingkosten: ['marketingkosten', 'werbekosten', 'werbebudget', 'marketingbudget', 'marketing', 'marketingausgaben', 'werbeausgaben'],
   roas: ['roas', 'return on ad spend', 'werbe-roi', 'werbeeffizienz', 'was bringt werbung', 'werbe-rendite'],
   cac: ['cac', 'kundengewinnungskosten', 'akquisekosten'],
   lagerbestand: ['lagerbestand', 'bestand', 'bestandswert', 'vorrat', 'inventar', 'warenbestand', 'bestandshöhe', 'wie viel liegt im lager', 'wie viel ware'],
