@@ -5,6 +5,11 @@
 //  Schlüssel = ansicht-/view-Key (wie in navMeta/Navigation).
 // =========================================================================
 export const BERICHT_INFO = {
+  // ---- Einstieg ----
+  startseite: { zweck: 'Persönlicher Einstieg: die wichtigsten Kennzahlen, Auffälligkeiten und Schnellzugriffe gebündelt auf einer Seite.', zielgruppe: 'Alle Rollen.', mehrwert: 'Sofort den richtigen Bericht und die dringendsten Themen finden, ohne zu suchen.',
+    inhalt: 'Rollenabhängige Übersicht mit Lage-Ampel, kritischsten Kennzahlen, zuletzt geöffneten/favorisierten Berichten und Sprungpunkten in die Fachbereiche.',
+    fragen: ['Wo stehe ich gerade?', 'Was ist heute wichtig?', 'Wo muss ich zuerst hin?'],
+    lesehilfe: 'Kacheln führen direkt in den jeweiligen Bericht; die Ampel zeigt den Gesamtstatus.', quelle: 'KPI-Engine + Navigation.' },
   // ---- Cockpit & Berichte ----
   baum: { zweck: 'Zentraler Einstieg: alle Berichte hierarchisch von der Geschäftsführung bis zum Detail.', zielgruppe: 'Alle Rollen.', mehrwert: 'Schneller Überblick und Drill-down bis zur Einzelkennzahl.',
     inhalt: 'Fünf Ebenen (E1 Geschäftsführung → E2 Fachbereich → E3 Themenbereich → E4 Details → E5 Historie). Je Knoten: automatische Lagebewertung, kritischste KPIs zuerst (Karten- oder Tabellensicht), Controller-Kommentar und Drill in die Detaillisten.',
