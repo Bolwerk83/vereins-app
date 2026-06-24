@@ -32,29 +32,36 @@ const skal = (b, id, faktor) => (b[id] ?? 0) * (faktor || 0)  // Anteil vom Basi
 export const KAUSAL = [
   // ===================== UMSATZ- / ERLÖSKETTE ===========================
   {
-    id: 'erloesschmaelerung', von: ['retourenquote', 'rabattquote'],
+    id: 'erloesschmaelerung', von: ['retourenquote', 'rabattquote', 'onlineAnteil'],
     f: (s, b) => b.erloesschmaelerung
       + d(s, b, 'retourenquote') / 100 * ((b.bruttoumsatz || 0) * ((b.onlineAnteil || 0) / 100)) // Retouren auf Online-Umsatz
-      + d(s, b, 'rabattquote') / 100 * (b.bruttoumsatz || 0),                                     // Rabatte auf Gesamtumsatz
-    erklaerung: 'Retouren und Rabatte erhöhen die Erlösschmälerung.',
+      + d(s, b, 'rabattquote') / 100 * (b.bruttoumsatz || 0)                                      // Rabatte auf Gesamtumsatz
+      + d(s, b, 'onlineAnteil') / 100 * (b.bruttoumsatz || 0) * ((b.retourenquote || 0) / 100),   // mehr Online-Anteil → mehr Retourenvolumen
+    erklaerung: 'Retouren, Rabatte und ein höherer Online-Anteil erhöhen die Erlösschmälerung.',
   },
   {
-    id: 'nettoumsatz', von: ['erloesschmaelerung', 'conversionRate', 'neukundenanteil', 'marketingkosten'],
+    id: 'nettoumsatz', von: ['erloesschmaelerung', 'conversionRate', 'neukundenanteil', 'marketingkosten', 'bruttoumsatz', 'serviceumsatz', 'auftragsbestand', 'roas', 'neuproduktumsatzanteil'],
     f: (s, b) => b.nettoumsatz
       - d(s, b, 'erloesschmaelerung')                                                              // Netto = Brutto − Erlösschmälerung
+      + d(s, b, 'bruttoumsatz')                                                                    // mehr Bruttoumsatz → mehr Netto
+      + d(s, b, 'serviceumsatz')                                                                   // Service-/After-Sales-Umsatz zählt mit
       + (b.conversionRate ? d(s, b, 'conversionRate') / b.conversionRate * ((b.bruttoumsatz || 0) * ((b.onlineAnteil || 0) / 100)) : 0) // Conversion hebt Online-Umsatz
       + d(s, b, 'neukundenanteil') / 100 * (b.nettoumsatz || 0) * 0.4                              // Neukunden treiben Wachstum (Teil-Elastizität)
-      + d(s, b, 'marketingkosten') * (b.roas || 0),                                                // Marketing-Euro × ROAS
-    erklaerung: 'Erlösschmälerung, Conversion, Neukunden und Marketing (×ROAS) wirken auf den Nettoumsatz.',
+      + d(s, b, 'marketingkosten') * (b.roas || 0)                                                 // Marketing-Euro × ROAS
+      + d(s, b, 'roas') * (b.marketingkosten || 0)                                                 // bessere Werbeeffizienz hebt Umsatz
+      + d(s, b, 'neuproduktumsatzanteil') / 100 * (b.nettoumsatz || 0) * 0.3                       // Innovationsumsatz
+      + d(s, b, 'auftragsbestand') * 0.3,                                                          // Auftragsbestand wird teils zu Umsatz
+    erklaerung: 'Brutto-/Service-Umsatz, Erlösschmälerung, Conversion, Neukunden, Marketing (×ROAS), Innovation und Auftragsbestand wirken auf den Nettoumsatz.',
   },
 
   // ===================== KOSTEN- / ERGEBNISKETTE ========================
   {
-    id: 'wareneinsatz', von: ['ausschuss', 'einkaufsvolumen'],
+    id: 'wareneinsatz', von: ['ausschuss', 'einkaufsvolumen', 'recyclingquote'],
     f: (s, b) => b.wareneinsatz
       + d(s, b, 'ausschuss') / 100 * (b.wareneinsatz || 0)                                         // Ausschuss verschwendet Material
-      + d(s, b, 'einkaufsvolumen') * 0.9,                                                          // höheres Einkaufsvolumen ≈ mehr COGS
-    erklaerung: 'Ausschuss und Einkaufsvolumen treiben den Wareneinsatz.',
+      + d(s, b, 'einkaufsvolumen') * 0.9                                                           // höheres Einkaufsvolumen ≈ mehr COGS
+      - d(s, b, 'recyclingquote') / 100 * (b.wareneinsatz || 0) * 0.15,                            // mehr Rezyklat senkt Materialkosten leicht
+    erklaerung: 'Ausschuss und Einkaufsvolumen treiben den Wareneinsatz; Recycling senkt ihn leicht.',
   },
   {
     id: 'herstellkosten', von: ['ausschuss', 'nacharbeitsquote'],
@@ -64,12 +71,14 @@ export const KAUSAL = [
     erklaerung: 'Ausschuss und Nacharbeit erhöhen die Herstellkosten.',
   },
   {
-    id: 'produktionsmenge', von: ['kapazitaetsauslastung', 'krankenstand', 'mitarbeiterFTE'],
+    id: 'produktionsmenge', von: ['kapazitaetsauslastung', 'krankenstand', 'mitarbeiterFTE', 'auslastung', 'schichtauslastung'],
     f: (s, b) => b.produktionsmenge
       + d(s, b, 'kapazitaetsauslastung') / 100 * (b.kapazitaet || 0)                              // Auslastung × Kapazität
+      + d(s, b, 'auslastung') / 100 * (b.kapazitaet || 0) * 0.5                                    // allgemeine Auslastung (Teilwirkung)
+      + d(s, b, 'schichtauslastung') / 100 * (b.kapazitaet || 0) * 0.3                             // Schichtnutzung
       - d(s, b, 'krankenstand') / 100 * (b.produktionsmenge || 0) * 0.5                            // Krankheit senkt Output
       + (b.mitarbeiterFTE ? d(s, b, 'mitarbeiterFTE') / b.mitarbeiterFTE * (b.produktionsmenge || 0) : 0), // Personal proportional
-    erklaerung: 'Auslastung, Krankenstand und Personal bestimmen die Produktionsmenge.',
+    erklaerung: 'Kapazitäts-/Schichtauslastung, Krankenstand und Personal bestimmen die Produktionsmenge.',
   },
   {
     id: 'personalkosten', von: ['ueberstundenquote', 'fluktuation', 'krankenstand', 'mitarbeiterFTE'],
@@ -120,8 +129,8 @@ export const KAUSAL = [
     erklaerung: 'Ein Teil des Jahresergebnisses stärkt das Eigenkapital (Thesaurierung).',
   },
   {
-    id: 'roce', von: ['ebit'],
-    f: (s, b) => b.roce + d(s, b, 'ebit') * 100 / (b.bilanzsumme || 1),
+    id: 'roce', von: ['ebit', 'bilanzsumme'],
+    f: (s, b) => (s.bilanzsumme ? (b.ebit + d(s, b, 'ebit')) * 100 / s.bilanzsumme : b.roce + d(s, b, 'ebit') * 100 / (b.bilanzsumme || 1)),
     erklaerung: 'ROCE = EBIT bezogen auf das eingesetzte Kapital (≈ Bilanzsumme).',
   },
   {
@@ -130,9 +139,14 @@ export const KAUSAL = [
     erklaerung: 'Cashflow folgt dem Ergebnis; gebundenes Working Capital (Forderungen, Bestand) zehrt daran.',
   },
   {
-    id: 'liquideMittel', von: ['operativerCashflow'],
-    f: (s, b) => b.liquideMittel + d(s, b, 'operativerCashflow') * 0.5,
-    erklaerung: 'Ein Teil des operativen Cashflows erhöht die liquiden Mittel.',
+    id: 'liquideMittel', von: ['operativerCashflow', 'investitionsvolumen'],
+    f: (s, b) => b.liquideMittel + d(s, b, 'operativerCashflow') * 0.5 - d(s, b, 'investitionsvolumen'),
+    erklaerung: 'Operativer Cashflow erhöht die Liquidität; Investitionen (CapEx) zehren daran.',
+  },
+  {
+    id: 'freieLiquiditaet', von: ['liquideMittel', 'kreditlinie'],
+    f: (s, b) => b.freieLiquiditaet + d(s, b, 'liquideMittel') + d(s, b, 'kreditlinie'),
+    erklaerung: 'Freie Liquidität = liquide Mittel + offene Kreditlinie.',
   },
   {
     id: 'nettoverschuldung', von: ['operativerCashflow'],
@@ -186,14 +200,19 @@ export const KAUSAL = [
     erklaerung: 'Garantiekosten skalieren mit der Reklamationsquote.',
   },
   {
-    id: 'lieferfaehigkeit', von: ['liefertreue', 'liefertermintreue'],
-    f: (s, b) => b.lieferfaehigkeit + d(s, b, 'liefertreue') * 0.3 + d(s, b, 'liefertermintreue') * 0.3,
-    erklaerung: 'Liefertreue und Termintreue verbessern die Lieferfähigkeit.',
+    id: 'lieferfaehigkeit', von: ['liefertreue', 'liefertermintreue', 'forecastGenauigkeit'],
+    f: (s, b) => b.lieferfaehigkeit + d(s, b, 'liefertreue') * 0.3 + d(s, b, 'liefertermintreue') * 0.3 + d(s, b, 'forecastGenauigkeit') * 0.2,
+    erklaerung: 'Liefertreue, Termintreue und Prognosegüte verbessern die Lieferfähigkeit.',
   },
   {
-    id: 'nps', von: ['reklamationsquote', 'liefertermintreue', 'reparaturdurchlaufzeit'],
-    f: (s, b) => b.nps - d(s, b, 'reklamationsquote') * 6 + d(s, b, 'liefertermintreue') * 0.5 - d(s, b, 'reparaturdurchlaufzeit') * 1.5,
-    erklaerung: 'Reklamationen und lange Reparaturzeiten drücken den NPS; Termintreue hebt ihn.',
+    id: 'nps', von: ['reklamationsquote', 'liefertermintreue', 'reparaturdurchlaufzeit', 'ersatzteilverfuegbarkeit'],
+    f: (s, b) => b.nps - d(s, b, 'reklamationsquote') * 6 + d(s, b, 'liefertermintreue') * 0.5 - d(s, b, 'reparaturdurchlaufzeit') * 1.5 + d(s, b, 'ersatzteilverfuegbarkeit') * 0.3,
+    erklaerung: 'Reklamationen und lange Reparaturzeiten drücken den NPS; Termintreue und Ersatzteilverfügbarkeit heben ihn.',
+  },
+  {
+    id: 'reklamationsquote', von: ['firstPassYield', 'liefertreue'],
+    f: (s, b) => b.reklamationsquote - d(s, b, 'firstPassYield') * 0.1 - d(s, b, 'liefertreue') * 0.05,
+    erklaerung: 'Bessere Gutausbeute und Liefertreue senken die Reklamationsquote.',
   },
   {
     id: 'neukundenanteil', von: ['nps', 'marketingkosten'],
@@ -215,5 +234,56 @@ export const KAUSAL = [
       + (b.co2ProRad ? d(s, b, 'co2ProRad') / b.co2ProRad * (b.co2Gesamt || 0) : 0)
       - d(s, b, 'oekostromanteil') / 100 * (b.co2Gesamt || 0) * 0.4,
     erklaerung: 'Fußabdruck je Rad und ein höherer Ökostromanteil bestimmen die Gesamtemissionen.',
+  },
+
+  // ===================== SERVICE / AFTER-SALES ==========================
+  {
+    id: 'reparaturdurchlaufzeit', von: ['ersatzteilverfuegbarkeit'],
+    f: (s, b) => b.reparaturdurchlaufzeit - d(s, b, 'ersatzteilverfuegbarkeit') * 0.05,
+    erklaerung: 'Bessere Ersatzteilverfügbarkeit verkürzt die Reparaturdurchlaufzeit.',
+  },
+  {
+    id: 'serviceumsatz', von: ['serviceanteil', 'ersatzteilverfuegbarkeit', 'reparaturdurchlaufzeit'],
+    f: (s, b) => b.serviceumsatz
+      + d(s, b, 'serviceanteil') / 100 * (b.nettoumsatz || 0)
+      + d(s, b, 'ersatzteilverfuegbarkeit') / 100 * (b.serviceumsatz || 0) * 0.5
+      - d(s, b, 'reparaturdurchlaufzeit') * 0.03,
+    erklaerung: 'Serviceanteil, Ersatzteilverfügbarkeit und kurze Reparaturzeiten treiben den Serviceumsatz.',
+  },
+
+  // ===================== RISIKO / TREASURY / RÜCKSTELLUNGEN ==============
+  {
+    id: 'forderungsausfall', von: ['klumpenrisikoTop3', 'ueberfaelligkeitsquote'],
+    f: (s, b) => b.forderungsausfall + d(s, b, 'klumpenrisikoTop3') / 100 * (b.forderungsausfall || 0) * 0.5 + d(s, b, 'ueberfaelligkeitsquote') / 100 * (b.offeneForderungen || 0) * 0.1,
+    erklaerung: 'Höheres Klumpenrisiko und mehr überfällige Forderungen erhöhen den Ausfall.',
+  },
+  {
+    id: 'neutralesErgebnis', von: ['rueckstellungen', 'forderungsausfall'],
+    f: (s, b) => b.neutralesErgebnis - d(s, b, 'rueckstellungen') - d(s, b, 'forderungsausfall'),
+    erklaerung: 'Zuführungen zu Rückstellungen und Forderungsausfälle belasten das neutrale Ergebnis.',
+  },
+  {
+    id: 'fxExposureOffen', von: ['hedgeQuote'],
+    f: (s, b) => b.fxExposureOffen - d(s, b, 'hedgeQuote') / 100 * (b.fxExposureOffen || 0),
+    erklaerung: 'Eine höhere Absicherungsquote senkt das offene Währungsrisiko.',
+  },
+
+  // ===================== DIGITAL / INNOVATION ==========================
+  {
+    id: 'conversionRate', von: ['shopVerfuegbarkeit'],
+    f: (s, b) => b.conversionRate + d(s, b, 'shopVerfuegbarkeit') * 0.1,
+    erklaerung: 'Shop-Verfügbarkeit (Uptime) wirkt auf die Conversion-Rate.',
+  },
+  {
+    id: 'neuproduktumsatzanteil', von: ['timeToMarket', 'fueQuote'],
+    f: (s, b) => b.neuproduktumsatzanteil - d(s, b, 'timeToMarket') * 0.3 + d(s, b, 'fueQuote') * 1.5,
+    erklaerung: 'Kürzere Time-to-Market und höhere F&E-Quote erhöhen den Innovationsumsatz-Anteil.',
+  },
+
+  // ===================== SUPPLY / FORECAST ==============================
+  {
+    id: 'ueberbestand', von: ['forecastGenauigkeit'],
+    f: (s, b) => b.ueberbestand - d(s, b, 'forecastGenauigkeit') / 100 * (b.ueberbestand || 0) * 0.6,
+    erklaerung: 'Bessere Prognosegüte reduziert Überbestände.',
   },
 ]
