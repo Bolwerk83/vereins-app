@@ -118,3 +118,14 @@ test('RBAC: gesicherte KPI wird ohne Berechtigung nicht zugeordnet', () => {
   const mitRecht = findeKpis('wie hoch sind die personalkosten', null, 3)
   assert.ok(mitRecht.some((k) => k.id === 'personalkosten'))
 })
+
+// --- Aus der 200-Personas-Simulation gelernte Synonyme (Regression) -------
+test('Gelernte Begriffe treffen die richtige Kennzahl', () => {
+  const treffer = (frage) => findeKpis(frage, null, 1)[0]?.id
+  assert.equal(treffer('Wie hoch ist die Handelsspanne?'), 'dbQuote')
+  assert.equal(treffer('Wie ist der Rohertrag?'), 'db1')
+  assert.equal(treffer('Wie hoch ist der Schuldenstand?'), 'nettoverschuldung')
+  assert.equal(treffer('Wie viel Geld ist in der Kasse?'), 'liquideMittel')
+  assert.equal(treffer('Wie ist das Zahlungsziel der Kunden?'), 'dso')
+  assert.equal(treffer('Wie ist der Forecast?'), 'umsatzprognose')
+})

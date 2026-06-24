@@ -28,6 +28,24 @@ Stand: laufend.
 - [x] **Beispielberichte** als HTML-Übersicht (11 echte Berichte) ✅
 - [x] **Nutzungs-Statistik** (Klick-Tracking je Bericht, Ranking/Verlauf) — nur Admin ✅
 
+## 🤖 Assistent-Lernen (eingebaut) & daraus erkannte Lücken
+- [x] **Telemetrie-Loop** (KI-frei): jede Frage mit Intent/Treffer/Rolle lokal
+      protokolliert; Insights-Panel mit Trefferquote, Top-Fragen, Wissenslücken
+      + Synonym-Vorschlägen ✅
+- [x] **200-Personas-Simulation** (`scripts/persona-simulation.mjs`) → Modell um
+      gelernte Synonyme erweitert (Handelsspanne→DB-Quote, Rohertrag→DB I,
+      Schuldenstand→Nettoverschuldung, „Geld in der Kasse"→Liquide Mittel,
+      Zahlungsziel→DSO, Forecast→Umsatzprognose, Rendite→ROCE …).
+      **Trefferquote 82,0 % → 92,4 %.** ✅
+- [ ] **Echte neue Kennzahlen** (aus den 5 verbliebenen Lücken, kein Synonym lösbar,
+      decken sich mit der Artikel-Journey): **Kundenbewertungen/Rezensionen**,
+      **Artikel-Lieferzeit**, **Probefahrten** (Filiale), **Hotline-Wartezeit**,
+      **Absatzmenge Ist** (verkaufte Räder). → als KPIs + Mock-Daten + Synonyme.
+- [ ] **Rückfragen mit vorgegebenen Antworten** (Disambiguation/Slot-Filling): bei
+      mehrdeutigen/unvollständigen Fragen gezielt nachfragen (z. B. Zeitraum,
+      Standort, „meintest du A oder B?") mit anklickbaren Antwortoptionen.
+- [ ] Optionaler **Backend-Sync** des Assistent-Logs (anonymisierbar) für Team-weite Auswertung.
+
 ## 🔜 Offen / geplant (priorisiert)
 - [x] **Kostenträgerrechnung / Kalkulation** — Division, Äquivalenzziffern, Zuschlag; Selbstkosten + Produktergebnis ✅
 - [x] **Maschinenstundensatz & Kuppelkalkulation** (Tabs in der Kalkulation, getestet) ✅
