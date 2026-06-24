@@ -13,6 +13,7 @@ import { EBENEN, verteile as verteileArtikel, flach as flachArtikel } from '../.
 import PlanungWizard from './PlanungWizard.jsx'
 import Beschaffung from './Beschaffung.jsx'
 import Machbarkeit from './Machbarkeit.jsx'
+import Produktionsplaner from './Produktionsplaner.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
@@ -72,7 +73,7 @@ export default function Planung({ onGeh }) {
       </div>
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
-        {[['wizard', '🧭 Einfache Planung (Wizard)'], ['beschaffung', '📦 Beschaffung (Rückwärtsterminierung)'], ['machbarkeit', '🏭 Machbarkeit (Durchlaufzeit)'], ['detail', 'Detailplanung (Produkte)']].map(([id, n]) => (
+        {[['wizard', '🧭 Einfache Planung (Wizard)'], ['beschaffung', '📦 Beschaffung (Rückwärtsterminierung)'], ['machbarkeit', '🏭 Machbarkeit (Durchlaufzeit)'], ['planer', '📅 Produktionsplaner'], ['detail', 'Detailplanung (Produkte)']].map(([id, n]) => (
           <button key={id} onClick={() => setPtab(id)} style={{ padding: '6px 12px', borderRadius: 999, fontSize: 13, cursor: 'pointer', fontWeight: 600, border: `1px solid ${ptab === id ? 'var(--accent)' : 'var(--line)'}`, background: ptab === id ? 'var(--accent)' : 'var(--panel)', color: ptab === id ? '#fff' : 'var(--ink)' }}>{n}</button>
         ))}
       </div>
@@ -80,6 +81,7 @@ export default function Planung({ onGeh }) {
       {ptab === 'wizard' && <PlanungWizard />}
       {ptab === 'beschaffung' && <Beschaffung />}
       {ptab === 'machbarkeit' && <Machbarkeit />}
+      {ptab === 'planer' && <Produktionsplaner />}
       {ptab === 'detail' && <>
 
       {/* Plan-Verwaltung */}
