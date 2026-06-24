@@ -7,6 +7,7 @@ import { MONATE, warenbereiche, gesamt, massnahmenFuer } from '../../core/bestan
 import { addMassnahme, ladeMassnahmen } from '../../core/massnahmen.js'
 import { datenstandText } from '../../core/datenstand.js'
 import ExecKopf, { ampelVon } from '../../components/ExecKopf.jsx'
+import Warenfluss from '../warenfluss/Warenfluss.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700 }
@@ -30,6 +31,7 @@ function Spark({ reihe, w = 150, h = 38 }) {
 
 export default function Bestandsentwicklung() {
   const [, setTick] = useState(0)
+  const [tab, setTab] = useState('entwicklung')
   const wb = warenbereiche(); const g = gesamt()
   const massn = ladeMassnahmen()
   const hat = (titel) => massn.some((m) => m.titel === titel)
@@ -58,6 +60,14 @@ export default function Bestandsentwicklung() {
         <button className="no-print" onClick={() => window.print()} style={{ padding: '7px 13px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: 'var(--panel)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>🖨 Drucken / PDF</button>
       </div>
 
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+        {[['entwicklung', 'Entwicklung & Gegensteuerung'], ['warenfluss', '🔄 Warenfluss & Vorschau']].map(([id, n]) => (
+          <button key={id} onClick={() => setTab(id)} style={{ padding: '6px 12px', borderRadius: 999, fontSize: 13, cursor: 'pointer', fontWeight: 600, border: `1px solid ${tab === id ? 'var(--accent)' : 'var(--line)'}`, background: tab === id ? 'var(--accent)' : 'var(--panel)', color: tab === id ? '#fff' : 'var(--ink)' }}>{n}</button>
+        ))}
+      </div>
+
+      {tab === 'warenfluss' && <Warenfluss />}
+      {tab === 'entwicklung' && <>
       <ExecKopf status={execStatus} kennzahl={mio(g.bestand)} kennzahlLabel="Gesamtbestand" kernaussage={execAussage} empfehlung={execEmpf} />
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
@@ -113,6 +123,7 @@ export default function Bestandsentwicklung() {
         })}
       </div>
       <div style={{ fontSize: 11, color: 'var(--muted)', textAlign: 'center', padding: '14px 0 20px' }}>Reichweite (DIO) = Bestandswert ÷ Monatsabgang × 30. Demo-Daten (Mock).</div>
+      </>}
     </div>
   )
 }
