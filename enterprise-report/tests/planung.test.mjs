@@ -4,8 +4,50 @@ import assert from 'node:assert/strict'
 import {
   PLAN_PRODUKTE, produktVon, rechneZeile, rechnePlan, topDownVerteilung,
   mengeAusBetrag, liquiditaet, neuerPlan, kopierePlan, planVon, ladePlaene,
-  loeschePlan, speicherePlan, AE_UMSATZ_FAKTOR
+  loeschePlan, speicherePlan, AE_UMSATZ_FAKTOR,
+  PLAN_VORJAHR, vorjahrMonatsgewichte, verteilschluesselListe, vorschlagDetails, planVorschlag, VORSCHLAG_MODI
 } from '../src/core/planung.js'
+
+test('Vorschlag: Vorjahr + Wachstum erhöht alle Mengen gleichmäßig', () => {
+  const d = vorschlagDetails({ modus: 'wachstum', wachstumPct: 10 })
+  assert.equal(d.length, PLAN_PRODUKTE.length)
+  for (const x of d) {
+    assert.equal(x.wachstumPct, 10)
+    assert.equal(x.menge, Math.round(PLAN_VORJAHR[x.prodId].menge * 1.1))
+    assert.equal(x.umsatz, Math.round(x.menge * x.vkPreis))
+  }
+})
+
+test('Vorschlag: Markttrend nutzt produktindividuelle Vorjahres-Trends', () => {
+  const d = vorschlagDetails({ modus: 'markttrend' })
+  const ebike = d.find((x) => x.prodId === 'ebike')
+  const bekl = d.find((x) => x.prodId === 'bekleidung')
+  assert.equal(ebike.wachstumPct, PLAN_VORJAHR.ebike.wachstum)   // E-Bikes wachsen
+  assert.ok(ebike.menge > PLAN_VORJAHR.ebike.menge)
+  assert.ok(bekl.wachstumPct < 0 && bekl.menge < PLAN_VORJAHR.bekleidung.menge) // Bekleidung rückläufig
+})
+
+test('Vorschlag: flach = Vorjahr unverändert', () => {
+  const d = vorschlagDetails({ modus: 'flach' })
+  for (const x of d) assert.equal(x.menge, PLAN_VORJAHR[x.prodId].menge)
+})
+
+test('planVorschlag setzt den Vorjahr-Verteilungsschlüssel und schreibt Mengen', () => {
+  const plan = { id: 't', name: 'T', typ: 'budget', jahr: 2026, schwundPct: 0, schluessel: 'gleich', zeilen: {} }
+  const np = planVorschlag(plan, { modus: 'wachstum', wachstumPct: 5 })
+  assert.equal(np.schluessel, 'vorjahr')
+  assert.equal(np.zeilen.ebike.menge, Math.round(PLAN_VORJAHR.ebike.menge * 1.05))
+})
+
+test('Verteilungsschlüssel „Aus Vorjahr": auswählbar und summiert auf den Jahreswert', () => {
+  assert.ok(verteilschluesselListe().some((s) => s.id === 'vorjahr'))
+  const g = vorjahrMonatsgewichte()
+  assert.equal(g.length, 12)
+  assert.ok(Math.max(...g) > Math.min(...g)) // echte Saison, nicht flach
+  const v = verteile(1_200_000, 'vorjahr')
+  assert.ok(Math.abs(v.reduce((a, b) => a + b, 0) - 1_200_000) < 1)
+  assert.ok(VORSCHLAG_MODI.length === 3)
+})
 
 function reset() { localStorage.removeItem('er_plaene') }
 

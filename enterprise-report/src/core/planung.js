@@ -48,13 +48,78 @@ export const VERTEILSCHLUESSEL = [
   { id: 'wachstum',    name: 'Wachsend (Hochlauf)', gewichte: [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16] },
   { id: 'jahresende',  name: 'Jahresendlastig (Q4)', gewichte: [4, 4, 5, 5, 6, 6, 7, 8, 10, 13, 16, 16] }
 ]
-export const schluesselVon = (id) => VERTEILSCHLUESSEL.find((s) => s.id === id) || VERTEILSCHLUESSEL[0]
+export const schluesselVon = (id) => verteilschluesselListe().find((s) => s.id === id) || VERTEILSCHLUESSEL[0]
 
 /** Jahreswert über einen Verteilungsschlüssel auf 12 Monate „splashen". */
 export function verteile(jahreswert, schluesselId = 'gleich') {
   const g = schluesselVon(schluesselId).gewichte
   const summe = g.reduce((a, b) => a + b, 0) || 1
   return g.map((w) => jahreswert * w / summe)
+}
+
+// =========================================================================
+//  VORSCHLAGSWERTE — Planung muss nicht bei null beginnen. Aus dem Vorjahr-Ist
+//  je Produkt werden Mengen, Saison (Verteilungsschlüssel) und ein produkt-
+//  individueller Trend vorgeschlagen. So entsteht in einem Klick ein
+//  realistischer Startplan, den man danach feinjustiert.
+//
+//  PLAN_VORJAHR: Jahres-Absatzmenge des Vorjahres, „ohne Umsatz"-Stück (Muster/
+//  Sponsoring), produktindividueller Trend (%) und die echte Monats-Saison
+//  (Jan–Dez, Gewichte werden normiert).
+// =========================================================================
+export const PLAN_VORJAHR = {
+  ebike:      { menge: 21800, ohneUmsatz: 120, wachstum: 9,  monate: [3, 4, 7, 11, 13, 13, 11, 9, 6, 4, 3, 2] },
+  akku:       { menge: 28500, ohneUmsatz: 60,  wachstum: 6,  monate: [4, 5, 7, 10, 12, 12, 10, 9, 7, 6, 5, 5] },
+  zubehoer:   { menge: 86000, ohneUmsatz: 0,   wachstum: 1,  monate: [6, 6, 7, 8, 9, 9, 9, 8, 8, 8, 11, 11] },
+  bekleidung: { menge: 38500, ohneUmsatz: 200, wachstum: -6, monate: [5, 6, 9, 11, 11, 9, 7, 7, 9, 10, 8, 6] }
+}
+
+/** Verteilungsschlüssel aus dem Vorjahr: umsatzgewichtete Monats-Saison über
+ *  alle Produkte (so dominiert das margen-/umsatzstarke E-Bike-Geschäft). */
+export function vorjahrMonatsgewichte() {
+  const g = new Array(12).fill(0)
+  for (const p of PLAN_PRODUKTE) {
+    const vj = PLAN_VORJAHR[p.id]; if (!vj) continue
+    const s = vj.monate.reduce((a, b) => a + b, 0) || 1
+    const jahresUmsatz = vj.menge * p.vkPreis
+    for (let m = 0; m < 12; m++) g[m] += jahresUmsatz * vj.monate[m] / s
+  }
+  const max = Math.max(...g) || 1
+  return g.map((x) => +(x / max * 16).toFixed(1)) // auf handliche Gewichte normiert
+}
+
+/** Auswählbare Verteilungsschlüssel inkl. des dynamischen „Aus Vorjahr". */
+export function verteilschluesselListe() {
+  return [...VERTEILSCHLUESSEL, { id: 'vorjahr', name: 'Aus Vorjahr (echte Saison)', gewichte: vorjahrMonatsgewichte() }]
+}
+
+// Vorschlags-Modi: kreativ, aber regelbasiert (kein KI nötig).
+export const VORSCHLAG_MODI = [
+  { id: 'wachstum',   name: 'Vorjahr + Wachstum',     hinweis: 'Alle Mengen aus dem Vorjahr, gleichmäßig um X % erhöht.' },
+  { id: 'markttrend', name: 'Markttrend je Produkt',  hinweis: 'Jedes Produkt mit seinem eigenen Vorjahres-Trend (E-Bikes +, Bekleidung −).' },
+  { id: 'flach',      name: 'Vorjahr unverändert',    hinweis: 'Mengen exakt wie im Vorjahr (Nullrunde) — als Diskussionsbasis.' }
+]
+
+/** Vorschau der Vorschlagswerte je Produkt (Vorjahr → Vorschlag). */
+export function vorschlagDetails({ modus = 'wachstum', wachstumPct = 5 } = {}) {
+  return PLAN_PRODUKTE.map((p) => {
+    const vj = PLAN_VORJAHR[p.id] || { menge: 0, ohneUmsatz: 0, wachstum: 0 }
+    const g = modus === 'markttrend' ? vj.wachstum : (modus === 'flach' ? 0 : Number(wachstumPct) || 0)
+    const menge = Math.max(0, r0(vj.menge * (1 + g / 100)))
+    return {
+      prodId: p.id, name: p.name, vkPreis: p.vkPreis,
+      vorjahrMenge: vj.menge, wachstumPct: g, menge, ohneUmsatz: vj.ohneUmsatz || 0,
+      vorjahrUmsatz: r0(vj.menge * p.vkPreis), umsatz: r0(menge * p.vkPreis)
+    }
+  })
+}
+
+/** Aus dem Vorjahr einen Startplan vorschlagen (Mengen + Saison-Schlüssel). */
+export function planVorschlag(plan, opts = {}) {
+  const det = vorschlagDetails(opts)
+  const zeilen = {}
+  for (const d of det) zeilen[d.prodId] = { menge: d.menge, ohneUmsatz: d.ohneUmsatz }
+  return { ...plan, zeilen, schluessel: 'vorjahr' }
 }
 
 const KEY = 'er_plaene'

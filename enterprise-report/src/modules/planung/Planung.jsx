@@ -5,8 +5,9 @@
 // =========================================================================
 import React, { useState } from 'react'
 import {
-  PLAN_PRODUKTE, PLAN_TYPEN, AE_UMSATZ_FAKTOR, VERTEILSCHLUESSEL, ladePlaene, planVon, neuerPlan,
-  kopierePlan, speicherePlan, loeschePlan, rechnePlan, topDownVerteilung, mengeAusBetrag, liquiditaet, monatsVerteilung, vergleiche, terminplanung
+  PLAN_PRODUKTE, PLAN_TYPEN, AE_UMSATZ_FAKTOR, VERTEILSCHLUESSEL, verteilschluesselListe, ladePlaene, planVon, neuerPlan,
+  kopierePlan, speicherePlan, loeschePlan, rechnePlan, topDownVerteilung, mengeAusBetrag, liquiditaet, monatsVerteilung, vergleiche, terminplanung,
+  VORSCHLAG_MODI, vorschlagDetails, planVorschlag
 } from '../../core/planung.js'
 import { EBENEN, verteile as verteileArtikel, flach as flachArtikel } from '../../core/artikelHierarchie.js'
 
@@ -27,6 +28,8 @@ export default function Planung({ onGeh }) {
   const [maxTiefe, setMaxTiefe] = useState(2) // bis zu welcher Hierarchie-Ebene anzeigen
   const [vglIds, setVglIds] = useState([]) // ausgewählte Szenarien für den Vergleich
   const [puffer, setPuffer] = useState(30) // Sicherheits-Puffer (Tage) für die Termin-/Beschaffungssicht
+  const [vModus, setVModus] = useState('wachstum') // Vorschlags-Modus
+  const [vWachstum, setVWachstum] = useState(5)     // Wachstum % für den Vorschlag
   const [tick, setTick] = useState(0)
   const plan = planVon(aktivId) || plaene[0]
   const refresh = () => { setPlaene(ladePlaene()); setTick((t) => t + 1) }
@@ -48,6 +51,10 @@ export default function Planung({ onGeh }) {
   const loeschen = () => { if (plaene.length > 1 && confirm(`Plan „${plan.name}" löschen?`)) { loeschePlan(plan.id); const rest = ladePlaene(); setAktivId(rest[0]?.id); refresh() } }
   const umbenennen = () => { const name = prompt('Plan umbenennen:', plan.name); if (name) setFeld('name', name) }
   const verteileTopDown = () => { const z = Number(zielUmsatz); if (z > 0) { speichere(topDownVerteilung(plan, z)); setZielUmsatz('') } }
+  const vorschlagOpts = { modus: vModus, wachstumPct: vWachstum }
+  const vorschau = vorschlagDetails(vorschlagOpts)
+  const vorschauUmsatz = vorschau.reduce((n, x) => n + x.umsatz, 0)
+  const uebernehmeVorschlag = () => { if (confirm('Vorschlagswerte in den aktuellen Plan übernehmen? Die bisherigen Mengen werden überschrieben.')) speichere(planVorschlag(plan, vorschlagOpts)) }
 
   return (
     <div style={{ maxWidth: '100%', margin: '0 auto' }}>
@@ -76,7 +83,7 @@ export default function Planung({ onGeh }) {
         <label style={lbl} title="Mehrbedarf, weil Teile/Räder kaputtgehen oder verschwinden">Schwund % <input type="number" step="0.5" value={plan.schwundPct} onChange={(e) => setFeld('schwundPct', Number(e.target.value))} style={{ ...inp, width: 70, marginLeft: 4 }} /></label>
         <label style={lbl} title="Verteilungsschlüssel: wie der Jahreswert auf die Monate gesplasht wird (Saisongeschäft berücksichtigen)">Verteilung
           <select value={plan.schluessel || 'gleich'} onChange={(e) => setFeld('schluessel', e.target.value)} style={{ ...inp, marginLeft: 4 }}>
-            {VERTEILSCHLUESSEL.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            {verteilschluesselListe().map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
         </label>
       </div>
@@ -97,6 +104,52 @@ export default function Planung({ onGeh }) {
         <input type="number" value={zielUmsatz} onChange={(e) => setZielUmsatz(e.target.value)} placeholder="z. B. 60000000" style={{ ...inp, width: 150 }} />
         <button onClick={verteileTopDown} style={btn}>↧ Verteilen</button>
         <span style={{ fontSize: 11.5, color: 'var(--muted)' }}>(Bottom-Up: einfach die Mengen unten direkt anpassen)</span>
+      </div>
+
+      {/* Planungsassistent — Vorschlagswerte aus dem Vorjahr */}
+      <div style={{ ...card, padding: 14, marginBottom: 14, borderLeft: '4px solid var(--accent)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
+          <span style={{ ...cap, color: 'var(--accent)' }}>✨ Planungsassistent <span style={{ color: 'var(--muted)', fontWeight: 400, textTransform: 'none' }}>· Vorschlagswerte aus dem Vorjahr (ohne KI)</span></span>
+          <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+            {VORSCHLAG_MODI.map((m) => (
+              <button key={m.id} onClick={() => setVModus(m.id)} title={m.hinweis}
+                style={{ padding: '4px 10px', borderRadius: 999, fontSize: 12, cursor: 'pointer', fontWeight: 600, border: `1px solid ${vModus === m.id ? 'var(--accent)' : 'var(--line)'}`, background: vModus === m.id ? 'var(--accent)' : 'var(--panel)', color: vModus === m.id ? '#fff' : 'var(--ink)' }}>{m.name}</button>
+            ))}
+            {vModus === 'wachstum' && (
+              <label style={lbl} title="Gleichmäßiges Mengenwachstum gegenüber dem Vorjahr">Wachstum %
+                <input type="number" step="1" value={vWachstum} onChange={(e) => setVWachstum(Number(e.target.value))} style={{ ...inp, width: 64, marginLeft: 4 }} />
+              </label>
+            )}
+          </span>
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>{VORSCHLAG_MODI.find((m) => m.id === vModus)?.hinweis} Der Verteilungsschlüssel wird auf <b>„Aus Vorjahr (echte Saison)"</b> gesetzt.</div>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5, minWidth: 560 }}>
+            <thead><tr>
+              <th style={th('left')}>Produkt</th><th style={th('right')}>Vorjahr (Menge)</th><th style={th('right')}>Trend</th>
+              <th style={th('right')}>Vorschlag (Menge)</th><th style={th('right')}>Vorschlag Umsatz €</th>
+            </tr></thead>
+            <tbody>
+              {vorschau.map((x) => (
+                <tr key={x.prodId}>
+                  <td style={td('left', true)}>{x.name}</td>
+                  <td className="mono" style={td('right')}>{n0(x.vorjahrMenge)}</td>
+                  <td className="mono" style={{ ...td('right'), color: x.wachstumPct >= 0 ? 'var(--amp-g)' : 'var(--amp-r)' }}>{x.wachstumPct >= 0 ? '+' : ''}{x.wachstumPct} %</td>
+                  <td className="mono" style={td('right', true)}>{n0(x.menge)}</td>
+                  <td className="mono" style={td('right')}>{eur0(x.umsatz)}</td>
+                </tr>
+              ))}
+              <tr style={{ background: 'var(--bg)' }}>
+                <td style={td('left', true)}>Gesamt</td><td /><td />
+                <td /><td className="mono" style={td('right', true)}>{eur0(vorschauUmsatz)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginTop: 10 }}>
+          <span style={{ fontSize: 11.5, color: 'var(--muted)' }}>Vorschau — wird erst beim Übernehmen in den Plan geschrieben (danach frei editierbar).</span>
+          <button onClick={uebernehmeVorschlag} style={btn}>✓ Vorschlag in Plan übernehmen</button>
+        </div>
       </div>
 
       {/* Plan-Tabelle (bidirektional Menge ↔ Betrag) */}
@@ -178,7 +231,7 @@ export default function Planung({ onGeh }) {
 
       {/* Monatsverteilung („Splash" über den Verteilungsschlüssel) */}
       <div style={{ ...card, padding: 16, overflowX: 'auto', marginBottom: 14 }}>
-        <div style={{ ...cap, marginBottom: 10 }}>Monatsverteilung (Splash) — Schlüssel „{VERTEILSCHLUESSEL.find((s) => s.id === (plan.schluessel || 'gleich'))?.name}"</div>
+        <div style={{ ...cap, marginBottom: 10 }}>Monatsverteilung (Splash) — Schlüssel „{verteilschluesselListe().find((s) => s.id === (plan.schluessel || 'gleich'))?.name}"</div>
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 90, padding: '0 4px' }}>
           {mv.map((m) => (
             <div key={m.monat} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
