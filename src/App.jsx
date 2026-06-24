@@ -10,6 +10,7 @@ const T = {
   de: {
     back:"<- Zurück",
     subPlayers:"Spieler", subAttendance:"Anwesenheit", subInsights:"Insights", subResults:"Ergebnisse", subCash:"Kasse", subReport:"Bericht", subAnalysis:"Analyse", subGoals:"Ziele", subDrills:"Übungen", subPlanner:"Planer", subTrainings:"Trainings", subTactics:"Taktik", subMarket:"Turnier-Börse", subManage:"Mannschaften",
+    vImInSelf:"Ich bin dabei", vImInChild:"Mein Kind ist dabei", vComesLate:"Kommt zu spät", vComesLateMins:"Kommt ca. {m} Min. zu spät", vHowLate:"Wie spät kommt dein Kind?", vConfirm:"Bestätigen", vCancel:"Abbrechen", vMin:"Min", vNotIn:"Leider nicht dabei", vWhyNot:"Warum kann dein Kind nicht?", vNoReason:"Ohne Angabe", vLateNeedsReason:"Nach Ablauf der Frist ist eine Absage nur mit Grund möglich.", vDeadlinePassed:"Frist abgelaufen – Abstimmung wird trotzdem gezählt", vDeadline:"Abstimmungs-Frist:", vLateList:"Verspätungen", vSumIn:"dabei", vSumLate:"verspätet", vSumOut:"nicht dabei", rKrank:"Krank", rUrlaub:"Urlaub", rSchule:"Schulpflicht", rWettkampf:"Wettkampf", rSonstiges:"Sonstiges",
     cancel: "Abbrechen",
     save: "Speichern",
     delete: "Löschen",
@@ -127,6 +128,7 @@ const T = {
   en: {
     back:"<- Back",
     subPlayers:"Players", subAttendance:"Attendance", subInsights:"Insights", subResults:"Results", subCash:"Cash box", subReport:"Report", subAnalysis:"Analysis", subGoals:"Goals", subDrills:"Drills", subPlanner:"Planner", subTrainings:"Sessions", subTactics:"Tactics", subMarket:"Tournament market", subManage:"Teams",
+    vImInSelf:"I'm in", vImInChild:"My child is in", vComesLate:"Will be late", vComesLateMins:"Arrives ~{m} min late", vHowLate:"How late will your child be?", vConfirm:"Confirm", vCancel:"Cancel", vMin:"min", vNotIn:"Not available", vWhyNot:"Why can't your child make it?", vNoReason:"No reason", vLateNeedsReason:"After the deadline a cancellation requires a reason.", vDeadlinePassed:"Deadline passed – your vote still counts", vDeadline:"Voting deadline:", vLateList:"Late arrivals", vSumIn:"in", vSumLate:"late", vSumOut:"out", rKrank:"Ill", rUrlaub:"Holiday", rSchule:"School", rWettkampf:"Competition", rSonstiges:"Other",
     cancel:"Cancel",
     save:"Save",
     delete:"Delete",
@@ -244,6 +246,7 @@ const T = {
   nl: {
     back:"<- Terug",
     subPlayers:"Spelers", subAttendance:"Aanwezigheid", subInsights:"Inzichten", subResults:"Resultaten", subCash:"Kas", subReport:"Rapport", subAnalysis:"Analyse", subGoals:"Doelen", subDrills:"Oefeningen", subPlanner:"Planner", subTrainings:"Trainingen", subTactics:"Tactiek", subMarket:"Toernooimarkt", subManage:"Teams",
+    vImInSelf:"Ik ben erbij", vImInChild:"Mijn kind is erbij", vComesLate:"Komt te laat", vComesLateMins:"Komt ~{m} min te laat", vHowLate:"Hoe laat komt je kind?", vConfirm:"Bevestigen", vCancel:"Annuleren", vMin:"min", vNotIn:"Helaas niet", vWhyNot:"Waarom kan je kind niet?", vNoReason:"Geen reden", vLateNeedsReason:"Na de deadline kan afmelden alleen met reden.", vDeadlinePassed:"Deadline verstreken – je stem telt toch mee", vDeadline:"Stemdeadline:", vLateList:"Te laat", vSumIn:"erbij", vSumLate:"te laat", vSumOut:"niet erbij", rKrank:"Ziek", rUrlaub:"Vakantie", rSchule:"School", rWettkampf:"Wedstrijd", rSonstiges:"Overig",
     cancel:"Annuleren",
     save:"Opslaan",
     delete:"Verwijderen",
@@ -19824,6 +19827,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid}) 
 }
 
 function PollAttend({ev,user,onVote,cl,session=null,save=()=>{},data=null,fire=()=>{}}) {
+  const { tr } = useT();
   const _team = data ? (data.teams||[]).find(tm=>tm.id===ev.tid) : null;
   const selfLogin = ev.selfVote || teamSelfLogin(_team, cl?.clubSettings);
   const _v = ev.votes||{};
@@ -19841,7 +19845,7 @@ function PollAttend({ev,user,onVote,cl,session=null,save=()=>{},data=null,fire=(
   const voteLate = () => { onVote(ev.id,"att",{val:"yes",late:lateMins}); setShowLate(false); };
   const [showReason, setShowReason] = useState(false);
   const [noReason, setNoReason] = useState("");
-  const REASONS = ["Krank","Urlaub","Schulpflicht","Wettkampf","Sonstiges"];
+  const REASONS = ["rKrank","rUrlaub","rSchule","rWettkampf","rSonstiges"];
   const voteNo = (reason="") => { onVote(ev.id,"att",{val:"no",reason}); setShowReason(false); };
 
   return (
@@ -19849,7 +19853,7 @@ function PollAttend({ev,user,onVote,cl,session=null,save=()=>{},data=null,fire=(
       {session?.role==="trainer"&&data&&<TrainerCheckin ev={ev} session={session} save={save} data={data} fire={fire}/>}
       {(Object.values(ev.trainerPresence||{}).length>0&&session?.role==="user"&&data)&&<TrainerCheckin ev={ev} session={session} save={save} data={data} fire={fire}/>}
       {ev.note&&<div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:12,padding:"10px 13px",fontSize:13,color:"#92400e",fontWeight:500}}>{ev.note}</div>}
-      {ev.deadline&&<div style={{background:dlPassed?"#fee2e2":"#fffbeb",border:`1.5px solid ${dlPassed?"#fca5a5":"#fde68a"}`,borderRadius:12,padding:"9px 13px",fontSize:13,fontWeight:700,color:dlPassed?"#dc2626":"#d97706"}}>{dlPassed?"Frist abgelaufen - Abstimmung wird trotzdem gezaehlt":"Abstimmungs-Frist: "+ev.deadline.date+(ev.deadline.time?" "+ev.deadline.time+" Uhr":"")}</div>}
+      {ev.deadline&&<div style={{background:dlPassed?"#fee2e2":"#fffbeb",border:`1.5px solid ${dlPassed?"#fca5a5":"#fde68a"}`,borderRadius:12,padding:"9px 13px",fontSize:13,fontWeight:700,color:dlPassed?"#dc2626":"#d97706"}}>{dlPassed?tr("vDeadlinePassed"):tr("vDeadline")+" "+ev.deadline.date+(ev.deadline.time?" "+ev.deadline.time+" Uhr":"")}</div>}
 
       {(()=>{ const squads=_team?.squads||[]; if(squads.length<2) return null;
         const yesN=yes.length; let rem=yesN,filled=0,nextNeed=null,nextLabel=null;
@@ -19877,7 +19881,7 @@ function PollAttend({ev,user,onVote,cl,session=null,save=()=>{},data=null,fire=(
         style={{borderRadius:16,border:`2px solid ${uv==="yes"&&!myLate?p:"#e2e8f0"}`,background:uv==="yes"&&!myLate?mix(p,86):"#fafafa",padding:"14px 16px",cursor:"pointer",transition:"all .18s"}}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
           <div style={{width:22,height:22,borderRadius:"50%",border:`${uv==="yes"&&!myLate?"7px":"2px"} solid ${uv==="yes"&&!myLate?p:"#cbd5e1"}`,background:"#fff",flexShrink:0,transition:"all .15s"}}/>
-          <span style={{flex:1,fontSize:16,fontWeight:uv==="yes"&&!myLate?800:600,color:uv==="yes"&&!myLate?p:"#334155"}}>{selfLogin?"Ich bin dabei":"Mein Kind ist dabei"}</span>
+          <span style={{flex:1,fontSize:16,fontWeight:uv==="yes"&&!myLate?800:600,color:uv==="yes"&&!myLate?p:"#334155"}}>{selfLogin?tr("vImInSelf"):tr("vImInChild")}</span>
           {yes.filter(n=>!late.find(l=>l.name===n)).length>0&&<div style={{display:"flex",alignItems:"center",gap:4}}>
             <div style={{display:"flex"}}>{yes.filter(n=>!late.find(l=>l.name===n)).slice(0,5).map((v,i)=><div key={v} style={{marginLeft:i?-8:0,zIndex:5-i}}><Av name={v} sz={24}/></div>)}</div>
             <span style={{fontSize:13,fontWeight:800,color:"#475569",marginLeft:5}}>{yes.filter(n=>!late.find(l=>l.name===n)).length}</span>
@@ -19905,7 +19909,7 @@ function PollAttend({ev,user,onVote,cl,session=null,save=()=>{},data=null,fire=(
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:showLate?12:0}}>
           <div onClick={()=>setShowLate(s=>!s)} style={{width:22,height:22,borderRadius:"50%",border:`${myLate?"7px":"2px"} solid ${myLate?"#d97706":"#cbd5e1"}`,background:"#fff",flexShrink:0,cursor:"pointer",transition:"all .15s"}}/>
           <span onClick={()=>setShowLate(s=>!s)} style={{flex:1,fontSize:16,fontWeight:myLate?800:600,color:myLate?"#d97706":"#334155",cursor:"pointer"}}>
-            {myLate ? `Kommt ca. ${myLate} Min. zu spät` : "Kommt zu spät"}
+            {myLate ? tr("vComesLateMins").replace("{m}",myLate) : tr("vComesLate")}
           </span>
           {late.length>0&&<div style={{display:"flex",alignItems:"center",gap:4}}>
             <div style={{display:"flex"}}>{late.slice(0,5).map((l,i)=><div key={l.name} style={{marginLeft:i?-8:0,zIndex:5-i}}><Av name={l.name} sz={24}/></div>)}</div>
@@ -19915,23 +19919,23 @@ function PollAttend({ev,user,onVote,cl,session=null,save=()=>{},data=null,fire=(
         {/* Late time picker */}
         {showLate&&(
           <div style={{paddingTop:8,borderTop:"1px solid #fde68a"}}>
-            <div style={{fontSize:12,fontWeight:700,color:"#92400e",marginBottom:8}}>Wie spät kommt dein Kind?</div>
+            <div style={{fontSize:12,fontWeight:700,color:"#92400e",marginBottom:8}}>{tr("vHowLate")}</div>
             <div style={{display:"flex",gap:7,flexWrap:"wrap",marginBottom:12}}>
               {[5,10,15,20,30,45,60].map(m=>(
                 <button key={m} onClick={()=>setLateMins(m)}
                   style={{padding:"7px 13px",borderRadius:99,border:`2px solid ${lateMins===m?"#d97706":"#e2e8f0"}`,background:lateMins===m?"#d97706":"#fff",color:lateMins===m?"#fff":"#64748b",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
-                  {m} Min
+                  {m} {tr("vMin")}
                 </button>
               ))}
             </div>
             <div style={{display:"flex",gap:9}}>
               <button onClick={voteLate}
                 style={{flex:1,padding:"11px",borderRadius:12,border:"none",background:"#d97706",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
-                Bestätigen
+                {tr("vConfirm")}
               </button>
               <button onClick={()=>setShowLate(false)}
                 style={{padding:"11px 16px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
-                Abbrechen
+                {tr("vCancel")}
               </button>
             </div>
           </div>
@@ -19943,7 +19947,7 @@ function PollAttend({ev,user,onVote,cl,session=null,save=()=>{},data=null,fire=(
         style={{borderRadius:16,border:`2px solid ${uv==="no"?"#dc2626":"#e2e8f0"}`,background:uv==="no"?"#fee2e2":"#fafafa",padding:"14px 16px",cursor:"pointer",transition:"all .18s"}}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
           <div style={{width:22,height:22,borderRadius:"50%",border:`${uv==="no"?"7px":"2px"} solid ${uv==="no"?"#dc2626":"#cbd5e1"}`,background:"#fff",flexShrink:0,transition:"all .15s"}}/>
-          <span style={{flex:1,fontSize:16,fontWeight:uv==="no"?800:600,color:uv==="no"?"#dc2626":"#334155"}}>Leider nicht dabei</span>
+          <span style={{flex:1,fontSize:16,fontWeight:uv==="no"?800:600,color:uv==="no"?"#dc2626":"#334155"}}>{tr("vNotIn")}</span>
           {no.length>0&&<div style={{display:"flex",alignItems:"center",gap:4}}>
             <div style={{display:"flex"}}>{no.slice(0,5).map((v,i)=><div key={v} style={{marginLeft:i?-8:0,zIndex:5-i}}><Av name={v} sz={24}/></div>)}</div>
             <span style={{fontSize:13,fontWeight:800,color:"#475569",marginLeft:5}}>{no.length}</span>
@@ -19955,24 +19959,24 @@ function PollAttend({ev,user,onVote,cl,session=null,save=()=>{},data=null,fire=(
       {/* Abmelde-Grund */}
       {showReason&&(
         <div style={{background:"#fef2f2",borderRadius:13,padding:"12px 14px",border:"1.5px solid #fca5a5"}}>
-          <div style={{fontWeight:700,fontSize:13,color:"#991b1b",marginBottom:8}}>Warum kann dein Kind nicht?</div>
+          <div style={{fontWeight:700,fontSize:13,color:"#991b1b",marginBottom:8}}>{tr("vWhyNot")}</div>
           <div style={{display:"flex",flexWrap:"wrap",gap:7,marginBottom:10}}>
             {REASONS.map(r=>(
-              <button key={r} onClick={()=>voteNo(r)}
+              <button key={r} onClick={()=>voteNo(tr(r))}
                 style={{padding:"7px 14px",borderRadius:99,border:"1.5px solid #fca5a5",background:"#fff",color:"#dc2626",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
-                {r}
+                {tr(r)}
               </button>
             ))}
           </div>
           {dlPassed
-            ? <div style={{fontSize:11.5,color:"#991b1b",fontWeight:600}}>Nach Ablauf der Frist ist eine Absage nur mit Grund möglich.</div>
-            : <button onClick={()=>voteNo("")} style={{fontSize:12,color:"#94a3b8",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit"}}>Ohne Angabe</button>}
+            ? <div style={{fontSize:11.5,color:"#991b1b",fontWeight:600}}>{tr("vLateNeedsReason")}</div>
+            : <button onClick={()=>voteNo("")} style={{fontSize:12,color:"#94a3b8",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit"}}>{tr("vNoReason")}</button>}
         </div>
       )}
       {/* Verspätungs-Übersicht für Trainer */}
       {late.length>0&&(
         <div style={{background:"#fef3c7",borderRadius:13,padding:"11px 14px",border:"1.5px solid #fde68a"}}>
-          <div style={{fontWeight:800,fontSize:12,color:"#92400e",marginBottom:7}}>Verspätungen ({late.length})</div>
+          <div style={{fontWeight:800,fontSize:12,color:"#92400e",marginBottom:7}}>{tr("vLateList")} ({late.length})</div>
           <div style={{display:"flex",flexDirection:"column",gap:5}}>
             {late.map(l=>(
               <div key={l.name} style={{display:"flex",alignItems:"center",gap:8,fontSize:13}}>
@@ -19986,7 +19990,7 @@ function PollAttend({ev,user,onVote,cl,session=null,save=()=>{},data=null,fire=(
       )}
 
       {tot>0&&<p style={{textAlign:"center",fontSize:12,color:"#94a3b8",fontWeight:600}}>
-        {yes.length} dabei . {late.length>0?`${late.length} verspätet . `:""}{no.length} nicht dabei
+        {yes.length} {tr("vSumIn")} · {late.length>0?`${late.length} ${tr("vSumLate")} · `:""}{no.length} {tr("vSumOut")}
       </p>}
     </div>
   );
