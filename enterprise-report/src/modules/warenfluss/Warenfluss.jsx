@@ -7,6 +7,7 @@
 import React, { useState } from 'react'
 import { FLOWS, GRANULARITAETEN, fortschreibung, flussLandung, STICHTAG_KPIS, STICHTAG_LABEL, stichtagHochrechnung } from '../../core/warenfluss.js'
 import { formatWert } from '../../design/theme.js'
+import AuftragsStatus from './AuftragsStatus.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700 }
@@ -163,11 +164,13 @@ export default function Warenfluss() {
   return (
     <div style={{ display: 'grid', gap: 14 }}>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        {[['fluss', 'Fluss & Vorschau'], ['stichtag', `Stichtags-Hochrechnung (${STICHTAG_LABEL})`]].map(([id, n]) => (
+        {[['fluss', 'Fluss & Vorschau'], ['stichtag', `Stichtags-Hochrechnung (${STICHTAG_LABEL})`], ['status', '📋 Auftrags-Status (Journal)']].map(([id, n]) => (
           <button key={id} style={chip(tab === id)} onClick={() => setTab(id)}>{n}</button>
         ))}
       </div>
-      {tab === 'fluss' ? <FlussTab /> : <StichtagKpis />}
+      {tab === 'fluss' && <FlussTab />}
+      {tab === 'stichtag' && <StichtagKpis />}
+      {tab === 'status' && <AuftragsStatus />}
     </div>
   )
 }
