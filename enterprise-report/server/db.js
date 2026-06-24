@@ -32,7 +32,13 @@ export function buildConfig() {
       instanceName,
       enableArithAbort: true
     },
-    pool: { max: 5, min: 0, idleTimeoutMillis: 30000 },
+    // Pool großzügig: bei vielen gleichzeitigen Nutzern ist max:5 der erste
+    // Engpass. Über MSSQL_POOL_MAX/MIN überschreibbar (Default 30/0).
+    pool: {
+      max: Number(process.env.MSSQL_POOL_MAX) || 30,
+      min: Number(process.env.MSSQL_POOL_MIN) || 0,
+      idleTimeoutMillis: Number(process.env.MSSQL_POOL_IDLE_MS) || 30000
+    },
     connectionTimeout: 15000,
     requestTimeout: 30000
   }
