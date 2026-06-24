@@ -3,7 +3,7 @@
 //  abgeleitete KPIs live sehen. Nutzt den KPI-Abhängigkeitsgraph der Registry.
 // =========================================================================
 import React, { useState } from 'react'
-import { treiber, simuliere } from '../../core/whatif.js'
+import { stellhebel, simuliereSzenario, effekte } from '../../core/szenarioEngine.js'
 import { MOCK } from '../../data/mock.js'
 import { formatWert } from '../../design/theme.js'
 
@@ -13,20 +13,21 @@ const inp = { padding: '6px 8px', border: '1px solid var(--line)', borderRadius:
 const th = (al) => ({ textAlign: al, padding: '6px 9px', borderBottom: '2px solid var(--line)', fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase' })
 const td = (al, bold) => ({ textAlign: al, padding: '7px 9px', borderBottom: '1px solid var(--line)', fontWeight: bold ? 700 : 400 })
 
-// Kuratiertе Treiber, die als Stellhebel am meisten Sinn ergeben.
-const TREIBER_IDS = ['nettoumsatz', 'erloesschmaelerung', 'wareneinsatz', 'personalkosten', 'einkaufsvolumen', 'onlineAnteil']
+// Kuratierte Stellhebel über mehrere Domänen — alle wirken jetzt über das
+// dichte Kausalmodell bis ins Ergebnis (EINE Engine: szenarioEngine).
+const LEVER_IDS = ['nettoumsatz', 'wareneinsatz', 'gemeinkosten', 'personalkosten', 'marketingkosten', 'retourenquote', 'dso', 'ausschuss']
 
 export default function Szenario({ periode = '2025' }) {
   const roh = MOCK.roheWerte[periode] || MOCK.roheWerte['2025']
-  const alleTreiber = treiber(roh)
-  const lever = TREIBER_IDS.map((id) => alleTreiber.find((t) => t.id === id)).filter(Boolean)
+  const alleHebel = stellhebel(roh)
+  const lever = LEVER_IDS.map((id) => alleHebel.find((t) => t.id === id)).filter(Boolean)
   const [ov, setOv] = useState({})   // { id: { modus, wert } }
 
   const setLever = (id, patch) => setOv((o) => ({ ...o, [id]: { modus: 'pct', wert: 0, ...o[id], ...patch } }))
   const reset = () => setOv({})
-  const { wirkung } = simuliere(roh, ov)
-  const geaendert = wirkung.filter((w) => w.geaendert)
   const aktiv = Object.values(ov).some((o) => o && Number(o.wert) !== 0)
+  const { basis, sim, fixiert } = simuliereSzenario(roh, ov)
+  const geaendert = aktiv ? effekte(basis, sim, { fixiert }) : []
 
   return (
     <div style={{ maxWidth: '100%', margin: '0 auto' }}>
@@ -77,20 +78,22 @@ export default function Szenario({ periode = '2025' }) {
 
         {/* Wirkung */}
         <div style={{ ...card, padding: 16, overflowX: 'auto' }}>
-          <div style={{ ...cap, marginBottom: 10 }}>Wirkung auf abgeleitete Kennzahlen {aktiv ? `(${geaendert.length} betroffen)` : ''}</div>
+          <div style={{ ...cap, marginBottom: 10 }}>Wirkung auf Kennzahlen {aktiv ? `(${geaendert.length} betroffen)` : ''}</div>
           {!aktiv
-            ? <div style={{ fontSize: 13, color: 'var(--muted)' }}>Links einen Stellhebel bewegen — hier erscheint live, welche Kennzahlen sich wie verändern.</div>
-            : (
+            ? <div style={{ fontSize: 13, color: 'var(--muted)' }}>Links einen Stellhebel bewegen — hier erscheint live, welche Kennzahlen sich wie verändern (bis ins Ergebnis).</div>
+            : geaendert.length === 0
+              ? <div style={{ fontSize: 13, color: 'var(--muted)' }}>Keine messbare Wirkung — Stellhebel stärker bewegen.</div>
+              : (
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
                 <thead><tr>{['Kennzahl', 'Basis', 'Szenario', 'Δ'].map((h, i) => <th key={i} style={th(i === 0 ? 'left' : 'right')}>{h}</th>)}</tr></thead>
                 <tbody>
-                  {(geaendert.length ? geaendert : wirkung).map((w) => (
-                    <tr key={w.id}>
+                  {geaendert.slice(0, 20).map((w) => (
+                    <tr key={w.id} style={{ background: w.flip ? 'var(--accent-soft)' : 'transparent' }}>
                       <td style={td('left', true)}>{w.name}</td>
-                      <td className="mono" style={td('right')}>{w.vor != null ? formatWert(w.vor, w.einheit) : '–'}</td>
-                      <td className="mono" style={td('right', true)}>{w.nach != null ? formatWert(w.nach, w.einheit) : '–'}</td>
-                      <td className="mono" style={{ ...td('right'), color: !w.geaendert ? 'var(--muted)' : w.delta >= 0 ? 'var(--amp-g)' : 'var(--amp-r)' }}>
-                        {w.geaendert ? `${w.delta >= 0 ? '+' : ''}${w.deltaPct} %` : '—'}
+                      <td className="mono" style={td('right')}>{formatWert(w.vor, w.einheit)}</td>
+                      <td className="mono" style={td('right', true)}>{formatWert(w.nach, w.einheit)}</td>
+                      <td className="mono" style={{ ...td('right'), color: w.delta >= 0 ? 'var(--amp-g)' : 'var(--amp-r)' }}>
+                        {w.delta >= 0 ? '+' : ''}{w.deltaPct} %
                       </td>
                     </tr>
                   ))}
@@ -100,8 +103,8 @@ export default function Szenario({ periode = '2025' }) {
         </div>
       </div>
       <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 12 }}>
-        Die Wirkung wird über den KPI-Abhängigkeitsgraph berechnet (z. B. Nettoumsatz → DB → DB-Quote). Szenario ist
-        rein explorativ und ändert keine gespeicherten Werte.
+        Die Wirkung wird über das dichte Kausalmodell + den KPI-Abhängigkeitsgraph berechnet (z. B. Retouren → Erlös →
+        Umsatz → EBIT). Ampel-Wechsel sind hervorgehoben. Szenario ist rein explorativ und ändert keine gespeicherten Werte.
       </div>
     </div>
   )

@@ -32,6 +32,16 @@ test('effekte sind nach Bedeutung sortiert und erklärt', () => {
   if (ersterFlip >= 0 && ersterNonFlip >= 0) assert.ok(ersterFlip <= ersterNonFlip)
 })
 
+test('+10 % Nettoumsatz hebt die DB-Quote (vormals whatif-Invariante)', () => {
+  const { basis, sim } = simuliereSzenario(roh, { nettoumsatz: { modus: 'pct', wert: 10 } })
+  assert.ok(sim.dbQuote > basis.dbQuote)
+})
+
+test('Absoluter Override setzt den Wert direkt', () => {
+  const { sim } = simuliereSzenario(roh, { wareneinsatz: { modus: 'abs', wert: 0 } })
+  assert.equal(sim.wareneinsatz, 0)
+})
+
 test('Kein Override → keine Effekte', () => {
   const { basis, sim, fixiert } = simuliereSzenario(roh, {})
   assert.equal(effekte(basis, sim, { fixiert }).length, 0)

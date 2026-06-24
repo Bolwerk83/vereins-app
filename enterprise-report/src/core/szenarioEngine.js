@@ -43,7 +43,8 @@ export function simuliereSzenario(roh = {}, overrides = {}) {
   for (const [id, ov] of Object.entries(overrides)) {
     if (basis[id] == null || !ov) continue
     const wert = Number(ov.wert)
-    if (!wert) continue
+    if (Number.isNaN(wert)) continue
+    if (ov.modus !== 'abs' && wert === 0) continue // 0 % relativ = kein Effekt; absolut 0 ist gültig
     fix[id] = ov.modus === 'abs' ? wert : r2(basis[id] * (1 + wert / 100))
   }
   const sim = { ...basis, ...fix }
