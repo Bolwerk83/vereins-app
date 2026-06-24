@@ -9,6 +9,7 @@ const LangCtx  = createContext("de");
 const T = {
   de: {
     back:"<- Zurück",
+    subPlayers:"Spieler", subAttendance:"Anwesenheit", subInsights:"Insights", subResults:"Ergebnisse", subCash:"Kasse", subReport:"Bericht", subAnalysis:"Analyse", subGoals:"Ziele", subDrills:"Übungen", subPlanner:"Planer", subTrainings:"Trainings", subTactics:"Taktik", subMarket:"Turnier-Börse", subManage:"Mannschaften",
     cancel: "Abbrechen",
     save: "Speichern",
     delete: "Löschen",
@@ -125,6 +126,7 @@ const T = {
   },
   en: {
     back:"<- Back",
+    subPlayers:"Players", subAttendance:"Attendance", subInsights:"Insights", subResults:"Results", subCash:"Cash box", subReport:"Report", subAnalysis:"Analysis", subGoals:"Goals", subDrills:"Drills", subPlanner:"Planner", subTrainings:"Sessions", subTactics:"Tactics", subMarket:"Tournament market", subManage:"Teams",
     cancel:"Cancel",
     save:"Save",
     delete:"Delete",
@@ -241,6 +243,7 @@ const T = {
   },
   nl: {
     back:"<- Terug",
+    subPlayers:"Spelers", subAttendance:"Aanwezigheid", subInsights:"Inzichten", subResults:"Resultaten", subCash:"Kas", subReport:"Rapport", subAnalysis:"Analyse", subGoals:"Doelen", subDrills:"Oefeningen", subPlanner:"Planner", subTrainings:"Trainingen", subTactics:"Tactiek", subMarket:"Toernooimarkt", subManage:"Teams",
     cancel:"Annuleren",
     save:"Opslaan",
     delete:"Verwijderen",
@@ -7151,26 +7154,27 @@ function CashbookTab({ data, myTids, save, fire, cl }){
 function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false, initialSubTab }) {
   const [subTab, setSubTab] = useState(initialSubTab || "players"); // players | attendance | stats
   const t = TH(cl);
+  const { tr } = useT();
   const [showGuide, setShowGuide] = useState(false);
   // Trainer-Onboarding einmalig automatisch zeigen; jederzeit über ❓ erneut aufrufbar.
   // va_intro_-Präfix: wird auch vom "Hilfe-Intros erneut anzeigen"-Knopf zurückgesetzt.
   useEffect(()=>{ try{ if(localStorage.getItem("va_intro_trainer_guide")!=="1") setShowGuide(true); }catch{} },[]);
   const closeGuide = ()=>{ try{ localStorage.setItem("va_intro_trainer_guide","1"); }catch{} setShowGuide(false); };
   const subTabs = [
-    ...(isAdmin ? [{ id:"manage", label:"Mannschaften", icon:"M" }] : []),
-    { id:"players",    label:"Spieler",     icon:"P" },
-    { id:"attendance", label:"Anwesenheit", icon:"S" },
-    { id:"insights",   label:"🧠 Insights", icon:"I" },
-    { id:"results",    label:"Ergebnisse",  icon:"E" },
-    { id:"kasse",      label:"💰 Kasse",    icon:"K" },
-    { id:"bericht",    label:"📄 Bericht",  icon:"R" },
-    { id:"analysis",   label:"Analyse",     icon:"A" },
-    { id:"ziele",      label:"Ziele",       icon:"Z" },
-    { id:"drills",     label:"Übungen",     icon:"U" },
-    { id:"planner",    label:"Planer",      icon:"W" },
-    { id:"trainings",  label:"Trainings",   icon:"TP" },
-    { id:"taktik",     label:"Taktik",      icon:"TB" },
-    { id:"boerse",     label:"🌐 Turnier-Börse", icon:"B" },
+    ...(isAdmin ? [{ id:"manage", label:tr("subManage"), icon:"M" }] : []),
+    { id:"players",    label:tr("subPlayers"),        icon:"P" },
+    { id:"attendance", label:tr("subAttendance"),     icon:"S" },
+    { id:"insights",   label:"🧠 "+tr("subInsights"), icon:"I" },
+    { id:"results",    label:tr("subResults"),        icon:"E" },
+    { id:"kasse",      label:"💰 "+tr("subCash"),     icon:"K" },
+    { id:"bericht",    label:"📄 "+tr("subReport"),   icon:"R" },
+    { id:"analysis",   label:tr("subAnalysis"),       icon:"A" },
+    { id:"ziele",      label:tr("subGoals"),          icon:"Z" },
+    { id:"drills",     label:tr("subDrills"),         icon:"U" },
+    { id:"planner",    label:tr("subPlanner"),        icon:"W" },
+    { id:"trainings",  label:tr("subTrainings"),      icon:"TP" },
+    { id:"taktik",     label:tr("subTactics"),        icon:"TB" },
+    { id:"boerse",     label:"🌐 "+tr("subMarket"),   icon:"B" },
   ];
   return (
     <div>
