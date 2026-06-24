@@ -132,6 +132,51 @@ export function stuecklisteTerminierung(bikeId, bedarf, opts = {}) {
   }
 }
 
+// --- Lager/Reservierung & Produktionskapazität (Demo) --------------------
+export const KAPAZITAET_PRO_TAG = 12 // Räder/Tag Endmontage
+export const RUEST_TAGE = 2          // Rüst-/Anlauf vor Serienmontage
+export const KOMPONENTEN_BESTAND = {
+  'rahmen-alu': { bestand: 30, reserviert: 10, fach: 'A-12' },
+  motor: { bestand: 80, reserviert: 20, fach: 'B-03' },
+  'akku-z': { bestand: 25, reserviert: 5, fach: 'C-07' },
+  schaltung: { bestand: 45, reserviert: 15, fach: 'B-09' },
+  bremse: { bestand: 120, reserviert: 30, fach: 'D-01' },
+  laufrad: { bestand: 50, reserviert: 40, fach: 'D-05' },
+  reifen: { bestand: 200, reserviert: 60, fach: 'E-02' },
+}
+
+/**
+ * Machbarkeit/Durchlaufzeit: „menge Räder bauen — wie lange?" Je Komponente
+ * verfügbarer Bestand (Bestand − reserviert), Fehlmenge und deren
+ * Beschaffungszeit; der kritische Pfad + Produktionszeit + Puffer ergeben die
+ * Gesamtdurchlaufzeit ab heute.
+ */
+export function machbarkeit(bikeId, menge, { reaktion = REAKTION_STD, puffer = 7, heute = HEUTE } = {}) {
+  const stk = STUECKLISTE[bikeId]
+  if (!stk) return null
+  const bike = artikelVon(bikeId)
+  const positionen = stk.map((p) => {
+    const k = artikelVon(p.id)
+    const lager = KOMPONENTEN_BESTAND[p.id] || { bestand: 0, reserviert: 0, fach: '—' }
+    const benoetigt = menge * p.menge
+    const verfuegbar = Math.max(0, lager.bestand - lager.reserviert)
+    const fehl = Math.max(0, benoetigt - verfuegbar)
+    const lz = k?.lieferzeitTage ?? lieferantVon(k?.hauptlieferant)?.standardLieferzeitTage ?? 60
+    const beschaffungTage = fehl > 0 ? lz + reaktion : 0
+    return { id: p.id, komponente: k, mengeProRad: p.menge, benoetigt, bestand: lager.bestand, reserviert: lager.reserviert, verfuegbar, fehl, fach: lager.fach, lieferzeit: lz, beschaffungTage, ausLager: fehl === 0 }
+  }).sort((a, b) => b.beschaffungTage - a.beschaffungTage)
+  const kritKomponente = positionen.find((p) => p.beschaffungTage > 0) || null
+  const kritBeschaffungTage = kritKomponente ? kritKomponente.beschaffungTage : 0
+  const produktionsTage = Math.ceil(menge / KAPAZITAET_PRO_TAG) + RUEST_TAGE
+  const gesamtTage = kritBeschaffungTage + produktionsTage + puffer
+  return {
+    bike, menge, kapazitaetProTag: KAPAZITAET_PRO_TAG, positionen,
+    kritKomponente, kritBeschaffungTage, produktionsTage, puffer, ruest: RUEST_TAGE, gesamtTage,
+    produktionStart: addTage(heute, kritBeschaffungTage), fertigDatum: addTage(heute, gesamtTage),
+    fehlteile: positionen.filter((p) => p.fehl > 0).length,
+  }
+}
+
 /** Anfragevorlage an den Lieferanten (Verfügbarkeit & Liefertermin). */
 export function anfrageVorlage(t, menge = 1) {
   const a = t.artikel, lf = t.lieferant
