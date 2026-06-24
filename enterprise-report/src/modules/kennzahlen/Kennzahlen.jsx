@@ -68,6 +68,7 @@ export default function Kennzahlen({ rolle, werte = {} }) {
         <div style={{ color: 'var(--muted)', fontSize: 13 }}>
           Nachschlagewerk aller Kennzahlen: Bedeutung, Formel, Ziel- und Ampel-Logik, Datenquelle.
           Über das <b>ⓘ</b> (auch direkt an jeder Kennzahl im Bericht) öffnest du den vollständigen Steckbrief.
+          <br /><span style={{ color: 'var(--slate)' }}>🔎 <b>Transparenz für alle:</b> jede Definition ist hier einsehbar — auch zu vertraulichen Kennzahlen. Nur der aktuelle <b>Wert</b> ist bei vertraulichen Kennzahlen (🔒) rollenabhängig.</span>
         </div>
         <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center', marginTop: 10 }}>
           <input value={suche} onChange={(e) => setSuche(e.target.value)} placeholder="Kennzahl suchen …"

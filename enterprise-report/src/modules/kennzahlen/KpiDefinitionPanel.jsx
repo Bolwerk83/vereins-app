@@ -2,7 +2,9 @@
 //  KENNZAHLEN-DEFINITION (Steckbrief) — Modal.
 //  Zeigt Bedeutung, Formel/Abhängigkeiten, Ziel-/Ampel-Logik, Datenquelle
 //  und "wo ist die Kennzahl eingebaut" (mit Sprunglink dorthin).
-//  Respektiert die Rechte: ohne Berechtigung wird nur ein Hinweis gezeigt.
+//  Transparenz für alle: die DEFINITION (Bedeutung, Formel, Quelle, Ziel) ist
+//  immer einsehbar; nur der aktuelle WERT ist bei vertraulichen Kennzahlen
+//  rollenabhängig (Governance: Definitionen öffentlich, Werte zugriffsgeschützt).
 // =========================================================================
 import React from 'react'
 import { KPI } from '../../core/kpiRegistry.js'
@@ -50,20 +52,23 @@ export default function KpiDefinitionPanel({ kpiId, rolle, werte = {}, onClose, 
           <button onClick={onClose} title="Schließen" style={{ border: 'none', background: 'none', fontSize: 22, lineHeight: 1, cursor: 'pointer', color: 'var(--muted)' }}>×</button>
         </div>
 
-        {!darf ? (
-          <div style={{ padding: 22 }}>
-            <div style={{ fontSize: 15, marginBottom: 6 }}>🔒 Keine Berechtigung für diese Kennzahl</div>
-            <div style={{ fontSize: 13, color: 'var(--muted)' }}>
-              Diese Kennzahl ist vertraulich. Sichtbar nur für: <b>{k.security?.join(' / ') || '—'}</b>.
-              {' '}Melde dich mit den passenden Rechten an oder wende dich an die Geschäftsführung/HR.
-            </div>
-          </div>
-        ) : (
+        {(
           <div style={{ padding: '6px 22px 18px' }}>
+            {/* Transparenz-Hinweis: Definition für alle, Wert ggf. rollenabhängig */}
+            <div style={{ margin: '10px 0 4px', fontSize: 12, color: 'var(--slate)', background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', padding: '8px 11px' }}>
+              🔎 <b>Transparenz:</b> Bedeutung, Formel und Datenquelle sind für <b>alle</b> einsehbar.
+              {k.security ? <> Der aktuelle <b>Wert</b> ist vertraulich (nur <b>{k.security.join(' / ')}</b>).</> : <> Der aktuelle Wert ist für deine Rolle sichtbar.</>}
+            </div>
             <Zeile label="Aktueller Wert">
-              <span className="mono" style={{ fontSize: 18, fontWeight: 600 }}>{formatWert(wert, k.einheit)}</span>
-              {k.ziel != null && <span style={{ marginLeft: 10, display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--muted)' }}>
-                <AmpelPunkt status={status} /> {AMPEL_LABEL?.[status] || ''}</span>}
+              {darf ? (
+                <>
+                  <span className="mono" style={{ fontSize: 18, fontWeight: 600 }}>{formatWert(wert, k.einheit)}</span>
+                  {k.ziel != null && <span style={{ marginLeft: 10, display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--muted)' }}>
+                    <AmpelPunkt status={status} /> {AMPEL_LABEL?.[status] || ''}</span>}
+                </>
+              ) : (
+                <span style={{ color: 'var(--muted)' }}>🔒 vertraulich — Wert nur für <b>{k.security?.join(' / ') || '—'}</b> sichtbar</span>
+              )}
             </Zeile>
             <Zeile label="Bedeutung">{k.beschreibung}</Zeile>
             <Zeile label="Ermittlung">
