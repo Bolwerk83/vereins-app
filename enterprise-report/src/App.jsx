@@ -14,6 +14,7 @@ import BurgerMenu from './components/BurgerMenu.jsx'
 import { KiStatusBadge } from './components/KiGate.jsx'
 import Assistent from './modules/assistent/Assistent.jsx'
 import RoterFaden from './modules/roter-faden/RoterFaden.jsx'
+import OnePager from './modules/onepager/OnePager.jsx'
 import { ladeKpiWerte, pruefeVerbindung, setCacheKontext, leereCache, PERIODEN, AKTUELLE_PERIODE, QUELLE } from './core/dataProvider.js'
 import { ladeModell } from './core/periodenmodell.js'
 import ZeitDatenart from './modules/zeit-datenart/ZeitDatenart.jsx'
@@ -429,6 +430,7 @@ export default function App() {
             {/* Nur Primär-Einstiege oben; die vollständige Navigation steckt im ☰-Menü. */}
             <button style={topBtn(ansicht === 'baum' || ansicht === 'report')} onClick={() => geh('baum')}>{t('nav.tree')}</button>
             <button style={topBtn(ansicht === 'kennzahlen')} onClick={() => geh('kennzahlen')}>{t('nav.kennzahlen')}</button>
+            <button style={topBtn(ansicht === 'onepager')} onClick={() => geh('onepager')}>📄 OnePager</button>
             <button style={topBtn(ansicht === 'roterfaden')} onClick={() => geh('roterfaden')}>🧵 Roter Faden</button>
             <button style={topBtn(ansicht === 'assistent')} onClick={() => geh('assistent')}>💬 Assistent</button>
             <button style={topBtn(ansicht === 'qc')} onClick={() => geh('qc')}>
@@ -559,6 +561,9 @@ export default function App() {
         )}
         {ansicht === 'alerts' && (
           <Alerts werte={werte} rolle={rolle} periode={periode} />
+        )}
+        {ansicht === 'onepager' && (
+          <OnePager rolle={rolle} werte={werte} onGeh={geh} onKpi={(id) => { setBaumStart(id); setAnsicht('baum') }} />
         )}
         {ansicht === 'roterfaden' && (
           <RoterFaden rolle={rolle} werte={werte} onGeh={geh} onKpi={(id) => { setBaumStart(id); setAnsicht('baum') }} />
