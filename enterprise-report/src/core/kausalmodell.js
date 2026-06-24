@@ -130,7 +130,9 @@ export const KAUSAL = [
   },
   {
     id: 'roce', von: ['ebit', 'bilanzsumme'],
-    f: (s, b) => (s.bilanzsumme ? (b.ebit + d(s, b, 'ebit')) * 100 / s.bilanzsumme : b.roce + d(s, b, 'ebit') * 100 / (b.bilanzsumme || 1)),
+    // delta-basiert: EBIT-Effekt additiv, Kapital-Effekt als Skalierung — so
+    // bleibt der Basiswert ohne Override exakt erhalten.
+    f: (s, b) => (b.roce + d(s, b, 'ebit') * 100 / (b.bilanzsumme || 1)) * (s.bilanzsumme ? (b.bilanzsumme || 0) / s.bilanzsumme : 1),
     erklaerung: 'ROCE = EBIT bezogen auf das eingesetzte Kapital (≈ Bilanzsumme).',
   },
   {
