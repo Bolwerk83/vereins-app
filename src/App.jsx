@@ -28014,6 +28014,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         <EventPlanEditor
           ev={planFor}
           vorlagen={(local.trainings||[]).filter(tr=>tr.cid===cid)}
+          cat={(local.teams||[]).find(tm=>tm.id===planFor.tid)?.cat || (local.teams||[]).find(tm=>tm.id===planFor.tid)?.name || null}
           t={TH(myClub)}
           onSave={plan=>{ save({...local, events:local.events.map(e=>e.id===planFor.id?{...e, trainingPlan:plan, trainingId:""}:e)}); setPlanFor(null); fire("Trainingsplan gespeichert *"); }}
           onRemove={()=>{ save({...local, events:local.events.map(e=>{ if(e.id!==planFor.id) return e; const {trainingPlan, ...rest}=e; return {...rest, trainingId:""}; })}); setPlanFor(null); fire("Trainingsplan entfernt"); }}
@@ -28089,7 +28090,7 @@ function DrillPicker({ pool, onPick, onClose, t }){
     </div>
   );
 }
-function EventPlanEditor({ ev, vorlagen, t, onSave, onRemove, onCancel, onOpenTaktik }) {
+function EventPlanEditor({ ev, vorlagen, cat=null, t, onSave, onRemove, onCancel, onOpenTaktik }) {
   const PHASES=["Aufwärmen","Hauptteil","Abschluss","Spielform","Athletik"];
   const mapBlock=b=>({phase:b.phase||"Hauptteil",title:b.title||"",min:Number(b.min)||0,drillId:b.drillId||"",axes:b.axes||[],diagram:b.diagram||"",mode:b.drillId?"lib":(b.mode||"free")});
   const initBlocks=(()=>{
@@ -28104,6 +28105,14 @@ function EventPlanEditor({ ev, vorlagen, t, onSave, onRemove, onCancel, onOpenTa
   const [showV,setShowV]=useState(false);
   const [infoDrill,setInfoDrill]=useState(null);
   const [pickIdx,setPickIdx]=useState(null);
+  const [genFocus,setGenFocus]=useState("auto");
+  const evDurMin=(()=>{ if(ev?.time&&ev?.endTime){ const[h1,m1]=String(ev.time).split(":").map(Number); const[h2,m2]=String(ev.endTime).split(":").map(Number); const d=(h2*60+m2)-(h1*60+m1); if(d>0) return d; } return 60; })();
+  const genPlan=()=>{
+    if(blocks.length&&typeof window!=="undefined"&&window.confirm&&!window.confirm("Aktuelle Blöcke durch den Vorschlag ersetzen?")) return;
+    const sess=buildSession({focus:genFocus,cat:cat||null,targetMin:evDurMin});
+    if(!sess.length) return;
+    setBlocks(sess.map(b=>({phase:b.phase,title:b.drill.title,min:b.drill.min,drillId:b.drill.id,axes:b.drill.axes||[],diagram:"",mode:"lib"})));
+  };
   const had=!!(ev?.trainingPlan||ev?.trainingId);
   const setBlock=(i,patch)=>setBlocks(bs=>bs.map((b,j)=>j===i?{...b,...patch}:b));
   const addBlock=()=>setBlocks(bs=>[...bs,{phase:bs.length?"Hauptteil":"Aufwärmen",title:"",min:10,mode:"lib",drillId:"",axes:[]}]);
@@ -28125,6 +28134,16 @@ function EventPlanEditor({ ev, vorlagen, t, onSave, onRemove, onCancel, onOpenTa
     <div>
       <div style={{background:"#eef2ff",borderRadius:14,padding:"12px 14px",marginBottom:12,border:"1.5px solid #c7d2fe"}}>
         <p style={{fontSize:13,color:"#3730a3",fontWeight:600,lineHeight:1.5}}>Stelle den Plan für <b>„{ev?.title||"dieses Training"}"</b> zusammen – wähle fertige Übungen aus der Bibliothek (mit Beschreibung & Diagramm) oder tippe eigene ein. Eine Vorlage bleibt beim Anpassen unverändert.</p>
+      </div>
+      <div style={{background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:14,padding:"12px 14px",marginBottom:12}}>
+        <div style={{fontWeight:800,fontSize:14,color:"#15803d",marginBottom:6}}>✨ Trainings-Assistent</div>
+        <div style={{fontSize:11.5,color:"#64748b",marginBottom:9,lineHeight:1.45}}>Erstellt automatisch einen ausgewogenen Ablauf (Aufwärmen → Hauptteil → Spielform) aus der Übungsbibliothek{cat?` für ${cat}`:""} – passend zur Trainingsdauer ({evDurMin} Min). Danach frei anpassbar.</div>
+        <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:9}}>
+          {[["auto","Ausgewogen"],["technik","Technik"],["taktik","Taktik"],["torschuss","Torschuss"],["kondition","Kondition"]].map(([k,l])=>(
+            <button key={k} onClick={()=>setGenFocus(k)} style={{padding:"6px 11px",borderRadius:99,border:`1.5px solid ${genFocus===k?"#16a34a":"#e2e8f0"}`,background:genFocus===k?"#16a34a14":"#fff",color:genFocus===k?"#15803d":"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
+          ))}
+        </div>
+        <button onClick={genPlan} style={{width:"100%",padding:"11px",borderRadius:11,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>✨ Vorschlag erstellen</button>
       </div>
       {onOpenTaktik&&<button onClick={onOpenTaktik} style={{width:"100%",padding:"11px",borderRadius:12,border:`1.5px solid ${t.p}`,background:t.p+"10",color:t.p,fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit",marginBottom:12}}>⚽ Taktiktafel öffnen</button>}
       {(vorlagen||[]).length>0&&<>
