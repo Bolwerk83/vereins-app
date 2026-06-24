@@ -8,6 +8,8 @@ import { beantworte, ASSISTENT_TIPPS } from '../../core/localAssistant.js'
 import { ladeHistorie } from '../../core/dataProvider.js'
 import { KiStatusBadge } from '../../components/KiGate.jsx'
 import { KPI } from '../../core/kpiRegistry.js'
+import { protokolliere } from '../../core/assistentLog.js'
+import AssistentInsights from './AssistentInsights.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 
@@ -59,6 +61,7 @@ export default function Assistent({ rolle, werte = {}, onGeh, onKpi }) {
   ])
   const [text, setText] = useState('')
   const [denkt, setDenkt] = useState(false)
+  const [ansicht, setAnsicht] = useState('chat') // 'chat' | 'insights'
   const endeRef = useRef(null)
   useEffect(() => { endeRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [verlauf, denkt])
 
@@ -69,6 +72,8 @@ export default function Assistent({ rolle, werte = {}, onGeh, onKpi }) {
     setVerlauf((v) => [...v, { von: 'user', text: q }])
     setDenkt(true)
     const antwort = await beantworte(q, { werte, rolle, ladeHistorie })
+    // Lernen: jede Frage mit Intent/Treffer protokollieren (lokal, KI-frei).
+    protokolliere({ frage: q, intent: antwort.intent, kpis: antwort.kpis, rolle })
     setVerlauf((v) => [...v, { von: 'bot', text: antwort.text, vorschlaege: antwort.vorschlaege, intent: antwort.intent, kpis: antwort.kpis }])
     setDenkt(false)
   }
@@ -80,8 +85,18 @@ export default function Assistent({ rolle, werte = {}, onGeh, onKpi }) {
           <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 9 }}>💬 Assistent</h2>
           <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 2 }}>Fragen zu deinen Kennzahlen — in eigenen Worten, beantwortet aus den echten Zahlen.</div>
         </div>
-        <KiStatusBadge />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
+            {[['chat', '💬 Chat'], ['insights', '📊 Insights']].map(([id, lbl]) => (
+              <button key={id} onClick={() => setAnsicht(id)} style={{ padding: '6px 12px', border: 'none', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', background: ansicht === id ? 'var(--accent)' : 'var(--panel)', color: ansicht === id ? '#fff' : 'var(--muted)' }}>{lbl}</button>
+            ))}
+          </div>
+          <KiStatusBadge />
+        </div>
       </div>
+
+      {ansicht === 'insights' && <AssistentInsights onGeh={onGeh} />}
+      {ansicht === 'chat' && <>
 
       {/* Verlauf */}
       <div style={{ ...card, flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -138,6 +153,7 @@ export default function Assistent({ rolle, werte = {}, onGeh, onKpi }) {
         <button onClick={() => frag()} disabled={denkt || !text.trim()} style={{ padding: '11px 20px', border: 'none', borderRadius: 'var(--radius-sm)', background: 'var(--accent)', color: '#fff', fontWeight: 600, cursor: 'pointer', opacity: denkt || !text.trim() ? .6 : 1 }}>Senden</button>
       </div>
       <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6, textAlign: 'center' }}>🔒 Läuft vollständig lokal · keine KI-Cloud · keine Kosten · Daten bleiben im Haus</div>
+      </>}
     </div>
   )
 }
