@@ -11,6 +11,7 @@ import { FilterProvider, GlobalFilterLeiste } from './core/filterKontext.jsx'
 import { detailFuerBereich } from './core/detailberichte.js'
 import Kennzahlen from './modules/kennzahlen/Kennzahlen.jsx'
 import BurgerMenu from './components/BurgerMenu.jsx'
+import { KiStatusBadge } from './components/KiGate.jsx'
 import { ladeKpiWerte, pruefeVerbindung, setCacheKontext, leereCache, PERIODEN, AKTUELLE_PERIODE, QUELLE } from './core/dataProvider.js'
 import { ladeModell } from './core/periodenmodell.js'
 import ZeitDatenart from './modules/zeit-datenart/ZeitDatenart.jsx'
@@ -788,6 +789,7 @@ export default function App() {
 
       {/* Dezenter, aber unmissverständlicher Urheberhinweis. */}
       <footer className="no-print" style={{ textAlign: 'center', padding: '14px 20px 22px', color: 'var(--muted)', fontSize: 11.5 }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}><KiStatusBadge /></div>
         Bei Rückfragen wende dich ans <b style={{ color: 'var(--ink)' }}>Business Controlling</b> ·{' '}
         <a href="https://servicedesk.example.com/controlling" target="_blank" rel="noreferrer"
           style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>🎫 Ticket erstellen</a>

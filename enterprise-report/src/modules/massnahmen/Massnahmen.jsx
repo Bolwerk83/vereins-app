@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react'
 import { ladeMassnahmen, addMassnahme, updateMassnahme, removeMassnahme, STATUS, istUeberfaellig, trackingZusammenfassung } from '../../core/massnahmen.js'
 import { empfehleMassnahmen, BI_QUELLE } from '../../core/biProvider.js'
+import { KiStatusBadge, useKiGate } from '../../components/KiGate.jsx'
 import { KPI } from '../../core/kpiRegistry.js'
 import { formatWert } from '../../design/theme.js'
 import { Badge } from '../../components/ui.jsx'
@@ -27,7 +28,9 @@ export default function Massnahmen({ werte, rolle, autoKontext, onVerbraucht }) 
   const [form, setForm] = useState({ titel: '', bereich: '', hebel: '', frist: 'nächstes Quartal', owner: '', aufwand: 'mittel' })
   const aktualisieren = () => setListe(ladeMassnahmen())
 
+  const kiGate = useKiGate()
   async function empfehlen(kontext) {
+    if (!(await kiGate.fordere(kontext || 'Gesamtlage'))) return // KI-Bestätigung; offline immer true
     setLaedt(true); setFehler(null)
     try { setEmpf(await empfehleMassnahmen(kontext || 'Gesamtlage', werte, rolle)) }
     catch (e) { setFehler(String(e.message || e)) }
@@ -49,10 +52,11 @@ export default function Massnahmen({ werte, rolle, autoKontext, onVerbraucht }) 
 
   return (
     <div style={{ maxWidth: '100%', margin: '0 auto', display: 'grid', gap: 18 }}>
+      {kiGate.modal}
       {/* KI-Empfehlung */}
       <div style={card}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-          <h2 style={{ fontSize: 18 }}>Controller-Auswertung → SMART-Maßnahmen <Badge status={BI_QUELLE === 'claude' ? 'g' : 'n'}>Engine: {BI_QUELLE}</Badge></h2>
+          <h2 style={{ fontSize: 18, display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>Controller-Auswertung → SMART-Maßnahmen <KiStatusBadge /></h2>
           <button onClick={() => empfehlen('Gesamtlage')} disabled={laedt}
             style={{ padding: '9px 16px', border: 'none', borderRadius: 'var(--radius-sm)', background: 'var(--accent)', color: '#fff', fontWeight: 600, opacity: laedt ? .6 : 1 }}>
             {laedt ? 'Auswertung läuft …' : '🎯 Auswerten (wie ein Controller)'}

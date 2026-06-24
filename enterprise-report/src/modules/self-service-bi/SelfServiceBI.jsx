@@ -8,6 +8,7 @@ import React, { useState } from 'react'
 import { KPI } from '../../core/kpiRegistry.js'
 import { darfKpi } from '../../core/rbac.js'
 import { erzeugeBiBericht, BI_QUELLE } from '../../core/biProvider.js'
+import { KiStatusBadge, useKiGate } from '../../components/KiGate.jsx'
 import { CONTROLLER_LEAD, BERATER, UNTERNEHMENSZIEL } from '../../core/agentBoard.js'
 import { KpiCard, KpiGesperrt, Badge, AmpelPunkt } from '../../components/ui.jsx'
 
@@ -44,10 +45,13 @@ export default function SelfServiceBI({ rolle, werte }) {
   const [bericht, setBericht] = useState(null)
   const [fehler, setFehler] = useState(null)
 
+  const kiGate = useKiGate()
   async function senden(anforderung) {
     const a = (anforderung ?? text).trim()
     if (!a) return
-    setText(a); setLaedt(true); setFehler(null); setBericht(null)
+    setText(a)
+    if (!(await kiGate.fordere(a))) return // bei aktiver KI erst nach Bestätigung; offline immer true
+    setLaedt(true); setFehler(null); setBericht(null)
     try { setBericht(await erzeugeBiBericht(a, werte, rolle)) }
     catch (e) { setFehler(String(e.message || e)) }
     finally { setLaedt(false) }
@@ -55,14 +59,15 @@ export default function SelfServiceBI({ rolle, werte }) {
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 20, alignItems: 'start' }}>
+      {kiGate.modal}
       <div style={{ display: 'grid', gap: 16 }}>
         {/* Eingabe */}
         <div style={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', padding: 16, boxShadow: 'var(--shadow)' }}>
           <h2 style={{ fontSize: 18 }}>Self-Service BI</h2>
           <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4 }}>
             Anforderung in eigenen Worten — der Beirat antwortet aus Controller-Sicht mit Befund und Maßnahmen.
-            &nbsp;<Badge status={BI_QUELLE === 'claude' ? 'g' : 'n'}>Engine: {BI_QUELLE}</Badge>
           </p>
+          <div style={{ marginTop: 6 }}><KiStatusBadge /></div>
           <textarea value={text} onChange={(e) => setText(e.target.value)} rows={3}
             placeholder="z. B. Warum steigt der Umsatz, aber nicht das Ergebnis?"
             style={{ width: '100%', marginTop: 10, padding: 10, border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', font: 'inherit', resize: 'vertical' }} />
