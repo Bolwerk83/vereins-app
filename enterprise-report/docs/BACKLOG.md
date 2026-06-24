@@ -111,6 +111,19 @@ Stand: laufend.
 - [ ] **Audit-Trail** je Stück/Charge für den Zollnachweis (aktive Veredelung/Präferenz/Zolllager)
 - [ ] DWH: FactSerienbewegung (Serie/Charge, Zollnummer, OrtKey, Status, Datum) + DimOrt/Fach
 
+## 🏭 Produktionsplaner & engpassorientiertes Controlling (neuer Wunsch)
+**Produktionsplaner** (Vorschlagsliste)
+- [ ] **Belegungsplan/Gantt**: Linien × Zeit, Produktionsaufträge mit Start/Ende (aus Machbarkeit)
+- [ ] **Kapazitätsauslastung** je Tag/Linie vs. Kapazität → Engpass sichtbar
+- [ ] **Materialverfügbarkeits-Ampel** je Auftrag (aus BOM/Bestand), Engpass-Komponenten + Beschaffungsstatus
+- [ ] **Reihenfolge/Priorisierung** nach Liefertermin **und** Deckungsbeitrag (Drag/Sort)
+- [ ] Plan/Ist (Produktionsplanerfüllung), Was-wäre-wenn „Auftrag vorziehen"
+**Controlling-Sicht** (Planabsatz, was fehlt bis wann, bester DB/EBIT)
+- [ ] **Planabsatz vs. Ist/Forecast** je Produkt/Monat → Lücke „was fehlt bis wann"
+- [ ] **DB je Stück & DB-Beitrag** je Produkt; **engpassorientierter DB** (DB je Engpasseinheit) → richtige Priorisierung
+- [ ] **Produktmix-Optimierung** für bestes EBIT unter Kapazitäts-/Materialrestriktionen
+- [ ] Verknüpfung mit Szenario-Engine (Mix ändern → EBIT-Wirkung)
+
 ## 💡 Claudes Empfehlungen (eigene Ideen, würde ich später umsetzen)
 Priorisiert nach Nutzen/Aufwand — alle lokal/ohne KI machbar:
 - [ ] **Treiberbaum-Visualisierung** des Kausalmodells: interaktiver Wirkungsbaum, Klick auf eine Kennzahl zeigt Treiber & Effekte (macht die 80+ Verkettungen sichtbar/prüfbar).
