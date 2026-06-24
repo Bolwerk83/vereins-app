@@ -18,7 +18,49 @@ import DetailPerspektiven from './DetailPerspektiven.jsx'
 
 function EbeneTag({ stufe }) {
   const e = EBENEN.find((x) => x.stufe === stufe)
-  return <Badge status="n">E{stufe} · {e?.name}</Badge>
+  return <span title={e ? `${e.frage} — ${e.beispiel}` : ''}><Badge status="n">E{stufe} · {e?.name}</Badge></span>
+}
+
+// Präsentationsreifes Navigations-Modell: die 5 Ebenen als konkrete Use Cases
+// (welche Frage, Beispiel, Rolle, nächster Schritt). Die aktuelle Ebene wird
+// hervorgehoben, damit klar ist, „wo im Modell" man gerade steht.
+function EbenenUseCase({ aktiveStufe }) {
+  const [auf, setAuf] = useState(true)
+  return (
+    <div className="no-print" style={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', padding: '12px 14px', marginBottom: 16, boxShadow: 'var(--shadow)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <div>
+          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '.04em' }}>🧭 Navigations-Modell · die 5 Ebenen als Use Case</span>
+          <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>Von der Gesamtlage bis zum Einzelfall — jede Ebene beantwortet eine konkrete Frage.</div>
+        </div>
+        <button onClick={() => setAuf(!auf)} style={{ fontSize: 12, padding: '4px 10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: 'var(--panel)', cursor: 'pointer', fontWeight: 600 }}>{auf ? 'Einklappen' : 'Use Cases zeigen'}</button>
+      </div>
+      {auf && (
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 12 }}>
+          {EBENEN.map((e) => {
+            const aktiv = e.stufe === aktiveStufe
+            return (
+              <div key={e.stufe} style={{ flex: '1 1 200px', minWidth: 188, border: `1px solid ${aktiv ? 'var(--accent)' : 'var(--line)'}`, borderRadius: 'var(--radius)', padding: '10px 12px', background: aktiv ? 'var(--accent-soft)' : 'var(--bg)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 20 }}>{e.icon}</span>
+                  <div>
+                    <div className="mono" style={{ fontSize: 10, color: aktiv ? 'var(--accent)' : 'var(--muted)', fontWeight: 700 }}>E{e.stufe}{aktiv ? ' · du bist hier' : ''}</div>
+                    <div style={{ fontWeight: 700, fontSize: 13 }}>{e.name}</div>
+                  </div>
+                </div>
+                <div style={{ fontSize: 12.5, fontWeight: 600, marginTop: 8 }}>{e.frage}</div>
+                <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 3, lineHeight: 1.4 }}>{e.beispiel}</div>
+                <div style={{ fontSize: 11, marginTop: 7, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <span style={{ color: 'var(--slate)' }}>👤 {e.rolle}</span>
+                  <span style={{ color: 'var(--accent)' }}>→ {e.aktion}</span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
 }
 
 function Zweig({ knoten, aktiv, onSelect, onSicht, tiefe = 0 }) {
@@ -89,6 +131,8 @@ export default function TreeNavigator({ rolle, werte, periode, onOpenReport, onD
   useEffect(() => { if (detailKey) ladeDetail(detailKey).then(setDetail); else setDetail(null) }, [detailKey])
 
   return (
+    <div>
+    <EbenenUseCase aktiveStufe={knoten.ebene} />
     <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: 20, alignItems: 'start' }}>
       {/* Baum — Wurzel + nach Clustern gruppierte Fachbereiche */}
       <aside className="no-print" style={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', padding: 10, position: 'sticky', top: 16, maxHeight: 'calc(100vh - 90px)', overflow: 'auto' }}>
@@ -188,6 +232,7 @@ export default function TreeNavigator({ rolle, werte, periode, onOpenReport, onD
           </div>
         )}
       </section>
+    </div>
     </div>
   )
 }
