@@ -11,6 +11,7 @@ const T = {
     back:"<- Zurück",
     subPlayers:"Spieler", subAttendance:"Anwesenheit", subInsights:"Insights", subResults:"Ergebnisse", subCash:"Kasse", subReport:"Bericht", subAnalysis:"Analyse", subGoals:"Ziele", subDrills:"Übungen", subPlanner:"Planer", subTrainings:"Trainings", subTactics:"Taktik", subMarket:"Turnier-Börse", subManage:"Mannschaften",
     vImInSelf:"Ich bin dabei", vImInChild:"Mein Kind ist dabei", vComesLate:"Kommt zu spät", vComesLateMins:"Kommt ca. {m} Min. zu spät", vHowLate:"Wie spät kommt dein Kind?", vConfirm:"Bestätigen", vCancel:"Abbrechen", vMin:"Min", vNotIn:"Leider nicht dabei", vWhyNot:"Warum kann dein Kind nicht?", vNoReason:"Ohne Angabe", vLateNeedsReason:"Nach Ablauf der Frist ist eine Absage nur mit Grund möglich.", vDeadlinePassed:"Frist abgelaufen – Abstimmung wird trotzdem gezählt", vDeadline:"Abstimmungs-Frist:", vLateList:"Verspätungen", vSumIn:"dabei", vSumLate:"verspätet", vSumOut:"nicht dabei", rKrank:"Krank", rUrlaub:"Urlaub", rSchule:"Schulpflicht", rWettkampf:"Wettkampf", rSonstiges:"Sonstiges",
+    lnTor:"Tor", lnAbwehr:"Abwehr", lnMittelfeld:"Mittelfeld", lnAngriff:"Angriff", luTitle:"Aufstellung", luSuggest:"Vorschlag", luFriends:"Freunde gewichten:", luOff:"Aus", luNormal:"Normal", luStrong:"Stark", luBench:"Bank / verfügbar", luAllPlaced:"Alle Zusagen sind aufgestellt.", luGuestVisible:"Mannschaft für Gäste sichtbar", luGuestHint:"Namen nur mit Eltern-Freigabe; sonst nur Trikotnummer.", luBenchShort:"Bank:", luForN:"Für {n} Spieler:", luFormation:"Formation", luWithGK:"mit Torwart", luOnBench:"{n} auf der Bank", luTogether:"Eingespielt:", luFriendsLabel:"Freunde", luSeparated:"getrennt", luAdjustHint:"Besetzung nach Position, Stärken & Freundschaften – frei anpassbar.",
     cancel: "Abbrechen",
     save: "Speichern",
     delete: "Löschen",
@@ -129,6 +130,7 @@ const T = {
     back:"<- Back",
     subPlayers:"Players", subAttendance:"Attendance", subInsights:"Insights", subResults:"Results", subCash:"Cash box", subReport:"Report", subAnalysis:"Analysis", subGoals:"Goals", subDrills:"Drills", subPlanner:"Planner", subTrainings:"Sessions", subTactics:"Tactics", subMarket:"Tournament market", subManage:"Teams",
     vImInSelf:"I'm in", vImInChild:"My child is in", vComesLate:"Will be late", vComesLateMins:"Arrives ~{m} min late", vHowLate:"How late will your child be?", vConfirm:"Confirm", vCancel:"Cancel", vMin:"min", vNotIn:"Not available", vWhyNot:"Why can't your child make it?", vNoReason:"No reason", vLateNeedsReason:"After the deadline a cancellation requires a reason.", vDeadlinePassed:"Deadline passed – your vote still counts", vDeadline:"Voting deadline:", vLateList:"Late arrivals", vSumIn:"in", vSumLate:"late", vSumOut:"out", rKrank:"Ill", rUrlaub:"Holiday", rSchule:"School", rWettkampf:"Competition", rSonstiges:"Other",
+    lnTor:"Goal", lnAbwehr:"Defence", lnMittelfeld:"Midfield", lnAngriff:"Attack", luTitle:"Line-up", luSuggest:"Suggestion", luFriends:"Weight friends:", luOff:"Off", luNormal:"Normal", luStrong:"Strong", luBench:"Bench / available", luAllPlaced:"All confirmed players are placed.", luGuestVisible:"Show squad to guests", luGuestHint:"Names only with parent consent; otherwise just shirt number.", luBenchShort:"Bench:", luForN:"For {n} players:", luFormation:"Formation", luWithGK:"with keeper", luOnBench:"{n} on the bench", luTogether:"Played together:", luFriendsLabel:"Friends", luSeparated:"separated", luAdjustHint:"Positions by role, strengths & friendships – freely adjustable.",
     cancel:"Cancel",
     save:"Save",
     delete:"Delete",
@@ -247,6 +249,7 @@ const T = {
     back:"<- Terug",
     subPlayers:"Spelers", subAttendance:"Aanwezigheid", subInsights:"Inzichten", subResults:"Resultaten", subCash:"Kas", subReport:"Rapport", subAnalysis:"Analyse", subGoals:"Doelen", subDrills:"Oefeningen", subPlanner:"Planner", subTrainings:"Trainingen", subTactics:"Tactiek", subMarket:"Toernooimarkt", subManage:"Teams",
     vImInSelf:"Ik ben erbij", vImInChild:"Mijn kind is erbij", vComesLate:"Komt te laat", vComesLateMins:"Komt ~{m} min te laat", vHowLate:"Hoe laat komt je kind?", vConfirm:"Bevestigen", vCancel:"Annuleren", vMin:"min", vNotIn:"Helaas niet", vWhyNot:"Waarom kan je kind niet?", vNoReason:"Geen reden", vLateNeedsReason:"Na de deadline kan afmelden alleen met reden.", vDeadlinePassed:"Deadline verstreken – je stem telt toch mee", vDeadline:"Stemdeadline:", vLateList:"Te laat", vSumIn:"erbij", vSumLate:"te laat", vSumOut:"niet erbij", rKrank:"Ziek", rUrlaub:"Vakantie", rSchule:"School", rWettkampf:"Wedstrijd", rSonstiges:"Overig",
+    lnTor:"Keeper", lnAbwehr:"Verdediging", lnMittelfeld:"Middenveld", lnAngriff:"Aanval", luTitle:"Opstelling", luSuggest:"Voorstel", luFriends:"Vrienden wegen:", luOff:"Uit", luNormal:"Normaal", luStrong:"Sterk", luBench:"Bank / beschikbaar", luAllPlaced:"Alle toezeggingen staan opgesteld.", luGuestVisible:"Team zichtbaar voor gasten", luGuestHint:"Namen alleen met toestemming ouders; anders alleen rugnummer.", luBenchShort:"Bank:", luForN:"Voor {n} spelers:", luFormation:"Formatie", luWithGK:"met keeper", luOnBench:"{n} op de bank", luTogether:"Ingespeeld:", luFriendsLabel:"Vrienden", luSeparated:"apart", luAdjustHint:"Posities op rol, sterktes & vriendschappen – vrij aanpasbaar.",
     cancel:"Annuleren",
     save:"Opslaan",
     delete:"Verwijderen",
@@ -30409,6 +30412,8 @@ function recommendLineup(present, profiles, pastLineups, friendWeight=1){
   return {lineup,bench,formation,pairs,friends,count:n};
 }
 function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChange=undefined, profiles=[], pastLineups=[] }){
+  const { tr } = useT();
+  const LINE_LABELS = {T:tr("lnTor"),A:tr("lnAbwehr"),M:tr("lnMittelfeld"),S:tr("lnAngriff")};
   const lu = ev.lineup || {T:[],A:[],M:[],S:[]};
   const placed = [...(lu.T||[]),...(lu.A||[]),...(lu.M||[]),...(lu.S||[])];
   const bench = (present||[]).filter(n=>!placed.includes(n));
@@ -30424,30 +30429,30 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
   return (
     <div style={{marginTop:14,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-        <span style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>Aufstellung <span style={{fontWeight:600,fontSize:12,color:"#94a3b8"}}>({placed.length})</span></span>
-        {canEdit&&(present||[]).length>0&&<button onClick={autoFill} style={{marginLeft:"auto",padding:"6px 12px",borderRadius:9,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>🤖 Vorschlag</button>}
+        <span style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>{tr("luTitle")} <span style={{fontWeight:600,fontSize:12,color:"#94a3b8"}}>({placed.length})</span></span>
+        {canEdit&&(present||[]).length>0&&<button onClick={autoFill} style={{marginLeft:"auto",padding:"6px 12px",borderRadius:9,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>🤖 {tr("luSuggest")}</button>}
       </div>
       {canEdit&&(present||[]).length>0&&(
         <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10,flexWrap:"wrap"}}>
-          <span style={{fontSize:11,fontWeight:700,color:"#64748b"}}>👫 Freunde gewichten:</span>
-          {[[0,"Aus"],[1,"Normal"],[2,"Stark"]].map(([v,l])=>(
+          <span style={{fontSize:11,fontWeight:700,color:"#64748b"}}>👫 {tr("luFriends")}</span>
+          {[[0,tr("luOff")],[1,tr("luNormal")],[2,tr("luStrong")]].map(([v,l])=>(
             <button key={v} onClick={()=>setFriendW(v)} style={{padding:"4px 11px",borderRadius:99,border:`1.5px solid ${friendW===v?"#16a34a":"#e2e8f0"}`,background:friendW===v?"#16a34a14":"#fff",color:friendW===v?"#15803d":"#64748b",fontWeight:700,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
           ))}
         </div>
       )}
       {canEdit&&tip&&(
         <div style={{background:"#eef2ff",border:"1.5px solid #c7d2fe",borderRadius:12,padding:"9px 12px",marginBottom:10,fontSize:12,color:"#3730a3",lineHeight:1.5}}>
-          <b>🤖 Für {tip.count} Spieler:</b> Formation <b>{tip.formation||"—"}</b>{tip.lineup.T.length?" (mit Torwart)":""}{tip.bench.length?` · ${tip.bench.length} auf der Bank`:""}.
-          {tip.pairs.length>0&&<div style={{marginTop:3}}>🤝 Eingespielt: {tip.pairs.map(p=>`${p.a.split(" ")[0]} & ${p.b.split(" ")[0]} (${p.c}×)`).join(", ")}</div>}
-          {tip.friendW>0&&tip.friends&&tip.friends.length>0&&<div style={{marginTop:3}}>👫 Freunde{tip.friendW===2?" (stark)":""}: {tip.friends.map(f=>`${f.a.split(" ")[0]} & ${f.b.split(" ")[0]}${f.together?"":" (getrennt)"}`).join(", ")}</div>}
-          <div style={{marginTop:3,color:"#6366f1"}}>Besetzung nach Position, Stärken{tip.friendW>0?" & Freundschaften":""} – frei anpassbar (× entfernen, von der Bank zuordnen).</div>
+          <b>🤖 {tr("luForN").replace("{n}",tip.count)}</b> {tr("luFormation")} <b>{tip.formation||"—"}</b>{tip.lineup.T.length?" ("+tr("luWithGK")+")":""}{tip.bench.length?` · ${tr("luOnBench").replace("{n}",tip.bench.length)}`:""}.
+          {tip.pairs.length>0&&<div style={{marginTop:3}}>🤝 {tr("luTogether")} {tip.pairs.map(p=>`${p.a.split(" ")[0]} & ${p.b.split(" ")[0]} (${p.c}×)`).join(", ")}</div>}
+          {tip.friendW>0&&tip.friends&&tip.friends.length>0&&<div style={{marginTop:3}}>👫 {tr("luFriendsLabel")}{tip.friendW===2?" ("+tr("luStrong").toLowerCase()+")":""}: {tip.friends.map(f=>`${f.a.split(" ")[0]} & ${f.b.split(" ")[0]}${f.together?"":" ("+tr("luSeparated")+")"}`).join(", ")}</div>}
+          <div style={{marginTop:3,color:"#6366f1"}}>{tr("luAdjustHint")}</div>
         </div>
       )}
       {onPubChange&&(
         <div onClick={()=>onPubChange(!pub)} style={{display:"flex",alignItems:"center",gap:10,background:pub?"#f0fdf4":"#f8fafc",border:`1.5px solid ${pub?"#bbf7d0":"#e2e8f0"}`,borderRadius:12,padding:"10px 12px",marginBottom:10,cursor:"pointer"}}>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:13,fontWeight:800,color:pub?"#15803d":"#334155"}}>Mannschaft für Gäste sichtbar</div>
-            <div style={{fontSize:11,color:"#94a3b8",marginTop:1,lineHeight:1.4}}>Namen nur mit Eltern-Freigabe; sonst nur Trikotnummer.</div>
+            <div style={{fontSize:13,fontWeight:800,color:pub?"#15803d":"#334155"}}>{tr("luGuestVisible")}</div>
+            <div style={{fontSize:11,color:"#94a3b8",marginTop:1,lineHeight:1.4}}>{tr("luGuestHint")}</div>
           </div>
           <div style={{width:42,height:24,borderRadius:99,background:pub?"#16a34a":"#cbd5e1",position:"relative",flexShrink:0,transition:"background .2s"}}>
             <div style={{position:"absolute",top:3,left:pub?21:3,width:18,height:18,borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.25)"}}/>
@@ -30457,7 +30462,7 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
       <div style={{background:"linear-gradient(#16a34a22,#16a34a11)",borderRadius:14,border:"1.5px solid #bbf7d0",padding:"10px 12px",display:"flex",flexDirection:"column",gap:8}}>
         {LINEUP_LINES.map(([k,label])=>(
           <div key={k} style={{display:"flex",alignItems:"center",gap:8,minHeight:34}}>
-            <span style={{fontSize:10,fontWeight:800,color:lineColors[k],width:74,flexShrink:0,letterSpacing:.3}}>{label.toUpperCase()}</span>
+            <span style={{fontSize:10,fontWeight:800,color:lineColors[k],width:74,flexShrink:0,letterSpacing:.3}}>{(LINE_LABELS[k]||label).toUpperCase()}</span>
             <div style={{flex:1,display:"flex",flexWrap:"wrap",gap:5}}>
               {(lu[k]||[]).length===0 && <span style={{fontSize:12,color:"#94a3b8"}}>–</span>}
               {(lu[k]||[]).map(n=>(
@@ -30471,21 +30476,21 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
       </div>
       {canEdit&&(
         <div style={{marginTop:10}}>
-          <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.4}}>BANK / VERFÜGBAR ({bench.length})</div>
-          {bench.length===0 ? <p style={{fontSize:12,color:"#94a3b8"}}>Alle Zusagen sind aufgestellt.</p>
+          <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.4}}>{tr("luBench").toUpperCase()} ({bench.length})</div>
+          {bench.length===0 ? <p style={{fontSize:12,color:"#94a3b8"}}>{tr("luAllPlaced")}</p>
             : <div style={{display:"flex",flexDirection:"column",gap:6}}>
                 {bench.map(n=>(
                   <div key={n} style={{display:"flex",alignItems:"center",gap:8,background:"#f8fafc",borderRadius:10,padding:"6px 9px",border:"1px solid #e2e8f0"}}>
                     <Av name={n} sz={22}/><span style={{flex:1,minWidth:0,fontSize:13,fontWeight:700,color:"#334155"}}>{n}</span>
                     {LINEUP_LINES.map(([k,label])=>(
-                      <button key={k} onClick={()=>place(n,k)} title={label} style={{width:26,height:26,borderRadius:7,border:`1.5px solid ${lineColors[k]}`,background:lineColors[k]+"15",color:lineColors[k],fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>{k}</button>
+                      <button key={k} onClick={()=>place(n,k)} title={LINE_LABELS[k]||label} style={{width:26,height:26,borderRadius:7,border:`1.5px solid ${lineColors[k]}`,background:lineColors[k]+"15",color:lineColors[k],fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>{k}</button>
                     ))}
                   </div>
                 ))}
               </div>}
         </div>
       )}
-      {!canEdit&&bench.length>0&&<div style={{fontSize:11.5,color:"#94a3b8",marginTop:8}}>Bank: {bench.join(", ")}</div>}
+      {!canEdit&&bench.length>0&&<div style={{fontSize:11.5,color:"#94a3b8",marginTop:8}}>{tr("luBenchShort")} {bench.join(", ")}</div>}
     </div>
   );
 }
