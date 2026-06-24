@@ -174,6 +174,39 @@ function clusterKpis(frage, rolle) {
   return [...ids].map((id) => KPI[id]).filter((k) => k && (!rolle || darfKpi(rolle, k)))
 }
 
+// --- Was-wäre-wenn: Override propagieren -------------------------------
+// Setzt eine Kennzahl fix auf neuerWert und rechnet alle ABGELEITETEN
+// Kennzahlen (berechne + abhaengig) bis zur Stabilität neu. Die override-
+// Kennzahl selbst bleibt fix (auch wenn sie sonst berechnet würde).
+function simuliere(werte, overrideId, neuerWert) {
+  const sim = { ...werte, [overrideId]: neuerWert }
+  const abgeleitet = Object.values(KPI).filter((k) => typeof k.berechne === 'function' && k.id !== overrideId)
+  for (let runde = 0; runde < 12; runde++) {
+    let geaendert = false
+    for (const k of abgeleitet) {
+      if (k.abhaengig.every((d) => sim[d] != null)) {
+        const nv = k.berechne(sim)
+        if (nv !== sim[k.id]) { sim[k.id] = nv; geaendert = true }
+      }
+    }
+    if (!geaendert) break
+  }
+  return sim
+}
+
+// Liest aus „… auf X", „… um X %", „… um X", „+/- X %" den Zielwert.
+function parseSzenario(frage, current) {
+  const m = frage.match(/(-?\d+(?:[.,]\d+)?)/)
+  if (!m) return null
+  const num = parseFloat(m[1].replace(',', '.'))
+  const neg = /senk|sink|f(ä|ae)ll|reduzier|runter|weniger|minus|verring|niedriger|halbier/.test(frage)
+  const prozent = /%|prozent/.test(frage)
+  if (/\bauf\b/.test(frage)) return num                                   // absoluter Zielwert
+  if (current == null) return null
+  if (prozent) return current * (1 + (neg ? -1 : 1) * num / 100)          // relative Änderung
+  return current + (neg ? -1 : 1) * num                                   // absolute Differenz
+}
+
 const wert = (k, werte) => werte?.[k.id]
 const ampelVonKpi = (k, werte) => ampelStatus({ wert: wert(k, werte), ziel: k.ziel, richtung: k.richtung, warn: k.warn })
 
@@ -192,6 +225,7 @@ const I = {
   definition: /was (ist|bedeutet|hei(ß|ss)t|sind|versteht man unter)|definition|erkl(ä|ae)r|begriff|wofür steht/i,
   formel: /wie (wird|errechnet|berechnet|ermittelt)|formel|berechnung|woher (kommt|stammt)|datenquelle|quelle (von|der|für)/i,
   ziel: /\bziel\b|zielwert|soll(wert)?\b|plan(wert)?\b|target|wie hoch sollte|wo wollen wir hin/i,
+  wenn: /was w(ä|ae)re|was passiert,? wenn|angenommen|simulier|szenario|wenn\b.{0,40}\b(auf|um)\b.{0,14}\d|halbier|verdoppel/i,
   lageGesamt: /gesamtlage|wie (geht|l(ä|ae)uft) (es|das gesch(ä|ae)ft|der laden)|wie stehen wir|(ü|ue)berblick|gesamtbild|wie ist die lage|status gesamt|wie sieht.?s aus/i,
   listeRot: /\brot\b|kritisch|auff(ä|ae)llig|baustelle|sorgenkind|handlungsbedarf|\brisiken\b|wo (brennt|hakt|stehen wir schlecht|liegt das problem)/i,
   listeGruen: /was l(ä|ae)uft gut|st(ä|ae)rken|welche.*(gr(ü|ue)n|gut)|wo sind wir gut|\bpositiv\b/i,
@@ -208,7 +242,7 @@ const TIPPS = [
   'Was ist gerade rot?',
   'Wie ist die Gesamtlage?',
   'Wie senke ich die Retourenquote?',
-  'Vergleiche Umsatz und Ergebnis.',
+  'Was wäre, wenn der Wareneinsatz auf 30 Mio € sinkt?',
 ]
 
 /**
@@ -237,6 +271,30 @@ export async function beantworte(frage, { werte = {}, rolle = null, ladeHistorie
     const lage = v.r > 0 ? 'mit Handlungsbedarf' : v.a > 2 ? 'überwiegend stabil mit Beobachtungspunkten' : 'insgesamt auf Kurs'
     const text = `Gesamtlage ${lage}: von ${bewertbar.length} bewerteten Kennzahlen sind **${v.g} grün**, **${v.a} gelb** und **${v.r} rot**.` + (rote.length ? ` Größte Baustellen: ${rote.join(', ')}.` : '')
     return out('lageGesamt', text, [], ['Was ist gerade rot?', 'Was läuft gut?', 'Was sollen wir tun?'])
+  }
+
+  // Was-wäre-wenn — braucht eine konkrete Kennzahl + Zahl, sonst durchfallen
+  if (I.wenn.test(f) && top) {
+    const cur = werte[top.id]
+    let neu = parseSzenario(f, cur)
+    if (neu == null && /halbier/.test(f) && cur != null) neu = cur / 2
+    if (neu == null && /verdoppel/.test(f) && cur != null) neu = cur * 2
+    if (neu == null) return out('wenn', `Sag mir einen Zielwert für **${top.name}** — z. B. „Was wäre, wenn ${top.name} auf … geht?" oder „… um 10 % sinkt?".`, [top], TIPPS)
+    const sim = simuliere(werte, top.id, neu)
+    const amp = (k, w) => ampelStatus({ wert: w, ziel: k.ziel, richtung: k.richtung, warn: k.warn })
+    const changes = Object.values(KPI)
+      .filter((k) => k.id !== top.id && (!rolle || darfKpi(rolle, k)) && sim[k.id] != null && werte[k.id] != null && Math.abs(sim[k.id] - werte[k.id]) > 1e-9)
+      .map((k) => ({ k, alt: werte[k.id], neu: sim[k.id], aAlt: amp(k, werte[k.id]), aNeu: amp(k, sim[k.id]) }))
+      .sort((a, b) => Math.abs(b.neu - b.alt) - Math.abs(a.neu - a.alt))
+      .slice(0, 6)
+    let text = `**Szenario:** ${top.name} ${cur != null ? `von ${formatWert(cur, top.einheit)} ` : ''}→ **${formatWert(neu, top.einheit)}**.`
+    if (!changes.length) text += `\n\n${top.name} ist eine Eingangsgröße — im hinterlegten Modell hängen keine weiteren Kennzahlen direkt davon ab.`
+    else text += '\n\nAuswirkung auf abhängige Kennzahlen:' + changes.map((c) => {
+      const pfeil = c.neu > c.alt ? '▲' : '▼'
+      const flip = c.k.ziel != null && c.aAlt !== c.aNeu ? ` — Ampel ${AMP_WORT[c.aAlt]} → ${AMP_WORT[c.aNeu]}` : ''
+      return `\n• **${c.k.name}**: ${formatWert(c.alt, c.k.einheit)} ${pfeil} **${formatWert(c.neu, c.k.einheit)}**${flip}`
+    }).join('')
+    return out('wenn', text, [top, ...changes.map((c) => c.k)].slice(0, 4), [`Was tun für ${top.name}?`, `Trend von ${top.name}?`])
   }
 
   // Ursache (warum) — vor den Rot/Gelb-Listen, damit "warum ... rot" hier landet

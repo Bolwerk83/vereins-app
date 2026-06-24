@@ -2,6 +2,7 @@ import './_setup.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { KPI } from '../src/core/kpiRegistry.js'
+import { ladeKpiWerte } from '../src/core/dataProvider.js'
 import { beantworte, findeKpis } from '../src/core/localAssistant.js'
 
 // Werte: meiste auf Ziel (grün), zwei bewusst rot.
@@ -70,6 +71,28 @@ test('Unbekannte Frage führt nicht zu Absturz, gibt Vorschläge', async () => {
   const a = await beantworte('Wie viele Bananen haben wir?', ctx)
   assert.equal(a.intent, 'unbekannt')
   assert.ok(a.vorschlaege.length > 0)
+})
+
+test('Was-wäre-wenn: Override schlägt auf abhängige Kennzahlen durch', async () => {
+  const echte = await ladeKpiWerte()
+  const a = await beantworte('Was wäre, wenn der Wareneinsatz auf 30 Mio € sinkt?', { werte: echte })
+  assert.equal(a.intent, 'wenn')
+  assert.match(a.text, /30,0 Mio/)
+  assert.match(a.text, /Wareneinsatzquote|DB-Quote/) // abgeleitete Kennzahl ändert sich
+})
+
+test('Was-wäre-wenn: Eingangsgröße ohne Abhängige wird benannt', async () => {
+  const echte = await ladeKpiWerte()
+  const a = await beantworte('Angenommen die Retourenquote sinkt auf 7 %', { werte: echte })
+  assert.equal(a.intent, 'wenn')
+  assert.match(a.text, /Eingangsgröße|abhängige/)
+})
+
+test('Was-wäre-wenn: relative Änderung (um 10 %)', async () => {
+  const echte = await ladeKpiWerte()
+  const a = await beantworte('Was wäre, wenn der Umsatz um 10 % steigt?', { werte: echte })
+  assert.equal(a.intent, 'wenn')
+  assert.match(a.text, /57,2 Mio|57,/) // 52 * 1,1
 })
 
 test('Hilfe erklärt die Fähigkeiten', async () => {
