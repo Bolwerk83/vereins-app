@@ -3,7 +3,7 @@
 //  (stufenweise Fixkostendeckung), plus Typologie der Kostenrechnungssysteme.
 // =========================================================================
 import React, { useState } from 'react'
-import { direktCosting, stufenweise, SYSTEME } from '../../core/deckungsbeitrag.js'
+import { direktCosting, stufenweise, SYSTEME, dbSichten, KONDITIONSARTEN } from '../../core/deckungsbeitrag.js'
 import { pcFaktor } from '../../core/statistikFilter.js'
 import PcFilter, { pcHinweis } from '../shared/PcFilter.jsx'
 import { useGlobalFilter } from '../../core/filterKontext.jsx'
@@ -54,14 +54,109 @@ export default function Deckungsbeitrag({ onGeh }) {
       {tab !== 'systeme' && <ExecKopf status={execStatus} kennzahl={m(sw.betriebsergebnis) + ' Mio €'} kennzahlLabel="Betriebsergebnis" kernaussage={execAussage} empfehlung={execEmpf} />}
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
-        {[['mehrstufig', 'Mehrstufig (Fixkostendeckung)'], ['einstufig', 'Einstufig (Direct Costing)'], ['systeme', 'Systeme der Kostenrechnung']].map(([id, n]) => (
+        {[['mehrstufig', 'Mehrstufig (Fixkostendeckung)'], ['einstufig', 'Einstufig (Direct Costing)'], ['fair', '⚖ Faire DB (Sonderfälle)'], ['systeme', 'Systeme der Kostenrechnung']].map(([id, n]) => (
           <button key={id} style={chip(tab === id)} onClick={() => setTab(id)}>{n}</button>
         ))}
       </div>
 
       {tab === 'einstufig' && <Einstufig fk={fk} />}
       {tab === 'mehrstufig' && <Mehrstufig fk={fk} />}
+      {tab === 'fair' && <FaireDB fk={fk} />}
       {tab === 'systeme' && <Systeme />}
+    </div>
+  )
+}
+
+// ⚖ Faire DB: Sonderfälle (Sponsoring/Aktion/Muster/Personal) transparent
+// aus dem Durchschnitts-DB herausrechnen — fürs Pricing-Team.
+function FaireDB({ fk = 1 }) {
+  const [aus, setAus] = useState(['sponsoring', 'aktion', 'muster', 'personal']) // Default: faire Basis (alle raus)
+  const [reklass, setReklass] = useState(false)
+  const s = dbSichten(aus, fk, reklass)
+  const toggle = (id) => setAus((a) => (a.includes(id) ? a.filter((x) => x !== id) : [...a, id]))
+  const eur = (v) => m(v) + ' Mio €'
+  const tile = (titel, d, hervor, hinweis) => (
+    <div style={{ ...card, padding: '12px 14px', flex: 1, minWidth: 190, borderTop: `3px solid ${hervor || 'var(--line)'}` }}>
+      <div style={{ ...cap, marginBottom: 3 }}>{titel}</div>
+      <div className="mono" style={{ fontSize: 20, fontWeight: 800, color: hervor || 'var(--ink)' }}>{eur(d.db)}</div>
+      <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>DB-Quote {d.dbQuote} % · Umsatz {eur(d.umsatz)}</div>
+      {hinweis && <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 4 }}>{hinweis}</div>}
+    </div>
+  )
+  return (
+    <div style={{ display: 'grid', gap: 14 }}>
+      <div style={{ ...card, padding: 14 }}>
+        <div style={{ fontSize: 13, color: 'var(--slate)', marginBottom: 10, maxWidth: 820 }}>
+          Sponsoring (100 %), starke Aktionen, Muster/Garantie und Personal-/IC-Käufe haben <b>vollen Wareneinsatz, aber kaum Erlös</b> — sie drücken den
+          Durchschnitts-DB. Hier rechnest du sie fürs Pricing heraus; die <b>Brücke</b> zeigt transparent, was sie kosten. Nichts wird gelöscht.
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span style={{ ...cap, marginRight: 2 }}>Ausschließen:</span>
+          {KONDITIONSARTEN.map((k) => {
+            const an = aus.includes(k.id)
+            return (
+              <button key={k.id} onClick={() => toggle(k.id)} title={k.hinweis}
+                style={{ padding: '5px 11px', borderRadius: 999, fontSize: 12.5, fontWeight: 600, cursor: 'pointer',
+                  border: `1px solid ${an ? 'var(--accent)' : 'var(--line)'}`, background: an ? 'var(--accent-soft)' : 'var(--panel)', color: an ? 'var(--accent)' : 'var(--muted)' }}>
+                {an ? '☒' : '☐'} {k.kurz}
+              </button>
+            )
+          })}
+          <span style={{ flex: 1 }} />
+          <button onClick={() => setAus(KONDITIONSARTEN.map((k) => k.id))} style={{ fontSize: 11.5, padding: '5px 9px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: 'var(--panel)', cursor: 'pointer', color: 'var(--muted)' }}>alle</button>
+          <button onClick={() => setAus([])} style={{ fontSize: 11.5, padding: '5px 9px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: 'var(--panel)', cursor: 'pointer', color: 'var(--muted)' }}>keine</button>
+        </div>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, fontSize: 12.5, color: 'var(--slate)', cursor: 'pointer' }}>
+          <input type="checkbox" checked={reklass} onChange={(e) => setReklass(e.target.checked)} />
+          Sponsoring-Wareneinsatz ins <b>Marketing-/Sponsoringbudget umbuchen</b> (Produkt-DB sauber, Kosten beim Marketing-ROI)
+          {s.marketingUmbuchung > 0 && <span style={{ color: 'var(--accent)', fontWeight: 600 }}>· {eur(s.marketingUmbuchung)} → Marketing</span>}
+        </label>
+      </div>
+
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        {tile('DB brutto (alles inkl.)', s.brutto, 'var(--muted)', 'Ökonomische Wahrheit — Sonderfälle enthalten.')}
+        {tile('DB bereinigt (Pricing-Basis)', s.bereinigt, 'var(--amp-g)', 'Faire Kerngeschäfts-Marge ohne Sonderfälle.')}
+        <div style={{ ...card, padding: '12px 14px', flex: 1, minWidth: 190, borderTop: '3px solid var(--accent)' }}>
+          <div style={{ ...cap, marginBottom: 3 }}>Effekt der Bereinigung</div>
+          <div className="mono" style={{ fontSize: 20, fontWeight: 800, color: s.effekt >= 0 ? 'var(--amp-g)' : 'var(--amp-r)' }}>{s.effekt >= 0 ? '+' : ''}{eur(s.effekt)}</div>
+          <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>DB-Quote {s.quoteEffekt >= 0 ? '+' : ''}{s.quoteEffekt} Pp</div>
+          <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 4 }}>{s.ausgeblendet.belege.toLocaleString('de-DE')} Belege · Umsatz {eur(s.ausgeblendet.umsatz)} · Wareneinsatz {eur(s.ausgeblendet.varKosten)} ausgeblendet</div>
+        </div>
+      </div>
+
+      <div style={{ ...card, overflow: 'hidden' }}>
+        <div style={{ ...cap, padding: '10px 12px 0' }}>Sonderfall-Brücke — was jeder Typ den DB kostet</div>
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 8 }}>
+          <thead><tr>
+            {['Konditionsart', 'Belege', 'Listenwert', 'Erlös', 'Wareneinsatz', 'DB', 'Status'].map((h, i) => (
+              <th key={h} style={th(i === 0 ? 'left' : 'right')}>{h}</th>
+            ))}
+          </tr></thead>
+          <tbody>
+            {s.bruecke.map((b) => (
+              <tr key={b.typ} style={{ opacity: b.ausgeschlossen ? 0.62 : 1 }}>
+                <td style={td('left', true)}>{KONDITIONSARTEN.find((k) => k.id === b.typ)?.kurz || b.typ}</td>
+                <td style={td('right')} className="mono">{b.belege.toLocaleString('de-DE')}</td>
+                <td style={td('right')} className="mono">{eur(b.listenumsatz)}</td>
+                <td style={td('right')} className="mono">{eur(b.umsatz)}</td>
+                <td style={td('right')} className="mono">{eur(b.varKosten)}</td>
+                <td style={{ ...td('right', true), color: b.db >= 0 ? 'var(--amp-g)' : 'var(--amp-r)' }} className="mono">{b.db >= 0 ? '+' : ''}{eur(b.db)}</td>
+                <td style={td('right')}>
+                  <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 999,
+                    background: b.umgebucht ? 'var(--accent-soft)' : b.ausgeschlossen ? '#fee2e2' : '#dcfce7',
+                    color: b.umgebucht ? 'var(--accent)' : b.ausgeschlossen ? '#991b1b' : '#166534' }}>
+                    {b.umgebucht ? '→ Marketing' : b.ausgeschlossen ? 'ausgeschlossen' : 'enthalten'}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>
+        Empfehlung: Pricing-Ziele und Konditions-Freigaben auf den <b>bereinigten DB</b> beziehen; Sponsoring über die Marketing-Umbuchung steuern und gegen ein Budget-Limit führen.
+      </div>
     </div>
   )
 }
