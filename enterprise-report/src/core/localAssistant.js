@@ -23,14 +23,14 @@ const AMP_WORT = { g: 'grün (auf Kurs)', a: 'gelb (beobachten)', r: 'rot (Handl
 
 // --- Synonym-Index: Phrase -> KPI-ID (kuratiert, erweiterbar) -------------
 const SYN = {
-  nettoumsatz: ['umsatz', 'nettoumsatz', 'erlös', 'erloes', 'umsatzerlös', 'revenue', 'sales', 'topline', 'top-line'],
+  nettoumsatz: ['umsatz', 'nettoumsatz', 'erlös', 'erloes', 'umsatzerlös', 'revenue', 'sales', 'topline', 'top-line', 'umsätze', 'umsatzentwicklung', 'wie viel verkaufen wir', 'wie viel umsatz', 'geschäftsvolumen'],
   bruttoumsatz: ['bruttoumsatz', 'fakturierter umsatz'],
   erloesschmaelerung: ['erlösschmälerung', 'erloesschmaelerung', 'gutschriften', 'preisnachlässe'],
   ebit: ['ebit', 'betriebsergebnis', 'operatives ergebnis', 'operating profit', 'ergebnis', 'gewinn'],
   ebitda: ['ebitda'],
   betrieblichesErgebnis: ['betriebliches ergebnis'],
   handelsrechtlichesErgebnis: ['jahresüberschuss', 'jahresueberschuss', 'jahresergebnis', 'konzernergebnis', 'nettoergebnis', 'bottomline'],
-  dbQuote: ['db-quote', 'dbquote', 'deckungsbeitragsquote', 'marge', 'bruttomarge', 'gewinnmarge'],
+  dbQuote: ['db-quote', 'dbquote', 'deckungsbeitragsquote', 'marge', 'bruttomarge', 'gewinnmarge', 'rohertragsquote', 'deckungsquote', 'wie hoch ist die marge', 'wie profitabel'],
   db1: ['deckungsbeitrag', 'db1', 'db 1', 'deckungsbeitrag i', 'db i'],
   wareneinsatzquote: ['wareneinsatzquote', 'materialquote', 'cogs-quote', 'einsatzquote'],
   wareneinsatz: ['wareneinsatz', 'materialaufwand', 'cogs', 'materialkosten'],
@@ -43,10 +43,10 @@ const SYN = {
   personalkostenquote: ['personalkostenquote', 'personalquote'],
   mitarbeiterFTE: ['mitarbeiter', 'fte', 'belegschaft', 'headcount', 'vollzeitäquivalent'],
   fluktuation: ['fluktuation', 'kündigungsquote', 'mitarbeiterabwanderung', 'turnover'],
-  krankenstand: ['krankenstand', 'krankheitsquote', 'fehlzeiten', 'fehlzeitenquote'],
+  krankenstand: ['krankenstand', 'krankheitsquote', 'fehlzeiten', 'fehlzeitenquote', 'wie krank ist die belegschaft', 'ausfallquote personal', 'krankheitstage'],
   ueberstundenquote: ['überstunden', 'ueberstunden', 'überstundenquote', 'mehrarbeit'],
   umsatzJeFTE: ['umsatz je fte', 'umsatz pro kopf', 'produktivität', 'produktivitaet', 'umsatz je mitarbeiter'],
-  dso: ['dso', 'debitorenlaufzeit', 'forderungslaufzeit', 'days sales outstanding'],
+  dso: ['dso', 'debitorenlaufzeit', 'forderungslaufzeit', 'days sales outstanding', 'außenstandsdauer', 'zahlungsdauer kunden', 'wie lange bis kunden zahlen', 'wie schnell zahlen kunden'],
   offeneForderungen: ['offene forderungen', 'außenstände', 'aussenstaende', 'debitoren', 'offene posten'],
   ueberfaelligeForderungen: ['überfällige forderungen', 'ueberfaellige forderungen'],
   ueberfaelligkeitsquote: ['überfälligkeitsquote', 'ueberfaelligkeitsquote', 'überfälligkeit', 'verzugsquote'],
@@ -63,9 +63,9 @@ const SYN = {
   vertriebskosten: ['vertriebskosten'],
   marketingkostenquote: ['marketingkostenquote', 'marketingquote', 'werbekostenquote'],
   marketingkosten: ['marketingkosten', 'werbekosten', 'werbebudget', 'marketingbudget'],
-  roas: ['roas', 'return on ad spend', 'werbe-roi'],
+  roas: ['roas', 'return on ad spend', 'werbe-roi', 'werbeeffizienz', 'was bringt werbung', 'werbe-rendite'],
   cac: ['cac', 'kundengewinnungskosten', 'akquisekosten'],
-  lagerbestand: ['lagerbestand', 'bestand', 'bestandswert', 'vorrat', 'inventar'],
+  lagerbestand: ['lagerbestand', 'bestand', 'bestandswert', 'vorrat', 'inventar', 'warenbestand', 'bestandshöhe', 'wie viel liegt im lager', 'wie viel ware'],
   reichweite: ['reichweite', 'bestandsreichweite', 'days of supply', 'vorratsdauer'],
   lagerumschlag: ['lagerumschlag', 'umschlag', 'umschlagshäufigkeit', 'drehzahl', 'turns'],
   ueberbestand: ['überbestand', 'ueberbestand', 'ladenhüter', 'ladenhueter', 'langsamdreher'],
@@ -73,22 +73,22 @@ const SYN = {
   liefertermintreue: ['liefertermintreue', 'termintreue', 'on-time-delivery', 'otd', 'pünktlichkeit'],
   liefertreue: ['liefertreue', 'lieferzuverlässigkeit'],
   einkaufsvolumen: ['einkaufsvolumen', 'beschaffungsvolumen', 'einkauf'],
-  ausschuss: ['ausschuss', 'ausschussquote', 'scrap'],
+  ausschuss: ['ausschuss', 'ausschussquote', 'scrap', 'schrott', 'wie viel ausschuss', 'fehlproduktion'],
   nacharbeitsquote: ['nacharbeit', 'nacharbeitsquote', 'rework'],
   firstPassYield: ['first pass yield', 'fpy', 'gutausbeute', 'durchlaufquote'],
   qualitaetskostenquote: ['qualitätskosten', 'qualitaetskosten', 'copq', 'fehlerkosten'],
   garantiekosten: ['garantiekosten', 'gewährleistungskosten', 'kulanzkosten'],
-  kapazitaetsauslastung: ['kapazitätsauslastung', 'kapazitaetsauslastung', 'auslastung', 'kapazität'],
+  kapazitaetsauslastung: ['kapazitätsauslastung', 'kapazitaetsauslastung', 'auslastung', 'auslastungsgrad', 'wie ausgelastet', 'wie gut ausgelastet'],
   auslastung: ['auslastung'],
   schichtauslastung: ['schichtauslastung', 'schichtnutzung'],
   produktionsmenge: ['produktionsmenge', 'output', 'produktionsoutput', 'stückzahl produktion'],
   planErfuellungProduktion: ['planerfüllung produktion', 'produktionsplanerfüllung'],
   operativerCashflow: ['operativer cashflow', 'cashflow', 'cash flow', 'cash-flow'],
-  freieLiquiditaet: ['freie liquidität', 'freie liquiditaet', 'verfügbare liquidität'],
+  freieLiquiditaet: ['freie liquidität', 'freie liquiditaet', 'verfügbare liquidität', 'liquiditätspuffer', 'wie viel cash frei', 'finanzpolster'],
   liquideMittel: ['liquide mittel', 'kassenbestand', 'bankguthaben', 'cash'],
-  cashConversion: ['cash conversion', 'cash-conversion', 'geldumschlag', 'working capital'],
-  kreditlinie: ['kreditlinie', 'kreditrahmen', 'kontokorrent'],
-  eigenkapitalquote: ['eigenkapitalquote', 'ek-quote', 'ekquote'],
+  cashConversion: ['cash conversion', 'cash-conversion', 'geldumschlag', 'working capital', 'cash conversion cycle', 'ccc', 'geldumschlagsdauer', 'kapitalbindungsdauer'],
+  kreditlinie: ['kreditlinie', 'kreditrahmen', 'kontokorrent', 'kreditfazilität'],
+  eigenkapitalquote: ['eigenkapitalquote', 'ek-quote', 'ekquote', 'wie solide', 'kapitalbasis', 'finanzielle stabilität'],
   eigenkapital: ['eigenkapital'],
   nettoverschuldung: ['nettoverschuldung', 'verschuldung', 'fremdkapital'],
   nettoverschuldungEbitda: ['verschuldungsgrad', 'leverage', 'nettoverschuldung/ebitda', 'gearing'],
@@ -116,7 +116,7 @@ const SYN = {
   serviceumsatz: ['serviceumsatz', 'werkstattumsatz', 'aftersales-umsatz'],
   ersatzteilverfuegbarkeit: ['ersatzteilverfügbarkeit', 'ersatzteilverfuegbarkeit', 'teileverfügbarkeit'],
   reparaturdurchlaufzeit: ['reparaturdurchlaufzeit', 'durchlaufzeit reparatur', 'werkstattdurchlaufzeit'],
-  nps: ['nps', 'net promoter score', 'weiterempfehlung', 'kundenzufriedenheit'],
+  nps: ['nps', 'net promoter score', 'weiterempfehlung', 'kundenzufriedenheit', 'wie zufrieden sind kunden', 'empfehlungsbereitschaft', 'kundentreue'],
   fueQuote: ['f&e-quote', 'fue-quote', 'forschungsquote', 'f&e-quote'],
   fuekosten: ['f&e-kosten', 'fue-kosten', 'forschungskosten', 'entwicklungskosten'],
   neuproduktumsatzanteil: ['neuproduktumsatzanteil', 'neuproduktanteil', 'innovationsrate'],
@@ -129,6 +129,14 @@ const SYN = {
   umsatzZielerreichung: ['umsatzzielerreichung', 'umsatzziel', 'zielerreichung umsatz'],
   ergebnisZielerreichung: ['ergebniszielerreichung', 'ergebnisziel', 'zielerreichung ergebnis'],
   kostendisziplin: ['kostendisziplin', 'kostentreue', 'budgetdisziplin'],
+  prognoseWachstum: ['prognostiziertes wachstum', 'wachstumsprognose', 'erwartetes wachstum', 'prognose wachstum'],
+  umsatzplan: ['umsatzplan', 'planumsatz', 'umsatzbudget', 'geplanter umsatz'],
+  kostenplan: ['kostenplan', 'plankosten', 'kostenbudget', 'geplante kosten'],
+  ebitPlan: ['ebit-plan', 'ebitplan', 'ergebnisplan', 'planergebnis', 'geplantes ebit'],
+  produktionsplan: ['produktionsplan', 'fertigungsplan', 'produktionsprogramm'],
+  kapazitaet: ['kapazität', 'kapazitaet', 'produktionskapazität', 'fertigungskapazität', 'gesamtkapazität'],
+  neutralesErgebnis: ['neutrales ergebnis', 'außerordentliches ergebnis', 'ausserordentliches ergebnis', 'a.o. ergebnis'],
+  investitionsbudget: ['investitionsbudget', 'capex-budget', 'investbudget', 'geplante investitionen'],
 }
 
 // Synonym -> ID (längste Phrasen zuerst, damit "online anteil" vor "anteil" greift)
@@ -142,7 +150,15 @@ export function findeKpis(frage, rolle = null, max = 3) {
   const score = {}
   const add = (id, p) => { if (KPI[id] && (!rolle || darfKpi(rolle, KPI[id]))) score[id] = (score[id] || 0) + p }
   // 1) kuratierte Synonyme (stärkstes Signal)
-  for (const { p, id } of SYN_INDEX) if (f.includes(' ' + p + ' ') || f.includes(' ' + p)) add(id, 3 + Math.min(3, Math.floor(p.length / 6)))
+  for (const { p, id } of SYN_INDEX) {
+    if (f.includes(' ' + p)) { add(id, 3 + Math.min(3, Math.floor(p.length / 6))); continue }
+    // Mehrwort-Phrase: trifft auch, wenn alle markanten Wörter (>3 Zeichen)
+    // vorkommen — robust gegen Füllwörter und andere Reihenfolge.
+    if (p.includes(' ')) {
+      const markant = p.split(' ').filter((w) => w.length > 3)
+      if (markant.length >= 2 && markant.every((w) => f.includes(' ' + w))) add(id, 3)
+    }
+  }
   // 2) KPI-Name-Tokens
   for (const k of Object.values(KPI)) {
     for (const w of norm(k.name).split(/\s+/)) if (w.length > 3 && f.includes(' ' + w)) add(k.id, 2)

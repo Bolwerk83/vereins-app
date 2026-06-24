@@ -7,8 +7,32 @@ import React, { useState, useRef, useEffect } from 'react'
 import { beantworte, ASSISTENT_TIPPS } from '../../core/localAssistant.js'
 import { ladeHistorie } from '../../core/dataProvider.js'
 import { KiStatusBadge } from '../../components/KiGate.jsx'
+import { KPI } from '../../core/kpiRegistry.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
+
+// Kennzahl -> passender Fachbericht (View-Name + Anzeigename) für Direktsprung.
+const BERICHT_FUER_KPI = {
+  nettoumsatz: ['verkaufsstatistik', 'Verkaufsstatistik'], bruttoumsatz: ['verkaufsstatistik', 'Verkaufsstatistik'],
+  onlineAnteil: ['verkaufsstatistik', 'Verkaufsstatistik'], conversionRate: ['verkaufsstatistik', 'Verkaufsstatistik'],
+  retourenquote: ['verkaufsstatistik', 'Verkaufsstatistik'],
+  dso: ['forderungen', 'Forderungs-Aging'], offeneForderungen: ['forderungen', 'Forderungs-Aging'],
+  ueberfaelligeForderungen: ['forderungen', 'Forderungs-Aging'], ueberfaelligkeitsquote: ['forderungen', 'Forderungs-Aging'],
+  forderungsausfall: ['forderungen', 'Forderungs-Aging'], klumpenrisikoTop3: ['forderungen', 'Forderungs-Aging'],
+  db1: ['deckungsbeitrag', 'Deckungsbeitrag'], dbQuote: ['deckungsbeitrag', 'Deckungsbeitrag'],
+  wareneinsatzquote: ['deckungsbeitrag', 'Deckungsbeitrag'], wareneinsatz: ['deckungsbeitrag', 'Deckungsbeitrag'],
+  ebit: ['ergebnis', 'Ergebnisrechnung'], ebitda: ['ergebnis', 'Ergebnisrechnung'],
+  betrieblichesErgebnis: ['ergebnis', 'Ergebnisrechnung'], handelsrechtlichesErgebnis: ['ergebnis', 'Ergebnisrechnung'],
+  gesamtkosten: ['ergebnis', 'Ergebnisrechnung'], gemeinkosten: ['ergebnis', 'Ergebnisrechnung'], gemeinkostenquote: ['ergebnis', 'Ergebnisrechnung'],
+  lagerbestand: ['bestand', 'Bestand'], reichweite: ['bestand', 'Bestand'], ueberbestand: ['bestand', 'Bestand'],
+  lagerumschlag: ['lager', 'Lagerverwaltung'], lieferfaehigkeit: ['lager', 'Lagerverwaltung'],
+  operativerCashflow: ['finanzcockpit', 'Finanz-Cockpit'], freieLiquiditaet: ['finanzcockpit', 'Finanz-Cockpit'],
+  liquideMittel: ['finanzcockpit', 'Finanz-Cockpit'], cashConversion: ['finanzcockpit', 'Finanz-Cockpit'],
+  eigenkapitalquote: ['finanzcockpit', 'Finanz-Cockpit'], nettoverschuldung: ['finanzcockpit', 'Finanz-Cockpit'],
+  auslandsanteil: ['segment', 'Segmentbericht'], roce: ['segment', 'Segmentbericht'], intercompanyQuote: ['segment', 'Segmentbericht'],
+  vertriebskostenquote: ['vertriebkpi', 'Vertriebskennzahlen'], neukundenanteil: ['vertriebkpi', 'Vertriebskennzahlen'], rabattquote: ['vertriebkpi', 'Vertriebskennzahlen'],
+  umsatzZielerreichung: ['abweichung', 'Abweichungsanalyse'], ergebnisZielerreichung: ['abweichung', 'Abweichungsanalyse'], kostendisziplin: ['abweichung', 'Abweichungsanalyse'],
+}
 
 // Mini-Markdown: **fett**, _kursiv_, Zeilenumbrüche, • Aufzählung.
 function inline(line, key) {
@@ -29,7 +53,7 @@ function MD({ text }) {
   return <>{text.split('\n').map((l, i) => (l.trim() === '' ? <div key={i} style={{ height: 6 }} /> : <div key={i} style={{ lineHeight: 1.5 }}>{inline(l, i)}</div>))}</>
 }
 
-export default function Assistent({ rolle, werte = {} }) {
+export default function Assistent({ rolle, werte = {}, onGeh, onKpi }) {
   const [verlauf, setVerlauf] = useState([
     { von: 'bot', text: 'Hallo! Ich bin dein **lokaler Kennzahlen-Assistent** — komplett offline, ohne KI-Cloud und ohne Datenweitergabe. Frag mich nach Werten, Definitionen, Zielen, Trends, Ursachen oder Maßnahmen.', vorschlaege: ASSISTENT_TIPPS },
   ])
@@ -45,7 +69,7 @@ export default function Assistent({ rolle, werte = {} }) {
     setVerlauf((v) => [...v, { von: 'user', text: q }])
     setDenkt(true)
     const antwort = await beantworte(q, { werte, rolle, ladeHistorie })
-    setVerlauf((v) => [...v, { von: 'bot', text: antwort.text, vorschlaege: antwort.vorschlaege, intent: antwort.intent }])
+    setVerlauf((v) => [...v, { von: 'bot', text: antwort.text, vorschlaege: antwort.vorschlaege, intent: antwort.intent, kpis: antwort.kpis }])
     setDenkt(false)
   }
 
@@ -74,6 +98,24 @@ export default function Assistent({ rolle, werte = {} }) {
               }}>
                 {m.von === 'user' ? m.text : <MD text={m.text} />}
               </div>
+              {m.von === 'bot' && (() => {
+                const ids = [...new Set(m.kpis || [])].filter((id) => KPI[id]).slice(0, 3)
+                if (!ids.length) return null
+                const berichte = [...new Map(ids.filter((id) => BERICHT_FUER_KPI[id]).map((id) => BERICHT_FUER_KPI[id])).entries()].slice(0, 2)
+                const primaer = ids[0]
+                return (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 7 }}>
+                    {onGeh && berichte.map(([view, label]) => (
+                      <button key={view} onClick={() => onGeh(view)} title={`Bericht „${label}" öffnen`}
+                        style={{ fontSize: 11.5, padding: '4px 10px', border: '1px solid var(--accent)', borderRadius: 999, background: 'var(--accent-soft)', color: 'var(--accent)', cursor: 'pointer', fontWeight: 600 }}>📊 {label}</button>
+                    ))}
+                    {onKpi && primaer && (
+                      <button onClick={() => onKpi(primaer)} title="Kennzahl im Drilldown-Baum öffnen"
+                        style={{ fontSize: 11.5, padding: '4px 10px', border: '1px solid var(--line)', borderRadius: 999, background: 'var(--panel)', color: 'var(--muted)', cursor: 'pointer', fontWeight: 600 }}>🔎 {KPI[primaer].name} im Baum</button>
+                    )}
+                  </div>
+                )
+              })()}
               {m.vorschlaege?.length > 0 && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 7 }}>
                   {m.vorschlaege.map((v) => (

@@ -558,7 +558,7 @@ export default function App() {
           <Alerts werte={werte} rolle={rolle} periode={periode} />
         )}
         {ansicht === 'assistent' && (
-          <Assistent rolle={rolle} werte={werte} />
+          <Assistent rolle={rolle} werte={werte} onGeh={geh} onKpi={(id) => { setBaumStart(id); setAnsicht('baum') }} />
         )}
         {ansicht === 'kennzahlen' && (
           <Kennzahlen rolle={rolle} werte={werte} />
