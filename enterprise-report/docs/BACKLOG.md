@@ -81,6 +81,15 @@ Stand: laufend.
 - [x] Farbwechsel Ist→Plan im Warenfluss-Chart
 - [ ] Farbwechsel Ist→Plan auf weitere Charts (Forecast-Brücke, Verlauf)
 
+## 🎯 Vision: vollständiges Reporting (Budget · Kommentierung · OnePager bis Ebene 5)
+- [ ] **Einheitliche Kommentierung** auf ALLEN Berichten/Ebenen (heute nur Detailberichte via `bemerkungen.js`) — Notiz/Owner/Status je Bericht & KPI, sichtbar im OnePager
+- [ ] **OnePager je Ebene** (1–5) mit Kernaussage, Ampel, Qualitätskennzahlen und Drill bis Ebene 5 — einheitliche Vorlage
+- [ ] **Budgetierung end-to-end**: FactPlan füllen, **alle KPIs vom Budget ableiten**, Plan/Ist/Forecast je KPI
+- [ ] **Rolling Forecast** (rollierend 12M) + dessen Auswirkungen auf alle Plan-KPIs (nutzt Kausalmodell/Szenario)
+- [ ] **Werbebudget-Bedarf laut Plan**: wie viel Marketing (über ROAS/CAC) nötig, um Umsatz-/Ergebnisziele zu erreichen (inverse Rechnung)
+- [ ] **Event-Planung**: geplante Events, Vorher-Wirkung (Wirksamkeitsanalyse `events` ausbauen) und Erwartung/Forecast
+- [ ] **GA-Berichte** ausbauen + **Webshop-Analyse** (Funnel, AOV, Warenkorbabbruch, Onsite-Suche, neu/wiederkehrend) — Schema (FactWebSession/FactWebFunnel) steht bereits
+
 ## 💡 Claudes Empfehlungen (eigene Ideen, würde ich später umsetzen)
 Priorisiert nach Nutzen/Aufwand — alle lokal/ohne KI machbar:
 - [ ] **Treiberbaum-Visualisierung** des Kausalmodells: interaktiver Wirkungsbaum, Klick auf eine Kennzahl zeigt Treiber & Effekte (macht die 80+ Verkettungen sichtbar/prüfbar).
