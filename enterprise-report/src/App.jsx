@@ -56,6 +56,7 @@ import Gutschriften from './modules/gutschriften/Gutschriften.jsx'
 import AbgleichAbsatz from './modules/abgleich/AbgleichAbsatz.jsx'
 import VertriebKennzahlen from './modules/vertrieb-kennzahlen/VertriebKennzahlen.jsx'
 import Prozesskette from './modules/prozesskette/Prozesskette.jsx'
+import Startseite from './modules/startseite/Startseite.jsx'
 import Tagesreporting from './modules/tagesreporting/Tagesreporting.jsx'
 import MarketingKarte from './modules/marketing-karte/MarketingKarte.jsx'
 import Szenario from './modules/szenario/Szenario.jsx'
@@ -255,6 +256,7 @@ export default function App() {
   const menuGruppen = [
     { titel: 'Cockpit & Berichte', icon: '📊', untergruppen: [
       { titel: 'Überblick', eintraege: [
+        E('startseite', 'nav.startseite', '🏠'),
         E('baum', 'nav.tree', '🌳', { aktiv: ansicht === 'baum' || ansicht === 'report' }),
         E('tagesreporting', 'nav.tagesreporting', '📅'),
         E('quartalsbericht', 'nav.quartalsbericht', '📑'),
@@ -529,6 +531,9 @@ export default function App() {
           <SetupWizard
             onFertig={() => { localStorage.setItem(SETUP_KEY, '1'); setAnsicht('baum') }}
             onAbbruch={() => setAnsicht(localStorage.getItem(SETUP_KEY) ? 'baum' : 'wizard')} />
+        )}
+        {ansicht === 'startseite' && (
+          <Startseite verbindung={verbindung} onGeh={geh} />
         )}
         {ansicht === 'baum' && (
           <TreeNavigator rolle={rolle} werte={werte} periode={periode} startId={baumStart} onOpenReport={() => setAnsicht('report')} onDetail={gehDetail} />
