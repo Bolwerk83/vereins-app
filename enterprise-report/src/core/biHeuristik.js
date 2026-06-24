@@ -16,7 +16,7 @@ import { kpiInsight } from './insights.js'
 // Umgangssprache, englische Begriffe und Abkürzungen, damit die Offline-
 // Auswertung möglichst viele Fragen trifft. Reihenfolge egal — es werden
 // ALLE passenden Muster vereinigt. Neue Synonyme einfach ergänzen.
-const STICHWORTE = [
+export const STICHWORTE = [
   // --- Umsatz / Vertrieb / Kanäle ---------------------------------------
   [/umsatz|absatz|verkauf|erl(ö|oe)s(?!schm)|sales|top.?line|revenue|wachstum|wächst|waechst|geschäftsverlauf|geschaeftsverlauf/i, ['nettoumsatz', 'bruttoumsatz', 'onlineAnteil', 'prognoseWachstum']],
   [/online|shop|e-?commerce|webshop|web-?store|kanal|omni.?channel|d2c|marktplatz|amazon|station(ä|ae)r|filial/i, ['onlineAnteil', 'nettoumsatz', 'shopVerfuegbarkeit', 'conversionRate']],

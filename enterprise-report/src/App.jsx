@@ -12,6 +12,7 @@ import { detailFuerBereich } from './core/detailberichte.js'
 import Kennzahlen from './modules/kennzahlen/Kennzahlen.jsx'
 import BurgerMenu from './components/BurgerMenu.jsx'
 import { KiStatusBadge } from './components/KiGate.jsx'
+import Assistent from './modules/assistent/Assistent.jsx'
 import { ladeKpiWerte, pruefeVerbindung, setCacheKontext, leereCache, PERIODEN, AKTUELLE_PERIODE, QUELLE } from './core/dataProvider.js'
 import { ladeModell } from './core/periodenmodell.js'
 import ZeitDatenart from './modules/zeit-datenart/ZeitDatenart.jsx'
@@ -427,6 +428,7 @@ export default function App() {
             {/* Nur Primär-Einstiege oben; die vollständige Navigation steckt im ☰-Menü. */}
             <button style={topBtn(ansicht === 'baum' || ansicht === 'report')} onClick={() => geh('baum')}>{t('nav.tree')}</button>
             <button style={topBtn(ansicht === 'kennzahlen')} onClick={() => geh('kennzahlen')}>{t('nav.kennzahlen')}</button>
+            <button style={topBtn(ansicht === 'assistent')} onClick={() => geh('assistent')}>💬 Assistent</button>
             <button style={topBtn(ansicht === 'qc')} onClick={() => geh('qc')}>
               {t('nav.qc')}{(() => { const f = validierungsZusammenfassung(werte).fehler; return f ? ` (${f})` : '' })()}
             </button>
@@ -554,6 +556,9 @@ export default function App() {
         )}
         {ansicht === 'alerts' && (
           <Alerts werte={werte} rolle={rolle} periode={periode} />
+        )}
+        {ansicht === 'assistent' && (
+          <Assistent rolle={rolle} werte={werte} />
         )}
         {ansicht === 'kennzahlen' && (
           <Kennzahlen rolle={rolle} werte={werte} />
