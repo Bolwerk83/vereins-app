@@ -11,7 +11,7 @@ export const VAPID_PUBLIC_KEY =
   "BAiX4eqLOJ_HAqEpTshi67K6HNgynFpzaYmfeiLn9eGhPEYzoC7LKNaTU_wS0iw5dSIYgawt_AbOwrCbP1TN5ZA";
 
 const DATA_KEY = "vereinsapp_v14";
-const SESS_KEY = "vereinsapp_v14_session";
+const SESS_KEY = "vereinsapp_v12_session"; // muss zur App passen (SS in App.jsx)
 const CFG_KEY  = "vereinsapp_config";
 const SUB_PREF = "va_push_local"; // letzter bekannter Endpoint + Prefs
 
@@ -74,7 +74,7 @@ export async function subscribePush() {
     p_p256dh: j.keys?.p256dh,
     p_auth:   j.keys?.auth,
     p_cid: s.cid || null,
-    p_tid: s.tid || null,
+    p_tid: s.tid || (Array.isArray(s.tids) && s.tids.length === 1 ? s.tids[0] : null),
     p_player_name: s.user || s.name || null,
   });
   setLocalPref({ endpoint: j.endpoint });
