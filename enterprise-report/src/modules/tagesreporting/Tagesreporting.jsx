@@ -4,6 +4,7 @@
 import React from 'react'
 import { tageskennzahlen, tagesHighlights, HEUTE } from '../../core/tagesreporting.js'
 import AutoSummary from '../../components/AutoSummary.jsx'
+import ExecKopf, { ampelVon } from '../../components/ExecKopf.jsx'
 import { useGlobalFilter } from '../../core/filterKontext.jsx'
 import { zeitraumVon, pcFaktor, pcName } from '../../core/statistikFilter.js'
 
@@ -25,6 +26,16 @@ export default function Tagesreporting({ onGeh }) {
   const hl = tagesHighlights()
   const g = useGlobalFilter()
   const zr = zeitraumVon(g.zeitraum)
+  // Exec-Kopf: Lage aus dem Tagesumsatz vs. gestern, Empfehlung aus stärkster Abweichung.
+  const umsatzKpi = k.find((x) => x.id === 'umsatz')
+  const execStatus = ampelVon(umsatzKpi ? umsatzKpi.deltaPct : null, { gut: 0, schlecht: -10 })
+  const execAussage = umsatzKpi
+    ? `Tagesumsatz ${fmt(umsatzKpi.heute, umsatzKpi.einheit)} (${umsatzKpi.deltaPct >= 0 ? '+' : ''}${umsatzKpi.deltaPct} % vs. gestern, Ø 14 Tg ${fmt(umsatzKpi.schnitt, umsatzKpi.einheit)} · ${umsatzKpi.ueberSchnitt ? 'über' : 'unter'} Ø).`
+    : 'Tageskennzahlen siehe Karten.'
+  const groessteAbw = hl[0]
+  const execEmpf = groessteAbw
+    ? `Größte Bewegung: ${groessteAbw.name} ${groessteAbw.deltaPct >= 0 ? '+' : ''}${groessteAbw.deltaPct} % vs. gestern — ${groessteAbw.gut ? 'Treiber sichern' : 'Ursache prüfen und gegensteuern'}.`
+    : 'Keine auffälligen Tagesabweichungen — Kurs halten.'
 
   return (
     <div style={{ maxWidth: '100%', margin: '0 auto' }}>
@@ -35,6 +46,8 @@ export default function Tagesreporting({ onGeh }) {
           14 Tage. Für den schnellen Start in den Tag.
         </div>
       </div>
+
+      <ExecKopf status={execStatus} kennzahl={umsatzKpi ? fmt(umsatzKpi.heute, umsatzKpi.einheit) : undefined} kennzahlLabel="Tagesumsatz" kernaussage={execAussage} empfehlung={execEmpf} />
 
       {/* Strategische Gesamtlage (regelbasiert, ohne KI) — Kontext zum Tagesstart */}
       <AutoSummary monate={zr.monate} faktor={pcFaktor(g.pc)} periodeName={zr.name}

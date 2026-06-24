@@ -9,6 +9,7 @@ import StatistikFilter, { ladeFilter, speichereFilter } from './StatistikFilter.
 import { useGlobalFilter } from '../../core/filterKontext.jsx'
 import { VerlaufChart, AnteilZelle } from '../../components/charts.jsx'
 import ExportButton from '../../components/ExportButton.jsx'
+import ExecKopf, { ampelVon } from '../../components/ExecKopf.jsx'
 import { datenstandText } from '../../core/datenstand.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
@@ -30,6 +31,14 @@ export default function Verkaufsstatistik() {
   const fk = faktor(f.zeitraum, f.pc, dat)
   const vlFaktor = pcFaktor(f.pc) * dat.mag
   const k = kennzahlen(fk); const wg = warengruppen(fk); const art = topArtikel(7, fk); const vl = verlauf(monateVon(f.zeitraum), vlFaktor)
+  // Exec-Kopf: Lage aus Wachstum, Empfehlung aus stärkster/schwächster Warengruppe.
+  const wgNachWachstum = [...wg].sort((a, b) => b.wachstumPct - a.wachstumPct)
+  const stark = wgNachWachstum[0], schwach = wgNachWachstum[wgNachWachstum.length - 1]
+  const execStatus = ampelVon(k.wachstumPct, { gut: 3, schlecht: 0 })
+  const execAussage = `Umsatz ${mio(k.umsatz)} bei ${k.wachstumPct >= 0 ? '+' : ''}${k.wachstumPct} % zum Vorjahr · DB-Marge ${k.dbProzent} % · Online-Anteil ${k.onlineAnteilPct} %.`
+  const execEmpf = stark && schwach && stark !== schwach
+    ? `${stark.name} wächst am stärksten (▲ ${stark.wachstumPct} %); ${schwach.name} ${schwach.wachstumPct < 0 ? `verliert (▼ ${Math.abs(schwach.wachstumPct)} %)` : `wächst nur ${schwach.wachstumPct} %`} — Sortiment und Aktionen dort prüfen.`
+    : 'Wachstumstreiber je Warengruppe in der Tabelle prüfen.'
   return (
     <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
@@ -44,6 +53,8 @@ export default function Verkaufsstatistik() {
         </div>
       </div>
       <StatistikFilter bereich="verkauf" datumsart={datumsart} onDatumsart={setD} />
+
+      <ExecKopf status={execStatus} kennzahl={mio(k.umsatz)} kennzahlLabel="Umsatz" kernaussage={execAussage} empfehlung={execEmpf} />
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
         {[['Umsatz', mio(k.umsatz)], ['Wachstum z. Vorjahr', (k.wachstumPct >= 0 ? '+' : '') + k.wachstumPct + ' %', k.wachstumPct >= 0 ? 'var(--amp-g)' : 'var(--amp-r)'], ['Absatzmenge', stk(k.menge) + ' Stk'], ['Ø Auftragswert', eur(k.avgBon)], ['DB-Marge', k.dbProzent + ' %'], ['Online-Anteil', k.onlineAnteilPct + ' %']].map(([l, v, c]) => (

@@ -6,6 +6,7 @@ import React, { useState } from 'react'
 import { MONATE, warenbereiche, gesamt, massnahmenFuer } from '../../core/bestandsentwicklung.js'
 import { addMassnahme, ladeMassnahmen } from '../../core/massnahmen.js'
 import { datenstandText } from '../../core/datenstand.js'
+import ExecKopf, { ampelVon } from '../../components/ExecKopf.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700 }
@@ -34,6 +35,18 @@ export default function Bestandsentwicklung() {
   const hat = (titel) => massn.some((m) => m.titel === titel)
   const uebernehmen = (m, bereich) => { addMassnahme({ titel: m.titel, owner: 'Disposition', quelle: 'bestandsentwicklung', bereich, hebel: m.hebel, relevanz: m.erwartet }); setTick((t) => t + 1) }
 
+  // Exec-Kopf: Lage aus Anzahl kritischer Warenbereiche, Empfehlung aus Trend-Richtung des Gesamtbestands.
+  const trendGesamt = wb.reduce((n, x) => n + (x.trend || 0), 0)   // < 0 = Bestand fällt (gut)
+  const startGesamt = wb.reduce((n, x) => n + (x.verlauf?.[0] || 0), 0)
+  const trendPct = startGesamt ? Math.round(trendGesamt / startGesamt * 1000) / 10 : 0
+  const execStatus = ampelVon(g.kritisch, { gut: 0, schlecht: 2, invert: true })
+  const execAussage = `Gesamtbestand ${mio(g.bestand)} bei ${trendGesamt <= 0 ? '' : '+'}${trendPct} % seit ${MONATE[0]} · Überbestand ${mio(g.ueberbestand)} · ${g.kritisch} kritische${g.kritisch === 1 ? 'r' : ''} Warenbereich${g.kritisch === 1 ? '' : 'e'}.`
+  const execEmpf = trendGesamt <= 0
+    ? (g.kritisch > 0
+      ? `Bestand sinkt, aber ${g.kritisch} Warenbereich${g.kritisch === 1 ? ' verfehlt' : 'e verfehlen'} die Frist — dort Abverkauf forcieren und Nachbestellungen kürzen (Überbestand ${mio(g.ueberbestand)}).`
+      : `Abbau-Trend (${trendPct} %) auf Kurs — Bestellmengen weiter an der Reichweite ausrichten und Ziele halten.`)
+    : `Bestand steigt (+${trendPct} %) trotz Zielvorgaben — Bestellstopp prüfen und Überbestand ${mio(g.ueberbestand)} aktiv abbauen.`
+
   return (
     <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
@@ -44,6 +57,8 @@ export default function Bestandsentwicklung() {
         </div>
         <button className="no-print" onClick={() => window.print()} style={{ padding: '7px 13px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: 'var(--panel)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>🖨 Drucken / PDF</button>
       </div>
+
+      <ExecKopf status={execStatus} kennzahl={mio(g.bestand)} kennzahlLabel="Gesamtbestand" kernaussage={execAussage} empfehlung={execEmpf} />
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
         {[['Gesamtbestand', mio(g.bestand)], ['Überbestand (über Ziel)', mio(g.ueberbestand), '#f59e0b'], ['Ø Reichweite', g.oReichweite + ' Tage'], ['Kritische Warenbereiche', g.kritisch, g.kritisch ? 'var(--amp-r)' : 'var(--amp-g)']].map(([l, v, c]) => (

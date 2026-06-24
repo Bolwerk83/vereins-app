@@ -4,6 +4,7 @@
 // =========================================================================
 import React from 'react'
 import { phasen, ART_SYMBOL, ART_LEGENDE } from '../../core/vertriebKennzahlen.js'
+import ExecKopf, { ampelVon } from '../../components/ExecKopf.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
@@ -16,6 +17,19 @@ const fmt = (k) => {
 
 export default function VertriebKennzahlen() {
   const ph = phasen()
+  // Exec-Kopf: Lage aus der Auftragsstorno-Quote (kleiner ist besser);
+  // wichtigste KPIs (Umsatz, Ø Auftragswert) + schwächste Verlust-KPI.
+  const alleKpi = (ph || []).flatMap((p) => p.kpis || [])
+  const kpi = (code) => alleKpi.find((k) => k.code === code)
+  const ums = kpi('UMS'), umsAuft = kpi('UMSAUFTØ')
+  const verluste = ['AUFSTORNO%', 'STORNO%', 'ANGVERL%'].map(kpi).filter(Boolean)
+  const schwaechste = verluste.length ? verluste.reduce((a, b) => (b.wert > a.wert ? b : a)) : null
+  const aufStorno = kpi('AUFSTORNO%')
+  const execStatus = ampelVon(aufStorno ? aufStorno.wert : null, { gut: 4, schlecht: 8, invert: true })
+  const execAussage = `Umsatzerlöse ${ums ? fmt(ums) : '—'} bei ${umsAuft ? fmt(umsAuft) : '—'} Ø pro Auftrag${aufStorno ? ` · Auftragsstorno ${fmt(aufStorno)}` : ''}.`
+  const execEmpf = schwaechste
+    ? `Schwächste Vertriebs-KPI: ${schwaechste.name} mit ${fmt(schwaechste)}${schwaechste.formel ? ` (${schwaechste.formel})` : ''} — Ursachen analysieren und Verluste reduzieren.`
+    : 'Verlust- und Stornoquoten in Phase „Vertriebsqualität & Verluste" prüfen.'
   return (
     <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ marginBottom: 14 }}>
@@ -32,6 +46,8 @@ export default function VertriebKennzahlen() {
           <span key={sym} style={{ fontSize: 12.5 }}><b className="mono" style={{ color: 'var(--accent)' }}>{sym}</b> <span style={{ color: 'var(--muted)' }}>{txt}</span></span>
         ))}
       </div>
+
+      <ExecKopf status={execStatus} kennzahl={ums ? fmt(ums) : undefined} kennzahlLabel="Umsatzerlöse" kernaussage={execAussage} empfehlung={execEmpf} />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 12 }}>
         {ph.map((p, i) => (

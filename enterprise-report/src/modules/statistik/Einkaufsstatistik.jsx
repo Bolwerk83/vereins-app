@@ -8,6 +8,7 @@ import { faktor, datumsartInfo, filterLabel } from '../../core/statistikFilter.j
 import StatistikFilter, { ladeFilter, speichereFilter } from './StatistikFilter.jsx'
 import { useGlobalFilter } from '../../core/filterKontext.jsx'
 import ExportButton from '../../components/ExportButton.jsx'
+import ExecKopf, { ampelVon } from '../../components/ExecKopf.jsx'
 import { datenstandText } from '../../core/datenstand.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
@@ -28,6 +29,16 @@ export default function Einkaufsstatistik() {
   const dat = datumsartInfo('einkauf', datumsart)
   const fk = faktor(f.zeitraum, f.pc, dat)
   const k = kennzahlen(fk); const lf = lieferanten(fk); const wg = warengruppen(fk); const abc = abcAnalyse(fk)
+  // Exec-Kopf: Lage aus Ø Liefertreue, Empfehlung aus Klumpenrisiko / schwächstem Lieferanten.
+  const lfNachTreue = [...lf].sort((a, b) => a.liefertreue - b.liefertreue)
+  const schwach = lfNachTreue[0]
+  const execStatus = ampelVon(k.liefertreue, { gut: 92, schlecht: 88 })
+  const execAussage = `Einkaufsvolumen ${mio(k.volumen)} bei ${k.wachstumPct >= 0 ? '+' : ''}${k.wachstumPct} % zum Vorjahr · Ø Liefertreue ${k.liefertreue} % · ${k.bestellungen.toLocaleString('de-DE')} Bestellungen.`
+  const execEmpf = k.klumpenPct > 25
+    ? `Klumpenrisiko: „${k.topLieferant}" bündelt ${k.klumpenPct} % des Volumens — Zweitquelle aufbauen.${schwach ? ` Zudem „${schwach.name}" mit nur ${schwach.liefertreue} % Liefertreue nachverhandeln.` : ''}`
+    : schwach
+      ? `„${schwach.name}" liefert mit nur ${schwach.liefertreue} % Liefertreue am schwächsten — Konditionen/Qualität nachverhandeln. Skonto-Potenzial ${eur(k.skontoPotenzial)} konsequent ziehen.`
+      : `Skonto-Potenzial ${eur(k.skontoPotenzial)} konsequent ziehen.`
   return (
     <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
@@ -42,6 +53,8 @@ export default function Einkaufsstatistik() {
         </div>
       </div>
       <StatistikFilter bereich="einkauf" datumsart={datumsart} onDatumsart={setD} />
+
+      <ExecKopf status={execStatus} kennzahl={mio(k.volumen)} kennzahlLabel="Einkaufsvolumen" kernaussage={execAussage} empfehlung={execEmpf} />
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
         {[['Einkaufsvolumen', mio(k.volumen)], ['vs. Vorjahr', (k.wachstumPct >= 0 ? '+' : '') + k.wachstumPct + ' %'], ['Bestellungen', k.bestellungen.toLocaleString('de-DE')], ['Ø Bestellwert', eur(k.avgBestellwert)], ['Ø Liefertreue', k.liefertreue + ' %', k.liefertreue >= 92 ? 'var(--amp-g)' : 'var(--amp-a)'], ['Skonto-Potenzial', eur(k.skontoPotenzial), 'var(--amp-g)']].map(([l, v, c]) => (

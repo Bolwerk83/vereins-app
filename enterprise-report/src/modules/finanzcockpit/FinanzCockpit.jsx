@@ -6,11 +6,12 @@
 // =========================================================================
 import React, { useState } from 'react'
 import {
-  GRUPPEN, kennzahlenGruppe, ampelKennzahl, risikoBild, TAGE, basis
+  GRUPPEN, kennzahlenGruppe, ampelKennzahl, risikoBild, TAGE, basis, kennzahlen
 } from '../../core/finanzkennzahlen.js'
 import { pcFaktor } from '../../core/statistikFilter.js'
 import PcFilter, { pcHinweis } from '../shared/PcFilter.jsx'
 import { useGlobalFilter } from '../../core/filterKontext.jsx'
+import ExecKopf, { ampelVon } from '../../components/ExecKopf.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700 }
@@ -89,6 +90,26 @@ export default function FinanzCockpit() {
   ]
   const total = Math.max(1, rb.total)
 
+  // Exec-Kopf: Lage aus Risikobild (Anteil grüner Kennzahlen), Kernzahl Free Cashflow,
+  // Empfehlung aus der kritischsten (roten) Kennzahl mit der größten Zielabweichung.
+  const alleKz = kennzahlen(fk)
+  const grueneQuote = Math.round(rb.g / total * 100)
+  const execStatus = ampelVon(grueneQuote, { gut: 60, schlecht: 30 })
+  const fcf = CASHFLOW.freeCashflow
+  const liq2 = alleKz.find((k) => k.name === 'Liquidität 2. Grades')
+  const execAussage = `Free Cashflow ${fmt(fcf, 'Mio €')} · EK-Quote ${fmt(BILANZ.eigenkapital / BILANZ.summe * 100, '%')} · ${rb.g} grün / ${rb.a} gelb / ${rb.r} rot bei ${rb.total} Kennzahlen.`
+  const roteKz = alleKz.filter((k) => ampelKennzahl(k) === 'r')
+  const kritisch = roteKz.length
+    ? roteKz.reduce((a, b) => {
+        const ab = a.richtung === 'tief' ? a.wert - a.ziel.ok : a.ziel.ok - a.wert
+        const bb = b.richtung === 'tief' ? b.wert - b.ziel.ok : b.ziel.ok - b.wert
+        return bb > ab ? b : a
+      })
+    : null
+  const execEmpf = kritisch
+    ? `Kritischste Kennzahl: ${kritisch.name} mit ${fmt(kritisch.wert, kritisch.einheit)} (${kritisch.richtung === 'tief' ? 'Ziel ≤' : 'Ziel ≥'} ${kritisch.ziel.gut}) — vorrangig gegensteuern.`
+    : (liq2 ? `Liquidität 2. Grades bei ${fmt(liq2.wert, liq2.einheit)} im Blick behalten und Working Capital straffen.` : 'Working Capital und Liquidität laufend überwachen.')
+
   return (
     <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
@@ -99,6 +120,8 @@ export default function FinanzCockpit() {
         <button className="no-print" onClick={() => window.print()} style={{ padding: '7px 13px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: 'var(--panel)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>🖨 Drucken / PDF</button>
       </div>
       <PcFilter pc={pc} onChange={aenderePc} hinweis="Segmentsicht: skaliert die absolute Bilanz/GuV-Größe je Profit-Center. Strukturkennzahlen (Quoten/Renditen) sind größenunabhängig und bleiben gleich." />
+
+      <ExecKopf status={execStatus} kennzahl={fmt(fcf, 'Mio €')} kennzahlLabel="Free Cashflow" kernaussage={execAussage} empfehlung={execEmpf} />
 
       {/* Überblick: Risikobild + Bilanzstruktur */}
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1.4fr)', gap: 14, marginBottom: 16 }}>

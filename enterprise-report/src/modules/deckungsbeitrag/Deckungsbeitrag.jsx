@@ -7,6 +7,7 @@ import { direktCosting, stufenweise, SYSTEME } from '../../core/deckungsbeitrag.
 import { pcFaktor } from '../../core/statistikFilter.js'
 import PcFilter, { pcHinweis } from '../shared/PcFilter.jsx'
 import { useGlobalFilter } from '../../core/filterKontext.jsx'
+import ExecKopf, { ampelVon } from '../../components/ExecKopf.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
@@ -20,6 +21,18 @@ export default function Deckungsbeitrag({ onGeh }) {
   const pc = g.pc
   const aenderePc = g.setPc
   const fk = pcFaktor(pc)
+  // Exec-Kopf: Lage aus Betriebsergebnis (Vorzeichen) & DB-I-Quote, Empfehlung aus schwächstem Bereich.
+  const dc = direktCosting(undefined, fk)
+  const sw = stufenweise(undefined, undefined, undefined, fk)
+  const bereicheNachDB3 = [...sw.bereiche].sort((a, b) => a.db3 - b.db3)
+  const schwachB = bereicheNachDB3[0]
+  const execStatus = sw.betriebsergebnis > 0 ? ampelVon(dc.db1Quote, { gut: 35, schlecht: 30 }) : 'r'
+  const execAussage = `Umsatz ${m(dc.umsatz)} Mio € · DB I ${m(dc.db1)} Mio € (Quote ${dc.db1Quote} %) · Betriebsergebnis ${m(sw.betriebsergebnis)} Mio €.`
+  const execEmpf = schwachB
+    ? (schwachB.db3 < 0
+        ? `Bereich „${schwachB.name}" trägt nach Bereichsfixkosten negativ bei (DB III ${m(schwachB.db3)} Mio €) — Kostenstruktur/Sortiment dort vorrangig prüfen.`
+        : `Schwächste Fixkostendeckung im Bereich „${schwachB.name}" (DB III ${m(schwachB.db3)} Mio €) — Margen und variable Kosten dort priorisieren.`)
+    : 'Stufenweise Fixkostendeckung je Bereich prüfen.'
   const chip = (aktiv) => ({ padding: '6px 12px', borderRadius: 999, fontSize: 13, cursor: 'pointer', fontWeight: 600,
     border: `1px solid ${aktiv ? 'var(--accent)' : 'var(--line)'}`, background: aktiv ? 'var(--accent)' : 'var(--panel)', color: aktiv ? '#fff' : 'var(--ink)' })
 
@@ -37,6 +50,8 @@ export default function Deckungsbeitrag({ onGeh }) {
       </div>
 
       {tab !== 'systeme' && <PcFilter pc={pc} onChange={aenderePc} hinweis="Umsätze/Kosten/Fixkosten anteilig je Profit-Center; DB-Quoten bleiben unverändert." />}
+
+      {tab !== 'systeme' && <ExecKopf status={execStatus} kennzahl={m(sw.betriebsergebnis) + ' Mio €'} kennzahlLabel="Betriebsergebnis" kernaussage={execAussage} empfehlung={execEmpf} />}
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
         {[['mehrstufig', 'Mehrstufig (Fixkostendeckung)'], ['einstufig', 'Einstufig (Direct Costing)'], ['systeme', 'Systeme der Kostenrechnung']].map(([id, n]) => (

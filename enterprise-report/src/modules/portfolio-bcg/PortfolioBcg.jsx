@@ -7,6 +7,7 @@
 import React, { useState } from 'react'
 import { portfolioListe, portfolio } from '../../core/bcgPortfolios.js'
 import { quadrantVon } from '../../core/lebenszyklus.js'
+import ExecKopf, { ampelVon } from '../../components/ExecKopf.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
@@ -70,6 +71,19 @@ export default function PortfolioBcg() {
   const qName = quadrant ? p.felder.find((f) => f.id === quadrant)?.name : null
   const jeStrich = (einheit) => (p.id === 'lieferanten' && einheit === 'y' ? '' : ' %')
 
+  // Exec-Kopf: Lage aus dem Anteil "gesunder" Felder (Stars + Cash Cows) am
+  // Volumen; Empfehlung aus dem volumenstärksten Cluster.
+  const felder = p.felder || []
+  const feld = (fid) => felder.find((f) => f.id === fid) || { anzahl: 0, anteil: 0, umsatz: 0 }
+  const stars = feld('star'), cashcow = feld('cashcow'), question = feld('question'), dog = feld('dog')
+  const gesundAnteil = +((stars.anteil || 0) + (cashcow.anteil || 0)).toFixed(1)
+  const groesstes = [...felder].sort((a, b) => (b.umsatz || 0) - (a.umsatz || 0))[0]
+  const execStatus = ampelVon(gesundAnteil, { gut: 70, schlecht: 50 })
+  const execAussage = `${stars.anzahl} Stars · ${cashcow.anzahl} Cash Cows · ${question.anzahl} Question Marks · ${dog.anzahl} Poor Dogs — Stars + Cash Cows tragen ${gesundAnteil} % des Volumens.`
+  const execEmpf = groesstes
+    ? `Größtes Cluster „${groesstes.name}" (${groesstes.anzahl} Objekte, ${groesstes.anteil} % Volumen): ${p.quadrant?.[groesstes.id] || 'gezielt steuern.'}`
+    : 'Verteilung über die Quadranten-Karten prüfen.'
+
   return (
     <div style={{ maxWidth: '100%' }}>
       <div style={{ marginBottom: 12 }}>
@@ -88,6 +102,8 @@ export default function PortfolioBcg() {
           <button key={x.id} style={chip(id === x.id)} onClick={() => { setId(x.id); setQuadrant(null) }}>{x.kurz}</button>
         ))}
       </div>
+
+      <ExecKopf status={execStatus} kennzahl={`${gesundAnteil} %`} kennzahlLabel="Stars + Cash Cows (Volumen)" kernaussage={execAussage} empfehlung={execEmpf} />
 
       {/* Mehrwert-Erklärung */}
       <div style={{ ...card, padding: 16, marginBottom: 14, borderLeft: '3px solid var(--accent)' }}>

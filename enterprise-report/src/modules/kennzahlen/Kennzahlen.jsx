@@ -13,6 +13,8 @@ import { kpiAnzeige, statusVon, darfFreigeben, NICHT_VERFUEGBAR } from '../../co
 import { useKpiDef } from './KpiDefContext.jsx'
 import { EINHEITEN, RICHTUNGEN, setKpiOverride, resetKpiOverride, istUeberschrieben, kpiFelder } from '../../core/kpiOverrides.js'
 import { HORIZONTE, ARTEN, horizontId, horizontInfo, artId, artInfo } from '../../core/klassifikation.js'
+import { ampelStatus } from '../../core/ampel.js'
+import ExecKopf, { ampelVon } from '../../components/ExecKopf.jsx'
 
 export default function Kennzahlen({ rolle, werte = {} }) {
   const def = useKpiDef()
@@ -46,6 +48,22 @@ export default function Kennzahlen({ rolle, werte = {} }) {
     kpiAnzeige(k.id, rolle).modus !== 'versteckt')
   const bereiche = [...new Set(liste.map((k) => k.bereich))]
 
+  // Exec-Kopf: Lage aus dem Anteil grüner Ampeln im sichtbaren KPI-Set
+  // (nur bewertbare KPIs mit Wert + Ziel); Empfehlung aus den roten KPIs.
+  const bewertet = (liste || [])
+    .map((k) => ({ k, amp: ampelStatus({ wert: werte[k.id], ziel: k.ziel, richtung: k.richtung, warn: k.warn }) }))
+    .filter((x) => x.amp === 'g' || x.amp === 'a' || x.amp === 'r')
+  const gruen = bewertet.filter((x) => x.amp === 'g').length
+  const rot = bewertet.filter((x) => x.amp === 'r')
+  const gruenAnteil = bewertet.length ? Math.round(gruen / bewertet.length * 100) : null
+  const execStatus = ampelVon(gruenAnteil, { gut: 70, schlecht: 40 })
+  const execAussage = bewertet.length
+    ? `${bewertet.length} bewertete Kennzahlen im aktuellen Set: ${gruen} grün · ${bewertet.filter((x) => x.amp === 'a').length} gelb · ${rot.length} rot (${gruenAnteil} % auf Ziel).`
+    : `${liste.length} Kennzahlen-Definitionen — derzeit keine zielbewerteten Werte im Set.`
+  const execEmpf = rot.length
+    ? `Handlungsbedarf bei ${rot.length} roten Kennzahlen: ${rot.slice(0, 3).map((x) => x.k.name).join(', ')}${rot.length > 3 ? ' u. a.' : ''} — Ursachen prüfen und gegensteuern.`
+    : 'Keine roten Kennzahlen im aktuellen Set — Zielwerte und Freigaben aktuell halten.'
+
   const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
   const lbl = { fontSize: 11, color: 'var(--muted)' }
   const fInp = { padding: '6px 8px', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', font: 'inherit', fontSize: 13, marginTop: 2 }
@@ -77,6 +95,8 @@ export default function Kennzahlen({ rolle, werte = {} }) {
           {chipGruppe('Art', ARTEN, fArt, setFArt)}
         </div>
       </div>
+
+      <ExecKopf status={execStatus} kennzahl={gruenAnteil != null ? `${gruenAnteil} %` : undefined} kennzahlLabel="Auf Ziel (grün)" kernaussage={execAussage} empfehlung={execEmpf} />
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         {bereiche.map((b) => (

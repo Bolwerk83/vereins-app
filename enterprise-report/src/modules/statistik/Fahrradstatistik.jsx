@@ -9,6 +9,7 @@ import StatistikFilter, { ladeFilter, speichereFilter } from './StatistikFilter.
 import { useGlobalFilter } from '../../core/filterKontext.jsx'
 import { BalkenChart } from '../../components/charts.jsx'
 import ExportButton from '../../components/ExportButton.jsx'
+import ExecKopf, { ampelVon } from '../../components/ExecKopf.jsx'
 import { datenstandText } from '../../core/datenstand.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
@@ -29,6 +30,14 @@ export default function Fahrradstatistik() {
   const fk = faktor(f.zeitraum, f.pc, dat)
   const k = kennzahlen(fk); const kat = kategorien(fk); const a = antrieb(fk); const pk = preisklassen(fk)
   const maxKat = Math.max(...kat.map((x) => x.stueck))
+  // Exec-Kopf: Lage aus Stück-Wachstum, Empfehlung aus stärkster/schwächster Kategorie.
+  const katNachWachstum = [...kat].sort((a, b) => b.wachstumPct - a.wachstumPct)
+  const stark = katNachWachstum[0], schwach = katNachWachstum[katNachWachstum.length - 1]
+  const execStatus = ampelVon(k.wachstumPct, { gut: 3, schlecht: 0 })
+  const execAussage = `${stk(k.stueck)} Räder (${k.wachstumPct >= 0 ? '+' : ''}${k.wachstumPct} % z. VJ) · Umsatz ${mio(k.umsatz)} · E-Bike-Anteil ${k.eBikeAnteilPct} % · Ø Marge ${k.margeProzent} %.`
+  const execEmpf = stark && schwach && stark !== schwach
+    ? `${stark.name} wächst am stärksten (▲ ${stark.wachstumPct} %); ${schwach.name} ${schwach.wachstumPct < 0 ? `verliert (▼ ${Math.abs(schwach.wachstumPct)} %)` : `wächst nur ${schwach.wachstumPct} %`} — Sortiment und Bestände dort prüfen. E-Bike-Segment (Ø Preis ${eur(a.eBike.avgPreis)}) als Margenhebel priorisieren.`
+    : 'Kategorie-Mix und E-Bike-Hebel in der Tabelle prüfen.'
   return (
     <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
@@ -43,6 +52,8 @@ export default function Fahrradstatistik() {
         </div>
       </div>
       <StatistikFilter bereich="verkauf" datumsart={datumsart} onDatumsart={setD} />
+
+      <ExecKopf status={execStatus} kennzahl={mio(k.umsatz)} kennzahlLabel="Umsatz" kernaussage={execAussage} empfehlung={execEmpf} />
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
         {[['Verkaufte Räder', stk(k.stueck) + ' Stk'], ['Wachstum z. Vorjahr', (k.wachstumPct >= 0 ? '+' : '') + k.wachstumPct + ' %', k.wachstumPct >= 0 ? 'var(--amp-g)' : 'var(--amp-r)'], ['Umsatz', mio(k.umsatz)], ['Ø Verkaufspreis', eur(k.avgPreis)], ['E-Bike-Anteil', k.eBikeAnteilPct + ' %', 'var(--accent)'], ['Ø Marge', k.margeProzent + ' %']].map(([l, v, c]) => (

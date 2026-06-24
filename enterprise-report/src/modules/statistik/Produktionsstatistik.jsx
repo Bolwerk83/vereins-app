@@ -9,6 +9,7 @@ import StatistikFilter, { ladeFilter, speichereFilter } from './StatistikFilter.
 import { useGlobalFilter } from '../../core/filterKontext.jsx'
 import { BalkenChart } from '../../components/charts.jsx'
 import ExportButton from '../../components/ExportButton.jsx'
+import ExecKopf, { ampelVon } from '../../components/ExecKopf.jsx'
 import { datenstandText } from '../../core/datenstand.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
@@ -29,6 +30,18 @@ export default function Produktionsstatistik() {
   const opts = { monate: monateVon(f.zeitraum), faktor: pcFaktor(f.pc) * dat.mag, shift: dat.shift }
   const k = kennzahlen(opts); const pr = produkte(opts); const mo = monatsOutput(opts); const wk = werke(opts)
   const leer = k.stueck === 0
+  // Exec-Kopf: Lage aus Ausschussquote (kleiner ist besser → invert), Empfehlung aus schwächstem Produkt.
+  const prNachAusschuss = [...pr].sort((a, b) => b.ausschussPct - a.ausschussPct)
+  const schwach = prNachAusschuss[0]
+  const execStatus = leer ? 'a' : ampelVon(k.ausschussPct, { gut: 2, schlecht: 3.5, invert: true })
+  const execAussage = leer
+    ? 'Für den gewählten Zeitraum liegen noch keine Produktions-Ist-Daten vor — bitte ein Halbjahr/Quartal aus H1 wählen.'
+    : `Output ${stk(k.stueck)} Stk (Wert ${mio(k.wert)}) · Ø OEE ${k.oee} % · Ausschuss ${k.ausschussPct} % · FPY ${k.fpy} %.`
+  const execEmpf = leer
+    ? 'Zeitraum mit Ist-Daten (H1) wählen, um Output und Qualität zu bewerten.'
+    : schwach
+      ? `Höchster Ausschuss bei „${schwach.name}" (${schwach.ausschussPct} %, FPY ${schwach.fpy} %) — Linie priorisiert stabilisieren. Ø OEE ${k.oee} % bietet Auslastungsspielraum.`
+      : `Ø OEE ${k.oee} % bietet Auslastungsspielraum — Engpasslinien priorisieren.`
   return (
     <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
@@ -48,6 +61,8 @@ export default function Produktionsstatistik() {
           ⚠ Für den gewählten Zeitraum liegen noch keine Produktions-Ist-Daten vor (Output-Historie reicht bis Juni). Bitte ein Halbjahr/Quartal aus H1 wählen.
         </div>
       )}
+
+      <ExecKopf status={execStatus} kennzahl={stk(k.stueck) + ' Stk'} kennzahlLabel="Produzierte Menge" kernaussage={execAussage} empfehlung={execEmpf} />
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
         {[['Produzierte Menge', stk(k.stueck) + ' Stk'], ['Ø / Monat', stk(k.schnittMonat) + ' Stk'], ['Produktionswert', mio(k.wert)], ['Ø OEE', k.oee + ' %', k.oee >= 75 ? 'var(--amp-g)' : 'var(--amp-a)'], ['Ausschuss', k.ausschussPct + ' %', ampAus(k.ausschussPct)], ['Ø First-Pass-Yield', k.fpy + ' %']].map(([l, v, c]) => (

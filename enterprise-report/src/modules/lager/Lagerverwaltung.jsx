@@ -8,6 +8,7 @@ import React, { useState } from 'react'
 import { kennzahlen, standorteAuswertung, optimierung, KOSTENSATZ, lagerhaltungskostensatz, KALK_ZINS,
   artikelEmpfehlungen, lieferantenSignale, LIEFERANT_HISTORIE, PERIODEN } from '../../core/lager.js'
 import { signaleMitStatus, offeneEskalationen, kommentiere, istEinkaufsleitung } from '../../core/lagerSignale.js'
+import ExecKopf, { ampelVon } from '../../components/ExecKopf.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
@@ -45,6 +46,18 @@ export default function Lagerverwaltung({ onGeh, rolle, onDetail }) {
 
   const kommentar = (id, text) => { kommentiere(id, text); setTick((t) => t + 1) }
 
+  // Exec-Kopf: Lage aus Anzahl kritischer Artikel (Unterdeckung/Überbestand), Empfehlung aus Engpass/Überbestand.
+  const kritischeArtikel = (opt.rows || []).filter((r) => r.status === 'unterdeckung' || r.status === 'ueberbestand')
+  const unterdeckung = kritischeArtikel.filter((r) => r.status === 'unterdeckung')
+  const ueberbestand = kritischeArtikel.filter((r) => r.status === 'ueberbestand')
+  const execStatus = ampelVon(kritischeArtikel.length, { gut: 0, schlecht: 2, invert: true })
+  const execAussage = `Lagerbestandswert ${m1(k.bestandswert)} Mio € · Umschlag ${m1(k.umschlag)}× (Reichweite ${k.reichweite} Tage) · ${kritischeArtikel.length} kritische${kritischeArtikel.length === 1 ? 'r' : ''} Artikel.`
+  const execEmpf = unterdeckung.length > 0
+    ? `${unterdeckung.length} Artikel in Unterdeckung (${unterdeckung.map((r) => r.name).join(', ')}) — Nachbestellung auslösen, um Lieferfähigkeit zu sichern.`
+    : ueberbestand.length > 0
+      ? `Überbestand bindet rund ${eur0(opt.ueberbestandWert)} € (${ueberbestand.map((r) => r.name).join(', ')}) — Bestellpause/Abverkauf; zusätzlich ${eur0(opt.einsparpotenzial)} € Losgrößen-Potenzial heben.`
+      : `Bestände im Korridor — ${eur0(opt.einsparpotenzial)} € Einsparpotenzial aus optimierten Losgrößen realisieren.`
+
   return (
     <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ marginBottom: 14 }}>
@@ -54,6 +67,8 @@ export default function Lagerverwaltung({ onGeh, rolle, onDetail }) {
           Bestandsoptimierung. Nicht die operative Lagerplatzverwaltung, sondern die Frage „<i>was kostet uns das Lager?</i>".
         </div>
       </div>
+
+      <ExecKopf status={execStatus} kennzahl={`${m1(k.bestandswert)} Mio €`} kennzahlLabel="Lagerbestandswert" kernaussage={execAussage} empfehlung={execEmpf} />
 
       {/* Eskalation: wichtige, unkommentierte Signale für die Einkaufsleitung */}
       {darfEskalation && eskalationen.length > 0 && eskaliereAuf && (

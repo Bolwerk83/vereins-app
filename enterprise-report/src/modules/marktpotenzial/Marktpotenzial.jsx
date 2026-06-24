@@ -7,6 +7,7 @@ import React, { useState } from 'react'
 import { ladeMarktpotenzial, regionen, gesamt, empfehlungFuer, setzeParameter, setzeZurueck } from '../../core/marktpotenzial.js'
 import { addMassnahme, ladeMassnahmen } from '../../core/massnahmen.js'
 import { datenstandText } from '../../core/datenstand.js'
+import ExecKopf, { ampelVon } from '../../components/ExecKopf.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700 }
@@ -36,6 +37,14 @@ export default function Marktpotenzial() {
   const hat = (titel) => massn.some((m) => m.titel === titel)
   const uebernehmen = (e, ort) => { addMassnahme({ titel: e.titel, owner: 'Vertrieb/Marketing', quelle: 'marktpotenzial', bereich: ort, hebel: 'Geomarketing', relevanz: e.text }); refresh() }
 
+  // Exec-Kopf: Lage aus Ø Ausschöpfung (Marktanteil) gegen den Zielanteil, Empfehlung aus größter Potenzialreserve.
+  const topReserve = liste[0]   // bereits nach Reserve absteigend sortiert (größte Chance zuerst)
+  const execStatus = ampelVon(g.ausschoepfungPct, { gut: g.zielAnteil, schlecht: g.zielAnteil / 2 })
+  const execAussage = `Marktanteil (Ausschöpfung) ${g.ausschoepfungPct} % vom Potenzial ${mio(g.potenzial)} · Ist-Umsatz ${mio(g.ist)} · ${g.whiteSpots} White Spot${g.whiteSpots === 1 ? '' : 's'} · Reserve zum Ziel ${mio(g.reserve)}.`
+  const execEmpf = topReserve && topReserve.reserve > 0
+    ? `Größtes ungenutztes Potenzial in ${topReserve.ort} (nur ${topReserve.ausschoepfungPct} % ausgeschöpft, Reserve ${teur(topReserve.reserve)}) — dort Geo-Kampagne/lokalen Partner priorisieren.`
+    : `Zielanteil ${g.zielAnteil} % flächendeckend erreicht — Bestandskunden binden und Marge in starken Gebieten sichern.`
+
   return (
     <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
@@ -62,6 +71,8 @@ export default function Marktpotenzial() {
         <button onClick={() => { setzeZurueck(); refresh() }} style={{ fontSize: 11.5, cursor: 'pointer', border: '1px solid var(--line)', background: 'var(--panel)', color: 'var(--muted)', borderRadius: 999, padding: '3px 11px' }}>↺ Standard</button>
         <span style={{ fontSize: 11.5, color: 'var(--muted)' }}>Potenzial = Einwohner × Marktvolumen/Kopf. Ausschöpfung = eigener Umsatz ÷ Potenzial (= lokaler Marktanteil).</span>
       </div>
+
+      <ExecKopf status={execStatus} kennzahl={`${g.ausschoepfungPct} %`} kennzahlLabel="Ø Ausschöpfung" kernaussage={execAussage} empfehlung={execEmpf} />
 
       {/* KPI-Band */}
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>

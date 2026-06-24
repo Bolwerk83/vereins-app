@@ -7,6 +7,7 @@ import { DATENARTEN, ergebnis, tKonto, ukv } from '../../core/ergebnis.js'
 import { pcFaktor } from '../../core/statistikFilter.js'
 import PcFilter, { pcHinweis } from '../shared/PcFilter.jsx'
 import { useGlobalFilter } from '../../core/filterKontext.jsx'
+import ExecKopf, { ampelVon } from '../../components/ExecKopf.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
@@ -22,6 +23,15 @@ export default function Ergebnisrechnung({ onGeh }) {
   const e = ergebnis(da, fk)
   const t = tKonto(da, fk)
   const u = ukv(da, fk)
+  // Exec-Kopf: Lage aus EBIT-Marge, Empfehlung aus größtem Kostenblock.
+  const umsatzPos = (e.ertraege || []).find((p) => p.id === 'umsatz')
+  const ebitMarge = umsatzPos && umsatzPos.wert ? Math.round(e.betriebsergebnis / umsatzPos.wert * 1000) / 10 : 0
+  const groessterAufwand = (e.aufwendungen || []).reduce((a, b) => (b.wert > (a ? a.wert : -Infinity) ? b : a), null)
+  const execStatus = ampelVon(ebitMarge, { gut: 6, schlecht: 0 })
+  const execAussage = `Betriebsergebnis ${m(e.betriebsergebnis)} Mio € bei ${umsatzPos ? m(umsatzPos.wert) : '–'} Mio € Umsatz · EBIT-Marge ${m(ebitMarge)} %.`
+  const execEmpf = groessterAufwand
+    ? `Größter Kostenblock ist ${groessterAufwand.name} mit ${m(groessterAufwand.wert)} Mio € (${e.summeAufwand ? m(Math.round(groessterAufwand.wert / e.summeAufwand * 1000) / 10) : '–'} % der Aufwendungen) — hier liegt der größte Ergebnishebel.`
+    : 'Kostenstruktur in der Staffel auf Einsparhebel prüfen.'
   const chip = (aktiv) => ({ padding: '5px 12px', borderRadius: 999, fontSize: 12.5, cursor: 'pointer', fontWeight: 600,
     border: `1px solid ${aktiv ? 'var(--accent)' : 'var(--line)'}`, background: aktiv ? 'var(--accent)' : 'var(--panel)', color: aktiv ? '#fff' : 'var(--ink)' })
   const row = (name, wert, opt = {}) => (
@@ -54,6 +64,8 @@ export default function Ergebnisrechnung({ onGeh }) {
         <button style={chip(verfahren === 'gkv')} onClick={() => setVerfahren('gkv')}>Gesamtkostenverfahren</button>
         <button style={chip(verfahren === 'ukv')} onClick={() => setVerfahren('ukv')}>Umsatzkostenverfahren</button>
       </div>
+
+      <ExecKopf status={execStatus} kennzahl={`${m(e.betriebsergebnis)} Mio €`} kennzahlLabel="Betriebsergebnis" kernaussage={execAussage} empfehlung={execEmpf} />
 
       {verfahren === 'ukv' && (
         <div style={{ ...card, padding: 16, marginBottom: 14, maxWidth: 520 }}>
