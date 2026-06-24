@@ -53,8 +53,8 @@ export function VerlaufChart({ daten, fmt = (n) => String(n), fmtKurz, H = 132, 
             return (
               <div key={d.label} style={{ flex: 1, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 3, height: H, minWidth: 0 }}>
                 {d.vorjahr != null && <div title={`${vergleichLabel} ${fmt(d.vorjahr)}`} style={{ width: '38%', maxWidth: 13, height: vjH, background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: '3px 3px 0 0' }} />}
-                <div title={`Ist ${fmt(d.ist)}`} style={{ position: 'relative', width: '38%', maxWidth: 13, height: istH, borderRadius: '3px 3px 0 0', background: isPeak ? BAR_PEAK : BAR, boxShadow: isPeak ? '0 0 0 1.5px color-mix(in srgb, var(--accent) 35%, transparent)' : 'none' }}>
-                  {isPeak && <span className="mono" style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: 3, fontSize: 9.5, fontWeight: 700, color: 'var(--accent)', whiteSpace: 'nowrap' }}>{kurz(d.ist)}</span>}
+                <div className="er-bar" title={`Ist ${fmt(d.ist)}`} style={{ position: 'relative', width: '38%', maxWidth: 13, height: istH, borderRadius: '3px 3px 0 0', background: isPeak ? BAR_PEAK : BAR, boxShadow: isPeak ? '0 0 0 1.5px color-mix(in srgb, var(--accent) 35%, transparent)' : 'none' }}>
+                  <span className={'mono er-bar-val' + (isPeak ? ' er-bar-val-on' : '')} style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: 3, fontSize: 9.5, fontWeight: 700, color: 'var(--accent)', whiteSpace: 'nowrap' }}>{kurz(d.ist)}</span>
                 </div>
               </div>
             )
@@ -86,7 +86,7 @@ export function BalkenChart({ daten, fmt = (n) => String(n), farbe, H = 120, zei
             const isPeak = d.wert === peak && d.wert > 0
             return (
               <div key={d.label} style={{ flex: 1, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', height: H, minWidth: 0 }}>
-                <div title={`${d.label}: ${fmt(d.wert)}`} style={{ position: 'relative', width: '60%', maxWidth: 56, height: h, borderRadius: '4px 4px 0 0', background: isPeak ? barPeak : bar, boxShadow: isPeak ? `0 0 0 1.5px color-mix(in srgb, ${farbe || 'var(--accent)'} 35%, transparent)` : 'none' }}>
+                <div className="er-bar" title={`${d.label}: ${fmt(d.wert)}`} style={{ position: 'relative', width: '60%', maxWidth: 56, height: h, borderRadius: '4px 4px 0 0', background: isPeak ? barPeak : bar, boxShadow: isPeak ? `0 0 0 1.5px color-mix(in srgb, ${farbe || 'var(--accent)'} 35%, transparent)` : 'none' }}>
                   {zeigeWert && <span className="mono" style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: 3, fontSize: 9.5, fontWeight: 700, color: isPeak ? (farbe || 'var(--accent)') : 'var(--muted)', whiteSpace: 'nowrap' }}>{fmt(d.wert)}</span>}
                 </div>
               </div>
