@@ -13,6 +13,7 @@ import {
 import { pcFaktor, pcName, zeitraumVon } from '../../core/statistikFilter.js'
 import { useGlobalFilter, GlobalFilterLeiste } from '../../core/filterKontext.jsx'
 import AutoSummary from '../../components/AutoSummary.jsx'
+import { forecastBruecke, FORECAST_METHODEN } from '../../core/forecast.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700 }
@@ -401,6 +402,58 @@ function BenchmarkSektion() {
   )
 }
 
+// Forecast Jahresende mit Forecast-Bruecke (Wasserfall) Plan -> YTD -> Rest -> FC.
+function ForecastSektion({ faktor, pcLabel }) {
+  const [methode, setMethode] = useState('runrate')
+  const b = forecastBruecke('gesamt', { faktor, methode })
+  const H = 150
+  const maxV = Math.max(b.jahresplan, b.forecast) * 1.12 || 1
+  const yH = (v) => Math.abs(v) / maxV * H
+  const r1 = b.jahresplan, r2 = b.jahresplan + b.ytdAbw, r3 = b.forecast
+  const saeulen = [
+    { label: 'Jahresplan', wert: b.jahresplan, bottom: 0, h: yH(b.jahresplan), farbe: 'var(--muted)', typ: 'basis' },
+    { label: `YTD-Abw. (bis ${b.monatName})`, wert: b.ytdAbw, bottom: Math.min(r1, r2) / maxV * H, h: yH(b.ytdAbw), farbe: b.ytdAbw >= 0 ? 'var(--amp-g)' : 'var(--amp-r)', typ: 'delta' },
+    { label: 'Restjahr-Abw.', wert: b.restAbw, bottom: Math.min(r2, r3) / maxV * H, h: yH(b.restAbw), farbe: b.restAbw >= 0 ? 'var(--amp-g)' : 'var(--amp-r)', typ: 'delta' },
+    { label: 'Forecast', wert: b.forecast, bottom: 0, h: yH(b.forecast), farbe: AMP[b.status], typ: 'summe' }
+  ]
+  const chip = (aktiv) => ({ padding: '4px 10px', borderRadius: 999, fontSize: 12, cursor: 'pointer', fontWeight: 600, border: `1px solid ${aktiv ? 'var(--accent)' : 'var(--line)'}`, background: aktiv ? 'var(--accent)' : 'var(--panel)', color: aktiv ? '#fff' : 'var(--ink)' })
+  return (
+    <section style={{ ...card, padding: 18, marginBottom: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+        <h3 style={{ margin: 0, fontSize: 17 }}>Forecast Jahresende — Hochrechnung{pcLabel ? ` · ${pcLabel}` : ''}</h3>
+        <span style={{ display: 'inline-flex', gap: 6 }}>
+          {FORECAST_METHODEN.map((m) => <button key={m.id} onClick={() => setMethode(m.id)} style={chip(methode === m.id)} title={m.beschreibung}>{m.name}</button>)}
+        </span>
+      </div>
+      <div style={{ fontSize: 12.5, color: 'var(--muted)', margin: '4px 0 12px' }}>
+        Stand {b.monatName} · Restjahr {methode === 'plantreu' ? 'plan-treu (trifft den Plan)' : `mit YTD-Leistungsindex ${b.leistungsindex.toLocaleString('de-DE')} fortgeschrieben`}.
+      </div>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
+        <KpiTile label="Jahresplan" value={mio(b.jahresplan)} />
+        <KpiTile label="Forecast Jahresende" value={mio(b.forecast)} sub={`Erreichungsgrad ${b.erreichungPct.toLocaleString('de-DE')} %`} status={b.status} />
+        <KpiTile label="Abweichung z. Plan" value={mio(b.abwForecast)} sub={pct(b.abwForecastPct)} status={b.status} />
+        <KpiTile label="vs. Vorjahr" value={pct(b.vsVjPct)} status={ampel(b.vsVjPct)} />
+      </div>
+      <div style={cap}>Forecast-Brücke · Plan → YTD → Restjahr → Forecast</div>
+      <div style={{ display: 'flex', gap: 14, alignItems: 'flex-end', height: H + 26, marginTop: 22 }}>
+        {saeulen.map((s, i) => (
+          <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 0 }}>
+            <div style={{ position: 'relative', width: '100%', height: H }}>
+              <div style={{ position: 'absolute', bottom: s.bottom, left: '50%', transform: 'translateX(-50%)', width: '62%', maxWidth: 84, height: Math.max(2, s.h), background: s.farbe, borderRadius: 4, opacity: s.typ === 'delta' ? 0.9 : 1 }}>
+                <span className="mono" style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: 3, fontSize: 10.5, fontWeight: 700, whiteSpace: 'nowrap', color: s.typ === 'delta' ? s.farbe : 'var(--ink)' }}>
+                  {s.typ === 'delta' ? (s.wert >= 0 ? '+' : '') + mio(s.wert) : mio(s.wert)}
+                </span>
+              </div>
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6, textAlign: 'center', lineHeight: 1.2 }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+      <Bemerkung sk="forecast" vorschlag={`Hochrechnung Jahresende ${mio(b.forecast)} (${b.erreichungPct.toLocaleString('de-DE')} % des Plans, ${pct(b.abwForecastPct)}). ${b.abwForecast < 0 ? 'Gegensteuern erforderlich, um die Planlücke zu schließen.' : 'Plan voraussichtlich erreicht — Kurs halten.'}`} />
+    </section>
+  )
+}
+
 export default function Quartalsbericht() {
   const g = useGlobalFilter()
   const [jeAt, setJeAt] = useState(false)
@@ -456,6 +509,8 @@ export default function Quartalsbericht() {
             style={{ width: '100%', marginTop: 5, padding: '10px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', font: 'inherit', fontSize: 13.5, lineHeight: 1.55, resize: 'vertical', background: 'var(--panel)' }} />
         </div>
       </div>
+
+      <ForecastSektion faktor={ctx.faktor} pcLabel={pc !== 'alle' ? pcLabel : ''} />
 
       {SERIEN_IDS.map((id) => <UmsatzSektion key={id} serie={SERIEN[id]} ctx={ctx} />)}
       <KanalSektion />
