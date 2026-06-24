@@ -12,6 +12,7 @@ const T = {
     subPlayers:"Spieler", subAttendance:"Anwesenheit", subInsights:"Insights", subResults:"Ergebnisse", subCash:"Kasse", subReport:"Bericht", subAnalysis:"Analyse", subGoals:"Ziele", subDrills:"Übungen", subPlanner:"Planer", subTrainings:"Trainings", subTactics:"Taktik", subMarket:"Turnier-Börse", subManage:"Mannschaften",
     vImInSelf:"Ich bin dabei", vImInChild:"Mein Kind ist dabei", vComesLate:"Kommt zu spät", vComesLateMins:"Kommt ca. {m} Min. zu spät", vHowLate:"Wie spät kommt dein Kind?", vConfirm:"Bestätigen", vCancel:"Abbrechen", vMin:"Min", vNotIn:"Leider nicht dabei", vWhyNot:"Warum kann dein Kind nicht?", vNoReason:"Ohne Angabe", vLateNeedsReason:"Nach Ablauf der Frist ist eine Absage nur mit Grund möglich.", vDeadlinePassed:"Frist abgelaufen – Abstimmung wird trotzdem gezählt", vDeadline:"Abstimmungs-Frist:", vLateList:"Verspätungen", vSumIn:"dabei", vSumLate:"verspätet", vSumOut:"nicht dabei", rKrank:"Krank", rUrlaub:"Urlaub", rSchule:"Schulpflicht", rWettkampf:"Wettkampf", rSonstiges:"Sonstiges",
     lnTor:"Tor", lnAbwehr:"Abwehr", lnMittelfeld:"Mittelfeld", lnAngriff:"Angriff", luTitle:"Aufstellung", luSuggest:"Vorschlag", luFriends:"Freunde gewichten:", luOff:"Aus", luNormal:"Normal", luStrong:"Stark", luBench:"Bank / verfügbar", luAllPlaced:"Alle Zusagen sind aufgestellt.", luGuestVisible:"Mannschaft für Gäste sichtbar", luGuestHint:"Namen nur mit Eltern-Freigabe; sonst nur Trikotnummer.", luBenchShort:"Bank:", luForN:"Für {n} Spieler:", luFormation:"Formation", luWithGK:"mit Torwart", luOnBench:"{n} auf der Bank", luTogether:"Eingespielt:", luFriendsLabel:"Freunde", luSeparated:"getrennt", luAdjustHint:"Besetzung nach Position, Stärken & Freundschaften – frei anpassbar.",
+    et_training:"Training", et_heimspiel:"Heimspiel", et_auswarts:"Auswärtsspiel", et_freundschaft:"Freundschaftsspiel", et_turnier:"Turnier", et_event:"Sondertermin",
     cancel: "Abbrechen",
     save: "Speichern",
     delete: "Löschen",
@@ -131,6 +132,7 @@ const T = {
     subPlayers:"Players", subAttendance:"Attendance", subInsights:"Insights", subResults:"Results", subCash:"Cash box", subReport:"Report", subAnalysis:"Analysis", subGoals:"Goals", subDrills:"Drills", subPlanner:"Planner", subTrainings:"Sessions", subTactics:"Tactics", subMarket:"Tournament market", subManage:"Teams",
     vImInSelf:"I'm in", vImInChild:"My child is in", vComesLate:"Will be late", vComesLateMins:"Arrives ~{m} min late", vHowLate:"How late will your child be?", vConfirm:"Confirm", vCancel:"Cancel", vMin:"min", vNotIn:"Not available", vWhyNot:"Why can't your child make it?", vNoReason:"No reason", vLateNeedsReason:"After the deadline a cancellation requires a reason.", vDeadlinePassed:"Deadline passed – your vote still counts", vDeadline:"Voting deadline:", vLateList:"Late arrivals", vSumIn:"in", vSumLate:"late", vSumOut:"out", rKrank:"Ill", rUrlaub:"Holiday", rSchule:"School", rWettkampf:"Competition", rSonstiges:"Other",
     lnTor:"Goal", lnAbwehr:"Defence", lnMittelfeld:"Midfield", lnAngriff:"Attack", luTitle:"Line-up", luSuggest:"Suggestion", luFriends:"Weight friends:", luOff:"Off", luNormal:"Normal", luStrong:"Strong", luBench:"Bench / available", luAllPlaced:"All confirmed players are placed.", luGuestVisible:"Show squad to guests", luGuestHint:"Names only with parent consent; otherwise just shirt number.", luBenchShort:"Bench:", luForN:"For {n} players:", luFormation:"Formation", luWithGK:"with keeper", luOnBench:"{n} on the bench", luTogether:"Played together:", luFriendsLabel:"Friends", luSeparated:"separated", luAdjustHint:"Positions by role, strengths & friendships – freely adjustable.",
+    et_training:"Training", et_heimspiel:"Home match", et_auswarts:"Away match", et_freundschaft:"Friendly", et_turnier:"Tournament", et_event:"Special event",
     cancel:"Cancel",
     save:"Save",
     delete:"Delete",
@@ -250,6 +252,7 @@ const T = {
     subPlayers:"Spelers", subAttendance:"Aanwezigheid", subInsights:"Inzichten", subResults:"Resultaten", subCash:"Kas", subReport:"Rapport", subAnalysis:"Analyse", subGoals:"Doelen", subDrills:"Oefeningen", subPlanner:"Planner", subTrainings:"Trainingen", subTactics:"Tactiek", subMarket:"Toernooimarkt", subManage:"Teams",
     vImInSelf:"Ik ben erbij", vImInChild:"Mijn kind is erbij", vComesLate:"Komt te laat", vComesLateMins:"Komt ~{m} min te laat", vHowLate:"Hoe laat komt je kind?", vConfirm:"Bevestigen", vCancel:"Annuleren", vMin:"min", vNotIn:"Helaas niet", vWhyNot:"Waarom kan je kind niet?", vNoReason:"Geen reden", vLateNeedsReason:"Na de deadline kan afmelden alleen met reden.", vDeadlinePassed:"Deadline verstreken – je stem telt toch mee", vDeadline:"Stemdeadline:", vLateList:"Te laat", vSumIn:"erbij", vSumLate:"te laat", vSumOut:"niet erbij", rKrank:"Ziek", rUrlaub:"Vakantie", rSchule:"School", rWettkampf:"Wedstrijd", rSonstiges:"Overig",
     lnTor:"Keeper", lnAbwehr:"Verdediging", lnMittelfeld:"Middenveld", lnAngriff:"Aanval", luTitle:"Opstelling", luSuggest:"Voorstel", luFriends:"Vrienden wegen:", luOff:"Uit", luNormal:"Normaal", luStrong:"Sterk", luBench:"Bank / beschikbaar", luAllPlaced:"Alle toezeggingen staan opgesteld.", luGuestVisible:"Team zichtbaar voor gasten", luGuestHint:"Namen alleen met toestemming ouders; anders alleen rugnummer.", luBenchShort:"Bank:", luForN:"Voor {n} spelers:", luFormation:"Formatie", luWithGK:"met keeper", luOnBench:"{n} op de bank", luTogether:"Ingespeeld:", luFriendsLabel:"Vrienden", luSeparated:"apart", luAdjustHint:"Posities op rol, sterktes & vriendschappen – vrij aanpasbaar.",
+    et_training:"Training", et_heimspiel:"Thuiswedstrijd", et_auswarts:"Uitwedstrijd", et_freundschaft:"Oefenwedstrijd", et_turnier:"Toernooi", et_event:"Speciale afspraak",
     cancel:"Annuleren",
     save:"Opslaan",
     delete:"Verwijderen",
@@ -1528,6 +1531,8 @@ const fmtDShort = iso => { const d=new Date(iso+"T12:00:00"); return `${String(d
 const ET = {
   training:     { label:"Training",    icon:"TR", col:"#16a34a", bg:"#dcfce7" },
   heimspiel:    { label:"Heimspiel",icon:"Heim",col:"#2563eb",bg:"#dbeafe" },auswarts:     { label:"Auswärtsspiel",icon:"Bus",col:"#d97706",bg:"#fef3c7" },freundschaft: { label:"Freundschaftsspiel",icon:"Hand",col:"#7c3aed",bg:"#ede9fe" },turnier:      { label:"Turnier",icon:"Pokal",col:"#dc2626",bg:"#fee2e2" },event:        { label:"Sondertermin",icon:"Fest",col:"#0891b2",bg:"#e0f2fe" },};
+// Übersetztes Terminart-Label (Fallback auf das deutsche ET.label).
+const etLabel = (type, tr) => (tr ? tr("et_"+type) : null) || ET[type]?.label || type;
 
 function seed() {
   return {
@@ -24242,7 +24247,7 @@ function VenuePicker({venues=[],value,onPick,onClear,onAdd,cl}) {
   );
 }
 function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTemplate=null,fields=[],venues=[],onAddVenue}) {
-  const t=TH(cl); const isEdit=!!editEv; const STEPS=5;
+  const t=TH(cl); const isEdit=!!editEv; const STEPS=5; const { tr } = useT();
   const blank={tid:teams[0]?.id||"",type:"training",title:"",date:now(),time:"",endTime:"",loc:"",note:"",sollPlayers:null,maxPlayers:null,pt:"att",recMode:"none",recDays:[],recStart:now(),recUntil:"",recDates:[],li:[],fi:[],sc:[],extraPolls:[],selType:"multi",open:false,_li:{txt:"",max:""},_fi:{name:"",col:"#16a34a"},_sc:{fid:"",time:"",a:"",b:"",ref:""}};
   const [step,setStep]=useState(1);
   const [f,setF]=useState(editEv?{...blank,...editEv,recMode:"none",recDays:[],recDates:[],_li:{txt:"",max:""},_fi:{name:"",col:"#16a34a"},_sc:{fid:"",time:"",a:"",b:"",ref:""}}:blank);
@@ -24291,15 +24296,15 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
         {}
         {step===2&&<div className="in" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
           {Object.entries(ET).map(([k,v])=>(
-            <div key={k} onClick={()=>u({type:k,title:isEdit?f.title:v.label})} style={{background:"#fff",borderRadius:16,padding:"16px 14px",border:`2px solid ${f.type===k?t.p:"#e2e8f0"}`,cursor:"pointer",textAlign:"center",transition:"all .18s"}}>
+            <div key={k} onClick={()=>u({type:k,title:isEdit?f.title:etLabel(k,tr)})} style={{background:"#fff",borderRadius:16,padding:"16px 14px",border:`2px solid ${f.type===k?t.p:"#e2e8f0"}`,cursor:"pointer",textAlign:"center",transition:"all .18s"}}>
               <div style={{fontSize:32,marginBottom:8}}>{v.icon}</div>
-              <div style={{fontWeight:800,fontSize:14,color:f.type===k?t.p:"#334155"}}>{v.label}</div>
+              <div style={{fontWeight:800,fontSize:14,color:f.type===k?t.p:"#334155"}}>{etLabel(k,tr)}</div>
             </div>
           ))}
         </div>}
         {}
         {step===3&&<div className="in" style={{display:"flex",flexDirection:"column",gap:13}}>
-          <Inp label="Titel" val={f.title} set={v=>u({title:v})} ph={`z.B. ${ET[f.type]?.label}`} af cl={cl}/>
+          <Inp label="Titel" val={f.title} set={v=>u({title:v})} ph={`z.B. ${etLabel(f.type,tr)}`} af cl={cl}/>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:11}}>
             <Inp label="Uhrzeit" val={f.time} set={v=>u({time:v})} type="time" ph="09:00" cl={cl}/>
             <Inp label="Ende (optional)" val={f.endTime} set={v=>u({endTime:v})} type="time" ph="" cl={cl}/>
@@ -24489,7 +24494,7 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
         {step===5&&<div className="in">
           <div style={{background:"#0f172a",borderRadius:17,padding:"18px"}}>
             <p style={{color:"rgba(255,255,255,.45)",fontSize:11,fontWeight:800,marginBottom:13,letterSpacing:.5}}>ZUSAMMENFASSUNG</p>
-            {[[" Mannschaft",teamsSel?.icon+" "+teamsSel?.name],["Art",ET[f.type]?.icon+" "+ET[f.type]?.label],["Titel",f.title],["Uhrzeit",f.time||"-"],f.loc&&["Ort","* "+f.loc+(f.fieldId&&f.fieldSplit>1?" · "+(SPLIT_OPTIONS.find(o=>o.id===f.fieldSplit)?.label||""):"")],f.note&&["Notiz","* "+f.note.slice(0,50)],["Umfrage",(f.pt==="att"?"* Anwesenheit":f.pt==="carpool"?"* Fahrtgemeinschaft":`* Liste (${(f.li||[]).length} Opt.)`)+((f.extraPolls||[]).length?` + ${f.extraPolls.length} Liste${f.extraPolls.length>1?"n":""}`:"")],["Termine",f.recMode==="weekly"?`* Woechentlich . ${f.recDays?.length||0} Tage`:f.recMode==="custom"?`* ${f.recDates?.length||0} Daten`:"1 Termin . "+fmtD(f.date)],f.open&&["Sichtbarkeit","* Offen für andere Vereine"]].filter(Boolean).filter(x=>!x.hidden).map(([k,v])=>(
+            {[[" Mannschaft",teamsSel?.icon+" "+teamsSel?.name],["Art",ET[f.type]?.icon+" "+etLabel(f.type,tr)],["Titel",f.title],["Uhrzeit",f.time||"-"],f.loc&&["Ort","* "+f.loc+(f.fieldId&&f.fieldSplit>1?" · "+(SPLIT_OPTIONS.find(o=>o.id===f.fieldSplit)?.label||""):"")],f.note&&["Notiz","* "+f.note.slice(0,50)],["Umfrage",(f.pt==="att"?"* Anwesenheit":f.pt==="carpool"?"* Fahrtgemeinschaft":`* Liste (${(f.li||[]).length} Opt.)`)+((f.extraPolls||[]).length?` + ${f.extraPolls.length} Liste${f.extraPolls.length>1?"n":""}`:"")],["Termine",f.recMode==="weekly"?`* Woechentlich . ${f.recDays?.length||0} Tage`:f.recMode==="custom"?`* ${f.recDates?.length||0} Daten`:"1 Termin . "+fmtD(f.date)],f.open&&["Sichtbarkeit","* Offen für andere Vereine"]].filter(Boolean).filter(x=>!x.hidden).map(([k,v])=>(
               <div key={k} style={{display:"flex",gap:10,marginBottom:9}}>
                 <span style={{color:"rgba(255,255,255,.4)",fontSize:12,fontWeight:700,minWidth:90}}>{k}</span>
                 <span style={{color:"#fff",fontSize:13,fontWeight:700,flex:1}}>{v}</span>
