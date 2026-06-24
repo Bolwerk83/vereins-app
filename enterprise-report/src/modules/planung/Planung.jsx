@@ -10,6 +10,7 @@ import {
   VORSCHLAG_MODI, vorschlagDetails, planVorschlag
 } from '../../core/planung.js'
 import { EBENEN, verteile as verteileArtikel, flach as flachArtikel } from '../../core/artikelHierarchie.js'
+import PlanungWizard from './PlanungWizard.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
@@ -22,6 +23,7 @@ const td = (al, bold) => ({ textAlign: al, padding: '6px 9px', borderBottom: '1p
 const MON = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']
 
 export default function Planung({ onGeh }) {
+  const [ptab, setPtab] = useState('wizard')
   const [plaene, setPlaene] = useState(() => ladePlaene())
   const [aktivId, setAktivId] = useState(() => ladePlaene()[0]?.id)
   const [zielUmsatz, setZielUmsatz] = useState('')
@@ -66,6 +68,15 @@ export default function Planung({ onGeh }) {
           (Sponsoren/Ausstellung) sind berücksichtigt — inklusive Liquiditätsvorschau.
         </div>
       </div>
+
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+        {[['wizard', '🧭 Einfache Planung (Wizard)'], ['detail', 'Detailplanung (Produkte)']].map(([id, n]) => (
+          <button key={id} onClick={() => setPtab(id)} style={{ padding: '6px 12px', borderRadius: 999, fontSize: 13, cursor: 'pointer', fontWeight: 600, border: `1px solid ${ptab === id ? 'var(--accent)' : 'var(--line)'}`, background: ptab === id ? 'var(--accent)' : 'var(--panel)', color: ptab === id ? '#fff' : 'var(--ink)' }}>{n}</button>
+        ))}
+      </div>
+
+      {ptab === 'wizard' && <PlanungWizard />}
+      {ptab === 'detail' && <>
 
       {/* Plan-Verwaltung */}
       <div style={{ ...card, padding: 12, marginBottom: 14, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -348,6 +359,7 @@ export default function Planung({ onGeh }) {
               )
             })()}
       </div>
+      </>}
     </div>
   )
 }
