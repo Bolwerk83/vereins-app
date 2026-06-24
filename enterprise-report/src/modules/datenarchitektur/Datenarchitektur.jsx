@@ -2,8 +2,9 @@
 //  DATENARCHITEKTUR — Konzeptseite: Schichten (Quelle→Browser), Sternschema,
 //  Profit-Center-Baum als Dimension, RLS/OLS-Pushdown, ELT externer Daten.
 // =========================================================================
-import React from 'react'
+import React, { useState } from 'react'
 import { SCHICHTEN, STERN, PRINZIPIEN, RICHTWERTE } from '../../core/datenarchitektur.js'
+import SqlSetup from './SqlSetup.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700 }
@@ -45,6 +46,7 @@ function DimBox({ d }) {
 }
 
 export default function Datenarchitektur() {
+  const [tab, setTab] = useState('konzept')
   return (
     <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
@@ -58,6 +60,15 @@ export default function Datenarchitektur() {
         </div>
         <button className="no-print" onClick={() => window.print()} style={{ padding: '7px 13px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: 'var(--panel)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>🖨 Drucken / PDF</button>
       </div>
+
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+        {[['konzept', 'Architektur-Konzept'], ['sql', '🗄 SQL-Setup & Anbindung']].map(([id, n]) => (
+          <button key={id} onClick={() => setTab(id)} style={{ padding: '6px 12px', borderRadius: 999, fontSize: 13, cursor: 'pointer', fontWeight: 600, border: `1px solid ${tab === id ? 'var(--accent)' : 'var(--line)'}`, background: tab === id ? 'var(--accent)' : 'var(--panel)', color: tab === id ? '#fff' : 'var(--ink)' }}>{n}</button>
+        ))}
+      </div>
+
+      {tab === 'sql' && <SqlSetup />}
+      {tab === 'konzept' && <>
 
       {/* Pipeline */}
       <div style={{ ...card, padding: 16, marginBottom: 14 }}>
@@ -98,6 +109,7 @@ export default function Datenarchitektur() {
       <div style={{ fontSize: 11, color: 'var(--muted)', textAlign: 'center', padding: '14px 0 20px' }}>
         Architektur-Leitlinie. Greift, sobald die Listen an echte Quellen (MSSQL/WaWi) angebunden werden — die UI bleibt gleich.
       </div>
+      </>}
     </div>
   )
 }
