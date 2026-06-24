@@ -6519,7 +6519,7 @@ function FoerderAssistent({ data, myTids, cl, save, fire }){
     <div>
       {teams.length>1&&(
         <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
-          {teams.map(tm=>(<button key={tm.id} onClick={()=>{setTid(tm.id);setStep(1);setFocusSkill(null);setSelPid(null);setSelSkills([]);}} style={{padding:"7px 13px",borderRadius:99,border:`1.5px solid ${tid===tm.id?t.p:"#e2e8f0"}`,background:tid===tm.id?t.p:"#fff",color:tid===tm.id?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{tm.name}</button>))}
+          {teams.map(tm=>(<button key={tm.id} onClick={()=>{setTid(tm.id);setStep(1);setFocusSkill(null);setSelPid(null);setSelSkills([]);setTcManual(false);setManualInd(null);}} style={{padding:"7px 13px",borderRadius:99,border:`1.5px solid ${tid===tm.id?t.p:"#e2e8f0"}`,background:tid===tm.id?t.p:"#fff",color:tid===tm.id?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{tm.name}</button>))}
         </div>
       )}
       <div style={{display:"flex",alignItems:"flex-start",marginBottom:16}}>
@@ -7120,7 +7120,7 @@ function CashbookTab({ data, myTids, save, fire, cl }){
         </div>
         {withPlayer&&<select value={player} onChange={e=>setPlayer(e.target.value)} style={{...inp,marginBottom:8}}>
           <option value="">{kind==="strafe"?"Spieler (wer zahlt)":"Spieler (optional)"}</option>
-          {players.map(n=><option key={n} value={n}>{n}</option>)}
+          {players.map((n,i)=><option key={i} value={n}>{n}</option>)}
         </select>}
         <input value={note} onChange={e=>setNote(e.target.value)} placeholder={kind==="strafe"?"Grund (z.B. zu spät)":"Notiz (optional)"} style={{...inp,marginBottom:10}}/>
         <button onClick={add} style={{width:"100%",padding:"11px",borderRadius:11,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>+ Buchung speichern</button>
@@ -7128,7 +7128,7 @@ function CashbookTab({ data, myTids, save, fire, cl }){
       {fineList.length>0&&<div style={{background:"#fff",border:"1.5px solid #fed7aa",borderRadius:14,padding:"12px 14px",marginBottom:14}}>
         <div style={{fontWeight:800,fontSize:13,color:"#9a3412",marginBottom:8}}>Strafen je Spieler</div>
         <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-          {fineList.map(([n,sum])=>(<span key={n} style={{background:"#fff7ed",border:"1px solid #fed7aa",borderRadius:99,padding:"4px 11px",fontSize:12.5,fontWeight:700,color:"#9a3412"}}>{n}: {eur(sum)}</span>))}
+          {fineList.map(([n,sum],i)=>(<span key={i} style={{background:"#fff7ed",border:"1px solid #fed7aa",borderRadius:99,padding:"4px 11px",fontSize:12.5,fontWeight:700,color:"#9a3412"}}>{n}: {eur(sum)}</span>))}
         </div>
       </div>}
       <div style={{display:"flex",flexDirection:"column",gap:7}}>
@@ -30273,7 +30273,7 @@ function StaffingBoard({ ev, team, session, isHelper, onPatch, fire, onRequestHe
       )}
       {isHelper&&(myOffer
         ? <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <span style={{flex:1,fontSize:12.5,fontWeight:700,color:slotsFree<0||confirmed.some(o=>o.id===myId)?"#15803d":"#b45309"}}>{confirmed.some(o=>o.id===myId)?"✓ Du leitest mit":"⏳ Du stehst auf der Warteliste"}</span>
+            <span style={{flex:1,fontSize:12.5,fontWeight:700,color:confirmed.some(o=>o.id===myId)?"#15803d":"#b45309"}}>{confirmed.some(o=>o.id===myId)?"✓ Du leitest mit":"⏳ Du stehst auf der Warteliste"}</span>
             <button onClick={leave} style={{padding:"8px 13px",borderRadius:10,border:"1.5px solid #e2e8f0",background:"#fff",color:"#dc2626",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Zurückziehen</button>
           </div>
         : <button onClick={join} style={{width:"100%",padding:"11px",borderRadius:11,border:"none",background:slotsFree>0?"#16a34a":"#64748b",color:"#fff",fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>{slotsFree>0?"🙋 Ich leite mit":"🙋 Auf die Warteliste"}</button>
