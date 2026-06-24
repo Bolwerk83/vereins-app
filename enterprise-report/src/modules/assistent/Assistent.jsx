@@ -62,6 +62,7 @@ export default function Assistent({ rolle, werte = {}, onGeh, onKpi }) {
   const [text, setText] = useState('')
   const [denkt, setDenkt] = useState(false)
   const [ansicht, setAnsicht] = useState('chat') // 'chat' | 'insights'
+  const [letzteKpiId, setLetzteKpiId] = useState(null) // Kontext für Folgefragen
   const endeRef = useRef(null)
   useEffect(() => { endeRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [verlauf, denkt])
 
@@ -71,10 +72,11 @@ export default function Assistent({ rolle, werte = {}, onGeh, onKpi }) {
     setText('')
     setVerlauf((v) => [...v, { von: 'user', text: q }])
     setDenkt(true)
-    const antwort = await beantworte(q, { werte, rolle, ladeHistorie })
+    const antwort = await beantworte(q, { werte, rolle, ladeHistorie, kontext: { letzteKpiId } })
     // Lernen: jede Frage mit Intent/Treffer protokollieren (lokal, KI-frei).
     protokolliere({ frage: q, intent: antwort.intent, kpis: antwort.kpis, rolle })
-    setVerlauf((v) => [...v, { von: 'bot', text: antwort.text, vorschlaege: antwort.vorschlaege, intent: antwort.intent, kpis: antwort.kpis }])
+    setVerlauf((v) => [...v, { von: 'bot', text: antwort.text, vorschlaege: antwort.vorschlaege, intent: antwort.intent, kpis: antwort.kpis, rueckfrage: antwort.rueckfrage }])
+    if (antwort.kpis?.[0]) setLetzteKpiId(antwort.kpis[0]) // Kontext für die nächste Folgefrage
     setDenkt(false)
   }
 
@@ -113,6 +115,17 @@ export default function Assistent({ rolle, werte = {}, onGeh, onKpi }) {
               }}>
                 {m.von === 'user' ? m.text : <MD text={m.text} />}
               </div>
+              {m.rueckfrage?.optionen?.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 7 }}>
+                  {m.rueckfrage.optionen.map((o) => (
+                    <button key={o.label} onClick={() => frag(o.frage)} title={o.empfohlen ? 'Empfehlung' : ''}
+                      style={{ fontSize: 12, padding: '5px 12px', borderRadius: 999, cursor: 'pointer', fontWeight: 700,
+                        border: `1px solid ${o.empfohlen ? 'var(--accent)' : 'var(--line)'}`,
+                        background: o.empfohlen ? 'var(--accent)' : 'var(--panel)', color: o.empfohlen ? '#fff' : 'var(--ink)' }}>
+                      {o.empfohlen ? '★ ' : ''}{o.label}</button>
+                  ))}
+                </div>
+              )}
               {m.von === 'bot' && (() => {
                 const ids = [...new Set(m.kpis || [])].filter((id) => KPI[id]).slice(0, 3)
                 if (!ids.length) return null

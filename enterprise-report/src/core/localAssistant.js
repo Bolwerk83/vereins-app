@@ -261,22 +261,58 @@ const TIPPS = [
   'Was wäre, wenn der Wareneinsatz auf 30 Mio € sinkt?',
 ]
 
+// --- Mehrdeutige Begriffe: bei Unklarheit gezielt zurückfragen (mit Empfehlung).
+//     Greift nur, wenn die beste Zuordnung selbst eine der Optionen ist und der
+//     Nutzer keine Variante ausdrücklich benannt hat.
+const MEHRDEUTIG = {
+  rendite:  { wort: /\brendite\b/,  empfohlen: 'roce',        frageText: 'Welche Rendite meinst du?',  optionen: ['roce', 'eigenkapitalrendite'] },
+  ergebnis: { wort: /\bergebnis\b/, empfohlen: 'ebit',        frageText: 'Welches Ergebnis meinst du?', optionen: ['ebit', 'betrieblichesErgebnis', 'handelsrechtlichesErgebnis'] },
+  kosten:   { wort: /\bkosten\b/,   empfohlen: 'gesamtkosten', frageText: 'Welche Kosten meinst du?',    optionen: ['gesamtkosten', 'personalkosten', 'gemeinkosten', 'herstellkosten'] },
+}
+function erkenneMehrdeutig(f, rolle, top) {
+  for (const m of Object.values(MEHRDEUTIG)) {
+    if (!m.wort.test(f)) continue
+    // Zeigt die beste Zuordnung auf eine ANDERE, eindeutige Kennzahl (z. B.
+    // „Kostendisziplin"), nicht zurückfragen. top===null ist erlaubt.
+    if (top && !m.optionen.includes(top.id)) continue
+    const opts = m.optionen.filter((id) => KPI[id] && (!rolle || darfKpi(rolle, KPI[id])))
+    if (opts.length < 2) continue
+    // Schon eindeutig benannt? (ein langes Namens-Token im Text) → keine Rückfrage.
+    if (opts.some((id) => norm(KPI[id].name).split(/\s+/).some((w) => w.length > 5 && f.includes(w)))) continue
+    return { frageText: m.frageText, optionen: opts, empfohlen: opts.includes(m.empfohlen) ? m.empfohlen : opts[0] }
+  }
+  return null
+}
+
+// --- Folgefrage-Erkennung: bezieht sich die Frage (ohne eigene Kennzahl) auf
+//     die zuletzt genannte? Dann mit dem Kontext textlich weiter beantworten.
+const FOLGE_MUSTER = /\b(und|auch|davon|daf(ü|ue)r|dazu|mehr|genauer|n(ä|ae)her|details|vorjahr|dann|trotzdem|warum|wieso|weshalb)\b/
+function istFolgefrage(f) {
+  return FOLGE_MUSTER.test(f) || I.ursache.test(f) || I.trend.test(f) || I.ziel.test(f) || I.empfehlung.test(f) || I.formel.test(f) || I.definition.test(f) || f.split(' ').length <= 3
+}
+
 /**
  * Beantwortet eine Frage lokal.
  * @param {string} frage
- * @param {object} ctx { werte, rolle, ladeHistorie? }
- * @returns {Promise<{intent,text,kpis,vorschlaege,quelle}>}
+ * @param {object} ctx { werte, rolle, ladeHistorie?, kontext? }
+ *   kontext: { letzteKpiId } — für textliche Folgefragen ("warum?", "und das Ziel?").
+ * @returns {Promise<{intent,text,kpis,vorschlaege,rueckfrage,quelle}>}
  */
-export async function beantworte(frage, { werte = {}, rolle = null, ladeHistorie = null } = {}) {
+export async function beantworte(frage, { werte = {}, rolle = null, ladeHistorie = null, kontext = null } = {}) {
   const f = norm(frage)
-  const out = (intent, text, kpis = [], vorschlaege = []) => ({ intent, text, kpis: kpis.map((k) => k.id || k), vorschlaege, quelle: 'lokal' })
+  const out = (intent, text, kpis = [], vorschlaege = [], rueckfrage = null) => ({ intent, text, kpis: kpis.map((k) => k.id || k), vorschlaege, rueckfrage, quelle: 'lokal' })
   if (!f) return out('leer', 'Stell mir einfach eine Frage zu deinen Kennzahlen — z. B. „Wie hoch ist der Umsatz?".', [], TIPPS)
 
   if (I.begruessung.test(f) && f.length < 25) return out('begruessung', 'Hallo! Ich bin dein lokaler Kennzahlen-Assistent — komplett offline, ohne KI-Cloud. Frag mich nach Werten, Definitionen, Zielen, Trends oder Empfehlungen.', [], TIPPS)
   if (I.hilfe.test(f)) return out('hilfe', 'Ich beantworte Fragen zu deinen Kennzahlen direkt aus den echten Zahlen — ohne KI, ohne Datenweitergabe. Ich kann u. a.: **Werte** abrufen, **Begriffe erklären**, **Ziele** vergleichen, sagen **was rot ist**, **Trends** zeigen, **Ursachen** eingrenzen und **Maßnahmen** vorschlagen.', [], TIPPS)
 
   const kpis = findeKpis(f, rolle, 3)
-  const top = kpis[0]
+  let top = kpis[0]
+  // Folgefrage ohne eigene Kennzahl → die zuletzt genannte aus dem Kontext nehmen.
+  let ausKontext = false
+  if (!top && kontext?.letzteKpiId && KPI[kontext.letzteKpiId] && (!rolle || darfKpi(rolle, KPI[kontext.letzteKpiId])) && istFolgefrage(f)) {
+    top = KPI[kontext.letzteKpiId]; ausKontext = true
+  }
 
   // Gesamtlage
   if (I.lageGesamt.test(f)) {
@@ -372,6 +408,14 @@ export async function beantworte(frage, { werte = {}, rolle = null, ladeHistorie
     return out('vergleich', `Vergleich:\n\n• ${sa}\n\n• ${sb}`, [a, b], [`Warum ${a.name}?`, `Was tun für ${b.name}?`])
   }
 
+  // Rückfrage bei Mehrdeutigkeit (mit Empfehlung) — vor der Kennzahl-Auflösung.
+  const ambig = erkenneMehrdeutig(f, rolle, top)
+  if (ambig) {
+    const optionen = ambig.optionen.map((id) => ({ label: KPI[id].name, frage: `Wie hoch ist ${KPI[id].name}?`, empfohlen: id === ambig.empfohlen }))
+    const empfName = KPI[ambig.empfohlen].name
+    return out('rueckfrage', `Dazu habe ich mehrere Kennzahlen. ${ambig.frageText}\n\n_Empfehlung: **${empfName}** — die gebräuchlichste Lesart._`, [], [], { frageText: ambig.frageText, optionen })
+  }
+
   // Ab hier brauchen wir eine konkrete Kennzahl
   if (!top) {
     const cl = clusterKpis(f, rolle)
@@ -416,8 +460,9 @@ export async function beantworte(frage, { werte = {}, rolle = null, ladeHistorie
     }
   }
 
-  // Default: Wert
-  return out('wert', wertSatz(top, werte), [top], [`Ziel von ${top.name}?`, `Trend von ${top.name}?`, `Was tun für ${top.name}?`])
+  // Default: Wert (bei Folgefragen den Bezug benennen)
+  const prefix = ausKontext ? `Bezogen auf **${top.name}**: ` : ''
+  return out('wert', prefix + wertSatz(top, werte), [top], [`Ziel von ${top.name}?`, `Trend von ${top.name}?`, `Was tun für ${top.name}?`])
 }
 
 export const ASSISTENT_TIPPS = TIPPS

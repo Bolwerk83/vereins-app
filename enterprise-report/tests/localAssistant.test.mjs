@@ -129,3 +129,45 @@ test('Gelernte Begriffe treffen die richtige Kennzahl', () => {
   assert.equal(treffer('Wie ist das Zahlungsziel der Kunden?'), 'dso')
   assert.equal(treffer('Wie ist der Forecast?'), 'umsatzprognose')
 })
+
+// --- Rückfrage bei Mehrdeutigkeit (mit Empfehlung) ------------------------
+test('Mehrdeutige Frage erzeugt Rückfrage mit empfohlener Option', async () => {
+  const a = await beantworte('Wie ist die Rendite?', { werte })
+  assert.equal(a.intent, 'rueckfrage')
+  assert.ok(a.rueckfrage && a.rueckfrage.optionen.length >= 2)
+  const empf = a.rueckfrage.optionen.filter((o) => o.empfohlen)
+  assert.equal(empf.length, 1)            // genau eine Empfehlung
+  assert.equal(empf[0].label, 'ROCE')     // ROCE als gebräuchlichste Rendite
+})
+
+test('Eindeutig benannte Variante löst KEINE Rückfrage aus', async () => {
+  const a = await beantworte('Wie hoch ist die Eigenkapitalrendite?', { werte })
+  assert.notEqual(a.intent, 'rueckfrage')
+})
+
+test('„Welche Kosten" fragt zurück, „Personalkosten" nicht', async () => {
+  const ambig = await beantworte('Wie hoch sind die Kosten?', { werte })
+  assert.equal(ambig.intent, 'rueckfrage')
+  const klar = await beantworte('Wie hoch sind die Personalkosten?', { werte })
+  assert.notEqual(klar.intent, 'rueckfrage')
+})
+
+// --- Kontext: Folgefragen ohne eigene Kennzahl ----------------------------
+test('Folgefrage „warum?" bezieht sich auf die letzte Kennzahl', async () => {
+  const a = await beantworte('Warum?', { werte, kontext: { letzteKpiId: 'dso' } })
+  assert.equal(a.intent, 'ursache')
+  assert.ok(a.kpis.length > 0)
+})
+
+test('Folgefrage „und das Ziel?" nutzt den Kontext', async () => {
+  const a = await beantworte('Und das Ziel?', { werte, kontext: { letzteKpiId: 'nettoumsatz' } })
+  assert.equal(a.intent, 'ziel')
+  assert.ok(a.text.toLowerCase().includes('nettoumsatz') || a.kpis.includes('nettoumsatz'))
+})
+
+test('Kontext steuert die Auflösung: „Warum?" nur mit Kontext auf die KPI bezogen', async () => {
+  const mit = await beantworte('Warum?', { werte, kontext: { letzteKpiId: 'dso' } })
+  const ohne = await beantworte('Warum?', { werte })
+  assert.ok(mit.kpis.includes('dso'))   // Kontext liefert die Kennzahl
+  assert.ok(!ohne.kpis.includes('dso')) // ohne Kontext keine konkrete Kennzahl
+})
