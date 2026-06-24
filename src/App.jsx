@@ -19960,7 +19960,9 @@ function PollAttend({ev,user,onVote,cl,session=null,save=()=>{},data=null,fire=(
               </button>
             ))}
           </div>
-          <button onClick={()=>voteNo("")} style={{fontSize:12,color:"#94a3b8",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit"}}>Ohne Angabe</button>
+          {dlPassed
+            ? <div style={{fontSize:11.5,color:"#991b1b",fontWeight:600}}>Nach Ablauf der Frist ist eine Absage nur mit Grund möglich.</div>
+            : <button onClick={()=>voteNo("")} style={{fontSize:12,color:"#94a3b8",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit"}}>Ohne Angabe</button>}
         </div>
       )}
       {/* Verspätungs-Übersicht für Trainer */}
@@ -28470,6 +28472,14 @@ function eventWarnings(ev, tod){
   if((ev.pt==="att"||!ev.pt) && days<=4 && ev.sollPlayers>0 && yes<ev.sollPlayers){
     w.push({label:`nur ${yes}/${ev.sollPlayers} Zusagen`,col:"#dc2626",bg:"#fee2e2"});
   }
+  // Frist abgelaufen, aber noch nicht alle (Soll) abgestimmt -> Trainer soll erinnern.
+  if((ev.pt==="att"||!ev.pt) && ev.deadline && isDeadlinePassed(ev) && ev.sollPlayers>0){
+    const votedN=Object.keys(ev.votes||{}).length;
+    if(votedN<ev.sollPlayers) w.push({label:"Frist abgelaufen – erinnern",col:"#dc2626",bg:"#fee2e2"});
+  }
+  // Nach Ablauf der Frist hat sich noch jemand ab-/angemeldet -> Trainer informieren.
+  { const lateN=(ev.lateCancellations||[]).length + Object.values(ev.votes||{}).filter(v=>typeof v==="object"&&v&&v.lateChange&&v.val!=="no").length;
+    if(lateN>0) w.push({label:`Nach Frist: ${lateN} Änderung${lateN>1?"en":""}`,col:"#b45309",bg:"#ffedd5"}); }
   if(ev.type==="training" && days<=2){
     const size=yes||ev.sollPlayers||7; const target=ev.staffTarget||(size>10?3:2);
     const tc=Object.keys(ev.trainerPresence||{}).length;
@@ -30729,6 +30739,8 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const vote=(eid,pt,val)=>{
     let lateCancel = null;
     let blocked = false;
+    let needReason = false;
+    let lateRejoin = false;
     const next={...data,events:data.events.map(e=>{
       if(e.id!==eid)return e;
       if(pt==="carpool")return {...e, votes:{...(e.votes||{}), [user]: val}};
@@ -30742,40 +30754,46 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       if(pt==="att"){
         const locked = isVotingLocked(e) && !isEventPast(e);
         const newVal = (typeof val==="object"&&val!==null) ? val.val : val;
+        const reason = (typeof val==="object"&&val!==null) ? String(val.reason||"") : "";
         const prev   = (e.votes||{})[user];
         const prevVal= (typeof prev==="object"&&prev!==null) ? prev.val : prev;
+        const nv={...e.votes}; const ts=new Date().toISOString();
         if (locked) {
-          if (newVal !== "no") {
-            blocked = true;
-            return e;
+          if (newVal==="no") {
+            if(!reason.trim()){ needReason=true; return e; }           // Begründung Pflicht
+            if (prevVal==="yes"||prevVal==="maybe"||prevVal==="late") lateCancel = { user, prev:prevVal, ts, reason:reason.trim() };
+            nv[user] = { val:"no", ts, reason:reason.trim(), lateChange:true };
+          } else {
+            // späte (Wieder-)Anmeldung erlauben und als Änderung markieren (Trainer wird informiert)
+            lateRejoin = true;
+            nv[user] = { val:newVal, ts, lateChange:true };
           }
-          if (prevVal==="yes"||prevVal==="maybe"||prevVal==="late") {
-            lateCancel = { user, prev: prevVal, ts: new Date().toISOString(),
-              reason: (typeof val==="object"&&val!==null) ? (val.reason||"") : "" };
-          }
+        } else {
+          const isObj = typeof val==="object" && val!==null;
+          const cur = nv[user];
+          const curVal = (typeof cur==="object"&&cur!==null) ? cur.val : cur;
+          const curHasExtra = typeof cur==="object"&&cur!==null&&(cur.late||cur.lateChange||cur.reason);
+          if(!isObj && curVal===val && !curHasExtra) delete nv[user];   // gleiche einfache Auswahl -> abwählen
+          else if(isObj) nv[user] = {...val, ts};
+          else nv[user] = {val, ts};
         }
+        const updated = {...e,votes:nv};
+        if (lateCancel) updated.lateCancellations = [...(e.lateCancellations||[]), lateCancel];
+        return updated;
       }
-      const nv={...e.votes};const ts=new Date().toISOString();
-      if(pt==="att"){
-        const isObj = typeof val==="object" && val!==null;
-        const cur = nv[user];
-        const curVal = (typeof cur==="object"&&cur!==null) ? cur.val : cur;
-        const curHasExtra = typeof cur==="object"&&cur!==null&&(cur.late||cur.reason);
-        if(!isObj && curVal===val && !curHasExtra) delete nv[user];   // gleiche einfache Auswahl -> abwählen
-        else if(isObj) nv[user] = {...val, ts};                       // Objekt (z.B. {val:'yes',late:30}) unverändert speichern
-        else nv[user] = {val, ts};                                    // einfache Auswahl
-      }
-      else nv[user]=val;
-      const updated = {...e,votes:nv};
-      if (lateCancel) updated.lateCancellations = [...(e.lateCancellations||[]), lateCancel];
-      return updated;
+      const nvX={...e.votes}; nvX[user]=val;
+      return {...e,votes:nvX};
     })};
+    if (needReason) {
+      window.alert("Absage nach Ablauf der Frist ist nur mit kurzer Begründung möglich. Bitte öffne den Termin und gib einen Grund an.");
+      return;
+    }
     if (blocked) {
       window.alert("Anmeldung ist geschlossen (24 h vor Termin).\nDu kannst nur noch absagen oder eine Nachfrage stellen.");
       return;
     }
     onSave(next);
-    fire(lateCancel ? "Späte Absage erfasst" : "Gespeichert *");
+    fire(lateCancel ? "Späte Absage erfasst – Trainer wird informiert" : lateRejoin ? "Späte Anmeldung erfasst" : "Gespeichert *");
   };
 
   return (
