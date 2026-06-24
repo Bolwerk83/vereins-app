@@ -245,12 +245,15 @@ export const KAUSAL = [
     erklaerung: 'Bessere Ersatzteilverfügbarkeit verkürzt die Reparaturdurchlaufzeit.',
   },
   {
-    id: 'serviceumsatz', von: ['serviceanteil', 'ersatzteilverfuegbarkeit', 'reparaturdurchlaufzeit'],
+    // serviceanteil bewusst NICHT als Treiber: er ist eine abgeleitete Quote
+    // (serviceumsatz/nettoumsatz) und nettoumsatz hängt seinerseits von
+    // serviceumsatz ab — als Treiber entstünde ein Rückkopplungszyklus, der
+    // jede umsatzseitige Simulation verfälscht. Nur echte Roh-Treiber.
+    id: 'serviceumsatz', von: ['ersatzteilverfuegbarkeit', 'reparaturdurchlaufzeit'],
     f: (s, b) => b.serviceumsatz
-      + d(s, b, 'serviceanteil') / 100 * (b.nettoumsatz || 0)
       + d(s, b, 'ersatzteilverfuegbarkeit') / 100 * (b.serviceumsatz || 0) * 0.5
       - d(s, b, 'reparaturdurchlaufzeit') * 0.03,
-    erklaerung: 'Serviceanteil, Ersatzteilverfügbarkeit und kurze Reparaturzeiten treiben den Serviceumsatz.',
+    erklaerung: 'Ersatzteilverfügbarkeit und kurze Reparaturzeiten treiben den Serviceumsatz.',
   },
 
   // ===================== RISIKO / TREASURY / RÜCKSTELLUNGEN ==============

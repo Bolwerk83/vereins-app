@@ -8,11 +8,11 @@ INSERT INTO dimkanal (kanalkey, kanalid, kanal, kanalgruppe) VALUES
   (5, 'email', 'Newsletter', 'email');
 
 INSERT INTO dimkonditionsart (konditionsartkey, konditionsartid, bezeichnung, istsonderfall, rabattprozent) VALUES
-  (1, 'normal', 'Normalverkauf', 0, 0),
-  (2, 'sponsoring', 'Sponsoring (100%)', 1, 100),
-  (3, 'aktion', 'Aktion/Rabatt (>=50%)', 1, 50),
-  (4, 'muster', 'Muster/Freiware & Garantie', 1, 100),
-  (5, 'personal', 'Personalkauf & Intern/IC', 1, 30);
+  (1, 'normal', 'Normalverkauf', FALSE, 0),
+  (2, 'sponsoring', 'Sponsoring (100%)', TRUE, 100),
+  (3, 'aktion', 'Aktion/Rabatt (>=50%)', TRUE, 50),
+  (4, 'muster', 'Muster/Freiware & Garantie', TRUE, 100),
+  (5, 'personal', 'Personalkauf & Intern/IC', TRUE, 30);
 
 INSERT INTO dimwarengruppe (warengruppekey, warengruppeid, bezeichnung, bereich) VALUES
   (1, 'ebike', 'E-Bikes', 'raeder'),

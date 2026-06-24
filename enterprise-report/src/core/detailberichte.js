@@ -50,7 +50,7 @@ export function pruefeArtikel(a) {
 }
 
 const SCHWERE_RANG = { fehler: 3, warnung: 2, hinweis: 1 }
-const maxSchwere = (befunde) => befunde.reduce((m, x) => (SCHWERE_RANG[x.schwere] > SCHWERE_RANG[m] ? x.schwere : m), null)
+const maxSchwere = (befunde) => befunde.reduce((m, x) => (SCHWERE_RANG[x.schwere] > (SCHWERE_RANG[m] || 0) ? x.schwere : m), null)
 
 /** Artikelliste mit Befunden + Summen; optional gefiltert/nur Auffällige. */
 export function artikelliste({ suche = '', nurAuffaellig = false } = {}) {

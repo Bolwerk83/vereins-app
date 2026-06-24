@@ -73,7 +73,7 @@ export function letzterIstMonat(serieId = 'gesamt') {
 const summe = (arr, bis) => arr.slice(0, bis + 1).reduce((n, x) => n + x, 0)
 
 /** YTD-Kennzahlen bis einschließlich `bisMonat`. */
-export function kennzahlen(serieId, bisMonat = letzterIstMonat()) {
+export function kennzahlen(serieId, bisMonat = letzterIstMonat(serieId)) {
   const s = SERIEN[serieId]
   const ist = summe(s.ist, bisMonat), plan = summe(s.plan, bisMonat), vj = summe(s.vj, bisMonat)
   return { ist, plan, vj, abw: ist - plan, abwPct: plan ? (ist - plan) / plan * 100 : 0, abwVj: ist - vj, abwVjPct: vj ? (ist - vj) / vj * 100 : 0 }

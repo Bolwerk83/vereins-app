@@ -77,7 +77,7 @@ function FlussTab() {
         {[['Heute', l.heute, 'var(--ink)'], [`Voraussichtlich ${STICHTAG_LABEL}`, l.stichtag, 'var(--accent)'], ['Veränderung bis Stichtag', l.delta, l.delta >= 0 ? 'var(--amp-g)' : 'var(--amp-r)']].map(([t, v, c]) => (
           <div key={t} style={{ ...card, padding: '12px 14px', flex: 1, minWidth: 170, borderTop: `3px solid ${c}` }}>
             <div style={{ ...cap, marginBottom: 3 }}>{t}</div>
-            <div className="mono" style={{ fontSize: 19, fontWeight: 800, color: c }}>{v >= 0 || t.startsWith('Ver') ? (t.startsWith('Ver') && v >= 0 ? '+' : '') : ''}{fmt(v)}</div>
+            <div className="mono" style={{ fontSize: 19, fontWeight: 800, color: c }}>{t.startsWith('Ver') && v >= 0 ? '+' : ''}{fmt(v)}</div>
           </div>
         ))}
       </div>

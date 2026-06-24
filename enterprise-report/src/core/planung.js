@@ -290,7 +290,9 @@ export function vergleiche(planIds = []) {
 }
 
 const MONNAMEN = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']
-const isoMinusTage = (datum, tage) => { const d = new Date(datum); d.setDate(d.getDate() - tage); return d.toISOString().slice(0, 10) }
+// UTC-deterministisch (wie beschaffung.js): setDate/getDate würden in nicht-UTC-
+// Zeitzonen einen Tag verschieben, daher direkt über die Zeitachse rechnen.
+const isoMinusTage = (datum, tage) => new Date(new Date(datum + 'T00:00:00Z').getTime() - tage * 86400000).toISOString().slice(0, 10)
 
 /**
  * Termin-/Beschaffungssicht: aus der saisonalen Planmenge je Produkt den

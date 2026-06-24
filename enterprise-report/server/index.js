@@ -238,7 +238,10 @@ app.get('/api/hauptbuch/:periode', async (req, res) => {
 // --- Transportwesen (dev/test/prod) --------------------------------------
 app.get('/api/stage', (_req, res) => res.json({ aktuell: AKTUELLE_STAGE }))
 app.get('/api/transport', (_req, res) => res.json(ladeTransporte()))
-app.post('/api/transport', (req, res) => res.json(speichereBundle(req.body)))
+app.post('/api/transport', (req, res) => {
+  try { res.json(speichereBundle(req.body)) }
+  catch (e) { res.status(400).json({ error: String(e.message || e) }) }
+})
 app.post('/api/transport/:id/promote', (req, res) => {
   const b = ladeBundle(req.params.id)
   if (!b) return res.status(404).json({ error: 'Transportauftrag nicht gefunden' })

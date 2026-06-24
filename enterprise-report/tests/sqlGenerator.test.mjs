@@ -55,3 +55,22 @@ test('skriptPaket liefert alle Teile', () => {
 test('Faktentabellen haben Audit-Spalten für Delta (AktualisiertAm)', () => {
   for (const f of FAKTEN) assert.ok(f.spalten.some((c) => c.n === 'AktualisiertAm'), `${f.name} ohne Wasserzeichen`)
 })
+
+test('Alle Tabellen haben Versions-/Bearbeitungsspalten (optimistisches Sperren)', () => {
+  for (const t of TABELLEN) for (const sp of ['RowVersion', 'GeaendertVon', 'GeaendertAm'])
+    assert.ok(t.spalten.some((c) => c.n === sp), `${t.name} ohne ${sp}`)
+})
+
+test('Bug2: Postgres-Seed rendert Boolean als TRUE/FALSE, MSSQL als 0/1', () => {
+  const pg = seed('postgres'), ms = seed('mssql')
+  // DimKonditionsart.IstSonderfall ist boolean — Postgres castet 0/1 NICHT zu boolean.
+  assert.ok(/'Normalverkauf', FALSE/.test(pg) && /'Sponsoring \(100%\)', TRUE/.test(pg), 'Postgres-Boolean nicht TRUE/FALSE')
+  assert.ok(/'Sponsoring \(100%\)', 1,/.test(ms), 'MSSQL-bit muss 0/1 bleiben')
+})
+
+test('Bug1: nullbarer Geschäftsschlüssel wird NULL-sicher gemergt', () => {
+  // FactKPIWert.Dimension ist biz + nullable.
+  const ms = deltaAlle('mssql'), pg = ddl('postgres')
+  assert.ok(/T\.Dimension IS NULL AND S\.Dimension IS NULL/.test(ms), 'MSSQL-MERGE nicht NULL-sicher')
+  assert.ok(/ux_factkpiwert_biz[^;]*NULLS NOT DISTINCT/.test(pg), 'Postgres-Index ohne NULLS NOT DISTINCT')
+})

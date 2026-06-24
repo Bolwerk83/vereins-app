@@ -44,7 +44,7 @@ export default function Plankalender() {
             {MONATSNAME.map((n, i) => <option key={i} value={i}>{n} 2026</option>)}
           </select>
           <label style={{ fontSize: 12.5, color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 6 }}>Monatsplan
-            <input type="number" value={plan} onChange={(e) => setPlan(e.target.value)} step="10000" style={{ width: 110, padding: '6px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', font: 'inherit', fontSize: 13 }} /> €
+            <input type="number" value={plan} onChange={(e) => setPlan(Number(e.target.value) || 0)} step="10000" style={{ width: 110, padding: '6px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', font: 'inherit', fontSize: 13 }} /> €
           </label>
         </div>
         <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 8 }}>{kal.beschreibung}</div>

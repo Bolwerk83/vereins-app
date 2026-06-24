@@ -100,7 +100,9 @@ export default function Beschaffung() {
           <div style={{ fontWeight: 700, color: '#92400e', marginBottom: 6 }}>⚠ Fehlende Werte am Artikel „{t.artikel.name}" — bitte am Artikel/Lieferanten erfassen:</div>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             {['lieferzeitTage', 'lieferzeitMin', 'lieferzeitMax'].map((key) => (
-              <label key={key} style={{ fontSize: 12, color: '#92400e' }}>{key}<br />
+              // key artikelspezifisch: sonst behält das wiederverwendete DOM-Element
+              // beim Artikelwechsel den alten defaultValue und onBlur speichert ihn falsch.
+              <label key={t.artikel.id + ':' + key} style={{ fontSize: 12, color: '#92400e' }}>{key}<br />
                 <input type="number" defaultValue={t.artikel[key] ?? ''} onBlur={(e) => setWert(t.artikel.id, key, e.target.value)} placeholder="Tage" style={{ ...feld, marginTop: 2, width: 100 }} /></label>
             ))}
           </div>

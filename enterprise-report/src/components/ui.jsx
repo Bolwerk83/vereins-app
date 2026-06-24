@@ -478,11 +478,14 @@ export function DetailTabelle({ daten, onZeileKlick, spaltenWahl = false }) {
 
 /** Mini-Sparkline für die Historisierung (Ebene 5). */
 export function Sparkline({ reihe, richtung = 'hoch_gut', w = 220, h = 56 }) {
-  const werte = reihe.map((r) => r.wert).filter((v) => v != null)
+  // Nur Punkte mit Wert: sonst rechnet (null - min) durch JS-Coercion zu (0 - min)
+  // und der Punkt springt aus dem Diagramm (falsche Trendlinie bei Lücken).
+  const punkte = reihe.filter((r) => r.wert != null)
+  const werte = punkte.map((r) => r.wert)
   if (werte.length < 2) return <div style={{ color: 'var(--muted)' }}>Zu wenig Historie.</div>
   const min = Math.min(...werte), max = Math.max(...werte), span = max - min || 1
-  const pts = reihe.map((r, i) => {
-    const x = (i / (reihe.length - 1)) * (w - 8) + 4
+  const pts = punkte.map((r, i) => {
+    const x = (i / (punkte.length - 1)) * (w - 8) + 4
     const y = h - 4 - ((r.wert - min) / span) * (h - 12)
     return [x, y]
   })

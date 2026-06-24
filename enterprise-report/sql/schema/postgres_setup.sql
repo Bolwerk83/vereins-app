@@ -422,4 +422,4 @@ ALTER TABLE factplan ADD CONSTRAINT fk_factplan_kpikey FOREIGN KEY (kpikey) REFE
 ALTER TABLE factplan ADD CONSTRAINT fk_factplan_standortkey FOREIGN KEY (standortkey) REFERENCES dimstandort(standortkey);
 CREATE UNIQUE INDEX ux_factplan_biz ON factplan (kpikey, jahr, monat);
 ALTER TABLE factkpiwert ADD CONSTRAINT fk_factkpiwert_kpikey FOREIGN KEY (kpikey) REFERENCES dimkpi(kpikey);
-CREATE UNIQUE INDEX ux_factkpiwert_biz ON factkpiwert (kpikey, periode, dimension);
+CREATE UNIQUE INDEX ux_factkpiwert_biz ON factkpiwert (kpikey, periode, dimension) NULLS NOT DISTINCT;

@@ -65,6 +65,6 @@ WHEN NOT MATCHED THEN INSERT (PlanKey, KPIKey, Jahr, Monat, StandortKey, Kalende
 
 -- Delta FactKPIWert (MSSQL): Staging 'FactKPIWert_stg' laden (nur AktualisiertAm > @SeitAktualisiert), dann MERGE:
 MERGE FactKPIWert AS T
-USING FactKPIWert_stg AS S ON (T.KPIKey = S.KPIKey AND T.Periode = S.Periode AND T.Dimension = S.Dimension)
+USING FactKPIWert_stg AS S ON (T.KPIKey = S.KPIKey AND T.Periode = S.Periode AND (T.Dimension = S.Dimension OR (T.Dimension IS NULL AND S.Dimension IS NULL)))
 WHEN MATCHED THEN UPDATE SET T.Wert = S.Wert, T.QuelleSystem = S.QuelleSystem, T.LadeBatchKey = S.LadeBatchKey, T.AktualisiertAm = S.AktualisiertAm, T.RowVersion = S.RowVersion, T.GeaendertVon = S.GeaendertVon, T.GeaendertAm = S.GeaendertAm
 WHEN NOT MATCHED THEN INSERT (KPIWertKey, KPIKey, Periode, Dimension, Wert, QuelleSystem, LadeBatchKey, AktualisiertAm, RowVersion, GeaendertVon, GeaendertAm) VALUES (S.KPIWertKey, S.KPIKey, S.Periode, S.Dimension, S.Wert, S.QuelleSystem, S.LadeBatchKey, S.AktualisiertAm, S.RowVersion, S.GeaendertVon, S.GeaendertAm);

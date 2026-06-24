@@ -44,8 +44,14 @@ function constraints(tab, d) {
     const [zt, zc] = c.fk.split('.')
     out.push(`ALTER TABLE ${q(tab.name, d)} ADD CONSTRAINT ${q('FK_' + tab.name + '_' + c.n, d)} FOREIGN KEY (${q(c.n, d)}) REFERENCES ${q(zt, d)}(${q(zc, d)});`)
   }
-  const biz = tab.spalten.filter((x) => x.biz).map((x) => q(x.n, d))
-  if (biz.length) out.push(`CREATE UNIQUE INDEX ${q('UX_' + tab.name + '_BIZ', d)} ON ${q(tab.name, d)} (${biz.join(', ')});`)
+  const bizCols = tab.spalten.filter((x) => x.biz)
+  if (bizCols.length) {
+    const cols = bizCols.map((x) => q(x.n, d)).join(', ')
+    // Postgres 15+: NULLS NOT DISTINCT, damit ON CONFLICT auch bei nullbarem
+    // Geschäftsschlüssel (z. B. FactKPIWert.Dimension) greift statt zu duplizieren.
+    const nnd = d === 'postgres' && bizCols.some((x) => x.null) ? ' NULLS NOT DISTINCT' : ''
+    out.push(`CREATE UNIQUE INDEX ${q('UX_' + tab.name + '_BIZ', d)} ON ${q(tab.name, d)} (${cols})${nnd};`)
+  }
   return out.join('\n')
 }
 
@@ -80,11 +86,11 @@ const SEED = {
     { KanalKey: 5, KanalId: 'email', Kanal: 'Newsletter', Kanalgruppe: 'email' },
   ],
   DimKonditionsart: [
-    { KonditionsartKey: 1, KonditionsartId: 'normal', Bezeichnung: 'Normalverkauf', IstSonderfall: 0, RabattProzent: 0 },
-    { KonditionsartKey: 2, KonditionsartId: 'sponsoring', Bezeichnung: 'Sponsoring (100%)', IstSonderfall: 1, RabattProzent: 100 },
-    { KonditionsartKey: 3, KonditionsartId: 'aktion', Bezeichnung: 'Aktion/Rabatt (>=50%)', IstSonderfall: 1, RabattProzent: 50 },
-    { KonditionsartKey: 4, KonditionsartId: 'muster', Bezeichnung: 'Muster/Freiware & Garantie', IstSonderfall: 1, RabattProzent: 100 },
-    { KonditionsartKey: 5, KonditionsartId: 'personal', Bezeichnung: 'Personalkauf & Intern/IC', IstSonderfall: 1, RabattProzent: 30 },
+    { KonditionsartKey: 1, KonditionsartId: 'normal', Bezeichnung: 'Normalverkauf', IstSonderfall: false, RabattProzent: 0 },
+    { KonditionsartKey: 2, KonditionsartId: 'sponsoring', Bezeichnung: 'Sponsoring (100%)', IstSonderfall: true, RabattProzent: 100 },
+    { KonditionsartKey: 3, KonditionsartId: 'aktion', Bezeichnung: 'Aktion/Rabatt (>=50%)', IstSonderfall: true, RabattProzent: 50 },
+    { KonditionsartKey: 4, KonditionsartId: 'muster', Bezeichnung: 'Muster/Freiware & Garantie', IstSonderfall: true, RabattProzent: 100 },
+    { KonditionsartKey: 5, KonditionsartId: 'personal', Bezeichnung: 'Personalkauf & Intern/IC', IstSonderfall: true, RabattProzent: 30 },
   ],
   DimWarengruppe: [
     { WarengruppeKey: 1, WarengruppeId: 'ebike', Bezeichnung: 'E-Bikes', Bereich: 'raeder' },
@@ -99,8 +105,10 @@ const SEED = {
   ],
 }
 
-const sqlWert = (v) => (v === null || v === undefined ? 'NULL' : typeof v === 'number' ? String(v) : `N'${String(v).replace(/'/g, "''")}'`)
-const sqlWertPg = (v) => (v === null || v === undefined ? 'NULL' : typeof v === 'number' ? String(v) : `'${String(v).replace(/'/g, "''")}'`)
+// MSSQL: bit erwartet 0/1. Postgres: boolean erwartet TRUE/FALSE (Integer 0/1
+// wird NICHT implizit gecastet → Seed-Fehler). Daher boolean dialektabhängig.
+const sqlWert = (v) => (v === null || v === undefined ? 'NULL' : typeof v === 'boolean' ? (v ? '1' : '0') : typeof v === 'number' ? String(v) : `N'${String(v).replace(/'/g, "''")}'`)
+const sqlWertPg = (v) => (v === null || v === undefined ? 'NULL' : typeof v === 'boolean' ? (v ? 'TRUE' : 'FALSE') : typeof v === 'number' ? String(v) : `'${String(v).replace(/'/g, "''")}'`)
 
 /** Seed-Inserts (Demo-Befüllung) für die Schlüssel-Dimensionen. */
 export function seed(dialekt = 'mssql') {
@@ -120,7 +128,8 @@ export function seed(dialekt = 'mssql') {
 export function deltaBeladung(faktName, dialekt = 'mssql') {
   const f = FAKTEN.find((x) => x.name === faktName)
   if (!f) return ''
-  const biz = f.spalten.filter((c) => c.biz).map((c) => c.n)
+  const bizCols = f.spalten.filter((c) => c.biz)
+  const biz = bizCols.map((c) => c.n)
   const mess = f.spalten.filter((c) => !c.biz && !c.pk).map((c) => c.n)
   const stg = (dialekt === 'postgres' ? f.name.toLowerCase() : f.name) + '_stg'
   if (!biz.length) return `-- ${f.name}: kein Geschäftsschlüssel definiert — Delta manuell.`
@@ -128,7 +137,9 @@ export function deltaBeladung(faktName, dialekt = 'mssql') {
     const set = mess.map((c) => `${c.toLowerCase()} = EXCLUDED.${c.toLowerCase()}`).join(', ')
     return `-- Delta ${f.name} (Postgres): Staging '${stg}' laden (nur AktualisiertAm > :seit), dann:\nINSERT INTO ${f.name.toLowerCase()} (${f.spalten.map((c) => c.n.toLowerCase()).join(', ')})\nSELECT ${f.spalten.map((c) => c.n.toLowerCase()).join(', ')} FROM ${stg}\nON CONFLICT (${biz.map((c) => c.toLowerCase()).join(', ')}) DO UPDATE SET ${set};`
   }
-  const on = biz.map((c) => `T.${c} = S.${c}`).join(' AND ')
+  // NULL-sicherer Vergleich für nullbare Geschäftsschlüssel: NULL = NULL ist in
+  // SQL UNKNOWN, sonst greift WHEN MATCHED nie und der MERGE bricht (Duplikat/Fehler).
+  const on = bizCols.map((c) => c.null ? `(T.${c.n} = S.${c.n} OR (T.${c.n} IS NULL AND S.${c.n} IS NULL))` : `T.${c.n} = S.${c.n}`).join(' AND ')
   const upd = mess.map((c) => `T.${c} = S.${c}`).join(', ')
   const ins = f.spalten.map((c) => c.n)
   return `-- Delta ${f.name} (MSSQL): Staging '${stg}' laden (nur AktualisiertAm > @SeitAktualisiert), dann MERGE:\nMERGE ${f.name} AS T\nUSING ${stg} AS S ON (${on})\nWHEN MATCHED THEN UPDATE SET ${upd}\nWHEN NOT MATCHED THEN INSERT (${ins.join(', ')}) VALUES (${ins.map((c) => 'S.' + c).join(', ')});`

@@ -209,7 +209,10 @@ function simuliere(werte, overrideId, neuerWert) {
 
 // Liest aus „… auf X", „… um X %", „… um X", „+/- X %" den Zielwert.
 function parseSzenario(frage, current) {
-  const m = frage.match(/(-?\d+(?:[.,]\d+)?)/)
+  // Zahl bevorzugt direkt nach dem Trigger-Wort (auf/um/von/plus/minus) lesen —
+  // sonst würden Ziffern in KPI-Namen (db1, co2, top3) als Zielwert verwechselt.
+  const m = frage.match(/\b(?:auf|um|von|plus|minus)\b\s*(-?\d+(?:[.,]\d+)?)/)
+    || frage.match(/(-?\d+(?:[.,]\d+)?)/)
   if (!m) return null
   const num = parseFloat(m[1].replace(',', '.'))
   const neg = /senk|sink|f(ä|ae)ll|reduzier|runter|weniger|minus|verring|niedriger|halbier/.test(frage)
@@ -241,7 +244,7 @@ const I = {
   wenn: /was w(ä|ae)re|was passiert,? wenn|angenommen|simulier|szenario|wenn\b.{0,40}\b(auf|um)\b.{0,14}\d|halbier|verdoppel/i,
   lageGesamt: /gesamtlage|wie (geht|l(ä|ae)uft) (es|das gesch(ä|ae)ft|der laden)|wie stehen wir|(ü|ue)berblick|gesamtbild|wie ist die lage|status gesamt|wie sieht.?s aus/i,
   listeRot: /\brot\b|kritisch|auff(ä|ae)llig|baustelle|sorgenkind|handlungsbedarf|\brisiken\b|wo (brennt|hakt|stehen wir schlecht|liegt das problem)/i,
-  listeGruen: /was l(ä|ae)uft gut|st(ä|ae)rken|welche.*(gr(ü|ue)n|gut)|wo sind wir gut|\bpositiv\b/i,
+  listeGruen: /was l(ä|ae)uft gut|st(ä|ae)rken|welche.*(gr(ü|ue)n|gut)|wo sind wir gut|\bgr(ü|ue)n\b|\bpositiv\b/i,
   trend: /trend|entwicklung|verlauf|(ü|ue)ber zeit|wie hat sich.*(entwickelt|ver(ä|ae)ndert)|steigt|sinkt|w(ä|ae)chst|r(ü|ue)ckl(ä|ae)ufig|historie/i,
   ursache: /warum|wieso|weshalb|ursach|woran liegt|grund (für|dafür)|was treibt|weswegen/i,
   empfehlung: /\b(was (tun|sollen|soll ich|machen|unternehmen)|ma(ß|ss)nahme|handlungsempfehlung|empfehl|gegensteuer)\b|\b(senke|senken|reduzier|verbesser|steiger|erh(ö|oe)h|optimier|abbau)\w*/i,
@@ -381,8 +384,9 @@ export async function beantworte(frage, { werte = {}, rolle = null, ladeHistorie
     return out('unbekannt', 'Das habe ich nicht sicher einer Kennzahl zugeordnet. Meintest du vielleicht eine davon — oder formuliere es etwas anders:', [], vor)
   }
 
-  // Definition
-  if (I.definition.test(f)) {
+  // Definition (aber nicht, wenn es eigentlich eine Ziel-Frage ist —
+  // „Was ist das Ziel bei X?" matcht beides; das spezifischere ziel gewinnt)
+  if (I.definition.test(f) && !I.ziel.test(f)) {
     return out('definition', `**${top.name}** (${top.bereich}): ${top.beschreibung}${top.ziel != null ? ` Zielwert: ${formatWert(top.ziel, top.einheit)}.` : ''}`, [top], [`Wie hoch ist ${top.name}?`, `Ziel von ${top.name}?`])
   }
   // Formel / Quelle

@@ -85,7 +85,7 @@ export function effekte(basis, sim, { fixiert = [], rolle = null, darfKpi = null
     if (Math.abs(delta) <= 1e-6) return null
     const aVor = amp(k, vor), aNach = amp(k, nach)
     const rel = Math.abs((nach - vor) / (vor || 1))
-    const strom = k.einheit === 'eur_mio' || k.einheit === 'stk' || k.einheit === 'menge'
+    const strom = k.einheit === 'eur_mio' || k.einheit === 'count' || k.einheit === 'tonnen' || k.einheit === 'kwh'
     return {
       id: k.id, name: k.name, einheit: k.einheit, ziel: k.ziel,
       vor, nach, delta, deltaPct: vor ? r2((nach - vor) / Math.abs(vor) * 100) : null,

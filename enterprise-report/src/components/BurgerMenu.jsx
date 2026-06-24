@@ -114,7 +114,7 @@ export default function BurgerMenu({ gruppen = [], onInfo }) {
                           {u.titel && <div className="mono" style={{ fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.05em', margin: '2px 4px 5px' }}>{u.titel}</div>}
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                             {[...u.eintraege].sort(sortRel).map((e) => (
-                              <Eintrag key={e.label} e={e} onNav={schliessen} fav={favSet.has(e.view)} onFav={onFav} onInfo={info} dim={alleAnzeigen && !rel(e)} locked={!rel(e)} />
+                              <Eintrag key={e.view || e.label} e={e} onNav={schliessen} fav={favSet.has(e.view)} onFav={onFav} onInfo={info} dim={alleAnzeigen && !rel(e)} locked={!rel(e)} />
                             ))}
                           </div>
                         </div>

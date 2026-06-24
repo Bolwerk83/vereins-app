@@ -24,7 +24,7 @@ export default function KnotenBewertung({ kpiIds, werte, rolle }) {
     Promise.all(sichtbar.map((id) => ladeHistorie(id).then((r) => [id, r])))
       .then((paare) => { if (!ab) setHist(Object.fromEntries(paare)) })
     return () => { ab = true }
-  }, [kpiIds.join(',')]) // eslint-disable-line
+  }, [sichtbar.join(',')]) // eslint-disable-line  (sichtbar hängt von Rolle ab — bei Rollenwechsel neu laden)
 
   const insights = sichtbar.map((id) => kpiInsight(id, werte[id], hist[id] || []))
   const bewertung = knotenBewertung(insights)

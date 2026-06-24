@@ -22,7 +22,9 @@ export const AUFTRAEGE = [
 export function plane(sortBy = 'termin', { puffer = 7 } = {}) {
   const lineFree = LINIEN.map(() => HEUTE)
   const liste = AUFTRAEGE.map((a) => {
-    const m = machbarkeit(a.bike, a.menge, { puffer })
+    // Ohne Stückliste liefert machbarkeit() null — dann keine Komponenten-
+    // Beschaffung, Produktionszeit aus der Linienkapazität (ceil(menge/12)+2).
+    const m = machbarkeit(a.bike, a.menge, { puffer }) || { fehlteile: 0, kritBeschaffungTage: 0, produktionsTage: Math.ceil(a.menge / 12) + 2 }
     const db = DB_JE_STUECK[a.bike] || 0
     return { ...a, name: artikelVon(a.bike)?.name || a.bike, fehlteile: m.fehlteile, materialReady: addTage(HEUTE, m.kritBeschaffungTage), prodTage: m.produktionsTage, dbStueck: db, dbBeitrag: a.menge * db }
   })
@@ -53,7 +55,9 @@ export function plane(sortBy = 'termin', { puffer = 7 } = {}) {
 /** Vergleicht beide Reihenfolgen und empfiehlt die bessere. */
 export function empfehlung() {
   const t = plane('termin'), d = plane('db')
-  const besser = d.dbPuenktlich > t.dbPuenktlich && d.gefaehrdet <= t.gefaehrdet ? 'db'
-    : t.gefaehrdet < d.gefaehrdet ? 'termin' : 'termin'
+  // Weniger gefährdete Aufträge gewinnen; bei Gleichstand der höhere pünktliche DB.
+  const besser = t.gefaehrdet !== d.gefaehrdet
+    ? (t.gefaehrdet < d.gefaehrdet ? 'termin' : 'db')
+    : (d.dbPuenktlich > t.dbPuenktlich ? 'db' : 'termin')
   return { besser, termin: t, db: d }
 }
