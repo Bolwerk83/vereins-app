@@ -85,7 +85,12 @@ Stand: laufend.
 - [x] **Einheitliche Kommentierung** auf allen Berichten mit Exec-Kopf (`<Kommentar>` im ExecKopf, Bericht-ID via Nav-Kontext). Offen: Kommentar je KPI/Knoten & im Roten Faden, Aufgaben-Rollup
 - [x] **Engine-Vereinheitlichung**: whatif.js → szenarioEngine.js (eine Wahrheit)
 - [ ] **OnePager je Ebene** (1–5) mit Kernaussage, Ampel, Qualitätskennzahlen und Drill bis Ebene 5 — einheitliche Vorlage
-- [ ] **Budgetierung end-to-end**: FactPlan füllen, **alle KPIs vom Budget ableiten**, Plan/Ist/Forecast je KPI
+- [ ] **Budgetierung end-to-end / vereinfachte Planung**: FactPlan füllen, **alle KPIs vom Budget ableiten**, Plan/Ist/Forecast je KPI
+  - [ ] **Einfache Erfassung weniger Treiber** → alle KPIs werden daraus abgeleitet (Kausalmodell + Verhältniszahlen)
+  - [ ] **Prozent-Vorschläge aus der Vorsaison** (Default = Vorjahr ±%, editierbar)
+  - [ ] **Rückwärtsrechnung über Verhältnisse**: z. B. Delta(Auftragseingang↔Umsatzerlöse)=x% → aus geplantem Auftragseingang den Umsatz (und umgekehrt)
+  - [ ] **AEB — Auftragseingang bereinigt** (ohne stornierte Aufträge & verlorene Angebote) als belastbare Planbasis; neue Kennzahl + Felder
+  - [ ] **Statuswechsel-Datum** (wie Buchungsdatum): Angebot→Auftrag→storniert/geliefert mit Datum je Wechsel, anzeig-/filterbar (DWH: FactAuftrag um Statushistorie erweitern)
 - [ ] **Rolling Forecast** (rollierend 12M) + dessen Auswirkungen auf alle Plan-KPIs (nutzt Kausalmodell/Szenario)
 - [ ] **Werbebudget-Bedarf laut Plan**: wie viel Marketing (über ROAS/CAC) nötig, um Umsatz-/Ergebnisziele zu erreichen (inverse Rechnung)
 - [ ] **Event-Planung**: geplante Events, Vorher-Wirkung (Wirksamkeitsanalyse `events` ausbauen) und Erwartung/Forecast
