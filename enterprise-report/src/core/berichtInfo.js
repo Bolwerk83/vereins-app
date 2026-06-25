@@ -113,7 +113,15 @@ export const BERICHT_INFO = {
     lesehilfe: 'ROCE = EBIT ÷ investiertes Kapital. Grüne Ampel = EBIT und ROCE über Ziel. Dimension-Chips wechseln die Gruppierungsebene. Klick auf PC → Kostenstellen-Drill.',
     quelle: 'Finanzbuchhaltung, Kostenstellenrechnung, Kapitalstruktur; Demo-Daten (Mock).'
   },
-  segment: { zweck: 'Segment-/Konzernbericht mit Intercompany-Konsolidierung.', zielgruppe: 'GF / Konzern.', mehrwert: 'Konzernsicht ohne Doppelzählung.' },
+  segment: {
+    zweck: 'Segment- und Konzernbericht: Ergebnisse je Segment (Fahrräder/Teile/Bekleidung), Intercompany-Eliminierungen und konsolidierte Gesamtsicht — nach IFRS 8 / HGB § 264.',
+    inhalt: 'Segment-Kacheln (Umsatz/EBIT/EBIT-Marge/eingesetztes Kapital je Segment), Intercompany-Eliminierungsbrücke, konsolidierte GuV-Staffel, Segment-Zeitverlauf, Überleitung Segment-Ergebnis → Konzernergebnis.',
+    zielgruppe: 'Geschäftsführung, Konzerncontrolling, Wirtschaftsprüfung, Investoren.',
+    mehrwert: 'Pflichtbestandteil für segmentberichtspflichtige Unternehmen (IFRS 8 / § 264) und Steuerungsinstrument für Geschäftsbereichsverantwortliche — zeigt, welches Segment Wert schafft.',
+    fragen: ['Welches Segment ist am profitabelsten (EBIT-Marge)?', 'Wie hoch sind die Intercompany-Transaktionen?', 'Wie entwickeln sich die Segmente im Jahresverlauf?', 'Welches Segment bindet das meiste Kapital?'],
+    lesehilfe: 'Intercompany-Posten werden konsolidierend eliminiert (erscheinen in beiden Segmenten, kürzen sich im Konzern heraus). ROCE = EBIT ÷ eingesetztes Kapital je Segment.',
+    quelle: 'Finanzbuchhaltung (je Gesellschaft/Segment), Konsolidierungstool; Demo-Daten (Mock).'
+  },
   // ---- Operativ ----
   marketing: {
     zweck: 'Digital-Analytics-Dashboard: Funnel (Klicks → Leads → Aufträge), Conversion-Rates je Kanal, ROAS, Kampagnenvergleich und Retargeting-Effizienz.',
@@ -200,7 +208,15 @@ export const BERICHT_INFO = {
     inhalt: 'Je Phase die Fach-Codes mit Wert: ANGE/OANG/VANGE; AE/AEB/AEOA/STORAE/SAEOA; AET/NFA; OAU/RET; Storno-/Angebotsverlust-/Auftragsstorno-%; UMS/ARTUMS/VUMS/KG/ABS/VKM und Ø-Kennzahlen. Abgeleitete Werte mit Formel-Hinweis.',
     fragen: ['Was bedeutet welcher Vertriebs-Code genau?', 'Wie hängen AE, AEB und AET zusammen?', 'Welche Phase verliert am meisten?'],
     lesehilfe: 'Symbole: Σ wertbasiert (€), ◊ mengenbezogen, % Verhältnis, Ø Schnitt. Hover über eine Zeile zeigt die Formel.', quelle: 'Vertriebs-Kennzahlenmodell (Demo).' },
-  abgleichabsatz: { zweck: 'Abgleich der fakturierten Absatzmenge (aus Rechnungspositionen) mit dem tatsächlichen Auftragseingang (AET, WaWi) je Produkt — Differenz abs/% und wahrscheinliche Ursache.', zielgruppe: 'Vertriebscontrolling / Controlling.', mehrwert: 'Auseinanderlaufen von Absatz und Auftragseingang früh erkennen (Teillieferung, Storno, Verschiebung, Nachfakturierung).' },
+  abgleichabsatz: {
+    zweck: 'Abgleich Absatzmenge vs. Auftragseingang tatsächlich (AET): fakturierte Absatzmenge (aus Rechnungspositionen) gegen AET aus dem WaWi je Produkt — mit Differenz abs/% und wahrscheinlicher Ursache.',
+    inhalt: 'Abgleich-Tabelle (Produkt, AET-Menge, Absatz-Menge, Differenz abs/%, Ursachen-Chip), Ursachen-Kategorien (Teillieferung, Storno, Periodenverschiebung, Nachfakturierung), Zeitverlauf je Produkt, Drill auf Einzelauftrag.',
+    zielgruppe: 'Vertriebscontrolling, Controlling, Auftragsmanagement.',
+    mehrwert: 'Erkennt früh, wenn Absatz und Auftragseingang auseinanderlaufen — wichtig für Umsatzsteuerung, Planungsqualität und Lagerkoordination. Ersetzt manuelle Excel-Abgleiche.',
+    fragen: ['Wo gibt es große Abweichungen zwischen AET und fakturiertem Absatz?', 'Sind die Abweichungen durch Teillieferungen erklärbar?', 'Gibt es systematische Periodenverschiebungen bei bestimmten Produkten?', 'Wie hoch ist die Stornoquote je Produkt?'],
+    lesehilfe: 'Differenz > 5 % = prüfenswert. Ursachen-Chip zeigt häufigste Erklärung (algorithmisch). Drill → Einzelaufträge mit Status und Lieferdaten.',
+    quelle: 'WaWi (AET, Auftragsstatus), Finanzbuchhaltung (Rechnungspositionen/Absatz); Demo-Daten (Mock).'
+  },
   lieferant: {
     zweck: 'Lieferanten-Lebenszyklus und Risiko-Cockpit: Einkaufsvolumen, Liefertreue, Qualität (Reklamationsquote) und Abhängigkeitsrisiko je Lieferant — mit Lifecycle-Phasen (Neuzugang/Kernlieferant/Problemlieferant/Auslaufend).',
     inhalt: 'Lieferanten-Rangliste (Volumen/Liefertreue/Qualität), Lifecycle-Matrix (Treue × Qualität), ABC-Lieferanten, Klumpenrisiko-Analyse (Anteil > 20 % = kritisch), Reklamations-Trend, Preisindex je Lieferant, Eskalations-Log.',
@@ -248,8 +264,24 @@ export const BERICHT_INFO = {
     quelle: 'Planung (Budget), Finanzbuchhaltung (Ist), Kostenrechnung; Demo-Daten (Mock).'
   },
   vergleich: { zweck: 'Versionsvergleich (Plan/Forecast/Ist).', zielgruppe: 'Controlling.', mehrwert: 'Stände sauber gegenüberstellen.' },
-  qc: { zweck: 'Querchecks / Datenqualitätsprüfungen.', zielgruppe: 'Controlling / IT.', mehrwert: 'Fehler vor dem Reporting finden.' },
-  abstimmung: { zweck: 'Abstimmbrücken zwischen FiBu und Controlling.', zielgruppe: 'Rechnungswesen.', mehrwert: 'Differenzen erklären und schließen.' },
+  qc: {
+    zweck: 'Datenqualitäts-Dashboard und Querchecks: automatische Plausibilitätsprüfungen, Abstimmkontrollen und Vollständigkeitsprüfungen über alle Datentöpfe.',
+    inhalt: 'Prüfregeln-Übersicht (aktiv/deaktiviert), Prüfergebnis-Tabelle (Regel, Bereich, Status, Fundstellen), Zeitverlauf Fehleranzahl, Drill bis auf Einzelsatz, Manuelle Ausnahmen dokumentieren, Export Fehlerliste.',
+    zielgruppe: 'Controlling, Rechnungswesen, IT-Datenmanagement.',
+    mehrwert: 'Erkennt Datenfehler bevor sie ins Reporting einfließen: Doppelbuchungen, Lücken, Plausi-Verstöße, unabgestimmte Summen — mit direktem Drill auf den Fehlerdatensatz.',
+    fragen: ['Welche Prüfregeln schlagen derzeit an?', 'Wie viele Fehler wurden in letzter Zeit gefunden?', 'Gibt es wiederkehrende Fehler bei bestimmten Quellen?', 'Sind alle Abstimmkontrollen grün?'],
+    lesehilfe: 'Rote Prüfregel = Fehler gefunden, sofort ansehen. Gelb = Warnung (Wert außerhalb Toleranz). Grün = Prüfung bestanden. Anzahl offener Fehler oben rechts.',
+    quelle: 'Alle angebundenen Datentöpfe (FiBu, WaWi, HR, ERP); Demo-Daten (Mock).'
+  },
+  abstimmung: {
+    zweck: 'Abstimmbrücken zwischen Finanzbuchhaltung (FiBu) und Controlling: Überleitung von Buchhaltungsergebnis zum Betriebsergebnis — mit Differenzanalyse je Abstimmposten.',
+    inhalt: 'Abstimmtabelle (FiBu-Ergebnis → Neutrale/Kalk. Posten → Betriebsergebnis), Differenz je Abstimmposten (Plan/Ist), Warnmeldungen bei unerwarteten Differenzen, monatlicher Abstimmstatus (freigegeben/offen), Kommentarfeld.',
+    zielgruppe: 'Rechnungswesen, Controlling, Wirtschaftsprüfung.',
+    mehrwert: 'Stellt die Datenqualität sicher: Jede Differenz zwischen FiBu und Controlling ist dokumentiert und begründet — kein Rätselraten beim Jahresabschluss.',
+    fragen: ['Wo gibt es ungeklärte Differenzen zwischen FiBu und Controlling?', 'Sind alle Abstimmposten freigegeben?', 'Wie hoch ist der neutrale Ergebnisanteil?', 'Welche Monate sind noch nicht abgestimmt?'],
+    lesehilfe: 'Grün = Abstimmung freigegeben. Gelb = Differenz vorhanden, Erklärung ausstehend. Rot = kritische Differenz, sofort klären. Differenz > Toleranzgrenze triggert Warnung.',
+    quelle: 'Finanzbuchhaltung (DATEV/SAP), Kostenrechnung; Demo-Daten (Mock).'
+  },
   lebenszyklus: {
     zweck: 'Produkt- und Kunden-Lebenszyklus: klassische Phasenkurve (Einführung/Wachstum/Reife/Sättigung/Rückgang) mit BCG-Blasen und Kundenbindungs-Phasen — inklusive Nachfolger-Verkettung.',
     inhalt: 'Produkte: Lebenszyklus-Kurve (Phasenbänder + Umsatzkurve), BCG-Blasen je Phase (Größe = Umsatz), Matrix/Kurve-Umschalter, Nachfolger-Verkettung (Vorgänger→Nachfolger kombinieren). Kunden: Beziehungskurve (5 Phasen: Neukundenphase → Stammkunde → Churn-Risiko → inaktiv → reaktiviert), Drill auf Einzelkunde.',
@@ -284,9 +316,33 @@ export const BERICHT_INFO = {
     lesehilfe: 'Rot = hohes Risiko (Churn/Auslauf), Gelb = Beobachtung, Grün = Wachstumspotenzial. KI-Konfidenz gibt an, wie verlässlich die Empfehlung ist (> 75 % = verlässlich).',
     quelle: 'Lebenszyklus-Analyse, Absatzdaten, Kundenkontakte; KI: regelbasiert + statistisch; Demo-Daten (Mock).'
   },
-  anlagen: { zweck: 'Anlagen-Lebenszyklus inkl. kalkulatorischer Abschreibung.', zielgruppe: 'Finanzen / Controlling.', mehrwert: 'Investitions- und Ersatzsteuerung.' },
-  technologie: { zweck: 'Technologie-Reifegrad & F&E-Portfolio.', zielgruppe: 'GF / F&E.', mehrwert: 'Innovationspipeline bewerten und priorisieren.' },
-  mitarbeiter: { zweck: 'Mitarbeiter-Lebenszyklus (HR).', zielgruppe: 'HR / Personalcontrolling.', mehrwert: 'Bindung & Fluktuation steuern.' },
+  anlagen: {
+    zweck: 'Anlagen-Lebenszyklus und kalkulatorische Abschreibung: Anschaffungskosten, Nutzungsdauer, Buchwert, AfA-Plan und der Unterschied zur kalkulatorischen Abschreibung (Wiederbeschaffungswert).',
+    inhalt: 'Anlagespiegel (Zugänge/Abgänge/Umbuchungen), HGB-AfA vs. kalk. Abschreibung je Anlage, Buchwert-Entwicklung (Zeitverlauf), fällige Ersatzbeschaffungen (Ampel), Leasing vs. Kauf je Objekt, IFRS-16-Pflicht.',
+    zielgruppe: 'Finanzen, Controlling, Einkauf/Fuhrpark.',
+    mehrwert: 'Zeigt den echten Werteverzehr der Anlagen (kalk. Abschr.) im Vergleich zum steuerlichen (HGB) — Grundlage für Investitionsplanung, Ersatzbeschaffung und Kostenträgerrechnung.',
+    fragen: ['Welche Anlagen laufen bald aus und müssen ersetzt werden?', 'Wie hoch ist die kalk. Abschreibung vs. HGB-Abschreibung?', 'Welche Anlagen sind schon vollständig abgeschrieben aber noch in Betrieb?', 'Wie hoch ist der Buchwert der Produktionsanlagen?'],
+    lesehilfe: 'Gelb = Nutzungsdauer < 1 Jahr. Rot = überschritten. kalk. Abschr. > HGB = höhere Rückstellungsnotwendigkeit für Ersatz.',
+    quelle: 'Anlagenbuchhaltung (HGB), Versicherungswerte/Wiederbeschaffungspreise (für kalk.); Demo-Daten (Mock).'
+  },
+  technologie: {
+    zweck: 'Technologie-Reifegrad (TRL) und F&E-Portfolio: Innovationspipeline, Entwicklungsbudgets, Time-to-Market und Patente — nach Produktkategorie und Reifegradstufe.',
+    inhalt: 'TRL-Matrix (Technology Readiness Level 1–9 nach NASA/EU-Standard), F&E-Budget-Kacheln (Plan/Ist/VJ), Innovationspipeline (Idee → Konzept → Prototyp → Markt), Patentübersicht, Time-to-Market-Benchmark, F&E-Quote (% des Umsatzes).',
+    zielgruppe: 'Geschäftsführung, F&E-Leitung, Produktmanagement.',
+    mehrwert: 'Schafft Transparenz über den Innovationsstatus: Welche Technologien sind marktreif? Wo werden F&E-Budgets eingesetzt? Was kommt als Nächstes?',
+    fragen: ['Welche Technologien stehen kurz vor Marktreife (TRL 7–9)?', 'Wie hoch ist unsere F&E-Quote im Branchenvergleich?', 'Wo werden Entwicklungsbudgets überschritten?', 'Wie lang ist unsere Time-to-Market im Schnitt?'],
+    lesehilfe: 'TRL 1–3 = Forschung (kein Umsatz in Sicht). TRL 4–6 = Entwicklung. TRL 7–9 = Serienreife/Markteinführung. F&E-Quote < 2 % = Innovationsrisiko.',
+    quelle: 'F&E-Controlling, Patentdatenbank, Projektmanagement-Tool; Demo-Daten (Mock).'
+  },
+  mitarbeiter: {
+    zweck: 'Mitarbeiter-Lebenszyklus (HR-Kennzahlen): Eintritt, Entwicklung, Bindung und Fluktuation — mit Dimension-Umschalter (Abteilung/Region/Altersgruppe) und Frühwarn-Indikatoren.',
+    inhalt: 'HR-KPI-Band (Headcount, Fluktuation, Durchschnittsalter, Betriebszugehörigkeit, Krankenquote), Lifecycle-Phasen (Onboarding/Kernphase/Risikophase/Austritt), Alters-/Abteilungsverteilung, Dimension-Chips (Abt./Region/Alter), Trend-Monatsverlauf.',
+    zielgruppe: 'HR, Personalcontrolling, Geschäftsführung.',
+    mehrwert: 'Macht Personalstrategie messbar: Wo ist die Fluktuation zu hoch? Welche Abteilung blutet aus? Frühwarnsystem für Wissensverlust durch Rentenabgänge.',
+    fragen: ['Wie hoch ist die Fluktuation je Abteilung?', 'Wo gibt es einen Altersberg (> 55 Jahre)?', 'Wie entwickelt sich der Krankenstand?', 'Wie lange dauert das Onboarding im Schnitt?', 'Welche Abteilung hat das größte Renteneintrittsrisiko in 5 Jahren?'],
+    lesehilfe: 'Fluktuation > 15 % p.a. = Warnsignal (Branchenmittel ca. 8 %). Krankenquote > 5 % = Handlungsbedarf. Lifecycle-Phase „Risiko" = Bindungsmaßnahme prüfen.',
+    quelle: 'HR-/Personalabrechnungssystem, Fehlzeitenerfassung; Demo-Daten (Mock).'
+  },
   massnahmen: { zweck: 'Maßnahmen-Nachverfolgung (SMART, mit Owner/Frist).', zielgruppe: 'Alle Führungskräfte.', mehrwert: 'Vom Bericht zur umgesetzten Maßnahme.' },
   instrumente: { zweck: 'Übersicht der Controlling-Instrumente.', zielgruppe: 'Controlling.', mehrwert: 'Das passende Instrument je Fragestellung.' },
   alerts: { zweck: 'Frühwarnungen bei kritischen Kennzahlen.', zielgruppe: 'Alle.', mehrwert: 'Rechtzeitig gegensteuern.' },
