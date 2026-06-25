@@ -158,6 +158,15 @@ export const BERICHT_INFO = {
     lesehilfe: 'Artikel über die Chip-Leiste oben auswählen. Tabs wechseln die Ansicht. Ampel-Farben zeigen Abweichungen vom Zielkorridor.',
     quelle: 'Artikelstammdaten, Absatz-/Planwerte, Lagerbewegungen, Produktionsdaten, Marketing-Tracking, Kundenbewertungen (Demo: artikelkarte.js).'
   }
+  detailanalyse: {
+    zweck: 'Operative Granularansicht für Erfasser:innen: tägliche Artikelbewegungen mit Mini-Zeitreihen und Deltas, Änderungslog, statistische Anomalien, Erfassungsqualität je Person und Pivot-Kreuztabelle.',
+    zielgruppe: 'Operative Sachbearbeiter:innen (Lager, Einkauf, Vertrieb), Teamleiter:innen, Controlling.',
+    mehrwert: 'Alles, was heute passiert ist — auf einen Blick: Was hat sich geändert? Wo laufen Bestände leer? Wer macht Fehler? Schneller Wechsel Tabelle ↔ Trend ↔ Anomalien ohne Detailbericht-Suche.',
+    inhalt: 'KPI-Band (Artikel/Umsatz/Absatz/Spikes/Bestandsalarme), Tab „Trend": 14-Tage-Sparklines + „Seit-gestern"-Delta, Tab „Änderungen": Chronolog. Log (Neueingang/Korrektur/Storno/Preis/Bestand), Tab „Anomalien": algorithmisch erkannte Ausreißer (Spike/Alarm/Einbruch), Tab „Qualität": Erfassungsqualität je Person (Korrektur-/Fehlerquote, Vollständigkeit), Tab „Pivot": frei wählbare Dimension × Maß (Kategorie/Erfasser × Umsatz/Menge/Bestand).',
+    fragen: ['Was hat sich heute gegenüber gestern verändert?', 'Welche Artikel haben einen Bestandsalarm?', 'Gibt es auffällige Absatz-Spikes?', 'Welche Änderungen wurden in den letzten 72 h gemacht?', 'Wie hoch ist die Fehlerquote je Erfasser:in?', 'Wie verteilt sich der Absatz nach Kategorie?'],
+    lesehilfe: 'Rot hinterlegt = Bestandsalarm (Bestand < Minimum). Orange = Umsatz-Spike (> Schnitt + 2σ). Korrektur-Quote > 10 % in Rot.',
+    quelle: 'Auftragseingang, Lagerbewegungen, Änderungslog, Erfassungsprotokoll (Demo: detailAnalyse.js).'
+  }
 }
 
 export const infoVon = (view) => BERICHT_INFO[view] || null
