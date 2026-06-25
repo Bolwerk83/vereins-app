@@ -342,12 +342,12 @@ export default function App() {
     // EINGABE & VERWALTUNG (Tools) unten und klar getrennt. Deep-Links auf die
     // jeweiligen Tabs über gehPlan(); RBAC/Relevanz kommt von E('planung').
     { titel: 'Planung & Budgetierung', icon: '🎯', untergruppen: [
-      { titel: 'Berichte', eintraege: [
+      { titel: 'Auswertungen', eintraege: [
         { ...E('planung', 'nav.planung', '📊'), label: 'Budget vs. Ist & Forecast', icon: '📊', aktiv: ansicht === 'planung' && planStart === 'budget', onClick: () => gehPlan('budget') },
         { ...E('planung', 'nav.planung', '📦'), label: 'Beschaffungs-Terminierung', icon: '📦', aktiv: ansicht === 'planung' && planStart === 'beschaffung', onClick: () => gehPlan('beschaffung') },
         { ...E('planung', 'nav.planung', '🏭'), label: 'Machbarkeit (Durchlaufzeit)', icon: '🏭', aktiv: ansicht === 'planung' && planStart === 'machbarkeit', onClick: () => gehPlan('machbarkeit') }
       ] },
-      { titel: 'Eingabe & Verwaltung', eintraege: [
+      { titel: 'Verwaltung', eintraege: [
         { ...E('planung', 'nav.planung', '🧭'), label: 'Plan anlegen & bearbeiten', icon: '🧭', aktiv: ansicht === 'planung' && planStart === 'wizard', onClick: () => gehPlan('wizard') },
         { ...E('planung', 'nav.planung', '✏️'), label: 'Detailplanung (Mengen & Preise)', icon: '✏️', aktiv: ansicht === 'planung' && planStart === 'detail', onClick: () => gehPlan('detail') },
         { ...E('planung', 'nav.planung', '📅'), label: 'Produktionsplaner', icon: '📅', aktiv: ansicht === 'planung' && planStart === 'planer', onClick: () => gehPlan('planer') }
@@ -415,6 +415,11 @@ export default function App() {
       ] }] : [])
     ] }
   ]
+  // Konvention app-weit: je Knoten kommen AUSWERTUNGEN zuerst, VERWALTUNG/
+  // Werkzeuge ans Ende. Untergruppen mit verwaltendem Titel werden nach unten
+  // sortiert (stabil), damit Berichte immer oben stehen.
+  const VERWALTUNG_TITEL = new Set(['Verwaltung', 'Eingabe & Verwaltung', 'Einrichtung', 'Administration', 'Prozesse', 'Werkzeuge', 'Pflege', 'Hilfe'])
+  const istVerwaltungsGruppe = (titel) => VERWALTUNG_TITEL.has(titel)
   // Status-Sichtbarkeit anwenden: deaktivierte/Test-Berichte für normale Nutzer
   // ausblenden (leere Untergruppen/Gruppen entfernen). Admin sieht alles.
   const menuSichtbar = menuGruppen
@@ -422,7 +427,9 @@ export default function App() {
       // Rollenfilter (relevant) UND Status-/Freigabe-Filter (versteckt) anwenden,
       // damit ein Rollenwechsel die sichtbaren Berichte tatsächlich einschränkt.
       .map((u) => ({ ...u, eintraege: u.eintraege.filter((e) => !e.versteckt && e.relevant) }))
-      .filter((u) => u.eintraege.length) }))
+      .filter((u) => u.eintraege.length)
+      // Auswertungen oben, Verwaltung unten (stabile Sortierung).
+      .sort((a, b) => (istVerwaltungsGruppe(a.titel) ? 1 : 0) - (istVerwaltungsGruppe(b.titel) ? 1 : 0)) }))
     .filter((g) => g.untergruppen.length)
   // Flacher Index view → { label, icon, bereich, relevant, pfad } für das Info-Panel.
   const eintragIndex = {}

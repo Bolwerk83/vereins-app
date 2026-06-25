@@ -90,11 +90,11 @@ export default function Planung({ onGeh, startTab }) {
       {/* Tabs gruppiert: Berichte (oben), Eingabe & Verwaltung (unten) */}
       <div style={{ display: 'grid', gap: 8, marginBottom: 14 }}>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <span style={{ ...cap, marginRight: 2 }}>📈 Berichte</span>
+          <span style={{ ...cap, marginRight: 2 }}>📈 Auswertungen</span>
           {PLAN_BERICHTE.map(([id, n]) => <TabBtn key={id} aktiv={ptab === id} onClick={() => setPtab(id)}>{n}</TabBtn>)}
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', borderTop: '1px dashed var(--line)', paddingTop: 8 }}>
-          <span style={{ ...cap, marginRight: 2 }}>⚙ Eingabe & Verwaltung</span>
+          <span style={{ ...cap, marginRight: 2 }}>⚙ Verwaltung</span>
           {PLAN_EINGABE.map(([id, n]) => <TabBtn key={id} aktiv={ptab === id} onClick={() => setPtab(id)} tool>{n}</TabBtn>)}
         </div>
       </div>
