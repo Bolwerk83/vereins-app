@@ -265,9 +265,13 @@ export default function App() {
         E('kennzahlen', 'nav.kennzahlen', '📖'),
         E('katalog', 'nav.katalog', '🗂'),
         E('detailberichte', 'nav.detailberichte', '🔬'),
+        E('detailanalyse', 'nav.detailanalyse', '🔍', { label: 'Detail-Analyse' }),
         E('kpieditor', 'nav.kpieditor', '🧪')
       ] },
-      { titel: 'Eigene Berichte', eintraege: [
+      { titel: 'Werkzeuge', eintraege: [
+        E('onepager',   'nav.onepager',   '📄', { label: 'OnePager' }),
+        E('roterfaden', 'nav.roterfaden', '🧵', { label: 'Roter Faden' }),
+        E('assistent',  'nav.assistent',  '💬', { label: 'Assistent' }),
         E('kibuilder', 'nav.kibuilder', '✨'),
         E('designer', 'nav.designer', '🧩')
       ] }
@@ -432,22 +436,14 @@ export default function App() {
         {ansicht !== 'wizard' && (
           <>
             <GlobalSuche onGeh={geh} onKpi={(id) => { setBaumStart(id); setAnsicht('baum') }} onInfo={zeigeInfo} rolle={rolle} istAdmin={adminAktiv} />
-            {/* Nur Primär-Einstiege oben; die vollständige Navigation steckt im ☰-Menü. */}
-            <button style={topBtn(ansicht === 'baum' || ansicht === 'report')} onClick={() => geh('baum')}>{t('nav.tree')}</button>
-            <button style={topBtn(ansicht === 'kennzahlen')} onClick={() => geh('kennzahlen')}>{t('nav.kennzahlen')}</button>
-            <button style={topBtn(ansicht === 'onepager')} onClick={() => geh('onepager')}>📄 OnePager</button>
-            <button style={topBtn(ansicht === 'roterfaden')} onClick={() => geh('roterfaden')}>🧵 Roter Faden</button>
-            <button style={topBtn(ansicht === 'assistent')} onClick={() => geh('assistent')}>💬 Assistent</button>
+            {/* Status-Badges: QC und Alerts — immer sichtbar, weil global relevant.
+                Alle weiteren Berichte/Werkzeuge erreichbar über das ☰-Menü. */}
             <button style={topBtn(ansicht === 'qc')} onClick={() => geh('qc')}>
               {t('nav.qc')}{(() => { const f = validierungsZusammenfassung(werte).fehler; return f ? ` (${f})` : '' })()}
             </button>
             {(() => { const n = alertAnzahl(werte, rolle); return (
               <button style={{ ...topBtn(ansicht === 'alerts'), ...(n ? { borderColor: 'var(--amp-r)', color: ansicht === 'alerts' ? '#fff' : 'var(--amp-r)' } : {}) }} onClick={() => geh('alerts')}>
                 ⚠ {t('nav.alerts')}{n ? ` (${n})` : ''}</button>) })()}
-            {istAdmin(rolle) && (
-              <button style={{ ...topBtn(ansicht === 'rechte'), ...(anfragenN ? { borderColor: 'var(--amp-a)' } : {}) }} onClick={() => geh('rechte')}>
-                {t('nav.rechte')}{anfragenN ? ` 🔔${anfragenN}` : ''}</button>
-            )}
             <BenutzerLeiste benutzer={benutzer} rolle={rolle} gruppen={gruppen} onLogin={anmelden} onLogout={abmelden} />
             {!benutzer && (
               <label style={{ fontSize: 12, color: 'var(--muted)' }}>{t('lbl.role')}&nbsp;
