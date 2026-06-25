@@ -64,6 +64,7 @@ import Szenario from './modules/szenario/Szenario.jsx'
 import WMS from './modules/wms/WMS.jsx'
 import Detailberichte from './modules/detailberichte/Detailberichte.jsx'
 import Forderungen from './modules/forderungen/Forderungen.jsx'
+import ServiceZollCockpit from './modules/service-zoll/ServiceZollCockpit.jsx'
 import Mitarbeiter from './modules/mitarbeiter/Mitarbeiter.jsx'
 import Segmentbericht from './modules/segment/Segmentbericht.jsx'
 import Kalkulation from './modules/kalkulation/Kalkulation.jsx'
@@ -327,7 +328,8 @@ export default function App() {
         E('bestand', 'nav.bestand', '📦'),
         E('lieferant', 'nav.lieferant', '🚚'),
         E('auftrag', 'nav.auftrag', '📦'),
-        E('versand', 'nav.versand', '📮')
+        E('versand', 'nav.versand', '📮'),
+        E('servicezoll', 'nav.servicezoll', '🛃')
       ] },
       { titel: 'Finanzen & Risiko', eintraege: [
         E('forderungen', 'nav.forderungen', '💶')
@@ -786,6 +788,7 @@ export default function App() {
         {ansicht === 'forderungen' && (
           <Forderungen />
         )}
+        {ansicht === 'servicezoll' && <ServiceZollCockpit />}
         {ansicht === 'mitarbeiter' && (
           <Mitarbeiter />
         )}

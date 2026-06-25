@@ -22,6 +22,10 @@ export const BERICHT_INFO = {
     inhalt: 'Chat mit Folgefragen-Vorschlägen, Rückfragen bei Unklarheit (mit Empfehlung), Kontext für Folgefragen, Sprung in Berichte; Insights-Tab mit Trefferquote und Wissenslücken.',
     fragen: ['Wie hoch ist der Umsatz?', 'Was ist gerade rot?', 'Warum sinkt das Ergebnis und was tun?'],
     lesehilfe: 'Frage eintippen oder Vorschlags-Chip klicken; bei mehrdeutigen Begriffen Rückfrage mit ★-Empfehlung.', quelle: 'KPI-Engine (lokal), keine Cloud.' },
+  servicezoll: { zweck: '360°-Sicht je Rad für den Support (BikeID → alle Seriennummern) und lückenloser Mengenverbleib je Zollcharge für den Zollnachweis.', zielgruppe: 'Service/Support, Logistik, Zoll/Compliance.', mehrwert: 'Telefon-Support antwortet sofort (Modell, Serien, Historie); Zollvergünstigung durch nachweisbaren Verbleib jeder Charge — sechsstellige Ergebniswirkung möglich.',
+    inhalt: 'Service-360: Suche über BikeID/Rahmen-/Gabel-/Motor-/Akkunummer/Auftrag/Kunde → Stammdaten, Seriennummern, Bewegungsjournal, Schnellaktionen (Retoure/Reklamation/Serviceauftrag). Zoll-Traceability: je Wareneingangs-/Zollnummer der Mengenverbleib (Lager/Produktion/Kunde/verschrottet) mit Vollständigkeits-Ampel und Audit-Trail.',
+    fragen: ['Welches Rad/Welche Serien gehören zu dieser Reklamation?', 'Wo befinden sich die 100 Rahmen aus Charge X?', 'Ist der Verbleib für den Zoll lückenlos nachgewiesen?'],
+    lesehilfe: 'Im Service-Tab oben suchen; im Zoll-Tab eine Charge wählen — der Balken zeigt den Verbleib, die Ampel ob vollständig.', quelle: 'Serien-/Chargen-Bewegungen (Demo; später DWH FactSerienbewegung).' },
   // ---- Cockpit & Berichte ----
   baum: { zweck: 'Zentraler Einstieg: alle Berichte hierarchisch von der Geschäftsführung bis zum Detail.', zielgruppe: 'Alle Rollen.', mehrwert: 'Schneller Überblick und Drill-down bis zur Einzelkennzahl.',
     inhalt: 'Fünf Ebenen (E1 Geschäftsführung → E2 Fachbereich → E3 Themenbereich → E4 Details → E5 Historie). Je Knoten: automatische Lagebewertung, kritischste KPIs zuerst (Karten- oder Tabellensicht), Controller-Kommentar und Drill in die Detaillisten.',
