@@ -74,15 +74,13 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
 - **Wertgutschriften zum tatsächlichen Auftrag**: in **EUR und %** ausweisen.
 - Retourenübersicht je Kunde (Quote, Wert, Gründe), Auffälligkeiten markieren.
 
-### H. Dimensions-Umschalter in allen sinnvollen Berichten — v1+v2 DONE (Lager offen)
+### H. Dimensions-Umschalter in allen sinnvollen Berichten — DONE
 - Gruppierung je Bericht umschaltbar (z. B. Bereich → Profit-Center → Region →
   Kanal → Warenbereich …), nicht nur Filtern. Basis: `core/pivot.js` (gruppiere,
   sinnvolleDimensionen). v1 im Personalbericht umgesetzt.
-- **Erledigt:** Vertrieb (Verkaufsstatistik: Warengruppe/Kanal/Artikel-Chips),
-  Produktion (Produktionsstatistik: Produkt/Werk-Chips), Profitcenter (war bereits
-  vorhanden: Geschäftsbereich/Region/Kanal), Fahrrad (Fahrradstatistik: Kategorie/Preisklasse-Chips).
-- **Noch offen:** Lager — Dimension-Umschalter erfordert Umbau der
-  Lagerverwaltung (komplex wegen Eskalations-Workflow).
+- **Erledigt:** Vertrieb (Warengruppe/Kanal/Artikel), Produktion (Produkt/Werk),
+  Profitcenter (Geschäftsbereich/Region/Kanal), Fahrrad (Kategorie/Preisklasse),
+  **Lager** (Artikel/Lieferant/Status — Eskalations-Workflow bleibt in Artikel-Sicht).
 
 ### G. Abgleichsbericht Absatzmenge vs. Auftragseingang tatsächlich — DONE
 - **Absatzmenge (aus Rechnungspositionen)** gegen **Auftragseingang tatsächlich
@@ -123,7 +121,7 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
 - Mehr als 2–3 KPIs je Bericht; **kritischste zuerst** sortiert.
 - **Visual-/Tabellen-Umschalter**; kompakte „Was sticht heraus"-Zeile.
 
-### 7. Prozesskette AE → Umsatz
+### 7. Prozesskette AE → Umsatz — DONE
 - Flussgrafik: **AE** → (− stornierte Aufträge − verlorene Angebote) → **AEB**
   → Aufteilung in **Lieferkette** (ab hier angestoßen) und **Wertschöpfungskette**
   bis zu den **Umsatzerlösen** (bessere Begriffe gern).
@@ -170,7 +168,7 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
   Burger = komplette, rollen-gefilterte Berichtsnavigation. Obere Leiste ebenfalls
   rollen-bewusst (fremde Bereiche ausblenden/kennzeichnen).
 
-### 15. Startseite mit Import-/Ladestatus
+### 15. Startseite mit Import-/Ladestatus — DONE
 - Eigene Startseite/Cockpit: Sind **alle Importe gelaufen?** Fortschritt/Restwartezeit,
   **Stand/Frische der Daten**, Verbindungsstatus, letzte Aktualisierung je Quelle,
   Fehler/Warnungen beim Laden.
@@ -197,7 +195,7 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
   viele **Visuals** hinterlegt (Karte, Balken, Linie, Tabelle, Donut, Hierarchie …),
   sodass man **nur die Kennzahl tauschen** muss und alle Visuals automatisch passen.
 
-### 19. Detailanalyse-Berichte für operative Erfasser:innen — IN ARBEIT
+### 19. Detailanalyse-Berichte für operative Erfasser:innen — DONE
 - Zielgruppe: die täglich Daten **erfassen & bewerten** — sehr granular, nicht „Overall".
 - Mehrwerte:
   - **Entwicklungen/Trends** je Artikel/Kunde/Charge/Konto über Zeit (Mini-Zeitreihen,
@@ -260,3 +258,11 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
 - Standard-Dimensionsfilter-Button (☰ Filter) je Bericht (nur sinnvolle Dimensionen).
 - Produktionscontrolling (#5): Werke/Linien-Live + OEE, EPQ-Losgrößen, Fehlteile,
   Qualität (FPY/Ausschuss), Output je Zeitraum, Abgleich Produktion↔Lager↔Auftragsbestand.
+- **#19 Detailanalyse fertiggestellt:** 20 Tests (`detailAnalyse.test.mjs`) — Pflichtfelder,
+  delta-Arithmetik, Anomalie-Konsistenz, Pivot-Aggregation, Determinismus; Backlog-Status DONE.
+- **H-Lager Dimensions-Umschalter:** `Lagerverwaltung.jsx` Optimierung-Tab erweitert um
+  Artikel/Lieferant/Status-Chips. Lieferant-Sicht: Kapital + Einsparpotenzial + Status-Mix
+  je Lieferant. Status-Sicht: Unter-/Überdeckung-Aggregation. Eskalations-Workflow bleibt
+  in Artikel-Sicht unberührt. Backlog H vollständig abgeschlossen.
+- **Backlog-Audit:** #7 (Prozesskette), #15 (Startseite) nachträglich als DONE markiert
+  (Module, Tests und berichtInfo-Einträge existierten bereits vollständig).
