@@ -91,8 +91,10 @@ export default function GlobalSuche({ onGeh, onKpi, onInfo, rolle, istAdmin = fa
           onFocus={() => setOffen(true)}
           onKeyDown={onKeyDown}
           style={{ border: 'none', outline: 'none', background: 'transparent', font: 'inherit', fontSize: 12, width: 150, color: 'var(--ink)' }} />
-        {q && <button onClick={() => { setQ(''); inputRef.current?.focus() }} aria-label="Suche leeren"
-          style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--muted)', fontSize: 13 }}>×</button>}
+        {q
+          ? <button onClick={() => { setQ(''); inputRef.current?.focus() }} aria-label="Suche leeren"
+              style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--muted)', fontSize: 13 }}>×</button>
+          : <kbd title="Command-Palette öffnen" style={{ fontSize: 10, color: 'var(--muted)', border: '1px solid var(--line)', borderRadius: 4, padding: '0 5px', lineHeight: '15px' }}>⌘K</kbd>}
       </div>
 
       {offen && (

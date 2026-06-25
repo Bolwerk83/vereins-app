@@ -70,6 +70,7 @@ import Ergebnisrechnung from './modules/ergebnis/Ergebnisrechnung.jsx'
 import Deckungsbeitrag from './modules/deckungsbeitrag/Deckungsbeitrag.jsx'
 import Lernpfad from './modules/lernpfad/Lernpfad.jsx'
 import GlobalSuche from './modules/suche/GlobalSuche.jsx'
+import CommandPalette from './modules/suche/CommandPalette.jsx'
 import Admin from './modules/admin/Admin.jsx'
 import Events from './modules/events/Events.jsx'
 import Doku from './modules/doku/Doku.jsx'
@@ -508,6 +509,7 @@ export default function App() {
       )}
 
       <HilfePanel offen={hilfeAuf} erstmalig={hilfeErstmalig} onSchliessen={hilfeSchliessen} />
+      <CommandPalette onGeh={geh} onKpi={(id) => { setBaumStart(id); setAnsicht('baum') }} rolle={rolle} istAdmin={adminAktiv} />
       {onbAuf && <Onboarding rolle={rolle} istAdmin={istAdmin(rolle)} onGeh={geh} onClose={() => setOnbAuf(false)} />}
       {infoView && infoMeta && (
         <BerichtInfoModal view={infoView} label={infoMeta.label} icon={infoMeta.icon} pfad={infoMeta.pfad}
