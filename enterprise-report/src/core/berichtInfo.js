@@ -157,7 +157,7 @@ export const BERICHT_INFO = {
     fragen: ['Wie entwickeln sich Umsatz und DB dieses Artikels?', 'Ist der Absatzplan erfüllt?', 'Wie wirkt die Marketingkampagne (ROAS)?', 'Welcher Artikel folgt als Nachfolger?', 'Wie hat sich der Lagerbestand entwickelt?', 'Wie beurteilen Kunden diesen Artikel?'],
     lesehilfe: 'Artikel über die Chip-Leiste oben auswählen. Tabs wechseln die Ansicht. Ampel-Farben zeigen Abweichungen vom Zielkorridor.',
     quelle: 'Artikelstammdaten, Absatz-/Planwerte, Lagerbewegungen, Produktionsdaten, Marketing-Tracking, Kundenbewertungen (Demo: artikelkarte.js).'
-  }
+  },
   detailanalyse: {
     zweck: 'Operative Granularansicht für Erfasser:innen: tägliche Artikelbewegungen mit Mini-Zeitreihen und Deltas, Änderungslog, statistische Anomalien, Erfassungsqualität je Person und Pivot-Kreuztabelle.',
     zielgruppe: 'Operative Sachbearbeiter:innen (Lager, Einkauf, Vertrieb), Teamleiter:innen, Controlling.',
