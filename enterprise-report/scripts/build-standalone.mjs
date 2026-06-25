@@ -37,11 +37,11 @@ const lsShim = `try{var __t='__ls_test__';window.localStorage.setItem(__t,'1');w
   try{Object.defineProperty(window,'localStorage',{configurable:true,value:__ls});}catch(_){}
 }`
 
-// Demo-Modus: Wizard/Overlays überspringen, direkt in die Detailberichte starten.
+// Demo-Modus: Wizard/Overlays überspringen, direkt auf der Startseite starten.
 const boot = `try{
   localStorage.setItem('er_setup_done','1');
   localStorage.setItem('er_hilfe_gesehen','1');
-  localStorage.setItem('er_demo_view','detailberichte');
+  localStorage.setItem('er_demo_view','startseite');
   localStorage.setItem('er_onboarding_gesehen',JSON.stringify(['gf','controlling','bereichsleiter','mitarbeiter','admin','vertrieb','einkauf','finanzen']));
 }catch(e){}`
 
