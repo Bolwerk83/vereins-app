@@ -195,14 +195,16 @@ export default function Artikelkarte({ rolle }) {
           <h3 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600 }}>
             Artikel-Timeline — {stamm.name}
           </h3>
-          {stamm.bild && (
-            <div style={{ marginBottom: 16 }}>
-              <img src={stamm.bild} alt={stamm.name}
-                style={{ maxHeight: 120, borderRadius: 8, objectFit: 'cover', border: '1px solid var(--border)' }}
-                onError={e => { e.currentTarget.style.display = 'none' }}
-              />
-            </div>
-          )}
+          <div style={{ marginBottom: 16 }}>
+            {stamm.bild
+              ? <img src={stamm.bild} alt={stamm.name}
+                  style={{ maxHeight: 120, borderRadius: 8, objectFit: 'cover', border: '1px solid var(--border)' }}
+                  onError={e => { e.currentTarget.outerHTML = '' }} />
+              : <div title="Kein Bild in der Datenbank hinterlegt" style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, width: 150, height: 110, borderRadius: 8, border: '1px dashed var(--line)', background: 'var(--bg)', color: 'var(--muted)' }}>
+                  <span style={{ fontSize: 38, lineHeight: 1 }}>{stamm.gruppe === 'Zubehör' ? '🪖' : '🚲'}</span>
+                  <span style={{ fontSize: 10.5 }}>kein Bild hinterlegt</span>
+                </div>}
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 680 }}>
             {(journey || []).map((evt, i) => (
               <div key={i} style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
