@@ -148,7 +148,16 @@ export const BERICHT_INFO = {
   wizard: { zweck: 'Ersteinrichtung der Anwendung.', zielgruppe: 'Admin.', mehrwert: 'System sauber konfigurieren.' },
   admin: { zweck: 'Admin-Bereich: Logo, Themes, Branding.', zielgruppe: 'Admin.', mehrwert: 'Die App an Anlässe/Marke anpassen.' },
   nutzung: { zweck: 'Nutzungs-Statistik: Aufrufe, eindeutige & aktive User.', zielgruppe: 'Admin.', mehrwert: 'Das Reporting datenbasiert verbessern.' },
-  rechte: { zweck: 'Rollen & Rechte verwalten (Bereiche, geschützte KPIs, Mitglieder).', zielgruppe: 'Admin.', mehrwert: 'Sichtbarkeit & Schutz zentral steuern.' }
+  rechte: { zweck: 'Rollen & Rechte verwalten (Bereiche, geschützte KPIs, Mitglieder).', zielgruppe: 'Admin.', mehrwert: 'Sichtbarkeit & Schutz zentral steuern.' },
+  artikelkarte: {
+    zweck: 'Vollständige Artikelkarte (Mini-ERP): alle relevanten Daten zu einem Artikel — Stammdaten, KPIs, Preis- und Absatzentwicklung, Lager, Produktion, Marketing, Bewertungen und Journey-Timeline.',
+    zielgruppe: 'Produktmanagement, Vertrieb, Controlling, Einkauf.',
+    mehrwert: 'Durchgängige 360°-Sicht je Artikel: Lebenszyklus, Planerreichung, Deckungsbeitrag, Marketingwirkung und Folgeartikel-Verkettung in einer Ansicht.',
+    inhalt: 'Artikelauswahl (Katalog-Chips), KPI-Kacheln, Tabs: Journey (Chronologie der Ereignisse), Verkauf (Ist/Plan-Vergleich mit Sparkline), Preisentwicklung, Lagerentwicklung, Produktionskennzahlen (OEE/Ausschuss), Marketing-Aktionen & Probefahrten/Shop-Conversion, Kundenbewertungen (Stern-Verteilung), Folgeartikel & Geschäftsarten.',
+    fragen: ['Wie entwickeln sich Umsatz und DB dieses Artikels?', 'Ist der Absatzplan erfüllt?', 'Wie wirkt die Marketingkampagne (ROAS)?', 'Welcher Artikel folgt als Nachfolger?', 'Wie hat sich der Lagerbestand entwickelt?', 'Wie beurteilen Kunden diesen Artikel?'],
+    lesehilfe: 'Artikel über die Chip-Leiste oben auswählen. Tabs wechseln die Ansicht. Ampel-Farben zeigen Abweichungen vom Zielkorridor.',
+    quelle: 'Artikelstammdaten, Absatz-/Planwerte, Lagerbewegungen, Produktionsdaten, Marketing-Tracking, Kundenbewertungen (Demo: artikelkarte.js).'
+  }
 }
 
 export const infoVon = (view) => BERICHT_INFO[view] || null
