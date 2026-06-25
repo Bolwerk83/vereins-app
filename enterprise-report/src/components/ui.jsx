@@ -7,6 +7,7 @@ import { kpiInsight } from '../core/insights.js'
 import { renderText, istVeraltet, ladeText, speichereText, loescheText, aktualisiereSnapshot, VORLAGEN, kiVorschlaege } from '../core/textbausteine.js'
 import { kpiAnzeige, statusVon, darfFreigeben, FREIGABE_STATUS, FREIGABE_LABEL, NICHT_VERFUEGBAR } from '../core/kpiFreigabe.js'
 import { useNav } from './NavContext.jsx'
+import { detailFuerBereich } from '../core/detailberichte.js'
 import { useKpiDef } from '../modules/kennzahlen/KpiDefContext.jsx'
 import { useFenster } from '../core/useFenster.js'
 import { ladeBookmarks, addBookmark, loescheBookmark, ladeLetzte, merkeLetzte } from '../core/bookmarks.js'
@@ -175,15 +176,24 @@ export function KpiDrillModal({ startId, werte = {}, onClose }) {
           </div>
           <div style={{ marginTop: 8, fontSize: 11.5, color: 'var(--muted)' }}>{k.beschreibung}</div>
 
-          {/* Öffnen in … (von jeder Kennzahl in Themenbericht/Details/Struktur) */}
-          {nav && (
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 12, alignItems: 'center' }}>
-              <span style={{ fontSize: 11, color: 'var(--muted)' }}>Öffnen in:</span>
-              <button onClick={() => { onClose(); nav.imBaum(id) }} style={{ fontSize: 12, padding: '4px 10px', borderRadius: 999, cursor: 'pointer', border: '1px solid var(--accent)', background: 'var(--panel)', color: 'var(--accent)', fontWeight: 600 }}>📂 Themenbericht</button>
-              <button onClick={() => { onClose(); nav.details(k.bereich) }} style={{ fontSize: 12, padding: '4px 10px', borderRadius: 999, cursor: 'pointer', border: '1px solid var(--accent)', background: 'var(--panel)', color: 'var(--accent)', fontWeight: 600 }}>🔎 Details</button>
-              <button onClick={() => { onClose(); nav.struktur() }} style={{ fontSize: 12, padding: '4px 10px', borderRadius: 999, cursor: 'pointer', border: '1px solid var(--accent)', background: 'var(--panel)', color: 'var(--accent)', fontWeight: 600 }}>📐 Struktur</button>
-            </div>
-          )}
+          {/* Öffnen in … (von jeder Kennzahl in Themenbericht/Details/Struktur).
+              Der Detail-Button nennt die konkrete Belegliste, damit transparent
+              ist, wohin der Drill führt (Herzstück: bis auf Detailebene). */}
+          {nav && (() => {
+            const det = detailFuerBereich(k.bereich)
+            const pill = { fontSize: 12, padding: '4px 10px', borderRadius: 999, cursor: 'pointer', border: '1px solid var(--accent)', background: 'var(--panel)', color: 'var(--accent)', fontWeight: 600 }
+            return (
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 12, alignItems: 'center' }}>
+                <span style={{ fontSize: 11, color: 'var(--muted)' }}>Öffnen in:</span>
+                <button onClick={() => { onClose(); nav.imBaum(id) }} style={pill}>📂 Themenbericht</button>
+                <button onClick={() => { onClose(); nav.details(k.bereich) }} style={pill}
+                  title={det ? `Auf Belegebene: ${det.name}` : 'Detailbericht-Übersicht'}>
+                  🔎 {det ? `Details: ${det.name}` : 'Detailberichte'}
+                </button>
+                <button onClick={() => { onClose(); nav.struktur() }} style={pill}>📐 Struktur</button>
+              </div>
+            )
+          })()}
           {ins?.aussage && (
             <div style={{ marginTop: 12, padding: '11px 13px', borderRadius: 'var(--radius-sm)', background: 'var(--accent-soft)', border: '1px solid var(--line)' }}>
               <div className="mono" style={{ fontSize: 10, color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 4 }}>🤖 KI-Einschätzung</div>

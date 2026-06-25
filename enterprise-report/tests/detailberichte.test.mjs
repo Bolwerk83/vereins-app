@@ -106,6 +106,22 @@ test('Drill E3→E4: Fachbereich → passende Detailliste', () => {
   assert.equal(detailFuerBereich('KON').id, 'leasing')
   assert.equal(detailFuerBereich('IT'), null)       // kein Mapping
   assert.equal(detailFuerBereich(undefined), null)
+  // erweiterte Mappings (Transparenz-Drill für mehr Bereiche)
+  assert.equal(detailFuerBereich('LIQ').id, 'offeneposten')
+  assert.equal(detailFuerBereich('PR').id, 'charge')
+  assert.equal(detailFuerBereich('QM').id, 'retoure')
+  assert.equal(detailFuerBereich('EK').id, 'bestellung')
+})
+
+test('Drill-Abdeckung: jede KPI-Kennzahl erreicht eine Detailebene (außer HR/IT/PC)', async () => {
+  const { KPI } = await import('../src/core/kpiRegistry.js')
+  const ohneListe = new Set(['HR', 'IT', 'PC'])   // keine personenbezogene Belegliste im Demo
+  const fehlend = new Set()
+  for (const k of Object.values(KPI)) {
+    if (!k.bereich || ohneListe.has(k.bereich)) continue
+    if (!detailFuerBereich(k.bereich)) fehlend.add(k.bereich)
+  }
+  assert.deepEqual([...fehlend], [], `Bereiche ohne Drill-Ziel: ${[...fehlend].join(', ')}`)
 })
 
 test('Produktliste: Plausi (kein VK-Preis, EAN, gesperrt)', () => {

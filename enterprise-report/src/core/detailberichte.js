@@ -645,10 +645,20 @@ export function verknuepfungenFuer(typ, row) {
 }
 
 // Drill-Down E3 → E4: welcher Fachbereich (E2-Code) führt in welche Detailliste?
+// Ziel: JEDE Kennzahl soll auf eine verursachungsnahe, befüllte Belegliste
+// drillen können (Transparenz-Herzstück). Bereiche ohne fachlich passende
+// Detailliste (HR/IT/Personalcontrolling) bleiben offen und fallen auf die
+// Detailbericht-Übersicht zurück.
 export const BEREICH_DETAIL = {
-  VK: 'auftrag', VC: 'kunde', MKT: 'kunde', SVC: 'retoure',
-  RIS: 'rechnung', FIN: 'rechnung', FIBU: 'rechnung', KON: 'leasing',
-  LOG: 'artikel', SCC: 'artikel', EK: 'artikel', KLR: 'plausiwv'
+  // Vertrieb / Markt / Kunde
+  VK: 'auftrag', VC: 'kunde', MKT: 'kunde', SVC: 'retoure', QM: 'retoure',
+  // Finanzen / Liquidität / Treasury / Forecast
+  RIS: 'rechnung', FIN: 'rechnung', FIBU: 'rechnung', FC: 'rechnung', GF: 'rechnung',
+  LIQ: 'offeneposten', TRE: 'offeneposten', KON: 'leasing',
+  // Supply Chain / Produktion / Beschaffung
+  LOG: 'artikel', SCC: 'artikel', EK: 'bestellung', PR: 'charge', PP: 'produkt',
+  // Kostenrechnung / Planung / F&E / ESG
+  KLR: 'plausiwv', PLAN: 'auftragsbestand', FE: 'produkt', ESG: 'lieferant'
 }
 /** Passende, verfügbare Detailliste zu einem Fachbereich (oder null). */
 export function detailFuerBereich(bereich) {
