@@ -74,12 +74,15 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
 - **Wertgutschriften zum tatsächlichen Auftrag**: in **EUR und %** ausweisen.
 - Retourenübersicht je Kunde (Quote, Wert, Gründe), Auffälligkeiten markieren.
 
-### H. Dimensions-Umschalter in allen sinnvollen Berichten — v1 (Personal) DONE
+### H. Dimensions-Umschalter in allen sinnvollen Berichten — v1+v2 DONE (Lager offen)
 - Gruppierung je Bericht umschaltbar (z. B. Bereich → Profit-Center → Region →
   Kanal → Warenbereich …), nicht nur Filtern. Basis: `core/pivot.js` (gruppiere,
   sinnvolleDimensionen). v1 im Personalbericht umgesetzt.
-- Offen: Rollout auf weitere Berichte (Vertrieb, Kosten/Profitcenter, Lager,
-  Produktion) — jeweils die fachlich sinnvollen Dimensionen anbieten.
+- **Erledigt:** Vertrieb (Verkaufsstatistik: Warengruppe/Kanal/Artikel-Chips),
+  Produktion (Produktionsstatistik: Produkt/Werk-Chips), Profitcenter (war bereits
+  vorhanden: Geschäftsbereich/Region/Kanal).
+- **Noch offen:** Lager — Dimension-Umschalter erfordert Umbau der
+  Lagerverwaltung (komplex wegen Eskalations-Workflow).
 
 ### G. Abgleichsbericht Absatzmenge vs. Auftragseingang tatsächlich — DONE
 - **Absatzmenge (aus Rechnungspositionen)** gegen **Auftragseingang tatsächlich
@@ -222,6 +225,12 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
   (`npm run build:standalone`).
 
 ## In dieser Session bereits erledigt (Kontext)
+- **Artikelkarte (360°-Artikel-Ansicht):** UI-Modul `Artikelkarte.jsx` mit 8 Tabs
+  (Journey-Timeline, Verkauf Ist/Plan, Preis, Lager, Produktion, Marketing,
+  Bewertungen, Folgeartikel) und 8 KPI-Kacheln; Core: `artikelkarte.js`;
+  in Nav + berichtInfo + i18n + navMeta + suche.js integriert.
+- **H-Rollout Dimensions-Umschalter:** Verkaufsstatistik (Warengruppe/Kanal/
+  Artikel), Produktionsstatistik (Produkt/Werk) — jeweils mit angepasstem Export.
 - Detailberichte: 17 Listen, Plausi, E5-Historie, Cross-Drill, Spalten/Bookmarks,
   CSV, KPI-Hover, Vollansicht (KI-Erkenntnisse/Bemerkungen/Preisvergleich),
   Sammel-Cockpit, Qualitätsdashboard (Status+Log), Controller-Radar (+Log),
