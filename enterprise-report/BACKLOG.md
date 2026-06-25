@@ -80,7 +80,7 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
   sinnvolleDimensionen). v1 im Personalbericht umgesetzt.
 - **Erledigt:** Vertrieb (Verkaufsstatistik: Warengruppe/Kanal/Artikel-Chips),
   Produktion (Produktionsstatistik: Produkt/Werk-Chips), Profitcenter (war bereits
-  vorhanden: Geschäftsbereich/Region/Kanal).
+  vorhanden: Geschäftsbereich/Region/Kanal), Fahrrad (Fahrradstatistik: Kategorie/Preisklasse-Chips).
 - **Noch offen:** Lager — Dimension-Umschalter erfordert Umbau der
   Lagerverwaltung (komplex wegen Eskalations-Workflow).
 
@@ -175,23 +175,29 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
   **Stand/Frische der Daten**, Verbindungsstatus, letzte Aktualisierung je Quelle,
   Fehler/Warnungen beim Laden.
 
-### 16. Flexible Zeitraumsdefinition
+### 16. Flexible Zeitraumsdefinition — DONE
 - Granularitäten wählbar: **Jahr/Monat/Tag**, **Jahr/KW/Tag** usw.,
   jeweils **nach Datumsart** (Belegdatum, Bestelldatum, Lieferdatum …).
-- Baut auf `periodenmodell.js` + `ZeitDatenart` auf; in allen passenden Berichten
-  wirksam (Filter/Aggregation).
+- Implementiert: `periodenmodell.js` (DATUMSSICHTEN, GRANULARITAETEN, Datenherkunft
+  je Monat), `ZeitDatenart.jsx` (vollständige UI, erreichbar über 🗓 in der Topbar),
+  `StatistikFilter.jsx` + `statistikFilter.js` (je Bericht: Datumsart-Auswahl);
+  `DatenartBadge` in der Topbar zeigt den aktuellen Mix.
 
-### 17. Von jeder Kennzahl in Themenbericht/Details springen
+### 17. Von jeder Kennzahl in Themenbericht/Details springen — DONE
 - An **jeder KPI** direkt: Sprung in den passenden **Themenbericht (E3)** oder die
-  **Details (E4)** — mit Auswahl **unterschiedlicher Ansichten** (Tabelle, Visual,
-  Hierarchie, Zeitreihe …). Einheitliches „Öffnen in …"-Menü an der Karte/im Drill.
+  **Details (E4)** — mit Auswahl **unterschiedlicher Ansichten**. Einheitliches
+  „Öffnen in …"-Menü an der Karte/im Drill.
+- Implementiert: `DRILL_ZIELE`-Mapping (20+ Berichtsansichten) in `ExecKopf.jsx`.
+  Kleine „Öffnen in:"-Pills am Fuß des ExecKopf nutzen `imBaum(kpiId)`,
+  `details(bereich)` und `struktur()` aus NavContext — erscheinen automatisch,
+  wenn die aktuelle Ansicht in `DRILL_ZIELE` eingetragen ist.
 
 ### 18. KPI als Standard-Vorlage beim Berichtsbau
 - Beim Bauen eines Berichts ist die Kennzahl bereits als **Standard-Vorlage** für
   viele **Visuals** hinterlegt (Karte, Balken, Linie, Tabelle, Donut, Hierarchie …),
   sodass man **nur die Kennzahl tauschen** muss und alle Visuals automatisch passen.
 
-### 19. Detailanalyse-Berichte für operative Erfasser:innen
+### 19. Detailanalyse-Berichte für operative Erfasser:innen — IN ARBEIT
 - Zielgruppe: die täglich Daten **erfassen & bewerten** — sehr granular, nicht „Overall".
 - Mehrwerte:
   - **Entwicklungen/Trends** je Artikel/Kunde/Charge/Konto über Zeit (Mini-Zeitreihen,
@@ -229,8 +235,11 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
   (Journey-Timeline, Verkauf Ist/Plan, Preis, Lager, Produktion, Marketing,
   Bewertungen, Folgeartikel) und 8 KPI-Kacheln; Core: `artikelkarte.js`;
   in Nav + berichtInfo + i18n + navMeta + suche.js integriert.
-- **H-Rollout Dimensions-Umschalter:** Verkaufsstatistik (Warengruppe/Kanal/
-  Artikel), Produktionsstatistik (Produkt/Werk) — jeweils mit angepasstem Export.
+- **H-Rollout Dimensions-Umschalter:** Verkaufsstatistik (Warengruppe/Kanal/Artikel),
+  Produktionsstatistik (Produkt/Werk), Fahrradstatistik (Kategorie/Preisklasse) —
+  jeweils mit angepasstem Export.
+- **#17 ExecKopf Drill-Links:** `DRILL_ZIELE`-Mapping in ExecKopf.jsx mit 20+
+  Berichtsansichten; „Öffnen in:"-Pills am Fuß des ExecKopf automatisch sichtbar.
 - Detailberichte: 17 Listen, Plausi, E5-Historie, Cross-Drill, Spalten/Bookmarks,
   CSV, KPI-Hover, Vollansicht (KI-Erkenntnisse/Bemerkungen/Preisvergleich),
   Sammel-Cockpit, Qualitätsdashboard (Status+Log), Controller-Radar (+Log),
