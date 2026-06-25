@@ -78,6 +78,7 @@ import Abgrenzungsrechnung from './modules/abgrenzung/Abgrenzungsrechnung.jsx'
 import LebenszyklusEmpfehlungen from './modules/lebenszyklus/Empfehlungen.jsx'
 import KpiEditor from './modules/kpi-editor/KpiEditor.jsx'
 import Nutzung from './modules/nutzung/Nutzung.jsx'
+import Artikelkarte from './modules/artikelkarte/Artikelkarte.jsx'
 import { trackOeffnung } from './core/nutzung.js'
 import { nutzerId } from './core/identitaet.js'
 import { heartbeat } from './core/praesenz.js'
@@ -334,6 +335,7 @@ export default function App() {
       { titel: 'Lebenszyklen', eintraege: [
         E('lebenszyklus', 'nav.lebenszyklus', '🔄'),
         E('lzempfehlung', 'nav.lzempfehlung', '🧭'),
+        E('artikelkarte', 'nav.artikelkarte', '📋'),
         E('anlagen', 'nav.anlagen', '🏗'),
         E('technologie', 'nav.technologie', '🔬'),
         E('mitarbeiter', 'nav.mitarbeiter', '🧑‍🤝‍🧑')
@@ -632,6 +634,9 @@ export default function App() {
         )}
         {ansicht === 'portfoliobcg' && (
           <PortfolioBcg />
+        )}
+        {ansicht === 'artikelkarte' && (
+          <Artikelkarte rolle={rolle} werte={werte} periode={periode} />
         )}
         {ansicht === 'quartalsbericht' && (
           <Quartalsbericht />
