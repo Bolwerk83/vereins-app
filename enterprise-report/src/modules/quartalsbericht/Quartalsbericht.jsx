@@ -13,6 +13,7 @@ import {
 import { pcFaktor, pcName, zeitraumVon } from '../../core/statistikFilter.js'
 import { useGlobalFilter, GlobalFilterLeiste } from '../../core/filterKontext.jsx'
 import AutoSummary from '../../components/AutoSummary.jsx'
+import { AmpelPunkt } from '../../components/ui.jsx'
 import { forecastBruecke, FORECAST_METHODEN } from '../../core/forecast.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
@@ -161,7 +162,7 @@ function UmsatzSektion({ serie, ctx }) {
   return (
     <section style={{ ...card, padding: 18, marginBottom: 16 }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
-        <span style={{ width: 9, height: 9, borderRadius: '50%', background: AMP[st], display: 'inline-block' }} />
+        <AmpelPunkt status={st} size={13} />
         <h3 style={{ margin: 0, fontSize: 17 }}>{serie.titel}</h3>
         <span style={{ fontSize: 14, fontWeight: 700, color: AMP[st] }}>{headTxt}</span>
         <span style={{ fontSize: 12, color: 'var(--muted)' }}>· {periodeName}{jeArbeitstag ? ` · ${k.arbeitstage} Arbeitstage` : ''}</span>

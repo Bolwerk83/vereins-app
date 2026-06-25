@@ -9,6 +9,7 @@ import StatistikFilter, { ladeFilter, speichereFilter } from './StatistikFilter.
 import { useGlobalFilter } from '../../core/filterKontext.jsx'
 import ExportButton from '../../components/ExportButton.jsx'
 import ExecKopf, { ampelVon } from '../../components/ExecKopf.jsx'
+import { AmpelPunkt } from '../../components/ui.jsx'
 import { datenstandText } from '../../core/datenstand.js'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
@@ -81,7 +82,7 @@ export default function Einkaufsstatistik() {
             <tbody>
               {lf.map((l) => (
                 <tr key={l.id} style={{ borderBottom: '1px solid var(--line)' }}>
-                  <td style={{ ...td, fontWeight: 600 }}><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 999, background: AMP[l.risiko], marginRight: 7 }} />{l.name}</td>
+                  <td style={{ ...td, fontWeight: 600 }}><span style={{ display: 'inline-flex', verticalAlign: 'middle', marginRight: 7 }}><AmpelPunkt status={l.risiko} size={12} /></span>{l.name}</td>
                   <td style={{ ...td, color: 'var(--muted)' }}>{l.warengruppe}</td>
                   <td style={{ ...td, textAlign: 'right' }} className="mono">{mio(l.volumen)}</td>
                   <td style={{ ...td, textAlign: 'right' }} className="mono">{l.anteilPct} %</td>

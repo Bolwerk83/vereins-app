@@ -6,6 +6,7 @@
 import React, { useState } from 'react'
 import { plane, empfehlung, SORTIERUNGEN } from '../../core/produktionsplaner.js'
 import { fmtDatum, diffTage, HEUTE } from '../../core/beschaffung.js'
+import { AmpelPunkt } from '../../components/ui.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700 }
@@ -81,7 +82,7 @@ export default function Produktionsplaner() {
                 <td style={{ padding: '6px 9px', borderBottom: '1px solid var(--line)' }}>{a.name}</td>
                 <td style={{ padding: '6px 9px', borderBottom: '1px solid var(--line)', textAlign: 'right' }} className="mono">{a.menge}</td>
                 <td style={{ padding: '6px 9px', borderBottom: '1px solid var(--line)', textAlign: 'right' }} className="mono">{fmtDatum(a.liefertermin)}</td>
-                <td style={{ padding: '6px 9px', borderBottom: '1px solid var(--line)', textAlign: 'right' }}><span style={{ color: AMP[a.material] }}>● {a.material === 'g' ? 'auf Lager' : a.material === 'a' ? 'beschaffen' : 'knapp'}</span></td>
+                <td style={{ padding: '6px 9px', borderBottom: '1px solid var(--line)', textAlign: 'right' }}><span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end', color: AMP[a.material] }}><AmpelPunkt status={a.material} size={12} /> {a.material === 'g' ? 'auf Lager' : a.material === 'a' ? 'beschaffen' : 'knapp'}</span></td>
                 <td style={{ padding: '6px 9px', borderBottom: '1px solid var(--line)' }}>{a.linieName}</td>
                 <td style={{ padding: '6px 9px', borderBottom: '1px solid var(--line)', textAlign: 'right' }} className="mono">{fmtDatum(a.start)}</td>
                 <td style={{ padding: '6px 9px', borderBottom: '1px solid var(--line)', textAlign: 'right', fontWeight: 700 }} className="mono">{fmtDatum(a.ende)}</td>

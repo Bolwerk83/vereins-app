@@ -10,11 +10,13 @@ import { BERICHTSBAUM } from '../../core/reportTree.js'
 import { ladeHistorie } from '../../core/dataProvider.js'
 import { formatWert } from '../../design/theme.js'
 import ExecKopf from '../../components/ExecKopf.jsx'
+import { AmpelPunkt } from '../../components/ui.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700 }
 const AMP = { g: 'var(--amp-g)', a: 'var(--amp-a)', r: 'var(--amp-r)', n: 'var(--line)' }
-const Punkt = ({ status, s = 9 }) => <span style={{ display: 'inline-block', width: s, height: s, borderRadius: '50%', background: AMP[status] || AMP.n }} />
+// Statuspunkt zentral über AmpelPunkt — trägt das Symbol (✓/!/✕), einheitlich.
+const Punkt = ({ status, s = 13 }) => <AmpelPunkt status={status} size={Math.max(12, s)} />
 
 function Spark({ kpiId, einheit, status }) {
   const [r, setR] = useState(null)

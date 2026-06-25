@@ -15,6 +15,7 @@
 import React from 'react'
 import Kommentar from './Kommentar.jsx'
 import { useNav } from './NavContext.jsx'
+import { AMPEL_SYMBOL } from '../design/theme.js'
 
 const AMP = {
   g: { f: 'var(--amp-g)', label: 'Auf Kurs' },
@@ -79,7 +80,7 @@ export default function ExecKopf({ status = 'a', kernaussage, kennzahl, kennzahl
       <div style={{ flex: 1, minWidth: 240, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 5 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '2px 9px', borderRadius: 999,
-            background: amp.f, color: '#fff', fontSize: 11, fontWeight: 700, letterSpacing: '.02em' }}>● {statusLabel || amp.label}</span>
+            background: amp.f, color: '#fff', fontSize: 11, fontWeight: 700, letterSpacing: '.02em' }}><span aria-hidden="true" style={{ fontWeight: 800 }}>{AMPEL_SYMBOL[status] || '•'}</span> {statusLabel || amp.label}</span>
           <span style={{ fontSize: 10.5, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.05em', fontWeight: 700 }}>Kernaussage</span>
           <span title="Diese Aussage entsteht regelbasiert aus den echten Zahlen — ohne KI, ohne Datenweitergabe." style={{ fontSize: 10, color: '#166534', fontWeight: 700, background: '#dcfce7', border: '1px solid #86efac', borderRadius: 999, padding: '1px 7px' }}>🔒 ohne KI</span>
         </div>

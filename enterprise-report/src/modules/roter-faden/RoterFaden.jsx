@@ -8,7 +8,8 @@ import React, { useState, useEffect } from 'react'
 import { kritischerPfad, fachbereiche, kernaussage, pfadLeitKpi } from '../../core/roterFaden.js'
 import { EBENEN } from '../../core/reportTree.js'
 import { ladeHistorie } from '../../core/dataProvider.js'
-import { formatWert } from '../../design/theme.js'
+import { formatWert, AMPEL_SYMBOL } from '../../design/theme.js'
+import { AmpelPunkt } from '../../components/ui.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700 }
@@ -16,7 +17,7 @@ const AMP = { g: 'var(--amp-g)', a: 'var(--amp-a)', r: 'var(--amp-r)', n: 'var(-
 const AMP_WORT = { g: 'auf Kurs', a: 'beobachten', r: 'Handlungsbedarf', n: '—' }
 
 function Punkt({ status, size = 11 }) {
-  return <span style={{ display: 'inline-block', width: size, height: size, borderRadius: '50%', background: AMP[status] || AMP.n }} />
+  return <AmpelPunkt status={status} size={Math.max(12, size)} />
 }
 
 function MiniVerlauf({ kpiId, einheit }) {
@@ -95,7 +96,7 @@ export default function RoterFaden({ rolle, werte = {}, onGeh, onKpi }) {
                     <div style={{ fontWeight: 700, fontSize: 15, margin: '2px 0' }}>{s.node.titel}</div>
                     <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>{e.frage}</div>
                   </div>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 10px', borderRadius: 999, background: AMP[s.status], color: '#fff', fontSize: 11.5, fontWeight: 700 }}>● {AMP_WORT[s.status]}</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 10px', borderRadius: 999, background: AMP[s.status], color: '#fff', fontSize: 11.5, fontWeight: 700 }}><span aria-hidden="true" style={{ fontWeight: 800 }}>{AMPEL_SYMBOL[s.status]}</span> {AMP_WORT[s.status]}</span>
                 </div>
 
                 <div style={{ fontSize: 13.5, lineHeight: 1.5, margin: '10px 0' }}>{kernaussage(s)}</div>

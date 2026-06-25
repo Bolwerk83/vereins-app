@@ -7,10 +7,12 @@
 import React from 'react'
 import { pruefeAlle } from '../../core/validierung.js'
 import { konsistenzReport, ZIEL_UMSATZ } from '../../core/berichtskonsistenz.js'
-import { Badge } from '../../components/ui.jsx'
+import { Badge, AmpelPunkt } from '../../components/ui.jsx'
 
 const FARBE = { ok: 'var(--amp-g)', warnung: 'var(--amp-a)', fehler: 'var(--amp-r)', na: 'var(--muted)' }
 const LABEL = { ok: 'OK', warnung: 'Plausibilität', fehler: 'Abstimmfehler', na: 'keine Daten' }
+// Validierungs-Status auf die gemeinsame Ampel-Kodierung (g/a/r/n) abbilden.
+const AMP = { ok: 'g', warnung: 'a', fehler: 'r', na: 'n' }
 const mio = (n) => (n / 1e6).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' Mio €'
 
 // Berichtsuebergreifender Quercheck: derselbe Jahresumsatz in jedem Bericht?
@@ -41,7 +43,7 @@ function KonsistenzPanel() {
               <td style={{ padding: '9px 16px', borderTop: '1px solid var(--line)', color: 'var(--muted)', fontSize: 12 }}>{x.basis}</td>
               <td className="mono" style={{ padding: '9px 16px', borderTop: '1px solid var(--line)', textAlign: 'right' }}>{mio(x.wert)}</td>
               <td className="mono" style={{ padding: '9px 16px', borderTop: '1px solid var(--line)', textAlign: 'right', fontWeight: 600, color: FARBE[x.status] }}>{x.abwPct >= 0 ? '+' : ''}{x.abwPct.toLocaleString('de-DE')} %</td>
-              <td style={{ padding: '9px 16px', borderTop: '1px solid var(--line)' }}><span style={{ width: 9, height: 9, borderRadius: '50%', background: FARBE[x.status], display: 'inline-block' }} /></td>
+              <td style={{ padding: '9px 16px', borderTop: '1px solid var(--line)' }}><AmpelPunkt status={AMP[x.status]} size={13} /></td>
             </tr>
           ))}
         </tbody>
@@ -82,7 +84,7 @@ export default function Datenqualitaet({ werte, periode }) {
         {ergebnisse.map((e, i) => (
           <div key={e.id} style={{ display: 'grid', gridTemplateColumns: '14px 1fr 220px 130px', gap: 12, alignItems: 'center',
             padding: '12px 16px', borderTop: i ? '1px solid var(--line)' : 'none' }}>
-            <span style={{ width: 10, height: 10, borderRadius: '50%', background: FARBE[e.status] }} />
+            <AmpelPunkt status={AMP[e.status]} size={14} />
             <div>
               <div style={{ fontWeight: 600, fontSize: 14 }}>{e.titel}</div>
               <div style={{ fontSize: 12, color: 'var(--muted)' }}>{e.hinweis} · Bereich {e.bereich} · {e.schwere}</div>
