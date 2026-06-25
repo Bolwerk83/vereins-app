@@ -98,7 +98,7 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
   im Chart + Karten; Klick filtert Chart & Liste auf das Feld, je Objekt Drill.
   Core: `bcgVerteilung`/`quadrantVon`/`BCG_QUADRANTEN` (+ Tests).
 
-### 2. Instrumente / Berichtsbaum aufräumen — DONE
+### 2. Instrumente / Berichtsbaum aufräumen
 - Alle Berichte unter **Instrumente** in sinnvolle Bereiche einsortieren.
 - Berichtsbaum-Logik **anwenderfreundlicher** strukturieren.
 - Berichts-**Beschreibungen deutlich ausführlicher** (Zweck, Inhalt, typische Fragen,
@@ -162,11 +162,14 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
   im Portfolio-Panel; Kunden: eigene Beziehungs-Kurve (5 Phasen) über der Tabelle.
   Core: `phasenKurve(phasen, objekte)` (Höhenprofil + Objektpositionen, + Tests).
 
-### 14. Navigation entwirren (zwei Leisten)
+### 14. Navigation entwirren (zwei Leisten) — DONE
 - Obere Leiste (Shortcuts) und Burger-Menü (volle Navigation) überschneiden sich →
   verwirrend. Klar trennen: oben = globaler Kontext + Suche + wenige Primär-Shortcuts;
   Burger = komplette, rollen-gefilterte Berichtsnavigation. Obere Leiste ebenfalls
   rollen-bewusst (fremde Bereiche ausblenden/kennzeichnen).
+- Erledigt: Berichte-/Kennzahlen-/Rechte-Shortcuts aus Topbar entfernt; nur noch QC + Alerts
+  als Status-Badges oben. OnePager/Roter Faden/Assistent in BurgerMenu (Werkzeuge-Untergruppe)
+  verschoben; Detail-Analyse in Burger-Überblick ergänzt; navMeta.js aktualisiert.
 
 ### 15. Startseite mit Import-/Ladestatus — DONE
 - Eigene Startseite/Cockpit: Sind **alle Importe gelaufen?** Fortschritt/Restwartezeit,
@@ -215,6 +218,47 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
 - **Export/Verteilung** je Bericht (PDF, geplanter Versand — Verteiler nutzen).
 - **Mobile/Responsive** Feinschliff für unterwegs.
 - **Datenherkunft/Lineage** bis zur SQL-Quelle sichtbar machen.
+
+### Neue Ideen aus Session-Review (2026-06)
+
+- **Working Capital Cockpit** — Forderungen + Lager (Vorratskapital) + Verbindlichkeiten in
+  einer Ansicht: Kapital-Bindungsdauer (DSO/DIO/DPO), Cash-Conversion-Cycle, Trend je
+  Periode, Drill in den jeweiligen Teilbereich. Besonders relevant, weil Lager und
+  Forderungen bereits als eigene Module existieren; die Synthese fehlt.
+
+- **Anomalie-Erklärungskette** — Wenn ein KPI-Alarm auslöst (z. B. Umsatz-Spike in Lager),
+  automatisch modulübergreifend nach Ursachen suchen: Lieferengpass? Saisoneffekt?
+  Preisänderung? Ergebnis: gerankte Hypothesen mit Evidenz-Links in die jeweiligen
+  Quell-Module. Ergänzt die bestehende Anomalie-Erkennung in detailAnalyse.js.
+
+- **Freitext-Analyse (Natural Language Query)** — Eingabefeld: „Welche Warengruppe hatte
+  den größten Umsatzrückgang im letzten Quartal?" → sofortige Chart/Tabellen-Antwort.
+  Technisch: Mapping von Schlüsselbegriffen auf KPIs + Dimensionen + Zeitraumformel;
+  Ergebnis im Antwort-Panel mit Drill-Link in den Bericht. Nutzt bestehenden Assistenten.
+
+- **Kundenprofitabilität 360°** — je Kunde: DB, Servicekosten (Aufwand Kundendienst/Retouren),
+  Zahlungsverhalten (Tage bis Zahlung), Retourenquote, Entwicklung über Zeit. Kreuzt
+  bestehende Module: Gutschriften, Forderungen, DB-Bericht, Detailberichte.
+  Liefert die Frage: „Welche Kunden sind wirklich profitabel — nach allen Kosten?"
+
+- **Lieferanten-Scorecard 360°** — systematische Bewertung je Lieferant: Liefertreue (OTIF),
+  Qualitätsquote (Reklamationen/Ausschuss), Preisstabilität, Reaktionszeit bei Engpässen,
+  Abhängigkeitsgrad (% der Beschaffung). Baut auf bestehenden Lager-Signalen auf;
+  ergänzt den Lieferanten-Lebenszyklus um eine quantitative Scorecard.
+
+- **PDF-Paket / Board-Report** — einen vollständigen Board-Report als PDF generieren:
+  Deckblatt (Logo, Periode, Ersteller), Inhaltsverzeichnis, Executive Summary (auto aus
+  Managementreport), je Bereich ein Abschnitt mit den wichtigsten Charts/Tabellen,
+  Maßnahmen-Übersicht. Nutzt `reportExport.js`; PDF via Browser-Print-API.
+
+- **Was-hat-sich-geändert (Delta seit letztem Login)** — beim Login/Startseite eine
+  kompakte Zusammenfassung: welche KPIs haben sich seit dem letzten Besuch signifikant
+  verändert? Welche Berichte wurden aktualisiert? Welche Maßnahmen sind fällig?
+  Speichert letzten Besuch-Timestamp in localStorage; Delta aus KPI-History berechnen.
+
+- **Interaktiver Budgetabgleich-Kalender** — Planungs-Monat-für-Monat-Vergleich: Ist vs.
+  Plan je Kostenstelle/Bereich als Kalenderansicht. Abweichungen direkt inline
+  kommentierbar; Drill in den Einzelmonat. Vervollständigt den Planungsbereich (A).
 
 ## Kleinere / Querschnitt
 - Visualisierungen (Daten-Balken etc.) auch **im Berichtsbaum** und weiteren
@@ -266,5 +310,9 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
   in Artikel-Sicht unberührt. Backlog H vollständig abgeschlossen.
 - **Backlog-Audit:** #7 (Prozesskette), #15 (Startseite) nachträglich als DONE markiert
   (Module, Tests und berichtInfo-Einträge existierten bereits vollständig).
-- **#2 berichtInfo vollständig enrichiert:** Alle 85 Einträge in `berichtInfo.js` haben jetzt `inhalt`, `fragen`, `lesehilfe` und `quelle` — 6 Commits (Batches 1–5), CI grün auf jedem.
-
+- **#14 Navigation entwirren:** Topbar auf QC+Alerts+Search+User/Settings reduziert.
+  OnePager/Roter Faden/Assistent in BurgerMenu (neue Werkzeuge-Untergruppe) verschoben.
+  Detail-Analyse im BurgerMenu (Überblick) ergänzt. navMeta.js um 3 Einträge erweitert.
+- **Neue Ideen dokumentiert:** 8 neue Entwicklungspunkte in „Eigene Themen-Ideen" eingetragen
+  (Working Capital Cockpit, Anomalie-Erklärungskette, Freitext-Analyse, Kundenprofitabilität 360°,
+  Lieferanten-Scorecard, PDF-Paket, Was-hat-sich-geändert, Budgetabgleich-Kalender).
