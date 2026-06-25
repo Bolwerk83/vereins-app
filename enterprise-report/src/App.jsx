@@ -148,6 +148,7 @@ export default function App() {
   const [hilfeAuf, setHilfeAuf] = useState(false)
   const [hilfeErstmalig, setHilfeErstmalig] = useState(false)
   const [onbAuf, setOnbAuf] = useState(false)
+  const [onbBanner, setOnbBanner] = useState(false)
   const [menuAuf, setMenuAuf] = useState(false)   // ⚙ Einstellungen-Menü (Topbar)
   const [theme, setTheme] = useState(() => { try { return localStorage.getItem('er_theme') || 'light' } catch { return 'light' } })
   useEffect(() => {
@@ -185,13 +186,12 @@ export default function App() {
     if (ansicht !== 'wizard' && !localStorage.getItem(HILFE_KEY)) { setHilfeErstmalig(true); setHilfeAuf(true) }
   }, [ansicht])
 
-  // Rollenbasiertes Onboarding einmal je Rolle automatisch zeigen
-  // (erst nach Ersthilfe/Setup, nicht im Wizard).
+  // Rollen-Onboarding NICHT mehr als blockierendes Modal aufpoppen, sondern als
+  // dezentes, schließbares Banner über dem Inhalt (einmal je Rolle). Den Rundgang
+  // startet der Nutzer selbst per CTA — oder jederzeit über 🚀.
   useEffect(() => {
     if (ansicht === 'wizard' || !localStorage.getItem(HILFE_KEY) || !rolle) return
-    // Genau EINMAL je Rolle automatisch zeigen: sofort als gesehen merken, damit
-    // es nicht bei jeder Navigation erneut aufpoppt (über 🚀 jederzeit erneut).
-    if (!schonGesehen(rolle.id)) { merkeGesehen(rolle.id); setOnbAuf(true) }
+    if (!schonGesehen(rolle.id)) { merkeGesehen(rolle.id); setOnbBanner(true) }
   }, [rolle?.id, ansicht]) // eslint-disable-line
 
   // Cache-Kontext aus dem Periodenmodell (Datumssicht + Granularität). Ändert
@@ -525,6 +525,17 @@ export default function App() {
         struktur: () => gehDetail('hierarchie')
       }}>
       <main style={{ padding: '22px 24px', maxWidth: 1800, margin: '0 auto' }}>
+        {onbBanner && ansicht !== 'wizard' && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 14, padding: '10px 14px',
+            background: 'var(--accent-soft)', border: '1px solid var(--accent)', borderRadius: 'var(--radius)' }}>
+            <span style={{ fontSize: 20 }}>🚀</span>
+            <span style={{ flex: 1, minWidth: 200, fontSize: 13.5, color: 'var(--ink)' }}>
+              <b>Neu hier{rolle?.name ? ` als ${rolle.name}` : ''}?</b> Kurzer Rundgang durch die wichtigsten Berichte deiner Rolle — oder jederzeit über 🚀 oben.
+            </span>
+            <button onClick={() => { setOnbBanner(false); setOnbAuf(true) }} style={{ padding: '7px 14px', border: 'none', borderRadius: 'var(--radius-sm)', background: 'var(--accent)', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>Rundgang starten</button>
+            <button onClick={() => setOnbBanner(false)} aria-label="Banner schließen" style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--muted)', fontSize: 18, lineHeight: 1 }}>×</button>
+          </div>
+        )}
         {ansicht !== 'wizard' && eintragIndex[ansicht] && (
           <BerichtInfoBanner view={ansicht} label={eintragIndex[ansicht].label} icon={eintragIndex[ansicht].icon} pfad={eintragIndex[ansicht].pfad} />
         )}
