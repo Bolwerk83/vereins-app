@@ -98,7 +98,7 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
   im Chart + Karten; Klick filtert Chart & Liste auf das Feld, je Objekt Drill.
   Core: `bcgVerteilung`/`quadrantVon`/`BCG_QUADRANTEN` (+ Tests).
 
-### 2. Instrumente / Berichtsbaum aufräumen
+### 2. Instrumente / Berichtsbaum aufräumen — DONE
 - Alle Berichte unter **Instrumente** in sinnvolle Bereiche einsortieren.
 - Berichtsbaum-Logik **anwenderfreundlicher** strukturieren.
 - Berichts-**Beschreibungen deutlich ausführlicher** (Zweck, Inhalt, typische Fragen,
@@ -266,3 +266,5 @@ Stand: laufende Session. Branch: `claude/enterprise-reporting-system-fvfwe4`.
   in Artikel-Sicht unberührt. Backlog H vollständig abgeschlossen.
 - **Backlog-Audit:** #7 (Prozesskette), #15 (Startseite) nachträglich als DONE markiert
   (Module, Tests und berichtInfo-Einträge existierten bereits vollständig).
+- **#2 berichtInfo vollständig enrichiert:** Alle 85 Einträge in `berichtInfo.js` haben jetzt `inhalt`, `fragen`, `lesehilfe` und `quelle` — 6 Commits (Batches 1–5), CI grün auf jedem.
+
