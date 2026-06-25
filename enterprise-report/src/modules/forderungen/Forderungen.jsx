@@ -4,6 +4,10 @@
 import React, { useState } from 'react'
 import { aging } from '../../core/forderungen.js'
 import { addMassnahme, ladeMassnahmen } from '../../core/massnahmen.js'
+import { pcFaktor } from '../../core/statistikFilter.js'
+import PcFilter, { pcHinweis } from '../shared/PcFilter.jsx'
+import { useGlobalFilter } from '../../core/filterKontext.jsx'
+import ExecKopf, { ampelVon } from '../../components/ExecKopf.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
@@ -14,10 +18,22 @@ const RISIKO_FARBE = { kein: 'var(--muted)', gering: 'var(--amp-g)', mittel: 'va
 
 export default function Forderungen() {
   const [, setTick] = useState(0)
-  const a = aging()
+  const g = useGlobalFilter()
+  const pc = g.pc
+  const aenderePc = g.setPc
+  const a = aging(pcFaktor(pc))
   const massn = ladeMassnahmen()
   const hatInkasso = massn.some((x) => x.quelle === 'forderungen')
   const max = Math.max(...a.rows.map((r) => r.betrag), 0.01)
+  // Exec-Kopf: Lage aus Überfälligkeitsquote (kleiner ist besser → invert),
+  // Empfehlung aus dem ältesten überfälligen Bucket mit Bestand.
+  const ueberfaelligRows = (a.rows || []).filter((r) => r.id !== 'nf' && r.betrag > 0)
+  const aeltester = ueberfaelligRows.length ? ueberfaelligRows[ueberfaelligRows.length - 1] : null
+  const execStatus = ampelVon(a.ueberfaelligkeitsquote, { gut: 5, schlecht: 15, invert: true })
+  const execAussage = `Offene Forderungen ${m(a.gesamt)} Mio €, davon überfällig ${m(a.ueberfaellig)} Mio € (${a.ueberfaelligkeitsquote} %) · DSO ${a.dso} Tg · erwarteter Ausfall ${m(a.erwarteterAusfall)} Mio €.`
+  const execEmpf = aeltester
+    ? `Ältester überfälliger Posten: ${aeltester.name} mit ${m(aeltester.betrag)} Mio € (Mahnstufe ${aeltester.mahnstufe}, erw. Ausfall ${m(aeltester.ausfall)} Mio €) — Mahnlauf/Inkasso priorisieren.`
+    : 'Keine überfälligen Posten — Mahnwesen weiter konsequent halten.'
 
   function inkasso() {
     addMassnahme({ titel: 'Überfällige Forderungen > 90 Tage: Inkasso & Klärung', owner: 'Finanzen', quelle: 'forderungen', bereich: 'FIN', hebel: 'Working Capital',
@@ -28,12 +44,15 @@ export default function Forderungen() {
   return (
     <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ marginBottom: 14 }}>
-        <h2 style={{ margin: '0 0 4px' }}>Forderungs-Aging</h2>
+        <h2 style={{ margin: '0 0 4px' }}>Forderungs-Aging{pcHinweis(pc)}</h2>
         <div style={{ color: 'var(--muted)', fontSize: 13, maxWidth: 740 }}>
           Altersstruktur der offenen Forderungen mit Mahnstufen und Wertberichtigung. Je älter, desto höher das
           Ausfallrisiko — und desto wichtiger das konsequente Mahnwesen.
         </div>
       </div>
+      <PcFilter pc={pc} onChange={aenderePc} hinweis="Forderungen anteilig je Profit-Center; Quoten/DSO bleiben unverändert." />
+
+      <ExecKopf status={execStatus} kennzahl={`${a.ueberfaelligkeitsquote} %`} kennzahlLabel="Überfälligkeitsquote" kernaussage={execAussage} empfehlung={execEmpf} />
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
         <div style={{ ...card, padding: '12px 14px', flex: 1, minWidth: 150 }}><div style={cap}>Forderungen gesamt</div><div style={{ fontSize: 22, fontWeight: 700 }}>{m(a.gesamt)} Mio €</div></div>

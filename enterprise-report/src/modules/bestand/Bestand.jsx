@@ -5,6 +5,7 @@
 import React, { useState } from 'react'
 import { auswertung, GAENGIGKEIT, gaengigkeitInfo } from '../../core/bestand.js'
 import { addMassnahme, ladeMassnahmen } from '../../core/massnahmen.js'
+import ExecKopf, { ampelVon } from '../../components/ExecKopf.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
@@ -18,6 +19,14 @@ export default function Bestand() {
   const massn = ladeMassnahmen()
   const hat = (id) => massn.some((m) => m.artikelId === id)
   const badge = (id) => { const g = gaengigkeitInfo(id); return { fontSize: 11, fontWeight: 700, color: '#fff', background: g.farbe, padding: '1px 8px', borderRadius: 999 } }
+
+  // Exec-Kopf: Lage aus Ladenhüter-Anteil (kleiner ist besser), Empfehlung aus dem konkreten Wert.
+  const ladenhueterAnteilPct = a.gesamt ? Math.round((a.ladenhueterWert || 0) / a.gesamt * 1000) / 10 : 0
+  const execStatus = ampelVon(ladenhueterAnteilPct, { gut: 3, schlecht: 8, invert: true })
+  const execAussage = `Bestandswert ${m(a.gesamt)} Mio € · Ø Reichweite ${a.reichweiteSchnitt} Tage · Ladenhüter-Anteil ${ladenhueterAnteilPct} % (${m(a.ladenhueterWert)} Mio €).`
+  const execEmpf = (a.ladenhueterWert || 0) > 0
+    ? `${m(a.ladenhueterWert)} Mio € binden Kapital in Ladenhütern — gezielten Abverkauf je Artikel anstoßen und Nachbestellungen dort stoppen.`
+    : `Keine Ladenhüter — Renner-Bestand (${m(a.rennerWert)} Mio €) lieferfähig halten und Reichweiten im Blick behalten.`
 
   function massnahme(r) {
     addMassnahme({ titel: `Bestand abbauen: ${r.name} (${gaengigkeitInfo(r.gaengigkeit).name})`, owner: 'Vertrieb/Logistik', quelle: 'bestand', artikelId: r.id, bereich: 'LOG', hebel: 'Bestand (Hebel #2)',
@@ -34,6 +43,8 @@ export default function Bestand() {
           Umschlag, Reichweite und Abverkaufs-Hinweise.
         </div>
       </div>
+
+      <ExecKopf status={execStatus} kennzahl={`${m(a.gesamt)} Mio €`} kennzahlLabel="Bestandswert" kernaussage={execAussage} empfehlung={execEmpf} />
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
         <div style={{ ...card, padding: '12px 14px', flex: 1, minWidth: 150 }}><div style={cap}>Bestand gesamt</div><div style={{ fontSize: 22, fontWeight: 700 }}>{m(a.gesamt)} Mio €</div></div>

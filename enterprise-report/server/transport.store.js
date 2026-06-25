@@ -11,6 +11,11 @@ const DIR = join(dirname(fileURLToPath(import.meta.url)), 'data', 'transports')
 function sicherstellen() { if (!existsSync(DIR)) mkdirSync(DIR, { recursive: true }) }
 
 export function speichereBundle(bundle) {
+  // Ohne gültige id würde 'undefined.json' geschrieben — alle id-losen Bundles
+  // kollidieren in einer Datei und sind über ladeBundle(id) nicht auffindbar.
+  if (!bundle || bundle.id == null || String(bundle.id).trim() === '') {
+    throw new Error('Transport-Bundle ohne id kann nicht gespeichert werden')
+  }
   sicherstellen()
   writeFileSync(join(DIR, `${bundle.id}.json`), JSON.stringify(bundle, null, 2))
   return bundle

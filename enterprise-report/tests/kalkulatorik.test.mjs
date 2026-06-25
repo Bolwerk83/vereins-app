@@ -24,3 +24,35 @@ test('Konfiguration persistiert und fließt in die Summe', () => {
   assert.ok(g.zeilen.length === BAUSTEINE.length)
   assert.equal(+(g.anders + g.zusatz).toFixed(2), g.summe)
 })
+
+import { felderVon as fJ, setFelder as sJ, wertVon as wJ, kopiereJahr, verfuegbareJahre, monatsVerteilung, DEFAULT_JAHR } from '../src/core/kalkulatorik.js'
+
+test('Jahres-Versionierung: Werte je Jahr getrennt', () => {
+  localStorage.removeItem('er_kalkulatorik')
+  sJ('zinsen', { kapital: 10, satz: 5 }, 2026)   // 0,5
+  sJ('zinsen', { kapital: 20, satz: 5 }, 2027)   // 1,0
+  assert.equal(wJ('zinsen', 2026), 0.5)
+  assert.equal(wJ('zinsen', 2027), 1.0)
+})
+
+test('Vorjahr kopieren übernimmt die Konfiguration', () => {
+  localStorage.removeItem('er_kalkulatorik')
+  sJ('zinsen', { kapital: 15, satz: 4 }, 2026)
+  kopiereJahr(2027, 2026)
+  assert.deepEqual(fJ('zinsen', 2027), fJ('zinsen', 2026))
+  assert.equal(wJ('zinsen', 2027), wJ('zinsen', 2026))
+})
+
+test('Monatsverteilung: 12 Monate, Summe = Jahreswert', () => {
+  localStorage.removeItem('er_kalkulatorik')
+  sJ('zinsen', { kapital: 12, satz: 5 }, 2026) // 0,6
+  const mv = monatsVerteilung('zinsen', 2026, 'gleich')
+  assert.equal(mv.length, 12)
+  assert.ok(Math.abs(mv.reduce((a, b) => a + b, 0) - wJ('zinsen', 2026)) < 0.01)
+})
+
+test('Legacy-Migration: altes flaches Format landet unter DEFAULT_JAHR', () => {
+  localStorage.setItem('er_kalkulatorik', JSON.stringify({ zinsen: { kapital: 8, satz: 5 } }))
+  assert.equal(wJ('zinsen', DEFAULT_JAHR), 0.4)
+  assert.ok(verfuegbareJahre().includes(DEFAULT_JAHR))
+})

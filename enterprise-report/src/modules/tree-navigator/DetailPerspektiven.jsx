@@ -4,10 +4,11 @@
 //  Felder-Filter (Status/Segment/Typ …) kommen aus dataset.filterSpalten.
 //  Geladen/gerendert wird die Tabelle erst nach "Anzeigen".
 // =========================================================================
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { DRILL } from '../../core/drilldowns.js'
 import { ladePerspektive, PERIODEN, AKTUELLE_PERIODE } from '../../core/dataProvider.js'
 import { DetailTabelle } from '../../components/ui.jsx'
+import { useNav } from '../../components/NavContext.jsx'
 import SteuerLeiste from '../../components/SteuerLeiste.jsx'
 import SpaltenDesigner from './SpaltenDesigner.jsx'
 import { ladeLayout, speichereLayout, setzeLayoutZurueck, wendeLayoutAn } from '../../core/tabellenLayout.js'
@@ -21,7 +22,8 @@ function parseNum(v) {
   return Number.isNaN(n) ? null : n
 }
 
-export default function DetailPerspektiven({ bereich, perspektiven = [] }) {
+export default function DetailPerspektiven({ bereich, perspektiven = [], startP = null }) {
+  const nav = useNav()
   const [aktiv, setAktiv] = useState(null)
   const [roh, setRoh] = useState(null)        // geladener Datensatz (für Filteroptionen)
   const [daten, setDaten] = useState(null)    // gefiltertes Ergebnis (Tabelle)
@@ -35,6 +37,9 @@ export default function DetailPerspektiven({ bereich, perspektiven = [] }) {
   const [sortDir, setSortDir] = useState('asc')
   const [layout, setLayout] = useState(null)       // Spalten-Layout (Designer)
   const [designerAuf, setDesignerAuf] = useState(false)
+
+  // Aus dem Baum verlinkte Sicht direkt öffnen (Klick auf eine Sicht im Baum).
+  useEffect(() => { if (startP && perspektiven.includes(startP) && startP !== aktiv) waehle(startP) }, [startP]) // eslint-disable-line
 
   async function waehle(p) {
     setAktiv(p); setDaten(null); setFeld({}); setSuche(''); setSortIdx(null); setDesignerAuf(false)
@@ -167,11 +172,25 @@ export default function DetailPerspektiven({ bereich, perspektiven = [] }) {
             <SpaltenDesigner spalten={daten.spalten} layout={layout} onChange={layoutAendern} onReset={layoutReset} />
           )}
 
-          {view && <div style={{ marginTop: 12 }}>
-            {drillZiel && <div style={{ fontSize: 12, color: 'var(--accent)', marginBottom: 6 }}>↳ Klick auf eine Zeile öffnet {DRILL[drillZiel.perspektive]?.name || drillZiel.perspektive}{drillZiel.label ? ` (${drillZiel.label})` : ''}.</div>}
-            <DetailTabelle daten={view} spaltenWahl onZeileKlick={drillZiel && sortedRows ? (i) => drill(drillZiel.perspektive, sortedRows[i][drillZiel.keySpalte]) : undefined} />
-            <div className="mono" style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>{view.zeilen.length} Zeile(n){top ? ` (Top ${top})` : ''}{sortIdx != null ? ` · sortiert nach ${daten.spalten[sortIdx]}` : ''}</div>
-          </div>}
+          {view && (() => {
+            // Zeilen-Klick: vorrangig Perspektiven-Drill; sonst Sprung in die
+            // granulare Detailliste, gefiltert auf den Schlüssel der Zeile.
+            const zeileKlick = (drillZiel && sortedRows)
+              ? (i) => drill(drillZiel.perspektive, sortedRows[i][drillZiel.keySpalte])
+              : (nav?.details && sortedRows)
+                ? (i) => nav.details(bereich, String(sortedRows[i][0]))
+                : undefined
+            const hinweis = drillZiel
+              ? `↳ Klick auf eine Zeile öffnet ${DRILL[drillZiel.perspektive]?.name || drillZiel.perspektive}${drillZiel.label ? ` (${drillZiel.label})` : ''}.`
+              : (nav?.details ? '↳ Klick auf eine Zeile öffnet die Detailliste, gefiltert auf den Eintrag.' : null)
+            return (
+              <div style={{ marginTop: 12 }}>
+                {hinweis && <div style={{ fontSize: 12, color: 'var(--accent)', marginBottom: 6 }}>{hinweis}</div>}
+                <DetailTabelle daten={view} spaltenWahl onZeileKlick={zeileKlick} />
+                <div className="mono" style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>{view.zeilen.length} Zeile(n){top ? ` (Top ${top})` : ''}{sortIdx != null ? ` · sortiert nach ${daten.spalten[sortIdx]}` : ''}</div>
+              </div>
+            )
+          })()}
         </div>
       )}
     </div>

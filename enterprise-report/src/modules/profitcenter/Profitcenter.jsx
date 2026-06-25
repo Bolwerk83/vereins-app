@@ -2,8 +2,9 @@
 //  PROFITCENTER-ERGEBNISRECHNUNG — Ergebnis je Center, ROCE und Beitrag
 //  zum Gesamtergebnis.
 // =========================================================================
-import React from 'react'
-import { auswertung, centerTypInfo, CENTER_TYPEN } from '../../core/profitcenter.js'
+import React, { useState } from 'react'
+import { auswertung, auswertungNach, centerTypInfo, CENTER_TYPEN, DIMENSIONEN } from '../../core/profitcenter.js'
+import Hierarchiebaum from './Hierarchiebaum.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
@@ -12,21 +13,33 @@ const th = (al) => ({ textAlign: al, padding: '6px 9px', borderBottom: '1px soli
 const td = (al, bold) => ({ textAlign: al, padding: '6px 9px', borderBottom: '1px solid var(--line)', fontWeight: bold ? 700 : 400 })
 
 export default function Profitcenter({ onGeh }) {
-  const a = auswertung()
+  const [tab, setTab] = useState('baum') // 'baum' | 'analyse'
+  const [dim, setDim] = useState('geschaeftsbereich')
+  const a = auswertungNach(dim)
   const maxAbs = Math.max(...a.rows.map((r) => Math.abs(r.ergebnis)), 1)
+  const dimName = DIMENSIONEN.find((d) => d.key === dim)?.name || 'Center'
+  const zeigeTyp = dim === 'geschaeftsbereich'
 
   return (
     <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
         <div>
           <h2 style={{ margin: '0 0 4px' }}>Profitcenter-Ergebnisrechnung</h2>
-          <div style={{ color: 'var(--muted)', fontSize: 13, maxWidth: 720 }}>
-            Ergebnis je Verantwortungsbereich und sein Beitrag zum Gesamtergebnis. Investment Center zusätzlich mit ROCE.
+          <div style={{ color: 'var(--muted)', fontSize: 13, maxWidth: 760 }}>
+            Vollständiger Hierarchiebaum (8 Ebenen: Konzern → Geschäftsbereich → Region → Funktion → Kostenstelle → Kostenart → Einzelposten → Beleg) mit exaktem Roll-up — oder die klassische Ergebnisanalyse je Center inkl. ROCE.
           </div>
         </div>
         {onGeh && <button onClick={() => onGeh('kostenstellen')} style={{ ...card, padding: '7px 12px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>Kostenstellen →</button>}
       </div>
 
+      <div style={{ display: 'flex', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', overflow: 'hidden', width: 'fit-content', marginBottom: 14 }}>
+        {[['baum', '🌳 Hierarchiebaum (8 Ebenen)'], ['analyse', '📊 Ergebnisanalyse']].map(([id, lbl]) => (
+          <button key={id} onClick={() => setTab(id)} style={{ padding: '7px 15px', border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer', background: tab === id ? 'var(--accent)' : 'var(--panel)', color: tab === id ? '#fff' : 'var(--muted)' }}>{lbl}</button>
+        ))}
+      </div>
+
+      {tab === 'baum' && <Hierarchiebaum />}
+      {tab === 'analyse' && <>
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
         <div style={{ ...card, padding: '12px 14px', flex: 1, minWidth: 160 }}><div style={cap}>Gesamtergebnis</div><div style={{ fontSize: 22, fontWeight: 700, color: a.gesamt >= 0 ? 'var(--amp-g)' : 'var(--amp-r)' }}>{m(a.gesamt)} Mio €</div></div>
         <div style={{ ...card, padding: '12px 14px', flex: 1, minWidth: 160 }}><div style={cap}>Umsatz gesamt</div><div style={{ fontSize: 22, fontWeight: 700 }}>{m(a.umsatz)} Mio €</div></div>
@@ -34,13 +47,20 @@ export default function Profitcenter({ onGeh }) {
       </div>
 
       <div style={{ ...card, padding: 16, overflowX: 'auto' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+          <span style={{ fontSize: 11, color: 'var(--muted)' }}>Gruppieren nach:</span>
+          {DIMENSIONEN.map((d) => (
+            <button key={d.key} onClick={() => setDim(d.key)} style={{ fontSize: 12, padding: '4px 10px', borderRadius: 999, cursor: 'pointer', fontWeight: 600,
+              border: `1px solid ${dim === d.key ? 'var(--accent)' : 'var(--line)'}`, background: dim === d.key ? 'var(--accent-soft)' : 'var(--panel)', color: dim === d.key ? 'var(--accent)' : 'var(--muted)' }}>{d.name}</button>
+          ))}
+        </div>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 720 }}>
-          <thead><tr>{['Profitcenter', 'Typ', 'Umsatz', 'DB', 'Fixkosten', 'Ergebnis', 'ROCE', 'Beitrag'].map((h, i) => <th key={i} style={th(i <= 1 ? 'left' : 'right')}>{h}</th>)}</tr></thead>
+          <thead><tr>{[dimName, ...(zeigeTyp ? ['Typ'] : []), 'Umsatz', 'DB', 'Fixkosten', 'Ergebnis', 'ROCE', 'Beitrag'].map((h, i) => <th key={i} style={th(i <= (zeigeTyp ? 1 : 0) ? 'left' : 'right')}>{h}</th>)}</tr></thead>
           <tbody>
             {a.rows.map((r) => (
               <tr key={r.id}>
                 <td style={td('left', true)}>{r.name}</td>
-                <td style={td('left')}><span style={{ fontSize: 11, color: r.typ === 'profit' ? 'var(--amp-g)' : r.typ === 'investment' ? 'var(--accent)' : 'var(--muted)' }}>{centerTypInfo(r.typ).name}</span></td>
+                {zeigeTyp && <td style={td('left')}><span style={{ fontSize: 11, color: r.typ === 'profit' ? 'var(--amp-g)' : r.typ === 'investment' ? 'var(--accent)' : 'var(--muted)' }}>{centerTypInfo(r.typ).name}</span></td>}
                 <td className="mono" style={td('right')}>{r.umsatz ? m(r.umsatz) : '–'}</td>
                 <td className="mono" style={td('right')}>{r.umsatz ? m(r.db) : '–'}</td>
                 <td className="mono" style={{ ...td('right'), color: 'var(--muted)' }}>− {m(r.fixKosten)}</td>
@@ -57,7 +77,7 @@ export default function Profitcenter({ onGeh }) {
               </tr>
             ))}
             <tr style={{ background: 'var(--bg)' }}>
-              <td style={td('left', true)}>Gesamt</td><td />
+              <td style={td('left', true)}>Gesamt</td>{zeigeTyp && <td />}
               <td className="mono" style={td('right', true)}>{m(a.umsatz)}</td><td /><td />
               <td className="mono" style={{ ...td('right', true), color: a.gesamt >= 0 ? 'var(--amp-g)' : 'var(--amp-r)' }}>{m(a.gesamt)}</td><td /><td />
             </tr>
@@ -67,6 +87,7 @@ export default function Profitcenter({ onGeh }) {
           Ergebnis = Umsatz − variable Kosten − zurechenbare Fixkosten. Cost Center (Zentrale) liefert keinen Umsatz und mindert das Ergebnis. ROCE = Ergebnis ÷ gebundenes Kapital (nur Investment Center).
         </div>
       </div>
+      </>}
     </div>
   )
 }

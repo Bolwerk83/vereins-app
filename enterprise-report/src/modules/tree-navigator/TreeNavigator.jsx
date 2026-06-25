@@ -5,6 +5,7 @@
 // =========================================================================
 import React, { useState, useMemo, useEffect } from 'react'
 import { BERICHTSBAUM, EBENEN, baumFuerRolle, findeKnoten, pfadZu } from '../../core/reportTree.js'
+import { DRILL } from '../../core/drilldowns.js'
 import { gruppiereNachCluster } from '../../core/bereiche.js'
 import { KPI } from '../../core/kpiRegistry.js'
 import { darfBereich, darfKpi } from '../../core/rbac.js'
@@ -17,12 +18,55 @@ import DetailPerspektiven from './DetailPerspektiven.jsx'
 
 function EbeneTag({ stufe }) {
   const e = EBENEN.find((x) => x.stufe === stufe)
-  return <Badge status="n">E{stufe} · {e?.name}</Badge>
+  return <span title={e ? `${e.frage} — ${e.beispiel}` : ''}><Badge status="n">E{stufe} · {e?.name}</Badge></span>
 }
 
-function Zweig({ knoten, aktiv, onSelect, tiefe = 0 }) {
+// Präsentationsreifes Navigations-Modell: die 5 Ebenen als konkrete Use Cases
+// (welche Frage, Beispiel, Rolle, nächster Schritt). Die aktuelle Ebene wird
+// hervorgehoben, damit klar ist, „wo im Modell" man gerade steht.
+function EbenenUseCase({ aktiveStufe }) {
+  const [auf, setAuf] = useState(true)
+  return (
+    <div className="no-print" style={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', padding: '12px 14px', marginBottom: 16, boxShadow: 'var(--shadow)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <div>
+          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '.04em' }}>🧭 Navigations-Modell · die 5 Ebenen als Use Case</span>
+          <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>Von der Gesamtlage bis zum Einzelfall — jede Ebene beantwortet eine konkrete Frage.</div>
+        </div>
+        <button onClick={() => setAuf(!auf)} style={{ fontSize: 12, padding: '4px 10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: 'var(--panel)', cursor: 'pointer', fontWeight: 600 }}>{auf ? 'Einklappen' : 'Use Cases zeigen'}</button>
+      </div>
+      {auf && (
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 12 }}>
+          {EBENEN.map((e) => {
+            const aktiv = e.stufe === aktiveStufe
+            return (
+              <div key={e.stufe} style={{ flex: '1 1 200px', minWidth: 188, border: `1px solid ${aktiv ? 'var(--accent)' : 'var(--line)'}`, borderRadius: 'var(--radius)', padding: '10px 12px', background: aktiv ? 'var(--accent-soft)' : 'var(--bg)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 20 }}>{e.icon}</span>
+                  <div>
+                    <div className="mono" style={{ fontSize: 10, color: aktiv ? 'var(--accent)' : 'var(--muted)', fontWeight: 700 }}>E{e.stufe}{aktiv ? ' · du bist hier' : ''}</div>
+                    <div style={{ fontWeight: 700, fontSize: 13 }}>{e.name}</div>
+                  </div>
+                </div>
+                <div style={{ fontSize: 12.5, fontWeight: 600, marginTop: 8 }}>{e.frage}</div>
+                <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 3, lineHeight: 1.4 }}>{e.beispiel}</div>
+                <div style={{ fontSize: 11, marginTop: 7, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <span style={{ color: 'var(--slate)' }}>👤 {e.rolle}</span>
+                  <span style={{ color: 'var(--accent)' }}>→ {e.aktion}</span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function Zweig({ knoten, aktiv, onSelect, onSicht, tiefe = 0 }) {
   const [offen, setOffen] = useState(tiefe < 1)
   const hatKinder = knoten.kinder?.length > 0
+  const sichten = knoten.perspektiven || []
   return (
     <div>
       <div onClick={() => { onSelect(knoten.id); if (hatKinder) setOffen(!offen) }}
@@ -34,8 +78,19 @@ function Zweig({ knoten, aktiv, onSelect, tiefe = 0 }) {
         <span style={{ flex: 1 }}>{knoten.titel}</span>
         <span className="mono" style={{ fontSize: 10, color: 'var(--muted)' }}>E{knoten.ebene}</span>
       </div>
+      {/* Verlinkte Sichten (Perspektiven) direkt im Baum — Klick öffnet die Sicht */}
+      {sichten.length > 0 && (
+        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', padding: `0 8px 5px ${8 + tiefe * 14 + 18}px` }}>
+          {sichten.map((code) => (
+            <span key={code} title={`Sicht: ${DRILL[code]?.name || code}`} onClick={(e) => { e.stopPropagation(); onSicht?.(knoten.id, code) }}
+              style={{ fontSize: 11, lineHeight: 1.6, padding: '0 6px', borderRadius: 999, border: '1px solid var(--line)', background: 'var(--panel)', color: 'var(--muted)', cursor: 'pointer' }}>
+              {DRILL[code]?.icon} {DRILL[code]?.name || code}
+            </span>
+          ))}
+        </div>
+      )}
       {offen && hatKinder && knoten.kinder.map((k) => (
-        <Zweig key={k.id} knoten={k} aktiv={aktiv} onSelect={onSelect} tiefe={tiefe + 1} />
+        <Zweig key={k.id} knoten={k} aktiv={aktiv} onSelect={onSelect} onSicht={onSicht} tiefe={tiefe + 1} />
       ))}
     </div>
   )
@@ -69,10 +124,15 @@ export default function TreeNavigator({ rolle, werte, periode, onOpenReport, onD
 
   const [detail, setDetail] = useState(null)
   const [zu, setZu] = useState({}) // eingeklappte Cluster
+  const [wunschP, setWunschP] = useState(null) // aus dem Baum verlinkte Sicht
+  const waehle = (id) => { setAktiv(id); setWunschP(null) }
+  const sichtKlick = (id, code) => { setAktiv(id); setWunschP(code) }
   useEffect(() => { if (startId && findeKnoten(baum, startId)) setAktiv(startId) }, [startId]) // eslint-disable-line
   useEffect(() => { if (detailKey) ladeDetail(detailKey).then(setDetail); else setDetail(null) }, [detailKey])
 
   return (
+    <div>
+    <EbenenUseCase aktiveStufe={knoten.ebene} />
     <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: 20, alignItems: 'start' }}>
       {/* Baum — Wurzel + nach Clustern gruppierte Fachbereiche */}
       <aside className="no-print" style={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', padding: 10, position: 'sticky', top: 16, maxHeight: 'calc(100vh - 90px)', overflow: 'auto' }}>
@@ -96,7 +156,7 @@ export default function TreeNavigator({ rolle, werte, periode, onOpenReport, onD
               <span className="mono" style={{ fontSize: 10 }}>{g.knoten.length}</span>
             </div>
             {!zu[g.cluster.id] && g.knoten.map((k) => (
-              <Zweig key={k.id} knoten={k} aktiv={aktiv} onSelect={setAktiv} tiefe={1} />
+              <Zweig key={k.id} knoten={k} aktiv={aktiv} onSelect={waehle} onSicht={sichtKlick} tiefe={1} />
             ))}
           </div>
         ))}
@@ -159,7 +219,7 @@ export default function TreeNavigator({ rolle, werte, periode, onOpenReport, onD
 
         {/* Ebene 4: mehrere Detail-Perspektiven (kontextabhängig) + Filtermaske */}
         {knoten.perspektiven?.length > 0 && (
-          <DetailPerspektiven bereich={knoten.bereich} perspektiven={knoten.perspektiven} />
+          <DetailPerspektiven bereich={knoten.bereich} perspektiven={knoten.perspektiven} startP={wunschP} />
         )}
 
         {/* Hinweis Drill-down */}
@@ -172,6 +232,7 @@ export default function TreeNavigator({ rolle, werte, periode, onOpenReport, onD
           </div>
         )}
       </section>
+    </div>
     </div>
   )
 }

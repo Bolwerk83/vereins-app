@@ -1,7 +1,7 @@
 import './_setup.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { renderText, referenzierteKpis, snapshot, istVeraltet, ladeText, speichereText, kiVorschlaege, VORLAGEN } from '../src/core/textbausteine.js'
+import { renderText, referenzierteKpis, snapshot, istVeraltet, ladeText, speichereText, aktualisiereSnapshot, kiVorschlaege, VORLAGEN } from '../src/core/textbausteine.js'
 
 test('@kpiId wird durch den aktuellen Wert ersetzt', () => {
   const out = renderText('Umsatz: @nettoumsatz.', { nettoumsatz: 52 })
@@ -40,6 +40,31 @@ test('Speichern/Laden mit Snapshot', () => {
   const m = ladeText('knoten:x')
   assert.equal(m.periode, '2025')
   assert.equal(m.snapshot.nettoumsatz, 52)
+})
+
+test('Veraltet liefert konkreten Diff (damals/heute) je Kennzahl', () => {
+  const meta = { text: 'Umsatz @nettoumsatz', periode: '2025', snapshot: snapshot('@nettoumsatz', { nettoumsatz: 50 }) }
+  const ver = istVeraltet(meta, { nettoumsatz: 55 }, '2025')
+  assert.equal(ver.veraltet, true)
+  assert.equal(ver.aenderungen.length, 1)
+  assert.equal(ver.aenderungen[0].alt, 50)
+  assert.equal(ver.aenderungen[0].neu, 55)
+  assert.equal(ver.aenderungen[0].deltaPct, 10)
+  // Periodenwechsel wird zusätzlich gemeldet
+  const verP = istVeraltet(meta, { nettoumsatz: 50 }, '2026')
+  assert.ok(verP.periode && verP.periode.alt === '2025' && verP.periode.neu === '2026')
+})
+
+test('aktualisiereSnapshot hebt den Stand und führt Verlauf', () => {
+  localStorage.removeItem('er_textboxen')
+  speichereText('knoten:y', { text: 'Umsatz @nettoumsatz', periode: '2025', werte: { nettoumsatz: 50 } })
+  const m = aktualisiereSnapshot('knoten:y', { werte: { nettoumsatz: 60 }, periode: '2026' })
+  assert.equal(m.snapshot.nettoumsatz, 60)
+  assert.equal(m.periode, '2026')
+  assert.equal(m.verlauf.length, 1)
+  assert.equal(m.verlauf[0].snapshot.nettoumsatz, 50)
+  // Nach dem Aktualisieren ist der Kommentar nicht mehr „veraltet"
+  assert.equal(istVeraltet(ladeText('knoten:y'), { nettoumsatz: 60 }, '2026').veraltet, false)
 })
 
 test('KI-Vorschläge: mehrere, mit @-Variablen', () => {

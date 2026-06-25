@@ -11,12 +11,35 @@
 //  Inhalte/Zahlen kommen aus der Datenschicht (Mock heute, MSSQL morgen).
 // =========================================================================
 
+// Die 5 Ebenen — je Ebene ein konkreter Use Case (welche Frage beantworte ich
+// hier, Beispiel, typische Rolle, was ich als Nächstes tue). So liest sich die
+// Navigation wie eine Präsentation: von der Lage bis zum Einzelfall.
 export const EBENEN = [
-  { stufe: 1, code: 'GF',  name: 'Geschäftsführung', kurz: 'Konzern-/Executive-Sicht' },
-  { stufe: 2, code: 'FB',  name: 'Fachbereich',      kurz: 'Abteilungssicht' },
-  { stufe: 3, code: 'TB',  name: 'Themenbereich',    kurz: 'Unterthema im Fachbereich' },
-  { stufe: 4, code: 'DET', name: 'Details',          kurz: 'Detailbericht / Positionen' },
-  { stufe: 5, code: 'HIST',name: 'Historisierung',   kurz: 'Zeitreihe / Entwicklung' }
+  { stufe: 1, code: 'GF',  name: 'Geschäftsführung', kurz: 'Konzern-/Executive-Sicht', icon: '🏛',
+    frage: 'Wie steht das Unternehmen insgesamt da?',
+    beispiel: 'Umsatz, EBITDA und DB-Quote der ganzen Gruppe — Ampel grün/gelb/rot.',
+    rolle: 'Geschäftsführung, Beirat',
+    aktion: 'Lage bewerten, Quartalsschwerpunkte setzen, in den auffälligen Bereich abtauchen.' },
+  { stufe: 2, code: 'FB',  name: 'Fachbereich', kurz: 'Abteilungssicht', icon: '🏢',
+    frage: 'Welcher Bereich trägt — und welcher hängt?',
+    beispiel: 'Verkauf, Einkauf, Produktion, Logistik je mit ihren Leitkennzahlen.',
+    rolle: 'Bereichsleitung',
+    aktion: 'Den auffälligen Bereich öffnen und das Thema dahinter finden.' },
+  { stufe: 3, code: 'TB',  name: 'Themenbereich', kurz: 'Unterthema im Fachbereich', icon: '🗂',
+    frage: 'Woran genau liegt es im Bereich?',
+    beispiel: 'Verkauf › Kanäle & Retouren; Logistik › Bestände & Lieferfähigkeit.',
+    rolle: 'Teamleitung, Controller',
+    aktion: 'Sicht wählen (Artikel, Kunde, Auftrag, Rechnung) und in die Details springen.' },
+  { stufe: 4, code: 'DET', name: 'Details', kurz: 'Detailbericht / Positionen', icon: '🔍',
+    frage: 'Welcher konkrete Fall steckt dahinter?',
+    beispiel: 'Umsatz je Kanal als Tabelle — bis zur einzelnen Position/zum Beleg.',
+    rolle: 'Sachbearbeitung, Fachreferent',
+    aktion: 'Position prüfen, Maßnahme anstoßen, exportieren.' },
+  { stufe: 5, code: 'HIST', name: 'Historisierung', kurz: 'Zeitreihe / Entwicklung', icon: '📈',
+    frage: 'Ausreißer oder Trend?',
+    beispiel: 'Dieselbe Kennzahl über die Zeit — Saison, Trend, Vorjahresvergleich.',
+    rolle: 'Alle Rollen',
+    aktion: 'Entwicklung einordnen, Forecast und Planung anpassen.' }
 ]
 
 // Hilfsknoten-Fabrik.
@@ -453,10 +476,13 @@ export const BERICHTSBAUM = n('konzern', 1, 'VeloWerk Gruppe · Management Repor
   ]
 })
 
-// Baum nach Rolle filtern (Bereichssichtbarkeit, s. rbac.js).
-export function baumFuerRolle(baum, darfBereich) {
-  if (!darfBereich(baum.bereich)) return null
-  const kinder = (baum.kinder || []).map((k) => baumFuerRolle(k, darfBereich)).filter(Boolean)
+// Baum nach Rolle filtern (Bereichssichtbarkeit, s. rbac.js). Die Wurzel (E1
+// Management-Report) bleibt für ALLE Rollen der Einstieg; nur die Unterknoten
+// werden nach Bereich gefiltert — sonst würde z. B. eine Rolle ohne „GF" an der
+// GF-Wurzel scheitern und (über den Fallback) versehentlich alles sehen.
+export function baumFuerRolle(baum, darfBereich, istWurzel = true) {
+  if (!istWurzel && !darfBereich(baum.bereich)) return null
+  const kinder = (baum.kinder || []).map((k) => baumFuerRolle(k, darfBereich, false)).filter(Boolean)
   return { ...baum, kinder }
 }
 

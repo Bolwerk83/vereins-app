@@ -1,14 +1,21 @@
 import './_setup.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { phaseProdukt, phaseKunde, produkte, kinderProdukt, kunden, produktPhaseVerteilung } from '../src/core/lebenszyklus.js'
+import { phaseProdukt, phaseKunde, produkte, kinderProdukt, kunden, produktPhaseVerteilung,
+  bcgVerteilung, quadrantVon, bcgSchwellen, BCG_QUADRANTEN,
+  phasenKurve, PRODUKT_PHASEN, KUNDE_PHASEN } from '../src/core/lebenszyklus.js'
 
-test('Produktphase aus Wachstum, Alter und Margentrend', () => {
+test('Produktphase aus Wachstum, Alter und Margentrend (5 Phasen)', () => {
   assert.equal(phaseProdukt({ alter: 1, wachstum: 40 }), 'einfuehrung')
   assert.equal(phaseProdukt({ alter: 6, wachstum: 9, dbTrend: 0.8 }), 'wachstum')
-  assert.equal(phaseProdukt({ alter: 8, wachstum: 1, dbTrend: 0.3 }), 'reife')
-  // Margenverfall zieht trotz leicht positivem Wachstum in den Rückgang:
+  assert.equal(phaseProdukt({ alter: 7, wachstum: 4, dbTrend: 0.1 }), 'reife')
+  // Plateau (~0 % Wachstum) bei gesunder Marge = Sättigung:
+  assert.equal(phaseProdukt({ alter: 8, wachstum: 1, dbTrend: 0.3 }), 'saettigung')
+  // Reife mit Margenverfall kippt in die Sättigung:
+  assert.equal(phaseProdukt({ alter: 9, wachstum: 3, dbTrend: -1.8 }), 'saettigung')
+  // Klar negatives Wachstum bzw. Margenverfall im Plateau = Rückgang:
   assert.equal(phaseProdukt({ alter: 12, wachstum: -2, dbTrend: -1.8 }), 'rueckgang')
+  assert.equal(phaseProdukt({ alter: 11, wachstum: 0, dbTrend: -1.8 }), 'rueckgang')
 })
 
 test('Kundenphase aus Beziehungsalter, Wachstum, letzter Bestellung', () => {
@@ -28,4 +35,65 @@ test('Produkt-Drilldown und Phasenanteile', () => {
 
 test('Kunden tragen eine Beziehungsphase', () => {
   assert.ok(kunden().every((k) => k.phase))
+})
+
+test('BCG-Quadranten klassifizieren über Wachstum × DB', () => {
+  const s = { wachstum: 0, db: 35 }
+  assert.equal(quadrantVon({ wachstum: 12, db: 40 }, s), 'star')
+  assert.equal(quadrantVon({ wachstum: -2, db: 40 }, s), 'cashcow')
+  assert.equal(quadrantVon({ wachstum: 35, db: 20 }, s), 'question')
+  assert.equal(quadrantVon({ wachstum: -6, db: 30 }, s), 'dog')
+})
+
+test('BCG-Schwelle nimmt den Median der DB-Werte', () => {
+  const s = bcgSchwellen(produkte('produkt'))
+  assert.equal(s.wachstum, 0)
+  assert.ok(s.db > 0)
+})
+
+test('Lebenszyklus-Kurve: jedes Objekt einmal, x normiert, Profil steigt dann fällt', () => {
+  const { profil, punkte } = phasenKurve(PRODUKT_PHASEN, produkte('produkt'))
+  assert.equal(profil.length, PRODUKT_PHASEN.length)
+  // jedes Produkt genau einmal als Punkt
+  assert.equal(punkte.length, produkte('produkt').length)
+  for (const p of punkte) {
+    assert.ok(p.x > 0 && p.x < 1, 'x im Einheitsintervall')
+    assert.ok(p.hoehe >= 0 && p.hoehe <= 1, 'Höhe normiert')
+    assert.ok(p.farbe && p.phase, 'trägt Phase & Farbe')
+  }
+  // Profil: erst aufsteigend bis zum Peak, danach abfallend
+  const peakIdx = profil.indexOf(Math.max(...profil))
+  for (let i = 1; i <= peakIdx; i++) assert.ok(profil[i] >= profil[i - 1], 'Aufstieg bis Peak')
+  for (let i = peakIdx + 1; i < profil.length; i++) assert.ok(profil[i] <= profil[i - 1], 'Abfall nach Peak')
+})
+
+test('Lebenszyklus-Kurve funktioniert auch für die 5 Kundenphasen', () => {
+  const { profil, punkte, gewinnStuetz } = phasenKurve(KUNDE_PHASEN, kunden())
+  assert.equal(profil.length, 5)
+  assert.equal(punkte.length, kunden().length)
+  assert.equal(gewinnStuetz, null, 'Kundenkurve hat keine Gewinnkurve')
+})
+
+test('Produktkurve hat Gewinnkurve + Break-even im Wachstumsbereich', () => {
+  const { breakEvenX, gewinnStuetz } = phasenKurve(PRODUKT_PHASEN, produkte('produkt'))
+  assert.ok(Array.isArray(gewinnStuetz) && gewinnStuetz.length === PRODUKT_PHASEN.length + 2)
+  assert.ok(breakEvenX != null, 'Break-even gefunden')
+  // Break-even liegt früh (Einführung → Wachstum), also im linken Drittel.
+  assert.ok(breakEvenX > 0 && breakEvenX < 0.4, `Break-even ${breakEvenX} im linken Bereich`)
+})
+
+test('BCG-Verteilung deckt alle Objekte ab und summiert auf Gesamtumsatz', () => {
+  const { schwellen, felder } = bcgVerteilung('produkt')
+  assert.equal(felder.length, BCG_QUADRANTEN.length)
+  const objekte = produkte('produkt')
+  // Jedes Objekt liegt in genau einem Feld → Summe der Anzahlen = Gesamtzahl.
+  assert.equal(felder.reduce((n, f) => n + f.anzahl, 0), objekte.length)
+  const gesUmsatz = +objekte.reduce((n, o) => n + o.umsatz, 0).toFixed(1)
+  assert.ok(Math.abs(felder.reduce((n, f) => n + f.umsatz, 0) - gesUmsatz) <= 0.2)
+  // Jedes Feld trägt seine Objekte und einen plausiblen Ø-DB.
+  for (const f of felder) {
+    assert.equal(f.objekte.length, f.anzahl)
+    if (f.anzahl) assert.ok(f.dbSchnitt > 0)
+    assert.ok(f.objekte.every((o) => quadrantVon(o, schwellen) === f.id))
+  }
 })

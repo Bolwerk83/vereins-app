@@ -20,3 +20,13 @@ test('Quoten und DSO vorhanden', () => {
   const a = aging()
   assert.ok(a.ueberfaelligkeitsquote > 0 && a.dso > 0)
 })
+
+test('Profit-Center-Faktor skaliert Beträge, Quoten/DSO bleiben', () => {
+  const voll = aging(1)
+  const teil = aging(0.586)
+  assert.ok(Math.abs(teil.gesamt - voll.gesamt * 0.586) < 0.05)
+  // Quoten aus unskalierter Basis → exakt invariant
+  assert.equal(teil.ueberfaelligkeitsquote, voll.ueberfaelligkeitsquote)
+  assert.equal(teil.dso, voll.dso)
+  assert.equal(teil.ausfallquote, voll.ausfallquote)
+})

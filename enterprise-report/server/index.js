@@ -29,7 +29,13 @@ import { mailKonfiguriert } from './mailer.js'
 import { speichereBundle, ladeAlle as ladeTransporte, ladeBundle } from './transport.store.js'
 import { promote, AKTUELLE_STAGE } from './transport.js'
 import { ladeHauptbuch } from './hauptbuch.js'
+import { memo, cacheControl, cacheStatus, leereCache } from './cache.js'
 import { KPI } from '../src/core/kpiRegistry.js'
+
+// TTL für die (für alle Nutzer identischen) Reporting-Antworten. Über
+// CACHE_TTL_MS überschreibbar; 0 schaltet den Cache ab.
+const CACHE_TTL_MS = process.env.CACHE_TTL_MS != null ? Number(process.env.CACHE_TTL_MS) : 60000
+const CACHE_SEK = Math.round(CACHE_TTL_MS / 1000)
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const SQL_DIR = join(__dirname, '..', 'sql')
@@ -67,6 +73,10 @@ app.get('/api/health', async (_req, res) => {
   }
 })
 
+// --- Cache: Status & gezieltes Leeren (nach Daten-Refresh) --------------
+app.get('/api/cache', (_req, res) => res.json({ ttl_ms: CACHE_TTL_MS, ...cacheStatus() }))
+app.delete('/api/cache', (req, res) => { leereCache(req.query.praefix || undefined); res.json({ status: 'geleert', praefix: req.query.praefix || '*' }) })
+
 // --- Self-Service BI (Claude) -------------------------------------------
 app.post('/api/bi', async (req, res) => {
   try {
@@ -87,13 +97,18 @@ app.post('/api/massnahmen', async (req, res) => {
 // --- Rohe KPI-Werte einer Periode (überspringt fehlende SQL-Dateien) -----
 app.get('/api/kpi', async (req, res) => {
   try {
-    const out = {}, fehlend = []
-    for (const [ref, kpiId] of Object.entries(ROHE_KPIS)) {
-      if (!hatSql(ref)) { fehlend.push(ref); continue }
-      const rows = await runKpi(ref, req.query.periode)
-      out[kpiId] = rows.reduce((s, x) => s + Number(x.wert), 0) // dimension-Zeilen aggregieren
-    }
+    const periode = req.query.periode
+    const { out, fehlend } = await memo(`kpi:${periode ?? '-'}`, CACHE_TTL_MS, async () => {
+      const out = {}, fehlend = []
+      for (const [ref, kpiId] of Object.entries(ROHE_KPIS)) {
+        if (!hatSql(ref)) { fehlend.push(ref); continue }
+        const rows = await runKpi(ref, periode)
+        out[kpiId] = rows.reduce((s, x) => s + Number(x.wert), 0) // dimension-Zeilen aggregieren
+      }
+      return { out, fehlend }
+    })
     res.set('X-KPI-Fehlend', fehlend.join(','))
+    cacheControl(res, CACHE_SEK)
     res.json(out)
   } catch (e) { res.status(500).json({ error: String(e) }) }
 })
@@ -104,7 +119,9 @@ app.get('/api/kpi/:id/historie', async (req, res) => {
     const ref = Object.entries(ROHE_KPIS).find(([, id]) => id === req.params.id)?.[0]
     if (!ref) return res.status(404).json({ error: 'unbekannte KPI' })
     if (!hatSql(ref)) return res.status(404).json({ error: `SQL fehlt: ${ref}.kpi.sql` })
-    res.json(await runKpi(ref, null))
+    const daten = await memo(`historie:${req.params.id}`, CACHE_TTL_MS, () => runKpi(ref, null))
+    cacheControl(res, CACHE_SEK)
+    res.json(daten)
   } catch (e) { res.status(500).json({ error: String(e) }) }
 })
 
@@ -113,9 +130,13 @@ app.get('/api/perspektive/:key', async (req, res) => {
   try {
     const p = join(SQL_DIR, `perspektive_${req.params.key}.sql`)
     if (!existsSync(p)) return res.status(404).json({ error: `SQL fehlt: perspektive_${req.params.key}.sql` })
-    const r = await (await getPool()).request().query(readFileSync(p, 'utf8'))
-    const spalten = Object.keys(r.recordset[0] ?? {})
-    res.json({ titel: req.params.key, spalten, zeilen: r.recordset.map((row) => spalten.map((c) => row[c])) })
+    const daten = await memo(`perspektive:${req.params.key}`, CACHE_TTL_MS, async () => {
+      const r = await (await getPool()).request().query(readFileSync(p, 'utf8'))
+      const spalten = Object.keys(r.recordset[0] ?? {})
+      return { titel: req.params.key, spalten, zeilen: r.recordset.map((row) => spalten.map((c) => row[c])) }
+    })
+    cacheControl(res, CACHE_SEK)
+    res.json(daten)
   } catch (e) { res.status(500).json({ error: String(e) }) }
 })
 
@@ -124,9 +145,13 @@ app.get('/api/detail/:key', async (req, res) => {
   try {
     const p = join(SQL_DIR, `detail_${req.params.key}.sql`)
     if (!existsSync(p)) return res.status(404).json({ error: `SQL fehlt: detail_${req.params.key}.sql` })
-    const r = await (await getPool()).request().query(readFileSync(p, 'utf8'))
-    const spalten = Object.keys(r.recordset[0] ?? {})
-    res.json({ titel: req.params.key, spalten, zeilen: r.recordset.map((row) => spalten.map((c) => row[c])) })
+    const daten = await memo(`detail:${req.params.key}`, CACHE_TTL_MS, async () => {
+      const r = await (await getPool()).request().query(readFileSync(p, 'utf8'))
+      const spalten = Object.keys(r.recordset[0] ?? {})
+      return { titel: req.params.key, spalten, zeilen: r.recordset.map((row) => spalten.map((c) => row[c])) }
+    })
+    cacheControl(res, CACHE_SEK)
+    res.json(daten)
   } catch (e) { res.status(500).json({ error: String(e) }) }
 })
 
@@ -213,7 +238,10 @@ app.get('/api/hauptbuch/:periode', async (req, res) => {
 // --- Transportwesen (dev/test/prod) --------------------------------------
 app.get('/api/stage', (_req, res) => res.json({ aktuell: AKTUELLE_STAGE }))
 app.get('/api/transport', (_req, res) => res.json(ladeTransporte()))
-app.post('/api/transport', (req, res) => res.json(speichereBundle(req.body)))
+app.post('/api/transport', (req, res) => {
+  try { res.json(speichereBundle(req.body)) }
+  catch (e) { res.status(400).json({ error: String(e.message || e) }) }
+})
 app.post('/api/transport/:id/promote', (req, res) => {
   const b = ladeBundle(req.params.id)
   if (!b) return res.status(404).json({ error: 'Transportauftrag nicht gefunden' })

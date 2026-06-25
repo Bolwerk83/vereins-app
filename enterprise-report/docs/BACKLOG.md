@@ -28,6 +28,36 @@ Stand: laufend.
 - [x] **Beispielberichte** als HTML-Übersicht (11 echte Berichte) ✅
 - [x] **Nutzungs-Statistik** (Klick-Tracking je Bericht, Ranking/Verlauf) — nur Admin ✅
 
+## 🤖 Assistent-Lernen (eingebaut) & daraus erkannte Lücken
+- [x] **Telemetrie-Loop** (KI-frei): jede Frage mit Intent/Treffer/Rolle lokal
+      protokolliert; Insights-Panel mit Trefferquote, Top-Fragen, Wissenslücken
+      + Synonym-Vorschlägen ✅
+- [x] **200-Personas-Simulation** (`scripts/persona-simulation.mjs`) → Modell um
+      gelernte Synonyme erweitert (Handelsspanne→DB-Quote, Rohertrag→DB I,
+      Schuldenstand→Nettoverschuldung, „Geld in der Kasse"→Liquide Mittel,
+      Zahlungsziel→DSO, Forecast→Umsatzprognose, Rendite→ROCE …).
+      **Trefferquote 82,0 % → 92,4 %.** ✅
+- [ ] **Echte neue Kennzahlen** (aus den 5 verbliebenen Lücken, kein Synonym lösbar,
+      decken sich mit der Artikel-Journey): **Kundenbewertungen/Rezensionen**,
+      **Artikel-Lieferzeit**, **Probefahrten** (Filiale), **Hotline-Wartezeit**,
+      **Absatzmenge Ist** (verkaufte Räder). → als KPIs + Mock-Daten + Synonyme.
+- [ ] **Rückfragen mit vorgegebenen Antworten** (Disambiguation/Slot-Filling): bei
+      mehrdeutigen/unvollständigen Fragen gezielt nachfragen (z. B. Zeitraum,
+      Standort, „meintest du A oder B?") mit anklickbaren Antwortoptionen.
+- [ ] Optionaler **Backend-Sync** des Assistent-Logs (anonymisierbar) für Team-weite Auswertung.
+
+## 🐞 Bug-Jagd (6 Agenten, verifiziert)
+- [x] **lager.js**: Meldebestand > Höchstbestand → Korridor-Status unerreichbar.
+      Behoben: Höchstbestand = Meldebestand + Losgröße (Order-up-to S=s+Q). ✅
+- [ ] **Tastatur-Reordering** in SpaltenDesigner/ReportDesigner: `key={index}` lässt
+      den Fokus beim Index statt beim verschobenen Element → ↑/↓ bewegt danach das
+      falsche Element. Saubere Behebung braucht stabile Spalten-/Block-IDs im
+      Datenmodell (Layout-Persistenz anpassen) — bewusst zurückgestellt.
+- [ ] Kosmetik: `Kennzahlen.jsx` No-op `def?.freigabeTick`; `key={index}` auf
+      einigen sortierten Listen (heute folgenlos, controlled Inputs).
+- Hinweis: Die übrigen ~20 Agenten-Funde waren im aktuellen Code bereits behoben
+  (Stand vor dem rebasten Remote-Commit) — verifiziert, keine Änderung nötig.
+
 ## 🔜 Offen / geplant (priorisiert)
 - [x] **Kostenträgerrechnung / Kalkulation** — Division, Äquivalenzziffern, Zuschlag; Selbstkosten + Produktergebnis ✅
 - [x] **Maschinenstundensatz & Kuppelkalkulation** (Tabs in der Kalkulation, getestet) ✅
@@ -46,6 +76,96 @@ Stand: laufend.
       Parser, Live-Vorschau), werden mitberechnet & überall nutzbar ✅
 - [ ] **Profitcenter-Ergebnisrechnung**, Abweichungsanalysen (DB/Erlös), Segmentbericht
 - [ ] **CI-Lauf grün halten** / ggf. PR eröffnen und überwachen
+
+## 🧭 Session-Themen (Simulation, Szenario, Planung, Designer) — offen
+**Szenario-Planung** (Engine `core/szenarioEngine.js` steht, UI offen)
+- [ ] UI mit mehreren Stellhebeln + **Kernaussage** (Größen & wichtigste Auswirkungen erklärt, je Effekt)
+- [ ] Szenarien **speichern · vergleichen · Best-/Worst-Range**
+- [ ] **Kumuliert-Haken** (Effekt über N Perioden, nur Stromgrößen)
+
+**Designer — Kennzahl-Ansichten (Phase 2)**
+- [ ] Ansichten je Kennzahl in den Eigenschaften: Menge/Summe · YTD/MTD/QTD · VJ · Δ VJ (abs/%) · Ø · kumuliert · Forecast · Plan/Abweichung · Anteil — **Label passt sich an**
+- [ ] **Gleitender Ø**: Default 3 Monate, einstellbar in Eigenschaften ODER Filter
+- [ ] **„Seiten-Filter ignorieren"** pro Kennzahl in den Eigenschaften
+
+**Plankalender / DimKalender** (in Arbeit)
+- [ ] Per-Kategorie-Tageskalender (Fixkosten/Filiale/Onlineshop …): Wochentagsmuster, Feiertage (0), kurze Tage (0,5)
+- [ ] Monats-Planwert taggenau verteilen; Integration Tagesreporting (taggenaue Ist + Monatshochrechnung)
+
+**Warenfluss / Vorschau** (Grundgerüst steht)
+- [ ] Echte Orderbuch-/Auftragsdaten (Einkauf/Vertrieb nach Lieferdatum) statt synthetisch
+- [ ] Liquidität an Forderungs-Fälligkeiten & Bestell-Zahlungen koppeln; Plan vs. Orderbuch trennen
+
+**Faire DB / Sponsoring** (Bericht steht)
+- [ ] Assistent-Anbindung „bereinigter DB ohne Sponsoring"; **Sponsoring-Budget-Tracking** (verbraucht/Limit/Ampel); Sonderfälle in Verkaufsstatistik-DB-Spalte
+
+**Assistent / Lokale KI**
+- [ ] Optionaler lokaler LLM-Modus (Ollama, abschaltbar); globalen Filter respektieren; Synonyme erweitern
+
+**Besucherdaten / Filial-Frequenz** (neuer Wunsch)
+- [ ] Besucher-/Frequenzdaten je Filiale erfassen und im Reporting analysieren
+- [ ] Mehrwerte: **Conversion (Käufe ÷ Besucher)**, **Umsatz je Besucher**, Bon-Quote, Stoßzeiten/Heatmap (Tag/Stunde), **Personalbedarf vs. Frequenz**, Wetter-/Aktions-Korrelation, Vergleich Filialen & vs. Onlineshop-Traffic
+- [ ] An Plankalender koppeln (Frequenz je Öffnungstag) und in die Kausal-/Szenario-Logik aufnehmen (Frequenz → Umsatz)
+
+**Diagramme**
+- [x] Farbwechsel Ist→Plan im Warenfluss-Chart
+- [ ] Farbwechsel Ist→Plan auf weitere Charts (Forecast-Brücke, Verlauf)
+
+## 🎯 Vision: vollständiges Reporting (Budget · Kommentierung · OnePager bis Ebene 5)
+- [x] **Einheitliche Kommentierung** auf allen Berichten mit Exec-Kopf (`<Kommentar>` im ExecKopf, Bericht-ID via Nav-Kontext). Offen: Kommentar je KPI/Knoten & im Roten Faden, Aufgaben-Rollup
+- [x] **Engine-Vereinheitlichung**: whatif.js → szenarioEngine.js (eine Wahrheit)
+- [ ] **OnePager je Ebene** (1–5) mit Kernaussage, Ampel, Qualitätskennzahlen und Drill bis Ebene 5 — einheitliche Vorlage
+- [ ] **Budgetierung end-to-end / vereinfachte Planung**: FactPlan füllen, **alle KPIs vom Budget ableiten**, Plan/Ist/Forecast je KPI
+  - [ ] **Einfache Erfassung weniger Treiber** → alle KPIs werden daraus abgeleitet (Kausalmodell + Verhältniszahlen)
+  - [ ] **Prozent-Vorschläge aus der Vorsaison** (Default = Vorjahr ±%, editierbar)
+  - [ ] **Rückwärtsrechnung über Verhältnisse**: z. B. Delta(Auftragseingang↔Umsatzerlöse)=x% → aus geplantem Auftragseingang den Umsatz (und umgekehrt)
+  - [ ] **AEB — Auftragseingang bereinigt** (ohne stornierte Aufträge & verlorene Angebote) als belastbare Planbasis; neue Kennzahl + Felder
+  - [ ] **Statuswechsel-Datum** (wie Buchungsdatum): Angebot→Auftrag→storniert/geliefert mit Datum je Wechsel, anzeig-/filterbar (DWH: FactAuftrag um Statushistorie erweitern)
+- [ ] **Rolling Forecast** (rollierend 12M) + dessen Auswirkungen auf alle Plan-KPIs (nutzt Kausalmodell/Szenario)
+- [ ] **Werbebudget-Bedarf laut Plan**: wie viel Marketing (über ROAS/CAC) nötig, um Umsatz-/Ergebnisziele zu erreichen (inverse Rechnung)
+- [ ] **Event-Planung**: geplante Events, Vorher-Wirkung (Wirksamkeitsanalyse `events` ausbauen) und Erwartung/Forecast
+- [ ] **GA-Berichte** ausbauen + **Webshop-Analyse** (Funnel, AOV, Warenkorbabbruch, Onsite-Suche, neu/wiederkehrend) — Schema (FactWebSession/FactWebFunnel) steht bereits
+
+## 🛟 Service-/Retoure-Cockpit & Zoll-Traceability (neuer Wunsch, hoher Wert)
+**Service-/Retoure-Cockpit (360°-Sicht für den Telefon-Support)**
+- [ ] Suche nach **BikeID / Rahmennummer / Gabelnummer / Auftrag / Kunde**
+- [ ] Zeigt: Modell + alle **Seriennummern** (Rahmen/Gabel/Motor/Akku), Kaufdatum,
+      **Garantie/Gewährleistung-Restlaufzeit**, Kunde/Händler, Status (aus Status-Journal),
+      Service-/Reklamations-/Retouren-Historie, Ersatzteilverfügbarkeit
+- [ ] Schnellaktionen: Retoure/Reklamation/Serviceauftrag anlegen
+
+**Zoll / Serien-Traceability (Nachweis für Zollvergünstigung)**
+- [ ] Bewegungsjournal auf **Serien-/Chargen-Ebene** mit **Wareneingangs-/Zollnummer + Ort + Status**
+- [ ] Pro Zoll-/WE-Nummer (z. B. 100 Rahmen) **Mengen-Verbleib**: X auf Lager (Fach), Y in Produktion,
+      Z beim Kunden, W verschrottet, V retour — lückenlos, Summe = Eingangsmenge
+- [ ] **Audit-Trail** je Stück/Charge für den Zollnachweis (aktive Veredelung/Präferenz/Zolllager)
+- [ ] DWH: FactSerienbewegung (Serie/Charge, Zollnummer, OrtKey, Status, Datum) + DimOrt/Fach
+
+## 🏭 Produktionsplaner & engpassorientiertes Controlling (neuer Wunsch)
+**Produktionsplaner** (Vorschlagsliste)
+- [ ] **Belegungsplan/Gantt**: Linien × Zeit, Produktionsaufträge mit Start/Ende (aus Machbarkeit)
+- [ ] **Kapazitätsauslastung** je Tag/Linie vs. Kapazität → Engpass sichtbar
+- [ ] **Materialverfügbarkeits-Ampel** je Auftrag (aus BOM/Bestand), Engpass-Komponenten + Beschaffungsstatus
+- [ ] **Reihenfolge/Priorisierung** nach Liefertermin **und** Deckungsbeitrag (Drag/Sort)
+- [ ] Plan/Ist (Produktionsplanerfüllung), Was-wäre-wenn „Auftrag vorziehen"
+**Controlling-Sicht** (Planabsatz, was fehlt bis wann, bester DB/EBIT)
+- [ ] **Planabsatz vs. Ist/Forecast** je Produkt/Monat → Lücke „was fehlt bis wann"
+- [ ] **DB je Stück & DB-Beitrag** je Produkt; **engpassorientierter DB** (DB je Engpasseinheit) → richtige Priorisierung
+- [ ] **Produktmix-Optimierung** für bestes EBIT unter Kapazitäts-/Materialrestriktionen
+- [ ] Verknüpfung mit Szenario-Engine (Mix ändern → EBIT-Wirkung)
+
+## 💡 Claudes Empfehlungen (eigene Ideen, würde ich später umsetzen)
+Priorisiert nach Nutzen/Aufwand — alle lokal/ohne KI machbar:
+- [ ] **Treiberbaum-Visualisierung** des Kausalmodells: interaktiver Wirkungsbaum, Klick auf eine Kennzahl zeigt Treiber & Effekte (macht die 80+ Verkettungen sichtbar/prüfbar).
+- [ ] **Sensitivität / Tornado-Diagramm**: jeder Stellhebel ±10 % → gerankt, welcher das EBIT am stärksten bewegt. Top-Hebel auf einen Blick.
+- [ ] **Bandbreiten-/Monte-Carlo-Simulation**: Verteilungen auf den Schlüsseltreibern → Konfidenzband für den EBIT-/Stichtags-Landepunkt (deckt „Best/Worst-Range" datenbasiert ab).
+- [ ] **Forecast-Alerts**: Stichtags-Hochrechnung unter Plan → automatischer Alert + Vorschlag passender Gegenmaßnahmen (nutzt Maßnahmen-Engine).
+- [ ] **Kalibrierung der Kausalfaktoren aus der Historie** (einfache Regression) statt Schätzwerte; je Kante Quelle/Verantwortlicher + Versionierung (Audit der Annahmen).
+- [ ] **Rollierender 12-Monats-Forecast** (nicht nur bis Jahresende/Stichtag).
+- [ ] **Szenario-/Vergleichs-Export** (Excel/PDF) und Teilen mit Berechtigung.
+- [ ] **Kommentar-/Annotations-Layer** auf Berichten (Controller-Notizen, mit Verlauf).
+- [ ] **Echte Datenanbindung** (MSSQL/DWH) über den vorhandenen SQL-Vertrag; Daten-Qualitäts-Gate vor jeder Hochrechnung.
+- [ ] **Konsistente Zeitintelligenz-Schicht** (eine Engine für YTD/MTD/VJ/Ø/kumuliert/gleitender Ø), die Designer, Tagesreporting und Forecast gemeinsam nutzen.
 
 ## Zuletzt ergänzt
 - Lernpfad (modulare Lektionen, Fortschritt, Zusammenhänge) ✅

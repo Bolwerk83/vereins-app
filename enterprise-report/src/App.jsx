@@ -1,19 +1,25 @@
 import React, { useState, useEffect } from 'react'
 import { ladeGruppen, ladeGruppenAsync, istAdmin, effektiveRolleAsync } from './core/gruppen.js'
 import RollenRechte from './modules/rollen-rechte/RollenRechte.jsx'
-import BenutzerLeiste from './modules/benutzer/BenutzerLeiste.jsx'
+import LoginDialog from './modules/benutzer/LoginDialog.jsx'
 import HilfePanel from './modules/hilfe/HilfePanel.jsx'
 import Onboarding from './modules/onboarding/Onboarding.jsx'
-import { schonGesehen } from './core/onboarding.js'
+import { schonGesehen, merkeGesehen } from './core/onboarding.js'
 import { KpiDefProvider } from './modules/kennzahlen/KpiDefContext.jsx'
 import { NavProvider } from './components/NavContext.jsx'
+import { FilterProvider, GlobalFilterLeiste } from './core/filterKontext.jsx'
 import { detailFuerBereich } from './core/detailberichte.js'
 import Kennzahlen from './modules/kennzahlen/Kennzahlen.jsx'
 import BurgerMenu from './components/BurgerMenu.jsx'
+import { KiStatusBadge } from './components/KiGate.jsx'
+import Assistent from './modules/assistent/Assistent.jsx'
+import RoterFaden from './modules/roter-faden/RoterFaden.jsx'
+import OnePager from './modules/onepager/OnePager.jsx'
 import { ladeKpiWerte, pruefeVerbindung, setCacheKontext, leereCache, PERIODEN, AKTUELLE_PERIODE, QUELLE } from './core/dataProvider.js'
 import { ladeModell } from './core/periodenmodell.js'
 import ZeitDatenart from './modules/zeit-datenart/ZeitDatenart.jsx'
 import DatenartBadge from './modules/zeit-datenart/DatenartBadge.jsx'
+import ZeitFilter from './modules/zeit-datenart/ZeitFilter.jsx'
 import Versionsvergleich from './modules/versionsvergleich/Versionsvergleich.jsx'
 import Verteiler from './modules/verteiler/Verteiler.jsx'
 import Abschluss from './modules/abschluss/Abschluss.jsx'
@@ -23,9 +29,17 @@ import ControllingStruktur from './modules/controlling/ControllingStruktur.jsx'
 import KLR from './modules/klr/KLR.jsx'
 import KLRAblauf from './modules/klr/KLRAblauf.jsx'
 import Ablaufdiagramm from './modules/ablauf/Ablaufdiagramm.jsx'
+import Datenarchitektur from './modules/datenarchitektur/Datenarchitektur.jsx'
 import Kostenartenrechnung from './modules/kostenarten/Kostenartenrechnung.jsx'
 import Kalkulatorik from './modules/kalkulatorik/Kalkulatorik.jsx'
 import Lebenszyklus from './modules/lebenszyklus/Lebenszyklus.jsx'
+import PortfolioBcg from './modules/portfolio-bcg/PortfolioBcg.jsx'
+import Quartalsbericht from './modules/quartalsbericht/Quartalsbericht.jsx'
+import FinanzCockpit from './modules/finanzcockpit/FinanzCockpit.jsx'
+import PcKostenstellen from './modules/pc-kostenstellen/PcKostenstellen.jsx'
+import Kontenstrukturen from './modules/kontenstrukturen/Kontenstrukturen.jsx'
+import Leasing from './modules/leasing/Leasing.jsx'
+import Versand from './modules/versand/Versand.jsx'
 import EinzelGemein from './modules/einzelgemein/EinzelGemein.jsx'
 import AuftragsLebenszyklus from './modules/auftrag/AuftragsLebenszyklus.jsx'
 import Kostenstellenrechnung from './modules/kostenstellen/Kostenstellenrechnung.jsx'
@@ -37,6 +51,16 @@ import LieferantenLebenszyklus from './modules/lieferant/LieferantenLebenszyklus
 import Marketing from './modules/marketing/Marketing.jsx'
 import Bestand from './modules/bestand/Bestand.jsx'
 import Lagerverwaltung from './modules/lager/Lagerverwaltung.jsx'
+import Produktionscontrolling from './modules/produktion/Produktionscontrolling.jsx'
+import Planung from './modules/planung/Planung.jsx'
+import Gutschriften from './modules/gutschriften/Gutschriften.jsx'
+import AbgleichAbsatz from './modules/abgleich/AbgleichAbsatz.jsx'
+import VertriebKennzahlen from './modules/vertrieb-kennzahlen/VertriebKennzahlen.jsx'
+import Prozesskette from './modules/prozesskette/Prozesskette.jsx'
+import Startseite from './modules/startseite/Startseite.jsx'
+import Tagesreporting from './modules/tagesreporting/Tagesreporting.jsx'
+import MarketingKarte from './modules/marketing-karte/MarketingKarte.jsx'
+import Szenario from './modules/szenario/Szenario.jsx'
 import WMS from './modules/wms/WMS.jsx'
 import Detailberichte from './modules/detailberichte/Detailberichte.jsx'
 import Forderungen from './modules/forderungen/Forderungen.jsx'
@@ -47,6 +71,7 @@ import Ergebnisrechnung from './modules/ergebnis/Ergebnisrechnung.jsx'
 import Deckungsbeitrag from './modules/deckungsbeitrag/Deckungsbeitrag.jsx'
 import Lernpfad from './modules/lernpfad/Lernpfad.jsx'
 import GlobalSuche from './modules/suche/GlobalSuche.jsx'
+import CommandPalette from './modules/suche/CommandPalette.jsx'
 import Admin from './modules/admin/Admin.jsx'
 import Events from './modules/events/Events.jsx'
 import Doku from './modules/doku/Doku.jsx'
@@ -55,11 +80,30 @@ import Abgrenzungsrechnung from './modules/abgrenzung/Abgrenzungsrechnung.jsx'
 import LebenszyklusEmpfehlungen from './modules/lebenszyklus/Empfehlungen.jsx'
 import KpiEditor from './modules/kpi-editor/KpiEditor.jsx'
 import Nutzung from './modules/nutzung/Nutzung.jsx'
+import Artikelkarte from './modules/artikelkarte/Artikelkarte.jsx'
+import DetailAnalyse from './modules/detail-analyse/DetailAnalyse.jsx'
 import { trackOeffnung } from './core/nutzung.js'
 import { nutzerId } from './core/identitaet.js'
 import { heartbeat } from './core/praesenz.js'
 import { darfBereich } from './core/rbac.js'
-import { bereichVon } from './core/navMeta.js'
+import { hatFreigabeFuerName } from './core/berichtRechte.js'
+import { istSichtbar as berichtSichtbar, statusVon as berichtStatusVon } from './core/berichtStatus.js'
+import Berichtfreigabe from './modules/berichtfreigabe/Berichtfreigabe.jsx'
+import DatenmodellAdmin from './modules/datenmodell/DatenmodellAdmin.jsx'
+import DatenschutzAdmin from './modules/datenschutz/DatenschutzAdmin.jsx'
+import KiSteuerung from './modules/ki-steuerung/KiSteuerung.jsx'
+import KiBuilder from './modules/ki-builder/KiBuilder.jsx'
+import BerichtLogAdmin from './modules/berichtlog/BerichtLogAdmin.jsx'
+import GoogleReporting from './modules/google/GoogleReporting.jsx'
+import Datenquellen from './modules/datenquellen/Datenquellen.jsx'
+import Bestandsentwicklung from './modules/bestandsentwicklung/Bestandsentwicklung.jsx'
+import Marktpotenzial from './modules/marktpotenzial/Marktpotenzial.jsx'
+import Verkaufsstatistik from './modules/statistik/Verkaufsstatistik.jsx'
+import Fahrradstatistik from './modules/statistik/Fahrradstatistik.jsx'
+import Einkaufsstatistik from './modules/statistik/Einkaufsstatistik.jsx'
+import Produktionsstatistik from './modules/statistik/Produktionsstatistik.jsx'
+import { gesamtStand } from './core/datenstand.js'
+import { bereichVon, istAdminView } from './core/navMeta.js'
 import BerichtInfoModal from './modules/berichtinfo/BerichtInfoModal.jsx'
 import BerichtInfoBanner from './modules/berichtinfo/BerichtInfoBanner.jsx'
 import { anzahlAnfragen } from './core/zugriff.js'
@@ -95,6 +139,9 @@ export default function App() {
   const [gruppen, setGruppen] = useState(ladeGruppen())
   const [rolleId, setRolleId] = useState(gruppen[0]?.id || null)
   const [benutzer, setBenutzer] = useState(localStorage.getItem(BENUTZER_KEY) || null)
+  // Demo-Anmeldung (Rolle + Name): Standard-Rolle ohne Anmeldung, mehr Berichte nach Login.
+  const [anmeldung, setAnmeldung] = useState(() => { try { return JSON.parse(localStorage.getItem('er_anmeldung') || 'null') } catch { return null } })
+  const [loginAuf, setLoginAuf] = useState(false)
   const [periode, setPeriode] = useState(AKTUELLE_PERIODE)
   const [werte, setWerte] = useState({})
   const [verbindung, setVerbindung] = useState(null)
@@ -106,16 +153,32 @@ export default function App() {
   const [hilfeAuf, setHilfeAuf] = useState(false)
   const [hilfeErstmalig, setHilfeErstmalig] = useState(false)
   const [onbAuf, setOnbAuf] = useState(false)
+  const [onbBanner, setOnbBanner] = useState(false)
+  const [menuAuf, setMenuAuf] = useState(false)   // ⚙ Einstellungen-Menü (Topbar)
+  const [theme, setTheme] = useState(() => { try { return localStorage.getItem('er_theme') || 'light' } catch { return 'light' } })
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'dark' : 'light')
+    try { localStorage.setItem('er_theme', theme) } catch {}
+  }, [theme])
+  const [praesentation, setPraesentation] = useState(false) // ablenkungsfreier Vollbild-/Präsentationsmodus
+  useEffect(() => {
+    document.documentElement.setAttribute('data-praesentation', praesentation ? '1' : '0')
+    if (praesentation) { try { document.documentElement.requestFullscreen?.() } catch {} }
+    else if (document.fullscreenElement) { try { document.exitFullscreen?.() } catch {} }
+    if (!praesentation) return
+    const onKey = (e) => { if (e.key === 'Escape') setPraesentation(false) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [praesentation])
   const [branding, setBranding] = useState(ladeBranding())
   const [infoView, setInfoView] = useState(null)   // Bericht-Info-Panel (Schaufenster)
   const [detailStart, setDetailStart] = useState(null) // Drill E3→E4: vorgewählte Detailliste
   const [detailSuche, setDetailSuche] = useState('')   // optionaler Vorfilter (z. B. aus BCG-Drill)
-  // Aktive "Rolle": angemeldeter Benutzer -> Vereinigung seiner Gruppen.
-  // Ohne Anmeldung -> manuell gewählte Gruppe (Demo-/Admin-Modus).
-  const rolle = benutzer
-    // Angemeldet, aber (noch) in keiner Gruppe -> least privilege: nichts sichtbar.
-    ? (benutzerRolle || { id: 'user:' + benutzer, name: benutzer, bereiche: [], kontext: [], gruppen: [] })
-    : (gruppen.find((g) => g.id === rolleId) || gruppen[0])
+  // Aktive "Rolle": ohne Anmeldung die Standard-Rolle (Lesezugriff), nach der
+  // Demo-Anmeldung die gewählte Rolle (mehr Berichte). Die Standard-Gruppe
+  // 'g-leser' ist die least-privilege-Sicht.
+  const standardGruppe = gruppen.find((g) => g.id === 'g-leser') || gruppen[gruppen.length - 1] || gruppen[0]
+  const rolle = (anmeldung && gruppen.find((g) => g.id === anmeldung.rolleId)) || standardGruppe
   const { t, lang, setLang } = useT()
 
   function anmelden(name) { localStorage.setItem(BENUTZER_KEY, name); setBenutzer(name) }
@@ -127,11 +190,12 @@ export default function App() {
     if (ansicht !== 'wizard' && !localStorage.getItem(HILFE_KEY)) { setHilfeErstmalig(true); setHilfeAuf(true) }
   }, [ansicht])
 
-  // Rollenbasiertes Onboarding einmal je Rolle automatisch zeigen
-  // (erst nach Ersthilfe/Setup, nicht im Wizard).
+  // Rollen-Onboarding NICHT mehr als blockierendes Modal aufpoppen, sondern als
+  // dezentes, schließbares Banner über dem Inhalt (einmal je Rolle). Den Rundgang
+  // startet der Nutzer selbst per CTA — oder jederzeit über 🚀.
   useEffect(() => {
     if (ansicht === 'wizard' || !localStorage.getItem(HILFE_KEY) || !rolle) return
-    if (!schonGesehen(rolle.id)) setOnbAuf(true)
+    if (!schonGesehen(rolle.id)) { merkeGesehen(rolle.id); setOnbBanner(true) }
   }, [rolle?.id, ansicht]) // eslint-disable-line
 
   // Cache-Kontext aus dem Periodenmodell (Datumssicht + Granularität). Ändert
@@ -173,7 +237,13 @@ export default function App() {
   // Navigation — von jeder Seite aus steuerbar. Fehlt die Berechtigung für den
   // Fachbereich des Ziels, wird statt des Berichts sein Info-Panel geöffnet
   // (Schaufenster: sehen, was es gibt — aber nicht aufrufen).
-  const geh = (a) => { if (a && !darfBereich(rolle, bereichVon(a))) { setInfoView(a); return } if (a === 'detailberichte') { setDetailStart(null); setDetailSuche('') } setAnsicht(a) }
+  const adminAktiv = istAdmin(rolle)
+  const geh = (a) => {
+    if (a && !adminAktiv && istAdminView(a)) { setInfoView(a); return } // Admin-Sichten nur für Admins (auch nicht über die Suche)
+    if (a && !adminAktiv && !berichtSichtbar(a, { admin: false, uid })) { setInfoView(a); return }
+    if (a && !darfBereich(rolle, bereichVon(a))) { setInfoView(a); return }
+    if (a === 'detailberichte') { setDetailStart(null); setDetailSuche('') } setAnsicht(a)
+  }
   // Drill E3 → E4: gezielt eine Detailliste öffnen.
   const gehDetail = (listId, suche = '') => { setDetailStart(listId); setDetailSuche(suche); setAnsicht('detailberichte') }
   const zeigeInfo = (a) => setInfoView(a)
@@ -183,19 +253,36 @@ export default function App() {
   // Eintrags-Helfer: label/icon/aktiv/onClick + Bereich/Relevanz (für Rollenfilter).
   const E = (view, key, icon, extra = {}) => {
     const bereich = bereichVon(view)
-    return { label: t(key), icon, view, bereich, relevant: darfBereich(rolle, bereich), aktiv: ansicht === view, onClick: () => geh(view), ...extra }
+    const status = berichtStatusVon(view)
+    // Status-Sichtbarkeit (Admin sieht alles, mit Kennzeichnung).
+    const versteckt = !adminAktiv && !berichtSichtbar(view, { admin: false, uid })
+    const marker = adminAktiv && status === 'test' ? '  🧪' : adminAktiv && status === 'deaktiviert' ? '  ⏸' : ''
+    // Sichtbar, wenn die Rolle den Bereich darf ODER der Bericht/Ordner für die
+    // Rolle bzw. den angemeldeten Kollegen zusätzlich freigegeben ist.
+    const relevant = darfBereich(rolle, bereich) || hatFreigabeFuerName(rolle?.id, anmeldung?.name, view)
+    return { label: t(key) + marker, icon, view, bereich, relevant, versteckt, aktiv: ansicht === view, onClick: () => geh(view), ...extra }
   }
   // Mehrstufige Navigation: Gruppe → Untergruppe (Bereich) → Eintrag.
   const menuGruppen = [
     { titel: 'Cockpit & Berichte', icon: '📊', untergruppen: [
       { titel: 'Überblick', eintraege: [
+        E('startseite', 'nav.startseite', '🏠'),
         E('baum', 'nav.tree', '🌳', { aktiv: ansicht === 'baum' || ansicht === 'report' }),
+        E('tagesreporting', 'nav.tagesreporting', '📅'),
+        E('quartalsbericht', 'nav.quartalsbericht', '📑'),
         E('kennzahlen', 'nav.kennzahlen', '📖'),
         E('katalog', 'nav.katalog', '🗂'),
         E('detailberichte', 'nav.detailberichte', '🔬'),
+        E('detailanalyse', 'nav.detailanalyse', '🔍', { label: 'Detail-Analyse' }),
         E('kpieditor', 'nav.kpieditor', '🧪')
       ] },
-      { titel: 'Eigene Berichte', eintraege: [ E('designer', 'nav.designer', '🧩') ] }
+      { titel: 'Werkzeuge', eintraege: [
+        E('onepager',   'nav.onepager',   '📄', { label: 'OnePager' }),
+        E('roterfaden', 'nav.roterfaden', '🧵', { label: 'Roter Faden' }),
+        E('assistent',  'nav.assistent',  '💬', { label: 'Assistent' }),
+        E('kibuilder', 'nav.kibuilder', '✨'),
+        E('designer', 'nav.designer', '🧩')
+      ] }
     ] },
     { titel: 'Kosten & Ergebnis', icon: '🧮', untergruppen: [
       { titel: 'Kostenrechnung', eintraege: [
@@ -209,21 +296,38 @@ export default function App() {
         E('kalkulation', 'nav.kalkulation', '🎯'),
         E('ergebnis', 'nav.ergebnis', '📕'),
         E('deckungsbeitrag', 'nav.db', '📐'),
-        E('profitcenter', 'nav.profitcenter', '🏦')
+        E('profitcenter', 'nav.profitcenter', '🏦'),
+        E('pckostenstellen', 'nav.pckostenstellen', '🗂'),
+        E('kontenstrukturen', 'nav.kontenstrukturen', '🌲'),
+        E('finanzcockpit', 'nav.finanzcockpit', '🛡'),
+        E('leasing', 'nav.leasing', '🚗')
       ] },
       { titel: 'Konzern', eintraege: [ E('segment', 'nav.segment', '🏛') ] }
     ] },
     { titel: 'Operativ', icon: '📈', untergruppen: [
       { titel: 'Vertrieb & Markt', eintraege: [
+        E('verkaufsstatistik', 'nav.verkaufsstatistik', '🧾'),
+        E('fahrradstatistik', 'nav.fahrradstatistik', '🚲'),
         E('marketing', 'nav.marketing', '📣'),
+        E('marketingkarte', 'nav.marketingkarte', '🗺'),
+        E('marktpotenzial', 'nav.marktpotenzial', '🎯'),
+        E('google', 'nav.google', '🔎'),
+        E('gutschriften', 'nav.gutschriften', '🧾'),
+        E('vertriebkpi', 'nav.vertriebkpi', '📈'),
+        E('prozesskette', 'nav.prozesskette', '🔻'),
         E('events', 'nav.events', '🎉')
       ] },
       { titel: 'Bestand & Beschaffung', eintraege: [
+        E('einkaufsstatistik', 'nav.einkaufsstatistik', '🛒'),
         E('lager', 'nav.lager', '🏬'),
+        E('bestandsentwicklung', 'nav.bestandsentwicklung', '📉'),
+        E('produktion', 'nav.produktion', '🏭'),
+        E('produktionsstatistik', 'nav.produktionsstatistik', '📐'),
         E('wms', 'nav.wms', '🗄'),
         E('bestand', 'nav.bestand', '📦'),
         E('lieferant', 'nav.lieferant', '🚚'),
-        E('auftrag', 'nav.auftrag', '📦')
+        E('auftrag', 'nav.auftrag', '📦'),
+        E('versand', 'nav.versand', '📮')
       ] },
       { titel: 'Finanzen & Risiko', eintraege: [
         E('forderungen', 'nav.forderungen', '💶')
@@ -232,14 +336,19 @@ export default function App() {
     { titel: 'Analyse & Steuerung', icon: '🔭', untergruppen: [
       { titel: 'Analyse', eintraege: [
         E('bi', 'nav.bi', '💬'),
+        E('planung', 'nav.planung', '🎯'),
+        E('szenario', 'nav.szenario', '🔮'),
         E('abweichung', 'nav.abweichung', '📊'),
         E('vergleich', 'nav.vergleich', '⚖'),
+        E('portfoliobcg', 'nav.portfoliobcg', '🧩'),
         E('qc', 'nav.qc', '✅', { badge: qcFehler || null }),
-        E('abstimmung', 'nav.abstimmung', '🔗')
+        E('abstimmung', 'nav.abstimmung', '🔗'),
+        E('abgleichabsatz', 'nav.abgleichabsatz', '🔀')
       ] },
       { titel: 'Lebenszyklen', eintraege: [
         E('lebenszyklus', 'nav.lebenszyklus', '🔄'),
         E('lzempfehlung', 'nav.lzempfehlung', '🧭'),
+        E('artikelkarte', 'nav.artikelkarte', '📋'),
         E('anlagen', 'nav.anlagen', '🏗'),
         E('technologie', 'nav.technologie', '🔬'),
         E('mitarbeiter', 'nav.mitarbeiter', '🧑‍🤝‍🧑')
@@ -254,12 +363,14 @@ export default function App() {
     { titel: 'Lernen & Wissen', icon: '📚', untergruppen: [
       { titel: 'Lernen', eintraege: [
         E('lernpfad', 'nav.lernpfad', '🎓'),
-        E('doku', 'nav.doku', '📚')
+        E('doku', 'nav.doku', '📚'),
+        E('datenquellen', 'nav.datenquellen', '🔗')
       ] },
       { titel: 'Konzepte', eintraege: [
         E('controlling', 'nav.controlling', '🧭'),
         E('klrablauf', 'nav.klrablauf', '🧵'),
-        E('ablaufdiagramm', 'nav.ablauf', '🗺')
+        E('ablaufdiagramm', 'nav.ablauf', '🗺'),
+        E('datenarchitektur', 'nav.datenarchitektur', '✳️')
       ] },
       { titel: 'Hilfe', eintraege: [
         { label: t('nav.onboarding'), icon: '🚀', aktiv: false, onClick: () => setOnbAuf(true) },
@@ -275,11 +386,25 @@ export default function App() {
       { titel: 'Einrichtung', eintraege: [ E('wizard', 'nav.wizard', '⚙') ] },
       ...(istAdmin(rolle) ? [{ titel: 'Administration', eintraege: [
         E('admin', 'nav.admin', '🛠'),
+        E('datenmodell', 'nav.datenmodell', '🧷'),
+        E('datenschutz', 'nav.datenschutz', '🔐'),
+        E('kisteuerung', 'nav.kisteuerung', '🤖'),
+        E('berichtfreigabe', 'nav.berichtfreigabe', '🚦'),
+        E('berichtlog', 'nav.berichtlog', '📊'),
         E('nutzung', 'nav.nutzung', '📈'),
         E('rechte', 'nav.rechte', '👥', { badge: anfragenN || null })
       ] }] : [])
     ] }
   ]
+  // Status-Sichtbarkeit anwenden: deaktivierte/Test-Berichte für normale Nutzer
+  // ausblenden (leere Untergruppen/Gruppen entfernen). Admin sieht alles.
+  const menuSichtbar = menuGruppen
+    .map((g) => ({ ...g, untergruppen: (g.untergruppen || [])
+      // Rollenfilter (relevant) UND Status-/Freigabe-Filter (versteckt) anwenden,
+      // damit ein Rollenwechsel die sichtbaren Berichte tatsächlich einschränkt.
+      .map((u) => ({ ...u, eintraege: u.eintraege.filter((e) => !e.versteckt && e.relevant) }))
+      .filter((u) => u.eintraege.length) }))
+    .filter((g) => g.untergruppen.length)
   // Flacher Index view → { label, icon, bereich, relevant, pfad } für das Info-Panel.
   const eintragIndex = {}
   for (const g of menuGruppen) for (const u of (g.untergruppen || [])) for (const e of u.eintraege)
@@ -287,11 +412,12 @@ export default function App() {
   const infoMeta = infoView ? (eintragIndex[infoView] || { label: infoView, bereich: bereichVon(infoView), relevant: darfBereich(rolle, bereichVon(infoView)), pfad: null }) : null
 
   return (
+    <FilterProvider>
     <div>
       {/* Topbar */}
       <header className="no-print" style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--panel)', borderBottom: '1px solid var(--line)',
         padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-        {ansicht !== 'wizard' && <BurgerMenu gruppen={menuGruppen} onInfo={zeigeInfo} />}
+        {ansicht !== 'wizard' && <BurgerMenu gruppen={menuSichtbar} onInfo={zeigeInfo} />}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {branding.logoDataUrl
             ? <img src={branding.logoDataUrl} alt="Logo" style={{ width: 26, height: 26, borderRadius: 7, objectFit: 'contain' }} />
@@ -310,6 +436,7 @@ export default function App() {
                     : verbindung.status === 'fehler' ? t('conn.none') : t('conn.mock')}
                 </span>
               )}
+              <span title="Stand der Daten (ältester relevanter Import)" style={{ marginLeft: 6, color: 'var(--muted)' }}>· 📅 {gesamtStand()}</span>
             </div>
           </div>
         </div>
@@ -318,47 +445,67 @@ export default function App() {
 
         {ansicht !== 'wizard' && (
           <>
-            <GlobalSuche onGeh={geh} onKpi={(id) => { setBaumStart(id); setAnsicht('baum') }} onInfo={zeigeInfo} rolle={rolle} />
-            {/* Nur Primär-Einstiege oben; die vollständige Navigation steckt im ☰-Menü. */}
-            <button style={topBtn(ansicht === 'baum' || ansicht === 'report')} onClick={() => geh('baum')}>{t('nav.tree')}</button>
-            <button style={topBtn(ansicht === 'kennzahlen')} onClick={() => geh('kennzahlen')}>{t('nav.kennzahlen')}</button>
+            <GlobalSuche onGeh={geh} onKpi={(id) => { setBaumStart(id); setAnsicht('baum') }} onInfo={zeigeInfo} rolle={rolle} istAdmin={adminAktiv} />
+            {/* Status-Badges: QC und Alerts — immer sichtbar, weil global relevant.
+                Alle weiteren Berichte/Werkzeuge erreichbar über das ☰-Menü. */}
             <button style={topBtn(ansicht === 'qc')} onClick={() => geh('qc')}>
               {t('nav.qc')}{(() => { const f = validierungsZusammenfassung(werte).fehler; return f ? ` (${f})` : '' })()}
             </button>
             {(() => { const n = alertAnzahl(werte, rolle); return (
               <button style={{ ...topBtn(ansicht === 'alerts'), ...(n ? { borderColor: 'var(--amp-r)', color: ansicht === 'alerts' ? '#fff' : 'var(--amp-r)' } : {}) }} onClick={() => geh('alerts')}>
                 ⚠ {t('nav.alerts')}{n ? ` (${n})` : ''}</button>) })()}
-            {istAdmin(rolle) && (
-              <button style={{ ...topBtn(ansicht === 'rechte'), ...(anfragenN ? { borderColor: 'var(--amp-a)' } : {}) }} onClick={() => geh('rechte')}>
-                {t('nav.rechte')}{anfragenN ? ` 🔔${anfragenN}` : ''}</button>
-            )}
-            <BenutzerLeiste benutzer={benutzer} rolle={rolle} gruppen={gruppen} onLogin={anmelden} onLogout={abmelden} />
-            {!benutzer && (
-              <label style={{ fontSize: 12, color: 'var(--muted)' }}>{t('lbl.role')}&nbsp;
-                <select value={rolle?.id || ''} onChange={(e) => setRolleId(e.target.value)} style={{ font: 'inherit', padding: '5px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)' }}>
-                  {gruppen.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
-                </select>
-              </label>
-            )}
-            <label style={{ fontSize: 12, color: 'var(--muted)' }}>{t('lbl.period')}&nbsp;
-              <select value={periode} onChange={(e) => setPeriode(e.target.value)} style={{ font: 'inherit', padding: '5px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)' }}>
-                {PERIODEN.map((p) => <option key={p} value={p}>{p}</option>)}
-              </select>
-            </label>
-            <DatenartBadge modell={zeitModell} onClick={() => setAnsicht('zeit')} />
-            <button style={topBtn(false)} onClick={() => setAnsicht('wizard')}>⚙ {t('nav.wizard')}</button>
-            <div style={{ display: 'flex', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
-              {SPRACHEN.map((s) => (
-                <button key={s.id} onClick={() => setLang(s.id)} style={{ padding: '5px 8px', border: 'none', fontSize: 11, fontWeight: 600,
-                  background: lang === s.id ? 'var(--accent)' : 'var(--panel)', color: lang === s.id ? '#fff' : 'var(--muted)' }}>{s.label}</button>
-              ))}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 6px 4px 10px', borderRadius: 999, background: anmeldung ? 'var(--accent-soft)' : 'var(--panel)', border: `1px solid ${anmeldung ? 'var(--accent)' : 'var(--line)'}` }}>
+              <span style={{ fontSize: 12, color: anmeldung ? 'var(--accent)' : 'var(--muted)', fontWeight: 600 }}>👤 {anmeldung?.name || 'Gast'}</span>
+              <span style={{ fontSize: 11, color: 'var(--muted)' }}>· {rolle?.name || '—'}</span>
+              {anmeldung
+                ? <button onClick={() => { setAnmeldung(null); try { localStorage.removeItem('er_anmeldung') } catch {} }} title="Abmelden — zurück zur Standard-Rolle" style={{ padding: '3px 9px', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', background: 'var(--panel)', cursor: 'pointer', fontSize: 12 }}>Abmelden</button>
+                : <button onClick={() => setLoginAuf(true)} title="Mit Rolle anmelden — mehr Berichte sehen" style={{ padding: '3px 11px', border: 'none', borderRadius: 'var(--radius-sm)', background: 'var(--accent)', color: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>Anmelden</button>}
             </div>
-            <button title={t('nav.onboarding')} onClick={() => setOnbAuf(true)}
-              style={{ width: 30, height: 30, borderRadius: '50%', border: '1px solid var(--line)', background: 'var(--panel)',
-                cursor: 'pointer', fontSize: 14 }}>🚀</button>
-            <button title={t('nav.hilfe')} onClick={() => { setHilfeErstmalig(false); setHilfeAuf(true) }}
-              style={{ width: 30, height: 30, borderRadius: '50%', border: '1px solid var(--line)', background: 'var(--panel)',
-                color: 'var(--accent)', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>?</button>
+            <ZeitFilter modell={zeitModell} onChange={() => setZeitModell(ladeModell())} />
+            <DatenartBadge modell={zeitModell} onClick={() => setAnsicht('zeit')} />
+            {/* ⚙ Einstellungen — bündelt Periode, Sprache, Wizard, Onboarding, Hilfe */}
+            <div style={{ position: 'relative' }}>
+              <button title="Einstellungen & Hilfe" aria-haspopup="true" aria-expanded={menuAuf} onClick={() => setMenuAuf((v) => !v)}
+                style={{ width: 32, height: 32, borderRadius: '50%', border: `1px solid ${menuAuf ? 'var(--accent)' : 'var(--line)'}`, background: menuAuf ? 'var(--accent-soft)' : 'var(--panel)', cursor: 'pointer', fontSize: 15 }}>⚙</button>
+              {menuAuf && (
+                <>
+                  <div onClick={() => setMenuAuf(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
+                  <div style={{ position: 'absolute', right: 0, top: 38, zIndex: 41, width: 230, background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: '0 14px 40px rgba(0,0,0,.18)', padding: 10, display: 'grid', gap: 10 }}>
+                    <label style={{ fontSize: 11, color: 'var(--muted)', display: 'block' }}>{t('lbl.period')}
+                      <select value={periode} onChange={(e) => setPeriode(e.target.value)} style={{ font: 'inherit', fontSize: 13, padding: '6px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', width: '100%', marginTop: 3, background: 'var(--panel)', color: 'var(--ink)' }}>
+                        {PERIODEN.map((p) => <option key={p} value={p}>{p}</option>)}
+                      </select>
+                    </label>
+                    <div>
+                      <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 3 }}>Sprache</div>
+                      <div style={{ display: 'flex', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
+                        {SPRACHEN.map((s) => (
+                          <button key={s.id} onClick={() => setLang(s.id)} style={{ flex: 1, padding: '6px 8px', border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                            background: lang === s.id ? 'var(--accent)' : 'var(--panel)', color: lang === s.id ? '#fff' : 'var(--muted)' }}>{s.label}</button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 3 }}>Darstellung</div>
+                      <div style={{ display: 'flex', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
+                        {[['light', '☀ Hell'], ['dark', '🌙 Dunkel']].map(([id, label]) => (
+                          <button key={id} onClick={() => setTheme(id)} style={{ flex: 1, padding: '6px 8px', border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                            background: theme === id ? 'var(--accent)' : 'var(--panel)', color: theme === id ? '#fff' : 'var(--muted)' }}>{label}</button>
+                        ))}
+                      </div>
+                      <button onClick={() => { setMenuAuf(false); setPraesentation(true) }} title="Vollbild, ablenkungsfrei, große Schrift — ideal zum Vorstellen"
+                        style={{ width: '100%', marginTop: 6, padding: '7px 8px', border: '1px solid var(--accent)', borderRadius: 'var(--radius-sm)', background: 'var(--accent-soft)', color: 'var(--accent)', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}>🖥 Präsentationsmodus</button>
+                    </div>
+                    <div style={{ borderTop: '1px solid var(--line)', paddingTop: 8, display: 'grid', gap: 4 }}>
+                      {[['⚙ ' + t('nav.wizard'), () => setAnsicht('wizard')], ['🚀 ' + t('nav.onboarding'), () => setOnbAuf(true)], ['❓ ' + t('nav.hilfe'), () => { setHilfeErstmalig(false); setHilfeAuf(true) }]].map(([label, fn]) => (
+                        <button key={label} onClick={() => { setMenuAuf(false); fn() }} style={{ textAlign: 'left', padding: '7px 8px', border: 'none', background: 'none', cursor: 'pointer', fontSize: 13, borderRadius: 'var(--radius-sm)', color: 'var(--ink)' }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg)' }} onMouseLeave={(e) => { e.currentTarget.style.background = 'none' }}>{label}</button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           </>
         )}
       </header>
@@ -371,6 +518,10 @@ export default function App() {
       )}
 
       <HilfePanel offen={hilfeAuf} erstmalig={hilfeErstmalig} onSchliessen={hilfeSchliessen} />
+      <CommandPalette onGeh={geh} onKpi={(id) => { setBaumStart(id); setAnsicht('baum') }} rolle={rolle} istAdmin={adminAktiv} />
+      {loginAuf && <LoginDialog gruppen={gruppen}
+        onAnmelden={({ name, rolleId }) => { const a = { name, rolleId }; setAnmeldung(a); try { localStorage.setItem('er_anmeldung', JSON.stringify(a)) } catch {} ; setLoginAuf(false) }}
+        onClose={() => setLoginAuf(false)} />}
       {onbAuf && <Onboarding rolle={rolle} istAdmin={istAdmin(rolle)} onGeh={geh} onClose={() => setOnbAuf(false)} />}
       {infoView && infoMeta && (
         <BerichtInfoModal view={infoView} label={infoMeta.label} icon={infoMeta.icon} pfad={infoMeta.pfad}
@@ -380,11 +531,23 @@ export default function App() {
 
       <KpiDefProvider rolle={rolle} werte={werte} onSpringe={(id) => { setBaumStart(id); setAnsicht('baum') }}>
       <NavProvider value={{
+        ansicht,
         imBaum: (kpiId) => { setBaumStart(kpiId); geh('baum') },
-        details: (bereich) => { const d = detailFuerBereich(bereich); if (d) gehDetail(d.id); else geh('detailberichte') },
+        details: (bereich, suche = '') => { const d = detailFuerBereich(bereich); if (d) gehDetail(d.id, suche); else geh('detailberichte') },
         struktur: () => gehDetail('hierarchie')
       }}>
-      <main style={{ padding: '22px 24px', maxWidth: 'none', margin: 0 }}>
+      <main style={{ padding: '22px 24px', maxWidth: 1800, margin: '0 auto' }}>
+        {onbBanner && ansicht !== 'wizard' && (
+          <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 14, padding: '10px 14px',
+            background: 'var(--accent-soft)', border: '1px solid var(--accent)', borderRadius: 'var(--radius)' }}>
+            <span style={{ fontSize: 20 }}>🚀</span>
+            <span style={{ flex: 1, minWidth: 200, fontSize: 13.5, color: 'var(--ink)' }}>
+              <b>Neu hier{rolle?.name ? ` als ${rolle.name}` : ''}?</b> Kurzer Rundgang durch die wichtigsten Berichte deiner Rolle — oder jederzeit über 🚀 oben.
+            </span>
+            <button onClick={() => { setOnbBanner(false); setOnbAuf(true) }} style={{ padding: '7px 14px', border: 'none', borderRadius: 'var(--radius-sm)', background: 'var(--accent)', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>Rundgang starten</button>
+            <button onClick={() => setOnbBanner(false)} aria-label="Banner schließen" style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--muted)', fontSize: 18, lineHeight: 1 }}>×</button>
+          </div>
+        )}
         {ansicht !== 'wizard' && eintragIndex[ansicht] && (
           <BerichtInfoBanner view={ansicht} label={eintragIndex[ansicht].label} icon={eintragIndex[ansicht].icon} pfad={eintragIndex[ansicht].pfad} />
         )}
@@ -392,6 +555,9 @@ export default function App() {
           <SetupWizard
             onFertig={() => { localStorage.setItem(SETUP_KEY, '1'); setAnsicht('baum') }}
             onAbbruch={() => setAnsicht(localStorage.getItem(SETUP_KEY) ? 'baum' : 'wizard')} />
+        )}
+        {ansicht === 'startseite' && (
+          <Startseite verbindung={verbindung} onGeh={geh} />
         )}
         {ansicht === 'baum' && (
           <TreeNavigator rolle={rolle} werte={werte} periode={periode} startId={baumStart} onOpenReport={() => setAnsicht('report')} onDetail={gehDetail} />
@@ -424,6 +590,15 @@ export default function App() {
         )}
         {ansicht === 'alerts' && (
           <Alerts werte={werte} rolle={rolle} periode={periode} />
+        )}
+        {ansicht === 'onepager' && (
+          <OnePager rolle={rolle} werte={werte} onGeh={geh} onKpi={(id) => { setBaumStart(id); setAnsicht('baum') }} />
+        )}
+        {ansicht === 'roterfaden' && (
+          <RoterFaden rolle={rolle} werte={werte} onGeh={geh} onKpi={(id) => { setBaumStart(id); setAnsicht('baum') }} />
+        )}
+        {ansicht === 'assistent' && (
+          <Assistent rolle={rolle} werte={werte} onGeh={geh} onKpi={(id) => { setBaumStart(id); setAnsicht('baum') }} />
         )}
         {ansicht === 'kennzahlen' && (
           <Kennzahlen rolle={rolle} werte={werte} />
@@ -461,6 +636,9 @@ export default function App() {
         {ansicht === 'ablaufdiagramm' && (
           <Ablaufdiagramm onGeh={geh} />
         )}
+        {ansicht === 'datenarchitektur' && (
+          <Datenarchitektur />
+        )}
         {ansicht === 'klr' && (
           <KLR werte={werte} rolle={rolle} periode={periode} onGeh={geh} />
         )}
@@ -475,6 +653,78 @@ export default function App() {
         )}
         {ansicht === 'lebenszyklus' && (
           <Lebenszyklus onDrill={(o) => gehDetail('artikel', o.gruppe || o.name)} />
+        )}
+        {ansicht === 'portfoliobcg' && (
+          <PortfolioBcg />
+        )}
+        {ansicht === 'artikelkarte' && (
+          <Artikelkarte rolle={rolle} werte={werte} periode={periode} />
+        )}
+        {ansicht === 'detailanalyse' && (
+          <DetailAnalyse />
+        )}
+        {ansicht === 'quartalsbericht' && (
+          <Quartalsbericht />
+        )}
+        {ansicht === 'finanzcockpit' && (
+          <FinanzCockpit />
+        )}
+        {ansicht === 'pckostenstellen' && (
+          <PcKostenstellen />
+        )}
+        {ansicht === 'kontenstrukturen' && (
+          <Kontenstrukturen />
+        )}
+        {ansicht === 'leasing' && (
+          <Leasing />
+        )}
+        {ansicht === 'versand' && (
+          <Versand />
+        )}
+        {ansicht === 'berichtfreigabe' && (
+          <Berichtfreigabe istAdmin={istAdmin(rolle)} />
+        )}
+        {ansicht === 'datenmodell' && (
+          <DatenmodellAdmin istAdmin={istAdmin(rolle)} />
+        )}
+        {ansicht === 'datenschutz' && (
+          <DatenschutzAdmin istAdmin={istAdmin(rolle)} />
+        )}
+        {ansicht === 'kisteuerung' && (
+          <KiSteuerung istAdmin={istAdmin(rolle)} />
+        )}
+        {ansicht === 'kibuilder' && (
+          <KiBuilder benutzer={benutzer} istAdmin={istAdmin(rolle)} />
+        )}
+        {ansicht === 'berichtlog' && (
+          <BerichtLogAdmin istAdmin={istAdmin(rolle)} />
+        )}
+        {ansicht === 'google' && (
+          <GoogleReporting />
+        )}
+        {ansicht === 'datenquellen' && (
+          <Datenquellen />
+        )}
+        {ansicht === 'bestandsentwicklung' && (
+          <Bestandsentwicklung />
+        )}
+        {ansicht === 'marktpotenzial' && (
+          <Marktpotenzial />
+        )}
+        {['verkaufsstatistik', 'fahrradstatistik', 'einkaufsstatistik', 'produktionsstatistik'].includes(ansicht) && (
+          <GlobalFilterLeiste />
+        )}
+        {ansicht === 'verkaufsstatistik' && (
+          <Verkaufsstatistik />
+        )}
+        {ansicht === 'fahrradstatistik' && (
+          <Fahrradstatistik />
+        )}
+        {ansicht === 'einkaufsstatistik' && (
+          <Einkaufsstatistik />
+        )}
+        {ansicht === 'produktionsstatistik' && (
+          <Produktionsstatistik />
         )}
         {ansicht === 'lzempfehlung' && (
           <LebenszyklusEmpfehlungen onGeh={geh} />
@@ -501,7 +751,34 @@ export default function App() {
           <Bestand />
         )}
         {ansicht === 'lager' && (
-          <Lagerverwaltung onGeh={geh} />
+          <Lagerverwaltung onGeh={geh} rolle={rolle} onDetail={gehDetail} />
+        )}
+        {ansicht === 'produktion' && (
+          <Produktionscontrolling onGeh={geh} onDetail={gehDetail} />
+        )}
+        {ansicht === 'planung' && (
+          <Planung onGeh={geh} />
+        )}
+        {ansicht === 'gutschriften' && (
+          <Gutschriften />
+        )}
+        {ansicht === 'abgleichabsatz' && (
+          <AbgleichAbsatz />
+        )}
+        {ansicht === 'vertriebkpi' && (
+          <VertriebKennzahlen />
+        )}
+        {ansicht === 'prozesskette' && (
+          <Prozesskette onGeh={geh} />
+        )}
+        {ansicht === 'tagesreporting' && (
+          <Tagesreporting onGeh={geh} />
+        )}
+        {ansicht === 'marketingkarte' && (
+          <MarketingKarte />
+        )}
+        {ansicht === 'szenario' && (
+          <Szenario periode={periode} />
         )}
         {ansicht === 'wms' && (
           <WMS />
@@ -563,10 +840,18 @@ export default function App() {
 
       {/* Dezenter, aber unmissverständlicher Urheberhinweis. */}
       <footer className="no-print" style={{ textAlign: 'center', padding: '14px 20px 22px', color: 'var(--muted)', fontSize: 11.5 }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}><KiStatusBadge /></div>
         Bei Rückfragen wende dich ans <b style={{ color: 'var(--ink)' }}>Business Controlling</b> ·{' '}
         <a href="https://servicedesk.example.com/controlling" target="_blank" rel="noreferrer"
           style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>🎫 Ticket erstellen</a>
       </footer>
+
+      {praesentation && (
+        <button onClick={() => setPraesentation(false)} title="Präsentationsmodus verlassen (Esc)"
+          style={{ position: 'fixed', top: 14, right: 16, zIndex: 200, padding: '8px 14px', borderRadius: 999, border: '1px solid var(--line)',
+            background: 'var(--panel)', color: 'var(--ink)', fontSize: 13, fontWeight: 600, cursor: 'pointer', boxShadow: 'var(--shadow)' }}>✕ Präsentation verlassen</button>
+      )}
     </div>
+    </FilterProvider>
   )
 }

@@ -2,17 +2,42 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { KPI } from '../core/kpiRegistry.js'
 import { ampelStatus, trendAusHistorie } from '../core/ampel.js'
-import { AMPEL_FARBE, AMPEL_SOFT, AMPEL_LABEL, formatWert, TREND_ICON, kpiSymbol } from '../design/theme.js'
+import { AMPEL_FARBE, AMPEL_SOFT, AMPEL_LABEL, AMPEL_SYMBOL, formatWert, TREND_ICON, kpiSymbol } from '../design/theme.js'
 import { kpiInsight } from '../core/insights.js'
-import { renderText, istVeraltet, ladeText, speichereText, loescheText, VORLAGEN, kiVorschlaege } from '../core/textbausteine.js'
+import { renderText, istVeraltet, ladeText, speichereText, loescheText, aktualisiereSnapshot, VORLAGEN, kiVorschlaege } from '../core/textbausteine.js'
+import { kpiAnzeige, statusVon, darfFreigeben, FREIGABE_STATUS, FREIGABE_LABEL, NICHT_VERFUEGBAR } from '../core/kpiFreigabe.js'
 import { useNav } from './NavContext.jsx'
 import { useKpiDef } from '../modules/kennzahlen/KpiDefContext.jsx'
 import { useFenster } from '../core/useFenster.js'
 import { ladeBookmarks, addBookmark, loescheBookmark, ladeLetzte, merkeLetzte } from '../core/bookmarks.js'
 
-export function AmpelPunkt({ status, size = 10 }) {
-  return <span style={{ display: 'inline-block', width: size, height: size, borderRadius: '50%',
-    background: AMPEL_FARBE[status] || AMPEL_FARBE.n }} />
+// Ampelpunkt mit Statussymbol (✓/!/✕) — auch ohne Farbe erkennbar.
+// mitText=true zeigt zusätzlich den Klartext ("Im Ziel" …).
+export function AmpelPunkt({ status, size = 14, mitText = false }) {
+  const s = status || 'n'
+  const dot = (
+    <span role="img" aria-label={AMPEL_LABEL[s]} title={AMPEL_LABEL[s]}
+      style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flex: 'none',
+        width: size, height: size, borderRadius: '50%', background: AMPEL_FARBE[s] || AMPEL_FARBE.n,
+        color: '#fff', fontSize: Math.round(size * 0.7), fontWeight: 800, lineHeight: 1 }}>{AMPEL_SYMBOL[s]}</span>
+  )
+  if (!mitText) return dot
+  return <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>{dot}
+    <span style={{ fontSize: 11.5, fontWeight: 700, color: AMPEL_FARBE[s] }}>{AMPEL_LABEL[s]}</span></span>
+}
+
+// Status-Chip: Symbol + Klartext + Farbfläche — die unmissverständliche „ok / nicht ok"-Anzeige.
+export function StatusChip({ status, size = 'm' }) {
+  const s = status || 'n'
+  const klein = size === 's'
+  return (
+    <span role="img" aria-label={AMPEL_LABEL[s]} style={{ display: 'inline-flex', alignItems: 'center', gap: 5,
+      padding: klein ? '1px 7px' : '2px 9px', borderRadius: 999, fontSize: klein ? 10.5 : 11.5, fontWeight: 700,
+      color: AMPEL_FARBE[s], background: AMPEL_SOFT[s], border: `1px solid ${AMPEL_FARBE[s]}` }}>
+      <span aria-hidden="true" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 14, height: 14, borderRadius: '50%', background: AMPEL_FARBE[s], color: '#fff', fontSize: 10, fontWeight: 800, lineHeight: 1 }}>{AMPEL_SYMBOL[s]}</span>
+      {AMPEL_LABEL[s]}
+    </span>
+  )
 }
 
 export function Badge({ children, status = 'n' }) {
@@ -27,17 +52,37 @@ export function KpiCard({ kpiId, wert, historie, onClick, alleWerte }) {
   const def = useKpiDef()
   const [drill, setDrill] = useState(null)
   if (!k) return null
+  // Freigabe-Governance: erst freigegebene KPIs sind für alle sichtbar.
+  const rolle = def?.rolle
+  const darfSteuern = darfFreigeben(rolle)
+  const anzeige = kpiAnzeige(kpiId, rolle) // hängt über def.freigabeTick an Re-Render
+  if (anzeige.modus === 'versteckt') return null
+  if (anzeige.modus === 'nichtVerfuegbar') {
+    return (
+      <div style={{ background: 'var(--panel)', border: '1px dashed var(--line)', borderRadius: 'var(--radius)',
+        padding: 14, minWidth: 150, flex: '1 1 0', color: 'var(--muted)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
+          <span className="mono" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '.04em' }}>{k.name}</span>
+          {darfSteuern && def && <FreigabeChip kpiId={kpiId} def={def} />}
+        </div>
+        <div style={{ fontSize: 14, marginTop: 12, fontWeight: 600 }}>{NICHT_VERFUEGBAR}</div>
+      </div>
+    )
+  }
+  const entwurf = anzeige.modus === 'entwurf'
   const status = ampelStatus({ wert, ziel: k.ziel, richtung: k.richtung, warn: k.warn })
   const t = historie ? trendAusHistorie(historie.map((h) => h.wert), k.richtung) : null
   const sym = kpiSymbol(k.einheit)
   return (
     <>
     <button onClick={onClick} style={{ textAlign: 'left', background: 'var(--panel)', border: '1px solid var(--line)',
-      borderLeft: `3px solid ${AMPEL_FARBE[status]}`, borderRadius: 'var(--radius)', padding: 14, minWidth: 150,
+      borderLeft: `3px solid ${entwurf ? 'var(--amp-a)' : AMPEL_FARBE[status]}`, borderRadius: 'var(--radius)', padding: 14, minWidth: 150,
       flex: '1 1 0', boxShadow: 'var(--shadow)' }}>
+      {entwurf && <div style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--amp-a)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 4 }}>✎ Entwurf · noch nicht freigegeben</div>}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
         <span className="mono" style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em' }}>{k.name}</span>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          {darfSteuern && def && <FreigabeChip kpiId={kpiId} def={def} />}
           {alleWerte && <span role="button" title="Logik & Herkunft (Drill durch die Ebenen)"
             onClick={(e) => { e.stopPropagation(); setDrill(kpiId) }}
             style={{ cursor: 'pointer', color: 'var(--accent)', fontSize: 13, fontWeight: 700, lineHeight: 1 }}>⛓</span>}
@@ -50,6 +95,7 @@ export function KpiCard({ kpiId, wert, historie, onClick, alleWerte }) {
       <div className="mono" style={{ fontSize: 24, fontWeight: 600, marginTop: 6 }}>
         {sym && <span style={{ color: 'var(--muted)', fontWeight: 500, marginRight: 5 }}>{sym}</span>}{formatWert(wert, k.einheit)}
       </div>
+      {!entwurf && k.ziel != null && <div style={{ marginTop: 6 }}><StatusChip status={status} size="s" /></div>}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
         <span style={{ fontSize: 11, color: 'var(--muted)' }}>{k.ziel != null ? `Ziel ${sym ? sym + ' ' : ''}${formatWert(k.ziel, k.einheit)}` : '—'}</span>
         {t && t.deltaPct != null && <span className="mono" style={{ fontSize: 11, color: t.istGut ? 'var(--amp-g)' : 'var(--amp-r)' }}>
@@ -58,6 +104,32 @@ export function KpiCard({ kpiId, wert, historie, onClick, alleWerte }) {
     </button>
     {drill && <KpiDrillModal startId={drill} werte={alleWerte} onClose={() => setDrill(null)} />}
     </>
+  )
+}
+
+/** Freigabe-Steuerung an der Karte (nur Controlling/Admin): Status umschalten. */
+export function FreigabeChip({ kpiId, def }) {
+  const [auf, setAuf] = useState(false)
+  const status = statusVon(kpiId)
+  const stil = { freigegeben: { i: '✓', f: 'var(--amp-g)' }, entwurf: { i: '✎', f: 'var(--amp-a)' }, deaktiviert: { i: '⊘', f: 'var(--amp-r)' } }[status]
+  return (
+    <span style={{ position: 'relative', display: 'inline-flex' }}>
+      <span role="button" title={`Freigabe: ${FREIGABE_LABEL[status]} — ändern`}
+        onClick={(e) => { e.stopPropagation(); setAuf((v) => !v) }}
+        style={{ cursor: 'pointer', color: stil.f, fontSize: 12, fontWeight: 700, lineHeight: 1, border: `1px solid ${stil.f}55`, borderRadius: 999, padding: '1px 5px' }}>{stil.i}</span>
+      {auf && (
+        <span onClick={(e) => e.stopPropagation()} style={{ position: 'absolute', top: '120%', right: 0, zIndex: 60, background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', boxShadow: 'var(--shadow)', padding: 4, minWidth: 180 }}>
+          <div style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', padding: '4px 8px' }}>Freigabe steuern</div>
+          {FREIGABE_STATUS.map((s) => (
+            <button key={s} onClick={(e) => { e.stopPropagation(); def.setFreigabe(kpiId, s); setAuf(false) }}
+              style={{ display: 'block', width: '100%', textAlign: 'left', border: 'none', cursor: 'pointer', fontSize: 12, padding: '6px 8px', borderRadius: 6,
+                background: s === status ? 'var(--accent-soft)' : 'transparent', color: s === status ? 'var(--accent)' : 'var(--ink)', fontWeight: s === status ? 700 : 400 }}>
+              {s === status ? '● ' : '○ '}{FREIGABE_LABEL[s]}
+            </button>
+          ))}
+        </span>
+      )}
+    </span>
   )
 }
 
@@ -118,8 +190,35 @@ export function KpiDrillModal({ startId, werte = {}, onClose }) {
               <div style={{ fontSize: 13 }}>{ins.aussage}</div>
             </div>
           )}
+          {/* Warum ist der Wert so? — Treiber-Herleitung aus den Bestandteilen */}
+          {(() => {
+            const sp = (x) => (x == null ? '—' : (x >= 0 ? '+' : '') + x.toFixed(1) + ' %')
+            const treiber = deps.map((d) => {
+              const insd = kpiInsight(d, werte[d])
+              return { d, name: KPI[d].name, abwPct: insd?.abwZielPct, status: ampelStatus({ wert: werte[d], ziel: KPI[d].ziel, richtung: KPI[d].richtung, warn: KPI[d].warn }) }
+            }).filter((x) => x.abwPct != null).sort((a, b) => Math.abs(b.abwPct) - Math.abs(a.abwPct))
+            const top = treiber[0]
+            const richtungTxt = ins?.abwZielPct == null ? '' : (ins.abwZielPct >= 0 ? 'über' : 'unter') + ' Budget'
+            let warum
+            if (deps.length === 0) {
+              warum = ins?.abwZiel != null
+                ? `Direkt gemessene Kennzahl — die Abweichung (${sp(ins.abwZielPct)} ${richtungTxt}) kommt unmittelbar aus der Quelle (SQL/Mock), keine weitere Zerlegung.`
+                : 'Direkt gemessene Kennzahl aus der Quelle — kein Ziel hinterlegt.'
+            } else if (top) {
+              warum = `${k.name} liegt ${sp(ins?.abwZielPct)} ${richtungTxt}. Stärkster Abweichungstreiber unter den Bestandteilen: ${top.name} (${sp(top.abwPct)} ggü. eigenem Budget)` + (treiber[1] ? `, gefolgt von ${treiber[1].name} (${sp(treiber[1].abwPct)}).` : '.')
+            } else {
+              warum = `${k.name} setzt sich aus ${deps.length} Bestandteilen zusammen — tiefer drillen für die Herleitung.`
+            }
+            return (
+              <div style={{ marginTop: 16, padding: '11px 13px', borderRadius: 'var(--radius-sm)', background: 'var(--bg)', border: '1px solid var(--line)' }}>
+                <div className="mono" style={{ fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 4 }}>🔍 Warum ist der Wert so?</div>
+                <div style={{ fontSize: 12.5, lineHeight: 1.5 }}>{warum}</div>
+              </div>
+            )
+          })()}
+
           <div style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700, margin: '16px 0 8px' }}>
-            {deps.length ? 'Setzt sich zusammen aus — tiefer drillen:' : 'Basiskennzahl'}
+            {deps.length ? 'Bestandteile — tiefer drillen (Abweichung ggü. eigenem Budget):' : 'Basiskennzahl'}
           </div>
           {deps.length === 0
             ? <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>Direkt gemessene Kennzahl — kommt aus der Quelle (SQL/Mock), keine weitere Herleitung.</div>
@@ -129,10 +228,14 @@ export function KpiDrillModal({ startId, werte = {}, onClose }) {
                   const kd = KPI[d], wd = werte[d]
                   const sd = ampelStatus({ wert: wd, ziel: kd.ziel, richtung: kd.richtung, warn: kd.warn })
                   const symd = kpiSymbol(kd.einheit)
+                  const insd = kpiInsight(d, wd)
+                  const abw = insd?.abwZielPct
                   return (
                     <button key={d} onClick={() => tief(d)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, textAlign: 'left', cursor: 'pointer', border: '1px solid var(--line)', background: 'var(--panel)', borderRadius: 'var(--radius-sm)', padding: '9px 12px' }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}><AmpelPunkt status={sd} /><span style={{ fontSize: 13, fontWeight: 600 }}>{kd.name}</span></span>
-                      <span className="mono" style={{ fontSize: 13 }}>{symd && <span style={{ color: 'var(--muted)' }}>{symd} </span>}{formatWert(wd, kd.einheit)} <span style={{ color: 'var(--accent)' }}>→</span></span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, minWidth: 0 }}><AmpelPunkt status={sd} /><span style={{ fontSize: 13, fontWeight: 600 }}>{kd.name}</span></span>
+                      <span className="mono" style={{ fontSize: 13, whiteSpace: 'nowrap' }}>
+                        {abw != null && <span style={{ fontSize: 11, color: sd === 'r' ? 'var(--amp-r)' : sd === 'a' ? 'var(--amp-a)' : 'var(--amp-g)', marginRight: 8 }}>{abw >= 0 ? '+' : ''}{abw.toFixed(1)} %</span>}
+                        {symd && <span style={{ color: 'var(--muted)' }}>{symd} </span>}{formatWert(wd, kd.einheit)} <span style={{ color: 'var(--accent)' }}>→</span></span>
                     </button>
                   )
                 })}
@@ -158,6 +261,7 @@ export function Textbox({ id, werte = {}, periode = null, titel = 'Controller-Ko
   const starten = () => { setDraft(meta?.text || ''); setVorschl([]); setEdit(true) }
   const speichern = () => { setMeta(speichereText(id, { text: draft, periode, werte })); setEdit(false) }
   const entfernen = () => { loescheText(id); setMeta(null); setEdit(false) }
+  const snapshotAktualisieren = () => { const m = aktualisiereSnapshot(id, { werte, periode }); if (m) setMeta({ ...m }) }
   const insert = (s) => {
     const el = ref.current
     if (!el) { setDraft((d) => d + s); return }
@@ -179,8 +283,40 @@ export function Textbox({ id, werte = {}, periode = null, titel = 'Controller-Ko
       </div>
 
       {!edit ? (
-        meta?.text ? <div style={{ fontSize: 13.5, lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{renderText(meta.text, werte)}</div>
-          : <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>Noch kein Kommentar.{editierbar ? ' Auf „Kommentieren" klicken.' : ''}</div>
+        <div>
+          {meta?.text ? <div style={{ fontSize: 13.5, lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{renderText(meta.text, werte)}</div>
+            : <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>Noch kein Kommentar.{editierbar ? ' Auf „Kommentieren" klicken.' : ''}</div>}
+
+          {meta && ver.veraltet && (
+            <div style={{ marginTop: 10, padding: '9px 11px', borderRadius: 'var(--radius-sm)', background: 'var(--amp-a-soft)', border: '1px solid var(--amp-a)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--amp-a)' }}>⚠ Zahlen haben sich seit dem Kommentar geändert</span>
+                {editierbar && <button onClick={snapshotAktualisieren} title="Den Kommentar auf den aktuellen Datenstand heben (Text bleibt, Vergleichswerte werden aktualisiert)."
+                  style={{ ...btn, borderColor: 'var(--amp-a)', color: 'var(--amp-a)' }}>↻ Snapshot aktualisieren</button>}
+              </div>
+              {ver.periode && (
+                <div style={{ fontSize: 12, marginTop: 6, color: 'var(--ink)' }}>
+                  Periode: <b>{ver.periode.alt}</b> <span style={{ color: 'var(--muted)' }}>→</span> <b>{ver.periode.neu}</b>
+                </div>
+              )}
+              {ver.aenderungen?.length > 0 && (
+                <div style={{ display: 'grid', gap: 4, marginTop: 6 }}>
+                  {ver.aenderungen.map((a) => (
+                    <div key={a.id} style={{ fontSize: 12, display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' }}>
+                      <span style={{ color: 'var(--slate)' }}>{a.name}:</span>
+                      <span className="mono" style={{ color: 'var(--muted)' }}>damals {a.altFmt}</span>
+                      <span style={{ color: 'var(--muted)' }}>→</span>
+                      <span className="mono" style={{ fontWeight: 700 }}>heute {a.neuFmt}</span>
+                      <span className="mono" style={{ color: a.deltaPct >= 0 ? 'var(--amp-g)' : 'var(--amp-r)' }}>
+                        ({a.deltaPct >= 0 ? '+' : ''}{a.deltaPct} %)
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       ) : (
         <div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8, alignItems: 'center' }}>
@@ -367,11 +503,14 @@ export function DetailTabelle({ daten, onZeileKlick, spaltenWahl = false }) {
 
 /** Mini-Sparkline für die Historisierung (Ebene 5). */
 export function Sparkline({ reihe, richtung = 'hoch_gut', w = 220, h = 56 }) {
-  const werte = reihe.map((r) => r.wert).filter((v) => v != null)
+  // Nur Punkte mit Wert: sonst rechnet (null - min) durch JS-Coercion zu (0 - min)
+  // und der Punkt springt aus dem Diagramm (falsche Trendlinie bei Lücken).
+  const punkte = reihe.filter((r) => r.wert != null)
+  const werte = punkte.map((r) => r.wert)
   if (werte.length < 2) return <div style={{ color: 'var(--muted)' }}>Zu wenig Historie.</div>
   const min = Math.min(...werte), max = Math.max(...werte), span = max - min || 1
-  const pts = reihe.map((r, i) => {
-    const x = (i / (reihe.length - 1)) * (w - 8) + 4
+  const pts = punkte.map((r, i) => {
+    const x = (i / (punkte.length - 1)) * (w - 8) + 4
     const y = h - 4 - ((r.wert - min) / span) * (h - 12)
     return [x, y]
   })

@@ -15,6 +15,84 @@ import { datensatzKatalog, datensatzInfo, ladeDatensatz, tabellenSicht, distinkt
 import { formatWert, AMPEL_FARBE } from '../../design/theme.js'
 import { exportReportPdf, exportReportExcel } from '../../core/reportExport.js'
 import { Badge, AmpelPunkt, DetailTabelle } from '../../components/ui.jsx'
+import { DIMENSIONEN as HIER_DIMS, MASSE, dimInfo, baueEigeneHierarchie, sichtbareZeilen as hierZeilen, alleIds as hierAlleIds } from '../../core/eigeneHierarchie.js'
+
+const eur0 = (n) => Math.round(n).toLocaleString('de-DE') + ' T€'
+
+// --- Eigene Hierarchie: Ebenen-Composer (der „Filter") --------------------
+function HierarchieEdit({ b, onChange }) {
+  const dims = b.dims || []
+  const verfuegbar = HIER_DIMS.filter((d) => !dims.includes(d.id))
+  const move = (i, d) => { const a = [...dims]; const j = i + d; if (j < 0 || j >= a.length) return;[a[i], a[j]] = [a[j], a[i]]; onChange({ dims: a }) }
+  return (
+    <div style={{ marginTop: 6, display: 'grid', gap: 6 }}>
+      <input style={{ padding: '4px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', font: 'inherit', fontSize: 12 }} value={b.titel || ''} onChange={(e) => onChange({ titel: e.target.value })} placeholder="Titel der Hierarchie" />
+      <div style={{ fontSize: 10.5, color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 700 }}>Ebenen (Reihenfolge = Hierarchie)</div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+        {dims.map((id, i) => (
+          <span key={id} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11.5, background: 'var(--accent-soft)', border: '1px solid var(--accent)', borderRadius: 999, padding: '2px 4px 2px 9px', color: 'var(--accent)' }}>
+            {i + 1}. {dimInfo(id)?.name}
+            <button onClick={() => move(i, -1)} title="nach vorne" style={miniBtn}>↑</button>
+            <button onClick={() => move(i, 1)} title="nach hinten" style={miniBtn}>↓</button>
+            <button onClick={() => onChange({ dims: dims.filter((x) => x !== id) })} title="entfernen" style={{ ...miniBtn, color: 'var(--amp-r)' }}>✕</button>
+          </span>
+        ))}
+        {!dims.length && <span style={{ fontSize: 12, color: 'var(--muted)' }}>Noch keine Ebene — unten hinzufügen.</span>}
+      </div>
+      <div style={{ display: 'flex', gap: 6 }}>
+        <select value="" onChange={(e) => { if (e.target.value) onChange({ dims: [...dims, e.target.value] }) }} style={{ flex: 1, padding: '4px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', font: 'inherit', fontSize: 12 }}>
+          <option value="">+ Ebene hinzufügen …</option>
+          {verfuegbar.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+        </select>
+        <select value={b.mass || 'ergebnis'} onChange={(e) => onChange({ mass: e.target.value })} style={{ padding: '4px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', font: 'inherit', fontSize: 12 }}>
+          {MASSE.map((m) => <option key={m.id} value={m.id}>nach {m.name}</option>)}
+        </select>
+      </div>
+    </div>
+  )
+}
+const miniBtn = { border: 'none', background: 'none', cursor: 'pointer', color: 'var(--accent)', fontSize: 12, lineHeight: 1, padding: '0 1px' }
+
+// --- Eigene Hierarchie: aufklappbare Drill-Vorschau -----------------------
+function HierarchieVorschau({ block }) {
+  const [offen, setOffen] = useState(new Set())
+  const root = baueEigeneHierarchie(block.dims || [], block.mass || 'ergebnis')
+  const zeilen = hierZeilen(root, offen)
+  const toggle = (id) => setOffen((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n })
+  const td = (al) => ({ textAlign: al, padding: '4px 9px', borderBottom: '1px solid var(--line)', whiteSpace: 'nowrap' })
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+        <span className="mono" style={{ fontSize: 11, color: 'var(--accent)', textTransform: 'uppercase' }}>🌳 {block.titel || 'Eigene Hierarchie'}</span>
+        <span style={{ fontSize: 11.5, color: 'var(--muted)' }}>{(block.dims || []).map((id) => dimInfo(id)?.name).join(' → ') || 'keine Ebenen'}</span>
+        <button onClick={() => setOffen(new Set(hierAlleIds(root)))} style={{ marginLeft: 'auto', ...miniBtn, color: 'var(--muted)', fontSize: 11 }}>alle auf</button>
+        <button onClick={() => setOffen(new Set())} style={{ ...miniBtn, color: 'var(--muted)', fontSize: 11 }}>zu</button>
+      </div>
+      {!(block.dims || []).length
+        ? <div style={{ color: 'var(--muted)', fontSize: 13 }}>Links Ebenen wählen, um die Hierarchie zu sehen.</div>
+        : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
+              <thead><tr>{['Struktur', 'Erlös', 'Kosten', 'Ergebnis'].map((h, i) => <th key={i} style={{ ...td(i ? 'right' : 'left'), borderBottom: '2px solid var(--line)', fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase' }}>{h}</th>)}</tr></thead>
+              <tbody>
+                {zeilen.map((z) => (
+                  <tr key={z.id}>
+                    <td style={{ ...td('left'), paddingLeft: 9 + z.tiefe * 18 }}>
+                      {z.hatKinder ? <button onClick={() => toggle(z.id)} style={{ ...miniBtn, color: 'var(--muted)', width: 12 }}>{z.offen ? '▾' : '▸'}</button> : <span style={{ display: 'inline-block', width: 12 }} />}
+                      <span style={{ fontWeight: z.tiefe === 0 ? 700 : 500, marginLeft: 4 }}>{z.name}</span>
+                    </td>
+                    <td style={td('right')} className="mono">{z.erloes ? eur0(z.erloes) : '—'}</td>
+                    <td style={td('right')} className="mono">{eur0(z.kosten)}</td>
+                    <td style={{ ...td('right'), fontWeight: 700, color: z.ergebnis >= 0 ? 'var(--amp-g)' : 'var(--amp-r)' }} className="mono">{eur0(z.ergebnis)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+    </div>
+  )
+}
 
 export default function ReportDesigner({ rolle, werte, startId }) {
   const [reports, setReports] = useState(ladeReports())
@@ -84,6 +162,7 @@ export default function ReportDesigner({ rolle, werte, startId }) {
             <button style={{ ...btn, flex: 1 }} onClick={() => addBlock({ typ: 'text', titel: 'Überschrift', text: 'Analysetext …' })}>+ Textblock</button>
             <button style={{ ...btn, flex: 1 }} onClick={() => addBlock({ typ: 'massnahmen' })}>+ Maßnahmen</button>
           </div>
+          <button style={btn} onClick={() => addBlock({ typ: 'hierarchie', titel: 'Eigene Hierarchie', dims: ['pc', 'funktion'], mass: 'ergebnis' })}>+ Hierarchie (eigener Baum)</button>
         </div>
 
         {/* Blockliste */}
@@ -91,8 +170,8 @@ export default function ReportDesigner({ rolle, werte, startId }) {
           {r.bloecke.map((b, i) => (
             <div key={i} style={{ border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', padding: 8 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Badge status="n">{b.typ === 'kpi' ? 'KPI' : b.typ === 'text' ? 'Text' : b.typ === 'tabelle' ? 'Tabelle' : 'Maßnahmen'}</Badge>
-                <span style={{ flex: 1, fontSize: 12.5 }}>{b.typ === 'kpi' ? KPI[b.kpiId]?.name : b.typ === 'text' ? b.titel : b.typ === 'tabelle' ? b.titel : 'Offene Maßnahmen'}</span>
+                <Badge status="n">{b.typ === 'kpi' ? 'KPI' : b.typ === 'text' ? 'Text' : b.typ === 'tabelle' ? 'Tabelle' : b.typ === 'hierarchie' ? 'Hierarchie' : 'Maßnahmen'}</Badge>
+                <span style={{ flex: 1, fontSize: 12.5 }}>{b.typ === 'kpi' ? KPI[b.kpiId]?.name : b.typ === 'text' ? b.titel : b.typ === 'tabelle' ? b.titel : b.typ === 'hierarchie' ? (b.titel || 'Eigene Hierarchie') : 'Offene Maßnahmen'}</span>
                 <button style={{ ...btn, padding: '2px 7px' }} onClick={() => move(i, -1)}>↑</button>
                 <button style={{ ...btn, padding: '2px 7px' }} onClick={() => move(i, 1)}>↓</button>
                 <button style={{ ...btn, padding: '2px 7px', color: 'var(--amp-r)' }} onClick={() => del(i)}>✕</button>
@@ -103,6 +182,7 @@ export default function ReportDesigner({ rolle, werte, startId }) {
                   <textarea style={{ ...inp, fontSize: 12 }} rows={2} value={b.text} onChange={(e) => editBlock(i, { text: e.target.value })} />
                 </div>
               )}
+              {b.typ === 'hierarchie' && <HierarchieEdit b={b} onChange={(patch) => editBlock(i, patch)} />}
             </div>
           ))}
           {!r.bloecke.length && <div style={{ color: 'var(--muted)', fontSize: 13 }}>Noch leer — oben Bausteine hinzufügen.</div>}
@@ -221,6 +301,7 @@ function Vorschau({ r, werte, rolle, onEditBlock }) {
             </div>
           )
           if (b.typ === 'tabelle') return <TabellenBlock key={i} block={b} onCfg={onEditBlock ? (patch) => onEditBlock(i, patch) : null} />
+          if (b.typ === 'hierarchie') return <HierarchieVorschau key={i} block={b} />
           if (b.typ === 'massnahmen') return (
             <div key={i}>
               <div className="mono" style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 6 }}>Maßnahmen (offen / in Arbeit)</div>

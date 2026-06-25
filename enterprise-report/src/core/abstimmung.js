@@ -33,18 +33,26 @@ export const STATUS = [
 ]
 export const statusInfo = (id) => STATUS.find((s) => s.id === id) || STATUS[0]
 
+// Abgestimmte Positionen gelten nach so vielen Tagen als „erledigt" und werden
+// standardmäßig ausgeblendet (uninteressant) — für Rückfragen einblendbar.
+export const FRISCH_TAGE = 7
+const heuteIso = () => new Date().toISOString().slice(0, 10)
+const tageSeit = (iso) => (iso ? Math.floor((Date.now() - new Date(iso).getTime()) / 86400000) : null)
+
 const KEY = 'er_abstimmung'
 function ladeState() { try { return JSON.parse(localStorage.getItem(KEY) || '{}') } catch { return {} } }
 function speichere(s) { localStorage.setItem(KEY, JSON.stringify(s)); return s }
 
-/** Gespeicherte Notiz (Status/Kommentar) je Periode+Position. */
+/** Gespeicherte Notiz (Status/Kommentar/Zeitstempel) je Periode+Position. */
 export function ladeNotiz(periode, posId) {
-  return ladeState()[periode]?.[posId] || { status: null, kommentar: '' }
+  return ladeState()[periode]?.[posId] || { status: null, kommentar: '', am: null }
 }
 export function setNotiz(periode, posId, patch) {
   const s = ladeState()
   s[periode] = s[periode] || {}
-  s[periode][posId] = { ...ladeNotiz(periode, posId), ...patch }
+  // Bei Statuswechsel den Zeitstempel mitführen (Basis fürs Ausblenden).
+  const mitZeit = 'status' in patch ? { ...patch, am: heuteIso() } : patch
+  s[periode][posId] = { ...ladeNotiz(periode, posId), ...mitZeit }
   return speichere(s)
 }
 
@@ -74,7 +82,12 @@ export function bruecken(werte = {}, periode = '', hauptbuch = null) {
     const notiz = ladeNotiz(periode, p.id)
     // Effektiver Status: gesetzter Status, sonst aus Toleranz abgeleitet.
     const status = notiz.status || (imRahmen ? 'abgestimmt' : 'klaerung')
-    return { ...p, ist, buchhaltung, diff, diffPct, imRahmen, status, kommentar: notiz.kommentar, gesetzt: !!notiz.status }
+    // „erledigt" = abgestimmt und entweder automatisch (Toleranz) oder schon
+    // länger als FRISCH_TAGE manuell abgestimmt → standardmäßig ausblenden.
+    const tageHer = tageSeit(notiz.am)
+    const frisch = status === 'abgestimmt' && notiz.am != null && tageHer < FRISCH_TAGE
+    const erledigt = status === 'abgestimmt' && !frisch
+    return { ...p, ist, buchhaltung, diff, diffPct, imRahmen, status, kommentar: notiz.kommentar, gesetzt: !!notiz.status, am: notiz.am || null, tageHer, frisch, erledigt }
   })
 }
 

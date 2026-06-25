@@ -10,6 +10,11 @@ export const AMPEL_SOFT = {
 export const AMPEL_LABEL = {
   g: 'Im Ziel', a: 'Beobachtung', r: 'Handlung nötig', n: 'Kein Ziel'
 }
+// Statussymbol — macht die Ampel auch OHNE Farbe eindeutig (Rot-Grün-Sehschwäche).
+// ✓ = im Ziel, ! = beobachten, ✕ = Handlung nötig, – = kein Ziel.
+export const AMPEL_SYMBOL = {
+  g: '✓', a: '!', r: '✕', n: '–'
+}
 
 // Einheitliche Zahlenformate (de-DE).
 const nf = (opts) => new Intl.NumberFormat('de-DE', opts)

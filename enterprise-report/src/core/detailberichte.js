@@ -9,7 +9,7 @@
 export const LEGENDE = [
   ['AE', 'Auftragseingang'], ['STOR', 'Storniert'], ['AEB', 'Auftragseingang bereinigt'],
   ['AB', 'Auftragsbestand'], ['GEL', 'Geliefert'], ['OFF ANGE', 'offene Angebote'],
-  ['AEW', 'Auftragseingang wirksam'], ['RET', 'Retoure'], ['AET', 'Auftragseingang tatsächlich'],
+  ['RET', 'Retoure'], ['AET', 'Auftragseingang tatsächlich'],
   ['ABS', 'Absatz'], ['BE', 'Bestellmenge'], ['FC', 'Forecast'],
   ['LB', 'Lagerbestand'], ['GESP', 'Gesperrt'], ['KOM', 'Kommissioniert'],
   ['RES', 'Reserviert'], ['VK', 'Verkaufspreis'], ['UVP', 'unverb. Preisempf.'],
@@ -50,7 +50,7 @@ export function pruefeArtikel(a) {
 }
 
 const SCHWERE_RANG = { fehler: 3, warnung: 2, hinweis: 1 }
-const maxSchwere = (befunde) => befunde.reduce((m, x) => (SCHWERE_RANG[x.schwere] > SCHWERE_RANG[m] ? x.schwere : m), null)
+const maxSchwere = (befunde) => befunde.reduce((m, x) => (SCHWERE_RANG[x.schwere] > (SCHWERE_RANG[m] || 0) ? x.schwere : m), null)
 
 /** Artikelliste mit Befunden + Summen; optional gefiltert/nur Auffällige. */
 export function artikelliste({ suche = '', nurAuffaellig = false } = {}) {
@@ -543,8 +543,7 @@ export const LISTEN = [
   { id: 'auftrag', name: 'Auftragsliste', verfuegbar: true },
   { id: 'artikel', name: 'Artikelliste', verfuegbar: true },
   { id: 'produkt', name: 'Produktliste', verfuegbar: true },
-  { id: 'rechnung', name: 'Rechnungsliste', verfuegbar: true },
-  { id: 'rechnungpos', name: 'Rechnungspositionsliste', verfuegbar: true },
+  { id: 'rechnung', name: 'Rechnungsliste (mit Positionen)', verfuegbar: true },
   { id: 'bestellkanal', name: 'Bestellkanalliste', verfuegbar: true },
   { id: 'leasing', name: 'Leasingliste', verfuegbar: true },
   { id: 'charge', name: 'Chargenliste', verfuegbar: true },

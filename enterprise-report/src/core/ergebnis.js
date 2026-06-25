@@ -27,10 +27,11 @@ export const AUFWENDUNGEN = [
 function faktor(p, da) { return da === 'plan' ? p.pf : da === 'forecast' ? p.ff : 1 }
 const r2 = (x) => Math.round(x * 100) / 100
 
-/** Skalierte Positionen + Summen + Betriebsergebnis für eine Datenart. */
-export function ergebnis(datenart = 'ist') {
-  const ertraege = ERTRAEGE.map((p) => ({ ...p, wert: r2(p.wert * faktor(p, datenart)) }))
-  const aufwendungen = AUFWENDUNGEN.map((p) => ({ ...p, wert: r2(p.wert * faktor(p, datenart)) }))
+/** Skalierte Positionen + Summen + Betriebsergebnis für eine Datenart.
+ *  pcF = Profit-Center-Anteil (Segment-GuV); skaliert alle Positionen. */
+export function ergebnis(datenart = 'ist', pcF = 1) {
+  const ertraege = ERTRAEGE.map((p) => ({ ...p, wert: r2(p.wert * faktor(p, datenart) * pcF) }))
+  const aufwendungen = AUFWENDUNGEN.map((p) => ({ ...p, wert: r2(p.wert * faktor(p, datenart) * pcF) }))
   const summeErtrag = r2(ertraege.reduce((n, p) => n + p.wert, 0))
   const summeAufwand = r2(aufwendungen.reduce((n, p) => n + p.wert, 0))
   const betriebsergebnis = r2(summeErtrag - summeAufwand)
@@ -45,8 +46,8 @@ export const UKV_POSITIONEN = [
   { id: 'verwaltung', name: 'Verwaltungskosten',              wert: 7.0,  pf: 0.98, ff: 1.01, typ: 'aufwand' },
   { id: 'vertrieb',   name: 'Vertriebskosten',                wert: 5.0,  pf: 0.97, ff: 1.03, typ: 'aufwand' }
 ]
-export function ukv(datenart = 'ist') {
-  const p = UKV_POSITIONEN.map((x) => ({ ...x, wert: r2(x.wert * faktor(x, datenart)) }))
+export function ukv(datenart = 'ist', pcF = 1) {
+  const p = UKV_POSITIONEN.map((x) => ({ ...x, wert: r2(x.wert * faktor(x, datenart) * pcF) }))
   const umsatz = p.find((x) => x.id === 'umsatz').wert
   const hku = p.find((x) => x.id === 'hku').wert
   const brutto = r2(umsatz - hku)
@@ -57,8 +58,8 @@ export function ukv(datenart = 'ist') {
 }
 
 /** Ergebniskonto (T-Konto): Soll/Haben inkl. Saldo, Bilanzsumme. */
-export function tKonto(datenart = 'ist') {
-  const e = ergebnis(datenart)
+export function tKonto(datenart = 'ist', pcF = 1) {
+  const e = ergebnis(datenart, pcF)
   const gewinn = e.betriebsergebnis >= 0
   const soll = e.aufwendungen.map((p) => ({ name: p.name, wert: p.wert }))
   const haben = e.ertraege.map((p) => ({ name: p.name, wert: p.wert }))

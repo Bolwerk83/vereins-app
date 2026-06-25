@@ -3,6 +3,7 @@
 // =========================================================================
 import React from 'react'
 import { segmentbericht } from '../../core/segment.js'
+import ExecKopf, { ampelVon } from '../../components/ExecKopf.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
@@ -14,6 +15,17 @@ export default function Segmentbericht() {
   const s = segmentbericht()
   const maxU = Math.max(...s.rows.map((r) => r.umsatz), 1)
 
+  // Exec-Kopf: Lage aus der konsolidierten Konzern-EBIT-Marge; bestes/schwächstes
+  // Segment nach Umsatz.
+  const rows = s.rows || []
+  const nachUmsatz = [...rows].sort((a, b) => b.umsatz - a.umsatz)
+  const best = nachUmsatz[0], schwach = nachUmsatz[nachUmsatz.length - 1]
+  const execStatus = ampelVon(s.konzernMarge, { gut: 4, schlecht: 2 })
+  const execAussage = `Konzernumsatz ${m(s.konzernUmsatz)} Mio € (konsolidiert) bei ${s.konzernEbit} Mio € EBIT · Konzern-EBIT-Marge ${s.konzernMarge} %.`
+  const execEmpf = best && schwach && best !== schwach
+    ? `Umsatzstärkstes Segment „${best.name}" (${m(best.umsatz)} Mio €, ${best.marge} % Marge); schwächstes „${schwach.name}" (${m(schwach.umsatz)} Mio €, ${schwach.marge} % Marge) — Margenhebel bei „${schwach.name}" prüfen.`
+    : 'Ergebnisbeiträge je Gesellschaft in der Tabelle prüfen.'
+
   return (
     <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ marginBottom: 14 }}>
@@ -23,6 +35,8 @@ export default function Segmentbericht() {
           (Intercompany-)Umsätze.
         </div>
       </div>
+
+      <ExecKopf status={execStatus} kennzahl={`${s.konzernMarge} %`} kennzahlLabel="Konzern-EBIT-Marge" kernaussage={execAussage} empfehlung={execEmpf} />
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
         <div style={{ ...card, padding: '12px 14px', flex: 1, minWidth: 160 }}><div style={cap}>Konzernumsatz (konsol.)</div><div style={{ fontSize: 22, fontWeight: 700 }}>{m(s.konzernUmsatz)} Mio €</div><div style={{ fontSize: 11, color: 'var(--muted)' }}>brutto {m(s.summeUmsatz)} − IC {m(s.summeIc)}</div></div>

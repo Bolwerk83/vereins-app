@@ -4,6 +4,7 @@
 // =========================================================================
 import React from 'react'
 import { analyse } from '../../core/abweichung.js'
+import ExecKopf, { ampelVon } from '../../components/ExecKopf.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
@@ -15,6 +16,18 @@ const td = (al, bold) => ({ textAlign: al, padding: '6px 9px', borderBottom: '1p
 export default function Abweichungsanalyse({ onGeh }) {
   const a = analyse()
   const farbe = (r) => r.guenstig ? 'var(--amp-g)' : 'var(--amp-r)'
+
+  // Exec-Kopf: Lage aus dem Netto-Ergebniseffekt (Erlös- minus Kostenabweichung);
+  // Empfehlung zur größten ungünstigen Einzelabweichung.
+  const rows = a.rows || []
+  const ergebnisEffekt = +((a.erloes?.gesamt || 0) - (a.kosten?.gesamt || 0)).toFixed(3)
+  const groessteAbw = [...rows].sort((x, y) => Math.abs(y.gesamt) - Math.abs(x.gesamt))[0]
+  const groessteUnguenstig = [...rows].filter((r) => !r.guenstig).sort((x, y) => Math.abs(y.gesamt) - Math.abs(x.gesamt))[0]
+  const execStatus = ampelVon(ergebnisEffekt, { gut: 0, schlecht: -0.5 })
+  const execAussage = `Netto-Ergebniseffekt ${m(ergebnisEffekt)} Mio € (Erlös ${m(a.erloes?.gesamt || 0)} · Kosten ${m(a.kosten?.gesamt || 0)} Mio €)${groessteAbw ? ` · größte Einzelabweichung „${groessteAbw.name}" ${m(groessteAbw.gesamt)} Mio €` : ''}.`
+  const execEmpf = groessteUnguenstig
+    ? `Größte ungünstige Abweichung: „${groessteUnguenstig.name}" ${m(groessteUnguenstig.gesamt)} Mio € (Preis ${m(groessteUnguenstig.preisAbw)} · Menge ${m(groessteUnguenstig.mengenAbw)}) — Preis-/Mengentreiber dort priorisiert gegensteuern.`
+    : 'Alle Positionen liegen günstig — Planannahmen für die nächste Periode schärfen.'
 
   const block = (titel, s, istKosten) => (
     <div style={{ ...card, padding: '12px 14px', flex: 1, minWidth: 220 }}>
@@ -36,6 +49,8 @@ export default function Abweichungsanalyse({ onGeh }) {
         </div>
         {onGeh && <button onClick={() => onGeh('vergleich')} style={{ ...card, padding: '7px 12px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>Versionsvergleich →</button>}
       </div>
+
+      <ExecKopf status={execStatus} kennzahl={`${m(ergebnisEffekt)} Mio €`} kennzahlLabel="Netto-Ergebniseffekt" kernaussage={execAussage} empfehlung={execEmpf} />
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
         {block('Erlösabweichung', a.erloes, false)}

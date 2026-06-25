@@ -5,7 +5,7 @@
 //  eine Zeile öffnet die Befund-Karte (Sprung in die Detailprüfung).
 // =========================================================================
 import React, { useState, useEffect } from 'react'
-import { LISTEN, LEGENDE, artikelliste, auftragsliste, warenverbrauchliste, leasingliste, retourenliste, rechnungsliste, kundenliste, produktliste, rechnungsposliste, bestellkanalliste, chargenliste, auftragsbestandliste, lieferantenliste, bestellliste, offenepostenliste, inventurliste, kontenliste, historie, sammelBefunde, befundStatistik, verknuepfungenFuer } from '../../core/detailberichte.js'
+import { LISTEN, artikelliste, auftragsliste, warenverbrauchliste, leasingliste, retourenliste, rechnungsliste, kundenliste, produktliste, rechnungsposliste, bestellkanalliste, chargenliste, auftragsbestandliste, lieferantenliste, bestellliste, offenepostenliste, inventurliste, kontenliste, historie, sammelBefunde, befundStatistik, verknuepfungenFuer } from '../../core/detailberichte.js'
 import { downloadCsv } from '../../core/export.js'
 import { ladeBookmarks, addBookmark, loescheBookmark, ladeLetzte, merkeLetzte } from '../../core/bookmarks.js'
 import { glossarFuer, ausfuehrlich } from '../../core/kpiGlossar.js'
@@ -630,7 +630,7 @@ function Radar({ werte, onBack, onOpen }) {
 
 // Detaillisten nach Fachbereich gruppiert (Unterordner im Hub).
 const KATEGORIEN = [
-  { name: 'Finanzen & FiBu', ids: ['rechnung', 'rechnungpos', 'offeneposten', 'konto'] },
+  { name: 'Finanzen & FiBu', ids: ['rechnung', 'offeneposten', 'konto'] },
   { name: 'Bestand & Logistik', ids: ['artikel', 'produkt', 'charge', 'inventur', 'plausiwv'] },
   { name: 'Vertrieb & Auftrag', ids: ['auftrag', 'auftragsbestand', 'leasing', 'retoure', 'bestellkanal'] },
   { name: 'Einkauf', ids: ['bestellung', 'lieferant'] },
@@ -648,7 +648,8 @@ export default function Detailberichte({ startListe = null, startSuche = '', wer
   if (aktiv === 'leasing') return <Liste key={aktiv} typ="leasing" titel="Leasingliste" sub="Entdopplung der 3 Belege (Angebot / Kundenleasing / Leasinggesellschaft): es zählt je Sicht genau EIN führender Wert — nie doppelt oder dreifach." cols={LEAS_COLS} sumKeys={LEAS_SUM} lade={leasingliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="vorgang" titelKey="kunde"
     optionen={[{ key: 'sicht', label: 'Sicht', default: 'auftrag', werte: [['auftrag', 'Auftragssicht (Kundenleasing führt)'], ['rechnung', 'Rechnungssicht (Leasinggesellschaft führt)']] }]} />
   if (aktiv === 'retoure') return <Liste key={aktiv} typ="retoure" titel="Retourenliste" sub="Retouren mit Plausi-Prüfung (Grund fehlt, Wert > Original, ohne Auftrag …)." cols={RET_COLS} sumKeys={RET_SUM} lade={retourenliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="retoure" titelKey="kunde" />
-  if (aktiv === 'rechnung') return <Liste key={aktiv} typ="rechnung" titel="Rechnungsliste" sub="Rechnungen mit Plausi-Prüfung (Brutto ≠ Netto + MwSt, ohne Position, unbezahlt …)." cols={RECH_COLS} sumKeys={RECH_SUM} lade={rechnungsliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="rechnung" titelKey="kunde" />
+  if (aktiv === 'rechnung') return <Liste key={aktiv} typ="rechnung" titel="Rechnungsliste" sub="Rechnungen mit Plausi-Prüfung (Brutto ≠ Netto + MwSt, ohne Position, unbezahlt …). Zeile mit ▶ aufklappen zeigt die Rechnungspositionen." cols={RECH_COLS} sumKeys={RECH_SUM} lade={rechnungsliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="rechnung" titelKey="kunde"
+    unterListe={{ id: 'rechnungpos', name: 'Rechnungspositionen', lade: rechnungsposliste, cols: RPOS_COLS, koppelKey: 'rechnung', idKey: 'pos', titelKey: 'artikel' }} />
   if (aktiv === 'kunde') return <Liste key={aktiv} typ="kunde" titel="Kundenliste" sub="Kunden mit Plausi-Prüfung (Kreditlimit überschritten, E-Mail, Umsatz …)." cols={KUND_COLS} sumKeys={KUND_SUM} lade={kundenliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="kundennr" titelKey="name" />
   if (aktiv === 'produkt') return <Liste key={aktiv} typ="produkt" titel="Produktliste" sub="Produktstammdaten mit Plausi (kein VK-Preis, EAN ungültig, gesperrt, Gewicht fehlt)." cols={PROD_COLS} sumKeys={PROD_SUM} lade={produktliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="sku" titelKey="name" />
   if (aktiv === 'rechnungpos') return <Liste key={aktiv} typ="rechnungpos" titel="Rechnungspositionsliste" sub="Einzelpositionen mit Plausi (Positionsnetto, Menge, hoher Rabatt)." cols={RPOS_COLS} sumKeys={RPOS_SUM} lade={rechnungsposliste} onBack={() => oeffneListe(null)} onDrill={oeffneListe} startSuche={drillSuche} idKey="rechnung" titelKey="artikel" />
@@ -669,7 +670,15 @@ export default function Detailberichte({ startListe = null, startSuche = '', wer
   // Hub
   const stat = befundStatistik()
   const q = qualitaetStats().gesamt
-  const cnt = Object.fromEntries(stat.proListe.map((l) => [l.id, l.gesamt]))
+  const pl = Object.fromEntries(stat.proListe.map((l) => [l.id, l]))
+  // Ampelrichtiger Status je Liste: rot=Fehler, gelb=Warnung, blau=Hinweis, grün=sauber.
+  const listStatus = (id) => {
+    const s = pl[id]
+    if (!s || s.gesamt === 0) return { rang: 0, farbe: 'var(--amp-g)', soft: 'var(--amp-g-soft)', n: 0, label: 'sauber', icon: '✓' }
+    if (s.fehler) return { rang: 3, farbe: SCHWERE.fehler.farbe, soft: SCHWERE.fehler.soft, n: s.fehler, label: `${s.fehler} Fehler`, icon: '●' }
+    if (s.warnung) return { rang: 2, farbe: SCHWERE.warnung.farbe, soft: SCHWERE.warnung.soft, n: s.warnung, label: `${s.warnung} Warnung(en)`, icon: '●' }
+    return { rang: 1, farbe: SCHWERE.hinweis.farbe, soft: SCHWERE.hinweis.soft, n: s.hinweis, label: `${s.hinweis} Hinweis(e)`, icon: '●' }
+  }
   const Tool = ({ on, titel, sub, kinder, primary }) => (
     <button onClick={on} style={{ ...card, padding: '13px 14px', textAlign: 'left', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 4,
       borderColor: primary ? 'var(--accent)' : 'var(--line)', background: primary ? 'var(--accent-soft)' : 'var(--panel)' }}>
@@ -697,47 +706,69 @@ export default function Detailberichte({ startListe = null, startSuche = '', wer
           kinder={<span style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 600 }}>Matrix öffnen →</span>} />
       </div>
 
-      {/* Listen nach Bereich gruppiert */}
-      {KATEGORIEN.map((kat) => (
-        <div key={kat.name} style={{ marginBottom: 18 }}>
-          <div style={{ ...cap, marginBottom: 8 }}>{kat.name}</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 8 }}>
-            {kat.ids.map((id) => {
-              const l = LISTEN.find((x) => x.id === id)
-              if (!l) return null
-              const n = cnt[l.id] || 0
-              return (
-                <button key={id} disabled={!l.verfuegbar} onClick={() => l.verfuegbar && oeffneListe(l.id)}
-                  style={{ ...card, padding: '10px 13px', textAlign: 'left', cursor: l.verfuegbar ? 'pointer' : 'not-allowed', opacity: l.verfuegbar ? 1 : 0.5,
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+      {/* Listen nach Bereich — ruhige Status-Zeilen, auffällige zuerst */}
+      {KATEGORIEN.map((kat) => {
+        const eintraege = kat.ids.map((id) => LISTEN.find((x) => x.id === id)).filter(Boolean)
+          .map((l) => ({ l, st: listStatus(l.id) }))
+          .sort((a, b) => b.st.rang - a.st.rang || a.l.name.localeCompare(b.l.name))
+        const fehlerSum = eintraege.reduce((n, e) => n + (pl[e.l.id]?.fehler || 0), 0)
+        const warnSum = eintraege.reduce((n, e) => n + (pl[e.l.id]?.warnung || 0), 0)
+        return (
+          <div key={kat.name} style={{ marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <div style={{ ...cap, margin: 0 }}>{kat.name}</div>
+              <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
+              <span style={{ fontSize: 10.5, color: 'var(--muted)' }}>
+                {fehlerSum ? <b style={{ color: 'var(--amp-r)' }}>{fehlerSum} Fehler</b> : null}
+                {fehlerSum && warnSum ? ' · ' : ''}
+                {warnSum ? <span style={{ color: 'var(--amp-a)' }}>{warnSum} Warnung(en)</span> : null}
+                {!fehlerSum && !warnSum ? <span style={{ color: 'var(--amp-g)' }}>✓ alles sauber</span> : null}
+              </span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 6 }}>
+              {eintraege.map(({ l, st }) => (
+                <button key={l.id} disabled={!l.verfuegbar} onClick={() => l.verfuegbar && oeffneListe(l.id)} title={st.label}
+                  onMouseEnter={(e) => { if (l.verfuegbar) e.currentTarget.style.background = 'var(--accent-soft)' }}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'var(--panel)'}
+                  style={{ background: 'var(--panel)', border: '1px solid var(--line)', borderLeft: `3px solid ${st.farbe}`, borderRadius: 'var(--radius-sm)',
+                    padding: '9px 12px', textAlign: 'left', cursor: l.verfuegbar ? 'pointer' : 'not-allowed', opacity: l.verfuegbar ? 1 : 0.5,
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, transition: 'background .12s' }}>
                   <span style={{ fontWeight: 500, fontSize: 13.5 }}>{l.name}</span>
-                  {n > 0 ? <span title={`${n} Auffälligkeit(en)`} style={{ fontSize: 11, fontWeight: 700, color: SCHWERE.fehler.farbe, background: SCHWERE.fehler.soft, borderRadius: 999, padding: '2px 8px' }}>{n}</span>
-                    : <span style={{ fontSize: 13, color: 'var(--muted)' }}>→</span>}
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    {st.rang === 0
+                      ? <span style={{ fontSize: 12, color: 'var(--amp-g)', fontWeight: 700 }}>✓</span>
+                      : <span style={{ fontSize: 11, fontWeight: 700, color: st.farbe, background: st.soft, borderRadius: 999, padding: '1px 8px', minWidth: 18, textAlign: 'center' }}>{st.n}</span>}
+                    <span style={{ fontSize: 13, color: 'var(--muted)' }}>›</span>
+                  </span>
                 </button>
-              )
-            })}
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
 
 const EBENEN_PFAD = ['E1 · Geschäftsführung', 'E2 · Fachbereich', 'E3 · Themenbereich', 'E4 · Details', 'E5 · Historisierung']
 
-function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, onDrill, startSuche = '', idKey, titelKey, optionen = [] }) {
+function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, onDrill, startSuche = '', idKey, titelKey, optionen = [], unterListe = null }) {
   const [suche, setSuche] = useState(startSuche)
   const [nurAuffaellig, setNurAuffaellig] = useState(false)
   const [legendeAuf, setLegendeAuf] = useState(false)
   const [detail, setDetail] = useState(null)
   const [voll, setVoll] = useState(null)
+  const [aufgeklappt, setAufgeklappt] = useState(() => new Set()) // ausgeklappte Master-Zeilen (Detail-Positionen)
   const [opts, setOpts] = useState(() => Object.fromEntries(optionen.map((o) => [o.key, o.default])))
   const [sichtbar, setSichtbar] = useState(() => {
     const gemerkt = ladeLetzte(typ)
     const gueltig = gemerkt && gemerkt.filter((k) => cols.some((c) => c.key === k))
     return new Set(gueltig && gueltig.length ? gueltig : cols.map((c) => c.key))
   })
-  const [panelAuf, setPanelAuf] = useState(true) // Auswahlfenster immer anzeigen (einklappbar)
+  const [panelAuf, setPanelAuf] = useState(true) // Bookmarks immer anzeigen (einklappbar)
+  const [spaltenAuf, setSpaltenAuf] = useState(false) // Spalten-Ein/Ausblenden standardmäßig zugeklappt
+  const [filterAuf, setFilterAuf] = useState(false) // Dimensionsfilter-Panel
+  const [dimFilter, setDimFilter] = useState({})     // { spalten-key: Set(ausgewählte Werte) }
   const [bmTick, setBmTick] = useState(0)
   const [hov, setHov] = useState(null)        // Spaltenkopf-Tooltip {key,x,y}
   const [infoKey, setInfoKey] = useState(null) // ausführliche KPI-Beschreibung
@@ -750,6 +781,34 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, onDrill, startSuc
   // Zuletzt genutzte Ansicht je Liste merken (Wiederherstellung beim Öffnen).
   useEffect(() => { merkeLetzte(typ, sichtbar) }, [sichtbar, typ])
   const data = lade({ suche, nurAuffaellig, ...opts })
+
+  // --- Standard-Dimensionsfilter ------------------------------------------
+  // Nur SINNVOLLE Dimensionen anbieten: kategoriale Spalten (keine Zahlen,
+  // keine hochkardinalen IDs/Namen). Heuristik: 2–12 verschiedene Werte.
+  const dimBasis = lade({ ...opts }).rows
+  const dimensionen = cols.filter((c) => c.al !== 'right' && c.key !== idKey).map((c) => {
+    const werte = [...new Set(dimBasis.map((r) => r[c.key]).filter((v) => v !== '' && v != null))]
+    return { key: c.key, label: c.label, fmt: c.fmt, werte }
+  }).filter((d) => d.werte.length >= 2 && d.werte.length <= 12)
+  const aktiveDims = Object.entries(dimFilter).filter(([, s]) => s && s.size)
+  const dimAktivN = aktiveDims.reduce((n, [, s]) => n + s.size, 0)
+  const toggleDim = (key, val) => setDimFilter((f) => {
+    const s = new Set(f[key]); s.has(val) ? s.delete(val) : s.add(val)
+    return { ...f, [key]: s }
+  })
+  // Zeilen nach aktiven Dimensionen filtern (UND zwischen Dimensionen, ODER innerhalb).
+  const zeilen = aktiveDims.length
+    ? data.rows.filter((r) => aktiveDims.every(([k, s]) => s.has(String(r[k]))))
+    : data.rows
+  const summeGefiltert = {}
+  for (const k of sumKeys) summeGefiltert[k] = Math.round(zeilen.reduce((n, r) => n + (r[k] || 0), 0) * 100) / 100
+  const auffaelligGefiltert = zeilen.filter((r) => r.befunde?.length).length
+
+  // Aufklappbare Unterliste (Master-Detail, z. B. Rechnung → Positionen).
+  const unterData = unterListe ? unterListe.lade({}) : null
+  const unterCols = unterListe ? unterListe.cols.filter((c) => c.key !== unterListe.koppelKey) : []
+  const kinderVon = (row) => (unterData ? unterData.rows.filter((r) => r[unterListe.koppelKey] === row[unterListe.koppelKey]) : [])
+  const toggleAuf = (key) => setAufgeklappt((s) => { const n = new Set(s); n.has(key) ? n.delete(key) : n.add(key); return n })
 
   // Eingebaute + benutzerdefinierte Ansichten (Bookmarks).
   const builtin = [{ id: 'voll', name: 'Vollansicht', sichtbar: cols.map((c) => c.key), system: true }, ...(PRESETS[typ] || []).map((p, i) => ({ id: 'p' + i, ...p, system: true }))]
@@ -776,14 +835,14 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, onDrill, startSuc
   // Spalten-Maxima für Daten-Balken (nur rechtsbündige Zahlenspalten).
   const colMax = {}
   if (visuals) for (const c of sichtCols) if (c.al === 'right') {
-    const m = Math.max(0, ...data.rows.map((r) => (typeof r[c.key] === 'number' ? Math.abs(r[c.key]) : 0)))
+    const m = Math.max(0, ...zeilen.map((r) => (typeof r[c.key] === 'number' ? Math.abs(r[c.key]) : 0)))
     if (m > 0) colMax[c.key] = m
   }
   // CSV-Export der aktuellen Ansicht: nur sichtbare Spalten + Befundspalte.
   const exportCsv = () => {
     const kopf = [...sichtCols.map((c) => c.label), 'Befund']
-    const zeilen = data.rows.map((r) => [...sichtCols.map((c) => (c.fmt ? c.fmt(r[c.key]) : r[c.key] ?? '')), r.befunde.map((b) => b.text).join(' | ')])
-    downloadCsv(`${typ}_${nurAuffaellig ? 'auffaellig' : 'ansicht'}`, [kopf, ...zeilen])
+    const csvZeilen = zeilen.map((r) => [...sichtCols.map((c) => (c.fmt ? c.fmt(r[c.key]) : r[c.key] ?? '')), r.befunde.map((b) => b.text).join(' | ')])
+    downloadCsv(`${typ}_${nurAuffaellig ? 'auffaellig' : 'ansicht'}`, [kopf, ...csvZeilen])
   }
 
   if (voll) return <Vollansicht typ={typ} row={voll} cols={cols} idKey={idKey} titelKey={titelKey} titel={titel} onBack={() => setVoll(null)} onDrill={onDrill} />
@@ -851,6 +910,10 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, onDrill, startSuc
           <input type="checkbox" checked={nurAuffaellig} onChange={(e) => setNurAuffaellig(e.target.checked)} />
           ⚠ nur Auffälligkeiten ({data.auffaellig})
         </label>
+        <button onClick={() => setFilterAuf((v) => !v)} title="Standard-Dimensionsfilter setzen (nur sinnvolle Dimensionen)"
+          style={{ ...inp, cursor: 'pointer', fontSize: 12, fontWeight: 600, borderColor: (filterAuf || dimAktivN) ? 'var(--accent)' : 'var(--line)', color: (filterAuf || dimAktivN) ? 'var(--accent)' : 'var(--ink)' }}>
+          ☰ Filter{dimAktivN ? ` (${dimAktivN})` : ''}
+        </button>
         <button onClick={() => setLegendeAuf((v) => !v)} style={{ ...inp, cursor: 'pointer', fontSize: 12 }}>Legende {legendeAuf ? '▴' : '▾'}</button>
         <button onClick={() => setPanelAuf((v) => !v)} title="Spalten ein-/ausblenden & Ansichten (Bookmarks)"
           style={{ ...inp, cursor: 'pointer', fontSize: 12, fontWeight: 600, borderColor: panelAuf ? 'var(--accent)' : 'var(--line)', color: panelAuf ? 'var(--accent)' : 'var(--ink)' }}>
@@ -860,6 +923,38 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, onDrill, startSuc
           style={{ ...inp, cursor: 'pointer', fontSize: 12, fontWeight: 600, borderColor: visuals ? 'var(--accent)' : 'var(--line)', color: visuals ? 'var(--accent)' : 'var(--ink)' }}>📊 Visuals {visuals ? 'an' : 'aus'}</button>
         <button onClick={exportCsv} title="Aktuelle Ansicht als CSV/Excel exportieren" style={{ ...inp, cursor: 'pointer', fontSize: 12 }}>⤓ CSV</button>
       </div>
+
+      {/* Dimensionsfilter-Panel — nur sinnvolle (kategoriale) Dimensionen */}
+      {filterAuf && (
+        <div style={{ ...card, padding: 14, marginBottom: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <div style={cap}>Dimensionsfilter{dimAktivN ? ` — ${dimAktivN} aktiv` : ''}</div>
+            {dimAktivN > 0 && <button onClick={() => setDimFilter({})} style={{ ...inp, padding: '3px 10px', cursor: 'pointer', fontSize: 12 }}>Alle zurücksetzen</button>}
+          </div>
+          {dimensionen.length === 0
+            ? <div style={{ fontSize: 12, color: 'var(--muted)' }}>Für diesen Bericht gibt es keine sinnvollen Dimensionsfilter (zu viele Einzelwerte oder reine Kennzahlen).</div>
+            : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
+                {dimensionen.map((d) => (
+                  <div key={d.key}>
+                    <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink)', marginBottom: 5 }}>{d.label}</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                      {d.werte.map((v) => {
+                        const sv = String(v); const an = dimFilter[d.key]?.has(sv)
+                        return (
+                          <button key={sv} onClick={() => toggleDim(d.key, sv)}
+                            style={{ fontSize: 11.5, padding: '3px 9px', borderRadius: 999, cursor: 'pointer',
+                              border: `1px solid ${an ? 'var(--accent)' : 'var(--line)'}`, background: an ? 'var(--accent-soft)' : 'var(--panel)', color: an ? 'var(--accent)' : 'var(--muted)' }}>
+                            {an ? '✓ ' : ''}{d.fmt ? d.fmt(v) : sv}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>}
+          <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 10 }}>Mehrere Werte einer Dimension wirken als ODER, verschiedene Dimensionen als UND. Nicht sinnvolle Dimensionen werden automatisch ausgeblendet.</div>
+        </div>
+      )}
 
       {/* Bookmark-/Spalten-Panel (auf-/zuklappbar wie das Burger-Menü) */}
       {panelAuf && (
@@ -879,36 +974,51 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, onDrill, startSuc
             <button onClick={speichereAnsicht} style={{ ...inp, padding: '4px 11px', cursor: 'pointer', fontSize: 12.5, borderStyle: 'dashed' }}>＋ Aktuelle Ansicht speichern</button>
           </div>
 
-          <div style={{ ...cap, margin: '12px 0 8px' }}>Spalten ein-/ausblenden</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {cols.map((c) => {
-              const an = sichtbar.has(c.key)
-              return (
-                <button key={c.key} onClick={() => toggleSpalte(c.key)}
-                  style={{ fontSize: 12, padding: '4px 9px', borderRadius: 999, cursor: 'pointer',
-                    border: `1px solid ${an ? 'var(--accent)' : 'var(--line)'}`, background: an ? 'var(--accent-soft)' : 'var(--panel)', color: an ? 'var(--accent)' : 'var(--muted)' }}>
-                  {an ? '✓ ' : '＋ '}{c.label}
-                </button>
-              )
-            })}
-          </div>
-          <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 10 }}>Deine Spaltenauswahl wird je Liste gemerkt und beim nächsten Öffnen wiederhergestellt.</div>
+          {/* Spalten ein-/ausblenden — standardmäßig zugeklappt */}
+          <button onClick={() => setSpaltenAuf((v) => !v)} style={{ ...cap, margin: '12px 0 0', display: 'flex', alignItems: 'center', gap: 6, border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}>
+            Spalten ein-/ausblenden ({sichtCols.length}/{cols.length}) <span style={{ color: 'var(--muted)' }}>{spaltenAuf ? '▴' : '▾'}</span>
+          </button>
+          {spaltenAuf && (
+            <>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                {cols.map((c) => {
+                  const an = sichtbar.has(c.key)
+                  return (
+                    <button key={c.key} onClick={() => toggleSpalte(c.key)}
+                      style={{ fontSize: 12, padding: '4px 9px', borderRadius: 999, cursor: 'pointer',
+                        border: `1px solid ${an ? 'var(--accent)' : 'var(--line)'}`, background: an ? 'var(--accent-soft)' : 'var(--panel)', color: an ? 'var(--accent)' : 'var(--muted)' }}>
+                      {an ? '✓ ' : '＋ '}{c.label}
+                    </button>
+                  )
+                })}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 10 }}>Deine Spaltenauswahl wird je Liste gemerkt und beim nächsten Öffnen wiederhergestellt.</div>
+            </>
+          )}
         </div>
       )}
 
-      {legendeAuf && (
-        <div style={{ ...card, padding: 12, marginBottom: 12, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '2px 16px' }}>
-          {LEGENDE.map(([abk, text]) => (
-            <div key={abk} style={{ fontSize: 12 }}><b className="mono">{abk}</b> <span style={{ color: 'var(--muted)' }}>= {text}</span></div>
-          ))}
-        </div>
-      )}
+      {/* Legende — nur die Kürzel, die in DIESEM Bericht vorkommen */}
+      {legendeAuf && (() => {
+        const eintraege = cols.filter((c) => glossarFuer(c.key))
+        return (
+          <div style={{ ...card, padding: 12, marginBottom: 12 }}>
+            {eintraege.length === 0
+              ? <div style={{ fontSize: 12, color: 'var(--muted)' }}>In diesem Bericht gibt es keine erklärungsbedürftigen Kürzel.</div>
+              : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '3px 16px' }}>
+                  {eintraege.map((c) => (
+                    <div key={c.key} style={{ fontSize: 12 }}><b className="mono">{c.label}</b> <span style={{ color: 'var(--muted)' }}>= {glossarFuer(c.key).name}</span></div>
+                  ))}
+                </div>}
+          </div>
+        )
+      })()}
 
       {/* Tabelle */}
       <div style={{ ...card, padding: 0, overflowX: 'auto' }}>
         <table style={{ tableLayout: 'fixed', width: tabBreite, borderCollapse: 'collapse', fontSize: 12.5 }}>
-          <colgroup>{sichtCols.map((c) => <col key={c.key} style={{ width: colW(c) }} />)}<col style={{ width: 36 }} /></colgroup>
-          <thead><tr>{sichtCols.map((c) => {
+          <colgroup>{unterListe && <col style={{ width: 30 }} />}{sichtCols.map((c) => <col key={c.key} style={{ width: colW(c) }} />)}<col style={{ width: 36 }} /></colgroup>
+          <thead><tr>{unterListe && <th style={{ position: 'sticky', top: 0, background: 'var(--panel)', borderBottom: '2px solid var(--line)' }} />}{sichtCols.map((c) => {
             const g = glossarFuer(c.key)
             return (
               <th key={c.key} onMouseEnter={(e) => zeigeHov(e, c.key)} onMouseLeave={planeHide}
@@ -920,29 +1030,85 @@ function Liste({ typ, titel, sub, cols, sumKeys, lade, onBack, onDrill, startSuc
             )
           })}<th style={{ padding: '8px 9px', borderBottom: '2px solid var(--line)' }} /></tr></thead>
           <tbody>
-            {data.rows.length === 0 && <tr><td colSpan={sichtCols.length + 1} style={{ padding: 20, textAlign: 'center', color: 'var(--muted)' }}>Keine Treffer.</td></tr>}
-            {data.rows.map((row, i) => (
-              <tr key={row[idKey] + i} onClick={() => setDetail(row)} style={{ cursor: 'pointer',
+            {zeilen.length === 0 && <tr><td colSpan={sichtCols.length + 1 + (unterListe ? 1 : 0)} style={{ padding: 20, textAlign: 'center', color: 'var(--muted)' }}>Keine Treffer.</td></tr>}
+            {zeilen.map((row, i) => {
+              const auf = unterListe && aufgeklappt.has(row[idKey])
+              const kinder = unterListe ? kinderVon(row) : []
+              return (
+              <React.Fragment key={row[idKey] + i}>
+              <tr onClick={() => setDetail(row)} style={{ cursor: 'pointer',
                 borderLeft: `3px solid ${row.schwere ? SCHWERE[row.schwere].farbe : 'transparent'}` }}
                 onMouseEnter={(e) => e.currentTarget.style.background = 'var(--accent-soft)'}
                 onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+                {unterListe && (
+                  <td style={{ padding: '0', borderBottom: '1px solid var(--line)', textAlign: 'center' }}>
+                    {kinder.length > 0 && (
+                      <button onClick={(e) => { e.stopPropagation(); toggleAuf(row[idKey]) }}
+                        title={auf ? 'Positionen zuklappen' : `${kinder.length} Position(en) anzeigen`}
+                        style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 11, width: '100%', padding: '6px 0' }}>
+                        <span style={{ display: 'inline-block', transform: auf ? 'rotate(90deg)' : 'none', transition: 'transform .12s' }}>▶</span>
+                      </button>
+                    )}
+                  </td>
+                )}
                 {sichtCols.map((c) => zelle(row, c))}
                 <td style={{ padding: '6px 9px', borderBottom: '1px solid var(--line)', textAlign: 'center' }}>{row.schwere ? SCHWERE[row.schwere].icon : ''}</td>
               </tr>
-            ))}
+              {auf && (
+                <tr>
+                  <td />
+                  <td colSpan={sichtCols.length + 1} style={{ padding: '4px 9px 12px', borderBottom: '1px solid var(--line)', background: 'var(--bg)' }}>
+                    <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', margin: '4px 0 6px' }}>
+                      {unterListe.name} ({kinder.length})
+                    </div>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                      <thead><tr>{unterCols.map((c) => (
+                        <th key={c.key} style={{ textAlign: c.al, padding: '4px 8px', borderBottom: '1px solid var(--line)', fontSize: 9.5, color: 'var(--muted)', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{c.label}</th>
+                      ))}<th style={{ width: 28, borderBottom: '1px solid var(--line)' }} /></tr></thead>
+                      <tbody>
+                        {kinder.map((kr, ki) => (
+                          <tr key={(kr[unterListe.idKey] ?? ki) + '-' + ki}
+                            onClick={(e) => { e.stopPropagation(); onDrill?.(unterListe.id, String(kr[unterListe.koppelKey])) }}
+                            title={`In ${unterListe.name} öffnen`}
+                            style={{ cursor: onDrill ? 'pointer' : 'default' }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--accent-soft)'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+                            {unterCols.map((c) => {
+                              const befund = kr.befunde?.find((b) => b.feld === c.key)
+                              const v = kr[c.key]
+                              return (
+                                <td key={c.key} title={befund ? befund.text : undefined} className={c.mono || c.al === 'right' ? 'mono' : undefined}
+                                  style={{ padding: '4px 8px', borderBottom: '1px solid var(--line)', textAlign: c.al, whiteSpace: 'nowrap',
+                                    background: befund ? SCHWERE[befund.schwere].soft : undefined, color: befund ? SCHWERE[befund.schwere].farbe : undefined, fontWeight: befund ? 700 : 400 }}>
+                                  {c.fmt ? c.fmt(v) : v}{befund ? ' ⚠' : ''}
+                                </td>
+                              )
+                            })}
+                            <td style={{ padding: '4px 8px', borderBottom: '1px solid var(--line)', textAlign: 'center' }}>{kr.schwere ? SCHWERE[kr.schwere].icon : ''}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </td>
+                  <td />
+                </tr>
+              )}
+              </React.Fragment>
+            )})}
           </tbody>
           <tfoot>
             <tr style={{ fontWeight: 700, background: 'var(--bg)' }}>
+              {unterListe && <td style={{ borderTop: '2px solid var(--line)' }} />}
               {sichtCols.map((c, i) => (
                 <td key={c.key} className={c.al === 'right' ? 'mono' : undefined} style={{ padding: '8px 9px', borderTop: '2px solid var(--line)', textAlign: c.al }}>
-                  {i === 0 ? 'Gesamt' : sumKeys.includes(c.key) ? (data.summe[c.key]?.toLocaleString('de-DE')) : ''}
+                  {i === 0 ? 'Gesamt' : sumKeys.includes(c.key) ? (summeGefiltert[c.key]?.toLocaleString('de-DE')) : ''}
                 </td>
               ))}<td style={{ borderTop: '2px solid var(--line)' }} />
             </tr>
           </tfoot>
         </table>
       </div>
-      <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 8 }}>{data.rows.length} von {data.gesamt} Zeilen · {data.auffaellig} auffällig · Klick auf eine Zeile öffnet die Befund-Karte.</div>
+      <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 8 }}>{zeilen.length} von {data.gesamt} Zeilen{dimAktivN ? ` (Dimensionsfilter aktiv)` : ''} · {auffaelligGefiltert} auffällig · Klick auf eine Zeile öffnet die Befund-Karte.</div>
 
       {detail && <BefundModal typ={typ} row={detail} cols={cols} idKey={idKey} titelKey={titelKey} onClose={() => setDetail(null)} onDrill={onDrill} onVoll={() => { const r = detail; setDetail(null); setVoll(r) }} />}
 

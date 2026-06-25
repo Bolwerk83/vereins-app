@@ -8,9 +8,13 @@ import { KPI } from '../../core/kpiRegistry.js'
 import { darfKpi } from '../../core/rbac.js'
 import { istAdmin } from '../../core/gruppen.js'
 import { formatWert } from '../../design/theme.js'
+import { FreigabeChip, StatusChip } from '../../components/ui.jsx'
+import { kpiAnzeige, statusVon, darfFreigeben, NICHT_VERFUEGBAR } from '../../core/kpiFreigabe.js'
 import { useKpiDef } from './KpiDefContext.jsx'
 import { EINHEITEN, RICHTUNGEN, setKpiOverride, resetKpiOverride, istUeberschrieben, kpiFelder } from '../../core/kpiOverrides.js'
 import { HORIZONTE, ARTEN, horizontId, horizontInfo, artId, artInfo } from '../../core/klassifikation.js'
+import { ampelStatus } from '../../core/ampel.js'
+import ExecKopf, { ampelVon } from '../../components/ExecKopf.jsx'
 
 export default function Kennzahlen({ rolle, werte = {} }) {
   const def = useKpiDef()
@@ -21,6 +25,8 @@ export default function Kennzahlen({ rolle, werte = {} }) {
   const [form, setForm] = useState(null)
   const [, setTick] = useState(0)
   const darfEditieren = istAdmin(rolle)
+  const darfSteuern = darfFreigeben(rolle)
+  def?.freigabeTick // Re-Render bei Freigabe-Änderung
   const s = suche.trim().toLowerCase()
 
   function starteEdit(id) { setEditId(id); setForm(kpiFelder(id)) }
@@ -37,8 +43,26 @@ export default function Kennzahlen({ rolle, werte = {} }) {
   const liste = Object.values(KPI).filter((k) =>
     (!s || k.name.toLowerCase().includes(s) || (k.beschreibung || '').toLowerCase().includes(s)) &&
     (!fHorizont || horizontId(k) === fHorizont) &&
-    (!fArt || artId(k) === fArt))
+    (!fArt || artId(k) === fArt) &&
+    // Freigabe: noch nicht freigegebene KPIs für unbefugte Rollen ausblenden
+    kpiAnzeige(k.id, rolle).modus !== 'versteckt')
   const bereiche = [...new Set(liste.map((k) => k.bereich))]
+
+  // Exec-Kopf: Lage aus dem Anteil grüner Ampeln im sichtbaren KPI-Set
+  // (nur bewertbare KPIs mit Wert + Ziel); Empfehlung aus den roten KPIs.
+  const bewertet = (liste || [])
+    .map((k) => ({ k, amp: ampelStatus({ wert: werte[k.id], ziel: k.ziel, richtung: k.richtung, warn: k.warn }) }))
+    .filter((x) => x.amp === 'g' || x.amp === 'a' || x.amp === 'r')
+  const gruen = bewertet.filter((x) => x.amp === 'g').length
+  const rot = bewertet.filter((x) => x.amp === 'r')
+  const gruenAnteil = bewertet.length ? Math.round(gruen / bewertet.length * 100) : null
+  const execStatus = ampelVon(gruenAnteil, { gut: 70, schlecht: 40 })
+  const execAussage = bewertet.length
+    ? `${bewertet.length} bewertete Kennzahlen im aktuellen Set: ${gruen} grün · ${bewertet.filter((x) => x.amp === 'a').length} gelb · ${rot.length} rot (${gruenAnteil} % auf Ziel).`
+    : `${liste.length} Kennzahlen-Definitionen — derzeit keine zielbewerteten Werte im Set.`
+  const execEmpf = rot.length
+    ? `Handlungsbedarf bei ${rot.length} roten Kennzahlen: ${rot.slice(0, 3).map((x) => x.k.name).join(', ')}${rot.length > 3 ? ' u. a.' : ''} — Ursachen prüfen und gegensteuern.`
+    : 'Keine roten Kennzahlen im aktuellen Set — Zielwerte und Freigaben aktuell halten.'
 
   const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
   const lbl = { fontSize: 11, color: 'var(--muted)' }
@@ -62,6 +86,7 @@ export default function Kennzahlen({ rolle, werte = {} }) {
         <div style={{ color: 'var(--muted)', fontSize: 13 }}>
           Nachschlagewerk aller Kennzahlen: Bedeutung, Formel, Ziel- und Ampel-Logik, Datenquelle.
           Über das <b>ⓘ</b> (auch direkt an jeder Kennzahl im Bericht) öffnest du den vollständigen Steckbrief.
+          <br /><span style={{ color: 'var(--slate)' }}>🔎 <b>Transparenz für alle:</b> jede Definition ist hier einsehbar — auch zu vertraulichen Kennzahlen. Nur der aktuelle <b>Wert</b> ist bei vertraulichen Kennzahlen (🔒) rollenabhängig.</span>
         </div>
         <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center', marginTop: 10 }}>
           <input value={suche} onChange={(e) => setSuche(e.target.value)} placeholder="Kennzahl suchen …"
@@ -71,6 +96,8 @@ export default function Kennzahlen({ rolle, werte = {} }) {
         </div>
       </div>
 
+      <ExecKopf status={execStatus} kennzahl={gruenAnteil != null ? `${gruenAnteil} %` : undefined} kennzahlLabel="Auf Ziel (grün)" kernaussage={execAussage} empfehlung={execEmpf} />
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         {bereiche.map((b) => (
           <div key={b} style={{ ...card, padding: 14 }}>
@@ -79,6 +106,7 @@ export default function Kennzahlen({ rolle, werte = {} }) {
               {liste.filter((k) => k.bereich === b).map((k) => {
                 const darf = darfKpi(rolle, k)
                 const ueb = istUeberschrieben(k.id)
+                const az = kpiAnzeige(k.id, rolle)
                 return (
                   <div key={k.id} style={{ padding: '8px 0', borderBottom: '1px solid var(--line)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -88,13 +116,21 @@ export default function Kennzahlen({ rolle, werte = {} }) {
                         <div style={{ fontWeight: 600, fontSize: 14, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>{k.name} {k.security && <span title="vertraulich" style={{ fontSize: 11 }}>🔒</span>}
                           <span title={horizontInfo(k)?.hinweis} style={klassBadge(horizontInfo(k)?.farbe)}>{horizontInfo(k)?.name}</span>
                           <span title={artInfo(k)?.hinweis} style={klassBadge(artInfo(k)?.farbe)}>{artInfo(k)?.name}</span>
-                          {ueb && <span title="angepasst (Override)" style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent)', background: 'var(--accent-soft)', padding: '1px 6px', borderRadius: 999 }}>angepasst</span>}</div>
+                          {ueb && <span title="angepasst (Override)" style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent)', background: 'var(--accent-soft)', padding: '1px 6px', borderRadius: 999 }}>angepasst</span>}
+                          {darfSteuern && az.modus === 'entwurf' && <span title="noch nicht freigegeben" style={{ fontSize: 10, fontWeight: 700, color: 'var(--amp-a)', border: '1px solid var(--amp-a)', padding: '0 6px', borderRadius: 999 }}>✎ Entwurf</span>}
+                          {darfSteuern && az.status === 'deaktiviert' && <span title="abgeschaltet" style={{ fontSize: 10, fontWeight: 700, color: 'var(--amp-r)', border: '1px solid var(--amp-r)', padding: '0 6px', borderRadius: 999 }}>⊘ deaktiviert</span>}</div>
                         <div style={{ fontSize: 12, color: 'var(--muted)' }}>{k.beschreibung}</div>
                       </div>
+                      {darfSteuern && def && <FreigabeChip kpiId={k.id} def={def} />}
                       {darfEditieren && <button onClick={() => editId === k.id ? setEditId(null) : starteEdit(k.id)} title="Definition bearbeiten"
                         style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 14 }}>✎</button>}
-                      <div className="mono" style={{ fontSize: 14, fontWeight: 600, minWidth: 90, textAlign: 'right' }}>
-                        {darf ? formatWert(werte[k.id], k.einheit) : '🔒'}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'flex-end', minWidth: 250 }}>
+                        {darf && az.modus !== 'nichtVerfuegbar' && k.ziel != null && werte[k.id] != null &&
+                          <StatusChip status={ampelStatus({ wert: werte[k.id], ziel: k.ziel, richtung: k.richtung, warn: k.warn })} size="s" />}
+                        <div className="mono" style={{ fontSize: 13, fontWeight: 600, minWidth: 110, textAlign: 'right', color: az.modus === 'nichtVerfuegbar' ? 'var(--muted)' : undefined }}>
+                          {az.modus === 'nichtVerfuegbar' ? NICHT_VERFUEGBAR : darf ? formatWert(werte[k.id], k.einheit) : '🔒'}
+                          {darf && az.modus !== 'nichtVerfuegbar' && k.ziel != null && <div style={{ fontSize: 10.5, color: 'var(--muted)', fontWeight: 500 }}>Ziel {formatWert(k.ziel, k.einheit)}</div>}
+                        </div>
                       </div>
                     </div>
                     {editId === k.id && form && (

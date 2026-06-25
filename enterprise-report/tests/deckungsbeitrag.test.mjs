@@ -20,3 +20,14 @@ test('Mehrstufig: DB-Stufen rechnen korrekt durch bis Betriebsergebnis', () => {
   }
   assert.equal(s.betriebsergebnis, +(s.summeDB3 - s.unternehmensfix).toFixed(2))
 })
+
+test('Profit-Center-Faktor skaliert Werte; DB-Quoten invariant', () => {
+  const voll = direktCosting(undefined, 1)
+  const halb = direktCosting(undefined, 0.5)
+  assert.ok(Math.abs(halb.umsatz - voll.umsatz * 0.5) < 0.05)
+  assert.equal(halb.db1Quote, voll.db1Quote)
+  const sVoll = stufenweise(undefined, undefined, undefined, 1)
+  const sHalb = stufenweise(undefined, undefined, undefined, 0.5)
+  assert.ok(Math.abs(sHalb.betriebsergebnis - sVoll.betriebsergebnis * 0.5) < 0.1)
+  assert.ok(Math.abs(sHalb.unternehmensfix - sVoll.unternehmensfix * 0.5) < 0.05)
+})
