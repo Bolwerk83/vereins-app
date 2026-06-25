@@ -115,7 +115,15 @@ export const BERICHT_INFO = {
   },
   segment: { zweck: 'Segment-/Konzernbericht mit Intercompany-Konsolidierung.', zielgruppe: 'GF / Konzern.', mehrwert: 'Konzernsicht ohne Doppelzählung.' },
   // ---- Operativ ----
-  marketing: { zweck: 'Digital-Analytics: Funnel, Conversion, Kanäle, ROAS.', zielgruppe: 'Marketing / Vertrieb.', mehrwert: 'Kanäle & Kampagnen datenbasiert steuern.' },
+  marketing: {
+    zweck: 'Digital-Analytics-Dashboard: Funnel (Klicks → Leads → Aufträge), Conversion-Rates je Kanal, ROAS, Kampagnenvergleich und Retargeting-Effizienz.',
+    inhalt: 'Funnel-Visualisierung (Impressionen → Klicks → Warenkörbe → Kaufabschlüsse), ROAS je Kampagne/Kanal, CPA (Cost per Acquisition), Lifetime-Value-Schätzung, Retargeting-Quote, Google/Meta/E-Mail-Vergleich, Zeitverlauf und Wochenmuster.',
+    zielgruppe: 'Marketing, Vertrieb, E-Commerce-Management.',
+    mehrwert: 'Zeigt genau, welcher Kanal und welche Kampagne Ergebnis bringt — und welche Budgets verbrannt werden. Basis für performancebasiertes Marketing-Budgeting.',
+    fragen: ['Welcher Kanal hat den besten ROAS?', 'Wo bricht der Funnel ein (schlechteste Conversion-Rate)?', 'Welche Kampagne hat den niedrigsten CPA?', 'Wie entwickelt sich die Conversion-Rate über die Zeit?', 'Lohnt sich Retargeting?'],
+    lesehilfe: 'ROAS > 3 = Kampagne profitabel. CPA = Gesamtkosten ÷ Käufer. Conversion-Rate = Kaufabschlüsse ÷ Klicks. Roter Kanal = unter Ziel-ROAS.',
+    quelle: 'Google Analytics, Meta Ads Manager, E-Mail-Plattform, CRM (Aufträge); Demo-Daten (Mock).'
+  },
   marketingkarte: { zweck: 'Geografische Verteilung mit Drilldown (Welt → Europa → Deutschland → Bundesland → PLZ-Gebiet) als Choropleth-Kachelkarte; wählbare Metrik (Umsatz, Marktanteil, DB %, Online-Anteil) und Warenbereichs-Split je Region.', zielgruppe: 'Marketing / Vertrieb / GF.', mehrwert: 'Stärkste/schwächste Regionen und Marktpotenziale auf einen Blick.',
     inhalt: 'Kachelkarte je Ebene; Farbintensität = gewählte Metrik; je Region Umsatzanteil, DB % und Warenbereichs-Split (Fahrräder/Zubehör/Bekleidung). Breadcrumb-Navigation über die Ebenen.',
     fragen: ['In welcher Region/PLZ ist unser Marktanteil am höchsten?', 'Wo ist der Online-Anteil besonders groß?', 'Wie verteilt sich der Umsatz nach Warenbereichen je Region?'],
@@ -140,7 +148,15 @@ export const BERICHT_INFO = {
     inhalt: 'KPI-Band (Menge, Ø/Monat, Produktionswert, OEE, Ausschuss, FPY), Monats-Output-Balken, Produkt-Tabelle (Menge/Trend/Ausschuss/FPY/Wert) und Output je Werk.',
     fragen: ['Wie viel produzieren wir je Produkt und Werk?', 'Wie entwickeln sich Ausschuss und First-Pass-Yield?', 'Welches Werk trägt welchen Output?'],
     lesehilfe: 'Ausschuss grün ≤ 2 %, gelb ≤ 3,5 %, sonst rot. Trend ▲/▼ vergleicht ersten und letzten Monat.', quelle: 'Produktionscontrolling (Demo).' },
-  events: { zweck: 'Aktionen mit Zeitraum/Kosten und ihre Wirksamkeit.', zielgruppe: 'Marketing / Vertrieb.', mehrwert: 'Werbe-ROI, Mehrumsatz und Ladenhüter-Abbau messen.' },
+  events: {
+    zweck: 'Events & Aktionen: Messen, Probefahrten, Händleraktionen und Rabattkampagnen — mit Zeitraum, Kosten, erreichtem Umsatz und ROI.',
+    inhalt: 'Aktionskalender (Kacheln nach Event-Typ), je Event: Kosten, Teilnehmer/Leads, Mehrumsatz im Aktionszeitraum, attributierter Umsatz (last-touch), ROI/ROAS, Nachverfolgung Folgekäufe bis 90 Tage, Vergleich Aktionszeitraum vs. Vorperiode.',
+    zielgruppe: 'Marketing, Vertrieb, Händlernetzwerk, Eventmanagement.',
+    mehrwert: 'Macht Marketingaktionen messbar: Welches Event bringt die meisten Leads? Welche Aktion hat den besten ROI? Basis für Event-Budget-Planung im nächsten Jahr.',
+    fragen: ['Welches Event hatte den höchsten Mehrumsatz?', 'Wie hoch ist der ROI der letzten Probefahrt-Aktion?', 'Welche Events führen zu langfristigen Folgekäufen?', 'Lohnt sich die Messeteilnahme?'],
+    lesehilfe: 'ROI > 0 = Event hat sich gerechnet. Folgekauf-Tracking bis 90 Tage nach Event (Cookie/CRM-Verknüpfung). Mehrumsatz = Ist-Umsatz Aktionszeitraum − Basis-Trend.',
+    quelle: 'CRM/Eventmanagement-System, Kassendaten/WaWi, Marketing-Tracking; Demo-Daten (Mock).'
+  },
   bestand: {
     zweck: 'Bestands-Gängigkeit: ABC/XYZ-Analyse nach Umsatz und Verbrauchsregelmäßigkeit — Renner und Ladenhüter identifizieren, Kapitalbindung und Lagerdauer steuern.',
     inhalt: 'ABC-Klassenverteilung (A=80 %, B=15 %, C=5 % Umsatzanteil), XYZ-Einteilung (X=stetig, Y=schwankend, Z=unregelmäßig), Kombinations-Matrix (AX bis CZ), Renner/Ladenhüter-Liste, Reichweiten-Ampel, Lagerumschlag.',
@@ -154,7 +170,15 @@ export const BERICHT_INFO = {
     inhalt: 'Kostenstruktur (Lagerhaltungskostensatz), Standorte, Bestandsoptimierung (EOQ, Melde-/Sicherheits-/Höchstbestand, Status, Einsparpotenzial je Artikel), anklickbare Artikel mit KI-Empfehlungen und Lieferanten-Trend, Signale & KI mit Eskalation an die Einkaufsleitung.',
     fragen: ['Was kostet uns das Lager wirklich?', 'Welche Bestellmenge ist optimal?', 'Welcher Artikel ist Über-/Unterbestand?', 'Verschlechtert sich ein Lieferant schleichend?'],
     lesehilfe: 'Artikel anklicken öffnet Details + KI-Empfehlungen. Wichtige, unkommentierte Signale ploppen bei der Abteilungsleitung Einkauf auf — kommentieren = geklärt.', quelle: 'Bestands-/Lieferantendaten (Demo).' },
-  wms: { zweck: 'Operatives Lager: Lagerplätze, Wareneingang, Kommissionierung, Umlagern und Bewegungsprotokoll.', zielgruppe: 'Lager / Logistik.', mehrwert: 'Bestände platzgenau führen und Buchungen nachvollziehen.' },
+  wms: {
+    zweck: 'Operatives Warehouse-Management: Lagerplätze, Wareneingänge, Kommissionieraufträge, Umlagerungen und vollständiges Bewegungsprotokoll — für den täglichen Lagerbetrieb.',
+    inhalt: 'Lagerplatz-Übersicht (Platz-Auslastung, Artikel je Stellplatz), Wareneingangsmaske (WE-Prüfung, Einlagerungsvorschlag), Kommissionieraufträge (offen/in Bearbeitung/abgeschlossen), Umlagerungs-Log, Bewegungsprotokoll (FIFO/LIFO-Sicht), Inventur-Unterstützung.',
+    zielgruppe: 'Lager, Logistik, Lagerleitstand.',
+    mehrwert: 'Ersetzt papierbasierte Lagerhaltung: vollständige Rückverfolgbarkeit jeder Warenbewegung, optimale Einlagerungsvorschläge und direkter Status von Kommissionieraufträgen.',
+    fragen: ['Welcher Artikel liegt auf welchem Lagerplatz?', 'Welche Kommissionieraufträge sind noch offen?', 'Wo gibt es Inventurdifferenzen?', 'Welche Einlagerungszone hat noch Kapazität?', 'Wie lief der Wareneingang heute?'],
+    lesehilfe: 'Rote Lagerplätze = überbelegt oder gesperrt. Grün = frei/normal. Klick auf Platz → alle Artikel und Bewegungen dort. Bewegungsprotokoll: FIFO = älteste Charge zuerst entnehmen.',
+    quelle: 'WMS/ERP (Lagerbewegungen, Lagerplatzverwaltung); Demo-Daten (Mock).'
+  },
   produktion: { zweck: 'Produktionscontrolling strategisch & operativ: Werke/Linien (Live-Status, OEE), optimale Losgrößen (EPQ), Fehlteile, Qualität (FPY/Ausschuss) und Abgleich Produktion ↔ Lager ↔ Auftragsbestand.', zielgruppe: 'Produktion / Supply Chain / Controlling.', mehrwert: 'Engpässe, Fehlteile und Qualitätsprobleme früh erkennen, Losgrößen und Output optimal steuern.',
     inhalt: 'Cockpit (OEE, FPY, Auslastung, Termintreue), Werke & Linien live (welches Produkt läuft wo), Produktionsprogramm (EPQ-Losgrößen), Fehlteile mit blockierten Aufträgen, Qualität je Linie, Output & Markt-Abgleich (Produktion ↔ Lager ↔ Auftragsbestand).',
     fragen: ['Welche Linie ist der Engpass?', 'Welche Aufträge stehen wegen fehlender Teile?', 'Welche Losgröße ist am wirtschaftlichsten?', 'Sollen wir aufstocken oder drosseln?'],
@@ -177,11 +201,43 @@ export const BERICHT_INFO = {
     fragen: ['Was bedeutet welcher Vertriebs-Code genau?', 'Wie hängen AE, AEB und AET zusammen?', 'Welche Phase verliert am meisten?'],
     lesehilfe: 'Symbole: Σ wertbasiert (€), ◊ mengenbezogen, % Verhältnis, Ø Schnitt. Hover über eine Zeile zeigt die Formel.', quelle: 'Vertriebs-Kennzahlenmodell (Demo).' },
   abgleichabsatz: { zweck: 'Abgleich der fakturierten Absatzmenge (aus Rechnungspositionen) mit dem tatsächlichen Auftragseingang (AET, WaWi) je Produkt — Differenz abs/% und wahrscheinliche Ursache.', zielgruppe: 'Vertriebscontrolling / Controlling.', mehrwert: 'Auseinanderlaufen von Absatz und Auftragseingang früh erkennen (Teillieferung, Storno, Verschiebung, Nachfakturierung).' },
-  lieferant: { zweck: 'Lieferanten-Lebenszyklus und -Risiken.', zielgruppe: 'Einkauf.', mehrwert: 'Lieferantenbasis aktiv steuern.' },
-  auftrag: { zweck: 'Order-to-Cash-Prozess mit Engpassanalyse.', zielgruppe: 'Vertrieb / Finanzen.', mehrwert: 'Durchlaufzeiten verkürzen, Cash beschleunigen.' },
-  forderungen: { zweck: 'Forderungs-Aging, DSO und Ausfallrisiko.', zielgruppe: 'Finanzen / Risiko.', mehrwert: 'Liquidität sichern, Ausfälle vermeiden.' },
+  lieferant: {
+    zweck: 'Lieferanten-Lebenszyklus und Risiko-Cockpit: Einkaufsvolumen, Liefertreue, Qualität (Reklamationsquote) und Abhängigkeitsrisiko je Lieferant — mit Lifecycle-Phasen (Neuzugang/Kernlieferant/Problemlieferant/Auslaufend).',
+    inhalt: 'Lieferanten-Rangliste (Volumen/Liefertreue/Qualität), Lifecycle-Matrix (Treue × Qualität), ABC-Lieferanten, Klumpenrisiko-Analyse (Anteil > 20 % = kritisch), Reklamations-Trend, Preisindex je Lieferant, Eskalations-Log.',
+    zielgruppe: 'Einkauf, Einkaufsleitung, Supply-Chain-Management.',
+    mehrwert: 'Macht die Qualität der Lieferantenbasis messbar und priorisiert Verhandlungs- und Entwicklungsmaßnahmen: Kernlieferanten halten, Problemlieferanten reduzieren, Klumpenrisiken abbauen.',
+    fragen: ['Welcher Lieferant hat die schlechteste Liefertreue?', 'Wo liegt ein Klumpenrisiko (> 20 % Anteil)?', 'Wie entwickelt sich die Reklamationsquote bei Lieferant X?', 'Welche Lieferanten sind im Lifecycle "Auslaufend"?', 'Wie hat sich der Preisindex verändert?'],
+    lesehilfe: 'Klumpenrisiko-Grenze: kein Lieferant > 30 % Einkaufsvolumen (Richtwert). Rote Liefertreue < 85 %. Lifecycle-Ampel: Neu/Kern = grün, Problem = rot, Auslaufend = grau.',
+    quelle: 'Wareneingänge, Reklamationserfassung, WaWi/ERP (Lieferantenkonditionen); Demo-Daten (Mock).'
+  },
+  auftrag: {
+    zweck: 'Order-to-Cash-Lebenszyklus: vom Auftragseingang über Produktion, Lieferung und Rechnungsstellung bis zum Zahlungseingang — mit Engpassanalyse und Durchlaufzeit-Drill.',
+    inhalt: 'Phasenverlauf (AE → Bestätigung → Produktion → Versand → RE → Zahlung), Durchlaufzeiten je Phase (Ist/Plan/Abweichung), Engpassanalyse (häufigste Verzögerungsphase), Offene Aufträge (Backlog), Storno-Rate, Zahlungsverzug, Top-Kunden nach Durchlaufzeit.',
+    zielgruppe: 'Vertrieb, Auftragsmanagement, Finanzen / Debitoren.',
+    mehrwert: 'Zeigt, wo im Order-to-Cash-Prozess Zeit und Geld verloren geht — Basis für gezielte Prozessverbesserung und Cashflow-Beschleunigung.',
+    fragen: ['Wo dauert der O2C-Prozess am längsten?', 'In welcher Phase liegen die meisten offenen Aufträge?', 'Wie hoch ist die Storno-Rate und warum?', 'Welche Kunden zahlen am langsamsten?', 'Wie entwickelt sich der Auftrags-Backlog?'],
+    lesehilfe: 'Durchlaufzeit-Balken: grün = unter Plan, rot = über Plan. Klick auf Phase → Einzelauftrags-Drill. DSO = Days Sales Outstanding (Ø Tage bis Zahlungseingang).',
+    quelle: 'WaWi (Auftragsstatus), Finanzbuchhaltung (Rechnungs-/Zahlungsdate), Produktionsplanung; Demo-Daten (Mock).'
+  },
+  forderungen: {
+    zweck: 'Forderungs-Aging: überfällige Rechnungen nach Fälligkeitsklassen (< 30 / 30–60 / 60–90 / > 90 Tage), DSO-Kennzahl und Ausfallrisiko-Scoring je Debitor.',
+    inhalt: 'Aging-Tabelle (alle offenen Forderungen nach Fälligkeitsklasse und Schuldner), DSO (Days Sales Outstanding) im Zeitverlauf, Risikoklassen-Ampel je Kunde, Zahlungsverhalten-Trend, Mahnstufen-Status, Drill auf Einzelrechnung.',
+    zielgruppe: 'Finanzen, Debitorenmanagement, Risikomanagement, Controlling.',
+    mehrwert: 'Verhindert Liquiditätsengpässe durch frühzeitiges Erkennen von Zahlungsverzug und schützt vor Forderungsausfällen durch rechtzeitige Eskalation — mit priorisierten Handlungsempfehlungen.',
+    fragen: ['Welche Rechnungen sind mehr als 60 Tage überfällig?', 'Wie hoch ist unser DSO im Vergleich zum Zahlungsziel?', 'Welche Kunden haben ein hohes Ausfallrisiko?', 'Wie hoch sind die Forderungen insgesamt in jeder Klasse?', 'Wo läuft ein Mahnverfahren?'],
+    lesehilfe: 'Rot = > 90 Tage überfällig, sofort Mahnstufe 3/Inkasso prüfen. Orange = 60–90 Tage, Mahnschreiben senden. DSO > Zahlungsziel = struktureller Zahlungsverzug.',
+    quelle: 'Debitorenbuchhaltung (offene Posten), CRM (Kundenkontakte), Scoring-Modell (Demo); Demo-Daten (Mock).'
+  },
   // ---- Analyse & Steuerung ----
-  bi: { zweck: 'Self-Service-BI für freie Auswertungen.', zielgruppe: 'Alle.', mehrwert: 'Ad-hoc-Analysen ohne IT.' },
+  bi: {
+    zweck: 'Self-Service-BI: freie Ad-hoc-Auswertungen ohne IT-Anfrage — Dimensionen, Maße und Zeiträume frei kombinierbar, Ergebnis sofort als Tabelle oder Visual.',
+    inhalt: 'Dimension-/Maß-Auswahl (Drag & Drop oder Chips), Zeitraum-Picker, Pivot-Tabelle und Chart-Umschalter (Balken/Linie/Donut), Filter (mehrfach, stapelähnlich), Ergebnis-Export (CSV/Excel), gespeicherte Ansichten (Bookmarks), KI-Abfrage in Klartext.',
+    zielgruppe: 'Controller:innen, Bereichsleitung, Vertrieb/Einkauf — alle, die Fragen haben, die kein vorbereiteter Bericht beantwortet.',
+    mehrwert: 'Keine IT-Anfrage, kein Warten: Fragen direkt beantwortet. Stärkt die Datenkompetenz im Unternehmen und entlastet das Controlling von Routineanfragen.',
+    fragen: ['Was war unser Umsatz je PLZ im Q2?', 'Welcher Vertriebsmitarbeiter hat welche Warengruppen verkauft?', 'Wie entwickeln sich die Einkaufspreise bei Lieferant X je Monat?', 'Welche Kunden haben mehrfach storniert?'],
+    lesehilfe: 'Links Dimensionen, oben Maße ziehen. Zeitraum-Chip unten setzt den Filter. „Speichern" legt eine wiederverwendbare Ansicht an. KI-Abfrage: einfach die Frage eintippen.',
+    quelle: 'Alle verfügbaren Datentöpfe der Anwendung (je nach freigegebenen Bereichsrechten); Demo-Daten (Mock).'
+  },
   abweichung: {
     zweck: 'Plan/Ist-Abweichungsanalyse: Gesamtabweichung in Preis-, Mengen- und Struktureffekt zerlegen — für Umsatz, Kosten und Ergebnis.',
     inhalt: 'Abweichungsübersicht (Umsatz/Kosten/DB/EBIT je Bereich), Preiseffekt (Preisänderung × Ist-Menge), Mengeneffekt (Plan-Preis × Mengenänderung), Struktureffekt (Mix-Shift), Drill bis auf Artikel/Kostenstelle, Monatsverlauf, Kommentar-Feld.',
@@ -194,7 +250,15 @@ export const BERICHT_INFO = {
   vergleich: { zweck: 'Versionsvergleich (Plan/Forecast/Ist).', zielgruppe: 'Controlling.', mehrwert: 'Stände sauber gegenüberstellen.' },
   qc: { zweck: 'Querchecks / Datenqualitätsprüfungen.', zielgruppe: 'Controlling / IT.', mehrwert: 'Fehler vor dem Reporting finden.' },
   abstimmung: { zweck: 'Abstimmbrücken zwischen FiBu und Controlling.', zielgruppe: 'Rechnungswesen.', mehrwert: 'Differenzen erklären und schließen.' },
-  lebenszyklus: { zweck: 'Produkt- und Kunden-Lebenszyklus mit Phasen.', zielgruppe: 'Vertrieb / Marketing.', mehrwert: 'Phasengerechte Strategie je Produkt/Kunde.' },
+  lebenszyklus: {
+    zweck: 'Produkt- und Kunden-Lebenszyklus: klassische Phasenkurve (Einführung/Wachstum/Reife/Sättigung/Rückgang) mit BCG-Blasen und Kundenbindungs-Phasen — inklusive Nachfolger-Verkettung.',
+    inhalt: 'Produkte: Lebenszyklus-Kurve (Phasenbänder + Umsatzkurve), BCG-Blasen je Phase (Größe = Umsatz), Matrix/Kurve-Umschalter, Nachfolger-Verkettung (Vorgänger→Nachfolger kombinieren). Kunden: Beziehungskurve (5 Phasen: Neukundenphase → Stammkunde → Churn-Risiko → inaktiv → reaktiviert), Drill auf Einzelkunde.',
+    zielgruppe: 'Vertrieb, Marketing, Produktmanagement, Controlling.',
+    mehrwert: 'Zeigt, wo Produkte und Kunden im Lifecycle stehen — und welche Maßnahmen phasenbezogen greifen: Neueinführung, Umsatzmaximierung, Lifecycle-Verlängerung oder geordneter Auslauf.',
+    fragen: ['In welcher Phase ist unser umsatzstärkstes Produkt?', 'Wie viele Produkte sind im Rückgang?', 'Welche Kunden sind Churn-Risiko?', 'Gibt es einen Nachfolger für das auslaufende Modell?', 'Wie entwickelt sich die Phasenverteilung über Quartale?'],
+    lesehilfe: 'Blasengröße = Umsatz. Farbe = Phase. Klick auf Blase → Artikel- oder Kundenkarte. Toggle „Nachfolger kombinieren" zeigt durchgängige Produktlinien trotz Artikelnummerwechsel.',
+    quelle: 'Absatzdaten, Stammdaten (Vorgänger-Feld), Kundendaten (WaWi/CRM); Demo-Daten (Mock).'
+  },
   pckostenstellen: { zweck: 'Bricht jedes Profit-Center bis auf die Einzelkostenstelle herunter und erlaubt das manuelle Verschieben einzelner Kostenstellen in ein anderes Profit-Center.', inhalt: 'PC-Karten mit Erlös/Kosten/Ergebnis, aufklappbar bis zur Kostenstelle; je Kostenstelle ein Auswahlfeld zum Umhängen. Live-Neuberechnung, Markierung verschobener Stellen, Zurücksetzen.', zielgruppe: 'Controlling, Bereichs-/Profit-Center-Leitung.', mehrwert: 'Schafft die bisher fehlende Ebene PC → Kostenstelle und macht Verantwortungs-/Ergebniszuordnung transparent und korrigierbar — ohne dass das Unternehmensergebnis kippt.', fragen: ['Aus welchen Kostenstellen besteht ein Profit-Center?', 'Welche Stelle macht ein PC defizitär?', 'Wie ändert sich das PC-Ergebnis, wenn eine Stelle umgehängt wird?'], lesehilfe: 'Σ Erlöse/Kosten bleiben beim Verschieben konstant — nur die Verteilung auf die PC ändert sich. Rote Ergebnisse = Verlust.', quelle: 'Kostenstellenrechnung (BAB); Demo-Daten (Mock).' },
   kontenstrukturen: { zweck: 'Mehrere parallele Sachkonto-Hierarchien über denselben Kontenstamm: GuV-Struktur, ROI-/DuPont-Baum und Kostenarten (variabel/fix mit DB-Schema).', inhalt: 'Umschaltbare Bäume, die aus dem Kontenstamm hochrollen; Konten können in mehreren Bäumen vorkommen („auch in …"). Aufklappbar bis zum Einzelkonto mit Kontonummer.', zielgruppe: 'Controlling, Bilanzbuchhaltung, Geschäftsführung.', mehrwert: 'Ein Konto, je nach Fragestellung anders gegliedert — z. B. Umsatz im GuV-, ROI- und DB-Baum — ohne die Kontierung zu ändern.', fragen: ['Wie setzt sich das Ergebnis nach Gesamtkostenverfahren zusammen?', 'Wie zerlegt sich der ROI (Umsatzrendite × Kapitalumschlag)?', 'Wie hoch ist der Deckungsbeitrag (variabel/fix)?'], lesehilfe: 'Summenknoten rollen ihre Kinder hoch (− = Aufwand); Formelknoten (ROI/Umsatzrendite/Kapitalumschlag) zeigen Kennzahlen in % bzw. ×.', quelle: 'Sachkontenstamm (SKR-nah); Demo-Daten (Mock).' },
   berichtlog: { zweck: 'Zugriffs-Log je Bericht: wie viele Personen zugegriffen haben, Aufrufe (pro Tag/User einmal), Ersteller und Bearbeiter mit Datum, Direkt-Link. Admin-Aufrufe zählen nicht.', zielgruppe: 'Administratoren.', mehrwert: 'Nutzung der Berichte transparent machen — was wird genutzt, von wie vielen, seit wann; mit Direkt-Link.' },
@@ -211,7 +275,15 @@ export const BERICHT_INFO = {
   finanzcockpit: { zweck: 'Finanz- & Risiko-Cockpit: Bilanz-, Liquiditäts-, Rentabilitäts- und Risikokennzahlen, konsistent aus einer Datenbasis (Bilanz/GuV/Cashflow) abgeleitet.', inhalt: 'Risikobild (Ampelverteilung), Bilanzstruktur (Aktiva/Passiva), je Kennzahl Wert, Ampel, Zielband, Formel, Standard-Bezug und Deutung. Druck-/PDF-fähig.', zielgruppe: 'Geschäftsführung, Leitung Controlling/Finanzen, Banken.', mehrwert: 'Standardkonforme Finanzanalyse auf einen Blick — zeigt Stabilität, Liquiditätslage, Ertragskraft und Risiken mit klaren Zielbändern.', fragen: ['Wie solide ist die Kapitalstruktur (EK-Quote, Anlagendeckung)?', 'Sind wir jederzeit zahlungsfähig (Liquiditätsgrade, CCC)?', 'Verdienen wir genug (Marge, ROCE, ROE)?', 'Wo sind die Risiken (Zinsdeckung, Verschuldung)?'], lesehilfe: 'Ampel je Kennzahl nach Zielband: grün = im Zielkorridor, gelb = Beobachtung, rot = Handlungsbedarf. Richtung „hoch/tief" je Kennzahl beachtet.', quelle: 'HGB-Bilanzanalyse, IFRS-KPIs (ROCE, EBITDA, IAS 7), Working-Capital-Mgmt, Risiko-Frühaufklärung (KonTraG). Demo-Daten (Mock).' },
   quartalsbericht: { zweck: 'Management-/Quartalsbericht: Umsatz Ist/Plan/Vorjahr (gesamt, Fahrräder, Teile/Bekleidung/Zubehör) mit kumulierten Verläufen, Online↔Offline, Internationalisierung, Benchmark/Marktanteil, Durchschnittspreisen und Auftragseingang — je Abschnitt mit Kernaussage und editierbarer Bemerkung.', inhalt: 'Kernaussage + Management-Summary, KPI-Kacheln, Ist/Plan/VJ-Tabelle je Monat + YTD, Linien-/Balkencharts, Preis- und Auftragseingangs-Sektion. Filter nach Zeitraum/Quartal und Profit-Center/Kanal. Druck-/PDF-fähig.', zielgruppe: 'Geschäftsführung, Controlling, Vertriebsleitung.', mehrwert: 'Ein konsolidierter, präsentationsreifer Bericht statt vieler Einzelfolien — mit klarer Kernaussage und dokumentierten Bemerkungen je Thema.', fragen: ['Wo stehen wir gegen Plan und Vorjahr (YTD/Quartal)?', 'Wie entwickeln sich Online vs. stationär und die Auslandsmärkte?', 'Wie ist unsere Marktposition (Benchmark/Marktanteil)?', 'Was sind Ursachen und Gegenmaßnahmen?'], lesehilfe: 'Ampel je Abschnitt: grün = im/über Plan, gelb = leicht darunter (≥ −5 %), rot = deutlich darunter. Zahlen in der Tabelle in TEUR.', quelle: 'Demo (Mock); später aus FiBu/Vertrieb (Ist/Plan), ZIV/Marktdaten (Benchmark), WaWi (Auftragseingang).' },
   portfoliobcg: { zweck: 'Boston-Consulting-Portfolios (Stars / Cash Cows / Question Marks / Poor Dogs) über Produkte, Kunden, Vertriebskanäle, Regionen und Lieferanten — Achsen Wachstum/Dynamik × Deckungsbeitrag/Performance, Blasengröße = Volumen.', inhalt: 'Je Sicht eine Matrix mit vier Feldern, Quadranten-Karten mit fachlicher Handlungsempfehlung, anklickbarem Quadranten-Filter und Detailtabelle.', zielgruppe: 'Geschäftsführung, Controlling, Vertriebs-/Einkaufsleitung.', mehrwert: 'Macht aus „viel Umsatz" eine klare Investitions-/Steuerungsentscheidung je Objekt: investieren, halten/melken, entwickeln oder bereinigen — statt Gießkanne.', fragen: ['Wo investieren wir in Wachstum (Stars)?', 'Was trägt heute den Gewinn (Cash Cows)?', 'Welche Wetten fördern, welche einstellen (Question Marks)?', 'Was bindet Kapital ohne Ertrag (Poor Dogs)?'], lesehilfe: 'Rechts oben = Stars, links oben = Cash Cows, rechts unten = Question Marks, links unten = Poor Dogs. Schwellen je Achse = Median.', quelle: 'Demo: Umsatz/DB/Wachstum je Objekt; später aus Vertriebs-, Kunden- und Einkaufsdaten.' },
-  lzempfehlung: { zweck: 'Automatische Empfehlungen + Maßnahmen aus den Lebenszyklen.', zielgruppe: 'Vertrieb / Controlling.', mehrwert: 'Risiken/Chancen direkt in Maßnahmen überführen.' },
+  lzempfehlung: {
+    zweck: 'Automatische Lifecycle-Empfehlungen: KI-gestützte Handlungsempfehlungen je Produkt und Kunde basierend auf der aktuellen Lebenszyklusphase.',
+    inhalt: 'Empfehlungskarten je Artikel/Kunde (Phase, Risikobewertung, 2–3 konkrete Maßnahmenvorschläge, Priorität), Filter nach Phasen/Dringlichkeit/Bereich, direkter Sprung in Artikelkarte oder Kundenprofil, Maßnahmen-Export, KI-Konfidenzniveau.',
+    zielgruppe: 'Vertrieb, Produktmanagement, Controlling.',
+    mehrwert: 'Übersetzt Lifecycle-Daten direkt in Handlungsoptionen — kein manuelles Interpretieren nötig. Priorisiert nach Umsatz-Impact, damit das Team mit dem Wichtigsten anfängt.',
+    fragen: ['Welche Produkte brauchen sofort Maßnahmen?', 'Welche Kunden sind churn-gefährdet?', 'Welche Empfehlungen haben den höchsten Umsatz-Impact?', 'Wurden Empfehlungen bereits umgesetzt?'],
+    lesehilfe: 'Rot = hohes Risiko (Churn/Auslauf), Gelb = Beobachtung, Grün = Wachstumspotenzial. KI-Konfidenz gibt an, wie verlässlich die Empfehlung ist (> 75 % = verlässlich).',
+    quelle: 'Lebenszyklus-Analyse, Absatzdaten, Kundenkontakte; KI: regelbasiert + statistisch; Demo-Daten (Mock).'
+  },
   anlagen: { zweck: 'Anlagen-Lebenszyklus inkl. kalkulatorischer Abschreibung.', zielgruppe: 'Finanzen / Controlling.', mehrwert: 'Investitions- und Ersatzsteuerung.' },
   technologie: { zweck: 'Technologie-Reifegrad & F&E-Portfolio.', zielgruppe: 'GF / F&E.', mehrwert: 'Innovationspipeline bewerten und priorisieren.' },
   mitarbeiter: { zweck: 'Mitarbeiter-Lebenszyklus (HR).', zielgruppe: 'HR / Personalcontrolling.', mehrwert: 'Bindung & Fluktuation steuern.' },
