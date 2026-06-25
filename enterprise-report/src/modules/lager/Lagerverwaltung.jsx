@@ -34,6 +34,7 @@ export default function Lagerverwaltung({ onGeh, rolle, onDetail }) {
   const [offen, setOffen] = useState(null)   // ausgeklappter Artikel
   const [tick, setTick] = useState(0)        // Re-Render nach Kommentar
   const [eskaliereAuf, setEskaliereAuf] = useState(true)
+  const [dim, setDim] = useState('artikel')  // Dimensions-Umschalter Optimierung
   const k = kennzahlen()
   const standorte = standorteAuswertung()
   const opt = optimierung()
@@ -57,6 +58,31 @@ export default function Lagerverwaltung({ onGeh, rolle, onDetail }) {
     : ueberbestand.length > 0
       ? `Überbestand bindet rund ${eur0(opt.ueberbestandWert)} € (${ueberbestand.map((r) => r.name).join(', ')}) — Bestellpause/Abverkauf; zusätzlich ${eur0(opt.einsparpotenzial)} € Losgrößen-Potenzial heben.`
       : `Bestände im Korridor — ${eur0(opt.einsparpotenzial)} € Einsparpotenzial aus optimierten Losgrößen realisieren.`
+
+  // Aggregierte Sichten für den Dimensions-Umschalter ─────────────────────
+  const lieferantDim = (() => {
+    const map = {}
+    for (const r of opt.rows) {
+      const key = r.lieferantId
+      if (!map[key]) map[key] = { key, name: r.lieferant?.name || key, artikel: [], kapital: 0, einsparpot: 0 }
+      map[key].artikel.push(r)
+      map[key].kapital    += r.kapitalGebunden
+      map[key].einsparpot += r.einsparpotenzial
+    }
+    return Object.values(map).sort((a, b) => b.kapital - a.kapital)
+  })()
+
+  const statusDim = (() => {
+    const basis = { unterdeckung: [], korridor: [], ueberbestand: [] }
+    for (const r of opt.rows) { if (basis[r.status]) basis[r.status].push(r) }
+    return Object.entries(basis).map(([key, rows]) => ({
+      key,
+      ...STATUS[key],
+      artikel: rows,
+      kapital:    rows.reduce((s, r) => s + r.kapitalGebunden,  0),
+      einsparpot: rows.reduce((s, r) => s + r.einsparpotenzial, 0),
+    }))
+  })()
 
   return (
     <div style={{ maxWidth: '100%', margin: '0 auto' }}>
@@ -174,49 +200,145 @@ export default function Lagerverwaltung({ onGeh, rolle, onDetail }) {
       )}
 
       {tab === 'optimierung' && (
-        <div style={{ ...card, padding: 16, overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5, minWidth: 920 }}>
-            <thead><tr>{['', 'Artikel', 'Lieferant', 'Bedarf/J', 'EOQ', 'Ist-Bestand', 'Reichw.', 'Meldebest.', 'Status', 'Einsparpot./J'].map((h, i) => <th key={i} style={th(i <= 2 ? 'left' : 'right')}>{h}</th>)}</tr></thead>
-            <tbody>
-              {opt.rows.map((r) => {
-                const auf = offen === r.id
-                const sig = lfMap[r.lieferantId]
-                return (
-                  <React.Fragment key={r.id}>
-                    <tr onClick={() => setOffen(auf ? null : r.id)} style={{ cursor: 'pointer', background: auf ? 'var(--accent-soft)' : undefined }}
-                      onMouseEnter={(e) => { if (!auf) e.currentTarget.style.background = 'var(--bg)' }}
-                      onMouseLeave={(e) => { if (!auf) e.currentTarget.style.background = 'transparent' }}>
-                      <td style={{ ...td('center'), color: 'var(--muted)' }}><span style={{ display: 'inline-block', transform: auf ? 'rotate(90deg)' : 'none', transition: 'transform .12s' }}>▶</span></td>
-                      <td style={td('left', true)}>{r.name}{sig && <span title="Lieferrisiko" style={{ marginLeft: 6 }}>⚠️</span>}</td>
-                      <td style={{ ...td('left'), color: 'var(--muted)', fontSize: 12 }}>{r.lieferant?.name}</td>
-                      <td className="mono" style={td('right')}>{n0(r.jahresbedarf)}</td>
-                      <td className="mono" style={td('right', true)}>{n0(r.eoqMenge)}</td>
-                      <td className="mono" style={td('right')}>{n0(r.istBestand)}</td>
-                      <td className="mono" style={td('right')}>{r.reichweiteTage} Tg</td>
-                      <td className="mono" style={{ ...td('right'), color: 'var(--accent)' }}>{n0(r.meldebestand)}</td>
-                      <td style={td('right')}><span style={{ fontSize: 11, fontWeight: 700, color: STATUS[r.status].farbe, border: `1px solid ${STATUS[r.status].farbe}`, borderRadius: 999, padding: '1px 8px', whiteSpace: 'nowrap' }}>{STATUS[r.status].label}</span></td>
-                      <td className="mono" style={{ ...td('right'), color: r.einsparpotenzial > 0 ? 'var(--accent)' : 'var(--muted)' }}>{r.einsparpotenzial > 0 ? `${eur0(r.einsparpotenzial)} €` : '—'}</td>
-                    </tr>
-                    {auf && (
-                      <tr><td colSpan={10} style={{ padding: 0, background: 'var(--bg)', borderBottom: '1px solid var(--line)' }}>
-                        <ArtikelDetail row={r} sig={sig} satz={satz} onDetail={onDetail} />
-                      </td></tr>
-                    )}
-                  </React.Fragment>
-                )
-              })}
-              <tr style={{ background: 'var(--bg)' }}>
-                <td />
-                <td style={td('left', true)}>Summe</td>
-                <td colSpan={7} style={{ ...td('right'), color: 'var(--muted)', fontSize: 12 }}>Ø gebundenes Kapital {eur0(opt.gebundenWert)} € · Ist {eur0(opt.kapitalGebunden)} €</td>
-                <td className="mono" style={td('right', true)}>{eur0(opt.einsparpotenzial)} €</td>
-              </tr>
-            </tbody>
-          </table>
-          <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 10 }}>
-            <b>Klick auf einen Artikel</b> öffnet Details, KI-Empfehlungen und den Lieferanten-Trend. <b>EOQ</b> (Andler) = wirtschaftlichste Losgröße.
-            <b> Meldebestand</b> = ab hier neu bestellen. <b>Status</b>: Unterdeckung &lt; Meldebestand &lt; Korridor &lt; Höchstbestand &lt; Überbestand.
+        <div style={{ ...card, padding: 16 }}>
+          {/* Dimensions-Umschalter — Backlog H */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 11, color: 'var(--muted)' }}>Dimension:</span>
+            {[{ key: 'artikel', name: 'Artikel' }, { key: 'lieferant', name: 'Lieferant' }, { key: 'status', name: 'Status' }].map((d) => (
+              <button key={d.key} onClick={() => { setDim(d.key); setOffen(null) }} style={{
+                fontSize: 12, padding: '4px 10px', borderRadius: 999, cursor: 'pointer', fontWeight: 600,
+                border: `1px solid ${dim === d.key ? 'var(--accent)' : 'var(--line)'}`,
+                background: dim === d.key ? 'var(--accent-soft)' : 'var(--panel)',
+                color: dim === d.key ? 'var(--accent)' : 'var(--muted)'
+              }}>{d.name}</button>
+            ))}
           </div>
+
+          {/* ── Artikel-Sicht (Original mit Eskalations-Workflow) ─────────── */}
+          {dim === 'artikel' && (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5, minWidth: 920 }}>
+                <thead><tr>{['', 'Artikel', 'Lieferant', 'Bedarf/J', 'EOQ', 'Ist-Bestand', 'Reichw.', 'Meldebest.', 'Status', 'Einsparpot./J'].map((h, i) => <th key={i} style={th(i <= 2 ? 'left' : 'right')}>{h}</th>)}</tr></thead>
+                <tbody>
+                  {opt.rows.map((r) => {
+                    const auf = offen === r.id
+                    const sig = lfMap[r.lieferantId]
+                    return (
+                      <React.Fragment key={r.id}>
+                        <tr onClick={() => setOffen(auf ? null : r.id)} style={{ cursor: 'pointer', background: auf ? 'var(--accent-soft)' : undefined }}
+                          onMouseEnter={(e) => { if (!auf) e.currentTarget.style.background = 'var(--bg)' }}
+                          onMouseLeave={(e) => { if (!auf) e.currentTarget.style.background = 'transparent' }}>
+                          <td style={{ ...td('center'), color: 'var(--muted)' }}><span style={{ display: 'inline-block', transform: auf ? 'rotate(90deg)' : 'none', transition: 'transform .12s' }}>▶</span></td>
+                          <td style={td('left', true)}>{r.name}{sig && <span title="Lieferrisiko" style={{ marginLeft: 6 }}>⚠️</span>}</td>
+                          <td style={{ ...td('left'), color: 'var(--muted)', fontSize: 12 }}>{r.lieferant?.name}</td>
+                          <td className="mono" style={td('right')}>{n0(r.jahresbedarf)}</td>
+                          <td className="mono" style={td('right', true)}>{n0(r.eoqMenge)}</td>
+                          <td className="mono" style={td('right')}>{n0(r.istBestand)}</td>
+                          <td className="mono" style={td('right')}>{r.reichweiteTage} Tg</td>
+                          <td className="mono" style={{ ...td('right'), color: 'var(--accent)' }}>{n0(r.meldebestand)}</td>
+                          <td style={td('right')}><span style={{ fontSize: 11, fontWeight: 700, color: STATUS[r.status].farbe, border: `1px solid ${STATUS[r.status].farbe}`, borderRadius: 999, padding: '1px 8px', whiteSpace: 'nowrap' }}>{STATUS[r.status].label}</span></td>
+                          <td className="mono" style={{ ...td('right'), color: r.einsparpotenzial > 0 ? 'var(--accent)' : 'var(--muted)' }}>{r.einsparpotenzial > 0 ? `${eur0(r.einsparpotenzial)} €` : '—'}</td>
+                        </tr>
+                        {auf && (
+                          <tr><td colSpan={10} style={{ padding: 0, background: 'var(--bg)', borderBottom: '1px solid var(--line)' }}>
+                            <ArtikelDetail row={r} sig={sig} satz={satz} onDetail={onDetail} />
+                          </td></tr>
+                        )}
+                      </React.Fragment>
+                    )
+                  })}
+                  <tr style={{ background: 'var(--bg)' }}>
+                    <td />
+                    <td style={td('left', true)}>Summe</td>
+                    <td colSpan={7} style={{ ...td('right'), color: 'var(--muted)', fontSize: 12 }}>Ø gebundenes Kapital {eur0(opt.gebundenWert)} € · Ist {eur0(opt.kapitalGebunden)} €</td>
+                    <td className="mono" style={td('right', true)}>{eur0(opt.einsparpotenzial)} €</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 10 }}>
+                <b>Klick auf einen Artikel</b> öffnet Details, KI-Empfehlungen und den Lieferanten-Trend. <b>EOQ</b> (Andler) = wirtschaftlichste Losgröße.
+                <b> Meldebestand</b> = ab hier neu bestellen. <b>Status</b>: Unterdeckung &lt; Meldebestand &lt; Korridor &lt; Höchstbestand &lt; Überbestand.
+              </div>
+            </div>
+          )}
+
+          {/* ── Lieferanten-Sicht ─────────────────────────────────────────── */}
+          {dim === 'lieferant' && (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5, minWidth: 680 }}>
+                <thead><tr>{['Lieferant', 'Artikel', 'Kapital geb. (€)', 'Einsparpot./J (€)', 'Unterdeckung', 'Überbestand', 'Status-Mix'].map((h, i) => <th key={i} style={th(i === 0 ? 'left' : 'right')}>{h}</th>)}</tr></thead>
+                <tbody>
+                  {lieferantDim.map((lf) => {
+                    const ud = lf.artikel.filter((r) => r.status === 'unterdeckung').length
+                    const ub = lf.artikel.filter((r) => r.status === 'ueberbestand').length
+                    const ok = lf.artikel.length - ud - ub
+                    const farbe = ud > 0 ? 'var(--amp-r)' : ub > 0 ? 'var(--amp-a)' : 'var(--amp-g)'
+                    return (
+                      <tr key={lf.key} style={{ borderBottom: '1px solid var(--line)' }}>
+                        <td style={td('left', true)}>{lf.name}</td>
+                        <td className="mono" style={td('right')}>{lf.artikel.length}</td>
+                        <td className="mono" style={td('right')}>{eur0(lf.kapital)} €</td>
+                        <td className="mono" style={{ ...td('right'), color: lf.einsparpot > 0 ? 'var(--accent)' : 'var(--muted)' }}>{lf.einsparpot > 0 ? `${eur0(lf.einsparpot)} €` : '—'}</td>
+                        <td className="mono" style={{ ...td('right'), color: ud > 0 ? 'var(--amp-r)' : 'var(--muted)', fontWeight: ud > 0 ? 700 : 400 }}>{ud || '—'}</td>
+                        <td className="mono" style={{ ...td('right'), color: ub > 0 ? 'var(--amp-a)' : 'var(--muted)', fontWeight: ub > 0 ? 700 : 400 }}>{ub || '—'}</td>
+                        <td style={td('right')}>
+                          <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end', alignItems: 'center' }}>
+                            {ud > 0 && <span style={{ fontSize: 10, fontWeight: 700, color: '#fff', background: 'var(--amp-r)', borderRadius: 999, padding: '1px 6px' }}>{ud}×UD</span>}
+                            {ok > 0 && <span style={{ fontSize: 10, fontWeight: 700, color: '#fff', background: 'var(--amp-g)', borderRadius: 999, padding: '1px 6px' }}>{ok}×OK</span>}
+                            {ub > 0 && <span style={{ fontSize: 10, fontWeight: 700, color: '#fff', background: 'var(--amp-a)', borderRadius: 999, padding: '1px 6px' }}>{ub}×ÜB</span>}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                  <tr style={{ background: 'var(--bg)' }}>
+                    <td style={td('left', true)}>Summe</td>
+                    <td className="mono" style={td('right', true)}>{opt.rows.length}</td>
+                    <td className="mono" style={td('right', true)}>{eur0(opt.kapitalGebunden)} €</td>
+                    <td className="mono" style={{ ...td('right', true), color: 'var(--accent)' }}>{eur0(opt.einsparpotenzial)} €</td>
+                    <td colSpan={3} />
+                  </tr>
+                </tbody>
+              </table>
+              <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 10 }}>
+                Gebundenes Kapital und Einsparpotenzial je Lieferant — sortiert nach größtem Kapitalanteil. UD = Unterdeckung, ÜB = Überbestand.
+              </div>
+            </div>
+          )}
+
+          {/* ── Status-Sicht ─────────────────────────────────────────────── */}
+          {dim === 'status' && (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5, minWidth: 520 }}>
+                <thead><tr>{['Status', 'Artikel', 'Kapital geb. (€)', 'Einsparpot./J (€)', 'Artikel-Namen'].map((h, i) => <th key={i} style={th(i <= 1 ? 'left' : 'right')}>{h}</th>)}</tr></thead>
+                <tbody>
+                  {statusDim.map((s) => (
+                    <tr key={s.key} style={{ borderBottom: '1px solid var(--line)', background: s.artikel.length > 0 && s.key !== 'korridor' ? `color-mix(in srgb,${s.farbe} 6%,transparent)` : undefined }}>
+                      <td style={td('left')}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: s.farbe, border: `1px solid ${s.farbe}`, borderRadius: 999, padding: '1px 8px', whiteSpace: 'nowrap' }}>{s.label}</span>
+                      </td>
+                      <td className="mono" style={{ ...td('left'), fontWeight: 700, color: s.artikel.length > 0 && s.key !== 'korridor' ? s.farbe : 'inherit' }}>{s.artikel.length}</td>
+                      <td className="mono" style={td('right')}>{s.artikel.length > 0 ? `${eur0(s.kapital)} €` : '—'}</td>
+                      <td className="mono" style={{ ...td('right'), color: s.einsparpot > 0 ? 'var(--accent)' : 'var(--muted)' }}>{s.einsparpot > 0 ? `${eur0(s.einsparpot)} €` : '—'}</td>
+                      <td style={{ ...td('left'), fontSize: 12, color: 'var(--muted)', maxWidth: 340, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {s.artikel.map((r) => r.name).join(', ') || '—'}
+                      </td>
+                    </tr>
+                  ))}
+                  <tr style={{ background: 'var(--bg)' }}>
+                    <td style={td('left', true)}>Summe</td>
+                    <td className="mono" style={td('left', true)}>{opt.rows.length}</td>
+                    <td className="mono" style={td('right', true)}>{eur0(opt.kapitalGebunden)} €</td>
+                    <td className="mono" style={{ ...td('right', true), color: 'var(--accent)' }}>{eur0(opt.einsparpotenzial)} €</td>
+                    <td />
+                  </tr>
+                </tbody>
+              </table>
+              <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 10 }}>
+                Kapital und Einsparpotenzial nach Bestandsstatus. Für Artikel-Details: Dimension „Artikel" wählen und Zeile aufklappen.
+              </div>
+            </div>
+          )}
         </div>
       )}
 
