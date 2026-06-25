@@ -175,6 +175,7 @@ export default function App() {
   const [infoView, setInfoView] = useState(null)   // Bericht-Info-Panel (Schaufenster)
   const [detailStart, setDetailStart] = useState(null) // Drill E3→E4: vorgewählte Detailliste
   const [detailSuche, setDetailSuche] = useState('')   // optionaler Vorfilter (z. B. aus BCG-Drill)
+  const [planStart, setPlanStart] = useState(null)     // Deep-Link auf einen Planung-Tab (Bericht/Eingabe)
   // Aktive "Rolle": ohne Anmeldung die Standard-Rolle (Lesezugriff), nach der
   // Demo-Anmeldung die gewählte Rolle (mehr Berichte). Die Standard-Gruppe
   // 'g-leser' ist die least-privilege-Sicht.
@@ -247,6 +248,8 @@ export default function App() {
   }
   // Drill E3 → E4: gezielt eine Detailliste öffnen.
   const gehDetail = (listId, suche = '') => { setDetailStart(listId); setDetailSuche(suche); setAnsicht('detailberichte') }
+  // Planung & Budgetierung: gezielt einen Tab öffnen (Bericht oder Eingabe).
+  const gehPlan = (tab) => { setPlanStart(tab); geh('planung') }
   const zeigeInfo = (a) => setInfoView(a)
   const qcFehler = validierungsZusammenfassung(werte).fehler
   const alertN = alertAnzahl(werte, rolle)
@@ -335,10 +338,24 @@ export default function App() {
         E('forderungen', 'nav.forderungen', '💶')
       ] }
     ] },
+    // Planung & Budgetierung — eigener Knoten. Konvention: BERICHTE oben,
+    // EINGABE & VERWALTUNG (Tools) unten und klar getrennt. Deep-Links auf die
+    // jeweiligen Tabs über gehPlan(); RBAC/Relevanz kommt von E('planung').
+    { titel: 'Planung & Budgetierung', icon: '🎯', untergruppen: [
+      { titel: 'Berichte', eintraege: [
+        { ...E('planung', 'nav.planung', '📊'), label: 'Budget vs. Ist & Forecast', icon: '📊', aktiv: ansicht === 'planung' && planStart === 'budget', onClick: () => gehPlan('budget') },
+        { ...E('planung', 'nav.planung', '📦'), label: 'Beschaffungs-Terminierung', icon: '📦', aktiv: ansicht === 'planung' && planStart === 'beschaffung', onClick: () => gehPlan('beschaffung') },
+        { ...E('planung', 'nav.planung', '🏭'), label: 'Machbarkeit (Durchlaufzeit)', icon: '🏭', aktiv: ansicht === 'planung' && planStart === 'machbarkeit', onClick: () => gehPlan('machbarkeit') }
+      ] },
+      { titel: 'Eingabe & Verwaltung', eintraege: [
+        { ...E('planung', 'nav.planung', '🧭'), label: 'Plan anlegen & bearbeiten', icon: '🧭', aktiv: ansicht === 'planung' && planStart === 'wizard', onClick: () => gehPlan('wizard') },
+        { ...E('planung', 'nav.planung', '✏️'), label: 'Detailplanung (Mengen & Preise)', icon: '✏️', aktiv: ansicht === 'planung' && planStart === 'detail', onClick: () => gehPlan('detail') },
+        { ...E('planung', 'nav.planung', '📅'), label: 'Produktionsplaner', icon: '📅', aktiv: ansicht === 'planung' && planStart === 'planer', onClick: () => gehPlan('planer') }
+      ] }
+    ] },
     { titel: 'Analyse & Steuerung', icon: '🔭', untergruppen: [
       { titel: 'Analyse', eintraege: [
         E('bi', 'nav.bi', '💬'),
-        E('planung', 'nav.planung', '🎯'),
         E('szenario', 'nav.szenario', '🔮'),
         E('abweichung', 'nav.abweichung', '📊'),
         E('vergleich', 'nav.vergleich', '⚖'),
@@ -760,7 +777,7 @@ export default function App() {
           <Produktionscontrolling onGeh={geh} onDetail={gehDetail} />
         )}
         {ansicht === 'planung' && (
-          <Planung onGeh={geh} />
+          <Planung onGeh={geh} startTab={planStart} />
         )}
         {ansicht === 'gutschriften' && (
           <Gutschriften />

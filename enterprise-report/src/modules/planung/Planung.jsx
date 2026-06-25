@@ -3,7 +3,7 @@
 //  Pläne anlegen/kopieren · Top-Down ODER Bottom-Up · Menge ↔ Betrag ·
 //  Schwund-Aufschlag · Produktion ohne Umsatz · Liquiditätsvorschau.
 // =========================================================================
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   PLAN_PRODUKTE, PLAN_TYPEN, AE_UMSATZ_FAKTOR, VERTEILSCHLUESSEL, verteilschluesselListe, ladePlaene, planVon, neuerPlan,
   kopierePlan, speicherePlan, loeschePlan, rechnePlan, topDownVerteilung, mengeAusBetrag, liquiditaet, monatsVerteilung, vergleiche, terminplanung,
@@ -26,8 +26,22 @@ const th = (al) => ({ textAlign: al, padding: '6px 9px', borderBottom: '2px soli
 const td = (al, bold) => ({ textAlign: al, padding: '6px 9px', borderBottom: '1px solid var(--line)', fontWeight: bold ? 700 : 400 })
 const MON = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']
 
-export default function Planung({ onGeh }) {
-  const [ptab, setPtab] = useState('wizard')
+// Tabs gruppiert: BERICHTE zuerst (oben), EINGABE & VERWALTUNG danach (unten).
+const PLAN_BERICHTE = [
+  ['budget', '📊 Budget vs. Ist & Forecast'],
+  ['beschaffung', '📦 Beschaffungs-Terminierung'],
+  ['machbarkeit', '🏭 Machbarkeit (Durchlaufzeit)']
+]
+const PLAN_EINGABE = [
+  ['wizard', '🧭 Plan anlegen & bearbeiten'],
+  ['detail', '✏️ Detailplanung (Mengen & Preise)'],
+  ['planer', '📅 Produktionsplaner']
+]
+const IST_BERICHT = (t) => PLAN_BERICHTE.some(([id]) => id === t)
+
+export default function Planung({ onGeh, startTab }) {
+  const [ptab, setPtab] = useState(startTab || 'budget')
+  useEffect(() => { if (startTab) setPtab(startTab) }, [startTab])
   const [plaene, setPlaene] = useState(() => ladePlaene())
   const [aktivId, setAktivId] = useState(() => ladePlaene()[0]?.id)
   const [zielUmsatz, setZielUmsatz] = useState('')
@@ -65,19 +79,38 @@ export default function Planung({ onGeh }) {
   return (
     <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ marginBottom: 14 }}>
-        <h2 style={{ margin: '0 0 4px' }}>Planung — Budget, Forecast & Szenarien</h2>
+        <h2 style={{ margin: '0 0 4px' }}>Planung & Budgetierung</h2>
         <div style={{ color: 'var(--muted)', fontSize: 13, maxWidth: 820 }}>
-          Damit alle dieselbe Vorstellung von den Werten haben: Mengen <b>bottom-up</b> je Produkt planen oder ein Ziel
-          <b> top-down</b> herunterbrechen. Eingabe wahlweise als Menge oder Betrag. Schwund und Produktion ohne Umsatz
-          (Sponsoren/Ausstellung) sind berücksichtigt — inklusive Liquiditätsvorschau.
+          <b>Berichte</b> zeigen den Plan-/Ist-/Forecast-Stand; in <b>Eingabe & Verwaltung</b> pflegst du die Pläne
+          (Mengen, Preise, Termine). Schwund und Produktion ohne Umsatz (Sponsoren/Ausstellung) sind berücksichtigt —
+          inklusive Liquiditätsvorschau.
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
-        {[['wizard', '🧭 Einfache Planung (Wizard)'], ['budget', '📊 Budget vs. Ist/Forecast'], ['beschaffung', '📦 Beschaffung (Rückwärtsterminierung)'], ['machbarkeit', '🏭 Machbarkeit (Durchlaufzeit)'], ['planer', '📅 Produktionsplaner'], ['detail', 'Detailplanung (Produkte)']].map(([id, n]) => (
-          <button key={id} onClick={() => setPtab(id)} style={{ padding: '6px 12px', borderRadius: 999, fontSize: 13, cursor: 'pointer', fontWeight: 600, border: `1px solid ${ptab === id ? 'var(--accent)' : 'var(--line)'}`, background: ptab === id ? 'var(--accent)' : 'var(--panel)', color: ptab === id ? '#fff' : 'var(--ink)' }}>{n}</button>
-        ))}
+      {/* Tabs gruppiert: Berichte (oben), Eingabe & Verwaltung (unten) */}
+      <div style={{ display: 'grid', gap: 8, marginBottom: 14 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span style={{ ...cap, marginRight: 2 }}>📈 Berichte</span>
+          {PLAN_BERICHTE.map(([id, n]) => <TabBtn key={id} aktiv={ptab === id} onClick={() => setPtab(id)}>{n}</TabBtn>)}
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', borderTop: '1px dashed var(--line)', paddingTop: 8 }}>
+          <span style={{ ...cap, marginRight: 2 }}>⚙ Eingabe & Verwaltung</span>
+          {PLAN_EINGABE.map(([id, n]) => <TabBtn key={id} aktiv={ptab === id} onClick={() => setPtab(id)} tool>{n}</TabBtn>)}
+        </div>
       </div>
+
+      {/* Hinweis: fehlen für den Bericht noch Eingaben? → zur Verwaltung */}
+      {IST_BERICHT(ptab) && erg.umsatz <= 0 && (
+        <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 14, padding: '10px 14px',
+          background: 'var(--amp-a-soft, #fef9c3)', border: '1px solid var(--amp-a)', borderRadius: 'var(--radius)' }}>
+          <span style={{ fontSize: 18 }}>⚠️</span>
+          <span style={{ flex: 1, minWidth: 220, fontSize: 13 }}>
+            Für diesen Bericht sind noch <b>keine Planmengen</b> hinterlegt. Bitte zuerst in der Verwaltung pflegen.
+          </span>
+          <button onClick={() => setPtab('detail')} style={{ ...btn }}>✏️ Zur Detailplanung</button>
+          <button onClick={() => setPtab('wizard')} style={{ ...btnGhost }}>🧭 Plan anlegen</button>
+        </div>
+      )}
 
       {ptab === 'wizard' && <PlanungWizard />}
       {ptab === 'budget' && <BudgetCockpit />}
@@ -375,6 +408,15 @@ export default function Planung({ onGeh }) {
 const btn = { padding: '7px 13px', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: 12.5, fontWeight: 600, border: '1px solid var(--accent)', background: 'var(--accent)', color: '#fff' }
 const btnGhost = { padding: '6px 11px', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: 12.5, fontWeight: 600, border: '1px solid var(--line)', background: 'var(--panel)', color: 'var(--ink)' }
 const lbl = { fontSize: 12, color: 'var(--muted)', display: 'flex', alignItems: 'center' }
+
+function TabBtn({ aktiv, onClick, tool, children }) {
+  return (
+    <button onClick={onClick} style={{ padding: '6px 12px', borderRadius: 999, fontSize: 13, cursor: 'pointer', fontWeight: 600,
+      border: `1px solid ${aktiv ? 'var(--accent)' : 'var(--line)'}`,
+      background: aktiv ? 'var(--accent)' : tool ? 'var(--bg)' : 'var(--panel)',
+      color: aktiv ? '#fff' : 'var(--ink)' }}>{children}</button>
+  )
+}
 
 function Kpi({ label, wert, sub, farbe }) {
   return <div style={{ ...card, padding: '10px 13px', flex: 1, minWidth: 150 }}>
