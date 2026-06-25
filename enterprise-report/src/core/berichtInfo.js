@@ -31,16 +31,88 @@ export const BERICHT_INFO = {
     fragen: ['Welche Datensätze sind auffällig oder fehlerhaft?', 'Wo weicht ein Einzelwert vom Erwarteten ab?', 'Welche Belege hängen zusammen (Cross-Drill)?'],
     lesehilfe: 'Roter Zeilenrand = Fehler, gelb = Warnung, blau = Hinweis. Klick auf eine Zeile öffnet die Befund-Karte mit E5-Historie.', quelle: 'Mock/WaWi-Detaildaten (später SQL-Anbindung).' },
   // ---- Kosten & Ergebnis ----
-  klr: { zweck: 'Grundlagen und Fluss der Kosten- & Leistungsrechnung.', zielgruppe: 'Controlling, Rechnungswesen.', mehrwert: 'Verstehen, welche Kosten wofür entstehen.' },
-  einzelgemein: { zweck: 'Einzel- vs. Gemeinkosten und Zuschlagskalkulation.', zielgruppe: 'Kalkulation / Controlling.', mehrwert: 'Saubere Gemeinkostenverrechnung.' },
-  abgrenzung: { zweck: 'Überleitung GuV → KLR inkl. neutraler Abgrenzung und kalkulatorischer Kosten.', zielgruppe: 'Rechnungswesen / Controlling.', mehrwert: 'Betriebsergebnis korrekt abgegrenzt.' },
+  klr: {
+    zweck: 'Grundlagen und Fluss der Kosten- & Leistungsrechnung (KLR): von der Kostenartenrechnung über die Kostenstellenrechnung bis zur Kostenträgerrechnung.',
+    inhalt: 'Dreistufige KLR-Struktur als Flussdiagramm (Kostenartenrechnung → Kostenstellenrechnung → Kostenträgerrechnung), Abgrenzungsübersicht, Verbindung zu BAB und Kalkulation, interaktive Beschriftungen je Stufe.',
+    zielgruppe: 'Controlling, Rechnungswesen, Auszubildende/Studierende.',
+    mehrwert: 'Vermittelt das vollständige KLR-System auf einen Blick — ideal als Einstieg und Nachschlagewerk für alle, die Kosten richtig zuordnen und verstehen müssen.',
+    fragen: ['Wie fließen Kosten von der Kostenartenrechnung in die Kostenstellen?', 'Was kommt in den BAB?', 'Wie wird aus dem BAB eine Kalkulation?', 'Was ist der Unterschied zwischen GuV und KLR-Ergebnis?'],
+    lesehilfe: 'Den Pfeilen in der Fluss-Grafik folgen: Links oben starten (Kostenartenrechnung), über den BAB (Mitte) zur Kalkulation (rechts) und zum Betriebsergebnis.',
+    quelle: 'KLR-Grundsätze nach VDMA/IKR; Bezug zu Finanzbuchhaltung und Planung; Demo-Daten (Mock).'
+  },
+  einzelgemein: {
+    zweck: 'Systematische Trennung von Einzel- und Gemeinkosten als Grundlage der Zuschlagskalkulation — mit Gemeinkostenzuschlagssätzen je Kostenstelle.',
+    inhalt: 'Kostenartentabelle (Einzel-/Gemeinkosten-Split), Gemeinkostenzuschlagssätze (Material-GK, Fertigungs-GK, Verwaltungs-GK, Vertriebs-GK), Beispielkalkulation, grafische Aufteilung.',
+    zielgruppe: 'Kalkulation, Controlling, Kostenrechner:innen.',
+    mehrwert: 'Saubere Gemeinkostenverrechnung verhindert Mischpreise und zeigt, welche Produkte zu günstigen/ungünstigen GK-Sätzen produziert werden.',
+    fragen: ['Welche Kosten sind Einzel-, welche Gemeinkosten?', 'Wie hoch sind die Gemeinkostenzuschlagssätze je Stelle?', 'Welches Produkt treibt den Fertigungs-GK?', 'Wo kann der GK-Satz gesenkt werden?'],
+    lesehilfe: 'Grün = direkt zurechenbar (Einzelkosten). Grau = über Kostenstellen zu verteilen (Gemeinkosten). GK-Satz = Gemeinkosten ÷ Bezugsgröße (z. B. Fertigungs-Lohn).',
+    quelle: 'Finanzbuchhaltung, Kostenstellenrechnung; Demo-Daten (Mock).'
+  },
+  abgrenzung: {
+    zweck: 'Überleitung von der handelsrechtlichen GuV zum KLR-Betriebsergebnis: neutrale Erträge/Aufwendungen herausrechnen, kalkulatorische Kosten ergänzen.',
+    inhalt: 'Abgrenzungsbrücke (GuV-Ergebnis → neutrales Ergebnis → Betriebsergebnis), Tabelle neutrale Erträge/Aufwendungen, kalkulatorische Kostenarten (Abschr., Zinsen, Wagnis, Unternehmerlohn, Miete), Vergleich Plan/Ist.',
+    zielgruppe: 'Rechnungswesen, Controlling, Wirtschaftsprüfung.',
+    mehrwert: 'Das Betriebsergebnis spiegelt die echte Leistungsfähigkeit des Betriebs — ohne einmalige Sondereffekte und mit vollständigen Kapitalkosten.',
+    fragen: ['Wie weit weicht das KLR-Ergebnis vom handelsrechtlichen ab?', 'Welche neutralen Posten verzerren das GuV-Ergebnis?', 'Sind kalkulatorische Zinsen und Abschreibungen vollständig erfasst?', 'Stimmt der Abgrenzungssaldo?'],
+    lesehilfe: 'Neutrale Erträge (z. B. Anlageverkäufe) werden abgezogen, neutrale Aufwendungen (z. B. außerplanmäßige Abschr.) werden addiert. Kalkulatorische Kosten erhöhen das Betriebsergebnis.',
+    quelle: 'GuV (HGB), Kostenrechnung; Anlagenspiegel für kalk. Abschreibungen; Demo-Daten (Mock).'
+  },
   kalkulatorik: { zweck: 'Kalkulatorische Kosten (Abschreibung, Zinsen, Wagnisse, Miete, Unternehmerlohn) je Wirtschaftsjahr aufbauen — mit begründeten Vorschlägen, „Vorjahr kopieren" und Monatsverteilung.', zielgruppe: 'Controlling / Rechnungswesen.', mehrwert: 'Anders-/Zusatzkosten je Jahr pflegen und sauber ins Betriebsergebnis überleiten.' },
-  kostenstellen: { zweck: 'Kostenstellenrechnung mit Umlage und Zuschlagssätzen.', zielgruppe: 'Controlling.', mehrwert: 'Wo entstehen Gemeinkosten – und wie teuer ist jede Stelle.' },
-  bab: { zweck: 'Betriebsabrechnungsbogen über die ganze Firma (Plan/Ist).', zielgruppe: 'Controlling.', mehrwert: 'Gemeinkostenverteilung & Wirtschaftlichkeit je Stelle.' },
-  kalkulation: { zweck: 'Kostenträgerrechnung: Selbstkosten je Produkt (Division/Äquivalenz/Zuschlag/Maschine/Kuppel).', zielgruppe: 'Kalkulation / Vertrieb.', mehrwert: 'Preisuntergrenzen & Produktergebnis.' },
-  ergebnis: { zweck: 'Ergebnisrechnung (GuV) als Staffel und T-Konto.', zielgruppe: 'Geschäftsführung / Finanzen.', mehrwert: 'Periodenergebnis transparent.' },
-  deckungsbeitrag: { zweck: 'Deckungsbeitragsrechnung, ein- und mehrstufig.', zielgruppe: 'Vertrieb / Controlling.', mehrwert: 'Welche Produkte tragen die Fixkosten.' },
-  profitcenter: { zweck: 'Ergebnis je Profitcenter inkl. Kapitalrendite (ROCE).', zielgruppe: 'Bereichsleitung / GF.', mehrwert: 'Wer verdient wie viel Geld.' },
+  kostenstellen: {
+    zweck: 'Vollständige Kostenstellenrechnung: Primärkosten je Stelle, innerbetriebliche Leistungsverrechnung (Sekundärumlage), Endkosten und Zuschlagssätze.',
+    inhalt: 'Kostenstellenübersicht (Primär-/Sekundärkosten, Endkosten, Plan/Ist/Abw.), Umlage-Matrix (ILV), Zuschlagssätze je Hilfskostenstelle, Abweichungsampel je Stelle, Drill bis Einzelkostenart.',
+    zielgruppe: 'Controlling, Kostenstellenverantwortliche, Bereichsleitung.',
+    mehrwert: 'Zeigt genau, wo Gemeinkosten entstehen und wie sie sich auf Fertigungs-/Dienstleistungsstellen verteilen — Grundlage für Kalkulation und Leistungsverrechnung.',
+    fragen: ['Welche Kostenstellen überziehen den Plan?', 'Wie verteilt sich die innerbetriebliche Leistung (Umlage)?', 'Wie hoch ist der Fertigungs-GK-Satz je Stelle?', 'Wo ist das Verhältnis Fix-/Variabelkosten kritisch?'],
+    lesehilfe: 'Rote Ampel = Kostenstelle über Plan. Klick auf Stelle → Aufschlüsselung nach Kostenart. Zuschlagssatz = Endkosten ÷ Bezugsgröße.',
+    quelle: 'Finanzbuchhaltung, Personalabrechnung, innerbetriebliche Leistungsmengen; Demo-Daten (Mock).'
+  },
+  bab: {
+    zweck: 'Betriebsabrechnungsbogen (BAB): vollständige Gemeinkostenverteilung von Vorkostenstellen auf Endkostenstellen — Bindeglied zwischen Kostenartenrechnung und Kalkulation.',
+    inhalt: 'BAB-Tabelle (Kostenarten als Zeilen, Kostenstellen als Spalten), Umlagespalten (ILV), Endkostenstellen-Summen, Zuschlagssatz-Berechnung, Plan/Ist-Vergleich mit Abweichungsmarkierung.',
+    zielgruppe: 'Controlling, Rechnungswesen, Prüfer:innen.',
+    mehrwert: 'Stellt die vollständige Kostenverteilung transparent dar — unverzichtbar für eine verursachungsgerechte Kalkulation und belastbare Gemeinkostenzuschlagssätze.',
+    fragen: ['Welche Kostenstellen erhalten wie viele Gemeinkosten?', 'Stimmt die innerbetriebliche Leistungsverrechnung?', 'Wie hoch ist der Fertigungslohn-GK-Satz?', 'Wo weichen Plan und Ist stark ab?'],
+    lesehilfe: 'Von links nach rechts lesen: Kostenartenzeilen → Vorkostenstellen → Umlage → Endkostenstellen. Zuschlagssätze stehen ganz unten je Spalte.',
+    quelle: 'Kostenartenrechnung, Kostenstellenrechnung, innerbetriebliche Leistungsmengen; Demo-Daten (Mock).'
+  },
+  kalkulation: {
+    zweck: 'Kostenträgerrechnung: Selbstkosten, Preisuntergrenze und Produktergebnis je Artikel — mit fünf Kalkulationsverfahren (Divisions-, Äquivalenz-, Zuschlag-, Maschinen-, Kuppelkalkulation).',
+    inhalt: 'Kalkulationsschema je Produkt (Material-EK → Herstellkosten → Selbstkosten → Deckungsbeitrag), Vergleich Kalkulationsverfahren, Preisuntergrenze (kurzfristig/langfristig), Ist- vs. Plankalkulation, Retrograder Ansatz.',
+    zielgruppe: 'Kalkulation, Vertrieb (Angebote), Controlling, Produktmanagement.',
+    mehrwert: 'Gibt für jedes Produkt die verlässliche Preisuntergrenze und den Produktergebnisbeitrag — Grundlage für Angebote, Rabattverhandlungen und Sortimentsentscheidungen.',
+    fragen: ['Wie hoch sind die Selbstkosten je Fahrrad/Artikel?', 'Was ist die kurzfristige Preisuntergrenze?', 'Welches Produkt hat die höchste/niedrigste Marge?', 'Stimmt die Plankalkulation mit den Ist-Kosten überein?', 'Welches Kalkulationsverfahren passt zum Produkt?'],
+    lesehilfe: 'Kurzfristige PUG = variable Kosten (kein Fixkostenanteil). Langfristige PUG = Selbstkosten gesamt. Deckungsbeitrag = Preis − variable Kosten; positiv = Fixkostenbeitrag.',
+    quelle: 'Materialkosten (EK-Statistik), Lohnkosten (HR), BAB-Zuschlagssätze, Planung; Demo-Daten (Mock).'
+  },
+  ergebnis: {
+    zweck: 'Ergebnisrechnung (Gewinn- und Verlustrechnung): Umsatzerlöse bis Jahresüberschuss in der Staffelform (UKV/GKV), ergänzt durch das klassische T-Konto-Format.',
+    inhalt: 'GuV-Staffel (Umsatz → Rohertrag → EBITDA → EBIT → EBT → Jahresüberschuss), T-Konto (Aufwands-/Ertragskonten), Plan/Ist/VJ-Vergleich je Zeile, Abweichungsampel, Margenpyramide, Export.',
+    zielgruppe: 'Geschäftsführung, Finanzen/Rechnungswesen, Banken, Investoren.',
+    mehrwert: 'Transparente Ergebnisstruktur auf einen Blick — zeigt, wo Erträge entstehen und wo Kosten die Marge auffressen; direkt HGB-konform aufgebaut.',
+    fragen: ['Wie hoch ist der Jahresüberschuss?', 'Wo weicht das Ist vom Plan ab?', 'Wie entwickelt sich die EBIT-Marge?', 'Welche Kostenblöcke wachsen überproportional?', 'Ist das Ergebnis mit Vorjahr vergleichbar?'],
+    lesehilfe: 'Positive Zahlen = Erträge, negative = Aufwendungen. EBITDA schließt Abschreibungen aus (Vergleichbarkeit). EBIT = operatives Ergebnis. Rote Abweichung = unter Plan/VJ.',
+    quelle: 'Finanzbuchhaltung (HGB/IFRS), Jahresabschluss; Demo-Daten (Mock).'
+  },
+  deckungsbeitrag: {
+    zweck: 'Deckungsbeitragsrechnung ein- und mehrstufig: von DB I (nach variablen Kosten) über DB II (nach produktfixen Kosten) bis zum Betriebsergebnis — je Produkt, Warengruppe und Kanal.',
+    inhalt: 'DB-Stufenrechnung (Erlöse → variable Kosten → DB I → produktfixe Kosten → DB II → Bereichsfixkosten → DB III → Unternehmensfixkosten → Betriebsergebnis), Produktranking nach DB I, Deckungspunkt-Analyse, Break-even-Menge, Engpassentscheidung.',
+    zielgruppe: 'Vertrieb, Controlling, Produktmanagement, Geschäftsführung.',
+    mehrwert: 'Zeigt, welche Produkte/Kanäle die Fixkosten decken — und welche im Sortiment zu überdenken sind. Ermöglicht kurzfristige Preis- und Volumenzentscheidungen auf Basis von Grenzkostenrechnung.',
+    fragen: ['Welches Produkt hat den höchsten DB I/II?', 'Wo liegt der Break-even?', 'Welches Produkt sollte bei Engpass bevorzugt gefertigt werden?', 'Decken alle Kanäle ihre variablen Kosten?', 'Wo sind produktfixe Kosten unverhältnismäßig hoch?'],
+    lesehilfe: 'DB I = Erlös − variable Kosten. Positiver DB I = Beitrag zur Fixkostendeckung. Negativer DB I = jede Einheit macht einen Verlust — sofortige Maßnahme. Break-even: Menge × DB I = Fixkosten.',
+    quelle: 'Kostenrechnung, Finanzbuchhaltung, Absatzdaten; Demo-Daten (Mock).'
+  },
+  profitcenter: {
+    zweck: 'Profitcenter-Ergebnisrechnung: Erlöse, Kosten und Ergebnis je Profit-Center — mit Kapitalrendite (ROCE), Dimension-Umschalter (Geschäftsbereich/Region/Kanal) und Drill bis zur Kostenstelle.',
+    inhalt: 'PC-Übersicht (Erlöse/Kosten/EBIT/ROCE je PC), Ampel je PC, Benchmark-Vergleich (beste/schlechteste PC), Monatsverlauf, Dimension-Chips (Geschäftsbereich/Region/Kanal), Drill → Kostenstellen-Zuordnung.',
+    zielgruppe: 'Bereichsleitung, Controlling, Geschäftsführung.',
+    mehrwert: 'Dezentrale Ergebnisverantwortung auf einen Blick: Wer liefert — und wer nicht? ROCE setzt Ergebnis ins Verhältnis zum eingesetzten Kapital.',
+    fragen: ['Welche Profit-Center sind profitabel?', 'Wie entwickelt sich das PC-Ergebnis über Monate?', 'Welcher Kanal/Region ist am stärksten?', 'Wie hoch ist die Kapitalrendite (ROCE) je PC?', 'Welche Kostenstellen machen ein PC defizitär?'],
+    lesehilfe: 'ROCE = EBIT ÷ investiertes Kapital. Grüne Ampel = EBIT und ROCE über Ziel. Dimension-Chips wechseln die Gruppierungsebene. Klick auf PC → Kostenstellen-Drill.',
+    quelle: 'Finanzbuchhaltung, Kostenstellenrechnung, Kapitalstruktur; Demo-Daten (Mock).'
+  },
   segment: { zweck: 'Segment-/Konzernbericht mit Intercompany-Konsolidierung.', zielgruppe: 'GF / Konzern.', mehrwert: 'Konzernsicht ohne Doppelzählung.' },
   // ---- Operativ ----
   marketing: { zweck: 'Digital-Analytics: Funnel, Conversion, Kanäle, ROAS.', zielgruppe: 'Marketing / Vertrieb.', mehrwert: 'Kanäle & Kampagnen datenbasiert steuern.' },
@@ -69,7 +141,15 @@ export const BERICHT_INFO = {
     fragen: ['Wie viel produzieren wir je Produkt und Werk?', 'Wie entwickeln sich Ausschuss und First-Pass-Yield?', 'Welches Werk trägt welchen Output?'],
     lesehilfe: 'Ausschuss grün ≤ 2 %, gelb ≤ 3,5 %, sonst rot. Trend ▲/▼ vergleicht ersten und letzten Monat.', quelle: 'Produktionscontrolling (Demo).' },
   events: { zweck: 'Aktionen mit Zeitraum/Kosten und ihre Wirksamkeit.', zielgruppe: 'Marketing / Vertrieb.', mehrwert: 'Werbe-ROI, Mehrumsatz und Ladenhüter-Abbau messen.' },
-  bestand: { zweck: 'Bestands-Gängigkeit (ABC/XYZ, Renner/Ladenhüter).', zielgruppe: 'Logistik / Einkauf.', mehrwert: 'Kapitalbindung senken, Ladenhüter erkennen.' },
+  bestand: {
+    zweck: 'Bestands-Gängigkeit: ABC/XYZ-Analyse nach Umsatz und Verbrauchsregelmäßigkeit — Renner und Ladenhüter identifizieren, Kapitalbindung und Lagerdauer steuern.',
+    inhalt: 'ABC-Klassenverteilung (A=80 %, B=15 %, C=5 % Umsatzanteil), XYZ-Einteilung (X=stetig, Y=schwankend, Z=unregelmäßig), Kombinations-Matrix (AX bis CZ), Renner/Ladenhüter-Liste, Reichweiten-Ampel, Lagerumschlag.',
+    zielgruppe: 'Logistik, Einkauf, Controlling, Lagerleitung.',
+    mehrwert: 'Zeigt auf einen Blick, wo Kapital unnötig gebunden ist (CZ-Artikel) und wo Fehlmengenrisiko besteht (AX-Artikel mit geringer Reichweite) — Basis für differenzierte Bestellstrategie.',
+    fragen: ['Welche Artikel binden das meiste Kapital?', 'Wo sind die Ladenhüter?', 'Welche Artikel haben kritische Reichweiten?', 'Wie verteilt sich unser Sortiment auf ABC-Klassen?', 'Wo ist der Lagerumschlag zu gering?'],
+    lesehilfe: 'AX = Bestseller mit stetigem Verbrauch → hohe Priorität, just-in-time. CZ = seltene Artikel, unregelmäßig → auf Losgröße prüfen oder auslisten. Reichweite < Wiederbeschaffungszeit = Fehlmengenrisiko.',
+    quelle: 'Lagerbewegungen, Absatzdaten, Stammdaten (Lieferzeit, Mindestbestand); Demo-Daten (Mock).'
+  },
   lager: { zweck: 'Lagerverwaltung aus Controlling-Sicht: Kapitalbindung, Lagerhaltungskosten, Standortkosten, Bestandsoptimierung (EOQ).', zielgruppe: 'Logistik / Controlling.', mehrwert: 'Lagerkosten transparent machen und Bestände/Bestellmengen optimieren.',
     inhalt: 'Kostenstruktur (Lagerhaltungskostensatz), Standorte, Bestandsoptimierung (EOQ, Melde-/Sicherheits-/Höchstbestand, Status, Einsparpotenzial je Artikel), anklickbare Artikel mit KI-Empfehlungen und Lieferanten-Trend, Signale & KI mit Eskalation an die Einkaufsleitung.',
     fragen: ['Was kostet uns das Lager wirklich?', 'Welche Bestellmenge ist optimal?', 'Welcher Artikel ist Über-/Unterbestand?', 'Verschlechtert sich ein Lieferant schleichend?'],
@@ -102,7 +182,15 @@ export const BERICHT_INFO = {
   forderungen: { zweck: 'Forderungs-Aging, DSO und Ausfallrisiko.', zielgruppe: 'Finanzen / Risiko.', mehrwert: 'Liquidität sichern, Ausfälle vermeiden.' },
   // ---- Analyse & Steuerung ----
   bi: { zweck: 'Self-Service-BI für freie Auswertungen.', zielgruppe: 'Alle.', mehrwert: 'Ad-hoc-Analysen ohne IT.' },
-  abweichung: { zweck: 'Plan/Ist-Abweichung, aufgeteilt in Preis- und Mengeneffekt.', zielgruppe: 'Controlling.', mehrwert: 'Ursachen von Abweichungen erkennen.' },
+  abweichung: {
+    zweck: 'Plan/Ist-Abweichungsanalyse: Gesamtabweichung in Preis-, Mengen- und Struktureffekt zerlegen — für Umsatz, Kosten und Ergebnis.',
+    inhalt: 'Abweichungsübersicht (Umsatz/Kosten/DB/EBIT je Bereich), Preiseffekt (Preisänderung × Ist-Menge), Mengeneffekt (Plan-Preis × Mengenänderung), Struktureffekt (Mix-Shift), Drill bis auf Artikel/Kostenstelle, Monatsverlauf, Kommentar-Feld.',
+    zielgruppe: 'Controlling, Bereichsleitung, Geschäftsführung.',
+    mehrwert: 'Beantwortet die entscheidende Controllingfrage: Liegt die Abweichung am Preis, am Volumen oder am Mix? — und zeigt damit den richtigen Hebel für Gegenmaßnahmen.',
+    fragen: ['Warum weicht das Ergebnis vom Plan ab?', 'Ist die Abweichung preis- oder volumengetrieben?', 'Welcher Bereich/Artikel verursacht die Abweichung?', 'Hat sich der Produkt-Mix verschoben?', 'In welchem Monat begann die Abweichung?'],
+    lesehilfe: 'Preiseffekt = Preis gesunken/gestiegen. Mengeneffekt = Volumen unter/über Plan. Struktureffekt = Anteil margenschwacher Produkte gestiegen. Alle drei addieren zur Gesamtabweichung.',
+    quelle: 'Planung (Budget), Finanzbuchhaltung (Ist), Kostenrechnung; Demo-Daten (Mock).'
+  },
   vergleich: { zweck: 'Versionsvergleich (Plan/Forecast/Ist).', zielgruppe: 'Controlling.', mehrwert: 'Stände sauber gegenüberstellen.' },
   qc: { zweck: 'Querchecks / Datenqualitätsprüfungen.', zielgruppe: 'Controlling / IT.', mehrwert: 'Fehler vor dem Reporting finden.' },
   abstimmung: { zweck: 'Abstimmbrücken zwischen FiBu und Controlling.', zielgruppe: 'Rechnungswesen.', mehrwert: 'Differenzen erklären und schließen.' },
