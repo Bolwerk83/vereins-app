@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { ladeGruppen, ladeGruppenAsync, istAdmin, effektiveRolleAsync } from './core/gruppen.js'
 import RollenRechte from './modules/rollen-rechte/RollenRechte.jsx'
-import BenutzerLeiste from './modules/benutzer/BenutzerLeiste.jsx'
+import LoginDialog from './modules/benutzer/LoginDialog.jsx'
 import HilfePanel from './modules/hilfe/HilfePanel.jsx'
 import Onboarding from './modules/onboarding/Onboarding.jsx'
 import { schonGesehen, merkeGesehen } from './core/onboarding.js'
@@ -137,6 +137,9 @@ export default function App() {
   const [gruppen, setGruppen] = useState(ladeGruppen())
   const [rolleId, setRolleId] = useState(gruppen[0]?.id || null)
   const [benutzer, setBenutzer] = useState(localStorage.getItem(BENUTZER_KEY) || null)
+  // Demo-Anmeldung (Rolle + Name): Standard-Rolle ohne Anmeldung, mehr Berichte nach Login.
+  const [anmeldung, setAnmeldung] = useState(() => { try { return JSON.parse(localStorage.getItem('er_anmeldung') || 'null') } catch { return null } })
+  const [loginAuf, setLoginAuf] = useState(false)
   const [periode, setPeriode] = useState(AKTUELLE_PERIODE)
   const [werte, setWerte] = useState({})
   const [verbindung, setVerbindung] = useState(null)
@@ -169,12 +172,11 @@ export default function App() {
   const [infoView, setInfoView] = useState(null)   // Bericht-Info-Panel (Schaufenster)
   const [detailStart, setDetailStart] = useState(null) // Drill E3→E4: vorgewählte Detailliste
   const [detailSuche, setDetailSuche] = useState('')   // optionaler Vorfilter (z. B. aus BCG-Drill)
-  // Aktive "Rolle": angemeldeter Benutzer -> Vereinigung seiner Gruppen.
-  // Ohne Anmeldung -> manuell gewählte Gruppe (Demo-/Admin-Modus).
-  const rolle = benutzer
-    // Angemeldet, aber (noch) in keiner Gruppe -> least privilege: nichts sichtbar.
-    ? (benutzerRolle || { id: 'user:' + benutzer, name: benutzer, bereiche: [], kontext: [], gruppen: [] })
-    : (gruppen.find((g) => g.id === rolleId) || gruppen[0])
+  // Aktive "Rolle": ohne Anmeldung die Standard-Rolle (Lesezugriff), nach der
+  // Demo-Anmeldung die gewählte Rolle (mehr Berichte). Die Standard-Gruppe
+  // 'g-leser' ist die least-privilege-Sicht.
+  const standardGruppe = gruppen.find((g) => g.id === 'g-leser') || gruppen[gruppen.length - 1] || gruppen[0]
+  const rolle = (anmeldung && gruppen.find((g) => g.id === anmeldung.rolleId)) || standardGruppe
   const { t, lang, setLang } = useT()
 
   function anmelden(name) { localStorage.setItem(BENUTZER_KEY, name); setBenutzer(name) }
@@ -393,7 +395,9 @@ export default function App() {
   // ausblenden (leere Untergruppen/Gruppen entfernen). Admin sieht alles.
   const menuSichtbar = menuGruppen
     .map((g) => ({ ...g, untergruppen: (g.untergruppen || [])
-      .map((u) => ({ ...u, eintraege: u.eintraege.filter((e) => !e.versteckt) }))
+      // Rollenfilter (relevant) UND Status-/Freigabe-Filter (versteckt) anwenden,
+      // damit ein Rollenwechsel die sichtbaren Berichte tatsächlich einschränkt.
+      .map((u) => ({ ...u, eintraege: u.eintraege.filter((e) => !e.versteckt && e.relevant) }))
       .filter((u) => u.eintraege.length) }))
     .filter((g) => g.untergruppen.length)
   // Flacher Index view → { label, icon, bereich, relevant, pfad } für das Info-Panel.
@@ -445,14 +449,13 @@ export default function App() {
             {(() => { const n = alertAnzahl(werte, rolle); return (
               <button style={{ ...topBtn(ansicht === 'alerts'), ...(n ? { borderColor: 'var(--amp-r)', color: ansicht === 'alerts' ? '#fff' : 'var(--amp-r)' } : {}) }} onClick={() => geh('alerts')}>
                 ⚠ {t('nav.alerts')}{n ? ` (${n})` : ''}</button>) })()}
-            <BenutzerLeiste benutzer={benutzer} rolle={rolle} gruppen={gruppen} onLogin={anmelden} onLogout={abmelden} />
-            {!benutzer && (
-              <label style={{ fontSize: 12, color: 'var(--muted)' }}>{t('lbl.role')}&nbsp;
-                <select value={rolle?.id || ''} onChange={(e) => setRolleId(e.target.value)} style={{ font: 'inherit', padding: '5px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)' }}>
-                  {gruppen.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
-                </select>
-              </label>
-            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 6px 4px 10px', borderRadius: 999, background: anmeldung ? 'var(--accent-soft)' : 'var(--panel)', border: `1px solid ${anmeldung ? 'var(--accent)' : 'var(--line)'}` }}>
+              <span style={{ fontSize: 12, color: anmeldung ? 'var(--accent)' : 'var(--muted)', fontWeight: 600 }}>👤 {anmeldung?.name || 'Gast'}</span>
+              <span style={{ fontSize: 11, color: 'var(--muted)' }}>· {rolle?.name || '—'}</span>
+              {anmeldung
+                ? <button onClick={() => { setAnmeldung(null); try { localStorage.removeItem('er_anmeldung') } catch {} }} title="Abmelden — zurück zur Standard-Rolle" style={{ padding: '3px 9px', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', background: 'var(--panel)', cursor: 'pointer', fontSize: 12 }}>Abmelden</button>
+                : <button onClick={() => setLoginAuf(true)} title="Mit Rolle anmelden — mehr Berichte sehen" style={{ padding: '3px 11px', border: 'none', borderRadius: 'var(--radius-sm)', background: 'var(--accent)', color: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>Anmelden</button>}
+            </div>
             <DatenartBadge modell={zeitModell} onClick={() => setAnsicht('zeit')} />
             {/* ⚙ Einstellungen — bündelt Periode, Sprache, Wizard, Onboarding, Hilfe */}
             <div style={{ position: 'relative' }}>
@@ -510,6 +513,9 @@ export default function App() {
 
       <HilfePanel offen={hilfeAuf} erstmalig={hilfeErstmalig} onSchliessen={hilfeSchliessen} />
       <CommandPalette onGeh={geh} onKpi={(id) => { setBaumStart(id); setAnsicht('baum') }} rolle={rolle} istAdmin={adminAktiv} />
+      {loginAuf && <LoginDialog gruppen={gruppen}
+        onAnmelden={({ name, rolleId }) => { const a = { name, rolleId }; setAnmeldung(a); try { localStorage.setItem('er_anmeldung', JSON.stringify(a)) } catch {} ; setLoginAuf(false) }}
+        onClose={() => setLoginAuf(false)} />}
       {onbAuf && <Onboarding rolle={rolle} istAdmin={istAdmin(rolle)} onGeh={geh} onClose={() => setOnbAuf(false)} />}
       {infoView && infoMeta && (
         <BerichtInfoModal view={infoView} label={infoMeta.label} icon={infoMeta.icon} pfad={infoMeta.pfad}
