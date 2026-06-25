@@ -3,7 +3,7 @@
 //  (stufenweise Fixkostendeckung), plus Typologie der Kostenrechnungssysteme.
 // =========================================================================
 import React, { useState } from 'react'
-import { direktCosting, stufenweise, SYSTEME, dbSichten, KONDITIONSARTEN } from '../../core/deckungsbeitrag.js'
+import { direktCosting, stufenweise, SYSTEME, dbSichten, KONDITIONSARTEN, breakEven, warengruppen, artikelListe, KUNDENSEGMENTE } from '../../core/deckungsbeitrag.js'
 import { pcFaktor } from '../../core/statistikFilter.js'
 import PcFilter, { pcHinweis } from '../shared/PcFilter.jsx'
 import { useGlobalFilter } from '../../core/filterKontext.jsx'
@@ -16,7 +16,7 @@ const th = (al) => ({ textAlign: al, padding: '6px 9px', borderBottom: '1px soli
 const td = (al, bold) => ({ textAlign: al, padding: '6px 9px', borderBottom: '1px solid var(--line)', fontWeight: bold ? 700 : 400 })
 
 export default function Deckungsbeitrag({ onGeh }) {
-  const [tab, setTab] = useState('mehrstufig')
+  const [tab, setTab] = useState('breakeven')
   const g = useGlobalFilter()
   const pc = g.pc
   const aenderePc = g.setPc
@@ -54,11 +54,12 @@ export default function Deckungsbeitrag({ onGeh }) {
       {tab !== 'systeme' && <ExecKopf status={execStatus} kennzahl={m(sw.betriebsergebnis) + ' Mio €'} kennzahlLabel="Betriebsergebnis" kernaussage={execAussage} empfehlung={execEmpf} />}
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
-        {[['mehrstufig', 'Mehrstufig (Fixkostendeckung)'], ['einstufig', 'Einstufig (Direct Costing)'], ['fair', '⚖ Faire DB (Sonderfälle)'], ['systeme', 'Systeme der Kostenrechnung']].map(([id, n]) => (
+        {[['breakeven', '📈 Break-Even (Gewinnschwelle)'], ['mehrstufig', 'Mehrstufig (Fixkostendeckung)'], ['einstufig', 'Einstufig (Direct Costing)'], ['fair', '⚖ Faire DB (Sonderfälle)'], ['systeme', 'Systeme der Kostenrechnung']].map(([id, n]) => (
           <button key={id} style={chip(tab === id)} onClick={() => setTab(id)}>{n}</button>
         ))}
       </div>
 
+      {tab === 'breakeven' && <BreakEvenTab fk={fk} />}
       {tab === 'einstufig' && <Einstufig fk={fk} />}
       {tab === 'mehrstufig' && <Mehrstufig fk={fk} />}
       {tab === 'fair' && <FaireDB fk={fk} />}
@@ -159,6 +160,186 @@ function FaireDB({ fk = 1 }) {
       </div>
     </div>
   )
+}
+
+// =========================================================================
+//  BREAK-EVEN-TAB — interaktives Gewinnschwellen-Diagramm mit Filtern nach
+//  Warengruppe, Artikel und Kundensegment.
+// =========================================================================
+function BreakEvenTab({ fk = 1 }) {
+  const [bereich, setBereich] = useState('*')
+  const [produkt, setProdukt] = useState('*')
+  const [segment, setSegment] = useState('*')
+  // Bei Warengruppenwechsel Artikel zurücksetzen, falls er nicht mehr passt.
+  const artikel = artikelListe(bereich)
+  const produktGueltig = produkt === '*' || artikel.some((a) => a.id === produkt)
+  const be = breakEven({ bereich, produkt: produktGueltig ? produkt : '*', segment }, fk)
+  const eur = (v) => (v == null ? '—' : m(v) + ' Mio €')
+
+  const sel = { font: 'inherit', fontSize: 13, padding: '7px 10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: 'var(--panel)', color: 'var(--ink)' }
+  const reset = () => { setBereich('*'); setProdukt('*'); setSegment('*') }
+
+  const status = be.ergebnis >= 0 ? 'var(--amp-g)' : 'var(--amp-r)'
+  const tile = (titel, wert, sub, farbe) => (
+    <div style={{ ...card, padding: '12px 14px', flex: 1, minWidth: 170, borderTop: `3px solid ${farbe || 'var(--line)'}` }}>
+      <div style={{ ...cap, marginBottom: 3 }}>{titel}</div>
+      <div className="mono" style={{ fontSize: 19, fontWeight: 800, color: farbe || 'var(--ink)' }}>{wert}</div>
+      {sub && <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 2 }}>{sub}</div>}
+    </div>
+  )
+
+  return (
+    <div style={{ display: 'grid', gap: 14 }}>
+      {/* Filterleiste */}
+      <div style={{ ...card, padding: 14, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+        <label style={{ display: 'grid', gap: 4 }}>
+          <span style={cap}>Warengruppe</span>
+          <select style={sel} value={bereich} onChange={(e) => { setBereich(e.target.value); setProdukt('*') }}>
+            <option value="*">Alle Warengruppen</option>
+            {warengruppen().map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
+          </select>
+        </label>
+        <label style={{ display: 'grid', gap: 4 }}>
+          <span style={cap}>Artikel</span>
+          <select style={sel} value={produktGueltig ? produkt : '*'} onChange={(e) => setProdukt(e.target.value)}>
+            <option value="*">Alle Artikel{bereich !== '*' ? ' der Gruppe' : ''}</option>
+            {artikel.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+          </select>
+        </label>
+        <label style={{ display: 'grid', gap: 4 }}>
+          <span style={cap}>Kunde / Kanal</span>
+          <select style={sel} value={segment} onChange={(e) => setSegment(e.target.value)}>
+            <option value="*">Alle Kanäle</option>
+            {KUNDENSEGMENTE.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+        </label>
+        <span style={{ flex: 1 }} />
+        <button onClick={reset} style={{ ...sel, cursor: 'pointer', color: 'var(--muted)' }}>Filter zurücksetzen</button>
+      </div>
+
+      {/* Kennzahlen */}
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        {tile('Break-even-Umsatz', eur(be.beUmsatz), be.beAuslastung != null ? `bei ${(be.beAuslastung * 100).toFixed(0)} % des Ist-Umsatzes` : 'kein positiver DB', 'var(--accent)')}
+        {tile('Sicherheitsstrecke', be.sicherheit != null ? `${be.sicherheit} %` : '—', 'Puffer bis zur Verlustzone', be.sicherheit != null && be.sicherheit >= 0 ? 'var(--amp-g)' : 'var(--amp-r)')}
+        {tile('DB-Quote', `${be.dbQuote} %`, `DB ${eur(be.db)} · var. Quote ${be.varQuote} %`, 'var(--ink)')}
+        {tile('Betriebsergebnis (Ausschnitt)', eur(be.ergebnis), `Umsatz ${eur(be.umsatz)} − Fix ${eur(be.fix)}`, status)}
+      </div>
+
+      {/* Diagramm */}
+      <div style={{ ...card, padding: '14px 16px' }}>
+        <div style={{ ...cap, marginBottom: 4 }}>Break-Even-Diagramm — {be.titel} · {be.segmentName}</div>
+        <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>
+          Schnittpunkt von Erlös- und Gesamtkostenkurve = Gewinnschwelle. Links davon Verlust, rechts Gewinn. Der Punkt ◆ markiert die heutige Auslastung (100 %).
+        </div>
+        <BreakEvenChart be={be} />
+      </div>
+
+      {/* Fixkosten-Herkunft */}
+      <div style={{ ...card, padding: 14 }}>
+        <div style={{ ...cap, marginBottom: 8 }}>Zugeordnete Fixkosten im Ausschnitt</div>
+        <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', fontSize: 13 }}>
+          <span>Produktfixkosten: <b className="mono">{eur(be.produktfix)}</b></span>
+          <span>Bereichsfixkosten: <b className="mono">{eur(be.bereichsfix)}</b></span>
+          <span>Unternehmensfix (anteilig): <b className="mono">{eur(be.unternehmensfix)}</b></span>
+          <span>= Fixkosten gesamt: <b className="mono">{eur(be.fix)}</b></span>
+        </div>
+        <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 8 }}>
+          Produktfixkosten direkt, Bereichs-/Unternehmensfixkosten verursachungsnah nach Umsatzanteil zugeordnet. Kundensegmente skalieren Umsatz und Fixkostenblock anteilig.
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// SVG-Break-Even-Diagramm (Erlös vs. Gesamtkosten über die Auslastung).
+function BreakEvenChart({ be }) {
+  const W = 680, H = 340, padL = 64, padR = 16, padT = 14, padB = 42
+  const xMax = 1.4                              // bis 140 % Auslastung
+  const yErloesMax = be.umsatz * xMax
+  const yKostenMax = be.fix + be.varKosten * xMax
+  const yMax = Math.max(yErloesMax, yKostenMax) * 1.06 || 1
+  const px = (x) => padL + (x / xMax) * (W - padL - padR)
+  const py = (v) => H - padB - (v / yMax) * (H - padT - padB)
+  const erloesAt = (x) => be.umsatz * x
+  const kostenAt = (x) => be.fix + be.varKosten * x
+
+  const hatBE = be.beAuslastung != null && be.beAuslastung <= xMax
+  const bx = hatBE ? px(be.beAuslastung) : null
+  const byVal = hatBE ? erloesAt(be.beAuslastung) : null
+
+  // Achsen-Ticks
+  const xticks = [0, 0.25, 0.5, 0.75, 1.0, 1.25].filter((t) => t <= xMax)
+  const yStep = niceStep(yMax / 4)
+  const yticks = []
+  for (let v = 0; v <= yMax; v += yStep) yticks.push(v)
+
+  // Gewinn-/Verlustflächen (Polygone zwischen Erlös und Kosten)
+  const verlustPoly = `${px(0)},${py(erloesAt(0))} ${hatBE ? bx : px(xMax)},${py(hatBE ? byVal : erloesAt(xMax))} ${hatBE ? bx : px(xMax)},${py(hatBE ? byVal : kostenAt(xMax))} ${px(0)},${py(kostenAt(0))}`
+  const gewinnPoly = hatBE ? `${bx},${py(byVal)} ${px(xMax)},${py(erloesAt(xMax))} ${px(xMax)},${py(kostenAt(xMax))}` : null
+
+  return (
+    <div style={{ overflowX: 'auto' }}>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', minWidth: 480, height: 'auto', display: 'block' }} role="img"
+        aria-label={`Break-Even-Diagramm. Gewinnschwelle bei ${be.beUmsatz != null ? be.beUmsatz + ' Mio Euro' : 'nicht erreichbar'}.`}>
+        {/* Flächen */}
+        <polygon points={verlustPoly} fill="var(--amp-r)" opacity="0.10" />
+        {gewinnPoly && <polygon points={gewinnPoly} fill="var(--amp-g)" opacity="0.14" />}
+        {/* Gitter + Y-Achse */}
+        {yticks.map((v, i) => (
+          <g key={i}>
+            <line x1={padL} y1={py(v)} x2={W - padR} y2={py(v)} stroke="var(--line)" strokeWidth="1" opacity="0.6" />
+            <text x={padL - 8} y={py(v) + 4} textAnchor="end" fontSize="10.5" fill="var(--muted)">{m(v)}</text>
+          </g>
+        ))}
+        {/* X-Achse */}
+        <line x1={padL} y1={py(0)} x2={W - padR} y2={py(0)} stroke="var(--ink)" strokeWidth="1.3" />
+        {xticks.map((t, i) => (
+          <g key={i}>
+            <line x1={px(t)} y1={py(0)} x2={px(t)} y2={py(0) + 5} stroke="var(--muted)" strokeWidth="1" />
+            <text x={px(t)} y={py(0) + 19} textAnchor="middle" fontSize="10.5" fill="var(--muted)">{(t * 100).toFixed(0)} %</text>
+          </g>
+        ))}
+        <text x={(padL + W - padR) / 2} y={H - 6} textAnchor="middle" fontSize="11" fill="var(--muted)">Auslastung / Absatzniveau (100 % = heute)</text>
+        <text transform={`translate(15 ${(padT + H - padB) / 2}) rotate(-90)`} textAnchor="middle" fontSize="11" fill="var(--muted)">Mio €</text>
+        {/* Fixkostenlinie */}
+        <line x1={px(0)} y1={py(be.fix)} x2={px(xMax)} y2={py(be.fix)} stroke="var(--muted)" strokeWidth="1.3" strokeDasharray="5 4" />
+        <text x={W - padR} y={py(be.fix) - 5} textAnchor="end" fontSize="10.5" fill="var(--muted)">Fixkosten {m(be.fix)}</text>
+        {/* Gesamtkostenkurve */}
+        <line x1={px(0)} y1={py(kostenAt(0))} x2={px(xMax)} y2={py(kostenAt(xMax))} stroke="var(--amp-a)" strokeWidth="2.4" />
+        <text x={px(xMax) - 4} y={py(kostenAt(xMax)) - 6} textAnchor="end" fontSize="11" fontWeight="700" fill="var(--amp-a)">Gesamtkosten</text>
+        {/* Erlöskurve */}
+        <line x1={px(0)} y1={py(erloesAt(0))} x2={px(xMax)} y2={py(erloesAt(xMax))} stroke="var(--accent)" strokeWidth="2.4" />
+        <text x={px(xMax) - 4} y={py(erloesAt(xMax)) - 6} textAnchor="end" fontSize="11" fontWeight="700" fill="var(--accent)">Erlös</text>
+        {/* Break-even-Punkt */}
+        {hatBE && (
+          <g>
+            <line x1={bx} y1={py(0)} x2={bx} y2={py(byVal)} stroke="var(--ink)" strokeWidth="1" strokeDasharray="3 3" opacity="0.7" />
+            <circle cx={bx} cy={py(byVal)} r="6" fill="var(--panel)" stroke="var(--ink)" strokeWidth="2" />
+            <text x={bx + 9} y={py(byVal) - 8} fontSize="11" fontWeight="700" fill="var(--ink)">Gewinnschwelle</text>
+            <text x={bx + 9} y={py(byVal) + 6} fontSize="10.5" fill="var(--muted)">{m(be.beUmsatz)} Mio € · {(be.beAuslastung * 100).toFixed(0)} %</text>
+          </g>
+        )}
+        {/* Heutiger Betriebspunkt (x = 100 %) */}
+        <g>
+          <rect x={px(1) - 5} y={py(erloesAt(1)) - 5} width="10" height="10" transform={`rotate(45 ${px(1)} ${py(erloesAt(1))})`} fill="var(--accent)" />
+          <text x={px(1)} y={py(erloesAt(1)) - 12} textAnchor="middle" fontSize="10.5" fill="var(--accent)">heute</text>
+        </g>
+      </svg>
+      {!hatBE && (
+        <div style={{ fontSize: 12.5, color: 'var(--amp-r)', marginTop: 6 }}>
+          In diesem Ausschnitt deckt der Deckungsbeitrag die Fixkosten nicht — es gibt keine erreichbare Gewinnschwelle. Margen/Sortiment prüfen.
+        </div>
+      )}
+    </div>
+  )
+}
+
+// „Schöne" Achsen-Schrittweite (1/2/5 × 10^n).
+function niceStep(roh) {
+  if (!(roh > 0)) return 1
+  const p = Math.pow(10, Math.floor(Math.log10(roh)))
+  const r = roh / p
+  return (r >= 5 ? 5 : r >= 2 ? 2 : 1) * p
 }
 
 function Einstufig({ fk = 1 }) {

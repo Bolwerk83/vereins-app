@@ -1,7 +1,7 @@
 import './_setup.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { ladeFavoriten, istFavorit, toggleFavorit, entferneFavorit } from '../src/core/favoriten.js'
+import { ladeFavoriten, istFavorit, toggleFavorit, entferneFavorit, fuegeFavoritHinzu } from '../src/core/favoriten.js'
 import { bereichVon, VIEW_BEREICH } from '../src/core/navMeta.js'
 
 test('Favorit anpinnen und lösen (Reihenfolge bleibt)', () => {
@@ -23,6 +23,22 @@ test('leere View wird ignoriert', () => {
   localStorage.removeItem('er_favoriten')
   toggleFavorit('')
   assert.equal(ladeFavoriten().length, 0)
+})
+
+test('Favoriten pro Benutzer getrennt', () => {
+  localStorage.removeItem('er_favoriten')
+  localStorage.removeItem('er_favoriten:Anna')
+  toggleFavorit('kennzahlen', 'Anna'); toggleFavorit('planung', 'Anna')
+  assert.deepEqual(ladeFavoriten('Anna'), ['kennzahlen', 'planung'])
+  assert.deepEqual(ladeFavoriten('Bob'), [])   // anderer Benutzer leer
+  assert.deepEqual(ladeFavoriten(), [])        // Gast unberührt
+})
+
+test('fuegeFavoritHinzu ist idempotent (je Benutzer)', () => {
+  localStorage.removeItem('er_favoriten:Anna')
+  fuegeFavoritHinzu('lager', 'Anna'); fuegeFavoritHinzu('lager', 'Anna')
+  assert.deepEqual(ladeFavoriten('Anna'), ['lager'])
+  assert.equal(istFavorit('lager', 'Anna'), true)
 })
 
 test('bereichVon: bekannte und übergreifende Views', () => {

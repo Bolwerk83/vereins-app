@@ -136,7 +136,7 @@ export default function App() {
   // Optionale Demo-Startansicht (z. B. Standalone-Build landet in den Detailberichten).
   const demoView = typeof localStorage !== 'undefined' ? localStorage.getItem('er_demo_view') : null
   // Erststart -> Wizard, sonst Baum (bzw. Demo-Startansicht).
-  const [ansicht, setAnsicht] = useState(localStorage.getItem(SETUP_KEY) || demoStart ? (demoView || 'baum') : 'wizard')
+  const [ansicht, setAnsicht] = useState(localStorage.getItem(SETUP_KEY) || demoStart ? (demoView || 'startseite') : 'wizard')
   const [gruppen, setGruppen] = useState(ladeGruppen())
   const [rolleId, setRolleId] = useState(gruppen[0]?.id || null)
   const [benutzer, setBenutzer] = useState(localStorage.getItem(BENUTZER_KEY) || null)
@@ -419,7 +419,7 @@ export default function App() {
       {/* Topbar */}
       <header className="no-print" style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--panel)', borderBottom: '1px solid var(--line)',
         padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-        {ansicht !== 'wizard' && <BurgerMenu gruppen={menuSichtbar} onInfo={zeigeInfo} />}
+        {ansicht !== 'wizard' && <BurgerMenu gruppen={menuSichtbar} onInfo={zeigeInfo} user={anmeldung?.name || null} />}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {branding.logoDataUrl
             ? <img src={branding.logoDataUrl} alt="Logo" style={{ width: 26, height: 26, borderRadius: 7, objectFit: 'contain' }} />
@@ -559,7 +559,8 @@ export default function App() {
             onAbbruch={() => setAnsicht(localStorage.getItem(SETUP_KEY) ? 'baum' : 'wizard')} />
         )}
         {ansicht === 'startseite' && (
-          <Startseite verbindung={verbindung} onGeh={geh} />
+          <Startseite verbindung={verbindung} onGeh={geh} onKpi={(id) => { setBaumStart(id); setAnsicht('baum') }}
+            anmeldung={anmeldung} rolle={rolle} navIndex={eintragIndex} onLogin={() => setLoginAuf(true)} />
         )}
         {ansicht === 'baum' && (
           <TreeNavigator rolle={rolle} werte={werte} periode={periode} startId={baumStart} onOpenReport={() => setAnsicht('report')} onDetail={gehDetail} />

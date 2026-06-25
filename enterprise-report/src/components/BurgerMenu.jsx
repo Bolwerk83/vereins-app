@@ -37,7 +37,7 @@ function Eintrag({ e, onNav, fav, onFav, onInfo, dim, locked }) {
   )
 }
 
-export default function BurgerMenu({ gruppen = [], onInfo }) {
+export default function BurgerMenu({ gruppen = [], onInfo, user = null }) {
   const [auf, setAuf] = useState(false)
   const [tick, setTick] = useState(0)
   const info = (view) => { onInfo?.(view); setAuf(false) }
@@ -51,11 +51,11 @@ export default function BurgerMenu({ gruppen = [], onInfo }) {
   const toggle = (titel) => setOffen((s) => { const n = new Set(s); n.has(titel) ? n.delete(titel) : n.add(titel); return n })
   const schliessen = () => setAuf(false)
   const setAlle = (v) => { setAlleAnzeigen(v); try { localStorage.setItem(ALLE_KEY, v ? '1' : '0') } catch {} }
-  const onFav = (view) => { toggleFavorit(view); setTick((t) => t + 1) }
+  const onFav = (view) => { toggleFavorit(view, user); setTick((t) => t + 1) }
 
-  const favSet = new Set(ladeFavoriten())
+  const favSet = new Set(ladeFavoriten(user))
   const alleEintraege = gruppen.flatMap((g) => untergruppenVon(g).flatMap((u) => u.eintraege || []))
-  const favEintraege = ladeFavoriten().map((v) => alleEintraege.find((e) => e.view === v)).filter(Boolean)
+  const favEintraege = ladeFavoriten(user).map((v) => alleEintraege.find((e) => e.view === v)).filter(Boolean)
   const sichtbar = (e) => alleAnzeigen || rel(e)
 
   return (

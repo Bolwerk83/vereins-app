@@ -127,6 +127,110 @@ export function stufenweise(produkte = PRODUKTE, bereiche = BEREICHE, unternehme
   return { bereiche: bereicheErg, summeDB3, unternehmensfix: ufix, betriebsergebnis, umsatz }
 }
 
+// =========================================================================
+//  BREAK-EVEN / GEWINNSCHWELLE — interaktiv nach Warengruppe, Artikel und
+//  Kundensegment. Grundgleichung (Teilkostensicht):
+//     Erlös(x)        = Umsatz_Ist · x          (x = Auslastung/Absatzniveau)
+//     Gesamtkosten(x) = Fixkosten + varKosten_Ist · x
+//     Break-even bei  Erlös = Gesamtkosten  →  x* = Fixkosten / DB_Ist
+//     Break-even-Umsatz = Umsatz_Ist · x*  =  Fixkosten / DB-Quote
+//  Fixkosten werden dem gewählten Ausschnitt verursachungsnah zugeordnet
+//  (Produktfix direkt; Bereichs-/Unternehmensfix anteilig nach Umsatz).
+// =========================================================================
+
+// Kundensegmente (Vertriebskanäle) als zusätzliche Filterdimension. anteil =
+// Umsatzanteil; margenMod verschiebt die variable Quote leicht (z. B. Online
+// mehr Rabatt → etwas geringerer DB; B2B/Leasing dünnere Marge).
+export const KUNDENSEGMENTE = [
+  { id: 'fachhandel', name: 'Fachhandel',     anteil: 0.45, margenMod: 1.00 },
+  { id: 'online',     name: 'Online-Shop',    anteil: 0.30, margenMod: 1.05 },
+  { id: 'filiale',    name: 'Eigene Filialen', anteil: 0.18, margenMod: 0.96 },
+  { id: 'b2b',        name: 'B2B & Leasing',  anteil: 0.07, margenMod: 1.10 }
+]
+
+export const warengruppen = () => BEREICHE.map((b) => ({ id: b.id, name: b.name }))
+export const artikelListe = (bereich) => PRODUKTE.filter((p) => !bereich || bereich === '*' || p.bereich === bereich).map((p) => ({ id: p.id, name: p.name, bereich: p.bereich }))
+
+/**
+ * Break-Even für einen Ausschnitt.
+ * @param {object} scope { bereich, produkt, segment } (jeweils id oder '*'/leer = alle)
+ * @param {number} faktor Profit-Center-Anteil
+ */
+export function breakEven({ bereich = '*', produkt = '*', segment = '*' } = {}, faktor = 1) {
+  const istBereich = bereich && bereich !== '*'
+  const istProdukt = produkt && produkt !== '*'
+  const seg = segment && segment !== '*' ? KUNDENSEGMENTE.find((s) => s.id === segment) : null
+
+  // Produktauswahl
+  let prod = PRODUKTE
+  if (istProdukt) prod = PRODUKTE.filter((p) => p.id === produkt)
+  else if (istBereich) prod = PRODUKTE.filter((p) => p.bereich === bereich)
+
+  const gesamtUmsatz = PRODUKTE.reduce((n, p) => n + p.umsatz, 0)
+  const segAnteil = seg ? seg.anteil : 1
+  const segMod = seg ? seg.margenMod : 1
+
+  // Erlös / variable Kosten des Ausschnitts (Segment skaliert Umsatz; margenMod
+  // verschiebt die variable Quote).
+  let umsatz = 0, varKosten = 0, produktfix = 0, umsatzAnteilBasis = 0
+  for (const p of prod) {
+    const u = p.umsatz * faktor * segAnteil
+    const vk = p.varKosten * faktor * segAnteil * segMod
+    umsatz += u; varKosten += vk; produktfix += p.produktfix * faktor * segAnteil
+    umsatzAnteilBasis += p.umsatz
+  }
+  umsatz = r2(umsatz); varKosten = r2(varKosten); produktfix = r2(produktfix)
+
+  // Bereichsfix: voll, wenn ganzer Bereich; anteilig nach Umsatz, wenn einzelnes Produkt.
+  let bereichsfix = 0
+  const betroffeneBereiche = istProdukt
+    ? [PRODUKTE.find((p) => p.id === produkt)?.bereich].filter(Boolean)
+    : istBereich ? [bereich] : BEREICHE.map((b) => b.id)
+  for (const bId of betroffeneBereiche) {
+    const b = BEREICHE.find((x) => x.id === bId); if (!b) continue
+    if (istProdukt) {
+      const bUms = PRODUKTE.filter((p) => p.bereich === bId).reduce((n, p) => n + p.umsatz, 0)
+      const pUms = PRODUKTE.find((p) => p.id === produkt)?.umsatz || 0
+      bereichsfix += b.bereichsfix * (bUms ? pUms / bUms : 0)
+    } else bereichsfix += b.bereichsfix
+  }
+  bereichsfix = r2(bereichsfix * faktor * segAnteil)
+
+  // Unternehmensfix anteilig nach Umsatzanteil des Ausschnitts.
+  const umsatzAnteil = gesamtUmsatz ? umsatzAnteilBasis / gesamtUmsatz : 1
+  const unternehmensfix = r2(UNTERNEHMENSFIX * faktor * segAnteil * umsatzAnteil)
+
+  const fix = r2(produktfix + bereichsfix + unternehmensfix)
+  const db = r2(umsatz - varKosten)
+  const dbQuote = pct(db, umsatz)
+  const varQuote = pct(varKosten, umsatz)
+  // Break-even (Auslastung x* feiner gerundet, damit der Schnittpunkt exakt bleibt)
+  const beAuslastung = db > 0 ? Math.round(fix / db * 10000) / 10000 : null // x* (Anteil des Ist-Umsatzes)
+  const beUmsatz = beAuslastung != null ? r2(umsatz * beAuslastung) : null
+  const ergebnis = r2(db - fix)                                 // Betriebsergebnis des Ausschnitts
+  const sicherheit = beUmsatz != null && umsatz > 0 ? r2((umsatz - beUmsatz) / umsatz * 100) : null // Sicherheitsstrecke %
+
+  return {
+    umsatz, varKosten, db, dbQuote, varQuote,
+    fix, produktfix, bereichsfix, unternehmensfix,
+    beUmsatz, beAuslastung, ergebnis, sicherheit,
+    titel: istProdukt ? (PRODUKTE.find((p) => p.id === produkt)?.name)
+      : istBereich ? (BEREICHE.find((b) => b.id === bereich)?.name) : 'Gesamtunternehmen',
+    segmentName: seg ? seg.name : 'Alle Kanäle'
+  }
+}
+
+/** Stützpunkte für die Break-Even-Kurven (Erlös & Gesamtkosten über Auslastung). */
+export function breakEvenKurve(be, bisAuslastung = 1.4, schritte = 28) {
+  if (!be) return []
+  const punkte = []
+  for (let i = 0; i <= schritte; i++) {
+    const x = bisAuslastung * i / schritte
+    punkte.push({ x, erloes: r2(be.umsatz * x), kosten: r2(be.fix + be.varKosten * x) })
+  }
+  return punkte
+}
+
 // Typologie der Kostenrechnungssysteme (Abb. 2.12) — für Kontext/Lernen.
 export const SYSTEME = {
   vollkosten: {
