@@ -54,6 +54,7 @@ export const NAV_ZIELE = [
   { ziel: 'produktionsstatistik', gruppe: 'Operativ', schluessel: 'nav.produktionsstatistik' },
   { ziel: 'lzempfehlung', gruppe: 'Analyse', schluessel: 'nav.lzempfehlung' },
   { ziel: 'artikelkarte', gruppe: 'Analyse', schluessel: 'nav.artikelkarte' },
+  { ziel: 'detailanalyse', gruppe: 'Operativ', schluessel: 'nav.detailanalyse' },
   { ziel: 'auftrag', gruppe: 'Analyse', schluessel: 'nav.auftrag' },
   { ziel: 'anlagen', gruppe: 'Analyse', schluessel: 'nav.anlagen' },
   { ziel: 'lieferant', gruppe: 'Analyse', schluessel: 'nav.lieferant' },
@@ -131,7 +132,9 @@ export const VISUALS = [
   { name: 'Leasinggebühren nach Kategorie', ziel: 'leasing' },
   { name: 'Versand: Erlös ↔ Kosten je Klasse', ziel: 'versand' },
   { name: 'Forderungs-Aging', ziel: 'forderungen' },
-  { name: 'Marketing-Landkarte (Choropleth)', ziel: 'marketingkarte' }
+  { name: 'Marketing-Landkarte (Choropleth)', ziel: 'marketingkarte' },
+  { name: 'Trend & Deltas (operative Artikel-Zeitreihen)', ziel: 'detailanalyse' },
+  { name: 'Pivot: Kategorie/Erfasser × Umsatz/Menge', ziel: 'detailanalyse' }
 ]
 
 export function baueIndex(t = (k) => k, kpis = {}) {
