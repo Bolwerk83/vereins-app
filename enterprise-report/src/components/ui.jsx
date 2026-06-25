@@ -8,6 +8,7 @@ import { renderText, istVeraltet, ladeText, speichereText, loescheText, aktualis
 import { kpiAnzeige, statusVon, darfFreigeben, FREIGABE_STATUS, FREIGABE_LABEL, NICHT_VERFUEGBAR } from '../core/kpiFreigabe.js'
 import { useNav } from './NavContext.jsx'
 import { detailFuerBereich } from '../core/detailberichte.js'
+import { glossar } from '../core/kpiLaienGlossar.js'
 import { useKpiDef } from '../modules/kennzahlen/KpiDefContext.jsx'
 import { useFenster } from '../core/useFenster.js'
 import { ladeBookmarks, addBookmark, loescheBookmark, ladeLetzte, merkeLetzte } from '../core/bookmarks.js'
@@ -175,6 +176,19 @@ export function KpiDrillModal({ startId, werte = {}, onClose }) {
             {ins?.abwZielPct != null && <span style={{ fontSize: 12.5, fontWeight: 700, color: status === 'r' ? 'var(--amp-r)' : status === 'a' ? 'var(--amp-a)' : 'var(--amp-g)' }}>Budget-Abw. {ins.abwZielPct >= 0 ? '+' : ''}{ins.abwZielPct.toFixed(1)} %</span>}
           </div>
           <div style={{ marginTop: 8, fontSize: 11.5, color: 'var(--muted)' }}>{k.beschreibung}</div>
+
+          {/* Einfach erklärt — Definition + Beispiel für Nicht-Kaufleute */}
+          {(() => {
+            const g = glossar(id)
+            if (!g) return null
+            return (
+              <div style={{ marginTop: 10, padding: '10px 12px', borderRadius: 'var(--radius-sm)', background: 'var(--bg)', border: '1px solid var(--line)' }}>
+                <div className="mono" style={{ fontSize: 10, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 4 }}>💡 Einfach erklärt</div>
+                <div style={{ fontSize: 13 }}>{g.definition}</div>
+                {g.beispiel && <div style={{ fontSize: 12.5, color: 'var(--slate)', marginTop: 5 }}><b>Beispiel:</b> {g.beispiel}</div>}
+              </div>
+            )
+          })()}
 
           {/* Öffnen in … (von jeder Kennzahl in Themenbericht/Details/Struktur).
               Der Detail-Button nennt die konkrete Belegliste, damit transparent

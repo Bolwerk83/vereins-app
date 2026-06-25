@@ -521,7 +521,7 @@ export default function Quartalsbericht() {
       <AuftragSektion />
 
       <div style={{ fontSize: 11, color: 'var(--muted)', textAlign: 'center', padding: '6px 0 20px' }}>
-        Enterprise Report · {typName} · Demo-Daten (Mock). Bemerkungen werden lokal gespeichert.
+        Business Controlling Reports (BCR) · {typName} · Demo-Daten (Mock). Bemerkungen werden lokal gespeichert.
       </div>
     </div>
   )

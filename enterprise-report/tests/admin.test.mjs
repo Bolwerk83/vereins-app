@@ -6,7 +6,7 @@ import { ladeBranding, speichereBranding, themeById, THEMES, applyBranding, addC
 test('Default-Branding ohne gespeicherte Daten', () => {
   localStorage.removeItem('er_admin_branding')
   const b = ladeBranding()
-  assert.equal(b.appName, 'Enterprise Report')
+  assert.equal(b.appName, 'Business Controlling Reports (BCR)')
   assert.equal(b.themeId, 'standard')
   assert.equal(b.logoDataUrl, null)
 })

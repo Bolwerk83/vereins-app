@@ -48,7 +48,7 @@ export function loescheCustomTheme(id) {
 
 export const themeById = (id) => alleThemes().find((t) => t.id === id) || THEMES[0]
 
-const DEFAULT = { appName: 'Enterprise Report', logoDataUrl: null, themeId: 'standard' }
+const DEFAULT = { appName: 'Business Controlling Reports (BCR)', logoDataUrl: null, themeId: 'standard' }
 
 /** Branding laden (mit Defaults zusammengeführt, robust gegen kaputtes JSON). */
 export function ladeBranding() {

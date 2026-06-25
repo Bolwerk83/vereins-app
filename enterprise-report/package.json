@@ -1,9 +1,9 @@
 {
-  "name": "enterprise-report",
+  "name": "business-controlling-reports",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Metadaten-getriebenes Enterprise-Reporting (Berichtsbaum, 5 Ebenen, KPI-Logik, Rollen/Rechte, MSSQL)",
+  "description": "Business Controlling Reports (BCR) — metadaten-getriebenes Controlling-Reporting (Berichtsbaum, 5 Ebenen, KPI-Logik, Rollen/Rechte, MSSQL)",
   "scripts": {
     "setup": "node setup.mjs",
     "start:local": "node start.mjs",

@@ -425,7 +425,7 @@ export default function App() {
             ? <img src={branding.logoDataUrl} alt="Logo" style={{ width: 26, height: 26, borderRadius: 7, objectFit: 'contain' }} />
             : <div style={{ width: 26, height: 26, borderRadius: 7, background: 'var(--accent)' }} />}
           <div>
-            <div style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 7 }}>{branding.appName || 'Enterprise Report'}
+            <div style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 7 }}>{branding.appName || 'Business Controlling Reports (BCR)'}
               <span title={`Instanz: ${stageInfo(AKTUELLE_STAGE).name}`} style={{ fontSize: 10, fontWeight: 700, padding: '1px 7px', borderRadius: 999,
                 color: '#fff', background: stageInfo(AKTUELLE_STAGE).farbe }}>{stageInfo(AKTUELLE_STAGE).kurz}</span>
             </div>

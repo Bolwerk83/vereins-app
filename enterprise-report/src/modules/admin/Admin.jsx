@@ -86,7 +86,7 @@ export default function Admin({ istAdmin = false, onChange }) {
         <div style={card}>
           <div style={cap}>App-Name</div>
           <input value={b.appName} onChange={(e) => setB({ ...b, appName: e.target.value })}
-            onBlur={(e) => aktualisiere({ appName: e.target.value.trim() || 'Enterprise Report' })}
+            onBlur={(e) => aktualisiere({ appName: e.target.value.trim() || 'Business Controlling Reports (BCR)' })}
             style={{ width: '100%', padding: '9px 11px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', font: 'inherit', fontSize: 14 }} />
           <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 10 }}>Erscheint in der Topbar und im Browser-Tab.</div>
         </div>

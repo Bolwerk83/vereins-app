@@ -777,6 +777,70 @@ export const KPI = {
     beschreibung: 'F&E-Kosten in % vom Nettoumsatz. Abgeleitet.',
     sqlRef: null, abhaengig: ['fuekosten', 'nettoumsatz'],
     berechne: (v) => (v.fuekosten / v.nettoumsatz) * 100, security: null
+  },
+  // ---- Kapitalstruktur & Rendite (aus Buch-Katalog, rechenbar) ----------
+  fremdkapital: {
+    id: 'fremdkapital', name: 'Fremdkapital', einheit: 'eur_mio',
+    bereich: 'FIBU', ziel: null, richtung: 'tief_gut',
+    beschreibung: 'Schulden gesamt = Bilanzsumme − Eigenkapital. Abgeleitet.',
+    sqlRef: null, abhaengig: ['bilanzsumme', 'eigenkapital'],
+    berechne: (v) => v.bilanzsumme - v.eigenkapital, security: null
+  },
+  fremdkapitalquote: {
+    id: 'fremdkapitalquote', name: 'Fremdkapitalquote', einheit: 'percent',
+    bereich: 'FIBU', ziel: 60, richtung: 'tief_gut', warn: 0.97,
+    beschreibung: 'Fremdkapital in % der Bilanzsumme (Gegenstück zur Eigenkapitalquote). Abgeleitet.',
+    sqlRef: null, abhaengig: ['fremdkapital', 'bilanzsumme'],
+    berechne: (v) => (v.fremdkapital / v.bilanzsumme) * 100, security: null
+  },
+  verschuldungsgrad: {
+    id: 'verschuldungsgrad', name: 'Verschuldungsgrad', einheit: 'percent',
+    bereich: 'FIBU', ziel: 150, richtung: 'tief_gut', warn: 0.97,
+    beschreibung: 'Fremdkapital ÷ Eigenkapital (Leverage). Abgeleitet.',
+    sqlRef: null, abhaengig: ['fremdkapital', 'eigenkapital'],
+    berechne: (v) => (v.fremdkapital / v.eigenkapital) * 100, security: null
+  },
+  kapitalumschlag: {
+    id: 'kapitalumschlag', name: 'Kapitalumschlag', einheit: 'faktor',
+    bereich: 'FIN', ziel: 1.8, richtung: 'hoch_gut', warn: 0.9,
+    beschreibung: 'Nettoumsatz ÷ Bilanzsumme — wie oft das eingesetzte Kapital pro Jahr „umschlägt". Abgeleitet.',
+    sqlRef: null, abhaengig: ['nettoumsatz', 'bilanzsumme'],
+    berechne: (v) => v.nettoumsatz / v.bilanzsumme, security: null
+  },
+  umsatzrendite: {
+    id: 'umsatzrendite', name: 'Umsatzrendite (RoS)', einheit: 'percent',
+    bereich: 'FIN', ziel: 5, richtung: 'hoch_gut', warn: 0.9,
+    beschreibung: 'EBIT in % vom Nettoumsatz (Return on Sales). Abgeleitet.',
+    sqlRef: null, abhaengig: ['ebit', 'nettoumsatz'],
+    berechne: (v) => (v.ebit / v.nettoumsatz) * 100, security: null
+  },
+  ebitdaMarge: {
+    id: 'ebitdaMarge', name: 'EBITDA-Marge', einheit: 'percent',
+    bereich: 'FIN', ziel: 7, richtung: 'hoch_gut', warn: 0.9,
+    beschreibung: 'EBITDA in % vom Nettoumsatz (operative Marge vor Abschreibungen). Abgeleitet.',
+    sqlRef: null, abhaengig: ['ebitda', 'nettoumsatz'],
+    berechne: (v) => (v.ebitda / v.nettoumsatz) * 100, security: null
+  },
+  nopat: {
+    id: 'nopat', name: 'NOPAT', einheit: 'eur_mio',
+    bereich: 'FIN', ziel: null, richtung: 'hoch_gut',
+    beschreibung: 'Operativer Gewinn nach Steuern = EBIT × (1 − Steuersatz 30 %). Basis für ROCE/EVA. Abgeleitet.',
+    sqlRef: null, abhaengig: ['ebit'],
+    berechne: (v) => v.ebit * (1 - 0.30), security: null
+  },
+  investitionsquote: {
+    id: 'investitionsquote', name: 'Investitionsquote', einheit: 'percent',
+    bereich: 'LIQ', ziel: 5, richtung: 'hoch_gut', warn: 0.9,
+    beschreibung: 'Investitionen in % vom Nettoumsatz — wie viel ins Anlagevermögen reinvestiert wird. Abgeleitet.',
+    sqlRef: null, abhaengig: ['investitionsvolumen', 'nettoumsatz'],
+    berechne: (v) => (v.investitionsvolumen / v.nettoumsatz) * 100, security: null
+  },
+  gmroi: {
+    id: 'gmroi', name: 'GMROI', einheit: 'faktor',
+    bereich: 'SCC', ziel: 1.5, richtung: 'hoch_gut', warn: 0.9,
+    beschreibung: 'Bruttoertrag (Nettoumsatz − Wareneinsatz) ÷ Lagerbestand — Marge je Euro Lager. Abgeleitet.',
+    sqlRef: null, abhaengig: ['nettoumsatz', 'wareneinsatz', 'lagerbestand'],
+    berechne: (v) => (v.nettoumsatz - v.wareneinsatz) / v.lagerbestand, security: null
   }
 }
 
