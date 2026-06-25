@@ -4,6 +4,7 @@
 // =========================================================================
 import React, { useState } from 'react'
 import { auswertung, auswertungNach, centerTypInfo, CENTER_TYPEN, DIMENSIONEN } from '../../core/profitcenter.js'
+import Hierarchiebaum from './Hierarchiebaum.jsx'
 
 const card = { background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)' }
 const cap = { fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.03em', fontWeight: 700 }
@@ -12,6 +13,7 @@ const th = (al) => ({ textAlign: al, padding: '6px 9px', borderBottom: '1px soli
 const td = (al, bold) => ({ textAlign: al, padding: '6px 9px', borderBottom: '1px solid var(--line)', fontWeight: bold ? 700 : 400 })
 
 export default function Profitcenter({ onGeh }) {
+  const [tab, setTab] = useState('baum') // 'baum' | 'analyse'
   const [dim, setDim] = useState('geschaeftsbereich')
   const a = auswertungNach(dim)
   const maxAbs = Math.max(...a.rows.map((r) => Math.abs(r.ergebnis)), 1)
@@ -23,13 +25,21 @@ export default function Profitcenter({ onGeh }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
         <div>
           <h2 style={{ margin: '0 0 4px' }}>Profitcenter-Ergebnisrechnung</h2>
-          <div style={{ color: 'var(--muted)', fontSize: 13, maxWidth: 720 }}>
-            Ergebnis je Verantwortungsbereich und sein Beitrag zum Gesamtergebnis. Investment Center zusätzlich mit ROCE.
+          <div style={{ color: 'var(--muted)', fontSize: 13, maxWidth: 760 }}>
+            Vollständiger Hierarchiebaum (8 Ebenen: Konzern → Geschäftsbereich → Region → Funktion → Kostenstelle → Kostenart → Einzelposten → Beleg) mit exaktem Roll-up — oder die klassische Ergebnisanalyse je Center inkl. ROCE.
           </div>
         </div>
         {onGeh && <button onClick={() => onGeh('kostenstellen')} style={{ ...card, padding: '7px 12px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>Kostenstellen →</button>}
       </div>
 
+      <div style={{ display: 'flex', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', overflow: 'hidden', width: 'fit-content', marginBottom: 14 }}>
+        {[['baum', '🌳 Hierarchiebaum (8 Ebenen)'], ['analyse', '📊 Ergebnisanalyse']].map(([id, lbl]) => (
+          <button key={id} onClick={() => setTab(id)} style={{ padding: '7px 15px', border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer', background: tab === id ? 'var(--accent)' : 'var(--panel)', color: tab === id ? '#fff' : 'var(--muted)' }}>{lbl}</button>
+        ))}
+      </div>
+
+      {tab === 'baum' && <Hierarchiebaum />}
+      {tab === 'analyse' && <>
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
         <div style={{ ...card, padding: '12px 14px', flex: 1, minWidth: 160 }}><div style={cap}>Gesamtergebnis</div><div style={{ fontSize: 22, fontWeight: 700, color: a.gesamt >= 0 ? 'var(--amp-g)' : 'var(--amp-r)' }}>{m(a.gesamt)} Mio €</div></div>
         <div style={{ ...card, padding: '12px 14px', flex: 1, minWidth: 160 }}><div style={cap}>Umsatz gesamt</div><div style={{ fontSize: 22, fontWeight: 700 }}>{m(a.umsatz)} Mio €</div></div>
@@ -77,6 +87,7 @@ export default function Profitcenter({ onGeh }) {
           Ergebnis = Umsatz − variable Kosten − zurechenbare Fixkosten. Cost Center (Zentrale) liefert keinen Umsatz und mindert das Ergebnis. ROCE = Ergebnis ÷ gebundenes Kapital (nur Investment Center).
         </div>
       </div>
+      </>}
     </div>
   )
 }
