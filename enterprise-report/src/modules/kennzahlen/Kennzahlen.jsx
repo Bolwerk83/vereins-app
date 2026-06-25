@@ -8,7 +8,7 @@ import { KPI } from '../../core/kpiRegistry.js'
 import { darfKpi } from '../../core/rbac.js'
 import { istAdmin } from '../../core/gruppen.js'
 import { formatWert } from '../../design/theme.js'
-import { FreigabeChip } from '../../components/ui.jsx'
+import { FreigabeChip, StatusChip } from '../../components/ui.jsx'
 import { kpiAnzeige, statusVon, darfFreigeben, NICHT_VERFUEGBAR } from '../../core/kpiFreigabe.js'
 import { useKpiDef } from './KpiDefContext.jsx'
 import { EINHEITEN, RICHTUNGEN, setKpiOverride, resetKpiOverride, istUeberschrieben, kpiFelder } from '../../core/kpiOverrides.js'
@@ -124,8 +124,13 @@ export default function Kennzahlen({ rolle, werte = {} }) {
                       {darfSteuern && def && <FreigabeChip kpiId={k.id} def={def} />}
                       {darfEditieren && <button onClick={() => editId === k.id ? setEditId(null) : starteEdit(k.id)} title="Definition bearbeiten"
                         style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 14 }}>✎</button>}
-                      <div className="mono" style={{ fontSize: 13, fontWeight: 600, minWidth: 140, textAlign: 'right', color: az.modus === 'nichtVerfuegbar' ? 'var(--muted)' : undefined }}>
-                        {az.modus === 'nichtVerfuegbar' ? NICHT_VERFUEGBAR : darf ? formatWert(werte[k.id], k.einheit) : '🔒'}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'flex-end', minWidth: 250 }}>
+                        {darf && az.modus !== 'nichtVerfuegbar' && k.ziel != null && werte[k.id] != null &&
+                          <StatusChip status={ampelStatus({ wert: werte[k.id], ziel: k.ziel, richtung: k.richtung, warn: k.warn })} size="s" />}
+                        <div className="mono" style={{ fontSize: 13, fontWeight: 600, minWidth: 110, textAlign: 'right', color: az.modus === 'nichtVerfuegbar' ? 'var(--muted)' : undefined }}>
+                          {az.modus === 'nichtVerfuegbar' ? NICHT_VERFUEGBAR : darf ? formatWert(werte[k.id], k.einheit) : '🔒'}
+                          {darf && az.modus !== 'nichtVerfuegbar' && k.ziel != null && <div style={{ fontSize: 10.5, color: 'var(--muted)', fontWeight: 500 }}>Ziel {formatWert(k.ziel, k.einheit)}</div>}
+                        </div>
                       </div>
                     </div>
                     {editId === k.id && form && (

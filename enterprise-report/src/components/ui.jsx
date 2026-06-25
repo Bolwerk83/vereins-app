@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { KPI } from '../core/kpiRegistry.js'
 import { ampelStatus, trendAusHistorie } from '../core/ampel.js'
-import { AMPEL_FARBE, AMPEL_SOFT, AMPEL_LABEL, formatWert, TREND_ICON, kpiSymbol } from '../design/theme.js'
+import { AMPEL_FARBE, AMPEL_SOFT, AMPEL_LABEL, AMPEL_SYMBOL, formatWert, TREND_ICON, kpiSymbol } from '../design/theme.js'
 import { kpiInsight } from '../core/insights.js'
 import { renderText, istVeraltet, ladeText, speichereText, loescheText, aktualisiereSnapshot, VORLAGEN, kiVorschlaege } from '../core/textbausteine.js'
 import { kpiAnzeige, statusVon, darfFreigeben, FREIGABE_STATUS, FREIGABE_LABEL, NICHT_VERFUEGBAR } from '../core/kpiFreigabe.js'
@@ -11,9 +11,33 @@ import { useKpiDef } from '../modules/kennzahlen/KpiDefContext.jsx'
 import { useFenster } from '../core/useFenster.js'
 import { ladeBookmarks, addBookmark, loescheBookmark, ladeLetzte, merkeLetzte } from '../core/bookmarks.js'
 
-export function AmpelPunkt({ status, size = 10 }) {
-  return <span style={{ display: 'inline-block', width: size, height: size, borderRadius: '50%',
-    background: AMPEL_FARBE[status] || AMPEL_FARBE.n }} />
+// Ampelpunkt mit Statussymbol (✓/!/✕) — auch ohne Farbe erkennbar.
+// mitText=true zeigt zusätzlich den Klartext ("Im Ziel" …).
+export function AmpelPunkt({ status, size = 14, mitText = false }) {
+  const s = status || 'n'
+  const dot = (
+    <span role="img" aria-label={AMPEL_LABEL[s]} title={AMPEL_LABEL[s]}
+      style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flex: 'none',
+        width: size, height: size, borderRadius: '50%', background: AMPEL_FARBE[s] || AMPEL_FARBE.n,
+        color: '#fff', fontSize: Math.round(size * 0.7), fontWeight: 800, lineHeight: 1 }}>{AMPEL_SYMBOL[s]}</span>
+  )
+  if (!mitText) return dot
+  return <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>{dot}
+    <span style={{ fontSize: 11.5, fontWeight: 700, color: AMPEL_FARBE[s] }}>{AMPEL_LABEL[s]}</span></span>
+}
+
+// Status-Chip: Symbol + Klartext + Farbfläche — die unmissverständliche „ok / nicht ok"-Anzeige.
+export function StatusChip({ status, size = 'm' }) {
+  const s = status || 'n'
+  const klein = size === 's'
+  return (
+    <span role="img" aria-label={AMPEL_LABEL[s]} style={{ display: 'inline-flex', alignItems: 'center', gap: 5,
+      padding: klein ? '1px 7px' : '2px 9px', borderRadius: 999, fontSize: klein ? 10.5 : 11.5, fontWeight: 700,
+      color: AMPEL_FARBE[s], background: AMPEL_SOFT[s], border: `1px solid ${AMPEL_FARBE[s]}` }}>
+      <span aria-hidden="true" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 14, height: 14, borderRadius: '50%', background: AMPEL_FARBE[s], color: '#fff', fontSize: 10, fontWeight: 800, lineHeight: 1 }}>{AMPEL_SYMBOL[s]}</span>
+      {AMPEL_LABEL[s]}
+    </span>
+  )
 }
 
 export function Badge({ children, status = 'n' }) {
@@ -71,6 +95,7 @@ export function KpiCard({ kpiId, wert, historie, onClick, alleWerte }) {
       <div className="mono" style={{ fontSize: 24, fontWeight: 600, marginTop: 6 }}>
         {sym && <span style={{ color: 'var(--muted)', fontWeight: 500, marginRight: 5 }}>{sym}</span>}{formatWert(wert, k.einheit)}
       </div>
+      {!entwurf && k.ziel != null && <div style={{ marginTop: 6 }}><StatusChip status={status} size="s" /></div>}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
         <span style={{ fontSize: 11, color: 'var(--muted)' }}>{k.ziel != null ? `Ziel ${sym ? sym + ' ' : ''}${formatWert(k.ziel, k.einheit)}` : '—'}</span>
         {t && t.deltaPct != null && <span className="mono" style={{ fontSize: 11, color: t.istGut ? 'var(--amp-g)' : 'var(--amp-r)' }}>
