@@ -15,7 +15,7 @@ export const VIEW_BEREICH = {
   marketing: 'MKT', marketingkarte: 'MKT', marktpotenzial: 'MKT', verkaufsstatistik: 'VK', fahrradstatistik: 'VK', einkaufsstatistik: 'EK', produktionsstatistik: 'PR', google: 'MKT', gutschriften: 'VC', vertriebkpi: 'VK', prozesskette: 'VK', events: 'MKT', bestand: 'SCC', bestandsentwicklung: 'SCC', lager: 'LOG', wms: 'LOG', produktion: 'PR', lieferant: 'EK', auftrag: 'VK', versand: 'LOG', forderungen: 'RIS',
   // Analyse & Steuerung
   bi: null, planung: 'FIN', szenario: 'FIN', abgleichabsatz: 'VC', abweichung: 'FIN', vergleich: null, portfoliobcg: null, qc: null, abstimmung: 'FIN',
-  lebenszyklus: 'VK', lzempfehlung: 'VK', anlagen: 'LIQ', technologie: 'FE', mitarbeiter: 'PC',
+  lebenszyklus: 'VK', lzempfehlung: 'VK', artikelkarte: 'VK', anlagen: 'LIQ', technologie: 'FE', mitarbeiter: 'PC',
   massnahmen: null, instrumente: null, alerts: null, zeit: null,
   // Lernen & Wissen – übergreifend
   lernpfad: null, doku: null, datenquellen: null, controlling: null, klrablauf: null, ablaufdiagramm: null, datenarchitektur: null,
