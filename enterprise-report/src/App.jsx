@@ -526,7 +526,7 @@ export default function App() {
       }}>
       <main style={{ padding: '22px 24px', maxWidth: 1800, margin: '0 auto' }}>
         {onbBanner && ansicht !== 'wizard' && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 14, padding: '10px 14px',
+          <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 14, padding: '10px 14px',
             background: 'var(--accent-soft)', border: '1px solid var(--accent)', borderRadius: 'var(--radius)' }}>
             <span style={{ fontSize: 20 }}>🚀</span>
             <span style={{ flex: 1, minWidth: 200, fontSize: 13.5, color: 'var(--ink)' }}>

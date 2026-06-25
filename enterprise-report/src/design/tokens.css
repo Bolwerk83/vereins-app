@@ -143,4 +143,26 @@ select:focus, input:focus, textarea:focus {
   .no-print { display: none !important; }
   main { padding: 0 !important; max-width: 100% !important; }
   @page { margin: 14mm; }
+
+  /* Saubere Seitenübergänge ------------------------------------------------ */
+  /* Ampelfarben/Status-Chips & farbige Flächen wirklich drucken (Browser
+     unterdrücken Hintergründe sonst). */
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  /* Karten/Panels (Signatur: box-shadow) nicht über den Seitenrand
+     durchschneiden; Schatten im Druck weglassen. */
+  [style*="box-shadow"] { break-inside: avoid; page-break-inside: avoid; box-shadow: none !important; }
+
+  /* Tabellen: Kopf (und Fuß) auf jeder Seite wiederholen, Zeilen/Bilder/
+     Diagramme nicht mitten splitten. */
+  thead { display: table-header-group; }
+  tfoot { display: table-footer-group; }
+  tr, img, svg { break-inside: avoid; page-break-inside: avoid; }
+
+  /* Überschriften nicht allein am Seitenende stehen lassen. */
+  h1, h2, h3, h4 { break-after: avoid-page; page-break-after: avoid; }
+
+  /* Opt-in-Hilfsklassen für Berichte: erzwungener Umbruch / Block-Zusammenhalt. */
+  .print-page-break { break-before: page; page-break-before: always; }
+  .print-keep { break-inside: avoid; page-break-inside: avoid; }
 }
