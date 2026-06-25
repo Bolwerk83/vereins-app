@@ -85,6 +85,7 @@ import { trackOeffnung } from './core/nutzung.js'
 import { nutzerId } from './core/identitaet.js'
 import { heartbeat } from './core/praesenz.js'
 import { darfBereich } from './core/rbac.js'
+import { hatFreigabeFuerName } from './core/berichtRechte.js'
 import { istSichtbar as berichtSichtbar, statusVon as berichtStatusVon } from './core/berichtStatus.js'
 import Berichtfreigabe from './modules/berichtfreigabe/Berichtfreigabe.jsx'
 import DatenmodellAdmin from './modules/datenmodell/DatenmodellAdmin.jsx'
@@ -255,7 +256,10 @@ export default function App() {
     // Status-Sichtbarkeit (Admin sieht alles, mit Kennzeichnung).
     const versteckt = !adminAktiv && !berichtSichtbar(view, { admin: false, uid })
     const marker = adminAktiv && status === 'test' ? '  🧪' : adminAktiv && status === 'deaktiviert' ? '  ⏸' : ''
-    return { label: t(key) + marker, icon, view, bereich, relevant: darfBereich(rolle, bereich), versteckt, aktiv: ansicht === view, onClick: () => geh(view), ...extra }
+    // Sichtbar, wenn die Rolle den Bereich darf ODER der Bericht/Ordner für die
+    // Rolle bzw. den angemeldeten Kollegen zusätzlich freigegeben ist.
+    const relevant = darfBereich(rolle, bereich) || hatFreigabeFuerName(rolle?.id, anmeldung?.name, view)
+    return { label: t(key) + marker, icon, view, bereich, relevant, versteckt, aktiv: ansicht === view, onClick: () => geh(view), ...extra }
   }
   // Mehrstufige Navigation: Gruppe → Untergruppe (Bereich) → Eintrag.
   const menuGruppen = [
