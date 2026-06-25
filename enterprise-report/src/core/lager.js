@@ -120,7 +120,11 @@ export function optimierung(artikel = ARTIKEL) {
     const tagesbedarf = a.jahresbedarf / LAGERTAGE
     const sicherheitsbestand = r0(tagesbedarf * a.sicherheitstage)
     const meldebestand = r0(tagesbedarf * a.wbzTage + sicherheitsbestand)
-    const hoechstbestand = sicherheitsbestand + eoqMenge
+    // Höchstbestand = Bestellpunkt + Losgröße (Order-up-to S = s + Q). Das hält
+    // den Korridor [Meldebestand, Höchstbestand] auch dann gültig, wenn die
+    // Laufzeit-Nachfrage (tagesbedarf·wbzTage) die Losgröße übersteigt — sonst
+    // läge der Meldebestand über dem Höchstbestand und „Korridor" wäre nie erreichbar.
+    const hoechstbestand = meldebestand + eoqMenge
     const oBestandMenge = sicherheitsbestand + eoqMenge / 2
     const oBestandWert = r0(oBestandMenge * a.einstandspreis)
     const bestellungenProJahr = eoqMenge ? r1(a.jahresbedarf / eoqMenge) : 0

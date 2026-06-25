@@ -46,6 +46,18 @@ Stand: laufend.
       Standort, „meintest du A oder B?") mit anklickbaren Antwortoptionen.
 - [ ] Optionaler **Backend-Sync** des Assistent-Logs (anonymisierbar) für Team-weite Auswertung.
 
+## 🐞 Bug-Jagd (6 Agenten, verifiziert)
+- [x] **lager.js**: Meldebestand > Höchstbestand → Korridor-Status unerreichbar.
+      Behoben: Höchstbestand = Meldebestand + Losgröße (Order-up-to S=s+Q). ✅
+- [ ] **Tastatur-Reordering** in SpaltenDesigner/ReportDesigner: `key={index}` lässt
+      den Fokus beim Index statt beim verschobenen Element → ↑/↓ bewegt danach das
+      falsche Element. Saubere Behebung braucht stabile Spalten-/Block-IDs im
+      Datenmodell (Layout-Persistenz anpassen) — bewusst zurückgestellt.
+- [ ] Kosmetik: `Kennzahlen.jsx` No-op `def?.freigabeTick`; `key={index}` auf
+      einigen sortierten Listen (heute folgenlos, controlled Inputs).
+- Hinweis: Die übrigen ~20 Agenten-Funde waren im aktuellen Code bereits behoben
+  (Stand vor dem rebasten Remote-Commit) — verifiziert, keine Änderung nötig.
+
 ## 🔜 Offen / geplant (priorisiert)
 - [x] **Kostenträgerrechnung / Kalkulation** — Division, Äquivalenzziffern, Zuschlag; Selbstkosten + Produktergebnis ✅
 - [x] **Maschinenstundensatz & Kuppelkalkulation** (Tabs in der Kalkulation, getestet) ✅

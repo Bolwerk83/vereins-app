@@ -33,7 +33,8 @@ test('Standort-Auswertung: Auslastung und Kosten/m²', () => {
 test('Optimierung: Meldebestand ≥ Sicherheitsbestand, Höchst = Sicherheit + EOQ', () => {
   for (const r of optimierung().rows) {
     assert.ok(r.meldebestand >= r.sicherheitsbestand)
-    assert.equal(r.hoechstbestand, r.sicherheitsbestand + r.eoqMenge)
+    assert.equal(r.hoechstbestand, r.meldebestand + r.eoqMenge)
+    assert.ok(r.hoechstbestand >= r.meldebestand) // Korridor nie invertiert
     assert.equal(r.gesamtkostenJahr, r.bestellkostenJahr + r.lagerkostenJahr)
   }
 })
