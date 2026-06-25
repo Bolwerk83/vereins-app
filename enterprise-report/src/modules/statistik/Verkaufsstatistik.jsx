@@ -1,9 +1,10 @@
 // =========================================================================
 //  VERKAUFSSTATISTIK — schneller Verkaufsüberblick: KPI-Band, Umsatz nach
-//  Warengruppe (mit VJ & DB), Top-Artikel, Vertriebskanal, Monatsverlauf.
+//  wählbarer Dimension (Warengruppe / Kanal / Artikel), Top-Artikel,
+//  Vertriebskanal, Monatsverlauf.
 // =========================================================================
 import React, { useState } from 'react'
-import { warengruppen, topArtikel, verlauf, kennzahlen } from '../../core/verkaufsstatistik.js'
+import { warengruppen, topArtikel, verlauf, kennzahlen, kanaele } from '../../core/verkaufsstatistik.js'
 import { monateVon, faktor, pcFaktor, datumsartInfo, filterLabel, pcBaum } from '../../core/statistikFilter.js'
 import StatistikFilter, { ladeFilter, speichereFilter } from './StatistikFilter.jsx'
 import { useGlobalFilter } from '../../core/filterKontext.jsx'
@@ -22,33 +23,74 @@ const stk = (n) => Math.round(n).toLocaleString('de-DE')
 const Wachs = ({ v }) => <span style={{ color: v >= 0 ? 'var(--amp-g)' : 'var(--amp-r)', fontWeight: 600 }}>{v >= 0 ? '▲' : '▼'} {Math.abs(v)} %</span>
 const mioKurz = (n) => (n / 1e6).toLocaleString('de-DE', { maximumFractionDigits: 1 })
 
+const DIMS = [
+  { key: 'warengruppe', name: 'Warengruppe' },
+  { key: 'kanal', name: 'Kanal' },
+  { key: 'artikel', name: 'Artikel' },
+]
+
+function DimChips({ aktiv, onChange }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <span style={{ fontSize: 11, color: 'var(--muted)' }}>Dimension:</span>
+      {DIMS.map((d) => (
+        <button key={d.key} onClick={() => onChange(d.key)} style={{
+          fontSize: 12, padding: '4px 10px', borderRadius: 999, cursor: 'pointer', fontWeight: 600,
+          border: `1px solid ${aktiv === d.key ? 'var(--accent)' : 'var(--line)'}`,
+          background: aktiv === d.key ? 'var(--accent-soft)' : 'var(--panel)',
+          color: aktiv === d.key ? 'var(--accent)' : 'var(--muted)'
+        }}>{d.name}</button>
+      ))}
+    </div>
+  )
+}
+
 export default function Verkaufsstatistik() {
   const g = useGlobalFilter()
   const [datumsart, setDatumsart] = useState(() => ladeFilter('verkauf', 'beleg').datumsart)
+  const [dim, setDim] = useState('warengruppe')
   const setD = (d) => { setDatumsart(d); speichereFilter('verkauf', { datumsart: d }) }
   const f = { zeitraum: g.zeitraum, pc: g.pc, datumsart }
   const dat = datumsartInfo('verkauf', datumsart)
   const fk = faktor(f.zeitraum, f.pc, dat)
   const vlFaktor = pcFaktor(f.pc) * dat.mag
-  const k = kennzahlen(fk); const wg = warengruppen(fk); const art = topArtikel(7, fk); const vl = verlauf(monateVon(f.zeitraum), vlFaktor)
-  // Exec-Kopf: Lage aus Wachstum, Empfehlung aus stärkster/schwächster Warengruppe.
+  const k = kennzahlen(fk)
+  const wg = warengruppen(fk)
+  const art = topArtikel(20, fk)
+  const kan = kanaele(fk)
+  const vl = verlauf(monateVon(f.zeitraum), vlFaktor)
+
+  const dimName = DIMS.find((d) => d.key === dim)?.name || 'Warengruppe'
+
+  // Exec-Kopf
   const wgNachWachstum = [...wg].sort((a, b) => b.wachstumPct - a.wachstumPct)
   const stark = wgNachWachstum[0], schwach = wgNachWachstum[wgNachWachstum.length - 1]
   const execStatus = ampelVon(k.wachstumPct, { gut: 3, schlecht: 0 })
-  const execAussage = `Umsatz ${mio(k.umsatz)} bei ${k.wachstumPct >= 0 ? '+' : ''}${k.wachstumPct} % zum Vorjahr · DB-Marge ${k.dbProzent} % · Online-Anteil ${k.onlineAnteilPct} %.`
+  const execAussage = `Umsatz ${mio(k.umsatz)} bei ${k.wachstumPct >= 0 ? '+' : ''}${k.wachstumPct} % zum Vorjahr · DB-Marge ${k.dbProzent} % · Online-Anteil ${k.onlineAnteilPct} %.`
   const execEmpf = stark && schwach && stark !== schwach
-    ? `${stark.name} wächst am stärksten (▲ ${stark.wachstumPct} %); ${schwach.name} ${schwach.wachstumPct < 0 ? `verliert (▼ ${Math.abs(schwach.wachstumPct)} %)` : `wächst nur ${schwach.wachstumPct} %`} — Sortiment und Aktionen dort prüfen.`
+    ? `${stark.name} wächst am stärksten (▲ ${stark.wachstumPct} %); ${schwach.name} ${schwach.wachstumPct < 0 ? `verliert (▼ ${Math.abs(schwach.wachstumPct)} %)` : `wächst nur ${schwach.wachstumPct} %`} — Sortiment und Aktionen dort prüfen.`
     : 'Wachstumstreiber je Warengruppe in der Tabelle prüfen.'
+
+  // Export-Daten je Dimension
+  const exportRows = dim === 'kanal'
+    ? [['Kanal', 'Umsatz (€)', 'Anteil %', 'Aufträge', 'Ø Bon (€)', 'vs VJ %'],
+        ...kan.map((c) => [c.name, Math.round(c.umsatz), c.anteilPct, c.auftraege, c.avgBon, c.wachstumPct])]
+    : dim === 'artikel'
+    ? [['Artikel', 'Warengruppe', 'Umsatz (€)', 'Menge', 'Ø Preis (€)', 'DB %'],
+        ...art.map((a) => [a.name, a.gruppe, Math.round(a.umsatz), a.menge, a.avgPreis, a.dbProzent])]
+    : [['Warengruppe', 'Umsatz (€)', 'Anteil %', 'Menge', 'Ø Preis (€)', 'vs VJ %', 'DB %'],
+        ...wg.map((w) => [w.name, Math.round(w.umsatz), w.anteilPct, w.menge, w.avgPreis, w.wachstumPct, w.dbProzent])]
+
   return (
     <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
         <div>
-          <div style={cap}>Vertrieb · Schneller Verkaufsüberblick</div>
+          <div style={cap}>Vertrieb · Schneller Verkaufsrüberblick</div>
           <h2 style={{ margin: '4px 0 0' }}>Verkaufsstatistik</h2>
           <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 2 }}>📅 {datenstandText()} · 🗓 Periode nach <b>{dat.name}</b> · {filterLabel(f.zeitraum, f.pc)} · vs. Vorjahr</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <ExportButton filename="Verkaufsstatistik" rows={[['Warengruppe', 'Umsatz (€)', 'Anteil %', 'Menge', 'Ø Preis (€)', 'vs VJ %', 'DB %'], ...wg.map((w) => [w.name, Math.round(w.umsatz), w.anteilPct, w.menge, w.avgPreis, w.wachstumPct, w.dbProzent])]} />
+          <ExportButton filename="Verkaufsstatistik" rows={exportRows} />
           <button className="no-print" onClick={() => window.print()} style={{ padding: '7px 13px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: 'var(--panel)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>🖨 Drucken / PDF</button>
         </div>
       </div>
@@ -71,26 +113,85 @@ export default function Verkaufsstatistik() {
       </div>
 
       <div style={{ ...card, overflow: 'hidden', marginBottom: 14 }}>
-        <div style={{ ...cap, padding: '12px 14px 0' }}>Umsatz nach Warengruppe</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, padding: '12px 14px 0' }}>
+          <div style={cap}>Umsatz nach {dimName}</div>
+          <DimChips aktiv={dim} onChange={setDim} />
+        </div>
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead><tr style={{ borderBottom: '1px solid var(--line)' }}>
-              <th style={{ ...th, textAlign: 'left' }}>Warengruppe</th><th style={{ ...th, textAlign: 'right' }}>Umsatz</th><th style={{ ...th, textAlign: 'right' }}>Anteil</th><th style={{ ...th, textAlign: 'right' }}>Menge</th><th style={{ ...th, textAlign: 'right' }}>Ø Preis</th><th style={{ ...th, textAlign: 'right' }}>vs. VJ</th><th style={{ ...th, textAlign: 'right' }}>DB %</th>
-            </tr></thead>
-            <tbody>
-              {wg.map((w) => (
-                <tr key={w.id} style={{ borderBottom: '1px solid var(--line)' }}>
-                  <td style={{ ...td, fontWeight: 600 }}>{w.name}</td>
-                  <td style={{ ...td, textAlign: 'right' }} className="mono">{mio(w.umsatz)}</td>
-                  <td style={{ ...td, textAlign: 'right' }}><AnteilZelle pct={w.anteilPct} /></td>
-                  <td style={{ ...td, textAlign: 'right' }} className="mono">{stk(w.menge)}</td>
-                  <td style={{ ...td, textAlign: 'right' }} className="mono">{eur(w.avgPreis)}</td>
-                  <td style={{ ...td, textAlign: 'right' }}><Wachs v={w.wachstumPct} /></td>
-                  <td style={{ ...td, textAlign: 'right' }} className="mono">{w.dbProzent} %</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {dim === 'warengruppe' && (
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead><tr style={{ borderBottom: '1px solid var(--line)' }}>
+                <th style={{ ...th, textAlign: 'left' }}>Warengruppe</th>
+                <th style={{ ...th, textAlign: 'right' }}>Umsatz</th>
+                <th style={{ ...th, textAlign: 'right' }}>Anteil</th>
+                <th style={{ ...th, textAlign: 'right' }}>Menge</th>
+                <th style={{ ...th, textAlign: 'right' }}>Ø Preis</th>
+                <th style={{ ...th, textAlign: 'right' }}>vs. VJ</th>
+                <th style={{ ...th, textAlign: 'right' }}>DB %</th>
+              </tr></thead>
+              <tbody>
+                {wg.map((w) => (
+                  <tr key={w.id} style={{ borderBottom: '1px solid var(--line)' }}>
+                    <td style={{ ...td, fontWeight: 600 }}>{w.name}</td>
+                    <td style={{ ...td, textAlign: 'right' }} className="mono">{mio(w.umsatz)}</td>
+                    <td style={{ ...td, textAlign: 'right' }}><AnteilZelle pct={w.anteilPct} /></td>
+                    <td style={{ ...td, textAlign: 'right' }} className="mono">{stk(w.menge)}</td>
+                    <td style={{ ...td, textAlign: 'right' }} className="mono">{eur(w.avgPreis)}</td>
+                    <td style={{ ...td, textAlign: 'right' }}><Wachs v={w.wachstumPct} /></td>
+                    <td style={{ ...td, textAlign: 'right' }} className="mono">{w.dbProzent} %</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          {dim === 'kanal' && (
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead><tr style={{ borderBottom: '1px solid var(--line)' }}>
+                <th style={{ ...th, textAlign: 'left' }}>Kanal</th>
+                <th style={{ ...th, textAlign: 'right' }}>Umsatz</th>
+                <th style={{ ...th, textAlign: 'right' }}>Anteil</th>
+                <th style={{ ...th, textAlign: 'right' }}>Aufträge</th>
+                <th style={{ ...th, textAlign: 'right' }}>Ø Bon</th>
+                <th style={{ ...th, textAlign: 'right' }}>vs. VJ</th>
+              </tr></thead>
+              <tbody>
+                {kan.map((c) => (
+                  <tr key={c.id} style={{ borderBottom: '1px solid var(--line)' }}>
+                    <td style={{ ...td, fontWeight: 600 }}>{c.name}</td>
+                    <td style={{ ...td, textAlign: 'right' }} className="mono">{mio(c.umsatz)}</td>
+                    <td style={{ ...td, textAlign: 'right' }}><AnteilZelle pct={c.anteilPct} /></td>
+                    <td style={{ ...td, textAlign: 'right' }} className="mono">{stk(c.auftraege)}</td>
+                    <td style={{ ...td, textAlign: 'right' }} className="mono">{eur(c.avgBon)}</td>
+                    <td style={{ ...td, textAlign: 'right' }}><Wachs v={c.wachstumPct} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          {dim === 'artikel' && (
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead><tr style={{ borderBottom: '1px solid var(--line)' }}>
+                <th style={{ ...th, textAlign: 'left' }}>Artikel</th>
+                <th style={{ ...th, textAlign: 'left' }}>Warengruppe</th>
+                <th style={{ ...th, textAlign: 'right' }}>Umsatz</th>
+                <th style={{ ...th, textAlign: 'right' }}>Menge</th>
+                <th style={{ ...th, textAlign: 'right' }}>Ø Preis</th>
+                <th style={{ ...th, textAlign: 'right' }}>DB %</th>
+              </tr></thead>
+              <tbody>
+                {art.map((a, i) => (
+                  <tr key={a.id} style={{ borderBottom: '1px solid var(--line)' }}>
+                    <td style={{ ...td }}><span style={{ color: 'var(--muted)', marginRight: 6 }} className="mono">{i + 1}</span><span style={{ fontWeight: 600 }}>{a.name}</span></td>
+                    <td style={{ ...td, color: 'var(--muted)', fontSize: 12 }}>{a.gruppe}</td>
+                    <td style={{ ...td, textAlign: 'right' }} className="mono">{mio(a.umsatz)}</td>
+                    <td style={{ ...td, textAlign: 'right' }} className="mono">{stk(a.menge)}</td>
+                    <td style={{ ...td, textAlign: 'right' }} className="mono">{eur(a.avgPreis)}</td>
+                    <td style={{ ...td, textAlign: 'right' }} className="mono">{a.dbProzent} %</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
 
@@ -99,7 +200,7 @@ export default function Verkaufsstatistik() {
           <div style={{ ...cap, padding: '12px 14px 6px' }}>Top-Artikel nach Umsatz</div>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <tbody>
-              {art.map((a, i) => (
+              {art.slice(0, 7).map((a, i) => (
                 <tr key={a.id} style={{ borderBottom: '1px solid var(--line)' }}>
                   <td style={{ ...td, width: 22, color: 'var(--muted)' }} className="mono">{i + 1}</td>
                   <td style={{ ...td }}><div style={{ fontWeight: 600 }}>{a.name}</div><div style={{ fontSize: 11, color: 'var(--muted)' }}>{a.gruppe} · {stk(a.menge)} Stk · Ø {eur(a.avgPreis)}</div></td>
@@ -110,7 +211,7 @@ export default function Verkaufsstatistik() {
           </table>
         </div>
         <div style={{ ...card, overflow: 'hidden' }}>
-          <div style={{ ...cap, padding: '12px 14px 6px' }}>Profit-Center · Geschäftsbereich & Kanal</div>
+          <div style={{ ...cap, padding: '12px 14px 6px' }}>Profit-Center · Geschäftsbereich &amp; Kanal</div>
           {pcBaum().filter((g) => g.id === 'geschaeftsbereich' || g.id === 'kanal').map((g) => (
             <div key={g.id}>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', padding: '8px 14px 2px', textTransform: 'uppercase', letterSpacing: '.03em' }}>{g.id === 'kanal' ? 'Vertriebskanal' : 'Geschäftsbereich'}</div>
