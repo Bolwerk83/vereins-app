@@ -56,7 +56,7 @@ export function standardZuweisung() {
     const nr = Number(m.slice(-2))
     eintraege[m] = nr < AKT_MONAT ? 'ist' : nr === AKT_MONAT ? 'tagesreporting' : 'plan'
   })
-  return { datumssicht: 'belegdatum', granularitaet: 'monat', eintraege, planKonten: [...STANDARD_PLANKONTEN] }
+  return { datumssicht: 'belegdatum', granularitaet: 'monat', kalender: 'kj-monat', eintraege, planKonten: [...STANDARD_PLANKONTEN] }
 }
 
 const KEY = 'er_periodenmodell'
@@ -78,6 +78,7 @@ function speichere(m) { localStorage.setItem(KEY, JSON.stringify(m)); return m }
 
 export function setDatumssicht(id) { return speichere({ ...ladeModell(), datumssicht: id }) }
 export function setGranularitaet(id) { return speichere({ ...ladeModell(), granularitaet: id }) }
+export function setKalender(id) { return speichere({ ...ladeModell(), kalender: id }) }
 export function setDatenart(periode, art) {
   const m = ladeModell()
   return speichere({ ...m, eintraege: { ...m.eintraege, [periode]: art } })

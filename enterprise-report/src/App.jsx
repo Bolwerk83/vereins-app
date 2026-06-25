@@ -19,6 +19,7 @@ import { ladeKpiWerte, pruefeVerbindung, setCacheKontext, leereCache, PERIODEN, 
 import { ladeModell } from './core/periodenmodell.js'
 import ZeitDatenart from './modules/zeit-datenart/ZeitDatenart.jsx'
 import DatenartBadge from './modules/zeit-datenart/DatenartBadge.jsx'
+import ZeitFilter from './modules/zeit-datenart/ZeitFilter.jsx'
 import Versionsvergleich from './modules/versionsvergleich/Versionsvergleich.jsx'
 import Verteiler from './modules/verteiler/Verteiler.jsx'
 import Abschluss from './modules/abschluss/Abschluss.jsx'
@@ -460,6 +461,7 @@ export default function App() {
                 ? <button onClick={() => { setAnmeldung(null); try { localStorage.removeItem('er_anmeldung') } catch {} }} title="Abmelden — zurück zur Standard-Rolle" style={{ padding: '3px 9px', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', background: 'var(--panel)', cursor: 'pointer', fontSize: 12 }}>Abmelden</button>
                 : <button onClick={() => setLoginAuf(true)} title="Mit Rolle anmelden — mehr Berichte sehen" style={{ padding: '3px 11px', border: 'none', borderRadius: 'var(--radius-sm)', background: 'var(--accent)', color: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>Anmelden</button>}
             </div>
+            <ZeitFilter modell={zeitModell} onChange={() => setZeitModell(ladeModell())} />
             <DatenartBadge modell={zeitModell} onClick={() => setAnsicht('zeit')} />
             {/* ⚙ Einstellungen — bündelt Periode, Sprache, Wizard, Onboarding, Hilfe */}
             <div style={{ position: 'relative' }}>
