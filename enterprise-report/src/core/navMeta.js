@@ -16,7 +16,7 @@ export const VIEW_BEREICH = {
   // Analyse & Steuerung
   bi: null, planung: 'FIN', szenario: 'FIN', abgleichabsatz: 'VC', abweichung: 'FIN', vergleich: null, portfoliobcg: null, qc: null, abstimmung: 'FIN',
   lebenszyklus: 'VK', lzempfehlung: 'VK', artikelkarte: 'VK', anlagen: 'LIQ', technologie: 'FE', mitarbeiter: 'PC',
-  massnahmen: null, instrumente: null, alerts: null, zeit: null,
+  massnahmen: null, instrumente: null, alerts: null, zeit: null, detailanalyse: null,
   // Lernen & Wissen – übergreifend
   lernpfad: null, doku: null, datenquellen: null, controlling: null, klrablauf: null, ablaufdiagramm: null, datenarchitektur: null,
   // Verwaltung
