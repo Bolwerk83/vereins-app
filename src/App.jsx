@@ -13,7 +13,7 @@ const T = {
     vImInSelf:"Ich bin dabei", vImInChild:"Mein Kind ist dabei", vComesLate:"Kommt zu spät", vComesLateMins:"Kommt ca. {m} Min. zu spät", vHowLate:"Wie spät kommt dein Kind?", vConfirm:"Bestätigen", vCancel:"Abbrechen", vMin:"Min", vNotIn:"Leider nicht dabei", vWhyNot:"Warum kann dein Kind nicht?", vNoReason:"Ohne Angabe", vLateNeedsReason:"Nach Ablauf der Frist ist eine Absage nur mit Grund möglich.", vDeadlinePassed:"Frist abgelaufen – Abstimmung wird trotzdem gezählt", vDeadline:"Abstimmungs-Frist:", vLateList:"Verspätungen", vSumIn:"dabei", vSumLate:"verspätet", vSumOut:"nicht dabei", rKrank:"Krank", rUrlaub:"Urlaub", rSchule:"Schulpflicht", rWettkampf:"Wettkampf", rSonstiges:"Sonstiges",
     lnTor:"Tor", lnAbwehr:"Abwehr", lnMittelfeld:"Mittelfeld", lnAngriff:"Angriff", luTitle:"Aufstellung", luSuggest:"Vorschlag", luFriends:"Freunde gewichten:", luOff:"Aus", luNormal:"Normal", luStrong:"Stark", luBench:"Bank / verfügbar", luAllPlaced:"Alle Zusagen sind aufgestellt.", luGuestVisible:"Mannschaft für Gäste sichtbar", luGuestHint:"Namen nur mit Eltern-Freigabe; sonst nur Trikotnummer.", luBenchShort:"Bank:", luForN:"Für {n} Spieler:", luFormation:"Formation", luWithGK:"mit Torwart", luOnBench:"{n} auf der Bank", luTogether:"Eingespielt:", luFriendsLabel:"Freunde", luSeparated:"getrennt", luAdjustHint:"Besetzung nach Position, Stärken & Freundschaften – frei anpassbar.",
     et_training:"Training", et_heimspiel:"Heimspiel", et_auswarts:"Auswärtsspiel", et_freundschaft:"Freundschaftsspiel", et_turnier:"Turnier", et_event:"Sondertermin",
-    wNext:"Weiter", wBack:"Zurück", wSave:"Speichern", wCreateEvent:"Termin erstellen", wCreateSeries:"Serie erstellen", wCreateN:"{n} Termine erstellen", fTitle:"Titel", fTime:"Uhrzeit", fEnd:"Ende (optional)", fDate:"Datum", fLoc:"Ort", fLocPh:"Sportplatz", wSummarySec:"ZUSAMMENFASSUNG", wPlayersSec:"SPIELERANZAHL (optional)", wDeadlineSec:"ABSTIMMUNGSFRIST (OPTIONAL)", wSoll:"Soll (für die Ampel)", wMax:"Max (optional)", secStaffing:"Betreuung", secLineup:"Aufstellung", secReport:"Spielbericht", lineT:"Tor", lineA:"Abwehr", lineM:"Mittelfeld", lineS:"Angriff", savedMark:"gespeichert", "dim_Technik":"Technik", "dim_Schnelligkeit":"Schnelligkeit", "dim_Zweikampf":"Zweikampf", "dim_Übersicht":"Übersicht", "dim_Abschluss":"Abschluss", "dim_Ausdauer":"Ausdauer", "dim_Teamplay":"Teamplay",
+    wNext:"Weiter", wBack:"Zurück", wSave:"Speichern", wCreateEvent:"Termin erstellen", wCreateSeries:"Serie erstellen", wCreateN:"{n} Termine erstellen", fTitle:"Titel", fTime:"Uhrzeit", fEnd:"Ende (optional)", fDate:"Datum", fLoc:"Ort", fLocPh:"Sportplatz", wSummarySec:"ZUSAMMENFASSUNG", wPlayersSec:"SPIELERANZAHL (optional)", wDeadlineSec:"ABSTIMMUNGSFRIST (OPTIONAL)", wSoll:"Soll (für die Ampel)", wMax:"Max (optional)", secStaffing:"Betreuung", secLineup:"Aufstellung", secReport:"Spielbericht", lineT:"Tor", lineA:"Abwehr", lineM:"Mittelfeld", lineS:"Angriff", savedMark:"gespeichert", "dim_Technik":"Technik", "dim_Schnelligkeit":"Schnelligkeit", "dim_Zweikampf":"Zweikampf", "dim_Übersicht":"Übersicht", "dim_Abschluss":"Abschluss", "dim_Ausdauer":"Ausdauer", "dim_Teamplay":"Teamplay", goalShort:"Ziel", kpiTraining:"Training", kpiGames:"Spiele", kpiPlaytime:"Spielzeit", kpiAvgSkill:"Ø Skill", kpiFocus:"Fokus", kpiRecommend:"Empfehlung", btnShareReport:"Bericht teilen", btnCopy:"Kopieren",
     cancel: "Abbrechen",
     save: "Speichern",
     delete: "Löschen",
@@ -134,7 +134,7 @@ const T = {
     vImInSelf:"I'm in", vImInChild:"My child is in", vComesLate:"Will be late", vComesLateMins:"Arrives ~{m} min late", vHowLate:"How late will your child be?", vConfirm:"Confirm", vCancel:"Cancel", vMin:"min", vNotIn:"Not available", vWhyNot:"Why can't your child make it?", vNoReason:"No reason", vLateNeedsReason:"After the deadline a cancellation requires a reason.", vDeadlinePassed:"Deadline passed – your vote still counts", vDeadline:"Voting deadline:", vLateList:"Late arrivals", vSumIn:"in", vSumLate:"late", vSumOut:"out", rKrank:"Ill", rUrlaub:"Holiday", rSchule:"School", rWettkampf:"Competition", rSonstiges:"Other",
     lnTor:"Goal", lnAbwehr:"Defence", lnMittelfeld:"Midfield", lnAngriff:"Attack", luTitle:"Line-up", luSuggest:"Suggestion", luFriends:"Weight friends:", luOff:"Off", luNormal:"Normal", luStrong:"Strong", luBench:"Bench / available", luAllPlaced:"All confirmed players are placed.", luGuestVisible:"Show squad to guests", luGuestHint:"Names only with parent consent; otherwise just shirt number.", luBenchShort:"Bench:", luForN:"For {n} players:", luFormation:"Formation", luWithGK:"with keeper", luOnBench:"{n} on the bench", luTogether:"Played together:", luFriendsLabel:"Friends", luSeparated:"separated", luAdjustHint:"Positions by role, strengths & friendships – freely adjustable.",
     et_training:"Training", et_heimspiel:"Home match", et_auswarts:"Away match", et_freundschaft:"Friendly", et_turnier:"Tournament", et_event:"Special event",
-    wNext:"Next", wBack:"Back", wSave:"Save", wCreateEvent:"Create event", wCreateSeries:"Create series", wCreateN:"Create {n} events", fTitle:"Title", fTime:"Time", fEnd:"End (optional)", fDate:"Date", fLoc:"Location", fLocPh:"Sports ground", wSummarySec:"SUMMARY", wPlayersSec:"NUMBER OF PLAYERS (optional)", wDeadlineSec:"VOTING DEADLINE (OPTIONAL)", wSoll:"Target (traffic light)", wMax:"Max (optional)", secStaffing:"Supervision", secLineup:"Lineup", secReport:"Match report", lineT:"Goal", lineA:"Defense", lineM:"Midfield", lineS:"Attack", savedMark:"saved", "dim_Technik":"Technique", "dim_Schnelligkeit":"Pace", "dim_Zweikampf":"Duels", "dim_Übersicht":"Vision", "dim_Abschluss":"Finishing", "dim_Ausdauer":"Stamina", "dim_Teamplay":"Teamwork",
+    wNext:"Next", wBack:"Back", wSave:"Save", wCreateEvent:"Create event", wCreateSeries:"Create series", wCreateN:"Create {n} events", fTitle:"Title", fTime:"Time", fEnd:"End (optional)", fDate:"Date", fLoc:"Location", fLocPh:"Sports ground", wSummarySec:"SUMMARY", wPlayersSec:"NUMBER OF PLAYERS (optional)", wDeadlineSec:"VOTING DEADLINE (OPTIONAL)", wSoll:"Target (traffic light)", wMax:"Max (optional)", secStaffing:"Supervision", secLineup:"Lineup", secReport:"Match report", lineT:"Goal", lineA:"Defense", lineM:"Midfield", lineS:"Attack", savedMark:"saved", "dim_Technik":"Technique", "dim_Schnelligkeit":"Pace", "dim_Zweikampf":"Duels", "dim_Übersicht":"Vision", "dim_Abschluss":"Finishing", "dim_Ausdauer":"Stamina", "dim_Teamplay":"Teamwork", goalShort:"Target", kpiTraining:"Training", kpiGames:"Games", kpiPlaytime:"Playing time", kpiAvgSkill:"Avg skill", kpiFocus:"Focus", kpiRecommend:"Recommendation", btnShareReport:"Share report", btnCopy:"Copy",
     cancel:"Cancel",
     save:"Save",
     delete:"Delete",
@@ -255,7 +255,7 @@ const T = {
     vImInSelf:"Ik ben erbij", vImInChild:"Mijn kind is erbij", vComesLate:"Komt te laat", vComesLateMins:"Komt ~{m} min te laat", vHowLate:"Hoe laat komt je kind?", vConfirm:"Bevestigen", vCancel:"Annuleren", vMin:"min", vNotIn:"Helaas niet", vWhyNot:"Waarom kan je kind niet?", vNoReason:"Geen reden", vLateNeedsReason:"Na de deadline kan afmelden alleen met reden.", vDeadlinePassed:"Deadline verstreken – je stem telt toch mee", vDeadline:"Stemdeadline:", vLateList:"Te laat", vSumIn:"erbij", vSumLate:"te laat", vSumOut:"niet erbij", rKrank:"Ziek", rUrlaub:"Vakantie", rSchule:"School", rWettkampf:"Wedstrijd", rSonstiges:"Overig",
     lnTor:"Keeper", lnAbwehr:"Verdediging", lnMittelfeld:"Middenveld", lnAngriff:"Aanval", luTitle:"Opstelling", luSuggest:"Voorstel", luFriends:"Vrienden wegen:", luOff:"Uit", luNormal:"Normaal", luStrong:"Sterk", luBench:"Bank / beschikbaar", luAllPlaced:"Alle toezeggingen staan opgesteld.", luGuestVisible:"Team zichtbaar voor gasten", luGuestHint:"Namen alleen met toestemming ouders; anders alleen rugnummer.", luBenchShort:"Bank:", luForN:"Voor {n} spelers:", luFormation:"Formatie", luWithGK:"met keeper", luOnBench:"{n} op de bank", luTogether:"Ingespeeld:", luFriendsLabel:"Vrienden", luSeparated:"apart", luAdjustHint:"Posities op rol, sterktes & vriendschappen – vrij aanpasbaar.",
     et_training:"Training", et_heimspiel:"Thuiswedstrijd", et_auswarts:"Uitwedstrijd", et_freundschaft:"Oefenwedstrijd", et_turnier:"Toernooi", et_event:"Speciale afspraak",
-    wNext:"Verder", wBack:"Terug", wSave:"Opslaan", wCreateEvent:"Afspraak maken", wCreateSeries:"Serie maken", wCreateN:"{n} afspraken maken", fTitle:"Titel", fTime:"Tijd", fEnd:"Einde (optioneel)", fDate:"Datum", fLoc:"Locatie", fLocPh:"Sportveld", wSummarySec:"SAMENVATTING", wPlayersSec:"AANTAL SPELERS (optioneel)", wDeadlineSec:"STEMDEADLINE (OPTIONEEL)", wSoll:"Streefgetal (stoplicht)", wMax:"Max (optioneel)", secStaffing:"Begeleiding", secLineup:"Opstelling", secReport:"Wedstrijdverslag", lineT:"Doel", lineA:"Verdediging", lineM:"Middenveld", lineS:"Aanval", savedMark:"opgeslagen", "dim_Technik":"Techniek", "dim_Schnelligkeit":"Snelheid", "dim_Zweikampf":"Duels", "dim_Übersicht":"Overzicht", "dim_Abschluss":"Afronding", "dim_Ausdauer":"Conditie", "dim_Teamplay":"Teamwork",
+    wNext:"Verder", wBack:"Terug", wSave:"Opslaan", wCreateEvent:"Afspraak maken", wCreateSeries:"Serie maken", wCreateN:"{n} afspraken maken", fTitle:"Titel", fTime:"Tijd", fEnd:"Einde (optioneel)", fDate:"Datum", fLoc:"Locatie", fLocPh:"Sportveld", wSummarySec:"SAMENVATTING", wPlayersSec:"AANTAL SPELERS (optioneel)", wDeadlineSec:"STEMDEADLINE (OPTIONEEL)", wSoll:"Streefgetal (stoplicht)", wMax:"Max (optioneel)", secStaffing:"Begeleiding", secLineup:"Opstelling", secReport:"Wedstrijdverslag", lineT:"Doel", lineA:"Verdediging", lineM:"Middenveld", lineS:"Aanval", savedMark:"opgeslagen", "dim_Technik":"Techniek", "dim_Schnelligkeit":"Snelheid", "dim_Zweikampf":"Duels", "dim_Übersicht":"Overzicht", "dim_Abschluss":"Afronding", "dim_Ausdauer":"Conditie", "dim_Teamplay":"Teamwork", goalShort:"Doel", kpiTraining:"Training", kpiGames:"Wedstrijden", kpiPlaytime:"Speeltijd", kpiAvgSkill:"Gem. skill", kpiFocus:"Focus", kpiRecommend:"Advies", btnShareReport:"Rapport delen", btnCopy:"Kopiëren",
     cancel:"Annuleren",
     save:"Opslaan",
     delete:"Verwijderen",
@@ -5386,6 +5386,7 @@ function TeamInsights({ data, myTids, cl }) {
 }
 
 function TeamSkillAnalysis({ data, myTids, cl }) {
+  const { tr } = useT();
   const t = TH(cl);
   const sport = cl?.sport || "fussball";
   const axes = skillAxesFor(sport);
@@ -5431,7 +5432,7 @@ function TeamSkillAnalysis({ data, myTids, cl }) {
               <SpiderChart axes={axes} values={avg} compareValues={soll} color={t.p||"#16a34a"} compareColor="#f59e0b" size={250}/>
               <div style={{display:"flex",gap:16,justifyContent:"center",fontSize:11,fontWeight:700,marginTop:8}}>
                 <span><span style={{display:"inline-block",width:10,height:10,borderRadius:3,background:t.p||"#16a34a",marginRight:4,verticalAlign:"middle"}}/>Schnitt</span>
-                <span><span style={{display:"inline-block",width:10,height:10,borderRadius:3,background:"#f59e0b",marginRight:4,verticalAlign:"middle"}}/>Ziel {cat}</span>
+                <span><span style={{display:"inline-block",width:10,height:10,borderRadius:3,background:"#f59e0b",marginRight:4,verticalAlign:"middle"}}/>{tr("goalShort")} {cat}</span>
               </div>
             </div>
           </div>
@@ -7015,6 +7016,7 @@ function TrainerGuide({ onClose, cl }){
 
 // Saisonbericht: Anwesenheit + Spielzeit + Skill-Stand + Empfehlung je Spieler – als Text teilbar.
 function SeasonReportTab({ data, myTids, cl, fire }){
+  const { tr } = useT();
   const t=TH(cl); const sport=cl?.sport||"fussball"; const axes=skillAxesFor(sport);
   const teams=(data.teams||[]).filter(tm=>myTids.includes(tm.id));
   const [tid,setTid]=useState(teams[0]?.id||"");
@@ -7059,8 +7061,8 @@ function SeasonReportTab({ data, myTids, cl, fire }){
         {teams.map(tm=>(<button key={tm.id} onClick={()=>setTid(tm.id)} style={{padding:"7px 13px",borderRadius:99,border:`2px solid ${tid===tm.id?tm.col:"#e2e8f0"}`,background:tid===tm.id?tm.col:"#fff",color:tid===tm.id?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit",flexShrink:0}}>{tm.name}</button>))}
       </div>}
       <div style={{display:"flex",gap:8,marginBottom:14}}>
-        <button onClick={doShare} style={{flex:2,padding:"11px",borderRadius:11,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>📄 Bericht teilen</button>
-        <button onClick={doCopy} style={{flex:1,padding:"11px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>Kopieren</button>
+        <button onClick={doShare} style={{flex:2,padding:"11px",borderRadius:11,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>📄 {tr("btnShareReport")}</button>
+        <button onClick={doCopy} style={{flex:1,padding:"11px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>{tr("btnCopy")}</button>
       </div>
       <div style={{fontSize:11.5,color:"#94a3b8",marginBottom:12,lineHeight:1.45}}>Ideal fürs Elterngespräch: Anwesenheit, Spielzeit, Skill-Stand und deine Empfehlung je Spieler. Über „Teilen" als Text (z. B. in WhatsApp oder als PDF aus dem Teilen-Menü).</div>
       <div style={{display:"flex",flexDirection:"column",gap:8}}>
@@ -7073,15 +7075,15 @@ function SeasonReportTab({ data, myTids, cl, fire }){
                 <div style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>{r.p.name}</div>
                 {r.p.position&&<div style={{fontSize:11.5,color:"#94a3b8"}}>{r.p.position}</div>}
               </div>
-              {r.avg!=null&&<div style={{textAlign:"right"}}><div style={{fontWeight:900,fontSize:17,color:t.p}}>{r.avg}</div><div style={{fontSize:10,color:"#94a3b8"}}>Ø Skill</div></div>}
+              {r.avg!=null&&<div style={{textAlign:"right"}}><div style={{fontWeight:900,fontSize:17,color:t.p}}>{r.avg}</div><div style={{fontSize:10,color:"#94a3b8"}}>{tr("kpiAvgSkill")}</div></div>}
             </div>
             <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-              <span style={{fontSize:11.5,fontWeight:700,color:"#15803d",background:"#dcfce7",borderRadius:99,padding:"3px 9px"}}>Training {r.trainPct??"–"}%</span>
-              {r.gamePct!=null&&<span style={{fontSize:11.5,fontWeight:700,color:"#1d4ed8",background:"#dbeafe",borderRadius:99,padding:"3px 9px"}}>Spiele {r.gamePct}%</span>}
-              {r.gc>0&&<span style={{fontSize:11.5,fontWeight:700,color:"#0f172a",background:"#f1f5f9",borderRadius:99,padding:"3px 9px"}}>{r.mins} Min Spielzeit</span>}
-              {r.weak&&<span style={{fontSize:11.5,fontWeight:700,color:"#9a3412",background:"#fff7ed",borderRadius:99,padding:"3px 9px"}}>Fokus: {r.weak.a}</span>}
+              <span style={{fontSize:11.5,fontWeight:700,color:"#15803d",background:"#dcfce7",borderRadius:99,padding:"3px 9px"}}>{tr("kpiTraining")} {r.trainPct??"–"}%</span>
+              {r.gamePct!=null&&<span style={{fontSize:11.5,fontWeight:700,color:"#1d4ed8",background:"#dbeafe",borderRadius:99,padding:"3px 9px"}}>{tr("kpiGames")} {r.gamePct}%</span>}
+              {r.gc>0&&<span style={{fontSize:11.5,fontWeight:700,color:"#0f172a",background:"#f1f5f9",borderRadius:99,padding:"3px 9px"}}>{r.mins} {tr("vMin")} {tr("kpiPlaytime")}</span>}
+              {r.weak&&<span style={{fontSize:11.5,fontWeight:700,color:"#9a3412",background:"#fff7ed",borderRadius:99,padding:"3px 9px"}}>{tr("kpiFocus")}: {dimLabel(r.weak.a,tr)}</span>}
             </div>
-            {r.p.recommend&&<div style={{fontSize:12,color:"#4f46e5",fontWeight:600,marginTop:6}}>Empfehlung: {r.p.recommend}</div>}
+            {r.p.recommend&&<div style={{fontSize:12,color:"#4f46e5",fontWeight:600,marginTop:6}}>{tr("kpiRecommend")}: {r.p.recommend}</div>}
           </div>
         ))}
       </div>
@@ -21452,6 +21454,7 @@ function FriendsInput({ label,sub,ids,allPlayers,current,onChange,color }) {
 }
 
 function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",club=null,onSave,onClose,t,allSeasons,allPlayerProfiles,trainers }) {
+  const { tr } = useT();
   const samePlayerHistory = (allPlayerProfiles||[]).filter(p=>
     p.id!==player.id && p.name===player.name && p.by===player.by && p.seasonId
   ).sort((a,b)=>(b.seasonId||"").localeCompare(a.seasonId||""));
@@ -21598,7 +21601,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
                   <div>
                     {axes.map((ax,i)=>(
                       <div key={ax} style={{display:"flex",alignItems:"center",gap:8,marginBottom:7}}>
-                        <span style={{flex:1,fontSize:13,fontWeight:600,color:"#334155"}}>{ax} <span style={{color:(Number(sk[ax])||0)?(t.p||"#16a34a"):"#cbd5e1",fontSize:11,fontWeight:800}}>{(Number(sk[ax])||0)?round2(sk[ax]).toFixed(2):"–"}</span> <span style={{color:"#cbd5e1",fontSize:11,fontWeight:700}}>Ziel {soll[i]}</span></span>
+                        <span style={{flex:1,fontSize:13,fontWeight:600,color:"#334155"}}>{dimLabel(ax,tr)} <span style={{color:(Number(sk[ax])||0)?(t.p||"#16a34a"):"#cbd5e1",fontSize:11,fontWeight:800}}>{(Number(sk[ax])||0)?round2(sk[ax]).toFixed(2):"–"}</span> <span style={{color:"#cbd5e1",fontSize:11,fontWeight:700}}>{tr("goalShort")} {soll[i]}</span></span>
                         <div style={{display:"flex",gap:3}}>
                           {[1,2,3,4,5].map(n=>(
                             <button key={n} type="button" onClick={()=>setSkill(ax,n)}
@@ -21611,7 +21614,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
                       <SpiderChart axes={axes} values={vals} compareValues={soll} color={t.p||"#16a34a"} compareColor="#f59e0b" size={240}/>
                       <div style={{display:"flex",gap:16,justifyContent:"center",fontSize:11,fontWeight:700,marginTop:8}}>
                         <span><span style={{display:"inline-block",width:10,height:10,borderRadius:3,background:t.p||"#16a34a",marginRight:4,verticalAlign:"middle"}}/>Ist</span>
-                        <span><span style={{display:"inline-block",width:10,height:10,borderRadius:3,background:"#f59e0b",marginRight:4,verticalAlign:"middle"}}/>Ziel {cat}</span>
+                        <span><span style={{display:"inline-block",width:10,height:10,borderRadius:3,background:"#f59e0b",marginRight:4,verticalAlign:"middle"}}/>{tr("goalShort")} {cat}</span>
                       </div>
                     </div>}
                     {(p.skillHistory||[]).length>0&&<div style={{marginTop:12}}>
@@ -21628,7 +21631,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
                               const drill=suggestDrillsForSkill(x.a,cat,1)[0]?.d;
                               return (
                                 <div key={x.a} style={{background:"#fff7ed",border:"1px solid #fed7aa",borderRadius:11,padding:"10px 12px"}}>
-                                  <div style={{fontWeight:800,fontSize:13,color:"#9a3412"}}>{x.a} <span style={{fontWeight:700,color:"#c2410c"}}>{round2(x.ist)} → {x.soll}</span></div>
+                                  <div style={{fontWeight:800,fontSize:13,color:"#9a3412"}}>{dimLabel(x.a,tr)} <span style={{fontWeight:700,color:"#c2410c"}}>{round2(x.ist)} → {x.soll}</span></div>
                                   <div style={{fontSize:12,color:"#7c2d12",lineHeight:1.55,marginTop:3}}>
                                     <div>🏋️ Training: {tip.train}{drill?` – z. B. „${drill.title}"`:""}</div>
                                     <div>⚽ Spiel: {tip.game}</div>
