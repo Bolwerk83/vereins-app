@@ -13,7 +13,7 @@ const T = {
     vImInSelf:"Ich bin dabei", vImInChild:"Mein Kind ist dabei", vComesLate:"Kommt zu spät", vComesLateMins:"Kommt ca. {m} Min. zu spät", vHowLate:"Wie spät kommt dein Kind?", vConfirm:"Bestätigen", vCancel:"Abbrechen", vMin:"Min", vNotIn:"Leider nicht dabei", vWhyNot:"Warum kann dein Kind nicht?", vNoReason:"Ohne Angabe", vLateNeedsReason:"Nach Ablauf der Frist ist eine Absage nur mit Grund möglich.", vDeadlinePassed:"Frist abgelaufen – Abstimmung wird trotzdem gezählt", vDeadline:"Abstimmungs-Frist:", vLateList:"Verspätungen", vSumIn:"dabei", vSumLate:"verspätet", vSumOut:"nicht dabei", rKrank:"Krank", rUrlaub:"Urlaub", rSchule:"Schulpflicht", rWettkampf:"Wettkampf", rSonstiges:"Sonstiges",
     lnTor:"Tor", lnAbwehr:"Abwehr", lnMittelfeld:"Mittelfeld", lnAngriff:"Angriff", luTitle:"Aufstellung", luSuggest:"Vorschlag", luFriends:"Freunde gewichten:", luOff:"Aus", luNormal:"Normal", luStrong:"Stark", luBench:"Bank / verfügbar", luAllPlaced:"Alle Zusagen sind aufgestellt.", luGuestVisible:"Mannschaft für Gäste sichtbar", luGuestHint:"Namen nur mit Eltern-Freigabe; sonst nur Trikotnummer.", luBenchShort:"Bank:", luForN:"Für {n} Spieler:", luFormation:"Formation", luWithGK:"mit Torwart", luOnBench:"{n} auf der Bank", luTogether:"Eingespielt:", luFriendsLabel:"Freunde", luSeparated:"getrennt", luAdjustHint:"Besetzung nach Position, Stärken & Freundschaften – frei anpassbar.",
     et_training:"Training", et_heimspiel:"Heimspiel", et_auswarts:"Auswärtsspiel", et_freundschaft:"Freundschaftsspiel", et_turnier:"Turnier", et_event:"Sondertermin",
-    wNext:"Weiter", wBack:"Zurück", wSave:"Speichern", wCreateEvent:"Termin erstellen", wCreateSeries:"Serie erstellen", wCreateN:"{n} Termine erstellen", fTitle:"Titel", fTime:"Uhrzeit", fEnd:"Ende (optional)", fDate:"Datum", fLoc:"Ort", fLocPh:"Sportplatz", wSummarySec:"ZUSAMMENFASSUNG", wPlayersSec:"SPIELERANZAHL (optional)", wDeadlineSec:"ABSTIMMUNGSFRIST (OPTIONAL)", wSoll:"Soll (für die Ampel)", wMax:"Max (optional)",
+    wNext:"Weiter", wBack:"Zurück", wSave:"Speichern", wCreateEvent:"Termin erstellen", wCreateSeries:"Serie erstellen", wCreateN:"{n} Termine erstellen", fTitle:"Titel", fTime:"Uhrzeit", fEnd:"Ende (optional)", fDate:"Datum", fLoc:"Ort", fLocPh:"Sportplatz", wSummarySec:"ZUSAMMENFASSUNG", wPlayersSec:"SPIELERANZAHL (optional)", wDeadlineSec:"ABSTIMMUNGSFRIST (OPTIONAL)", wSoll:"Soll (für die Ampel)", wMax:"Max (optional)", secStaffing:"Betreuung", secLineup:"Aufstellung", secReport:"Spielbericht", lineT:"Tor", lineA:"Abwehr", lineM:"Mittelfeld", lineS:"Angriff", savedMark:"gespeichert", "dim_Technik":"Technik", "dim_Schnelligkeit":"Schnelligkeit", "dim_Zweikampf":"Zweikampf", "dim_Übersicht":"Übersicht", "dim_Abschluss":"Abschluss", "dim_Ausdauer":"Ausdauer", "dim_Teamplay":"Teamplay",
     cancel: "Abbrechen",
     save: "Speichern",
     delete: "Löschen",
@@ -134,7 +134,7 @@ const T = {
     vImInSelf:"I'm in", vImInChild:"My child is in", vComesLate:"Will be late", vComesLateMins:"Arrives ~{m} min late", vHowLate:"How late will your child be?", vConfirm:"Confirm", vCancel:"Cancel", vMin:"min", vNotIn:"Not available", vWhyNot:"Why can't your child make it?", vNoReason:"No reason", vLateNeedsReason:"After the deadline a cancellation requires a reason.", vDeadlinePassed:"Deadline passed – your vote still counts", vDeadline:"Voting deadline:", vLateList:"Late arrivals", vSumIn:"in", vSumLate:"late", vSumOut:"out", rKrank:"Ill", rUrlaub:"Holiday", rSchule:"School", rWettkampf:"Competition", rSonstiges:"Other",
     lnTor:"Goal", lnAbwehr:"Defence", lnMittelfeld:"Midfield", lnAngriff:"Attack", luTitle:"Line-up", luSuggest:"Suggestion", luFriends:"Weight friends:", luOff:"Off", luNormal:"Normal", luStrong:"Strong", luBench:"Bench / available", luAllPlaced:"All confirmed players are placed.", luGuestVisible:"Show squad to guests", luGuestHint:"Names only with parent consent; otherwise just shirt number.", luBenchShort:"Bench:", luForN:"For {n} players:", luFormation:"Formation", luWithGK:"with keeper", luOnBench:"{n} on the bench", luTogether:"Played together:", luFriendsLabel:"Friends", luSeparated:"separated", luAdjustHint:"Positions by role, strengths & friendships – freely adjustable.",
     et_training:"Training", et_heimspiel:"Home match", et_auswarts:"Away match", et_freundschaft:"Friendly", et_turnier:"Tournament", et_event:"Special event",
-    wNext:"Next", wBack:"Back", wSave:"Save", wCreateEvent:"Create event", wCreateSeries:"Create series", wCreateN:"Create {n} events", fTitle:"Title", fTime:"Time", fEnd:"End (optional)", fDate:"Date", fLoc:"Location", fLocPh:"Sports ground", wSummarySec:"SUMMARY", wPlayersSec:"NUMBER OF PLAYERS (optional)", wDeadlineSec:"VOTING DEADLINE (OPTIONAL)", wSoll:"Target (traffic light)", wMax:"Max (optional)",
+    wNext:"Next", wBack:"Back", wSave:"Save", wCreateEvent:"Create event", wCreateSeries:"Create series", wCreateN:"Create {n} events", fTitle:"Title", fTime:"Time", fEnd:"End (optional)", fDate:"Date", fLoc:"Location", fLocPh:"Sports ground", wSummarySec:"SUMMARY", wPlayersSec:"NUMBER OF PLAYERS (optional)", wDeadlineSec:"VOTING DEADLINE (OPTIONAL)", wSoll:"Target (traffic light)", wMax:"Max (optional)", secStaffing:"Supervision", secLineup:"Lineup", secReport:"Match report", lineT:"Goal", lineA:"Defense", lineM:"Midfield", lineS:"Attack", savedMark:"saved", "dim_Technik":"Technique", "dim_Schnelligkeit":"Pace", "dim_Zweikampf":"Duels", "dim_Übersicht":"Vision", "dim_Abschluss":"Finishing", "dim_Ausdauer":"Stamina", "dim_Teamplay":"Teamwork",
     cancel:"Cancel",
     save:"Save",
     delete:"Delete",
@@ -255,7 +255,7 @@ const T = {
     vImInSelf:"Ik ben erbij", vImInChild:"Mijn kind is erbij", vComesLate:"Komt te laat", vComesLateMins:"Komt ~{m} min te laat", vHowLate:"Hoe laat komt je kind?", vConfirm:"Bevestigen", vCancel:"Annuleren", vMin:"min", vNotIn:"Helaas niet", vWhyNot:"Waarom kan je kind niet?", vNoReason:"Geen reden", vLateNeedsReason:"Na de deadline kan afmelden alleen met reden.", vDeadlinePassed:"Deadline verstreken – je stem telt toch mee", vDeadline:"Stemdeadline:", vLateList:"Te laat", vSumIn:"erbij", vSumLate:"te laat", vSumOut:"niet erbij", rKrank:"Ziek", rUrlaub:"Vakantie", rSchule:"School", rWettkampf:"Wedstrijd", rSonstiges:"Overig",
     lnTor:"Keeper", lnAbwehr:"Verdediging", lnMittelfeld:"Middenveld", lnAngriff:"Aanval", luTitle:"Opstelling", luSuggest:"Voorstel", luFriends:"Vrienden wegen:", luOff:"Uit", luNormal:"Normaal", luStrong:"Sterk", luBench:"Bank / beschikbaar", luAllPlaced:"Alle toezeggingen staan opgesteld.", luGuestVisible:"Team zichtbaar voor gasten", luGuestHint:"Namen alleen met toestemming ouders; anders alleen rugnummer.", luBenchShort:"Bank:", luForN:"Voor {n} spelers:", luFormation:"Formatie", luWithGK:"met keeper", luOnBench:"{n} op de bank", luTogether:"Ingespeeld:", luFriendsLabel:"Vrienden", luSeparated:"apart", luAdjustHint:"Posities op rol, sterktes & vriendschappen – vrij aanpasbaar.",
     et_training:"Training", et_heimspiel:"Thuiswedstrijd", et_auswarts:"Uitwedstrijd", et_freundschaft:"Oefenwedstrijd", et_turnier:"Toernooi", et_event:"Speciale afspraak",
-    wNext:"Verder", wBack:"Terug", wSave:"Opslaan", wCreateEvent:"Afspraak maken", wCreateSeries:"Serie maken", wCreateN:"{n} afspraken maken", fTitle:"Titel", fTime:"Tijd", fEnd:"Einde (optioneel)", fDate:"Datum", fLoc:"Locatie", fLocPh:"Sportveld", wSummarySec:"SAMENVATTING", wPlayersSec:"AANTAL SPELERS (optioneel)", wDeadlineSec:"STEMDEADLINE (OPTIONEEL)", wSoll:"Streefgetal (stoplicht)", wMax:"Max (optioneel)",
+    wNext:"Verder", wBack:"Terug", wSave:"Opslaan", wCreateEvent:"Afspraak maken", wCreateSeries:"Serie maken", wCreateN:"{n} afspraken maken", fTitle:"Titel", fTime:"Tijd", fEnd:"Einde (optioneel)", fDate:"Datum", fLoc:"Locatie", fLocPh:"Sportveld", wSummarySec:"SAMENVATTING", wPlayersSec:"AANTAL SPELERS (optioneel)", wDeadlineSec:"STEMDEADLINE (OPTIONEEL)", wSoll:"Streefgetal (stoplicht)", wMax:"Max (optioneel)", secStaffing:"Begeleiding", secLineup:"Opstelling", secReport:"Wedstrijdverslag", lineT:"Doel", lineA:"Verdediging", lineM:"Middenveld", lineS:"Aanval", savedMark:"opgeslagen", "dim_Technik":"Techniek", "dim_Schnelligkeit":"Snelheid", "dim_Zweikampf":"Duels", "dim_Übersicht":"Overzicht", "dim_Abschluss":"Afronding", "dim_Ausdauer":"Conditie", "dim_Teamplay":"Teamwork",
     cancel:"Annuleren",
     save:"Opslaan",
     delete:"Verwijderen",
@@ -20196,6 +20196,8 @@ const SKILL_AXES = {
   mehrzweck:     ["Technik","Schnelligkeit","Kraft","Ausdauer","Koordination","Teamplay"],
 };
 const skillAxesFor = sport => SKILL_AXES[sport] || SKILL_AXES.mehrzweck;
+// Übersetztes Dimensions-Label (Skill-Achse); Datenschlüssel bleibt deutsch.
+const dimLabel = (axis, tr) => (tr ? tr("dim_"+axis) : "") || axis;
 
 // Positions-Eignung: welche Skill-Achsen zählen wie stark je Position (Vorschlag, anpassbar).
 // Nur für Fußball; Werte 0..3 = Gewicht. Achsen, die hier fehlen, zählen mit 0.
@@ -20358,6 +20360,7 @@ function PlayFormatCard({ cat, sport="fussball", cl, compact=false }) {
 
 // Reines SVG-Spinnennetz (keine externe Bibliothek noetig)
 function SpiderChart({ axes, values, compareValues=null, size=260, color="#16a34a", compareColor="#94a3b8", max=5 }) {
+  const { tr } = useT();
   const n = axes.length;
   if(n<3) return null;
   const cx=size/2, cy=size/2, r=size*0.36;
@@ -20382,7 +20385,7 @@ function SpiderChart({ axes, values, compareValues=null, size=260, color="#16a34
         const [lx,ly]=point(i,max*1.18);
         return <text key={i} x={lx} y={ly} fontSize="10.5" fontWeight="700" fill="#475569"
           textAnchor={Math.abs(lx-cx)<8?"middle":(lx<cx?"end":"start")}
-          dominantBaseline="middle">{ax}</text>;
+          dominantBaseline="middle">{dimLabel(ax,tr)}</text>;
       })}
     </svg>
   );
@@ -30269,6 +30272,7 @@ const LINEUP_LINES = [["T","Tor"],["A","Abwehr"],["M","Mittelfeld"],["S","Angrif
 // Betreuung/Staffing fürs Training: Soll 2–3 je nach Größe, Trainer haben Vorrang,
 // Helfer füllen nur die Lücke (wer zuerst kommt) – Rest auf die Warteliste.
 function StaffingBoard({ ev, team, session, isHelper, onPatch, fire, onRequestHelpers }){
+  const { tr } = useT();
   const role=session?.role; const isManager=role==="trainer"||role==="admin";
   const yes=Object.entries(ev.votes||{}).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").length;
   const size=yes||ev.sollPlayers||defaultSollPlayers(team?.cat)||7;
@@ -30294,7 +30298,7 @@ function StaffingBoard({ ev, team, session, isHelper, onPatch, fire, onRequestHe
     <div style={{marginTop:16,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
         <span style={{fontSize:18}}>👥</span>
-        <span style={{fontWeight:800,fontSize:15,color:"#0f172a",flex:1}}>Betreuung</span>
+        <span style={{fontWeight:800,fontSize:15,color:"#0f172a",flex:1}}>{tr("secStaffing")}</span>
         <span style={{fontSize:12.5,fontWeight:800,color:enough?"#15803d":"#b45309",background:enough?"#dcfce7":"#fef3c7",borderRadius:99,padding:"3px 10px"}}>{ist}/{target}</span>
       </div>
       {isManager&&(
@@ -30333,6 +30337,7 @@ function StaffingBoard({ ev, team, session, isHelper, onPatch, fire, onRequestHe
   );
 }
 function MatchReportCard({ ev, roster, onSave }){
+  const { tr } = useT();
   const r=ev.report||{};
   const [gf,setGf]=useState(r.gf==null?"":String(r.gf));
   const [ga,setGa]=useState(r.ga==null?"":String(r.ga));
@@ -30345,7 +30350,7 @@ function MatchReportCard({ ev, roster, onSave }){
   const numIn={width:48,padding:"8px",fontSize:18,fontWeight:900,textAlign:"center",border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none"};
   return (
     <div style={{marginTop:16,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
-      <div style={{fontWeight:800,fontSize:14,color:"#0f172a",marginBottom:10}}>📋 Spielbericht{r.ts?<span style={{fontWeight:600,fontSize:11.5,color:"#16a34a",marginLeft:6}}>· gespeichert</span>:""}</div>
+      <div style={{fontWeight:800,fontSize:14,color:"#0f172a",marginBottom:10}}>📋 {tr("secReport")}{r.ts?<span style={{fontWeight:600,fontSize:11.5,color:"#16a34a",marginLeft:6}}>· {tr("savedMark")}</span>:""}</div>
       <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:12}}>
         <span style={{fontSize:12,fontWeight:700,color:"#475569"}}>{home?"Wir":"Gegner"}</span>
         <input value={home?gf:ga} onChange={e=>(home?setGf:setGa)(e.target.value.replace(/[^0-9]/g,"").slice(0,2))} inputMode="numeric" style={numIn}/>
