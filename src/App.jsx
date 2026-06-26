@@ -13,6 +13,7 @@ const T = {
     vImInSelf:"Ich bin dabei", vImInChild:"Mein Kind ist dabei", vComesLate:"Kommt zu spät", vComesLateMins:"Kommt ca. {m} Min. zu spät", vHowLate:"Wie spät kommt dein Kind?", vConfirm:"Bestätigen", vCancel:"Abbrechen", vMin:"Min", vNotIn:"Leider nicht dabei", vWhyNot:"Warum kann dein Kind nicht?", vNoReason:"Ohne Angabe", vLateNeedsReason:"Nach Ablauf der Frist ist eine Absage nur mit Grund möglich.", vDeadlinePassed:"Frist abgelaufen – Abstimmung wird trotzdem gezählt", vDeadline:"Abstimmungs-Frist:", vLateList:"Verspätungen", vSumIn:"dabei", vSumLate:"verspätet", vSumOut:"nicht dabei", rKrank:"Krank", rUrlaub:"Urlaub", rSchule:"Schulpflicht", rWettkampf:"Wettkampf", rSonstiges:"Sonstiges",
     lnTor:"Tor", lnAbwehr:"Abwehr", lnMittelfeld:"Mittelfeld", lnAngriff:"Angriff", luTitle:"Aufstellung", luSuggest:"Vorschlag", luFriends:"Freunde gewichten:", luOff:"Aus", luNormal:"Normal", luStrong:"Stark", luBench:"Bank / verfügbar", luAllPlaced:"Alle Zusagen sind aufgestellt.", luGuestVisible:"Mannschaft für Gäste sichtbar", luGuestHint:"Namen nur mit Eltern-Freigabe; sonst nur Trikotnummer.", luBenchShort:"Bank:", luForN:"Für {n} Spieler:", luFormation:"Formation", luWithGK:"mit Torwart", luOnBench:"{n} auf der Bank", luTogether:"Eingespielt:", luFriendsLabel:"Freunde", luSeparated:"getrennt", luAdjustHint:"Besetzung nach Position, Stärken & Freundschaften – frei anpassbar.",
     et_training:"Training", et_heimspiel:"Heimspiel", et_auswarts:"Auswärtsspiel", et_freundschaft:"Freundschaftsspiel", et_turnier:"Turnier", et_event:"Sondertermin",
+    wNext:"Weiter", wBack:"Zurück", wSave:"Speichern", wCreateEvent:"Termin erstellen", wCreateSeries:"Serie erstellen", wCreateN:"{n} Termine erstellen", fTitle:"Titel", fTime:"Uhrzeit", fEnd:"Ende (optional)", fDate:"Datum", fLoc:"Ort", fLocPh:"Sportplatz", wSummarySec:"ZUSAMMENFASSUNG", wPlayersSec:"SPIELERANZAHL (optional)", wDeadlineSec:"ABSTIMMUNGSFRIST (OPTIONAL)", wSoll:"Soll (für die Ampel)", wMax:"Max (optional)",
     cancel: "Abbrechen",
     save: "Speichern",
     delete: "Löschen",
@@ -133,6 +134,7 @@ const T = {
     vImInSelf:"I'm in", vImInChild:"My child is in", vComesLate:"Will be late", vComesLateMins:"Arrives ~{m} min late", vHowLate:"How late will your child be?", vConfirm:"Confirm", vCancel:"Cancel", vMin:"min", vNotIn:"Not available", vWhyNot:"Why can't your child make it?", vNoReason:"No reason", vLateNeedsReason:"After the deadline a cancellation requires a reason.", vDeadlinePassed:"Deadline passed – your vote still counts", vDeadline:"Voting deadline:", vLateList:"Late arrivals", vSumIn:"in", vSumLate:"late", vSumOut:"out", rKrank:"Ill", rUrlaub:"Holiday", rSchule:"School", rWettkampf:"Competition", rSonstiges:"Other",
     lnTor:"Goal", lnAbwehr:"Defence", lnMittelfeld:"Midfield", lnAngriff:"Attack", luTitle:"Line-up", luSuggest:"Suggestion", luFriends:"Weight friends:", luOff:"Off", luNormal:"Normal", luStrong:"Strong", luBench:"Bench / available", luAllPlaced:"All confirmed players are placed.", luGuestVisible:"Show squad to guests", luGuestHint:"Names only with parent consent; otherwise just shirt number.", luBenchShort:"Bench:", luForN:"For {n} players:", luFormation:"Formation", luWithGK:"with keeper", luOnBench:"{n} on the bench", luTogether:"Played together:", luFriendsLabel:"Friends", luSeparated:"separated", luAdjustHint:"Positions by role, strengths & friendships – freely adjustable.",
     et_training:"Training", et_heimspiel:"Home match", et_auswarts:"Away match", et_freundschaft:"Friendly", et_turnier:"Tournament", et_event:"Special event",
+    wNext:"Next", wBack:"Back", wSave:"Save", wCreateEvent:"Create event", wCreateSeries:"Create series", wCreateN:"Create {n} events", fTitle:"Title", fTime:"Time", fEnd:"End (optional)", fDate:"Date", fLoc:"Location", fLocPh:"Sports ground", wSummarySec:"SUMMARY", wPlayersSec:"NUMBER OF PLAYERS (optional)", wDeadlineSec:"VOTING DEADLINE (OPTIONAL)", wSoll:"Target (traffic light)", wMax:"Max (optional)",
     cancel:"Cancel",
     save:"Save",
     delete:"Delete",
@@ -253,6 +255,7 @@ const T = {
     vImInSelf:"Ik ben erbij", vImInChild:"Mijn kind is erbij", vComesLate:"Komt te laat", vComesLateMins:"Komt ~{m} min te laat", vHowLate:"Hoe laat komt je kind?", vConfirm:"Bevestigen", vCancel:"Annuleren", vMin:"min", vNotIn:"Helaas niet", vWhyNot:"Waarom kan je kind niet?", vNoReason:"Geen reden", vLateNeedsReason:"Na de deadline kan afmelden alleen met reden.", vDeadlinePassed:"Deadline verstreken – je stem telt toch mee", vDeadline:"Stemdeadline:", vLateList:"Te laat", vSumIn:"erbij", vSumLate:"te laat", vSumOut:"niet erbij", rKrank:"Ziek", rUrlaub:"Vakantie", rSchule:"School", rWettkampf:"Wedstrijd", rSonstiges:"Overig",
     lnTor:"Keeper", lnAbwehr:"Verdediging", lnMittelfeld:"Middenveld", lnAngriff:"Aanval", luTitle:"Opstelling", luSuggest:"Voorstel", luFriends:"Vrienden wegen:", luOff:"Uit", luNormal:"Normaal", luStrong:"Sterk", luBench:"Bank / beschikbaar", luAllPlaced:"Alle toezeggingen staan opgesteld.", luGuestVisible:"Team zichtbaar voor gasten", luGuestHint:"Namen alleen met toestemming ouders; anders alleen rugnummer.", luBenchShort:"Bank:", luForN:"Voor {n} spelers:", luFormation:"Formatie", luWithGK:"met keeper", luOnBench:"{n} op de bank", luTogether:"Ingespeeld:", luFriendsLabel:"Vrienden", luSeparated:"apart", luAdjustHint:"Posities op rol, sterktes & vriendschappen – vrij aanpasbaar.",
     et_training:"Training", et_heimspiel:"Thuiswedstrijd", et_auswarts:"Uitwedstrijd", et_freundschaft:"Oefenwedstrijd", et_turnier:"Toernooi", et_event:"Speciale afspraak",
+    wNext:"Verder", wBack:"Terug", wSave:"Opslaan", wCreateEvent:"Afspraak maken", wCreateSeries:"Serie maken", wCreateN:"{n} afspraken maken", fTitle:"Titel", fTime:"Tijd", fEnd:"Einde (optioneel)", fDate:"Datum", fLoc:"Locatie", fLocPh:"Sportveld", wSummarySec:"SAMENVATTING", wPlayersSec:"AANTAL SPELERS (optioneel)", wDeadlineSec:"STEMDEADLINE (OPTIONEEL)", wSoll:"Streefgetal (stoplicht)", wMax:"Max (optioneel)",
     cancel:"Annuleren",
     save:"Opslaan",
     delete:"Verwijderen",
@@ -24304,10 +24307,10 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
         </div>}
         {}
         {step===3&&<div className="in" style={{display:"flex",flexDirection:"column",gap:13}}>
-          <Inp label="Titel" val={f.title} set={v=>u({title:v})} ph={`z.B. ${etLabel(f.type,tr)}`} af cl={cl}/>
+          <Inp label={tr("fTitle")} val={f.title} set={v=>u({title:v})} ph={`z.B. ${etLabel(f.type,tr)}`} af cl={cl}/>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:11}}>
-            <Inp label="Uhrzeit" val={f.time} set={v=>u({time:v})} type="time" ph="09:00" cl={cl}/>
-            <Inp label="Ende (optional)" val={f.endTime} set={v=>u({endTime:v})} type="time" ph="" cl={cl}/>
+            <Inp label={tr("fTime")} val={f.time} set={v=>u({time:v})} type="time" ph="09:00" cl={cl}/>
+            <Inp label={tr("fEnd")} val={f.endTime} set={v=>u({endTime:v})} type="time" ph="" cl={cl}/>
           </div>
           {["auswarts","freundschaft","turnier"].includes(f.type) ? (
             <VenuePicker venues={venues} value={f.venueId}
@@ -24325,10 +24328,10 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
                   ? ((selF.split||1)>1 && <Sel label="Feldgröße" val={String(f.fieldSplit||1)}
                       set={v=>u({fieldSplit:parseInt(v)})}
                       opts={SPLIT_OPTIONS.filter(o=>o.id<=(selF.split||1)).map(o=>[String(o.id),o.label])}/>)
-                  : <Inp label="Ort" val={f.loc} set={v=>u({loc:v})} ph="Sportplatz" cl={cl}/>}
+                  : <Inp label={tr("fLoc")} val={f.loc} set={v=>u({loc:v})} ph={tr("fLocPh")} cl={cl}/>}
               </div>
             );
-          })() : <Inp label="Ort" val={f.loc} set={v=>u({loc:v})} ph="Sportplatz" cl={cl}/>}
+          })() : <Inp label={tr("fLoc")} val={f.loc} set={v=>u({loc:v})} ph={tr("fLocPh")} cl={cl}/>}
           {["heimspiel","auswarts","freundschaft","turnier"].includes(f.type)&&(()=>{ const on=f.carpoolEnabled!==false; return (
             <div style={{border:"1.5px solid #e2e8f0",borderRadius:13,padding:"12px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
               <div>
@@ -24341,7 +24344,7 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
             </div>
           );})()}
           <SeriesWizard f={f} u={u} t={t} cl={cl}/>
-          {f.recMode==="none"&&<Inp label="Datum" val={f.date} set={v=>u({date:v})} type="date" cl={cl}/>}
+          {f.recMode==="none"&&<Inp label={tr("fDate")} val={f.date} set={v=>u({date:v})} type="date" cl={cl}/>}
           {f.recMode==="none"&&(()=>{ const hn=publicHolidayName(f.date,cl?.clubSettings?.holidayState); return hn?(
             <div style={{display:"flex",alignItems:"center",gap:8,background:"#fef3c7",border:"1.5px solid #fde68a",borderRadius:11,padding:"9px 12px",marginTop:-4,fontSize:12.5,color:"#92400e",fontWeight:600}}>
               <span style={{fontSize:15}}>🎉</span><span>Achtung: Dieser Tag ist ein Feiertag – <strong>{hn}</strong></span>
@@ -24357,17 +24360,17 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
           ):null; })()}
           {f.recMode==="none"&&(
             <div>
-              <div style={{fontSize:11,fontWeight:800,color:"#64748b",margin:"4px 0 6px",letterSpacing:.5}}>ABSTIMMUNGSFRIST (OPTIONAL)</div>
+              <div style={{fontSize:11,fontWeight:800,color:"#64748b",margin:"4px 0 6px",letterSpacing:.5}}>{tr("wDeadlineSec")}</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:11}}>
-                <Inp label="Datum" val={f.deadline?.date||""} set={v=>u({deadline:v?{date:v,time:f.deadline?.time||""}:undefined})} type="date" cl={cl}/>
-                <Inp label="Uhrzeit" val={f.deadline?.time||""} set={v=>u({deadline:f.deadline?.date?{date:f.deadline.date,time:v}:(v?{date:f.date||now(),time:v}:undefined)})} type="time" cl={cl}/>
+                <Inp label={tr("fDate")} val={f.deadline?.date||""} set={v=>u({deadline:v?{date:v,time:f.deadline?.time||""}:undefined})} type="date" cl={cl}/>
+                <Inp label={tr("fTime")} val={f.deadline?.time||""} set={v=>u({deadline:f.deadline?.date?{date:f.deadline.date,time:v}:(v?{date:f.date||now(),time:v}:undefined)})} type="time" cl={cl}/>
               </div>
               <div style={{fontSize:11,color:"#94a3b8",marginTop:5}}>Bis wann darf abgestimmt werden? Spätere Antworten werden als „verspätet" markiert. Leer = keine feste Frist.</div>
             </div>
           )}
           {f.recMode!=="none"&&(
             <div>
-              <div style={{fontSize:11,fontWeight:800,color:"#64748b",margin:"4px 0 6px",letterSpacing:.5}}>ABSTIMMUNGSFRIST (OPTIONAL)</div>
+              <div style={{fontSize:11,fontWeight:800,color:"#64748b",margin:"4px 0 6px",letterSpacing:.5}}>{tr("wDeadlineSec")}</div>
               <div style={{display:"flex",gap:8,alignItems:"flex-end"}}>
                 <div style={{width:96}}><Inp val={f.deadlineOffset?.value||""} set={v=>u({deadlineOffset:{value:v.replace(/[^0-9]/g,""),unit:f.deadlineOffset?.unit||"h"}})} type="number" ph="z.B. 24" cl={cl}/></div>
                 <div style={{flex:1}}><Sel val={f.deadlineOffset?.unit||"h"} set={v=>u({deadlineOffset:{value:f.deadlineOffset?.value||"",unit:v}})} opts={[["h","Stunden"],["d","Tage"],["w","Wochen"]]}/></div>
@@ -24382,10 +24385,10 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
             const sollVal = (f.sollPlayers ?? vorschlag);
             return (
               <div>
-                <div style={{fontSize:11,fontWeight:800,color:"#64748b",margin:"4px 0 6px",letterSpacing:.5}}>SPIELERANZAHL (optional)</div>
+                <div style={{fontSize:11,fontWeight:800,color:"#64748b",margin:"4px 0 6px",letterSpacing:.5}}>{tr("wPlayersSec")}</div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:11,alignItems:"end"}}>
                   <div>
-                    <div style={{fontSize:11,color:"#94a3b8",marginBottom:4}}>Soll (für die Ampel)</div>
+                    <div style={{fontSize:11,color:"#94a3b8",marginBottom:4}}>{tr("wSoll")}</div>
                     <div style={{display:"flex",alignItems:"center",gap:6}}>
                       <button type="button" onClick={()=>u({sollPlayers:Math.max(0,sollVal-1)})} style={{width:32,height:38,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontWeight:800,fontSize:16}}>–</button>
                       <span style={{flex:1,textAlign:"center",fontWeight:900,fontSize:18}}>{sollVal}</span>
@@ -24393,7 +24396,7 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
                     </div>
                   </div>
                   <div>
-                    <div style={{fontSize:11,color:"#94a3b8",marginBottom:4}}>Max (optional)</div>
+                    <div style={{fontSize:11,color:"#94a3b8",marginBottom:4}}>{tr("wMax")}</div>
                     <div style={{display:"flex",alignItems:"center",gap:6}}>
                       <button type="button" onClick={()=>u({maxPlayers:f.maxPlayers?Math.max(0,f.maxPlayers-1):0})} style={{width:32,height:38,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontWeight:800,fontSize:16}}>–</button>
                       <span style={{flex:1,textAlign:"center",fontWeight:900,fontSize:18,color:f.maxPlayers?"#0f172a":"#cbd5e1"}}>{f.maxPlayers||"–"}</span>
@@ -24493,7 +24496,7 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
         {}
         {step===5&&<div className="in">
           <div style={{background:"#0f172a",borderRadius:17,padding:"18px"}}>
-            <p style={{color:"rgba(255,255,255,.45)",fontSize:11,fontWeight:800,marginBottom:13,letterSpacing:.5}}>ZUSAMMENFASSUNG</p>
+            <p style={{color:"rgba(255,255,255,.45)",fontSize:11,fontWeight:800,marginBottom:13,letterSpacing:.5}}>{tr("wSummarySec")}</p>
             {[[" Mannschaft",teamsSel?.icon+" "+teamsSel?.name],["Art",ET[f.type]?.icon+" "+etLabel(f.type,tr)],["Titel",f.title],["Uhrzeit",f.time||"-"],f.loc&&["Ort","* "+f.loc+(f.fieldId&&f.fieldSplit>1?" · "+(SPLIT_OPTIONS.find(o=>o.id===f.fieldSplit)?.label||""):"")],f.note&&["Notiz","* "+f.note.slice(0,50)],["Umfrage",(f.pt==="att"?"* Anwesenheit":f.pt==="carpool"?"* Fahrtgemeinschaft":`* Liste (${(f.li||[]).length} Opt.)`)+((f.extraPolls||[]).length?` + ${f.extraPolls.length} Liste${f.extraPolls.length>1?"n":""}`:"")],["Termine",f.recMode==="weekly"?`* Woechentlich . ${f.recDays?.length||0} Tage`:f.recMode==="custom"?`* ${f.recDates?.length||0} Daten`:"1 Termin . "+fmtD(f.date)],f.open&&["Sichtbarkeit","* Offen für andere Vereine"]].filter(Boolean).filter(x=>!x.hidden).map(([k,v])=>(
               <div key={k} style={{display:"flex",gap:10,marginBottom:9}}>
                 <span style={{color:"rgba(255,255,255,.4)",fontSize:12,fontWeight:700,minWidth:90}}>{k}</span>
@@ -24508,8 +24511,8 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
       </div>
       {}
       <div style={{padding:"12px 16px calc(12px + env(safe-area-inset-bottom))",background:"#fff",borderTop:"1px solid #f1f5f9",display:"flex",gap:10,position:"sticky",bottom:0,zIndex:100}}>
-        {step>1?<Btn ch="<- Zurück" onClick={()=>setStep(s=>s-1)} v="gst" sx={{flex:1}}/>:<Btn ch="Abbrechen" onClick={onClose} v="gst" sx={{flex:1}}/>}
-        {step<STEPS?<Btn ch="Weiter ->" onClick={()=>setStep(s=>s+1)} dis={!ok()} cl={cl} sx={{flex:2}}/>:<Btn ch={isEdit?"Speichern":f.recMode==="weekly"?"Serie erstellen":f.recMode==="custom"?`${(f.recDates||[]).length} Termine erstellen`:"Termin erstellen"} onClick={finish} cl={cl} sx={{flex:2}}/>}
+        {step>1?<Btn ch={"<- "+tr("wBack")} onClick={()=>setStep(s=>s-1)} v="gst" sx={{flex:1}}/>:<Btn ch={tr("vCancel")} onClick={onClose} v="gst" sx={{flex:1}}/>}
+        {step<STEPS?<Btn ch={tr("wNext")+" ->"} onClick={()=>setStep(s=>s+1)} dis={!ok()} cl={cl} sx={{flex:2}}/>:<Btn ch={isEdit?tr("wSave"):f.recMode==="weekly"?tr("wCreateSeries"):f.recMode==="custom"?tr("wCreateN").replace("{n}",(f.recDates||[]).length):tr("wCreateEvent")} onClick={finish} cl={cl} sx={{flex:2}}/>}
       </div>
     </div>
   );
