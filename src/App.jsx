@@ -6525,7 +6525,8 @@ function FoerderAssistent({ data, myTids, cl, save, fire }){
       ? (arr||[]).map(p=>indGroup.some(x=>x.id===p.id)?{...p,focusCount:(p.focusCount||0)+1,lastFocus:ts}:p)
       : (arr||[]);
     if(save&&nextTraining){
-      const plan={cat,createdAt:ts,sessions:[{title:"Förderstation ("+effSkills.join("/")+")",blocks:station.map(b=>({phase:b.phase,id:b.d.id,title:b.d.title,min:b.d.min}))}]};
+      // Datenschutz: keine Skill-Namen in Titel/Phasen (Plan ist auch für Eltern/Spieler sichtbar).
+      const plan={cat,createdAt:ts,sessions:[{title:"Trainingseinheit",blocks:station.map(b=>({phase:String(b.phase).startsWith("Förderung")?"Förderung":b.phase,id:b.d.id,title:b.d.title,min:b.d.min}))}]};
       save({...data,
         events:(data.events||[]).map(e=>e.id===nextTraining.id?{...e,trainingPlan:plan}:e),
         playerProfiles:bumpProfiles(data.playerProfiles)});
@@ -7050,20 +7051,29 @@ function SeasonReportTab({ data, myTids, cl, fire }){
     let weak=null; axes.forEach(a=>{const v=p.skills?.[a]; if(typeof v==="number"&&v>0&&(!weak||v<weak.v))weak={a,v};});
     return {p,trainPct,gamePct,tY,gY,mins:Math.round(secs/60),gc,avg,weak};
   });
-  const reportText=()=>{
-    const L=[`Saisonbericht – ${team?.name||""}`,`Stand: ${fmtD(tod)}`,`Trainings: ${pastTrain.length} · Spiele: ${pastGames.length} · Spieler: ${players.length}`,""];
-    rows.forEach(r=>{
-      L.push(`• ${r.p.name}${r.p.position?` (${r.p.position})`:""}`);
-      L.push(`   Anwesenheit Training: ${r.trainPct??"–"}%${r.gamePct!=null?` · Spiele: ${r.gamePct}%`:""}`);
-      if(r.gc) L.push(`   Spielzeit: ${r.mins} Min in ${r.gc} ${r.gc===1?"Spiel":"Spielen"}`);
-      if(r.avg!=null) L.push(`   Ø Skill: ${r.avg}/5${r.weak?` · schwächster Bereich: ${r.weak.a} (${r.weak.v}/5)`:""}`);
+  // Datenschutz: full=true (Skills/Empfehlung) nur im Einzelbericht für das jeweilige Kind.
+  const playerBlock=(r,full)=>{
+    const L=[`• ${r.p.name}${r.p.position?` (${r.p.position})`:""}`,
+      `   Anwesenheit Training: ${r.trainPct??"–"}%${r.gamePct!=null?` · Spiele: ${r.gamePct}%`:""}`];
+    if(r.gc) L.push(`   Spielzeit: ${r.mins} Min in ${r.gc} ${r.gc===1?"Spiel":"Spielen"}`);
+    if(full){
+      if(r.avg!=null) L.push(`   Ø Skill: ${r.avg}/5${r.weak?` · schwächster Bereich: ${dimLabel(r.weak.a,tr)} (${r.weak.v}/5)`:""}`);
       if(r.p.recommend) L.push(`   Empfehlung: ${r.p.recommend}`);
-      L.push("");
-    });
+    }
     return L.join("\n");
   };
-  const doCopy=()=>{ navigator.clipboard?.writeText(reportText()); fire&&fire("Bericht kopiert"); };
-  const doShare=()=>{ const text=reportText(); if(navigator.share){ navigator.share({title:`Saisonbericht ${team?.name||""}`,text}).catch(()=>{}); } else { navigator.clipboard?.writeText(text); fire&&fire("Bericht kopiert"); } };
+  const reportTextFor=(r)=>[`Saisonbericht – ${r.p.name}`,`${team?.name||""} · Stand ${fmtD(tod)}`,"",playerBlock(r,true),"","Vertraulich – enthält personenbezogene Daten. Nur an Berechtigte weitergeben."].join("\n");
+  const reportTextTeam=()=>{
+    const L=[`Saisonbericht (Team) – ${team?.name||""}`,`Stand: ${fmtD(tod)} · Trainings: ${pastTrain.length} · Spiele: ${pastGames.length}`,
+      `Hinweis: Nur Anwesenheit & Spielzeit – Skill-Bewertungen/Empfehlungen werden teamweit NICHT geteilt.`,""];
+    rows.forEach(r=>L.push(playerBlock(r,false)));
+    return L.join("\n");
+  };
+  const share=(title,text)=>{ if(navigator.share){ navigator.share({title,text}).catch(()=>{}); } else { navigator.clipboard?.writeText(text); fire&&fire("Bericht kopiert"); } };
+  const shareOne=(r)=>share(`Saisonbericht ${r.p.name}`, reportTextFor(r));
+  const confirmTeam=()=> typeof window==="undefined" || !window.confirm || window.confirm("Datenschutz-Hinweis: Du teilst Daten ALLER Spieler (Minderjährige).\nTeamweit werden nur Anwesenheit & Spielzeit geteilt (keine Skills/Empfehlungen). Nur an Berechtigte mit Einwilligung weitergeben.\n\nWirklich den ganzen Kader teilen?");
+  const doShareTeam=()=>{ if(!confirmTeam())return; share(`Saisonbericht ${team?.name||""}`, reportTextTeam()); };
+  const doCopyTeam=()=>{ if(!confirmTeam())return; navigator.clipboard?.writeText(reportTextTeam()); fire&&fire("Bericht kopiert"); };
   if(teams.length===0) return <p style={{color:"#94a3b8",fontSize:13,padding:20}}>Keine Mannschaft.</p>;
   return (
     <div>
@@ -7071,10 +7081,10 @@ function SeasonReportTab({ data, myTids, cl, fire }){
         {teams.map(tm=>(<button key={tm.id} onClick={()=>setTid(tm.id)} style={{padding:"7px 13px",borderRadius:99,border:`2px solid ${tid===tm.id?tm.col:"#e2e8f0"}`,background:tid===tm.id?tm.col:"#fff",color:tid===tm.id?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit",flexShrink:0}}>{tm.name}</button>))}
       </div>}
       <div style={{display:"flex",gap:8,marginBottom:14}}>
-        <button onClick={doShare} style={{flex:2,padding:"11px",borderRadius:11,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>📄 {tr("btnShareReport")}</button>
-        <button onClick={doCopy} style={{flex:1,padding:"11px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>{tr("btnCopy")}</button>
+        <button onClick={doShareTeam} style={{flex:2,padding:"11px",borderRadius:11,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>📄 Team teilen</button>
+        <button onClick={doCopyTeam} style={{flex:1,padding:"11px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>{tr("btnCopy")}</button>
       </div>
-      <div style={{fontSize:11.5,color:"#94a3b8",marginBottom:12,lineHeight:1.45}}>Ideal fürs Elterngespräch: Anwesenheit, Spielzeit, Skill-Stand und deine Empfehlung je Spieler. Über „Teilen" als Text (z. B. in WhatsApp oder als PDF aus dem Teilen-Menü).</div>
+      <div style={{fontSize:11.5,color:"#92400e",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:10,padding:"9px 11px",marginBottom:12,lineHeight:1.5}}>🔒 Datenschutz: Pro Kind über „Teilen" auf der jeweiligen Karte den <b>vollständigen Einzelbericht</b> (Skills/Empfehlung) nur an dessen Eltern senden. „Team teilen" enthält <b>nur Anwesenheit & Spielzeit</b> – keine Bewertungen.</div>
       <div style={{display:"flex",flexDirection:"column",gap:8}}>
         {rows.length===0&&<p style={{fontSize:13,color:"#94a3b8",textAlign:"center",padding:20}}>Keine Spieler in dieser Saison.</p>}
         {rows.map(r=>(
@@ -7086,6 +7096,7 @@ function SeasonReportTab({ data, myTids, cl, fire }){
                 {r.p.position&&<div style={{fontSize:11.5,color:"#94a3b8"}}>{r.p.position}</div>}
               </div>
               {r.avg!=null&&<div style={{textAlign:"right"}}><div style={{fontWeight:900,fontSize:17,color:t.p}}>{r.avg}</div><div style={{fontSize:10,color:"#94a3b8"}}>{tr("kpiAvgSkill")}</div></div>}
+              <button onClick={()=>shareOne(r)} title="Einzelbericht teilen" style={{flexShrink:0,padding:"7px 10px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:t.p,fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>📤</button>
             </div>
             <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
               <span style={{fontSize:11.5,fontWeight:700,color:"#15803d",background:"#dcfce7",borderRadius:99,padding:"3px 9px"}}>{tr("kpiTraining")} {r.trainPct??"–"}%</span>
