@@ -13,7 +13,7 @@ const T = {
     vImInSelf:"Ich bin dabei", vImInChild:"Mein Kind ist dabei", vComesLate:"Kommt zu spät", vComesLateMins:"Kommt ca. {m} Min. zu spät", vHowLate:"Wie spät kommt dein Kind?", vConfirm:"Bestätigen", vCancel:"Abbrechen", vMin:"Min", vNotIn:"Leider nicht dabei", vWhyNot:"Warum kann dein Kind nicht?", vNoReason:"Ohne Angabe", vLateNeedsReason:"Nach Ablauf der Frist ist eine Absage nur mit Grund möglich.", vDeadlinePassed:"Frist abgelaufen – Absage nur noch mit Grund", vDeadline:"Abstimmungs-Frist:", vLateList:"Verspätungen", vSumIn:"dabei", vSumLate:"verspätet", vSumOut:"nicht dabei", rKrank:"Krank", rUrlaub:"Urlaub", rSchule:"Schulpflicht", rWettkampf:"Wettkampf", rSonstiges:"Sonstiges", vReasonPh:"Eigener Grund …", vReasonSend:"Absagen",
     lnTor:"Tor", lnAbwehr:"Abwehr", lnMittelfeld:"Mittelfeld", lnAngriff:"Angriff", luTitle:"Aufstellung", luSuggest:"Vorschlag", luFriends:"Freunde gewichten:", luOff:"Aus", luNormal:"Normal", luStrong:"Stark", luBench:"Bank / verfügbar", luAllPlaced:"Alle Zusagen sind aufgestellt.", luGuestVisible:"Mannschaft für Gäste sichtbar", luGuestHint:"Namen nur mit Eltern-Freigabe; sonst nur Trikotnummer.", luBenchShort:"Bank:", luForN:"Für {n} Spieler:", luFormation:"Formation", luWithGK:"mit Torwart", luOnBench:"{n} auf der Bank", luTogether:"Eingespielt:", luFriendsLabel:"Freunde", luSeparated:"getrennt", luAdjustHint:"Besetzung nach Position, Stärken & Freundschaften – frei anpassbar.",
     et_training:"Training", et_heimspiel:"Heimspiel", et_auswarts:"Auswärtsspiel", et_freundschaft:"Freundschaftsspiel", et_turnier:"Turnier", et_event:"Sondertermin",
-    wNext:"Weiter", wBack:"Zurück", wSave:"Speichern", wCreateEvent:"Termin erstellen", wCreateSeries:"Serie erstellen", wCreateN:"{n} Termine erstellen", fTitle:"Titel", fTime:"Uhrzeit", fEnd:"Ende (optional)", fDate:"Datum", fLoc:"Ort", fLocPh:"Sportplatz", wSummarySec:"ZUSAMMENFASSUNG", wPlayersSec:"SPIELERANZAHL (optional)", wDeadlineSec:"ABSTIMMUNGSFRIST (OPTIONAL)", wSoll:"Soll (für die Ampel)", wMax:"Max (optional)", secStaffing:"Betreuung", secLineup:"Aufstellung", secReport:"Spielbericht", lineT:"Tor", lineA:"Abwehr", lineM:"Mittelfeld", lineS:"Angriff", savedMark:"gespeichert", "dim_Technik":"Technik", "dim_Schnelligkeit":"Schnelligkeit", "dim_Zweikampf":"Zweikampf", "dim_Übersicht":"Übersicht", "dim_Abschluss":"Abschluss", "dim_Ausdauer":"Ausdauer", "dim_Teamplay":"Teamplay", goalShort:"Ziel", kpiTraining:"Training", kpiGames:"Spiele", kpiPlaytime:"Spielzeit", kpiAvgSkill:"Ø Skill", kpiFocus:"Fokus", kpiRecommend:"Empfehlung", btnShareReport:"Bericht teilen", btnCopy:"Kopieren",
+    wNext:"Weiter", wBack:"Zurück", wSave:"Speichern", wCreateEvent:"Termin erstellen", wCreateSeries:"Serie erstellen", wCreateN:"{n} Termine erstellen", fTitle:"Titel", fTime:"Uhrzeit", fEnd:"Ende (optional)", fDate:"Datum", fLoc:"Ort", fLocPh:"Sportplatz", wSummarySec:"ZUSAMMENFASSUNG", wPlayersSec:"SPIELERANZAHL (optional)", wDeadlineSec:"ABSTIMMUNGSFRIST (OPTIONAL)", wSoll:"Soll (für die Ampel)", wMax:"Max (optional)", secStaffing:"Betreuung", secLineup:"Aufstellung", secReport:"Spielbericht", lineT:"Tor", lineA:"Abwehr", lineM:"Mittelfeld", lineS:"Angriff", savedMark:"gespeichert", "dim_Technik":"Technik", "dim_Schnelligkeit":"Schnelligkeit", "dim_Zweikampf":"Zweikampf", "dim_Übersicht":"Übersicht", "dim_Abschluss":"Abschluss", "dim_Ausdauer":"Ausdauer", "dim_Teamplay":"Teamplay", goalShort:"Ziel", sArea:"Bereich", sIst:"Ist", kpiTraining:"Training", kpiGames:"Spiele", kpiPlaytime:"Spielzeit", kpiAvgSkill:"Ø Skill", kpiFocus:"Fokus", kpiRecommend:"Empfehlung", btnShareReport:"Bericht teilen", btnCopy:"Kopieren",
     cancel: "Abbrechen",
     save: "Speichern",
     delete: "Löschen",
@@ -134,7 +134,7 @@ const T = {
     vImInSelf:"I'm in", vImInChild:"My child is in", vComesLate:"Will be late", vComesLateMins:"Arrives ~{m} min late", vHowLate:"How late will your child be?", vConfirm:"Confirm", vCancel:"Cancel", vMin:"min", vNotIn:"Not available", vWhyNot:"Why can't your child make it?", vNoReason:"No reason", vLateNeedsReason:"After the deadline a cancellation requires a reason.", vDeadlinePassed:"Deadline passed – cancellation needs a reason", vDeadline:"Voting deadline:", vLateList:"Late arrivals", vSumIn:"in", vSumLate:"late", vSumOut:"out", rKrank:"Ill", rUrlaub:"Holiday", rSchule:"School", rWettkampf:"Competition", rSonstiges:"Other", vReasonPh:"Own reason …", vReasonSend:"Decline",
     lnTor:"Goal", lnAbwehr:"Defence", lnMittelfeld:"Midfield", lnAngriff:"Attack", luTitle:"Line-up", luSuggest:"Suggestion", luFriends:"Weight friends:", luOff:"Off", luNormal:"Normal", luStrong:"Strong", luBench:"Bench / available", luAllPlaced:"All confirmed players are placed.", luGuestVisible:"Show squad to guests", luGuestHint:"Names only with parent consent; otherwise just shirt number.", luBenchShort:"Bench:", luForN:"For {n} players:", luFormation:"Formation", luWithGK:"with keeper", luOnBench:"{n} on the bench", luTogether:"Played together:", luFriendsLabel:"Friends", luSeparated:"separated", luAdjustHint:"Positions by role, strengths & friendships – freely adjustable.",
     et_training:"Training", et_heimspiel:"Home match", et_auswarts:"Away match", et_freundschaft:"Friendly", et_turnier:"Tournament", et_event:"Special event",
-    wNext:"Next", wBack:"Back", wSave:"Save", wCreateEvent:"Create event", wCreateSeries:"Create series", wCreateN:"Create {n} events", fTitle:"Title", fTime:"Time", fEnd:"End (optional)", fDate:"Date", fLoc:"Location", fLocPh:"Sports ground", wSummarySec:"SUMMARY", wPlayersSec:"NUMBER OF PLAYERS (optional)", wDeadlineSec:"VOTING DEADLINE (OPTIONAL)", wSoll:"Target (traffic light)", wMax:"Max (optional)", secStaffing:"Supervision", secLineup:"Lineup", secReport:"Match report", lineT:"Goal", lineA:"Defense", lineM:"Midfield", lineS:"Attack", savedMark:"saved", "dim_Technik":"Technique", "dim_Schnelligkeit":"Pace", "dim_Zweikampf":"Duels", "dim_Übersicht":"Vision", "dim_Abschluss":"Finishing", "dim_Ausdauer":"Stamina", "dim_Teamplay":"Teamwork", goalShort:"Target", kpiTraining:"Training", kpiGames:"Games", kpiPlaytime:"Playing time", kpiAvgSkill:"Avg skill", kpiFocus:"Focus", kpiRecommend:"Recommendation", btnShareReport:"Share report", btnCopy:"Copy",
+    wNext:"Next", wBack:"Back", wSave:"Save", wCreateEvent:"Create event", wCreateSeries:"Create series", wCreateN:"Create {n} events", fTitle:"Title", fTime:"Time", fEnd:"End (optional)", fDate:"Date", fLoc:"Location", fLocPh:"Sports ground", wSummarySec:"SUMMARY", wPlayersSec:"NUMBER OF PLAYERS (optional)", wDeadlineSec:"VOTING DEADLINE (OPTIONAL)", wSoll:"Target (traffic light)", wMax:"Max (optional)", secStaffing:"Supervision", secLineup:"Lineup", secReport:"Match report", lineT:"Goal", lineA:"Defense", lineM:"Midfield", lineS:"Attack", savedMark:"saved", "dim_Technik":"Technique", "dim_Schnelligkeit":"Pace", "dim_Zweikampf":"Duels", "dim_Übersicht":"Vision", "dim_Abschluss":"Finishing", "dim_Ausdauer":"Stamina", "dim_Teamplay":"Teamwork", goalShort:"Target", sArea:"Area", sIst:"Current", kpiTraining:"Training", kpiGames:"Games", kpiPlaytime:"Playing time", kpiAvgSkill:"Avg skill", kpiFocus:"Focus", kpiRecommend:"Recommendation", btnShareReport:"Share report", btnCopy:"Copy",
     cancel:"Cancel",
     save:"Save",
     delete:"Delete",
@@ -255,7 +255,7 @@ const T = {
     vImInSelf:"Ik ben erbij", vImInChild:"Mijn kind is erbij", vComesLate:"Komt te laat", vComesLateMins:"Komt ~{m} min te laat", vHowLate:"Hoe laat komt je kind?", vConfirm:"Bevestigen", vCancel:"Annuleren", vMin:"min", vNotIn:"Helaas niet", vWhyNot:"Waarom kan je kind niet?", vNoReason:"Geen reden", vLateNeedsReason:"Na de deadline kan afmelden alleen met reden.", vDeadlinePassed:"Deadline verstreken – afmelden alleen met reden", vDeadline:"Stemdeadline:", vLateList:"Te laat", vSumIn:"erbij", vSumLate:"te laat", vSumOut:"niet erbij", rKrank:"Ziek", rUrlaub:"Vakantie", rSchule:"School", rWettkampf:"Wedstrijd", rSonstiges:"Overig", vReasonPh:"Eigen reden …", vReasonSend:"Afmelden",
     lnTor:"Keeper", lnAbwehr:"Verdediging", lnMittelfeld:"Middenveld", lnAngriff:"Aanval", luTitle:"Opstelling", luSuggest:"Voorstel", luFriends:"Vrienden wegen:", luOff:"Uit", luNormal:"Normaal", luStrong:"Sterk", luBench:"Bank / beschikbaar", luAllPlaced:"Alle toezeggingen staan opgesteld.", luGuestVisible:"Team zichtbaar voor gasten", luGuestHint:"Namen alleen met toestemming ouders; anders alleen rugnummer.", luBenchShort:"Bank:", luForN:"Voor {n} spelers:", luFormation:"Formatie", luWithGK:"met keeper", luOnBench:"{n} op de bank", luTogether:"Ingespeeld:", luFriendsLabel:"Vrienden", luSeparated:"apart", luAdjustHint:"Posities op rol, sterktes & vriendschappen – vrij aanpasbaar.",
     et_training:"Training", et_heimspiel:"Thuiswedstrijd", et_auswarts:"Uitwedstrijd", et_freundschaft:"Oefenwedstrijd", et_turnier:"Toernooi", et_event:"Speciale afspraak",
-    wNext:"Verder", wBack:"Terug", wSave:"Opslaan", wCreateEvent:"Afspraak maken", wCreateSeries:"Serie maken", wCreateN:"{n} afspraken maken", fTitle:"Titel", fTime:"Tijd", fEnd:"Einde (optioneel)", fDate:"Datum", fLoc:"Locatie", fLocPh:"Sportveld", wSummarySec:"SAMENVATTING", wPlayersSec:"AANTAL SPELERS (optioneel)", wDeadlineSec:"STEMDEADLINE (OPTIONEEL)", wSoll:"Streefgetal (stoplicht)", wMax:"Max (optioneel)", secStaffing:"Begeleiding", secLineup:"Opstelling", secReport:"Wedstrijdverslag", lineT:"Doel", lineA:"Verdediging", lineM:"Middenveld", lineS:"Aanval", savedMark:"opgeslagen", "dim_Technik":"Techniek", "dim_Schnelligkeit":"Snelheid", "dim_Zweikampf":"Duels", "dim_Übersicht":"Overzicht", "dim_Abschluss":"Afronding", "dim_Ausdauer":"Conditie", "dim_Teamplay":"Teamwork", goalShort:"Doel", kpiTraining:"Training", kpiGames:"Wedstrijden", kpiPlaytime:"Speeltijd", kpiAvgSkill:"Gem. skill", kpiFocus:"Focus", kpiRecommend:"Advies", btnShareReport:"Rapport delen", btnCopy:"Kopiëren",
+    wNext:"Verder", wBack:"Terug", wSave:"Opslaan", wCreateEvent:"Afspraak maken", wCreateSeries:"Serie maken", wCreateN:"{n} afspraken maken", fTitle:"Titel", fTime:"Tijd", fEnd:"Einde (optioneel)", fDate:"Datum", fLoc:"Locatie", fLocPh:"Sportveld", wSummarySec:"SAMENVATTING", wPlayersSec:"AANTAL SPELERS (optioneel)", wDeadlineSec:"STEMDEADLINE (OPTIONEEL)", wSoll:"Streefgetal (stoplicht)", wMax:"Max (optioneel)", secStaffing:"Begeleiding", secLineup:"Opstelling", secReport:"Wedstrijdverslag", lineT:"Doel", lineA:"Verdediging", lineM:"Middenveld", lineS:"Aanval", savedMark:"opgeslagen", "dim_Technik":"Techniek", "dim_Schnelligkeit":"Snelheid", "dim_Zweikampf":"Duels", "dim_Übersicht":"Overzicht", "dim_Abschluss":"Afronding", "dim_Ausdauer":"Conditie", "dim_Teamplay":"Teamwork", goalShort:"Doel", sArea:"Onderdeel", sIst:"Nu", kpiTraining:"Training", kpiGames:"Wedstrijden", kpiPlaytime:"Speeltijd", kpiAvgSkill:"Gem. skill", kpiFocus:"Focus", kpiRecommend:"Advies", btnShareReport:"Rapport delen", btnCopy:"Kopiëren",
     cancel:"Annuleren",
     save:"Opslaan",
     delete:"Verwijderen",
@@ -20382,7 +20382,7 @@ function SpiderChart({ axes, values, compareValues=null, size=260, color="#16a34
   const { tr } = useT();
   const n = axes.length;
   if(n<3) return null;
-  const cx=size/2, cy=size/2, r=size*0.36;
+  const cx=size/2, cy=size/2, r=size*0.34;
   const angle = i => (Math.PI*2*i/n) - Math.PI/2;
   const point = (i,val) => {
     const rad = r*(Math.max(0,Math.min(max,val))/max);
@@ -20390,23 +20390,48 @@ function SpiderChart({ axes, values, compareValues=null, size=260, color="#16a34
   };
   const polygon = vals => vals.map((v,i)=>point(i,v).join(",")).join(" ");
   const rings = [1,2,3,4,5].slice(0,max);
+  const aria = axes.map((a,i)=>`${dimLabel(a,tr)} ${values[i]??0}${compareValues?` von ${compareValues[i]??0}`:""}`).join(", ");
   return (
-    <svg viewBox={`0 0 ${size} ${size}`} width="100%" style={{maxWidth:size,display:"block",margin:"0 auto"}}>
-      {rings.map((ring,ri)=>(
-        <polygon key={ri}
-          points={axes.map((_,i)=>{const rad=r*(ring/max);return [cx+rad*Math.cos(angle(i)),cy+rad*Math.sin(angle(i))].join(",");}).join(" ")}
-          fill="none" stroke="#e2e8f0" strokeWidth="1"/>
-      ))}
-      {axes.map((_,i)=>{const [x,y]=point(i,max);return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="#e2e8f0" strokeWidth="1"/>;})}
-      {compareValues && <polygon points={polygon(compareValues)} fill={compareColor+"33"} stroke={compareColor} strokeWidth="2"/>}
-      <polygon points={polygon(values)} fill={color+"33"} stroke={color} strokeWidth="2.5"/>
-      {axes.map((ax,i)=>{
-        const [lx,ly]=point(i,max*1.18);
-        return <text key={i} x={lx} y={ly} fontSize="10.5" fontWeight="700" fill="#475569"
-          textAnchor={Math.abs(lx-cx)<8?"middle":(lx<cx?"end":"start")}
-          dominantBaseline="middle">{dimLabel(ax,tr)}</text>;
-      })}
-    </svg>
+    <div>
+      <svg viewBox={`0 0 ${size} ${size}`} width="100%" role="img" aria-label={(compareValues?"Ist/Ziel – ":"")+aria} style={{maxWidth:size,display:"block",margin:"0 auto"}}>
+        {rings.map((ring,ri)=>(
+          <polygon key={ri}
+            points={axes.map((_,i)=>{const rad=r*(ring/max);return [cx+rad*Math.cos(angle(i)),cy+rad*Math.sin(angle(i))].join(",");}).join(" ")}
+            fill="none" stroke="#e2e8f0" strokeWidth="1"/>
+        ))}
+        {axes.map((_,i)=>{const [x,y]=point(i,max);return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="#e2e8f0" strokeWidth="1"/>;})}
+        {/* Skala 1..max entlang der oberen Achse */}
+        {rings.map((ring,ri)=>(<text key={"sc"+ri} x={cx+3} y={cy - r*(ring/max)} fontSize="8" fill="#cbd5e1" dominantBaseline="middle">{ring}</text>))}
+        {/* Ziel: gestrichelte Kontur ohne Füllung – auch ohne Farbe von Ist unterscheidbar */}
+        {compareValues && <polygon points={polygon(compareValues)} fill="none" stroke={compareColor} strokeWidth="2" strokeDasharray="5 3"/>}
+        {/* Ist: gefüllte Fläche */}
+        <polygon points={polygon(values)} fill={color+"33"} stroke={color} strokeWidth="2.5"/>
+        {/* Ziel-Marker (hohle Raute) */}
+        {compareValues && compareValues.map((v,i)=>{const [x,y]=point(i,v);return <rect key={"z"+i} x={x-3} y={y-3} width="6" height="6" transform={`rotate(45 ${x} ${y})`} fill="#fff" stroke={compareColor} strokeWidth="1.5"/>;})}
+        {/* Ist-Marker (Kreis) */}
+        {values.map((v,i)=>{const [x,y]=point(i,v);return <circle key={"i"+i} cx={x} cy={y} r="3" fill={color}/>;})}
+        {axes.map((ax,i)=>{
+          const [lx,ly]=point(i,max*1.2);
+          return <text key={i} x={lx} y={ly} fontSize="12" fontWeight="700" fill="#475569"
+            textAnchor={Math.abs(lx-cx)<8?"middle":(lx<cx?"end":"start")}
+            dominantBaseline="middle">{dimLabel(ax,tr)}</text>;
+        })}
+      </svg>
+      <table style={{width:"100%",maxWidth:size,margin:"6px auto 0",borderCollapse:"collapse",fontSize:11.5}}>
+        <thead><tr style={{textAlign:"left"}}>
+          <th style={{padding:"2px 4px",fontWeight:700,color:"#94a3b8"}}>{tr("sArea")}</th>
+          <th style={{padding:"2px 4px",fontWeight:700,textAlign:"right",color}}>● {tr("sIst")}</th>
+          {compareValues&&<th style={{padding:"2px 4px",fontWeight:700,textAlign:"right",color:compareColor}}>◇ {tr("goalShort")}</th>}
+        </tr></thead>
+        <tbody>{axes.map((a,i)=>(
+          <tr key={i} style={{borderTop:"1px solid #f1f5f9"}}>
+            <td style={{padding:"2px 4px",color:"#334155"}}>{dimLabel(a,tr)}</td>
+            <td style={{padding:"2px 4px",textAlign:"right",fontWeight:800,color}}>{values[i]??0}</td>
+            {compareValues&&<td style={{padding:"2px 4px",textAlign:"right",fontWeight:700,color:compareColor}}>{compareValues[i]??0}</td>}
+          </tr>
+        ))}</tbody>
+      </table>
+    </div>
   );
 }
 
