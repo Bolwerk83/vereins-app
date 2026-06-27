@@ -19690,7 +19690,15 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid}) 
   const [step,setStep]=useState("cat");
   const [cat,setCat]=useState(null);
   const [tid,setTid]=useState(null);
-  const [q,setQ]=useState(""); 
+  const [q,setQ]=useState("");
+  const [pendingName,setPendingName]=useState(null);   // Einwilligungs-Gate vor dem Anmelden
+  const [consentChk,setConsentChk]=useState(false);
+  // Datenschutz: Namensliste maskieren (Vorname + Initial), Klartext erst nach Auswahl.
+  const maskName = n => { const a=String(n||"").trim().split(/\s+/); return a.length>1 ? a[0]+" "+a[a.length-1][0]+"." : (a[0]||""); };
+  const consentKey = (tid2,name) => "va_consent_"+tid2+"_"+String(name).toLowerCase();
+  const hasConsent = (tid2,name) => { try{ return !!localStorage.getItem(consentKey(tid2,name)); }catch{ return false; } };
+  const pickName = (tid2,name) => { if(hasConsent(tid2,name)){ onDone(tid2,name); } else { setConsentChk(false); setPendingName({tid:tid2,name}); } };
+  const confirmConsent = () => { if(!consentChk||!pendingName) return; try{ localStorage.setItem(consentKey(pendingName.tid,pendingName.name), new Date().toISOString()); }catch{} const pn=pendingName; setPendingName(null); onDone(pn.tid,pn.name); };
   const [pwd,setPwd]=useState(""); const [pwdErr,setPwdErr]=useState(false);
   const [showForgotParent,setShowForgotParent]=useState(false);
   // Direktlink: Team vorauswählen und direkt zum Passwort-Schritt springen
@@ -19823,6 +19831,22 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid}) 
   );
   return (
     <div style={{minHeight:"100dvh",background:"#f0f4f8",display:"flex",flexDirection:"column"}}>
+      {pendingName&&(
+        <div onClick={()=>setPendingName(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:2000,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
+          <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:480,padding:"20px 20px calc(28px + env(safe-area-inset-bottom))"}}>
+            <div style={{fontWeight:900,fontSize:18,color:"#0f172a",marginBottom:6}}>🔒 Einwilligung (Datenschutz)</div>
+            <p style={{fontSize:13.5,color:"#334155",lineHeight:1.55,marginBottom:10}}>Du meldest dich für <b>{maskName(pendingName.name)}</b> an. Der Verein verarbeitet Termin-, Anwesenheits- und ggf. Entwicklungsdaten zur Organisation des Trainings- und Spielbetriebs (Rechtsgrundlage: Einwilligung, Art. 6 / Art. 8 DSGVO). Daten werden nicht öffentlich angezeigt, außer du gibst sie ausdrücklich frei.</p>
+            <label style={{display:"flex",gap:10,alignItems:"flex-start",background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"12px 13px",cursor:"pointer",marginBottom:12}}>
+              <input type="checkbox" checked={consentChk} onChange={e=>setConsentChk(e.target.checked)} style={{marginTop:2}}/>
+              <span style={{fontSize:12.5,color:"#334155",lineHeight:1.5}}>Ich bin erziehungsberechtigt (oder selbst der/die Spieler:in) und willige in die Verarbeitung der Daten dieses Kindes ein.</span>
+            </label>
+            <div style={{display:"flex",gap:9}}>
+              <button onClick={()=>setPendingName(null)} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",color:"#475569"}}>Abbrechen</button>
+              <button disabled={!consentChk} onClick={confirmConsent} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:consentChk?t.p:"#cbd5e1",color:consentChk?contrast(t.p):"#fff",fontWeight:800,fontSize:14,cursor:consentChk?"pointer":"default",fontFamily:"inherit"}}>Bestätigen &amp; anmelden</button>
+            </div>
+          </div>
+        </div>
+      )}
       <div style={{background:`linear-gradient(135deg,${t.s},${t.p}99)`,padding:"16px 18px 22px"}}>
         <button onClick={goBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:14}}>← Zurück</button>
         <div style={{display:"flex",alignItems:"center",gap:12}}><Logo cl={cl} sz={40}/><div><div style={{color:"rgba(255,255,255,.6)",fontSize:12,fontWeight:700}}>{ct?.icon} {ct?.name}</div><div style={{color:"#fff",fontSize:20,fontWeight:900}}>Wer bist du?</div></div></div>
@@ -19832,9 +19856,9 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid}) 
       </div>
       <div style={{flex:1,overflowY:"auto",padding:"10px 14px",display:"flex",flexDirection:"column",gap:8}}>
         {list.map((p,i)=>(
-          <div key={p} className="up" onClick={()=>onDone(tid,p)}
+          <div key={p} className="up" onClick={()=>pickName(tid,p)}
             style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:16,padding:"13px 16px",cursor:"pointer",display:"flex",alignItems:"center",gap:12,animationDelay:`${i*.03}s`}}>
-            <Av name={p} sz={40}/><span style={{fontWeight:700,fontSize:16,color:"#0f172a",flex:1}}>{p}</span><span style={{color:"#94a3b8",fontSize:20}}>{">"}</span>
+            <Av name={p} sz={40}/><span style={{fontWeight:700,fontSize:16,color:"#0f172a",flex:1}}>{maskName(p)}</span><span style={{color:"#94a3b8",fontSize:20}}>{">"}</span>
           </div>
         ))}
         {list.length===0&&<div style={{textAlign:"center",padding:"32px",color:"#94a3b8"}}><div style={{fontSize:36,marginBottom:8}}></div><p style={{fontWeight:700}}>Niemanden gefunden</p></div>}
