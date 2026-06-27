@@ -233,8 +233,8 @@ export function NotifMount() {
         aria-label="Benachrichtigungen"
         onClick={() => setOpen(true)}
         style={{
-          position:"fixed", right:14, bottom:18, zIndex:9000,
-          width:46, height:46, borderRadius:"50%", border:"none",
+          position:"fixed", right:14, bottom:"calc(78px + env(safe-area-inset-bottom))", zIndex:9000,
+          width:52, height:52, borderRadius:"50%", border:"none",
           background: subbed ? COL : "rgba(15,23,42,.86)",
           color:"#fff", fontSize:20, cursor:"pointer",
           boxShadow:"0 6px 18px rgba(0,0,0,.3)", fontFamily:"inherit",
