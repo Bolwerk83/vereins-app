@@ -2216,6 +2216,7 @@ function InboxTab({ data,cid,save,fire,cl }) {
 function OnboardingWizard({ cl, data, save, fire, onDone }) {
   const t = TH(cl);
   const [step, setStep] = useState(1);
+  const [legalAck, setLegalAck] = useState(false);
   const STEPS = 5;
   const SPORT_CATS = {
     fussball: [
@@ -2489,6 +2490,13 @@ function OnboardingWizard({ cl, data, save, fire, onDone }) {
           )}
         </div>
 
+        {step===STEPS&&(
+          <label style={{display:"flex",gap:10,alignItems:"flex-start",margin:"0 22px 4px",background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:12,padding:"11px 13px",cursor:"pointer"}}>
+            <input type="checkbox" checked={legalAck} onChange={e=>setLegalAck(e.target.checked)} style={{marginTop:2}}/>
+            <span style={{fontSize:12,color:"#92400e",lineHeight:1.5}}>🔒 Mir ist bewusst: Bevor Daten Minderjähriger verarbeitet werden, müssen <b>Impressum</b> und <b>Datenschutzerklärung</b> hinterlegt sein (später unter Einstellungen → Datenschutz) und die <b>Eltern-Einwilligung</b> (Art. 8 DSGVO) eingeholt werden.</span>
+          </label>
+        )}
+
         {/* Navigation */}
         <div style={{padding:"12px 22px 32px",borderTop:"1px solid #f1f5f9",display:"flex",gap:10,flexShrink:0}}>
           {step>1
@@ -2500,8 +2508,8 @@ function OnboardingWizard({ cl, data, save, fire, onDone }) {
                 style={{flex:2,padding:"13px",borderRadius:13,border:"none",background:ok()?t.p:"#e2e8f0",color:ok()?"#fff":"#64748b",fontWeight:800,fontSize:15,cursor:ok()?"pointer":"default",fontFamily:"inherit",transition:"all .2s"}}>
                 Weiter
               </button>
-            : <button onClick={finish}
-                style={{flex:2,padding:"13px",borderRadius:13,border:"none",background:t.p,color:"#fff",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit",boxShadow:`0 4px 20px ${t.p}44`}}>
+            : <button onClick={()=>legalAck&&finish()} disabled={!legalAck}
+                style={{flex:2,padding:"13px",borderRadius:13,border:"none",background:legalAck?t.p:"#e2e8f0",color:legalAck?"#fff":"#64748b",fontWeight:800,fontSize:15,cursor:legalAck?"pointer":"default",fontFamily:"inherit",boxShadow:legalAck?`0 4px 20px ${t.p}44`:"none"}}>
                 Verein einrichten!
               </button>
           }
@@ -21717,6 +21725,10 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
                               );
                             })}
                           </div>}
+                    </div>}
+                    {(p.focusCount||0)>0&&<div style={{marginTop:10,display:"flex",alignItems:"center",gap:8,fontSize:11.5,color:"#94a3b8"}}>
+                      <span style={{flex:1}}>Förder-Historie: {p.focusCount}× gefördert{p.lastFocus?` · zuletzt ${fmtD(String(p.lastFocus).slice(0,10))}`:""}</span>
+                      <button onClick={()=>{ if(typeof window!=="undefined"&&window.confirm&&!window.confirm("Förder-Historie dieses Spielers löschen? (Recht auf Löschung)"))return; up({focusCount:0,lastFocus:""}); }} style={{padding:"5px 10px",borderRadius:8,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>Zurücksetzen</button>
                     </div>}
                     {(()=>{
                       const fits = positionFit(sport, sk, club);
