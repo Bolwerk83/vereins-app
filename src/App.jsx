@@ -5366,12 +5366,17 @@ function TeamInsights({ data, myTids, cl }) {
               {attendance.map(({p,last8,pct})=>(
                 <tr key={p.id} style={{borderTop:"1px solid #f1f5f9"}}>
                   <td style={{padding:"5px 6px",fontWeight:700,color:"#334155",whiteSpace:"nowrap",maxWidth:140,overflow:"hidden",textOverflow:"ellipsis"}}>{p.name}</td>
-                  {last8.map((x,i)=>(
-                    <td key={i} style={{padding:"5px 4px",textAlign:"center"}}>
-                      <div style={{width:14,height:14,borderRadius:4,margin:"0 auto",
-                        background: x.val==="yes" ? "#16a34a" : x.val==="late" ? "#d97706" : x.val==="maybe" ? "#fbbf24" : x.val==="no" ? "#dc2626" : "#e2e8f0"}}/>
+                  {last8.map((x,i)=>{
+                    const c = x.val==="yes" ? {bg:"#16a34a",fg:"#fff",g:"✓",t:"Dabei"}
+                      : x.val==="late" ? {bg:"#d97706",fg:"#fff",g:"⏰",t:"Verspätet"}
+                      : x.val==="maybe" ? {bg:"#fbbf24",fg:"#7c2d12",g:"~",t:"Vielleicht"}
+                      : x.val==="no" ? {bg:"#dc2626",fg:"#fff",g:"✕",t:"Nicht dabei"}
+                      : {bg:"#e2e8f0",fg:"#94a3b8",g:"·",t:"Keine Antwort"};
+                    return (
+                    <td key={i} title={c.t} style={{padding:"5px 4px",textAlign:"center"}}>
+                      <div style={{width:16,height:16,borderRadius:4,margin:"0 auto",background:c.bg,color:c.fg,fontSize:10,fontWeight:900,lineHeight:"16px",textAlign:"center"}}>{c.g}</div>
                     </td>
-                  ))}
+                  );})}
                   <td style={{padding:"5px 6px",textAlign:"right",fontWeight:800,color:pct>=80?"#16a34a":pct>=50?"#d97706":"#dc2626"}}>
                     {pct==null ? "—" : pct+"%"}
                   </td>
@@ -5379,6 +5384,11 @@ function TeamInsights({ data, myTids, cl }) {
               ))}
             </tbody>
           </table>
+          <div style={{display:"flex",flexWrap:"wrap",gap:10,marginTop:10,fontSize:11,color:"#64748b"}}>
+            {[["✓","#16a34a","Dabei"],["⏰","#d97706","Verspätet"],["~","#fbbf24","Vielleicht"],["✕","#dc2626","Nicht dabei"],["·","#cbd5e1","Keine Antwort"]].map(([g,c,t])=>(
+              <span key={t} style={{display:"inline-flex",alignItems:"center",gap:4}}><span style={{width:14,height:14,borderRadius:3,background:c,color:"#fff",fontSize:9,fontWeight:900,lineHeight:"14px",textAlign:"center"}}>{g}</span>{t}</span>
+            ))}
+          </div>
         </div>
       </Card>
     </div>
@@ -7124,8 +7134,8 @@ function CashbookTab({ data, myTids, save, fire, cl }){
         {teams.map(tm=>(<button key={tm.id} onClick={()=>setTid(tm.id)} style={{padding:"7px 13px",borderRadius:99,border:`2px solid ${tid===tm.id?tm.col:"#e2e8f0"}`,background:tid===tm.id?tm.col:"#fff",color:tid===tm.id?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit",flexShrink:0}}>{tm.name}</button>))}
       </div>}
       <div style={{background:balance>=0?"#f0fdf4":"#fef2f2",border:`1.5px solid ${balance>=0?"#bbf7d0":"#fecaca"}`,borderRadius:16,padding:"16px",marginBottom:14,textAlign:"center"}}>
-        <div style={{fontSize:12,fontWeight:700,color:"#64748b",letterSpacing:.4}}>KASSENSTAND</div>
-        <div style={{fontWeight:900,fontSize:30,color:balance>=0?"#15803d":"#dc2626",marginTop:2}}>{eur(balance)}</div>
+        <div style={{fontSize:12,fontWeight:700,color:"#64748b",letterSpacing:.4}}>KASSENSTAND · {balance>=0?"Im Plus":"Im Minus"}</div>
+        <div style={{fontWeight:900,fontSize:30,color:balance>=0?"#15803d":"#dc2626",marginTop:2}}>{balance>=0?"+":"−"}{eur(Math.abs(balance))}</div>
         <div style={{fontSize:11.5,color:"#94a3b8",marginTop:3}}>{entries.length} Buchungen</div>
       </div>
       <div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:14,padding:"13px",marginBottom:14}}>
@@ -28326,9 +28336,9 @@ function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline}) {
       {}
       <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:lateArrivals.length>0?8:16}}>
         {[
-          {label:"Dabei",val:yes.length,color:"#16a34a",bg:"#dcfce7",icon:"OK"},
-          {label:"Nicht dabei",val:no.length,color:"#dc2626",bg:"#fee2e2",icon:"X"},
-          {label:"Fehlt noch",val:missing.length,color:"#d97706",bg:"#fef3c7",icon:"?"},
+          {label:"Dabei",val:yes.length,color:"#16a34a",bg:"#dcfce7",icon:"✓"},
+          {label:"Nicht dabei",val:no.length,color:"#dc2626",bg:"#fee2e2",icon:"✕"},
+          {label:"Fehlt noch",val:missing.length,color:"#d97706",bg:"#fef3c7",icon:"⏳"},
         ].map(s=>(
           <div key={s.label} style={{background:s.bg,borderRadius:14,padding:"12px 8px",textAlign:"center",border:`1.5px solid ${s.color}22`}}>
             <div style={{fontWeight:900,fontSize:22,color:s.color,lineHeight:1}}>{s.val}</div>
@@ -30518,19 +30528,19 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
   const p=cl?.pri||"#16a34a";
   let status=null;
   if(ev.pt==="att"){
-    if(uvVal==="yes")status={icon:"OK",label:"Ich bin dabei",color:"#16a34a",bg:"#dcfce7",urgent:false};
-    else if(uvVal==="no")status={icon:"*",label:"Nicht dabei",color:"#dc2626",bg:"#fee2e2",urgent:false};
-    else if(!isPast)status={icon:"*",label:"Noch nicht abgestimmt",color:"#d97706",bg:"#fef3c7",urgent:true};
+    if(uvVal==="yes")status={icon:"✓",label:"Ich bin dabei",color:"#16a34a",bg:"#dcfce7",urgent:false};
+    else if(uvVal==="no")status={icon:"✕",label:"Nicht dabei",color:"#dc2626",bg:"#fee2e2",urgent:false};
+    else if(!isPast)status={icon:"⏳",label:"Noch nicht abgestimmt",color:"#d97706",bg:"#fef3c7",urgent:true};
   } else if(ev.pt==="list"){
     const mc=Array.isArray(uv)?uv:[];
-    if(mc.length>0)status={icon:"Liste",label:`${mc.length} ausgewählt`,color:"#16a34a",bg:"#dcfce7",urgent:false};
-    else if(!isPast)status={icon:"Liste",label:"Auswahl fehlt noch",color:"#d97706",bg:"#fef3c7",urgent:true};
+    if(mc.length>0)status={icon:"✓",label:`${mc.length} ausgewählt`,color:"#16a34a",bg:"#dcfce7",urgent:false};
+    else if(!isPast)status={icon:"⏳",label:"Auswahl fehlt noch",color:"#d97706",bg:"#fef3c7",urgent:true};
   } else if(ev.pt==="carpool"){
     const cv=(ev.votes||{})[user]; const m=cv&&typeof cv==="object"?cv.mode:null;
-    if(m==="drive")status={icon:"*",label:"Ich fahre",color:"#16a34a",bg:"#dcfce7",urgent:false};
-    else if(m==="need")status={icon:"*",label:"Mitfahrt gesucht",color:"#d97706",bg:"#fef3c7",urgent:true};
-    else if(m==="self")status={icon:"*",label:"Komme selbst",color:"#64748b",bg:"#f1f5f9",urgent:false};
-    else if(!isPast)status={icon:"*",label:"Noch nicht eingetragen",color:"#d97706",bg:"#fef3c7",urgent:true};
+    if(m==="drive")status={icon:"🚗",label:"Ich fahre",color:"#16a34a",bg:"#dcfce7",urgent:false};
+    else if(m==="need")status={icon:"🙋",label:"Mitfahrt gesucht",color:"#d97706",bg:"#fef3c7",urgent:true};
+    else if(m==="self")status={icon:"🚶",label:"Komme selbst",color:"#64748b",bg:"#f1f5f9",urgent:false};
+    else if(!isPast)status={icon:"⏳",label:"Noch nicht eingetragen",color:"#d97706",bg:"#fef3c7",urgent:true};
   }
   const yesN=Object.values(ev.votes||{}).filter(v=>(typeof v==="object"?v.val:v)==="yes").length;
   return (
