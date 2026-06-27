@@ -10,7 +10,7 @@ const T = {
   de: {
     back:"<- Zurück",
     subPlayers:"Spieler", subAttendance:"Anwesenheit", subInsights:"Insights", subResults:"Ergebnisse", subCash:"Kasse", subReport:"Bericht", subAnalysis:"Analyse", subGoals:"Ziele", subDrills:"Übungen", subPlanner:"Planer", subTrainings:"Trainings", subTactics:"Taktik", subMarket:"Turnier-Börse", subManage:"Mannschaften",
-    vImInSelf:"Ich bin dabei", vImInChild:"Mein Kind ist dabei", vComesLate:"Kommt zu spät", vComesLateMins:"Kommt ca. {m} Min. zu spät", vHowLate:"Wie spät kommt dein Kind?", vConfirm:"Bestätigen", vCancel:"Abbrechen", vMin:"Min", vNotIn:"Leider nicht dabei", vWhyNot:"Warum kann dein Kind nicht?", vNoReason:"Ohne Angabe", vLateNeedsReason:"Nach Ablauf der Frist ist eine Absage nur mit Grund möglich.", vDeadlinePassed:"Frist abgelaufen – Abstimmung wird trotzdem gezählt", vDeadline:"Abstimmungs-Frist:", vLateList:"Verspätungen", vSumIn:"dabei", vSumLate:"verspätet", vSumOut:"nicht dabei", rKrank:"Krank", rUrlaub:"Urlaub", rSchule:"Schulpflicht", rWettkampf:"Wettkampf", rSonstiges:"Sonstiges",
+    vImInSelf:"Ich bin dabei", vImInChild:"Mein Kind ist dabei", vComesLate:"Kommt zu spät", vComesLateMins:"Kommt ca. {m} Min. zu spät", vHowLate:"Wie spät kommt dein Kind?", vConfirm:"Bestätigen", vCancel:"Abbrechen", vMin:"Min", vNotIn:"Leider nicht dabei", vWhyNot:"Warum kann dein Kind nicht?", vNoReason:"Ohne Angabe", vLateNeedsReason:"Nach Ablauf der Frist ist eine Absage nur mit Grund möglich.", vDeadlinePassed:"Frist abgelaufen – Absage nur noch mit Grund", vDeadline:"Abstimmungs-Frist:", vLateList:"Verspätungen", vSumIn:"dabei", vSumLate:"verspätet", vSumOut:"nicht dabei", rKrank:"Krank", rUrlaub:"Urlaub", rSchule:"Schulpflicht", rWettkampf:"Wettkampf", rSonstiges:"Sonstiges", vReasonPh:"Eigener Grund …", vReasonSend:"Absagen",
     lnTor:"Tor", lnAbwehr:"Abwehr", lnMittelfeld:"Mittelfeld", lnAngriff:"Angriff", luTitle:"Aufstellung", luSuggest:"Vorschlag", luFriends:"Freunde gewichten:", luOff:"Aus", luNormal:"Normal", luStrong:"Stark", luBench:"Bank / verfügbar", luAllPlaced:"Alle Zusagen sind aufgestellt.", luGuestVisible:"Mannschaft für Gäste sichtbar", luGuestHint:"Namen nur mit Eltern-Freigabe; sonst nur Trikotnummer.", luBenchShort:"Bank:", luForN:"Für {n} Spieler:", luFormation:"Formation", luWithGK:"mit Torwart", luOnBench:"{n} auf der Bank", luTogether:"Eingespielt:", luFriendsLabel:"Freunde", luSeparated:"getrennt", luAdjustHint:"Besetzung nach Position, Stärken & Freundschaften – frei anpassbar.",
     et_training:"Training", et_heimspiel:"Heimspiel", et_auswarts:"Auswärtsspiel", et_freundschaft:"Freundschaftsspiel", et_turnier:"Turnier", et_event:"Sondertermin",
     wNext:"Weiter", wBack:"Zurück", wSave:"Speichern", wCreateEvent:"Termin erstellen", wCreateSeries:"Serie erstellen", wCreateN:"{n} Termine erstellen", fTitle:"Titel", fTime:"Uhrzeit", fEnd:"Ende (optional)", fDate:"Datum", fLoc:"Ort", fLocPh:"Sportplatz", wSummarySec:"ZUSAMMENFASSUNG", wPlayersSec:"SPIELERANZAHL (optional)", wDeadlineSec:"ABSTIMMUNGSFRIST (OPTIONAL)", wSoll:"Soll (für die Ampel)", wMax:"Max (optional)", secStaffing:"Betreuung", secLineup:"Aufstellung", secReport:"Spielbericht", lineT:"Tor", lineA:"Abwehr", lineM:"Mittelfeld", lineS:"Angriff", savedMark:"gespeichert", "dim_Technik":"Technik", "dim_Schnelligkeit":"Schnelligkeit", "dim_Zweikampf":"Zweikampf", "dim_Übersicht":"Übersicht", "dim_Abschluss":"Abschluss", "dim_Ausdauer":"Ausdauer", "dim_Teamplay":"Teamplay", goalShort:"Ziel", kpiTraining:"Training", kpiGames:"Spiele", kpiPlaytime:"Spielzeit", kpiAvgSkill:"Ø Skill", kpiFocus:"Fokus", kpiRecommend:"Empfehlung", btnShareReport:"Bericht teilen", btnCopy:"Kopieren",
@@ -131,7 +131,7 @@ const T = {
   en: {
     back:"<- Back",
     subPlayers:"Players", subAttendance:"Attendance", subInsights:"Insights", subResults:"Results", subCash:"Cash box", subReport:"Report", subAnalysis:"Analysis", subGoals:"Goals", subDrills:"Drills", subPlanner:"Planner", subTrainings:"Sessions", subTactics:"Tactics", subMarket:"Tournament market", subManage:"Teams",
-    vImInSelf:"I'm in", vImInChild:"My child is in", vComesLate:"Will be late", vComesLateMins:"Arrives ~{m} min late", vHowLate:"How late will your child be?", vConfirm:"Confirm", vCancel:"Cancel", vMin:"min", vNotIn:"Not available", vWhyNot:"Why can't your child make it?", vNoReason:"No reason", vLateNeedsReason:"After the deadline a cancellation requires a reason.", vDeadlinePassed:"Deadline passed – your vote still counts", vDeadline:"Voting deadline:", vLateList:"Late arrivals", vSumIn:"in", vSumLate:"late", vSumOut:"out", rKrank:"Ill", rUrlaub:"Holiday", rSchule:"School", rWettkampf:"Competition", rSonstiges:"Other",
+    vImInSelf:"I'm in", vImInChild:"My child is in", vComesLate:"Will be late", vComesLateMins:"Arrives ~{m} min late", vHowLate:"How late will your child be?", vConfirm:"Confirm", vCancel:"Cancel", vMin:"min", vNotIn:"Not available", vWhyNot:"Why can't your child make it?", vNoReason:"No reason", vLateNeedsReason:"After the deadline a cancellation requires a reason.", vDeadlinePassed:"Deadline passed – cancellation needs a reason", vDeadline:"Voting deadline:", vLateList:"Late arrivals", vSumIn:"in", vSumLate:"late", vSumOut:"out", rKrank:"Ill", rUrlaub:"Holiday", rSchule:"School", rWettkampf:"Competition", rSonstiges:"Other", vReasonPh:"Own reason …", vReasonSend:"Decline",
     lnTor:"Goal", lnAbwehr:"Defence", lnMittelfeld:"Midfield", lnAngriff:"Attack", luTitle:"Line-up", luSuggest:"Suggestion", luFriends:"Weight friends:", luOff:"Off", luNormal:"Normal", luStrong:"Strong", luBench:"Bench / available", luAllPlaced:"All confirmed players are placed.", luGuestVisible:"Show squad to guests", luGuestHint:"Names only with parent consent; otherwise just shirt number.", luBenchShort:"Bench:", luForN:"For {n} players:", luFormation:"Formation", luWithGK:"with keeper", luOnBench:"{n} on the bench", luTogether:"Played together:", luFriendsLabel:"Friends", luSeparated:"separated", luAdjustHint:"Positions by role, strengths & friendships – freely adjustable.",
     et_training:"Training", et_heimspiel:"Home match", et_auswarts:"Away match", et_freundschaft:"Friendly", et_turnier:"Tournament", et_event:"Special event",
     wNext:"Next", wBack:"Back", wSave:"Save", wCreateEvent:"Create event", wCreateSeries:"Create series", wCreateN:"Create {n} events", fTitle:"Title", fTime:"Time", fEnd:"End (optional)", fDate:"Date", fLoc:"Location", fLocPh:"Sports ground", wSummarySec:"SUMMARY", wPlayersSec:"NUMBER OF PLAYERS (optional)", wDeadlineSec:"VOTING DEADLINE (OPTIONAL)", wSoll:"Target (traffic light)", wMax:"Max (optional)", secStaffing:"Supervision", secLineup:"Lineup", secReport:"Match report", lineT:"Goal", lineA:"Defense", lineM:"Midfield", lineS:"Attack", savedMark:"saved", "dim_Technik":"Technique", "dim_Schnelligkeit":"Pace", "dim_Zweikampf":"Duels", "dim_Übersicht":"Vision", "dim_Abschluss":"Finishing", "dim_Ausdauer":"Stamina", "dim_Teamplay":"Teamwork", goalShort:"Target", kpiTraining:"Training", kpiGames:"Games", kpiPlaytime:"Playing time", kpiAvgSkill:"Avg skill", kpiFocus:"Focus", kpiRecommend:"Recommendation", btnShareReport:"Share report", btnCopy:"Copy",
@@ -252,7 +252,7 @@ const T = {
   nl: {
     back:"<- Terug",
     subPlayers:"Spelers", subAttendance:"Aanwezigheid", subInsights:"Inzichten", subResults:"Resultaten", subCash:"Kas", subReport:"Rapport", subAnalysis:"Analyse", subGoals:"Doelen", subDrills:"Oefeningen", subPlanner:"Planner", subTrainings:"Trainingen", subTactics:"Tactiek", subMarket:"Toernooimarkt", subManage:"Teams",
-    vImInSelf:"Ik ben erbij", vImInChild:"Mijn kind is erbij", vComesLate:"Komt te laat", vComesLateMins:"Komt ~{m} min te laat", vHowLate:"Hoe laat komt je kind?", vConfirm:"Bevestigen", vCancel:"Annuleren", vMin:"min", vNotIn:"Helaas niet", vWhyNot:"Waarom kan je kind niet?", vNoReason:"Geen reden", vLateNeedsReason:"Na de deadline kan afmelden alleen met reden.", vDeadlinePassed:"Deadline verstreken – je stem telt toch mee", vDeadline:"Stemdeadline:", vLateList:"Te laat", vSumIn:"erbij", vSumLate:"te laat", vSumOut:"niet erbij", rKrank:"Ziek", rUrlaub:"Vakantie", rSchule:"School", rWettkampf:"Wedstrijd", rSonstiges:"Overig",
+    vImInSelf:"Ik ben erbij", vImInChild:"Mijn kind is erbij", vComesLate:"Komt te laat", vComesLateMins:"Komt ~{m} min te laat", vHowLate:"Hoe laat komt je kind?", vConfirm:"Bevestigen", vCancel:"Annuleren", vMin:"min", vNotIn:"Helaas niet", vWhyNot:"Waarom kan je kind niet?", vNoReason:"Geen reden", vLateNeedsReason:"Na de deadline kan afmelden alleen met reden.", vDeadlinePassed:"Deadline verstreken – afmelden alleen met reden", vDeadline:"Stemdeadline:", vLateList:"Te laat", vSumIn:"erbij", vSumLate:"te laat", vSumOut:"niet erbij", rKrank:"Ziek", rUrlaub:"Vakantie", rSchule:"School", rWettkampf:"Wedstrijd", rSonstiges:"Overig", vReasonPh:"Eigen reden …", vReasonSend:"Afmelden",
     lnTor:"Keeper", lnAbwehr:"Verdediging", lnMittelfeld:"Middenveld", lnAngriff:"Aanval", luTitle:"Opstelling", luSuggest:"Voorstel", luFriends:"Vrienden wegen:", luOff:"Uit", luNormal:"Normaal", luStrong:"Sterk", luBench:"Bank / beschikbaar", luAllPlaced:"Alle toezeggingen staan opgesteld.", luGuestVisible:"Team zichtbaar voor gasten", luGuestHint:"Namen alleen met toestemming ouders; anders alleen rugnummer.", luBenchShort:"Bank:", luForN:"Voor {n} spelers:", luFormation:"Formatie", luWithGK:"met keeper", luOnBench:"{n} op de bank", luTogether:"Ingespeeld:", luFriendsLabel:"Vrienden", luSeparated:"apart", luAdjustHint:"Posities op rol, sterktes & vriendschappen – vrij aanpasbaar.",
     et_training:"Training", et_heimspiel:"Thuiswedstrijd", et_auswarts:"Uitwedstrijd", et_freundschaft:"Oefenwedstrijd", et_turnier:"Toernooi", et_event:"Speciale afspraak",
     wNext:"Verder", wBack:"Terug", wSave:"Opslaan", wCreateEvent:"Afspraak maken", wCreateSeries:"Serie maken", wCreateN:"{n} afspraken maken", fTitle:"Titel", fTime:"Tijd", fEnd:"Einde (optioneel)", fDate:"Datum", fLoc:"Locatie", fLocPh:"Sportveld", wSummarySec:"SAMENVATTING", wPlayersSec:"AANTAL SPELERS (optioneel)", wDeadlineSec:"STEMDEADLINE (OPTIONEEL)", wSoll:"Streefgetal (stoplicht)", wMax:"Max (optioneel)", secStaffing:"Begeleiding", secLineup:"Opstelling", secReport:"Wedstrijdverslag", lineT:"Doel", lineA:"Verdediging", lineM:"Middenveld", lineS:"Aanval", savedMark:"opgeslagen", "dim_Technik":"Techniek", "dim_Schnelligkeit":"Snelheid", "dim_Zweikampf":"Duels", "dim_Übersicht":"Overzicht", "dim_Abschluss":"Afronding", "dim_Ausdauer":"Conditie", "dim_Teamplay":"Teamwork", goalShort:"Doel", kpiTraining:"Training", kpiGames:"Wedstrijden", kpiPlaytime:"Speeltijd", kpiAvgSkill:"Gem. skill", kpiFocus:"Focus", kpiRecommend:"Advies", btnShareReport:"Rapport delen", btnCopy:"Kopiëren",
@@ -19991,6 +19991,13 @@ function PollAttend({ev,user,onVote,cl,session=null,save=()=>{},data=null,fire=(
               </button>
             ))}
           </div>
+          <div style={{display:"flex",gap:6,marginBottom:dlPassed?0:8}}>
+            <input value={noReason} onChange={e=>setNoReason(e.target.value)} placeholder={tr("vReasonPh")}
+              onKeyDown={e=>{if(e.key==="Enter"&&noReason.trim())voteNo(noReason.trim());}}
+              style={{flex:1,padding:"8px 11px",fontSize:13,border:"1.5px solid #fca5a5",borderRadius:9,outline:"none",fontFamily:"inherit",boxSizing:"border-box"}}/>
+            <button disabled={!noReason.trim()} onClick={()=>voteNo(noReason.trim())}
+              style={{padding:"8px 14px",borderRadius:9,border:"none",background:noReason.trim()?"#dc2626":"#fecaca",color:"#fff",fontWeight:800,fontSize:13,cursor:noReason.trim()?"pointer":"default",fontFamily:"inherit"}}>{tr("vReasonSend")}</button>
+          </div>
           {dlPassed
             ? <div style={{fontSize:11.5,color:"#991b1b",fontWeight:600}}>{tr("vLateNeedsReason")}</div>
             : <button onClick={()=>voteNo("")} style={{fontSize:12,color:"#94a3b8",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit"}}>{tr("vNoReason")}</button>}
@@ -27627,14 +27634,20 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const selfName = session.name || (isAdmin?"Admin":isHelper?"Helfer":"");
   const selfVote = (evId,val) => {
     if(!selfName) return;
+    const ev0=(local.events||[]).find(e=>e.id===evId);
+    const locked = ev0 && (isVotingLocked(ev0)||isDeadlinePassed(ev0)) && !isEventPast(ev0);
+    // Nach Frist: Absage nur mit Grund -> im Termin (Schnellknopf kann keinen Grund erfassen).
+    if(locked && val==="no"){ setViewEv(ev0); fire("Absage nach Frist nur mit Grund – bitte im Termin angeben."); return; }
+    const ts=new Date().toISOString();
     save({...local, events: local.events.map(e=>{
       if(e.id!==evId) return e;
       const votes={...(e.votes||{})};
-      if((typeof votes[selfName]==="object"?votes[selfName]?.val:votes[selfName])===val) delete votes[selfName]; // erneuter Klick = zurücknehmen
-      else votes[selfName]=val;
+      const cur=typeof votes[selfName]==="object"?votes[selfName]?.val:votes[selfName];
+      if(cur===val && !locked) delete votes[selfName]; // erneuter Klick = zurücknehmen (vor Frist)
+      else votes[selfName]= locked ? {val,ts,lateChange:true} : val;   // nach Frist als Änderung markieren
       return {...e,votes};
     })});
-    fire(val==="yes"?"Du bist dabei":"Du hast abgesagt");
+    fire(locked ? "Späte Anmeldung erfasst" : val==="yes"?"Du bist dabei":"Du hast abgesagt");
   };
   const tod=now(); const up=myEvs.filter(e=>e.date>=tod); const past=myEvs.filter(e=>e.date<tod).reverse();
   const _in10=addD(now(),10); const soon=up.filter(e=>e.date<=_in10); const later=up.filter(e=>e.date>_in10);
@@ -30791,7 +30804,7 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         return {...e, extraPolls:(e.extraPolls||[]).map(p=>p.id===pid?{...p, votes:{...(p.votes||{}), [user]: val}}:p)};
       }
       if(pt==="att"){
-        const locked = isVotingLocked(e) && !isEventPast(e);
+        const locked = (isVotingLocked(e) || isDeadlinePassed(e)) && !isEventPast(e);
         const newVal = (typeof val==="object"&&val!==null) ? val.val : val;
         const reason = (typeof val==="object"&&val!==null) ? String(val.reason||"") : "";
         const prev   = (e.votes||{})[user];
@@ -30824,11 +30837,11 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       return {...e,votes:nvX};
     })};
     if (needReason) {
-      window.alert("Absage nach Ablauf der Frist ist nur mit kurzer Begründung möglich. Bitte öffne den Termin und gib einen Grund an.");
+      fire("Absage nach Frist nur mit Grund – bitte unten einen Grund wählen oder eingeben.");
       return;
     }
     if (blocked) {
-      window.alert("Anmeldung ist geschlossen (24 h vor Termin).\nDu kannst nur noch absagen oder eine Nachfrage stellen.");
+      fire("Anmeldung ist geschlossen – du kannst nur noch absagen (mit Grund).");
       return;
     }
     onSave(next);
