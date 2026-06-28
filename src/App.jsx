@@ -48,7 +48,7 @@ const T = {
     roleTrainerSub: "Termine meiner Mannschaft",
     roleAdmin:"Vereinsadmin",
     roleAdminSub: "Alle Rechte & Einstellungen",
-    tabEvents:"Termine",
+    tabEvents:"Termine", tabMyStats:"Meine Werte",
     tabPlayers: "Spieler",
     tabTemplates: "Vorlagen",
     tabHelpers:"Helfer",
@@ -169,7 +169,7 @@ const T = {
     roleTrainerSub:"Events of my team",
     roleAdmin:"Club admin",
     roleAdminSub:"All rights & settings",
-    tabEvents:"Events",
+    tabEvents:"Events", tabMyStats:"My stats",
     tabPlayers:"Players",
     tabTemplates:"Templates",
     tabHelpers:"Helpers",
@@ -290,7 +290,7 @@ const T = {
     roleTrainerSub:"Evenementen van mijn team",
     roleAdmin:"Clubbeheerder",
     roleAdminSub:"Alle rechten & instellingen",
-    tabEvents:"Agenda",
+    tabEvents:"Agenda", tabMyStats:"Mijn cijfers",
     tabPlayers:"Spelers",
     tabTemplates:"Sjablonen",
     tabHelpers:"Helpers",
@@ -406,7 +406,7 @@ const T = {
     roleTrainerSub:"Mawa3id fariqi",
     roleAdmin:"Mudawwin alnadiya",
     roleAdminSub:"Jami3 alhuquq wa al-i3dadat",
-    tabEvents:"Mawa3id",
+    tabEvents:"Mawa3id", tabMyStats:"Bayanati",
     tabPlayers:"Laebun",
     tabTemplates:"Qawalib",
     tabHelpers:"Musa3idun",
@@ -518,7 +518,7 @@ const T = {
     roleTrainerSub:"Takimimin etkinlikleri",
     roleAdmin:"Kulup yoneticisi",
     roleAdminSub:"Tum haklar ve ayarlar",
-    tabEvents:"Etkinlikler",
+    tabEvents:"Etkinlikler", tabMyStats:"Verilerim",
     tabPlayers:"Oyuncular",
     tabTemplates:"Sablonlar",
     tabHelpers:"Yardimcilar",
@@ -4400,6 +4400,7 @@ function BottomNav({ tab, setTab, isAdmin, isHelper, isParent=false, unread, inb
   const clubFeat = (key, def=true) => cs[key]!==undefined ? cs[key] : def;
   const mainTabs = (isParent ? [
     { id:"events",  label:tr("tabEvents"),  icon:"K" },
+    { id:"stats",   label:tr("tabMyStats"), icon:"S" },
     { id:"chat",    label:tr("tabChat"),     icon:"C", badge: unread, hidden: !feat("chat_team") },
     { id:"more",    label:tr("navMore"),     icon:"=" },
   ] : [
@@ -30753,6 +30754,216 @@ function ShareTeamLink({ cl, team, t, compact }){
   );
 }
 
+// Read-only Selbst-Statistik fuer Eltern/Spieler: zeigt AUSSCHLIESSLICH die eigenen
+// Werte (Anwesenheit, faire Spielzeit im Teamvergleich ohne fremde Namen, Skill-Profil,
+// Foerder-Empfehlung). Keine Bearbeitung – DSGVO: eigene Daten / Daten des eigenen Kindes.
+function SelfStats({ data, session, cl, lang="de" }){
+  const tr = (k) => T[lang]?.[k] ?? T.de[k] ?? k;
+  const t = TH(cl);
+  const { tid, user, cid } = session;
+  const sport = cl?.sport || "fussball";
+  const axes = skillAxesFor(sport);
+  const myTeam = (data.teams||[]).find(x=>x.id===tid);
+  const sid = activeSid(data, cid);
+  const tod = now();
+  const vval = v => (typeof v==="object"&&v) ? v.val : v;
+
+  // Eigenes Profil (gleiche Logik wie UserHome)
+  const me = (data.playerProfiles||[]).find(p=>p.cid===cid && (p.name||"").toLowerCase()===String(user).toLowerCase() && (p.mainTid===tid || (p.optTids||[]).includes(tid)))
+    || (data.playerProfiles||[]).find(p=>p.cid===cid && (p.name||"").toLowerCase()===String(user).toLowerCase());
+
+  // Anwesenheit ueber vergangene Team-Termine der aktiven Saison
+  const evs = (data.events||[]).filter(e=>e.tid===tid && (!e.seasonId||e.seasonId===sid));
+  const pastTrain = evs.filter(e=>e.type==="training" && e.date<tod);
+  const pastGames = evs.filter(e=>e.type!=="training" && e.date<tod);
+  const tYes = pastTrain.filter(e=>vval(e.votes?.[user])==="yes").length;
+  const gYes = pastGames.filter(e=>vval(e.votes?.[user])==="yes").length;
+  const trainPct = pastTrain.length ? Math.round(tYes/pastTrain.length*100) : null;
+  const gamePct  = pastGames.length ? Math.round(gYes/pastGames.length*100) : null;
+
+  // Faire Spielzeit: eigene Minuten + Teamschnitt (ohne fremde Namen zu zeigen)
+  const ptGames = pastGames.filter(e=>e.playtime && e.playtime.base);
+  let mySecs=0, myGc=0;
+  ptGames.forEach(e=>{ const b=e.playtime.base?.[user]; if(typeof b==="number"&&b>0){ mySecs+=b; myGc++; } });
+  const myMins = Math.round(mySecs/60);
+  const teamPlayers = (data.playerProfiles||[]).filter(p=>p.mainTid===tid && !p.archived && (!p.seasonId||p.seasonId===sid));
+  const teamMins = teamPlayers.map(p=>{ let s=0,g=0; ptGames.forEach(e=>{ const b=e.playtime.base?.[p.name]; if(typeof b==="number"&&b>0){ s+=b; g++; } }); return g>0?Math.round(s/60):null; }).filter(x=>x!=null);
+  const teamAvg = teamMins.length ? Math.round(teamMins.reduce((a,b)=>a+b,0)/teamMins.length) : 0;
+  const lowPlaytime = teamAvg>0 && myGc>0 && myMins < teamAvg*0.7;
+
+  // Skill-Profil (eigene Werte) + Zielwerte der Altersklasse
+  const sk = me?.skills || {};
+  const vals = axes.map(a=>{ const v=Number(sk[a])||0; return v>0?Math.round(clampSkill(v)):0; });
+  const cat = myTeam?.cat || myTeam?.name || "E-Jugend";
+  const soll = sollFor(cl, cat, axes);
+  const hasSkills = axes.some(a=>(sk[a]||0)>0);
+  const rated = axes.map(a=>sk[a]).filter(v=>typeof v==="number"&&v>0);
+  const avg = rated.length ? Math.round(rated.reduce((x,y)=>x+y,0)/rated.length*10)/10 : null;
+  const foerder = axes.map((a,i)=>({a,ist:sk[a]||0,soll:soll[i]})).filter(x=>x.ist>0&&x.ist<x.soll).sort((a,b)=>(b.soll-b.ist)-(a.soll-a.ist));
+  const MEASURE_TIPS={
+    Technik:{train:"2× Ball-/Passübung je Einheit, bewusst beidfüßig",game:"Ruhige erste Berührung – erst sichern, dann spielen"},
+    Schnelligkeit:{train:"Kurze Antritts-Sprints mit voller Pause",game:"In die Tiefe starten, Lücken attackieren"},
+    Zweikampf:{train:"1-gegen-1-Duelle, Körper richtig einsetzen",game:"Früh Druck machen, Gegner aktiv stellen"},
+    Übersicht:{train:"Vor der Annahme Schulterblick einüben",game:"Kopf hoch, früh nach der Anspielstation schauen"},
+    Abschluss:{train:"Torschuss-Serien aus dem Dribbling",game:"Strafraum besetzen, schnell und platziert abschließen"},
+    Ausdauer:{train:"Intervallläufe – auch mit Ball",game:"Tempo über die ganze Spielzeit halten"},
+    Teamplay:{train:"Kombinations- und Spielformen",game:"Anbieten, kommunizieren, für andere mitarbeiten"},
+  };
+  const hasAnyData = pastTrain.length>0 || pastGames.length>0 || hasSkills;
+  const pct = (v,d)=> d>0 ? Math.min(100, Math.round(v/d*100)) : 0;
+  const card = {background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",padding:"15px 16px",marginBottom:14};
+  const secHead = {fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:12};
+
+  return (
+    <div>
+      <div style={{display:"flex",alignItems:"center",gap:11,marginBottom:14}}>
+        <Av name={user} sz={42}/>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontWeight:900,fontSize:17,color:"#0f172a"}}>{user}</div>
+          <div style={{fontSize:12,color:"#64748b"}}>{myTeam?.icon} {myTeam?.name}</div>
+        </div>
+        <span style={{fontSize:10.5,fontWeight:800,color:"#475569",background:"#f1f5f9",borderRadius:8,padding:"4px 9px"}}>🔒 nur für dich</span>
+      </div>
+
+      {!hasAnyData&&(
+        <div style={{textAlign:"center",padding:"48px 20px",background:"#f8fafc",borderRadius:16,border:"1.5px dashed #e2e8f0"}}>
+          <div style={{fontSize:34,marginBottom:10}}>📊</div>
+          <p style={{fontWeight:800,fontSize:16,color:"#334155"}}>Noch keine Auswertung</p>
+          <p style={{fontSize:13.5,color:"#64748b",marginTop:6,lineHeight:1.5}}>Sobald Termine stattgefunden haben oder der Trainer eine Einschätzung hinterlegt hat, siehst du hier deine persönlichen Werte.</p>
+        </div>
+      )}
+
+      {/* Anwesenheit */}
+      {(pastTrain.length>0||pastGames.length>0)&&(
+        <div style={card}>
+          <div style={secHead}>ANWESENHEIT</div>
+          {pastTrain.length>0&&(
+            <div style={{marginBottom:gamePct!=null?14:0}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:5}}>
+                <span style={{fontSize:13.5,fontWeight:700,color:"#334155"}}>{tr("kpiTraining")}</span>
+                <span style={{fontWeight:900,fontSize:15,color:(trainPct??0)>=75?"#16a34a":(trainPct??0)>=50?"#d97706":"#dc2626"}}>{trainPct}% <span style={{fontSize:11,fontWeight:600,color:"#64748b"}}>({tYes}/{pastTrain.length})</span></span>
+              </div>
+              <div style={{height:8,background:"#f1f5f9",borderRadius:99,overflow:"hidden"}}>
+                <div style={{height:"100%",borderRadius:99,width:`${trainPct||0}%`,background:(trainPct??0)>=75?"#16a34a":(trainPct??0)>=50?"#d97706":"#dc2626",transition:"width .4s"}}/>
+              </div>
+            </div>
+          )}
+          {gamePct!=null&&(
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:5}}>
+                <span style={{fontSize:13.5,fontWeight:700,color:"#334155"}}>{tr("kpiGames")}</span>
+                <span style={{fontWeight:900,fontSize:15,color:"#2563eb"}}>{gamePct}% <span style={{fontSize:11,fontWeight:600,color:"#64748b"}}>({gYes}/{pastGames.length})</span></span>
+              </div>
+              <div style={{height:8,background:"#f1f5f9",borderRadius:99,overflow:"hidden"}}>
+                <div style={{height:"100%",borderRadius:99,width:`${gamePct||0}%`,background:"#2563eb",transition:"width .4s"}}/>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Faire Spielzeit */}
+      {myGc>0&&(
+        <div style={card}>
+          <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:12}}>
+            <span style={{fontSize:16}}>⏱</span>
+            <span style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5,flex:1}}>FAIRE SPIELZEIT</span>
+            {lowPlaytime&&<span style={{fontSize:10,fontWeight:800,color:"#9a3412",background:"#fef3c7",borderRadius:6,padding:"2px 7px"}}>wenig Spielzeit</span>}
+          </div>
+          <div style={{display:"flex",gap:10,marginBottom:10}}>
+            <div style={{flex:1,textAlign:"center",background:"#eff6ff",borderRadius:12,padding:"12px 6px"}}>
+              <div style={{fontSize:24,fontWeight:900,color:"#2563eb"}}>{myMins}</div>
+              <div style={{fontSize:11,color:"#64748b",marginTop:2}}>{tr("vMin")} gesamt</div>
+            </div>
+            <div style={{flex:1,textAlign:"center",background:"#f1f5f9",borderRadius:12,padding:"12px 6px"}}>
+              <div style={{fontSize:24,fontWeight:900,color:"#0f172a"}}>{myGc?Math.round(myMins/myGc):0}</div>
+              <div style={{fontSize:11,color:"#64748b",marginTop:2}}>Ø {tr("vMin")}/{tr("kpiGames")}</div>
+            </div>
+            {teamAvg>0&&(
+              <div style={{flex:1,textAlign:"center",background:"#f1f5f9",borderRadius:12,padding:"12px 6px"}}>
+                <div style={{fontSize:24,fontWeight:900,color:"#64748b"}}>{teamAvg}</div>
+                <div style={{fontSize:11,color:"#64748b",marginTop:2}}>Team-Ø</div>
+              </div>
+            )}
+          </div>
+          {teamAvg>0&&(
+            <div style={{height:8,background:"#f1f5f9",borderRadius:99,overflow:"hidden",position:"relative"}}>
+              <div style={{height:"100%",borderRadius:99,width:`${pct(myMins,teamAvg*1.5)}%`,background:lowPlaytime?"#d97706":"#2563eb",transition:"width .4s"}}/>
+            </div>
+          )}
+          <div style={{fontSize:11,color:"#64748b",marginTop:8,lineHeight:1.45}}>{myGc} {myGc===1?"Spiel":"Spiele"} mit erfasster Einsatzzeit. Der Teamschnitt zeigt nur den Durchschnitt – keine Werte anderer Kinder.{lowPlaytime?" Du lagst zuletzt unter 70 % des Schnitts und solltest bald bevorzugt eingesetzt werden.":""}</div>
+        </div>
+      )}
+
+      {/* Skill-Profil */}
+      {hasSkills&&(
+        <div style={card}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+            <span style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5,flex:1}}>SKILL-PROFIL</span>
+            {avg!=null&&<span style={{textAlign:"right"}}><span style={{fontWeight:900,fontSize:17,color:t.p}}>{avg}</span><span style={{fontSize:10,color:"#64748b"}}> / 5 {tr("kpiAvgSkill")}</span></span>}
+          </div>
+          <div style={{background:"#f8fafc",borderRadius:14,padding:"14px 10px"}}>
+            <SpiderChart axes={axes} values={vals} compareValues={soll} color={t.p||"#16a34a"} compareColor="#f59e0b" size={230}/>
+            <div style={{display:"flex",gap:16,justifyContent:"center",fontSize:11,fontWeight:700,marginTop:8}}>
+              <span><span style={{display:"inline-block",width:10,height:10,borderRadius:3,background:t.p||"#16a34a",marginRight:4,verticalAlign:"middle"}}/>{tr("sIst")}</span>
+              <span><span style={{display:"inline-block",width:10,height:10,borderRadius:3,background:"#f59e0b",marginRight:4,verticalAlign:"middle"}}/>{tr("goalShort")} {cat}</span>
+            </div>
+          </div>
+          <div style={{marginTop:12,display:"flex",flexDirection:"column",gap:6}}>
+            {axes.map((ax,i)=>{ const v=Number(sk[ax])||0; return (
+              <div key={ax} style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{flex:1,fontSize:13,fontWeight:600,color:"#334155"}}>{dimLabel(ax,tr)}</span>
+                <span style={{fontSize:11,fontWeight:800,color:v?(t.p||"#16a34a"):"#94a3b8"}}>{v?round2(v).toFixed(2):"–"}</span>
+                <span style={{fontSize:11,fontWeight:700,color:"#64748b",minWidth:46,textAlign:"right"}}>{tr("goalShort")} {soll[i]}</span>
+              </div>
+            );})}
+          </div>
+        </div>
+      )}
+
+      {/* Persoenliche Foerder-Empfehlung */}
+      {hasSkills&&foerder.length>0&&(
+        <div style={card}>
+          <div style={secHead}>🎯 DEIN FOKUS ({cat})</div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {foerder.slice(0,3).map(x=>{
+              const tip=MEASURE_TIPS[x.a]||{train:"Gezielte Übung im Schwerpunkt",game:"Im Spiel bewusst anwenden"};
+              const drill=suggestDrillsForSkill(x.a,cat,1)[0]?.d;
+              return (
+                <div key={x.a} style={{background:"#fff7ed",border:"1px solid #fed7aa",borderRadius:11,padding:"10px 12px"}}>
+                  <div style={{fontWeight:800,fontSize:13,color:"#9a3412"}}>{dimLabel(x.a,tr)} <span style={{fontWeight:700,color:"#c2410c"}}>{round2(x.ist)} → {x.soll}</span></div>
+                  <div style={{fontSize:12,color:"#7c2d12",lineHeight:1.55,marginTop:3}}>
+                    <div>🏋️ Training: {tip.train}{drill?` – z. B. „${drill.title}"`:""}</div>
+                    <div>⚽ Spiel: {tip.game}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {hasSkills&&foerder.length===0&&(
+        <div style={{...card,background:"#f0fdf4",borderColor:"#bbf7d0"}}>
+          <div style={{fontSize:13,color:"#166534",fontWeight:700,lineHeight:1.5}}>👏 Alle Zielwerte deiner Altersklasse erreicht! Bleib dran und übernimm mehr Verantwortung im Team.</div>
+        </div>
+      )}
+
+      {/* Empfehlung des Trainers */}
+      {me?.recommend&&(
+        <div style={{...card,background:"#eef2ff",borderColor:"#c7d2fe"}}>
+          <div style={{fontSize:11,fontWeight:800,color:"#4f46e5",letterSpacing:.5,marginBottom:6}}>{tr("kpiRecommend").toUpperCase()} (TRAINER)</div>
+          <div style={{fontSize:13.5,color:"#3730a3",lineHeight:1.55,fontWeight:600}}>{me.recommend}</div>
+        </div>
+      )}
+
+      <div style={{fontSize:11,color:"#64748b",textAlign:"center",lineHeight:1.5,marginTop:6,padding:"0 8px"}}>
+        Diese Werte siehst nur du. Skill-Einschätzungen und Empfehlungen kommen vom Trainerteam und dienen deiner Entwicklung.
+      </div>
+    </div>
+  );
+}
+
 function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const tr = (k) => T[lang]?.[k] ?? T.de[k] ?? k;
   const {tid,user,cid}=session;
@@ -31000,7 +31211,12 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           <ChatTab data={data} cid={cid} myTids={[tid]} session={{...session,name:user}} save={onSave} fire={fire} cl={myClub} teamOnly={true}/>
         </div>
       )}
-      {tab!=="chat" && <div style={{maxWidth:isDesktop?1080:520,margin:"0 auto",padding:isDesktop?"24px":"16px 14px",display:isDesktop?"grid":"block",gridTemplateColumns:isDesktop?"1fr 320px":"none",gap:isDesktop?24:0,alignItems:"start"}}>
+      {tab==="stats" && (
+        <div style={{maxWidth:isDesktop?760:520,margin:"0 auto",padding:isDesktop?"24px":"16px 14px"}}>
+          <SelfStats data={data} session={session} cl={myClub} lang={lang}/>
+        </div>
+      )}
+      {tab!=="chat" && tab!=="stats" && <div style={{maxWidth:isDesktop?1080:520,margin:"0 auto",padding:isDesktop?"24px":"16px 14px",display:isDesktop?"grid":"block",gridTemplateColumns:isDesktop?"1fr 320px":"none",gap:isDesktop?24:0,alignItems:"start"}}>
         <div>
         <AreaIntro id="parent_home" cl={cl}/>
         <AffiliateBanner trigger="events" slim style={{marginBottom:12}}/>
