@@ -27690,6 +27690,16 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const [delConf,setDelConf]=useState(null); const [viewEv,setViewEv]=useState(null); const [delConfVal,setDelConfVal]=useState(null);
   const [editConf,setEditConf]=useState(null);
   const [planFor,setPlanFor]=useState(null);
+  // Push-Deep-Links: ?event=<id> öffnet den Termin direkt, ?tab=<id> wechselt den Reiter.
+  useEffect(()=>{
+    try{
+      const sp=new URLSearchParams(window.location.search);
+      const evId=sp.get("event"); const tabP=sp.get("tab");
+      if(tabP && ["events","chat","team","training","attendance"].includes(tabP)) setTab(tabP);
+      if(evId){ const ev=(local.events||[]).find(e=>e.id===evId); if(ev){ setTab("events"); setViewEv(ev); } }
+      if(evId||tabP){ sp.delete("event"); sp.delete("tab"); const qs=sp.toString(); window.history.replaceState({},"",window.location.pathname+(qs?"?"+qs:"")+window.location.hash); }
+    }catch{}
+  },[]); // eslint-disable-line
   const [planDrill,setPlanDrill]=useState(null);   // Übungs-Detail aus dem Trainingsplan
   const [showTaktik,setShowTaktik]=useState(false); // Taktiktafel-Overlay
   const [taktikEv,setTaktikEv]=useState(null);      // optional: Termin, an den das Board gehängt wird
