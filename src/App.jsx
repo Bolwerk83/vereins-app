@@ -7221,6 +7221,14 @@ function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false, initial
     { id:"taktik",     label:tr("subTactics"),        icon:"TB" },
     { id:"boerse",     label:"🌐 "+tr("subMarket"),   icon:"B" },
   ];
+  // Reiter thematisch gruppieren, damit nichts in einer unsichtbaren Scroll-Leiste verschwindet.
+  const GROUPS = [
+    { id:"kader", label:"👥 Kader",        ids:["manage","players","attendance"] },
+    { id:"ausw",  label:"📊 Auswertung",   ids:["insights","analysis","results","bericht"] },
+    { id:"train", label:"⚽ Training",      ids:["planner","trainings","drills","taktik","ziele"] },
+    { id:"org",   label:"🗂️ Organisation", ids:["kasse","boerse"] },
+  ].map(g=>({ ...g, tabs:g.ids.map(id=>subTabs.find(s=>s.id===id)).filter(Boolean) })).filter(g=>g.tabs.length);
+  const activeGroup = GROUPS.find(g=>g.tabs.some(s=>s.id===subTab)) || GROUPS[0];
   return (
     <div>
       {showGuide && <TrainerGuide onClose={closeGuide} cl={cl}/>}
@@ -7230,16 +7238,24 @@ function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false, initial
           ❓ Erklärung
         </button>
       </div>
-      <div style={{display:"flex",gap:6,marginBottom:14,overflowX:"auto",scrollbarWidth:"none"}}>
-        {subTabs.map(st=>(
+      <div style={{display:"flex",gap:6,marginBottom:8,flexWrap:"wrap"}}>
+        {GROUPS.map(g=>{ const on=g.id===activeGroup.id; return (
+          <button key={g.id} onClick={()=>{ if(!on) setSubTab(g.tabs[0].id); }}
+            style={{flex:"1 1 auto",padding:"9px 10px",borderRadius:11,whiteSpace:"nowrap",
+              border:`2px solid ${on?t.p:"#e2e8f0"}`,background:on?t.p:"#fff",
+              color:on?"#fff":"#475569",fontWeight:on?800:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+            {g.label}
+          </button>
+        );})}
+      </div>
+      <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap"}}>
+        {activeGroup.tabs.map(st=>(
           <button key={st.id} onClick={()=>setSubTab(st.id)}
-            style={{flex:"1 0 auto",padding:"9px 12px",borderRadius:11,whiteSpace:"nowrap",
-              border:`2px solid ${subTab===st.id?t.p:"#e2e8f0"}`,
-              background:subTab===st.id?t.p:"#fff",
-              color:subTab===st.id?"#fff":"#64748b",
-              fontWeight:subTab===st.id?800:600,fontSize:13,
-              cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:6}}>
-            {HAS_ICON.has(st.id)&&<NavIcon name={st.id} size={16}/>}
+            style={{padding:"7px 12px",borderRadius:99,whiteSpace:"nowrap",
+              border:`1.5px solid ${subTab===st.id?t.p:"#e2e8f0"}`,
+              background:subTab===st.id?t.p+"14":"#fff",color:subTab===st.id?t.p:"#64748b",
+              fontWeight:subTab===st.id?800:600,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5}}>
+            {HAS_ICON.has(st.id)&&<NavIcon name={st.id} size={15}/>}
             {st.label}
           </button>
         ))}
