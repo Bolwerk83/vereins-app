@@ -123,7 +123,7 @@ const T = {
     send: "Senden",
     wholeClub:"Gesamter Verein",
     noMessages: "Noch keine Nachrichten",
-    navTeam:"Team", navMore:"Mehr", navTreasury:"Kasse", navTraining:"Trainingsplan", cashNewEntry:"Neue Buchung", cashKStrafe:"Strafe", cashKBeitrag:"Beitrag", cashKEinnahme:"Einnahme", cashKAusgabe:"Ausgabe", cashBalance:"KASSENSTAND", cashPlus:"Im Plus", cashMinus:"Im Minus", cashBookings:"Buchungen", cashAmount:"Betrag €", cashPlayerPays:"Spieler (wer zahlt)", cashPlayerOpt:"Spieler (optional)", cashReason:"Grund (z.B. zu spät)", cashNoteOpt:"Notiz (optional)", cashSave:"+ Buchung speichern", cashFines:"Strafen je Spieler", cashNoEntries:"Noch keine Buchungen.", cashDeleteQ:"Eintrag löschen?", cashEnterAmount:"Bitte Betrag eingeben", cashSaved:"Eintrag gespeichert", cashDeleted:"Eintrag gelöscht", noTeamMsg:"Keine Mannschaft.", attNoTrain:"Noch keine Trainings", attNoTrainSub:"Sobald Termine mit Abstimmung angelegt wurden, erscheint hier die Anwesenheitsstatistik.", attPlaytime:"Spielzeit (faire Einsatzzeiten)", attLowPlay:"wenig Spielzeit", attMinTotal:"Min gesamt", attTrainingPct:"% Training", attPlaytimeFoot:"Summiert aus der Einsatzzeit-Erfassung der Spiele. „Wenig Spielzeit“ = unter 70 % des Durchschnitts – im nächsten Spiel bevorzugt einsetzen.", lblTrainings:"Trainings", lblPlayers:"Spieler", attPerGame:"Min/Spiel", attGameOne:"Spiel", attGameMany:"Spiele",
+    navTeam:"Team", navMore:"Mehr", navTreasury:"Kasse", navTraining:"Trainingsplan", cashNewEntry:"Neue Buchung", cashKStrafe:"Strafe", cashKBeitrag:"Beitrag", cashKEinnahme:"Einnahme", cashKAusgabe:"Ausgabe", cashBalance:"KASSENSTAND", cashPlus:"Im Plus", cashMinus:"Im Minus", cashBookings:"Buchungen", cashAmount:"Betrag €", cashPlayerPays:"Spieler (wer zahlt)", cashPlayerOpt:"Spieler (optional)", cashReason:"Grund (z.B. zu spät)", cashNoteOpt:"Notiz (optional)", cashSave:"+ Buchung speichern", cashFines:"Strafen je Spieler", cashNoEntries:"Noch keine Buchungen.", cashDeleteQ:"Eintrag löschen?", cashEnterAmount:"Bitte Betrag eingeben", cashSaved:"Eintrag gespeichert", cashDeleted:"Eintrag gelöscht", noTeamMsg:"Keine Mannschaft.", attNoTrain:"Noch keine Trainings", attNoTrainSub:"Sobald Termine mit Abstimmung angelegt wurden, erscheint hier die Anwesenheitsstatistik.", attPlaytime:"Spielzeit (faire Einsatzzeiten)", attLowPlay:"wenig Spielzeit", attMinTotal:"Min gesamt", attTrainingPct:"% Training", attPlaytimeFoot:"Summiert aus der Einsatzzeit-Erfassung der Spiele. „Wenig Spielzeit“ = unter 70 % des Durchschnitts – im nächsten Spiel bevorzugt einsetzen.", lblTrainings:"Trainings", lblPlayers:"Spieler", attPerGame:"Min/Spiel", attGameOne:"Spiel", attGameMany:"Spiele", msOnlyYou:"nur für dich", msNoEval:"Noch keine Auswertung", msNoEvalSub:"Sobald Termine stattgefunden haben oder der Trainer eine Einschätzung hinterlegt hat, siehst du hier deine persönlichen Werte.", msSecAttend:"ANWESENHEIT", msSecFair:"FAIRE SPIELZEIT", msTeamAvg:"Team-Ø", msSecSkill:"SKILL-PROFIL", msYourFocus:"DEIN FOKUS", msAllGoals:"👏 Alle Zielwerte deiner Altersklasse erreicht! Bleib dran und übernimm mehr Verantwortung im Team.", msTrainer:"Trainer", msDisclaimer:"Diese Werte siehst nur du. Skill-Einschätzungen und Empfehlungen kommen vom Trainerteam und dienen deiner Entwicklung.", msPlayFoot1:"mit erfasster Einsatzzeit. Der Teamschnitt zeigt nur den Durchschnitt – keine Werte anderer Kinder.", msPlayFootLow:" Du lagst zuletzt unter 70 % des Schnitts und solltest bald bevorzugt eingesetzt werden.", mtTechnikT:"2× Ball-/Passübung je Einheit, bewusst beidfüßig", mtTechnikG:"Ruhige erste Berührung – erst sichern, dann spielen", mtSchnellT:"Kurze Antritts-Sprints mit voller Pause", mtSchnellG:"In die Tiefe starten, Lücken attackieren", mtZweiT:"1-gegen-1-Duelle, Körper richtig einsetzen", mtZweiG:"Früh Druck machen, Gegner aktiv stellen", mtUeberT:"Vor der Annahme Schulterblick einüben", mtUeberG:"Kopf hoch, früh nach der Anspielstation schauen", mtAbschT:"Torschuss-Serien aus dem Dribbling", mtAbschG:"Strafraum besetzen, schnell und platziert abschließen", mtAusdT:"Intervallläufe – auch mit Ball", mtAusdG:"Tempo über die ganze Spielzeit halten", mtTeamT:"Kombinations- und Spielformen", mtTeamG:"Anbieten, kommunizieren, für andere mitarbeiten", mtDefT:"Gezielte Übung im Schwerpunkt", mtDefG:"Im Spiel bewusst anwenden", uhProfile:"Profil", uhMyProfile:"Mein Profil", uhPrivacyLbl:"Datenschutz:", uhPhotoNote:"Dein Profilbild wird verschlüsselt auf dem Server gespeichert und ist nur für dich sichtbar. Du kannst es jederzeit löschen.", uhLoggedInAs:"Angemeldet als", uhMyDataDsgvo:"MEINE DATEN (DSGVO)", uhExportData:"Daten exportieren", uhRequestDel:"Löschung anfragen", uhShowNamePublic:"Name in öffentlicher Aufstellung zeigen", uhShowNameSub1:"Erlaubt, dass der Name von ", uhShowNameSub2:" Gästen im Turnier-Spielplan angezeigt wird (sonst nur die Trikotnummer). Jederzeit widerrufbar.", uhClose:"Schließen", uhResetIntros:"Hilfe-Intros erneut anzeigen", uhSwitchLogout:"Team wechseln / Abmelden", uhNext10:"NÄCHSTE 10 TAGE", uhNoNext10:"Keine Termine in den nächsten 10 Tagen.", uhNoUpcoming:"Keine anstehenden Termine", uhNoUpcomingSub:"Der Trainer hat noch keine Termine angelegt.", uhClubLinks:"VEREINS-INFOS & LINKS", uhOverview:"ÜBERSICHT", uhUpcomingN:"anstehend", uhPastN:"vergangen", uhNextEvent:"NÄCHSTER TERMIN", uhHello:"Hallo", uhPast:"VERGANGENE", uhHideMore:"Weitere Termine ausblenden", uhShowMoreA:"Weitere", uhShowMoreB:"Termine anzeigen", uhPhotoSaved:"Profilbild gespeichert", uhPhotoRemoved:"Bild entfernt", uhDataExported:"Daten exportiert", uhExportFailed:"Export fehlgeschlagen", uhDelConfirm:"Möchtest du beim Verein die Löschung deiner Daten anfragen? Der Vereinsadmin erhält die Anfrage im Posteingang.", uhDelSent:"Löschantrag an den Verein gesendet", uhProfileNotFound:"Profil nicht gefunden – bitte beim Trainer melden", uhReleaseGiven:"Freigabe erteilt – Name darf gezeigt werden", uhReleaseWithdrawn:"Freigabe zurückgezogen", uhIntrosReset:"Hilfe-Intros werden wieder angezeigt", uhNeedReason:"Absage nach Frist nur mit Grund – bitte unten einen Grund wählen oder eingeben.", uhVotingClosed:"Anmeldung ist geschlossen – du kannst nur noch absagen (mit Grund).", uhLateCancel:"Späte Absage erfasst – Trainer wird informiert", uhLateJoin:"Späte Anmeldung erfasst", uhSaved:"Gespeichert",
     navResults:"Ergebnisse", navAttendance:"Anwesenheit", navOverview:"Übersicht alle Teams",
     navNews:"Neuigkeiten", navFieldsAdmin:"Plätze", navSecurity:"Sicherheitslog",
     navAccess:"Zugänge & Passwörter", secManage:"VERWALTUNG", secAdmin:"ADMIN",
@@ -244,7 +244,7 @@ const T = {
     send:"Send",
     wholeClub:"Whole club",
     noMessages:"No messages yet",
-    navTeam:"Team", navMore:"More", navTreasury:"Treasury", navTraining:"Training plan", cashNewEntry:"New entry", cashKStrafe:"Penalty", cashKBeitrag:"Contribution", cashKEinnahme:"Income", cashKAusgabe:"Expense", cashBalance:"BALANCE", cashPlus:"In credit", cashMinus:"In debit", cashBookings:"entries", cashAmount:"Amount â¬", cashPlayerPays:"Player (who pays)", cashPlayerOpt:"Player (optional)", cashReason:"Reason (e.g. late)", cashNoteOpt:"Note (optional)", cashSave:"+ Save entry", cashFines:"Penalties per player", cashNoEntries:"No entries yet.", cashDeleteQ:"Delete entry?", cashEnterAmount:"Please enter an amount", cashSaved:"Entry saved", cashDeleted:"Entry deleted", noTeamMsg:"No team.", attNoTrain:"No trainings yet", attNoTrainSub:"As soon as events with voting are created, the attendance statistics appear here.", attPlaytime:"Playing time (fair minutes)", attLowPlay:"little playing time", attMinTotal:"min total", attTrainingPct:"% Training", attPlaytimeFoot:"Summed from the playing-time tracking of games. “Little playing time” = below 70% of the average – give priority in the next game.", lblTrainings:"Trainings", lblPlayers:"Players", attPerGame:"min/game", attGameOne:"game", attGameMany:"games",
+    navTeam:"Team", navMore:"More", navTreasury:"Treasury", navTraining:"Training plan", cashNewEntry:"New entry", cashKStrafe:"Penalty", cashKBeitrag:"Contribution", cashKEinnahme:"Income", cashKAusgabe:"Expense", cashBalance:"BALANCE", cashPlus:"In credit", cashMinus:"In debit", cashBookings:"entries", cashAmount:"Amount â¬", cashPlayerPays:"Player (who pays)", cashPlayerOpt:"Player (optional)", cashReason:"Reason (e.g. late)", cashNoteOpt:"Note (optional)", cashSave:"+ Save entry", cashFines:"Penalties per player", cashNoEntries:"No entries yet.", cashDeleteQ:"Delete entry?", cashEnterAmount:"Please enter an amount", cashSaved:"Entry saved", cashDeleted:"Entry deleted", noTeamMsg:"No team.", attNoTrain:"No trainings yet", attNoTrainSub:"As soon as events with voting are created, the attendance statistics appear here.", attPlaytime:"Playing time (fair minutes)", attLowPlay:"little playing time", attMinTotal:"min total", attTrainingPct:"% Training", attPlaytimeFoot:"Summed from the playing-time tracking of games. “Little playing time” = below 70% of the average – give priority in the next game.", lblTrainings:"Trainings", lblPlayers:"Players", attPerGame:"min/game", attGameOne:"game", attGameMany:"games", msOnlyYou:"only you", msNoEval:"No data yet", msNoEvalSub:"Once events have taken place or your coach has added an assessment, your personal stats will appear here.", msSecAttend:"ATTENDANCE", msSecFair:"FAIR PLAYING TIME", msTeamAvg:"Team avg", msSecSkill:"SKILL PROFILE", msYourFocus:"YOUR FOCUS", msAllGoals:"👏 You reached all target values for your age group! Keep it up and take on more responsibility in the team.", msTrainer:"Coach", msDisclaimer:"Only you can see these stats. Skill assessments and recommendations come from the coaching team and support your development.", msPlayFoot1:"with tracked playing time. The team average only shows the mean – no values of other children.", msPlayFootLow:" You were recently below 70% of the average and should soon be given priority.", mtTechnikT:"2× ball/passing drill per session, deliberately both-footed", mtTechnikG:"Calm first touch – secure first, then play", mtSchnellT:"Short acceleration sprints with full rest", mtSchnellG:"Run in behind, attack the gaps", mtZweiT:"1-v-1 duels, use your body correctly", mtZweiG:"Press early, actively close opponents down", mtUeberT:"Practise shoulder checks before receiving", mtUeberG:"Head up, look for the next pass early", mtAbschT:"Finishing series out of the dribble", mtAbschG:"Occupy the box, finish quickly and placed", mtAusdT:"Interval runs – also with the ball", mtAusdG:"Keep the tempo up the whole game", mtTeamT:"Combination and small-sided games", mtTeamG:"Offer, communicate, work for others", mtDefT:"Targeted drill on the focus area", mtDefG:"Apply it deliberately in the game", uhProfile:"Profile", uhMyProfile:"My profile", uhPrivacyLbl:"Privacy:", uhPhotoNote:"Your profile photo is stored encrypted on the server and only visible to you. You can delete it anytime.", uhLoggedInAs:"Logged in as", uhMyDataDsgvo:"MY DATA (GDPR)", uhExportData:"Export data", uhRequestDel:"Request deletion", uhShowNamePublic:"Show name in public line-up", uhShowNameSub1:"Allows the name of ", uhShowNameSub2:" to be shown to guests in the tournament schedule (otherwise only the shirt number). Revocable anytime.", uhClose:"Close", uhResetIntros:"Show help intros again", uhSwitchLogout:"Switch team / Log out", uhNext10:"NEXT 10 DAYS", uhNoNext10:"No events in the next 10 days.", uhNoUpcoming:"No upcoming events", uhNoUpcomingSub:"The coach hasn't created any events yet.", uhClubLinks:"CLUB INFO & LINKS", uhOverview:"OVERVIEW", uhUpcomingN:"upcoming", uhPastN:"past", uhNextEvent:"NEXT EVENT", uhHello:"Hi", uhPast:"PAST", uhHideMore:"Hide further events", uhShowMoreA:"Show", uhShowMoreB:"more events", uhPhotoSaved:"Profile photo saved", uhPhotoRemoved:"Photo removed", uhDataExported:"Data exported", uhExportFailed:"Export failed", uhDelConfirm:"Do you want to request deletion of your data from the club? The club admin will receive the request in the inbox.", uhDelSent:"Deletion request sent to the club", uhProfileNotFound:"Profile not found – please contact the coach", uhReleaseGiven:"Consent granted – name may be shown", uhReleaseWithdrawn:"Consent withdrawn", uhIntrosReset:"Help intros will be shown again", uhNeedReason:"Cancelling after the deadline requires a reason – please pick or enter one below.", uhVotingClosed:"Sign-up is closed – you can only cancel now (with a reason).", uhLateCancel:"Late cancellation recorded – the coach is notified", uhLateJoin:"Late sign-up recorded", uhSaved:"Saved",
     navResults:"Results", navAttendance:"Attendance", navOverview:"All teams overview",
     navNews:"News", navFieldsAdmin:"Pitches", navSecurity:"Security log",
     navAccess:"Access & passwords", secManage:"MANAGEMENT", secAdmin:"ADMIN",
@@ -365,7 +365,7 @@ const T = {
     send:"Versturen",
     wholeClub:"Hele club",
     noMessages:"Nog geen berichten",
-    navTeam:"Team", navMore:"Meer", navTreasury:"Kas", navTraining:"Trainingsschema", cashNewEntry:"Nieuwe boeking", cashKStrafe:"Boete", cashKBeitrag:"Bijdrage", cashKEinnahme:"Inkomsten", cashKAusgabe:"Uitgave", cashBalance:"KASSALDO", cashPlus:"Positief", cashMinus:"Negatief", cashBookings:"boekingen", cashAmount:"Bedrag â¬", cashPlayerPays:"Speler (wie betaalt)", cashPlayerOpt:"Speler (optioneel)", cashReason:"Reden (bijv. te laat)", cashNoteOpt:"Notitie (optioneel)", cashSave:"+ Boeking opslaan", cashFines:"Boetes per speler", cashNoEntries:"Nog geen boekingen.", cashDeleteQ:"Boeking verwijderen?", cashEnterAmount:"Voer een bedrag in", cashSaved:"Boeking opgeslagen", cashDeleted:"Boeking verwijderd", noTeamMsg:"Geen team.", attNoTrain:"Nog geen trainingen", attNoTrainSub:"Zodra afspraken met stemming zijn aangemaakt, verschijnt hier de aanwezigheidsstatistiek.", attPlaytime:"Speeltijd (eerlijke inzet)", attLowPlay:"weinig speeltijd", attMinTotal:"min totaal", attTrainingPct:"% Training", attPlaytimeFoot:"Opgeteld uit de speeltijdregistratie van wedstrijden. “Weinig speeltijd” = onder 70% van het gemiddelde – zet bij de volgende wedstrijd met voorrang in.", lblTrainings:"Trainingen", lblPlayers:"Spelers", attPerGame:"min/wedstrijd", attGameOne:"wedstrijd", attGameMany:"wedstrijden",
+    navTeam:"Team", navMore:"Meer", navTreasury:"Kas", navTraining:"Trainingsschema", cashNewEntry:"Nieuwe boeking", cashKStrafe:"Boete", cashKBeitrag:"Bijdrage", cashKEinnahme:"Inkomsten", cashKAusgabe:"Uitgave", cashBalance:"KASSALDO", cashPlus:"Positief", cashMinus:"Negatief", cashBookings:"boekingen", cashAmount:"Bedrag â¬", cashPlayerPays:"Speler (wie betaalt)", cashPlayerOpt:"Speler (optioneel)", cashReason:"Reden (bijv. te laat)", cashNoteOpt:"Notitie (optioneel)", cashSave:"+ Boeking opslaan", cashFines:"Boetes per speler", cashNoEntries:"Nog geen boekingen.", cashDeleteQ:"Boeking verwijderen?", cashEnterAmount:"Voer een bedrag in", cashSaved:"Boeking opgeslagen", cashDeleted:"Boeking verwijderd", noTeamMsg:"Geen team.", attNoTrain:"Nog geen trainingen", attNoTrainSub:"Zodra afspraken met stemming zijn aangemaakt, verschijnt hier de aanwezigheidsstatistiek.", attPlaytime:"Speeltijd (eerlijke inzet)", attLowPlay:"weinig speeltijd", attMinTotal:"min totaal", attTrainingPct:"% Training", attPlaytimeFoot:"Opgeteld uit de speeltijdregistratie van wedstrijden. “Weinig speeltijd” = onder 70% van het gemiddelde – zet bij de volgende wedstrijd met voorrang in.", lblTrainings:"Trainingen", lblPlayers:"Spelers", attPerGame:"min/wedstrijd", attGameOne:"wedstrijd", attGameMany:"wedstrijden", msOnlyYou:"alleen voor jou", msNoEval:"Nog geen analyse", msNoEvalSub:"Zodra er afspraken hebben plaatsgevonden of de trainer een beoordeling heeft toegevoegd, zie je hier je persoonlijke cijfers.", msSecAttend:"AANWEZIGHEID", msSecFair:"EERLIJKE SPEELTIJD", msTeamAvg:"Team-gem.", msSecSkill:"VAARDIGHEDEN", msYourFocus:"JOUW FOCUS", msAllGoals:"👏 Alle streefwaarden van je leeftijdsgroep behaald! Ga zo door en neem meer verantwoordelijkheid in het team.", msTrainer:"Trainer", msDisclaimer:"Alleen jij ziet deze cijfers. Beoordelingen en aanbevelingen komen van het trainersteam en helpen je ontwikkeling.", msPlayFoot1:"met geregistreerde speeltijd. Het teamgemiddelde toont alleen het gemiddelde – geen waarden van andere kinderen.", msPlayFootLow:" Je zat recent onder 70% van het gemiddelde en zou binnenkort met voorrang ingezet moeten worden.", mtTechnikT:"2× bal-/passoefening per training, bewust met beide voeten", mtTechnikG:"Rustige eerste balaanname – eerst beheersen, dan spelen", mtSchnellT:"Korte versnellingssprints met volledige rust", mtSchnellG:"Diep starten, de gaten aanvallen", mtZweiT:"1-tegen-1-duels, lichaam goed gebruiken", mtZweiG:"Vroeg druk zetten, tegenstander actief opvangen", mtUeberT:"Voor de aanname over de schouder kijken", mtUeberG:"Hoofd omhoog, vroeg naar de volgende man kijken", mtAbschT:"Afrondreeksen vanuit de dribbel", mtAbschG:"Bezet het strafschopgebied, snel en geplaatst afronden", mtAusdT:"Intervallopen – ook met bal", mtAusdG:"Tempo de hele wedstrijd vasthouden", mtTeamT:"Combinatie- en partijvormen", mtTeamG:"Aanbieden, communiceren, voor anderen werken", mtDefT:"Gerichte oefening op het accent", mtDefG:"Bewust toepassen in de wedstrijd", uhProfile:"Profiel", uhMyProfile:"Mijn profiel", uhPrivacyLbl:"Privacy:", uhPhotoNote:"Je profielfoto wordt versleuteld op de server opgeslagen en is alleen voor jou zichtbaar. Je kunt hem altijd verwijderen.", uhLoggedInAs:"Aangemeld als", uhMyDataDsgvo:"MIJN GEGEVENS (AVG)", uhExportData:"Gegevens exporteren", uhRequestDel:"Verwijdering aanvragen", uhShowNamePublic:"Naam tonen in openbare opstelling", uhShowNameSub1:"Staat toe dat de naam van ", uhShowNameSub2:" aan gasten in het toernooischema wordt getoond (anders alleen het rugnummer). Altijd intrekbaar.", uhClose:"Sluiten", uhResetIntros:"Hulp-intro's opnieuw tonen", uhSwitchLogout:"Team wisselen / Afmelden", uhNext10:"KOMENDE 10 DAGEN", uhNoNext10:"Geen afspraken in de komende 10 dagen.", uhNoUpcoming:"Geen aankomende afspraken", uhNoUpcomingSub:"De trainer heeft nog geen afspraken aangemaakt.", uhClubLinks:"CLUBINFO & LINKS", uhOverview:"OVERZICHT", uhUpcomingN:"aankomend", uhPastN:"voorbij", uhNextEvent:"VOLGENDE AFSPRAAK", uhHello:"Hallo", uhPast:"VOORBIJ", uhHideMore:"Meer afspraken verbergen", uhShowMoreA:"Toon", uhShowMoreB:"meer afspraken", uhPhotoSaved:"Profielfoto opgeslagen", uhPhotoRemoved:"Foto verwijderd", uhDataExported:"Gegevens geëxporteerd", uhExportFailed:"Export mislukt", uhDelConfirm:"Wil je verwijdering van je gegevens bij de club aanvragen? De clubbeheerder ontvangt het verzoek in de inbox.", uhDelSent:"Verwijderingsverzoek naar de club gestuurd", uhProfileNotFound:"Profiel niet gevonden – neem contact op met de trainer", uhReleaseGiven:"Toestemming gegeven – naam mag worden getoond", uhReleaseWithdrawn:"Toestemming ingetrokken", uhIntrosReset:"Hulp-intro's worden weer getoond", uhNeedReason:"Afmelden na de deadline kan alleen met reden – kies of voer hieronder een reden in.", uhVotingClosed:"Aanmelding is gesloten – je kunt je nu alleen nog afmelden (met reden).", uhLateCancel:"Late afmelding geregistreerd – de trainer wordt geïnformeerd", uhLateJoin:"Late aanmelding geregistreerd", uhSaved:"Opgeslagen",
     navResults:"Resultaten", navAttendance:"Aanwezigheid", navOverview:"Overzicht alle teams",
     navNews:"Nieuws", navFieldsAdmin:"Velden", navSecurity:"Beveiligingslog",
     navAccess:"Toegang & wachtwoorden", secManage:"BEHEER", secAdmin:"ADMIN",
@@ -21709,14 +21709,14 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
                         ? <div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:11,padding:"10px 13px",fontSize:12.5,color:"#166534",lineHeight:1.5}}>Alle Zielwerte erreicht 👏 – Stärken weiter ausbauen und mehr Verantwortung im Team geben.</div>
                         : <div style={{display:"flex",flexDirection:"column",gap:8}}>
                             {[...foerder].sort((a,b)=>(b.soll-b.ist)-(a.soll-a.ist)).slice(0,3).map(x=>{
-                              const tip=MEASURE_TIPS[x.a]||{train:"Gezielte Übung im Schwerpunkt",game:"Im Spiel bewusst anwenden"};
+                              const tip=tipFor(x.a);
                               const drill=suggestDrillsForSkill(x.a,cat,1)[0]?.d;
                               return (
                                 <div key={x.a} style={{background:"#fff7ed",border:"1px solid #fed7aa",borderRadius:11,padding:"10px 12px"}}>
                                   <div style={{fontWeight:800,fontSize:13,color:"#9a3412"}}>{dimLabel(x.a,tr)} <span style={{fontWeight:700,color:"#c2410c"}}>{round2(x.ist)} → {x.soll}</span></div>
                                   <div style={{fontSize:12,color:"#7c2d12",lineHeight:1.55,marginTop:3}}>
-                                    <div>🏋️ Training: {tip.train}{drill?` – z. B. „${drill.title}"`:""}</div>
-                                    <div>⚽ Spiel: {tip.game}</div>
+                                    <div>🏋️ {tr("kpiTraining")}: {tip.train}{drill?` – z. B. „${drill.title}“`:""}</div>
+                                    <div>⚽ {tr("attGameOne")}: {tip.game}</div>
                                   </div>
                                 </div>
                               );
@@ -30802,15 +30802,8 @@ function SelfStats({ data, session, cl, lang="de" }){
   const rated = axes.map(a=>sk[a]).filter(v=>typeof v==="number"&&v>0);
   const avg = rated.length ? Math.round(rated.reduce((x,y)=>x+y,0)/rated.length*10)/10 : null;
   const foerder = axes.map((a,i)=>({a,ist:sk[a]||0,soll:soll[i]})).filter(x=>x.ist>0&&x.ist<x.soll).sort((a,b)=>(b.soll-b.ist)-(a.soll-a.ist));
-  const MEASURE_TIPS={
-    Technik:{train:"2× Ball-/Passübung je Einheit, bewusst beidfüßig",game:"Ruhige erste Berührung – erst sichern, dann spielen"},
-    Schnelligkeit:{train:"Kurze Antritts-Sprints mit voller Pause",game:"In die Tiefe starten, Lücken attackieren"},
-    Zweikampf:{train:"1-gegen-1-Duelle, Körper richtig einsetzen",game:"Früh Druck machen, Gegner aktiv stellen"},
-    Übersicht:{train:"Vor der Annahme Schulterblick einüben",game:"Kopf hoch, früh nach der Anspielstation schauen"},
-    Abschluss:{train:"Torschuss-Serien aus dem Dribbling",game:"Strafraum besetzen, schnell und platziert abschließen"},
-    Ausdauer:{train:"Intervallläufe – auch mit Ball",game:"Tempo über die ganze Spielzeit halten"},
-    Teamplay:{train:"Kombinations- und Spielformen",game:"Anbieten, kommunizieren, für andere mitarbeiten"},
-  };
+  const TIPKEY={Technik:"Technik",Schnelligkeit:"Schnell",Zweikampf:"Zwei","Übersicht":"Ueber",Abschluss:"Absch",Ausdauer:"Ausd",Teamplay:"Team"};
+  const tipFor=a=>({train:tr("mt"+(TIPKEY[a]||"Def")+"T"),game:tr("mt"+(TIPKEY[a]||"Def")+"G")});
   const hasAnyData = pastTrain.length>0 || pastGames.length>0 || hasSkills;
   const pct = (v,d)=> d>0 ? Math.min(100, Math.round(v/d*100)) : 0;
   const card = {background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",padding:"15px 16px",marginBottom:14};
@@ -30824,21 +30817,21 @@ function SelfStats({ data, session, cl, lang="de" }){
           <div style={{fontWeight:900,fontSize:17,color:"#0f172a"}}>{user}</div>
           <div style={{fontSize:12,color:"#64748b"}}>{myTeam?.icon} {myTeam?.name}</div>
         </div>
-        <span style={{fontSize:10.5,fontWeight:800,color:"#475569",background:"#f1f5f9",borderRadius:8,padding:"4px 9px"}}>🔒 nur für dich</span>
+        <span style={{fontSize:10.5,fontWeight:800,color:"#475569",background:"#f1f5f9",borderRadius:8,padding:"4px 9px"}}>🔒 {tr("msOnlyYou")}</span>
       </div>
 
       {!hasAnyData&&(
         <div style={{textAlign:"center",padding:"48px 20px",background:"#f8fafc",borderRadius:16,border:"1.5px dashed #e2e8f0"}}>
           <div style={{fontSize:34,marginBottom:10}}>📊</div>
-          <p style={{fontWeight:800,fontSize:16,color:"#334155"}}>Noch keine Auswertung</p>
-          <p style={{fontSize:13.5,color:"#64748b",marginTop:6,lineHeight:1.5}}>Sobald Termine stattgefunden haben oder der Trainer eine Einschätzung hinterlegt hat, siehst du hier deine persönlichen Werte.</p>
+          <p style={{fontWeight:800,fontSize:16,color:"#334155"}}>{tr("msNoEval")}</p>
+          <p style={{fontSize:13.5,color:"#64748b",marginTop:6,lineHeight:1.5}}>{tr("msNoEvalSub")}</p>
         </div>
       )}
 
       {/* Anwesenheit */}
       {(pastTrain.length>0||pastGames.length>0)&&(
         <div style={card}>
-          <div style={secHead}>ANWESENHEIT</div>
+          <div style={secHead}>{tr("msSecAttend")}</div>
           {pastTrain.length>0&&(
             <div style={{marginBottom:gamePct!=null?14:0}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:5}}>
@@ -30869,22 +30862,22 @@ function SelfStats({ data, session, cl, lang="de" }){
         <div style={card}>
           <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:12}}>
             <span style={{fontSize:16}}>⏱</span>
-            <span style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5,flex:1}}>FAIRE SPIELZEIT</span>
-            {lowPlaytime&&<span style={{fontSize:10,fontWeight:800,color:"#9a3412",background:"#fef3c7",borderRadius:6,padding:"2px 7px"}}>wenig Spielzeit</span>}
+            <span style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5,flex:1}}>{tr("msSecFair")}</span>
+            {lowPlaytime&&<span style={{fontSize:10,fontWeight:800,color:"#9a3412",background:"#fef3c7",borderRadius:6,padding:"2px 7px"}}>{tr("attLowPlay")}</span>}
           </div>
           <div style={{display:"flex",gap:10,marginBottom:10}}>
             <div style={{flex:1,textAlign:"center",background:"#eff6ff",borderRadius:12,padding:"12px 6px"}}>
               <div style={{fontSize:24,fontWeight:900,color:"#2563eb"}}>{myMins}</div>
-              <div style={{fontSize:11,color:"#64748b",marginTop:2}}>{tr("vMin")} gesamt</div>
+              <div style={{fontSize:11,color:"#64748b",marginTop:2}}>{tr("attMinTotal")}</div>
             </div>
             <div style={{flex:1,textAlign:"center",background:"#f1f5f9",borderRadius:12,padding:"12px 6px"}}>
               <div style={{fontSize:24,fontWeight:900,color:"#0f172a"}}>{myGc?Math.round(myMins/myGc):0}</div>
-              <div style={{fontSize:11,color:"#64748b",marginTop:2}}>Ø {tr("vMin")}/{tr("kpiGames")}</div>
+              <div style={{fontSize:11,color:"#64748b",marginTop:2}}>Ø {tr("vMin")}/{tr("attGameOne")}</div>
             </div>
             {teamAvg>0&&(
               <div style={{flex:1,textAlign:"center",background:"#f1f5f9",borderRadius:12,padding:"12px 6px"}}>
                 <div style={{fontSize:24,fontWeight:900,color:"#64748b"}}>{teamAvg}</div>
-                <div style={{fontSize:11,color:"#64748b",marginTop:2}}>Team-Ø</div>
+                <div style={{fontSize:11,color:"#64748b",marginTop:2}}>{tr("msTeamAvg")}</div>
               </div>
             )}
           </div>
@@ -30893,7 +30886,7 @@ function SelfStats({ data, session, cl, lang="de" }){
               <div style={{height:"100%",borderRadius:99,width:`${pct(myMins,teamAvg*1.5)}%`,background:lowPlaytime?"#d97706":"#2563eb",transition:"width .4s"}}/>
             </div>
           )}
-          <div style={{fontSize:11,color:"#64748b",marginTop:8,lineHeight:1.45}}>{myGc} {myGc===1?"Spiel":"Spiele"} mit erfasster Einsatzzeit. Der Teamschnitt zeigt nur den Durchschnitt – keine Werte anderer Kinder.{lowPlaytime?" Du lagst zuletzt unter 70 % des Schnitts und solltest bald bevorzugt eingesetzt werden.":""}</div>
+          <div style={{fontSize:11,color:"#64748b",marginTop:8,lineHeight:1.45}}>{myGc} {myGc===1?tr("attGameOne"):tr("attGameMany")} {tr("msPlayFoot1")}{lowPlaytime?tr("msPlayFootLow"):""}</div>
         </div>
       )}
 
@@ -30901,7 +30894,7 @@ function SelfStats({ data, session, cl, lang="de" }){
       {hasSkills&&(
         <div style={card}>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-            <span style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5,flex:1}}>SKILL-PROFIL</span>
+            <span style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5,flex:1}}>{tr("msSecSkill")}</span>
             {avg!=null&&<span style={{textAlign:"right"}}><span style={{fontWeight:900,fontSize:17,color:t.p}}>{avg}</span><span style={{fontSize:10,color:"#64748b"}}> / 5 {tr("kpiAvgSkill")}</span></span>}
           </div>
           <div style={{background:"#f8fafc",borderRadius:14,padding:"14px 10px"}}>
@@ -30926,7 +30919,7 @@ function SelfStats({ data, session, cl, lang="de" }){
       {/* Persoenliche Foerder-Empfehlung */}
       {hasSkills&&foerder.length>0&&(
         <div style={card}>
-          <div style={secHead}>🎯 DEIN FOKUS ({cat})</div>
+          <div style={secHead}>🎯 {tr("msYourFocus")} ({cat})</div>
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
             {foerder.slice(0,3).map(x=>{
               const tip=MEASURE_TIPS[x.a]||{train:"Gezielte Übung im Schwerpunkt",game:"Im Spiel bewusst anwenden"};
@@ -30947,20 +30940,20 @@ function SelfStats({ data, session, cl, lang="de" }){
 
       {hasSkills&&foerder.length===0&&(
         <div style={{...card,background:"#f0fdf4",borderColor:"#bbf7d0"}}>
-          <div style={{fontSize:13,color:"#166534",fontWeight:700,lineHeight:1.5}}>👏 Alle Zielwerte deiner Altersklasse erreicht! Bleib dran und übernimm mehr Verantwortung im Team.</div>
+          <div style={{fontSize:13,color:"#166534",fontWeight:700,lineHeight:1.5}}>{tr("msAllGoals")}</div>
         </div>
       )}
 
       {/* Empfehlung des Trainers */}
       {me?.recommend&&(
         <div style={{...card,background:"#eef2ff",borderColor:"#c7d2fe"}}>
-          <div style={{fontSize:11,fontWeight:800,color:"#4f46e5",letterSpacing:.5,marginBottom:6}}>{tr("kpiRecommend").toUpperCase()} (TRAINER)</div>
+          <div style={{fontSize:11,fontWeight:800,color:"#4f46e5",letterSpacing:.5,marginBottom:6}}>{tr("kpiRecommend").toUpperCase()} ({tr("msTrainer").toUpperCase()})</div>
           <div style={{fontSize:13.5,color:"#3730a3",lineHeight:1.55,fontWeight:600}}>{me.recommend}</div>
         </div>
       )}
 
       <div style={{fontSize:11,color:"#64748b",textAlign:"center",lineHeight:1.5,marginTop:6,padding:"0 8px"}}>
-        Diese Werte siehst nur du. Skill-Einschätzungen und Empfehlungen kommen vom Trainerteam und dienen deiner Entwicklung.
+        {tr("msDisclaimer")}
       </div>
     </div>
   );
@@ -31027,14 +31020,14 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
     compressImage(dataUrl,async compressed=>{
       try{ await window.storage?.set(photoKey,compressed,true); }catch{}
       setPhoto(compressed);
-      fire("Profilbild gespeichert *");
+      fire(tr("uhPhotoSaved"));
       setShowProfile(false);
     });
   };
   const removePhoto=async()=>{
     try{ await window.storage?.delete(photoKey,true); }catch{}
     setPhoto(null);
-    fire("Bild entfernt");
+    fire(tr("uhPhotoRemoved"));
   };
 
   // DSGVO: eigene Daten als JSON exportieren (Auskunft/Datenuebertragbarkeit, Art. 15/20)
@@ -31046,15 +31039,15 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
       const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`meine-daten-${String(user).replace(/[^a-z0-9]/gi,"_")}.json`; a.click();
       setTimeout(()=>URL.revokeObjectURL(a.href),2000);
-      fire("Daten exportiert *");
-    }catch{ fire("Export fehlgeschlagen"); }
+      fire(tr("uhDataExported"));
+    }catch{ fire(tr("uhExportFailed")); }
   };
   // DSGVO: Loeschung beim Verein anfragen (landet im Admin-Posteingang)
   const requestDeletion=()=>{
-    if(!window.confirm("Möchtest du beim Verein die Löschung deiner Daten anfragen? Der Vereinsadmin erhält die Anfrage im Posteingang.")) return;
+    if(!window.confirm(tr("uhDelConfirm"))) return;
     const req={id:uid(),cid,fromName:String(user),fromEmail:"",msg:"[DSGVO-Löschantrag] Bitte die in der App gespeicherten Daten von „"+user+"“ löschen.",ts:new Date().toISOString(),read:false,blocked:false,dsgvo:true};
     onSave({...data, contactRequests:[...(data.contactRequests||[]),req]});
-    fire("Löschantrag an den Verein gesendet");
+    fire(tr("uhDelSent"));
     setShowProfile(false);
   };
 
@@ -31064,7 +31057,7 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
     || (data.playerProfiles||[]).find(p=>p.cid===cid && (p.name||"").toLowerCase()===String(user).toLowerCase());
   const pubOk=!!myProfile?.pubOk;
   const togglePubOk=()=>{
-    if(!myProfile){ fire("Profil nicht gefunden – bitte beim Trainer melden"); return; }
+    if(!myProfile){ fire(tr("uhProfileNotFound")); return; }
     const next=(data.playerProfiles||[]).map(p=>p.id===myProfile.id?{...p,pubOk:!pubOk}:p);
     // Laufende Turnier-Spiegel dieses Vereins auffrischen, damit die (Wider-)
     // Freigabe sofort fuer Gaeste greift (sonst erst beim naechsten Trainer-Save).
@@ -31075,7 +31068,7 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       return {...le, pub:tournPubSnapshot(tev, next)};
     });
     onSave({...data,playerProfiles:next,liveEvents});
-    fire(!pubOk?"Freigabe erteilt – Name darf gezeigt werden":"Freigabe zurückgezogen");
+    fire(!pubOk?tr("uhReleaseGiven"):tr("uhReleaseWithdrawn"));
   };
 
   const vote=(eid,pt,val)=>{
@@ -31127,15 +31120,15 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       return {...e,votes:nvX};
     })};
     if (needReason) {
-      fire("Absage nach Frist nur mit Grund – bitte unten einen Grund wählen oder eingeben.");
+      fire(tr("uhNeedReason"));
       return;
     }
     if (blocked) {
-      fire("Anmeldung ist geschlossen – du kannst nur noch absagen (mit Grund).");
+      fire(tr("uhVotingClosed"));
       return;
     }
     onSave(next);
-    fire(lateCancel ? "Späte Absage erfasst – Trainer wird informiert" : lateRejoin ? "Späte Anmeldung erfasst" : "Gespeichert *");
+    fire(lateCancel ? tr("uhLateCancel") : lateRejoin ? tr("uhLateJoin") : tr("uhSaved"));
   };
 
   return (
@@ -31158,7 +31151,7 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             }
             <div style={{textAlign:"right"}}>
               <div style={{color:"#fff",fontSize:13,fontWeight:700}}>{user}</div>
-              <div style={{color:"rgba(255,255,255,.5)",fontSize:11}}>Profil</div>
+              <div style={{color:"rgba(255,255,255,.5)",fontSize:11}}>{tr("uhProfile")}</div>
             </div>
           </div>
           </div>
@@ -31170,28 +31163,28 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:800,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(8px)"}} onClick={()=>setShowProfile(false)}>
           <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"92dvh",overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"12px 22px calc(48px + env(safe-area-inset-bottom))",animation:"down .24s ease"}}>
             <div style={{display:"flex",justifyContent:"center",marginBottom:16}}><div style={{width:44,height:4,borderRadius:99,background:"#e2e8f0"}}/></div>
-            <h3 style={{fontWeight:900,fontSize:18,color:"#0f172a",marginBottom:20,textAlign:"center"}}> Mein Profil</h3>
+            <h3 style={{fontWeight:900,fontSize:18,color:"#0f172a",marginBottom:20,textAlign:"center"}}> {tr("uhMyProfile")}</h3>
             <div style={{display:"flex",justifyContent:"center",marginBottom:18}}>
               <PhotoUploader photo={photo} name={user} onSave={savePhoto} onRemove={removePhoto} t={t}/>
             </div>
             <div style={{background:"#f8fafc",borderRadius:12,padding:"11px 14px",marginBottom:18,fontSize:13,color:"#64748b",textAlign:"center",fontWeight:600}}>
-              Angemeldet als <strong style={{color:"#334155"}}>{user}</strong><br/>
+              {tr("uhLoggedInAs")} <strong style={{color:"#334155"}}>{user}</strong><br/>
               <span style={{fontSize:12}}>{myTeam?.name}</span>
             </div>
             <div style={{background:"#fffbeb",borderRadius:11,padding:"10px 13px",marginBottom:16,fontSize:12,color:"#92400e",lineHeight:1.6}}>
-               <strong>Datenschutz:</strong> Dein Profilbild wird verschluesselt auf dem Server gespeichert und ist nur für dich sichtbar. Du kannst es jederzeit löschen.
+               <strong>{tr("uhPrivacyLbl")}</strong> {tr("uhPhotoNote")}
             </div>
             <div style={{background:"#f8fafc",borderRadius:12,padding:"12px 14px",marginBottom:14,border:"1px solid #e2e8f0"}}>
-              <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.4,marginBottom:8}}>MEINE DATEN (DSGVO)</div>
+              <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.4,marginBottom:8}}>{tr("uhMyDataDsgvo")}</div>
               <div style={{display:"flex",gap:8}}>
-                <button onClick={exportMyData} style={{flex:1,padding:"10px",borderRadius:10,border:"1.5px solid #e2e8f0",background:"#fff",color:"#334155",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Daten exportieren</button>
-                <button onClick={requestDeletion} style={{flex:1,padding:"10px",borderRadius:10,border:"1.5px solid #fecaca",background:"#fff7f7",color:"#dc2626",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Löschung anfragen</button>
+                <button onClick={exportMyData} style={{flex:1,padding:"10px",borderRadius:10,border:"1.5px solid #e2e8f0",background:"#fff",color:"#334155",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{tr("uhExportData")}</button>
+                <button onClick={requestDeletion} style={{flex:1,padding:"10px",borderRadius:10,border:"1.5px solid #fecaca",background:"#fff7f7",color:"#dc2626",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{tr("uhRequestDel")}</button>
               </div>
             </div>
             <div onClick={togglePubOk} style={{display:"flex",alignItems:"center",gap:12,background:pubOk?"#f0fdf4":"#f8fafc",border:`1.5px solid ${pubOk?"#bbf7d0":"#e2e8f0"}`,borderRadius:12,padding:"12px 14px",marginBottom:14,cursor:"pointer"}}>
               <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:13,fontWeight:800,color:pubOk?"#15803d":"#334155"}}>Name in öffentlicher Aufstellung zeigen</div>
-                <div style={{fontSize:11,color:"#64748b",marginTop:2,lineHeight:1.45}}>Erlaubt, dass der Name von <strong>{user}</strong> Gästen im Turnier-Spielplan angezeigt wird (sonst nur die Trikotnummer). Jederzeit widerrufbar.</div>
+                <div style={{fontSize:13,fontWeight:800,color:pubOk?"#15803d":"#334155"}}>{tr("uhShowNamePublic")}</div>
+                <div style={{fontSize:11,color:"#64748b",marginTop:2,lineHeight:1.45}}>{tr("uhShowNameSub1")}<strong>{user}</strong>{tr("uhShowNameSub2")}</div>
               </div>
               <div style={{width:46,height:26,borderRadius:99,background:pubOk?"#16a34a":"#cbd5e1",position:"relative",flexShrink:0,transition:"background .2s"}}>
                 <div style={{position:"absolute",top:3,left:pubOk?22:3,width:20,height:20,borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.25)"}}/>
@@ -31200,9 +31193,9 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             <div style={{display:"flex",flexDirection:"column",gap:9}}>
               <div style={{background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"12px 14px",marginBottom:4}}><FontScaleControl/></div>
               <div style={{marginBottom:4}}><ShareTeamLink cl={cl} team={myTeam} t={t} compact/></div>
-              <button onClick={()=>setShowProfile(false)} style={{width:"100%",padding:"13px",borderRadius:13,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Schließen</button>
-              <button onClick={()=>{ try{ Object.keys(localStorage).filter(k=>k.startsWith("va_intro_")).forEach(k=>localStorage.removeItem(k)); }catch{} fire("Hilfe-Intros werden wieder angezeigt"); setShowProfile(false); }} style={{width:"100%",padding:"12px",borderRadius:13,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:13.5,cursor:"pointer",fontFamily:"inherit",marginBottom:10}}>Hilfe-Intros erneut anzeigen</button>
-              <button onClick={()=>{setShowProfile(false);onLogout();}} style={{width:"100%",padding:"13px",borderRadius:13,border:"none",background:"#fee2e2",color:"#dc2626",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}> Team wechseln / Abmelden</button>
+              <button onClick={()=>setShowProfile(false)} style={{width:"100%",padding:"13px",borderRadius:13,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>{tr("uhClose")}</button>
+              <button onClick={()=>{ try{ Object.keys(localStorage).filter(k=>k.startsWith("va_intro_")).forEach(k=>localStorage.removeItem(k)); }catch{} fire(tr("uhIntrosReset")); setShowProfile(false); }} style={{width:"100%",padding:"12px",borderRadius:13,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:13.5,cursor:"pointer",fontFamily:"inherit",marginBottom:10}}>{tr("uhResetIntros")}</button>
+              <button onClick={()=>{setShowProfile(false);onLogout();}} style={{width:"100%",padding:"13px",borderRadius:13,border:"none",background:"#fee2e2",color:"#dc2626",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}> {tr("uhSwitchLogout")}</button>
             </div>
           </div>
         </div>
@@ -31223,27 +31216,27 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         <AreaIntro id="parent_home" cl={cl}/>
         <AffiliateBanner trigger="events" slim style={{marginBottom:12}}/>
         {up.length>0&&<>
-          <Divider label="NÄCHSTE 10 TAGE"/>
+          <Divider label={tr("uhNext10")}/>
           {soon.length>0
             ? soon.map((ev,i)=><div key={ev.id} className="up" style={{marginBottom:10,animationDelay:`${i*.05}s`}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user"/></div>)
-            : <p style={{textAlign:"center",color:"#64748b",fontSize:13.5,padding:"16px 10px"}}>Keine Termine in den nächsten 10 Tagen.</p>}
+            : <p style={{textAlign:"center",color:"#64748b",fontSize:13.5,padding:"16px 10px"}}>{tr("uhNoNext10")}</p>}
           {later.length>0&&<>
             <button onClick={()=>setShowLater(s=>!s)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",background:showLater?"#f1f5f9":"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,cursor:"pointer",margin:"6px 0 10px",padding:"11px 14px",fontWeight:800,fontSize:13,color:"#475569",fontFamily:"inherit"}}>
-              <span>{showLater?"▲ Weitere Termine ausblenden":"▼ Weitere "+later.length+" Termine anzeigen"}</span>
+              <span>{showLater?"▲ "+tr("uhHideMore"):"▼ "+tr("uhShowMoreA")+" "+later.length+" "+tr("uhShowMoreB")}</span>
             </button>
             {showLater&&later.map((ev,i)=><div key={ev.id} style={{marginBottom:10}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user"/></div>)}
           </>}
         </>}
-        {up.length===0&&<div style={{textAlign:"center",padding:"52px 20px"}}><Logo cl={cl} sz={64} sx={{margin:"0 auto 16px"}}/><p style={{fontWeight:800,fontSize:18,color:"#334155"}}>Keine anstehenden Termine</p><p style={{color:"#64748b",fontSize:14,marginTop:6}}>Der Trainer hat noch keine Termine angelegt.</p><div style={{marginTop:20}}><AdBanner/></div></div>}
+        {up.length===0&&<div style={{textAlign:"center",padding:"52px 20px"}}><Logo cl={cl} sz={64} sx={{margin:"0 auto 16px"}}/><p style={{fontWeight:800,fontSize:18,color:"#334155"}}>{tr("uhNoUpcoming")}</p><p style={{color:"#64748b",fontSize:14,marginTop:6}}>{tr("uhNoUpcomingSub")}</p><div style={{marginTop:20}}><AdBanner/></div></div>}
         {past.length>0&&<>
           <button onClick={()=>setSP(s=>!s)} style={{display:"flex",alignItems:"center",gap:10,width:"100%",background:"none",border:"none",cursor:"pointer",margin:"18px 0 10px",padding:"4px 0"}}>
-            <div style={{flex:1,height:1,background:"#e2e8f0"}}/><span style={{fontSize:11,fontWeight:800,color:"#64748b",whiteSpace:"nowrap"}}>{showPast?"▲":"▼"} VERGANGENE ({past.length})</span><div style={{flex:1,height:1,background:"#e2e8f0"}}/>
+            <div style={{flex:1,height:1,background:"#e2e8f0"}}/><span style={{fontSize:11,fontWeight:800,color:"#64748b",whiteSpace:"nowrap"}}>{showPast?"▲":"▼"} {tr("uhPast")} ({past.length})</span><div style={{flex:1,height:1,background:"#e2e8f0"}}/>
           </button>
           {showPast&&past.map(ev=><div key={ev.id} style={{marginBottom:10}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user"/></div>)}
         </>}
         {(cl.links||[]).length>0&&(
           <div style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",padding:"14px 16px",marginTop:16}}>
-            <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:10}}>VEREINS-INFOS &amp; LINKS</div>
+            <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:10}}>{tr("uhClubLinks")}</div>
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
               {(cl.links||[]).map(l=>(
                 <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer"
@@ -31274,22 +31267,22 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
                     <div style={{fontSize:12,color:"rgba(255,255,255,.7)"}}>{myTeam?.name}</div>
                   </div>
                 </div>
-                <div style={{fontSize:13,color:"rgba(255,255,255,.9)",fontWeight:600}}>Hallo {user}!</div>
+                <div style={{fontSize:13,color:"rgba(255,255,255,.9)",fontWeight:600}}>{tr("uhHello")} {user}!</div>
               </div>
               <div style={{background:"#fff",padding:"16px 18px"}}>
-                <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:8}}>ÜBERSICHT</div>
+                <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:8}}>{tr("uhOverview")}</div>
                 <div style={{display:"flex",gap:10}}>
                   <div style={{flex:1,background:t.p+"12",borderRadius:12,padding:"12px 10px",textAlign:"center"}}>
                     <div style={{fontSize:24,fontWeight:900,color:t.p}}>{up.length}</div>
-                    <div style={{fontSize:11,color:"#64748b",fontWeight:600}}>anstehend</div>
+                    <div style={{fontSize:11,color:"#64748b",fontWeight:600}}>{tr("uhUpcomingN")}</div>
                   </div>
                   <div style={{flex:1,background:"#f1f5f9",borderRadius:12,padding:"12px 10px",textAlign:"center"}}>
                     <div style={{fontSize:24,fontWeight:900,color:"#64748b"}}>{past.length}</div>
-                    <div style={{fontSize:11,color:"#64748b",fontWeight:600}}>vergangen</div>
+                    <div style={{fontSize:11,color:"#64748b",fontWeight:600}}>{tr("uhPastN")}</div>
                   </div>
                 </div>
                 {up[0]&&<div style={{marginTop:14,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
-                  <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:6}}>NÄCHSTER TERMIN</div>
+                  <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:6}}>{tr("uhNextEvent")}</div>
                   <div style={{fontWeight:800,fontSize:14,color:"#334155"}}>{up[0].title}</div>
                   <div style={{fontSize:12.5,color:"#64748b",marginTop:2}}>{new Date(up[0].date+"T12:00:00").toLocaleDateString("de-DE",{weekday:"short",day:"2-digit",month:"2-digit"})}{up[0].time?` · ${up[0].time}${up[0].endTime?"–"+up[0].endTime:""}`:""}</div>
                 </div>}
