@@ -638,8 +638,8 @@ function FloatingLangSwitcher({ lang,setLang }) {
 // Globale Schriftgröße (Lesbarkeit für ältere Nutzer). Wir skalieren die ganze
 // Oberfläche per CSS-zoom, weil Schriftgrößen in der App in px hinterlegt sind.
 const FONT_KEY = "va_fontscale";
-const FONT_STEPS = [["A", 1], ["A⁺", 1.15], ["A⁺⁺", 1.3]];
-const getFontScale = () => { try { const v = parseFloat(localStorage.getItem(FONT_KEY)); return [1, 1.15, 1.3].includes(v) ? v : 1; } catch { return 1; } };
+const FONT_STEPS = [["A", 1], ["A⁺", 1.15], ["A⁺⁺", 1.3], ["A⁺⁺⁺", 1.5]];
+const getFontScale = () => { try { const v = parseFloat(localStorage.getItem(FONT_KEY)); return [1, 1.15, 1.3, 1.5].includes(v) ? v : 1; } catch { return 1; } };
 const applyFontScale = (s) => { try { document.documentElement.style.zoom = s === 1 ? "" : String(s); localStorage.setItem(FONT_KEY, String(s)); } catch {} };
 function FontScaleControl({ dark = false }) {
   const [cur, setCur] = useState(getFontScale);
@@ -4068,29 +4068,8 @@ function ImportData({ save, fire, onClose }) {
 
 
 
-function AccessibilityBar() {
-  const [fs, setFs] = React.useState(()=>localStorage.getItem("va_fontsize")||"normal");
-  const apply = (size) => {
-    setFs(size);
-    localStorage.setItem("va_fontsize", size);
-    document.documentElement.style.fontSize = {small:"13px",normal:"15px",large:"19px"}[size];
-  };
-  React.useEffect(()=>{ apply(fs); }, []);
-  return (
-    <div style={{position:"fixed",bottom:16,right:16,zIndex:500,display:"flex",gap:5,
-      background:"rgba(0,0,0,.45)",borderRadius:12,padding:"6px 8px",backdropFilter:"blur(8px)"}}>
-      {[["small","A"],["normal","A"],["large","A"]].map(([size,label],i)=>(
-        <button key={size} onClick={()=>apply(size)}
-          style={{width:28,height:28,borderRadius:8,border:`1.5px solid ${fs===size?"#fff":"rgba(255,255,255,.3)"}`,
-            background:fs===size?"rgba(255,255,255,.25)":"transparent",
-            color:"#fff",fontWeight:900,fontSize:[11,14,18][i],cursor:"pointer",
-            fontFamily:"inherit",lineHeight:1}}>
-          {label}
-        </button>
-      ))}
-    </div>
-  );
-}
+// (Alte AccessibilityBar entfernt – ersetzt durch das funktionierende FontScaleControl,
+//  das html-Zoom nutzt und in „Mehr“, Login-Screen und Einstellungen eingebunden ist.)
 
 
 /* =================================================================
