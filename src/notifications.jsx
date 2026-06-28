@@ -14,6 +14,124 @@ const DATA_KEY = "vereinsapp_v14";
 const SESS_KEY = "vereinsapp_v12_session"; // muss zur App passen (SS in App.jsx)
 const CFG_KEY  = "vereinsapp_config";
 const SUB_PREF = "va_push_local"; // letzter bekannter Endpoint + Prefs
+const LANG_KEY = "vereinsapp_lang"; // muss zur App passen (LANG_KEY in App.jsx)
+
+// ── Eigenstaendige i18n (das Modul lebt ausserhalb der App-LangCtx) ──────────
+const I18N = {
+  de: {
+    notConnected:"Supabase ist nicht verbunden.",
+    notSupported:"Push wird auf diesem Gerät nicht unterstützt.",
+    blocked:"Du hast Benachrichtigungen blockiert. Bitte in den Browser-Einstellungen freigeben.",
+    permDenied:"Erlaubnis verweigert.",
+    enableFirst:"Erst Benachrichtigungen aktivieren.",
+    testFailed:"Test fehlgeschlagen",
+    activated:"Aktiviert.",
+    deactivated:"Deaktiviert.",
+    testSent:"Test gesendet – sollte gleich ankommen.",
+    testNoRecip:"Gesendet, aber 0 Empfänger. Push wirklich aktiviert?",
+    bell:"Benachrichtigungen",
+    title:"Benachrichtigungen",
+    intro:"Erinnerungen an Termine, Abstimmungen und Chat-Nachrichten.",
+    unsupportedDevice:"Dieses Gerät / diese Browser-Version unterstützt keine Push-Benachrichtigungen.",
+    iosHint1:"Auf dem iPhone muss die App zuerst zum ",
+    iosHintBold:"Home-Bildschirm",
+    iosHint2:" hinzugefügt werden (Safari → Teilen-Icon → „Zum Home-Bildschirm“). Danach die App von dort öffnen und hier nochmal auf „Aktivieren“ tippen.",
+    deniedHint:"Du hast Benachrichtigungen für diese Seite blockiert. In den Browser-/iOS-Einstellungen wieder freigeben.",
+    turnOff:"Auf diesem Gerät ausschalten",
+    turnOn:"Auf diesem Gerät aktivieren",
+    testBtn:"🔔 Test-Benachrichtigung an dieses Gerät",
+    testSub:"Schickt dir sofort eine Push, um zu prüfen ob alles funktioniert.",
+    whatReaches:"Was soll mich erreichen?",
+    voteRem:"Erinnerungen wenn ich noch nicht abgestimmt habe",
+    voteRemSub:"3 Tage vor dem Termin, danach täglich",
+    morning:"Morgens am Tag des Termins",
+    morningSub:"Nur wenn du zugesagt hast – mit motivierendem Spruch",
+    chatMsg:"Neue Chat-Nachrichten",
+    evTypes:"Termin-Arten",
+    muteEvents:"Einzelne Termine stummschalten",
+    event:"Termin",
+    muted:"stumm",
+    onLabel:"an",
+    close:"Schließen",
+    training:"Training", heimspiel:"Heimspiel", auswarts:"Auswärts", freundschaft:"Freundschaft", turnier:"Turnier", sondertermin:"Sondertermin",
+  },
+  en: {
+    notConnected:"Supabase is not connected.",
+    notSupported:"Push is not supported on this device.",
+    blocked:"You have blocked notifications. Please allow them in your browser settings.",
+    permDenied:"Permission denied.",
+    enableFirst:"Enable notifications first.",
+    testFailed:"Test failed",
+    activated:"Enabled.",
+    deactivated:"Disabled.",
+    testSent:"Test sent – it should arrive shortly.",
+    testNoRecip:"Sent, but 0 recipients. Is push really enabled?",
+    bell:"Notifications",
+    title:"Notifications",
+    intro:"Reminders for events, votes and chat messages.",
+    unsupportedDevice:"This device / browser version does not support push notifications.",
+    iosHint1:"On iPhone, the app must first be added to the ",
+    iosHintBold:"Home Screen",
+    iosHint2:" (Safari → Share icon → “Add to Home Screen”). Then open the app from there and tap “Enable” here again.",
+    deniedHint:"You have blocked notifications for this site. Allow them again in your browser / iOS settings.",
+    turnOff:"Turn off on this device",
+    turnOn:"Turn on on this device",
+    testBtn:"🔔 Test notification to this device",
+    testSub:"Sends you a push right away to check everything works.",
+    whatReaches:"What should reach me?",
+    voteRem:"Reminders when I haven't voted yet",
+    voteRemSub:"3 days before the event, then daily",
+    morning:"On the morning of the event",
+    morningSub:"Only if you accepted – with a motivating line",
+    chatMsg:"New chat messages",
+    evTypes:"Event types",
+    muteEvents:"Mute individual events",
+    event:"Event",
+    muted:"muted",
+    onLabel:"on",
+    close:"Close",
+    training:"Training", heimspiel:"Home game", auswarts:"Away game", freundschaft:"Friendly", turnier:"Tournament", sondertermin:"Special event",
+  },
+  nl: {
+    notConnected:"Supabase is niet verbonden.",
+    notSupported:"Push wordt op dit apparaat niet ondersteund.",
+    blocked:"Je hebt meldingen geblokkeerd. Sta ze toe in je browserinstellingen.",
+    permDenied:"Toestemming geweigerd.",
+    enableFirst:"Schakel eerst meldingen in.",
+    testFailed:"Test mislukt",
+    activated:"Ingeschakeld.",
+    deactivated:"Uitgeschakeld.",
+    testSent:"Test verstuurd – zou zo moeten aankomen.",
+    testNoRecip:"Verstuurd, maar 0 ontvangers. Staat push echt aan?",
+    bell:"Meldingen",
+    title:"Meldingen",
+    intro:"Herinneringen voor afspraken, stemmingen en chatberichten.",
+    unsupportedDevice:"Dit apparaat / deze browserversie ondersteunt geen pushmeldingen.",
+    iosHint1:"Op de iPhone moet de app eerst aan het ",
+    iosHintBold:"Beginscherm",
+    iosHint2:" worden toegevoegd (Safari → Deel-icoon → “Zet op beginscherm”). Open de app daarna van daaruit en tik hier opnieuw op “Inschakelen”.",
+    deniedHint:"Je hebt meldingen voor deze site geblokkeerd. Sta ze weer toe in je browser-/iOS-instellingen.",
+    turnOff:"Uitschakelen op dit apparaat",
+    turnOn:"Inschakelen op dit apparaat",
+    testBtn:"🔔 Testmelding naar dit apparaat",
+    testSub:"Stuurt je meteen een push om te controleren of alles werkt.",
+    whatReaches:"Wat moet mij bereiken?",
+    voteRem:"Herinneringen als ik nog niet gestemd heb",
+    voteRemSub:"3 dagen voor de afspraak, daarna dagelijks",
+    morning:"'s Ochtends op de dag van de afspraak",
+    morningSub:"Alleen als je hebt toegezegd – met een motiverende zin",
+    chatMsg:"Nieuwe chatberichten",
+    evTypes:"Soorten afspraken",
+    muteEvents:"Losse afspraken dempen",
+    event:"Afspraak",
+    muted:"gedempt",
+    onLabel:"aan",
+    close:"Sluiten",
+    training:"Training", heimspiel:"Thuiswedstrijd", auswarts:"Uitwedstrijd", freundschaft:"Vriendschappelijk", turnier:"Toernooi", sondertermin:"Speciale afspraak",
+  },
+};
+function getLang(){ try { const l = localStorage.getItem(LANG_KEY); return I18N[l] ? l : "de"; } catch { return "de"; } }
+function tr(key){ const l = getLang(); return (I18N[l] && I18N[l][key]) ?? I18N.de[key] ?? key; }
 
 // ── Helpers ─────────────────────────────────────────────────
 function safeJSON(s) { try { return JSON.parse(s); } catch { return null; } }
@@ -35,7 +153,7 @@ function urlBase64ToUint8Array(base64String) {
 // ── Supabase RPC (anon) ────────────────────────────────────
 async function rpc(name, params) {
   const c = getConfig();
-  if (!c.url || !c.key) throw new Error("Supabase ist nicht verbunden.");
+  if (!c.url || !c.key) throw new Error(tr("notConnected"));
   const r = await fetch(`${c.url}/rest/v1/rpc/${name}`, {
     method: "POST",
     headers: {
@@ -52,12 +170,12 @@ async function rpc(name, params) {
 // ── Subscribe / Unsubscribe ────────────────────────────────
 export async function subscribePush() {
   if (!("serviceWorker" in navigator) || !("PushManager" in window))
-    throw new Error("Push wird auf diesem Geraet nicht unterstuetzt.");
+    throw new Error(tr("notSupported"));
   if (Notification.permission === "denied")
-    throw new Error("Du hast Benachrichtigungen blockiert. Bitte in den Browser-Einstellungen freigeben.");
+    throw new Error(tr("blocked"));
   if (Notification.permission !== "granted") {
     const perm = await Notification.requestPermission();
-    if (perm !== "granted") throw new Error("Erlaubnis verweigert.");
+    if (perm !== "granted") throw new Error(tr("permDenied"));
   }
   const reg = await navigator.serviceWorker.ready;
   let sub = await reg.pushManager.getSubscription();
@@ -100,13 +218,13 @@ export async function testPush() {
   if (!endpoint && "serviceWorker" in navigator) {
     try { const reg = await navigator.serviceWorker.ready; const sub = await reg.pushManager.getSubscription(); endpoint = sub?.endpoint; } catch {}
   }
-  if (!endpoint) throw new Error("Erst Benachrichtigungen aktivieren.");
+  if (!endpoint) throw new Error(tr("enableFirst"));
   const r = await fetch(`${c.url}/functions/v1/notify`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "apikey": c.key, "Authorization": "Bearer " + c.key },
     body: JSON.stringify({ mode: "test", endpoint }),
   });
-  if (!r.ok) throw new Error("Test fehlgeschlagen (" + r.status + ")");
+  if (!r.ok) throw new Error(tr("testFailed") + " (" + r.status + ")");
   return await r.json().catch(() => ({}));
 }
 
@@ -135,12 +253,12 @@ const isIOS = () =>
   /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
 const EVENT_TYPES = [
-  ["training",     "Training"],
-  ["heimspiel",    "Heimspiel"],
-  ["auswarts",     "Auswaerts"],
-  ["freundschaft", "Freundschaft"],
-  ["turnier",      "Turnier"],
-  ["event",        "Sondertermin"],
+  ["training",     "training"],
+  ["heimspiel",    "heimspiel"],
+  ["auswarts",     "auswarts"],
+  ["freundschaft", "freundschaft"],
+  ["turnier",      "turnier"],
+  ["event",        "sondertermin"],
 ];
 
 export function NotifMount() {
@@ -188,19 +306,19 @@ export function NotifMount() {
 
   const onEnable = async () => {
     setBusy(true);
-    try { await subscribePush(); setSubbed(true); setPerm(Notification.permission); fire("Aktiviert."); }
+    try { await subscribePush(); setSubbed(true); setPerm(Notification.permission); fire(tr("activated")); }
     catch (e) { fire(String(e.message || e)); }
     finally { setBusy(false); }
   };
   const onDisable = async () => {
     setBusy(true);
-    try { await unsubscribePush(); setSubbed(false); fire("Deaktiviert."); }
+    try { await unsubscribePush(); setSubbed(false); fire(tr("deactivated")); }
     catch (e) { fire(String(e.message || e)); }
     finally { setBusy(false); }
   };
   const onTest = async () => {
     setBusy(true);
-    try { const j = await testPush(); fire(j?.sent ? "Test gesendet – sollte gleich ankommen." : "Gesendet, aber 0 Empfaenger. Push wirklich aktiviert?"); }
+    try { const j = await testPush(); fire(j?.sent ? tr("testSent") : tr("testNoRecip")); }
     catch (e) { fire(String(e.message || e)); }
     finally { setBusy(false); }
   };
@@ -230,7 +348,7 @@ export function NotifMount() {
   return (
     <>
       <button
-        aria-label="Benachrichtigungen"
+        aria-label={tr("bell")}
         onClick={() => setOpen(true)}
         style={{
           position:"fixed", right:14, bottom:"calc(78px + env(safe-area-inset-bottom))", zIndex:9000,
@@ -251,66 +369,63 @@ export function NotifMount() {
             <div style={{display:"flex",justifyContent:"center",marginBottom:10}}>
               <div style={{width:40,height:4,borderRadius:99,background:"#e2e8f0"}}/>
             </div>
-            <h3 style={{fontWeight:900,fontSize:18,color:"#0f172a",margin:"0 0 4px"}}>Benachrichtigungen</h3>
+            <h3 style={{fontWeight:900,fontSize:18,color:"#0f172a",margin:"0 0 4px"}}>{tr("title")}</h3>
             <p style={{fontSize:13,color:"#64748b",margin:"0 0 14px"}}>
-              Erinnerungen an Termine, Abstimmungen und Chat-Nachrichten.
+              {tr("intro")}
             </p>
 
             {!supported && (
               <Info color="#dc2626">
-                Dieses Geraet/diese Browser-Version unterstuetzt keine Push-Benachrichtigungen.
+                {tr("unsupportedDevice")}
               </Info>
             )}
             {supported && needsHomescreen && (
               <Info color="#d97706">
-                Auf dem iPhone muss die App zuerst zum <b>Home-Bildschirm</b> hinzugefuegt werden
-                (Safari -&gt; Teilen-Icon -&gt; „Zum Home-Bildschirm"). Danach die App von dort
-                oeffnen und hier nochmal auf „Aktivieren" tippen.
+                {tr("iosHint1")}<b>{tr("iosHintBold")}</b>{tr("iosHint2")}
               </Info>
             )}
             {supported && perm === "denied" && (
               <Info color="#dc2626">
-                Du hast Benachrichtigungen fuer diese Seite blockiert. In den Browser-/iOS-Einstellungen
-                wieder freigeben.
+                {tr("deniedHint")}
               </Info>
             )}
 
             <div style={{display:"flex",gap:8,marginTop:6,marginBottom:subbed?8:14}}>
               {subbed
-                ? <Btn label="Auf diesem Geraet ausschalten" onClick={onDisable} busy={busy} kind="ghost"/>
-                : <Btn label="Auf diesem Geraet aktivieren"  onClick={onEnable}  busy={busy} kind="primary"/>}
+                ? <Btn label={tr("turnOff")} onClick={onDisable} busy={busy} kind="ghost"/>
+                : <Btn label={tr("turnOn")}  onClick={onEnable}  busy={busy} kind="primary"/>}
             </div>
             {subbed && (
               <div style={{marginBottom:14}}>
-                <Btn label="🔔 Test-Benachrichtigung an dieses Geraet" onClick={onTest} busy={busy} kind="primary"/>
-                <p style={{fontSize:11.5,color:"#94a3b8",margin:"6px 2px 0",lineHeight:1.4}}>Schickt dir sofort eine Push, um zu pruefen ob alles funktioniert.</p>
+                <Btn label={tr("testBtn")} onClick={onTest} busy={busy} kind="primary"/>
+                <p style={{fontSize:11.5,color:"#64748b",margin:"6px 2px 0",lineHeight:1.4}}>{tr("testSub")}</p>
               </div>
             )}
 
-            <Section title="Was soll mich erreichen?">
-              <Sw label="Erinnerungen wenn ich noch nicht abgestimmt habe"
-                  sub="3 Tage vor dem Termin, danach taeglich"
+            <Section title={tr("whatReaches")}>
+              <Sw label={tr("voteRem")}
+                  sub={tr("voteRemSub")}
                   on={prefs.reminders_vote}
                   onChange={v=>togglePref("reminders_vote", v)}/>
-              <Sw label="Morgens am Tag des Termins"
-                  sub="Nur wenn du zugesagt hast - mit motivierendem Spruch"
+              <Sw label={tr("morning")}
+                  sub={tr("morningSub")}
                   on={prefs.reminders_morning}
                   onChange={v=>togglePref("reminders_morning", v)}/>
-              <Sw label="Neue Chat-Nachrichten"
+              <Sw label={tr("chatMsg")}
                   on={prefs.chat}
                   onChange={v=>togglePref("chat", v)}/>
             </Section>
 
-            <Section title="Termin-Arten">
+            <Section title={tr("evTypes")}>
               <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
                 {EVENT_TYPES.map(([k,lbl]) => {
                   const off = prefs.disabled_types.includes(k);
                   return (
                     <button key={k} onClick={()=>toggleType(k)}
                       style={{padding:"7px 12px",borderRadius:99,border:"1.5px solid "+(off?"#e2e8f0":COL),
-                              background:off?"#fff":COL+"18",color:off?"#94a3b8":COL,
+                              background:off?"#fff":COL+"18",color:off?"#64748b":COL,
                               fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
-                      {off ? "✕ " : "✓ "}{lbl}
+                      {off ? "✕ " : "✓ "}{tr(lbl)}
                     </button>
                   );
                 })}
@@ -318,7 +433,7 @@ export function NotifMount() {
             </Section>
 
             {upcomingEvents.length > 0 && (
-              <Section title="Einzelne Termine stummschalten">
+              <Section title={tr("muteEvents")}>
                 <div style={{display:"flex",flexDirection:"column",gap:6}}>
                   {upcomingEvents.map(e => {
                     const muted = prefs.muted_events.includes(e.id);
@@ -331,14 +446,14 @@ export function NotifMount() {
                         <div style={{fontSize:18}}>{muted ? "🔕" : "🔔"}</div>
                         <div style={{flex:1,minWidth:0}}>
                           <div style={{fontSize:13,fontWeight:700,color:"#0f172a"}}>
-                            {e.title || "Termin"}
+                            {e.title || tr("event")}
                           </div>
                           <div style={{fontSize:11,color:"#64748b"}}>
                             {e.date}{e.time ? " " + e.time : ""}
                           </div>
                         </div>
-                        <div style={{fontSize:12,fontWeight:700,color:muted ? "#94a3b8" : COL}}>
-                          {muted ? "stumm" : "an"}
+                        <div style={{fontSize:12,fontWeight:700,color:muted ? "#64748b" : COL}}>
+                          {muted ? tr("muted") : tr("onLabel")}
                         </div>
                       </button>
                     );
@@ -356,7 +471,7 @@ export function NotifMount() {
               style={{marginTop:18,width:"100%",padding:"12px",borderRadius:13,
                       border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",
                       fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
-              Schliessen
+              {tr("close")}
             </button>
           </div>
         </div>

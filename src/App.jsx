@@ -123,7 +123,7 @@ const T = {
     send: "Senden",
     wholeClub:"Gesamter Verein",
     noMessages: "Noch keine Nachrichten",
-    navTeam:"Team", navMore:"Mehr", navTreasury:"Kasse", navTraining:"Trainingsplan",
+    navTeam:"Team", navMore:"Mehr", navTreasury:"Kasse", navTraining:"Trainingsplan", cashNewEntry:"Neue Buchung", cashKStrafe:"Strafe", cashKBeitrag:"Beitrag", cashKEinnahme:"Einnahme", cashKAusgabe:"Ausgabe", cashBalance:"KASSENSTAND", cashPlus:"Im Plus", cashMinus:"Im Minus", cashBookings:"Buchungen", cashAmount:"Betrag €", cashPlayerPays:"Spieler (wer zahlt)", cashPlayerOpt:"Spieler (optional)", cashReason:"Grund (z.B. zu spät)", cashNoteOpt:"Notiz (optional)", cashSave:"+ Buchung speichern", cashFines:"Strafen je Spieler", cashNoEntries:"Noch keine Buchungen.", cashDeleteQ:"Eintrag löschen?", cashEnterAmount:"Bitte Betrag eingeben", cashSaved:"Eintrag gespeichert", cashDeleted:"Eintrag gelöscht", noTeamMsg:"Keine Mannschaft.", attNoTrain:"Noch keine Trainings", attNoTrainSub:"Sobald Termine mit Abstimmung angelegt wurden, erscheint hier die Anwesenheitsstatistik.", attPlaytime:"Spielzeit (faire Einsatzzeiten)", attLowPlay:"wenig Spielzeit", attMinTotal:"Min gesamt", attTrainingPct:"% Training", attPlaytimeFoot:"Summiert aus der Einsatzzeit-Erfassung der Spiele. „Wenig Spielzeit“ = unter 70 % des Durchschnitts – im nächsten Spiel bevorzugt einsetzen.", lblTrainings:"Trainings", lblPlayers:"Spieler", attPerGame:"Min/Spiel", attGameOne:"Spiel", attGameMany:"Spiele",
     navResults:"Ergebnisse", navAttendance:"Anwesenheit", navOverview:"Übersicht alle Teams",
     navNews:"Neuigkeiten", navFieldsAdmin:"Plätze", navSecurity:"Sicherheitslog",
     navAccess:"Zugänge & Passwörter", secManage:"VERWALTUNG", secAdmin:"ADMIN",
@@ -244,7 +244,7 @@ const T = {
     send:"Send",
     wholeClub:"Whole club",
     noMessages:"No messages yet",
-    navTeam:"Team", navMore:"More", navTreasury:"Treasury", navTraining:"Training plan",
+    navTeam:"Team", navMore:"More", navTreasury:"Treasury", navTraining:"Training plan", cashNewEntry:"New entry", cashKStrafe:"Penalty", cashKBeitrag:"Contribution", cashKEinnahme:"Income", cashKAusgabe:"Expense", cashBalance:"BALANCE", cashPlus:"In credit", cashMinus:"In debit", cashBookings:"entries", cashAmount:"Amount â¬", cashPlayerPays:"Player (who pays)", cashPlayerOpt:"Player (optional)", cashReason:"Reason (e.g. late)", cashNoteOpt:"Note (optional)", cashSave:"+ Save entry", cashFines:"Penalties per player", cashNoEntries:"No entries yet.", cashDeleteQ:"Delete entry?", cashEnterAmount:"Please enter an amount", cashSaved:"Entry saved", cashDeleted:"Entry deleted", noTeamMsg:"No team.", attNoTrain:"No trainings yet", attNoTrainSub:"As soon as events with voting are created, the attendance statistics appear here.", attPlaytime:"Playing time (fair minutes)", attLowPlay:"little playing time", attMinTotal:"min total", attTrainingPct:"% Training", attPlaytimeFoot:"Summed from the playing-time tracking of games. “Little playing time” = below 70% of the average – give priority in the next game.", lblTrainings:"Trainings", lblPlayers:"Players", attPerGame:"min/game", attGameOne:"game", attGameMany:"games",
     navResults:"Results", navAttendance:"Attendance", navOverview:"All teams overview",
     navNews:"News", navFieldsAdmin:"Pitches", navSecurity:"Security log",
     navAccess:"Access & passwords", secManage:"MANAGEMENT", secAdmin:"ADMIN",
@@ -365,7 +365,7 @@ const T = {
     send:"Versturen",
     wholeClub:"Hele club",
     noMessages:"Nog geen berichten",
-    navTeam:"Team", navMore:"Meer", navTreasury:"Kas", navTraining:"Trainingsschema",
+    navTeam:"Team", navMore:"Meer", navTreasury:"Kas", navTraining:"Trainingsschema", cashNewEntry:"Nieuwe boeking", cashKStrafe:"Boete", cashKBeitrag:"Bijdrage", cashKEinnahme:"Inkomsten", cashKAusgabe:"Uitgave", cashBalance:"KASSALDO", cashPlus:"Positief", cashMinus:"Negatief", cashBookings:"boekingen", cashAmount:"Bedrag â¬", cashPlayerPays:"Speler (wie betaalt)", cashPlayerOpt:"Speler (optioneel)", cashReason:"Reden (bijv. te laat)", cashNoteOpt:"Notitie (optioneel)", cashSave:"+ Boeking opslaan", cashFines:"Boetes per speler", cashNoEntries:"Nog geen boekingen.", cashDeleteQ:"Boeking verwijderen?", cashEnterAmount:"Voer een bedrag in", cashSaved:"Boeking opgeslagen", cashDeleted:"Boeking verwijderd", noTeamMsg:"Geen team.", attNoTrain:"Nog geen trainingen", attNoTrainSub:"Zodra afspraken met stemming zijn aangemaakt, verschijnt hier de aanwezigheidsstatistiek.", attPlaytime:"Speeltijd (eerlijke inzet)", attLowPlay:"weinig speeltijd", attMinTotal:"min totaal", attTrainingPct:"% Training", attPlaytimeFoot:"Opgeteld uit de speeltijdregistratie van wedstrijden. “Weinig speeltijd” = onder 70% van het gemiddelde – zet bij de volgende wedstrijd met voorrang in.", lblTrainings:"Trainingen", lblPlayers:"Spelers", attPerGame:"min/wedstrijd", attGameOne:"wedstrijd", attGameMany:"wedstrijden",
     navResults:"Resultaten", navAttendance:"Aanwezigheid", navOverview:"Overzicht alle teams",
     navNews:"Nieuws", navFieldsAdmin:"Velden", navSecurity:"Beveiligingslog",
     navAccess:"Toegang & wachtwoorden", secManage:"BEHEER", secAdmin:"ADMIN",
@@ -7101,13 +7101,14 @@ function SeasonReportTab({ data, myTids, cl, fire }){
 }
 // Mannschaftskasse: Beiträge, Strafen, Einnahmen/Ausgaben mit laufendem Saldo.
 function CashbookTab({ data, myTids, save, fire, cl }){
+  const { tr } = useT();
   const t=TH(cl);
   const teams=(data.teams||[]).filter(tm=>myTids.includes(tm.id));
   const [tid,setTid]=useState(teams[0]?.id||"");
   const cid=teams.find(x=>x.id===tid)?.cid;
   const entries=(data.cashbook||[]).filter(e=>e.tid===tid).sort((a,b)=>String(b.date||"").localeCompare(String(a.date||""))||String(b.ts||"").localeCompare(String(a.ts||"")));
   const players=(data.playerProfiles||[]).filter(p=>p.mainTid===tid&&!p.archived).map(p=>p.name).sort((a,b)=>a.localeCompare(b));
-  const KINDS=[["strafe","Strafe","#d97706"],["beitrag","Beitrag","#16a34a"],["einnahme","Einnahme","#2563eb"],["ausgabe","Ausgabe","#dc2626"]];
+  const KINDS=[["strafe",tr("cashKStrafe"),"#d97706"],["beitrag",tr("cashKBeitrag"),"#16a34a"],["einnahme",tr("cashKEinnahme"),"#2563eb"],["ausgabe",tr("cashKAusgabe"),"#dc2626"]];
   const kindConf=k=>KINDS.find(x=>x[0]===k)||KINDS[0];
   const [kind,setKind]=useState("strafe");
   const [amount,setAmount]=useState("");
@@ -7120,47 +7121,47 @@ function CashbookTab({ data, myTids, save, fire, cl }){
   const fineList=Object.entries(finesByPlayer).sort((a,b)=>b[1]-a[1]);
   const eur=n=>(Number(n)||0).toLocaleString("de-DE",{style:"currency",currency:"EUR"});
   const withPlayer=kind==="beitrag"||kind==="strafe";
-  const add=()=>{ const amt=Number(String(amount).replace(",","."))||0; if(amt<=0){fire&&fire("Bitte Betrag eingeben");return;}
+  const add=()=>{ const amt=Number(String(amount).replace(",","."))||0; if(amt<=0){fire&&fire(tr("cashEnterAmount"));return;}
     const entry={id:uid(),cid,tid,date,kind,amount:Math.round(amt*100)/100,player:withPlayer?(player||""):"",note:note.trim(),ts:new Date().toISOString()};
-    save({...data,cashbook:[...(data.cashbook||[]),entry]}); setAmount("");setNote("");setPlayer(""); fire&&fire("Eintrag gespeichert");
+    save({...data,cashbook:[...(data.cashbook||[]),entry]}); setAmount("");setNote("");setPlayer(""); fire&&fire(tr("cashSaved"));
   };
-  const del=id=>{ if(typeof window!=="undefined"&&window.confirm&&!window.confirm("Eintrag löschen?"))return; save({...data,cashbook:(data.cashbook||[]).filter(e=>e.id!==id)}); fire&&fire("Eintrag gelöscht"); };
+  const del=id=>{ if(typeof window!=="undefined"&&window.confirm&&!window.confirm(tr("cashDeleteQ")))return; save({...data,cashbook:(data.cashbook||[]).filter(e=>e.id!==id)}); fire&&fire(tr("cashDeleted")); };
   const inp={padding:"10px 12px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",fontFamily:"inherit",boxSizing:"border-box",width:"100%"};
-  if(teams.length===0) return <p style={{color:"#64748b",fontSize:13,padding:20}}>Keine Mannschaft.</p>;
+  if(teams.length===0) return <p style={{color:"#64748b",fontSize:13,padding:20}}>{tr("noTeamMsg")}</p>;
   return (
     <div>
       {teams.length>1&&<div style={{display:"flex",gap:6,marginBottom:14,overflowX:"auto",scrollbarWidth:"none"}}>
         {teams.map(tm=>(<button key={tm.id} onClick={()=>setTid(tm.id)} style={{padding:"7px 13px",borderRadius:99,border:`2px solid ${tid===tm.id?tm.col:"#e2e8f0"}`,background:tid===tm.id?tm.col:"#fff",color:tid===tm.id?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit",flexShrink:0}}>{tm.name}</button>))}
       </div>}
       <div style={{background:balance>=0?"#f0fdf4":"#fef2f2",border:`1.5px solid ${balance>=0?"#bbf7d0":"#fecaca"}`,borderRadius:16,padding:"16px",marginBottom:14,textAlign:"center"}}>
-        <div style={{fontSize:12,fontWeight:700,color:"#64748b",letterSpacing:.4}}>KASSENSTAND · {balance>=0?"Im Plus":"Im Minus"}</div>
+        <div style={{fontSize:12,fontWeight:700,color:"#64748b",letterSpacing:.4}}>{tr("cashBalance")} · {balance>=0?tr("cashPlus"):tr("cashMinus")}</div>
         <div style={{fontWeight:900,fontSize:30,color:balance>=0?"#15803d":"#dc2626",marginTop:2}}>{balance>=0?"+":"−"}{eur(Math.abs(balance))}</div>
-        <div style={{fontSize:11.5,color:"#64748b",marginTop:3}}>{entries.length} Buchungen</div>
+        <div style={{fontSize:11.5,color:"#64748b",marginTop:3}}>{entries.length} {tr("cashBookings")}</div>
       </div>
       <div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:14,padding:"13px",marginBottom:14}}>
-        <div style={{fontWeight:800,fontSize:14,color:"#0f172a",marginBottom:9}}>Neue Buchung</div>
+        <div style={{fontWeight:800,fontSize:14,color:"#0f172a",marginBottom:9}}>{tr("cashNewEntry")}</div>
         <div style={{display:"flex",gap:6,marginBottom:9,flexWrap:"wrap"}}>
           {KINDS.map(([k,l,c])=>(<button key={k} onClick={()=>setKind(k)} style={{flex:"1 0 auto",padding:"7px 12px",borderRadius:99,border:`1.5px solid ${kind===k?c:"#e2e8f0"}`,background:kind===k?c+"15":"#fff",color:kind===k?c:"#64748b",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>))}
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
-          <input value={amount} onChange={e=>setAmount(e.target.value)} inputMode="decimal" placeholder="Betrag €" style={inp}/>
+          <input value={amount} onChange={e=>setAmount(e.target.value)} inputMode="decimal" placeholder={tr("cashAmount")} style={inp}/>
           <input value={date} onChange={e=>setDate(e.target.value)} type="date" style={inp}/>
         </div>
         {withPlayer&&<select value={player} onChange={e=>setPlayer(e.target.value)} style={{...inp,marginBottom:8}}>
-          <option value="">{kind==="strafe"?"Spieler (wer zahlt)":"Spieler (optional)"}</option>
+          <option value="">{kind==="strafe"?tr("cashPlayerPays"):tr("cashPlayerOpt")}</option>
           {players.map((n,i)=><option key={i} value={n}>{n}</option>)}
         </select>}
-        <input value={note} onChange={e=>setNote(e.target.value)} placeholder={kind==="strafe"?"Grund (z.B. zu spät)":"Notiz (optional)"} style={{...inp,marginBottom:10}}/>
-        <button onClick={add} style={{width:"100%",padding:"11px",borderRadius:11,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>+ Buchung speichern</button>
+        <input value={note} onChange={e=>setNote(e.target.value)} placeholder={kind==="strafe"?tr("cashReason"):tr("cashNoteOpt")} style={{...inp,marginBottom:10}}/>
+        <button onClick={add} style={{width:"100%",padding:"11px",borderRadius:11,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>{tr("cashSave")}</button>
       </div>
       {fineList.length>0&&<div style={{background:"#fff",border:"1.5px solid #fed7aa",borderRadius:14,padding:"12px 14px",marginBottom:14}}>
-        <div style={{fontWeight:800,fontSize:13,color:"#9a3412",marginBottom:8}}>Strafen je Spieler</div>
+        <div style={{fontWeight:800,fontSize:13,color:"#9a3412",marginBottom:8}}>{tr("cashFines")}</div>
         <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
           {fineList.map(([n,sum],i)=>(<span key={i} style={{background:"#fff7ed",border:"1px solid #fed7aa",borderRadius:99,padding:"4px 11px",fontSize:12.5,fontWeight:700,color:"#9a3412"}}>{n}: {eur(sum)}</span>))}
         </div>
       </div>}
       <div style={{display:"flex",flexDirection:"column",gap:7}}>
-        {entries.length===0&&<p style={{fontSize:13,color:"#64748b",textAlign:"center",padding:"20px"}}>Noch keine Buchungen.</p>}
+        {entries.length===0&&<p style={{fontSize:13,color:"#64748b",textAlign:"center",padding:"20px"}}>{tr("cashNoEntries")}</p>}
         {entries.map(e=>{ const c=kindConf(e.kind); return (
           <div key={e.id} style={{display:"flex",alignItems:"center",gap:10,background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"10px 12px"}}>
             <span style={{width:8,height:8,borderRadius:"50%",background:c[2],flexShrink:0}}/>
@@ -27541,6 +27542,7 @@ function TrainerStatsView({ data, cid }) {
 
 
 function AttendanceTab({ data, myTids, cl, save, fire }) {
+  const { tr } = useT();
   const t = TH(cl);
   const activeSeason = activeSid(data, (data.teams||[]).find(tm=>myTids.includes(tm.id))?.cid) || "s2627";
   const myTeams = (data.teams||[]).filter(tm=>myTids.includes(tm.id));
@@ -27582,7 +27584,7 @@ function AttendanceTab({ data, myTids, cl, save, fire }) {
       </div>}
       <div style={{background:"#fff",borderRadius:16,padding:14,border:"1.5px solid #e2e8f0",marginBottom:14}}>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
-          {[[trainings.length,"Trainings","#16a34a"],[games.length,"Spiele","#2563eb"],[players.length,"Spieler","#7c3aed"]].map(([v,l,col])=>(
+          {[[trainings.length,tr("lblTrainings"),"#16a34a"],[games.length,tr("kpiGames"),"#2563eb"],[players.length,tr("lblPlayers"),"#7c3aed"]].map(([v,l,col])=>(
             <div key={l} style={{textAlign:"center",background:col+"12",borderRadius:12,padding:"10px 6px",border:`1px solid ${col}30`}}>
               <div style={{fontWeight:900,fontSize:22,color:col}}>{v}</div>
               <div style={{fontSize:11,color:"#64748b",marginTop:2}}>{l}</div>
@@ -27590,7 +27592,7 @@ function AttendanceTab({ data, myTids, cl, save, fire }) {
           ))}
         </div>
       </div>
-      {trainings.length===0&&<div style={{textAlign:"center",padding:"32px",background:"#f8fafc",borderRadius:14,border:"1.5px dashed #e2e8f0"}}><p style={{fontWeight:700,color:"#334155"}}>Noch keine Trainings</p><p style={{fontSize:13,color:"#64748b",marginTop:4}}>Sobald Termine mit Abstimmung angelegt wurden, erscheint hier die Anwesenheitsstatistik.</p></div>}
+      {trainings.length===0&&<div style={{textAlign:"center",padding:"32px",background:"#f8fafc",borderRadius:14,border:"1.5px dashed #e2e8f0"}}><p style={{fontWeight:700,color:"#334155"}}>{tr("attNoTrain")}</p><p style={{fontSize:13,color:"#64748b",marginTop:4}}>{tr("attNoTrainSub")}</p></div>}
       {trainings.length>0&&<div style={{display:"flex",flexDirection:"column",gap:8}}>
         {stats.map(({pl,tYes,gYes,trainPct,gamePct,totalT,totalG})=>(
           <div key={pl.id} style={{background:"#fff",borderRadius:13,padding:"12px 14px",border:"1.5px solid #e2e8f0",display:"flex",alignItems:"center",gap:12}}>
@@ -27600,11 +27602,11 @@ function AttendanceTab({ data, myTids, cl, save, fire }) {
               <div style={{height:6,background:"#f1f5f9",borderRadius:99,overflow:"hidden"}}>
                 <div style={{height:"100%",borderRadius:99,background:(trainPct??0)>=75?"#16a34a":(trainPct??0)>=50?"#d97706":"#dc2626",width:`${trainPct||0}%`,transition:"width .4s"}}/>
               </div>
-              {totalG>0&&<div style={{fontSize:11,color:"#64748b",marginTop:4}}>Spiele: {gYes}/{totalG}{gamePct!==null?` · ${gamePct}%`:""}</div>}
+              {totalG>0&&<div style={{fontSize:11,color:"#64748b",marginTop:4}}>{tr("kpiGames")}: {gYes}/{totalG}{gamePct!==null?` · ${gamePct}%`:""}</div>}
             </div>
             <div style={{textAlign:"right",minWidth:60}}>
               <div style={{fontWeight:900,fontSize:16,color:(trainPct??0)>=75?"#16a34a":(trainPct??0)>=50?"#d97706":"#dc2626"}}>{tYes}/{totalT}</div>
-              <div style={{fontSize:11,color:"#64748b"}}>{trainPct!==null?trainPct+"% Training":"–"}</div>
+              <div style={{fontSize:11,color:"#64748b"}}>{trainPct!==null?trainPct+"% "+tr("kpiTraining"):"–"}</div>
             </div>
           </div>
         ))}
@@ -27613,28 +27615,28 @@ function AttendanceTab({ data, myTids, cl, save, fire }) {
         <div style={{marginTop:18}}>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
             <span style={{fontSize:18}}>⏱</span>
-            <span style={{fontWeight:800,fontSize:15,color:"#0f172a",flex:1}}>Spielzeit (faire Einsatzzeiten)</span>
-            <span style={{fontSize:11.5,color:"#64748b",fontWeight:700}}>{ptGames.length} Spiele · Ø {ptAvg} Min</span>
+            <span style={{fontWeight:800,fontSize:15,color:"#0f172a",flex:1}}>{tr("attPlaytime")}</span>
+            <span style={{fontSize:11.5,color:"#64748b",fontWeight:700}}>{ptGames.length} {tr("kpiGames")} · Ø {ptAvg} {tr("vMin")}</span>
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
             {ptStats.map(({pl,mins,games})=>{ const low=ptAvg>0&&mins<ptAvg*0.7; const pct=ptAvg>0?Math.min(100,Math.round(mins/(ptAvg*1.5)*100)):0; return (
               <div key={pl.id} style={{background:"#fff",borderRadius:13,padding:"12px 14px",border:`1.5px solid ${low?"#fed7aa":"#e2e8f0"}`,display:"flex",alignItems:"center",gap:12}}>
                 <Av name={pl.name} sz={36}/>
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontWeight:700,fontSize:14,color:"#0f172a",marginBottom:4,display:"flex",alignItems:"center",gap:6}}>{pl.name}{low&&<span style={{fontSize:10,fontWeight:800,color:"#9a3412",background:"#fef3c7",borderRadius:5,padding:"1px 6px"}}>wenig Spielzeit</span>}</div>
+                  <div style={{fontWeight:700,fontSize:14,color:"#0f172a",marginBottom:4,display:"flex",alignItems:"center",gap:6}}>{pl.name}{low&&<span style={{fontSize:10,fontWeight:800,color:"#9a3412",background:"#fef3c7",borderRadius:5,padding:"1px 6px"}}>{tr("attLowPlay")}</span>}</div>
                   <div style={{height:6,background:"#f1f5f9",borderRadius:99,overflow:"hidden"}}>
                     <div style={{height:"100%",borderRadius:99,background:low?"#d97706":"#2563eb",width:`${pct}%`,transition:"width .4s"}}/>
                   </div>
-                  <div style={{fontSize:11,color:"#64748b",marginTop:4}}>{games} {games===1?"Spiel":"Spiele"} · Ø {games?Math.round(mins/games):0} Min/Spiel</div>
+                  <div style={{fontSize:11,color:"#64748b",marginTop:4}}>{games} {games===1?tr("attGameOne"):tr("attGameMany")} · Ø {games?Math.round(mins/games):0} {tr("attPerGame")}</div>
                 </div>
                 <div style={{textAlign:"right",minWidth:54}}>
                   <div style={{fontWeight:900,fontSize:16,color:low?"#d97706":"#2563eb"}}>{mins}</div>
-                  <div style={{fontSize:11,color:"#64748b"}}>Min gesamt</div>
+                  <div style={{fontSize:11,color:"#64748b"}}>{tr("attMinTotal")}</div>
                 </div>
               </div>
             );})}
           </div>
-          <div style={{fontSize:11,color:"#64748b",marginTop:8,lineHeight:1.45}}>Summiert aus der Einsatzzeit-Erfassung der Spiele. „Wenig Spielzeit" = unter 70 % des Durchschnitts – im nächsten Spiel bevorzugt einsetzen.</div>
+          <div style={{fontSize:11,color:"#64748b",marginTop:8,lineHeight:1.45}}>{tr("attPlaytimeFoot")}</div>
         </div>
       )}
     </div>
