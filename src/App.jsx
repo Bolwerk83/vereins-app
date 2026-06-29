@@ -5757,18 +5757,31 @@ const DFB_FORMATS=[
     rules:"Volle Regeln; A-Jugend teils nach Erwachsenenregeln",
     fair:"Wettkampf & individuelle Förderung Richtung Aktiven-Bereich."},
 ];
-function DFBFormatsCard({ cl, defaultOpen=false }){
+// Passende DFB-Spielform zur Mannschafts-Kategorie ("F-Jugend", "Bambini", …) finden.
+// Liefert null, wenn keine (Jugend-)Zuordnung moeglich ist -> dann werden alle Formate gezeigt.
+const dfbFormatForCat = (cat) => {
+  if(!cat) return null;
+  const c=String(cat).toLowerCase();
+  if(c.includes("bambini")) return DFB_FORMATS[0];
+  const m=c.match(/\b([a-g])[-\s]?jugend\b/);
+  if(!m) return null;
+  const idx={g:0,f:1,e:2,d:3,c:4,b:5,a:5}[m[1]];
+  return idx!=null ? DFB_FORMATS[idx] : null;
+};
+function DFBFormatsCard({ cl, defaultOpen=false, cat=null }){
   const [open,setOpen]=useState(defaultOpen);
   const c=cl?.pri||"#16a34a";
+  const only = cat ? dfbFormatForCat(cat) : null;
+  const list = only ? [only] : DFB_FORMATS;
   return (
     <div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:13,overflow:"hidden"}}>
       <button onClick={()=>setOpen(o=>!o)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 14px",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit"}}>
-        <span style={{fontWeight:800,fontSize:13.5,color:"#0f172a"}}>📐 DFB-Spielformen &amp; Platzgrößen je Jugend</span>
+        <span style={{fontWeight:800,fontSize:13.5,color:"#0f172a"}}>📐 {only?`DFB-Spielform & Platzgröße: ${only.age}`:"DFB-Spielformen & Platzgrößen je Jugend"}</span>
         <span style={{color:"#64748b",fontSize:16}}>{open?"▲":"▼"}</span>
       </button>
       {open&&<div style={{padding:"0 14px 14px"}}>
         <div style={{display:"flex",flexDirection:"column",gap:8}}>
-          {DFB_FORMATS.map((f,i)=>(
+          {list.map((f,i)=>(
             <div key={i} style={{background:"#f8fafc",border:"1px solid #f1f5f9",borderRadius:11,padding:"10px 12px"}}>
               <div style={{fontWeight:800,fontSize:13,color:c}}>{f.age}</div>
               <div style={{fontSize:12,color:"#334155",marginTop:4,lineHeight:1.6}}>
@@ -31249,7 +31262,7 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             </div>
           </div>
         )}
-        <div style={{marginTop:16}}><DFBFormatsCard cl={cl}/></div>
+        <div style={{marginTop:16}}><DFBFormatsCard cl={cl} cat={myTeam?.cat}/></div>
         <div style={{marginTop:16}}><RecommendCard theme={t.p}/></div>
         </div>
         {isDesktop&&(
