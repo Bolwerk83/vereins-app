@@ -18009,6 +18009,23 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
               <Toggle val={S("notifyChat",true)} onChange={v=>saveSetting("notifyChat",v)}/>
             </Row>
           </div>
+          <div style={card}>
+            <div style={{fontWeight:800,fontSize:14,color:"#0f172a",marginBottom:4}}>🚗 Fahrgemeinschaft – Vorlage</div>
+            <div style={{fontSize:12,color:"#64748b",marginBottom:12,lineHeight:1.45}}>Standard-Beschriftung der drei Optionen für alle neuen Spiele. Pro Termin lässt sich das beim Anlegen überschreiben. Die Funktion (Sitzplätze, Abholort) bleibt immer gleich.</div>
+            {(()=>{ const cur={...CARPOOL_DEFAULTS,...(S("carpoolLabels",{})||{})};
+              const setOne=(k,v)=>saveSetting("carpoolLabels",{...(S("carpoolLabels",{})||{}),[k]:v});
+              const inpS={width:"100%",padding:"10px 12px",fontSize:13.5,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",boxSizing:"border-box",fontFamily:"inherit"};
+              return (<div style={{display:"flex",flexDirection:"column",gap:9}}>
+                {[["drive","🚗 Fahrer-Option"],["need","🙋 Mitfahr-Option"],["self","🚶 Selbst-Option"]].map(([k,ph])=>(
+                  <div key={k}>
+                    <div style={{fontSize:11,fontWeight:700,color:"#64748b",marginBottom:4}}>{ph}</div>
+                    <input value={cur[k]} onChange={e=>setOne(k,e.target.value)} placeholder={CARPOOL_DEFAULTS[k]} style={inpS}/>
+                  </div>
+                ))}
+                {Object.keys(S("carpoolLabels",{})||{}).length>0&&<button onClick={()=>saveSetting("carpoolLabels",undefined)} style={{alignSelf:"flex-start",padding:"7px 12px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Auf Standard zurücksetzen</button>}
+              </div>);
+            })()}
+          </div>
         </>
       )}
 
@@ -24354,11 +24371,16 @@ function VenuePicker({venues=[],value,onPick,onClear,onAdd,cl}) {
     </div>
   );
 }
+// Fahrgemeinschaft-Vorlage: Standardtexte der drei Optionen. Reihenfolge der
+// Anpassung: eingebaut < vereinsweit (clubSettings.carpoolLabels) < pro Termin (ev.carpoolLabels).
+const CARPOOL_DEFAULTS = { drive:"Ich fahre", need:"Brauche Mitfahrt", self:"Komme selbst" };
+const carpoolLabelsFor = (ev, cl) => ({ ...CARPOOL_DEFAULTS, ...(cl?.clubSettings?.carpoolLabels||{}), ...(ev?.carpoolLabels||{}) });
 function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTemplate=null,fields=[],venues=[],onAddVenue}) {
   const t=TH(cl); const isEdit=!!editEv; const STEPS=5; const { tr } = useT();
   const blank={tid:teams[0]?.id||"",type:"training",title:"",date:now(),time:"",endTime:"",loc:"",note:"",sollPlayers:null,maxPlayers:null,pt:"att",recMode:"none",recDays:[],recStart:now(),recUntil:"",recDates:[],li:[],fi:[],sc:[],extraPolls:[],selType:"multi",open:false,_li:{txt:"",max:""},_fi:{name:"",col:"#16a34a"},_sc:{fid:"",time:"",a:"",b:"",ref:""}};
   const [step,setStep]=useState(1);
   const [f,setF]=useState(editEv?{...blank,...editEv,recMode:"none",recDays:[],recDates:[],_li:{txt:"",max:""},_fi:{name:"",col:"#16a34a"},_sc:{fid:"",time:"",a:"",b:"",ref:""}}:blank);
+  const [cpEdit,setCpEdit]=useState(false);
   const u=p=>setF(prev=>({...prev,...p}));
   const ok=()=>{if(step===1)return!!f.tid;if(step===2)return!!f.type;if(step===3)return f.title.trim().length>1;return true;};
   const finish=()=>{
@@ -24437,15 +24459,41 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
               </div>
             );
           })() : <Inp label={tr("fLoc")} val={f.loc} set={v=>u({loc:v})} ph={tr("fLocPh")} cl={cl}/>}
-          {["heimspiel","auswarts","freundschaft","turnier"].includes(f.type)&&(()=>{ const on=f.carpoolEnabled!==false; return (
-            <div style={{border:"1.5px solid #e2e8f0",borderRadius:13,padding:"12px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
-              <div>
-                <div style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>🚗 Fahrgemeinschaft</div>
-                <div style={{fontSize:12,color:"#64748b",marginTop:2,lineHeight:1.45}}>Fahrer / brauche Mitnahme / freie Sitzplätze – die Mitglieder tragen sich anschließend direkt im Termin ein.</div>
+          {["heimspiel","auswarts","freundschaft","turnier"].includes(f.type)&&(()=>{ const on=f.carpoolEnabled!==false;
+            const lbl=carpoolLabelsFor(f,cl);
+            const setLbl=(k,v)=>u({carpoolLabels:{...(f.carpoolLabels||{}),[k]:v}});
+            const edit=cpEdit, setEdit=setCpEdit;
+            const cpInp={width:"100%",padding:"9px 11px",fontSize:13.5,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",boxSizing:"border-box",fontFamily:"inherit"};
+            return (
+            <div style={{border:"1.5px solid #e2e8f0",borderRadius:13,overflow:"hidden"}}>
+              <div style={{padding:"12px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+                <div>
+                  <div style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>🚗 Fahrgemeinschaft</div>
+                  <div style={{fontSize:12,color:"#64748b",marginTop:2,lineHeight:1.45}}>Fahrer / brauche Mitnahme / freie Sitzplätze – die Mitglieder tragen sich anschließend direkt im Termin ein.</div>
+                </div>
+                <button type="button" onClick={()=>u({carpoolEnabled:!on})} aria-label="Fahrgemeinschaft aktivieren" style={{width:46,height:27,borderRadius:99,border:"none",background:on?t.p:"#cbd5e1",position:"relative",cursor:"pointer",flexShrink:0,transition:"background .15s"}}>
+                  <span style={{position:"absolute",top:3,left:on?22:3,width:21,height:21,borderRadius:"50%",background:"#fff",boxShadow:"0 1px 3px rgba(0,0,0,.25)",transition:"left .15s"}}/>
+                </button>
               </div>
-              <button type="button" onClick={()=>u({carpoolEnabled:!on})} aria-label="Fahrgemeinschaft aktivieren" style={{width:46,height:27,borderRadius:99,border:"none",background:on?t.p:"#cbd5e1",position:"relative",cursor:"pointer",flexShrink:0,transition:"background .15s"}}>
-                <span style={{position:"absolute",top:3,left:on?22:3,width:21,height:21,borderRadius:"50%",background:"#fff",boxShadow:"0 1px 3px rgba(0,0,0,.25)",transition:"left .15s"}}/>
-              </button>
+              {on&&(
+                <div style={{borderTop:"1px solid #f1f5f9",background:"#fafafa",padding:"10px 14px 12px"}}>
+                  <button type="button" onClick={()=>setEdit(!edit)} style={{background:"none",border:"none",padding:0,cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:800,color:t.p,display:"flex",alignItems:"center",gap:6}}>
+                    {edit?"▲ Optionen-Texte ausblenden":"⚙️ Optionen-Texte anpassen"}
+                  </button>
+                  {edit&&(
+                    <div style={{display:"flex",flexDirection:"column",gap:7,marginTop:9}}>
+                      {[["drive","🚗 Fahrer-Option"],["need","🙋 Mitfahr-Option"],["self","🚶 Selbst-Option"]].map(([k,ph])=>(
+                        <div key={k}>
+                          <div style={{fontSize:10.5,fontWeight:700,color:"#64748b",marginBottom:3}}>{ph}</div>
+                          <input value={lbl[k]} onChange={e=>setLbl(k,e.target.value)} placeholder={CARPOOL_DEFAULTS[k]} style={cpInp}/>
+                        </div>
+                      ))}
+                      <div style={{fontSize:11,color:"#64748b",lineHeight:1.45,marginTop:2}}>Nur die Beschriftung – die Funktion (freie Sitzplätze, Abholort) bleibt gleich. Vereinsweite Standard-Texte unter Einstellungen → Kommunikation.</div>
+                      {(f.carpoolLabels&&Object.keys(f.carpoolLabels).length>0)&&<button type="button" onClick={()=>u({carpoolLabels:undefined})} style={{alignSelf:"flex-start",marginTop:2,padding:"5px 10px",borderRadius:8,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>Auf Standard zurücksetzen</button>}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           );})()}
           <SeriesWizard f={f} u={u} t={t} cl={cl}/>
@@ -29343,8 +29391,9 @@ function RegisterOfferModalInline({ offer, register }){
 }
 
 const PICKUP_SUGGEST = ["Sportplatz","Marktplatz","Schule","Kirche","Zuhause","Bahnhof","Rewe","Aldi"];
-function PollCarpool({ entries={}, onSet, user, cl }) {
+function PollCarpool({ entries={}, onSet, user, cl, labels=CARPOOL_DEFAULTS }) {
   const t=TH(cl);
+  const L={...CARPOOL_DEFAULTS,...(labels||{})};
   const votes=entries||{};
   const entryOf = name => { const v=votes[name]; return v&&typeof v==="object"&&v.mode?v:null; };
   const mine = entryOf(user);
@@ -29394,9 +29443,9 @@ function PollCarpool({ entries={}, onSet, user, cl }) {
   return (
     <div style={{display:"flex",flexDirection:"column",gap:13}}>
       <div style={{display:"flex",gap:8}}>
-        <ModeBtn mode="drive" label="Ich fahre" col="#16a34a" onClick={()=>saveDriver()}/>
-        <ModeBtn mode="need" label="Brauche Mitfahrt" col="#d97706" onClick={()=>saveNeed(mine?.car||null,pickup)}/>
-        <ModeBtn mode="self" label="Komme selbst" col="#64748b" onClick={saveSelf}/>
+        <ModeBtn mode="drive" label={L.drive} col="#16a34a" onClick={()=>saveDriver()}/>
+        <ModeBtn mode="need" label={L.need} col="#d97706" onClick={()=>saveNeed(mine?.car||null,pickup)}/>
+        <ModeBtn mode="self" label={L.self} col="#64748b" onClick={saveSelf}/>
       </div>
 
       {myMode==="drive"&&(
@@ -30715,7 +30764,7 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
               <div style={{textAlign:"center",fontSize:12.5,color:"#64748b",padding:"6px"}}>Info-Termin – keine Abstimmung nötig.</div>
             </div>
           )
-          :ev.pt==="carpool"?<PollCarpool entries={ev.votes||{}} onSet={v=>onVote(ev.id,"carpool",v)} user={user} cl={cl}/>
+          :ev.pt==="carpool"?<PollCarpool entries={ev.votes||{}} onSet={v=>onVote(ev.id,"carpool",v)} user={user} cl={cl} labels={carpoolLabelsFor(ev,cl)}/>
           :ev.pt==="list"?<PollList ev={ev} user={user} onVote={onVote}/>
           :<PollAttend ev={ev} user={user} onVote={onVote} cl={cl}/>}
         {(ev.extraPolls||[]).map(p=>(
@@ -30731,7 +30780,7 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
         {ev.pt!=="carpool" && ev.carpoolEnabled!==false && ["heimspiel","auswarts","freundschaft","turnier"].includes(ev.type) && (
           <div style={{marginTop:16,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
             <div style={{fontWeight:800,fontSize:14,color:"#0f172a",marginBottom:10}}>🚗 Fahrgemeinschaft</div>
-            <PollCarpool entries={ev.carpool||{}} onSet={v=>onVote(ev.id,"carpoolmap",v)} user={user} cl={cl}/>
+            <PollCarpool entries={ev.carpool||{}} onSet={v=>onVote(ev.id,"carpoolmap",v)} user={user} cl={cl} labels={carpoolLabelsFor(ev,cl)}/>
           </div>
         )}
         <DutyBoard ev={ev} user={user} canManage={isTrainerOrHelper} onChange={arr=>onVote(ev.id,"duty",arr)}/>
