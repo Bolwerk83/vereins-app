@@ -27958,15 +27958,15 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
 
       {}
       {viewEv&&<Drawer onClose={()=>setViewEv(null)} title={viewEv.title}>
-        {viewEv.venueAddr && (
-          <a href={`https://maps.google.com/?q=${encodeURIComponent((viewEv.loc?viewEv.loc+", ":"")+viewEv.venueAddr)}`} target="_blank" rel="noreferrer"
+        {(viewEv.venueAddr || (viewEv.loc && ["heimspiel","auswarts","freundschaft","turnier"].includes(viewEv.type))) && (
+          <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([viewEv.loc,viewEv.venueAddr].filter(Boolean).join(", "))}`} target="_blank" rel="noreferrer"
             style={{display:"flex",alignItems:"flex-start",gap:10,textDecoration:"none",background:"#eff6ff",border:"1.5px solid #bfdbfe",borderRadius:14,padding:"12px 14px",marginBottom:14}}>
             <span style={{fontSize:18,flexShrink:0}}>📍</span>
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontSize:11,fontWeight:800,color:"#1d4ed8",letterSpacing:.3}}>SPIELORT</div>
               {viewEv.loc&&<div style={{fontSize:14,fontWeight:800,color:"#0f172a",marginTop:2}}>{viewEv.loc}</div>}
-              <div style={{fontSize:13,color:"#475569",whiteSpace:"pre-line",marginTop:1}}>{viewEv.venueAddr}</div>
-              <div style={{fontSize:12,fontWeight:700,color:"#2563eb",marginTop:5}}>In Karte öffnen →</div>
+              {viewEv.venueAddr&&<div style={{fontSize:13,color:"#475569",whiteSpace:"pre-line",marginTop:1}}>{viewEv.venueAddr}</div>}
+              <div style={{fontSize:12,fontWeight:700,color:"#2563eb",marginTop:5}}>Route in Karten-App öffnen →</div>
             </div>
           </a>
         )}
@@ -30675,15 +30675,15 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
       </div>
       {expanded&&<div style={{padding:"0 17px 20px",borderTop:"1px solid #f1f5f9"}}>
         <div style={{height:14}}/>
-        {ev.venueAddr && (
-          <a href={`https://maps.google.com/?q=${encodeURIComponent((ev.loc?ev.loc+", ":"")+ev.venueAddr)}`} target="_blank" rel="noreferrer"
+        {(ev.venueAddr || (ev.loc && ["heimspiel","auswarts","freundschaft","turnier"].includes(ev.type))) && (
+          <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([ev.loc,ev.venueAddr].filter(Boolean).join(", "))}`} target="_blank" rel="noreferrer"
             style={{display:"flex",alignItems:"flex-start",gap:10,textDecoration:"none",background:"#eff6ff",border:"1.5px solid #bfdbfe",borderRadius:14,padding:"12px 14px",marginBottom:14}}>
             <span style={{fontSize:18,flexShrink:0}}>📍</span>
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontSize:11,fontWeight:800,color:"#1d4ed8",letterSpacing:.3}}>SPIELORT</div>
               {ev.loc&&<div style={{fontSize:14,fontWeight:800,color:"#0f172a",marginTop:2}}>{ev.loc}</div>}
-              <div style={{fontSize:13,color:"#475569",whiteSpace:"pre-line",marginTop:1}}>{ev.venueAddr}</div>
-              <div style={{fontSize:12,fontWeight:700,color:"#2563eb",marginTop:5}}>In Karte öffnen →</div>
+              {ev.venueAddr&&<div style={{fontSize:13,color:"#475569",whiteSpace:"pre-line",marginTop:1}}>{ev.venueAddr}</div>}
+              <div style={{fontSize:12,fontWeight:700,color:"#2563eb",marginTop:5}}>Route in Karten-App öffnen →</div>
             </div>
           </a>
         )}
