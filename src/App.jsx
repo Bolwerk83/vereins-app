@@ -24566,7 +24566,7 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
         {}
         {step===4&&<div className="in" style={{display:"flex",flexDirection:"column",gap:14}}>
           <p style={{fontSize:13,fontWeight:700,color:"#64748b"}}>Welche Abstimmung soll es geben?</p>
-          {[{k:"att",icon:"OK",title:"Anwesenheit",sub:"Dabei / Nicht dabei"},{k:"list",icon:"Liste",title:"Auswahlliste",sub:"z.B. Verpflegung,Helfer"},{k:"carpool",icon:"*",title:"Fahrtgemeinschaft",sub:"Wer braucht Mitnahme? Wer kann fahren?"},{k:"none",icon:"–",title:"Keine Abstimmung",sub:"Reiner Info-Termin (z.B. Versammlung, Fahrt)"}].map(o=>(
+          {[{k:"att",icon:"OK",title:"Anwesenheit",sub:"✅ Dabei · 🕒 Später · ❌ Absage (mit Grund)"},{k:"list",icon:"Liste",title:"Auswahlliste",sub:"z.B. Verpflegung,Helfer"},{k:"carpool",icon:"*",title:"Fahrtgemeinschaft",sub:"Wer braucht Mitnahme? Wer kann fahren?"},{k:"none",icon:"–",title:"Keine Abstimmung",sub:"Reiner Info-Termin (z.B. Versammlung, Fahrt)"}].map(o=>(
             <div key={o.k} onClick={()=>u({pt:o.k})} style={{background:"#fff",borderRadius:16,padding:"14px 16px",border:`2px solid ${f.pt===o.k?t.p:"#e2e8f0"}`,cursor:"pointer",display:"flex",alignItems:"center",gap:13,transition:"all .18s"}}>
               <div style={{width:46,height:46,borderRadius:14,background:f.pt===o.k?t.p+"20":"#f8fafc",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{o.icon}</div>
               <div style={{flex:1}}><div style={{fontWeight:800,fontSize:15,color:f.pt===o.k?t.p:"#334155"}}>{o.title}</div><div style={{fontSize:12,color:"#64748b",marginTop:2}}>{o.sub}</div></div>
