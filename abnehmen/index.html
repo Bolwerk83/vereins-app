@@ -98,6 +98,26 @@
   </div>
 </div>
 
+<!-- Tarn-Fassade: harmloser Wochenplaner. Geheim-Eingang = 3× auf den Titel tippen. -->
+<div class="wrap" id="facade" style="display:none">
+  <div class="row between">
+    <h1 id="facadeTitle" style="cursor:default">Planer <span style="font-size:16px">🗓️</span></h1>
+    <span class="mini" id="facadeDate"></span>
+  </div>
+  <p class="sub">Deine Woche im Blick.</p>
+  <div class="card">
+    <div class="label">To-dos diese Woche</div>
+    <div id="plannerDays"></div>
+  </div>
+  <div class="card">
+    <div class="label">Notizen</div>
+    <textarea id="plannerNotes" rows="5" placeholder="…"
+      style="width:100%; background:#0a1326; border:1px solid var(--line); color:var(--ink);
+      border-radius:12px; padding:12px; font-size:14px; resize:vertical; outline:none"></textarea>
+  </div>
+  <p class="footnote">Lokaler Wochenplaner · nichts wird hochgeladen.</p>
+</div>
+
 <div class="wrap" id="app">
 
   <div class="row between">
@@ -105,7 +125,7 @@
       <h1 id="appTitle">Leichter <span style="font-size:16px">📉</span></h1>
       <p class="sub" id="appSub">Kein Kalorienzählen. Nur wiegen. Die Kurve macht den Rest.</p>
     </div>
-    <button class="btn ghost" id="privacyBtn" title="Privatsphäre"
+    <button class="btn ghost" id="privacyBtn" title="Sofort zur Fassade"
       style="padding:8px 11px; font-size:16px; align-self:flex-start">🔒</button>
   </div>
 
@@ -237,11 +257,21 @@
     </ul>
   </div>
 
+  <!-- Einsatz / Wetteinsatz: härtester Verhaltens-Hebel (Commitment-Device) -->
+  <div class="card span2" id="stakeCard">
+    <div class="row between" style="margin-bottom:8px">
+      <div class="label" style="margin:0">💰 Einsatz · dein Pfand</div>
+      <button class="btn ghost" id="stakeBtn" style="padding:5px 9px; font-size:12px">festlegen</button>
+    </div>
+    <div id="stakeBody" class="mini" style="line-height:1.5"></div>
+  </div>
+
   </div><!-- /grid -->
 
   <p class="footnote">
     Alles bleibt lokal auf deinem Gerät — nichts wird hochgeladen.<br/>
     Tipp: „Zum Home-Bildschirm hinzufügen“ → läuft wie eine echte App, auch offline.<br/>
+    <a href="#" id="privLink">Privatsphäre &amp; Tarnung</a> ·
     <a href="#" id="exportLink">Daten exportieren</a> · <a href="#" id="resetLink">zurücksetzen</a>
   </p>
 </div>
@@ -261,6 +291,22 @@
     <div class="row" style="gap:10px">
       <button class="btn ghost" value="cancel" style="flex:1">Abbrechen</button>
       <button class="btn" id="privSave" value="ok" style="flex:1">Speichern</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Einsatz-Dialog -->
+<dialog id="stakeDlg">
+  <form method="dialog" class="sheet">
+    <div class="label">Einsatz festlegen</div>
+    <p class="quiet" style="margin-top:0">Der stärkste Hebel gegen den Schweinehund: ein echter Einsatz. Vereinbar mit einer Person deines Vertrauens — <b>verfehlst du eine Etappe, ist das Geld weg</b> (an sie, an einen Verein, egal). Die App führt nur Buch; das Geld regelst du echt.</p>
+    <label class="mini">Betrag pro Etappe (€)</label><br/>
+    <input id="sAmount" type="number" step="1" inputmode="numeric" placeholder="z. B. 20" style="width:100%; margin:6px 0 12px"/><br/>
+    <label class="mini">Geht im Zweifel an … (Name/Verein)</label><br/>
+    <input id="sTo" type="text" placeholder="z. B. Sportverein" style="width:100%; margin:6px 0 16px"/><br/>
+    <div class="row" style="gap:10px">
+      <button class="btn ghost" value="cancel" id="sClear" style="flex:1">Entfernen</button>
+      <button class="btn" id="sSave" value="ok" style="flex:1">Speichern</button>
     </div>
   </form>
 </dialog>
@@ -295,7 +341,10 @@ const dayKey = t => new Date(t).toISOString().slice(0,10);
 const KEY = "leichter.v1";
 const defaults = { entries:{}, habits:{}, goal:null, points:0, ranges:[30,90,365], rangeIdx:0,
   flowRate:0.5, checkpoint:null /* {set,date,startW,target} */,
-  workouts:{}, pin:"", tarn:false, cpDone:0 };
+  workouts:{}, pin:"", tarn:true, cpDone:0,
+  stake:null, stakeWon:0, stakeLost:0,
+  planner:{ days:["","","","","","",""], notes:"" } };
+const WEEKDAYS = ["Mo","Di","Mi","Do","Fr","Sa","So"];
 let S = load();
 function load(){ try{ return Object.assign({}, defaults, JSON.parse(localStorage.getItem(KEY)||"{}")); }catch(e){ return {...defaults}; } }
 function save(){ localStorage.setItem(KEY, JSON.stringify(S)); }
@@ -359,7 +408,33 @@ function render(){
   renderLevel();
   renderHabits(tk);
   renderWorkout();
+  renderStake();
   renderCoach(tk);
+}
+
+// ---------- Einsatz / Wetteinsatz ----------
+function renderStake(){
+  const body = $("#stakeBody"), btn = $("#stakeBtn");
+  if(!S.stake){
+    btn.textContent = "festlegen";
+    body.innerHTML = `Noch kein Einsatz. Der härteste Trick gegen einen schlauen Schweinehund: vereinbar mit jemandem einen echten Betrag, der weg ist, wenn du eine Etappe reißt. <a href="#" id="stakeSet2">Jetzt festlegen</a>`;
+    const l=$("#stakeSet2"); if(l) l.onclick=(e)=>{e.preventDefault(); openStake();};
+    return;
+  }
+  btn.textContent = "ändern";
+  const w=S.stakeWon||0, ls=S.stakeLost||0;
+  body.innerHTML =
+    `<b style="color:var(--ink); font-size:15px">${S.stake.amount} €</b> pro Etappe` +
+    (S.stake.to ? ` → <b style="color:var(--ink)">${escapeHtml(S.stake.to)}</b>` : "") +
+    ` stehen auf dem Spiel.<br/>` +
+    `<span style="color:var(--good)">✅ ${w}× gerettet</span> · ` +
+    `<span style="color:${ls>0?'var(--bad)':'var(--muted)'}">💸 ${ls}× fällig (${ls*Number(S.stake.amount||0)} €)</span>`;
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function openStake(){
+  $("#sAmount").value = S.stake? S.stake.amount : "";
+  $("#sTo").value = S.stake? (S.stake.to||"") : "";
+  $("#stakeDlg").showModal();
 }
 
 // ---------- Coach-Banner: Marketing-/Verhaltens-Instrumente ----------
@@ -407,8 +482,15 @@ function ensureCheckpoint(arr){
   };
   const cp = S.checkpoint;
   if(!cp){ fresh(); save(); return; }
-  if(cur <= cp.target + 0.001){ S.cpDone=(S.cpDone||0)+1; S.points += 30; fresh(); save(); return; } // erreicht -> Belohnung + groessere Etappe
-  if(t > cp.date){ fresh(); save(); return; } // abgelaufen -> sanfter Neustart, keine Strafe
+  if(cur <= cp.target + 0.001){ // erreicht -> Belohnung + groessere Etappe + Einsatz gerettet
+    S.cpDone=(S.cpDone||0)+1; S.points += 30;
+    if(S.stake) S.stakeWon=(S.stakeWon||0)+1;
+    fresh(); save(); return;
+  }
+  if(t > cp.date){ // abgelaufen -> sanfter Neustart, keine Strafe (aber Einsatz faellig)
+    if(S.stake) S.stakeLost=(S.stakeLost||0)+1;
+    fresh(); save(); return;
+  }
 }
 function renderFlow(arr){
   const card = $("#flowCard");
@@ -672,40 +754,73 @@ $("#resetLink").onclick = (e)=>{
 
 // ---------- Tarnmodus & PIN ----------
 function applyTarn(){
-  if(S.tarn){
-    document.title = "Planer";
-    $("#appTitle").innerHTML = 'Planer <span style="font-size:16px">🗓️</span>';
-    $("#appSub").textContent = "Deine private Wochenübersicht.";
-  } else {
-    document.title = "Leichter — dein Anti-Schweinehund";
-    $("#appTitle").innerHTML = 'Leichter <span style="font-size:16px">📉</span>';
-    $("#appSub").textContent = "Kein Kalorienzählen. Nur wiegen. Die Kurve macht den Rest.";
-  }
+  // Die Fassade (eigene Ansicht) uebernimmt die Tarnung; der Browser-Tab/PWA-Name bleibt neutral.
+  document.title = S.tarn ? "Planer" : "Leichter — dein Anti-Schweinehund";
 }
-function lockApp(){
-  if(!S.pin) return;
-  $("#app").style.display="none";
-  const lock=$("#lock"); lock.style.display="grid";
+// ---------- Navigation: Fassade <-> PIN <-> App ----------
+function hideAll(){ $("#app").style.display="none"; $("#facade").style.display="none"; $("#lock").style.display="none"; }
+function showApp(){ hideAll(); $("#app").style.display=""; render(); }
+function showFacade(){ hideAll(); renderFacade(); $("#facade").style.display=""; }
+function showLock(){
+  if(!S.pin){ showApp(); return; }
+  hideAll(); const lock=$("#lock"); lock.style.display="grid";
   const inp=$("#pinIn"); inp.value=""; $("#pinErr").textContent="";
   setTimeout(()=>inp.focus(),100);
   inp.oninput=()=>{
     if(inp.value.length>=S.pin.length){
-      if(inp.value===S.pin){ lock.style.display="none"; $("#app").style.display=""; }
+      if(inp.value===S.pin){ showApp(); }
       else { $("#pinErr").textContent="Falsche PIN"; inp.value=""; }
     }
   };
 }
-$("#privacyBtn").onclick = ()=>{
+
+// ---------- Planer-Fassade ----------
+function renderFacade(){
+  $("#facadeDate").textContent = new Date().toLocaleDateString("de-DE",{weekday:"long",day:"numeric",month:"long"});
+  const wrap=$("#plannerDays"); wrap.innerHTML="";
+  WEEKDAYS.forEach((d,i)=>{
+    const row=document.createElement("div"); row.className="row"; row.style.padding="6px 0";
+    row.innerHTML=`<span style="width:34px; color:var(--muted); font-weight:700; font-size:13px">${d}</span>`;
+    const inp=document.createElement("input"); inp.type="text"; inp.value=(S.planner.days[i]||"");
+    inp.placeholder="…"; inp.style.cssText="flex:1; width:auto; background:#0a1326; border:1px solid var(--line); color:var(--ink); font-size:14px; font-weight:500; border-radius:10px; padding:9px 11px; text-align:left";
+    inp.oninput=()=>{ S.planner.days[i]=inp.value; save(); };
+    row.appendChild(inp); wrap.appendChild(row);
+  });
+  const nt=$("#plannerNotes"); nt.value=S.planner.notes||"";
+  nt.oninput=()=>{ S.planner.notes=nt.value; save(); };
+}
+// Geheim-Eingang: 3× schnell auf den Titel tippen
+(function(){
+  let taps=0, timer=null;
+  $("#facadeTitle").addEventListener("click", ()=>{
+    taps++; clearTimeout(timer); timer=setTimeout(()=>{ taps=0; }, 700);
+    if(taps>=3){ taps=0; showLock(); }
+  });
+})();
+
+// ---------- Privatsphäre-Dialog ----------
+function openPriv(){
   $("#tarnChk").checked = !!S.tarn;
   $("#pinSet").value = S.pin || "";
   $("#privDlg").showModal();
-};
+}
+$("#privacyBtn").onclick = ()=> showFacade();           // Panik-Knopf: sofort zur Fassade
+$("#privLink").onclick = (e)=>{ e.preventDefault(); openPriv(); };
 $("#privSave").onclick = ()=>{
   S.tarn = $("#tarnChk").checked;
   S.pin = ($("#pinSet").value||"").replace(/\D/g,"").slice(0,8);
   save();
   setTimeout(()=>{ applyTarn(); },0);
 };
+
+// ---------- Einsatz-Dialog ----------
+$("#stakeBtn").onclick = ()=> openStake();
+$("#sSave").onclick = ()=>{
+  const a=parseFloat(($("#sAmount").value||"").replace(",","."));
+  if(isFinite(a)&&a>0){ S.stake={ amount:Math.round(a), to:($("#sTo").value||"").trim().slice(0,40) }; save(); }
+  setTimeout(()=>render(),0);
+};
+$("#sClear").onclick = ()=>{ S.stake=null; save(); setTimeout(()=>render(),0); };
 
 // ---------- Demo-Daten (nur mit ?demo in der URL) ----------
 function seedDemo(){
@@ -730,8 +845,11 @@ if(location.search.indexOf("demo")>=0 && Object.keys(S.entries).length===0){ see
 // ---------- Boot ----------
 $("#rangeBtn").textContent = S.ranges[S.rangeIdx]>=365 ? "1 J" : S.ranges[S.rangeIdx]+" T";
 applyTarn();
-render();
-lockApp();
+const isDemo = location.search.indexOf("demo")>=0;
+if(isDemo) showApp();            // Demo zeigt die echte App direkt
+else if(S.tarn) showFacade();    // Tarnmodus: erst die harmlose Fassade
+else if(S.pin) showLock();       // PIN ohne Tarnung
+else showApp();
 if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").catch(()=>{}); }
 </script>
 </body>
