@@ -19,6 +19,16 @@
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif}
   body{padding:max(16px,env(safe-area-inset-top)) 16px calc(28px + env(safe-area-inset-bottom))}
   .wrap{max-width:560px; margin:0 auto}
+  .grid{display:grid; gap:14px}
+  .grid > .card{margin-bottom:0}
+  @media(min-width:820px){
+    .wrap{max-width:940px}
+    .grid{grid-template-columns:1fr 1fr; align-items:start}
+    .span2{grid-column:1 / -1}
+    body{padding-left:24px; padding-right:24px}
+    h1{font-size:26px}
+  }
+  @media(min-width:1200px){ .wrap{max-width:1080px} }
   h1{font-size:22px; margin:4px 0 2px; letter-spacing:.2px}
   .sub{color:var(--muted); font-size:13px; margin:0 0 16px}
   .card{background:linear-gradient(180deg,var(--card),#0e1830);
@@ -99,8 +109,15 @@
       style="padding:8px 11px; font-size:16px; align-self:flex-start">🔒</button>
   </div>
 
+  <!-- Coach: Marketing-/Verhaltens-Instrument (Verlustaversion, Identität, soziale Bewährtheit) -->
+  <div id="coach" style="background:linear-gradient(120deg,#10233b,#0e1830); border:1px solid #1d3a55;
+    border-radius:16px; padding:13px 16px; font-weight:600; font-size:14px; line-height:1.4;
+    margin-bottom:14px; box-shadow:var(--shadow)"></div>
+
+  <div class="grid">
+
   <!-- Gewicht heute -->
-  <div class="card">
+  <div class="card span2">
     <div class="label">Heute wiegen</div>
     <div class="row between">
       <div class="row" style="gap:10px">
@@ -112,7 +129,7 @@
   </div>
 
   <!-- Trendkurve – das Herzstück -->
-  <div class="card">
+  <div class="card span2">
     <div class="row between" style="margin-bottom:4px">
       <div>
         <div class="label" style="margin:0">Trend (geglättet)</div>
@@ -140,12 +157,16 @@
       <div class="label" style="margin:0">Weg zum Ziel</div>
       <button class="btn ghost" id="goalBtn" style="padding:5px 9px; font-size:12px">⚙︎ Ziel</button>
     </div>
-    <div class="goalbar"><div class="goalfill" id="goalFill"></div></div>
+    <div class="goalbar" style="position:relative">
+      <div class="goalfill" id="goalFill"></div>
+      <div id="healthyMark" style="display:none; position:absolute; top:-3px; width:3px; height:18px; background:var(--good); border-radius:2px"></div>
+    </div>
     <div class="row between" style="margin-top:8px">
       <span class="mini" id="goalStart">–</span>
       <span class="mini" id="goalPct" style="color:var(--ink); font-weight:700"></span>
       <span class="mini" id="goalTarget">–</span>
     </div>
+    <div class="mini" id="bmiLine" style="margin-top:10px; line-height:1.4"></div>
   </div>
 
   <!-- Flow-Frist: rollende, selbst-anpassende Etappe -->
@@ -216,6 +237,8 @@
     </ul>
   </div>
 
+  </div><!-- /grid -->
+
   <p class="footnote">
     Alles bleibt lokal auf deinem Gerät — nichts wird hochgeladen.<br/>
     Tipp: „Zum Home-Bildschirm hinzufügen“ → läuft wie eine echte App, auch offline.<br/>
@@ -250,7 +273,9 @@
     <label class="mini">Startgewicht (kg)</label><br/>
     <input id="gStart" type="number" step="0.1" inputmode="decimal" style="width:100%; margin:6px 0 12px"/><br/>
     <label class="mini">Zielgewicht (kg)</label><br/>
-    <input id="gTarget" type="number" step="0.1" inputmode="decimal" style="width:100%; margin:6px 0 16px"/><br/>
+    <input id="gTarget" type="number" step="0.1" inputmode="decimal" style="width:100%; margin:6px 0 12px"/><br/>
+    <label class="mini">Körpergröße (cm) — für den Gesund-Marker</label><br/>
+    <input id="gHeight" type="number" step="1" inputmode="numeric" placeholder="z. B. 190" style="width:100%; margin:6px 0 16px"/><br/>
     <div class="row" style="gap:10px">
       <button class="btn ghost" value="cancel" style="flex:1">Abbrechen</button>
       <button class="btn" id="gSave" value="ok" style="flex:1">Speichern</button>
@@ -270,7 +295,7 @@ const dayKey = t => new Date(t).toISOString().slice(0,10);
 const KEY = "leichter.v1";
 const defaults = { entries:{}, habits:{}, goal:null, points:0, ranges:[30,90,365], rangeIdx:0,
   flowRate:0.5, checkpoint:null /* {set,date,startW,target} */,
-  workouts:{}, pin:"", tarn:false };
+  workouts:{}, pin:"", tarn:false, cpDone:0 };
 let S = load();
 function load(){ try{ return Object.assign({}, defaults, JSON.parse(localStorage.getItem(KEY)||"{}")); }catch(e){ return {...defaults}; } }
 function save(){ localStorage.setItem(KEY, JSON.stringify(S)); }
@@ -278,9 +303,15 @@ function save(){ localStorage.setItem(KEY, JSON.stringify(S)); }
 // entries: { "YYYY-MM-DD": weight }   habits: { "YYYY-MM-DD": {water:bool,nosnack:bool,move:bool} }
 const HABITS = [
   {id:"water",  emo:"💧", t:"Wasser vor dem Essen", s:"3× Glas vorweg"},
+  {id:"protein",emo:"🍗", t:"Eiweiß-Ziel getroffen", s:"~Xg"},
   {id:"nosnack",emo:"🌙", t:"Kein Snack nach 21 Uhr", s:"Küche zu"},
   {id:"move",   emo:"👟", t:"10 Min bewegt", s:"Spaziergang zählt"},
 ];
+function currentWeight(){
+  const a = sortedEntries();
+  return a.length ? a[a.length-1].w : (S.goal ? S.goal.start : 105);
+}
+function proteinTarget(){ return Math.round(currentWeight()*1.6/5)*5; } // ~1,6 g/kg, gerundet
 
 // ---------- Trend (exponentiell geglättet) ----------
 function sortedEntries(){
@@ -328,20 +359,55 @@ function render(){
   renderLevel();
   renderHabits(tk);
   renderWorkout();
+  renderCoach(tk);
+}
+
+// ---------- Coach-Banner: Marketing-/Verhaltens-Instrumente ----------
+function renderCoach(tk){
+  const st = streakCount();
+  const logged = S.entries[tk] != null;
+  let msg;
+  if(!logged){
+    // Verlustaversion + Foot-in-the-door (winziger erster Schritt)
+    msg = st>0
+      ? `🔥 ${st} Tage am Stück — ein 10-Sekunden-Eintrag hält die Serie heute am Leben.`
+      : `🎯 Nur EIN winziger Schritt heute: 10 Sekunden auf die Waage. Mehr nicht.`;
+  } else {
+    // Identitäts-Framing + soziale Bewährtheit + Fortschritts-Stolz (rotierend)
+    const lines = [
+      "✅ Eingetragen. Genau so machen es Leute, die's wirklich durchziehen.",
+      "💪 Du bist gerade jemand, der dranbleibt. Jeder Tag bestätigt das.",
+      "📈 Jeder Punkt auf der Kurve ist ein Beweis: Du machst das.",
+      "🧠 Dein Zukunfts-Ich winkt dir zu. Heute schon investiert.",
+    ];
+    msg = lines[ st % lines.length ];
+  }
+  $("#coach").textContent = msg;
 }
 
 // ---------- Flow-Frist: rollende, selbst-anpassende Etappe (kein Druck) ----------
+// Sich selbst beschleunigender Start: viel Reserve -> schneller (bis 0,75/Wo),
+// nahe am Ziel -> sanft zurueck auf das Basistempo. Nie ueber-/unterfordernd.
+function effectiveRate(cur){
+  if(!S.goal) return S.flowRate;
+  const remaining = cur - S.goal.target;
+  const boosted = S.flowRate + Math.max(0, (remaining - 5)) * 0.03;
+  return Math.round(Math.min(0.75, Math.max(S.flowRate, boosted)) * 100) / 100;
+}
 function ensureCheckpoint(arr){
   if(!arr.length || !S.goal){ return; }
   const cur = arr[arr.length-1].ema, t = today();
   if(cur <= S.goal.target + 0.05){ S.checkpoint = null; return; } // grosses Ziel erreicht
   const fresh = ()=>{
-    const tgt = Math.max(S.goal.target, Math.round((cur - S.flowRate*2)*10)/10);
-    S.checkpoint = { set:t, date:t + 14*DAY, startW:cur, target:tgt };
+    // Sehr kleine Einstiegs-Etappen, dann steigern: Rampe 0,4 -> 0,6 -> 0,8 -> 1,0
+    const ramp = Math.min(1, 0.4 + 0.2*(S.cpDone||0));
+    const drop = effectiveRate(cur) * 2 * ramp;
+    const tgt = Math.max(S.goal.target, Math.round((cur - drop)*10)/10);
+    S.checkpoint = { set:t, date:t + 14*DAY, startW:cur, target:tgt, n:(S.cpDone||0)+1 };
   };
   const cp = S.checkpoint;
   if(!cp){ fresh(); save(); return; }
-  if(cur <= cp.target + 0.001){ S.points += 30; fresh(); save(); return; } // erreicht -> Belohnung + neue Etappe
+  if(cur <= cp.target + 0.001){ S.cpDone=(S.cpDone||0)+1; S.points += 30; fresh(); save(); return; } // erreicht -> Belohnung + groessere Etappe
   if(t > cp.date){ fresh(); save(); return; } // abgelaufen -> sanfter Neustart, keine Strafe
 }
 function renderFlow(arr){
@@ -357,8 +423,9 @@ function renderFlow(arr){
   const span = cp.startW - cp.target;
   const prog = span>0 ? Math.max(0,Math.min(100,(cp.startW-cur)/span*100)) : 100;
   $("#flowFill").style.width = prog+"%";
-  $("#flowGap").textContent = gap>0.05 ? `noch ${fmtKg(gap)} kg` : "Etappe erreicht 🎉";
-  $("#flowRate").textContent = fmtKg(S.flowRate).replace(".",",");
+  const n = cp.n || ((S.cpDone||0)+1);
+  $("#flowGap").textContent = (gap>0.05 ? `noch ${fmtKg(gap)} kg` : "Etappe erreicht 🎉") + (n<=2 ? " · Einstieg 🐣" : "");
+  $("#flowRate").textContent = fmtKg(effectiveRate(cur)).replace(".",",");
   let msg;
   if(gap<=0.05) msg = "Stark — Etappe geschafft! 🎉 +30 Punkte";
   else if(prog>=66) msg = "Voll im Flow. Läuft. 🌊";
@@ -480,6 +547,7 @@ function renderGoal(arr){
     $("#goalStart").textContent = S.goal? fmtKg(S.goal.start)+" kg" : "kein Ziel gesetzt";
     $("#goalTarget").textContent = S.goal? fmtKg(S.goal.target)+" kg" : "";
     $("#goalPct").textContent = "";
+    $("#bmiLine").textContent = ""; $("#healthyMark").style.display="none";
     return;
   }
   const cur = arr[arr.length-1].ema;
@@ -491,6 +559,20 @@ function renderGoal(arr){
   $("#goalTarget").textContent = "🎯 "+fmtKg(S.goal.target)+" kg";
   const left = Math.max(0, cur - S.goal.target);
   $("#goalPct").textContent = `${Math.round(pct)} % · noch ${fmtKg(left)} kg`;
+
+  // Gesund-Marker (BMI)
+  const h = S.goal.height || 190, m = h/100;
+  const bmi = cur/(m*m), healthyMax = 24.9*m*m;
+  const zone = bmi < 18.5 ? "Untergewicht" : bmi < 25 ? "Normalgewicht ✓" : bmi < 30 ? "Übergewicht" : "Adipositas";
+  const zc = bmi < 25 && bmi >= 18.5 ? "var(--good)" : "var(--warn)";
+  $("#bmiLine").innerHTML = `BMI <b style="color:${zc}">${bmi.toFixed(1).replace(".",",")}</b> · ${zone}` +
+    ` — gesund (BMI 25) ab <b style="color:var(--good)">${fmtKg(healthyMax)} kg</b>`;
+  const mk = $("#healthyMark");
+  if(total>0 && healthyMax>=S.goal.target && healthyMax<=S.goal.start){
+    mk.style.display="block";
+    mk.style.left = `calc(${(S.goal.start-healthyMax)/total*100}% - 1px)`;
+    mk.title = `gesund ab ${fmtKg(healthyMax)} kg`;
+  } else { mk.style.display="none"; }
 }
 
 function streakCount(){
@@ -511,9 +593,10 @@ function renderHabits(tk){
   const state = S.habits[tk] || {};
   for(const h of HABITS){
     const on = !!state[h.id];
+    const sub = h.id==="protein" ? `~${proteinTarget()} g (≈1,6 g/kg)` : h.s;
     const div=document.createElement("div");
     div.className="chip"+(on?" on":"");
-    div.innerHTML=`<div class="box">${on?"✓":""}</div><div class="t">${h.emo} ${h.t}<small>${h.s}</small></div>`;
+    div.innerHTML=`<div class="box">${on?"✓":""}</div><div class="t">${h.emo} ${h.t}<small>${sub}</small></div>`;
     div.onclick=()=>toggleHabit(tk,h.id,div);
     wrap.appendChild(div);
   }
@@ -538,7 +621,7 @@ $("#save").onclick = ()=>{
   S.entries[tk]=v;
   if(isNew) S.points += 10; // wiegen = 10 Punkte
   if(!S.goal){ // first weigh-in seeds the goal (start, -15 kg as default)
-    S.goal = { start:v, target: Math.round((v-15)*10)/10 };
+    S.goal = { start:v, target: Math.round((v-15)*10)/10, height:190 };
   }
   save(); render();
   $("#trendVal").classList.add("pulse");
@@ -555,12 +638,17 @@ $("#rangeBtn").onclick = ()=>{
 $("#goalBtn").onclick = ()=>{
   $("#gStart").value = S.goal? S.goal.start : "";
   $("#gTarget").value = S.goal? S.goal.target : "";
+  $("#gHeight").value = S.goal? (S.goal.height||"") : "";
   $("#goalDlg").showModal();
 };
 $("#gSave").onclick = (e)=>{
   const st=parseFloat(($("#gStart").value||"").replace(",",".")),
-        tg=parseFloat(($("#gTarget").value||"").replace(",","."));
-  if(isFinite(st)&&isFinite(tg)&&tg>0&&tg<st){ S.goal={start:st,target:tg}; save(); }
+        tg=parseFloat(($("#gTarget").value||"").replace(",",".")),
+        ht=parseFloat(($("#gHeight").value||"").replace(",","."));
+  if(isFinite(st)&&isFinite(tg)&&tg>0&&tg<st){
+    S.goal={ start:st, target:tg, height: (isFinite(ht)&&ht>80&&ht<250)? Math.round(ht) : (S.goal&&S.goal.height||190) };
+    save();
+  }
   setTimeout(render,0);
 };
 
@@ -618,6 +706,26 @@ $("#privSave").onclick = ()=>{
   save();
   setTimeout(()=>{ applyTarn(); },0);
 };
+
+// ---------- Demo-Daten (nur mit ?demo in der URL) ----------
+function seedDemo(){
+  const e={}, w={}, wo={}; let base=105.6;
+  for(let i=24;i>=0;i--){
+    const d=new Date(); d.setDate(d.getDate()-i); d.setHours(0,0,0,0);
+    const k=d.toISOString().slice(0,10);
+    base -= 0.16; const noise = (i%3?0.3:-0.25) + (i%5===0?0.2:0);
+    e[k]=Math.round((base+noise)*10)/10;
+    if(i%3!==0) wo[k]=true;
+  }
+  const tk=new Date(); tk.setHours(0,0,0,0); const key=tk.toISOString().slice(0,10);
+  S = Object.assign({}, defaults, {
+    entries:e, workouts:wo, goal:{start:105.6,target:90,height:190},
+    points:265, cpDone:3, flowRate:0.5,
+    habits:{ [key]:{water:true, protein:true, move:true} }
+  });
+  save();
+}
+if(location.search.indexOf("demo")>=0 && Object.keys(S.entries).length===0){ seedDemo(); }
 
 // ---------- Boot ----------
 $("#rangeBtn").textContent = S.ranges[S.rangeIdx]>=365 ? "1 J" : S.ranges[S.rangeIdx]+" T";
