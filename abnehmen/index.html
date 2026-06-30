@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0f172a" />
+<title>Leichter — dein Anti-Schweinehund</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icon.svg" />
+<style>
+  :root{
+    --bg:#0b1120; --card:#111c33; --line:#1e2d4d;
+    --ink:#e7eefb; --muted:#8da3c9; --accent:#22d3ee; --accent2:#34d399;
+    --warn:#fbbf24; --bad:#fb7185; --good:#34d399;
+    --shadow:0 10px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif}
+  body{padding:max(16px,env(safe-area-inset-top)) 16px calc(28px + env(safe-area-inset-bottom))}
+  .wrap{max-width:560px; margin:0 auto}
+  h1{font-size:22px; margin:4px 0 2px; letter-spacing:.2px}
+  .sub{color:var(--muted); font-size:13px; margin:0 0 16px}
+  .card{background:linear-gradient(180deg,var(--card),#0e1830);
+    border:1px solid var(--line); border-radius:18px; padding:16px;
+    margin-bottom:14px; box-shadow:var(--shadow)}
+  .row{display:flex; align-items:center; gap:12px}
+  .between{justify-content:space-between}
+  .big{font-size:40px; font-weight:800; line-height:1; letter-spacing:-1px}
+  .unit{font-size:16px; color:var(--muted); font-weight:600}
+  .label{font-size:12px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); margin-bottom:6px}
+  .delta{font-weight:700; font-size:14px; padding:3px 9px; border-radius:999px}
+  .delta.down{background:rgba(52,211,153,.15); color:var(--good)}
+  .delta.up{background:rgba(251,113,133,.15); color:var(--bad)}
+  .delta.flat{background:rgba(141,163,201,.15); color:var(--muted)}
+  input,button{font-family:inherit}
+  input[type=number]{width:120px; background:#0a1326; border:1px solid var(--line);
+    color:var(--ink); font-size:24px; font-weight:700; border-radius:12px;
+    padding:12px 14px; text-align:center; outline:none}
+  input[type=number]:focus{border-color:var(--accent)}
+  .btn{border:0; border-radius:12px; padding:13px 16px; font-size:15px; font-weight:700;
+    cursor:pointer; background:var(--accent); color:#04212a}
+  .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:#0a1326; color:var(--ink); border:1px solid var(--line)}
+  .btn.wide{width:100%}
+  svg{display:block; width:100%; height:auto; touch-action:none}
+  .chips{display:flex; gap:8px; flex-wrap:wrap; margin-top:4px}
+  .chip{flex:1; min-width:140px; background:#0a1326; border:1px solid var(--line);
+    border-radius:14px; padding:12px; cursor:pointer; user-select:none;
+    display:flex; align-items:center; gap:10px; transition:.15s}
+  .chip .box{width:24px; height:24px; border-radius:8px; border:2px solid var(--line);
+    display:grid; place-items:center; font-size:14px; flex:none}
+  .chip.on{border-color:var(--accent2); background:rgba(52,211,153,.08)}
+  .chip.on .box{background:var(--accent2); border-color:var(--accent2); color:#04212a}
+  .chip .t{font-size:13px; line-height:1.2}
+  .chip .t small{color:var(--muted); display:block; font-size:11px; font-weight:500}
+  .stat{flex:1; text-align:center}
+  .stat .n{font-size:26px; font-weight:800}
+  .stat .l{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px}
+  .flame{font-size:22px}
+  .mini{font-size:12px; color:var(--muted)}
+  .goalbar{height:12px; background:#0a1326; border-radius:999px; overflow:hidden; border:1px solid var(--line)}
+  .goalfill{height:100%; background:linear-gradient(90deg,var(--accent2),var(--accent)); width:0%; transition:width .6s}
+  .legend{display:flex; gap:14px; font-size:11px; color:var(--muted); margin-top:8px; flex-wrap:wrap}
+  .dot{display:inline-block; width:10px; height:3px; border-radius:2px; vertical-align:middle; margin-right:5px}
+  dialog{border:0; background:transparent; padding:0; max-width:92vw}
+  dialog::backdrop{background:rgba(2,6,18,.7)}
+  .sheet{background:var(--card); border:1px solid var(--line); border-radius:18px; padding:18px; color:var(--ink); width:380px; max-width:90vw}
+  .quiet{color:var(--muted); font-size:13px; line-height:1.5}
+  .footnote{color:var(--muted); font-size:11px; text-align:center; margin-top:18px; line-height:1.5}
+  a{color:var(--accent)}
+  .pulse{animation:pulse 1.2s ease}
+  @keyframes pulse{0%{transform:scale(1)}40%{transform:scale(1.08)}100%{transform:scale(1)}}
+</style>
+</head>
+<body>
+
+<!-- PIN-Sperre (Tarnmodus) -->
+<div id="lock" style="display:none; position:fixed; inset:0; background:var(--bg); z-index:50;
+     display:none; place-items:center; padding:24px">
+  <div style="text-align:center; max-width:300px">
+    <div style="font-size:42px">🗓️</div>
+    <div style="font-weight:800; font-size:20px; margin:6px 0">Planer</div>
+    <p class="mini" id="lockHint">PIN eingeben</p>
+    <input id="pinIn" type="password" inputmode="numeric" maxlength="8" autocomplete="off"
+       style="width:160px; text-align:center; letter-spacing:8px; margin:8px 0"/>
+    <div id="pinErr" class="mini" style="color:var(--bad); height:16px"></div>
+  </div>
+</div>
+
+<div class="wrap" id="app">
+
+  <div class="row between">
+    <div>
+      <h1 id="appTitle">Leichter <span style="font-size:16px">📉</span></h1>
+      <p class="sub" id="appSub">Kein Kalorienzählen. Nur wiegen. Die Kurve macht den Rest.</p>
+    </div>
+    <button class="btn ghost" id="privacyBtn" title="Privatsphäre"
+      style="padding:8px 11px; font-size:16px; align-self:flex-start">🔒</button>
+  </div>
+
+  <!-- Gewicht heute -->
+  <div class="card">
+    <div class="label">Heute wiegen</div>
+    <div class="row between">
+      <div class="row" style="gap:10px">
+        <input id="w" type="number" inputmode="decimal" step="0.1" placeholder="kg" />
+        <button class="btn" id="save">Eintragen</button>
+      </div>
+      <div id="todayState" class="mini"></div>
+    </div>
+  </div>
+
+  <!-- Trendkurve – das Herzstück -->
+  <div class="card">
+    <div class="row between" style="margin-bottom:4px">
+      <div>
+        <div class="label" style="margin:0">Trend (geglättet)</div>
+        <div class="row" style="gap:10px; align-items:baseline">
+          <span class="big" id="trendVal">–</span><span class="unit">kg</span>
+          <span id="trendDelta" class="delta flat">–</span>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div class="mini" id="rangeLbl">letzte 30 Tage</div>
+        <button class="btn ghost" id="rangeBtn" style="padding:6px 10px; font-size:12px; margin-top:6px">30 T</button>
+      </div>
+    </div>
+    <svg id="chart" viewBox="0 0 560 240" preserveAspectRatio="none" aria-label="Gewichtsverlauf"></svg>
+    <div class="legend">
+      <span><span class="dot" style="background:#2b3d63"></span>tägliche Werte</span>
+      <span><span class="dot" style="background:var(--accent)"></span>Trend (wirklich wichtig)</span>
+      <span><span class="dot" style="background:var(--accent2)"></span>Ziel</span>
+    </div>
+  </div>
+
+  <!-- Ziel-Fortschritt -->
+  <div class="card">
+    <div class="row between" style="margin-bottom:8px">
+      <div class="label" style="margin:0">Weg zum Ziel</div>
+      <button class="btn ghost" id="goalBtn" style="padding:5px 9px; font-size:12px">⚙︎ Ziel</button>
+    </div>
+    <div class="goalbar"><div class="goalfill" id="goalFill"></div></div>
+    <div class="row between" style="margin-top:8px">
+      <span class="mini" id="goalStart">–</span>
+      <span class="mini" id="goalPct" style="color:var(--ink); font-weight:700"></span>
+      <span class="mini" id="goalTarget">–</span>
+    </div>
+  </div>
+
+  <!-- Flow-Frist: rollende, selbst-anpassende Etappe -->
+  <div class="card" id="flowCard" style="display:none">
+    <div class="row between" style="margin-bottom:8px">
+      <div class="label" style="margin:0">Flow-Frist · nächste Etappe</div>
+      <span id="flowCountdown" class="delta flat">–</span>
+    </div>
+    <div class="row between" style="align-items:flex-end">
+      <div>
+        <div class="row" style="gap:8px; align-items:baseline">
+          <span class="big" id="flowTarget" style="font-size:30px">–</span><span class="unit">kg</span>
+        </div>
+        <div class="mini" id="flowGap" style="margin-top:4px"></div>
+      </div>
+      <div style="text-align:right; max-width:55%">
+        <div id="flowMsg" class="mini" style="color:var(--ink); font-weight:600; line-height:1.35"></div>
+      </div>
+    </div>
+    <div class="goalbar" style="margin-top:12px"><div class="goalfill" id="flowFill" style="background:linear-gradient(90deg,var(--accent),#818cf8)"></div></div>
+    <div class="mini" style="margin-top:8px; line-height:1.4">
+      Sanftes Tempo: ~<span id="flowRate">0,5</span>&nbsp;kg/Woche. Die Etappe passt sich selbst an —
+      du wirst nie über- oder unterfordert. <a href="#" id="flowEase">langsamer</a> ·
+      <a href="#" id="flowPush">etwas mehr</a>
+    </div>
+  </div>
+
+  <!-- Streak + Tages-Häkchen -->
+  <div class="card">
+    <div class="row between">
+      <div class="stat"><div class="n"><span class="flame">🔥</span> <span id="streak">0</span></div><div class="l">Streak</div></div>
+      <div class="stat"><div class="n" id="logged">0</div><div class="l">Wiege-Tage</div></div>
+      <div class="stat"><div class="n" id="pts">0</div><div class="l">Punkte</div></div>
+    </div>
+    <div class="row between" style="margin-top:12px; margin-bottom:6px">
+      <span class="mini" style="color:var(--ink); font-weight:700">Level <span id="lvl">1</span> · <span id="lvlName">Starter</span></span>
+      <span class="mini" id="lvlNext"></span>
+    </div>
+    <div class="goalbar"><div class="goalfill" id="lvlFill" style="background:linear-gradient(90deg,#fbbf24,#fb7185)"></div></div>
+    <div style="height:1px; background:var(--line); margin:14px 0"></div>
+    <div class="label">Heute gewonnen?</div>
+    <div class="chips" id="habits"></div>
+  </div>
+
+  <!-- Heimliches Sixpack-Training: nur Körpergewicht, keine Anschaffung -->
+  <div class="card">
+    <div class="row between" style="margin-bottom:6px">
+      <div class="label" style="margin:0">Sixpack · heute (≈6 Min)</div>
+      <div class="stat" style="flex:none; text-align:right">
+        <div class="n" style="font-size:18px"><span class="flame">💪</span> <span id="wStreak">0</span></div>
+        <div class="l">Trainings-Streak</div>
+      </div>
+    </div>
+    <div class="mini" style="margin-bottom:10px; line-height:1.4">
+      Bauchmuskeln baust du hier auf — sehen wirst du sie, wenn die Trendkurve fällt.
+      Beides zusammen = Sixpack. Level <span id="wLevel">1</span>.
+    </div>
+    <div id="exList"></div>
+    <button class="btn wide" id="wDone" style="margin-top:12px">Training abhaken · +15</button>
+    <div id="wDoneState" class="mini" style="text-align:center; margin-top:8px"></div>
+
+    <div style="height:1px; background:var(--line); margin:14px 0"></div>
+    <div class="label">🤫 Heimlich im Alltag (sieht keiner)</div>
+    <ul class="quiet" style="margin:6px 0 0; padding-left:18px; line-height:1.7">
+      <li><b>Bauch-Vacuum:</b> Bauch tief einziehen, 10–15 Sek halten. Am Schreibtisch, im Auto, beim Zähneputzen — komplett unsichtbar, trifft die tiefe Bauchmuskulatur.</li>
+      <li><b>Anspannen &amp; halten:</b> An roten Ampeln / in Meetings Bauch fest anspannen, 20 Sek.</li>
+      <li><b>Treppe statt Aufzug</b> und beim Zähneputzen auf einem Bein stehen (Core stabilisiert mit).</li>
+    </ul>
+  </div>
+
+  <p class="footnote">
+    Alles bleibt lokal auf deinem Gerät — nichts wird hochgeladen.<br/>
+    Tipp: „Zum Home-Bildschirm hinzufügen“ → läuft wie eine echte App, auch offline.<br/>
+    <a href="#" id="exportLink">Daten exportieren</a> · <a href="#" id="resetLink">zurücksetzen</a>
+  </p>
+</div>
+
+<!-- Privatsphäre-Dialog -->
+<dialog id="privDlg">
+  <form method="dialog" class="sheet">
+    <div class="label">Privatsphäre &amp; Tarnmodus</div>
+    <p class="quiet" style="margin-top:0">Alle Daten liegen <b>nur auf diesem Gerät</b> — nichts wird hochgeladen, kein Konto, keine Cloud. Auf dem Homescreen heißt die App neutral „Planer“.</p>
+    <label class="row" style="gap:10px; margin:12px 0; cursor:pointer">
+      <input type="checkbox" id="tarnChk" style="width:20px;height:20px"/>
+      <span class="quiet" style="color:var(--ink)">Tarnmodus: App zeigt sich als neutraler „Planer“</span>
+    </label>
+    <label class="mini">PIN-Sperre (leer = aus)</label><br/>
+    <input id="pinSet" type="password" inputmode="numeric" maxlength="8" autocomplete="off"
+       placeholder="z. B. 1234" style="width:100%; margin:6px 0 16px; letter-spacing:6px; text-align:center"/><br/>
+    <div class="row" style="gap:10px">
+      <button class="btn ghost" value="cancel" style="flex:1">Abbrechen</button>
+      <button class="btn" id="privSave" value="ok" style="flex:1">Speichern</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Ziel-Dialog -->
+<dialog id="goalDlg">
+  <form method="dialog" class="sheet">
+    <div class="label">Dein Ziel festlegen</div>
+    <p class="quiet" style="margin-top:0">Faustregel: ein realistisches Tempo sind ~0,5&nbsp;kg pro Woche. 15&nbsp;kg dauern also grob 7–8&nbsp;Monate — und das ist völlig okay. Der Trend zählt, nicht das Tempo.</p>
+    <label class="mini">Startgewicht (kg)</label><br/>
+    <input id="gStart" type="number" step="0.1" inputmode="decimal" style="width:100%; margin:6px 0 12px"/><br/>
+    <label class="mini">Zielgewicht (kg)</label><br/>
+    <input id="gTarget" type="number" step="0.1" inputmode="decimal" style="width:100%; margin:6px 0 16px"/><br/>
+    <div class="row" style="gap:10px">
+      <button class="btn ghost" value="cancel" style="flex:1">Abbrechen</button>
+      <button class="btn" id="gSave" value="ok" style="flex:1">Speichern</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const DAY = 86400000;
+const today = () => { const d = new Date(); d.setHours(0,0,0,0); return d.getTime(); };
+const fmtKg = n => (Math.round(n*10)/10).toFixed(1);
+const dayKey = t => new Date(t).toISOString().slice(0,10);
+
+// ---------- Storage ----------
+const KEY = "leichter.v1";
+const defaults = { entries:{}, habits:{}, goal:null, points:0, ranges:[30,90,365], rangeIdx:0,
+  flowRate:0.5, checkpoint:null /* {set,date,startW,target} */,
+  workouts:{}, pin:"", tarn:false };
+let S = load();
+function load(){ try{ return Object.assign({}, defaults, JSON.parse(localStorage.getItem(KEY)||"{}")); }catch(e){ return {...defaults}; } }
+function save(){ localStorage.setItem(KEY, JSON.stringify(S)); }
+
+// entries: { "YYYY-MM-DD": weight }   habits: { "YYYY-MM-DD": {water:bool,nosnack:bool,move:bool} }
+const HABITS = [
+  {id:"water",  emo:"💧", t:"Wasser vor dem Essen", s:"3× Glas vorweg"},
+  {id:"nosnack",emo:"🌙", t:"Kein Snack nach 21 Uhr", s:"Küche zu"},
+  {id:"move",   emo:"👟", t:"10 Min bewegt", s:"Spaziergang zählt"},
+];
+
+// ---------- Trend (exponentiell geglättet) ----------
+function sortedEntries(){
+  return Object.entries(S.entries).map(([d,w])=>({t:Date.parse(d), w})).sort((a,b)=>a.t-b.t);
+}
+function emaSeries(arr, alpha=0.25){
+  let ema=null; return arr.map(p=>{ ema = ema==null ? p.w : alpha*p.w + (1-alpha)*ema; return {t:p.t, w:p.w, ema}; });
+}
+
+// ---------- Render ----------
+function render(){
+  const arr = emaSeries(sortedEntries());
+  const tk = dayKey(today());
+
+  // today's weight field state
+  if(S.entries[tk]!=null){
+    $("#todayState").innerHTML = `heute: <b style="color:var(--ink)">${fmtKg(S.entries[tk])} kg</b> ✓`;
+    if(!$("#w").value) $("#w").value = S.entries[tk];
+  } else {
+    $("#todayState").textContent = "noch nicht gewogen";
+  }
+
+  // trend headline
+  if(arr.length){
+    const cur = arr[arr.length-1].ema;
+    $("#trendVal").textContent = fmtKg(cur);
+    // delta vs 7 days ago (trend), fallback to first
+    const wk = arr.filter(p=>p.t <= today()-7*DAY);
+    const ref = wk.length ? wk[wk.length-1].ema : arr[0].ema;
+    const d = cur - ref;
+    const el = $("#trendDelta");
+    if(Math.abs(d) < 0.05){ el.className="delta flat"; el.textContent="±0,0 kg / Woche"; }
+    else if(d < 0){ el.className="delta down"; el.textContent=`▼ ${fmtKg(Math.abs(d))} kg / Woche`; }
+    else { el.className="delta up"; el.textContent=`▲ ${fmtKg(d)} kg / Woche`; }
+  } else {
+    $("#trendVal").textContent = "–";
+    $("#trendDelta").className="delta flat"; $("#trendDelta").textContent="trag dein erstes Gewicht ein";
+  }
+
+  drawChart(arr);
+  renderGoal(arr);
+  ensureCheckpoint(arr);
+  renderFlow(arr);
+  renderStreak(arr);
+  renderLevel();
+  renderHabits(tk);
+  renderWorkout();
+}
+
+// ---------- Flow-Frist: rollende, selbst-anpassende Etappe (kein Druck) ----------
+function ensureCheckpoint(arr){
+  if(!arr.length || !S.goal){ return; }
+  const cur = arr[arr.length-1].ema, t = today();
+  if(cur <= S.goal.target + 0.05){ S.checkpoint = null; return; } // grosses Ziel erreicht
+  const fresh = ()=>{
+    const tgt = Math.max(S.goal.target, Math.round((cur - S.flowRate*2)*10)/10);
+    S.checkpoint = { set:t, date:t + 14*DAY, startW:cur, target:tgt };
+  };
+  const cp = S.checkpoint;
+  if(!cp){ fresh(); save(); return; }
+  if(cur <= cp.target + 0.001){ S.points += 30; fresh(); save(); return; } // erreicht -> Belohnung + neue Etappe
+  if(t > cp.date){ fresh(); save(); return; } // abgelaufen -> sanfter Neustart, keine Strafe
+}
+function renderFlow(arr){
+  const card = $("#flowCard");
+  if(!S.checkpoint || !arr.length){ card.style.display="none"; return; }
+  card.style.display="";
+  const cp = S.checkpoint, cur = arr[arr.length-1].ema;
+  $("#flowTarget").textContent = fmtKg(cp.target);
+  const daysLeft = Math.max(0, Math.ceil((cp.date - today())/DAY));
+  $("#flowCountdown").className = "delta flat";
+  $("#flowCountdown").textContent = daysLeft<=0 ? "heute" : `noch ${daysLeft} Tage`;
+  const gap = cur - cp.target;
+  const span = cp.startW - cp.target;
+  const prog = span>0 ? Math.max(0,Math.min(100,(cp.startW-cur)/span*100)) : 100;
+  $("#flowFill").style.width = prog+"%";
+  $("#flowGap").textContent = gap>0.05 ? `noch ${fmtKg(gap)} kg` : "Etappe erreicht 🎉";
+  $("#flowRate").textContent = fmtKg(S.flowRate).replace(".",",");
+  let msg;
+  if(gap<=0.05) msg = "Stark — Etappe geschafft! 🎉 +30 Punkte";
+  else if(prog>=66) msg = "Voll im Flow. Läuft. 🌊";
+  else if(prog>=25) msg = "Guter Rhythmus — einfach dranbleiben.";
+  else if(daysLeft<=3) msg = "Kein Stress: was jetzt nicht klappt, wird die nächste Etappe.";
+  else msg = "Locker angehen — kleine Schritte zählen.";
+  $("#flowMsg").textContent = msg;
+}
+
+// ---------- Sixpack-Training (Körpergewicht, progressiv) ----------
+const EXERCISES = [
+  {emo:"🫥", t:"Bauch-Vacuum", base:3, unit:"× 12 Sek halten", per:0},
+  {emo:"🪵", t:"Plank", base:25, unit:"Sek", per:8},
+  {emo:"⬆️", t:"Beinheben (liegend)", base:8, unit:"Wdh", per:3},
+  {emo:"🚲", t:"Käfer / Bicycle", base:12, unit:"Wdh", per:4},
+  {emo:"🟰", t:"Crunches", base:12, unit:"Wdh", per:5},
+  {emo:"🧎", t:"Dead Bug", base:8, unit:"Wdh", per:3},
+];
+function workoutCount(){ return Object.keys(S.workouts).length; }
+function workoutLevel(){ return Math.floor(workoutCount()/8)+1; } // alle 8 Sessions ein Level
+function workoutStreak(){
+  let n=0, t=today();
+  if(!S.workouts[dayKey(t)]) t-=DAY; // gestern reicht, um die Serie zu halten
+  while(S.workouts[dayKey(t)]){ n++; t-=DAY; }
+  return n;
+}
+function renderWorkout(){
+  const lvl = workoutLevel();
+  $("#wLevel").textContent = lvl;
+  $("#wStreak").textContent = workoutStreak();
+  const list = $("#exList"); list.innerHTML="";
+  for(const e of EXERCISES){
+    const reps = e.base + e.per*(lvl-1);
+    const row=document.createElement("div");
+    row.className="row"; row.style.padding="7px 0";
+    row.innerHTML = `<span style="font-size:18px; width:26px">${e.emo}</span>
+      <span style="flex:1; font-size:14px">${e.t}</span>
+      <span style="font-weight:700; font-size:14px">${e.base===3&&e.per===0?"3 × 12 Sek":reps+" "+e.unit}</span>`;
+    list.appendChild(row);
+  }
+  const tk = dayKey(today());
+  const done = !!S.workouts[tk];
+  $("#wDone").textContent = done ? "Heute erledigt ✓" : "Training abhaken · +15";
+  $("#wDone").classList.toggle("ghost", done);
+  $("#wDoneState").textContent = done ? "Stark. Morgen die nächste Runde." : "";
+}
+$("#wDone").onclick = ()=>{
+  const tk = dayKey(today());
+  if(S.workouts[tk]){ S.workouts[tk]=false; delete S.workouts[tk]; S.points=Math.max(0,S.points-15); }
+  else { S.workouts[tk]=true; S.points += 15; }
+  save(); render();
+  $("#wStreak").classList.add("pulse"); setTimeout(()=>$("#wStreak").classList.remove("pulse"),600);
+};
+
+// ---------- Level ----------
+const LVL_NAMES = ["Starter","Dranbleiber","Gewohnheitstier","Flow-Finder","Trendsetter",
+  "Leichtmatrose","Schweinehund-Bändiger","Eisern locker","Federgewicht"];
+function levelFor(pts){
+  const lvl = Math.floor(pts/100)+1;
+  return { lvl, name: LVL_NAMES[Math.min(lvl-1, LVL_NAMES.length-1)], into: pts%100 };
+}
+function renderLevel(){
+  const L = levelFor(S.points);
+  $("#lvl").textContent = L.lvl;
+  $("#lvlName").textContent = L.name;
+  $("#lvlFill").style.width = L.into+"%";
+  $("#lvlNext").textContent = `${100-L.into} P bis Level ${L.lvl+1}`;
+}
+
+function drawChart(arr){
+  const W=560,H=240, pad={l:8,r:8,t:14,b:18};
+  const svg=$("#chart"); svg.innerHTML="";
+  const days = S.ranges[S.rangeIdx];
+  const from = today()-(days-1)*DAY;
+  const pts = arr.filter(p=>p.t>=from);
+  $("#rangeLbl").textContent = `letzte ${days} Tage`;
+  if(pts.length===0){
+    svg.innerHTML = `<text x="280" y="120" fill="#5b6f96" font-size="14" text-anchor="middle">Noch keine Daten — los, wieg dich!</text>`;
+    return;
+  }
+  // y-domain from raw + ema + goal
+  let vals = pts.flatMap(p=>[p.w,p.ema]);
+  if(S.goal){ vals.push(S.goal.target); }
+  let min=Math.min(...vals), max=Math.max(...vals);
+  if(max-min < 1){ min-=0.6; max+=0.6; }
+  const padV=(max-min)*0.12; min-=padV; max+=padV;
+  const x = t => pad.l + (pts.length===1?0.5:(t-from)/((days-1)*DAY))*(W-pad.l-pad.r);
+  const y = v => pad.t + (1-(v-min)/(max-min))*(H-pad.t-pad.b);
+
+  let out="";
+  // gridlines
+  for(let i=0;i<=3;i++){ const gy=pad.t+i*(H-pad.t-pad.b)/3; const gv=max-(max-min)*i/3;
+    out+=`<line x1="${pad.l}" y1="${gy.toFixed(1)}" x2="${W-pad.r}" y2="${gy.toFixed(1)}" stroke="#16233f" stroke-width="1"/>`;
+    out+=`<text x="${W-pad.r}" y="${(gy-3).toFixed(1)}" text-anchor="end" font-size="9" fill="#4b5f87">${fmtKg(gv)}</text>`;
+  }
+  // goal line
+  if(S.goal){ const gy=y(S.goal.target);
+    out+=`<line x1="${pad.l}" y1="${gy.toFixed(1)}" x2="${W-pad.r}" y2="${gy.toFixed(1)}" stroke="#34d399" stroke-width="1.5" stroke-dasharray="5 5" opacity="0.8"/>`;
+  }
+  // raw dots
+  for(const p of pts){ out+=`<circle cx="${x(p.t).toFixed(1)}" cy="${y(p.w).toFixed(1)}" r="2.2" fill="#2b3d63"/>`; }
+  // ema area + line
+  const line = pts.map((p,i)=>`${i?'L':'M'}${x(p.t).toFixed(1)},${y(p.ema).toFixed(1)}`).join(" ");
+  const area = `${line} L${x(pts[pts.length-1].t).toFixed(1)},${H-pad.b} L${x(pts[0].t).toFixed(1)},${H-pad.b} Z`;
+  out+=`<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#22d3ee" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#22d3ee" stop-opacity="0"/></linearGradient></defs>`;
+  out+=`<path d="${area}" fill="url(#g)"/>`;
+  out+=`<path d="${line}" fill="none" stroke="#22d3ee" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>`;
+  // last point marker
+  const last=pts[pts.length-1];
+  out+=`<circle cx="${x(last.t).toFixed(1)}" cy="${y(last.ema).toFixed(1)}" r="4.5" fill="#22d3ee" stroke="#04212a" stroke-width="2"/>`;
+  svg.innerHTML=out;
+}
+
+function renderGoal(arr){
+  if(!S.goal || !arr.length){
+    $("#goalFill").style.width="0%";
+    $("#goalStart").textContent = S.goal? fmtKg(S.goal.start)+" kg" : "kein Ziel gesetzt";
+    $("#goalTarget").textContent = S.goal? fmtKg(S.goal.target)+" kg" : "";
+    $("#goalPct").textContent = "";
+    return;
+  }
+  const cur = arr[arr.length-1].ema;
+  const total = S.goal.start - S.goal.target;
+  const done = S.goal.start - cur;
+  const pct = total>0 ? Math.max(0,Math.min(100, done/total*100)) : 0;
+  $("#goalFill").style.width = pct+"%";
+  $("#goalStart").textContent = fmtKg(S.goal.start)+" kg";
+  $("#goalTarget").textContent = "🎯 "+fmtKg(S.goal.target)+" kg";
+  const left = Math.max(0, cur - S.goal.target);
+  $("#goalPct").textContent = `${Math.round(pct)} % · noch ${fmtKg(left)} kg`;
+}
+
+function streakCount(){
+  // consecutive days (ending today or yesterday) with a weigh-in
+  let n=0; let t=today();
+  if(S.entries[dayKey(t)]==null) t-=DAY; // grace: streak alive if yesterday logged
+  while(S.entries[dayKey(t)]!=null){ n++; t-=DAY; }
+  return n;
+}
+function renderStreak(arr){
+  $("#streak").textContent = streakCount();
+  $("#logged").textContent = Object.keys(S.entries).length;
+  $("#pts").textContent = S.points;
+}
+
+function renderHabits(tk){
+  const wrap=$("#habits"); wrap.innerHTML="";
+  const state = S.habits[tk] || {};
+  for(const h of HABITS){
+    const on = !!state[h.id];
+    const div=document.createElement("div");
+    div.className="chip"+(on?" on":"");
+    div.innerHTML=`<div class="box">${on?"✓":""}</div><div class="t">${h.emo} ${h.t}<small>${h.s}</small></div>`;
+    div.onclick=()=>toggleHabit(tk,h.id,div);
+    wrap.appendChild(div);
+  }
+}
+function toggleHabit(tk,id,el){
+  const s = S.habits[tk] || (S.habits[tk]={});
+  s[id]=!s[id];
+  S.points += s[id] ? 5 : -5;
+  if(S.points<0) S.points=0;
+  save();
+  el.classList.add("pulse");
+  setTimeout(()=>el.classList.remove("pulse"),600);
+  render();
+}
+
+// ---------- Actions ----------
+$("#save").onclick = ()=>{
+  const v = parseFloat(($("#w").value||"").replace(",","."));
+  if(!isFinite(v) || v<=0 || v>400){ $("#w").focus(); return; }
+  const tk = dayKey(today());
+  const isNew = S.entries[tk]==null;
+  S.entries[tk]=v;
+  if(isNew) S.points += 10; // wiegen = 10 Punkte
+  if(!S.goal){ // first weigh-in seeds the goal (start, -15 kg as default)
+    S.goal = { start:v, target: Math.round((v-15)*10)/10 };
+  }
+  save(); render();
+  $("#trendVal").classList.add("pulse");
+  setTimeout(()=>$("#trendVal").classList.remove("pulse"),600);
+};
+$("#w").addEventListener("keydown",e=>{ if(e.key==="Enter") $("#save").click(); });
+
+$("#rangeBtn").onclick = ()=>{
+  S.rangeIdx = (S.rangeIdx+1)%S.ranges.length;
+  $("#rangeBtn").textContent = S.ranges[S.rangeIdx]>=365 ? "1 J" : S.ranges[S.rangeIdx]+" T";
+  save(); render();
+};
+
+$("#goalBtn").onclick = ()=>{
+  $("#gStart").value = S.goal? S.goal.start : "";
+  $("#gTarget").value = S.goal? S.goal.target : "";
+  $("#goalDlg").showModal();
+};
+$("#gSave").onclick = (e)=>{
+  const st=parseFloat(($("#gStart").value||"").replace(",",".")),
+        tg=parseFloat(($("#gTarget").value||"").replace(",","."));
+  if(isFinite(st)&&isFinite(tg)&&tg>0&&tg<st){ S.goal={start:st,target:tg}; save(); }
+  setTimeout(render,0);
+};
+
+$("#flowEase").onclick = (e)=>{ e.preventDefault();
+  S.flowRate = Math.max(0.25, Math.round((S.flowRate-0.1)*100)/100); S.checkpoint=null; save(); render(); };
+$("#flowPush").onclick = (e)=>{ e.preventDefault();
+  S.flowRate = Math.min(0.75, Math.round((S.flowRate+0.1)*100)/100); S.checkpoint=null; save(); render(); };
+
+$("#exportLink").onclick = (e)=>{
+  e.preventDefault();
+  const blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download="leichter-export.json"; a.click();
+};
+$("#resetLink").onclick = (e)=>{
+  e.preventDefault();
+  if(confirm("Wirklich alle Daten löschen? Das kann nicht rückgängig gemacht werden.")){
+    localStorage.removeItem(KEY); S=load(); $("#w").value=""; render();
+  }
+};
+
+// ---------- Tarnmodus & PIN ----------
+function applyTarn(){
+  if(S.tarn){
+    document.title = "Planer";
+    $("#appTitle").innerHTML = 'Planer <span style="font-size:16px">🗓️</span>';
+    $("#appSub").textContent = "Deine private Wochenübersicht.";
+  } else {
+    document.title = "Leichter — dein Anti-Schweinehund";
+    $("#appTitle").innerHTML = 'Leichter <span style="font-size:16px">📉</span>';
+    $("#appSub").textContent = "Kein Kalorienzählen. Nur wiegen. Die Kurve macht den Rest.";
+  }
+}
+function lockApp(){
+  if(!S.pin) return;
+  $("#app").style.display="none";
+  const lock=$("#lock"); lock.style.display="grid";
+  const inp=$("#pinIn"); inp.value=""; $("#pinErr").textContent="";
+  setTimeout(()=>inp.focus(),100);
+  inp.oninput=()=>{
+    if(inp.value.length>=S.pin.length){
+      if(inp.value===S.pin){ lock.style.display="none"; $("#app").style.display=""; }
+      else { $("#pinErr").textContent="Falsche PIN"; inp.value=""; }
+    }
+  };
+}
+$("#privacyBtn").onclick = ()=>{
+  $("#tarnChk").checked = !!S.tarn;
+  $("#pinSet").value = S.pin || "";
+  $("#privDlg").showModal();
+};
+$("#privSave").onclick = ()=>{
+  S.tarn = $("#tarnChk").checked;
+  S.pin = ($("#pinSet").value||"").replace(/\D/g,"").slice(0,8);
+  save();
+  setTimeout(()=>{ applyTarn(); },0);
+};
+
+// ---------- Boot ----------
+$("#rangeBtn").textContent = S.ranges[S.rangeIdx]>=365 ? "1 J" : S.ranges[S.rangeIdx]+" T";
+applyTarn();
+render();
+lockApp();
+if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").catch(()=>{}); }
+</script>
+</body>
+</html>
