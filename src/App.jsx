@@ -17991,6 +17991,10 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
             <Row title="Anwesenheit sichtbar für Eltern" sub="Wer hat abgestimmt">
               <Toggle val={S("showAttendance",false)} onChange={v=>saveSetting("showAttendance",v)}/>
             </Row>
+            <Row title="Spieler je Betreuer" sub="Standard-Betreuer-Schlüssel – daraus wird der Trainer-/Betreuer-Bedarf je Termin berechnet">
+              <Select value={String(S("playersPerStaff",6))} onChange={v=>saveSetting("playersPerStaff",Number(v))}
+                opts={[["5","5"],["6","6"],["7","7"],["8","8"],["10","10"]]}/>
+            </Row>
             <Row title="Vergangene Termine anzeigen" sub="Wie viele Tage zurück">
               <Select value={S("pastDays",30)} onChange={v=>saveSetting("pastDays",Number(v))}
                 opts={[["7","7 Tage"],["14","14 Tage"],["30","30 Tage"],["60","60 Tage"],["90","90 Tage"]]}/>
@@ -28081,7 +28085,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               if(sec>0) todos.push({label:"Sicherheit",col:"#dc2626",bg:"#fee2e2",title:`${sec} Sicherheits-Hinweis${sec>1?"e":""}`,sub:"prüfen",onClick:()=>setTab("security")});
             } else {
             (local.events||[]).filter(e=>myTids.includes(e.tid)).forEach(e=>{
-              eventWarnings(e,tod).forEach(x=>todos.push({ev:e,label:x.label,col:x.col,bg:x.bg}));
+              eventWarnings(e,tod,{ perStaff:myClub?.clubSettings?.playersPerStaff||6, trainers:(local.trainers||[]).filter(trn=>(trn.tids||[]).includes(e.tid)&&isActive(trn)).length, squad:(local.playerProfiles||[]).filter(pp=>pp.mainTid===e.tid&&!pp.archived).length }).forEach(x=>todos.push({ev:e,label:x.label,col:x.col,bg:x.bg}));
               if(["heimspiel","auswarts","freundschaft"].includes(e.type)&&e.date<tod&&e.date>=addD(tod,-21)&&!(e.report&&e.report.ts)) todos.push({ev:e,label:"Spielbericht eintragen",col:"#2563eb",bg:"#eff6ff"});
               if(trainingOn&&e.type==="training"&&e.date>=tod&&e.date<=addD(tod,10)&&!e.trainingId&&!e.trainingPlan) todos.push({ev:e,label:"Trainingsplan fehlt",col:"#7c3aed",bg:"#ede9fe"});
             });
@@ -28248,6 +28252,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               <div style={{textAlign:"center",fontSize:12.5,color:"#64748b",padding:"6px"}}>Info-Termin – keine Abstimmung, keine Anwesenheits-Auswertung.</div>
             </div>
           : <VoteOverview ev={viewEv} players={local.players} teams={local.teams} myTids={myTids} cl={myClub}
+              staff={staffNeed(viewEv,{ perStaff:myClub?.clubSettings?.playersPerStaff||6, trainers:(local.trainers||[]).filter(trn=>(trn.tids||[]).includes(viewEv.tid)&&isActive(trn)).length, squad:(local.playerProfiles||[]).filter(pp=>pp.mainTid===viewEv.tid&&!pp.archived).length })}
               onSetDeadline={deadline=>{
                 save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,deadline}:e)});
                 setViewEv(prev=>({...prev,deadline}));
@@ -28317,6 +28322,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         ))}
         {viewEv.type==="training"&&(
           <StaffingBoard ev={viewEv} team={(local.teams||[]).find(tm=>tm.id===viewEv.tid)} session={session} isHelper={isHelper}
+            assignedTrainers={(local.trainers||[]).filter(trn=>(trn.tids||[]).includes(viewEv.tid)&&isActive(trn)).length}
+            perStaff={myClub?.clubSettings?.playersPerStaff||6}
             onPatch={patch=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,...patch}:e)}); setViewEv(prev=>({...prev,...patch})); }}
             fire={fire}/>
         )}
@@ -28647,8 +28654,9 @@ function PlaytimeTracker({ ev, roster, onSave, t }){
     </div>
   );
 }
-function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline,onSetPresent=()=>{},onSetGuests=()=>{}}) {
+function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline,onSetPresent=()=>{},onSetGuests=()=>{},staff=null}) {
   const p = cl?.pri||"#16a34a";
+  const isGameEv = ["heimspiel","auswarts","freundschaft","turnier"].includes(ev.type);
   const present = ev.present||{};
   const guests = ev.guests||[];
   const [guestName,setGuestName] = useState("");
@@ -28705,6 +28713,18 @@ function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline,onSetPresent=()=
           </div>
         ))}
       </div>
+
+      {/* Betreuer-Bedarf bei Spielen (Training hat dafür die Betreuung-Sektion) */}
+      {isGameEv&&staff&&staff.required>0&&(
+        <div style={{display:"flex",alignItems:"center",gap:10,background:staff.ok?"#f0fdf4":"#fffbeb",border:`1.5px solid ${staff.ok?"#bbf7d0":"#fde68a"}`,borderRadius:13,padding:"11px 14px",marginBottom:16}}>
+          <span style={{fontSize:18}}>👥</span>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontWeight:800,fontSize:13.5,color:staff.ok?"#166534":"#92400e"}}>Betreuer {staff.avail}/{staff.required} · {staff.ok?"reicht":"reicht nicht"}</div>
+            <div style={{fontSize:11.5,color:"#64748b",marginTop:1}}>~{staff.expected} Spieler · {staff.perStaff} je Betreuer</div>
+          </div>
+          <span style={{fontSize:12.5,fontWeight:800,color:staff.ok?"#15803d":"#b45309",background:staff.ok?"#dcfce7":"#fef3c7",borderRadius:99,padding:"3px 10px"}}>{staff.ok?"✓":`+${staff.required-staff.avail}`}</span>
+        </div>
+      )}
 
       {/* Verspätungen - prominent für Trainer */}
       {lateArrivals.length>0&&(
@@ -28904,7 +28924,18 @@ function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline,onSetPresent=()=
 }
 
 // Modulübergreifende Auto-Hinweise pro Termin (für Trainer/Admin).
-function eventWarnings(ev, tod){
+// Betreuer-Bedarf: benötigte Trainer/Betreuer aus der erwarteten Spielerzahl.
+// Standard 6 Spieler je Betreuer (einstellbar, sinnvoll 6–8). Verfügbar = zugeteilte
+// Trainer bzw. eingecheckte Trainer (das Größere) + zugesagte Helfer.
+const staffNeed = (ev, { perStaff=6, trainers=0, squad=0 }={}) => {
+  const ps = Math.max(1, Number(perStaff)||6);
+  const yes = Object.values(ev.votes||{}).filter(v=>(typeof v==="object"?v.val:v)==="yes").length;
+  const expected = yes>0 ? yes : (ev.sollPlayers||squad||0);
+  const required = expected>0 ? Math.max(1, Math.ceil(expected/ps)) : 0;
+  const avail = Math.max(Object.keys(ev.trainerPresence||{}).length, trainers||0) + (ev.helperOffers||[]).length;
+  return { expected, required, avail, perStaff:ps, ok: required===0 || avail>=required };
+};
+function eventWarnings(ev, tod, ctx={}){
   const w=[];
   if(!ev || isEventPast(ev)) return w;
   const days = ev.date ? Math.round((new Date(ev.date+"T12:00:00")-new Date(tod+"T12:00:00"))/86400000) : 99;
@@ -28925,11 +28956,11 @@ function eventWarnings(ev, tod){
   // Nach Ablauf der Frist hat sich noch jemand ab-/angemeldet -> Trainer informieren.
   { const lateN=(ev.lateCancellations||[]).length + Object.values(ev.votes||{}).filter(v=>typeof v==="object"&&v&&v.lateChange&&v.val!=="no").length;
     if(lateN>0) w.push({label:`Nach Frist: ${lateN} Änderung${lateN>1?"en":""}`,col:"#b45309",bg:"#ffedd5"}); }
-  if(ev.type==="training" && days<=2){
-    const size=yes||ev.sollPlayers||7; const target=ev.staffTarget||(size>10?3:2);
-    const tc=Object.keys(ev.trainerPresence||{}).length;
-    const ist=tc+Math.min((ev.helperOffers||[]).length, Math.max(0,target-tc));
-    if(ist<target) w.push({label:`Betreuer ${ist}/${target}`,col:"#d97706",bg:"#fef3c7"});
+  // Betreuer reichen? (Training + Spiele) – nötige Trainer aus Spielerzahl/Betreuer-Schlüssel.
+  // Nur wenn die Trainer-Anzahl bekannt ist (ctx.trainers) – sonst kein Fehlalarm auf der Event-Zeile.
+  if((ev.type==="training"||isGame) && days<=10 && ctx.trainers!=null){
+    const sn=staffNeed(ev, ctx);
+    if(sn.required>0 && !sn.ok) w.push({label:`Betreuer ${sn.avail}/${sn.required}`,col:"#d97706",bg:"#fef3c7"});
   }
   if(ev.type==="auswarts" && days<=4){
     const cp=ev.carpool||{};
@@ -29101,7 +29132,7 @@ function DrillInfoModal({ drill, t, onClose }){
 }
 function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSelfVote,onRemind,onPlan,planTitle}) {
   const eT=ET[ev.type]||ET.training; const tF=ev.date===tod; const p=cl?.pri||"#16a34a";
-  const warns=eventWarnings(ev,tod);
+  const warns=eventWarnings(ev,tod,{ perStaff:cl?.clubSettings?.playersPerStaff||6 });
   const _v=ev.votes||{};
   const vc=Object.keys(_v).length;
   const yes=ev.pt==="att"?Object.values(_v).filter(v=>(typeof v==="object"?v.val:v)==="yes").length:0;
@@ -30695,14 +30726,17 @@ const LINEUP_LINES = [["T","Tor"],["A","Abwehr"],["M","Mittelfeld"],["S","Angrif
 // Schnell-Spielbericht: Ergebnis + Torschützen + Notiz, in Sekunden nach dem Spiel.
 // Betreuung/Staffing fürs Training: Soll 2–3 je nach Größe, Trainer haben Vorrang,
 // Helfer füllen nur die Lücke (wer zuerst kommt) – Rest auf die Warteliste.
-function StaffingBoard({ ev, team, session, isHelper, onPatch, fire, onRequestHelpers }){
+function StaffingBoard({ ev, team, session, isHelper, onPatch, fire, onRequestHelpers, assignedTrainers=0, perStaff=6 }){
   const { tr } = useT();
   const role=session?.role; const isManager=role==="trainer"||role==="admin";
   const yes=Object.entries(ev.votes||{}).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").length;
   const size=yes||ev.sollPlayers||defaultSollPlayers(team?.cat)||7;
-  const target=ev.staffTarget||(size>10?3:2);
+  const ps=Math.max(1,Number(perStaff)||6);
+  const reqDefault=Math.max(1,Math.ceil(size/ps));         // Standard-Soll aus Spielerzahl/Schlüssel
+  const target=ev.staffTarget||reqDefault;
   const trainers=Object.values(ev.trainerPresence||{});
-  const trainerCount=trainers.length;
+  const checkinCount=trainers.length;
+  const trainerCount=Math.max(checkinCount, assignedTrainers); // zugeteilte Trainer zählen mit (auch ohne Check-in)
   const offers=(ev.helperOffers||[]).slice().sort((a,b)=>(a.ts||"").localeCompare(b.ts||""));
   const gap=Math.max(0,target-trainerCount);
   const confirmed=offers.slice(0,gap);
@@ -30727,7 +30761,7 @@ function StaffingBoard({ ev, team, session, isHelper, onPatch, fire, onRequestHe
       </div>
       {isManager&&(
         <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-          <span style={{fontSize:12,color:"#64748b",fontWeight:600,flex:1}}>Soll-Betreuer (je nach Größe)</span>
+          <span style={{fontSize:12,color:"#64748b",fontWeight:600,flex:1}}>Soll-Betreuer (~{size} Spieler · {ps}/Betreuer)</span>
           <button onClick={()=>setTarget(-1)} style={{width:28,height:28,borderRadius:8,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:900,cursor:"pointer"}}>−</button>
           <span style={{minWidth:20,textAlign:"center",fontWeight:900,fontSize:15}}>{target}</span>
           <button onClick={()=>setTarget(1)} style={{width:28,height:28,borderRadius:8,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:900,cursor:"pointer"}}>+</button>
@@ -30735,6 +30769,7 @@ function StaffingBoard({ ev, team, session, isHelper, onPatch, fire, onRequestHe
       )}
       <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:8}}>
         {trainers.map((tr,i)=><Chip key={"t"+i} name={tr.name||"Trainer"} sub="Trainer" col="#16a34a"/>)}
+        {assignedTrainers>checkinCount&&<span style={{display:"flex",alignItems:"center",gap:5,background:"#f0fdf4",borderRadius:99,padding:"3px 11px",border:"1.5px solid #bbf7d0",fontSize:12.5,fontWeight:700,color:"#166534"}}>👥 {assignedTrainers} Trainer im Team</span>}
         {confirmed.map(o=><span key={o.id} style={{display:"flex",alignItems:"center",gap:5,background:"#fff",borderRadius:99,padding:"3px 9px 3px 3px",border:"1.5px solid #d97706"}}><Av name={o.name} sz={20}/><span style={{fontSize:12.5,fontWeight:700,color:"#0f172a"}}>{o.name} <span style={{fontWeight:600,color:"#64748b"}}>· Helfer</span></span>{isManager&&<span onClick={()=>removeOffer(o.id)} style={{color:"#dc2626",fontWeight:800,fontSize:12,cursor:"pointer"}}>×</span>}</span>)}
         {trainerCount+confirmed.length===0&&<span style={{fontSize:12.5,color:"#64748b"}}>Noch niemand eingeteilt.</span>}
       </div>
