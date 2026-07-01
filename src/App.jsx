@@ -18038,6 +18038,17 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
             </Row>
           </div>
           <div style={card}>
+            <Row title="No-Show-Hinweis aktiv" sub="Trainer kann bei wiederholtem „zugesagt, nicht erschienen“ einen Eltern-Hinweis auslösen">
+              <Toggle val={S("noShowEnabled",true)} onChange={v=>saveSetting("noShowEnabled",v)}/>
+            </Row>
+            {S("noShowEnabled",true)&&(
+              <Row title="No-Show-Schwelle" sub="Ab wie vielen No-Shows die Entscheidung erscheint" last>
+                <Select value={String(S("noShowThreshold",2))} onChange={v=>saveSetting("noShowThreshold",Number(v))}
+                  opts={[["1","1"],["2","2"],["3","3"],["4","4"],["5","5"]]}/>
+              </Row>
+            )}
+          </div>
+          <div style={card}>
             <div style={{fontWeight:800,fontSize:14,color:"#0f172a",marginBottom:4}}>🚗 Fahrgemeinschaft – Vorlage</div>
             <div style={{fontSize:12,color:"#64748b",marginBottom:12,lineHeight:1.45}}>Standard-Beschriftung der drei Optionen für alle neuen Spiele. Pro Termin lässt sich das beim Anlegen überschreiben. Die Funktion (Sitzplätze, Abholort) bleibt immer gleich.</div>
             {(()=>{ const cur={...CARPOOL_DEFAULTS,...(S("carpoolLabels",{})||{})};
@@ -27694,6 +27705,8 @@ function AttendanceTab({ data, myTids, cl, save, fire, session=null }) {
   const t = TH(cl);
   const raterId = session?.id || session?.role || "trainer";
   const raterName = session?.name || "Trainer";
+  const nsEnabled = cl?.clubSettings?.noShowEnabled!==false;
+  const nsThreshold = cl?.clubSettings?.noShowThreshold || NO_SHOW_HINT_THRESHOLD;
   const patchProfile = (plId, patch)=> save && save({...data, playerProfiles:(data.playerProfiles||[]).map(p=>p.id===plId?{...p,...patch}:p)});
   const triggerNoShow = (pl,count)=>{ patchProfile(pl.id,{ nsDecision:{count,action:"trigger",by:raterName,ts:new Date().toISOString()}, nsTriggerCount:count }); fire&&fire("Eltern-Hinweis ausgelöst – erscheint beim nächsten Login"); };
   const dismissNoShow = (pl,count)=>{ patchProfile(pl.id,{ nsDecision:{count,action:"dismiss",by:raterName,ts:new Date().toISOString()} }); fire&&fire("Hinweis übergangen"); };
@@ -27782,7 +27795,7 @@ function AttendanceTab({ data, myTids, cl, save, fire, session=null }) {
             ? <div style={{background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:13,padding:"12px 14px",fontSize:13,color:"#166534",fontWeight:600}}>👍 Keine No-Shows – alle Zusagen sind auch erschienen.</div>
             : <div style={{display:"flex",flexDirection:"column",gap:8}}>
                 {noShowStats.map(({pl,n})=>{
-                  const high=n>=NO_SHOW_HINT_THRESHOLD;
+                  const high=nsEnabled&&n>=nsThreshold;
                   const dec=pl.nsDecision;
                   const resolved=dec&&dec.count>=n;              // ein Trainer hat schon entschieden
                   const skipped=(pl.nsSkip?.[raterId]||0)>=n;     // ich habe für diesen Stand übersprungen
@@ -27827,7 +27840,7 @@ function AttendanceTab({ data, myTids, cl, save, fire, session=null }) {
                     )}
                   </div>
                 );})}
-                <div style={{fontSize:11,color:"#64748b",marginTop:2,lineHeight:1.45}}>Ab {NO_SHOW_HINT_THRESHOLD} No-Shows kannst du einen Eltern-Hinweis auslösen. Bei mehreren Trainern gilt die erste Entscheidung; die Bestätigung der Eltern wird im Audit-Log protokolliert.</div>
+                <div style={{fontSize:11,color:"#64748b",marginTop:2,lineHeight:1.45}}>{nsEnabled?`Ab ${nsThreshold} No-Show${nsThreshold>1?"s":""} kannst du einen Eltern-Hinweis auslösen. Bei mehreren Trainern gilt die erste Entscheidung; die Bestätigung der Eltern wird im Audit-Log protokolliert.`:"Eltern-Hinweise sind deaktiviert (Einstellungen → Kommunikation). Die Auswertung bleibt sichtbar."}</div>
               </div>}
         </div>
       )}
@@ -31350,9 +31363,10 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   // Login-Gate: Trainer-Nachrichten (Pflicht-Lesebestätigung) + Wiederholungs-No-Show-Hinweis.
   const uLow=String(user).toLowerCase();
   const myMsgs=(data.trainerMsgs||[]).filter(m=>m.cid===cid && String(m.to||"").toLowerCase()===uLow && !((m.reads||{})[uLow]));
-  // No-Show-Hinweis nur, wenn ein Trainer ihn aktiv ausgelöst hat (nicht automatisch).
+  // No-Show-Hinweis nur, wenn aktiviert UND ein Trainer ihn aktiv ausgelöst hat.
   const nsTrigger=myProfile?.nsTriggerCount||0;
-  const showNoShow=!!myProfile && nsTrigger>0 && nsTrigger>(myProfile.noShowAckCount||0);
+  const nsEnabled=cl?.clubSettings?.noShowEnabled!==false;
+  const showNoShow=nsEnabled && !!myProfile && nsTrigger>0 && nsTrigger>(myProfile.noShowAckCount||0);
   const gateItems=[...myMsgs.map(m=>({type:"msg",m})), ...(showNoShow?[{type:"noshow",count:nsTrigger}]:[])];
   const gate=gateItems[0]||null;
   const ackMsg=(m)=>onSave({...data, trainerMsgs:(data.trainerMsgs||[]).map(x=>x.id===m.id?{...x,reads:{...(x.reads||{}),[uLow]:new Date().toISOString()}}:x)});
