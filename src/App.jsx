@@ -5768,11 +5768,16 @@ const dfbFormatForCat = (cat) => {
   const idx={g:0,f:1,e:2,d:3,c:4,b:5,a:5}[m[1]];
   return idx!=null ? DFB_FORMATS[idx] : null;
 };
-function DFBFormatsCard({ cl, defaultOpen=false, cat=null }){
+function DFBFormatsCard({ cl, defaultOpen=false, cat=null, cats=null }){
   const [open,setOpen]=useState(defaultOpen);
   const c=cl?.pri||"#16a34a";
-  const only = cat ? dfbFormatForCat(cat) : null;
-  const list = only ? [only] : DFB_FORMATS;
+  // Auf die gewählte(n) Jugend(en) filtern: cat = eine Kategorie, cats = Liste
+  // (z. B. alle Mannschaften des Trainers). Ohne Treffer -> volle Übersicht.
+  const matched = cat
+    ? [dfbFormatForCat(cat)].filter(Boolean)
+    : (Array.isArray(cats)&&cats.length ? [...new Set(cats.map(x=>dfbFormatForCat(x)).filter(Boolean))] : []);
+  const list = matched.length ? DFB_FORMATS.filter(f=>matched.includes(f)) : DFB_FORMATS;
+  const only = list.length===1 ? list[0] : null;
   return (
     <div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:13,overflow:"hidden"}}>
       <button onClick={()=>setOpen(o=>!o)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 14px",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit"}}>
@@ -28026,7 +28031,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           {up.length===0&&<div style={{textAlign:"center",padding:"30px",background:"#fff",borderRadius:18,border:"1.5px dashed #e2e8f0",color:"#64748b"}}><Logo cl={myClub} sz={50} sx={{margin:"0 auto 12px"}}/><p style={{fontWeight:800,fontSize:15}}>Noch keine Termine</p><p style={{fontSize:13,marginTop:3}}>Klicke oben auf "Neuen Termin anlegen"</p></div>}
           {past.length>0&&<><Divider label={`VERGANGENE (${past.length})`} light/><div style={{opacity:.72}}>{past.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{}} onCopyLink={()=>{}}/>)}</div></>}
           <AffiliateBanner trigger="events" style={{marginTop:14}}/>
-          <div style={{marginTop:14}}><DFBFormatsCard cl={myClub}/></div>
+          <div style={{marginTop:14}}><DFBFormatsCard cl={myClub} cats={(local.teams||[]).filter(tm=>myTids.includes(tm.id)).map(tm=>tm.cat||tm.name)}/></div>
           <div style={{marginTop:14}}><RecommendCard theme={t.p}/></div>
         </>}
         {tab==="players"    &&<><PlayersTab data={local} myTids={myTids} save={save} fire={fire} cl={myClub} session={session}/><AffiliateBanner trigger="players" style={{marginTop:14}}/></> }
