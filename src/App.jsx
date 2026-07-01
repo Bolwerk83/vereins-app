@@ -7763,6 +7763,7 @@ function PlanEditor({ plan, cid, myTids, data, save, fire, cl, onClose }) {
   const [editExIdx, setEditExIdx] = useState(null);
   const [showTplBrowser, setShowTplBrowser] = useState(false);
   const [showGen, setShowGen] = useState(false);
+  const [previewEx, setPreviewEx] = useState(null); // Übung read-only ansehen (Ablauf/Details) vor dem Speichern
   // Dauer aus dem verknüpften – sonst dem nächsten – Trainingstermin des Teams ablesen.
   const evMinutes = e => { if(!e?.time||!e?.endTime) return null; const [h1,m1]=String(e.time).split(":").map(Number); const [h2,m2]=String(e.endTime).split(":").map(Number); const d=(h2*60+m2)-(h1*60+m1); return d>0?d:null; };
   const linkedEv = (plan?.id && (data.events||[]).find(e=>e.planId===plan.id))
@@ -7904,7 +7905,7 @@ function PlanEditor({ plan, cid, myTids, data, save, fire, cl, onClose }) {
                 padding:"11px 13px",marginBottom:8}}>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
                   <div style={{width:8,height:8,borderRadius:"50%",background:cat.col,flexShrink:0}}/>
-                  <div style={{flex:1}}>
+                  <div onClick={()=>setPreviewEx(ex)} style={{flex:1,cursor:"pointer"}}>
                     <div style={{fontWeight:700,fontSize:13,color:"#0f172a"}}>{ex.name||"Übung"}</div>
                     <div style={{fontSize:11,color:"#64748b",marginTop:1}}>
                       {cat.label}  {ex.duration||0} Min.
@@ -7912,6 +7913,7 @@ function PlanEditor({ plan, cid, myTids, data, save, fire, cl, onClose }) {
                     </div>
                   </div>
                   <div style={{display:"flex",gap:4}}>
+                    <button onClick={()=>setPreviewEx(ex)} title="Übung ansehen" style={{width:24,height:24,borderRadius:7,border:"1.5px solid #e2e8f0",background:"#fff",cursor:"pointer",fontSize:12}}>👁</button>
                     <button onClick={()=>moveEx(i,-1)} style={{width:24,height:24,borderRadius:7,border:"1.5px solid #e2e8f0",background:"#fff",cursor:"pointer",fontSize:11,fontWeight:700}}>^</button>
                     <button onClick={()=>moveEx(i,1)}  style={{width:24,height:24,borderRadius:7,border:"1.5px solid #e2e8f0",background:"#fff",cursor:"pointer",fontSize:11,fontWeight:700}}>v</button>
                     <button onClick={()=>{setEditExIdx(i);setShowAddEx(true);}} style={{width:24,height:24,borderRadius:7,background:"#eff6ff",border:"none",color:"#2563eb",cursor:"pointer",fontSize:11,fontWeight:700}}>E</button>
@@ -7970,6 +7972,13 @@ function PlanEditor({ plan, cid, myTids, data, save, fire, cl, onClose }) {
         onClose={()=>{setShowAddEx(false);setEditExIdx(null);}}
         cl={cl}
       />}
+      {previewEx&&(()=>{
+        const tpl = previewEx.fromTemplate ? TRAINING_TEMPLATES.find(x=>x.id===previewEx.fromTemplate) : null;
+        const merged = tpl
+          ? {...tpl, duration:previewEx.duration||tpl.duration, material:(previewEx.material&&previewEx.material.length?previewEx.material:tpl.material)}
+          : { name:previewEx.name||"Übung", cat:previewEx.cat, duration:previewEx.duration, intensity:previewEx.intensity||5, skills:previewEx.skills||[], description:previewEx.description||"Keine Beschreibung hinterlegt.", material:previewEx.material||[], fieldZone:previewEx.zone, age:[], minPlayers:previewEx.minPlayers };
+        return <TemplateDetail tpl={merged} onBack={()=>setPreviewEx(null)} cl={cl}/>;
+      })()}
     </div>
   );
 }
@@ -13574,14 +13583,14 @@ function TemplateDetail({ tpl, onBack, onUse, cl }) {
             </div>
           )}
 
-          {/* Als Übung verwenden */}
-          <button onClick={onUse}
+          {/* Als Übung verwenden (nur wenn ein onUse-Handler übergeben wurde – bei reiner Vorschau ausgeblendet) */}
+          {onUse&&<button onClick={onUse}
             style={{width:"100%",padding:"14px",borderRadius:14,border:"none",
               background:t.p,color:"#fff",fontWeight:800,fontSize:15,
               cursor:"pointer",fontFamily:"inherit",
               boxShadow:`0 4px 20px ${t.p}44`,marginBottom:8}}>
             Diese Vorlage verwenden
-          </button>
+          </button>}
         </div>
       </div>
     </div>
