@@ -19930,14 +19930,14 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid}) 
         const isDup=q.trim().length>1 && allNames.includes(q.trim().toLowerCase());
         return (
       <div style={{padding:"12px 14px 36px",background:"#fff",borderTop:"1px solid #e2e8f0"}}>
-        <p style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8}}>NICHT IN DER LISTE? ALS GAST ABSTIMMEN</p>
-        <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Gast-Name eingeben (z.B. Tom Gast)..."
+        <p style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8}}>NEU HIER? GAST / PROBETRAINING ANMELDEN</p>
+        <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Name des Kindes (z.B. Probetraining)..."
           style={{width:"100%",padding:"11px 14px",fontSize:14,border:`1.5px solid ${isDup?"#fca5a5":"#e2e8f0"}`,borderRadius:12,outline:"none",marginBottom:8}}/>
-        {isDup&&<p style={{fontSize:12,color:"#dc2626",fontWeight:700,marginBottom:8}}>Dieser Name ist schon im Team – bitte einen eindeutigen Gast-Namen wählen (z.B. mit Zusatz).</p>}
+        {isDup&&<p style={{fontSize:12,color:"#dc2626",fontWeight:700,marginBottom:8}}>Dieser Name ist schon im Team – bitte einen eindeutigen Namen wählen (z.B. mit Zusatz).</p>}
         <div style={{marginBottom:8}}><PrivacyNote/></div>
         {q.trim().length>1&&!isDup&&<button onClick={()=>onDone(tid,q.trim())}
           style={{width:"100%",padding:"11px",borderRadius:12,border:"none",background:cl.pri,color:contrast(cl.pri),fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
-           Als Gast „{q.trim()}" anmelden &amp; abstimmen
+           „{q.trim()}" als Gast anmelden &amp; abstimmen
         </button>}
       </div>
         );
@@ -28737,8 +28737,10 @@ function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline,onSetPresent=()=
 
       {/* Anwesenheit abhaken: wer war wirklich da? (Trainer) */}
       {(()=>{
-        const roster=[...teamPlayers].sort(byName);
-        if(roster.length===0) return null;
+        // Kader + selbst angemeldete Gäste (haben abgestimmt, sind aber nicht im Kader)
+        const extraVoters=Object.keys(ev.votes||{}).filter(n=>!teamPlayers.includes(n));
+        const roster=[...new Set([...teamPlayers,...extraVoters])].sort(byName);
+        if(roster.length===0&&guests.length===0) return null;
         const presN=Object.keys(present).length;
         const yesish=roster.filter(n=>getVal((ev.votes||{})[n])==="yes");
         const noShows=yesish.filter(n=>!present[n]);
