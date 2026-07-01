@@ -19764,7 +19764,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid}) 
   const ct=teams.find(x=>x.id===tid);
   const cats=[...new Set(teams.map(tm=>tm.cat||tm.name))];
   const teamsInCat=cat?teams.filter(tm=>(tm.cat||tm.name)===cat):[];
-  const list=(playerProfiles||[]).filter(p=>p.mainTid===tid&&!p.archived&&(p.name||"").toLowerCase().includes(q.toLowerCase())).map(p=>p.name);
+  const list=(playerProfiles||[]).filter(p=>p.mainTid===tid&&!p.archived&&(p.name||"").toLowerCase().includes(q.toLowerCase())).map(p=>p.name).sort((a,b)=>String(a).localeCompare(String(b),"de"));
   const hasAssigned = tid
     ? (playerProfiles||[]).some(p=>p.mainTid===tid)
     : false;
