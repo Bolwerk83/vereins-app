@@ -27926,9 +27926,9 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       {}
       <div style={{background:`linear-gradient(90deg,${t.p},${mix(t.p,-20)})`,display:"grid",gridTemplateColumns:"repeat(3,1fr)"}}>
         {[[up.length,"Anstehende Termine"],[myTids.length,"Mannschaften"],[myEvs.reduce((s,e)=>s+Object.keys(e.votes||{}).length,0),"Rückmeldungen"]].map(([v,l],i)=>(
-          <div key={l} style={{padding:"12px 6px",textAlign:"center",borderRight:i<2?"1px solid rgba(255,255,255,.2)":"none"}}>
-            <div style={{color:"#fff",fontWeight:900,fontSize:22,lineHeight:1}}>{v}</div>
-            <div style={{color:"#fff",opacity:.85,fontSize:10.5,fontWeight:600,marginTop:4,letterSpacing:.2,lineHeight:1.2}}>{l}</div>
+          <div key={l} style={{padding:"12px 6px",textAlign:"center",borderRight:i<2?`1px solid ${t.ct==="#fff"?"rgba(255,255,255,.2)":"rgba(0,0,0,.12)"}`:"none"}}>
+            <div style={{color:t.ct,fontWeight:900,fontSize:22,lineHeight:1}}>{v}</div>
+            <div style={{color:t.ct,opacity:.82,fontSize:10.5,fontWeight:600,marginTop:4,letterSpacing:.2,lineHeight:1.2}}>{l}</div>
           </div>
         ))}
       </div>
@@ -28015,12 +28015,12 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           })()}
           {}
           <div onClick={()=>setWizard(true)} style={{background:t.p,borderRadius:20,padding:"18px 20px",cursor:"pointer",marginBottom:18,display:"flex",alignItems:"center",gap:14,boxShadow:`0 6px 24px ${t.p}66,0 2px 8px rgba(0,0,0,.15)`,transition:"all .2s"}}>
-            <div style={{width:52,height:52,borderRadius:16,background:"rgba(0,0,0,.15)",border:"2px solid rgba(255,255,255,.35)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,fontWeight:900,color:"#fff",flexShrink:0}}>+</div>
+            <div style={{width:52,height:52,borderRadius:16,background:"rgba(0,0,0,.15)",border:`2px solid ${t.ct==="#fff"?"rgba(255,255,255,.35)":"rgba(0,0,0,.18)"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,fontWeight:900,color:t.ct,flexShrink:0}}>+</div>
             <div style={{flex:1}}>
-              <div style={{color:"#fff",fontWeight:900,fontSize:18,letterSpacing:"-.3px",textShadow:"0 1px 3px rgba(0,0,0,.25)"}}>Neuen Termin anlegen</div>
-              <div style={{color:"rgba(255,255,255,.9)",fontSize:13,marginTop:3,fontWeight:500}}>Schritt-für-Schritt Assistent</div>
+              <div style={{color:t.ct,fontWeight:900,fontSize:18,letterSpacing:"-.3px",textShadow:t.ct==="#fff"?"0 1px 3px rgba(0,0,0,.25)":"none"}}>Neuen Termin anlegen</div>
+              <div style={{color:t.ct,opacity:.82,fontSize:13,marginTop:3,fontWeight:500}}>Schritt-für-Schritt Assistent</div>
             </div>
-            <div style={{width:32,height:32,borderRadius:10,background:"rgba(0,0,0,.15)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:18,fontWeight:700,flexShrink:0}}>{">"}</div>
+            <div style={{width:32,height:32,borderRadius:10,background:"rgba(0,0,0,.15)",display:"flex",alignItems:"center",justifyContent:"center",color:t.ct,fontSize:18,fontWeight:700,flexShrink:0}}>{">"}</div>
           </div>
           {up.length>0&&<><Divider label={`NÄCHSTE 10 TAGE (${soon.length})`}/>{soon.length>0?soon.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={selfName} onSelfVote={selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={()=>openPlan(ev)} planTitle={planTitleOf(ev)}/>):<p style={{textAlign:"center",color:"#64748b",fontSize:13.5,padding:"14px 10px"}}>Keine Termine in den nächsten 10 Tagen.</p>}
             {later.length>0&&<>
