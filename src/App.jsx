@@ -7737,16 +7737,24 @@ function generateTrainingPlan({ ageKey="all", targetMin=90, focus="auto", avoidI
     spielform: [d=>d.cat==="taktik", d=>d.cat==="technik", d=>d.cat==="kondition"],
     auto:      [d=>d.cat==="technik", d=>d.cat==="taktik", isShot],
   }[focus]) || [d=>d.cat==="technik", d=>d.cat==="taktik", isShot];
+  // Junge Jahrgänge spielerischer: weniger Hauptteil, mehr Platz fürs Spielen.
+  const young = ["bambini","g","f"].includes(ageKey);
+  const mainFill = young ? 0.5 : 0.62;
   let gi=0, guard=0;
-  while(total() < targetMin*0.62 && guard++<14){
+  while(total() < targetMin*mainFill && guard++<14){
     const d = pick(seq[gi%seq.length]) || pick(x=>["technik","taktik","kondition","spezial"].includes(x.cat));
     gi++; if(!d) break; out.push(toEx(d));
   }
-  // 3) Abschluss: Spielform(en) bis ~Zieldauer
+  // 3) Abschluss: IMMER mindestens ein Abschlussspiel (Spielform), dann bis ~Zieldauer auffüllen.
   guard=0;
-  while(total() < targetMin-6 && guard++<6){
+  do {
     const d = pick(x=>x.cat==="spielform") || pick(x=>["spielform","taktik"].includes(x.cat));
     if(!d) break; out.push(toEx(d));
+  } while(total() < targetMin-6 && guard++<6);
+  // Garantie: falls die Altersauswahl keine Spielform enthielt, aus der ganzen Bibliothek nachziehen.
+  if(!out.some(e=>e.cat==="spielform")){
+    const g = lib.find(d=>d.cat==="spielform" && !used.has(d.id)) || lib.find(d=>d.cat==="spielform");
+    if(g){ used.add(g.id); out.push(toEx(g)); }
   }
   // Belastungskurve: Aufwärmen vorn, Hauptteil nach Intensität aufsteigend, Spielform hinten.
   const wu  = out.filter(e=>e.cat==="warmup");
