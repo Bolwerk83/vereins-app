@@ -4155,6 +4155,11 @@ const createAuditEntry = (type, detail, session, extra = {}) => ({
 });
 
 // Audit-Log speichern (append-only, max 500 Eintraege)
+// Anwesenheit: hat ein Spieler bei einem Termin zugesagt (Dabei/Verspätet)?
+const _votedYes = (ev,name)=>{ const v=(ev.votes||{})[name]; const val=(typeof v==="object"&&v)?v.val:v; return val==="yes"; };
+// No-Show-Termine: Anwesenheit wurde abgehakt, Spieler hat zugesagt, war aber nicht als anwesend markiert.
+const playerNoShowEvents = (events, name)=> (events||[]).filter(e=> e && e.present && Object.keys(e.present).length>0 && _votedYes(e,name) && !e.present[name]);
+const NO_SHOW_HINT_THRESHOLD = 2; // ab so vielen No-Shows Hinweis an Eltern + Audit
 const addAuditLog = (data, save, entry) => {
   const log = [...(data.securityLog || []), entry].slice(-500);
   save({ ...data, securityLog: log });
@@ -27678,6 +27683,11 @@ function AttendanceTab({ data, myTids, cl, save, fire }) {
     return { pl, tYes, gYes, trainPct, gamePct, totalT: pastTrain.length, totalG: pastGames.length };
   }).sort((a,b)=>(b.trainPct??-1)-(a.trainPct??-1));
 
+  // No-Shows: zugesagt, aber beim Abhaken nicht als anwesend markiert.
+  const pastAll = [...pastTrain, ...pastGames];
+  const checkedCount = pastAll.filter(e=>e.present&&Object.keys(e.present).length>0).length;
+  const noShowStats = players.map(pl=>({ pl, n: playerNoShowEvents(pastAll, pl.name).length })).filter(x=>x.n>0).sort((a,b)=>b.n-a.n);
+
   // Spielzeit-Fairness: aufsummierte Einsatzminuten aus vergangenen Spielen (PlaytimeTracker).
   const ptGames = pastGames.filter(e=>e.playtime&&e.playtime.base&&Object.keys(e.playtime.base).length>0);
   const ptStats = players.map(pl=>{
@@ -27726,6 +27736,33 @@ function AttendanceTab({ data, myTids, cl, save, fire }) {
           </div>
         ))}
       </div>}
+      {checkedCount>0&&(
+        <div style={{marginTop:18}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+            <span style={{fontSize:18}}>🚫</span>
+            <span style={{fontWeight:800,fontSize:15,color:"#0f172a",flex:1}}>No-Shows (zugesagt, nicht erschienen)</span>
+            <span style={{fontSize:11.5,color:"#64748b",fontWeight:700}}>{checkedCount} abgehakt</span>
+          </div>
+          {noShowStats.length===0
+            ? <div style={{background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:13,padding:"12px 14px",fontSize:13,color:"#166534",fontWeight:600}}>👍 Keine No-Shows – alle Zusagen sind auch erschienen.</div>
+            : <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {noShowStats.map(({pl,n})=>{ const high=n>=NO_SHOW_HINT_THRESHOLD; return (
+                  <div key={pl.id} style={{background:"#fff",borderRadius:13,padding:"12px 14px",border:`1.5px solid ${high?"#fed7aa":"#e2e8f0"}`,display:"flex",alignItems:"center",gap:12}}>
+                    <Av name={pl.name} sz={36}/>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontWeight:700,fontSize:14,color:"#0f172a",display:"flex",alignItems:"center",gap:6}}>{pl.name}{high&&<span style={{fontSize:10,fontWeight:800,color:"#9a3412",background:"#ffedd5",borderRadius:5,padding:"1px 6px"}}>Eltern-Hinweis aktiv</span>}</div>
+                      <div style={{fontSize:11,color:"#64748b",marginTop:2}}>{n}× zugesagt und nicht gekommen</div>
+                    </div>
+                    <div style={{textAlign:"right",minWidth:44}}>
+                      <div style={{fontWeight:900,fontSize:18,color:high?"#c2410c":"#d97706"}}>{n}</div>
+                      <div style={{fontSize:10,color:"#64748b"}}>No-Show</div>
+                    </div>
+                  </div>
+                );})}
+                <div style={{fontSize:11,color:"#64748b",marginTop:2,lineHeight:1.45}}>Ab {NO_SHOW_HINT_THRESHOLD} No-Shows sehen die Eltern beim Anmelden einen Hinweis; die Bestätigung wird im Sicherheits-/Audit-Log protokolliert.</div>
+              </div>}
+        </div>
+      )}
       {ptGames.length>0&&(
         <div style={{marginTop:18}}>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
@@ -28118,6 +28155,14 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
                 setViewEv(prev=>({...prev,deadline}));
                 fire("Frist gesetzt *");
               }}
+              onSetPresent={present=>{
+                save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,present}:e)});
+                setViewEv(prev=>({...prev,present}));
+              }}
+              onSetGuests={guests=>{
+                save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,guests}:e)});
+                setViewEv(prev=>({...prev,guests}));
+              }}
             />}
         {viewEv.type==="training"&&(()=>{ const emb=viewEv.trainingPlan; const pl=emb?{focus:emb.focus,blocks:(emb.sessions?.[0]?.blocks)||[]}:(local.trainings||[]).find(tr=>tr.id===viewEv.trainingId); return (
           <div style={{marginTop:16,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
@@ -28502,8 +28547,14 @@ function PlaytimeTracker({ ev, roster, onSave, t }){
     </div>
   );
 }
-function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline}) {
+function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline,onSetPresent=()=>{},onSetGuests=()=>{}}) {
   const p = cl?.pri||"#16a34a";
+  const present = ev.present||{};
+  const guests = ev.guests||[];
+  const [guestName,setGuestName] = useState("");
+  const togglePresent = (name)=>{ const np={...present}; if(np[name]) delete np[name]; else np[name]=true; onSetPresent(np); };
+  const addGuest = ()=>{ const n=guestName.trim(); if(!n) return; if(!guests.includes(n)){ onSetGuests([...guests,n]); onSetPresent({...present,[n]:true}); } setGuestName(""); };
+  const removeGuest = (name)=>{ onSetGuests(guests.filter(x=>x!==name)); const np={...present}; delete np[name]; onSetPresent(np); };
   const [showDeadlineForm,setShowDL]=useState(false);
   const [dlDate,setDlDate]=useState(ev.deadline?.date||"");
   const [dlTime,setDlTime]=useState(ev.deadline?.time||"");
@@ -28683,6 +28734,55 @@ function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline}) {
           })}
         </div>
       </>}
+
+      {/* Anwesenheit abhaken: wer war wirklich da? (Trainer) */}
+      {(()=>{
+        const roster=[...teamPlayers].sort(byName);
+        if(roster.length===0) return null;
+        const presN=Object.keys(present).length;
+        const yesish=roster.filter(n=>getVal((ev.votes||{})[n])==="yes");
+        const noShows=yesish.filter(n=>!present[n]);
+        return (
+        <div style={{marginBottom:16,background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:14,padding:"12px 14px"}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+            <span style={{fontSize:16}}>✅</span>
+            <span style={{fontWeight:800,fontSize:13.5,color:"#0f172a",flex:1}}>Anwesenheit abhaken</span>
+            <span style={{fontSize:11.5,fontWeight:700,color:"#16a34a"}}>{presN} da{noShows.length>0?` · ${noShows.length} No-Show`:""}</span>
+          </div>
+          <div style={{fontSize:11,color:"#64748b",marginBottom:10,lineHeight:1.45}}>Hake ab, wer wirklich gekommen ist. „No-Show" = hat zugesagt, war aber nicht da.</div>
+          <div style={{display:"flex",flexDirection:"column",gap:6,maxHeight:"38dvh",overflowY:"auto"}}>
+            {roster.map(name=>{
+              const val=getVal((ev.votes||{})[name]);
+              const here=!!present[name];
+              const noShow=val==="yes"&&!here;
+              return (
+                <div key={name} onClick={()=>togglePresent(name)} style={{display:"flex",alignItems:"center",gap:10,background:here?"#f0fdf4":noShow?"#fff7ed":"#f8fafc",borderRadius:11,padding:"9px 11px",border:`1.5px solid ${here?"#bbf7d0":noShow?"#fed7aa":"#e2e8f0"}`,cursor:"pointer"}}>
+                  <div style={{width:22,height:22,borderRadius:7,border:`2px solid ${here?"#16a34a":"#cbd5e1"}`,background:here?"#16a34a":"#fff",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:13,fontWeight:900}}>{here?"✓":""}</div>
+                  <Av name={name} sz={30}/>
+                  <span style={{flex:1,minWidth:0,fontWeight:700,fontSize:13.5,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</span>
+                  {val==="yes"&&<span style={{fontSize:10.5,fontWeight:700,color:"#16a34a",background:"#dcfce7",borderRadius:6,padding:"2px 7px"}}>zugesagt</span>}
+                  {val==="no"&&<span style={{fontSize:10.5,fontWeight:700,color:"#dc2626",background:"#fee2e2",borderRadius:6,padding:"2px 7px"}}>abgesagt</span>}
+                  {noShow&&<span style={{fontSize:10.5,fontWeight:800,color:"#9a3412",background:"#ffedd5",borderRadius:6,padding:"2px 7px"}}>No-Show</span>}
+                </div>
+              );
+            })}
+            {guests.map(name=>(
+              <div key={"g_"+name} style={{display:"flex",alignItems:"center",gap:10,background:"#eef2ff",borderRadius:11,padding:"9px 11px",border:"1.5px solid #c7d2fe"}}>
+                <div style={{width:22,height:22,borderRadius:7,border:"2px solid #4f46e5",background:"#4f46e5",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:13,fontWeight:900}}>✓</div>
+                <Av name={name} sz={30}/>
+                <span style={{flex:1,minWidth:0,fontWeight:700,fontSize:13.5,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</span>
+                <span style={{fontSize:10.5,fontWeight:800,color:"#4f46e5",background:"#e0e7ff",borderRadius:6,padding:"2px 7px"}}>Gast</span>
+                <button onClick={()=>removeGuest(name)} style={{width:22,height:22,borderRadius:7,background:"#fee2e2",border:"none",color:"#dc2626",cursor:"pointer",fontWeight:800,fontSize:12,flexShrink:0}}>×</button>
+              </div>
+            ))}
+          </div>
+          <div style={{display:"flex",gap:7,marginTop:9}}>
+            <input value={guestName} onChange={e=>setGuestName(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();addGuest();}}} placeholder="Gastspieler / Probetraining (Name)" style={{flex:1,padding:"9px 11px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",fontFamily:"inherit",boxSizing:"border-box"}}/>
+            <button onClick={addGuest} disabled={!guestName.trim()} style={{padding:"9px 14px",borderRadius:10,border:"none",background:guestName.trim()?"#4f46e5":"#e2e8f0",color:guestName.trim()?"#fff":"#94a3b8",fontWeight:800,fontSize:13,cursor:guestName.trim()?"pointer":"default",fontFamily:"inherit"}}>+ Gast</button>
+          </div>
+        </div>
+        );
+      })()}
 
       {}
       {missing.length>0&&<>
