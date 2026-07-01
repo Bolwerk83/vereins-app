@@ -23067,18 +23067,33 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
             const m=monthKey();
             const ratedBy=(selTeam.skillCheckBy?.[m])||[];
             const iDid=ratedBy.includes(raterId);
+            const skipped=!!(selTeam.skillCheckSkip?.[m]);
             const teamTrainers=(data.trainers||[]).filter(tr=>tr.cid===cid&&(tr.tids||[]).includes(selTid)&&isActive(tr));
-            const due=!iDid;
+            const due=!iDid&&!skipped;
+            const setSkip=(on)=>save({...data,teams:(data.teams||[]).map(tm=>tm.id===selTeam.id?{...tm,skillCheckSkip:{...(tm.skillCheckSkip||{}),[m]:on?true:undefined}}:tm)});
+            const chip = iDid
+              ? <span style={{fontSize:11,fontWeight:800,color:"#16a34a",background:"#dcfce7",borderRadius:6,padding:"1px 7px",marginLeft:4}}>von dir erledigt</span>
+              : skipped
+                ? <span style={{fontSize:11,fontWeight:800,color:"#64748b",background:"#f1f5f9",borderRadius:6,padding:"1px 7px",marginLeft:4}}>übersprungen</span>
+                : <span style={{fontSize:11,fontWeight:800,color:"#fff",background:"#4f46e5",borderRadius:6,padding:"1px 7px",marginLeft:4}}>fällig</span>;
             return (
-            <button onClick={()=>setSkillCheck(selTeam)}
-              style={{width:"100%",marginBottom:14,padding:"12px 14px",borderRadius:13,border:`1.5px solid ${due?"#4f46e5":"#e2e8f0"}`,background:due?"#eef2ff":"#fff",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:10}}>
-              <span style={{fontSize:20}}>📊</span>
-              <div style={{flex:1,textAlign:"left"}}>
-                <div style={{fontWeight:800,fontSize:13.5,color:"#0f172a"}}>Monats-Skill-Check {due?<span style={{fontSize:11,fontWeight:800,color:"#fff",background:"#4f46e5",borderRadius:6,padding:"1px 7px",marginLeft:4}}>fällig</span>:<span style={{fontSize:11,fontWeight:800,color:"#16a34a",background:"#dcfce7",borderRadius:6,padding:"1px 7px",marginLeft:4}}>von dir erledigt</span>}</div>
-                <div style={{fontSize:11.5,color:"#64748b",marginTop:1}}>{ratedBy.length>0?`${ratedBy.length}${teamTrainers.length>1?"/"+teamTrainers.length:""} Trainer bewertet (${monthLabel(m)}) · Schnitt`:(selTeam.lastSkillCheck?`Zuletzt: ${monthLabel(selTeam.lastSkillCheck)}`:"Noch nie durchgeführt")}{teamTrainers.length>1?" · mehrere Trainer werden gemittelt":""}</div>
+            <div style={{width:"100%",marginBottom:14,padding:"12px 14px",borderRadius:13,border:`1.5px solid ${due?"#4f46e5":"#e2e8f0"}`,background:due?"#eef2ff":"#fff",fontFamily:"inherit"}}>
+              <div onClick={()=>setSkillCheck(selTeam)} style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}>
+                <span style={{fontSize:20}}>📊</span>
+                <div style={{flex:1,textAlign:"left"}}>
+                  <div style={{fontWeight:800,fontSize:13.5,color:"#0f172a"}}>Monats-Skill-Check {chip}</div>
+                  <div style={{fontSize:11.5,color:"#64748b",marginTop:1}}>{skipped?`Diesen Monat übersprungen (${monthLabel(m)})`:(ratedBy.length>0?`${ratedBy.length}${teamTrainers.length>1?"/"+teamTrainers.length:""} Trainer bewertet (${monthLabel(m)}) · Schnitt`:(selTeam.lastSkillCheck?`Zuletzt: ${monthLabel(selTeam.lastSkillCheck)}`:"Noch nie durchgeführt"))}{teamTrainers.length>1&&!skipped?" · mehrere Trainer werden gemittelt":""}</div>
+                </div>
+                <span style={{color:due?"#4f46e5":"#94a3b8",fontSize:18}}>{">"}</span>
               </div>
-              <span style={{color:"#4f46e5",fontSize:18}}>{">"}</span>
-            </button>
+              {!iDid&&(
+                <div style={{marginTop:9,paddingTop:9,borderTop:"1px solid #eef2f7",display:"flex",justifyContent:"flex-end"}}>
+                  {skipped
+                    ? <button onClick={()=>setSkip(false)} style={{padding:"6px 12px",borderRadius:9,border:"1.5px solid #4f46e5",background:"#eef2ff",color:"#4f46e5",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Doch bewerten</button>
+                    : <button onClick={()=>setSkip(true)} style={{padding:"6px 12px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Diesen Monat überspringen</button>}
+                </div>
+              )}
+            </div>
           );})()}
 
           {}
@@ -27933,7 +27948,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             // Skill-Check fällig (pro Mannschaft, pro Trainer) + Kinder ohne Skill-Profil
             const mk=monthKey(); const raterId=session?.id||session?.role||"trainer";
             const myEvalTeams=(local.teams||[]).filter(tm=>myTids.includes(tm.id)&&tm.skillCheckEnabled!==false);
-            myEvalTeams.forEach(tm=>{ const ratedBy=tm.skillCheckBy?.[mk]||[]; if(!ratedBy.includes(raterId)) todos.push({label:"Skill-Check fällig",col:"#4f46e5",bg:"#eef2ff",title:`${tm.name} · Monats-Bewertung`,sub:monthLabel(mk),onClick:()=>setTab("players")}); });
+            myEvalTeams.forEach(tm=>{ const ratedBy=tm.skillCheckBy?.[mk]||[]; const skipped=!!(tm.skillCheckSkip?.[mk]); if(!ratedBy.includes(raterId)&&!skipped) todos.push({label:"Skill-Check fällig",col:"#4f46e5",bg:"#eef2ff",title:`${tm.name} · Monats-Bewertung`,sub:monthLabel(mk),onClick:()=>setTab("players")}); });
             if(myEvalTeams.length>0){
               const evalTids=new Set(myEvalTeams.map(tm=>tm.id));
               const unrated=(local.playerProfiles||[]).filter(p=>evalTids.has(p.mainTid)&&!p.archived&&!Object.values(p.skills||{}).some(v=>(Number(v)||0)>0));
