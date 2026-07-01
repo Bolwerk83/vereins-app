@@ -28297,8 +28297,9 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             onSave={rep=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,report:rep}:e)}); setViewEv(prev=>({...prev,report:rep})); fire("Spielbericht gespeichert"); }}/>
         )}
         {["heimspiel","auswarts","freundschaft","turnier","training"].includes(viewEv.type)&&!isHelper&&(()=>{
-          const yes=Object.entries(viewEv.votes||{}).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>n);
-          const roster=yes.length?yes:(local.playerProfiles||[]).filter(p=>p.mainTid===viewEv.tid&&!p.archived).map(p=>p.name);
+          // Nur Spieler, die zugesagt haben oder später kommen (val==="yes" deckt auch "verspätet" ab).
+          // Kein Fallback mehr auf den ganzen Kader – ohne Zusagen bleibt die Liste leer (Hinweis im Tracker).
+          const roster=Object.entries(viewEv.votes||{}).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>n);
           return <PlaytimeTracker ev={viewEv} roster={roster} t={TH(myClub)} onSave={pt=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,playtime:pt}:e)}); setViewEv(prev=>({...prev,playtime:pt})); }}/>;
         })()}
         {(viewEv.extraPolls||[]).map(p=>(
@@ -28619,6 +28620,7 @@ function PlaytimeTracker({ ev, roster, onSave, t }){
       <div style={{display:"flex",alignItems:"center",gap:8}}>
         <button onClick={()=>setOpen(o=>!o)} style={{flex:1,textAlign:"left",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:8}}>
           <span style={{fontSize:18}}>⏱</span><span style={{fontWeight:800,fontSize:15,color:"#0f172a"}}>Einsatzzeit (faire Spielzeit)</span>
+          {roster.length>0&&<span style={{fontSize:11,fontWeight:800,color:"#15803d",background:"#dcfce7",borderRadius:7,padding:"2px 8px"}}>{onCount}/{roster.length} auf dem Feld</span>}
           {pt.running&&<span style={{fontSize:11,fontWeight:800,color:"#16a34a"}}>● läuft</span>}
         </button>
         <span style={{color:"#64748b",fontSize:16}}>{open?"▲":"▼"}</span>
