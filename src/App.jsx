@@ -28094,6 +28094,23 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               const unrated=(local.playerProfiles||[]).filter(p=>evalTids.has(p.mainTid)&&!p.archived&&!Object.values(p.skills||{}).some(v=>(Number(v)||0)>0));
               if(unrated.length>0) todos.push({label:"Ohne Skill-Profil",col:"#0891b2",bg:"#cffafe",title:`${unrated.length} Kind${unrated.length>1?"er":""} noch nicht bewertet`,sub:"Skill-Wizard im Kader starten",onClick:()=>setTab("players")});
             }
+            // Offene No-Show-Entscheidungen (pro Team, wenn Feature aktiv und für mich noch nicht entschieden/übersprungen)
+            if(myClub?.clubSettings?.noShowEnabled!==false){
+              const nsThr=myClub?.clubSettings?.noShowThreshold||NO_SHOW_HINT_THRESHOLD;
+              myTids.forEach(tid2=>{
+                const teamPast=(local.events||[]).filter(e=>e.tid===tid2&&e.date<tod&&e.present&&Object.keys(e.present).length>0);
+                if(teamPast.length===0) return;
+                const open=(local.playerProfiles||[]).filter(pl=>{
+                  if(pl.mainTid!==tid2||pl.archived) return false;
+                  const n=playerNoShowEvents(teamPast, pl.name).length;
+                  if(n<nsThr) return false;
+                  if(pl.nsDecision&&pl.nsDecision.count>=n) return false;
+                  if((pl.nsSkip?.[raterId]||0)>=n) return false;
+                  return true;
+                });
+                if(open.length>0){ const tmName=(local.teams||[]).find(x=>x.id===tid2)?.name||""; todos.push({label:"No-Show entscheiden",col:"#d97706",bg:"#fef3c7",title:`${open.length} offene No-Show-Entscheidung${open.length>1?"en":""}`,sub:tmName,onClick:()=>setTab("attendance")}); }
+              });
+            }
             }
             if(todos.length===0) return null;
             return (
