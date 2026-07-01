@@ -7267,7 +7267,7 @@ function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false, initial
       </div>
       <AreaIntro id={"team_"+subTab} cl={cl}/>
       {subTab==="players"    && <PlayersTab    data={data} myTids={myTids} save={save} fire={fire} cl={cl} session={session}/>}
-      {subTab==="attendance" && <AttendanceTab data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
+      {subTab==="attendance" && <AttendanceTab data={data} myTids={myTids} cl={cl} save={save} fire={fire} session={session}/>}
       {subTab==="results"    && <LeagueTab     data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
       {subTab==="kasse"      && <CashbookTab   data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
       {subTab==="bericht"    && <SeasonReportTab data={data} myTids={myTids} cl={cl} fire={fire}/>}
@@ -27689,9 +27689,16 @@ function TrainerStatsView({ data, cid }) {
 
 
 
-function AttendanceTab({ data, myTids, cl, save, fire }) {
+function AttendanceTab({ data, myTids, cl, save, fire, session=null }) {
   const { tr } = useT();
   const t = TH(cl);
+  const raterId = session?.id || session?.role || "trainer";
+  const raterName = session?.name || "Trainer";
+  const patchProfile = (plId, patch)=> save && save({...data, playerProfiles:(data.playerProfiles||[]).map(p=>p.id===plId?{...p,...patch}:p)});
+  const triggerNoShow = (pl,count)=>{ patchProfile(pl.id,{ nsDecision:{count,action:"trigger",by:raterName,ts:new Date().toISOString()}, nsTriggerCount:count }); fire&&fire("Eltern-Hinweis ausgelöst – erscheint beim nächsten Login"); };
+  const dismissNoShow = (pl,count)=>{ patchProfile(pl.id,{ nsDecision:{count,action:"dismiss",by:raterName,ts:new Date().toISOString()} }); fire&&fire("Hinweis übergangen"); };
+  const skipNoShow = (pl,count)=>{ patchProfile(pl.id,{ nsSkip:{...(pl.nsSkip||{}),[raterId]:count} }); };
+  const unskipNoShow = (pl)=>{ patchProfile(pl.id,{ nsSkip:{...(pl.nsSkip||{}),[raterId]:0} }); };
   const activeSeason = activeSid(data, (data.teams||[]).find(tm=>myTids.includes(tm.id))?.cid) || "s2627";
   const myTeams = (data.teams||[]).filter(tm=>myTids.includes(tm.id));
   const [selTid, setSelTid] = useState(myTids[0]||"");
@@ -27774,20 +27781,53 @@ function AttendanceTab({ data, myTids, cl, save, fire }) {
           {noShowStats.length===0
             ? <div style={{background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:13,padding:"12px 14px",fontSize:13,color:"#166534",fontWeight:600}}>👍 Keine No-Shows – alle Zusagen sind auch erschienen.</div>
             : <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                {noShowStats.map(({pl,n})=>{ const high=n>=NO_SHOW_HINT_THRESHOLD; return (
-                  <div key={pl.id} style={{background:"#fff",borderRadius:13,padding:"12px 14px",border:`1.5px solid ${high?"#fed7aa":"#e2e8f0"}`,display:"flex",alignItems:"center",gap:12}}>
-                    <Av name={pl.name} sz={36}/>
-                    <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontWeight:700,fontSize:14,color:"#0f172a",display:"flex",alignItems:"center",gap:6}}>{pl.name}{high&&<span style={{fontSize:10,fontWeight:800,color:"#9a3412",background:"#ffedd5",borderRadius:5,padding:"1px 6px"}}>Eltern-Hinweis aktiv</span>}</div>
-                      <div style={{fontSize:11,color:"#64748b",marginTop:2}}>{n}× zugesagt und nicht gekommen</div>
+                {noShowStats.map(({pl,n})=>{
+                  const high=n>=NO_SHOW_HINT_THRESHOLD;
+                  const dec=pl.nsDecision;
+                  const resolved=dec&&dec.count>=n;              // ein Trainer hat schon entschieden
+                  const skipped=(pl.nsSkip?.[raterId]||0)>=n;     // ich habe für diesen Stand übersprungen
+                  const actionable=high&&!resolved;
+                  const parentAcked=(pl.noShowAckCount||0)>=n;
+                  return (
+                  <div key={pl.id} style={{background:"#fff",borderRadius:13,padding:"12px 14px",border:`1.5px solid ${actionable&&!skipped?"#fdba74":high?"#fed7aa":"#e2e8f0"}`}}>
+                    <div style={{display:"flex",alignItems:"center",gap:12}}>
+                      <Av name={pl.name} sz={36}/>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontWeight:700,fontSize:14,color:"#0f172a"}}>{pl.name}</div>
+                        <div style={{fontSize:11,color:"#64748b",marginTop:2}}>{n}× zugesagt und nicht gekommen</div>
+                      </div>
+                      <div style={{textAlign:"right",minWidth:44}}>
+                        <div style={{fontWeight:900,fontSize:18,color:high?"#c2410c":"#d97706"}}>{n}</div>
+                        <div style={{fontSize:10,color:"#64748b"}}>No-Show</div>
+                      </div>
                     </div>
-                    <div style={{textAlign:"right",minWidth:44}}>
-                      <div style={{fontWeight:900,fontSize:18,color:high?"#c2410c":"#d97706"}}>{n}</div>
-                      <div style={{fontSize:10,color:"#64748b"}}>No-Show</div>
-                    </div>
+                    {high&&(
+                      <div style={{marginTop:10,paddingTop:10,borderTop:"1px solid #f1f5f9"}}>
+                        {resolved
+                          ? <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                              {dec.action==="trigger"
+                                ? <span style={{fontSize:11.5,fontWeight:800,color:"#166534",background:"#dcfce7",borderRadius:7,padding:"3px 9px"}}>✓ Eltern-Hinweis ausgelöst{parentAcked?" · bestätigt":""}</span>
+                                : <span style={{fontSize:11.5,fontWeight:800,color:"#64748b",background:"#f1f5f9",borderRadius:7,padding:"3px 9px"}}>übergangen</span>}
+                              <span style={{fontSize:11,color:"#64748b"}}>von {dec.by}</span>
+                            </div>
+                          : skipped
+                            ? <div style={{display:"flex",alignItems:"center",gap:8,justifyContent:"space-between"}}>
+                                <span style={{fontSize:11.5,color:"#64748b",fontWeight:600}}>Von dir übersprungen – wartet auf Entscheidung.</span>
+                                <button onClick={()=>unskipNoShow(pl)} style={{padding:"6px 11px",borderRadius:8,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>Doch entscheiden</button>
+                              </div>
+                            : <div>
+                                <div style={{fontSize:11.5,color:"#9a3412",fontWeight:600,marginBottom:8,lineHeight:1.4}}>{pl.name} sollte einen Eltern-Hinweis bekommen. Auslösen (beim nächsten Login), übergehen oder erstmal überspringen?</div>
+                                <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
+                                  <button onClick={()=>triggerNoShow(pl,n)} style={{flex:"1 1 auto",padding:"9px 12px",borderRadius:10,border:"none",background:"#d97706",color:"#fff",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Hinweis auslösen</button>
+                                  <button onClick={()=>dismissNoShow(pl,n)} style={{flex:"1 1 auto",padding:"9px 12px",borderRadius:10,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Übergehen</button>
+                                  <button onClick={()=>skipNoShow(pl,n)} style={{flex:"1 1 auto",padding:"9px 12px",borderRadius:10,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Überspringen</button>
+                                </div>
+                              </div>}
+                      </div>
+                    )}
                   </div>
                 );})}
-                <div style={{fontSize:11,color:"#64748b",marginTop:2,lineHeight:1.45}}>Ab {NO_SHOW_HINT_THRESHOLD} No-Shows sehen die Eltern beim Anmelden einen Hinweis; die Bestätigung wird im Sicherheits-/Audit-Log protokolliert.</div>
+                <div style={{fontSize:11,color:"#64748b",marginTop:2,lineHeight:1.45}}>Ab {NO_SHOW_HINT_THRESHOLD} No-Shows kannst du einen Eltern-Hinweis auslösen. Bei mehreren Trainern gilt die erste Entscheidung; die Bestätigung der Eltern wird im Audit-Log protokolliert.</div>
               </div>}
         </div>
       )}
@@ -28106,7 +28146,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         {tab==="training"  &&<><TrainingPlanTab data={local} myTids={myTids} save={save} fire={fire} cl={myClub} session={session}/><AffiliateBanner trigger="training" style={{marginTop:14}}/></> }
         {tab==="jerseys"    &&<><AffiliateBanner trigger="jerseys"/><JerseysTab data={local} myTids={myTids} save={save} fire={fire} cl={myClub}/></> }
         {tab==="fields"     &&<><FieldsTab data={local} myTids={myTids} session={session} save={save} fire={fire} cl={myClub}/><AffiliateBanner trigger="fields" style={{marginTop:14}}/></> }
-        {tab==="attendance" &&<AttendanceTab data={local} myTids={myTids} cl={myClub}/>}
+        {tab==="attendance" &&<AttendanceTab data={local} myTids={myTids} cl={myClub} save={save} fire={fire} session={session}/>}
         {tab==="results"    &&<><LeagueTab data={local} myTids={myTids} cl={myClub} save={save} fire={fire}/><AffiliateBanner trigger="results" style={{marginTop:14}}/></> }
         {tab==="inbox"      &&<InboxTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
         {tab==="tinbox"     &&<TrainerInboxTab data={local} cid={cid} session={session} save={save} cl={myClub}/>}
@@ -31310,10 +31350,10 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   // Login-Gate: Trainer-Nachrichten (Pflicht-Lesebestätigung) + Wiederholungs-No-Show-Hinweis.
   const uLow=String(user).toLowerCase();
   const myMsgs=(data.trainerMsgs||[]).filter(m=>m.cid===cid && String(m.to||"").toLowerCase()===uLow && !((m.reads||{})[uLow]));
-  const myPastEvents=(data.events||[]).filter(e=>e.tid===tid && e.date<tod);
-  const myNoShows=playerNoShowEvents(myPastEvents, user).length;
-  const showNoShow=!!myProfile && myNoShows>=NO_SHOW_HINT_THRESHOLD && myNoShows>(myProfile.noShowAckCount||0);
-  const gateItems=[...myMsgs.map(m=>({type:"msg",m})), ...(showNoShow?[{type:"noshow",count:myNoShows}]:[])];
+  // No-Show-Hinweis nur, wenn ein Trainer ihn aktiv ausgelöst hat (nicht automatisch).
+  const nsTrigger=myProfile?.nsTriggerCount||0;
+  const showNoShow=!!myProfile && nsTrigger>0 && nsTrigger>(myProfile.noShowAckCount||0);
+  const gateItems=[...myMsgs.map(m=>({type:"msg",m})), ...(showNoShow?[{type:"noshow",count:nsTrigger}]:[])];
   const gate=gateItems[0]||null;
   const ackMsg=(m)=>onSave({...data, trainerMsgs:(data.trainerMsgs||[]).map(x=>x.id===m.id?{...x,reads:{...(x.reads||{}),[uLow]:new Date().toISOString()}}:x)});
   const ackNoShow=(count)=>{
