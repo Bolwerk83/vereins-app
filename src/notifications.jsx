@@ -134,8 +134,15 @@ function getLang(){ try { const l = localStorage.getItem(LANG_KEY); return I18N[
 function tr(key){ const l = getLang(); return (I18N[l] && I18N[l][key]) ?? I18N.de[key] ?? key; }
 
 // ── Helpers ─────────────────────────────────────────────────
+// Fest eingebaute Standard-Verbindung – identisch zu DEFAULT_CFG in App.jsx.
+// Ohne diesen Fallback meldete der Testknopf "Supabase ist nicht verbunden",
+// weil die App die Default-Verbindung nutzt und nichts in den localStorage schreibt.
+const DEFAULT_CFG = {
+  url: "https://phpkyzujpvrsypqqptlv.supabase.co",
+  key: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBocGt5enVqcHZyc3lwcXFwdGx2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0MjA2MjAsImV4cCI6MjA5NTk5NjYyMH0.t7wCh6Juzkn9cyshpy78ZfJ_G9ji8pko_v1hoOzui8w"
+};
 function safeJSON(s) { try { return JSON.parse(s); } catch { return null; } }
-function getConfig()  { return safeJSON(localStorage.getItem(CFG_KEY))  || {}; }
+function getConfig()  { const v = safeJSON(localStorage.getItem(CFG_KEY)); return (v && v.url && v.key) ? v : DEFAULT_CFG; }
 function getSession() { return safeJSON(sessionStorage.getItem(SESS_KEY)) || {}; }
 function getData()    { return safeJSON(localStorage.getItem(DATA_KEY))  || {}; }
 function getLocalPref(){ return safeJSON(localStorage.getItem(SUB_PREF))  || {}; }
