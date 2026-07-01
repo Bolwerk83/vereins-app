@@ -838,7 +838,8 @@ const _DATA_ARRAYS = [
   "events","chats","messages","helpers","teams","trainers",
   "playerProfiles","trainings","fields","bookings",
   "contactRequests","securityLog","seasons","pollTemplates",
-  "clubs","news","newsItems","photos","broadcasts","treasuries","liveEvents"
+  "clubs","news","newsItems","photos","broadcasts","treasuries","liveEvents",
+  "trainerMsgs","cashbook"
 ];
 const normData = (d) => {
   if (!d || typeof d !== "object") return d;
@@ -22048,7 +22049,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
   );
 }
 
-function PlayerCard({ player: pl,onEdit,onDel,isMain,allTeams,allEvents,onWizard }) {
+function PlayerCard({ player: pl,onEdit,onDel,isMain,allTeams,allEvents,onWizard,onMessage }) {
   const noSkills = !Object.values(pl.skills||{}).some(v=>(Number(v)||0)>0);
   const [exp,setExp] = useState(false);
   const allTids = [pl.mainTid,...(pl.optTids||[])].filter(Boolean).filter(x=>!x.hidden);
@@ -22079,6 +22080,7 @@ function PlayerCard({ player: pl,onEdit,onDel,isMain,allTeams,allEvents,onWizard
         </div>
         <div style={{display:"flex",gap:5,flexShrink:0}}>
           {onWizard&&noSkills&&<button onClick={e=>{e.stopPropagation();onWizard();}} title="Skill-Wizard: Erstbewertung starten" style={{height:30,padding:"0 9px",borderRadius:9,background:"#eef2ff",border:"none",color:"#4f46e5",cursor:"pointer",display:"flex",alignItems:"center",gap:4,fontSize:12,fontWeight:800,fontFamily:"inherit"}}>🎯 Skills</button>}
+          {onMessage&&<button onClick={e=>{e.stopPropagation();onMessage();}} title="Nachricht an Eltern/Spieler (Pflicht-Lesebestätigung beim Login)" style={{width:30,height:30,borderRadius:9,background:"#eef2ff",border:"none",color:"#4f46e5",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>✉</button>}
           <button onClick={e=>{e.stopPropagation();onEdit();}} style={{width:30,height:30,borderRadius:9,background:"#eff6ff",border:"none",color:"#2563eb",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>✎</button>
           {onDel&&<button onClick={e=>{e.stopPropagation();onDel();}} style={{width:30,height:30,borderRadius:9,background:"#fee2e2",border:"none",color:"#dc2626",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>✕</button>}
         </div>
@@ -22916,6 +22918,15 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
   const [showOpt,setShowOpt] = useState(false);
   const [skillCheck,setSkillCheck] = useState(null); // Team für Monats-Skill-Check
   const [wizardChild,setWizardChild] = useState(null); // Kind für Skill-Wizard (Erstbewertung)
+  const [msgPlayer,setMsgPlayer] = useState(null); // Spieler für Trainer→Eltern-Nachricht
+  const [msgText,setMsgText] = useState("");
+  const sendPlayerMsg = ()=>{
+    const txt=msgText.trim(); if(!txt||!msgPlayer) return;
+    const m={ id:uid(), cid, tid:msgPlayer.mainTid||selTid, to:msgPlayer.name, from:session?.name||"Trainer", text:txt, ts:new Date().toISOString(), reads:{} };
+    save({...data, trainerMsgs:[...(data.trainerMsgs||[]), m]});
+    fire("Nachricht gesendet – poppt beim nächsten Login auf");
+    setMsgPlayer(null); setMsgText("");
+  };
   const sport = cl?.sport || "fussball";
   const skillAxes = skillAxesFor(sport);
   const raterId = session?.id || session?.role || "trainer";
@@ -23141,6 +23152,7 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
             {mainPlayers.map(pl=>(
               <PlayerCard key={pl.id} player={pl} allTeams={allTeams} allEvents={allEvents}
                 onEdit={()=>setEditP(pl)} onDel={()=>delPlayer(pl.id)} isMain
+                onMessage={()=>{setMsgText("");setMsgPlayer(pl);}}
                 onWizard={selTeam?.skillCheckEnabled!==false?()=>setWizardChild(pl):null}/>
             ))}
           </div>
@@ -23213,6 +23225,22 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
           onApply={applyInitialSkill}
           onClose={()=>setWizardChild(null)}
         />
+      )}
+      {msgPlayer && (
+        <div onClick={()=>setMsgPlayer(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:2000,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
+          <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:480,padding:"18px 20px calc(28px + env(safe-area-inset-bottom))",fontFamily:"inherit"}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+              <span style={{fontSize:20}}>✉️</span>
+              <div style={{fontWeight:900,fontSize:17,color:"#0f172a"}}>Nachricht an {msgPlayer.name}</div>
+            </div>
+            <p style={{fontSize:12.5,color:"#64748b",lineHeight:1.5,marginBottom:12}}>Die Nachricht poppt beim nächsten Login der Eltern/Spieler auf und muss als <b>gelesen</b> bestätigt werden, bevor es weitergeht.</p>
+            <textarea value={msgText} onChange={e=>setMsgText(e.target.value)} rows={4} placeholder="z. B. Bitte Trikot zum nächsten Spiel mitbringen…" style={{width:"100%",padding:"11px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",fontFamily:"inherit",boxSizing:"border-box",resize:"vertical"}}/>
+            <div style={{display:"flex",gap:9,marginTop:12}}>
+              <button onClick={()=>setMsgPlayer(null)} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
+              <button onClick={sendPlayerMsg} disabled={!msgText.trim()} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:msgText.trim()?t.p:"#e2e8f0",color:msgText.trim()?contrast(t.p):"#94a3b8",fontWeight:800,fontSize:14,cursor:msgText.trim()?"pointer":"default",fontFamily:"inherit"}}>Senden</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -31278,6 +31306,24 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const myProfile=(data.playerProfiles||[]).find(p=>p.cid===cid && (p.name||"").toLowerCase()===String(user).toLowerCase() && (p.mainTid===tid || (p.optTids||[]).includes(tid)))
     || (data.playerProfiles||[]).find(p=>p.cid===cid && (p.name||"").toLowerCase()===String(user).toLowerCase());
   const pubOk=!!myProfile?.pubOk;
+
+  // Login-Gate: Trainer-Nachrichten (Pflicht-Lesebestätigung) + Wiederholungs-No-Show-Hinweis.
+  const uLow=String(user).toLowerCase();
+  const myMsgs=(data.trainerMsgs||[]).filter(m=>m.cid===cid && String(m.to||"").toLowerCase()===uLow && !((m.reads||{})[uLow]));
+  const myPastEvents=(data.events||[]).filter(e=>e.tid===tid && e.date<tod);
+  const myNoShows=playerNoShowEvents(myPastEvents, user).length;
+  const showNoShow=!!myProfile && myNoShows>=NO_SHOW_HINT_THRESHOLD && myNoShows>(myProfile.noShowAckCount||0);
+  const gateItems=[...myMsgs.map(m=>({type:"msg",m})), ...(showNoShow?[{type:"noshow",count:myNoShows}]:[])];
+  const gate=gateItems[0]||null;
+  const ackMsg=(m)=>onSave({...data, trainerMsgs:(data.trainerMsgs||[]).map(x=>x.id===m.id?{...x,reads:{...(x.reads||{}),[uLow]:new Date().toISOString()}}:x)});
+  const ackNoShow=(count)=>{
+    if(!myProfile) return;
+    const profiles=(data.playerProfiles||[]).map(p=>p.id===myProfile.id?{...p,noShowAckCount:count}:p);
+    const audit={ id:uid(), cid, ts:new Date().toISOString(), type:"noshow_ack", user:String(user), read:false,
+      msg:`No-Show-Hinweis für „${user}“ beim Login angezeigt und bestätigt (Stand ${count} No-Shows).` };
+    onSave({...data, playerProfiles:profiles, securityLog:[...(data.securityLog||[]), audit].slice(-500)});
+  };
+
   const togglePubOk=()=>{
     if(!myProfile){ fire(tr("uhProfileNotFound")); return; }
     const next=(data.playerProfiles||[]).map(p=>p.id===myProfile.id?{...p,pubOk:!pubOk}:p);
@@ -31358,6 +31404,37 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       paddingBottom:isDesktop?0:"calc(64px + env(safe-area-inset-bottom))",
       display:isDesktop?"grid":"block",
       gridTemplateColumns:isDesktop?"260px 1fr":"none"}}>
+      {gate&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(15,23,42,.72)",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:20,backdropFilter:"blur(6px)"}}>
+          <div style={{background:"#fff",borderRadius:20,width:"100%",maxWidth:440,padding:"22px 22px 20px",fontFamily:"inherit",boxShadow:"0 20px 60px rgba(0,0,0,.4)"}}>
+            {gate.type==="msg"?(<>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+                <div style={{width:42,height:42,borderRadius:12,background:t.p+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>✉️</div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontWeight:900,fontSize:16,color:"#0f172a"}}>Nachricht vom Trainer</div>
+                  <div style={{fontSize:12,color:"#64748b"}}>{gate.m.from}{gate.m.ts?` · ${new Date(gate.m.ts).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"})}`:""}</div>
+                </div>
+              </div>
+              <div style={{background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:13,padding:"14px 15px",fontSize:14.5,color:"#0f172a",lineHeight:1.6,whiteSpace:"pre-wrap",marginBottom:14}}>{gate.m.text}</div>
+              {gateItems.length>1&&<div style={{fontSize:11.5,color:"#64748b",textAlign:"center",marginBottom:10}}>Noch {gateItems.length-1} weitere{gateItems.length-1===1?"r":""} Hinweis{gateItems.length-1===1?"":"e"}</div>}
+              <button onClick={()=>ackMsg(gate.m)} style={{width:"100%",padding:"14px",borderRadius:14,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>Gelesen ✓</button>
+            </>):(<>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+                <div style={{width:42,height:42,borderRadius:12,background:"#ffedd5",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>⚠️</div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontWeight:900,fontSize:16,color:"#0f172a"}}>Hinweis zur Anwesenheit</div>
+                  <div style={{fontSize:12,color:"#64748b"}}>Betrifft {user}</div>
+                </div>
+              </div>
+              <div style={{background:"#fff7ed",border:"1.5px solid #fed7aa",borderRadius:13,padding:"14px 15px",fontSize:14,color:"#7c2d12",lineHeight:1.6,marginBottom:14}}>
+                <b>{user}</b> hat sich <b>{gate.count}×</b> zu einem Termin angemeldet, ist dann aber nicht erschienen. Bitte sagt künftig rechtzeitig ab, wenn es doch nicht klappt – so kann der Trainer besser planen. Danke!
+              </div>
+              <div style={{fontSize:11,color:"#64748b",textAlign:"center",marginBottom:12,lineHeight:1.45}}>Mit „Verstanden" wird bestätigt, dass ihr diesen Hinweis gesehen habt (wird für den Trainer protokolliert).</div>
+              <button onClick={()=>ackNoShow(gate.count)} style={{width:"100%",padding:"14px",borderRadius:14,border:"none",background:"#d97706",color:"#fff",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>Verstanden ✓</button>
+            </>)}
+          </div>
+        </div>
+      )}
       {isDesktop&&<DesktopSidebar tab={tab} setTab={setTab}
         isAdmin={isAdmin} isHelper={isHelper}
         unread={unreadMsgs} cl={myClub}
