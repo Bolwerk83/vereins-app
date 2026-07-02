@@ -5019,6 +5019,10 @@ function TacticFullscreen({ tactic, title, onClose }) {
 // Helper: extrahiert Geburts-Bandbreite aus Team-Kategorie ("F-Jugend" → [2016,2017])
 function teamYearRange(team) {
   if (!team) return null;
+  // Zuerst die aktuelle (saison-korrekte) Zuordnung der Kategorie – so sind auch
+  // bestehende Teams mit veralteter gespeicherter Jahrgangs-Angabe korrekt.
+  const cy = CAT_YEARS[team.cat] || CAT_YEARS[team.name];
+  if (cy && cy.length) return [Math.min(...cy), Math.max(...cy)];
   if (team.years) {
     const m = String(team.years).match(/(\d{4})\D+(\d{2,4})/);
     if (m) {
@@ -5153,7 +5157,10 @@ function TeamInsights({ data, myTids, cl }) {
       const tm = clubTeams.find(t => t.id === p.mainTid);
       const range = teamYearRange(tm);
       if (!range) return null;
-      const diff = p.by < range[0] ? range[0] - p.by : p.by > range[1] ? p.by - range[1] : 0;
+      // Mädchen dürfen bis zu 2 Jahre älter (früherer Jahrgang) spielen – untere Grenze erweitern.
+      const gb = p.gender === "w" ? 2 : 0;
+      const lo = range[0] - gb, hi = range[1];
+      const diff = p.by < lo ? lo - p.by : p.by > hi ? p.by - hi : 0;
       if (diff < 2) return null;
       const best = bestTeamForPlayer(p);
       if (!best || best.team.id === p.mainTid) return null;
@@ -5298,7 +5305,7 @@ function TeamInsights({ data, myTids, cl }) {
                 <div style={{fontWeight:800,fontSize:13,color:"#0f172a"}}>{p.name}</div>
                 <div style={{fontSize:11,color:"#1e40af",marginTop:1}}>
                   Jg. {p.by||"?"} → <b>{suggestion.team.name}</b>
-                  {suggestion.team.years && ` (${suggestion.team.years})`}
+                  {(catYearsStr(suggestion.team.cat)||suggestion.team.years) && ` (${catYearsStr(suggestion.team.cat)||suggestion.team.years})`}
                 </div>
               </div>
             </div>
@@ -5315,8 +5322,8 @@ function TeamInsights({ data, myTids, cl }) {
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontWeight:800,fontSize:13,color:"#0f172a"}}>{p.name} <span style={{color:"#64748b",fontWeight:600}}>(Jg. {p.by})</span></div>
                 <div style={{fontSize:11,color:"#92400e",marginTop:1,lineHeight:1.45}}>
-                  Aktuell: <b>{currentTeam?.name}</b> ({currentTeam?.years}) · {diff}J. außerhalb<br/>
-                  Vorschlag: <b>{suggestedTeam.name}</b> ({suggestedTeam.years})
+                  Aktuell: <b>{currentTeam?.name}</b> ({catYearsStr(currentTeam?.cat)||currentTeam?.years}) · {diff}J. außerhalb<br/>
+                  Vorschlag: <b>{suggestedTeam.name}</b> ({catYearsStr(suggestedTeam.cat)||suggestedTeam.years})
                 </div>
               </div>
             </div>
@@ -21421,11 +21428,26 @@ const AXIS_TO_FOCUS = {
 };
 
 
+// Fußball-Saison beginnt am 1. Juli. Jahrgänge je Altersklasse werden aus der
+// laufenden Saison berechnet (2 Jahrgänge je Jugend, DFB-Schema) – so stimmen sie
+// jede Saison automatisch. Anker: F-Jugend (U8/U9) = Saisonstart-8 / -7.
+// Beispiel Saison 2026/27: F = 2018/2019, E = 2016/2017, … (Mädchen zusätzlich +2 Jahre
+// über die eligibleCats/playerFitType-Logik).
+const _fbSeasonStart = (()=>{ try{ const d=new Date(); return d.getMonth()>=6 ? d.getFullYear() : d.getFullYear()-1; }catch{ return 2026; } })();
+const _ySpan = off => [ _fbSeasonStart-off, _fbSeasonStart-off+1 ];
 const CAT_YEARS = {
-
-  "Bambinis": [2019,2020,2021,2022],"G-Jugend": [2017,2018,2019],"F-Jugend": [2015,2016,2017],"E-Jugend": [2013,2014,2015],"D-Jugend": [2011,2012,2013],"C-Jugend": [2009,2010,2011],"B-Jugend": [2007,2008,2009],"A-Jugend": [2005,2006,2007],
+  "Bambinis": [_fbSeasonStart-4,_fbSeasonStart-3,_fbSeasonStart-2],  // U6 und jünger
+  "G-Jugend": _ySpan(6),   // U6/U7
+  "F-Jugend": _ySpan(8),   // U8/U9
+  "E-Jugend": _ySpan(10),  // U10/U11
+  "D-Jugend": _ySpan(12),  // U12/U13
+  "C-Jugend": _ySpan(14),  // U14/U15
+  "B-Jugend": _ySpan(16),  // U16/U17
+  "A-Jugend": _ySpan(18),  // U18/U19
   // Erwachsene / weitere Mannschaften: keine festen Jahrgänge (manuelle Zuordnung).
   "Senioren": [],"Alt-Herren": [],"Damen": [],"Mädchen": [],};
+// Anzeige-String der aktuellen Jahrgänge einer Kategorie (z. B. "2018/2019").
+const catYearsStr = (cat) => { const y=CAT_YEARS[cat]; return (y&&y.length)? (y.length<=2? y.join("/") : `${Math.min(...y)}–${Math.max(...y)}`) : ""; };
 const CAT_ORDER = ["Bambinis","G-Jugend","F-Jugend","E-Jugend","D-Jugend","C-Jugend","B-Jugend","A-Jugend","Senioren","Alt-Herren","Damen","Mädchen"];
 
 function eligibleCats(by,gender) {
