@@ -22331,6 +22331,10 @@ function PlayerAssignRow({ player: pl,teams,allTeams,t,onAssign,onOptToggle }) {
   const allElig = allTeams.filter(tm =>
     playerFitsTeam(pl,tm) && tm.id !== pl.mainTid
   );
+  // Alle passenden Teams (auch außerhalb des aktuellen Filters) – für eine klare
+  // Hauptmannschafts-Auswahl. Aushelfen = alle passenden außer der Hauptmannschaft.
+  const fitElig = allTeams.filter(tm => playerFitsTeam(pl,tm));
+  const helpElig = fitElig.filter(tm => tm.id !== pl.mainTid);
 
   return (
     <>
@@ -22500,46 +22504,49 @@ function PlayerAssignRow({ player: pl,teams,allTeams,t,onAssign,onOptToggle }) {
 
       {}
       <div style={{padding:"10px 14px 0"}}>
-        <div style={{fontSize:10,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:6}}>HAUPTMANNSCHAFT ZUWEISEN</div>
+        <div style={{fontSize:10,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:6}}>HAUPTMANNSCHAFT <span style={{color:"#94a3b8",fontWeight:600}}>(genau eine)</span></div>
         <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-          {mainTeam && scopeElig.some(tm=>tm.id===pl.mainTid) && (
-            <button onClick={()=>onAssign("")}
-              style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",borderRadius:10,border:"none",background:mainTeam.col,color:"#fff",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit",boxShadow:`0 2px 8px ${mainTeam.col}44`}}>
-              {mainTeam.name} 
-            </button>
-          )}
-          {scopeElig.filter(tm=>tm.id!==pl.mainTid).map(tm=>{
-            const ft = playerFitType(pl,tm);
-            const lbl = fitLabel(ft);
+          {fitElig.map(tm=>{
+            const isMain = tm.id===pl.mainTid;
+            const lbl = fitLabel(playerFitType(pl,tm));
             return (
-              <button key={tm.id} onClick={()=>onAssign(tm.id)}
-                style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",borderRadius:10,border:`2px solid ${lbl?lbl.col+"80":tm.col+"50"}`,background:lbl?lbl.bg:tm.col+"12",color:lbl?lbl.col:tm.col,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",transition:"all .14s"}}>
-                {tm.name}
-                {lbl&&<span style={{fontSize:10,fontWeight:800,background:lbl.col+"25",borderRadius:5,padding:"1px 6px"}}>{lbl.text}</span>}
+              <button key={tm.id} onClick={()=>{ if(!isMain) onAssign(tm.id); }}
+                style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",borderRadius:10,cursor:"pointer",fontFamily:"inherit",transition:"all .14s",
+                  border:isMain?"none":`2px solid ${lbl?lbl.col+"80":tm.col+"50"}`,
+                  background:isMain?tm.col:(lbl?lbl.bg:tm.col+"12"),
+                  color:isMain?"#fff":(lbl?lbl.col:tm.col),
+                  fontWeight:isMain?800:700,fontSize:13, boxShadow:isMain?`0 2px 8px ${tm.col}44`:"none"}}>
+                {isMain?"✓ ":""}{tm.name}
+                {lbl&&!isMain&&<span style={{fontSize:10,fontWeight:800,background:lbl.col+"25",borderRadius:5,padding:"1px 6px"}}>{lbl.text}</span>}
               </button>
             );
           })}
-          {scopeElig.length===0&&(
-            <span style={{fontSize:12,color:"#64748b"}}>Kein passendes Team im Filter</span>
+          {mainTeam&&(
+            <button onClick={()=>onAssign("")}
+              style={{display:"flex",alignItems:"center",gap:5,padding:"8px 12px",borderRadius:10,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+              ✕ keine
+            </button>
+          )}
+          {fitElig.length===0&&(
+            <span style={{fontSize:12,color:"#64748b"}}>Kein passendes Team – Jahrgang prüfen</span>
           )}
         </div>
       </div>
 
       {}
-      {mainTeam && (
+      {mainTeam && helpElig.length>0 && (
         <div style={{padding:"10px 14px 12px",marginTop:6,borderTop:"1px solid #f1f5f9"}}>
-          <div style={{fontSize:10,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:6}}>KANN AUSHELFEN IN</div>
+          <div style={{fontSize:10,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:6}}>KANN AUSHELFEN IN <span style={{color:"#94a3b8",fontWeight:600}}>(zusätzlich, optional)</span></div>
           <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-            {allElig.map(tm=>{
+            {helpElig.map(tm=>{
               const isOpt=(pl.optTids||[]).includes(tm.id);
               return (
                 <button key={tm.id} onClick={()=>onOptToggle(tm.id,!isOpt)}
-                  style={{display:"flex",alignItems:"center",gap:5,padding:"6px 12px",borderRadius:9,border:`2px solid ${isOpt?tm.col:"#e2e8f0"}`,background:isOpt?tm.col+"15":"#f8fafc",color:isOpt?tm.col:"#94a3b8",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",transition:"all .13s"}}>
-                  {isOpt?"* ":""}{tm.name}
+                  style={{display:"flex",alignItems:"center",gap:5,padding:"6px 12px",borderRadius:9,border:`2px solid ${isOpt?tm.col:"#e2e8f0"}`,background:isOpt?tm.col+"15":"#f8fafc",color:isOpt?tm.col:"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",transition:"all .13s"}}>
+                  {isOpt?"✓ ":"+ "}{tm.name}
                 </button>
               );
             })}
-            {allElig.length===0&&<span style={{fontSize:12,color:"#64748b"}}>Kein weiteres Team verfügbar</span>}
           </div>
         </div>
       )}
