@@ -19720,7 +19720,7 @@ function AdminLogin({cl,onLogin,onBack}) {
               textDecoration:"underline",marginTop:4,padding:0}}>
             Passwort vergessen?
           </button>
-          <div style={{height:14}}/><Btn full ch="Als Admin einloggen" onClick={go} icon="**" v="drk"/>
+          <div style={{height:14}}/><Btn full ch="Als Admin einloggen" onClick={go} v="drk"/>
           
         </div>
       </div>
@@ -24909,7 +24909,7 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
             </div>
 
             <div style={{display:"flex",gap:9}}>
-              <Btn full ch="Speichern" onClick={save2} dis={!f.name.trim()} cl={cl} icon="*"/>
+              <Btn full ch="Speichern" onClick={save2} dis={!f.name.trim()} cl={cl}/>
               <Btn ch="Abbrechen" onClick={()=>setShowForm(false)} v="gst"/>
             </div>
           </div>
@@ -28394,17 +28394,17 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           {local.events.find(e=>e.id===delConf)?.sid&&<p style={{fontSize:13,color:"#b45309",marginTop:6}}> Dieser Termin ist Teil einer Terminserie.</p>}
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:9}}>
-          <Btn v="red" full ch="Nur diesen Termin löschen" icon="**" onClick={()=>{
+          <Btn v="red" full ch="Nur diesen Termin löschen" onClick={()=>{
             save({...local,events:local.events.filter(e=>e.id!==delConf)});
             setDelConf(null);setDelConfVal(null);fire("Termin gelöscht");
           }}/>
           {local.events.find(e=>e.id===delConf)?.sid&&<>
-            <Btn v="red" full ch="Diesen + alle zukünftigen löschen" icon="**" onClick={()=>{
+            <Btn v="red" full ch="Diesen + alle zukünftigen löschen" onClick={()=>{
               const ev=local.events.find(e=>e.id===delConf);
               save({...local,events:local.events.filter(e=>!(e.sid===ev.sid&&e.date>=ev.date))});
               setDelConf(null);setDelConfVal(null);fire("Serientermine gelöscht");
             }}/>
-            <Btn v="red" full ch="Gesamte Serie löschen" icon="**" onClick={()=>{
+            <Btn v="red" full ch="Gesamte Serie löschen" onClick={()=>{
               const ev=local.events.find(e=>e.id===delConf);
               save({...local,events:local.events.filter(e=>e.sid!==ev.sid)});
               setDelConf(null);setDelConfVal(null);fire("Gesamte Serie gelöscht");
@@ -28421,13 +28421,13 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           {editConf.sid&&<p style={{fontSize:13,color:"#b45309",marginTop:6}}> Dieser Termin ist Teil einer Serie.</p>}
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:9}}>
-          <Btn full ch="Nur diesen Termin bearbeiten" icon="**" cl={myClub} onClick={()=>{
+          <Btn full ch="Nur diesen Termin bearbeiten" cl={myClub} onClick={()=>{
             setEditEv(editConf);setEditConf(null);
           }}/>
-          {editConf.sid&&<Btn full ch="Diesen + alle zukünftigen bearbeiten" icon="**" cl={myClub} onClick={()=>{
+          {editConf.sid&&<Btn full ch="Diesen + alle zukünftigen bearbeiten" cl={myClub} onClick={()=>{
             setEditEv({...editConf,_editSeries:"future"});setEditConf(null);
           }}/>}
-          {editConf.sid&&<Btn full ch="Ganze Serie bearbeiten" icon="**" cl={myClub} onClick={()=>{
+          {editConf.sid&&<Btn full ch="Ganze Serie bearbeiten" cl={myClub} onClick={()=>{
             setEditEv({...editConf,_editSeries:"all"});setEditConf(null);
           }}/>}
           <Btn v="gst" full ch="Abbrechen" onClick={()=>setEditConf(null)}/>
@@ -29186,7 +29186,7 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
   const msToDeadline = dl ? dl.getTime() - now2 : 0;
   const BtnSm=({onClick,label,icon,bg,col})=>(
     <button onClick={onClick} style={{display:"flex",alignItems:"center",gap:5,padding:"6px 11px",borderRadius:9,border:"none",background:bg,color:col,fontSize:12,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit"}}>
-      <span style={{fontSize:14}}>{icon}</span>{label}
+      {icon&&<span style={{fontSize:14}}>{icon}</span>}{label}
     </button>
   );
   return (
@@ -29240,13 +29240,13 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
       )}
       {}
       <div style={{display:"flex",gap:6,padding:"8px 12px 10px",borderTop:"1px solid #f1f5f9",flexWrap:"wrap"}}>
-        <BtnSm onClick={onView}  icon="*" label="Ansehen"   bg="#f1f5f9" col="#475569"/>
-        <BtnSm onClick={onEdit}  icon="**" label="Bearbeiten" bg="#f0fdf4" col="#16a34a"/>
+        <BtnSm onClick={onView}  icon="👁" label="Ansehen"   bg="#f1f5f9" col="#475569"/>
+        <BtnSm onClick={onEdit}  icon="✏️" label="Bearbeiten" bg="#f0fdf4" col="#16a34a"/>
         {ev.type==="training"&&onPlan&&<BtnSm onClick={onPlan} icon="📋" label={planTitle?"Plan ändern":"Trainingsplan"} bg="#eef2ff" col="#4f46e5"/>}
         {onRemind&&(ev.pt==="att"||!ev.pt)&&ev.date>=tod&&<BtnSm onClick={onRemind} icon="🔔" label="Erinnern" bg="#e0f2fe" col="#0369a1"/>}
-        <BtnSm onClick={onReset} icon="*" label="Zurücksetzen" bg="#fff7ed" col="#d97706"/>
-        {ev.open&&<BtnSm onClick={onCopyLink} icon="*" label="Link kopieren" bg="#ede9fe" col="#7c3aed"/>}
-        <BtnSm onClick={onDel}   icon="*" label="Löschen"   bg="#fee2e2" col="#dc2626"/>
+        <BtnSm onClick={onReset} icon="♻️" label="Zurücksetzen" bg="#fff7ed" col="#d97706"/>
+        {ev.open&&<BtnSm onClick={onCopyLink} icon="🔗" label="Link kopieren" bg="#ede9fe" col="#7c3aed"/>}
+        <BtnSm onClick={onDel}   icon="🗑" label="Löschen"   bg="#fee2e2" col="#dc2626"/>
       </div>
     </div>
   );
