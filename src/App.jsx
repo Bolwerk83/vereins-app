@@ -839,7 +839,7 @@ const _DATA_ARRAYS = [
   "playerProfiles","trainings","fields","bookings",
   "contactRequests","securityLog","seasons","pollTemplates",
   "clubs","news","newsItems","photos","broadcasts","treasuries","liveEvents",
-  "trainerMsgs","cashbook"
+  "trainerMsgs","cashbook","waitlist"
 ];
 const normData = (d) => {
   if (!d || typeof d !== "object") return d;
@@ -2208,6 +2208,125 @@ function InboxTab({ data,cid,save,fire,cl }) {
           Automatischer Schutz aktiv: Absender die mehr als 5 Nachrichten senden werden automatisch blockiert und gemeldet. Dein Admin-Zugang wird bei 10 Fehlversuchen temporaer gesperrt.
         </div>
       </>}
+    </div>
+  );
+}
+
+// Öffentliches Warteliste-Formular: Interessent:innen tragen sich mit Kontakt ein.
+// Kontakt sehen später NUR Trainer/Verein.
+function WaitlistForm({ cl, teams=[], preTid=null, preCat=null, onSubmit, onClose }) {
+  const t=TH(cl);
+  const cats=[...new Set((teams||[]).map(tm=>tm.cat||tm.name))];
+  const [f,setF]=useState({ childName:"", by:"", gender:"m", parentName:"", contact:"", note:"", cat:preCat||cats[0]||"", tid:preTid||"" });
+  const [sent,setSent]=useState(false);
+  const valid=f.childName.trim().length>1 && f.parentName.trim().length>1 && f.contact.trim().length>=5;
+  const inp={width:"100%",padding:"11px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",fontFamily:"inherit",boxSizing:"border-box"};
+  const submit=()=>{ if(!valid) return; onSubmit({ ...f, by: parseInt(f.by)||null, childName:f.childName.trim(), parentName:f.parentName.trim(), contact:f.contact.trim(), note:f.note.trim() }); setSent(true); };
+  return (
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:2100,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"92dvh",overflowY:"auto",padding:"18px 20px calc(28px + env(safe-area-inset-bottom))",fontFamily:"inherit"}}>
+        <div style={{display:"flex",justifyContent:"center",marginBottom:12}}><div style={{width:44,height:4,borderRadius:99,background:"#e2e8f0"}}/></div>
+        {sent ? (
+          <div style={{textAlign:"center",padding:"18px 8px 8px"}}>
+            <div style={{fontSize:44,marginBottom:8}}>✅</div>
+            <div style={{fontWeight:900,fontSize:18,color:"#0f172a",marginBottom:6}}>Auf der Warteliste!</div>
+            <p style={{fontSize:13.5,color:"#64748b",lineHeight:1.55,marginBottom:16}}>Danke – der Verein meldet sich bei euch, sobald ein Platz frei wird. Eure Kontaktdaten sehen nur Trainer und Verein.</p>
+            <button onClick={onClose} style={{width:"100%",padding:"13px",borderRadius:13,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>Schließen</button>
+          </div>
+        ) : (<>
+          <div style={{fontWeight:900,fontSize:18,color:"#0f172a",marginBottom:4}}>📝 Auf die Warteliste</div>
+          <p style={{fontSize:12.5,color:"#64748b",lineHeight:1.5,marginBottom:14}}>Trag dein Kind ein – der Verein meldet sich, sobald ein Platz frei wird. <b>Kontaktdaten sehen nur Trainer/Verein</b>, nicht andere Eltern.</p>
+          <div style={{display:"flex",flexDirection:"column",gap:9}}>
+            <input value={f.childName} onChange={e=>setF(p=>({...p,childName:e.target.value}))} placeholder="Name des Kindes*" style={inp}/>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9}}>
+              <input value={f.by} onChange={e=>setF(p=>({...p,by:e.target.value}))} inputMode="numeric" placeholder="Jahrgang (z.B. 2018)" style={inp}/>
+              <select value={f.gender} onChange={e=>setF(p=>({...p,gender:e.target.value}))} style={inp}>
+                <option value="m">Junge</option><option value="w">Mädchen</option>
+              </select>
+            </div>
+            {cats.length>0&&(
+              <select value={f.cat} onChange={e=>setF(p=>({...p,cat:e.target.value}))} style={inp}>
+                <option value="">Wunsch-Jugend (optional)</option>
+                {cats.map(c=><option key={c} value={c}>{c}</option>)}
+              </select>
+            )}
+            <input value={f.parentName} onChange={e=>setF(p=>({...p,parentName:e.target.value}))} placeholder="Name Elternteil*" style={inp}/>
+            <input value={f.contact} onChange={e=>setF(p=>({...p,contact:e.target.value}))} placeholder="Kontakt: Telefon oder E-Mail*" style={inp}/>
+            <textarea value={f.note} onChange={e=>setF(p=>({...p,note:e.target.value}))} rows={2} placeholder="Nachricht (optional)" style={{...inp,resize:"vertical"}}/>
+            <div style={{fontSize:11,color:"#64748b",lineHeight:1.45}}>Mit dem Absenden willigst du in die Speicherung dieser Kontaktdaten zur Bearbeitung deiner Anfrage ein (Art. 6 DSGVO). Jederzeit widerrufbar.</div>
+          </div>
+          <div style={{display:"flex",gap:9,marginTop:14}}>
+            <button onClick={onClose} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
+            <button onClick={submit} disabled={!valid} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:valid?t.p:"#e2e8f0",color:valid?contrast(t.p):"#94a3b8",fontWeight:800,fontSize:14,cursor:valid?"pointer":"default",fontFamily:"inherit"}}>Eintragen</button>
+          </div>
+        </>)}
+      </div>
+    </div>
+  );
+}
+
+// Trainer/Admin-Ansicht der Warteliste (mit Kontakt). Trainer sehen die Jugenden
+// ihrer Mannschaften, Admin alle.
+const WAITLIST_STATUS = { open:{l:"offen",c:"#b45309",bg:"#fef3c7"}, contacted:{l:"kontaktiert",c:"#1d4ed8",bg:"#dbeafe"}, admitted:{l:"aufgenommen",c:"#15803d",bg:"#dcfce7"}, declined:{l:"abgelehnt",c:"#64748b",bg:"#f1f5f9"} };
+function WaitlistTab({ data, cid, myTids, session, save, fire, cl, isAdmin=false }) {
+  const t=TH(cl);
+  const teams=(data.teams||[]).filter(tm=>tm.cid===cid);
+  const myCats=new Set(teams.filter(tm=>isAdmin||myTids.includes(tm.id)).map(tm=>tm.cat||tm.name));
+  const visible=(data.waitlist||[]).filter(w=>w.cid===cid && (isAdmin || !w.cat || myCats.has(w.cat) || (w.tid&&myTids.includes(w.tid))))
+    .sort((a,b)=>String(b.ts||"").localeCompare(String(a.ts||"")));
+  const openN=visible.filter(w=>(w.status||"open")==="open").length;
+  const setStatus=(id,status)=>save({...data, waitlist:(data.waitlist||[]).map(w=>w.id===id?{...w,status}:w)});
+  const del=(id)=>{ if(typeof window!=="undefined"&&window.confirm&&!window.confirm("Eintrag von der Warteliste entfernen?"))return; save({...data, waitlist:(data.waitlist||[]).filter(w=>w.id!==id)}); fire&&fire("Von der Warteliste entfernt"); };
+  const admit=(w)=>{
+    const tid=w.tid||teams.find(tm=>(tm.cat||tm.name)===w.cat)?.id||"";
+    if(typeof window!=="undefined"&&window.confirm&&!window.confirm(`„${w.childName}" als Spieler in den Kader übernehmen?`))return;
+    const prof={...mkPlayer({name:w.childName||w.parentName||"Neuer Spieler", by:w.by||2018, gender:w.gender||"m", mainTid:tid}), cid, seasonId:activeSid(data,cid)||"", notes:[w.parentName?`Eltern: ${w.parentName}`:"", w.contact?`Kontakt: ${w.contact}`:"", w.note||""].filter(Boolean).join(" · ")};
+    save({...data, playerProfiles:[...(data.playerProfiles||[]), prof], waitlist:(data.waitlist||[]).map(x=>x.id===w.id?{...x,status:"admitted"}:x)});
+    fire&&fire("Als Spieler in den Kader übernommen");
+  };
+  const contactHref=(c)=>{ const v=String(c||"").trim(); if(/@/.test(v)) return "mailto:"+v; const tel=v.replace(/[^\d+]/g,""); return tel.length>=5?"tel:"+tel:null; };
+  return (
+    <div>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+        <span style={{fontSize:20}}>📋</span>
+        <div style={{flex:1}}>
+          <div style={{fontWeight:900,fontSize:17,color:"#0f172a"}}>Warteliste</div>
+          <div style={{fontSize:12,color:"#64748b"}}>{visible.length} Einträge{openN>0?` · ${openN} offen`:""} · Kontakt nur für Trainer/Verein</div>
+        </div>
+      </div>
+      {visible.length===0 && (
+        <div style={{textAlign:"center",padding:"40px 20px",background:"#f8fafc",borderRadius:16,border:"1.5px dashed #e2e8f0"}}>
+          <div style={{fontSize:34,marginBottom:8}}>📭</div>
+          <p style={{fontWeight:800,color:"#334155"}}>Noch niemand auf der Warteliste</p>
+          <p style={{fontSize:13,color:"#64748b",marginTop:4,lineHeight:1.5}}>Interessierte können sich beim Team-Login über „Auf die Warteliste" eintragen – v. a. wenn ein Team voll ist.</p>
+        </div>
+      )}
+      <div style={{display:"flex",flexDirection:"column",gap:9}}>
+        {visible.map(w=>{ const st=WAITLIST_STATUS[w.status||"open"]||WAITLIST_STATUS.open; const href=contactHref(w.contact); return (
+          <div key={w.id} style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:14,padding:"12px 14px"}}>
+            <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+              <Av name={w.childName||"?"} sz={38}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontWeight:800,fontSize:14.5,color:"#0f172a",display:"flex",alignItems:"center",gap:7,flexWrap:"wrap"}}>{w.childName}
+                  <span style={{fontSize:10.5,fontWeight:800,color:st.c,background:st.bg,borderRadius:6,padding:"1px 7px"}}>{st.l}</span>
+                </div>
+                <div style={{fontSize:12,color:"#64748b",marginTop:2}}>{w.by?`Jg. ${w.by}`:""}{w.gender?` · ${w.gender==="w"?"Mädchen":"Junge"}`:""}{w.cat?` · ${w.cat}`:""}{w.ts?` · ${fmtD(String(w.ts).slice(0,10))}`:""}</div>
+                <div style={{fontSize:12.5,color:"#334155",marginTop:6,lineHeight:1.5}}>
+                  <div>👤 {w.parentName||"—"}</div>
+                  <div>📞 {href?<a href={href} style={{color:t.p,fontWeight:700,textDecoration:"none"}}>{w.contact}</a>:w.contact}</div>
+                  {w.note&&<div style={{color:"#64748b",marginTop:2}}>💬 {w.note}</div>}
+                </div>
+              </div>
+            </div>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:10,paddingTop:10,borderTop:"1px solid #f1f5f9"}}>
+              {(w.status||"open")!=="contacted"&&<button onClick={()=>setStatus(w.id,"contacted")} style={{flex:"1 1 auto",padding:"8px 10px",borderRadius:9,border:"1.5px solid #bfdbfe",background:"#eff6ff",color:"#1d4ed8",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>kontaktiert</button>}
+              <button onClick={()=>admit(w)} style={{flex:"1 1 auto",padding:"8px 10px",borderRadius:9,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>In Kader übernehmen</button>
+              {(w.status||"open")!=="declined"&&<button onClick={()=>setStatus(w.id,"declined")} style={{flex:"1 1 auto",padding:"8px 10px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>ablehnen</button>}
+              <button onClick={()=>del(w.id)} title="Löschen" style={{padding:"8px 11px",borderRadius:9,border:"none",background:"#fee2e2",color:"#dc2626",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>🗑</button>
+            </div>
+          </div>
+        );})}
+      </div>
     </div>
   );
 }
@@ -4429,6 +4548,7 @@ function BottomNav({ tab, setTab, isAdmin, isHelper, isParent=false, unread, inb
         { id:"templates",  label:tr("tabTemplates"),     icon:"V", hidden: isHelper },
         { id:"results",    label:tr("navResults"),   icon:"E", hidden: isHelper||!feat("results_tab")||!clubFeat("mod_results") },
         { id:"attendance", label:tr("navAttendance"),  icon:"S", hidden: isHelper||!feat("attendance_tab") },
+        { id:"waitlist",   label:"Warteliste",         icon:"WL", hidden: isHelper },
       ].filter(x=>!x.hidden),
     },
     isAdmin && {
@@ -18396,6 +18516,7 @@ function DesktopSidebar({ tab, setTab, isAdmin, isHelper, unread, inboxUnread=0,
     { id:"jerseys",    label:"Trikots",        icon:"Tr", hidden: isHelper },
     { id:"helpers",    label:"Helfer",         icon:"H",  hidden: isHelper },
     { id:"attendance", label:"Anwesenheit",    icon:"S",  hidden: isHelper },
+    { id:"waitlist",   label:"Warteliste",     icon:"WL", hidden: isHelper },
     { id:"results",    label:"Ergebnisse",     icon:"E",  hidden: isHelper },
   ].filter(x=>!x.hidden);
 
@@ -19770,7 +19891,8 @@ function HelperLogin({cl,helpers,onLogin,onBack}) {
   );
 }
 
-function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid}) {
+function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid,onWaitlist}) {
+  const [showWait,setShowWait]=useState(false);
   const t=TH(cl);
   const [step,setStep]=useState("cat");
   const [cat,setCat]=useState(null);
@@ -19962,9 +20084,18 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid}) 
           style={{width:"100%",padding:"11px",borderRadius:12,border:"none",background:cl.pri,color:contrast(cl.pri),fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
            „{q.trim()}" als Gast anmelden &amp; abstimmen
         </button>}
+        {onWaitlist&&(
+          <div style={{marginTop:12,paddingTop:12,borderTop:"1px solid #f1f5f9"}}>
+            <p style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6}}>KEIN PLATZ FREI? AUF DIE WARTELISTE</p>
+            <p style={{fontSize:11.5,color:"#64748b",lineHeight:1.45,marginBottom:8}}>Wenn ein Team voll ist, trag dein Kind hier ein – der Verein meldet sich, sobald ein Platz frei wird. Kontakt sehen nur Trainer/Verein.</p>
+            <button onClick={()=>setShowWait(true)} style={{width:"100%",padding:"11px",borderRadius:12,border:`1.5px solid ${cl.pri}`,background:cl.pri+"12",color:cl.pri,fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>📝 Auf die Warteliste setzen</button>
+          </div>
+        )}
       </div>
         );
       })()}
+      {showWait&&<WaitlistForm cl={cl} teams={teams} preCat={cat} preTid={tid} onClose={()=>setShowWait(false)}
+        onSubmit={e=>{ onWaitlist&&onWaitlist(e); }}/>}
     </div>
   );
 }
@@ -28210,6 +28341,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         {tab==="jerseys"    &&<><AffiliateBanner trigger="jerseys"/><JerseysTab data={local} myTids={myTids} save={save} fire={fire} cl={myClub}/></> }
         {tab==="fields"     &&<><FieldsTab data={local} myTids={myTids} session={session} save={save} fire={fire} cl={myClub}/><AffiliateBanner trigger="fields" style={{marginTop:14}}/></> }
         {tab==="attendance" &&<AttendanceTab data={local} myTids={myTids} cl={myClub} save={save} fire={fire} session={session}/>}
+        {tab==="waitlist"   &&<WaitlistTab data={local} cid={cid} myTids={myTids} session={session} save={save} fire={fire} cl={myClub} isAdmin={isAdmin}/>}
         {tab==="results"    &&<><LeagueTab data={local} myTids={myTids} cl={myClub} save={save} fire={fire}/><AffiliateBanner trigger="results" style={{marginTop:14}}/></> }
         {tab==="inbox"      &&<InboxTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
         {tab==="tinbox"     &&<TrainerInboxTab data={local} cid={cid} session={session} save={save} cl={myClub}/>}
@@ -32188,7 +32320,8 @@ function AppInner({lang,setLang}) {
         }}/>}
       {screen==="role"  &&activeCl&&<RolePicker cl={activeCl} onRole={r=>setScr(r==="user"?"flow":r==="trainer"?"tlogin":r==="helper"?"hlogin":"alogin")} onGuest={()=>setScr("guest")} onBack={()=>setScr("dir")}/>}
       {screen==="guest" &&activeCl&&<ClubGuestList cl={activeCl} liveEvents={data.liveEvents||[]} onOpen={(eid,club)=>setVisitor({eid,club})} onBack={()=>setScr("role")}/>}
-      {screen==="flow"  &&activeCl&&<UserFlow cl={activeCl} teams={clTeams} players={data.players} playerProfiles={data.playerProfiles||[]} preselectTid={linkTeam} onDone={(tid,user)=>login("user",{tid,user})} onBack={()=>setScr(linkTeam?"role":"role")}/>}
+      {screen==="flow"  &&activeCl&&<UserFlow cl={activeCl} teams={clTeams} players={data.players} playerProfiles={data.playerProfiles||[]} preselectTid={linkTeam} onDone={(tid,user)=>login("user",{tid,user})} onBack={()=>setScr(linkTeam?"role":"role")}
+        onWaitlist={entry=>{ save({...data, waitlist:[...(data.waitlist||[]), { ...entry, id:uid(), cid:activeCl.id, ts:new Date().toISOString(), status:"open" }]}); }}/>}
       {screen==="tlogin"&&activeCl&&<TrainerLogin cl={activeCl} trainers={data.trainers.filter(t=>t.cid===cid&&isActive(t))} teams={(data.teams||[]).filter(tm=>tm.cid===cid)} onLogin={tr=>login("trainer",tr)} onSetTrainerPw={(trId,newHash)=>{ save({...data,trainers:(data.trainers||[]).map(t=>t.id===trId?{...t,pw:newHash,mustChangePw:false,sharedAt:t.sharedAt||new Date().toISOString()}:t)}); }} onBack={()=>setScr("role")}/>}
       {screen==="hlogin"&&activeCl&&<HelperLogin cl={activeCl} helpers={data.helpers||[]} onLogin={h=>login("helper",{...h,cid})} onBack={()=>setScr("role")}/>}
       {screen==="alogin"&&activeCl&&<AdminLogin cl={activeCl} onLogin={a=>login("admin",{...a,cid})} onBack={()=>setScr("role")}/>}
