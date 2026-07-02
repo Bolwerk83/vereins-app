@@ -4684,6 +4684,7 @@ function ManageTeams({ data, save, fire, cl }) {
   const setTeamStrength = (id,s) => save({...data, teams:(data.teams||[]).map(tm=>tm.id===id?{...tm,strength:s}:tm)});
   const setTeamLogin = (id,m) => save({...data, teams:(data.teams||[]).map(tm=>tm.id===id?{...tm,loginMode:m}:tm)});
   const setTeamSkillCheck = (id,on) => save({...data, teams:(data.teams||[]).map(tm=>tm.id===id?{...tm,skillCheckEnabled:on}:tm)});
+  const setTeamMax = (id,v) => save({...data, teams:(data.teams||[]).map(tm=>tm.id===id?{...tm,maxSize:v>0?v:undefined}:tm)});
   const setTeamSquads = (id,squads) => save({...data, teams:(data.teams||[]).map(tm=>tm.id===id?{...tm,squads}:tm)});
   const setTeamTrainerPwd = (id,v) => save({...data, teams:(data.teams||[]).map(tm=>tm.id===id?{...tm,trainerEditPwd:v}:tm)});
   const LOGIN_OPTS=[["auto","Automatisch"],["parents","Eltern"],["players","Spieler"]];
@@ -4820,6 +4821,15 @@ function ManageTeams({ data, save, fire, cl }) {
                 <InfoHint text={"Monatlicher Skill-Check: Trainer beantworten 1×/Monat je Kind kurze Fragen pro Fähigkeit (ca. 1–2 Min pro Kind). Daraus entstehen Entwicklung & Förderhinweise. Aufwand lohnt sich v.a. im Leistungsbereich – im reinen Breitensport ruhig 'Aus'."}/>
               </div>
             )}
+            {editId!==tm.id && (()=>{ const kaderN=(data.playerProfiles||[]).filter(p=>p.mainTid===tm.id&&!p.archived).length; const full=tm.maxSize&&kaderN>=tm.maxSize; return (
+              <div style={{display:"flex",alignItems:"center",gap:6,marginTop:6,flexWrap:"wrap"}}>
+                <span style={{fontSize:10.5,fontWeight:800,color:"#64748b",letterSpacing:.3}}>MAX KADER</span>
+                <input type="number" min="0" value={tm.maxSize||""} onChange={e=>setTeamMax(tm.id, Math.max(0,parseInt(e.target.value)||0))} placeholder="—"
+                  style={{width:60,padding:"5px 8px",fontSize:12,border:"1.5px solid #e2e8f0",borderRadius:8,outline:"none",fontFamily:"inherit"}}/>
+                <span style={{fontSize:11,color:full?"#dc2626":"#64748b",fontWeight:full?800:600}}>aktuell {kaderN}{tm.maxSize?`/${tm.maxSize}`:""}{full?" · VOLL":""}</span>
+                <InfoHint text={"Maximale Kadergröße. Bei erreichtem Max sollen neue Interessenten auf die Warteliste – der Hinweis erscheint im Team-Login."}/>
+              </div>
+            ); })()}
             {editId!==tm.id && (
               <div style={{display:"flex",alignItems:"center",gap:6,marginTop:6,flexWrap:"wrap"}}>
                 <span style={{fontSize:10.5,fontWeight:800,color:"#64748b",letterSpacing:.3}}>PASSWORT (TRAINER)</span>
@@ -20084,13 +20094,14 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid,on
           style={{width:"100%",padding:"11px",borderRadius:12,border:"none",background:cl.pri,color:contrast(cl.pri),fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
            „{q.trim()}" als Gast anmelden &amp; abstimmen
         </button>}
-        {onWaitlist&&(
+        {onWaitlist&&(()=>{ const curTeam=teams.find(x=>x.id===tid); const kaderN=(playerProfiles||[]).filter(p=>p.mainTid===tid&&!p.archived).length; const teamFull=!!(curTeam?.maxSize&&kaderN>=curTeam.maxSize); return (
           <div style={{marginTop:12,paddingTop:12,borderTop:"1px solid #f1f5f9"}}>
-            <p style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6}}>KEIN PLATZ FREI? AUF DIE WARTELISTE</p>
-            <p style={{fontSize:11.5,color:"#64748b",lineHeight:1.45,marginBottom:8}}>Wenn ein Team voll ist, trag dein Kind hier ein – der Verein meldet sich, sobald ein Platz frei wird. Kontakt sehen nur Trainer/Verein.</p>
-            <button onClick={()=>setShowWait(true)} style={{width:"100%",padding:"11px",borderRadius:12,border:`1.5px solid ${cl.pri}`,background:cl.pri+"12",color:cl.pri,fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>📝 Auf die Warteliste setzen</button>
+            {teamFull&&<div style={{background:"#fef2f2",border:"1.5px solid #fecaca",borderRadius:11,padding:"9px 12px",marginBottom:8,fontSize:12.5,color:"#b91c1c",fontWeight:700,lineHeight:1.45}}>Dieses Team ist aktuell <b>voll ({kaderN}/{curTeam.maxSize})</b>. Trag dein Kind auf die Warteliste – der Verein meldet sich, sobald ein Platz frei wird.</div>}
+            <p style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6}}>{teamFull?"AUF DIE WARTELISTE":"KEIN PLATZ FREI? AUF DIE WARTELISTE"}</p>
+            {!teamFull&&<p style={{fontSize:11.5,color:"#64748b",lineHeight:1.45,marginBottom:8}}>Wenn ein Team voll ist, trag dein Kind hier ein – der Verein meldet sich, sobald ein Platz frei wird. Kontakt sehen nur Trainer/Verein.</p>}
+            <button onClick={()=>setShowWait(true)} style={{width:"100%",padding:"11px",borderRadius:12,border:teamFull?"none":`1.5px solid ${cl.pri}`,background:teamFull?cl.pri:cl.pri+"12",color:teamFull?contrast(cl.pri):cl.pri,fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>📝 Auf die Warteliste setzen</button>
           </div>
-        )}
+        ); })()}
       </div>
         );
       })()}
