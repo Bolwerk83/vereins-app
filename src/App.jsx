@@ -847,6 +847,8 @@ const normData = (d) => {
   const o = { ...d };
   for (const k of _DATA_ARRAYS) if (!Array.isArray(o[k])) o[k] = [];
   if (!o.players || typeof o.players !== "object" || Array.isArray(o.players)) o.players = {};
+  // Global gepflegte Modul-Schalter (SuperAdmin -> Rollout) fuer feat() uebernehmen
+  applyFeatureFlags(o.featureFlags);
   return o;
 };
 
@@ -15322,7 +15324,7 @@ function SuperAdminDashboard({ data, onExit }) {
     {id:"activity",   label:"Aktivität",   icon:"AK"},
     {id:"clubs",      label:"Vereine",     icon:"V"},
     {id:"message",    label:"Nachrichten", icon:"N"},
-    {id:"modules",    label:"Module",      icon:"M"},
+    {id:"modules",    label:"Module",      icon:"M"}, // zeigt den Feature-Manager (global wirksam)
     {id:"revenue",    label:"Einnahmen",   icon:"E"},
     {id:"affiliate",  label:"Werbung / IDs",icon:"€"},
     {id:"analytics",  label:"Analytics",   icon:"A"},
@@ -15482,9 +15484,11 @@ function SuperAdminDashboard({ data, onExit }) {
           <SuperAdminMessages data={data} allClubs={allClubs}/>
         )}
 
-        {/* MODULE */}
-        {tab==="modules"&&(
-          <SuperAdminModules modules={modules} setModule={setModule}/>
+        {/* MODULE / ROLLOUT - beide Tabs zeigen den echten (global wirksamen)
+            Feature-Manager. Der alte "Module"-Schalter (va_modules) hatte auf
+            die App KEINE Wirkung und fuehrte in die Irre. */}
+        {(tab==="modules"||tab==="rollout")&&(
+          <SuperAdminRollout data={data}/>
         )}
 
         {/* EINNAHMEN */}
@@ -17437,8 +17441,14 @@ const MILESTONES = [
 
 // Feature-Flag lesen
 const FEAT_KEY = "va_features_v1";
+// Global gespeicherte Modul-Schalter (data.featureFlags, globale Zeile) haben
+// Vorrang - sie gelten fuer ALLE Geraete. Der Geraete-Speicher (va_features)
+// ist nur noch Fallback, solange die Cloud keinen Wert kennt.
+let _FEAT_CLOUD = null;
+const applyFeatureFlags = (o) => { _FEAT_CLOUD = (o && typeof o === "object" && !Array.isArray(o)) ? o : null; };
 const getFeat = (id) => {
   try {
+    if (_FEAT_CLOUD && Object.prototype.hasOwnProperty.call(_FEAT_CLOUD, id)) return !!_FEAT_CLOUD[id];
     const stored = JSON.parse(localStorage.getItem(FEAT_KEY)||"{}");
     if(stored.hasOwnProperty(id)) return stored[id];
     return FEATURE_REGISTRY.find(f=>f.id===id)?.default ?? true;
@@ -17466,7 +17476,7 @@ const feat = (id) => getFeat(id);
 /* -----------------------------------------------------------------
    ROLLOUT MANAGER COMPONENT (im Super-Admin)
 ----------------------------------------------------------------- */
-function SuperAdminRollout() {
+function SuperAdminRollout({ data }) {
   const [, forceUpdate] = useState(0);
   const [catFilter, setCatFilter] = useState("all");
   const [phaseFilter, setPhaseFilter] = useState("all");
@@ -17477,14 +17487,26 @@ function SuperAdminRollout() {
     try { return JSON.parse(localStorage.getItem(FEAT_KEY)||"{}"); } catch { return {}; }
   })();
 
+  // Schalter gelten GLOBAL: Aenderungen werden in data.featureFlags (globale
+  // Zeile) gespeichert und wirken damit auf allen Geraeten/fuer alle Nutzer.
+  // Der Geraete-Speicher wird nur noch als Fallback mitgepflegt.
+  const flagsRef = useRef({ ...((data&&data.featureFlags)||{}) });
+  const persistCloud = (patch) => {
+    if(!Object.keys(patch).length) return;
+    Object.assign(flagsRef.current, patch);
+    applyFeatureFlags({ ...flagsRef.current });
+    if(data) sb.set({ ...data, featureFlags: { ...flagsRef.current } }).catch(()=>{});
+  };
+
   const toggle = (id, deps=[]) => {
+    const patch = {};
     const cur = getFeat(id);
     // Wenn deaktiviert: prüfen ob andere Features abhängen
     if(cur) {
       const dependents = FEATURE_REGISTRY.filter(f=>f.deps.includes(id)&&getFeat(f.id));
       if(dependents.length>0) {
         if(!confirm(`Achtung: ${dependents.map(f=>f.label).join(", ")} hängen davon ab. Trotzdem deaktivieren?`)) return;
-        dependents.forEach(f=>setFeat(f.id,false));
+        dependents.forEach(f=>{ setFeat(f.id,false); patch[f.id]=false; });
       }
     }
     // Wenn aktiviert: Abhängigkeiten prüfen
@@ -17493,15 +17515,17 @@ function SuperAdminRollout() {
       if(missing.length>0) {
         const missingLabels = missing.map(d=>FEATURE_REGISTRY.find(f=>f.id===d)?.label||d);
         if(!confirm(`Benötigt: ${missingLabels.join(", ")}. Diese auch aktivieren?`)) return;
-        missing.forEach(d=>setFeat(d,true));
+        missing.forEach(d=>{ setFeat(d,true); patch[d]=true; });
       }
     }
-    setFeat(id, !cur);
+    setFeat(id, !cur); patch[id]=!cur;
+    persistCloud(patch);
     forceUpdate(n=>n+1);
   };
 
   const activatePhase = (phase) => {
     setAllPhase(phase);
+    persistCloud(Object.fromEntries(FEATURE_REGISTRY.map(f=>[f.id, f.phase<=phase])));
     forceUpdate(n=>n+1);
     setShowMilestoneModal(false);
   };
@@ -17551,7 +17575,7 @@ function SuperAdminRollout() {
             Rollout & Feature-Flags
           </h2>
           <div style={{color:"#64748b",fontSize:12,marginTop:3}}>
-            {activeCount}/{totalCount} Features aktiv
+            {activeCount}/{totalCount} Features aktiv · Änderungen gelten <b style={{color:"#a78bfa"}}>global für alle Geräte</b> (in der Cloud gespeichert)
           </div>
         </div>
         <button onClick={()=>setShowMilestoneModal(true)}
@@ -18908,7 +18932,7 @@ function DesktopSidebar({ tab, setTab, isAdmin, isHelper, unread, inboxUnread=0,
     { id:"events",   label:"Termine",    icon:"K" },
     { id:"team",     label:"Team",       icon:"P", hidden: isHelper },
     { id:"fields",   label:"Platz",      icon:"F", hidden: isHelper },
-    { id:"chat",     label:"Chat",       icon:"C", badge: unread },
+    { id:"chat",     label:"Chat",       icon:"C", badge: unread, hidden: !feat("chat_team") }, // gleicher Modul-Schalter wie mobile Nav
   ].filter(x=>!x.hidden);
 
   const adminItems = [
