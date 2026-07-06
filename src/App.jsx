@@ -839,7 +839,8 @@ const _DATA_ARRAYS = [
   "playerProfiles","trainings","fields","bookings",
   "contactRequests","securityLog","seasons","pollTemplates",
   "clubs","news","newsItems","photos","broadcasts","treasuries","liveEvents",
-  "trainerMsgs","cashbook","waitlist","drillFeedback"
+  "trainerMsgs","cashbook","waitlist","drillFeedback",
+  "tacticBoards","trainingPlans","venues"
 ];
 const normData = (d) => {
   if (!d || typeof d !== "object") return d;
@@ -25737,6 +25738,14 @@ function ChatTab({data,cid,myTids,session,save,fire,cl,teamOnly=false}) {
       ? baseChats.map(c=>c.id===selScope?{...c,messages:[...(c.messages||[]),msg]}:c)
       : [...baseChats,{id:selScope,cid,messages:[msg]}];
     save({...data,chats:next});
+    // Push an die anderen Chat-Teilnehmer (Edge Function "notify", Modus chat);
+    // Fehler bewusst still - die Nachricht selbst ist bereits gespeichert.
+    try {
+      const cfg=getConfig();
+      const tidPush=selScope.startsWith("team_")?selScope.slice(5):null;
+      fetch(`${cfg.url}/functions/v1/notify`,{method:"POST",headers:{"Content-Type":"application/json","apikey":cfg.key,"Authorization":"Bearer "+cfg.key},
+        body:JSON.stringify({mode:"chat",message:{cid,tid:tidPush,from:session.name||"",text:msg.text}})}).catch(()=>{});
+    } catch {}
     setTimeout(()=>msgRef.current?.scrollIntoView({behavior:"smooth"}),100);
   };
 
@@ -26733,7 +26742,7 @@ function BookingModal({ field,cellStart,date,data,save,fire,cl,myTids,session,on
   const save2 = () => {
     const tm = data.teams.find(x=>x.id===f.teamId);
     const booking = {
-      id: uid(),fieldId: field.id,date,cellStart,cells: f.cells,teamId: f.teamId,teamName: tm?.name||"",booker: session.name||"Trainer",timeFrom: f.timeFrom,timeTo: f.timeTo,note: f.note,cid: field.cid,};
+      id: uid(),fieldId: field.id,date,cellStart,cells: f.cells,teamId: f.teamId,teamName: tm?.name||"",booker: session.name||"Trainer",timeFrom: f.timeFrom,timeTo: f.timeTo,note: f.note,cid: field.cid||cl?.id,};
     const next = [...(data.bookings||[]),booking];
     save({...data,bookings:next});
     fire("Platz gebucht *");
@@ -27290,7 +27299,7 @@ function FieldsTab({ data,myTids,session,save,fire,cl }) {
     });
     if(clash){ fire("Bereich in dieser Zeit schon belegt: "+(clash.teamName||clash.booker||"andere Buchung")+" ("+clash.timeFrom+"–"+clash.timeTo+")"); return false; }
     const tm = myTeams.find(x=>x.id===teamId);
-    const bk = {id:uid(),fieldId:field.id,date:selDate,cellStart,cells,teamId,teamName:tm?.name||"",booker:session?.name||"",timeFrom,timeTo,cid:field.cid};
+    const bk = {id:uid(),fieldId:field.id,date:selDate,cellStart,cells,teamId,teamName:tm?.name||"",booker:session?.name||"",timeFrom,timeTo,cid:field.cid||cid};
     save({...data,bookings:[...bookings,bk]});
     fire("Platz gebucht");
     setBookTarget(null);
@@ -28681,6 +28690,10 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
     fire(`${missing.length} noch offen – Erinnerung erstellt`);
   };
   const [local,setLocal]=useState(()=>JSON.parse(JSON.stringify(data)));
+  // Cloud-Updates (10s-Poll) uebernehmen: local darf nicht auf dem Mount-Stand
+  // einfrieren, sonst fehlen fremde Aenderungen in der Ansicht und der
+  // 3-Wege-Merge wertet fremde Neuanlagen beim naechsten Save als Loeschung.
+  useEffect(()=>{ setLocal(prev=>JSON.stringify(prev)===JSON.stringify(data)?prev:JSON.parse(JSON.stringify(data))); },[data]);
   const [toast,setToast]=useState(null);
   const unreadMsgs = useMemo(()=>{
     const lastRead = Number(localStorage.getItem("va_last_read_"+cid)||0);

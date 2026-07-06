@@ -64,13 +64,49 @@ export const mergeData = (global, shardList) => {
 // ----------------------------------------------------------------
 const _eq = (a,b) => JSON.stringify(a)===JSON.stringify(b);
 const _isRecArr = a => Array.isArray(a) && a.length>0 && a.every(r=>r&&typeof r==="object"&&"id"in r);
+// 3-Wege-Merge fuer Key->Wert-Objekte (z. B. votes: Name -> Stimme).
+// Lokale Aenderung gewinnt je Schluessel; unveraenderte Schluessel nehmen den
+// Cloud-Stand; Cloud-Loeschung (in base, nicht mehr in cloud) wird respektiert.
+function _merge3Map(b,c,l){
+  b=b||{}; c=c||{}; l=l||{};
+  const out={...c};
+  for(const k of new Set([...Object.keys(c),...Object.keys(l)])){
+    const inB=k in b, inC=k in c, inL=k in l;
+    if(inL&&inC) out[k] = !_eq(l[k],b[k]) ? l[k] : c[k];
+    else if(inL&&!inC){ if(!inB||!_eq(l[k],b[k])) out[k]=l[k]; else delete out[k]; }
+    else if(!inL&&inC){ if(inB&&_eq(c[k],b[k])) delete out[k]; }
+  }
+  return out;
+}
+// Unter-Objekte, in die mehrere Nutzer parallel schreiben (Abstimmungen,
+// Anwesenheits-Abhaken). Ohne feldweisen Merge wuerde bei gleichzeitiger
+// Aenderung desselben Termins die Stimme des anderen Geraets verloren gehen.
+const _VOTE_MAPS = ["votes","trainerPresence","present"];
 function _mergeRecord(b,c,l,key){
   if(key==="chats"){
     const m=new Map();
     [...(c?.messages||[]),...(l?.messages||[])].forEach(x=>{ if(x&&x.id!=null&&!m.has(x.id)) m.set(x.id,x); });
     return {...l, messages:[...m.values()].sort((x,y)=>String(x.ts||"").localeCompare(String(y.ts||"")))};
   }
-  return l;
+  let out=l;
+  for(const vk of _VOTE_MAPS){
+    const lv=l?.[vk], cv=c?.[vk];
+    if((lv&&typeof lv==="object"&&!Array.isArray(lv))||(cv&&typeof cv==="object"&&!Array.isArray(cv))){
+      if(out===l) out={...l};
+      out[vk]=_merge3Map(b?.[vk], cv, lv);
+    }
+  }
+  if(Array.isArray(l?.extraPolls)&&Array.isArray(c?.extraPolls)){
+    const cBy=new Map(c.extraPolls.filter(p=>p&&p.id!=null).map(p=>[p.id,p]));
+    const bBy=new Map((b?.extraPolls||[]).filter(p=>p&&p.id!=null).map(p=>[p.id,p]));
+    if(out===l) out={...l};
+    out.extraPolls=l.extraPolls.map(p=>{
+      const cp=p&&p.id!=null?cBy.get(p.id):null;
+      if(!cp||(!p.votes&&!cp.votes)) return p;
+      return {...p, votes:_merge3Map(bBy.get(p.id)?.votes, cp.votes, p.votes)};
+    });
+  }
+  return out;
 }
 export function merge3Arr(base, cloud, local, key){
   const bById=new Map((base||[]).filter(r=>r&&r.id!=null).map(r=>[r.id,r]));

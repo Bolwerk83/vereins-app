@@ -129,3 +129,46 @@ test("merge3Obj: players-Map - lokale Team-Aenderung gewinnt, fremde bleiben", (
   assert.deepEqual(out.t2, ["remote"]);
 });
 
+
+// ---- feldweiser Vote-Merge (gleichzeitige Abstimmungen) ----
+test("merge3Arr: parallele Stimmen am selben Termin bleiben BEIDE erhalten", () => {
+  const base  = [{ id:"ev1", title:"Training", votes:{} }];
+  const cloud = [{ id:"ev1", title:"Training", votes:{ Ben:"yes" } }];          // Gerät B hat abgestimmt
+  const local = [{ id:"ev1", title:"Training", votes:{ Anna:"yes" } }];         // Gerät A stimmt gleichzeitig ab
+  const out = merge3Arr(base, cloud, local, "events");
+  assert.deepEqual(out[0].votes, { Ben:"yes", Anna:"yes" });
+});
+
+test("merge3Arr: lokale Stimm-Aenderung gewinnt je Schluessel, Rest aus der Cloud", () => {
+  const base  = [{ id:"ev1", votes:{ Anna:"yes", Ben:"yes" } }];
+  const cloud = [{ id:"ev1", votes:{ Anna:"yes", Ben:"no" } }];                 // Ben hat umgestimmt
+  const local = [{ id:"ev1", votes:{ Anna:"no",  Ben:"yes" } }];                // Anna stimmt lokal um
+  const out = merge3Arr(base, cloud, local, "events");
+  assert.deepEqual(out[0].votes, { Anna:"no", Ben:"no" });
+});
+
+test("merge3Arr: trainerPresence und present werden ebenfalls feldweise gemerged", () => {
+  const base  = [{ id:"ev1", present:{}, trainerPresence:{} }];
+  const cloud = [{ id:"ev1", present:{ Ben:true }, trainerPresence:{ T1:"yes" } }];
+  const local = [{ id:"ev1", present:{ Anna:true }, trainerPresence:{ T2:"no" } }];
+  const out = merge3Arr(base, cloud, local, "events");
+  assert.deepEqual(out[0].present, { Ben:true, Anna:true });
+  assert.deepEqual(out[0].trainerPresence, { T1:"yes", T2:"no" });
+});
+
+test("merge3Arr: extraPolls-Stimmen werden je Umfrage gemerged", () => {
+  const base  = [{ id:"ev1", extraPolls:[{ id:"p1", q:"Grillen?", votes:{} }] }];
+  const cloud = [{ id:"ev1", extraPolls:[{ id:"p1", q:"Grillen?", votes:{ Ben:"ja" } }] }];
+  const local = [{ id:"ev1", extraPolls:[{ id:"p1", q:"Grillen?", votes:{ Anna:"nein" } }] }];
+  const out = merge3Arr(base, cloud, local, "events");
+  assert.deepEqual(out[0].extraPolls[0].votes, { Ben:"ja", Anna:"nein" });
+});
+
+test("merge3Arr: Cloud-Loeschung einer Stimme wird respektiert (kein Zombie)", () => {
+  const base  = [{ id:"ev1", title:"T", votes:{ Ben:"yes" } }];
+  const cloud = [{ id:"ev1", title:"T", votes:{} }];                            // Ben hat Stimme zurueckgezogen
+  const local = [{ id:"ev1", title:"T2", votes:{ Ben:"yes", Anna:"yes" } }];    // lokal unveraendert Ben + neu Anna
+  const out = merge3Arr(base, cloud, local, "events");
+  assert.deepEqual(out[0].votes, { Anna:"yes" });
+  assert.equal(out[0].title, "T2");
+});
