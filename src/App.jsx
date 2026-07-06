@@ -4685,6 +4685,7 @@ function ManageTeams({ data, save, fire, cl }) {
   const setTeamLogin = (id,m) => save({...data, teams:(data.teams||[]).map(tm=>tm.id===id?{...tm,loginMode:m}:tm)});
   const setTeamSkillCheck = (id,on) => save({...data, teams:(data.teams||[]).map(tm=>tm.id===id?{...tm,skillCheckEnabled:on}:tm)});
   const setTeamMax = (id,v) => save({...data, teams:(data.teams||[]).map(tm=>tm.id===id?{...tm,maxSize:v>0?v:undefined}:tm)});
+  const setTeamFussball = (id,v) => save({...data, teams:(data.teams||[]).map(tm=>tm.id===id?{...tm,fussballUrl:v.trim()||undefined}:tm)});
   const setTeamSquads = (id,squads) => save({...data, teams:(data.teams||[]).map(tm=>tm.id===id?{...tm,squads}:tm)});
   const setTeamTrainerPwd = (id,v) => save({...data, teams:(data.teams||[]).map(tm=>tm.id===id?{...tm,trainerEditPwd:v}:tm)});
   const LOGIN_OPTS=[["auto","Automatisch"],["parents","Eltern"],["players","Spieler"]];
@@ -4830,6 +4831,15 @@ function ManageTeams({ data, save, fire, cl }) {
                 <InfoHint text={"Maximale Kadergröße. Bei erreichtem Max sollen neue Interessenten auf die Warteliste – der Hinweis erscheint im Team-Login."}/>
               </div>
             ); })()}
+            {editId!==tm.id && (
+              <div style={{display:"flex",alignItems:"center",gap:6,marginTop:6,flexWrap:"wrap"}}>
+                <span style={{fontSize:10.5,fontWeight:800,color:"#64748b",letterSpacing:.3}}>FUSSBALL.DE</span>
+                <input value={tm.fussballUrl||""} onChange={e=>setTeamFussball(tm.id,e.target.value)} placeholder="Link zu Spielplan/Tabelle einfügen…"
+                  style={{flex:1,minWidth:150,padding:"5px 9px",fontSize:12,border:"1.5px solid #e2e8f0",borderRadius:8,outline:"none",fontFamily:"inherit"}}/>
+                {tm.fussballUrl&&<a href={tm.fussballUrl} target="_blank" rel="noreferrer" style={{fontSize:11.5,fontWeight:800,color:"#16a34a",textDecoration:"none",padding:"5px 9px",border:"1.5px solid #bbf7d0",borderRadius:8,background:"#f0fdf4"}}>öffnen ↗</a>}
+                <InfoHint text={"Link eures Teams auf fussball.de (Spielplan/Tabelle). Erscheint als Schnellzugriff im Kader und bei den Eltern."}/>
+              </div>
+            )}
             {editId!==tm.id && (
               <div style={{display:"flex",alignItems:"center",gap:6,marginTop:6,flexWrap:"wrap"}}>
                 <span style={{fontSize:10.5,fontWeight:800,color:"#64748b",letterSpacing:.3}}>PASSWORT (TRAINER)</span>
@@ -23454,9 +23464,12 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
           })()}
 
           {mainPlayers.length>0&&(
-            <button onClick={()=>setShowMeld(true)} style={{width:"100%",marginBottom:12,padding:"11px",borderRadius:12,border:"1.5px dashed #94a3b8",background:"#f8fafc",color:"#334155",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
-              📤 Meldeliste erstellen (Turnier / DFBnet)
-            </button>
+            <div style={{display:"flex",gap:8,marginBottom:12}}>
+              <button onClick={()=>setShowMeld(true)} style={{flex:1,padding:"11px",borderRadius:12,border:"1.5px dashed #94a3b8",background:"#f8fafc",color:"#334155",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+                📤 Meldeliste (Turnier / DFBnet)
+              </button>
+              {selTeam?.fussballUrl&&<a href={selTeam.fussballUrl} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",padding:"11px 14px",borderRadius:12,border:"1.5px solid #bbf7d0",background:"#f0fdf4",color:"#15803d",fontWeight:800,fontSize:13,textDecoration:"none",whiteSpace:"nowrap"}}>⚽ fussball.de ↗</a>}
+            </div>
           )}
           {showMeld&&(()=>{
             const teamTrainers=(data.trainers||[]).filter(trn=>(trn.tids||[]).includes(selTid)&&isActive(trn));
@@ -28568,7 +28581,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             </div>
           ); })()}
         {viewEv.type==="turnier"
-          ? <TournView ev={viewEv} user={session.name||"Admin"} onVote={()=>{}} cl={myClub} players={local.players} isHelper={isHelper} fields={(data.fields||[]).filter(f=>f.cid===cid)}
+          ? <TournView ev={viewEv} user={session.name||"Admin"} onVote={()=>{}} cl={myClub} players={local.players} isHelper={isHelper} teamCat={(local.teams||[]).find(tm=>tm.id===viewEv.tid)?.cat||null} fields={(data.fields||[]).filter(f=>f.cid===cid)}
               onUpdate={patch=>{
                 const events=local.events.map(e=>e.id===viewEv.id?{...e,...patch}:e);
                 const updatedEv=events.find(e=>e.id===viewEv.id);
@@ -30714,7 +30727,7 @@ function FestivalPanel({ ev, setup, t, onUpdate, isHelper }){
     </div>
   );
 }
-function TournView({ ev,user,onVote,onUpdate,cl,players,isHelper=false,fields=[],onPublish,onUnpublish }) {
+function TournView({ ev,user,onVote,onUpdate,cl,players,isHelper=false,fields=[],onPublish,onUnpublish,teamCat=null }) {
   const t=TH(cl);
   const setup=ev.setup||{};
   const [stab,setStab]=useState("info");
@@ -30732,7 +30745,41 @@ function TournView({ ev,user,onVote,onUpdate,cl,players,isHelper=false,fields=[]
         ))}
       </div>
       {stab==="info"&&<PollAttend ev={ev} user={user} onVote={onVote} cl={cl}/>}
-      {stab==="setup"&&!isHelper&&<TournSetup setup={setup} cl={cl} t={t} onUpdate={onUpdate} fields={fields} ev={ev}/>}
+      {stab==="setup"&&!isHelper&&<>
+        <TournSetup setup={setup} cl={cl} t={t} onUpdate={onUpdate} fields={fields} ev={ev}/>
+        {(()=>{
+          // Turnierantrag: alle Angaben für den DFBnet-Antrag (Kreis) gebündelt zum Kopieren/Teilen.
+          const fmtDfb=teamCat?dfbFormatForCat(teamCat):null;
+          const parts=(setup.clubs||[]).filter(Boolean);
+          const L=[
+            `Turnierantrag / Turnierdaten – ${setup.clubName||cl.name||""}`,
+            `Turnier: ${ev.title||""}`,
+            `Ausrichter: ${setup.clubName||cl.name||""}`,
+            `Datum: ${fmtD(ev.date||now())}${ev.time?` · Beginn: ${ev.time} Uhr`:""}`,
+            ev.loc?`Ort: ${ev.loc}${ev.venueAddr?`, ${ev.venueAddr}`:""}`:null,
+            teamCat?`Altersklasse: ${teamCat}${catYearsStr(teamCat)?` (Jg. ${catYearsStr(teamCat)})`:""}`:null,
+            fmtDfb?`Spielform (DFB): ${fmtDfb.form} · Feld: ${fmtDfb.field} · Tore: ${fmtDfb.goals} · Ball: ${fmtDfb.ball}`:null,
+            setup.gameTime?`Spielzeit: ${setup.gameTime} Min je Spiel`:null,
+            (setup.pitches?.length||setup.fields)?`Felder: ${setup.pitches?.length||setup.fields}`:null,
+            parts.length?`Teilnehmende Mannschaften (${parts.length}): ${parts.join(", ")}`:null,
+            `Regeln: ${setup.rules?String(setup.rules).slice(0,400):"nach DFB-Spielformen der Altersklasse"}`,
+            ``,`Stand: ${fmtD(now())} · Antrag bitte im DFBnet-Modul „Freundschaftsspiele/Turniere" beim zuständigen Kreis stellen.`,
+          ].filter(x=>x!=null);
+          const txt=L.join("\n");
+          const copy=()=>{ navigator.clipboard?.writeText(txt); };
+          const share=()=>{ if(navigator.share){ navigator.share({title:"Turnierantrag",text:txt}).catch(()=>{}); } else copy(); };
+          return (
+            <div style={{marginTop:12,background:"#fff",border:"1.5px dashed #94a3b8",borderRadius:14,padding:"12px 14px"}}>
+              <div style={{fontWeight:800,fontSize:13.5,color:"#0f172a",marginBottom:4}}>📤 Turnierantrag (DFBnet)</div>
+              <div style={{fontSize:11.5,color:"#64748b",lineHeight:1.5,marginBottom:9}}>Alle Angaben für den Antrag beim Kreis gebündelt – kopieren und in DFBnet („Freundschaftsspiele/Turniere") einfügen oder an den Verband mailen.</div>
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={copy} style={{flex:1,padding:"10px",borderRadius:11,border:`1.5px solid ${t.p}`,background:"#fff",color:t.p,fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Kopieren</button>
+                <button onClick={share} style={{flex:1,padding:"10px",borderRadius:11,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Teilen</button>
+              </div>
+            </div>
+          );
+        })()}
+      </>}
       {stab==="plan"&&<TournPlan ev={ev} setup={setup} t={t} onUpdate={onUpdate} isHelper={isHelper}/>}
       {stab==="festival"&&<FestivalPanel ev={ev} setup={setup} t={t} onUpdate={onUpdate} isHelper={isHelper}/>}
       {stab==="timer"&&<CompactTimer ev={ev} cl={cl} canControl={!!onUpdate} onTimer={arr=>onUpdate&&onUpdate({timer:arr})}/>}
@@ -32026,6 +32073,16 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               ))}
             </div>
           </div>
+        )}
+        {myTeam?.fussballUrl&&(
+          <a href={myTeam.fussballUrl} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:11,textDecoration:"none",background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",padding:"13px 16px",marginTop:16}}>
+            <div style={{width:36,height:36,borderRadius:10,background:"#f0fdf4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,flexShrink:0}}>⚽</div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>Spielplan & Tabelle</div>
+              <div style={{fontSize:11.5,color:"#64748b"}}>auf fussball.de öffnen</div>
+            </div>
+            <span style={{color:"#64748b",fontSize:18}}>↗</span>
+          </a>
         )}
         <div style={{marginTop:16}}><DFBFormatsCard cl={cl} cat={myTeam?.cat}/></div>
         <div style={{marginTop:16}}><RecommendCard theme={t.p}/></div>
