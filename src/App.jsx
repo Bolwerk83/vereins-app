@@ -19901,7 +19901,7 @@ function HelperLogin({cl,helpers,onLogin,onBack}) {
   );
 }
 
-function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid,onWaitlist}) {
+function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid,onWaitlist,onConsent}) {
   const [showWait,setShowWait]=useState(false);
   const t=TH(cl);
   const [step,setStep]=useState("cat");
@@ -19913,9 +19913,28 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid,on
   // Datenschutz: Namensliste maskieren (Vorname + Initial), Klartext erst nach Auswahl.
   const maskName = n => { const a=String(n||"").trim().split(/\s+/); return a.length>1 ? a[0]+" "+a[a.length-1][0]+"." : (a[0]||""); };
   const consentKey = (tid2,name) => "va_consent_"+tid2+"_"+String(name).toLowerCase();
-  const hasConsent = (tid2,name) => { try{ return !!localStorage.getItem(consentKey(tid2,name)); }catch{ return false; } };
+  // Profil des Kindes finden (wie UserHome): erst Team-genau, dann nur per Name.
+  const profileFor = (tid2,name) => {
+    const low=String(name||"").toLowerCase();
+    return (playerProfiles||[]).find(p=>(p.name||"").toLowerCase()===low && (p.mainTid===tid2||(p.optTids||[]).includes(tid2)))
+      || (playerProfiles||[]).find(p=>(p.name||"").toLowerCase()===low);
+  };
+  // Einwilligung gilt, wenn sie im GETEILTEN Profil steht (consentAt, auf jedem Gerät
+  // sichtbar & Nachweis für den Verein) – localStorage nur noch als Fallback für Gäste.
+  const hasConsent = (tid2,name) => {
+    const prof=profileFor(tid2,name);
+    if(prof?.consentAt) return true;
+    try{ return !prof && !!localStorage.getItem(consentKey(tid2,name)); }catch{ return false; }
+  };
   const pickName = (tid2,name) => { if(hasConsent(tid2,name)){ onDone(tid2,name); } else { setConsentChk(false); setPendingName({tid:tid2,name}); } };
-  const confirmConsent = () => { if(!consentChk||!pendingName) return; try{ localStorage.setItem(consentKey(pendingName.tid,pendingName.name), new Date().toISOString()); }catch{} const pn=pendingName; setPendingName(null); onDone(pn.tid,pn.name); };
+  const confirmConsent = () => {
+    if(!consentChk||!pendingName) return;
+    const pn=pendingName;
+    const prof=profileFor(pn.tid,pn.name);
+    if(prof && onConsent){ onConsent(prof.id); }                      // in die Vereinsdaten (synct auf alle Geräte)
+    else { try{ localStorage.setItem(consentKey(pn.tid,pn.name), new Date().toISOString()); }catch{} } // Gast ohne Profil
+    setPendingName(null); onDone(pn.tid,pn.name);
+  };
   const [pwd,setPwd]=useState(""); const [pwdErr,setPwdErr]=useState(false);
   const [showForgotParent,setShowForgotParent]=useState(false);
   // Direktlink: Team vorauswählen und direkt zum Passwort-Schritt springen
@@ -32332,7 +32351,8 @@ function AppInner({lang,setLang}) {
       {screen==="role"  &&activeCl&&<RolePicker cl={activeCl} onRole={r=>setScr(r==="user"?"flow":r==="trainer"?"tlogin":r==="helper"?"hlogin":"alogin")} onGuest={()=>setScr("guest")} onBack={()=>setScr("dir")}/>}
       {screen==="guest" &&activeCl&&<ClubGuestList cl={activeCl} liveEvents={data.liveEvents||[]} onOpen={(eid,club)=>setVisitor({eid,club})} onBack={()=>setScr("role")}/>}
       {screen==="flow"  &&activeCl&&<UserFlow cl={activeCl} teams={clTeams} players={data.players} playerProfiles={data.playerProfiles||[]} preselectTid={linkTeam} onDone={(tid,user)=>login("user",{tid,user})} onBack={()=>setScr(linkTeam?"role":"role")}
-        onWaitlist={entry=>{ save({...data, waitlist:[...(data.waitlist||[]), { ...entry, id:uid(), cid:activeCl.id, ts:new Date().toISOString(), status:"open" }]}); }}/>}
+        onWaitlist={entry=>{ save({...data, waitlist:[...(data.waitlist||[]), { ...entry, id:uid(), cid:activeCl.id, ts:new Date().toISOString(), status:"open" }]}); }}
+        onConsent={profId=>{ save({...data, playerProfiles:(data.playerProfiles||[]).map(p=>p.id===profId?{...p, consentAt:new Date().toISOString(), consentBy:"Eltern (App-Anmeldung)"}:p)}); }}/>}
       {screen==="tlogin"&&activeCl&&<TrainerLogin cl={activeCl} trainers={data.trainers.filter(t=>t.cid===cid&&isActive(t))} teams={(data.teams||[]).filter(tm=>tm.cid===cid)} onLogin={tr=>login("trainer",tr)} onSetTrainerPw={(trId,newHash)=>{ save({...data,trainers:(data.trainers||[]).map(t=>t.id===trId?{...t,pw:newHash,mustChangePw:false,sharedAt:t.sharedAt||new Date().toISOString()}:t)}); }} onBack={()=>setScr("role")}/>}
       {screen==="hlogin"&&activeCl&&<HelperLogin cl={activeCl} helpers={data.helpers||[]} onLogin={h=>login("helper",{...h,cid})} onBack={()=>setScr("role")}/>}
       {screen==="alogin"&&activeCl&&<AdminLogin cl={activeCl} onLogin={a=>login("admin",{...a,cid})} onBack={()=>setScr("role")}/>}
