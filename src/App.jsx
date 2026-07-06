@@ -7282,6 +7282,7 @@ function CashbookTab({ data, myTids, save, fire, cl }){
   const KINDS=[["strafe",tr("cashKStrafe"),"#d97706"],["beitrag",tr("cashKBeitrag"),"#16a34a"],["einnahme",tr("cashKEinnahme"),"#2563eb"],["ausgabe",tr("cashKAusgabe"),"#dc2626"]];
   const kindConf=k=>KINDS.find(x=>x[0]===k)||KINDS[0];
   const [kind,setKind]=useState("strafe");
+  const [kTab,setKTab]=useState("buchen"); // Unter-Tabs: Buchen / Buchungen / Strafen
   const [amount,setAmount]=useState("");
   const [player,setPlayer]=useState("");
   const [note,setNote]=useState("");
@@ -7309,6 +7310,12 @@ function CashbookTab({ data, myTids, save, fire, cl }){
         <div style={{fontWeight:900,fontSize:30,color:balance>=0?"#15803d":"#dc2626",marginTop:2}}>{balance>=0?"+":"−"}{eur(Math.abs(balance))}</div>
         <div style={{fontSize:11.5,color:"#64748b",marginTop:3}}>{entries.length} {tr("cashBookings")}</div>
       </div>
+      <div style={{display:"flex",gap:6,marginBottom:12,overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
+        {[["buchen","➕ Buchen"],["liste",`📒 Buchungen (${entries.length})`],["strafen",`⚠️ Strafen${fineList.length?` (${fineList.length})`:""}`]].map(([k,l])=>(
+          <button key={k} onClick={()=>setKTab(k)} style={{flexShrink:0,padding:"8px 14px",borderRadius:99,border:`1.5px solid ${kTab===k?t.p:"#e2e8f0"}`,background:kTab===k?t.p:"#fff",color:kTab===k?contrast(t.p):"#475569",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{l}</button>
+        ))}
+      </div>
+      {kTab==="buchen"&&<>
       <div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:14,padding:"13px",marginBottom:14}}>
         <div style={{fontWeight:800,fontSize:14,color:"#0f172a",marginBottom:9}}>{tr("cashNewEntry")}</div>
         <div style={{display:"flex",gap:6,marginBottom:9,flexWrap:"wrap"}}>
@@ -7325,12 +7332,17 @@ function CashbookTab({ data, myTids, save, fire, cl }){
         <input value={note} onChange={e=>setNote(e.target.value)} placeholder={kind==="strafe"?tr("cashReason"):tr("cashNoteOpt")} style={{...inp,marginBottom:10}}/>
         <button onClick={add} style={{width:"100%",padding:"11px",borderRadius:11,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>{tr("cashSave")}</button>
       </div>
+      </>}
+      {kTab==="strafen"&&<>
+      {fineList.length===0&&<p style={{fontSize:13,color:"#64748b",textAlign:"center",padding:"20px"}}>Noch keine Strafen erfasst.</p>}
       {fineList.length>0&&<div style={{background:"#fff",border:"1.5px solid #fed7aa",borderRadius:14,padding:"12px 14px",marginBottom:14}}>
         <div style={{fontWeight:800,fontSize:13,color:"#9a3412",marginBottom:8}}>{tr("cashFines")}</div>
         <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
           {fineList.map(([n,sum],i)=>(<span key={i} style={{background:"#fff7ed",border:"1px solid #fed7aa",borderRadius:99,padding:"4px 11px",fontSize:12.5,fontWeight:700,color:"#9a3412"}}>{n}: {eur(sum)}</span>))}
         </div>
       </div>}
+      </>}
+      {kTab==="liste"&&<>
       <div style={{display:"flex",flexDirection:"column",gap:7}}>
         {entries.length===0&&<p style={{fontSize:13,color:"#64748b",textAlign:"center",padding:"20px"}}>{tr("cashNoEntries")}</p>}
         {entries.map(e=>{ const c=kindConf(e.kind); return (
@@ -7345,6 +7357,7 @@ function CashbookTab({ data, myTids, save, fire, cl }){
           </div>
         );})}
       </div>
+      </>}
     </div>
   );
 }
@@ -28066,6 +28079,7 @@ function AttendanceTab({ data, myTids, cl, save, fire, session=null }) {
   const raterName = session?.name || "Trainer";
   const nsEnabled = cl?.clubSettings?.noShowEnabled!==false;
   const nsThreshold = cl?.clubSettings?.noShowThreshold || NO_SHOW_HINT_THRESHOLD;
+  const [aTab,setATab]=useState("anw");   // Unter-Tabs: Anwesenheit / Spielzeit / No-Shows
   const patchProfile = (plId, patch)=> save && save({...data, playerProfiles:(data.playerProfiles||[]).map(p=>p.id===plId?{...p,...patch}:p)});
   const triggerNoShow = (pl,count)=>{ patchProfile(pl.id,{ nsDecision:{count,action:"trigger",by:raterName,ts:new Date().toISOString()}, nsTriggerCount:count }); fire&&fire("Eltern-Hinweis ausgelöst – erscheint beim nächsten Login"); };
   const dismissNoShow = (pl,count)=>{ patchProfile(pl.id,{ nsDecision:{count,action:"dismiss",by:raterName,ts:new Date().toISOString()} }); fire&&fire("Hinweis übergangen"); };
@@ -28124,6 +28138,12 @@ function AttendanceTab({ data, myTids, cl, save, fire, session=null }) {
           ))}
         </div>
       </div>
+      <div style={{display:"flex",gap:6,marginBottom:12,overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
+        {[["anw","✅ Anwesenheit"],["zeit","⏱ Spielzeit"],["ns","🚫 No-Shows"+(noShowStats.length?` (${noShowStats.length})`:"")]].map(([k,l])=>(
+          <button key={k} onClick={()=>setATab(k)} style={{flexShrink:0,padding:"8px 14px",borderRadius:99,border:`1.5px solid ${aTab===k?t.p:"#e2e8f0"}`,background:aTab===k?t.p:"#fff",color:aTab===k?contrast(t.p):"#475569",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{l}</button>
+        ))}
+      </div>
+      {aTab==="anw"&&<>
       {trainings.length===0&&<div style={{textAlign:"center",padding:"32px",background:"#f8fafc",borderRadius:14,border:"1.5px dashed #e2e8f0"}}><p style={{fontWeight:700,color:"#334155"}}>{tr("attNoTrain")}</p><p style={{fontSize:13,color:"#64748b",marginTop:4}}>{tr("attNoTrainSub")}</p></div>}
       {trainings.length>0&&<div style={{display:"flex",flexDirection:"column",gap:8}}>
         {stats.map(({pl,tYes,gYes,trainPct,gamePct,totalT,totalG})=>(
@@ -28143,6 +28163,9 @@ function AttendanceTab({ data, myTids, cl, save, fire, session=null }) {
           </div>
         ))}
       </div>}
+      </>}
+      {aTab==="ns"&&<>
+      {checkedCount===0&&<div style={{textAlign:"center",padding:"28px",background:"#f8fafc",borderRadius:14,border:"1.5px dashed #e2e8f0",fontSize:13,color:"#64748b",lineHeight:1.5}}>Noch keine Anwesenheit abgehakt.<br/>Im Termin unter „Rückmeldungen" abhaken, wer wirklich da war – dann erscheinen hier die No-Shows.</div>}
       {checkedCount>0&&(
         <div style={{marginTop:18}}>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
@@ -28203,6 +28226,9 @@ function AttendanceTab({ data, myTids, cl, save, fire, session=null }) {
               </div>}
         </div>
       )}
+      </>}
+      {aTab==="zeit"&&<>
+      {ptGames.length===0&&<div style={{textAlign:"center",padding:"28px",background:"#f8fafc",borderRadius:14,border:"1.5px dashed #e2e8f0",fontSize:13,color:"#64748b",lineHeight:1.5}}>Noch keine Einsatzzeiten erfasst.<br/>Beim Spiel im Tab „Spieltag" die Einsatzzeit mitlaufen lassen.</div>}
       {ptGames.length>0&&(
         <div style={{marginTop:18}}>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
@@ -28231,6 +28257,7 @@ function AttendanceTab({ data, myTids, cl, save, fire, session=null }) {
           <div style={{fontSize:11,color:"#64748b",marginTop:8,lineHeight:1.45}}>{tr("attPlaytimeFoot")}</div>
         </div>
       )}
+      </>}
     </div>
   );
 }
