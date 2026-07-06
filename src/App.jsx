@@ -28916,6 +28916,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             onPatch={patch=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,...patch}:e)}); setViewEv(prev=>({...prev,...patch})); }}
             fire={fire}/>
         )}
+        {viewEv.type==="training"&&<TrainingGroups ev={viewEv} data={local} cl={myClub} fire={fire}
+          onPatch={patch=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,...patch}:e)}); setViewEv(prev=>({...prev,...patch})); }}/>}
         <DutyBoard ev={viewEv} user={session.name||"Trainer"} canManage={!isHelper} onChange={arr=>{
           save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,duties:arr}:e)});
           setViewEv(prev=>({...prev,duties:arr}));
@@ -31502,6 +31504,132 @@ function StaffingBoard({ ev, team, session, isHelper, onPatch, fire, onRequestHe
     </div>
   );
 }
+
+// ═══ Trainingsgruppen & Stationen ═══════════════════════════════════════
+// Einfacher Ablauf für Trainer: 1 Zeile Mathe (Zusagen → Gruppen à max 8),
+// "Gruppen einteilen" (ausbalanciert nach Skills, anwesende Trainer zuerst,
+// dann Betreuer), "Rotieren" (bewusst andere Leiter/Mitspieler als letztes
+// Mal), Betreuer-Anfrage als teilbarer Text, Stations-Plan (je Gruppe ein
+// Feld + Aufwärm-Übung, Wechsel im Uhrzeigersinn) und KI-Hinweis zum
+// Zusammenlegen für die Spielform (z. B. F-Jugend: ein großes Feld 5+1).
+const GROUP_MAX = 8; // max. Kinder je Trainer/Betreuer
+function TrainingGroups({ ev, data, cl, onPatch, fire }){
+  const t=TH(cl);
+  const team=(data.teams||[]).find(tm=>tm.id===ev.tid);
+  const cat=team?.cat||team?.name||"F-Jugend";
+  const yes=Object.entries(ev.votes||{}).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>n);
+  const kids=yes.length;
+  const nGroups=Math.max(1, Math.ceil(kids/GROUP_MAX));
+  // Gruppengrößen möglichst gleich (17 -> 6/6/5)
+  const sizes=Array.from({length:nGroups},(_,i)=>Math.floor(kids/nGroups)+(i<kids%nGroups?1:0));
+  // Leiter-Reihenfolge: eingecheckte Trainer -> weitere Team-Trainer -> bestätigte Helfer
+  const checked=Object.values(ev.trainerPresence||{}).map(x=>x.name).filter(Boolean);
+  const assigned=(data.trainers||[]).filter(tr=>(tr.tids||[]).includes(ev.tid)&&isActive(tr)).map(tr=>tr.name).filter(n=>!checked.includes(n));
+  const helpers=(ev.helperOffers||[]).map(o=>o.name).filter(Boolean);
+  const leaders=[...checked.map(n=>({n,role:"Trainer"})),...assigned.map(n=>({n,role:"Trainer"})),...helpers.map(n=>({n,role:"Betreuer"}))];
+  const missing=Math.max(0,nGroups-leaders.length);
+  const profOf=n=>(data.playerProfiles||[]).find(p=>(p.name||"").toLowerCase()===String(n).toLowerCase()&&p.mainTid===ev.tid)
+    ||(data.playerProfiles||[]).find(p=>(p.name||"").toLowerCase()===String(n).toLowerCase());
+  const skillAvgOf=n=>{ const p=profOf(n); const vs=Object.values(p?.skills||{}).map(Number).filter(v=>v>0); return vs.length?vs.reduce((a,b)=>a+b,0)/vs.length:2.5; };
+  // Rotation: letzte Gruppen-Einteilung dieses Teams (frühere Trainings)
+  const prev=(data.events||[]).filter(e=>e.tid===ev.tid&&e.id!==ev.id&&e.type==="training"&&e.groups?.list?.length&&e.date<=ev.date)
+    .sort((a,b)=>(b.date||"").localeCompare(a.date||""))[0];
+  const prevLeaderOf={}; const prevMatesOf={};
+  (prev?.groups?.list||[]).forEach(g=>{ (g.members||[]).forEach(m=>{ prevLeaderOf[m]=g.leader; prevMatesOf[m]=g.members; }); });
+
+  const build=(rotate)=>{
+    if(kids===0){ fire&&fire("Noch keine Zusagen – erst abstimmen lassen"); return; }
+    // 1) Kinder nach Skill sortieren, im Schlangen-Muster verteilen (ausgeglichen)
+    const order=[...yes].map(n=>({n,v:skillAvgOf(n)+(rotate?Math.random()*0.6-0.3:0)})).sort((a,b)=>b.v-a.v).map(x=>x.n);
+    const groups=Array.from({length:nGroups},()=>[]);
+    let gi=0,dir=1;
+    for(const n of order){
+      // Zielgruppe: nächste im Schlangenmuster, bei Rotation Mitspieler-Wiederholung leicht vermeiden
+      let pick=gi;
+      if(rotate&&prevMatesOf[n]){
+        const alts=groups.map((g,i)=>({i,ov:g.filter(m=>(prevMatesOf[n]||[]).includes(m)).length,len:g.length}))
+          .filter(x=>x.len<sizes[x.i]).sort((a,b)=>a.ov-b.ov||a.len-b.len);
+        if(alts.length) pick=alts[0].i;
+      }
+      if(groups[pick].length>=sizes[pick]){ const free=groups.findIndex((g,i)=>g.length<sizes[i]); pick=free>=0?free:pick; }
+      groups[pick].push(n);
+      gi+=dir; if(gi===nGroups||gi<0){ dir*=-1; gi+=dir; }
+    }
+    // 2) Leiter zuordnen: möglichst NICHT dieselben Kinder wie letztes Mal (Rotation)
+    const pool=leaders.slice(0,nGroups);
+    const used=new Set();
+    const list=groups.map(members=>{
+      let best=null,bestOv=1e9;
+      pool.forEach(ld=>{ if(used.has(ld.n)) return; const ov=members.filter(m=>prevLeaderOf[m]===ld.n).length + (rotate?0:-0); if(ov<bestOv){bestOv=ov;best=ld;} });
+      if(best) used.add(best.n);
+      return { leader:best?.n||null, role:best?.role||null, members };
+    });
+    onPatch({ groups:{ ts:new Date().toISOString(), list } });
+    fire&&fire(rotate?"Gruppen neu gemischt (Rotation) ✓":"Gruppen eingeteilt ✓");
+  };
+
+  // Stationen: je Gruppe eine Aufwärm-Übung (altersgerecht aus der Bibliothek)
+  const ageKey=CAT_TO_AGEKEY[cat]||"all";
+  const warmups=TRAINING_TEMPLATES.filter(d=>d.cat==="warmup"&&(ageKey==="all"||(d.age||[]).includes(ageKey)));
+  const stations=Array.from({length:nGroups},(_,i)=>warmups[i%Math.max(1,warmups.length)]).filter(Boolean);
+  const rotMin=stations.length?Math.min(10,Math.max(6,Math.round((stations[0].duration||8)))):8;
+  const fmtDfb=dfbFormatForCat(cat);
+  const mergeHint = nGroups<=1 ? null
+    : `Danach für die Spielform zusammenlegen: ${nGroups>=3?`erst 2 Felder, dann `:""}ein großes Feld${fmtDfb?` (${fmtDfb.form})`:""} – oder bei ${nGroups} Feldern bleiben, wenn die Gruppen gut laufen.`;
+
+  const requestText=()=>[
+    `🙋 Betreuer gesucht – ${team?.name||""}`,
+    `Training am ${fmtD(ev.date)}${ev.time?` um ${ev.time} Uhr`:""}${ev.loc?` (${ev.loc})`:""}.`,
+    `${kids} Kinder haben zugesagt → ${nGroups} Gruppen (${sizes.join("·")}), je max. ${GROUP_MAX} Kinder pro Trainer/Betreuer.`,
+    `Wir haben ${leaders.length} Trainer/Betreuer und brauchen noch ${missing}. Wer kann unterstützen? Einfach in der App unter dem Termin „Ich leite mit" tippen. Danke! 💚`,
+  ].join("\n");
+  const shareRequest=()=>{ const txt=requestText(); if(navigator.share){ navigator.share({title:"Betreuer gesucht",text:txt}).catch(()=>{}); } else { navigator.clipboard?.writeText(txt); fire&&fire("Anfrage kopiert – in der Gruppe teilen"); } };
+
+  const gl=ev.groups?.list||[];
+  return (
+    <div style={{marginTop:16,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+        <span style={{fontSize:18}}>👥</span>
+        <span style={{fontWeight:800,fontSize:15,color:"#0f172a",flex:1}}>Trainingsgruppen & Stationen</span>
+      </div>
+      <div style={{fontSize:12,color:"#475569",fontWeight:600,marginBottom:10,lineHeight:1.5}}>
+        {kids} Zusagen → <b>{nGroups} Gruppe{nGroups>1?"n":""}</b> ({sizes.join(" · ")}) · max. {GROUP_MAX} Kinder je Trainer/Betreuer · verfügbar: {leaders.length}
+        {missing>0&&<span style={{color:"#b45309"}}> · es fehlt{missing>1?"en":""} {missing} Betreuer</span>}
+      </div>
+      {missing>0&&(
+        <button onClick={shareRequest} style={{width:"100%",marginBottom:10,padding:"11px",borderRadius:11,border:"1.5px solid #f59e0b",background:"#fffbeb",color:"#92400e",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+          📣 Betreuer-Anfrage teilen ({missing} fehlt{missing>1?"en":""})
+        </button>
+      )}
+      <div style={{display:"flex",gap:8,marginBottom:gl.length?12:0}}>
+        <button onClick={()=>build(false)} style={{flex:1.3,padding:"11px",borderRadius:11,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>✨ Gruppen einteilen</button>
+        {gl.length>0&&<button onClick={()=>build(true)} style={{flex:1,padding:"11px",borderRadius:11,border:`1.5px solid ${t.p}`,background:"#fff",color:t.p,fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>🔁 Rotieren</button>}
+      </div>
+      {gl.length>0&&(
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {gl.map((g,i)=>(
+            <div key={i} style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"10px 12px"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                <span style={{fontSize:11,fontWeight:900,color:contrast(t.p),background:t.p,borderRadius:7,padding:"2px 8px"}}>Feld {i+1}</span>
+                {g.leader
+                  ? <span style={{fontSize:12.5,fontWeight:800,color:"#0f172a"}}>{g.leader} <span style={{fontSize:10.5,fontWeight:700,color:g.role==="Trainer"?"#15803d":"#b45309",background:g.role==="Trainer"?"#dcfce7":"#fef3c7",borderRadius:5,padding:"1px 6px"}}>{g.role||"?"}</span></span>
+                  : <span style={{fontSize:12,fontWeight:800,color:"#b45309"}}>⚠️ Betreuer fehlt</span>}
+                <span style={{marginLeft:"auto",fontSize:11.5,fontWeight:700,color:"#64748b"}}>{(g.members||[]).length} Kinder</span>
+              </div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                {(g.members||[]).map(m=><span key={m} style={{display:"inline-flex",alignItems:"center",gap:4,background:"#f8fafc",border:"1px solid #eef2f7",borderRadius:99,padding:"2px 9px 2px 3px",fontSize:11.5,fontWeight:600,color:"#334155"}}><Av name={m} sz={17}/>{m}</span>)}
+              </div>
+              {stations[i]&&<div style={{marginTop:7,fontSize:11.5,color:"#4f46e5",fontWeight:700}}>🏃 Aufwärmen: {stations[i].name} <span style={{color:"#64748b",fontWeight:600}}>({stations[i].duration||10} Min)</span></div>}
+            </div>
+          ))}
+          {nGroups>1&&<div style={{fontSize:11.5,color:"#0369a1",background:"#e0f2fe",border:"1px solid #bae6fd",borderRadius:10,padding:"8px 11px",lineHeight:1.5}}>🔄 Stationen-Wechsel alle ~{rotMin} Min im Uhrzeigersinn (Feld 1 → 2 → 3). {mergeHint}</div>}
+          <div style={{fontSize:10.5,color:"#64748b",lineHeight:1.45}}>„Rotieren" mischt bewusst andere Leiter & Mitspieler als beim letzten Training – so lernen sich alle kennen und jedes Kind entwickelt sich in wechselnden Gruppen.</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function MatchReportCard({ ev, roster, onSave }){
   const { tr } = useT();
   const r=ev.report||{};
