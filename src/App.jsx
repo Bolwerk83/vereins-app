@@ -23142,6 +23142,7 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
   const [editP,setEditP]   = useState(null);
   const [showNew,setShowNew] = useState(false);
   const [showBulk,setShowBulk] = useState(false);
+  const [quickNew,setQuickNew] = useState(null); // saubere Anlege-Maske {name,by,gender}
   const [search,setSearch]  = useState("");
   const [showOpt,setShowOpt] = useState(false);
   const [skillCheck,setSkillCheck] = useState(null); // Team für Monats-Skill-Check
@@ -23292,23 +23293,75 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
             ))}
           </div>
 
-          {}
+          {/* Suche + Anlegen: Suche volle Breite, Buttons darunter (nicht mehr gequetscht) */}
+          <div style={{marginBottom:8}}>
+            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 Spieler suchen..."
+              style={{width:"100%",padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",background:"#fff",boxSizing:"border-box"}}/>
+          </div>
           <div style={{display:"flex",gap:8,marginBottom:14}}>
-            <div style={{flex:1,position:"relative"}}>
-              <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontSize:15,pointerEvents:"none"}}></span>
-              <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Spieler suchen..."
-                style={{width:"100%",padding:"10px 13px 10px 38px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",background:"#fff"}}/>
-            </div>
-            <button onClick={()=>{setShowNew(true);setEditP(mkPlayer({mainTid:selTid,by:selTeam?.years?parseInt(String(selTeam.years).split("/")[0])||2014:2014}));}}
-              style={{padding:"0 16px",height:44,borderRadius:12,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",boxShadow:`0 3px 12px ${t.p}44`}}>
-              + Spieler
+            <button onClick={()=>{ const ys=CAT_YEARS[selTeam?.cat]||[]; setQuickNew({name:"",by:ys[0]||2018,gender:"m"}); }}
+              style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit",boxShadow:`0 3px 12px ${t.p}44`}}>
+              + Spieler anlegen
             </button>
             <button onClick={()=>setShowBulk(true)}
               title="Mehrere Spieler auf einmal anlegen (z.B. ganzen Kader aus Liste reinkopieren)"
-              style={{padding:"0 14px",height:44,borderRadius:12,border:`1.5px solid ${t.p}`,background:"#fff",color:t.p,fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>
-              ⚡ Mehrere anlegen
+              style={{flex:1,padding:"12px",borderRadius:12,border:`1.5px solid ${t.p}`,background:"#fff",color:t.p,fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>
+              ⚡ Mehrere
             </button>
           </div>
+          {quickNew&&(()=>{
+            const ys=CAT_YEARS[selTeam?.cat]||[];
+            const valid=quickNew.name.trim().length>1;
+            const mk=()=>({...mkPlayer({name:quickNew.name.trim(),by:Number(quickNew.by)||ys[0]||2018,gender:quickNew.gender,mainTid:selTid}), cid, seasonId:activeSeason});
+            const dup=allPlayers.some(p=>p.mainTid===selTid&&(p.name||"").toLowerCase()===quickNew.name.trim().toLowerCase());
+            const inpQ={width:"100%",padding:"12px 14px",fontSize:15,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",fontFamily:"inherit",boxSizing:"border-box"};
+            const addAnd=(openProfile)=>{
+              if(!valid||dup) return;
+              const prof=mk();
+              if(openProfile){ save({...data,playerProfiles:[...(data.playerProfiles||[]),prof]}); setQuickNew(null); setShowNew(true); setEditP(prof); }
+              else { save({...data,playerProfiles:[...(data.playerProfiles||[]),prof]}); fire(`${prof.name} angelegt ✓`); setQuickNew({name:"",by:quickNew.by,gender:"m"}); }
+            };
+            return (
+              <div onClick={()=>setQuickNew(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:900,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
+                <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:480,padding:"18px 20px calc(30px + env(safe-area-inset-bottom))",fontFamily:"inherit"}}>
+                  <div style={{display:"flex",justifyContent:"center",marginBottom:12}}><div style={{width:44,height:4,borderRadius:99,background:"#e2e8f0"}}/></div>
+                  <div style={{fontWeight:900,fontSize:18,color:"#0f172a",marginBottom:2}}>Neuer Spieler</div>
+                  <div style={{fontSize:12,color:"#64748b",marginBottom:14}}>{selTeam?.icon} {selTeam?.name}{ys.length?` · Jg. ${ys.join("/")}`:""}</div>
+                  <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                    <div>
+                      <input autoFocus value={quickNew.name} onChange={e=>setQuickNew(q=>({...q,name:e.target.value}))} onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();addAnd(false);}}} placeholder="Name (z.B. Max M.)" style={{...inpQ,border:`1.5px solid ${dup?"#fca5a5":"#e2e8f0"}`}}/>
+                      {dup
+                        ? <div style={{fontSize:11.5,color:"#dc2626",fontWeight:700,marginTop:4}}>Name ist schon im Team – bitte eindeutig machen (z.B. Initial).</div>
+                        : <div style={{fontSize:11,color:"#64748b",marginTop:4}}>Datenschutz: nur Vorname, höchstens Nachname-Initial.</div>}
+                    </div>
+                    <div>
+                      <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.4,marginBottom:6}}>JAHRGANG</div>
+                      <div style={{display:"flex",gap:7,alignItems:"center",flexWrap:"wrap"}}>
+                        {ys.map(y=>(
+                          <button key={y} onClick={()=>setQuickNew(q=>({...q,by:y}))} style={{padding:"9px 15px",borderRadius:10,border:`1.5px solid ${Number(quickNew.by)===y?t.p:"#e2e8f0"}`,background:Number(quickNew.by)===y?t.p:"#fff",color:Number(quickNew.by)===y?contrast(t.p):"#475569",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>{y}</button>
+                        ))}
+                        <input value={quickNew.by} onChange={e=>setQuickNew(q=>({...q,by:e.target.value}))} inputMode="numeric" style={{width:76,padding:"9px 10px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",fontFamily:"inherit",textAlign:"center"}}/>
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.4,marginBottom:6}}>GESCHLECHT</div>
+                      <div style={{display:"flex",gap:7}}>
+                        {[["m","Junge"],["w","Mädchen"]].map(([k,l])=>(
+                          <button key={k} onClick={()=>setQuickNew(q=>({...q,gender:k}))} style={{flex:1,padding:"10px",borderRadius:10,border:`1.5px solid ${quickNew.gender===k?t.p:"#e2e8f0"}`,background:quickNew.gender===k?t.p+"14":"#fff",color:quickNew.gender===k?t.p:"#475569",fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{display:"flex",gap:8,marginTop:16}}>
+                    <button onClick={()=>setQuickNew(null)} style={{padding:"13px 14px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Fertig</button>
+                    <button disabled={!valid||dup} onClick={()=>addAnd(true)} style={{flex:1,padding:"13px",borderRadius:12,border:`1.5px solid ${valid&&!dup?t.p:"#e2e8f0"}`,background:"#fff",color:valid&&!dup?t.p:"#94a3b8",fontWeight:800,fontSize:13.5,cursor:valid&&!dup?"pointer":"default",fontFamily:"inherit"}}>+ Details</button>
+                    <button disabled={!valid||dup} onClick={()=>addAnd(false)} style={{flex:1.4,padding:"13px",borderRadius:12,border:"none",background:valid&&!dup?t.p:"#e2e8f0",color:valid&&!dup?contrast(t.p):"#94a3b8",fontWeight:800,fontSize:14,cursor:valid&&!dup?"pointer":"default",fontFamily:"inherit"}}>Anlegen ✓</button>
+                  </div>
+                  <div style={{fontSize:11,color:"#64748b",marginTop:8,textAlign:"center"}}>„Anlegen" speichert und bleibt offen für den nächsten · „+ Details" öffnet direkt das volle Profil</div>
+                </div>
+              </div>
+            );
+          })()}
           {showBulk && <BulkAddPlayers cid={cid} cl={cl} selTid={selTid} selTeam={selTeam} clubTeams={clubTeams} activeSeason={activeSeason} allPlayers={allPlayers} data={data} save={save} fire={fire} onClose={()=>setShowBulk(false)}/>}
 
           {}
@@ -23391,7 +23444,7 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
           {}
           <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5,display:"flex",justifyContent:"space-between"}}>
             <span>HAUPTKADER ({mainPlayers.length})</span>
-            {selTeam&&<span style={{color:"#64748b"}}>{selTeam.cat}{selTeam.years?" . Jg. "+selTeam.years:""}</span>}
+            {selTeam&&<span style={{color:"#64748b"}}>{selTeam.cat}{(catYearsStr(selTeam.cat)||selTeam.years)?" · Jg. "+(catYearsStr(selTeam.cat)||selTeam.years):""}</span>}
           </div>
 
           {mainPlayers.length===0 && (
