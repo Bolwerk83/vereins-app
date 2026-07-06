@@ -4317,6 +4317,9 @@ const createAuditEntry = (type, detail, session, extra = {}) => ({
 // Anwesenheit: hat ein Spieler bei einem Termin zugesagt (Dabei/Verspätet)?
 const _votedYes = (ev,name)=>{ const v=(ev.votes||{})[name]; const val=(typeof v==="object"&&v)?v.val:v; return val==="yes"; };
 // No-Show-Termine: Anwesenheit wurde abgehakt, Spieler hat zugesagt, war aber nicht als anwesend markiert.
+// Pausiert/Verletzt: Kind ist bis einschliesslich pausedUntil aus Planung,
+// Gruppen, Vorschlaegen und No-Show-Logik ausgenommen.
+const isPausedP = (p, tod=null)=> !!(p?.pausedUntil && p.pausedUntil >= (tod||new Date().toISOString().slice(0,10)));
 const playerNoShowEvents = (events, name)=> (events||[]).filter(e=> e && e.present && Object.keys(e.present).length>0 && _votedYes(e,name) && !e.present[name]);
 const NO_SHOW_HINT_THRESHOLD = 2; // ab so vielen No-Shows Hinweis an Eltern + Audit
 const addAuditLog = (data, save, entry) => {
@@ -5466,6 +5469,56 @@ function TeamInsights({ data, myTids, cl, save, fire }) {
           </div>
         </Card>
       )}
+
+      {/* Plausibilitäts-Wächter: unrealistische Bewertungen erkennen */}
+      {(()=>{
+        const rated=players.filter(p=>p.skills&&Object.values(p.skills).some(v=>(Number(v)||0)>0));
+        if(rated.length<3) return null;
+        const avgOf=p=>{ const vs=Object.values(p.skills||{}).map(Number).filter(v=>v>0); return vs.length?vs.reduce((a,b)=>a+b,0)/vs.length:0; };
+        const teamMean=rated.reduce((s,p)=>s+avgOf(p),0)/rated.length;
+        const kidNames=new Set((data.trainers||[]).flatMap(tr=>String(tr.childNames||"").split(",")).map(x=>x.trim().toLowerCase()).filter(Boolean));
+        const flags=[];
+        rated.forEach(p=>{
+          const a=avgOf(p); const reasons=[];
+          const vals=Object.values(p.skills||{}).map(Number).filter(v=>v>0);
+          if(a>=teamMean+1.2) reasons.push(`Ø ${a.toFixed(1)} liegt ${(a-teamMean).toFixed(1)} über dem Team-Schnitt (${teamMean.toFixed(1)})`);
+          if(vals.length>=4&&vals.filter(v=>v>=4.5).length>=vals.length-1) reasons.push("fast nur Höchstwerte – 5 sollte die absolute Ausnahme sein");
+          const hist=p.skillHistory||[];
+          if(hist.length>=2){ const last=hist[hist.length-1]?.skills||{}, prev=hist[hist.length-2]?.skills||{};
+            const jump=Object.keys(last).map(k=>(Number(last[k])||0)-(Number(prev[k])||0)).filter(d=>d>=1.5).length;
+            if(jump>=2) reasons.push(`${jump} Bereiche sind in einem Monat um ≥1,5 gesprungen – bitte prüfen`); }
+          // Mehrfach-Bewerter: weicht ein Trainer stark von den anderen ab?
+          const pend=Object.values(p.skillPending||{}).slice(-1)[0];
+          if(pend&&Object.keys(pend.byTrainer||{}).length>=2){
+            const means=Object.entries(pend.byTrainer).map(([id,ans])=>({id,m:(()=>{const v=Object.values(ans||{}).map(Number).filter(x=>x>0);return v.length?v.reduce((x,y)=>x+y,0)/v.length:0;})()}));
+            const all=means.reduce((s,x)=>s+x.m,0)/means.length;
+            const dev=means.find(x=>Math.abs(x.m-all)>=1);
+            if(dev) reasons.push("die Trainer-Bewertungen weichen ≥1,0 voneinander ab – Schnitt wird verwendet");
+          }
+          if(kidNames.has((p.name||"").toLowerCase())&&a>=teamMean+0.8) reasons.push("Trainer-Kind mit Werten deutlich über Schnitt – Zweitbewertung durch anderen Trainer empfohlen");
+          if(reasons.length) flags.push({p,a,reasons});
+        });
+        if(!flags.length) return null;
+        return (
+          <Card title="Plausibilitäts-Check" sub="KI prüft, ob Bewertungen realistisch wirken – Hinweis, kein Urteil" col="#0891b2">
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {flags.slice(0,6).map(({p,a,reasons})=>(
+                <div key={p.id} style={{background:"#f0f9ff",border:"1px solid #bae6fd",borderRadius:11,padding:"10px 12px"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <Av name={p.name} sz={26}/>
+                    <span style={{fontWeight:800,fontSize:13,color:"#0f172a",flex:1}}>{p.name}</span>
+                    <span style={{fontSize:11.5,fontWeight:800,color:"#0369a1"}}>Ø {a.toFixed(1)}</span>
+                  </div>
+                  <ul style={{margin:"6px 0 0",paddingLeft:18,fontSize:11.5,color:"#075985",lineHeight:1.55}}>
+                    {reasons.map((r,i)=><li key={i}>{r}</li>)}
+                  </ul>
+                </div>
+              ))}
+            </div>
+            <div style={{fontSize:11,color:"#64748b",marginTop:8,lineHeight:1.5}}>Bester Schutz: den <b>Monats-Skill-Check von mehreren Trainern</b> ausfüllen lassen – die App mittelt automatisch. Eigene Kinder idealerweise vom Co-Trainer bewerten lassen.</div>
+          </Card>
+        );
+      })()}
 
       {/* Skill-Aggregat */}
       {skillAvg.length > 0 && (
@@ -20773,7 +20826,7 @@ function trainingFocusFor({ data, cl, tid, present=null, overrideFocus=null }) {
   const team = (data?.teams||[]).find(tm=>tm.id===tid);
   const cat = team?.cat||team?.name||"F-Jugend";
   const soll = sollFor(cl, cat, axes);
-  const roster = (data?.playerProfiles||[]).filter(p=>p.mainTid===tid&&!p.archived&&p.skills&&Object.values(p.skills).some(v=>(Number(v)||0)>0));
+  const roster = (data?.playerProfiles||[]).filter(p=>p.mainTid===tid&&!p.archived&&!isPausedP(p)&&p.skills&&Object.values(p.skills).some(v=>(Number(v)||0)>0));
   const presentLow = (present||[]).map(n=>String(n).toLowerCase());
   const pool = presentLow.length ? roster.filter(p=>presentLow.includes((p.name||"").toLowerCase())) : [];
   const use = pool.length ? pool : roster;
@@ -22067,6 +22120,15 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
             <Inp label="Geburtsdatum (optional – für Geburtstags-Hinweise)" val={p.bday||""} set={v=>up(v?{bday:v,by:parseInt(v.slice(0,4))||p.by}:{bday:""})} type="date" cl={{pri:t.p}}/>
             <Inp label="Passnummer (DFBnet-Spielberechtigung, optional)" val={p.passNr||""} set={v=>up({passNr:v})} ph="z.B. 01234567" cl={{pri:t.p}} note="Erscheint in der Meldeliste für Turniere/DFBnet."/>
             <Inp label="Eltern-Vornamen (optional)" val={p.parentNames||""} set={v=>up({parentNames:v})} ph="z. B. Anna & Markus" cl={{pri:t.p}} note="Für die persönliche Ansprache – können Eltern auch selbst im Profil eintragen."/>
+            <div style={{background:isPausedP(p)?"#fff7ed":"#f8fafc",border:`1.5px solid ${isPausedP(p)?"#fed7aa":"#e2e8f0"}`,borderRadius:12,padding:"11px 13px"}}>
+              <div style={{fontSize:11,fontWeight:800,color:isPausedP(p)?"#9a3412":"#64748b",letterSpacing:.4,marginBottom:7}}>🤕 PAUSIERT / VERLETZT {isPausedP(p)?`– bis ${fmtD(p.pausedUntil)}`:""}</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                <Inp label="Pausiert bis" val={p.pausedUntil||""} set={v=>up({pausedUntil:v||""})} type="date" cl={{pri:t.p}}/>
+                <Sel label="Grund" val={p.pausedReason||"verletzt"} set={v=>up({pausedReason:v})} opts={[["verletzt","🤕 Verletzt"],["krank","🤒 Länger krank"],["urlaub","✈️ Urlaub"],["pause","⏸ Pause"]]}/>
+              </div>
+              <div style={{fontSize:11,color:"#64748b",marginTop:6,lineHeight:1.45}}>Solange pausiert: aus Aufstellungs-/Positions-Vorschlägen, Trainingsgruppen, Förder-Logik und No-Show-Zählung ausgenommen. Danach automatisch wieder dabei.</div>
+              {isPausedP(p)&&<button onClick={()=>up({pausedUntil:"",pausedReason:""})} style={{marginTop:8,padding:"7px 12px",borderRadius:9,border:"1.5px solid #bbf7d0",background:"#f0fdf4",color:"#15803d",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>✓ Wieder fit – Pause beenden</button>}
+            </div>
             {p.by && (
               <div style={{background:"#f0fdf4",borderRadius:10,padding:"9px 13px",fontSize:12,color:"#15803d",fontWeight:600}}>
                  Passt altersmäßig in: {eligibleCats(p.by,p.gender||"m").join(",")||"Keine Kategorie"}
@@ -22510,6 +22572,7 @@ function PlayerCard({ player: pl,onEdit,onDel,isMain,allTeams,allEvents,onWizard
             {pl.position && <span>. {pl.position}</span>}
             {!isMain && <Tag c="#d97706" bg="#fef3c7" ch="Aushilfe" sm/>}
             {!pl.consentAt && <Tag c="#b45309" bg="#fef3c7" ch="Einwilligung fehlt" sm/>}
+            {isPausedP(pl) && <Tag c="#9a3412" bg="#ffedd5" ch={`🤕 bis ${fmtDShort(pl.pausedUntil)}`} sm/>}
           </div>
         </div>
         <div style={{display:"flex",gap:5,flexShrink:0,alignItems:"center"}}>
@@ -28309,7 +28372,7 @@ function AttendanceTab({ data, myTids, cl, save, fire, session=null }) {
   // No-Shows: zugesagt, aber beim Abhaken nicht als anwesend markiert.
   const pastAll = [...pastTrain, ...pastGames];
   const checkedCount = pastAll.filter(e=>e.present&&Object.keys(e.present).length>0).length;
-  const noShowStats = players.map(pl=>({ pl, n: playerNoShowEvents(pastAll, pl.name).length })).filter(x=>x.n>0).sort((a,b)=>b.n-a.n);
+  const noShowStats = players.filter(pl=>!isPausedP(pl)).map(pl=>({ pl, n: playerNoShowEvents(pastAll, pl.name).length })).filter(x=>x.n>0).sort((a,b)=>b.n-a.n);
 
   // Spielzeit-Fairness: aufsummierte Einsatzminuten aus vergangenen Spielen (PlaytimeTracker).
   const ptGames = pastGames.filter(e=>e.playtime&&e.playtime.base&&Object.keys(e.playtime.base).length>0);
@@ -28941,7 +29004,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         {["heimspiel","auswarts","freundschaft","turnier"].includes(viewEv.type)&&(()=>{
           // Positions-Vorschläge aus dem Skill-Profil – nur für Spieler, die zugesagt haben
           const yes=Object.entries(viewEv.votes||{}).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>String(n).toLowerCase());
-          const profs=(local.playerProfiles||[]).filter(p=>p.mainTid===viewEv.tid&&!p.archived&&yes.includes((p.name||"").toLowerCase())&&p.skills&&Object.values(p.skills).some(v=>(Number(v)||0)>0));
+          const profs=(local.playerProfiles||[]).filter(p=>p.mainTid===viewEv.tid&&!p.archived&&!isPausedP(p)&&yes.includes((p.name||"").toLowerCase())&&p.skills&&Object.values(p.skills).some(v=>(Number(v)||0)>0));
           if(profs.length===0) return null;
           const sport=myClub?.sport||"fussball";
           const axesAll=skillAxesFor(sport);
@@ -31532,7 +31595,8 @@ function TrainingGroups({ ev, data, cl, onPatch, fire }){
   const team=(data.teams||[]).find(tm=>tm.id===ev.tid);
   const cat=team?.cat||team?.name||"F-Jugend";
   const GROUP_MAX=cl?.clubSettings?.groupMax||GROUP_MAX_DEFAULT;
-  const yes=Object.entries(ev.votes||{}).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>n);
+  const _pausedNames=new Set((data.playerProfiles||[]).filter(p=>p.mainTid===ev.tid&&isPausedP(p)).map(p=>(p.name||"").toLowerCase()));
+  const yes=Object.entries(ev.votes||{}).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>n).filter(n=>!_pausedNames.has(String(n).toLowerCase()));
   const kids=yes.length;
   const nGroups=Math.max(1, Math.ceil(kids/GROUP_MAX));
   // Gruppengrößen möglichst gleich (17 -> 6/6/5)
