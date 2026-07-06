@@ -123,7 +123,7 @@ const T = {
     send: "Senden",
     wholeClub:"Gesamter Verein",
     noMessages: "Noch keine Nachrichten",
-    navTeam:"Team", navMore:"Mehr", navTreasury:"Kasse", navTraining:"Trainingsplan", cashNewEntry:"Neue Buchung", cashKStrafe:"Strafe", cashKBeitrag:"Beitrag", cashKEinnahme:"Einnahme", cashKAusgabe:"Ausgabe", cashBalance:"KASSENSTAND", cashPlus:"Im Plus", cashMinus:"Im Minus", cashBookings:"Buchungen", cashAmount:"Betrag €", cashPlayerPays:"Spieler (wer zahlt)", cashPlayerOpt:"Spieler (optional)", cashReason:"Grund (z.B. zu spät)", cashNoteOpt:"Notiz (optional)", cashSave:"+ Buchung speichern", cashFines:"Strafen je Spieler", cashNoEntries:"Noch keine Buchungen.", cashDeleteQ:"Eintrag löschen?", cashEnterAmount:"Bitte Betrag eingeben", cashSaved:"Eintrag gespeichert", cashDeleted:"Eintrag gelöscht", noTeamMsg:"Keine Mannschaft.", attNoTrain:"Noch keine Trainings", attNoTrainSub:"Sobald Termine mit Abstimmung angelegt wurden, erscheint hier die Anwesenheitsstatistik.", attPlaytime:"Spielzeit (faire Einsatzzeiten)", attLowPlay:"wenig Spielzeit", attMinTotal:"Min gesamt", attTrainingPct:"% Training", attPlaytimeFoot:"Summiert aus der Einsatzzeit-Erfassung der Spiele. „Wenig Spielzeit“ = unter 70 % des Durchschnitts – im nächsten Spiel bevorzugt einsetzen.", lblTrainings:"Trainings", lblPlayers:"Spieler", attPerGame:"Min/Spiel", attGameOne:"Spiel", attGameMany:"Spiele", msNoEvalSubLite:"Sobald Termine stattgefunden haben, siehst du hier deine persönlichen Werte zu Anwesenheit und Spielzeit.", msDisclaimerLite:"Diese Werte siehst nur du.", msOnlyYou:"nur für dich", msNoEval:"Noch keine Auswertung", msNoEvalSub:"Sobald Termine stattgefunden haben oder der Trainer eine Einschätzung hinterlegt hat, siehst du hier deine persönlichen Werte.", msSecAttend:"ANWESENHEIT", msSecFair:"FAIRE SPIELZEIT", msTeamAvg:"Team-Ø", msSecSkill:"SKILL-PROFIL", msYourFocus:"DEIN FOKUS", msAllGoals:"👏 Alle Zielwerte deiner Altersklasse erreicht! Bleib dran und übernimm mehr Verantwortung im Team.", msTrainer:"Trainer", msDisclaimer:"Diese Werte siehst nur du. Skill-Einschätzungen und Empfehlungen kommen vom Trainerteam und dienen deiner Entwicklung.", msPlayFoot1:"mit erfasster Einsatzzeit. Der Teamschnitt zeigt nur den Durchschnitt – keine Werte anderer Kinder.", msPlayFootLow:" Du lagst zuletzt unter 70 % des Schnitts und solltest bald bevorzugt eingesetzt werden.", mtTechnikT:"2× Ball-/Passübung je Einheit, bewusst beidfüßig", mtTechnikG:"Ruhige erste Berührung – erst sichern, dann spielen", mtSchnellT:"Kurze Antritts-Sprints mit voller Pause", mtSchnellG:"In die Tiefe starten, Lücken attackieren", mtZweiT:"1-gegen-1-Duelle, Körper richtig einsetzen", mtZweiG:"Früh Druck machen, Gegner aktiv stellen", mtUeberT:"Vor der Annahme Schulterblick einüben", mtUeberG:"Kopf hoch, früh nach der Anspielstation schauen", mtAbschT:"Torschuss-Serien aus dem Dribbling", mtAbschG:"Strafraum besetzen, schnell und platziert abschließen", mtAusdT:"Intervallläufe – auch mit Ball", mtAusdG:"Tempo über die ganze Spielzeit halten", mtTeamT:"Kombinations- und Spielformen", mtTeamG:"Anbieten, kommunizieren, für andere mitarbeiten", mtDefT:"Gezielte Übung im Schwerpunkt", mtDefG:"Im Spiel bewusst anwenden", uhProfile:"Profil", uhMyProfile:"Mein Profil", uhPrivacyLbl:"Datenschutz:", uhPhotoNote:"Dein Profilbild wird verschlüsselt auf dem Server gespeichert und ist nur für dich sichtbar. Du kannst es jederzeit löschen.", uhLoggedInAs:"Angemeldet als", uhMyDataDsgvo:"MEINE DATEN (DSGVO)", uhExportData:"Daten exportieren", uhRequestDel:"Löschung anfragen", uhShowNamePublic:"Name in öffentlicher Aufstellung zeigen", uhShowNameSub1:"Erlaubt, dass der Name von ", uhShowNameSub2:" Gästen im Turnier-Spielplan angezeigt wird (sonst nur die Trikotnummer). Jederzeit widerrufbar.", uhClose:"Schließen", uhResetIntros:"Hilfe-Intros erneut anzeigen", uhSwitchLogout:"Team wechseln / Abmelden", uhNext10:"NÄCHSTE 10 TAGE", uhNoNext10:"Keine Termine in den nächsten 10 Tagen.", uhNoUpcoming:"Keine anstehenden Termine", uhNoUpcomingSub:"Der Trainer hat noch keine Termine angelegt.", uhClubLinks:"VEREINS-INFOS & LINKS", uhOverview:"ÜBERSICHT", uhUpcomingN:"anstehend", uhPastN:"vergangen", uhNextEvent:"NÄCHSTER TERMIN", uhHello:"Hallo", uhPast:"VERGANGENE", uhHideMore:"Weitere Termine ausblenden", uhShowMoreA:"Weitere", uhShowMoreB:"Termine anzeigen", uhPhotoSaved:"Profilbild gespeichert", uhPhotoRemoved:"Bild entfernt", uhDataExported:"Daten exportiert", uhExportFailed:"Export fehlgeschlagen", uhDelConfirm:"Möchtest du beim Verein die Löschung deiner Daten anfragen? Der Vereinsadmin erhält die Anfrage im Posteingang.", uhDelSent:"Löschantrag an den Verein gesendet", uhProfileNotFound:"Profil nicht gefunden – bitte beim Trainer melden", uhReleaseGiven:"Freigabe erteilt – Name darf gezeigt werden", uhReleaseWithdrawn:"Freigabe zurückgezogen", uhIntrosReset:"Hilfe-Intros werden wieder angezeigt", uhNeedReason:"Absage nach Frist nur mit Grund – bitte unten einen Grund wählen oder eingeben.", uhVotingClosed:"Anmeldung ist geschlossen – du kannst nur noch absagen (mit Grund).", uhLateCancel:"Späte Absage erfasst – Trainer wird informiert", uhLateJoin:"Späte Anmeldung erfasst", uhSaved:"Gespeichert",
+    navTeam:"Team", navMore:"Mehr", navTreasury:"Kasse", navTraining:"Trainingsplan", cashNewEntry:"Neue Buchung", cashKStrafe:"Strafe", cashKBeitrag:"Beitrag", cashKEinnahme:"Einnahme", cashKAusgabe:"Ausgabe", cashBalance:"KASSENSTAND", cashPlus:"Im Plus", cashMinus:"Im Minus", cashBookings:"Buchungen", cashAmount:"Betrag €", cashPlayerPays:"Spieler (wer zahlt)", cashPlayerOpt:"Spieler (optional)", cashReason:"Grund (z.B. zu spät)", cashNoteOpt:"Notiz (optional)", cashSave:"+ Buchung speichern", cashFines:"Strafen je Spieler", cashNoEntries:"Noch keine Buchungen.", cashDeleteQ:"Eintrag löschen?", cashEnterAmount:"Bitte Betrag eingeben", cashSaved:"Eintrag gespeichert", cashDeleted:"Eintrag gelöscht", noTeamMsg:"Keine Mannschaft.", attNoTrain:"Noch keine Trainings", attNoTrainSub:"Sobald Termine mit Abstimmung angelegt wurden, erscheint hier die Anwesenheitsstatistik.", attPlaytime:"Spielzeit (faire Einsatzzeiten)", attLowPlay:"wenig Spielzeit", attMinTotal:"Min gesamt", attTrainingPct:"% Training", attPlaytimeFoot:"Summiert aus der Einsatzzeit-Erfassung der Spiele. „Wenig Spielzeit“ = unter 70 % des Durchschnitts – im nächsten Spiel bevorzugt einsetzen.", lblTrainings:"Trainings", lblPlayers:"Spieler", attPerGame:"Min/Spiel", attGameOne:"Spiel", attGameMany:"Spiele", cgTitle:"🔒 Einwilligung (Datenschutz)", cgBody1:"Du meldest dich an für", cgBody2:"Der Verein verarbeitet Termin-, Anwesenheits- und ggf. Entwicklungsdaten zur Organisation des Trainings- und Spielbetriebs (Art. 6 / Art. 8 DSGVO). Daten werden nicht öffentlich angezeigt, außer du gibst sie ausdrücklich frei.", cgCheck:"Ich bin erziehungsberechtigt (oder selbst der/die Spieler:in) und willige in die Verarbeitung ein.", cgCancel:"Abbrechen", cgNext:"Weiter", obPwT:"🔑 Extra-Schutz (optional)", obPwSub:"Auf Wunsch könnt ihr ein Passwort für dieses Kind setzen – dann kann sich niemand anderes mit diesem Namen anmelden. Standard: kein Passwort. Zurücksetzen kann es nur der Trainer.", obPwPh:"Passwort (mind. 4 Zeichen)", obSkip:"Ohne Passwort weiter", obSetPw:"Passwort setzen", obDoneT:"Kurz erklärt", obB1:"Termine: mit einem Tipp zusagen, „komme später“ wählen oder mit Grund absagen.", obB2:"„Meine Werte“: Anwesenheit & Spielzeit eures Kindes – nur für euch sichtbar.", obB3:"Profil (oben rechts): Abmelden, Sprache, Schriftgröße und Kind-Passwort.", obGo:"Los geht’s!", pwSecT:"🔑 Kind-Passwort (optional)", pwSet:"gesetzt", pwNotSet:"nicht gesetzt", pwCurPh:"aktuelles Passwort", pwNewPh:"neues Passwort (mind. 4 Zeichen)", pwSave:"Speichern", pwRemove:"Entfernen", pwWrong:"Aktuelles Passwort falsch", pwShort:"Mind. 4 Zeichen", pwSaved:"Kind-Passwort gespeichert", pwRemoved:"Kind-Passwort entfernt", pwGateT:"🔑 Passwort für", pwGateSub:"Für dieses Kind ist ein Passwort gesetzt.", pwGatePh:"Passwort…", pwGateBtn:"Anmelden", pwGateErr:"Passwort falsch", pwHintReset:"Vergessen? Der Trainer kann es zurücksetzen.", pnT:"👨‍👩‍👧 Eltern-Vornamen (optional)", pnPh:"z. B. Anna & Markus", pnNote:"Hilft den Trainern bei der persönlichen Ansprache.", cpDrive:"Ich fahre", cpNeed:"Brauche Mitfahrt", cpSelf:"Komme selbst", gstTitle:"NEU HIER? GAST / PROBETRAINING ANMELDEN", gstPh:"Name des Kindes (z.B. Probetraining)...", gstDup:"Dieser Name ist schon im Team – bitte einen eindeutigen Namen wählen.", gstBtn:"als Gast anmelden & abstimmen", wlHead:"KEIN PLATZ FREI? AUF DIE WARTELISTE", wlHeadFull:"AUF DIE WARTELISTE", wlTeaser:"Wenn ein Team voll ist, trag dein Kind hier ein – der Verein meldet sich, sobald ein Platz frei wird. Kontakt sehen nur Trainer/Verein.", wlBtn:"📝 Auf die Warteliste setzen", wlFullA:"Dieses Team ist aktuell voll", wlFullB:"Trag dein Kind auf die Warteliste – der Verein meldet sich, sobald ein Platz frei wird.", wfTitle:"📝 Auf die Warteliste", wfIntro:"Trag dein Kind ein – der Verein meldet sich, sobald ein Platz frei wird. Kontaktdaten sehen nur Trainer/Verein, nicht andere Eltern.", wfChild:"Name des Kindes*", wfYear:"Jahrgang (z.B. 2018)", wfBoy:"Junge", wfGirl:"Mädchen", wfWishCat:"Wunsch-Jugend (optional)", wfParent:"Name Elternteil*", wfContact:"Kontakt: Telefon oder E-Mail*", wfMsg:"Nachricht (optional)", wfPrivacy:"Mit dem Absenden willigst du in die Speicherung dieser Kontaktdaten zur Bearbeitung deiner Anfrage ein (Art. 6 DSGVO). Jederzeit widerrufbar.", wfCancel:"Abbrechen", wfSubmit:"Eintragen", wfDoneT:"Auf der Warteliste!", wfDoneSub:"Danke – der Verein meldet sich bei euch, sobald ein Platz frei wird. Eure Kontaktdaten sehen nur Trainer und Verein.", wfClose:"Schließen", uhDelHint:"⚠️ „Daten löschen“ entfernt die Daten deines Kindes dauerhaft – das ist NICHT das Abmelden! Zum Abmelden den grauen Knopf oben nutzen.", msNoEvalSubLite:"Sobald Termine stattgefunden haben, siehst du hier deine persönlichen Werte zu Anwesenheit und Spielzeit.", msDisclaimerLite:"Diese Werte siehst nur du.", msOnlyYou:"nur für dich", msNoEval:"Noch keine Auswertung", msNoEvalSub:"Sobald Termine stattgefunden haben oder der Trainer eine Einschätzung hinterlegt hat, siehst du hier deine persönlichen Werte.", msSecAttend:"ANWESENHEIT", msSecFair:"FAIRE SPIELZEIT", msTeamAvg:"Team-Ø", msSecSkill:"SKILL-PROFIL", msYourFocus:"DEIN FOKUS", msAllGoals:"👏 Alle Zielwerte deiner Altersklasse erreicht! Bleib dran und übernimm mehr Verantwortung im Team.", msTrainer:"Trainer", msDisclaimer:"Diese Werte siehst nur du. Skill-Einschätzungen und Empfehlungen kommen vom Trainerteam und dienen deiner Entwicklung.", msPlayFoot1:"mit erfasster Einsatzzeit. Der Teamschnitt zeigt nur den Durchschnitt – keine Werte anderer Kinder.", msPlayFootLow:" Du lagst zuletzt unter 70 % des Schnitts und solltest bald bevorzugt eingesetzt werden.", mtTechnikT:"2× Ball-/Passübung je Einheit, bewusst beidfüßig", mtTechnikG:"Ruhige erste Berührung – erst sichern, dann spielen", mtSchnellT:"Kurze Antritts-Sprints mit voller Pause", mtSchnellG:"In die Tiefe starten, Lücken attackieren", mtZweiT:"1-gegen-1-Duelle, Körper richtig einsetzen", mtZweiG:"Früh Druck machen, Gegner aktiv stellen", mtUeberT:"Vor der Annahme Schulterblick einüben", mtUeberG:"Kopf hoch, früh nach der Anspielstation schauen", mtAbschT:"Torschuss-Serien aus dem Dribbling", mtAbschG:"Strafraum besetzen, schnell und platziert abschließen", mtAusdT:"Intervallläufe – auch mit Ball", mtAusdG:"Tempo über die ganze Spielzeit halten", mtTeamT:"Kombinations- und Spielformen", mtTeamG:"Anbieten, kommunizieren, für andere mitarbeiten", mtDefT:"Gezielte Übung im Schwerpunkt", mtDefG:"Im Spiel bewusst anwenden", uhProfile:"Profil", uhMyProfile:"Mein Profil", uhPrivacyLbl:"Datenschutz:", uhPhotoNote:"Dein Profilbild wird verschlüsselt auf dem Server gespeichert und ist nur für dich sichtbar. Du kannst es jederzeit löschen.", uhLoggedInAs:"Angemeldet als", uhMyDataDsgvo:"MEINE DATEN (DSGVO)", uhExportData:"Daten exportieren", uhRequestDel:"🗑 Daten löschen (Antrag)", uhShowNamePublic:"Name in öffentlicher Aufstellung zeigen", uhShowNameSub1:"Erlaubt, dass der Name von ", uhShowNameSub2:" Gästen im Turnier-Spielplan angezeigt wird (sonst nur die Trikotnummer). Jederzeit widerrufbar.", uhClose:"Schließen", uhResetIntros:"Hilfe-Intros erneut anzeigen", uhSwitchLogout:"Team wechseln / Abmelden", uhNext10:"NÄCHSTE 10 TAGE", uhNoNext10:"Keine Termine in den nächsten 10 Tagen.", uhNoUpcoming:"Keine anstehenden Termine", uhNoUpcomingSub:"Der Trainer hat noch keine Termine angelegt.", uhClubLinks:"VEREINS-INFOS & LINKS", uhOverview:"ÜBERSICHT", uhUpcomingN:"anstehend", uhPastN:"vergangen", uhNextEvent:"NÄCHSTER TERMIN", uhHello:"Hallo", uhPast:"VERGANGENE", uhHideMore:"Weitere Termine ausblenden", uhShowMoreA:"Weitere", uhShowMoreB:"Termine anzeigen", uhPhotoSaved:"Profilbild gespeichert", uhPhotoRemoved:"Bild entfernt", uhDataExported:"Daten exportiert", uhExportFailed:"Export fehlgeschlagen", uhDelConfirm:"ACHTUNG: Damit beantragst du die DAUERHAFTE LÖSCHUNG der Daten deines Kindes beim Verein. Das ist NICHT das Abmelden! Zum Abmelden nutze den Abmelden-Knopf. Wirklich Löschung beantragen?", uhDelSent:"Löschantrag an den Verein gesendet", uhProfileNotFound:"Profil nicht gefunden – bitte beim Trainer melden", uhReleaseGiven:"Freigabe erteilt – Name darf gezeigt werden", uhReleaseWithdrawn:"Freigabe zurückgezogen", uhIntrosReset:"Hilfe-Intros werden wieder angezeigt", uhNeedReason:"Absage nach Frist nur mit Grund – bitte unten einen Grund wählen oder eingeben.", uhVotingClosed:"Anmeldung ist geschlossen – du kannst nur noch absagen (mit Grund).", uhLateCancel:"Späte Absage erfasst – Trainer wird informiert", uhLateJoin:"Späte Anmeldung erfasst", uhSaved:"Gespeichert",
     navResults:"Ergebnisse", navAttendance:"Anwesenheit", navOverview:"Übersicht alle Teams",
     navNews:"Neuigkeiten", navFieldsAdmin:"Plätze", navSecurity:"Sicherheitslog",
     navAccess:"Zugänge & Passwörter", secManage:"VERWALTUNG", secAdmin:"ADMIN",
@@ -244,7 +244,7 @@ const T = {
     send:"Send",
     wholeClub:"Whole club",
     noMessages:"No messages yet",
-    navTeam:"Team", navMore:"More", navTreasury:"Treasury", navTraining:"Training plan", cashNewEntry:"New entry", cashKStrafe:"Penalty", cashKBeitrag:"Contribution", cashKEinnahme:"Income", cashKAusgabe:"Expense", cashBalance:"BALANCE", cashPlus:"In credit", cashMinus:"In debit", cashBookings:"entries", cashAmount:"Amount â¬", cashPlayerPays:"Player (who pays)", cashPlayerOpt:"Player (optional)", cashReason:"Reason (e.g. late)", cashNoteOpt:"Note (optional)", cashSave:"+ Save entry", cashFines:"Penalties per player", cashNoEntries:"No entries yet.", cashDeleteQ:"Delete entry?", cashEnterAmount:"Please enter an amount", cashSaved:"Entry saved", cashDeleted:"Entry deleted", noTeamMsg:"No team.", attNoTrain:"No trainings yet", attNoTrainSub:"As soon as events with voting are created, the attendance statistics appear here.", attPlaytime:"Playing time (fair minutes)", attLowPlay:"little playing time", attMinTotal:"min total", attTrainingPct:"% Training", attPlaytimeFoot:"Summed from the playing-time tracking of games. “Little playing time” = below 70% of the average – give priority in the next game.", lblTrainings:"Trainings", lblPlayers:"Players", attPerGame:"min/game", attGameOne:"game", attGameMany:"games", msNoEvalSubLite:"Once events have taken place, you will see your personal attendance and playing-time stats here.", msDisclaimerLite:"Only you can see these stats.", msOnlyYou:"only you", msNoEval:"No data yet", msNoEvalSub:"Once events have taken place or your coach has added an assessment, your personal stats will appear here.", msSecAttend:"ATTENDANCE", msSecFair:"FAIR PLAYING TIME", msTeamAvg:"Team avg", msSecSkill:"SKILL PROFILE", msYourFocus:"YOUR FOCUS", msAllGoals:"👏 You reached all target values for your age group! Keep it up and take on more responsibility in the team.", msTrainer:"Coach", msDisclaimer:"Only you can see these stats. Skill assessments and recommendations come from the coaching team and support your development.", msPlayFoot1:"with tracked playing time. The team average only shows the mean – no values of other children.", msPlayFootLow:" You were recently below 70% of the average and should soon be given priority.", mtTechnikT:"2× ball/passing drill per session, deliberately both-footed", mtTechnikG:"Calm first touch – secure first, then play", mtSchnellT:"Short acceleration sprints with full rest", mtSchnellG:"Run in behind, attack the gaps", mtZweiT:"1-v-1 duels, use your body correctly", mtZweiG:"Press early, actively close opponents down", mtUeberT:"Practise shoulder checks before receiving", mtUeberG:"Head up, look for the next pass early", mtAbschT:"Finishing series out of the dribble", mtAbschG:"Occupy the box, finish quickly and placed", mtAusdT:"Interval runs – also with the ball", mtAusdG:"Keep the tempo up the whole game", mtTeamT:"Combination and small-sided games", mtTeamG:"Offer, communicate, work for others", mtDefT:"Targeted drill on the focus area", mtDefG:"Apply it deliberately in the game", uhProfile:"Profile", uhMyProfile:"My profile", uhPrivacyLbl:"Privacy:", uhPhotoNote:"Your profile photo is stored encrypted on the server and only visible to you. You can delete it anytime.", uhLoggedInAs:"Logged in as", uhMyDataDsgvo:"MY DATA (GDPR)", uhExportData:"Export data", uhRequestDel:"Request deletion", uhShowNamePublic:"Show name in public line-up", uhShowNameSub1:"Allows the name of ", uhShowNameSub2:" to be shown to guests in the tournament schedule (otherwise only the shirt number). Revocable anytime.", uhClose:"Close", uhResetIntros:"Show help intros again", uhSwitchLogout:"Switch team / Log out", uhNext10:"NEXT 10 DAYS", uhNoNext10:"No events in the next 10 days.", uhNoUpcoming:"No upcoming events", uhNoUpcomingSub:"The coach hasn't created any events yet.", uhClubLinks:"CLUB INFO & LINKS", uhOverview:"OVERVIEW", uhUpcomingN:"upcoming", uhPastN:"past", uhNextEvent:"NEXT EVENT", uhHello:"Hi", uhPast:"PAST", uhHideMore:"Hide further events", uhShowMoreA:"Show", uhShowMoreB:"more events", uhPhotoSaved:"Profile photo saved", uhPhotoRemoved:"Photo removed", uhDataExported:"Data exported", uhExportFailed:"Export failed", uhDelConfirm:"Do you want to request deletion of your data from the club? The club admin will receive the request in the inbox.", uhDelSent:"Deletion request sent to the club", uhProfileNotFound:"Profile not found – please contact the coach", uhReleaseGiven:"Consent granted – name may be shown", uhReleaseWithdrawn:"Consent withdrawn", uhIntrosReset:"Help intros will be shown again", uhNeedReason:"Cancelling after the deadline requires a reason – please pick or enter one below.", uhVotingClosed:"Sign-up is closed – you can only cancel now (with a reason).", uhLateCancel:"Late cancellation recorded – the coach is notified", uhLateJoin:"Late sign-up recorded", uhSaved:"Saved",
+    navTeam:"Team", navMore:"More", navTreasury:"Treasury", navTraining:"Training plan", cashNewEntry:"New entry", cashKStrafe:"Penalty", cashKBeitrag:"Contribution", cashKEinnahme:"Income", cashKAusgabe:"Expense", cashBalance:"BALANCE", cashPlus:"In credit", cashMinus:"In debit", cashBookings:"entries", cashAmount:"Amount â¬", cashPlayerPays:"Player (who pays)", cashPlayerOpt:"Player (optional)", cashReason:"Reason (e.g. late)", cashNoteOpt:"Note (optional)", cashSave:"+ Save entry", cashFines:"Penalties per player", cashNoEntries:"No entries yet.", cashDeleteQ:"Delete entry?", cashEnterAmount:"Please enter an amount", cashSaved:"Entry saved", cashDeleted:"Entry deleted", noTeamMsg:"No team.", attNoTrain:"No trainings yet", attNoTrainSub:"As soon as events with voting are created, the attendance statistics appear here.", attPlaytime:"Playing time (fair minutes)", attLowPlay:"little playing time", attMinTotal:"min total", attTrainingPct:"% Training", attPlaytimeFoot:"Summed from the playing-time tracking of games. “Little playing time” = below 70% of the average – give priority in the next game.", lblTrainings:"Trainings", lblPlayers:"Players", attPerGame:"min/game", attGameOne:"game", attGameMany:"games", cgTitle:"ð Consent (privacy)", cgBody1:"You are signing in for", cgBody2:"The club processes schedule, attendance and development data to organise training and matches (GDPR Art. 6 / 8). Data is never shown publicly unless you explicitly allow it.", cgCheck:"I am the legal guardian (or the player myself) and consent to the processing.", cgCancel:"Cancel", cgNext:"Next", obPwT:"ð Extra protection (optional)", obPwSub:"You can set a password for this child - then nobody else can sign in with this name. Default: no password. Only the coach can reset it.", obPwPh:"Password (min. 4 characters)", obSkip:"Continue without", obSetPw:"Set password", obDoneT:"Quick guide", obB1:"Events: accept with one tap, choose “coming late” or cancel with a reason.", obB2:"“My stats”: your child's attendance & playing time - visible only to you.", obB3:"Profile (top right): log out, language, font size and child password.", obGo:"Let's go!", pwSecT:"ð Child password (optional)", pwSet:"set", pwNotSet:"not set", pwCurPh:"current password", pwNewPh:"new password (min. 4 characters)", pwSave:"Save", pwRemove:"Remove", pwWrong:"Current password wrong", pwShort:"Min. 4 characters", pwSaved:"Child password saved", pwRemoved:"Child password removed", pwGateT:"ð Password for", pwGateSub:"A password is set for this child.", pwGatePh:"Passwordâ¦", pwGateBtn:"Sign in", pwGateErr:"Wrong password", pwHintReset:"Forgot it? The coach can reset it.", pnT:"ð¨âð©âð§ Parents' first names (optional)", pnPh:"e.g. Anna & Mark", pnNote:"Helps the coaches address you personally.", cpDrive:"I can drive", cpNeed:"Need a ride", cpSelf:"Coming on our own", gstTitle:"NEW HERE? SIGN UP AS GUEST / TRIAL", gstPh:"Child's name (e.g. trial training)...", gstDup:"This name already exists in the team - please choose a unique name.", gstBtn:"sign up as guest & vote", wlHead:"NO SPOT LEFT? JOIN THE WAITLIST", wlHeadFull:"JOIN THE WAITLIST", wlTeaser:"If a team is full, add your child here - the club will contact you as soon as a spot opens. Only coaches/club see the contact details.", wlBtn:"ð Join the waitlist", wlFullA:"This team is currently full", wlFullB:"Add your child to the waitlist - the club will contact you as soon as a spot opens.", wfTitle:"ð Join the waitlist", wfIntro:"Add your child - the club will contact you as soon as a spot opens. Only coaches/club see the contact details.", wfChild:"Child's name*", wfYear:"Birth year (e.g. 2018)", wfBoy:"Boy", wfGirl:"Girl", wfWishCat:"Preferred age group (optional)", wfParent:"Parent's name*", wfContact:"Contact: phone or e-mail*", wfMsg:"Message (optional)", wfPrivacy:"By submitting you consent to storing these contact details to process your request (GDPR Art. 6). Revocable anytime.", wfCancel:"Cancel", wfSubmit:"Submit", wfDoneT:"You're on the waitlist!", wfDoneSub:"Thanks - the club will contact you as soon as a spot opens. Only coaches and the club see your contact details.", wfClose:"Close", uhDelHint:"â ï¸ “Delete data” permanently removes your child's data - it is NOT the logout! Use the grey button above to log out.", msNoEvalSubLite:"Once events have taken place, you will see your personal attendance and playing-time stats here.", msDisclaimerLite:"Only you can see these stats.", msOnlyYou:"only you", msNoEval:"No data yet", msNoEvalSub:"Once events have taken place or your coach has added an assessment, your personal stats will appear here.", msSecAttend:"ATTENDANCE", msSecFair:"FAIR PLAYING TIME", msTeamAvg:"Team avg", msSecSkill:"SKILL PROFILE", msYourFocus:"YOUR FOCUS", msAllGoals:"👏 You reached all target values for your age group! Keep it up and take on more responsibility in the team.", msTrainer:"Coach", msDisclaimer:"Only you can see these stats. Skill assessments and recommendations come from the coaching team and support your development.", msPlayFoot1:"with tracked playing time. The team average only shows the mean – no values of other children.", msPlayFootLow:" You were recently below 70% of the average and should soon be given priority.", mtTechnikT:"2× ball/passing drill per session, deliberately both-footed", mtTechnikG:"Calm first touch – secure first, then play", mtSchnellT:"Short acceleration sprints with full rest", mtSchnellG:"Run in behind, attack the gaps", mtZweiT:"1-v-1 duels, use your body correctly", mtZweiG:"Press early, actively close opponents down", mtUeberT:"Practise shoulder checks before receiving", mtUeberG:"Head up, look for the next pass early", mtAbschT:"Finishing series out of the dribble", mtAbschG:"Occupy the box, finish quickly and placed", mtAusdT:"Interval runs – also with the ball", mtAusdG:"Keep the tempo up the whole game", mtTeamT:"Combination and small-sided games", mtTeamG:"Offer, communicate, work for others", mtDefT:"Targeted drill on the focus area", mtDefG:"Apply it deliberately in the game", uhProfile:"Profile", uhMyProfile:"My profile", uhPrivacyLbl:"Privacy:", uhPhotoNote:"Your profile photo is stored encrypted on the server and only visible to you. You can delete it anytime.", uhLoggedInAs:"Logged in as", uhMyDataDsgvo:"MY DATA (GDPR)", uhExportData:"Export data", uhRequestDel:"🗑 Delete data (request)", uhShowNamePublic:"Show name in public line-up", uhShowNameSub1:"Allows the name of ", uhShowNameSub2:" to be shown to guests in the tournament schedule (otherwise only the shirt number). Revocable anytime.", uhClose:"Close", uhResetIntros:"Show help intros again", uhSwitchLogout:"Switch team / Log out", uhNext10:"NEXT 10 DAYS", uhNoNext10:"No events in the next 10 days.", uhNoUpcoming:"No upcoming events", uhNoUpcomingSub:"The coach hasn't created any events yet.", uhClubLinks:"CLUB INFO & LINKS", uhOverview:"OVERVIEW", uhUpcomingN:"upcoming", uhPastN:"past", uhNextEvent:"NEXT EVENT", uhHello:"Hi", uhPast:"PAST", uhHideMore:"Hide further events", uhShowMoreA:"Show", uhShowMoreB:"more events", uhPhotoSaved:"Profile photo saved", uhPhotoRemoved:"Photo removed", uhDataExported:"Data exported", uhExportFailed:"Export failed", uhDelConfirm:"WARNING: This requests PERMANENT DELETION of your child's data at the club. This is NOT the logout! Use the log-out button to log out. Really request deletion?", uhDelSent:"Deletion request sent to the club", uhProfileNotFound:"Profile not found – please contact the coach", uhReleaseGiven:"Consent granted – name may be shown", uhReleaseWithdrawn:"Consent withdrawn", uhIntrosReset:"Help intros will be shown again", uhNeedReason:"Cancelling after the deadline requires a reason – please pick or enter one below.", uhVotingClosed:"Sign-up is closed – you can only cancel now (with a reason).", uhLateCancel:"Late cancellation recorded – the coach is notified", uhLateJoin:"Late sign-up recorded", uhSaved:"Saved",
     navResults:"Results", navAttendance:"Attendance", navOverview:"All teams overview",
     navNews:"News", navFieldsAdmin:"Pitches", navSecurity:"Security log",
     navAccess:"Access & passwords", secManage:"MANAGEMENT", secAdmin:"ADMIN",
@@ -365,7 +365,7 @@ const T = {
     send:"Versturen",
     wholeClub:"Hele club",
     noMessages:"Nog geen berichten",
-    navTeam:"Team", navMore:"Meer", navTreasury:"Kas", navTraining:"Trainingsschema", cashNewEntry:"Nieuwe boeking", cashKStrafe:"Boete", cashKBeitrag:"Bijdrage", cashKEinnahme:"Inkomsten", cashKAusgabe:"Uitgave", cashBalance:"KASSALDO", cashPlus:"Positief", cashMinus:"Negatief", cashBookings:"boekingen", cashAmount:"Bedrag â¬", cashPlayerPays:"Speler (wie betaalt)", cashPlayerOpt:"Speler (optioneel)", cashReason:"Reden (bijv. te laat)", cashNoteOpt:"Notitie (optioneel)", cashSave:"+ Boeking opslaan", cashFines:"Boetes per speler", cashNoEntries:"Nog geen boekingen.", cashDeleteQ:"Boeking verwijderen?", cashEnterAmount:"Voer een bedrag in", cashSaved:"Boeking opgeslagen", cashDeleted:"Boeking verwijderd", noTeamMsg:"Geen team.", attNoTrain:"Nog geen trainingen", attNoTrainSub:"Zodra afspraken met stemming zijn aangemaakt, verschijnt hier de aanwezigheidsstatistiek.", attPlaytime:"Speeltijd (eerlijke inzet)", attLowPlay:"weinig speeltijd", attMinTotal:"min totaal", attTrainingPct:"% Training", attPlaytimeFoot:"Opgeteld uit de speeltijdregistratie van wedstrijden. “Weinig speeltijd” = onder 70% van het gemiddelde – zet bij de volgende wedstrijd met voorrang in.", lblTrainings:"Trainingen", lblPlayers:"Spelers", attPerGame:"min/wedstrijd", attGameOne:"wedstrijd", attGameMany:"wedstrijden", msNoEvalSubLite:"Zodra er afspraken hebben plaatsgevonden, zie je hier je persoonlijke cijfers voor aanwezigheid en speeltijd.", msDisclaimerLite:"Alleen jij ziet deze cijfers.", msOnlyYou:"alleen voor jou", msNoEval:"Nog geen analyse", msNoEvalSub:"Zodra er afspraken hebben plaatsgevonden of de trainer een beoordeling heeft toegevoegd, zie je hier je persoonlijke cijfers.", msSecAttend:"AANWEZIGHEID", msSecFair:"EERLIJKE SPEELTIJD", msTeamAvg:"Team-gem.", msSecSkill:"VAARDIGHEDEN", msYourFocus:"JOUW FOCUS", msAllGoals:"👏 Alle streefwaarden van je leeftijdsgroep behaald! Ga zo door en neem meer verantwoordelijkheid in het team.", msTrainer:"Trainer", msDisclaimer:"Alleen jij ziet deze cijfers. Beoordelingen en aanbevelingen komen van het trainersteam en helpen je ontwikkeling.", msPlayFoot1:"met geregistreerde speeltijd. Het teamgemiddelde toont alleen het gemiddelde – geen waarden van andere kinderen.", msPlayFootLow:" Je zat recent onder 70% van het gemiddelde en zou binnenkort met voorrang ingezet moeten worden.", mtTechnikT:"2× bal-/passoefening per training, bewust met beide voeten", mtTechnikG:"Rustige eerste balaanname – eerst beheersen, dan spelen", mtSchnellT:"Korte versnellingssprints met volledige rust", mtSchnellG:"Diep starten, de gaten aanvallen", mtZweiT:"1-tegen-1-duels, lichaam goed gebruiken", mtZweiG:"Vroeg druk zetten, tegenstander actief opvangen", mtUeberT:"Voor de aanname over de schouder kijken", mtUeberG:"Hoofd omhoog, vroeg naar de volgende man kijken", mtAbschT:"Afrondreeksen vanuit de dribbel", mtAbschG:"Bezet het strafschopgebied, snel en geplaatst afronden", mtAusdT:"Intervallopen – ook met bal", mtAusdG:"Tempo de hele wedstrijd vasthouden", mtTeamT:"Combinatie- en partijvormen", mtTeamG:"Aanbieden, communiceren, voor anderen werken", mtDefT:"Gerichte oefening op het accent", mtDefG:"Bewust toepassen in de wedstrijd", uhProfile:"Profiel", uhMyProfile:"Mijn profiel", uhPrivacyLbl:"Privacy:", uhPhotoNote:"Je profielfoto wordt versleuteld op de server opgeslagen en is alleen voor jou zichtbaar. Je kunt hem altijd verwijderen.", uhLoggedInAs:"Aangemeld als", uhMyDataDsgvo:"MIJN GEGEVENS (AVG)", uhExportData:"Gegevens exporteren", uhRequestDel:"Verwijdering aanvragen", uhShowNamePublic:"Naam tonen in openbare opstelling", uhShowNameSub1:"Staat toe dat de naam van ", uhShowNameSub2:" aan gasten in het toernooischema wordt getoond (anders alleen het rugnummer). Altijd intrekbaar.", uhClose:"Sluiten", uhResetIntros:"Hulp-intro's opnieuw tonen", uhSwitchLogout:"Team wisselen / Afmelden", uhNext10:"KOMENDE 10 DAGEN", uhNoNext10:"Geen afspraken in de komende 10 dagen.", uhNoUpcoming:"Geen aankomende afspraken", uhNoUpcomingSub:"De trainer heeft nog geen afspraken aangemaakt.", uhClubLinks:"CLUBINFO & LINKS", uhOverview:"OVERZICHT", uhUpcomingN:"aankomend", uhPastN:"voorbij", uhNextEvent:"VOLGENDE AFSPRAAK", uhHello:"Hallo", uhPast:"VOORBIJ", uhHideMore:"Meer afspraken verbergen", uhShowMoreA:"Toon", uhShowMoreB:"meer afspraken", uhPhotoSaved:"Profielfoto opgeslagen", uhPhotoRemoved:"Foto verwijderd", uhDataExported:"Gegevens geëxporteerd", uhExportFailed:"Export mislukt", uhDelConfirm:"Wil je verwijdering van je gegevens bij de club aanvragen? De clubbeheerder ontvangt het verzoek in de inbox.", uhDelSent:"Verwijderingsverzoek naar de club gestuurd", uhProfileNotFound:"Profiel niet gevonden – neem contact op met de trainer", uhReleaseGiven:"Toestemming gegeven – naam mag worden getoond", uhReleaseWithdrawn:"Toestemming ingetrokken", uhIntrosReset:"Hulp-intro's worden weer getoond", uhNeedReason:"Afmelden na de deadline kan alleen met reden – kies of voer hieronder een reden in.", uhVotingClosed:"Aanmelding is gesloten – je kunt je nu alleen nog afmelden (met reden).", uhLateCancel:"Late afmelding geregistreerd – de trainer wordt geïnformeerd", uhLateJoin:"Late aanmelding geregistreerd", uhSaved:"Opgeslagen",
+    navTeam:"Team", navMore:"Meer", navTreasury:"Kas", navTraining:"Trainingsschema", cashNewEntry:"Nieuwe boeking", cashKStrafe:"Boete", cashKBeitrag:"Bijdrage", cashKEinnahme:"Inkomsten", cashKAusgabe:"Uitgave", cashBalance:"KASSALDO", cashPlus:"Positief", cashMinus:"Negatief", cashBookings:"boekingen", cashAmount:"Bedrag â¬", cashPlayerPays:"Speler (wie betaalt)", cashPlayerOpt:"Speler (optioneel)", cashReason:"Reden (bijv. te laat)", cashNoteOpt:"Notitie (optioneel)", cashSave:"+ Boeking opslaan", cashFines:"Boetes per speler", cashNoEntries:"Nog geen boekingen.", cashDeleteQ:"Boeking verwijderen?", cashEnterAmount:"Voer een bedrag in", cashSaved:"Boeking opgeslagen", cashDeleted:"Boeking verwijderd", noTeamMsg:"Geen team.", attNoTrain:"Nog geen trainingen", attNoTrainSub:"Zodra afspraken met stemming zijn aangemaakt, verschijnt hier de aanwezigheidsstatistiek.", attPlaytime:"Speeltijd (eerlijke inzet)", attLowPlay:"weinig speeltijd", attMinTotal:"min totaal", attTrainingPct:"% Training", attPlaytimeFoot:"Opgeteld uit de speeltijdregistratie van wedstrijden. “Weinig speeltijd” = onder 70% van het gemiddelde – zet bij de volgende wedstrijd met voorrang in.", lblTrainings:"Trainingen", lblPlayers:"Spelers", attPerGame:"min/wedstrijd", attGameOne:"wedstrijd", attGameMany:"wedstrijden", cgTitle:"ð Toestemming (privacy)", cgBody1:"Je meldt je aan voor", cgBody2:"De club verwerkt afspraak-, aanwezigheids- en ontwikkelingsgegevens om trainingen en wedstrijden te organiseren (AVG art. 6 / 8). Gegevens worden nooit openbaar getoond, tenzij je dat uitdrukkelijk toestaat.", cgCheck:"Ik ben de wettelijke vertegenwoordiger (of zelf de speler) en stem in met de verwerking.", cgCancel:"Annuleren", cgNext:"Verder", obPwT:"ð Extra bescherming (optioneel)", obPwSub:"Je kunt een wachtwoord voor dit kind instellen - dan kan niemand anders zich met deze naam aanmelden. Standaard: geen wachtwoord. Alleen de trainer kan het resetten.", obPwPh:"Wachtwoord (min. 4 tekens)", obSkip:"Zonder verder", obSetPw:"Wachtwoord instellen", obDoneT:"Kort uitgelegd", obB1:"Afspraken: met een tik toezeggen, „kom later” kiezen of met reden afmelden.", obB2:"„Mijn cijfers”: aanwezigheid & speeltijd van je kind - alleen voor jullie zichtbaar.", obB3:"Profiel (rechtsboven): afmelden, taal, lettergrootte en kind-wachtwoord.", obGo:"Aan de slag!", pwSecT:"ð Kind-wachtwoord (optioneel)", pwSet:"ingesteld", pwNotSet:"niet ingesteld", pwCurPh:"huidig wachtwoord", pwNewPh:"nieuw wachtwoord (min. 4 tekens)", pwSave:"Opslaan", pwRemove:"Verwijderen", pwWrong:"Huidig wachtwoord onjuist", pwShort:"Min. 4 tekens", pwSaved:"Kind-wachtwoord opgeslagen", pwRemoved:"Kind-wachtwoord verwijderd", pwGateT:"ð Wachtwoord voor", pwGateSub:"Voor dit kind is een wachtwoord ingesteld.", pwGatePh:"Wachtwoordâ¦", pwGateBtn:"Aanmelden", pwGateErr:"Wachtwoord onjuist", pwHintReset:"Vergeten? De trainer kan het resetten.", pnT:"ð¨âð©âð§ Voornamen ouders (optioneel)", pnPh:"bijv. Anna & Mark", pnNote:"Helpt de trainers jullie persoonlijk aan te spreken.", cpDrive:"Ik rijd", cpNeed:"Zoek een lift", cpSelf:"Komen zelf", gstTitle:"NIEUW HIER? AANMELDEN ALS GAST / PROEFTRAINING", gstPh:"Naam van het kind (bijv. proeftraining)...", gstDup:"Deze naam bestaat al in het team - kies een unieke naam.", gstBtn:"als gast aanmelden & stemmen", wlHead:"GEEN PLEK? OP DE WACHTLIJST", wlHeadFull:"OP DE WACHTLIJST", wlTeaser:"Als een team vol is, zet je kind hier op de lijst - de club neemt contact op zodra er plek is. Alleen trainers/club zien de contactgegevens.", wlBtn:"ð Op de wachtlijst zetten", wlFullA:"Dit team is momenteel vol", wlFullB:"Zet je kind op de wachtlijst - de club neemt contact op zodra er plek is.", wfTitle:"ð Op de wachtlijst", wfIntro:"Zet je kind op de lijst - de club neemt contact op zodra er plek is. Alleen trainers/club zien de contactgegevens.", wfChild:"Naam van het kind*", wfYear:"Geboortejaar (bijv. 2018)", wfBoy:"Jongen", wfGirl:"Meisje", wfWishCat:"Gewenste jeugd (optioneel)", wfParent:"Naam ouder*", wfContact:"Contact: telefoon of e-mail*", wfMsg:"Bericht (optioneel)", wfPrivacy:"Met het verzenden stem je in met het opslaan van deze contactgegevens om je aanvraag te verwerken (AVG art. 6). Altijd intrekbaar.", wfCancel:"Annuleren", wfSubmit:"Versturen", wfDoneT:"Op de wachtlijst!", wfDoneSub:"Bedankt - de club neemt contact op zodra er plek is. Alleen trainers en de club zien jullie contactgegevens.", wfClose:"Sluiten", uhDelHint:"â ï¸ „Gegevens verwijderen” wist de gegevens van je kind permanent - dat is NIET afmelden! Gebruik de grijze knop hierboven om af te melden.", msNoEvalSubLite:"Zodra er afspraken hebben plaatsgevonden, zie je hier je persoonlijke cijfers voor aanwezigheid en speeltijd.", msDisclaimerLite:"Alleen jij ziet deze cijfers.", msOnlyYou:"alleen voor jou", msNoEval:"Nog geen analyse", msNoEvalSub:"Zodra er afspraken hebben plaatsgevonden of de trainer een beoordeling heeft toegevoegd, zie je hier je persoonlijke cijfers.", msSecAttend:"AANWEZIGHEID", msSecFair:"EERLIJKE SPEELTIJD", msTeamAvg:"Team-gem.", msSecSkill:"VAARDIGHEDEN", msYourFocus:"JOUW FOCUS", msAllGoals:"👏 Alle streefwaarden van je leeftijdsgroep behaald! Ga zo door en neem meer verantwoordelijkheid in het team.", msTrainer:"Trainer", msDisclaimer:"Alleen jij ziet deze cijfers. Beoordelingen en aanbevelingen komen van het trainersteam en helpen je ontwikkeling.", msPlayFoot1:"met geregistreerde speeltijd. Het teamgemiddelde toont alleen het gemiddelde – geen waarden van andere kinderen.", msPlayFootLow:" Je zat recent onder 70% van het gemiddelde en zou binnenkort met voorrang ingezet moeten worden.", mtTechnikT:"2× bal-/passoefening per training, bewust met beide voeten", mtTechnikG:"Rustige eerste balaanname – eerst beheersen, dan spelen", mtSchnellT:"Korte versnellingssprints met volledige rust", mtSchnellG:"Diep starten, de gaten aanvallen", mtZweiT:"1-tegen-1-duels, lichaam goed gebruiken", mtZweiG:"Vroeg druk zetten, tegenstander actief opvangen", mtUeberT:"Voor de aanname over de schouder kijken", mtUeberG:"Hoofd omhoog, vroeg naar de volgende man kijken", mtAbschT:"Afrondreeksen vanuit de dribbel", mtAbschG:"Bezet het strafschopgebied, snel en geplaatst afronden", mtAusdT:"Intervallopen – ook met bal", mtAusdG:"Tempo de hele wedstrijd vasthouden", mtTeamT:"Combinatie- en partijvormen", mtTeamG:"Aanbieden, communiceren, voor anderen werken", mtDefT:"Gerichte oefening op het accent", mtDefG:"Bewust toepassen in de wedstrijd", uhProfile:"Profiel", uhMyProfile:"Mijn profiel", uhPrivacyLbl:"Privacy:", uhPhotoNote:"Je profielfoto wordt versleuteld op de server opgeslagen en is alleen voor jou zichtbaar. Je kunt hem altijd verwijderen.", uhLoggedInAs:"Aangemeld als", uhMyDataDsgvo:"MIJN GEGEVENS (AVG)", uhExportData:"Gegevens exporteren", uhRequestDel:"🗑 Gegevens verwijderen (aanvraag)", uhShowNamePublic:"Naam tonen in openbare opstelling", uhShowNameSub1:"Staat toe dat de naam van ", uhShowNameSub2:" aan gasten in het toernooischema wordt getoond (anders alleen het rugnummer). Altijd intrekbaar.", uhClose:"Sluiten", uhResetIntros:"Hulp-intro's opnieuw tonen", uhSwitchLogout:"Team wisselen / Afmelden", uhNext10:"KOMENDE 10 DAGEN", uhNoNext10:"Geen afspraken in de komende 10 dagen.", uhNoUpcoming:"Geen aankomende afspraken", uhNoUpcomingSub:"De trainer heeft nog geen afspraken aangemaakt.", uhClubLinks:"CLUBINFO & LINKS", uhOverview:"OVERZICHT", uhUpcomingN:"aankomend", uhPastN:"voorbij", uhNextEvent:"VOLGENDE AFSPRAAK", uhHello:"Hallo", uhPast:"VOORBIJ", uhHideMore:"Meer afspraken verbergen", uhShowMoreA:"Toon", uhShowMoreB:"meer afspraken", uhPhotoSaved:"Profielfoto opgeslagen", uhPhotoRemoved:"Foto verwijderd", uhDataExported:"Gegevens geëxporteerd", uhExportFailed:"Export mislukt", uhDelConfirm:"LET OP: Hiermee vraag je PERMANENTE VERWIJDERING van de gegevens van je kind aan. Dit is NIET afmelden! Gebruik de afmeld-knop om af te melden. Echt verwijdering aanvragen?", uhDelSent:"Verwijderingsverzoek naar de club gestuurd", uhProfileNotFound:"Profiel niet gevonden – neem contact op met de trainer", uhReleaseGiven:"Toestemming gegeven – naam mag worden getoond", uhReleaseWithdrawn:"Toestemming ingetrokken", uhIntrosReset:"Hulp-intro's worden weer getoond", uhNeedReason:"Afmelden na de deadline kan alleen met reden – kies of voer hieronder een reden in.", uhVotingClosed:"Aanmelding is gesloten – je kunt je nu alleen nog afmelden (met reden).", uhLateCancel:"Late afmelding geregistreerd – de trainer wordt geïnformeerd", uhLateJoin:"Late aanmelding geregistreerd", uhSaved:"Opgeslagen",
     navResults:"Resultaten", navAttendance:"Aanwezigheid", navOverview:"Overzicht alle teams",
     navNews:"Nieuws", navFieldsAdmin:"Velden", navSecurity:"Beveiligingslog",
     navAccess:"Toegang & wachtwoorden", secManage:"BEHEER", secAdmin:"ADMIN",
@@ -1537,6 +1537,9 @@ const ET = {
   heimspiel:    { label:"Heimspiel",icon:"Heim",col:"#2563eb",bg:"#dbeafe" },auswarts:     { label:"Auswärtsspiel",icon:"Bus",col:"#d97706",bg:"#fef3c7" },freundschaft: { label:"Freundschaftsspiel",icon:"Hand",col:"#7c3aed",bg:"#ede9fe" },turnier:      { label:"Turnier",icon:"Pokal",col:"#dc2626",bg:"#fee2e2" },event:        { label:"Sondertermin",icon:"Fest",col:"#0891b2",bg:"#e0f2fe" },};
 // Übersetztes Terminart-Label (Fallback auf das deutsche ET.label).
 const etLabel = (type, tr) => (tr ? tr("et_"+type) : null) || ET[type]?.label || type;
+// Standard-Termintitel (deutsch gespeichert) sprachabhängig anzeigen; eigene Titel bleiben.
+const _STD_TITLE = { "training":"training","heimspiel":"heimspiel","auswärtsspiel":"auswarts","auswartsspiel":"auswarts","auswaertsspiel":"auswarts","freundschaftsspiel":"freundschaft","turnier":"turnier","sondertermin":"event" };
+const evDisplayTitle = (ev, tr) => { const t0=String(ev?.title||"").trim(); if(!t0) return etLabel(ev?.type,tr); const k=_STD_TITLE[t0.toLowerCase()]; return k?etLabel(k,tr):t0; };
 
 function seed() {
   return {
@@ -2216,6 +2219,7 @@ function InboxTab({ data,cid,save,fire,cl }) {
 // Kontakt sehen später NUR Trainer/Verein.
 function WaitlistForm({ cl, teams=[], preTid=null, preCat=null, onSubmit, onClose }) {
   const t=TH(cl);
+  const { tr } = useT();
   const cats=[...new Set((teams||[]).map(tm=>tm.cat||tm.name))];
   const [f,setF]=useState({ childName:"", by:"", gender:"m", parentName:"", contact:"", note:"", cat:preCat||cats[0]||"", tid:preTid||"" });
   const [sent,setSent]=useState(false);
@@ -2229,35 +2233,35 @@ function WaitlistForm({ cl, teams=[], preTid=null, preCat=null, onSubmit, onClos
         {sent ? (
           <div style={{textAlign:"center",padding:"18px 8px 8px"}}>
             <div style={{fontSize:44,marginBottom:8}}>✅</div>
-            <div style={{fontWeight:900,fontSize:18,color:"#0f172a",marginBottom:6}}>Auf der Warteliste!</div>
-            <p style={{fontSize:13.5,color:"#64748b",lineHeight:1.55,marginBottom:16}}>Danke – der Verein meldet sich bei euch, sobald ein Platz frei wird. Eure Kontaktdaten sehen nur Trainer und Verein.</p>
-            <button onClick={onClose} style={{width:"100%",padding:"13px",borderRadius:13,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>Schließen</button>
+            <div style={{fontWeight:900,fontSize:18,color:"#0f172a",marginBottom:6}}>{tr("wfDoneT")}</div>
+            <p style={{fontSize:13.5,color:"#64748b",lineHeight:1.55,marginBottom:16}}>{tr("wfDoneSub")}</p>
+            <button onClick={onClose} style={{width:"100%",padding:"13px",borderRadius:13,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>{tr("wfClose")}</button>
           </div>
         ) : (<>
-          <div style={{fontWeight:900,fontSize:18,color:"#0f172a",marginBottom:4}}>📝 Auf die Warteliste</div>
-          <p style={{fontSize:12.5,color:"#64748b",lineHeight:1.5,marginBottom:14}}>Trag dein Kind ein – der Verein meldet sich, sobald ein Platz frei wird. <b>Kontaktdaten sehen nur Trainer/Verein</b>, nicht andere Eltern.</p>
+          <div style={{fontWeight:900,fontSize:18,color:"#0f172a",marginBottom:4}}>{tr("wfTitle")}</div>
+          <p style={{fontSize:12.5,color:"#64748b",lineHeight:1.5,marginBottom:14}}>{tr("wfIntro")}</p>
           <div style={{display:"flex",flexDirection:"column",gap:9}}>
-            <input value={f.childName} onChange={e=>setF(p=>({...p,childName:e.target.value}))} placeholder="Name des Kindes*" style={inp}/>
+            <input value={f.childName} onChange={e=>setF(p=>({...p,childName:e.target.value}))} placeholder={tr("wfChild")} style={inp}/>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9}}>
-              <input value={f.by} onChange={e=>setF(p=>({...p,by:e.target.value}))} inputMode="numeric" placeholder="Jahrgang (z.B. 2018)" style={inp}/>
+              <input value={f.by} onChange={e=>setF(p=>({...p,by:e.target.value}))} inputMode="numeric" placeholder={tr("wfYear")} style={inp}/>
               <select value={f.gender} onChange={e=>setF(p=>({...p,gender:e.target.value}))} style={inp}>
-                <option value="m">Junge</option><option value="w">Mädchen</option>
+                <option value="m">{tr("wfBoy")}</option><option value="w">{tr("wfGirl")}</option>
               </select>
             </div>
             {cats.length>0&&(
               <select value={f.cat} onChange={e=>setF(p=>({...p,cat:e.target.value}))} style={inp}>
-                <option value="">Wunsch-Jugend (optional)</option>
+                <option value="">{tr("wfWishCat")}</option>
                 {cats.map(c=><option key={c} value={c}>{c}</option>)}
               </select>
             )}
-            <input value={f.parentName} onChange={e=>setF(p=>({...p,parentName:e.target.value}))} placeholder="Name Elternteil*" style={inp}/>
-            <input value={f.contact} onChange={e=>setF(p=>({...p,contact:e.target.value}))} placeholder="Kontakt: Telefon oder E-Mail*" style={inp}/>
-            <textarea value={f.note} onChange={e=>setF(p=>({...p,note:e.target.value}))} rows={2} placeholder="Nachricht (optional)" style={{...inp,resize:"vertical"}}/>
-            <div style={{fontSize:11,color:"#64748b",lineHeight:1.45}}>Mit dem Absenden willigst du in die Speicherung dieser Kontaktdaten zur Bearbeitung deiner Anfrage ein (Art. 6 DSGVO). Jederzeit widerrufbar.</div>
+            <input value={f.parentName} onChange={e=>setF(p=>({...p,parentName:e.target.value}))} placeholder={tr("wfParent")} style={inp}/>
+            <input value={f.contact} onChange={e=>setF(p=>({...p,contact:e.target.value}))} placeholder={tr("wfContact")} style={inp}/>
+            <textarea value={f.note} onChange={e=>setF(p=>({...p,note:e.target.value}))} rows={2} placeholder={tr("wfMsg")} style={{...inp,resize:"vertical"}}/>
+            <div style={{fontSize:11,color:"#64748b",lineHeight:1.45}}>{tr("wfPrivacy")}</div>
           </div>
           <div style={{display:"flex",gap:9,marginTop:14}}>
-            <button onClick={onClose} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
-            <button onClick={submit} disabled={!valid} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:valid?t.p:"#e2e8f0",color:valid?contrast(t.p):"#94a3b8",fontWeight:800,fontSize:14,cursor:valid?"pointer":"default",fontFamily:"inherit"}}>Eintragen</button>
+            <button onClick={onClose} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>{tr("wfCancel")}</button>
+            <button onClick={submit} disabled={!valid} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:valid?t.p:"#e2e8f0",color:valid?contrast(t.p):"#94a3b8",fontWeight:800,fontSize:14,cursor:valid?"pointer":"default",fontFamily:"inherit"}}>{tr("wfSubmit")}</button>
           </div>
         </>)}
       </div>
@@ -19924,8 +19928,13 @@ function HelperLogin({cl,helpers,onLogin,onBack}) {
   );
 }
 
-function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid,onWaitlist,onConsent}) {
+function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid,onWaitlist,onConsent,onSetChildPw}) {
   const [showWait,setShowWait]=useState(false);
+  const { tr } = useT();
+  const [obStep,setObStep]=useState(1);            // Eltern-Onboarding: 1 Einwilligung, 2 Passwort, 3 Erklärung
+  const [childPwNew,setChildPwNew]=useState("");
+  const [pwGate,setPwGate]=useState(null);         // {tid,name} wenn Kind-Passwort gesetzt
+  const [pwTry,setPwTry]=useState(""); const [pwErr,setPwErr]=useState(false);
   const t=TH(cl);
   const [step,setStep]=useState("cat");
   const [cat,setCat]=useState(null);
@@ -19949,15 +19958,21 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid,on
     if(prof?.consentAt) return true;
     try{ return !prof && !!localStorage.getItem(consentKey(tid2,name)); }catch{ return false; }
   };
-  const pickName = (tid2,name) => { if(hasConsent(tid2,name)){ onDone(tid2,name); } else { setConsentChk(false); setPendingName({tid:tid2,name}); } };
+  const startAfterPw = (tid2,name) => { if(hasConsent(tid2,name)){ onDone(tid2,name); } else { setConsentChk(false); setChildPwNew(""); setObStep(1); setPendingName({tid:tid2,name}); } };
+  const pickName = (tid2,name) => {
+    const prof=profileFor(tid2,name);
+    if(prof?.childPw){ setPwTry(""); setPwErr(false); setPwGate({tid:tid2,name}); return; }   // Kind-Passwort abfragen
+    startAfterPw(tid2,name);
+  };
   const confirmConsent = () => {
     if(!consentChk||!pendingName) return;
     const pn=pendingName;
     const prof=profileFor(pn.tid,pn.name);
     if(prof && onConsent){ onConsent(prof.id); }                      // in die Vereinsdaten (synct auf alle Geräte)
     else { try{ localStorage.setItem(consentKey(pn.tid,pn.name), new Date().toISOString()); }catch{} } // Gast ohne Profil
-    setPendingName(null); onDone(pn.tid,pn.name);
+    setObStep(prof?2:3);                                              // weiter im Onboarding (Passwort nur mit Profil)
   };
+  const finishOnboarding = () => { const pn=pendingName; setPendingName(null); onDone(pn.tid,pn.name); };
   const [pwd,setPwd]=useState(""); const [pwdErr,setPwdErr]=useState(false);
   const [showForgotParent,setShowForgotParent]=useState(false);
   // Direktlink: Team vorauswählen und direkt zum Passwort-Schritt springen
@@ -20090,19 +20105,63 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid,on
   );
   return (
     <div style={{minHeight:"100dvh",background:"#f0f4f8",display:"flex",flexDirection:"column"}}>
+      {pwGate&&(
+        <div onClick={()=>setPwGate(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:2000,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
+          <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:480,padding:"20px 20px calc(28px + env(safe-area-inset-bottom))"}}>
+            <div style={{fontWeight:900,fontSize:17,color:"#0f172a",marginBottom:4}}>{tr("pwGateT")} {maskName(pwGate.name)}</div>
+            <p style={{fontSize:12.5,color:"#64748b",marginBottom:12}}>{tr("pwGateSub")}</p>
+            <input type="password" autoFocus value={pwTry} onChange={e=>{setPwTry(e.target.value);setPwErr(false);}}
+              onKeyDown={e=>{ if(e.key==="Enter"){ const prof=profileFor(pwGate.tid,pwGate.name); if(prof&&checkPw(pwTry,prof.childPw)){ const g=pwGate; setPwGate(null); startAfterPw(g.tid,g.name);} else { setPwErr(true);} } }}
+              placeholder={tr("pwGatePh")} style={{width:"100%",padding:"12px 14px",fontSize:15,border:`1.5px solid ${pwErr?"#fca5a5":"#e2e8f0"}`,borderRadius:12,outline:"none",fontFamily:"inherit",boxSizing:"border-box",marginBottom:pwErr?6:12}}/>
+            {pwErr&&<div style={{fontSize:12,color:"#dc2626",fontWeight:700,marginBottom:8}}>{tr("pwGateErr")}</div>}
+            <div style={{display:"flex",gap:9}}>
+              <button onClick={()=>setPwGate(null)} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",color:"#475569"}}>{tr("cgCancel")}</button>
+              <button onClick={()=>{ const prof=profileFor(pwGate.tid,pwGate.name); if(prof&&checkPw(pwTry,prof.childPw)){ const g=pwGate; setPwGate(null); startAfterPw(g.tid,g.name);} else { setPwErr(true);} }}
+                style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>{tr("pwGateBtn")}</button>
+            </div>
+            <div style={{fontSize:11,color:"#64748b",marginTop:10,textAlign:"center"}}>{tr("pwHintReset")}</div>
+          </div>
+        </div>
+      )}
       {pendingName&&(
         <div onClick={()=>setPendingName(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:2000,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
           <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:480,padding:"20px 20px calc(28px + env(safe-area-inset-bottom))"}}>
-            <div style={{fontWeight:900,fontSize:18,color:"#0f172a",marginBottom:6}}>🔒 Einwilligung (Datenschutz)</div>
-            <p style={{fontSize:13.5,color:"#334155",lineHeight:1.55,marginBottom:10}}>Du meldest dich für <b>{maskName(pendingName.name)}</b> an. Der Verein verarbeitet Termin-, Anwesenheits- und ggf. Entwicklungsdaten zur Organisation des Trainings- und Spielbetriebs (Rechtsgrundlage: Einwilligung, Art. 6 / Art. 8 DSGVO). Daten werden nicht öffentlich angezeigt, außer du gibst sie ausdrücklich frei.</p>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+              <div style={{flex:1,fontWeight:900,fontSize:18,color:"#0f172a"}}>{obStep===1?tr("cgTitle"):obStep===2?tr("obPwT"):tr("obDoneT")}</div>
+              <div style={{display:"flex",gap:4}}>{[1,2,3].map(n=><span key={n} style={{width:8,height:8,borderRadius:"50%",background:obStep>=n?t.p:"#e2e8f0"}}/>)}</div>
+            </div>
+            {obStep===1&&<>
+            <p style={{fontSize:13.5,color:"#334155",lineHeight:1.55,marginBottom:10}}>{tr("cgBody1")} <b>{maskName(pendingName.name)}</b>. {tr("cgBody2")}</p>
             <label style={{display:"flex",gap:10,alignItems:"flex-start",background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"12px 13px",cursor:"pointer",marginBottom:12}}>
               <input type="checkbox" checked={consentChk} onChange={e=>setConsentChk(e.target.checked)} style={{marginTop:2}}/>
-              <span style={{fontSize:12.5,color:"#334155",lineHeight:1.5}}>Ich bin erziehungsberechtigt (oder selbst der/die Spieler:in) und willige in die Verarbeitung der Daten dieses Kindes ein.</span>
+              <span style={{fontSize:12.5,color:"#334155",lineHeight:1.5}}>{tr("cgCheck")}</span>
             </label>
             <div style={{display:"flex",gap:9}}>
-              <button onClick={()=>setPendingName(null)} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",color:"#475569"}}>Abbrechen</button>
-              <button disabled={!consentChk} onClick={confirmConsent} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:consentChk?t.p:"#cbd5e1",color:consentChk?contrast(t.p):"#fff",fontWeight:800,fontSize:14,cursor:consentChk?"pointer":"default",fontFamily:"inherit"}}>Bestätigen &amp; anmelden</button>
+              <button onClick={()=>setPendingName(null)} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",color:"#475569"}}>{tr("cgCancel")}</button>
+              <button disabled={!consentChk} onClick={confirmConsent} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:consentChk?t.p:"#cbd5e1",color:consentChk?contrast(t.p):"#fff",fontWeight:800,fontSize:14,cursor:consentChk?"pointer":"default",fontFamily:"inherit"}}>{tr("cgNext")} →</button>
             </div>
+            </>}
+            {obStep===2&&<>
+              <p style={{fontSize:13,color:"#334155",lineHeight:1.6,marginBottom:12}}>{tr("obPwSub")}</p>
+              <input type="password" value={childPwNew} onChange={e=>setChildPwNew(e.target.value)} placeholder={tr("obPwPh")}
+                style={{width:"100%",padding:"12px 14px",fontSize:15,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",fontFamily:"inherit",boxSizing:"border-box",marginBottom:12}}/>
+              <div style={{display:"flex",gap:9}}>
+                <button onClick={()=>setObStep(3)} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,fontSize:13.5,cursor:"pointer",fontFamily:"inherit",color:"#475569"}}>{tr("obSkip")}</button>
+                <button disabled={childPwNew.trim().length<4} onClick={()=>{ const prof=profileFor(pendingName.tid,pendingName.name); if(prof&&onSetChildPw) onSetChildPw(prof.id, childPwNew.trim()); setObStep(3); }}
+                  style={{flex:1,padding:"12px",borderRadius:12,border:"none",background:childPwNew.trim().length>=4?t.p:"#cbd5e1",color:childPwNew.trim().length>=4?contrast(t.p):"#fff",fontWeight:800,fontSize:13.5,cursor:childPwNew.trim().length>=4?"pointer":"default",fontFamily:"inherit"}}>{tr("obSetPw")}</button>
+              </div>
+            </>}
+            {obStep===3&&<>
+              <div style={{display:"flex",flexDirection:"column",gap:9,marginBottom:14}}>
+                {[["📅",tr("obB1")],["📊",tr("obB2")],["👤",tr("obB3")]].map(([ic,txt],i)=>(
+                  <div key={i} style={{display:"flex",gap:10,alignItems:"flex-start",background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:12,padding:"11px 13px"}}>
+                    <span style={{fontSize:18,flexShrink:0}}>{ic}</span>
+                    <span style={{fontSize:13,color:"#334155",lineHeight:1.5}}>{txt}</span>
+                  </div>
+                ))}
+              </div>
+              <button onClick={finishOnboarding} style={{width:"100%",padding:"14px",borderRadius:13,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>{tr("obGo")} ⚽</button>
+            </>}
           </div>
         </div>
       )}
@@ -20127,21 +20186,21 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid,on
         const isDup=q.trim().length>1 && allNames.includes(q.trim().toLowerCase());
         return (
       <div style={{padding:"12px 14px 36px",background:"#fff",borderTop:"1px solid #e2e8f0"}}>
-        <p style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8}}>NEU HIER? GAST / PROBETRAINING ANMELDEN</p>
-        <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Name des Kindes (z.B. Probetraining)..."
+        <p style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8}}>{tr("gstTitle")}</p>
+        <input value={q} onChange={e=>setQ(e.target.value)} placeholder={tr("gstPh")}
           style={{width:"100%",padding:"11px 14px",fontSize:14,border:`1.5px solid ${isDup?"#fca5a5":"#e2e8f0"}`,borderRadius:12,outline:"none",marginBottom:8}}/>
-        {isDup&&<p style={{fontSize:12,color:"#dc2626",fontWeight:700,marginBottom:8}}>Dieser Name ist schon im Team – bitte einen eindeutigen Namen wählen (z.B. mit Zusatz).</p>}
+        {isDup&&<p style={{fontSize:12,color:"#dc2626",fontWeight:700,marginBottom:8}}>{tr("gstDup")}</p>}
         <div style={{marginBottom:8}}><PrivacyNote/></div>
         {q.trim().length>1&&!isDup&&<button onClick={()=>onDone(tid,q.trim())}
           style={{width:"100%",padding:"11px",borderRadius:12,border:"none",background:cl.pri,color:contrast(cl.pri),fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
-           „{q.trim()}" als Gast anmelden &amp; abstimmen
+           {"„"+q.trim()+"“ "+tr("gstBtn")}
         </button>}
         {onWaitlist&&(()=>{ const curTeam=teams.find(x=>x.id===tid); const kaderN=(playerProfiles||[]).filter(p=>p.mainTid===tid&&!p.archived).length; const teamFull=!!(curTeam?.maxSize&&kaderN>=curTeam.maxSize); return (
           <div style={{marginTop:12,paddingTop:12,borderTop:"1px solid #f1f5f9"}}>
-            {teamFull&&<div style={{background:"#fef2f2",border:"1.5px solid #fecaca",borderRadius:11,padding:"9px 12px",marginBottom:8,fontSize:12.5,color:"#b91c1c",fontWeight:700,lineHeight:1.45}}>Dieses Team ist aktuell <b>voll ({kaderN}/{curTeam.maxSize})</b>. Trag dein Kind auf die Warteliste – der Verein meldet sich, sobald ein Platz frei wird.</div>}
-            <p style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6}}>{teamFull?"AUF DIE WARTELISTE":"KEIN PLATZ FREI? AUF DIE WARTELISTE"}</p>
-            {!teamFull&&<p style={{fontSize:11.5,color:"#64748b",lineHeight:1.45,marginBottom:8}}>Wenn ein Team voll ist, trag dein Kind hier ein – der Verein meldet sich, sobald ein Platz frei wird. Kontakt sehen nur Trainer/Verein.</p>}
-            <button onClick={()=>setShowWait(true)} style={{width:"100%",padding:"11px",borderRadius:12,border:teamFull?"none":`1.5px solid ${cl.pri}`,background:teamFull?cl.pri:cl.pri+"12",color:teamFull?contrast(cl.pri):cl.pri,fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>📝 Auf die Warteliste setzen</button>
+            {teamFull&&<div style={{background:"#fef2f2",border:"1.5px solid #fecaca",borderRadius:11,padding:"9px 12px",marginBottom:8,fontSize:12.5,color:"#b91c1c",fontWeight:700,lineHeight:1.45}}>{tr("wlFullA")} <b>({kaderN}/{curTeam.maxSize})</b>. {tr("wlFullB")}</div>}
+            <p style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6}}>{teamFull?tr("wlHeadFull"):tr("wlHead")}</p>
+            {!teamFull&&<p style={{fontSize:11.5,color:"#64748b",lineHeight:1.45,marginBottom:8}}>{tr("wlTeaser")}</p>}
+            <button onClick={()=>setShowWait(true)} style={{width:"100%",padding:"11px",borderRadius:12,border:teamFull?"none":`1.5px solid ${cl.pri}`,background:teamFull?cl.pri:cl.pri+"12",color:teamFull?contrast(cl.pri):cl.pri,fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>{tr("wlBtn")}</button>
           </div>
         ); })()}
       </div>
@@ -21878,6 +21937,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
             </div>
             <Inp label="Geburtsdatum (optional – für Geburtstags-Hinweise)" val={p.bday||""} set={v=>up(v?{bday:v,by:parseInt(v.slice(0,4))||p.by}:{bday:""})} type="date" cl={{pri:t.p}}/>
             <Inp label="Passnummer (DFBnet-Spielberechtigung, optional)" val={p.passNr||""} set={v=>up({passNr:v})} ph="z.B. 01234567" cl={{pri:t.p}} note="Erscheint in der Meldeliste für Turniere/DFBnet."/>
+            <Inp label="Eltern-Vornamen (optional)" val={p.parentNames||""} set={v=>up({parentNames:v})} ph="z. B. Anna & Markus" cl={{pri:t.p}} note="Für die persönliche Ansprache – können Eltern auch selbst im Profil eintragen."/>
             {p.by && (
               <div style={{background:"#f0fdf4",borderRadius:10,padding:"9px 13px",fontSize:12,color:"#15803d",fontWeight:600}}>
                  Passt altersmäßig in: {eligibleCats(p.by,p.gender||"m").join(",")||"Keine Kategorie"}
@@ -22163,6 +22223,10 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
                 <div style={{fontSize:12,color:"#64748b",marginTop:1}}>{p.consentAt?("Bestätigt am "+fmtD(String(p.consentAt).slice(0,10))):"Für Minderjährige erforderlich (Art. 8 DSGVO)"}</div>
               </div>
             </label>
+                      <div style={{display:"flex",alignItems:"center",gap:8,background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:11,padding:"10px 13px",marginTop:8}}>
+              <span style={{flex:1,fontSize:12.5,color:"#334155",fontWeight:600}}>🔑 Kind-Passwort: <b>{p.childPw?"gesetzt":"nicht gesetzt"}</b></span>
+              {p.childPw&&<button onClick={()=>{ if(typeof window!=="undefined"&&window.confirm&&!window.confirm("Kind-Passwort zurücksetzen? Die Eltern können sich danach ohne Passwort anmelden und ein neues setzen."))return; up({childPw:"",childPwAt:""}); }} style={{padding:"6px 11px",borderRadius:8,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:700,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>Zurücksetzen</button>}
+            </div>
           </Section>
 
           <Section title="Notfall & Gesundheit">
@@ -24844,7 +24908,7 @@ function VenuePicker({venues=[],value,onPick,onClear,onAdd,cl}) {
 // Fahrgemeinschaft-Vorlage: Standardtexte der drei Optionen. Reihenfolge der
 // Anpassung: eingebaut < vereinsweit (clubSettings.carpoolLabels) < pro Termin (ev.carpoolLabels).
 const CARPOOL_DEFAULTS = { drive:"Ich fahre", need:"Brauche Mitfahrt", self:"Komme selbst" };
-const carpoolLabelsFor = (ev, cl) => ({ ...CARPOOL_DEFAULTS, ...(cl?.clubSettings?.carpoolLabels||{}), ...(ev?.carpoolLabels||{}) });
+const carpoolLabelsFor = (ev, cl) => ({ ...(cl?.clubSettings?.carpoolLabels||{}), ...(ev?.carpoolLabels||{}) }); // Defaults kommen sprachabhängig aus dem Dictionary
 function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTemplate=null,fields=[],venues=[],onAddVenue}) {
   const t=TH(cl); const isEdit=!!editEv; const STEPS=5; const { tr } = useT();
   const blank={tid:teams[0]?.id||"",type:"training",title:"",date:now(),time:"",endTime:"",loc:"",note:"",sollPlayers:null,maxPlayers:null,pt:"att",recMode:"none",recDays:[],recStart:now(),recUntil:"",recDates:[],li:[],fi:[],sc:[],extraPolls:[],selType:"multi",open:false,_li:{txt:"",max:""},_fi:{name:"",col:"#16a34a"},_sc:{fid:"",time:"",a:"",b:"",ref:""}};
@@ -24930,7 +24994,7 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
             );
           })() : <Inp label={tr("fLoc")} val={f.loc} set={v=>u({loc:v})} ph={tr("fLocPh")} cl={cl}/>}
           {["heimspiel","auswarts","freundschaft","turnier"].includes(f.type)&&(()=>{ const on=f.carpoolEnabled!==false;
-            const lbl=carpoolLabelsFor(f,cl);
+            const lbl={drive:tr("cpDrive"),need:tr("cpNeed"),self:tr("cpSelf"),...carpoolLabelsFor(f,cl)};
             const setLbl=(k,v)=>u({carpoolLabels:{...(f.carpoolLabels||{}),[k]:v}});
             const edit=cpEdit, setEdit=setCpEdit;
             const cpInp={width:"100%",padding:"9px 11px",fontSize:13.5,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",boxSizing:"border-box",fontFamily:"inherit"};
@@ -28662,6 +28726,12 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
                 save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,guests}:e)});
                 setViewEv(prev=>({...prev,guests}));
               }}
+              onSetVote={(name,val)=>{
+                const nv={...(viewEv.votes||{}),[name]:{val,ts:new Date().toISOString(),byTrainer:true}};
+                save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,votes:nv}:e)});
+                setViewEv(prev=>({...prev,votes:nv}));
+                fire(val==="yes"?name+": zugesagt (vom Trainer eingetragen)":name+": abgesagt (vom Trainer eingetragen)");
+              }}
             />}
         {evTab==="plan"&&<>
         </>}
@@ -29065,7 +29135,7 @@ function PlaytimeTracker({ ev, roster, onSave, t }){
     </div>
   );
 }
-function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline,onSetPresent=()=>{},onSetGuests=()=>{},staff=null}) {
+function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline,onSetPresent=()=>{},onSetGuests=()=>{},onSetVote=null,staff=null}) {
   const p = cl?.pri||"#16a34a";
   const isGameEv = ["heimspiel","auswarts","freundschaft","turnier"].includes(ev.type);
   const present = ev.present||{};
@@ -29257,7 +29327,7 @@ function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline,onSetPresent=()=
                   {ts&&<div style={{fontSize:11,color:"#64748b",marginTop:1}}>{new Date(ts).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"})} {new Date(ts).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"})}</div>}
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:6}}>
-                  {late&&<span style={{fontSize:11,fontWeight:700,color:"#d97706",background:"#fef3c7",borderRadius:6,padding:"2px 7px"}}> Zu spät</span>}
+                  {typeof rawVal==="object"&&rawVal?.byTrainer&&<span style={{fontSize:10.5,fontWeight:700,color:"#4f46e5",background:"#eef2ff",borderRadius:6,padding:"2px 7px"}}>Trainer</span>}{late&&<span style={{fontSize:11,fontWeight:700,color:"#d97706",background:"#fef3c7",borderRadius:6,padding:"2px 7px"}}> Zu spät</span>}
                   <span style={{fontSize:14,fontWeight:700,color:val==="yes"?"#16a34a":"#dc2626"}}>{val==="yes"?"* Dabei":"* Nicht dabei"}</span>
                 </div>
               </div>
@@ -29325,7 +29395,12 @@ function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline,onSetPresent=()=
             <div key={name} style={{display:"flex",alignItems:"center",gap:10,background:"#fffbeb",borderRadius:12,padding:"10px 13px",border:"1px solid #fde68a"}}>
               <Av name={name} sz={34}/>
               <span style={{flex:1,fontWeight:700,fontSize:14,color:"#92400e"}}>{name}</span>
-              <span style={{fontSize:12,color:"#d97706",fontWeight:600}}>? Ausstehend</span>
+              {onSetVote
+                ? <div style={{display:"flex",gap:6,flexShrink:0}}>
+                    <button onClick={()=>onSetVote(name,"yes")} title="Für diesen Spieler zusagen (z. B. eigenes Kind)" style={{width:38,height:32,borderRadius:9,border:"none",background:"#16a34a",color:"#fff",fontWeight:900,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>✓</button>
+                    <button onClick={()=>onSetVote(name,"no")} title="Für diesen Spieler absagen" style={{width:38,height:32,borderRadius:9,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:900,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>✕</button>
+                  </div>
+                : <span style={{fontSize:12,color:"#d97706",fontWeight:600}}>? Ausstehend</span>}
             </div>
           ))}
         </div>
@@ -30089,9 +30164,10 @@ function RegisterOfferModalInline({ offer, register }){
 }
 
 const PICKUP_SUGGEST = ["Sportplatz","Marktplatz","Schule","Kirche","Zuhause","Bahnhof","Rewe","Aldi"];
-function PollCarpool({ entries={}, onSet, user, cl, labels=CARPOOL_DEFAULTS }) {
+function PollCarpool({ entries={}, onSet, user, cl, labels={} }) {
   const t=TH(cl);
-  const L={...CARPOOL_DEFAULTS,...(labels||{})};
+  const { tr } = useT();
+  const L={drive:tr("cpDrive"),need:tr("cpNeed"),self:tr("cpSelf"),...(labels||{})};
   const votes=entries||{};
   const entryOf = name => { const v=votes[name]; return v&&typeof v==="object"&&v.mode?v:null; };
   const mine = entryOf(user);
@@ -31412,6 +31488,7 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
   );
 }
 function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
+  const { tr } = useT();
   const isTrainerOrHelper = role==="trainer"||role==="helper"||role==="admin";
   const [infoDrill,setInfoDrill]=useState(null);
   const eT=ET[ev.type]||ET.training;const isToday=ev.date===now();const isPast=ev.date<now();
@@ -31441,7 +31518,7 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
         <div style={{width:48,height:48,borderRadius:15,background:eT.bg,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><EventIcon type={EVENT_TYPE_ALIAS[ev.type]||ev.type} size={26} color={eT.col}/></div>
         <div style={{flex:1,minWidth:0}}>
           <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-            <span style={{fontWeight:900,fontSize:17,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ev.title}</span>
+            <span style={{fontWeight:900,fontSize:17,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{evDisplayTitle(ev,tr)}</span>
             {isToday&&<Tag c={p} bg={p+"20"} ch="* Heute"/>}
             {ev.open&&<Tag c="#7c3aed" bg="#ede9fe" ch="* Offen"/>}
             {ev.sid&&<Tag c="#94a3b8" bg="#f1f5f9" ch="*" sm/>}
@@ -31788,6 +31865,8 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       .filter(m=>m&&!m.system&&m.author!==user&&new Date(m.ts).getTime()>lastRead).length;
   },[data.chats, tab]);
   const [showProfile,setShowProfile]=useState(false);
+  const [pwCur,setPwCur]=useState(""); const [pwNew,setPwNew]=useState("");
+  const [pnDraft,setPnDraft]=useState(null); // Eltern-Vornamen (Entwurf)
   // "Mehr" in der Eltern-Leiste oeffnet das Profil/Einstellungen-Sheet (kein Trainer-Drawer).
   useEffect(()=>{ if(tab==="more"){ setShowProfile(true); setTab("events"); } },[tab]);
   const toastRef=useRef(null);
@@ -32023,6 +32102,7 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               {tr("uhLoggedInAs")} <strong style={{color:"#334155"}}>{user}</strong><br/>
               <span style={{fontSize:12}}>{myTeam?.name}</span>
             </div>
+            <button onClick={()=>{setShowProfile(false);onLogout();}} style={{width:"100%",padding:"13px",borderRadius:13,border:"none",background:"#334155",color:"#fff",fontWeight:800,fontSize:14.5,cursor:"pointer",fontFamily:"inherit",marginBottom:14}}>🚪 {tr("uhSwitchLogout")}</button>
             <div style={{background:"#fffbeb",borderRadius:11,padding:"10px 13px",marginBottom:16,fontSize:12,color:"#92400e",lineHeight:1.6}}>
                <strong>{tr("uhPrivacyLbl")}</strong> {tr("uhPhotoNote")}
             </div>
@@ -32032,6 +32112,7 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
                 <button onClick={exportMyData} style={{flex:1,padding:"10px",borderRadius:10,border:"1.5px solid #e2e8f0",background:"#fff",color:"#334155",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{tr("uhExportData")}</button>
                 <button onClick={requestDeletion} style={{flex:1,padding:"10px",borderRadius:10,border:"1.5px solid #fecaca",background:"#fff7f7",color:"#dc2626",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{tr("uhRequestDel")}</button>
               </div>
+              <div style={{fontSize:11,color:"#9a3412",marginTop:8,lineHeight:1.5,background:"#fff7ed",border:"1px solid #fed7aa",borderRadius:9,padding:"7px 10px"}}>{tr("uhDelHint")}</div>
             </div>
             <div onClick={togglePubOk} style={{display:"flex",alignItems:"center",gap:12,background:pubOk?"#f0fdf4":"#f8fafc",border:`1.5px solid ${pubOk?"#bbf7d0":"#e2e8f0"}`,borderRadius:12,padding:"12px 14px",marginBottom:14,cursor:"pointer"}}>
               <div style={{flex:1,minWidth:0}}>
@@ -32043,11 +32124,42 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               </div>
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:9}}>
+              {myProfile&&(
+                <div style={{background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"12px 14px",marginBottom:4}}>
+                  <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.4,marginBottom:6}}>{tr("pnT")}</div>
+                  <input value={pnDraft??(myProfile.parentNames||"")} onChange={e=>setPnDraft(e.target.value)}
+                    onBlur={()=>{ if(pnDraft!=null&&pnDraft!==(myProfile.parentNames||"")){ onSave({...data, playerProfiles:(data.playerProfiles||[]).map(p=>p.id===myProfile.id?{...p,parentNames:pnDraft.trim()}:p)}); fire(tr("uhSaved")+" ✓"); } }}
+                    placeholder={tr("pnPh")} style={{width:"100%",padding:"10px 12px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",fontFamily:"inherit",boxSizing:"border-box"}}/>
+                  <div style={{fontSize:11,color:"#64748b",marginTop:5}}>{tr("pnNote")}</div>
+                </div>
+              )}
+              {myProfile&&(
+                <div style={{background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"12px 14px",marginBottom:4}}>
+                  <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.4,marginBottom:2}}>{tr("pwSecT")}</div>
+                  <div style={{fontSize:12,color:myProfile.childPw?"#15803d":"#64748b",fontWeight:700,marginBottom:8}}>{myProfile.childPw?"● "+tr("pwSet"):"○ "+tr("pwNotSet")}</div>
+                  {myProfile.childPw&&<input type="password" value={pwCur} onChange={e=>setPwCur(e.target.value)} placeholder={tr("pwCurPh")} style={{width:"100%",padding:"10px 12px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",fontFamily:"inherit",boxSizing:"border-box",marginBottom:7}}/>}
+                  <input type="password" value={pwNew} onChange={e=>setPwNew(e.target.value)} placeholder={tr("pwNewPh")} style={{width:"100%",padding:"10px 12px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",fontFamily:"inherit",boxSizing:"border-box",marginBottom:8}}/>
+                  <div style={{display:"flex",gap:7}}>
+                    <button onClick={()=>{
+                      if(myProfile.childPw&&!checkPw(pwCur,myProfile.childPw)){ fire(tr("pwWrong")); return; }
+                      if(pwNew.trim().length<4){ fire(tr("pwShort")); return; }
+                      onSave({...data, playerProfiles:(data.playerProfiles||[]).map(p=>p.id===myProfile.id?{...p,childPw:hashPw(pwNew.trim()),childPwAt:new Date().toISOString()}:p)});
+                      setPwCur(""); setPwNew(""); fire(tr("pwSaved"));
+                    }} style={{flex:1,padding:"10px",borderRadius:10,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{tr("pwSave")}</button>
+                    {myProfile.childPw&&<button onClick={()=>{
+                      if(!checkPw(pwCur,myProfile.childPw)){ fire(tr("pwWrong")); return; }
+                      onSave({...data, playerProfiles:(data.playerProfiles||[]).map(p=>p.id===myProfile.id?{...p,childPw:"",childPwAt:""}:p)});
+                      setPwCur(""); setPwNew(""); fire(tr("pwRemoved"));
+                    }} style={{flex:1,padding:"10px",borderRadius:10,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{tr("pwRemove")}</button>}
+                  </div>
+                  <div style={{fontSize:11,color:"#64748b",marginTop:6}}>{tr("pwHintReset")}</div>
+                </div>
+              )}
               <div style={{background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"12px 14px",marginBottom:4}}><FontScaleControl/></div>
               <div style={{marginBottom:4}}><ShareTeamLink cl={cl} team={myTeam} t={t} compact/></div>
               <button onClick={()=>setShowProfile(false)} style={{width:"100%",padding:"13px",borderRadius:13,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>{tr("uhClose")}</button>
               <button onClick={()=>{ try{ Object.keys(localStorage).filter(k=>k.startsWith("va_intro_")).forEach(k=>localStorage.removeItem(k)); }catch{} fire(tr("uhIntrosReset")); setShowProfile(false); }} style={{width:"100%",padding:"12px",borderRadius:13,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:13.5,cursor:"pointer",fontFamily:"inherit",marginBottom:10}}>{tr("uhResetIntros")}</button>
-              <button onClick={()=>{setShowProfile(false);onLogout();}} style={{width:"100%",padding:"13px",borderRadius:13,border:"none",background:"#fee2e2",color:"#dc2626",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}> {tr("uhSwitchLogout")}</button>
+
             </div>
           </div>
         </div>
@@ -32145,7 +32257,7 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
                 </div>
                 {up[0]&&<div style={{marginTop:14,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
                   <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:6}}>{tr("uhNextEvent")}</div>
-                  <div style={{fontWeight:800,fontSize:14,color:"#334155"}}>{up[0].title}</div>
+                  <div style={{fontWeight:800,fontSize:14,color:"#334155"}}>{evDisplayTitle(up[0],tr)}</div>
                   <div style={{fontSize:12.5,color:"#64748b",marginTop:2}}>{new Date(up[0].date+"T12:00:00").toLocaleDateString("de-DE",{weekday:"short",day:"2-digit",month:"2-digit"})}{up[0].time?` · ${up[0].time}${up[0].endTime?"–"+up[0].endTime:""}`:""}</div>
                 </div>}
               </div>
@@ -32616,7 +32728,8 @@ function AppInner({lang,setLang}) {
       {screen==="guest" &&activeCl&&<ClubGuestList cl={activeCl} liveEvents={data.liveEvents||[]} onOpen={(eid,club)=>setVisitor({eid,club})} onBack={()=>setScr("role")}/>}
       {screen==="flow"  &&activeCl&&<UserFlow cl={activeCl} teams={clTeams} players={data.players} playerProfiles={data.playerProfiles||[]} preselectTid={linkTeam} onDone={(tid,user)=>login("user",{tid,user})} onBack={()=>setScr(linkTeam?"role":"role")}
         onWaitlist={entry=>{ save({...data, waitlist:[...(data.waitlist||[]), { ...entry, id:uid(), cid:activeCl.id, ts:new Date().toISOString(), status:"open" }]}); }}
-        onConsent={profId=>{ save({...data, playerProfiles:(data.playerProfiles||[]).map(p=>p.id===profId?{...p, consentAt:new Date().toISOString(), consentBy:"Eltern (App-Anmeldung)"}:p)}); }}/>}
+        onConsent={profId=>{ save({...data, playerProfiles:(data.playerProfiles||[]).map(p=>p.id===profId?{...p, consentAt:new Date().toISOString(), consentBy:"Eltern (App-Anmeldung)"}:p)}); }}
+        onSetChildPw={(profId,pw)=>{ save({...data, playerProfiles:(data.playerProfiles||[]).map(p=>p.id===profId?{...p, childPw:hashPw(pw), childPwAt:new Date().toISOString()}:p)}); }}/>}
       {screen==="tlogin"&&activeCl&&<TrainerLogin cl={activeCl} trainers={data.trainers.filter(t=>t.cid===cid&&isActive(t))} teams={(data.teams||[]).filter(tm=>tm.cid===cid)} onLogin={tr=>login("trainer",tr)} onSetTrainerPw={(trId,newHash)=>{ save({...data,trainers:(data.trainers||[]).map(t=>t.id===trId?{...t,pw:newHash,mustChangePw:false,sharedAt:t.sharedAt||new Date().toISOString()}:t)}); }} onBack={()=>setScr("role")}/>}
       {screen==="hlogin"&&activeCl&&<HelperLogin cl={activeCl} helpers={data.helpers||[]} onLogin={h=>login("helper",{...h,cid})} onBack={()=>setScr("role")}/>}
       {screen==="alogin"&&activeCl&&<AdminLogin cl={activeCl} onLogin={a=>login("admin",{...a,cid})} onBack={()=>setScr("role")}/>}
