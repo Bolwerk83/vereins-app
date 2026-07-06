@@ -1846,6 +1846,50 @@ function Drawer({ch,children,onClose,title,maxH="92dvh"}) {
     </div>
   );
 }
+// ── Einheitliches Seiten-Layout ─────────────────────────────────────────
+// Jede Hauptseite folgt demselben Skelett: PageHead (Icon+Titel+Kontext)
+// → TeamPills (Team-Wahl) → PillTabs (Unter-Tabs) → Inhalt → EmptyBox.
+function PageHead({icon,title,sub,right}) {
+  return (
+    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+      <div style={{width:40,height:40,borderRadius:12,background:"#f1f5f9",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{icon}</div>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontWeight:900,fontSize:17,color:"#0f172a",lineHeight:1.2}}>{title}</div>
+        {sub&&<div style={{fontSize:12,color:"#64748b",marginTop:1}}>{sub}</div>}
+      </div>
+      {right}
+    </div>
+  );
+}
+function PillTabs({tabs,value,onChange,color="#16a34a"}) {
+  return (
+    <div style={{display:"flex",gap:6,marginBottom:12,overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
+      {tabs.map(([k,l])=>(
+        <button key={k} onClick={()=>onChange(k)} style={{flexShrink:0,padding:"8px 14px",borderRadius:99,border:`1.5px solid ${value===k?color:"#e2e8f0"}`,background:value===k?color:"#fff",color:value===k?contrast(color):"#475569",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{l}</button>
+      ))}
+    </div>
+  );
+}
+function TeamPills({teams,value,onChange}) {
+  if(!teams||teams.length<2) return null;
+  return (
+    <div style={{display:"flex",gap:6,marginBottom:12,overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
+      {teams.map(tm=>(
+        <button key={tm.id} onClick={()=>onChange(tm.id)} style={{padding:"7px 14px",borderRadius:99,border:`2px solid ${value===tm.id?tm.col:"#e2e8f0"}`,background:value===tm.id?tm.col:"#fff",color:value===tm.id?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit",flexShrink:0}}>{tm.name}</button>
+      ))}
+    </div>
+  );
+}
+function EmptyBox({icon="📭",title,sub,children}) {
+  return (
+    <div style={{textAlign:"center",padding:"34px 20px",background:"#f8fafc",borderRadius:16,border:"1.5px dashed #e2e8f0"}}>
+      <div style={{fontSize:32,marginBottom:8}}>{icon}</div>
+      <p style={{fontWeight:800,color:"#334155",fontSize:15,margin:0}}>{title}</p>
+      {sub&&<p style={{fontSize:13,color:"#64748b",marginTop:5,lineHeight:1.5}}>{sub}</p>}
+      {children}
+    </div>
+  );
+}
 function Btn({ch,onClick,v="pri",full,sm,dis,load,icon,cl,sx={}}) {
   const p=cl?.pri||"#16a34a";
   const V={
@@ -2291,20 +2335,8 @@ function WaitlistTab({ data, cid, myTids, session, save, fire, cl, isAdmin=false
   const contactHref=(c)=>{ const v=String(c||"").trim(); if(/@/.test(v)) return "mailto:"+v; const tel=v.replace(/[^\d+]/g,""); return tel.length>=5?"tel:"+tel:null; };
   return (
     <div>
-      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-        <span style={{fontSize:20}}>📋</span>
-        <div style={{flex:1}}>
-          <div style={{fontWeight:900,fontSize:17,color:"#0f172a"}}>Warteliste</div>
-          <div style={{fontSize:12,color:"#64748b"}}>{visible.length} Einträge{openN>0?` · ${openN} offen`:""} · Kontakt nur für Trainer/Verein</div>
-        </div>
-      </div>
-      {visible.length===0 && (
-        <div style={{textAlign:"center",padding:"40px 20px",background:"#f8fafc",borderRadius:16,border:"1.5px dashed #e2e8f0"}}>
-          <div style={{fontSize:34,marginBottom:8}}>📭</div>
-          <p style={{fontWeight:800,color:"#334155"}}>Noch niemand auf der Warteliste</p>
-          <p style={{fontSize:13,color:"#64748b",marginTop:4,lineHeight:1.5}}>Interessierte können sich beim Team-Login über „Auf die Warteliste" eintragen – v. a. wenn ein Team voll ist.</p>
-        </div>
-      )}
+      <PageHead icon="📋" title="Warteliste" sub={`${visible.length} Einträge${openN>0?` · ${openN} offen`:""} · Kontakt nur für Trainer/Verein`}/>
+      {visible.length===0&&<EmptyBox icon="📭" title="Noch niemand auf der Warteliste" sub={'Interessierte können sich beim Team-Login über „Auf die Warteliste“ eintragen – v. a. wenn ein Team voll ist.'}/>}
       <div style={{display:"flex",flexDirection:"column",gap:9}}>
         {visible.map(w=>{ const st=WAITLIST_STATUS[w.status||"open"]||WAITLIST_STATUS.open; const href=contactHref(w.contact); return (
           <div key={w.id} style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:14,padding:"12px 14px"}}>
@@ -7240,9 +7272,8 @@ function SeasonReportTab({ data, myTids, cl, fire }){
   if(teams.length===0) return <p style={{color:"#64748b",fontSize:13,padding:20}}>Keine Mannschaft.</p>;
   return (
     <div>
-      {teams.length>1&&<div style={{display:"flex",gap:6,marginBottom:14,overflowX:"auto",scrollbarWidth:"none"}}>
-        {teams.map(tm=>(<button key={tm.id} onClick={()=>setTid(tm.id)} style={{padding:"7px 13px",borderRadius:99,border:`2px solid ${tid===tm.id?tm.col:"#e2e8f0"}`,background:tid===tm.id?tm.col:"#fff",color:tid===tm.id?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit",flexShrink:0}}>{tm.name}</button>))}
-      </div>}
+      <PageHead icon="📄" title="Saisonbericht" sub="Anwesenheit · Spielzeit · Entwicklung"/>
+      <TeamPills teams={teams} value={tid} onChange={setTid}/>
       <div style={{display:"flex",gap:8,marginBottom:14}}>
         <button onClick={doShareTeam} style={{flex:2,padding:"11px",borderRadius:11,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>📄 Team teilen</button>
         <button onClick={doCopyTeam} style={{flex:1,padding:"11px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>{tr("btnCopy")}</button>
@@ -7306,19 +7337,14 @@ function CashbookTab({ data, myTids, save, fire, cl }){
   if(teams.length===0) return <p style={{color:"#64748b",fontSize:13,padding:20}}>{tr("noTeamMsg")}</p>;
   return (
     <div>
-      {teams.length>1&&<div style={{display:"flex",gap:6,marginBottom:14,overflowX:"auto",scrollbarWidth:"none"}}>
-        {teams.map(tm=>(<button key={tm.id} onClick={()=>setTid(tm.id)} style={{padding:"7px 13px",borderRadius:99,border:`2px solid ${tid===tm.id?tm.col:"#e2e8f0"}`,background:tid===tm.id?tm.col:"#fff",color:tid===tm.id?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit",flexShrink:0}}>{tm.name}</button>))}
-      </div>}
+      <PageHead icon="💰" title="Mannschaftskasse" sub="Beiträge · Strafen · Ausgaben"/>
+      <TeamPills teams={teams} value={tid} onChange={setTid}/>
       <div style={{background:balance>=0?"#f0fdf4":"#fef2f2",border:`1.5px solid ${balance>=0?"#bbf7d0":"#fecaca"}`,borderRadius:16,padding:"16px",marginBottom:14,textAlign:"center"}}>
         <div style={{fontSize:12,fontWeight:700,color:"#64748b",letterSpacing:.4}}>{tr("cashBalance")} · {balance>=0?tr("cashPlus"):tr("cashMinus")}</div>
         <div style={{fontWeight:900,fontSize:30,color:balance>=0?"#15803d":"#dc2626",marginTop:2}}>{balance>=0?"+":"−"}{eur(Math.abs(balance))}</div>
         <div style={{fontSize:11.5,color:"#64748b",marginTop:3}}>{entries.length} {tr("cashBookings")}</div>
       </div>
-      <div style={{display:"flex",gap:6,marginBottom:12,overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
-        {[["buchen","➕ Buchen"],["liste",`📒 Buchungen (${entries.length})`],["strafen",`⚠️ Strafen${fineList.length?` (${fineList.length})`:""}`]].map(([k,l])=>(
-          <button key={k} onClick={()=>setKTab(k)} style={{flexShrink:0,padding:"8px 14px",borderRadius:99,border:`1.5px solid ${kTab===k?t.p:"#e2e8f0"}`,background:kTab===k?t.p:"#fff",color:kTab===k?contrast(t.p):"#475569",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{l}</button>
-        ))}
-      </div>
+      <PillTabs color={t.p} value={kTab} onChange={setKTab} tabs={[["buchen","➕ Buchen"],["liste",`📒 Buchungen (${entries.length})`],["strafen",`⚠️ Strafen${fineList.length?` (${fineList.length})`:""}`]]}/>
       {kTab==="buchen"&&<>
       <div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:14,padding:"13px",marginBottom:14}}>
         <div style={{fontWeight:800,fontSize:14,color:"#0f172a",marginBottom:9}}>{tr("cashNewEntry")}</div>
@@ -26758,6 +26784,10 @@ function DayTimeline({ field, bookings, trainings, date, dayStart=480, dayEnd=13
     return { id:"ev_"+ev.id, label:(ev.title||"Training"), from:s, to:s+dur, color:"#0891b2", kind:"training", frac:1/split, fracLabel };
   }).filter(Boolean);
   const all=[...blocks,...trainBlocks];
+  // Teil-Platz-Bloecke, die sich zeitlich ueberlappen, nebeneinander legen (Spuren).
+  const laneMap=(()=>{ const m=new Map(); const parts=all.filter(b=>b.frac&&b.frac<1).sort((a,b)=>a.from-b.from||a.to-b.to);
+    for(const b of parts){ let lane=0; for(;;){ const busy=parts.some(o=>o!==b&&m.has(o.id)&&m.get(o.id)===lane&&o.to>b.from&&o.from<b.to); if(!busy) break; lane++; } m.set(b.id,lane); }
+    return m; })();
   return (
     <div style={{display:"flex",gap:8}}>
       <div style={{position:"relative",width:42,flexShrink:0,height:H}}>
@@ -26785,7 +26815,9 @@ function DayTimeline({ field, bookings, trainings, date, dayStart=480, dayEnd=13
           else if(/Feld [34]/.test(bl.area)) lft="51%";
           // Termin mit Teil-Platz: Block nur so breit wie der belegte Anteil (Rest sichtbar frei)
           const partial = bl.frac && bl.frac<1;
-          const pos = partial ? {left:"3px", width:`calc(${Math.round(bl.frac*100)}% - 6px)`} : {left:lft, right:rgt};
+          const lane = partial ? (laneMap.get(bl.id)||0) : 0;
+          const leftPct = Math.min(lane*bl.frac*100, Math.max(0,100-bl.frac*100));
+          const pos = partial ? {left:`calc(${Math.round(leftPct)}% + 3px)`, width:`calc(${Math.round(bl.frac*100)}% - 6px)`} : {left:lft, right:rgt};
           return (
             <div key={bl.id} style={{position:"absolute",top,...pos,height:Math.max(h-2,14),
               background:bl.color,borderRadius:7,padding:"3px 7px",color:"#fff",overflow:"hidden",
@@ -26927,6 +26959,7 @@ function FieldsTab({ data,myTids,session,save,fire,cl }) {
   const [selDate,setSelDate] = useState(new Date().toISOString().slice(0,10));
   const [bookTarget,setBookTarget] = useState(null);
   const [view,setView] = useState("timeline"); // timeline | week | grid
+  const [selFid,setSelFid] = useState(null);       // gewählter Platz (Tab)
   const [prefillFrom,setPrefillFrom] = useState(null);
   const dayBk = fid => bookings.filter(b=>b.fieldId===fid&&b.date===selDate);
   // Trainings-Termine des Tages (für automatische Anzeige in der Zeitleiste)
@@ -26962,8 +26995,14 @@ function FieldsTab({ data,myTids,session,save,fire,cl }) {
     setBookTarget(null);
     return true;
   };
+  const selField = fields.find(fl=>fl.id===selFid) || fields[0] || null;
   return (
     <div>
+      <PageHead icon="🏟" title="Platzbelegung" sub={selField?`${selField.name}${fields.length>1?` · ${fields.length} Plätze`:""}`:"Plätze & Buchungen"}/>
+      {fields.length>1&&(
+        <PillTabs color={t.p} value={selField?.id} onChange={setSelFid}
+          tabs={fields.map(fl=>[fl.id,(fl.icon?fl.icon+" ":"")+fl.name])}/>
+      )}
       <div style={{background:"#fff",borderRadius:16,padding:14,border:"1.5px solid #e2e8f0",marginBottom:14,display:"flex",alignItems:"center",gap:10}}>
         <button onClick={()=>{const d=new Date(selDate+"T12:00:00");d.setDate(d.getDate()-1);setSelDate(d.toISOString().slice(0,10));}} style={{width:32,height:32,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",cursor:"pointer",fontSize:18}}>&#8249;</button>
         <input type="date" value={selDate} onChange={e=>setSelDate(e.target.value)} style={{flex:1,padding:"7px 10px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none"}}/>
@@ -26980,7 +27019,7 @@ function FieldsTab({ data,myTids,session,save,fire,cl }) {
           onBook={(field,teamId,cells,from,to,cellStart)=>addBk(field,teamId,cells,from,to,cellStart)}/>
       )}
       {fields.length===0&&<div style={{textAlign:"center",padding:"32px",background:"#f8fafc",borderRadius:14,border:"1.5px dashed #e2e8f0"}}><p style={{fontWeight:700,color:"#334155"}}>Keine Plätze konfiguriert</p><p style={{fontSize:13,color:"#64748b",marginTop:4}}>Plätze können im Admin-Bereich angelegt werden.</p></div>}
-      {fields.map(field=>(
+      {fields.filter(fl=>!selField||fl.id===selField.id).map(field=>(
         <div key={field.id} style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",marginBottom:14,overflow:"hidden"}}>
           <div style={{padding:"12px 16px",borderBottom:"1px solid #f1f5f9",display:"flex",alignItems:"center",gap:10}}>
             <div style={{flex:1}}><div style={{fontWeight:800,fontSize:15}}>{field.name}</div><div style={{fontSize:12,color:"#64748b"}}>{field.surface} - {dayBk(field.id).length} Buchung(en)</div></div>
@@ -28193,14 +28232,8 @@ function AttendanceTab({ data, myTids, cl, save, fire, session=null }) {
 
   return (
     <div>
-      {myTeams.length>1&&<div style={{display:"flex",gap:6,marginBottom:14,overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
-        {myTeams.map(tm=>(
-          <button key={tm.id} onClick={()=>setSelTid(tm.id)}
-            style={{padding:"7px 14px",borderRadius:99,border:`2px solid ${selTid===tm.id?tm.col:"#e2e8f0"}`,background:selTid===tm.id?tm.col:"#fff",color:selTid===tm.id?"#fff":"#475569",fontWeight:700,fontSize:12,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit",flexShrink:0}}>
-            {tm.name}
-          </button>
-        ))}
-      </div>}
+      <PageHead icon="📊" title="Anwesenheit & Einsatz" sub="Quote · Spielzeit · No-Shows"/>
+      <TeamPills teams={myTeams} value={selTid} onChange={setSelTid}/>
       <div style={{background:"#fff",borderRadius:16,padding:14,border:"1.5px solid #e2e8f0",marginBottom:14}}>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
           {[[trainings.length,tr("lblTrainings"),"#16a34a"],[games.length,tr("kpiGames"),"#2563eb"],[players.length,tr("lblPlayers"),"#7c3aed"]].map(([v,l,col])=>(
@@ -28211,13 +28244,9 @@ function AttendanceTab({ data, myTids, cl, save, fire, session=null }) {
           ))}
         </div>
       </div>
-      <div style={{display:"flex",gap:6,marginBottom:12,overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
-        {[["anw","✅ Anwesenheit"],["zeit","⏱ Spielzeit"],["ns","🚫 No-Shows"+(noShowStats.length?` (${noShowStats.length})`:"")]].map(([k,l])=>(
-          <button key={k} onClick={()=>setATab(k)} style={{flexShrink:0,padding:"8px 14px",borderRadius:99,border:`1.5px solid ${aTab===k?t.p:"#e2e8f0"}`,background:aTab===k?t.p:"#fff",color:aTab===k?contrast(t.p):"#475569",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{l}</button>
-        ))}
-      </div>
+      <PillTabs color={t.p} value={aTab} onChange={setATab} tabs={[["anw","✅ Anwesenheit"],["zeit","⏱ Spielzeit"],["ns","🚫 No-Shows"+(noShowStats.length?` (${noShowStats.length})`:"")]]}/>
       {aTab==="anw"&&<>
-      {trainings.length===0&&<div style={{textAlign:"center",padding:"32px",background:"#f8fafc",borderRadius:14,border:"1.5px dashed #e2e8f0"}}><p style={{fontWeight:700,color:"#334155"}}>{tr("attNoTrain")}</p><p style={{fontSize:13,color:"#64748b",marginTop:4}}>{tr("attNoTrainSub")}</p></div>}
+      {trainings.length===0&&<EmptyBox icon="📊" title={tr("attNoTrain")} sub={tr("attNoTrainSub")}/>}
       {trainings.length>0&&<div style={{display:"flex",flexDirection:"column",gap:8}}>
         {stats.map(({pl,tYes,gYes,trainPct,gamePct,totalT,totalG})=>(
           <div key={pl.id} style={{background:"#fff",borderRadius:13,padding:"12px 14px",border:"1.5px solid #e2e8f0",display:"flex",alignItems:"center",gap:12}}>
@@ -28238,7 +28267,7 @@ function AttendanceTab({ data, myTids, cl, save, fire, session=null }) {
       </div>}
       </>}
       {aTab==="ns"&&<>
-      {checkedCount===0&&<div style={{textAlign:"center",padding:"28px",background:"#f8fafc",borderRadius:14,border:"1.5px dashed #e2e8f0",fontSize:13,color:"#64748b",lineHeight:1.5}}>Noch keine Anwesenheit abgehakt.<br/>Im Termin unter „Rückmeldungen" abhaken, wer wirklich da war – dann erscheinen hier die No-Shows.</div>}
+      {checkedCount===0&&<EmptyBox icon="🚫" title="Noch keine Anwesenheit abgehakt" sub={'Im Termin unter „Rückmeldungen“ abhaken, wer wirklich da war – dann erscheinen hier die No-Shows.'}/>}
       {checkedCount>0&&(
         <div style={{marginTop:18}}>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
@@ -28301,7 +28330,7 @@ function AttendanceTab({ data, myTids, cl, save, fire, session=null }) {
       )}
       </>}
       {aTab==="zeit"&&<>
-      {ptGames.length===0&&<div style={{textAlign:"center",padding:"28px",background:"#f8fafc",borderRadius:14,border:"1.5px dashed #e2e8f0",fontSize:13,color:"#64748b",lineHeight:1.5}}>Noch keine Einsatzzeiten erfasst.<br/>Beim Spiel im Tab „Spieltag" die Einsatzzeit mitlaufen lassen.</div>}
+      {ptGames.length===0&&<EmptyBox icon="⏱" title="Noch keine Einsatzzeiten erfasst" sub={'Beim Spiel im Tab „Spieltag“ die Einsatzzeit mitlaufen lassen.'}/>}
       {ptGames.length>0&&(
         <div style={{marginTop:18}}>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
