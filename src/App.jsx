@@ -5266,15 +5266,11 @@ function TeamInsights({ data, myTids, cl, save, fire }) {
     .map(s => ({ s, avg: skillAgg[s].n ? skillAgg[s].sum/skillAgg[s].n : null, n: skillAgg[s].n }))
     .filter(x => x.n > 0)
     .sort((a,b) => a.avg - b.avg);
-  // Ziel-orientiert priorisieren: 1) Standard erreichen (größte Lücke zum Alters-Ziel zuerst),
-  // 2) sind alle Ziele erreicht -> Ausbau-Modus (kleinster Vorsprung zuerst, um über den Schnitt zu kommen).
-  const _insCat = (data.teams||[]).find(tm=>myTids.includes(tm.id))?.cat || "F-Jugend";
-  const _soll = sollFor(cl, _insCat, skillFields);
-  const _withGap = skillAvg.map(x=>({ ...x, soll:_soll[skillFields.indexOf(x.s)]??3, gap:(_soll[skillFields.indexOf(x.s)]??3)-x.avg }));
-  const _below = _withGap.filter(x=>x.gap>0.05).sort((a,b)=>b.gap-a.gap);
-  const buildMode = _withGap.length>0 && _below.length===0;
-  const ranked = _below.length ? _below : [..._withGap].sort((a,b)=>(a.avg-a.soll)-(b.avg-b.soll));
-  const weakest = ranked.slice(0, 2);
+  // ZENTRALE Trainings-Logik – identische Rechnung wie Auto-Plan & Termin-Zuordnung.
+  const _tf = trainingFocusFor({ data, cl, tid: myTids[0] });
+  const _insCat = _tf.cat;
+  const buildMode = _tf.buildMode;
+  const weakest = _tf.ranked.slice(0, 2).map(x=>({ s:x.axis, avg:x.avg, n:x.n, soll:x.soll }));
 
   // Trainings-Empfehlung
   const TRAINING_FOCUS = {
@@ -5440,14 +5436,16 @@ function TeamInsights({ data, myTids, cl, save, fire }) {
                 .sort((a,b)=>((a.date||"")+(a.time||"")).localeCompare((b.date||"")+(b.time||""))).slice(0,3);
               if(!axis||upcoming.length===0) return null;
               const attach=(ev)=>{
-                const team=(data.teams||[]).find(tm=>tm.id===ev.tid);
-                const cat=team?.cat||team?.name||null;
-                const picks=suggestDrillsForSkill(axis,cat,3).map(x=>x.d).filter(Boolean);
+                // Schwerpunkt individuell aus den Zusagen DIESES Termins (zentrale Logik)
+                const yesNames=Object.entries(ev.votes||{}).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>n);
+                const tfEv=trainingFocusFor({ data, cl, tid: ev.tid, present: yesNames });
+                const evAxis=tfEv.axis, cat=tfEv.cat;
+                const picks=suggestDrillsForSkill(evAxis,cat,3).map(x=>x.d).filter(Boolean);
                 if(!picks.length){ fire&&fire("Keine passenden Übungen in der Bibliothek gefunden"); return; }
                 if(ev.trainingPlan&&typeof window!=="undefined"&&window.confirm&&!window.confirm("Dieser Termin hat schon einen Trainingsplan – ersetzen?")) return;
-                const plan={ cat, createdAt: now(), focus: axis, sessions:[{ title:"Trainingseinheit", blocks: picks.map(d=>({phase:"Schwerpunkt", id:d.id, drillId:d.id, title:d.title, min:d.min||12})) }] };
+                const plan={ cat, createdAt: now(), focus: evAxis, sessions:[{ title:"Trainingseinheit", blocks: picks.map(d=>({phase:"Schwerpunkt", id:d.id, drillId:d.id, title:d.title, min:d.min||12})) }] };
                 save({...data, events:(data.events||[]).map(e=>e.id===ev.id?{...e,trainingPlan:plan}:e)});
-                fire&&fire(`Schwerpunkt „${axis}“ an ${fmtDShort(ev.date)} gehängt ✓`);
+                fire&&fire(`Schwerpunkt „${evAxis}“${tfEv.basis==="anwesend"?` (auf ${tfEv.usedCount} Zusagen zugeschnitten)`:""} an ${fmtDShort(ev.date)} gehängt ✓`);
               };
               return (
                 <div style={{marginTop:12,paddingTop:10,borderTop:"1px solid #e9d5ff"}}>
@@ -7042,12 +7040,9 @@ function TrainingPlanner({ data, myTids, cl, save, fire }) {
 
   // Förderlücken der Mannschaft (für "auto")
   const autoFocus = () => {
-    const players = (data.playerProfiles||[]).filter(p=>p.mainTid===tid && !p.archived && p.skills);
-    if(players.length===0) return "technik";
-    const avg = teamSkillAverages(players, axes);
-    const soll = sollFor(cl, cat||"E-Jugend", axes);
-    const gaps = axes.map((a,i)=>({axis:a, gap: avg[i]>0 ? soll[i]-avg[i] : 0})).filter(g=>g.gap>0).sort((a,b)=>b.gap-a.gap);
-    return gaps.length ? (AXIS_TO_FOCUS[gaps[0].axis]||"technik") : "technik";
+    // zentrale Logik (Ziel-Lücken, Ausbau-Modus) – identisch zu Insights & Termin-Zuordnung
+    const tf = trainingFocusFor({ data, cl, tid });
+    return AXIS_TO_FOCUS[tf.axis] || "technik";
   };
 
   const generate = () => {
@@ -8034,7 +8029,7 @@ function PlanEditor({ plan, cid, myTids, data, save, fire, cl, onClose }) {
   const [genDur, setGenDur] = useState(evDur||90);
   const [genFocus, setGenFocus] = useState("auto");
   const myTeams = (data.teams||[]).filter(tm=>myTids.includes(tm.id));
-  const GEN_FOCI = [["auto","Ausgewogen"],["technik","Technik"],["taktik","Taktik"],["torschuss","Torschuss"],["spielform","Spielformen"],["kondition","Kondition"]];
+  const GEN_FOCI = [["auto","Auto (Förderlücken)"],["technik","Technik"],["taktik","Taktik"],["torschuss","Torschuss"],["spielform","Spielformen"],["kondition","Kondition"]];
   const durOpts = Array.from(new Set([...(evDur?[evDur]:[]),60,75,90,105])).sort((a,b)=>a-b);
   const doGenerate = () => {
     const tm = (data.teams||[]).find(x=>x.id===tid);
@@ -8042,7 +8037,14 @@ function PlanEditor({ plan, cid, myTids, data, save, fire, cl, onClose }) {
     const last = (data.trainingPlans||[]).filter(p=>p.tid===tid && p.id!==plan?.id && !p.isTemplate)
       .sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""))[0];
     const avoidIds = (last?.exercises||[]).map(e=>e.fromTemplate).filter(Boolean);
-    const gen = generateTrainingPlan({ ageKey, targetMin:genDur, focus:genFocus, avoidIds });
+    let effFocus=genFocus;
+    if(genFocus==="auto"){
+      const present=linkedEv?Object.entries(linkedEv.votes||{}).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>n):null;
+      const tf=trainingFocusFor({ data, cl, tid, present });
+      effFocus=AXIS_TO_FOCUS[tf.axis]||"auto";
+      fire(`Auto-Schwerpunkt: ${tf.axis}${tf.basis==="anwesend"?` (auf ${tf.usedCount} Zusagen zugeschnitten)`:" (Kader-Basis)"}`);
+    }
+    const gen = generateTrainingPlan({ ageKey, targetMin:genDur, focus:effFocus, avoidIds });
     if(!gen.length){ fire("Keine passenden Übungen gefunden"); return; }
     if(exercises.length && typeof window!=="undefined" && !window.confirm("Bestehende Übungen durch den generierten Plan ersetzen?")) return;
     setExercises(gen);
@@ -20747,6 +20749,30 @@ function sollFor(cl, cat, axes) {
   return axes.map(a => (override && typeof override[a]==="number") ? override[a] : defaultSoll(rank,a));
 }
 
+// ═══ ZENTRALE Trainings-Logik ═══════════════════════════════════════════
+// EIN Rechenweg für Empfehlung, Auto-Plan und "an Termin hängen":
+// 1) Standard erreichen: größte Lücke zum Alters-Ziel (sollFor) zuerst.
+// 2) Alle Ziele erreicht -> Ausbau-Modus: kleinster Vorsprung zuerst.
+// present = Namen der Zusagen eines Termins -> Schwerpunkt wird primär aus
+// den Skills der TATSÄCHLICH anwesenden Spieler berechnet (Fallback: Kader).
+// overrideFocus setzt die Achse manuell (eigener Schwerpunkt schlägt Logik).
+function trainingFocusFor({ data, cl, tid, present=null, overrideFocus=null }) {
+  const axes = skillAxesFor(cl?.sport||"fussball");
+  const team = (data?.teams||[]).find(tm=>tm.id===tid);
+  const cat = team?.cat||team?.name||"F-Jugend";
+  const soll = sollFor(cl, cat, axes);
+  const roster = (data?.playerProfiles||[]).filter(p=>p.mainTid===tid&&!p.archived&&p.skills&&Object.values(p.skills).some(v=>(Number(v)||0)>0));
+  const presentLow = (present||[]).map(n=>String(n).toLowerCase());
+  const pool = presentLow.length ? roster.filter(p=>presentLow.includes((p.name||"").toLowerCase())) : [];
+  const use = pool.length ? pool : roster;
+  const stats = axes.map((a,i)=>{ let sum=0,n=0; use.forEach(p=>{ const v=p.skills?.[a]; if(typeof v==="number"&&v>0){ sum+=v; n++; } }); return { axis:a, avg:n?sum/n:null, n, soll:soll[i], gap:n?soll[i]-sum/n:null }; }).filter(x=>x.n>0);
+  const below = stats.filter(x=>x.gap>0.05).sort((a,b)=>b.gap-a.gap);
+  const buildMode = stats.length>0 && below.length===0;
+  const ranked = below.length ? below : [...stats].sort((a,b)=>(a.avg-a.soll)-(b.avg-b.soll));
+  const axis = overrideFocus || ranked[0]?.axis || "Technik";
+  return { axis, ranked, buildMode, cat, axes, soll, basis: pool.length?"anwesend":"kader", usedCount: use.length };
+}
+
 // Empfohlene Spieleranzahl auf dem Feld je Altersklasse (DFB-Spielformen, Stand 2024/25)
 const SOLL_PLAYERS_BY_CAT = {
   "Bambinis":3,"G-Jugend":3,"F-Jugend":5,"E-Jugend":7,"D-Jugend":9,
@@ -28738,7 +28764,6 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             </div>
           </a>
         )}
-        {evTab==="rueck"&&<>
         {(()=>{ const isG=["heimspiel","auswarts","freundschaft","turnier"].includes(viewEv.type); const isT=viewEv.type==="training";
           const tabs=[["rueck","📊 Rückmeldungen"],...(isT?[["plan","📋 Training"]]:[]),...(isG?[["plan","⚽ Aufstellung"]]:[]),["orga","👥 Orga"],...((isG||isT)?[["zeit","⏱ Spieltag"]]:[])];
           const tp=TH(myClub).p;
@@ -28749,6 +28774,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               ))}
             </div>
           ); })()}
+        {evTab==="rueck"&&<>
         {viewEv.type==="turnier"
           ? <TournView ev={viewEv} user={session.name||"Admin"} onVote={()=>{}} cl={myClub} players={local.players} isHelper={isHelper} teamCat={(local.teams||[]).find(tm=>tm.id===viewEv.tid)?.cat||null} fields={(data.fields||[]).filter(f=>f.cid===cid)}
               onUpdate={patch=>{
@@ -28812,8 +28838,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
                 fire(val==="yes"?name+": zugesagt (vom Trainer eingetragen)":name+": abgesagt (vom Trainer eingetragen)");
               }}
             />}
-        {evTab==="plan"&&<>
         </>}
+        {evTab==="plan"&&<>
         {viewEv.type==="training"&&(()=>{ const emb=viewEv.trainingPlan; const pl=emb?{focus:emb.focus,blocks:(emb.sessions?.[0]?.blocks)||[]}:(local.trainings||[]).find(tr=>tr.id===viewEv.trainingId); return (
           <div style={{marginTop:16,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginBottom:10}}>
@@ -28843,23 +28869,21 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             ⚽ Taktiktafel / Aufstellung zeigen
           </button>
         )}
-        {evTab==="zeit"&&<>
         </>}
+        {evTab==="zeit"&&<>
         {["heimspiel","auswarts","freundschaft"].includes(viewEv.type)&&!isHelper&&(
           <MatchReportCard ev={viewEv}
             roster={(local.playerProfiles||[]).filter(p=>p.mainTid===viewEv.tid&&!p.archived).map(p=>p.name)}
             onSave={rep=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,report:rep}:e)}); setViewEv(prev=>({...prev,report:rep})); fire("Spielbericht gespeichert"); }}/>
         )}
-        {evTab==="zeit"&&<>
-        </>}
         {["heimspiel","auswarts","freundschaft","turnier","training"].includes(viewEv.type)&&!isHelper&&(()=>{
           // Nur Spieler, die zugesagt haben oder später kommen (val==="yes" deckt auch "verspätet" ab).
           // Kein Fallback mehr auf den ganzen Kader – ohne Zusagen bleibt die Liste leer (Hinweis im Tracker).
           const roster=Object.entries(viewEv.votes||{}).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>n);
           return <PlaytimeTracker ev={viewEv} roster={roster} t={TH(myClub)} onSave={pt=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,playtime:pt}:e)}); setViewEv(prev=>({...prev,playtime:pt})); }}/>;
         })()}
-        {evTab==="rueck"&&<>
         </>}
+        {evTab==="rueck"&&<>
         {(viewEv.extraPolls||[]).map(p=>(
           <div key={p.id} style={{marginTop:16,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
@@ -28873,8 +28897,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             }}/>
           </div>
         ))}
-        {evTab==="orga"&&<>
         </>}
+        {evTab==="orga"&&<>
         {viewEv.type==="training"&&(
           <StaffingBoard ev={viewEv} team={(local.teams||[]).find(tm=>tm.id===viewEv.tid)} session={session} isHelper={isHelper}
             assignedTrainers={(local.trainers||[]).filter(trn=>(trn.tids||[]).includes(viewEv.tid)&&isActive(trn)).length}
@@ -28882,14 +28906,38 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             onPatch={patch=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,...patch}:e)}); setViewEv(prev=>({...prev,...patch})); }}
             fire={fire}/>
         )}
-        {evTab==="orga"&&<>
-        </>}
         <DutyBoard ev={viewEv} user={session.name||"Trainer"} canManage={!isHelper} onChange={arr=>{
           save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,duties:arr}:e)});
           setViewEv(prev=>({...prev,duties:arr}));
         }}/>
-        {evTab==="plan"&&<>
         </>}
+        {evTab==="plan"&&<>
+        {["heimspiel","auswarts","freundschaft","turnier"].includes(viewEv.type)&&(()=>{
+          // Positions-Vorschläge aus dem Skill-Profil – nur für Spieler, die zugesagt haben
+          const yes=Object.entries(viewEv.votes||{}).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>String(n).toLowerCase());
+          const profs=(local.playerProfiles||[]).filter(p=>p.mainTid===viewEv.tid&&!p.archived&&yes.includes((p.name||"").toLowerCase())&&p.skills&&Object.values(p.skills).some(v=>(Number(v)||0)>0));
+          if(profs.length===0) return null;
+          const sport=myClub?.sport||"fussball";
+          const rows=profs.map(p=>({p,fit:positionFit(sport,p.skills,myClub)[0]})).filter(x=>x.fit);
+          if(!rows.length) return null;
+          return (
+            <div style={{marginBottom:14,background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:13,padding:"11px 14px"}}>
+              <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.4,marginBottom:8}}>🧭 POSITIONS-VORSCHLÄGE <span style={{color:"#94a3b8"}}>(nach Skills · nur Zusagen)</span></div>
+              <div style={{display:"flex",flexDirection:"column",gap:5}}>
+                {rows.map(({p,fit})=>(
+                  <div key={p.id} style={{display:"flex",alignItems:"center",gap:8,fontSize:12.5}}>
+                    <Av name={p.name} sz={22}/>
+                    <span style={{flex:1,minWidth:0,fontWeight:700,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
+                    {p.position&&p.position!==fit.pos&&<span style={{fontSize:10.5,color:"#94a3b8"}}>bisher {p.position}</span>}
+                    <span style={{fontWeight:800,color:"#4f46e5"}}>{fit.pos}</span>
+                    <span style={{fontSize:11,color:"#64748b",width:36,textAlign:"right"}}>{fit.pct}%</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{fontSize:10.5,color:"#64748b",marginTop:7,lineHeight:1.4}}>Beste Position je Spieler aus dem Skill-Profil – Übernahme über „Vorschlag" im Aufstellungs-Board darunter.</div>
+            </div>
+          );
+        })()}
         {["heimspiel","auswarts","freundschaft","turnier"].includes(viewEv.type)&&<LineupBoard ev={viewEv}
           present={Object.entries(viewEv.votes||{}).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>n)}
           canEdit={!isHelper}
@@ -28967,7 +29015,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
 
       {}
       {planFor&&<Drawer onClose={()=>setPlanFor(null)} title={(planFor.trainingPlan||planFor.trainingId)?"Trainingsplan bearbeiten":"Trainingsplan erstellen"}>
-        <EventPlanEditor
+        <EventPlanEditor data={local} cl={myClub}
           ev={planFor}
           vorlagen={(local.trainings||[]).filter(tr=>tr.cid===cid)}
           cat={(local.teams||[]).find(tm=>tm.id===planFor.tid)?.cat || (local.teams||[]).find(tm=>tm.id===planFor.tid)?.name || null}
@@ -29046,7 +29094,7 @@ function DrillPicker({ pool, onPick, onClose, t }){
     </div>
   );
 }
-function EventPlanEditor({ ev, vorlagen, cat=null, t, onSave, onRemove, onCancel, onOpenTaktik }) {
+function EventPlanEditor({ ev, vorlagen, cat=null, t, onSave, onRemove, onCancel, onOpenTaktik, data=null, cl=null }) {
   const PHASES=["Aufwärmen","Hauptteil","Abschluss","Spielform","Athletik"];
   const mapBlock=b=>({phase:b.phase||"Hauptteil",title:b.title||"",min:Number(b.min)||0,drillId:b.drillId||"",axes:b.axes||[],diagram:b.diagram||"",mode:b.drillId?"lib":(b.mode||"free")});
   const initBlocks=(()=>{
@@ -29065,7 +29113,13 @@ function EventPlanEditor({ ev, vorlagen, cat=null, t, onSave, onRemove, onCancel
   const evDurMin=(()=>{ if(ev?.time&&ev?.endTime){ const[h1,m1]=String(ev.time).split(":").map(Number); const[h2,m2]=String(ev.endTime).split(":").map(Number); const d=(h2*60+m2)-(h1*60+m1); if(d>0) return d; } return 60; })();
   const genPlan=()=>{
     if(blocks.length&&typeof window!=="undefined"&&window.confirm&&!window.confirm("Aktuelle Blöcke durch den Vorschlag ersetzen?")) return;
-    const sess=buildSession({focus:genFocus,cat:cat||null,targetMin:evDurMin});
+    let effFocus=genFocus;
+    if(genFocus==="auto"&&data&&cl){
+      const yesNames=Object.entries(ev.votes||{}).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>n);
+      const tf=trainingFocusFor({ data, cl, tid: ev.tid, present: yesNames });
+      effFocus=AXIS_TO_FOCUS[tf.axis]||"auto";
+    }
+    const sess=buildSession({focus:effFocus,cat:cat||null,targetMin:evDurMin});
     if(!sess.length) return;
     setBlocks(sess.map(b=>({phase:b.phase,title:b.drill.title,min:b.drill.min,drillId:b.drill.id,axes:b.drill.axes||[],diagram:"",mode:"lib"})));
   };
@@ -29095,7 +29149,7 @@ function EventPlanEditor({ ev, vorlagen, cat=null, t, onSave, onRemove, onCancel
         <div style={{fontWeight:800,fontSize:14,color:"#15803d",marginBottom:6}}>✨ Trainings-Assistent</div>
         <div style={{fontSize:11.5,color:"#64748b",marginBottom:9,lineHeight:1.45}}>Erstellt automatisch einen ausgewogenen Ablauf (Aufwärmen → Hauptteil → Spielform) aus der Übungsbibliothek{cat?` für ${cat}`:""} – passend zur Trainingsdauer ({evDurMin} Min). Danach frei anpassbar.</div>
         <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:9}}>
-          {[["auto","Ausgewogen"],["technik","Technik"],["taktik","Taktik"],["torschuss","Torschuss"],["kondition","Kondition"]].map(([k,l])=>(
+          {[["auto","Auto (Förderlücken)"],["technik","Technik"],["taktik","Taktik"],["torschuss","Torschuss"],["kondition","Kondition"]].map(([k,l])=>(
             <button key={k} onClick={()=>setGenFocus(k)} style={{padding:"6px 11px",borderRadius:99,border:`1.5px solid ${genFocus===k?"#16a34a":"#e2e8f0"}`,background:genFocus===k?"#16a34a14":"#fff",color:genFocus===k?"#15803d":"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
           ))}
         </div>
