@@ -21840,7 +21840,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
         <div style={{padding:"18px 20px 48px",display:"flex",flexDirection:"column",gap:16}}>
           {/* Tab-Leiste: Abschnitte wie Tabs, frei hin- und herspringen */}
           <div style={{position:"sticky",top:-18,zIndex:6,background:"#fff",margin:"-6px -4px 0",padding:"8px 4px 10px",display:"flex",gap:6,overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
-            {[["basis","👤 Basis"],["skills","🎯 Skills"],["stats","📊 Statistik"],["schutz","🔒 Schutz"],["notizen","📝 Notizen"]].map(([k,l])=>(
+            {[["basis","👤 Basis"],["profil","🎯 Profil"],["skills","📈 Skill-Werte"],["freunde","🤝 Freunde"],["stats","📊 Statistik"],["schutz","🔒 Schutz"],["notizen","📝 Notizen"]].map(([k,l])=>(
               <button key={k} onClick={()=>setPTab(k)} style={{flexShrink:0,padding:"8px 14px",borderRadius:99,border:`1.5px solid ${pTab===k?(t.p||"#16a34a"):"#e2e8f0"}`,background:pTab===k?(t.p||"#16a34a"):"#fff",color:pTab===k?contrast(t.p||"#16a34a"):"#475569",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{l}</button>
             ))}
           </div>
@@ -21896,8 +21896,8 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
           </>}
 
           {}
-          {pTab==="skills"&&<>
-          <Section title="* Spielerprofil (nur Trainer)">
+          {pTab==="profil"&&<>
+          <Section title="* Position, Fuß & Stärken (nur Trainer)">
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
               <Sel label="Position" val={p.position||""} set={v=>up({position:v})} opts={[["","- wählen -"],...POSITIONS_LIST.map(x=>[x,x])]}/>
               <Sel label="Starker Fuss" val={p.foot||""} set={v=>up({foot:v})} opts={[["","- wählen -"],...FOOT_LIST.map(x=>[x,x])]}/>
@@ -21920,6 +21920,10 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
                 {(p.rating||0) > 0 && <span style={{fontSize:13,color:"#64748b",alignSelf:"center",marginLeft:4,fontWeight:600}}>{p.rating}/5</span>}
               </div>
             </div>
+          </Section>
+          </>}
+          {pTab==="skills"&&<>
+          <Section title="* Skill-Werte (1–5)">
 
             {}
             <div style={{marginTop:18}}>
@@ -22231,6 +22235,8 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
             </div>
           </Section>
 
+          </>}
+          {pTab==="freunde"&&<>
           {}
           <Section title="* Freundschaften & Zusammenspiel">
             <FriendsInput
