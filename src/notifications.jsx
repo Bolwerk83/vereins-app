@@ -8,7 +8,7 @@ import React, { useState, useEffect, useCallback } from "react";
 
 // VAPID Public Key (zu dem privaten Schluessel in den Supabase Edge Function Secrets).
 export const VAPID_PUBLIC_KEY =
-  "BAiX4eqLOJ_HAqEpTshi67K6HNgynFpzaYmfeiLn9eGhPEYzoC7LKNaTU_wS0iw5dSIYgawt_AbOwrCbP1TN5ZA";
+  "BI5eJY_Tbc7-ylbYvr9TfcXwB9Fnhls2EWeL0Sx8VXTK5VsGvKlyMgn7V5QtfMFfnKMrkR5yRkG4JMMjOHvN6LY";
 
 const DATA_KEY = "vereinsapp_v14";
 const SESS_KEY = "vereinsapp_v12_session"; // muss zur App passen (SS in App.jsx)
