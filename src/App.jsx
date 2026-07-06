@@ -20202,7 +20202,7 @@ function HelperLogin({cl,helpers,onLogin,onBack}) {
   );
 }
 
-function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid,onWaitlist,onConsent,onSetChildPw}) {
+function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid,onWaitlist,onConsent,onGuestConsent,onSetChildPw}) {
   const [showWait,setShowWait]=useState(false);
   const { tr } = useT();
   const [obStep,setObStep]=useState(1);            // Eltern-Onboarding: 1 Einwilligung, 2 Passwort, 3 Erklärung
@@ -20243,7 +20243,12 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid,on
     const pn=pendingName;
     const prof=profileFor(pn.tid,pn.name);
     if(prof && onConsent){ onConsent(prof.id); }                      // in die Vereinsdaten (synct auf alle Geräte)
-    else { try{ localStorage.setItem(consentKey(pn.tid,pn.name), new Date().toISOString()); }catch{} } // Gast ohne Profil
+    else {
+      // Gast ohne Profil: lokal merken (kein erneutes Fragen) UND als
+      // Vereins-Nachweis ins Sicherheits-Log schreiben (DSGVO-Dokumentation).
+      try{ localStorage.setItem(consentKey(pn.tid,pn.name), new Date().toISOString()); }catch{}
+      if(onGuestConsent) onGuestConsent({tid:pn.tid,name:pn.name});
+    }
     setObStep(prof?2:3);                                              // weiter im Onboarding (Passwort nur mit Profil)
   };
   const finishOnboarding = () => { const pn=pendingName; setPendingName(null); onDone(pn.tid,pn.name); };
@@ -20329,7 +20334,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid,on
         <div style={{background:"rgba(255,255,255,.1)",backdropFilter:"blur(16px)",borderRadius:22,padding:"24px 22px",border:"1px solid rgba(255,255,255,.15)"}}>
           <PwInput value={pwd} onChange={e=>{setPwd(e.target.value);setPwdErr(false);}}
             onKeyDown={e=>{if(e.key==="Enter"){if(ct?.locked){setPwdErr(true);}else if(checkPw(pwd,ct?.pwd||"")){const assigned=(playerProfiles||[]).some(p=>p.mainTid===ct.id);if(assigned)setStep("name");else setStep("locked");}else{setPwdErr(true);setTimeout(()=>setPwdErr(false),1800);}}}}
-            placeholder="Passwort..." autoFocus autoCapitalize="none" autoCorrect="off" spellCheck={false}
+            placeholder={tr("ufPwPh")} autoFocus autoCapitalize="none" autoCorrect="off" spellCheck={false}
             style={{width:"100%",padding:"13px 16px",fontSize:16,background:"rgba(255,255,255,.12)",border:`2px solid ${pwdErr?"#ff6b6b":pwd?"rgba(255,255,255,.4)":"rgba(255,255,255,.2)"}`,borderRadius:13,outline:"none",color:"#fff",marginBottom:10}}/>
           {pwdErr&&<FriendlyError type="wrongPassword"/>}
           {showForgotParent&&<ForgotPasswordHelp cl={cl} trainers={trainers}
@@ -20340,7 +20345,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid,on
             style={{background:"none",border:"none",color:"rgba(255,255,255,.4)",
               fontSize:12,cursor:"pointer",fontFamily:"inherit",
               textDecoration:"underline",marginTop:4,padding:0}}>
-            Passwort vergessen?
+            {tr("ufPwForgot")}
           </button>
           <button onClick={()=>{if(ct?.locked){setPwdErr(true);}else if(checkPw(pwd,ct?.pwd||"")){
             const assigned=(playerProfiles||[]).some(p=>p.mainTid===ct.id);
@@ -20360,7 +20365,7 @@ function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid,on
       <style>{CSS}</style>
       <button onClick={()=>setStep("pwd")} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}>← Zurück</button>
       <div className="up" style={{textAlign:"center",maxWidth:340}}>
-        <div style={{fontSize:64,marginBottom:16}}></div>
+        <div style={{fontSize:64,marginBottom:16}}>🔒</div>
         <h2 style={{color:"#fff",fontSize:22,fontWeight:900,margin:"0 0 12px"}}>{ct?.name}</h2>
         <div style={{background:"rgba(255,255,255,.1)",borderRadius:18,padding:"24px 22px",border:"1px solid rgba(255,255,255,.15)"}}>
           <p style={{color:"#fff",fontSize:16,fontWeight:700,marginBottom:8}}>{tr("ufLockedT")}</p>
@@ -26256,7 +26261,7 @@ function NewSeasonWizard({ data,save,fire,cl,myTids,onClose,onDone }) {
     const label = f.label.trim();
     if(!label) return;
     const sid = "s"+label.replace(/[^a-z0-9]/gi,"").toLowerCase()+Date.now().toString(36);
-    const newSeason = {id:sid, label, status:"planning", ...(MULTI_TENANT?{cid:clubId}:{})};
+    const newSeason = {id:sid, label, status:"planning", cid:clubId}; // cid immer setzen, sonst landet die Saison in der globalen Zeile (teilt sich ueber Vereine)
     const allP = data.playerProfiles||[];
     const existingSids = (data.seasons||[]).map(s=>s.id);
     if(existingSids.includes(sid)) { fire&&fire("Saison existiert bereits"); return; }
@@ -32119,7 +32124,7 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
   const yesN=Object.values(ev.votes||{}).filter(v=>(typeof v==="object"?v.val:v)==="yes").length;
   return (
     <div style={{background:"#fff",borderRadius:20,boxShadow:expanded?"0 8px 32px rgba(0,0,0,.11)":"0 2px 10px rgba(0,0,0,.05)",border:`2px solid ${expanded?p:status?.urgent?"#fde68a":"#e2e8f0"}`,overflow:"hidden",transition:"all .2s",opacity:isPast&&!expanded?.7:1}}>
-      {status?.urgent&&!expanded&&!isPast&&<div style={{background:"#fffbeb",borderBottom:"1px solid #fde68a",padding:"6px 17px",display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:13}}></span><span style={{fontSize:12,fontWeight:700,color:"#d97706"}}>{tr("evAnswerMissing")}</span></div>}
+      {status?.urgent&&!expanded&&!isPast&&<div style={{background:"#fffbeb",borderBottom:"1px solid #fde68a",padding:"6px 17px",display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:13}}>⏰</span><span style={{fontSize:12,fontWeight:700,color:"#d97706"}}>{tr("evAnswerMissing")}</span></div>}
       <div onClick={onToggle} style={{padding:"14px 17px",cursor:"pointer",display:"flex",alignItems:"center",gap:12}}>
         <div style={{width:48,height:48,borderRadius:15,background:eT.bg,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><EventIcon type={EVENT_TYPE_ALIAS[ev.type]||ev.type} size={26} color={eT.col}/></div>
         <div style={{flex:1,minWidth:0}}>
@@ -32131,7 +32136,7 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8,marginTop:4,flexWrap:"wrap"}}>
             <span style={{fontSize:13,color:"#64748b",fontWeight:600}}>{fmtD(ev.date)}{ev.time?" · "+ev.time+(ev.endTime?"–"+ev.endTime:""):""}{wx?.[ev.date]&&<span style={{marginLeft:6,fontSize:11.5,fontWeight:700,color:(wx[ev.date].r??0)>=50?"#0369a1":"#64748b"}}>{wxIcon(wx[ev.date].c)} {wx[ev.date].t}°{(wx[ev.date].r??0)>=30?` · 💧${wx[ev.date].r}%`:""}</span>}</span>
-            {ev.loc&&<span style={{fontSize:12,color:"#64748b"}}> {ev.loc}</span>}
+            {ev.loc&&<span style={{fontSize:12,color:"#64748b"}}>📍 {ev.loc}</span>}
             {(()=>{ const hn=publicHolidayName(ev.date,cl?.clubSettings?.holidayState); return hn?<span style={{fontSize:11,fontWeight:800,color:"#92400e",background:"#fef3c7",border:"1px solid #fde68a",borderRadius:7,padding:"2px 7px"}}>🎉 {hn}</span>:null; })()}
           </div>
           {status&&<div style={{marginTop:6,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
@@ -32139,7 +32144,7 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
             {!expanded&&yesN>0&&<Tag c={eT.col} bg={eT.bg} ch={`${yesN} dabei`} sm/>}
           </div>}
         </div>
-        <div style={{color:"#64748b",fontSize:22,transform:expanded?"rotate(180deg)":"none",transition:"transform .2s",flexShrink:0}}>?</div>
+        <div style={{color:"#64748b",fontSize:22,transform:expanded?"rotate(180deg)":"none",transition:"transform .2s",flexShrink:0}}>▾</div>
       </div>
       {expanded&&<div style={{padding:"0 17px 20px",borderTop:"1px solid #f1f5f9"}}>
         <div style={{height:14}}/>
@@ -33430,6 +33435,7 @@ function AppInner({lang,setLang}) {
       {screen==="flow"  &&activeCl&&<UserFlow cl={activeCl} teams={clTeams} players={data.players} playerProfiles={data.playerProfiles||[]} preselectTid={linkTeam} onDone={(tid,user)=>login("user",{tid,user})} onBack={()=>setScr(linkTeam?"role":"role")}
         onWaitlist={entry=>{ save({...data, waitlist:[...(data.waitlist||[]), { ...entry, id:uid(), cid:activeCl.id, ts:new Date().toISOString(), status:"open" }]}); }}
         onConsent={profId=>{ save({...data, playerProfiles:(data.playerProfiles||[]).map(p=>p.id===profId?{...p, consentAt:new Date().toISOString(), consentBy:"Eltern (App-Anmeldung)"}:p)}); }}
+        onGuestConsent={({tid,name})=>{ addAuditLog(data, save, {id:uid(), cid, ts:new Date().toISOString(), type:"consent", device:"Eltern-Gerät", msg:`Einwilligung (Gast ohne Profil): ${name} · Team ${(data.teams||[]).find(tm=>tm.id===tid)?.name||tid}`}); }}
         onSetChildPw={(profId,pw)=>{ save({...data, playerProfiles:(data.playerProfiles||[]).map(p=>p.id===profId?{...p, childPw:hashPw(pw), childPwAt:new Date().toISOString()}:p)}); }}/>}
       {screen==="tlogin"&&activeCl&&<TrainerLogin cl={activeCl} trainers={data.trainers.filter(t=>t.cid===cid&&isActive(t))} teams={(data.teams||[]).filter(tm=>tm.cid===cid)} onLogin={tr=>login("trainer",tr)} onSetTrainerPw={(trId,newHash)=>{ save({...data,trainers:(data.trainers||[]).map(t=>t.id===trId?{...t,pw:newHash,mustChangePw:false,sharedAt:t.sharedAt||new Date().toISOString()}:t)}); }} onBack={()=>setScr("role")}/>}
       {screen==="hlogin"&&activeCl&&<HelperLogin cl={activeCl} helpers={data.helpers||[]} onLogin={h=>login("helper",{...h,cid})} onBack={()=>setScr("role")}/>}
