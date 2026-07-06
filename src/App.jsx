@@ -7992,12 +7992,20 @@ function generateTrainingPlan({ ageKey="all", targetMin=90, focus="auto", avoidI
     const d = pick(seq[gi%seq.length]) || pick(x=>["technik","taktik","kondition","spezial"].includes(x.cat));
     gi++; if(!d) break; out.push(toEx(d));
   }
-  // 3) Abschluss: IMMER mindestens ein Abschlussspiel (Spielform), dann bis ~Zieldauer auffüllen.
-  guard=0;
-  do {
-    const d = pick(x=>x.cat==="spielform") || pick(x=>["spielform","taktik"].includes(x.cat));
-    if(!d) break; out.push(toEx(d));
-  } while(total() < targetMin-6 && guard++<6);
+  // 3) Abschluss: EIN richtiges, LANGES Abschlussspiel – es bekommt die komplette
+  //    Restzeit (gerade in der Jugend soll jedes Training mit viel Spielen enden).
+  {
+    const g = pick(x=>x.cat==="spielform") || pick(x=>["spielform","taktik"].includes(x.cat));
+    if(g){
+      const rest = Math.max(g.duration||15, targetMin - total());
+      out.push({ ...toEx(g), duration: Math.min(45, rest) });
+      // sehr lange Einheit: lieber ein zweites Spiel als ein 60-Minuten-Block
+      if(targetMin - total() > 18){
+        const g2 = pick(x=>x.cat==="spielform");
+        if(g2) out.push({ ...toEx(g2), duration: Math.min(30, Math.max(g2.duration||15, targetMin - total())) });
+      }
+    }
+  }
   // Garantie: falls die Altersauswahl keine Spielform enthielt, aus der ganzen Bibliothek nachziehen.
   if(!out.some(e=>e.cat==="spielform")){
     const g = lib.find(d=>d.cat==="spielform" && !used.has(d.id)) || lib.find(d=>d.cat==="spielform");
@@ -21757,10 +21765,12 @@ function buildSession({ focus="technik", cat=null, used=[], targetMin=60 }) {
   add("Aufwärmen", pickRandom(byFocus("aufwärmen"), ex));
   // 2) Hauptteil 1 — Schwerpunkt
   add("Hauptteil", pickRandom(byFocus(mainFocus), ex));
-  // 3) Abschluss — Spielform (immer, als Abschluss)
+  // 3) Abschluss — Spielform (immer, als Abschluss). Jugend-Reserve: das Spiel
+  //    bekommt ~40 % (junge Jahrgänge) bzw. ~30 % der Einheit und wird am Ende
+  //    auf die komplette Restzeit gestreckt (langes Abschlussspiel).
   const game = pickRandom(byFocus("spielform"), ex);
-  // 4) optionale weitere Hauptteil-Blöcke, bis Zieldauer (abzüglich Abschluss) etwa erreicht ist
-  const gameMin = game?.min||18;
+  const _young = ["Bambinis","G-Jugend","F-Jugend","E-Jugend"].includes(cat);
+  const gameMin = Math.max(game?.min||18, Math.round(targetMin*(_young?0.4:0.3)));
   const secondFocus = ["torschuss","technik"].includes(mainFocus) ? "taktik" : "torschuss";
   const fillPool = [secondFocus, mainFocus, "kondition"];
   let fi=0, guard=0;
@@ -21769,8 +21779,8 @@ function buildSession({ focus="technik", cat=null, used=[], targetMin=60 }) {
     const d = pickRandom(byFocus(fid), ex);
     if(d && sum() + gameMin + d.min <= targetMin + 6){ add("Hauptteil", d); }
   }
-  // Abschluss zuletzt anhängen
-  add("Abschluss", game);
+  // Abschluss zuletzt anhängen – gestreckt auf die Restzeit (max. 45 Min am Stück)
+  if(game){ const rest=Math.max(game.min||15, targetMin - sum()); add("Abschluss", {...game, min: Math.min(45, rest)}); }
   return blocks;
 }
 // Schwerpunkt aus den größten Förderlücken ableiten (Achse -> Schwerpunkt-Id)
