@@ -5216,7 +5216,7 @@ function teamYearRange(team) {
   return null;
 }
 
-function TeamInsights({ data, myTids, cl }) {
+function TeamInsights({ data, myTids, cl, save, fire }) {
   const t = TH(cl);
   const today = now();
   const players = (data.playerProfiles||[]).filter(p =>
@@ -5419,6 +5419,38 @@ function TeamInsights({ data, myTids, cl }) {
             <ul style={{margin:"0",paddingLeft:18,fontSize:13,color:"#334155",lineHeight:1.7}}>
               {recommendation.drills.map((d,i)=><li key={i}>{d}</li>)}
             </ul>
+            {save&&(()=>{
+              // Empfehlung direkt an ein kommendes Training haengen (als Trainingsplan-Bloecke)
+              const axis=weakest[0]?.s;
+              const upcoming=(data.events||[]).filter(e=>myTids.includes(e.tid)&&e.type==="training"&&e.date>=now())
+                .sort((a,b)=>((a.date||"")+(a.time||"")).localeCompare((b.date||"")+(b.time||""))).slice(0,3);
+              if(!axis||upcoming.length===0) return null;
+              const attach=(ev)=>{
+                const team=(data.teams||[]).find(tm=>tm.id===ev.tid);
+                const cat=team?.cat||team?.name||null;
+                const picks=suggestDrillsForSkill(axis,cat,3).map(x=>x.d).filter(Boolean);
+                if(!picks.length){ fire&&fire("Keine passenden Übungen in der Bibliothek gefunden"); return; }
+                if(ev.trainingPlan&&typeof window!=="undefined"&&window.confirm&&!window.confirm("Dieser Termin hat schon einen Trainingsplan – ersetzen?")) return;
+                const plan={ cat, createdAt: now(), focus: axis, sessions:[{ title:"Trainingseinheit", blocks: picks.map(d=>({phase:"Schwerpunkt", id:d.id, drillId:d.id, title:d.title, min:d.min||12})) }] };
+                save({...data, events:(data.events||[]).map(e=>e.id===ev.id?{...e,trainingPlan:plan}:e)});
+                fire&&fire(`Schwerpunkt „${axis}“ an ${fmtDShort(ev.date)} gehängt ✓`);
+              };
+              return (
+                <div style={{marginTop:12,paddingTop:10,borderTop:"1px solid #e9d5ff"}}>
+                  <div style={{fontSize:10,fontWeight:800,color:"#7c3aed",letterSpacing:.4,marginBottom:6}}>DIREKT EINEM TRAINING ZUORDNEN</div>
+                  <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                    {upcoming.map(ev=>(
+                      <button key={ev.id} onClick={()=>attach(ev)} style={{display:"flex",alignItems:"center",gap:8,padding:"9px 12px",borderRadius:10,border:"1.5px solid #d8b4fe",background:"#fff",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
+                        <span style={{fontSize:14}}>📅</span>
+                        <span style={{flex:1,minWidth:0,fontSize:12.5,fontWeight:700,color:"#334155",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{fmtDShort(ev.date)}{ev.time?` · ${ev.time}`:""} – {ev.title||"Training"}</span>
+                        <span style={{fontSize:11,fontWeight:800,color:ev.trainingPlan?"#d97706":"#7c3aed",flexShrink:0}}>{ev.trainingPlan?"ersetzen":"übernehmen →"}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{fontSize:10.5,color:"#64748b",marginTop:6,lineHeight:1.45}}>Hängt 3 passende Übungen aus der Bibliothek als Trainingsplan an den Termin – dort unter „Training“ sichtbar und frei anpassbar.</div>
+                </div>
+              );
+            })()}
           </div>
         </Card>
       )}
@@ -7466,7 +7498,7 @@ function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false, initial
       {subTab==="results"    && <LeagueTab     data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
       {subTab==="kasse"      && <CashbookTab   data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
       {subTab==="bericht"    && <SeasonReportTab data={data} myTids={myTids} cl={cl} fire={fire}/>}
-      {subTab==="insights"   && <TeamInsights data={data} myTids={myTids} cl={cl}/>}
+      {subTab==="insights"   && <TeamInsights data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
       {subTab==="analysis"   && <TeamSkillAnalysis data={data} myTids={myTids} cl={cl}/>}
       {subTab==="ziele"      && <TrainerTrainingZiele data={data} cid={cl?.id} myTids={myTids} save={save} fire={fire} cl={cl}/>}
       {subTab==="drills"     && <DrillLibrary cl={cl} data={data} myTids={myTids} save={save} fire={fire}/>}
