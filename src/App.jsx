@@ -30021,7 +30021,7 @@ function TournBoerse({ data, cid, myTids, cl, save, fire }){
                 <div key={r.id} style={{background:r.status==="accepted"?"#f0fdf4":r.status==="declined"?"#fef2f2":"#f8fafc",border:`1px solid ${r.status==="accepted"?"#bbf7d0":r.status==="declined"?"#fecaca":"#e2e8f0"}`,borderRadius:11,padding:"9px 11px"}}>
                   <div style={{display:"flex",alignItems:"center",gap:8}}>
                     <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontWeight:800,fontSize:13.5,color:"#0f172a"}}>{r.teamName} <span style={{color:"#64748b",fontWeight:600}}>· {r.teams} Team{r.teams>1?"s":""}{r.cat?" · "+r.cat:""}</span></div>
+                      <div style={{fontWeight:800,fontSize:13.5,color:"#0f172a"}}>{r.teamName} {(data.clubs||[]).length>1&&r.byCid&&!(data.clubs||[]).some(c=>c.id===r.byCid)&&<span title="Der anmeldende Verein existiert nicht (mehr) in der App – vermutlich Test-/Altbestand." style={{fontSize:10,fontWeight:800,color:"#9a3412",background:"#ffedd5",borderRadius:5,padding:"1px 6px",verticalAlign:"middle"}}>⚠️ Altbestand?</span>} <span style={{color:"#64748b",fontWeight:600}}>· {r.teams} Team{r.teams>1?"s":""}{r.cat?" · "+r.cat:""}</span></div>
                       {r.note&&<div style={{fontSize:11.5,color:"#64748b",marginTop:1}}>{r.note}</div>}
                       {(r.contact?.email||r.contact?.phone||r.contact?.whatsapp)&&<div style={{fontSize:11.5,color:"#64748b",marginTop:2}}>{[r.contact.email,r.contact.phone,r.contact.whatsapp].filter(Boolean).join(" · ")}</div>}
                     </div>
@@ -30031,6 +30031,7 @@ function TournBoerse({ data, cid, myTids, cl, save, fire }){
                           <button onClick={()=>setRegStatus(r.id,"declined")} style={{padding:"6px 11px",borderRadius:8,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Ablehnen</button>
                         </div>
                       : <span style={{fontSize:11,fontWeight:800,color:r.status==="accepted"?"#15803d":"#dc2626"}}>{r.status==="accepted"?"ZUGESAGT":"ABGELEHNT"}</span>}
+                    <button onClick={()=>{ if(typeof window!=="undefined"&&window.confirm&&!window.confirm(`Anmeldung von „${r.teamName}" endgültig entfernen?`))return; writeRegs(regs.filter(x=>x.id!==r.id)); fire&&fire("Anmeldung entfernt"); }} title="Anmeldung entfernen (z. B. Altbestand)" style={{width:24,height:24,borderRadius:7,border:"none",background:"#f1f5f9",color:"#64748b",fontWeight:800,fontSize:12,cursor:"pointer",flexShrink:0,fontFamily:"inherit"}}>×</button>
                   </div>
                   {r.status==="accepted"&&(r.contact?.whatsapp||r.contact?.email)&&(
                     <div style={{display:"flex",gap:6,marginTop:8}}>
@@ -30060,7 +30061,7 @@ function TournBoerse({ data, cid, myTids, cl, save, fire }){
         <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.3}}>ALTERSKLASSE</div>
         <div style={{display:"flex",flexWrap:"wrap",gap:5}}>{CATS.map(c=><button key={c} onClick={()=>un({cat:c})} style={{padding:"6px 11px",borderRadius:99,border:`1.5px solid ${nf.cat===c?t.p:"#e2e8f0"}`,background:nf.cat===c?t.p:"#fff",color:nf.cat===c?"#fff":"#475569",fontWeight:700,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>{c}</button>)}</div>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <span style={{fontSize:12,fontWeight:700,color:"#475569",flex:1}}>Mannschaften min/max</span>
+          <span style={{fontSize:12,fontWeight:700,color:"#475569",flex:1}}>Teams min/max <span style={{color:"#94a3b8",fontWeight:600}}>(ein Verein kann mehrere Teams melden)</span></span>
           <input type="number" min="1" value={nf.minTeams} onChange={e=>un({minTeams:e.target.value})} style={{width:60,padding:"8px",fontSize:14,textAlign:"center",border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none"}}/>
           <span style={{color:"#64748b"}}>–</span>
           <input type="number" min="1" value={nf.maxTeams} onChange={e=>un({maxTeams:e.target.value})} style={{width:60,padding:"8px",fontSize:14,textAlign:"center",border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none"}}/>
@@ -30147,7 +30148,7 @@ function RegisterOfferModal({ offer, myTeams, t, onClose, onRegister, guest=fals
           {(!guest&&myTeams.length>0) && <div style={{display:"flex",flexWrap:"wrap",gap:5}}>{myTeams.map(tm=><button key={tm.id} onClick={()=>{setTeamName(tm.name);setStrength(tm.strength||1);}} style={{padding:"6px 11px",borderRadius:99,border:`1.5px solid ${teamName===tm.name?t.p:"#e2e8f0"}`,background:teamName===tm.name?t.p+"15":"#fff",color:teamName===tm.name?t.p:"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{tm.name}</button>)}</div>}
           <input value={teamName} onChange={e=>setTeamName(e.target.value)} placeholder="Mannschaft / Verein" style={{padding:"11px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <span style={{fontSize:13,fontWeight:700,color:"#475569",flex:1}}>Anzahl Mannschaften</span>
+            <span style={{fontSize:13,fontWeight:700,color:"#475569",flex:1}}>Anzahl Teams</span>
             <button onClick={()=>setTeams(Math.max(1,teams-1))} style={{width:34,height:34,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:900,fontSize:17,cursor:"pointer"}}>−</button>
             <span style={{fontWeight:900,fontSize:17,width:26,textAlign:"center"}}>{teams}</span>
             <button onClick={()=>setTeams(teams+1)} style={{width:34,height:34,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:900,fontSize:17,cursor:"pointer"}}>+</button>
@@ -30200,7 +30201,7 @@ function OfferPublic({ offerId }){
   return (
     <Shell>
       <div style={{background:"#fff",borderRadius:16,padding:"16px",border:"1.5px solid #e2e8f0",marginBottom:14}}>
-        {[["Ausrichter",offer.hostName],["Datum",fmtD(offer.date)+(offer.time?" "+offer.time+" Uhr":"")],["Altersklasse",offer.cat],["Ort",offer.loc||offer.plz||"-"],["Mannschaften",offer.minTeams+"–"+offer.maxTeams],["Spielstärke",(offer.strengths||[]).map(s=>strengthOf(s)?.label).filter(Boolean).join(", ")]].map(([k,v])=>(
+        {[["Ausrichter",offer.hostName],["Datum",fmtD(offer.date)+(offer.time?" "+offer.time+" Uhr":"")],["Altersklasse",offer.cat],["Ort",offer.loc||offer.plz||"-"],["Teams",offer.minTeams+"–"+offer.maxTeams],["Spielstärke",(offer.strengths||[]).map(s=>strengthOf(s)?.label).filter(Boolean).join(", ")]].map(([k,v])=>(
           <div key={k} style={{display:"flex",gap:10,padding:"3px 0"}}><span style={{fontSize:13,color:"#64748b",fontWeight:700,minWidth:100}}>{k}</span><span style={{fontSize:14,fontWeight:700,color:"#0f172a"}}>{v}</span></div>
         ))}
       </div>
