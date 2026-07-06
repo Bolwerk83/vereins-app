@@ -21854,6 +21854,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
               <Sel label="Geschlecht" val={p.gender||"m"} set={v=>up({gender:v})} opts={[["m","* Männlich"],["w","* Weiblich"]]}/>
             </div>
             <Inp label="Geburtsdatum (optional – für Geburtstags-Hinweise)" val={p.bday||""} set={v=>up(v?{bday:v,by:parseInt(v.slice(0,4))||p.by}:{bday:""})} type="date" cl={{pri:t.p}}/>
+            <Inp label="Passnummer (DFBnet-Spielberechtigung, optional)" val={p.passNr||""} set={v=>up({passNr:v})} ph="z.B. 01234567" cl={{pri:t.p}} note="Erscheint in der Meldeliste für Turniere/DFBnet."/>
             {p.by && (
               <div style={{background:"#f0fdf4",borderRadius:10,padding:"9px 13px",fontSize:12,color:"#15803d",fontWeight:600}}>
                  Passt altersmäßig in: {eligibleCats(p.by,p.gender||"m").join(",")||"Keine Kategorie"}
@@ -23143,6 +23144,7 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
   const [showNew,setShowNew] = useState(false);
   const [showBulk,setShowBulk] = useState(false);
   const [quickNew,setQuickNew] = useState(null); // saubere Anlege-Maske {name,by,gender}
+  const [showMeld,setShowMeld] = useState(false); // Meldeliste (DFBnet/Turnier) als Text
   const [search,setSearch]  = useState("");
   const [showOpt,setShowOpt] = useState(false);
   const [skillCheck,setSkillCheck] = useState(null); // Team für Monats-Skill-Check
@@ -23451,6 +23453,44 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
             );
           })()}
 
+          {mainPlayers.length>0&&(
+            <button onClick={()=>setShowMeld(true)} style={{width:"100%",marginBottom:12,padding:"11px",borderRadius:12,border:"1.5px dashed #94a3b8",background:"#f8fafc",color:"#334155",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+              📤 Meldeliste erstellen (Turnier / DFBnet)
+            </button>
+          )}
+          {showMeld&&(()=>{
+            const teamTrainers=(data.trainers||[]).filter(trn=>(trn.tids||[]).includes(selTid)&&isActive(trn));
+            const ys=catYearsStr(selTeam?.cat)||selTeam?.years||"";
+            const sorted=[...mainPlayers].sort((a,b)=>(a.name||"").localeCompare(b.name||""));
+            const L=[
+              `Mannschaftsmeldung – ${cl?.name||""}`,
+              `Mannschaft: ${selTeam?.name||""} (${selTeam?.cat||""}${ys?`, Jg. ${ys}`:""})`,
+              teamTrainers.length?`Trainer: ${teamTrainers.map(trn=>trn.name+(trn.phone?` (${trn.phone})`:"")).join(", ")}`:null,
+              `Spieler (${sorted.length}):`,
+              ...sorted.map((p,i)=>`${i+1}. ${p.name} – Jg. ${p.by||"?"}${p.gender==="w"?" (w)":""}${p.passNr?` – Pass-Nr. ${p.passNr}`:""}`),
+              ``,`Stand: ${fmtD(now())}`,
+            ].filter(x=>x!=null);
+            const txt=L.join("\n");
+            const doCopy=()=>{ navigator.clipboard?.writeText(txt); fire("Meldeliste kopiert ✓"); };
+            const doShare=()=>{ if(navigator.share){ navigator.share({title:"Mannschaftsmeldung",text:txt}).catch(()=>{}); } else doCopy(); };
+            const noPass=sorted.filter(p=>!p.passNr).length;
+            return (
+              <div onClick={()=>setShowMeld(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:900,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
+                <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"90dvh",overflowY:"auto",padding:"18px 20px calc(30px + env(safe-area-inset-bottom))",fontFamily:"inherit"}}>
+                  <div style={{display:"flex",justifyContent:"center",marginBottom:12}}><div style={{width:44,height:4,borderRadius:99,background:"#e2e8f0"}}/></div>
+                  <div style={{fontWeight:900,fontSize:18,color:"#0f172a",marginBottom:4}}>📤 Meldeliste</div>
+                  <p style={{fontSize:12.5,color:"#64748b",lineHeight:1.5,marginBottom:10}}>Fertig zum Einfügen in DFBnet bzw. zum Senden an den Turnier-Ausrichter (WhatsApp/E-Mail).</p>
+                  {noPass>0&&<div style={{background:"#fffbeb",border:"1px solid #fde68a",borderRadius:10,padding:"8px 12px",fontSize:11.5,color:"#92400e",marginBottom:10,lineHeight:1.45}}>Bei {noPass} Spieler{noPass>1?"n":""} fehlt die Passnummer – im Spielerprofil (Basis) nachtragbar.</div>}
+                  <textarea readOnly value={txt} rows={Math.min(16,L.length+2)} style={{width:"100%",padding:"12px 14px",fontSize:12.5,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",fontFamily:"monospace",boxSizing:"border-box",lineHeight:1.55,background:"#f8fafc"}}/>
+                  <div style={{display:"flex",gap:8,marginTop:12}}>
+                    <button onClick={()=>setShowMeld(false)} style={{padding:"12px 16px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Schließen</button>
+                    <button onClick={doCopy} style={{flex:1,padding:"12px",borderRadius:12,border:`1.5px solid ${t.p}`,background:"#fff",color:t.p,fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Kopieren</button>
+                    <button onClick={doShare} style={{flex:1,padding:"12px",borderRadius:12,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Teilen</button>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
           {}
           <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5,display:"flex",justifyContent:"space-between"}}>
             <span>HAUPTKADER ({mainPlayers.length})</span>
