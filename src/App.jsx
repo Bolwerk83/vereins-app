@@ -25549,7 +25549,10 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
   const openEdit=h=>{setF({...h});setEditH(h.id);setShowForm(true);};
 
   const save2=()=>{
-    const rec={...f,id:editH||uid(),cid,createdAt:editH?f.createdAt:new Date().toISOString()};
+    // Code nur gehasht speichern (wie Trainer-Passwoerter): Klartext ist nur
+    // bis zum Speichern sichtbar - danach zeigt die Liste "gesetzt".
+    const code=f.code&&!String(f.code).startsWith("s")?hashPw(f.code):f.code;
+    const rec={...f,code,id:editH||uid(),cid,createdAt:editH?f.createdAt:new Date().toISOString()};
     const next=editH?allHelpers.map(x=>x.id===editH?rec:x):[...allHelpers,rec];
     save({...data,helpers:[...(data.helpers||[]).filter(h=>h.cid!==cid),...next]});
     setShowForm(false);fire(editH?"Helfer aktualisiert *":"Helfer angelegt *");
@@ -25581,7 +25584,7 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
                 <div style={{fontWeight:800,fontSize:15,color:"#0f172a"}}>{h.name}</div>
                 {h.childName&&<div style={{fontSize:12,color:"#64748b",marginTop:1}}>Kind: {h.childName}</div>}
                 <div style={{display:"flex",gap:6,marginTop:4,flexWrap:"wrap"}}>
-                  <span style={{fontSize:11,fontWeight:800,color:"#2563eb",background:"#eff6ff",borderRadius:6,padding:"2px 8px",fontFamily:"monospace"}}>{h.code}</span>
+                  <span style={{fontSize:11,fontWeight:800,color:"#2563eb",background:"#eff6ff",borderRadius:6,padding:"2px 8px",fontFamily:"monospace"}}>{String(h.code||"").startsWith("s")?"Code gesetzt 🔒":h.code}</span>
                   <span style={{fontSize:11,fontWeight:700,color:h.active!==false?"#16a34a":"#dc2626",background:h.active!==false?"#dcfce7":"#fee2e2",borderRadius:6,padding:"2px 8px"}}>{h.active!==false?"? Aktiv":"? Inaktiv"}</span>
                 </div>
               </div>
@@ -25613,10 +25616,10 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
             <div style={{background:"#eff6ff",borderRadius:12,padding:"12px 14px",border:"1.5px solid #bfdbfe"}}>
               <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6}}>LOGIN-CODE (persönlich & geheim)</div>
               <div style={{display:"flex",alignItems:"center",gap:10}}>
-                <span style={{fontWeight:900,fontSize:22,color:"#2563eb",fontFamily:"monospace",flex:1}}>{f.code}</span>
+                <span style={{fontWeight:900,fontSize:22,color:"#2563eb",fontFamily:"monospace",flex:1}}>{String(f.code||"").startsWith("s")?"••••••":f.code}</span>
                 <button onClick={()=>u({code:genCode()})} style={{padding:"6px 12px",borderRadius:9,border:"1.5px solid #bfdbfe",background:"#fff",color:"#2563eb",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}> Neu generieren</button>
               </div>
-              <p style={{fontSize:11,color:"#64748b",marginTop:6}}>Gib diesen Code dem Helfer. Er kann sich damit einloggen.</p>
+              <p style={{fontSize:11,color:"#64748b",marginTop:6}}>Gib diesen Code dem Helfer – er kann sich damit einloggen. Nach dem Speichern wird er aus Sicherheitsgründen nicht mehr angezeigt; bei Verlust einfach neu generieren.</p>
             </div>
 
             {}
@@ -28969,15 +28972,15 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           <div style={{marginTop:14}}><DFBFormatsCard cl={myClub} cats={(local.teams||[]).filter(tm=>myTids.includes(tm.id)).map(tm=>tm.cat||tm.name)}/></div>
           <div style={{marginTop:14}}><RecommendCard theme={t.p}/></div>
         </>}
-        {tab==="players"    &&<><PlayersTab data={local} myTids={myTids} save={save} fire={fire} cl={myClub} session={session}/><AffiliateBanner trigger="players" style={{marginTop:14}}/></> }
+        {tab==="players"    &&!isHelper&&<><PlayersTab data={local} myTids={myTids} save={save} fire={fire} cl={myClub} session={session}/><AffiliateBanner trigger="players" style={{marginTop:14}}/></> }
         {tab==="templates"  &&<TemplatesTab data={local} cid={cid} save={save} fire={fire} cl={myClub} myTids={myTids} teams={(local.teams||[]).filter(tm=>tm.cid===cid)}/>}
-        {tab==="treasury"   &&<TreasuryTab data={local} cid={cid} save={save} fire={fire} cl={myClub} myTids={myTids} teams={(local.teams||[]).filter(tm=>tm.cid===cid)} isAdmin={isAdmin}/>}
-        {tab==="helpers"    &&<HelpersTab data={local} cid={cid} myTids={myTids} session={session} save={save} fire={fire} cl={myClub}/>}
+        {tab==="treasury"   &&!isHelper&&<TreasuryTab data={local} cid={cid} save={save} fire={fire} cl={myClub} myTids={myTids} teams={(local.teams||[]).filter(tm=>tm.cid===cid)} isAdmin={isAdmin}/>}
+        {tab==="helpers"    &&!isHelper&&<HelpersTab data={local} cid={cid} myTids={myTids} session={session} save={save} fire={fire} cl={myClub}/>}
         {tab==="training"  &&<><TrainingPlanTab data={local} myTids={myTids} save={save} fire={fire} cl={myClub} session={session}/><AffiliateBanner trigger="training" style={{marginTop:14}}/></> }
         {tab==="jerseys"    &&<><AffiliateBanner trigger="jerseys"/><JerseysTab data={local} myTids={myTids} save={save} fire={fire} cl={myClub}/></> }
         {tab==="fields"     &&<><FieldsTab data={local} myTids={myTids} session={session} save={save} fire={fire} cl={myClub}/><AffiliateBanner trigger="fields" style={{marginTop:14}}/></> }
-        {tab==="attendance" &&<AttendanceTab data={local} myTids={myTids} cl={myClub} save={save} fire={fire} session={session}/>}
-        {tab==="waitlist"   &&<WaitlistTab data={local} cid={cid} myTids={myTids} session={session} save={save} fire={fire} cl={myClub} isAdmin={isAdmin}/>}
+        {tab==="attendance" &&!isHelper&&<AttendanceTab data={local} myTids={myTids} cl={myClub} save={save} fire={fire} session={session}/>}
+        {tab==="waitlist"   &&!isHelper&&<WaitlistTab data={local} cid={cid} myTids={myTids} session={session} save={save} fire={fire} cl={myClub} isAdmin={isAdmin}/>}
         {tab==="results"    &&<><LeagueTab data={local} myTids={myTids} cl={myClub} save={save} fire={fire}/><AffiliateBanner trigger="results" style={{marginTop:14}}/></> }
         {tab==="inbox"      &&<InboxTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
         {tab==="tinbox"     &&<TrainerInboxTab data={local} cid={cid} session={session} save={save} cl={myClub}/>}
@@ -29075,7 +29078,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               <div style={{textAlign:"center",fontSize:12.5,color:"#64748b",padding:"6px"}}>Info-Termin – keine Abstimmung, keine Anwesenheits-Auswertung.</div>
             </div>
           : <VoteOverview ev={viewEv} players={local.players} teams={local.teams} myTids={myTids} cl={myClub}
-              myKids={(((local.trainers||[]).find(x=>x.id===session?.id)?.childNames)||"").split(",").map(x=>x.trim()).filter(Boolean)}
+              readOnly={isHelper}
+              myKids={isHelper?[]:(((local.trainers||[]).find(x=>x.id===session?.id)?.childNames)||"").split(",").map(x=>x.trim()).filter(Boolean)}
               staff={staffNeed(viewEv,{ perStaff:myClub?.clubSettings?.playersPerStaff||6, trainers:(local.trainers||[]).filter(trn=>(trn.tids||[]).includes(viewEv.tid)&&isActive(trn)).length, squad:(local.playerProfiles||[]).filter(pp=>pp.mainTid===viewEv.tid&&!pp.archived).length })}
               onSetDeadline={deadline=>{
                 save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,deadline}:e)});
@@ -29090,7 +29094,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
                 save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,guests}:e)});
                 setViewEv(prev=>({...prev,guests}));
               }}
-              onSetVote={(name,val)=>{
+              onSetVote={isHelper?null:(name,val)=>{
                 const nv={...(viewEv.votes||{}),[name]:{val,ts:new Date().toISOString(),byTrainer:true}};
                 save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,votes:nv}:e)});
                 setViewEv(prev=>({...prev,votes:nv}));
@@ -29560,7 +29564,7 @@ function PlaytimeTracker({ ev, roster, onSave, t }){
     </div>
   );
 }
-function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline,onSetPresent=()=>{},onSetGuests=()=>{},onSetVote=null,myKids=[],staff=null}) {
+function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline,onSetPresent=()=>{},onSetGuests=()=>{},onSetVote=null,myKids=[],staff=null,readOnly=false}) {
   const p = cl?.pri||"#16a34a";
   const isGameEv = ["heimspiel","auswarts","freundschaft","turnier"].includes(ev.type);
   const present = ev.present||{};
@@ -29778,8 +29782,8 @@ function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline,onSetPresent=()=
         </div>
       </>}
 
-      {/* Anwesenheit abhaken: wer war wirklich da? (Trainer) */}
-      {(()=>{
+      {/* Anwesenheit abhaken: wer war wirklich da? (nur Trainer, nicht Betreuer) */}
+      {!readOnly&&(()=>{
         // Kader + selbst angemeldete Gäste (haben abgestimmt, sind aber nicht im Kader)
         const extraVoters=Object.keys(ev.votes||{}).filter(n=>!teamPlayers.includes(n));
         const roster=[...new Set([...teamPlayers,...extraVoters])].sort(byName);
