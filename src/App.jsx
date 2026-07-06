@@ -5247,7 +5247,7 @@ function TeamInsights({ data, myTids, cl, save, fire }) {
   const t = TH(cl);
   const today = now();
   const players = (data.playerProfiles||[]).filter(p =>
-    myTids.includes(p.mainTid) && !p.archived && isActive(p)
+    myTids.includes(p.mainTid) && !p.archived && isActive(p) && !isPausedP(p)
   );
   const teamNames = (data.teams||[]).filter(tm=>myTids.includes(tm.id)).map(tm=>tm.name).join(", ");
 
@@ -5263,13 +5263,16 @@ function TeamInsights({ data, myTids, cl, save, fire }) {
       const val = (typeof v==="object" && v!==null) ? v.val : v;
       return { date: ev.date, val };
     });
-    const present = last8.filter(x => x.val === "yes" || x.val === "late" || x.val === "maybe").length;
+    // Nur echte Zusagen zaehlen (konsistent mit dem Anwesenheits-Tab);
+    // "vielleicht" ist keine Anwesenheit.
+    const present = last8.filter(x => x.val === "yes" || x.val === "late").length;
     const total = last8.length;
     const pct = total ? Math.round(100*present/total) : null;
-    // Letzte 3 in Folge gefehlt?
+    // Letzte 3 in Folge ABGESAGT? Kein Votum zaehlt nicht als Fehlen -
+    // sonst gilt jedes Kind, das die App nicht oeffnet, als Risiko.
     let consecutiveMisses = 0;
     for (const x of last8) {
-      if (x.val === "no" || !x.val) consecutiveMisses++;
+      if (x.val === "no") consecutiveMisses++;
       else break;
     }
     return { p, last8, present, total, pct, consecutiveMisses };
@@ -5499,18 +5502,25 @@ function TeamInsights({ data, myTids, cl, save, fire }) {
         const rated=players.filter(p=>p.skills&&Object.values(p.skills).some(v=>(Number(v)||0)>0));
         if(rated.length<3) return null;
         const avgOf=p=>{ const vs=Object.values(p.skills||{}).map(Number).filter(v=>v>0); return vs.length?vs.reduce((a,b)=>a+b,0)/vs.length:0; };
-        const teamMean=rated.reduce((s,p)=>s+avgOf(p),0)/rated.length;
+        // Vergleich immer gegen den Schnitt der ANDEREN: der eigene Wert wuerde
+        // den Mittelwert sonst mit hochziehen und die Abweichung verwaessern.
+        const peerMean=self=>{ const rest=rated.filter(x=>x.id!==self.id); return rest.length?rest.reduce((s,p)=>s+avgOf(p),0)/rest.length:0; };
         const kidNames=new Set((data.trainers||[]).flatMap(tr=>String(tr.childNames||"").split(",")).map(x=>x.trim().toLowerCase()).filter(Boolean));
         const flags=[];
         rated.forEach(p=>{
           const a=avgOf(p); const reasons=[];
+          const teamMean=peerMean(p);
           const vals=Object.values(p.skills||{}).map(Number).filter(v=>v>0);
-          if(a>=teamMean+1.2) reasons.push(`Ø ${a.toFixed(1)} liegt ${(a-teamMean).toFixed(1)} über dem Team-Schnitt (${teamMean.toFixed(1)})`);
+          if(a>=teamMean+1.2) reasons.push(`Ø ${a.toFixed(1)} liegt ${(a-teamMean).toFixed(1)} über dem Schnitt der anderen (${teamMean.toFixed(1)})`);
           if(vals.length>=4&&vals.filter(v=>v>=4.5).length>=vals.length-1) reasons.push("fast nur Höchstwerte – 5 sollte die absolute Ausnahme sein");
           const hist=p.skillHistory||[];
-          if(hist.length>=2){ const last=hist[hist.length-1]?.skills||{}, prev=hist[hist.length-2]?.skills||{};
-            const jump=Object.keys(last).map(k=>(Number(last[k])||0)-(Number(prev[k])||0)).filter(d=>d>=1.5).length;
-            if(jump>=2) reasons.push(`${jump} Bereiche sind in einem Monat um ≥1,5 gesprungen – bitte prüfen`); }
+          if(hist.length>=2){ const last=hist[hist.length-1]||{}, prev=hist[hist.length-2]||{};
+            // nur warnen, wenn wirklich ein Monatswechsel dazwischen liegt
+            // (zwei Eintraege am selben Tag sind meist eine Korrektur)
+            if((last.month||"")!==(prev.month||"")){
+              const jump=Object.keys(last.skills||{}).map(k=>(Number(last.skills?.[k])||0)-(Number(prev.skills?.[k])||0)).filter(d=>d>=1.5).length;
+              if(jump>=2) reasons.push(`${jump} Bereiche sind in einem Monat um ≥1,5 gesprungen – bitte prüfen`);
+            } }
           // Mehrfach-Bewerter: weicht ein Trainer stark von den anderen ab?
           const pend=Object.values(p.skillPending||{}).slice(-1)[0];
           if(pend&&Object.keys(pend.byTrainer||{}).length>=2){
@@ -8124,10 +8134,14 @@ function generateTrainingPlan({ ageKey="all", targetMin=90, focus="auto", avoidI
     if(g){
       const rest = Math.max(g.duration||15, targetMin - total());
       out.push({ ...toEx(g), duration: Math.min(45, rest) });
-      // sehr lange Einheit: lieber ein zweites Spiel als ein 60-Minuten-Block
-      if(targetMin - total() > 18){
-        const g2 = pick(x=>x.cat==="spielform");
-        if(g2) out.push({ ...toEx(g2), duration: Math.min(30, Math.max(g2.duration||15, targetMin - total())) });
+      // Bei sehr langen Einheiten frisst der 45-Min-Deckel sonst Restzeit:
+      // verbleibende Minuten mit weiteren Spielformen auffuellen.
+      let extraGames = 0;
+      while(targetMin - total() > 8 && extraGames < 2){
+        extraGames++;
+        const gx = pick(x=>x.cat==="spielform");
+        if(!gx) break;
+        out.push({ ...toEx(gx), duration: Math.min(45, Math.max(gx.duration||15, targetMin - total())) });
       }
     }
   }
@@ -20678,7 +20692,8 @@ function PollList({ev,user,onVote}) {
   const totFor=id=>Object.values(_v).flat().filter(v=>v===id).length;
   const vFor  =id=>Object.entries(_v).filter(([,vs])=>Array.isArray(vs)&&vs.includes(id)).map(([n])=>n);
   const tog=id=>{
-    const item=ev.li.find(i=>i.id===id); const cur=[...uv]; const idx=cur.indexOf(id);
+    const item=ev.li.find(i=>i.id===id); if(!item) return; // Option wurde parallel entfernt
+    const cur=[...uv]; const idx=cur.indexOf(id);
     if(idx>=0){cur.splice(idx,1);}else{const tk=totFor(id),mn=cur.includes(id)?1:0;if(item.max&&(tk-mn)>=item.max)return;cur.push(id);}
     onVote(ev.id,"list",cur);
   };
@@ -21950,8 +21965,14 @@ function buildSession({ focus="technik", cat=null, used=[], targetMin=60, scores
     const d = wpick(byFocus(fid));
     if(d && sum() + gameMin + d.min <= targetMin + 6){ add("Hauptteil", d); }
   }
-  // Abschluss zuletzt anhängen – gestreckt auf die Restzeit (max. 45 Min am Stück)
-  if(game){ const rest=Math.max(game.min||15, targetMin - sum()); add("Abschluss", {...game, min: Math.min(45, rest)}); }
+  // Abschluss zuletzt anhängen – gestreckt auf die Restzeit (max. 45 Min am Stück);
+  // bleibt darüber hinaus Zeit übrig, ein zweites Spiel statt abzuschneiden
+  if(game){
+    const rest=Math.max(game.min||15, targetMin - sum());
+    add("Abschluss", {...game, min: Math.min(45, rest)});
+    const left=targetMin - sum();
+    if(left > 8) add("Abschluss", {...game, title:(game.title||"Abschlussspiel")+" – Variante", min: Math.min(45, left)});
+  }
   return blocks;
 }
 // Schwerpunkt aus den größten Förderlücken ableiten (Achse -> Schwerpunkt-Id)
@@ -29938,6 +29959,7 @@ function buildDrillAnim(el, meta){
         return {p, x:bx+Math.cos(a)*12, y:by+Math.sin(a)*9};
       });
       fp.forEach(o=>moved.set(o.p,{x:o.x,y:o.y}));
+      if(!fp.length) return {balls:[],moved};
       // Faenger jagt die aktuell naechste fluechtende Person.
       let tx=fp[0].x, ty=fp[0].y, bd=1e9;
       fp.forEach(o=>{const d=Math.hypot(o.x-cx0,o.y-cy0); if(d<bd){bd=d;tx=o.x;ty=o.y;}});
@@ -31801,8 +31823,8 @@ function TrainingGroups({ ev, data, cl, onPatch, fire }){
     ||(data.playerProfiles||[]).find(p=>(p.name||"").toLowerCase()===String(n).toLowerCase());
   const skillAvgOf=n=>{ const p=profOf(n); const vs=Object.values(p?.skills||{}).map(Number).filter(v=>v>0); return vs.length?vs.reduce((a,b)=>a+b,0)/vs.length:2.5; };
   // Rotation: letzte Gruppen-Einteilung dieses Teams (frühere Trainings)
-  const prev=(data.events||[]).filter(e=>e.tid===ev.tid&&e.id!==ev.id&&e.type==="training"&&e.groups?.list?.length&&e.date<=ev.date)
-    .sort((a,b)=>(b.date||"").localeCompare(a.date||""))[0];
+  const prev=(data.events||[]).filter(e=>e.tid===ev.tid&&e.id!==ev.id&&e.type==="training"&&e.groups?.list?.length&&e.date<ev.date)
+    .sort((a,b)=>(b.date||"").localeCompare(a.date||"")||String(b.time||"").localeCompare(String(a.time||"")))[0];
   const prevLeaderOf={}; const prevMatesOf={};
   (prev?.groups?.list||[]).forEach(g=>{ (g.members||[]).forEach(m=>{ prevLeaderOf[m]=g.leader; prevMatesOf[m]=g.members; }); });
 
