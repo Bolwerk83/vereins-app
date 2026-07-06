@@ -1463,6 +1463,25 @@ const PLZ2_GEO = {
   "95":[50.00,11.60],"96":[49.89,10.90],"97":[49.79,9.95],"98":[50.61,10.69],"99":[50.98,11.03],
 };
 const plzToGeo = plz => { const p=String(plz||"").trim().slice(0,2); return PLZ2_GEO[p]||null; };
+// ── Wetter (Open-Meteo, kostenlos & ohne Schlüssel) ─────────────────────
+// 8-Tage-Vorhersage für die Vereins-Region; 1× je Tag gecacht (localStorage).
+const wxIcon = c => c==null?"":c<=1?"☀️":c<=3?"⛅":c<=48?"🌫":c<=57?"🌦":c<=67?"🌧":c<=77?"🌨":c<=82?"🌦":c<=86?"🌨":"⛈";
+function useWeather(geo){
+  const [wx,setWx]=useState(null);
+  useEffect(()=>{
+    if(!geo) return; let dead=false;
+    const ck="wx_"+geo.join(",")+"_"+new Date().toISOString().slice(0,10);
+    try{ const c=JSON.parse(localStorage.getItem("va_wx")||"null"); if(c&&c.key===ck){ setWx(c.data); return; } }catch{}
+    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${geo[0]}&longitude=${geo[1]}&daily=weather_code,temperature_2m_max,precipitation_probability_max&timezone=Europe%2FBerlin&forecast_days=8`)
+      .then(r=>r.json())
+      .then(j=>{ if(dead||!j?.daily?.time) return;
+        const d={}; j.daily.time.forEach((tday,i)=>{ d[tday]={c:j.daily.weather_code?.[i], t:Math.round(j.daily.temperature_2m_max?.[i]), r:j.daily.precipitation_probability_max?.[i]??null}; });
+        setWx(d); try{ localStorage.setItem("va_wx",JSON.stringify({key:ck,data:d})); }catch{}
+      }).catch(()=>{});
+    return ()=>{ dead=true; };
+  },[geo&&geo.join(",")]);
+  return wx;
+}
 const geoDistanceKm = (a,b) => {
   if(!a||!b) return null;
   const R=6371, toR=d=>d*Math.PI/180;
@@ -29876,6 +29895,7 @@ function DrillInfoModal({ drill, t, onClose }){
 function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSelfVote,onRemind,onPlan,planTitle}) {
   const [more,setMore]=useState(false);
   const wd=d=>{ try{ return new Date(d+"T12:00:00").toLocaleDateString("de-DE",{weekday:"short"})+", "; }catch{ return ""; } };
+  const wx=useWeather(plzToGeo(cl?.plz));
   const eT=ET[ev.type]||ET.training; const tF=ev.date===tod; const p=cl?.pri||"#16a34a";
   const warns=eventWarnings(ev,tod,{ perStaff:cl?.clubSettings?.playersPerStaff||6 });
   const _v=ev.votes||{};
@@ -29911,7 +29931,7 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
         <div style={{width:42,height:42,borderRadius:13,background:eT.bg,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><EventIcon type={EVENT_TYPE_ALIAS[ev.type]||ev.type} size={22} color={eT.col}/></div>
         <div style={{flex:1,minWidth:0}}>
           <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}><span style={{fontWeight:800,fontSize:14,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ev.title}</span>{tF&&<Tag c={p} bg={p+"20"} ch="Heute"/>}{ev.open&&<Tag c="#7c3aed" bg="#ede9fe" ch="🌐 Offen"/>}{ev.sid&&<Tag c="#64748b" bg="#f1f5f9" ch="🔁 Serie"/>}</div>
-          <div style={{fontSize:12.5,color:"#475569",marginTop:3,fontWeight:600}}>{wd(ev.date)}{fmtDShort(ev.date)}{ev.time?" · "+ev.time+" Uhr":""}{ev.loc?" · 📍 "+ev.loc:""}</div>
+          <div style={{fontSize:12.5,color:"#475569",marginTop:3,fontWeight:600}}>{wd(ev.date)}{fmtDShort(ev.date)}{ev.time?" · "+ev.time+" Uhr":""}{ev.loc?" · 📍 "+ev.loc:""}{wx?.[ev.date]&&<span style={{marginLeft:6,fontSize:11.5,fontWeight:700,color:(wx[ev.date].r??0)>=50?"#0369a1":"#64748b"}}>{wxIcon(wx[ev.date].c)} {wx[ev.date].t}°{(wx[ev.date].r??0)>=30?` · 💧${wx[ev.date].r}%`:""}</span>}</div>
           {(()=>{ const hn=publicHolidayName(ev.date,cl?.clubSettings?.holidayState); return hn?<div style={{marginTop:5}}><span style={{fontSize:11,fontWeight:800,color:"#92400e",background:"#fef3c7",border:"1px solid #fde68a",borderRadius:6,padding:"2px 8px"}}>🎉 Feiertag: {hn}</span></div>:null; })()}
           {ev.type==="training"&&planTitle&&<div style={{marginTop:5}}><span style={{fontSize:11,fontWeight:700,color:"#4f46e5",background:"#eef2ff",borderRadius:6,padding:"2px 8px"}}>📋 {planTitle}</span></div>}
           {warns.length>0&&<div style={{display:"flex",gap:5,marginTop:5,flexWrap:"wrap"}}>{warns.map((w,i)=><span key={i} style={{fontSize:11,fontWeight:800,color:w.col,background:w.bg,borderRadius:6,padding:"2px 8px"}}>⚠ {w.label}</span>)}</div>}
@@ -31882,6 +31902,7 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
 }
 function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
   const { tr } = useT();
+  const wx=useWeather(plzToGeo(cl?.plz));
   const isTrainerOrHelper = role==="trainer"||role==="helper"||role==="admin";
   const [infoDrill,setInfoDrill]=useState(null);
   const eT=ET[ev.type]||ET.training;const isToday=ev.date===now();const isPast=ev.date<now();
@@ -31917,7 +31938,7 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
             {ev.sid&&<Tag c="#94a3b8" bg="#f1f5f9" ch="*" sm/>}
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8,marginTop:4,flexWrap:"wrap"}}>
-            <span style={{fontSize:13,color:"#64748b",fontWeight:600}}>{fmtD(ev.date)}{ev.time?" . "+ev.time+(ev.endTime?"–"+ev.endTime:""):""}</span>
+            <span style={{fontSize:13,color:"#64748b",fontWeight:600}}>{fmtD(ev.date)}{ev.time?" · "+ev.time+(ev.endTime?"–"+ev.endTime:""):""}{wx?.[ev.date]&&<span style={{marginLeft:6,fontSize:11.5,fontWeight:700,color:(wx[ev.date].r??0)>=50?"#0369a1":"#64748b"}}>{wxIcon(wx[ev.date].c)} {wx[ev.date].t}°{(wx[ev.date].r??0)>=30?` · 💧${wx[ev.date].r}%`:""}</span>}</span>
             {ev.loc&&<span style={{fontSize:12,color:"#64748b"}}> {ev.loc}</span>}
             {(()=>{ const hn=publicHolidayName(ev.date,cl?.clubSettings?.holidayState); return hn?<span style={{fontSize:11,fontWeight:800,color:"#92400e",background:"#fef3c7",border:"1px solid #fde68a",borderRadius:7,padding:"2px 7px"}}>🎉 {hn}</span>:null; })()}
           </div>
@@ -32548,6 +32569,27 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
                   <div style={{fontSize:11,color:"#64748b",marginTop:6}}>{tr("pwHintReset")}</div>
                 </div>
               )}
+              {/* Kalender-Abo: Termine automatisch im Handy-Kalender */}
+              <div style={{background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"12px 14px",marginBottom:4}}>
+                <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.4,marginBottom:4}}>📅 KALENDER-ABO</div>
+                <div style={{fontSize:12,color:"#64748b",lineHeight:1.5,marginBottom:9}}>Einmal abonnieren – alle Termine von {myTeam?.name||"deinem Team"} erscheinen automatisch im Handy-Kalender, Änderungen inklusive.</div>
+                {(()=>{
+                  const mkUrl=()=>{
+                    let tok=myTeam?.icalToken;
+                    if(!tok){ tok=uid()+uid(); onSave({...data, teams:(data.teams||[]).map(x=>x.id===tid?{...x,icalToken:tok}:x)}); }
+                    const base=getConfig()?.url; if(!base) return null;
+                    return `${base}/functions/v1/ical?club=${cid}&team=${tid}&token=${tok}`;
+                  };
+                  return (
+                    <div style={{display:"flex",gap:7}}>
+                      <button onClick={()=>{ const u=mkUrl(); if(!u){fire("Cloud nicht verbunden");return;} navigator.clipboard?.writeText(u); fire("Abo-Link kopiert – im Kalender „Abonnement hinzufügen“ einfügen"); }}
+                        style={{flex:1,padding:"10px",borderRadius:10,border:`1.5px solid ${t.p}`,background:"#fff",color:t.p,fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>🔗 Link kopieren</button>
+                      <button onClick={()=>{ const u=mkUrl(); if(!u){fire("Cloud nicht verbunden");return;} window.open(u.replace(/^https:\/\//,"webcal://"),"_blank"); }}
+                        style={{flex:1,padding:"10px",borderRadius:10,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>📅 Abonnieren</button>
+                    </div>
+                  );
+                })()}
+              </div>
               <div style={{background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"12px 14px",marginBottom:4}}><FontScaleControl/></div>
               <div style={{marginBottom:4}}><ShareTeamLink cl={cl} team={myTeam} t={t} compact/></div>
               <button onClick={()=>setShowProfile(false)} style={{width:"100%",padding:"13px",borderRadius:13,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>{tr("uhClose")}</button>
