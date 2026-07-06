@@ -26752,7 +26752,10 @@ function DayTimeline({ field, bookings, trainings, date, dayStart=480, dayEnd=13
   const trainBlocks=(trainings||[]).map(ev=>{
     const s=toMin(ev.time); const dur=eventDurationMin(ev);
     if(s==null||!dur) return null;
-    return { id:"ev_"+ev.id, label:(ev.title||"Training"), from:s, to:s+dur, color:"#0891b2", kind:"training" };
+    // Platz-Anteil aus der Termin-Aufteilung (1=ganz, 2=halb, …) – Rest bleibt sichtbar frei.
+    const split=Math.max(1,Number(ev.fieldSplit)||1);
+    const fracLabel = split>1 ? `1/${split} Platz belegt · ${split-1}/${split} frei` : "ganzer Platz";
+    return { id:"ev_"+ev.id, label:(ev.title||"Training"), from:s, to:s+dur, color:"#0891b2", kind:"training", frac:1/split, fracLabel };
   }).filter(Boolean);
   const all=[...blocks,...trainBlocks];
   return (
@@ -26780,12 +26783,15 @@ function DayTimeline({ field, bookings, trainings, date, dayStart=480, dayEnd=13
           else if(bl.area==="rechts") lft="51%";
           else if(/Feld [12]/.test(bl.area)) rgt="51%";
           else if(/Feld [34]/.test(bl.area)) lft="51%";
+          // Termin mit Teil-Platz: Block nur so breit wie der belegte Anteil (Rest sichtbar frei)
+          const partial = bl.frac && bl.frac<1;
+          const pos = partial ? {left:"3px", width:`calc(${Math.round(bl.frac*100)}% - 6px)`} : {left:lft, right:rgt};
           return (
-            <div key={bl.id} style={{position:"absolute",top,left:lft,right:rgt,height:Math.max(h-2,14),
+            <div key={bl.id} style={{position:"absolute",top,...pos,height:Math.max(h-2,14),
               background:bl.color,borderRadius:7,padding:"3px 7px",color:"#fff",overflow:"hidden",
               boxShadow:"0 1px 4px rgba(0,0,0,.15)",border:bl.kind==="training"?"2px dashed rgba(255,255,255,.6)":"none"}}>
               <div style={{fontSize:10.5,fontWeight:800,lineHeight:1.2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{bl.label}{bl.area?<span style={{fontSize:8.5,fontWeight:700,opacity:.85,marginLeft:4,background:"rgba(255,255,255,.25)",borderRadius:4,padding:"0 4px"}}>{bl.area}</span>:null}</div>
-              <div style={{fontSize:9.5,opacity:.9}}>{minToTime(bl.from)}–{minToTime(bl.to)}{bl.kind==="training"?" · Termin":""}</div>
+              <div style={{fontSize:9.5,opacity:.9,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{minToTime(bl.from)}–{minToTime(bl.to)}{bl.kind==="training"?" · "+(bl.fracLabel||"Termin"):""}</div>
               {bl.kind==="booking"&&onCancel&&<button onClick={e=>{e.stopPropagation();onCancel(bl.id);}} style={{position:"absolute",top:2,right:2,width:18,height:18,borderRadius:5,background:"rgba(0,0,0,.25)",border:"none",color:"#fff",cursor:"pointer",fontSize:11,fontWeight:800,lineHeight:1,padding:0}}>×</button>}
             </div>
           );
