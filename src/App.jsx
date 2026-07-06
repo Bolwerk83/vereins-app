@@ -15333,6 +15333,7 @@ function SuperAdminDashboard({ data, onExit }) {
     {id:"compliance",  label:"Compliance",    icon:"C"},
     {id:"rollout",     label:"Rollout",        icon:"R"},
     {id:"database",    label:"Datenbank",      icon:"DB"},
+    {id:"orphans",     label:"Altdaten",       icon:"AL"},
   ];
 
   return (
@@ -15519,7 +15520,100 @@ function SuperAdminDashboard({ data, onExit }) {
         {tab==="database"&&(
           <SuperAdminDatabase/>
         )}
+
+        {/* ALTDATEN - verwaiste Datensaetze geloeschter Vereine finden + loeschen */}
+        {tab==="orphans"&&(
+          <SuperAdminOrphans data={data}/>
+        )}
       </div>
+    </div>
+  );
+}
+
+/* -----------------------------------------------------------------
+   ALTDATEN geloeschter Vereine (SuperAdmin)
+   Findet alle Datensaetze (Turnier-Boerse, Live-Spiegel, Shard-Reste),
+   die auf einen Verein verweisen, den es im Verzeichnis nicht mehr
+   gibt - durchsuchbar, je Alt-Verein komplett loeschbar. Entfernt
+   auch die verwaiste Shard-Zeile in der Datenbank (Zombie-Quelle).
+----------------------------------------------------------------- */
+function SuperAdminOrphans({ data }) {
+  const [q,setQ]=useState("");
+  const [busy,setBusy]=useState(null);
+  const known=new Set((data.clubs||[]).map(c=>c.id));
+  const CID_FIELDS=["cid","hostCid","byCid","clubId"];
+  const NAME_FIELDS=["hostName","clubName","club","name","teamName","title","label"];
+  const refs={};
+  for(const [key,val] of Object.entries(data)){
+    if(!Array.isArray(val)) continue;
+    for(const rec of val){
+      if(!rec||typeof rec!=="object") continue;
+      for(const f of CID_FIELDS){
+        const id=rec[f];
+        if(typeof id==="string"&&id&&!known.has(id)&&!id.startsWith("demo")){
+          const e=(refs[id] ||= {counts:{},names:new Set(),total:0});
+          e.counts[key]=(e.counts[key]||0)+1; e.total++;
+          for(const nf of NAME_FIELDS){ if(rec[nf]){ e.names.add(String(rec[nf]).slice(0,44)); break; } }
+          break;
+        }
+      }
+    }
+  }
+  const ql=q.trim().toLowerCase();
+  const list=Object.entries(refs).map(([id,e])=>({id,counts:e.counts,total:e.total,names:[...e.names].slice(0,3)}))
+    .filter(x=>!ql||x.id.toLowerCase().includes(ql)||x.names.some(n=>n.toLowerCase().includes(ql)))
+    .sort((a,b)=>b.total-a.total);
+  const purge=async(cid)=>{
+    const e=refs[cid];
+    if(!window.confirm(`Alle ${e.total} Alt-Datensätze von „${[...e.names][0]||cid}" endgültig löschen?\n\nDas kann nicht rückgängig gemacht werden.`)) return;
+    setBusy(cid);
+    const next={...data};
+    for(const [key,val] of Object.entries(next)){
+      if(!Array.isArray(val)) continue;
+      next[key]=val.filter(rec=>!(rec&&typeof rec==="object"&&CID_FIELDS.some(f=>rec[f]===cid)));
+    }
+    try { await sb.set(next); } catch(err){ window.alert("Speichern fehlgeschlagen: "+String((err&&err.message)||err)); setBusy(null); return; }
+    try { await sb.dbDelete(sb._clubKey(cid)); } catch {} // verwaiste Shard-Zeile mit entfernen
+    window.location.reload();
+  };
+  return (
+    <div>
+      <h2 style={{color:"#fff",fontWeight:900,fontSize:20,marginBottom:6}}>Altdaten gelöschter Vereine</h2>
+      <p style={{fontSize:12.5,color:"#64748b",lineHeight:1.55,marginBottom:14}}>
+        Datensätze (z. B. Turnier-Ausschreibungen, Börsen-Anmeldungen, Live-Spiegel), die auf einen Verein
+        verweisen, den es im Verzeichnis nicht mehr gibt. Löschen entfernt alle Verweise UND die verwaiste
+        Datenbank-Zeile des Vereins – danach tauchen sie auch nach dem nächsten Sync nicht wieder auf.
+      </p>
+      <input value={q} onChange={e=>setQ(e.target.value)}
+        placeholder="Suchen: Vereins-ID oder Name (z. B. aus der alten Einladung)…"
+        style={{width:"100%",padding:"11px 14px",fontSize:14,background:"#1e293b",
+          border:"1px solid #334155",borderRadius:11,color:"#fff",outline:"none",
+          marginBottom:14,boxSizing:"border-box"}}/>
+      {list.length===0&&(
+        <div style={{background:"#1e293b",border:"1px dashed #334155",borderRadius:14,padding:"28px 20px",textAlign:"center",color:"#64748b",fontSize:13.5}}>
+          {ql?"Keine Altdaten zu dieser Suche.":"Keine verwaisten Datensätze gefunden – Datenbank ist sauber. ✓"}
+        </div>
+      )}
+      {list.map(x=>(
+        <div key={x.id} style={{background:"#1e293b",border:"1px solid #7f1d1d",borderRadius:14,padding:"14px 16px",marginBottom:10}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+            <div style={{flex:1,minWidth:180}}>
+              <div style={{fontWeight:800,fontSize:14.5,color:"#fff"}}>{x.names[0]||"Unbekannter Verein"}</div>
+              <div style={{fontSize:11,color:"#64748b",fontFamily:"monospace",marginTop:2}}>ID: {x.id}{x.names.length>1?` · auch: ${x.names.slice(1).join(", ")}`:""}</div>
+            </div>
+            <span style={{fontSize:12,fontWeight:800,color:"#fca5a5",background:"#7f1d1d55",borderRadius:8,padding:"4px 10px"}}>{x.total} Datensätze</span>
+            <button onClick={()=>purge(x.id)} disabled={busy===x.id}
+              style={{padding:"9px 16px",borderRadius:10,border:"none",background:busy===x.id?"#475569":"#dc2626",color:"#fff",fontWeight:800,fontSize:13,cursor:busy===x.id?"default":"pointer",fontFamily:"inherit"}}>
+              {busy===x.id?"Lösche…":"Endgültig löschen"}
+            </button>
+          </div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:10}}>
+            {Object.entries(x.counts).map(([k,n])=>(
+              <span key={k} style={{fontSize:11,fontWeight:700,color:"#94a3b8",background:"#0f172a",border:"1px solid #334155",borderRadius:7,padding:"3px 8px"}}>{k}: {n}</span>
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -30335,7 +30429,10 @@ function TournBoerse({ data, cid, myTids, cl, save, fire }){
   const t=TH(cl);
   const myClub=(data.clubs||[]).find(c=>c.id===cid)||{};
   const myGeo=plzToGeo(myClub.plz);
-  const offers=(data.tournamentOffers||[]);
+  // Angebote geloeschter Vereine ausblenden (Altlasten; SuperAdmin kann sie
+  // unter "Altdaten" endgueltig entfernen)
+  const _clubIds=new Set((data.clubs||[]).map(c=>c.id));
+  const offers=(data.tournamentOffers||[]).filter(o=>!o.hostCid||_clubIds.has(o.hostCid));
   const regs=(data.tournamentRegs||[]);
   const myTeams=(data.teams||[]).filter(tm=>myTids.includes(tm.id));
   const CATS=Object.keys(CAT_YEARS);
