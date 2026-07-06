@@ -4476,7 +4476,7 @@ function NavIcon({ name, size=20, color="currentColor" }) {
     case "fields":   return <svg {...p}><rect x="3" y="5" width="18" height="14" rx="1"/><path d="M12 5v14M3 9h3v6H3M21 9h-3v6h3"/><circle cx="12" cy="12" r="2.2"/></svg>;
     case "chat":     return <svg {...p}><path d="M21 15a2 2 0 0 1-2 2H8l-4 4V5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2z"/></svg>;
     case "more":     return <svg {...p}><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>;
-    case "training": return <svg {...p}><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>;
+    case "training": return <svg {...p}><path d="M12 3L18.5 20H5.5L12 3z"/><path d="M8.2 14h7.6M9.7 9.5h4.6"/><path d="M3.5 20h17"/></svg>;
     case "jerseys":  return <svg {...p}><path d="M4 6l4-3 4 2 4-2 4 3-2 4-2-1v10H8V9L6 10z"/></svg>;
     case "helpers":  return <svg {...p}><circle cx="12" cy="7" r="3.2"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/><path d="M12 11v4M10 13h4"/></svg>;
     case "templates":return <svg {...p}><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>;
@@ -26703,6 +26703,9 @@ function TrainersTab({data,cid,save,fire,session}) {
               {!editId && <div style={{background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:11,padding:"10px 13px",fontSize:12.5,color:"#1d4ed8",lineHeight:1.5}}>Es wird automatisch ein Einmal-Passwort erzeugt. Nach dem Speichern kannst du den Zugang direkt teilen – der Trainer vergibt beim ersten Login sein eigenes Passwort.</div>}
               <input value={f.phone||""} onChange={e=>u({phone:e.target.value})} placeholder="Telefon (optional)"
                 style={{padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
+              <input value={f.childNames||""} onChange={e=>u({childNames:e.target.value})} placeholder="Eigene Kinder im Verein (z.B. Anni, Ben)"
+                style={{padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none"}}/>
+              <div style={{fontSize:12,color:"#64748b",marginTop:-4}}>Trainer-Kinder werden im Termin oben angepinnt – Zu-/Absage mit einem Tipp, ohne Umloggen.</div>
               <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginTop:4}}>MANNSCHAFTEN</div>
               {myTeams.map(tm=>(
                 <label key={tm.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 13px",borderRadius:12,border:`1.5px solid ${f.tids.includes(tm.id)?tm.col:"#e2e8f0"}`,background:f.tids.includes(tm.id)?tm.col+"12":"#fafafa",cursor:"pointer"}}>
@@ -28712,6 +28715,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               <div style={{textAlign:"center",fontSize:12.5,color:"#64748b",padding:"6px"}}>Info-Termin – keine Abstimmung, keine Anwesenheits-Auswertung.</div>
             </div>
           : <VoteOverview ev={viewEv} players={local.players} teams={local.teams} myTids={myTids} cl={myClub}
+              myKids={(((local.trainers||[]).find(x=>x.id===session?.id)?.childNames)||"").split(",").map(x=>x.trim()).filter(Boolean)}
               staff={staffNeed(viewEv,{ perStaff:myClub?.clubSettings?.playersPerStaff||6, trainers:(local.trainers||[]).filter(trn=>(trn.tids||[]).includes(viewEv.tid)&&isActive(trn)).length, squad:(local.playerProfiles||[]).filter(pp=>pp.mainTid===viewEv.tid&&!pp.archived).length })}
               onSetDeadline={deadline=>{
                 save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,deadline}:e)});
@@ -29135,7 +29139,7 @@ function PlaytimeTracker({ ev, roster, onSave, t }){
     </div>
   );
 }
-function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline,onSetPresent=()=>{},onSetGuests=()=>{},onSetVote=null,staff=null}) {
+function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline,onSetPresent=()=>{},onSetGuests=()=>{},onSetVote=null,myKids=[],staff=null}) {
   const p = cl?.pri||"#16a34a";
   const isGameEv = ["heimspiel","auswarts","freundschaft","turnier"].includes(ev.type);
   const present = ev.present||{};
@@ -29194,6 +29198,23 @@ function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline,onSetPresent=()=
           </div>
         ))}
       </div>
+
+      {/* Meine Kinder: Trainer-Kinder angepinnt – Zu-/Absage ohne Umloggen */}
+      {onSetVote&&myKids.length>0&&(()=>{ const kids=myKids.filter(n=>teamPlayers.includes(n)); if(!kids.length) return null; return (
+        <div style={{background:"#eef2ff",border:"1.5px solid #c7d2fe",borderRadius:13,padding:"11px 14px",marginBottom:16}}>
+          <div style={{fontSize:11,fontWeight:800,color:"#4f46e5",letterSpacing:.4,marginBottom:8}}>👨‍👩‍👧 MEINE KINDER</div>
+          <div style={{display:"flex",flexDirection:"column",gap:7}}>
+            {kids.map(n=>{ const v=getVal((ev.votes||{})[n]); return (
+              <div key={n} style={{display:"flex",alignItems:"center",gap:9}}>
+                <Av name={n} sz={28}/>
+                <span style={{flex:1,minWidth:0,fontWeight:700,fontSize:13.5,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{n}</span>
+                <button onClick={()=>onSetVote(n,"yes")} style={{padding:"8px 13px",borderRadius:10,border:"1.5px solid #16a34a",background:v==="yes"?"#16a34a":"#fff",color:v==="yes"?"#fff":"#16a34a",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>✓ dabei</button>
+                <button onClick={()=>onSetVote(n,"no")} style={{padding:"8px 13px",borderRadius:10,border:"1.5px solid #dc2626",background:v==="no"?"#dc2626":"#fff",color:v==="no"?"#fff":"#dc2626",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>✕ absagen</button>
+              </div>
+            );})}
+          </div>
+        </div>
+      ); })()}
 
       {/* Betreuer-Bedarf bei Spielen (Training hat dafür die Betreuung-Sektion) */}
       {isGameEv&&staff&&staff.required>0&&(
@@ -29617,6 +29638,8 @@ function DrillInfoModal({ drill, t, onClose }){
   );
 }
 function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSelfVote,onRemind,onPlan,planTitle}) {
+  const [more,setMore]=useState(false);
+  const wd=d=>{ try{ return new Date(d+"T12:00:00").toLocaleDateString("de-DE",{weekday:"short"})+", "; }catch{ return ""; } };
   const eT=ET[ev.type]||ET.training; const tF=ev.date===tod; const p=cl?.pri||"#16a34a";
   const warns=eventWarnings(ev,tod,{ perStaff:cl?.clubSettings?.playersPerStaff||6 });
   const _v=ev.votes||{};
@@ -29651,13 +29674,13 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
       <div style={{padding:"12px 14px",display:"flex",gap:10,alignItems:"center"}}>
         <div style={{width:42,height:42,borderRadius:13,background:eT.bg,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><EventIcon type={EVENT_TYPE_ALIAS[ev.type]||ev.type} size={22} color={eT.col}/></div>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}><span style={{fontWeight:800,fontSize:14,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ev.title}</span>{tF&&<Tag c={p} bg={p+"20"} ch="Heute"/>}{ev.open&&<Tag c="#7c3aed" bg="#ede9fe" ch="* Offen"/>}{ev.sid&&<Tag c="#94a3b8" bg="#f1f5f9" ch="* Serie"/>}</div>
-          <div style={{fontSize:12,color:"#64748b",marginTop:3}}>{fmtDShort(ev.date)}{ev.time?" . "+ev.time:""}{ev.loc?" . *"+ev.loc:""}</div>
+          <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}><span style={{fontWeight:800,fontSize:14,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ev.title}</span>{tF&&<Tag c={p} bg={p+"20"} ch="Heute"/>}{ev.open&&<Tag c="#7c3aed" bg="#ede9fe" ch="🌐 Offen"/>}{ev.sid&&<Tag c="#64748b" bg="#f1f5f9" ch="🔁 Serie"/>}</div>
+          <div style={{fontSize:12.5,color:"#475569",marginTop:3,fontWeight:600}}>{wd(ev.date)}{fmtDShort(ev.date)}{ev.time?" · "+ev.time+" Uhr":""}{ev.loc?" · 📍 "+ev.loc:""}</div>
           {(()=>{ const hn=publicHolidayName(ev.date,cl?.clubSettings?.holidayState); return hn?<div style={{marginTop:5}}><span style={{fontSize:11,fontWeight:800,color:"#92400e",background:"#fef3c7",border:"1px solid #fde68a",borderRadius:6,padding:"2px 8px"}}>🎉 Feiertag: {hn}</span></div>:null; })()}
           {ev.type==="training"&&planTitle&&<div style={{marginTop:5}}><span style={{fontSize:11,fontWeight:700,color:"#4f46e5",background:"#eef2ff",borderRadius:6,padding:"2px 8px"}}>📋 {planTitle}</span></div>}
           {warns.length>0&&<div style={{display:"flex",gap:5,marginTop:5,flexWrap:"wrap"}}>{warns.map((w,i)=><span key={i} style={{fontSize:11,fontWeight:800,color:w.col,background:w.bg,borderRadius:6,padding:"2px 8px"}}>⚠ {w.label}</span>)}</div>}
-          {vc>0&&<div style={{display:"flex",gap:5,marginTop:4,flexWrap:"wrap"}}>{ev.pt==="att"?<><Tag c="#16a34a" ch={`* ${yes}`}/><Tag c="#dc2626" bg="#fee2e2" ch={`* ${no}`}/></>:<Tag c="#2563eb" ch={`* ${vc} Eintraege`}/>}</div>}
-          {ev.deadline&&<div style={{marginTop:4}}><span style={{fontSize:11,fontWeight:700,color:dlPassed?"#dc2626":"#d97706",background:dlPassed?"#fee2e2":"#fef3c7",borderRadius:6,padding:"2px 8px"}}> {dlPassed?"Frist abgelaufen":"Frist: "}{!dlPassed&&ev.deadline.date}</span></div>}
+          {vc>0&&<div style={{display:"flex",gap:5,marginTop:4,flexWrap:"wrap"}}>{ev.pt==="att"?<><Tag c="#16a34a" ch={`✓ ${yes}`}/><Tag c="#dc2626" bg="#fee2e2" ch={`✕ ${no}`}/></>:<Tag c="#2563eb" ch={`📝 ${vc} Einträge`}/>}</div>}
+          {ev.deadline&&<div style={{marginTop:4}}><span style={{fontSize:11,fontWeight:700,color:dlPassed?"#dc2626":"#d97706",background:dlPassed?"#fee2e2":"#fef3c7",borderRadius:6,padding:"2px 8px"}}>⏳ {dlPassed?"Frist abgelaufen":"Frist "+fmtDShort(ev.deadline.date)+(ev.deadline.time?" "+ev.deadline.time:"")}</span></div>}
           {upcoming5 && !votingLocked && msToStart>0 && (
             <div style={{marginTop:4,display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
               <span style={{fontSize:11,fontWeight:800,color:"#0c4a6e",background:"#e0f2fe",borderRadius:6,padding:"2px 8px",letterSpacing:.3}}>
@@ -29691,20 +29714,25 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
           <span style={{fontSize:11,fontWeight:700,color:"#64748b"}}>Ich:</span>
           <button onClick={()=>onSelfVote(ev.id,"yes")} disabled={votingLocked}
             title={votingLocked?"Anmeldung geschlossen":""}
-            style={{flex:1,padding:"7px",borderRadius:9,border:`1.5px solid ${myVote==="yes"?"#16a34a":"#e2e8f0"}`,background:myVote==="yes"?"#16a34a":(votingLocked?"#f1f5f9":"#fff"),color:myVote==="yes"?"#fff":(votingLocked?"#cbd5e1":"#475569"),fontWeight:700,fontSize:12,cursor:votingLocked?"not-allowed":"pointer",fontFamily:"inherit",opacity:votingLocked?.6:1}}>Bin dabei</button>
-          <button onClick={()=>onSelfVote(ev.id,"no")} style={{flex:1,padding:"7px",borderRadius:9,border:`1.5px solid ${myVote==="no"?"#dc2626":"#e2e8f0"}`,background:myVote==="no"?"#dc2626":"#fff",color:myVote==="no"?"#fff":"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{votingLocked?"Späte Absage":"Sage ab"}</button>
+            style={{flex:1,padding:"7px",borderRadius:9,border:`1.5px solid ${myVote==="yes"?"#16a34a":"#e2e8f0"}`,background:myVote==="yes"?"#16a34a":(votingLocked?"#f1f5f9":"#fff"),color:myVote==="yes"?"#fff":(votingLocked?"#cbd5e1":"#475569"),fontWeight:800,fontSize:12.5,cursor:votingLocked?"not-allowed":"pointer",fontFamily:"inherit",opacity:votingLocked?.6:1}}>✓ Bin dabei</button>
+          <button onClick={()=>onSelfVote(ev.id,"no")} style={{flex:1,padding:"7px",borderRadius:9,border:`1.5px solid ${myVote==="no"?"#dc2626":"#e2e8f0"}`,background:myVote==="no"?"#dc2626":"#fff",color:myVote==="no"?"#fff":"#475569",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{votingLocked?"✕ Späte Absage":"✕ Sage ab"}</button>
         </div>
       )}
       {}
-      <div style={{display:"flex",gap:6,padding:"8px 12px 10px",borderTop:"1px solid #f1f5f9",flexWrap:"wrap"}}>
-        <BtnSm onClick={onView}  icon="👁" label="Ansehen"   bg="#f1f5f9" col="#475569"/>
-        <BtnSm onClick={onEdit}  icon="✏️" label="Bearbeiten" bg="#f0fdf4" col="#16a34a"/>
-        {ev.type==="training"&&onPlan&&<BtnSm onClick={onPlan} icon="📋" label={planTitle?"Plan ändern":"Trainingsplan"} bg="#eef2ff" col="#4f46e5"/>}
-        {onRemind&&(ev.pt==="att"||!ev.pt)&&ev.date>=tod&&<BtnSm onClick={onRemind} icon="🔔" label="Erinnern" bg="#e0f2fe" col="#0369a1"/>}
-        <BtnSm onClick={onReset} icon="♻️" label="Zurücksetzen" bg="#fff7ed" col="#d97706"/>
-        {ev.open&&<BtnSm onClick={onCopyLink} icon="🔗" label="Link kopieren" bg="#ede9fe" col="#7c3aed"/>}
-        <BtnSm onClick={onDel}   icon="🗑" label="Löschen"   bg="#fee2e2" col="#dc2626"/>
+      <div style={{display:"flex",gap:7,padding:"9px 12px 10px",borderTop:"1px solid #f1f5f9",alignItems:"center"}}>
+        <button onClick={onView} style={{flex:1.2,padding:"9px",borderRadius:10,border:"none",background:p,color:contrast(p),fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Ansehen</button>
+        <button onClick={onEdit} style={{flex:1,padding:"9px",borderRadius:10,border:"1.5px solid #e2e8f0",background:"#fff",color:"#334155",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Bearbeiten</button>
+        {ev.type==="training"&&onPlan&&<button onClick={onPlan} style={{flex:1,padding:"9px",borderRadius:10,border:"1.5px solid #c7d2fe",background:"#eef2ff",color:"#4f46e5",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{planTitle?"📋 Plan":"📋 Plan +"}</button>}
+        <button onClick={()=>setMore(m=>!m)} aria-label="Weitere Aktionen" style={{width:38,height:35,borderRadius:10,border:`1.5px solid ${more?"#94a3b8":"#e2e8f0"}`,background:more?"#f1f5f9":"#fff",color:"#475569",fontWeight:900,fontSize:16,cursor:"pointer",fontFamily:"inherit",lineHeight:1}}>⋯</button>
       </div>
+      {more&&(
+        <div style={{display:"flex",gap:6,padding:"0 12px 10px",flexWrap:"wrap"}}>
+          {onRemind&&(ev.pt==="att"||!ev.pt)&&ev.date>=tod&&<BtnSm onClick={onRemind} label="🔔 Erinnern" bg="#e0f2fe" col="#0369a1"/>}
+          {ev.open&&<BtnSm onClick={onCopyLink} label="🔗 Link kopieren" bg="#ede9fe" col="#7c3aed"/>}
+          <BtnSm onClick={onReset} label="↺ Stimmen zurücksetzen" bg="#fff7ed" col="#d97706"/>
+          <BtnSm onClick={onDel} label="Löschen" bg="#fee2e2" col="#dc2626"/>
+        </div>
+      )}
     </div>
   );
 }
