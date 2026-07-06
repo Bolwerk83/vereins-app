@@ -5266,7 +5266,15 @@ function TeamInsights({ data, myTids, cl, save, fire }) {
     .map(s => ({ s, avg: skillAgg[s].n ? skillAgg[s].sum/skillAgg[s].n : null, n: skillAgg[s].n }))
     .filter(x => x.n > 0)
     .sort((a,b) => a.avg - b.avg);
-  const weakest = skillAvg.slice(0, 2);
+  // Ziel-orientiert priorisieren: 1) Standard erreichen (größte Lücke zum Alters-Ziel zuerst),
+  // 2) sind alle Ziele erreicht -> Ausbau-Modus (kleinster Vorsprung zuerst, um über den Schnitt zu kommen).
+  const _insCat = (data.teams||[]).find(tm=>myTids.includes(tm.id))?.cat || "F-Jugend";
+  const _soll = sollFor(cl, _insCat, skillFields);
+  const _withGap = skillAvg.map(x=>({ ...x, soll:_soll[skillFields.indexOf(x.s)]??3, gap:(_soll[skillFields.indexOf(x.s)]??3)-x.avg }));
+  const _below = _withGap.filter(x=>x.gap>0.05).sort((a,b)=>b.gap-a.gap);
+  const buildMode = _withGap.length>0 && _below.length===0;
+  const ranked = _below.length ? _below : [..._withGap].sort((a,b)=>(a.avg-a.soll)-(b.avg-b.soll));
+  const weakest = ranked.slice(0, 2);
 
   // Trainings-Empfehlung
   const TRAINING_FOCUS = {
@@ -5278,7 +5286,13 @@ function TeamInsights({ data, myTids, cl, save, fire }) {
     Ausdauer:       { title:"Kondition + Spielform", reason:"Ausdauer-Schnitt niedrig", drills:["Intervalle 4x4","Polnischer Tag","Lange Spielform 30min"] },
     Teamplay:       { title:"Mannschafts-Kommunikation", reason:"Teamplay-Wert niedrig", drills:["Stimme aktiv","Doppelpass-Pflicht","Eckenball-Variante einstudieren"] },
   };
-  const recommendation = weakest.length > 0 ? TRAINING_FOCUS[weakest[0].s] : null;
+  const recommendation = weakest.length > 0 ? {
+    ...TRAINING_FOCUS[weakest[0].s],
+    buildMode,
+    reason: buildMode
+      ? `Alle ${_insCat}-Zielwerte erreicht 💪 – Ausbau: ${weakest[0].s} hat den kleinsten Vorsprung (Ist ${weakest[0].avg.toFixed(1)} / Ziel ${weakest[0].soll})`
+      : `${weakest[0].s}: größte Lücke zum ${_insCat}-Ziel – Ist ${weakest[0].avg.toFixed(1)} / Ziel ${weakest[0].soll}`,
+  } : null;
 
   // Empfehlungs-Quote aus playerProfile.recommend
   const recCount = players.filter(p => (p.recommend||"").trim().length > 0).length;
@@ -5410,10 +5424,10 @@ function TeamInsights({ data, myTids, cl, save, fire }) {
       {recommendation && (
         <Card title="Trainings-Empfehlung" sub="Warum: schwächster Skill-Bereich im Team" col="#7c3aed">
           <div style={{background:"#faf5ff",borderRadius:12,padding:"12px 14px",border:"1.5px solid #d8b4fe"}}>
-            <div style={{fontSize:11,fontWeight:800,color:"#7c3aed",letterSpacing:.4,marginBottom:3}}>SCHWERPUNKT</div>
+            <div style={{fontSize:11,fontWeight:800,color:"#7c3aed",letterSpacing:.4,marginBottom:3}}>{recommendation.buildMode?"AUSBAU ÜBER DEN STANDARD":"SCHWERPUNKT (ZIEL ERREICHEN)"}</div>
             <div style={{fontWeight:900,fontSize:16,color:"#0f172a",marginBottom:8}}>{recommendation.title}</div>
             <div style={{fontSize:12.5,color:"#475569",lineHeight:1.5,marginBottom:10}}>
-              {recommendation.reason} ({weakest[0].avg.toFixed(1)} von 5,0). {weakest[1] && <>Zweitschwächster Bereich: <b>{weakest[1].s}</b> ({weakest[1].avg.toFixed(1)})</>}
+              {recommendation.reason}. {weakest[1] && <>Danach: <b>{weakest[1].s}</b> (Ist {weakest[1].avg.toFixed(1)} / Ziel {weakest[1].soll})</>}
             </div>
             <div style={{fontSize:10,fontWeight:800,color:"#7c3aed",letterSpacing:.4,marginBottom:5}}>VORSCHLAG-ÜBUNGEN</div>
             <ul style={{margin:"0",paddingLeft:18,fontSize:13,color:"#334155",lineHeight:1.7}}>
