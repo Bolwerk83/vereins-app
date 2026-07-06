@@ -18240,6 +18240,10 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
               <Select value={String(S("playersPerStaff",6))} onChange={v=>saveSetting("playersPerStaff",Number(v))}
                 opts={[["5","5"],["6","6"],["7","7"],["8","8"],["10","10"]]}/>
             </Row>
+            <Row title="Trainingsgruppen: max. Kinder je Gruppe" sub="Ideal sind 6–8 – die Einteilung macht die Gruppen so groß wie möglich bis zu diesem Deckel">
+              <Select value={String(S("groupMax",8))} onChange={v=>saveSetting("groupMax",Number(v))}
+                opts={[["6","6"],["7","7"],["8","8"],["9","9"],["10","10"]]}/>
+            </Row>
             <Row title="Vergangene Termine anzeigen" sub="Wie viele Tage zurück">
               <Select value={S("pastDays",30)} onChange={v=>saveSetting("pastDays",Number(v))}
                 opts={[["7","7 Tage"],["14","14 Tage"],["30","30 Tage"],["60","60 Tage"],["90","90 Tage"]]}/>
@@ -31512,11 +31516,12 @@ function StaffingBoard({ ev, team, session, isHelper, onPatch, fire, onRequestHe
 // Mal), Betreuer-Anfrage als teilbarer Text, Stations-Plan (je Gruppe ein
 // Feld + Aufwärm-Übung, Wechsel im Uhrzeigersinn) und KI-Hinweis zum
 // Zusammenlegen für die Spielform (z. B. F-Jugend: ein großes Feld 5+1).
-const GROUP_MAX = 8; // max. Kinder je Trainer/Betreuer
+const GROUP_MAX_DEFAULT = 8; // Ideal 6–8; Deckel je Verein einstellbar (clubSettings.groupMax)
 function TrainingGroups({ ev, data, cl, onPatch, fire }){
   const t=TH(cl);
   const team=(data.teams||[]).find(tm=>tm.id===ev.tid);
   const cat=team?.cat||team?.name||"F-Jugend";
+  const GROUP_MAX=cl?.clubSettings?.groupMax||GROUP_MAX_DEFAULT;
   const yes=Object.entries(ev.votes||{}).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>n);
   const kids=yes.length;
   const nGroups=Math.max(1, Math.ceil(kids/GROUP_MAX));
@@ -31580,7 +31585,7 @@ function TrainingGroups({ ev, data, cl, onPatch, fire }){
   const requestText=()=>[
     `🙋 Betreuer gesucht – ${team?.name||""}`,
     `Training am ${fmtD(ev.date)}${ev.time?` um ${ev.time} Uhr`:""}${ev.loc?` (${ev.loc})`:""}.`,
-    `${kids} Kinder haben zugesagt → ${nGroups} Gruppen (${sizes.join("·")}), je max. ${GROUP_MAX} Kinder pro Trainer/Betreuer.`,
+    `${kids} Kinder haben zugesagt → ${nGroups} Gruppen (${sizes.join("·")}), ideal 6–8 (max. ${GROUP_MAX}) Kinder pro Trainer/Betreuer.`,
     `Wir haben ${leaders.length} Trainer/Betreuer und brauchen noch ${missing}. Wer kann unterstützen? Einfach in der App unter dem Termin „Ich leite mit" tippen. Danke! 💚`,
   ].join("\n");
   const shareRequest=()=>{ const txt=requestText(); if(navigator.share){ navigator.share({title:"Betreuer gesucht",text:txt}).catch(()=>{}); } else { navigator.clipboard?.writeText(txt); fire&&fire("Anfrage kopiert – in der Gruppe teilen"); } };
@@ -31593,7 +31598,7 @@ function TrainingGroups({ ev, data, cl, onPatch, fire }){
         <span style={{fontWeight:800,fontSize:15,color:"#0f172a",flex:1}}>Trainingsgruppen & Stationen</span>
       </div>
       <div style={{fontSize:12,color:"#475569",fontWeight:600,marginBottom:10,lineHeight:1.5}}>
-        {kids} Zusagen → <b>{nGroups} Gruppe{nGroups>1?"n":""}</b> ({sizes.join(" · ")}) · max. {GROUP_MAX} Kinder je Trainer/Betreuer · verfügbar: {leaders.length}
+        {kids} Zusagen → <b>{nGroups} Gruppe{nGroups>1?"n":""}</b> ({sizes.join(" · ")}) · ideal 6–8, max. {GROUP_MAX} je Trainer/Betreuer · verfügbar: {leaders.length}
         {missing>0&&<span style={{color:"#b45309"}}> · es fehlt{missing>1?"en":""} {missing} Betreuer</span>}
       </div>
       {missing>0&&(
