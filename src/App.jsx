@@ -21770,6 +21770,16 @@ function buildSession({ focus="technik", cat=null, used=[], targetMin=60 }) {
   return blocks;
 }
 // Schwerpunkt aus den größten Förderlücken ableiten (Achse -> Schwerpunkt-Id)
+// Spieler-Typ fuer Positions-Vorschlaege: kurze, fachliche Einordnung ("Ausputzer",
+// "Spielmacher", "Knipser") auf Basis der staerksten Skills fuer die Position.
+const playerArchetype = (sk, pos) => {
+  const v = a => Number(sk?.[a]) || 0;
+  if (pos === "Tor")        return "Rückhalt";
+  if (pos === "Abwehr")     return (v("Übersicht")>=3.5 && v("Zweikampf")>=3.5) ? "Ausputzer" : v("Zweikampf")>=3.5 ? "Zweikampfstark" : "Stabilisator";
+  if (pos === "Mittelfeld") return v("Übersicht")>=3.5 ? "Spielmacher" : v("Ausdauer")>=3.5 ? "Dauerläufer" : "Box-to-Box";
+  if (pos === "Sturm")      return v("Abschluss")>=3.5 ? "Knipser" : v("Schnelligkeit")>=3.5 ? "Tempo-Stürmer" : "Wühler";
+  return "";
+};
 const AXIS_TO_FOCUS = {
   Technik:"technik", Schnelligkeit:"kondition", Zweikampf:"taktik",
   Übersicht:"taktik", Abschluss:"torschuss", Ausdauer:"kondition", Teamplay:"spielform",
@@ -28918,23 +28928,41 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           const profs=(local.playerProfiles||[]).filter(p=>p.mainTid===viewEv.tid&&!p.archived&&yes.includes((p.name||"").toLowerCase())&&p.skills&&Object.values(p.skills).some(v=>(Number(v)||0)>0));
           if(profs.length===0) return null;
           const sport=myClub?.sport||"fussball";
-          const rows=profs.map(p=>({p,fit:positionFit(sport,p.skills,myClub)[0]})).filter(x=>x.fit);
+          const axesAll=skillAxesFor(sport);
+          const rows=profs.map(p=>{
+            const fits=positionFit(sport,p.skills,myClub);
+            const fit=fits[0], alt=fits[1];
+            if(!fit) return null;
+            // Begruendung: staerkste Faehigkeiten + fachlicher Spieler-Typ + eigene Staerken
+            const top=axesAll.map(a=>({a,v:Number(p.skills?.[a])||0})).filter(x=>x.v>0).sort((x,y)=>y.v-x.v).slice(0,2);
+            const arch=playerArchetype(p.skills,fit.pos);
+            const strengths=[...(p.strengths||[]),...(p.customStrengths||[])].slice(0,2);
+            return {p,fit,alt,top,arch,strengths};
+          }).filter(Boolean);
           if(!rows.length) return null;
           return (
             <div style={{marginBottom:14,background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:13,padding:"11px 14px"}}>
               <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.4,marginBottom:8}}>🧭 POSITIONS-VORSCHLÄGE <span style={{color:"#94a3b8"}}>(nach Skills · nur Zusagen)</span></div>
-              <div style={{display:"flex",flexDirection:"column",gap:5}}>
-                {rows.map(({p,fit})=>(
-                  <div key={p.id} style={{display:"flex",alignItems:"center",gap:8,fontSize:12.5}}>
-                    <Av name={p.name} sz={22}/>
-                    <span style={{flex:1,minWidth:0,fontWeight:700,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
-                    {p.position&&p.position!==fit.pos&&<span style={{fontSize:10.5,color:"#94a3b8"}}>bisher {p.position}</span>}
-                    <span style={{fontWeight:800,color:"#4f46e5"}}>{fit.pos}</span>
-                    <span style={{fontSize:11,color:"#64748b",width:36,textAlign:"right"}}>{fit.pct}%</span>
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {rows.map(({p,fit,alt,top,arch,strengths})=>(
+                  <div key={p.id} style={{background:"#fff",border:"1px solid #eef2f7",borderRadius:10,padding:"8px 11px"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,fontSize:12.5}}>
+                      <Av name={p.name} sz={22}/>
+                      <span style={{flex:1,minWidth:0,fontWeight:700,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
+                      {p.position&&p.position!==fit.pos&&<span style={{fontSize:10.5,color:"#94a3b8"}}>bisher {p.position}</span>}
+                      <span style={{fontWeight:800,color:"#4f46e5"}}>{fit.pos}</span>
+                      <span style={{fontSize:11,color:"#64748b",width:36,textAlign:"right"}}>{fit.pct}%</span>
+                    </div>
+                    <div style={{fontSize:11,color:"#64748b",marginTop:4,lineHeight:1.5,paddingLeft:30}}>
+                      {arch&&<span style={{fontWeight:800,color:"#7c3aed"}}>{arch}</span>}
+                      {top.length>0&&<span>{arch?" · ":""}stark in {top.map(x=>`${dimLabel(x.a,null)} ${x.v%1?x.v.toFixed(1):x.v}`).join(" & ")}</span>}
+                      {strengths.length>0&&<span> · {strengths.join(", ")}</span>}
+                      {alt&&<span style={{color:"#94a3b8"}}> · auch möglich: {alt.pos} ({alt.pct}%)</span>}
+                    </div>
                   </div>
                 ))}
               </div>
-              <div style={{fontSize:10.5,color:"#64748b",marginTop:7,lineHeight:1.4}}>Beste Position je Spieler aus dem Skill-Profil – Übernahme über „Vorschlag" im Aufstellungs-Board darunter.</div>
+              <div style={{fontSize:10.5,color:"#0369a1",background:"#e0f2fe",border:"1px solid #bae6fd",borderRadius:9,padding:"7px 10px",marginTop:8,lineHeight:1.5}}>💙 Jugend-Grundsatz: Spaß & Entwicklung vor Taktik. Der Vorschlag ist eine Orientierung – Positionen regelmäßig rotieren, Wünsche der Kinder berücksichtigen und allen faire Spielzeit geben. „Auch möglich" zeigt, wo ein Kind sich zusätzlich ausprobieren kann.</div>
             </div>
           );
         })()}
