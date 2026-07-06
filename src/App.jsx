@@ -3908,6 +3908,7 @@ function AllTeamsOverview({ data, cid, cl, onSelectTeam }) {
 
   return (
     <div>
+      <PageHead icon="🧭" title="Vereins-Übersicht" sub="Alle Teams auf einen Blick"/>
       {/* Schnell-Statistik */}
       <div className="va-grid-3" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:16}}>
         {[
@@ -4385,6 +4386,7 @@ function SecurityTab({ data, cid, save }) {
 
   return (
     <div>
+      <PageHead icon="🛡" title="Sicherheit" sub="Logins · Geräte · Ereignisse"/>
       {/* Zusammenfassung */}
       <div className="va-grid-3" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:16}}>
         {[
@@ -13992,6 +13994,7 @@ function AccessManagerTab({ data, cid, save, fire, cl }) {
 
   return (
     <div>
+      <PageHead icon="🔐" title="Zugänge & Passwörter" sub="Admin · Trainer · Teams"/>
       {/* Passwort-Änderungs-Modal */}
       {editing && (
         <div style={{position:"fixed", inset:0, background:"rgba(0,0,0,.6)",
@@ -18012,6 +18015,7 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
 
   return (
     <div>
+      <PageHead icon="⚙️" title="Einstellungen" sub="Verein · Module · Datenschutz"/>
       {/* Section Nav */}
       <div style={{display:"flex",gap:5,overflowX:"auto",scrollbarWidth:"none",
         marginBottom:16,paddingBottom:2}}>
@@ -23726,8 +23730,8 @@ function BrandingTab({cl,onSave}) {
   const up=e=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=ev=>setC(p=>({...p,logo:ev.target.result}));r.readAsDataURL(f);};
   return (
     <div>
+      <PageHead icon="🎨" title="Design & Branding" sub="Farben · Logo · Auftritt"/>
       <div style={{background:"#fff",borderRadius:18,padding:"18px",border:"1.5px solid #e2e8f0"}}>
-        <h3 style={{fontWeight:900,fontSize:16,color:"#0f172a",marginBottom:16}}> Vereins-Design</h3>
         <div style={{marginBottom:18}}>
           <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.6,textTransform:"uppercase",marginBottom:8}}>Vereinslogo</div>
           <div style={{display:"flex",alignItems:"center",gap:14}}>
@@ -24454,15 +24458,11 @@ function TemplatesTab({data,cid,save,fire,cl,myTids=[],teams=[]}) {
     <div>
       {}
       {!mode&&(
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-          <div>
-            <p style={{fontWeight:800,fontSize:16,color:"#0f172a"}}> Umfrage-Vorlagen</p>
-            <p style={{fontSize:12,color:"#64748b",marginTop:2}}>Pro Team gespeichert · beim Termin anlegen mit einem Klick laden</p>
-          </div>
+      <PageHead icon="🗳" title="Umfrage-Vorlagen" sub="Pro Team gespeichert · beim Termin mit einem Klick laden" right={
           <button onClick={()=>setMode("new")} style={{display:"flex",alignItems:"center",gap:7,padding:"10px 18px",borderRadius:12,border:"none",background:t.p,color:contrast(t.p),fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",boxShadow:`0 3px 12px ${t.p}55`}}>
             <span style={{fontSize:16}}>+</span> Neue Vorlage
           </button>
-        </div>
+      }/>
       )}
 
       {}
@@ -24643,16 +24643,12 @@ function TreasuryTab({ data, cid, save, fire, cl, myTids=[], teams=[], isAdmin=f
 
   return (
     <div>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-        <div>
-          <p style={{fontWeight:800,fontSize:16,color:"#0f172a"}}>Mannschaftskasse</p>
-          <p style={{fontSize:12,color:"#64748b",marginTop:2}}>Einnahmen & Ausgaben je Kasse – auch teamübergreifend</p>
-        </div>
+      <PageHead icon="🏦" title="Kassen-Verwaltung" sub="Einnahmen & Ausgaben je Kasse – teamübergreifend" right={
         <button onClick={()=>setForm({name:"",tids:myTeams.length===1?[myTeams[0].id]:[]})} disabled={selectableTeams.length===0}
           style={{display:"flex",alignItems:"center",gap:7,padding:"10px 16px",borderRadius:12,border:"none",background:selectableTeams.length?t.p:"#e2e8f0",color:selectableTeams.length?contrast(t.p):"#64748b",fontWeight:700,fontSize:14,cursor:selectableTeams.length?"pointer":"default",fontFamily:"inherit"}}>
           <span style={{fontSize:16}}>+</span> Neue Kasse
         </button>
-      </div>
+      }/>
       <AffiliateBanner trigger="fields" slim style={{marginBottom:14}}/>
 
       {visible.length===0&&(
@@ -27857,17 +27853,13 @@ function FieldsManagerTab({ data, cid, save, fire, cl }) {
 
   return (
     <div>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-        <div>
-          <div style={{fontWeight:900,fontSize:16,color:"#0f172a"}}>Felder & Plätze</div>
-          <div style={{fontSize:12,color:"#64748b",marginTop:2}}>{fields.length} angelegt</div>
-        </div>
+      <PageHead icon="🗺" title="Felder & Plätze" sub={`${fields.length} angelegt`} right={
         <button onClick={startNew}
           style={{padding:"10px 18px",borderRadius:12,border:"none",background:t.p,
             color:"#fff",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
           + Neues Feld
         </button>
-      </div>
+      }/>
 
       {/* Wizard Modal */}
       {step&&(
