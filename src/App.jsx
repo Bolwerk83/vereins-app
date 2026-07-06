@@ -1712,7 +1712,7 @@ button:active:not(:disabled){transform:scale(.95)}
 
 const TH = cl => {
   const p = cl?.pri||"#16a34a";
-  return { p,s:cl?.sec||"#052e16",ct:contrast(p),li:mix(p,85),logo:cl?.logo||null,em:cl?.em||"*" };
+  return { p,s:cl?.sec||"#052e16",ct:contrast(p),li:mix(p,85),logo:cl?.logo||null,em:cl?.em||(cl?.name?cl.name.trim().slice(0,1).toUpperCase():"⚽") };
 };
 
 
@@ -6181,7 +6181,7 @@ function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAttachBoar
     const nm=(boardName.trim()||("Board "+(myBoards.length+1)));
     const b={id:uid(),cid:cl.id,name:nm,sport,count,formIdx,oppFormIdx,showOpp,tokens,oppTokens,arrows,createdAt:new Date().toISOString()};
     save({...data,tacticBoards:[...(data.tacticBoards||[]),b]});
-    setBoardName(""); fire&&fire("Board gespeichert *");
+    setBoardName(""); fire&&fire("Board gespeichert");
   };
   const loadBoard=(b)=>{
     skipRebuildRef.current=true;
@@ -6557,7 +6557,7 @@ function TrainingsLibrary({ data, myTids, cl, save, fire }) {
       const exists=(data.trainings||[]).some(x=>x.id===rec.id);
       const trainings=exists ? (data.trainings||[]).map(x=>x.id===rec.id?rec:x) : [...(data.trainings||[]), rec];
       save({...data, trainings});
-      fire&&fire(exists?"Training gespeichert *":"Training angelegt *");
+      fire&&fire(exists?"Training gespeichert *":"Training angelegt");
       setEditing(null);
     };
     return (
@@ -6703,7 +6703,7 @@ function TrainingsLibrary({ data, myTids, cl, save, fire }) {
             <div style={{display:"flex",gap:8,marginTop:12}}>
               <button onClick={()=>setSched(tr)} style={{flex:1,padding:"9px",borderRadius:9,border:`1.5px solid ${t.p}`,background:"#fff",color:t.p,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Als Termin planen</button>
               {mine&&<button onClick={()=>setEditing(tr)} style={{padding:"9px 14px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Bearbeiten</button>}
-              {mine&&<button onClick={()=>{ if(typeof window!=="undefined"&&window.confirm&&!window.confirm("Dieses Training löschen?"))return; save({...data,trainings:(data.trainings||[]).filter(x=>x.id!==tr.id)}); fire&&fire("Training gelöscht *"); }} style={{padding:"9px 12px",borderRadius:9,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Löschen</button>}
+              {mine&&<button onClick={()=>{ if(typeof window!=="undefined"&&window.confirm&&!window.confirm("Dieses Training löschen?"))return; save({...data,trainings:(data.trainings||[]).filter(x=>x.id!==tr.id)}); fire&&fire("Training gelöscht"); }} style={{padding:"9px 12px",borderRadius:9,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Löschen</button>}
             </div>
           </div>
         );
@@ -6726,7 +6726,7 @@ function ScheduleTraining({ tr, myTeams, data, cl, save, fire, onDone }){
     const ev={ id:"e_"+uid(), cid:tr.cid, tid, type:"training", title:tr.title, date, time, loc:"", note:tr.focus?("Schwerpunkt: "+tr.focus):"",
       seasonId:activeSid(data, tr.cid), votes:{}, pt:"att", selType:"multi", li:[], fi:[], sc:[], trainingPlan:plan };
     save({...data, events:[...(data.events||[]), ev]});
-    fire&&fire("Termin erstellt *");
+    fire&&fire("Termin erstellt");
     onDone&&onDone();
   };
   return (
@@ -18542,7 +18542,7 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
           <div style={{marginTop:14,display:"flex",flexDirection:"column",gap:8}}>
             <input value={lkTitle} onChange={e=>setLkTitle(e.target.value)} placeholder="Titel, z. B. Vereins-Shop" style={{width:"100%",padding:"11px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
             <input value={lkUrl} onChange={e=>setLkUrl(e.target.value)} placeholder="https://… (Link oder PDF-Adresse)" style={{width:"100%",padding:"11px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
-            <button onClick={()=>{ const ti=lkTitle.trim(); let u=lkUrl.trim(); if(!ti||!u){fire("Bitte Titel und Link angeben");return;} if(!/^https?:\/\//i.test(u))u="https://"+u; saveLinks([...(myClub.links||[]),{id:uid(),title:ti,url:u}]); setLkTitle("");setLkUrl(""); fire("Link hinzugefügt *"); }}
+            <button onClick={()=>{ const ti=lkTitle.trim(); let u=lkUrl.trim(); if(!ti||!u){fire("Bitte Titel und Link angeben");return;} if(!/^https?:\/\//i.test(u))u="https://"+u; saveLinks([...(myClub.links||[]),{id:uid(),title:ti,url:u}]); setLkTitle("");setLkUrl(""); fire("Link hinzugefügt"); }}
               style={{padding:"12px",borderRadius:11,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>+ Link hinzufügen</button>
           </div>
         </div>
@@ -23594,7 +23594,7 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
     });
     save({...data, playerProfiles:next});
     setWizardChild(null);
-    fire("Skill-Profil angelegt *");
+    fire("Skill-Profil angelegt");
   };
   // Mehrere Trainer: Einschätzungen werden pro Monat gesammelt und GEMITTELT,
   // bevor der Skill (von der Monats-Basis aus) gleitend angepasst wird. So zieht
@@ -23620,7 +23620,7 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
       ? { ...tm, lastSkillCheck:m, skillCheckBy:{ ...(tm.skillCheckBy||{}), [m]:Array.from(new Set([...((tm.skillCheckBy?.[m])||[]), raterId])) } } : tm);
     save({...data, playerProfiles:nextProfiles, teams:nextTeams});
     setSkillCheck(null);
-    fire(`Skill-Check ${monthLabel(m)} gespeichert *`);
+    fire(`Skill-Check ${monthLabel(m)} gespeichert`);
   };
 
   // WICHTIG: Schreibvorgaenge IMMER auf der vollen playerProfiles-Liste, nicht
@@ -23632,7 +23632,7 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
     const next   = exists ? full.map(x=>x.id===p.id?p:x) : [...full,p];
     save({...data,playerProfiles:next});
     setEditP(null); setShowNew(false);
-    fire("Spielerprofil gespeichert *");
+    fire("Spielerprofil gespeichert");
   };
   const delPlayer = id => { const pl=allPlayers.find(p=>p.id===id); save({...data,playerProfiles:(data.playerProfiles||[]).filter(p=>p.id!==id),securityLog:[...(data.securityLog||[]),{id:uid(),cid,type:"dsgvo_delete",ts:new Date().toISOString(),detail:"Spieler "+(pl?.name||id)+" auf Anfrage gelöscht",read:false}]}); fire("Spieler entfernt + DSGVO-Log erstellt"); };
 
@@ -24061,7 +24061,7 @@ function BrandingTab({cl,onSave}) {
           <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.6,textTransform:"uppercase",marginBottom:8}}>Vereinslogo</div>
           <div style={{display:"flex",alignItems:"center",gap:14}}>
             <div style={{width:70,height:70,borderRadius:18,overflow:"hidden",border:"2px solid #e2e8f0",background:"#f8fafc",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-              {c.logo?<img src={c.logo} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span style={{fontSize:34}}>{c.em||"*"}</span>}
+              {c.logo?<img src={c.logo} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span style={{fontSize:34}}>{c.em||(c.name||"V").trim().slice(0,1).toUpperCase()}</span>}
             </div>
             <div style={{flex:1,display:"flex",flexDirection:"column",gap:7}}>
               <input ref={ref} type="file" accept="image/*" style={{display:"none"}} onChange={up}/>
@@ -24182,7 +24182,7 @@ function OnbStep1Logo({ cl, data, cid, save, onNext }) {
       sub="Ein gutes Logo macht deinen Verein in der App sofort erkennbar. Quadratisch, mind. 200×200 Pixel, max. 3 MB. Kannst du auch später anpassen.">
       <div style={{display:"flex",alignItems:"center",gap:18,marginBottom:16}}>
         <div style={{width:96,height:96,borderRadius:22,overflow:"hidden",border:"2px solid rgba(255,255,255,.15)",background:"rgba(255,255,255,.05)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-          {logo ? <img src={logo} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/> : <span style={{fontSize:44,color:"rgba(255,255,255,.4)"}}>{cl?.em||"*"}</span>}
+          {logo ? <img src={logo} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/> : <span style={{fontSize:44,color:"rgba(255,255,255,.4)"}}>{cl?.em||(cl?.name||"V").trim().slice(0,1).toUpperCase()}</span>}
         </div>
         <div style={{flex:1}}>
           <input ref={ref} type="file" accept="image/*" style={{display:"none"}} onChange={onFile}/>
@@ -24716,11 +24716,11 @@ function TemplatesTab({data,cid,save,fire,cl,myTids=[],teams=[]}) {
 
   const doSaveNew=f=>{
     save({...data,pollTemplates:[...(data.pollTemplates||[]),{id:uid(),cid,tid:selTid,name:f.name.trim(),icon:f.icon,selType:f.selType||"multi",items:f.items}]});
-    setMode(null);fire("Vorlage erstellt *");
+    setMode(null);fire("Vorlage erstellt");
   };
   const doUpdate=f=>{
     save({...data,pollTemplates:(data.pollTemplates||[]).map(x=>x.id===mode?{...x,tid:x.tid||selTid,name:f.name.trim(),icon:f.icon,selType:f.selType||x.selType||"multi",items:f.items}:x)});
-    setMode(null);fire("Vorlage gespeichert *");
+    setMode(null);fire("Vorlage gespeichert");
   };
   const doDel=id=>{
     save({...data,pollTemplates:(data.pollTemplates||[]).filter(x=>x.id!==id)});
@@ -24734,7 +24734,7 @@ function TemplatesTab({data,cid,save,fire,cl,myTids=[],teams=[]}) {
   // Eingehende Vorlage uebernehmen (ggf. angepasst) -> wird fuer das Zielteam aktiv
   const doAdopt=f=>{
     save({...data,pollTemplates:(data.pollTemplates||[]).map(x=>x.id===adoptId?{...x,pending:false,fromName:undefined,name:f.name.trim(),icon:f.icon,selType:f.selType||x.selType||"multi",items:f.items}:x)});
-    setAdoptId(null);fire("Vorlage übernommen *");
+    setAdoptId(null);fire("Vorlage übernommen");
   };
   const doDecline=id=>{
     save({...data,pollTemplates:(data.pollTemplates||[]).filter(x=>x.id!==id)});
@@ -24919,10 +24919,10 @@ function TreasuryTab({ data, cid, save, fire, cl, myTids=[], teams=[], isAdmin=f
     const name=(form.name||"").trim(); if(!name||(form.tids||[]).length===0) return;
     if(form.id){
       save({...data,treasuries:all0().map(k=>k.id===form.id?{...k,name,tids:form.tids}:k)});
-      fire("Kasse aktualisiert *");
+      fire("Kasse aktualisiert");
     } else {
       save({...data,treasuries:[...all0(),{id:uid(),cid,name,tids:form.tids,entries:[]}]});
-      fire("Kasse angelegt *");
+      fire("Kasse angelegt");
     }
     setForm(null);
   };
@@ -24933,7 +24933,7 @@ function TreasuryTab({ data, cid, save, fire, cl, myTids=[], teams=[], isAdmin=f
     if(!amt||amt<=0) { fire("Betrag fehlt"); return; }
     const rec={id:uid(),type:entry.type,amount:Math.round(amt*100)/100,note:(entry.note||"").trim(),date:entry.date||now(),by:"Trainer",ts:new Date().toISOString()};
     save({...data,treasuries:all0().map(k=>k.id===entry.kid?{...k,entries:[...(k.entries||[]),rec]}:k)});
-    setEntry(null); fire("Buchung erfasst *");
+    setEntry(null); fire("Buchung erfasst");
   };
   const delEntry=(kid,eid)=>{ save({...data,treasuries:all0().map(k=>k.id===kid?{...k,entries:(k.entries||[]).filter(e=>e.id!==eid)}:k)}); fire("Buchung gelöscht"); };
 
@@ -25576,7 +25576,7 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
     const rec={...f,code,id:editH||uid(),cid,createdAt:editH?f.createdAt:new Date().toISOString()};
     const next=editH?allHelpers.map(x=>x.id===editH?rec:x):[...allHelpers,rec];
     save({...data,helpers:[...(data.helpers||[]).filter(h=>h.cid!==cid),...next]});
-    setShowForm(false);fire(editH?"Helfer aktualisiert *":"Helfer angelegt *");
+    setShowForm(false);fire(editH?"Helfer aktualisiert *":"Helfer angelegt");
   };
   const del=id=>{save({...data,helpers:(data.helpers||[]).filter(h=>h.id!==id)});fire("Helfer entfernt");};
   const toggle=id=>{
@@ -25918,7 +25918,7 @@ function JerseysTab({ data,myTids,save,fire,cl }) {
   const setStatus = (playerId,status) => {
     const next = allPlayers.map(p => p.id===playerId ? {...p,jerseyStatus:status} : p);
     save({...data,playerProfiles:next});
-    fire("Status gespeichert *");
+    fire("Status gespeichert");
   };
 
   const statusFor = sid => JERSEY_STATUS.find(s=>s.id===sid)||JERSEY_STATUS[5];
@@ -26769,7 +26769,7 @@ function BookingModal({ field,cellStart,date,data,save,fire,cl,myTids,session,on
       id: uid(),fieldId: field.id,date,cellStart,cells: f.cells,teamId: f.teamId,teamName: tm?.name||"",booker: session.name||"Trainer",timeFrom: f.timeFrom,timeTo: f.timeTo,note: f.note,cid: field.cid||cl?.id,};
     const next = [...(data.bookings||[]),booking];
     save({...data,bookings:next});
-    fire("Platz gebucht *");
+    fire("Platz gebucht");
     onClose();
   };
 
@@ -28795,7 +28795,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
     venues={(local.venues||[]).filter(x=>x.cid===cid)}
     onAddVenue={v=>{ const nv={id:uid(),cid,name:v.name,address:v.address||""}; save({...local,venues:[...(local.venues||[]),nv]}); fire("Adresse im Vereins-Adressbuch gespeichert"); return nv; }}
     onTemplates={(local.pollTemplates||[]).filter(t=>t.cid===cid&&!t.pending)}
-    onSaveTemplate={tpl=>{save({...local,pollTemplates:[...(local.pollTemplates||[]),{...tpl,cid}]});fire("Vorlage gespeichert *");}}
+    onSaveTemplate={tpl=>{save({...local,pollTemplates:[...(local.pollTemplates||[]),{...tpl,cid}]});fire("Vorlage gespeichert");}}
     onSave={evs=>{
     if(editEv){
       const {_editSeries,...saved}=evs[0];
@@ -28808,17 +28808,17 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           if(e.sid===editEv.sid&&e.date>=editEv.date) return{...e,...common};
           return e;
         })});
-        fire("Serie ab hier aktualisiert *");
+        fire("Serie ab hier aktualisiert");
       } else if(editEv._editSeries==="all"&&editEv.sid){
         save({...local,events:local.events.map(e=>{
           if(e.sid===editEv.sid) return{...e,...common};
           return e;
         })});
-        fire("Ganze Serie aktualisiert *");
+        fire("Ganze Serie aktualisiert");
       } else {
         const deleteEv = ev => { save({...local,events:(local.events||[]).filter(e=>e.id!==ev.id)}); fire("Termin gelöscht"); };
     save({...local,events:(local.events||[]).map(e=>e.id===saved.id?saved:e)});
-        fire("Termin aktualisiert *");
+        fire("Termin aktualisiert");
       }
     } else {
       const _sid = activeSid(local, cid);
@@ -29011,7 +29011,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         {tab==="news"      &&<NewsTab data={local} cid={cid} session={session} save={save} fire={fire} cl={myClub}/>}
         {tab==="fieldsadmin"&&isAdmin&&<FieldsManagerTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/> }
         {tab==="trainers"   &&isAdmin&&<TrainersTab data={local} cid={cid} save={save} fire={fire} session={session}/>}
-        {tab==="branding"   &&isAdmin&&<BrandingTab cl={myClub} onSave={c=>{save({...local,clubs:local.clubs.map(x=>x.id===c.id?c:x)});fire("Design gespeichert *");}}/>}
+        {tab==="branding"   &&isAdmin&&<BrandingTab cl={myClub} onSave={c=>{save({...local,clubs:local.clubs.map(x=>x.id===c.id?c:x)});fire("Design gespeichert");}}/>}
         {tab==="settings"   &&isAdmin&&<ClubAdminSettings data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
         {tab==="security"   &&isAdmin&&<SecurityTab data={local} cid={cid} save={save}/>}
         {tab==="access"     &&isAdmin&&<AccessManagerTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
@@ -29046,7 +29046,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         {!isHelper&&(()=>{
           const link=`${window.location.origin}${window.location.pathname}?club=${encodeURIComponent(myClub?.slug||cid)}&team=${encodeURIComponent(viewEv.tid)}&event=${encodeURIComponent(viewEv.id)}`;
           const txt=`⏰ Erinnerung: ${viewEv.title} am ${fmtD(viewEv.date)}${viewEv.time?` um ${viewEv.time} Uhr`:""}${viewEv.loc?` (${viewEv.loc})`:""}\n\n👉 Link antippen, Kind wählen, zu-/absagen:\n${link}`;
-          const doShare=()=>{ if(navigator.share){ navigator.share({title:viewEv.title,text:txt}).catch(()=>{}); } else { navigator.clipboard?.writeText(txt); fire("Erinnerungs-Text kopiert *"); } };
+          const doShare=()=>{ if(navigator.share){ navigator.share({title:viewEv.title,text:txt}).catch(()=>{}); } else { navigator.clipboard?.writeText(txt); fire("Erinnerungs-Text kopiert"); } };
           return (
             <button onClick={doShare} style={{display:"flex",alignItems:"center",gap:9,width:"100%",background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:12,padding:"10px 13px",marginBottom:12,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
               <span style={{fontSize:16,flexShrink:0}}>🔗</span>
@@ -29073,7 +29073,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
                   :(local.liveEvents||[]).map(x=>x.eid===viewEv.id?{...x,title:updatedEv.title,date:updatedEv.date,pub:tournPubSnapshot(updatedEv,local.playerProfiles||[])}:x);
                 save({...local,events,...(isPub?{liveEvents}:{})});
                 setViewEv(prev=>({...prev,...patch}));
-                fire("Turnier aktualisiert *");
+                fire("Turnier aktualisiert");
               }}
               onPublish={isHelper?undefined:({from,until})=>{
                 if(myClub?.clubSettings?.guestTournament===false){ fire("Gäste-Turniere sind im Vereinsadmin deaktiviert"); return; }
@@ -29084,7 +29084,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
                 const events=local.events.map(e=>e.id===viewEv.id?{...e,published:true,pubFrom:from,pubUntil:until}:e);
                 save({...local,liveEvents,events});
                 setViewEv(prev=>({...prev,published:true,pubFrom:from,pubUntil:until}));
-                fire("Turnier veröffentlicht *");
+                fire("Turnier veröffentlicht");
               }}
               onUnpublish={isHelper?undefined:()=>{
                 const liveEvents=(local.liveEvents||[]).filter(x=>x.eid!==viewEv.id);
@@ -29105,7 +29105,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               onSetDeadline={deadline=>{
                 save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,deadline}:e)});
                 setViewEv(prev=>({...prev,deadline}));
-                fire("Frist gesetzt *");
+                fire("Frist gesetzt");
               }}
               onSetPresent={present=>{
                 save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,present}:e)});
@@ -29337,7 +29337,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           vorlagen={(local.trainings||[]).filter(tr=>tr.cid===cid)}
           cat={(local.teams||[]).find(tm=>tm.id===planFor.tid)?.cat || (local.teams||[]).find(tm=>tm.id===planFor.tid)?.name || null}
           t={TH(myClub)}
-          onSave={plan=>{ save({...local, events:local.events.map(e=>e.id===planFor.id?{...e, trainingPlan:plan, trainingId:""}:e)}); setPlanFor(null); fire("Trainingsplan gespeichert *"); }}
+          onSave={plan=>{ save({...local, events:local.events.map(e=>e.id===planFor.id?{...e, trainingPlan:plan, trainingId:""}:e)}); setPlanFor(null); fire("Trainingsplan gespeichert"); }}
           onRemove={()=>{ save({...local, events:local.events.map(e=>{ if(e.id!==planFor.id) return e; const {trainingPlan, ...rest}=e; return {...rest, trainingId:""}; })}); setPlanFor(null); fire("Trainingsplan entfernt"); }}
           onCancel={()=>setPlanFor(null)}
           onOpenTaktik={()=>{ setTaktikEv(planFor); setPlanFor(null); setShowTaktik(true); }}
@@ -29357,7 +29357,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           <div style={{maxWidth:1000,margin:"0 auto",padding:"16px 14px 40px"}}>
             <TacticBoard data={local} myTids={myTids} cl={myClub} save={save} fire={fire}
               eventCtx={taktikEv}
-              onAttachBoard={board=>{ if(!taktikEv)return; save({...local,events:local.events.map(e=>e.id===taktikEv.id?{...e,board}:e)}); setTaktikEv(p=>p?{...p,board}:p); fire("Board an Termin gehängt *"); }}/>
+              onAttachBoard={board=>{ if(!taktikEv)return; save({...local,events:local.events.map(e=>e.id===taktikEv.id?{...e,board}:e)}); setTaktikEv(p=>p?{...p,board}:p); fire("Board an Termin gehängt"); }}/>
           </div>
         </div>
       )}
