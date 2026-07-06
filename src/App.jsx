@@ -21800,6 +21800,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
 
   const [p,setP] = useState({...player});
   const [showTrend,setShowTrend] = useState(false);
+  const [pTab,setPTab] = useState("basis");   // Tab-Wizard: frei springen
   const up = f => setP(prev => ({...prev,...f}));
   const allTeams  = teams.filter(tm => tm.cid === cid);
   const eligCats  = eligibleCats(p.by||2014,p.gender||"m");
@@ -21837,8 +21838,15 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
         </div>
 
         <div style={{padding:"18px 20px 48px",display:"flex",flexDirection:"column",gap:16}}>
+          {/* Tab-Leiste: Abschnitte wie Tabs, frei hin- und herspringen */}
+          <div style={{position:"sticky",top:-18,zIndex:6,background:"#fff",margin:"-6px -4px 0",padding:"8px 4px 10px",display:"flex",gap:6,overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
+            {[["basis","👤 Basis"],["skills","🎯 Skills"],["stats","📊 Statistik"],["schutz","🔒 Schutz"],["notizen","📝 Notizen"]].map(([k,l])=>(
+              <button key={k} onClick={()=>setPTab(k)} style={{flexShrink:0,padding:"8px 14px",borderRadius:99,border:`1.5px solid ${pTab===k?(t.p||"#16a34a"):"#e2e8f0"}`,background:pTab===k?(t.p||"#16a34a"):"#fff",color:pTab===k?contrast(t.p||"#16a34a"):"#475569",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{l}</button>
+            ))}
+          </div>
 
           {}
+          {pTab==="basis"&&<>
           <Section title="* Stammdaten">
             <Inp label="Name" val={p.name} set={v=>up({name:v})} ph="z.B. Max M." cl={{pri:t.p}} note="Datenschutz: Bitte nur Vorname, höchstens Nachname-Initial (z.B. Max M.). So wenig wie möglich."/>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
@@ -21885,8 +21893,10 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
               </div>
             </div>
           </Section>
+          </>}
 
           {}
+          {pTab==="skills"&&<>
           <Section title="* Spielerprofil (nur Trainer)">
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
               <Sel label="Position" val={p.position||""} set={v=>up({position:v})} opts={[["","- wählen -"],...POSITIONS_LIST.map(x=>[x,x])]}/>
@@ -22016,8 +22026,10 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
               })()}
             </div>
           </Section>
+          </>}
 
           {}
+          {pTab==="stats"&&<>
           <Section title="* Statistiken">
             <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:9,marginBottom:12}}>
               {[["goals","G","Tore"],["assists","V","Vorlagen"],["yellowCards","Ge","Gelb"],["redCards","Ro","Rot"]].map(([k,ic,l])=>(
@@ -22110,7 +22122,9 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
               </div>
             </div>
           </Section>
+          </>}
 
+          {pTab==="schutz"&&<>
           <Section title="Datenschutz">
             <label style={{display:"flex",alignItems:"center",gap:11,cursor:"pointer",background:p.consentAt?"#f0fdf4":"#fffbeb",border:`1.5px solid ${p.consentAt?"#bbf7d0":"#fde68a"}`,borderRadius:12,padding:"12px 14px"}}>
               <input type="checkbox" checked={!!p.consentAt}
@@ -22148,8 +22162,10 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
                 style={{width:"100%",padding:"11px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",resize:"vertical",fontFamily:"inherit",boxSizing:"border-box"}}/>
             </div>
           </Section>
+          </>}
 
           {}
+          {pTab==="notizen"&&<>
           <Section title="* Trainer-Notizen (intern)">
             {}
             <div>
@@ -22236,6 +22252,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
               color="#dc2626"
             />
           </Section>
+          </>}
 
           <button onClick={()=>onSave(p)}
             style={{width:"100%",padding:"14px",borderRadius:15,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:16,cursor:"pointer",fontFamily:"inherit",boxShadow:`0 4px 18px ${t.p}44`}}>
@@ -28139,6 +28156,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const [helperWelcomeOpen,  setHelperWelcomeOpen]  = useState(()=>!!(meHelper  && meHelper.onboarded!==true));
   const { trigger: shareTrigger,dismiss: dismissShare } = useShareTrigger(local,session,myTids);
   const [delConf,setDelConf]=useState(null); const [viewEv,setViewEv]=useState(null); const [delConfVal,setDelConfVal]=useState(null);
+  const [evTab,setEvTab]=useState("rueck");                       // Termin-Ansicht als Tabs
+  useEffect(()=>{ setEvTab("rueck"); },[viewEv?.id]);
   const [editConf,setEditConf]=useState(null);
   const [planFor,setPlanFor]=useState(null);
   // Push-Deep-Links: ?event=<id> öffnet den Termin direkt, ?tab=<id> wechselt den Reiter.
@@ -28428,6 +28447,17 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             </div>
           </a>
         )}
+        {evTab==="rueck"&&<>
+        {(()=>{ const isG=["heimspiel","auswarts","freundschaft","turnier"].includes(viewEv.type); const isT=viewEv.type==="training";
+          const tabs=[["rueck","📊 Rückmeldungen"],...(isT?[["plan","📋 Training"]]:[]),...(isG?[["plan","⚽ Aufstellung"]]:[]),["orga","👥 Orga"],...((isG||isT)?[["zeit","⏱ Spieltag"]]:[])];
+          const tp=TH(myClub).p;
+          return (
+            <div style={{position:"sticky",top:-16,zIndex:6,background:"#fff",margin:"0 -2px",padding:"6px 2px 10px",display:"flex",gap:6,overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
+              {tabs.map(([k,l])=>(
+                <button key={k} onClick={()=>setEvTab(k)} style={{flexShrink:0,padding:"8px 13px",borderRadius:99,border:`1.5px solid ${evTab===k?tp:"#e2e8f0"}`,background:evTab===k?tp:"#fff",color:evTab===k?contrast(tp):"#475569",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{l}</button>
+              ))}
+            </div>
+          ); })()}
         {viewEv.type==="turnier"
           ? <TournView ev={viewEv} user={session.name||"Admin"} onVote={()=>{}} cl={myClub} players={local.players} isHelper={isHelper} fields={(data.fields||[]).filter(f=>f.cid===cid)}
               onUpdate={patch=>{
@@ -28484,6 +28514,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
                 setViewEv(prev=>({...prev,guests}));
               }}
             />}
+        {evTab==="plan"&&<>
+        </>}
         {viewEv.type==="training"&&(()=>{ const emb=viewEv.trainingPlan; const pl=emb?{focus:emb.focus,blocks:(emb.sessions?.[0]?.blocks)||[]}:(local.trainings||[]).find(tr=>tr.id===viewEv.trainingId); return (
           <div style={{marginTop:16,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginBottom:10}}>
@@ -28513,17 +28545,23 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             ⚽ Taktiktafel / Aufstellung zeigen
           </button>
         )}
+        {evTab==="zeit"&&<>
+        </>}
         {["heimspiel","auswarts","freundschaft"].includes(viewEv.type)&&!isHelper&&(
           <MatchReportCard ev={viewEv}
             roster={(local.playerProfiles||[]).filter(p=>p.mainTid===viewEv.tid&&!p.archived).map(p=>p.name)}
             onSave={rep=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,report:rep}:e)}); setViewEv(prev=>({...prev,report:rep})); fire("Spielbericht gespeichert"); }}/>
         )}
+        {evTab==="zeit"&&<>
+        </>}
         {["heimspiel","auswarts","freundschaft","turnier","training"].includes(viewEv.type)&&!isHelper&&(()=>{
           // Nur Spieler, die zugesagt haben oder später kommen (val==="yes" deckt auch "verspätet" ab).
           // Kein Fallback mehr auf den ganzen Kader – ohne Zusagen bleibt die Liste leer (Hinweis im Tracker).
           const roster=Object.entries(viewEv.votes||{}).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>n);
           return <PlaytimeTracker ev={viewEv} roster={roster} t={TH(myClub)} onSave={pt=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,playtime:pt}:e)}); setViewEv(prev=>({...prev,playtime:pt})); }}/>;
         })()}
+        {evTab==="rueck"&&<>
+        </>}
         {(viewEv.extraPolls||[]).map(p=>(
           <div key={p.id} style={{marginTop:16,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
@@ -28537,6 +28575,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             }}/>
           </div>
         ))}
+        {evTab==="orga"&&<>
+        </>}
         {viewEv.type==="training"&&(
           <StaffingBoard ev={viewEv} team={(local.teams||[]).find(tm=>tm.id===viewEv.tid)} session={session} isHelper={isHelper}
             assignedTrainers={(local.trainers||[]).filter(trn=>(trn.tids||[]).includes(viewEv.tid)&&isActive(trn)).length}
@@ -28544,10 +28584,14 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             onPatch={patch=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,...patch}:e)}); setViewEv(prev=>({...prev,...patch})); }}
             fire={fire}/>
         )}
+        {evTab==="orga"&&<>
+        </>}
         <DutyBoard ev={viewEv} user={session.name||"Trainer"} canManage={!isHelper} onChange={arr=>{
           save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,duties:arr}:e)});
           setViewEv(prev=>({...prev,duties:arr}));
         }}/>
+        {evTab==="plan"&&<>
+        </>}
         {["heimspiel","auswarts","freundschaft","turnier"].includes(viewEv.type)&&<LineupBoard ev={viewEv}
           present={Object.entries(viewEv.votes||{}).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>n)}
           canEdit={!isHelper}
@@ -28572,6 +28616,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             save({...local,events,...(isPub?{liveEvents}:{})});
             setViewEv(prev=>({...prev,lineup:lu}));
           }}/>}
+        </>}
         <div style={{height:14}}/><Btn full ch="Schließen" v="gst" onClick={()=>setViewEv(null)}/>
       </Drawer>}
 
