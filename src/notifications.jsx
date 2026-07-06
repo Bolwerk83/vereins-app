@@ -205,7 +205,9 @@ export async function subscribePush() {
     p_p256dh: j.keys?.p256dh,
     p_auth:   j.keys?.auth,
     p_cid: s.cid || null,
-    p_tid: s.tid || (Array.isArray(s.tids) && s.tids.length === 1 ? s.tids[0] : null),
+    // Trainer/Helfer haben tids (Array): erstes Team nehmen, sonst gaebe es
+    // fuer Multi-Team-Trainer gar keine Team-Erinnerungen (tid=null matcht nie).
+    p_tid: s.tid || (Array.isArray(s.tids) && s.tids.length ? s.tids[0] : null),
     p_player_name: s.user || s.name || null,
   });
   setLocalPref({ endpoint: j.endpoint });

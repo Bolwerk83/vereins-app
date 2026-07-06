@@ -63,11 +63,6 @@ Deno.serve(async (req) => {
   if (!mail.from && !mail.subject && !mail.text) return new Response("empty mail", { status: 400 });
 
   const key = `${SK}__club_${club}`;
-  const { data: rows, error } = await admin.from("app_data").select("key, value").eq("key", key).limit(1);
-  if (error) return new Response("db error: " + error.message, { status: 500 });
-  if (!rows || !rows.length) return new Response("unknown club", { status: 404 });
-
-  const value: any = rows[0].value || {};
   const fromLow = mail.from.toLowerCase();
   const isDfb = /dfbnet|dfb\.de|fussball\.de/.test(fromLow);
   const entry = {
@@ -81,12 +76,27 @@ Deno.serve(async (req) => {
     blocked: false,
     mail: true,
   };
-  const next = [...(Array.isArray(value.contactRequests) ? value.contactRequests : []), entry].slice(-MAX_REQUESTS);
-  const { error: werr } = await admin
-    .from("app_data")
-    .update({ value: { ...value, contactRequests: next }, updated_at: new Date().toISOString() })
-    .eq("key", key);
-  if (werr) return new Response("write error: " + werr.message, { status: 500 });
 
-  return new Response(JSON.stringify({ ok: true, id: entry.id }), { headers: { "content-type": "application/json" } });
+  // Optimistic Locking: Der Shard wird als Ganzes geschrieben. Damit ein
+  // paralleler App-Save (z. B. neuer Termin) nicht von unserem veralteten
+  // Snapshot ueberschrieben wird, schreiben wir nur, wenn updated_at noch dem
+  // gelesenen Stand entspricht - sonst frisch lesen und erneut versuchen.
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const { data: rows, error } = await admin.from("app_data").select("key, value, updated_at").eq("key", key).limit(1);
+    if (error) return new Response("db error: " + error.message, { status: 500 });
+    if (!rows || !rows.length) return new Response("unknown club", { status: 404 });
+
+    const value: any = rows[0].value || {};
+    const next = [...(Array.isArray(value.contactRequests) ? value.contactRequests : []), entry].slice(-MAX_REQUESTS);
+    let q = admin
+      .from("app_data")
+      .update({ value: { ...value, contactRequests: next }, updated_at: new Date().toISOString() })
+      .eq("key", key);
+    q = rows[0].updated_at == null ? q.is("updated_at", null) : q.eq("updated_at", rows[0].updated_at);
+    const { data: upd, error: werr } = await q.select("key");
+    if (werr) return new Response("write error: " + werr.message, { status: 500 });
+    if (upd && upd.length) return new Response(JSON.stringify({ ok: true, id: entry.id }), { headers: { "content-type": "application/json" } });
+    await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
+  }
+  return new Response("conflict, retry later", { status: 409 });
 });

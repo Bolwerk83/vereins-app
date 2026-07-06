@@ -1,10 +1,14 @@
 // Vereins-App Service Worker — auto-updating + Web-Push.
 // Diese Datei (public/sw.js) wird in den Build kopiert und unter /sw.js
 // ausgeliefert. Cache-Name bei groesseren Aenderungen hochzaehlen.
-const CACHE = 'vereins-v5';
+const CACHE = 'vereins-v6';
 
-self.addEventListener('install', () => {
+self.addEventListener('install', e => {
   self.skipWaiting();
+  // Start-HTML vorab cachen: Nutzer oeffnen die App meist mit Query-Params
+  // (?club=...); der Offline-Fallback ist caches.match('/') — ohne Precache
+  // waere der leer und offline gaebe es eine weisse Seite.
+  e.waitUntil(caches.open(CACHE).then(c => c.add('/')).catch(() => {}));
 });
 
 self.addEventListener('activate', e => {

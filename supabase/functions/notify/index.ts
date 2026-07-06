@@ -163,8 +163,8 @@ async function runCron(): Promise<Response> {
           : `In ${diff} ${diff === 1 ? "Tag" : "Tagen"} (${ev.date}) - du hast noch nicht abgestimmt.`;
         const { ok, gone: g } = await send(sub, {
           title: ev.title || "Termin",
-          body, tag: `vote_${ev.id}`,
-          url: `/?event=${ev.id}`, icon: "/icon-192.png",
+          body, tag: `vote_${ev.id}`, renotify: true,
+          url: `/?club=${ev.cid || ""}&event=${ev.id}`, icon: "/icon-192.png",
         });
         if (ok) sent++; if (g) gone.push(sub.endpoint);
       }
@@ -175,7 +175,7 @@ async function runCron(): Promise<Response> {
           title: `Heute: ${ev.title || "Termin"}${ev.time ? " um " + ev.time : ""}`,
           body: quoteFor(ev.id),
           tag: `morn_${ev.id}`,
-          url: `/?event=${ev.id}`, icon: "/icon-192.png",
+          url: `/?club=${ev.cid || ""}&event=${ev.id}`, icon: "/icon-192.png",
         });
         if (ok) sent++; if (g) gone.push(sub.endpoint);
       }
@@ -211,8 +211,8 @@ async function runCron(): Promise<Response> {
         const { ok, gone: g } = await send(sub, {
           title: `Betreuer gesucht: ${e.title || "Training"}`,
           body: `${diff === 0 ? "Heute" : "Morgen"}${e.time ? " " + e.time : ""}: noch ${need} Betreuer fehlen. Kannst du einspringen?`.trim(),
-          tag: `staff_${e.id}`,
-          url: `/?event=${e.id}`, icon: "/icon-192.png",
+          tag: `staff_${e.id}`, renotify: true,
+          url: `/?club=${e.cid || ""}&event=${e.id}`, icon: "/icon-192.png",
           requireInteraction: true,
         });
         if (ok) sent++; if (g) gone.push(sub.endpoint);
