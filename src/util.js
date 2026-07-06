@@ -14,5 +14,7 @@ export const inits = n => (n||"").split(" ").map(w=>w[0]||"").join("").slice(0,2
 // Lesbare Textfarbe (#111 oder #fff) fuer eine Hintergrundfarbe (Helligkeit).
 export const contrast = hex => { const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16); return (r*299+g*587+b*114)/1000>145?"#111":"#fff"; };
 
-// Farbe um p% in Richtung Weiss aufhellen (fuer dezente Tints).
-export const mix = (hex,p) => { let r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16); const m=c=>Math.min(255,Math.floor(c+(255-c)*(p/100))); return `#${m(r).toString(16).padStart(2,"0")}${m(g).toString(16).padStart(2,"0")}${m(b).toString(16).padStart(2,"0")}`; };
+// Farbe um p% in Richtung Weiss aufhellen (p>0) bzw. Richtung Schwarz
+// abdunkeln (p<0). Kanaele werden auf 0..255 begrenzt, sonst entsteht
+// ungueltiges Hex (z. B. "#-6...") und der Browser verwirft die Farbe.
+export const mix = (hex,p) => { let r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16); const m=c=>Math.min(255,Math.max(0,Math.floor(p>=0?c+(255-c)*(p/100):c*(1+p/100)))); return `#${m(r).toString(16).padStart(2,"0")}${m(g).toString(16).padStart(2,"0")}${m(b).toString(16).padStart(2,"0")}`; };

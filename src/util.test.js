@@ -27,3 +27,9 @@ test("mix: Richtung Weiss aufhellen", () => {
   assert.equal(mix("#000000", 0), "#000000");
   assert.equal(mix("#ffffff", 50), "#ffffff");
 });
+
+test("mix: negatives p dunkelt ab und bleibt gueltiges Hex", () => {
+  assert.equal(mix("#16a34a", -12), "#138f41");        // Vereins-Gruen leicht dunkler
+  assert.equal(mix("#000000", -50), "#000000");        // klemmt bei 0, kein "#-..."
+  assert.match(mix("#16a34a", -20), /^#[0-9a-f]{6}$/); // immer parsebares Hex
+});

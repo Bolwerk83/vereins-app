@@ -4569,7 +4569,7 @@ const HAS_ICON = new Set(["events","team","teams","fields","chat","more","traini
 function EventIcon({ type, size=22, color="#16a34a" }) {
   const p = { width:size, height:size, viewBox:"0 0 24 24", fill:"none", stroke:color, strokeWidth:2, strokeLinecap:"round", strokeLinejoin:"round" };
   switch(type){
-    case "training": return <svg {...p}><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>;
+    case "training": return <svg {...p}><path d="M12 3l6 17H6z"/><path d="M9.5 10h5M8 14.5h8"/></svg>;
     case "heimspiel": return <svg {...p}><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>;
     case "auswarts": return <svg {...p}><rect x="3" y="6" width="15" height="11" rx="2"/><path d="M18 9h2.5L22 12v4h-4"/><circle cx="7" cy="18" r="1.8"/><circle cx="16" cy="18" r="1.8"/></svg>;
     case "freundschaft": return <svg {...p}><path d="M8 13l-3-3a2.5 2.5 0 0 1 3.5-3.5l.5.5.5-.5A2.5 2.5 0 0 1 16 10l-3 3"/><path d="M11 11l3 3-2 2-3-3"/></svg>;

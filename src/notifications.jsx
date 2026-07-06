@@ -143,7 +143,13 @@ const DEFAULT_CFG = {
 };
 function safeJSON(s) { try { return JSON.parse(s); } catch { return null; } }
 function getConfig()  { const v = safeJSON(localStorage.getItem(CFG_KEY)); return (v && v.url && v.key) ? v : DEFAULT_CFG; }
-function getSession() { return safeJSON(sessionStorage.getItem(SESS_KEY)) || {}; }
+// Session wie in App.jsx: erst sessionStorage, sonst die "angemeldet bleiben"-
+// Kopie aus localStorage (PWA-Neustart hat keine sessionStorage-Session mehr).
+function getSession() {
+  const s = safeJSON(sessionStorage.getItem(SESS_KEY)) || safeJSON(localStorage.getItem(SESS_KEY + "_persist"));
+  if (s && s._exp && Date.now() > s._exp) return {};
+  return s || {};
+}
 function getData()    { return safeJSON(localStorage.getItem(DATA_KEY))  || {}; }
 function getLocalPref(){ return safeJSON(localStorage.getItem(SUB_PREF))  || {}; }
 function setLocalPref(p){ try { localStorage.setItem(SUB_PREF, JSON.stringify(p)); } catch {} }
