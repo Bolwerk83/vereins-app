@@ -28688,7 +28688,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       const evId=sp.get("event"); const tabP=sp.get("tab");
       if(tabP && ["events","chat","team","training","attendance"].includes(tabP)) setTab(tabP);
       if(evId){ const ev=(local.events||[]).find(e=>e.id===evId); if(ev){ setTab("events"); setViewEv(ev); } }
-      if(evId||tabP){ sp.delete("event"); sp.delete("tab"); const qs=sp.toString(); window.history.replaceState({},"",window.location.pathname+(qs?"?"+qs:"")+window.location.hash); }
+      if(evId||tabP){ sp.delete("event"); sp.delete("tab"); sp.delete("club"); sp.delete("team"); const qs=sp.toString(); window.history.replaceState({},"",window.location.pathname+(qs?"?"+qs:"")+window.location.hash); }
     }catch{}
   },[]); // eslint-disable-line
   const [planDrill,setPlanDrill]=useState(null);   // Übungs-Detail aus dem Trainingsplan
@@ -28979,6 +28979,21 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             </div>
           ); })()}
         {evTab==="rueck"&&<>
+        {!isHelper&&(()=>{
+          const link=`${window.location.origin}${window.location.pathname}?club=${encodeURIComponent(myClub?.slug||cid)}&team=${encodeURIComponent(viewEv.tid)}&event=${encodeURIComponent(viewEv.id)}`;
+          const txt=`⏰ Erinnerung: ${viewEv.title} am ${fmtD(viewEv.date)}${viewEv.time?` um ${viewEv.time} Uhr`:""}${viewEv.loc?` (${viewEv.loc})`:""}\n\n👉 Link antippen, Kind wählen, zu-/absagen:\n${link}`;
+          const doShare=()=>{ if(navigator.share){ navigator.share({title:viewEv.title,text:txt}).catch(()=>{}); } else { navigator.clipboard?.writeText(txt); fire("Erinnerungs-Text kopiert *"); } };
+          return (
+            <button onClick={doShare} style={{display:"flex",alignItems:"center",gap:9,width:"100%",background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:12,padding:"10px 13px",marginBottom:12,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
+              <span style={{fontSize:16,flexShrink:0}}>🔗</span>
+              <span style={{flex:1,minWidth:0}}>
+                <span style={{display:"block",fontSize:13,fontWeight:800,color:"#166534"}}>Termin-Link teilen</span>
+                <span style={{display:"block",fontSize:11.5,color:"#4d7c0f",marginTop:1,lineHeight:1.35}}>Quick-Erinnerung für die WhatsApp-Gruppe – der Link öffnet direkt diesen Termin</span>
+              </span>
+              <span style={{fontSize:12.5,fontWeight:800,color:"#16a34a",flexShrink:0}}>Teilen →</span>
+            </button>
+          );
+        })()}
         {viewEv.type==="turnier"
           ? <TournView ev={viewEv} user={session.name||"Admin"} onVote={()=>{}} cl={myClub} players={local.players} isHelper={isHelper} teamCat={(local.teams||[]).find(tm=>tm.id===viewEv.tid)?.cat||null} fields={(data.fields||[]).filter(f=>f.cid===cid)}
               onUpdate={patch=>{
@@ -32443,6 +32458,19 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const later=up.filter(e=>e.date>_in10);              // weiter in der Zukunft
   const [showLater,setShowLater]=useState(false);
   const [exp,setExp]=useState((up[0]||past[0])?.id||null);
+  // Deep-Link: ?event=<id> (z. B. WhatsApp-Erinnerung vom Trainer) öffnet den Termin direkt
+  useEffect(()=>{
+    try{
+      const sp=new URLSearchParams(window.location.search);
+      const evId=sp.get("event");
+      if(evId){
+        const ev=evs.find(e=>e.id===evId);
+        if(ev){ setTab("events"); setExp(evId); if(ev.date>_in10) setShowLater(true); }
+        sp.delete("event"); sp.delete("club"); sp.delete("team");
+        const qs=sp.toString(); window.history.replaceState({},"",window.location.pathname+(qs?"?"+qs:"")+window.location.hash);
+      }
+    }catch{}
+  },[]); // eslint-disable-line
   const [showPast,setSP]=useState(false);
   const [toast,setToast]=useState(null);
   const unreadMsgs = useMemo(()=>{
