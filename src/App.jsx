@@ -2157,7 +2157,7 @@ function InboxTab({ data,cid,save,fire,cl }) {
 
   return (
     <div>
-      {}
+      <PageHead icon="📥" title="Posteingang" sub="Anfragen · Sicherheits-Log"/>
       <div style={{display:"flex",gap:8,marginBottom:16}}>
         {[["inbox",`Posteingang${unreadInbox>0?` (${unreadInbox})`:""}`],["security",`Sicherheit${unreadSec>0?` (${unreadSec})`:""}`]].map(([k,l])=>(
           <button key={k} onClick={()=>setView(k)}
@@ -3688,6 +3688,7 @@ function LeagueTab({ data, myTids, cl, save, fire }) {
 
   return (
     <div>
+      <PageHead icon="🏆" title="Ergebnisse & Tabelle" sub="Spielberichte · Saison"/>
       {myTeams.length>1&&(
         <div style={{display:"flex",gap:6,marginBottom:14,overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
           {myTeams.map(tm=>(
@@ -4093,6 +4094,7 @@ function NewsTab({ data, cid, session, save, fire, cl }) {
 
   return (
     <div>
+      <PageHead icon="📰" title="News & Infos" sub="Vereins-Pinnwand"/>
       {isAdmin&&<button onClick={()=>setShowForm(true)}
         style={{width:"100%",padding:"13px",borderRadius:14,border:"none",background:t.p,color:"#fff",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit",marginBottom:14}}>
         + Neuigkeit veröffentlichen
@@ -7028,6 +7030,7 @@ function TrainingPlanner({ data, myTids, cl, save, fire }) {
 
   return (
     <div>
+      <PageHead icon="📋" title="Training & Förderung" sub="Auto-Plan · Einzelförderung"/>
       <ViewTabs/>
       {teams.length>1 && (
         <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
@@ -25259,10 +25262,9 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
 
   return (
     <div>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-        <div><p style={{fontWeight:900,fontSize:16,color:"#0f172a"}}> Helfer-Accounts</p><p style={{fontSize:12,color:"#64748b",marginTop:2}}>{allHelpers.length} angelegt . {allHelpers.filter(h=>h.active!==false).length} aktiv</p></div>
+      <PageHead icon="🤝" title="Helfer-Accounts" sub={`${allHelpers.length} Zugänge · ${allHelpers.filter(isActive).length} aktiv`} right={
         <button onClick={openNew} style={{padding:"9px 16px",borderRadius:11,border:"none",background:t.p,color:contrast(t.p),fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",boxShadow:`0 3px 10px ${t.p}44`}}>+ Neuer Helfer</button>
-      </div>
+      }/>
 
       {allHelpers.length===0&&<div style={{textAlign:"center",padding:"32px",background:"#f8fafc",borderRadius:16,border:"1.5px dashed #e2e8f0"}}>
         <div style={{fontSize:36,marginBottom:8}}></div>
@@ -25593,7 +25595,7 @@ function JerseysTab({ data,myTids,save,fire,cl }) {
 
   return (
     <div>
-      {}
+      <PageHead icon="👕" title="Trikots" sub="Bestand & Status je Spieler"/>
       <div style={{overflowX:"auto",display:"flex",gap:7,marginBottom:14,scrollbarWidth:"none"}}>
         {myTeams.map(tm=>(
           <button key={tm.id} onClick={()=>setSelTid(tm.id)}
@@ -26628,8 +26630,7 @@ function TrainerInboxTab({ data, cid, session, save, cl }) {
   const fmt = ts => { try { return new Date(ts).toLocaleString("de-DE",{day:"2-digit",month:"2-digit",year:"2-digit",hour:"2-digit",minute:"2-digit"}); } catch { return ""; } };
   return (
     <div>
-      <p style={{fontWeight:900,fontSize:16,color:"#0f172a",margin:"0 0 4px"}}>Posteingang</p>
-      <p style={{fontSize:12,color:"#64748b",margin:"0 0 14px"}}>Rundschreiben vom Vereinsadmin</p>
+      <PageHead icon="📥" title="Posteingang" sub="Rundschreiben vom Vereinsadmin"/>
       {mine.length===0 ? (
         <div style={{textAlign:"center",padding:"32px",background:"#f8fafc",borderRadius:14,border:"1.5px dashed #e2e8f0"}}>
           <p style={{fontWeight:700,color:"#334155",margin:"0 0 4px"}}>Keine Nachrichten</p>
@@ -26691,6 +26692,7 @@ function TrainersTab({data,cid,save,fire,session}) {
 
   return (
     <div>
+      <PageHead icon="👔" title="Trainer" sub="Zugänge · Anwesenheit · Rundschreiben"/>
       <TrainerStatsView data={data} cid={cid}/>
       {showBroadcast&&<BroadcastModal data={data} cid={cid} session={session} save={save} fire={fire} onClose={()=>setShowBroadcast(false)}/>}
       {showAccessShare&&<TrainerAccessShare tr={showAccessShare} cl={cl} data={data} save={save} fire={fire} onClose={()=>setShowAccessShare(null)}/>}
