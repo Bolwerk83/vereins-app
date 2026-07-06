@@ -7466,7 +7466,7 @@ function CashbookTab({ data, myTids, save, fire, cl }){
         <div style={{fontWeight:900,fontSize:30,color:balance>=0?"#15803d":"#dc2626",marginTop:2}}>{balance>=0?"+":"−"}{eur(Math.abs(balance))}</div>
         <div style={{fontSize:11.5,color:"#64748b",marginTop:3}}>{entries.length} {tr("cashBookings")}</div>
       </div>
-      <PillTabs color={t.p} value={kTab} onChange={setKTab} tabs={[["buchen","➕ Buchen"],["liste",`📒 Buchungen (${entries.length})`],["strafen",`⚠️ Strafen${fineList.length?` (${fineList.length})`:""}`]]}/>
+      <PillTabs color={t.p} value={kTab} onChange={setKTab} tabs={[["buchen","➕ Buchen"],["beitraege","✅ Beiträge"],["liste",`📒 Buchungen (${entries.length})`],["strafen",`⚠️ Strafen${fineList.length?` (${fineList.length})`:""}`]]}/>
       {kTab==="buchen"&&<>
       <div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:14,padding:"13px",marginBottom:14}}>
         <div style={{fontWeight:800,fontSize:14,color:"#0f172a",marginBottom:9}}>{tr("cashNewEntry")}</div>
@@ -7494,6 +7494,51 @@ function CashbookTab({ data, myTids, save, fire, cl }){
         </div>
       </div>}
       </>}
+      {kTab==="beitraege"&&(()=>{
+        const team=teams.find(x=>x.id===tid);
+        const fee=Number(team?.seasonFee)||0;
+        const setFee=v=>save({...data,teams:(data.teams||[]).map(tm=>tm.id===tid?{...tm,seasonFee:Math.max(0,Number(String(v).replace(",","."))||0)}:tm)});
+        const paidOf=n=>entries.filter(e=>e.kind==="beitrag"&&e.player===n).reduce((s2,e)=>s2+(Number(e.amount)||0),0);
+        const rows=players.map(n=>({n,paid:paidOf(n)})).map(x=>({...x,open:Math.max(0,fee-x.paid)}));
+        const openRows=rows.filter(x=>fee>0&&x.open>0.004);
+        const bookRest=(x)=>{ if(!x.open) return; const entry={id:uid(),cid,tid,date:now(),kind:"beitrag",amount:Math.round(x.open*100)/100,player:x.n,note:"Saisonbeitrag",ts:new Date().toISOString()};
+          save({...data,cashbook:[...(data.cashbook||[]),entry]}); fire&&fire(`${x.n}: Beitrag gebucht ✓`); };
+        const remind=()=>{ const txt=[`💰 Saisonbeitrag ${team?.name||""}: ${eur(fee)}`,`Noch offen bei: ${openRows.map(x=>x.n+(x.paid?` (${eur(x.open)} rest)`:"")).join(", ")}.`,`Bitte an die Mannschaftskasse zahlen – danke! 🙏`].join("\n");
+          if(navigator.share){ navigator.share({title:"Saisonbeitrag",text:txt}).catch(()=>{}); } else { navigator.clipboard?.writeText(txt); fire&&fire("Erinnerung kopiert"); } };
+        return (
+          <div>
+            <div style={{display:"flex",alignItems:"center",gap:9,background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:13,padding:"11px 13px",marginBottom:12}}>
+              <span style={{flex:1,fontSize:13,fontWeight:700,color:"#334155"}}>Saisonbeitrag je Kind</span>
+              <input value={fee||""} onChange={e=>setFee(e.target.value)} inputMode="decimal" placeholder="z.B. 30"
+                style={{width:90,padding:"9px 11px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",fontFamily:"inherit",textAlign:"right"}}/>
+              <span style={{fontSize:13,fontWeight:800,color:"#334155"}}>€</span>
+            </div>
+            {fee<=0&&<p style={{fontSize:13,color:"#64748b",textAlign:"center",padding:"14px"}}>Betrag oben festlegen – dann siehst du je Kind bezahlt/offen.</p>}
+            {fee>0&&(
+              <>
+                <div style={{display:"flex",gap:8,marginBottom:10}}>
+                  <span style={{flex:1,fontSize:12.5,fontWeight:700,color:"#15803d"}}>✓ bezahlt: {rows.length-openRows.length}/{rows.length}</span>
+                  {openRows.length>0&&<button onClick={remind} style={{padding:"8px 13px",borderRadius:10,border:`1.5px solid ${t.p}`,background:"#fff",color:t.p,fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>📣 Erinnerung teilen ({openRows.length})</button>}
+                </div>
+                <div style={{display:"flex",flexDirection:"column",gap:7}}>
+                  {rows.map(x=>(
+                    <div key={x.n} style={{display:"flex",alignItems:"center",gap:10,background:"#fff",border:`1.5px solid ${x.open>0.004?"#fde68a":"#bbf7d0"}`,borderRadius:12,padding:"9px 12px"}}>
+                      <Av name={x.n} sz={30}/>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontWeight:700,fontSize:13.5,color:"#0f172a"}}>{x.n}</div>
+                        <div style={{fontSize:11,color:"#64748b"}}>{eur(x.paid)} von {eur(fee)}{x.open>0.004?` · offen ${eur(x.open)}`:""}</div>
+                      </div>
+                      {x.open>0.004
+                        ? <button onClick={()=>bookRest(x)} style={{padding:"7px 11px",borderRadius:9,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>✓ bezahlt</button>
+                        : <span style={{fontSize:12,fontWeight:800,color:"#15803d"}}>✓</span>}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        );
+      })()}
       {kTab==="liste"&&<>
       <div style={{display:"flex",flexDirection:"column",gap:7}}>
         {entries.length===0&&<p style={{fontSize:13,color:"#64748b",textAlign:"center",padding:"20px"}}>{tr("cashNoEntries")}</p>}
@@ -18112,6 +18157,7 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
     {id:"infos",       label:"Infos & Links", icon:"L"},
     {id:"sicherheit",  label:"Sicherheit",    icon:"Si"},
     {id:"datenschutz", label:"Datenschutz",   icon:"D"},
+    {id:"pflege",      label:"Datenpflege",   icon:"🧹"},
     {id:"konto",       label:"Konto",         icon:"A"},
   ];
 
@@ -18486,6 +18532,47 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
           </div>
         </div>
       )}
+
+      {/* DATENPFLEGE: Altbestaende finden & mit einem Tipp aufraeumen */}
+      {section==="pflege"&&(()=>{
+        const tod=now();
+        const teamIds=new Set((data.teams||[]).filter(tm=>tm.cid===cid).map(tm=>tm.id));
+        const clubIds=new Set((data.clubs||[]).map(c=>c.id));
+        const issues=[];
+        const orphanPlayers=(data.playerProfiles||[]).filter(p=>p.cid===cid&&p.mainTid&&!teamIds.has(p.mainTid));
+        if(orphanPlayers.length) issues.push({k:"players",n:orphanPlayers.length,label:"Spieler, deren Mannschaft nicht mehr existiert",fix:"In den Zuteilungs-Pool verschieben",run:()=>save({...data,playerProfiles:(data.playerProfiles||[]).map(p=>orphanPlayers.some(o=>o.id===p.id)?{...p,mainTid:""}:p)})});
+        const orphanEvents=(data.events||[]).filter(e=>e.cid===cid&&e.tid&&!teamIds.has(e.tid));
+        if(orphanEvents.length) issues.push({k:"events",n:orphanEvents.length,label:"Termine ohne existierende Mannschaft",fix:"Termine löschen",run:()=>save({...data,events:(data.events||[]).filter(e=>!orphanEvents.some(o=>o.id===e.id))})});
+        const staleRegs=(data.tournamentRegs||[]).filter(r=>{ const own=(data.tournamentOffers||[]).some(o=>o.id===r.offerId&&o.hostCid===cid); return own&&r.byCid&&clubIds.size>1&&!clubIds.has(r.byCid); });
+        if(staleRegs.length) issues.push({k:"regs",n:staleRegs.length,label:"Börsen-Anmeldungen von nicht (mehr) existierenden Vereinen",fix:"Entfernen",run:()=>save({...data,tournamentRegs:(data.tournamentRegs||[]).filter(r=>!staleRegs.some(x=>x.id===r.id))})});
+        const oldOffers=(data.tournamentOffers||[]).filter(o=>o.hostCid===cid&&!o.closed&&o.date<tod);
+        if(oldOffers.length) issues.push({k:"offers",n:oldOffers.length,label:"Abgelaufene eigene Turnier-Ausschreibungen (noch offen)",fix:"Schließen",run:()=>save({...data,tournamentOffers:(data.tournamentOffers||[]).map(o=>oldOffers.some(x=>x.id===o.id)?{...o,closed:true}:o)})});
+        const cut90=addD(tod,-90);
+        const oldMsgs=(data.trainerMsgs||[]).filter(m=>m.cid===cid&&m.ts&&String(m.ts).slice(0,10)<cut90&&Object.keys(m.reads||{}).length>0);
+        if(oldMsgs.length) issues.push({k:"msgs",n:oldMsgs.length,label:"Gelesene Trainer-Nachrichten älter als 90 Tage",fix:"Aufräumen",run:()=>save({...data,trainerMsgs:(data.trainerMsgs||[]).filter(m=>!oldMsgs.some(x=>x.id===m.id))})});
+        const oldWait=(data.waitlist||[]).filter(w=>w.cid===cid&&["admitted","declined"].includes(w.status)&&w.ts&&String(w.ts).slice(0,10)<cut90);
+        if(oldWait.length) issues.push({k:"wait",n:oldWait.length,label:"Erledigte Warteliste-Einträge älter als 90 Tage",fix:"Aufräumen (löscht Kontaktdaten)",run:()=>save({...data,waitlist:(data.waitlist||[]).filter(w=>!oldWait.some(x=>x.id===w.id))})});
+        const cut180=addD(tod,-180);
+        const oldReq=(data.contactRequests||[]).filter(r=>r.cid===cid&&r.read&&!r.blocked&&r.ts&&String(r.ts).slice(0,10)<cut180);
+        if(oldReq.length) issues.push({k:"req",n:oldReq.length,label:"Gelesene Posteingang-Anfragen älter als 180 Tage",fix:"Aufräumen",run:()=>save({...data,contactRequests:(data.contactRequests||[]).filter(r=>!oldReq.some(x=>x.id===r.id))})});
+        return (
+          <div style={card}>
+            <div style={{fontSize:12.5,color:"#64748b",lineHeight:1.5,marginBottom:12}}>Findet Altbestände und Verwaistes (z. B. nach Tests oder Saisonwechseln) – Aufräumen jeweils mit einem Tipp. DSGVO-Bonus: alte personenbezogene Daten werden nicht ewig aufgehoben.</div>
+            {issues.length===0&&<div style={{background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:12,padding:"14px",textAlign:"center",fontWeight:800,color:"#166534",fontSize:14}}>✨ Alles sauber – keine Altbestände gefunden.</div>}
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {issues.map(it=>(
+                <div key={it.k} style={{display:"flex",alignItems:"center",gap:10,background:"#fffbeb",border:"1px solid #fde68a",borderRadius:11,padding:"10px 12px"}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:13,fontWeight:700,color:"#92400e"}}>{it.n}× {it.label}</div>
+                  </div>
+                  <button onClick={()=>{ if(window.confirm&&!window.confirm(`${it.n} Einträge: ${it.fix}?`))return; it.run(); fire("Aufgeräumt ✓"); }}
+                    style={{padding:"8px 12px",borderRadius:9,border:"none",background:"#d97706",color:"#fff",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{it.fix.split(" ")[0]}</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {section==="konto"&&(
         <>
