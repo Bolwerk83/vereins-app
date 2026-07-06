@@ -23339,6 +23339,32 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
             </div>
           );})()}
 
+          {/* Einwilligungs-Übersicht (Art. 8 DSGVO): wie viele liegen vor, wer fehlt */}
+          {mainPlayers.length>0&&(()=>{
+            const okN=mainPlayers.filter(p=>p.consentAt).length;
+            const missing=mainPlayers.filter(p=>!p.consentAt).sort((a,b)=>(a.name||"").localeCompare(b.name||""));
+            const all=missing.length===0;
+            return (
+              <div style={{marginBottom:14,background:all?"#f0fdf4":"#fffbeb",border:`1.5px solid ${all?"#bbf7d0":"#fde68a"}`,borderRadius:13,padding:"11px 14px"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:16}}>🔒</span>
+                  <span style={{flex:1,fontWeight:800,fontSize:13,color:all?"#166534":"#92400e"}}>Einwilligungen: {okN}/{mainPlayers.length} liegen vor{all?" ✓":""}</span>
+                </div>
+                {!all&&(
+                  <div style={{marginTop:8,display:"flex",flexWrap:"wrap",gap:6}}>
+                    {missing.map(p=>(
+                      <button key={p.id} onClick={()=>setEditP(p)} title="Profil öffnen und Einwilligung abhaken"
+                        style={{display:"flex",alignItems:"center",gap:5,padding:"4px 10px 4px 4px",borderRadius:99,border:"1.5px solid #fde68a",background:"#fff",color:"#92400e",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+                        <Av name={p.name} sz={20}/>{p.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {!all&&<div style={{fontSize:11,color:"#92400e",marginTop:7,lineHeight:1.45}}>Fehlt bei {missing.length} {missing.length===1?"Kind":"Kindern"} – wird automatisch gesetzt, sobald die Eltern sich anmelden und bestätigen. Antippen = im Profil manuell abhaken (z. B. bei Papier-Einwilligung).</div>}
+              </div>
+            );
+          })()}
+
           {}
           <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5,display:"flex",justifyContent:"space-between"}}>
             <span>HAUPTKADER ({mainPlayers.length})</span>
