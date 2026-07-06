@@ -23336,12 +23336,22 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
                     </div>
                     <div>
                       <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.4,marginBottom:6}}>JAHRGANG</div>
-                      <div style={{display:"flex",gap:7,alignItems:"center",flexWrap:"wrap"}}>
-                        {ys.map(y=>(
-                          <button key={y} onClick={()=>setQuickNew(q=>({...q,by:y}))} style={{padding:"9px 15px",borderRadius:10,border:`1.5px solid ${Number(quickNew.by)===y?t.p:"#e2e8f0"}`,background:Number(quickNew.by)===y?t.p:"#fff",color:Number(quickNew.by)===y?contrast(t.p):"#475569",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>{y}</button>
-                        ))}
-                        <input value={quickNew.by} onChange={e=>setQuickNew(q=>({...q,by:e.target.value}))} inputMode="numeric" style={{width:76,padding:"9px 10px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",fontFamily:"inherit",textAlign:"center"}}/>
-                      </div>
+                      {(()=>{
+                        // Mädchen dürfen bis zu 2 Jahre älter sein -> zwei zusätzliche (ältere) Jahrgänge anbieten
+                        const girlYs = (quickNew.gender==="w"&&ys.length) ? [Math.min(...ys)-1, Math.min(...ys)-2] : [];
+                        return (
+                          <div style={{display:"flex",gap:7,alignItems:"center",flexWrap:"wrap"}}>
+                            {ys.map(y=>(
+                              <button key={y} onClick={()=>setQuickNew(q=>({...q,by:y}))} style={{padding:"9px 15px",borderRadius:10,border:`1.5px solid ${Number(quickNew.by)===y?t.p:"#e2e8f0"}`,background:Number(quickNew.by)===y?t.p:"#fff",color:Number(quickNew.by)===y?contrast(t.p):"#475569",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>{y}</button>
+                            ))}
+                            {girlYs.map(y=>(
+                              <button key={y} onClick={()=>setQuickNew(q=>({...q,by:y}))} title="Mädchen dürfen bis zu 2 Jahre älter sein" style={{padding:"9px 13px",borderRadius:10,border:`1.5px solid ${Number(quickNew.by)===y?"#7c3aed":"#ddd6fe"}`,background:Number(quickNew.by)===y?"#7c3aed":"#f5f3ff",color:Number(quickNew.by)===y?"#fff":"#7c3aed",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>{y}</button>
+                            ))}
+                            <input value={quickNew.by} onChange={e=>setQuickNew(q=>({...q,by:e.target.value}))} inputMode="numeric" style={{width:76,padding:"9px 10px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",fontFamily:"inherit",textAlign:"center"}}/>
+                          </div>
+                        );
+                      })()}
+                      {quickNew.gender==="w"&&ys.length>0&&<div style={{fontSize:11,color:"#7c3aed",fontWeight:600,marginTop:5}}>Mädchen-Regel: darf bis zu 2 Jahre älter sein – daher auch {Math.min(...ys)-1}/{Math.min(...ys)-2} wählbar.</div>}
                     </div>
                     <div>
                       <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.4,marginBottom:6}}>GESCHLECHT</div>
