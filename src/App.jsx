@@ -2755,27 +2755,36 @@ function LegalPage({ onBack, cl }) {
             Verantwortlich im Sinne der DSGVO ist der im Impressum genannte Betreiber.</p>
 
             <p style={{marginTop:12}}><strong>2. Welche Daten werden verarbeitet?</strong><br/>
-            Es werden nur die Daten verarbeitet, die im Verein eingegeben werden: Namen bzw. Vornamen von Mitgliedern, Geburtsjahr, Mannschaftszugehörigkeit, Termine, An-/Abmeldungen, Nachrichten innerhalb des Vereins sowie optionale sportliche Einschätzungen (z. B. Position, Skill-Profil). Es werden bewusst möglichst wenige Daten erhoben (Datensparsamkeit, Art. 5 DSGVO).</p>
+            Es werden nur die Daten verarbeitet, die im Verein eingegeben werden: Vornamen (empfohlen mit höchstens Nachnamen-Initial), Geburtsjahr, Mannschaftszugehörigkeit, Termine mit Zu-/Absagen und Anwesenheit, Fahrgemeinschafts-Einträge, Nachrichten innerhalb des Vereins, optionale Eltern-Kontaktangaben (z. B. Warteliste) sowie optionale sportliche Einschätzungen (Position, Skill-Profil – nur für Trainer sichtbar). Es werden bewusst möglichst wenige Daten erhoben (Datensparsamkeit, Art. 5 DSGVO). <strong>Gesundheitsdaten werden nicht gespeichert</strong>; eine Trainingspause wird ohne Grund nur mit Zeitraum erfasst.</p>
 
             <p style={{marginTop:12}}><strong>3. Rechtsgrundlage</strong><br/>
             Die Verarbeitung erfolgt auf Grundlage einer Einwilligung (Art. 6 Abs. 1 lit. a DSGVO) und/oder zur Durchführung der Vereinsorganisation (berechtigtes Interesse, Art. 6 Abs. 1 lit. f DSGVO).</p>
 
             <p style={{marginTop:12}}><strong>4. Minderjährige</strong><br/>
-            Für die Verarbeitung von Daten Minderjähriger ist die Einwilligung der Erziehungsberechtigten erforderlich (Art. 8 DSGVO). Eltern können die Daten ihres Kindes jederzeit einsehen, berichtigen und löschen lassen.</p>
+            Für die Verarbeitung von Daten Minderjähriger ist die Einwilligung der Erziehungsberechtigten erforderlich (Art. 8 DSGVO). Die Einwilligung wird bei der ersten Anmeldung in der App abgefragt und mit Name der einwilligenden Person, Rolle (z. B. Mutter/Vater) und Zeitpunkt dokumentiert. Eltern können die Daten ihres Kindes jederzeit einsehen, berichtigen und über die Lösch-Funktion im Profil löschen lassen.</p>
 
-            <p style={{marginTop:12}}><strong>5. Speicherort</strong><br/>
-            Daten werden lokal im Browser gespeichert. Sofern der Verein die Cloud-Speicherung über Supabase einrichtet, werden Daten dort als Auftragsverarbeiter gespeichert; hierfür ist ein Auftragsverarbeitungsvertrag erforderlich.</p>
+            <p style={{marginTop:12}}><strong>5. Speicherort &amp; Auftragsverarbeitung</strong><br/>
+            Die Daten werden auf dem eigenen Gerät (Browser-Speicher) und in einer zentralen Datenbank beim Dienstleister Supabase gespeichert, damit alle Geräte des Vereins denselben Stand sehen. Supabase handelt als Auftragsverarbeiter (Art. 28 DSGVO) auf Grundlage des mit dem Betreiber geschlossenen Auftragsverarbeitungsvertrags (DPA).</p>
 
-            <p style={{marginTop:12}}><strong>6. Werbung &amp; externe Links</strong><br/>
-            Die App kann als Werbung gekennzeichnete Empfehlungen (Affiliate-Links) zu externen Shops anzeigen. Beim Klick verlässt du die App; auf den Zielseiten gelten deren eigene Datenschutzbestimmungen. Es werden keine personenbezogenen Mitgliederdaten an diese Dritten weitergegeben.</p>
+            <p style={{marginTop:12}}><strong>6. Push-Benachrichtigungen (optional)</strong><br/>
+            Aktivierst du Benachrichtigungen, wird eine technische Empfangsadresse deines Geräts (Push-Endpoint deines Browsers, z. B. Apple/Google) zusammen mit Verein/Team gespeichert, um Termin-Erinnerungen zuzustellen. Du kannst das jederzeit in der App wieder abschalten; die Adresse wird dann gelöscht.</p>
 
-            <p style={{marginTop:12}}><strong>7. Deine Rechte</strong><br/>
-            Du hast das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit und Widerspruch sowie das Recht auf Beschwerde bei einer Datenschutz-Aufsichtsbehörde.</p>
+            <p style={{marginTop:12}}><strong>7. Kalender-Abo (optional)</strong><br/>
+            Das Termin-Abo stellt die Team-Termine über eine geheime, tokengeschützte Internet-Adresse bereit. Wer den Link kennt, sieht die Termine des Teams (keine weiteren Personendaten). Der Link sollte nicht öffentlich geteilt werden.</p>
 
-            <p style={{marginTop:12}}><strong>8. Speicherdauer</strong><br/>
-            Daten werden gespeichert, solange die Vereinszugehörigkeit besteht, und auf Wunsch gelöscht.</p>
+            <p style={{marginTop:12}}><strong>8. Wetteranzeige</strong><br/>
+            Für die Wetteranzeige an Terminen wird die ungefähre Vereins-Position (aus der Vereins-PLZ) an den Wetterdienst Open-Meteo übertragen – keine personenbezogenen Daten.</p>
 
-            <p style={{marginTop:12}}><strong>9. Kontakt</strong><br/>
+            <p style={{marginTop:12}}><strong>9. Werbung &amp; externe Links</strong><br/>
+            Die App kann als Werbung gekennzeichnete Empfehlungen (Affiliate-Links) zu externen Shops anzeigen. Beim Klick verlässt du die App; auf den Zielseiten gelten deren eigene Datenschutzbestimmungen. Es werden keine personenbezogenen Mitgliederdaten an diese Dritten weitergegeben; ein Tracking innerhalb der App findet nicht statt.</p>
+
+            <p style={{marginTop:12}}><strong>10. Deine Rechte</strong><br/>
+            Du hast das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit und Widerspruch sowie das Recht auf Beschwerde bei einer Datenschutz-Aufsichtsbehörde (für NRW: LDI NRW).</p>
+
+            <p style={{marginTop:12}}><strong>11. Speicherdauer</strong><br/>
+            Daten werden gespeichert, solange die Vereinszugehörigkeit besteht, und auf Wunsch bzw. beim Verlassen des Vereins gelöscht. Der Verein kann Altlasten (z. B. erledigte Wartelisten-Einträge, alte Kontaktanfragen) über den Datenpflege-Assistenten regelmäßig entfernen.</p>
+
+            <p style={{marginTop:12}}><strong>12. Kontakt</strong><br/>
             Datenschutzanfragen bitte an die im Impressum genannte Adresse.</p>
           </div>
         )}
