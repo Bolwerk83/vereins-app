@@ -25787,7 +25787,16 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
                 <span style={{fontWeight:900,fontSize:22,color:"#2563eb",fontFamily:"monospace",flex:1}}>{String(f.code||"").startsWith("s")?"••••••":f.code}</span>
                 <button onClick={()=>u({code:genCode()})} style={{padding:"6px 12px",borderRadius:9,border:"1.5px solid #bfdbfe",background:"#fff",color:"#2563eb",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}> Neu generieren</button>
               </div>
-              <p style={{fontSize:11,color:"#64748b",marginTop:6}}>Gib diesen Code dem Helfer – er kann sich damit einloggen. Nach dem Speichern wird er aus Sicherheitsgründen nicht mehr angezeigt; bei Verlust einfach neu generieren.</p>
+              {!String(f.code||"").startsWith("s")&&(
+                <button onClick={()=>{
+                  const link=(typeof window!=="undefined"?window.location.origin:"")+"?club="+(cl?.slug||cl?.id||"");
+                  const teams=(data.teams||[]).filter(tm=>(f.tids||[]).includes(tm.id)).map(tm=>tm.name).join(", ");
+                  const txt=`Hallo ${f.name||""},\n\ndu bist als Betreuer/Helfer${teams?` für ${teams}`:""} bei ${cl?.name||"unserem Verein"} eingetragen.\n\nLink: ${link}\nDein Login-Code: ${f.code}\n\nSo geht's: Link öffnen, „${cl?.name||"Verein"}" wählen, Rolle „Helfer" antippen, deinen Namen wählen und den Code eingeben.\n\nBitte behandle den Code wie ein Passwort.`;
+                  if(navigator.share){ navigator.share({title:"Helfer-Zugang",text:txt}).catch(()=>{}); }
+                  else { navigator.clipboard?.writeText(txt); fire("Einladung kopiert"); }
+                }} style={{width:"100%",marginTop:9,padding:"10px",borderRadius:10,border:"none",background:"#2563eb",color:"#fff",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>📤 Zugang teilen (Link + Code)</button>
+              )}
+              <p style={{fontSize:11,color:"#64748b",marginTop:6}}>Gib diesen Code dem Helfer – er kann sich damit einloggen. <b>Erst „Speichern", dann funktioniert der Login.</b> Nach dem Speichern wird der Code aus Sicherheitsgründen nicht mehr angezeigt; bei Verlust einfach neu generieren und erneut teilen.</p>
             </div>
 
             {}

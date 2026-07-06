@@ -366,7 +366,9 @@ export function NotifMount() {
         aria-label={tr("bell")}
         onClick={() => setOpen(true)}
         style={{
-          position:"fixed", right:14, bottom:"calc(78px + env(safe-area-inset-bottom))", zIndex:9000,
+          // zIndex bewusst UNTER den Sheets/Drawern der App (>=850): die Glocke
+          // soll nie Buttons in geoeffneten Dialogen ueberdecken.
+          position:"fixed", right:14, bottom:"calc(78px + env(safe-area-inset-bottom))", zIndex:800,
           width:52, height:52, borderRadius:"50%", border:"none",
           background: subbed ? COL : "rgba(15,23,42,.86)",
           color:"#fff", fontSize:20, cursor:"pointer",
