@@ -839,7 +839,7 @@ const _DATA_ARRAYS = [
   "playerProfiles","trainings","fields","bookings",
   "contactRequests","securityLog","seasons","pollTemplates",
   "clubs","news","newsItems","photos","broadcasts","treasuries","liveEvents",
-  "trainerMsgs","cashbook","waitlist"
+  "trainerMsgs","cashbook","waitlist","drillFeedback"
 ];
 const normData = (d) => {
   if (!d || typeof d !== "object") return d;
@@ -4339,6 +4339,10 @@ const _votedYes = (ev,name)=>{ const v=(ev.votes||{})[name]; const val=(typeof v
 // Pausiert/Verletzt: Kind ist bis einschliesslich pausedUntil aus Planung,
 // Gruppen, Vorschlaegen und No-Show-Logik ausgenommen.
 const isPausedP = (p, tod=null)=> !!(p?.pausedUntil && p.pausedUntil >= (tod||new Date().toISOString().slice(0,10)));
+// Übungs-Feedback (👍/👎 nach dem Training): Generatoren bevorzugen Übungen,
+// die bei EUREN Kindern gut ankamen (Score je Übungs-Id, vereinsweit).
+const drillScores = (data, cid) => { const m={}; (data?.drillFeedback||[]).forEach(fb=>{ if(cid&&fb.cid!==cid) return; if(!fb.drillId) return; m[fb.drillId]=(m[fb.drillId]||0)+(fb.vote>0?1:-1); }); return m; };
+const drillVoteOf = (data, evId, drillId) => (data?.drillFeedback||[]).find(fb=>fb.evId===evId&&fb.drillId===drillId)?.vote||0;
 const playerNoShowEvents = (events, name)=> (events||[]).filter(e=> e && e.present && Object.keys(e.present).length>0 && _votedYes(e,name) && !e.present[name]);
 const NO_SHOW_HINT_THRESHOLD = 2; // ab so vielen No-Shows Hinweis an Eltern + Audit
 const addAuditLog = (data, save, entry) => {
@@ -7120,13 +7124,13 @@ function TrainingPlanner({ data, myTids, cl, save, fire }) {
   const generate = () => {
     const realFocus = focus==="auto" ? autoFocus() : focus;
     if(mode==="single"){
-      setPlan({ type:"single", sessions:[{ title:"Trainingseinheit", blocks: buildSession({focus:realFocus, cat, targetMin:dur}) }] });
+      setPlan({ type:"single", sessions:[{ title:"Trainingseinheit", blocks: buildSession({focus:realFocus, cat, targetMin:dur, scores:drillScores(data, team?.cid)}) }] });
     } else {
       const days = ["Einheit 1","Einheit 2","Einheit 3"];
       const used=[]; const sessions=[];
       days.forEach((d,i)=>{
         const f = focus==="auto" ? autoFocus() : (i===1?"taktik":i===2?"torschuss":realFocus);
-        const blocks = buildSession({focus:f, cat, used, targetMin:dur});
+        const blocks = buildSession({focus:f, cat, used, targetMin:dur, scores:drillScores(data, team?.cid)});
         blocks.forEach(b=>used.push(b.drill.id));
         sessions.push({ title:d, blocks });
       });
@@ -8026,7 +8030,7 @@ const CAT_TO_AGEKEY = {
 // Baut automatisch eine ausgewogene Trainingseinheit aus TRAINING_TEMPLATES:
 // Aufwärmen -> Hauptteil (nach Schwerpunkt) -> Spielform, passend zu Alter & Zieldauer,
 // mit Belastungsaufbau und möglichst ohne Übungen der zuletzt gespeicherten Einheit.
-function generateTrainingPlan({ ageKey="all", targetMin=90, focus="auto", avoidIds=[] }){
+function generateTrainingPlan({ ageKey="all", targetMin=90, focus="auto", avoidIds=[], scores={} }){
   const lib = TRAINING_TEMPLATES;
   const ageOk = d => ageKey==="all" || (d.age||[]).includes(ageKey);
   let pool = lib.filter(ageOk);
@@ -8037,7 +8041,10 @@ function generateTrainingPlan({ ageKey="all", targetMin=90, focus="auto", avoidI
     const fresh = cand.filter(d=>!avoid.has(d.id));
     const arr = fresh.length ? fresh : cand;
     if(!arr.length) return null;
-    const d = arr[Math.floor(Math.random()*arr.length)];
+    // Feedback-gewichtet: gut bewertete Übungen kommen öfter dran (Basisgewicht 3)
+    const w = x => Math.max(1, 3 + (scores[x.id]||0));
+    let tot=arr.reduce((s2,x)=>s2+w(x),0), r=Math.random()*tot, d=arr[0];
+    for(const x of arr){ r-=w(x); if(r<=0){ d=x; break; } }
     used.add(d.id); return d;
   };
   const toEx = d => ({ name:d.name, cat:d.cat||"technik", duration:d.duration||15,
@@ -8124,7 +8131,7 @@ function PlanEditor({ plan, cid, myTids, data, save, fire, cl, onClose }) {
       effFocus=AXIS_TO_FOCUS[tf.axis]||"auto";
       fire(`Auto-Schwerpunkt: ${tf.axis}${tf.basis==="anwesend"?` (auf ${tf.usedCount} Zusagen zugeschnitten)`:" (Kader-Basis)"}`);
     }
-    const gen = generateTrainingPlan({ ageKey, targetMin:genDur, focus:effFocus, avoidIds });
+    const gen = generateTrainingPlan({ ageKey, targetMin:genDur, focus:effFocus, avoidIds, scores:drillScores(data, cid) });
     if(!gen.length){ fire("Keine passenden Übungen gefunden"); return; }
     if(exercises.length && typeof window!=="undefined" && !window.confirm("Bestehende Übungen durch den generierten Plan ersetzen?")) return;
     setExercises(gen);
@@ -21824,23 +21831,27 @@ function pickRandom(arr, exclude=[]) {
 }
 // Baut eine Einheit. focus = Schwerpunkt-Id, cat = Altersklasse, used = bereits verwendete IDs
 // targetMin = angestrebte Gesamtdauer; die Auswahl füllt die Phasen passend dazu.
-function buildSession({ focus="technik", cat=null, used=[], targetMin=60 }) {
+function buildSession({ focus="technik", cat=null, used=[], targetMin=60, scores={} }) {
   const inCat = d => !cat || (d.cats||[]).includes(cat);
   const byFocus = (fid) => DRILL_LIB.filter(d=>d.focus===fid && inCat(d));
   const blocks = [];
   const ex = [...used];
   const add = (phase, drill) => { if(drill){ blocks.push({phase, drill}); ex.push(drill.id); } };
+  // Feedback-gewichtete Auswahl (👍 erhöht, 👎 senkt die Chance)
+  const wpick = (cands) => { const arr=cands.filter(d=>!ex.includes(d.id)); if(!arr.length) return null;
+    const w=d=>Math.max(1,3+(scores[d.id]||0)); let tot=arr.reduce((s2,d)=>s2+w(d),0), r=Math.random()*tot;
+    for(const d of arr){ r-=w(d); if(r<=0) return d; } return arr[0]; };
   const sum = () => blocks.reduce((a,b)=>a+(b.drill.min||0),0);
 
   const mainFocus = (focus==="auto"||focus==="spielform"||focus==="aufwärmen") ? "technik" : focus;
   // 1) Aufwärmen (immer)
-  add("Aufwärmen", pickRandom(byFocus("aufwärmen"), ex));
+  add("Aufwärmen", wpick(byFocus("aufwärmen")));
   // 2) Hauptteil 1 — Schwerpunkt
-  add("Hauptteil", pickRandom(byFocus(mainFocus), ex));
+  add("Hauptteil", wpick(byFocus(mainFocus)));
   // 3) Abschluss — Spielform (immer, als Abschluss). Jugend-Reserve: das Spiel
   //    bekommt ~40 % (junge Jahrgänge) bzw. ~30 % der Einheit und wird am Ende
   //    auf die komplette Restzeit gestreckt (langes Abschlussspiel).
-  const game = pickRandom(byFocus("spielform"), ex);
+  const game = wpick(byFocus("spielform"));
   const _young = ["Bambinis","G-Jugend","F-Jugend","E-Jugend"].includes(cat);
   const gameMin = Math.max(game?.min||18, Math.round(targetMin*(_young?0.4:0.3)));
   const secondFocus = ["torschuss","technik"].includes(mainFocus) ? "taktik" : "torschuss";
@@ -21848,7 +21859,7 @@ function buildSession({ focus="technik", cat=null, used=[], targetMin=60 }) {
   let fi=0, guard=0;
   while(sum() + gameMin < targetMin - 6 && guard < 8){
     const fid = fillPool[fi % fillPool.length]; fi++; guard++;
-    const d = pickRandom(byFocus(fid), ex);
+    const d = wpick(byFocus(fid));
     if(d && sum() + gameMin + d.min <= targetMin + 6){ add("Hauptteil", d); }
   }
   // Abschluss zuletzt anhängen – gestreckt auf die Restzeit (max. 45 Min am Stück)
@@ -28963,8 +28974,21 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
                         {(b.axes||[]).length>0&&<div style={{display:"flex",gap:4,flexWrap:"wrap",marginTop:3}}>{b.axes.map(a=><span key={a} style={{fontSize:10,fontWeight:800,color:"#4f46e5",background:"#eef2ff",borderRadius:5,padding:"1px 6px"}}>{a}</span>)}</div>}
                       </div>
                       <span style={{fontSize:12,color:"#64748b",fontWeight:700,whiteSpace:"nowrap",marginTop:1}}>{b.min} Min</span>
+                      {!isHelper&&viewEv.date<=tod&&b.drillId&&(()=>{
+                        const v=drillVoteOf(local,viewEv.id,b.drillId);
+                        const setV=(nv)=>{ const rest=(local.drillFeedback||[]).filter(fb=>!(fb.evId===viewEv.id&&fb.drillId===b.drillId));
+                          const next= v===nv ? rest : [...rest,{id:uid(),cid,evId:viewEv.id,drillId:b.drillId,vote:nv,ts:new Date().toISOString()}];
+                          save({...local,drillFeedback:next}); };
+                        return (
+                          <span style={{display:"flex",gap:4,marginLeft:4,flexShrink:0}} onClick={e=>e.stopPropagation()}>
+                            <button onClick={()=>setV(1)} title="Kam gut an" style={{width:26,height:26,borderRadius:8,border:v===1?"1.5px solid #16a34a":"1.5px solid #e2e8f0",background:v===1?"#dcfce7":"#fff",fontSize:13,cursor:"pointer",opacity:v===1?1:.6}}>👍</button>
+                            <button onClick={()=>setV(-1)} title="Kam nicht an / zu schwer" style={{width:26,height:26,borderRadius:8,border:v===-1?"1.5px solid #dc2626":"1.5px solid #e2e8f0",background:v===-1?"#fee2e2":"#fff",fontSize:13,cursor:"pointer",opacity:v===-1?1:.6}}>👎</button>
+                          </span>
+                        );
+                      })()}
                     </div>
                   );})}
+                  {!isHelper&&viewEv.date<=tod&&<div style={{fontSize:10.5,color:"#64748b",marginTop:4,lineHeight:1.4}}>👍/👎 je Übung: Wie kam sie an? Fließt in künftige Auto-Pläne ein – gut bewertete Übungen kommen öfter dran.</div>}
                 </div>
               : <p style={{fontSize:13,color:"#64748b"}}>Noch kein Trainingsplan hinterlegt.</p>}
           </div>
@@ -29245,7 +29269,7 @@ function EventPlanEditor({ ev, vorlagen, cat=null, t, onSave, onRemove, onCancel
       const tf=trainingFocusFor({ data, cl, tid: ev.tid, present: yesNames });
       effFocus=AXIS_TO_FOCUS[tf.axis]||"auto";
     }
-    const sess=buildSession({focus:effFocus,cat:cat||null,targetMin:evDurMin});
+    const sess=buildSession({focus:effFocus,cat:cat||null,targetMin:evDurMin, scores:drillScores(data, cl?.id)});
     if(!sess.length) return;
     setBlocks(sess.map(b=>({phase:b.phase,title:b.drill.title,min:b.drill.min,drillId:b.drill.id,axes:b.drill.axes||[],diagram:"",mode:"lib"})));
   };
