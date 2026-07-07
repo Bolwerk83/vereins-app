@@ -26,14 +26,14 @@ export function LangSwitcher({ lang,setLang }) {
       <select value={lang} aria-label="Sprache / Language"
         onChange={e=>{const v=e.target.value; setLang(v); try{localStorage.setItem(LANG_KEY,v);}catch{}}}
         style={{appearance:"none",WebkitAppearance:"none",MozAppearance:"none",
-          padding:"6px 24px 6px 10px",borderRadius:9,border:"1.5px solid rgba(255,255,255,.28)",
+          padding:"6px 10px",paddingInlineEnd:24,borderRadius:9,border:"1.5px solid rgba(255,255,255,.28)",
           background:"rgba(255,255,255,.14)",color:"#fff",fontWeight:800,fontSize:12,
           fontFamily:"inherit",cursor:"pointer",maxWidth:150}}>
         {LANG_OPTIONS.map(o=>(
           <option key={o.id} value={o.id} style={{color:"#0f172a",background:"#fff"}}>{o.label}</option>
         ))}
       </select>
-      <span style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",pointerEvents:"none",fontSize:8,color:"rgba(255,255,255,.75)"}}>▼</span>
+      <span style={{position:"absolute",insetInlineEnd:8,top:"50%",transform:"translateY(-50%)",pointerEvents:"none",fontSize:8,color:"rgba(255,255,255,.75)"}}>▼</span>
     </div>
   );
 }

@@ -18857,6 +18857,14 @@ function AppRoot() {
   // sprache, sonst springt die App auf englisch-eingestellten Geräten auf Englisch.
   const [lang,setLang] = useState(()=> LANG_SWITCHER_ENABLED ? (localStorage.getItem(LANG_KEY)||"de") : "de");
   useEffect(()=>{ applyFontScale(getFontScale()); },[]);
+  // Arabisch: komplette Oberflaeche rechts-nach-links spiegeln (Browser
+  // uebernimmt das fuer Flex-Layouts automatisch ueber dir="rtl").
+  useEffect(()=>{
+    try{
+      document.documentElement.dir = lang==="ar" ? "rtl" : "ltr";
+      document.documentElement.lang = lang;
+    }catch{}
+  },[lang]);
   return (
     <LangCtx.Provider value={lang in T ? lang : "de"}>
       <AppInner lang={lang} setLang={setLang}/>
