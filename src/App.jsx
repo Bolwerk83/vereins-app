@@ -14870,6 +14870,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   useEffect(()=>{ setEvTab("rueck"); },[viewEv?.id]);
   const [editConf,setEditConf]=useState(null);
   const [pauseSer,setPauseSer]=useState(null); // {ev,from,to} Ferien-Pause fuer eine Serie
+  const [showSearch,setShowSearch]=useState(false); const [searchQ,setSearchQ]=useState("");
+  const [searchPlayer,setSearchPlayer]=useState(null); // Spielerprofil direkt aus der Suche
   const [planFor,setPlanFor]=useState(null);
   // Push-Deep-Links: ?event=<id> öffnet den Termin direkt, ?tab=<id> wechselt den Reiter.
   useEffect(()=>{
@@ -14974,8 +14976,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       <ClubHeader cl={myClub} hide={isDesktop} sub={`${isAdmin?"🛡 Admin":isHelper?"🤝 Helfer":"⚽ Trainer"} · ${session.name||"Admin"}`}
         right={
           <div style={{display:"flex",gap:7,alignItems:"center"}}>
-            {/* Sprachwahl bewusst NICHT im Trainer-Kopf: der Trainer-Bereich ist
-                rein deutsch; die Reiter gelten fuer Startseite + Eltern-Ansicht. */}
+            <button onClick={()=>{setShowSearch(true);setSearchQ("");}} aria-label="Suche"
+              style={{width:34,height:34,borderRadius:10,border:"1.5px solid rgba(255,255,255,.3)",background:"rgba(255,255,255,.14)",color:"#fff",fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>🔍</button>
             {}
             {(()=>{
               const seasons=local.seasons||[];
@@ -15542,6 +15544,54 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           </Drawer>
         );
       })()}
+
+      {/* Globale Suche: Kinder, Termine, Uebungen, Bereiche */}
+      {showSearch&&(()=>{
+        const q=searchQ.trim().toLowerCase();
+        const hit=x=>String(x||"").toLowerCase().includes(q);
+        const players=q.length<2||isHelper?[]:(local.playerProfiles||[]).filter(pp=>pp.cid===cid&&!pp.archived&&myTids.includes(pp.mainTid)&&hit(pp.name)).slice(0,6);
+        const events=q.length<2?[]:(local.events||[]).filter(e=>myTids.includes(e.tid)&&(hit(e.title)||hit(evDisplayTitle(e))||hit(e.loc)||hit(e.date))).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,6);
+        const drills=q.length<2?[]:DRILL_LIB.filter(d=>hit(d.title)||hit(d.cat)||hit(d.focus)).slice(0,6);
+        const AREAS=[["events","📅 Termine"],["players","👥 Spieler"],["attendance","📊 Anwesenheit"],["training","📋 Trainingsplan"],["chat","💬 Chat"],["fields","🏟 Platz buchen"],["treasury","💶 Kasse"],["waitlist","📝 Warteliste"],["jerseys","👕 Trikots"],["results","🏆 Ergebnisse"],["helpers","🤝 Helfer"],["team","🧩 Team-Bereich"]]
+          .filter(([id])=>!(isHelper&&["players","treasury","attendance","waitlist","helpers"].includes(id)));
+        const areas=q.length<2?[]:AREAS.filter(([,l])=>hit(l)).slice(0,4);
+        const none=q.length>=2&&!players.length&&!events.length&&!drills.length&&!areas.length;
+        const Sec=({label,children})=>(<div style={{marginBottom:14}}><div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:6}}>{label}</div><div style={{display:"flex",flexDirection:"column",gap:6}}>{children}</div></div>);
+        const RowB=({icon,title,sub,onClick})=>(
+          <button onClick={onClick} style={{display:"flex",alignItems:"center",gap:10,width:"100%",background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:11,padding:"10px 12px",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
+            <span style={{fontSize:16,flexShrink:0}}>{icon}</span>
+            <span style={{flex:1,minWidth:0}}>
+              <span style={{display:"block",fontSize:13.5,fontWeight:700,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{title}</span>
+              {sub&&<span style={{display:"block",fontSize:11.5,color:"#64748b",marginTop:1}}>{sub}</span>}
+            </span>
+            <span style={{color:"#94a3b8",fontSize:15,flexShrink:0}}>›</span>
+          </button>
+        );
+        const teamName=tid2=>(local.teams||[]).find(tm=>tm.id===tid2)?.name||"";
+        return (
+          <Drawer onClose={()=>setShowSearch(false)} title="🔍 Suche">
+            <input autoFocus value={searchQ} onChange={e=>setSearchQ(e.target.value)}
+              placeholder="Kind, Termin, Übung oder Bereich…"
+              style={{width:"100%",padding:"12px 14px",fontSize:15,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",fontFamily:"inherit",boxSizing:"border-box",marginBottom:14}}/>
+            {q.length<2&&<div style={{fontSize:12.5,color:"#64748b",textAlign:"center",padding:"12px"}}>Mindestens 2 Zeichen eingeben – durchsucht Kinder, Termine, Übungen und Bereiche.</div>}
+            {players.length>0&&<Sec label="KINDER">{players.map(pp=>(<RowB key={pp.id} icon="👤" title={pp.name} sub={`${teamName(pp.mainTid)}${pp.by?` · Jg. ${pp.by}`:""}`} onClick={()=>{setSearchPlayer(pp);setShowSearch(false);}}/>))}</Sec>}
+            {events.length>0&&<Sec label="TERMINE">{events.map(e=>(<RowB key={e.id} icon={e.type==="training"?"🏋️":"⚽"} title={evDisplayTitle(e)} sub={`${fmtD(e.date)}${e.time?` · ${e.time}`:""}${e.loc?` · ${e.loc}`:""}`} onClick={()=>{setTab("events");setViewEv(e);setShowSearch(false);}}/>))}</Sec>}
+            {drills.length>0&&<Sec label="ÜBUNGEN">{drills.map(d=>(<RowB key={d.id} icon="🎯" title={d.title} sub={`${d.cat||""}${d.min?` · ${d.min} Min`:""}`} onClick={()=>{setPlanDrill(d);setShowSearch(false);}}/>))}</Sec>}
+            {areas.length>0&&<Sec label="BEREICHE">{areas.map(([id,l])=>(<RowB key={id} icon={l.split(" ")[0]} title={l.split(" ").slice(1).join(" ")} onClick={()=>{setTab(id);setShowSearch(false);}}/>))}</Sec>}
+            {none&&<EmptyBox icon="🔍" title="Nichts gefunden" sub="Anders schreiben oder kürzer suchen – z. B. nur der Vorname."/>}
+          </Drawer>
+        );
+      })()}
+      {searchPlayer&&<PlayerProfile
+        player={searchPlayer}
+        teams={(local.teams||[]).filter(tm=>tm.cid===cid)}
+        allEvents={local.events||[]}
+        allPlayers={(local.playerProfiles||[]).filter(pp=>pp.cid===cid)}
+        cid={cid} sport={myClub?.sport||"fussball"} club={myClub} t={t}
+        allSeasons={local.seasons||[]} allPlayerProfiles={local.playerProfiles||[]}
+        trainers={(local.trainers||[]).filter(x=>x.cid===cid)}
+        onSave={pp=>{ const full=local.playerProfiles||[]; save({...local,playerProfiles:full.some(x=>x.id===pp.id)?full.map(x=>x.id===pp.id?pp:x):[...full,pp]}); setSearchPlayer(null); fire("Spielerprofil gespeichert"); }}
+        onClose={()=>setSearchPlayer(null)}/>}
 
       {}
       {planFor&&<Drawer onClose={()=>setPlanFor(null)} title={(planFor.trainingPlan||planFor.trainingId)?"Trainingsplan bearbeiten":"Trainingsplan erstellen"}>
