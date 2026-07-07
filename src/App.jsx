@@ -11737,14 +11737,14 @@ const CARPOOL_DEFAULTS = { drive:"Ich fahre", need:"Brauche Mitfahrt", self:"Kom
 const carpoolLabelsFor = (ev, cl) => ({ ...(cl?.clubSettings?.carpoolLabels||{}), ...(ev?.carpoolLabels||{}) }); // Defaults kommen sprachabhängig aus dem Dictionary
 function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTemplate=null,fields=[],venues=[],onAddVenue}) {
   const t=TH(cl); const isEdit=!!editEv; const STEPS=5; const { tr } = useT();
-  const blank={tid:teams[0]?.id||"",type:"training",title:"",date:now(),time:"",endTime:"",loc:"",note:"",sollPlayers:null,maxPlayers:null,pt:"att",recMode:"none",recDays:[],recStart:now(),recUntil:"",recDates:[],li:[],fi:[],sc:[],extraPolls:[],selType:"multi",open:false,_li:{txt:"",max:""},_fi:{name:"",col:"#16a34a"},_sc:{fid:"",time:"",a:"",b:"",ref:""}};
+  const blank={tid:teams[0]?.id||"",coTids:[],type:"training",title:"",date:now(),time:"",endTime:"",loc:"",note:"",sollPlayers:null,maxPlayers:null,pt:"att",recMode:"none",recDays:[],recStart:now(),recUntil:"",recDates:[],li:[],fi:[],sc:[],extraPolls:[],selType:"multi",open:false,_li:{txt:"",max:""},_fi:{name:"",col:"#16a34a"},_sc:{fid:"",time:"",a:"",b:"",ref:""}};
   const [step,setStep]=useState(1);
   const [f,setF]=useState(editEv?{...blank,...editEv,recMode:"none",recDays:[],recDates:[],_li:{txt:"",max:""},_fi:{name:"",col:"#16a34a"},_sc:{fid:"",time:"",a:"",b:"",ref:""}}:blank);
   const [cpEdit,setCpEdit]=useState(false);
   const u=p=>setF(prev=>({...prev,...p}));
   const ok=()=>{if(step===1)return!!f.tid;if(step===2)return!!f.type;if(step===3)return f.title.trim().length>1;return true;};
   const finish=()=>{
-    const{_li,_fi,_sc,recMode,recDays,recStart,recUntil,recDates,deadlineOffset,...base}=f;
+    const{_li,_fi,_sc,recMode,recDays,recStart,recUntil,recDates,deadlineOffset,coTids=[],...base}=f;
     { const c=(teams.find(x=>x.id===base.tid)?.cat)||(teams.find(x=>x.id===base.tid)?.name)||""; if(base.sollPlayers==null) base.sollPlayers=defaultSollPlayers(c); }
     if(isEdit){onSave([{...base,id:editEv.id}]);return;}
     let eventDates=[];
@@ -11758,7 +11758,17 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
     // konkretes deadline-Datum umrechnen, damit Verspaetungs-Markierung & Badge greifen.
     const offMs=(()=>{const n=parseInt(deadlineOffset?.value,10);if(!n||n<=0)return null;const un=deadlineOffset.unit||"h";return n*(un==="w"?7*86400000:un==="d"?86400000:3600000);})();
     const dlFor=date=>{const s=new Date(`${date}T${(base.time||"12:00").padStart(5,"0")}:00`);if(isNaN(s.getTime()))return null;const d=new Date(s.getTime()-offMs);const p=x=>String(x).padStart(2,"0");return {date:`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`,time:`${p(d.getHours())}:${p(d.getMinutes())}`};};
-    onSave(eventDates.map((date,i)=>{const dl=offMs!=null?dlFor(date):base.deadline;return {...base,id:uid(),date,...(dl?{deadline:dl}:{}),votes:{},sid,sidx:i,extraPolls:(base.extraPolls||[]).map(p=>({...p,votes:{}}))};}));
+    // Verbund: nur bei Einzelterminen - je Team ein gespiegelter Termin mit
+    // gemeinsamer groupId; Listen-Umfragen der Spiegel zeigen auf den Haupt-Termin.
+    const verbund = eventDates.length===1 && coTids.length>0;
+    const groupId = verbund ? uid() : null;
+    onSave(eventDates.flatMap((date,i)=>{
+      const dl=offMs!=null?dlFor(date):base.deadline;
+      const mk=(tid2,extra)=>({...base,tid:tid2,id:uid(),date,...(dl?{deadline:dl}:{}),votes:{},sid,sidx:i,extraPolls:(base.extraPolls||[]).map(p=>({...p,votes:{}})),...(groupId?{groupId}:{}),...extra});
+      const main=mk(base.tid,{});
+      const mirrors=verbund?coTids.map(t2=>mk(t2, base.pt==="list"?{pollLink:{evId:main.id}}:{})):[];
+      return [main,...mirrors];
+    }));
   };
   const SL=["Mannschaft","Art","Details","Umfrage","Abschluss"];
   const teamsSel=teams.find(x=>x.id===f.tid);
@@ -11776,12 +11786,27 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
         {}
         {step===1&&<div className="in" style={{display:"flex",flexDirection:"column",gap:11}}>
           {teams.map(tm=>(
-            <div key={tm.id} onClick={()=>u({tid:tm.id})} style={{background:"#fff",borderRadius:17,padding:"15px 16px",border:`2px solid ${f.tid===tm.id?t.p:"#e2e8f0"}`,cursor:"pointer",display:"flex",alignItems:"center",gap:13,transition:"all .18s"}}>
+            <div key={tm.id} onClick={()=>u({tid:tm.id,coTids:(f.coTids||[]).filter(x=>x!==tm.id)})} style={{background:"#fff",borderRadius:17,padding:"15px 16px",border:`2px solid ${f.tid===tm.id?t.p:"#e2e8f0"}`,cursor:"pointer",display:"flex",alignItems:"center",gap:13,transition:"all .18s"}}>
               <div style={{width:50,height:50,borderRadius:16,background:f.tid===tm.id?t.p+"20":"#f8fafc",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26}}>{tm.icon}</div>
               <div style={{flex:1}}><div style={{fontWeight:800,fontSize:16,color:f.tid===tm.id?t.p:"#0f172a"}}>{tm.name}</div>{tm.cat&&<div style={{fontSize:12,color:"#64748b",marginTop:2}}>{tm.cat}</div>}</div>
               <div style={{width:22,height:22,borderRadius:"50%",border:`${f.tid===tm.id?"7px":"2px"} solid ${f.tid===tm.id?t.p:"#cbd5e1"}`,transition:"all .18s"}}/>
             </div>
           ))}
+          {/* Verbund-Termin: EIN Termin fuer mehrere Teams (z. B. F1 + F2 beim Turnier) */}
+          {!isEdit&&teams.length>1&&(
+            <div style={{background:"#eef2ff",border:"1.5px solid #c7d2fe",borderRadius:15,padding:"13px 15px"}}>
+              <div style={{fontSize:12,fontWeight:800,color:"#3730a3",marginBottom:3}}>🤝 VERBUND-TERMIN (OPTIONAL)</div>
+              <div style={{fontSize:12,color:"#4f46e5",lineHeight:1.45,marginBottom:9}}>Weitere Teams mit anlegen – jedes Team bekommt den Termin, Änderungen gelten für alle, Listen-Umfragen teilen sich einen Topf. (Nur für Einzeltermine, nicht für Serien.)</div>
+              <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
+                {teams.filter(tm=>tm.id!==f.tid).map(tm=>{const on=(f.coTids||[]).includes(tm.id);return (
+                  <button key={tm.id} onClick={()=>u({coTids:on?(f.coTids||[]).filter(x=>x!==tm.id):[...(f.coTids||[]),tm.id]})}
+                    style={{padding:"8px 13px",borderRadius:10,border:`1.5px solid ${on?"#4f46e5":"#c7d2fe"}`,background:on?"#4f46e5":"#fff",color:on?"#fff":"#4f46e5",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
+                    {tm.icon} {tm.name}{on?" ✓":""}
+                  </button>
+                );})}
+              </div>
+            </div>
+          )}
         </div>}
         {}
         {step===2&&<div className="in" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
@@ -14966,9 +14991,15 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         })});
         fire("Ganze Serie aktualisiert");
       } else {
-        const deleteEv = ev => { save({...local,events:(local.events||[]).filter(e=>e.id!==ev.id)}); fire("Termin gelöscht"); };
-    save({...local,events:(local.events||[]).map(e=>e.id===saved.id?saved:e)});
-        fire("Termin aktualisiert");
+        // Verbund-Termin: gemeinsame Felder auf die Termine der anderen Teams
+        // uebertragen; team-eigenes (Stimmen, Anwesenheit, Dienste, ...) bleibt.
+        const {id:_gi,tid:_gt,votes:_gv,present:_gp,guests:_gg,sid:_gs,sidx:_gx,seasonId:_gsn,lateCancellations:_glc,pollLink:_gpl,groupId:_ggr,trainerPresence:_gtp,groups:_ggs,playtime:_gpt,report:_grp,duties:_gd,carpool:_gc,extraPolls:_gep,nsDecision:_gnd,...gemeinsam}=saved;
+        save({...local,events:(local.events||[]).map(e=>{
+          if(e.id===saved.id) return saved;
+          if(saved.groupId&&e.groupId===saved.groupId) return {...e,...gemeinsam};
+          return e;
+        })});
+        fire(saved.groupId?"Verbund-Termin für alle Teams aktualisiert":"Termin aktualisiert");
       }
     } else {
       const _sid = activeSid(local, cid);
@@ -15254,6 +15285,13 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             </button>
           );
         })()}
+        {/* Verbund-Anzeige: dieser Termin existiert fuer mehrere Teams */}
+        {viewEv.groupId&&(()=>{
+          const sibs=(local.events||[]).filter(e=>e.groupId===viewEv.groupId);
+          if(sibs.length<2) return null;
+          const names=sibs.map(e=>(local.teams||[]).find(tm=>tm.id===e.tid)?.name||"?").join(" + ");
+          return <div style={{background:"#eef2ff",border:"1px solid #c7d2fe",borderRadius:10,padding:"8px 12px",fontSize:12,color:"#3730a3",fontWeight:700,marginBottom:12}}>🤝 Verbund-Termin: {names} – Änderungen gelten für alle Teams.</div>;
+        })()}
         {/* Umfrage koppeln: gemeinsamer Antwort-Topf fuer mehrere Teams */}
         {!isHelper&&viewEv.pt==="list"&&(()=>{
           const candidates=(local.events||[]).filter(e=>e.id!==viewEv.id&&e.cid===cid&&e.pt==="list"&&!e.pollLink&&e.date>=addD(tod,-30))
@@ -15516,11 +15554,17 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           <p style={{fontSize:14,color:"#7f1d1d",fontWeight:600}}>"{delConfVal}"</p>
           {local.events.find(e=>e.id===delConf)?.sid&&<p style={{fontSize:13,color:"#b45309",marginTop:6}}> Dieser Termin ist Teil einer Terminserie.</p>}
         </div>
+        {local.events.find(e=>e.id===delConf)?.groupId&&<p style={{fontSize:13,color:"#3730a3",fontWeight:600,margin:"-8px 0 12px"}}>🤝 Verbund-Termin: {(()=>{const g=local.events.find(e=>e.id===delConf)?.groupId;const tms=local.events.filter(e=>e.groupId===g).map(e=>(local.teams||[]).find(tm=>tm.id===e.tid)?.name||"?");return tms.join(" + ");})()}</p>}
         <div style={{display:"flex",flexDirection:"column",gap:9}}>
           <Btn v="red" full ch="Nur diesen Termin löschen" onClick={()=>{
             save({...local,events:local.events.filter(e=>e.id!==delConf)});
             setDelConf(null);setDelConfVal(null);fire("Termin gelöscht");
           }}/>
+          {local.events.find(e=>e.id===delConf)?.groupId&&<Btn v="red" full ch="Für ALLE Verbund-Teams löschen" onClick={()=>{
+            const g=local.events.find(e=>e.id===delConf)?.groupId;
+            save({...local,events:local.events.filter(e=>e.groupId!==g)});
+            setDelConf(null);setDelConfVal(null);fire("Verbund-Termin für alle Teams gelöscht");
+          }}/>}
           {local.events.find(e=>e.id===delConf)?.sid&&<>
             <Btn v="red" full ch="Diesen + alle zukünftigen löschen" onClick={()=>{
               const ev=local.events.find(e=>e.id===delConf);
