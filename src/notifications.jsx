@@ -200,16 +200,21 @@ export async function subscribePush() {
   }
   const j = sub.toJSON();
   const s = getSession();
-  await rpc("subscribe_push", {
+  const base = {
     p_endpoint: j.endpoint,
     p_p256dh: j.keys?.p256dh,
     p_auth:   j.keys?.auth,
     p_cid: s.cid || null,
-    // Trainer/Helfer haben tids (Array): erstes Team nehmen, sonst gaebe es
-    // fuer Multi-Team-Trainer gar keine Team-Erinnerungen (tid=null matcht nie).
+    // Fallback-Feld fuer aeltere DB-Staende: erstes Team
     p_tid: s.tid || (Array.isArray(s.tids) && s.tids.length ? s.tids[0] : null),
     p_player_name: s.user || s.name || null,
-  });
+  };
+  // Trainer/Helfer mit mehreren Teams: ALLE Teams mitgeben. Faellt die DB
+  // noch auf den alten Stand ohne p_tids zurueck (notifications-multiteam.sql
+  // nicht ausgefuehrt), erneut ohne p_tids anmelden.
+  const tidsArr = s.tid ? [s.tid] : (Array.isArray(s.tids) && s.tids.length ? s.tids : null);
+  try { await rpc("subscribe_push", { ...base, p_tids: tidsArr }); }
+  catch { await rpc("subscribe_push", base); }
   setLocalPref({ endpoint: j.endpoint });
   return j.endpoint;
 }

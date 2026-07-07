@@ -147,8 +147,9 @@ async function runCron(): Promise<Response> {
 
   let sent = 0; const gone: string[] = [];
   for (const sub of subs) {
-    // Termine fuer dieses Team
-    const teamEvents = allEvents.filter(e => sub.tid && e.tid === sub.tid && (!sub.cid || e.cid === sub.cid));
+    // Termine fuer die Teams dieses Abos (Trainer/Betreuer koennen mehrere haben)
+    const subTids: string[] = (Array.isArray(sub.tids) && sub.tids.length ? sub.tids : (sub.tid ? [sub.tid] : []));
+    const teamEvents = allEvents.filter(e => subTids.includes(e.tid) && (!sub.cid || e.cid === sub.cid));
     for (const ev of teamEvents) {
       if ((sub.disabled_types || []).includes(ev.type)) continue;
       if ((sub.muted_events || []).includes(ev.id)) continue;
@@ -219,9 +220,9 @@ async function runCron(): Promise<Response> {
       }
     }
     // d) Geburtstags-Gratulation: heute Geburtstag im Team -> an die Teammitglieder.
-    if (sub.tid) {
+    for (const btid of subTids) {
       const md = today.slice(5); // MM-DD
-      const others = (birthdaysByTid[sub.tid] || [])
+      const others = (birthdaysByTid[btid] || [])
         .filter(p => String(p.bday || "").slice(5) === md && p.name)
         .filter(p => String(p.name).toLowerCase() !== String(sub.player_name || "").toLowerCase());
       if (others.length) {
@@ -229,7 +230,7 @@ async function runCron(): Promise<Response> {
         const { ok, gone: g } = await send(sub, {
           title: "🎂 Geburtstag im Team!",
           body: `${names} hat heute Geburtstag. Gratuliert doch kurz! 🎉`,
-          tag: `bday_${today}_${sub.tid}`,
+          tag: `bday_${today}_${btid}`,
           url: "/", icon: "/icon-192.png",
         });
         if (ok) sent++; if (g) gone.push(sub.endpoint);
