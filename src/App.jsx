@@ -9144,6 +9144,14 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
 }
 
 function PlayerCard({ player: pl,onEdit,onDel,isMain,allTeams,allEvents,onWizard,onMessage }) {
+  // Loeschen ist zweistufig: erster Tipp "scharfschalten" (Button wird breit
+  // und rot), zweiter Tipp loescht. Nach 3 s automatisch wieder entschaerft.
+  const [armDel,setArmDel]=useState(false);
+  const armRef=useRef(null);
+  const tapDel=(e)=>{ e.stopPropagation();
+    if(!armDel){ setArmDel(true); clearTimeout(armRef.current); armRef.current=setTimeout(()=>setArmDel(false),3000); return; }
+    clearTimeout(armRef.current); setArmDel(false); onDel();
+  };
   const noSkills = !Object.values(pl.skills||{}).some(v=>(Number(v)||0)>0);
   const [exp,setExp] = useState(false);
   const allTids = [pl.mainTid,...(pl.optTids||[])].filter(Boolean).filter(x=>!x.hidden);
@@ -9177,7 +9185,12 @@ function PlayerCard({ player: pl,onEdit,onDel,isMain,allTeams,allEvents,onWizard
           {onWizard&&noSkills&&<button onClick={e=>{e.stopPropagation();onWizard();}} title="Skill-Wizard: Erstbewertung starten" style={{height:30,padding:"0 9px",borderRadius:9,background:"#eef2ff",border:"none",color:"#4f46e5",cursor:"pointer",display:"flex",alignItems:"center",gap:4,fontSize:12,fontWeight:800,fontFamily:"inherit"}}>🎯 Skills</button>}
           {onMessage&&<button onClick={e=>{e.stopPropagation();onMessage();}} title="Nachricht an Eltern/Spieler (Pflicht-Lesebestätigung beim Login)" style={{width:30,height:30,borderRadius:9,background:"#eef2ff",border:"none",color:"#4f46e5",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>✉</button>}
           <button onClick={e=>{e.stopPropagation();onEdit();}} style={{width:30,height:30,borderRadius:9,background:"#eff6ff",border:"none",color:"#2563eb",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>✎</button>
-          {onDel&&<button onClick={e=>{e.stopPropagation();onDel();}} style={{width:30,height:30,borderRadius:9,background:"#fee2e2",border:"none",color:"#dc2626",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>✕</button>}
+          {onDel&&<button onClick={tapDel} title={armDel?"Nochmal tippen: endgültig löschen":"Spieler löschen (2× tippen)"}
+            style={{height:30,minWidth:armDel?undefined:30,padding:armDel?"0 10px":0,marginLeft:10,borderRadius:9,
+              background:armDel?"#dc2626":"#fff",border:armDel?"none":"1.5px solid #fecaca",color:armDel?"#fff":"#dc2626",
+              cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:5,fontSize:armDel?11.5:13,fontWeight:800,fontFamily:"inherit",transition:"all .15s"}}>
+            {armDel?"Sicher löschen?":"✕"}
+          </button>}
         </div>
       </div>
       {exp && (
@@ -10088,7 +10101,12 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
     setEditP(null); setShowNew(false);
     fire("Spielerprofil gespeichert");
   };
-  const delPlayer = id => { const pl=allPlayers.find(p=>p.id===id); save({...data,playerProfiles:(data.playerProfiles||[]).filter(p=>p.id!==id),securityLog:[...(data.securityLog||[]),{id:uid(),cid,type:"dsgvo_delete",ts:new Date().toISOString(),detail:"Spieler "+(pl?.name||id)+" auf Anfrage gelöscht",read:false}]}); fire("Spieler entfernt + DSGVO-Log erstellt"); };
+  const delPlayer = id => {
+    const pl=allPlayers.find(p=>p.id===id);
+    if(typeof window!=="undefined"&&window.confirm&&!window.confirm(`„${pl?.name||"Spieler"}“ endgültig löschen?\n\nProfil, Skills und Verlauf werden entfernt (DSGVO-Log wird erstellt). Das kann nicht rückgängig gemacht werden.`)) return;
+    save({...data,playerProfiles:(data.playerProfiles||[]).filter(p=>p.id!==id),securityLog:[...(data.securityLog||[]),{id:uid(),cid,type:"dsgvo_delete",ts:new Date().toISOString(),detail:"Spieler "+(pl?.name||id)+" auf Anfrage gelöscht",read:false}]});
+    fire("Spieler entfernt + DSGVO-Log erstellt");
+  };
 
   const assignPlayer = (playerId,toTid) => {
     const next = (data.playerProfiles||[]).map(p => p.id===playerId ? {...p,mainTid:toTid} : p);
