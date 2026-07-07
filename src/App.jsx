@@ -11313,24 +11313,28 @@ function TemplatesTab({data,cid,save,fire,cl,myTids=[],teams=[]}) {
         {templates.map(tpl=>(
           <div key={tpl.id} style={{background:"#fff",borderRadius:18,border:"1.5px solid #e2e8f0",overflow:"hidden",transition:"box-shadow .18s"}}>
             {}
-            <div style={{padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
-              <div style={{width:48,height:48,borderRadius:14,background:t.p+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{tpl.icon}</div>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontWeight:800,fontSize:15,color:"#0f172a"}}>{tpl.name}</div>
-                <div style={{fontSize:12,color:"#64748b",marginTop:2}}>{tpl.items.length} Option{tpl.items.length!==1?"en":""}</div>
+            {/* Kopf zweizeilig: Titel-Zeile + Aktions-Zeile darunter - auf schmalen
+                Handys ueberlappten die drei Buttons sonst den Vorlagen-Namen. */}
+            <div style={{padding:"14px 16px"}}>
+              <div style={{display:"flex",alignItems:"center",gap:12}}>
+                <div style={{width:48,height:48,borderRadius:14,background:t.p+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{tpl.icon}</div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontWeight:800,fontSize:15,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tpl.name}</div>
+                  <div style={{fontSize:12,color:"#64748b",marginTop:2}}>{tpl.items.length} Option{tpl.items.length!==1?"en":""}</div>
+                </div>
               </div>
-              <div style={{display:"flex",gap:7}}>
+              <div style={{display:"flex",gap:7,marginTop:10,flexWrap:"wrap"}}>
                 <button onClick={()=>setMode(tpl.id)}
-                  style={{padding:"7px 13px",borderRadius:10,border:`1.5px solid ${t.p}`,background:t.p+"12",color:t.p,fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
-                  Bearbeiten
+                  style={{flex:"1 1 auto",padding:"8px 13px",borderRadius:10,border:`1.5px solid ${t.p}`,background:t.p+"12",color:t.p,fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+                  ✏️ Bearbeiten
                 </button>
                 {clubTeams.length>1&&<button onClick={()=>setSendId(tpl.id)}
-                  style={{padding:"7px 11px",borderRadius:10,border:"1.5px solid #bfdbfe",background:"#eff6ff",color:"#2563eb",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
-                  An Team
+                  style={{flex:"1 1 auto",padding:"8px 11px",borderRadius:10,border:"1.5px solid #bfdbfe",background:"#eff6ff",color:"#2563eb",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+                  📤 An Team
                 </button>}
                 <button onClick={()=>setDelId(tpl.id)}
-                  style={{padding:"7px 11px",borderRadius:10,border:"1.5px solid #fecaca",background:"#fff7f7",color:"#dc2626",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
-                  Löschen
+                  style={{flex:"0 0 auto",padding:"8px 11px",borderRadius:10,border:"1.5px solid #fecaca",background:"#fff7f7",color:"#dc2626",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+                  🗑
                 </button>
               </div>
             </div>
