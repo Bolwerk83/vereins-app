@@ -6287,7 +6287,7 @@ button:focus-visible, a:focus-visible, input:focus-visible {
    DESKTOP SIDEBAR
    Ersetzt BottomNav auf >1024px
 ----------------------------------------------------------------- */
-function DesktopSidebar({ tab, setTab, isAdmin, isHelper, unread, inboxUnread=0, cl, session, onLogout, lang="de", setLang=()=>{} }) {
+function DesktopSidebar({ tab, setTab, isAdmin, isHelper, unread, inboxUnread=0, cl, session, onLogout, lang="de", setLang=()=>{}, showLang=true }) {
   const t = TH(cl);
   const [showDrawer, setShowDrawer] = React.useState(false);
   const isTrainer = !isAdmin && !isHelper;
@@ -6429,7 +6429,7 @@ function DesktopSidebar({ tab, setTab, isAdmin, isHelper, unread, inboxUnread=0,
         borderTop:"1px solid #1e293b",
         padding:"10px 8px",
       }}>
-        {LANG_SWITCHER_ENABLED&&<div style={{display:"flex",justifyContent:"center",padding:"4px 0 10px"}}><LangSwitcher lang={lang} setLang={setLang}/></div>}
+        {LANG_SWITCHER_ENABLED&&showLang&&<div style={{display:"flex",justifyContent:"center",padding:"4px 0 10px"}}><LangSwitcher lang={lang} setLang={setLang}/></div>}
         <button onClick={onLogout}
           style={{
             display:"flex", alignItems:"center", gap:10,
@@ -14838,13 +14838,14 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       {isDesktop&&<DesktopSidebar tab={tab} setTab={setTab}
         isAdmin={isAdmin} isHelper={isHelper}
         unread={unreadMsgs} inboxUnread={unreadInbox} cl={myClub}
-        session={session} onLogout={onLogout} lang={lang} setLang={setLang}/>}
+        session={session} onLogout={onLogout} lang={lang} setLang={setLang} showLang={false}/>}
       <div style={{minHeight:"100dvh",background:"#f0f4f8",paddingBottom:isDesktop?0:"calc(72px + env(safe-area-inset-bottom))"}}>
       <div style={{maxWidth:isDesktop?"900px":"100%",margin:"0 auto",padding:isDesktop?"24px":"0"}}>
-      <ClubHeader cl={myClub} hide={isDesktop} sub={`${isAdmin?"** Admin":isHelper?"* Helfer":"**"} ${session.name||"Admin"}`}
+      <ClubHeader cl={myClub} hide={isDesktop} sub={`${isAdmin?"🛡 Admin":isHelper?"🤝 Helfer":"⚽ Trainer"} · ${session.name||"Admin"}`}
         right={
           <div style={{display:"flex",gap:7,alignItems:"center"}}>
-            <LangSwitcher lang={lang} setLang={setLang}/>
+            {/* Sprachwahl bewusst NICHT im Trainer-Kopf: der Trainer-Bereich ist
+                rein deutsch; die Reiter gelten fuer Startseite + Eltern-Ansicht. */}
             {}
             {(()=>{
               const seasons=local.seasons||[];
