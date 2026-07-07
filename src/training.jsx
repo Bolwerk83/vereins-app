@@ -980,13 +980,13 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
   const teamCol = cl?.pri || "#16a34a";
   const buildTokens = (sp,cnt,fi)=>{ const FF=TB_FIELDS[sp]||TB_FIELDS.generic; const f=tbForms(sp,cnt)[fi]||tbForms(sp,cnt)[0]; return (f?.p||[]).map((pos,i)=>({id:"tk"+i,x:pos[0]*FF.vw,y:pos[1]*FF.vh,n:i+1})); };
   const [tokens,setTokens]=useState(()=>buildTokens(sport,count,formIdx));
-  useEffect(()=>{ if(skipRebuildRef.current) return; setTokens(buildTokens(sport,count,formIdx)); resetAnim(); /* eslint-disable-next-line */ },[sport,count,formIdx]);
+  useEffect(()=>{ if(skipRebuildRef.current) return; setTokens(buildTokens(sport,count,formIdx)); resetAnim();   },[sport,count,formIdx]);
   // Gegner-Team (gespiegelt auf der oberen Haelfte), eigene Aufstellung, verschiebbar.
   const [showOpp,setShowOpp]=useState(false);
   const [oppFormIdx,setOppFormIdx]=useState(0);
   const buildOpp=(sp,cnt,fi)=>{ const FF=TB_FIELDS[sp]||TB_FIELDS.generic; const f=tbForms(sp,cnt)[fi]||tbForms(sp,cnt)[0]; return (f?.p||[]).map((pos,i)=>({id:"op"+i,x:pos[0]*FF.vw,y:(1-pos[1])*FF.vh,n:i+1})); };
   const [oppTokens,setOppTokens]=useState(()=>buildOpp(sport,count,oppFormIdx));
-  useEffect(()=>{ if(skipRebuildRef.current) return; setOppTokens(buildOpp(sport,count,oppFormIdx)); /* eslint-disable-next-line */ },[sport,count,oppFormIdx]);
+  useEffect(()=>{ if(skipRebuildRef.current) return; setOppTokens(buildOpp(sport,count,oppFormIdx));   },[sport,count,oppFormIdx]);
   const dragSetRef=useRef("own");
   // Animation: Spieler entlang der eingezeichneten Laufwege bewegen.
   const [animOwn,setAnimOwn]=useState(null);
@@ -1022,7 +1022,7 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
   const delBoard=(id)=>{ if(typeof window!=="undefined"&&window.confirm&&!window.confirm("Board löschen?"))return; save({...data,tacticBoards:(data.tacticBoards||[]).filter(x=>x.id!==id)}); };
   const curBoard=()=>({sport,count,formIdx,oppFormIdx,showOpp,tokens,oppTokens,arrows});
   // Falls dieses Board an einem Termin haengt: beim Oeffnen den gespeicherten Stand laden.
-  useEffect(()=>{ if(eventCtx?.board){ loadBoard(eventCtx.board); } /* eslint-disable-next-line */ },[]);
+  useEffect(()=>{ if(eventCtx?.board){ loadBoard(eventCtx.board); }   },[]);
   const stopAnim=()=>{ if(animRef.current) cancelAnimationFrame(animRef.current); animRef.current=null; };
   const resetAnim=()=>{ stopAnim(); setPlaying(false); setPaused(false); setAnimOwn(null); setAnimOpp(null); setAnimBall(null); setAnimTrail([]); setAnimGoal(null); trailRef.current=[]; };
   const pauseAnim=()=>{ if(!playing||paused) return; elapsedRef.current=(performance.now()-t0Ref.current)*animSpeed; stopAnim(); setPaused(true); };

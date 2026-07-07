@@ -7138,7 +7138,7 @@ function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,pre
       const pt=teams.find(x=>x.id===preselectTid);
       if(pt){ setCat(pt.cat||pt.name); setTid(pt.id); setStep("pwd"); }
     }
-  // eslint-disable-next-line
+   
   },[preselectTid]);
   const ct=teams.find(x=>x.id===tid);
   const cats=[...new Set(teams.map(tm=>tm.cat||tm.name))];
@@ -11857,7 +11857,7 @@ function ChatTab({data,cid,myTids,session,save,fire,cl,teamOnly=false}) {
     if((chat.seen?.[myName]||"")>=latest) return;
     const iso=new Date().toISOString();
     save({...data,chats:(data.chats||[]).map(c=>c.id===selScope?{...c,seen:{...(c.seen||{}),[myName]:iso}}:c)});
-  },[selScope,msgs.length]); // eslint-disable-line
+  },[selScope,msgs.length]);  
   const lastMineIdx=(()=>{ for(let i=msgs.length-1;i>=0;i--){ if(!msgs[i].system&&msgs[i].author===myName) return i; } return -1; })();
   const seersFor=ts=>Object.entries(chat?.seen||{}).filter(([n,s])=>n!==myName&&s&&s>=ts).sort((a,b)=>String(a[1]).localeCompare(String(b[1])));
 
@@ -11897,7 +11897,7 @@ function ChatTab({data,cid,myTids,session,save,fire,cl,teamOnly=false}) {
       return c;
     });
     if(changed) save({...data,chats:cleaned});
-  // eslint-disable-next-line
+   
   },[]);
 
   const send=async ()=>{
@@ -13112,7 +13112,7 @@ function TrainerInboxTab({ data, cid, session, save, cl }) {
     if(unreadIds.size){
       save({...data, broadcasts:(data.broadcasts||[]).map(b=> unreadIds.has(b.id) ? {...b, readBy:[...(b.readBy||[]), myId]} : b)});
     }
-  // eslint-disable-next-line
+   
   },[]);
   const fmt = ts => { try { return new Date(ts).toLocaleString("de-DE",{day:"2-digit",month:"2-digit",year:"2-digit",hour:"2-digit",minute:"2-digit"}); } catch { return ""; } };
   return (
@@ -14513,7 +14513,7 @@ function SpielplanImport({ local, save, fire, cl, cid, teams, defaultTid, onClos
   const [tid,setTid]=useState(defaultTid||teams[0]?.id||"");
   const team=teams.find(x=>x.id===tid);
   const [url,setUrl]=useState(team?.fussballDe||"");
-  useEffect(()=>{ setUrl(teams.find(x=>x.id===tid)?.fussballDe||""); },[tid]); // eslint-disable-line
+  useEffect(()=>{ setUrl(teams.find(x=>x.id===tid)?.fussballDe||""); },[tid]);  
   const [txt,setTxt]=useState("");
   const [rows,setRows]=useState(null);
   const ownWords=[...new Set([cl?.name,team?.name,cl?.short].filter(Boolean).flatMap(x=>String(x).toLowerCase().replace(/ä/g,"ae").replace(/ö/g,"oe").replace(/ü/g,"ue").replace(/ß/g,"ss").split(/[^a-z0-9]+/).filter(w=>w.length>=4)))];
@@ -14682,7 +14682,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       if(evId){ const ev=(local.events||[]).find(e=>e.id===evId); if(ev){ setTab("events"); setViewEv(ev); } }
       if(evId||tabP){ sp.delete("event"); sp.delete("tab"); sp.delete("club"); sp.delete("team"); const qs=sp.toString(); window.history.replaceState({},"",window.location.pathname+(qs?"?"+qs:"")+window.location.hash); }
     }catch{}
-  },[]); // eslint-disable-line
+  },[]);  
   const [planDrill,setPlanDrill]=useState(null);   // Übungs-Detail aus dem Trainingsplan
   const [showTaktik,setShowTaktik]=useState(false); // Taktiktafel-Overlay
   const [taktikEv,setTaktikEv]=useState(null);      // optional: Termin, an den das Board gehängt wird
@@ -17167,7 +17167,7 @@ function TournSplit({ ev, t }){
   const present = Object.entries(ev.votes||{}).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>n);
   const [n,setN]=useState(2);
   const [order,setOrder]=useState(present);
-  useEffect(()=>{ setOrder(present); /* bei Aenderung der Zusagen neu uebernehmen */ // eslint-disable-next-line
+  useEffect(()=>{ setOrder(present); /* bei Aenderung der Zusagen neu uebernehmen */  
   },[present.length]);
   const shuffle=()=>{ const a=[...present]; for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } setOrder(a); };
   const groups=Array.from({length:n},()=>[]);
@@ -17521,7 +17521,7 @@ function TournamentPublic({ eid, clubParam, onBack }){
       }catch{}
     },6000);
     return ()=>clearInterval(iv);
-  // eslint-disable-next-line
+   
   },[]);
 
   const cl = (data?.clubs||[]).find(c=>c.id===cid) || { pri:"#16a34a", name: ev?.setup?.clubName||"Turnier" };
@@ -18505,7 +18505,7 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         const qs=sp.toString(); window.history.replaceState({},"",window.location.pathname+(qs?"?"+qs:"")+window.location.hash);
       }
     }catch{}
-  },[]); // eslint-disable-line
+  },[]);  
   const [showPast,setSP]=useState(false);
   const [toast,setToast]=useState(null);
   const unreadMsgs = useMemo(()=>{
