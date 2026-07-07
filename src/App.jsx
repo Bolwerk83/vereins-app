@@ -15254,6 +15254,37 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             </button>
           );
         })()}
+        {/* Umfrage koppeln: gemeinsamer Antwort-Topf fuer mehrere Teams */}
+        {!isHelper&&viewEv.pt==="list"&&(()=>{
+          const candidates=(local.events||[]).filter(e=>e.id!==viewEv.id&&e.cid===cid&&e.pt==="list"&&!e.pollLink&&e.date>=addD(tod,-30))
+            .sort((a,b)=>a.date.localeCompare(b.date));
+          const tn=tid2=>(local.teams||[]).find(tm=>tm.id===tid2)?.name||"";
+          const linkedHere=(local.events||[]).filter(e=>e.pollLink?.evId===viewEv.id);
+          const target=viewEv.pollLink?.evId?(local.events||[]).find(e=>e.id===viewEv.pollLink.evId):null;
+          const setLink=v=>{
+            const events=local.events.map(e=>{ if(e.id!==viewEv.id) return e; if(!v){ const {pollLink,...rest}=e; return rest; } return {...e,pollLink:{evId:v}}; });
+            save({...local,events});
+            setViewEv(prev=>{ if(!v){ const {pollLink,...rest}=prev; return rest; } return {...prev,pollLink:{evId:v}}; });
+            fire(v?"Umfrage gekoppelt – ein gemeinsamer Antwort-Topf":"Kopplung gelöst");
+          };
+          if(!candidates.length&&!target&&!linkedHere.length) return null;
+          return (
+            <div style={{background:"#eef2ff",border:"1.5px solid #c7d2fe",borderRadius:12,padding:"11px 13px",marginBottom:12}}>
+              <div style={{fontSize:12,fontWeight:800,color:"#3730a3",marginBottom:6}}>🔗 GEMEINSAME LISTE (MEHRERE TEAMS)</div>
+              {linkedHere.length>0&&<div style={{fontSize:12,color:"#3730a3",marginBottom:8}}>Hierauf gekoppelt: {linkedHere.map(e=>tn(e.tid)).join(", ")} – alle Antworten laufen in DIESEM Termin zusammen.</div>}
+              {target
+                ? <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <span style={{flex:1,fontSize:12.5,color:"#3730a3",fontWeight:600}}>Gekoppelt mit „{evDisplayTitle(target)}“ ({tn(target.tid)}, {fmtDShort(target.date)}) – Optionen & Max-Plätze kommen von dort.</span>
+                    <button onClick={()=>setLink(null)} style={{padding:"7px 11px",borderRadius:9,border:"1.5px solid #c7d2fe",background:"#fff",color:"#4f46e5",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>Lösen</button>
+                  </div>
+                : <>
+                    <div style={{fontSize:11.5,color:"#4f46e5",lineHeight:1.45,marginBottom:8}}>Machen z. B. F1 und F2 zusammen ein Turnier: Diesen Termin mit der Liste des anderen Teams koppeln – dann teilen sich beide EINEN Antwort-Topf, und „max"-Grenzen (z. B. 3× Waffeln) gelten über alle Teams.</div>
+                    <Sel label="Mit Termin koppeln" val="" set={v=>{ if(v) setLink(v); }}
+                      opts={[["","– Termin wählen –"],...candidates.map(e=>[e.id,`${tn(e.tid)} · ${evDisplayTitle(e)} · ${fmtDShort(e.date)}`])]}/>
+                  </>}
+            </div>
+          );
+        })()}
         {viewEv.type==="turnier"
           ? <TournView ev={viewEv} user={session.name||"Admin"} onVote={()=>{}} cl={myClub} players={local.players} isHelper={isHelper} teamCat={(local.teams||[]).find(tm=>tm.id===viewEv.tid)?.cat||null} fields={(data.fields||[]).filter(f=>f.cid===cid)}
               onUpdate={patch=>{
@@ -18226,13 +18257,21 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
     </div>
   );
 }
-function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
+// Gekoppelte Umfrage: mehrere Termine (z. B. F1 + F2 beim gemeinsamen Turnier)
+// teilen sich EINEN Antwort-Topf. ev.pollLink.evId zeigt auf den Master-Termin;
+// Optionen, Max-Grenzen und Antworten kommen dann von dort.
+const resolveLinkedEv=(events,ev)=>{
+  const tid2=ev?.pollLink?.evId; if(!tid2) return ev;
+  return (events||[]).find(x=>x.id===tid2)||ev;
+};
+function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user",allEvents=[]}) {
   const { tr } = useT();
   const wx=useWeather(plzToGeo(cl?.plz));
   const isTrainerOrHelper = role==="trainer"||role==="helper"||role==="admin";
   const [infoDrill,setInfoDrill]=useState(null);
   const eT=ET[ev.type]||ET.training;const isToday=ev.date===now();const isPast=ev.date<now();
-  const uv=(ev.votes||{})[user];const uvVal=typeof uv==="object"&&uv!==null?uv.val:uv;
+  const pollEv = ev.pt==="list" ? resolveLinkedEv(allEvents,ev) : ev; // gekoppelte Liste
+  const uv=(((ev.pt==="list"?pollEv:ev).votes)||{})[user];const uvVal=typeof uv==="object"&&uv!==null?uv.val:uv;
   const p=cl?.pri||"#16a34a";
   let status=null;
   if(ev.pt==="att"){
@@ -18318,7 +18357,10 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user"}) {
             </div>
           )
           :ev.pt==="carpool"?<PollCarpool entries={ev.votes||{}} onSet={v=>onVote(ev.id,"carpool",v)} user={user} cl={cl} labels={carpoolLabelsFor(ev,cl)}/>
-          :ev.pt==="list"?<PollList ev={ev} user={user} onVote={onVote}/>
+          :ev.pt==="list"?<>
+            {pollEv.id!==ev.id&&<div style={{background:"#eef2ff",border:"1px solid #c7d2fe",borderRadius:10,padding:"8px 12px",fontSize:12,color:"#3730a3",fontWeight:600,marginBottom:10}}>🔗 Gemeinsame Liste („{evDisplayTitle(pollEv)}“) – Antworten und Max-Plätze gelten über alle gekoppelten Teams.</div>}
+            <PollList ev={pollEv} user={user} onVote={onVote}/>
+          </>
           :<PollAttend ev={ev} user={user} onVote={onVote} cl={cl}/>}
         {(ev.extraPolls||[]).map(p=>(
           <div key={p.id} style={{marginTop:16,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
@@ -19021,13 +19063,13 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         {up.length>0&&<>
           <Divider label={tr("uhNext10")}/>
           {soon.length>0
-            ? soon.map((ev,i)=><div key={ev.id} className="up" style={{marginBottom:10,animationDelay:`${i*.05}s`}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user"/></div>)
+            ? soon.map((ev,i)=><div key={ev.id} className="up" style={{marginBottom:10,animationDelay:`${i*.05}s`}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user" allEvents={data.events||[]}/></div>)
             : <p style={{textAlign:"center",color:"#64748b",fontSize:13.5,padding:"16px 10px"}}>{tr("uhNoNext10")}</p>}
           {later.length>0&&<>
             <button onClick={()=>setShowLater(s=>!s)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",background:showLater?"#f1f5f9":"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,cursor:"pointer",margin:"6px 0 10px",padding:"11px 14px",fontWeight:800,fontSize:13,color:"#475569",fontFamily:"inherit"}}>
               <span>{showLater?"▲ "+tr("uhHideMore"):"▼ "+tr("uhShowMoreA")+" "+later.length+" "+tr("uhShowMoreB")}</span>
             </button>
-            {showLater&&later.map((ev,i)=><div key={ev.id} style={{marginBottom:10}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user"/></div>)}
+            {showLater&&later.map((ev,i)=><div key={ev.id} style={{marginBottom:10}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user" allEvents={data.events||[]}/></div>)}
           </>}
         </>}
         {up.length===0&&<div style={{textAlign:"center",padding:"52px 20px"}}><Logo cl={cl} sz={64} sx={{margin:"0 auto 16px"}}/><p style={{fontWeight:800,fontSize:18,color:"#334155"}}>{tr("uhNoUpcoming")}</p><p style={{color:"#64748b",fontSize:14,marginTop:6}}>{tr("uhNoUpcomingSub")}</p><div style={{marginTop:20}}><AdBanner/></div></div>}
@@ -19035,7 +19077,7 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           <button onClick={()=>setSP(s=>!s)} style={{display:"flex",alignItems:"center",gap:10,width:"100%",background:"none",border:"none",cursor:"pointer",margin:"18px 0 10px",padding:"4px 0"}}>
             <div style={{flex:1,height:1,background:"#e2e8f0"}}/><span style={{fontSize:11,fontWeight:800,color:"#64748b",whiteSpace:"nowrap"}}>{showPast?"▲":"▼"} {tr("uhPast")} ({past.length})</span><div style={{flex:1,height:1,background:"#e2e8f0"}}/>
           </button>
-          {showPast&&past.map(ev=><div key={ev.id} style={{marginBottom:10}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user"/></div>)}
+          {showPast&&past.map(ev=><div key={ev.id} style={{marginBottom:10}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user" allEvents={data.events||[]}/></div>)}
         </>}
         {(cl.links||[]).length>0&&(
           <div style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",padding:"14px 16px",marginTop:16}}>
