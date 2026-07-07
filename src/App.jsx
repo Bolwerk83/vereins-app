@@ -14759,6 +14759,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const [evTab,setEvTab]=useState("rueck");                       // Termin-Ansicht als Tabs
   useEffect(()=>{ setEvTab("rueck"); },[viewEv?.id]);
   const [editConf,setEditConf]=useState(null);
+  const [pauseSer,setPauseSer]=useState(null); // {ev,from,to} Ferien-Pause fuer eine Serie
   const [planFor,setPlanFor]=useState(null);
   // Push-Deep-Links: ?event=<id> öffnet den Termin direkt, ?tab=<id> wechselt den Reiter.
   useEffect(()=>{
@@ -15387,9 +15388,50 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           {editConf.sid&&<Btn full ch="Ganze Serie bearbeiten" cl={myClub} onClick={()=>{
             setEditEv({...editConf,_editSeries:"all"});setEditConf(null);
           }}/>}
+          {editConf.sid&&<Btn v="out" full ch="⛱ Serie pausieren (Ferien)" cl={myClub} onClick={()=>{
+            setPauseSer({ev:editConf,from:tod>editConf.date?tod:editConf.date,to:addD(tod>editConf.date?tod:editConf.date,41)});setEditConf(null);
+          }}/>}
           <Btn v="gst" full ch="Abbrechen" onClick={()=>setEditConf(null)}/>
         </div>
       </Drawer>}
+
+      {/* Ferien-/Pausen-Modus: Serien-Termine in einem Zeitraum entfernen und
+          den Eltern EINE Info-Karte ("Ferienpause bis ...") hinterlassen. */}
+      {pauseSer&&(()=>{
+        const inRange=(local.events||[]).filter(e=>e.sid===pauseSer.ev.sid&&e.date>=pauseSer.from&&e.date<=pauseSer.to).sort((a,b)=>a.date.localeCompare(b.date));
+        const after=(local.events||[]).filter(e=>e.sid===pauseSer.ev.sid&&e.date>pauseSer.to).length;
+        const ok=pauseSer.from&&pauseSer.to&&pauseSer.to>=pauseSer.from&&inRange.length>0;
+        const doPause=()=>{
+          if(!ok) return;
+          const info={ id:uid(), cid, tid:pauseSer.ev.tid, type:"event", pt:"none",
+            title:"⛱ Ferienpause", date:pauseSer.from, seasonId:pauseSer.ev.seasonId||"",
+            note:`Bis ${fmtD(pauseSer.to)} ist Pause – kein ${pauseSer.ev.type==="training"?"Training":"Termin"}. Danach geht es wie gewohnt weiter. Schöne Ferien! ☀️` };
+          save({...local, events:[...local.events.filter(e=>!inRange.some(x=>x.id===e.id)), info]});
+          fire(`${inRange.length} Termine pausiert – Info-Karte für die Eltern erstellt`);
+          setPauseSer(null);
+        };
+        return (
+          <Drawer onClose={()=>setPauseSer(null)} title="⛱ Serie pausieren">
+            <p style={{fontSize:13.5,color:"#475569",lineHeight:1.55,marginBottom:14}}>
+              Alle Termine der Serie <b>„{pauseSer.ev.title}“</b> im Zeitraum werden entfernt.
+              Die Eltern sehen stattdessen eine Info-Karte <b>„⛱ Ferienpause"</b>. Termine nach dem Zeitraum bleiben unverändert.
+            </p>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+              <Inp label="Pause von" type="date" val={pauseSer.from} set={v=>setPauseSer(pz=>({...pz,from:v}))} cl={myClub}/>
+              <Inp label="Pause bis (einschließlich)" type="date" val={pauseSer.to} set={v=>setPauseSer(pz=>({...pz,to:v}))} cl={myClub}/>
+            </div>
+            <div style={{background:ok?"#f0fdf4":"#fff7ed",border:`1.5px solid ${ok?"#bbf7d0":"#fed7aa"}`,borderRadius:12,padding:"11px 13px",fontSize:13,color:ok?"#166534":"#9a3412",fontWeight:600,marginBottom:14}}>
+              {inRange.length>0
+                ? <>Betroffen: <b>{inRange.length} Termine</b> ({fmtDShort(inRange[0]?.date)}–{fmtDShort(inRange[inRange.length-1]?.date)}) · danach geht die Serie mit {after} Terminen weiter</>
+                : "Im gewählten Zeitraum liegen keine Termine dieser Serie."}
+            </div>
+            <div style={{display:"flex",gap:9}}>
+              <Btn v="gst" full ch="Abbrechen" onClick={()=>setPauseSer(null)} sx={{flex:1}}/>
+              <Btn full dis={!ok} ch={`⛱ ${inRange.length} Termine pausieren`} cl={myClub} onClick={doPause} sx={{flex:2}}/>
+            </div>
+          </Drawer>
+        );
+      })()}
 
       {}
       {planFor&&<Drawer onClose={()=>setPlanFor(null)} title={(planFor.trainingPlan||planFor.trainingId)?"Trainingsplan bearbeiten":"Trainingsplan erstellen"}>
