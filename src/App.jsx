@@ -12032,9 +12032,21 @@ function ChatTab({data,cid,myTids,session,save,fire,cl,teamOnly=false}) {
   const t=TH(cl);
   const allTeams=data.teams.filter(tm=>tm.cid===cid);
   const isHelper=session.role==="helper";
+  // Trainer-Kanaele: nur fuer Trainer/Admin/Helfer sichtbar (Eltern nie) -
+  // je Team, je Jugend (alle Trainer der Altersklasse) und vereinsweit.
+  const isStaffChat = !teamOnly && ["trainer","admin","helper"].includes(session.role);
+  const isAdminChat = session.role==="admin";
+  const catSlug = c => String(c).replace(/[^a-zA-Z0-9]+/g,"_");
+  const myCats = [...new Set(myTids.map(tid=>{const tm=allTeams.find(x=>x.id===tid);return tm?(tm.cat||tm.name):null;}).filter(Boolean))];
+  const staffCats = isAdminChat ? [...new Set(allTeams.map(tm=>tm.cat||tm.name).filter(Boolean))] : myCats;
   const scopes=[
     ...(teamOnly?[]:[{id:"club_"+cid,label:"Gesamter Verein",col:t.p,all:true}]),
-    ...myTids.map(tid=>{const tm=allTeams.find(x=>x.id===tid);return{id:"team_"+tid,label:tm?.name||tid,col:tm?.col||t.p};})
+    ...myTids.map(tid=>{const tm=allTeams.find(x=>x.id===tid);return{id:"team_"+tid,label:tm?.name||tid,col:tm?.col||t.p};}),
+    ...(isStaffChat?[
+      ...myTids.map(tid=>{const tm=allTeams.find(x=>x.id===tid);return{id:"tteam_"+tid,label:"🔒 "+(tm?.name||tid)+" · Trainer",col:"#7c3aed",staff:true};}),
+      ...(session.role!=="helper"?staffCats.map(c=>({id:"tcat_"+cid+"_"+catSlug(c),label:"🔒 "+c+" · Trainer",col:"#7c3aed",staff:true})):[]),
+      ...(session.role!=="helper"?[{id:"tclub_"+cid,label:"🔒 Alle Trainer",col:"#0f172a",staff:true}]:[]),
+    ]:[]),
   ];
 
   const [selScope,setSelScope]=useState(scopes[0]?.id||"");
@@ -12118,6 +12130,7 @@ function ChatTab({data,cid,myTids,session,save,fire,cl,teamOnly=false}) {
     // Push an die anderen Chat-Teilnehmer (Edge Function "notify", Modus chat);
     // Fehler bewusst still - die Nachricht selbst ist bereits gespeichert.
     try {
+      if(selScope.startsWith("tteam_")||selScope.startsWith("tcat_")||selScope.startsWith("tclub_")) throw 0; // Trainer-Kanaele: kein Push an den ganzen Verein
       const cfg=getConfig();
       const tidPush=selScope.startsWith("team_")?selScope.slice(5):null;
       fetch(`${cfg.url}/functions/v1/notify`,{method:"POST",headers:{"Content-Type":"application/json","apikey":cfg.key,"Authorization":"Bearer "+cfg.key},
@@ -18394,7 +18407,9 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const [toast,setToast]=useState(null);
   const unreadMsgs = useMemo(()=>{
     const lastRead = Number(localStorage.getItem("va_last_read_"+cid)||0);
-    return (data.chats||[]).filter(c=>c.cid===cid).flatMap(c=>c.messages||[])
+    // Eltern zaehlen NUR ihren Team-Chat + Vereins-Chat - nicht fremde Teams
+    // und niemals die Trainer-Kanaele (tteam_/tcat_/tclub_).
+    return (data.chats||[]).filter(c=>c.cid===cid&&(c.id==="team_"+tid||c.id==="club_"+cid)).flatMap(c=>c.messages||[])
       .filter(m=>m&&!m.system&&m.author!==user&&new Date(m.ts).getTime()>lastRead).length;
   },[data.chats, tab]);
   const [showProfile,setShowProfile]=useState(false);
