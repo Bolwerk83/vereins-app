@@ -6081,6 +6081,72 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
                 </div>
               ))}
             </div>
+
+            {/* ---- Sicherung & Export ---- */}
+            {(()=>{
+              const dl=(name,content,mime)=>{ try{
+                const blob=new Blob([content],{type:mime});
+                const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name;
+                document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+              }catch{ fire("Export fehlgeschlagen"); } };
+              const csvEsc=v=>{ const x=String(v??""); return /[";\n]/.test(x)?'"'+x.replace(/"/g,'""')+'"':x; };
+              const csv=rows=>"\uFEFF"+rows.map(r=>r.map(csvEsc).join(";")).join("\n"); // BOM+Semikolon: oeffnet sauber in Excel (DE)
+              const stamp=now();
+              const teams=(data.teams||[]).filter(tm=>tm.cid===cid);
+              const teamName=tid=>teams.find(tm=>tm.id===tid)?.name||"";
+              const doBackup=()=>{
+                const keep={};
+                for(const [k,v] of Object.entries(data)){
+                  if(Array.isArray(v)){ const own=v.filter(r=>r&&typeof r==="object"&&(r.cid===cid||r.hostCid===cid||r.clubId===cid)); if(own.length) keep[k]=own; }
+                }
+                keep.clubs=(data.clubs||[]).filter(c=>c.id===cid);
+                dl(`vereins-backup_${cid}_${stamp}.json`, JSON.stringify({exportedAt:new Date().toISOString(),cid,...keep},null,1), "application/json");
+                fire("Backup heruntergeladen ✓");
+              };
+              const doPlayers=()=>{
+                const rows=[["Name","Jahrgang","Geschlecht","Mannschaft","Eltern","Einwilligung am","Einwilligung durch"]];
+                (data.playerProfiles||[]).filter(pl=>pl.cid===cid&&!pl.archived).sort((a,b)=>String(a.name).localeCompare(String(b.name),"de"))
+                  .forEach(pl=>rows.push([pl.name,pl.by||"",pl.gender==="w"?"w":"m",teamName(pl.mainTid),pl.parentNames||"",pl.consentAt?String(pl.consentAt).slice(0,10):"",pl.consentBy||""]));
+                dl(`spielerliste_${stamp}.csv`, csv(rows), "text/csv;charset=utf-8");
+              };
+              const doConsent=()=>{
+                const rows=[["Kind","Mannschaft","Einwilligung am","Uhrzeit","Erteilt durch","Quelle"]];
+                (data.playerProfiles||[]).filter(pl=>pl.cid===cid&&pl.consentAt)
+                  .sort((a,b)=>String(a.consentAt).localeCompare(String(b.consentAt)))
+                  .forEach(pl=>rows.push([pl.name,teamName(pl.mainTid),String(pl.consentAt).slice(0,10),String(pl.consentAt).slice(11,16),pl.consentBy||"Eltern (App)","Spielerprofil"]));
+                (data.securityLog||[]).filter(l=>l.cid===cid&&l.type==="consent")
+                  .forEach(l=>rows.push(["(siehe Text)","",String(l.ts||"").slice(0,10),String(l.ts||"").slice(11,16),l.msg||"","Sicherheits-Log"]));
+                dl(`einwilligungen_${stamp}.csv`, csv(rows), "text/csv;charset=utf-8");
+              };
+              const doCash=()=>{
+                const rows=[["Datum","Team","Art","Spieler","Betrag","Notiz"]];
+                (data.cashbook||[]).filter(e=>e.cid===cid).sort((a,b)=>String(a.date||"").localeCompare(String(b.date||"")))
+                  .forEach(e=>rows.push([e.date||"",teamName(e.tid),e.kind||"",e.player||"",String(e.amount??"").replace(".",","),e.note||""]));
+                dl(`kassenbuch_${stamp}.csv`, csv(rows), "text/csv;charset=utf-8");
+              };
+              const B=({icon,title,sub,onClick})=>(
+                <button onClick={onClick} style={{display:"flex",alignItems:"center",gap:10,width:"100%",background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"11px 13px",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
+                  <span style={{fontSize:17,flexShrink:0}}>{icon}</span>
+                  <span style={{flex:1,minWidth:0}}>
+                    <span style={{display:"block",fontSize:13,fontWeight:800,color:"#0f172a"}}>{title}</span>
+                    <span style={{display:"block",fontSize:11.5,color:"#64748b",marginTop:1}}>{sub}</span>
+                  </span>
+                  <span style={{fontSize:12,fontWeight:800,color:t.p,flexShrink:0}}>Laden ↓</span>
+                </button>
+              );
+              return (
+                <div style={{marginTop:18,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
+                  <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:4}}>💾 SICHERUNG & EXPORT</div>
+                  <div style={{fontSize:12,color:"#64748b",lineHeight:1.5,marginBottom:10}}>Regelmäßig ein Backup ziehen – dann seid ihr auch ohne Cloud nie ohne eure Daten. Die CSV-Dateien öffnen direkt in Excel.</div>
+                  <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                    <B icon="🗄" title="Komplett-Backup (JSON)" sub="Alle Vereinsdaten als Datei – zur Sicherheit ablegen" onClick={doBackup}/>
+                    <B icon="👥" title="Spielerliste (CSV)" sub="Name, Jahrgang, Team, Eltern, Einwilligungs-Status" onClick={doPlayers}/>
+                    <B icon="🔏" title="Einwilligungs-Nachweise (CSV)" sub="Wer hat wann für welches Kind eingewilligt – für die Vereinsakte" onClick={doConsent}/>
+                    <B icon="💶" title="Kassenbuch (CSV)" sub="Alle Buchungen mit Datum, Art, Betrag" onClick={doCash}/>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         );
       })()}
