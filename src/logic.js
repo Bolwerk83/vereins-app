@@ -231,3 +231,62 @@ export const parseRosterText = (raw, opts = {}) => {
   return out;
 };
 
+
+// Spielplan-Parser (fussball.de-Kopie, DFBnet-CSV, ICS) - siehe SpielplanImport in App.jsx
+export function parseSpielplan(text, ownWords){
+  const games=[];
+  const norm=x=>String(x||"").toLowerCase().replace(/ä/g,"ae").replace(/ö/g,"oe").replace(/ü/g,"ue").replace(/ß/g,"ss");
+  const isOwn=x=>{ const n=norm(x); return ownWords.some(w=>w.length>=4&&n.includes(w)); };
+  const isoDate=(d,m,y)=>{ y=String(y); if(y.length===2) y="20"+y; return `${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`; };
+  const push=(date,time,home,away,loc)=>{
+    home=String(home||"").replace(/\s+/g," ").trim(); away=String(away||"").replace(/\s+/g," ").trim();
+    if(!date||!home||!away||home.length<2||away.length<2) return;
+    const oh=isOwn(home), oa=isOwn(away);
+    const type=oh?"heimspiel":oa?"auswarts":"heimspiel";
+    const opp=oh?away:oa?home:away;
+    games.push({date,time:time||"",type,opp,home,away,loc:loc||"",own:oh||oa});
+  };
+  if(/BEGIN:VCALENDAR/i.test(text)){
+    text.split(/BEGIN:VEVENT/i).slice(1).forEach(block=>{
+      const g=re=>{ const m=block.match(re); return m?m[1].trim():""; };
+      const dt=g(/DTSTART[^:]*:(\d{8}(?:T\d{4,6})?)/i);
+      if(!dt) return;
+      const date=`${dt.slice(0,4)}-${dt.slice(4,6)}-${dt.slice(6,8)}`;
+      const time=dt.length>=13?`${dt.slice(9,11)}:${dt.slice(11,13)}`:"";
+      const sum=g(/SUMMARY[^:]*:(.+)/i).replace(/\\,/g,",");
+      const m=sum.split(/\s+(?:–|—|-|:|vs\.?|gegen)\s+/i);
+      if(m.length>=2) push(date,time,m[0],m.slice(1).join(" "),g(/LOCATION[^:]*:(.+)/i).replace(/\\,/g,","));
+    });
+    return games;
+  }
+  const lines=text.split(/\r?\n/);
+  const sep=lines[0]&&(lines[0].split(";").length>3?";":lines[0].split("\t").length>3?"\t":null);
+  const headIdx=(cols,res)=>cols.findIndex(c=>res.some(r=>r.test(c)));
+  if(sep){
+    const head=lines[0].split(sep).map(x=>norm(x));
+    const iD=headIdx(head,[/datum/,/^tag/]), iT=headIdx(head,[/uhr/,/ansto/,/zeit/]),
+          iH=headIdx(head,[/heim/]), iA=headIdx(head,[/gast/,/ausw/,/gegner/]), iL=headIdx(head,[/staette|st\u00e4tte|spielort|^ort/]);
+    if(iD>=0&&iH>=0&&iA>=0){
+      lines.slice(1).forEach(l=>{
+        const c=l.split(sep).map(x=>x.replace(/^"|"$/g,"").trim());
+        const dm=(c[iD]||"").match(/(\d{1,2})\.(\d{1,2})\.(\d{2,4})/); if(!dm) return;
+        const tm=(iT>=0?c[iT]||"":"").match(/(\d{1,2}):(\d{2})/);
+        push(isoDate(dm[1],dm[2],dm[3]), tm?`${tm[1].padStart(2,"0")}:${tm[2]}`:"", c[iH], c[iA], iL>=0?c[iL]:"");
+      });
+      return games;
+    }
+  }
+  // Freitext (kopierte fussball.de-Seite): Datum/Uhrzeit merken, Team-Paare erkennen
+  let curDate="", curTime="";
+  lines.forEach(raw=>{
+    const l=raw.trim(); if(!l) return;
+    const dm=l.match(/(\d{1,2})\.(\d{1,2})\.(\d{2,4})/);
+    if(dm) curDate=isoDate(dm[1],dm[2],dm[3]);
+    const tm=l.match(/(\d{1,2}):(\d{2})(?:\s*uhr)?/i);
+    if(tm&&!/\d:\d.*\d:\d/.test(l)) curTime=`${tm[1].padStart(2,"0")}:${tm[2]}`;
+    const cleaned=l.replace(/(\d{1,2})\.(\d{1,2})\.(\d{2,4})/g,"").replace(/(\d{1,2}):(\d{2})(\s*uhr)?/gi,"").replace(/^[|,\s·–-]+|[|,\s·–-]+$/g,"");
+    const pm=cleaned.match(/^(.{3,60}?)\s+(?:–|—|:|vs\.?|gegen)\s+(.{3,60})$/i)||cleaned.match(/^(.{3,60}?)\s+-\s+(.{3,60})$/);
+    if(pm&&curDate){ push(curDate,curTime,pm[1],pm[2],""); curTime=""; }
+  });
+  return games;
+}

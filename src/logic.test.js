@@ -5,8 +5,7 @@ import {
   isEventPast, daysUntil, isUpcoming5, formatCountdown,
   round2, clampSkill, monthKey, skillsMean, blendSkill,
   germanPublicHolidays, publicHolidayName, DE_STATES,
-  parseRosterText,
-} from "./logic.js";
+  parseRosterText, parseSpielplan } from "./logic.js";
 
 const isoDaysFromNow = (n) => new Date(Date.now() + n*86400000).toISOString().slice(0,10);
 
@@ -158,4 +157,71 @@ test("parseRosterText: OCR-Rauschen ohne echtes Wort/Jahr wird verworfen", () =>
   const r = parseRosterText("ha ET an\nnn > Pd\nMia Hoffmann 2019");
   assert.equal(r.length, 1);
   assert.equal(r[0].name, "Mia Hoffmann");
+});
+
+// ---- Spielplan-Parser (fussball.de-Kopie / DFBnet-CSV / ICS) ----
+const OWN = ["kalkar"];
+
+test("parseSpielplan: kopierter fussball.de-Text (Datum, Uhrzeit, Paarung)", () => {
+  const txt = `Spielplan F-Junioren
+Sa, 13.09.25
+10:30 Uhr
+SuS Kalkar II – SV Grieth 2010
+Kreisklasse
+
+Sa, 20.09.25
+11:00 Uhr
+JSG Appeldorn/Wissel – SuS Kalkar II
+Kreisklasse`;
+  const g = parseSpielplan(txt, OWN);
+  assert.equal(g.length, 2);
+  assert.equal(g[0].date, "2025-09-13");
+  assert.equal(g[0].time, "10:30");
+  assert.equal(g[0].type, "heimspiel");
+  assert.equal(g[0].opp, "SV Grieth 2010");
+  assert.equal(g[1].type, "auswarts");
+  assert.equal(g[1].opp, "JSG Appeldorn/Wissel");
+});
+
+test("parseSpielplan: Datum und Paarung in EINER Zeile", () => {
+  const g = parseSpielplan("So, 05.10.2025 10:00 Uhr SV Rees - SuS Kalkar II", OWN);
+  assert.equal(g.length, 1);
+  assert.equal(g[0].date, "2025-10-05");
+  assert.equal(g[0].time, "10:00");
+  assert.equal(g[0].type, "auswarts");
+});
+
+test("parseSpielplan: DFBnet-CSV mit Kopfzeile", () => {
+  const csv = `Datum;Anstoß;Heimmannschaft;Gastmannschaft;Spielstätte
+13.09.2025;10:30;SuS Kalkar II;SV Grieth;Sportplatz Kalkar
+20.09.2025;11:00;JSG Appeldorn;SuS Kalkar II;Am Deich 3`;
+  const g = parseSpielplan(csv, OWN);
+  assert.equal(g.length, 2);
+  assert.equal(g[0].type, "heimspiel");
+  assert.equal(g[0].loc, "Sportplatz Kalkar");
+  assert.equal(g[1].type, "auswarts");
+  assert.equal(g[1].opp, "JSG Appeldorn");
+});
+
+test("parseSpielplan: ICS-Kalenderdatei", () => {
+  const ics = `BEGIN:VCALENDAR
+BEGIN:VEVENT
+DTSTART:20250913T103000
+SUMMARY:SuS Kalkar II - SV Grieth
+LOCATION:Sportplatz Kalkar
+END:VEVENT
+END:VCALENDAR`;
+  const g = parseSpielplan(ics, OWN);
+  assert.equal(g.length, 1);
+  assert.equal(g[0].date, "2025-09-13");
+  assert.equal(g[0].time, "10:30");
+  assert.equal(g[0].type, "heimspiel");
+  assert.equal(g[0].loc, "Sportplatz Kalkar");
+});
+
+test("parseSpielplan: Muell wird ignoriert, eigene Erkennung faellt sonst auf Heim", () => {
+  const g = parseSpielplan("irgendwas ohne Spiele\n12.10.25\nTeam A – Team B", ["kalkar"]);
+  assert.equal(g.length, 1);
+  assert.equal(g[0].type, "heimspiel"); // unbekannt -> Standard Heim, im Wizard umschaltbar
+  assert.equal(g[0].own, false);
 });

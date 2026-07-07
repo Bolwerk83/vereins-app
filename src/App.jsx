@@ -1,6 +1,6 @@
 import React, { useState,useEffect,useCallback,useRef,useMemo,createContext,useContext } from "react";
 import { splitData, mergeData, merge3Obj } from "./data.js";
-import { eventStart, eventDeadline, isVotingLocked, isDeadlinePassed, isEventPast, daysUntil, isUpcoming5, formatCountdown, round2, clampSkill, monthKey, skillsMean, blendSkill, germanPublicHolidays, publicHolidayName, DE_STATES, parseRosterText } from "./logic.js";
+import { eventStart, eventDeadline, isVotingLocked, isDeadlinePassed, isEventPast, daysUntil, isUpcoming5, formatCountdown, round2, clampSkill, monthKey, skillsMean, blendSkill, germanPublicHolidays, publicHolidayName, DE_STATES, parseRosterText, parseSpielplan } from "./logic.js";
 import { ACOLORS, acol, inits, contrast, mix } from "./util.js";
 import { feat } from "./features.js";
 import { SK, SS, CFG, DEFAULT_CFG, JOIN_CODE, getConfig, setConfig, MULTI_TENANT, auth, _DATA_ARRAYS, normData, sb, localGet, localSet, sess } from "./storage.js";
@@ -14887,6 +14887,126 @@ function AttendanceTab({ data, myTids, cl, save, fire, session=null }) {
   );
 }
 
+
+/* =================================================================
+   SPIELPLAN-IMPORT (fussball.de / DFBnet)
+   Kein Auto-Scraping (rechtlich heikel, keine oeffentliche API) -
+   stattdessen: 1) Team-Seite oeffnen (Link wird je Team gemerkt),
+   2) Spielplan kopieren/Datei waehlen, 3) Vorschau -> Import.
+   Erneuter Import AKTUALISIERT bestehende Spiele (Erkennung ueber
+   importKey = Datum+Gegner), Zusagen der Eltern bleiben erhalten.
+================================================================= */
+function SpielplanImport({ local, save, fire, cl, cid, teams, defaultTid, onClose }){
+  const t=TH(cl);
+  const [step,setStep]=useState(1);
+  const [tid,setTid]=useState(defaultTid||teams[0]?.id||"");
+  const team=teams.find(x=>x.id===tid);
+  const [url,setUrl]=useState(team?.fussballDe||"");
+  useEffect(()=>{ setUrl(teams.find(x=>x.id===tid)?.fussballDe||""); },[tid]); // eslint-disable-line
+  const [txt,setTxt]=useState("");
+  const [rows,setRows]=useState(null);
+  const ownWords=[...new Set([cl?.name,team?.name,cl?.short].filter(Boolean).flatMap(x=>String(x).toLowerCase().replace(/ä/g,"ae").replace(/ö/g,"oe").replace(/ü/g,"ue").replace(/ß/g,"ss").split(/[^a-z0-9]+/).filter(w=>w.length>=4)))];
+  const openSource=()=>{
+    const target=(url||"").trim()||`https://www.fussball.de/suche/-/text/${encodeURIComponent(cl?.name||"")}`;
+    if((url||"").trim()&&team&&team.fussballDe!==url.trim()){
+      save({...local,teams:(local.teams||[]).map(tm=>tm.id===tid?{...tm,fussballDe:url.trim()}:tm)});
+      fire("Link am Team gespeichert – nächstes Mal ein Tipp");
+    }
+    window.open(target,"_blank","noopener");
+  };
+  const onFile=e=>{
+    const file=e.target.files?.[0]; if(!file) return;
+    const rd=new FileReader();
+    rd.onload=ev2=>{ setTxt(String(ev2.target.result||"")); };
+    rd.readAsText(file);
+  };
+  const doParse=()=>{
+    const gs=parseSpielplan(txt,ownWords);
+    if(!gs.length){ fire("Keine Spiele erkannt – bitte kompletten Spielplan kopieren"); return; }
+    const keyOf=g=>g.date+"_"+String(g.opp).toLowerCase().replace(/[^a-z0-9]+/g,"").slice(0,24);
+    const existing=(local.events||[]).filter(e=>e.tid===tid);
+    setRows(gs.map(g=>{
+      const key=keyOf(g);
+      const hit=existing.find(e=>e.importKey===key)||existing.find(e=>e.date===g.date&&["heimspiel","auswarts","freundschaft"].includes(e.type));
+      const status=!hit?"neu":(hit.time!==g.time||hit.date!==g.date)?"update":"gleich";
+      return {...g,key,use:status!=="gleich",status,exId:hit?.id||null};
+    }));
+    setStep(3);
+  };
+  const doImport=()=>{
+    const sel=(rows||[]).filter(r=>r.use);
+    if(!sel.length){ fire("Nichts ausgewählt"); return; }
+    const sid=activeSid(local,cid)||"";
+    let events=[...(local.events||[])];
+    let created=0,updated=0;
+    sel.forEach(r=>{
+      if(r.exId){
+        events=events.map(e=>e.id===r.exId?{...e,date:r.date,time:r.time||e.time,loc:r.loc||e.loc,type:r.type,title:`gegen ${r.opp}`,importKey:r.key}:e);
+        updated++;
+      } else {
+        events.push({ id:uid(), cid, tid, type:r.type, pt:"att", title:`gegen ${r.opp}`,
+          date:r.date, time:r.time||"", loc:r.loc||(r.type==="auswarts"?`bei ${r.opp}`:""),
+          votes:{}, seasonId:sid, importKey:r.key });
+        created++;
+      }
+    });
+    save({...local,events});
+    fire(`Spielplan importiert: ${created} neu${updated?`, ${updated} aktualisiert`:""} – Eltern können abstimmen`);
+    onClose();
+  };
+  const chip=(st)=>st==="neu"?["NEU","#166534","#dcfce7"]:st==="update"?["AKTUALISIERT","#9a3412","#ffedd5"]:["SCHON DA","#475569","#f1f5f9"];
+  return (
+    <Drawer onClose={onClose} title="📥 Spielplan importieren">
+      <div style={{display:"flex",gap:5,marginBottom:14}}>
+        {[1,2,3].map(n=><div key={n} style={{flex:1,height:4,borderRadius:99,background:step>=n?t.p:"#e2e8f0"}}/>)}
+      </div>
+      {step===1&&<>
+        <TeamPills teams={teams} value={tid} onChange={setTid}/>
+        <div style={{background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:13,padding:"12px 14px",margin:"12px 0"}}>
+          <div style={{fontSize:12,fontWeight:800,color:"#64748b",marginBottom:6}}>SO GEHT'S</div>
+          <div style={{fontSize:13,color:"#334155",lineHeight:1.6}}>1. fussball.de öffnen (Knopf unten)<br/>2. Spielplan eurer Mannschaft anzeigen<br/>3. Alles markieren & kopieren<br/>4. Zurück hier: einfügen → Vorschau → fertig</div>
+        </div>
+        <Inp label="fussball.de-Link eurer Mannschaft (wird gemerkt)" val={url} set={setUrl} ph="https://www.fussball.de/mannschaft/…" cl={cl} note="Einmal einfügen – ab dann öffnet der Knopf direkt euren Spielplan. Alternativ öffnet er die Vereins-Suche."/>
+        <Btn full cl={cl} ch={url.trim()?"🔗 Spielplan öffnen":"🔎 fussball.de-Suche öffnen"} onClick={openSource} sx={{marginTop:10}}/>
+        <Btn full v="out" cl={cl} ch="Weiter: Spielplan einfügen →" onClick={()=>setStep(2)} sx={{marginTop:8}}/>
+      </>}
+      {step===2&&<>
+        <textarea value={txt} onChange={e=>setTxt(e.target.value)} rows={9} placeholder={"Kopierten Spielplan hier einfügen …\n(oder unten eine DFBnet-Datei wählen)"}
+          style={{width:"100%",padding:"12px 14px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",fontFamily:"inherit",boxSizing:"border-box",resize:"vertical"}}/>
+        <label style={{display:"block",marginTop:10,fontSize:12.5,fontWeight:700,color:"#475569"}}>
+          Oder Datei aus DFBnet (CSV/ICS/TXT):
+          <input type="file" accept=".csv,.ics,.txt" onChange={onFile} style={{display:"block",marginTop:6,fontSize:12}}/>
+        </label>
+        <div style={{display:"flex",gap:9,marginTop:14}}>
+          <Btn v="gst" ch="← Zurück" onClick={()=>setStep(1)} sx={{flex:1}}/>
+          <Btn cl={cl} dis={txt.trim().length<20} ch="Vorschau anzeigen →" onClick={doParse} sx={{flex:2}}/>
+        </div>
+      </>}
+      {step===3&&rows&&<>
+        <div style={{fontSize:13,color:"#475569",marginBottom:10}}>{rows.filter(r=>r.use).length} von {rows.length} Spielen ausgewählt – Heim/Auswärts bei Bedarf antippen.</div>
+        <div style={{display:"flex",flexDirection:"column",gap:7,maxHeight:"46dvh",overflowY:"auto",marginBottom:12}}>
+          {rows.map((r,i)=>{ const [cl2,cc,cb]=chip(r.status); return (
+            <div key={i} style={{display:"flex",alignItems:"center",gap:9,background:r.use?"#fff":"#f8fafc",border:`1.5px solid ${r.use?t.p+"55":"#e2e8f0"}`,borderRadius:11,padding:"9px 11px",opacity:r.use?1:.6}}>
+              <input type="checkbox" checked={r.use} onChange={()=>setRows(rs=>rs.map((x,j)=>j===i?{...x,use:!x.use}:x))}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:13,fontWeight:800,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.opp}</div>
+                <div style={{fontSize:11.5,color:"#64748b"}}>{fmtD(r.date)}{r.time?` · ${r.time}`:""}{r.loc?` · ${r.loc}`:""}</div>
+              </div>
+              <button onClick={()=>setRows(rs=>rs.map((x,j)=>j===i?{...x,type:x.type==="heimspiel"?"auswarts":"heimspiel"}:x))}
+                style={{padding:"5px 9px",borderRadius:8,border:"1.5px solid #e2e8f0",background:r.type==="heimspiel"?"#dcfce7":"#dbeafe",color:r.type==="heimspiel"?"#166534":"#1e40af",fontWeight:800,fontSize:10.5,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>{r.type==="heimspiel"?"🏠 HEIM":"🚌 AUSW."}</button>
+              <span style={{fontSize:9.5,fontWeight:800,color:cc,background:cb,borderRadius:6,padding:"3px 7px",flexShrink:0}}>{cl2}</span>
+            </div>
+          );})}
+        </div>
+        <div style={{display:"flex",gap:9}}>
+          <Btn v="gst" ch="← Zurück" onClick={()=>setStep(2)} sx={{flex:1}}/>
+          <Btn cl={cl} dis={!rows.some(r=>r.use)} ch={`📥 ${rows.filter(r=>r.use).length} Spiele importieren`} onClick={doImport} sx={{flex:2}}/>
+        </div>
+      </>}
+    </Drawer>
+  );
+}
+
 function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const { isDesktop, isTablet } = useBreakpoint();
   const isAdmin=session.role==="admin"; const isHelper=session.role==="helper"; const cid=session.cid; const cl=data.clubs.find(c=>c.id===cid);
@@ -14939,6 +15059,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const [editConf,setEditConf]=useState(null);
   const [pauseSer,setPauseSer]=useState(null); // {ev,from,to} Ferien-Pause fuer eine Serie
   const [showSearch,setShowSearch]=useState(false); const [searchQ,setSearchQ]=useState("");
+  const [showImport,setShowImport]=useState(false); // Spielplan-Import (fussball.de/DFBnet)
   const [searchPlayer,setSearchPlayer]=useState(null); // Spielerprofil direkt aus der Suche
   const [planFor,setPlanFor]=useState(null);
   // Push-Deep-Links: ?event=<id> öffnet den Termin direkt, ?tab=<id> wechselt den Reiter.
@@ -15186,6 +15307,14 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             </div>
             <div style={{width:32,height:32,borderRadius:10,background:"rgba(0,0,0,.15)",display:"flex",alignItems:"center",justifyContent:"center",color:t.ct,fontSize:18,fontWeight:700,flexShrink:0}}>{">"}</div>
           </div>
+          <button onClick={()=>setShowImport(true)} style={{display:"flex",alignItems:"center",gap:10,width:"100%",background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:14,padding:"11px 15px",marginBottom:18,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
+            <span style={{fontSize:18,flexShrink:0}}>📥</span>
+            <span style={{flex:1,minWidth:0}}>
+              <span style={{display:"block",fontSize:13.5,fontWeight:800,color:"#0f172a"}}>Spielplan von fussball.de importieren</span>
+              <span style={{display:"block",fontSize:11.5,color:"#64748b",marginTop:1}}>Kopieren & einfügen – erneuter Import aktualisiert verlegte Spiele</span>
+            </span>
+            <span style={{color:"#94a3b8",fontSize:16,flexShrink:0}}>›</span>
+          </button>
           {up.length>0&&<><Divider label={`NÄCHSTE 10 TAGE (${soon.length})`}/>{soon.length>0?soon.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={selfName} onSelfVote={selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={()=>openPlan(ev)} planTitle={planTitleOf(ev)}/>):<p style={{textAlign:"center",color:"#64748b",fontSize:13.5,padding:"14px 10px"}}>Keine Termine in den nächsten 10 Tagen.</p>}
             {later.length>0&&<>
               <button onClick={()=>setShowLater(s=>!s)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",background:showLater?"#f1f5f9":"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,cursor:"pointer",margin:"6px 0 12px",padding:"11px 14px",fontWeight:800,fontSize:13,color:"#475569",fontFamily:"inherit"}}>{showLater?"▲ Weitere Termine ausblenden":"▼ Weitere "+later.length+" Termine anzeigen"}</button>
@@ -15663,6 +15792,9 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           </Drawer>
         );
       })()}
+
+      {showImport&&<SpielplanImport local={local} save={save} fire={fire} cl={myClub} cid={cid}
+        teams={(local.teams||[]).filter(x=>myTids.includes(x.id))} defaultTid={myTids[0]} onClose={()=>setShowImport(false)}/>}
 
       {/* Globale Suche: Kinder, Termine, Uebungen, Bereiche */}
       {showSearch&&(()=>{
