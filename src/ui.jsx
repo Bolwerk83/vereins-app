@@ -433,16 +433,19 @@ export function ChangePasswordModal({ cl, onSave, onClose }) {
 }
 export function OnlineStatus() {
   const [online, setOnline] = React.useState(navigator.onLine);
+  const [pending, setPending] = React.useState(()=>sb.hasPending());
   React.useEffect(()=>{
     const on=()=>setOnline(true); const off=()=>setOnline(false);
     window.addEventListener("online",on); window.addEventListener("offline",off);
-    return()=>{window.removeEventListener("online",on);window.removeEventListener("offline",off);};
+    const iv=setInterval(()=>setPending(sb.hasPending()),3000); // Nachtrag-Status beobachten
+    return()=>{window.removeEventListener("online",on);window.removeEventListener("offline",off);clearInterval(iv);};
   },[]);
-  if(online) return null;
+  if(online && !pending) return null;
+  const offline=!online;
   return (
-    <div style={{position:"fixed",top:0,left:0,right:0,zIndex:9999,background:"#dc2626",color:"#fff",
+    <div style={{position:"fixed",top:0,left:0,right:0,zIndex:9999,background:offline?"#dc2626":"#d97706",color:"#fff",
       textAlign:"center",fontSize:12,fontWeight:700,padding:"6px"}}>
-      Offline - Daten werden lokal gespeichert
+      {offline?"📴 Offline – Änderungen werden auf dem Gerät gesichert und automatisch nachgetragen":"📶 Verbindung wieder da – Änderungen werden nachgetragen …"}
     </div>
   );
 }

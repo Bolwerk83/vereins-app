@@ -14853,6 +14853,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       paddingBottom:isDesktop?0:52,
       display:isDesktop?"grid":"block",
       gridTemplateColumns:isDesktop?"260px 1fr":"none"}}>
+      <OnlineStatus/>
       {isDesktop&&<DesktopSidebar tab={tab} setTab={setTab}
         isAdmin={isAdmin} isHelper={isHelper}
         unread={unreadMsgs} inboxUnread={unreadInbox} cl={myClub}
@@ -18615,6 +18616,7 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           </div>
         </div>
       )}
+      <OnlineStatus/>
       {isDesktop&&<DesktopSidebar tab={tab} setTab={setTab}
         isAdmin={isAdmin} isHelper={isHelper}
         unread={unreadMsgs} cl={myClub}
@@ -19042,8 +19044,10 @@ function AppInner({lang,setLang}) {
     && !new URLSearchParams(window.location.search).has("superadmin");
   const [saveStatus,setSaveStatus] = useState(null); // null | "saving" | "saved" | "local"
   const syncRef  = useRef(null);
+  const dataRef  = useRef(null);
   const saveTimer= useRef(null);
   const cidRef   = useRef(null); cidRef.current = cid; // immer aktueller Verein für Schreib-Isolation
+  const dataRef2 = dataRef; dataRef2.current = data;    // aktueller Stand für den Offline-Nachtrag
 
   useEffect(()=>{
     (async()=>{
@@ -19117,6 +19121,9 @@ function AppInner({lang,setLang}) {
         // nur den Verein des angemeldeten Nutzers laden
         let cd=null; try { cd=await sb.getClub(s.cid); } catch {}
         cd = cd||dir; if(s.cid==="demo") cd=refreshDemo(cd);
+        // Offline gespeicherte Aenderungen ueberleben auch einen App-Neustart:
+        // lokalen Stand zeigen, der Sync traegt ihn gleich in die Cloud nach.
+        if (sb.hasPending()) { const loc=localGet(); if (loc) cd=normData(loc); }
         setData(cd); setCid(s.cid); setSess(s); setScr(s.role==="user"?"user":"dash"); return;
       }
       // Direktlink ?club=<slug|id>&team=<id> → Verein laden, dann zur Anmeldung
@@ -19147,6 +19154,12 @@ function AppInner({lang,setLang}) {
         // lokalen Stand fallen und beim naechsten Save aus global.clubs
         // verschwinden (Shard bleibt, Verzeichnis-Eintrag geht verloren).
         if (sb._writing) return;
+        // Offene Offline-Aenderungen ZUERST nachtragen - ein Cloud-Read wuerde
+        // sie im UI ueberschreiben. sb.set merged 3-wegig gegen den Cloud-Stand.
+        if (sb.hasPending() && dataRef.current) {
+          await sb.set(dataRef.current, cidRef.current);
+          return;
+        }
         if (sb._lastWrite?.at && Date.now()-sb._lastWrite.at < 6000) return;
         const cur=cidRef.current;
         const r = cur ? await sb.getClub(cur) : await sb.getDirectory();

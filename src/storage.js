@@ -309,6 +309,12 @@ export const sb = {
     }
   },
   // set(d): schreibt erst in die Cloud; localStorage wird erst nach Erfolg aktualisiert.
+  // Offline-Nachtrag: gescheiterte Netzwerk-Writes werden lokal gesichert und
+  // vom 10s-Sync erneut geschrieben (3-Wege-Merge verhindert Ueberschreiben).
+  _pendKey: SK + "_pendingSync",
+  hasPending: () => { try { return !!localStorage.getItem(sb._pendKey); } catch { return false; } },
+  _markPending: (d) => { try { localSet(d); localStorage.setItem(sb._pendKey, new Date().toISOString()); } catch {} },
+  clearPending: () => { try { localStorage.removeItem(sb._pendKey); } catch {} },
   set: async (d, cid=null) => {
     const cfg = getConfig();
     if (!cfg?.url || !cfg?.key) {
@@ -361,10 +367,14 @@ export const sb = {
         return sb._lastWrite;
       }
       localSet(d); // Cache erst nach Cloud-Erfolg
+      sb.clearPending(); // evtl. offene Offline-Aenderungen sind jetzt in der Cloud
       rows.forEach(x=>{ sb._snap[x.key]=x.value; }); // Snapshot = neuer Cloud-Stand
       sb._lastWrite = { ok:true, status:r.status, error:"", at:Date.now() };
       return sb._lastWrite;
     } catch (e) {
+      // Netzwerk weg (Sportplatz!): Stand lokal sichern und als "nachzutragen"
+      // markieren - der Hintergrund-Sync schreibt ihn, sobald Verbindung da ist.
+      sb._markPending(d);
       sb._lastWrite = { ok:false, status:0, error:String((e&&e.message)||e).slice(0,400), at:Date.now() };
       return sb._lastWrite;
     } finally {
