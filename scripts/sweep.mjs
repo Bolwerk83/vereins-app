@@ -34,12 +34,18 @@ const tap = async (label, locator, {optional=false, wait=900}={}) => {
   try {
     const el = typeof locator==="string" ? page.getByText(locator,{exact:false}).first() : locator;
     await el.waitFor({ state:"visible", timeout: 4000 });
-    await el.click();
+    await el.click({ timeout: 5000 });
     await page.waitForTimeout(wait);
     return true;
   } catch(e){ if(!optional) errors.push(`[${label}] NICHT KLICKBAR: ${String(e.message).split("\n")[0].slice(0,140)}`); return false; }
 };
-const closeSheets = async ()=>{ for(let i=0;i<3;i++){ await page.keyboard.press("Escape").catch(()=>{}); const x=page.locator('button:has-text("✕")').first(); if(await x.isVisible().catch(()=>false)) await x.click().catch(()=>{}); await page.waitForTimeout(250);} };
+const closeSheets = async ()=>{ for(let i=0;i<4;i++){
+  const x=page.locator('button:has-text("✕")').last();
+  if(await x.isVisible().catch(()=>false)) { await x.click({timeout:2000}).catch(()=>{}); }
+  else { await page.mouse.click(10,200).catch(()=>{}); } // Backdrop-Tipp schliesst Drawer
+  await page.keyboard.press("Escape").catch(()=>{});
+  await page.waitForTimeout(300);
+} };
 
 const body = async ()=> (await page.evaluate(()=>document.body.innerText.slice(0,400))).replace(/\n/g," | ");
 console.log("BOOT:", (await body()).slice(0,180));
