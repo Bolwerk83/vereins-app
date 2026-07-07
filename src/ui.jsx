@@ -502,7 +502,10 @@ export const AREA_INTROS = {
   parent_home:     {icon:"👋", title:"Willkommen!", text:"Hier siehst du die Termine eures Teams. Tippe 'Bin dabei' oder 'Sage ab'. Unten findest du Chat und unter 'Mehr' dein Profil."},
 };
 export function AreaIntro({ id, cl }){
-  const info=AREA_INTROS[id]; if(!info) return null;
+  const { tr } = useT();
+  let info=AREA_INTROS[id]; if(!info) return null;
+  // Eltern-Intros folgen der gewaehlten Sprache (Trainer-Intros bleiben deutsch)
+  if(id==="parent_home") info={...info, title:tr("aiParentT"), text:tr("aiParentX")};
   const key="va_intro_"+id;
   const [open,setOpen]=useState(()=>{ try{return localStorage.getItem(key)!=="1";}catch{return true;} });
   if(!open) return null;

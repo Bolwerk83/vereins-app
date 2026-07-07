@@ -858,6 +858,7 @@ function affiliateUrl(aff) {
 }
 
 function AffiliateBanner({ trigger, style={}, slim=false }) {
+  const { tr } = useT();
   const [dismissed, setDismissed] = useState(false);
   const aff = pickAffiliate(trigger);
   if (!aff || dismissed) return null;
@@ -867,8 +868,8 @@ function AffiliateBanner({ trigger, style={}, slim=false }) {
   };
   if (slim) return (
     <div style={{display:"flex",alignItems:"center",gap:8,background:"#f8fafc",border:"1px solid #eef2f7",borderRadius:10,padding:"7px 11px",...style}}>
-      <span style={{fontSize:8.5,fontWeight:800,color:"#64748b",letterSpacing:.5,flexShrink:0}}>WERBUNG</span>
-      <span onClick={onClick} style={{flex:1,minWidth:0,fontSize:12,fontWeight:600,color:"#475569",cursor:"pointer",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{aff.text} <span style={{color:"#64748b"}}>· Anzeige*</span></span>
+      <span style={{fontSize:8.5,fontWeight:800,color:"#64748b",letterSpacing:.5,flexShrink:0}}>{tr("adLabel")}</span>
+      <span onClick={onClick} style={{flex:1,minWidth:0,fontSize:12,fontWeight:600,color:"#475569",cursor:"pointer",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{aff.text} <span style={{color:"#64748b"}}>· {tr("adMark")}</span></span>
       <button onClick={()=>setDismissed(true)} aria-label="Werbung ausblenden" style={{width:20,height:20,borderRadius:5,background:"none",border:"none",color:"#64748b",cursor:"pointer",fontSize:13,fontWeight:800,flexShrink:0}}>×</button>
     </div>
   );
@@ -881,7 +882,7 @@ function AffiliateBanner({ trigger, style={}, slim=false }) {
       </div>
       <div style={{flex:1,cursor:"pointer"}} onClick={onClick}>
         <div style={{fontSize:9,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:2}}>
-          WERBUNG{aff.network?" · "+aff.network:""}
+          {tr("adLabel")}{aff.network?" · "+aff.network:""}
         </div>
         <div style={{fontWeight:700,fontSize:13,color:"#334155"}}>{aff.text}</div>
         <div style={{fontSize:11,color:"#64748b",marginTop:2}}>
@@ -901,6 +902,7 @@ function AffiliateBanner({ trigger, style={}, slim=false }) {
    ohne separates Consent-Banner). Fuer personalisierte Ads zusaetzlich
    einen Consent-Manager einbinden. */
 function AdSenseSlot({ slot, format="auto", style={} }) {
+  const { tr } = useT();
   const client = ADSENSE_CONFIG.client;
   const slotId = ADSENSE_CONFIG.slots?.[slot];
   useEffect(() => {
@@ -923,7 +925,7 @@ function AdSenseSlot({ slot, format="auto", style={} }) {
   if (!client || !slotId) return null;
   return (
     <div style={{margin:"12px 0",textAlign:"center",...style}}>
-      <div style={{fontSize:9,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:4}}>WERBUNG</div>
+      <div style={{fontSize:9,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:4}}>{tr("adLabel")}</div>
       <ins className="adsbygoogle"
         style={{display:"block",minHeight:90}}
         data-ad-client={client}
@@ -3632,6 +3634,7 @@ function TeamSkillAnalysis({ data, myTids, cl }) {
 
 
 function DFBFormatsCard({ cl, defaultOpen=false, cat=null, cats=null }){
+  const { tr } = useT();
   const [open,setOpen]=useState(defaultOpen);
   const c=cl?.pri||"#16a34a";
   // Auf die gewählte(n) Jugend(en) filtern: cat = eine Kategorie, cats = Liste
@@ -3644,7 +3647,7 @@ function DFBFormatsCard({ cl, defaultOpen=false, cat=null, cats=null }){
   return (
     <div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:13,overflow:"hidden"}}>
       <button onClick={()=>setOpen(o=>!o)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 14px",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit"}}>
-        <span style={{fontWeight:800,fontSize:13.5,color:"#0f172a"}}>📐 {only?`DFB-Spielform & Platzgröße: ${only.age}`:"DFB-Spielformen & Platzgrößen je Jugend"}</span>
+        <span style={{fontWeight:800,fontSize:13.5,color:"#0f172a"}}>📐 {only?tr("dfbCardOne").replace("{age}",only.age):tr("dfbCardAll")}</span>
         <span style={{color:"#64748b",fontSize:16}}>{open?"▲":"▼"}</span>
       </button>
       {open&&<div style={{padding:"0 14px 14px"}}>
@@ -5573,7 +5576,9 @@ function SkillTargetsEditor({ data, cid, save, fire, cl, sport="fussball", allow
 // Weiterempfehlung – neugierig machen, kein Druck, kostenlos testen, löschbar.
 const RECOMMEND_LINK = "https://verein.bolwerk24.de";
 const recommendMsg = () => `⚽ Kennst du einen Verein oder ein Team, das das WhatsApp-Chaos satt hat?\n\nMit der Vereins-App laufen Termine, Zu-/Absagen, Mannschaften, Fahrgemeinschaften und sogar Turniere an einem Ort zusammen – übersichtlich für Trainer und Eltern.\n\nKostenlos zum Ausprobieren, keine Verpflichtung. Wenn's nicht passt, lässt sich alles einfach wieder löschen.\n\nSchau's dir an: ${RECOMMEND_LINK}`;
-function RecommendCard({ theme="#16a34a", title="Gefällt dir die App?", sub="Zeig sie einem Verein oder Team, dem das auch helfen würde – kostenlos zum Testen, jederzeit wieder löschbar. Kein Druck. 🙂", style={} }){
+function RecommendCard({ theme="#16a34a", title=null, sub=null, style={} }){
+  const { tr } = useT();
+  title=title??tr("recT"); sub=sub??tr("recSub");
   const msg=recommendMsg();
   const wa=()=>window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");
   const native=async()=>{ if(navigator.share){try{await navigator.share({title:"Vereins-App",text:msg,url:RECOMMEND_LINK});}catch{}} else {navigator.clipboard?.writeText(msg);} };
@@ -5588,9 +5593,9 @@ function RecommendCard({ theme="#16a34a", title="Gefällt dir die App?", sub="Ze
       <div style={{fontWeight:900,fontSize:15,marginBottom:3}}>💚 {title}</div>
       <div style={{fontSize:12.5,opacity:.92,lineHeight:1.5,marginBottom:12}}>{sub}</div>
       <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-        <button onClick={wa} style={{flex:"1 1 auto",padding:"10px 14px",borderRadius:11,border:"none",background:ink,color:primTxt,fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Per WhatsApp empfehlen</button>
-        {typeof navigator!=="undefined"&&navigator.share&&<button onClick={native} style={{flexShrink:0,padding:"10px 14px",borderRadius:11,border:`1.5px solid ${ink}66`,background:`${ink}24`,color:ink,fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Teilen</button>}
-        <button onClick={copy} style={{flexShrink:0,padding:"10px 14px",borderRadius:11,border:`1.5px solid ${ink}66`,background:`${ink}24`,color:ink,fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{copied?"Kopiert!":"Link kopieren"}</button>
+        <button onClick={wa} style={{flex:"1 1 auto",padding:"10px 14px",borderRadius:11,border:"none",background:ink,color:primTxt,fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{tr("recWa")}</button>
+        {typeof navigator!=="undefined"&&navigator.share&&<button onClick={native} style={{flexShrink:0,padding:"10px 14px",borderRadius:11,border:`1.5px solid ${ink}66`,background:`${ink}24`,color:ink,fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{tr("recShare")}</button>}
+        <button onClick={copy} style={{flexShrink:0,padding:"10px 14px",borderRadius:11,border:`1.5px solid ${ink}66`,background:`${ink}24`,color:ink,fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{copied?tr("recCopied"):tr("recCopy")}</button>
       </div>
     </div>
   );
