@@ -11735,7 +11735,7 @@ function VenuePicker({venues=[],value,onPick,onClear,onAdd,cl}) {
 // Anpassung: eingebaut < vereinsweit (clubSettings.carpoolLabels) < pro Termin (ev.carpoolLabels).
 const CARPOOL_DEFAULTS = { drive:"Ich fahre", need:"Brauche Mitfahrt", self:"Komme selbst" };
 const carpoolLabelsFor = (ev, cl) => ({ ...(cl?.clubSettings?.carpoolLabels||{}), ...(ev?.carpoolLabels||{}) }); // Defaults kommen sprachabhängig aus dem Dictionary
-function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTemplate=null,fields=[],venues=[],onAddVenue}) {
+function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTemplate=null,fields=[],venues=[],onAddVenue,clubTeams=null}) {
   const t=TH(cl); const isEdit=!!editEv; const STEPS=5; const { tr } = useT();
   const blank={tid:teams[0]?.id||"",coTids:[],type:"training",title:"",date:now(),time:"",endTime:"",loc:"",note:"",sollPlayers:null,maxPlayers:null,pt:"att",recMode:"none",recDays:[],recStart:now(),recUntil:"",recDates:[],li:[],fi:[],sc:[],extraPolls:[],selType:"multi",open:false,_li:{txt:"",max:""},_fi:{name:"",col:"#16a34a"},_sc:{fid:"",time:"",a:"",b:"",ref:""}};
   const [step,setStep]=useState(1);
@@ -11792,21 +11792,42 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
               <div style={{width:22,height:22,borderRadius:"50%",border:`${f.tid===tm.id?"7px":"2px"} solid ${f.tid===tm.id?t.p:"#cbd5e1"}`,transition:"all .18s"}}/>
             </div>
           ))}
-          {/* Verbund-Termin: EIN Termin fuer mehrere Teams (z. B. F1 + F2 beim Turnier) */}
-          {!isEdit&&teams.length>1&&(
+          {/* Verbund-Termin: EIN Termin fuer mehrere Teams (z. B. F1 + F2 beim
+              Turnier). Zur Auswahl stehen ALLE Vereins-Teams - der andere Trainer
+              sieht und pflegt den Termin danach ganz normal in seinem Team. */}
+          {!isEdit&&(()=>{
+            const vTeams=(clubTeams&&clubTeams.length?clubTeams:teams).filter(tm=>tm.id!==f.tid);
+            if(!vTeams.length) return null;
+            const co=f.coTids||[];
+            const toggle=id=>u({coTids:co.includes(id)?co.filter(x=>x!==id):[...co,id]});
+            // Schnellwahl je Jugend: alle Teams der Altersklasse auf einmal
+            const catOf=tm=>tm.cat||tm.name;
+            const cats=[...new Set(vTeams.map(catOf))].map(c=>({c,ids:vTeams.filter(tm=>catOf(tm)===c).map(tm=>tm.id)}))
+              .filter(x=>{ const mainCat=catOf((clubTeams||teams).find(tm=>tm.id===f.tid)||{}); return x.ids.length>=(x.c===mainCat?1:2); });
+            return (
             <div style={{background:"#eef2ff",border:"1.5px solid #c7d2fe",borderRadius:15,padding:"13px 15px"}}>
               <div style={{fontSize:12,fontWeight:800,color:"#3730a3",marginBottom:3}}>🤝 VERBUND-TERMIN (OPTIONAL)</div>
               <div style={{fontSize:12,color:"#4f46e5",lineHeight:1.45,marginBottom:9}}>Weitere Teams mit anlegen – jedes Team bekommt den Termin, Änderungen gelten für alle, Listen-Umfragen teilen sich einen Topf. (Nur für Einzeltermine, nicht für Serien.)</div>
+              {cats.length>0&&<div style={{display:"flex",gap:7,flexWrap:"wrap",marginBottom:8}}>
+                {cats.map(({c,ids})=>{const all=ids.every(id=>co.includes(id));return (
+                  <button key={c} onClick={()=>u({coTids:all?co.filter(x=>!ids.includes(x)):[...new Set([...co,...ids])]})}
+                    style={{padding:"8px 13px",borderRadius:10,border:"1.5px dashed #818cf8",background:all?"#4f46e5":"#eef2ff",color:all?"#fff":"#4338ca",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
+                    ⚡ Ganze {c}{all?" ✓":""}
+                  </button>
+                );})}
+              </div>}
               <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
-                {teams.filter(tm=>tm.id!==f.tid).map(tm=>{const on=(f.coTids||[]).includes(tm.id);return (
-                  <button key={tm.id} onClick={()=>u({coTids:on?(f.coTids||[]).filter(x=>x!==tm.id):[...(f.coTids||[]),tm.id]})}
+                {vTeams.map(tm=>{const on=co.includes(tm.id);return (
+                  <button key={tm.id} onClick={()=>toggle(tm.id)}
                     style={{padding:"8px 13px",borderRadius:10,border:`1.5px solid ${on?"#4f46e5":"#c7d2fe"}`,background:on?"#4f46e5":"#fff",color:on?"#fff":"#4f46e5",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
                     {tm.icon} {tm.name}{on?" ✓":""}
                   </button>
                 );})}
               </div>
+              {co.length>0&&<div style={{fontSize:11.5,color:"#3730a3",fontWeight:700,marginTop:8}}>Wird zusätzlich angelegt für: {vTeams.filter(tm=>co.includes(tm.id)).map(tm=>tm.name).join(", ")}</div>}
             </div>
-          )}
+            );
+          })()}
         </div>}
         {}
         {step===2&&<div className="in" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
@@ -14966,6 +14987,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const [showLater,setShowLater]=useState(false);
 
   if(wizard||editEv) return <Wizard teams={local.teams.filter(x=>myTids.includes(x.id))} cl={myClub} editEv={editEv}
+    clubTeams={(local.teams||[]).filter(x=>x.cid===cid&&isActive(x))}
     fields={(local.fields||[]).filter(x=>x.cid===cid)}
     venues={(local.venues||[]).filter(x=>x.cid===cid)}
     onAddVenue={v=>{ const nv={id:uid(),cid,name:v.name,address:v.address||""}; save({...local,venues:[...(local.venues||[]),nv]}); fire("Adresse im Vereins-Adressbuch gespeichert"); return nv; }}
