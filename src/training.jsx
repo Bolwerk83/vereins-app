@@ -12,8 +12,328 @@ import { CAT_YEARS, catYearsStr, dfbFormatForCat, DFB_FORMATS } from "./dfb.js";
 import { trainingFocusFor, generateTrainingPlan, buildSession, suggestDrillsForSkill, drillScores, drillVoteOf, sollFor, skillAxesFor, SKILLS, AXIS_TO_FOCUS, playerArchetype, isPausedP, addAuditLog } from "./domain.js";
 import { uid, now, addD, addW, fmtD, fmtDShort, TH, CSS, ET, etLabel, evDisplayTitle, activeSid, activeTeamsFor, isActive, Btn, Tag, Av, Drawer, PageHead, PillTabs, TeamPills, EmptyBox, Inp, Sel, Sw, Divider, InfoHint, SpiderChart, dimLabel } from "./ui.jsx";
 import { CAT_ORDER } from "./dfb.js";
+import { AffiliateBanner } from "./affiliates.jsx";
 
 // ---- Trainings-Konstanten & -Helfer ----
+export function TacticLibrary({ onPick, onClose }) {
+  return (
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",
+      display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:18}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:18,padding:"20px",
+        width:"100%",maxWidth:720,maxHeight:"88vh",overflowY:"auto"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+          <div>
+            <div style={{fontWeight:900,fontSize:18,color:"#0f172a"}}>Taktiktafel-Bibliothek</div>
+            <div style={{fontSize:12,color:"#64748b"}}>{TACTIC_TEMPLATES.length} Vorlagen · per Klick auswählen</div>
+          </div>
+          <button onClick={onClose} style={{background:"none",border:"none",fontSize:22,color:"#64748b",cursor:"pointer"}}>×</button>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:10}}>
+          {TACTIC_TEMPLATES.map(tpl=>(
+            <button key={tpl.id} onClick={()=>onPick(tpl.id)}
+              style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:13,padding:"10px",
+                cursor:"pointer",fontFamily:"inherit",display:"flex",flexDirection:"column",gap:7,textAlign:"left"}}>
+              <TacticField tactic={tpl} size="md"/>
+              <div style={{display:"flex",alignItems:"center",gap:6}}>
+                <span style={{fontSize:18}}>{tpl.icon}</span>
+                <span style={{fontWeight:800,fontSize:13.5,color:"#0f172a"}}>{tpl.name}</span>
+              </div>
+              <div style={{fontSize:11.5,color:"#64748b",lineHeight:1.45}}>{tpl.desc}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function DFBFormatsCard({ cl, defaultOpen=false, cat=null, cats=null }){
+  const { tr } = useT();
+  const [open,setOpen]=useState(defaultOpen);
+  const c=cl?.pri||"#16a34a";
+  // Auf die gewählte(n) Jugend(en) filtern: cat = eine Kategorie, cats = Liste
+  // (z. B. alle Mannschaften des Trainers). Ohne Treffer -> volle Übersicht.
+  const matched = cat
+    ? [dfbFormatForCat(cat)].filter(Boolean)
+    : (Array.isArray(cats)&&cats.length ? [...new Set(cats.map(x=>dfbFormatForCat(x)).filter(Boolean))] : []);
+  const list = matched.length ? DFB_FORMATS.filter(f=>matched.includes(f)) : DFB_FORMATS;
+  const only = list.length===1 ? list[0] : null;
+  return (
+    <div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:13,overflow:"hidden"}}>
+      <button onClick={()=>setOpen(o=>!o)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 14px",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit"}}>
+        <span style={{fontWeight:800,fontSize:13.5,color:"#0f172a"}}>📐 {only?tr("dfbCardOne").replace("{age}",only.age):tr("dfbCardAll")}</span>
+        <span style={{color:"#64748b",fontSize:16}}>{open?"▲":"▼"}</span>
+      </button>
+      {open&&<div style={{padding:"0 14px 14px"}}>
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {list.map((f,i)=>(
+            <div key={i} style={{background:"#f8fafc",border:"1px solid #f1f5f9",borderRadius:11,padding:"10px 12px"}}>
+              <div style={{fontWeight:800,fontSize:13,color:c}}>{f.age}</div>
+              <div style={{fontSize:12,color:"#334155",marginTop:4,lineHeight:1.6}}>
+                <b>Spielform:</b> {f.form} · <b>Spieler:</b> {f.players}<br/>
+                <b>Feld:</b> {f.field} · <b>Tore:</b> {f.goals}<br/>
+                <b>Ball:</b> {f.ball} · <b>Spielzeit:</b> {f.time}<br/>
+                <b>Schwerpunkt / Bewegung:</b> {f.focus}
+                {f.rules&&<><br/><b>Regeln:</b> {f.rules}</>}
+                {f.fair&&<><br/><b>Fair-Play / Einsatzzeit:</b> {f.fair}</>}
+              </div>
+            </div>
+          ))}
+        </div>
+        <p style={{fontSize:11,color:"#64748b",marginTop:10,lineHeight:1.5}}>Orientierungswerte nach DFB-Empfehlung (Kinderfußball-Reform). Landes-/Kreisverbände können abweichen – im Zweifel beim eigenen Verband prüfen.</p>
+      </div>}
+    </div>
+  );
+}
+export function TacticFullscreen({ tactic, title, onClose }) {
+  return (
+    <div style={{position:"fixed",inset:0,background:"#0f172a",zIndex:9999,
+      display:"flex",flexDirection:"column",padding:"env(safe-area-inset-top) 12px 12px"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 4px"}}>
+        <div style={{color:"#fff",fontWeight:900,fontSize:18}}>{title || "Taktiktafel"}</div>
+        <button onClick={onClose} style={{padding:"10px 18px",borderRadius:11,border:"none",background:"#dc2626",color:"#fff",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>
+          Fertig
+        </button>
+      </div>
+      <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:"8px"}}>
+        <TacticField tactic={tactic} size="xl"/>
+      </div>
+      {tactic?.desc && (
+        <div style={{background:"rgba(255,255,255,.06)",borderRadius:14,padding:"12px 16px",color:"#64748b",fontSize:14,textAlign:"center",lineHeight:1.55}}>
+          {tactic.desc}
+        </div>
+      )}
+    </div>
+  );
+}
+export function TacticPicker({ value, onChange, onFullscreen }) {
+  const [open, setOpen] = useState(false);
+  const tpl = value?.template ? TACTIC_TEMPLATES.find(t=>t.id===value.template) : null;
+  return (
+    <div style={{marginTop:6}}>
+      {tpl ? (
+        <div style={{display:"flex",alignItems:"center",gap:8,background:"#f8fafc",borderRadius:10,padding:"6px 8px",border:"1px solid #e2e8f0"}}>
+          <TacticField tactic={tpl} size="sm" showLabels={false}/>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontWeight:800,fontSize:12,color:"#0f172a"}}>{tpl.icon} {tpl.name}</div>
+            <div style={{fontSize:10.5,color:"#64748b",lineHeight:1.4}}>{tpl.desc}</div>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:4}}>
+            {onFullscreen && <button onClick={()=>onFullscreen(tpl)}
+              title="Auf dem Platz vergrößern"
+              style={{padding:"4px 8px",borderRadius:7,border:"1.5px solid #16a34a",background:"#dcfce7",color:"#15803d",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>🔍 Platz</button>}
+            <button onClick={()=>setOpen(true)}
+              style={{padding:"4px 8px",borderRadius:7,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>Wechseln</button>
+            <button onClick={()=>onChange(null)}
+              style={{padding:"4px 8px",borderRadius:7,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>×</button>
+          </div>
+        </div>
+      ) : (
+        <button onClick={()=>setOpen(true)}
+          style={{width:"100%",padding:"6px 8px",borderRadius:8,border:"1.5px dashed #cbd5e1",background:"transparent",color:"#64748b",fontWeight:700,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>
+          ⚽ Taktiktafel hinzufügen
+        </button>
+      )}
+      {open && <TacticLibrary onPick={(id)=>{onChange({template:id});setOpen(false);}} onClose={()=>setOpen(false)}/>}
+    </div>
+  );
+}
+export function TacticField({ tactic, size="md", showLabels=true }) {
+  // Maße basierend auf size
+  const dims = {
+    xs: { w:80,  h:50, cone:3, player:8, font:7,  arrow:1.5 },
+    sm: { w:160, h:100, cone:4, player:11, font:10, arrow:2 },
+    md: { w:260, h:160, cone:5, player:13, font:11, arrow:2.5 },
+    lg: { w:420, h:260, cone:7, player:18, font:13, arrow:3 },
+    xl: { w:760, h:460, cone:11, player:28, font:18, arrow:5 },
+  };
+  const D = dims[size] || dims.md;
+  if (!tactic) return null;
+  const tpl = TACTIC_TEMPLATES.find(t=>t.id===tactic.template) || tactic;
+  const { cones=[], players=[], arrows=[], goal } = tpl;
+  const arrowCol = (a) => a.type==="pass" ? "#fb923c" : "#ffffff";
+
+  return (
+    <svg viewBox="0 0 100 65" width={D.w} height={D.h}
+      style={{display:"block",background:"#16a34a",borderRadius:8,boxShadow:"inset 0 0 0 2px rgba(255,255,255,.25)"}}>
+      {/* Field markings */}
+      <rect x="0" y="0" width="100" height="65" fill="none" stroke="rgba(255,255,255,.3)" strokeWidth=".3"/>
+      <line x1="50" y1="0" x2="50" y2="65" stroke="rgba(255,255,255,.25)" strokeWidth=".3"/>
+      <circle cx="50" cy="32.5" r="6" fill="none" stroke="rgba(255,255,255,.25)" strokeWidth=".3"/>
+      <rect x="0" y="20" width="12" height="25" fill="none" stroke="rgba(255,255,255,.25)" strokeWidth=".3"/>
+      <rect x="88" y="20" width="12" height="25" fill="none" stroke="rgba(255,255,255,.25)" strokeWidth=".3"/>
+      {goal && <rect x={goal.x*0.85+85} y={goal.y*0.65-6} width="3" height="12" fill="#ffffff"/>}
+      {/* Arrows */}
+      <defs>
+        <marker id="arr-run" viewBox="0 -3 6 6" refX="5" refY="0" markerWidth="3" markerHeight="3" orient="auto"><path d="M0 -3L6 0L0 3z" fill="#ffffff"/></marker>
+        <marker id="arr-pass" viewBox="0 -3 6 6" refX="5" refY="0" markerWidth="3" markerHeight="3" orient="auto"><path d="M0 -3L6 0L0 3z" fill="#fb923c"/></marker>
+      </defs>
+      {arrows.map((a,i)=>(
+        <line key={i}
+          x1={a.x1} y1={a.y1*0.65} x2={a.x2} y2={a.y2*0.65}
+          stroke={arrowCol(a)} strokeWidth="0.8"
+          strokeDasharray={a.type==="pass"?"1.5,1":"none"}
+          markerEnd={`url(#arr-${a.type==="pass"?"pass":"run"})`}/>
+      ))}
+      {/* Cones */}
+      {cones.map((c,i)=>(
+        <g key={"c"+i} transform={`translate(${c.x},${c.y*0.65})`}>
+          <polygon points="-1.6,1.6 1.6,1.6 0,-1.6" fill="#fb923c"/>
+        </g>
+      ))}
+      {/* Players */}
+      {players.map((p,i)=>(
+        <g key={"p"+i} transform={`translate(${p.x},${p.y*0.65})`}>
+          <circle r="2.4" fill={p.color||"#0f172a"} stroke="#fff" strokeWidth=".3"/>
+          {showLabels && <text textAnchor="middle" y="0.9" fontSize="2.7" fontWeight="900" fill="#fff" fontFamily="sans-serif">{p.label}</text>}
+        </g>
+      ))}
+    </svg>
+  );
+}
+// Kompakter Umschalter für die Diagramm-Darstellung (Rasen / Taktiktafel / Für Kinder)
+export function StyleToggle({ value, onChange, t }){
+  const opts=[["grass","Rasen",t.p],["chalk","Tafel","#1c2530"],["kids","Kinder","#f59e0b"]];
+  return (
+    <div style={{display:"flex",gap:5,marginBottom:10,flexWrap:"wrap"}}>
+      {opts.map(([v,lbl,col])=>(
+        <button key={v} onClick={()=>onChange(v)}
+          style={{padding:"4px 10px",borderRadius:99,border:`1.5px solid ${value===v?col:"#e2e8f0"}`,background:value===v?col:"#fff",color:value===v?"#fff":"#475569",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>{lbl}</button>
+      ))}
+    </div>
+  );
+}
+export const TrainerTipBadge = ({ small }) => (
+  <span title="App-Empfehlung: vielseitig einsetzbare Übung – keine offizielle DFB-Empfehlung"
+    style={{background:"#fde047",color:"#713f12",borderRadius:99,padding:small?"2px 7px":"3px 10px",fontSize:small?10.5:12,fontWeight:800,display:"inline-flex",alignItems:"center",gap:4,whiteSpace:"nowrap"}}>⭐ Trainer-Tipp</span>
+);
+export function TrackDiagram({ width=300 }){
+  const h=Math.round(width*0.625);
+  return (
+    <svg viewBox="0 0 320 200" width={width} height={h} style={{borderRadius:14,boxShadow:"0 2px 10px rgba(0,0,0,.08)",background:"#eaf4ee"}}>
+      <rect x="0" y="0" width="320" height="200" fill="#eaf4ee"/>
+      <rect x="12" y="22" width="296" height="156" rx="78" fill="#c0492f"/>
+      <rect x="26" y="36" width="268" height="128" rx="64" fill="none" stroke="#fff" strokeWidth="1.4" opacity=".85"/>
+      <rect x="40" y="50" width="240" height="100" rx="50" fill="none" stroke="#fff" strokeWidth="1.4" opacity=".85"/>
+      <rect x="54" y="64" width="212" height="72" rx="36" fill="#3f9d5e"/>
+      <rect x="150" y="163" width="3" height="16" fill="#fff"/>
+      <circle cx="118" cy="171" r="5" fill="#0f172a"/>
+      <path d="M130 171 h24" stroke="#0f172a" strokeWidth="2.4" fill="none" strokeLinecap="round"/>
+      <path d="M150 167 l6 4 -6 4" fill="none" stroke="#0f172a" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
+      <text x="160" y="104" textAnchor="middle" fontSize="13" fontWeight="800" fill="#1e7a44" fontFamily="inherit">Tartanbahn</text>
+    </svg>
+  );
+}
+
+export function DrillDiagram({ field="half", elements=[], color="#16a34a", width=320, variant="grass", runColor=null }) {
+  // Halbfeld: Hochformat (schmaler), Vollfeld: Querformat
+  const ratio = field==="full" ? 0.64 : 1.3;   // h/w
+  const W = 100, H = Math.round(100*ratio);
+  const px = x => (x/100)*W;
+  const py = y => (y/100)*H;
+  const chalk = variant==="chalk";
+  const kids = variant==="kids";
+  const lineCol = chalk ? "rgba(255,255,255,.85)" : kids ? "rgba(255,255,255,.7)" : "rgba(255,255,255,.55)";
+  const grass = chalk ? "#1c2530" : kids ? "#22c55e" : "#15803d";
+  const lineW = chalk ? 0.7 : 0.8;
+  const ownCol = chalk ? "#fff" : color;          // eigene Spieler
+  const arrowCol = chalk ? "#fff" : "#fff";
+
+  const arrowDefs = (
+    <defs>
+      <marker id="dd-arrow" markerWidth="6" markerHeight="6" refX="4.5" refY="3" orient="auto">
+        <path d="M0,0 L6,3 L0,6 Z" fill="#fff"/>
+      </marker>
+      <marker id="dd-arrow-ball" markerWidth="6" markerHeight="6" refX="4.5" refY="3" orient="auto">
+        <path d="M0,0 L6,3 L0,6 Z" fill={chalk?"#fff":"#fde047"}/>
+      </marker>
+    </defs>
+  );
+
+  const renderEl = (el, i) => {
+    const c = el.color || "#fff";
+    switch(el.type){
+      case "player": return (
+        <g key={i}>
+          {chalk ? (
+            <circle cx={px(el.x)} cy={py(el.y)} r="3.4" fill="none" stroke="#fff" strokeWidth="1"/>
+          ) : kids ? (
+            <circle cx={px(el.x)} cy={py(el.y)} r="4.5" fill="#fde047" stroke="#fff" strokeWidth="1.2"/>
+          ) : (
+            <circle cx={px(el.x)} cy={py(el.y)} r="3.4" fill={color} stroke="#fff" strokeWidth="0.8"/>
+          )}
+          {el.n!=null && !kids && <text x={px(el.x)} y={py(el.y)} fontSize="3.4" fontWeight="800" fill="#fff" textAnchor="middle" dominantBaseline="central">{el.n}</text>}
+          {el.label && <text x={px(el.x)} y={py(el.y)-5} fontSize={kids?"3.6":"3"} fontWeight="700" fill="#fff" textAnchor="middle">{el.label}</text>}
+        </g>
+      );
+      case "opp": return (
+        <g key={i}>
+          {chalk ? (
+            <g stroke="#fff" strokeWidth="1" strokeLinecap="round">
+              <line x1={px(el.x)-2.6} y1={py(el.y)-2.6} x2={px(el.x)+2.6} y2={py(el.y)+2.6}/>
+              <line x1={px(el.x)+2.6} y1={py(el.y)-2.6} x2={px(el.x)-2.6} y2={py(el.y)+2.6}/>
+            </g>
+          ) : kids ? (
+            <circle cx={px(el.x)} cy={py(el.y)} r="4.5" fill="#ef4444" stroke="#fff" strokeWidth="1.2"/>
+          ) : (
+            <>
+              <circle cx={px(el.x)} cy={py(el.y)} r="3.4" fill="#1e293b" stroke="#fff" strokeWidth="0.8"/>
+              {el.n!=null && <text x={px(el.x)} y={py(el.y)} fontSize="3.4" fontWeight="800" fill="#fff" textAnchor="middle" dominantBaseline="central">{el.n}</text>}
+            </>
+          )}
+        </g>
+      );
+      case "ball": return chalk
+        ? <g key={i}><circle cx={px(el.x)} cy={py(el.y)} r="2" fill="none" stroke="#fff" strokeWidth="0.9"/><circle cx={px(el.x)} cy={py(el.y)} r="0.7" fill="#fff"/></g>
+        : <circle key={i} cx={px(el.x)} cy={py(el.y)} r={kids?"2.6":"2"} fill="#fff" stroke="#1e293b" strokeWidth="0.6"/>;
+      case "cone": return <path key={i} d={`M ${px(el.x)} ${py(el.y)-3} L ${px(el.x)+2.2} ${py(el.y)+2} L ${px(el.x)-2.2} ${py(el.y)+2} Z`} fill={chalk?"none":"#f59e0b"} stroke="#fff" strokeWidth={chalk?"0.9":"0.4"}/>;
+      case "goal": {
+        const w=el.w||10;
+        return <rect key={i} x={px(el.x)-px(w)/2} y={py(el.y)-1} width={px(w)} height="2.4" fill="none" stroke="#fff" strokeWidth="1.2"/>;
+      }
+      case "zone": return <rect key={i} x={px(el.x)} y={py(el.y)} width={px(el.w||20)} height={py(el.h||20)} fill={chalk?"none":(el.color||color)+"22"} stroke={chalk?"rgba(255,255,255,.5)":(el.color||color)+"66"} strokeWidth="0.6" strokeDasharray="2 1.5" rx="1"/>;
+      case "passArrow": case "runArrow": case "dribbleArrow": {
+        const dash = el.type==="passArrow" ? "3 2" : el.type==="dribbleArrow" ? "0.5 2" : "none";
+        const isRun = el.type!=="passArrow";
+        const stroke = (isRun&&runColor&&!chalk) ? runColor : (el.ball&&!chalk) ? "#fde047" : "#fff";
+        const marker = (isRun&&runColor&&!chalk) ? "url(#dd-arrow)" : (el.ball&&!chalk) ? "url(#dd-arrow-ball)" : "url(#dd-arrow)";
+        return <line key={i} x1={px(el.x1)} y1={py(el.y1)} x2={px(el.x2)} y2={py(el.y2)}
+          stroke={stroke} strokeWidth={isRun&&runColor?"1.3":"1"} strokeDasharray={dash} markerEnd={marker}/>;
+      }
+      case "label": return <text key={i} x={px(el.x)} y={py(el.y)} fontSize="3.2" fontWeight="700" fill="#fff" textAnchor="middle">{el.text}</text>;
+      default: return null;
+    }
+  };
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width={width} style={{maxWidth:"100%",display:"block",borderRadius:10,background:grass}}>
+      {arrowDefs}
+      {/* Rasenstreifen nur im Rasen-Stil */}
+      {!chalk && Array.from({length:6}).map((_,i)=>(
+        <rect key={i} x="0" y={(H/6)*i} width={W} height={H/6} fill={i%2?"rgba(255,255,255,.04)":"transparent"}/>
+      ))}
+      {/* Feldbegrenzung */}
+      <rect x="2" y="2" width={W-4} height={H-4} fill="none" stroke={lineCol} strokeWidth="0.8"/>
+      {field==="full" ? (
+        <>
+          <line x1={W/2} y1="2" x2={W/2} y2={H-2} stroke={lineCol} strokeWidth="0.8"/>
+          <circle cx={W/2} cy={H/2} r="9" fill="none" stroke={lineCol} strokeWidth="0.8"/>
+          <rect x="2" y={H/2-12} width="10" height="24" fill="none" stroke={lineCol} strokeWidth="0.8"/>
+          <rect x={W-12} y={H/2-12} width="10" height="24" fill="none" stroke={lineCol} strokeWidth="0.8"/>
+        </>
+      ) : (
+        <>
+          {/* Halbfeld: Strafraum oben, Mittellinie unten angedeutet */}
+          <rect x={W/2-18} y="2" width="36" height="14" fill="none" stroke={lineCol} strokeWidth="0.8"/>
+          <rect x={W/2-8} y="2" width="16" height="6" fill="none" stroke={lineCol} strokeWidth="0.8"/>
+          <circle cx={W/2} cy="22" r="6" fill="none" stroke={lineCol} strokeWidth="0.8"/>
+          <line x1="2" y1={H-2} x2={W-2} y2={H-2} stroke={lineCol} strokeWidth="0.8"/>
+        </>
+      )}
+      {elements.map(renderEl)}
+    </svg>
+  );
+}
 // Trainingsplan-Generator: Einheit oder Woche, Schwerpunkt manuell oder aus Förderlücken
 // ---- Teilbare Trainings-Bibliothek -------------------------------------
 // Sichtbarkeit: eigene (Besitzer-Team) immer; "club" vereinsweit; "teams" nur freigegebene Teams; "team" nur Besitzer.

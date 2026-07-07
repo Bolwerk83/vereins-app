@@ -1,9 +1,12 @@
 // Sicherheitsnetz fuer den Modul-Umbau: NUR "no-undef" - faengt vergessene
 // Importe beim Herausloesen von Modulen (esbuild meldet fehlende globale
 // Bezeichner nicht; zur Laufzeit waere das ein Crash).
+import react from "eslint-plugin-react";
+
 export default [
   {
     files: ["src/**/*.{js,jsx}"],
+    plugins: { react },
     languageOptions: {
       ecmaVersion: 2023,
       sourceType: "module",
@@ -24,6 +27,13 @@ export default [
         XMLSerializer:"readonly", __BUILD_ID__:"readonly",
       },
     },
-    rules: { "no-undef": "error" },
+    rules: {
+      "no-undef": "error",
+      // Kern-ESLint prueft JSX-Komponenten NICHT - diese beiden Regeln
+      // schliessen die Luecke (undefinierte Komponenten = Laufzeit-Crash).
+      "react/jsx-no-undef": "error",
+      "react/jsx-uses-vars": "error",
+    },
+    settings: { react: { version: "detect" } },
   },
 ];

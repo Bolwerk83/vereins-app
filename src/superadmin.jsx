@@ -7,7 +7,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { sb } from "./storage.js";
 import { hashPw, checkPw } from "./util.js";
-import { AFFILIATE_IDS, applyAffiliateIds, AFFILIATES } from "./affiliates.js";
+import { PwInput } from "./ui.jsx";
+import { AFFILIATE_IDS, applyAffiliateIds, AFFILIATES } from "./affiliates.jsx";
 import { FEATURES_KEY, FEATURE_REGISTRY, FEAT_KEY, MILESTONES, applyFeatureFlags, getFeat, setFeat, setAllPhase } from "./features.js";
 
 const SA_KEY = "va_superadmin";
