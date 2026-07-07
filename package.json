@@ -6,7 +6,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test"
+    "test": "node --test",
+    "lint": "eslint src/*.jsx src/*.js"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.0.0",
@@ -15,6 +16,7 @@
     "vite": "^5.0.0"
   },
   "devDependencies": {
+    "eslint": "^9.39.4",
     "web-push": "^3.6.7"
   }
 }

@@ -19703,7 +19703,7 @@ function useViewportWidth() {
   return w;
 }
 
-function Directory({data,onPick,onNewClub,onVisitorOpen,lang,setLang}) {
+function Directory({data,onPick,onNewClub,onVisitorOpen,lang,setLang,onLegal}) {
   const tr = (k) => T[lang]?.[k] ?? T.de[k] ?? k;
   const [mode,setMode] = useState("home");
   const liveNow = (data.liveEvents||[]).filter(isLiveNow).sort((a,b)=>String(a.date||"").localeCompare(String(b.date||"")));
@@ -20331,7 +20331,7 @@ function HelperLogin({cl,helpers,onLogin,onBack}) {
   );
 }
 
-function UserFlow({cl,teams,players,playerProfiles,onDone,onBack,preselectTid,onWaitlist,onConsent,onGuestConsent,onSetChildPw}) {
+function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,preselectTid,onWaitlist,onConsent,onGuestConsent,onSetChildPw}) {
   const [showWait,setShowWait]=useState(false);
   const { tr } = useT();
   const [obStep,setObStep]=useState(1);            // Eltern-Onboarding: 1 Einwilligung, 2 Passwort, 3 Erklärung
@@ -20835,7 +20835,7 @@ function PollAttend({ev,user,onVote,cl,session=null,save=()=>{},data=null,fire=(
   );
 }
 
-function PollList({ev,user,onVote}) {
+function PollList({ev,user,onVote,session=null,save=null,data=null,fire=null}) {
   const _v = ev.votes||{};
   const uv=_v[user]||[];
   const totFor=id=>Object.values(_v).flat().filter(v=>v===id).length;
@@ -33237,7 +33237,7 @@ function AppInner({lang,setLang}) {
         }}/>}
       {screen==="role"  &&activeCl&&<RolePicker cl={activeCl} onRole={r=>setScr(r==="user"?"flow":r==="trainer"?"tlogin":r==="helper"?"hlogin":"alogin")} onGuest={()=>setScr("guest")} onBack={()=>setScr("dir")}/>}
       {screen==="guest" &&activeCl&&<ClubGuestList cl={activeCl} liveEvents={data.liveEvents||[]} onOpen={(eid,club)=>setVisitor({eid,club})} onBack={()=>setScr("role")}/>}
-      {screen==="flow"  &&activeCl&&<UserFlow cl={activeCl} teams={clTeams} players={data.players} playerProfiles={data.playerProfiles||[]} preselectTid={linkTeam} onDone={(tid,user)=>login("user",{tid,user})} onBack={()=>setScr(linkTeam?"role":"role")}
+      {screen==="flow"  &&activeCl&&<UserFlow cl={activeCl} teams={clTeams} players={data.players} playerProfiles={data.playerProfiles||[]} trainers={(data.trainers||[]).filter(t=>t.cid===cid)} preselectTid={linkTeam} onDone={(tid,user)=>login("user",{tid,user})} onBack={()=>setScr(linkTeam?"role":"role")}
         onWaitlist={entry=>{ save({...data, waitlist:[...(data.waitlist||[]), { ...entry, id:uid(), cid:activeCl.id, ts:new Date().toISOString(), status:"open" }]}); }}
         onConsent={(profId,by)=>{ const prof=(data.playerProfiles||[]).find(p=>p.id===profId);
           const next={...data, playerProfiles:(data.playerProfiles||[]).map(p=>p.id===profId?{...p, consentAt:new Date().toISOString(), consentBy:by||"Eltern (App-Anmeldung)"}:p)};
