@@ -15075,6 +15075,50 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             </button>
           );
         })()}
+        {/* Spieltag-Zettel: fertige Tages-Uebersicht fuer die WhatsApp-Gruppe */}
+        {!isHelper&&["heimspiel","auswarts","freundschaft","turnier"].includes(viewEv.type)&&(()=>{
+          const vv=v=>(typeof v==="object"&&v)?v.val:v;
+          const yes=Object.entries(viewEv.votes||{}).filter(([,v])=>vv(v)==="yes").map(([n])=>n).sort((a,b)=>a.localeCompare(b,"de"));
+          const wxc=(()=>{ try{ const c=JSON.parse(localStorage.getItem("va_wx")||"null"); return c?.data?.[viewEv.date]||null; }catch{ return null; } })();
+          const lu=viewEv.lineup||{};
+          const LU_NAMES={T:"Tor",A:"Abwehr",M:"Mittelfeld",S:"Sturm"};
+          const luTxt=["T","A","M","S"].map(k=>LU_NAMES[k]+": "+((lu[k]||[]).join(", ")||"–")).join("\n   ");
+          const hasLu=[...(lu.T||[]),...(lu.A||[]),...(lu.M||[]),...(lu.S||[])].length>0;
+          const cp=viewEv.carpool||{};
+          const cpe=n=>{const v=cp[n];return v&&typeof v==="object"&&v.mode?v:null;};
+          const drivers=Object.keys(cp).filter(n=>cpe(n)?.mode==="drive");
+          const paxOf=d=>Object.keys(cp).filter(n=>cpe(n)?.mode==="need"&&cpe(n)?.car===d);
+          const seeking=Object.keys(cp).filter(n=>cpe(n)?.mode==="need"&&!cpe(n)?.car);
+          const duties=(viewEv.duties||[]).filter(d=>d.title);
+          const link=`${window.location.origin}${window.location.pathname}?club=${encodeURIComponent(myClub?.slug||cid)}&team=${encodeURIComponent(viewEv.tid)}&event=${encodeURIComponent(viewEv.id)}`;
+          const L=[
+            `🏆 Spieltag-Zettel – ${evDisplayTitle(viewEv)}`,
+            `📅 ${fmtD(viewEv.date)}${viewEv.time?` · ${viewEv.time} Uhr`:""}`,
+            (viewEv.loc||viewEv.venueAddr)&&`📍 ${[viewEv.loc,viewEv.venueAddr].filter(Boolean).join(", ")}`,
+            wxc&&`${wxIcon(wxc.c)} ${wxc.t}°C${(wxc.r??0)>=30?` · ${wxc.r}% Regen – Regenjacke einpacken!`:""}`,
+            viewEv.note&&`📝 ${viewEv.note}`,
+            ``,
+            `👥 Dabei (${yes.length}): ${yes.join(", ")||"noch keine Zusagen"}`,
+            hasLu&&`⭐ Aufstellung:\n   ${luTxt}`,
+            drivers.length&&`🚗 Es fahren: ${drivers.map(d=>{const e=cpe(d);const px=paxOf(d);return `${d}${e?.seats?` (${e.seats} Plätze${px.length?`: ${px.join(", ")}`:""})`:""}`;}).join(" · ")}`,
+            seeking.length&&`🙋 Suchen noch Mitfahrt: ${seeking.join(", ")}`,
+            duties.length&&`🤝 Dienste: ${duties.map(d=>`${d.title}${d.assignee?` – ${d.assignee}`:" – noch offen"}`).join(" · ")}`,
+            ``,
+            `👉 Alles live in der App: ${link}`,
+          ].filter(x=>x!==false&&x!==undefined&&x!==null);
+          const txt=L.join("\n");
+          const doShare=()=>{ if(navigator.share){ navigator.share({title:"Spieltag-Zettel",text:txt}).catch(()=>{}); } else { navigator.clipboard?.writeText(txt); fire("Spieltag-Zettel kopiert"); } };
+          return (
+            <button onClick={doShare} style={{display:"flex",alignItems:"center",gap:9,width:"100%",background:"#eff6ff",border:"1.5px solid #bfdbfe",borderRadius:12,padding:"10px 13px",marginBottom:12,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
+              <span style={{fontSize:16,flexShrink:0}}>🏆</span>
+              <span style={{flex:1,minWidth:0}}>
+                <span style={{display:"block",fontSize:13,fontWeight:800,color:"#1e40af"}}>Spieltag-Zettel teilen</span>
+                <span style={{display:"block",fontSize:11.5,color:"#1d4ed8",marginTop:1,lineHeight:1.35}}>Treffpunkt, Wetter, Kader, Aufstellung, Fahrer & Dienste – fertig für die Eltern-Gruppe</span>
+              </span>
+              <span style={{fontSize:12.5,fontWeight:800,color:"#2563eb",flexShrink:0}}>Teilen →</span>
+            </button>
+          );
+        })()}
         {viewEv.type==="turnier"
           ? <TournView ev={viewEv} user={session.name||"Admin"} onVote={()=>{}} cl={myClub} players={local.players} isHelper={isHelper} teamCat={(local.teams||[]).find(tm=>tm.id===viewEv.tid)?.cat||null} fields={(data.fields||[]).filter(f=>f.cid===cid)}
               onUpdate={patch=>{
