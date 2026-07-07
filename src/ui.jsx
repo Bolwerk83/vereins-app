@@ -666,3 +666,65 @@ export function ClubHeader({cl, sub, right, hide=false}) {
 export function Divider({label,light}) {
   return <div style={{display:"flex",alignItems:"center",gap:10,margin:"14px 0 10px"}}><div style={{flex:1,height:1,background:"#e2e8f0"}}/><span style={{fontSize:11,fontWeight:800,color:light?"#94a3b8":"#64748b",whiteSpace:"nowrap"}}>{label}</span><div style={{flex:1,height:1,background:"#e2e8f0"}}/></div>;
 }
+
+// Übersetztes Dimensions-Label (Skill-Achse); Datenschlüssel bleibt deutsch.
+export const dimLabel = (axis, tr) => (tr ? tr("dim_"+axis) : "") || axis;
+
+// Reines SVG-Spinnennetz (keine externe Bibliothek noetig)
+export function SpiderChart({ axes, values, compareValues=null, size=260, color="#16a34a", compareColor="#94a3b8", max=5 }) {
+  const { tr } = useT();
+  const n = axes.length;
+  if(n<3) return null;
+  const cx=size/2, cy=size/2, r=size*0.34;
+  const angle = i => (Math.PI*2*i/n) - Math.PI/2;
+  const point = (i,val) => {
+    const rad = r*(Math.max(0,Math.min(max,val))/max);
+    return [cx+rad*Math.cos(angle(i)), cy+rad*Math.sin(angle(i))];
+  };
+  const polygon = vals => vals.map((v,i)=>point(i,v).join(",")).join(" ");
+  const rings = [1,2,3,4,5].slice(0,max);
+  const aria = axes.map((a,i)=>`${dimLabel(a,tr)} ${values[i]??0}${compareValues?` von ${compareValues[i]??0}`:""}`).join(", ");
+  return (
+    <div>
+      <svg viewBox={`0 0 ${size} ${size}`} width="100%" role="img" aria-label={(compareValues?"Ist/Ziel – ":"")+aria} style={{maxWidth:size,display:"block",margin:"0 auto"}}>
+        {rings.map((ring,ri)=>(
+          <polygon key={ri}
+            points={axes.map((_,i)=>{const rad=r*(ring/max);return [cx+rad*Math.cos(angle(i)),cy+rad*Math.sin(angle(i))].join(",");}).join(" ")}
+            fill="none" stroke="#e2e8f0" strokeWidth="1"/>
+        ))}
+        {axes.map((_,i)=>{const [x,y]=point(i,max);return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="#e2e8f0" strokeWidth="1"/>;})}
+        {/* Skala 1..max entlang der oberen Achse */}
+        {rings.map((ring,ri)=>(<text key={"sc"+ri} x={cx+3} y={cy - r*(ring/max)} fontSize="8" fill="#cbd5e1" dominantBaseline="middle">{ring}</text>))}
+        {/* Ziel: gestrichelte Kontur ohne Füllung – auch ohne Farbe von Ist unterscheidbar */}
+        {compareValues && <polygon points={polygon(compareValues)} fill="none" stroke={compareColor} strokeWidth="2" strokeDasharray="5 3"/>}
+        {/* Ist: gefüllte Fläche */}
+        <polygon points={polygon(values)} fill={color+"33"} stroke={color} strokeWidth="2.5"/>
+        {/* Ziel-Marker (hohle Raute) */}
+        {compareValues && compareValues.map((v,i)=>{const [x,y]=point(i,v);return <rect key={"z"+i} x={x-3} y={y-3} width="6" height="6" transform={`rotate(45 ${x} ${y})`} fill="#fff" stroke={compareColor} strokeWidth="1.5"/>;})}
+        {/* Ist-Marker (Kreis) */}
+        {values.map((v,i)=>{const [x,y]=point(i,v);return <circle key={"i"+i} cx={x} cy={y} r="3" fill={color}/>;})}
+        {axes.map((ax,i)=>{
+          const [lx,ly]=point(i,max*1.2);
+          return <text key={i} x={lx} y={ly} fontSize="12" fontWeight="700" fill="#475569"
+            textAnchor={Math.abs(lx-cx)<8?"middle":(lx<cx?"end":"start")}
+            dominantBaseline="middle">{dimLabel(ax,tr)}</text>;
+        })}
+      </svg>
+      <table style={{width:"100%",maxWidth:size,margin:"6px auto 0",borderCollapse:"collapse",fontSize:11.5}}>
+        <thead><tr style={{textAlign:"left"}}>
+          <th style={{padding:"2px 4px",fontWeight:700,color:"#64748b"}}>{tr("sArea")}</th>
+          <th style={{padding:"2px 4px",fontWeight:700,textAlign:"right",color}}>● {tr("sIst")}</th>
+          {compareValues&&<th style={{padding:"2px 4px",fontWeight:700,textAlign:"right",color:compareColor}}>◇ {tr("goalShort")}</th>}
+        </tr></thead>
+        <tbody>{axes.map((a,i)=>(
+          <tr key={i} style={{borderTop:"1px solid #f1f5f9"}}>
+            <td style={{padding:"2px 4px",color:"#334155"}}>{dimLabel(a,tr)}</td>
+            <td style={{padding:"2px 4px",textAlign:"right",fontWeight:800,color}}>{values[i]??0}</td>
+            {compareValues&&<td style={{padding:"2px 4px",textAlign:"right",fontWeight:700,color:compareColor}}>{compareValues[i]??0}</td>}
+          </tr>
+        ))}</tbody>
+      </table>
+    </div>
+  );
+}
+
