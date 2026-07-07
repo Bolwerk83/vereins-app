@@ -8661,6 +8661,50 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
 
           {}
           {pTab==="basis"&&<>
+            {/* Eltern-Gespraechs-Zettel: Entwicklungs-Uebersicht aus vorhandenen Daten */}
+            {(()=>{
+              const axes=skillAxesFor(sport);
+              const team=(teams||[]).find(tm=>tm.id===p.mainTid);
+              const vv=v=>(typeof v==="object"&&v)?v.val:v;
+              const tod=now();
+              const evsT=(allEvents||[]).filter(e=>e.tid===p.mainTid&&e.date<tod);
+              const tr8=evsT.filter(e=>e.type==="training");
+              const gm8=evsT.filter(e=>e.type!=="training");
+              const yesOf=list=>list.filter(e=>vv((e.votes||{})[p.name])==="yes").length;
+              const sk=p.skills||{};
+              const rated=axes.map(a=>({a,v:Number(sk[a])||0})).filter(x=>x.v>0);
+              const top=[...rated].sort((x,y)=>y.v-x.v).slice(0,2);
+              const soll=sollFor(club,team?.cat||team?.name||"F-Jugend",axes);
+              const gaps=axes.map((a,i)=>({a,d:(soll[i]||0)-(Number(sk[a])||0)})).filter(x=>(Number(sk[x.a])||0)>0&&x.d>0.2).sort((x,y)=>y.d-x.d).slice(0,2);
+              const hist=(p.skillHistory||[]).slice().sort((a,b)=>(a.month||"").localeCompare(b.month||""));
+              let prog=null;
+              if(hist.length>=2){ const f=hist[0].skills||{}, l=hist[hist.length-1].skills||{};
+                axes.forEach(ax=>{ const a0=Number(f[ax])||0,b0=Number(l[ax])||0; const d=Math.round((b0-a0)*10)/10; if(a0>0&&d>=0.3&&(!prog||d>prog.d)) prog={ax,d}; }); }
+              const arch=playerArchetype(sk,p.pos);
+              const L=[
+                `🗒 Entwicklungs-Zettel – ${p.name}${team?` (${team.name})`:""}`,
+                `Stand: ${fmtD(tod)}`,``,
+                tr8.length?`🏋️ Training: ${yesOf(tr8)}/${tr8.length} dabei`:null,
+                gm8.length?`⚽ Spiele: ${yesOf(gm8)}/${gm8.length} dabei`:null,
+                top.length?`💪 Stärken: ${top.map(x=>dimLabel(x.a)).join(", ")}${arch?` · Typ: ${arch}`:""}`:null,
+                prog?`📈 Größter Fortschritt: ${dimLabel(prog.ax)} +${String(prog.d).replace(".",",")}`:null,
+                gaps.length?`🎯 Nächste Schritte: ${gaps.map(x=>dimLabel(x.a)).join(", ")}`:null,
+                p.recommend?`🧭 Empfehlung: ${p.recommend}`:null,
+                ``,`Mit Spaß dabei bleiben – darum geht's. 💚`,
+              ].filter(x=>x!==null);
+              const txt=L.join("\n");
+              const doShare=()=>{ if(navigator.share){ navigator.share({title:"Entwicklungs-Zettel "+p.name,text:txt}).catch(()=>{}); } else { navigator.clipboard?.writeText(txt); } };
+              return (
+                <button onClick={doShare} style={{display:"flex",alignItems:"center",gap:9,width:"100%",background:"#fdf4ff",border:"1.5px solid #f0abfc",borderRadius:12,padding:"10px 13px",marginBottom:12,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
+                  <span style={{fontSize:16,flexShrink:0}}>🗒</span>
+                  <span style={{flex:1,minWidth:0}}>
+                    <span style={{display:"block",fontSize:13,fontWeight:800,color:"#86198f"}}>Gesprächs-Zettel fürs Elterngespräch</span>
+                    <span style={{display:"block",fontSize:11.5,color:"#a21caf",marginTop:1,lineHeight:1.35}}>Anwesenheit, Stärken, Fortschritt & nächste Schritte – zum Zeigen oder Teilen</span>
+                  </span>
+                  <span style={{fontSize:12.5,fontWeight:800,color:"#c026d3",flexShrink:0}}>Teilen →</span>
+                </button>
+              );
+            })()}
           <Section title="* Stammdaten">
             <Inp label="Name" val={p.name} set={v=>up({name:v})} ph="z.B. Max M." cl={{pri:t.p}} note="Datenschutz: Bitte nur Vorname, höchstens Nachname-Initial (z.B. Max M.). So wenig wie möglich."/>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
