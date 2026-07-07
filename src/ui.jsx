@@ -10,17 +10,30 @@ import { getConfig, setConfig, DEFAULT_CFG, sb, MULTI_TENANT } from "./storage.j
 import { ACOLORS, acol, inits, contrast, mix, hashPw, checkPw } from "./util.js";
 
 export const LANG_SWITCHER_ENABLED = true;
+// Sprachwahl als Dropdown (5 Sprachen). Natives <select>, damit es auf dem
+// Handy das gewohnte Auswahlmenue oeffnet; dunkel gestylt fuer die Header.
+export const LANG_OPTIONS = [
+  { id:"de", label:"🇩🇪 Deutsch" },
+  { id:"en", label:"🇬🇧 English" },
+  { id:"nl", label:"🇳🇱 Nederlands" },
+  { id:"ar", label:"🌍 العربية" },
+  { id:"tr", label:"🇹🇷 Türkçe" },
+];
 export function LangSwitcher({ lang,setLang }) {
   if(!LANG_SWITCHER_ENABLED) return null;
-  const LANGS = [{id:"de",flag:"DE"},{id:"en",flag:"EN"},{id:"nl",flag:"NL"}];
   return (
-    <div style={{display:"flex",gap:4}}>
-      {LANGS.map(l=>(
-        <button key={l.id} onClick={()=>{setLang(l.id);localStorage.setItem(LANG_KEY,l.id);}}
-          style={{padding:"4px 8px",borderRadius:7,border:`1.5px solid ${lang===l.id?"rgba(255,255,255,.5)":"rgba(255,255,255,.15)"}`,background:lang===l.id?"rgba(255,255,255,.2)":"transparent",color:lang===l.id?"#fff":"rgba(255,255,255,.4)",fontWeight:800,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>
-          {l.flag}
-        </button>
-      ))}
+    <div style={{position:"relative",display:"inline-block"}}>
+      <select value={lang} aria-label="Sprache / Language"
+        onChange={e=>{const v=e.target.value; setLang(v); try{localStorage.setItem(LANG_KEY,v);}catch{}}}
+        style={{appearance:"none",WebkitAppearance:"none",MozAppearance:"none",
+          padding:"6px 24px 6px 10px",borderRadius:9,border:"1.5px solid rgba(255,255,255,.28)",
+          background:"rgba(255,255,255,.14)",color:"#fff",fontWeight:800,fontSize:12,
+          fontFamily:"inherit",cursor:"pointer",maxWidth:150}}>
+        {LANG_OPTIONS.map(o=>(
+          <option key={o.id} value={o.id} style={{color:"#0f172a",background:"#fff"}}>{o.label}</option>
+        ))}
+      </select>
+      <span style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",pointerEvents:"none",fontSize:8,color:"rgba(255,255,255,.75)"}}>▼</span>
     </div>
   );
 }
