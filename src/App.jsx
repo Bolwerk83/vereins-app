@@ -6484,7 +6484,7 @@ function Directory({data,onPick,onNewClub,onVisitorOpen,lang,setLang,onLegal}) {
       </div>
       <button onClick={e=>{e.stopPropagation();setContactCl(cl);setMode("contact");}}
         style={{marginTop:"auto",width:"100%",padding:"7px 8px",borderRadius:9,border:"1px solid rgba(255,255,255,.2)",background:"rgba(255,255,255,.08)",color:"rgba(255,255,255,.75)",fontWeight:600,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>
-        Kontaktieren
+        {tr("lpContactBtn")}
       </button>
     </div>
   );
@@ -6674,7 +6674,7 @@ function Directory({data,onPick,onNewClub,onVisitorOpen,lang,setLang,onLegal}) {
           {SPORTS.map(s=>(
             <button key={s} onClick={()=>setSportFilter(s)}
               style={{padding:"6px 12px",borderRadius:99,border:`1.5px solid ${sportFilter===s?(SPORT_COLS[s]||"#16a34a"):"rgba(255,255,255,.12)"}`,background:sportFilter===s?(SPORT_COLS[s]||"#16a34a")+"22":"transparent",color:sportFilter===s?"#fff":"rgba(255,255,255,.4)",fontWeight:700,fontSize:12,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit",flexShrink:0}}>
-              {SPORT_LABELS[s]}
+              {s==="alle"?tr("lpAll"):SPORT_LABELS[s]}
             </button>
           ))}
         </div>
@@ -6707,7 +6707,7 @@ function Directory({data,onPick,onNewClub,onVisitorOpen,lang,setLang,onLegal}) {
               {SPORTS.map(s=>(
                 <button key={s} onClick={()=>setSportFilter(s)}
                   style={{padding:"6px 13px",borderRadius:99,border:`1.5px solid ${sportFilter===s?(SPORT_COLS[s]||"#16a34a"):"rgba(255,255,255,.12)"}`,background:sportFilter===s?(SPORT_COLS[s]||"#16a34a")+"22":"transparent",color:sportFilter===s?"#fff":"rgba(255,255,255,.5)",fontWeight:700,fontSize:12,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit"}}>
-                  {SPORT_LABELS[s]}
+                  {s==="alle"?tr("lpAll"):SPORT_LABELS[s]}
                 </button>
               ))}
             </div>
@@ -6755,13 +6755,13 @@ function Directory({data,onPick,onNewClub,onVisitorOpen,lang,setLang,onLegal}) {
         )}
 
         <details style={{maxWidth:isDesktop?600:460,margin:"20px auto 0",background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.1)",borderRadius:12,padding:"10px 14px"}}>
-          <summary style={{cursor:"pointer",color:"rgba(255,255,255,.7)",fontSize:12.5,fontWeight:700,listStyle:"none"}}>💡 Wie finanziert sich das? Kostet das was?</summary>
+          <summary style={{cursor:"pointer",color:"rgba(255,255,255,.7)",fontSize:12.5,fontWeight:700,listStyle:"none"}}>{tr("lpFaqQ")}</summary>
           <p style={{color:"rgba(255,255,255,.55)",fontSize:12,lineHeight:1.6,marginTop:8}}>
-            Die Vereins-App ist ein <strong style={{color:"rgba(255,255,255,.75)"}}>Hobby-Projekt</strong> – entstanden aus dem ganz normalen Vereinsalltag, um wiederkehrende Abläufe zu vereinfachen und zu automatisieren. Für Vereine ist die Nutzung <strong style={{color:"rgba(255,255,255,.75)"}}>kostenlos</strong>. Getragen wird das Projekt durch dezente, klar gekennzeichnete Empfehlungen (Affiliate) – eure Mitgliederdaten werden dabei nicht weitergegeben. Einfach ausprobieren; wenn es nicht passt, lässt sich alles wieder löschen.
+            {tr("lpFaqA")}
           </p>
         </details>
         <p style={{color:"rgba(255,255,255,.15)",fontSize:11,textAlign:"center",marginTop:16}}>
-          Nur Vereine die zugestimmt haben werden angezeigt
+          {tr("lpConsentNote")}
         </p>
         <div style={{display:"flex",justifyContent:"center",gap:16,marginTop:12,paddingBottom:8}}>
           <button onClick={()=>onLegal&&onLegal()} style={{background:"none",border:"none",color:"rgba(255,255,255,.25)",fontSize:11,cursor:"pointer",textDecoration:"underline"}}>{tr("lpImprint")}</button>
