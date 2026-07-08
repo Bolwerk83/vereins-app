@@ -14670,6 +14670,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const [pauseSer,setPauseSer]=useState(null); // {ev,from,to} Ferien-Pause fuer eine Serie
   const [showSearch,setShowSearch]=useState(false); const [searchQ,setSearchQ]=useState("");
   const [showImport,setShowImport]=useState(false); // Spielplan-Import (fussball.de/DFBnet)
+  const _ferienDash=useSchoolHolidays(myClub?.clubSettings?.holidayState);
+  const [ferienFix,setFerienFix]=useState(null); // Ferien-Aufraeum-Dialog: [{ev,hol,use}]
   const [searchPlayer,setSearchPlayer]=useState(null); // Spielerprofil direkt aus der Suche
   const [planFor,setPlanFor]=useState(null);
   // Push-Deep-Links: ?event=<id> öffnet den Termin direkt, ?tab=<id> wechselt den Reiter.
@@ -14925,6 +14927,24 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             </span>
             <span style={{color:"#94a3b8",fontSize:16,flexShrink:0}}>›</span>
           </button>
+          {/* Ferien-Check: anstehende Termine in Schulferien schnell erkennen + rausnehmen */}
+          {(()=>{
+            if(!_ferienDash?.length) return null;
+            const hits=up.map(e=>({ev:e,hol:schoolHolidayFor(_ferienDash,e.date)})).filter(x=>x.hol);
+            if(!hits.length) return null;
+            const trainings=hits.filter(x=>x.ev.type==="training").length;
+            return (
+              <button onClick={()=>setFerienFix(hits.map(x=>({...x,use:x.ev.type==="training"&&!!x.ev.sid})))}
+                style={{display:"flex",alignItems:"center",gap:10,width:"100%",background:"#ecfeff",border:"1.5px solid #a5f3fc",borderRadius:14,padding:"11px 15px",marginBottom:18,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
+                <span style={{fontSize:18,flexShrink:0}}>⛱</span>
+                <span style={{flex:1,minWidth:0}}>
+                  <span style={{display:"block",fontSize:13.5,fontWeight:800,color:"#155e75"}}>{hits.length} Termin{hits.length>1?"e":""} in den Ferien{trainings?` (davon ${trainings} Training${trainings>1?"s":""})`:""}</span>
+                  <span style={{display:"block",fontSize:11.5,color:"#0e7490",marginTop:1}}>Ansehen & mit einem Tipp rausnehmen – Eltern bekommen eine Ferienpause-Karte</span>
+                </span>
+                <span style={{color:"#06b6d4",fontSize:16,flexShrink:0}}>›</span>
+              </button>
+            );
+          })()}
           {up.length>0&&<><Divider label={`NÄCHSTE 10 TAGE (${soon.length})`}/>{soon.length>0?soon.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={selfName} onSelfVote={selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={()=>openPlan(ev)} planTitle={planTitleOf(ev)}/>):<p style={{textAlign:"center",color:"#64748b",fontSize:13.5,padding:"14px 10px"}}>Keine Termine in den nächsten 10 Tagen.</p>}
             {later.length>0&&<>
               <button onClick={()=>setShowLater(s=>!s)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",background:showLater?"#f1f5f9":"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,cursor:"pointer",margin:"6px 0 12px",padding:"11px 14px",fontWeight:800,fontSize:13,color:"#475569",fontFamily:"inherit"}}>{showLater?"▲ Weitere Termine ausblenden":"▼ Weitere "+later.length+" Termine anzeigen"}</button>
@@ -15458,6 +15478,52 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         trainers={(local.trainers||[]).filter(x=>x.cid===cid)}
         onSave={pp=>{ const full=local.playerProfiles||[]; save({...local,playerProfiles:full.some(x=>x.id===pp.id)?full.map(x=>x.id===pp.id?pp:x):[...full,pp]}); setSearchPlayer(null); fire("Spielerprofil gespeichert"); }}
         onClose={()=>setSearchPlayer(null)}/>}
+
+      {/* Ferien-Aufraeumen: betroffene Termine gesammelt entfernen */}
+      {ferienFix&&(()=>{
+        const sel=ferienFix.filter(x=>x.use);
+        const doRemove=()=>{
+          if(!sel.length) return;
+          let events=local.events.filter(e=>!sel.some(x=>x.ev.id===e.id));
+          // Je Team+Ferien EINE Info-Karte fuer die Eltern (nur wenn Trainings entfernt wurden)
+          const seen=new Set();
+          sel.forEach(x=>{
+            if(x.ev.type!=="training") return;
+            const key=x.ev.tid+"|"+x.hol.name;
+            if(seen.has(key)) return; seen.add(key);
+            events.push({ id:uid(), cid, tid:x.ev.tid, type:"event", pt:"none",
+              title:"⛱ "+x.hol.name, date:x.hol.start>tod?x.hol.start:tod, seasonId:x.ev.seasonId||"",
+              note:`Bis ${fmtD(x.hol.end)} ist Ferienpause – kein Training. Danach geht es wie gewohnt weiter. ☀️` });
+          });
+          save({...local,events});
+          fire(`${sel.length} Termine rausgenommen – Ferienpause-Karte erstellt`);
+          setFerienFix(null);
+        };
+        return (
+          <Drawer onClose={()=>setFerienFix(null)} title="⛱ Termine in den Ferien">
+            <p style={{fontSize:13,color:"#475569",lineHeight:1.5,marginBottom:12}}>
+              Serien-Trainings sind vorausgewählt. Spiele/Turniere bewusst nicht – die finden in den Ferien ja oft trotzdem statt. Antippen zum Ändern.
+            </p>
+            <div style={{display:"flex",flexDirection:"column",gap:7,maxHeight:"48dvh",overflowY:"auto",marginBottom:14}}>
+              {ferienFix.map((x,i)=>(
+                <div key={x.ev.id} onClick={()=>setFerienFix(fs=>fs.map((y,j)=>j===i?{...y,use:!y.use}:y))}
+                  style={{display:"flex",alignItems:"center",gap:10,background:x.use?"#ecfeff":"#f8fafc",border:`1.5px solid ${x.use?"#67e8f9":"#e2e8f0"}`,borderRadius:11,padding:"9px 11px",cursor:"pointer",opacity:x.use?1:.65}}>
+                  <div style={{width:22,height:22,borderRadius:7,border:`2px solid ${x.use?"#0891b2":"#cbd5e1"}`,background:x.use?"#0891b2":"#fff",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:13,fontWeight:900}}>{x.use?"✓":""}</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:13,fontWeight:800,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{evDisplayTitle(x.ev)}{x.ev.sid?" · Serie":""}</div>
+                    <div style={{fontSize:11.5,color:"#64748b"}}>{fmtD(x.ev.date)}{x.ev.time?` · ${x.ev.time}`:""} · ⛱ {x.hol.name}</div>
+                  </div>
+                  <span style={{fontSize:10,fontWeight:800,color:x.ev.type==="training"?"#166534":"#1e40af",background:x.ev.type==="training"?"#dcfce7":"#dbeafe",borderRadius:6,padding:"2px 7px",flexShrink:0}}>{etLabel(x.ev.type)}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{display:"flex",gap:9}}>
+              <Btn v="gst" full ch="Abbrechen" onClick={()=>setFerienFix(null)} sx={{flex:1}}/>
+              <Btn full dis={!sel.length} ch={`⛱ ${sel.length} rausnehmen`} cl={myClub} onClick={doRemove} sx={{flex:2}}/>
+            </div>
+          </Drawer>
+        );
+      })()}
 
       {}
       {planFor&&<Drawer onClose={()=>setPlanFor(null)} title={(planFor.trainingPlan||planFor.trainingId)?"Trainingsplan bearbeiten":"Trainingsplan erstellen"}>
