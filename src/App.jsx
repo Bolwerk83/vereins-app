@@ -11250,6 +11250,8 @@ function SeriesWizard({f,u,t}) {
 
 // Schulferien je Bundesland vom openHolidaysAPI laden (1x, dann 7 Tage gecacht
 // in localStorage). Offline/blockiert -> leere Liste, Feiertage bleiben offline.
+// Faellt ein Datum in Schulferien? -> {name,start,end} oder null
+const schoolHolidayFor=(hols,date)=>(hols||[]).find(h=>h.start<=date&&date<=h.end)||null;
 function useSchoolHolidays(stateCode) {
   const [hols, setHols] = useState([]);
   useEffect(() => {
@@ -16036,6 +16038,7 @@ function eventWarnings(ev, tod, ctx={}){
 }
 
 function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSelfVote,onRemind,onPlan,planTitle}) {
+  const _ferien=useSchoolHolidays(cl?.clubSettings?.holidayState);
   const [more,setMore]=useState(false);
   const wd=d=>{ try{ return new Date(d+"T12:00:00").toLocaleDateString("de-DE",{weekday:"short"})+", "; }catch{ return ""; } };
   const wx=useWeather(plzToGeo(cl?.plz));
@@ -16075,7 +16078,10 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
         <div style={{flex:1,minWidth:0}}>
           <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}><span style={{fontWeight:800,fontSize:14,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ev.title}</span>{tF&&<Tag c={p} bg={p+"20"} ch="Heute"/>}{ev.open&&<Tag c="#7c3aed" bg="#ede9fe" ch="🌐 Offen"/>}{ev.sid&&<Tag c="#64748b" bg="#f1f5f9" ch="🔁 Serie"/>}</div>
           <div style={{fontSize:12.5,color:"#475569",marginTop:3,fontWeight:600}}>{wd(ev.date)}{fmtDShort(ev.date)}{ev.time?" · "+ev.time+" Uhr":""}{ev.loc?" · 📍 "+ev.loc:""}{wx?.[ev.date]&&<span style={{marginLeft:6,fontSize:11.5,fontWeight:700,color:(wx[ev.date].r??0)>=50?"#0369a1":"#64748b"}}>{wxIcon(wx[ev.date].c)} {wx[ev.date].t}°{(wx[ev.date].r??0)>=30?` · 💧${wx[ev.date].r}%`:""}</span>}</div>
-          {(()=>{ const hn=publicHolidayName(ev.date,cl?.clubSettings?.holidayState); return hn?<div style={{marginTop:5}}><span style={{fontSize:11,fontWeight:800,color:"#92400e",background:"#fef3c7",border:"1px solid #fde68a",borderRadius:6,padding:"2px 8px"}}>🎉 Feiertag: {hn}</span></div>:null; })()}
+          {(()=>{ const hn=publicHolidayName(ev.date,cl?.clubSettings?.holidayState); const sf=schoolHolidayFor(_ferien,ev.date); if(!hn&&!sf) return null; return <div style={{marginTop:5,display:"flex",gap:5,flexWrap:"wrap"}}>
+            {hn&&<span style={{fontSize:11,fontWeight:800,color:"#92400e",background:"#fef3c7",border:"1px solid #fde68a",borderRadius:6,padding:"2px 8px"}}>🎉 Feiertag: {hn}</span>}
+            {sf&&<span style={{fontSize:11,fontWeight:800,color:"#0e7490",background:"#ecfeff",border:"1px solid #a5f3fc",borderRadius:6,padding:"2px 8px"}}>⛱ {sf.name}</span>}
+          </div>; })()}
           {ev.type==="training"&&planTitle&&<div style={{marginTop:5}}><span style={{fontSize:11,fontWeight:700,color:"#4f46e5",background:"#eef2ff",borderRadius:6,padding:"2px 8px"}}>📋 {planTitle}</span></div>}
           {warns.length>0&&<div style={{display:"flex",gap:5,marginTop:5,flexWrap:"wrap"}}>{warns.map((w,i)=><span key={i} style={{fontSize:11,fontWeight:800,color:w.col,background:w.bg,borderRadius:6,padding:"2px 8px"}}>⚠ {w.label}</span>)}</div>}
           {vc>0&&<div style={{display:"flex",gap:5,marginTop:4,flexWrap:"wrap"}}>{ev.pt==="att"?<><Tag c="#16a34a" ch={`✓ ${yes}`}/><Tag c="#dc2626" bg="#fee2e2" ch={`✕ ${no}`}/></>:<Tag c="#2563eb" ch={`📝 ${vc} Einträge`}/>}</div>}
@@ -18060,6 +18066,7 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user",allEven
   const [infoDrill,setInfoDrill]=useState(null);
   const eT=ET[ev.type]||ET.training;const isToday=ev.date===now();const isPast=ev.date<now();
   const pollEv = ev.pt==="list" ? resolveLinkedEv(allEvents,ev) : ev; // gekoppelte Liste
+  const _ferien=useSchoolHolidays(cl?.clubSettings?.holidayState);
   const uv=(((ev.pt==="list"?pollEv:ev).votes)||{})[user];const uvVal=typeof uv==="object"&&uv!==null?uv.val:uv;
   const p=cl?.pri||"#16a34a";
   let status=null;
@@ -18095,6 +18102,7 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user",allEven
             <span style={{fontSize:13,color:"#64748b",fontWeight:600}}>{fmtD(ev.date)}{ev.time?" · "+ev.time+(ev.endTime?"–"+ev.endTime:""):""}{wx?.[ev.date]&&<span style={{marginLeft:6,fontSize:11.5,fontWeight:700,color:(wx[ev.date].r??0)>=50?"#0369a1":"#64748b"}}>{wxIcon(wx[ev.date].c)} {wx[ev.date].t}°{(wx[ev.date].r??0)>=30?` · 💧${wx[ev.date].r}%`:""}</span>}</span>
             {ev.loc&&<span style={{fontSize:12,color:"#64748b"}}>📍 {ev.loc}</span>}
             {(()=>{ const hn=publicHolidayName(ev.date,cl?.clubSettings?.holidayState); return hn?<span style={{fontSize:11,fontWeight:800,color:"#92400e",background:"#fef3c7",border:"1px solid #fde68a",borderRadius:7,padding:"2px 7px"}}>🎉 {hn}</span>:null; })()}
+            {(()=>{ const sf=schoolHolidayFor(_ferien,ev.date); return sf?<span style={{fontSize:11,fontWeight:800,color:"#0e7490",background:"#ecfeff",border:"1px solid #a5f3fc",borderRadius:7,padding:"2px 7px"}}>⛱ {sf.name}</span>:null; })()}
           </div>
           {status&&<div style={{marginTop:6,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
             <span style={{display:"inline-flex",alignItems:"center",gap:4,background:status.bg,color:status.color,borderRadius:8,padding:"3px 9px",fontSize:12,fontWeight:700}}>{status.icon} {status.label}</span>
