@@ -6395,12 +6395,9 @@ function SetupWizard({ onDone,onBack }) {
 function PrivacyBanner(){
   return (
     <div style={{background:"#eff6ff",border:"1.5px solid #bfdbfe",borderRadius:12,padding:"12px 14px",margin:"0 0 14px"}}>
-      <div style={{fontWeight:800,color:"#1e40af",fontSize:13,marginBottom:4}}>Beta-Test mit Cloud-Datenbank</div>
+      <div style={{fontWeight:800,color:"#1e40af",fontSize:13,marginBottom:4}}>{(T[LANG_SWITCHER_ENABLED?(localStorage.getItem(LANG_KEY)||"de"):"de"]?.lpBetaT)??T.de.lpBetaT}</div>
       <div style={{fontSize:12.5,color:"#1e3a8a",lineHeight:1.5}}>
-        Deine Eingaben werden in einer verschlüsselten Datenbank (Supabase, Frankfurt) gespeichert.
-        Du kannst die App mit echten Vereinsdaten nutzen – beachte aber, dass sie sich noch in der
-        Test-Phase befindet und Funktionen sich ändern können. Für Kinderdaten bitte die Einwilligung
-        der Eltern einholen. Die datenschutzrechtliche Verantwortung liegt beim jeweiligen Verein.
+        {(T[LANG_SWITCHER_ENABLED?(localStorage.getItem(LANG_KEY)||"de"):"de"]?.lpBetaX)??T.de.lpBetaX}
       </div>
     </div>
   );
@@ -6501,10 +6498,10 @@ function Directory({data,onPick,onNewClub,onVisitorOpen,lang,setLang,onLegal}) {
       <style>{CSS}</style>
       <div style={{maxWidth:520,margin:"0 auto",padding:"26px 18px 40px"}}>
         <button onClick={()=>setMode("home")} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:20}}>← Zurück</button>
-        <h2 style={{fontWeight:900,fontSize:24,margin:"0 0 4px"}}>Veranstaltungen</h2>
-        <p style={{color:"rgba(255,255,255,.55)",fontSize:14,marginBottom:20}}>Aktuell freigeschaltete Turniere – tippe zum Öffnen (Passwort nötig).</p>
+        <h2 style={{fontWeight:900,fontSize:24,margin:"0 0 4px"}}>{tr("lpEvT")}</h2>
+        <p style={{color:"rgba(255,255,255,.55)",fontSize:14,marginBottom:20}}>{tr("lpEvSub")}</p>
         {liveNow.length===0
-          ? <div style={{background:"rgba(255,255,255,.07)",borderRadius:18,padding:"32px",textAlign:"center",color:"rgba(255,255,255,.6)",fontSize:14}}>Gerade ist keine Veranstaltung freigeschaltet.</div>
+          ? <div style={{background:"rgba(255,255,255,.07)",borderRadius:18,padding:"32px",textAlign:"center",color:"rgba(255,255,255,.6)",fontSize:14}}>{tr("lpEvNone")}</div>
           : liveNow.map(e=>{
               const clubName=(data.clubs||[]).find(c=>c.id===e.clubId||c.slug===e.clubSlug)?.name||"";
               return (
@@ -6564,25 +6561,25 @@ function Directory({data,onPick,onNewClub,onVisitorOpen,lang,setLang,onLegal}) {
       {isDesktop ? (
       <div style={{position:"relative",padding:"42px 28px 14px",maxWidth:860,margin:"0 auto",textAlign:"center"}}>
         <div className="up" style={{display:"inline-flex",alignItems:"center",gap:6,background:"rgba(134,239,172,.12)",border:"1px solid rgba(134,239,172,.28)",color:"#86efac",fontSize:12,fontWeight:700,padding:"5px 13px",borderRadius:99,marginBottom:18}}>
-          &#9917; Für jeden Sportverein
+          ⚽ {tr("lpBadge")}
         </div>
         <h1 className="up" style={{fontWeight:900,fontSize:48,lineHeight:1.05,letterSpacing:-1.7,margin:"0 0 16px"}}>
-          Schluss mit dem <span style={{color:"#4ade80"}}>WhatsApp-Chaos</span> im Verein.
+          {tr("lpT1")} <span style={{color:"#4ade80"}}>{tr("lpTHi")}</span> {tr("lpT2")}
         </h1>
         <p className="up" style={{color:"rgba(255,255,255,.72)",fontSize:16.5,lineHeight:1.55,fontWeight:500,margin:"0 auto 26px",maxWidth:600,animationDelay:".1s"}}>
-          Termine, Anwesenheit, Mannschaften und Kommunikation &ndash; alles an einem Ort. Eltern stimmen mit einem Tipp ab, du planst die Saison in Minuten.
+          {tr("lpSub")}
         </p>
         <div className="up" style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap",marginBottom:9,animationDelay:".15s"}}>
           <button onClick={()=>setMode("setup")}
             style={{padding:"14px 28px",borderRadius:14,border:"none",background:"linear-gradient(135deg,#22c55e,#16a34a)",color:"#fff",fontWeight:800,fontSize:16,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 8px 26px rgba(22,163,74,.5)"}}>
-            Verein anlegen &#8594;
+            {tr("lpCta")} →
           </button>
           <button onClick={()=>onPick("__demo__")}
             style={{padding:"14px 24px",borderRadius:14,border:"1.5px solid rgba(255,255,255,.2)",background:"rgba(255,255,255,.06)",color:"#fff",fontWeight:700,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>
-            Erst die Demo ansehen
+            {tr("lpDemo")}
           </button>
         </div>
-        <p className="up" style={{color:"rgba(255,255,255,.45)",fontSize:12.5,fontWeight:600,margin:"0 0 30px"}}>In 2 Minuten startklar · keine Verpflichtung</p>
+        <p className="up" style={{color:"rgba(255,255,255,.45)",fontSize:12.5,fontWeight:600,margin:"0 0 30px"}}>{tr("lpReadyLong")}</p>
         <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,textAlign:"left",marginBottom:18}}>
           {[
             ["&#127919;","Klare Termin&shy;Abstimmung","Zusagen, Absagen, Begründungen – alles auf einen Blick."],
@@ -6601,7 +6598,7 @@ function Directory({data,onPick,onNewClub,onVisitorOpen,lang,setLang,onLegal}) {
         </div>
         <button onClick={()=>setShowPushHelp(true)}
           style={{padding:"9px 16px",borderRadius:11,border:"1px dashed rgba(255,255,255,.2)",background:"transparent",color:"rgba(255,255,255,.7)",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
-          🔔 Benachrichtigungen einrichten
+          {tr("lpPush2")}
         </button>
         <div style={{marginTop:14,fontSize:11,color:"rgba(255,255,255,.4)",lineHeight:1.45}}>
           Beta-Test · verschlüsselt in Frankfurt · DSGVO-Verantwortung beim Verein
@@ -6610,46 +6607,46 @@ function Directory({data,onPick,onNewClub,onVisitorOpen,lang,setLang,onLegal}) {
       ) : (
       <div style={{position:"relative",padding:"32px 22px 6px",maxWidth:520,margin:"0 auto",textAlign:"center"}}>
         <div className="up" style={{display:"inline-flex",alignItems:"center",gap:6,background:"rgba(134,239,172,.12)",border:"1px solid rgba(134,239,172,.28)",color:"#86efac",fontSize:12,fontWeight:700,padding:"5px 13px",borderRadius:99,marginBottom:18}}>
-          &#9917; Für jeden Sportverein
+          ⚽ {tr("lpBadge")}
         </div>
         <h1 className="up" style={{fontWeight:900,fontSize:34,lineHeight:1.08,letterSpacing:-1.2,margin:"0 0 14px",animationDelay:".05s"}}>
-          Schluss mit dem<br/><span style={{color:"#4ade80"}}>WhatsApp-Chaos</span> im Verein.
+          {tr("lpT1")}<br/><span style={{color:"#4ade80"}}>{tr("lpTHi")}</span> {tr("lpT2")}
         </h1>
         <p className="up" style={{color:"rgba(255,255,255,.72)",fontSize:16,lineHeight:1.5,fontWeight:500,margin:"0 auto 24px",maxWidth:400,animationDelay:".1s"}}>
-          Termine, Anwesenheit, Mannschaften und Kommunikation &ndash; alles an einem Ort. Eltern stimmen mit einem Tipp ab, du planst die Saison in Minuten.
+          {tr("lpSub")}
         </p>
         <div className="up" style={{display:"flex",flexDirection:"column",gap:10,maxWidth:340,margin:"0 auto 12px",animationDelay:".15s"}}>
           <button onClick={()=>setMode("setup")}
             style={{padding:"16px",borderRadius:15,border:"none",background:"linear-gradient(135deg,#22c55e,#16a34a)",color:"#fff",fontWeight:800,fontSize:16,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 10px 34px rgba(22,163,74,.5)"}}>
-            Verein anlegen &#8594;
+            {tr("lpCta")} →
           </button>
           <button onClick={()=>onPick("__demo__")}
             style={{padding:"13px",borderRadius:15,border:"1.5px solid rgba(255,255,255,.18)",background:"rgba(255,255,255,.06)",color:"#fff",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
-            Erst die Demo ansehen
+            {tr("lpDemo")}
           </button>
           <button onClick={()=>setShowPushHelp(true)}
             style={{padding:"10px",borderRadius:13,border:"1px dashed rgba(255,255,255,.2)",background:"transparent",color:"rgba(255,255,255,.7)",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
-            🔔 So kriegst du Benachrichtigungen
+            {tr("lpPush")}
           </button>
         </div>
         <p className="up" style={{color:"rgba(255,255,255,.45)",fontSize:12,fontWeight:600,margin:"0 0 28px",animationDelay:".2s"}}>
-          In 2 Minuten startklar
+          {tr("lpReady")}
         </p>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,textAlign:"left"}}>
           <div className="up" style={{background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.09)",borderRadius:14,padding:"13px 11px",animationDelay:".25s"}}>
             <div style={{fontSize:20,marginBottom:6}}>&#128197;</div>
-            <div style={{fontWeight:800,fontSize:13,color:"#fff"}}>Nie wieder</div>
-            <div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:1}}>Termin-Chaos</div>
+            <div style={{fontWeight:800,fontSize:13,color:"#fff"}}>{tr("lpC3a")}</div>
+            <div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:1}}>{tr("lpC3b")}</div>
           </div>
           <div className="up" style={{background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.09)",borderRadius:14,padding:"13px 11px",animationDelay:".3s"}}>
             <div style={{fontSize:20,marginBottom:6}}>&#9989;</div>
-            <div style={{fontWeight:800,fontSize:13,color:"#fff"}}>Ein Tipp</div>
-            <div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:1}}>Eltern stimmen ab</div>
+            <div style={{fontWeight:800,fontSize:13,color:"#fff"}}>{tr("lpC2a")}</div>
+            <div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:1}}>{tr("lpC2b")}</div>
           </div>
           <div className="up" style={{background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.09)",borderRadius:14,padding:"13px 11px",animationDelay:".35s"}}>
             <div style={{fontSize:20,marginBottom:6}}>&#128172;</div>
-            <div style={{fontWeight:800,fontSize:13,color:"#fff"}}>Statt 5</div>
-            <div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:1}}>WhatsApp-Gruppen</div>
+            <div style={{fontWeight:800,fontSize:13,color:"#fff"}}>{tr("lpC1a")}</div>
+            <div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:1}}>{tr("lpC1b")}</div>
           </div>
         </div>
       </div>
@@ -6661,7 +6658,7 @@ function Directory({data,onPick,onNewClub,onVisitorOpen,lang,setLang,onLegal}) {
       {!isDesktop && <div style={{maxWidth:520,margin:"30px auto 0",padding:"0 22px"}}>
         <div style={{display:"flex",alignItems:"center",gap:12}}>
           <div style={{flex:1,height:1,background:"rgba(255,255,255,.1)"}}/>
-          <span style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,.4)",whiteSpace:"nowrap"}}>Schon dabei? Finde deinen Verein</span>
+          <span style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,.4)",whiteSpace:"nowrap"}}>{tr("lpFind")}</span>
           <div style={{flex:1,height:1,background:"rgba(255,255,255,.1)"}}/>
         </div>
       </div>}
@@ -6670,7 +6667,7 @@ function Directory({data,onPick,onNewClub,onVisitorOpen,lang,setLang,onLegal}) {
       {!isDesktop && <div style={{padding:"0 16px",maxWidth:460,margin:"0 auto"}}>
         <div style={{position:"relative",marginBottom:10}}>
           <span style={{position:"absolute",left:13,top:"50%",transform:"translateY(-50%)",fontSize:15,pointerEvents:"none",opacity:.5}}>&#128269;</span>
-          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Verein suchen..."
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder={tr("lpSearchPh")}
             style={{width:"100%",padding:"11px 13px 11px 40px",fontSize:14,background:"rgba(255,255,255,.08)",border:"1.5px solid rgba(255,255,255,.12)",borderRadius:13,outline:"none",color:"#fff",boxSizing:"border-box"}}/>
         </div>
         <div style={{display:"flex",gap:7,overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch",paddingBottom:4,marginBottom:16}}>
@@ -6687,9 +6684,9 @@ function Directory({data,onPick,onNewClub,onVisitorOpen,lang,setLang,onLegal}) {
       <div style={{maxWidth:isDesktop?1180:460,margin:"0 auto",padding:isDesktop?"4px 28px 30px":"0 16px 60px"}}>
         {filtered.length===0&&search&&(
           <div style={{textAlign:"center",padding:"32px",color:"rgba(255,255,255,.3)"}}>
-            <p style={{fontWeight:700,fontSize:15}}>Kein Verein gefunden</p>
-            <p style={{fontSize:13,marginTop:4}}>Noch nicht dabei? Jetzt anlegen!</p>
-            <button onClick={()=>setMode("setup")} style={{marginTop:12,padding:"10px 20px",borderRadius:12,border:"none",background:"#16a34a",color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Verein anlegen</button>
+            <p style={{fontWeight:700,fontSize:15}}>{tr("lpNone")}</p>
+            <p style={{fontSize:13,marginTop:4}}>{tr("lpNone2")}</p>
+            <button onClick={()=>setMode("setup")} style={{marginTop:12,padding:"10px 20px",borderRadius:12,border:"none",background:"#16a34a",color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{tr("lpCta")}</button>
           </div>
         )}
 
@@ -6698,12 +6695,12 @@ function Directory({data,onPick,onNewClub,onVisitorOpen,lang,setLang,onLegal}) {
           <div style={{maxWidth:600,margin:"0 auto 22px"}}>
             <div style={{display:"flex",alignItems:"center",gap:12,justifyContent:"center",marginBottom:14}}>
               <div style={{flex:1,height:1,background:"rgba(255,255,255,.1)"}}/>
-              <span style={{fontSize:14,fontWeight:800,color:"rgba(255,255,255,.6)",whiteSpace:"nowrap"}}>Schon dabei? Finde deinen Verein</span>
+              <span style={{fontSize:14,fontWeight:800,color:"rgba(255,255,255,.6)",whiteSpace:"nowrap"}}>{tr("lpFind")}</span>
               <div style={{flex:1,height:1,background:"rgba(255,255,255,.1)"}}/>
             </div>
             <div style={{position:"relative",marginBottom:11}}>
               <span style={{position:"absolute",left:13,top:"50%",transform:"translateY(-50%)",fontSize:15,pointerEvents:"none",opacity:.5}}>&#128269;</span>
-              <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Verein suchen…"
+              <input value={search} onChange={e=>setSearch(e.target.value)} placeholder={tr("lpSearchPh")}
                 style={{width:"100%",padding:"11px 13px 11px 40px",fontSize:14,background:"rgba(255,255,255,.08)",border:"1.5px solid rgba(255,255,255,.12)",borderRadius:13,outline:"none",color:"#fff",boxSizing:"border-box"}}/>
             </div>
             <div style={{display:"flex",gap:7,flexWrap:"wrap",justifyContent:"center"}}>
@@ -6767,9 +6764,9 @@ function Directory({data,onPick,onNewClub,onVisitorOpen,lang,setLang,onLegal}) {
           Nur Vereine die zugestimmt haben werden angezeigt
         </p>
         <div style={{display:"flex",justifyContent:"center",gap:16,marginTop:12,paddingBottom:8}}>
-          <button onClick={()=>onLegal&&onLegal()} style={{background:"none",border:"none",color:"rgba(255,255,255,.25)",fontSize:11,cursor:"pointer",textDecoration:"underline"}}>Impressum</button>
-          <button onClick={()=>onLegal&&onLegal()} style={{background:"none",border:"none",color:"rgba(255,255,255,.25)",fontSize:11,cursor:"pointer",textDecoration:"underline"}}>Datenschutz</button>
-          <button onClick={()=>onLegal&&onLegal()} style={{background:"none",border:"none",color:"rgba(255,255,255,.25)",fontSize:11,cursor:"pointer",textDecoration:"underline"}}>Nutzungsbedingungen</button>
+          <button onClick={()=>onLegal&&onLegal()} style={{background:"none",border:"none",color:"rgba(255,255,255,.25)",fontSize:11,cursor:"pointer",textDecoration:"underline"}}>{tr("lpImprint")}</button>
+          <button onClick={()=>onLegal&&onLegal()} style={{background:"none",border:"none",color:"rgba(255,255,255,.25)",fontSize:11,cursor:"pointer",textDecoration:"underline"}}>{tr("lpPrivacy")}</button>
+          <button onClick={()=>onLegal&&onLegal()} style={{background:"none",border:"none",color:"rgba(255,255,255,.25)",fontSize:11,cursor:"pointer",textDecoration:"underline"}}>{tr("lpTerms")}</button>
         </div>
         <div style={{textAlign:"center",fontSize:10,color:"rgba(255,255,255,.2)",marginTop:6}}>Affiliate-Partner: Awin</div>
         <div style={{marginTop:14,maxWidth:isDesktop?720:"none",marginLeft:isDesktop?"auto":undefined,marginRight:isDesktop?"auto":undefined}}><AdBanner style={{borderRadius:12,overflow:"hidden"}}/></div>
