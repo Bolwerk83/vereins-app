@@ -83,7 +83,10 @@ export function LegalPage({ onBack, cl }) {
             Für die Wetteranzeige an Terminen wird die ungefähre Vereins-Position (aus der Vereins-PLZ) an den Wetterdienst Open-Meteo übertragen – keine personenbezogenen Daten.</p>
 
             <p style={{marginTop:12}}><strong>9. Werbung &amp; externe Links</strong><br/>
-            Die App kann als Werbung gekennzeichnete Empfehlungen (Affiliate-Links) zu externen Shops anzeigen. Beim Klick verlässt du die App; auf den Zielseiten gelten deren eigene Datenschutzbestimmungen. Es werden keine personenbezogenen Mitgliederdaten an diese Dritten weitergegeben; ein Tracking innerhalb der App findet nicht statt.</p>
+            Die App kann als Werbung gekennzeichnete Empfehlungen (Affiliate-Links) zu externen Shops anzeigen. Beim Klick verlässt du die App; auf den Zielseiten gelten deren eigene Datenschutzbestimmungen. Es werden keine personenbezogenen Mitgliederdaten an diese Dritten weitergegeben. Die App zählt lediglich anonym, wie oft Werbe-Empfehlungen angeklickt werden (je Angebot, ohne Personenbezug), um die Auswahl der Empfehlungen zu verbessern.</p>
+
+            <p style={{marginTop:12}}><strong>9a. Anonyme Nutzungsstatistik</strong><br/>
+            Zur Verbesserung der App werden anonyme Tages-Zähler erhoben: eingestellte Sprache, grobe Region (abgeleitet aus der Zeitzone des Geräts – keine IP-Adresse, kein GPS), Gerätetyp und die Häufigkeit genutzter Funktionen. Die Zähler sind keiner Person zuordenbar; es wird eine zufällige Gerätekennung ohne Bezug zu Namen oder Konten verwendet.</p>
 
             <p style={{marginTop:12}}><strong>10. Deine Rechte</strong><br/>
             Du hast das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit und Widerspruch sowie das Recht auf Beschwerde bei einer Datenschutz-Aufsichtsbehörde (für NRW: LDI NRW).</p>

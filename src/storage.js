@@ -559,3 +559,34 @@ export const sess = {
     try { sessionStorage.removeItem(SS); localStorage.removeItem(SS+"_persist"); } catch {}
   },
 };
+
+// ---- Anonyme Nutzungs-Statistik (DSGVO-schonend) --------------------
+// Jedes Geraet schreibt EINE eigene Zeile pro Tag (keine Schreibkonflikte):
+// key = <SK>__stats_<datum>_<zufaellige Geraete-ID>. Inhalt: nur Sprache,
+// grobe Region (aus der Zeitzone) und Funktions-Zaehler - keine Namen/IDs.
+export const statsDeviceId = () => {
+  try {
+    let id = localStorage.getItem("va_stats_dev");
+    if (!id) { id = Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6); localStorage.setItem("va_stats_dev", id); }
+    return id;
+  } catch { return "anon"; }
+};
+export const statsPush = async (value) => {
+  const day = new Date().toISOString().slice(0, 10);
+  const key = `${SK}__stats_${day}_${statsDeviceId()}`;
+  try {
+    const r = await sb._fetch(`/rest/v1/app_data`, {
+      method: "POST",
+      headers: { "Prefer": "resolution=merge-duplicates" },
+      body: JSON.stringify([{ key, value, updated_at: new Date().toISOString() }]),
+    });
+    return r.ok;
+  } catch { return false; }
+};
+export const statsFetch = async () => {
+  try {
+    const r = await sb._fetch(`/rest/v1/app_data?key=like.${encodeURIComponent(SK + "__stats_")}*&select=key,value`);
+    if (!r.ok) return null;
+    return await r.json();
+  } catch { return null; }
+};

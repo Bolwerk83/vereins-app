@@ -5,7 +5,7 @@
 // SuperAdmin (Gate) und trackEvent/trackEventGeo.
 // ----------------------------------------------------------------
 import React, { useState, useEffect, useRef } from "react";
-import { sb } from "./storage.js";
+import { sb, statsPush, statsFetch, statsDeviceId } from "./storage.js";
 import { hashPw, checkPw } from "./util.js";
 import { PwInput } from "./ui.jsx";
 import { AFFILIATE_IDS, applyAffiliateIds, AFFILIATES } from "./affiliates.jsx";
@@ -2406,8 +2406,29 @@ export const getGeoInfo = () => {
   return { tz, lang, geo, device, browser };
 };
 
+// Anonymen Tages-Zaehler in die Cloud spiegeln (max. alle 15 Minuten).
+// Enthaelt NUR: Sprache, grobe Region (Zeitzone), Ereignis-Zaehler des Tages.
+function _statsSync(){
+  try {
+    const now=Date.now();
+    const last=Number(localStorage.getItem("va_stats_pushed")||0);
+    if(now-last < 15*60*1000) return;
+    localStorage.setItem("va_stats_pushed", String(now));
+    const day=new Date().toISOString().slice(0,10);
+    const log=JSON.parse(localStorage.getItem("va_analytics")||"[]").filter(e=>e.date===day);
+    const counts={}, ads={};
+    log.forEach(e=>{
+      counts[e.type]=(counts[e.type]||0)+1;
+      if(e.type==="affiliate_click"&&e.detail) ads[e.detail]=(ads[e.detail]||0)+1; // welcher Partner-Link
+    });
+    const geo=getGeoInfo();
+    statsPush({ day, region:geo.geo?.country||"??", lang:geo.lang||"?", device:geo.device||"?", counts, ads }).catch?.(()=>{});
+  } catch {}
+}
+
 // Erweitertes trackEvent mit Geo-Daten
 export const trackEventGeo = (type, detail="") => {
+  try { _statsSync(); } catch {}
   const geo = getGeoInfo();
   const log = (() => {
     try { return JSON.parse(localStorage.getItem("va_analytics")||"[]"); } catch { return []; }
@@ -2432,6 +2453,74 @@ export const trackEventGeo = (type, detail="") => {
    GEO ANALYTICS TAB (Super-Admin)
 ================================================================= */
 function SuperAdminGeoAnalytics() {
+  const [cloud,setCloud]=useState(null);   // null=nicht geladen, []=leer
+  const [loading,setLoading]=useState(false);
+  const loadCloud=async()=>{
+    setLoading(true);
+    const rows=await statsFetch();
+    setLoading(false);
+    setCloud(rows||[]);
+  };
+  const CloudStats=()=>{
+    if(cloud===null) return (
+      <div style={{background:"#1e293b",border:"1px solid #334155",borderRadius:14,padding:"16px",marginBottom:18}}>
+        <div style={{fontWeight:800,color:"#fff",fontSize:14,marginBottom:4}}>☁️ Vereinsweite Statistik (alle Geräte)</div>
+        <div style={{fontSize:12,color:"#64748b",lineHeight:1.5,marginBottom:10}}>Anonyme Tages-Zähler aller Geräte: Sprache, grobe Region (Zeitzone), genutzte Funktionen und Werbeklicks je Partner-Link. Keine Namen, keine IDs.</div>
+        <button onClick={loadCloud} disabled={loading} style={{padding:"9px 16px",borderRadius:10,border:"none",background:"#7c3aed",color:"#fff",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{loading?"Lade…":"Cloud-Statistik laden"}</button>
+      </div>
+    );
+    const vals=cloud.map(r=>r.value||{});
+    const days={}, regions={}, langs={}, types={}, ads={};
+    vals.forEach(v=>{
+      days[v.day]=(days[v.day]||0)+1;
+      regions[v.region||"??"]=(regions[v.region||"??"]||0)+1;
+      langs[v.lang||"?"]=(langs[v.lang||"?"]||0)+1;
+      Object.entries(v.counts||{}).forEach(([k,n])=>{ types[k]=(types[k]||0)+Number(n||0); });
+      Object.entries(v.ads||{}).forEach(([k,n])=>{ ads[k]=(ads[k]||0)+Number(n||0); });
+    });
+    const adTotal=Object.values(ads).reduce((a,b)=>a+b,0);
+    const affName=id=>{ const a=(AFFILIATES||[]).find(x=>x.id===id); return a?`${a.text} (${a.network||a.idKey||""})`:id; };
+    const Table=({title,obj,fmt})=>{
+      const rows=Object.entries(obj).sort((a,b)=>b[1]-a[1]).slice(0,10);
+      if(!rows.length) return null;
+      const max=rows[0][1]||1;
+      return (
+        <div style={{marginBottom:14}}>
+          <div style={{fontSize:11,fontWeight:800,color:"#94a3b8",letterSpacing:.5,marginBottom:6}}>{title}</div>
+          {rows.map(([k,n])=>(
+            <div key={k} style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+              <div style={{flex:1,minWidth:0,fontSize:12,color:"#e2e8f0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{fmt?fmt(k):k}</div>
+              <div style={{width:110,height:7,borderRadius:99,background:"#0f172a",overflow:"hidden",flexShrink:0}}><div style={{height:"100%",width:`${Math.round(n/max*100)}%`,background:"#7c3aed",borderRadius:99}}/></div>
+              <div style={{width:36,textAlign:"right",fontSize:12,fontWeight:800,color:"#a78bfa",flexShrink:0}}>{n}</div>
+            </div>
+          ))}
+        </div>
+      );
+    };
+    const deviceDays=cloud.length;
+    const uniqueDays=Object.keys(days).length;
+    return (
+      <div style={{background:"#1e293b",border:"1px solid #334155",borderRadius:14,padding:"16px",marginBottom:18}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+          <div style={{flex:1,fontWeight:800,color:"#fff",fontSize:14}}>☁️ Vereinsweite Statistik</div>
+          <button onClick={loadCloud} style={{padding:"6px 12px",borderRadius:9,border:"1px solid #334155",background:"transparent",color:"#94a3b8",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>Neu laden</button>
+        </div>
+        <div style={{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap"}}>
+          {[["Gerät-Tage",deviceDays],["Tage mit Nutzung",uniqueDays],["Werbeklicks gesamt",adTotal]].map(([l,v])=>(
+            <div key={l} style={{flex:1,minWidth:90,background:"#0f172a",borderRadius:11,padding:"10px",textAlign:"center"}}>
+              <div style={{fontSize:20,fontWeight:900,color:"#fff"}}>{v}</div>
+              <div style={{fontSize:10.5,color:"#64748b",marginTop:2}}>{l}</div>
+            </div>
+          ))}
+        </div>
+        <Table title="💶 WERBEKLICKS JE PARTNER-LINK (Provisions-Potenzial)" obj={ads} fmt={affName}/>
+        <Table title="SPRACHEN (Geräte)" obj={langs}/>
+        <Table title="REGIONEN (Geräte)" obj={regions}/>
+        <Table title="EREIGNISSE" obj={types}/>
+        {cloud.length===0&&<div style={{fontSize:12.5,color:"#64748b"}}>Noch keine Cloud-Zähler – sie entstehen automatisch, sobald Geräte mit dem neuen Stand genutzt werden (max. 1 Übertragung/15 Min je Gerät).</div>}
+      </div>
+    );
+  };
   const analytics = (() => {
     try { return JSON.parse(localStorage.getItem("va_analytics")||"[]"); } catch { return []; }
   })();
@@ -2534,6 +2623,7 @@ function SuperAdminGeoAnalytics() {
 
   return (
     <div>
+      <CloudStats/>
       <h2 style={{color:"#fff",fontWeight:900,fontSize:20,marginBottom:8}}>
         Geo & Sprach-Analytics
       </h2>
