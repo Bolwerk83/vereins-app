@@ -18125,6 +18125,7 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user",allEven
             </div>
           </a>
         )}
+        {["auswarts","turnier"].includes(ev.type)&&!isPast&&<AffiliateBanner trigger="events" slim style={{marginBottom:12}}/>}
         {ev.trainingPlan && (
           <div style={{background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:14,padding:"13px 15px",marginBottom:14}}>
             <div style={{fontSize:12,fontWeight:800,color:"#166534",marginBottom:8,letterSpacing:.3}}>{tr("evPlanLabel")}{ev.trainingPlan.cat?" · "+ev.trainingPlan.cat:""}</div>
@@ -18471,6 +18472,8 @@ function SelfStats({ data, session, cl, lang="de" }){
           </div>
         );
       })()}
+
+      <AffiliateBanner trigger="parents" style={{marginBottom:14}}/>
 
       <div style={{fontSize:11,color:"#64748b",textAlign:"center",lineHeight:1.5,marginTop:6,padding:"0 8px"}}>
         {SHOW_PARENT_SKILLS?tr("msDisclaimer"):tr("msDisclaimerLite")}
@@ -18857,6 +18860,7 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         <div>
         <AreaIntro id="parent_home" cl={cl}/>
         <AffiliateBanner trigger="events" slim style={{marginBottom:12}}/>
+        {null /* Eltern-Banner unten, siehe parentsBottom */}
         {up.length>0&&<>
           <Divider label={tr("uhNext10")}/>
           {soon.length>0
@@ -18876,6 +18880,7 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           </button>
           {showPast&&past.map(ev=><div key={ev.id} style={{marginBottom:10}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user" allEvents={data.events||[]}/></div>)}
         </>}
+        <AffiliateBanner trigger="parents" style={{marginTop:16}}/>
         {(cl.links||[]).length>0&&(
           <div style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",padding:"14px 16px",marginTop:16}}>
             <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:10}}>{tr("uhClubLinks")}</div>

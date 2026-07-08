@@ -138,6 +138,23 @@ export const AFFILIATES = [
     url:(id)=>`https://www.amazon.de/s?k=jugendfu%C3%9Fball+training+buch&tag=${id||"vereinsapp-21"}` },
 
   // settings (Operatives)
+  // === ELTERN (Kinder-Ausruestung - groesster Traffic in der Eltern-Ansicht) ===
+  { id:"11teamsports-parents", trigger:"parents", weight:3, idKey:"awin", icon:"11",
+    text:"Kinder-Fußballschuhe & Schienbeinschoner",
+    sub:"11teamsports · Größen für jede Jugend · schnelle Lieferung",
+    network:"AWIN",
+    url:(id)=>`https://www.awin1.com/cread.php?awinmid=15286&awinaffid=${id||"vereinsapp"}&ued=${encodeURIComponent("https://www.11teamsports.com/de-de/kinder")}` },
+  { id:"decathlon-parents", trigger:"parents", weight:2, idKey:"awin", icon:"D",
+    text:"Fußball-Ausrüstung für Kinder",
+    sub:"Decathlon · Bälle, Schoner, Trainingskleidung",
+    network:"AWIN",
+    url:(id)=>`https://www.awin1.com/cread.php?awinmid=14636&awinaffid=${id||"vereinsapp"}&ued=${encodeURIComponent("https://www.decathlon.de/browse/c0-alle-sportarten/c1-fussball/c3-kinder/_/N-175dnf5")}` },
+  { id:"amazon-parents", trigger:"parents", weight:1, idKey:"amazon", icon:"A",
+    text:"Trinkflaschen, Taschen & Kleinkram",
+    sub:"Amazon · alles für die Sporttasche",
+    network:"Amazon",
+    url:(id)=>`https://www.amazon.de/s?k=kinder+fussball+ausruestung&tag=${id||"vereinsapp-21"}` },
+
   { id:"supabase", trigger:"settings", weight:1, idKey:null, icon:"S",
     text:"Eigene Cloud-Datenbank",
     sub:"Supabase · kostenloser Vereins-Start",
