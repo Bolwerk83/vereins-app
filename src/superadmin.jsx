@@ -377,12 +377,22 @@ function SuperAdminDashboard({ data, onExit }) {
         )}
 
         {tab==="settings"&&(
-          <SuperAdminSettings/>
+          <SuperAdminSettings data={data}/>
         )}
 
         {/* COMPLIANCE / SICHERHEITS-STATUS */}
         {tab==="compliance"&&(
           <SuperAdminCompliance allClubs={allClubs} allPlayers={allPlayers}/>
+        )}
+
+        {/* GEO & SPRACHE */}
+        {tab==="geo"&&(
+          <SuperAdminGeoAnalytics/>
+        )}
+
+        {/* CHAT-MODERATION */}
+        {tab==="moderation"&&(
+          <SuperAdminModeration/>
         )}
 
         {/* DATENBANK - app_data Rows ansehen + loeschen */}
@@ -1551,7 +1561,7 @@ function SuperAdminLogs({ data }) {
 /* -----------------------------------------------------------------
    SUPER ADMIN EINSTELLUNGEN
 ----------------------------------------------------------------- */
-function SuperAdminSettings() {
+function SuperAdminSettings({ data }) {
   const [newPw, setNewPw] = useState("");
   const [newPw2, setNewPw2] = useState("");
   const [saved, setSaved] = useState("");
@@ -1571,6 +1581,9 @@ function SuperAdminSettings() {
     const next = !maintenance;
     setMaintenance(next);
     localStorage.setItem("va_maintenance", next?"1":"0");
+    // GLOBAL wirksam: Flag in der globalen Zeile speichern - alle Geraete
+    // sehen den Wartungshinweis (Poll/Neuladen), nicht nur dieses.
+    if(data) sb.set({ ...data, maintenance: next }).catch(()=>{});
   };
 
   const clearAnalytics = () => {

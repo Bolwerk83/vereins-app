@@ -19139,7 +19139,9 @@ function AppInner({lang,setLang}) {
     ()=>new URLSearchParams(window.location.search).has("superadmin")
   );
   const [logoTaps,setLogoTaps] = useState(0);
-  const isMaintenance = localStorage.getItem("va_maintenance")==="1"
+  // Wartungsmodus: global (data.maintenance aus der Cloud) ODER lokal gesetzt.
+  // ?superadmin kommt immer durch, um ihn wieder abschalten zu koennen.
+  const isMaintenance = (data?.maintenance===true || localStorage.getItem("va_maintenance")==="1")
     && !new URLSearchParams(window.location.search).has("superadmin");
   const [saveStatus,setSaveStatus] = useState(null); // null | "saving" | "saved" | "local"
   const syncRef  = useRef(null);
@@ -19338,6 +19340,17 @@ function AppInner({lang,setLang}) {
   );
 
   if(showSuperAdmin) return (<><style>{CSS}</style><SuperAdmin data={data}/></>);
+  if(isMaintenance) return (
+    <div style={{minHeight:"100dvh",background:"#0f172a",display:"flex",alignItems:"center",justifyContent:"center",padding:24,fontFamily:"'Plus Jakarta Sans',sans-serif"}}>
+      <style>{CSS}</style>
+      <div style={{textAlign:"center",maxWidth:340}}>
+        <div style={{fontSize:54,marginBottom:14}}>🔧</div>
+        <p style={{color:"#fff",fontWeight:900,fontSize:20,marginBottom:8}}>Kurze Wartungspause</p>
+        <p style={{color:"rgba(255,255,255,.6)",fontSize:14,lineHeight:1.6,marginBottom:20}}>Wir arbeiten gerade an der App – sie ist gleich wieder da. Eure Daten sind sicher.</p>
+        <button onClick={()=>window.location.reload()} style={{padding:"12px 24px",borderRadius:12,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Neu laden</button>
+      </div>
+    </div>
+  );
 
   const activeCl = data.clubs.find(c=>c.id===cid);
   const clTeams  = activeTeamsFor(data,cid);
