@@ -8,7 +8,8 @@
     "preview": "vite preview",
     "test": "node --test",
     "lint": "eslint src/*.jsx src/*.js",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "verify": "npm run lint && npm test && npm run build && node scripts/smoke.mjs && node scripts/sweep.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.0.0",

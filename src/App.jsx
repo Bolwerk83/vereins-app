@@ -82,6 +82,9 @@ function seed() {
       { id:"demo", slug:"demo-verein", name:"Demo Verein", short:"Demo", em:"D",
         logo:null, pri:"#16a34a", sec:"#052e16", adm:"h1j67nz",
         pub:false, dir:false, sport:"fussball",
+        // Bundesland gesetzt, damit der Durchklick-Test (sweep) auch die
+        // Ferien-/Feiertags-Pfade abdeckt - genau da sass der TDZ-Crash.
+        clubSettings:{ holidayState:"DE-NW" },
         links:[
           {id:"dl1",title:"Vereins-Shop (Trikots & Fanartikel)",url:"https://example.com/shop"},
           {id:"dl2",title:"Vereinsheft als PDF",url:"https://example.com/vereinsheft.pdf"},
@@ -14671,7 +14674,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const [pauseSer,setPauseSer]=useState(null); // {ev,from,to} Ferien-Pause fuer eine Serie
   const [showSearch,setShowSearch]=useState(false); const [searchQ,setSearchQ]=useState("");
   const [showImport,setShowImport]=useState(false); // Spielplan-Import (fussball.de/DFBnet)
-  const _ferienDash=useSchoolHolidays(myClub?.clubSettings?.holidayState);
+  const _ferienDash=useSchoolHolidays(cl?.clubSettings?.holidayState); // cl (Zeile oben), NICHT myClub - das ist hier noch nicht deklariert (TDZ)
   const [ferienFix,setFerienFix]=useState(null); // Ferien-Aufraeum-Dialog: [{ev,hol,use}]
   const [searchPlayer,setSearchPlayer]=useState(null); // Spielerprofil direkt aus der Suche
   const [planFor,setPlanFor]=useState(null);

@@ -24,6 +24,11 @@ page.on("console", m=>{ if(m.type()==="error" && !/net::|Failed to load resource
 // Demo-Trainer-Session direkt setzen (App baut Demo-Daten offline selbst auf)
 await page.addInitScript(()=>{
   sessionStorage.setItem("vereinsapp_v12_session", JSON.stringify({ role:"trainer", cid:"demo", tids:["demo_f1"], name:"Demo Trainer", id:"demo_tr1" }));
+  // Ferien-Cache: deckt Ferien-Chips + Ferien-Check ohne Netz ab (1 Jahr Spanne)
+  const y=new Date().getFullYear();
+  localStorage.setItem("va_ferien_DE-NW", JSON.stringify({ts:Date.now(),data:[
+    {start:`${y}-01-01`,end:`${y+1}-12-31`,name:"Test-Ferien"},
+  ]}));
 });
 await page.goto("http://127.0.0.1:4175/", { waitUntil:"networkidle", timeout:30000 }).catch(e=>errors.push("[goto] "+e.message));
 await page.waitForTimeout(2500);
