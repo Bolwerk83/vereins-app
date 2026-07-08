@@ -15124,7 +15124,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               {viewEv.note&&<div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:12,padding:"10px 13px",fontSize:13,color:"#92400e",fontWeight:500}}>{viewEv.note}</div>}
               <div style={{textAlign:"center",fontSize:12.5,color:"#64748b",padding:"6px"}}>Info-Termin – keine Abstimmung, keine Anwesenheits-Auswertung.</div>
             </div>
-          : <VoteOverview ev={viewEv} players={local.players} teams={local.teams} myTids={myTids} cl={myClub}
+          : <VoteOverview ev={viewEv} players={local.players} playerProfiles={local.playerProfiles||[]} teams={local.teams} myTids={myTids} cl={myClub}
               readOnly={isHelper}
               myKids={isHelper?[]:(((local.trainers||[]).find(x=>x.id===session?.id)?.childNames)||"").split(",").map(x=>x.trim()).filter(Boolean)}
               staff={staffNeed(viewEv,{ perStaff:myClub?.clubSettings?.playersPerStaff||6, trainers:(local.trainers||[]).filter(trn=>(trn.tids||[]).includes(viewEv.tid)&&isActive(trn)).length, squad:(local.playerProfiles||[]).filter(pp=>pp.mainTid===viewEv.tid&&!pp.archived).length })}
@@ -15222,6 +15222,11 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         ))}
         </>}
         {evTab==="orga"&&<>
+        {/* Checkliste direkt in der Orga: Zusagen sehen, ganzen Kader abhaken, Gaeste anlegen */}
+        {!isHelper&&<AttendanceCheckoff ev={viewEv}
+          teamPlayers={[...new Set([...((local.players||{})[viewEv.tid]||[]), ...((local.playerProfiles||[]).filter(pp=>pp.mainTid===viewEv.tid&&!pp.archived).map(pp=>pp.name))])]}
+          onSetPresent={present=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,present}:e)}); setViewEv(prev=>({...prev,present})); }}
+          onSetGuests={guests=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,guests}:e)}); setViewEv(prev=>({...prev,guests})); }}/>}
         {viewEv.type==="training"&&(
           <StaffingBoard ev={viewEv} team={(local.teams||[]).find(tm=>tm.id===viewEv.tid)} session={session} isHelper={isHelper}
             assignedTrainers={(local.trainers||[]).filter(trn=>(trn.tids||[]).includes(viewEv.tid)&&isActive(trn)).length}
@@ -15709,7 +15714,68 @@ function PlaytimeTracker({ ev, roster, onSave, t }){
     </div>
   );
 }
-function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline,onSetPresent=()=>{},onSetGuests=()=>{},onSetVote=null,myKids=[],staff=null,readOnly=false}) {
+// Anwesenheits-Checkliste: kompletter Kader + alle Abstimmenden, Abhaken,
+// No-Show-Markierung und Gaeste (Probetraining). Haengt im Termin unter
+// "Rueckmeldungen" UND im Orga-Tab (Planung vor Ort).
+function AttendanceCheckoff({ ev, teamPlayers=[], onSetPresent=()=>{}, onSetGuests=()=>{} }){
+  const [guestName,setGuestName]=useState("");
+  const present=ev.present||{};
+  const guests=ev.guests||[];
+  const getVal=v=>(typeof v==="object"&&v)?v.val:v;
+  const byName=(a,b)=>String(a).localeCompare(String(b),"de");
+  const togglePresent=(name)=>{ const np={...present}; if(np[name]) delete np[name]; else np[name]=true; onSetPresent(np); };
+  const addGuest=()=>{ const n=guestName.trim(); if(!n) return; if(!guests.includes(n)){ onSetGuests([...guests,n]); onSetPresent({...present,[n]:true}); } setGuestName(""); };
+  const removeGuest=(name)=>{ onSetGuests(guests.filter(x=>x!==name)); const np={...present}; delete np[name]; onSetPresent(np); };
+  // Kader + selbst angemeldete Gäste (haben abgestimmt, sind aber nicht im Kader)
+  const extraVoters=Object.keys(ev.votes||{}).filter(n=>!teamPlayers.includes(n));
+  const roster=[...new Set([...teamPlayers,...extraVoters])].sort(byName);
+  if(roster.length===0&&guests.length===0) return null;
+  const presN=Object.keys(present).length;
+  const yesish=roster.filter(n=>getVal((ev.votes||{})[n])==="yes");
+  const noShows=yesish.filter(n=>!present[n]);
+  return (
+        <div style={{marginBottom:16,background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:14,padding:"12px 14px"}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+            <span style={{fontSize:16}}>✅</span>
+            <span style={{fontWeight:800,fontSize:13.5,color:"#0f172a",flex:1}}>Anwesenheit abhaken</span>
+            <span style={{fontSize:11.5,fontWeight:700,color:"#16a34a"}}>{presN} da{noShows.length>0?` · ${noShows.length} No-Show`:""}</span>
+          </div>
+          <div style={{fontSize:11,color:"#64748b",marginBottom:10,lineHeight:1.45}}>Hake ab, wer wirklich gekommen ist. „No-Show" = hat zugesagt, war aber nicht da.</div>
+          <div style={{display:"flex",flexDirection:"column",gap:6,maxHeight:"38dvh",overflowY:"auto"}}>
+            {roster.map(name=>{
+              const val=getVal((ev.votes||{})[name]);
+              const here=!!present[name];
+              const noShow=val==="yes"&&!here;
+              return (
+                <div key={name} onClick={()=>togglePresent(name)} style={{display:"flex",alignItems:"center",gap:10,background:here?"#f0fdf4":noShow?"#fff7ed":"#f8fafc",borderRadius:11,padding:"9px 11px",border:`1.5px solid ${here?"#bbf7d0":noShow?"#fed7aa":"#e2e8f0"}`,cursor:"pointer"}}>
+                  <div style={{width:22,height:22,borderRadius:7,border:`2px solid ${here?"#16a34a":"#cbd5e1"}`,background:here?"#16a34a":"#fff",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:13,fontWeight:900}}>{here?"✓":""}</div>
+                  <Av name={name} sz={30}/>
+                  <span style={{flex:1,minWidth:0,fontWeight:700,fontSize:13.5,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</span>
+                  {val==="yes"&&<span style={{fontSize:10.5,fontWeight:700,color:"#16a34a",background:"#dcfce7",borderRadius:6,padding:"2px 7px"}}>zugesagt</span>}
+                  {val==="no"&&<span style={{fontSize:10.5,fontWeight:700,color:"#dc2626",background:"#fee2e2",borderRadius:6,padding:"2px 7px"}}>abgesagt</span>}
+                  {noShow&&<span style={{fontSize:10.5,fontWeight:800,color:"#9a3412",background:"#ffedd5",borderRadius:6,padding:"2px 7px"}}>No-Show</span>}
+                </div>
+              );
+            })}
+            {guests.map(name=>(
+              <div key={"g_"+name} style={{display:"flex",alignItems:"center",gap:10,background:"#eef2ff",borderRadius:11,padding:"9px 11px",border:"1.5px solid #c7d2fe"}}>
+                <div style={{width:22,height:22,borderRadius:7,border:"2px solid #4f46e5",background:"#4f46e5",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:13,fontWeight:900}}>✓</div>
+                <Av name={name} sz={30}/>
+                <span style={{flex:1,minWidth:0,fontWeight:700,fontSize:13.5,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</span>
+                <span style={{fontSize:10.5,fontWeight:800,color:"#4f46e5",background:"#e0e7ff",borderRadius:6,padding:"2px 7px"}}>Gast</span>
+                <button onClick={()=>removeGuest(name)} style={{width:22,height:22,borderRadius:7,background:"#fee2e2",border:"none",color:"#dc2626",cursor:"pointer",fontWeight:800,fontSize:12,flexShrink:0}}>×</button>
+              </div>
+            ))}
+          </div>
+          <div style={{display:"flex",gap:7,marginTop:9}}>
+            <input value={guestName} onChange={e=>setGuestName(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();addGuest();}}} placeholder="Gastspieler / Probetraining (Name)" style={{flex:1,padding:"9px 11px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",fontFamily:"inherit",boxSizing:"border-box"}}/>
+            <button onClick={addGuest} disabled={!guestName.trim()} style={{padding:"9px 14px",borderRadius:10,border:"none",background:guestName.trim()?"#4f46e5":"#e2e8f0",color:guestName.trim()?"#fff":"#94a3b8",fontWeight:800,fontSize:13,cursor:guestName.trim()?"pointer":"default",fontFamily:"inherit"}}>+ Gast</button>
+          </div>
+        </div>
+  );
+}
+
+function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadline,onSetPresent=()=>{},onSetGuests=()=>{},onSetVote=null,myKids=[],staff=null,readOnly=false}) {
   const p = cl?.pri||"#16a34a";
   const isGameEv = ["heimspiel","auswarts","freundschaft","turnier"].includes(ev.type);
   const present = ev.present||{};
@@ -15725,7 +15791,9 @@ function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline,onSetPresent=()=
   const [dlOffN,setDlOffN]=useState("24");      // Anzahl
   const [dlOffU,setDlOffU]=useState("h");       // h | d
   const dlRelDate=()=>{ const s=eventStart(ev); if(!s) return null; const n=parseInt(dlOffN,10); if(!n||n<=0) return null; const d=new Date(s.getTime()-n*(dlOffU==="d"?86400000:3600000)); const pad=x=>String(x).padStart(2,"0"); return {date:`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`,time:`${pad(d.getHours())}:${pad(d.getMinutes())}`}; };
-  const teamPlayers = (players[ev.tid]||[]);
+  // Kader: Legacy-players-Map UND moderne Spielerprofile zusammenfuehren -
+  // sonst fehlt bei Profil-gefuehrten Teams die "ganze Liste" beim Abhaken.
+  const teamPlayers = [...new Set([...(players?.[ev.tid]||[]), ...((playerProfiles||[]).filter(pp=>pp.mainTid===ev.tid&&!pp.archived).map(pp=>pp.name))])];
   const totalPlayers = teamPlayers.length;
   const dlPassed = isDeadlinePassed(ev);
   const dlLabel  = ev.deadline ? `${ev.deadline.date} ${ev.deadline.time||""}`.trim() : null;
@@ -15927,56 +15995,7 @@ function VoteOverview({ev,players,teams,myTids,cl,onSetDeadline,onSetPresent=()=
         </div>
       </>}
 
-      {/* Anwesenheit abhaken: wer war wirklich da? (nur Trainer, nicht Betreuer) */}
-      {!readOnly&&(()=>{
-        // Kader + selbst angemeldete Gäste (haben abgestimmt, sind aber nicht im Kader)
-        const extraVoters=Object.keys(ev.votes||{}).filter(n=>!teamPlayers.includes(n));
-        const roster=[...new Set([...teamPlayers,...extraVoters])].sort(byName);
-        if(roster.length===0&&guests.length===0) return null;
-        const presN=Object.keys(present).length;
-        const yesish=roster.filter(n=>getVal((ev.votes||{})[n])==="yes");
-        const noShows=yesish.filter(n=>!present[n]);
-        return (
-        <div style={{marginBottom:16,background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:14,padding:"12px 14px"}}>
-          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
-            <span style={{fontSize:16}}>✅</span>
-            <span style={{fontWeight:800,fontSize:13.5,color:"#0f172a",flex:1}}>Anwesenheit abhaken</span>
-            <span style={{fontSize:11.5,fontWeight:700,color:"#16a34a"}}>{presN} da{noShows.length>0?` · ${noShows.length} No-Show`:""}</span>
-          </div>
-          <div style={{fontSize:11,color:"#64748b",marginBottom:10,lineHeight:1.45}}>Hake ab, wer wirklich gekommen ist. „No-Show" = hat zugesagt, war aber nicht da.</div>
-          <div style={{display:"flex",flexDirection:"column",gap:6,maxHeight:"38dvh",overflowY:"auto"}}>
-            {roster.map(name=>{
-              const val=getVal((ev.votes||{})[name]);
-              const here=!!present[name];
-              const noShow=val==="yes"&&!here;
-              return (
-                <div key={name} onClick={()=>togglePresent(name)} style={{display:"flex",alignItems:"center",gap:10,background:here?"#f0fdf4":noShow?"#fff7ed":"#f8fafc",borderRadius:11,padding:"9px 11px",border:`1.5px solid ${here?"#bbf7d0":noShow?"#fed7aa":"#e2e8f0"}`,cursor:"pointer"}}>
-                  <div style={{width:22,height:22,borderRadius:7,border:`2px solid ${here?"#16a34a":"#cbd5e1"}`,background:here?"#16a34a":"#fff",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:13,fontWeight:900}}>{here?"✓":""}</div>
-                  <Av name={name} sz={30}/>
-                  <span style={{flex:1,minWidth:0,fontWeight:700,fontSize:13.5,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</span>
-                  {val==="yes"&&<span style={{fontSize:10.5,fontWeight:700,color:"#16a34a",background:"#dcfce7",borderRadius:6,padding:"2px 7px"}}>zugesagt</span>}
-                  {val==="no"&&<span style={{fontSize:10.5,fontWeight:700,color:"#dc2626",background:"#fee2e2",borderRadius:6,padding:"2px 7px"}}>abgesagt</span>}
-                  {noShow&&<span style={{fontSize:10.5,fontWeight:800,color:"#9a3412",background:"#ffedd5",borderRadius:6,padding:"2px 7px"}}>No-Show</span>}
-                </div>
-              );
-            })}
-            {guests.map(name=>(
-              <div key={"g_"+name} style={{display:"flex",alignItems:"center",gap:10,background:"#eef2ff",borderRadius:11,padding:"9px 11px",border:"1.5px solid #c7d2fe"}}>
-                <div style={{width:22,height:22,borderRadius:7,border:"2px solid #4f46e5",background:"#4f46e5",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:13,fontWeight:900}}>✓</div>
-                <Av name={name} sz={30}/>
-                <span style={{flex:1,minWidth:0,fontWeight:700,fontSize:13.5,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</span>
-                <span style={{fontSize:10.5,fontWeight:800,color:"#4f46e5",background:"#e0e7ff",borderRadius:6,padding:"2px 7px"}}>Gast</span>
-                <button onClick={()=>removeGuest(name)} style={{width:22,height:22,borderRadius:7,background:"#fee2e2",border:"none",color:"#dc2626",cursor:"pointer",fontWeight:800,fontSize:12,flexShrink:0}}>×</button>
-              </div>
-            ))}
-          </div>
-          <div style={{display:"flex",gap:7,marginTop:9}}>
-            <input value={guestName} onChange={e=>setGuestName(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();addGuest();}}} placeholder="Gastspieler / Probetraining (Name)" style={{flex:1,padding:"9px 11px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",fontFamily:"inherit",boxSizing:"border-box"}}/>
-            <button onClick={addGuest} disabled={!guestName.trim()} style={{padding:"9px 14px",borderRadius:10,border:"none",background:guestName.trim()?"#4f46e5":"#e2e8f0",color:guestName.trim()?"#fff":"#94a3b8",fontWeight:800,fontSize:13,cursor:guestName.trim()?"pointer":"default",fontFamily:"inherit"}}>+ Gast</button>
-          </div>
-        </div>
-        );
-      })()}
+      {!readOnly&&<AttendanceCheckoff ev={ev} teamPlayers={teamPlayers} onSetPresent={onSetPresent} onSetGuests={onSetGuests}/>}
 
       {}
       {missing.length>0&&<>
@@ -17768,7 +17787,13 @@ function TrainingGroups({ ev, data, cl, onPatch, fire }){
   const cat=team?.cat||team?.name||"F-Jugend";
   const GROUP_MAX=cl?.clubSettings?.groupMax||GROUP_MAX_DEFAULT;
   const _pausedNames=new Set((data.playerProfiles||[]).filter(p=>p.mainTid===ev.tid&&isPausedP(p)).map(p=>(p.name||"").toLowerCase()));
-  const yes=Object.entries(ev.votes||{}).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>n).filter(n=>!_pausedNames.has(String(n).toLowerCase()));
+  const yesVoters=Object.entries(ev.votes||{}).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>n).filter(n=>!_pausedNames.has(String(n).toLowerCase()));
+  const roster=(data.playerProfiles||[]).filter(p=>p.mainTid===ev.tid&&!p.archived&&!isPausedP(p)).map(p=>p.name);
+  // Vorab planen: solange keine Zusagen da sind, automatisch der ganze Kader;
+  // per Umschalter jederzeit waehlbar. Gespeicherte Gruppen bleiben unberuehrt.
+  const [basisSel,setBasisSel]=useState(null);
+  const basis=basisSel??(yesVoters.length>0?"zusagen":"kader");
+  const yes=basis==="kader"?roster:yesVoters;
   const kids=yes.length;
   const nGroups=Math.max(1, Math.ceil(kids/GROUP_MAX));
   // Gruppengrößen möglichst gleich (17 -> 6/6/5)
@@ -17789,7 +17814,7 @@ function TrainingGroups({ ev, data, cl, onPatch, fire }){
   (prev?.groups?.list||[]).forEach(g=>{ (g.members||[]).forEach(m=>{ prevLeaderOf[m]=g.leader; prevMatesOf[m]=g.members; }); });
 
   const build=(rotate)=>{
-    if(kids===0){ fire&&fire("Noch keine Zusagen – erst abstimmen lassen"); return; }
+    if(kids===0){ fire&&fire(basis==="kader"?"Kein Kader hinterlegt – erst Spieler anlegen":"Noch keine Zusagen – oder oben auf „Ganzer Kader“ umschalten"); return; }
     // 1) Kinder nach Skill sortieren, im Schlangen-Muster verteilen (ausgeglichen)
     const order=[...yes].map(n=>({n,v:skillAvgOf(n)+(rotate?Math.random()*0.6-0.3:0)})).sort((a,b)=>b.v-a.v).map(x=>x.n);
     const groups=Array.from({length:nGroups},()=>[]);
@@ -17843,8 +17868,15 @@ function TrainingGroups({ ev, data, cl, onPatch, fire }){
         <span style={{fontSize:18}}>👥</span>
         <span style={{fontWeight:800,fontSize:15,color:"#0f172a",flex:1}}>Trainingsgruppen & Stationen</span>
       </div>
+      {/* Vorab planen: Basis waehlen (Zusagen vs. ganzer Kader) */}
+      <div style={{display:"flex",gap:6,marginBottom:8}}>
+        {[["zusagen",`✅ Zusagen (${yesVoters.length})`],["kader",`👥 Ganzer Kader (${roster.length})`]].map(([k,l])=>(
+          <button key={k} onClick={()=>setBasisSel(k)}
+            style={{flex:1,padding:"7px 10px",borderRadius:9,border:`1.5px solid ${basis===k?t.p:"#e2e8f0"}`,background:basis===k?t.p+"14":"#fff",color:basis===k?t.p:"#64748b",fontWeight:800,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
+        ))}
+      </div>
       <div style={{fontSize:12,color:"#475569",fontWeight:600,marginBottom:10,lineHeight:1.5}}>
-        {kids} Zusagen → <b>{nGroups} Gruppe{nGroups>1?"n":""}</b> ({sizes.join(" · ")}) · ideal 6–8, max. {GROUP_MAX} je Trainer/Betreuer · verfügbar: {leaders.length}
+        {kids} {basis==="kader"?"Kader-Kinder":"Zusagen"} → <b>{nGroups} Gruppe{nGroups>1?"n":""}</b> ({sizes.join(" · ")}) · ideal 6–8, max. {GROUP_MAX} je Trainer/Betreuer · verfügbar: {leaders.length}
         {missing>0&&<span style={{color:"#b45309"}}> · es fehlt{missing>1?"en":""} {missing} Betreuer</span>}
       </div>
       {missing>0&&(
