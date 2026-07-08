@@ -1454,6 +1454,7 @@ class ErrorBoundary extends React.Component {
           <div style={{background:"#f8fafc",borderRadius:12,padding:"12px 14px",
             marginBottom:20,fontSize:12,color:"#64748b"}}>
             {this.state.error?.message||"Unbekannter Fehler"}
+            <div style={{marginTop:6,fontSize:10,color:"#94a3b8",fontFamily:"monospace"}}>Build {typeof __BUILD_ID__!=="undefined"?__BUILD_ID__:"?"}</div>
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
             <button onClick={()=>window.location.reload()}
