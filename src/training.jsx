@@ -1610,6 +1610,31 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
     return {dx,dy}; };
 
   const chSport=(sp)=>{ const FF=TB_FIELDS[sp]||TB_FIELDS.generic; const c=FF.counts.includes(11)?11:FF.counts[0]; setSport(sp); setCount(c); setFormIdx(0); setArrows([]); setDraw(null); setBallPos(b=>b?{x:FF.vw/2,y:FF.vh/2}:null); };
+  // Werkzeuge – im Board als Kachel-Grid, im Vorfuehr-Modus als Controller-Tasten
+  const TOOLS=[
+    {id:"move",e:"🖐",l:"Bewegen",c:"#2563eb"},
+    {id:"run",e:"🏃",l:"Laufen",c:"#16a34a"},
+    {id:"dribble",e:"⚽💨",l:"Dribbeln",c:"#0891b2"},
+    {id:"pass",e:"🎯",l:"Pass",c:"#ea580c"},
+    {id:"focus",e:"🔦",l:"Fokus",c:"#7c3aed"},
+    {id:"mark",e:"⭐",l:"Stern",c:"#ca8a04"},
+  ];
+  // Steuerkreuz-Bedienfeld (Chip mit gewaehltem Spieler + 3x3-Tastenfeld)
+  const padUI=(cell=46)=>{ const si=selInfo(); return (
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5}}>
+      <div style={{background:"rgba(15,23,42,.78)",color:"#fff",borderRadius:99,padding:"4px 11px",fontSize:11.5,fontWeight:800,whiteSpace:"nowrap"}}>
+        {si?`🎮 ${si.side==="opp"?"🔴":"🔵"} Nr. ${si.n}`:"🎮 Spieler antippen"}
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:`repeat(3,${cell}px)`,gridTemplateRows:`repeat(3,${cell}px)`,gap:4}}>
+        {[null,["▲",0,-1],null,["◀",-1,0],["⭐","star"],["▶",1,0],null,["▼",0,1],null].map((b,i)=>
+          b? <button key={i}
+               onPointerDown={(e)=>{ e.preventDefault(); b[1]==="star"?padStar():padStart(b[1],b[2]); }}
+               onPointerUp={padStop} onPointerLeave={padStop} onPointerCancel={padStop} onTouchEnd={padStop}
+               style={{borderRadius:13,border:"none",background:b[1]==="star"?"rgba(202,138,4,.85)":"rgba(15,23,42,.72)",color:"#fff",fontSize:17,fontWeight:900,cursor:"pointer",touchAction:"none",fontFamily:"inherit",opacity:si?1:0.45}}>{b[0]}</button>
+           : <span key={i}/>)}
+      </div>
+    </div>
+  ); };
   const Btn=({active,onClick,children})=>(
     <button onClick={onClick} style={{padding:"7px 12px",borderRadius:9,border:active?`1.5px solid ${t.p}`:"1.5px solid #e2e8f0",background:active?t.p:"#fff",color:active?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{children}</button>
   );
@@ -1675,14 +1700,7 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
       )}
       {/* Werkzeuge: ein Tipp = ein Werkzeug, gross und farbig */}
       <div style={{display:"grid",gridTemplateColumns:kidMode?"repeat(3,1fr)":"repeat(6,1fr)",gap:kidMode?8:6}}>
-        {[
-          {id:"move",e:"🖐",l:"Bewegen",c:"#2563eb"},
-          {id:"run",e:"🏃",l:"Laufen",c:"#16a34a"},
-          {id:"dribble",e:"⚽💨",l:"Dribbeln",c:"#0891b2"},
-          {id:"pass",e:"🎯",l:"Pass",c:"#ea580c"},
-          {id:"focus",e:"🔦",l:"Fokus",c:"#7c3aed"},
-          {id:"mark",e:"⭐",l:"Stern",c:"#ca8a04"},
-        ].map(o=>(
+        {TOOLS.map(o=>(
           <button key={o.id} onClick={()=>setMode(o.id)}
             style={{padding:kidMode?"12px 4px":"8px 2px",borderRadius:14,border:`2.5px solid ${mode===o.id?o.c:"#e2e8f0"}`,background:mode===o.id?o.c+"16":"#fff",display:"flex",flexDirection:"column",alignItems:"center",gap:3,cursor:"pointer",fontFamily:"inherit"}}>
             <span style={{fontSize:kidMode?26:17,lineHeight:1.15}}>{o.e}</span>
@@ -1729,9 +1747,13 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
       {/* Vorfuehr-Modus: derselbe Feld-Block wandert per CSS in ein Vollbild-Overlay */}
       <div style={present?{position:"fixed",inset:0,zIndex:2000,background:"#07230f",display:"flex",flexDirection:"column",padding:"12px",gap:10,boxSizing:"border-box"}:{display:"contents"}}>
       {present&&(
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,flexShrink:0}}>
           <span style={{color:"#fff",fontWeight:900,fontSize:17}}>🎬 Taktik zeigen</span>
-          <button onClick={()=>setPresent(false)} style={{width:40,height:40,borderRadius:12,border:"none",background:"rgba(255,255,255,.14)",color:"#fff",fontWeight:900,fontSize:17,cursor:"pointer"}}>✕</button>
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={()=>setPadOn(v=>!v)} title="Steuerkreuz"
+              style={{width:40,height:40,borderRadius:12,border:padOn?"2px solid #4ade80":"2px solid transparent",background:padOn?"rgba(74,222,128,.22)":"rgba(255,255,255,.14)",color:"#fff",fontSize:18,cursor:"pointer"}}>🎮</button>
+            <button onClick={()=>setPresent(false)} style={{width:40,height:40,borderRadius:12,border:"none",background:"rgba(255,255,255,.14)",color:"#fff",fontWeight:900,fontSize:17,cursor:"pointer"}}>✕</button>
+          </div>
         </div>
       )}
       <div style={{background:F.bg,borderRadius:14,padding:8,boxShadow:"inset 0 0 0 1px rgba(255,255,255,.08)",position:"relative",...(present?{flex:1,minHeight:0,display:"flex",alignItems:"center",justifyContent:"center"}:{})}}>
@@ -1831,32 +1853,38 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
             <text x={animGoal.x} y={animGoal.y-F.r*2} textAnchor="middle" fontSize={F.fs*1.5} fontWeight="900" fill="#16a34a" stroke="#fff" strokeWidth={F.r*0.05}>TOR!</text>
           </g>}
         </svg>
-        {padOn&&(()=>{ const si=selInfo(); return (
-          <div style={{position:"absolute",right:10,bottom:10,display:"flex",flexDirection:"column",alignItems:"center",gap:5}}>
-            <div style={{background:"rgba(15,23,42,.78)",color:"#fff",borderRadius:99,padding:"4px 11px",fontSize:11.5,fontWeight:800,whiteSpace:"nowrap"}}>
-              {si?`🎮 ${si.side==="opp"?"🔴":"🔵"} Nr. ${si.n}`:"🎮 Spieler antippen"}
-            </div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(3,46px)",gridTemplateRows:"repeat(3,46px)",gap:4}}>
-              {[null,["▲",0,-1],null,["◀",-1,0],["⭐","star"],["▶",1,0],null,["▼",0,1],null].map((b,i)=>
-                b? <button key={i}
-                     onPointerDown={(e)=>{ e.preventDefault(); b[1]==="star"?padStar():padStart(b[1],b[2]); }}
-                     onPointerUp={padStop} onPointerLeave={padStop} onPointerCancel={padStop} onTouchEnd={padStop}
-                     style={{borderRadius:13,border:"none",background:b[1]==="star"?"rgba(202,138,4,.85)":"rgba(15,23,42,.72)",color:"#fff",fontSize:17,fontWeight:900,cursor:"pointer",touchAction:"none",fontFamily:"inherit",opacity:si?1:0.45}}>{b[0]}</button>
-                 : <span key={i}/>)}
-            </div>
-          </div>
-        );})()}
+        {padOn&&!present&&(
+          <div style={{position:"absolute",right:10,bottom:10}}>{padUI(46)}</div>
+        )}
       </div>
       {present&&(
         <div style={{flexShrink:0,display:"flex",flexDirection:"column",gap:8}}>
-          <div style={{display:"flex",gap:8}}>
-            <button onClick={playing?(paused?resumeAnim:pauseAnim):playAnim} disabled={!arrows.length&&!playing}
-              style={{flex:1,padding:"16px",borderRadius:14,border:"none",background:arrows.length||playing?"#22c55e":"rgba(255,255,255,.14)",color:"#fff",fontWeight:900,fontSize:19,cursor:"pointer",fontFamily:"inherit"}}>
-              {playing?(paused?"▶ Weiter":"⏸ Pause"):"▶ Abspielen"}</button>
-            <button onClick={resetAnim} style={{padding:"16px 20px",borderRadius:14,border:"none",background:"rgba(255,255,255,.14)",color:"#fff",fontWeight:800,fontSize:18,cursor:"pointer"}}>↺</button>
-            <button onClick={()=>setLoopAnim(v=>!v)} style={{padding:"16px 20px",borderRadius:14,border:"none",background:loopAnim?"#16a34a":"rgba(255,255,255,.14)",color:"#fff",fontWeight:800,fontSize:18,cursor:"pointer"}}>🔁</button>
+          {/* Aktionen als Tasten (wie am Controller) */}
+          <div style={{display:"flex",gap:6,justifyContent:"center"}}>
+            {TOOLS.map(o=>(
+              <button key={o.id} onClick={()=>setMode(o.id)} title={o.l}
+                style={{width:48,height:48,borderRadius:13,border:mode===o.id?`2.5px solid ${o.c}`:"2.5px solid rgba(255,255,255,.12)",background:mode===o.id?"#fff":"rgba(255,255,255,.12)",fontSize:19,cursor:"pointer",display:"grid",placeItems:"center",padding:0}}>{o.e}</button>
+            ))}
           </div>
-          <div style={{color:"#86efac",fontSize:12.5,textAlign:"center",fontWeight:600}}>Spieler & Ball mit dem Finger verschieben · ✕ oben beendet die Vorführung</div>
+          <div style={{color:"#86efac",fontSize:12,textAlign:"center",fontWeight:700}}>
+            {TOOLS.find(o=>o.id===mode)?.l}{mode==="move"?" – Spieler & Ball mit dem Finger verschieben":mode==="run"||mode==="pass"||mode==="dribble"?" – auf dem Feld ziehen":mode==="focus"?" – Spieler antippen":" – Spieler antippen"}
+          </div>
+          {/* Steuerkreuz links, Abspielen rechts – Gameboy-Aufteilung */}
+          <div style={{display:"flex",gap:12,alignItems:"center"}}>
+            {padOn&&<div style={{flexShrink:0}}>{padUI(44)}</div>}
+            <div style={{flex:1,display:"flex",flexDirection:"column",gap:8}}>
+              <button onClick={playing?(paused?resumeAnim:pauseAnim):playAnim} disabled={!arrows.length&&!playing}
+                style={{width:"100%",padding:padOn?"14px":"16px",borderRadius:14,border:"none",background:arrows.length||playing?"#22c55e":"rgba(255,255,255,.14)",color:"#fff",fontWeight:900,fontSize:padOn?16:19,cursor:"pointer",fontFamily:"inherit"}}>
+                {playing?(paused?"▶ Weiter":"⏸ Pause"):"▶ Abspielen"}</button>
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={resetAnim} style={{flex:1,padding:"11px",borderRadius:12,border:"none",background:"rgba(255,255,255,.14)",color:"#fff",fontWeight:800,fontSize:16,cursor:"pointer"}}>↺</button>
+                <button onClick={()=>setLoopAnim(v=>!v)} style={{flex:1,padding:"11px",borderRadius:12,border:"none",background:loopAnim?"#16a34a":"rgba(255,255,255,.14)",color:"#fff",fontWeight:800,fontSize:16,cursor:"pointer"}}>🔁</button>
+                {[[0.6,"🐢"],[1.6,"⏩"]].map(([s,l])=>(
+                  <button key={s} onClick={()=>setAnimSpeed(animSpeed===s?1:s)} style={{flex:1,padding:"11px",borderRadius:12,border:"none",background:animSpeed===s?"#16a34a":"rgba(255,255,255,.14)",color:"#fff",fontWeight:800,fontSize:16,cursor:"pointer"}}>{l}</button>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       )}
       </div>
