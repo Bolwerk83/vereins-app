@@ -1268,7 +1268,7 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
     const ownA=withRun(tokens);
     const oppA=showOpp?withRun(oppTokens):[];
     // Tempo in SVG-Einheiten/Sekunde: Schuss am schnellsten, Pass schnell, Dribbling langsam.
-    const spd=a=>{ if(a.type==="pass")return isGoalShot(a)?900:560; if(a.type==="dribble")return 150; return a.pace===3?330:a.pace===1?150:230; };
+    const spd=a=>{ if(a.type==="pass")return isGoalShot(a)?900:(a.kind==="hoch"?440:560); if(a.type==="dribble")return 150; return a.pace===3?330:a.pace===1?150:230; };
     const durOf=a=>{ const d=Math.hypot(a.x2-a.x1,a.y2-a.y1); return Math.max(260,Math.min(2800, d/spd(a)*1000)); };
     // Sequenzieller Zeitplan; Pass direkt nach Lauf = Steckpass in den Lauf (überlappt),
     // dazwischen kurze Ballannahme (Settle), damit jede Aktion lesbar bleibt.
@@ -1278,9 +1278,9 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
       // wieder zum vorigen Passgeber zurück -> schneller Rückpass (kurzer Kontakt).
       const oneTwo = a.type==="pass" && prevPass && Math.hypot(a.x1-prevPass.x2,a.y1-prevPass.y2)<F.r*3.2 && Math.hypot(a.x2-prevPass.x1,a.y2-prevPass.y1)<F.vw*0.24;
       if(a.par&&prev) start=sched.get(prev).start;   // ∥ laeuft gleichzeitig mit dem Schritt davor
-      // Pass nach Lauf: "In den Fuss" wartet, bis der Spieler steht; "Steilpass"
-      // startet mitten im Lauf, sodass Ball und Spieler sich treffen.
-      else if(a.type==="pass"&&prev&&prev.type==="run") start = a.kind==="steil" ? Math.max(0,tEnd-durOf(prev)*0.55) : tEnd+140;
+      // Pass nach Lauf: "In den Fuss" wartet, bis der Spieler steht; Steilpass und
+      // hohe Flanke starten mitten im Lauf, sodass Ball und Spieler sich treffen.
+      else if(a.type==="pass"&&prev&&prev.type==="run") start = (a.kind==="steil"||a.kind==="hoch") ? Math.max(0,tEnd-durOf(prev)*0.55) : tEnd+140;
       else if(oneTwo) start=tEnd+60;      // Doppelpass: direkt klatschen lassen
       else if(i>0) start=tEnd+170;         // Ballannahme/Settle
       const ph={start,end:start+d,dur:d,oneTwo}; sched.set(a,ph); tEnd=Math.max(tEnd,ph.end);
@@ -1301,9 +1301,10 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
       for(const a of ballEv){ const ph=sched.get(a); if(T>=ph.start&&T<=ph.end){ cur={a,ph,live:true}; break; } if(T>ph.end) cur={a,ph,live:false}; }
       if(!cur) return {x:first.x1,y:first.y1,rot:0,shot:false};
       const len=Math.hypot(cur.a.x2-cur.a.x1,cur.a.y2-cur.a.y1);
-      // Hoher Ball/Flanke: langer Pass (kein flacher Torschuss) steigt und fällt.
-      const lob=cur.a.type==="pass"&&len>F.vw*0.45&&!isGoalShot(cur.a);
-      if(cur.live){ const raw=clamp((T-cur.ph.start)/cur.ph.dur); const e=cur.a.type==="pass"?ezOut(raw):raw; const p=bezPt(cur.a,e); const height=lob?Math.sin(Math.PI*raw)*F.r*1.8:0; return {...p,rot:(cur.ph.start+raw*len)*0.7,shot:cur.a.type==="pass"&&isGoalShot(cur.a),height}; }
+      // Hoher Ball/Flanke: explizit gewaehlt (🌙) oder langer Pass (kein flacher Torschuss).
+      const lob=cur.a.type==="pass"&&(cur.a.kind==="hoch"||(len>F.vw*0.45&&!isGoalShot(cur.a)));
+      const lobH=cur.a.kind==="hoch"?F.r*2.6:F.r*1.8;
+      if(cur.live){ const raw=clamp((T-cur.ph.start)/cur.ph.dur); const e=cur.a.type==="pass"?ezOut(raw):raw; const p=bezPt(cur.a,e); const height=lob?Math.sin(Math.PI*raw)*lobH:0; return {...p,rot:(cur.ph.start+raw*len)*0.7,shot:cur.a.type==="pass"&&isGoalShot(cur.a),height}; }
       return {x:cur.a.x2,y:cur.a.y2,rot:len*0.7,shot:cur.a.type==="pass"&&isGoalShot(cur.a),height:0};
     };
     // letzter Abschluss aufs Tor?
@@ -1445,7 +1446,7 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
     if(a.type==="run") return `🏃 Lauf ${nm(s)} ${a.pace===3?"· Sprint":a.pace===1?"· locker":""}`.replace(/\s+/g," ").trim();
     if(a.type==="dribble") return `⚽💨 Dribbling ${nm(s)}`.trim();
     if(isGoalShot(a)) return `🥅 Schuss aufs Tor ${nm(s)}`.trim();
-    return `${a.kind==="steil"?"🚀 Steilpass":"🦶 Pass in den Fuß"} ${nm(s)}${z&&z.id!==s?.id?` → ${nm(z)}`:""}`.trim();
+    return `${a.kind==="steil"?"🚀 Steilpass":a.kind==="hoch"?"🌙 Hohe Flanke":"🦶 Pass in den Fuß"} ${nm(s)}${z&&z.id!==s?.id?` → ${nm(z)}`:""}`.trim();
   };
   const delStep=(id)=>{ resetAnim(); setArrows(a=>a.filter(x=>x.id!==id)); };
   const moveStep=(i,dir)=>{ resetAnim(); setArrows(a=>{ const j=i+dir; if(j<0||j>=a.length) return a; const n=a.slice(); [n[i],n[j]]=[n[j],n[i]]; return n; }); };
@@ -1498,8 +1499,10 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
       const forward=(by-tk.y);
       return {tk,s:free*2.2+openness*1.4+forward*0.9}; }).sort((a,b)=>b.s-a.s);
     const best=scored[0]; if(!best||best.s<=-1e9) return null;
-    return { a:{type:"pass",kind:"fuss",x1:bx,y1:by,x2:best.tk.x,y2:best.tk.y,par:false},
-      hint:`Nr. ${best.tk.n} steht frei – Pass in den Fuß! 🦶` };
+    // Von der Aussenbahn in die Mitte nach vorn -> hohe Flanke statt Flachpass
+    const flank=(bx<F.vw*0.22||bx>F.vw*0.78)&&by<F.vh*0.55&&Math.abs(best.tk.x-F.vw/2)<F.vw*0.22&&best.tk.y<F.vh*0.4;
+    return { a:{type:"pass",kind:flank?"hoch":"fuss",x1:bx,y1:by,x2:best.tk.x,y2:best.tk.y,par:false},
+      hint:flank?`Flanke von außen auf Nr. ${best.tk.n} in die Mitte! 🌙`:`Nr. ${best.tk.n} steht frei – Pass in den Fuß! 🦶` };
   };
   const aiSuggest=()=>{
     const wantType=(mode==="run"||mode==="dribble"||mode==="pass")?mode:undefined;
@@ -1845,7 +1848,7 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
       {mode==="pass"&&(
         <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
           <span style={{fontSize:11,fontWeight:800,color:"#64748b",marginRight:2}}>PASS</span>
-          {[["fuss","🦶 In den Fuß","Ball kommt direkt zum Spieler"],["steil","🚀 Steilpass","Ball kommt in den Lauf – Spieler und Ball treffen sich"]].map(([k,l,tt])=>(
+          {[["fuss","🦶 In den Fuß","Ball kommt direkt zum Spieler"],["steil","🚀 Steilpass","Ball kommt in den Lauf – Spieler und Ball treffen sich"],["hoch","🌙 Hohe Flanke","Hoher Ball über alle drüber – z.B. in den Strafraum"]].map(([k,l,tt])=>(
             <button key={k} onClick={()=>setPassKind(k)} title={tt} style={{padding:kidMode?"9px 13px":"5px 11px",borderRadius:9,border:`1.5px solid ${passKind===k?"#ea580c":"#e2e8f0"}`,background:passKind===k?"#ea580c18":"#fff",color:passKind===k?"#9a3412":"#64748b",fontWeight:700,fontSize:kidMode?13.5:12,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
           ))}
         </div>
@@ -1929,7 +1932,7 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
             return (
             <g key={tk.id} opacity={focusId&&focusId!==tk.id?0.3:1} style={{cursor:mode==="move"?"grab":(mode==="mark"||mode==="focus")?"pointer":"crosshair",transition:"opacity .25s"}}
                onPointerDown={(e)=>{ if(mode==="focus"){ e.preventDefault(); e.stopPropagation(); setFocusId(f=>f===tk.id?null:tk.id); return;} if(mode==="mark"){ e.preventDefault(); toggleMark(setOppTokens,tk.id); return;} if(mode!=="move") return; e.preventDefault(); resetAnim(); setSelTok({side:"opp",id:tk.id}); dragRef.current=tk.id; dragSetRef.current="opp";}}
-               onTouchStart={(e)=>{ if(mode==="focus"){ e.stopPropagation(); setFocusId(f=>f===tk.id?null:tk.id); return;} if(mode==="mark"){ toggleMark(setOppTokens,tk.id); return;} if(mode!=="move") return; resetAnim(); setSelTok({side:"opp",id:tk.id}); dragRef.current=tk.id; dragSetRef.current="opp";}}>
+               onTouchStart={(e)=>{ if(mode==="focus"||mode==="mark"){ e.stopPropagation(); return; } /* Umschalten macht schon onPointerDown – sonst doppelt es auf iOS */ if(mode!=="move") return; resetAnim(); setSelTok({side:"opp",id:tk.id}); dragRef.current=tk.id; dragSetRef.current="opp";}}>
               {selTok?.id===tk.id&&<circle cx={X} cy={Y} r={F.r*1.55} fill="none" stroke="#38bdf8" strokeWidth={F.r*0.2} strokeDasharray={`${F.r*0.55} ${F.r*0.3}`}/>}
               {focusId===tk.id&&<circle cx={X} cy={Y} r={F.r*1.9} fill="none" stroke="#fff" strokeWidth={F.r*0.18} opacity={0.9}>
                 <animate attributeName="r" values={`${F.r*1.6};${F.r*2.2};${F.r*1.6}`} dur="1.6s" repeatCount="indefinite"/>
@@ -1945,7 +1948,7 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
             return (
             <g key={tk.id} opacity={focusId&&focusId!==tk.id?0.3:1} style={{cursor:mode==="move"?"grab":(mode==="mark"||mode==="focus")?"pointer":"crosshair",transition:"opacity .25s"}}
                onPointerDown={(e)=>{ if(mode==="focus"){ e.preventDefault(); e.stopPropagation(); setFocusId(f=>f===tk.id?null:tk.id); return;} if(mode==="mark"){ e.preventDefault(); toggleMark(setTokens,tk.id); return;} if(mode!=="move") return; e.preventDefault(); resetAnim(); setSelTok({side:"own",id:tk.id}); dragRef.current=tk.id; dragSetRef.current="own";}}
-               onTouchStart={(e)=>{ if(mode==="focus"){ e.stopPropagation(); setFocusId(f=>f===tk.id?null:tk.id); return;} if(mode==="mark"){ toggleMark(setTokens,tk.id); return;} if(mode!=="move") return; resetAnim(); setSelTok({side:"own",id:tk.id}); dragRef.current=tk.id; dragSetRef.current="own";}}>
+               onTouchStart={(e)=>{ if(mode==="focus"||mode==="mark"){ e.stopPropagation(); return; } /* Umschalten macht schon onPointerDown – sonst doppelt es auf iOS */ if(mode!=="move") return; resetAnim(); setSelTok({side:"own",id:tk.id}); dragRef.current=tk.id; dragSetRef.current="own";}}>
               {selTok?.id===tk.id&&<circle cx={X} cy={Y} r={F.r*1.55} fill="none" stroke="#38bdf8" strokeWidth={F.r*0.2} strokeDasharray={`${F.r*0.55} ${F.r*0.3}`}/>}
               {focusId===tk.id&&<circle cx={X} cy={Y} r={F.r*1.9} fill="none" stroke="#fff" strokeWidth={F.r*0.18} opacity={0.9}>
                 <animate attributeName="r" values={`${F.r*1.6};${F.r*2.2};${F.r*1.6}`} dur="1.6s" repeatCount="indefinite"/>
@@ -2018,7 +2021,7 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
                     <button key={p} onClick={()=>setRunPace(p)} title={tt}
                       style={{width:54,height:40,borderRadius:11,border:runPace===p?`2.5px solid ${PACE_COL[p]}`:"2.5px solid rgba(255,255,255,.12)",background:runPace===p?"#fff":"rgba(255,255,255,.12)",fontSize:18,cursor:"pointer",padding:0}}>{l}</button>
                   ))
-                : [["fuss","🦶","In den Fuß"],["steil","🚀","Steilpass in den Lauf"]].map(([k,l,tt])=>(
+                : [["fuss","🦶","In den Fuß"],["steil","🚀","Steilpass in den Lauf"],["hoch","🌙","Hohe Flanke"]].map(([k,l,tt])=>(
                     <button key={k} onClick={()=>setPassKind(k)} title={tt}
                       style={{width:54,height:40,borderRadius:11,border:passKind===k?"2.5px solid #fb923c":"2.5px solid rgba(255,255,255,.12)",background:passKind===k?"#fff":"rgba(255,255,255,.12)",fontSize:18,cursor:"pointer",padding:0}}>{l}</button>
                   ))}
@@ -2039,9 +2042,14 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
                 {[[0.6,"🐢"],[1.6,"⏩"]].map(([s,l])=>(
                   <button key={s} onClick={()=>setAnimSpeed(animSpeed===s?1:s)} style={{flex:1,padding:"11px",borderRadius:12,border:"none",background:animSpeed===s?"#16a34a":"rgba(255,255,255,.14)",color:"#fff",fontWeight:800,fontSize:16,cursor:"pointer"}}>{l}</button>
                 ))}
+                <button onClick={aiSuggest} title="KI: nächster Schritt (passend zum Werkzeug)"
+                  style={{flex:1,padding:"11px",borderRadius:12,border:"none",background:"#7c3aed",color:"#fff",fontWeight:800,fontSize:16,cursor:"pointer"}}>✨</button>
+                <button onClick={aiPlay} title="KI: ganzer Spielzug"
+                  style={{flex:1,padding:"11px",borderRadius:12,border:"none",background:"rgba(124,58,237,.45)",color:"#fff",fontWeight:800,fontSize:16,cursor:"pointer"}}>🪄</button>
               </div>
             </div>
           </div>
+          {aiHint&&<div style={{background:"rgba(124,58,237,.3)",borderRadius:10,padding:"8px 12px",color:"#ede9fe",fontSize:13,fontWeight:700,textAlign:"center"}}>✨ {aiHint}</div>}
         </div>
       )}
       </div>
