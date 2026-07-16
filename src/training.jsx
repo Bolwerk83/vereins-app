@@ -1401,6 +1401,23 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
   const toSvg=(e)=>{ const el=svgRef.current; if(!el) return null; const r=el.getBoundingClientRect(); const cx=(e.touches?e.touches[0].clientX:e.clientX); const cy=(e.touches?e.touches[0].clientY:e.clientY); return { x:(cx-r.left)/r.width*F.vw, y:(cy-r.top)/r.height*F.vh }; };
   // Wo liegt der Ball nach den bisher gezeichneten Schritten?
   const curBallSpot=()=>{ const seq=arrows.filter(a=>a.type==="pass"||a.type==="dribble"); if(seq.length){ const l=seq[seq.length-1]; return {x:l.x2,y:l.y2}; } return ballPos; };
+  // Endaufstellung uebernehmen: Spieler ans Ende ihrer Laufwege, Ball ans Ende des
+  // letzten Ball-Schritts, Pfeile weg -> aus dem Spielzug entsteht die neue Situation.
+  const adoptEnd=()=>{
+    const runs=arrows.filter(a=>a.type==="run"||a.type==="dribble");
+    const used=new Set();
+    const apply=(list)=>list.map(tk=>{ let best=-1,bd=F.r*3.6;
+      runs.forEach((a,i)=>{ if(used.has(i))return; const d=Math.hypot(a.x1-tk.x,a.y1-tk.y); if(d<bd){bd=d;best=i;} });
+      if(best>=0){ used.add(best); return {...tk,x:runs[best].x2,y:runs[best].y2}; }
+      return tk; });
+    const bs=curBallSpot();
+    const newOwn=apply(tokens), newOpp=apply(oppTokens);
+    resetAnim();
+    setTokens(newOwn); setOppTokens(newOpp);
+    if(bs) setBallPos({x:bs.x,y:bs.y});
+    setArrows([]); setDraw(null);
+    fire&&fire("Endaufstellung übernommen – weiter geht's!");
+  };
   const startDraw=(e)=>{ if(mode==="focus"){ setFocusId(null); return; } if(mode==="move"||mode==="mark") return; resetAnim(); const p=toSvg(e); if(!p) return; if(e.preventDefault)e.preventDefault();
     let x1=p.x,y1=p.y;
     if(mode==="pass"||mode==="dribble"){
@@ -1495,6 +1512,11 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
     while(guard++<7){
       const s=suggestOne(arrs); if(!s) break;
       const na={...s.a,id:"ar"+Date.now()+guard+Math.round(Math.random()*999)};
+      // Endet der Pass dort, wo gerade ein Freilauf hinfuehrt -> Steilpass in den Lauf
+      if(na.type==="pass"&&!isGoalShot(na)){
+        const run=added.find(x=>(x.type==="run")&&Math.hypot(x.x2-na.x2,x.y2-na.y2)<F.r*3.2);
+        if(run) na.kind="steil";
+      }
       arrs=[...arrs,na]; added.push(na);
       if(na.type==="pass"&&isGoalShot(na)) break;
       if(added.length===1||added.length===3){ const r=suggestOne(arrs,"run");
@@ -1623,13 +1645,18 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
     fire&&fire(`Szenario beendet: ${s.score} ⭐ – Ergebnis gespeichert`);
   };
 
-  // "Leben": kleine Pendel-Bewegung fuer alle; Gegner ruecken zum freien Ball (der Naechste presst).
+  // "Leben": kleine Pendel-Bewegung fuer alle; Gegner ruecken zum freien Ball –
+  // jugendtypisch geht der Naechste richtig drauf, der Rest orientiert sich nur.
+  const liveNearId=(liveOn&&!playing&&ballPos)
+    ? oppTokens.filter(t2=>t2.n!==1).reduce((b,tk)=>{ const d=Math.hypot(ballPos.x-tk.x,ballPos.y-tk.y); return d<b.d?{d,id:tk.id}:b; },{d:1e9,id:null}).id
+    : null;
   const liveOff=(tk,side)=>{ if(!liveOn||playing||!liveT) return null;
     const amp=side==="opp"?0.3:0.2;
     let dx=Math.sin(liveT/700+tk.n*2.3+(side==="opp"?1.7:0))*F.r*amp;
     let dy=Math.cos(liveT/560+tk.n*3.1)*F.r*amp;
     if(side==="opp"&&ballPos&&tk.n!==1){ const bdx=ballPos.x-tk.x,bdy=ballPos.y-tk.y,d=Math.hypot(bdx,bdy)||1;
-      const lean=Math.min(F.vw*0.08,d*0.35); dx+=bdx/d*lean; dy+=bdy/d*lean; }
+      const near=tk.id===liveNearId;
+      const lean=Math.min(F.vw*(near?0.14:0.07),d*(near?0.55:0.3)); dx+=bdx/d*lean; dy+=bdy/d*lean; }
     return {dx,dy}; };
 
   const chSport=(sp)=>{ const FF=TB_FIELDS[sp]||TB_FIELDS.generic; const c=FF.counts.includes(11)?11:FF.counts[0]; setSport(sp); setCount(c); setFormIdx(0); setArrows([]); setDraw(null); setBallPos(b=>b?{x:FF.vw/2,y:FF.vh/2}:null); };
@@ -1761,6 +1788,8 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
           style={{padding:kidMode?"14px 16px":"10px 12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:kidMode?15:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{paused?"▶":"⏸"}</button>}
         <button onClick={resetAnim} disabled={!animOwn&&!animOpp&&!playing}
           style={{padding:kidMode?"14px 16px":"10px 12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:(animOwn||animOpp||playing)?"#475569":"#cbd5e1",fontWeight:700,fontSize:kidMode?15:12.5,cursor:(animOwn||animOpp||playing)?"pointer":"default",fontFamily:"inherit",whiteSpace:"nowrap"}}>↺</button>
+        {!playing&&animOwn&&arrows.length>0&&<button onClick={adoptEnd} title="Spieler und Ball bleiben am Ende des Spielzugs stehen – daraus entsteht die nächste Situation"
+          style={{padding:kidMode?"14px 14px":"10px 12px",borderRadius:12,border:"none",background:"#0891b2",color:"#fff",fontWeight:800,fontSize:kidMode?14:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>📍 Übernehmen</button>}
         {[[0.6,"🐢"],[1,"▶"],[1.6,"⏩"]].map(([s,l])=>(
           <button key={s} onClick={()=>setAnimSpeed(s)} title={s===0.6?"Langsam":s===1?"Normal":"Schnell"}
             style={{padding:kidMode?"12px 13px":"8px 10px",borderRadius:10,border:`1.5px solid ${animSpeed===s?t.p:"#e2e8f0"}`,background:animSpeed===s?t.p+"15":"#fff",color:animSpeed===s?t.p:"#64748b",fontWeight:700,fontSize:kidMode?14:12.5,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
@@ -1850,17 +1879,23 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
               {tk.marked&&<text x={X} y={Y-F.r*1.45} textAnchor="middle" fontSize={F.fs*0.95} style={{pointerEvents:"none"}}>⭐</text>}
             </g>
           );})}
-          {ballPos&&!animBall&&(
+          {ballPos&&!animBall&&(()=>{
+            // Ballbesitz zeigen: Ring in der Farbe des Spielers, der den Ball am Fuss hat
+            let ownerCol=null,bd=F.r*1.9;
+            tokens.forEach(tk=>{ const d=Math.hypot(tk.x-ballPos.x,tk.y-ballPos.y); if(d<bd){bd=d;ownerCol=teamCol;} });
+            if(showOpp) oppTokens.forEach(tk=>{ const d=Math.hypot(tk.x-ballPos.x,tk.y-ballPos.y); if(d<bd){bd=d;ownerCol="#dc2626";} });
+            return (
             <g style={{cursor:mode==="move"?"grab":"crosshair"}}
                onPointerDown={(e)=>{ if(mode!=="move") return; e.preventDefault(); resetAnim(); dragRef.current="ball"; }}
                onTouchStart={(e)=>{ if(mode!=="move") return; resetAnim(); dragRef.current="ball"; }}>
+              {ownerCol&&<circle cx={ballPos.x} cy={ballPos.y} r={F.r*0.9} fill="none" stroke={ownerCol} strokeWidth={F.r*0.13} opacity={0.85}/>}
               <circle cx={ballPos.x} cy={ballPos.y} r={F.r} fill="transparent"/>
               <circle cx={ballPos.x} cy={ballPos.y} r={F.r*0.55} fill="#fff" stroke="#0f172a" strokeWidth={F.r*0.16}/>
               <circle cx={ballPos.x} cy={ballPos.y} r={F.r*0.17} fill="#0f172a"/>
               <line x1={ballPos.x-F.r*0.5} y1={ballPos.y} x2={ballPos.x+F.r*0.5} y2={ballPos.y} stroke="#0f172a" strokeWidth={F.r*0.07} opacity={0.45}/>
               <line x1={ballPos.x} y1={ballPos.y-F.r*0.5} x2={ballPos.x} y2={ballPos.y+F.r*0.5} stroke="#0f172a" strokeWidth={F.r*0.07} opacity={0.45}/>
             </g>
-          )}
+          );})()}
           {animTrail.length>1&&<g style={{pointerEvents:"none"}}>
             {animTrail.map((p,i)=>(<circle key={i} cx={p.x} cy={p.y} r={F.r*0.5*((i+1)/animTrail.length)} fill="#fff" opacity={0.05*(i+1)}/>))}
           </g>}
@@ -1919,6 +1954,8 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
                 style={{width:"100%",padding:padOn?"14px":"16px",borderRadius:14,border:"none",background:arrows.length||playing?"#22c55e":"rgba(255,255,255,.14)",color:"#fff",fontWeight:900,fontSize:padOn?16:19,cursor:"pointer",fontFamily:"inherit"}}>
                 {playing?(paused?"▶ Weiter":"⏸ Pause"):"▶ Abspielen"}</button>
               <div style={{display:"flex",gap:8}}>
+                {!playing&&animOwn&&arrows.length>0&&<button onClick={adoptEnd} title="Endposition übernehmen"
+                  style={{flex:1,padding:"11px",borderRadius:12,border:"none",background:"#0891b2",color:"#fff",fontWeight:800,fontSize:16,cursor:"pointer"}}>📍</button>}
                 <button onClick={resetAnim} style={{flex:1,padding:"11px",borderRadius:12,border:"none",background:"rgba(255,255,255,.14)",color:"#fff",fontWeight:800,fontSize:16,cursor:"pointer"}}>↺</button>
                 <button onClick={()=>setLoopAnim(v=>!v)} style={{flex:1,padding:"11px",borderRadius:12,border:"none",background:loopAnim?"#16a34a":"rgba(255,255,255,.14)",color:"#fff",fontWeight:800,fontSize:16,cursor:"pointer"}}>🔁</button>
                 {[[0.6,"🐢"],[1.6,"⏩"]].map(([s,l])=>(
