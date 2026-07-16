@@ -1351,6 +1351,8 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
     stepRef.current=step;
     animRef.current=requestAnimationFrame(step);
   };
+  // Immer die frischeste playAnim-Version (fuer verzoegerte Aufrufe aus dem Szenario)
+  const playAnimRef=useRef(null); playAnimRef.current=playAnim;
 
   // Gebogene Pfeile/Wege (Pass-Bogen, Bogenlauf) – gerendert UND animiert auf
   // derselben Kurve, damit gezeichneter Weg und Bewegung übereinstimmen.
@@ -1548,38 +1550,102 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
   const scnResolve=(good,fb,extra)=>{
     setScn(s=>s?{...s,phase:"resolve",feedback:fb,score:s.score+(good?1:0),history:[...s.history,{round:s.round,type:s.type,good,...(extra||{})}]}:s);
   };
-  // Naechste Situation: der Gegner spielt den Ball zum freiesten Mann -> daraus
-  // entsteht die neue Lage, die Abwehr schiebt nach, dann kommt die Aufgabe.
-  const scnNext=(prev)=>{
-    stopRun(); resetAnim(); setMode("move");
+  // Naechste Situation. Zwei Modi:
+  //  ⚔️ Angriff: Pass-Entscheidung (Fuss/Steil), Freilaufen, einen nach vorn schicken?
+  //  🛡️ Verteidigung: Decken, zwischen Ball und Tor stellen, Verstaerkung rufen.
+  // Nach jeder Loesung verschiebt sich die Lage -> daraus entsteht die neue Situation.
+  const scnArrowsBk=useRef(null);
+  const scnNext=(prev,selArg)=>{
+    stopRun(); resetAnim(); setMode("move"); setArrows([]); setDraw(null);
+    const sel=selArg||prev?.sel||"def";
     const own=tokens, opp=oppTokens;
-    const {opp:free}=freestOpp(own,opp);
-    const bx=free?Math.max(F.r*2,Math.min(F.vw-F.r*2,free.x+(free.x>F.vw/2?-F.r*1.6:F.r*1.6))):F.vw/2;
-    const by=free?free.y:F.vh/2;
-    setBallPos({x:bx,y:by});
-    setOppTokens(ts=>ts.map(tk=>{ if(tk.n===1) return tk; const dx=bx-tk.x,dy=by-tk.y,d=Math.hypot(dx,dy)||1; const sh=Math.min(F.vw*0.06,d*0.18); return {...tk,x:Math.max(F.r,Math.min(F.vw-F.r,tk.x+dx/d*sh)),y:Math.max(F.r,Math.min(F.vh-F.r,tk.y+dy/d*sh))}; }));
     const round=(prev?.round||0)+1;
-    const type=["cover","reinforce","space"][(round-1)%3];
-    let actor=null,target=null,text="";
-    if(type==="cover"){
-      const tgt=free||opp.find(o=>o.n!==1);
-      const sorted=own.filter(t2=>t2.n!==1).sort((a,b)=>Math.hypot(a.x-tgt.x,a.y-tgt.y)-Math.hypot(b.x-tgt.x,b.y-tgt.y));
-      actor=sorted[1]||sorted[0];
-      target={kind:"opp",id:tgt.id};
-      text=`🔵 Nr. ${actor.n}: Rüber zu 🔴 Nr. ${tgt.n} – decken! Er steht ganz frei!`;
-    } else if(type==="space"){
-      const fld=own.filter(t2=>t2.n!==1);
-      actor=fld[Math.floor(round*2.7)%fld.length]||fld[0];
-      const cands=[]; for(let gx=0.2;gx<=0.8;gx+=0.2) for(let gy=0.15;gy<=0.6;gy+=0.15){ const x=gx*F.vw,y=gy*F.vh; const d=Math.min(...opp.map(o=>Math.hypot(o.x-x,o.y-y))); cands.push({x,y,d}); }
-      const c=cands.sort((a,b)=>b.d-a.d)[0];
-      target={kind:"pos",x:c.x,y:c.y};
-      text=`🔵 Nr. ${actor.n}: Lauf in den gelben Kreis – da ist Platz zum Anspielen!`;
+    const cX=x=>Math.max(F.r,Math.min(F.vw-F.r,x));
+    const cY=y=>Math.max(F.r,Math.min(F.vh-F.r,y));
+    const fld=own.filter(t2=>t2.n!==1);
+    const freeSpot=(fx,fy,len)=>{ const cands=[]; for(let ang=-50;ang<=50;ang+=25){ const rad=(ang-90)*Math.PI/180;
+      const x=cX(fx+Math.cos(rad)*len), y=cY(fy+Math.sin(rad)*len);
+      const d=opp.length?Math.min(...opp.map(o=>Math.hypot(o.x-x,o.y-y))):9; cands.push({x,y,d}); }
+      return cands.sort((a,b)=>b.d-a.d)[0]; };
+    let type,actor=null,target=null,text="",pw=null,bx,by;
+    if(sel==="att"){
+      type=["passwahl","space","reinforce"][(round-1)%3];
+      if(type==="passwahl"){
+        const carrier=fld.slice().sort((a,b)=>b.y-a.y)[round%2]||fld[0];
+        const mates=fld.filter(t2=>t2.id!==carrier.id&&t2.y<=carrier.y+F.r&&Math.hypot(t2.x-carrier.x,t2.y-carrier.y)>F.vw*0.15);
+        const mate=(mates.length?mates:fld.filter(t2=>t2.id!==carrier.id)).sort((a,b)=>Math.hypot(a.x-carrier.x,a.y-carrier.y)-Math.hypot(b.x-carrier.x,b.y-carrier.y))[0];
+        const running=round%2===1;                       // abwechselnd: er laeuft / er steht
+        const spot=running?freeSpot(mate.x,mate.y,F.vh*0.15):null;
+        bx=cX(carrier.x+F.r*0.9); by=carrier.y;
+        actor=mate;
+        pw={bx,by,cn:carrier.n,mx:mate.x,my:mate.y,n:mate.n,running,sx:spot?.x,sy:spot?.y};
+        text=running
+          ?`⚔️ Nr. ${carrier.n} hat den Ball. 🔵 Nr. ${mate.n} startet durch (weißer Pfeil)! Wie spielst du den Pass?`
+          :`⚔️ Nr. ${carrier.n} hat den Ball. 🔵 Nr. ${mate.n} steht frei und wartet. Wie spielst du den Pass?`;
+      } else if(type==="space"){
+        const carrier=fld.slice().sort((a,b)=>b.y-a.y)[0];
+        bx=cX(carrier.x+F.r*0.9); by=carrier.y;
+        const rest=fld.filter(t2=>t2.id!==carrier.id);
+        actor=rest[Math.floor(round*2.7)%rest.length]||rest[0];
+        const c=freeSpot(actor.x,actor.y,F.vh*0.17);
+        target={kind:"pos",x:c.x,y:c.y};
+        text=`⚔️ Nr. ${carrier.n} sucht eine Anspielstation. 🔵 Nr. ${actor.n}: Lauf in den gelben Kreis – frei anbieten!`;
+      } else {
+        const atk=fld.slice().sort((a,b)=>a.y-b.y)[0];
+        bx=cX(atk.x+F.r*0.9); by=atk.y;
+        const zc=zoneCount(own,opp,bx,by,F.vw*0.24);
+        text=`⚔️ Ihr greift an! Am Ball: ${zc.o} Blaue gegen ${zc.g} Rote. Schickst du noch einen nach vorn?`;
+      }
     } else {
-      const zc=zoneCount(own,opp,bx,by,F.vw*0.24);
-      text=`Der Ball ist bei 🔴 Nr. ${free?.n??"?"}. Am Ball: ${zc.g} Rote gegen ${zc.o} Blaue. Rufst du Verstärkung?`;
+      type=["cover","block","reinforce"][(round-1)%3];
+      const {opp:free}=freestOpp(own,opp);
+      bx=free?cX(free.x+(free.x>F.vw/2?-F.r*1.6:F.r*1.6)):F.vw/2;
+      by=free?free.y:F.vh/2;
+      if(type==="cover"){
+        const tgt=free||opp.find(o=>o.n!==1);
+        const sorted=fld.slice().sort((a,b)=>Math.hypot(a.x-tgt.x,a.y-tgt.y)-Math.hypot(b.x-tgt.x,b.y-tgt.y));
+        actor=sorted[1]||sorted[0];
+        target={kind:"opp",id:tgt.id};
+        text=`🛡️ 🔵 Nr. ${actor.n}: Rüber zu 🔴 Nr. ${tgt.n} – decken! Er steht ganz frei!`;
+      } else if(type==="block"){
+        // Zwischen Ball und eigenes Tor stellen (Schusslinie zumachen)
+        const gx=F.vw/2, gy=F.vh*0.97;
+        const sx=cX(bx+(gx-bx)*0.45), sy=cY(by+(gy-by)*0.45);
+        const sorted=fld.slice().sort((a,b)=>Math.hypot(a.x-sx,a.y-sy)-Math.hypot(b.x-sx,b.y-sy));
+        actor=sorted[1]||sorted[0];
+        target={kind:"pos",x:sx,y:sy};
+        text=`🛡️ 🔴 Nr. ${free?.n??"?"} zieht Richtung Tor! 🔵 Nr. ${actor.n}: Stell dich in den Kreis – zwischen Ball und Tor!`;
+      } else {
+        const zc=zoneCount(own,opp,bx,by,F.vw*0.24);
+        text=`🛡️ Der Ball ist bei 🔴 Nr. ${free?.n??"?"}. Am Ball: ${zc.g} Rote gegen ${zc.o} Blaue. Rufst du Verstärkung?`;
+      }
     }
+    setBallPos({x:bx,y:by});
+    setOppTokens(ts=>ts.map(tk=>{ if(tk.n===1) return tk; const dx=bx-tk.x,dy=by-tk.y,d=Math.hypot(dx,dy)||1; const sh=Math.min(F.vw*0.06,d*0.18); return {...tk,x:cX(tk.x+dx/d*sh),y:cY(tk.y+dy/d*sh)}; }));
     if(actor){ setTokens(ts=>ts.map(t2=>({...t2,marked:t2.id===actor.id}))); setSelTok({side:"own",id:actor.id}); }
-    setScn({round,score:prev?.score||0,history:prev?.history||[],phase:"task",type,actorId:actor?.id||null,target,text,deadline:Date.now()+12000,feedback:null});
+    setScn({sel,round,score:prev?.score||0,history:prev?.history||[],phase:"task",type,actorId:actor?.id||null,target,pw,text,deadline:Date.now()+12000,feedback:null});
+  };
+  const scnStart=(sel)=>{ setShowOpp(true); scnArrowsBk.current=arrows; scnNext(null,sel); };
+  // Pass-Entscheidung: Antwort waehlen, dann wird das Ergebnis vorgespielt.
+  const scnPass=(kind)=>{
+    const s=scn; if(!s||s.type!=="passwahl"||s.phase!=="task"||!s.pw) return;
+    const correct=s.pw.running?"steil":"fuss";
+    const good=kind===correct;
+    const arrs=[];
+    if(s.pw.running) arrs.push({id:"scnr"+Date.now(),type:"run",pace:3,par:false,x1:s.pw.mx,y1:s.pw.my,x2:s.pw.sx,y2:s.pw.sy});
+    // Steil zum Laufenden: in den Lauf. Steil zum Stehenden: rollt an ihm vorbei.
+    // In den Fuss: dorthin, wo der Mitspieler JETZT steht (Laufende sind dann weg).
+    const to=kind==="steil"
+      ? (s.pw.running ? {x:s.pw.sx,y:s.pw.sy}
+         : {x:Math.max(F.r,Math.min(F.vw-F.r,s.pw.mx+(s.pw.mx-s.pw.bx)*0.5)), y:Math.max(F.r,Math.min(F.vh-F.r,s.pw.my+(s.pw.my-s.pw.by)*0.5))})
+      : {x:s.pw.mx,y:s.pw.my};
+    arrs.push({id:"scnp"+Date.now(),type:"pass",kind,par:false,x1:s.pw.bx,y1:s.pw.by,x2:to.x,y2:to.y});
+    setArrows(arrs);
+    scnResolve(good, good
+      ?(correct==="steil"?`Perfekt! 🚀 Steilpass in den Lauf – Nr. ${s.pw.n} läuft ja gerade durch! Schau es dir an. ✅`:`Perfekt! 🦶 In den Fuß – Nr. ${s.pw.n} steht frei und wartet auf den Ball. ✅`)
+      :(correct==="steil"?`Nr. ${s.pw.n} läuft weg – der Pass in den Fuß kommt dahin, wo er WAR. Beim laufenden Mitspieler: 🚀 Steilpass! ⚠️`:`Nr. ${s.pw.n} steht doch still – der Steilpass rollt an ihm vorbei ins Leere. Beim stehenden Mitspieler: 🦶 in den Fuß! ⚠️`),
+      {choice:kind});
+    setTimeout(()=>playAnimRef.current&&playAnimRef.current(),120);
   };
   // Erfolg pruefen bei jeder Bewegung (Drag oder Steuerkreuz)
   useEffect(()=>{ const s=scn; if(!s||s.phase!=="task") return;
@@ -1587,10 +1653,12 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
       if(a&&g&&Math.hypot(a.x-g.x,a.y-g.y)<F.r*2.6) scnResolve(true,`Super! 🔴 Nr. ${g.n} ist zugestellt – kein freier Passweg mehr. ✅`);
     } else if(s.type==="space"){ const a=tokens.find(t2=>t2.id===s.actorId);
       if(a&&s.target&&Math.hypot(a.x-s.target.x,a.y-s.target.y)<F.r*2.2) scnResolve(true,"Stark! Frei angeboten – jetzt bist du anspielbar. ✅");
+    } else if(s.type==="block"){ const a=tokens.find(t2=>t2.id===s.actorId);
+      if(a&&s.target&&Math.hypot(a.x-s.target.x,a.y-s.target.y)<F.r*2.2) scnResolve(true,"Genau richtig! Schusslinie zu – so kommt der Ball nicht durch. ✅");
     }
   },[tokens,oppTokens]);
-  // Zeitlimit (nur fuer Bewegungs-Aufgaben; die Verstaerkungs-Frage darf man in Ruhe ueberlegen)
-  useEffect(()=>{ const s=scn; if(!s||s.phase!=="task"||s.type==="reinforce") return;
+  // Zeitlimit (nur fuer Bewegungs-Aufgaben; Entscheidungs-Fragen darf man in Ruhe ueberlegen)
+  useEffect(()=>{ const s=scn; if(!s||s.phase!=="task"||s.type==="reinforce"||s.type==="passwahl") return;
     const ms=s.deadline-Date.now(); if(ms<=0) return;
     const to=setTimeout(()=>{ const c=scnRef.current; if(c&&c.phase==="task"&&c.round===s.round) scnResolve(false,"⏱ Zeit um! Auf dem Platz musst du sofort reagieren – nächste Chance kommt."); },ms);
     return ()=>clearTimeout(to);
@@ -1639,6 +1707,7 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
   const scnEnd=()=>{
     const s=scn; stopRun(); setScn(null);
     setTokens(ts=>ts.map(t2=>({...t2,marked:false})));
+    resetAnim(); setArrows(scnArrowsBk.current||[]); scnArrowsBk.current=null;
     if(!s||!s.history.length) return;
     const rec={id:uid(),cid:cl.id,pid:playerCtx?.pid||null,name:playerCtx?.name||"Trainer",ts:new Date().toISOString(),score:s.score,rounds:s.history.length,decisions:s.history};
     save({...data,tacticSessions:[...(data.tacticSessions||[]),rec]});
@@ -1842,6 +1911,15 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
               <animate attributeName="opacity" values="0.15;0.4;0.15" dur="1.4s" repeatCount="indefinite"/>
             </circle>
           )}
+          {scn&&scn.phase==="task"&&scn.type==="block"&&scn.target&&(<>
+            {ballPos&&<line x1={ballPos.x} y1={ballPos.y} x2={F.vw/2} y2={F.vh*0.97} stroke="#f97316" strokeWidth={F.r*0.1} strokeDasharray={`${F.r*0.4} ${F.r*0.4}`} opacity={0.65} style={{pointerEvents:"none"}}/>}
+            <circle cx={scn.target.x} cy={scn.target.y} r={F.r*2.1} fill="#f97316" opacity={0.3} stroke="#f97316" strokeWidth={F.r*0.15} style={{pointerEvents:"none"}}>
+              <animate attributeName="opacity" values="0.15;0.42;0.15" dur="1.4s" repeatCount="indefinite"/>
+            </circle>
+          </>)}
+          {scn&&scn.phase==="task"&&scn.type==="passwahl"&&scn.pw?.running&&(
+            <path d={`M ${scn.pw.mx} ${scn.pw.my} L ${scn.pw.sx} ${scn.pw.sy}`} stroke="#fff" strokeWidth={F.vw*0.012} strokeDasharray={`${F.vw*0.02} ${F.vw*0.015}`} fill="none" markerEnd="url(#tb-ar-run)" opacity={0.9} style={{pointerEvents:"none"}}/>
+          )}
           {scn&&scn.phase==="task"&&scn.type==="cover"&&(()=>{ const g=oppTokens.find(o=>o.id===scn.target?.id); return g?(
             <circle cx={g.x} cy={g.y} r={F.r*2} fill="none" stroke="#f97316" strokeWidth={F.r*0.22} strokeDasharray={`${F.r*0.5} ${F.r*0.3}`} style={{pointerEvents:"none"}}>
               <animate attributeName="r" values={`${F.r*1.7};${F.r*2.3};${F.r*1.7}`} dur="1.2s" repeatCount="indefinite"/>
@@ -1995,14 +2073,18 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
       {/* Szenario-Spiel: Situationen erkennen, reagieren, Verstaerkung rufen – mit ehrlicher Analyse */}
       <div style={{background:"linear-gradient(135deg,#fff7ed,#fefce8)",border:"1.5px solid #fed7aa",borderRadius:13,padding:"12px 13px"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginBottom:scn?9:7}}>
-          <span style={{fontSize:11,fontWeight:800,color:"#c2410c",letterSpacing:.4}}>🎲 SZENARIO-SPIEL{scn?` · RUNDE ${scn.round} · ${scn.score} ⭐`:""}</span>
+          <span style={{fontSize:11,fontWeight:800,color:"#c2410c",letterSpacing:.4}}>🎲 SZENARIO{scn?` · ${scn.sel==="att"?"⚔️ ANGRIFF":"🛡️ ABWEHR"} · RUNDE ${scn.round} · ${scn.score} ⭐`:"-SPIEL"}</span>
           {scn&&<button onClick={scnEnd}
             style={{padding:"6px 12px",borderRadius:9,border:"1.5px solid #fed7aa",background:"#fff",color:"#c2410c",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>🏁 Fertig</button>}
         </div>
         {!scn&&<>
-          <div style={{fontSize:kidMode?13.5:12.5,color:"#7c2d12",lineHeight:1.55,marginBottom:10}}>Die App stellt dir echte Spiel-Situationen: Gegner decken, freilaufen, Verstärkung rufen – und sagt dir danach ehrlich, ob es schlau war. Aus jeder Lösung entsteht die nächste Situation!</div>
-          <button onClick={()=>{ setShowOpp(true); if(!ballPos) setBallPos({x:F.vw/2,y:F.vh/2}); scnNext(null); }}
-            style={{width:"100%",padding:kidMode?"14px":"11px",borderRadius:11,border:"none",background:"#ea580c",color:"#fff",fontWeight:900,fontSize:kidMode?16:14,cursor:"pointer",fontFamily:"inherit"}}>▶ Los geht's!</button>
+          <div style={{fontSize:kidMode?13.5:12.5,color:"#7c2d12",lineHeight:1.55,marginBottom:10}}>Echte Spiel-Situationen zum Lösen – mit ehrlicher Auswertung. <b>Angriff:</b> richtig passen (Fuß oder steil?), freilaufen, nachrücken. <b>Abwehr:</b> decken, Schusslinie zustellen, Verstärkung rufen. Aus jeder Lösung entsteht die nächste Situation!</div>
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={()=>scnStart("att")}
+              style={{flex:1,padding:kidMode?"14px 8px":"11px 8px",borderRadius:11,border:"none",background:"#ea580c",color:"#fff",fontWeight:900,fontSize:kidMode?15.5:13.5,cursor:"pointer",fontFamily:"inherit"}}>⚔️ Angriff</button>
+            <button onClick={()=>scnStart("def")}
+              style={{flex:1,padding:kidMode?"14px 8px":"11px 8px",borderRadius:11,border:"none",background:"#2563eb",color:"#fff",fontWeight:900,fontSize:kidMode?15.5:13.5,cursor:"pointer",fontFamily:"inherit"}}>🛡️ Verteidigung</button>
+          </div>
         </>}
         {scn&&(
           <div style={{background:"#fff",borderRadius:11,padding:"11px 13px"}}>
@@ -2015,9 +2097,17 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
             {scn.phase==="task"&&scn.type==="reinforce"&&(
               <div style={{display:"flex",gap:8,marginTop:10}}>
                 <button onClick={()=>scnAnswer(true)}
-                  style={{flex:1,padding:kidMode?"13px 8px":"10px 8px",borderRadius:11,border:"none",background:"#dc2626",color:"#fff",fontWeight:900,fontSize:kidMode?15:13,cursor:"pointer",fontFamily:"inherit"}}>📣 Verstärkung!</button>
+                  style={{flex:1,padding:kidMode?"13px 8px":"10px 8px",borderRadius:11,border:"none",background:"#dc2626",color:"#fff",fontWeight:900,fontSize:kidMode?15:13,cursor:"pointer",fontFamily:"inherit"}}>{scn.sel==="att"?"📣 Einer nach vorn!":"📣 Verstärkung!"}</button>
                 <button onClick={()=>scnAnswer(false)}
-                  style={{flex:1,padding:kidMode?"13px 8px":"10px 8px",borderRadius:11,border:"2px solid #475569",background:"#fff",color:"#334155",fontWeight:900,fontSize:kidMode?15:13,cursor:"pointer",fontFamily:"inherit"}}>🙅 Halten!</button>
+                  style={{flex:1,padding:kidMode?"13px 8px":"10px 8px",borderRadius:11,border:"2px solid #475569",background:"#fff",color:"#334155",fontWeight:900,fontSize:kidMode?15:13,cursor:"pointer",fontFamily:"inherit"}}>{scn.sel==="att"?"🙅 Hinten bleiben!":"🙅 Halten!"}</button>
+              </div>
+            )}
+            {scn.phase==="task"&&scn.type==="passwahl"&&(
+              <div style={{display:"flex",gap:8,marginTop:10}}>
+                <button onClick={()=>scnPass("fuss")}
+                  style={{flex:1,padding:kidMode?"13px 8px":"10px 8px",borderRadius:11,border:"none",background:"#ea580c",color:"#fff",fontWeight:900,fontSize:kidMode?15:13,cursor:"pointer",fontFamily:"inherit"}}>🦶 In den Fuß</button>
+                <button onClick={()=>scnPass("steil")}
+                  style={{flex:1,padding:kidMode?"13px 8px":"10px 8px",borderRadius:11,border:"none",background:"#0891b2",color:"#fff",fontWeight:900,fontSize:kidMode?15:13,cursor:"pointer",fontFamily:"inherit"}}>🚀 Steilpass</button>
               </div>
             )}
             {scn.phase==="running"&&<div style={{marginTop:8,fontSize:12.5,color:"#64748b",fontWeight:700}}>🏃 Läuft…</div>}
@@ -2075,7 +2165,10 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
           fire&&fire(`${p.name} für ${days===1?"1 Tag":days+" Tage"} freigeschaltet`); };
         const revoke=(id)=>save({...data,tacticUnlocks:(data.tacticUnlocks||[]).filter(x=>x.id!==id)});
         const delSession=(id)=>save({...data,tacticSessions:(data.tacticSessions||[]).filter(x=>x.id!==id)});
-        const rSum=(d)=>{ const re=(d||[]).filter(x=>x.type==="reinforce"); if(!re.length) return ""; const g=re.filter(x=>x.good).length; return ` · 📣 ${g}/${re.length} gute Verstärkungs-Entscheidungen`; };
+        const rSum=(d)=>{ const parts=[];
+          const re=(d||[]).filter(x=>x.type==="reinforce"); if(re.length) parts.push(`📣 ${re.filter(x=>x.good).length}/${re.length} Verstärkung`);
+          const pw=(d||[]).filter(x=>x.type==="passwahl"); if(pw.length) parts.push(`🎯 ${pw.filter(x=>x.good).length}/${pw.length} Pass-Wahl`);
+          return parts.length?" · "+parts.join(" · "):""; };
         return (<>
         <div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:13,padding:"13px 14px"}}>
           <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.4,marginBottom:4}}>🔓 KINDER-FREISCHALTUNG</div>
