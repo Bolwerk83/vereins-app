@@ -1184,8 +1184,9 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
   const setKid=(v)=>{ setKidMode(v); try{ localStorage.setItem("va_tb_kid",v?"1":"0"); }catch{} };
   // Fokus-Spotlight: einen Spieler hervorheben, alle anderen abdunkeln.
   const [focusId,setFocusId]=useState(null);
-  // Vorfuehr-Modus: Vollbild nur mit Feld + Abspielen (zum Zeigen am Spielfeldrand).
-  const [present,setPresent]=useState(false);
+  // Vorfuehr-Modus: Vollbild nur mit Feld + Controller. Aus einem Termin ("Wizard")
+  // geoeffnet startet die Tafel direkt im Fokus, inklusive Steuerkreuz.
+  const [present,setPresent]=useState(!!eventCtx);
   // "Leben": staendige kleine Bewegung aller Spieler, Gegner orientieren sich zum Ball.
   const [liveOn,setLiveOn]=useState(false);
   const [liveT,setLiveT]=useState(0);
@@ -1198,7 +1199,7 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
   const [aiHint,setAiHint]=useState("");
   // Auswahl + Steuerkreuz (wie am Gameboy): angetippten Spieler mit Pfeilen steuern.
   const [selTok,setSelTok]=useState(null);   // {side:"own"|"opp", id}
-  const [padOn,setPadOn]=useState(false);
+  const [padOn,setPadOn]=useState(!!eventCtx);
   const padHold=useRef(null);
   const padStop=()=>{ if(padHold.current){ clearInterval(padHold.current); padHold.current=null; } };
   useEffect(()=>()=>padStop(),[]);
@@ -1277,7 +1278,9 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
       // wieder zum vorigen Passgeber zurück -> schneller Rückpass (kurzer Kontakt).
       const oneTwo = a.type==="pass" && prevPass && Math.hypot(a.x1-prevPass.x2,a.y1-prevPass.y2)<F.r*3.2 && Math.hypot(a.x2-prevPass.x1,a.y2-prevPass.y1)<F.vw*0.24;
       if(a.par&&prev) start=sched.get(prev).start;   // ∥ laeuft gleichzeitig mit dem Schritt davor
-      else if(a.type==="pass"&&prev&&prev.type==="run") start=Math.max(0,tEnd-durOf(prev)*0.5);
+      // Pass nach Lauf: "In den Fuss" wartet, bis der Spieler steht; "Steilpass"
+      // startet mitten im Lauf, sodass Ball und Spieler sich treffen.
+      else if(a.type==="pass"&&prev&&prev.type==="run") start = a.kind==="steil" ? Math.max(0,tEnd-durOf(prev)*0.55) : tEnd+140;
       else if(oneTwo) start=tEnd+60;      // Doppelpass: direkt klatschen lassen
       else if(i>0) start=tEnd+170;         // Ballannahme/Settle
       const ph={start,end:start+d,dur:d,oneTwo}; sched.set(a,ph); tEnd=Math.max(tEnd,ph.end);
@@ -1321,13 +1324,22 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
         return {...p,x:p.x+w.dx+sx,y:p.y+w.dy+sy};
       }));
       if(showOpp){
-        const pr=Math.min(1,T/(TOTAL*0.45));   // Press-Intensität rampt hoch
-        let nearId=null,nd=1e9;
-        if(reactDef&&b) oppA.forEach(tk=>{ if(tk.run||tk.n===1)return; const dd=Math.hypot(b.x-tk.sx,b.y-tk.sy); if(dd<nd){nd=dd;nearId=tk.id;} });
+        const pr=Math.min(1,T/(TOTAL*0.35));   // Press-Intensität rampt hoch
+        // Jugendfussball: alle orientieren sich zum Ball, die zwei Naechsten gehen
+        // richtig drauf – mit kleiner Reaktionszeit (sie laufen dahin, wo der Ball WAR).
+        const db=b&&trailRef.current.length>5?trailRef.current[trailRef.current.length-6]:b;
+        let order=[];
+        if(reactDef&&db) order=oppA.filter(tk=>!tk.run&&tk.n!==1).map(tk=>({id:tk.id,d:Math.hypot(db.x-tk.sx,db.y-tk.sy)})).sort((x,y)=>x.d-y.d).map(x=>x.id);
         setAnimOpp(oppA.map(tk=>{
           if(tk.run) return tokAt(tk,T);
           const w=wob(tk,0.28);
-          if(reactDef&&b&&tk.n!==1){ const dx=b.x-tk.sx,dy=b.y-tk.sy,dist=Math.hypot(dx,dy)||1; const press=pr*(tk.id===nearId?0.85:0.36); const shift=Math.min(F.vw*0.13,dist*0.45)*press; return {...tk,x:tk.sx+dx/dist*shift+w.dx,y:tk.sy+dy/dist*shift+w.dy}; }
+          if(reactDef&&db&&tk.n!==1){
+            const rank=order.indexOf(tk.id);
+            const press=pr*(rank===0?0.95:rank===1?0.62:0.3);
+            const dx=db.x-tk.sx,dy=db.y-tk.sy,dist=Math.hypot(dx,dy)||1;
+            const shift=Math.min(F.vw*(rank<=1?0.19:0.12),dist*0.5)*press;
+            return {...tk,x:tk.sx+dx/dist*shift+w.dx,y:tk.sy+dy/dist*shift+w.dy};
+          }
           return {...tk,x:tk.sx+w.dx,y:tk.sy+w.dy};
         }));
       }
@@ -1379,6 +1391,7 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
   };
   const [mode,setMode]=useState("move");
   const [runPace,setRunPace]=useState(2);   // Tempo fuer neue Laufwege: 1 locker / 2 zuegig / 3 Sprint
+  const [passKind,setPassKind]=useState("fuss");   // "fuss" = in den Fuss, "steil" = Steilpass in den Lauf
   const [arrows,setArrows]=useState([]);
   const [draw,setDraw0]=useState(null); const drawRef=useRef(null);
   const setDraw=(v)=>{ const nv=typeof v==="function"?v(drawRef.current):v; drawRef.current=nv; setDraw0(nv); };
@@ -1386,7 +1399,17 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
   const runArrowCol=a=>PACE_COL[a.pace]||"#ffffff";
   const ARR_COL={run:"#ffffff",pass:"#fb923c",dribble:"#22d3ee"};
   const toSvg=(e)=>{ const el=svgRef.current; if(!el) return null; const r=el.getBoundingClientRect(); const cx=(e.touches?e.touches[0].clientX:e.clientX); const cy=(e.touches?e.touches[0].clientY:e.clientY); return { x:(cx-r.left)/r.width*F.vw, y:(cy-r.top)/r.height*F.vh }; };
-  const startDraw=(e)=>{ if(mode==="focus"){ setFocusId(null); return; } if(mode==="move"||mode==="mark") return; resetAnim(); const p=toSvg(e); if(!p) return; if(e.preventDefault)e.preventDefault(); setDraw({type:mode,x1:p.x,y1:p.y,x2:p.x,y2:p.y,...(mode==="run"?{pace:runPace}:{})}); };
+  // Wo liegt der Ball nach den bisher gezeichneten Schritten?
+  const curBallSpot=()=>{ const seq=arrows.filter(a=>a.type==="pass"||a.type==="dribble"); if(seq.length){ const l=seq[seq.length-1]; return {x:l.x2,y:l.y2}; } return ballPos; };
+  const startDraw=(e)=>{ if(mode==="focus"){ setFocusId(null); return; } if(mode==="move"||mode==="mark") return; resetAnim(); const p=toSvg(e); if(!p) return; if(e.preventDefault)e.preventDefault();
+    let x1=p.x,y1=p.y;
+    if(mode==="pass"||mode==="dribble"){
+      // Pass & Dribbling starten immer am Ball: hat ihn ein Spieler am Fuss, geht es
+      // von dort weiter. Gibt es noch keinen Ball, wird er am Startpunkt hingelegt.
+      const bp=curBallSpot();
+      if(bp){ x1=bp.x; y1=bp.y; } else setBallPos({x:p.x,y:p.y});
+    }
+    setDraw({type:mode,x1,y1,x2:p.x,y2:p.y,...(mode==="run"?{pace:runPace}:{}),...(mode==="pass"?{kind:passKind}:{})}); };
   const toggleMark=(setT,id)=>{ resetAnim(); setT(ts=>ts.map(x=>x.id===id?{...x,marked:!x.marked}:x)); };
   const onMove=(e)=>{ const p=toSvg(e); if(!p) return; if(mode==="move"){ if(dragRef.current==null) return; if(dragRef.current==="ball"){ const R=F.r*0.6; setBallPos({x:Math.max(R,Math.min(F.vw-R,p.x)),y:Math.max(R,Math.min(F.vh-R,p.y))}); return; } const R=F.r; const setT=dragSetRef.current==="opp"?setOppTokens:setTokens; setT(ts=>ts.map(tk=>tk.id===dragRef.current?{...tk,x:Math.max(R,Math.min(F.vw-R,p.x)),y:Math.max(R,Math.min(F.vh-R,p.y))}:tk)); } else { if(!drawRef.current) return; setDraw(d=>d?{...d,x2:p.x,y2:p.y}:d); } };
   const endDrag=()=>{ if(mode==="move"){ dragRef.current=null; return; } const d=drawRef.current; if(d){ const len=Math.hypot(d.x2-d.x1,d.y2-d.y1); if(len>F.vw*0.04) setArrows(a=>[...a,{...d,par:false,id:"ar"+Date.now()+Math.round(Math.random()*999)}]); } setDraw(null); };
@@ -1403,7 +1426,7 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
     if(a.type==="run") return `🏃 Lauf ${nm(s)} ${a.pace===3?"· Sprint":a.pace===1?"· locker":""}`.replace(/\s+/g," ").trim();
     if(a.type==="dribble") return `⚽💨 Dribbling ${nm(s)}`.trim();
     if(isGoalShot(a)) return `🥅 Schuss aufs Tor ${nm(s)}`.trim();
-    return `🎯 Pass ${nm(s)}${z&&z.id!==s?.id?` → ${nm(z)}`:""}`.trim();
+    return `${a.kind==="steil"?"🚀 Steilpass":"🦶 Pass in den Fuß"} ${nm(s)}${z&&z.id!==s?.id?` → ${nm(z)}`:""}`.trim();
   };
   const delStep=(id)=>{ resetAnim(); setArrows(a=>a.filter(x=>x.id!==id)); };
   const moveStep=(i,dir)=>{ resetAnim(); setArrows(a=>{ const j=i+dir; if(j<0||j>=a.length) return a; const n=a.slice(); [n[i],n[j]]=[n[j],n[i]]; return n; }); };
@@ -1456,8 +1479,8 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
       const forward=(by-tk.y);
       return {tk,s:free*2.2+openness*1.4+forward*0.9}; }).sort((a,b)=>b.s-a.s);
     const best=scored[0]; if(!best||best.s<=-1e9) return null;
-    return { a:{type:"pass",x1:bx,y1:by,x2:best.tk.x,y2:best.tk.y,par:false},
-      hint:`Nr. ${best.tk.n} steht frei – Pass! 🎯` };
+    return { a:{type:"pass",kind:"fuss",x1:bx,y1:by,x2:best.tk.x,y2:best.tk.y,par:false},
+      hint:`Nr. ${best.tk.n} steht frei – Pass in den Fuß! 🦶` };
   };
   const aiSuggest=()=>{
     const wantType=(mode==="run"||mode==="dribble"||mode==="pass")?mode:undefined;
@@ -1610,14 +1633,14 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
     return {dx,dy}; };
 
   const chSport=(sp)=>{ const FF=TB_FIELDS[sp]||TB_FIELDS.generic; const c=FF.counts.includes(11)?11:FF.counts[0]; setSport(sp); setCount(c); setFormIdx(0); setArrows([]); setDraw(null); setBallPos(b=>b?{x:FF.vw/2,y:FF.vh/2}:null); };
-  // Werkzeuge – im Board als Kachel-Grid, im Vorfuehr-Modus als Controller-Tasten
+  // Werkzeuge – im Board als Kachel-Grid, im Vorfuehr-Modus als Controller-Tasten.
+  // Stern-Markierung laeuft ueber die Mitte des Steuerkreuzes (kein eigenes Werkzeug mehr).
   const TOOLS=[
     {id:"move",e:"🖐",l:"Bewegen",c:"#2563eb"},
     {id:"run",e:"🏃",l:"Laufen",c:"#16a34a"},
     {id:"dribble",e:"⚽💨",l:"Dribbeln",c:"#0891b2"},
     {id:"pass",e:"🎯",l:"Pass",c:"#ea580c"},
     {id:"focus",e:"🔦",l:"Fokus",c:"#7c3aed"},
-    {id:"mark",e:"⭐",l:"Stern",c:"#ca8a04"},
   ];
   // Steuerkreuz-Bedienfeld (Chip mit gewaehltem Spieler + 3x3-Tastenfeld)
   const padUI=(cell=46)=>{ const si=selInfo(); return (
@@ -1699,7 +1722,7 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
         </div>
       )}
       {/* Werkzeuge: ein Tipp = ein Werkzeug, gross und farbig */}
-      <div style={{display:"grid",gridTemplateColumns:kidMode?"repeat(3,1fr)":"repeat(6,1fr)",gap:kidMode?8:6}}>
+      <div style={{display:"grid",gridTemplateColumns:kidMode?"repeat(3,1fr)":"repeat(5,1fr)",gap:kidMode?8:6}}>
         {TOOLS.map(o=>(
           <button key={o.id} onClick={()=>setMode(o.id)}
             style={{padding:kidMode?"12px 4px":"8px 2px",borderRadius:14,border:`2.5px solid ${mode===o.id?o.c:"#e2e8f0"}`,background:mode===o.id?o.c+"16":"#fff",display:"flex",flexDirection:"column",alignItems:"center",gap:3,cursor:"pointer",fontFamily:"inherit"}}>
@@ -1711,18 +1734,24 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
       <div style={{fontSize:kidMode?13.5:11.5,color:"#475569",background:"#f8fafc",borderRadius:10,padding:"8px 12px",fontWeight:kidMode?700:500}}>
         {{move:"👉 Spieler und Ball einfach mit dem Finger verschieben.",
           run:"👉 Vom Spieler dorthin ziehen, wo er hinlaufen soll.",
-          dribble:"👉 Vom Spieler mit Ball dorthin ziehen, wo er hindribbelt – Ball läuft mit!",
-          pass:"👉 Vom Ball zum Mitspieler ziehen. Oder mutig: direkt aufs Tor!",
-          focus:"👉 Auf einen Spieler tippen – alle schauen nur auf ihn. Aufs Feld tippen: aus.",
-          mark:"👉 Auf Spieler tippen, um ihm einen Stern zu geben."}[mode]}
+          dribble:"👉 Der Spieler am Ball dribbelt los – einfach ziehen, der Ball klebt am Fuß.",
+          pass:"👉 Der Pass startet automatisch am Ball – zieh dahin, wo er ankommen soll. Oder mutig: aufs Tor!",
+          focus:"👉 Auf einen Spieler tippen – alle schauen nur auf ihn. Aufs Feld tippen: aus."}[mode]}
       </div>
       {mode==="run"&&(
         <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
           <span style={{fontSize:11,fontWeight:800,color:"#64748b",marginRight:2}}>TEMPO</span>
-          {[[1,"🐢 locker"],[2,"🐇 zügig"],[3,"🐆 Sprint"]].map(([p,l])=>(
-            <button key={p} onClick={()=>setRunPace(p)} style={{padding:kidMode?"9px 14px":"5px 11px",borderRadius:9,border:`1.5px solid ${runPace===p?PACE_COL[p]:"#e2e8f0"}`,background:runPace===p?PACE_COL[p]+"22":"#fff",color:runPace===p?"#0f172a":"#64748b",fontWeight:700,fontSize:kidMode?14:12,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
+          {[[1,"🐢","locker"],[2,"🐇","zügig"],[3,"🐆","Sprint"]].map(([p,l,tt])=>(
+            <button key={p} onClick={()=>setRunPace(p)} title={tt} style={{padding:kidMode?"9px 16px":"5px 13px",borderRadius:9,border:`1.5px solid ${runPace===p?PACE_COL[p]:"#e2e8f0"}`,background:runPace===p?PACE_COL[p]+"22":"#fff",fontWeight:700,fontSize:kidMode?17:14,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
           ))}
-          {!kidMode&&<span style={{fontSize:11,color:"#64748b"}}>für den nächsten Laufweg</span>}
+        </div>
+      )}
+      {mode==="pass"&&(
+        <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
+          <span style={{fontSize:11,fontWeight:800,color:"#64748b",marginRight:2}}>PASS</span>
+          {[["fuss","🦶 In den Fuß","Ball kommt direkt zum Spieler"],["steil","🚀 Steilpass","Ball kommt in den Lauf – Spieler und Ball treffen sich"]].map(([k,l,tt])=>(
+            <button key={k} onClick={()=>setPassKind(k)} title={tt} style={{padding:kidMode?"9px 13px":"5px 11px",borderRadius:9,border:`1.5px solid ${passKind===k?"#ea580c":"#e2e8f0"}`,background:passKind===k?"#ea580c18":"#fff",color:passKind===k?"#9a3412":"#64748b",fontWeight:700,fontSize:kidMode?13.5:12,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
+          ))}
         </div>
       )}
       <div style={{display:"flex",gap:7,flexWrap:"wrap",alignItems:"center"}}>
@@ -1867,8 +1896,21 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
             ))}
           </div>
           <div style={{color:"#86efac",fontSize:12,textAlign:"center",fontWeight:700}}>
-            {TOOLS.find(o=>o.id===mode)?.l}{mode==="move"?" – Spieler & Ball mit dem Finger verschieben":mode==="run"||mode==="pass"||mode==="dribble"?" – auf dem Feld ziehen":mode==="focus"?" – Spieler antippen":" – Spieler antippen"}
+            {TOOLS.find(o=>o.id===mode)?.l}{mode==="move"?" – Spieler & Ball mit dem Finger verschieben":mode==="run"||mode==="pass"||mode==="dribble"?" – auf dem Feld ziehen":" – Spieler antippen"}
           </div>
+          {(mode==="run"||mode==="pass")&&(
+            <div style={{display:"flex",gap:6,justifyContent:"center"}}>
+              {mode==="run"
+                ? [[1,"🐢","locker"],[2,"🐇","zügig"],[3,"🐆","Sprint"]].map(([p,l,tt])=>(
+                    <button key={p} onClick={()=>setRunPace(p)} title={tt}
+                      style={{width:54,height:40,borderRadius:11,border:runPace===p?`2.5px solid ${PACE_COL[p]}`:"2.5px solid rgba(255,255,255,.12)",background:runPace===p?"#fff":"rgba(255,255,255,.12)",fontSize:18,cursor:"pointer",padding:0}}>{l}</button>
+                  ))
+                : [["fuss","🦶","In den Fuß"],["steil","🚀","Steilpass in den Lauf"]].map(([k,l,tt])=>(
+                    <button key={k} onClick={()=>setPassKind(k)} title={tt}
+                      style={{width:54,height:40,borderRadius:11,border:passKind===k?"2.5px solid #fb923c":"2.5px solid rgba(255,255,255,.12)",background:passKind===k?"#fff":"rgba(255,255,255,.12)",fontSize:18,cursor:"pointer",padding:0}}>{l}</button>
+                  ))}
+            </div>
+          )}
           {/* Steuerkreuz links, Abspielen rechts – Gameboy-Aufteilung */}
           <div style={{display:"flex",gap:12,alignItems:"center"}}>
             {padOn&&<div style={{flexShrink:0}}>{padUI(44)}</div>}
