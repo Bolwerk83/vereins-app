@@ -983,6 +983,9 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
   useEffect(()=>{ if(skipRebuildRef.current) return; setTokens(buildTokens(sport,count,formIdx)); resetAnim();   },[sport,count,formIdx]);
   // Gegner-Team (gespiegelt auf der oberen Haelfte), eigene Aufstellung, verschiebbar.
   const [showOpp,setShowOpp]=useState(false);
+  // Freier Ball: ein-/ausblendbar und wie ein Spieler-Token verschiebbar.
+  const [ballPos,setBallPos]=useState(null); // null = ausgeblendet
+  const toggleBall=()=>setBallPos(b=>b?null:{x:F.vw/2,y:F.vh/2});
   const [oppFormIdx,setOppFormIdx]=useState(0);
   const buildOpp=(sp,cnt,fi)=>{ const FF=TB_FIELDS[sp]||TB_FIELDS.generic; const f=tbForms(sp,cnt)[fi]||tbForms(sp,cnt)[0]; return (f?.p||[]).map((pos,i)=>({id:"op"+i,x:pos[0]*FF.vw,y:(1-pos[1])*FF.vh,n:i+1})); };
   const [oppTokens,setOppTokens]=useState(()=>buildOpp(sport,count,oppFormIdx));
@@ -1007,20 +1010,20 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
   const myBoards=(data.tacticBoards||[]).filter(b=>b.cid===cl.id);
   const saveBoard=()=>{
     const nm=(boardName.trim()||("Board "+(myBoards.length+1)));
-    const b={id:uid(),cid:cl.id,name:nm,sport,count,formIdx,oppFormIdx,showOpp,tokens,oppTokens,arrows,createdAt:new Date().toISOString()};
+    const b={id:uid(),cid:cl.id,name:nm,sport,count,formIdx,oppFormIdx,showOpp,tokens,oppTokens,arrows,ball:ballPos,createdAt:new Date().toISOString()};
     save({...data,tacticBoards:[...(data.tacticBoards||[]),b]});
     setBoardName(""); fire&&fire("Board gespeichert");
   };
   const loadBoard=(b)=>{
     skipRebuildRef.current=true;
     setSport(b.sport||sport); setCount(b.count||count); setFormIdx(b.formIdx||0); setOppFormIdx(b.oppFormIdx||0);
-    setShowOpp(!!b.showOpp); setTokens(b.tokens||[]); setOppTokens(b.oppTokens||[]); setArrows(b.arrows||[]);
+    setShowOpp(!!b.showOpp); setTokens(b.tokens||[]); setOppTokens(b.oppTokens||[]); setArrows(b.arrows||[]); setBallPos(b.ball||null);
     resetAnim();
     setTimeout(()=>{ skipRebuildRef.current=false; },0);
     fire&&fire("Board geladen");
   };
   const delBoard=(id)=>{ if(typeof window!=="undefined"&&window.confirm&&!window.confirm("Board löschen?"))return; save({...data,tacticBoards:(data.tacticBoards||[]).filter(x=>x.id!==id)}); };
-  const curBoard=()=>({sport,count,formIdx,oppFormIdx,showOpp,tokens,oppTokens,arrows});
+  const curBoard=()=>({sport,count,formIdx,oppFormIdx,showOpp,tokens,oppTokens,arrows,ball:ballPos});
   // Falls dieses Board an einem Termin haengt: beim Oeffnen den gespeicherten Stand laden.
   useEffect(()=>{ if(eventCtx?.board){ loadBoard(eventCtx.board); }   },[]);
   const stopAnim=()=>{ if(animRef.current) cancelAnimationFrame(animRef.current); animRef.current=null; };
@@ -1159,10 +1162,10 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
   const toSvg=(e)=>{ const el=svgRef.current; if(!el) return null; const r=el.getBoundingClientRect(); const cx=(e.touches?e.touches[0].clientX:e.clientX); const cy=(e.touches?e.touches[0].clientY:e.clientY); return { x:(cx-r.left)/r.width*F.vw, y:(cy-r.top)/r.height*F.vh }; };
   const startDraw=(e)=>{ if(mode==="move"||mode==="mark") return; resetAnim(); const p=toSvg(e); if(!p) return; if(e.preventDefault)e.preventDefault(); setDraw({type:mode,x1:p.x,y1:p.y,x2:p.x,y2:p.y,...(mode==="run"?{pace:runPace}:{})}); };
   const toggleMark=(setT,id)=>{ resetAnim(); setT(ts=>ts.map(x=>x.id===id?{...x,marked:!x.marked}:x)); };
-  const onMove=(e)=>{ const p=toSvg(e); if(!p) return; if(mode==="move"){ if(dragRef.current==null) return; const R=F.r; const setT=dragSetRef.current==="opp"?setOppTokens:setTokens; setT(ts=>ts.map(tk=>tk.id===dragRef.current?{...tk,x:Math.max(R,Math.min(F.vw-R,p.x)),y:Math.max(R,Math.min(F.vh-R,p.y))}:tk)); } else { if(!drawRef.current) return; setDraw(d=>d?{...d,x2:p.x,y2:p.y}:d); } };
+  const onMove=(e)=>{ const p=toSvg(e); if(!p) return; if(mode==="move"){ if(dragRef.current==null) return; if(dragRef.current==="ball"){ const R=F.r*0.6; setBallPos({x:Math.max(R,Math.min(F.vw-R,p.x)),y:Math.max(R,Math.min(F.vh-R,p.y))}); return; } const R=F.r; const setT=dragSetRef.current==="opp"?setOppTokens:setTokens; setT(ts=>ts.map(tk=>tk.id===dragRef.current?{...tk,x:Math.max(R,Math.min(F.vw-R,p.x)),y:Math.max(R,Math.min(F.vh-R,p.y))}:tk)); } else { if(!drawRef.current) return; setDraw(d=>d?{...d,x2:p.x,y2:p.y}:d); } };
   const endDrag=()=>{ if(mode==="move"){ dragRef.current=null; return; } const d=drawRef.current; if(d){ const len=Math.hypot(d.x2-d.x1,d.y2-d.y1); if(len>F.vw*0.04) setArrows(a=>[...a,{...d,id:"ar"+Date.now()+Math.round(Math.random()*999)}]); } setDraw(null); };
 
-  const chSport=(sp)=>{ const FF=TB_FIELDS[sp]||TB_FIELDS.generic; const c=FF.counts.includes(11)?11:FF.counts[0]; setSport(sp); setCount(c); setFormIdx(0); setArrows([]); setDraw(null); };
+  const chSport=(sp)=>{ const FF=TB_FIELDS[sp]||TB_FIELDS.generic; const c=FF.counts.includes(11)?11:FF.counts[0]; setSport(sp); setCount(c); setFormIdx(0); setArrows([]); setDraw(null); setBallPos(b=>b?{x:FF.vw/2,y:FF.vh/2}:null); };
   const Btn=({active,onClick,children})=>(
     <button onClick={onClick} style={{padding:"7px 12px",borderRadius:9,border:active?`1.5px solid ${t.p}`:"1.5px solid #e2e8f0",background:active?t.p:"#fff",color:active?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{children}</button>
   );
@@ -1198,6 +1201,8 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
         <span style={{fontSize:11,fontWeight:800,color:"#64748b",marginRight:2}}>GEGNER</span>
         <Btn active={showOpp} onClick={()=>setShowOpp(s=>!s)}>{showOpp?"An":"Aus"}</Btn>
         {showOpp&&forms.map((f,i)=><Btn key={"o"+f.name} active={oppFormIdx===i} onClick={()=>setOppFormIdx(i)}>{f.name}</Btn>)}
+        <span style={{width:1,height:18,background:"#e2e8f0"}}/>
+        <Btn active={!!ballPos} onClick={toggleBall}>⚽ Ball {ballPos?"An":"Aus"}</Btn>
       </div>
       <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
         <span style={{fontSize:11,fontWeight:800,color:"#64748b",marginRight:2}}>WERKZEUG</span>
@@ -1285,6 +1290,17 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
               {tk.marked&&<text x={tk.x} y={tk.y-F.r*1.45} textAnchor="middle" fontSize={F.fs*0.95} style={{pointerEvents:"none"}}>⭐</text>}
             </g>
           ))}
+          {ballPos&&!animBall&&(
+            <g style={{cursor:mode==="move"?"grab":"crosshair"}}
+               onPointerDown={(e)=>{ if(mode!=="move") return; e.preventDefault(); resetAnim(); dragRef.current="ball"; }}
+               onTouchStart={(e)=>{ if(mode!=="move") return; resetAnim(); dragRef.current="ball"; }}>
+              <circle cx={ballPos.x} cy={ballPos.y} r={F.r} fill="transparent"/>
+              <circle cx={ballPos.x} cy={ballPos.y} r={F.r*0.55} fill="#fff" stroke="#0f172a" strokeWidth={F.r*0.16}/>
+              <circle cx={ballPos.x} cy={ballPos.y} r={F.r*0.17} fill="#0f172a"/>
+              <line x1={ballPos.x-F.r*0.5} y1={ballPos.y} x2={ballPos.x+F.r*0.5} y2={ballPos.y} stroke="#0f172a" strokeWidth={F.r*0.07} opacity={0.45}/>
+              <line x1={ballPos.x} y1={ballPos.y-F.r*0.5} x2={ballPos.x} y2={ballPos.y+F.r*0.5} stroke="#0f172a" strokeWidth={F.r*0.07} opacity={0.45}/>
+            </g>
+          )}
           {animTrail.length>1&&<g style={{pointerEvents:"none"}}>
             {animTrail.map((p,i)=>(<circle key={i} cx={p.x} cy={p.y} r={F.r*0.5*((i+1)/animTrail.length)} fill="#fff" opacity={0.05*(i+1)}/>))}
           </g>}
@@ -1339,7 +1355,7 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
                 <div key={b.id} style={{display:"flex",alignItems:"center",gap:8,background:"#f8fafc",borderRadius:10,padding:"8px 11px",border:"1px solid #f1f5f9"}}>
                   <button onClick={()=>loadBoard(b)} style={{flex:1,textAlign:"left",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",minWidth:0}}>
                     <div style={{fontWeight:700,fontSize:13.5,color:"#0f172a"}}>{b.name}</div>
-                    <div style={{fontSize:11,color:"#64748b"}}>{(tbForms(b.sport,b.count)[b.formIdx]||{}).name||""}{b.showOpp?" · mit Gegner":""}{(b.arrows||[]).length?` · ${b.arrows.length} Pfeile`:""}</div>
+                    <div style={{fontSize:11,color:"#64748b"}}>{(tbForms(b.sport,b.count)[b.formIdx]||{}).name||""}{b.showOpp?" · mit Gegner":""}{b.ball?" · mit Ball":""}{(b.arrows||[]).length?` · ${b.arrows.length} Pfeile`:""}</div>
                   </button>
                   <button onClick={()=>loadBoard(b)} style={{padding:"6px 11px",borderRadius:8,border:"none",background:t.p+"15",color:t.p,fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Laden</button>
                   <button onClick={()=>delBoard(b.id)} style={{width:28,height:28,borderRadius:8,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:800,cursor:"pointer"}}>✕</button>
