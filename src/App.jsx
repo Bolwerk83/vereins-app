@@ -12,7 +12,7 @@ import { LANG_SWITCHER_ENABLED, LangSwitcher, FloatingLangSwitcher, getFontScale
 import { DFB_FORMATS, dfbFormatForCat, CAT_YEARS, catYearsStr, CAT_ORDER, eligibleCats, playerFitType, playerFitsTeam, fitLabel } from "./dfb.js";
 import { CAT_RANK, defaultSoll, SOLL_PLAYERS_BY_CAT, _votedYes, isPausedP, drillScores, drillVoteOf, playerNoShowEvents, NO_SHOW_HINT_THRESHOLD, addAuditLog, suggestDrillsForSkill, generateTrainingPlan, SKILLS, SKILL_AXES, skillAxesFor, sollFor, trainingFocusFor, buildSession, playerArchetype, AXIS_TO_FOCUS, staffNeed } from "./domain.js";
 import { TRAINING_TEMPLATES, DRILL_LIB } from "./drills.js";
-import { DFBFormatsCard, TacticField, StyleToggle, DrillDiagram, DrillLibrary, TacticBoard, TrainingsLibrary, TrainingPlanner, TrainerGuide, TrainingPlanTab, DrillAutoAnim, DrillInfoModal, CAT_TO_AGEKEY, DRILL_FOCUS, TACTIC_TEMPLATES, drillsForPhase, eventDurationMin, WeeklySoloCard, WeeklyQuizCard } from "./training.jsx";
+import { DFBFormatsCard, TacticField, StyleToggle, DrillDiagram, DrillLibrary, TacticBoard, TrainingsLibrary, TrainingPlanner, TrainerGuide, TrainingPlanTab, DrillAutoAnim, DrillInfoModal, CAT_TO_AGEKEY, DRILL_FOCUS, TACTIC_TEMPLATES, drillsForPhase, eventDurationMin, WeeklySoloCard, WeeklyQuizCard, KidAchievements } from "./training.jsx";
 
 // Demo-Daten (nutzen DEMO_CLUBS/tournPubSnapshot weiter unten; Funktions-Hoisting)
 function seed() {
@@ -19027,6 +19027,7 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         </>}
         {/* Kinder-Bereich: Wochen-Übungen (nur mit Eltern-Freigabe) + Bundesliga-Quiz */}
         {myProfile&&<div style={{marginTop:16}}>
+          <KidAchievements profile={myProfile} data={data}/>
           {soloOk&&<WeeklySoloCard profile={myProfile} data={data} save={onSave} fire={fire} color={t.p}/>}
           <WeeklyQuizCard profile={myProfile} data={data} save={onSave} fire={fire}/>
         </div>}

@@ -990,7 +990,10 @@ export function WeeklySoloCard({profile,data,save,fire,color="#16a34a"}){
   const [open,setOpen]=useState(null);
   const toggleDone=(id)=>{
     const arr=done.includes(id)?done.filter(x=>x!==id):[...done,id];
-    save({...data,playerProfiles:(data.playerProfiles||[]).map(p=>p.id===profile.id?{...p,soloDone:{[weekKey]:arr}}:p)});
+    // Historie der letzten Wochen behalten (fuer die Wochen-Serie in den Erfolgen)
+    const nd={...(profile.soloDone||{}),[weekKey]:arr};
+    const keys=Object.keys(nd).sort(); while(keys.length>12) delete nd[keys.shift()];
+    save({...data,playerProfiles:(data.playerProfiles||[]).map(p=>p.id===profile.id?{...p,soloDone:nd}:p)});
     if(!done.includes(id)) fire&&fire(arr.length===drills.length?"Alle Übungen geschafft! 🎉":"Super gemacht! ⭐");
   };
   return (
@@ -1025,6 +1028,49 @@ export function WeeklySoloCard({profile,data,save,fire,color="#16a34a"}){
           );
         })}
       </div>
+    </div>
+  );
+}
+
+// Erfolge-Karte fuers Kind: Szenario-Sterne, Quiz-Rekord, Uebungen, Wochen-Serie + Abzeichen.
+export function KidAchievements({profile,data}){
+  const sessions=(data.tacticSessions||[]).filter(s=>s.pid===profile.id);
+  const stars=sessions.reduce((a,s)=>a+(s.score||0),0);
+  const qs=profile.quizScores||{};
+  const quizBest=Object.values(qs).length?Math.max(...Object.values(qs)):null;
+  const sd=profile.soloDone||{};
+  const drills=Object.values(sd).reduce((a,arr)=>a+(arr||[]).length,0);
+  // Wochen-Serie: rueckwaerts ab dieser Woche zaehlen, solange alle 3 Uebungen geschafft
+  const streak=(()=>{ let n=0; const d=new Date();
+    for(let i=0;i<26;i++){ const wk=isoWeek(new Date(d.getTime()-i*7*864e5)); if((sd[wk]||[]).length>=3) n++; else break; }
+    return n; })();
+  const badges=[
+    {got:stars>=1,e:"⭐",l:"Erster Stern"},
+    {got:stars>=10,e:"🌟",l:"10 Szenario-Sterne"},
+    {got:quizBest===5,e:"🧠",l:"Quiz 5/5"},
+    {got:drills>=9,e:"🏠",l:"9 Übungen zuhause"},
+    {got:streak>=3,e:"🔥",l:"3-Wochen-Serie"},
+  ];
+  return (
+    <div style={{background:"linear-gradient(135deg,#fffbeb,#fef3c7)",border:"1.5px solid #fde68a",borderRadius:14,padding:"14px 15px",marginBottom:14}}>
+      <div style={{fontSize:11,fontWeight:800,color:"#b45309",letterSpacing:.4,marginBottom:10}}>🏆 MEINE ERFOLGE</div>
+      <div style={{display:"flex",gap:7,marginBottom:11}}>
+        {[{v:stars,l:"Szenario-⭐"},{v:quizBest!=null?quizBest+"/5":"–",l:"Quiz-Rekord"},{v:drills,l:"Übungen"},{v:streak>0?streak+" 🔥":"–",l:"Wochen-Serie"}].map((x,i)=>(
+          <div key={i} style={{flex:1,background:"#fff",borderRadius:12,padding:"10px 3px",textAlign:"center"}}>
+            <div style={{fontSize:18,fontWeight:900,color:"#b45309",whiteSpace:"nowrap"}}>{x.v}</div>
+            <div style={{fontSize:9.5,color:"#92400e",fontWeight:700}}>{x.l}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+        {badges.map((b,i)=>(
+          <span key={i} title={b.l} style={{display:"inline-flex",alignItems:"center",gap:5,padding:"6px 10px",borderRadius:99,fontSize:11.5,fontWeight:800,
+            background:b.got?"#fff":"rgba(253,230,138,.35)",color:b.got?"#b45309":"#c9a24d",border:`1.5px solid ${b.got?"#f59e0b":"transparent"}`,opacity:b.got?1:0.7}}>
+            {b.got?b.e:"🔒"} {b.l}
+          </span>
+        ))}
+      </div>
+      {!badges.some(b=>b.got)&&<div style={{marginTop:9,fontSize:12,color:"#92400e",fontWeight:600}}>Sammle deinen ersten ⭐ im Szenario-Spiel oder beim Quiz!</div>}
     </div>
   );
 }
@@ -1200,6 +1246,10 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
   // Auswahl + Steuerkreuz (wie am Gameboy): angetippten Spieler mit Pfeilen steuern.
   const [selTok,setSelTok]=useState(null);   // {side:"own"|"opp", id}
   const [padOn,setPadOn]=useState(!!eventCtx);
+  // Aufnehmen: Spieler einfach ziehen -> der Weg wird als Lauf-/Dribbelpfeil
+  // aufgezeichnet und laeuft beim Abspielen (Standard AN im Einfach-Modus).
+  const [recOn,setRecOn]=useState(()=>{ if(playerCtx) return true; try{ return localStorage.getItem("va_tb_kid")==="1"; }catch{ return false; } });
+  const dragStartRef=useRef(null);           // {x,y,id,side} beim Drag-Beginn
   const padHold=useRef(null);
   const padStop=()=>{ if(padHold.current){ clearInterval(padHold.current); padHold.current=null; } };
   useEffect(()=>()=>padStop(),[]);
@@ -1260,10 +1310,15 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
     const runs=seq.filter(a=>a.type==="run"||a.type==="dribble");
     const thr=F.r*3.6; const usedRun=new Set();
     const withRun=(list)=>list.map(tk=>{
-      let best=null,bd=thr,bi=-1;
-      runs.forEach((a,idx)=>{ if(usedRun.has(idx))return; const d=Math.hypot(a.x1-tk.x,a.y1-tk.y); if(d<bd){bd=d;best=a;bi=idx;} });
+      let best=null,bi=-1;
+      // Aufgenommene Wege (per Ziehen erzeugt) sind fest an ihren Spieler gebunden –
+      // er steht schon am Ziel und laeuft in der Animation vom Startpunkt los.
+      const rec=runs.findIndex((a,idx)=>!usedRun.has(idx)&&a.tokId===tk.id);
+      if(rec>=0){ best=runs[rec]; bi=rec; }
+      else { let bd=thr; runs.forEach((a,idx)=>{ if(usedRun.has(idx)||a.tokId)return; const d=Math.hypot(a.x1-tk.x,a.y1-tk.y); if(d<bd){bd=d;best=a;bi=idx;} }); }
       if(bi>=0) usedRun.add(bi);
-      return {...tk,sx:tk.x,sy:tk.y,run:best};
+      const snap=best&&best.tokId===tk.id;
+      return {...tk,sx:snap?best.x1:tk.x,sy:snap?best.y1:tk.y,run:best};
     });
     const ownA=withRun(tokens);
     const oppA=showOpp?withRun(oppTokens):[];
@@ -1431,8 +1486,23 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
     }
     setDraw({type:mode,x1,y1,x2:p.x,y2:p.y,...(mode==="run"?{pace:runPace}:{}),...(mode==="pass"?{kind:passKind}:{})}); };
   const toggleMark=(setT,id)=>{ resetAnim(); setT(ts=>ts.map(x=>x.id===id?{...x,marked:!x.marked}:x)); };
-  const onMove=(e)=>{ const p=toSvg(e); if(!p) return; if(mode==="move"){ if(dragRef.current==null) return; if(dragRef.current==="ball"){ const R=F.r*0.6; setBallPos({x:Math.max(R,Math.min(F.vw-R,p.x)),y:Math.max(R,Math.min(F.vh-R,p.y))}); return; } const R=F.r; const setT=dragSetRef.current==="opp"?setOppTokens:setTokens; setT(ts=>ts.map(tk=>tk.id===dragRef.current?{...tk,x:Math.max(R,Math.min(F.vw-R,p.x)),y:Math.max(R,Math.min(F.vh-R,p.y))}:tk)); } else { if(!drawRef.current) return; setDraw(d=>d?{...d,x2:p.x,y2:p.y}:d); } };
-  const endDrag=()=>{ if(mode==="move"){ dragRef.current=null; return; } const d=drawRef.current; if(d){ const len=Math.hypot(d.x2-d.x1,d.y2-d.y1); if(len>F.vw*0.04) setArrows(a=>[...a,{...d,par:false,id:"ar"+Date.now()+Math.round(Math.random()*999)}]); } setDraw(null); };
+  const onMove=(e)=>{ const p=toSvg(e); if(!p) return; if(mode==="move"){ if(dragRef.current==null) return; if(dragRef.current==="ball"){ const R=F.r*0.6; setBallPos({x:Math.max(R,Math.min(F.vw-R,p.x)),y:Math.max(R,Math.min(F.vh-R,p.y))}); return; } const R=F.r; const setT=dragSetRef.current==="opp"?setOppTokens:setTokens; setT(ts=>ts.map(tk=>tk.id===dragRef.current?{...tk,x:Math.max(R,Math.min(F.vw-R,p.x)),y:Math.max(R,Math.min(F.vh-R,p.y))}:tk));
+      if(dragStartRef.current?.hadBall){ const R2=F.r*0.6; setBallPos({x:Math.max(R2,Math.min(F.vw-R2,p.x+F.r*0.7)),y:Math.max(R2,Math.min(F.vh-R2,p.y+F.r*0.6))}); } } else { if(!drawRef.current) return; setDraw(d=>d?{...d,x2:p.x,y2:p.y}:d); } };
+  const endDrag=()=>{
+    if(mode==="move"){
+      const st=dragStartRef.current; dragRef.current=null; dragStartRef.current=null;
+      // Aufnehmen: gezogener Weg wird zum Lauf (bzw. Dribbling, wenn der Ball am Fuss war)
+      if(recOn&&!scnRef.current&&st){
+        const tk=(st.side==="opp"?oppTokens:tokens).find(x=>x.id===st.id);
+        if(tk&&Math.hypot(tk.x-st.x,tk.y-st.y)>F.vw*0.07){
+          const hadBall=!!st.hadBall;
+          setArrows(a=>[...a,{id:"ar"+Date.now()+Math.round(Math.random()*999),type:hadBall?"dribble":"run",par:false,tokId:tk.id,x1:st.x,y1:st.y,x2:tk.x,y2:tk.y,...(hadBall?{}:{pace:runPace})}]);
+          if(hadBall) setBallPos({x:tk.x,y:tk.y});
+        }
+      }
+      return;
+    }
+    const d=drawRef.current; if(d){ const len=Math.hypot(d.x2-d.x1,d.y2-d.y1); if(len>F.vw*0.04) setArrows(a=>[...a,{...d,par:false,id:"ar"+Date.now()+Math.round(Math.random()*999)}]); } setDraw(null); };
 
   // ---- Ablauf-Liste: Beschriftung, Loeschen, Umsortieren, Parallel-Schalter ----
   const nearTok=(x,y)=>{ let best=null,bd=1e9;
@@ -1441,7 +1511,8 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
     return bd<F.r*3.5?best:null;
   };
   const stepLabel=(a)=>{
-    const s=nearTok(a.x1,a.y1), z=nearTok(a.x2,a.y2);
+    const byId=(id)=>{ const t2=tokens.find(x=>x.id===id); if(t2) return {...t2,side:"own"}; const o=oppTokens.find(x=>x.id===id); return o?{...o,side:"opp"}:null; };
+    const s=(a.tokId&&byId(a.tokId))||nearTok(a.x1,a.y1), z=nearTok(a.x2,a.y2);
     const nm=tk=>tk?`${tk.side==="opp"?"Gegner ":""}Nr. ${tk.n}`:"";
     if(a.type==="run") return `🏃 Lauf ${nm(s)} ${a.pace===3?"· Sprint":a.pace===1?"· locker":""}`.replace(/\s+/g," ").trim();
     if(a.type==="dribble") return `⚽💨 Dribbling ${nm(s)}`.trim();
@@ -1531,6 +1602,18 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
     setArrows(arrs); setAiHint(`Fertiger Spielzug mit ${added.length} Schritten – tippe auf ▶ Abspielen!`);
   };
 
+  // Ball anfassen: liegt er einem Spieler am Fuss und Aufnehmen ist an, wird der
+  // SPIELER gezogen (Ball laeuft mit) -> Ziehen ergibt ein Dribbling statt Ball-Klau.
+  const grabBall=()=>{ resetAnim();
+    if(recOn&&ballPos){
+      let best=null,bd=F.r*1.9,side=null;
+      tokens.forEach(tk=>{ const d=Math.hypot(tk.x-ballPos.x,tk.y-ballPos.y); if(d<bd){bd=d;best=tk;side="own";} });
+      if(showOpp) oppTokens.forEach(tk=>{ const d=Math.hypot(tk.x-ballPos.x,tk.y-ballPos.y); if(d<bd){bd=d;best=tk;side="opp";} });
+      if(best){ setSelTok({side,id:best.id}); dragStartRef.current={x:best.x,y:best.y,id:best.id,side,hadBall:true}; dragRef.current=best.id; dragSetRef.current=side; return; }
+    }
+    dragStartRef.current=null; dragRef.current="ball";
+  };
+
   // Steuerkreuz: gewaehlten Spieler schrittweise bewegen (Halten = Dauerlauf)
   const padMove=(dx,dy)=>{ const s=selTok; if(!s) return;
     const setT=s.side==="opp"?setOppTokens:setTokens; const st=F.vw*0.035;
@@ -1541,6 +1624,14 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
     const tk=(s.side==="opp"?oppTokens:tokens).find(x=>x.id===s.id); return tk?{...tk,side:s.side}:null; };
 
   // ---- Szenario-Spiel: Situationen lesen, reagieren, Verstaerkung rufen ----
+  // Schwierigkeit: Zeitlimit, Trefferzonen-Groesse und Gegner-Druck skalieren mit.
+  const SCN_DIFF={
+    easy:  {e:"🐣",l:"Leicht",time:20000,zone:1.5, shift:0.7},
+    normal:{e:"⚽",l:"Normal",time:12000,zone:1,   shift:1},
+    pro:   {e:"🏆",l:"Profi", time:8000, zone:0.75,shift:1.4},
+  };
+  const [scnDiff,setScnDiff]=useState(()=>{ try{ return SCN_DIFF[localStorage.getItem("va_tb_diff")]?localStorage.getItem("va_tb_diff"):"normal"; }catch{ return "normal"; } });
+  const setDiff=(d)=>{ setScnDiff(d); try{ localStorage.setItem("va_tb_diff",d); }catch{} };
   const [scn,setScn]=useState(null);
   const scnRef=useRef(null); useEffect(()=>{ scnRef.current=scn; },[scn]);
   const tokensRef=useRef(tokens); useEffect(()=>{ tokensRef.current=tokens; },[tokens]);
@@ -1624,9 +1715,10 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
       }
     }
     setBallPos({x:bx,y:by});
-    setOppTokens(ts=>ts.map(tk=>{ if(tk.n===1) return tk; const dx=bx-tk.x,dy=by-tk.y,d=Math.hypot(dx,dy)||1; const sh=Math.min(F.vw*0.06,d*0.18); return {...tk,x:cX(tk.x+dx/d*sh),y:cY(tk.y+dy/d*sh)}; }));
+    const D=SCN_DIFF[prev?.diff||scnDiff]||SCN_DIFF.normal;
+    setOppTokens(ts=>ts.map(tk=>{ if(tk.n===1) return tk; const dx=bx-tk.x,dy=by-tk.y,d=Math.hypot(dx,dy)||1; const sh=Math.min(F.vw*0.06,d*0.18)*D.shift; return {...tk,x:cX(tk.x+dx/d*sh),y:cY(tk.y+dy/d*sh)}; }));
     if(actor){ setTokens(ts=>ts.map(t2=>({...t2,marked:t2.id===actor.id}))); setSelTok({side:"own",id:actor.id}); }
-    setScn({sel,round,score:prev?.score||0,history:prev?.history||[],phase:"task",type,actorId:actor?.id||null,target,pw,text,deadline:Date.now()+12000,feedback:null});
+    setScn({sel,diff:prev?.diff||scnDiff,round,score:prev?.score||0,history:prev?.history||[],phase:"task",type,actorId:actor?.id||null,target,pw,text,deadline:Date.now()+D.time,feedback:null});
   };
   const scnStart=(sel)=>{ setShowOpp(true); scnArrowsBk.current=arrows; scnNext(null,sel); };
   // Pass-Entscheidung: Antwort waehlen, dann wird das Ergebnis vorgespielt.
@@ -1650,14 +1742,15 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
       {choice:kind});
     setTimeout(()=>playAnimRef.current&&playAnimRef.current(),120);
   };
-  // Erfolg pruefen bei jeder Bewegung (Drag oder Steuerkreuz)
+  // Erfolg pruefen bei jeder Bewegung (Drag oder Steuerkreuz); Trefferzone je Schwierigkeit
   useEffect(()=>{ const s=scn; if(!s||s.phase!=="task") return;
+    const Z=(SCN_DIFF[s.diff]||SCN_DIFF.normal).zone;
     if(s.type==="cover"){ const a=tokens.find(t2=>t2.id===s.actorId), g=oppTokens.find(o=>o.id===s.target?.id);
-      if(a&&g&&Math.hypot(a.x-g.x,a.y-g.y)<F.r*2.6) scnResolve(true,`Super! 🔴 Nr. ${g.n} ist zugestellt – kein freier Passweg mehr. ✅`);
+      if(a&&g&&Math.hypot(a.x-g.x,a.y-g.y)<F.r*2.6*Z) scnResolve(true,`Super! 🔴 Nr. ${g.n} ist zugestellt – kein freier Passweg mehr. ✅`);
     } else if(s.type==="space"){ const a=tokens.find(t2=>t2.id===s.actorId);
-      if(a&&s.target&&Math.hypot(a.x-s.target.x,a.y-s.target.y)<F.r*2.2) scnResolve(true,"Stark! Frei angeboten – jetzt bist du anspielbar. ✅");
+      if(a&&s.target&&Math.hypot(a.x-s.target.x,a.y-s.target.y)<F.r*2.2*Z) scnResolve(true,"Stark! Frei angeboten – jetzt bist du anspielbar. ✅");
     } else if(s.type==="block"){ const a=tokens.find(t2=>t2.id===s.actorId);
-      if(a&&s.target&&Math.hypot(a.x-s.target.x,a.y-s.target.y)<F.r*2.2) scnResolve(true,"Genau richtig! Schusslinie zu – so kommt der Ball nicht durch. ✅");
+      if(a&&s.target&&Math.hypot(a.x-s.target.x,a.y-s.target.y)<F.r*2.2*Z) scnResolve(true,"Genau richtig! Schusslinie zu – so kommt der Ball nicht durch. ✅");
     }
   },[tokens,oppTokens]);
   // Zeitlimit (nur fuer Bewegungs-Aufgaben; Entscheidungs-Fragen darf man in Ruhe ueberlegen)
@@ -1712,8 +1805,8 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
     setTokens(ts=>ts.map(t2=>({...t2,marked:false})));
     resetAnim(); setArrows(scnArrowsBk.current||[]); scnArrowsBk.current=null;
     if(!s||!s.history.length) return;
-    const rec={id:uid(),cid:cl.id,pid:playerCtx?.pid||null,name:playerCtx?.name||"Trainer",ts:new Date().toISOString(),score:s.score,rounds:s.history.length,decisions:s.history};
-    save({...data,tacticSessions:[...(data.tacticSessions||[]),rec]});
+    const rec={id:uid(),cid:cl.id,pid:playerCtx?.pid||null,name:playerCtx?.name||"Trainer",ts:new Date().toISOString(),score:s.score,rounds:s.history.length,sel:s.sel,diff:s.diff,decisions:s.history};
+    save({...data,tacticSessions:[...(data.tacticSessions||[]),rec].slice(-100)});
     fire&&fire(`Szenario beendet: ${s.score} ⭐ – Ergebnis gespeichert`);
   };
 
@@ -1807,6 +1900,7 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
           {on:!!ballPos,click:toggleBall,e:"⚽",l:"Ball",c:"#0f172a"},
           {on:liveOn,click:()=>setLiveOn(v=>!v),e:"💓",l:"Leben",c:"#16a34a"},
           {on:padOn,click:()=>setPadOn(v=>!v),e:"🎮",l:"Steuerkreuz",c:"#7c3aed"},
+          {on:recOn,click:()=>setRecOn(v=>!v),e:"🎥",l:"Aufnehmen",c:"#db2777"},
         ].map(o=>(
           <button key={o.l} onClick={o.click}
             style={{flex:1,minWidth:90,padding:kidMode?"11px 8px":"9px 8px",borderRadius:12,border:`2px solid ${o.on?o.c:"#e2e8f0"}`,background:o.on?o.c+"14":"#fff",color:o.on?o.c:"#64748b",fontWeight:800,fontSize:kidMode?14.5:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>
@@ -1910,13 +2004,13 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
               strokeDasharray={draw.type==="pass"?`${F.vw*0.03} ${F.vw*0.022}`:draw.type==="dribble"?`${F.vw*0.008} ${F.vw*0.016}`:undefined}/>
           )}
           {scn&&scn.phase==="task"&&scn.type==="space"&&scn.target&&(
-            <circle cx={scn.target.x} cy={scn.target.y} r={F.r*2.2} fill="#facc15" opacity={0.3} stroke="#facc15" strokeWidth={F.r*0.15} style={{pointerEvents:"none"}}>
+            <circle cx={scn.target.x} cy={scn.target.y} r={F.r*2.2*((SCN_DIFF[scn.diff]||SCN_DIFF.normal).zone)} fill="#facc15" opacity={0.3} stroke="#facc15" strokeWidth={F.r*0.15} style={{pointerEvents:"none"}}>
               <animate attributeName="opacity" values="0.15;0.4;0.15" dur="1.4s" repeatCount="indefinite"/>
             </circle>
           )}
           {scn&&scn.phase==="task"&&scn.type==="block"&&scn.target&&(<>
             {ballPos&&<line x1={ballPos.x} y1={ballPos.y} x2={F.vw/2} y2={F.vh*0.97} stroke="#f97316" strokeWidth={F.r*0.1} strokeDasharray={`${F.r*0.4} ${F.r*0.4}`} opacity={0.65} style={{pointerEvents:"none"}}/>}
-            <circle cx={scn.target.x} cy={scn.target.y} r={F.r*2.1} fill="#f97316" opacity={0.3} stroke="#f97316" strokeWidth={F.r*0.15} style={{pointerEvents:"none"}}>
+            <circle cx={scn.target.x} cy={scn.target.y} r={F.r*2.1*((SCN_DIFF[scn.diff]||SCN_DIFF.normal).zone)} fill="#f97316" opacity={0.3} stroke="#f97316" strokeWidth={F.r*0.15} style={{pointerEvents:"none"}}>
               <animate attributeName="opacity" values="0.15;0.42;0.15" dur="1.4s" repeatCount="indefinite"/>
             </circle>
           </>)}
@@ -1931,9 +2025,17 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
           {showOpp&&(animOpp||oppTokens).map(tk=>{ const lo=liveOff(tk,"opp"); const X=tk.x+(lo?.dx||0), Y=tk.y+(lo?.dy||0);
             return (
             <g key={tk.id} opacity={focusId&&focusId!==tk.id?0.3:1} style={{cursor:mode==="move"?"grab":(mode==="mark"||mode==="focus")?"pointer":"crosshair",transition:"opacity .25s"}}
-               onPointerDown={(e)=>{ if(mode==="focus"){ e.preventDefault(); e.stopPropagation(); setFocusId(f=>f===tk.id?null:tk.id); return;} if(mode==="mark"){ e.preventDefault(); toggleMark(setOppTokens,tk.id); return;} if(mode!=="move") return; e.preventDefault(); resetAnim(); setSelTok({side:"opp",id:tk.id}); dragRef.current=tk.id; dragSetRef.current="opp";}}
-               onTouchStart={(e)=>{ if(mode==="focus"||mode==="mark"){ e.stopPropagation(); return; } /* Umschalten macht schon onPointerDown – sonst doppelt es auf iOS */ if(mode!=="move") return; resetAnim(); setSelTok({side:"opp",id:tk.id}); dragRef.current=tk.id; dragSetRef.current="opp";}}>
-              {selTok?.id===tk.id&&<circle cx={X} cy={Y} r={F.r*1.55} fill="none" stroke="#38bdf8" strokeWidth={F.r*0.2} strokeDasharray={`${F.r*0.55} ${F.r*0.3}`}/>}
+               onPointerDown={(e)=>{ if(mode==="focus"){ e.preventDefault(); e.stopPropagation(); setFocusId(f=>f===tk.id?null:tk.id); return;} if(mode==="mark"){ e.preventDefault(); toggleMark(setOppTokens,tk.id); return;} if(mode!=="move") return; e.preventDefault(); resetAnim(); setSelTok({side:"opp",id:tk.id}); dragStartRef.current={x:tk.x,y:tk.y,id:tk.id,side:"opp",hadBall:!!ballPos&&Math.hypot(tk.x-ballPos.x,tk.y-ballPos.y)<F.r*1.9}; dragRef.current=tk.id; dragSetRef.current="opp";}}
+               onTouchStart={(e)=>{ if(mode==="focus"||mode==="mark"){ e.stopPropagation(); return; } /* Umschalten macht schon onPointerDown – sonst doppelt es auf iOS */ if(mode!=="move") return; resetAnim(); setSelTok({side:"opp",id:tk.id}); dragStartRef.current={x:tk.x,y:tk.y,id:tk.id,side:"opp",hadBall:!!ballPos&&Math.hypot(tk.x-ballPos.x,tk.y-ballPos.y)<F.r*1.9}; dragRef.current=tk.id; dragSetRef.current="opp";}}>
+              {selTok?.id===tk.id&&<>
+                <circle cx={X} cy={Y} r={F.r*1.7} fill="#22d3ee" opacity={0.28}>
+                  <animate attributeName="r" values={`${F.r*1.45};${F.r*1.95};${F.r*1.45}`} dur="1s" repeatCount="indefinite"/>
+                </circle>
+                <circle cx={X} cy={Y} r={F.r*1.42} fill="none" stroke="#fff" strokeWidth={F.r*0.3}/>
+                <circle cx={X} cy={Y} r={F.r*1.42} fill="none" stroke="#0284c7" strokeWidth={F.r*0.2} strokeDasharray={`${F.r*0.6} ${F.r*0.35}`}>
+                  <animate attributeName="stroke-dashoffset" from="0" to={F.r*0.95} dur="0.8s" repeatCount="indefinite"/>
+                </circle>
+              </>}
               {focusId===tk.id&&<circle cx={X} cy={Y} r={F.r*1.9} fill="none" stroke="#fff" strokeWidth={F.r*0.18} opacity={0.9}>
                 <animate attributeName="r" values={`${F.r*1.6};${F.r*2.2};${F.r*1.6}`} dur="1.6s" repeatCount="indefinite"/>
               </circle>}
@@ -1947,9 +2049,17 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
           {(animOwn||tokens).map(tk=>{ const lo=liveOff(tk,"own"); const X=tk.x+(lo?.dx||0), Y=tk.y+(lo?.dy||0);
             return (
             <g key={tk.id} opacity={focusId&&focusId!==tk.id?0.3:1} style={{cursor:mode==="move"?"grab":(mode==="mark"||mode==="focus")?"pointer":"crosshair",transition:"opacity .25s"}}
-               onPointerDown={(e)=>{ if(mode==="focus"){ e.preventDefault(); e.stopPropagation(); setFocusId(f=>f===tk.id?null:tk.id); return;} if(mode==="mark"){ e.preventDefault(); toggleMark(setTokens,tk.id); return;} if(mode!=="move") return; e.preventDefault(); resetAnim(); setSelTok({side:"own",id:tk.id}); dragRef.current=tk.id; dragSetRef.current="own";}}
-               onTouchStart={(e)=>{ if(mode==="focus"||mode==="mark"){ e.stopPropagation(); return; } /* Umschalten macht schon onPointerDown – sonst doppelt es auf iOS */ if(mode!=="move") return; resetAnim(); setSelTok({side:"own",id:tk.id}); dragRef.current=tk.id; dragSetRef.current="own";}}>
-              {selTok?.id===tk.id&&<circle cx={X} cy={Y} r={F.r*1.55} fill="none" stroke="#38bdf8" strokeWidth={F.r*0.2} strokeDasharray={`${F.r*0.55} ${F.r*0.3}`}/>}
+               onPointerDown={(e)=>{ if(mode==="focus"){ e.preventDefault(); e.stopPropagation(); setFocusId(f=>f===tk.id?null:tk.id); return;} if(mode==="mark"){ e.preventDefault(); toggleMark(setTokens,tk.id); return;} if(mode!=="move") return; e.preventDefault(); resetAnim(); setSelTok({side:"own",id:tk.id}); dragStartRef.current={x:tk.x,y:tk.y,id:tk.id,side:"own",hadBall:!!ballPos&&Math.hypot(tk.x-ballPos.x,tk.y-ballPos.y)<F.r*1.9}; dragRef.current=tk.id; dragSetRef.current="own";}}
+               onTouchStart={(e)=>{ if(mode==="focus"||mode==="mark"){ e.stopPropagation(); return; } /* Umschalten macht schon onPointerDown – sonst doppelt es auf iOS */ if(mode!=="move") return; resetAnim(); setSelTok({side:"own",id:tk.id}); dragStartRef.current={x:tk.x,y:tk.y,id:tk.id,side:"own",hadBall:!!ballPos&&Math.hypot(tk.x-ballPos.x,tk.y-ballPos.y)<F.r*1.9}; dragRef.current=tk.id; dragSetRef.current="own";}}>
+              {selTok?.id===tk.id&&<>
+                <circle cx={X} cy={Y} r={F.r*1.7} fill="#22d3ee" opacity={0.28}>
+                  <animate attributeName="r" values={`${F.r*1.45};${F.r*1.95};${F.r*1.45}`} dur="1s" repeatCount="indefinite"/>
+                </circle>
+                <circle cx={X} cy={Y} r={F.r*1.42} fill="none" stroke="#fff" strokeWidth={F.r*0.3}/>
+                <circle cx={X} cy={Y} r={F.r*1.42} fill="none" stroke="#0284c7" strokeWidth={F.r*0.2} strokeDasharray={`${F.r*0.6} ${F.r*0.35}`}>
+                  <animate attributeName="stroke-dashoffset" from="0" to={F.r*0.95} dur="0.8s" repeatCount="indefinite"/>
+                </circle>
+              </>}
               {focusId===tk.id&&<circle cx={X} cy={Y} r={F.r*1.9} fill="none" stroke="#fff" strokeWidth={F.r*0.18} opacity={0.9}>
                 <animate attributeName="r" values={`${F.r*1.6};${F.r*2.2};${F.r*1.6}`} dur="1.6s" repeatCount="indefinite"/>
               </circle>}
@@ -1967,8 +2077,8 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
             if(showOpp) oppTokens.forEach(tk=>{ const d=Math.hypot(tk.x-ballPos.x,tk.y-ballPos.y); if(d<bd){bd=d;ownerCol="#dc2626";} });
             return (
             <g style={{cursor:mode==="move"?"grab":"crosshair"}}
-               onPointerDown={(e)=>{ if(mode!=="move") return; e.preventDefault(); resetAnim(); dragRef.current="ball"; }}
-               onTouchStart={(e)=>{ if(mode!=="move") return; resetAnim(); dragRef.current="ball"; }}>
+               onPointerDown={(e)=>{ if(mode!=="move") return; e.preventDefault(); grabBall(); }}
+               onTouchStart={(e)=>{ if(mode!=="move") return; if(dragRef.current==null) grabBall(); }}>
               {ownerCol&&<circle cx={ballPos.x} cy={ballPos.y} r={F.r*0.9} fill="none" stroke={ownerCol} strokeWidth={F.r*0.13} opacity={0.85}/>}
               <circle cx={ballPos.x} cy={ballPos.y} r={F.r} fill="transparent"/>
               <circle cx={ballPos.x} cy={ballPos.y} r={F.r*0.55} fill="#fff" stroke="#0f172a" strokeWidth={F.r*0.16}/>
@@ -2081,12 +2191,19 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
       {/* Szenario-Spiel: Situationen erkennen, reagieren, Verstaerkung rufen – mit ehrlicher Analyse */}
       <div style={{background:"linear-gradient(135deg,#fff7ed,#fefce8)",border:"1.5px solid #fed7aa",borderRadius:13,padding:"12px 13px"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginBottom:scn?9:7}}>
-          <span style={{fontSize:11,fontWeight:800,color:"#c2410c",letterSpacing:.4}}>🎲 SZENARIO{scn?` · ${scn.sel==="att"?"⚔️ ANGRIFF":"🛡️ ABWEHR"} · RUNDE ${scn.round} · ${scn.score} ⭐`:"-SPIEL"}</span>
+          <span style={{fontSize:11,fontWeight:800,color:"#c2410c",letterSpacing:.4}}>🎲 SZENARIO{scn?` · ${scn.sel==="att"?"⚔️ ANGRIFF":"🛡️ ABWEHR"} ${(SCN_DIFF[scn.diff]||SCN_DIFF.normal).e} · RUNDE ${scn.round} · ${scn.score} ⭐`:"-SPIEL"}</span>
           {scn&&<button onClick={scnEnd}
             style={{padding:"6px 12px",borderRadius:9,border:"1.5px solid #fed7aa",background:"#fff",color:"#c2410c",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>🏁 Fertig</button>}
         </div>
         {!scn&&<>
           <div style={{fontSize:kidMode?13.5:12.5,color:"#7c2d12",lineHeight:1.55,marginBottom:10}}>Echte Spiel-Situationen zum Lösen – mit ehrlicher Auswertung. <b>Angriff:</b> richtig passen (Fuß oder steil?), freilaufen, nachrücken. <b>Abwehr:</b> decken, Schusslinie zustellen, Verstärkung rufen. Aus jeder Lösung entsteht die nächste Situation!</div>
+          <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:9,flexWrap:"wrap"}}>
+            <span style={{fontSize:11,fontWeight:800,color:"#c2410c"}}>STUFE</span>
+            {Object.entries(SCN_DIFF).map(([k,d])=>(
+              <button key={k} onClick={()=>setDiff(k)} title={k==="easy"?"20 s Zeit, große Zielkreise":k==="pro"?"8 s Zeit, kleine Zielkreise, Gegner enger":"12 s Zeit"}
+                style={{padding:kidMode?"8px 12px":"6px 10px",borderRadius:9,border:`1.5px solid ${scnDiff===k?"#ea580c":"#fed7aa"}`,background:scnDiff===k?"#ea580c18":"#fff",color:scnDiff===k?"#9a3412":"#b45309",fontWeight:800,fontSize:kidMode?13:12,cursor:"pointer",fontFamily:"inherit"}}>{d.e} {d.l}</button>
+            ))}
+          </div>
           <div style={{display:"flex",gap:8}}>
             <button onClick={()=>scnStart("att")}
               style={{flex:1,padding:kidMode?"14px 8px":"11px 8px",borderRadius:11,border:"none",background:"#ea580c",color:"#fff",fontWeight:900,fontSize:kidMode?15.5:13.5,cursor:"pointer",fontFamily:"inherit"}}>⚔️ Angriff</button>
@@ -2200,7 +2317,7 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
             {sessions.map(s=>(
               <div key={s.id} style={{display:"flex",alignItems:"center",gap:8,background:"#f8fafc",borderRadius:10,padding:"8px 11px",border:"1px solid #f1f5f9"}}>
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontWeight:700,fontSize:13,color:"#0f172a"}}>{s.name} · {s.score}/{s.rounds} ⭐</div>
+                  <div style={{fontWeight:700,fontSize:13,color:"#0f172a"}}>{s.name} · {s.score}/{s.rounds} ⭐ {s.sel==="att"?"⚔️":s.sel==="def"?"🛡️":""}{s.diff==="easy"?"🐣":s.diff==="pro"?"🏆":""}</div>
                   <div style={{fontSize:11,color:"#64748b"}}>{fmtD(s.ts)}{rSum(s.decisions)}</div>
                 </div>
                 <button onClick={()=>delSession(s.id)} style={{width:26,height:26,borderRadius:8,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:800,cursor:"pointer",flexShrink:0}}>✕</button>
