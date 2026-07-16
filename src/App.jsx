@@ -12,7 +12,7 @@ import { LANG_SWITCHER_ENABLED, LangSwitcher, FloatingLangSwitcher, getFontScale
 import { DFB_FORMATS, dfbFormatForCat, CAT_YEARS, catYearsStr, CAT_ORDER, eligibleCats, playerFitType, playerFitsTeam, fitLabel } from "./dfb.js";
 import { CAT_RANK, defaultSoll, SOLL_PLAYERS_BY_CAT, _votedYes, isPausedP, drillScores, drillVoteOf, playerNoShowEvents, NO_SHOW_HINT_THRESHOLD, addAuditLog, suggestDrillsForSkill, generateTrainingPlan, SKILLS, SKILL_AXES, skillAxesFor, sollFor, trainingFocusFor, buildSession, playerArchetype, AXIS_TO_FOCUS, staffNeed } from "./domain.js";
 import { TRAINING_TEMPLATES, DRILL_LIB } from "./drills.js";
-import { DFBFormatsCard, TacticField, StyleToggle, DrillDiagram, DrillLibrary, TacticBoard, TrainingsLibrary, TrainingPlanner, TrainerGuide, TrainingPlanTab, DrillAutoAnim, DrillInfoModal, CAT_TO_AGEKEY, DRILL_FOCUS, TACTIC_TEMPLATES, drillsForPhase, eventDurationMin } from "./training.jsx";
+import { DFBFormatsCard, TacticField, StyleToggle, DrillDiagram, DrillLibrary, TacticBoard, TrainingsLibrary, TrainingPlanner, TrainerGuide, TrainingPlanTab, DrillAutoAnim, DrillInfoModal, CAT_TO_AGEKEY, DRILL_FOCUS, TACTIC_TEMPLATES, drillsForPhase, eventDurationMin, WeeklySoloCard, WeeklyQuizCard } from "./training.jsx";
 
 // Demo-Daten (nutzen DEMO_CLUBS/tournPubSnapshot weiter unten; Funktions-Hoisting)
 function seed() {
@@ -18698,6 +18698,16 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const myProfile=(data.playerProfiles||[]).find(p=>p.cid===cid && (p.name||"").toLowerCase()===String(user).toLowerCase() && (p.mainTid===tid || (p.optTids||[]).includes(tid)))
     || (data.playerProfiles||[]).find(p=>p.cid===cid && (p.name||"").toLowerCase()===String(user).toLowerCase());
   const pubOk=!!myProfile?.pubOk;
+  // Eltern-Freigabe: Wochen-Übungen fuers Alleine-Trainieren anzeigen (Standard AUS).
+  const soloOk=!!myProfile?.soloOk;
+  const toggleSoloOk=()=>{
+    if(!myProfile){ fire(tr("uhProfileNotFound")); return; }
+    onSave({...data,playerProfiles:(data.playerProfiles||[]).map(p=>p.id===myProfile.id?{...p,soloOk:!soloOk}:p)});
+    fire(!soloOk?"Wochen-Übungen freigegeben ✓":"Wochen-Übungen ausgeblendet");
+  };
+  // Vom Trainer befristet freigeschaltet: Taktiktafel & Szenario-Spiel fuer dieses Kind.
+  const taktikUnlock=myProfile&&(data.tacticUnlocks||[]).find(u=>u.cid===cid&&u.pid===myProfile.id&&new Date(u.until)>new Date());
+  const [showTaktik,setShowTaktik]=useState(false);
 
   // Login-Gate: Trainer-Nachrichten (Pflicht-Lesebestätigung) + Wiederholungs-No-Show-Hinweis.
   const uLow=String(user).toLowerCase();
@@ -18885,6 +18895,16 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
                 <div style={{position:"absolute",top:3,left:pubOk?22:3,width:20,height:20,borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.25)"}}/>
               </div>
             </div>
+            {/* Eltern-Freigabe: Wochen-Übungen zum Alleine-Trainieren */}
+            <div onClick={toggleSoloOk} style={{display:"flex",alignItems:"center",gap:12,background:soloOk?"#f0fdf4":"#f8fafc",border:`1.5px solid ${soloOk?"#bbf7d0":"#e2e8f0"}`,borderRadius:12,padding:"12px 14px",marginBottom:14,cursor:"pointer"}}>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:13,fontWeight:800,color:soloOk?"#15803d":"#334155"}}>🏠 Wochen-Übungen für Zuhause</div>
+                <div style={{fontSize:11,color:"#64748b",marginTop:2,lineHeight:1.45}}>Zeigt <strong>{user}</strong> jede Woche 3 altersgerechte Übungen zum Alleine-Trainieren. Nur sichtbar, wenn ihr es hier einschaltet.</div>
+              </div>
+              <div style={{width:46,height:26,borderRadius:99,background:soloOk?"#16a34a":"#cbd5e1",position:"relative",flexShrink:0,transition:"background .2s"}}>
+                <div style={{position:"absolute",top:3,left:soloOk?22:3,width:20,height:20,borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.25)"}}/>
+              </div>
+            </div>
             <div style={{display:"flex",flexDirection:"column",gap:9}}>
               {myProfile&&(
                 <div style={{background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"12px 14px",marginBottom:4}}>
@@ -18948,6 +18968,18 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         </div>
       )}
 
+      {/* Vom Trainer freigeschaltete Taktiktafel (befristet, im Kinder-Modus) */}
+      {showTaktik&&myProfile&&taktikUnlock&&(
+        <div style={{position:"fixed",inset:0,zIndex:1500,background:"#f0f4f8",overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
+          <div style={{position:"sticky",top:0,zIndex:10,background:t.p,padding:"12px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
+            <span style={{color:"#fff",fontWeight:900,fontSize:16}}>⚽ Deine Taktiktafel</span>
+            <button onClick={()=>setShowTaktik(false)} style={{width:36,height:36,borderRadius:10,border:"none",background:"rgba(255,255,255,.18)",color:"#fff",fontWeight:900,fontSize:16,cursor:"pointer"}}>✕</button>
+          </div>
+          <div style={{maxWidth:520,margin:"0 auto",padding:"14px 14px 40px"}}>
+            <TacticBoard data={data} myTids={[tid]} cl={myClub} save={onSave} fire={fire} playerCtx={{pid:myProfile.id,name:myProfile.name}}/>
+          </div>
+        </div>
+      )}
       {tab==="chat" && (
         <div style={{maxWidth:isDesktop?1080:760,margin:"0 auto",padding:isDesktop?"20px 24px":"12px 12px"}}>
           <ChatTab data={data} cid={cid} myTids={[tid]} session={{...session,name:user}} save={onSave} fire={fire} cl={myClub} teamOnly={true}/>
@@ -18963,6 +18995,17 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         <AreaIntro id="parent_home" cl={cl}/>
         <AffiliateBanner trigger="events" slim style={{marginBottom:12}}/>
         {null /* Eltern-Banner unten, siehe parentsBottom */}
+        {taktikUnlock&&(
+          <button onClick={()=>setShowTaktik(true)}
+            style={{width:"100%",display:"flex",alignItems:"center",gap:12,padding:"14px 16px",borderRadius:16,border:"none",cursor:"pointer",fontFamily:"inherit",textAlign:"left",marginBottom:14,background:`linear-gradient(135deg,${t.s} 0%,${t.p} 100%)`,boxShadow:"0 4px 16px rgba(0,0,0,.14)"}}>
+            <span style={{fontSize:28}}>⚽</span>
+            <span style={{flex:1,minWidth:0}}>
+              <span style={{display:"block",color:"#fff",fontWeight:900,fontSize:15.5}}>Taktik & Szenarien – für dich freigeschaltet!</span>
+              <span style={{display:"block",color:"rgba(255,255,255,.85)",fontSize:12,marginTop:2}}>Vom Trainer bis {new Date(taktikUnlock.until).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"})} · Spiele Situationen durch und sammle ⭐</span>
+            </span>
+            <span style={{color:"#fff",fontSize:20}}>›</span>
+          </button>
+        )}
         {up.length>0&&<>
           <Divider label={tr("uhNext10")}/>
           {soon.length>0
@@ -18982,6 +19025,11 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           </button>
           {showPast&&past.map(ev=><div key={ev.id} style={{marginBottom:10}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user" allEvents={data.events||[]}/></div>)}
         </>}
+        {/* Kinder-Bereich: Wochen-Übungen (nur mit Eltern-Freigabe) + Bundesliga-Quiz */}
+        {myProfile&&<div style={{marginTop:16}}>
+          {soloOk&&<WeeklySoloCard profile={myProfile} data={data} save={onSave} fire={fire} color={t.p}/>}
+          <WeeklyQuizCard profile={myProfile} data={data} save={onSave} fire={fire}/>
+        </div>}
         <AffiliateBanner trigger="parents" style={{marginTop:16}}/>
         {(cl.links||[]).length>0&&(
           <div style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",padding:"14px 16px",marginTop:16}}>

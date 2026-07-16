@@ -969,7 +969,199 @@ export const FORMATION_MOVE={
   "4-5-1":"Sehr enges Mittelfeld, kaum zu bespielen; der Einzelstürmer hält Bälle fest, das Mittelfeld rückt nach. Gegen stärkere Gegner / Ergebnis halten.",
 };
 
-export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAttachBoard=null }) {
+/* =================================================================
+   KINDER-BEREICH: Wochen-Übungen (Eltern-Freigabe) + Bundesliga-Quiz
+================================================================= */
+
+// ISO-Kalenderwoche als stabiler Schluessel, z.B. "2026-W29"
+export const isoWeek=(d=new Date())=>{ const x=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())); const day=x.getUTCDay()||7; x.setUTCDate(x.getUTCDate()+4-day); const y0=new Date(Date.UTC(x.getUTCFullYear(),0,1)); const w=Math.ceil(((x-y0)/864e5+1)/7); return `${x.getUTCFullYear()}-W${String(w).padStart(2,"0")}`; };
+// Deterministischer Zufall: gleiche Woche -> gleiche Auswahl (auf jedem Geraet)
+const hashStr=s=>{ let h=0; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))|0; return h>>>0; };
+const mulberry=(seed)=>{ let a=seed>>>0; return ()=>{ a|=0; a=a+0x6D2B79F5|0; let t2=Math.imul(a^a>>>15,1|a); t2=t2+Math.imul(t2^t2>>>7,61|t2)^t2; return ((t2^t2>>>14)>>>0)/4294967296; }; };
+const seededPick=(arr,n,seed)=>{ const rnd=mulberry(seed); const a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a.slice(0,n); };
+
+// Wochen-Übungen fuers Training zuhause – nur sichtbar, wenn die Eltern es
+// im Profil freigegeben haben (profile.soloOk). 3 Solo-Übungen pro Woche.
+export function WeeklySoloCard({profile,data,save,fire,color="#16a34a"}){
+  const weekKey=isoWeek();
+  const pool=DRILL_LIB.filter(d=>/^(1|beliebig)/i.test(String(d.players||""))&&d.kids);
+  const drills=seededPick(pool,3,hashStr(weekKey+"_"+(profile.id||"")));
+  const done=(profile.soloDone&&profile.soloDone[weekKey])||[];
+  const [open,setOpen]=useState(null);
+  const toggleDone=(id)=>{
+    const arr=done.includes(id)?done.filter(x=>x!==id):[...done,id];
+    save({...data,playerProfiles:(data.playerProfiles||[]).map(p=>p.id===profile.id?{...p,soloDone:{[weekKey]:arr}}:p)});
+    if(!done.includes(id)) fire&&fire(arr.length===drills.length?"Alle Übungen geschafft! 🎉":"Super gemacht! ⭐");
+  };
+  return (
+    <div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:14,padding:"14px 15px",marginBottom:14}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+        <span style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.4}}>🏠 DEINE ÜBUNGEN DER WOCHE</span>
+        <span style={{fontSize:12,fontWeight:800,color:done.length===drills.length?"#16a34a":"#64748b"}}>{done.length}/{drills.length} {done.length===drills.length?"🎉":""}</span>
+      </div>
+      <div style={{fontSize:12,color:"#64748b",lineHeight:1.5,marginBottom:11}}>Diese 3 Übungen kannst du diese Woche alleine üben – Garten, Hof oder Wohnzimmer reicht!</div>
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {drills.map(d=>{
+          const isDone=done.includes(d.id), isOpen=open===d.id;
+          return (
+            <div key={d.id} style={{border:`1.5px solid ${isDone?"#bbf7d0":"#e2e8f0"}`,borderRadius:12,background:isDone?"#f0fdf4":"#fff",overflow:"hidden"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 12px"}}>
+                <button onClick={()=>setOpen(isOpen?null:d.id)} style={{flex:1,textAlign:"left",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",minWidth:0,padding:0}}>
+                  <div style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>{isDone?"✅ ":""}{d.title}</div>
+                  <div style={{fontSize:11.5,color:"#64748b"}}>{d.min} Min · tippen für Anleitung</div>
+                </button>
+                <button onClick={()=>toggleDone(d.id)}
+                  style={{flexShrink:0,padding:"8px 12px",borderRadius:10,border:"none",background:isDone?"#16a34a":color+"18",color:isDone?"#fff":color,fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{isDone?"Geschafft!":"✔ Fertig?"}</button>
+              </div>
+              {isOpen&&(
+                <div style={{padding:"0 12px 12px"}}>
+                  <div style={{display:"flex",justifyContent:"center",marginBottom:10}}>
+                    <DrillDiagram field={d.field} elements={d.el} color={color} width={260} variant="kids"/>
+                  </div>
+                  <div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:11,padding:"11px 13px",fontSize:14,color:"#78350f",lineHeight:1.6,fontWeight:600}}>{d.kids}</div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// Bundesliga-Fragenbank fuer das Wochen-Quiz (feststehende Fakten, kindgerecht).
+// Die "KI" waehlt jede Woche deterministisch 5 neue Fragen fuer alle aus.
+export const BL_QUIZ=[
+  {q:"Welcher Verein ist Rekordmeister der Bundesliga?",a:["FC Bayern München","Borussia Dortmund","Hamburger SV","1. FC Köln"],c:0,info:"Der FC Bayern hat die meisten Meistertitel geholt."},
+  {q:"Wer schoss die meisten Tore in der Bundesliga-Geschichte?",a:["Gerd Müller","Thomas Müller","Robert Lewandowski","Miroslav Klose"],c:0,info:"Gerd Müller traf unglaubliche 365-mal – der 'Bomber der Nation'."},
+  {q:"Wer stellte mit 41 Toren in einer Saison den Rekord auf?",a:["Robert Lewandowski","Erling Haaland","Gerd Müller","Harry Kane"],c:0,info:"Lewandowski schaffte 2020/21 sogar mehr als Gerd Müllers 40 Tore."},
+  {q:"Wie heißt das Stadion von Borussia Dortmund?",a:["Signal Iduna Park","Allianz Arena","Olympiastadion","Volksparkstadion"],c:0,info:"Mit der berühmten 'Gelben Wand' – der größten Stehtribüne Europas."},
+  {q:"Welche Farben trägt Borussia Dortmund?",a:["Schwarz-Gelb","Rot-Weiß","Blau-Weiß","Grün-Weiß"],c:0,info:"Deshalb sagt man auch 'die Schwarz-Gelben'."},
+  {q:"Welcher Verein wird 'Die Königsblauen' genannt?",a:["FC Schalke 04","Hertha BSC","VfL Bochum","TSG Hoffenheim"],c:0,info:"Schalke spielt in königsblauen Trikots."},
+  {q:"Wie nennen viele die Meisterschale liebevoll?",a:["Salatschüssel","Suppenteller","Goldtopf","Silberpfanne"],c:0,info:"Weil die Schale wie eine große Schüssel aussieht."},
+  {q:"Wie viele Vereine spielen in der Bundesliga?",a:["18","16","20","22"],c:0,info:"18 Teams spielen je zweimal gegeneinander – 34 Spieltage."},
+  {q:"In welchem Stadion spielt der FC Bayern?",a:["Allianz Arena","Signal Iduna Park","Deutsche Bank Park","Red Bull Arena"],c:0,info:"Die Arena in München leuchtet bei Heimspielen rot."},
+  {q:"Wer wurde 2024 Meister – ohne ein einziges Spiel zu verlieren?",a:["Bayer Leverkusen","FC Bayern München","VfB Stuttgart","RB Leipzig"],c:0,info:"Leverkusen blieb die ganze Saison ungeschlagen – das gab es noch nie!"},
+  {q:"Wie lange dauert ein Bundesliga-Spiel (ohne Nachspielzeit)?",a:["90 Minuten","60 Minuten","80 Minuten","100 Minuten"],c:0,info:"Zweimal 45 Minuten mit einer Pause dazwischen."},
+  {q:"Welche zwei Teams spielen den 'Klassiker'?",a:["Bayern und Dortmund","Schalke und Dortmund","Bayern und 1860","HSV und Bremen"],c:0,info:"Das Duell der zwei erfolgreichsten Teams der letzten Jahre."},
+  {q:"Auf welcher Position wurde Manuel Neuer weltberühmt?",a:["Torwart","Stürmer","Verteidiger","Mittelfeld"],c:0,info:"Er erfand den 'mitspielenden Torwart' fast neu."},
+  {q:"Wie viele Punkte gibt es für einen Sieg?",a:["3","2","1","5"],c:0,info:"Sieg = 3 Punkte, Unentschieden = 1 Punkt, Niederlage = 0."},
+  {q:"Was bekommt der beste Torschütze der Saison?",a:["Die Torjägerkanone","Den Goldenen Schuh","Einen Pokal-Teller","Eine Medaille"],c:0,info:"Die Kanone ist die berühmte Trophäe der Bundesliga."},
+  {q:"Welcher Verein wird 'Werkself' genannt?",a:["Bayer Leverkusen","VfL Wolfsburg","RB Leipzig","Mainz 05"],c:0,info:"Der Verein wurde von Mitarbeitern des Bayer-Werks gegründet."},
+  {q:"Welcher Verein ist für seine 'Fohlen' bekannt?",a:["Borussia Mönchengladbach","Eintracht Frankfurt","Werder Bremen","1. FC Union Berlin"],c:0,info:"In den 70ern spielte Gladbach so jung und wild, dass man sie Fohlen nannte."},
+  {q:"Wie viele Spieler stehen pro Team auf dem Platz?",a:["11","10","12","9"],c:0,info:"10 Feldspieler plus 1 Torwart."},
+  {q:"Welche zwei Bundesliga-Klubs trainierte Jürgen Klopp?",a:["Mainz und Dortmund","Bayern und Schalke","Köln und Bremen","Stuttgart und Hertha"],c:0,info:"Mit Dortmund wurde er 2011 und 2012 Deutscher Meister."},
+  {q:"Bei welchem Verein war Uwe Seeler die große Legende?",a:["Hamburger SV","Werder Bremen","FC St. Pauli","Hannover 96"],c:0,info:"'Uns Uwe' blieb dem HSV sein Leben lang treu."},
+  {q:"Wo spielt Werder Bremen seine Heimspiele?",a:["Weserstadion","Rheinstadion","Ostseestadion","Waldstadion"],c:0,info:"Das Stadion liegt direkt am Fluss Weser."},
+  {q:"Was gibt es, wenn ein Spieler im Strafraum gefoult wird?",a:["Elfmeter","Ecke","Einwurf","Abstoß"],c:0,info:"Der Ball kommt auf den Punkt – 11 Meter vor dem Tor."},
+  {q:"Wie weit ist der Elfmeterpunkt vom Tor entfernt?",a:["11 Meter","7 Meter","16 Meter","9 Meter"],c:0,info:"Deshalb heißt er auch Elfmeter!"},
+  {q:"In welchem Jahr startete die Bundesliga?",a:["1963","1950","1974","1990"],c:0,info:"Über 60 Jahre Bundesliga-Geschichte!"},
+  {q:"Wer wurde 1964 allererster Bundesliga-Meister?",a:["1. FC Köln","FC Bayern München","Borussia Dortmund","1860 München"],c:0,info:"Die Kölner gewannen die allererste Saison."},
+  {q:"Welcher Verein hat einen echten Geißbock als Maskottchen?",a:["1. FC Köln","VfB Stuttgart","SC Freiburg","FC Augsburg"],c:0,info:"Der Geißbock heißt Hennes – nach Trainer Hennes Weisweiler."},
+  {q:"Was zeigt der Schiedsrichter bei einem ganz bösen Foul?",a:["Rote Karte","Gelbe Karte","Grüne Karte","Blaue Karte"],c:0,info:"Rot heißt: sofort runter vom Platz."},
+  {q:"Bei welchem Verein spielte Thomas Müller seine ganze Karriere?",a:["FC Bayern München","1860 München","FC Augsburg","Borussia Dortmund"],c:0,info:"Müller kam schon als Kind zum FC Bayern."},
+  {q:"Welcher Verein war die große Liebe von Marco Reus?",a:["Borussia Dortmund","FC Bayern München","FC Schalke 04","Bayer Leverkusen"],c:0,info:"Reus ist in Dortmund geboren und wurde dort Kapitän."},
+  {q:"Wie heißt der große Pokal-Wettbewerb in Deutschland?",a:["DFB-Pokal","Liga-Cup","Super-Schale","Deutschland-Trophäe"],c:0,info:"Das Finale ist jedes Jahr in Berlin."},
+  {q:"Was ist ein 'Hattrick'?",a:["3 Tore eines Spielers in einem Spiel","Ein Trick mit dem Hut","3 gehaltene Elfmeter","3 Ecken hintereinander"],c:0,info:"Drei Tore in einem Spiel – das schaffen nur die Besten!"},
+  {q:"Wie nennt man ein Tor ins eigene Netz?",a:["Eigentor","Fehlschuss","Rücktor","Falschtor"],c:0,info:"Passiert auch den Profis manchmal – Kopf hoch!"},
+  {q:"Welche Stadt jubelt für den 1. FC Union in der 'Alten Försterei'?",a:["Berlin","Leipzig","Dresden","Rostock"],c:0,info:"Die Union-Fans haben ihr Stadion sogar selbst mitgebaut."},
+  {q:"Was passiert mit den zwei letzten Teams der Tabelle?",a:["Sie steigen in die 2. Liga ab","Sie dürfen nochmal spielen","Nichts","Sie bekommen einen Pokal"],c:0,info:"Platz 17 und 18 steigen direkt ab, Platz 16 spielt Relegation."},
+  {q:"Welcher Torwart hielt für den FC Bayern jahrelang den Kasten sauber und wurde Weltmeister 2014?",a:["Manuel Neuer","Oliver Kahn","Marc-André ter Stegen","Kevin Trapp"],c:0,info:"2014 in Brasilien stand er im WM-Finale im Tor."},
+  {q:"Wie oft spielt jedes Team pro Saison gegen jedes andere?",a:["2-mal","1-mal","3-mal","4-mal"],c:0,info:"Einmal zuhause, einmal auswärts – Hin- und Rückrunde."},
+];
+
+// Woechentliches Bundesliga-Quiz: 5 Fragen, alle als Auswahlfelder.
+export function WeeklyQuizCard({profile,data,save,fire,color="#7c3aed"}){
+  const weekKey=isoWeek();
+  const qs=useMemo(()=>{
+    // Antworten mischen (richtige Antwort steht in der Bank immer vorne)
+    return seededPick(BL_QUIZ,5,hashStr("quiz_"+weekKey)).map((it,qi)=>{
+      const order=seededPick(it.a.map((_,i)=>i),it.a.length,hashStr(weekKey+"_"+qi+"_"+it.q.length));
+      return {...it,opts:order.map(i=>it.a[i]),correct:order.indexOf(it.c)};
+    });
+  },[weekKey]);
+  const savedScore=profile?.quizScores?.[weekKey];
+  const [st,setSt]=useState(null); // null | {idx,score,picked}
+  const [doneScore,setDoneScore]=useState(null);
+  const start=()=>setSt({idx:0,score:0,picked:null});
+  const pick=(i)=>{ if(!st||st.picked!=null) return; setSt({...st,picked:i,score:st.score+(i===qs[st.idx].correct?1:0)}); };
+  const next=()=>{
+    if(!st) return;
+    if(st.idx+1<qs.length){ setSt({idx:st.idx+1,score:st.score,picked:null}); return; }
+    const score=st.score; setSt(null); setDoneScore(score);
+    if(profile&&(savedScore==null||score>savedScore)){
+      save({...data,playerProfiles:(data.playerProfiles||[]).map(p=>p.id===profile.id?{...p,quizScores:{...(p.quizScores||{}),[weekKey]:score}}:p)});
+    }
+    fire&&fire(score>=4?`${score}/5 – Fußball-Profi! 🏆`:`${score}/5 geschafft!`);
+  };
+  const cur=st?qs[st.idx]:null;
+  return (
+    <div style={{background:"linear-gradient(135deg,#faf5ff,#eff6ff)",border:"1.5px solid #ddd6fe",borderRadius:14,padding:"14px 15px",marginBottom:14}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+        <span style={{fontSize:11,fontWeight:800,color:color,letterSpacing:.4}}>🧠 BUNDESLIGA-QUIZ DER WOCHE</span>
+        {st&&<span style={{fontSize:12,fontWeight:800,color:"#64748b"}}>Frage {st.idx+1}/{qs.length}</span>}
+      </div>
+      {!st&&(
+        <>
+          <div style={{fontSize:12.5,color:"#4c1d95",lineHeight:1.55,marginBottom:11}}>
+            Jede Woche 5 neue Fragen rund um die Bundesliga – Spieler, Rekorde, Regeln.
+            {savedScore!=null&&<b> Dein Rekord diese Woche: {savedScore}/5 ⭐</b>}
+            {doneScore!=null&&savedScore==null&&<b> Gerade geschafft: {doneScore}/5 ⭐</b>}
+          </div>
+          <button onClick={start}
+            style={{width:"100%",padding:"13px",borderRadius:11,border:"none",background:color,color:"#fff",fontWeight:900,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>{savedScore!=null||doneScore!=null?"🔁 Nochmal spielen":"▶ Quiz starten"}</button>
+        </>
+      )}
+      {st&&cur&&(
+        <div style={{background:"#fff",borderRadius:12,padding:"13px 14px"}}>
+          <div style={{fontWeight:800,fontSize:15,color:"#0f172a",lineHeight:1.5,marginBottom:11}}>{cur.q}</div>
+          <div style={{display:"flex",flexDirection:"column",gap:7}}>
+            {cur.opts.map((o,i)=>{
+              const isPicked=st.picked===i, isCorrect=i===cur.correct, show=st.picked!=null;
+              return (
+                <button key={i} onClick={()=>pick(i)}
+                  style={{padding:"12px 13px",borderRadius:11,textAlign:"left",fontWeight:700,fontSize:14,cursor:show?"default":"pointer",fontFamily:"inherit",
+                    border:`2px solid ${show&&isCorrect?"#16a34a":show&&isPicked?"#dc2626":"#e2e8f0"}`,
+                    background:show&&isCorrect?"#f0fdf4":show&&isPicked?"#fef2f2":"#fff",
+                    color:show&&isCorrect?"#166534":show&&isPicked?"#b91c1c":"#334155"}}>
+                  {show&&isCorrect?"✅ ":show&&isPicked?"❌ ":""}{o}
+                </button>
+              );
+            })}
+          </div>
+          {st.picked!=null&&(
+            <>
+              <div style={{marginTop:10,background:"#f8fafc",borderRadius:10,padding:"9px 12px",fontSize:12.5,color:"#475569",lineHeight:1.5}}>💡 {cur.info}</div>
+              <button onClick={next}
+                style={{width:"100%",marginTop:10,padding:"12px",borderRadius:11,border:"none",background:color,color:"#fff",fontWeight:900,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>{st.idx+1<qs.length?"▶ Nächste Frage":"🏁 Ergebnis"}</button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Auswahlzeile fuer die befristete Kinder-Freischaltung (Kind + Dauer + Knopf)
+function UnlockPicker({kids,onGrant,t}){
+  const [pid,setPid]=useState("");
+  const [days,setDays]=useState(3);
+  return (
+    <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
+      <select value={pid} onChange={e=>setPid(e.target.value)} style={{flex:1,minWidth:130,padding:"9px 10px",borderRadius:10,border:"1.5px solid #e2e8f0",fontSize:13.5,fontFamily:"inherit"}}>
+        <option value="">Kind wählen…</option>
+        {kids.map(k=><option key={k.id} value={k.id}>{k.name}</option>)}
+      </select>
+      {[[1,"1 Tag"],[3,"3 Tage"],[7,"1 Woche"]].map(([d,l])=>(
+        <button key={d} onClick={()=>setDays(d)} style={{padding:"8px 11px",borderRadius:9,border:`1.5px solid ${days===d?t.p:"#e2e8f0"}`,background:days===d?t.p+"15":"#fff",color:days===d?t.p:"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
+      ))}
+      <button onClick={()=>pid&&onGrant(pid,days)} disabled={!pid}
+        style={{padding:"8px 14px",borderRadius:9,border:"none",background:pid?t.p:"#e2e8f0",color:pid?"#fff":"#94a3b8",fontWeight:800,fontSize:12.5,cursor:pid?"pointer":"default",fontFamily:"inherit"}}>🔓 Freischalten</button>
+    </div>
+  );
+}
+
+export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAttachBoard=null, playerCtx=null }) {
   const t=TH(cl);
   const sportMap={fussball:"football",handball:"handball",basketball:"basketball"};
   const [sport,setSport]=useState(sportMap[cl?.sport]||"football");
@@ -987,7 +1179,8 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
   const [ballPos,setBallPos]=useState(null); // null = ausgeblendet
   const toggleBall=()=>setBallPos(b=>b?null:{x:F.vw/2,y:F.vh/2});
   // Einfach-Modus (Kinder): grosse Knoepfe, weniger Optionen – gleiche Technik darunter.
-  const [kidMode,setKidMode]=useState(()=>{ try{ return localStorage.getItem("va_tb_kid")==="1"; }catch{ return false; } });
+  // Kinder-Sessions (playerCtx) starten immer im Einfach-Modus.
+  const [kidMode,setKidMode]=useState(()=>{ if(playerCtx) return true; try{ return localStorage.getItem("va_tb_kid")==="1"; }catch{ return false; } });
   const setKid=(v)=>{ setKidMode(v); try{ localStorage.setItem("va_tb_kid",v?"1":"0"); }catch{} };
   // Fokus-Spotlight: einen Spieler hervorheben, alle anderen abdunkeln.
   const [focusId,setFocusId]=useState(null);
@@ -1003,6 +1196,12 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
     return ()=>{ on=false; cancelAnimationFrame(id); };
   },[liveOn]);
   const [aiHint,setAiHint]=useState("");
+  // Auswahl + Steuerkreuz (wie am Gameboy): angetippten Spieler mit Pfeilen steuern.
+  const [selTok,setSelTok]=useState(null);   // {side:"own"|"opp", id}
+  const [padOn,setPadOn]=useState(false);
+  const padHold=useRef(null);
+  const padStop=()=>{ if(padHold.current){ clearInterval(padHold.current); padHold.current=null; } };
+  useEffect(()=>()=>padStop(),[]);
   const [oppFormIdx,setOppFormIdx]=useState(0);
   const buildOpp=(sp,cnt,fi)=>{ const FF=TB_FIELDS[sp]||TB_FIELDS.generic; const f=tbForms(sp,cnt)[fi]||tbForms(sp,cnt)[0]; return (f?.p||[]).map((pos,i)=>({id:"op"+i,x:pos[0]*FF.vw,y:(1-pos[1])*FF.vh,n:i+1})); };
   const [oppTokens,setOppTokens]=useState(()=>buildOpp(sport,count,oppFormIdx));
@@ -1282,6 +1481,125 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
     setArrows(arrs); setAiHint(`Fertiger Spielzug mit ${added.length} Schritten – tippe auf ▶ Abspielen!`);
   };
 
+  // Steuerkreuz: gewaehlten Spieler schrittweise bewegen (Halten = Dauerlauf)
+  const padMove=(dx,dy)=>{ const s=selTok; if(!s) return;
+    const setT=s.side==="opp"?setOppTokens:setTokens; const st=F.vw*0.035;
+    setT(ts=>ts.map(tk=>tk.id===s.id?{...tk,x:Math.max(F.r,Math.min(F.vw-F.r,tk.x+dx*st)),y:Math.max(F.r,Math.min(F.vh-F.r,tk.y+dy*st))}:tk)); };
+  const padStart=(dx,dy)=>{ resetAnim(); padMove(dx,dy); padStop(); padHold.current=setInterval(()=>padMove(dx,dy),120); };
+  const padStar=()=>{ const s=selTok; if(!s) return; toggleMark(s.side==="opp"?setOppTokens:setTokens,s.id); };
+  const selInfo=()=>{ const s=selTok; if(!s) return null;
+    const tk=(s.side==="opp"?oppTokens:tokens).find(x=>x.id===s.id); return tk?{...tk,side:s.side}:null; };
+
+  // ---- Szenario-Spiel: Situationen lesen, reagieren, Verstaerkung rufen ----
+  const [scn,setScn]=useState(null);
+  const scnRef=useRef(null); useEffect(()=>{ scnRef.current=scn; },[scn]);
+  const tokensRef=useRef(tokens); useEffect(()=>{ tokensRef.current=tokens; },[tokens]);
+  const [scnTick,setScnTick]=useState(0);
+  const runRef=useRef(null);
+  const stopRun=()=>{ if(runRef.current){ cancelAnimationFrame(runRef.current); runRef.current=null; } };
+  useEffect(()=>()=>stopRun(),[]);
+  const zoneCount=(own,opp,bx,by,R)=>({o:own.filter(t2=>t2.n!==1&&Math.hypot(t2.x-bx,t2.y-by)<R).length, g:opp.filter(t2=>t2.n!==1&&Math.hypot(t2.x-bx,t2.y-by)<R).length});
+  const freestOpp=(own,opp)=>{ let best=null,bd=-1; opp.forEach(o=>{ if(o.n===1)return; const d=Math.min(...own.map(t2=>Math.hypot(t2.x-o.x,t2.y-o.y))); if(d>bd){bd=d;best=o;} }); return {opp:best,dist:bd}; };
+  const scnResolve=(good,fb,extra)=>{
+    setScn(s=>s?{...s,phase:"resolve",feedback:fb,score:s.score+(good?1:0),history:[...s.history,{round:s.round,type:s.type,good,...(extra||{})}]}:s);
+  };
+  // Naechste Situation: der Gegner spielt den Ball zum freiesten Mann -> daraus
+  // entsteht die neue Lage, die Abwehr schiebt nach, dann kommt die Aufgabe.
+  const scnNext=(prev)=>{
+    stopRun(); resetAnim(); setMode("move");
+    const own=tokens, opp=oppTokens;
+    const {opp:free}=freestOpp(own,opp);
+    const bx=free?Math.max(F.r*2,Math.min(F.vw-F.r*2,free.x+(free.x>F.vw/2?-F.r*1.6:F.r*1.6))):F.vw/2;
+    const by=free?free.y:F.vh/2;
+    setBallPos({x:bx,y:by});
+    setOppTokens(ts=>ts.map(tk=>{ if(tk.n===1) return tk; const dx=bx-tk.x,dy=by-tk.y,d=Math.hypot(dx,dy)||1; const sh=Math.min(F.vw*0.06,d*0.18); return {...tk,x:Math.max(F.r,Math.min(F.vw-F.r,tk.x+dx/d*sh)),y:Math.max(F.r,Math.min(F.vh-F.r,tk.y+dy/d*sh))}; }));
+    const round=(prev?.round||0)+1;
+    const type=["cover","reinforce","space"][(round-1)%3];
+    let actor=null,target=null,text="";
+    if(type==="cover"){
+      const tgt=free||opp.find(o=>o.n!==1);
+      const sorted=own.filter(t2=>t2.n!==1).sort((a,b)=>Math.hypot(a.x-tgt.x,a.y-tgt.y)-Math.hypot(b.x-tgt.x,b.y-tgt.y));
+      actor=sorted[1]||sorted[0];
+      target={kind:"opp",id:tgt.id};
+      text=`🔵 Nr. ${actor.n}: Rüber zu 🔴 Nr. ${tgt.n} – decken! Er steht ganz frei!`;
+    } else if(type==="space"){
+      const fld=own.filter(t2=>t2.n!==1);
+      actor=fld[Math.floor(round*2.7)%fld.length]||fld[0];
+      const cands=[]; for(let gx=0.2;gx<=0.8;gx+=0.2) for(let gy=0.15;gy<=0.6;gy+=0.15){ const x=gx*F.vw,y=gy*F.vh; const d=Math.min(...opp.map(o=>Math.hypot(o.x-x,o.y-y))); cands.push({x,y,d}); }
+      const c=cands.sort((a,b)=>b.d-a.d)[0];
+      target={kind:"pos",x:c.x,y:c.y};
+      text=`🔵 Nr. ${actor.n}: Lauf in den gelben Kreis – da ist Platz zum Anspielen!`;
+    } else {
+      const zc=zoneCount(own,opp,bx,by,F.vw*0.24);
+      text=`Der Ball ist bei 🔴 Nr. ${free?.n??"?"}. Am Ball: ${zc.g} Rote gegen ${zc.o} Blaue. Rufst du Verstärkung?`;
+    }
+    if(actor){ setTokens(ts=>ts.map(t2=>({...t2,marked:t2.id===actor.id}))); setSelTok({side:"own",id:actor.id}); }
+    setScn({round,score:prev?.score||0,history:prev?.history||[],phase:"task",type,actorId:actor?.id||null,target,text,deadline:Date.now()+12000,feedback:null});
+  };
+  // Erfolg pruefen bei jeder Bewegung (Drag oder Steuerkreuz)
+  useEffect(()=>{ const s=scn; if(!s||s.phase!=="task") return;
+    if(s.type==="cover"){ const a=tokens.find(t2=>t2.id===s.actorId), g=oppTokens.find(o=>o.id===s.target?.id);
+      if(a&&g&&Math.hypot(a.x-g.x,a.y-g.y)<F.r*2.6) scnResolve(true,`Super! 🔴 Nr. ${g.n} ist zugestellt – kein freier Passweg mehr. ✅`);
+    } else if(s.type==="space"){ const a=tokens.find(t2=>t2.id===s.actorId);
+      if(a&&s.target&&Math.hypot(a.x-s.target.x,a.y-s.target.y)<F.r*2.2) scnResolve(true,"Stark! Frei angeboten – jetzt bist du anspielbar. ✅");
+    }
+  },[tokens,oppTokens]);
+  // Zeitlimit (nur fuer Bewegungs-Aufgaben; die Verstaerkungs-Frage darf man in Ruhe ueberlegen)
+  useEffect(()=>{ const s=scn; if(!s||s.phase!=="task"||s.type==="reinforce") return;
+    const ms=s.deadline-Date.now(); if(ms<=0) return;
+    const to=setTimeout(()=>{ const c=scnRef.current; if(c&&c.phase==="task"&&c.round===s.round) scnResolve(false,"⏱ Zeit um! Auf dem Platz musst du sofort reagieren – nächste Chance kommt."); },ms);
+    return ()=>clearTimeout(to);
+  },[scn?.round,scn?.phase]);
+  useEffect(()=>{ if(!scn||scn.phase!=="task") return; const iv=setInterval(()=>setScnTick(t=>t+1),500); return ()=>clearInterval(iv); },[scn?.round,scn?.phase]);
+  // Verstaerkungs-Entscheidung: Ja -> naechster freier Spieler sprintet zeitrealistisch hin,
+  // danach ehrliche Analyse (Ueberzahl geholt? Wer ist dafuer frei geworden?)
+  const scnAnswer=(call)=>{
+    const s=scn; if(!s||s.phase!=="task") return;
+    const own=tokens, opp=oppTokens, b=ballPos||{x:F.vw/2,y:F.vh/2};
+    const R=F.vw*0.24, before=zoneCount(own,opp,b.x,b.y,R);
+    const under=before.g>before.o;
+    if(!call){
+      scnResolve(!under, !under
+        ?`Richtig! ${before.o} gegen ${before.g} am Ball – ihr habt es im Griff. Stellung halten spart Kraft. ✅`
+        :`Riskant! ${before.g} Rote gegen ${before.o} Blaue – da wäre Verstärkung gut gewesen. ⚠️`, {called:false});
+      return;
+    }
+    const cands=own.filter(t2=>t2.n!==1&&Math.hypot(t2.x-b.x,t2.y-b.y)>R);
+    if(!cands.length){ scnResolve(true,"Alle Blauen sind schon am Ball – mehr geht nicht! ✅",{called:true}); return; }
+    const helper=cands.sort((a,c)=>Math.hypot(a.x-b.x,a.y-b.y)-Math.hypot(c.x-b.x,c.y-b.y))[0];
+    const from={x:helper.x,y:helper.y};
+    const to={x:Math.max(F.r,Math.min(F.vw-F.r,b.x+(helper.x>b.x?F.r*2:-F.r*2))), y:Math.max(F.r,Math.min(F.vh-F.r,b.y+F.r*1.5))};
+    const dist=Math.hypot(to.x-from.x,to.y-from.y);
+    const dur=Math.max(900,Math.min(6000, dist/(F.vh*0.10)*1000));   // Sprint: ~10% Feldlaenge pro Sekunde
+    setScn(x=>x?{...x,phase:"running",text:`📣 Nr. ${helper.n} sprintet zur Verstärkung… (${(dur/1000).toFixed(1)} s – so lange dauert das wirklich!)`}:x);
+    const t0=performance.now();
+    const step=(t)=>{ const e=Math.min(1,(t-t0)/dur); const ease=e<.5?2*e*e:1-Math.pow(-2*e+2,2)/2;
+      setTokens(ts=>ts.map(tk=>tk.id===helper.id?{...tk,x:from.x+(to.x-from.x)*ease,y:from.y+(to.y-from.y)*ease}:tk));
+      if(e<1){ runRef.current=requestAnimationFrame(step); return; }
+      runRef.current=null;
+      // Endposition des Helfers fest einrechnen (State-Updates koennen einen Frame nachlaufen)
+      const own2=tokensRef.current.map(tk=>tk.id===helper.id?{...tk,x:to.x,y:to.y}:tk);
+      const after=zoneCount(own2,opp,b.x,b.y,R);
+      const {opp:fo,dist:fd}=freestOpp(own2,opp);
+      const good=after.o>=after.g;
+      const risk=fo&&fd>F.vw*0.3;
+      scnResolve(good,(good
+        ?`✅ Jetzt ${after.o} gegen ${after.g} am Ball – Überzahl geholt!`
+        :`⚠️ Immer noch ${after.g} gegen ${after.o} – die Verstärkung hat nicht gereicht.`)
+        +(risk?` Aber Achtung: 🔴 Nr. ${fo.n} steht jetzt ganz frei – das ist der Preis fürs Verschieben!`:" Und hinten wurde niemand richtig frei – gute Entscheidung!"),
+        {called:true,helper:helper.n,freed:risk?fo.n:null});
+    };
+    runRef.current=requestAnimationFrame(step);
+  };
+  const scnEnd=()=>{
+    const s=scn; stopRun(); setScn(null);
+    setTokens(ts=>ts.map(t2=>({...t2,marked:false})));
+    if(!s||!s.history.length) return;
+    const rec={id:uid(),cid:cl.id,pid:playerCtx?.pid||null,name:playerCtx?.name||"Trainer",ts:new Date().toISOString(),score:s.score,rounds:s.history.length,decisions:s.history};
+    save({...data,tacticSessions:[...(data.tacticSessions||[]),rec]});
+    fire&&fire(`Szenario beendet: ${s.score} ⭐ – Ergebnis gespeichert`);
+  };
+
   // "Leben": kleine Pendel-Bewegung fuer alle; Gegner ruecken zum freien Ball (der Naechste presst).
   const liveOff=(tk,side)=>{ if(!liveOn||playing||!liveT) return null;
     const amp=side==="opp"?0.3:0.2;
@@ -1303,10 +1621,10 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
           <h3 style={{margin:"0 0 2px",fontSize:17,fontWeight:900,color:"#0f172a"}}>Taktikboard</h3>
           <p style={{fontSize:12.5,color:"#64748b",margin:0}}>{kidMode?"Werkzeug antippen, auf dem Feld ziehen, ▶ drücken – fertig!":"Feld & Aufstellung – Abläufe zeichnen, sortieren und animieren."}</p>
         </div>
-        <button onClick={()=>setKid(!kidMode)}
+        {!playerCtx&&<button onClick={()=>setKid(!kidMode)}
           style={{flexShrink:0,padding:"8px 13px",borderRadius:99,border:`2px solid ${kidMode?"#f59e0b":"#e2e8f0"}`,background:kidMode?"#fffbeb":"#fff",color:kidMode?"#b45309":"#475569",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>
           {kidMode?"🧒 Einfach":"👔 Profi"}
-        </button>
+        </button>}
       </div>
       <button onClick={()=>{setPresent(true);setMode("move");}}
         style={{width:"100%",padding:kidMode?"14px":"12px",borderRadius:13,border:"none",background:"#0f172a",color:"#fff",fontWeight:800,fontSize:kidMode?16:14,cursor:"pointer",fontFamily:"inherit"}}>
@@ -1341,6 +1659,7 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
           {on:showOpp,click:()=>setShowOpp(s=>!s),e:"🔴",l:"Gegner",c:"#dc2626"},
           {on:!!ballPos,click:toggleBall,e:"⚽",l:"Ball",c:"#0f172a"},
           {on:liveOn,click:()=>setLiveOn(v=>!v),e:"💓",l:"Leben",c:"#16a34a"},
+          {on:padOn,click:()=>setPadOn(v=>!v),e:"🎮",l:"Steuerkreuz",c:"#7c3aed"},
         ].map(o=>(
           <button key={o.l} onClick={o.click}
             style={{flex:1,minWidth:90,padding:kidMode?"11px 8px":"9px 8px",borderRadius:12,border:`2px solid ${o.on?o.c:"#e2e8f0"}`,background:o.on?o.c+"14":"#fff",color:o.on?o.c:"#64748b",fontWeight:800,fontSize:kidMode?14.5:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>
@@ -1415,7 +1734,7 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
           <button onClick={()=>setPresent(false)} style={{width:40,height:40,borderRadius:12,border:"none",background:"rgba(255,255,255,.14)",color:"#fff",fontWeight:900,fontSize:17,cursor:"pointer"}}>✕</button>
         </div>
       )}
-      <div style={{background:F.bg,borderRadius:14,padding:8,boxShadow:"inset 0 0 0 1px rgba(255,255,255,.08)",...(present?{flex:1,minHeight:0,display:"flex",alignItems:"center",justifyContent:"center"}:{})}}>
+      <div style={{background:F.bg,borderRadius:14,padding:8,boxShadow:"inset 0 0 0 1px rgba(255,255,255,.08)",position:"relative",...(present?{flex:1,minHeight:0,display:"flex",alignItems:"center",justifyContent:"center"}:{})}}>
         <svg ref={svgRef} viewBox={`0 0 ${F.vw} ${F.vh}`} preserveAspectRatio="xMidYMid meet"
           style={{width:"100%",maxHeight:present?"100%":kidMode?"62vh":"58vh",...(present?{height:"100%"}:{}),display:"block",touchAction:"none",cursor:mode==="move"?"default":(mode==="focus"||mode==="mark")?"pointer":"crosshair"}}
           onPointerDown={startDraw} onTouchStart={startDraw}
@@ -1438,11 +1757,22 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
               stroke={draw.type==="run"?runArrowCol(draw):ARR_COL[draw.type]} strokeWidth={F.vw*0.012} strokeLinecap="round"
               strokeDasharray={draw.type==="pass"?`${F.vw*0.03} ${F.vw*0.022}`:draw.type==="dribble"?`${F.vw*0.008} ${F.vw*0.016}`:undefined}/>
           )}
+          {scn&&scn.phase==="task"&&scn.type==="space"&&scn.target&&(
+            <circle cx={scn.target.x} cy={scn.target.y} r={F.r*2.2} fill="#facc15" opacity={0.3} stroke="#facc15" strokeWidth={F.r*0.15} style={{pointerEvents:"none"}}>
+              <animate attributeName="opacity" values="0.15;0.4;0.15" dur="1.4s" repeatCount="indefinite"/>
+            </circle>
+          )}
+          {scn&&scn.phase==="task"&&scn.type==="cover"&&(()=>{ const g=oppTokens.find(o=>o.id===scn.target?.id); return g?(
+            <circle cx={g.x} cy={g.y} r={F.r*2} fill="none" stroke="#f97316" strokeWidth={F.r*0.22} strokeDasharray={`${F.r*0.5} ${F.r*0.3}`} style={{pointerEvents:"none"}}>
+              <animate attributeName="r" values={`${F.r*1.7};${F.r*2.3};${F.r*1.7}`} dur="1.2s" repeatCount="indefinite"/>
+            </circle>
+          ):null; })()}
           {showOpp&&(animOpp||oppTokens).map(tk=>{ const lo=liveOff(tk,"opp"); const X=tk.x+(lo?.dx||0), Y=tk.y+(lo?.dy||0);
             return (
             <g key={tk.id} opacity={focusId&&focusId!==tk.id?0.3:1} style={{cursor:mode==="move"?"grab":(mode==="mark"||mode==="focus")?"pointer":"crosshair",transition:"opacity .25s"}}
-               onPointerDown={(e)=>{ if(mode==="focus"){ e.preventDefault(); e.stopPropagation(); setFocusId(f=>f===tk.id?null:tk.id); return;} if(mode==="mark"){ e.preventDefault(); toggleMark(setOppTokens,tk.id); return;} if(mode!=="move") return; e.preventDefault(); resetAnim(); dragRef.current=tk.id; dragSetRef.current="opp";}}
-               onTouchStart={(e)=>{ if(mode==="focus"){ e.stopPropagation(); setFocusId(f=>f===tk.id?null:tk.id); return;} if(mode==="mark"){ toggleMark(setOppTokens,tk.id); return;} if(mode!=="move") return; resetAnim(); dragRef.current=tk.id; dragSetRef.current="opp";}}>
+               onPointerDown={(e)=>{ if(mode==="focus"){ e.preventDefault(); e.stopPropagation(); setFocusId(f=>f===tk.id?null:tk.id); return;} if(mode==="mark"){ e.preventDefault(); toggleMark(setOppTokens,tk.id); return;} if(mode!=="move") return; e.preventDefault(); resetAnim(); setSelTok({side:"opp",id:tk.id}); dragRef.current=tk.id; dragSetRef.current="opp";}}
+               onTouchStart={(e)=>{ if(mode==="focus"){ e.stopPropagation(); setFocusId(f=>f===tk.id?null:tk.id); return;} if(mode==="mark"){ toggleMark(setOppTokens,tk.id); return;} if(mode!=="move") return; resetAnim(); setSelTok({side:"opp",id:tk.id}); dragRef.current=tk.id; dragSetRef.current="opp";}}>
+              {selTok?.id===tk.id&&<circle cx={X} cy={Y} r={F.r*1.55} fill="none" stroke="#38bdf8" strokeWidth={F.r*0.2} strokeDasharray={`${F.r*0.55} ${F.r*0.3}`}/>}
               {focusId===tk.id&&<circle cx={X} cy={Y} r={F.r*1.9} fill="none" stroke="#fff" strokeWidth={F.r*0.18} opacity={0.9}>
                 <animate attributeName="r" values={`${F.r*1.6};${F.r*2.2};${F.r*1.6}`} dur="1.6s" repeatCount="indefinite"/>
               </circle>}
@@ -1456,8 +1786,9 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
           {(animOwn||tokens).map(tk=>{ const lo=liveOff(tk,"own"); const X=tk.x+(lo?.dx||0), Y=tk.y+(lo?.dy||0);
             return (
             <g key={tk.id} opacity={focusId&&focusId!==tk.id?0.3:1} style={{cursor:mode==="move"?"grab":(mode==="mark"||mode==="focus")?"pointer":"crosshair",transition:"opacity .25s"}}
-               onPointerDown={(e)=>{ if(mode==="focus"){ e.preventDefault(); e.stopPropagation(); setFocusId(f=>f===tk.id?null:tk.id); return;} if(mode==="mark"){ e.preventDefault(); toggleMark(setTokens,tk.id); return;} if(mode!=="move") return; e.preventDefault(); resetAnim(); dragRef.current=tk.id; dragSetRef.current="own";}}
-               onTouchStart={(e)=>{ if(mode==="focus"){ e.stopPropagation(); setFocusId(f=>f===tk.id?null:tk.id); return;} if(mode==="mark"){ toggleMark(setTokens,tk.id); return;} if(mode!=="move") return; resetAnim(); dragRef.current=tk.id; dragSetRef.current="own";}}>
+               onPointerDown={(e)=>{ if(mode==="focus"){ e.preventDefault(); e.stopPropagation(); setFocusId(f=>f===tk.id?null:tk.id); return;} if(mode==="mark"){ e.preventDefault(); toggleMark(setTokens,tk.id); return;} if(mode!=="move") return; e.preventDefault(); resetAnim(); setSelTok({side:"own",id:tk.id}); dragRef.current=tk.id; dragSetRef.current="own";}}
+               onTouchStart={(e)=>{ if(mode==="focus"){ e.stopPropagation(); setFocusId(f=>f===tk.id?null:tk.id); return;} if(mode==="mark"){ toggleMark(setTokens,tk.id); return;} if(mode!=="move") return; resetAnim(); setSelTok({side:"own",id:tk.id}); dragRef.current=tk.id; dragSetRef.current="own";}}>
+              {selTok?.id===tk.id&&<circle cx={X} cy={Y} r={F.r*1.55} fill="none" stroke="#38bdf8" strokeWidth={F.r*0.2} strokeDasharray={`${F.r*0.55} ${F.r*0.3}`}/>}
               {focusId===tk.id&&<circle cx={X} cy={Y} r={F.r*1.9} fill="none" stroke="#fff" strokeWidth={F.r*0.18} opacity={0.9}>
                 <animate attributeName="r" values={`${F.r*1.6};${F.r*2.2};${F.r*1.6}`} dur="1.6s" repeatCount="indefinite"/>
               </circle>}
@@ -1500,6 +1831,21 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
             <text x={animGoal.x} y={animGoal.y-F.r*2} textAnchor="middle" fontSize={F.fs*1.5} fontWeight="900" fill="#16a34a" stroke="#fff" strokeWidth={F.r*0.05}>TOR!</text>
           </g>}
         </svg>
+        {padOn&&(()=>{ const si=selInfo(); return (
+          <div style={{position:"absolute",right:10,bottom:10,display:"flex",flexDirection:"column",alignItems:"center",gap:5}}>
+            <div style={{background:"rgba(15,23,42,.78)",color:"#fff",borderRadius:99,padding:"4px 11px",fontSize:11.5,fontWeight:800,whiteSpace:"nowrap"}}>
+              {si?`🎮 ${si.side==="opp"?"🔴":"🔵"} Nr. ${si.n}`:"🎮 Spieler antippen"}
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,46px)",gridTemplateRows:"repeat(3,46px)",gap:4}}>
+              {[null,["▲",0,-1],null,["◀",-1,0],["⭐","star"],["▶",1,0],null,["▼",0,1],null].map((b,i)=>
+                b? <button key={i}
+                     onPointerDown={(e)=>{ e.preventDefault(); b[1]==="star"?padStar():padStart(b[1],b[2]); }}
+                     onPointerUp={padStop} onPointerLeave={padStop} onPointerCancel={padStop} onTouchEnd={padStop}
+                     style={{borderRadius:13,border:"none",background:b[1]==="star"?"rgba(202,138,4,.85)":"rgba(15,23,42,.72)",color:"#fff",fontSize:17,fontWeight:900,cursor:"pointer",touchAction:"none",fontFamily:"inherit",opacity:si?1:0.45}}>{b[0]}</button>
+                 : <span key={i}/>)}
+            </div>
+          </div>
+        );})()}
       </div>
       {present&&(
         <div style={{flexShrink:0,display:"flex",flexDirection:"column",gap:8}}>
@@ -1539,6 +1885,43 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
         </div>
       )}
 
+      {/* Szenario-Spiel: Situationen erkennen, reagieren, Verstaerkung rufen – mit ehrlicher Analyse */}
+      <div style={{background:"linear-gradient(135deg,#fff7ed,#fefce8)",border:"1.5px solid #fed7aa",borderRadius:13,padding:"12px 13px"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginBottom:scn?9:7}}>
+          <span style={{fontSize:11,fontWeight:800,color:"#c2410c",letterSpacing:.4}}>🎲 SZENARIO-SPIEL{scn?` · RUNDE ${scn.round} · ${scn.score} ⭐`:""}</span>
+          {scn&&<button onClick={scnEnd}
+            style={{padding:"6px 12px",borderRadius:9,border:"1.5px solid #fed7aa",background:"#fff",color:"#c2410c",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>🏁 Fertig</button>}
+        </div>
+        {!scn&&<>
+          <div style={{fontSize:kidMode?13.5:12.5,color:"#7c2d12",lineHeight:1.55,marginBottom:10}}>Die App stellt dir echte Spiel-Situationen: Gegner decken, freilaufen, Verstärkung rufen – und sagt dir danach ehrlich, ob es schlau war. Aus jeder Lösung entsteht die nächste Situation!</div>
+          <button onClick={()=>{ setShowOpp(true); if(!ballPos) setBallPos({x:F.vw/2,y:F.vh/2}); scnNext(null); }}
+            style={{width:"100%",padding:kidMode?"14px":"11px",borderRadius:11,border:"none",background:"#ea580c",color:"#fff",fontWeight:900,fontSize:kidMode?16:14,cursor:"pointer",fontFamily:"inherit"}}>▶ Los geht's!</button>
+        </>}
+        {scn&&(
+          <div style={{background:"#fff",borderRadius:11,padding:"11px 13px"}}>
+            <div style={{fontSize:kidMode?15:13.5,fontWeight:800,color:"#0f172a",lineHeight:1.55}}>{scn.phase==="resolve"?scn.feedback:scn.text}</div>
+            {scn.phase==="task"&&scn.type!=="reinforce"&&(
+              <div style={{marginTop:8,fontSize:12.5,fontWeight:800,color:(scn.deadline-Date.now())<4000?"#dc2626":"#64748b"}}>
+                ⏱ noch {Math.max(0,Math.ceil((scn.deadline-Date.now())/1000))} s – schieb {kidMode?"deinen Spieler":"den markierten Spieler"} mit Finger oder 🎮 hin!
+              </div>
+            )}
+            {scn.phase==="task"&&scn.type==="reinforce"&&(
+              <div style={{display:"flex",gap:8,marginTop:10}}>
+                <button onClick={()=>scnAnswer(true)}
+                  style={{flex:1,padding:kidMode?"13px 8px":"10px 8px",borderRadius:11,border:"none",background:"#dc2626",color:"#fff",fontWeight:900,fontSize:kidMode?15:13,cursor:"pointer",fontFamily:"inherit"}}>📣 Verstärkung!</button>
+                <button onClick={()=>scnAnswer(false)}
+                  style={{flex:1,padding:kidMode?"13px 8px":"10px 8px",borderRadius:11,border:"2px solid #475569",background:"#fff",color:"#334155",fontWeight:900,fontSize:kidMode?15:13,cursor:"pointer",fontFamily:"inherit"}}>🙅 Halten!</button>
+              </div>
+            )}
+            {scn.phase==="running"&&<div style={{marginTop:8,fontSize:12.5,color:"#64748b",fontWeight:700}}>🏃 Läuft…</div>}
+            {scn.phase==="resolve"&&(
+              <button onClick={()=>scnNext(scn)}
+                style={{width:"100%",marginTop:10,padding:kidMode?"13px":"10px",borderRadius:11,border:"none",background:"#ea580c",color:"#fff",fontWeight:900,fontSize:kidMode?15:13.5,cursor:"pointer",fontFamily:"inherit"}}>▶ Nächste Situation</button>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* KI-Assistent: schlaegt Schritte vor (eingebaute Spiellogik, offline) */}
       <div style={{background:"linear-gradient(135deg,#faf5ff,#eff6ff)",border:"1.5px solid #ddd6fe",borderRadius:13,padding:"12px 13px"}}>
         <div style={{fontSize:11,fontWeight:800,color:"#7c3aed",letterSpacing:.4,marginBottom:9}}>✨ KI-ASSISTENT</div>
@@ -1572,6 +1955,53 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
         </div>
       )}
       {!kidMode&&<>
+      {!playerCtx&&(()=>{
+        // Befristete Freischaltung: einzelne Kinder duerfen Taktik & Szenarien in ihrer
+        // eigenen Ansicht nutzen; Ergebnisse landen unten fuer die gemeinsame Analyse.
+        const kids=(data.playerProfiles||[]).filter(p=>myTids.includes(p.mainTid)&&!p.archived).sort((a,b)=>(a.name||"").localeCompare(b.name||""));
+        const unlocks=(data.tacticUnlocks||[]).filter(u=>u.cid===cl.id&&new Date(u.until)>new Date());
+        const sessions=(data.tacticSessions||[]).filter(s=>s.cid===cl.id).sort((a,b)=>(b.ts||"").localeCompare(a.ts||"")).slice(0,15);
+        const restLabel=(until)=>{ const h=Math.max(0,(new Date(until)-Date.now())/36e5); return h>=48?`noch ${Math.round(h/24)} Tage`:h>=1?`noch ${Math.round(h)} Std`:"läuft ab"; };
+        const grant=(pid,days)=>{ const p=kids.find(k=>k.id===pid); if(!p) return;
+          const u={id:uid(),cid:cl.id,pid,name:p.name,until:new Date(Date.now()+days*864e5).toISOString(),createdAt:new Date().toISOString()};
+          save({...data,tacticUnlocks:[...(data.tacticUnlocks||[]).filter(x=>x.pid!==pid),u]});
+          fire&&fire(`${p.name} für ${days===1?"1 Tag":days+" Tage"} freigeschaltet`); };
+        const revoke=(id)=>save({...data,tacticUnlocks:(data.tacticUnlocks||[]).filter(x=>x.id!==id)});
+        const delSession=(id)=>save({...data,tacticSessions:(data.tacticSessions||[]).filter(x=>x.id!==id)});
+        const rSum=(d)=>{ const re=(d||[]).filter(x=>x.type==="reinforce"); if(!re.length) return ""; const g=re.filter(x=>x.good).length; return ` · 📣 ${g}/${re.length} gute Verstärkungs-Entscheidungen`; };
+        return (<>
+        <div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:13,padding:"13px 14px"}}>
+          <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.4,marginBottom:4}}>🔓 KINDER-FREISCHALTUNG</div>
+          <div style={{fontSize:12,color:"#64748b",lineHeight:1.5,marginBottom:10}}>Schalte Taktiktafel &amp; Szenario-Spiel für einzelne Kinder befristet frei. Sie sehen es dann in ihrer eigenen App-Ansicht – die Ergebnisse erscheinen unten zum gemeinsamen Besprechen.</div>
+          <UnlockPicker kids={kids} onGrant={grant} t={t}/>
+          {unlocks.length>0&&<div style={{display:"flex",flexDirection:"column",gap:6,marginTop:10}}>
+            {unlocks.map(u=>(
+              <div key={u.id} style={{display:"flex",alignItems:"center",gap:8,background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:10,padding:"8px 11px"}}>
+                <span style={{flex:1,fontWeight:700,fontSize:13,color:"#166534"}}>✅ {u.name}</span>
+                <span style={{fontSize:11.5,color:"#16a34a",fontWeight:700}}>{restLabel(u.until)}</span>
+                <button onClick={()=>revoke(u.id)} style={{width:26,height:26,borderRadius:8,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:800,cursor:"pointer"}}>✕</button>
+              </div>
+            ))}
+          </div>}
+        </div>
+        {sessions.length>0&&(
+        <div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:13,padding:"13px 14px"}}>
+          <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.4,marginBottom:4}}>📊 SZENARIO-ERGEBNISSE</div>
+          <div style={{fontSize:12,color:"#64748b",lineHeight:1.5,marginBottom:10}}>Zum gemeinsamen Analysieren: Wie haben die Kinder entschieden?</div>
+          <div style={{display:"flex",flexDirection:"column",gap:6}}>
+            {sessions.map(s=>(
+              <div key={s.id} style={{display:"flex",alignItems:"center",gap:8,background:"#f8fafc",borderRadius:10,padding:"8px 11px",border:"1px solid #f1f5f9"}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontWeight:700,fontSize:13,color:"#0f172a"}}>{s.name} · {s.score}/{s.rounds} ⭐</div>
+                  <div style={{fontSize:11,color:"#64748b"}}>{fmtD(s.ts)}{rSum(s.decisions)}</div>
+                </div>
+                <button onClick={()=>delSession(s.id)} style={{width:26,height:26,borderRadius:8,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:800,cursor:"pointer",flexShrink:0}}>✕</button>
+              </div>
+            ))}
+          </div>
+        </div>)}
+        </>);
+      })()}
       <div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:13,padding:"13px 14px"}}>
         <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.4,marginBottom:9}}>GESPEICHERTE BOARDS</div>
         <div style={{display:"flex",gap:8,marginBottom:myBoards.length?12:0}}>
