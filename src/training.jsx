@@ -986,6 +986,23 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
   // Freier Ball: ein-/ausblendbar und wie ein Spieler-Token verschiebbar.
   const [ballPos,setBallPos]=useState(null); // null = ausgeblendet
   const toggleBall=()=>setBallPos(b=>b?null:{x:F.vw/2,y:F.vh/2});
+  // Einfach-Modus (Kinder): grosse Knoepfe, weniger Optionen – gleiche Technik darunter.
+  const [kidMode,setKidMode]=useState(()=>{ try{ return localStorage.getItem("va_tb_kid")==="1"; }catch{ return false; } });
+  const setKid=(v)=>{ setKidMode(v); try{ localStorage.setItem("va_tb_kid",v?"1":"0"); }catch{} };
+  // Fokus-Spotlight: einen Spieler hervorheben, alle anderen abdunkeln.
+  const [focusId,setFocusId]=useState(null);
+  // Vorfuehr-Modus: Vollbild nur mit Feld + Abspielen (zum Zeigen am Spielfeldrand).
+  const [present,setPresent]=useState(false);
+  // "Leben": staendige kleine Bewegung aller Spieler, Gegner orientieren sich zum Ball.
+  const [liveOn,setLiveOn]=useState(false);
+  const [liveT,setLiveT]=useState(0);
+  useEffect(()=>{ if(!liveOn){ setLiveT(0); return; }
+    let on=true,id=0,last=0;
+    const lo=(t)=>{ if(!on) return; if(t-last>40){ last=t; setLiveT(t); } id=requestAnimationFrame(lo); };
+    id=requestAnimationFrame(lo);
+    return ()=>{ on=false; cancelAnimationFrame(id); };
+  },[liveOn]);
+  const [aiHint,setAiHint]=useState("");
   const [oppFormIdx,setOppFormIdx]=useState(0);
   const buildOpp=(sp,cnt,fi)=>{ const FF=TB_FIELDS[sp]||TB_FIELDS.generic; const f=tbForms(sp,cnt)[fi]||tbForms(sp,cnt)[0]; return (f?.p||[]).map((pos,i)=>({id:"op"+i,x:pos[0]*FF.vw,y:(1-pos[1])*FF.vh,n:i+1})); };
   const [oppTokens,setOppTokens]=useState(()=>buildOpp(sport,count,oppFormIdx));
@@ -1039,7 +1056,8 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
     const seq=arrows.filter(a=>a.type==="run"||a.type==="pass"||a.type==="dribble");
     if(!seq.length){ fire&&fire("Erst Lauf-/Passwege einzeichnen"); return; }
     resetAnim();
-    const runs=seq.filter(a=>a.type==="run");
+    // Dribbling bewegt Spieler UND Ball zusammen -> zaehlt auch als "Lauf" des Spielers.
+    const runs=seq.filter(a=>a.type==="run"||a.type==="dribble");
     const thr=F.r*3.6; const usedRun=new Set();
     const withRun=(list)=>list.map(tk=>{
       let best=null,bd=thr,bi=-1;
@@ -1059,7 +1077,8 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
       // Doppelpass (One-Two): Pass kommt von dort, wo der vorige Pass ankam, und geht
       // wieder zum vorigen Passgeber zurück -> schneller Rückpass (kurzer Kontakt).
       const oneTwo = a.type==="pass" && prevPass && Math.hypot(a.x1-prevPass.x2,a.y1-prevPass.y2)<F.r*3.2 && Math.hypot(a.x2-prevPass.x1,a.y2-prevPass.y1)<F.vw*0.24;
-      if(a.type==="pass"&&prev&&prev.type==="run") start=Math.max(0,tEnd-durOf(prev)*0.5);
+      if(a.par&&prev) start=sched.get(prev).start;   // ∥ laeuft gleichzeitig mit dem Schritt davor
+      else if(a.type==="pass"&&prev&&prev.type==="run") start=Math.max(0,tEnd-durOf(prev)*0.5);
       else if(oneTwo) start=tEnd+60;      // Doppelpass: direkt klatschen lassen
       else if(i>0) start=tEnd+170;         // Ballannahme/Settle
       const ph={start,end:start+d,dur:d,oneTwo}; sched.set(a,ph); tEnd=Math.max(tEnd,ph.end);
@@ -1094,15 +1113,23 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
     let goalShown=false;
     const step=(t)=>{ const T=Math.min((t-t0Ref.current)*animSpeed,TOTAL);
       const b = ballEv.length ? ballAt(T) : null;
-      setAnimOwn(ownA.map(tk=>tokAt(tk,T)));
+      // Staendige kleine Bewegung: nichts steht wie angewurzelt auf dem Feld.
+      const wob=(tk,amp)=>({dx:Math.sin(T/620+tk.n*2.1)*F.r*amp, dy:Math.cos(T/540+tk.n*3.7)*F.r*amp});
+      setAnimOwn(ownA.map(tk=>{ const p=tokAt(tk,T); if(tk.run) return p;
+        // Mitspieler ohne eigenen Laufweg ruecken leicht zum Ball auf (Anspielstationen anbieten)
+        const w=wob(tk,0.16); let sx=0,sy=0;
+        if(b&&tk.n!==1){ const dx=b.x-tk.sx,dy=b.y-tk.sy,dist=Math.hypot(dx,dy)||1; const sh=Math.min(F.vw*0.05,dist*0.2)*Math.min(1,T/1200); sx=dx/dist*sh; sy=dy/dist*sh; }
+        return {...p,x:p.x+w.dx+sx,y:p.y+w.dy+sy};
+      }));
       if(showOpp){
         const pr=Math.min(1,T/(TOTAL*0.45));   // Press-Intensität rampt hoch
         let nearId=null,nd=1e9;
         if(reactDef&&b) oppA.forEach(tk=>{ if(tk.run||tk.n===1)return; const dd=Math.hypot(b.x-tk.sx,b.y-tk.sy); if(dd<nd){nd=dd;nearId=tk.id;} });
         setAnimOpp(oppA.map(tk=>{
           if(tk.run) return tokAt(tk,T);
-          if(reactDef&&b&&tk.n!==1){ const dx=b.x-tk.sx,dy=b.y-tk.sy,dist=Math.hypot(dx,dy)||1; const press=pr*(tk.id===nearId?0.85:0.36); const shift=Math.min(F.vw*0.13,dist*0.45)*press; return {...tk,x:tk.sx+dx/dist*shift,y:tk.sy+dy/dist*shift}; }
-          return {...tk,x:tk.sx,y:tk.sy};
+          const w=wob(tk,0.28);
+          if(reactDef&&b&&tk.n!==1){ const dx=b.x-tk.sx,dy=b.y-tk.sy,dist=Math.hypot(dx,dy)||1; const press=pr*(tk.id===nearId?0.85:0.36); const shift=Math.min(F.vw*0.13,dist*0.45)*press; return {...tk,x:tk.sx+dx/dist*shift+w.dx,y:tk.sy+dy/dist*shift+w.dy}; }
+          return {...tk,x:tk.sx+w.dx,y:tk.sy+w.dy};
         }));
       }
       if(b){ setAnimBall(b); const tr=trailRef.current; tr.push({x:b.x,y:b.y}); if(tr.length>10) tr.shift(); setAnimTrail(tr.slice()); }
@@ -1158,12 +1185,111 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
   const setDraw=(v)=>{ const nv=typeof v==="function"?v(drawRef.current):v; drawRef.current=nv; setDraw0(nv); };
   const PACE_COL={1:"#22c55e",2:"#f59e0b",3:"#ef4444"};
   const runArrowCol=a=>PACE_COL[a.pace]||"#ffffff";
-  const ARR_COL={run:"#ffffff",pass:"#fb923c"};
+  const ARR_COL={run:"#ffffff",pass:"#fb923c",dribble:"#22d3ee"};
   const toSvg=(e)=>{ const el=svgRef.current; if(!el) return null; const r=el.getBoundingClientRect(); const cx=(e.touches?e.touches[0].clientX:e.clientX); const cy=(e.touches?e.touches[0].clientY:e.clientY); return { x:(cx-r.left)/r.width*F.vw, y:(cy-r.top)/r.height*F.vh }; };
-  const startDraw=(e)=>{ if(mode==="move"||mode==="mark") return; resetAnim(); const p=toSvg(e); if(!p) return; if(e.preventDefault)e.preventDefault(); setDraw({type:mode,x1:p.x,y1:p.y,x2:p.x,y2:p.y,...(mode==="run"?{pace:runPace}:{})}); };
+  const startDraw=(e)=>{ if(mode==="focus"){ setFocusId(null); return; } if(mode==="move"||mode==="mark") return; resetAnim(); const p=toSvg(e); if(!p) return; if(e.preventDefault)e.preventDefault(); setDraw({type:mode,x1:p.x,y1:p.y,x2:p.x,y2:p.y,...(mode==="run"?{pace:runPace}:{})}); };
   const toggleMark=(setT,id)=>{ resetAnim(); setT(ts=>ts.map(x=>x.id===id?{...x,marked:!x.marked}:x)); };
   const onMove=(e)=>{ const p=toSvg(e); if(!p) return; if(mode==="move"){ if(dragRef.current==null) return; if(dragRef.current==="ball"){ const R=F.r*0.6; setBallPos({x:Math.max(R,Math.min(F.vw-R,p.x)),y:Math.max(R,Math.min(F.vh-R,p.y))}); return; } const R=F.r; const setT=dragSetRef.current==="opp"?setOppTokens:setTokens; setT(ts=>ts.map(tk=>tk.id===dragRef.current?{...tk,x:Math.max(R,Math.min(F.vw-R,p.x)),y:Math.max(R,Math.min(F.vh-R,p.y))}:tk)); } else { if(!drawRef.current) return; setDraw(d=>d?{...d,x2:p.x,y2:p.y}:d); } };
-  const endDrag=()=>{ if(mode==="move"){ dragRef.current=null; return; } const d=drawRef.current; if(d){ const len=Math.hypot(d.x2-d.x1,d.y2-d.y1); if(len>F.vw*0.04) setArrows(a=>[...a,{...d,id:"ar"+Date.now()+Math.round(Math.random()*999)}]); } setDraw(null); };
+  const endDrag=()=>{ if(mode==="move"){ dragRef.current=null; return; } const d=drawRef.current; if(d){ const len=Math.hypot(d.x2-d.x1,d.y2-d.y1); if(len>F.vw*0.04) setArrows(a=>[...a,{...d,par:false,id:"ar"+Date.now()+Math.round(Math.random()*999)}]); } setDraw(null); };
+
+  // ---- Ablauf-Liste: Beschriftung, Loeschen, Umsortieren, Parallel-Schalter ----
+  const nearTok=(x,y)=>{ let best=null,bd=1e9;
+    tokens.forEach(tk=>{ const d=Math.hypot(tk.x-x,tk.y-y); if(d<bd){bd=d;best={...tk,side:"own"};} });
+    if(showOpp) oppTokens.forEach(tk=>{ const d=Math.hypot(tk.x-x,tk.y-y); if(d<bd){bd=d;best={...tk,side:"opp"};} });
+    return bd<F.r*3.5?best:null;
+  };
+  const stepLabel=(a)=>{
+    const s=nearTok(a.x1,a.y1), z=nearTok(a.x2,a.y2);
+    const nm=tk=>tk?`${tk.side==="opp"?"Gegner ":""}Nr. ${tk.n}`:"";
+    if(a.type==="run") return `🏃 Lauf ${nm(s)} ${a.pace===3?"· Sprint":a.pace===1?"· locker":""}`.replace(/\s+/g," ").trim();
+    if(a.type==="dribble") return `⚽💨 Dribbling ${nm(s)}`.trim();
+    if(isGoalShot(a)) return `🥅 Schuss aufs Tor ${nm(s)}`.trim();
+    return `🎯 Pass ${nm(s)}${z&&z.id!==s?.id?` → ${nm(z)}`:""}`.trim();
+  };
+  const delStep=(id)=>{ resetAnim(); setArrows(a=>a.filter(x=>x.id!==id)); };
+  const moveStep=(i,dir)=>{ resetAnim(); setArrows(a=>{ const j=i+dir; if(j<0||j>=a.length) return a; const n=a.slice(); [n[i],n[j]]=[n[j],n[i]]; return n; }); };
+  const togglePar=(id)=>{ resetAnim(); setArrows(a=>a.map(x=>x.id===id?{...x,par:!x.par}:x)); };
+
+  // ---- KI-Assistent (eingebaute Spiellogik, laeuft komplett offline) ----
+  // Spielstand nach den bisherigen Schritten: wo ist der Ball, wo steht wer?
+  const simState=(arrs)=>{
+    const after=(list)=>list.map(tk=>{ let x=tk.x,y=tk.y;
+      arrs.forEach(a=>{ if(a.type!=="run"&&a.type!=="dribble") return; if(Math.hypot(a.x1-x,a.y1-y)<F.r*2.2){ x=a.x2; y=a.y2; } });
+      return {...tk,x,y}; });
+    const own=after(tokens), opp=showOpp?after(oppTokens):[];
+    const ballSeq=arrs.filter(a=>a.type==="pass"||a.type==="dribble");
+    let bx,by;
+    if(ballSeq.length){ const l=ballSeq[ballSeq.length-1]; bx=l.x2; by=l.y2; }
+    else if(ballPos){ bx=ballPos.x; by=ballPos.y; }
+    else { const deep=own.filter(o=>o.n!==1).sort((a,b)=>b.y-a.y)[0]||own[0]; bx=deep?.x??F.vw/2; by=deep?.y??F.vh/2; }
+    return {own,opp,bx,by};
+  };
+  // Wie frei ist eine Passlinie? (Abstand des naechsten Gegners zur Linie)
+  const laneFree=(x1,y1,x2,y2,opp)=>{ if(!opp.length) return 9;
+    let m=9; opp.forEach(o=>{ const dx=x2-x1,dy=y2-y1,L=dx*dx+dy*dy||1;
+      let u=((o.x-x1)*dx+(o.y-y1)*dy)/L; u=Math.max(0,Math.min(1,u));
+      const d=Math.hypot(o.x-(x1+dx*u),o.y-(y1+dy*u)); if(d<m)m=d; });
+    return m; };
+  const suggestOne=(arrs,wantType)=>{
+    const {own,opp,bx,by}=simState(arrs);
+    const carrier=own.reduce((b,tk)=>{ const d=Math.hypot(tk.x-bx,tk.y-by); return d<b.d?{d,tk}:b; },{d:1e9,tk:null}).tk;
+    const mates=own.filter(tk=>tk.n!==1&&tk.id!==carrier?.id);
+    // Nah am Tor -> Abschluss!
+    if((!wantType||wantType==="pass")&&by<F.vh*0.32)
+      return { a:{type:"pass",x1:bx,y1:by,x2:F.vw/2,y2:F.vh*0.012,par:false}, hint:`Nr. ${carrier?.n??"?"} ist frei vor dem Tor – Schuss! 🥅` };
+    if(wantType==="run"||wantType==="dribble"){
+      // Lauf/Dribbling in den freiesten Raum Richtung gegnerisches Tor
+      const who=wantType==="dribble"?carrier:(mates.sort((a,b)=>a.y-b.y)[0]||carrier);
+      if(!who) return null;
+      const cands=[]; for(let ang=-60;ang<=60;ang+=30){ const rad=(ang-90)*Math.PI/180; const len=F.vh*0.18;
+        const x2=Math.max(F.r,Math.min(F.vw-F.r,who.x+Math.cos(rad)*len)), y2=Math.max(F.r,Math.min(F.vh-F.r,who.y+Math.sin(rad)*len));
+        const nearOpp=opp.length?Math.min(...opp.map(o=>Math.hypot(o.x-x2,o.y-y2))):9;
+        cands.push({x2,y2,s:nearOpp-(y2/F.vh)*3}); }
+      const c=cands.sort((a,b)=>b.s-a.s)[0];
+      return { a:{type:wantType,x1:who.x,y1:who.y,x2:c.x2,y2:c.y2,par:false,...(wantType==="run"?{pace:2}:{})},
+        hint:wantType==="dribble"?`Nr. ${who.n} dribbelt in den freien Raum! ⚽💨`:`Nr. ${who.n} läuft sich frei – Richtung Tor! 🏃` };
+    }
+    // Standard: bester Pass = freie Linie + freier Mitspieler + Raumgewinn nach vorn
+    const scored=mates.map(tk=>{ const dist=Math.hypot(tk.x-bx,tk.y-by);
+      if(dist<F.vw*0.1||dist>F.vh*0.55) return {tk,s:-1e9};
+      const free=laneFree(bx,by,tk.x,tk.y,opp);
+      const openness=opp.length?Math.min(...opp.map(o=>Math.hypot(o.x-tk.x,o.y-tk.y))):6;
+      const forward=(by-tk.y);
+      return {tk,s:free*2.2+openness*1.4+forward*0.9}; }).sort((a,b)=>b.s-a.s);
+    const best=scored[0]; if(!best||best.s<=-1e9) return null;
+    return { a:{type:"pass",x1:bx,y1:by,x2:best.tk.x,y2:best.tk.y,par:false},
+      hint:`Nr. ${best.tk.n} steht frei – Pass! 🎯` };
+  };
+  const aiSuggest=()=>{
+    const wantType=(mode==="run"||mode==="dribble"||mode==="pass")?mode:undefined;
+    const s=suggestOne(arrows,wantType);
+    if(!s){ setAiHint("Mir fällt gerade nichts ein – verschiebe die Spieler ein bisschen!"); return; }
+    resetAnim(); setArrows(a=>[...a,{...s.a,id:"ar"+Date.now()+Math.round(Math.random()*999)}]); setAiHint(s.hint);
+  };
+  const aiPlay=()=>{
+    // Ganzer Spielzug: Pass-Stationen, parallel dazu Freilaeufe, bis zum Abschluss.
+    resetAnim();
+    let arrs=arrows.slice(); const added=[]; let guard=0;
+    while(guard++<7){
+      const s=suggestOne(arrs); if(!s) break;
+      const na={...s.a,id:"ar"+Date.now()+guard+Math.round(Math.random()*999)};
+      arrs=[...arrs,na]; added.push(na);
+      if(na.type==="pass"&&isGoalShot(na)) break;
+      if(added.length===1||added.length===3){ const r=suggestOne(arrs,"run");
+        if(r){ const ra={...r.a,id:"arp"+Date.now()+guard,par:true}; arrs=[...arrs,ra]; added.push(ra); } }
+    }
+    if(!added.length){ setAiHint("Kein Vorschlag möglich – stell die Spieler neu auf!"); return; }
+    setArrows(arrs); setAiHint(`Fertiger Spielzug mit ${added.length} Schritten – tippe auf ▶ Abspielen!`);
+  };
+
+  // "Leben": kleine Pendel-Bewegung fuer alle; Gegner ruecken zum freien Ball (der Naechste presst).
+  const liveOff=(tk,side)=>{ if(!liveOn||playing||!liveT) return null;
+    const amp=side==="opp"?0.3:0.2;
+    let dx=Math.sin(liveT/700+tk.n*2.3+(side==="opp"?1.7:0))*F.r*amp;
+    let dy=Math.cos(liveT/560+tk.n*3.1)*F.r*amp;
+    if(side==="opp"&&ballPos&&tk.n!==1){ const bdx=ballPos.x-tk.x,bdy=ballPos.y-tk.y,d=Math.hypot(bdx,bdy)||1;
+      const lean=Math.min(F.vw*0.08,d*0.35); dx+=bdx/d*lean; dy+=bdy/d*lean; }
+    return {dx,dy}; };
 
   const chSport=(sp)=>{ const FF=TB_FIELDS[sp]||TB_FIELDS.generic; const c=FF.counts.includes(11)?11:FF.counts[0]; setSport(sp); setCount(c); setFormIdx(0); setArrows([]); setDraw(null); setBallPos(b=>b?{x:FF.vw/2,y:FF.vh/2}:null); };
   const Btn=({active,onClick,children})=>(
@@ -1172,10 +1298,21 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
 
   return (
     <div style={{display:"flex",flexDirection:"column",gap:12}}>
-      <div>
-        <h3 style={{margin:"0 0 2px",fontSize:17,fontWeight:900,color:"#0f172a"}}>Taktikboard</h3>
-        <p style={{fontSize:12.5,color:"#64748b",margin:0}}>Feld &amp; Aufstellung – Spieler verschieben und Lauf-/Passwege einzeichnen.</p>
+      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:10}}>
+        <div style={{minWidth:0}}>
+          <h3 style={{margin:"0 0 2px",fontSize:17,fontWeight:900,color:"#0f172a"}}>Taktikboard</h3>
+          <p style={{fontSize:12.5,color:"#64748b",margin:0}}>{kidMode?"Werkzeug antippen, auf dem Feld ziehen, ▶ drücken – fertig!":"Feld & Aufstellung – Abläufe zeichnen, sortieren und animieren."}</p>
+        </div>
+        <button onClick={()=>setKid(!kidMode)}
+          style={{flexShrink:0,padding:"8px 13px",borderRadius:99,border:`2px solid ${kidMode?"#f59e0b":"#e2e8f0"}`,background:kidMode?"#fffbeb":"#fff",color:kidMode?"#b45309":"#475569",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>
+          {kidMode?"🧒 Einfach":"👔 Profi"}
+        </button>
       </div>
+      <button onClick={()=>{setPresent(true);setMode("move");}}
+        style={{width:"100%",padding:kidMode?"14px":"12px",borderRadius:13,border:"none",background:"#0f172a",color:"#fff",fontWeight:800,fontSize:kidMode?16:14,cursor:"pointer",fontFamily:"inherit"}}>
+        🎬 Vorführen – Vollbild nur zum Zeigen
+      </button>
+      {!kidMode&&<>
       {(()=>{ const clSport=sportMap[cl?.sport]||"football"; const shown=TB_SPORTS.filter(s=>s.id===clSport||s.id==="generic"); return shown.length>1?(
       <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
         {shown.map(s=><Btn key={s.id} active={sport===s.id} onClick={()=>chSport(s.id)}>{s.label}</Btn>)}
@@ -1197,99 +1334,140 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
           {FORMATION_MOVE[forms[formIdx].name]&&<div style={{marginTop:6,paddingTop:6,borderTop:"1px dashed #e2e8f0"}}><b style={{color:"#0f172a"}}>↔ Bewegung:</b> {FORMATION_MOVE[forms[formIdx].name]}</div>}
         </div>
       )}
-      <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
-        <span style={{fontSize:11,fontWeight:800,color:"#64748b",marginRight:2}}>GEGNER</span>
-        <Btn active={showOpp} onClick={()=>setShowOpp(s=>!s)}>{showOpp?"An":"Aus"}</Btn>
-        {showOpp&&forms.map((f,i)=><Btn key={"o"+f.name} active={oppFormIdx===i} onClick={()=>setOppFormIdx(i)}>{f.name}</Btn>)}
-        <span style={{width:1,height:18,background:"#e2e8f0"}}/>
-        <Btn active={!!ballPos} onClick={toggleBall}>⚽ Ball {ballPos?"An":"Aus"}</Btn>
+      </>}
+      {/* Auf dem Feld: Gegner, Ball, Leben (staendige Bewegung) */}
+      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+        {[
+          {on:showOpp,click:()=>setShowOpp(s=>!s),e:"🔴",l:"Gegner",c:"#dc2626"},
+          {on:!!ballPos,click:toggleBall,e:"⚽",l:"Ball",c:"#0f172a"},
+          {on:liveOn,click:()=>setLiveOn(v=>!v),e:"💓",l:"Leben",c:"#16a34a"},
+        ].map(o=>(
+          <button key={o.l} onClick={o.click}
+            style={{flex:1,minWidth:90,padding:kidMode?"11px 8px":"9px 8px",borderRadius:12,border:`2px solid ${o.on?o.c:"#e2e8f0"}`,background:o.on?o.c+"14":"#fff",color:o.on?o.c:"#64748b",fontWeight:800,fontSize:kidMode?14.5:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>
+            {o.e} {o.l} {o.on?"An":"Aus"}
+          </button>
+        ))}
       </div>
-      <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
-        <span style={{fontSize:11,fontWeight:800,color:"#64748b",marginRight:2}}>WERKZEUG</span>
-        <Btn active={mode==="move"} onClick={()=>setMode("move")}>Bewegen</Btn>
-        <Btn active={mode==="mark"} onClick={()=>setMode("mark")}>⭐ Markieren</Btn>
-        <Btn active={mode==="run"} onClick={()=>setMode("run")}>Laufweg</Btn>
-        <Btn active={mode==="pass"} onClick={()=>setMode("pass")}>Passweg</Btn>
-        <button onClick={()=>setArrows(a=>a.slice(0,-1))} disabled={!arrows.length}
-          style={{padding:"7px 12px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:arrows.length?"#475569":"#cbd5e1",fontWeight:700,fontSize:12.5,cursor:arrows.length?"pointer":"default",fontFamily:"inherit",whiteSpace:"nowrap"}}>Rückgängig</button>
-        <button onClick={()=>{resetAnim();setArrows([]);setDraw(null);}} disabled={!arrows.length&&!draw}
-          style={{padding:"7px 12px",borderRadius:9,border:"1.5px solid #fecaca",background:"#fff",color:(arrows.length||draw)?"#dc2626":"#fca5a5",fontWeight:700,fontSize:12.5,cursor:(arrows.length||draw)?"pointer":"default",fontFamily:"inherit",whiteSpace:"nowrap"}}>Pfeile löschen</button>
+      {!kidMode&&showOpp&&(
+        <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
+          <span style={{fontSize:11,fontWeight:800,color:"#64748b",marginRight:2}}>GEGNER-SYSTEM</span>
+          {forms.map((f,i)=><Btn key={"o"+f.name} active={oppFormIdx===i} onClick={()=>setOppFormIdx(i)}>{f.name}</Btn>)}
+        </div>
+      )}
+      {/* Werkzeuge: ein Tipp = ein Werkzeug, gross und farbig */}
+      <div style={{display:"grid",gridTemplateColumns:kidMode?"repeat(3,1fr)":"repeat(6,1fr)",gap:kidMode?8:6}}>
+        {[
+          {id:"move",e:"🖐",l:"Bewegen",c:"#2563eb"},
+          {id:"run",e:"🏃",l:"Laufen",c:"#16a34a"},
+          {id:"dribble",e:"⚽💨",l:"Dribbeln",c:"#0891b2"},
+          {id:"pass",e:"🎯",l:"Pass",c:"#ea580c"},
+          {id:"focus",e:"🔦",l:"Fokus",c:"#7c3aed"},
+          {id:"mark",e:"⭐",l:"Stern",c:"#ca8a04"},
+        ].map(o=>(
+          <button key={o.id} onClick={()=>setMode(o.id)}
+            style={{padding:kidMode?"12px 4px":"8px 2px",borderRadius:14,border:`2.5px solid ${mode===o.id?o.c:"#e2e8f0"}`,background:mode===o.id?o.c+"16":"#fff",display:"flex",flexDirection:"column",alignItems:"center",gap:3,cursor:"pointer",fontFamily:"inherit"}}>
+            <span style={{fontSize:kidMode?26:17,lineHeight:1.15}}>{o.e}</span>
+            <span style={{fontSize:kidMode?13:9.5,fontWeight:800,color:mode===o.id?o.c:"#64748b"}}>{o.l}</span>
+          </button>
+        ))}
+      </div>
+      <div style={{fontSize:kidMode?13.5:11.5,color:"#475569",background:"#f8fafc",borderRadius:10,padding:"8px 12px",fontWeight:kidMode?700:500}}>
+        {{move:"👉 Spieler und Ball einfach mit dem Finger verschieben.",
+          run:"👉 Vom Spieler dorthin ziehen, wo er hinlaufen soll.",
+          dribble:"👉 Vom Spieler mit Ball dorthin ziehen, wo er hindribbelt – Ball läuft mit!",
+          pass:"👉 Vom Ball zum Mitspieler ziehen. Oder mutig: direkt aufs Tor!",
+          focus:"👉 Auf einen Spieler tippen – alle schauen nur auf ihn. Aufs Feld tippen: aus.",
+          mark:"👉 Auf Spieler tippen, um ihm einen Stern zu geben."}[mode]}
       </div>
       {mode==="run"&&(
         <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
           <span style={{fontSize:11,fontWeight:800,color:"#64748b",marginRight:2}}>TEMPO</span>
           {[[1,"🐢 locker"],[2,"🐇 zügig"],[3,"🐆 Sprint"]].map(([p,l])=>(
-            <button key={p} onClick={()=>setRunPace(p)} style={{padding:"5px 11px",borderRadius:8,border:`1.5px solid ${runPace===p?PACE_COL[p]:"#e2e8f0"}`,background:runPace===p?PACE_COL[p]+"22":"#fff",color:runPace===p?"#0f172a":"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
+            <button key={p} onClick={()=>setRunPace(p)} style={{padding:kidMode?"9px 14px":"5px 11px",borderRadius:9,border:`1.5px solid ${runPace===p?PACE_COL[p]:"#e2e8f0"}`,background:runPace===p?PACE_COL[p]+"22":"#fff",color:runPace===p?"#0f172a":"#64748b",fontWeight:700,fontSize:kidMode?14:12,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
           ))}
-          <span style={{fontSize:11,color:"#64748b"}}>für den nächsten Laufweg</span>
+          {!kidMode&&<span style={{fontSize:11,color:"#64748b"}}>für den nächsten Laufweg</span>}
         </div>
       )}
-      <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
-        <span style={{fontSize:11,fontWeight:800,color:"#64748b",marginRight:2}}>ANIMATION</span>
+      <div style={{display:"flex",gap:7,flexWrap:"wrap",alignItems:"center"}}>
         <button onClick={playAnim} disabled={playing||!arrows.length}
-          style={{padding:"7px 14px",borderRadius:9,border:"none",background:(playing||!arrows.length)?"#e2e8f0":t.p,color:(playing||!arrows.length)?"#94a3b8":"#fff",fontWeight:800,fontSize:12.5,cursor:(playing||!arrows.length)?"default":"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{playing?"▶ läuft…":"▶ Abspielen"}</button>
+          style={{flex:1,minWidth:130,padding:kidMode?"14px":"10px 14px",borderRadius:12,border:"none",background:(playing||!arrows.length)?"#e2e8f0":t.p,color:(playing||!arrows.length)?"#94a3b8":"#fff",fontWeight:900,fontSize:kidMode?17:13.5,cursor:(playing||!arrows.length)?"default":"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{playing?"▶ läuft…":"▶ Abspielen"}</button>
         {playing&&<button onClick={paused?resumeAnim:pauseAnim}
-          style={{padding:"7px 12px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{paused?"▶ Weiter":"⏸ Pause"}</button>}
+          style={{padding:kidMode?"14px 16px":"10px 12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:kidMode?15:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{paused?"▶":"⏸"}</button>}
         <button onClick={resetAnim} disabled={!animOwn&&!animOpp&&!playing}
-          style={{padding:"7px 12px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:(animOwn||animOpp||playing)?"#475569":"#cbd5e1",fontWeight:700,fontSize:12.5,cursor:(animOwn||animOpp||playing)?"pointer":"default",fontFamily:"inherit",whiteSpace:"nowrap"}}>↺ Zurück</button>
-        <span style={{width:1,height:18,background:"#e2e8f0"}}/>
+          style={{padding:kidMode?"14px 16px":"10px 12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:(animOwn||animOpp||playing)?"#475569":"#cbd5e1",fontWeight:700,fontSize:kidMode?15:12.5,cursor:(animOwn||animOpp||playing)?"pointer":"default",fontFamily:"inherit",whiteSpace:"nowrap"}}>↺</button>
         {[[0.6,"🐢"],[1,"▶"],[1.6,"⏩"]].map(([s,l])=>(
           <button key={s} onClick={()=>setAnimSpeed(s)} title={s===0.6?"Langsam":s===1?"Normal":"Schnell"}
-            style={{padding:"6px 10px",borderRadius:8,border:`1.5px solid ${animSpeed===s?t.p:"#e2e8f0"}`,background:animSpeed===s?t.p+"15":"#fff",color:animSpeed===s?t.p:"#64748b",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
+            style={{padding:kidMode?"12px 13px":"8px 10px",borderRadius:10,border:`1.5px solid ${animSpeed===s?t.p:"#e2e8f0"}`,background:animSpeed===s?t.p+"15":"#fff",color:animSpeed===s?t.p:"#64748b",fontWeight:700,fontSize:kidMode?14:12.5,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
         ))}
         <button onClick={()=>setLoopAnim(v=>!v)} title="Wiederholen"
-          style={{padding:"6px 10px",borderRadius:8,border:`1.5px solid ${loopAnim?t.p:"#e2e8f0"}`,background:loopAnim?t.p+"15":"#fff",color:loopAnim?t.p:"#64748b",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>🔁</button>
-        {showOpp&&<button onClick={()=>setReactDef(v=>!v)} title="Verteidiger verschieben zum Ball"
-          style={{padding:"6px 10px",borderRadius:8,border:`1.5px solid ${reactDef?t.p:"#e2e8f0"}`,background:reactDef?t.p+"15":"#fff",color:reactDef?t.p:"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>🛡️ Abwehr</button>}
-        <button onClick={shareScene} title="Szene als Bild teilen"
-          style={{padding:"6px 10px",borderRadius:8,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>📤 Teilen</button>
+          style={{padding:kidMode?"12px 13px":"8px 10px",borderRadius:10,border:`1.5px solid ${loopAnim?t.p:"#e2e8f0"}`,background:loopAnim?t.p+"15":"#fff",color:loopAnim?t.p:"#64748b",fontWeight:700,fontSize:kidMode?14:12.5,cursor:"pointer",fontFamily:"inherit"}}>🔁</button>
+        {!kidMode&&showOpp&&<button onClick={()=>setReactDef(v=>!v)} title="Verteidiger verschieben zum Ball"
+          style={{padding:"8px 10px",borderRadius:10,border:`1.5px solid ${reactDef?t.p:"#e2e8f0"}`,background:reactDef?t.p+"15":"#fff",color:reactDef?t.p:"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>🛡️ Abwehr</button>}
+        {!kidMode&&<button onClick={shareScene} title="Szene als Bild teilen"
+          style={{padding:"8px 10px",borderRadius:10,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>📤</button>}
       </div>
-      <div style={{fontSize:11,color:"#64748b"}}>Abfolge = Zeichen-Reihenfolge: erst Laufweg, dann Pass in den Lauf, dann Abschluss. Pass aufs Tor löst „TOR!" aus.</div>
 
-      <div style={{background:F.bg,borderRadius:14,padding:8,boxShadow:"inset 0 0 0 1px rgba(255,255,255,.08)"}}>
+      {/* Vorfuehr-Modus: derselbe Feld-Block wandert per CSS in ein Vollbild-Overlay */}
+      <div style={present?{position:"fixed",inset:0,zIndex:2000,background:"#07230f",display:"flex",flexDirection:"column",padding:"12px",gap:10,boxSizing:"border-box"}:{display:"contents"}}>
+      {present&&(
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
+          <span style={{color:"#fff",fontWeight:900,fontSize:17}}>🎬 Taktik zeigen</span>
+          <button onClick={()=>setPresent(false)} style={{width:40,height:40,borderRadius:12,border:"none",background:"rgba(255,255,255,.14)",color:"#fff",fontWeight:900,fontSize:17,cursor:"pointer"}}>✕</button>
+        </div>
+      )}
+      <div style={{background:F.bg,borderRadius:14,padding:8,boxShadow:"inset 0 0 0 1px rgba(255,255,255,.08)",...(present?{flex:1,minHeight:0,display:"flex",alignItems:"center",justifyContent:"center"}:{})}}>
         <svg ref={svgRef} viewBox={`0 0 ${F.vw} ${F.vh}`} preserveAspectRatio="xMidYMid meet"
-          style={{width:"100%",maxHeight:"58vh",display:"block",touchAction:"none",cursor:mode==="move"?"default":"crosshair"}}
+          style={{width:"100%",maxHeight:present?"100%":kidMode?"62vh":"58vh",...(present?{height:"100%"}:{}),display:"block",touchAction:"none",cursor:mode==="move"?"default":(mode==="focus"||mode==="mark")?"pointer":"crosshair"}}
           onPointerDown={startDraw} onTouchStart={startDraw}
           onPointerMove={onMove} onPointerUp={endDrag} onPointerLeave={endDrag}
           onTouchMove={onMove} onTouchEnd={endDrag}>
           <defs>
             <marker id="tb-ar-run" markerWidth="3.6" markerHeight="3.6" refX="2.7" refY="1.8" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L3.6,1.8 L0,3.6 Z" fill={ARR_COL.run}/></marker>
             <marker id="tb-ar-pass" markerWidth="3.6" markerHeight="3.6" refX="2.7" refY="1.8" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L3.6,1.8 L0,3.6 Z" fill={ARR_COL.pass}/></marker>
+            <marker id="tb-ar-dribble" markerWidth="3.6" markerHeight="3.6" refX="2.7" refY="1.8" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L3.6,1.8 L0,3.6 Z" fill={ARR_COL.dribble}/></marker>
           </defs>
           {F.draw("rgba(255,255,255,.85)")}
           {arrows.map(a=>(
             <path key={a.id} d={arrPath(a)} fill="none"
               stroke={a.type==="run"?runArrowCol(a):ARR_COL[a.type]} strokeWidth={F.vw*0.012} strokeLinecap="round"
-              strokeDasharray={a.type==="pass"?`${F.vw*0.03} ${F.vw*0.022}`:undefined}
+              strokeDasharray={a.type==="pass"?`${F.vw*0.03} ${F.vw*0.022}`:a.type==="dribble"?`${F.vw*0.008} ${F.vw*0.016}`:undefined}
               markerEnd={`url(#tb-ar-${a.type})`}/>
           ))}
           {draw&&Math.hypot(draw.x2-draw.x1,draw.y2-draw.y1)>0.1&&(
             <line x1={draw.x1} y1={draw.y1} x2={draw.x2} y2={draw.y2} opacity={0.6}
               stroke={draw.type==="run"?runArrowCol(draw):ARR_COL[draw.type]} strokeWidth={F.vw*0.012} strokeLinecap="round"
-              strokeDasharray={draw.type==="pass"?`${F.vw*0.03} ${F.vw*0.022}`:undefined}/>
+              strokeDasharray={draw.type==="pass"?`${F.vw*0.03} ${F.vw*0.022}`:draw.type==="dribble"?`${F.vw*0.008} ${F.vw*0.016}`:undefined}/>
           )}
-          {showOpp&&(animOpp||oppTokens).map(tk=>(
-            <g key={tk.id} style={{cursor:mode==="move"?"grab":mode==="mark"?"pointer":"crosshair"}}
-               onPointerDown={(e)=>{ if(mode==="mark"){ e.preventDefault(); toggleMark(setOppTokens,tk.id); return;} if(mode!=="move") return; e.preventDefault(); resetAnim(); dragRef.current=tk.id; dragSetRef.current="opp";}}
-               onTouchStart={(e)=>{ if(mode==="mark"){ toggleMark(setOppTokens,tk.id); return;} if(mode!=="move") return; resetAnim(); dragRef.current=tk.id; dragSetRef.current="opp";}}>
-              {tk.marked&&<circle cx={tk.x} cy={tk.y} r={F.r*1.5} fill="none" stroke="#facc15" strokeWidth={F.r*0.22} strokeDasharray={`${F.r*0.5} ${F.r*0.35}`}/>}
-              <circle cx={tk.x} cy={tk.y} r={F.r} fill={tk.n===1?"#0f172a":"#dc2626"} stroke="#fff" strokeWidth={F.r*0.16}/>
-              <text x={tk.x} y={tk.y+F.fs*0.36} textAnchor="middle" fontSize={F.fs} fontWeight="800"
+          {showOpp&&(animOpp||oppTokens).map(tk=>{ const lo=liveOff(tk,"opp"); const X=tk.x+(lo?.dx||0), Y=tk.y+(lo?.dy||0);
+            return (
+            <g key={tk.id} opacity={focusId&&focusId!==tk.id?0.3:1} style={{cursor:mode==="move"?"grab":(mode==="mark"||mode==="focus")?"pointer":"crosshair",transition:"opacity .25s"}}
+               onPointerDown={(e)=>{ if(mode==="focus"){ e.preventDefault(); e.stopPropagation(); setFocusId(f=>f===tk.id?null:tk.id); return;} if(mode==="mark"){ e.preventDefault(); toggleMark(setOppTokens,tk.id); return;} if(mode!=="move") return; e.preventDefault(); resetAnim(); dragRef.current=tk.id; dragSetRef.current="opp";}}
+               onTouchStart={(e)=>{ if(mode==="focus"){ e.stopPropagation(); setFocusId(f=>f===tk.id?null:tk.id); return;} if(mode==="mark"){ toggleMark(setOppTokens,tk.id); return;} if(mode!=="move") return; resetAnim(); dragRef.current=tk.id; dragSetRef.current="opp";}}>
+              {focusId===tk.id&&<circle cx={X} cy={Y} r={F.r*1.9} fill="none" stroke="#fff" strokeWidth={F.r*0.18} opacity={0.9}>
+                <animate attributeName="r" values={`${F.r*1.6};${F.r*2.2};${F.r*1.6}`} dur="1.6s" repeatCount="indefinite"/>
+              </circle>}
+              {tk.marked&&<circle cx={X} cy={Y} r={F.r*1.5} fill="none" stroke="#facc15" strokeWidth={F.r*0.22} strokeDasharray={`${F.r*0.5} ${F.r*0.35}`}/>}
+              <circle cx={X} cy={Y} r={F.r} fill={tk.n===1?"#0f172a":"#dc2626"} stroke="#fff" strokeWidth={F.r*0.16}/>
+              <text x={X} y={Y+F.fs*0.36} textAnchor="middle" fontSize={F.fs} fontWeight="800"
                     fill="#fff" style={{pointerEvents:"none",userSelect:"none"}}>{tk.n}</text>
-              {tk.marked&&<text x={tk.x} y={tk.y-F.r*1.45} textAnchor="middle" fontSize={F.fs*0.95} style={{pointerEvents:"none"}}>⭐</text>}
+              {tk.marked&&<text x={X} y={Y-F.r*1.45} textAnchor="middle" fontSize={F.fs*0.95} style={{pointerEvents:"none"}}>⭐</text>}
             </g>
-          ))}
-          {(animOwn||tokens).map(tk=>(
-            <g key={tk.id} style={{cursor:mode==="move"?"grab":mode==="mark"?"pointer":"crosshair"}}
-               onPointerDown={(e)=>{ if(mode==="mark"){ e.preventDefault(); toggleMark(setTokens,tk.id); return;} if(mode!=="move") return; e.preventDefault(); resetAnim(); dragRef.current=tk.id; dragSetRef.current="own";}}
-               onTouchStart={(e)=>{ if(mode==="mark"){ toggleMark(setTokens,tk.id); return;} if(mode!=="move") return; resetAnim(); dragRef.current=tk.id; dragSetRef.current="own";}}>
-              {tk.marked&&<circle cx={tk.x} cy={tk.y} r={F.r*1.5} fill="none" stroke="#facc15" strokeWidth={F.r*0.22} strokeDasharray={`${F.r*0.5} ${F.r*0.35}`}/>}
-              <circle cx={tk.x} cy={tk.y} r={F.r} fill={tk.n===1?"#facc15":teamCol} stroke="#fff" strokeWidth={F.r*0.16}/>
-              <text x={tk.x} y={tk.y+F.fs*0.36} textAnchor="middle" fontSize={F.fs} fontWeight="800"
+          );})}
+          {(animOwn||tokens).map(tk=>{ const lo=liveOff(tk,"own"); const X=tk.x+(lo?.dx||0), Y=tk.y+(lo?.dy||0);
+            return (
+            <g key={tk.id} opacity={focusId&&focusId!==tk.id?0.3:1} style={{cursor:mode==="move"?"grab":(mode==="mark"||mode==="focus")?"pointer":"crosshair",transition:"opacity .25s"}}
+               onPointerDown={(e)=>{ if(mode==="focus"){ e.preventDefault(); e.stopPropagation(); setFocusId(f=>f===tk.id?null:tk.id); return;} if(mode==="mark"){ e.preventDefault(); toggleMark(setTokens,tk.id); return;} if(mode!=="move") return; e.preventDefault(); resetAnim(); dragRef.current=tk.id; dragSetRef.current="own";}}
+               onTouchStart={(e)=>{ if(mode==="focus"){ e.stopPropagation(); setFocusId(f=>f===tk.id?null:tk.id); return;} if(mode==="mark"){ toggleMark(setTokens,tk.id); return;} if(mode!=="move") return; resetAnim(); dragRef.current=tk.id; dragSetRef.current="own";}}>
+              {focusId===tk.id&&<circle cx={X} cy={Y} r={F.r*1.9} fill="none" stroke="#fff" strokeWidth={F.r*0.18} opacity={0.9}>
+                <animate attributeName="r" values={`${F.r*1.6};${F.r*2.2};${F.r*1.6}`} dur="1.6s" repeatCount="indefinite"/>
+              </circle>}
+              {tk.marked&&<circle cx={X} cy={Y} r={F.r*1.5} fill="none" stroke="#facc15" strokeWidth={F.r*0.22} strokeDasharray={`${F.r*0.5} ${F.r*0.35}`}/>}
+              <circle cx={X} cy={Y} r={F.r} fill={tk.n===1?"#facc15":teamCol} stroke="#fff" strokeWidth={F.r*0.16}/>
+              <text x={X} y={Y+F.fs*0.36} textAnchor="middle" fontSize={F.fs} fontWeight="800"
                     fill={tk.n===1?"#1e293b":contrast(teamCol)} style={{pointerEvents:"none",userSelect:"none"}}>{tk.n}</text>
-              {tk.marked&&<text x={tk.x} y={tk.y-F.r*1.45} textAnchor="middle" fontSize={F.fs*0.95} style={{pointerEvents:"none"}}>⭐</text>}
+              {tk.marked&&<text x={X} y={Y-F.r*1.45} textAnchor="middle" fontSize={F.fs*0.95} style={{pointerEvents:"none"}}>⭐</text>}
             </g>
-          ))}
+          );})}
           {ballPos&&!animBall&&(
             <g style={{cursor:mode==="move"?"grab":"crosshair"}}
                onPointerDown={(e)=>{ if(mode!=="move") return; e.preventDefault(); resetAnim(); dragRef.current="ball"; }}
@@ -1323,18 +1501,69 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
           </g>}
         </svg>
       </div>
+      {present&&(
+        <div style={{flexShrink:0,display:"flex",flexDirection:"column",gap:8}}>
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={playing?(paused?resumeAnim:pauseAnim):playAnim} disabled={!arrows.length&&!playing}
+              style={{flex:1,padding:"16px",borderRadius:14,border:"none",background:arrows.length||playing?"#22c55e":"rgba(255,255,255,.14)",color:"#fff",fontWeight:900,fontSize:19,cursor:"pointer",fontFamily:"inherit"}}>
+              {playing?(paused?"▶ Weiter":"⏸ Pause"):"▶ Abspielen"}</button>
+            <button onClick={resetAnim} style={{padding:"16px 20px",borderRadius:14,border:"none",background:"rgba(255,255,255,.14)",color:"#fff",fontWeight:800,fontSize:18,cursor:"pointer"}}>↺</button>
+            <button onClick={()=>setLoopAnim(v=>!v)} style={{padding:"16px 20px",borderRadius:14,border:"none",background:loopAnim?"#16a34a":"rgba(255,255,255,.14)",color:"#fff",fontWeight:800,fontSize:18,cursor:"pointer"}}>🔁</button>
+          </div>
+          <div style={{color:"#86efac",fontSize:12.5,textAlign:"center",fontWeight:600}}>Spieler & Ball mit dem Finger verschieben · ✕ oben beendet die Vorführung</div>
+        </div>
+      )}
+      </div>
+
+      {/* Ablauf-Liste: jeder Schritt einzeln loeschbar, verschiebbar, parallel schaltbar */}
+      {arrows.length>0&&(
+        <div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:13,padding:"12px 13px"}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:9}}>
+            <span style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.4}}>ABLAUF · {arrows.length} {arrows.length===1?"SCHRITT":"SCHRITTE"}</span>
+            <button onClick={()=>{resetAnim();setArrows([]);setDraw(null);}}
+              style={{padding:"5px 11px",borderRadius:8,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:700,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>🧹 Alle löschen</button>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:6}}>
+            {arrows.map((a,i)=>(
+              <div key={a.id} style={{display:"flex",alignItems:"center",gap:6,background:"#f8fafc",borderRadius:10,padding:kidMode?"9px 9px":"7px 9px",border:"1px solid #f1f5f9"}}>
+                <span style={{width:22,height:22,borderRadius:"50%",flexShrink:0,background:(a.type==="run"?PACE_COL[a.pace]||"#16a34a":a.type==="dribble"?"#0891b2":"#ea580c")+"26",color:a.type==="run"?"#166534":a.type==="dribble"?"#0e7490":"#c2410c",fontSize:11.5,fontWeight:900,display:"grid",placeItems:"center"}}>{i+1}</span>
+                <span style={{flex:1,fontSize:kidMode?14:12.5,fontWeight:700,color:"#0f172a",minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{stepLabel(a)}</span>
+                {i>0&&<button onClick={()=>togglePar(a.id)} title="Gleichzeitig mit dem Schritt davor abspielen"
+                  style={{flexShrink:0,padding:"5px 8px",borderRadius:8,border:`1.5px solid ${a.par?"#7c3aed":"#e2e8f0"}`,background:a.par?"#f5f3ff":"#fff",color:a.par?"#7c3aed":"#94a3b8",fontWeight:800,fontSize:10.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{a.par?"∥ zusammen":"→ danach"}</button>}
+                <button onClick={()=>moveStep(i,-1)} disabled={i===0} style={{flexShrink:0,width:26,height:26,borderRadius:8,border:"1.5px solid #e2e8f0",background:"#fff",color:i===0?"#e2e8f0":"#475569",fontWeight:800,fontSize:11,cursor:i===0?"default":"pointer"}}>▲</button>
+                <button onClick={()=>moveStep(i,1)} disabled={i===arrows.length-1} style={{flexShrink:0,width:26,height:26,borderRadius:8,border:"1.5px solid #e2e8f0",background:"#fff",color:i===arrows.length-1?"#e2e8f0":"#475569",fontWeight:800,fontSize:11,cursor:i===arrows.length-1?"default":"pointer"}}>▼</button>
+                <button onClick={()=>delStep(a.id)} style={{flexShrink:0,width:26,height:26,borderRadius:8,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:800,fontSize:11,cursor:"pointer"}}>✕</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* KI-Assistent: schlaegt Schritte vor (eingebaute Spiellogik, offline) */}
+      <div style={{background:"linear-gradient(135deg,#faf5ff,#eff6ff)",border:"1.5px solid #ddd6fe",borderRadius:13,padding:"12px 13px"}}>
+        <div style={{fontSize:11,fontWeight:800,color:"#7c3aed",letterSpacing:.4,marginBottom:9}}>✨ KI-ASSISTENT</div>
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={aiSuggest}
+            style={{flex:1,padding:kidMode?"13px 8px":"10px 8px",borderRadius:11,border:"none",background:"#7c3aed",color:"#fff",fontWeight:800,fontSize:kidMode?14.5:13,cursor:"pointer",fontFamily:"inherit"}}>✨ Nächster Schritt</button>
+          <button onClick={aiPlay}
+            style={{flex:1,padding:kidMode?"13px 8px":"10px 8px",borderRadius:11,border:"2px solid #7c3aed",background:"#fff",color:"#7c3aed",fontWeight:800,fontSize:kidMode?14.5:13,cursor:"pointer",fontFamily:"inherit"}}>🪄 Ganzer Spielzug</button>
+        </div>
+        {aiHint&&<div style={{marginTop:9,background:"#fff",borderRadius:10,padding:"9px 12px",fontSize:kidMode?14:12.5,color:"#4c1d95",fontWeight:700,lineHeight:1.5}}>{aiHint}</div>}
+        {!kidMode&&<div style={{marginTop:7,fontSize:10.5,color:"#7c7ba8",lineHeight:1.4}}>Die Vorschläge kommen aus einer eingebauten Spiellogik (freie Passwege, offene Räume, Torabschluss) und berücksichtigen das gewählte Werkzeug – komplett offline.</div>}
+      </div>
 
       <div style={{display:"flex",gap:8,alignItems:"center",justifyContent:"space-between"}}>
-        <span style={{fontSize:12,color:"#64748b"}}>Eigenes Team {showOpp?"(farbig)":"(gelb = Torwart)"}{showOpp?" · Gegner rot":""}</span>
-        <button onClick={()=>{setTokens(buildTokens(sport,count,formIdx)); setOppTokens(buildOpp(sport,count,oppFormIdx));}}
+        <span style={{fontSize:12,color:"#64748b"}}>{kidMode?"Gelb = Torwart":"Eigenes Team "+(showOpp?"(farbig) · Gegner rot":"(gelb = Torwart)")}</span>
+        <button onClick={()=>{setTokens(buildTokens(sport,count,formIdx)); setOppTokens(buildOpp(sport,count,oppFormIdx)); setFocusId(null);}}
           style={{padding:"8px 14px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
-          Aufstellung zurücksetzen
+          🔄 Neu aufstellen
         </button>
       </div>
-      <div style={{display:"flex",gap:14,alignItems:"center",flexWrap:"wrap",fontSize:11.5,color:"#64748b"}}>
+      {!kidMode&&<div style={{display:"flex",gap:14,alignItems:"center",flexWrap:"wrap",fontSize:11.5,color:"#64748b"}}>
         <span><span style={{display:"inline-block",width:22,height:0,borderTop:"3px solid #94a3b8",verticalAlign:"middle",marginRight:5}}/>Laufweg</span>
         <span><span style={{display:"inline-block",width:22,height:0,borderTop:"3px dashed #fb923c",verticalAlign:"middle",marginRight:5}}/>Passweg</span>
-      </div>
+        <span><span style={{display:"inline-block",width:22,height:0,borderTop:"3px dotted #22d3ee",verticalAlign:"middle",marginRight:5}}/>Dribbling</span>
+      </div>}
       {/* Gespeicherte Boards (vereinsweit, jederzeit aufrufbar) */}
       {eventCtx&&onAttachBoard&&(
         <div style={{background:"#eff6ff",border:"1.5px solid #bfdbfe",borderRadius:13,padding:"12px 14px"}}>
@@ -1342,6 +1571,7 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
           <button onClick={()=>onAttachBoard(curBoard())} style={{width:"100%",padding:"11px",borderRadius:11,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>📌 An „{eventCtx.title}" hängen</button>
         </div>
       )}
+      {!kidMode&&<>
       <div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:13,padding:"13px 14px"}}>
         <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.4,marginBottom:9}}>GESPEICHERTE BOARDS</div>
         <div style={{display:"flex",gap:8,marginBottom:myBoards.length?12:0}}>
@@ -1366,8 +1596,9 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
       </div>
       <DFBFormatsCard cl={cl}/>
       <div style={{fontSize:12,color:"#64748b",background:"#f8fafc",borderRadius:10,padding:"10px 12px",lineHeight:1.5}}>
-        Tipp: Werkzeug auf <strong>Laufweg</strong> oder <strong>Passweg</strong> stellen, dann auf dem Feld vom Start- zum Zielpunkt ziehen. Gespeicherte Boards sind für alle Trainer des Vereins jederzeit abrufbar.
+        Tipp: Werkzeug wählen, dann auf dem Feld vom Start- zum Zielpunkt ziehen. Schritte lassen sich in der Ablauf-Liste sortieren, löschen oder mit ∥ gleichzeitig abspielen. Gespeicherte Boards sind für alle Trainer des Vereins abrufbar.
       </div>
+      </>}
     </div>
   );
 }
