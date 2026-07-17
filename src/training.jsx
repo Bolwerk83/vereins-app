@@ -1641,6 +1641,50 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
   useEffect(()=>()=>stopRun(),[]);
   const zoneCount=(own,opp,bx,by,R)=>({o:own.filter(t2=>t2.n!==1&&Math.hypot(t2.x-bx,t2.y-by)<R).length, g:opp.filter(t2=>t2.n!==1&&Math.hypot(t2.x-bx,t2.y-by)<R).length});
   const freestOpp=(own,opp)=>{ let best=null,bd=-1; opp.forEach(o=>{ if(o.n===1)return; const d=Math.min(...own.map(t2=>Math.hypot(t2.x-o.x,t2.y-o.y))); if(d>bd){bd=d;best=o;} }); return {opp:best,dist:bd}; };
+
+  // ---- Mathe-Kern der Szenarien -------------------------------------------
+  // Einflussfeld: jeder Feldspieler wirkt als Gauss-Kern; die Summe sagt, wie
+  // stark ein Team einen Punkt kontrolliert (weich statt Koepfe-zaehlen).
+  const SIG=F.vw*0.16;
+  const inflAt=(list,x,y)=>list.reduce((a,t2)=>t2.n===1?a:a+Math.exp(-((t2.x-x)*(t2.x-x)+(t2.y-y)*(t2.y-y))/(2*SIG*SIG)),0);
+  const nearestDist=(list,x,y)=>{ const f=list.filter(t2=>t2.n!==1); return f.length?Math.min(...f.map(t2=>Math.hypot(t2.x-x,t2.y-y))):99; };
+  // Gefahren-Index eines Gegners: Tornaehe x Anspielbarkeit x freier Raum x Zentralitaet
+  const dangerOf=(o,own,bx,by)=>{
+    const dGoal=Math.hypot(o.x-F.vw/2,o.y-F.vh*0.95);
+    const lane=(bx!=null)?laneFree(bx,by,o.x,o.y,own.filter(t2=>t2.n!==1)):F.r*2.5;
+    const space=nearestDist(own,o.x,o.y);
+    const central=1-Math.abs(o.x-F.vw/2)/(F.vw/2);
+    return 2.4*Math.max(0,1-dGoal/(F.vh*0.75))+1.3*Math.min(1,lane/(F.r*2.5))+1.1*Math.min(1,space/(F.vw*0.28))+0.5*central;
+  };
+  // Bester Laufpunkt: Rastersuche ueber erreichbare Zellen; bewertet freien Raum,
+  // Anspiellinie vom Ball, Raumgewinn nach vorn und Laufoekonomie.
+  const bestSpot=(actor,own,opp,ball,maxRun,{forwardW=1.2,laneW=1.6}={})=>{
+    let best=null;
+    for(let gx=0.12;gx<=0.881;gx+=0.095) for(let gy=0.08;gy<=0.921;gy+=0.095){
+      const x=gx*F.vw,y=gy*F.vh;
+      const run=Math.hypot(x-actor.x,y-actor.y);
+      if(run<F.r*3.5||run>maxRun) continue;
+      if(nearestDist(own.filter(t2=>t2.id!==actor.id),x,y)<F.r*2.5) continue;   // nicht in den Mitspieler
+      const oppD=nearestDist(opp,x,y);
+      const lane=ball?laneFree(ball.x,ball.y,x,y,opp):F.r*3;
+      const fwd=(actor.y-y)/F.vh;
+      const sc=1.5*Math.min(1,oppD/(F.vw*0.3))+laneW*Math.min(1,lane/(F.r*3))+forwardW*fwd-0.35*(run/maxRun);
+      if(!best||sc>best.sc) best={x,y,sc};
+    }
+    return best;
+  };
+  // Wer soll die Aufgabe loesen? Der Naechste, der es in der Zeit realistisch
+  // schafft (Sprint ~10% Feldlaenge/s) und nicht schon praktisch dort steht.
+  const pickActor=(own,tx,ty,timeMs,excludeId)=>{
+    const speed=F.vh*0.10;
+    const cand=own.filter(t2=>t2.n!==1&&t2.id!==excludeId)
+      .map(t2=>({t2,d:Math.hypot(t2.x-tx,t2.y-ty)}))
+      .filter(c=>c.d>F.r*3.2&&(c.d/speed)*1000<timeMs*0.75)
+      .sort((a,b)=>a.d-b.d);
+    if(cand.length) return cand[0].t2;
+    const all=own.filter(t2=>t2.n!==1&&t2.id!==excludeId).sort((a,b)=>Math.hypot(a.x-tx,a.y-ty)-Math.hypot(b.x-tx,b.y-ty));
+    return all[1]||all[0];
+  };
   const scnResolve=(good,fb,extra)=>{
     setScn(s=>s?{...s,phase:"resolve",feedback:fb,score:s.score+(good?1:0),history:[...s.history,{round:s.round,type:s.type,good,...(extra||{})}]}:s);
   };
@@ -1652,39 +1696,64 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
   const scnNext=(prev,selArg)=>{
     stopRun(); resetAnim(); setMode("move"); setArrows([]); setDraw(null);
     const sel=selArg||prev?.sel||"def";
-    const own=tokens, opp=oppTokens;
     const round=(prev?.round||0)+1;
+    const D=SCN_DIFF[prev?.diff||scnDiff]||SCN_DIFF.normal;
     const cX=x=>Math.max(F.r,Math.min(F.vw-F.r,x));
     const cY=y=>Math.max(F.r,Math.min(F.vh-F.r,y));
+    const rnd=mulberry(hashStr((prev?.seed||String(Date.now()))+"_"+round));
+    // 1) Grundordnung wiederherstellen: 55% Formation + 45% aktuelle Position +
+    //    Phasen-Verschiebung + kleines Rauschen. Verhindert, dass die Teams nach
+    //    ein paar Runden verklumpen, und ergibt jede Runde ein echtes Spielbild.
+    const baseOwn=buildTokens(sport,count,formIdx), baseOpp=buildOpp(sport,count,oppFormIdx);
+    const reAnchor=(list,base,shY)=>list.map((tk,i)=>{ const b=base[i]||tk;
+      return {...tk,marked:false,
+        x:cX(b.x*0.55+tk.x*0.45+(rnd()-0.5)*F.vw*0.06),
+        y:cY(b.y*0.55+tk.y*0.45+shY+(rnd()-0.5)*F.vh*0.035)}; });
+    // Angriff: eigener Block schiebt hoch, Gegner faellt leicht zurueck – und umgekehrt.
+    const own=reAnchor(tokens,baseOwn, sel==="att"?-F.vh*0.05: F.vh*0.03);
+    const opp=reAnchor(oppTokens,baseOpp, sel==="att"?-F.vh*0.02: F.vh*0.07*D.shift);
     const fld=own.filter(t2=>t2.n!==1);
-    const freeSpot=(fx,fy,len)=>{ const cands=[]; for(let ang=-50;ang<=50;ang+=25){ const rad=(ang-90)*Math.PI/180;
-      const x=cX(fx+Math.cos(rad)*len), y=cY(fy+Math.sin(rad)*len);
-      const d=opp.length?Math.min(...opp.map(o=>Math.hypot(o.x-x,o.y-y))):9; cands.push({x,y,d}); }
-      return cands.sort((a,b)=>b.d-a.d)[0]; };
+    const oFld=opp.filter(t2=>t2.n!==1);
     let type,actor=null,target=null,text="",pw=null,bx,by;
     if(sel==="att"){
       type=["passwahl","space","reinforce"][(round-1)%3];
+      // Ballfuehrer: zentraler Aufbauspieler (tief + mittig), leicht variiert
+      const builders=fld.slice().sort((a,b)=>(b.y-Math.abs(b.x-F.vw/2)*0.6)-(a.y-Math.abs(a.x-F.vw/2)*0.6));
+      const carrier=builders[Math.floor(rnd()*Math.min(3,builders.length))]||fld[0];
+      bx=cX(carrier.x+F.r*0.9); by=carrier.y;
       if(type==="passwahl"){
-        const carrier=fld.slice().sort((a,b)=>b.y-a.y)[round%2]||fld[0];
-        const mates=fld.filter(t2=>t2.id!==carrier.id&&t2.y<=carrier.y+F.r&&Math.hypot(t2.x-carrier.x,t2.y-carrier.y)>F.vw*0.15);
-        const mate=(mates.length?mates:fld.filter(t2=>t2.id!==carrier.id)).sort((a,b)=>Math.hypot(a.x-carrier.x,a.y-carrier.y)-Math.hypot(b.x-carrier.x,b.y-carrier.y))[0];
-        const running=round%2===1;                       // abwechselnd: er laeuft / er steht
-        const spot=running?freeSpot(mate.x,mate.y,F.vh*0.15):null;
-        bx=cX(carrier.x+F.r*0.9); by=carrier.y;
+        // Mitspieler-Wahl per Score: Anspiellinie frei + selbst frei + Raumgewinn,
+        // in sinnvoller Pass-Distanz. Laeuft er? Nur wenn ein guter Tiefenlauf existiert.
+        const mates=fld.filter(t2=>t2.id!==carrier.id).map(m=>{
+          const dist=Math.hypot(m.x-bx,m.y-by);
+          if(dist<F.vw*0.16||dist>F.vh*0.5) return {m,sc:-9};
+          const lane=laneFree(bx,by,m.x,m.y,oFld);
+          const open=nearestDist(opp,m.x,m.y);
+          const fwd=(by-m.y)/F.vh;
+          return {m,sc:1.6*Math.min(1,lane/(F.r*2.6))+1.2*Math.min(1,open/(F.vw*0.25))+1.1*fwd};
+        }).sort((a,b)=>b.sc-a.sc);
+        const mate=(mates[0]||{m:fld[0]}).m;
+        const spot=bestSpot(mate,own,oFld,{x:bx,y:by},F.vh*0.10*(D.time/1000)*0.6,{forwardW:1.5});
+        const running=!!spot&&spot.sc>0.9&&rnd()<0.6;   // Tiefenlauf nur, wenn er sich wirklich lohnt
         actor=mate;
         pw={bx,by,cn:carrier.n,mx:mate.x,my:mate.y,n:mate.n,running,sx:spot?.x,sy:spot?.y};
         text=running
           ?`⚔️ Nr. ${carrier.n} hat den Ball. 🔵 Nr. ${mate.n} startet durch (weißer Pfeil)! Wie spielst du den Pass?`
           :`⚔️ Nr. ${carrier.n} hat den Ball. 🔵 Nr. ${mate.n} steht frei und wartet. Wie spielst du den Pass?`;
       } else if(type==="space"){
-        const carrier=fld.slice().sort((a,b)=>b.y-a.y)[0];
-        bx=cX(carrier.x+F.r*0.9); by=carrier.y;
-        const rest=fld.filter(t2=>t2.id!==carrier.id);
-        actor=rest[Math.floor(round*2.7)%rest.length]||rest[0];
-        const c=freeSpot(actor.x,actor.y,F.vh*0.17);
-        target={kind:"pos",x:c.x,y:c.y};
+        // Wer laeuft? Der Kandidat mit dem wertvollsten erreichbaren freien Raum.
+        const maxRun=F.vh*0.10*(D.time/1000)*0.7;
+        let best=null;
+        fld.filter(t2=>t2.id!==carrier.id).forEach(c=>{
+          const sp=bestSpot(c,own,oFld,{x:bx,y:by},maxRun);
+          if(sp&&(!best||sp.sc>best.sp.sc)) best={c,sp};
+        });
+        actor=best?best.c:fld[0];
+        const sp=best?best.sp:{x:cX(actor.x),y:cY(actor.y-F.vh*0.15)};
+        target={kind:"pos",x:sp.x,y:sp.y};
         text=`⚔️ Nr. ${carrier.n} sucht eine Anspielstation. 🔵 Nr. ${actor.n}: Lauf in den gelben Kreis – frei anbieten!`;
       } else {
+        // Nachruecken: Ball beim vordersten Angreifer, Lage per Einfluss bewerten
         const atk=fld.slice().sort((a,b)=>a.y-b.y)[0];
         bx=cX(atk.x+F.r*0.9); by=atk.y;
         const zc=zoneCount(own,opp,bx,by,F.vw*0.24);
@@ -1692,33 +1761,42 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
       }
     } else {
       type=["cover","block","reinforce"][(round-1)%3];
-      const {opp:free}=freestOpp(own,opp);
-      bx=free?cX(free.x+(free.x>F.vw/2?-F.r*1.6:F.r*1.6)):F.vw/2;
-      by=free?free.y:F.vh/2;
+      // Gefaehrlichster Gegner per Gefahren-Index (Tornaehe, frei, anspielbar, zentral)
+      const byDanger=oFld.slice().sort((a,b)=>dangerOf(b,own)-dangerOf(a,own));
       if(type==="cover"){
-        const tgt=free||opp.find(o=>o.n!==1);
-        const sorted=fld.slice().sort((a,b)=>Math.hypot(a.x-tgt.x,a.y-tgt.y)-Math.hypot(b.x-tgt.x,b.y-tgt.y));
-        actor=sorted[1]||sorted[0];
+        // Ball beim gegnerischen Aufbau (tiefster Roter), Gefahr = freier Mann vorn
+        const oCarrier=oFld.slice().sort((a,b)=>a.y-b.y)[0];
+        bx=cX(oCarrier.x+F.r*0.9); by=oCarrier.y;
+        const tgt=byDanger.find(o=>o.id!==oCarrier.id&&laneFree(bx,by,o.x,o.y,fld)>F.r*1.6)||byDanger[0];
+        actor=pickActor(own,tgt.x,tgt.y,D.time);
         target={kind:"opp",id:tgt.id};
-        text=`🛡️ 🔵 Nr. ${actor.n}: Rüber zu 🔴 Nr. ${tgt.n} – decken! Er steht ganz frei!`;
+        text=`🛡️ Der Ball ist bei 🔴 Nr. ${oCarrier.n}. 🔵 Nr. ${actor.n}: Rüber zu 🔴 Nr. ${tgt.n} – er ist frei UND anspielbar!`;
       } else if(type==="block"){
-        // Zwischen Ball und eigenes Tor stellen (Schusslinie zumachen)
+        // Der Gefaehrlichste zieht selbst aufs Tor: Sperrpunkt = Lot des Verteidigers
+        // auf die Schusslinie (torseitig, zwischen 35% und 60% der Strecke)
+        const tgt=byDanger[0];
+        bx=cX(tgt.x+F.r*0.9); by=tgt.y;
         const gx=F.vw/2, gy=F.vh*0.97;
-        const sx=cX(bx+(gx-bx)*0.45), sy=cY(by+(gy-by)*0.45);
-        const sorted=fld.slice().sort((a,b)=>Math.hypot(a.x-sx,a.y-sy)-Math.hypot(b.x-sx,b.y-sy));
-        actor=sorted[1]||sorted[0];
+        const preActor=pickActor(own,(bx+gx)/2,(by+gy)/2,D.time);
+        const vx=gx-bx,vy=gy-by,L2=vx*vx+vy*vy||1;
+        const tPar=Math.max(0.35,Math.min(0.6,((preActor.x-bx)*vx+(preActor.y-by)*vy)/L2));
+        const sx=cX(bx+vx*tPar), sy=cY(by+vy*tPar);
+        actor=preActor;
         target={kind:"pos",x:sx,y:sy};
-        text=`🛡️ 🔴 Nr. ${free?.n??"?"} zieht Richtung Tor! 🔵 Nr. ${actor.n}: Stell dich in den Kreis – zwischen Ball und Tor!`;
+        text=`🛡️ 🔴 Nr. ${tgt.n} zieht aufs Tor! 🔵 Nr. ${actor.n}: Stell dich in den Kreis – genau auf die Schusslinie!`;
       } else {
+        // Verstaerkung: Ball beim gefaehrlichsten Gegner in Tornaehe
+        const tgt=byDanger[0];
+        bx=cX(tgt.x+F.r*0.9); by=tgt.y;
         const zc=zoneCount(own,opp,bx,by,F.vw*0.24);
-        text=`🛡️ Der Ball ist bei 🔴 Nr. ${free?.n??"?"}. Am Ball: ${zc.g} Rote gegen ${zc.o} Blaue. Rufst du Verstärkung?`;
+        text=`🛡️ Der Ball ist bei 🔴 Nr. ${tgt.n}. Am Ball: ${zc.g} Rote gegen ${zc.o} Blaue. Rufst du Verstärkung?`;
       }
     }
+    setTokens(own.map(t2=>({...t2,marked:actor?t2.id===actor.id:false})));
+    setOppTokens(opp);
     setBallPos({x:bx,y:by});
-    const D=SCN_DIFF[prev?.diff||scnDiff]||SCN_DIFF.normal;
-    setOppTokens(ts=>ts.map(tk=>{ if(tk.n===1) return tk; const dx=bx-tk.x,dy=by-tk.y,d=Math.hypot(dx,dy)||1; const sh=Math.min(F.vw*0.06,d*0.18)*D.shift; return {...tk,x:cX(tk.x+dx/d*sh),y:cY(tk.y+dy/d*sh)}; }));
-    if(actor){ setTokens(ts=>ts.map(t2=>({...t2,marked:t2.id===actor.id}))); setSelTok({side:"own",id:actor.id}); }
-    setScn({sel,diff:prev?.diff||scnDiff,round,score:prev?.score||0,history:prev?.history||[],phase:"task",type,actorId:actor?.id||null,target,pw,text,deadline:Date.now()+D.time,feedback:null});
+    if(actor) setSelTok({side:"own",id:actor.id});
+    setScn({sel,diff:prev?.diff||scnDiff,seed:prev?.seed||String(Date.now()),round,score:prev?.score||0,history:prev?.history||[],phase:"task",type,actorId:actor?.id||null,target,pw,text,deadline:Date.now()+D.time,feedback:null});
   };
   const scnStart=(sel)=>{ setShowOpp(true); scnArrowsBk.current=arrows; scnNext(null,sel); };
   // Pass-Entscheidung: Antwort waehlen, dann wird das Ergebnis vorgespielt.
@@ -1766,16 +1844,29 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
     const s=scn; if(!s||s.phase!=="task") return;
     const own=tokens, opp=oppTokens, b=ballPos||{x:F.vw/2,y:F.vh/2};
     const R=F.vw*0.24, before=zoneCount(own,opp,b.x,b.y,R);
-    const under=before.g>before.o;
+    // Urteil ueber Einflussfelder (weiche Raumkontrolle) statt reinem Koepfe-Zaehlen:
+    // ein Blauer direkt am Ball wiegt mehr als zwei Rote am Zonenrand.
+    const iOwn=inflAt(own,b.x,b.y), iOpp=inflAt(opp,b.x,b.y);
+    const under=iOpp-iOwn>0.22;
     if(!call){
       scnResolve(!under, !under
-        ?`Richtig! ${before.o} gegen ${before.g} am Ball – ihr habt es im Griff. Stellung halten spart Kraft. ✅`
-        :`Riskant! ${before.g} Rote gegen ${before.o} Blaue – da wäre Verstärkung gut gewesen. ⚠️`, {called:false});
+        ?`Richtig! ${before.o} gegen ${before.g} am Ball und die Räume sind dicht – Stellung halten spart Kraft. ✅`
+        :`Riskant! Die Roten kontrollieren den Ballraum (${before.g} gegen ${before.o}) – da wäre Verstärkung gut gewesen. ⚠️`, {called:false});
       return;
     }
-    const cands=own.filter(t2=>t2.n!==1&&Math.hypot(t2.x-b.x,t2.y-b.y)>R);
-    if(!cands.length){ scnResolve(true,"Alle Blauen sind schon am Ball – mehr geht nicht! ✅",{called:true}); return; }
-    const helper=cands.sort((a,c)=>Math.hypot(a.x-b.x,a.y-b.y)-Math.hypot(c.x-b.x,c.y-b.y))[0];
+    const candsAll=own.filter(t2=>t2.n!==1&&Math.hypot(t2.x-b.x,t2.y-b.y)>R);
+    if(!candsAll.length){ scnResolve(true,"Alle Blauen sind schon am Ball – mehr geht nicht! ✅",{called:true}); return; }
+    // Wen schicken? Den, der schnell genug ankommt UND dessen Zone am wenigsten
+    // gefaehrlich verwaist (Kosten = Gefahr des Gegners, den er alleine deckt).
+    const helper=candsAll.map(c=>{
+      const arrMs=Math.hypot(c.x-b.x,c.y-b.y)/(F.vh*0.10)*1000;
+      let cost=0;
+      opp.forEach(o=>{ if(o.n===1) return;
+        const near=own.filter(t2=>t2.n!==1).sort((x,y)=>Math.hypot(x.x-o.x,x.y-o.y)-Math.hypot(y.x-o.x,y.y-o.y))[0];
+        if(near&&near.id===c.id) cost=Math.max(cost,dangerOf(o,own.filter(t2=>t2.id!==c.id)));
+      });
+      return {c,arrMs,score:cost*2+arrMs/3000};
+    }).sort((a,c)=>a.score-c.score)[0].c;
     const from={x:helper.x,y:helper.y};
     const to={x:Math.max(F.r,Math.min(F.vw-F.r,b.x+(helper.x>b.x?F.r*2:-F.r*2))), y:Math.max(F.r,Math.min(F.vh-F.r,b.y+F.r*1.5))};
     const dist=Math.hypot(to.x-from.x,to.y-from.y);
@@ -1789,13 +1880,17 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
       // Endposition des Helfers fest einrechnen (State-Updates koennen einen Frame nachlaufen)
       const own2=tokensRef.current.map(tk=>tk.id===helper.id?{...tk,x:to.x,y:to.y}:tk);
       const after=zoneCount(own2,opp,b.x,b.y,R);
-      const {opp:fo,dist:fd}=freestOpp(own2,opp);
-      const good=after.o>=after.g;
-      const risk=fo&&fd>F.vw*0.3;
+      // Erfolg = Einfluss am Ball mindestens ausgeglichen; Risiko = der Gegner,
+      // dessen Gefahren-Index durch das Verschieben am staerksten gewachsen ist.
+      const iOwn2=inflAt(own2,b.x,b.y);
+      const good=iOwn2>=iOpp-0.12;
+      let fo=null,gain=0;
+      opp.forEach(o=>{ if(o.n===1) return; const g2=dangerOf(o,own2)-dangerOf(o,own); if(g2>gain){gain=g2;fo=o;} });
+      const risk=fo&&gain>0.35&&dangerOf(fo,own2)>1.5;
       scnResolve(good,(good
-        ?`✅ Jetzt ${after.o} gegen ${after.g} am Ball – Überzahl geholt!`
+        ?`✅ Jetzt ${after.o} gegen ${after.g} am Ball – ihr habt den Ballraum unter Kontrolle!`
         :`⚠️ Immer noch ${after.g} gegen ${after.o} – die Verstärkung hat nicht gereicht.`)
-        +(risk?` Aber Achtung: 🔴 Nr. ${fo.n} steht jetzt ganz frei – das ist der Preis fürs Verschieben!`:" Und hinten wurde niemand richtig frei – gute Entscheidung!"),
+        +(risk?` Aber Achtung: 🔴 Nr. ${fo.n} ist jetzt viel gefährlicher – frei und in Tornähe. Das ist der Preis!`:" Und hinten wurde niemand richtig gefährlich frei – gute Entscheidung!"),
         {called:true,helper:helper.n,freed:risk?fo.n:null});
     };
     runRef.current=requestAnimationFrame(step);
