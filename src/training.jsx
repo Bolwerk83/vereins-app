@@ -1234,14 +1234,9 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
   // geoeffnet startet die Tafel direkt im Fokus, inklusive Steuerkreuz.
   const [present,setPresent]=useState(!!eventCtx);
   // "Leben": staendige kleine Bewegung aller Spieler, Gegner orientieren sich zum Ball.
+  // Das Wackeln macht der Browser selbst (SMIL-Animation im SVG) - KEIN Render-Loop,
+  // sonst friert die Bedienung auf dem Handy ein.
   const [liveOn,setLiveOn]=useState(false);
-  const [liveT,setLiveT]=useState(0);
-  useEffect(()=>{ if(!liveOn){ setLiveT(0); return; }
-    let on=true,id=0,last=0;
-    const lo=(t)=>{ if(!on) return; if(t-last>40){ last=t; setLiveT(t); } id=requestAnimationFrame(lo); };
-    id=requestAnimationFrame(lo);
-    return ()=>{ on=false; cancelAnimationFrame(id); };
-  },[liveOn]);
   const [aiHint,setAiHint]=useState("");
   // Auswahl + Steuerkreuz (wie am Gameboy): angetippten Spieler mit Pfeilen steuern.
   const [selTok,setSelTok]=useState(null);   // {side:"own"|"opp", id}
@@ -1905,19 +1900,22 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
     fire&&fire(`Szenario beendet: ${s.score} ⭐ – Ergebnis gespeichert`);
   };
 
-  // "Leben": kleine Pendel-Bewegung fuer alle; Gegner ruecken zum freien Ball –
-  // jugendtypisch geht der Naechste richtig drauf, der Rest orientiert sich nur.
+  // "Leben": Gegner lehnen sich statisch zum freien Ball (der Naechste am staerksten);
+  // die Pendel-Bewegung selbst laeuft als SMIL-Animation direkt im Browser.
   const liveNearId=(liveOn&&!playing&&ballPos)
     ? oppTokens.filter(t2=>t2.n!==1).reduce((b,tk)=>{ const d=Math.hypot(ballPos.x-tk.x,ballPos.y-tk.y); return d<b.d?{d,id:tk.id}:b; },{d:1e9,id:null}).id
     : null;
-  const liveOff=(tk,side)=>{ if(!liveOn||playing||!liveT) return null;
-    const amp=side==="opp"?0.3:0.2;
-    let dx=Math.sin(liveT/700+tk.n*2.3+(side==="opp"?1.7:0))*F.r*amp;
-    let dy=Math.cos(liveT/560+tk.n*3.1)*F.r*amp;
-    if(side==="opp"&&ballPos&&tk.n!==1){ const bdx=ballPos.x-tk.x,bdy=ballPos.y-tk.y,d=Math.hypot(bdx,bdy)||1;
-      const near=tk.id===liveNearId;
-      const lean=Math.min(F.vw*(near?0.14:0.07),d*(near?0.55:0.3)); dx+=bdx/d*lean; dy+=bdy/d*lean; }
-    return {dx,dy}; };
+  const liveLean=(tk,side)=>{ if(!liveOn||playing||side!=="opp"||!ballPos||tk.n===1) return null;
+    const bdx=ballPos.x-tk.x,bdy=ballPos.y-tk.y,d=Math.hypot(bdx,bdy)||1;
+    const near=tk.id===liveNearId;
+    const lean=Math.min(F.vw*(near?0.14:0.07),d*(near?0.55:0.3));
+    return {dx:bdx/d*lean,dy:bdy/d*lean}; };
+  // Browser-eigenes Wackeln (kein React-Render): kleine Translate-Schleife je Token
+  const liveWobble=(n)=>(liveOn&&!playing)?(
+    <animateTransform attributeName="transform" type="translate" additive="sum"
+      values={`0 0; ${(F.r*0.24).toFixed(2)} ${(-F.r*0.18).toFixed(2)}; 0 0; ${(-F.r*0.2).toFixed(2)} ${(F.r*0.16).toFixed(2)}; 0 0`}
+      dur={`${(1.3+(n%5)*0.23).toFixed(2)}s`} repeatCount="indefinite"/>
+  ):null;
 
   const chSport=(sp)=>{ const FF=TB_FIELDS[sp]||TB_FIELDS.generic; const c=FF.counts.includes(11)?11:FF.counts[0]; setSport(sp); setCount(c); setFormIdx(0); setArrows([]); setDraw(null); setBallPos(b=>b?{x:FF.vw/2,y:FF.vh/2}:null); };
   // Werkzeuge – im Board als Kachel-Grid, im Vorfuehr-Modus als Controller-Tasten.
@@ -2117,11 +2115,12 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
               <animate attributeName="r" values={`${F.r*1.7};${F.r*2.3};${F.r*1.7}`} dur="1.2s" repeatCount="indefinite"/>
             </circle>
           ):null; })()}
-          {showOpp&&(animOpp||oppTokens).map(tk=>{ const lo=liveOff(tk,"opp"); const X=tk.x+(lo?.dx||0), Y=tk.y+(lo?.dy||0);
+          {showOpp&&(animOpp||oppTokens).map(tk=>{ const lo=liveLean(tk,"opp"); const X=tk.x+(lo?.dx||0), Y=tk.y+(lo?.dy||0);
             return (
             <g key={tk.id} opacity={focusId&&focusId!==tk.id?0.3:1} style={{cursor:mode==="move"?"grab":(mode==="mark"||mode==="focus")?"pointer":"crosshair",transition:"opacity .25s"}}
                onPointerDown={(e)=>{ if(mode==="focus"){ e.preventDefault(); e.stopPropagation(); setFocusId(f=>f===tk.id?null:tk.id); return;} if(mode==="mark"){ e.preventDefault(); toggleMark(setOppTokens,tk.id); return;} if(mode!=="move") return; e.preventDefault(); resetAnim(); setSelTok({side:"opp",id:tk.id}); dragStartRef.current={x:tk.x,y:tk.y,id:tk.id,side:"opp",hadBall:!!ballPos&&Math.hypot(tk.x-ballPos.x,tk.y-ballPos.y)<F.r*1.9}; dragRef.current=tk.id; dragSetRef.current="opp";}}
                onTouchStart={(e)=>{ if(mode==="focus"||mode==="mark"){ e.stopPropagation(); return; } /* Umschalten macht schon onPointerDown – sonst doppelt es auf iOS */ if(mode!=="move") return; resetAnim(); setSelTok({side:"opp",id:tk.id}); dragStartRef.current={x:tk.x,y:tk.y,id:tk.id,side:"opp",hadBall:!!ballPos&&Math.hypot(tk.x-ballPos.x,tk.y-ballPos.y)<F.r*1.9}; dragRef.current=tk.id; dragSetRef.current="opp";}}>
+              {liveWobble(tk.n)}
               {selTok?.id===tk.id&&<>
                 <circle cx={X} cy={Y} r={F.r*1.7} fill="#22d3ee" opacity={0.28}>
                   <animate attributeName="r" values={`${F.r*1.45};${F.r*1.95};${F.r*1.45}`} dur="1s" repeatCount="indefinite"/>
@@ -2141,11 +2140,12 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
               {tk.marked&&<text x={X} y={Y-F.r*1.45} textAnchor="middle" fontSize={F.fs*0.95} style={{pointerEvents:"none"}}>⭐</text>}
             </g>
           );})}
-          {(animOwn||tokens).map(tk=>{ const lo=liveOff(tk,"own"); const X=tk.x+(lo?.dx||0), Y=tk.y+(lo?.dy||0);
+          {(animOwn||tokens).map(tk=>{ const X=tk.x, Y=tk.y;
             return (
             <g key={tk.id} opacity={focusId&&focusId!==tk.id?0.3:1} style={{cursor:mode==="move"?"grab":(mode==="mark"||mode==="focus")?"pointer":"crosshair",transition:"opacity .25s"}}
                onPointerDown={(e)=>{ if(mode==="focus"){ e.preventDefault(); e.stopPropagation(); setFocusId(f=>f===tk.id?null:tk.id); return;} if(mode==="mark"){ e.preventDefault(); toggleMark(setTokens,tk.id); return;} if(mode!=="move") return; e.preventDefault(); resetAnim(); setSelTok({side:"own",id:tk.id}); dragStartRef.current={x:tk.x,y:tk.y,id:tk.id,side:"own",hadBall:!!ballPos&&Math.hypot(tk.x-ballPos.x,tk.y-ballPos.y)<F.r*1.9}; dragRef.current=tk.id; dragSetRef.current="own";}}
                onTouchStart={(e)=>{ if(mode==="focus"||mode==="mark"){ e.stopPropagation(); return; } /* Umschalten macht schon onPointerDown – sonst doppelt es auf iOS */ if(mode!=="move") return; resetAnim(); setSelTok({side:"own",id:tk.id}); dragStartRef.current={x:tk.x,y:tk.y,id:tk.id,side:"own",hadBall:!!ballPos&&Math.hypot(tk.x-ballPos.x,tk.y-ballPos.y)<F.r*1.9}; dragRef.current=tk.id; dragSetRef.current="own";}}>
+              {liveWobble(tk.n)}
               {selTok?.id===tk.id&&<>
                 <circle cx={X} cy={Y} r={F.r*1.7} fill="#22d3ee" opacity={0.28}>
                   <animate attributeName="r" values={`${F.r*1.45};${F.r*1.95};${F.r*1.45}`} dur="1s" repeatCount="indefinite"/>
@@ -2309,7 +2309,7 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
         {scn&&(
           <div style={{background:"#fff",borderRadius:11,padding:"11px 13px"}}>
             <div style={{fontSize:kidMode?15:13.5,fontWeight:800,color:"#0f172a",lineHeight:1.55}}>{scn.phase==="resolve"?scn.feedback:scn.text}</div>
-            {scn.phase==="task"&&scn.type!=="reinforce"&&(
+            {scn.phase==="task"&&scn.type!=="reinforce"&&scn.type!=="passwahl"&&(
               <div style={{marginTop:8,fontSize:12.5,fontWeight:800,color:(scn.deadline-Date.now())<4000?"#dc2626":"#64748b"}}>
                 ⏱ noch {Math.max(0,Math.ceil((scn.deadline-Date.now())/1000))} s – schieb {kidMode?"deinen Spieler":"den markierten Spieler"} mit Finger oder 🎮 hin!
               </div>
