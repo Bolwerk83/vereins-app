@@ -2335,6 +2335,7 @@ function NavIcon({ name, size=20, color="currentColor" }) {
     case "team":     return <svg {...p}><circle cx="9" cy="7" r="3"/><path d="M2 21v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1"/><circle cx="18" cy="8" r="2.2"/><path d="M22 21v-.5a4 4 0 0 0-3-3.8"/></svg>;
     case "teams":    return <svg {...p}><circle cx="7" cy="8" r="2.4"/><circle cx="17" cy="8" r="2.4"/><path d="M1.5 19v-.5a4 4 0 0 1 4-4h3a4 4 0 0 1 4 4V19M14 19v-.5a4 4 0 0 1 4-4h0a4 4 0 0 1 4 4V19"/></svg>;
     case "fields":   return <svg {...p}><rect x="3" y="5" width="18" height="14" rx="1"/><path d="M12 5v14M3 9h3v6H3M21 9h-3v6h3"/><circle cx="12" cy="12" r="2.2"/></svg>;
+    case "taktik":   return <svg {...p}><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.2" cy="9" r="1.7"/><circle cx="15.8" cy="15" r="1.7"/><path d="M9.6 10.4l4.8 3.2M15.8 8l2.5 2.5M18.3 8l-2.5 2.5"/></svg>;
     case "chat":     return <svg {...p}><path d="M21 15a2 2 0 0 1-2 2H8l-4 4V5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2z"/></svg>;
     case "more":     return <svg {...p}><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>;
     case "training": return <svg {...p}><path d="M12 3L18.5 20H5.5L12 3z"/><path d="M8.2 14h7.6M9.7 9.5h4.6"/><path d="M3.5 20h17"/></svg>;
@@ -2362,7 +2363,7 @@ function NavIcon({ name, size=20, color="currentColor" }) {
   }
 }
 // true, wenn für diese ID ein SVG existiert (sonst Fallback auf Buchstabe)
-const HAS_ICON = new Set(["events","team","teams","fields","chat","more","training","jerseys","helpers","templates","results","attendance","overview","news","trainers","fieldsadmin","branding","inbox","security","access","settings","players","analysis","ziele","drills","planner","manage"]);
+const HAS_ICON = new Set(["events","team","teams","taktik","fields","chat","more","training","jerseys","helpers","templates","results","attendance","overview","news","trainers","fieldsadmin","branding","inbox","security","access","settings","players","analysis","ziele","drills","planner","manage"]);
 
 // Icons für Event-Typen (Training, Heim/Auswärts, Turnier...)
 function EventIcon({ type, size=22, color="#16a34a" }) {
@@ -2396,6 +2397,7 @@ function BottomNav({ tab, setTab, isAdmin, isHelper, isParent=false, unread, inb
   ] : [
     { id:"events",  label:tr("tabEvents"),  icon:"K" },
     { id:"team",    label:tr("navTeam"),     icon:"P", hidden: isHelper },
+    { id:"taktik",  label:"Taktik",           icon:"TK", hidden: isHelper },
     { id:"fields",  label:tr("tabFields"),    icon:"F", hidden: isHelper||!feat("fields_booking")||!clubFeat("mod_fields") },
     { id:"chat",    label:tr("tabChat"),     icon:"C", badge: unread, hidden: !feat("chat_team") },
     { id:"more",    label:tr("navMore"),     icon:"=", badge: inboxUnread },
@@ -14966,6 +14968,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         {tab==="treasury"   &&!isHelper&&<TreasuryTab data={local} cid={cid} save={save} fire={fire} cl={myClub} myTids={myTids} teams={(local.teams||[]).filter(tm=>tm.cid===cid)} isAdmin={isAdmin}/>}
         {tab==="helpers"    &&!isHelper&&<HelpersTab data={local} cid={cid} myTids={myTids} session={session} save={save} fire={fire} cl={myClub}/>}
         {tab==="training"  &&<><TrainingPlanTab data={local} myTids={myTids} save={save} fire={fire} cl={myClub} session={session}/><AffiliateBanner trigger="training" style={{marginTop:14}}/></> }
+        {tab==="taktik"    &&!isHelper&&<TacticBoard data={local} myTids={myTids} save={save} fire={fire} cl={myClub}/>}
         {tab==="jerseys"    &&<><AffiliateBanner trigger="jerseys"/><JerseysTab data={local} myTids={myTids} save={save} fire={fire} cl={myClub}/></> }
         {tab==="fields"     &&<><FieldsTab data={local} myTids={myTids} session={session} save={save} fire={fire} cl={myClub}/><AffiliateBanner trigger="fields" style={{marginTop:14}}/></> }
         {tab==="attendance" &&!isHelper&&<AttendanceTab data={local} myTids={myTids} cl={myClub} save={save} fire={fire} session={session}/>}
@@ -15210,12 +15213,6 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               : <p style={{fontSize:13,color:"#64748b"}}>Noch kein Trainingsplan hinterlegt.</p>}
           </div>
         ); })()}
-        {["heimspiel","auswarts","freundschaft","turnier"].includes(viewEv.type)&&!isHelper&&(
-          <button onClick={()=>{ setTaktikEv(viewEv); setViewEv(null); setShowTaktik(true); }}
-            style={{width:"100%",marginTop:16,padding:"12px",borderRadius:12,border:`1.5px solid ${TH(myClub).p}`,background:TH(myClub).p+"10",color:TH(myClub).p,fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
-            ⚽ Taktiktafel / Aufstellung zeigen
-          </button>
-        )}
         </>}
         {evTab==="zeit"&&<>
         {["heimspiel","auswarts","freundschaft"].includes(viewEv.type)&&!isHelper&&(
@@ -15539,7 +15536,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           onSave={plan=>{ save({...local, events:local.events.map(e=>e.id===planFor.id?{...e, trainingPlan:plan, trainingId:""}:e)}); setPlanFor(null); fire("Trainingsplan gespeichert"); }}
           onRemove={()=>{ save({...local, events:local.events.map(e=>{ if(e.id!==planFor.id) return e; const {trainingPlan, ...rest}=e; return {...rest, trainingId:""}; })}); setPlanFor(null); fire("Trainingsplan entfernt"); }}
           onCancel={()=>setPlanFor(null)}
-          onOpenTaktik={()=>{ setTaktikEv(planFor); setPlanFor(null); setShowTaktik(true); }}
+
         />
       </Drawer>}
 
