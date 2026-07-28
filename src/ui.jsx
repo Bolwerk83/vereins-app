@@ -58,13 +58,14 @@ export const FONT_STEPS = [["A", 1], ["A⁺", 1.15], ["A⁺⁺", 1.3], ["A⁺⁺
 export const getFontScale = () => { try { const v = parseFloat(localStorage.getItem(FONT_KEY)); return [1, 1.15, 1.3, 1.5].includes(v) ? v : 1; } catch { return 1; } };
 export const applyFontScale = (s) => { try { document.documentElement.style.zoom = s === 1 ? "" : String(s); localStorage.setItem(FONT_KEY, String(s)); } catch {} };
 export function FontScaleControl({ dark = false }) {
+  const { tr } = useT();
   const [cur, setCur] = useState(getFontScale);
   const set = (s) => { setCur(s); applyFontScale(s); };
   const idle = dark ? "rgba(255,255,255,.7)" : "#475569";
   const idleBd = dark ? "rgba(255,255,255,.25)" : "#e2e8f0";
   return (
     <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-      <span style={{ fontSize: 13, fontWeight: 700, color: dark ? "rgba(255,255,255,.75)" : "#64748b", marginRight: 2 }}>Schriftgröße</span>
+      <span style={{ fontSize: 13, fontWeight: 700, color: dark ? "rgba(255,255,255,.75)" : "#64748b", marginRight: 2 }}>{tr("fontScale")}</span>
       {FONT_STEPS.map(([l, s], i) => {
         const on = cur === s;
         return (
