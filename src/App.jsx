@@ -2380,7 +2380,7 @@ function EventIcon({ type, size=22, color="#16a34a" }) {
 }
 const EVENT_TYPE_ALIAS = { spiel:"heimspiel", heim:"heimspiel", ausw:"auswarts", freund:"freundschaft" };
 
-function BottomNav({ tab, setTab, isAdmin, isHelper, isParent=false, unread, inboxUnread=0, cl, hide=false }) {
+function BottomNav({ tab, setTab, isAdmin, isHelper, isParent=false, parentStats=true, unread, inboxUnread=0, cl, hide=false }) {
   if(hide) return null;
   const t = TH(cl);
   const { tr } = useT();
@@ -2391,7 +2391,7 @@ function BottomNav({ tab, setTab, isAdmin, isHelper, isParent=false, unread, inb
   const clubFeat = (key, def=true) => cs[key]!==undefined ? cs[key] : def;
   const mainTabs = (isParent ? [
     { id:"events",  label:tr("tabEvents"),  icon:"K" },
-    { id:"stats",   label:tr("tabMyStats"), icon:"S" },
+    { id:"stats",   label:tr("tabMyStats"), icon:"S", hidden: isParent&&!parentStats },
     { id:"chat",    label:tr("tabChat"),     icon:"C", badge: unread, hidden: !feat("chat_team") },
     { id:"more",    label:tr("navMore"),     icon:"=" },
   ] : [
@@ -18908,8 +18908,8 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               style={{width:"100%",display:"flex",alignItems:"center",gap:12,background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"12px 14px",marginBottom:14,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
               <span style={{fontSize:20}}>🧩</span>
               <span style={{flex:1,minWidth:0}}>
-                <span style={{display:"block",fontSize:13,fontWeight:800,color:"#334155"}}>Extras & Anzeige</span>
-                <span style={{display:"block",fontSize:11,color:"#64748b",marginTop:2,lineHeight:1.45}}>Erfolge, Quiz, Wochen-Übungen, Vereins-Infos – hier auswählen, was angezeigt wird.</span>
+                <span style={{display:"block",fontSize:13,fontWeight:800,color:"#334155"}}>{tr("exTitle")}</span>
+                <span style={{display:"block",fontSize:11,color:"#64748b",marginTop:2,lineHeight:1.45}}>{tr("exBtnSub")}</span>
               </span>
               <span style={{color:"#94a3b8",fontSize:18}}>›</span>
             </button>
@@ -18980,20 +18980,21 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       {showExtras&&(
         <div style={{position:"fixed",inset:0,zIndex:1400,background:"#f0f4f8",overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
           <div style={{position:"sticky",top:0,zIndex:10,background:t.p,padding:"12px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
-            <span style={{color:"#fff",fontWeight:900,fontSize:16}}>🧩 Extras & Anzeige</span>
+            <span style={{color:"#fff",fontWeight:900,fontSize:16}}>🧩 {tr("exTitle")}</span>
             <button onClick={()=>setShowExtras(false)} style={{width:36,height:36,borderRadius:10,border:"none",background:"rgba(255,255,255,.18)",color:"#fff",fontWeight:900,fontSize:16,cursor:"pointer"}}>✕</button>
           </div>
           <div style={{maxWidth:520,margin:"0 auto",padding:"16px 14px 40px"}}>
             <div style={{background:"#fff",borderRadius:14,border:"1.5px solid #e2e8f0",padding:"13px 15px",marginBottom:14,fontSize:12.5,color:"#64748b",lineHeight:1.55}}>
-              Die Startseite bleibt bewusst schlank – <b>im Mittelpunkt steht die Termin-Abstimmung</b>. Was ihr zusätzlich sehen möchtet, schaltet ihr hier ein.
+              {tr("exIntro")}
             </div>
             {[
-              {k:"ach",  e:"🏆", tt:"Meine Erfolge",        sub:"Szenario-Sterne, Quiz-Rekord, Übungs-Serie und Abzeichen deines Kindes."},
-              {k:"quiz", e:"🧠", tt:"Bundesliga-Quiz",       sub:"Jede Woche 5 neue Fragen zu Spielern, Rekorden und Regeln."},
-              {k:"solo", e:"🏠", tt:"Wochen-Übungen",        sub:"3 Übungen pro Woche zum Alleine-Trainieren. Eltern-Freigabe – nur mit eurem Einverständnis sichtbar.", special:"solo"},
-              {k:"dfb",  e:"📐", tt:"DFB-Spielformen",       sub:"Spielform & Platzgröße der Altersklasse eures Kindes."},
-              {k:"links",e:"🔗", tt:"Vereins-Infos & Links",  sub:"Links des Vereins und fussball.de-Spielplan."},
-              {k:"rec",  e:"💚", tt:"App weiterempfehlen",    sub:"Karte zum Weiterempfehlen der Vereins-App."},
+              {k:"ach",  e:"🏆", tt:tr("exAch"),   sub:tr("exAchSub")},
+              {k:"quiz", e:"🧠", tt:tr("exQuiz"),  sub:tr("exQuizSub")},
+              {k:"solo", e:"🏠", tt:tr("exSolo"),  sub:tr("exSoloSub"), special:"solo"},
+              {k:"stats",e:"📊", tt:tr("exStats"), sub:tr("exStatsSub")},
+              {k:"dfb",  e:"📐", tt:tr("exDfb"),   sub:tr("exDfbSub")},
+              {k:"links",e:"🔗", tt:tr("exLinks"), sub:tr("exLinksSub")},
+              {k:"rec",  e:"💚", tt:tr("exRec"),   sub:tr("exRecSub")},
             ].map(o=>{
               const on=o.special==="solo"?soloOk:!!ext[o.k];
               const toggle=()=>{ if(o.special==="solo") toggleSoloOk(); else setExt(o.k,!on); };
@@ -19011,7 +19012,7 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
                 </div>
               );
             })}
-            <button onClick={()=>setShowExtras(false)} style={{width:"100%",marginTop:6,padding:"13px",borderRadius:13,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:14.5,cursor:"pointer",fontFamily:"inherit"}}>Fertig</button>
+            <button onClick={()=>setShowExtras(false)} style={{width:"100%",marginTop:6,padding:"13px",borderRadius:13,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:14.5,cursor:"pointer",fontFamily:"inherit"}}>{tr("exDone")}</button>
           </div>
         </div>
       )}
@@ -19147,7 +19148,7 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         )}
       </div>}
       <Toast msg={toast}/>
-      <BottomNav tab={tab} setTab={setTab} isAdmin={isAdmin} isHelper={isHelper} isParent={true}
+      <BottomNav tab={tab} setTab={setTab} isAdmin={isAdmin} isHelper={isHelper} isParent={true} parentStats={!!ext.stats}
         unread={unreadMsgs} cl={myClub} />
     </div>
   );
