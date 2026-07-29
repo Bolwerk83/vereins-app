@@ -18706,6 +18706,16 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   // Vom Trainer befristet freigeschaltet: Taktiktafel & Szenario-Spiel fuer dieses Kind.
   const taktikUnlock=myProfile&&(data.tacticUnlocks||[]).find(u=>u.cid===cid&&u.pid===myProfile.id&&new Date(u.until)>new Date());
   const [showTaktik,setShowTaktik]=useState(false);
+  // Extras-Auswahl der Eltern: Standard ist ALLES aus - der Fokus liegt auf der
+  // Abstimmung. Einschalten geht auf der Extras-Seite unter dem Profil.
+  const [extLocal,setExtLocal]=useState(()=>{ try{ return JSON.parse(localStorage.getItem("va_extras_"+cid+"_"+String(user).toLowerCase()))||{}; }catch{ return {}; } });
+  const ext=(myProfile?.parentExtras)||extLocal;
+  const setExt=(k,v)=>{
+    const nx={...ext,[k]:v};
+    if(myProfile) onSave({...data,playerProfiles:(data.playerProfiles||[]).map(p=>p.id===myProfile.id?{...p,parentExtras:nx}:p)});
+    else { setExtLocal(nx); try{ localStorage.setItem("va_extras_"+cid+"_"+String(user).toLowerCase(),JSON.stringify(nx)); }catch{} }
+  };
+  const [showExtras,setShowExtras]=useState(false);
 
   // Login-Gate: Trainer-Nachrichten (Pflicht-Lesebestätigung) + Wiederholungs-No-Show-Hinweis.
   const uLow=String(user).toLowerCase();
@@ -18893,16 +18903,16 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
                 <div style={{position:"absolute",top:3,left:pubOk?22:3,width:20,height:20,borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.25)"}}/>
               </div>
             </div>
-            {/* Eltern-Freigabe: Wochen-Übungen zum Alleine-Trainieren */}
-            <div onClick={toggleSoloOk} style={{display:"flex",alignItems:"center",gap:12,background:soloOk?"#f0fdf4":"#f8fafc",border:`1.5px solid ${soloOk?"#bbf7d0":"#e2e8f0"}`,borderRadius:12,padding:"12px 14px",marginBottom:14,cursor:"pointer"}}>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:13,fontWeight:800,color:soloOk?"#15803d":"#334155"}}>🏠 Wochen-Übungen für Zuhause</div>
-                <div style={{fontSize:11,color:"#64748b",marginTop:2,lineHeight:1.45}}>Zeigt <strong>{user}</strong> jede Woche 3 altersgerechte Übungen zum Alleine-Trainieren. Nur sichtbar, wenn ihr es hier einschaltet.</div>
-              </div>
-              <div style={{width:46,height:26,borderRadius:99,background:soloOk?"#16a34a":"#cbd5e1",position:"relative",flexShrink:0,transition:"background .2s"}}>
-                <div style={{position:"absolute",top:3,left:soloOk?22:3,width:20,height:20,borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.25)"}}/>
-              </div>
-            </div>
+            {/* Extras-Seite: Eltern waehlen dort, welche Zusatz-Karten angezeigt werden */}
+            <button onClick={()=>{setShowProfile(false);setShowExtras(true);}}
+              style={{width:"100%",display:"flex",alignItems:"center",gap:12,background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"12px 14px",marginBottom:14,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
+              <span style={{fontSize:20}}>🧩</span>
+              <span style={{flex:1,minWidth:0}}>
+                <span style={{display:"block",fontSize:13,fontWeight:800,color:"#334155"}}>Extras & Anzeige</span>
+                <span style={{display:"block",fontSize:11,color:"#64748b",marginTop:2,lineHeight:1.45}}>Erfolge, Quiz, Wochen-Übungen, Vereins-Infos – hier auswählen, was angezeigt wird.</span>
+              </span>
+              <span style={{color:"#94a3b8",fontSize:18}}>›</span>
+            </button>
             <div style={{display:"flex",flexDirection:"column",gap:9}}>
               {myProfile&&(
                 <div style={{background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"12px 14px",marginBottom:4}}>
@@ -18966,6 +18976,45 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         </div>
       )}
 
+      {/* Extras-Seite: Eltern schalten Zusatz-Karten einzeln frei (Standard: alles aus) */}
+      {showExtras&&(
+        <div style={{position:"fixed",inset:0,zIndex:1400,background:"#f0f4f8",overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
+          <div style={{position:"sticky",top:0,zIndex:10,background:t.p,padding:"12px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
+            <span style={{color:"#fff",fontWeight:900,fontSize:16}}>🧩 Extras & Anzeige</span>
+            <button onClick={()=>setShowExtras(false)} style={{width:36,height:36,borderRadius:10,border:"none",background:"rgba(255,255,255,.18)",color:"#fff",fontWeight:900,fontSize:16,cursor:"pointer"}}>✕</button>
+          </div>
+          <div style={{maxWidth:520,margin:"0 auto",padding:"16px 14px 40px"}}>
+            <div style={{background:"#fff",borderRadius:14,border:"1.5px solid #e2e8f0",padding:"13px 15px",marginBottom:14,fontSize:12.5,color:"#64748b",lineHeight:1.55}}>
+              Die Startseite bleibt bewusst schlank – <b>im Mittelpunkt steht die Termin-Abstimmung</b>. Was ihr zusätzlich sehen möchtet, schaltet ihr hier ein.
+            </div>
+            {[
+              {k:"ach",  e:"🏆", tt:"Meine Erfolge",        sub:"Szenario-Sterne, Quiz-Rekord, Übungs-Serie und Abzeichen deines Kindes."},
+              {k:"quiz", e:"🧠", tt:"Bundesliga-Quiz",       sub:"Jede Woche 5 neue Fragen zu Spielern, Rekorden und Regeln."},
+              {k:"solo", e:"🏠", tt:"Wochen-Übungen",        sub:"3 Übungen pro Woche zum Alleine-Trainieren. Eltern-Freigabe – nur mit eurem Einverständnis sichtbar.", special:"solo"},
+              {k:"dfb",  e:"📐", tt:"DFB-Spielformen",       sub:"Spielform & Platzgröße der Altersklasse eures Kindes."},
+              {k:"links",e:"🔗", tt:"Vereins-Infos & Links",  sub:"Links des Vereins und fussball.de-Spielplan."},
+              {k:"rec",  e:"💚", tt:"App weiterempfehlen",    sub:"Karte zum Weiterempfehlen der Vereins-App."},
+            ].map(o=>{
+              const on=o.special==="solo"?soloOk:!!ext[o.k];
+              const toggle=()=>{ if(o.special==="solo") toggleSoloOk(); else setExt(o.k,!on); };
+              return (
+                <div key={o.k} onClick={toggle}
+                  style={{display:"flex",alignItems:"center",gap:12,background:on?"#f0fdf4":"#fff",border:`1.5px solid ${on?"#bbf7d0":"#e2e8f0"}`,borderRadius:13,padding:"13px 14px",marginBottom:10,cursor:"pointer"}}>
+                  <span style={{fontSize:22,flexShrink:0}}>{o.e}</span>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:13.5,fontWeight:800,color:on?"#15803d":"#334155"}}>{o.tt}</div>
+                    <div style={{fontSize:11.5,color:"#64748b",marginTop:2,lineHeight:1.45}}>{o.sub}</div>
+                  </div>
+                  <div style={{width:46,height:26,borderRadius:99,background:on?"#16a34a":"#cbd5e1",position:"relative",flexShrink:0,transition:"background .2s"}}>
+                    <div style={{position:"absolute",top:3,left:on?22:3,width:20,height:20,borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.25)"}}/>
+                  </div>
+                </div>
+              );
+            })}
+            <button onClick={()=>setShowExtras(false)} style={{width:"100%",marginTop:6,padding:"13px",borderRadius:13,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:14.5,cursor:"pointer",fontFamily:"inherit"}}>Fertig</button>
+          </div>
+        </div>
+      )}
       {/* Vom Trainer freigeschaltete Taktiktafel (befristet, im Kinder-Modus) */}
       {showTaktik&&myProfile&&taktikUnlock&&(
         <div style={{position:"fixed",inset:0,zIndex:1500,background:"#f0f4f8",overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
@@ -19024,13 +19073,13 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           {showPast&&past.map(ev=><div key={ev.id} style={{marginBottom:10}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user" allEvents={data.events||[]}/></div>)}
         </>}
         {/* Kinder-Bereich: Wochen-Übungen (nur mit Eltern-Freigabe) + Bundesliga-Quiz */}
-        {myProfile&&<div style={{marginTop:16}}>
-          <KidAchievements profile={myProfile} data={data}/>
+        {myProfile&&(ext.ach||soloOk||ext.quiz)&&<div style={{marginTop:16}}>
+          {ext.ach&&<KidAchievements profile={myProfile} data={data}/>}
           {soloOk&&<WeeklySoloCard profile={myProfile} data={data} save={onSave} fire={fire} color={t.p}/>}
-          <WeeklyQuizCard profile={myProfile} data={data} save={onSave} fire={fire}/>
+          {ext.quiz&&<WeeklyQuizCard profile={myProfile} data={data} save={onSave} fire={fire}/>}
         </div>}
         <AffiliateBanner trigger="parents" style={{marginTop:16}}/>
-        {(cl.links||[]).length>0&&(
+        {ext.links&&(cl.links||[]).length>0&&(
           <div style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",padding:"14px 16px",marginTop:16}}>
             <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:10}}>{tr("uhClubLinks")}</div>
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
@@ -19045,7 +19094,7 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             </div>
           </div>
         )}
-        {myTeam?.fussballUrl&&(
+        {ext.links&&myTeam?.fussballUrl&&(
           <a href={myTeam.fussballUrl} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:11,textDecoration:"none",background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",padding:"13px 16px",marginTop:16}}>
             <div style={{width:36,height:36,borderRadius:10,background:"#f0fdf4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,flexShrink:0}}>⚽</div>
             <div style={{flex:1,minWidth:0}}>
@@ -19055,8 +19104,8 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             <span style={{color:"#64748b",fontSize:18}}>↗</span>
           </a>
         )}
-        <div style={{marginTop:16}}><DFBFormatsCard cl={cl} cat={myTeam?.cat}/></div>
-        <div style={{marginTop:16}}><RecommendCard theme={t.p}/></div>
+        {ext.dfb&&<div style={{marginTop:16}}><DFBFormatsCard cl={cl} cat={myTeam?.cat}/></div>}
+        {ext.rec&&<div style={{marginTop:16}}><RecommendCard theme={t.p}/></div>}
         </div>
         {isDesktop&&(
           <aside style={{position:"sticky",top:24,display:"flex",flexDirection:"column",gap:16}}>
