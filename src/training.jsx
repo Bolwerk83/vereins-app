@@ -920,9 +920,9 @@ export function DrillLibrary({ cl, data, myTids, save, fire }) {
               </button>
               {isOpen && (
                 <div style={{padding:"0 15px 15px"}}>
-                  <div style={{display:"flex",justifyContent:"center",marginBottom:12}}>
+                  {drillPrep(d).showDiagram&&<div style={{display:"flex",justifyContent:"center",marginBottom:12}}>
                     <DrillDiagram field={d.field} elements={d.el} color={t.p||"#16a34a"} width={300} variant={style}/>
-                  </div>
+                  </div>}
                   {style==="kids" ? (
                     d.kids ? (
                       <div style={{background:"#fffbeb",border:"2px solid #fde68a",borderRadius:14,padding:"14px 16px",fontSize:16,color:"#78350f",lineHeight:1.65,fontWeight:600}}>
@@ -936,7 +936,7 @@ export function DrillLibrary({ cl, data, myTids, save, fire }) {
                   ) : (
                     <>
                       <p style={{fontSize:13.5,color:"#334155",lineHeight:1.6,marginBottom:10}}>{d.desc}</p>
-                      {d.coach && <div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:10,padding:"9px 12px",fontSize:12.5,color:"#166534",lineHeight:1.5,marginBottom:8}}><strong>Coaching:</strong> {d.coach}</div>}
+                      <DrillPrepCards d={d}/>
                     </>
                   )}
                   <div style={{fontSize:11.5,color:"#64748b",marginTop:8}}>Geeignet für: {d.cats.join(", ")}</div>
@@ -4604,6 +4604,70 @@ export function TemplateDetail({ tpl, onBack, onUse, cl }) {
   );
 }
 
+/* =================================================================
+   TRAINER-VORBEREITUNG JE ÜBUNG
+   Was muss ich aufbauen, was bedeuten die Begriffe, was ist meine
+   Aufgabe? Wird aus Skizzen-Elementen, Spielerzahl und Schwerpunkt
+   der Uebung abgeleitet - fuer alle Uebungen automatisch.
+================================================================= */
+const DRILL_TERMS=[
+  [/dosen/i,"„Dosen“ = umgedrehte Hütchen (oder leere Getränkedosen) als Abschuss-Ziele – auf eine Bank, Stange oder Linie gestellt. Umgefallen = Punkt."],
+  [/gasse/i,"„Gasse“ = zwei Hütchenreihen bilden einen schmalen Korridor (2–3 m breit)."],
+  [/slalom/i,"„Slalom“ = Hütchen versetzt in einer Reihe (1–1,5 m Abstand), wird im Zickzack durchlaufen bzw. durchdribbelt."],
+  [/rondo/i,"„Rondo“ = Passspiel im Kreis; 1–2 Jäger in der Mitte versuchen, den Ball zu erobern. Ballverlust = Rollentausch."],
+  [/raute/i,"„Raute“ = vier Hütchen in Rautenform, an jeder Ecke eine Station/ein Spieler."],
+  [/doppelpass/i,"„Doppelpass“ = Pass zum Mitspieler und sofort der direkte Rückpass in den Lauf."],
+  [/hütchentor|huetchentor/i,"„Hütchentor“ = zwei Hütchen im Abstand von 1–2 m bilden ein kleines Tor."],
+  [/parcours/i,"„Parcours“ = mehrere Stationen hintereinander, die der Reihe nach durchlaufen werden."],
+  [/staffel/i,"„Staffel“ = Teams in Reihen; es läuft immer nur der/die Vorderste, danach abklatschen und hinten anstellen."],
+  [/pendel/i,"„Pendel“ = hinlaufen, Aufgabe erfüllen, zurück zum Start – im ständigen Wechsel."],
+  [/schatten/i,"„Schatten“ = ein Spieler macht vor, der andere läuft dicht dahinter alles nach."],
+  [/zone/i,"„Zone“ = mit Hütchen markierter Bereich auf dem Feld."],
+];
+export const drillPrep=(d)=>{
+  const el=d.el||[];
+  const cnt=t2=>el.filter(e=>e.type===t2).length;
+  const cones=cnt("cone"), goals=cnt("goal"), balls=cnt("ball"), opps=cnt("opp"), zones=cnt("zone");
+  const arrows=el.filter(e=>/Arrow/.test(e.type)).length;
+  const setup=[];
+  if(cones) setup.push(`${cones} Hütchen aufstellen – Anordnung wie in der Skizze`);
+  if(zones) setup.push(`${zones===1?"Eine Zone":zones+" Zonen"} mit Hütchen markieren`);
+  if(goals) setup.push(goals===1?"1 Tor bereitstellen (Minitor oder Hütchentor)":`${goals} Tore bereitstellen (Minitore oder Hütchentore)`);
+  if(balls) setup.push(`${balls===1?"1 Ball":balls+" Bälle"} bereitlegen – plus Ersatzbälle, damit keine Wartezeit entsteht`);
+  if(opps) setup.push(`Leibchen für ${opps===1?"die Verteidiger-/Fänger-Rolle":opps+" Verteidiger/Gegenspieler"}`);
+  setup.push(`Passt für ${d.players} Spieler · ca. ${d.min} Min`);
+  const hay=(d.title||"")+" "+(d.desc||"")+" "+(d.kids||"");
+  const terms=DRILL_TERMS.filter(([re])=>re.test(hay)).map(([,txt])=>txt);
+  const TASK={
+    "aufwärmen":"Gruppen einteilen, Start- und Stoppsignal geben und das Tempo hochhalten – alle bleiben in Bewegung. Ruhig mitmachen, das motiviert!",
+    technik:"Einmal langsam vormachen (oder von einem Kind vormachen lassen). Dann beobachten und einzeln korrigieren – saubere Ausführung geht vor Tempo. Beide Füße üben lassen und regelmäßig durchwechseln.",
+    torschuss:"Bälle nachlegen und zügig rotieren lassen, damit keine Schlange entsteht. Treffer laut mitzählen – ein kleiner Wettkampf motiviert enorm.",
+    taktik:"Kurz erklären, dann laufen lassen. Wenn etwas nicht passt: Spiel kurz „einfrieren“, die Situation zeigen, weiterspielen. Wenig reden, viel spielen lassen.",
+    spielform:"Faire Teams einteilen (Leibchen!), die Regeln in einem Satz erklären und als Schiedsrichter die Punkte laut mitzählen. Nur eingreifen, wenn sich Fehler wiederholen.",
+    kondition:"Belastung und Pausen mit der Uhr steuern und auf saubere Bewegungen achten. Bei starker Ermüdung lieber eine Runde früher aufhören.",
+  };
+  const task=(TASK[d.focus]||TASK.technik)+(d.coach?` Achte besonders auf: ${d.coach}`:"");
+  // Skizze nur zeigen, wenn sie etwas erklaert (Huetchen/Tore/Wege/Gegner/Zonen) -
+  // reine "Spieler stehen herum"-Bilder verwirren mehr, als sie helfen.
+  const showDiagram=(cones+goals+zones+opps+arrows)>0;
+  return {setup,terms,task,showDiagram};
+};
+// Kompakte Anzeige: Aufbau-Checkliste + Begriffe + Trainer-Aufgabe
+export function DrillPrepCards({ d }){
+  const prep=drillPrep(d);
+  return (<>
+    <div style={{background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:11,padding:"10px 13px",marginBottom:10}}>
+      <div style={{fontSize:10.5,fontWeight:800,color:"#64748b",letterSpacing:.4,marginBottom:6}}>🛠️ VORBEREITUNG & AUFBAU</div>
+      {prep.setup.map((x,i)=>(<div key={i} style={{fontSize:12.5,color:"#334155",lineHeight:1.55,display:"flex",gap:7}}><span style={{color:"#16a34a",fontWeight:900}}>✓</span><span>{x}</span></div>))}
+      {prep.terms.map((x,i)=>(<div key={"t"+i} style={{fontSize:12,color:"#475569",lineHeight:1.5,marginTop:7,background:"#fffbeb",border:"1px solid #fde68a",borderRadius:8,padding:"7px 10px"}}>💡 {x}</div>))}
+    </div>
+    <div style={{background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:11,padding:"10px 13px",marginBottom:10}}>
+      <div style={{fontSize:10.5,fontWeight:800,color:"#166534",letterSpacing:.4,marginBottom:5}}>👨‍🏫 DEINE AUFGABE</div>
+      <div style={{fontSize:12.5,color:"#166534",lineHeight:1.6}}>{prep.task}</div>
+    </div>
+  </>);
+}
+
 export function DrillInfoModal({ drill, t, onClose }){
   const col = t?.p || "#16a34a";
   const [view,setView] = useState(drill?.diagram==="track"?"track":"field");
@@ -4641,11 +4705,11 @@ export function DrillInfoModal({ drill, t, onClose }){
             <button onClick={()=>setView("field")} style={segBtn(view==="field")}>⚽ Feld</button>
             <button onClick={()=>setView("track")} style={segBtn(view==="track")}>🏃 Tartanbahn</button>
           </div>}
-          <div style={{display:"flex",justifyContent:"center",marginBottom:10}}>
+          {(view==="track"||drillPrep(drill).showDiagram)&&<div style={{display:"flex",justifyContent:"center",marginBottom:10}}>
             {view==="track"
               ? <TrackDiagram width={300}/>
               : <DrillDiagram field={drill.field} elements={drillEl} color={col} width={300} variant="grass" runColor={pace.color}/>}
-          </div>
+          </div>}
           {view==="field"&&(
             <div style={{background:pace.color+"12",border:`1.5px solid ${pace.color}40`,borderRadius:12,padding:"10px 13px",marginBottom:10}}>
               <div style={{fontSize:13,fontWeight:800,color:"#0f172a"}}>⏱ Lauf-Tempo: <span style={{color:pace.color}}>{pace.emoji} {pace.label}</span></div>
@@ -4658,7 +4722,7 @@ export function DrillInfoModal({ drill, t, onClose }){
             {pd&&anim.catcher&&<p style={{fontSize:12,color:"#dc2626",fontWeight:700,textAlign:"center",marginBottom:14}}>🔴 Der Rote ist der Fänger – er jagt die anderen, die laufen weg!</p>}
           </>)}
           {drill.desc&&<p style={{fontSize:13.5,color:"#334155",lineHeight:1.6,marginBottom:10}}>{drill.desc}</p>}
-          {drill.coach&&<div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:10,padding:"10px 12px",fontSize:12.5,color:"#166534",lineHeight:1.55,marginBottom:10}}><strong>Coaching:</strong> {drill.coach}</div>}
+          <DrillPrepCards d={drill}/>
           {drill.kids&&<div style={{background:"#fffbeb",border:"1px solid #fde68a",borderRadius:10,padding:"10px 12px",fontSize:13,color:"#78350f",lineHeight:1.6,marginBottom:10}}><strong>🧒 Für Kinder erklärt:</strong> {drill.kids}</div>}
           {(drill.cats||[]).length>0&&<div style={{fontSize:11.5,color:"#64748b",marginBottom:14}}>Geeignet für: {drill.cats.join(", ")}</div>}
           <button onClick={onClose} style={{width:"100%",padding:"12px",borderRadius:12,border:"none",background:"#f1f5f9",color:"#475569",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Schließen</button>
