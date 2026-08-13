@@ -40,6 +40,7 @@ const ICON_PATHS = {
   archive: <><rect x="3" y="4" width="18" height="5" rx="1" /><path d="M5 9v10a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 19V9" /><path d="M10 13h4" /></>,
   alert: <><path d="M12 3 2.5 20h19Z" /><path d="M12 9.5V14M12 17h.01" /></>,
   info: <><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 7.5h.01" /></>,
+  activity: <path d="M3 13h4l3 7 4-16 3 9h4" />,
 }
 function Icon({ name, size = 19 }) {
   return (
@@ -83,6 +84,11 @@ const MODULES = [
     id: 'arbeit', ico: 'briefcase', name: 'Arbeitskalender',
     desc: 'Arbeitstermine per .ics-Import aus Outlook/Office365.',
     privacy: 'Die Familie sieht nur „Arbeit“ als belegte Zeit – keine Betreffe.',
+  },
+  {
+    id: 'sport', ico: 'activity', name: 'Sport',
+    desc: 'Deine Sporteinheiten fest einplanen – Wochenziel, Serien, Wochenüberblick.',
+    privacy: 'Dein Ziel und dein Stand gehören dir – die Familie sieht nur die Termine.',
   },
   {
     id: 'connect', ico: 'link', name: 'Anbindungen',
@@ -311,13 +317,14 @@ function EventSheet({ initial, members, me, onSave, onDelete, onClose }) {
   const [date, setDate] = useState(e ? e.on_date : initial.date)
   const [time, setTime] = useState(e ? e.at_time : '15:00')
   const [meta, setMeta] = useState(e ? e.meta : '')
+  const [zust, setZust] = useState(e?.zust || '')
   const [serie, setSerie] = useState(false)
 
   return (
     <div className="overlay" onClick={(ev) => { if (ev.target === ev.currentTarget) onClose() }}>
       <form className="sheet" onSubmit={(ev) => {
         ev.preventDefault()
-        if (title.trim()) onSave({ title: title.trim(), member_id: memberId, on_date: date, at_time: time, meta: meta.trim(), serie })
+        if (title.trim()) onSave({ title: title.trim(), member_id: memberId, on_date: date, at_time: time, meta: meta.trim(), zust: zust || null, serie })
       }}>
         <h3>{e ? 'Termin bearbeiten' : 'Neuer Termin'}<button type="button" className="x" onClick={onClose} aria-label="Schließen">✕</button></h3>
         <div className="field">
@@ -342,9 +349,16 @@ function EventSheet({ initial, members, me, onSave, onDelete, onClose }) {
             <input id="f-time" type="time" required value={time} onChange={(ev) => setTime(ev.target.value)} />
           </div>
           <div className="field">
-            <label htmlFor="f-meta">Bringt / holt (optional)</label>
-            <input id="f-meta" value={meta} onChange={(ev) => setMeta(ev.target.value)} placeholder="z. B. Bringt: Papa" />
+            <label htmlFor="f-zust">✋ Wer übernimmt? (bringt/holt/betreut)</label>
+            <select id="f-zust" value={zust} onChange={(ev) => setZust(ev.target.value)}>
+              <option value="">– noch offen –</option>
+              {members.filter((m) => m.kind !== 'kid').map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+            </select>
           </div>
+        </div>
+        <div className="field">
+          <label htmlFor="f-meta">Notiz (optional)</label>
+          <input id="f-meta" value={meta} onChange={(ev) => setMeta(ev.target.value)} placeholder="z. B. Sportzeug mitgeben" />
         </div>
         {!e && (
           <div className="field checkline">
@@ -1309,6 +1323,45 @@ export default function App() {
     }
   }
 
+  /* ---------- Sport & Kinderbetreuung (Wochen-Balance) ---------- */
+
+  const weekSpan = (() => {
+    const now = new Date()
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const mo = new Date(d); mo.setDate(d.getDate() - ((d.getDay() + 6) % 7))
+    const su = new Date(mo); su.setDate(mo.getDate() + 6)
+    return [iso(mo), iso(su)]
+  })()
+  const inWeek = (e) => e.on_date >= weekSpan[0] && e.on_date <= weekSpan[1]
+
+  const mySportWeek = db.events.filter((e) => e.sport && e.member_id === me.id && e.status === 'fix' && inWeek(e))
+  const sportGoal = me.sportGoal || 2
+
+  function planSport(activity, wd, time) {
+    const base = fromIso(today)
+    const diff = (wd - ((base.getDay() + 6) % 7) + 7) % 7
+    const first = new Date(base); first.setDate(base.getDate() + diff)
+    const rows = Array.from({ length: 8 }, (_, k) => {
+      const d = new Date(first); d.setDate(first.getDate() + k * 7)
+      return { id: uid(), member_id: me.id, on_date: iso(d), at_time: time, title: activity, meta: 'Dein Ausgleich', serie: true, sport: true, status: 'fix', created_by: me.id }
+    })
+    saveAll({ ...db, events: [...db.events, ...rows] })
+    toast(`🏃 ${activity} eingeplant – jede Woche, 8 Wochen. Der Termin gehört dir.`)
+  }
+
+  const toggleSportDone = (e) => saveAll({ ...db, events: db.events.map((x) => (x.id === e.id ? { ...x, done: !x.done } : x)) })
+
+  const adults = db.members.filter((m) => m.kind !== 'kid')
+  const careCount = (mid) => db.events.filter((e) => e.status === 'fix' && inWeek(e) && e.zust === mid).length
+  const unclaimed = db.events
+    .filter((e) => e.status === 'fix' && !e.zust && byId[e.member_id]?.kind === 'kid' && e.on_date >= today && e.on_date <= addDays(today, 2))
+    .sort((a, b) => a.on_date.localeCompare(b.on_date) || a.at_time.localeCompare(b.at_time))
+    .slice(0, 5)
+  function claimEvent(e) {
+    saveAll({ ...db, events: db.events.map((x) => (x.id === e.id ? { ...x, zust: me.id } : x)) })
+    toast('✋ Übernommen – steht für alle sichtbar im Kalender')
+  }
+
   /* ---------- Anbindungen: Export für Outlook/Google/Excel ---------- */
 
   const icsEscape = (t) => String(t || '').replace(/\\/g, '\\\\').replace(/[,;]/g, ' ').replace(/\n/g, ' ')
@@ -1437,8 +1490,8 @@ export default function App() {
         <span className="time">{e.at_time}</span>
         <span className="dot" style={{ background: mcolor(e.member_id) }} />
         <div className="row-main">
-          <div className="row-title">{e.title}{e.serie ? ' ↻' : ''}{e.src === 'verein' ? ' ⚽' : ''}</div>
-          <div className="row-meta">{e.masked ? e.meta : mname(e.member_id) + (e.meta ? ' · ' + e.meta : '')}</div>
+          <div className="row-title">{e.title}{e.serie ? ' ↻' : ''}{e.src === 'verein' ? ' ⚽' : ''}{e.sport ? ' 🏃' : ''}</div>
+          <div className="row-meta">{e.masked ? e.meta : mname(e.member_id) + (e.meta ? ' · ' + e.meta : '') + (e.zust ? ' · ✋ ' + mname(e.zust) : '')}</div>
         </div>
         {e.status === 'pending' && <span className="chip honey">📩 Anfrage</span>}
         <span className="chev">›</span>
@@ -1461,7 +1514,40 @@ export default function App() {
         <div className="kpi accent"><div className="num">{db.events.filter((e) => e.on_date === today && e.status === 'fix').length}</div><div className="cap">Termine heute</div></div>
         <div className={'kpi' + (invites.length ? ' alert' : '')}><div className="num">{invites.length}</div><div className="cap">Anfragen an dich</div></div>
         <div className="kpi"><div className="num">{db.items.filter((i) => !i.done).length}</div><div className="cap">Offene Listenpunkte</div></div>
+        {hasMod(me, 'sport') && (
+          <div className={'kpi' + (mySportWeek.filter((e) => e.done).length >= sportGoal ? ' accent' : '')}>
+            <div className="num">{mySportWeek.filter((e) => e.done).length}/{sportGoal}</div>
+            <div className="cap">🏃 Sport diese Woche</div>
+          </div>
+        )}
       </div>
+
+      {!isKid && (adults.length > 1 || unclaimed.length > 0) && (
+        <>
+          <p className="label">✋ Kinder & Alltag · wer übernimmt diese Woche</p>
+          <div className="card">
+            <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+              {adults.map((m) => (
+                <span key={m.id} className="chip">
+                  <i className="dot" style={{ background: m.color, width: 8, height: 8, borderRadius: '50%' }} />
+                  {m.name}: {careCount(m.id)}×
+                </span>
+              ))}
+              <span className="row-meta" style={{ flexBasis: '100%' }}>Entlastung sichtbar gemacht – ein „✋ Ich übernehme“ zählt sofort mit.</span>
+            </div>
+            {unclaimed.map((e) => (
+              <div className="row" key={e.id}>
+                <span className="time" style={{ minWidth: 76 }}>{fmtShort(e.on_date)} {e.at_time}</span>
+                <div className="row-main">
+                  <div className="row-title">{e.title}</div>
+                  <div className="row-meta">{mname(e.member_id)} · noch niemand eingeteilt</div>
+                </div>
+                <button className="btn sm" onClick={() => claimEvent(e)}>✋ Ich übernehme</button>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
       {invites.length > 0 && (
         <>
           <p className="label">📩 Anfragen an dich</p>
@@ -1797,6 +1883,40 @@ export default function App() {
                   </div>
                   <span className="chev">›</span>
                 </button>
+              </div>
+            </>
+          )}
+
+          {hasMod(me, 'sport') && (
+            <>
+              <p className="label">🏃 Sport · dein Ausgleich, fest eingeplant</p>
+              <div className="card">
+                <div className="row">
+                  <RowIcon name="activity" />
+                  <div className="row-main">
+                    <div className="row-title">Wochenziel</div>
+                    <div className="row-meta">Klein anfangen zählt – lieber 2× geschafft als 5× geplant.</div>
+                  </div>
+                  <select value={sportGoal} aria-label="Wochenziel"
+                    onChange={(e) => saveAll({ ...db, members: db.members.map((m) => (m.id === me.id ? { ...m, sportGoal: +e.target.value } : m)) })}
+                    style={{ font: 'inherit', fontWeight: 800, padding: '6px 10px', borderRadius: 9, border: '2px solid var(--line)', background: 'var(--ground)', color: 'var(--ink)' }}>
+                    {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}× / Woche</option>)}
+                  </select>
+                </div>
+                <SportPlanForm onPlan={planSport} />
+                {mySportWeek.length > 0 && (
+                  <>
+                    {mySportWeek.sort((a, b) => a.on_date.localeCompare(b.on_date)).map((e) => (
+                      <label className="row" key={e.id} style={{ cursor: 'pointer' }}>
+                        <input type="checkbox" className="check" checked={!!e.done} onChange={() => toggleSportDone(e)} aria-label={'Gemacht: ' + e.title} />
+                        <div className="row-main">
+                          <div className={'row-title' + (e.done ? ' done-text' : '')}>{e.title}</div>
+                          <div className="row-meta">{fmtShort(e.on_date)} {e.at_time} · abhaken, wenn gemacht 💪</div>
+                        </div>
+                      </label>
+                    ))}
+                  </>
+                )}
               </div>
             </>
           )}
@@ -2322,6 +2442,26 @@ function VereinSheet({ members, me, onLink, onClose }) {
           </>
         )}
       </form>
+    </div>
+  )
+}
+
+function SportPlanForm({ onPlan }) {
+  const [act, setAct] = useState('')
+  const [wd, setWd] = useState(2)
+  const [time, setTime] = useState('19:00')
+  const submit = () => { if (act.trim()) { onPlan(act.trim(), +wd, time); setAct('') } }
+  return (
+    <div className="quickadd" style={{ flexWrap: 'wrap' }}>
+      <input value={act} onChange={(e) => setAct(e.target.value)} placeholder="Was? (z. B. Laufen, Kraftraum)" aria-label="Sportart"
+        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); submit() } }} style={{ flex: '2 1 150px' }} />
+      <select value={wd} onChange={(e) => setWd(e.target.value)} aria-label="Wochentag"
+        style={{ font: 'inherit', padding: '8px 10px', borderRadius: 9, border: '2px solid var(--line)', background: 'var(--ground)', color: 'var(--ink)' }}>
+        {WD.map((n, i) => <option key={n} value={i}>{n}</option>)}
+      </select>
+      <input type="time" value={time} onChange={(e) => setTime(e.target.value)} aria-label="Uhrzeit"
+        style={{ font: 'inherit', padding: '8px 10px', borderRadius: 9, border: '2px solid var(--line)', background: 'var(--ground)', color: 'var(--ink)', width: 100 }} />
+      <button type="button" className="btn sm" onClick={submit}>Einplanen</button>
     </div>
   )
 }
