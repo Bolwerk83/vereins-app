@@ -52,6 +52,18 @@ function Icon({ name, size = 19 }) {
 }
 const RowIcon = ({ name }) => <span style={{ color: 'var(--ink-soft)', flex: 'none', display: 'flex' }}><Icon name={name} size={21} /></span>
 
+/* Das Logo: eine Seite mit umgeknickter Ecke – das Eselsohr, wörtlich */
+const LogoMark = ({ size = 26 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true"
+    style={{ flex: 'none', transform: 'rotate(-5deg)' }}>
+    <path d="M6 2.5h8.2l5.3 5.3v11.7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-15a2 2 0 0 1 2-2Z"
+      fill="var(--surface)" stroke="var(--ink)" strokeWidth="2" strokeLinejoin="round" />
+    <path d="M14.2 2.5v5.3h5.3Z"
+      fill="var(--marker)" stroke="var(--ink)" strokeWidth="2" strokeLinejoin="round" />
+    <path d="M8 12.5h8M8 16h5.5" stroke="var(--ink-soft)" strokeWidth="1.8" strokeLinecap="round" />
+  </svg>
+)
+
 const PTYPES = ['Nachsorge', 'Vorsorge', 'Beratung', 'Kursstunde', 'Wochenbettbesuch', 'Sonstiges']
 
 // Module: werden pro Mitglied auf dem eigenen Profil hinzugefügt.
@@ -203,7 +215,7 @@ function Onboarding({ onCreate }) {
   return (
     <div className="auth-wrap">
       <form className="auth-card" onSubmit={(e) => { e.preventDefault(); if (famName.trim() && myName.trim()) onCreate(famName.trim(), myName.trim(), color) }}>
-        <h1 className="serif">Esels<span style={{ color: 'var(--brand)' }}>ohr</span></h1>
+        <h1 className="serif" style={{ display: 'flex', alignItems: 'center', gap: 10 }}><LogoMark size={36} />Esels<span className="nest">ohr</span></h1>
         <p className="sub">Der Familienkalender mit Gedächtnis. Startklar in 20 Sekunden – ganz ohne Konto.</p>
         <div className="field">
           <label htmlFor="famname">Familienname</label>
@@ -1702,7 +1714,7 @@ export default function App() {
   return (
     <div className="shell">
       <aside className="side">
-        <div className="logo serif">Esels<span className="nest">ohr</span></div>
+        <div className="logo serif"><LogoMark size={28} />Esels<span className="nest">ohr</span></div>
         {NAVS.map(([id, ico, label, cnt]) => (
           <button key={id} className={'navbtn' + (nav === id ? ' active' : '')} onClick={() => setNav(id)}>
             <span className="ico"><Icon name={ico} /></span>{label}
@@ -1714,7 +1726,7 @@ export default function App() {
       </aside>
       <div className="mainwrap">
         <header className="topbar">
-          <h1 className="wordmark serif">Esels<span className="nest">ohr</span></h1>
+          <h1 className="wordmark serif"><LogoMark size={25} />Esels<span className="nest">ohr</span></h1>
           <span className="sp" />
           <button className="userchip" onClick={() => setNav('profil')} aria-label="Mein Profil">
             <span className="avatar sm member" style={{ background: me.color }}>{me.name[0].toUpperCase()}</span>

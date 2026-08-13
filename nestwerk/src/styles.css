@@ -86,7 +86,7 @@ body {
 /* ================= App-Shell ================= */
 .shell { display: flex; min-height: 100vh; max-width: 1160px; margin: 0 auto; }
 aside.side { display: none; width: 232px; flex: none; flex-direction: column; gap: 5px; padding: 22px 16px; border-right: 2px solid var(--line); background: var(--surface); }
-.side .logo { font-size: 26px; margin: 0 6px 20px; }
+.side .logo { font-size: 26px; margin: 0 6px 20px; display: flex; align-items: center; gap: 9px; }
 .logo .nest, .wordmark .nest {
   background: var(--marker);
   color: var(--ink);
@@ -114,14 +114,14 @@ aside.side { display: none; width: 232px; flex: none; flex-direction: column; ga
 .mainwrap { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 @media (min-width: 900px) {
   aside.side { display: flex; }
-  .topbar .wordmark { display: none; }
+  .topbar .wordmark { display: none !important; }
   main { padding: 26px 32px 60px !important; }
   nav.tabs { display: none !important; }
 }
 
 /* ================= Kopfzeile ================= */
 .topbar { display: flex; align-items: center; gap: 8px; padding: 14px 18px 10px; position: sticky; top: 0; z-index: 15; background: var(--ground); }
-.topbar .wordmark { font-size: 23px; margin: 0; }
+.topbar .wordmark { font-size: 23px; margin: 0; display: flex; align-items: center; gap: 8px; }
 .topbar .sp { flex: 1; }
 .iconbtn { position: relative; font: inherit; font-size: 17px; background: var(--surface); border: 2px solid var(--line); border-radius: 999px; width: 38px; height: 38px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm); }
 .iconbtn:active { transform: translate(2px, 2px); box-shadow: none; }
