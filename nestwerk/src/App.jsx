@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { loadState, saveState, storageWorks } from './store.js'
 import { newSalt, deriveKey, encryptJson, decryptJson } from './crypto.js'
+import { fetchVereinData, mapTeamEvents, teamInfo } from './verein.js'
 
 /* ================= Helfer ================= */
 
@@ -104,6 +105,26 @@ function ProfilePicker({ members, onPick }) {
 
 function EventSheet({ initial, members, me, onSave, onDelete, onClose }) {
   const e = initial.event
+  if (e && e.src === 'verein') {
+    return (
+      <div className="overlay" onClick={(ev) => { if (ev.target === ev.currentTarget) onClose() }}>
+        <div className="sheet">
+          <h3>⚽ {e.title}<button type="button" className="x" onClick={onClose} aria-label="Schließen">✕</button></h3>
+          <div className="card" style={{ marginBottom: 12 }}>
+            <div className="fact"><b>Wann</b><span>{fmtDate(e.on_date)} · {e.at_time} Uhr</span></div>
+            <div className="fact"><b>Details</b><span>{e.meta}</span></div>
+            <div className="fact"><b>Für</b><span>{members.find((m) => m.id === e.member_id)?.name || '—'}</span></div>
+          </div>
+          <p className="hint" style={{ marginTop: 0 }}>
+            Dieser Termin kommt aus der <b>Vereins-App</b> und wird automatisch aktuell gehalten –
+            Verlegungen und Absagen übernimmt Nestwerk beim nächsten Sync von selbst.
+            Ändern oder absagen bitte direkt in der Vereins-App.
+          </p>
+          <button className="btn" style={{ width: '100%' }} onClick={onClose}>Alles klar</button>
+        </div>
+      </div>
+    )
+  }
   const [title, setTitle] = useState(e ? e.title : '')
   const [memberId, setMemberId] = useState(e ? e.member_id : me.id)
   const [date, setDate] = useState(e ? e.on_date : initial.date)
@@ -346,6 +367,8 @@ export default function App() {
   const [selDate, setSelDate] = useState(iso(new Date()))
   const [filterWho, setFilterWho] = useState(null)
   const [memberSheet, setMemberSheet] = useState(false)
+  const [vereinSheet, setVereinSheet] = useState(false)
+  const [syncing, setSyncing] = useState(false)
   const today = iso(new Date())
 
   const persistent = storageWorks()
@@ -367,6 +390,12 @@ export default function App() {
         if (m && db.active !== m.id) saveAll({ ...db, active: m.id })
       }
     } catch { /* URL nicht lesbar (Sandbox) */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Beim Start automatisch mit der Vereins-App synchronisieren (still; offline unkritisch)
+  useEffect(() => {
+    if (db?.verein?.links?.length) syncVerein(db.verein.links, db, true)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -460,6 +489,45 @@ export default function App() {
     saveAll({ ...db, members: [...db.members, { id: uid(), name, color, kind, is_admin: false, can_direct: false }] })
     toast(`${name} ist dabei 🪺`)
   }
+
+  /* ---------- Vereins-App-Sync ---------- */
+
+  async function syncVerein(links, base, quiet) {
+    if (!links.length) return
+    setSyncing(true)
+    try {
+      const data = await fetchVereinData()
+      const mapped = links.flatMap((l) => mapTeamEvents(data, l.tid, l.memberId))
+      const next = {
+        ...base,
+        events: [...base.events.filter((e) => e.src !== 'verein'), ...mapped],
+        verein: { links, lastSync: new Date().toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' }) },
+      }
+      saveAll(next)
+      if (!quiet) toast(`Synchronisiert ⚽ – ${mapped.length} Vereinstermine übernommen`)
+    } catch (e) {
+      if (!quiet) toast('Sync nicht möglich: ' + e.message)
+    } finally {
+      setSyncing(false)
+    }
+  }
+
+  function addVereinLink(tid, teamName, memberId) {
+    const links = [...(db.verein?.links || []).filter((l) => l.tid !== tid), { tid, teamName, memberId }]
+    syncVerein(links, { ...db, verein: { ...(db.verein || {}), links } }, false)
+  }
+
+  function removeVereinLink(tid) {
+    const links = (db.verein?.links || []).filter((l) => l.tid !== tid)
+    const keptTids = new Set(links.map((l) => l.tid))
+    saveAll({
+      ...db,
+      events: db.events.filter((e) => e.src !== 'verein' || keptTids.has(e.tid)),
+      verein: { ...(db.verein || {}), links },
+    })
+    toast('Verknüpfung entfernt – Vereinstermine gelöscht')
+  }
+
   function toggleDirect(m) {
     saveAll({ ...db, members: db.members.map((x) => (x.id === m.id ? { ...x, can_direct: !x.can_direct } : x)) })
     toast(`${m.name} ${!m.can_direct ? 'darf jetzt direkt eintragen' : 'braucht jetzt Bestätigung'}`)
@@ -495,7 +563,7 @@ export default function App() {
       <span className="time">{e.at_time}</span>
       <span className="dot" style={{ background: mcolor(e.member_id) }} />
       <div className="row-main">
-        <div className="row-title">{e.title}{e.serie ? ' ↻' : ''}</div>
+        <div className="row-title">{e.title}{e.serie ? ' ↻' : ''}{e.src === 'verein' ? ' ⚽' : ''}</div>
         <div className="row-meta">{mname(e.member_id)}{e.meta ? ' · ' + e.meta : ''}</div>
       </div>
       {e.status === 'pending' && <span className="chip honey">📩 Anfrage</span>}
@@ -676,6 +744,38 @@ export default function App() {
           </button>
         )}
       </div>
+      <p className="label">⚽ Vereins-App</p>
+      <div className="card">
+        {(db.verein?.links || []).map((l) => (
+          <div className="row" key={l.tid}>
+            <span style={{ fontSize: 20 }}>⚽</span>
+            <div className="row-main">
+              <div className="row-title">{l.teamName}</div>
+              <div className="row-meta">Termine landen bei {mname(l.memberId)} · letzter Sync: {db.verein?.lastSync || '—'}</div>
+            </div>
+            <button className="xdel" onClick={() => removeVereinLink(l.tid)} aria-label="Verknüpfung entfernen">✕</button>
+          </div>
+        ))}
+        {(db.verein?.links || []).length > 0 && (
+          <button className="row" disabled={syncing} onClick={() => syncVerein(db.verein.links, db, false)}>
+            <span style={{ fontSize: 20 }}>🔄</span>
+            <div className="row-main">
+              <div className="row-title">{syncing ? 'Synchronisiere …' : 'Jetzt synchronisieren'}</div>
+              <div className="row-meta">Passiert auch automatisch bei jedem App-Start</div>
+            </div>
+            <span className="chev">›</span>
+          </button>
+        )}
+        <button className="row" onClick={() => setVereinSheet(true)}>
+          <span style={{ fontSize: 20 }}>🔗</span>
+          <div className="row-main">
+            <div className="row-title">{(db.verein?.links || []).length ? 'Weiteres Team verknüpfen' : 'Team aus der Vereins-App verknüpfen'}</div>
+            <div className="row-meta">Trainings, Spiele und Turniere automatisch im Familienkalender</div>
+          </div>
+          <span className="chev">›</span>
+        </button>
+      </div>
+
       <p className="label">Sicherung</p>
       <div className="card">
         <button className="row" onClick={exportBackup}>
@@ -776,6 +876,11 @@ export default function App() {
         <MemberSheet onAdd={addMember} onClose={() => setMemberSheet(false)}
           usedColors={db.members.map((m) => m.color)} />
       )}
+      {vereinSheet && (
+        <VereinSheet members={db.members} me={me}
+          onLink={(tid, teamName, memberId) => { addVereinLink(tid, teamName, memberId); setVereinSheet(false) }}
+          onClose={() => setVereinSheet(false)} />
+      )}
       {toastEl}
     </div>
   )
@@ -814,6 +919,73 @@ function MemberSheet({ onAdd, onClose, usedColors }) {
         </div>
         <button className="btn" style={{ width: '100%' }}>Hinzufügen</button>
         <p className="hint">Kinder sehen nur Heute, Kalender und Listen – ohne Merkzeug und Verwaltung.</p>
+      </form>
+    </div>
+  )
+}
+
+function VereinSheet({ members, me, onLink, onClose }) {
+  const [state, setState] = useState('loading') // loading | error | ready
+  const [error, setError] = useState(null)
+  const [data, setData] = useState(null)
+  const [tid, setTid] = useState('')
+  const [memberId, setMemberId] = useState(me.id)
+
+  useEffect(() => {
+    fetchVereinData()
+      .then((d) => {
+        setData(d)
+        if (d.teams.length === 1) setTid(d.teams[0].id)
+        setState('ready')
+      })
+      .catch((e) => { setError(e.message); setState('error') })
+  }, [])
+
+  const info = data && tid ? teamInfo(data, tid) : null
+  const evCount = data && tid ? data.events.filter((ev) => ev.tid === tid && ev.date).length : 0
+
+  return (
+    <div className="overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <form className="sheet" onSubmit={(e) => {
+        e.preventDefault()
+        if (!tid) return
+        const team = data.teams.find((t) => t.id === tid)
+        onLink(tid, team?.name || 'Team', memberId)
+      }}>
+        <h3>⚽ Vereins-App verknüpfen<button type="button" className="x" onClick={onClose} aria-label="Schließen">✕</button></h3>
+        {state === 'loading' && <div className="empty">Verbinde mit der Vereins-App …</div>}
+        {state === 'error' && (
+          <>
+            <div className="authmsg err">Keine Verbindung zur Vereins-App: {error}</div>
+            <p className="hint">Das klappt nur mit Internetverbindung – und nicht in der eingebetteten Vorschau. In der installierten bzw. deployten App funktioniert es.</p>
+          </>
+        )}
+        {state === 'ready' && (
+          <>
+            <div className="field">
+              <label htmlFor="v-team">Mannschaft</label>
+              <select id="v-team" value={tid} onChange={(e) => setTid(e.target.value)}>
+                <option value="" disabled>Team wählen …</option>
+                {data.teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+            </div>
+            {info && (
+              <div className="card" style={{ marginBottom: 12 }}>
+                <div className="fact"><b>Trainer</b><span>{info.trainers.length ? info.trainers.join(', ') : '—'}</span></div>
+                <div className="fact"><b>Spieler</b><span>{info.players.length ? `${info.players.length}: ${info.players.slice(0, 6).join(', ')}${info.players.length > 6 ? ' …' : ''}` : '—'}</span></div>
+                <div className="fact"><b>Termine</b><span>{evCount} in der Vereins-App</span></div>
+              </div>
+            )}
+            <div className="field">
+              <label htmlFor="v-member">Termine landen im Kalender bei</label>
+              <select id="v-member" value={memberId} onChange={(e) => setMemberId(e.target.value)}>
+                {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+              </select>
+            </div>
+            <button className="btn" style={{ width: '100%' }} disabled={!tid}>Verknüpfen &amp; synchronisieren</button>
+            <p className="hint">Ab jetzt hält Nestwerk die Termine automatisch aktuell – Absagen und Verlegungen inklusive. Ganz ohne Passwort.</p>
+          </>
+        )}
       </form>
     </div>
   )
