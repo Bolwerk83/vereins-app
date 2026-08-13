@@ -143,8 +143,10 @@ await page.locator('button:has-text("Mehr")').last().click(); await page.waitFor
 await page.locator('button:has-text("📝 Saison-Check")').click(); await page.waitForTimeout(600);
 b=await body();
 if(b.includes("Saison-Check")&&b.includes("MACHST DU NÄCHSTE SAISON WEITER?")) ok("Saison-Fragebogen öffnet (Mehr → Saison-Check)"); else fail("Fragebogen fehlt: "+b.slice(0,150));
+if(b.includes("dein Jahrgang rückt auf")&&b.includes("empfohlen")) ok("Jugend-Vorschläge: nächsthöhere Jugend empfohlen (F → E)"); else fail("Jugend-Vorschlag fehlt: "+b.slice(0,180));
+if(b.includes("deine aktuelle")) ok("Eigene Jugend markiert"); else fail("Aktuell-Markierung fehlt");
 await page.locator('button:has-text("✅ Ja")').click(); await page.waitForTimeout(250);
-await page.locator('button:has-text("Wo ich gebraucht werde")').click(); await page.waitForTimeout(250);
+await page.locator('button:has-text("empfohlen")').first().click(); await page.waitForTimeout(250);
 await page.locator('button:has-text("2×")').first().click(); await page.waitForTimeout(250);
 await page.locator('button:has-text("Antwort senden")').click(); await page.waitForTimeout(700);
 b=await body();
@@ -158,6 +160,39 @@ await page.locator('button:has-text("Übersicht")').last().click(); await page.w
 b=await body();
 if(b.includes("Vereins-Cockpit")&&b.includes("SPIELER")&&b.includes("Gesamt")) ok("Vereins-Cockpit: Spieler/Trainer/Helfer je Team"); else fail("Cockpit fehlt: "+b.slice(0,150));
 if(b.includes("1 machen weiter")&&b.includes("Trainer A")) ok("Cockpit zeigt Saison-Check-Antwort (Trainer A macht weiter)"); else fail("Saison-Antwort fehlt im Cockpit: "+(b.match(/SAISON-CHECK[\s\S]{0,160}/)||["?"])[0].replace(/\n/g," | "));
+if(b.includes("VERFÜGBARE TRAINER JE JUGEND")) ok("Cockpit: verfügbare Trainer je Jugend (Wunsch aus Saison-Check)"); else fail("Jugend-Auswertung fehlt");
+// Admin hat KEINE Eintrags-Karte, aber den Erinnern-Knopf
+if(b.includes("🔔 Offene erinnern")) ok("Admin kann Offene erinnern"); else fail("Erinnern-Knopf fehlt");
+await page.locator('button:has-text("🔔 Offene erinnern")').click(); await page.waitForTimeout(600);
+b=await body();
+if(b.includes("Erinnerung an")) ok("Erinnerung gesendet (Posteingang + Teilen-Text)"); else fail("Erinnerungs-Toast fehlt");
+await page.locator('button:has-text("Mehr")').last().click(); await page.waitForTimeout(600);
+b=await body();
+if(!b.includes("📝 Saison-Check")) ok("Admin hat keine Saison-Check-Eintragskarte im Menü"); else fail("Admin sieht Saison-Check-Menüpunkt");
+await page.keyboard.press("Escape").catch(()=>{}); await page.waitForTimeout(300);
+// Saison-Label kompakt: 2026/27 statt 2026/2027 (in der Saisonplanung)
+await page.locator('button:has-text("Termine")').last().click().catch(()=>{}); await page.waitForTimeout(500);
+await page.evaluate(()=>{ const b2=[...document.querySelectorAll("button")].find(x=>x.innerText.trim()==="Saison"); b2&&b2.click(); }); await page.waitForTimeout(700);
+b=await body();
+if(b.includes("Saisonplanung")) ok("Saison-Verwaltung öffnet"); else fail("Saisonplanung fehlt: "+b.slice(0,120));
+// Neue Saison im Kurzformat anlegen -> Archivieren (mit Nachfrage) -> Wiederherstellen
+await page.locator('button:has-text("+ Neue Saison planen")').click(); await page.waitForTimeout(600);
+await page.evaluate(()=>{ const b2=[...document.querySelectorAll("button")].find(x=>/^\d{4}\/\d{2}$/.test(x.innerText.trim())); b2&&b2.click(); });
+await page.waitForTimeout(300);
+b=await body();
+if(/z\.B\. 2026\/27|\d{4}\/\d{2}/.test(b)) ok("Saison-Vorschläge im Kurzformat (2026/27 statt 2026/2027)"); else fail("Kurzformat-Vorschlag fehlt");
+for(let k=0;k<4;k++){ const t2=await body(); if(t2.includes("Saison anlegen")&&!t2.includes("SCHRITT 1")){ break; }
+  await page.locator('button:has-text("Weiter")').last().click().catch(()=>{}); await page.waitForTimeout(400); }
+await page.locator('button:has-text("Saison anlegen")').last().click().catch(()=>{}); await page.waitForTimeout(800);
+b=await body();
+const lbl=(b.match(/\d{4}\/\d{2}(?!\d)/)||[null])[0];
+if(lbl&&b.includes("Planung")) ok("Neue Saison angelegt ("+lbl+", Status Planung)"); else fail("Saison-Anlage fehlgeschlagen: "+b.slice(0,200));
+await page.locator('button:has-text("Archiv")').first().click().catch(()=>{}); await page.waitForTimeout(600);
+b=await body();
+if(b.includes("↩ Wiederherstellen")) ok("Archiviert bleibt sichtbar + Wiederherstellen-Knopf"); else fail("Wiederherstellen fehlt: "+b.slice(0,150));
+await page.locator('button:has-text("↩ Wiederherstellen")').click(); await page.waitForTimeout(900);
+b=await body();
+if(b.includes("Planung")&&!b.includes("↩ Wiederherstellen")) ok("Saison wiederhergestellt (zurück in Planung)"); else fail("Wiederherstellen wirkt nicht");
 
 if(errors.length){ console.log("JS-FEHLER:"); [...new Set(errors)].forEach(e=>console.log(" -",e.slice(0,150))); }
 console.log(errors.length||fails.length?`ERGEBNIS: ${fails.length} Fehlschläge, ${errors.length} JS-Fehler`:"ERGEBNIS: ALLES OK");

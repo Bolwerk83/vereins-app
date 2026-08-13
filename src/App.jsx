@@ -2417,7 +2417,7 @@ function BottomNav({ tab, setTab, isAdmin, isHelper, isParent=false, parentStats
         { id:"results",    label:tr("navResults"),   icon:"E", hidden: isHelper||!feat("results_tab")||!clubFeat("mod_results") },
         { id:"attendance", label:tr("navAttendance"),  icon:"S", hidden: isHelper||!feat("attendance_tab") },
         { id:"waitlist",   label:"Warteliste",         icon:"WL", hidden: isHelper },
-        { id:"saisoncheck",label:"📝 Saison-Check",     icon:"SC", hidden: isHelper||mods.saison===false },
+        { id:"saisoncheck",label:"📝 Saison-Check",     icon:"SC", hidden: isHelper||isAdmin||mods.saison===false },
         { id:"module",     label:"🧩 Module",           icon:"MO", hidden: isHelper },
       ].filter(x=>!x.hidden),
     },
@@ -12751,10 +12751,10 @@ function NewSeasonWizard({ data,save,fire,cl,myTids,onClose,onDone }) {
         <div style={{padding:"20px"}}>
           {step===1&&<>
             <h3 style={{fontWeight:900,fontSize:18,margin:"0 0 16px"}}>Neue Saison</h3>
-            <input value={f.label} onChange={e=>u({label:e.target.value})} placeholder="z.B. 2026/2027" autoFocus
+            <input value={f.label} onChange={e=>u({label:e.target.value})} placeholder="z.B. 2026/27" autoFocus
               style={{width:"100%",padding:"13px",fontSize:20,fontWeight:800,textAlign:"center",border:`1.5px solid ${f.label.length>=6?t.p:"#e2e8f0"}`,borderRadius:12,outline:"none",boxSizing:"border-box"}}/>
             <div style={{display:"flex",gap:8,marginTop:10,flexWrap:"wrap"}}>
-              {["2026/2027","2027/2028"].map(l=><button key={l} onClick={()=>u({label:l})} style={{padding:"7px 14px",borderRadius:9,border:`2px solid ${f.label===l?t.p:"#e2e8f0"}`,background:f.label===l?t.p:"#fff",color:f.label===l?"#fff":t.p,fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>)}
+              {(()=>{ const y=new Date().getFullYear(); const mk=y2=>`${y2}/${String(y2+1).slice(2)}`; return [mk(y),mk(y+1)]; })().map(l=><button key={l} onClick={()=>u({label:l})} style={{padding:"7px 14px",borderRadius:9,border:`2px solid ${f.label===l?t.p:"#e2e8f0"}`,background:f.label===l?t.p:"#fff",color:f.label===l?"#fff":t.p,fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>)}
             </div>
           </>}
           {step===2&&<>
@@ -12817,7 +12817,12 @@ function SeasonPicker({ data,save,fire,onSelect,t }) {
   const seasons = data.seasons || [{id:"s2627",label:"2026/2027",status:"active"}];
   const active  = data.activeSeason || seasons[0]?.id;
   const [showWizard,setShowWizard] = useState(false);
-  const archiveSeason = sid => { save({...data,seasons:seasons.map(s=>s.id===sid?{...s,status:"archived"}:s)}); fire&&fire("Archiviert"); };
+  const archiveSeason = sid => {
+    const lb=seasons.find(x=>x.id===sid)?.label||"";
+    if(!window.confirm(`Saison ${seasonLbl(lb)} wirklich archivieren?\n\nSie bleibt in der Liste und kann jederzeit wiederhergestellt werden.`)) return;
+    save({...data,seasons:seasons.map(s=>s.id===sid?{...s,status:"archived"}:s)}); fire&&fire("Archiviert – über „Wiederherstellen“ jederzeit zurückholbar");
+  };
+  const restoreSeason = sid => { save({...data,seasons:seasons.map(s=>s.id===sid?{...s,status:s.id===active?"active":"planning"}:s)}); fire&&fire("Saison wiederhergestellt – wieder in Planung"); };
   // Wenn der Parent (SeasonModal) das Aktivieren uebernimmt: kein lokaler Save,
   // sonst greift die Migration in activateAndMigrate nicht (active waere schon
   // umgesetzt). Ohne Parent-Handler: Default-Verhalten (nur Activeseason setzen).
@@ -12831,6 +12836,7 @@ function SeasonPicker({ data,save,fire,onSelect,t }) {
   return (
     <div style={{display:"flex",flexDirection:"column",gap:10}}>
       {showWizard&&<NewSeasonWizard data={data} save={save} fire={fire} cl={clubs[0]||null} myTids={teams.map(tm=>tm.id)} onClose={()=>setShowWizard(false)} onDone={()=>setShowWizard(false)}/>}
+      {seasons.length===0&&<div style={{background:"#f8fafc",border:"1.5px dashed #e2e8f0",borderRadius:14,padding:"16px",textAlign:"center",fontSize:13,color:"#64748b"}}>Noch keine Saison angelegt – unten „+ Neue Saison planen“ tippen. Angelegte Saisons bleiben hier dauerhaft sichtbar (auch archivierte, mit „Wiederherstellen“).</div>}
       {seasons.map(s=>{
         const st=STATUS[s.status]||STATUS.active;
         const isActive=s.id===active;
@@ -12839,7 +12845,7 @@ function SeasonPicker({ data,save,fire,onSelect,t }) {
           <div key={s.id} style={{background:"#fff",borderRadius:16,border:`2px solid ${isActive?t.p:"#e2e8f0"}`,padding:"13px 16px",display:"flex",alignItems:"center",gap:12}}>
             <div style={{flex:1}}>
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
-                <span style={{fontWeight:900,fontSize:17,color:"#0f172a"}}>{s.label}</span>
+                <span style={{fontWeight:900,fontSize:17,color:"#0f172a"}}>{seasonLbl(s.label)}</span>
                 <span style={{fontSize:11,fontWeight:700,color:st.col,background:st.bg,borderRadius:6,padding:"2px 8px"}}>{st.l}</span>
               </div>
               <div style={{fontSize:12,color:"#64748b"}}>{cnt} Spieler</div>
@@ -12847,6 +12853,7 @@ function SeasonPicker({ data,save,fire,onSelect,t }) {
             <div style={{display:"flex",gap:7}}>
               {s.status!=="archived"&&<button onClick={()=>switchActive(s.id)} style={{padding:"7px 14px",borderRadius:10,border:`2px solid ${t.p}`,background:isActive?t.p:"#fff",color:isActive?"#fff":t.p,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{isActive?"Aktiv":"Öffnen"}</button>}
               {s.status==="planning"&&<button onClick={()=>archiveSeason(s.id)} style={{padding:"7px 12px",borderRadius:10,border:"1.5px solid #e2e8f0",background:"#f8fafc",color:"#64748b",fontWeight:600,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Archiv</button>}
+              {s.status==="archived"&&<button onClick={()=>restoreSeason(s.id)} style={{padding:"7px 12px",borderRadius:10,border:"1.5px solid #bbf7d0",background:"#f0fdf4",color:"#15803d",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>↩ Wiederherstellen</button>}
             </div>
           </div>
         );
@@ -13047,7 +13054,7 @@ function SeasonModal({ data,save,fire,cl,myTids,onClose }) {
                 <select value={copyFrom} onChange={e=>setCopyFrom(e.target.value)}
                   style={{width:"100%",padding:"11px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",background:"#fff"}}>
                   {seasons.filter(s=>s.status!=="archived").map(s=>(
-                    <option key={s.id} value={s.id}>{s.label} ({(allPlayers.filter(p=>p.seasonId===s.id)).length} Spieler)</option>
+                    <option key={s.id} value={s.id}>{seasonLbl(s.label)} ({(allPlayers.filter(p=>p.seasonId===s.id)).length} Spieler)</option>
                   ))}
                 </select>
               </div>
@@ -15106,7 +15113,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
                 <button onClick={()=>setShowSeasonModal(true)}
                   style={{display:"flex",alignItems:"center",gap:5,background:"rgba(255,255,255,.12)",border:hasPlan?"1.5px solid rgba(255,255,255,.5)":"none",borderRadius:11,padding:"6px 11px",color:"rgba(255,255,255,.85)",fontSize:12,fontWeight:700,cursor:"pointer",position:"relative"}}>
                   {hasPlan&&<span style={{position:"absolute",top:-3,right:-3,width:8,height:8,borderRadius:"50%",background:"#fbbf24",border:"1.5px solid #fff"}}/>}
-                   {curSeason?.label||"Saison"}
+                   {seasonLbl(curSeason?.label)||"Saison"}
                 </button>
               );
             })()}
@@ -15188,7 +15195,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               <span style={{fontSize:20}}></span>
               <div style={{flex:1}}>
                 <div style={{fontWeight:800,fontSize:13,color:"#1d4ed8"}}>
-                  Saison {(local.seasons||[]).find(s=>s.status==="planning")?.label} in Planung
+                  Saison {seasonLbl((local.seasons||[]).find(s=>s.status==="planning")?.label)} in Planung
                 </div>
                 <div style={{fontSize:12,color:"#3b82f6",marginTop:1}}>Spieler zuteilen und Saison aktivieren →</div>
               </div>
@@ -15359,7 +15366,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         {tab==="tinbox"     &&<TrainerInboxTab data={local} cid={cid} session={session} save={save} cl={myClub}/>}
         {tab==="chat"       &&<ChatTab data={local} cid={cid} myTids={myTids} session={session} save={save} fire={fire} cl={myClub}/>}
         {tab==="teams"      &&isAdmin&&<TeamHub data={local} myTids={myTids} save={save} fire={fire} cl={myClub} session={session} isAdmin={isAdmin} initialSubTab="manage"/>}
-        {tab==="overview"  &&isAdmin&&<><VereinsCockpit data={local} cid={cid} cl={myClub}/><AllTeamsOverview data={local} cid={cid} cl={myClub} onSelectTeam={tid=>{ const team=(local.teams||[]).find(x=>x.id===tid); if(team) fire("Team: "+team.name); }}/></>}
+        {tab==="overview"  &&isAdmin&&<><VereinsCockpit data={local} cid={cid} cl={myClub} save={save} fire={fire} session={session}/><AllTeamsOverview data={local} cid={cid} cl={myClub} onSelectTeam={tid=>{ const team=(local.teams||[]).find(x=>x.id===tid); if(team) fire("Team: "+team.name); }}/></>}
         {tab==="news"      &&<NewsTab data={local} cid={cid} session={session} save={save} fire={fire} cl={myClub}/>}
         {tab==="fieldsadmin"&&isAdmin&&<FieldsManagerTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/> }
         {tab==="trainers"   &&isAdmin&&<TrainersTab data={local} cid={cid} save={save} fire={fire} session={session}/>}
@@ -16762,6 +16769,8 @@ function ModuleWizard({data,session,myTids,cl,save,onClose}){
   );
 }
 
+// Saison-Label kompakt anzeigen: "2026/2027" -> "2026/27" (doppeltes Jahr wirkt sperrig)
+const seasonLbl=l=>String(l||"").replace(/^(\d{4})\s*\/\s*(\d{4})$/,(m,a2,b2)=>a2+"/"+b2.slice(2));
 // Saisonende aus dem Saison-Label ableiten ("2026/2027" -> 30.06.2027).
 // Jugendfussball-Saisons enden zum 30. Juni; Fallback: Jahreslabel + 1.
 function seasonEndDate(data,cid){
@@ -16778,8 +16787,18 @@ function seasonEndDate(data,cid){
 function SeasonSurveyModal({data,cid,session,cl,save,fire,onClose}){
   const t=TH(cl);
   const sid=activeSid(data,cid);
-  const label=(data.seasons||[]).find(x=>x.id===sid)?.label||"";
-  const cats=[...new Set((data.teams||[]).filter(tm=>tm.cid===cid).map(tm=>tm.cat||tm.name).filter(Boolean))];
+  const label=seasonLbl((data.seasons||[]).find(x=>x.id===sid)?.label||"");
+  // Jugend-Vorschlaege: die eigene Jugend rueckt meist auf (F -> E). Die naechsthoehere
+  // wird empfohlen, alle anderen Jugenden stehen ebenfalls zur Wahl - so weiss der
+  // Vorstand, wie viele Trainer je Jugend naechste Saison zur Verfuegung stehen.
+  const CAT_ORDER=["Bambinis","G-Jugend","F-Jugend","E-Jugend","D-Jugend","C-Jugend","B-Jugend","A-Jugend"];
+  const clubCats=[...new Set((data.teams||[]).filter(tm=>tm.cid===cid).map(tm=>tm.cat||tm.name).filter(Boolean))];
+  const meRec=session.role==="helper"?(data.helpers||[]).find(x=>x.id===session.id):(data.trainers||[]).find(x=>x.id===session.id);
+  const myCats=[...new Set(((meRec?.tids)||[]).map(tid=>{const tm=(data.teams||[]).find(x=>x.id===tid);return tm?(tm.cat||tm.name):null;}).filter(Boolean))];
+  const nextOf=c=>CAT_ORDER[CAT_ORDER.indexOf(c)+1]||null;
+  const nextCats=[...new Set(myCats.map(nextOf).filter(Boolean))];
+  const cats=[...new Set([...nextCats,...myCats,...clubCats])];
+  const tagOf=c=>nextCats.includes(c)?"⬆ empfohlen – dein Jahrgang rückt auf":myCats.includes(c)?"deine aktuelle":null;
   const [again,setAgain]=useState(null);
   const [teamWish,setTeamWish]=useState("");
   const [units,setUnits]=useState(null);
@@ -16807,10 +16826,13 @@ function SeasonSurveyModal({data,cid,session,cl,save,fire,onClose}){
           ))}
         </div>
         <div style={{fontSize:12,fontWeight:800,color:"#64748b",marginBottom:6}}>WELCHE JUGEND WÜRDEST DU ÜBERNEHMEN?</div>
+        {nextCats.length>0&&<div style={{fontSize:11.5,color:"#64748b",lineHeight:1.45,marginBottom:7}}>Tipp: Dein Jahrgang rückt auf – viele Trainer gehen mit ihren Kindern mit ({myCats.join("/")} → {nextCats.join("/")}).</div>}
         <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:8}}>
-          {[...cats,"Wo ich gebraucht werde"].map(c=>(
-            <button key={c} onClick={()=>setTeamWish(c)} style={{padding:"6px 11px",borderRadius:99,border:`1.5px solid ${teamWish===c?t.p:"#e2e8f0"}`,background:teamWish===c?t.p+"14":"#fff",color:teamWish===c?t.p:"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{c}</button>
-          ))}
+          {[...cats,"Wo ich gebraucht werde"].map(c=>{ const tag=tagOf(c); return (
+            <button key={c} onClick={()=>setTeamWish(c)} style={{padding:"6px 11px",borderRadius:99,border:`1.5px solid ${teamWish===c?t.p:tag&&tag.startsWith("⬆")?"#f59e0b":"#e2e8f0"}`,background:teamWish===c?t.p+"14":tag&&tag.startsWith("⬆")?"#fffbeb":"#fff",color:teamWish===c?t.p:"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+              {c}{tag?<span style={{fontWeight:600,fontSize:10.5,color:tag.startsWith("⬆")?"#b45309":"#94a3b8"}}> · {tag}</span>:null}
+            </button>
+          );})}
         </div>
         <input value={teamWish} onChange={e=>setTeamWish(e.target.value)} placeholder="oder frei eintragen…"
           style={{width:"100%",padding:"10px 12px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",fontFamily:"inherit",boxSizing:"border-box",marginBottom:14}}/>
@@ -16894,7 +16916,7 @@ function VertretungsBoard({data,cid,session,save,fire}){
 
 // Vereins-Cockpit fuer den Vorstand: Spieler/Trainer/Helfer je Team auf einen Blick
 // + Antworten aus dem Saison-Check -> fruehe Planung, wo Trainer fehlen.
-function VereinsCockpit({data,cid,cl}){
+function VereinsCockpit({data,cid,cl,save=null,fire=null,session=null}){
   const t=TH(cl);
   const sid=activeSid(data,cid);
   const teams=activeTeamsFor(data,cid);
@@ -16962,7 +16984,45 @@ function VereinsCockpit({data,cid,cl}){
               ))}
             </div>
           </>)}
+        {surveys.length>0&&(()=>{
+          // Verfuegbare Trainer je Jugend naechste Saison (Wunsch aus dem Saison-Check)
+          const avail=surveys.filter(sv=>sv.again!=="nein");
+          const byCat={}; const flex=[];
+          avail.forEach(sv=>{ const w=(sv.teamWish||"").trim(); if(!w||/gebraucht/i.test(w)) flex.push(sv); else (byCat[w]=byCat[w]||[]).push(sv); });
+          if(!Object.keys(byCat).length&&!flex.length) return null;
+          return (
+            <div style={{marginTop:10,background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:11,padding:"9px 12px"}}>
+              <div style={{fontSize:11,fontWeight:800,color:"#166534",marginBottom:6}}>VERFÜGBARE TRAINER JE JUGEND (NÄCHSTE SAISON)</div>
+              <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                {Object.entries(byCat).sort((x,y)=>x[0].localeCompare(y[0])).map(([c,list])=>(
+                  <div key={c} style={{display:"flex",alignItems:"center",gap:8,fontSize:12.5}}>
+                    <span style={{fontWeight:800,color:"#166534",minWidth:88}}>{c}</span>
+                    <span style={{fontWeight:900,color:"#15803d"}}>{list.length}</span>
+                    <span style={{color:"#4d7c0f",flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{list.map(sv=>sv.name+(sv.again==="unsicher"?" (?)":"")).join(", ")}</span>
+                  </div>
+                ))}
+                {flex.length>0&&<div style={{display:"flex",alignItems:"center",gap:8,fontSize:12.5}}>
+                  <span style={{fontWeight:800,color:"#166534",minWidth:88}}>Flexibel</span>
+                  <span style={{fontWeight:900,color:"#15803d"}}>{flex.length}</span>
+                  <span style={{color:"#4d7c0f",flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{flex.map(sv=>sv.name).join(", ")} (wo gebraucht)</span>
+                </div>}
+              </div>
+            </div>
+          );
+        })()}
         {open.length>0&&<div style={{fontSize:11.5,color:"#64748b",marginTop:7,lineHeight:1.5}}>Ohne Antwort: {open.map(p=>p.name).join(", ")}</div>}
+        {open.length>0&&save&&(
+          <button onClick={()=>{
+            const trOpen=open.filter(p2=>p2.role==="Trainer");
+            const rec={id:uid(),cid,fromName:(session?.name)||"Vereinsadmin",
+              text:"📝 Kurze Erinnerung vom Vorstand: Bitte den Saison-Check ausfüllen (Mehr → Saison-Check, dauert 2 Minuten). Danke!",
+              ts:new Date().toISOString(),recipients:trOpen.length?trOpen.map(p2=>p2.id):"all",readBy:[]};
+            save({...data,broadcasts:[...(data.broadcasts||[]),rec]});
+            const txt=`Kurze Erinnerung: Bitte den Saison-Check in der Vereins-App ausfüllen (Mehr → Saison-Check, 2 Minuten).\n\nEs fehlen noch: ${open.map(p2=>p2.name).join(", ")}`;
+            if(navigator.share){ navigator.share({title:"Saison-Check Erinnerung",text:txt}).catch(()=>{}); } else { navigator.clipboard?.writeText(txt); }
+            fire&&fire(`Erinnerung an ${open.length} Offene gesendet (Posteingang + Text zum Teilen)`);
+          }} style={{width:"100%",marginTop:8,padding:"10px",borderRadius:10,border:"1.5px solid #fde68a",background:"#fffbeb",color:"#92400e",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>🔔 Offene erinnern ({open.length})</button>
+        )}
       </div>
     </div>
   );
