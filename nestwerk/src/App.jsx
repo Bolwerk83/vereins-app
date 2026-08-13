@@ -1147,6 +1147,7 @@ export default function App() {
   const [selDate, setSelDate] = useState(iso(new Date()))
   const [filterWho, setFilterWho] = useState(null)
   const [memberSheet, setMemberSheet] = useState(false)
+  const [careSheet, setCareSheet] = useState(null) // member_id des Kindes
   const [blitz, setBlitz] = useState(false)
   const [vereinSheet, setVereinSheet] = useState(false)
   const [syncing, setSyncing] = useState(false)
@@ -1412,6 +1413,22 @@ export default function App() {
     toast('✋ Übernommen – steht für alle sichtbar im Kalender')
   }
 
+  /* ---------- Betreuungszeiten: Wann sind die Kinder versorgt? ---------- */
+
+  const kids = db.members.filter((m) => m.kind === 'kid')
+  const careOn = (m, dateStr) => (m.care || [])
+    .filter((b) => b.days.includes(wdIdx(fromIso(dateStr))))
+    .sort((a, b) => a.from.localeCompare(b.from))
+  const careText = (m, dateStr) => {
+    const blocks = careOn(m, dateStr)
+    return blocks.length ? blocks.map((b) => `${b.label} ${b.from}–${b.to}`).join(', ') : null
+  }
+
+  function saveCare(kidId, blocks) {
+    saveAll({ ...db, members: db.members.map((m) => (m.id === kidId ? { ...m, care: blocks } : m)) })
+    toast('🏫 Betreuungszeiten gespeichert – für alle sichtbar')
+  }
+
   /* ---------- Anbindungen: Export für Outlook/Google/Excel ---------- */
 
   const icsEscape = (t) => String(t || '').replace(/\\/g, '\\\\').replace(/[,;]/g, ' ').replace(/\n/g, ' ')
@@ -1550,8 +1567,25 @@ export default function App() {
   }
 
   const dayList = (dateStr) => {
+    const care = kids.flatMap((k) => careOn(k, dateStr).map((b) => ({ k, b })))
     const list = eventsOn(dateStr)
-    return list.length ? list.map((e) => <EventRow key={e.id} e={e} />) : <div className="empty">Keine Termine – freier Tag 🎉</div>
+    return (
+      <>
+        {care.map(({ k, b }) => (
+          <button className="row" key={'care' + k.id + b.id} onClick={() => !isKid && setCareSheet(k.id)}>
+            <span className="time">{b.from}</span>
+            <span className="dot" style={{ background: k.color }} />
+            <div className="row-main">
+              <div className="row-title">🏫 {k.name} · {b.label}</div>
+              <div className="row-meta">in Betreuung bis {b.to}</div>
+            </div>
+          </button>
+        ))}
+        {list.length
+          ? list.map((e) => <EventRow key={e.id} e={e} />)
+          : <div className="empty">{care.length ? 'Sonst keine Termine 🎉' : 'Keine Termine – freier Tag 🎉'}</div>}
+      </>
+    )
   }
 
   /* ---------- Bildschirme ---------- */
@@ -1571,6 +1605,34 @@ export default function App() {
           </div>
         )}
       </div>
+
+      {!isKid && kids.length > 0 && (
+        <>
+          <p className="label">🏫 Wann sind die Kinder in der Betreuung?</p>
+          <div className="card">
+            {kids.map((k) => {
+              const heute = careText(k, today)
+              const morgen = careText(k, addDays(today, 1))
+              const letzter = careOn(k, today).slice(-1)[0]
+              const angelegt = (k.care || []).length > 0
+              return (
+                <button className="row" key={k.id} onClick={() => setCareSheet(k.id)}>
+                  <span className="avatar member" style={{ background: k.color }}>{k.name[0].toUpperCase()}</span>
+                  <div className="row-main">
+                    <div className="row-title">{k.name}: {heute || (angelegt ? 'heute keine Betreuung' : 'noch keine Zeiten hinterlegt')}</div>
+                    <div className="row-meta">
+                      {angelegt
+                        ? (heute ? `ab ${letzter.to} zu Hause` : 'heute übernimmt die Familie') + ' · morgen: ' + (morgen || 'keine Betreuung')
+                        : 'Antippen und Kita-/Schulzeiten anlegen – dann steht hier die Antwort'}
+                    </div>
+                  </div>
+                  <span className="chev">›</span>
+                </button>
+              )
+            })}
+          </div>
+        </>
+      )}
 
       {!isKid && (adults.length > 1 || unclaimed.length > 0) && (
         <>
@@ -2117,6 +2179,11 @@ export default function App() {
                 {m.can_direct ? 'direkt ✓' : 'Anfrage'}
               </button>
             )}
+            {m.kind === 'kid' && (
+              <button className="btn sm ghost" onClick={() => setCareSheet(m.id)}>
+                🏫 Betreuung{(m.care || []).length ? ` · ${m.care.length}` : ''}
+              </button>
+            )}
           </div>
         ))}
         {me.is_admin && (
@@ -2252,6 +2319,11 @@ export default function App() {
         <MemberSheet onAdd={addMember} onClose={() => setMemberSheet(false)}
           usedColors={db.members.map((m) => m.color)} />
       )}
+      {careSheet && byId[careSheet] && (
+        <CareSheet kid={byId[careSheet]}
+          onSave={(blocks) => { saveCare(careSheet, blocks); setCareSheet(null) }}
+          onClose={() => setCareSheet(null)} />
+      )}
       {vereinSheet && (
         <VereinSheet members={db.members} me={me}
           onLink={(tid, teamName, memberId) => { addVereinLink(tid, teamName, memberId); setVereinSheet(false) }}
@@ -2310,6 +2382,66 @@ function MemberSheet({ onAdd, onClose, usedColors }) {
         </div>
         <button className="btn" style={{ width: '100%' }}>Hinzufügen</button>
         <p className="hint">Kinder sehen nur Heute, Kalender und Listen – ohne Gedächtnispalast und Verwaltung.</p>
+      </form>
+    </div>
+  )
+}
+
+const CARE_PRESETS = ['Kita', 'Schule', 'OGS / Hort', 'Tagesmutter', 'Oma & Opa']
+
+function CareSheet({ kid, onSave, onClose }) {
+  const [blocks, setBlocks] = useState(kid.care || [])
+  const [label, setLabel] = useState(CARE_PRESETS[0])
+  const [days, setDays] = useState([0, 1, 2, 3, 4])
+  const [from, setFrom] = useState('08:00')
+  const [to, setTo] = useState('14:00')
+  const addBlock = () => {
+    if (!label.trim() || !days.length || !from || !to) return
+    setBlocks([...blocks, { id: uid(), label: label.trim(), days: [...days].sort((a, b) => a - b), from, to }])
+  }
+  return (
+    <div className="overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <form className="sheet" onSubmit={(e) => { e.preventDefault(); onSave(blocks) }}>
+        <h3>🏫 Betreuung · {kid.name}<button type="button" className="x" onClick={onClose} aria-label="Schließen">✕</button></h3>
+        <p className="hint" style={{ marginTop: 0 }}>
+          Feste Zeiten, in denen {kid.name} versorgt ist – Kita, Schule, Hort … Alle sehen dann
+          auf einen Blick, wann kein Elternteil einspringen muss.
+        </p>
+        {blocks.map((b) => (
+          <div className="row" key={b.id}>
+            <div className="row-main">
+              <div className="row-title">{b.label}</div>
+              <div className="row-meta">{b.days.map((d) => WD[d]).join(' · ')} · {b.from}–{b.to} Uhr</div>
+            </div>
+            <button type="button" className="xdel" onClick={() => setBlocks(blocks.filter((x) => x.id !== b.id))} aria-label={b.label + ' entfernen'}>✕</button>
+          </div>
+        ))}
+        {!blocks.length && <div className="empty">Noch keine Betreuungszeiten angelegt.</div>}
+        <div className="field">
+          <label>Was ist es?</label>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {CARE_PRESETS.map((p) => (
+              <button type="button" key={p} className={'btn sm ' + (label === p ? '' : 'ghost')} onClick={() => setLabel(p)}>{p}</button>
+            ))}
+          </div>
+          <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="oder eigener Name" style={{ marginTop: 6 }} aria-label="Name der Betreuung" />
+        </div>
+        <div className="field">
+          <label>An welchen Tagen?</label>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {WD.map((n, i) => (
+              <button type="button" key={n} className={'btn sm ' + (days.includes(i) ? '' : 'ghost')}
+                onClick={() => setDays(days.includes(i) ? days.filter((x) => x !== i) : [...days, i])}>{n}</button>
+            ))}
+          </div>
+        </div>
+        <div className="grid2">
+          <div className="field"><label htmlFor="c-from">Von</label><input id="c-from" type="time" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
+          <div className="field"><label htmlFor="c-to">Bis</label><input id="c-to" type="time" value={to} onChange={(e) => setTo(e.target.value)} /></div>
+        </div>
+        <button type="button" className="btn ghost" style={{ width: '100%', marginBottom: 8 }} onClick={addBlock}>+ Zeit hinzufügen</button>
+        <button className="btn" style={{ width: '100%' }}>Speichern</button>
+        <p className="hint">Gilt jede Woche automatisch – Ferien oder Ausnahmen trägst du einfach als Termin ein.</p>
       </form>
     </div>
   )
