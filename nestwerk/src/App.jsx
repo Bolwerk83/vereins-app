@@ -19,6 +19,98 @@ const addDays = (s, n) => { const d = fromIso(s); d.setDate(d.getDate() + n); re
 const mins = (t) => +t.slice(0, 2) * 60 + +t.slice(3, 5)
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2))
 
+const PTYPES = ['Nachsorge', 'Vorsorge', 'Beratung', 'Kursstunde', 'Wochenbettbesuch', 'Sonstiges']
+
+const VORLAGEN = [
+  {
+    id: 'bescheinigung',
+    name: 'Bescheinigung über Termine',
+    text: 'Bescheinigung\n\nHiermit bestätige ich, dass bei {name}, {adresse}, im Zeitraum vom {von} bis {bis} insgesamt {anzahl} Termine ({typen}) mit einer Gesamtdauer von {gesamt} Minuten stattgefunden haben.\n\n{heute}\n\n____________________\n{ich}',
+  },
+  {
+    id: 'anschreiben',
+    name: 'Anschreiben an Klientin',
+    text: 'Liebe {vorname},\n\nvielen Dank für dein Vertrauen. Anbei die besprochenen Unterlagen.\n\nUnser nächster Termin: bitte kurz bestätigen.\n\nHerzliche Grüße\n{ich}\n{heute}',
+  },
+]
+
+function fillVorlage(tpl, klient, termine, meName) {
+  const done = termine.filter((t) => t.ist)
+  const dates = termine.map((t) => t.on_date).sort()
+  const d = new Date()
+  const heute = `${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()}`
+  const fmt = (s) => (s ? `${+s.slice(8, 10)}.${+s.slice(5, 7)}.${s.slice(0, 4)}` : '—')
+  return tpl.text
+    .replaceAll('{name}', klient.name)
+    .replaceAll('{vorname}', klient.name.split(' ')[0])
+    .replaceAll('{adresse}', klient.adresse || '—')
+    .replaceAll('{telefon}', klient.telefon || '—')
+    .replaceAll('{anzahl}', String(termine.length))
+    .replaceAll('{typen}', [...new Set(termine.map((t) => t.ptype))].join(', ') || '—')
+    .replaceAll('{gesamt}', String(done.reduce((a, t) => a + (+t.ist || 0), 0)))
+    .replaceAll('{von}', fmt(dates[0]))
+    .replaceAll('{bis}', fmt(dates[dates.length - 1]))
+    .replaceAll('{heute}', heute)
+    .replaceAll('{ich}', meName)
+}
+
+// Datei an den Nutzer übergeben (Artifact-Viewer, Browser-Download oder Zwischenablage)
+async function saveTextFile(filename, text, toast) {
+  try { await navigator.clipboard?.writeText(text) } catch { /* Zwischenablage gesperrt */ }
+  if (window.claude?.downloads) {
+    try {
+      await window.claude.downloads.save({ filename, data: text })
+      toast('Gespeichert ✓ (und in die Zwischenablage kopiert)')
+      return
+    } catch (e) {
+      toast(e?.code === 'declined' ? 'Speichern abgebrochen – Text liegt in der Zwischenablage' : 'In die Zwischenablage kopiert ✓')
+      return
+    }
+  }
+  try {
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain' }))
+    a.download = filename
+    a.click()
+    toast('Als Datei gespeichert ✓')
+  } catch {
+    toast('In die Zwischenablage kopiert ✓')
+  }
+}
+
+// Einfacher ICS-Parser (Outlook/Office365-Export): DTSTART/DTEND/SUMMARY/LOCATION
+function parseIcs(text) {
+  const unfold = text.replace(/\r/g, '').replace(/\n[ \t]/g, '')
+  const out = []
+  for (const block of unfold.split('BEGIN:VEVENT').slice(1)) {
+    const get = (k) => {
+      const m = block.match(new RegExp('(?:^|\\n)' + k + '[^:\\n]*:([^\\n]*)'))
+      return m ? m[1].trim().replace(/\\,/g, ',').replace(/\\n/gi, ' · ') : ''
+    }
+    const ds = get('DTSTART')
+    if (!/^\d{8}/.test(ds)) continue
+    const toLocal = (v) => {
+      if (v.length <= 8) return { d: new Date(+v.slice(0, 4), +v.slice(4, 6) - 1, +v.slice(6, 8)), allday: true }
+      const y = +v.slice(0, 4), mo = +v.slice(4, 6) - 1, dd = +v.slice(6, 8), h = +v.slice(9, 11), mi = +v.slice(11, 13)
+      return { d: v.endsWith('Z') ? new Date(Date.UTC(y, mo, dd, h, mi)) : new Date(y, mo, dd, h, mi), allday: false }
+    }
+    const start = toLocal(ds)
+    const de = get('DTEND')
+    const end = /^\d{8}/.test(de) ? toLocal(de) : null
+    const pad = (n) => String(n).padStart(2, '0')
+    out.push({
+      date: `${start.d.getFullYear()}-${pad(start.d.getMonth() + 1)}-${pad(start.d.getDate())}`,
+      time: start.allday ? '09:00' : `${pad(start.d.getHours())}:${pad(start.d.getMinutes())}`,
+      end: end && !end.allday ? `${pad(end.d.getHours())}:${pad(end.d.getMinutes())}` : '',
+      title: get('SUMMARY') || 'Arbeitstermin',
+      loc: get('LOCATION'),
+    })
+  }
+  return out
+}
+
+const mapsLink = (adresse) => 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(adresse)
+
 function useToast() {
   const [msg, setMsg] = useState(null)
   const timer = useRef()
@@ -182,7 +274,7 @@ function EventSheet({ initial, members, me, onSave, onDelete, onClose }) {
 
 /* ================= Merkzeug (E2E-verschlüsselt, lokal) ================= */
 
-const EMPTY_MEMORY = { persons: [] }
+const EMPTY_MEMORY = { persons: [], docs: [] }
 
 function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
   const [state, setState] = useState('locked')
@@ -194,6 +286,9 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
   const [isNew, setIsNew] = useState(false)
   const [q, setQ] = useState('')
   const [sel, setSel] = useState(null)
+  const [tab, setTab] = useState('personen')
+  const [docSel, setDocSel] = useState(null)
+  const docInput = useRef()
   const [addName, setAddName] = useState('')
   const [addCtx, setAddCtx] = useState('')
 
@@ -207,7 +302,9 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
         const k = await deriveKey(pw, blob.salt)
         try {
           const obj = await decryptJson(k, blob.iv, blob.cipher)
-          setKey(k); setSalt(blob.salt); setMem(obj); setIsNew(false); setState('open')
+          setKey(k); setSalt(blob.salt)
+          setMem({ persons: obj.persons || [], docs: obj.docs || [] })
+          setIsNew(false); setState('open')
           toast('Entsperrt – nur auf diesem Gerät lesbar')
         } catch {
           setErr('Falsches Gedächtnis-Passwort.')
@@ -235,8 +332,48 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
   }
 
   function lock() {
-    setKey(null); setMem(EMPTY_MEMORY); setSel(null); setState('locked'); setQ('')
+    setKey(null); setMem(EMPTY_MEMORY); setSel(null); setDocSel(null); setState('locked'); setQ('')
     toast('Gesperrt 🔒')
+  }
+
+  async function addDoc(file) {
+    if (file.size > 1_500_000) {
+      toast('Zu groß (max. 1,5 MB) – größere Archive kommen mit der Cloud-Stufe')
+      return
+    }
+    const b64 = await new Promise((res, rej) => {
+      const r = new FileReader()
+      r.onload = () => res(String(r.result).split(',')[1] || '')
+      r.onerror = rej
+      r.readAsDataURL(file)
+    })
+    await persist({
+      ...mem,
+      docs: [{ id: uid(), name: file.name, mime: file.type || 'application/octet-stream', size: file.size, b64, added: iso(new Date()) }, ...(mem.docs || [])],
+    })
+    toast('Hochgeladen & verschlüsselt ✓ – ohne Passwort unlesbar')
+  }
+
+  async function saveDoc(doc) {
+    const bytes = Uint8Array.from(atob(doc.b64), (c) => c.charCodeAt(0))
+    if (window.claude?.downloads) {
+      try {
+        await window.claude.downloads.save({ filename: doc.name, data: bytes })
+        toast('Gespeichert ✓')
+      } catch (e) {
+        toast(e?.code === 'declined' ? 'Speichern abgebrochen' : 'Speichern hier nicht möglich – in der installierten App klappt es')
+      }
+      return
+    }
+    try {
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(new Blob([bytes], { type: doc.mime }))
+      a.download = doc.name
+      a.click()
+      toast('Gespeichert ✓')
+    } catch {
+      toast('Speichern fehlgeschlagen')
+    }
   }
 
   if (state !== 'open') {
@@ -327,31 +464,87 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
           </ul>
         </div>
       )}
-      <input className="search" value={q} onChange={(e) => setQ(e.target.value)}
-        placeholder="Suchen: Name, Thema, Notiz …" aria-label="Im Gedächtnis suchen" />
-      <div className="card">
-        {hits.map((p) => (
-          <button className="row" key={p.id} onClick={() => setSel(p.id)}>
-            <span className="avatar">{(p.name || '?')[0].toUpperCase()}</span>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+        <button className={'btn sm ' + (tab === 'personen' ? '' : 'ghost')} onClick={() => setTab('personen')}>👥 Personen</button>
+        <button className={'btn sm ' + (tab === 'dokumente' ? '' : 'ghost')} onClick={() => setTab('dokumente')}>📄 Dokumente</button>
+      </div>
+      {tab === 'personen' && (
+        <>
+          <input className="search" value={q} onChange={(e) => setQ(e.target.value)}
+            placeholder="Suchen: Name, Thema, Notiz …" aria-label="Im Gedächtnis suchen" />
+          <div className="card">
+            {hits.map((p) => (
+              <button className="row" key={p.id} onClick={() => setSel(p.id)}>
+                <span className="avatar">{(p.name || '?')[0].toUpperCase()}</span>
+                <div className="row-main">
+                  <div className="row-title">{p.name}</div>
+                  <div className="row-meta">{p.ctx || '—'}</div>
+                </div>
+                <span className="chev">›</span>
+              </button>
+            ))}
+            {!hits.length && <div className="empty">{q ? `Kein Treffer für „${q}“.` : 'Noch keine Personen – leg unten die erste an.'}</div>}
+            <div className="quickadd">
+              <input value={addName} onChange={(e) => setAddName(e.target.value)} placeholder="Name" aria-label="Name" style={{ maxWidth: 130 }} />
+              <input value={addCtx} onChange={(e) => setAddCtx(e.target.value)} placeholder="Woher? (z. B. Nachbar)" aria-label="Kontext" />
+              <button type="button" className="btn sm" onClick={() => {
+                if (!addName.trim()) return
+                persist({ ...mem, persons: [{ id: uid(), name: addName.trim(), ctx: addCtx.trim(), notizen: [] }, ...mem.persons] })
+                setAddName(''); setAddCtx('')
+                toast('Person angelegt ✓')
+              }}>+</button>
+            </div>
+          </div>
+        </>
+      )}
+      {tab === 'dokumente' && (
+        <div className="card">
+          {(mem.docs || []).map((d) => (
+            <button className="row" key={d.id} onClick={() => setDocSel(d.id)}>
+              <span style={{ fontSize: 20 }}>{d.mime.startsWith('image/') ? '🖼️' : '📄'}</span>
+              <div className="row-main">
+                <div className="row-title">{d.name}</div>
+                <div className="row-meta">{Math.round(d.size / 1024)} KB · {d.added} · 🔒 verschlüsselt gespeichert</div>
+              </div>
+              <span className="chev">›</span>
+            </button>
+          ))}
+          {!(mem.docs || []).length && <div className="empty">Noch keine Dokumente. Scans und PDFs werden vor dem Speichern verschlüsselt – ohne dein Passwort sind sie unlesbar.</div>}
+          <button className="row" onClick={() => docInput.current?.click()}>
+            <span style={{ fontSize: 20 }}>⬆️</span>
             <div className="row-main">
-              <div className="row-title">{p.name}</div>
-              <div className="row-meta">{p.ctx || '—'}</div>
+              <div className="row-title">Dokument hinzufügen</div>
+              <div className="row-meta">Foto, Scan oder PDF (max. 1,5 MB in dieser Stufe)</div>
             </div>
             <span className="chev">›</span>
           </button>
-        ))}
-        {!hits.length && <div className="empty">{q ? `Kein Treffer für „${q}“.` : 'Noch keine Personen – leg unten die erste an.'}</div>}
-        <div className="quickadd">
-          <input value={addName} onChange={(e) => setAddName(e.target.value)} placeholder="Name" aria-label="Name" style={{ maxWidth: 130 }} />
-          <input value={addCtx} onChange={(e) => setAddCtx(e.target.value)} placeholder="Woher? (z. B. Nachbar)" aria-label="Kontext" />
-          <button type="button" className="btn sm" onClick={() => {
-            if (!addName.trim()) return
-            persist({ ...mem, persons: [{ id: uid(), name: addName.trim(), ctx: addCtx.trim(), notizen: [] }, ...mem.persons] })
-            setAddName(''); setAddCtx('')
-            toast('Person angelegt ✓')
-          }}>+</button>
+          <input ref={docInput} type="file" accept="image/*,application/pdf" style={{ display: 'none' }}
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) addDoc(f); e.target.value = '' }} />
         </div>
-      </div>
+      )}
+      {docSel && (() => {
+        const d = (mem.docs || []).find((x) => x.id === docSel)
+        if (!d) return null
+        return (
+          <div className="overlay" onClick={(e) => { if (e.target === e.currentTarget) setDocSel(null) }}>
+            <div className="sheet">
+              <h3>{d.mime.startsWith('image/') ? '🖼️' : '📄'} {d.name}<button type="button" className="x" onClick={() => setDocSel(null)} aria-label="Schließen">✕</button></h3>
+              {d.mime.startsWith('image/') && (
+                <img src={`data:${d.mime};base64,${d.b64}`} alt={d.name}
+                  style={{ maxWidth: '100%', borderRadius: 12, border: '1px solid var(--hairline)', marginBottom: 12 }} />
+              )}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn" style={{ flex: 1 }} onClick={() => saveDoc(d)}>Speichern / Öffnen</button>
+                <button className="btn danger" style={{ flex: 1 }} onClick={() => {
+                  persist({ ...mem, docs: mem.docs.filter((x) => x.id !== d.id) })
+                  setDocSel(null)
+                  toast('Dokument gelöscht')
+                }}>Löschen</button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </section>
   )
 }
@@ -369,6 +562,13 @@ export default function App() {
   const [memberSheet, setMemberSheet] = useState(false)
   const [vereinSheet, setVereinSheet] = useState(false)
   const [syncing, setSyncing] = useState(false)
+  const [calQ, setCalQ] = useState('')
+  const [praxisQ, setPraxisQ] = useState('')
+  const [praxisSel, setPraxisSel] = useState(null)
+  const [klientSheet, setKlientSheet] = useState(null) // true = neu, id = bearbeiten
+  const [pTerminSheet, setPTerminSheet] = useState(null) // { klid? }
+  const [vorlageSheet, setVorlageSheet] = useState(null) // klid
+  const icsInput = useRef()
   const today = iso(new Date())
 
   const persistent = storageWorks()
@@ -478,6 +678,72 @@ export default function App() {
     } else {
       saveAll({ ...db, events: db.events.filter((e) => e.id !== ev.id) })
       toast(`Abgelehnt – ${mname(ev.created_by)} sieht das im Kalender`)
+    }
+  }
+
+  /* ---------- Praxis: Klientinnen, Termin-Typen, Soll/Ist ---------- */
+
+  const praxis = db.praxis || { klienten: [] }
+  const klientById = (id) => praxis.klienten.find((k) => k.id === id)
+  const klientTermine = (klid) => db.events.filter((e) => e.klid === klid).sort((a, b) => b.on_date.localeCompare(a.on_date))
+
+  function saveKlient(data, id) {
+    const klienten = id
+      ? praxis.klienten.map((k) => (k.id === id ? { ...k, ...data } : k))
+      : [{ id: uid(), ...data }, ...praxis.klienten]
+    saveAll({ ...db, praxis: { ...praxis, klienten } })
+    toast(id ? 'Gespeichert ✓' : data.name + ' angelegt ✓')
+  }
+
+  function addPraxisTermin(data) {
+    const k = klientById(data.klid)
+    saveAll({
+      ...db,
+      events: [...db.events, {
+        id: uid(),
+        member_id: me.id,
+        on_date: data.on_date,
+        at_time: data.at_time,
+        title: `${data.ptype}: ${k?.name || '—'}`,
+        meta: [data.notiz, k?.adresse].filter(Boolean).join(' · ') || data.ptype,
+        serie: false,
+        status: 'fix',
+        created_by: me.id,
+        ptype: data.ptype,
+        klid: data.klid,
+        soll: data.soll,
+        ist: null,
+      }],
+    })
+    toast(`${data.ptype} geplant ✓ – steht auch im Familienkalender`)
+  }
+
+  function setIst(eventId, min) {
+    saveAll({ ...db, events: db.events.map((e) => (e.id === eventId ? { ...e, ist: min ? +min : null } : e)) })
+  }
+
+  /* ---------- Arbeitskalender (ICS-Import) ---------- */
+
+  async function importIcs(file) {
+    try {
+      const parsed = parseIcs(await file.text())
+      if (!parsed.length) { toast('Keine Termine in der Datei gefunden'); return }
+      const mapped = parsed.map((ev) => ({
+        id: uid(),
+        member_id: me.id,
+        on_date: ev.date,
+        at_time: ev.time,
+        title: ev.title,
+        meta: [ev.end ? 'bis ' + ev.end : '', ev.loc, 'Arbeit 💼'].filter(Boolean).join(' · '),
+        serie: false,
+        status: 'fix',
+        src: 'work',
+        created_by: me.id,
+      }))
+      saveAll({ ...db, events: [...db.events.filter((e) => !(e.src === 'work' && e.member_id === me.id)), ...mapped] })
+      toast(`💼 ${mapped.length} Arbeitstermine importiert – erneuter Import aktualisiert alles`)
+    } catch (e) {
+      toast('Import fehlgeschlagen: ' + e.message)
     }
   }
 
@@ -653,6 +919,31 @@ export default function App() {
           ))}
         </div>
       </div>
+      <input className="search" value={calQ} onChange={(e) => setCalQ(e.target.value)}
+        placeholder="Termine durchsuchen: Name, Typ, Ort … (z. B. „Nachsorge Müller“)" aria-label="Termine durchsuchen" />
+      {calQ.trim() ? (() => {
+        const q = calQ.trim().toLowerCase()
+        const hits = db.events
+          .filter((e) => (e.title + ' ' + e.meta + ' ' + (e.ptype || '')).toLowerCase().includes(q))
+          .sort((a, b) => a.on_date.localeCompare(b.on_date) || a.at_time.localeCompare(b.at_time))
+          .slice(0, 60)
+        return (
+          <div className="card">
+            {hits.map((e) => (
+              <button className="row" key={e.id} onClick={() => setSheet({ event: e })}>
+                <span className="time" style={{ minWidth: 76 }}>{fmtShort(e.on_date)} {e.at_time}</span>
+                <span className="dot" style={{ background: mcolor(e.member_id) }} />
+                <div className="row-main">
+                  <div className="row-title">{e.title}</div>
+                  <div className="row-meta">{mname(e.member_id)}{e.meta ? ' · ' + e.meta : ''}{e.ist ? ` · Ist: ${e.ist} Min.` : ''}</div>
+                </div>
+                <span className="chev">›</span>
+              </button>
+            ))}
+            {!hits.length && <div className="empty">Kein Termin passt zu „{calQ}“.</div>}
+          </div>
+        )
+      })() : (
       <div className="calgrid">
         <div>
           <div className="month">
@@ -676,6 +967,7 @@ export default function App() {
           <div className="card">{dayList(selDate)}</div>
         </div>
       </div>
+      )}
     </section>
   )
 
@@ -709,6 +1001,121 @@ export default function App() {
       </div>
     </section>
   )
+
+  const screenPraxis = (() => {
+    if (praxisSel) {
+      const k = klientById(praxisSel)
+      if (!k) { setPraxisSel(null); return null }
+      const kt = klientTermine(k.id)
+      const done = kt.filter((t) => t.ist)
+      return (
+        <section className="screen">
+          <button className="btn ghost" style={{ margin: '12px 0 10px' }} onClick={() => setPraxisSel(null)}>‹ Zurück</button>
+          <h2 className="screen-title serif">{k.name}</h2>
+          <p className="screen-sub">{kt.length} Termin{kt.length === 1 ? '' : 'e'} · {done.reduce((a, t) => a + (+t.ist || 0), 0)} Min. dokumentiert</p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+            {k.adresse && <a className="btn" href={mapsLink(k.adresse)} target="_blank" rel="noreferrer">🚗 Anfahrt</a>}
+            {k.telefon && <a className="btn ghost" href={'tel:' + k.telefon}>📞 Anrufen</a>}
+            <button className="btn ghost" onClick={() => setPTerminSheet({ klid: k.id })}>➕ Termin</button>
+            <button className="btn ghost" onClick={() => setVorlageSheet(k.id)}>📄 Dokument</button>
+            <button className="btn ghost" onClick={() => setKlientSheet(k.id)}>✏️ Bearbeiten</button>
+          </div>
+          <div className="card">
+            <div className="fact"><b>Telefon</b><span>{k.telefon || '—'}</span></div>
+            <div className="fact"><b>Adresse</b><span>{k.adresse || '—'}</span></div>
+            <div className="fact"><b>Notiz</b><span>{k.notiz || '—'}</span></div>
+          </div>
+          <p className="label">Termin-Historie · Ist-Zeit direkt eintragen</p>
+          <div className="card">
+            {kt.map((t) => (
+              <div className="row" key={t.id}>
+                <span className="time" style={{ minWidth: 76 }}>{fmtShort(t.on_date)} {t.at_time}</span>
+                <div className="row-main">
+                  <div className="row-title">{t.ptype}</div>
+                  <div className="row-meta">Soll: {t.soll || '—'} Min.</div>
+                </div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: 'var(--ink-soft)' }}>
+                  Ist
+                  <input type="number" min="0" defaultValue={t.ist || ''} placeholder="–"
+                    onBlur={(e) => setIst(t.id, e.target.value)}
+                    aria-label="Ist-Dauer in Minuten"
+                    style={{ width: 58, font: 'inherit', padding: '5px 8px', borderRadius: 8, border: '1px solid var(--hairline)', background: 'var(--ground)', color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }} />
+                  Min.
+                </label>
+              </div>
+            ))}
+            {!kt.length && <div className="empty">Noch keine Termine – oben „➕ Termin“ antippen.</div>}
+          </div>
+        </section>
+      )
+    }
+
+    const q = praxisQ.trim().toLowerCase()
+    const hits = praxis.klienten.filter((k) => !q || (k.name + ' ' + (k.adresse || '') + ' ' + (k.notiz || '')).toLowerCase().includes(q))
+    const upcoming = db.events
+      .filter((e) => e.ptype && e.on_date >= today && (!q || e.title.toLowerCase().includes(q)))
+      .sort((a, b) => a.on_date.localeCompare(b.on_date) || a.at_time.localeCompare(b.at_time))
+      .slice(0, 10)
+    return (
+      <section className="screen">
+        <div className="title-row">
+          <div>
+            <h2 className="screen-title">Praxis</h2>
+            <p className="screen-sub">Klientinnen, Termine mit Soll/Ist-Zeiten und Dokumente</p>
+          </div>
+          <button className="btn" onClick={() => setPTerminSheet({})}>+ Praxistermin</button>
+        </div>
+        <input className="search" value={praxisQ} onChange={(e) => setPraxisQ(e.target.value)}
+          placeholder="Nach Namen suchen …" aria-label="Klientinnen durchsuchen" />
+        <div className="cols two">
+          <div>
+            <p className="label">Klientinnen</p>
+            <div className="card">
+              {hits.map((k) => {
+                const kt = klientTermine(k.id)
+                return (
+                  <button className="row" key={k.id} onClick={() => setPraxisSel(k.id)}>
+                    <span className="avatar">{k.name[0].toUpperCase()}</span>
+                    <div className="row-main">
+                      <div className="row-title">{k.name}</div>
+                      <div className="row-meta">{kt.length ? `${kt.length} Termin${kt.length === 1 ? '' : 'e'} · zuletzt ${fmtShort(kt[0].on_date)}` : 'noch kein Termin'}</div>
+                    </div>
+                    <span className="chev">›</span>
+                  </button>
+                )
+              })}
+              {!hits.length && <div className="empty">{q ? `Keine Klientin passt zu „${praxisQ}“.` : 'Noch keine Klientinnen.'}</div>}
+              <button className="row" onClick={() => setKlientSheet(true)}>
+                <span style={{ fontSize: 20 }}>➕</span>
+                <div className="row-main">
+                  <div className="row-title">Neue Klientin</div>
+                  <div className="row-meta">Kontaktformular: Name, Telefon, Adresse</div>
+                </div>
+                <span className="chev">›</span>
+              </button>
+            </div>
+          </div>
+          <div>
+            <p className="label">Nächste Praxistermine</p>
+            <div className="card">
+              {upcoming.map((e) => (
+                <button className="row" key={e.id} onClick={() => { if (e.klid) setPraxisSel(e.klid) }}>
+                  <span className="time" style={{ minWidth: 76 }}>{fmtShort(e.on_date)} {e.at_time}</span>
+                  <div className="row-main">
+                    <div className="row-title">{e.title}</div>
+                    <div className="row-meta">Soll: {e.soll || '—'} Min.{e.klid && klientById(e.klid)?.adresse ? ' · ' + klientById(e.klid).adresse : ''}</div>
+                  </div>
+                  <span className="chev">›</span>
+                </button>
+              ))}
+              {!upcoming.length && <div className="empty">Nichts geplant.</div>}
+            </div>
+            <p className="hint">Praxistermine erscheinen automatisch auch im Familienkalender.</p>
+          </div>
+        </div>
+      </section>
+    )
+  })()
 
   const screenFamilie = (
     <section className="screen">
@@ -744,6 +1151,26 @@ export default function App() {
           </button>
         )}
       </div>
+      <p className="label">💼 Arbeitskalender</p>
+      <div className="card">
+        <button className="row" onClick={() => icsInput.current?.click()}>
+          <span style={{ fontSize: 20 }}>📥</span>
+          <div className="row-main">
+            <div className="row-title">Kalenderdatei importieren (.ics)</div>
+            <div className="row-meta">Aus Outlook/Office365 exportieren – deine Arbeitstermine landen bei dir mit 💼. Erneuter Import aktualisiert alles.</div>
+          </div>
+          <span className="chev">›</span>
+        </button>
+        <input ref={icsInput} type="file" accept=".ics,text/calendar" style={{ display: 'none' }}
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) importIcs(f); e.target.value = '' }} />
+        <div className="row">
+          <span style={{ fontSize: 20 }}>ℹ️</span>
+          <div className="row-main">
+            <div className="row-meta">Die Datei bleibt auf deinem Gerät – nichts wird an den Arbeitgeber oder einen Server geschickt. Automatischer Abo-Sync per Link kommt mit der Cloud-Stufe.</div>
+          </div>
+        </div>
+      </div>
+
       <p className="label">⚽ Vereins-App</p>
       <div className="card">
         {(db.verein?.links || []).map((l) => (
@@ -818,7 +1245,7 @@ export default function App() {
     ['heute', '🪺', 'Heute', invites.length],
     ['kalender', '📅', 'Kalender', 0],
     ['listen', '🛒', 'Listen', 0],
-    ...(!isKid ? [['merkzeug', '🔐', 'Merkzeug', 0], ['familie', '👨‍👩‍👧‍👦', 'Familie', 0]] : []),
+    ...(!isKid ? [['praxis', '🩺', 'Praxis', 0], ['merkzeug', '🔐', 'Merkzeug', 0], ['familie', '👨‍👩‍👧‍👦', 'Familie', 0]] : []),
   ]
 
   return (
@@ -847,6 +1274,7 @@ export default function App() {
           {nav === 'heute' && screenHeute}
           {nav === 'kalender' && screenKalender}
           {nav === 'listen' && screenListen}
+          {nav === 'praxis' && !isKid && screenPraxis}
           {nav === 'merkzeug' && !isKid && (
             <Merkzeug
               blob={db.memories[me.id] || null}
@@ -880,6 +1308,21 @@ export default function App() {
         <VereinSheet members={db.members} me={me}
           onLink={(tid, teamName, memberId) => { addVereinLink(tid, teamName, memberId); setVereinSheet(false) }}
           onClose={() => setVereinSheet(false)} />
+      )}
+      {klientSheet && (
+        <KlientSheet existing={klientSheet === true ? null : klientById(klientSheet)}
+          onSave={(data, id) => { saveKlient(data, id); setKlientSheet(null) }}
+          onClose={() => setKlientSheet(null)} />
+      )}
+      {pTerminSheet && (
+        <PTerminSheet klienten={praxis.klienten} initialKlid={pTerminSheet.klid} today={today}
+          onSave={(data) => { addPraxisTermin(data); setPTerminSheet(null) }}
+          onClose={() => setPTerminSheet(null)}
+          onNeedKlient={() => { setPTerminSheet(null); setKlientSheet(true) }} />
+      )}
+      {vorlageSheet && (
+        <VorlageSheet klient={klientById(vorlageSheet)} termine={klientTermine(vorlageSheet)} meName={me.name}
+          toast={toast} onClose={() => setVorlageSheet(null)} />
       )}
       {toastEl}
     </div>
@@ -920,6 +1363,136 @@ function MemberSheet({ onAdd, onClose, usedColors }) {
         <button className="btn" style={{ width: '100%' }}>Hinzufügen</button>
         <p className="hint">Kinder sehen nur Heute, Kalender und Listen – ohne Merkzeug und Verwaltung.</p>
       </form>
+    </div>
+  )
+}
+
+function KlientSheet({ existing, onSave, onClose }) {
+  const [name, setName] = useState(existing?.name || '')
+  const [telefon, setTelefon] = useState(existing?.telefon || '')
+  const [adresse, setAdresse] = useState(existing?.adresse || '')
+  const [notiz, setNotiz] = useState(existing?.notiz || '')
+  return (
+    <div className="overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <form className="sheet" onSubmit={(e) => {
+        e.preventDefault()
+        if (name.trim()) onSave({ name: name.trim(), telefon: telefon.trim(), adresse: adresse.trim(), notiz: notiz.trim() }, existing?.id)
+      }}>
+        <h3>{existing ? 'Klientin bearbeiten' : 'Neue Klientin'}<button type="button" className="x" onClick={onClose} aria-label="Schließen">✕</button></h3>
+        <div className="field">
+          <label htmlFor="k-name">Name</label>
+          <input id="k-name" autoFocus required value={name} onChange={(e) => setName(e.target.value)} placeholder="z. B. Julia Müller" />
+        </div>
+        <div className="field">
+          <label htmlFor="k-tel">Telefon</label>
+          <input id="k-tel" type="tel" value={telefon} onChange={(e) => setTelefon(e.target.value)} placeholder="für 📞 Anrufen per Knopfdruck" />
+        </div>
+        <div className="field">
+          <label htmlFor="k-adr">Adresse</label>
+          <input id="k-adr" value={adresse} onChange={(e) => setAdresse(e.target.value)} placeholder="für 🚗 Anfahrt per Knopfdruck" />
+        </div>
+        <div className="field">
+          <label htmlFor="k-notiz">Notiz (optional)</label>
+          <input id="k-notiz" value={notiz} onChange={(e) => setNotiz(e.target.value)} placeholder="z. B. 2. Kind, Hebammen-Übernahme ab …" />
+        </div>
+        <button className="btn" style={{ width: '100%' }}>Speichern</button>
+      </form>
+    </div>
+  )
+}
+
+function PTerminSheet({ klienten, initialKlid, today, onSave, onClose, onNeedKlient }) {
+  const [klid, setKlid] = useState(initialKlid || klienten[0]?.id || '')
+  const [ptype, setPtype] = useState('Nachsorge')
+  const [date, setDate] = useState(today)
+  const [time, setTime] = useState('10:00')
+  const [soll, setSoll] = useState(60)
+  const [notiz, setNotiz] = useState('')
+  if (!klienten.length) {
+    return (
+      <div className="overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+        <div className="sheet">
+          <h3>🩺 Praxistermin<button type="button" className="x" onClick={onClose} aria-label="Schließen">✕</button></h3>
+          <p style={{ margin: '0 0 14px', fontSize: 14, color: 'var(--ink-soft)' }}>Zuerst brauchst du eine Klientin.</p>
+          <button className="btn" style={{ width: '100%' }} onClick={onNeedKlient}>➕ Neue Klientin anlegen</button>
+        </div>
+      </div>
+    )
+  }
+  return (
+    <div className="overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <form className="sheet" onSubmit={(e) => {
+        e.preventDefault()
+        if (klid) onSave({ klid, ptype, on_date: date, at_time: time, soll: +soll || null, notiz: notiz.trim() })
+      }}>
+        <h3>🩺 Praxistermin<button type="button" className="x" onClick={onClose} aria-label="Schließen">✕</button></h3>
+        <div className="grid2">
+          <div className="field">
+            <label htmlFor="p-klient">Klientin</label>
+            <select id="p-klient" value={klid} onChange={(e) => setKlid(e.target.value)}>
+              {klienten.map((k) => <option key={k.id} value={k.id}>{k.name}</option>)}
+            </select>
+          </div>
+          <div className="field">
+            <label htmlFor="p-typ">Typ</label>
+            <select id="p-typ" value={ptype} onChange={(e) => setPtype(e.target.value)}>
+              {PTYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="grid2">
+          <div className="field">
+            <label htmlFor="p-date">Tag</label>
+            <input id="p-date" type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
+          </div>
+          <div className="field">
+            <label htmlFor="p-time">Uhrzeit</label>
+            <input id="p-time" type="time" required value={time} onChange={(e) => setTime(e.target.value)} />
+          </div>
+        </div>
+        <div className="grid2">
+          <div className="field">
+            <label htmlFor="p-soll">Soll-Dauer (Min.)</label>
+            <input id="p-soll" type="number" min="5" step="5" value={soll} onChange={(e) => setSoll(e.target.value)} />
+          </div>
+          <div className="field">
+            <label htmlFor="p-notiz">Notiz (optional)</label>
+            <input id="p-notiz" value={notiz} onChange={(e) => setNotiz(e.target.value)} placeholder="z. B. Gewichtskontrolle" />
+          </div>
+        </div>
+        <button className="btn" style={{ width: '100%' }}>Termin planen</button>
+        <p className="hint">Die Ist-Zeit trägst du später mit einem Fingertipp in der Historie der Klientin ein.</p>
+      </form>
+    </div>
+  )
+}
+
+function VorlageSheet({ klient, termine, meName, toast, onClose }) {
+  const [vid, setVid] = useState(VORLAGEN[0].id)
+  const tpl = VORLAGEN.find((v) => v.id === vid)
+  const [text, setText] = useState(() => fillVorlage(tpl, klient, termine, meName))
+  return (
+    <div className="overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="sheet">
+        <h3>📄 Dokument aus Vorlage<button type="button" className="x" onClick={onClose} aria-label="Schließen">✕</button></h3>
+        <div className="field">
+          <label htmlFor="v-vorlage">Vorlage · Name und Daten von {klient.name} sind schon eingesetzt</label>
+          <select id="v-vorlage" value={vid} onChange={(e) => {
+            setVid(e.target.value)
+            setText(fillVorlage(VORLAGEN.find((v) => v.id === e.target.value), klient, termine, meName))
+          }}>
+            {VORLAGEN.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
+          </select>
+        </div>
+        <div className="field">
+          <textarea rows={11} value={text} onChange={(e) => setText(e.target.value)} aria-label="Dokumenttext" style={{ fontSize: 13.5 }} />
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn" style={{ flex: 1 }} onClick={() => saveTextFile(klient.name.replaceAll(' ', '-') + '-dokument.txt', text, toast)}>Speichern</button>
+          <button className="btn ghost" style={{ flex: 1 }} onClick={() => { navigator.clipboard?.writeText(text); toast('Kopiert ✓') }}>Kopieren</button>
+        </div>
+        <p className="hint">Stufe KI: Später liest die KI deine Scans/PDFs aus und füllt Vorlagen automatisch – die Namenszuordnung bleibt so wie hier.</p>
+      </div>
     </div>
   )
 }
