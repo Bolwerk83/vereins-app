@@ -1,16 +1,26 @@
 /* Eselsohr – Papeterie-Brutalismus: Papier, Tinte, Textmarker, harte Schatten */
 
+/* Das gesamte Design leitet sich aus der Profilfarbe (--user) ab.
+   Die Literale davor sind Fallbacks für Browser ohne color-mix(). */
 :root {
+  --user: #6C3BFF;
+  --user-ink: #FFFFFF; /* wird per JS auf dunkel gestellt, wenn die Farbe hell ist */
   --ground: #F1EEFF;
+  --ground: color-mix(in oklab, var(--user) 9%, #FFFFFF);
   --surface: #FFFFFF;
   --surface-2: #E7E2FB;
+  --surface-2: color-mix(in oklab, var(--user) 16%, #FFFFFF);
   --ink: #191627;
   --ink-soft: #5D5876;
   --line: #191627;
   --hairline: #D9D3F2;
+  --hairline: color-mix(in oklab, var(--user) 24%, #FFFFFF);
   --brand: #6C3BFF;
+  --brand: var(--user);
   --brand-ink: #FFFFFF;
+  --brand-ink: var(--user-ink);
   --brand-soft: #E4DAFF;
+  --brand-soft: color-mix(in oklab, var(--user) 20%, #FFFFFF);
   --marker: #FFE86B;
   --honey: #B97E00;
   --honey-soft: #FFE86B;
@@ -19,6 +29,7 @@
   --ok: #1C7C3E;
   --ok-soft: #C9F24E;
   --fold: #E4DAFF;
+  --fold: color-mix(in oklab, var(--user) 20%, #FFFFFF);
   --shadow: 4px 4px 0 var(--line);
   --shadow-sm: 3px 3px 0 var(--line);
   --dots: rgba(25, 22, 39, 0.10);
@@ -26,15 +37,21 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --ground: #171233;
+    --ground: color-mix(in oklab, var(--user) 14%, #0E0B1C);
     --surface: #221C44;
+    --surface: color-mix(in oklab, var(--user) 10%, #191424);
     --surface-2: #2C2456;
+    --surface-2: color-mix(in oklab, var(--user) 24%, #191424);
     --ink: #F3F0FF;
     --ink-soft: #A79FCB;
     --line: #0C0920;
     --hairline: #3A3168;
+    --hairline: color-mix(in oklab, var(--user) 32%, #14101F);
     --brand: #9B7BFF;
+    --brand: color-mix(in oklab, var(--user) 62%, #FFFFFF);
     --brand-ink: #171233;
     --brand-soft: #35296B;
+    --brand-soft: color-mix(in oklab, var(--user) 36%, #14101F);
     --marker: #D9B92E;
     --honey: #FFD84D;
     --honey-soft: #4A3D14;
@@ -43,6 +60,7 @@
     --ok: #B7EB4A;
     --ok-soft: #2E401A;
     --fold: #35296B;
+    --fold: color-mix(in oklab, var(--user) 36%, #14101F);
     --shadow: 4px 4px 0 var(--line);
     --shadow-sm: 3px 3px 0 var(--line);
     --dots: rgba(243, 240, 255, 0.07);

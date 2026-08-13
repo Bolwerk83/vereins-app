@@ -754,6 +754,22 @@ export default function App() {
     saveState(next)
   }
 
+  // Das gesamte Design folgt der Farbe des aktiven Profils
+  const activeColor = db?.members?.find((m) => m.id === db?.active)?.color || null
+  useEffect(() => {
+    const root = document.documentElement
+    if (activeColor && /^#[0-9a-fA-F]{6}$/.test(activeColor)) {
+      root.style.setProperty('--user', activeColor)
+      const r = parseInt(activeColor.slice(1, 3), 16)
+      const g = parseInt(activeColor.slice(3, 5), 16)
+      const b = parseInt(activeColor.slice(5, 7), 16)
+      root.style.setProperty('--user-ink', (r * 299 + g * 587 + b * 114) / 1000 > 160 ? '#191627' : '#FFFFFF')
+    } else {
+      root.style.removeProperty('--user')
+      root.style.removeProperty('--user-ink')
+    }
+  }, [activeColor])
+
   // Direktstart mit Profil per Link: ?u=Name oder #u=Name
   useEffect(() => {
     if (!db) return
@@ -1347,6 +1363,21 @@ export default function App() {
       </div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '12px 0 4px' }}>
         <button className="btn ghost" onClick={() => saveAll({ ...db, active: null })}>⇄ Profil wechseln</button>
+      </div>
+
+      <p className="label">Meine Farbe · färbt deine ganze App</p>
+      <div className="card">
+        <div className="row">
+          <div className="colorpick">
+            {COLORS.map((c) => (
+              <button type="button" key={c} className={me.color === c ? 'sel' : ''} style={{ background: c }}
+                aria-label={'Farbe ' + c} onClick={() => {
+                  saveAll({ ...db, members: db.members.map((m) => (m.id === me.id ? { ...m, color: c } : m)) })
+                  toast('Neue Farbe ✓ – deine App trägt sie jetzt überall')
+                }} />
+            ))}
+          </div>
+        </div>
       </div>
 
       {!isKid && (
