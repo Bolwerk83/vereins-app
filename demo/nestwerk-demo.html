@@ -74,82 +74,115 @@
     margin: 0;
     background: var(--ground);
     color: var(--ink);
-    font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+    font: 15.5px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
-  .app {
-    max-width: 440px;
-    margin: 0 auto;
-    min-height: 100vh;
-    display: flex;
+  .serif { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; }
+
+  /* ================= App-Shell ================= */
+  .shell { display: flex; min-height: 100vh; max-width: 1160px; margin: 0 auto; }
+  aside.side {
+    display: none;
+    width: 232px;
+    flex: none;
     flex-direction: column;
+    gap: 4px;
+    padding: 22px 14px;
+    border-right: 1px solid var(--hairline);
+  }
+  .side .logo { font-size: 24px; font-weight: 700; margin: 0 8px 18px; letter-spacing: -0.01em; }
+  .side .logo .nest { color: var(--brand); }
+  .navbtn {
+    display: flex; align-items: center; gap: 11px;
+    font: inherit; font-size: 14.5px; font-weight: 600;
+    background: none; border: 0; border-radius: 11px;
+    padding: 10px 12px; color: var(--ink-soft); cursor: pointer; text-align: left;
+    width: 100%;
+  }
+  .navbtn .ico { font-size: 18px; width: 22px; text-align: center; }
+  .navbtn:hover { background: var(--surface-2); }
+  .navbtn.active { background: var(--brand-soft); color: var(--brand); }
+  .navbtn .cnt {
+    margin-left: auto; font-size: 11px; font-weight: 700;
+    background: var(--danger); color: #fff; border-radius: 999px;
+    min-width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; padding: 0 5px;
+  }
+  .side .spacer { flex: 1; }
+  .side .usercard {
+    display: flex; align-items: center; gap: 10px;
+    font: inherit; text-align: left;
+    border: 1px solid var(--hairline); background: var(--surface);
+    border-radius: 14px; padding: 10px; cursor: pointer; color: var(--ink);
+  }
+  .side .usercard:hover { background: var(--surface-2); }
+  .side .usercard .who { flex: 1; min-width: 0; }
+  .side .usercard .who b { display: block; font-size: 14px; }
+  .side .usercard .who span { font-size: 12px; color: var(--ink-soft); }
+  .side .demonote { font-size: 11.5px; color: var(--ink-soft); margin: 10px 8px 0; }
+
+  .mainwrap { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  @media (min-width: 900px) {
+    aside.side { display: flex; }
+    .topbar .wordmark { display: none; }
+    main { padding: 26px 32px 60px !important; }
+    nav.tabs { display: none !important; }
+  }
+
+  /* ================= Topbar ================= */
+  .topbar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 14px 18px 10px;
+    position: sticky; top: 0; z-index: 15;
     background: var(--ground);
+    border-bottom: 1px solid transparent;
   }
-  @media (min-width: 500px) {
-    body { padding: 24px 0 40px; }
-    .app {
-      min-height: calc(100vh - 64px);
-      border: 1px solid var(--hairline);
-      border-radius: 24px;
-      overflow: hidden;
-      box-shadow: var(--shadow);
-    }
+  .topbar .wordmark { font-size: 22px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
+  .topbar .wordmark .nest { color: var(--brand); }
+  .topbar .sp { flex: 1; }
+  .iconbtn {
+    position: relative;
+    font: inherit; font-size: 17px;
+    background: var(--surface); border: 1px solid var(--hairline);
+    border-radius: 999px; width: 36px; height: 36px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
   }
-
-  /* ---------- Kopf ---------- */
-  header.top {
-    padding: 18px 20px 12px;
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 12px;
+  .iconbtn:hover { background: var(--surface-2); }
+  .iconbtn .badge {
+    position: absolute; top: -4px; right: -4px;
+    background: var(--danger); color: #fff;
+    font-size: 10px; font-weight: 700;
+    border-radius: 999px; min-width: 16px; height: 16px;
+    display: flex; align-items: center; justify-content: center; padding: 0 4px;
   }
-  .wordmark {
-    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
-    font-size: 26px;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-    margin: 0;
-  }
-  .wordmark .nest { color: var(--brand); }
-  .demo-tag {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: .08em;
-    color: var(--ink-soft);
-    border: 1px solid var(--hairline);
-    border-radius: 999px;
-    padding: 3px 10px;
-    white-space: nowrap;
+  .userchip {
+    display: flex; align-items: center; gap: 7px;
+    font: inherit; font-size: 13px; font-weight: 600;
+    background: var(--surface); border: 1px solid var(--hairline);
+    border-radius: 999px; padding: 4px 10px 4px 4px;
+    color: var(--ink); cursor: pointer; white-space: nowrap;
   }
 
-  main { flex: 1; padding: 0 16px 96px; }
-  .screen { display: none; }
-  .screen.active { display: block; animation: rise .25s ease; }
+  main { flex: 1; padding: 0 16px 100px; }
+  .screen { display: none; max-width: 860px; }
+  .screen.active { display: block; animation: rise .22s ease; }
   @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
   @media (prefers-reduced-motion: reduce) {
     .screen.active { animation: none; }
-    * { transition: none !important; }
+    * { transition: none !important; scroll-behavior: auto !important; }
   }
 
-  h2.screen-title {
-    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
-    font-size: 21px;
-    margin: 10px 4px 2px;
-    text-wrap: balance;
-  }
-  .screen-sub { margin: 0 4px 14px; color: var(--ink-soft); font-size: 14px; }
-  .title-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-  .title-row .btn { flex: none; }
-
+  h2.screen-title { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; font-size: 22px; margin: 12px 2px 2px; text-wrap: balance; }
+  .screen-sub { margin: 0 2px 16px; color: var(--ink-soft); font-size: 14px; }
+  .title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
   .label {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: .09em;
-    color: var(--ink-soft);
-    margin: 20px 4px 8px;
-    font-weight: 600;
+    font-size: 11px; text-transform: uppercase; letter-spacing: .09em;
+    color: var(--ink-soft); margin: 22px 2px 8px; font-weight: 700;
+    display: flex; align-items: center; gap: 8px;
   }
+  .label .lact { margin-left: auto; text-transform: none; letter-spacing: 0; }
+
+  .cols { display: grid; grid-template-columns: 1fr; gap: 0 24px; }
+  @media (min-width: 900px) { .cols.two { grid-template-columns: 1fr 1fr; align-items: start; } }
 
   .card {
     background: var(--surface);
@@ -158,86 +191,74 @@
     box-shadow: var(--shadow);
     overflow: hidden;
   }
-  .row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 14px;
-    border-top: 1px solid var(--hairline);
-  }
+  .row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-top: 1px solid var(--hairline); }
   .row:first-child { border-top: 0; }
   button.row { width: 100%; text-align: left; background: none; border-left: 0; border-right: 0; border-bottom: 0; font: inherit; color: inherit; cursor: pointer; }
   button.row:hover { background: var(--surface-2); }
-  button.row:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
-    outline: 2px solid var(--brand);
-    outline-offset: 2px;
+  button:focus-visible, input:focus-visible, select:focus-visible, label:focus-visible {
+    outline: 2px solid var(--brand); outline-offset: 2px;
   }
-
-  .time { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 15px; min-width: 48px; }
+  .time { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 15px; min-width: 46px; }
   .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
   .row-main { flex: 1; min-width: 0; }
   .row-title { font-weight: 600; font-size: 15px; }
   .row-meta { font-size: 13px; color: var(--ink-soft); }
   .chev { color: var(--ink-soft); flex: none; }
+  .empty { padding: 18px 14px; color: var(--ink-soft); font-size: 14px; }
 
   .chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    font-weight: 600;
-    border-radius: 999px;
-    padding: 2px 10px;
-    background: var(--surface-2);
-    color: var(--ink);
-    white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 600; border-radius: 999px; padding: 2px 10px;
+    background: var(--surface-2); color: var(--ink); white-space: nowrap; border: 1px solid transparent;
   }
   .chip .dot { width: 7px; height: 7px; }
   .chip.warn { background: var(--danger-soft); color: var(--danger); }
   .chip.ok { background: var(--ok-soft); color: var(--ok); }
   .chip.honey { background: var(--honey-soft); color: var(--honey); }
   .chip.brand { background: var(--brand-soft); color: var(--brand); }
+  button.chip { cursor: pointer; font: inherit; font-size: 12px; font-weight: 600; }
+  button.chip.off { opacity: .45; }
 
-  .conflict {
-    border: 1px solid var(--danger);
-    background: var(--danger-soft);
-    border-radius: 16px;
-    padding: 14px;
-    margin-top: 12px;
-  }
-  .conflict h3 { margin: 0 0 4px; font-size: 15px; color: var(--danger); }
-  .conflict p { margin: 0 0 10px; font-size: 14px; }
   .btn {
-    font: inherit;
-    font-size: 14px;
-    font-weight: 600;
-    border: 0;
-    border-radius: 10px;
-    padding: 9px 16px;
-    cursor: pointer;
-    background: var(--brand);
-    color: var(--brand-ink);
+    font: inherit; font-size: 14px; font-weight: 600;
+    border: 0; border-radius: 10px; padding: 9px 16px; cursor: pointer;
+    background: var(--brand); color: var(--brand-ink);
   }
   .btn.ghost { background: var(--surface); color: var(--ink); border: 1px solid var(--hairline); }
   .btn.danger { background: var(--danger-soft); color: var(--danger); border: 1px solid var(--danger); }
+  .btn.sm { padding: 6px 12px; font-size: 13px; }
   .btn:hover { filter: brightness(1.06); }
 
-  /* ---------- Kalender ---------- */
-  .week {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 6px;
-    margin-bottom: 14px;
+  /* Zusammenfassung („Auf einen Blick") */
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-top: 4px; }
+  .kpi {
+    background: var(--surface); border: 1px solid var(--hairline); border-radius: 14px;
+    padding: 10px 13px; box-shadow: var(--shadow);
   }
+  .kpi .num { font-size: 21px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .kpi .cap { font-size: 11.5px; color: var(--ink-soft); }
+  .kpi.accent { border-color: var(--brand); background: var(--brand-soft); }
+  .kpi.alert { border-color: var(--danger); background: var(--danger-soft); }
+  .kpi.alert .num { color: var(--danger); }
+
+  .notice {
+    border: 1px solid var(--honey); background: var(--honey-soft);
+    border-radius: 16px; padding: 12px 14px; margin-top: 12px; font-size: 14px;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .conflict { border: 1px solid var(--danger); background: var(--danger-soft); border-radius: 16px; padding: 14px; margin-top: 12px; }
+  .conflict h3 { margin: 0 0 4px; font-size: 15px; color: var(--danger); }
+  .conflict p { margin: 0 0 10px; font-size: 14px; }
+
+  /* Kalender */
+  .calbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .seg { display: flex; border: 1px solid var(--hairline); border-radius: 10px; overflow: hidden; background: var(--surface); }
+  .seg button { font: inherit; font-size: 13px; font-weight: 600; border: 0; background: none; color: var(--ink-soft); padding: 7px 14px; cursor: pointer; }
+  .seg button.active { background: var(--brand); color: var(--brand-ink); }
+  .week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 12px; }
   .day {
-    font: inherit;
-    border: 1px solid var(--hairline);
-    background: var(--surface);
-    color: var(--ink);
-    border-radius: 12px;
-    padding: 8px 2px 7px;
-    text-align: center;
-    cursor: pointer;
+    font: inherit; border: 1px solid var(--hairline); background: var(--surface); color: var(--ink);
+    border-radius: 12px; padding: 8px 2px 7px; text-align: center; cursor: pointer;
   }
   .day .dname { font-size: 11px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .04em; }
   .day .dnum { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -245,74 +266,48 @@
   .day .dots i { width: 5px; height: 5px; border-radius: 50%; }
   .day.sel { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); }
   .day.sel .dname { color: var(--brand-ink); opacity: .8; }
-
-  .legend { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 4px 0; }
-
-  /* ---------- Overlay / Sheet (Termin-Formular & Assistent) ---------- */
-  .overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(18, 24, 21, .45);
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    z-index: 40;
-    padding: 16px;
+  .day.today:not(.sel) { border-color: var(--brand); }
+  .month { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 12px; }
+  .month .mh { text-align: center; font-size: 11px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .04em; padding: 2px 0; }
+  .mday {
+    font: inherit; min-height: 44px; border: 1px solid var(--hairline); background: var(--surface); color: var(--ink);
+    border-radius: 9px; padding: 4px 2px 3px; cursor: pointer; text-align: center;
   }
+  .mday .dnum { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .mday .dots { display: flex; gap: 2px; justify-content: center; min-height: 5px; margin-top: 2px; flex-wrap: wrap; }
+  .mday .dots i { width: 5px; height: 5px; border-radius: 50%; }
+  .mday.sel { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); }
+  .mday.today:not(.sel) { border-color: var(--brand); }
+  .mday.pad { visibility: hidden; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 2px 0; }
+
+  /* Listen */
+  .quickadd { display: flex; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--hairline); background: var(--surface); }
+  .quickadd input { flex: 1; min-width: 0; font: inherit; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--hairline); background: var(--ground); color: var(--ink); }
+  .check { width: 21px; height: 21px; flex: none; accent-color: var(--brand); cursor: pointer; }
+  .done-text { text-decoration: line-through; opacity: .55; }
+
+  /* Sheets & Overlays */
+  .overlay { position: fixed; inset: 0; background: rgba(18,24,21,.45); display: flex; align-items: flex-end; justify-content: center; z-index: 40; padding: 16px; }
   .overlay[hidden] { display: none; }
   .sheet {
-    background: var(--surface);
-    border: 1px solid var(--hairline);
-    border-radius: 20px;
-    box-shadow: var(--shadow);
-    width: 100%;
-    max-width: 420px;
-    max-height: 84vh;
-    overflow-y: auto;
-    padding: 18px;
+    background: var(--surface); border: 1px solid var(--hairline); border-radius: 20px;
+    box-shadow: var(--shadow); width: 100%; max-width: 430px; max-height: 86vh; overflow-y: auto; padding: 18px;
   }
   @media (min-width: 500px) { .overlay { align-items: center; } }
-  .sheet h3 {
-    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
-    font-size: 19px;
-    margin: 0 0 12px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-  }
-  .x {
-    font: inherit; font-size: 14px; font-weight: 600;
-    background: var(--surface-2); color: var(--ink-soft);
-    border: 0; border-radius: 999px; width: 30px; height: 30px; cursor: pointer; flex: none;
-  }
+  .sheet h3 { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; font-size: 19px; margin: 0 0 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .x { font: inherit; font-size: 14px; font-weight: 600; background: var(--surface-2); color: var(--ink-soft); border: 0; border-radius: 999px; width: 30px; height: 30px; cursor: pointer; flex: none; }
   .field { margin-bottom: 12px; }
   .field label { display: block; font-size: 12px; font-weight: 600; color: var(--ink-soft); margin-bottom: 4px; }
-  .field input, .field select {
-    width: 100%;
-    font: inherit;
-    padding: 9px 12px;
-    border-radius: 10px;
-    border: 1px solid var(--hairline);
-    background: var(--ground);
-    color: var(--ink);
-  }
-  .field.check { display: flex; align-items: center; gap: 10px; }
-  .field.check input { width: auto; }
-  .field.check label { margin: 0; font-size: 14px; color: var(--ink); font-weight: 500; }
+  .field input, .field select { width: 100%; font: inherit; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--hairline); background: var(--ground); color: var(--ink); }
+  .field.checkline { display: flex; align-items: center; gap: 10px; }
+  .field.checkline input { width: 18px; height: 18px; accent-color: var(--brand); }
+  .field.checkline label { margin: 0; font-size: 14px; color: var(--ink); font-weight: 500; }
   .sheet .actions { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
   .sheet .actions .btn { flex: 1; min-width: 100px; }
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-  /* ---------- Anmeldung & Rechte ---------- */
-  .userchip {
-    display: flex; align-items: center; gap: 7px;
-    font: inherit; font-size: 13px; font-weight: 600;
-    background: var(--surface); border: 1px solid var(--hairline);
-    border-radius: 999px; padding: 4px 10px 4px 4px;
-    color: var(--ink); cursor: pointer; white-space: nowrap;
-  }
-  .gear { font: inherit; font-size: 17px; background: none; border: 0; cursor: pointer; padding: 4px; }
+  /* Anmeldung */
   .profiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
   .profile {
     font: inherit; display: flex; flex-direction: column; align-items: center; gap: 6px;
@@ -320,599 +315,763 @@
     background: var(--ground); color: var(--ink); cursor: pointer;
   }
   .profile:hover { background: var(--surface-2); }
-  .profile .pav {
-    width: 52px; height: 52px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 22px; font-weight: 700; color: #fff;
-  }
+  .profile .pav { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; color: #fff; }
   .profile b { font-size: 14px; }
   .profile .role { font-size: 12px; color: var(--ink-soft); }
+  .hint { font-size: 12px; color: var(--ink-soft); margin-top: 10px; }
   .invite-actions { display: flex; gap: 6px; flex: none; }
   .invite-actions .btn { padding: 6px 12px; font-size: 14px; }
   #permlist label.row { cursor: pointer; }
-  #permlist input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--brand); }
+  #permlist input[type="checkbox"], .switch { width: 18px; height: 18px; accent-color: var(--brand); }
 
-  /* ---------- Assistent ---------- */
-  .fab {
-    position: fixed;
-    bottom: 78px;
-    right: max(16px, calc(50% - 204px));
-    z-index: 30;
-    width: 52px; height: 52px;
-    border-radius: 50%;
-    border: 0;
-    background: var(--brand);
-    color: var(--brand-ink);
-    font-size: 23px;
-    cursor: pointer;
-    box-shadow: var(--shadow);
-  }
-  .fab:hover { filter: brightness(1.08); }
-  .ai-card {
-    border: 1px solid var(--hairline);
-    background: var(--ground);
-    border-radius: 14px;
-    padding: 12px 14px;
-    margin-bottom: 10px;
-    font-size: 14.5px;
-  }
-  .ai-card .src { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--brand); font-weight: 700; margin-bottom: 4px; }
-  .ai-card p { margin: 0 0 10px; }
-  .ai-card p:last-child { margin-bottom: 0; }
-  .ai-card.done { opacity: .65; }
-  .ai-card.done .btn { display: none; }
-  .ai-card .doneflag { display: none; font-size: 13px; font-weight: 600; color: var(--ok); }
-  .ai-card.done .doneflag { display: inline; }
-  .bubble-user {
-    background: var(--brand); color: var(--brand-ink);
-    border-radius: 14px 14px 4px 14px;
-    padding: 8px 12px; font-size: 14.5px;
-    margin: 0 0 10px auto; max-width: 85%; width: fit-content;
-  }
-  .airow { display: flex; gap: 8px; margin-top: 4px; }
-  .airow input { flex: 1; min-width: 0; font: inherit; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--hairline); background: var(--ground); color: var(--ink); }
-
-  /* ---------- Merkzeug ---------- */
-  .lockbox { text-align: center; padding: 36px 24px 30px; }
-  .lockbox .lock-ico { font-size: 40px; }
-  .lockbox h3 { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; margin: 10px 0 6px; font-size: 19px; }
-  .lockbox p { color: var(--ink-soft); font-size: 14px; margin: 0 auto 18px; max-width: 30ch; }
-  .pwrow { display: flex; gap: 8px; max-width: 300px; margin: 0 auto; }
-  .pwrow input {
-    flex: 1; min-width: 0;
-    font: inherit;
-    padding: 9px 12px;
-    border-radius: 10px;
-    border: 1px solid var(--hairline);
-    background: var(--ground);
-    color: var(--ink);
-  }
-  .hint { font-size: 12px; color: var(--ink-soft); margin-top: 10px; }
-  .decrypting { display: none; margin-top: 16px; font-size: 14px; color: var(--brand); font-weight: 600; }
-
-  .search {
-    width: 100%;
-    font: inherit;
-    padding: 10px 14px;
-    border-radius: 12px;
-    border: 1px solid var(--hairline);
-    background: var(--surface);
-    color: var(--ink);
-    margin-bottom: 12px;
-  }
   .avatar {
     width: 38px; height: 38px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     font-weight: 700; font-size: 15px; flex: none;
     background: var(--brand-soft); color: var(--brand);
   }
+  .avatar.sm { width: 26px; height: 26px; font-size: 12px; }
 
-  .spick .back { margin: 4px 0 10px; }
-  .spick h3 { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; font-size: 22px; margin: 0 4px 2px; }
-  .spick .ctx { color: var(--ink-soft); margin: 0 4px 14px; font-size: 14px; }
+  /* Assistent */
+  .fab {
+    position: fixed; bottom: 78px; right: 16px; z-index: 30;
+    width: 52px; height: 52px; border-radius: 50%; border: 0;
+    background: var(--brand); color: var(--brand-ink); font-size: 23px; cursor: pointer; box-shadow: var(--shadow);
+  }
+  @media (min-width: 900px) { .fab { bottom: 28px; right: max(16px, calc(50% - 580px + 24px)); } }
+  .fab:hover { filter: brightness(1.08); }
+  .ai-card { border: 1px solid var(--hairline); background: var(--ground); border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; font-size: 14.5px; }
+  .ai-card .src { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--brand); font-weight: 700; margin-bottom: 4px; }
+  .ai-card p { margin: 0 0 10px; }
+  .ai-card p:last-child { margin-bottom: 0; }
+  .ai-card.done { opacity: .6; }
+  .ai-card.done .btn { display: none; }
+  .ai-card .doneflag { display: none; font-size: 13px; font-weight: 600; color: var(--ok); }
+  .ai-card.done .doneflag { display: inline; }
+  .bubble-user { background: var(--brand); color: var(--brand-ink); border-radius: 14px 14px 4px 14px; padding: 8px 12px; font-size: 14.5px; margin: 0 0 10px auto; max-width: 85%; width: fit-content; }
+  .airow { display: flex; gap: 8px; margin-top: 4px; }
+  .airow input { flex: 1; min-width: 0; font: inherit; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--hairline); background: var(--ground); color: var(--ink); }
+  .chiprow { display: flex; gap: 6px; flex-wrap: wrap; margin: 2px 0 12px; }
+
+  /* Merkzeug */
+  .lockbox { text-align: center; padding: 36px 24px 30px; }
+  .lockbox .lock-ico { font-size: 40px; }
+  .lockbox h3 { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; margin: 10px 0 6px; font-size: 19px; }
+  .lockbox p { color: var(--ink-soft); font-size: 14px; margin: 0 auto 18px; max-width: 32ch; }
+  .pwrow { display: flex; gap: 8px; max-width: 300px; margin: 0 auto; }
+  .pwrow input { flex: 1; min-width: 0; font: inherit; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--hairline); background: var(--ground); color: var(--ink); }
+  .decrypting { display: none; margin-top: 16px; font-size: 14px; color: var(--brand); font-weight: 600; }
+  .search { width: 100%; font: inherit; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--hairline); background: var(--surface); color: var(--ink); margin-bottom: 10px; }
+  .subtabs { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+  .subtabs button { font: inherit; font-size: 13px; font-weight: 600; border: 1px solid var(--hairline); background: var(--surface); color: var(--ink-soft); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+  .subtabs button.active { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); }
   .fact { padding: 10px 14px; border-top: 1px solid var(--hairline); font-size: 14px; display: flex; gap: 10px; }
   .fact:first-child { border-top: 0; }
-  .fact b { flex: none; min-width: 86px; font-weight: 600; color: var(--ink-soft); font-size: 13px; padding-top: 1px; }
+  .fact b { flex: none; min-width: 92px; font-weight: 600; color: var(--ink-soft); font-size: 13px; padding-top: 1px; }
   .qcard { background: var(--brand-soft); border: 1px solid var(--brand); border-radius: 16px; padding: 14px; margin-top: 12px; }
   .qcard h4 { margin: 0 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--brand); }
   .qcard ul { margin: 0; padding-left: 18px; font-size: 14.5px; }
   .qcard li { margin-bottom: 6px; }
   .qcard li:last-child { margin-bottom: 0; }
-  .noterow { display: flex; gap: 8px; margin-top: 12px; }
-  .noterow input { flex: 1; min-width: 0; font: inherit; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--hairline); background: var(--surface); color: var(--ink); }
-
-  /* ---------- Praxis ---------- */
-  .kurs-head { padding: 12px 14px; }
-  .kurs-head .row-title { font-size: 15.5px; }
   .bar { height: 6px; border-radius: 3px; background: var(--surface-2); margin-top: 8px; overflow: hidden; }
   .bar i { display: block; height: 100%; background: var(--brand); border-radius: 3px; }
+
+  /* Praxis */
+  .kurs-head { padding: 12px 14px; }
   .tn { display: flex; align-items: center; gap: 10px; padding: 9px 14px; border-top: 1px solid var(--hairline); font-size: 14px; }
   .tn .name { flex: 1; }
   .paybtn { font: inherit; font-size: 12px; font-weight: 600; border: 0; border-radius: 999px; padding: 3px 11px; cursor: pointer; }
   .paybtn.paid { background: var(--ok-soft); color: var(--ok); }
   .paybtn.open { background: var(--honey-soft); color: var(--honey); }
-  .frist-days { font-variant-numeric: tabular-nums; }
 
-  /* ---------- Superadmin ---------- */
-  .adminbar {
-    background: var(--ink);
-    color: var(--ground);
-    border-radius: 12px;
-    padding: 8px 14px;
-    font-size: 13px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 14px;
-  }
-  .statgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .stat {
-    background: var(--surface);
-    border: 1px solid var(--hairline);
-    border-radius: 14px;
-    padding: 10px 12px;
-    box-shadow: var(--shadow);
-  }
-  .stat .num { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
-  .stat .cap { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-soft); }
-  .cipher {
-    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-    font-size: 12px;
-    color: var(--ink-soft);
-    word-break: break-all;
-    background: var(--surface-2);
-    border-radius: 8px;
-    padding: 6px 8px;
-    margin-top: 6px;
-  }
-  .denied {
-    display: none;
-    border: 1px solid var(--danger);
-    background: var(--danger-soft);
-    border-radius: 16px;
-    padding: 14px;
-    margin-top: 12px;
-  }
+  /* Admin */
+  .adminbar { background: var(--ink); color: var(--ground); border-radius: 12px; padding: 8px 14px; font-size: 13px; display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .cipher { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12px; color: var(--ink-soft); word-break: break-all; background: var(--surface-2); border-radius: 8px; padding: 6px 8px; margin-top: 6px; }
+  .denied { display: none; border: 1px solid var(--danger); background: var(--danger-soft); border-radius: 16px; padding: 14px; margin-top: 12px; }
   .denied h3 { margin: 0 0 4px; font-size: 15px; color: var(--danger); }
   .denied p { margin: 0; font-size: 14px; }
+  .log { font-size: 13px; color: var(--ink-soft); padding: 8px 14px; border-top: 1px solid var(--hairline); display: flex; gap: 10px; }
+  .log:first-child { border-top: 0; }
+  .log .lt { font-variant-numeric: tabular-nums; flex: none; }
 
-  /* ---------- Toast & Tabbar ---------- */
+  /* Toast & mobile Tabs */
   .toast {
-    position: fixed;
-    left: 50%; bottom: 92px;
+    position: fixed; left: 50%; bottom: 92px;
     transform: translateX(-50%) translateY(20px);
-    background: var(--ink);
-    color: var(--ground);
-    padding: 10px 18px;
-    border-radius: 999px;
-    font-size: 14px;
-    font-weight: 600;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity .25s, transform .25s;
-    max-width: 90vw;
-    text-align: center;
-    z-index: 50;
+    background: var(--ink); color: var(--ground);
+    padding: 10px 18px; border-radius: 999px; font-size: 14px; font-weight: 600;
+    opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s;
+    max-width: 92vw; text-align: center; z-index: 60;
   }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-
   nav.tabs {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    display: flex;
-    justify-content: center;
+    position: fixed; bottom: 0; left: 0; right: 0;
+    display: flex; justify-content: center;
     padding: 0 0 env(safe-area-inset-bottom);
-    background: var(--surface);
-    border-top: 1px solid var(--hairline);
-    z-index: 20;
+    background: var(--surface); border-top: 1px solid var(--hairline); z-index: 20;
   }
-  @media (min-width: 500px) {
-    nav.tabs { position: sticky; margin-top: auto; }
-  }
-  nav.tabs .inner { display: flex; width: 100%; max-width: 440px; }
+  nav.tabs .inner { display: flex; width: 100%; max-width: 560px; }
   .tab {
-    flex: 1;
-    font: inherit;
-    background: none;
-    border: 0;
-    cursor: pointer;
-    padding: 9px 4px 10px;
-    color: var(--ink-soft);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    font-size: 11px;
-    font-weight: 600;
+    flex: 1; font: inherit; background: none; border: 0; cursor: pointer;
+    padding: 9px 2px 10px; color: var(--ink-soft);
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    font-size: 10.5px; font-weight: 600;
   }
   .tab .ico { font-size: 20px; line-height: 1.2; }
   .tab.active { color: var(--brand); }
+  footer.note { text-align: center; font-size: 12px; color: var(--ink-soft); padding: 22px 20px 10px; }
 
-  footer.note { text-align: center; font-size: 12px; color: var(--ink-soft); padding: 18px 20px 8px; }
+  /* Benachrichtigungen */
+  .notif { padding: 10px 14px; border-top: 1px solid var(--hairline); font-size: 14px; display: flex; gap: 10px; align-items: flex-start; }
+  .notif:first-child { border-top: 0; }
+  .notif.unread { background: var(--brand-soft); }
+  .notif .nt { font-size: 12px; color: var(--ink-soft); flex: none; padding-top: 2px; }
 </style>
 
-<div class="app">
-  <header class="top">
-    <h1 class="wordmark"><span class="nest">Nest</span>werk</h1>
-    <div style="display:flex; align-items:center; gap:6px">
+<div class="shell">
+  <!-- ============ Seitenleiste (Desktop) ============ -->
+  <aside class="side">
+    <div class="logo serif"><span class="nest">Nest</span>werk</div>
+    <div id="sidenav"></div>
+    <div class="spacer"></div>
+    <button class="usercard" id="usercard">
+      <span class="avatar" id="sc-av" style="color:#fff">?</span>
+      <span class="who"><b id="sc-name">Anmelden</b><span id="sc-role">Profil wählen</span></span>
+      <span class="chev">⇄</span>
+    </button>
+    <div class="demonote">Demo mit Beispieldaten – nichts wird gespeichert, alle Namen sind ausgedacht.</div>
+  </aside>
+
+  <div class="mainwrap">
+    <!-- ============ Kopfzeile ============ -->
+    <header class="topbar">
+      <h1 class="wordmark serif"><span class="nest">Nest</span>werk</h1>
+      <span class="sp"></span>
+      <button class="iconbtn" id="btn-bell" aria-label="Benachrichtigungen"><span>🔔</span><span class="badge" id="bellbadge" style="display:none">0</span></button>
+      <button class="iconbtn" id="btn-settings" aria-label="Rechte-Einstellungen" style="display:none">⚙️</button>
       <button class="userchip" id="userchip" aria-label="Profil wechseln">
-        <span class="avatar" id="uc-av" style="width:26px;height:26px;font-size:12px;color:#fff">?</span>
+        <span class="avatar sm" id="uc-av" style="color:#fff">?</span>
         <span id="uc-name">Anmelden</span> ⇄
       </button>
-      <button class="gear" id="btn-settings" aria-label="Rechte-Einstellungen" style="display:none">⚙️</button>
-    </div>
-  </header>
+    </header>
 
-  <main>
-    <!-- ============ HEUTE ============ -->
-    <section class="screen active" id="scr-heute">
-      <h2 class="screen-title">Guten Tag! 🪺</h2>
-      <p class="screen-sub">Mittwoch, 13. August · Familie Beispiel</p>
+    <main>
+      <!-- ============ HEUTE ============ -->
+      <section class="screen active" id="scr-heute">
+        <h2 class="screen-title" id="greeting">Guten Tag! 🪺</h2>
+        <p class="screen-sub">Mittwoch, 13. August 2026 · Familie Beispiel</p>
 
-      <div class="legend">
-        <span class="chip"><i class="dot" style="background:var(--m-du)"></i>Du</span>
-        <span class="chip"><i class="dot" style="background:var(--m-anna)"></i>Anna</span>
-        <span class="chip"><i class="dot" style="background:var(--m-emma)"></i>Emma (9)</span>
-        <span class="chip"><i class="dot" style="background:var(--m-ben)"></i>Ben (6)</span>
-      </div>
+        <div class="kpis" id="kpis"></div>
 
-      <div id="invitewrap" style="display:none">
-        <p class="label">📩 Anfragen an dich</p>
-        <div class="card" id="invites"></div>
-      </div>
+        <div id="invitewrap" style="display:none">
+          <p class="label">📩 Anfragen an dich</p>
+          <div class="card" id="invites"></div>
+        </div>
 
-      <p class="label">Heute im Nest · antippen zum Bearbeiten</p>
-      <div class="card" id="todaylist"></div>
+        <div class="conflict" id="conflict-card" style="display:none">
+          <h3>⚠️ Konflikt um 16:30</h3>
+          <p>Ben muss zum Kinderarzt, aber Anna leitet bis 17:30 ihren Kurs. <b>Wer fährt Ben?</b></p>
+          <button class="btn" id="btn-uebernehmen">Ich übernehme</button>
+        </div>
 
-      <div class="conflict" id="conflict-card">
-        <h3>⚠️ Konflikt um 16:30</h3>
-        <p>Ben muss zum Kinderarzt, aber Anna leitet bis 17:30 ihren Kurs. <b>Wer fährt Ben?</b></p>
-        <button class="btn" id="btn-uebernehmen">Ich übernehme</button>
-      </div>
+        <div class="notice" id="bday-notice" style="display:none"></div>
 
-      <p class="label">Schnell erledigt</p>
-      <div class="card">
-        <button class="row" id="qa-notiz">
-          <span style="font-size:20px">🎙️</span>
-          <div class="row-main">
-            <div class="row-title">Schnellnotiz ins Merkzeug</div>
-            <div class="row-meta">Nach dem Gespräch: 30 Sekunden, nichts vergessen</div>
+        <div class="cols two">
+          <div>
+            <p class="label">Heute <span class="lact"><button class="btn ghost sm" id="qa-termin">+ Termin</button></span></p>
+            <div class="card" id="todaylist"></div>
           </div>
-          <span class="chev">›</span>
-        </button>
-        <button class="row" id="qa-termin">
-          <span style="font-size:20px">📅</span>
-          <div class="row-main">
-            <div class="row-title">Termin hinzufügen</div>
-            <div class="row-meta">Mit „Wer bringt / wer holt?“ und Serien-Option</div>
+          <div>
+            <p class="label">Morgen schon im Blick</p>
+            <div class="card" id="tomorrowlist"></div>
           </div>
-          <span class="chev">›</span>
-        </button>
-      </div>
-    </section>
-
-    <!-- ============ KALENDER ============ -->
-    <section class="screen" id="scr-kalender">
-      <div class="title-row">
-        <div>
-          <h2 class="screen-title">Gemeinschaftskalender</h2>
-          <p class="screen-sub">Termine antippen: bearbeiten oder löschen</p>
         </div>
-        <button class="btn" id="btn-new">+ Termin</button>
-      </div>
-      <div class="week" id="week"></div>
-      <div class="card" id="daylist"></div>
-      <div class="legend">
-        <span class="chip"><i class="dot" style="background:var(--m-du)"></i>Du</span>
-        <span class="chip"><i class="dot" style="background:var(--m-anna)"></i>Anna</span>
-        <span class="chip"><i class="dot" style="background:var(--m-emma)"></i>Emma</span>
-        <span class="chip"><i class="dot" style="background:var(--m-ben)"></i>Ben</span>
-        <span class="chip brand">↻ Serie</span>
-        <span class="chip brand">⚽ Vereins-App</span>
-      </div>
-    </section>
+      </section>
 
-    <!-- ============ MERKZEUG ============ -->
-    <section class="screen" id="scr-merkzeug">
-      <h2 class="screen-title">Merkzeug</h2>
-      <p class="screen-sub">Dein privates Gedächtnis – nur du hast den Schlüssel</p>
-
-      <div class="card lockbox" id="lockbox">
-        <div class="lock-ico">🔐</div>
-        <h3>Ende-zu-Ende verschlüsselt</h3>
-        <p>Dieser Bereich wird erst auf deinem Gerät entschlüsselt. Selbst der Server kann ihn nicht lesen.</p>
-        <div class="pwrow">
-          <input type="password" id="pw" placeholder="Gedächtnis-Passwort" aria-label="Gedächtnis-Passwort">
-          <button class="btn" id="btn-unlock">Entsperren</button>
-        </div>
-        <div class="hint">Demo: jedes Passwort funktioniert</div>
-        <div class="decrypting" id="decrypting">Entschlüssle lokal auf deinem Gerät …</div>
-      </div>
-
-      <div id="memory" style="display:none">
-        <input class="search" id="search" placeholder="Suchen: Name, Thema, „kroatien“ …" aria-label="Im Gedächtnis suchen">
-        <div class="card" id="personlist"></div>
-        <p class="hint" style="margin:12px 4px 0">🔒 <button class="btn ghost" id="btn-lock" style="padding:5px 12px;font-size:13px">Wieder sperren</button></p>
-      </div>
-
-      <div id="spick" class="spick" style="display:none"></div>
-    </section>
-
-    <!-- ============ PRAXIS ============ -->
-    <section class="screen" id="scr-praxis">
-      <h2 class="screen-title">Praxis</h2>
-      <p class="screen-sub">Annas Arbeitsbereich · nur für sie sichtbar</p>
-
-      <p class="label">Kurse</p>
-      <div class="card">
-        <div class="kurs-head">
-          <div class="row-title">Rückbildung – Kurs B</div>
-          <div class="row-meta">Mi 16:00–17:30 · Praxisraum · 8 von 10 Plätzen</div>
-          <div class="bar"><i style="width:80%"></i></div>
-        </div>
-        <div id="teilnehmer"></div>
-      </div>
-      <div class="card" style="margin-top:12px">
-        <div class="kurs-head">
-          <div class="row-title">Geburtsvorbereitung – Kurs C</div>
-          <div class="row-meta">Start 2. September · Do 19:00 · 4 von 12 Plätzen</div>
-          <div class="bar"><i style="width:33%"></i></div>
-        </div>
-      </div>
-
-      <p class="label">Fristen-Cockpit</p>
-      <div class="card" id="fristen"></div>
-    </section>
-
-    <!-- ============ SUPERADMIN ============ -->
-    <section class="screen" id="scr-admin">
-      <h2 class="screen-title">Superadmin</h2>
-      <p class="screen-sub">Betreiber-Sicht: verwalten ja – mitlesen nein</p>
-
-      <div class="adminbar">🛡️ Angemeldet als Betreiber (du) · volle Verwaltungsrechte</div>
-
-      <div class="statgrid">
-        <div class="stat"><div class="num">2</div><div class="cap">Familien</div></div>
-        <div class="stat"><div class="num">6</div><div class="cap">Nutzer</div></div>
-        <div class="stat"><div class="num">312<span style="font-size:13px"> MB</span></div><div class="cap">Speicher</div></div>
-      </div>
-
-      <p class="label">Familien (Mandanten)</p>
-      <div class="card">
-        <div class="row">
-          <span style="font-size:20px">🪺</span>
-          <div class="row-main">
-            <div class="row-title">Familie Beispiel</div>
-            <div class="row-meta">4 Mitglieder · aktiv seit 13.08.2026 · Praxis-Modul an</div>
+      <!-- ============ KALENDER ============ -->
+      <section class="screen" id="scr-kalender">
+        <div class="title-row">
+          <div>
+            <h2 class="screen-title">Gemeinschaftskalender</h2>
+            <p class="screen-sub">Termine antippen zum Bearbeiten · August 2026</p>
           </div>
-          <span class="chip ok">aktiv</span>
+          <button class="btn" id="btn-new">+ Termin</button>
         </div>
-        <div class="row">
-          <span style="font-size:20px">🪺</span>
-          <div class="row-main">
-            <div class="row-title">Familie Muster</div>
-            <div class="row-meta">Einladung verschickt · noch nicht angenommen</div>
+        <div class="calbar">
+          <div class="seg" role="tablist">
+            <button id="mode-week" class="active">Woche</button>
+            <button id="mode-month">Monat</button>
           </div>
-          <span class="chip honey">eingeladen</span>
+          <span class="sp" style="flex:1"></span>
+          <div class="legend" id="filterchips" style="margin:0"></div>
         </div>
-      </div>
+        <div class="week" id="week"></div>
+        <div class="month" id="month" style="display:none"></div>
+        <p class="label" id="daylabel">Mittwoch, 13. August</p>
+        <div class="card" id="daylist"></div>
+        <div class="legend">
+          <span class="chip brand">↻ Serie</span>
+          <span class="chip brand">⚽ Vereins-App</span>
+          <span class="chip honey">📩 Anfrage – wartet auf Zusage</span>
+        </div>
+      </section>
 
-      <p class="label">Digitale Gedächtnisse</p>
-      <div class="card">
-        <div class="row" style="align-items:flex-start; flex-direction:column; gap:4px">
-          <div style="display:flex; align-items:center; gap:10px; width:100%">
-            <span class="avatar">D</span>
-            <div class="row-main">
-              <div class="row-title">Dein Merkzeug</div>
-              <div class="row-meta">3 Personen · 6 Notizen · zuletzt synchronisiert heute 14:02</div>
+      <!-- ============ LISTEN ============ -->
+      <section class="screen" id="scr-listen">
+        <h2 class="screen-title">Familienlisten</h2>
+        <p class="screen-sub">Für alle – auch die Kinder. Eintippen, fertig.</p>
+        <div class="cols two">
+          <div>
+            <p class="label">🛒 Einkaufen</p>
+            <div class="card">
+              <div id="einkauf"></div>
+              <div class="quickadd">
+                <input id="add-einkauf" placeholder="Was fehlt? (Enter)" aria-label="Einkauf hinzufügen">
+                <button class="btn sm" data-addlist="einkauf">+</button>
+              </div>
             </div>
-            <span class="chip">🔒 E2E</span>
           </div>
-          <div class="cipher">gcm:v1:pZ8kT3…aFq9Lw2XnR0eYt7VbM4sHj6…c1Du5oI8 (2,1 KB Chiffretext)</div>
-        </div>
-        <div class="row" style="align-items:flex-start; flex-direction:column; gap:4px">
-          <div style="display:flex; align-items:center; gap:10px; width:100%">
-            <span class="avatar">A</span>
-            <div class="row-main">
-              <div class="row-title">Annas Merkzeug</div>
-              <div class="row-meta">11 Personen · 24 Notizen · zuletzt synchronisiert heute 09:47</div>
+          <div>
+            <p class="label">✅ Zu erledigen</p>
+            <div class="card">
+              <div id="todos"></div>
+              <div class="quickadd">
+                <input id="add-todos" placeholder="Was ist zu tun? (Enter)" aria-label="Aufgabe hinzufügen">
+                <button class="btn sm" data-addlist="todos">+</button>
+              </div>
             </div>
-            <span class="chip">🔒 E2E</span>
           </div>
-          <div class="cipher">gcm:v1:Rw2nB7…kLp4Qx9ZvT1mC8dJ3fGh0…yU6sE2aO5 (9,8 KB Chiffretext)</div>
         </div>
-        <button class="row" id="btn-snoop">
-          <span style="font-size:20px">👁️</span>
-          <div class="row-main">
-            <div class="row-title">Als Superadmin öffnen</div>
-            <div class="row-meta">Versuch: ein Gedächtnis ohne Passwort entschlüsseln</div>
+      </section>
+
+      <!-- ============ MERKZEUG ============ -->
+      <section class="screen" id="scr-merkzeug">
+        <div class="title-row">
+          <div>
+            <h2 class="screen-title">Merkzeug</h2>
+            <p class="screen-sub" id="mz-sub">Dein privates Gedächtnis – nur du hast den Schlüssel</p>
           </div>
-          <span class="chev">›</span>
-        </button>
-      </div>
-
-      <div class="denied" id="denied">
-        <h3>⛔ Zugriff nicht möglich</h3>
-        <p>Der Server besitzt <b>keinen Schlüssel</b>. Die Gedächtnisse sind Ende-zu-Ende-verschlüsselt – entschlüsseln kann sie nur die jeweilige Person mit ihrem Passwort, auf ihrem eigenen Gerät. Auch der Superadmin sieht nur Chiffretext. Genau so ist es gebaut.</p>
-      </div>
-
-      <p class="label">Was der Superadmin kann</p>
-      <div class="card">
-        <div class="fact"><b>✓ Ja</b><span>Familien anlegen, Mitglieder einladen/sperren, Module an- und abschalten, Speicher &amp; Backups verwalten</span></div>
-        <div class="fact"><b>✗ Nein</b><span>Inhalte der digitalen Gedächtnisse lesen – technisch unmöglich, nicht nur verboten</span></div>
-      </div>
-    </section>
-
-    <footer class="note">Nestwerk-Demo · alle Namen und Daten sind ausgedacht · nichts wird gespeichert</footer>
-  </main>
-
-  <!-- ============ ANMELDUNG ============ -->
-  <div class="overlay" id="login-overlay">
-    <div class="sheet" role="dialog" aria-label="Anmeldung">
-      <h3>🪺 Wer bist du?</h3>
-      <p style="margin:0;color:var(--ink-soft);font-size:14px">Jede Person hat ihren eigenen Zugang – und sieht nur, was sie darf.</p>
-      <div class="profiles">
-        <button class="profile" data-u="du"><span class="pav" style="background:var(--m-du)">D</span><b>Du</b><span class="role">Familien-Admin</span></button>
-        <button class="profile" data-u="anna"><span class="pav" style="background:var(--m-anna)">A</span><b>Anna</b><span class="role">Erwachsene · Praxis</span></button>
-        <button class="profile" data-u="emma"><span class="pav" style="background:var(--m-emma)">E</span><b>Emma</b><span class="role">Kind · 9 Jahre</span></button>
-        <button class="profile" data-u="ben"><span class="pav" style="background:var(--m-ben)">B</span><b>Ben</b><span class="role">Kind · 6 Jahre</span></button>
-      </div>
-      <p class="hint">Demo: Antippen genügt. In der echten App: eigenes Passwort, für Kinder eine einfache PIN.</p>
-    </div>
-  </div>
-
-  <!-- ============ RECHTE ============ -->
-  <div class="overlay" id="set-overlay" hidden>
-    <div class="sheet" role="dialog" aria-label="Rechte">
-      <h3>⚙️ Rechte<button class="x" id="set-close" aria-label="Schließen">✕</button></h3>
-      <p style="margin:0 0 12px;color:var(--ink-soft);font-size:14px">Wer darf Termine für andere <b>direkt zusagen</b> (wenn der Platz frei ist)? Alle anderen senden eine <b>Anfrage</b>, die erst bestätigt werden muss – wie bei Outlook.</p>
-      <div class="card" id="permlist"></div>
-      <p class="hint">Nur der Familien-Admin sieht diese Einstellung.</p>
-    </div>
-  </div>
-
-  <!-- ============ TERMIN-SHEET ============ -->
-  <div class="overlay" id="ev-overlay" hidden>
-    <div class="sheet" role="dialog" aria-label="Termin bearbeiten">
-      <h3><span id="ev-title">Termin</span><button class="x" id="ev-close" aria-label="Schließen">✕</button></h3>
-      <div class="field">
-        <label for="f-title">Titel</label>
-        <input id="f-title" placeholder="z. B. Fußballtraining">
-      </div>
-      <div class="grid2">
-        <div class="field">
-          <label for="f-who">Person</label>
-          <select id="f-who">
-            <option value="du">Du</option>
-            <option value="anna">Anna</option>
-            <option value="emma">Emma</option>
-            <option value="ben">Ben</option>
-          </select>
+          <button class="btn ghost sm" id="btn-export" style="display:none">⬇ Vollbackup (ZIP)</button>
         </div>
-        <div class="field">
-          <label for="f-day">Tag</label>
-          <select id="f-day">
-            <option value="11">Mo 11.08.</option>
-            <option value="12">Di 12.08.</option>
-            <option value="13">Mi 13.08.</option>
-            <option value="14">Do 14.08.</option>
-            <option value="15">Fr 15.08.</option>
-            <option value="16">Sa 16.08.</option>
-            <option value="17">So 17.08.</option>
-          </select>
+
+        <div class="card lockbox" id="lockbox">
+          <div class="lock-ico">🔐</div>
+          <h3>Ende-zu-Ende verschlüsselt</h3>
+          <p>Dieser Bereich wird erst auf deinem Gerät entschlüsselt. Selbst der Server – und der Superadmin – können ihn nicht lesen.</p>
+          <div class="pwrow">
+            <input type="password" id="pw" placeholder="Gedächtnis-Passwort" aria-label="Gedächtnis-Passwort">
+            <button class="btn" id="btn-unlock">Entsperren</button>
+          </div>
+          <div class="hint">Demo: jedes Passwort funktioniert</div>
+          <div class="decrypting" id="decrypting">Entschlüssle lokal auf deinem Gerät …</div>
         </div>
-      </div>
-      <div class="grid2">
-        <div class="field">
-          <label for="f-time">Uhrzeit</label>
-          <input id="f-time" type="time" value="15:00">
+
+        <div id="memory" style="display:none">
+          <input class="search" id="search" placeholder="Alles durchsuchen: „kroatien“, „router“, „impfpass“ …" aria-label="Im Gedächtnis suchen">
+          <div class="subtabs" id="mz-tabs">
+            <button data-mz="personen" class="active">👥 Personen</button>
+            <button data-mz="ablaeufe">📋 Abläufe</button>
+            <button data-mz="dokumente">📄 Dokumente</button>
+          </div>
+          <div id="mz-personen"><div class="card" id="personlist"></div></div>
+          <div id="mz-ablaeufe" style="display:none"></div>
+          <div id="mz-dokumente" style="display:none">
+            <div class="card" id="doclist"></div>
+            <p class="hint">Demo: Der Upload-Knopf legt ein Beispieldokument an. In der echten App: Foto/PDF wählen, Schlagworte tippen, fertig – verschlüsselt vor dem Upload.</p>
+          </div>
+          <p class="hint" style="margin-top:12px">🔒 <button class="btn ghost sm" id="btn-lock">Wieder sperren</button></p>
         </div>
-        <div class="field">
-          <label for="f-meta">Bringt / holt</label>
-          <input id="f-meta" placeholder="z. B. Bringt: Du · Holt: Anna">
+
+        <div id="spick" style="display:none"></div>
+      </section>
+
+      <!-- ============ PRAXIS ============ -->
+      <section class="screen" id="scr-praxis">
+        <h2 class="screen-title">Praxis</h2>
+        <p class="screen-sub">Annas Arbeitsbereich · für den Rest der Familie unsichtbar</p>
+
+        <div class="kpis" id="praxis-kpis"></div>
+
+        <p class="label">Kurse</p>
+        <div class="card">
+          <div class="kurs-head">
+            <div class="row-title">Rückbildung – Kurs B</div>
+            <div class="row-meta">Mi 16:00–17:30 · Praxisraum · 8 von 10 Plätzen · Anwesenheit &amp; Zahlung antippen</div>
+            <div class="bar"><i style="width:80%"></i></div>
+          </div>
+          <div id="teilnehmer"></div>
         </div>
-      </div>
-      <div class="field check">
-        <input type="checkbox" id="f-serie">
-        <label for="f-serie">↻ Serientermin – wiederholt sich jede Woche</label>
-      </div>
-      <div class="actions">
-        <button class="btn" id="ev-save">Speichern</button>
-        <button class="btn danger" id="ev-delete">Löschen</button>
-      </div>
-    </div>
+        <div class="card" style="margin-top:12px">
+          <div class="kurs-head">
+            <div class="row-title">Geburtsvorbereitung – Kurs C</div>
+            <div class="row-meta">Start 2. September · Do 19:00 · 4 von 12 Plätzen · Warteliste: 2</div>
+            <div class="bar"><i style="width:33%"></i></div>
+          </div>
+        </div>
+
+        <div class="cols two">
+          <div>
+            <p class="label">Fristen-Cockpit</p>
+            <div class="card">
+              <div id="fristen"></div>
+              <div class="quickadd">
+                <input id="add-frist" placeholder="Neue Frist, z. B. „QM-Bericht in 30 Tagen“" aria-label="Frist hinzufügen">
+                <button class="btn sm" id="btn-addfrist">+</button>
+              </div>
+            </div>
+          </div>
+          <div>
+            <p class="label">Vorlagen · ein Tipp = fertiges PDF</p>
+            <div class="card" id="vorlagen"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ ADMIN ============ -->
+      <section class="screen" id="scr-admin">
+        <h2 class="screen-title">Superadmin</h2>
+        <p class="screen-sub">Betreiber-Sicht: verwalten ja – mitlesen nein</p>
+        <div class="adminbar">🛡️ Angemeldet als Betreiber (du) · volle Verwaltungsrechte</div>
+
+        <div class="kpis">
+          <div class="kpi"><div class="num">2</div><div class="cap">Familien</div></div>
+          <div class="kpi"><div class="num">6</div><div class="cap">Nutzer</div></div>
+          <div class="kpi"><div class="num">312 MB</div><div class="cap">Speicher</div></div>
+          <div class="kpi"><div class="num">03:00 ✓</div><div class="cap">Letztes Backup</div></div>
+        </div>
+
+        <div class="cols two">
+          <div>
+            <p class="label">Familien (Mandanten)</p>
+            <div class="card">
+              <div class="row">
+                <span style="font-size:20px">🪺</span>
+                <div class="row-main">
+                  <div class="row-title">Familie Beispiel</div>
+                  <div class="row-meta">4 Mitglieder · Praxis-Modul an · Vereins-Sync an</div>
+                </div>
+                <span class="chip ok">aktiv</span>
+              </div>
+              <div class="row">
+                <span style="font-size:20px">🪺</span>
+                <div class="row-main">
+                  <div class="row-title">Familie Muster</div>
+                  <div class="row-meta">Einladung verschickt · noch nicht angenommen</div>
+                </div>
+                <span class="chip honey">eingeladen</span>
+              </div>
+            </div>
+
+            <p class="label">Sicherung</p>
+            <div class="card">
+              <div class="row">
+                <span style="font-size:20px">🗄️</span>
+                <div class="row-main">
+                  <div class="row-title">Automatisches Backup</div>
+                  <div class="row-meta">täglich 03:00 · 30 Tage aufbewahrt · zuletzt heute ✓</div>
+                </div>
+                <span class="chip ok">aktiv</span>
+              </div>
+              <button class="row" id="btn-adminexport">
+                <span style="font-size:20px">⬇️</span>
+                <div class="row-main">
+                  <div class="row-title">Vollexport erstellen</div>
+                  <div class="row-meta">Alles als ZIP – Gedächtnisse bleiben darin verschlüsselt</div>
+                </div>
+                <span class="chev">›</span>
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <p class="label">Digitale Gedächtnisse</p>
+            <div class="card">
+              <div class="row" style="align-items:flex-start; flex-direction:column; gap:4px">
+                <div style="display:flex; align-items:center; gap:10px; width:100%">
+                  <span class="avatar">D</span>
+                  <div class="row-main">
+                    <div class="row-title">Dein Merkzeug</div>
+                    <div class="row-meta">zuletzt synchronisiert heute 14:02</div>
+                  </div>
+                  <span class="chip">🔒 E2E</span>
+                </div>
+                <div class="cipher">gcm:v1:pZ8kT3…aFq9Lw2XnR0eYt7VbM4sHj6…c1Du5oI8 (2,1 KB Chiffretext)</div>
+              </div>
+              <div class="row" style="align-items:flex-start; flex-direction:column; gap:4px">
+                <div style="display:flex; align-items:center; gap:10px; width:100%">
+                  <span class="avatar">A</span>
+                  <div class="row-main">
+                    <div class="row-title">Annas Merkzeug</div>
+                    <div class="row-meta">zuletzt synchronisiert heute 09:47</div>
+                  </div>
+                  <span class="chip">🔒 E2E</span>
+                </div>
+                <div class="cipher">gcm:v1:Rw2nB7…kLp4Qx9ZvT1mC8dJ3fGh0…yU6sE2aO5 (9,8 KB Chiffretext)</div>
+              </div>
+              <button class="row" id="btn-snoop">
+                <span style="font-size:20px">👁️</span>
+                <div class="row-main">
+                  <div class="row-title">Als Superadmin öffnen</div>
+                  <div class="row-meta">Versuch: ein Gedächtnis ohne Passwort entschlüsseln</div>
+                </div>
+                <span class="chev">›</span>
+              </button>
+            </div>
+            <div class="denied" id="denied">
+              <h3>⛔ Zugriff nicht möglich</h3>
+              <p>Der Server besitzt <b>keinen Schlüssel</b>. Entschlüsseln kann nur die jeweilige Person – mit ihrem Passwort, auf ihrem Gerät. Auch der Superadmin sieht nur Chiffretext. Genau so ist es gebaut.</p>
+            </div>
+
+            <p class="label">Protokoll</p>
+            <div class="card" id="audit"></div>
+          </div>
+        </div>
+      </section>
+
+      <footer class="note">Nestwerk-Demo · alle Namen und Daten sind ausgedacht · nichts wird gespeichert</footer>
+    </main>
+
+    <!-- mobile Tabs -->
+    <nav class="tabs"><div class="inner" id="mobilenav"></div></nav>
   </div>
-
-  <!-- ============ ASSISTENT ============ -->
-  <button class="fab" id="fab" aria-label="Nest-Assistent öffnen">✨</button>
-  <div class="overlay" id="ai-overlay" hidden>
-    <div class="sheet" role="dialog" aria-label="Nest-Assistent">
-      <h3>✨ Nest-Assistent<button class="x" id="ai-close" aria-label="Schließen">✕</button></h3>
-      <div id="ai-feed"></div>
-      <div class="airow">
-        <input id="ai-input" placeholder="Frag mich etwas … (Demo)" aria-label="Nachricht an den Assistenten">
-        <button class="btn" id="ai-send">Senden</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="toast" id="toast" role="status"></div>
-
-  <nav class="tabs">
-    <div class="inner">
-      <button class="tab active" data-scr="heute"><span class="ico">🪺</span>Heute</button>
-      <button class="tab" data-scr="kalender"><span class="ico">📅</span>Kalender</button>
-      <button class="tab" data-scr="merkzeug"><span class="ico">🔐</span>Merkzeug</button>
-      <button class="tab" data-scr="praxis"><span class="ico">🩺</span>Praxis</button>
-      <button class="tab" data-scr="admin"><span class="ico">🛡️</span>Admin</button>
-    </div>
-  </nav>
 </div>
+
+<!-- ============ ANMELDUNG ============ -->
+<div class="overlay" id="login-overlay">
+  <div class="sheet" role="dialog" aria-label="Anmeldung">
+    <h3 class="serif">🪺 Wer bist du?</h3>
+    <p style="margin:0;color:var(--ink-soft);font-size:14px">Jede Person hat ihren eigenen Zugang – und sieht nur, was sie darf.</p>
+    <div class="profiles">
+      <button class="profile" data-u="du"><span class="pav" style="background:var(--m-du)">D</span><b>Du</b><span class="role">Familien-Admin</span></button>
+      <button class="profile" data-u="anna"><span class="pav" style="background:var(--m-anna)">A</span><b>Anna</b><span class="role">Erwachsene · Praxis</span></button>
+      <button class="profile" data-u="emma"><span class="pav" style="background:var(--m-emma)">E</span><b>Emma</b><span class="role">Kind · 9 Jahre</span></button>
+      <button class="profile" data-u="ben"><span class="pav" style="background:var(--m-ben)">B</span><b>Ben</b><span class="role">Kind · 6 Jahre</span></button>
+    </div>
+    <p class="hint">Demo: Antippen genügt. In der echten App: eigenes Passwort, für Kinder eine einfache PIN.</p>
+  </div>
+</div>
+
+<!-- ============ RECHTE ============ -->
+<div class="overlay" id="set-overlay" hidden>
+  <div class="sheet" role="dialog" aria-label="Rechte">
+    <h3>⚙️ Rechte<button class="x" id="set-close" aria-label="Schließen">✕</button></h3>
+    <p style="margin:0 0 12px;color:var(--ink-soft);font-size:14px">Wer darf Termine für andere <b>direkt zusagen</b> (wenn der Platz frei ist)? Alle anderen senden eine <b>Anfrage</b>, die erst bestätigt werden muss – wie bei Outlook.</p>
+    <div class="card" id="permlist"></div>
+    <p class="hint">Nur der Familien-Admin sieht diese Einstellung.</p>
+  </div>
+</div>
+
+<!-- ============ BENACHRICHTIGUNGEN ============ -->
+<div class="overlay" id="notif-overlay" hidden>
+  <div class="sheet" role="dialog" aria-label="Benachrichtigungen">
+    <h3>🔔 Benachrichtigungen<button class="x" id="notif-close" aria-label="Schließen">✕</button></h3>
+    <div class="card" id="notiflist"></div>
+    <p class="hint">In der echten App kommen diese als Push-Nachricht aufs Handy.</p>
+  </div>
+</div>
+
+<!-- ============ TERMIN-SHEET ============ -->
+<div class="overlay" id="ev-overlay" hidden>
+  <div class="sheet" role="dialog" aria-label="Termin bearbeiten">
+    <h3><span id="ev-title">Termin</span><button class="x" id="ev-close" aria-label="Schließen">✕</button></h3>
+    <div class="field">
+      <label for="f-title">Titel</label>
+      <input id="f-title" placeholder="z. B. Fußballtraining">
+    </div>
+    <div class="grid2">
+      <div class="field">
+        <label for="f-who">Für wen?</label>
+        <select id="f-who">
+          <option value="du">Du</option>
+          <option value="anna">Anna</option>
+          <option value="emma">Emma</option>
+          <option value="ben">Ben</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="f-day">Tag (August)</label>
+        <select id="f-day"></select>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="field">
+        <label for="f-time">Uhrzeit</label>
+        <input id="f-time" type="time" value="15:00">
+      </div>
+      <div class="field">
+        <label for="f-meta">Bringt / holt (optional)</label>
+        <input id="f-meta" placeholder="z. B. Bringt: Du · Holt: Anna">
+      </div>
+    </div>
+    <div class="field checkline">
+      <input type="checkbox" id="f-serie">
+      <label for="f-serie">↻ Serientermin – wiederholt sich jede Woche</label>
+    </div>
+    <div class="actions">
+      <button class="btn" id="ev-save">Speichern</button>
+      <button class="btn danger" id="ev-delete">Löschen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ASSISTENT ============ -->
+<button class="fab" id="fab" aria-label="Nest-Assistent öffnen">✨</button>
+<div class="overlay" id="ai-overlay" hidden>
+  <div class="sheet" role="dialog" aria-label="Nest-Assistent">
+    <h3>✨ Nest-Assistent<button class="x" id="ai-close" aria-label="Schließen">✕</button></h3>
+    <div id="ai-feed"></div>
+    <div class="chiprow" id="ai-chips"></div>
+    <div class="airow">
+      <input id="ai-input" placeholder="Frag mich etwas … (Demo)" aria-label="Nachricht an den Assistenten">
+      <button class="btn" id="ai-send">Senden</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
 
 <script>
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => document.querySelectorAll(s);
 
-  /* ---------- Toast ---------- */
   let toastTimer;
   function toast(msg) {
     const t = $("#toast");
     t.textContent = msg;
     t.classList.add("show");
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => t.classList.remove("show"), 2800);
+    toastTimer = setTimeout(() => t.classList.remove("show"), 2900);
   }
 
-  /* ---------- Tabs ---------- */
-  function show(scr) {
-    $$(".screen").forEach((s) => s.classList.remove("active"));
-    $("#scr-" + scr).classList.add("active");
-    $$(".tab").forEach((t) => t.classList.toggle("active", t.dataset.scr === scr));
-    window.scrollTo({ top: 0 });
-  }
-  $$(".tab").forEach((t) => t.addEventListener("click", () => show(t.dataset.scr)));
-
-  /* ---------- Nutzer, Anmeldung & Rechte ---------- */
+  /* ================= Stammdaten ================= */
+  const TODAY = 13; // Mi, 13. August 2026
   const users = {
-    du:   { name: "Du",   ini: "D", role: "admin", color: "var(--m-du)" },
-    anna: { name: "Anna", ini: "A", role: "adult", color: "var(--m-anna)" },
-    emma: { name: "Emma", ini: "E", role: "kid",   color: "var(--m-emma)" },
-    ben:  { name: "Ben",  ini: "B", role: "kid",   color: "var(--m-ben)" },
+    du:   { name: "Du",   ini: "D", role: "admin", rolename: "Familien-Admin", color: "var(--m-du)" },
+    anna: { name: "Anna", ini: "A", role: "adult", rolename: "Erwachsene · Praxis", color: "var(--m-anna)" },
+    emma: { name: "Emma", ini: "E", role: "kid",   rolename: "Kind · 9 Jahre", color: "var(--m-emma)" },
+    ben:  { name: "Ben",  ini: "B", role: "kid",   rolename: "Kind · 6 Jahre", color: "var(--m-ben)" },
   };
   const perms = { du: true, anna: true, emma: false, ben: false };
   let currentUser = null;
   let conflictResolved = false;
 
-  function applyUser() {
-    const u = users[currentUser];
-    $("#uc-av").textContent = u.ini;
-    $("#uc-av").style.background = u.color;
-    $("#uc-name").textContent = u.name;
-    const vis = {
-      heute: true,
-      kalender: true,
-      merkzeug: u.role !== "kid",
-      praxis: currentUser === "anna",
-      admin: currentUser === "du",
-    };
-    $$(".tab").forEach((t) => { t.style.display = vis[t.dataset.scr] ? "" : "none"; });
-    $("#btn-settings").style.display = currentUser === "du" ? "" : "none";
-    $("#fab").style.display = u.role === "kid" ? "none" : "";
-    $("#conflict-card").style.display = (u.role === "kid" || conflictResolved) ? "none" : "";
-    $("#scr-merkzeug .screen-sub").textContent =
-      (currentUser === "du" ? "Dein" : u.name + "s") + " privates Gedächtnis – nur du hast den Schlüssel";
-    lockMemory();
-    show("heute");
-    renderCal();
+  const wdNames = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+  const wdLong = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
+  const wd = (d) => (d + 4) % 7; // 1. Aug 2026 = Samstag
+
+  let seq = 100;
+  let events = [
+    { id: 1,  d: 11, t: "07:45", who: "du",   title: "Frühschicht", meta: "bis 16:00" },
+    { id: 2,  d: 12, t: "17:00", who: "emma", title: "Schwimmkurs", meta: "Bringt &amp; holt: Anna", serie: true },
+    { id: 3,  d: 13, t: "15:00", who: "emma", title: "Fußballtraining Emma", meta: "Bringt: Du · Holt: Anna", chip: ["ok", "geregelt"] },
+    { id: 4,  d: 13, t: "16:00", who: "anna", title: "Rückbildungskurs B leiten", meta: "Praxis · bis 17:30", serie: true, chip: ["honey", "Praxis"] },
+    { id: 5,  d: 13, t: "16:30", who: "ben",  title: "Kinderarzt Dr. Weber (Ben)", meta: "Bringt: noch offen", chip: ["warn", "offen"] },
+    { id: 6,  d: 14, t: "09:30", who: "ben",  title: "Zahnarzt", meta: "Bringt: Anna" },
+    { id: 7,  d: 14, t: "19:00", who: "anna", title: "Geburtsvorbereitung C", meta: "Praxis", serie: true },
+    { id: 8,  d: 15, t: "18:00", who: "du",   title: "Vereinssitzung", meta: "Sportheim" },
+    { id: 9,  d: 16, t: "10:00", who: "emma", title: "Fußballturnier", meta: "Bringt: Du · Familie schaut zu" },
+    { id: 10, d: 16, t: "14:00", who: "ben",  title: "Kindergeburtstag Luis", meta: "Holt: Anna um 17:00" },
+    { id: 11, d: 17, t: "12:30", who: "du",   title: "Mittagessen bei Oma", meta: "alle vier" },
+    { id: 12, d: 16, t: "15:00", who: "anna", by: "emma", title: "Schulfest-Aufführung", meta: "Emma: Kommst du zuschauen?", status: "pending" },
+    { id: 13, d: 17, t: "10:00", who: "du",   by: "anna", title: "Reifen wechseln", meta: "Anna: Passt Sonntagvormittag?", status: "pending" },
+    { id: 14, d: 19, t: "17:00", who: "emma", title: "Schwimmkurs", meta: "Bringt &amp; holt: Anna", serie: true },
+    { id: 15, d: 20, t: "16:00", who: "anna", title: "Rückbildungskurs B leiten", meta: "Praxis", serie: true },
+    { id: 16, d: 21, t: "19:00", who: "anna", title: "Geburtsvorbereitung C", meta: "Praxis", serie: true },
+    { id: 17, d: 22, t: "11:00", who: "du",   title: "Wertstoffhof", meta: "Anhänger von Jürgen leihen" },
+    { id: 18, d: 23, t: "15:00", who: "ben",  title: "Spielplatz mit Oma", meta: "Oma holt Ben ab" },
+    { id: 19, d: 25, t: "08:00", who: "emma", title: "Kieferorthopäde", meta: "Bringt: Du · vor der Schule" },
+    { id: 20, d: 26, t: "17:00", who: "emma", title: "Schwimmkurs", meta: "Bringt &amp; holt: Anna", serie: true },
+    { id: 21, d: 27, t: "16:00", who: "anna", title: "Rückbildungskurs B leiten", meta: "Praxis", serie: true },
+    { id: 22, d: 28, t: "19:00", who: "anna", title: "Geburtsvorbereitung C", meta: "Praxis", serie: true },
+    { id: 23, d: 29, t: "10:00", who: "du",   title: "Auto zum TÜV", meta: "Werkstatt Brenner" },
+    { id: 24, d: 31, t: "18:30", who: "emma", title: "Elternabend Klasse 4a", meta: "Geht hin: Du" },
+  ];
+
+  const persons = [
+    {
+      id: "juergen", name: "Jürgen", ctx: "Nachbar · seit 2019", ini: "J", geb: "16.08.",
+      familie: "Frau Petra, Sohn Timo (studiert in Köln), Hund „Balu“",
+      themen: "Gartenbau, 1. FC, Wohnmobil",
+      faden: "Plant im September eine Wohnmobiltour nach Südtirol",
+      fragen: ["Wie laufen die Vorbereitungen für Südtirol?", "Was macht Timo im Studium?", "Ist der neue Rasen angewachsen?"],
+      notizen: ["02.08. – Hat uns die Leiter geliehen, zurückgeben!", "20.07. – Balu war beim Tierarzt, alles gut"],
+    },
+    {
+      id: "sandra", name: "Sandra", ctx: "Vereinskollegin · Kassenwartin", ini: "S", geb: "03.11.",
+      familie: "Mann Alex, Tochter Mia (macht 2027 Abi)",
+      themen: "Laufen (Halbmarathon!), Backen, Kroatien-Fan",
+      faden: "War im Juli in Kroatien – Insel Krk, will nächstes Jahr wieder hin",
+      fragen: ["Wie war Krk – lohnt sich das für uns?", "Wann ist der nächste Lauf?", "Wie läuft Mias Abi-Vorbereitung?"],
+      notizen: ["28.07. – Empfiehlt Konoba am Hafen von Krk", "15.06. – Halbmarathon in 1:58 gelaufen 🎉"],
+    },
+    {
+      id: "kaya", name: "Herr Kaya", ctx: "Bens Fußballtrainer", ini: "K", geb: "",
+      familie: "Zwei Töchter, beide spielen auch",
+      themen: "Jugendfußball, Grillen, hat früher in der Oberliga gespielt",
+      faden: "Sucht noch Eltern-Helfer fürs Sommerturnier am 16.08.",
+      fragen: ["Braucht ihr am Samstag noch Hilfe beim Turnier?", "Wie macht sich Ben im Training?"],
+      notizen: ["06.08. – Ben soll Schienbeinschoner Größe M bekommen"],
+    },
+    {
+      id: "lisa", name: "Lisa", ctx: "Schulmama · Klasse 4a", ini: "L", geb: "",
+      familie: "Tochter Marie (Emmas beste Freundin), Mann Tom",
+      themen: "Organisiert den Elternstammtisch, näht, Flohmarkt-Profi",
+      faden: "Sammelt noch Geld für die Klassenfahrt im Oktober ein",
+      fragen: ["Bis wann soll das Klassenfahrt-Geld überwiesen sein?", "Kommt Marie am Freitag zum Spielen?"],
+      notizen: ["11.08. – Klassenfahrt: 85 € bis Ende August überweisen"],
+    },
+    {
+      id: "markus", name: "Markus", ctx: "Arbeitskollege · Schicht", ini: "M", geb: "22.08.",
+      familie: "Frau Julia, Zwillinge (3)",
+      themen: "Angeln, Grillen, BVB",
+      faden: "Renoviert gerade das Badezimmer – dauert länger als geplant",
+      fragen: ["Und, Bad schon fertig? 😄", "Wann fahren wir mal wieder angeln?"],
+      notizen: ["05.08. – Kann mir die Fliesenschneider leihen"],
+    },
+  ];
+
+  let ablaeufe = [
+    { id: "router", title: "Router neu starten & einrichten", steps: [
+      { text: "Strom 10 Sekunden trennen", done: true },
+      { text: "2 Minuten warten bis alle LEDs grün", done: true },
+      { text: "Zugangsdaten stehen hinten auf dem Router", done: false },
+      { text: "WLAN-Passwort steht im Dokument „Router“", done: false },
+    ]},
+    { id: "beamer", title: "Vereinsheim: Beamer & Musik", steps: [
+      { text: "Schlüssel für den Technikschrank: Haken 3", done: false },
+      { text: "Beamer: HDMI 2 wählen", done: false },
+      { text: "Mischpult: nur Regler 1 und Master anfassen", done: false },
+      { text: "Nach Ende: alles auf Stellung „0“, abschließen", done: false },
+    ]},
+    { id: "steuer", title: "Steuerunterlagen zusammenstellen", steps: [
+      { text: "Lohnsteuerbescheinigungen (beide)", done: true },
+      { text: "Spendenquittungen aus Ordner „Verein“", done: false },
+      { text: "Handwerkerrechnungen (Bad!)", done: false },
+      { text: "Annas Einnahmenliste aus der Praxis exportieren", done: false },
+    ]},
+  ];
+
+  let docs = [
+    { icon: "🩹", name: "Impfpass Ben.pdf", meta: "Gesundheit · Ben · verknüpft: Kinderarzt Dr. Weber" },
+    { icon: "⚽", name: "Mitgliedsantrag Verein Emma.pdf", meta: "Verein · Emma" },
+    { icon: "🏖️", name: "Ferienhaus Krk – Buchung.pdf", meta: "Urlaub 2027 · Tipp von Sandra" },
+    { icon: "📶", name: "Router – Zugangsdaten.pdf", meta: "Zuhause · verknüpft: Ablauf „Router“" },
+    { icon: "🎓", name: "Zeugnis Emma – 3. Klasse.pdf", meta: "Schule · Emma" },
+  ];
+
+  let listen = {
+    einkauf: [
+      { text: "Milch", by: "anna", done: false },
+      { text: "Äpfel", by: "ben", done: false },
+      { text: "Spülmaschinentabs", by: "du", done: true },
+      { text: "Geschenk für Luis (Sa!)", by: "anna", done: false },
+    ],
+    todos: [
+      { text: "Leiter an Jürgen zurückgeben", by: "du", done: false },
+      { text: "Sportbeutel waschen", by: "emma", done: false },
+      { text: "Klassenfahrt 85 € überweisen", by: "du", done: false },
+    ],
+  };
+
+  const teilnehmer = [
+    { name: "Lena M.", paid: true,  here: true },
+    { name: "Ayşe K.", paid: true,  here: true },
+    { name: "Franzi B.", paid: false, here: false },
+    { name: "Julia S.", paid: true,  here: true },
+    { name: "Miriam W.", paid: true,  here: false },
+    { name: "Nadine H.", paid: false, here: true },
+    { name: "Carla P.", paid: true,  here: true },
+    { name: "Steffi R.", paid: true,  here: true },
+  ];
+  const KURSPREIS = 90;
+
+  let fristen = [
+    { text: "Berufshaftpflicht verlängern", days: 6 },
+    { text: "GKV-Abrechnung Q3 einreichen", days: 18 },
+    { text: "Steuervorauszahlung", days: 34 },
+    { text: "QM-Fortbildung nachweisen", days: 60 },
+  ];
+
+  let audit = [
+    { t: "14:02", text: "Dein Merkzeug synchronisiert (verschlüsselt)" },
+    { t: "11:35", text: "Anna hat Kurs C angelegt" },
+    { t: "09:47", text: "Annas Merkzeug synchronisiert (verschlüsselt)" },
+    { t: "03:00", text: "Automatisches Backup erfolgreich" },
+    { t: "Di",   text: "Familie Muster eingeladen" },
+  ];
+
+  let notifications = [
+    { user: "du",   text: "Anna fragt an: Reifen wechseln, So 10:00", time: "08:12", read: false },
+    { user: "du",   text: "Vereins-App: Turnier am Sa – Treffpunkt 09:15", time: "Di", read: true },
+    { user: "anna", text: "Emma fragt an: Schulfest-Aufführung, Sa 15:00", time: "07:55", read: false },
+    { user: "anna", text: "Kurs B: Franzi B. hat noch nicht bezahlt", time: "Mo", read: true },
+    { user: "emma", text: "Papa hat dein Training eingetragen", time: "Mo", read: false },
+    { user: "ben",  text: "Sa ist Kindergeburtstag bei Luis 🎉", time: "Mo", read: false },
+  ];
+  function notify(user, text) { notifications.unshift({ user, text, time: "jetzt", read: false }); renderBell(); }
+
+  /* ================= Navigation ================= */
+  const NAV = [
+    { id: "heute",    ico: "🪺", label: "Heute" },
+    { id: "kalender", ico: "📅", label: "Kalender" },
+    { id: "listen",   ico: "🛒", label: "Listen" },
+    { id: "merkzeug", ico: "🔐", label: "Merkzeug" },
+    { id: "praxis",   ico: "🩺", label: "Praxis" },
+    { id: "admin",    ico: "🛡️", label: "Admin" },
+  ];
+  function navVisible(id) {
+    if (!currentUser) return false;
+    const role = users[currentUser].role;
+    if (id === "merkzeug") return role !== "kid";
+    if (id === "praxis") return currentUser === "anna";
+    if (id === "admin") return currentUser === "du";
+    return true;
+  }
+  function renderNav(active) {
+    const inviteCnt = currentUser ? events.filter((e) => e.status === "pending" && e.who === currentUser).length : 0;
+    const html = NAV.filter((n) => navVisible(n.id)).map((n) => {
+      const cnt = n.id === "heute" && inviteCnt ? `<span class="cnt">${inviteCnt}</span>` : "";
+      return { side: `<button class="navbtn ${n.id === active ? "active" : ""}" data-nav="${n.id}"><span class="ico">${n.ico}</span>${n.label}${cnt}</button>`,
+               mob:  `<button class="tab ${n.id === active ? "active" : ""}" data-nav="${n.id}"><span class="ico">${n.ico}</span>${n.label}</button>` };
+    });
+    $("#sidenav").innerHTML = html.map((h) => h.side).join("");
+    $("#mobilenav").innerHTML = html.map((h) => h.mob).join("");
+    $$("[data-nav]").forEach((b) => b.addEventListener("click", () => show(b.dataset.nav)));
+  }
+  let activeScreen = "heute";
+  function show(scr) {
+    activeScreen = scr;
+    $$(".screen").forEach((s) => s.classList.remove("active"));
+    $("#scr-" + scr).classList.add("active");
+    renderNav(scr);
+    window.scrollTo({ top: 0 });
   }
 
+  /* ================= Anmeldung & Rechte ================= */
+  function applyUser() {
+    const u = users[currentUser];
+    $("#uc-av").textContent = u.ini; $("#uc-av").style.background = u.color;
+    $("#uc-name").textContent = u.name;
+    $("#sc-av").textContent = u.ini; $("#sc-av").style.background = u.color;
+    $("#sc-name").textContent = u.name; $("#sc-role").textContent = u.rolename;
+    $("#btn-settings").style.display = currentUser === "du" ? "" : "none";
+    $("#fab").style.display = u.role === "kid" ? "none" : "";
+    $("#mz-sub").textContent = (currentUser === "du" ? "Dein" : u.name + "s") + " privates Gedächtnis – nur du hast den Schlüssel";
+    $("#greeting").textContent = currentUser === "du" ? "Guten Tag! 🪺" : "Hallo " + u.name + "! 🪺";
+    lockMemory();
+    aiUser = null;
+    renderAll();
+    show("heute");
+  }
   $$("#login-overlay .profile").forEach((b) => b.addEventListener("click", () => {
     currentUser = b.dataset.u;
     $("#login-overlay").hidden = true;
     applyUser();
     toast("Angemeldet als " + users[currentUser].name);
   }));
-  $("#userchip").addEventListener("click", () => { $("#login-overlay").hidden = false; });
+  const openLogin = () => { $("#login-overlay").hidden = false; };
+  $("#userchip").addEventListener("click", openLogin);
+  $("#usercard").addEventListener("click", openLogin);
 
   function renderPerms() {
     $("#permlist").innerHTML = Object.keys(users).map((k) => `
@@ -932,31 +1091,37 @@
   }
   $("#btn-settings").addEventListener("click", () => { renderPerms(); $("#set-overlay").hidden = false; });
   $("#set-close").addEventListener("click", () => { $("#set-overlay").hidden = true; });
-  $("#set-overlay").addEventListener("click", (e) => { if (e.target.id === "set-overlay") $("#set-overlay").hidden = true; });
 
-  /* ---------- Termindaten ---------- */
+  /* ================= Benachrichtigungen ================= */
+  function renderBell() {
+    const mine = currentUser ? notifications.filter((n) => n.user === currentUser) : [];
+    const unread = mine.filter((n) => !n.read).length;
+    $("#bellbadge").style.display = unread ? "" : "none";
+    $("#bellbadge").textContent = unread;
+    $("#notiflist").innerHTML = mine.length
+      ? mine.map((n) => `<div class="notif ${n.read ? "" : "unread"}"><span class="nt">${n.time}</span><span>${n.text}</span></div>`).join("")
+      : `<div class="empty">Keine Benachrichtigungen.</div>`;
+  }
+  $("#btn-bell").addEventListener("click", () => {
+    renderBell();
+    $("#notif-overlay").hidden = false;
+    notifications.forEach((n) => { if (n.user === currentUser) n.read = true; });
+    setTimeout(renderBell, 400);
+  });
+  $("#notif-close").addEventListener("click", () => { $("#notif-overlay").hidden = true; });
+
+  /* ================= Kalender ================= */
   const colors = { du: "var(--m-du)", anna: "var(--m-anna)", emma: "var(--m-emma)", ben: "var(--m-ben)" };
-  const dayNames = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
-  let seq = 100;
-  let events = [
-    { id: 1, d: 11, t: "07:45", who: "du", title: "Frühschicht", meta: "bis 16:00" },
-    { id: 2, d: 12, t: "17:00", who: "emma", title: "Schwimmkurs", meta: "Bringt: Anna · Holt: Anna", serie: true },
-    { id: 3, d: 13, t: "15:00", who: "emma", title: "Fußballtraining Emma", meta: "Bringt: Du · Holt: Anna", chip: ["ok", "geregelt"] },
-    { id: 4, d: 13, t: "16:00", who: "anna", title: "Rückbildungskurs B leiten", meta: "Praxis · bis 17:30", serie: true, chip: ["honey", "Praxis"] },
-    { id: 5, d: 13, t: "16:30", who: "ben", title: "Kinderarzt Dr. Weber (Ben)", meta: "Bringt: noch offen", chip: ["warn", "offen"] },
-    { id: 6, d: 14, t: "09:30", who: "ben", title: "Zahnarzt", meta: "Bringt: Anna" },
-    { id: 7, d: 14, t: "19:00", who: "anna", title: "Geburtsvorbereitung C", meta: "Praxis", serie: true },
-    { id: 8, d: 15, t: "18:00", who: "du", title: "Vereinssitzung", meta: "Sportheim" },
-    { id: 9, d: 16, t: "10:00", who: "emma", title: "Fußballturnier", meta: "Bringt: Du · Familie schaut zu" },
-    { id: 10, d: 16, t: "14:00", who: "ben", title: "Kindergeburtstag Luis", meta: "Holt: Anna um 17:00" },
-    { id: 11, d: 17, t: "12:30", who: "du", title: "Mittagessen bei Oma", meta: "alle vier" },
-    { id: 12, d: 16, t: "15:00", who: "anna", by: "emma", title: "Schulfest-Aufführung", meta: "Emma: Kommst du zuschauen?", status: "pending" },
-    { id: 13, d: 17, t: "10:00", who: "du", by: "anna", title: "Reifen wechseln", meta: "Anna: Passt Sonntagvormittag?", status: "pending" },
-  ];
-  let selDay = 13;
+  let selDay = TODAY;
+  let calMode = "week";
+  let filterWho = null;
 
-  const eventsOn = (d) => events.filter((e) => e.d === d).sort((a, b) => a.t.localeCompare(b.t));
+  const visibleEvents = () => filterWho ? events.filter((e) => e.who === filterWho) : events;
+  const eventsOn = (d) => visibleEvents().filter((e) => e.d === d).sort((a, b) => a.t.localeCompare(b.t));
   const badges = (e) => (e.serie ? " ↻" : "") + (e.src === "verein" ? " ⚽" : "");
+  const mins = (t) => +t.slice(0, 2) * 60 + +t.slice(3, 5);
+  const isFree = (who, d, t, ex) =>
+    !events.some((e) => e.who === who && e.d === d && e.id !== ex && e.status !== "pending" && Math.abs(mins(e.t) - mins(t)) < 60);
 
   function eventRow(e, withChip) {
     const chip = e.status === "pending"
@@ -972,37 +1137,88 @@
       ${chip}<span class="chev">›</span>
     </button>`;
   }
+  function bindEventRows(sel) {
+    $$(sel + " [data-ev]").forEach((b) => b.addEventListener("click", () => openSheet(+b.dataset.ev)));
+  }
 
-  function renderToday() {
-    $("#todaylist").innerHTML = eventsOn(13).map((e) => eventRow(e, true)).join("") ||
-      `<div class="row"><div class="row-main"><div class="row-meta">Heute ist nichts eingetragen.</div></div></div>`;
-    $$("#todaylist [data-ev]").forEach((b) => b.addEventListener("click", () => openSheet(+b.dataset.ev)));
+  function renderFilter() {
+    $("#filterchips").innerHTML = Object.keys(users).map((k) => `
+      <button class="chip ${filterWho && filterWho !== k ? "off" : ""}" data-fw="${k}">
+        <i class="dot" style="background:${colors[k]}"></i>${users[k].name}
+      </button>`).join("");
+    $$("#filterchips [data-fw]").forEach((b) => b.addEventListener("click", () => {
+      filterWho = filterWho === b.dataset.fw ? null : b.dataset.fw;
+      renderCal();
+    }));
   }
 
   function renderWeek() {
-    $("#week").innerHTML = dayNames.map((n, i) => {
+    $("#week").innerHTML = wdNames.map((n, i) => {
       const d = 11 + i;
       const dots = eventsOn(d).slice(0, 4).map((e) => `<i style="background:${colors[e.who]}"></i>`).join("");
-      return `<button class="day ${d === selDay ? "sel" : ""}" data-d="${d}" aria-label="${n} ${d}. August">
+      return `<button class="day ${d === selDay ? "sel" : ""} ${d === TODAY ? "today" : ""}" data-d="${d}">
         <div class="dname">${n}</div><div class="dnum">${d}</div><div class="dots">${dots}</div></button>`;
     }).join("");
-    $$(".day").forEach((b) => b.addEventListener("click", () => { selDay = +b.dataset.d; renderWeek(); renderDay(); }));
+    $$("#week .day").forEach((b) => b.addEventListener("click", () => { selDay = +b.dataset.d; renderCal(); }));
+  }
+
+  function renderMonth() {
+    let cells = wdNames.map((n) => `<div class="mh">${n}</div>`).join("");
+    for (let i = 0; i < wd(1); i++) cells += `<div class="mday pad"></div>`;
+    for (let d = 1; d <= 31; d++) {
+      const dots = eventsOn(d).slice(0, 4).map((e) => `<i style="background:${colors[e.who]}"></i>`).join("");
+      cells += `<button class="mday ${d === selDay ? "sel" : ""} ${d === TODAY ? "today" : ""}" data-d="${d}">
+        <div class="dnum">${d}</div><div class="dots">${dots}</div></button>`;
+    }
+    $("#month").innerHTML = cells;
+    $$("#month .mday:not(.pad)").forEach((b) => b.addEventListener("click", () => { selDay = +b.dataset.d; renderCal(); }));
   }
 
   function renderDay() {
+    $("#daylabel").textContent = wdLong[wd(selDay)] + ", " + selDay + ". August" + (selDay === TODAY ? " · heute" : "");
     const list = eventsOn(selDay);
     $("#daylist").innerHTML = list.length
       ? list.map((e) => eventRow(e, false)).join("")
-      : `<div class="row"><div class="row-main"><div class="row-meta">Keine Termine – freier Tag 🎉</div></div></div>`;
-    $$("#daylist [data-ev]").forEach((b) => b.addEventListener("click", () => openSheet(+b.dataset.ev)));
+      : `<div class="empty">Keine Termine – freier Tag 🎉</div>`;
+    bindEventRows("#daylist");
   }
 
-  function renderInvites() {
-    const inv = currentUser ? events.filter((e) => e.status === "pending" && e.who === currentUser) : [];
-    $("#invitewrap").style.display = inv.length ? "" : "none";
-    $("#invites").innerHTML = inv.map((e) => `
+  $("#mode-week").addEventListener("click", () => { calMode = "week"; renderCal(); });
+  $("#mode-month").addEventListener("click", () => { calMode = "month"; renderCal(); });
+
+  function renderCal() {
+    $("#mode-week").classList.toggle("active", calMode === "week");
+    $("#mode-month").classList.toggle("active", calMode === "month");
+    $("#week").style.display = calMode === "week" ? "" : "none";
+    $("#month").style.display = calMode === "month" ? "" : "none";
+    renderFilter();
+    if (calMode === "week") { if (selDay < 11 || selDay > 17) selDay = TODAY; renderWeek(); } else renderMonth();
+    renderDay();
+    renderHeute();
+    renderNav(activeScreen);
+  }
+
+  /* ================= Heute ================= */
+  function renderHeute() {
+    if (!currentUser) return;
+    const u = users[currentUser];
+    const todayCnt = events.filter((e) => e.d === TODAY && e.status !== "pending").length;
+    const invites = events.filter((e) => e.status === "pending" && e.who === currentUser);
+    const openList = listen.einkauf.filter((i) => !i.done).length + listen.todos.filter((i) => !i.done).length;
+    let kpis = `
+      <div class="kpi accent"><div class="num">${todayCnt}</div><div class="cap">Termine heute</div></div>
+      <div class="kpi ${invites.length ? "alert" : ""}"><div class="num">${invites.length}</div><div class="cap">Anfragen an dich</div></div>
+      <div class="kpi"><div class="num">${openList}</div><div class="cap">Offene Listenpunkte</div></div>`;
+    if (currentUser === "anna") {
+      const f = fristen.reduce((a, b) => (a.days < b.days ? a : b));
+      kpis += `<div class="kpi ${f.days <= 7 ? "alert" : ""}"><div class="num">${f.days} Tage</div><div class="cap">${f.text}</div></div>`;
+    }
+    $("#kpis").innerHTML = kpis;
+
+    $("#invitewrap").style.display = invites.length ? "" : "none";
+    $("#invites").innerHTML = invites.map((e) => `
       <div class="row">
-        <span class="time">${dayNames[e.d - 11]} ${e.t}</span>
+        <span class="time">${wdNames[wd(e.d)]} ${e.t}</span>
         <div class="row-main">
           <div class="row-title">${e.title}</div>
           <div class="row-meta">von ${users[e.by].name} · ${e.meta}</div>
@@ -1015,44 +1231,56 @@
     $$("#invites [data-acc]").forEach((b) => b.addEventListener("click", () => {
       const e = events.find((x) => x.id === +b.dataset.acc);
       e.status = "fix";
+      notify(e.by, users[currentUser].name + " hat zugesagt: " + e.title);
       renderCal();
       toast("Zugesagt ✓ – steht jetzt fest im Familienkalender");
     }));
     $$("#invites [data-dec]").forEach((b) => b.addEventListener("click", () => {
       const e = events.find((x) => x.id === +b.dataset.dec);
       events = events.filter((x) => x.id !== e.id);
+      notify(e.by, users[currentUser].name + " hat abgelehnt: " + e.title);
       renderCal();
       toast("Abgelehnt – " + users[e.by].name + " bekommt Bescheid");
     }));
+
+    $("#conflict-card").style.display = (u.role === "kid" || conflictResolved) ? "none" : "";
+
+    // Geburtstag aus dem eigenen Merkzeug (nur für dich sichtbar – Privatsphäre!)
+    const bday = currentUser === "du" ? persons.find((p) => p.geb === "16.08.") : null;
+    $("#bday-notice").style.display = bday ? "" : "none";
+    if (bday) $("#bday-notice").innerHTML = `<span>🎂</span><span><b>${bday.name}</b> hat am Samstag Geburtstag (steht in deinem Merkzeug – nur du siehst das). Kleiner Glückwunsch am Gartenzaun?</span>`;
+
+    const today = events.filter((e) => e.d === TODAY && e.status !== "pending").sort((a, b) => a.t.localeCompare(b.t));
+    $("#todaylist").innerHTML = today.length ? today.map((e) => eventRow(e, true)).join("") : `<div class="empty">Heute ist nichts eingetragen.</div>`;
+    bindEventRows("#todaylist");
+    const tmrw = events.filter((e) => e.d === TODAY + 1 && e.status !== "pending").sort((a, b) => a.t.localeCompare(b.t));
+    $("#tomorrowlist").innerHTML = tmrw.length ? tmrw.map((e) => eventRow(e, false)).join("") : `<div class="empty">Morgen ist frei 🎉</div>`;
+    bindEventRows("#tomorrowlist");
   }
 
-  function renderCal() { renderToday(); renderWeek(); renderDay(); renderInvites(); }
+  /* ================= Termin-Sheet ================= */
+  $("#f-day").innerHTML = Array.from({ length: 31 }, (_, i) => {
+    const d = i + 1;
+    return `<option value="${d}">${wdNames[wd(d)]} ${d}.08.</option>`;
+  }).join("");
 
-  /* Frei-Prüfung: gilt als belegt, wenn ±1 Stunde schon etwas Festes liegt */
-  const mins = (t) => +t.slice(0, 2) * 60 + +t.slice(3, 5);
-  const isFree = (who, d, t, ex) =>
-    !events.some((e) => e.who === who && e.d === d && e.id !== ex && e.status !== "pending" && Math.abs(mins(e.t) - mins(t)) < 60);
-
-  /* ---------- Termin-Sheet (anlegen / bearbeiten / löschen) ---------- */
   let editing = null;
   function openSheet(id) {
     editing = id;
     const e = id ? events.find((x) => x.id === id) : null;
     $("#ev-title").textContent = e ? "Termin bearbeiten" : "Neuer Termin";
-    $("#f-title").value = e ? e.title : "";
-    $("#f-who").value = e ? e.who : "emma";
+    $("#f-title").value = e ? e.title.replace(/&amp;/g, "&") : "";
+    $("#f-who").value = e ? e.who : (users[currentUser].role === "kid" ? currentUser : "emma");
     $("#f-day").value = e ? e.d : selDay;
     $("#f-time").value = e ? e.t : "15:00";
-    $("#f-meta").value = e ? e.meta : "";
+    $("#f-meta").value = e ? e.meta.replace(/&amp;/g, "&") : "";
     $("#f-serie").checked = e ? !!e.serie : false;
-    $("#ev-delete").style.display =
-      e && (e.who === currentUser || e.by === currentUser || perms[currentUser]) ? "" : "none";
+    $("#ev-delete").style.display = e && (e.who === currentUser || e.by === currentUser || perms[currentUser]) ? "" : "none";
     $("#ev-overlay").hidden = false;
     $("#f-title").focus();
   }
   function closeSheet() { $("#ev-overlay").hidden = true; editing = null; }
   $("#ev-close").addEventListener("click", closeSheet);
-  $("#ev-overlay").addEventListener("click", (e) => { if (e.target.id === "ev-overlay") closeSheet(); });
 
   $("#ev-save").addEventListener("click", () => {
     const title = $("#f-title").value.trim();
@@ -1074,12 +1302,15 @@
         msg = data.serie ? "Serientermin angelegt ↻ – jede Woche" : "Termin angelegt ✓";
       } else if (perms[currentUser] && isFree(data.who, data.d, data.t)) {
         msg = "Direkt zugesagt ✓ – du darfst für " + users[data.who].name + " eintragen";
+        notify(data.who, users[currentUser].name + " hat eingetragen: " + data.title);
       } else if (perms[currentUser]) {
         status = "pending";
         msg = users[data.who].name + " ist da schon belegt – als Anfrage gesendet 📩";
+        notify(data.who, users[currentUser].name + " fragt an: " + data.title);
       } else {
         status = "pending";
         msg = "Anfrage an " + users[data.who].name + " gesendet 📩 – muss erst zusagen";
+        notify(data.who, users[currentUser].name + " fragt an: " + data.title);
       }
       events.push({ id: ++seq, ...data, by: currentUser, status });
       toast(msg);
@@ -1087,37 +1318,279 @@
     closeSheet();
     renderCal();
   });
-
   $("#ev-delete").addEventListener("click", () => {
     events = events.filter((x) => x.id !== editing);
     closeSheet();
     renderCal();
     toast("Termin gelöscht");
   });
-
   $("#btn-new").addEventListener("click", () => openSheet(null));
-  $("#qa-termin").addEventListener("click", () => { show("kalender"); openSheet(null); });
-  $("#qa-notiz").addEventListener("click", () => { show("merkzeug"); });
+  $("#qa-termin").addEventListener("click", () => openSheet(null));
 
-  /* ---------- Konflikt lösen (Heute + Assistent) ---------- */
+  /* ================= Konflikt ================= */
   function resolveConflict(viaAI) {
     const e = events.find((x) => x.id === 5);
-    if (!e || e.chip[1] === "geregelt") return;
+    if (!e || conflictResolved) return;
     e.meta = "Bringt: Du · Anna informiert ✓";
     e.chip = ["ok", "geregelt"];
     conflictResolved = true;
-    $("#conflict-card").style.display = "none";
+    notify("anna", "Konflikt gelöst: Du fährt Ben zum Kinderarzt");
     renderCal();
     toast(viaAI ? "Assistent: eingetragen – du fährst Ben, Anna weiß Bescheid" : "Du fährst Ben – steht im Familienkalender");
   }
   $("#btn-uebernehmen").addEventListener("click", () => resolveConflict(false));
 
-  /* ---------- Nest-Assistent ---------- */
-  const suggestions = [
-    {
-      id: "serie",
+  /* ================= Listen ================= */
+  function renderListen() {
+    ["einkauf", "todos"].forEach((key) => {
+      const el = $("#" + key);
+      el.innerHTML = listen[key].map((item, i) => `
+        <label class="row" style="cursor:pointer">
+          <input type="checkbox" class="check" data-list="${key}" data-i="${i}" ${item.done ? "checked" : ""}>
+          <div class="row-main">
+            <div class="row-title ${item.done ? "done-text" : ""}">${item.text}</div>
+            <div class="row-meta">von ${users[item.by].name}</div>
+          </div>
+        </label>`).join("") || `<div class="empty">Alles erledigt 🎉</div>`;
+    });
+    $$(".check[data-list]").forEach((c) => c.addEventListener("change", () => {
+      listen[c.dataset.list][+c.dataset.i].done = c.checked;
+      renderListen();
+      renderHeute();
+    }));
+  }
+  function addListItem(key) {
+    const inp = $("#add-" + key);
+    const v = inp.value.trim();
+    if (!v) return;
+    listen[key].unshift({ text: v, by: currentUser, done: false });
+    inp.value = "";
+    renderListen();
+    renderHeute();
+    toast("Steht auf der Liste ✓");
+  }
+  $$("[data-addlist]").forEach((b) => b.addEventListener("click", () => addListItem(b.dataset.addlist)));
+  ["einkauf", "todos"].forEach((key) =>
+    $("#add-" + key).addEventListener("keydown", (e) => { if (e.key === "Enter") addListItem(key); }));
+
+  /* ================= Merkzeug ================= */
+  let mzTab = "personen";
+  function lockMemory() {
+    $("#memory").style.display = "none";
+    $("#spick").style.display = "none";
+    $("#lockbox").style.display = "block";
+    $("#decrypting").style.display = "none";
+    $("#btn-export").style.display = "none";
+    $("#pw").value = "";
+    $("#search").value = "";
+  }
+  $("#btn-unlock").addEventListener("click", () => {
+    $("#decrypting").style.display = "block";
+    setTimeout(() => {
+      $("#lockbox").style.display = "none";
+      $("#memory").style.display = "block";
+      $("#btn-export").style.display = "";
+      renderMz();
+      toast("Entsperrt – nur auf diesem Gerät lesbar");
+    }, 900);
+  });
+  $("#pw").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#btn-unlock").click(); });
+  $("#btn-lock").addEventListener("click", () => { lockMemory(); toast("Gesperrt 🔒"); });
+  $("#btn-export").addEventListener("click", () =>
+    toast("Vollbackup wird erstellt … ZIP mit allen Daten &amp; Dokumenten (Demo)".replace(/&amp;/g, "&")));
+
+  $$("#mz-tabs button").forEach((b) => b.addEventListener("click", () => {
+    mzTab = b.dataset.mz;
+    renderMz();
+  }));
+
+  function renderMz() {
+    $$("#mz-tabs button").forEach((b) => b.classList.toggle("active", b.dataset.mz === mzTab));
+    ["personen", "ablaeufe", "dokumente"].forEach((t) => { $("#mz-" + t).style.display = t === mzTab ? "" : "none"; });
+    const q = $("#search").value.trim().toLowerCase();
+    renderPersons(q);
+    renderAblaeufe(q);
+    renderDocs(q);
+  }
+
+  function renderPersons(q) {
+    const hits = persons.filter((p) =>
+      !q || [p.name, p.ctx, p.familie, p.themen, p.faden, p.notizen.join(" ")].join(" ").toLowerCase().includes(q));
+    $("#personlist").innerHTML = hits.length
+      ? hits.map((p) => `<button class="row" data-p="${p.id}">
+          <span class="avatar">${p.ini}</span>
+          <div class="row-main"><div class="row-title">${p.name}${p.geb === "16.08." ? " 🎂" : ""}</div><div class="row-meta">${p.ctx}</div></div>
+          <span class="chev">›</span></button>`).join("")
+      : `<div class="empty">Kein Treffer${q ? " für „" + q + "“" : ""}.</div>`;
+    $$("#personlist [data-p]").forEach((b) => b.addEventListener("click", () => openSpick(b.dataset.p)));
+  }
+
+  function renderAblaeufe(q) {
+    const hits = ablaeufe.filter((a) => !q || (a.title + " " + a.steps.map((s) => s.text).join(" ")).toLowerCase().includes(q));
+    $("#mz-ablaeufe").innerHTML = hits.map((a) => {
+      const done = a.steps.filter((s) => s.done).length;
+      return `<div class="card" style="margin-bottom:12px">
+        <div class="kurs-head">
+          <div class="row-title">📋 ${a.title}</div>
+          <div class="row-meta">${done} von ${a.steps.length} Schritten erledigt</div>
+          <div class="bar"><i style="width:${Math.round(done / a.steps.length * 100)}%"></i></div>
+        </div>
+        ${a.steps.map((s, i) => `
+          <label class="row" style="cursor:pointer">
+            <input type="checkbox" class="check" data-ab="${a.id}" data-i="${i}" ${s.done ? "checked" : ""}>
+            <div class="row-main"><div class="row-title ${s.done ? "done-text" : ""}" style="font-weight:500">${s.text}</div></div>
+          </label>`).join("")}
+      </div>`;
+    }).join("") || `<div class="card"><div class="empty">Kein Ablauf gefunden.</div></div>`;
+    $$(".check[data-ab]").forEach((c) => c.addEventListener("change", () => {
+      const a = ablaeufe.find((x) => x.id === c.dataset.ab);
+      a.steps[+c.dataset.i].done = c.checked;
+      renderMz();
+    }));
+  }
+
+  function renderDocs(q) {
+    const hits = docs.filter((d) => !q || (d.name + " " + d.meta).toLowerCase().includes(q));
+    $("#doclist").innerHTML = (hits.map((d) => `
+      <button class="row" data-doc="${d.name}">
+        <span style="font-size:20px">${d.icon}</span>
+        <div class="row-main"><div class="row-title">${d.name}</div><div class="row-meta">${d.meta} · 🔒 verschlüsselt</div></div>
+        <span class="chev">›</span>
+      </button>`).join("") || `<div class="empty">Kein Dokument gefunden.</div>`) + `
+      <button class="row" id="btn-upload">
+        <span style="font-size:20px">⬆️</span>
+        <div class="row-main"><div class="row-title">Dokument hochladen</div><div class="row-meta">Foto oder PDF – wird vor dem Upload verschlüsselt</div></div>
+        <span class="chev">›</span>
+      </button>`;
+    $$("#doclist [data-doc]").forEach((b) => b.addEventListener("click", () =>
+      toast("Öffne " + b.dataset.doc + " … (Demo)")));
+    $("#btn-upload").addEventListener("click", () => {
+      docs.unshift({ icon: "📄", name: "Neues Dokument.pdf", meta: "gerade hochgeladen · Schlagworte tippen" });
+      renderMz();
+      toast("Hochgeladen &amp; verschlüsselt ✓ (Demo)".replace(/&amp;/g, "&"));
+    });
+  }
+
+  function openSpick(id) {
+    const p = persons.find((x) => x.id === id);
+    $("#memory").style.display = "none";
+    $("#spick").style.display = "block";
+    $("#spick").innerHTML = `
+      <button class="btn ghost" id="btn-back" style="margin:4px 0 10px">‹ Zurück</button>
+      <h3 class="serif" style="font-size:22px;margin:0 2px 2px">${p.name}</h3>
+      <p style="color:var(--ink-soft);margin:0 2px 14px;font-size:14px">${p.ctx}</p>
+      <div class="card">
+        <div class="fact"><b>Familie</b><span>${p.familie}</span></div>
+        <div class="fact"><b>Themen</b><span>${p.themen}</span></div>
+        <div class="fact"><b>Offener Faden</b><span>${p.faden}</span></div>
+        ${p.geb ? `<div class="fact"><b>Geburtstag</b><span>${p.geb} 🎂</span></div>` : ""}
+      </div>
+      <div class="qcard">
+        <h4>💬 Einstiegsfragen</h4>
+        <ul>${p.fragen.map((f) => `<li>${f}</li>`).join("")}</ul>
+      </div>
+      <p class="label">Letzte Notizen</p>
+      <div class="card">${p.notizen.map((n) => `<div class="fact"><span>${n}</span></div>`).join("")}</div>
+      <div class="airow" style="margin-top:12px">
+        <input id="newnote" placeholder="Nach dem Gespräch: kurz festhalten …" aria-label="Neue Notiz">
+        <button class="btn" id="btn-addnote">Merken</button>
+      </div>`;
+    $("#btn-back").addEventListener("click", () => {
+      $("#spick").style.display = "none";
+      $("#memory").style.display = "block";
+    });
+    const save = () => {
+      const v = $("#newnote").value.trim();
+      if (!v) return;
+      p.notizen.unshift("13.08. – " + v);
+      openSpick(id);
+      toast("Gemerkt ✓ (verschlüsselt gespeichert)");
+    };
+    $("#btn-addnote").addEventListener("click", save);
+    $("#newnote").addEventListener("keydown", (e) => { if (e.key === "Enter") save(); });
+  }
+  $("#search").addEventListener("input", renderMz);
+
+  /* ================= Praxis ================= */
+  function renderPraxis() {
+    const paid = teilnehmer.filter((t) => t.paid).length;
+    const open = teilnehmer.length - paid;
+    const f = fristen.reduce((a, b) => (a.days < b.days ? a : b));
+    $("#praxis-kpis").innerHTML = `
+      <div class="kpi accent"><div class="num">2</div><div class="cap">Aktive Kurse</div></div>
+      <div class="kpi"><div class="num">${paid * KURSPREIS} €</div><div class="cap">Bezahlt (Kurs B)</div></div>
+      <div class="kpi ${open ? "alert" : ""}"><div class="num">${open * KURSPREIS} €</div><div class="cap">Noch offen</div></div>
+      <div class="kpi ${f.days <= 7 ? "alert" : ""}"><div class="num">${f.days} Tage</div><div class="cap">${f.text}</div></div>`;
+
+    $("#teilnehmer").innerHTML = teilnehmer.map((t, i) => `
+      <div class="tn">
+        <input type="checkbox" class="check" data-here="${i}" ${t.here ? "checked" : ""} aria-label="Anwesend: ${t.name}">
+        <span class="name">${t.name}</span>
+        <button class="paybtn ${t.paid ? "paid" : "open"}" data-pay="${i}">${t.paid ? "bezahlt" : "offen"}</button>
+      </div>`).join("");
+    $$("[data-pay]").forEach((b) => b.addEventListener("click", () => {
+      teilnehmer[+b.dataset.pay].paid = !teilnehmer[+b.dataset.pay].paid;
+      renderPraxis();
+    }));
+    $$(".check[data-here]").forEach((c) => c.addEventListener("change", () => {
+      teilnehmer[+c.dataset.here].here = c.checked;
+    }));
+
+    $("#fristen").innerHTML = fristen.slice().sort((a, b) => a.days - b.days).map((f2) => `
+      <div class="row">
+        <div class="row-main"><div class="row-title">${f2.text}</div></div>
+        <span class="chip ${f2.days <= 7 ? "warn" : f2.days <= 21 ? "honey" : "ok"}" style="font-variant-numeric:tabular-nums">in ${f2.days} Tagen</span>
+      </div>`).join("");
+
+    $("#vorlagen").innerHTML = [
+      ["📝", "Anmeldebogen Kurs", "Name der Teilnehmerin eintragen – fertig"],
+      ["🧾", "Teilnahmebescheinigung", "für die Krankenkasse"],
+      ["📊", "Einnahmenliste exportieren", "als Zuarbeit für die Steuer"],
+    ].map(([i, t, m]) => `
+      <button class="row" data-vorlage="${t}">
+        <span style="font-size:20px">${i}</span>
+        <div class="row-main"><div class="row-title">${t}</div><div class="row-meta">${m}</div></div>
+        <span class="chev">›</span>
+      </button>`).join("");
+    $$("[data-vorlage]").forEach((b) => b.addEventListener("click", () =>
+      toast(b.dataset.vorlage + ": PDF erstellt ✓ (Demo)")));
+  }
+  function addFrist() {
+    const v = $("#add-frist").value.trim();
+    if (!v) return;
+    const m = v.match(/in\s+(\d+)\s+Tag/i);
+    fristen.push({ text: v.replace(/\s*in\s+\d+\s+Tagen?/i, ""), days: m ? +m[1] : 30 });
+    $("#add-frist").value = "";
+    renderPraxis();
+    toast("Frist gemerkt – Erinnerung kommt rechtzeitig");
+  }
+  $("#btn-addfrist").addEventListener("click", addFrist);
+  $("#add-frist").addEventListener("keydown", (e) => { if (e.key === "Enter") addFrist(); });
+
+  /* ================= Admin ================= */
+  function renderAudit() {
+    $("#audit").innerHTML = audit.slice(0, 6).map((a) => `<div class="log"><span class="lt">${a.t}</span><span>${a.text}</span></div>`).join("");
+  }
+  $("#btn-snoop").addEventListener("click", () => {
+    $("#denied").style.display = "block";
+    $("#denied").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    audit.unshift({ t: "jetzt", text: "Superadmin-Zugriffsversuch auf Gedächtnis: abgelehnt (kein Schlüssel)" });
+    renderAudit();
+    toast("Entschlüsselung fehlgeschlagen: kein Schlüssel auf dem Server");
+  });
+  $("#btn-adminexport").addEventListener("click", () => {
+    audit.unshift({ t: "jetzt", text: "Vollexport erstellt (Gedächtnisse verschlüsselt enthalten)" });
+    renderAudit();
+    toast("Export läuft … ZIP kommt per sicherem Link (Demo)");
+  });
+
+  /* ================= Assistent ================= */
+  let aiUser = null;
+  const suggestions = {
+    serie: {
+      for: ["du", "anna"],
       src: "Muster erkannt",
-      text: "<b>Fußballtraining Emma</b> war jetzt 6 Mittwoche in Folge um 15:00. Soll ich daraus einen <b>Serientermin</b> machen? Ausfälle in den Ferien lasse ich automatisch weg.",
+      text: "<b>Fußballtraining Emma</b> war jetzt 6 Mittwoche in Folge um 15:00. Soll ich daraus einen <b>Serientermin</b> machen? Ferien lasse ich automatisch aus.",
       btn: "↻ Als Serie anlegen",
       run() {
         const e = events.find((x) => x.id === 3);
@@ -1126,66 +1599,102 @@
         toast("Serientermin angelegt – jeden Mittwoch 15:00");
       },
     },
-    {
-      id: "konflikt",
+    konflikt: {
+      for: ["du", "anna"],
       src: "Koordination",
-      text: "Heute 16:30 kollidiert: <b>Ben → Kinderarzt</b>, aber Anna leitet bis 17:30 ihren Kurs. Mein Vorschlag: <b>Du fährst Ben</b> – dein Kalender ist ab 16:00 frei. Ich trage es ein und informiere Anna.",
+      text: "Heute 16:30 kollidiert: <b>Ben → Kinderarzt</b>, aber Anna leitet bis 17:30 ihren Kurs. Vorschlag: <b>Du fährst Ben</b> – dein Kalender ist ab 16:00 frei. Ich trage es ein und informiere Anna.",
       btn: "✓ Übernehmen",
       run() { resolveConflict(true); },
     },
-    {
-      id: "verein",
+    verein: {
+      for: ["du"],
       src: "Vereins-App",
-      text: "Die <b>Vereins-App</b> kennt Trainings- und Spielplan von Bens F-Jugend. Soll ich sie verknüpfen? Änderungen – Ausfall, Verlegung, neues Turnier – übernehme ich dann <b>automatisch</b>. Dafür brauche ich <b>kein Passwort</b>, nur den Team-Code aus der Vereins-App.",
+      text: "Die <b>Vereins-App</b> kennt Trainings- und Spielplan von Bens F-Jugend. Verknüpfen? Änderungen – Ausfall, Verlegung, neues Turnier – übernehme ich <b>automatisch</b>. Dafür brauche ich <b>kein Passwort</b>, nur den Team-Code.",
       btn: "⚽ Team verknüpfen",
       run() {
         events.push(
           { id: ++seq, d: 15, t: "17:00", who: "ben", title: "F-Jugend Training", meta: "Vereins-App · Sportplatz 2", src: "verein", serie: true },
-          { id: ++seq, d: 16, t: "09:15", who: "ben", title: "F-Jugend Treffpunkt Turnier", meta: "Vereins-App · Trikot nicht vergessen", src: "verein" }
+          { id: ++seq, d: 16, t: "09:15", who: "ben", title: "F-Jugend Treffpunkt Turnier", meta: "Vereins-App · Trikot nicht vergessen", src: "verein" },
+          { id: ++seq, d: 22, t: "17:00", who: "ben", title: "F-Jugend Training", meta: "Vereins-App · Sportplatz 2", src: "verein", serie: true },
+          { id: ++seq, d: 29, t: "17:00", who: "ben", title: "F-Jugend Training", meta: "Vereins-App · Sportplatz 2", src: "verein", serie: true }
         );
         renderCal();
-        toast("Verknüpft ⚽ – 2 Termine übernommen, bleibt automatisch aktuell");
-        addAICard({
-          src: "Vereins-App · verknüpft",
-          text: "Erledigt: <b>2 Termine übernommen</b> (Training Fr 17:00 ↻, Turnier-Treffpunkt Sa 09:15). Ich prüfe den Plan ab jetzt laufend – sagt der Trainer ab, verschwindet der Termin bei euch von selbst und ihr bekommt eine Push-Nachricht.",
-        });
+        toast("Verknüpft ⚽ – 4 Termine übernommen, bleibt automatisch aktuell");
+        addAICard({ src: "Vereins-App · verknüpft", text: "Erledigt: <b>4 Termine übernommen</b>. Ich prüfe den Plan laufend – sagt der Trainer ab, verschwindet der Termin von selbst und ihr bekommt eine Push-Nachricht." });
       },
     },
-  ];
+    geburtstag: {
+      for: ["du"],
+      src: "Aus deinem Merkzeug · privat",
+      text: "<b>Jürgen</b> hat am Samstag Geburtstag 🎂 (weiß nur ich – steht in deinem verschlüsselten Merkzeug). Soll ich <b>„Kleinigkeit für Jürgen besorgen“</b> auf die Einkaufsliste setzen?",
+      btn: "🛒 Auf die Liste",
+      run() {
+        listen.einkauf.unshift({ text: "Kleinigkeit für Jürgen (Sa 🎂)", by: currentUser, done: false });
+        renderListen();
+        renderHeute();
+        toast("Steht auf der Einkaufsliste ✓");
+      },
+    },
+    frist: {
+      for: ["anna"],
+      src: "Fristen-Cockpit",
+      text: "Deine <b>Berufshaftpflicht</b> läuft in 6 Tagen ab. Soll ich dir für morgen 9:00 eine Erinnerung mit der Nummer der Versicherung einstellen?",
+      btn: "⏰ Erinnerung stellen",
+      run() { toast("Erinnerung gestellt: morgen 9:00 (Demo)"); },
+    },
+  };
 
   function addAICard(s, ref) {
     const div = document.createElement("div");
     div.className = "ai-card";
-    if (ref) div.dataset.sug = ref;
     div.innerHTML = `<div class="src">${s.src}</div><p>${s.text}</p>` +
       (s.btn ? `<button class="btn" data-run="${ref}">${s.btn}</button> <span class="doneflag">✓ erledigt</span>` : "");
     $("#ai-feed").appendChild(div);
     if (s.btn) {
       div.querySelector("[data-run]").addEventListener("click", () => {
-        const sug = suggestions.find((x) => x.id === ref);
-        if (sug) sug.run();
+        suggestions[ref].run();
         div.classList.add("done");
       });
     }
     return div;
   }
 
-  let aiInit = false;
+  const aiChips = [
+    { q: "Was steht morgen an?", a() {
+        const l = events.filter((e) => e.d === TODAY + 1 && e.status !== "pending").sort((a, b) => a.t.localeCompare(b.t));
+        return l.length ? "Morgen (Do): " + l.map((e) => `${e.t} ${e.title}`).join(" · ") + "." : "Morgen ist nichts eingetragen – freier Tag!";
+      } },
+    { q: "Wo ist Bens Impfpass?", a: () => "Im Merkzeug unter Dokumente: <b>Impfpass Ben.pdf</b> – verknüpft mit dem Kinderarzt-Termin heute 16:30. Denk daran, ihn mitzunehmen!" },
+    { q: "Wer hat bald Geburtstag?", a() {
+        return currentUser === "du"
+          ? "Aus deinem Merkzeug: <b>Jürgen am Samstag (16.08.)</b> 🎂 und Markus am 22.08."
+          : "Das steht in den privaten Gedächtnissen – ich kann nur in <b>dein eigenes</b> schauen, und nur wenn du es entsperrst. 🔐";
+      } },
+  ];
+
   function openAI() {
-    if (!aiInit) {
-      aiInit = true;
-      addAICard({
-        src: "Nest-Assistent",
-        text: "Hallo! Ich schaue auf euren Familienkalender und mache Vorschläge – eintragen tue ich <b>nie ohne dein Okay</b>. Drei Dinge sind mir aufgefallen:",
+    if (aiUser !== currentUser) {
+      aiUser = currentUser;
+      $("#ai-feed").innerHTML = "";
+      addAICard({ src: "Nest-Assistent", text: "Hallo " + users[currentUser].name + "! Ich schaue auf euren Familienkalender und mache Vorschläge – eintragen tue ich <b>nie ohne dein Okay</b>. Das ist mir aufgefallen:" });
+      Object.keys(suggestions).forEach((k) => {
+        if (suggestions[k].for.includes(currentUser)) addAICard(suggestions[k], k);
       });
-      suggestions.forEach((s) => addAICard(s, s.id));
+      $("#ai-chips").innerHTML = aiChips.map((c, i) => `<button class="chip" data-chip="${i}">${c.q}</button>`).join("");
+      $$("#ai-chips [data-chip]").forEach((b) => b.addEventListener("click", () => {
+        const c = aiChips[+b.dataset.chip];
+        const u = document.createElement("div");
+        u.className = "bubble-user";
+        u.textContent = c.q;
+        $("#ai-feed").appendChild(u);
+        addAICard({ src: "Nest-Assistent", text: c.a() });
+        $("#ai-feed").lastElementChild.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }));
     }
     $("#ai-overlay").hidden = false;
-    $("#ai-input").focus();
   }
   $("#fab").addEventListener("click", openAI);
   $("#ai-close").addEventListener("click", () => { $("#ai-overlay").hidden = true; });
-  $("#ai-overlay").addEventListener("click", (e) => { if (e.target.id === "ai-overlay") $("#ai-overlay").hidden = true; });
 
   $("#ai-send").addEventListener("click", () => {
     const v = $("#ai-input").value.trim();
@@ -1196,155 +1705,24 @@
     $("#ai-feed").appendChild(u);
     $("#ai-input").value = "";
     setTimeout(() => {
-      addAICard({
-        src: "Nest-Assistent",
-        text: "In der echten App antworte ich hier mit KI (Claude) und kenne euren Kalender, die Kurse und – <b>nur wenn du ihn entsperrst</b> – dein Merkzeug. In dieser Demo bin ich noch ein Skript. 😊",
-      });
+      addAICard({ src: "Nest-Assistent", text: "In der echten App antworte ich hier mit KI (Claude) und kenne Kalender, Listen und Kurse – dein Merkzeug <b>nur, wenn du es entsperrst</b>. In dieser Demo bin ich ein Skript; probier die Fragen-Knöpfe oben. 😊" });
       $("#ai-feed").lastElementChild.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }, 500);
-    u.scrollIntoView({ behavior: "smooth", block: "nearest" });
   });
   $("#ai-input").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#ai-send").click(); });
 
-  /* ---------- Merkzeug ---------- */
-  const persons = [
-    {
-      id: "juergen", name: "Jürgen", ctx: "Nachbar · seit 2019", ini: "J",
-      familie: "Frau Petra, Sohn Timo (studiert in Köln), Hund „Balu“",
-      themen: "Gartenbau, 1. FC, Wohnmobil",
-      faden: "Plant im September eine Wohnmobiltour nach Südtirol",
-      fragen: ["Wie laufen die Vorbereitungen für Südtirol?", "Was macht Timo im Studium?", "Ist der neue Rasen angewachsen?"],
-      notizen: ["02.08. – Hat uns die Leiter geliehen, zurückgeben!", "20.07. – Balu war beim Tierarzt, alles gut"],
-    },
-    {
-      id: "sandra", name: "Sandra", ctx: "Vereinskollegin · Kassenwartin", ini: "S",
-      familie: "Mann Alex, Tochter Mia (macht 2027 Abi)",
-      themen: "Laufen (Halbmarathon!), Backen, Kroatien-Fan",
-      faden: "War im Juli in Kroatien – Insel Krk, will nächstes Jahr wieder hin",
-      fragen: ["Wie war Krk – lohnt sich das für uns?", "Wann ist der nächste Lauf?", "Wie läuft Mias Abi-Vorbereitung?"],
-      notizen: ["28.07. – Empfiehlt Konoba am Hafen von Krk", "15.06. – Halbmarathon in 1:58 gelaufen 🎉"],
-    },
-    {
-      id: "kaya", name: "Herr Kaya", ctx: "Bens Fußballtrainer", ini: "K",
-      familie: "Zwei Töchter, beide spielen auch",
-      themen: "Jugendfußball, Grillen, hat früher selbst in der Oberliga gespielt",
-      faden: "Sucht noch Eltern-Helfer fürs Sommerturnier am 16.08.",
-      fragen: ["Braucht ihr am Samstag noch Hilfe beim Turnier?", "Wie macht sich Ben im Training?"],
-      notizen: ["06.08. – Ben soll Schienbeinschoner Größe M bekommen"],
-    },
-  ];
-
-  function renderPersons(filter) {
-    const q = (filter || "").toLowerCase();
-    const hits = persons.filter((p) =>
-      !q || [p.name, p.ctx, p.familie, p.themen, p.faden, p.notizen.join(" ")].join(" ").toLowerCase().includes(q)
-    );
-    $("#personlist").innerHTML = hits.length
-      ? hits.map((p) => `<button class="row" data-p="${p.id}">
-          <span class="avatar">${p.ini}</span>
-          <div class="row-main"><div class="row-title">${p.name}</div><div class="row-meta">${p.ctx}</div></div>
-          <span class="chev">›</span></button>`).join("")
-      : `<div class="row"><div class="row-main"><div class="row-meta">Kein Treffer für „${filter}“</div></div></div>`;
-    $$("#personlist [data-p]").forEach((b) => b.addEventListener("click", () => openSpick(b.dataset.p)));
-  }
-
-  function openSpick(id) {
-    const p = persons.find((x) => x.id === id);
-    $("#memory").style.display = "none";
-    $("#spick").style.display = "block";
-    $("#spick").innerHTML = `
-      <button class="btn ghost back" id="btn-back">‹ Zurück</button>
-      <h3>${p.name}</h3>
-      <p class="ctx">${p.ctx}</p>
-      <div class="card">
-        <div class="fact"><b>Familie</b><span>${p.familie}</span></div>
-        <div class="fact"><b>Themen</b><span>${p.themen}</span></div>
-        <div class="fact"><b>Offener Faden</b><span>${p.faden}</span></div>
-      </div>
-      <div class="qcard">
-        <h4>💬 Einstiegsfragen</h4>
-        <ul>${p.fragen.map((f) => `<li>${f}</li>`).join("")}</ul>
-      </div>
-      <p class="label">Letzte Notizen</p>
-      <div class="card" id="notecard">
-        ${p.notizen.map((n) => `<div class="fact"><span>${n}</span></div>`).join("")}
-      </div>
-      <div class="noterow">
-        <input id="newnote" placeholder="Nach dem Gespräch: kurz festhalten …" aria-label="Neue Notiz">
-        <button class="btn" id="btn-addnote">Merken</button>
-      </div>`;
-    $("#btn-back").addEventListener("click", () => {
-      $("#spick").style.display = "none";
-      $("#memory").style.display = "block";
-    });
-    $("#btn-addnote").addEventListener("click", () => {
-      const v = $("#newnote").value.trim();
-      if (!v) return;
-      p.notizen.unshift("13.08. – " + v);
-      openSpick(id);
-      toast("Gemerkt ✓ (verschlüsselt gespeichert)");
-    });
-  }
-
-  $("#btn-unlock").addEventListener("click", () => {
-    $("#decrypting").style.display = "block";
-    setTimeout(() => {
-      $("#lockbox").style.display = "none";
-      $("#memory").style.display = "block";
-      renderPersons("");
-      toast("Entsperrt – nur auf diesem Gerät lesbar");
-    }, 900);
-  });
-  $("#pw").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#btn-unlock").click(); });
-  function lockMemory() {
-    $("#memory").style.display = "none";
-    $("#spick").style.display = "none";
-    $("#lockbox").style.display = "block";
-    $("#decrypting").style.display = "none";
-    $("#pw").value = "";
-  }
-  document.addEventListener("click", (e) => {
-    if (e.target.id === "btn-lock") { lockMemory(); toast("Gesperrt 🔒"); }
-  });
-  $("#search").addEventListener("input", (e) => renderPersons(e.target.value));
-
-  /* ---------- Superadmin: Mitlese-Versuch scheitert ---------- */
-  $("#btn-snoop").addEventListener("click", () => {
-    const d = $("#denied");
-    d.style.display = "block";
-    d.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    toast("Entschlüsselung fehlgeschlagen: kein Schlüssel auf dem Server");
+  /* ================= Overlays: Klick auf Hintergrund schließt ================= */
+  ["ev-overlay", "ai-overlay", "set-overlay", "notif-overlay"].forEach((id) => {
+    $("#" + id).addEventListener("click", (e) => { if (e.target.id === id) $("#" + id).hidden = true; });
   });
 
-  /* ---------- Praxis ---------- */
-  const teilnehmer = [
-    ["Lena M.", true], ["Ayşe K.", true], ["Franzi B.", false], ["Julia S.", true],
-    ["Miriam W.", true], ["Nadine H.", false], ["Carla P.", true], ["Steffi R.", true],
-  ];
-  function renderTeilnehmer() {
-    $("#teilnehmer").innerHTML = teilnehmer.map(([n, paid], i) => `
-      <div class="tn">
-        <span class="name">${n}</span>
-        <button class="paybtn ${paid ? "paid" : "open"}" data-i="${i}">${paid ? "bezahlt" : "offen"}</button>
-      </div>`).join("");
-    $$("#teilnehmer .paybtn").forEach((b) => b.addEventListener("click", () => {
-      teilnehmer[b.dataset.i][1] = !teilnehmer[b.dataset.i][1];
-      renderTeilnehmer();
-    }));
+  /* ================= Start ================= */
+  function renderAll() {
+    renderCal();
+    renderListen();
+    renderPraxis();
+    renderAudit();
+    renderBell();
   }
-  renderTeilnehmer();
-
-  const fristen = [
-    ["Berufshaftpflicht verlängern", 6, "warn"],
-    ["GKV-Abrechnung Q3 einreichen", 18, "honey"],
-    ["QM-Fortbildung nachweisen", 60, "ok"],
-    ["Steuervorauszahlung", 34, "ok"],
-  ];
-  $("#fristen").innerHTML = fristen.map(([t, d, c]) => `
-    <div class="row">
-      <div class="row-main"><div class="row-title">${t}</div></div>
-      <span class="chip ${c} frist-days">in ${d} Tagen</span>
-    </div>`).join("");
-
-  renderCal();
+  renderAll();
 </script>
