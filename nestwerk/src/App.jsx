@@ -21,6 +21,27 @@ const uid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Math.random(
 
 const PTYPES = ['Nachsorge', 'Vorsorge', 'Beratung', 'Kursstunde', 'Wochenbettbesuch', 'Sonstiges']
 
+// Module: werden pro Mitglied auf dem eigenen Profil hinzugefügt.
+// Grundsatz: nicht mehr Infos als nötig – Details sieht nur, wem das Modul gehört.
+const MODULES = [
+  {
+    id: 'praxis', ico: '🩺', name: 'Praxis',
+    desc: 'Klientinnen, Termin-Typen mit Soll/Ist-Zeiten, Dokumente aus Vorlagen.',
+    privacy: 'Die Familie sieht nur „Praxis · belegt“ – keine Namen, keine Details.',
+  },
+  {
+    id: 'verein', ico: '⚽', name: 'Vereins-App',
+    desc: 'Trainings, Spiele und Turniere automatisch im Familienkalender – immer aktuell.',
+    privacy: 'Ohne Passwort, nur lesend über den Vereinszugang.',
+  },
+  {
+    id: 'arbeit', ico: '💼', name: 'Arbeitskalender',
+    desc: 'Arbeitstermine per .ics-Import aus Outlook/Office365.',
+    privacy: 'Die Familie sieht nur „Arbeit“ als belegte Zeit – keine Betreffe.',
+  },
+]
+const hasMod = (m, id) => !!(m?.modules && m.modules[id])
+
 const VORLAGEN = [
   {
     id: 'bescheinigung',
@@ -197,6 +218,24 @@ function ProfilePicker({ members, onPick }) {
 
 function EventSheet({ initial, members, me, onSave, onDelete, onClose }) {
   const e = initial.event
+  if (e && ((e.klid && e.created_by !== me.id) || (e.src === 'work' && e.member_id !== me.id))) {
+    const isPraxis = !!e.klid
+    return (
+      <div className="overlay" onClick={(ev) => { if (ev.target === ev.currentTarget) onClose() }}>
+        <div className="sheet">
+          <h3>{isPraxis ? '🩺 Praxis · belegt' : '💼 Arbeit'}<button type="button" className="x" onClick={onClose} aria-label="Schließen">✕</button></h3>
+          <div className="card" style={{ marginBottom: 12 }}>
+            <div className="fact"><b>Wann</b><span>{fmtDate(e.on_date)} · {e.at_time} Uhr</span></div>
+            <div className="fact"><b>Wer</b><span>{members.find((m) => m.id === e.member_id)?.name || '—'}</span></div>
+          </div>
+          <p className="hint" style={{ marginTop: 0 }}>
+            Mehr zeigt Eselsohr hier bewusst nicht: {isPraxis ? 'Praxis-Details (Namen, Inhalte) sieht nur, wem das Praxis-Modul gehört.' : 'Arbeits-Details sieht nur die Person selbst.'} Nicht mehr Infos als nötig.
+          </p>
+          <button className="btn" style={{ width: '100%' }} onClick={onClose}>Alles klar</button>
+        </div>
+      </div>
+    )
+  }
   if (e && e.src === 'verein') {
     return (
       <div className="overlay" onClick={(ev) => { if (ev.target === ev.currentTarget) onClose() }}>
@@ -747,6 +786,28 @@ export default function App() {
     }
   }
 
+  function toggleModule(id) {
+    const active = hasMod(me, id)
+    let next = {
+      ...db,
+      members: db.members.map((m) => (m.id === me.id ? { ...m, modules: { ...(m.modules || {}), [id]: !active } } : m)),
+    }
+    if (active && id === 'arbeit') {
+      next = { ...next, events: next.events.filter((e) => !(e.src === 'work' && e.member_id === me.id)) }
+    }
+    if (active && id === 'verein') {
+      next = { ...next, events: next.events.filter((e) => e.src !== 'verein'), verein: { links: [] } }
+    }
+    if (active && id === 'praxis' && nav === 'praxis') setNav('profil')
+    saveAll(next)
+    if (active) {
+      toast(MODULES.find((m) => m.id === id).name + ' entfernt' + (id === 'praxis' ? ' – deine Daten bleiben gespeichert' : ''))
+    } else {
+      toast(MODULES.find((m) => m.id === id).name + ' hinzugefügt ✓' + (id === 'praxis' ? ' – neuer Bereich 🩺 in der Navigation' : ''))
+      if (id === 'praxis') setNav('praxis')
+    }
+  }
+
   const addItem = (list, text) => saveAll({ ...db, items: [{ id: uid(), list, text, done: false, created_by: me.id }, ...db.items] })
   const toggleItem = (it) => saveAll({ ...db, items: db.items.map((x) => (x.id === it.id ? { ...x, done: !x.done } : x)) })
   const deleteItem = (it) => saveAll({ ...db, items: db.items.filter((x) => x.id !== it.id) })
@@ -824,18 +885,33 @@ export default function App() {
 
   /* ---------- Bausteine ---------- */
 
-  const EventRow = ({ e }) => (
-    <button className="row" onClick={() => setSheet({ event: e })}>
-      <span className="time">{e.at_time}</span>
-      <span className="dot" style={{ background: mcolor(e.member_id) }} />
-      <div className="row-main">
-        <div className="row-title">{e.title}{e.serie ? ' ↻' : ''}{e.src === 'verein' ? ' ⚽' : ''}</div>
-        <div className="row-meta">{mname(e.member_id)}{e.meta ? ' · ' + e.meta : ''}</div>
-      </div>
-      {e.status === 'pending' && <span className="chip honey">📩 Anfrage</span>}
-      <span className="chev">›</span>
-    </button>
-  )
+  // Privatsphäre: fremde Praxis- und Arbeitstermine erscheinen nur als belegter Block
+  const viewEvent = (e) => {
+    if (e.klid && e.created_by !== me.id) {
+      return { ...e, title: '🩺 Praxis · belegt', meta: mname(e.member_id) + ' · Details privat', masked: true, serie: false }
+    }
+    if (e.src === 'work' && e.member_id !== me.id) {
+      const bis = (e.meta || '').split(' · ').find((p) => p.startsWith('bis '))
+      return { ...e, title: '💼 Arbeit', meta: [mname(e.member_id), bis].filter(Boolean).join(' · '), masked: true }
+    }
+    return e
+  }
+
+  const EventRow = ({ e: raw }) => {
+    const e = viewEvent(raw)
+    return (
+      <button className="row" onClick={() => setSheet({ event: raw })}>
+        <span className="time">{e.at_time}</span>
+        <span className="dot" style={{ background: mcolor(e.member_id) }} />
+        <div className="row-main">
+          <div className="row-title">{e.title}{e.serie ? ' ↻' : ''}{e.src === 'verein' ? ' ⚽' : ''}</div>
+          <div className="row-meta">{e.masked ? e.meta : mname(e.member_id) + (e.meta ? ' · ' + e.meta : '')}</div>
+        </div>
+        {e.status === 'pending' && <span className="chip honey">📩 Anfrage</span>}
+        <span className="chev">›</span>
+      </button>
+    )
+  }
 
   const dayList = (dateStr) => {
     const list = eventsOn(dateStr)
@@ -924,22 +1000,28 @@ export default function App() {
       {calQ.trim() ? (() => {
         const q = calQ.trim().toLowerCase()
         const hits = db.events
-          .filter((e) => (e.title + ' ' + e.meta + ' ' + (e.ptype || '')).toLowerCase().includes(q))
+          .filter((e) => {
+            const v = viewEvent(e) // Privatsphäre: fremde Praxis-/Arbeitsdetails sind auch nicht durchsuchbar
+            return (v.title + ' ' + v.meta + ' ' + (v.masked ? '' : v.ptype || '')).toLowerCase().includes(q)
+          })
           .sort((a, b) => a.on_date.localeCompare(b.on_date) || a.at_time.localeCompare(b.at_time))
           .slice(0, 60)
         return (
           <div className="card">
-            {hits.map((e) => (
-              <button className="row" key={e.id} onClick={() => setSheet({ event: e })}>
-                <span className="time" style={{ minWidth: 76 }}>{fmtShort(e.on_date)} {e.at_time}</span>
-                <span className="dot" style={{ background: mcolor(e.member_id) }} />
-                <div className="row-main">
-                  <div className="row-title">{e.title}</div>
-                  <div className="row-meta">{mname(e.member_id)}{e.meta ? ' · ' + e.meta : ''}{e.ist ? ` · Ist: ${e.ist} Min.` : ''}</div>
-                </div>
-                <span className="chev">›</span>
-              </button>
-            ))}
+            {hits.map((raw) => {
+              const e = viewEvent(raw)
+              return (
+                <button className="row" key={e.id} onClick={() => setSheet({ event: raw })}>
+                  <span className="time" style={{ minWidth: 76 }}>{fmtShort(e.on_date)} {e.at_time}</span>
+                  <span className="dot" style={{ background: mcolor(e.member_id) }} />
+                  <div className="row-main">
+                    <div className="row-title">{e.title}</div>
+                    <div className="row-meta">{e.masked ? e.meta : mname(e.member_id) + (e.meta ? ' · ' + e.meta : '') + (e.ist ? ` · Ist: ${e.ist} Min.` : '')}</div>
+                  </div>
+                  <span className="chev">›</span>
+                </button>
+              )
+            })}
             {!hits.length && <div className="empty">Kein Termin passt zu „{calQ}“.</div>}
           </div>
         )
@@ -1117,6 +1199,128 @@ export default function App() {
     )
   })()
 
+  const screenProfil = (
+    <section className="screen">
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, margin: '16px 2px 4px' }}>
+        <span className="avatar member" style={{ background: me.color, width: 54, height: 54, fontSize: 22 }}>{me.name[0].toUpperCase()}</span>
+        <div>
+          <h2 className="screen-title" style={{ margin: 0 }}>{me.name}</h2>
+          <p className="screen-sub" style={{ margin: 0 }}>{isKid ? 'Kind' : me.is_admin ? 'Erwachsen · Familien-Admin' : 'Erwachsen'} · {db.family.name}</p>
+        </div>
+      </div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '12px 0 4px' }}>
+        <button className="btn ghost" onClick={() => saveAll({ ...db, active: null })}>⇄ Profil wechseln</button>
+      </div>
+
+      {!isKid && (
+        <>
+          <p className="label">Meine Module · nur du siehst deren Inhalte</p>
+          <div className="card">
+            {MODULES.map((mod) => hasMod(me, mod.id) ? (
+              <div className="row" key={mod.id}>
+                <span style={{ fontSize: 20 }}>{mod.ico}</span>
+                <div className="row-main">
+                  <div className="row-title">{mod.name} <span className="chip ok" style={{ marginLeft: 4 }}>aktiv</span></div>
+                  <div className="row-meta">{mod.privacy}</div>
+                </div>
+                <button className="btn ghost sm" onClick={() => toggleModule(mod.id)}>Entfernen</button>
+              </div>
+            ) : (
+              <button className="row" key={mod.id} onClick={() => toggleModule(mod.id)}>
+                <span style={{ fontSize: 20 }}>{mod.ico}</span>
+                <div className="row-main">
+                  <div className="row-title">➕ {mod.name}</div>
+                  <div className="row-meta">{mod.desc}</div>
+                </div>
+                <span className="chev">›</span>
+              </button>
+            ))}
+          </div>
+
+          {hasMod(me, 'praxis') && (
+            <>
+              <p className="label">🩺 Praxis</p>
+              <div className="card">
+                <button className="row" onClick={() => setNav('praxis')}>
+                  <span style={{ fontSize: 20 }}>🩺</span>
+                  <div className="row-main">
+                    <div className="row-title">Praxis öffnen</div>
+                    <div className="row-meta">{praxis.klienten.length} Klientin{praxis.klienten.length === 1 ? '' : 'nen'} · {db.events.filter((e) => e.ptype).length} Praxistermine</div>
+                  </div>
+                  <span className="chev">›</span>
+                </button>
+              </div>
+            </>
+          )}
+
+          {hasMod(me, 'verein') && (
+            <>
+              <p className="label">⚽ Vereins-App</p>
+              <div className="card">
+                {(db.verein?.links || []).map((l) => (
+                  <div className="row" key={l.tid}>
+                    <span style={{ fontSize: 20 }}>⚽</span>
+                    <div className="row-main">
+                      <div className="row-title">{l.teamName}</div>
+                      <div className="row-meta">Termine landen bei {mname(l.memberId)} · letzter Sync: {db.verein?.lastSync || '—'}</div>
+                    </div>
+                    <button className="xdel" onClick={() => removeVereinLink(l.tid)} aria-label="Verknüpfung entfernen">✕</button>
+                  </div>
+                ))}
+                {(db.verein?.links || []).length > 0 && (
+                  <button className="row" disabled={syncing} onClick={() => syncVerein(db.verein.links, db, false)}>
+                    <span style={{ fontSize: 20 }}>🔄</span>
+                    <div className="row-main">
+                      <div className="row-title">{syncing ? 'Synchronisiere …' : 'Jetzt synchronisieren'}</div>
+                      <div className="row-meta">Passiert auch automatisch bei jedem App-Start</div>
+                    </div>
+                    <span className="chev">›</span>
+                  </button>
+                )}
+                <button className="row" onClick={() => setVereinSheet(true)}>
+                  <span style={{ fontSize: 20 }}>🔗</span>
+                  <div className="row-main">
+                    <div className="row-title">{(db.verein?.links || []).length ? 'Weiteres Team verknüpfen' : 'Team verknüpfen'}</div>
+                    <div className="row-meta">Trainings, Spiele und Turniere automatisch im Familienkalender</div>
+                  </div>
+                  <span className="chev">›</span>
+                </button>
+              </div>
+            </>
+          )}
+
+          {hasMod(me, 'arbeit') && (
+            <>
+              <p className="label">💼 Arbeitskalender</p>
+              <div className="card">
+                <button className="row" onClick={() => icsInput.current?.click()}>
+                  <span style={{ fontSize: 20 }}>📥</span>
+                  <div className="row-main">
+                    <div className="row-title">Kalenderdatei importieren (.ics)</div>
+                    <div className="row-meta">
+                      {db.events.filter((e) => e.src === 'work' && e.member_id === me.id).length
+                        ? db.events.filter((e) => e.src === 'work' && e.member_id === me.id).length + ' Arbeitstermine importiert – erneuter Import aktualisiert alles'
+                        : 'Aus Outlook/Office365 exportieren – deine Termine erscheinen mit 💼'}
+                    </div>
+                  </div>
+                  <span className="chev">›</span>
+                </button>
+                <input ref={icsInput} type="file" accept=".ics,text/calendar" style={{ display: 'none' }}
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) importIcs(f); e.target.value = '' }} />
+                <div className="row">
+                  <span style={{ fontSize: 20 }}>ℹ️</span>
+                  <div className="row-main">
+                    <div className="row-meta">Die Datei bleibt auf deinem Gerät. Die Familie sieht nur „Arbeit“ als belegte Zeit – keine Betreffe. Abo-Sync per Link kommt mit der Cloud-Stufe.</div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </>
+      )}
+    </section>
+  )
+
   const screenFamilie = (
     <section className="screen">
       <h2 className="screen-title">{db.family.name}</h2>
@@ -1131,6 +1335,7 @@ export default function App() {
               <div className="row-meta">
                 {m.kind === 'kid' ? 'Kind' : m.is_admin ? 'Erwachsen · Familien-Admin' : 'Erwachsen'}
                 {m.kind !== 'kid' && (m.can_direct ? ' · trägt direkt ein' : ' · braucht Bestätigung')}
+                {MODULES.some((x) => hasMod(m, x.id)) && ' · ' + MODULES.filter((x) => hasMod(m, x.id)).map((x) => x.ico).join(' ')}
               </div>
             </div>
             {me.is_admin && m.kind !== 'kid' && m.id !== me.id && (
@@ -1151,58 +1356,6 @@ export default function App() {
           </button>
         )}
       </div>
-      <p className="label">💼 Arbeitskalender</p>
-      <div className="card">
-        <button className="row" onClick={() => icsInput.current?.click()}>
-          <span style={{ fontSize: 20 }}>📥</span>
-          <div className="row-main">
-            <div className="row-title">Kalenderdatei importieren (.ics)</div>
-            <div className="row-meta">Aus Outlook/Office365 exportieren – deine Arbeitstermine landen bei dir mit 💼. Erneuter Import aktualisiert alles.</div>
-          </div>
-          <span className="chev">›</span>
-        </button>
-        <input ref={icsInput} type="file" accept=".ics,text/calendar" style={{ display: 'none' }}
-          onChange={(e) => { const f = e.target.files?.[0]; if (f) importIcs(f); e.target.value = '' }} />
-        <div className="row">
-          <span style={{ fontSize: 20 }}>ℹ️</span>
-          <div className="row-main">
-            <div className="row-meta">Die Datei bleibt auf deinem Gerät – nichts wird an den Arbeitgeber oder einen Server geschickt. Automatischer Abo-Sync per Link kommt mit der Cloud-Stufe.</div>
-          </div>
-        </div>
-      </div>
-
-      <p className="label">⚽ Vereins-App</p>
-      <div className="card">
-        {(db.verein?.links || []).map((l) => (
-          <div className="row" key={l.tid}>
-            <span style={{ fontSize: 20 }}>⚽</span>
-            <div className="row-main">
-              <div className="row-title">{l.teamName}</div>
-              <div className="row-meta">Termine landen bei {mname(l.memberId)} · letzter Sync: {db.verein?.lastSync || '—'}</div>
-            </div>
-            <button className="xdel" onClick={() => removeVereinLink(l.tid)} aria-label="Verknüpfung entfernen">✕</button>
-          </div>
-        ))}
-        {(db.verein?.links || []).length > 0 && (
-          <button className="row" disabled={syncing} onClick={() => syncVerein(db.verein.links, db, false)}>
-            <span style={{ fontSize: 20 }}>🔄</span>
-            <div className="row-main">
-              <div className="row-title">{syncing ? 'Synchronisiere …' : 'Jetzt synchronisieren'}</div>
-              <div className="row-meta">Passiert auch automatisch bei jedem App-Start</div>
-            </div>
-            <span className="chev">›</span>
-          </button>
-        )}
-        <button className="row" onClick={() => setVereinSheet(true)}>
-          <span style={{ fontSize: 20 }}>🔗</span>
-          <div className="row-main">
-            <div className="row-title">{(db.verein?.links || []).length ? 'Weiteres Team verknüpfen' : 'Team aus der Vereins-App verknüpfen'}</div>
-            <div className="row-meta">Trainings, Spiele und Turniere automatisch im Familienkalender</div>
-          </div>
-          <span className="chev">›</span>
-        </button>
-      </div>
-
       <p className="label">Sicherung</p>
       <div className="card">
         <button className="row" onClick={exportBackup}>
@@ -1245,7 +1398,11 @@ export default function App() {
     ['heute', '🏠', 'Heute', invites.length],
     ['kalender', '📅', 'Kalender', 0],
     ['listen', '🛒', 'Listen', 0],
-    ...(!isKid ? [['praxis', '🩺', 'Praxis', 0], ['merkzeug', '🔐', 'Merkzeug', 0], ['familie', '👨‍👩‍👧‍👦', 'Familie', 0]] : []),
+    ...(!isKid ? [
+      ...(hasMod(me, 'praxis') ? [['praxis', '🩺', 'Praxis', 0]] : []),
+      ['merkzeug', '🔐', 'Merkzeug', 0],
+      ['familie', '👨‍👩‍👧‍👦', 'Familie', 0],
+    ] : []),
   ]
 
   return (
@@ -1265,16 +1422,17 @@ export default function App() {
         <header className="topbar">
           <h1 className="wordmark serif">Esels<span className="nest">ohr</span></h1>
           <span className="sp" />
-          <button className="userchip" onClick={() => saveAll({ ...db, active: null })} aria-label="Profil wechseln">
+          <button className="userchip" onClick={() => setNav('profil')} aria-label="Mein Profil">
             <span className="avatar sm member" style={{ background: me.color }}>{me.name[0].toUpperCase()}</span>
-            {me.name} ⇄
+            {me.name}
           </button>
         </header>
         <main>
           {nav === 'heute' && screenHeute}
           {nav === 'kalender' && screenKalender}
           {nav === 'listen' && screenListen}
-          {nav === 'praxis' && !isKid && screenPraxis}
+          {nav === 'praxis' && !isKid && hasMod(me, 'praxis') && screenPraxis}
+          {nav === 'profil' && screenProfil}
           {nav === 'merkzeug' && !isKid && (
             <Merkzeug
               blob={db.memories[me.id] || null}
