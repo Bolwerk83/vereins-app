@@ -139,6 +139,8 @@
     text-wrap: balance;
   }
   .screen-sub { margin: 0 4px 14px; color: var(--ink-soft); font-size: 14px; }
+  .title-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .title-row .btn { flex: none; }
 
   .label {
     font-size: 11px;
@@ -166,7 +168,7 @@
   .row:first-child { border-top: 0; }
   button.row { width: 100%; text-align: left; background: none; border-left: 0; border-right: 0; border-bottom: 0; font: inherit; color: inherit; cursor: pointer; }
   button.row:hover { background: var(--surface-2); }
-  button.row:focus-visible, button:focus-visible, input:focus-visible {
+  button.row:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
     outline: 2px solid var(--brand);
     outline-offset: 2px;
   }
@@ -194,6 +196,7 @@
   .chip.warn { background: var(--danger-soft); color: var(--danger); }
   .chip.ok { background: var(--ok-soft); color: var(--ok); }
   .chip.honey { background: var(--honey-soft); color: var(--honey); }
+  .chip.brand { background: var(--brand-soft); color: var(--brand); }
 
   .conflict {
     border: 1px solid var(--danger);
@@ -216,6 +219,7 @@
     color: var(--brand-ink);
   }
   .btn.ghost { background: var(--surface); color: var(--ink); border: 1px solid var(--hairline); }
+  .btn.danger { background: var(--danger-soft); color: var(--danger); border: 1px solid var(--danger); }
   .btn:hover { filter: brightness(1.06); }
 
   /* ---------- Kalender ---------- */
@@ -243,6 +247,102 @@
   .day.sel .dname { color: var(--brand-ink); opacity: .8; }
 
   .legend { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 4px 0; }
+
+  /* ---------- Overlay / Sheet (Termin-Formular & Assistent) ---------- */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(18, 24, 21, .45);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 40;
+    padding: 16px;
+  }
+  .overlay[hidden] { display: none; }
+  .sheet {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: 20px;
+    box-shadow: var(--shadow);
+    width: 100%;
+    max-width: 420px;
+    max-height: 84vh;
+    overflow-y: auto;
+    padding: 18px;
+  }
+  @media (min-width: 500px) { .overlay { align-items: center; } }
+  .sheet h3 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    font-size: 19px;
+    margin: 0 0 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .x {
+    font: inherit; font-size: 14px; font-weight: 600;
+    background: var(--surface-2); color: var(--ink-soft);
+    border: 0; border-radius: 999px; width: 30px; height: 30px; cursor: pointer; flex: none;
+  }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 12px; font-weight: 600; color: var(--ink-soft); margin-bottom: 4px; }
+  .field input, .field select {
+    width: 100%;
+    font: inherit;
+    padding: 9px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--hairline);
+    background: var(--ground);
+    color: var(--ink);
+  }
+  .field.check { display: flex; align-items: center; gap: 10px; }
+  .field.check input { width: auto; }
+  .field.check label { margin: 0; font-size: 14px; color: var(--ink); font-weight: 500; }
+  .sheet .actions { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+  .sheet .actions .btn { flex: 1; min-width: 100px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  /* ---------- Assistent ---------- */
+  .fab {
+    position: fixed;
+    bottom: 78px;
+    right: max(16px, calc(50% - 204px));
+    z-index: 30;
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    border: 0;
+    background: var(--brand);
+    color: var(--brand-ink);
+    font-size: 23px;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+  }
+  .fab:hover { filter: brightness(1.08); }
+  .ai-card {
+    border: 1px solid var(--hairline);
+    background: var(--ground);
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    font-size: 14.5px;
+  }
+  .ai-card .src { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--brand); font-weight: 700; margin-bottom: 4px; }
+  .ai-card p { margin: 0 0 10px; }
+  .ai-card p:last-child { margin-bottom: 0; }
+  .ai-card.done { opacity: .65; }
+  .ai-card.done .btn { display: none; }
+  .ai-card .doneflag { display: none; font-size: 13px; font-weight: 600; color: var(--ok); }
+  .ai-card.done .doneflag { display: inline; }
+  .bubble-user {
+    background: var(--brand); color: var(--brand-ink);
+    border-radius: 14px 14px 4px 14px;
+    padding: 8px 12px; font-size: 14.5px;
+    margin: 0 0 10px auto; max-width: 85%; width: fit-content;
+  }
+  .airow { display: flex; gap: 8px; margin-top: 4px; }
+  .airow input { flex: 1; min-width: 0; font: inherit; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--hairline); background: var(--ground); color: var(--ink); }
 
   /* ---------- Merkzeug ---------- */
   .lockbox { text-align: center; padding: 36px 24px 30px; }
@@ -305,58 +405,6 @@
   .paybtn.open { background: var(--honey-soft); color: var(--honey); }
   .frist-days { font-variant-numeric: tabular-nums; }
 
-  /* ---------- Toast & Tabbar ---------- */
-  .toast {
-    position: fixed;
-    left: 50%; bottom: 92px;
-    transform: translateX(-50%) translateY(20px);
-    background: var(--ink);
-    color: var(--ground);
-    padding: 10px 18px;
-    border-radius: 999px;
-    font-size: 14px;
-    font-weight: 600;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity .25s, transform .25s;
-    max-width: 90vw;
-    text-align: center;
-  }
-  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-  nav.tabs {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    display: flex;
-    justify-content: center;
-    padding: 0 0 env(safe-area-inset-bottom);
-    background: var(--surface);
-    border-top: 1px solid var(--hairline);
-  }
-  @media (min-width: 500px) {
-    nav.tabs { position: sticky; margin-top: auto; }
-  }
-  nav.tabs .inner { display: flex; width: 100%; max-width: 440px; }
-  .tab {
-    flex: 1;
-    font: inherit;
-    background: none;
-    border: 0;
-    cursor: pointer;
-    padding: 9px 4px 10px;
-    color: var(--ink-soft);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    font-size: 11px;
-    font-weight: 600;
-  }
-  .tab .ico { font-size: 20px; line-height: 1.2; }
-  .tab.active { color: var(--brand); }
-
-  footer.note { text-align: center; font-size: 12px; color: var(--ink-soft); padding: 18px 20px 8px; }
-
   /* ---------- Superadmin ---------- */
   .adminbar {
     background: var(--ink);
@@ -399,6 +447,60 @@
   }
   .denied h3 { margin: 0 0 4px; font-size: 15px; color: var(--danger); }
   .denied p { margin: 0; font-size: 14px; }
+
+  /* ---------- Toast & Tabbar ---------- */
+  .toast {
+    position: fixed;
+    left: 50%; bottom: 92px;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--ink);
+    color: var(--ground);
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 600;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .25s, transform .25s;
+    max-width: 90vw;
+    text-align: center;
+    z-index: 50;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  nav.tabs {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    display: flex;
+    justify-content: center;
+    padding: 0 0 env(safe-area-inset-bottom);
+    background: var(--surface);
+    border-top: 1px solid var(--hairline);
+    z-index: 20;
+  }
+  @media (min-width: 500px) {
+    nav.tabs { position: sticky; margin-top: auto; }
+  }
+  nav.tabs .inner { display: flex; width: 100%; max-width: 440px; }
+  .tab {
+    flex: 1;
+    font: inherit;
+    background: none;
+    border: 0;
+    cursor: pointer;
+    padding: 9px 4px 10px;
+    color: var(--ink-soft);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .tab .ico { font-size: 20px; line-height: 1.2; }
+  .tab.active { color: var(--brand); }
+
+  footer.note { text-align: center; font-size: 12px; color: var(--ink-soft); padding: 18px 20px 8px; }
 </style>
 
 <div class="app">
@@ -420,36 +522,8 @@
         <span class="chip"><i class="dot" style="background:var(--m-ben)"></i>Ben (6)</span>
       </div>
 
-      <p class="label">Heute im Nest</p>
-      <div class="card">
-        <div class="row">
-          <span class="time">15:00</span>
-          <span class="dot" style="background:var(--m-emma)"></span>
-          <div class="row-main">
-            <div class="row-title">Fußballtraining Emma</div>
-            <div class="row-meta">Bringt: Du · Holt: Anna</div>
-          </div>
-          <span class="chip ok">geregelt</span>
-        </div>
-        <div class="row">
-          <span class="time">16:30</span>
-          <span class="dot" style="background:var(--m-ben)"></span>
-          <div class="row-main">
-            <div class="row-title">Kinderarzt Dr. Weber (Ben)</div>
-            <div class="row-meta" id="ben-meta">Bringt: <b>noch offen</b></div>
-          </div>
-          <span class="chip warn" id="ben-chip">offen</span>
-        </div>
-        <div class="row">
-          <span class="time">16:00</span>
-          <span class="dot" style="background:var(--m-anna)"></span>
-          <div class="row-main">
-            <div class="row-title">Rückbildungskurs B leiten</div>
-            <div class="row-meta">Anna · Praxis, bis 17:30</div>
-          </div>
-          <span class="chip honey">Praxis</span>
-        </div>
-      </div>
+      <p class="label">Heute im Nest · antippen zum Bearbeiten</p>
+      <div class="card" id="todaylist"></div>
 
       <div class="conflict" id="conflict-card">
         <h3>⚠️ Konflikt um 16:30</h3>
@@ -471,7 +545,7 @@
           <span style="font-size:20px">📅</span>
           <div class="row-main">
             <div class="row-title">Termin hinzufügen</div>
-            <div class="row-meta">Mit „Wer bringt / wer holt?“</div>
+            <div class="row-meta">Mit „Wer bringt / wer holt?“ und Serien-Option</div>
           </div>
           <span class="chev">›</span>
         </button>
@@ -480,8 +554,13 @@
 
     <!-- ============ KALENDER ============ -->
     <section class="screen" id="scr-kalender">
-      <h2 class="screen-title">Gemeinschaftskalender</h2>
-      <p class="screen-sub">Eine Ansicht für die ganze Familie</p>
+      <div class="title-row">
+        <div>
+          <h2 class="screen-title">Gemeinschaftskalender</h2>
+          <p class="screen-sub">Termine antippen: bearbeiten oder löschen</p>
+        </div>
+        <button class="btn" id="btn-new">+ Termin</button>
+      </div>
       <div class="week" id="week"></div>
       <div class="card" id="daylist"></div>
       <div class="legend">
@@ -489,6 +568,8 @@
         <span class="chip"><i class="dot" style="background:var(--m-anna)"></i>Anna</span>
         <span class="chip"><i class="dot" style="background:var(--m-emma)"></i>Emma</span>
         <span class="chip"><i class="dot" style="background:var(--m-ben)"></i>Ben</span>
+        <span class="chip brand">↻ Serie</span>
+        <span class="chip brand">⚽ Vereins-App</span>
       </div>
     </section>
 
@@ -626,6 +707,71 @@
     <footer class="note">Nestwerk-Demo · alle Namen und Daten sind ausgedacht · nichts wird gespeichert</footer>
   </main>
 
+  <!-- ============ TERMIN-SHEET ============ -->
+  <div class="overlay" id="ev-overlay" hidden>
+    <div class="sheet" role="dialog" aria-label="Termin bearbeiten">
+      <h3><span id="ev-title">Termin</span><button class="x" id="ev-close" aria-label="Schließen">✕</button></h3>
+      <div class="field">
+        <label for="f-title">Titel</label>
+        <input id="f-title" placeholder="z. B. Fußballtraining">
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label for="f-who">Person</label>
+          <select id="f-who">
+            <option value="du">Du</option>
+            <option value="anna">Anna</option>
+            <option value="emma">Emma</option>
+            <option value="ben">Ben</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-day">Tag</label>
+          <select id="f-day">
+            <option value="11">Mo 11.08.</option>
+            <option value="12">Di 12.08.</option>
+            <option value="13">Mi 13.08.</option>
+            <option value="14">Do 14.08.</option>
+            <option value="15">Fr 15.08.</option>
+            <option value="16">Sa 16.08.</option>
+            <option value="17">So 17.08.</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label for="f-time">Uhrzeit</label>
+          <input id="f-time" type="time" value="15:00">
+        </div>
+        <div class="field">
+          <label for="f-meta">Bringt / holt</label>
+          <input id="f-meta" placeholder="z. B. Bringt: Du · Holt: Anna">
+        </div>
+      </div>
+      <div class="field check">
+        <input type="checkbox" id="f-serie">
+        <label for="f-serie">↻ Serientermin – wiederholt sich jede Woche</label>
+      </div>
+      <div class="actions">
+        <button class="btn" id="ev-save">Speichern</button>
+        <button class="btn danger" id="ev-delete">Löschen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ ASSISTENT ============ -->
+  <button class="fab" id="fab" aria-label="Nest-Assistent öffnen">✨</button>
+  <div class="overlay" id="ai-overlay" hidden>
+    <div class="sheet" role="dialog" aria-label="Nest-Assistent">
+      <h3>✨ Nest-Assistent<button class="x" id="ai-close" aria-label="Schließen">✕</button></h3>
+      <div id="ai-feed"></div>
+      <div class="airow">
+        <input id="ai-input" placeholder="Frag mich etwas … (Demo)" aria-label="Nachricht an den Assistenten">
+        <button class="btn" id="ai-send">Senden</button>
+      </div>
+    </div>
+  </div>
+
   <div class="toast" id="toast" role="status"></div>
 
   <nav class="tabs">
@@ -650,7 +796,7 @@
     t.textContent = msg;
     t.classList.add("show");
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => t.classList.remove("show"), 2600);
+    toastTimer = setTimeout(() => t.classList.remove("show"), 2800);
   }
 
   /* ---------- Tabs ---------- */
@@ -662,65 +808,225 @@
   }
   $$(".tab").forEach((t) => t.addEventListener("click", () => show(t.dataset.scr)));
 
-  /* ---------- Heute: Konflikt lösen ---------- */
-  $("#btn-uebernehmen").addEventListener("click", () => {
-    $("#conflict-card").style.display = "none";
-    $("#ben-meta").innerHTML = "Bringt: <b>Du</b> · Anna informiert ✓";
-    const chip = $("#ben-chip");
-    chip.textContent = "geregelt";
-    chip.classList.remove("warn");
-    chip.classList.add("ok");
-    toast("Du fährst Ben – steht im Familienkalender");
-  });
-  $("#qa-notiz").addEventListener("click", () => { show("merkzeug"); });
-  $("#qa-termin").addEventListener("click", () => { show("kalender"); toast("Demo: Termin-Formular kommt in Stufe 1"); });
-
-  /* ---------- Kalender ---------- */
-  const events = {
-    11: [["07:45", "du", "Frühschicht", "bis 16:00"]],
-    12: [["17:00", "emma", "Schwimmkurs", "Bringt: Anna · Holt: Anna"]],
-    13: [
-      ["15:00", "emma", "Fußballtraining", "Bringt: Du · Holt: Anna"],
-      ["16:00", "anna", "Rückbildungskurs B", "Praxis · bis 17:30"],
-      ["16:30", "ben", "Kinderarzt Dr. Weber", "Bringt: Du"],
-    ],
-    14: [
-      ["09:30", "ben", "Zahnarzt", "Bringt: Anna"],
-      ["19:00", "anna", "Geburtsvorbereitung C", "Praxis"],
-    ],
-    15: [["18:00", "du", "Vereinssitzung", "Sportheim"]],
-    16: [
-      ["10:00", "emma", "Fußballturnier", "Bringt: Du · ganze Familie schaut zu"],
-      ["14:00", "ben", "Kindergeburtstag Luis", "Holt: Anna um 17:00"],
-    ],
-    17: [["12:30", "du", "Mittagessen bei Oma", "alle vier"]],
-  };
+  /* ---------- Termindaten ---------- */
   const colors = { du: "var(--m-du)", anna: "var(--m-anna)", emma: "var(--m-emma)", ben: "var(--m-ben)" };
   const dayNames = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+  let seq = 100;
+  let events = [
+    { id: 1, d: 11, t: "07:45", who: "du", title: "Frühschicht", meta: "bis 16:00" },
+    { id: 2, d: 12, t: "17:00", who: "emma", title: "Schwimmkurs", meta: "Bringt: Anna · Holt: Anna", serie: true },
+    { id: 3, d: 13, t: "15:00", who: "emma", title: "Fußballtraining Emma", meta: "Bringt: Du · Holt: Anna", chip: ["ok", "geregelt"] },
+    { id: 4, d: 13, t: "16:00", who: "anna", title: "Rückbildungskurs B leiten", meta: "Praxis · bis 17:30", serie: true, chip: ["honey", "Praxis"] },
+    { id: 5, d: 13, t: "16:30", who: "ben", title: "Kinderarzt Dr. Weber (Ben)", meta: "Bringt: noch offen", chip: ["warn", "offen"] },
+    { id: 6, d: 14, t: "09:30", who: "ben", title: "Zahnarzt", meta: "Bringt: Anna" },
+    { id: 7, d: 14, t: "19:00", who: "anna", title: "Geburtsvorbereitung C", meta: "Praxis", serie: true },
+    { id: 8, d: 15, t: "18:00", who: "du", title: "Vereinssitzung", meta: "Sportheim" },
+    { id: 9, d: 16, t: "10:00", who: "emma", title: "Fußballturnier", meta: "Bringt: Du · Familie schaut zu" },
+    { id: 10, d: 16, t: "14:00", who: "ben", title: "Kindergeburtstag Luis", meta: "Holt: Anna um 17:00" },
+    { id: 11, d: 17, t: "12:30", who: "du", title: "Mittagessen bei Oma", meta: "alle vier" },
+  ];
+  let selDay = 13;
 
-  function renderWeek(sel) {
-    $("#week").innerHTML = dayNames
-      .map((n, i) => {
-        const d = 11 + i;
-        const dots = (events[d] || []).slice(0, 4)
-          .map((e) => `<i style="background:${colors[e[1]]}"></i>`).join("");
-        return `<button class="day ${d === sel ? "sel" : ""}" data-d="${d}" aria-label="${n} ${d}. August">
-          <div class="dname">${n}</div><div class="dnum">${d}</div><div class="dots">${dots}</div></button>`;
-      }).join("");
-    $$(".day").forEach((b) => b.addEventListener("click", () => { renderWeek(+b.dataset.d); renderDay(+b.dataset.d); }));
+  const eventsOn = (d) => events.filter((e) => e.d === d).sort((a, b) => a.t.localeCompare(b.t));
+  const badges = (e) => (e.serie ? " ↻" : "") + (e.src === "verein" ? " ⚽" : "");
+
+  function eventRow(e, withChip) {
+    const chip = withChip && e.chip ? `<span class="chip ${e.chip[0]}">${e.chip[1]}</span>` : "";
+    return `<button class="row" data-ev="${e.id}">
+      <span class="time">${e.t}</span>
+      <span class="dot" style="background:${colors[e.who]}"></span>
+      <div class="row-main">
+        <div class="row-title">${e.title}${badges(e)}</div>
+        <div class="row-meta">${e.meta}</div>
+      </div>
+      ${chip}<span class="chev">›</span>
+    </button>`;
   }
-  function renderDay(d) {
-    const list = events[d] || [];
+
+  function renderToday() {
+    $("#todaylist").innerHTML = eventsOn(13).map((e) => eventRow(e, true)).join("") ||
+      `<div class="row"><div class="row-main"><div class="row-meta">Heute ist nichts eingetragen.</div></div></div>`;
+    $$("#todaylist [data-ev]").forEach((b) => b.addEventListener("click", () => openSheet(+b.dataset.ev)));
+  }
+
+  function renderWeek() {
+    $("#week").innerHTML = dayNames.map((n, i) => {
+      const d = 11 + i;
+      const dots = eventsOn(d).slice(0, 4).map((e) => `<i style="background:${colors[e.who]}"></i>`).join("");
+      return `<button class="day ${d === selDay ? "sel" : ""}" data-d="${d}" aria-label="${n} ${d}. August">
+        <div class="dname">${n}</div><div class="dnum">${d}</div><div class="dots">${dots}</div></button>`;
+    }).join("");
+    $$(".day").forEach((b) => b.addEventListener("click", () => { selDay = +b.dataset.d; renderWeek(); renderDay(); }));
+  }
+
+  function renderDay() {
+    const list = eventsOn(selDay);
     $("#daylist").innerHTML = list.length
-      ? list.map((e) => `<div class="row">
-          <span class="time">${e[0]}</span>
-          <span class="dot" style="background:${colors[e[1]]}"></span>
-          <div class="row-main"><div class="row-title">${e[2]}</div><div class="row-meta">${e[3]}</div></div>
-        </div>`).join("")
+      ? list.map((e) => eventRow(e, false)).join("")
       : `<div class="row"><div class="row-main"><div class="row-meta">Keine Termine – freier Tag 🎉</div></div></div>`;
+    $$("#daylist [data-ev]").forEach((b) => b.addEventListener("click", () => openSheet(+b.dataset.ev)));
   }
-  renderWeek(13);
-  renderDay(13);
+
+  function renderCal() { renderToday(); renderWeek(); renderDay(); }
+
+  /* ---------- Termin-Sheet (anlegen / bearbeiten / löschen) ---------- */
+  let editing = null;
+  function openSheet(id) {
+    editing = id;
+    const e = id ? events.find((x) => x.id === id) : null;
+    $("#ev-title").textContent = e ? "Termin bearbeiten" : "Neuer Termin";
+    $("#f-title").value = e ? e.title : "";
+    $("#f-who").value = e ? e.who : "emma";
+    $("#f-day").value = e ? e.d : selDay;
+    $("#f-time").value = e ? e.t : "15:00";
+    $("#f-meta").value = e ? e.meta : "";
+    $("#f-serie").checked = e ? !!e.serie : false;
+    $("#ev-delete").style.display = e ? "" : "none";
+    $("#ev-overlay").hidden = false;
+    $("#f-title").focus();
+  }
+  function closeSheet() { $("#ev-overlay").hidden = true; editing = null; }
+  $("#ev-close").addEventListener("click", closeSheet);
+  $("#ev-overlay").addEventListener("click", (e) => { if (e.target.id === "ev-overlay") closeSheet(); });
+
+  $("#ev-save").addEventListener("click", () => {
+    const title = $("#f-title").value.trim();
+    if (!title) { toast("Bitte einen Titel eingeben"); return; }
+    const data = {
+      title,
+      who: $("#f-who").value,
+      d: +$("#f-day").value,
+      t: $("#f-time").value || "12:00",
+      meta: $("#f-meta").value.trim() || "—",
+      serie: $("#f-serie").checked,
+    };
+    if (editing) {
+      Object.assign(events.find((x) => x.id === editing), data);
+      toast("Gespeichert ✓ – die ganze Familie sieht den neuen Stand");
+    } else {
+      events.push({ id: ++seq, ...data });
+      toast(data.serie ? "Serientermin angelegt ↻ – jede Woche" : "Termin angelegt ✓");
+    }
+    closeSheet();
+    renderCal();
+  });
+
+  $("#ev-delete").addEventListener("click", () => {
+    events = events.filter((x) => x.id !== editing);
+    closeSheet();
+    renderCal();
+    toast("Termin gelöscht");
+  });
+
+  $("#btn-new").addEventListener("click", () => openSheet(null));
+  $("#qa-termin").addEventListener("click", () => { show("kalender"); openSheet(null); });
+  $("#qa-notiz").addEventListener("click", () => { show("merkzeug"); });
+
+  /* ---------- Konflikt lösen (Heute + Assistent) ---------- */
+  function resolveConflict(viaAI) {
+    const e = events.find((x) => x.id === 5);
+    if (!e || e.chip[1] === "geregelt") return;
+    e.meta = "Bringt: Du · Anna informiert ✓";
+    e.chip = ["ok", "geregelt"];
+    $("#conflict-card").style.display = "none";
+    renderCal();
+    toast(viaAI ? "Assistent: eingetragen – du fährst Ben, Anna weiß Bescheid" : "Du fährst Ben – steht im Familienkalender");
+  }
+  $("#btn-uebernehmen").addEventListener("click", () => resolveConflict(false));
+
+  /* ---------- Nest-Assistent ---------- */
+  const suggestions = [
+    {
+      id: "serie",
+      src: "Muster erkannt",
+      text: "<b>Fußballtraining Emma</b> war jetzt 6 Mittwoche in Folge um 15:00. Soll ich daraus einen <b>Serientermin</b> machen? Ausfälle in den Ferien lasse ich automatisch weg.",
+      btn: "↻ Als Serie anlegen",
+      run() {
+        const e = events.find((x) => x.id === 3);
+        if (e) e.serie = true;
+        renderCal();
+        toast("Serientermin angelegt – jeden Mittwoch 15:00");
+      },
+    },
+    {
+      id: "konflikt",
+      src: "Koordination",
+      text: "Heute 16:30 kollidiert: <b>Ben → Kinderarzt</b>, aber Anna leitet bis 17:30 ihren Kurs. Mein Vorschlag: <b>Du fährst Ben</b> – dein Kalender ist ab 16:00 frei. Ich trage es ein und informiere Anna.",
+      btn: "✓ Übernehmen",
+      run() { resolveConflict(true); },
+    },
+    {
+      id: "verein",
+      src: "Vereins-App",
+      text: "Die <b>Vereins-App</b> kennt Trainings- und Spielplan von Bens F-Jugend. Soll ich sie verknüpfen? Änderungen – Ausfall, Verlegung, neues Turnier – übernehme ich dann <b>automatisch</b>. Dafür brauche ich <b>kein Passwort</b>, nur den Team-Code aus der Vereins-App.",
+      btn: "⚽ Team verknüpfen",
+      run() {
+        events.push(
+          { id: ++seq, d: 15, t: "17:00", who: "ben", title: "F-Jugend Training", meta: "Vereins-App · Sportplatz 2", src: "verein", serie: true },
+          { id: ++seq, d: 16, t: "09:15", who: "ben", title: "F-Jugend Treffpunkt Turnier", meta: "Vereins-App · Trikot nicht vergessen", src: "verein" }
+        );
+        renderCal();
+        toast("Verknüpft ⚽ – 2 Termine übernommen, bleibt automatisch aktuell");
+        addAICard({
+          src: "Vereins-App · verknüpft",
+          text: "Erledigt: <b>2 Termine übernommen</b> (Training Fr 17:00 ↻, Turnier-Treffpunkt Sa 09:15). Ich prüfe den Plan ab jetzt laufend – sagt der Trainer ab, verschwindet der Termin bei euch von selbst und ihr bekommt eine Push-Nachricht.",
+        });
+      },
+    },
+  ];
+
+  function addAICard(s, ref) {
+    const div = document.createElement("div");
+    div.className = "ai-card";
+    if (ref) div.dataset.sug = ref;
+    div.innerHTML = `<div class="src">${s.src}</div><p>${s.text}</p>` +
+      (s.btn ? `<button class="btn" data-run="${ref}">${s.btn}</button> <span class="doneflag">✓ erledigt</span>` : "");
+    $("#ai-feed").appendChild(div);
+    if (s.btn) {
+      div.querySelector("[data-run]").addEventListener("click", () => {
+        const sug = suggestions.find((x) => x.id === ref);
+        if (sug) sug.run();
+        div.classList.add("done");
+      });
+    }
+    return div;
+  }
+
+  let aiInit = false;
+  function openAI() {
+    if (!aiInit) {
+      aiInit = true;
+      addAICard({
+        src: "Nest-Assistent",
+        text: "Hallo! Ich schaue auf euren Familienkalender und mache Vorschläge – eintragen tue ich <b>nie ohne dein Okay</b>. Drei Dinge sind mir aufgefallen:",
+      });
+      suggestions.forEach((s) => addAICard(s, s.id));
+    }
+    $("#ai-overlay").hidden = false;
+    $("#ai-input").focus();
+  }
+  $("#fab").addEventListener("click", openAI);
+  $("#ai-close").addEventListener("click", () => { $("#ai-overlay").hidden = true; });
+  $("#ai-overlay").addEventListener("click", (e) => { if (e.target.id === "ai-overlay") $("#ai-overlay").hidden = true; });
+
+  $("#ai-send").addEventListener("click", () => {
+    const v = $("#ai-input").value.trim();
+    if (!v) return;
+    const u = document.createElement("div");
+    u.className = "bubble-user";
+    u.textContent = v;
+    $("#ai-feed").appendChild(u);
+    $("#ai-input").value = "";
+    setTimeout(() => {
+      addAICard({
+        src: "Nest-Assistent",
+        text: "In der echten App antworte ich hier mit KI (Claude) und kenne euren Kalender, die Kurse und – <b>nur wenn du ihn entsperrst</b> – dein Merkzeug. In dieser Demo bin ich noch ein Skript. 😊",
+      });
+      $("#ai-feed").lastElementChild.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }, 500);
+    u.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  });
+  $("#ai-input").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#ai-send").click(); });
 
   /* ---------- Merkzeug ---------- */
   const persons = [
@@ -861,4 +1167,6 @@
       <div class="row-main"><div class="row-title">${t}</div></div>
       <span class="chip ${c} frist-days">in ${d} Tagen</span>
     </div>`).join("");
+
+  renderCal();
 </script>
