@@ -479,6 +479,16 @@ function PersonSheet({ existing, onSave, onClose, toast }) {
   )
 }
 
+/* Startseiten „Ordnung“: nehmen das Anlegen ab – reinschreiben genügt */
+const ORDNUNG_PAGES = [
+  ['Kopf leeren', 'Alles hier rein, ungefiltert. **Stichworte reichen.**\nNichts auf dieser Seite muss schön oder vollständig sein.\n\n[ ] …\n[ ] …\n[ ] …\n\nWenn der Kopf leer ist, verteile die Zeilen auf:\n[[Diese Woche wirklich wichtig]] · [[Darf warten]] · [[Gehört nicht mir · darf weg]]'],
+  ['Diese Woche wirklich wichtig', 'Maximal **drei**. Alles darüber ist keine Priorität, sondern eine Liste.\n\n[ ] …\n[ ] …\n[ ] …'],
+  ['Darf warten', 'Bekommt ein Datum – und darf bis dahin raus aus deinem Kopf.\n\n- …'],
+  ['Gehört nicht mir · darf weg', '# Gehört nicht mir\nWas du für andere im Kopf trägst. Zurückgeben oder ansprechen.\n- …\n\n# Darf weg\nWas niemand von dir verlangt außer du selbst. Streichen ist erlaubt.\n- …'],
+  ['Gut gemacht', '**Perfekt ist nicht das Ziel. Erledigt ist das Ziel.**\nJede Woche mindestens eine Zeile – auch kleine zählen:\n\n- …'],
+  ['4 Säulen der Empathie', 'Deine Stärke – und dein größter Energiefresser. So nutzt du sie, ohne dich zu verausgaben:\n\n# 1. Wahrnehmen\nDu merkst sofort, wie es anderen geht. → Nach dem Gespräch **kurz bei der Person notieren** – dann darf dein Kopf loslassen.\n\n# 2. Verstehen\nWarum geht es jemandem so? → Steht im Spickzettel: Familie, Themen, offener Faden.\n\n# 3. Mitfühlen\nMitgefühl ja – **Mittragen nein**. Die Last der anderen ist nicht deine Aufgabe.\n\n# 4. Handeln\nKlein handeln reicht: eine gute Frage stellen, ein Eselsohr setzen, einmal ✋ übernehmen.\n\nMerksatz: **wahrnehmen → notieren → loslassen.** #ordnung'],
+]
+
 const EMPTY_MEMORY = { persons: [], docs: [], sections: [] }
 const SEC_COLORS = ['#8B5CF6', '#FF5D73', '#FFB02E', '#2FBF71', '#00B8C4', '#FF7A3D']
 const TAG_RE = /#[A-Za-z0-9äöüÄÖÜß_-]+/g
@@ -520,7 +530,7 @@ function PageView({ text, onToggleLine, onLink, onTag }) {
   )
 }
 
-function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
+function Merkzeug({ blob, onSaveBlob, ownerName, toast, inbox = [], onImportInbox }) {
   const [state, setState] = useState('locked')
   const [pw, setPw] = useState('')
   const [err, setErr] = useState(null)
@@ -554,7 +564,22 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
         try {
           const obj = await decryptJson(k, blob.iv, blob.cipher)
           setKey(k); setSalt(blob.salt)
-          setMem({ persons: obj.persons || [], docs: obj.docs || [], sections: obj.sections || [] })
+          let merged = { persons: obj.persons || [], docs: obj.docs || [], sections: obj.sections || [] }
+          // Blitzzettel jetzt verschlüsselt in den 📥 Eingang übernehmen
+          if (inbox.length) {
+            let secs = merged.sections
+            let ein = secs.find((x) => x.name === '📥 Eingang')
+            if (!ein) { ein = { id: uid(), name: '📥 Eingang', color: '#FFB02E', pages: [] }; secs = [ein, ...secs] }
+            const pages = inbox.map((i) => ({
+              id: uid(), title: i.text.split('\n')[0].slice(0, 42), text: i.text + '\n\n· Blitzzettel vom ' + i.date,
+              updated: i.date, ts: i.ts,
+            }))
+            merged = { ...merged, sections: secs.map((x) => (x.id === ein.id ? { ...x, pages: [...pages, ...x.pages] } : x)) }
+            const enc2 = await encryptJson(k, merged)
+            onSaveBlob({ salt: blob.salt, ...enc2 }, { clearInbox: true })
+            toast(`⚡ ${inbox.length} Blitzzettel verschlüsselt in den Eingang übernommen`)
+          }
+          setMem(merged)
           setIsNew(false); setState('open')
           toast('Entsperrt – nur auf diesem Gerät lesbar')
         } catch {
@@ -564,10 +589,19 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
       } else {
         const s = newSalt()
         const k = await deriveKey(pw, s)
-        const starter = { ...EMPTY_MEMORY, sections: [{ id: uid(), name: 'Notizen', color: SEC_COLORS[0], pages: [] }] }
+        let starter = { ...EMPTY_MEMORY, sections: [{ id: uid(), name: 'Notizen', color: SEC_COLORS[0], pages: [] }] }
+        if (inbox.length) {
+          starter = {
+            ...starter,
+            sections: [{
+              id: uid(), name: '📥 Eingang', color: '#FFB02E',
+              pages: inbox.map((i) => ({ id: uid(), title: i.text.split('\n')[0].slice(0, 42), text: i.text + '\n\n· Blitzzettel vom ' + i.date, updated: i.date, ts: i.ts })),
+            }, ...starter.sections],
+          }
+        }
         setKey(k); setSalt(s); setMem(starter); setIsNew(true); setState('open')
         const enc = await encryptJson(k, starter)
-        onSaveBlob({ salt: s, ...enc })
+        onSaveBlob({ salt: s, ...enc }, { clearInbox: inbox.length > 0 })
         toast('Neues Gedächtnis angelegt – merk dir dieses Passwort gut!')
       }
       setPw('')
@@ -904,6 +938,21 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSection() } }} />
             <button type="button" className="btn sm" onClick={addSection}>+</button>
           </div>
+          {!sections.some((x) => x.name.includes('Ordnung')) && (
+            <button type="button" className="osec" style={{ borderStyle: 'dashed' }} onClick={() => {
+              const ns = {
+                id: uid(), name: '🧭 Ordnung', color: '#8B5CF6',
+                pages: ORDNUNG_PAGES.map(([title, text], i) => ({ id: uid(), title, text, updated: stamp(), ts: Date.now() - i })),
+              }
+              updSections((ss) => [ns, ...ss])
+              setSec(ns.id)
+              setPageId(ns.pages[0].id)
+              setPageMode('view')
+              toast('🧭 Deine Ordnung steht – fang bei „Kopf leeren“ an. Stichworte reichen.')
+            }}>
+              <span className="osec-bar" style={{ background: '#8B5CF6' }} />🧭 Ordnung anlegen
+            </button>
+          )}
         </div>
 
         {sec === '_personen' && (
@@ -1098,6 +1147,7 @@ export default function App() {
   const [selDate, setSelDate] = useState(iso(new Date()))
   const [filterWho, setFilterWho] = useState(null)
   const [memberSheet, setMemberSheet] = useState(false)
+  const [blitz, setBlitz] = useState(false)
   const [vereinSheet, setVereinSheet] = useState(false)
   const [syncing, setSyncing] = useState(false)
   const [calQ, setCalQ] = useState('')
@@ -2146,6 +2196,9 @@ export default function App() {
         <header className="topbar">
           <h1 className="wordmark serif"><LogoMark size={25} />Esels<span className="nest">ohr</span></h1>
           <span className="sp" />
+          {!isKid && (
+            <button className="iconbtn" aria-label="Blitzzettel – schnell festhalten" title="Blitzzettel" onClick={() => setBlitz(true)}>⚡</button>
+          )}
           <button className="userchip" onClick={() => setNav('profil')} aria-label="Mein Profil">
             <span className="avatar sm member" style={{ background: me.color }}>{me.name[0].toUpperCase()}</span>
             {me.name}
@@ -2160,9 +2213,11 @@ export default function App() {
           {nav === 'merkzeug' && !isKid && (
             <Merkzeug
               blob={db.memories[me.id] || null}
-              onSaveBlob={(blob) => saveAll({ ...db, memories: { ...db.memories, [me.id]: blob } })}
+              onSaveBlob={(blob, opts) => saveAll({ ...db, memories: { ...db.memories, [me.id]: blob }, ...(opts?.clearInbox ? { inbox: (db.inbox || []).filter((i) => i.member_id !== me.id) } : {}) })}
               ownerName={me.name}
               toast={toast}
+              inbox={(db.inbox || []).filter((i) => i.member_id === me.id)}
+              onImportInbox={() => saveAll({ ...db, inbox: (db.inbox || []).filter((i) => i.member_id !== me.id) })}
             />
           )}
           {nav === 'familie' && !isKid && screenFamilie}
@@ -2181,6 +2236,17 @@ export default function App() {
       {sheet && (
         <EventSheet initial={sheet} members={db.members} me={me}
           onSave={saveEvent} onDelete={deleteEvent} onClose={() => setSheet(null)} />
+      )}
+      {blitz && (
+        <BlitzSheet onClose={() => setBlitz(false)} onSave={(text) => {
+          const d = new Date()
+          saveAll({
+            ...db,
+            inbox: [...(db.inbox || []), { id: uid(), member_id: me.id, text, ts: Date.now(), date: `${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()}` }],
+          })
+          setBlitz(false)
+          toast('⚡ Festgehalten – ist sicher. Weiter im Alltag.')
+        }} />
       )}
       {memberSheet && (
         <MemberSheet onAdd={addMember} onClose={() => setMemberSheet(false)}
@@ -2441,6 +2507,25 @@ function VereinSheet({ members, me, onLink, onClose }) {
             <p className="hint">Ab jetzt hält Eselsohr die Termine automatisch aktuell – Absagen und Verlegungen inklusive. Ganz ohne Passwort.</p>
           </>
         )}
+      </form>
+    </div>
+  )
+}
+
+/* Blitzzettel: null Hürde – festhalten, bevor der Gedanke weg ist */
+function BlitzSheet({ onSave, onClose }) {
+  const [text, setText] = useState('')
+  return (
+    <div className="overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <form className="sheet" onSubmit={(e) => { e.preventDefault(); if (text.trim()) onSave(text.trim()) }}>
+        <h3>⚡ Blitzzettel<button type="button" className="x" onClick={onClose} aria-label="Schließen">✕</button></h3>
+        <div className="field">
+          <textarea rows={4} autoFocus value={text} onChange={(e) => setText(e.target.value)}
+            placeholder="Einfach raus damit – Stichworte reichen. Sortieren kannst du später. Oder nie."
+            aria-label="Blitzzettel" />
+        </div>
+        <button className="btn" style={{ width: '100%' }}>Festhalten</button>
+        <p className="hint">Wandert beim nächsten Entsperren automatisch verschlüsselt in deinen Gedächtnispalast (📥 Eingang). Bis dahin liegt der Zettel unverschlüsselt nur auf diesem Gerät.</p>
       </form>
     </div>
   )
