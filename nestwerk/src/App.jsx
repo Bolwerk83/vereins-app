@@ -449,18 +449,27 @@ export default function App() {
     toast(`${m.name} ${!m.can_direct ? 'darf jetzt direkt eintragen' : 'braucht jetzt Bestätigung'}`)
   }
 
-  function exportBackup() {
+  async function exportBackup() {
     const json = JSON.stringify(db, null, 2)
     try {
-      navigator.clipboard?.writeText(json)
+      await navigator.clipboard?.writeText(json)
     } catch { /* Zwischenablage gesperrt */ }
+    if (window.claude?.downloads) {
+      try {
+        await window.claude.downloads.save({ filename: 'nestwerk-backup.json', data: json })
+        toast('Backup gespeichert ✓ (und in die Zwischenablage kopiert)')
+      } catch (e) {
+        toast(e?.code === 'declined' ? 'Speichern abgebrochen – Backup liegt in der Zwischenablage' : 'Backup in Zwischenablage kopiert ✓')
+      }
+      return
+    }
     try {
       const a = document.createElement('a')
       a.href = URL.createObjectURL(new Blob([json], { type: 'application/json' }))
       a.download = 'nestwerk-backup.json'
       a.click()
     } catch { /* Download gesperrt */ }
-    toast('Backup in Zwischenablage kopiert (und als Datei versucht) ✓')
+    toast('Backup als Datei gespeichert und in die Zwischenablage kopiert ✓')
   }
 
   /* ---------- Bausteine ---------- */
