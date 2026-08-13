@@ -14970,6 +14970,10 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   // alles AN (Bestandsschutz). Bei Gleichstand bleibt das Modul aktiv.
   const teamModOn=(tm,key)=>{ const vs=Object.values(tm?.moduleVotes||{}).filter(v=>v&&(key in v)); if(!vs.length) return true; return vs.filter(v=>v[key]).length*2>=vs.length; };
   const modOn=key=>{ const tms=(local.teams||[]).filter(tm=>myTids.includes(tm.id)); return tms.length?tms.some(tm=>teamModOn(tm,key)):true; };                       // Termin-Ansicht als Tabs
+  // Namen aller Vereins-Trainer: Zusagen werden in Spieler und Trainer getrennt gezaehlt
+  const trainerNames=(local.trainers||[]).filter(x=>x.cid===cid).map(x=>x.name).filter(Boolean);
+  const [subReqEv,setSubReqEv]=useState(null);   // Vertretungs-Gesuch anlegen (Modal)
+  const [subNote,setSubNote]=useState("");
   useEffect(()=>{ setEvTab("rueck"); },[viewEv?.id]);
   const [editConf,setEditConf]=useState(null);
   const [pauseSer,setPauseSer]=useState(null); // {ev,from,to} Ferien-Pause fuer eine Serie
@@ -15167,6 +15171,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         {tab==="events"&&<>
           {/* Saison-Check: Erinnerung ab 3 Monate vor Saisonende, bis der Fragebogen abgegeben ist */}
           {!isAdmin&&modOn("saison")&&<SeasonSurveyReminder data={local} cid={cid} session={session} onOpen={()=>setSurveyOpen(true)}/>}
+          {/* Vertretungs-Gesuche: Trainer helfen sich bei Krankheit & Co. gegenseitig aus */}
+          {!isHelper&&<VertretungsBoard data={local} cid={cid} session={session} save={save} fire={fire}/>}
           {/* Helfer mit mehreren Jugenden: einfacher Wechsel ohne Neu-Login */}
           {isHelper&&myTids.length>1&&(
             <div style={{display:"flex",gap:6,marginBottom:12,overflowX:"auto",paddingBottom:2}}>
@@ -15326,14 +15332,14 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             );
           })()}
           <FerienHinweis hols={_ferienDash} from={tod} to={_in10}/>
-          {up.length>0&&<><Divider label={`NÄCHSTE 21 TAGE (${soon.length})`}/>{soon.length>0?soon.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={selfName} onSelfVote={selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={()=>setBriefEv(ev)} modTraining={modOn("training")}/>):<p style={{textAlign:"center",color:"#64748b",fontSize:13.5,padding:"14px 10px"}}>Keine Termine in den nächsten 21 Tagen.</p>}
+          {up.length>0&&<><Divider label={`NÄCHSTE 21 TAGE (${soon.length})`}/>{soon.length>0?soon.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={selfName} onSelfVote={selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}}/>):<p style={{textAlign:"center",color:"#64748b",fontSize:13.5,padding:"14px 10px"}}>Keine Termine in den nächsten 21 Tagen.</p>}
             {later.length>0&&<>
               <button onClick={()=>setShowLater(s=>!s)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",background:showLater?"#f1f5f9":"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,cursor:"pointer",margin:"6px 0 12px",padding:"11px 14px",fontWeight:800,fontSize:13,color:"#475569",fontFamily:"inherit"}}>{showLater?"▲ Weitere Termine ausblenden":"▼ Weitere "+later.length+" Termine anzeigen"}</button>
-              {showLater&&later.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={selfName} onSelfVote={selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={()=>setBriefEv(ev)} modTraining={modOn("training")}/>)}
+              {showLater&&later.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={selfName} onSelfVote={selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}}/>)}
             </>}
           </>}
           {up.length===0&&<div style={{textAlign:"center",padding:"30px",background:"#fff",borderRadius:18,border:"1.5px dashed #e2e8f0",color:"#64748b"}}><Logo cl={myClub} sz={50} sx={{margin:"0 auto 12px"}}/><p style={{fontWeight:800,fontSize:15}}>Noch keine Termine</p><p style={{fontSize:13,marginTop:3}}>Klicke oben auf "Neuen Termin anlegen"</p></div>}
-          {past.length>0&&<><Divider label={`VERGANGENE (${past.length})`} light/><div style={{opacity:.72}}>{past.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{}} onCopyLink={()=>{}} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={()=>setBriefEv(ev)} modTraining={modOn("training")}/>)}</div></>}
+          {past.length>0&&<><Divider label={`VERGANGENE (${past.length})`} light/><div style={{opacity:.72}}>{past.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{}} onCopyLink={()=>{}} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames}/>)}</div></>}
           <AffiliateBanner trigger="events" style={{marginTop:14}}/>
           <div style={{marginTop:14}}><DFBFormatsCard cl={myClub} cats={(local.teams||[]).filter(tm=>myTids.includes(tm.id)).map(tm=>tm.cat||tm.name)}/></div>
           <div style={{marginTop:14}}><RecommendCard theme={t.p}/></div>
@@ -15529,7 +15535,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               <div style={{textAlign:"center",fontSize:12.5,color:"#64748b",padding:"6px"}}>Info-Termin – keine Abstimmung, keine Anwesenheits-Auswertung.</div>
             </div>
           : <VoteOverview ev={viewEv} players={local.players} playerProfiles={local.playerProfiles||[]} teams={local.teams} myTids={myTids} cl={myClub}
-              readOnly={isHelper}
+              readOnly={isHelper} trainerNames={trainerNames}
               myKids={isHelper?[]:(((local.trainers||[]).find(x=>x.id===session?.id)?.childNames)||"").split(",").map(x=>x.trim()).filter(Boolean)}
               staff={staffNeed(viewEv,{ perStaff:myClub?.clubSettings?.playersPerStaff||6, trainers:(local.trainers||[]).filter(trn=>(trn.tids||[]).includes(viewEv.tid)&&isActive(trn)).length, squad:(local.playerProfiles||[]).filter(pp=>pp.mainTid===viewEv.tid&&!pp.archived).length })}
               onSetDeadline={deadline=>{
@@ -15973,6 +15979,28 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         <ModuleWizard data={local} session={session} myTids={myTids} cl={myClub} save={save} onClose={()=>setModWizardManual(false)}/>
       )}
       {surveyOpen&&<SeasonSurveyModal data={local} cid={cid} session={session} cl={myClub} save={save} fire={fire} onClose={()=>setSurveyOpen(false)}/>}
+      {/* Vertretungs-Gesuch anlegen (aus dem ⋯-Menue der Terminkarte) */}
+      {subReqEv&&(
+        <div onClick={()=>setSubReqEv(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:820,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(8px)"}}>
+          <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,animation:"down .24s ease"}}>
+            <div style={{display:"flex",justifyContent:"center",padding:"12px 0 4px"}}><div style={{width:44,height:4,borderRadius:99,background:"#e2e8f0"}}/></div>
+            <div style={{padding:"8px 22px 44px"}}>
+              <h3 style={{fontWeight:900,fontSize:18,color:"#0f172a",marginBottom:2}}>🆘 Vertretung suchen</h3>
+              <p style={{fontSize:12.5,color:"#64748b",marginBottom:12,lineHeight:1.5}}>Dein Gesuch sehen <b>alle Trainer des Vereins</b> oben in ihrer Terminliste – wer kann, übernimmt mit einem Tipp.</p>
+              <div style={{background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"10px 13px",marginBottom:12}}>
+                <div style={{fontWeight:800,fontSize:13.5,color:"#0f172a"}}>{subReqEv.title}</div>
+                <div style={{fontSize:12,color:"#64748b",marginTop:2}}>{fmtD(subReqEv.date)}{subReqEv.time?` · ${subReqEv.time} Uhr`:""}{subReqEv.loc?` · 📍 ${subReqEv.loc}`:""}</div>
+              </div>
+              <textarea value={subNote} onChange={e=>setSubNote(e.target.value)} rows={2} placeholder="Kurzer Grund, z.B. Bin krank – wer kann das Training übernehmen?"
+                style={{width:"100%",padding:"10px 12px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",fontFamily:"inherit",boxSizing:"border-box",marginBottom:12,resize:"vertical"}}/>
+              <button onClick={()=>{
+                save({...local,subRequests:[...(local.subRequests||[]),{id:uid(),cid,evId:subReqEv.id,tid:subReqEv.tid,by:session.id,byName:session.name||"Trainer",note:subNote.trim(),status:"open",ts:new Date().toISOString()}]});
+                setSubReqEv(null); fire("Gesuch gesendet – alle Trainer sehen es jetzt 🙌");
+              }} style={{width:"100%",padding:"13px",borderRadius:13,border:"none",background:"#be123c",color:"#fff",fontWeight:800,fontSize:14.5,cursor:"pointer",fontFamily:"inherit"}}>Gesuch an alle Trainer senden</button>
+            </div>
+          </div>
+        </div>
+      )}
       {helperWelcomeOpen && meHelper && <HelperWelcome h={meHelper} data={local} save={save} onClose={()=>setHelperWelcomeOpen(false)}/>}
       <Toast msg={toast}/>
       {!isDesktop&&<BottomNav tab={tab} setTab={setTab} isAdmin={isAdmin} isHelper={isHelper} helperKasse={helperKasse} helperOnlyKasse={helperOnlyKasse}
@@ -16196,7 +16224,7 @@ function PlaytimeTracker({ ev, roster, onSave, t }){
 // Anwesenheits-Checkliste: kompletter Kader + alle Abstimmenden, Abhaken,
 // No-Show-Markierung und Gaeste (Probetraining). Haengt im Termin unter
 // "Rueckmeldungen" UND im Orga-Tab (Planung vor Ort).
-function AttendanceCheckoff({ ev, teamPlayers=[], onSetPresent=()=>{}, onSetGuests=()=>{} }){
+function AttendanceCheckoff({ ev, teamPlayers=[], onSetPresent=()=>{}, onSetGuests=()=>{}, trainerNames=[], onSetVote=null }){
   const [guestName,setGuestName]=useState("");
   const present=ev.present||{};
   const guests=ev.guests||[];
@@ -16205,9 +16233,13 @@ function AttendanceCheckoff({ ev, teamPlayers=[], onSetPresent=()=>{}, onSetGues
   const togglePresent=(name)=>{ const np={...present}; if(np[name]) delete np[name]; else np[name]=true; onSetPresent(np); };
   const addGuest=()=>{ const n=guestName.trim(); if(!n) return; if(!guests.includes(n)){ onSetGuests([...guests,n]); onSetPresent({...present,[n]:true}); } setGuestName(""); };
   const removeGuest=(name)=>{ onSetGuests(guests.filter(x=>x!==name)); const np={...present}; delete np[name]; onSetPresent(np); };
-  // Kader + selbst angemeldete Gäste (haben abgestimmt, sind aber nicht im Kader)
-  const extraVoters=Object.keys(ev.votes||{}).filter(n=>!teamPlayers.includes(n));
-  const roster=[...new Set([...teamPlayers,...extraVoters])].sort(byName);
+  // Kader + selbst angemeldete Gäste (haben abgestimmt, sind aber nicht im Kader).
+  // Trainer-Selbstzusagen gehoeren NICHT in die Spieler-Anwesenheit.
+  const _tn=new Set(trainerNames.map(n=>String(n).toLowerCase()));
+  const extraVoters=Object.keys(ev.votes||{}).filter(n=>!teamPlayers.includes(n)&&!_tn.has(String(n).toLowerCase()));
+  // Sortierung: erst Zusagen (inkl. "komme später"), dann Offene, dann Absagen
+  const rank=n=>{ const v=(ev.votes||{})[n]; const val=getVal(v); if(val==="yes") return (typeof v==="object"&&v?.late)?1:0; return val==="no"?3:2; };
+  const roster=[...new Set([...teamPlayers,...extraVoters])].sort((a,b)=>rank(a)-rank(b)||byName(a,b));
   if(roster.length===0&&guests.length===0) return null;
   const presN=Object.keys(present).length;
   const yesish=roster.filter(n=>getVal((ev.votes||{})[n])==="yes");
@@ -16222,7 +16254,9 @@ function AttendanceCheckoff({ ev, teamPlayers=[], onSetPresent=()=>{}, onSetGues
           <div style={{fontSize:11,color:"#64748b",marginBottom:10,lineHeight:1.45}}>Hake ab, wer wirklich gekommen ist. „No-Show" = hat zugesagt, war aber nicht da.</div>
           <div style={{display:"flex",flexDirection:"column",gap:6,maxHeight:"38dvh",overflowY:"auto"}}>
             {roster.map(name=>{
-              const val=getVal((ev.votes||{})[name]);
+              const raw=(ev.votes||{})[name];
+              const val=getVal(raw);
+              const lateMin=(typeof raw==="object"&&raw)?raw.late:null;
               const here=!!present[name];
               const noShow=val==="yes"&&!here;
               return (
@@ -16230,9 +16264,17 @@ function AttendanceCheckoff({ ev, teamPlayers=[], onSetPresent=()=>{}, onSetGues
                   <div style={{width:22,height:22,borderRadius:7,border:`2px solid ${here?"#16a34a":"#cbd5e1"}`,background:here?"#16a34a":"#fff",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:13,fontWeight:900}}>{here?"✓":""}</div>
                   <Av name={name} sz={30}/>
                   <span style={{flex:1,minWidth:0,fontWeight:700,fontSize:13.5,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</span>
-                  {val==="yes"&&<span style={{fontSize:10.5,fontWeight:700,color:"#16a34a",background:"#dcfce7",borderRadius:6,padding:"2px 7px"}}>zugesagt</span>}
+                  {val==="yes"&&!lateMin&&<span style={{fontSize:10.5,fontWeight:700,color:"#16a34a",background:"#dcfce7",borderRadius:6,padding:"2px 7px"}}>zugesagt</span>}
+                  {val==="yes"&&lateMin&&<span style={{fontSize:10.5,fontWeight:800,color:"#b45309",background:"#fef3c7",borderRadius:6,padding:"2px 7px"}}>+{lateMin} Min später</span>}
                   {val==="no"&&<span style={{fontSize:10.5,fontWeight:700,color:"#dc2626",background:"#fee2e2",borderRadius:6,padding:"2px 7px"}}>abgesagt</span>}
                   {noShow&&<span style={{fontSize:10.5,fontWeight:800,color:"#9a3412",background:"#ffedd5",borderRadius:6,padding:"2px 7px"}}>No-Show</span>}
+                  {/* Ohne Stimme: Trainer kann direkt zu-/absagen (z.B. nach Telefonat) */}
+                  {onSetVote&&!val&&(
+                    <span style={{display:"flex",gap:4,flexShrink:0}} onClick={e=>e.stopPropagation()}>
+                      <button onClick={()=>onSetVote(name,"yes")} title="Für diesen Spieler zusagen" style={{width:28,height:26,borderRadius:8,border:"none",background:"#16a34a",color:"#fff",fontWeight:900,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>✓</button>
+                      <button onClick={()=>onSetVote(name,"no")} title="Für diesen Spieler absagen" style={{width:28,height:26,borderRadius:8,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:900,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>✕</button>
+                    </span>
+                  )}
                 </div>
               );
             })}
@@ -16254,7 +16296,7 @@ function AttendanceCheckoff({ ev, teamPlayers=[], onSetPresent=()=>{}, onSetGues
   );
 }
 
-function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadline,onSetPresent=()=>{},onSetGuests=()=>{},onSetVote=null,myKids=[],staff=null,readOnly=false}) {
+function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadline,onSetPresent=()=>{},onSetGuests=()=>{},onSetVote=null,myKids=[],staff=null,readOnly=false,trainerNames=[]}) {
   const p = cl?.pri||"#16a34a";
   const isGameEv = ["heimspiel","auswarts","freundschaft","turnier"].includes(ev.type);
   const present = ev.present||{};
@@ -16289,8 +16331,16 @@ function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadlin
 
   const byName  = (a,b)=>(a||"").localeCompare(b||"");
   const voted   = Object.entries(ev.votes||{});
-  const yes     = voted.filter(([,v])=>getVal(v)==="yes").map(([n])=>n).sort(byName);
-  const no      = voted.filter(([,v])=>getVal(v)==="no" ).map(([n])=>n).sort(byName);
+  // Spieler und Trainer getrennt zaehlen: fuer "mindestens 6 Spieler" ist die
+  // Trainer-Selbstzusage uninteressant - sie steht separat darunter.
+  const _tnLow  = new Set(trainerNames.map(n=>String(n).toLowerCase()));
+  const isTrainerName = n=>_tnLow.has(String(n).toLowerCase());
+  const yesAll  = voted.filter(([,v])=>getVal(v)==="yes").map(([n])=>n).sort(byName);
+  const noAll   = voted.filter(([,v])=>getVal(v)==="no" ).map(([n])=>n).sort(byName);
+  const yes     = yesAll.filter(n=>!isTrainerName(n));
+  const no      = noAll.filter(n=>!isTrainerName(n));
+  const trYes   = yesAll.filter(isTrainerName);
+  const trNo    = noAll.filter(isTrainerName);
   const missing = teamPlayers.filter(n=>!(ev.votes||{})[n]).sort(byName);
   const lateVoters = voted.filter(([n])=>isLate(n)).map(([n])=>n);
   // Late arrivals: yes votes with .late field
@@ -16303,10 +16353,10 @@ function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadlin
   return (
     <div>
       {}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:lateArrivals.length>0?8:16}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:(trYes.length||trNo.length)?8:lateArrivals.length>0?8:16}}>
         {[
-          {label:"Dabei",val:yes.length,color:"#16a34a",bg:"#dcfce7",icon:"✓"},
-          {label:"Nicht dabei",val:no.length,color:"#dc2626",bg:"#fee2e2",icon:"✕"},
+          {label:"Spieler dabei",val:yes.length,color:"#16a34a",bg:"#dcfce7",icon:"✓"},
+          {label:"Abgesagt",val:no.length,color:"#dc2626",bg:"#fee2e2",icon:"✕"},
           {label:"Fehlt noch",val:missing.length,color:"#d97706",bg:"#fef3c7",icon:"⏳"},
         ].map(s=>(
           <div key={s.label} style={{background:s.bg,borderRadius:14,padding:"12px 8px",textAlign:"center",border:`1.5px solid ${s.color}22`}}>
@@ -16315,6 +16365,14 @@ function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadlin
           </div>
         ))}
       </div>
+      {/* Trainer separat - fuer "mind. 6 Spieler" zaehlen nur die Spieler oben */}
+      {(trYes.length>0||trNo.length>0)&&(
+        <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap",marginBottom:lateArrivals.length>0?8:16,background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:11,padding:"7px 11px"}}>
+          <span style={{fontSize:11,fontWeight:800,color:"#64748b"}}>🧑‍🏫 TRAINER:</span>
+          {trYes.map(n=><span key={n} style={{display:"inline-flex",alignItems:"center",gap:4,fontSize:11.5,fontWeight:700,color:"#15803d",background:"#dcfce7",borderRadius:99,padding:"2px 8px 2px 3px"}}><Av name={n} sz={16}/>{n} ✓</span>)}
+          {trNo.map(n=><span key={n} style={{display:"inline-flex",alignItems:"center",gap:4,fontSize:11.5,fontWeight:700,color:"#dc2626",background:"#fee2e2",borderRadius:99,padding:"2px 8px 2px 3px"}}><Av name={n} sz={16}/>{n} ✕</span>)}
+        </div>
+      )}
 
       {/* Meine Kinder: Trainer-Kinder angepinnt – Zu-/Absage ohne Umloggen */}
       {onSetVote&&myKids.length>0&&(()=>{ const kids=myKids.filter(n=>teamPlayers.includes(n)); if(!kids.length) return null; return (
@@ -16371,8 +16429,8 @@ function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadlin
       {}
       <div style={{marginBottom:16}}>
         <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
-          <span style={{fontSize:12,fontWeight:700,color:"#64748b"}}>Ruecklauf</span>
-          <span style={{fontSize:12,fontWeight:700,color:p}}>{voted.length}/{totalPlayers} ({pct(voted.length)}%)</span>
+          <span style={{fontSize:12,fontWeight:700,color:"#64748b"}}>Ruecklauf (Spieler)</span>
+          <span style={{fontSize:12,fontWeight:700,color:p}}>{yes.length+no.length}/{totalPlayers} ({pct(yes.length+no.length)}%)</span>
         </div>
         <div style={{height:8,borderRadius:99,background:"#e2e8f0",overflow:"hidden",display:"flex"}}>
           <div style={{height:"100%",background:"#16a34a",width:`${pct(yes.length)}%`,transition:"width .4s ease"}}/>
@@ -16448,8 +16506,9 @@ function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadlin
         )}
       </div>
 
-      {}
-      {voted.length>0&&<>
+      {/* Die Einzel-Auflistung der Abstimmungen erscheint nur noch, wenn es KEINE
+          Abhak-Liste darunter gibt - dort stehen die Stimmen ja schon dran. */}
+      {readOnly&&voted.length>0&&<>
         <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:8}}>ABSTIMMUNGEN ({voted.length})</div>
         <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:14,maxHeight:"35dvh",overflowY:"auto"}}>
           {[...voted].sort((a,b)=>{
@@ -16474,10 +16533,10 @@ function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadlin
         </div>
       </>}
 
-      {!readOnly&&<AttendanceCheckoff ev={ev} teamPlayers={teamPlayers} onSetPresent={onSetPresent} onSetGuests={onSetGuests}/>}
+      {!readOnly&&<AttendanceCheckoff ev={ev} teamPlayers={teamPlayers} onSetPresent={onSetPresent} onSetGuests={onSetGuests} trainerNames={trainerNames} onSetVote={onSetVote}/>}
 
-      {}
-      {missing.length>0&&<>
+      {/* "Noch nicht abgestimmt" nur ohne Abhak-Liste - dort stehen Offene mit ✓/✕ drin */}
+      {readOnly&&missing.length>0&&<>
         <div style={{fontSize:11,fontWeight:800,color:"#d97706",letterSpacing:.5,marginBottom:8}}>NOCH NICHT ABGESTIMMT ({missing.length})</div>
         <div style={{display:"flex",flexDirection:"column",gap:6}}>
           {missing.map(name=>(
@@ -16503,13 +16562,15 @@ function eventWarnings(ev, tod, ctx={}){
   if(!ev || isEventPast(ev)) return w;
   const days = ev.date ? Math.round((new Date(ev.date+"T12:00:00")-new Date(tod+"T12:00:00"))/86400000) : 99;
   const isGame = ["heimspiel","auswarts","freundschaft","turnier"].includes(ev.type);
-  const yes = Object.values(ev.votes||{}).filter(v=>(typeof v==="object"?v.val:v)==="yes").length;
+  // Soll-Vergleich zaehlt nur SPIELER-Zusagen - Trainer-Selbstzusagen bleiben aussen vor
+  const _tn=new Set((ctx.trainerNames||[]).map(n=>String(n).toLowerCase()));
+  const yes = Object.entries(ev.votes||{}).filter(([n,v])=>(typeof v==="object"?v.val:v)==="yes"&&!_tn.has(String(n).toLowerCase())).length;
   if(isGame && days<=3){
     const lu=ev.lineup||{}; const placed=[...(lu.T||[]),...(lu.A||[]),...(lu.M||[]),...(lu.S||[])].length;
     if(placed===0) w.push({label:"Aufstellung fehlt",col:"#7c3aed",bg:"#ede9fe"});
   }
   if((ev.pt==="att"||!ev.pt) && days<=4 && ev.sollPlayers>0 && yes<ev.sollPlayers){
-    w.push({label:`nur ${yes}/${ev.sollPlayers} Zusagen`,col:"#dc2626",bg:"#fee2e2"});
+    w.push({label:`nur ${yes}/${ev.sollPlayers} Spieler`,col:"#dc2626",bg:"#fee2e2"});
   }
   // Frist abgelaufen, aber noch nicht alle (Soll) abgestimmt -> Trainer soll erinnern.
   if((ev.pt==="att"||!ev.pt) && ev.deadline && isDeadlinePassed(ev) && ev.sollPlayers>0){
@@ -16789,6 +16850,48 @@ function SeasonSurveyReminder({data,cid,session,onOpen}){
     </div>
   );
 }
+// Trainer-Vertretung: Bei Krankheit & Co. ein Gesuch an ALLE Trainer des Vereins -
+// wer kann, uebernimmt den Termin mit einem Tipp (auch teamuebergreifend).
+function VertretungsBoard({data,cid,session,save,fire}){
+  const tod=now();
+  const evOf=r=>(data.events||[]).find(e=>e.id===r.evId);
+  const reqs=(data.subRequests||[]).filter(r=>r.cid===cid&&evOf(r)&&evOf(r).date>=tod);
+  const mine=reqs.filter(r=>r.by===session.id);
+  const others=reqs.filter(r=>r.by!==session.id&&(r.status==="open"||r.takenById===session.id));
+  if(!mine.length&&!others.length) return null;
+  const tmOf=ev=>(data.teams||[]).find(t=>t.id===ev?.tid);
+  const accept=r=>{ save({...data,subRequests:(data.subRequests||[]).map(x=>x.id===r.id?{...x,status:"taken",takenBy:session.name,takenById:session.id,takenAt:new Date().toISOString()}:x)}); fire&&fire("Stark! Du übernimmst den Termin 🙌"); };
+  const withdraw=r=>{ save({...data,subRequests:(data.subRequests||[]).filter(x=>x.id!==r.id)}); fire&&fire("Gesuch zurückgezogen"); };
+  const Row=({r,own})=>{ const ev=evOf(r); const tm=tmOf(ev); return (
+    <div style={{background:"#fff",border:"1.5px solid #fecdd3",borderRadius:12,padding:"10px 12px",marginBottom:7}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+        <Av name={r.byName} sz={26}/>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontWeight:800,fontSize:13,color:"#0f172a"}}>{own?"Dein Gesuch":r.byName} · „{ev?.title}“</div>
+          <div style={{fontSize:11.5,color:"#64748b",marginTop:1}}>{fmtDShort(ev?.date)}{ev?.time?` · ${ev.time} Uhr`:""}{tm?` · ${tm.icon} ${tm.name}`:""}</div>
+        </div>
+        {r.status==="taken"
+          ? <span style={{fontSize:11.5,fontWeight:800,color:"#15803d",background:"#dcfce7",borderRadius:99,padding:"4px 10px",flexShrink:0}}>✓ {r.takenById===session.id?"Du übernimmst":`${r.takenBy} übernimmt`}</span>
+          : own
+            ? <button onClick={()=>withdraw(r)} style={{flexShrink:0,padding:"6px 11px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:700,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>Zurückziehen</button>
+            : <button onClick={()=>accept(r)} style={{flexShrink:0,padding:"7px 13px",borderRadius:10,border:"none",background:"#be123c",color:"#fff",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>🤝 Ich übernehme</button>}
+      </div>
+      {r.note&&<div style={{fontSize:12,color:"#475569",background:"#fff1f2",borderRadius:8,padding:"6px 9px",marginTop:7}}>„{r.note}“</div>}
+    </div>
+  ); };
+  return (
+    <div style={{background:"#fff1f2",border:"1.5px solid #fecdd3",borderRadius:14,padding:"12px 14px",marginBottom:12}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
+        <span style={{fontSize:17}}>🆘</span>
+        <span style={{fontWeight:800,fontSize:13.5,color:"#9f1239",flex:1}}>Vertretung & Unterstützung</span>
+      </div>
+      <div style={{fontSize:11.5,color:"#be123c",marginBottom:9,lineHeight:1.45}}>Krank oder verhindert? Trainer helfen sich untereinander aus – auch über Teams hinweg.</div>
+      {others.map(r=><Row key={r.id} r={r} own={false}/>)}
+      {mine.map(r=><Row key={r.id} r={r} own={true}/>)}
+    </div>
+  );
+}
+
 // Vereins-Cockpit fuer den Vorstand: Spieler/Trainer/Helfer je Team auf einen Blick
 // + Antworten aus dem Saison-Check -> fruehe Planung, wo Trainer fehlen.
 function VereinsCockpit({data,cid,cl}){
@@ -16926,17 +17029,21 @@ function FerienHinweis({hols,from,to}){
   );
 }
 
-function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSelfVote,onRemind,onPlan,planTitle,onAttend,onBrief,modTraining=true}) {
+function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSelfVote,onRemind,onPlan,planTitle,onAttend,onBrief,modTraining=true,trainerNames=[],onSubReq=null}) {
   const _ferien=useSchoolHolidays(cl?.clubSettings?.holidayState);
   const [more,setMore]=useState(false);
   const wd=d=>{ try{ return new Date(d+"T12:00:00").toLocaleDateString("de-DE",{weekday:"short"})+", "; }catch{ return ""; } };
   const wx=useWeather(plzToGeo(cl?.plz));
   const eT=ET[ev.type]||ET.training; const tF=ev.date===tod; const p=cl?.pri||"#16a34a";
-  const warns=eventWarnings(ev,tod,{ perStaff:cl?.clubSettings?.playersPerStaff||6 });
+  const warns=eventWarnings(ev,tod,{ perStaff:cl?.clubSettings?.playersPerStaff||6, trainerNames });
   const _v=ev.votes||{};
   const vc=Object.keys(_v).length;
-  const yes=ev.pt==="att"?Object.values(_v).filter(v=>(typeof v==="object"?v.val:v)==="yes").length:0;
-  const no =ev.pt==="att"?Object.values(_v).filter(v=>(typeof v==="object"?v.val:v)==="no" ).length:0;
+  // Spieler- und Trainer-Zusagen getrennt: "mind. 6 Spieler" braucht die Spieler-Zahl
+  const _tnd=new Set(trainerNames.map(n=>String(n).toLowerCase()));
+  const _vv=v=>(typeof v==="object"?v.val:v);
+  const yes=ev.pt==="att"?Object.entries(_v).filter(([n,v])=>_vv(v)==="yes"&&!_tnd.has(String(n).toLowerCase())).length:0;
+  const no =ev.pt==="att"?Object.entries(_v).filter(([n,v])=>_vv(v)==="no" &&!_tnd.has(String(n).toLowerCase())).length:0;
+  const trYesN=ev.pt==="att"?Object.entries(_v).filter(([n,v])=>_vv(v)==="yes"&&_tnd.has(String(n).toLowerCase())).length:0;
   const dlPassed = isDeadlinePassed(ev);
   const myVoteRaw = selfName ? _v[selfName] : null;
   const myVote = typeof myVoteRaw==="object"&&myVoteRaw!==null ? myVoteRaw.val : myVoteRaw;
@@ -16973,7 +17080,7 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
           </div>; })()}
           {ev.type==="training"&&planTitle&&<div style={{marginTop:5}}><span style={{fontSize:11,fontWeight:700,color:"#4f46e5",background:"#eef2ff",borderRadius:6,padding:"2px 8px"}}>📋 {planTitle}</span></div>}
           {warns.length>0&&<div style={{display:"flex",gap:5,marginTop:5,flexWrap:"wrap"}}>{warns.map((w,i)=><span key={i} style={{fontSize:11,fontWeight:800,color:w.col,background:w.bg,borderRadius:6,padding:"2px 8px"}}>⚠ {w.label}</span>)}</div>}
-          {vc>0&&<div style={{display:"flex",gap:5,marginTop:4,flexWrap:"wrap"}}>{ev.pt==="att"?<><Tag c="#16a34a" ch={`✓ ${yes}`}/><Tag c="#dc2626" bg="#fee2e2" ch={`✕ ${no}`}/></>:<Tag c="#2563eb" ch={`📝 ${vc} Einträge`}/>}</div>}
+          {vc>0&&<div style={{display:"flex",gap:5,marginTop:4,flexWrap:"wrap"}}>{ev.pt==="att"?<><Tag c="#16a34a" ch={`✓ ${yes} Spieler`}/><Tag c="#dc2626" bg="#fee2e2" ch={`✕ ${no}`}/>{trYesN>0&&<Tag c="#4f46e5" bg="#eef2ff" ch={`🧑‍🏫 ${trYesN} Trainer`}/>}</>:<Tag c="#2563eb" ch={`📝 ${vc} Einträge`}/>}</div>}
           {ev.deadline&&<div style={{marginTop:4}}><span style={{fontSize:11,fontWeight:700,color:dlPassed?"#dc2626":"#d97706",background:dlPassed?"#fee2e2":"#fef3c7",borderRadius:6,padding:"2px 8px"}}>⏳ {dlPassed?"Frist abgelaufen":"Frist "+fmtDShort(ev.deadline.date)+(ev.deadline.time?" "+ev.deadline.time:"")}</span></div>}
           {upcoming5 && !votingLocked && msToStart>0 && (
             <div style={{marginTop:4,display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
@@ -17025,6 +17132,7 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
           {onAttend&&<BtnSm onClick={onAttend} label="✅ Anwesenheit erfassen" bg="#dcfce7" col="#15803d"/>}
           {onBrief&&<BtnSm onClick={onBrief} label="📋 Spickzettel" bg="#eef2ff" col="#4f46e5"/>}
           {onRemind&&(ev.pt==="att"||!ev.pt)&&ev.date>=tod&&<BtnSm onClick={onRemind} label="🔔 Erinnern" bg="#e0f2fe" col="#0369a1"/>}
+          {onSubReq&&ev.date>=tod&&<BtnSm onClick={onSubReq} label="🆘 Vertretung suchen" bg="#fff1f2" col="#be123c"/>}
           {ev.open&&<BtnSm onClick={onCopyLink} label="🔗 Link kopieren" bg="#ede9fe" col="#7c3aed"/>}
           <BtnSm onClick={onReset} label="↺ Stimmen zurücksetzen" bg="#fff7ed" col="#d97706"/>
           <BtnSm onClick={onDel} label="Löschen" bg="#fee2e2" col="#dc2626"/>
