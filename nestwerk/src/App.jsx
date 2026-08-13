@@ -208,7 +208,7 @@ function ProfilePicker({ members, onPick }) {
             </button>
           ))}
         </div>
-        <p className="hint">Antippen genügt. Das Merkzeug hat zusätzlich sein eigenes Passwort.</p>
+        <p className="hint">Antippen genügt. Der Gedächtnispalast hat zusätzlich sein eigenes Passwort.</p>
       </div>
     </div>
   )
@@ -311,7 +311,7 @@ function EventSheet({ initial, members, me, onSave, onDelete, onClose }) {
   )
 }
 
-/* ================= Merkzeug (E2E-verschlüsselt, lokal) ================= */
+/* ================= Gedächtnispalast (E2E-verschlüsselt, lokal) ================= */
 
 const EMPTY_MEMORY = { persons: [], docs: [], sections: [] }
 const SEC_COLORS = ['#8B5CF6', '#FF5D73', '#FFB02E', '#2FBF71', '#00B8C4', '#FF7A3D']
@@ -439,7 +439,7 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
   if (state !== 'open') {
     return (
       <section className="screen">
-        <h2 className="screen-title">Merkzeug</h2>
+        <h2 className="screen-title">Gedächtnispalast</h2>
         <p className="screen-sub">{ownerName}s privates Gedächtnis – Ende-zu-Ende-verschlüsselt</p>
         <form className="card lockbox" onSubmit={unlock}>
           <div className="lock-ico">🔐</div>
@@ -537,7 +537,7 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
     <section className="screen">
       <div className="title-row">
         <div>
-          <h2 className="screen-title">Merkzeug</h2>
+          <h2 className="screen-title">Gedächtnispalast</h2>
           <p className="screen-sub">{mem.persons.length} Personen · {sections.reduce((a, s) => a + s.pages.length, 0)} Seiten · {(mem.docs || []).length} Dokumente · alles verschlüsselt</p>
         </div>
         <button className="btn ghost sm" onClick={lock}>🔒 Sperren</button>
@@ -1499,7 +1499,7 @@ export default function App() {
           <span style={{ fontSize: 20 }}>⬇️</span>
           <div className="row-main">
             <div className="row-title">Backup exportieren</div>
-            <div className="row-meta">Alle Daten als Text (Merkzeug bleibt darin verschlüsselt) – sicher ablegen!</div>
+            <div className="row-meta">Alle Daten als Text (Gedächtnispalast bleibt darin verschlüsselt) – sicher ablegen!</div>
           </div>
           <span className="chev">›</span>
         </button>
@@ -1537,7 +1537,7 @@ export default function App() {
     ['listen', '🛒', 'Listen', 0],
     ...(!isKid ? [
       ...(hasMod(me, 'praxis') ? [['praxis', '🩺', 'Praxis', 0]] : []),
-      ['merkzeug', '🔐', 'Merkzeug', 0],
+      ['merkzeug', '🏛️', 'Gedächtnispalast', 0, 'Palast'],
       ['familie', '👨‍👩‍👧‍👦', 'Familie', 0],
     ] : []),
   ]
@@ -1579,13 +1579,13 @@ export default function App() {
             />
           )}
           {nav === 'familie' && !isKid && screenFamilie}
-          <footer className="note">Eselsohr · eure Daten gehören euch · Merkzeug Ende-zu-Ende-verschlüsselt</footer>
+          <footer className="note">Eselsohr · eure Daten gehören euch · Gedächtnispalast Ende-zu-Ende-verschlüsselt</footer>
         </main>
         <nav className="tabs">
           <div className="inner">
-            {NAVS.map(([id, ico, label]) => (
+            {NAVS.map(([id, ico, label, , short]) => (
               <button key={id} className={'tab' + (nav === id ? ' active' : '')} onClick={() => setNav(id)}>
-                <span className="ico">{ico}</span>{label}
+                <span className="ico">{ico}</span>{short || label}
               </button>
             ))}
           </div>
@@ -1656,7 +1656,7 @@ function MemberSheet({ onAdd, onClose, usedColors }) {
           </div>
         </div>
         <button className="btn" style={{ width: '100%' }}>Hinzufügen</button>
-        <p className="hint">Kinder sehen nur Heute, Kalender und Listen – ohne Merkzeug und Verwaltung.</p>
+        <p className="hint">Kinder sehen nur Heute, Kalender und Listen – ohne Gedächtnispalast und Verwaltung.</p>
       </form>
     </div>
   )

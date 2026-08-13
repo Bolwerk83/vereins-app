@@ -2,16 +2,17 @@
 
 Der Familienkalender mit Gedächtnis – Gemeinschaftskalender mit Outlook-artigen
 Terminanfragen, Praxis-Modul für die Hebammenarbeit, Familienlisten und ein
-Ende-zu-Ende-verschlüsseltes „Merkzeug“ (digitales Gedächtnis + Dokumentenarchiv)
-pro Person. Wie das Eselsohr im Buch: umknicken, wiederfinden, nichts vergessen.
+Ende-zu-Ende-verschlüsselter „Gedächtnispalast“ (digitales Gedächtnis mit
+OneNote-artigen Abschnitten, Seiten und Dokumentenarchiv) pro Person.
+Wie das Eselsohr im Buch: umknicken, wiederfinden, nichts vergessen.
 
 ## Stufe 1: läuft komplett ohne Datenbank
 
-Keine Einrichtung nötig: Alle Daten liegen im Browser (localStorage), das
-Merkzeug darin ausschließlich als AES-256-Chiffretext – ohne das richtige
+Keine Einrichtung nötig: Alle Daten liegen im Browser (localStorage), der
+Gedächtnispalast darin ausschließlich als AES-256-Chiffretext – ohne das richtige
 Passwort unkenntlich, ein „Passwort vergessen“ gibt es bewusst nicht.
 Unter *Familie → Sicherung* gibt es Backup-Export und -Import (der Export
-enthält das Merkzeug weiterhin nur verschlüsselt).
+enthält den Gedächtnispalast weiterhin nur verschlüsselt).
 
 Die Cloud-Synchronisierung über Supabase ist **Stufe 2** und liegt fertig
 vorbereitet in [`supabase/schema.sql`](supabase/schema.sql) – sie ersetzt dann
@@ -52,7 +53,7 @@ erkannt (Build `npm run build`, Output `dist`).
 - **Vereins-App-Sync:** Team verknüpfen (zeigt Trainer und Spieler zur
   Kontrolle) – Trainings, Spiele und Turniere landen automatisch im
   Familienkalender und bleiben aktuell, Absagen inklusive. Ohne Passwort.
-- **Merkzeug (E2E):** Eigenes Gedächtnis-Passwort pro Person → PBKDF2
+- **Gedächtnispalast (E2E):** Eigenes Gedächtnis-Passwort pro Person → PBKDF2
   (310 000 Runden) → AES-256-GCM im Browser. Personen-Spickzettel und
   Dokumentenarchiv (Scans/PDFs) werden vor dem Speichern verschlüsselt;
   nicht einmal Dateinamen liegen im Klartext.
