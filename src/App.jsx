@@ -2417,6 +2417,7 @@ function BottomNav({ tab, setTab, isAdmin, isHelper, isParent=false, parentStats
         { id:"results",    label:tr("navResults"),   icon:"E", hidden: isHelper||!feat("results_tab")||!clubFeat("mod_results") },
         { id:"attendance", label:tr("navAttendance"),  icon:"S", hidden: isHelper||!feat("attendance_tab") },
         { id:"waitlist",   label:"Warteliste",         icon:"WL", hidden: isHelper },
+        { id:"saisoncheck",label:"📝 Saison-Check",     icon:"SC", hidden: isHelper||mods.saison===false },
         { id:"module",     label:"🧩 Module",           icon:"MO", hidden: isHelper },
       ].filter(x=>!x.hidden),
     },
@@ -5407,6 +5408,20 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
   const S = (key, def) => cs[key]!==undefined ? cs[key] : def;
   const [lkTitle,setLkTitle]=useState(""); const [lkUrl,setLkUrl]=useState("");
   const saveLinks = (links) => save({...data,clubs:(data.clubs||[]).map(x=>x.id===cid?{...myClub,links}:x)});
+  // Ansprechpartner: nur mit Zustimmung per Link sichtbar fuer Eltern & Teams
+  const [ctf,setCtf]=useState({name:"",role:"",email:"",phone:"",note:""});
+  const saveContacts = (contacts) => save({...data,clubs:(data.clubs||[]).map(x=>x.id===cid?{...myClub,contacts}:x)});
+  const shareConsent = (c) => {
+    const link=(typeof window!=="undefined"?window.location.origin:"")+"/?kontakt="+c.id+"&club="+cid;
+    const txt=`Hallo ${c.name},\n\nwir möchten dich in unserer Vereins-App (${myClub.name}) als Ansprechpartner${c.role?` für „${c.role}"`:""} anzeigen – sichtbar für Eltern und Teams.\n\nBitte bestätige über diesen Link, ob das für dich in Ordnung ist:\n${link}\n\nDanke!`;
+    if(navigator.share){ navigator.share({title:"Ansprechpartner-Freigabe",text:txt}).catch(()=>{}); }
+    else { navigator.clipboard?.writeText(txt); fire("Einwilligungs-Link kopiert – einfach per Mail/WhatsApp senden"); }
+  };
+  const clickStats=(lid)=>{
+    const all=(data.linkClicks||[]).filter(x=>x.cid===cid&&x.lid===lid);
+    const since=d=>all.filter(x=>Date.now()-new Date(x.ts).getTime()<=d*86400000).length;
+    return {d7:since(7),d30:since(30),tot:all.length};
+  };
 
   // Export
   const exportData = () => {
@@ -5781,17 +5796,48 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
       {/* KONTO */}
       {section==="infos"&&(
         <div style={card}>
+          {/* Ansprechpartner: Vorsitzende, An-/Abmeldung, Fragen - nur mit Einwilligung sichtbar */}
+          <div style={{marginBottom:18,paddingBottom:16,borderBottom:"2px solid #f1f5f9"}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.4,marginBottom:4}}>📇 ANSPRECHPARTNER FÜR ELTERN</div>
+            <p style={{fontSize:12.5,color:"#64748b",lineHeight:1.55,marginBottom:10}}>Z. B. Vorsitzende, An-/Abmeldung, Mitgliedsbeiträge. Eltern sehen den Eintrag <b>erst, wenn die Person per Link zugestimmt hat</b> (DSGVO). Link teilen → Person tippt „Ja" → Eintrag wird sichtbar.</p>
+            {(myClub.contacts||[]).map(c=>(
+              <div key={c.id} style={{background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"10px 12px",marginBottom:8}}>
+                <div style={{display:"flex",alignItems:"center",gap:9}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontWeight:800,fontSize:13.5,color:"#0f172a"}}>{c.name} {c.role&&<span style={{fontWeight:600,color:"#64748b"}}>· {c.role}</span>}</div>
+                    <div style={{fontSize:11.5,color:"#64748b",marginTop:1}}>{[c.email,c.phone].filter(Boolean).join(" · ")||"keine Kontaktdaten"}</div>
+                  </div>
+                  <span style={{fontSize:10.5,fontWeight:800,flexShrink:0,borderRadius:6,padding:"3px 8px",
+                    color:c.consent==="ok"?"#15803d":c.consent==="declined"?"#dc2626":"#b45309",
+                    background:c.consent==="ok"?"#dcfce7":c.consent==="declined"?"#fee2e2":"#fef3c7"}}>
+                    {c.consent==="ok"?"✓ Zugestimmt":c.consent==="declined"?"✕ Abgelehnt":"⏳ Zustimmung offen"}</span>
+                  <button onClick={()=>{ if(window.confirm("Diesen Ansprechpartner entfernen?")) saveContacts((myClub.contacts||[]).filter(x=>x.id!==c.id)); }} style={{width:28,height:28,borderRadius:8,background:"#fee2e2",border:"none",color:"#dc2626",cursor:"pointer",fontWeight:800,flexShrink:0}}>✕</button>
+                </div>
+                {c.consent!=="ok"&&<button onClick={()=>shareConsent(c)} style={{width:"100%",marginTop:8,padding:"8px",borderRadius:9,border:"1.5px solid #bfdbfe",background:"#eff6ff",color:"#2563eb",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>📤 Einwilligungs-Link teilen</button>}
+              </div>
+            ))}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginTop:6}}>
+              <input value={ctf.name} onChange={e=>setCtf({...ctf,name:e.target.value})} placeholder="Name, z. B. Petra M." style={{padding:"10px 12px",fontSize:13.5,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",fontFamily:"inherit"}}/>
+              <input value={ctf.role} onChange={e=>setCtf({...ctf,role:e.target.value})} placeholder="Funktion, z. B. 1. Vorsitzende" style={{padding:"10px 12px",fontSize:13.5,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",fontFamily:"inherit"}}/>
+              <input value={ctf.email} onChange={e=>setCtf({...ctf,email:e.target.value})} placeholder="E-Mail" style={{padding:"10px 12px",fontSize:13.5,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",fontFamily:"inherit"}}/>
+              <input value={ctf.phone} onChange={e=>setCtf({...ctf,phone:e.target.value})} placeholder="Telefon (optional)" style={{padding:"10px 12px",fontSize:13.5,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",fontFamily:"inherit"}}/>
+            </div>
+            <input value={ctf.note} onChange={e=>setCtf({...ctf,note:e.target.value})} placeholder="Wofür zuständig? z. B. Anmelden & Abmelden, Fragen rund um den Verein" style={{width:"100%",marginTop:7,padding:"10px 12px",fontSize:13.5,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",fontFamily:"inherit",boxSizing:"border-box"}}/>
+            <button onClick={()=>{ if(!ctf.name.trim()){fire("Bitte mindestens den Namen angeben");return;} saveContacts([...(myClub.contacts||[]),{id:uid(),...ctf,name:ctf.name.trim(),consent:"pending",createdAt:new Date().toISOString()}]); setCtf({name:"",role:"",email:"",phone:"",note:""}); fire("Ansprechpartner angelegt – jetzt Einwilligungs-Link teilen"); }}
+              style={{width:"100%",marginTop:8,padding:"11px",borderRadius:11,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>+ Ansprechpartner anlegen</button>
+          </div>
           <p style={{fontSize:13,color:"#64748b",marginBottom:14,lineHeight:1.55}}>Hinterlege Links & Infos für Eltern und Spieler – z. B. <b>Vereins-Shop</b>, Trikot-Bestellung, ein Vereinsheft als PDF-Link oder die Vereins-Website. Das erscheint bei allen übersichtlich unter „Vereins-Infos".</p>
-          {(myClub.links||[]).map(l=>(
+          {(myClub.links||[]).map(l=>{ const st=clickStats(l.id); return (
             <div key={l.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 0",borderBottom:"1px solid #f1f5f9"}}>
               <div style={{width:34,height:34,borderRadius:10,background:t.p+"15",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>🔗</div>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontWeight:700,fontSize:14,color:"#0f172a"}}>{l.title}</div>
                 <div style={{fontSize:11,color:"#64748b",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{l.url}</div>
+                <div style={{fontSize:10.5,color:"#94a3b8",marginTop:1,fontWeight:700}}>Klicks: {st.d7} (7 Tage) · {st.d30} (30 Tage) · {st.tot} gesamt</div>
               </div>
               <button onClick={()=>{ if(window.confirm("Diesen Link entfernen?")) saveLinks((myClub.links||[]).filter(x=>x.id!==l.id)); }} style={{width:30,height:30,borderRadius:8,background:"#fee2e2",border:"none",color:"#dc2626",cursor:"pointer",fontWeight:800,flexShrink:0}}>✕</button>
             </div>
-          ))}
+          );})}
           {(myClub.links||[]).length===0&&<p style={{fontSize:13,color:"#64748b",margin:"2px 0 14px"}}>Noch keine Links hinterlegt.</p>}
           <div style={{marginTop:14,display:"flex",flexDirection:"column",gap:8}}>
             <input value={lkTitle} onChange={e=>setLkTitle(e.target.value)} placeholder="Titel, z. B. Vereins-Shop" style={{width:"100%",padding:"11px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
@@ -11501,15 +11547,22 @@ const CARPOOL_DEFAULTS = { drive:"Ich fahre", need:"Brauche Mitfahrt", self:"Kom
 const carpoolLabelsFor = (ev, cl) => ({ ...(cl?.clubSettings?.carpoolLabels||{}), ...(ev?.carpoolLabels||{}) }); // Defaults kommen sprachabhängig aus dem Dictionary
 function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTemplate=null,fields=[],venues=[],onAddVenue,clubTeams=null}) {
   const t=TH(cl); const isEdit=!!editEv; const STEPS=5; const { tr } = useT();
-  const blank={tid:teams[0]?.id||"",coTids:[],type:"training",title:"",date:now(),time:"",endTime:"",loc:"",note:"",sollPlayers:null,maxPlayers:null,pt:"att",recMode:"none",recDays:[],recStart:now(),recUntil:"",recDates:[],li:[],fi:[],sc:[],extraPolls:[],selType:"multi",open:false,_li:{txt:"",max:""},_fi:{name:"",col:"#16a34a"},_sc:{fid:"",time:"",a:"",b:"",ref:""}};
+  const blank={tid:teams[0]?.id||"",coTids:[],type:"training",title:"",date:now(),time:"",endTime:"",loc:"",note:"",sollPlayers:null,maxPlayers:null,pt:"att",pts:["att"],inOut:false,recMode:"none",recDays:[],recStart:now(),recUntil:"",recDates:[],li:[],fi:[],sc:[],extraPolls:[],selType:"multi",open:false,_li:{txt:"",max:""},_fi:{name:"",col:"#16a34a"},_sc:{fid:"",time:"",a:"",b:"",ref:""}};
   const [step,setStep]=useState(1);
-  const [f,setF]=useState(editEv?{...blank,...editEv,recMode:"none",recDays:[],recDates:[],_li:{txt:"",max:""},_fi:{name:"",col:"#16a34a"},_sc:{fid:"",time:"",a:"",b:"",ref:""}}:blank);
+  const [f,setF]=useState(editEv?{...blank,...editEv,pts:[...new Set([editEv.pt||"att",...(editEv.carpoolExtra?["carpool"]:[])])],recMode:"none",recDays:[],recDates:[],_li:{txt:"",max:""},_fi:{name:"",col:"#16a34a"},_sc:{fid:"",time:"",a:"",b:"",ref:""}}:blank);
   const [cpEdit,setCpEdit]=useState(false);
   const u=p=>setF(prev=>({...prev,...p}));
   const ok=()=>{if(step===1)return!!f.tid;if(step===2)return!!f.type;if(step===3)return f.title.trim().length>1;return true;};
   const finish=()=>{
-    const{_li,_fi,_sc,recMode,recDays,recStart,recUntil,recDates,deadlineOffset,coTids=[],...base}=f;
+    const{_li,_fi,_sc,recMode,recDays,recStart,recUntil,recDates,deadlineOffset,coTids=[],pts:_pts,...base}=f;
     { const c=(teams.find(x=>x.id===base.tid)?.cat)||(teams.find(x=>x.id===base.tid)?.name)||""; if(base.sollPlayers==null) base.sollPlayers=defaultSollPlayers(c); }
+    // Mehrfachauswahl: Haupt-Abstimmung + Zusaetze (Liste wird Extra-Liste, Fahrgemeinschaft eigener Topf)
+    { const sel=(_pts&&_pts.length?_pts:[f.pt||"att"]);
+      base.pt = sel.includes("none")?"none" : sel.includes("att")?"att" : sel.includes("list")?"list" : sel.includes("carpool")?"carpool" : "att";
+      base.carpoolExtra = sel.includes("carpool") && base.pt!=="carpool";
+      if(sel.includes("list") && base.pt!=="list" && (f.li||[]).length)
+        base.extraPolls=[...(base.extraPolls||[]),{id:uid(),title:"Auswahlliste",selType:f.selType||"multi",items:f.li}];
+    }
     if(isEdit){onSave([{...base,id:editEv.id}]);return;}
     let eventDates=[];
     if(recMode==="weekly"&&recDays.length&&recUntil){
@@ -11731,19 +11784,33 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
               </div>
             );
           })()}
+          {/* Halle als Ort? Dann optional wetterabhaengig drinnen/draussen (Standard AUS) */}
+          {f.type==="training"&&/halle/i.test(f.loc||"")&&(
+            <Sw on={!!f.inOut} tog={()=>u({inOut:!f.inOut})} pri={t.p} label="🌤 Drinnen/Draußen je nach Wetter"
+              sub="Bei gutem Wetter draußen, bei schlechtem in der Halle – Eltern sehen den Hinweis automatisch am Termin"/>
+          )}
           <Inp label="Nachricht an Eltern (optional)" val={f.note} set={v=>u({note:v})} ph="z.B. Bitte 15 Min frueher da sein..." rows={2} cl={cl}/>
         </div>}
         {}
         {step===4&&<div className="in" style={{display:"flex",flexDirection:"column",gap:14}}>
-          <p style={{fontSize:13,fontWeight:700,color:"#64748b"}}>Welche Abstimmung soll es geben?</p>
-          {[{k:"att",icon:"OK",title:"Anwesenheit",sub:"✅ Dabei · 🕒 Später · ❌ Absage (mit Grund)"},{k:"list",icon:"Liste",title:"Auswahlliste",sub:"z.B. Verpflegung,Helfer"},{k:"carpool",icon:"*",title:"Fahrtgemeinschaft",sub:"Wer braucht Mitnahme? Wer kann fahren?"},{k:"none",icon:"–",title:"Keine Abstimmung",sub:"Reiner Info-Termin (z.B. Versammlung, Fahrt)"}].map(o=>(
-            <div key={o.k} onClick={()=>u({pt:o.k})} style={{background:"#fff",borderRadius:16,padding:"14px 16px",border:`2px solid ${f.pt===o.k?t.p:"#e2e8f0"}`,cursor:"pointer",display:"flex",alignItems:"center",gap:13,transition:"all .18s"}}>
-              <div style={{width:46,height:46,borderRadius:14,background:f.pt===o.k?t.p+"20":"#f8fafc",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{o.icon}</div>
-              <div style={{flex:1}}><div style={{fontWeight:800,fontSize:15,color:f.pt===o.k?t.p:"#334155"}}>{o.title}</div><div style={{fontSize:12,color:"#64748b",marginTop:2}}>{o.sub}</div></div>
-              <div style={{width:22,height:22,borderRadius:"50%",border:`${f.pt===o.k?"7px":"2px"} solid ${f.pt===o.k?t.p:"#cbd5e1"}`,transition:"all .18s"}}/>
+          <p style={{fontSize:13,fontWeight:700,color:"#64748b"}}>Welche Abstimmung soll es geben? <span style={{fontWeight:600,color:"#94a3b8"}}>Auch mehrere zusammen – einfach mehrere antippen.</span></p>
+          {[{k:"att",icon:"OK",title:"Anwesenheit",sub:"✅ Dabei · 🕒 Später · ❌ Absage (mit Grund)"},{k:"list",icon:"Liste",title:"Auswahlliste",sub:"z.B. Verpflegung,Helfer"},{k:"carpool",icon:"*",title:"Fahrtgemeinschaft",sub:"Wer braucht Mitnahme? Wer kann fahren?"},{k:"none",icon:"–",title:"Keine Abstimmung",sub:"Reiner Info-Termin (z.B. Versammlung, Fahrt)"}].map(o=>{
+            const cur=f.pts&&f.pts.length?f.pts:[f.pt||"att"];
+            const on=cur.includes(o.k);
+            const toggle=()=>{
+              let next;
+              if(o.k==="none") next=["none"];
+              else { next=cur.filter(x=>x!=="none"); next=next.includes(o.k)?next.filter(x=>x!==o.k):[...next,o.k]; if(!next.length) next=["att"]; }
+              u({pts:next, pt:next.includes("att")?"att":next.includes("list")?"list":next.includes("carpool")?"carpool":"none"});
+            };
+            return (
+            <div key={o.k} onClick={toggle} style={{background:"#fff",borderRadius:16,padding:"14px 16px",border:`2px solid ${on?t.p:"#e2e8f0"}`,cursor:"pointer",display:"flex",alignItems:"center",gap:13,transition:"all .18s"}}>
+              <div style={{width:46,height:46,borderRadius:14,background:on?t.p+"20":"#f8fafc",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{o.icon}</div>
+              <div style={{flex:1}}><div style={{fontWeight:800,fontSize:15,color:on?t.p:"#334155"}}>{o.title}</div><div style={{fontSize:12,color:"#64748b",marginTop:2}}>{o.sub}</div></div>
+              <div style={{width:22,height:22,borderRadius:7,border:`2px solid ${on?t.p:"#cbd5e1"}`,background:on?t.p:"#fff",color:contrast(t.p),display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:900,transition:"all .18s"}}>{on?"✓":""}</div>
             </div>
-          ))}
-          {f.pt==="list"&&<div>
+          );})}
+          {(f.pts||[f.pt]).includes("list")&&<div>
             {}
             <div style={{display:"flex",gap:8,marginBottom:14}}>
               {[["multi","**","Mehrfachauswahl","Mehrere wählbar"],["single","**","Einfachauswahl","Nur eine wählbar"]].map(([k,em,label,sub])=>(
@@ -11820,7 +11887,7 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
         {step===5&&<div className="in">
           <div style={{background:"#0f172a",borderRadius:17,padding:"18px"}}>
             <p style={{color:"rgba(255,255,255,.45)",fontSize:11,fontWeight:800,marginBottom:13,letterSpacing:.5}}>{tr("wSummarySec")}</p>
-            {[[" Mannschaft",teamsSel?.icon+" "+teamsSel?.name],["Art",ET[f.type]?.icon+" "+etLabel(f.type,tr)],["Titel",f.title],["Uhrzeit",f.time||"-"],f.loc&&["Ort","* "+f.loc+(f.fieldId&&f.fieldSplit>1?" · "+(SPLIT_OPTIONS.find(o=>o.id===f.fieldSplit)?.label||""):"")],f.note&&["Notiz","* "+f.note.slice(0,50)],["Umfrage",(f.pt==="att"?"* Anwesenheit":f.pt==="carpool"?"* Fahrtgemeinschaft":`* Liste (${(f.li||[]).length} Opt.)`)+((f.extraPolls||[]).length?` + ${f.extraPolls.length} Liste${f.extraPolls.length>1?"n":""}`:"")],["Termine",f.recMode==="weekly"?`* Woechentlich . ${f.recDays?.length||0} Tage`:f.recMode==="custom"?`* ${f.recDates?.length||0} Daten`:"1 Termin . "+fmtD(f.date)],f.open&&["Sichtbarkeit","* Offen für andere Vereine"]].filter(Boolean).filter(x=>!x.hidden).map(([k,v])=>(
+            {[[" Mannschaft",teamsSel?.icon+" "+teamsSel?.name],["Art",ET[f.type]?.icon+" "+etLabel(f.type,tr)],["Titel",f.title],["Uhrzeit",f.time||"-"],f.loc&&["Ort","* "+f.loc+(f.fieldId&&f.fieldSplit>1?" · "+(SPLIT_OPTIONS.find(o=>o.id===f.fieldSplit)?.label||""):"")],f.note&&["Notiz","* "+f.note.slice(0,50)],["Umfrage",(()=>{ const sel=f.pts&&f.pts.length?f.pts:[f.pt||"att"]; const L={att:"Anwesenheit",list:`Liste (${(f.li||[]).length} Opt.)`,carpool:"Fahrtgemeinschaft",none:"Keine"}; return "* "+sel.map(k=>L[k]).filter(Boolean).join(" + "); })()+((f.extraPolls||[]).length?` + ${f.extraPolls.length} Liste${f.extraPolls.length>1?"n":""}`:"")],["Termine",f.recMode==="weekly"?`* Woechentlich . ${f.recDays?.length||0} Tage`:f.recMode==="custom"?`* ${f.recDates?.length||0} Daten`:"1 Termin . "+fmtD(f.date)],f.open&&["Sichtbarkeit","* Offen für andere Vereine"]].filter(Boolean).filter(x=>!x.hidden).map(([k,v])=>(
               <div key={k} style={{display:"flex",gap:10,marginBottom:9}}>
                 <span style={{color:"rgba(255,255,255,.4)",fontSize:12,fontWeight:700,minWidth:90}}>{k}</span>
                 <span style={{color:"#fff",fontSize:13,fontWeight:700,flex:1}}>{v}</span>
@@ -12039,10 +12106,15 @@ function ChatTab({data,cid,myTids,session,save,fire,cl,teamOnly=false}) {
       ...myTids.map(tid=>{const tm=allTeams.find(x=>x.id===tid);return{id:"tteam_"+tid,label:"🔒 "+(tm?.name||tid)+" · Trainer",col:"#7c3aed",staff:true};}),
       ...(session.role!=="helper"?staffCats.map(c=>({id:"tcat_"+cid+"_"+catSlug(c),label:"🔒 "+c+" · Trainer",col:"#7c3aed",staff:true})):[]),
       ...(session.role!=="helper"?[{id:"tclub_"+cid,label:"🔒 Alle Trainer",col:"#0f172a",staff:true}]:[]),
+      // Direkter Draht zum Vereins-Admin (1:1) - Trainer schreiben NICHT an den ganzen Verein
+      ...(session.role==="trainer"?[{id:"tadmin_"+cid+"_"+session.id,label:"🛡 Vereins-Admin",col:"#0f172a",staff:true}]:[]),
+      ...(isAdminChat?(data.trainers||[]).filter(x=>x.cid===cid&&isActive(x)).map(x=>({id:"tadmin_"+cid+"_"+x.id,label:"🛡 "+x.name+" (direkt)",col:"#0f172a",staff:true})):[]),
     ]:[]),
   ];
 
   const [selScope,setSelScope]=useState(scopes[0]?.id||"");
+  // Vereinsweiter Kanal: Trainer lesen mit, aber nur der Vereins-Admin schreibt dort.
+  const clubReadOnly = session.role==="trainer" && String(selScope||"").startsWith("club_");
   const [text,setText]=useState("");
   const [editId,setEditId]=useState(null);
   const [editText,setEditText]=useState("");
@@ -12106,6 +12178,7 @@ function ChatTab({data,cid,myTids,session,save,fire,cl,teamOnly=false}) {
 
   const send=async ()=>{
     if(!text.trim())return;
+    if(clubReadOnly) return; // Trainer: kein Schreibrecht im Vereins-Kanal
     { const tid2=selScope.startsWith("team_")?selScope.slice(5):null; const tm2=tid2?allTeams.find(x=>x.id===tid2):null; if(session.role==="user"&&tm2&&tm2.parentChat===false){ return; } }
     const msg={id:uid(),author:session.name||"Unbekannt",role:session.role,text:text.trim(),ts:new Date().toISOString()};
     setText("");
@@ -12123,7 +12196,7 @@ function ChatTab({data,cid,myTids,session,save,fire,cl,teamOnly=false}) {
     // Push an die anderen Chat-Teilnehmer (Edge Function "notify", Modus chat);
     // Fehler bewusst still - die Nachricht selbst ist bereits gespeichert.
     try {
-      if(selScope.startsWith("tteam_")||selScope.startsWith("tcat_")||selScope.startsWith("tclub_")) throw 0; // Trainer-Kanaele: kein Push an den ganzen Verein
+      if(selScope.startsWith("tteam_")||selScope.startsWith("tcat_")||selScope.startsWith("tclub_")||selScope.startsWith("tadmin_")) throw 0; // Trainer-Kanaele: kein Push an den ganzen Verein
       const cfg=getConfig();
       const tidPush=selScope.startsWith("team_")?selScope.slice(5):null;
       fetch(`${cfg.url}/functions/v1/notify`,{method:"POST",headers:{"Content-Type":"application/json","apikey":cfg.key,"Authorization":"Bearer "+cfg.key},
@@ -12237,6 +12310,8 @@ function ChatTab({data,cid,myTids,session,save,fire,cl,teamOnly=false}) {
       )}
       {blockedForParent
         ? <div style={{paddingTop:8,borderTop:"1px solid #f1f5f9",background:"#f8fafc",borderRadius:14,padding:"12px 14px",fontSize:13,color:"#64748b",textAlign:"center",fontWeight:600}}>🔒 Nur Lesen – der Trainer hat das Schreiben für Eltern in diesem Chat nicht freigeschaltet.</div>
+        : clubReadOnly
+        ? <div style={{paddingTop:8,borderTop:"1px solid #f1f5f9",background:"#f8fafc",borderRadius:14,padding:"12px 14px",fontSize:13,color:"#64748b",textAlign:"center",fontWeight:600}}>🔒 Nur Lesen – an den ganzen Verein schreibt nur der Vereins-Admin. Nutze deine Team-Kanäle oder „🛡 Vereins-Admin" für direkte Anliegen.</div>
         : <div style={{display:"flex",gap:8,paddingTop:8,borderTop:"1px solid #f1f5f9",background:"#f8fafc",borderRadius:14,padding:"10px 12px"}}>
             <input value={text} onChange={e=>setText(e.target.value)}
               onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}}
@@ -14884,6 +14959,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const [trainerWelcomeOpen, setTrainerWelcomeOpen] = useState(()=>!!(meTrainer && meTrainer.onboarded!==true));
   const [modWizardManual,setModWizardManual]=useState(false);
   useEffect(()=>{ if(tab==="module"){ setModWizardManual(true); setTab("events"); } },[tab]);
+  const [surveyOpen,setSurveyOpen]=useState(false);   // Saison-Fragebogen (Mehr -> Saison-Check oder Erinnerung)
+  useEffect(()=>{ if(tab==="saisoncheck"){ setSurveyOpen(true); setTab("events"); } },[tab]);
   const [helperWelcomeOpen,  setHelperWelcomeOpen]  = useState(()=>!!(meHelper  && meHelper.onboarded!==true));
   const { trigger: shareTrigger,dismiss: dismissShare } = useShareTrigger(local,session,myTids);
   const [delConf,setDelConf]=useState(null); const [viewEv,setViewEv]=useState(null); const [delConfVal,setDelConfVal]=useState(null);
@@ -15088,6 +15165,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       <div style={{maxWidth:560,margin:"0 auto",padding:"14px"}}>
         <AreaIntro id={tab} cl={myClub}/>
         {tab==="events"&&<>
+          {/* Saison-Check: Erinnerung ab 3 Monate vor Saisonende, bis der Fragebogen abgegeben ist */}
+          {!isAdmin&&modOn("saison")&&<SeasonSurveyReminder data={local} cid={cid} session={session} onOpen={()=>setSurveyOpen(true)}/>}
           {/* Helfer mit mehreren Jugenden: einfacher Wechsel ohne Neu-Login */}
           {isHelper&&myTids.length>1&&(
             <div style={{display:"flex",gap:6,marginBottom:12,overflowX:"auto",paddingBottom:2}}>
@@ -15274,7 +15353,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         {tab==="tinbox"     &&<TrainerInboxTab data={local} cid={cid} session={session} save={save} cl={myClub}/>}
         {tab==="chat"       &&<ChatTab data={local} cid={cid} myTids={myTids} session={session} save={save} fire={fire} cl={myClub}/>}
         {tab==="teams"      &&isAdmin&&<TeamHub data={local} myTids={myTids} save={save} fire={fire} cl={myClub} session={session} isAdmin={isAdmin} initialSubTab="manage"/>}
-        {tab==="overview"  &&isAdmin&&<AllTeamsOverview data={local} cid={cid} cl={myClub} onSelectTeam={tid=>{ const team=(local.teams||[]).find(x=>x.id===tid); if(team) fire("Team: "+team.name); }}/>}
+        {tab==="overview"  &&isAdmin&&<><VereinsCockpit data={local} cid={cid} cl={myClub}/><AllTeamsOverview data={local} cid={cid} cl={myClub} onSelectTeam={tid=>{ const team=(local.teams||[]).find(x=>x.id===tid); if(team) fire("Team: "+team.name); }}/></>}
         {tab==="news"      &&<NewsTab data={local} cid={cid} session={session} save={save} fire={fire} cl={myClub}/>}
         {tab==="fieldsadmin"&&isAdmin&&<FieldsManagerTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/> }
         {tab==="trainers"   &&isAdmin&&<TrainersTab data={local} cid={cid} save={save} fire={fire} session={session}/>}
@@ -15300,6 +15379,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             </div>
           </a>
         )}
+        <InOutHint ev={viewEv} cl={myClub}/>
         {(()=>{ const isG=["heimspiel","auswarts","freundschaft","turnier"].includes(viewEv.type); const isT=viewEv.type==="training";
           const tabs=[["rueck","📊 Rückmeldungen"],...(isT?[["plan","📋 Training"]]:[]),...(isG?[["plan","⚽ Aufstellung"]]:[]),["orga","👥 Orga"],...((isG||isT)?[["zeit","⏱ Spieltag"]]:[])];
           const tp=TH(myClub).p;
@@ -15892,11 +15972,12 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       {((meTrainer&&meTrainer.moduleWizardDone!==true&&!trainerWelcomeOpen)||modWizardManual)&&session.role==="trainer"&&(
         <ModuleWizard data={local} session={session} myTids={myTids} cl={myClub} save={save} onClose={()=>setModWizardManual(false)}/>
       )}
+      {surveyOpen&&<SeasonSurveyModal data={local} cid={cid} session={session} cl={myClub} save={save} fire={fire} onClose={()=>setSurveyOpen(false)}/>}
       {helperWelcomeOpen && meHelper && <HelperWelcome h={meHelper} data={local} save={save} onClose={()=>setHelperWelcomeOpen(false)}/>}
       <Toast msg={toast}/>
       {!isDesktop&&<BottomNav tab={tab} setTab={setTab} isAdmin={isAdmin} isHelper={isHelper} helperKasse={helperKasse} helperOnlyKasse={helperOnlyKasse}
         unread={unreadMsgs} inboxUnread={unreadInbox} cl={myClub}
-        mods={{taktik:modOn("taktik"),training:modOn("training"),helfer:modOn("helfer"),kasse:modOn("kasse")}}/>}
+        mods={{taktik:modOn("taktik"),training:modOn("training"),helfer:modOn("helfer"),kasse:modOn("kasse"),saison:modOn("saison")}}/>}
       
     </div>
   );
@@ -16528,17 +16609,19 @@ function SpickzettelModal({ev,data,cl,save,fire,onClose}){
 // entscheidet; bei Gleichstand bleibt das Modul AKTIV (es stoert niemanden,
 // und wer es braucht, kann arbeiten) - der Patt wird offen angezeigt.
 const APP_MODULES=[
-  {key:"skills",  e:"🎯", t:"Skills & Entwicklung", d:"Spieler-Bewertungen, Skill-Profile, Entwicklungsziele und Team-Auswertungen (Analyse, Insights, Saison-Bericht). Ideal, wenn ihr Entwicklung dokumentieren wollt."},
+  // Skills startet bewusst AUS: Spieler-Bewertungen soll der Trainer aktiv einschalten.
+  {key:"skills",  e:"🎯", t:"Skills & Entwicklung", d:"Spieler-Bewertungen, Skill-Profile, Entwicklungsziele und Team-Auswertungen (Analyse, Insights, Saison-Bericht). Startet ausgeschaltet – schaltet es bewusst ein, wenn ihr Entwicklung dokumentieren wollt.", defOff:true},
   {key:"training",e:"📋", t:"Training & Übungen",   d:"Trainingspläne, Übungsbibliothek mit Skizzen und Anleitungen, Wochen-Planer und der Training-Knopf direkt am Termin."},
   {key:"taktik",  e:"⚽", t:"Taktiktafel",           d:"Digitale Taktiktafel mit Animationen, Szenario-Spiel für Kinder und Vorführ-Modus – als eigener Tab in der unteren Leiste."},
   {key:"helfer",  e:"🙋", t:"Helfer-Verwaltung",     d:"Helfer-Zugänge mit Passwort, Termin-Freigaben mit Bedarf und automatischer Warteliste für Spieltage und Feste."},
   {key:"kasse",   e:"💶", t:"Mannschaftskasse",      d:"Einnahmen, Ausgaben und Strafenkatalog fürs Team – einfache, transparente Kassenführung."},
+  {key:"saison",  e:"📝", t:"Saison-Planung",        d:"Kurzer Fragebogen 3 Monate vor Saisonende: Wer macht weiter, wer übernimmt welche Jugend? Der Vorstand sieht die Antworten im Vereins-Cockpit und kann früh planen."},
 ];
 function ModuleWizard({data,session,myTids,cl,save,onClose}){
   const t=TH(cl);
   const teams=(data.teams||[]).filter(tm=>myTids.includes(tm.id));
   const mine=(teams[0]?.moduleVotes||{})[session.id]||{};
-  const [sel,setSel]=useState(()=>{ const o={}; APP_MODULES.forEach(m=>{ o[m.key]=mine[m.key]!==false; }); return o; });
+  const [sel,setSel]=useState(()=>{ const o={}; APP_MODULES.forEach(m=>{ o[m.key]= m.defOff ? mine[m.key]===true : mine[m.key]!==false; }); return o; });
   const [step,setStep]=useState(0);                 // 0=Intro, 1..N=Module, N+1=Zusammenfassung
   const N=APP_MODULES.length;
   const finish=()=>{
@@ -16615,6 +16698,216 @@ function ModuleWizard({data,session,myTids,cl,save,onClose}){
         </>)}
       </div>
     </div>
+  );
+}
+
+// Saisonende aus dem Saison-Label ableiten ("2026/2027" -> 30.06.2027).
+// Jugendfussball-Saisons enden zum 30. Juni; Fallback: Jahreslabel + 1.
+function seasonEndDate(data,cid){
+  const sid=activeSid(data,cid);
+  const s=(data.seasons||[]).find(x=>x.id===sid);
+  const m=String(s?.label||"").match(/(\d{4})\s*\/\s*(\d{2,4})/);
+  if(m){ let y=parseInt(m[2],10); if(y<100) y+=2000; return `${y}-06-30`; }
+  const m2=String(s?.label||"").match(/(\d{4})/);
+  if(m2) return `${parseInt(m2[1],10)+1}-06-30`;
+  return null;
+}
+// Saison-Fragebogen: Wer macht naechste Saison weiter, wer uebernimmt welche Jugend?
+// Erinnerung ab 3 Monate vor Saisonende fuer Trainer & Betreuer - bis zur Abgabe.
+function SeasonSurveyModal({data,cid,session,cl,save,fire,onClose}){
+  const t=TH(cl);
+  const sid=activeSid(data,cid);
+  const label=(data.seasons||[]).find(x=>x.id===sid)?.label||"";
+  const cats=[...new Set((data.teams||[]).filter(tm=>tm.cid===cid).map(tm=>tm.cat||tm.name).filter(Boolean))];
+  const [again,setAgain]=useState(null);
+  const [teamWish,setTeamWish]=useState("");
+  const [units,setUnits]=useState(null);
+  const [note,setNote]=useState("");
+  const submit=()=>{
+    if(!again) return;
+    save({...data,seasonSurveys:[...(data.seasonSurveys||[]),{
+      id:uid(),cid,seasonId:sid,personId:session.id,name:session.name||"",role:session.role,
+      again,teamWish:teamWish.trim(),units,note:note.trim(),ts:new Date().toISOString()}]});
+    fire("Danke! Deine Antwort hilft dem Vorstand bei der Planung 🙌");
+    onClose();
+  };
+  return (
+    <div style={{position:"fixed",inset:0,zIndex:1700,background:"rgba(15,23,42,.78)",display:"flex",alignItems:"center",justifyContent:"center",padding:16,backdropFilter:"blur(6px)"}}>
+      <div style={{background:"#fff",borderRadius:22,width:"100%",maxWidth:480,maxHeight:"92dvh",overflowY:"auto",padding:"22px"}}>
+        <div style={{textAlign:"center",marginBottom:14}}>
+          <div style={{fontSize:40}}>📝</div>
+          <h2 style={{fontWeight:900,fontSize:19,color:"#0f172a",margin:"8px 0 4px"}}>Saison-Check {label}</h2>
+          <p style={{fontSize:12.5,color:"#64748b",lineHeight:1.55}}>2 Minuten – damit der Vorstand früh weiß, welche Teams nächste Saison Trainer brauchen. Deine Antwort sieht nur der Vereins-Admin.</p>
+        </div>
+        <div style={{fontSize:12,fontWeight:800,color:"#64748b",marginBottom:6}}>MACHST DU NÄCHSTE SAISON WEITER?</div>
+        <div style={{display:"flex",gap:6,marginBottom:14}}>
+          {[["ja","✅ Ja"],["unsicher","🤔 Unsicher"],["nein","❌ Nein"]].map(([k,l])=>(
+            <button key={k} onClick={()=>setAgain(k)} style={{flex:1,padding:"11px 6px",borderRadius:11,border:`2px solid ${again===k?t.p:"#e2e8f0"}`,background:again===k?t.p+"14":"#fff",color:again===k?t.p:"#475569",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
+          ))}
+        </div>
+        <div style={{fontSize:12,fontWeight:800,color:"#64748b",marginBottom:6}}>WELCHE JUGEND WÜRDEST DU ÜBERNEHMEN?</div>
+        <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:8}}>
+          {[...cats,"Wo ich gebraucht werde"].map(c=>(
+            <button key={c} onClick={()=>setTeamWish(c)} style={{padding:"6px 11px",borderRadius:99,border:`1.5px solid ${teamWish===c?t.p:"#e2e8f0"}`,background:teamWish===c?t.p+"14":"#fff",color:teamWish===c?t.p:"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{c}</button>
+          ))}
+        </div>
+        <input value={teamWish} onChange={e=>setTeamWish(e.target.value)} placeholder="oder frei eintragen…"
+          style={{width:"100%",padding:"10px 12px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",fontFamily:"inherit",boxSizing:"border-box",marginBottom:14}}/>
+        <div style={{fontSize:12,fontWeight:800,color:"#64748b",marginBottom:6}}>WIE OFT PRO WOCHE SCHAFFST DU ES?</div>
+        <div style={{display:"flex",gap:6,marginBottom:14}}>
+          {[["1","1×"],["2","2×"],["3","3× oder mehr"]].map(([k,l])=>(
+            <button key={k} onClick={()=>setUnits(k)} style={{flex:1,padding:"10px 6px",borderRadius:11,border:`2px solid ${units===k?t.p:"#e2e8f0"}`,background:units===k?t.p+"14":"#fff",color:units===k?t.p:"#475569",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
+          ))}
+        </div>
+        <textarea value={note} onChange={e=>setNote(e.target.value)} rows={2} placeholder="Anmerkung an den Vorstand (optional)…"
+          style={{width:"100%",padding:"10px 12px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",fontFamily:"inherit",boxSizing:"border-box",marginBottom:14,resize:"vertical"}}/>
+        <button onClick={submit} disabled={!again}
+          style={{width:"100%",padding:"14px",borderRadius:14,border:"none",background:again?t.p:"#e2e8f0",color:again?contrast(t.p):"#94a3b8",fontWeight:800,fontSize:15,cursor:again?"pointer":"default",fontFamily:"inherit"}}>Antwort senden</button>
+        <button onClick={onClose} style={{width:"100%",marginTop:8,padding:"10px",borderRadius:12,border:"none",background:"none",color:"#64748b",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Später</button>
+      </div>
+    </div>
+  );
+}
+// Erinnerungs-Karte: erscheint ab 3 Monate vor Saisonende bei Trainern & Betreuern,
+// jedes Mal wieder, bis der Fragebogen ausgefuellt ist.
+function SeasonSurveyReminder({data,cid,session,onOpen}){
+  const end=seasonEndDate(data,cid);
+  if(!end) return null;
+  const days=Math.round((new Date(end+"T12:00:00")-new Date(now()+"T12:00:00"))/86400000);
+  if(days>92||days<-31) return null;
+  const sid=activeSid(data,cid);
+  const done=(data.seasonSurveys||[]).some(s=>s.cid===cid&&s.seasonId===sid&&s.personId===session.id);
+  if(done) return null;
+  return (
+    <div onClick={onOpen} style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:13,padding:"12px 15px",marginBottom:12,cursor:"pointer",display:"flex",alignItems:"center",gap:11}}>
+      <span style={{fontSize:22}}>📝</span>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontWeight:800,fontSize:13.5,color:"#92400e"}}>Saison-Check: Machst du nächste Saison weiter?</div>
+        <div style={{fontSize:12,color:"#a16207",marginTop:2,lineHeight:1.45}}>Noch {Math.max(0,days)} Tage bis Saisonende – der Vorstand plant jetzt die Teams. 2 Minuten, danach ist Ruhe. 😉</div>
+      </div>
+      <span style={{fontSize:12.5,fontWeight:800,color:"#b45309",flexShrink:0}}>Ausfüllen →</span>
+    </div>
+  );
+}
+// Vereins-Cockpit fuer den Vorstand: Spieler/Trainer/Helfer je Team auf einen Blick
+// + Antworten aus dem Saison-Check -> fruehe Planung, wo Trainer fehlen.
+function VereinsCockpit({data,cid,cl}){
+  const t=TH(cl);
+  const sid=activeSid(data,cid);
+  const teams=activeTeamsFor(data,cid);
+  const rows=teams.map(tm=>({
+    tm,
+    players:(data.playerProfiles||[]).filter(p=>p.mainTid===tm.id&&!p.archived&&(!p.seasonId||p.seasonId===sid)).length,
+    trainers:(data.trainers||[]).filter(x=>x.cid===cid&&isActive(x)&&(x.tids||[]).includes(tm.id)).length,
+    helpers:(data.helpers||[]).filter(h=>h.cid===cid&&h.active!==false&&(h.tids||[]).includes(tm.id)).length,
+  }));
+  const tot=rows.reduce((a,r)=>({p:a.p+r.players,t:a.t+r.trainers,h:a.h+r.helpers}),{p:0,t:0,h:0});
+  const surveys=(data.seasonSurveys||[]).filter(s=>s.cid===cid&&s.seasonId===sid);
+  const staff=[...(data.trainers||[]).filter(x=>x.cid===cid&&isActive(x)).map(x=>({id:x.id,name:x.name,role:"Trainer"})),
+               ...(data.helpers||[]).filter(h=>h.cid===cid&&h.active!==false).map(h=>({id:h.id,name:h.name,role:"Betreuer"}))];
+  const open=staff.filter(p=>!surveys.some(s=>s.personId===p.id));
+  const cnt=k=>surveys.filter(s=>s.again===k).length;
+  return (
+    <div style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",padding:"16px",marginBottom:16}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+        <span style={{fontSize:18}}>🧭</span>
+        <span style={{fontWeight:900,fontSize:16,color:"#0f172a",flex:1}}>Vereins-Cockpit</span>
+      </div>
+      <div style={{fontSize:11.5,color:"#64748b",marginBottom:12}}>Schnellübersicht zum Steuern des Vereins – Spieler, Trainer und Helfer je Mannschaft.</div>
+      <div style={{overflowX:"auto"}}>
+        <table style={{width:"100%",borderCollapse:"collapse",fontSize:12.5}}>
+          <thead><tr style={{textAlign:"left",color:"#64748b"}}>
+            <th style={{padding:"6px 8px",fontSize:11,fontWeight:800}}>MANNSCHAFT</th>
+            <th style={{padding:"6px 8px",fontSize:11,fontWeight:800,textAlign:"center"}}>👟 SPIELER</th>
+            <th style={{padding:"6px 8px",fontSize:11,fontWeight:800,textAlign:"center"}}>🧑‍🏫 TRAINER</th>
+            <th style={{padding:"6px 8px",fontSize:11,fontWeight:800,textAlign:"center"}}>🙋 HELFER</th>
+          </tr></thead>
+          <tbody>
+            {rows.map(r=>(
+              <tr key={r.tm.id} style={{borderTop:"1px solid #f1f5f9"}}>
+                <td style={{padding:"7px 8px",fontWeight:800,color:"#0f172a"}}>{r.tm.icon} {r.tm.name}</td>
+                <td style={{padding:"7px 8px",textAlign:"center",fontWeight:700}}>{r.players}</td>
+                <td style={{padding:"7px 8px",textAlign:"center",fontWeight:700,color:r.trainers===0?"#dc2626":"#0f172a"}}>{r.trainers}{r.trainers===0?" ⚠️":""}</td>
+                <td style={{padding:"7px 8px",textAlign:"center",fontWeight:700}}>{r.helpers}</td>
+              </tr>
+            ))}
+            <tr style={{borderTop:"2px solid #e2e8f0",background:"#f8fafc"}}>
+              <td style={{padding:"7px 8px",fontWeight:900}}>Gesamt</td>
+              <td style={{padding:"7px 8px",textAlign:"center",fontWeight:900}}>{tot.p}</td>
+              <td style={{padding:"7px 8px",textAlign:"center",fontWeight:900}}>{tot.t}</td>
+              <td style={{padding:"7px 8px",textAlign:"center",fontWeight:900}}>{tot.h}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div style={{marginTop:14,paddingTop:12,borderTop:"1px solid #f1f5f9"}}>
+        <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6}}>📝 SAISON-CHECK (NÄCHSTE SAISON)</div>
+        {surveys.length===0
+          ? <div style={{fontSize:12.5,color:"#64748b"}}>Noch keine Antworten. Trainer & Betreuer werden ab 3 Monate vor Saisonende automatisch erinnert, bis sie den Fragebogen ausfüllen.</div>
+          : (<>
+            <div style={{display:"flex",gap:6,marginBottom:8}}>
+              <span style={{fontSize:11.5,fontWeight:800,color:"#15803d",background:"#dcfce7",borderRadius:7,padding:"3px 9px"}}>✅ {cnt("ja")} machen weiter</span>
+              <span style={{fontSize:11.5,fontWeight:800,color:"#b45309",background:"#fef3c7",borderRadius:7,padding:"3px 9px"}}>🤔 {cnt("unsicher")} unsicher</span>
+              <span style={{fontSize:11.5,fontWeight:800,color:"#dc2626",background:"#fee2e2",borderRadius:7,padding:"3px 9px"}}>❌ {cnt("nein")} hören auf</span>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:5}}>
+              {surveys.map(s=>(
+                <div key={s.id} style={{display:"flex",alignItems:"center",gap:8,background:"#f8fafc",borderRadius:9,padding:"6px 10px",fontSize:12}}>
+                  <span style={{fontWeight:800,color:"#0f172a",flex:1,minWidth:0}}>{s.name} <span style={{fontWeight:600,color:"#64748b"}}>· {s.role==="helper"?"Betreuer":"Trainer"}</span></span>
+                  <span style={{fontWeight:700,color:s.again==="ja"?"#15803d":s.again==="nein"?"#dc2626":"#b45309"}}>{s.again==="ja"?"✅":s.again==="nein"?"❌":"🤔"}{s.teamWish?` → ${s.teamWish}`:""}{s.units?` · ${s.units}×/Wo`:""}</span>
+                </div>
+              ))}
+            </div>
+          </>)}
+        {open.length>0&&<div style={{fontSize:11.5,color:"#64748b",marginTop:7,lineHeight:1.5}}>Ohne Antwort: {open.map(p=>p.name).join(", ")}</div>}
+      </div>
+    </div>
+  );
+}
+// Oeffentliche Einwilligungs-Seite fuer Vereins-Ansprechpartner: Die Person
+// bestaetigt per Link, dass Name/Rolle/Kontakt in der App angezeigt werden duerfen.
+function ContactConsentPublic({contactId,clubParam}){
+  const [phase,setPhase]=useState("loading");
+  const [dataAll,setDataAll]=useState(null);
+  const [club,setClub]=useState(null);
+  const [contact,setContact]=useState(null);
+  const [done,setDone]=useState(null);
+  useEffect(()=>{ (async()=>{
+    try{ try{await auth.ensureMember();}catch{}
+      const d=await sb.getClub(clubParam);
+      const c=(d?.clubs||[]).find(x=>x.id===clubParam||x.slug===clubParam);
+      const ct=(c?.contacts||[]).find(x=>x.id===contactId);
+      if(!c||!ct){ setPhase("notfound"); return; }
+      setDataAll(d); setClub(c); setContact(ct); setPhase("view");
+    }catch{ setPhase("error"); }
+  })(); },[contactId,clubParam]);
+  const answer=async ok=>{
+    const next={...dataAll,clubs:(dataAll.clubs||[]).map(c=>c.id!==club.id?c:{...c,contacts:(c.contacts||[]).map(x=>x.id===contactId?{...x,consent:ok?"ok":"declined",consentAt:new Date().toISOString()}:x)})};
+    setDone(ok);
+    try{ await sb.set(next,club.id); }catch{}
+  };
+  const Shell=({children})=>(<div style={{minHeight:"100dvh",background:"#f0f4f8"}}><style>{CSS}</style><div style={{background:"linear-gradient(135deg,#052e16,#16a34acc)",padding:"22px 18px",color:"#fff"}}><div style={{maxWidth:520,margin:"0 auto"}}><div style={{fontSize:12,fontWeight:700,opacity:.7}}>ANSPRECHPARTNER-FREIGABE</div><div style={{fontWeight:900,fontSize:21}}>{club?.name||"Verein"}</div></div></div><div style={{maxWidth:520,margin:"0 auto",padding:"16px"}}>{children}</div></div>);
+  if(phase==="loading") return <Shell><p style={{textAlign:"center",color:"#64748b",padding:"30px",fontWeight:700}}>Lädt …</p></Shell>;
+  if(phase==="notfound") return <Shell><div style={{background:"#fff",borderRadius:16,padding:"26px",textAlign:"center",border:"1.5px solid #e2e8f0"}}><p style={{fontWeight:800,color:"#334155"}}>Link ungültig</p><p style={{fontSize:13,color:"#64748b",marginTop:6}}>Der Eintrag wurde nicht gefunden oder bereits entfernt.</p></div></Shell>;
+  if(phase==="error") return <Shell><div style={{background:"#fff",borderRadius:16,padding:"26px",textAlign:"center"}}><p style={{fontWeight:800,color:"#334155"}}>Verbindung fehlgeschlagen</p></div></Shell>;
+  return (
+    <Shell>
+      {done!=null
+        ? <div style={{background:done?"#f0fdf4":"#fff7f7",border:`1.5px solid ${done?"#bbf7d0":"#fecaca"}`,borderRadius:16,padding:"22px",textAlign:"center"}}>
+            <p style={{fontWeight:800,fontSize:16,color:done?"#15803d":"#dc2626"}}>{done?"Danke! Deine Daten werden angezeigt ✓":"Alles klar – deine Daten werden NICHT angezeigt."}</p>
+            <p style={{fontSize:13,color:"#64748b",marginTop:6}}>Du kannst deine Entscheidung jederzeit über den Vereins-Admin ändern.</p>
+          </div>
+        : (<>
+          <div style={{background:"#fff",borderRadius:16,padding:"16px",border:"1.5px solid #e2e8f0",marginBottom:14}}>
+            <p style={{fontSize:13.5,color:"#334155",lineHeight:1.6,marginBottom:12}}><b>{club.name}</b> möchte dich in der Vereins-App als Ansprechpartner anzeigen – sichtbar für Eltern und Teams des Vereins. Das passiert <b>nur mit deiner Zustimmung</b> (Art. 6 Abs. 1 lit. a DSGVO, jederzeit widerruflich).</p>
+            {[["Name",contact.name],["Funktion",contact.role||"–"],["E-Mail",contact.email||"–"],["Telefon",contact.phone||"–"],contact.note&&["Hinweis",contact.note]].filter(Boolean).map(([k,v])=>(
+              <div key={k} style={{display:"flex",gap:10,padding:"4px 0"}}><span style={{fontSize:13,color:"#64748b",fontWeight:700,minWidth:90}}>{k}</span><span style={{fontSize:14,fontWeight:700,color:"#0f172a"}}>{v}</span></div>
+            ))}
+          </div>
+          <button onClick={()=>answer(true)} style={{width:"100%",padding:"14px",borderRadius:13,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit",marginBottom:8}}>✓ Ja, Daten anzeigen</button>
+          <button onClick={()=>answer(false)} style={{width:"100%",padding:"12px",borderRadius:13,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>✕ Nein, nicht anzeigen</button>
+        </>)}
+    </Shell>
   );
 }
 
@@ -18889,6 +19182,22 @@ const resolveLinkedEv=(events,ev)=>{
   const tid2=ev?.pollLink?.evId; if(!tid2) return ev;
   return (events||[]).find(x=>x.id===tid2)||ev;
 };
+// Drinnen/Draussen-Hinweis fuer Hallen-Trainings: entscheidet per Wettervorhersage
+function InOutHint({ev,cl}){
+  const wx=useWeather(plzToGeo(cl?.plz));
+  if(!ev?.inOut) return null;
+  const w=wx?.data?.[ev.date];
+  const indoor=w?(((w.r??0)>=50)||((w.t??15)<=3)):null;
+  return (
+    <div style={{background:"#ecfeff",border:"1.5px solid #a5f3fc",borderRadius:11,padding:"8px 12px",marginBottom:10,fontSize:12.5,color:"#0e7490",fontWeight:700,lineHeight:1.5}}>
+      {indoor==null
+        ? "🌤 Je nach Wetter draußen oder in der Halle – der Hinweis erscheint hier, sobald die Vorhersage da ist."
+        : indoor
+          ? <>🏠 Voraussichtlich <b>drinnen (Halle)</b> – {wxIcon(w.c)} {w.t}°C · {w.r??0}% Regen</>
+          : <>🌤 Voraussichtlich <b>draußen</b> – {wxIcon(w.c)} {w.t}°C · {w.r??0}% Regen. Bei Wetterumschwung: Halle.</>}
+    </div>
+  );
+}
 function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user",allEvents=[]}) {
   const { tr } = useT();
   const wx=useWeather(plzToGeo(cl?.plz));
@@ -18976,6 +19285,7 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user",allEven
           </div>
         )}
         {infoDrill&&<DrillInfoModal drill={infoDrill} t={TH(cl)} onClose={()=>setInfoDrill(null)}/>}
+        <InOutHint ev={ev} cl={cl}/>
         {ev.type==="turnier"&&isTrainerOrHelper?<TournView ev={ev} user={user} onVote={onVote} cl={cl} players={players} isHelper={role==="helper"}/>
           :ev.type==="turnier"?<PollAttend ev={ev} user={user} onVote={onVote} cl={cl}/>
           :ev.pt==="none"?(
@@ -18999,8 +19309,9 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user",allEven
             <ExtraListPoll poll={p} user={user} onChange={arr=>onVote(ev.id,"extra:"+p.id,arr)}/>
           </div>
         ))}
-        {/* Termin-Cockpit: Fahrgemeinschaft auch bei Spielen (eigener Datentopf, nicht die Anwesenheit) */}
-        {ev.pt!=="carpool" && ev.carpoolEnabled!==false && ["heimspiel","auswarts","freundschaft","turnier"].includes(ev.type) && (
+        {/* Termin-Cockpit: Fahrgemeinschaft auch bei Spielen (eigener Datentopf, nicht die Anwesenheit).
+            carpoolExtra: im Wizard zusaetzlich zur Anwesenheit angehakt (Mehrfachauswahl). */}
+        {ev.pt!=="carpool" && (ev.carpoolExtra===true || (ev.carpoolEnabled!==false && ["heimspiel","auswarts","freundschaft","turnier"].includes(ev.type))) && (
           <div style={{marginTop:16,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
             <div style={{fontWeight:800,fontSize:14,color:"#0f172a",marginBottom:10}}>🚗 {tr("evCarpoolT")}</div>
             <PollCarpool entries={ev.carpool||{}} onSet={v=>onVote(ev.id,"carpoolmap",v)} user={user} cl={cl} labels={carpoolLabelsFor(ev,cl)}/>
@@ -19880,12 +20191,32 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{},onSwitc
           {ext.quiz&&<WeeklyQuizCard profile={myProfile} data={data} save={onSave} fire={fire}/>}
         </div>}
         <AffiliateBanner trigger="parents" style={{marginTop:16}}/>
+        {/* Ansprechpartner des Vereins: nur Eintraege MIT Einwilligung (per Link bestaetigt) */}
+        {(cl.contacts||[]).filter(c=>c.consent==="ok").length>0&&(
+          <div style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",padding:"14px 16px",marginTop:16}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:4}}>📇 ANSPRECHPARTNER</div>
+            <div style={{fontSize:12,color:"#64748b",marginBottom:10,lineHeight:1.5}}>Anmelden, Abmelden oder Fragen rund um den Verein? Hier bist du richtig.</div>
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {(cl.contacts||[]).filter(c=>c.consent==="ok").map(c=>(
+                <div key={c.id} style={{background:"#f8fafc",borderRadius:12,padding:"11px 13px",border:"1px solid #f1f5f9"}}>
+                  <div style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>{c.name}{c.role&&<span style={{fontWeight:600,color:"#64748b"}}> · {c.role}</span>}</div>
+                  {c.note&&<div style={{fontSize:12,color:"#64748b",marginTop:2,lineHeight:1.45}}>{c.note}</div>}
+                  <div style={{display:"flex",gap:7,marginTop:7,flexWrap:"wrap"}}>
+                    {c.email&&<a href={"mailto:"+c.email} style={{textDecoration:"none",padding:"6px 12px",borderRadius:9,background:t.p,color:contrast(t.p),fontWeight:800,fontSize:12}}>✉️ E-Mail schreiben</a>}
+                    {c.phone&&<a href={"tel:"+c.phone} style={{textDecoration:"none",padding:"6px 12px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:"#334155",fontWeight:800,fontSize:12}}>📞 {c.phone}</a>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         {ext.links&&(cl.links||[]).length>0&&(
           <div style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",padding:"14px 16px",marginTop:16}}>
             <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:10}}>{tr("uhClubLinks")}</div>
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
               {(cl.links||[]).map(l=>(
                 <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer"
+                  onClick={()=>{ try{ onSave({...data,linkClicks:[...(data.linkClicks||[]),{id:uid(),cid:cl.id,lid:l.id,ts:new Date().toISOString()}]}); }catch{} }}
                   style={{display:"flex",alignItems:"center",gap:11,textDecoration:"none",background:"#f8fafc",borderRadius:12,padding:"11px 13px",border:"1px solid #f1f5f9"}}>
                   <div style={{width:34,height:34,borderRadius:10,background:t.p+"15",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>🔗</div>
                   <span style={{flex:1,fontWeight:700,fontSize:14,color:"#0f172a"}}>{l.title}</span>
@@ -20337,6 +20668,7 @@ function AppInner({lang,setLang}) {
 
   {const _q=new URLSearchParams(window.location.search); if(_q.has("tournament")) return (<><style>{CSS}</style><TournamentPublic eid={_q.get("tournament")} clubParam={_q.get("club")}/></>);}
   {const _q=new URLSearchParams(window.location.search); if(_q.has("offer")) return (<><style>{CSS}</style><OfferPublic offerId={_q.get("offer")}/></>);}
+  {const _q=new URLSearchParams(window.location.search); if(_q.has("kontakt")) return (<><style>{CSS}</style><ContactConsentPublic contactId={_q.get("kontakt")} clubParam={_q.get("club")||cid}/></>);}
 
   if(visitor) return (<><style>{CSS}</style><TournamentPublic eid={visitor.eid} clubParam={visitor.club} onBack={()=>setVisitor(null)}/></>);
 

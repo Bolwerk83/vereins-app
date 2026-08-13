@@ -36,7 +36,7 @@ if(b.includes("Was möchtet ihr nutzen?")){
   if(b.includes("Termin-Abstimmung")&&b.includes("Immer aktiv")) ok("Abstimmung als Pflicht-Modul erklärt");
   await page.locator('button:has-text("Los geht")').click(); await page.waitForTimeout(400);
   // 5 Modul-Seiten durchgehen, Taktik (Seite 3) abwählen
-  for(let i=0;i<5;i++){
+  for(let i=0;i<6;i++){
     b=await body();
     if(i===2){ if(b.includes("Taktiktafel")) ok("Modul-Seite Taktik mit Erklärung"); await page.locator('div:has-text("Wir nutzen das")').last().click(); await page.waitForTimeout(300); }
     await page.locator('button:has-text("Weiter →")').click(); await page.waitForTimeout(400);
@@ -50,7 +50,7 @@ if(b.includes("Was möchtet ihr nutzen?")){
   await page.locator('button:has-text("Mehr")').last().click(); await page.waitForTimeout(600);
   await page.locator('button:has-text("🧩 Module")').click(); await page.waitForTimeout(500);
   await page.locator('button:has-text("Los geht")').click(); await page.waitForTimeout(300);
-  for(let i=0;i<5;i++){
+  for(let i=0;i<6;i++){
     if(i===2){ await page.locator('div:has-text("Ausgeblendet")').last().click().catch(()=>{}); await page.waitForTimeout(250); }
     await page.locator('button:has-text("Weiter →")').click(); await page.waitForTimeout(300);
   }
