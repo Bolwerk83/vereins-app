@@ -1,0 +1,733 @@
+<title>Nestwerk</title>
+<style>
+  :root {
+    --ground: #F6F4EF;
+    --surface: #FFFFFF;
+    --surface-2: #EFECE4;
+    --ink: #24322D;
+    --ink-soft: #5C6B65;
+    --hairline: #E2DED4;
+    --brand: #2E6B58;
+    --brand-ink: #FFFFFF;
+    --brand-soft: #E3EEE9;
+    --honey: #D28E2C;
+    --honey-soft: #F7EAD3;
+    --danger: #B8453C;
+    --danger-soft: #F6E3E0;
+    --ok: #4C8A55;
+    --ok-soft: #E4F0E4;
+    --m-anna: #BC5878;
+    --m-du: #3E7CB1;
+    --m-emma: #D28E2C;
+    --m-ben: #5B9E63;
+    --shadow: 0 1px 2px rgba(36,50,45,.06), 0 6px 20px rgba(36,50,45,.07);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #131715;
+      --surface: #1C221F;
+      --surface-2: #242B28;
+      --ink: #E8ECE7;
+      --ink-soft: #9AA8A1;
+      --hairline: #2E3733;
+      --brand: #5CA98F;
+      --brand-ink: #10201A;
+      --brand-soft: #22352E;
+      --honey: #E0A44B;
+      --honey-soft: #37301F;
+      --danger: #D97066;
+      --danger-soft: #3A2523;
+      --ok: #7CB884;
+      --ok-soft: #243325;
+      --m-anna: #D07A96;
+      --m-du: #6B9FC9;
+      --m-emma: #E0A44B;
+      --m-ben: #7CB884;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.25);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #131715;
+    --surface: #1C221F;
+    --surface-2: #242B28;
+    --ink: #E8ECE7;
+    --ink-soft: #9AA8A1;
+    --hairline: #2E3733;
+    --brand: #5CA98F;
+    --brand-ink: #10201A;
+    --brand-soft: #22352E;
+    --honey: #E0A44B;
+    --honey-soft: #37301F;
+    --danger: #D97066;
+    --danger-soft: #3A2523;
+    --ok: #7CB884;
+    --ok-soft: #243325;
+    --m-anna: #D07A96;
+    --m-du: #6B9FC9;
+    --m-emma: #E0A44B;
+    --m-ben: #7CB884;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.25);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .app {
+    max-width: 440px;
+    margin: 0 auto;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--ground);
+  }
+  @media (min-width: 500px) {
+    body { padding: 24px 0 40px; }
+    .app {
+      min-height: calc(100vh - 64px);
+      border: 1px solid var(--hairline);
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+  }
+
+  /* ---------- Kopf ---------- */
+  header.top {
+    padding: 18px 20px 12px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .wordmark {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+  .wordmark .nest { color: var(--brand); }
+  .demo-tag {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--ink-soft);
+    border: 1px solid var(--hairline);
+    border-radius: 999px;
+    padding: 3px 10px;
+    white-space: nowrap;
+  }
+
+  main { flex: 1; padding: 0 16px 96px; }
+  .screen { display: none; }
+  .screen.active { display: block; animation: rise .25s ease; }
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    .screen.active { animation: none; }
+    * { transition: none !important; }
+  }
+
+  h2.screen-title {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    font-size: 21px;
+    margin: 10px 4px 2px;
+    text-wrap: balance;
+  }
+  .screen-sub { margin: 0 4px 14px; color: var(--ink-soft); font-size: 14px; }
+
+  .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .09em;
+    color: var(--ink-soft);
+    margin: 20px 4px 8px;
+    font-weight: 600;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-top: 1px solid var(--hairline);
+  }
+  .row:first-child { border-top: 0; }
+  button.row { width: 100%; text-align: left; background: none; border-left: 0; border-right: 0; border-bottom: 0; font: inherit; color: inherit; cursor: pointer; }
+  button.row:hover { background: var(--surface-2); }
+  button.row:focus-visible, button:focus-visible, input:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+  }
+
+  .time { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 15px; min-width: 48px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .row-main { flex: 1; min-width: 0; }
+  .row-title { font-weight: 600; font-size: 15px; }
+  .row-meta { font-size: 13px; color: var(--ink-soft); }
+  .chev { color: var(--ink-soft); flex: none; }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 999px;
+    padding: 2px 10px;
+    background: var(--surface-2);
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .chip .dot { width: 7px; height: 7px; }
+  .chip.warn { background: var(--danger-soft); color: var(--danger); }
+  .chip.ok { background: var(--ok-soft); color: var(--ok); }
+  .chip.honey { background: var(--honey-soft); color: var(--honey); }
+
+  .conflict {
+    border: 1px solid var(--danger);
+    background: var(--danger-soft);
+    border-radius: 16px;
+    padding: 14px;
+    margin-top: 12px;
+  }
+  .conflict h3 { margin: 0 0 4px; font-size: 15px; color: var(--danger); }
+  .conflict p { margin: 0 0 10px; font-size: 14px; }
+  .btn {
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    border: 0;
+    border-radius: 10px;
+    padding: 9px 16px;
+    cursor: pointer;
+    background: var(--brand);
+    color: var(--brand-ink);
+  }
+  .btn.ghost { background: var(--surface); color: var(--ink); border: 1px solid var(--hairline); }
+  .btn:hover { filter: brightness(1.06); }
+
+  /* ---------- Kalender ---------- */
+  .week {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .day {
+    font: inherit;
+    border: 1px solid var(--hairline);
+    background: var(--surface);
+    color: var(--ink);
+    border-radius: 12px;
+    padding: 8px 2px 7px;
+    text-align: center;
+    cursor: pointer;
+  }
+  .day .dname { font-size: 11px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .04em; }
+  .day .dnum { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .day .dots { display: flex; gap: 3px; justify-content: center; min-height: 6px; margin-top: 3px; }
+  .day .dots i { width: 5px; height: 5px; border-radius: 50%; }
+  .day.sel { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); }
+  .day.sel .dname { color: var(--brand-ink); opacity: .8; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 4px 0; }
+
+  /* ---------- Merkzeug ---------- */
+  .lockbox { text-align: center; padding: 36px 24px 30px; }
+  .lockbox .lock-ico { font-size: 40px; }
+  .lockbox h3 { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; margin: 10px 0 6px; font-size: 19px; }
+  .lockbox p { color: var(--ink-soft); font-size: 14px; margin: 0 auto 18px; max-width: 30ch; }
+  .pwrow { display: flex; gap: 8px; max-width: 300px; margin: 0 auto; }
+  .pwrow input {
+    flex: 1; min-width: 0;
+    font: inherit;
+    padding: 9px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--hairline);
+    background: var(--ground);
+    color: var(--ink);
+  }
+  .hint { font-size: 12px; color: var(--ink-soft); margin-top: 10px; }
+  .decrypting { display: none; margin-top: 16px; font-size: 14px; color: var(--brand); font-weight: 600; }
+
+  .search {
+    width: 100%;
+    font: inherit;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--hairline);
+    background: var(--surface);
+    color: var(--ink);
+    margin-bottom: 12px;
+  }
+  .avatar {
+    width: 38px; height: 38px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 15px; flex: none;
+    background: var(--brand-soft); color: var(--brand);
+  }
+
+  .spick .back { margin: 4px 0 10px; }
+  .spick h3 { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; font-size: 22px; margin: 0 4px 2px; }
+  .spick .ctx { color: var(--ink-soft); margin: 0 4px 14px; font-size: 14px; }
+  .fact { padding: 10px 14px; border-top: 1px solid var(--hairline); font-size: 14px; display: flex; gap: 10px; }
+  .fact:first-child { border-top: 0; }
+  .fact b { flex: none; min-width: 86px; font-weight: 600; color: var(--ink-soft); font-size: 13px; padding-top: 1px; }
+  .qcard { background: var(--brand-soft); border: 1px solid var(--brand); border-radius: 16px; padding: 14px; margin-top: 12px; }
+  .qcard h4 { margin: 0 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--brand); }
+  .qcard ul { margin: 0; padding-left: 18px; font-size: 14.5px; }
+  .qcard li { margin-bottom: 6px; }
+  .qcard li:last-child { margin-bottom: 0; }
+  .noterow { display: flex; gap: 8px; margin-top: 12px; }
+  .noterow input { flex: 1; min-width: 0; font: inherit; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--hairline); background: var(--surface); color: var(--ink); }
+
+  /* ---------- Praxis ---------- */
+  .kurs-head { padding: 12px 14px; }
+  .kurs-head .row-title { font-size: 15.5px; }
+  .bar { height: 6px; border-radius: 3px; background: var(--surface-2); margin-top: 8px; overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--brand); border-radius: 3px; }
+  .tn { display: flex; align-items: center; gap: 10px; padding: 9px 14px; border-top: 1px solid var(--hairline); font-size: 14px; }
+  .tn .name { flex: 1; }
+  .paybtn { font: inherit; font-size: 12px; font-weight: 600; border: 0; border-radius: 999px; padding: 3px 11px; cursor: pointer; }
+  .paybtn.paid { background: var(--ok-soft); color: var(--ok); }
+  .paybtn.open { background: var(--honey-soft); color: var(--honey); }
+  .frist-days { font-variant-numeric: tabular-nums; }
+
+  /* ---------- Toast & Tabbar ---------- */
+  .toast {
+    position: fixed;
+    left: 50%; bottom: 92px;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--ink);
+    color: var(--ground);
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 600;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .25s, transform .25s;
+    max-width: 90vw;
+    text-align: center;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  nav.tabs {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    display: flex;
+    justify-content: center;
+    padding: 0 0 env(safe-area-inset-bottom);
+    background: var(--surface);
+    border-top: 1px solid var(--hairline);
+  }
+  @media (min-width: 500px) {
+    nav.tabs { position: sticky; margin-top: auto; }
+  }
+  nav.tabs .inner { display: flex; width: 100%; max-width: 440px; }
+  .tab {
+    flex: 1;
+    font: inherit;
+    background: none;
+    border: 0;
+    cursor: pointer;
+    padding: 9px 4px 10px;
+    color: var(--ink-soft);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .tab .ico { font-size: 20px; line-height: 1.2; }
+  .tab.active { color: var(--brand); }
+
+  footer.note { text-align: center; font-size: 12px; color: var(--ink-soft); padding: 18px 20px 8px; }
+</style>
+
+<div class="app">
+  <header class="top">
+    <h1 class="wordmark"><span class="nest">Nest</span>werk</h1>
+    <span class="demo-tag">Demo · Beispieldaten</span>
+  </header>
+
+  <main>
+    <!-- ============ HEUTE ============ -->
+    <section class="screen active" id="scr-heute">
+      <h2 class="screen-title">Guten Tag! 🪺</h2>
+      <p class="screen-sub">Mittwoch, 13. August · Familie Beispiel</p>
+
+      <div class="legend">
+        <span class="chip"><i class="dot" style="background:var(--m-du)"></i>Du</span>
+        <span class="chip"><i class="dot" style="background:var(--m-anna)"></i>Anna</span>
+        <span class="chip"><i class="dot" style="background:var(--m-emma)"></i>Emma (9)</span>
+        <span class="chip"><i class="dot" style="background:var(--m-ben)"></i>Ben (6)</span>
+      </div>
+
+      <p class="label">Heute im Nest</p>
+      <div class="card">
+        <div class="row">
+          <span class="time">15:00</span>
+          <span class="dot" style="background:var(--m-emma)"></span>
+          <div class="row-main">
+            <div class="row-title">Fußballtraining Emma</div>
+            <div class="row-meta">Bringt: Du · Holt: Anna</div>
+          </div>
+          <span class="chip ok">geregelt</span>
+        </div>
+        <div class="row">
+          <span class="time">16:30</span>
+          <span class="dot" style="background:var(--m-ben)"></span>
+          <div class="row-main">
+            <div class="row-title">Kinderarzt Dr. Weber (Ben)</div>
+            <div class="row-meta" id="ben-meta">Bringt: <b>noch offen</b></div>
+          </div>
+          <span class="chip warn" id="ben-chip">offen</span>
+        </div>
+        <div class="row">
+          <span class="time">16:00</span>
+          <span class="dot" style="background:var(--m-anna)"></span>
+          <div class="row-main">
+            <div class="row-title">Rückbildungskurs B leiten</div>
+            <div class="row-meta">Anna · Praxis, bis 17:30</div>
+          </div>
+          <span class="chip honey">Praxis</span>
+        </div>
+      </div>
+
+      <div class="conflict" id="conflict-card">
+        <h3>⚠️ Konflikt um 16:30</h3>
+        <p>Ben muss zum Kinderarzt, aber Anna leitet bis 17:30 ihren Kurs. <b>Wer fährt Ben?</b></p>
+        <button class="btn" id="btn-uebernehmen">Ich übernehme</button>
+      </div>
+
+      <p class="label">Schnell erledigt</p>
+      <div class="card">
+        <button class="row" id="qa-notiz">
+          <span style="font-size:20px">🎙️</span>
+          <div class="row-main">
+            <div class="row-title">Schnellnotiz ins Merkzeug</div>
+            <div class="row-meta">Nach dem Gespräch: 30 Sekunden, nichts vergessen</div>
+          </div>
+          <span class="chev">›</span>
+        </button>
+        <button class="row" id="qa-termin">
+          <span style="font-size:20px">📅</span>
+          <div class="row-main">
+            <div class="row-title">Termin hinzufügen</div>
+            <div class="row-meta">Mit „Wer bringt / wer holt?“</div>
+          </div>
+          <span class="chev">›</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ============ KALENDER ============ -->
+    <section class="screen" id="scr-kalender">
+      <h2 class="screen-title">Gemeinschaftskalender</h2>
+      <p class="screen-sub">Eine Ansicht für die ganze Familie</p>
+      <div class="week" id="week"></div>
+      <div class="card" id="daylist"></div>
+      <div class="legend">
+        <span class="chip"><i class="dot" style="background:var(--m-du)"></i>Du</span>
+        <span class="chip"><i class="dot" style="background:var(--m-anna)"></i>Anna</span>
+        <span class="chip"><i class="dot" style="background:var(--m-emma)"></i>Emma</span>
+        <span class="chip"><i class="dot" style="background:var(--m-ben)"></i>Ben</span>
+      </div>
+    </section>
+
+    <!-- ============ MERKZEUG ============ -->
+    <section class="screen" id="scr-merkzeug">
+      <h2 class="screen-title">Merkzeug</h2>
+      <p class="screen-sub">Dein privates Gedächtnis – nur du hast den Schlüssel</p>
+
+      <div class="card lockbox" id="lockbox">
+        <div class="lock-ico">🔐</div>
+        <h3>Ende-zu-Ende verschlüsselt</h3>
+        <p>Dieser Bereich wird erst auf deinem Gerät entschlüsselt. Selbst der Server kann ihn nicht lesen.</p>
+        <div class="pwrow">
+          <input type="password" id="pw" placeholder="Gedächtnis-Passwort" aria-label="Gedächtnis-Passwort">
+          <button class="btn" id="btn-unlock">Entsperren</button>
+        </div>
+        <div class="hint">Demo: jedes Passwort funktioniert</div>
+        <div class="decrypting" id="decrypting">Entschlüssle lokal auf deinem Gerät …</div>
+      </div>
+
+      <div id="memory" style="display:none">
+        <input class="search" id="search" placeholder="Suchen: Name, Thema, „kroatien“ …" aria-label="Im Gedächtnis suchen">
+        <div class="card" id="personlist"></div>
+        <p class="hint" style="margin:12px 4px 0">🔒 <button class="btn ghost" id="btn-lock" style="padding:5px 12px;font-size:13px">Wieder sperren</button></p>
+      </div>
+
+      <div id="spick" class="spick" style="display:none"></div>
+    </section>
+
+    <!-- ============ PRAXIS ============ -->
+    <section class="screen" id="scr-praxis">
+      <h2 class="screen-title">Praxis</h2>
+      <p class="screen-sub">Annas Arbeitsbereich · nur für sie sichtbar</p>
+
+      <p class="label">Kurse</p>
+      <div class="card">
+        <div class="kurs-head">
+          <div class="row-title">Rückbildung – Kurs B</div>
+          <div class="row-meta">Mi 16:00–17:30 · Praxisraum · 8 von 10 Plätzen</div>
+          <div class="bar"><i style="width:80%"></i></div>
+        </div>
+        <div id="teilnehmer"></div>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <div class="kurs-head">
+          <div class="row-title">Geburtsvorbereitung – Kurs C</div>
+          <div class="row-meta">Start 2. September · Do 19:00 · 4 von 12 Plätzen</div>
+          <div class="bar"><i style="width:33%"></i></div>
+        </div>
+      </div>
+
+      <p class="label">Fristen-Cockpit</p>
+      <div class="card" id="fristen"></div>
+    </section>
+
+    <footer class="note">Nestwerk-Demo · alle Namen und Daten sind ausgedacht · nichts wird gespeichert</footer>
+  </main>
+
+  <div class="toast" id="toast" role="status"></div>
+
+  <nav class="tabs">
+    <div class="inner">
+      <button class="tab active" data-scr="heute"><span class="ico">🪺</span>Heute</button>
+      <button class="tab" data-scr="kalender"><span class="ico">📅</span>Kalender</button>
+      <button class="tab" data-scr="merkzeug"><span class="ico">🔐</span>Merkzeug</button>
+      <button class="tab" data-scr="praxis"><span class="ico">🩺</span>Praxis</button>
+    </div>
+  </nav>
+</div>
+
+<script>
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => document.querySelectorAll(s);
+
+  /* ---------- Toast ---------- */
+  let toastTimer;
+  function toast(msg) {
+    const t = $("#toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove("show"), 2600);
+  }
+
+  /* ---------- Tabs ---------- */
+  function show(scr) {
+    $$(".screen").forEach((s) => s.classList.remove("active"));
+    $("#scr-" + scr).classList.add("active");
+    $$(".tab").forEach((t) => t.classList.toggle("active", t.dataset.scr === scr));
+    window.scrollTo({ top: 0 });
+  }
+  $$(".tab").forEach((t) => t.addEventListener("click", () => show(t.dataset.scr)));
+
+  /* ---------- Heute: Konflikt lösen ---------- */
+  $("#btn-uebernehmen").addEventListener("click", () => {
+    $("#conflict-card").style.display = "none";
+    $("#ben-meta").innerHTML = "Bringt: <b>Du</b> · Anna informiert ✓";
+    const chip = $("#ben-chip");
+    chip.textContent = "geregelt";
+    chip.classList.remove("warn");
+    chip.classList.add("ok");
+    toast("Du fährst Ben – steht im Familienkalender");
+  });
+  $("#qa-notiz").addEventListener("click", () => { show("merkzeug"); });
+  $("#qa-termin").addEventListener("click", () => { show("kalender"); toast("Demo: Termin-Formular kommt in Stufe 1"); });
+
+  /* ---------- Kalender ---------- */
+  const events = {
+    11: [["07:45", "du", "Frühschicht", "bis 16:00"]],
+    12: [["17:00", "emma", "Schwimmkurs", "Bringt: Anna · Holt: Anna"]],
+    13: [
+      ["15:00", "emma", "Fußballtraining", "Bringt: Du · Holt: Anna"],
+      ["16:00", "anna", "Rückbildungskurs B", "Praxis · bis 17:30"],
+      ["16:30", "ben", "Kinderarzt Dr. Weber", "Bringt: Du"],
+    ],
+    14: [
+      ["09:30", "ben", "Zahnarzt", "Bringt: Anna"],
+      ["19:00", "anna", "Geburtsvorbereitung C", "Praxis"],
+    ],
+    15: [["18:00", "du", "Vereinssitzung", "Sportheim"]],
+    16: [
+      ["10:00", "emma", "Fußballturnier", "Bringt: Du · ganze Familie schaut zu"],
+      ["14:00", "ben", "Kindergeburtstag Luis", "Holt: Anna um 17:00"],
+    ],
+    17: [["12:30", "du", "Mittagessen bei Oma", "alle vier"]],
+  };
+  const colors = { du: "var(--m-du)", anna: "var(--m-anna)", emma: "var(--m-emma)", ben: "var(--m-ben)" };
+  const dayNames = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+
+  function renderWeek(sel) {
+    $("#week").innerHTML = dayNames
+      .map((n, i) => {
+        const d = 11 + i;
+        const dots = (events[d] || []).slice(0, 4)
+          .map((e) => `<i style="background:${colors[e[1]]}"></i>`).join("");
+        return `<button class="day ${d === sel ? "sel" : ""}" data-d="${d}" aria-label="${n} ${d}. August">
+          <div class="dname">${n}</div><div class="dnum">${d}</div><div class="dots">${dots}</div></button>`;
+      }).join("");
+    $$(".day").forEach((b) => b.addEventListener("click", () => { renderWeek(+b.dataset.d); renderDay(+b.dataset.d); }));
+  }
+  function renderDay(d) {
+    const list = events[d] || [];
+    $("#daylist").innerHTML = list.length
+      ? list.map((e) => `<div class="row">
+          <span class="time">${e[0]}</span>
+          <span class="dot" style="background:${colors[e[1]]}"></span>
+          <div class="row-main"><div class="row-title">${e[2]}</div><div class="row-meta">${e[3]}</div></div>
+        </div>`).join("")
+      : `<div class="row"><div class="row-main"><div class="row-meta">Keine Termine – freier Tag 🎉</div></div></div>`;
+  }
+  renderWeek(13);
+  renderDay(13);
+
+  /* ---------- Merkzeug ---------- */
+  const persons = [
+    {
+      id: "juergen", name: "Jürgen", ctx: "Nachbar · seit 2019", ini: "J",
+      familie: "Frau Petra, Sohn Timo (studiert in Köln), Hund „Balu“",
+      themen: "Gartenbau, 1. FC, Wohnmobil",
+      faden: "Plant im September eine Wohnmobiltour nach Südtirol",
+      fragen: ["Wie laufen die Vorbereitungen für Südtirol?", "Was macht Timo im Studium?", "Ist der neue Rasen angewachsen?"],
+      notizen: ["02.08. – Hat uns die Leiter geliehen, zurückgeben!", "20.07. – Balu war beim Tierarzt, alles gut"],
+    },
+    {
+      id: "sandra", name: "Sandra", ctx: "Vereinskollegin · Kassenwartin", ini: "S",
+      familie: "Mann Alex, Tochter Mia (macht 2027 Abi)",
+      themen: "Laufen (Halbmarathon!), Backen, Kroatien-Fan",
+      faden: "War im Juli in Kroatien – Insel Krk, will nächstes Jahr wieder hin",
+      fragen: ["Wie war Krk – lohnt sich das für uns?", "Wann ist der nächste Lauf?", "Wie läuft Mias Abi-Vorbereitung?"],
+      notizen: ["28.07. – Empfiehlt Konoba am Hafen von Krk", "15.06. – Halbmarathon in 1:58 gelaufen 🎉"],
+    },
+    {
+      id: "kaya", name: "Herr Kaya", ctx: "Bens Fußballtrainer", ini: "K",
+      familie: "Zwei Töchter, beide spielen auch",
+      themen: "Jugendfußball, Grillen, hat früher selbst in der Oberliga gespielt",
+      faden: "Sucht noch Eltern-Helfer fürs Sommerturnier am 16.08.",
+      fragen: ["Braucht ihr am Samstag noch Hilfe beim Turnier?", "Wie macht sich Ben im Training?"],
+      notizen: ["06.08. – Ben soll Schienbeinschoner Größe M bekommen"],
+    },
+  ];
+
+  function renderPersons(filter) {
+    const q = (filter || "").toLowerCase();
+    const hits = persons.filter((p) =>
+      !q || [p.name, p.ctx, p.familie, p.themen, p.faden, p.notizen.join(" ")].join(" ").toLowerCase().includes(q)
+    );
+    $("#personlist").innerHTML = hits.length
+      ? hits.map((p) => `<button class="row" data-p="${p.id}">
+          <span class="avatar">${p.ini}</span>
+          <div class="row-main"><div class="row-title">${p.name}</div><div class="row-meta">${p.ctx}</div></div>
+          <span class="chev">›</span></button>`).join("")
+      : `<div class="row"><div class="row-main"><div class="row-meta">Kein Treffer für „${filter}“</div></div></div>`;
+    $$("#personlist [data-p]").forEach((b) => b.addEventListener("click", () => openSpick(b.dataset.p)));
+  }
+
+  function openSpick(id) {
+    const p = persons.find((x) => x.id === id);
+    $("#memory").style.display = "none";
+    $("#spick").style.display = "block";
+    $("#spick").innerHTML = `
+      <button class="btn ghost back" id="btn-back">‹ Zurück</button>
+      <h3>${p.name}</h3>
+      <p class="ctx">${p.ctx}</p>
+      <div class="card">
+        <div class="fact"><b>Familie</b><span>${p.familie}</span></div>
+        <div class="fact"><b>Themen</b><span>${p.themen}</span></div>
+        <div class="fact"><b>Offener Faden</b><span>${p.faden}</span></div>
+      </div>
+      <div class="qcard">
+        <h4>💬 Einstiegsfragen</h4>
+        <ul>${p.fragen.map((f) => `<li>${f}</li>`).join("")}</ul>
+      </div>
+      <p class="label">Letzte Notizen</p>
+      <div class="card" id="notecard">
+        ${p.notizen.map((n) => `<div class="fact"><span>${n}</span></div>`).join("")}
+      </div>
+      <div class="noterow">
+        <input id="newnote" placeholder="Nach dem Gespräch: kurz festhalten …" aria-label="Neue Notiz">
+        <button class="btn" id="btn-addnote">Merken</button>
+      </div>`;
+    $("#btn-back").addEventListener("click", () => {
+      $("#spick").style.display = "none";
+      $("#memory").style.display = "block";
+    });
+    $("#btn-addnote").addEventListener("click", () => {
+      const v = $("#newnote").value.trim();
+      if (!v) return;
+      p.notizen.unshift("13.08. – " + v);
+      openSpick(id);
+      toast("Gemerkt ✓ (verschlüsselt gespeichert)");
+    });
+  }
+
+  $("#btn-unlock").addEventListener("click", () => {
+    $("#decrypting").style.display = "block";
+    setTimeout(() => {
+      $("#lockbox").style.display = "none";
+      $("#memory").style.display = "block";
+      renderPersons("");
+      toast("Entsperrt – nur auf diesem Gerät lesbar");
+    }, 900);
+  });
+  $("#pw").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#btn-unlock").click(); });
+  document.addEventListener("click", (e) => {
+    if (e.target.id === "btn-lock") {
+      $("#memory").style.display = "none";
+      $("#spick").style.display = "none";
+      $("#lockbox").style.display = "block";
+      $("#decrypting").style.display = "none";
+      $("#pw").value = "";
+      toast("Gesperrt 🔒");
+    }
+  });
+  $("#search").addEventListener("input", (e) => renderPersons(e.target.value));
+
+  /* ---------- Praxis ---------- */
+  const teilnehmer = [
+    ["Lena M.", true], ["Ayşe K.", true], ["Franzi B.", false], ["Julia S.", true],
+    ["Miriam W.", true], ["Nadine H.", false], ["Carla P.", true], ["Steffi R.", true],
+  ];
+  function renderTeilnehmer() {
+    $("#teilnehmer").innerHTML = teilnehmer.map(([n, paid], i) => `
+      <div class="tn">
+        <span class="name">${n}</span>
+        <button class="paybtn ${paid ? "paid" : "open"}" data-i="${i}">${paid ? "bezahlt" : "offen"}</button>
+      </div>`).join("");
+    $$("#teilnehmer .paybtn").forEach((b) => b.addEventListener("click", () => {
+      teilnehmer[b.dataset.i][1] = !teilnehmer[b.dataset.i][1];
+      renderTeilnehmer();
+    }));
+  }
+  renderTeilnehmer();
+
+  const fristen = [
+    ["Berufshaftpflicht verlängern", 6, "warn"],
+    ["GKV-Abrechnung Q3 einreichen", 18, "honey"],
+    ["QM-Fortbildung nachweisen", 60, "ok"],
+    ["Steuervorauszahlung", 34, "ok"],
+  ];
+  $("#fristen").innerHTML = fristen.map(([t, d, c]) => `
+    <div class="row">
+      <div class="row-main"><div class="row-title">${t}</div></div>
+      <span class="chip ${c} frist-days">in ${d} Tagen</span>
+    </div>`).join("");
+</script>
