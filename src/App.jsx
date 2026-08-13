@@ -7038,43 +7038,73 @@ function AdminLogin({cl,onLogin,onBack}) {
   );
 }
 
-function HelperLogin({cl,helpers,onLogin,onBack}) {
+function HelperLogin({cl,helpers,onLogin,onSetHelperPw,onBack}) {
   const t=TH(cl);
-  const [code,setCode]=useState(""); const [err,setErr]=useState(false);
   const clHelpers=(helpers||[]).filter(h=>h.cid===cl.id&&h.active!==false);
+  const [sel,setSel]=useState(null);
+  const [step,setStep]=useState("who");          // who -> pwd -> setpw
+  const [pw,setPw]=useState(""); const [err,setErr]=useState(false);
+  const [np1,setNp1]=useState(""); const [np2,setNp2]=useState(""); const [perr,setPerr]=useState("");
+  const doLogin=(h)=>onLogin({id:h.id,role:"helper",cid:cl.id,name:h.name,helperId:h.id});
   const go=()=>{
-    const entered=code.trim();
-    // Klartext-Vergleich (Normalfall); Fallback: alte, versehentlich gehashte Codes aus früherer Version
-    const h=clHelpers.find(x=>x.code===entered) || clHelpers.find(x=>x.code&&x.code.startsWith("s")&&hashPw(entered)===x.code) || clHelpers.find(x=>x.code&&x.code.startsWith("h")&&checkPw(entered,x.code));
-    if(h){onLogin({id:h.id,role:"helper",cid:cl.id,name:h.name,helperId:h.id});}
-    else{setErr(true);setTimeout(()=>setErr(false),1800);}
+    const h=sel; if(!h) return;
+    const entered=pw.trim();
+    const okPw=h.pw&&checkPw(entered,h.pw);
+    // Alt-Codes aus der frueheren Code-Anmeldung funktionieren einmalig weiter -
+    // danach wird ein eigenes Passwort gesetzt.
+    const okLegacy=!h.pw&&h.code&&(h.code===entered||(String(h.code).startsWith("s")&&hashPw(entered)===h.code)||(String(h.code).startsWith("h")&&checkPw(entered,h.code)));
+    if(!okPw&&!okLegacy){ setErr(true); setTimeout(()=>setErr(false),1800); return; }
+    if(h.mustChangePw||okLegacy){ setStep("setpw"); return; }
+    doLogin(h);
   };
+  const saveNewPw=()=>{
+    if(!validTrainerPw(np1)){ setPerr("Mindestens 6 Zeichen mit Buchstabe und Zahl."); return; }
+    if(np1!==np2){ setPerr("Die Passwörter stimmen nicht überein."); return; }
+    const nh=hashPw(np1.trim());
+    onSetHelperPw&&onSetHelperPw(sel.id,nh);
+    doLogin(sel);
+  };
+  const card={background:"rgba(255,255,255,.09)",border:"1.5px solid rgba(255,255,255,.13)",borderRadius:16,padding:"14px 17px",cursor:"pointer",marginBottom:10};
   return (
-    <div style={{minHeight:"100dvh",background:`linear-gradient(135deg,${t.s},${t.p}66)`,display:"flex",alignItems:"center",justifyContent:"center",padding:22}}>
+    <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s} 0%,${t.p}66 100%)`}}>
       <style>{CSS}</style>
-      <div className="up" style={{width:"100%",maxWidth:390}}>
-        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:26}}>← Zurück</button>
-        <div style={{background:"#fff",borderRadius:24,padding:"34px 26px",boxShadow:"0 24px 80px rgba(0,0,0,.3)"}}>
-          <div style={{textAlign:"center",marginBottom:22}}>
-            <div style={{fontSize:52,marginBottom:8}}></div>
-            <h2 style={{fontSize:22,fontWeight:900,color:"#0f172a",margin:"0 0 4px"}}>Helfer-Zugang</h2>
-            <p style={{color:"#64748b",fontSize:13}}>{cl.name}</p>
-          </div>
-          <div style={{background:"#fffbeb",borderRadius:12,padding:"11px 14px",marginBottom:16,border:"1.5px solid #fde68a",fontSize:12,color:"#92400e",lineHeight:1.6}}>
-             Zugriff auf Spielpläne und Turnier-Übersichten. Keine internen Trainer-Notizen.
-          </div>
-          {clHelpers.length===0
-            ? <div style={{background:"#fee2e2",borderRadius:12,padding:"11px 14px",marginBottom:14,fontSize:13,color:"#dc2626",fontWeight:600,textAlign:"center"}}>
-                Keine aktiven Helfer-Accounts.<br/>Bitte Trainer kontaktieren.
-              </div>
-            : <>
-                <Inp label="Persönlicher Helfer-Code" type="password" val={code} set={v=>{setCode(v);setErr(false);}} ph="Code vom Trainer erhalten..." af cl={cl} onEnter={go}/>
-                {err&&<div style={{background:"#fef2f2",borderRadius:12,padding:"10px 14px",fontSize:14,fontWeight:700,color:"#dc2626",marginTop:10}}> Ungültiger Code</div>}
-                <div style={{height:14}}/>
-                <Btn full ch="Als Helfer einloggen" onClick={go} dis={!code.trim()} cl={cl}/>
-              </>
-          }
+      <div style={{padding:"50px 22px 40px",maxWidth:440,margin:"0 auto"}}>
+        <button onClick={()=>{ if(step==="pwd"){ setStep("who"); setPw(""); } else if(step==="setpw"){ setStep("pwd"); } else onBack(); }}
+          style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:28}}>← Zurück</button>
+        <div className="up" style={{display:"flex",flexDirection:"column",alignItems:"center",marginBottom:28}}>
+          <Logo cl={cl} sz={70}/>
+          <h1 style={{color:"#fff",fontSize:22,fontWeight:900,margin:"12px 0 4px",textAlign:"center"}}>Helfer-Anmeldung</h1>
+          <p style={{color:"rgba(255,255,255,.55)",fontSize:14}}>{step==="who"?"Wer bist du?":step==="pwd"?`Hallo ${sel?.name||""}!`:"Neues Passwort festlegen"}</p>
         </div>
+        {step==="who"&&(clHelpers.length===0
+          ? <div style={{background:"rgba(255,255,255,.09)",borderRadius:16,padding:"18px",color:"rgba(255,255,255,.75)",fontSize:14,lineHeight:1.6,textAlign:"center"}}>Noch keine Helfer-Zugänge angelegt.<br/>Die Trainer können Helfer unter „Mehr → Helfer" anlegen.</div>
+          : clHelpers.map(h=>(
+            <div key={h.id} className="up" style={card} onClick={()=>{ setSel(h); setStep("pwd"); setPw(""); }}>
+              <div style={{display:"flex",alignItems:"center",gap:12}}>
+                <Av name={h.name} sz={38}/>
+                <div style={{flex:1}}><div style={{color:"#fff",fontWeight:800,fontSize:16}}>{h.name}</div>{h.childName&&<div style={{color:"rgba(255,255,255,.5)",fontSize:12,marginTop:1}}>Kind: {h.childName}</div>}</div>
+                <div style={{color:"rgba(255,255,255,.35)",fontSize:20}}>{">"}</div>
+              </div>
+            </div>
+          )))}
+        {step==="pwd"&&(
+          <div className="up" style={{background:"rgba(255,255,255,.09)",border:"1.5px solid rgba(255,255,255,.13)",borderRadius:18,padding:"18px"}}>
+            <div style={{color:"rgba(255,255,255,.7)",fontSize:13,fontWeight:700,marginBottom:8}}>Passwort{sel?.mustChangePw?" (Einmal-Passwort vom Trainer)":""}</div>
+            <PwInput value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&go()} placeholder="Passwort…" autoFocus/>
+            {err&&<div style={{color:"#fecaca",fontSize:13,fontWeight:700,marginTop:8}}>Passwort falsch. Bei Verlust kann der Trainer ein neues Einmal-Passwort erzeugen.</div>}
+            <button onClick={go} style={{width:"100%",marginTop:12,padding:"13px",borderRadius:13,border:"none",background:"#fff",color:"#0f172a",fontWeight:900,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>Anmelden</button>
+          </div>
+        )}
+        {step==="setpw"&&(
+          <div className="up" style={{background:"rgba(255,255,255,.09)",border:"1.5px solid rgba(255,255,255,.13)",borderRadius:18,padding:"18px"}}>
+            <div style={{color:"#fff",fontWeight:800,fontSize:15,marginBottom:4}}>🔑 Eigenes Passwort festlegen</div>
+            <div style={{color:"rgba(255,255,255,.6)",fontSize:12.5,lineHeight:1.5,marginBottom:12}}>Das Einmal-Passwort war nur für den ersten Login. Wähle jetzt dein eigenes Passwort (mind. 6 Zeichen mit Buchstabe und Zahl).</div>
+            <div style={{marginBottom:9}}><PwInput value={np1} onChange={e=>setNp1(e.target.value)} placeholder="Neues Passwort…" autoFocus/></div>
+            <PwInput value={np2} onChange={e=>setNp2(e.target.value)} onKeyDown={e=>e.key==="Enter"&&saveNewPw()} placeholder="Wiederholen…"/>
+            {perr&&<div style={{color:"#fecaca",fontSize:13,fontWeight:700,marginTop:8}}>{perr}</div>}
+            <button onClick={saveNewPw} style={{width:"100%",marginTop:12,padding:"13px",borderRadius:13,border:"none",background:"#fff",color:"#0f172a",fontWeight:900,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>Speichern & anmelden</button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -11703,16 +11733,15 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
   const u=p=>setF(prev=>({...prev,...p}));
   const myTeams=data.teams.filter(tm=>myTids.includes(tm.id));
 
-  const genCode=()=>Math.random().toString(36).slice(2,8).toUpperCase();
-
-  const openNew=()=>{setF({name:"",childName:"",tids:myTids,notes:"",active:true,code:genCode()});setEditH(null);setShowForm(true);};
+  const openNew=()=>{setF({name:"",childName:"",tids:myTids,notes:"",active:true,tempPw:genTempPw()});setEditH(null);setShowForm(true);};
   const openEdit=h=>{setF({...h});setEditH(h.id);setShowForm(true);};
 
   const save2=()=>{
-    // Code nur gehasht speichern (wie Trainer-Passwoerter): Klartext ist nur
-    // bis zum Speichern sichtbar - danach zeigt die Liste "gesetzt".
-    const code=f.code&&!String(f.code).startsWith("s")?hashPw(f.code):f.code;
-    const rec={...f,code,id:editH||uid(),cid,createdAt:editH?f.createdAt:new Date().toISOString()};
+    // Einmal-Passwort wie bei Trainern: gehasht speichern + Pflicht-Wechsel beim
+    // ersten Login. Der Klartext ist nur bis zum Speichern sichtbar.
+    const {tempPw,...base}=f;
+    const rec={...base,id:editH||uid(),cid,createdAt:editH?f.createdAt:new Date().toISOString(),
+      ...(tempPw?{pw:hashPw(tempPw),mustChangePw:true,sharedAt:null}:{})};
     const next=editH?allHelpers.map(x=>x.id===editH?rec:x):[...allHelpers,rec];
     save({...data,helpers:[...(data.helpers||[]).filter(h=>h.cid!==cid),...next]});
     setShowForm(false);fire(editH?"Helfer aktualisiert *":"Helfer angelegt");
@@ -11732,7 +11761,7 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
       {allHelpers.length===0&&<div style={{textAlign:"center",padding:"32px",background:"#f8fafc",borderRadius:16,border:"1.5px dashed #e2e8f0"}}>
         <div style={{fontSize:36,marginBottom:8}}></div>
         <p style={{fontWeight:700,color:"#334155"}}>Noch keine Helfer angelegt</p>
-        <p style={{fontSize:13,color:"#64748b",marginTop:4}}>Erstelle personalisierte Zugänge mit eigenem Code</p>
+        <p style={{fontSize:13,color:"#64748b",marginTop:4}}>Erstelle Zugänge mit Namen + Einmal-Passwort – wie bei den Trainern</p>
       </div>}
 
       <div style={{display:"flex",flexDirection:"column",gap:9}}>
@@ -11744,7 +11773,7 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
                 <div style={{fontWeight:800,fontSize:15,color:"#0f172a"}}>{h.name}</div>
                 {h.childName&&<div style={{fontSize:12,color:"#64748b",marginTop:1}}>Kind: {h.childName}</div>}
                 <div style={{display:"flex",gap:6,marginTop:4,flexWrap:"wrap"}}>
-                  <span style={{fontSize:11,fontWeight:800,color:"#2563eb",background:"#eff6ff",borderRadius:6,padding:"2px 8px",fontFamily:"monospace"}}>{String(h.code||"").startsWith("s")?"Code gesetzt 🔒":h.code}</span>
+                  <span style={{fontSize:11,fontWeight:800,color:h.pw?(h.mustChangePw?"#b45309":"#16a34a"):"#dc2626",background:h.pw?(h.mustChangePw?"#fef3c7":"#dcfce7"):"#fee2e2",borderRadius:6,padding:"2px 8px"}}>{h.pw?(h.mustChangePw?"🔑 Einmal-Passwort aktiv":"Passwort gesetzt 🔒"):(h.code?"Alt-Code – bitte zurücksetzen":"kein Zugang")}</span>
                   <span style={{fontSize:11,fontWeight:700,color:h.active!==false?"#16a34a":"#dc2626",background:h.active!==false?"#dcfce7":"#fee2e2",borderRadius:6,padding:"2px 8px"}}>{h.active!==false?"? Aktiv":"? Inaktiv"}</span>
                 </div>
               </div>
@@ -11774,21 +11803,27 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
 
             {}
             <div style={{background:"#eff6ff",borderRadius:12,padding:"12px 14px",border:"1.5px solid #bfdbfe"}}>
-              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6}}>LOGIN-CODE (persönlich & geheim)</div>
-              <div style={{display:"flex",alignItems:"center",gap:10}}>
-                <span style={{fontWeight:900,fontSize:22,color:"#2563eb",fontFamily:"monospace",flex:1}}>{String(f.code||"").startsWith("s")?"••••••":f.code}</span>
-                <button onClick={()=>u({code:genCode()})} style={{padding:"6px 12px",borderRadius:9,border:"1.5px solid #bfdbfe",background:"#fff",color:"#2563eb",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}> Neu generieren</button>
-              </div>
-              {!String(f.code||"").startsWith("s")&&(
+              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6}}>🔑 EINMAL-PASSWORT (wie bei Trainern)</div>
+              {f.tempPw?(<>
+                <div style={{display:"flex",alignItems:"center",gap:10}}>
+                  <span style={{fontWeight:900,fontSize:22,color:"#2563eb",fontFamily:"monospace",flex:1,letterSpacing:2}}>{f.tempPw}</span>
+                  <button onClick={()=>u({tempPw:genTempPw()})} style={{padding:"6px 12px",borderRadius:9,border:"1.5px solid #bfdbfe",background:"#fff",color:"#2563eb",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Neu erzeugen</button>
+                </div>
                 <button onClick={()=>{
                   const link=(typeof window!=="undefined"?window.location.origin:"")+"?club="+(cl?.slug||cl?.id||"");
                   const teams=(data.teams||[]).filter(tm=>(f.tids||[]).includes(tm.id)).map(tm=>tm.name).join(", ");
-                  const txt=`Hallo ${f.name||""},\n\ndu bist als Betreuer/Helfer${teams?` für ${teams}`:""} bei ${cl?.name||"unserem Verein"} eingetragen.\n\nLink: ${link}\nDein Login-Code: ${f.code}\n\nSo geht's: Link öffnen, „${cl?.name||"Verein"}" wählen, Rolle „Helfer" antippen, deinen Namen wählen und den Code eingeben.\n\nBitte behandle den Code wie ein Passwort.`;
+                  const txt=`Hallo ${f.name||""},\n\ndu bist als Helfer${teams?` für ${teams}`:""} bei ${cl?.name||"unserem Verein"} eingetragen.\n\nLink: ${link}\nDein Einmal-Passwort: ${f.tempPw}\n\nSo geht's: Link öffnen, Rolle „Helfer" antippen, deinen Namen wählen und das Einmal-Passwort eingeben. Danach legst du dein eigenes Passwort fest.`;
                   if(navigator.share){ navigator.share({title:"Helfer-Zugang",text:txt}).catch(()=>{}); }
                   else { navigator.clipboard?.writeText(txt); fire("Einladung kopiert"); }
-                }} style={{width:"100%",marginTop:9,padding:"10px",borderRadius:10,border:"none",background:"#2563eb",color:"#fff",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>📤 Zugang teilen (Link + Code)</button>
-              )}
-              <p style={{fontSize:11,color:"#64748b",marginTop:6}}>Gib diesen Code dem Helfer – er kann sich damit einloggen. <b>Erst „Speichern", dann funktioniert der Login.</b> Nach dem Speichern wird der Code aus Sicherheitsgründen nicht mehr angezeigt; bei Verlust einfach neu generieren und erneut teilen.</p>
+                }} style={{width:"100%",marginTop:9,padding:"10px",borderRadius:10,border:"none",background:"#2563eb",color:"#fff",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>📤 Zugang teilen (Link + Einmal-Passwort)</button>
+                <p style={{fontSize:11,color:"#64748b",marginTop:6}}>Beim ersten Login muss {f.name||"der Helfer"} ein <b>eigenes Passwort</b> festlegen – das Einmal-Passwort gilt nur einmal. <b>Erst „Speichern", dann funktioniert der Login.</b></p>
+              </>):(<>
+                <div style={{fontSize:13,fontWeight:700,color:f.pw?(f.mustChangePw?"#b45309":"#15803d"):"#dc2626",marginBottom:8}}>
+                  {f.pw?(f.mustChangePw?"🔑 Einmal-Passwort aktiv – noch nicht geändert":"✓ Eigenes Passwort gesetzt"):(f.code?"Alt-Code-Zugang (bitte auf Einmal-Passwort umstellen)":"Noch kein Zugang")}
+                </div>
+                <button onClick={()=>u({tempPw:genTempPw()})} style={{width:"100%",padding:"10px",borderRadius:10,border:"1.5px solid #bfdbfe",background:"#fff",color:"#2563eb",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>🔑 Neues Einmal-Passwort erzeugen (zurücksetzen)</button>
+                <p style={{fontSize:11,color:"#64748b",marginTop:6}}>Zurücksetzen erzeugt ein neues Einmal-Passwort – das alte Passwort gilt dann nicht mehr.</p>
+              </>)}
             </div>
 
             {}
@@ -15256,6 +15291,13 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             onPatch={patch=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,...patch}:e)}); setViewEv(prev=>({...prev,...patch})); }}
             fire={fire}/>
         )}
+        {viewEv.type!=="training"&&(viewEv.helferOpen
+          ? <StaffingBoard mode="helfer" ev={viewEv} team={(local.teams||[]).find(tm=>tm.id===viewEv.tid)} session={session} isHelper={isHelper}
+              onPatch={patch=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,...patch}:e)}); setViewEv(prev=>({...prev,...patch})); }}
+              fire={fire}/>
+          : (!isHelper&&<button onClick={()=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,helferOpen:true}:e)}); setViewEv(prev=>({...prev,helferOpen:true})); fire("Helfer-Anmeldung freigegeben"); }}
+              style={{width:"100%",marginTop:14,padding:"11px",borderRadius:11,border:"1.5px dashed #d97706",background:"#fffbeb",color:"#b45309",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>🙋 Helfer-Anmeldung für diesen Termin freigeben</button>)
+        )}
         {viewEv.type==="training"&&<TrainingGroups ev={viewEv} data={local} cl={myClub} fire={fire}
           onPatch={patch=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,...patch}:e)}); setViewEv(prev=>({...prev,...patch})); }}/>}
         <DutyBoard ev={viewEv} user={session.name||"Trainer"} canManage={!isHelper} onChange={arr=>{
@@ -17771,17 +17813,18 @@ const LINEUP_LINES = [["T","Tor"],["A","Abwehr"],["M","Mittelfeld"],["S","Angrif
 // Schnell-Spielbericht: Ergebnis + Torschützen + Notiz, in Sekunden nach dem Spiel.
 // Betreuung/Staffing fürs Training: Soll 2–3 je nach Größe, Trainer haben Vorrang,
 // Helfer füllen nur die Lücke (wer zuerst kommt) – Rest auf die Warteliste.
-function StaffingBoard({ ev, team, session, isHelper, onPatch, fire, onRequestHelpers, assignedTrainers=0, perStaff=6 }){
+function StaffingBoard({ ev, team, session, isHelper, onPatch, fire, onRequestHelpers, assignedTrainers=0, perStaff=6, mode="betreuung" }){
   const { tr } = useT();
+  const hm=mode==="helfer";   // Helfer-Einsatz: vom Trainer freigegebener Termin (Spieltag, Turnier, Fest ...)
   const role=session?.role; const isManager=role==="trainer"||role==="admin";
   const yes=Object.entries(ev.votes||{}).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").length;
   const size=yes||ev.sollPlayers||defaultSollPlayers(team?.cat)||7;
   const ps=Math.max(1,Number(perStaff)||6);
   const reqDefault=Math.max(1,Math.ceil(size/ps));         // Standard-Soll aus Spielerzahl/Schlüssel
-  const target=ev.staffTarget||reqDefault;
-  const trainers=Object.values(ev.trainerPresence||{});
+  const target=ev.staffTarget||(hm?2:reqDefault);
+  const trainers=hm?[]:Object.values(ev.trainerPresence||{});
   const checkinCount=trainers.length;
-  const trainerCount=Math.max(checkinCount, assignedTrainers); // zugeteilte Trainer zählen mit (auch ohne Check-in)
+  const trainerCount=hm?0:Math.max(checkinCount, assignedTrainers); // zugeteilte Trainer zählen mit (auch ohne Check-in)
   const offers=(ev.helperOffers||[]).slice().sort((a,b)=>(a.ts||"").localeCompare(b.ts||""));
   const gap=Math.max(0,target-trainerCount);
   const confirmed=offers.slice(0,gap);
@@ -17791,8 +17834,8 @@ function StaffingBoard({ ev, team, session, isHelper, onPatch, fire, onRequestHe
   const myId=session?.id||session?.name;
   const myOffer=offers.find(o=>o.id===myId);
   const slotsFree=Math.max(0,gap-confirmed.length);
-  const setTarget=d=>onPatch({staffTarget:Math.max(1,Math.min(5,target+d))});
-  const join=()=>{ if(myOffer)return; const willLead=slotsFree>0; onPatch({helperOffers:[...(ev.helperOffers||[]),{id:myId,name:session?.name||"Helfer",ts:new Date().toISOString()}]}); fire&&fire(willLead?"Du leitest mit – danke!":"Auf die Warteliste gesetzt"); };
+  const setTarget=d=>onPatch({staffTarget:Math.max(1,Math.min(hm?12:5,target+d))});
+  const join=()=>{ if(myOffer)return; const willLead=slotsFree>0; onPatch({helperOffers:[...(ev.helperOffers||[]),{id:myId,name:session?.name||"Helfer",ts:new Date().toISOString()}]}); fire&&fire(willLead?(hm?"Du bist fest eingeplant – danke!":"Du leitest mit – danke!"):"Auf die Warteliste gesetzt – du rückst bei Absage automatisch nach"); };
   const leave=()=>onPatch({helperOffers:(ev.helperOffers||[]).filter(o=>o.id!==myId)});
   const removeOffer=id=>onPatch({helperOffers:(ev.helperOffers||[]).filter(o=>o.id!==id)});
   const Chip=({name,sub,col})=>(<span style={{display:"flex",alignItems:"center",gap:5,background:"#fff",borderRadius:99,padding:"3px 10px 3px 3px",border:`1.5px solid ${col}`}}>
@@ -17800,17 +17843,25 @@ function StaffingBoard({ ev, team, session, isHelper, onPatch, fire, onRequestHe
   return (
     <div style={{marginTop:16,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-        <span style={{fontSize:18}}>👥</span>
-        <span style={{fontWeight:800,fontSize:15,color:"#0f172a",flex:1}}>{tr("secStaffing")}</span>
+        <span style={{fontSize:18}}>{hm?"🙋":"👥"}</span>
+        <span style={{fontWeight:800,fontSize:15,color:"#0f172a",flex:1}}>{hm?"Helfer-Einsatz":tr("secStaffing")}</span>
         <span style={{fontSize:12.5,fontWeight:800,color:enough?"#15803d":"#b45309",background:enough?"#dcfce7":"#fef3c7",borderRadius:99,padding:"3px 10px"}}>{ist}/{target}</span>
       </div>
       {isManager&&(
         <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-          <span style={{fontSize:12,color:"#64748b",fontWeight:600,flex:1}}>Soll-Betreuer (~{size} Spieler · {ps}/Betreuer)</span>
+          <span style={{fontSize:12,color:"#64748b",fontWeight:600,flex:1}}>{hm?"Benötigte Helfer":`Soll-Betreuer (~${size} Spieler · ${ps}/Betreuer)`}</span>
           <button onClick={()=>setTarget(-1)} style={{width:28,height:28,borderRadius:8,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:900,cursor:"pointer"}}>−</button>
           <span style={{minWidth:20,textAlign:"center",fontWeight:900,fontSize:15}}>{target}</span>
           <button onClick={()=>setTarget(1)} style={{width:28,height:28,borderRadius:8,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:900,cursor:"pointer"}}>+</button>
         </div>
+      )}
+      {hm&&isManager&&(
+        <input defaultValue={ev.helferNote||""} placeholder="Wofür? z.B. Grillstand, Auf-/Abbau, Kuchenverkauf"
+          onBlur={e=>onPatch({helferNote:e.target.value})}
+          style={{width:"100%",boxSizing:"border-box",padding:"9px 11px",borderRadius:10,border:"1.5px solid #e2e8f0",fontSize:13,fontFamily:"inherit",marginBottom:10}}/>
+      )}
+      {hm&&!isManager&&ev.helferNote&&(
+        <div style={{fontSize:12.5,color:"#475569",background:"#f8fafc",borderRadius:10,padding:"8px 11px",marginBottom:8}}>📋 {ev.helferNote}</div>
       )}
       <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:8}}>
         {trainers.map((tr,i)=><Chip key={"t"+i} name={tr.name||"Trainer"} sub="Trainer" col="#16a34a"/>)}
@@ -17818,7 +17869,7 @@ function StaffingBoard({ ev, team, session, isHelper, onPatch, fire, onRequestHe
         {confirmed.map(o=><span key={o.id} style={{display:"flex",alignItems:"center",gap:5,background:"#fff",borderRadius:99,padding:"3px 9px 3px 3px",border:"1.5px solid #d97706"}}><Av name={o.name} sz={20}/><span style={{fontSize:12.5,fontWeight:700,color:"#0f172a"}}>{o.name} <span style={{fontWeight:600,color:"#64748b"}}>· Helfer</span></span>{isManager&&<span onClick={()=>removeOffer(o.id)} style={{color:"#dc2626",fontWeight:800,fontSize:12,cursor:"pointer"}}>×</span>}</span>)}
         {trainerCount+confirmed.length===0&&<span style={{fontSize:12.5,color:"#64748b"}}>Noch niemand eingeteilt.</span>}
       </div>
-      {!enough&&<div style={{fontSize:12.5,color:"#b45309",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:10,padding:"8px 11px",marginBottom:8,fontWeight:600}}>Noch {target-ist} Betreuer gesucht. Trainer haben Vorrang – Helfer rücken nur nach, wenn Trainer fehlen.</div>}
+      {!enough&&<div style={{fontSize:12.5,color:"#b45309",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:10,padding:"8px 11px",marginBottom:8,fontWeight:600}}>{hm?`Noch ${target-ist} Helfer gesucht – wer zuerst zusagt, ist fest dabei.`:`Noch ${target-ist} Betreuer gesucht. Trainer haben Vorrang – Helfer rücken nur nach, wenn Trainer fehlen.`}</div>}
       {waitlist.length>0&&(
         <div style={{marginBottom:8}}>
           <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.3,marginBottom:5}}>WARTELISTE ({waitlist.length}) – springt bei Absage ein</div>
@@ -17829,10 +17880,13 @@ function StaffingBoard({ ev, team, session, isHelper, onPatch, fire, onRequestHe
       )}
       {isHelper&&(myOffer
         ? <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <span style={{flex:1,fontSize:12.5,fontWeight:700,color:confirmed.some(o=>o.id===myId)?"#15803d":"#b45309"}}>{confirmed.some(o=>o.id===myId)?"✓ Du leitest mit":"⏳ Du stehst auf der Warteliste"}</span>
+            <span style={{flex:1,fontSize:12.5,fontWeight:700,color:confirmed.some(o=>o.id===myId)?"#15803d":"#b45309"}}>{confirmed.some(o=>o.id===myId)?(hm?"✓ Du bist fest eingeplant – danke!":"✓ Du leitest mit"):`⏳ Warteliste Platz ${waitlist.findIndex(o=>o.id===myId)+1} – du rückst bei Absage automatisch nach`}</span>
             <button onClick={leave} style={{padding:"8px 13px",borderRadius:10,border:"1.5px solid #e2e8f0",background:"#fff",color:"#dc2626",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Zurückziehen</button>
           </div>
-        : <button onClick={join} style={{width:"100%",padding:"11px",borderRadius:11,border:"none",background:slotsFree>0?"#16a34a":"#64748b",color:"#fff",fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>{slotsFree>0?"🙋 Ich leite mit":"🙋 Auf die Warteliste"}</button>
+        : <button onClick={join} style={{width:"100%",padding:"11px",borderRadius:11,border:"none",background:slotsFree>0?"#16a34a":"#64748b",color:"#fff",fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>{slotsFree>0?(hm?"🙋 Ich helfe!":"🙋 Ich leite mit"):"🙋 Auf die Warteliste"}</button>
+      )}
+      {hm&&isManager&&(
+        <button onClick={()=>onPatch({helferOpen:false})} style={{width:"100%",marginTop:8,padding:"9px",borderRadius:10,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Helfer-Anmeldung zurückziehen</button>
       )}
       {isManager&&!enough&&onRequestHelpers&&(
         <button onClick={onRequestHelpers} style={{width:"100%",marginTop:8,padding:"10px",borderRadius:11,border:"1.5px solid #16a34a",background:"#16a34a10",color:"#15803d",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>🔔 Helfer per Push anfragen</button>
@@ -19648,7 +19702,9 @@ function AppInner({lang,setLang}) {
         onGuestConsent={({tid,name,by})=>{ addAuditLog(data, save, {id:uid(), cid, ts:new Date().toISOString(), type:"consent", device:"Eltern-Gerät", msg:`Einwilligung (Gast ohne Profil) für ${name} erteilt durch ${by||"Eltern"} · Team ${(data.teams||[]).find(tm=>tm.id===tid)?.name||tid}`}); }}
         onSetChildPw={(profId,pw)=>{ save({...data, playerProfiles:(data.playerProfiles||[]).map(p=>p.id===profId?{...p, childPw:hashPw(pw), childPwAt:new Date().toISOString()}:p)}); }}/>}
       {screen==="tlogin"&&activeCl&&<TrainerLogin cl={activeCl} trainers={data.trainers.filter(t=>t.cid===cid&&isActive(t))} teams={(data.teams||[]).filter(tm=>tm.cid===cid)} onLogin={tr=>login("trainer",tr)} onSetTrainerPw={(trId,newHash)=>{ save({...data,trainers:(data.trainers||[]).map(t=>t.id===trId?{...t,pw:newHash,mustChangePw:false,sharedAt:t.sharedAt||new Date().toISOString()}:t)}); }} onBack={()=>setScr("role")}/>}
-      {screen==="hlogin"&&activeCl&&<HelperLogin cl={activeCl} helpers={data.helpers||[]} onLogin={h=>login("helper",{...h,cid})} onBack={()=>setScr("role")}/>}
+      {screen==="hlogin"&&activeCl&&<HelperLogin cl={activeCl} helpers={data.helpers||[]} onLogin={h=>login("helper",{...h,cid})}
+        onSetHelperPw={(hid,nh)=>{ save({...data,helpers:(data.helpers||[]).map(h=>h.id===hid?{...h,pw:nh,mustChangePw:false,sharedAt:h.sharedAt||new Date().toISOString()}:h)}); }}
+        onBack={()=>setScr("role")}/>}
       {screen==="alogin"&&activeCl&&<AdminLogin cl={activeCl} onLogin={a=>login("admin",{...a,cid})} onBack={()=>setScr("role")}/>}
       {screen==="user"  &&session&&activeCl&&<UserHome data={data} session={session} onSave={save} onLogout={logout} lang={lang} setLang={setLang}/>}
       {screen==="dash"  &&session&&activeCl&&<Dashboard data={data} session={session} onSave={save} onLogout={logout} lang={lang} setLang={setLang}/>}
