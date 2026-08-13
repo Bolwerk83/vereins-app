@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { loadState, saveState, storageWorks } from './store.js'
 import { newSalt, deriveKey, encryptJson, decryptJson } from './crypto.js'
 
@@ -345,6 +345,7 @@ export default function App() {
   const [calCursor, setCalCursor] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() } })
   const [selDate, setSelDate] = useState(iso(new Date()))
   const [filterWho, setFilterWho] = useState(null)
+  const [memberSheet, setMemberSheet] = useState(false)
   const today = iso(new Date())
 
   const persistent = storageWorks()
@@ -353,6 +354,21 @@ export default function App() {
     setDb(next)
     saveState(next)
   }
+
+  // Direktstart mit Profil per Link: ?u=Name oder #u=Name
+  useEffect(() => {
+    if (!db) return
+    try {
+      const fromSearch = new URLSearchParams(location.search).get('u')
+      const fromHash = location.hash.startsWith('#u=') ? decodeURIComponent(location.hash.slice(3)) : null
+      const wanted = fromSearch || fromHash
+      if (wanted) {
+        const m = db.members.find((x) => x.name.toLowerCase() === wanted.toLowerCase())
+        if (m && db.active !== m.id) saveAll({ ...db, active: m.id })
+      }
+    } catch { /* URL nicht lesbar (Sandbox) */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   if (!db) {
     return (
@@ -569,22 +585,28 @@ export default function App() {
           ))}
         </div>
       </div>
-      <div className="month">
-        {WD.map((n) => <div className="mh" key={n}>{n}</div>)}
-        {cal.cells.map((dateStr, i) => dateStr ? (
-          <button key={dateStr}
-            className={'mday' + (dateStr === selDate ? ' sel' : '') + (dateStr === today ? ' today' : '')}
-            onClick={() => setSelDate(dateStr)}>
-            <div className="dnum">{+dateStr.slice(8, 10)}</div>
-            <div className="dots">{eventsOn(dateStr).slice(0, 4).map((e) => <i key={e.id} style={{ background: mcolor(e.member_id) }} />)}</div>
-          </button>
-        ) : <div className="mday pad" key={'p' + i} />)}
-      </div>
-      <p className="label">{fmtDate(selDate)}{selDate === today ? ' · heute' : ''}</p>
-      <div className="card">{dayList(selDate)}</div>
-      <div className="legend">
-        <span className="chip brand">↻ Serie</span>
-        <span className="chip honey">📩 Anfrage – wartet auf Zusage</span>
+      <div className="calgrid">
+        <div>
+          <div className="month">
+            {WD.map((n) => <div className="mh" key={n}>{n}</div>)}
+            {cal.cells.map((dateStr, i) => dateStr ? (
+              <button key={dateStr}
+                className={'mday' + (dateStr === selDate ? ' sel' : '') + (dateStr === today ? ' today' : '')}
+                onClick={() => setSelDate(dateStr)}>
+                <div className="dnum">{+dateStr.slice(8, 10)}</div>
+                <div className="dots">{eventsOn(dateStr).slice(0, 4).map((e) => <i key={e.id} style={{ background: mcolor(e.member_id) }} />)}</div>
+              </button>
+            ) : <div className="mday pad" key={'p' + i} />)}
+          </div>
+          <div className="legend">
+            <span className="chip brand">↻ Serie</span>
+            <span className="chip honey">📩 Anfrage – wartet auf Zusage</span>
+          </div>
+        </div>
+        <div>
+          <p className="label">{fmtDate(selDate)}{selDate === today ? ' · heute' : ''}</p>
+          <div className="card">{dayList(selDate)}</div>
+        </div>
       </div>
     </section>
   )
@@ -643,7 +665,16 @@ export default function App() {
             )}
           </div>
         ))}
-        {me.is_admin && <AddMember onAdd={addMember} />}
+        {me.is_admin && (
+          <button className="row" onClick={() => setMemberSheet(true)}>
+            <span style={{ fontSize: 20 }}>➕</span>
+            <div className="row-main">
+              <div className="row-title">Mitglied hinzufügen</div>
+              <div className="row-meta">Erwachsen oder Kind – mit Name und Farbe</div>
+            </div>
+            <span className="chev">›</span>
+          </button>
+        )}
       </div>
       <p className="label">Sicherung</p>
       <div className="card">
@@ -741,28 +772,49 @@ export default function App() {
         <EventSheet initial={sheet} members={db.members} me={me}
           onSave={saveEvent} onDelete={deleteEvent} onClose={() => setSheet(null)} />
       )}
+      {memberSheet && (
+        <MemberSheet onAdd={addMember} onClose={() => setMemberSheet(false)}
+          usedColors={db.members.map((m) => m.color)} />
+      )}
       {toastEl}
     </div>
   )
 }
 
-function AddMember({ onAdd }) {
+function MemberSheet({ onAdd, onClose, usedColors }) {
   const [name, setName] = useState('')
-  const [color, setColor] = useState(COLORS[3])
   const [kind, setKind] = useState('kid')
+  const [color, setColor] = useState(COLORS.find((c) => !usedColors.includes(c)) || COLORS[3])
   return (
-    <div className="quickadd">
-      <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Mitglied hinzufügen: Vorname" aria-label="Mitglied hinzufügen" />
-      <select value={kind} onChange={(e) => setKind(e.target.value)} aria-label="Art"
-        style={{ font: 'inherit', borderRadius: 10, border: '1px solid var(--hairline)', background: 'var(--ground)', color: 'var(--ink)' }}>
-        <option value="kid">Kind</option>
-        <option value="adult">Erwachsen</option>
-      </select>
-      <select value={color} onChange={(e) => setColor(e.target.value)} aria-label="Farbe"
-        style={{ font: 'inherit', borderRadius: 10, border: '1px solid var(--hairline)', background: color, width: 44 }}>
-        {COLORS.map((c) => <option key={c} value={c} style={{ background: c }}>&nbsp;</option>)}
-      </select>
-      <button type="button" className="btn sm" onClick={() => { if (name.trim()) { onAdd(name.trim(), color, kind); setName('') } }}>+</button>
+    <div className="overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <form className="sheet" onSubmit={(e) => {
+        e.preventDefault()
+        if (name.trim()) { onAdd(name.trim(), color, kind); onClose() }
+      }}>
+        <h3>Mitglied hinzufügen<button type="button" className="x" onClick={onClose} aria-label="Schließen">✕</button></h3>
+        <div className="field">
+          <label htmlFor="m-name">Vorname</label>
+          <input id="m-name" autoFocus required value={name} onChange={(e) => setName(e.target.value)} placeholder="z. B. Anne-Christin" />
+        </div>
+        <div className="field">
+          <label>Wer ist es?</label>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button type="button" className={'btn sm ' + (kind === 'adult' ? '' : 'ghost')} onClick={() => setKind('adult')}>Erwachsen</button>
+            <button type="button" className={'btn sm ' + (kind === 'kid' ? '' : 'ghost')} onClick={() => setKind('kid')}>Kind</button>
+          </div>
+        </div>
+        <div className="field">
+          <label>Farbe im Kalender</label>
+          <div className="colorpick">
+            {COLORS.map((c) => (
+              <button type="button" key={c} className={color === c ? 'sel' : ''} style={{ background: c }}
+                aria-label={'Farbe ' + c} onClick={() => setColor(c)} />
+            ))}
+          </div>
+        </div>
+        <button className="btn" style={{ width: '100%' }}>Hinzufügen</button>
+        <p className="hint">Kinder sehen nur Heute, Kalender und Listen – ohne Merkzeug und Verwaltung.</p>
+      </form>
     </div>
   )
 }
