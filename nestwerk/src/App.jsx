@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { supabase } from './supabase.js'
+import React, { useRef, useState } from 'react'
+import { loadState, saveState, storageWorks } from './store.js'
 import { newSalt, deriveKey, encryptJson, decryptJson } from './crypto.js'
 
 /* ================= Helfer ================= */
@@ -12,10 +12,11 @@ const COLORS = ['#3E7CB1', '#BC5878', '#D28E2C', '#5B9E63', '#7C6BAF', '#C96A4A'
 const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 const fromIso = (s) => new Date(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10))
 const wdIdx = (d) => (d.getDay() + 6) % 7
-const hhmm = (t) => (t || '').slice(0, 5)
 const fmtDate = (s) => { const d = fromIso(s); return `${WD_LONG[wdIdx(d)]}, ${d.getDate()}. ${MONTHS[d.getMonth()]}` }
 const fmtShort = (s) => { const d = fromIso(s); return `${WD[wdIdx(d)]} ${d.getDate()}.${d.getMonth() + 1}.` }
 const addDays = (s, n) => { const d = fromIso(s); d.setDate(d.getDate() + n); return iso(d) }
+const mins = (t) => +t.slice(0, 2) * 60 + +t.slice(3, 5)
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2))
 
 function useToast() {
   const [msg, setMsg] = useState(null)
@@ -29,114 +30,33 @@ function useToast() {
   return [toast, el]
 }
 
-/* ================= Anmeldung ================= */
-
-function AuthScreen({ toast }) {
-  const [mode, setMode] = useState('login')
-  const [email, setEmail] = useState('')
-  const [pw, setPw] = useState('')
-  const [msg, setMsg] = useState(null)
-  const [busy, setBusy] = useState(false)
-
-  async function submit(e) {
-    e.preventDefault()
-    setBusy(true)
-    setMsg(null)
-    try {
-      if (mode === 'login') {
-        const { error } = await supabase.auth.signInWithPassword({ email, password: pw })
-        if (error) throw error
-      } else {
-        const { data, error } = await supabase.auth.signUp({ email, password: pw })
-        if (error) throw error
-        if (!data.session) {
-          setMsg({ ok: true, text: 'Fast geschafft: Bitte bestätige den Link in deiner E-Mail und melde dich dann an.' })
-          setMode('login')
-          return
-        }
-      }
-    } catch (err) {
-      setMsg({ ok: false, text: err.message === 'Invalid login credentials' ? 'E-Mail oder Passwort stimmt nicht.' : err.message })
-    } finally {
-      setBusy(false)
-    }
-  }
-
+function QuickAdd({ placeholder, onAdd, autoFocus }) {
+  const [v, setV] = useState('')
+  const submit = () => { if (v.trim()) { onAdd(v.trim()); setV('') } }
   return (
-    <div className="auth-wrap">
-      <form className="auth-card" onSubmit={submit}>
-        <h1 className="serif"><span style={{ color: 'var(--brand)' }}>Nest</span>werk</h1>
-        <p className="sub">Der Familienkalender mit Gedächtnis. Jede Person hat ihren eigenen Zugang.</p>
-        {msg && <div className={'authmsg ' + (msg.ok ? 'ok' : 'err')}>{msg.text}</div>}
-        <div className="field">
-          <label htmlFor="email">E-Mail</label>
-          <input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
-        </div>
-        <div className="field">
-          <label htmlFor="pw">Passwort</label>
-          <input id="pw" type="password" required minLength={8} value={pw} onChange={(e) => setPw(e.target.value)}
-            autoComplete={mode === 'login' ? 'current-password' : 'new-password'} />
-        </div>
-        <button className="btn" style={{ width: '100%' }} disabled={busy}>
-          {busy ? 'Moment …' : mode === 'login' ? 'Anmelden' : 'Konto anlegen'}
-        </button>
-        <p className="hint" style={{ textAlign: 'center' }}>
-          {mode === 'login'
-            ? <>Noch kein Konto? <button type="button" className="linkbtn" onClick={() => { setMode('register'); setMsg(null) }}>Registrieren</button></>
-            : <>Schon dabei? <button type="button" className="linkbtn" onClick={() => { setMode('login'); setMsg(null) }}>Anmelden</button></>}
-        </p>
-      </form>
+    <div className="quickadd">
+      <input value={v} autoFocus={autoFocus} onChange={(e) => setV(e.target.value)} placeholder={placeholder}
+        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); submit() } }} />
+      <button type="button" className="btn sm" onClick={submit}>+</button>
     </div>
   )
 }
 
-/* ================= Familie gründen / beitreten ================= */
+/* ================= Onboarding: Familie gründen ================= */
 
-function Onboarding({ onDone, toast }) {
-  const [mode, setMode] = useState('create')
+function Onboarding({ onCreate }) {
   const [famName, setFamName] = useState('')
-  const [code, setCode] = useState('')
   const [myName, setMyName] = useState('')
   const [color, setColor] = useState(COLORS[0])
-  const [msg, setMsg] = useState(null)
-  const [busy, setBusy] = useState(false)
-
-  async function submit(e) {
-    e.preventDefault()
-    setBusy(true)
-    setMsg(null)
-    const fn = mode === 'create' ? 'nw_create_family' : 'nw_join_family'
-    const args = mode === 'create'
-      ? { family_name: famName, my_name: myName, my_color: color }
-      : { code, my_name: myName, my_color: color }
-    const { error } = await supabase.rpc(fn, args)
-    setBusy(false)
-    if (error) { setMsg(error.message); return }
-    toast(mode === 'create' ? 'Familie gegründet 🪺' : 'Willkommen in der Familie 🪺')
-    onDone()
-  }
-
   return (
     <div className="auth-wrap">
-      <form className="auth-card" onSubmit={submit}>
-        <h1 className="serif">🪺 Euer Nest</h1>
-        <p className="sub">Gründe eure Familie – oder tritt mit einem Einladungscode bei.</p>
-        <div className="calbar">
-          <button type="button" className={'btn sm ' + (mode === 'create' ? '' : 'ghost')} onClick={() => setMode('create')}>Neu gründen</button>
-          <button type="button" className={'btn sm ' + (mode === 'join' ? '' : 'ghost')} onClick={() => setMode('join')}>Mit Code beitreten</button>
+      <form className="auth-card" onSubmit={(e) => { e.preventDefault(); if (famName.trim() && myName.trim()) onCreate(famName.trim(), myName.trim(), color) }}>
+        <h1 className="serif"><span style={{ color: 'var(--brand)' }}>Nest</span>werk</h1>
+        <p className="sub">Der Familienkalender mit Gedächtnis. Gründe euer Nest – dauert 20 Sekunden, ganz ohne Konto.</p>
+        <div className="field">
+          <label htmlFor="famname">Familienname</label>
+          <input id="famname" required value={famName} onChange={(e) => setFamName(e.target.value)} placeholder="z. B. Familie Bolwerk" />
         </div>
-        {msg && <div className="authmsg err">{msg}</div>}
-        {mode === 'create' ? (
-          <div className="field">
-            <label htmlFor="famname">Familienname</label>
-            <input id="famname" required value={famName} onChange={(e) => setFamName(e.target.value)} placeholder="z. B. Familie Bolwerk" />
-          </div>
-        ) : (
-          <div className="field">
-            <label htmlFor="code">Einladungscode</label>
-            <input id="code" required value={code} onChange={(e) => setCode(e.target.value)} placeholder="z. B. a1b2c3d4e5f6" />
-          </div>
-        )}
         <div className="field">
           <label htmlFor="myname">Dein Vorname</label>
           <input id="myname" required value={myName} onChange={(e) => setMyName(e.target.value)} placeholder="z. B. Markus" />
@@ -150,8 +70,32 @@ function Onboarding({ onDone, toast }) {
             ))}
           </div>
         </div>
-        <button className="btn" style={{ width: '100%' }} disabled={busy}>{busy ? 'Moment …' : 'Los geht’s'}</button>
+        <button className="btn" style={{ width: '100%' }}>Nest gründen 🪺</button>
+        <p className="hint">Alles bleibt auf diesem Gerät – keine Datenbank, kein Server. Backup gibt’s unter „Familie“.</p>
       </form>
+    </div>
+  )
+}
+
+/* ================= Profilwahl ================= */
+
+function ProfilePicker({ members, onPick }) {
+  return (
+    <div className="auth-wrap">
+      <div className="auth-card">
+        <h1 className="serif">🪺 Wer bist du?</h1>
+        <p className="sub">Jede Person hat ihr eigenes Profil – und sieht nur, was sie darf.</p>
+        <div className="profiles">
+          {members.map((m) => (
+            <button key={m.id} className="profile" onClick={() => onPick(m.id)}>
+              <span className="pav" style={{ background: m.color }}>{m.name[0].toUpperCase()}</span>
+              <b>{m.name}</b>
+              <span className="role">{m.kind === 'kid' ? 'Kind' : m.is_admin ? 'Familien-Admin' : 'Erwachsen'}</span>
+            </button>
+          ))}
+        </div>
+        <p className="hint">Antippen genügt. Das Merkzeug hat zusätzlich sein eigenes Passwort.</p>
+      </div>
     </div>
   )
 }
@@ -163,22 +107,16 @@ function EventSheet({ initial, members, me, onSave, onDelete, onClose }) {
   const [title, setTitle] = useState(e ? e.title : '')
   const [memberId, setMemberId] = useState(e ? e.member_id : me.id)
   const [date, setDate] = useState(e ? e.on_date : initial.date)
-  const [time, setTime] = useState(e ? hhmm(e.at_time) : '15:00')
+  const [time, setTime] = useState(e ? e.at_time : '15:00')
   const [meta, setMeta] = useState(e ? e.meta : '')
-  const [serie, setSerie] = useState(e ? e.serie : false)
-  const [busy, setBusy] = useState(false)
-
-  async function save(ev) {
-    ev.preventDefault()
-    if (!title.trim()) return
-    setBusy(true)
-    await onSave({ title: title.trim(), member_id: memberId, on_date: date, at_time: time, meta: meta.trim(), serie })
-    setBusy(false)
-  }
+  const [serie, setSerie] = useState(false)
 
   return (
     <div className="overlay" onClick={(ev) => { if (ev.target === ev.currentTarget) onClose() }}>
-      <form className="sheet" onSubmit={save}>
+      <form className="sheet" onSubmit={(ev) => {
+        ev.preventDefault()
+        if (title.trim()) onSave({ title: title.trim(), member_id: memberId, on_date: date, at_time: time, meta: meta.trim(), serie })
+      }}>
         <h3>{e ? 'Termin bearbeiten' : 'Neuer Termin'}<button type="button" className="x" onClick={onClose} aria-label="Schließen">✕</button></h3>
         <div className="field">
           <label htmlFor="f-title">Titel</label>
@@ -213,7 +151,7 @@ function EventSheet({ initial, members, me, onSave, onDelete, onClose }) {
           </div>
         )}
         <div className="actions">
-          <button className="btn" disabled={busy}>{busy ? 'Moment …' : 'Speichern'}</button>
+          <button className="btn">Speichern</button>
           {e && <button type="button" className="btn danger" onClick={onDelete}>Löschen</button>}
         </div>
       </form>
@@ -221,12 +159,12 @@ function EventSheet({ initial, members, me, onSave, onDelete, onClose }) {
   )
 }
 
-/* ================= Merkzeug (E2E-verschlüsselt) ================= */
+/* ================= Merkzeug (E2E-verschlüsselt, lokal) ================= */
 
 const EMPTY_MEMORY = { persons: [] }
 
-function Merkzeug({ session, toast }) {
-  const [state, setState] = useState('locked') // locked | busy | open
+function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
+  const [state, setState] = useState('locked')
   const [pw, setPw] = useState('')
   const [err, setErr] = useState(null)
   const [key, setKey] = useState(null)
@@ -244,13 +182,11 @@ function Merkzeug({ session, toast }) {
     setState('busy')
     setErr(null)
     try {
-      const { data, error } = await supabase.from('nw_memory').select('*').eq('user_id', session.user.id).maybeSingle()
-      if (error) throw error
-      if (data) {
-        const k = await deriveKey(pw, data.salt)
+      if (blob) {
+        const k = await deriveKey(pw, blob.salt)
         try {
-          const obj = await decryptJson(k, data.iv, data.cipher)
-          setKey(k); setSalt(data.salt); setMem(obj); setIsNew(false); setState('open')
+          const obj = await decryptJson(k, blob.iv, blob.cipher)
+          setKey(k); setSalt(blob.salt); setMem(obj); setIsNew(false); setState('open')
           toast('Entsperrt – nur auf diesem Gerät lesbar')
         } catch {
           setErr('Falsches Gedächtnis-Passwort.')
@@ -260,21 +196,21 @@ function Merkzeug({ session, toast }) {
         const s = newSalt()
         const k = await deriveKey(pw, s)
         setKey(k); setSalt(s); setMem(EMPTY_MEMORY); setIsNew(true); setState('open')
+        const enc = await encryptJson(k, EMPTY_MEMORY)
+        onSaveBlob({ salt: s, ...enc })
         toast('Neues Gedächtnis angelegt – merk dir dieses Passwort gut!')
       }
       setPw('')
     } catch (e2) {
-      setErr(e2.message)
+      setErr(String(e2.message || e2))
       setState('locked')
     }
   }
 
   async function persist(next) {
     setMem(next)
-    const { iv, cipher } = await encryptJson(key, next)
-    const { error } = await supabase.from('nw_memory')
-      .upsert({ user_id: session.user.id, salt, iv, cipher, updated_at: new Date().toISOString() })
-    if (error) toast('Speichern fehlgeschlagen: ' + error.message)
+    const enc = await encryptJson(key, next)
+    onSaveBlob({ salt, ...enc })
   }
 
   function lock() {
@@ -286,17 +222,17 @@ function Merkzeug({ session, toast }) {
     return (
       <section className="screen">
         <h2 className="screen-title">Merkzeug</h2>
-        <p className="screen-sub">Dein privates Gedächtnis – Ende-zu-Ende-verschlüsselt</p>
+        <p className="screen-sub">{ownerName}s privates Gedächtnis – Ende-zu-Ende-verschlüsselt</p>
         <form className="card lockbox" onSubmit={unlock}>
           <div className="lock-ico">🔐</div>
           <h3>Nur du hast den Schlüssel</h3>
-          <p>Entschlüsselt wird ausschließlich auf deinem Gerät. Es gibt kein „Passwort vergessen“ – das ist der Sinn der Sache.</p>
+          <p>Entschlüsselt wird ausschließlich auf diesem Gerät. Es gibt kein „Passwort vergessen“ – das ist der Sinn der Sache.</p>
           {err && <div className="authmsg err" style={{ maxWidth: 320, margin: '0 auto 12px' }}>{err}</div>}
           <div className="pwrow">
             <input type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="Gedächtnis-Passwort" aria-label="Gedächtnis-Passwort" />
             <button className="btn" disabled={state === 'busy'}>{state === 'busy' ? '…' : 'Entsperren'}</button>
           </div>
-          <div className="hint">Beim ersten Mal legst du mit deinem Passwort ein neues Gedächtnis an.</div>
+          <div className="hint">{blob ? 'Gib dein Gedächtnis-Passwort ein.' : 'Beim ersten Mal legst du mit deinem Passwort ein neues Gedächtnis an.'}</div>
         </form>
       </section>
     )
@@ -305,22 +241,18 @@ function Merkzeug({ session, toast }) {
   if (sel) {
     const p = mem.persons.find((x) => x.id === sel)
     if (!p) { setSel(null); return null }
-    const upd = (patch) => {
-      const next = { ...mem, persons: mem.persons.map((x) => (x.id === p.id ? { ...x, ...patch } : x)) }
-      persist(next)
-    }
+    const upd = (patch) => persist({ ...mem, persons: mem.persons.map((x) => (x.id === p.id ? { ...x, ...patch } : x)) })
     return (
       <section className="screen">
         <button className="btn ghost" style={{ margin: '12px 0 10px' }} onClick={() => setSel(null)}>‹ Zurück</button>
         <h2 className="screen-title serif">{p.name}</h2>
         <p className="screen-sub">{p.ctx || 'Woher kennt ihr euch?'}</p>
         <div className="card">
-          {[['familie', 'Familie'], ['themen', 'Themen'], ['faden', 'Offener Faden']].map(([k, label]) => (
+          {[['familie', 'Familie'], ['themen', 'Themen'], ['faden', 'Offener Faden'], ['geb', 'Geburtstag']].map(([k, label]) => (
             <div className="fact" key={k}>
               <b>{label}</b>
               <input style={{ flex: 1, font: 'inherit', border: 0, background: 'none', color: 'inherit', outline: 'none' }}
-                value={p[k] || ''} placeholder="…"
-                onChange={(e) => upd({ [k]: e.target.value })} />
+                value={p[k] || ''} placeholder="…" onChange={(e) => upd({ [k]: e.target.value })} />
             </div>
           ))}
         </div>
@@ -344,10 +276,9 @@ function Merkzeug({ session, toast }) {
           }} />
         </div>
         <p className="hint">
-          <button className="btn danger sm" onClick={() => {
-            persist({ ...mem, persons: mem.persons.filter((x) => x.id !== p.id) })
-            setSel(null)
-          }}>Person löschen</button>
+          <button className="btn danger sm" onClick={() => { persist({ ...mem, persons: mem.persons.filter((x) => x.id !== p.id) }); setSel(null) }}>
+            Person löschen
+          </button>
         </p>
       </section>
     )
@@ -355,7 +286,7 @@ function Merkzeug({ session, toast }) {
 
   const ql = q.trim().toLowerCase()
   const hits = mem.persons.filter((p) =>
-    !ql || [p.name, p.ctx, p.familie, p.themen, p.faden, (p.notizen || []).join(' ')].join(' ').toLowerCase().includes(ql))
+    !ql || [p.name, p.ctx, p.familie, p.themen, p.faden, p.geb, (p.notizen || []).join(' ')].join(' ').toLowerCase().includes(ql))
 
   return (
     <section className="screen">
@@ -370,7 +301,7 @@ function Merkzeug({ session, toast }) {
         <div className="qcard" style={{ marginBottom: 14 }}>
           <h4>Wichtig</h4>
           <ul>
-            <li>Dein Gedächtnis-Passwort lässt sich <b>nicht zurücksetzen</b>. Schreib es auf und leg es sicher ab (z. B. Tresor).</li>
+            <li>Dein Gedächtnis-Passwort lässt sich <b>nicht zurücksetzen</b>. Schreib es auf und leg es sicher ab.</li>
             <li>Leg gleich die erste Person an – z. B. jemanden, dessen Namen du dir nie merken kannst. 😉</li>
           </ul>
         </div>
@@ -394,8 +325,7 @@ function Merkzeug({ session, toast }) {
           <input value={addCtx} onChange={(e) => setAddCtx(e.target.value)} placeholder="Woher? (z. B. Nachbar)" aria-label="Kontext" />
           <button type="button" className="btn sm" onClick={() => {
             if (!addName.trim()) return
-            const next = { ...mem, persons: [{ id: crypto.randomUUID(), name: addName.trim(), ctx: addCtx.trim(), notizen: [] }, ...mem.persons] }
-            persist(next)
+            persist({ ...mem, persons: [{ id: uid(), name: addName.trim(), ctx: addCtx.trim(), notizen: [] }, ...mem.persons] })
             setAddName(''); setAddCtx('')
             toast('Person angelegt ✓')
           }}>+</button>
@@ -405,154 +335,139 @@ function Merkzeug({ session, toast }) {
   )
 }
 
-function QuickAdd({ placeholder, onAdd }) {
-  const [v, setV] = useState('')
-  const submit = () => { if (v.trim()) { onAdd(v.trim()); setV('') } }
-  return (
-    <div className="quickadd">
-      <input value={v} onChange={(e) => setV(e.target.value)} placeholder={placeholder}
-        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); submit() } }} />
-      <button type="button" className="btn sm" onClick={submit}>+</button>
-    </div>
-  )
-}
-
 /* ================= Haupt-App ================= */
 
 export default function App() {
   const [toast, toastEl] = useToast()
-  const [session, setSession] = useState(undefined)
-  const [me, setMe] = useState(undefined) // mein nw_members-Eintrag
-  const [family, setFamily] = useState(null)
-  const [members, setMembers] = useState([])
-  const [events, setEvents] = useState([])
-  const [items, setItems] = useState([])
+  const [db, setDb] = useState(() => loadState())
   const [nav, setNav] = useState('heute')
-  const [sheet, setSheet] = useState(null) // {event?, date}
+  const [sheet, setSheet] = useState(null)
   const [calCursor, setCalCursor] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() } })
   const [selDate, setSelDate] = useState(iso(new Date()))
   const [filterWho, setFilterWho] = useState(null)
   const today = iso(new Date())
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSession(data.session))
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s))
-    return () => sub.subscription.unsubscribe()
-  }, [])
+  const persistent = storageWorks()
 
-  async function loadAll() {
-    const [{ data: m }, { data: fam }, { data: evs }, { data: li }] = await Promise.all([
-      supabase.from('nw_members').select('*').order('created_at'),
-      supabase.from('nw_families').select('*').maybeSingle(),
-      supabase.from('nw_events').select('*').order('on_date').order('at_time'),
-      supabase.from('nw_list_items').select('*').order('created_at', { ascending: false }),
-    ])
-    setMembers(m || [])
-    setFamily(fam || null)
-    setEvents(evs || [])
-    setItems(li || [])
-    setMe((m || []).find((x) => x.user_id === session.user.id) || null)
+  function saveAll(next) {
+    setDb(next)
+    saveState(next)
   }
 
-  useEffect(() => {
-    if (!session) { setMe(undefined); return }
-    loadAll()
-  }, [session])
-
-  if (session === undefined || (session && me === undefined)) {
-    return <div className="loading">Nestwerk lädt …</div>
+  if (!db) {
+    return (
+      <>
+        <Onboarding onCreate={(famName, myName, color) => {
+          const meId = uid()
+          saveAll({
+            family: { name: famName },
+            members: [{ id: meId, name: myName, color, kind: 'adult', is_admin: true, can_direct: true }],
+            events: [], items: [], memories: {}, active: meId,
+          })
+          toast('Familie gegründet 🪺')
+        }} />
+        {toastEl}
+      </>
+    )
   }
-  if (!session) return <><AuthScreen toast={toast} />{toastEl}</>
-  if (!me) return <><Onboarding toast={toast} onDone={loadAll} />{toastEl}</>
 
-  const byId = Object.fromEntries(members.map((m) => [m.id, m]))
+  const me = db.members.find((m) => m.id === db.active)
+  if (!me) {
+    return (
+      <>
+        <ProfilePicker members={db.members} onPick={(id) => { saveAll({ ...db, active: id }); setNav('heute') }} />
+        {toastEl}
+      </>
+    )
+  }
+
+  const isKid = me.kind === 'kid'
+  const byId = Object.fromEntries(db.members.map((m) => [m.id, m]))
   const mname = (id) => byId[id]?.name || '?'
   const mcolor = (id) => byId[id]?.color || '#888'
-  const visible = filterWho ? events.filter((e) => e.member_id === filterWho) : events
-  const eventsOn = (dateStr) => visible.filter((e) => e.on_date === dateStr)
-  const invites = events.filter((e) => e.status === 'pending' && e.member_id === me.id)
+  const visible = filterWho ? db.events.filter((e) => e.member_id === filterWho) : db.events
+  const eventsOn = (dateStr) => visible.filter((e) => e.on_date === dateStr).sort((a, b) => a.at_time.localeCompare(b.at_time))
+  const invites = db.events.filter((e) => e.status === 'pending' && e.member_id === me.id)
+
+  const isFree = (memberId, dateStr, time) =>
+    !db.events.some((e) => e.member_id === memberId && e.on_date === dateStr && e.status === 'fix' && Math.abs(mins(e.at_time) - mins(time)) < 60)
 
   /* ---------- Aktionen ---------- */
 
-  async function saveEvent(data) {
+  function saveEvent(data) {
     if (sheet.event) {
-      const { error } = await supabase.from('nw_events')
-        .update({ title: data.title, member_id: data.member_id, on_date: data.on_date, at_time: data.at_time, meta: data.meta })
-        .eq('id', sheet.event.id)
-      if (error) { toast(error.message); return }
-      toast('Gespeichert ✓')
+      saveAll({ ...db, events: db.events.map((e) => (e.id === sheet.event.id ? { ...e, ...data, serie: e.serie } : e)) })
+      toast('Gespeichert ✓ – die ganze Familie sieht den neuen Stand')
     } else {
-      const rows = data.serie
-        ? Array.from({ length: 8 }, (_, k) => ({ ...data, on_date: addDays(data.on_date, k * 7), member_id: data.member_id }))
-        : [data]
-      const { data: inserted, error } = await supabase.from('nw_events').insert(
-        rows.map((r) => ({ title: r.title, member_id: r.member_id, on_date: r.on_date, at_time: r.at_time, meta: r.meta, serie: data.serie }))
-      ).select()
-      if (error) { toast(error.message); return }
-      const first = inserted?.[0]
-      if (first?.status === 'pending') toast(`Anfrage an ${mname(data.member_id)} gesendet 📩 – muss erst zusagen`)
-      else if (data.member_id !== me.id) toast(`Direkt eingetragen ✓ für ${mname(data.member_id)}`)
-      else toast(data.serie ? 'Serientermin angelegt ↻ (8 Wochen)' : 'Termin angelegt ✓')
+      const target = byId[data.member_id]
+      let status = 'fix', msg
+      if (data.member_id === me.id || target.kind === 'kid') {
+        msg = data.serie ? 'Serientermin angelegt ↻ (8 Wochen)' : 'Termin angelegt ✓'
+      } else if (me.can_direct && isFree(data.member_id, data.on_date, data.at_time)) {
+        msg = `Direkt eingetragen ✓ für ${target.name}`
+      } else if (me.can_direct) {
+        status = 'pending'
+        msg = `${target.name} ist da schon belegt – als Anfrage gesendet 📩`
+      } else {
+        status = 'pending'
+        msg = `Anfrage an ${target.name} gesendet 📩 – muss erst zusagen`
+      }
+      const rows = (data.serie ? Array.from({ length: 8 }, (_, k) => addDays(data.on_date, k * 7)) : [data.on_date])
+        .map((dateStr) => ({ id: uid(), ...data, on_date: dateStr, status, created_by: me.id }))
+      saveAll({ ...db, events: [...db.events, ...rows] })
+      toast(msg)
     }
     setSheet(null)
-    loadAll()
   }
 
-  async function deleteEvent() {
-    const { error } = await supabase.from('nw_events').delete().eq('id', sheet.event.id)
-    if (error) { toast(error.message); return }
+  function deleteEvent() {
+    saveAll({ ...db, events: db.events.filter((e) => e.id !== sheet.event.id) })
     setSheet(null)
     toast('Termin gelöscht')
-    loadAll()
   }
 
-  async function answerInvite(ev, accept) {
+  function answerInvite(ev, accept) {
     if (accept) {
-      const { error } = await supabase.from('nw_events').update({ status: 'fix' }).eq('id', ev.id)
-      if (error) { toast(error.message); return }
+      saveAll({ ...db, events: db.events.map((e) => (e.id === ev.id ? { ...e, status: 'fix' } : e)) })
       toast('Zugesagt ✓ – steht jetzt fest im Familienkalender')
     } else {
-      const { error } = await supabase.from('nw_events').delete().eq('id', ev.id)
-      if (error) { toast(error.message); return }
+      saveAll({ ...db, events: db.events.filter((e) => e.id !== ev.id) })
       toast(`Abgelehnt – ${mname(ev.created_by)} sieht das im Kalender`)
     }
-    loadAll()
   }
 
-  async function addItem(list, text) {
-    const { error } = await supabase.from('nw_list_items')
-      .insert({ list, text, family_id: me.family_id, created_by: me.id })
-    if (error) { toast(error.message); return }
-    loadAll()
-  }
-  async function toggleItem(it) {
-    await supabase.from('nw_list_items').update({ done: !it.done }).eq('id', it.id)
-    loadAll()
-  }
-  async function deleteItem(it) {
-    await supabase.from('nw_list_items').delete().eq('id', it.id)
-    loadAll()
-  }
+  const addItem = (list, text) => saveAll({ ...db, items: [{ id: uid(), list, text, done: false, created_by: me.id }, ...db.items] })
+  const toggleItem = (it) => saveAll({ ...db, items: db.items.map((x) => (x.id === it.id ? { ...x, done: !x.done } : x)) })
+  const deleteItem = (it) => saveAll({ ...db, items: db.items.filter((x) => x.id !== it.id) })
 
-  async function addKid(name, color) {
-    const { error } = await supabase.from('nw_members')
-      .insert({ family_id: me.family_id, name, color, kind: 'kid' })
-    if (error) { toast(error.message); return }
+  function addMember(name, color, kind) {
+    saveAll({ ...db, members: [...db.members, { id: uid(), name, color, kind, is_admin: false, can_direct: false }] })
     toast(`${name} ist dabei 🪺`)
-    loadAll()
   }
-  async function toggleDirect(m) {
-    const { error } = await supabase.from('nw_members').update({ can_direct: !m.can_direct }).eq('id', m.id)
-    if (error) { toast(error.message); return }
+  function toggleDirect(m) {
+    saveAll({ ...db, members: db.members.map((x) => (x.id === m.id ? { ...x, can_direct: !x.can_direct } : x)) })
     toast(`${m.name} ${!m.can_direct ? 'darf jetzt direkt eintragen' : 'braucht jetzt Bestätigung'}`)
-    loadAll()
+  }
+
+  function exportBackup() {
+    const json = JSON.stringify(db, null, 2)
+    try {
+      navigator.clipboard?.writeText(json)
+    } catch { /* Zwischenablage gesperrt */ }
+    try {
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(new Blob([json], { type: 'application/json' }))
+      a.download = 'nestwerk-backup.json'
+      a.click()
+    } catch { /* Download gesperrt */ }
+    toast('Backup in Zwischenablage kopiert (und als Datei versucht) ✓')
   }
 
   /* ---------- Bausteine ---------- */
 
-  const EventRow = ({ e, onClick }) => (
-    <button className="row" onClick={onClick}>
-      <span className="time">{hhmm(e.at_time)}</span>
+  const EventRow = ({ e }) => (
+    <button className="row" onClick={() => setSheet({ event: e })}>
+      <span className="time">{e.at_time}</span>
       <span className="dot" style={{ background: mcolor(e.member_id) }} />
       <div className="row-main">
         <div className="row-title">{e.title}{e.serie ? ' ↻' : ''}</div>
@@ -565,9 +480,7 @@ export default function App() {
 
   const dayList = (dateStr) => {
     const list = eventsOn(dateStr)
-    return list.length
-      ? list.map((e) => <EventRow key={e.id} e={e} onClick={() => setSheet({ event: e })} />)
-      : <div className="empty">Keine Termine – freier Tag 🎉</div>
+    return list.length ? list.map((e) => <EventRow key={e.id} e={e} />) : <div className="empty">Keine Termine – freier Tag 🎉</div>
   }
 
   /* ---------- Bildschirme ---------- */
@@ -575,11 +488,11 @@ export default function App() {
   const screenHeute = (
     <section className="screen">
       <h2 className="screen-title">Hallo {me.name}! 🪺</h2>
-      <p className="screen-sub">{fmtDate(today)} · {family?.name}</p>
+      <p className="screen-sub">{fmtDate(today)} · {db.family.name}</p>
       <div className="kpis">
-        <div className="kpi accent"><div className="num">{events.filter((e) => e.on_date === today && e.status === 'fix').length}</div><div className="cap">Termine heute</div></div>
+        <div className="kpi accent"><div className="num">{db.events.filter((e) => e.on_date === today && e.status === 'fix').length}</div><div className="cap">Termine heute</div></div>
         <div className={'kpi' + (invites.length ? ' alert' : '')}><div className="num">{invites.length}</div><div className="cap">Anfragen an dich</div></div>
-        <div className="kpi"><div className="num">{items.filter((i) => !i.done).length}</div><div className="cap">Offene Listenpunkte</div></div>
+        <div className="kpi"><div className="num">{db.items.filter((i) => !i.done).length}</div><div className="cap">Offene Listenpunkte</div></div>
       </div>
       {invites.length > 0 && (
         <>
@@ -587,7 +500,7 @@ export default function App() {
           <div className="card">
             {invites.map((e) => (
               <div className="row" key={e.id}>
-                <span className="time">{fmtShort(e.on_date)} {hhmm(e.at_time)}</span>
+                <span className="time">{fmtShort(e.on_date)} {e.at_time}</span>
                 <div className="row-main">
                   <div className="row-title">{e.title}</div>
                   <div className="row-meta">von {mname(e.created_by)}{e.meta ? ' · ' + e.meta : ''}</div>
@@ -634,12 +547,12 @@ export default function App() {
         <button className="btn" onClick={() => setSheet({ date: selDate })}>+ Termin</button>
       </div>
       <div className="calbar">
-        <button className="btn ghost sm" onClick={() => setCalCursor(({ y, m }) => (m ? { y, m: m - 1 } : { y: y - 1, m: 11 }))}>‹</button>
+        <button className="btn ghost sm" onClick={() => setCalCursor(({ y, m }) => (m ? { y, m: m - 1 } : { y: y - 1, m: 11 }))} aria-label="Voriger Monat">‹</button>
         <b style={{ minWidth: 140, textAlign: 'center' }}>{MONTHS[cal.m]} {cal.y}</b>
-        <button className="btn ghost sm" onClick={() => setCalCursor(({ y, m }) => (m < 11 ? { y, m: m + 1 } : { y: y + 1, m: 0 }))}>›</button>
+        <button className="btn ghost sm" onClick={() => setCalCursor(({ y, m }) => (m < 11 ? { y, m: m + 1 } : { y: y + 1, m: 0 }))} aria-label="Nächster Monat">›</button>
         <span style={{ flex: 1 }} />
         <div className="legend" style={{ margin: 0 }}>
-          {members.map((mm) => (
+          {db.members.map((mm) => (
             <button key={mm.id} className={'chip' + (filterWho && filterWho !== mm.id ? ' off' : '')}
               onClick={() => setFilterWho(filterWho === mm.id ? null : mm.id)}>
               <i className="dot" style={{ background: mm.color }} />{mm.name}
@@ -671,7 +584,7 @@ export default function App() {
     <div>
       <p className="label">{title}</p>
       <div className="card">
-        {items.filter((i) => i.list === list).map((it) => (
+        {db.items.filter((i) => i.list === list).map((it) => (
           <div className="row" key={it.id}>
             <input type="checkbox" className="check" checked={it.done} onChange={() => toggleItem(it)} aria-label={it.text} />
             <div className="row-main">
@@ -681,7 +594,7 @@ export default function App() {
             <button className="xdel" onClick={() => deleteItem(it)} aria-label="Eintrag löschen">✕</button>
           </div>
         ))}
-        {!items.filter((i) => i.list === list).length && <div className="empty">Alles erledigt 🎉</div>}
+        {!db.items.filter((i) => i.list === list).length && <div className="empty">Alles erledigt 🎉</div>}
         <QuickAdd placeholder={ph} onAdd={(v) => addItem(list, v)} />
       </div>
     </div>
@@ -690,7 +603,7 @@ export default function App() {
   const screenListen = (
     <section className="screen">
       <h2 className="screen-title">Familienlisten</h2>
-      <p className="screen-sub">Für alle. Eintippen, fertig.</p>
+      <p className="screen-sub">Für alle – auch die Kinder. Eintippen, fertig.</p>
       <div className="cols two">
         {listCard('einkauf', '🛒 Einkaufen', 'Was fehlt? (Enter)')}
         {listCard('todo', '✅ Zu erledigen', 'Was ist zu tun? (Enter)')}
@@ -700,53 +613,62 @@ export default function App() {
 
   const screenFamilie = (
     <section className="screen">
-      <h2 className="screen-title">{family?.name}</h2>
-      <p className="screen-sub">Mitglieder, Rechte und Einladung</p>
+      <h2 className="screen-title">{db.family.name}</h2>
+      <p className="screen-sub">Mitglieder, Rechte und Sicherung</p>
       <p className="label">Mitglieder</p>
       <div className="card">
-        {members.map((m) => (
+        {db.members.map((m) => (
           <div className="row" key={m.id}>
             <span className="avatar member" style={{ background: m.color }}>{m.name[0].toUpperCase()}</span>
             <div className="row-main">
               <div className="row-title">{m.name}{m.id === me.id ? ' (du)' : ''}</div>
               <div className="row-meta">
-                {m.kind === 'kid' ? 'Kind · ohne eigenen Login' : m.is_admin ? 'Erwachsen · Familien-Admin' : 'Erwachsen'}
+                {m.kind === 'kid' ? 'Kind' : m.is_admin ? 'Erwachsen · Familien-Admin' : 'Erwachsen'}
                 {m.kind !== 'kid' && (m.can_direct ? ' · trägt direkt ein' : ' · braucht Bestätigung')}
               </div>
             </div>
-            {me.is_admin && m.kind !== 'kid' && (
+            {me.is_admin && m.kind !== 'kid' && m.id !== me.id && (
               <button className={'btn sm ' + (m.can_direct ? 'ghost' : '')} onClick={() => toggleDirect(m)}>
                 {m.can_direct ? 'direkt ✓' : 'Anfrage'}
               </button>
             )}
           </div>
         ))}
-        {me.is_admin && <AddKid onAdd={addKid} />}
+        {me.is_admin && <AddMember onAdd={addMember} />}
       </div>
-      {me.is_admin && family && (
-        <>
-          <p className="label">Einladung</p>
-          <div className="card">
-            <div className="row">
-              <span style={{ fontSize: 20 }}>✉️</span>
-              <div className="row-main">
-                <div className="row-title">Einladungscode: <code>{family.invite_code}</code></div>
-                <div className="row-meta">Weitergeben an Erwachsene – beim Registrieren „Mit Code beitreten“ wählen.</div>
-              </div>
-              <button className="btn ghost sm" onClick={() => { navigator.clipboard?.writeText(family.invite_code); toast('Code kopiert ✓') }}>Kopieren</button>
-            </div>
+      <p className="label">Sicherung</p>
+      <div className="card">
+        <button className="row" onClick={exportBackup}>
+          <span style={{ fontSize: 20 }}>⬇️</span>
+          <div className="row-main">
+            <div className="row-title">Backup exportieren</div>
+            <div className="row-meta">Alle Daten als Text (Merkzeug bleibt darin verschlüsselt) – sicher ablegen!</div>
           </div>
-        </>
-      )}
-      <p className="label">Konto</p>
+          <span className="chev">›</span>
+        </button>
+        <ImportRow onImport={(json) => {
+          try {
+            const obj = JSON.parse(json)
+            if (!obj.family || !obj.members) throw new Error('Kein Nestwerk-Backup')
+            saveAll(obj)
+            toast('Backup eingespielt ✓')
+          } catch (e) {
+            toast('Import fehlgeschlagen: ' + e.message)
+          }
+        }} />
+      </div>
+      <p className="label">Hinweis</p>
       <div className="card">
         <div className="row">
-          <span style={{ fontSize: 20 }}>👤</span>
+          <span style={{ fontSize: 20 }}>{persistent ? '💾' : '⚠️'}</span>
           <div className="row-main">
-            <div className="row-title">{session.user.email}</div>
-            <div className="row-meta">Dein Login – das Merkzeug hat zusätzlich sein eigenes Passwort.</div>
+            <div className="row-title">{persistent ? 'Daten liegen nur in diesem Browser' : 'Achtung: Speichern in diesem Browser nicht möglich'}</div>
+            <div className="row-meta">
+              {persistent
+                ? 'Keine Datenbank, kein Server. Regelmäßig ein Backup exportieren – die Cloud-Synchronisierung kommt in Stufe 2.'
+                : 'Daten leben nur in dieser Sitzung. Exportiere ein Backup, bevor du die Seite schließt.'}
+            </div>
           </div>
-          <button className="btn ghost sm" onClick={() => supabase.auth.signOut()}>Abmelden</button>
         </div>
       </div>
     </section>
@@ -756,8 +678,7 @@ export default function App() {
     ['heute', '🪺', 'Heute', invites.length],
     ['kalender', '📅', 'Kalender', 0],
     ['listen', '🛒', 'Listen', 0],
-    ['merkzeug', '🔐', 'Merkzeug', 0],
-    ['familie', '👨‍👩‍👧‍👦', 'Familie', 0],
+    ...(!isKid ? [['merkzeug', '🔐', 'Merkzeug', 0], ['familie', '👨‍👩‍👧‍👦', 'Familie', 0]] : []),
   ]
 
   return (
@@ -771,23 +692,30 @@ export default function App() {
           </button>
         ))}
         <div className="spacer" />
-        <div className="demonote">{family?.name} · {members.length} Mitglieder</div>
+        <div className="demonote">{db.family.name} · {db.members.length} Mitglieder · Daten nur auf diesem Gerät</div>
       </aside>
       <div className="mainwrap">
         <header className="topbar">
           <h1 className="wordmark serif"><span className="nest">Nest</span>werk</h1>
           <span className="sp" />
-          <button className="userchip" onClick={() => setNav('familie')}>
+          <button className="userchip" onClick={() => saveAll({ ...db, active: null })} aria-label="Profil wechseln">
             <span className="avatar sm member" style={{ background: me.color }}>{me.name[0].toUpperCase()}</span>
-            {me.name}
+            {me.name} ⇄
           </button>
         </header>
         <main>
           {nav === 'heute' && screenHeute}
           {nav === 'kalender' && screenKalender}
           {nav === 'listen' && screenListen}
-          {nav === 'merkzeug' && <Merkzeug session={session} toast={toast} />}
-          {nav === 'familie' && screenFamilie}
+          {nav === 'merkzeug' && !isKid && (
+            <Merkzeug
+              blob={db.memories[me.id] || null}
+              onSaveBlob={(blob) => saveAll({ ...db, memories: { ...db.memories, [me.id]: blob } })}
+              ownerName={me.name}
+              toast={toast}
+            />
+          )}
+          {nav === 'familie' && !isKid && screenFamilie}
           <footer className="note">Nestwerk · eure Daten gehören euch · Merkzeug Ende-zu-Ende-verschlüsselt</footer>
         </main>
         <nav className="tabs">
@@ -801,7 +729,7 @@ export default function App() {
         </nav>
       </div>
       {sheet && (
-        <EventSheet initial={sheet} members={members} me={me}
+        <EventSheet initial={sheet} members={db.members} me={me}
           onSave={saveEvent} onDelete={deleteEvent} onClose={() => setSheet(null)} />
       )}
       {toastEl}
@@ -809,16 +737,50 @@ export default function App() {
   )
 }
 
-function AddKid({ onAdd }) {
+function AddMember({ onAdd }) {
   const [name, setName] = useState('')
   const [color, setColor] = useState(COLORS[3])
+  const [kind, setKind] = useState('kid')
   return (
     <div className="quickadd">
-      <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Kind hinzufügen: Vorname" aria-label="Kind hinzufügen" />
-      <select value={color} onChange={(e) => setColor(e.target.value)} aria-label="Farbe" style={{ font: 'inherit', borderRadius: 10, border: '1px solid var(--hairline)', background: color, width: 44 }}>
+      <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Mitglied hinzufügen: Vorname" aria-label="Mitglied hinzufügen" />
+      <select value={kind} onChange={(e) => setKind(e.target.value)} aria-label="Art"
+        style={{ font: 'inherit', borderRadius: 10, border: '1px solid var(--hairline)', background: 'var(--ground)', color: 'var(--ink)' }}>
+        <option value="kid">Kind</option>
+        <option value="adult">Erwachsen</option>
+      </select>
+      <select value={color} onChange={(e) => setColor(e.target.value)} aria-label="Farbe"
+        style={{ font: 'inherit', borderRadius: 10, border: '1px solid var(--hairline)', background: color, width: 44 }}>
         {COLORS.map((c) => <option key={c} value={c} style={{ background: c }}>&nbsp;</option>)}
       </select>
-      <button type="button" className="btn sm" onClick={() => { if (name.trim()) { onAdd(name.trim(), color); setName('') } }}>+</button>
+      <button type="button" className="btn sm" onClick={() => { if (name.trim()) { onAdd(name.trim(), color, kind); setName('') } }}>+</button>
+    </div>
+  )
+}
+
+function ImportRow({ onImport }) {
+  const [open, setOpen] = useState(false)
+  const [v, setV] = useState('')
+  if (!open) {
+    return (
+      <button className="row" onClick={() => setOpen(true)}>
+        <span style={{ fontSize: 20 }}>⬆️</span>
+        <div className="row-main">
+          <div className="row-title">Backup einspielen</div>
+          <div className="row-meta">Gespeicherten Backup-Text einfügen</div>
+        </div>
+        <span className="chev">›</span>
+      </button>
+    )
+  }
+  return (
+    <div className="row" style={{ alignItems: 'stretch', flexDirection: 'column', gap: 8 }}>
+      <textarea value={v} onChange={(e) => setV(e.target.value)} rows={4} placeholder='Backup-Text hier einfügen ({"family":…})'
+        style={{ font: 'inherit', fontSize: 13, borderRadius: 10, border: '1px solid var(--hairline)', background: 'var(--ground)', color: 'var(--ink)', padding: 10, width: '100%' }} />
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button className="btn sm" onClick={() => { onImport(v); setOpen(false); setV('') }}>Einspielen</button>
+        <button className="btn ghost sm" onClick={() => setOpen(false)}>Abbrechen</button>
+      </div>
     </div>
   )
 }
