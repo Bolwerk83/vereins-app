@@ -365,6 +365,44 @@ function EventSheet({ initial, members, me, onSave, onDelete, onClose }) {
 
 const EMPTY_MEMORY = { persons: [], docs: [], sections: [] }
 const SEC_COLORS = ['#8B5CF6', '#FF5D73', '#FFB02E', '#2FBF71', '#00B8C4', '#FF7A3D']
+const TAG_RE = /#[A-Za-z0-9äöüÄÖÜß_-]+/g
+
+/* Lese-Ansicht einer Palast-Seite: [[Links]], #Schlagworte, Aufgaben,
+   Überschriften, Listen und **fett** – alles klickbar. */
+function PageView({ text, onToggleLine, onLink, onTag }) {
+  const lines = String(text || '').split('\n')
+  const inline = (str) => {
+    return String(str).split(/(\[\[[^\]]+\]\]|#[A-Za-z0-9äöüÄÖÜß_-]+|\*\*[^*]+\*\*)/g).map((p, i) => {
+      if (/^\[\[.+\]\]$/.test(p)) {
+        const t = p.slice(2, -2).trim()
+        return <button key={i} type="button" className="wikilink" onClick={() => onLink(t)}>{t}</button>
+      }
+      if (/^#[A-Za-z0-9äöüÄÖÜß_-]+$/.test(p)) {
+        return <button key={i} type="button" className="tagchip" onClick={() => onTag(p)}>{p}</button>
+      }
+      if (/^\*\*[^*]+\*\*$/.test(p)) return <b key={i}>{p.slice(2, -2)}</b>
+      return p
+    })
+  }
+  return (
+    <div className="pageview">
+      {lines.map((ln, i) => {
+        if (ln.startsWith('## ')) return <h4 key={i}>{inline(ln.slice(3))}</h4>
+        if (ln.startsWith('# ')) return <h3 key={i}>{inline(ln.slice(2))}</h3>
+        const task = ln.match(/^\[( |x)\] ?(.*)$/)
+        if (task) return (
+          <label key={i} className="pv-task">
+            <input type="checkbox" className="check" checked={task[1] === 'x'} onChange={() => onToggleLine(i)} />
+            <span className={task[1] === 'x' ? 'done-text' : ''}>{inline(task[2])}</span>
+          </label>
+        )
+        if (ln.startsWith('- ')) return <div key={i} className="pv-li">•&nbsp; {inline(ln.slice(2))}</div>
+        if (!ln.trim()) return <div key={i} style={{ height: 10 }} />
+        return <p key={i}>{inline(ln)}</p>
+      })}
+    </div>
+  )
+}
 
 function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
   const [state, setState] = useState('locked')
@@ -378,6 +416,7 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
   const [sel, setSel] = useState(null)
   const [sec, setSec] = useState('_personen')
   const [pageId, setPageId] = useState(null)
+  const [pageMode, setPageMode] = useState('view')
   const [addSec, setAddSec] = useState('')
   const [docSel, setDocSel] = useState(null)
   const docInput = useRef()
@@ -543,6 +582,23 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
             toast('Gemerkt ✓ (verschlüsselt gespeichert)')
           }} />
         </div>
+        {(() => {
+          const mentions = (mem.sections || []).flatMap((s2) =>
+            s2.pages.filter((pg) => (pg.text || '').toLowerCase().includes('[[' + (p.name || '').toLowerCase() + ']]')).map((pg) => ({ s2, pg })))
+          return mentions.length > 0 && (
+            <>
+              <p className="label">↩ Erwähnt auf Seiten</p>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {mentions.map(({ s2, pg }) => (
+                  <button key={pg.id} type="button" className="wikilink"
+                    onClick={() => { setSel(null); setSec(s2.id); setPageId(pg.id); setPageMode('view') }}>
+                    {pg.title || 'Unbenannte Seite'}
+                  </button>
+                ))}
+              </div>
+            </>
+          )
+        })()}
         <p className="hint">
           <button className="btn danger sm" onClick={() => { persist({ ...mem, persons: mem.persons.filter((x) => x.id !== p.id) }); setSel(null) }}>
             Person löschen
@@ -560,12 +616,46 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
   const updSections = (fn) => schedulePersist({ ...mem, sections: fn(sections) })
 
   const updPage = (patch) => updSections((ss) => ss.map((s) =>
-    s.id === curSec.id ? { ...s, pages: s.pages.map((p) => (p.id === pageId ? { ...p, ...patch, updated: stamp() } : p)) } : s))
+    s.id === curSec.id ? { ...s, pages: s.pages.map((p) => (p.id === pageId ? { ...p, ...patch, updated: stamp(), ts: Date.now() } : p)) } : s))
 
   const addPage = () => {
-    const np = { id: uid(), title: '', text: '', updated: stamp() }
+    const np = { id: uid(), title: '', text: '', updated: stamp(), ts: Date.now() }
     updSections((ss) => ss.map((s) => (s.id === curSec.id ? { ...s, pages: [np, ...s.pages] } : s)))
     setPageId(np.id)
+    setPageMode('edit')
+  }
+
+  /* Vernetzung: alle Seiten, Rückverweise, Schlagworte, Link-Navigation */
+  const allPages = sections.flatMap((s) => s.pages.map((p) => ({ s, p })))
+  const backlinksOf = (title) => title
+    ? allPages.filter(({ p }) => p.id !== pageId && (p.text || '').toLowerCase().includes('[[' + title.toLowerCase() + ']]'))
+    : []
+  const allTags = [...new Set(allPages.flatMap(({ p }) => (p.text || '').match(TAG_RE) || []))].slice(0, 14)
+
+  const openPageRef = (s, p, mode) => { setSel(null); setSec(s.id); setPageId(p.id); setPageMode(mode || (p.text ? 'view' : 'edit')) }
+
+  const followLink = (target) => {
+    const t = target.toLowerCase()
+    const hitPage = allPages.find(({ p }) => (p.title || '').toLowerCase() === t)
+    if (hitPage) { openPageRef(hitPage.s, hitPage.p); return }
+    const hitPerson = mem.persons.find((x) => (x.name || '').toLowerCase() === t)
+    if (hitPerson) { setSel(hitPerson.id); return }
+    // Ziel gibt es noch nicht: Seite im aktuellen Abschnitt anlegen
+    if (curSec) {
+      const np = { id: uid(), title: target, text: '', updated: stamp(), ts: Date.now() }
+      updSections((ss) => ss.map((s) => (s.id === curSec.id ? { ...s, pages: [np, ...s.pages] } : s)))
+      setPageId(np.id)
+      setPageMode('edit')
+      toast(`Neue Seite „${target}“ angelegt – Verknüpfung steht ✓`)
+    }
+  }
+
+  const toggleTaskLine = (lineIdx) => {
+    const lines = String(curPage.text || '').split('\n')
+    lines[lineIdx] = lines[lineIdx].startsWith('[x]')
+      ? lines[lineIdx].replace('[x]', '[ ]')
+      : lines[lineIdx].replace('[ ]', '[x]')
+    updPage({ text: lines.join('\n') })
   }
 
   const addSection = () => {
@@ -602,7 +692,12 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
         </div>
       )}
       <input className="search" value={q} onChange={(e) => setQ(e.target.value)}
-        placeholder="Alles durchsuchen: Personen, Seiten, Dokumente …" aria-label="Im Gedächtnis suchen" />
+        placeholder="Alles durchsuchen: Personen, Seiten, Dokumente, #schlagworte …" aria-label="Im Gedächtnis suchen" />
+      {!ql && allTags.length > 0 && (
+        <div className="legend" style={{ margin: '0 0 12px' }}>
+          {allTags.map((t) => <button key={t} type="button" className="tagchip" onClick={() => setQ(t)}>{t}</button>)}
+        </div>
+      )}
       {ql ? (
         <div className="card">
           {search.persons.map((p) => (
@@ -613,7 +708,7 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
             </button>
           ))}
           {search.pages.map(({ s, p }) => (
-            <button className="row" key={p.id} onClick={() => { setQ(''); setSec(s.id); setPageId(p.id) }}>
+            <button className="row" key={p.id} onClick={() => { setQ(''); openPageRef(s, p) }}>
               <span className="osec-bar" style={{ background: s.color }} />
               <div className="row-main"><div className="row-title">{p.title || 'Unbenannte Seite'}</div><div className="row-meta">Seite in „{s.name}“ · {p.text.slice(0, 60)}</div></div>
               <span className="chev">›</span>
@@ -641,7 +736,7 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
           </button>
           {sections.map((s) => (
             <button key={s.id} className={'osec' + (sec === s.id ? ' active' : '')}
-              onClick={() => { setSec(s.id); setPageId(s.pages[0]?.id || null) }}>
+              onClick={() => { setSec(s.id); const f = s.pages[0]; setPageId(f?.id || null); setPageMode(f?.text ? 'view' : 'edit') }}>
               <span className="osec-bar" style={{ background: s.color }} />{s.name}<span className="osec-cnt">{s.pages.length}</span>
               {sec === s.id && !s.pages.length && (
                 <span className="xdel" role="button" aria-label="Abschnitt löschen" onClick={(e) => {
@@ -716,9 +811,10 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
           <>
             <div className="on-pages">
               <button className="btn ghost sm" style={{ width: '100%' }} onClick={addPage}>+ Seite</button>
-              {curSec.pages.map((p) => (
-                <button key={p.id} className={'opage' + (p.id === pageId ? ' active' : '')} onClick={() => setPageId(p.id)}>
-                  <div className="opage-t">{p.title || 'Unbenannte Seite'}</div>
+              {[...curSec.pages].sort((a, b) => (b.pin ? 1 : 0) - (a.pin ? 1 : 0) || (b.ts || 0) - (a.ts || 0)).map((p) => (
+                <button key={p.id} className={'opage' + (p.id === pageId ? ' active' : '')}
+                  onClick={() => { setPageId(p.id); setPageMode(p.text ? 'view' : 'edit') }}>
+                  <div className="opage-t">{p.pin ? '📌 ' : ''}{p.title || 'Unbenannte Seite'}</div>
                   <div className="opage-d">{p.updated}{p.text ? ' · ' + p.text.slice(0, 34) : ''}</div>
                 </button>
               ))}
@@ -727,21 +823,51 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
             <div className="on-editor">
               {curPage ? (
                 <>
-                  <input className="oe-title" value={curPage.title} placeholder="Seitentitel"
-                    onChange={(e) => updPage({ title: e.target.value })} aria-label="Seitentitel" />
-                  <div className="oe-date">zuletzt {curPage.updated} · verschlüsselt gespeichert 🔒</div>
-                  <textarea className="oe-body" value={curPage.text} placeholder="Einfach lostippen – gespeichert wird automatisch …"
-                    onChange={(e) => updPage({ text: e.target.value })} aria-label="Seiteninhalt" />
-                  <div>
-                    <button className="btn danger sm" onClick={() => {
-                      updSections((ss) => ss.map((s) => (s.id === curSec.id ? { ...s, pages: s.pages.filter((p) => p.id !== pageId) } : s)))
-                      setPageId(null)
-                      toast('Seite gelöscht')
-                    }}>Seite löschen</button>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <input className="oe-title" style={{ flex: 1, minWidth: 0 }} value={curPage.title} placeholder="Seitentitel"
+                      onChange={(e) => updPage({ title: e.target.value })} aria-label="Seitentitel" />
+                    <button className="btn ghost sm" title={curPage.pin ? 'Losheften' : 'Anheften'}
+                      onClick={() => { updPage({ pin: !curPage.pin }); toast(curPage.pin ? 'Losgeheftet' : '📌 Angeheftet – steht jetzt oben') }}>
+                      {curPage.pin ? '📌' : '📍'}
+                    </button>
+                    <button className="btn sm" onClick={() => setPageMode(pageMode === 'view' ? 'edit' : 'view')}>
+                      {pageMode === 'view' ? '✏️ Bearbeiten' : '✓ Fertig'}
+                    </button>
                   </div>
+                  <div className="oe-date">zuletzt {curPage.updated} · verschlüsselt gespeichert 🔒</div>
+                  {pageMode === 'edit' ? (
+                    <>
+                      <textarea className="oe-body" value={curPage.text} placeholder="Einfach lostippen – gespeichert wird automatisch …"
+                        onChange={(e) => updPage({ text: e.target.value })} aria-label="Seiteninhalt" autoFocus />
+                      <div className="oe-hint">Tricks: <code># Überschrift</code> · <code>- Liste</code> · <code>[ ] Aufgabe</code> · <code>[[Verknüpfung]]</code> · <code>#schlagwort</code> · <code>**fett**</code></div>
+                    </>
+                  ) : (
+                    <PageView text={curPage.text} onToggleLine={toggleTaskLine} onLink={followLink} onTag={(t) => setQ(t)} />
+                  )}
+                  {backlinksOf(curPage.title).length > 0 && (
+                    <div className="backlinks">
+                      <div className="oe-date" style={{ marginBottom: 4 }}>↩ Hierher verlinkt:</div>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        {backlinksOf(curPage.title).map(({ s, p }) => (
+                          <button key={p.id} type="button" className="wikilink" onClick={() => openPageRef(s, p)}>
+                            {p.title || 'Unbenannte Seite'}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {pageMode === 'edit' && (
+                    <div>
+                      <button className="btn danger sm" onClick={() => {
+                        updSections((ss) => ss.map((s) => (s.id === curSec.id ? { ...s, pages: s.pages.filter((p) => p.id !== pageId) } : s)))
+                        setPageId(null)
+                        toast('Seite gelöscht')
+                      }}>Seite löschen</button>
+                    </div>
+                  )}
                 </>
               ) : (
-                <div className="empty" style={{ borderBottom: 0 }}>Wähle eine Seite – oder leg mit „+ Seite“ eine neue an.</div>
+                <div className="empty" style={{ borderBottom: 0 }}>Wähle eine Seite – oder leg mit „+ Seite“ eine neue an. Mit <b>[[Name]]</b> verknüpfst du Seiten und Personen.</div>
               )}
             </div>
           </>
