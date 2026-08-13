@@ -19,25 +19,63 @@ const addDays = (s, n) => { const d = fromIso(s); d.setDate(d.getDate() + n); re
 const mins = (t) => +t.slice(0, 2) * 60 + +t.slice(3, 5)
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2))
 
+/* Einheitliches, gezeichnetes Icon-Set (statt geräteabhängiger Emojis) */
+const ICON_PATHS = {
+  home: <><path d="M3 10.5 12 3l9 7.5" /><path d="M5 9.5V21h14V9.5" /><path d="M9 21v-6h6v6" /></>,
+  calendar: <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 11h18" /></>,
+  cart: <><circle cx="9" cy="20" r="1.6" /><circle cx="18" cy="20" r="1.6" /><path d="M2 3h3l2.6 12.5a1.8 1.8 0 0 0 1.8 1.5h7.9a1.8 1.8 0 0 0 1.8-1.4L21 8H6" /></>,
+  heart: <path d="M12 21C7 16.5 3 13.2 3 8.9A4.9 4.9 0 0 1 7.9 4c1.7 0 3.2.8 4.1 2.1A5 5 0 0 1 16.1 4 4.9 4.9 0 0 1 21 8.9c0 4.3-4 7.6-9 12.1Z" />,
+  landmark: <><path d="M3 21h18" /><path d="M5 21v-9M9.5 21v-9M14.5 21v-9M19 21v-9" /><path d="M2.5 9 12 3l9.5 6z" /></>,
+  users: <><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0" /><path d="M16 5.2a3.5 3.5 0 0 1 0 5.6" /><path d="M17.5 14.5a6.5 6.5 0 0 1 4 5.5" /></>,
+  user: <><circle cx="12" cy="8" r="3.8" /><path d="M5 20.5a7 7 0 0 1 14 0" /></>,
+  lock: <><rect x="4.5" y="10.5" width="15" height="10" rx="2" /><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" /></>,
+  briefcase: <><rect x="3" y="8" width="18" height="12" rx="2" /><path d="M9 8V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" /><path d="M3 13h18" /></>,
+  trophy: <><path d="M8 21h8M12 17.5V21" /><path d="M7 4h10v5a5 5 0 0 1-10 0Z" /><path d="M7 5H4v1.5A3.5 3.5 0 0 0 7.5 10M17 5h3v1.5A3.5 3.5 0 0 1 16.5 10" /></>,
+  link: <><path d="M10 13.5a4 4 0 0 0 6 .5l3-3a4 4 0 0 0-5.7-5.7l-1.6 1.6" /><path d="M14 10.5a4 4 0 0 0-6-.5l-3 3a4 4 0 0 0 5.7 5.7l1.6-1.6" /></>,
+  file: <><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" /><path d="M14 3v5h5" /></>,
+  plus: <path d="M12 5v14M5 12h14" />,
+  download: <><path d="M12 4v11" /><path d="m7 11 5 5 5-5" /><path d="M4 20h16" /></>,
+  upload: <><path d="M12 20V9" /><path d="m7 13 5-5 5 5" /><path d="M4 4h16" /></>,
+  table: <><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 10h18M3 15h18M9 4v16" /></>,
+  archive: <><rect x="3" y="4" width="18" height="5" rx="1" /><path d="M5 9v10a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 19V9" /><path d="M10 13h4" /></>,
+  alert: <><path d="M12 3 2.5 20h19Z" /><path d="M12 9.5V14M12 17h.01" /></>,
+  info: <><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 7.5h.01" /></>,
+}
+function Icon({ name, size = 19 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+      style={{ display: 'block', flex: 'none' }}>
+      {ICON_PATHS[name] || null}
+    </svg>
+  )
+}
+const RowIcon = ({ name }) => <span style={{ color: 'var(--ink-soft)', flex: 'none', display: 'flex' }}><Icon name={name} size={21} /></span>
+
 const PTYPES = ['Nachsorge', 'Vorsorge', 'Beratung', 'Kursstunde', 'Wochenbettbesuch', 'Sonstiges']
 
 // Module: werden pro Mitglied auf dem eigenen Profil hinzugefügt.
 // Grundsatz: nicht mehr Infos als nötig – Details sieht nur, wem das Modul gehört.
 const MODULES = [
   {
-    id: 'praxis', ico: '🩺', name: 'Praxis',
+    id: 'praxis', ico: 'heart', name: 'Praxis',
     desc: 'Klientinnen, Termin-Typen mit Soll/Ist-Zeiten, Dokumente aus Vorlagen.',
     privacy: 'Die Familie sieht nur „Praxis · belegt“ – keine Namen, keine Details.',
   },
   {
-    id: 'verein', ico: '⚽', name: 'Vereins-App',
+    id: 'verein', ico: 'trophy', name: 'Vereins-App',
     desc: 'Trainings, Spiele und Turniere automatisch im Familienkalender – immer aktuell.',
     privacy: 'Ohne Passwort, nur lesend über den Vereinszugang.',
   },
   {
-    id: 'arbeit', ico: '💼', name: 'Arbeitskalender',
+    id: 'arbeit', ico: 'briefcase', name: 'Arbeitskalender',
     desc: 'Arbeitstermine per .ics-Import aus Outlook/Office365.',
     privacy: 'Die Familie sieht nur „Arbeit“ als belegte Zeit – keine Betreffe.',
+  },
+  {
+    id: 'connect', ico: 'link', name: 'Anbindungen',
+    desc: 'Andere Programme mit deinen Daten verbinden – Outlook, Excel, Kalender-Export.',
+    privacy: 'Exporte enthalten nur, was du selbst sehen darfst.',
   },
 ]
 const hasMod = (m, id) => !!(m?.modules && m.modules[id])
@@ -571,7 +609,7 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
           ))}
           {search.docs.map((d) => (
             <button className="row" key={d.id} onClick={() => { setQ(''); setSec('_dokumente'); setDocSel(d.id) }}>
-              <span style={{ fontSize: 20 }}>{d.mime.startsWith('image/') ? '🖼️' : '📄'}</span>
+              <RowIcon name='file' />
               <div className="row-main"><div className="row-title">{d.name}</div><div className="row-meta">Dokument</div></div>
               <span className="chev">›</span>
             </button>
@@ -584,10 +622,10 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
       <div className="on-grid">
         <div className="on-rail">
           <button className={'osec' + (sec === '_personen' ? ' active' : '')} onClick={() => { setSec('_personen'); setPageId(null) }}>
-            <span className="osec-bar" style={{ background: '#2FBF71' }} />👥 Personen<span className="osec-cnt">{mem.persons.length}</span>
+            <span className="osec-bar" style={{ background: '#2FBF71' }} /><Icon name="user" size={15} /> Personen<span className="osec-cnt">{mem.persons.length}</span>
           </button>
           <button className={'osec' + (sec === '_dokumente' ? ' active' : '')} onClick={() => { setSec('_dokumente'); setPageId(null) }}>
-            <span className="osec-bar" style={{ background: '#3D7BFF' }} />📄 Dokumente<span className="osec-cnt">{(mem.docs || []).length}</span>
+            <span className="osec-bar" style={{ background: '#3D7BFF' }} /><Icon name="file" size={15} /> Dokumente<span className="osec-cnt">{(mem.docs || []).length}</span>
           </button>
           {sections.map((s) => (
             <button key={s.id} className={'osec' + (sec === s.id ? ' active' : '')}
@@ -640,7 +678,7 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
           <div className="on-wide card">
             {(mem.docs || []).map((d) => (
               <button className="row" key={d.id} onClick={() => setDocSel(d.id)}>
-                <span style={{ fontSize: 20 }}>{d.mime.startsWith('image/') ? '🖼️' : '📄'}</span>
+                <RowIcon name='file' />
                 <div className="row-main">
                   <div className="row-title">{d.name}</div>
                   <div className="row-meta">{Math.round(d.size / 1024)} KB · {d.added} · 🔒 verschlüsselt gespeichert</div>
@@ -650,7 +688,7 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
             ))}
             {!(mem.docs || []).length && <div className="empty">Noch keine Dokumente. Scans und PDFs werden vor dem Speichern verschlüsselt – ohne dein Passwort sind sie unlesbar.</div>}
             <button className="row" onClick={() => docInput.current?.click()}>
-              <span style={{ fontSize: 20 }}>⬆️</span>
+              <RowIcon name="upload" />
               <div className="row-main">
                 <div className="row-title">Dokument hinzufügen</div>
                 <div className="row-meta">Foto, Scan oder PDF (max. 1,5 MB in dieser Stufe)</div>
@@ -959,6 +997,38 @@ export default function App() {
       toast(MODULES.find((m) => m.id === id).name + ' hinzugefügt ✓' + (id === 'praxis' ? ' – neuer Bereich 🩺 in der Navigation' : ''))
       if (id === 'praxis') setNav('praxis')
     }
+  }
+
+  /* ---------- Anbindungen: Export für Outlook/Google/Excel ---------- */
+
+  const icsEscape = (t) => String(t || '').replace(/\\/g, '\\\\').replace(/[,;]/g, ' ').replace(/\n/g, ' ')
+
+  function exportIcs() {
+    const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Eselsohr//DE', 'CALSCALE:GREGORIAN']
+    db.events.filter((e) => e.status === 'fix').forEach((raw) => {
+      const e = viewEvent(raw) // Privatsphäre gilt auch im Export
+      lines.push(
+        'BEGIN:VEVENT',
+        'UID:' + e.id + '@eselsohr',
+        'DTSTART:' + e.on_date.replaceAll('-', '') + 'T' + e.at_time.replace(':', '') + '00',
+        'SUMMARY:' + icsEscape(e.title.replace(/[📩⚽💼🩺↻]/g, '').trim() || 'Termin'),
+        'DESCRIPTION:' + icsEscape(mname(e.member_id) + (e.masked || !e.meta ? '' : ' - ' + e.meta)),
+        'END:VEVENT'
+      )
+    })
+    lines.push('END:VCALENDAR')
+    saveTextFile('eselsohr-kalender.ics', lines.join('\r\n'), toast)
+  }
+
+  function exportPraxisCsv() {
+    const rows = [['Klientin', 'Datum', 'Uhrzeit', 'Typ', 'Soll (Min)', 'Ist (Min)', 'Notiz']]
+    db.events.filter((e) => e.ptype).sort((a, b) => a.on_date.localeCompare(b.on_date)).forEach((e) => {
+      rows.push([
+        klientById(e.klid)?.name || '—', e.on_date, e.at_time, e.ptype,
+        e.soll ?? '', e.ist ?? '', (e.meta || '').replace(/;/g, ','),
+      ])
+    })
+    saveTextFile('praxis-termine.csv', rows.map((r) => r.join(';')).join('\n'), toast)
   }
 
   const addItem = (list, text) => saveAll({ ...db, items: [{ id: uid(), list, text, done: false, created_by: me.id }, ...db.items] })
@@ -1321,7 +1391,7 @@ export default function App() {
               })}
               {!hits.length && <div className="empty">{q ? `Keine Klientin passt zu „${praxisQ}“.` : 'Noch keine Klientinnen.'}</div>}
               <button className="row" onClick={() => setKlientSheet(true)}>
-                <span style={{ fontSize: 20 }}>➕</span>
+                <RowIcon name="plus" />
                 <div className="row-main">
                   <div className="row-title">Neue Klientin</div>
                   <div className="row-meta">Kontaktformular: Name, Telefon, Adresse</div>
@@ -1386,7 +1456,7 @@ export default function App() {
           <div className="card">
             {MODULES.map((mod) => hasMod(me, mod.id) ? (
               <div className="row" key={mod.id}>
-                <span style={{ fontSize: 20 }}>{mod.ico}</span>
+                <RowIcon name={mod.ico} />
                 <div className="row-main">
                   <div className="row-title">{mod.name} <span className="chip ok" style={{ marginLeft: 4 }}>aktiv</span></div>
                   <div className="row-meta">{mod.privacy}</div>
@@ -1395,7 +1465,7 @@ export default function App() {
               </div>
             ) : (
               <button className="row" key={mod.id} onClick={() => toggleModule(mod.id)}>
-                <span style={{ fontSize: 20 }}>{mod.ico}</span>
+                <RowIcon name={mod.ico} />
                 <div className="row-main">
                   <div className="row-title">➕ {mod.name}</div>
                   <div className="row-meta">{mod.desc}</div>
@@ -1410,7 +1480,7 @@ export default function App() {
               <p className="label">🩺 Praxis</p>
               <div className="card">
                 <button className="row" onClick={() => setNav('praxis')}>
-                  <span style={{ fontSize: 20 }}>🩺</span>
+                  <RowIcon name="heart" />
                   <div className="row-main">
                     <div className="row-title">Praxis öffnen</div>
                     <div className="row-meta">{praxis.klienten.length} Klientin{praxis.klienten.length === 1 ? '' : 'nen'} · {db.events.filter((e) => e.ptype).length} Praxistermine</div>
@@ -1427,7 +1497,7 @@ export default function App() {
               <div className="card">
                 {(db.verein?.links || []).map((l) => (
                   <div className="row" key={l.tid}>
-                    <span style={{ fontSize: 20 }}>⚽</span>
+                    <RowIcon name="trophy" />
                     <div className="row-main">
                       <div className="row-title">{l.teamName}</div>
                       <div className="row-meta">Termine landen bei {mname(l.memberId)} · letzter Sync: {db.verein?.lastSync || '—'}</div>
@@ -1437,7 +1507,7 @@ export default function App() {
                 ))}
                 {(db.verein?.links || []).length > 0 && (
                   <button className="row" disabled={syncing} onClick={() => syncVerein(db.verein.links, db, false)}>
-                    <span style={{ fontSize: 20 }}>🔄</span>
+                    <RowIcon name="link" />
                     <div className="row-main">
                       <div className="row-title">{syncing ? 'Synchronisiere …' : 'Jetzt synchronisieren'}</div>
                       <div className="row-meta">Passiert auch automatisch bei jedem App-Start</div>
@@ -1446,7 +1516,7 @@ export default function App() {
                   </button>
                 )}
                 <button className="row" onClick={() => setVereinSheet(true)}>
-                  <span style={{ fontSize: 20 }}>🔗</span>
+                  <RowIcon name="link" />
                   <div className="row-main">
                     <div className="row-title">{(db.verein?.links || []).length ? 'Weiteres Team verknüpfen' : 'Team verknüpfen'}</div>
                     <div className="row-meta">Trainings, Spiele und Turniere automatisch im Familienkalender</div>
@@ -1459,10 +1529,10 @@ export default function App() {
 
           {hasMod(me, 'arbeit') && (
             <>
-              <p className="label">💼 Arbeitskalender</p>
+              <p className="label">Arbeitskalender</p>
               <div className="card">
                 <button className="row" onClick={() => icsInput.current?.click()}>
-                  <span style={{ fontSize: 20 }}>📥</span>
+                  <RowIcon name="upload" />
                   <div className="row-main">
                     <div className="row-title">Kalenderdatei importieren (.ics)</div>
                     <div className="row-meta">
@@ -1476,9 +1546,65 @@ export default function App() {
                 <input ref={icsInput} type="file" accept=".ics,text/calendar" style={{ display: 'none' }}
                   onChange={(e) => { const f = e.target.files?.[0]; if (f) importIcs(f); e.target.value = '' }} />
                 <div className="row">
-                  <span style={{ fontSize: 20 }}>ℹ️</span>
+                  <RowIcon name="info" />
                   <div className="row-main">
                     <div className="row-meta">Die Datei bleibt auf deinem Gerät. Die Familie sieht nur „Arbeit“ als belegte Zeit – keine Betreffe. Abo-Sync per Link kommt mit der Cloud-Stufe.</div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {hasMod(me, 'connect') && (
+            <>
+              <p className="label">Anbindungen · deine Daten in anderen Programmen</p>
+              <div className="card">
+                <button className="row" onClick={exportIcs}>
+                  <RowIcon name="calendar" />
+                  <div className="row-main">
+                    <div className="row-title">Kalender exportieren (.ics)</div>
+                    <div className="row-meta">Für Outlook, Google oder Apple Kalender – enthält nur, was du sehen darfst</div>
+                  </div>
+                  <span className="chev">›</span>
+                </button>
+                {hasMod(me, 'praxis') && (
+                  <button className="row" onClick={exportPraxisCsv}>
+                    <RowIcon name="table" />
+                    <div className="row-main">
+                      <div className="row-title">Praxistermine als CSV (Excel)</div>
+                      <div className="row-meta">Klientin, Datum, Typ, Soll/Ist-Minuten – fertig für die Abrechnung</div>
+                    </div>
+                    <span className="chev">›</span>
+                  </button>
+                )}
+                <button className="row" onClick={() => { if (!hasMod(me, 'arbeit')) toggleModule('arbeit'); else icsInput.current?.click() }}>
+                  <RowIcon name="briefcase" />
+                  <div className="row-main">
+                    <div className="row-title">Outlook/Office-Kalender importieren</div>
+                    <div className="row-meta">{hasMod(me, 'arbeit') ? 'Modul aktiv – .ics-Datei wählen' : 'Aktiviert das Modul Arbeitskalender'}</div>
+                  </div>
+                  <span className="chev">›</span>
+                </button>
+                <button className="row" onClick={() => { if (!hasMod(me, 'verein')) toggleModule('verein'); else setVereinSheet(true) }}>
+                  <RowIcon name="trophy" />
+                  <div className="row-main">
+                    <div className="row-title">Vereins-App verknüpfen</div>
+                    <div className="row-meta">{hasMod(me, 'verein') ? 'Modul aktiv – Team verknüpfen' : 'Aktiviert das Modul Vereins-App'}</div>
+                  </div>
+                  <span className="chev">›</span>
+                </button>
+                <button className="row" onClick={exportBackup}>
+                  <RowIcon name="download" />
+                  <div className="row-main">
+                    <div className="row-title">Komplett-Backup (JSON)</div>
+                    <div className="row-meta">Alle Daten als Datei – der Gedächtnispalast bleibt darin verschlüsselt</div>
+                  </div>
+                  <span className="chev">›</span>
+                </button>
+                <div className="row">
+                  <RowIcon name="info" />
+                  <div className="row-main">
+                    <div className="row-meta">Mit der Cloud-Stufe kommen Live-Anbindungen: Abo-Link für Kalender, automatischer Abgleich statt Dateien.</div>
                   </div>
                 </div>
               </div>
@@ -1503,7 +1629,7 @@ export default function App() {
               <div className="row-meta">
                 {m.kind === 'kid' ? 'Kind' : m.is_admin ? 'Erwachsen · Familien-Admin' : 'Erwachsen'}
                 {m.kind !== 'kid' && (m.can_direct ? ' · trägt direkt ein' : ' · braucht Bestätigung')}
-                {MODULES.some((x) => hasMod(m, x.id)) && ' · ' + MODULES.filter((x) => hasMod(m, x.id)).map((x) => x.ico).join(' ')}
+                {MODULES.some((x) => hasMod(m, x.id)) && <span style={{ display: 'inline-flex', gap: 4, marginLeft: 6, verticalAlign: '-3px' }}>{MODULES.filter((x) => hasMod(m, x.id)).map((x) => <Icon key={x.id} name={x.ico} size={13} />)}</span>}
               </div>
             </div>
             {me.is_admin && m.kind !== 'kid' && m.id !== me.id && (
@@ -1515,7 +1641,7 @@ export default function App() {
         ))}
         {me.is_admin && (
           <button className="row" onClick={() => setMemberSheet(true)}>
-            <span style={{ fontSize: 20 }}>➕</span>
+            <RowIcon name="plus" />
             <div className="row-main">
               <div className="row-title">Mitglied hinzufügen</div>
               <div className="row-meta">Erwachsen oder Kind – mit Name und Farbe</div>
@@ -1527,7 +1653,7 @@ export default function App() {
       <p className="label">Sicherung</p>
       <div className="card">
         <button className="row" onClick={exportBackup}>
-          <span style={{ fontSize: 20 }}>⬇️</span>
+          <RowIcon name="download" />
           <div className="row-main">
             <div className="row-title">Backup exportieren</div>
             <div className="row-meta">Alle Daten als Text (Gedächtnispalast bleibt darin verschlüsselt) – sicher ablegen!</div>
@@ -1548,7 +1674,7 @@ export default function App() {
       <p className="label">Hinweis</p>
       <div className="card">
         <div className="row">
-          <span style={{ fontSize: 20 }}>{persistent ? '💾' : '⚠️'}</span>
+          <RowIcon name={persistent ? 'archive' : 'alert'} />
           <div className="row-main">
             <div className="row-title">{persistent ? 'Daten liegen nur in diesem Browser' : 'Achtung: Speichern in diesem Browser nicht möglich'}</div>
             <div className="row-meta">
@@ -1563,13 +1689,13 @@ export default function App() {
   )
 
   const NAVS = [
-    ['heute', '🏠', 'Heute', invites.length],
-    ['kalender', '📅', 'Kalender', 0],
-    ['listen', '🛒', 'Listen', 0],
+    ['heute', 'home', 'Heute', invites.length],
+    ['kalender', 'calendar', 'Kalender', 0],
+    ['listen', 'cart', 'Listen', 0],
     ...(!isKid ? [
-      ...(hasMod(me, 'praxis') ? [['praxis', '🩺', 'Praxis', 0]] : []),
-      ['merkzeug', '🏛️', 'Gedächtnispalast', 0, 'Palast'],
-      ['familie', '👨‍👩‍👧‍👦', 'Familie', 0],
+      ...(hasMod(me, 'praxis') ? [['praxis', 'heart', 'Praxis', 0]] : []),
+      ['merkzeug', 'landmark', 'Gedächtnispalast', 0, 'Palast'],
+      ['familie', 'users', 'Familie', 0],
     ] : []),
   ]
 
@@ -1579,7 +1705,7 @@ export default function App() {
         <div className="logo serif">Esels<span className="nest">ohr</span></div>
         {NAVS.map(([id, ico, label, cnt]) => (
           <button key={id} className={'navbtn' + (nav === id ? ' active' : '')} onClick={() => setNav(id)}>
-            <span className="ico">{ico}</span>{label}
+            <span className="ico"><Icon name={ico} /></span>{label}
             {cnt > 0 && <span className="cnt">{cnt}</span>}
           </button>
         ))}
@@ -1616,7 +1742,7 @@ export default function App() {
           <div className="inner">
             {NAVS.map(([id, ico, label, , short]) => (
               <button key={id} className={'tab' + (nav === id ? ' active' : '')} onClick={() => setNav(id)}>
-                <span className="ico">{ico}</span>{short || label}
+                <span className="ico"><Icon name={ico} /></span>{short || label}
               </button>
             ))}
           </div>
@@ -1896,7 +2022,7 @@ function ImportRow({ onImport }) {
   if (!open) {
     return (
       <button className="row" onClick={() => setOpen(true)}>
-        <span style={{ fontSize: 20 }}>⬆️</span>
+        <RowIcon name="upload" />
         <div className="row-main">
           <div className="row-title">Backup einspielen</div>
           <div className="row-meta">Gespeicherten Backup-Text einfügen</div>
