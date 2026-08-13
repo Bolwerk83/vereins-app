@@ -3,13 +3,14 @@
 // Die Supabase-Anbindung (supabase/schema.sql) ist Stufe 2 und ersetzt
 // später nur diese Datei.
 
-const KEY = 'nestwerk-v1'
+const KEY = 'eselsohr-v1'
+const OLD_KEY = 'nestwerk-v1' // App hieß früher Nestwerk – vorhandene Daten werden übernommen
 
 let memoryFallback = null // falls localStorage nicht verfügbar ist (z. B. Sandbox)
 
 export function loadState() {
   try {
-    const raw = localStorage.getItem(KEY)
+    const raw = localStorage.getItem(KEY) || localStorage.getItem(OLD_KEY)
     if (raw) return JSON.parse(raw)
   } catch { /* localStorage gesperrt */ }
   return memoryFallback

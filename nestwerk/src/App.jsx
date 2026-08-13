@@ -144,8 +144,8 @@ function Onboarding({ onCreate }) {
   return (
     <div className="auth-wrap">
       <form className="auth-card" onSubmit={(e) => { e.preventDefault(); if (famName.trim() && myName.trim()) onCreate(famName.trim(), myName.trim(), color) }}>
-        <h1 className="serif"><span style={{ color: 'var(--brand)' }}>Nest</span>werk</h1>
-        <p className="sub">Der Familienkalender mit Gedächtnis. Gründe euer Nest – dauert 20 Sekunden, ganz ohne Konto.</p>
+        <h1 className="serif">Esels<span style={{ color: 'var(--brand)' }}>ohr</span></h1>
+        <p className="sub">Der Familienkalender mit Gedächtnis. Startklar in 20 Sekunden – ganz ohne Konto.</p>
         <div className="field">
           <label htmlFor="famname">Familienname</label>
           <input id="famname" required value={famName} onChange={(e) => setFamName(e.target.value)} placeholder="z. B. Familie Bolwerk" />
@@ -163,7 +163,7 @@ function Onboarding({ onCreate }) {
             ))}
           </div>
         </div>
-        <button className="btn" style={{ width: '100%' }}>Nest gründen 🪺</button>
+        <button className="btn" style={{ width: '100%' }}>Familie anlegen</button>
         <p className="hint">Alles bleibt auf diesem Gerät – keine Datenbank, kein Server. Backup gibt’s unter „Familie“.</p>
       </form>
     </div>
@@ -176,7 +176,7 @@ function ProfilePicker({ members, onPick }) {
   return (
     <div className="auth-wrap">
       <div className="auth-card">
-        <h1 className="serif">🪺 Wer bist du?</h1>
+        <h1 className="serif">👋 Wer bist du?</h1>
         <p className="sub">Jede Person hat ihr eigenes Profil – und sieht nur, was sie darf.</p>
         <div className="profiles">
           {members.map((m) => (
@@ -209,7 +209,7 @@ function EventSheet({ initial, members, me, onSave, onDelete, onClose }) {
           </div>
           <p className="hint" style={{ marginTop: 0 }}>
             Dieser Termin kommt aus der <b>Vereins-App</b> und wird automatisch aktuell gehalten –
-            Verlegungen und Absagen übernimmt Nestwerk beim nächsten Sync von selbst.
+            Verlegungen und Absagen übernimmt Eselsohr beim nächsten Sync von selbst.
             Ändern oder absagen bitte direkt in der Vereins-App.
           </p>
           <button className="btn" style={{ width: '100%' }} onClick={onClose}>Alles klar</button>
@@ -609,7 +609,7 @@ export default function App() {
             members: [{ id: meId, name: myName, color, kind: 'adult', is_admin: true, can_direct: true }],
             events: [], items: [], memories: {}, active: meId,
           })
-          toast('Familie gegründet 🪺')
+          toast('Familie angelegt ✓')
         }} />
         {toastEl}
       </>
@@ -753,7 +753,7 @@ export default function App() {
 
   function addMember(name, color, kind) {
     saveAll({ ...db, members: [...db.members, { id: uid(), name, color, kind, is_admin: false, can_direct: false }] })
-    toast(`${name} ist dabei 🪺`)
+    toast(`${name} ist dabei ✓`)
   }
 
   /* ---------- Vereins-App-Sync ---------- */
@@ -806,7 +806,7 @@ export default function App() {
     } catch { /* Zwischenablage gesperrt */ }
     if (window.claude?.downloads) {
       try {
-        await window.claude.downloads.save({ filename: 'nestwerk-backup.json', data: json })
+        await window.claude.downloads.save({ filename: 'eselsohr-backup.json', data: json })
         toast('Backup gespeichert ✓ (und in die Zwischenablage kopiert)')
       } catch (e) {
         toast(e?.code === 'declined' ? 'Speichern abgebrochen – Backup liegt in der Zwischenablage' : 'Backup in Zwischenablage kopiert ✓')
@@ -816,7 +816,7 @@ export default function App() {
     try {
       const a = document.createElement('a')
       a.href = URL.createObjectURL(new Blob([json], { type: 'application/json' }))
-      a.download = 'nestwerk-backup.json'
+      a.download = 'eselsohr-backup.json'
       a.click()
     } catch { /* Download gesperrt */ }
     toast('Backup als Datei gespeichert und in die Zwischenablage kopiert ✓')
@@ -846,7 +846,7 @@ export default function App() {
 
   const screenHeute = (
     <section className="screen">
-      <h2 className="screen-title">Hallo {me.name}! 🪺</h2>
+      <h2 className="screen-title">Hallo {me.name}! 👋</h2>
       <p className="screen-sub">{fmtDate(today)} · {db.family.name}</p>
       <div className="kpis">
         <div className="kpi accent"><div className="num">{db.events.filter((e) => e.on_date === today && e.status === 'fix').length}</div><div className="cap">Termine heute</div></div>
@@ -1216,7 +1216,7 @@ export default function App() {
         <ImportRow onImport={(json) => {
           try {
             const obj = JSON.parse(json)
-            if (!obj.family || !obj.members) throw new Error('Kein Nestwerk-Backup')
+            if (!obj.family || !obj.members) throw new Error('Kein Eselsohr-Backup')
             saveAll(obj)
             toast('Backup eingespielt ✓')
           } catch (e) {
@@ -1242,7 +1242,7 @@ export default function App() {
   )
 
   const NAVS = [
-    ['heute', '🪺', 'Heute', invites.length],
+    ['heute', '🏠', 'Heute', invites.length],
     ['kalender', '📅', 'Kalender', 0],
     ['listen', '🛒', 'Listen', 0],
     ...(!isKid ? [['praxis', '🩺', 'Praxis', 0], ['merkzeug', '🔐', 'Merkzeug', 0], ['familie', '👨‍👩‍👧‍👦', 'Familie', 0]] : []),
@@ -1251,7 +1251,7 @@ export default function App() {
   return (
     <div className="shell">
       <aside className="side">
-        <div className="logo serif"><span className="nest">Nest</span>werk</div>
+        <div className="logo serif">Esels<span className="nest">ohr</span></div>
         {NAVS.map(([id, ico, label, cnt]) => (
           <button key={id} className={'navbtn' + (nav === id ? ' active' : '')} onClick={() => setNav(id)}>
             <span className="ico">{ico}</span>{label}
@@ -1263,7 +1263,7 @@ export default function App() {
       </aside>
       <div className="mainwrap">
         <header className="topbar">
-          <h1 className="wordmark serif"><span className="nest">Nest</span>werk</h1>
+          <h1 className="wordmark serif">Esels<span className="nest">ohr</span></h1>
           <span className="sp" />
           <button className="userchip" onClick={() => saveAll({ ...db, active: null })} aria-label="Profil wechseln">
             <span className="avatar sm member" style={{ background: me.color }}>{me.name[0].toUpperCase()}</span>
@@ -1284,7 +1284,7 @@ export default function App() {
             />
           )}
           {nav === 'familie' && !isKid && screenFamilie}
-          <footer className="note">Nestwerk · eure Daten gehören euch · Merkzeug Ende-zu-Ende-verschlüsselt</footer>
+          <footer className="note">Eselsohr · eure Daten gehören euch · Merkzeug Ende-zu-Ende-verschlüsselt</footer>
         </main>
         <nav className="tabs">
           <div className="inner">
@@ -1556,7 +1556,7 @@ function VereinSheet({ members, me, onLink, onClose }) {
               </select>
             </div>
             <button className="btn" style={{ width: '100%' }} disabled={!tid}>Verknüpfen &amp; synchronisieren</button>
-            <p className="hint">Ab jetzt hält Nestwerk die Termine automatisch aktuell – Absagen und Verlegungen inklusive. Ganz ohne Passwort.</p>
+            <p className="hint">Ab jetzt hält Eselsohr die Termine automatisch aktuell – Absagen und Verlegungen inklusive. Ganz ohne Passwort.</p>
           </>
         )}
       </form>

@@ -8,7 +8,7 @@ const BASE = 'https://phpkyzujpvrsypqqptlv.supabase.co'
 const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBocGt5enVqcHZyc3lwcXFwdGx2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0MjA2MjAsImV4cCI6MjA5NTk5NjYyMH0.t7wCh6Juzkn9cyshpy78ZfJ_G9ji8pko_v1hoOzui8w'
 const JOIN_CODE = 'r3EDDDJf0t4U4Zep8_tTXw'
 const SK = 'vereinsapp_v14'
-const AUTH_KEY = 'nestwerk-verein-auth'
+const AUTH_KEY = 'eselsohr-verein-auth'
 
 export const TYPE_LABEL = {
   training: 'Training',
@@ -109,7 +109,7 @@ export async function fetchVereinData() {
   return merged
 }
 
-/** Vereins-Termine eines Teams in Nestwerk-Termine umwandeln. */
+/** Vereins-Termine eines Teams in Eselsohr-Termine umwandeln. */
 export function mapTeamEvents(data, tid, memberId) {
   return (data.events || [])
     .filter((ev) => ev.tid === tid && ev.date && /^\d{4}-\d{2}-\d{2}$/.test(ev.date))
