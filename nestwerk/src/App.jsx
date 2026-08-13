@@ -363,6 +363,108 @@ function EventSheet({ initial, members, me, onSave, onDelete, onClose }) {
 
 /* ================= Gedächtnispalast (E2E-verschlüsselt, lokal) ================= */
 
+const GROUPS = ['Familie', 'Freunde', 'Nachbarn', 'Verein', 'Arbeit', 'Schule & Kita', 'Sonstige']
+
+/* Geburtstag: „16.08.1978“ oder „16.08.“ → Alter und Countdown */
+function gebInfo(s) {
+  const m = String(s || '').trim().match(/^(\d{1,2})\.(\d{1,2})\.?(\d{4})?$/)
+  if (!m) return null
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  let next = new Date(now.getFullYear(), +m[2] - 1, +m[1])
+  if (next < today) next = new Date(now.getFullYear() + 1, +m[2] - 1, +m[1])
+  const days = Math.round((next - today) / 86400000)
+  return { days, age: m[3] ? next.getFullYear() - +m[3] : null }
+}
+
+/* Kontaktfoto: auf 128 px quadratisch verkleinern (wird verschlüsselt gespeichert) */
+async function shrinkPhoto(file) {
+  const url = URL.createObjectURL(file)
+  try {
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url })
+    const c = document.createElement('canvas')
+    c.width = c.height = 128
+    const s = Math.min(img.width, img.height)
+    c.getContext('2d').drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, 128, 128)
+    return c.toDataURL('image/jpeg', 0.82).split(',')[1]
+  } finally {
+    URL.revokeObjectURL(url)
+  }
+}
+
+const PersonAvatar = ({ p, size = 38 }) => p.foto
+  ? <img className="avatar member" style={{ width: size, height: size, objectFit: 'cover', background: 'none' }} src={'data:image/jpeg;base64,' + p.foto} alt="" />
+  : <span className="avatar" style={{ width: size, height: size, fontSize: size * 0.4 }}>{(p.name || '?')[0].toUpperCase()}</span>
+
+/* Professionelles Kontaktformular – Eingaben bleiben einfache Textfelder */
+function PersonSheet({ existing, onSave, onClose, toast }) {
+  const [f, setF] = useState(() => ({
+    name: existing?.name || '', gruppe: existing?.gruppe || 'Sonstige', ctx: existing?.ctx || '',
+    firma: existing?.firma || '', telefon: existing?.telefon || '', email: existing?.email || '',
+    adresse: existing?.adresse || '', geb: existing?.geb || '', kennengelernt: existing?.kennengelernt || '',
+    familie: existing?.familie || '', themen: existing?.themen || '', faden: existing?.faden || '',
+    foto: existing?.foto || null,
+  }))
+  const set = (k) => (e) => setF({ ...f, [k]: e.target.value })
+  const fotoInput = useRef()
+  const field = (k, label, ph, type) => (
+    <div className="field">
+      <label htmlFor={'pf-' + k}>{label}</label>
+      <input id={'pf-' + k} type={type || 'text'} value={f[k]} onChange={set(k)} placeholder={ph || ''} />
+    </div>
+  )
+  return (
+    <div className="overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <form className="sheet" style={{ maxWidth: 480 }} onSubmit={(e) => {
+        e.preventDefault()
+        if (f.name.trim()) onSave({ ...f, name: f.name.trim() }, existing?.id)
+      }}>
+        <h3>{existing ? 'Kontakt bearbeiten' : 'Neuer Kontakt'}<button type="button" className="x" onClick={onClose} aria-label="Schließen">✕</button></h3>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 12 }}>
+          <PersonAvatar p={f} size={56} />
+          <button type="button" className="btn ghost sm" onClick={() => fotoInput.current?.click()}>
+            {f.foto ? 'Foto ändern' : '📷 Foto hinzufügen'}
+          </button>
+          {f.foto && <button type="button" className="btn ghost sm" onClick={() => setF({ ...f, foto: null })}>Entfernen</button>}
+          <input ref={fotoInput} type="file" accept="image/*" style={{ display: 'none' }}
+            onChange={async (e) => {
+              const file = e.target.files?.[0]
+              e.target.value = ''
+              if (!file) return
+              try { setF({ ...f, foto: await shrinkPhoto(file) }) } catch { toast('Foto konnte nicht gelesen werden') }
+            }} />
+        </div>
+        <div className="grid2">
+          {field('name', 'Name *', 'z. B. Jürgen Weber')}
+          <div className="field">
+            <label htmlFor="pf-gruppe">Gruppe</label>
+            <select id="pf-gruppe" value={f.gruppe} onChange={set('gruppe')}>
+              {GROUPS.map((g) => <option key={g} value={g}>{g}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="grid2">
+          {field('ctx', 'Woher / Rolle', 'z. B. Nachbar · seit 2019')}
+          {field('firma', 'Firma / Beruf', 'z. B. Schreinerei Weber')}
+        </div>
+        <div className="grid2">
+          {field('telefon', 'Telefon', 'für 📞 Anrufen', 'tel')}
+          {field('email', 'E-Mail', 'für ✉️ Schreiben', 'email')}
+        </div>
+        {field('adresse', 'Adresse', 'für 🚗 Route')}
+        <div className="grid2">
+          {field('geb', 'Geburtstag', '16.08.1978 oder 16.08.')}
+          {field('kennengelernt', 'Kennengelernt', 'z. B. 2019, Straßenfest')}
+        </div>
+        {field('familie', 'Familie & Umfeld', 'Partner, Kinder (Vornamen!), Haustiere')}
+        {field('themen', 'Themen & Hobbys', 'worüber man immer reden kann')}
+        {field('faden', 'Offener Faden', 'letztes Gespräch, offene Frage')}
+        <button className="btn" style={{ width: '100%' }}>Speichern</button>
+      </form>
+    </div>
+  )
+}
+
 const EMPTY_MEMORY = { persons: [], docs: [], sections: [] }
 const SEC_COLORS = ['#8B5CF6', '#FF5D73', '#FFB02E', '#2FBF71', '#00B8C4', '#FF7A3D']
 const TAG_RE = /#[A-Za-z0-9äöüÄÖÜß_-]+/g
@@ -418,6 +520,8 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
   const [pageId, setPageId] = useState(null)
   const [pageMode, setPageMode] = useState('view')
   const [addSec, setAddSec] = useState('')
+  const [personSheet, setPersonSheet] = useState(null) // 'new' | Personen-ID
+  const [gFilter, setGFilter] = useState(null)
   const [docSel, setDocSel] = useState(null)
   const docInput = useRef()
   const flushTimer = useRef()
@@ -477,6 +581,14 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
       persist(pendingMem.current)
       pendingMem.current = null
     }
+  }
+
+  function savePerson(data, id) {
+    persist(id
+      ? { ...mem, persons: mem.persons.map((x) => (x.id === id ? { ...x, ...data } : x)) }
+      : { ...mem, persons: [{ id: uid(), notizen: [], ...data }, ...mem.persons] })
+    setPersonSheet(null)
+    toast(id ? 'Kontakt gespeichert ✓' : data.name + ' angelegt ✓ – verschlüsselt')
   }
 
   function lock() {
@@ -549,19 +661,40 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
     const p = mem.persons.find((x) => x.id === sel)
     if (!p) { setSel(null); return null }
     const upd = (patch) => persist({ ...mem, persons: mem.persons.map((x) => (x.id === p.id ? { ...x, ...patch } : x)) })
+    const gi = gebInfo(p.geb)
     return (
       <section className="screen">
         <button className="btn ghost" style={{ margin: '12px 0 10px' }} onClick={() => setSel(null)}>‹ Zurück</button>
-        <h2 className="screen-title serif">{p.name}</h2>
-        <p className="screen-sub">{p.ctx || 'Woher kennt ihr euch?'}</p>
-        <div className="card">
-          {[['familie', 'Familie'], ['themen', 'Themen'], ['faden', 'Offener Faden'], ['geb', 'Geburtstag']].map(([k, label]) => (
-            <div className="fact" key={k}>
-              <b>{label}</b>
-              <input style={{ flex: 1, font: 'inherit', border: 0, background: 'none', color: 'inherit', outline: 'none' }}
-                value={p[k] || ''} placeholder="…" onChange={(e) => upd({ [k]: e.target.value })} />
+        <div style={{ display: 'flex', gap: 14, alignItems: 'center', margin: '4px 2px 8px' }}>
+          <PersonAvatar p={p} size={64} />
+          <div style={{ minWidth: 0 }}>
+            <h2 className="screen-title serif" style={{ margin: 0 }}>{p.name}</h2>
+            <p className="screen-sub" style={{ margin: 0 }}>
+              {[p.ctx, p.firma].filter(Boolean).join(' · ') || 'Woher kennt ihr euch?'}
+            </p>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
+              {p.gruppe && <span className="chip brand">{p.gruppe}</span>}
+              {gi && gi.days <= 14 && <span className="chip honey">🎂 {gi.days === 0 ? 'HEUTE' : 'in ' + gi.days + ' Tag' + (gi.days === 1 ? '' : 'en')}{gi.age ? ' · wird ' + gi.age : ''}</span>}
             </div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+          {p.telefon && <a className="btn" href={'tel:' + p.telefon}>📞 Anrufen</a>}
+          {p.email && <a className="btn ghost" href={'mailto:' + p.email}>✉️ Schreiben</a>}
+          {p.adresse && <a className="btn ghost" href={'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(p.adresse)} target="_blank" rel="noreferrer">🚗 Route</a>}
+          <button className="btn ghost" onClick={() => setPersonSheet(p.id)}>✏️ Bearbeiten</button>
+        </div>
+        <div className="card">
+          {[
+            ['Familie', p.familie], ['Themen', p.themen], ['Offener Faden', p.faden],
+            ['Geburtstag', p.geb ? p.geb + (gi?.age ? ` · wird ${gi.age}` : '') + (gi ? ` · in ${gi.days} Tagen` : '') : ''],
+            ['Kennengelernt', p.kennengelernt], ['Telefon', p.telefon], ['E-Mail', p.email], ['Adresse', p.adresse],
+          ].filter(([, v]) => v).map(([label, v]) => (
+            <div className="fact" key={label}><b>{label}</b><span>{v}</span></div>
           ))}
+          {!p.familie && !p.themen && !p.telefon && (
+            <div className="empty">Noch wenig bekannt – „✏️ Bearbeiten“ öffnet das vollständige Kontaktformular.</div>
+          )}
         </div>
         {(p.faden || p.themen) && (
           <div className="qcard">
@@ -601,9 +734,13 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
         })()}
         <p className="hint">
           <button className="btn danger sm" onClick={() => { persist({ ...mem, persons: mem.persons.filter((x) => x.id !== p.id) }); setSel(null) }}>
-            Person löschen
+            Kontakt löschen
           </button>
         </p>
+        {personSheet !== null && (
+          <PersonSheet existing={personSheet === 'new' ? null : mem.persons.find((x) => x.id === personSheet)}
+            onSave={savePerson} onClose={() => setPersonSheet(null)} toast={toast} />
+        )}
       </section>
     )
   }
@@ -668,7 +805,7 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
   }
 
   const search = ql ? {
-    persons: mem.persons.filter((p) => [p.name, p.ctx, p.familie, p.themen, p.faden, p.geb, (p.notizen || []).join(' ')].join(' ').toLowerCase().includes(ql)),
+    persons: mem.persons.filter((p) => [p.name, p.ctx, p.firma, p.gruppe, p.telefon, p.email, p.adresse, p.kennengelernt, p.familie, p.themen, p.faden, p.geb, (p.notizen || []).join(' ')].join(' ').toLowerCase().includes(ql)),
     pages: sections.flatMap((s) => s.pages.filter((p) => (p.title + ' ' + p.text).toLowerCase().includes(ql)).map((p) => ({ s, p }))),
     docs: (mem.docs || []).filter((d) => d.name.toLowerCase().includes(ql)),
   } : null
@@ -756,27 +893,58 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
         </div>
 
         {sec === '_personen' && (
-          <div className="on-wide card">
-            {mem.persons.map((p) => (
-              <button className="row" key={p.id} onClick={() => setSel(p.id)}>
-                <span className="avatar">{(p.name || '?')[0].toUpperCase()}</span>
+          <div className="on-wide">
+            {(() => {
+              const groups = [...new Set(mem.persons.map((p) => p.gruppe).filter(Boolean))]
+              return groups.length > 0 && (
+                <div className="legend" style={{ margin: '0 0 10px' }}>
+                  {groups.map((g) => (
+                    <button key={g} type="button" className={'chip' + (gFilter && gFilter !== g ? ' off' : '')}
+                      onClick={() => setGFilter(gFilter === g ? null : g)}>{g}</button>
+                  ))}
+                </div>
+              )
+            })()}
+            <div className="card">
+              {[...mem.persons]
+                .filter((p) => !gFilter || p.gruppe === gFilter)
+                .sort((a, b) => {
+                  const ga = gebInfo(a.geb), gb = gebInfo(b.geb)
+                  return ((ga && ga.days <= 14) ? ga.days : 99) - ((gb && gb.days <= 14) ? gb.days : 99) || (a.name || '').localeCompare(b.name || '')
+                })
+                .map((p) => {
+                  const gi = gebInfo(p.geb)
+                  return (
+                    <button className="row" key={p.id} onClick={() => setSel(p.id)}>
+                      <PersonAvatar p={p} />
+                      <div className="row-main">
+                        <div className="row-title">{p.name}</div>
+                        <div className="row-meta">{[p.ctx, p.firma].filter(Boolean).join(' · ') || p.gruppe || '—'}</div>
+                      </div>
+                      {gi && gi.days <= 14 && <span className="chip honey">🎂 {gi.days === 0 ? 'heute' : gi.days + ' Tg.'}</span>}
+                      <span className="chev">›</span>
+                    </button>
+                  )
+                })}
+              {!mem.persons.length && <div className="empty">Noch keine Kontakte – leg unten den ersten an.</div>}
+              <button className="row" onClick={() => setPersonSheet('new')}>
+                <RowIcon name="user" />
                 <div className="row-main">
-                  <div className="row-title">{p.name}</div>
-                  <div className="row-meta">{p.ctx || '—'}</div>
+                  <div className="row-title">Vollständigen Kontakt anlegen</div>
+                  <div className="row-meta">Mit Foto, Gruppe, Telefon, Geburtstag, Adresse …</div>
                 </div>
                 <span className="chev">›</span>
               </button>
-            ))}
-            {!mem.persons.length && <div className="empty">Noch keine Personen – leg unten die erste an.</div>}
-            <div className="quickadd">
-              <input value={addName} onChange={(e) => setAddName(e.target.value)} placeholder="Name" aria-label="Name" style={{ maxWidth: 130 }} />
-              <input value={addCtx} onChange={(e) => setAddCtx(e.target.value)} placeholder="Woher? (z. B. Nachbar)" aria-label="Kontext" />
-              <button type="button" className="btn sm" onClick={() => {
-                if (!addName.trim()) return
-                persist({ ...mem, persons: [{ id: uid(), name: addName.trim(), ctx: addCtx.trim(), notizen: [] }, ...mem.persons] })
-                setAddName(''); setAddCtx('')
-                toast('Person angelegt ✓')
-              }}>+</button>
+              <div className="quickadd">
+                <input value={addName} onChange={(e) => setAddName(e.target.value)} placeholder="Schnell: Name" aria-label="Name" style={{ maxWidth: 130 }} />
+                <input value={addCtx} onChange={(e) => setAddCtx(e.target.value)} placeholder="Woher? (z. B. Nachbar)" aria-label="Kontext" />
+                <button type="button" className="btn sm" onClick={() => {
+                  if (!addName.trim()) return
+                  persist({ ...mem, persons: [{ id: uid(), name: addName.trim(), ctx: addCtx.trim(), gruppe: 'Sonstige', notizen: [] }, ...mem.persons] })
+                  setAddName(''); setAddCtx('')
+                  toast('Kontakt angelegt ✓ – Details jederzeit per ✏️')
+                }}>+</button>
+              </div>
             </div>
           </div>
         )}
@@ -873,6 +1041,10 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
           </>
         )}
       </div>
+      )}
+      {personSheet !== null && (
+        <PersonSheet existing={personSheet === 'new' ? null : mem.persons.find((x) => x.id === personSheet)}
+          onSave={savePerson} onClose={() => setPersonSheet(null)} toast={toast} />
       )}
       {docSel && (() => {
         const d = (mem.docs || []).find((x) => x.id === docSel)
