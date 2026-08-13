@@ -12,7 +12,7 @@ import { LANG_SWITCHER_ENABLED, LangSwitcher, FloatingLangSwitcher, getFontScale
 import { DFB_FORMATS, dfbFormatForCat, CAT_YEARS, catYearsStr, CAT_ORDER, eligibleCats, playerFitType, playerFitsTeam, fitLabel } from "./dfb.js";
 import { CAT_RANK, defaultSoll, SOLL_PLAYERS_BY_CAT, _votedYes, isPausedP, drillScores, drillVoteOf, playerNoShowEvents, NO_SHOW_HINT_THRESHOLD, addAuditLog, suggestDrillsForSkill, generateTrainingPlan, SKILLS, SKILL_AXES, skillAxesFor, sollFor, trainingFocusFor, buildSession, playerArchetype, AXIS_TO_FOCUS, staffNeed } from "./domain.js";
 import { TRAINING_TEMPLATES, DRILL_LIB } from "./drills.js";
-import { DFBFormatsCard, TacticField, StyleToggle, DrillDiagram, DrillLibrary, TacticBoard, TrainingsLibrary, TrainingPlanner, TrainerGuide, TrainingPlanTab, DrillAutoAnim, DrillInfoModal, CAT_TO_AGEKEY, DRILL_FOCUS, TACTIC_TEMPLATES, drillsForPhase, eventDurationMin, WeeklySoloCard, WeeklyQuizCard, KidAchievements } from "./training.jsx";
+import { DFBFormatsCard, TacticField, StyleToggle, DrillDiagram, DrillLibrary, TacticBoard, TrainingsLibrary, TrainingPlanner, TrainerGuide, TrainingPlanTab, DrillAutoAnim, DrillInfoModal, CAT_TO_AGEKEY, DRILL_FOCUS, TACTIC_TEMPLATES, drillsForPhase, eventDurationMin, WeeklySoloCard, WeeklyQuizCard, KidAchievements, calcInventory } from "./training.jsx";
 
 // Demo-Daten (nutzen DEMO_CLUBS/tournPubSnapshot weiter unten; Funktions-Hoisting)
 function seed() {
@@ -2380,7 +2380,7 @@ function EventIcon({ type, size=22, color="#16a34a" }) {
 }
 const EVENT_TYPE_ALIAS = { spiel:"heimspiel", heim:"heimspiel", ausw:"auswarts", freund:"freundschaft" };
 
-function BottomNav({ tab, setTab, isAdmin, isHelper, isParent=false, parentStats=true, unread, inboxUnread=0, cl, hide=false }) {
+function BottomNav({ tab, setTab, isAdmin, isHelper, isParent=false, parentStats=true, unread, inboxUnread=0, cl, hide=false, mods={} }) {
   if(hide) return null;
   const t = TH(cl);
   const { tr } = useT();
@@ -2397,7 +2397,7 @@ function BottomNav({ tab, setTab, isAdmin, isHelper, isParent=false, parentStats
   ] : [
     { id:"events",  label:tr("tabEvents"),  icon:"K" },
     { id:"team",    label:tr("navTeam"),     icon:"P", hidden: isHelper },
-    { id:"taktik",  label:"Taktik",           icon:"TK", hidden: isHelper },
+    { id:"taktik",  label:"Taktik",           icon:"TK", hidden: isHelper||mods.taktik===false },
     { id:"fields",  label:tr("tabFields"),    icon:"F", hidden: isHelper||!feat("fields_booking")||!clubFeat("mod_fields") },
     { id:"chat",    label:tr("tabChat"),     icon:"C", badge: unread, hidden: !feat("chat_team") },
     { id:"more",    label:tr("navMore"),     icon:"=", badge: inboxUnread },
@@ -2408,14 +2408,15 @@ function BottomNav({ tab, setTab, isAdmin, isHelper, isParent=false, parentStats
       label: tr("secManage"),
       items: [
         { id:"tinbox",    label: inboxUnread>0?`${tr("tabInbox")} (${inboxUnread})`:tr("tabInbox"), icon:"I", hidden: !isTrainer },
-        { id:"treasury",  label:tr("navTreasury"),        icon:"€", hidden: isHelper },
-        { id:"training",  label:tr("navTraining"), icon:"TP", hidden: isHelper||!feat("training_plans")||!clubFeat("mod_training") },
+        { id:"treasury",  label:tr("navTreasury"),        icon:"€", hidden: isHelper||mods.kasse===false },
+        { id:"training",  label:tr("navTraining"), icon:"TP", hidden: isHelper||!feat("training_plans")||!clubFeat("mod_training")||mods.training===false },
         { id:"jerseys",    label:tr("tabJerseys"),      icon:"T", hidden: isHelper||!feat("jerseys_tab")||!clubFeat("mod_jerseys") },
-        { id:"helpers",    label:tr("tabHelpers"),       icon:"H", hidden: isHelper },
+        { id:"helpers",    label:tr("tabHelpers"),       icon:"H", hidden: isHelper||mods.helfer===false },
         { id:"templates",  label:tr("tabTemplates"),     icon:"V", hidden: isHelper },
         { id:"results",    label:tr("navResults"),   icon:"E", hidden: isHelper||!feat("results_tab")||!clubFeat("mod_results") },
         { id:"attendance", label:tr("navAttendance"),  icon:"S", hidden: isHelper||!feat("attendance_tab") },
         { id:"waitlist",   label:"Warteliste",         icon:"WL", hidden: isHelper },
+        { id:"module",     label:"🧩 Module",           icon:"MO", hidden: isHelper },
       ].filter(x=>!x.hidden),
     },
     isAdmin && {
@@ -3624,7 +3625,36 @@ function CashbookTab({ data, myTids, save, fire, cl }){
     </div>
   );
 }
-function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false, initialSubTab }) {
+// Freundschafts-Netz: was die Eltern unter "Freunde im Team" gepflegt haben -
+// als Trainer-Auswertung. Fliesst in Aufstellungs-Vorschlag (Freunde gewichten)
+// und Trainingsgruppen ein; die Rotation mischt bewusst regelmaessig durch.
+function FriendNetCard({data,myTids}){
+  const players=(data.playerProfiles||[]).filter(p=>myTids.includes(p.mainTid)&&!p.archived);
+  const withFr=players.filter(p=>(p.friends||[]).length);
+  if(!withFr.length) return null;
+  const nameSet=new Set(players.map(p=>p.name));
+  const pairs=[]; const oneway=[];
+  withFr.forEach(p=>(p.friends||[]).forEach(f=>{ if(!nameSet.has(f)) return;
+    const other=players.find(q=>q.name===f);
+    if(other&&(other.friends||[]).includes(p.name)){ const k=[p.name,f].sort().join("|"); if(!pairs.some(x=>x.k===k)) pairs.push({k,a:p.name,b:f}); }
+    else oneway.push({a:p.name,b:f});
+  }));
+  return (
+    <div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:14,padding:"13px 15px",marginTop:14}}>
+      <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.4,marginBottom:4}}>🤝 FREUNDSCHAFTS-NETZ</div>
+      <div style={{fontSize:11.5,color:"#64748b",lineHeight:1.5,marginBottom:9}}>Von den Eltern gepflegt („Freunde im Team"). Wird beim Aufstellungs-Vorschlag (Freunde gewichten) und in Trainingsgruppen berücksichtigt – die Rotation mischt bewusst regelmäßig durch.</div>
+      {pairs.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:oneway.length?8:0}}>
+        {pairs.map(x=><span key={x.k} style={{fontSize:12,fontWeight:700,color:"#15803d",background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:99,padding:"4px 11px"}}>{x.a} ↔ {x.b}</span>)}
+      </div>}
+      {oneway.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+        {oneway.map((x,i)=><span key={i} style={{fontSize:12,fontWeight:600,color:"#64748b",background:"#f8fafc",border:"1.5px dashed #cbd5e1",borderRadius:99,padding:"4px 11px"}}>{x.a} → {x.b}</span>)}
+      </div>}
+      <div style={{fontSize:10.5,color:"#94a3b8",marginTop:8}}>↔ beidseitig genannt · → einseitig genannt</div>
+    </div>
+  );
+}
+
+function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false, initialSubTab, mods={} }) {
   const [subTab, setSubTab] = useState(initialSubTab || "players"); // players | attendance | stats
   const t = TH(cl);
   const { tr } = useT();
@@ -3650,11 +3680,12 @@ function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false, initial
     { id:"boerse",     label:"🌐 "+tr("subMarket"),   icon:"B" },
   ];
   // Reiter thematisch gruppieren, damit nichts in einer unsichtbaren Scroll-Leiste verschwindet.
+  // Modul-Abwahl des Trainer-Teams blendet ganze Bereiche aus (Mehr -> Module)
   const GROUPS = [
     { id:"kader", label:"👥 Kader",        ids:["manage","players","attendance"] },
-    { id:"ausw",  label:"📊 Auswertung",   ids:["insights","analysis","results","bericht"] },
-    { id:"train", label:"⚽ Training",      ids:["planner","trainings","drills","taktik","ziele"] },
-    { id:"org",   label:"🗂️ Organisation", ids:["kasse","boerse"] },
+    { id:"ausw",  label:"📊 Auswertung",   ids: mods.skills===false?["results"]:["insights","analysis","results","bericht"] },
+    { id:"train", label:"⚽ Training",      ids: mods.training===false?(mods.taktik===false?[]:["taktik"]):(mods.taktik===false?["planner","trainings","drills","ziele"]:["planner","trainings","drills","taktik","ziele"]) },
+    { id:"org",   label:"🗂️ Organisation", ids: mods.kasse===false?["boerse"]:["kasse","boerse"] },
   ].map(g=>({ ...g, tabs:g.ids.map(id=>subTabs.find(s=>s.id===id)).filter(Boolean) })).filter(g=>g.tabs.length);
   const activeGroup = GROUPS.find(g=>g.tabs.some(s=>s.id===subTab)) || GROUPS[0];
   return (
@@ -3689,7 +3720,7 @@ function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false, initial
         ))}
       </div>
       <AreaIntro id={"team_"+subTab} cl={cl}/>
-      {subTab==="players"    && <PlayersTab    data={data} myTids={myTids} save={save} fire={fire} cl={cl} session={session}/>}
+      {subTab==="players"    && <><PlayersTab    data={data} myTids={myTids} save={save} fire={fire} cl={cl} session={session}/><FriendNetCard data={data} myTids={myTids}/></>}
       {subTab==="attendance" && <AttendanceTab data={data} myTids={myTids} cl={cl} save={save} fire={fire} session={session}/>}
       {subTab==="results"    && <LeagueTab     data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
       {subTab==="kasse"      && <CashbookTab   data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
@@ -7146,7 +7177,11 @@ function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,pre
   const startAfterPw = (tid2,name) => { if(hasConsent(tid2,name)){ onDone(tid2,name); } else { setConsentChk(false); setChildPwNew(""); setObStep(1); setPendingName({tid:tid2,name}); } };
   const pickName = (tid2,name) => {
     const prof=profileFor(tid2,name);
-    if(prof?.childPw){ setPwTry(""); setPwErr(false); setPwGate({tid:tid2,name}); return; }   // Kind-Passwort abfragen
+    if(prof?.childPw){
+      // Geraet kennt das Kind-Passwort bereits (frueher korrekt eingegeben)? Dann durchwinken.
+      try{ if(localStorage.getItem("va_childok_"+prof.id)===prof.childPw){ startAfterPw(tid2,name); return; } }catch{}
+      setPwTry(""); setPwErr(false); setPwGate({tid:tid2,name}); return;
+    }
     startAfterPw(tid2,name);
   };
   const confirmConsent = () => {
@@ -7174,6 +7209,18 @@ function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,pre
     }
    
   },[preselectTid]);
+  // Geraet kennt das Team-Passwort schon? Dann direkt zur Namensliste (Kind wechseln
+  // ohne erneute Passwort-Eingabe). Bei geaendertem Team-Passwort greift es nicht mehr.
+  const ctSkip=teams.find(x=>x.id===tid);
+  React.useEffect(()=>{
+    if(step!=="pwd"||!ctSkip||ctSkip.locked) return;
+    try{
+      if(localStorage.getItem("va_teamok_"+ctSkip.id)===(ctSkip.pwd||"1")){
+        const assigned=(playerProfiles||[]).some(p2=>p2.mainTid===ctSkip.id);
+        setStep(assigned?"name":"locked");
+      }
+    }catch{}
+  },[step,tid]);
   const ct=teams.find(x=>x.id===tid);
   const cats=[...new Set(teams.map(tm=>tm.cat||tm.name))];
   const teamsInCat=cat?teams.filter(tm=>(tm.cat||tm.name)===cat):[];
@@ -7245,7 +7292,7 @@ function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,pre
         </div>
         <div style={{background:"rgba(255,255,255,.1)",backdropFilter:"blur(16px)",borderRadius:22,padding:"24px 22px",border:"1px solid rgba(255,255,255,.15)"}}>
           <PwInput value={pwd} onChange={e=>{setPwd(e.target.value);setPwdErr(false);}}
-            onKeyDown={e=>{if(e.key==="Enter"){if(ct?.locked){setPwdErr(true);}else if(checkPw(pwd,ct?.pwd||"")){const assigned=(playerProfiles||[]).some(p=>p.mainTid===ct.id);if(assigned)setStep("name");else setStep("locked");}else{setPwdErr(true);setTimeout(()=>setPwdErr(false),1800);}}}}
+            onKeyDown={e=>{if(e.key==="Enter"){if(ct?.locked){setPwdErr(true);}else if(checkPw(pwd,ct?.pwd||"")){try{localStorage.setItem("va_teamok_"+ct.id,ct?.pwd||"1");}catch{} const assigned=(playerProfiles||[]).some(p=>p.mainTid===ct.id);if(assigned)setStep("name");else setStep("locked");}else{setPwdErr(true);setTimeout(()=>setPwdErr(false),1800);}}}}
             placeholder={tr("ufPwPh")} autoFocus autoCapitalize="none" autoCorrect="off" spellCheck={false}
             style={{width:"100%",padding:"13px 16px",fontSize:16,background:"rgba(255,255,255,.12)",border:`2px solid ${pwdErr?"#ff6b6b":pwd?"rgba(255,255,255,.4)":"rgba(255,255,255,.2)"}`,borderRadius:13,outline:"none",color:"#fff",marginBottom:10}}/>
           {pwdErr&&<FriendlyError type="wrongPassword"/>}
@@ -7260,6 +7307,7 @@ function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,pre
             {tr("ufPwForgot")}
           </button>
           <button onClick={()=>{if(ct?.locked){setPwdErr(true);}else if(checkPw(pwd,ct?.pwd||"")){
+            try{localStorage.setItem("va_teamok_"+ct.id,ct?.pwd||"1");}catch{}   // Geraet merkt sich das Team-Passwort
             const assigned=(playerProfiles||[]).some(p=>p.mainTid===ct.id);
             if(assigned) setStep("name");
             else setStep("locked"); // team not yet released
@@ -7302,12 +7350,12 @@ function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,pre
             <div style={{fontWeight:900,fontSize:17,color:"#0f172a",marginBottom:4}}>{tr("pwGateT")} {maskName(pwGate.name)}</div>
             <p style={{fontSize:12.5,color:"#64748b",marginBottom:12}}>{tr("pwGateSub")}</p>
             <input type="password" autoFocus value={pwTry} onChange={e=>{setPwTry(e.target.value);setPwErr(false);}}
-              onKeyDown={e=>{ if(e.key==="Enter"){ const prof=profileFor(pwGate.tid,pwGate.name); if(prof&&checkPw(pwTry,prof.childPw)){ const g=pwGate; setPwGate(null); startAfterPw(g.tid,g.name);} else { setPwErr(true);} } }}
+              onKeyDown={e=>{ if(e.key==="Enter"){ const prof=profileFor(pwGate.tid,pwGate.name); if(prof&&checkPw(pwTry,prof.childPw)){ try{localStorage.setItem("va_childok_"+prof.id,prof.childPw);}catch{} const g=pwGate; setPwGate(null); startAfterPw(g.tid,g.name);} else { setPwErr(true);} } }}
               placeholder={tr("pwGatePh")} style={{width:"100%",padding:"12px 14px",fontSize:15,border:`1.5px solid ${pwErr?"#fca5a5":"#e2e8f0"}`,borderRadius:12,outline:"none",fontFamily:"inherit",boxSizing:"border-box",marginBottom:pwErr?6:12}}/>
             {pwErr&&<div style={{fontSize:12,color:"#dc2626",fontWeight:700,marginBottom:8}}>{tr("pwGateErr")}</div>}
             <div style={{display:"flex",gap:9}}>
               <button onClick={()=>setPwGate(null)} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",color:"#475569"}}>{tr("cgCancel")}</button>
-              <button onClick={()=>{ const prof=profileFor(pwGate.tid,pwGate.name); if(prof&&checkPw(pwTry,prof.childPw)){ const g=pwGate; setPwGate(null); startAfterPw(g.tid,g.name);} else { setPwErr(true);} }}
+              <button onClick={()=>{ const prof=profileFor(pwGate.tid,pwGate.name); if(prof&&checkPw(pwTry,prof.childPw)){ try{localStorage.setItem("va_childok_"+prof.id,prof.childPw);}catch{} const g=pwGate; setPwGate(null); startAfterPw(g.tid,g.name);} else { setPwErr(true);} }}
                 style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>{tr("pwGateBtn")}</button>
             </div>
             <div style={{fontSize:11,color:"#64748b",marginTop:10,textAlign:"center"}}>{tr("pwHintReset")}</div>
@@ -14703,10 +14751,17 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const meTrainer = session.role==="trainer" ? (data.trainers||[]).find(x=>x.id===session.id) : null;
   const meHelper  = session.role==="helper"  ? (data.helpers||[]).find(x=>x.id===session.id) : null;
   const [trainerWelcomeOpen, setTrainerWelcomeOpen] = useState(()=>!!(meTrainer && meTrainer.onboarded!==true));
+  const [modWizardManual,setModWizardManual]=useState(false);
+  useEffect(()=>{ if(tab==="module"){ setModWizardManual(true); setTab("events"); } },[tab]);
   const [helperWelcomeOpen,  setHelperWelcomeOpen]  = useState(()=>!!(meHelper  && meHelper.onboarded!==true));
   const { trigger: shareTrigger,dismiss: dismissShare } = useShareTrigger(local,session,myTids);
   const [delConf,setDelConf]=useState(null); const [viewEv,setViewEv]=useState(null); const [delConfVal,setDelConfVal]=useState(null);
-  const [evTab,setEvTab]=useState("rueck");                       // Termin-Ansicht als Tabs
+  const [evTab,setEvTab]=useState("rueck");
+  const [briefEv,setBriefEv]=useState(null);   // Spickzettel-Modal
+  // Module je Team: Trainer stimmen ab (Mehrheit); ohne abgegebene Stimmen ist
+  // alles AN (Bestandsschutz). Bei Gleichstand bleibt das Modul aktiv.
+  const teamModOn=(tm,key)=>{ const vs=Object.values(tm?.moduleVotes||{}).filter(v=>v&&(key in v)); if(!vs.length) return true; return vs.filter(v=>v[key]).length*2>=vs.length; };
+  const modOn=key=>{ const tms=(local.teams||[]).filter(tm=>myTids.includes(tm.id)); return tms.length?tms.some(tm=>teamModOn(tm,key)):true; };                       // Termin-Ansicht als Tabs
   useEffect(()=>{ setEvTab("rueck"); },[viewEv?.id]);
   const [editConf,setEditConf]=useState(null);
   const [pauseSer,setPauseSer]=useState(null); // {ev,from,to} Ferien-Pause fuer eine Serie
@@ -14758,7 +14813,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
     fire(locked ? "Späte Anmeldung erfasst" : val==="yes"?"Du bist dabei":"Du hast abgesagt");
   };
   const tod=now(); const up=myEvs.filter(e=>e.date>=tod); const past=myEvs.filter(e=>e.date<tod).reverse();
-  const _in10=addD(now(),10); const soon=up.filter(e=>e.date<=_in10); const later=up.filter(e=>e.date>_in10);
+  const _in10=addD(now(),21); const soon=up.filter(e=>e.date<=_in10); const later=up.filter(e=>e.date>_in10);
   const [showLater,setShowLater]=useState(false);
 
   if(wizard||editEv) return <Wizard teams={local.teams.filter(x=>myTids.includes(x.id))} cl={myClub} editEv={editEv}
@@ -14919,6 +14974,29 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             if(todos.length===0) return null;
             return (
               <div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:18,padding:"14px 16px",marginBottom:14}}>
+                {(()=>{ const reqs=(local.deletionRequests||[]).filter(r=>r.cid===cid&&r.status==="pending");
+                  if(!reqs.length) return null;
+                  const doDel=(r)=>{ if(!window.confirm(`ENDGÜLTIG löschen: Alle Daten von „${r.name}" werden entfernt. Das lässt sich nicht rückgängig machen. Fortfahren?`)) return;
+                    save({...local,
+                      playerProfiles:(local.playerProfiles||[]).filter(p2=>r.pid?p2.id!==r.pid:!(p2.cid===cid&&(p2.name||"").toLowerCase()===r.name.toLowerCase())),
+                      deletionRequests:(local.deletionRequests||[]).map(x=>x.id===r.id?{...x,status:"done",decidedAt:new Date().toISOString(),decidedBy:session.name}:x),
+                      securityLog:[...(local.securityLog||[]),{id:uid(),cid,ts:new Date().toISOString(),type:"dsgvo_delete",msg:`Löschantrag von „${r.name}" durch ${session.name} bestätigt – Profil gelöscht.`}].slice(-500)});
+                    fire("Daten gelöscht (DSGVO)"); };
+                  const doReject=(r)=>{ save({...local,
+                      deletionRequests:(local.deletionRequests||[]).map(x=>x.id===r.id?{...x,status:"rejected",decidedAt:new Date().toISOString(),decidedBy:session.name}:x),
+                      securityLog:[...(local.securityLog||[]),{id:uid(),cid,ts:new Date().toISOString(),type:"dsgvo_reject",msg:`Löschantrag von „${r.name}" durch ${session.name} abgelehnt (mutmaßlich unberechtigt).`}].slice(-500)});
+                    fire("Antrag abgelehnt – Daten bleiben erhalten"); };
+                  return reqs.map(r=>{ const left=Math.max(0,2*86400000-(Date.now()-Date.parse(r.ts))); const expired=left<=0;
+                    return (
+                    <div key={r.id} style={{background:"#fef2f2",border:"2px solid #fecaca",borderRadius:14,padding:"12px 14px",marginBottom:10}}>
+                      <div style={{fontWeight:900,fontSize:14,color:"#991b1b"}}>🗑 Löschantrag: {r.name}</div>
+                      <div style={{fontSize:12,color:"#7f1d1d",lineHeight:1.5,marginTop:3}}>Jemand hat die endgültige Löschung aller Daten von „{r.name}" beantragt. Bitte prüfe, ob der Antrag wirklich von den Erziehungsberechtigten kommt (kurz nachfragen!). {expired?"⚠ Frist abgelaufen – Antrag verfällt, bei Bedarf neu stellen lassen.":`Noch ${Math.ceil(left/3600000)} Std. zur Bestätigung.`}</div>
+                      {!expired&&<div style={{display:"flex",gap:8,marginTop:9}}>
+                        <button onClick={()=>doDel(r)} style={{flex:1,padding:"9px",borderRadius:10,border:"none",background:"#dc2626",color:"#fff",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Löschung bestätigen</button>
+                        <button onClick={()=>doReject(r)} style={{flex:1,padding:"9px",borderRadius:10,border:"1.5px solid #e2e8f0",background:"#fff",color:"#334155",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Ablehnen</button>
+                      </div>}
+                    </div>); });
+                })()}
                 <div style={{fontWeight:900,fontSize:15,color:"#0f172a",marginBottom:10}}>✅ Zu erledigen <span style={{color:"#64748b",fontWeight:700,fontSize:13}}>({todos.length})</span></div>
                 <div style={{display:"flex",flexDirection:"column",gap:7}}>
                   {todos.slice(0,12).map((td,i)=>(
@@ -14987,14 +15065,15 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               </button>
             );
           })()}
-          {up.length>0&&<><Divider label={`NÄCHSTE 10 TAGE (${soon.length})`}/>{soon.length>0?soon.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={selfName} onSelfVote={selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={()=>openPlan(ev)} planTitle={planTitleOf(ev)}/>):<p style={{textAlign:"center",color:"#64748b",fontSize:13.5,padding:"14px 10px"}}>Keine Termine in den nächsten 10 Tagen.</p>}
+          <FerienHinweis hols={_ferienDash} from={tod} to={_in10}/>
+          {up.length>0&&<><Divider label={`NÄCHSTE 21 TAGE (${soon.length})`}/>{soon.length>0?soon.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={selfName} onSelfVote={selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={()=>setBriefEv(ev)} modTraining={modOn("training")}/>):<p style={{textAlign:"center",color:"#64748b",fontSize:13.5,padding:"14px 10px"}}>Keine Termine in den nächsten 21 Tagen.</p>}
             {later.length>0&&<>
               <button onClick={()=>setShowLater(s=>!s)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",background:showLater?"#f1f5f9":"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,cursor:"pointer",margin:"6px 0 12px",padding:"11px 14px",fontWeight:800,fontSize:13,color:"#475569",fontFamily:"inherit"}}>{showLater?"▲ Weitere Termine ausblenden":"▼ Weitere "+later.length+" Termine anzeigen"}</button>
-              {showLater&&later.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={selfName} onSelfVote={selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={()=>openPlan(ev)} planTitle={planTitleOf(ev)}/>)}
+              {showLater&&later.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={selfName} onSelfVote={selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={()=>setBriefEv(ev)} modTraining={modOn("training")}/>)}
             </>}
           </>}
           {up.length===0&&<div style={{textAlign:"center",padding:"30px",background:"#fff",borderRadius:18,border:"1.5px dashed #e2e8f0",color:"#64748b"}}><Logo cl={myClub} sz={50} sx={{margin:"0 auto 12px"}}/><p style={{fontWeight:800,fontSize:15}}>Noch keine Termine</p><p style={{fontSize:13,marginTop:3}}>Klicke oben auf "Neuen Termin anlegen"</p></div>}
-          {past.length>0&&<><Divider label={`VERGANGENE (${past.length})`} light/><div style={{opacity:.72}}>{past.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{}} onCopyLink={()=>{}}/>)}</div></>}
+          {past.length>0&&<><Divider label={`VERGANGENE (${past.length})`} light/><div style={{opacity:.72}}>{past.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{}} onCopyLink={()=>{}} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={()=>setBriefEv(ev)} modTraining={modOn("training")}/>)}</div></>}
           <AffiliateBanner trigger="events" style={{marginTop:14}}/>
           <div style={{marginTop:14}}><DFBFormatsCard cl={myClub} cats={(local.teams||[]).filter(tm=>myTids.includes(tm.id)).map(tm=>tm.cat||tm.name)}/></div>
           <div style={{marginTop:14}}><RecommendCard theme={t.p}/></div>
@@ -15022,10 +15101,11 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         {tab==="settings"   &&isAdmin&&<ClubAdminSettings data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
         {tab==="security"   &&isAdmin&&<SecurityTab data={local} cid={cid} save={save}/>}
         {tab==="access"     &&isAdmin&&<AccessManagerTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
-        {tab==="team"       &&<TeamHub key={teamSub||"team"} data={local} myTids={myTids} save={save} fire={fire} cl={myClub} session={session} isAdmin={isAdmin} initialSubTab={teamSub||undefined}/>}
+        {tab==="team"       &&<TeamHub key={teamSub||"team"} data={local} myTids={myTids} save={save} fire={fire} cl={myClub} session={session} isAdmin={isAdmin} initialSubTab={teamSub||undefined} mods={{skills:modOn("skills"),training:modOn("training"),taktik:modOn("taktik"),kasse:modOn("kasse")}}/>}
       </div>
 
       {}
+      {briefEv&&<SpickzettelModal ev={briefEv} data={local} cl={myClub} save={save} fire={fire} onClose={()=>setBriefEv(null)}/>}
       {viewEv&&<Drawer onClose={()=>setViewEv(null)} title={viewEv.title}>
         {(viewEv.venueAddr || (viewEv.loc && ["heimspiel","auswarts","freundschaft","turnier"].includes(viewEv.type))) && (
           <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([viewEv.loc,viewEv.venueAddr].filter(Boolean).join(", "))}`} target="_blank" rel="noreferrer"
@@ -15605,10 +15685,14 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
 
       {showOnboarding&&<OnboardingWizard cl={myClub} data={local} save={save} fire={fire} onDone={()=>setShowOnboarding(false)}/>}
       {trainerWelcomeOpen && meTrainer && <TrainerWelcome tr={meTrainer} data={local} save={save} onClose={()=>setTrainerWelcomeOpen(false)}/>}
+      {((meTrainer&&meTrainer.moduleWizardDone!==true&&!trainerWelcomeOpen)||modWizardManual)&&session.role==="trainer"&&(
+        <ModuleWizard data={local} session={session} myTids={myTids} cl={myClub} save={save} onClose={()=>setModWizardManual(false)}/>
+      )}
       {helperWelcomeOpen && meHelper && <HelperWelcome h={meHelper} data={local} save={save} onClose={()=>setHelperWelcomeOpen(false)}/>}
       <Toast msg={toast}/>
       {!isDesktop&&<BottomNav tab={tab} setTab={setTab} isAdmin={isAdmin} isHelper={isHelper}
-        unread={unreadMsgs} inboxUnread={unreadInbox} cl={myClub} />}
+        unread={unreadMsgs} inboxUnread={unreadInbox} cl={myClub}
+        mods={{taktik:modOn("taktik"),training:modOn("training"),helfer:modOn("helfer"),kasse:modOn("kasse")}}/>}
       
     </div>
   );
@@ -16166,7 +16250,186 @@ function eventWarnings(ev, tod, ctx={}){
   return w;
 }
 
-function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSelfVote,onRemind,onPlan,planTitle}) {
+// Spickzettel: Schnellueberblick vor dem Termin - wer kommt, wer betreut,
+// welches Material braucht der Plan, was ist am Platz vorhanden (Ressourcen),
+// und welche parallelen Einheiten konkurrieren um Tore & Co.
+function SpickzettelModal({ev,data,cl,save,fire,onClose}){
+  const t=TH(cl);
+  const team=(data.teams||[]).find(tm=>tm.id===ev.tid);
+  const vv=v=>typeof v==="object"&&v!==null?v.val:v;
+  const votes=Object.entries(ev.votes||{});
+  const yes=votes.filter(([,v])=>vv(v)==="yes").map(([n])=>n);
+  const late=votes.filter(([,v])=>vv(v)==="late").map(([n])=>n);
+  const trainersN=(data.trainers||[]).filter(x=>(x.tids||[]).includes(ev.tid)&&isActive(x)).length;
+  const offers=(ev.helperOffers||[]);
+  const blocks=ev.trainingPlan?(ev.trainingPlan.sessions?.[0]?.blocks||[]):((data.trainings||[]).find(x=>x.id===ev.trainingId)?.blocks||[]);
+  const mat=calcInventory(blocks);
+  const res=cl?.clubSettings?.resources||{};
+  const others=(data.events||[]).filter(e=>e.id!==ev.id&&e.date===ev.date&&(e.trainingPlan||e.trainingId||e.type==="training"));
+  const setRes=(k,d)=>{ const nr={...res,[k]:Math.max(0,(Number(res[k])||0)+d)};
+    save({...data,clubs:(data.clubs||[]).map(c=>c.id===cl.id?{...c,clubSettings:{...(c.clubSettings||{}),resources:nr}}:c)}); };
+  const RES=[["torKlein","Kleine Tore"],["torMittel","Mittlere Tore"],["torGross","Große Tore"],["huetchen","Hütchen"],["leibchen","Leibchen"]];
+  const Row=({l,v})=>(<div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:"#334155",padding:"3px 0"}}><span>{l}</span><b>{v}</b></div>);
+  return (
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:1350,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"90dvh",overflowY:"auto",animation:"down .22s ease",padding:"14px 20px 40px"}}>
+        <div style={{display:"flex",justifyContent:"center",marginBottom:10}}><div style={{width:44,height:4,borderRadius:99,background:"#e2e8f0"}}/></div>
+        <div style={{fontWeight:900,fontSize:18,color:"#0f172a"}}>📋 Spickzettel</div>
+        <div style={{fontSize:12.5,color:"#64748b",marginBottom:12}}>{ev.title} · {fmtDShort(ev.date)}{ev.time?" · "+ev.time+" Uhr":""}{team?" · "+team.name:""}</div>
+        <div style={{display:"flex",gap:8,marginBottom:12}}>
+          {[["👟",yes.length,"Zusagen"],["🧑\u200d🏫",trainersN,"Trainer"],["🙋",offers.length,"Helfer"]].map(([e2,v,l],i)=>(
+            <div key={i} style={{flex:1,background:"#f8fafc",borderRadius:12,padding:"10px 4px",textAlign:"center"}}>
+              <div style={{fontSize:17,fontWeight:900,color:"#0f172a"}}>{e2} {v}</div>
+              <div style={{fontSize:10.5,color:"#64748b",fontWeight:700}}>{l}</div>
+            </div>
+          ))}
+        </div>
+        {late.length>0&&<div style={{fontSize:12,color:"#b45309",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:10,padding:"7px 11px",marginBottom:10}}>⏱ Verspätet: {late.join(", ")}</div>}
+        {blocks.length>0&&(
+          <div style={{background:"#eef2ff",border:"1.5px solid #c7d2fe",borderRadius:12,padding:"11px 13px",marginBottom:10}}>
+            <div style={{fontSize:10.5,fontWeight:800,color:"#4f46e5",letterSpacing:.4,marginBottom:6}}>ABLAUF ({blocks.reduce((a,b)=>a+(Number(b.min)||0),0)} MIN)</div>
+            {blocks.map((b,i)=>(<div key={i} style={{fontSize:12.5,color:"#312e81",padding:"2px 0"}}>{i+1}. {b.phase?b.phase+": ":""}{b.title||"–"} <span style={{color:"#6366f1"}}>({b.min||"?"} Min)</span></div>))}
+          </div>
+        )}
+        <div style={{background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:12,padding:"11px 13px",marginBottom:10}}>
+          <div style={{fontSize:10.5,fontWeight:800,color:"#166534",letterSpacing:.4,marginBottom:6}}>MATERIAL LT. PLAN</div>
+          {mat.length?mat.map((m,i)=><Row key={i} l={(m.color?m.color+"e ":"")+m.label} v={m.total+" "+(m.unit||"")}/>):
+            <div style={{fontSize:12.5,color:"#166534"}}>Kein Material im Plan hinterlegt – Faustregel: 1 Ball pro Kind, 8–10 Hütchen, 1 Leibchen-Satz.</div>}
+        </div>
+        <div style={{background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"11px 13px",marginBottom:10}}>
+          <div style={{fontSize:10.5,fontWeight:800,color:"#64748b",letterSpacing:.4,marginBottom:6}}>AM PLATZ VORHANDEN (für alle Teams)</div>
+          {RES.map(([k,l])=>(
+            <div key={k} style={{display:"flex",alignItems:"center",gap:8,padding:"3px 0"}}>
+              <span style={{flex:1,fontSize:13,color:"#334155"}}>{l}</span>
+              <button onClick={()=>setRes(k,-1)} style={{width:26,height:26,borderRadius:8,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:900,cursor:"pointer"}}>−</button>
+              <span style={{minWidth:22,textAlign:"center",fontWeight:900}}>{Number(res[k])||0}</span>
+              <button onClick={()=>setRes(k,1)} style={{width:26,height:26,borderRadius:8,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:900,cursor:"pointer"}}>+</button>
+            </div>
+          ))}
+          <div style={{fontSize:10.5,color:"#94a3b8",marginTop:4}}>Einmal pflegen – gilt vereinsweit für alle Einheiten.</div>
+        </div>
+        {others.length>0&&(
+          <div style={{background:"#fff7ed",border:"1.5px solid #fed7aa",borderRadius:12,padding:"10px 13px",marginBottom:10}}>
+            <div style={{fontSize:12.5,color:"#9a3412",fontWeight:700,lineHeight:1.5}}>⚠ Am selben Tag: {others.map(o=>o.title+(o.time?" ("+o.time+")":"")).join(", ")} – Material ggf. absprechen/teilen.</div>
+          </div>
+        )}
+        <button onClick={onClose} style={{width:"100%",padding:"12px",borderRadius:12,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Schließen</button>
+      </div>
+    </div>
+  );
+}
+
+// Module der App: Trainer waehlen im Wizard, was ihr Team nutzt. Die
+// Termin-Abstimmung ist immer aktiv. Regel bei mehreren Trainern: Mehrheit
+// entscheidet; bei Gleichstand bleibt das Modul AKTIV (es stoert niemanden,
+// und wer es braucht, kann arbeiten) - der Patt wird offen angezeigt.
+const APP_MODULES=[
+  {key:"skills",  e:"🎯", t:"Skills & Entwicklung", d:"Spieler-Bewertungen, Skill-Profile, Entwicklungsziele und Team-Auswertungen (Analyse, Insights, Saison-Bericht). Ideal, wenn ihr Entwicklung dokumentieren wollt."},
+  {key:"training",e:"📋", t:"Training & Übungen",   d:"Trainingspläne, Übungsbibliothek mit Skizzen und Anleitungen, Wochen-Planer und der Training-Knopf direkt am Termin."},
+  {key:"taktik",  e:"⚽", t:"Taktiktafel",           d:"Digitale Taktiktafel mit Animationen, Szenario-Spiel für Kinder und Vorführ-Modus – als eigener Tab in der unteren Leiste."},
+  {key:"helfer",  e:"🙋", t:"Helfer-Verwaltung",     d:"Helfer-Zugänge mit Passwort, Termin-Freigaben mit Bedarf und automatischer Warteliste für Spieltage und Feste."},
+  {key:"kasse",   e:"💶", t:"Mannschaftskasse",      d:"Einnahmen, Ausgaben und Strafenkatalog fürs Team – einfache, transparente Kassenführung."},
+];
+function ModuleWizard({data,session,myTids,cl,save,onClose}){
+  const t=TH(cl);
+  const teams=(data.teams||[]).filter(tm=>myTids.includes(tm.id));
+  const mine=(teams[0]?.moduleVotes||{})[session.id]||{};
+  const [sel,setSel]=useState(()=>{ const o={}; APP_MODULES.forEach(m=>{ o[m.key]=mine[m.key]!==false; }); return o; });
+  const [step,setStep]=useState(0);                 // 0=Intro, 1..N=Module, N+1=Zusammenfassung
+  const N=APP_MODULES.length;
+  const finish=()=>{
+    save({...data,
+      teams:(data.teams||[]).map(tm=>myTids.includes(tm.id)?{...tm,moduleVotes:{...(tm.moduleVotes||{}),[session.id]:sel}}:tm),
+      trainers:(data.trainers||[]).map(x=>x.id===session.id?{...x,moduleWizardDone:true}:x)});
+    onClose();
+  };
+  const preview=(key)=>{ const tm=teams[0]; if(!tm) return {cast:1,on:sel[key]?1:0,eff:sel[key],tie:false};
+    const votes={...(tm.moduleVotes||{}),[session.id]:sel};
+    const trs=(data.trainers||[]).filter(x=>(x.tids||[]).includes(tm.id)&&isActive(x));
+    const cast=trs.filter(x=>votes[x.id]&&(key in votes[x.id]));
+    const onN=cast.filter(x=>votes[x.id][key]).length;
+    const tie=cast.length>1&&onN*2===cast.length;
+    return {cast:cast.length,on:onN,eff:cast.length?onN*2>=cast.length:true,tie};
+  };
+  const mod=step>=1&&step<=N?APP_MODULES[step-1]:null;
+  return (
+    <div style={{position:"fixed",inset:0,zIndex:1700,background:"rgba(15,23,42,.78)",display:"flex",alignItems:"center",justifyContent:"center",padding:16,backdropFilter:"blur(6px)"}}>
+      <div style={{background:"#fff",borderRadius:22,width:"100%",maxWidth:480,maxHeight:"92dvh",overflowY:"auto",padding:"22px"}}>
+        <div style={{display:"flex",gap:5,justifyContent:"center",marginBottom:16}}>
+          {Array.from({length:N+2},(_,i)=>(<span key={i} style={{width:i===step?22:8,height:8,borderRadius:99,background:i===step?t.p:"#e2e8f0",transition:"all .2s"}}/>))}
+        </div>
+        {step===0&&(<>
+          <div style={{textAlign:"center",marginBottom:14}}><div style={{fontSize:44}}>🧩</div>
+            <h2 style={{fontWeight:900,fontSize:20,color:"#0f172a",margin:"8px 0 4px"}}>Was möchtet ihr nutzen?</h2>
+            <p style={{fontSize:13,color:"#64748b",lineHeight:1.6}}>Die App kann viel – ihr entscheidet, was euer Team davon sieht. Alles lässt sich später jederzeit ändern (Mehr → Module).</p>
+          </div>
+          <div style={{background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:13,padding:"12px 14px",marginBottom:10}}>
+            <div style={{fontWeight:800,fontSize:14,color:"#166534"}}>📊 Termin-Abstimmung</div>
+            <div style={{fontSize:12.5,color:"#166534",lineHeight:1.5,marginTop:3}}>Das Herzstück – Termine anlegen, Eltern stimmen ab. <b>Immer aktiv.</b></div>
+          </div>
+          <div style={{fontSize:12,color:"#64748b",lineHeight:1.55,marginBottom:14}}>Bei mehreren Trainern gilt: <b>Mehrheit entscheidet</b> pro Modul. Steht es unentschieden, bleibt das Modul aktiv – und ihr seht den Patt hier, damit ihr kurz drüber sprecht.</div>
+          <button onClick={()=>setStep(1)} style={{width:"100%",padding:"14px",borderRadius:14,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>Los geht's →</button>
+        </>)}
+        {mod&&(<>
+          <div style={{textAlign:"center",marginBottom:14}}><div style={{fontSize:44}}>{mod.e}</div>
+            <h2 style={{fontWeight:900,fontSize:20,color:"#0f172a",margin:"8px 0 4px"}}>{mod.t}</h2>
+            <p style={{fontSize:13.5,color:"#475569",lineHeight:1.6}}>{mod.d}</p>
+          </div>
+          <div onClick={()=>setSel(p2=>({...p2,[mod.key]:!p2[mod.key]}))}
+            style={{display:"flex",alignItems:"center",gap:12,background:sel[mod.key]?"#f0fdf4":"#f8fafc",border:`2px solid ${sel[mod.key]?"#16a34a":"#e2e8f0"}`,borderRadius:14,padding:"14px",cursor:"pointer",marginBottom:14}}>
+            <span style={{flex:1,fontWeight:800,fontSize:15,color:sel[mod.key]?"#15803d":"#334155"}}>{sel[mod.key]?"✓ Wir nutzen das":"Ausgeblendet"}</span>
+            <div style={{width:50,height:28,borderRadius:99,background:sel[mod.key]?"#16a34a":"#cbd5e1",position:"relative",transition:"background .2s"}}>
+              <div style={{position:"absolute",top:3,left:sel[mod.key]?25:3,width:22,height:22,borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.25)"}}/>
+            </div>
+          </div>
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={()=>setStep(s2=>s2-1)} style={{padding:"12px 16px",borderRadius:13,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>← Zurück</button>
+            <button onClick={()=>setStep(s2=>s2+1)} style={{flex:1,padding:"12px",borderRadius:13,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:14.5,cursor:"pointer",fontFamily:"inherit"}}>Weiter →</button>
+          </div>
+        </>)}
+        {step===N+1&&(<>
+          <div style={{textAlign:"center",marginBottom:12}}><div style={{fontSize:40}}>✅</div>
+            <h2 style={{fontWeight:900,fontSize:19,color:"#0f172a",margin:"6px 0 2px"}}>Eure Auswahl</h2>
+            <p style={{fontSize:12.5,color:"#64748b"}}>So steht die Team-Abstimmung{teams[0]?` für ${teams[0].name}`:""}:</p>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:7,marginBottom:14}}>
+            {APP_MODULES.map(m=>{ const pv=preview(m.key); return (
+              <div key={m.key} style={{display:"flex",alignItems:"center",gap:9,background:"#f8fafc",borderRadius:11,padding:"9px 12px",border:`1.5px solid ${pv.eff?"#bbf7d0":"#e2e8f0"}`}}>
+                <span style={{fontSize:18}}>{m.e}</span>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:13,fontWeight:800,color:"#0f172a"}}>{m.t}</div>
+                  <div style={{fontSize:11,color:pv.tie?"#b45309":"#64748b"}}>
+                    Du: {sel[m.key]?"nutzen":"ausblenden"} · Team: {pv.on}/{pv.cast} dafür{pv.tie?" · ⚖️ Patt → bleibt aktiv, sprecht euch ab":""}
+                  </div>
+                </div>
+                <span style={{fontSize:11.5,fontWeight:800,color:pv.eff?"#15803d":"#94a3b8"}}>{pv.eff?"AKTIV":"AUS"}</span>
+              </div>
+            );})}
+          </div>
+          <button onClick={finish} style={{width:"100%",padding:"14px",borderRadius:14,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>Speichern & loslegen</button>
+          <button onClick={()=>setStep(N)} style={{width:"100%",marginTop:8,padding:"11px",borderRadius:13,border:"none",background:"none",color:"#64748b",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>← Zurück</button>
+        </>)}
+      </div>
+    </div>
+  );
+}
+
+function FerienHinweis({hols,from,to}){
+  const list=(hols||[]).filter(h=>h.end>=from&&h.start<=to);
+  if(!list.length) return null;
+  return (
+    <div style={{background:"#ecfeff",border:"1.5px solid #a5f3fc",borderRadius:12,padding:"9px 13px",marginBottom:10}}>
+      {list.map(h=>(
+        <div key={h.start} style={{fontSize:12.5,color:"#0e7490",fontWeight:700,lineHeight:1.5}}>
+          ⛱ {h.name}: {fmtDShort(h.start)} – {fmtDShort(h.end)}
+          <span style={{fontWeight:500,color:"#155e75"}}> · Serientermine pausieren in den Ferien automatisch</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSelfVote,onRemind,onPlan,planTitle,onAttend,onBrief,modTraining=true}) {
   const _ferien=useSchoolHolidays(cl?.clubSettings?.holidayState);
   const [more,setMore]=useState(false);
   const wd=d=>{ try{ return new Date(d+"T12:00:00").toLocaleDateString("de-DE",{weekday:"short"})+", "; }catch{ return ""; } };
@@ -16256,11 +16519,14 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
       <div style={{display:"flex",gap:7,padding:"9px 12px 10px",borderTop:"1px solid #f1f5f9",alignItems:"center"}}>
         <button onClick={onView} style={{flex:1.2,padding:"9px",borderRadius:10,border:"none",background:p,color:contrast(p),fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Ansehen</button>
         <button onClick={onEdit} style={{flex:1,padding:"9px",borderRadius:10,border:"1.5px solid #e2e8f0",background:"#fff",color:"#334155",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Bearbeiten</button>
-        {ev.type==="training"&&onPlan&&<button onClick={onPlan} style={{flex:1,padding:"9px",borderRadius:10,border:"1.5px solid #c7d2fe",background:"#eef2ff",color:"#4f46e5",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{planTitle?"📋 Plan":"📋 Plan +"}</button>}
+        {ev.type==="training"&&onPlan&&modTraining&&<button onClick={onPlan} title={planTitle?("Training: "+planTitle):"Noch kein Training hinterlegt (optional)"} style={{flex:1,padding:"9px",borderRadius:10,border:`1.5px solid ${planTitle?"#bbf7d0":"#c7d2fe"}`,background:planTitle?"#f0fdf4":"#eef2ff",color:planTitle?"#15803d":"#4f46e5",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{planTitle?"✓ Training":"+ Training"}</button>}
+        {onAttend&&<button onClick={onAttend} title="Anwesenheit erfassen: wer ist da, wer verspätet, wer fehlt" style={{width:38,height:35,borderRadius:10,border:"1.5px solid #bbf7d0",background:"#f0fdf4",color:"#15803d",fontWeight:900,fontSize:15,cursor:"pointer",fontFamily:"inherit",lineHeight:1}}>✅</button>}
         <button onClick={()=>setMore(m=>!m)} aria-label="Weitere Aktionen" style={{width:38,height:35,borderRadius:10,border:`1.5px solid ${more?"#94a3b8":"#e2e8f0"}`,background:more?"#f1f5f9":"#fff",color:"#475569",fontWeight:900,fontSize:16,cursor:"pointer",fontFamily:"inherit",lineHeight:1}}>⋯</button>
       </div>
       {more&&(
         <div style={{display:"flex",gap:6,padding:"0 12px 10px",flexWrap:"wrap"}}>
+          {onAttend&&<BtnSm onClick={onAttend} label="✅ Anwesenheit erfassen" bg="#dcfce7" col="#15803d"/>}
+          {onBrief&&<BtnSm onClick={onBrief} label="📋 Spickzettel" bg="#eef2ff" col="#4f46e5"/>}
           {onRemind&&(ev.pt==="att"||!ev.pt)&&ev.date>=tod&&<BtnSm onClick={onRemind} label="🔔 Erinnern" bg="#e0f2fe" col="#0369a1"/>}
           {ev.open&&<BtnSm onClick={onCopyLink} label="🔗 Link kopieren" bg="#ede9fe" col="#7c3aed"/>}
           <BtnSm onClick={onReset} label="↺ Stimmen zurücksetzen" bg="#fff7ed" col="#d97706"/>
@@ -18636,7 +18902,7 @@ function SelfStats({ data, session, cl, lang="de" }){
   );
 }
 
-function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
+function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{},onSwitchChild}) {
   const tr = (k) => T[lang]?.[k] ?? T.de[k] ?? k;
   const {tid,user,cid}=session;
   const cl=data.clubs.find(c=>c.id===cid);
@@ -18650,8 +18916,8 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const evs=data.events.filter(e=>e.tid===tid&&(!e.seasonId||e.seasonId===_activeSid)).sort((a,b)=>a.date.localeCompare(b.date));
   const up=evs.filter(e=>e.date>=tod);
   const past=evs.filter(e=>e.date<tod).reverse();
-  const _in10=addD(now(),10);                          // Grenze: heute + 10 Tage
-  const soon=up.filter(e=>e.date<=_in10);              // nächste 10 Tage
+  const _in10=addD(now(),21);                          // Grenze: heute + 21 Tage
+  const soon=up.filter(e=>e.date<=_in10);              // nächste 21 Tage
   const later=up.filter(e=>e.date>_in10);              // weiter in der Zukunft
   const [showLater,setShowLater]=useState(false);
   const [exp,setExp]=useState((up[0]||past[0])?.id||null);
@@ -18726,9 +18992,12 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
 
   // DSGVO: eigene Daten als JSON exportieren (Auskunft/Datenuebertragbarkeit, Art. 15/20)
   const exportMyData=()=>{
-    const profil=(data.playerProfiles||[]).filter(p=>p.cid===cid && (p.name||"").toLowerCase()===String(user).toLowerCase());
+    // Trainer-Einschaetzungen (Skills, Empfehlungen, Notizen, Bewertungen) bleiben
+    // beim Trainerteam und werden NICHT exportiert - nur freigegebene Basisdaten.
+    const profil=(data.playerProfiles||[]).filter(p=>p.cid===cid && (p.name||"").toLowerCase()===String(user).toLowerCase())
+      .map(({skills,recommend,rating,notes,nsTriggerCount,noShowAckCount,...rest})=>rest);
     const abstimmungen=(data.events||[]).filter(e=>e.cid===cid && e.votes && (user in e.votes)).map(e=>({termin:e.title,datum:e.date,antwort:e.votes[user]}));
-    const payload={ exportiertAm:new Date().toISOString(), verein:cl?.name||cid, person:user, team:myTeam?.name||"", profil, abstimmungen };
+    const payload={ exportiertAm:new Date().toISOString(), verein:cl?.name||cid, person:user, team:myTeam?.name||"", hinweis:"Trainer-Einschätzungen (Skills, Empfehlungen, interne Notizen) sind nicht enthalten – sie verbleiben beim Trainerteam.", profil, abstimmungen };
     try{
       const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
       const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`meine-daten-${String(user).replace(/[^a-z0-9]/gi,"_")}.json`; a.click();
@@ -18739,14 +19008,19 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   // DSGVO: Loeschung beim Verein anfragen (landet im Admin-Posteingang)
   const requestDeletion=()=>{
     if(!window.confirm(tr("uhDelConfirm"))) return;
-    const req={id:uid(),cid,fromName:String(user),fromEmail:"",msg:"[DSGVO-Löschantrag] Bitte die in der App gespeicherten Daten von „"+user+"“ löschen.",ts:new Date().toISOString(),read:false,blocked:false,dsgvo:true};
-    onSave({...data, contactRequests:[...(data.contactRequests||[]),req]});
-    fire(tr("uhDelSent"));
+    // Missbrauchsschutz: die endgueltige Loeschung fuehrt erst ein Trainer aus -
+    // er muss den Antrag innerhalb von 2 Tagen bestaetigen (steht oben in seiner
+    // Zu-erledigen-Liste), sonst verfaellt er.
+    const dreq={id:uid(),cid,tid,pid:myProfile?.id||null,name:String(user),ts:new Date().toISOString(),status:"pending"};
+    const req={id:uid(),cid,fromName:String(user),fromEmail:"",msg:"[DSGVO-Löschantrag] Bitte die in der App gespeicherten Daten von „"+user+"“ löschen. (Bestätigung durch Trainer innerhalb von 2 Tagen erforderlich.)",ts:new Date().toISOString(),read:false,blocked:false,dsgvo:true};
+    onSave({...data, deletionRequests:[...(data.deletionRequests||[]),dreq], contactRequests:[...(data.contactRequests||[]),req]});
+    fire("Löschantrag gestellt – ein Trainer bestätigt ihn innerhalb von 2 Tagen");
     setShowProfile(false);
   };
 
   // Eltern-Freigabe: Name des Kindes in der oeffentlichen Turnier-Aufstellung zeigen.
   // Standard AUS. Ohne Freigabe erscheint das Kind dort nur mit Trikotnummer.
+  const _ferienUH=useSchoolHolidays(cl?.clubSettings?.holidayState);
   const myProfile=(data.playerProfiles||[]).find(p=>p.cid===cid && (p.name||"").toLowerCase()===String(user).toLowerCase() && (p.mainTid===tid || (p.optTids||[]).includes(tid)))
     || (data.playerProfiles||[]).find(p=>p.cid===cid && (p.name||"").toLowerCase()===String(user).toLowerCase());
   const pubOk=!!myProfile?.pubOk;
@@ -18770,6 +19044,7 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
     else { setExtLocal(nx); try{ localStorage.setItem("va_extras_"+cid+"_"+String(user).toLowerCase(),JSON.stringify(nx)); }catch{} }
   };
   const [showExtras,setShowExtras]=useState(false);
+  const [photoConfirm,setPhotoConfirm]=useState(false);
 
   // Login-Gate: Trainer-Nachrichten (Pflicht-Lesebestätigung) + Wiederholungs-No-Show-Hinweis.
   const uLow=String(user).toLowerCase();
@@ -18936,6 +19211,7 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               {tr("uhLoggedInAs")} <strong style={{color:"#334155"}}>{user}</strong><br/>
               <span style={{fontSize:12}}>{myTeam?.name}</span>
             </div>
+            {onSwitchChild&&<button onClick={()=>{setShowProfile(false);onSwitchChild(tid);}} style={{width:"100%",padding:"13px",borderRadius:13,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:14.5,cursor:"pointer",fontFamily:"inherit",marginBottom:10}}>👧👦 Kind wechseln</button>}
             <button onClick={()=>{setShowProfile(false);onLogout();}} style={{width:"100%",padding:"13px",borderRadius:13,border:"none",background:"#334155",color:"#fff",fontWeight:800,fontSize:14.5,cursor:"pointer",fontFamily:"inherit",marginBottom:14}}>🚪 {tr("uhSwitchLogout")}</button>
             <div style={{background:"#fffbeb",borderRadius:11,padding:"10px 13px",marginBottom:16,fontSize:12,color:"#92400e",lineHeight:1.6}}>
                <strong>{tr("uhPrivacyLbl")}</strong> {tr("uhPhotoNote")}
@@ -18957,6 +19233,47 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
                 <div style={{position:"absolute",top:3,left:pubOk?22:3,width:20,height:20,borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.25)"}}/>
               </div>
             </div>
+            {/* Profilbild-Freigaben: Team ja (mit rechtlicher Bestaetigung), Turnier vorerst gesperrt */}
+            {myProfile&&(
+              <div style={{background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"12px 14px",marginBottom:14}}>
+                <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.4,marginBottom:8}}>📸 PROFILBILD-FREIGABE</div>
+                <div onClick={()=>{ if(myProfile.photoTeamOk){ onSave({...data,playerProfiles:(data.playerProfiles||[]).map(p=>p.id===myProfile.id?{...p,photoTeamOk:false}:p)}); fire("Foto-Freigabe zurückgezogen"); } else setPhotoConfirm(true); }}
+                  style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",padding:"6px 0"}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:13,fontWeight:800,color:myProfile.photoTeamOk?"#15803d":"#334155"}}>Für Trainer & Mannschaft</div>
+                    <div style={{fontSize:11,color:"#64748b",marginTop:2,lineHeight:1.4}}>Angemeldete Trainer und Team-Mitglieder dürfen das Profilbild sehen. Jederzeit widerrufbar.</div>
+                  </div>
+                  <div style={{width:46,height:26,borderRadius:99,background:myProfile.photoTeamOk?"#16a34a":"#cbd5e1",position:"relative",flexShrink:0,transition:"background .2s"}}>
+                    <div style={{position:"absolute",top:3,left:myProfile.photoTeamOk?22:3,width:20,height:20,borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.25)"}}/>
+                  </div>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0",opacity:.5}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:13,fontWeight:800,color:"#94a3b8"}}>Bei Spielen & Turnieren öffentlich</div>
+                    <div style={{fontSize:11,color:"#94a3b8",marginTop:2}}>🔒 Rechtlich in Klärung – wird später freigeschaltet.</div>
+                  </div>
+                  <div style={{width:46,height:26,borderRadius:99,background:"#e2e8f0",position:"relative",flexShrink:0}}>
+                    <div style={{position:"absolute",top:3,left:3,width:20,height:20,borderRadius:"50%",background:"#fff"}}/>
+                  </div>
+                </div>
+              </div>
+            )}
+            {/* Freunde im Team: fuer Aufstellung & Trainingsgruppen */}
+            {myProfile&&(()=>{ const mates=(data.playerProfiles||[]).filter(p=>p.mainTid===tid&&!p.archived&&p.id!==myProfile.id).map(p=>p.name).sort((a,b)=>a.localeCompare(b,"de"));
+              const fr=myProfile.friends||[];
+              const togF=(n)=>onSave({...data,playerProfiles:(data.playerProfiles||[]).map(p=>p.id===myProfile.id?{...p,friends:fr.includes(n)?fr.filter(x=>x!==n):[...fr,n]}:p)});
+              if(!mates.length) return null;
+              return (
+              <div style={{background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"12px 14px",marginBottom:14}}>
+                <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.4,marginBottom:4}}>🤝 FREUNDE IM TEAM</div>
+                <div style={{fontSize:11,color:"#64748b",lineHeight:1.45,marginBottom:8}}>Mit wem spielt dein Kind besonders gern? Wird bei Aufstellungen und Trainingsgruppen berücksichtigt – ab und zu wird bewusst gemischt, damit alle zusammenwachsen.</div>
+                <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                  {mates.map(n=>(
+                    <button key={n} onClick={()=>togF(n)} style={{padding:"6px 11px",borderRadius:99,border:`1.5px solid ${fr.includes(n)?"#16a34a":"#e2e8f0"}`,background:fr.includes(n)?"#f0fdf4":"#fff",color:fr.includes(n)?"#15803d":"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{fr.includes(n)?"✓ ":""}{n}</button>
+                  ))}
+                </div>
+              </div>
+            );})()}
             {/* Extras-Seite: Eltern waehlen dort, welche Zusatz-Karten angezeigt werden */}
             <button onClick={()=>{setShowProfile(false);setShowExtras(true);}}
               style={{width:"100%",display:"flex",alignItems:"center",gap:12,background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"12px 14px",marginBottom:14,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
@@ -19030,6 +19347,24 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         </div>
       )}
 
+      {/* Rechtliche Bestaetigung fuer die Foto-Freigabe (2. Stufe) */}
+      {photoConfirm&&myProfile&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(15,23,42,.72)",zIndex:1600,display:"flex",alignItems:"center",justifyContent:"center",padding:20,backdropFilter:"blur(6px)"}}>
+          <div style={{background:"#fff",borderRadius:20,width:"100%",maxWidth:440,padding:"22px"}}>
+            <div style={{fontWeight:900,fontSize:17,color:"#0f172a",marginBottom:8}}>📸 Rechtlicher Hinweis</div>
+            <div style={{fontSize:13,color:"#334155",lineHeight:1.6,marginBottom:12}}>
+              Mit der Freigabe willigt ihr ein, dass das Profilbild eures Kindes für <b>angemeldete Trainer und Mitglieder eures Teams</b> in der App sichtbar ist (Einwilligung nach Art.&nbsp;6 Abs.&nbsp;1 lit.&nbsp;a DSGVO, §&nbsp;22 KUG).
+              Das Bild wird <b>nicht öffentlich</b> gezeigt – nicht bei Turnieren, Spielen oder für Gäste.
+              Die Einwilligung ist <b>freiwillig</b> und kann jederzeit mit einem Tipp widerrufen werden; das Bild ist dann sofort wieder nur für euch sichtbar.
+            </div>
+            <button onClick={()=>{ onSave({...data,playerProfiles:(data.playerProfiles||[]).map(p=>p.id===myProfile.id?{...p,photoTeamOk:true,photoTeamOkAt:new Date().toISOString()}:p),
+                securityLog:[...(data.securityLog||[]),{id:uid(),cid,ts:new Date().toISOString(),type:"photo_consent",msg:`Foto-Freigabe (Team) für „${user}" erteilt.`}].slice(-500)});
+              setPhotoConfirm(false); fire("Foto für Trainer & Team freigegeben ✓"); }}
+              style={{width:"100%",padding:"13px",borderRadius:13,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:14.5,cursor:"pointer",fontFamily:"inherit",marginBottom:8}}>Einwilligen & freigeben</button>
+            <button onClick={()=>setPhotoConfirm(false)} style={{width:"100%",padding:"12px",borderRadius:13,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
+          </div>
+        </div>
+      )}
       {/* Extras-Seite: Eltern schalten Zusatz-Karten einzeln frei (Standard: alles aus) */}
       {showExtras&&(
         <div style={{position:"fixed",inset:0,zIndex:1400,background:"#f0f4f8",overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
@@ -19108,6 +19443,7 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             <span style={{color:"#fff",fontSize:20}}>›</span>
           </button>
         )}
+        <FerienHinweis hols={_ferienUH} from={tod} to={_in10}/>
         {up.length>0&&<>
           <Divider label={tr("uhNext10")}/>
           {soon.length>0
@@ -19706,7 +20042,8 @@ function AppInner({lang,setLang}) {
         onSetHelperPw={(hid,nh)=>{ save({...data,helpers:(data.helpers||[]).map(h=>h.id===hid?{...h,pw:nh,mustChangePw:false,sharedAt:h.sharedAt||new Date().toISOString()}:h)}); }}
         onBack={()=>setScr("role")}/>}
       {screen==="alogin"&&activeCl&&<AdminLogin cl={activeCl} onLogin={a=>login("admin",{...a,cid})} onBack={()=>setScr("role")}/>}
-      {screen==="user"  &&session&&activeCl&&<UserHome data={data} session={session} onSave={save} onLogout={logout} lang={lang} setLang={setLang}/>}
+      {screen==="user"  &&session&&activeCl&&<UserHome data={data} session={session} onSave={save} onLogout={logout} lang={lang} setLang={setLang}
+        onSwitchChild={(tid2)=>{ sess.del(); setSess(null); setLinkTeam(tid2); setScr("flow"); }}/>}
       {screen==="dash"  &&session&&activeCl&&<Dashboard data={data} session={session} onSave={save} onLogout={logout} lang={lang} setLang={setLang}/>}
       {/* Sicherheitsnetz: eingeloggt, aber Vereinsdaten (noch) nicht geladen (z.B.
           Cloud kurz nicht erreichbar beim Start). Statt leerer grauer Seite einen
