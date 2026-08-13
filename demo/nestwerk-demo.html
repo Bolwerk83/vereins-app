@@ -356,6 +356,49 @@
   .tab.active { color: var(--brand); }
 
   footer.note { text-align: center; font-size: 12px; color: var(--ink-soft); padding: 18px 20px 8px; }
+
+  /* ---------- Superadmin ---------- */
+  .adminbar {
+    background: var(--ink);
+    color: var(--ground);
+    border-radius: 12px;
+    padding: 8px 14px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .statgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: 14px;
+    padding: 10px 12px;
+    box-shadow: var(--shadow);
+  }
+  .stat .num { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .stat .cap { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-soft); }
+  .cipher {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+    word-break: break-all;
+    background: var(--surface-2);
+    border-radius: 8px;
+    padding: 6px 8px;
+    margin-top: 6px;
+  }
+  .denied {
+    display: none;
+    border: 1px solid var(--danger);
+    background: var(--danger-soft);
+    border-radius: 16px;
+    padding: 14px;
+    margin-top: 12px;
+  }
+  .denied h3 { margin: 0 0 4px; font-size: 15px; color: var(--danger); }
+  .denied p { margin: 0; font-size: 14px; }
 </style>
 
 <div class="app">
@@ -501,6 +544,85 @@
       <div class="card" id="fristen"></div>
     </section>
 
+    <!-- ============ SUPERADMIN ============ -->
+    <section class="screen" id="scr-admin">
+      <h2 class="screen-title">Superadmin</h2>
+      <p class="screen-sub">Betreiber-Sicht: verwalten ja – mitlesen nein</p>
+
+      <div class="adminbar">🛡️ Angemeldet als Betreiber (du) · volle Verwaltungsrechte</div>
+
+      <div class="statgrid">
+        <div class="stat"><div class="num">2</div><div class="cap">Familien</div></div>
+        <div class="stat"><div class="num">6</div><div class="cap">Nutzer</div></div>
+        <div class="stat"><div class="num">312<span style="font-size:13px"> MB</span></div><div class="cap">Speicher</div></div>
+      </div>
+
+      <p class="label">Familien (Mandanten)</p>
+      <div class="card">
+        <div class="row">
+          <span style="font-size:20px">🪺</span>
+          <div class="row-main">
+            <div class="row-title">Familie Beispiel</div>
+            <div class="row-meta">4 Mitglieder · aktiv seit 13.08.2026 · Praxis-Modul an</div>
+          </div>
+          <span class="chip ok">aktiv</span>
+        </div>
+        <div class="row">
+          <span style="font-size:20px">🪺</span>
+          <div class="row-main">
+            <div class="row-title">Familie Muster</div>
+            <div class="row-meta">Einladung verschickt · noch nicht angenommen</div>
+          </div>
+          <span class="chip honey">eingeladen</span>
+        </div>
+      </div>
+
+      <p class="label">Digitale Gedächtnisse</p>
+      <div class="card">
+        <div class="row" style="align-items:flex-start; flex-direction:column; gap:4px">
+          <div style="display:flex; align-items:center; gap:10px; width:100%">
+            <span class="avatar">D</span>
+            <div class="row-main">
+              <div class="row-title">Dein Merkzeug</div>
+              <div class="row-meta">3 Personen · 6 Notizen · zuletzt synchronisiert heute 14:02</div>
+            </div>
+            <span class="chip">🔒 E2E</span>
+          </div>
+          <div class="cipher">gcm:v1:pZ8kT3…aFq9Lw2XnR0eYt7VbM4sHj6…c1Du5oI8 (2,1 KB Chiffretext)</div>
+        </div>
+        <div class="row" style="align-items:flex-start; flex-direction:column; gap:4px">
+          <div style="display:flex; align-items:center; gap:10px; width:100%">
+            <span class="avatar">A</span>
+            <div class="row-main">
+              <div class="row-title">Annas Merkzeug</div>
+              <div class="row-meta">11 Personen · 24 Notizen · zuletzt synchronisiert heute 09:47</div>
+            </div>
+            <span class="chip">🔒 E2E</span>
+          </div>
+          <div class="cipher">gcm:v1:Rw2nB7…kLp4Qx9ZvT1mC8dJ3fGh0…yU6sE2aO5 (9,8 KB Chiffretext)</div>
+        </div>
+        <button class="row" id="btn-snoop">
+          <span style="font-size:20px">👁️</span>
+          <div class="row-main">
+            <div class="row-title">Als Superadmin öffnen</div>
+            <div class="row-meta">Versuch: ein Gedächtnis ohne Passwort entschlüsseln</div>
+          </div>
+          <span class="chev">›</span>
+        </button>
+      </div>
+
+      <div class="denied" id="denied">
+        <h3>⛔ Zugriff nicht möglich</h3>
+        <p>Der Server besitzt <b>keinen Schlüssel</b>. Die Gedächtnisse sind Ende-zu-Ende-verschlüsselt – entschlüsseln kann sie nur die jeweilige Person mit ihrem Passwort, auf ihrem eigenen Gerät. Auch der Superadmin sieht nur Chiffretext. Genau so ist es gebaut.</p>
+      </div>
+
+      <p class="label">Was der Superadmin kann</p>
+      <div class="card">
+        <div class="fact"><b>✓ Ja</b><span>Familien anlegen, Mitglieder einladen/sperren, Module an- und abschalten, Speicher &amp; Backups verwalten</span></div>
+        <div class="fact"><b>✗ Nein</b><span>Inhalte der digitalen Gedächtnisse lesen – technisch unmöglich, nicht nur verboten</span></div>
+      </div>
+    </section>
+
     <footer class="note">Nestwerk-Demo · alle Namen und Daten sind ausgedacht · nichts wird gespeichert</footer>
   </main>
 
@@ -512,6 +634,7 @@
       <button class="tab" data-scr="kalender"><span class="ico">📅</span>Kalender</button>
       <button class="tab" data-scr="merkzeug"><span class="ico">🔐</span>Merkzeug</button>
       <button class="tab" data-scr="praxis"><span class="ico">🩺</span>Praxis</button>
+      <button class="tab" data-scr="admin"><span class="ico">🛡️</span>Admin</button>
     </div>
   </nav>
 </div>
@@ -700,6 +823,14 @@
     }
   });
   $("#search").addEventListener("input", (e) => renderPersons(e.target.value));
+
+  /* ---------- Superadmin: Mitlese-Versuch scheitert ---------- */
+  $("#btn-snoop").addEventListener("click", () => {
+    const d = $("#denied");
+    d.style.display = "block";
+    d.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    toast("Entschlüsselung fehlgeschlagen: kein Schlüssel auf dem Server");
+  });
 
   /* ---------- Praxis ---------- */
   const teilnehmer = [
