@@ -71,15 +71,19 @@ const helperLogin=async(name,tempPw,newPw)=>{
   await page.waitForTimeout(1000);
   await page.getByText("Turnier & Spieltag unterstützen").click(); await page.waitForTimeout(900);
   let t2=await body();
-  if(!t2.includes("Helfer-Anmeldung")){ fail("Helfer-Login-Seite fehlt: "+t2.slice(0,120)); return false; }
-  await page.getByText(name,{exact:false}).first().click(); await page.waitForTimeout(500);
+  // Neuer Login-Flow im Trainer-Design: erst die Jugend waehlen, dann den Namen
+  if(!t2.includes("Für welche Jugend hilfst du?")){ fail("Jugend-Auswahl beim Helfer-Login fehlt: "+t2.slice(0,120)); return false; }
+  await page.evaluate(()=>{ const cards=[...document.querySelectorAll("div")].filter(d=>String(d.className).includes("up")&&/\d+ Helfer/.test(d.innerText)&&d.innerText.length<120); cards[0]&&cards[0].click(); });
+  await page.waitForTimeout(700);
+  t2=await body();
+  if(t2.includes("Welcher Helfer bist du?")){ await page.getByText(name,{exact:false}).first().click(); await page.waitForTimeout(500); }
   await page.locator('input[type="password"]').first().fill(tempPw);
   await page.locator('button:has-text("Anmelden")').click(); await page.waitForTimeout(700);
   t2=await body();
-  if(t2.includes("Eigenes Passwort festlegen")){
+  if(t2.includes("Eigenes Passwort vergeben")){
     const pws=page.locator('input[type="password"]');
     await pws.nth(0).fill(newPw); await pws.nth(1).fill(newPw);
-    await page.locator('button:has-text("Speichern & anmelden")').click(); await page.waitForTimeout(1200);
+    await page.locator('button:has-text("Passwort speichern & einloggen")').click(); await page.waitForTimeout(1200);
     return true;
   }
   fail("Kein Pflicht-Passwortwechsel für "+name); return false;

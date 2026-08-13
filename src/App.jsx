@@ -2380,7 +2380,7 @@ function EventIcon({ type, size=22, color="#16a34a" }) {
 }
 const EVENT_TYPE_ALIAS = { spiel:"heimspiel", heim:"heimspiel", ausw:"auswarts", freund:"freundschaft" };
 
-function BottomNav({ tab, setTab, isAdmin, isHelper, isParent=false, parentStats=true, unread, inboxUnread=0, cl, hide=false, mods={} }) {
+function BottomNav({ tab, setTab, isAdmin, isHelper, isParent=false, parentStats=true, unread, inboxUnread=0, cl, hide=false, mods={}, helperKasse=false, helperOnlyKasse=false }) {
   if(hide) return null;
   const t = TH(cl);
   const { tr } = useT();
@@ -2395,12 +2395,13 @@ function BottomNav({ tab, setTab, isAdmin, isHelper, isParent=false, parentStats
     { id:"chat",    label:tr("tabChat"),     icon:"C", badge: unread, hidden: !feat("chat_team") },
     { id:"more",    label:tr("navMore"),     icon:"=" },
   ] : [
-    { id:"events",  label:tr("tabEvents"),  icon:"K" },
+    { id:"events",  label:tr("tabEvents"),  icon:"K", hidden: helperOnlyKasse },
+    { id:"treasury",label:tr("navTreasury"), icon:"€", hidden: !(isHelper&&helperKasse) },
     { id:"team",    label:tr("navTeam"),     icon:"P", hidden: isHelper },
     { id:"taktik",  label:"Taktik",           icon:"TK", hidden: isHelper||mods.taktik===false },
     { id:"fields",  label:tr("tabFields"),    icon:"F", hidden: isHelper||!feat("fields_booking")||!clubFeat("mod_fields") },
-    { id:"chat",    label:tr("tabChat"),     icon:"C", badge: unread, hidden: !feat("chat_team") },
-    { id:"more",    label:tr("navMore"),     icon:"=", badge: inboxUnread },
+    { id:"chat",    label:tr("tabChat"),     icon:"C", badge: unread, hidden: !feat("chat_team")||helperOnlyKasse },
+    { id:"more",    label:tr("navMore"),     icon:"=", badge: inboxUnread, hidden: helperOnlyKasse },
   ]).filter(x=>!x.hidden);
 
   const drawerSections = [
@@ -6115,16 +6116,17 @@ button:focus-visible, a:focus-visible, input:focus-visible {
    DESKTOP SIDEBAR
    Ersetzt BottomNav auf >1024px
 ----------------------------------------------------------------- */
-function DesktopSidebar({ tab, setTab, isAdmin, isHelper, unread, inboxUnread=0, cl, session, onLogout, lang="de", setLang=()=>{}, showLang=true }) {
+function DesktopSidebar({ tab, setTab, isAdmin, isHelper, unread, inboxUnread=0, cl, session, onLogout, lang="de", setLang=()=>{}, showLang=true, helperKasse=false, helperOnlyKasse=false }) {
   const t = TH(cl);
   const [showDrawer, setShowDrawer] = React.useState(false);
   const isTrainer = !isAdmin && !isHelper;
 
   const mainItems = [
-    { id:"events",   label:"Termine",    icon:"K" },
+    { id:"events",   label:"Termine",    icon:"K", hidden: helperOnlyKasse },
+    { id:"treasury", label:"Kasse",      icon:"€", hidden: !(isHelper&&helperKasse) },
     { id:"team",     label:"Team",       icon:"P", hidden: isHelper },
     { id:"fields",   label:"Platz",      icon:"F", hidden: isHelper },
-    { id:"chat",     label:"Chat",       icon:"C", badge: unread, hidden: !feat("chat_team") }, // gleicher Modul-Schalter wie mobile Nav
+    { id:"chat",     label:"Chat",       icon:"C", badge: unread, hidden: !feat("chat_team")||helperOnlyKasse }, // gleicher Modul-Schalter wie mobile Nav
   ].filter(x=>!x.hidden);
 
   const adminItems = [
@@ -7069,14 +7071,21 @@ function AdminLogin({cl,onLogin,onBack}) {
   );
 }
 
-function HelperLogin({cl,helpers,onLogin,onSetHelperPw,onBack}) {
+function HelperLogin({cl,helpers,teams=[],onLogin,onSetHelperPw,onBack}) {
+  // Gleicher Aufbau & Look wie der Trainer-Login: Jugend waehlen -> Name -> Passwort.
   const t=TH(cl);
   const clHelpers=(helpers||[]).filter(h=>h.cid===cl.id&&h.active!==false);
+  const NO_TEAM="Ohne feste Mannschaft";
+  const teamCat=tid=>{ const tm=teams?.find(x=>x.id===tid); return tm?(tm.cat||tm.name):null; };
+  const catsOf=h=>{ const cs=(h.tids||[]).map(teamCat).filter(Boolean); return cs.length?[...new Set(cs)]:[NO_TEAM]; };
+  const cats=[...new Set(clHelpers.flatMap(catsOf))].sort((a,b)=> a===NO_TEAM?1 : b===NO_TEAM?-1 : String(a).localeCompare(String(b)));
+  const [step,setStep]=useState("cat");          // cat -> who -> pwd -> setpw
+  const [cat,setCat]=useState(null);
   const [sel,setSel]=useState(null);
-  const [step,setStep]=useState("who");          // who -> pwd -> setpw
   const [pw,setPw]=useState(""); const [err,setErr]=useState(false);
   const [np1,setNp1]=useState(""); const [np2,setNp2]=useState(""); const [perr,setPerr]=useState("");
-  const doLogin=(h)=>onLogin({id:h.id,role:"helper",cid:cl.id,name:h.name,helperId:h.id});
+  const helpersInCat=cat?clHelpers.filter(h=>catsOf(h).includes(cat)):[];
+  const doLogin=(h)=>onLogin({id:h.id,role:"helper",cid:cl.id,name:h.name,helperId:h.id,tids:h.tids||[]});
   const go=()=>{
     const h=sel; if(!h) return;
     const entered=pw.trim();
@@ -7085,7 +7094,7 @@ function HelperLogin({cl,helpers,onLogin,onSetHelperPw,onBack}) {
     // danach wird ein eigenes Passwort gesetzt.
     const okLegacy=!h.pw&&h.code&&(h.code===entered||(String(h.code).startsWith("s")&&hashPw(entered)===h.code)||(String(h.code).startsWith("h")&&checkPw(entered,h.code)));
     if(!okPw&&!okLegacy){ setErr(true); setTimeout(()=>setErr(false),1800); return; }
-    if(h.mustChangePw||okLegacy){ setStep("setpw"); return; }
+    if(h.mustChangePw||okLegacy){ setNp1("");setNp2("");setPerr(""); setStep("setpw"); return; }
     doLogin(h);
   };
   const saveNewPw=()=>{
@@ -7095,47 +7104,107 @@ function HelperLogin({cl,helpers,onLogin,onSetHelperPw,onBack}) {
     onSetHelperPw&&onSetHelperPw(sel.id,nh);
     doLogin(sel);
   };
-  const card={background:"rgba(255,255,255,.09)",border:"1.5px solid rgba(255,255,255,.13)",borderRadius:16,padding:"14px 17px",cursor:"pointer",marginBottom:10};
-  return (
+  const GradWrap=({children})=>(
     <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s} 0%,${t.p}66 100%)`}}>
       <style>{CSS}</style>
-      <div style={{padding:"50px 22px 40px",maxWidth:440,margin:"0 auto"}}>
-        <button onClick={()=>{ if(step==="pwd"){ setStep("who"); setPw(""); } else if(step==="setpw"){ setStep("pwd"); } else onBack(); }}
+      <div style={{padding:"48px 20px 40px",maxWidth:460,margin:"0 auto"}}>
+        <button onClick={step==="cat"?onBack:step==="who"?()=>setStep("cat"):()=>{setStep(helpersInCat.length>1?"who":"cat");setPw("");setErr(false);}}
           style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:28}}>← Zurück</button>
-        <div className="up" style={{display:"flex",flexDirection:"column",alignItems:"center",marginBottom:28}}>
-          <Logo cl={cl} sz={70}/>
-          <h1 style={{color:"#fff",fontSize:22,fontWeight:900,margin:"12px 0 4px",textAlign:"center"}}>Helfer-Anmeldung</h1>
-          <p style={{color:"rgba(255,255,255,.55)",fontSize:14}}>{step==="who"?"Wer bist du?":step==="pwd"?`Hallo ${sel?.name||""}!`:"Neues Passwort festlegen"}</p>
-        </div>
-        {step==="who"&&(clHelpers.length===0
-          ? <div style={{background:"rgba(255,255,255,.09)",borderRadius:16,padding:"18px",color:"rgba(255,255,255,.75)",fontSize:14,lineHeight:1.6,textAlign:"center"}}>Noch keine Helfer-Zugänge angelegt.<br/>Die Trainer können Helfer unter „Mehr → Helfer" anlegen.</div>
-          : clHelpers.map(h=>(
-            <div key={h.id} className="up" style={card} onClick={()=>{ setSel(h); setStep("pwd"); setPw(""); }}>
-              <div style={{display:"flex",alignItems:"center",gap:12}}>
-                <Av name={h.name} sz={38}/>
-                <div style={{flex:1}}><div style={{color:"#fff",fontWeight:800,fontSize:16}}>{h.name}</div>{h.childName&&<div style={{color:"rgba(255,255,255,.5)",fontSize:12,marginTop:1}}>Kind: {h.childName}</div>}</div>
-                <div style={{color:"rgba(255,255,255,.35)",fontSize:20}}>{">"}</div>
+        {children}
+      </div>
+    </div>
+  );
+  if(step==="cat") return (
+    <GradWrap>
+      <div className="up" style={{display:"flex",flexDirection:"column",alignItems:"center",marginBottom:32}}>
+        <Logo cl={cl} sz={64}/>
+        <h2 style={{color:"#fff",fontSize:24,fontWeight:900,margin:"12px 0 4px",textAlign:"center"}}>{cl.name}</h2>
+        <p style={{color:"rgba(255,255,255,.55)",fontSize:14}}>Für welche Jugend hilfst du?</p>
+      </div>
+      {cats.length===0
+        ? <div style={{background:"rgba(255,255,255,.1)",borderRadius:18,padding:"22px",textAlign:"center",color:"rgba(255,255,255,.6)",fontSize:14,lineHeight:1.6}}>Noch keine Helfer-Zugänge angelegt.<br/>Die Trainer können Helfer unter „Mehr → Helfer" anlegen.</div>
+        : cats.map((c,i)=>{
+            const hs=clHelpers.filter(h=>catsOf(h).includes(c));
+            const icons=[...new Set(hs.flatMap(h=>(h.tids||[]).map(tid=>teams?.find(x=>x.id===tid)?.icon).filter(Boolean)))];
+            return (
+              <div key={c} className="up" onClick={()=>{setCat(c);if(hs.length===1){setSel(hs[0]);setPw("");setErr(false);setStep("pwd");}else setStep("who");}}
+                style={{background:"rgba(255,255,255,.09)",border:"1.5px solid rgba(255,255,255,.13)",borderRadius:20,padding:"16px 20px",cursor:"pointer",marginBottom:12,animationDelay:`${i*.06}s`,display:"flex",alignItems:"center",gap:14}}>
+                <div style={{width:46,height:46,borderRadius:14,background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{icons[0]||"🙋"}</div>
+                <div style={{flex:1}}>
+                  <div style={{color:"#fff",fontWeight:900,fontSize:18}}>{c}</div>
+                  <div style={{color:"rgba(255,255,255,.5)",fontSize:12,marginTop:2}}>{hs.length} Helfer</div>
+                </div>
+                <span style={{color:"rgba(255,255,255,.3)",fontSize:22}}>{">"}</span>
               </div>
+            );
+          })
+      }
+    </GradWrap>
+  );
+  if(step==="who") return (
+    <GradWrap>
+      <div className="up" style={{display:"flex",flexDirection:"column",alignItems:"center",marginBottom:32}}>
+        <h2 style={{color:"#fff",fontSize:24,fontWeight:900,margin:"0 0 4px",textAlign:"center"}}>{cat}</h2>
+        <p style={{color:"rgba(255,255,255,.55)",fontSize:14}}>Welcher Helfer bist du?</p>
+      </div>
+      {helpersInCat.map((h,i)=>(
+        <div key={h.id} className="up" onClick={()=>{setSel(h);setPw("");setErr(false);setStep("pwd");}}
+          style={{background:"rgba(255,255,255,.09)",border:"1.5px solid rgba(255,255,255,.13)",borderRadius:20,padding:"15px 18px",cursor:"pointer",marginBottom:12,animationDelay:`${i*.06}s`,display:"flex",alignItems:"center",gap:13}}>
+          <Av name={h.name} sz={44}/>
+          <div style={{flex:1}}>
+            <div style={{color:"#fff",fontWeight:900,fontSize:17}}>{h.name}</div>
+            <div style={{color:"rgba(255,255,255,.5)",fontSize:12,marginTop:2}}>
+              {[(h.roles?.kasse?"💶 Kassenhelfer":null),...(h.tids||[]).map(tid=>teams?.find(x=>x.id===tid)?.name)].filter(Boolean).join(" · ")||"Helfer"}
             </div>
-          )))}
-        {step==="pwd"&&(
-          <div className="up" style={{background:"rgba(255,255,255,.09)",border:"1.5px solid rgba(255,255,255,.13)",borderRadius:18,padding:"18px"}}>
-            <div style={{color:"rgba(255,255,255,.7)",fontSize:13,fontWeight:700,marginBottom:8}}>Passwort{sel?.mustChangePw?" (Einmal-Passwort vom Trainer)":""}</div>
-            <PwInput value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&go()} placeholder="Passwort…" autoFocus/>
-            {err&&<div style={{color:"#fecaca",fontSize:13,fontWeight:700,marginTop:8}}>Passwort falsch. Bei Verlust kann der Trainer ein neues Einmal-Passwort erzeugen.</div>}
-            <button onClick={go} style={{width:"100%",marginTop:12,padding:"13px",borderRadius:13,border:"none",background:"#fff",color:"#0f172a",fontWeight:900,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>Anmelden</button>
           </div>
-        )}
-        {step==="setpw"&&(
-          <div className="up" style={{background:"rgba(255,255,255,.09)",border:"1.5px solid rgba(255,255,255,.13)",borderRadius:18,padding:"18px"}}>
-            <div style={{color:"#fff",fontWeight:800,fontSize:15,marginBottom:4}}>🔑 Eigenes Passwort festlegen</div>
-            <div style={{color:"rgba(255,255,255,.6)",fontSize:12.5,lineHeight:1.5,marginBottom:12}}>Das Einmal-Passwort war nur für den ersten Login. Wähle jetzt dein eigenes Passwort (mind. 6 Zeichen mit Buchstabe und Zahl).</div>
-            <div style={{marginBottom:9}}><PwInput value={np1} onChange={e=>setNp1(e.target.value)} placeholder="Neues Passwort…" autoFocus/></div>
-            <PwInput value={np2} onChange={e=>setNp2(e.target.value)} onKeyDown={e=>e.key==="Enter"&&saveNewPw()} placeholder="Wiederholen…"/>
-            {perr&&<div style={{color:"#fecaca",fontSize:13,fontWeight:700,marginTop:8}}>{perr}</div>}
-            <button onClick={saveNewPw} style={{width:"100%",marginTop:12,padding:"13px",borderRadius:13,border:"none",background:"#fff",color:"#0f172a",fontWeight:900,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>Speichern & anmelden</button>
-          </div>
-        )}
+          <span style={{color:"rgba(255,255,255,.3)",fontSize:22}}>{">"}</span>
+        </div>
+      ))}
+    </GradWrap>
+  );
+  if(step==="setpw") return (
+    <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s},${t.p}66)`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,position:"relative"}}>
+      <style>{CSS}</style>
+      <div className="up" style={{width:"100%",maxWidth:370}}>
+        <div style={{textAlign:"center",marginBottom:24}}>
+          <Av name={sel?.name||"?"} sz={64} sx={{margin:"0 auto 14px"}}/>
+          <h2 style={{color:"#fff",fontSize:22,fontWeight:900,margin:"0 0 6px"}}>Eigenes Passwort vergeben</h2>
+          <p style={{color:"rgba(255,255,255,.6)",fontSize:13,lineHeight:1.5}}>Du bist mit einem Einmal-Passwort angemeldet. Lege jetzt dein persönliches Passwort fest – mind. 6 Zeichen mit Buchstaben und Zahlen.</p>
+        </div>
+        <div style={{background:"rgba(255,255,255,.1)",backdropFilter:"blur(16px)",borderRadius:22,padding:"22px",border:"1px solid rgba(255,255,255,.15)",display:"flex",flexDirection:"column",gap:10}}>
+          <PwInput value={np1} onChange={e=>{setNp1(e.target.value);setPerr("");}} placeholder="Neues Passwort" autoFocus autoCapitalize="none" autoCorrect="off" spellCheck={false}
+            style={{width:"100%",padding:"13px 16px",fontSize:16,background:"rgba(255,255,255,.12)",border:`2px solid ${perr?"#ff6b6b":"rgba(255,255,255,.25)"}`,borderRadius:13,outline:"none",color:"#fff",boxSizing:"border-box"}}/>
+          <PwInput value={np2} onChange={e=>{setNp2(e.target.value);setPerr("");}} onKeyDown={e=>{if(e.key==="Enter")saveNewPw();}} placeholder="Passwort wiederholen" autoCapitalize="none" autoCorrect="off" spellCheck={false}
+            style={{width:"100%",padding:"13px 16px",fontSize:16,background:"rgba(255,255,255,.12)",border:`2px solid ${perr?"#ff6b6b":"rgba(255,255,255,.25)"}`,borderRadius:13,outline:"none",color:"#fff",boxSizing:"border-box"}}/>
+          <div style={{fontSize:11.5,color:np1&&!validTrainerPw(np1)?"#fca5a5":"rgba(255,255,255,.5)"}}>{validTrainerPw(np1)?"✓ sicher genug":"Mind. 6 Zeichen · Buchstaben + Zahlen"}</div>
+          {perr&&<p style={{fontSize:12.5,color:"#fca5a5",fontWeight:700,margin:0}}>{perr}</p>}
+          <button onClick={saveNewPw} disabled={!np1||!np2}
+            style={{width:"100%",padding:"13px",fontSize:15,fontWeight:800,background:np1&&np2?cl.pri:"rgba(255,255,255,.15)",color:np1&&np2?"#fff":"rgba(255,255,255,.4)",border:"none",borderRadius:13,cursor:np1&&np2?"pointer":"not-allowed",fontFamily:"inherit"}}>
+            Passwort speichern & einloggen
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+  return (
+    <div style={{minHeight:"100dvh",background:`linear-gradient(160deg,${t.s},${t.p}66)`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,position:"relative"}}>
+      <style>{CSS}</style>
+      <button onClick={()=>{setStep(helpersInCat.length>1?"who":"cat");setPw("");setErr(false);}} style={{position:"absolute",top:22,left:22,background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer"}}>← Zurück</button>
+      <div className="up" style={{width:"100%",maxWidth:370}}>
+        <div style={{textAlign:"center",marginBottom:24}}>
+          <Av name={sel?.name||"?"} sz={64} sx={{margin:"0 auto 14px"}}/>
+          <h2 style={{color:"#fff",fontSize:22,fontWeight:900,margin:"0 0 6px"}}>Hallo {sel?.name?.split(" ")[0]||""}!</h2>
+          <p style={{color:"rgba(255,255,255,.6)",fontSize:13}}>{sel?.mustChangePw?"Einmal-Passwort vom Trainer eingeben":"Gib dein Passwort ein"}</p>
+        </div>
+        <div style={{background:"rgba(255,255,255,.1)",backdropFilter:"blur(16px)",borderRadius:22,padding:"22px",border:"1px solid rgba(255,255,255,.15)",display:"flex",flexDirection:"column",gap:10}}>
+          <PwInput value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&go()} placeholder="Passwort…" autoFocus autoCapitalize="none" autoCorrect="off" spellCheck={false}
+            style={{width:"100%",padding:"13px 16px",fontSize:16,background:"rgba(255,255,255,.12)",border:`2px solid ${err?"#ff6b6b":"rgba(255,255,255,.25)"}`,borderRadius:13,outline:"none",color:"#fff",boxSizing:"border-box"}}/>
+          {err&&<p style={{fontSize:12.5,color:"#fca5a5",fontWeight:700,margin:0}}>Passwort falsch. Bei Verlust kann der Trainer ein neues Einmal-Passwort erzeugen.</p>}
+          <button onClick={go} disabled={!pw}
+            style={{width:"100%",padding:"13px",fontSize:15,fontWeight:800,background:pw?cl.pri:"rgba(255,255,255,.15)",color:pw?"#fff":"rgba(255,255,255,.4)",border:"none",borderRadius:13,cursor:pw?"pointer":"not-allowed",fontFamily:"inherit"}}>
+            Anmelden
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -11781,8 +11850,25 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
   const u=p=>setF(prev=>({...prev,...p}));
   const myTeams=data.teams.filter(tm=>myTids.includes(tm.id));
 
-  const openNew=()=>{setF({name:"",childName:"",tids:myTids,notes:"",active:true,tempPw:genTempPw()});setEditH(null);setShowForm(true);};
+  const openNew=()=>{setF({name:"",childName:"",tids:myTids,notes:"",active:true,roles:{einsatz:true,kasse:false},tempPw:genTempPw()});setEditH(null);setShowForm(true);};
   const openEdit=h=>{setF({...h});setEditH(h.id);setShowForm(true);};
+  // Rollen: mindestens eine muss aktiv bleiben
+  const setRole=(k,v)=>{ const r={einsatz:f.roles?.einsatz!==false,kasse:!!f.roles?.kasse,[k]:v}; if(!r.einsatz&&!r.kasse) return; u({roles:r}); };
+
+  // Gleicher Name in mehreren Jugenden? Zusammenfuehren -> EIN Login, einfacher Wechsel.
+  const dupGroups=(()=>{ const by={}; allHelpers.forEach(h=>{ const k=(h.name||"").trim().toLowerCase(); if(k) (by[k]=by[k]||[]).push(h); }); return Object.values(by).filter(g=>g.length>1); })();
+  const mergeGroup=g=>{
+    const keep=g.find(h=>h.pw&&!h.mustChangePw)||g.find(h=>h.pw)||g[0];
+    const others=g.filter(h=>h.id!==keep.id);
+    const merged={...keep,
+      tids:[...new Set(g.flatMap(h=>h.tids||[]))],
+      childName:keep.childName||others.map(h=>h.childName).find(Boolean)||"",
+      notes:[keep.notes,...others.map(h=>h.notes)].filter(Boolean).join(" · "),
+      roles:{einsatz:g.some(h=>h.roles?.einsatz!==false),kasse:g.some(h=>!!h.roles?.kasse)},
+    };
+    save({...data,helpers:(data.helpers||[]).filter(h=>!others.some(o=>o.id===h.id)).map(h=>h.id===keep.id?merged:h)});
+    fire("Zugänge zusammengeführt – ein Login für alle Jugenden ✓");
+  };
 
   const save2=()=>{
     // Einmal-Passwort wie bei Trainern: gehasht speichern + Pflicht-Wechsel beim
@@ -11812,6 +11898,18 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
         <p style={{fontSize:13,color:"#64748b",marginTop:4}}>Erstelle Zugänge mit Namen + Einmal-Passwort – wie bei den Trainern</p>
       </div>}
 
+      {/* Doppelte Zugaenge (gleicher Name in mehreren Jugenden) zusammenfuehren */}
+      {dupGroups.map(g=>(
+        <div key={g[0].id} style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:14,padding:"12px 14px",marginBottom:10}}>
+          <div style={{fontWeight:800,fontSize:13.5,color:"#92400e"}}>🔗 {g.length} Zugänge für „{g[0].name}“ gefunden</div>
+          <div style={{fontSize:12,color:"#a16207",marginTop:3,lineHeight:1.5}}>Zusammenführen macht daraus <b>einen Login für alle Jugenden</b> – {g[0].name} kann dann in der App einfach zwischen den Jugenden wechseln. Es gilt das Passwort des Kontos, das schon ein eigenes Passwort gesetzt hat.</div>
+          <div style={{display:"flex",gap:5,flexWrap:"wrap",marginTop:6}}>
+            {data.teams.filter(tm=>g.some(h=>(h.tids||[]).includes(tm.id))).map(tm=><span key={tm.id} style={{fontSize:11,fontWeight:700,color:tm.col,background:tm.col+"18",borderRadius:6,padding:"2px 8px"}}>{tm.icon} {tm.name}</span>)}
+          </div>
+          <button onClick={()=>mergeGroup(g)} style={{width:"100%",marginTop:9,padding:"10px",borderRadius:10,border:"none",background:"#d97706",color:"#fff",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>🔗 Jetzt zusammenführen</button>
+        </div>
+      ))}
+
       <div style={{display:"flex",flexDirection:"column",gap:9}}>
         {allHelpers.map(h=>(
           <div key={h.id} style={{background:"#fff",borderRadius:15,border:`1.5px solid ${h.active!==false?"#e2e8f0":"#fecaca"}`,overflow:"hidden"}}>
@@ -11822,6 +11920,7 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
                 {h.childName&&<div style={{fontSize:12,color:"#64748b",marginTop:1}}>Kind: {h.childName}</div>}
                 <div style={{display:"flex",gap:6,marginTop:4,flexWrap:"wrap"}}>
                   <span style={{fontSize:11,fontWeight:800,color:h.pw?(h.mustChangePw?"#b45309":"#16a34a"):"#dc2626",background:h.pw?(h.mustChangePw?"#fef3c7":"#dcfce7"):"#fee2e2",borderRadius:6,padding:"2px 8px"}}>{h.pw?(h.mustChangePw?"🔑 Einmal-Passwort aktiv":"Passwort gesetzt 🔒"):(h.code?"Alt-Code – bitte zurücksetzen":"kein Zugang")}</span>
+                  {h.roles?.kasse&&<span style={{fontSize:11,fontWeight:800,color:"#7c3aed",background:"#ede9fe",borderRadius:6,padding:"2px 8px"}}>💶 Kassenhelfer{h.roles?.einsatz===false?" (nur Kasse)":""}</span>}
                   <span style={{fontSize:11,fontWeight:700,color:h.active!==false?"#16a34a":"#dc2626",background:h.active!==false?"#dcfce7":"#fee2e2",borderRadius:6,padding:"2px 8px"}}>{h.active!==false?"? Aktiv":"? Inaktiv"}</span>
                 </div>
               </div>
@@ -11848,6 +11947,22 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
             <Inp label="Name des Helfers" val={f.name} set={v=>u({name:v})} ph="z.B. Maria M." cl={cl} note="Datenschutz: Bitte nur Vorname, höchstens Nachname-Initial."/>
             <Inp label="Kind im Verein (optional)" val={f.childName||""} set={v=>u({childName:v})} ph="z.B. Leon Müller,G-Jugend" cl={cl}/>
             <Inp label="Notizen (intern)" val={f.notes||""} set={v=>u({notes:v})} ph="z.B. Hilft bei Heimspielen" rows={2} cl={cl}/>
+
+            {/* Aufgaben: Einsatz-Helfer und/oder Kassenhelfer */}
+            <div>
+              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:7}}>AUFGABEN</div>
+              <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                <label style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:11,border:`1.5px solid ${f.roles?.einsatz!==false?"#16a34a":"#e2e8f0"}`,background:f.roles?.einsatz!==false?"#f0fdf4":"#fafafa",cursor:"pointer"}}>
+                  <input type="checkbox" checked={f.roles?.einsatz!==false} onChange={e=>setRole("einsatz",e.target.checked)} style={{width:17,height:17,accentColor:"#16a34a"}}/>
+                  <span style={{flex:1}}><span style={{fontWeight:800,fontSize:13.5}}>🙋 Einsatz-Helfer</span><span style={{display:"block",fontSize:11.5,color:"#64748b",marginTop:1}}>Termine sehen, für Einsätze zusagen, Orga- & Verkaufslisten pflegen</span></span>
+                </label>
+                <label style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:11,border:`1.5px solid ${f.roles?.kasse?"#7c3aed":"#e2e8f0"}`,background:f.roles?.kasse?"#f5f3ff":"#fafafa",cursor:"pointer"}}>
+                  <input type="checkbox" checked={!!f.roles?.kasse} onChange={e=>setRole("kasse",e.target.checked)} style={{width:17,height:17,accentColor:"#7c3aed"}}/>
+                  <span style={{flex:1}}><span style={{fontWeight:800,fontSize:13.5}}>💶 Kassenhelfer</span><span style={{display:"block",fontSize:11.5,color:"#64748b",marginTop:1}}>Darf die Mannschafts-Kasse pflegen (Kassenwart)</span></span>
+                </label>
+              </div>
+              <p style={{fontSize:11,color:"#64748b",marginTop:6,lineHeight:1.45}}>Wer <b>nur</b> Kassenhelfer ist, sieht ausschließlich die Kasse – keine Termine, keine Spieler-Daten.</p>
+            </div>
 
             {}
             <div style={{background:"#eff6ff",borderRadius:12,padding:"12px 14px",border:"1.5px solid #bfdbfe"}}>
@@ -14710,7 +14825,17 @@ function SpielplanImport({ local, save, fire, cl, cid, teams, defaultTid, onClos
 function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const { isDesktop, isTablet } = useBreakpoint();
   const isAdmin=session.role==="admin"; const isHelper=session.role==="helper"; const cid=session.cid; const cl=data.clubs.find(c=>c.id===cid);
-  const myTids=isAdmin?activeTeamsFor(data,cid).map(t=>t.id):isHelper?activeTeamsFor(data,cid).map(t=>t.id):(session.tids||[]);
+  const myTids=(()=>{
+    const allActive=activeTeamsFor(data,cid).map(t=>t.id);
+    if(isAdmin) return allActive;
+    if(isHelper){
+      // Helfer sehen nur ihre zugeteilten Jugenden (Fallback: alle, wie frueher)
+      const h=(data.helpers||[]).find(x=>x.id===session.id);
+      const ts=(h?.tids||session.tids||[]).filter(tid=>allActive.includes(tid));
+      return ts.length?ts:allActive;
+    }
+    return session.tids||[];
+  })();
   const t=TH(cl);
   const [tab,setTab]=useState("events"); // BottomNav manages this
   const [teamSub,setTeamSub]=useState(null); // Sprungziel im Team-Bereich (z.B. Turnier-Börse)
@@ -14750,6 +14875,12 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   // Welcome-Modal beim ersten Login für Trainer / Helfer (nur einmalig)
   const meTrainer = session.role==="trainer" ? (data.trainers||[]).find(x=>x.id===session.id) : null;
   const meHelper  = session.role==="helper"  ? (data.helpers||[]).find(x=>x.id===session.id) : null;
+  // Kassenhelfer: darf die Kasse pflegen; wer NUR Kassenhelfer ist, sieht sonst nichts.
+  const helperKasse   = isHelper && !!meHelper?.roles?.kasse;
+  const helperEinsatz = isHelper ? (meHelper?.roles?.einsatz!==false) : true;
+  const helperOnlyKasse = helperKasse && !helperEinsatz;
+  const [helperTid,setHelperTid]=useState(null);   // Jugend-Filter fuer Helfer mit mehreren Teams
+  const [showRueck,setShowRueck]=useState(false);  // Kachel "Rueckmeldungen": Uebersicht je Termin
   const [trainerWelcomeOpen, setTrainerWelcomeOpen] = useState(()=>!!(meTrainer && meTrainer.onboarded!==true));
   const [modWizardManual,setModWizardManual]=useState(false);
   useEffect(()=>{ if(tab==="module"){ setModWizardManual(true); setTab("events"); } },[tab]);
@@ -14792,7 +14923,9 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const save=next=>{setLocal(next);onSave(next);};
   const myClub=local.clubs.find(c=>c.id===cid);
   const _activeSid = activeSid(local, cid);
-  const myEvs=local.events.filter(e=>myTids.includes(e.tid)&&e.cid===cid&&(!e.seasonId||e.seasonId===_activeSid)).sort((a,b)=>a.date.localeCompare(b.date));
+  const myEvs=local.events.filter(e=>myTids.includes(e.tid)&&e.cid===cid&&(!e.seasonId||e.seasonId===_activeSid)&&(!isHelper||!helperTid||e.tid===helperTid)).sort((a,b)=>a.date.localeCompare(b.date));
+  // Reiner Kassenhelfer: direkt in die Kasse, alles andere bleibt zu.
+  useEffect(()=>{ if(helperOnlyKasse&&tab!=="treasury") setTab("treasury"); },[helperOnlyKasse,tab]);
   // Trainer/Admin kann selbst zu-/absagen (stimmt unter eigenem Namen ab)
   const selfName = session.name || (isAdmin?"Admin":isHelper?"Helfer":"");
   const selfVote = (evId,val) => {
@@ -14873,7 +15006,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       gridTemplateColumns:isDesktop?"260px 1fr":"none"}}>
       <OnlineStatus/>
       {isDesktop&&<DesktopSidebar tab={tab} setTab={setTab}
-        isAdmin={isAdmin} isHelper={isHelper}
+        isAdmin={isAdmin} isHelper={isHelper} helperKasse={helperKasse} helperOnlyKasse={helperOnlyKasse}
         unread={unreadMsgs} inboxUnread={unreadInbox} cl={myClub}
         session={session} onLogout={onLogout} lang={lang} setLang={setLang} showLang={false}/>}
       <div style={{minHeight:"100dvh",background:"#f0f4f8",paddingBottom:isDesktop?0:"calc(72px + env(safe-area-inset-bottom))"}}>
@@ -14902,13 +15035,52 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       {showSeasonModal&&<SeasonModal data={local} save={d=>{save(d);}} fire={fire} cl={myClub} myTids={myTids} onClose={()=>setShowSeasonModal(false)}/>}
       {}
       <div style={{background:`linear-gradient(90deg,${t.p},${mix(t.p,-20)})`,display:"grid",gridTemplateColumns:"repeat(3,1fr)"}}>
-        {[[up.length,"Anstehende Termine"],[myTids.length,"Mannschaften"],[myEvs.reduce((s,e)=>s+Object.keys(e.votes||{}).length,0),"Rückmeldungen"]].map(([v,l],i)=>(
-          <div key={l} style={{padding:"12px 6px",textAlign:"center",borderRight:i<2?`1px solid ${t.ct==="#fff"?"rgba(255,255,255,.2)":"rgba(0,0,0,.12)"}`:"none"}}>
+        {[[up.length,"Anstehende Termine",()=>{setViewEv(null);setTab("events");}],[myTids.length,"Mannschaften",()=>{setViewEv(null);setTab(isHelper?"events":"team");}],[myEvs.reduce((s,e)=>s+Object.keys(e.votes||{}).length,0),"Rückmeldungen",()=>setShowRueck(true)]].map(([v,l,go],i)=>(
+          <div key={l} onClick={go} style={{padding:"12px 6px",textAlign:"center",cursor:"pointer",borderRight:i<2?`1px solid ${t.ct==="#fff"?"rgba(255,255,255,.2)":"rgba(0,0,0,.12)"}`:"none"}}>
             <div style={{color:t.ct,fontWeight:900,fontSize:22,lineHeight:1}}>{v}</div>
-            <div style={{color:t.ct,opacity:.82,fontSize:10.5,fontWeight:600,marginTop:4,letterSpacing:.2,lineHeight:1.2}}>{l}</div>
+            <div style={{color:t.ct,opacity:.82,fontSize:10.5,fontWeight:600,marginTop:4,letterSpacing:.2,lineHeight:1.2}}>{l} ›</div>
           </div>
         ))}
       </div>
+      {/* Kachel "Rueckmeldungen": Abstimmungs-Ueberblick je Termin, antippen oeffnet den Termin */}
+      {showRueck&&(
+        <div onClick={()=>setShowRueck(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:800,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(8px)"}}>
+          <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"85dvh",overflowY:"auto",animation:"down .24s ease"}}>
+            <div style={{display:"flex",justifyContent:"center",padding:"12px 0 4px"}}><div style={{width:44,height:4,borderRadius:99,background:"#e2e8f0"}}/></div>
+            <div style={{padding:"8px 20px 40px"}}>
+              <h3 style={{fontWeight:900,fontSize:18,color:"#0f172a",marginBottom:2}}>📊 Rückmeldungen</h3>
+              <p style={{fontSize:12.5,color:"#64748b",marginBottom:14}}>Antippen öffnet den Termin mit allen Details.</p>
+              {(()=>{
+                const list=myEvs.filter(e=>e.date>=now()).slice(0,15);
+                if(!list.length) return <EmptyBox icon="📭" title="Keine anstehenden Termine" sub="Sobald Termine anstehen, siehst du hier die Rückmeldungen."/>;
+                return list.map(ev=>{
+                  const vv=v=>(typeof v==="object"&&v)?v.val:v;
+                  const vs=Object.values(ev.votes||{});
+                  const yes=vs.filter(v=>vv(v)==="yes").length, no=vs.filter(v=>vv(v)==="no").length;
+                  const roster=(local.playerProfiles||[]).filter(p=>p.mainTid===ev.tid&&!p.archived).length;
+                  const open=Math.max(0,roster-vs.length);
+                  const tm=(local.teams||[]).find(x=>x.id===ev.tid);
+                  return (
+                    <div key={ev.id} onClick={()=>{setShowRueck(false);setTab("events");setViewEv(ev);}}
+                      style={{display:"flex",alignItems:"center",gap:11,background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:13,padding:"11px 13px",marginBottom:8,cursor:"pointer"}}>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontWeight:800,fontSize:13.5,color:"#0f172a",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{ev.title}</div>
+                        <div style={{fontSize:11.5,color:"#64748b",marginTop:2}}>{fmtD(ev.date)}{ev.time?` · ${ev.time}`:""}{tm?` · ${tm.name}`:""}</div>
+                      </div>
+                      <div style={{display:"flex",gap:5,flexShrink:0,alignItems:"center"}}>
+                        <span style={{fontSize:11.5,fontWeight:800,color:"#15803d",background:"#dcfce7",borderRadius:7,padding:"3px 8px"}}>✓ {yes}</span>
+                        <span style={{fontSize:11.5,fontWeight:800,color:"#dc2626",background:"#fee2e2",borderRadius:7,padding:"3px 8px"}}>✕ {no}</span>
+                        {open>0&&<span style={{fontSize:11.5,fontWeight:800,color:"#b45309",background:"#fef3c7",borderRadius:7,padding:"3px 8px"}}>⏳ {open}</span>}
+                        <span style={{color:"#94a3b8",fontSize:16}}>›</span>
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
       {}
       <div style={{background:"#fff",borderBottom:"2px solid #f1f5f9",display:"flex",overflowX:"auto",boxShadow:"0 2px 8px rgba(0,0,0,.04)"}}>
         {tabs.map(([id,label])=><button key={id} onClick={()=>setTab(id)} style={{background:"none",border:"none",padding:"12px 13px",fontSize:12,fontWeight:800,cursor:"pointer",whiteSpace:"nowrap",color:tab===id?t.p:"#94a3b8",borderBottom:tab===id?`3px solid ${t.p}`:"3px solid transparent",marginBottom:-2,flexShrink:0}}>{label}</button>)}
@@ -14916,6 +15088,15 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       <div style={{maxWidth:560,margin:"0 auto",padding:"14px"}}>
         <AreaIntro id={tab} cl={myClub}/>
         {tab==="events"&&<>
+          {/* Helfer mit mehreren Jugenden: einfacher Wechsel ohne Neu-Login */}
+          {isHelper&&myTids.length>1&&(
+            <div style={{display:"flex",gap:6,marginBottom:12,overflowX:"auto",paddingBottom:2}}>
+              {[[null,"Alle Jugenden"],...myTids.map(tid=>{const tm=(local.teams||[]).find(x=>x.id===tid);return [tid,`${tm?.icon||"⚽"} ${tm?.name||tid}`];})].map(([tid,l])=>(
+                <button key={tid||"all"} onClick={()=>setHelperTid(tid)}
+                  style={{flexShrink:0,padding:"7px 13px",borderRadius:99,border:`1.5px solid ${helperTid===tid?t.p:"#e2e8f0"}`,background:helperTid===tid?t.p:"#fff",color:helperTid===tid?contrast(t.p):"#475569",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{l}</button>
+              ))}
+            </div>
+          )}
           {}
           {(local.seasons||[]).some(s=>s.status==="planning")&&(
             <div onClick={()=>setShowSeasonModal(true)} style={{background:"#eff6ff",border:"1.5px solid #bfdbfe",borderRadius:13,padding:"11px 16px",marginBottom:14,cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
@@ -15080,7 +15261,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         </>}
         {tab==="players"    &&!isHelper&&<><PlayersTab data={local} myTids={myTids} save={save} fire={fire} cl={myClub} session={session}/><AffiliateBanner trigger="players" style={{marginTop:14}}/></> }
         {tab==="templates"  &&<TemplatesTab data={local} cid={cid} save={save} fire={fire} cl={myClub} myTids={myTids} teams={(local.teams||[]).filter(tm=>tm.cid===cid)}/>}
-        {tab==="treasury"   &&!isHelper&&<TreasuryTab data={local} cid={cid} save={save} fire={fire} cl={myClub} myTids={myTids} teams={(local.teams||[]).filter(tm=>tm.cid===cid)} isAdmin={isAdmin}/>}
+        {tab==="treasury"   &&(!isHelper||helperKasse)&&<TreasuryTab data={local} cid={cid} save={save} fire={fire} cl={myClub} myTids={myTids} teams={(local.teams||[]).filter(tm=>tm.cid===cid)} isAdmin={isAdmin}/>}
         {tab==="helpers"    &&!isHelper&&<HelpersTab data={local} cid={cid} myTids={myTids} session={session} save={save} fire={fire} cl={myClub}/>}
         {tab==="training"  &&<><TrainingPlanTab data={local} myTids={myTids} save={save} fire={fire} cl={myClub} session={session}/><AffiliateBanner trigger="training" style={{marginTop:14}}/></> }
         {tab==="taktik"    &&!isHelper&&<TacticBoard data={local} myTids={myTids} save={save} fire={fire} cl={myClub}/>}
@@ -15378,8 +15559,31 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           : (!isHelper&&<button onClick={()=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,helferOpen:true}:e)}); setViewEv(prev=>({...prev,helferOpen:true})); fire("Helfer-Anmeldung freigegeben"); }}
               style={{width:"100%",marginTop:14,padding:"11px",borderRadius:11,border:"1.5px dashed #d97706",background:"#fffbeb",color:"#b45309",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>🙋 Helfer-Anmeldung für diesen Termin freigeben</button>)
         )}
+        {/* Orga & Verkauf: Kuchen, Getraenke, Material & Schichten - Trainer UND Helfer pflegen gemeinsam */}
+        {viewEv.type!=="training"&&<OrgaBoard ev={viewEv} user={session.name||(isHelper?"Helfer":"Trainer")} canEdit={!isHelper||helperEinsatz}
+          onPatch={patch=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,...patch}:e)}); setViewEv(prev=>({...prev,...patch})); }} fire={fire}/>}
+        {/* Spielteams: KI teilt fuer Festivals/Turniere faire eigene Teams ein */}
+        {["heimspiel","auswarts","freundschaft","turnier"].includes(viewEv.type)&&!isHelper&&<TrainingGroups variant="spiel" ev={viewEv} data={local} cl={myClub} fire={fire}
+          onPatch={patch=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,...patch}:e)}); setViewEv(prev=>({...prev,...patch})); }}
+          onFeedback={({gi,kind,adj})=>{
+            const list=(viewEv.groups?.list||[]).map((g,i)=>i===gi?{...g,fb:kind}:g);
+            save({...local,
+              events:local.events.map(e=>e.id===viewEv.id?{...e,groups:{...e.groups,list}}:e),
+              teams:local.teams.map(tm=>tm.id===viewEv.tid?{...tm,strengthAdj:{...(tm.strengthAdj||{}),...adj}}:tm)});
+            setViewEv(prev=>({...prev,groups:{...prev.groups,list}}));
+            fire(kind==="gut"?"Danke! Einteilung als gut gemerkt 👍":"Gemerkt – fließt in die nächste Einteilung ein ✓");
+          }}/>}
         {viewEv.type==="training"&&<TrainingGroups ev={viewEv} data={local} cl={myClub} fire={fire}
-          onPatch={patch=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,...patch}:e)}); setViewEv(prev=>({...prev,...patch})); }}/>}
+          onPatch={patch=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,...patch}:e)}); setViewEv(prev=>({...prev,...patch})); }}
+          onFeedback={({gi,kind,adj})=>{
+            // Feedback + gelernte Staerke-Korrektur in EINEM Save (sonst ueberschreibt der zweite den ersten)
+            const list=(viewEv.groups?.list||[]).map((g,i)=>i===gi?{...g,fb:kind}:g);
+            save({...local,
+              events:local.events.map(e=>e.id===viewEv.id?{...e,groups:{...e.groups,list}}:e),
+              teams:local.teams.map(tm=>tm.id===viewEv.tid?{...tm,strengthAdj:{...(tm.strengthAdj||{}),...adj}}:tm)});
+            setViewEv(prev=>({...prev,groups:{...prev.groups,list}}));
+            fire(kind==="gut"?"Danke! Einteilung als gut gemerkt 👍":"Gemerkt – fließt in die nächste Einteilung ein ✓");
+          }}/>}
         <DutyBoard ev={viewEv} user={session.name||"Trainer"} canManage={!isHelper} onChange={arr=>{
           save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,duties:arr}:e)});
           setViewEv(prev=>({...prev,duties:arr}));
@@ -15690,7 +15894,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       )}
       {helperWelcomeOpen && meHelper && <HelperWelcome h={meHelper} data={local} save={save} onClose={()=>setHelperWelcomeOpen(false)}/>}
       <Toast msg={toast}/>
-      {!isDesktop&&<BottomNav tab={tab} setTab={setTab} isAdmin={isAdmin} isHelper={isHelper}
+      {!isDesktop&&<BottomNav tab={tab} setTab={setTab} isAdmin={isAdmin} isHelper={isHelper} helperKasse={helperKasse} helperOnlyKasse={helperOnlyKasse}
         unread={unreadMsgs} inboxUnread={unreadInbox} cl={myClub}
         mods={{taktik:modOn("taktik"),training:modOn("training"),helfer:modOn("helfer"),kasse:modOn("kasse")}}/>}
       
@@ -18039,6 +18243,115 @@ function TournamentPublic({ eid, clubParam, onBack }){
   );
 }
 
+// Orga & Verkauf pro Spiel/Turnier: Mitbring-Liste (Kuchen, Getraenke ...), Material
+// (Tische, Baenke ...) und Verkaufs-Schichten. Trainer UND Einsatz-Helfer pflegen die
+// Liste gemeinsam - so laeuft die Organisation im Hintergrund und die Trainer koennen
+// sich auf die Mannschaft konzentrieren.
+const ORGA_SUGGEST=["🍰 Kuchen","🧃 Trinkpäckchen","☕ Kaffee & Kanne","🥨 Brötchen","🌭 Grill + Kohle","🪑 Tische","🛋 Bänke","⛺ Pavillon","💶 Wechselgeld","🗑 Müllsäcke"];
+function OrgaBoard({ ev, user, canEdit, onPatch, fire }){
+  const orga=ev.orga||{items:[],shifts:[]};
+  const items=orga.items||[], shifts=orga.shifts||[];
+  const [newItem,setNewItem]=useState("");
+  const [newShift,setNewShift]=useState("");
+  const patch=next=>onPatch({orga:{...orga,...next}});
+  const addItem=label=>{ const l=String(label||"").trim(); if(!l) return;
+    if(items.some(x=>x.label.toLowerCase()===l.toLowerCase())) return;
+    patch({items:[...items,{id:uid(),label:l,need:1,who:[]}]}); setNewItem(""); };
+  const joinItem=it=>{ const has=it.who.includes(user);
+    patch({items:items.map(x=>x.id===it.id?{...x,who:has?x.who.filter(w=>w!==user):[...x.who,user]}:x)});
+    fire&&fire(has?"Eintrag zurückgezogen":"Danke – eingetragen! 🙌"); };
+  const bumpNeed=(it,d)=>patch({items:items.map(x=>x.id===it.id?{...x,need:Math.max(1,Math.min(20,(x.need||1)+d))}:x)});
+  const delItem=it=>patch({items:items.filter(x=>x.id!==it.id)});
+  const addShift=label=>{ const l=String(label||"").trim(); if(!l) return;
+    patch({shifts:[...shifts,{id:uid(),label:l,need:2,who:[]}]}); setNewShift(""); };
+  const joinShift=s=>{ const has=s.who.includes(user);
+    patch({shifts:shifts.map(x=>x.id===s.id?{...x,who:has?x.who.filter(w=>w!==user):[...x.who,user]}:x)});
+    fire&&fire(has?"Schicht abgegeben":"Schicht übernommen – danke! 🙌"); };
+  const bumpShiftNeed=(s,d)=>patch({shifts:shifts.map(x=>x.id===s.id?{...x,need:Math.max(1,Math.min(12,(x.need||1)+d))}:x)});
+  const delShift=s=>patch({shifts:shifts.filter(x=>x.id!==s.id)});
+  const openSuggest=ORGA_SUGGEST.filter(sg=>!items.some(x=>x.label.toLowerCase()===sg.toLowerCase()));
+  return (
+    <div style={{marginTop:16,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+        <span style={{fontSize:18}}>🧺</span>
+        <span style={{fontWeight:800,fontSize:15,color:"#0f172a",flex:1}}>Orga & Verkauf</span>
+      </div>
+      <div style={{fontSize:11.5,color:"#64748b",lineHeight:1.5,marginBottom:10}}>Kuchen, Getränke, Material & Verkaufs-Schichten – Trainer und Helfer pflegen die Liste gemeinsam. Einfach antippen und übernehmen.</div>
+      {/* Mitbringen & Material */}
+      <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6}}>MITBRINGEN & MATERIAL</div>
+      {items.length===0&&<div style={{fontSize:12,color:"#94a3b8",marginBottom:8}}>Noch nichts auf der Liste – unten anlegen oder Vorschlag antippen.</div>}
+      <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:8}}>
+        {items.map(it=>{ const ok=it.who.length>=(it.need||1); const mine=it.who.includes(user);
+          return (
+            <div key={it.id} style={{background:ok?"#f0fdf4":"#fff",border:`1.5px solid ${ok?"#bbf7d0":"#e2e8f0"}`,borderRadius:12,padding:"9px 11px"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{flex:1,minWidth:0,fontWeight:800,fontSize:13,color:"#0f172a"}}>{it.label}</span>
+                {canEdit&&<span style={{display:"flex",alignItems:"center",gap:4,flexShrink:0}}>
+                  <button onClick={()=>bumpNeed(it,-1)} style={{width:22,height:22,borderRadius:6,border:"1px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:800,cursor:"pointer",fontSize:12}}>−</button>
+                  <span style={{fontSize:11.5,fontWeight:800,color:ok?"#15803d":"#b45309"}}>{it.who.length}/{it.need||1}</span>
+                  <button onClick={()=>bumpNeed(it,1)} style={{width:22,height:22,borderRadius:6,border:"1px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:800,cursor:"pointer",fontSize:12}}>+</button>
+                </span>}
+                {!canEdit&&<span style={{fontSize:11.5,fontWeight:800,color:ok?"#15803d":"#b45309",flexShrink:0}}>{it.who.length}/{it.need||1}</span>}
+                <button onClick={()=>joinItem(it)} style={{flexShrink:0,padding:"5px 11px",borderRadius:9,border:"none",background:mine?"#fee2e2":"#d97706",color:mine?"#dc2626":"#fff",fontWeight:800,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>{mine?"Doch nicht":"Übernehme ich"}</button>
+                {canEdit&&<button onClick={()=>delItem(it)} style={{flexShrink:0,width:24,height:24,borderRadius:7,border:"none",background:"#fee2e2",color:"#dc2626",fontWeight:800,fontSize:12,cursor:"pointer"}}>✕</button>}
+              </div>
+              {it.who.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:6}}>
+                {it.who.map(w=><span key={w} style={{display:"inline-flex",alignItems:"center",gap:4,background:"#f8fafc",border:"1px solid #eef2f7",borderRadius:99,padding:"2px 8px 2px 3px",fontSize:11,fontWeight:600,color:"#334155"}}><Av name={w} sz={16}/>{w}</span>)}
+              </div>}
+            </div>
+          );
+        })}
+      </div>
+      {canEdit&&openSuggest.length>0&&(
+        <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:8}}>
+          {openSuggest.slice(0,6).map(sg=>(
+            <button key={sg} onClick={()=>addItem(sg)} style={{padding:"5px 10px",borderRadius:99,border:"1.5px dashed #cbd5e1",background:"#f8fafc",color:"#475569",fontWeight:700,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>+ {sg}</button>
+          ))}
+        </div>
+      )}
+      {canEdit&&(
+        <div style={{display:"flex",gap:6,marginBottom:14}}>
+          <input value={newItem} onChange={e=>setNewItem(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addItem(newItem)} placeholder="Eigenes anlegen, z.B. Obstteller…"
+            style={{flex:1,padding:"9px 12px",borderRadius:10,border:"1.5px solid #e2e8f0",fontSize:13,fontFamily:"inherit",outline:"none"}}/>
+          <button onClick={()=>addItem(newItem)} style={{padding:"9px 14px",borderRadius:10,border:"none",background:"#0f172a",color:"#fff",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Hinzufügen</button>
+        </div>
+      )}
+      {/* Schichten: wer verkauft wann */}
+      <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6}}>SCHICHTEN (WER HILFT WANN?)</div>
+      {shifts.length===0&&<div style={{fontSize:12,color:"#94a3b8",marginBottom:8}}>Noch keine Schichten – z.B. „Verkauf 10:00–11:30" anlegen.</div>}
+      <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:8}}>
+        {shifts.map(s=>{ const ok=s.who.length>=(s.need||1); const mine=s.who.includes(user);
+          return (
+            <div key={s.id} style={{background:ok?"#f0fdf4":"#fff",border:`1.5px solid ${ok?"#bbf7d0":"#e2e8f0"}`,borderRadius:12,padding:"9px 11px"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{flex:1,minWidth:0,fontWeight:800,fontSize:13,color:"#0f172a"}}>⏱ {s.label}</span>
+                {canEdit&&<span style={{display:"flex",alignItems:"center",gap:4,flexShrink:0}}>
+                  <button onClick={()=>bumpShiftNeed(s,-1)} style={{width:22,height:22,borderRadius:6,border:"1px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:800,cursor:"pointer",fontSize:12}}>−</button>
+                  <span style={{fontSize:11.5,fontWeight:800,color:ok?"#15803d":"#b45309"}}>{s.who.length}/{s.need||1}</span>
+                  <button onClick={()=>bumpShiftNeed(s,1)} style={{width:22,height:22,borderRadius:6,border:"1px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:800,cursor:"pointer",fontSize:12}}>+</button>
+                </span>}
+                {!canEdit&&<span style={{fontSize:11.5,fontWeight:800,color:ok?"#15803d":"#b45309",flexShrink:0}}>{s.who.length}/{s.need||1}</span>}
+                <button onClick={()=>joinShift(s)} style={{flexShrink:0,padding:"5px 11px",borderRadius:9,border:"none",background:mine?"#fee2e2":"#d97706",color:mine?"#dc2626":"#fff",fontWeight:800,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>{mine?"Abgeben":"Ich helfe"}</button>
+                {canEdit&&<button onClick={()=>delShift(s)} style={{flexShrink:0,width:24,height:24,borderRadius:7,border:"none",background:"#fee2e2",color:"#dc2626",fontWeight:800,fontSize:12,cursor:"pointer"}}>✕</button>}
+              </div>
+              {s.who.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:6}}>
+                {s.who.map(w=><span key={w} style={{display:"inline-flex",alignItems:"center",gap:4,background:"#f8fafc",border:"1px solid #eef2f7",borderRadius:99,padding:"2px 8px 2px 3px",fontSize:11,fontWeight:600,color:"#334155"}}><Av name={w} sz={16}/>{w}</span>)}
+              </div>}
+            </div>
+          );
+        })}
+      </div>
+      {canEdit&&(
+        <div style={{display:"flex",gap:6}}>
+          <input value={newShift} onChange={e=>setNewShift(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addShift(newShift)} placeholder="z.B. Verkauf 10:00–11:30"
+            style={{flex:1,padding:"9px 12px",borderRadius:10,border:"1.5px solid #e2e8f0",fontSize:13,fontFamily:"inherit",outline:"none"}}/>
+          <button onClick={()=>addShift(newShift)} style={{padding:"9px 14px",borderRadius:10,border:"none",background:"#0f172a",color:"#fff",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Anlegen</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Helfer-Dienste pro Termin: Aufgaben anlegen (Trainer/Admin) und uebernehmen
 // (alle). Jede Aufgabe hat eine id -> 3-Wege-Merge greift bei parallelen Klicks.
 function DutyBoard({ ev, user, canManage, onChange }){
@@ -18169,8 +18482,9 @@ function StaffingBoard({ ev, team, session, isHelper, onPatch, fire, onRequestHe
 // Feld + Aufwärm-Übung, Wechsel im Uhrzeigersinn) und KI-Hinweis zum
 // Zusammenlegen für die Spielform (z. B. F-Jugend: ein großes Feld 5+1).
 const GROUP_MAX_DEFAULT = 8; // Ideal 6–8; Deckel je Verein einstellbar (clubSettings.groupMax)
-function TrainingGroups({ ev, data, cl, onPatch, fire }){
+function TrainingGroups({ ev, data, cl, onPatch, fire, variant="training", onFeedback=null }){
   const t=TH(cl);
+  const sp=variant==="spiel"; // Spielteams fuer Spiele/Turniere statt Trainingsgruppen
   const team=(data.teams||[]).find(tm=>tm.id===ev.tid);
   const cat=team?.cat||team?.name||"F-Jugend";
   const GROUP_MAX=cl?.clubSettings?.groupMax||GROUP_MAX_DEFAULT;
@@ -18194,32 +18508,80 @@ function TrainingGroups({ ev, data, cl, onPatch, fire }){
   const missing=Math.max(0,nGroups-leaders.length);
   const profOf=n=>(data.playerProfiles||[]).find(p=>(p.name||"").toLowerCase()===String(n).toLowerCase()&&p.mainTid===ev.tid)
     ||(data.playerProfiles||[]).find(p=>(p.name||"").toLowerCase()===String(n).toLowerCase());
-  const skillAvgOf=n=>{ const p=profOf(n); const vs=Object.values(p?.skills||{}).map(Number).filter(v=>v>0); return vs.length?vs.reduce((a,b)=>a+b,0)/vs.length:2.5; };
-  // Rotation: letzte Gruppen-Einteilung dieses Teams (frühere Trainings)
-  const prev=(data.events||[]).filter(e=>e.tid===ev.tid&&e.id!==ev.id&&e.type==="training"&&e.groups?.list?.length&&e.date<ev.date)
+  // Gelerntes Trainer-Feedback ("zu stark"/"zu schwach") je Kind: fliesst in die Staerke ein
+  const adjMapT=team?.strengthAdj||{};
+  const adjOf=n=>Number(adjMapT[String(n).toLowerCase()]||0);
+  const skillAvgOf=n=>{ const p=profOf(n); const vs=Object.values(p?.skills||{}).map(Number).filter(v=>v>0); return (vs.length?vs.reduce((a,b)=>a+b,0)/vs.length:2.5)+adjOf(n); };
+  // Kriterien fuer die Einteilung: kombinierbar (z.B. Staerken + Befreundet)
+  const [crit,setCrit]=useState(["staerken"]);
+  const toggleCrit=k=>setCrit(c=>c.includes(k)?(c.length>1?c.filter(x=>x!==k):c):[...c,k]);
+  // Freundes-Paare aus den Eltern-Angaben ("Freunde im Team"), nur Anwesende
+  const friendsOf=n=>{ const p=profOf(n); return (p?.friends||[]).map(f=>String(f)); };
+  const friendPairs=(()=>{ const mut=[],one=[],seen=new Set();
+    yes.forEach(a=>{ friendsOf(a).forEach(b=>{
+      const bn=yes.find(y=>y.toLowerCase()===String(b).toLowerCase()); if(!bn||bn===a) return;
+      const key=[a,bn].sort().join("|"); if(seen.has(key)) return; seen.add(key);
+      const back=friendsOf(bn).some(x=>String(x).toLowerCase()===a.toLowerCase());
+      (back?mut:one).push([a,bn]);
+    }); });
+    return [...mut,...one]; // beidseitig gepflegte Paare zuerst
+  })();
+  // Rotation: letzte Gruppen-Einteilung dieses Teams (frühere Trainings bzw. Spiele)
+  const prev=(data.events||[]).filter(e=>e.tid===ev.tid&&e.id!==ev.id&&(sp?["heimspiel","auswarts","freundschaft","turnier"].includes(e.type):e.type==="training")&&e.groups?.list?.length&&e.date<ev.date)
     .sort((a,b)=>(b.date||"").localeCompare(a.date||"")||String(b.time||"").localeCompare(String(a.time||"")))[0];
   const prevLeaderOf={}; const prevMatesOf={};
   (prev?.groups?.list||[]).forEach(g=>{ (g.members||[]).forEach(m=>{ prevLeaderOf[m]=g.leader; prevMatesOf[m]=g.members; }); });
 
   const build=(rotate)=>{
     if(kids===0){ fire&&fire(basis==="kader"?"Kein Kader hinterlegt – erst Spieler anlegen":"Noch keine Zusagen – oder oben auf „Ganzer Kader“ umschalten"); return; }
-    // 1) Kinder nach Skill sortieren, im Schlangen-Muster verteilen (ausgeglichen)
-    const order=[...yes].map(n=>({n,v:skillAvgOf(n)+(rotate?Math.random()*0.6-0.3:0)})).sort((a,b)=>b.v-a.v).map(x=>x.n);
+    const useS=crit.includes("staerken"), useF=crit.includes("freunde"), useR=crit.includes("zufall");
+    // 1) Befreundet: beidseitig gepflegte Paare zu kleinen Clustern zusammenfassen (max. 3),
+    //    damit Freunde in derselben Gruppe landen. Rotation trennt gelegentlich bewusst.
+    let units=yes.map(n=>[n]);
+    if(useF){
+      for(const [a,b] of friendPairs){
+        const ia=units.findIndex(u=>u.includes(a)), ib=units.findIndex(u=>u.includes(b));
+        if(ia<0||ib<0||ia===ib) continue;
+        if(units[ia].length+units[ib].length>3) continue;
+        if(rotate&&Math.random()<0.35) continue;
+        units[ia]=[...units[ia],...units[ib]]; units.splice(ib,1);
+      }
+    }
+    // 2) Wert je Cluster: Staerke (Skills + gelerntes Feedback) und/oder Zufall
+    const val=u=>{
+      let v=0;
+      if(useS) v+=u.reduce((s,n)=>s+skillAvgOf(n),0)/u.length;
+      if(useR) v+=Math.random()*(useS?1.2:10)-(useS?0.6:0);
+      else if(rotate&&useS) v+=Math.random()*0.6-0.3;
+      return v;
+    };
+    const order=units.map(u=>({u,v:val(u)})).sort((a,b)=>b.v-a.v);
+    // 3) Schlangen-Verteilung: haelt die Gruppen-Staerkesummen nah beieinander
     const groups=Array.from({length:nGroups},()=>[]);
+    const room=i=>sizes[i]-groups[i].length;
     let gi=0,dir=1;
-    for(const n of order){
-      // Zielgruppe: nächste im Schlangenmuster, bei Rotation Mitspieler-Wiederholung leicht vermeiden
-      let pick=gi;
-      if(rotate&&prevMatesOf[n]){
-        const alts=groups.map((g,i)=>({i,ov:g.filter(m=>(prevMatesOf[n]||[]).includes(m)).length,len:g.length}))
-          .filter(x=>x.len<sizes[x.i]).sort((a,b)=>a.ov-b.ov||a.len-b.len);
+    const advance=()=>{ gi+=dir; if(gi>=nGroups||gi<0){ dir*=-1; gi+=dir; } };
+    for(const {u} of order){
+      let pick=-1;
+      // Rotation: Einzelkinder moeglichst zu NEUEN Mitspielern (wie bisher)
+      if(rotate&&u.length===1&&prevMatesOf[u[0]]){
+        const alts=groups.map((g,i)=>({i,ov:g.filter(m=>(prevMatesOf[u[0]]||[]).includes(m)).length,len:g.length}))
+          .filter(x=>room(x.i)>=1).sort((a,b)=>a.ov-b.ov||a.len-b.len);
         if(alts.length) pick=alts[0].i;
       }
-      if(groups[pick].length>=sizes[pick]){ const free=groups.findIndex((g,i)=>g.length<sizes[i]); pick=free>=0?free:pick; }
-      groups[pick].push(n);
-      gi+=dir; if(gi===nGroups||gi<0){ dir*=-1; gi+=dir; }
+      if(pick<0){
+        let tries=0;
+        while(tries<nGroups&&room(gi)<u.length){ advance(); tries++; }
+        pick=room(gi)>=u.length?gi:groups.findIndex((g,i)=>room(i)>=u.length);
+      }
+      if(pick<0){ // Freundes-Cluster passt nirgends komplett -> notfalls aufteilen
+        for(const n of u){ const free=groups.findIndex((g,i)=>room(i)>0); if(free>=0) groups[free].push(n); }
+      } else {
+        groups[pick].push(...u);
+        advance();
+      }
     }
-    // 2) Leiter zuordnen: möglichst NICHT dieselben Kinder wie letztes Mal (Rotation)
+    // 4) Leiter zuordnen: möglichst NICHT dieselben Kinder wie letztes Mal (Rotation)
     const pool=leaders.slice(0,nGroups);
     const used=new Set();
     const list=groups.map(members=>{
@@ -18228,8 +18590,32 @@ function TrainingGroups({ ev, data, cl, onPatch, fire }){
       if(best) used.add(best.n);
       return { leader:best?.n||null, role:best?.role||null, members };
     });
-    onPatch({ groups:{ ts:new Date().toISOString(), list } });
-    fire&&fire(rotate?"Gruppen neu gemischt (Rotation) ✓":"Gruppen eingeteilt ✓");
+    onPatch({ groups:{ ts:new Date().toISOString(), list, crit:[...crit] } });
+    fire&&fire(rotate?(sp?"Teams neu gemischt (Rotation) ✓":"Gruppen neu gemischt (Rotation) ✓"):(sp?"Spielteams eingeteilt ✓":"Gruppen eingeteilt ✓"));
+  };
+
+  // Trainer/Betreuer suchen sich ihre Gruppe selbst aus (oder tauschen)
+  const setLeader=(gi2,name)=>{
+    const ld=leaders.find(l=>l.n===name);
+    const list=(ev.groups?.list||[]).map((g,i)=>{
+      if(i===gi2) return {...g,leader:name||null,role:name?(ld?.role||g.role||null):null};
+      return (name&&g.leader===name)?{...g,leader:null,role:null}:g; // gleicher Leiter woanders -> freigeben
+    });
+    onPatch({ groups:{...(ev.groups||{}),list} });
+    fire&&fire(name?`${name} übernimmt ${sp?"Team":"Feld"} ${gi2+1}`:"Leiter entfernt");
+  };
+  // Ehrliches Trainer-Feedback: die App lernt daraus fuer die naechste Einteilung
+  const feedback=(gi2,kind)=>{
+    if(!onFeedback) return;
+    const g=(ev.groups?.list||[])[gi2]; if(!g) return;
+    const adj={};
+    (g.members||[]).forEach(n=>{
+      const k=String(n).toLowerCase(); const cur=adjOf(n);
+      if(kind==="stark") adj[k]=Math.min(1.5,Math.round((cur+0.3)*100)/100);
+      else if(kind==="schwach") adj[k]=Math.max(-1.5,Math.round((cur-0.3)*100)/100);
+      else adj[k]=Math.round(cur*0.5*100)/100; // "gut": Einschaetzung passt -> Korrekturen abbauen
+    });
+    onFeedback({ gi:gi2, kind, adj });
   };
 
   // Stationen: je Gruppe eine Aufwärm-Übung (altersgerecht aus der Bibliothek)
@@ -18243,7 +18629,7 @@ function TrainingGroups({ ev, data, cl, onPatch, fire }){
 
   const requestText=()=>[
     `🙋 Betreuer gesucht – ${team?.name||""}`,
-    `Training am ${fmtD(ev.date)}${ev.time?` um ${ev.time} Uhr`:""}${ev.loc?` (${ev.loc})`:""}.`,
+    `${sp?"Spieltag":"Training"} am ${fmtD(ev.date)}${ev.time?` um ${ev.time} Uhr`:""}${ev.loc?` (${ev.loc})`:""}.`,
     `${kids} Kinder haben zugesagt → ${nGroups} Gruppen (${sizes.join("·")}), ideal 6–8 (max. ${GROUP_MAX}) Kinder pro Trainer/Betreuer.`,
     `Wir haben ${leaders.length} Trainer/Betreuer und brauchen noch ${missing}. Wer kann unterstützen? Einfach in der App unter dem Termin „Ich leite mit" tippen. Danke! 💚`,
   ].join("\n");
@@ -18253,14 +18639,23 @@ function TrainingGroups({ ev, data, cl, onPatch, fire }){
   return (
     <div style={{marginTop:16,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-        <span style={{fontSize:18}}>👥</span>
-        <span style={{fontWeight:800,fontSize:15,color:"#0f172a",flex:1}}>Trainingsgruppen & Stationen</span>
+        <span style={{fontSize:18}}>{sp?"🆚":"👥"}</span>
+        <span style={{fontWeight:800,fontSize:15,color:"#0f172a",flex:1}}>{sp?"Spielteams (KI-Vorschlag)":"Trainingsgruppen & Stationen"}</span>
       </div>
+      {sp&&<div style={{fontSize:11.5,color:"#64748b",lineHeight:1.5,marginBottom:8}}>Für Festivals & Turniere mit mehreren eigenen Teams: die App teilt fair nach euren Kriterien ein. Für die klassische Aufstellung auf Positionen gibt es den Reiter „⚽ Aufstellung“.</div>}
       {/* Vorab planen: Basis waehlen (Zusagen vs. ganzer Kader) */}
       <div style={{display:"flex",gap:6,marginBottom:8}}>
         {[["zusagen",`✅ Zusagen (${yesVoters.length})`],["kader",`👥 Ganzer Kader (${roster.length})`]].map(([k,l])=>(
           <button key={k} onClick={()=>setBasisSel(k)}
             style={{flex:1,padding:"7px 10px",borderRadius:9,border:`1.5px solid ${basis===k?t.p:"#e2e8f0"}`,background:basis===k?t.p+"14":"#fff",color:basis===k?t.p:"#64748b",fontWeight:800,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
+        ))}
+      </div>
+      {/* Kriterien: einfach antippen, auch mehrere zusammen */}
+      <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:5}}>WIE EINTEILEN? <span style={{fontWeight:600}}>(auch mehrere zusammen)</span></div>
+      <div style={{display:"flex",gap:6,marginBottom:8,flexWrap:"wrap"}}>
+        {[["staerken","💪 Stärken"],["freunde","👫 Befreundet"],["zufall","🎲 Zufall"]].map(([k,l])=>(
+          <button key={k} onClick={()=>toggleCrit(k)}
+            style={{padding:"7px 12px",borderRadius:99,border:`1.5px solid ${crit.includes(k)?t.p:"#e2e8f0"}`,background:crit.includes(k)?t.p:"#fff",color:crit.includes(k)?contrast(t.p):"#64748b",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{l}{crit.includes(k)?" ✓":""}</button>
         ))}
       </div>
       <div style={{fontSize:12,color:"#475569",fontWeight:600,marginBottom:10,lineHeight:1.5}}>
@@ -18273,28 +18668,43 @@ function TrainingGroups({ ev, data, cl, onPatch, fire }){
         </button>
       )}
       <div style={{display:"flex",gap:8,marginBottom:gl.length?12:0}}>
-        <button onClick={()=>build(false)} style={{flex:1.3,padding:"11px",borderRadius:11,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>✨ Gruppen einteilen</button>
+        <button onClick={()=>build(false)} style={{flex:1.3,padding:"11px",borderRadius:11,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>✨ {sp?"Teams":"Gruppen"} einteilen</button>
         {gl.length>0&&<button onClick={()=>build(true)} style={{flex:1,padding:"11px",borderRadius:11,border:`1.5px solid ${t.p}`,background:"#fff",color:t.p,fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>🔁 Rotieren</button>}
       </div>
       {gl.length>0&&(
         <div style={{display:"flex",flexDirection:"column",gap:8}}>
           {gl.map((g,i)=>(
             <div key={i} style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"10px 12px"}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-                <span style={{fontSize:11,fontWeight:900,color:contrast(t.p),background:t.p,borderRadius:7,padding:"2px 8px"}}>Feld {i+1}</span>
-                {g.leader
-                  ? <span style={{fontSize:12.5,fontWeight:800,color:"#0f172a"}}>{g.leader} <span style={{fontSize:10.5,fontWeight:700,color:g.role==="Trainer"?"#15803d":"#b45309",background:g.role==="Trainer"?"#dcfce7":"#fef3c7",borderRadius:5,padding:"1px 6px"}}>{g.role||"?"}</span></span>
-                  : <span style={{fontSize:12,fontWeight:800,color:"#b45309"}}>⚠️ Betreuer fehlt</span>}
-                <span style={{marginLeft:"auto",fontSize:11.5,fontWeight:700,color:"#64748b"}}>{(g.members||[]).length} Kinder</span>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,flexWrap:"wrap"}}>
+                <span style={{fontSize:11,fontWeight:900,color:contrast(t.p),background:t.p,borderRadius:7,padding:"2px 8px"}}>{sp?"Team":"Feld"} {i+1}</span>
+                {/* Trainer & Betreuer suchen sich ihre Gruppe selbst aus */}
+                <select value={g.leader||""} onChange={e=>setLeader(i,e.target.value)}
+                  style={{flex:1,minWidth:120,padding:"5px 8px",borderRadius:8,border:`1.5px solid ${g.leader?"#e2e8f0":"#fbbf24"}`,background:g.leader?"#fff":"#fffbeb",color:g.leader?"#0f172a":"#b45309",fontWeight:800,fontSize:12,fontFamily:"inherit"}}>
+                  <option value="">⚠️ Wer übernimmt? (antippen)</option>
+                  {[...leaders,...(g.leader&&!leaders.some(l=>l.n===g.leader)?[{n:g.leader,role:g.role}]:[])].map(l=>(
+                    <option key={l.n} value={l.n}>{l.n}{l.role?` · ${l.role}`:""}</option>
+                  ))}
+                </select>
+                <span style={{fontSize:11.5,fontWeight:700,color:"#64748b",flexShrink:0}}>{(g.members||[]).length} Kinder</span>
               </div>
               <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
                 {(g.members||[]).map(m=><span key={m} style={{display:"inline-flex",alignItems:"center",gap:4,background:"#f8fafc",border:"1px solid #eef2f7",borderRadius:99,padding:"2px 9px 2px 3px",fontSize:11.5,fontWeight:600,color:"#334155"}}><Av name={m} sz={17}/>{m}</span>)}
               </div>
-              {stations[i]&&<div style={{marginTop:7,fontSize:11.5,color:"#4f46e5",fontWeight:700}}>🏃 Aufwärmen: {stations[i].name} <span style={{color:"#64748b",fontWeight:600}}>({stations[i].duration||10} Min)</span></div>}
+              {!sp&&stations[i]&&<div style={{marginTop:7,fontSize:11.5,color:"#4f46e5",fontWeight:700}}>🏃 Aufwärmen: {stations[i].name} <span style={{color:"#64748b",fontWeight:600}}>({stations[i].duration||10} Min)</span></div>}
+              {/* Ehrliches Feedback: die App lernt daraus fuer die naechste Einteilung */}
+              {onFeedback&&(
+                <div style={{display:"flex",alignItems:"center",gap:5,marginTop:8,flexWrap:"wrap"}}>
+                  <span style={{fontSize:10.5,fontWeight:700,color:"#94a3b8"}}>Wie war die Einteilung?</span>
+                  {[["gut","👍 Gut"],["stark","💪 Zu stark"],["schwach","😮‍💨 Zu schwach"]].map(([k,l])=>(
+                    <button key={k} onClick={()=>feedback(i,k)}
+                      style={{padding:"4px 10px",borderRadius:99,border:`1.5px solid ${g.fb===k?(k==="gut"?"#16a34a":"#d97706"):"#e2e8f0"}`,background:g.fb===k?(k==="gut"?"#dcfce7":"#fef3c7"):"#fff",color:g.fb===k?(k==="gut"?"#15803d":"#b45309"):"#64748b",fontWeight:700,fontSize:10.5,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
-          {nGroups>1&&<div style={{fontSize:11.5,color:"#0369a1",background:"#e0f2fe",border:"1px solid #bae6fd",borderRadius:10,padding:"8px 11px",lineHeight:1.5}}>🔄 Stationen-Wechsel alle ~{rotMin} Min im Uhrzeigersinn (Feld 1 → 2 → 3). {mergeHint}</div>}
-          <div style={{fontSize:10.5,color:"#64748b",lineHeight:1.45}}>„Rotieren" mischt bewusst andere Leiter & Mitspieler als beim letzten Training – so lernen sich alle kennen und jedes Kind entwickelt sich in wechselnden Gruppen.</div>
+          {!sp&&nGroups>1&&<div style={{fontSize:11.5,color:"#0369a1",background:"#e0f2fe",border:"1px solid #bae6fd",borderRadius:10,padding:"8px 11px",lineHeight:1.5}}>🔄 Stationen-Wechsel alle ~{rotMin} Min im Uhrzeigersinn (Feld 1 → 2 → 3). {mergeHint}</div>}
+          <div style={{fontSize:10.5,color:"#64748b",lineHeight:1.45}}>„Rotieren" mischt bewusst andere Leiter & Mitspieler als beim letzten Mal – so lernen sich alle kennen. {onFeedback?"„Zu stark / zu schwach“ merkt sich die App und rechnet es beim nächsten Einteilen automatisch ein.":""}</div>
         </div>
       )}
     </div>
@@ -20038,7 +20448,7 @@ function AppInner({lang,setLang}) {
         onGuestConsent={({tid,name,by})=>{ addAuditLog(data, save, {id:uid(), cid, ts:new Date().toISOString(), type:"consent", device:"Eltern-Gerät", msg:`Einwilligung (Gast ohne Profil) für ${name} erteilt durch ${by||"Eltern"} · Team ${(data.teams||[]).find(tm=>tm.id===tid)?.name||tid}`}); }}
         onSetChildPw={(profId,pw)=>{ save({...data, playerProfiles:(data.playerProfiles||[]).map(p=>p.id===profId?{...p, childPw:hashPw(pw), childPwAt:new Date().toISOString()}:p)}); }}/>}
       {screen==="tlogin"&&activeCl&&<TrainerLogin cl={activeCl} trainers={data.trainers.filter(t=>t.cid===cid&&isActive(t))} teams={(data.teams||[]).filter(tm=>tm.cid===cid)} onLogin={tr=>login("trainer",tr)} onSetTrainerPw={(trId,newHash)=>{ save({...data,trainers:(data.trainers||[]).map(t=>t.id===trId?{...t,pw:newHash,mustChangePw:false,sharedAt:t.sharedAt||new Date().toISOString()}:t)}); }} onBack={()=>setScr("role")}/>}
-      {screen==="hlogin"&&activeCl&&<HelperLogin cl={activeCl} helpers={data.helpers||[]} onLogin={h=>login("helper",{...h,cid})}
+      {screen==="hlogin"&&activeCl&&<HelperLogin cl={activeCl} helpers={data.helpers||[]} teams={(data.teams||[]).filter(tm=>tm.cid===cid)} onLogin={h=>login("helper",{...h,cid})}
         onSetHelperPw={(hid,nh)=>{ save({...data,helpers:(data.helpers||[]).map(h=>h.id===hid?{...h,pw:nh,mustChangePw:false,sharedAt:h.sharedAt||new Date().toISOString()}:h)}); }}
         onBack={()=>setScr("role")}/>}
       {screen==="alogin"&&activeCl&&<AdminLogin cl={activeCl} onLogin={a=>login("admin",{...a,cid})} onBack={()=>setScr("role")}/>}
