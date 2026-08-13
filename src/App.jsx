@@ -15636,6 +15636,13 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         {/* Checkliste direkt in der Orga: Zusagen sehen, ganzen Kader abhaken, Gaeste anlegen */}
         {!isHelper&&<AttendanceCheckoff ev={viewEv}
           teamPlayers={[...new Set([...((local.players||{})[viewEv.tid]||[]), ...((local.playerProfiles||[]).filter(pp=>pp.mainTid===viewEv.tid&&!pp.archived).map(pp=>pp.name))])]}
+          trainerNames={trainerNames}
+          onSetVote={(name,val)=>{
+            const nv={...(viewEv.votes||{}),[name]:{val,ts:new Date().toISOString(),byTrainer:true}};
+            save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,votes:nv}:e)});
+            setViewEv(prev=>({...prev,votes:nv}));
+            fire(val==="yes"?name+": zugesagt (vom Trainer eingetragen)":name+": abgesagt (vom Trainer eingetragen)");
+          }}
           onSetPresent={present=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,present}:e)}); setViewEv(prev=>({...prev,present})); }}
           onSetGuests={guests=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,guests}:e)}); setViewEv(prev=>({...prev,guests})); }}/>}
         {viewEv.type==="training"&&(
@@ -16611,7 +16618,9 @@ function SpickzettelModal({ev,data,cl,save,fire,onClose}){
   const team=(data.teams||[]).find(tm=>tm.id===ev.tid);
   const vv=v=>typeof v==="object"&&v!==null?v.val:v;
   const votes=Object.entries(ev.votes||{});
-  const yes=votes.filter(([,v])=>vv(v)==="yes").map(([n])=>n);
+  // Zusagen ohne Trainer-Selbstzusagen - Trainer stehen in der eigenen Kachel
+  const _tnSp=new Set((data.trainers||[]).filter(x=>!ev.cid||x.cid===ev.cid).map(x=>String(x.name||"").toLowerCase()));
+  const yes=votes.filter(([n,v])=>vv(v)==="yes"&&!_tnSp.has(String(n).toLowerCase())).map(([n])=>n);
   const late=votes.filter(([,v])=>vv(v)==="late").map(([n])=>n);
   const trainersN=(data.trainers||[]).filter(x=>(x.tids||[]).includes(ev.tid)&&isActive(x)).length;
   const offers=(ev.helperOffers||[]);
@@ -20384,7 +20393,7 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{},onSwitc
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
               {(cl.links||[]).map(l=>(
                 <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer"
-                  onClick={()=>{ try{ onSave({...data,linkClicks:[...(data.linkClicks||[]),{id:uid(),cid:cl.id,lid:l.id,ts:new Date().toISOString()}]}); }catch{} }}
+                  onClick={()=>{ try{ onSave({...data,linkClicks:[...(data.linkClicks||[]).slice(-1999),{id:uid(),cid:cl.id,lid:l.id,ts:new Date().toISOString()}]}); }catch{} }}
                   style={{display:"flex",alignItems:"center",gap:11,textDecoration:"none",background:"#f8fafc",borderRadius:12,padding:"11px 13px",border:"1px solid #f1f5f9"}}>
                   <div style={{width:34,height:34,borderRadius:10,background:t.p+"15",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>🔗</div>
                   <span style={{flex:1,fontWeight:700,fontSize:14,color:"#0f172a"}}>{l.title}</span>
