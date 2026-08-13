@@ -8,7 +8,7 @@ import { fetchVereinData, mapTeamEvents, teamInfo } from './verein.js'
 const WD = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
 const WD_LONG = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag']
 const MONTHS = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember']
-const COLORS = ['#3E7CB1', '#BC5878', '#D28E2C', '#5B9E63', '#7C6BAF', '#C96A4A', '#4A9FA5', '#8A8F3C']
+const COLORS = ['#3D7BFF', '#FF5D73', '#FFB02E', '#2FBF71', '#8B5CF6', '#FF7A3D', '#00B8C4', '#E5484D']
 
 const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 const fromIso = (s) => new Date(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10))
