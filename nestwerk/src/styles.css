@@ -361,3 +361,55 @@ footer.note { text-align: center; font-size: 12px; color: var(--ink-soft); paddi
 .colorpick button { width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--line); cursor: pointer; }
 .colorpick button.sel { outline: 3px solid var(--brand); outline-offset: 2px; }
 .loading { min-height: 100vh; display: flex; align-items: center; justify-content: center; color: var(--ink-soft); font-weight: 700; }
+
+/* ================= Merkzeug im OneNote-Stil ================= */
+.on-grid { display: grid; grid-template-columns: 1fr; gap: 14px; align-items: start; }
+@media (min-width: 900px) {
+  .on-grid { grid-template-columns: 200px 235px 1fr; }
+  .on-wide { grid-column: 2 / span 2; }
+  .on-rail { flex-direction: column; }
+}
+.on-rail { display: flex; flex-wrap: wrap; gap: 7px; }
+.osec {
+  display: flex; align-items: center; gap: 8px;
+  font: inherit; font-size: 13.5px; font-weight: 800;
+  border: 2px solid var(--line); border-radius: 9px; padding: 7px 10px;
+  background: var(--surface); color: var(--ink); cursor: pointer;
+  box-shadow: 2px 2px 0 var(--line); text-align: left;
+}
+@media (min-width: 900px) { .osec { width: 100%; } }
+.osec:active { transform: translate(1px, 1px); box-shadow: none; }
+.osec.active { background: var(--brand); color: var(--brand-ink); }
+.osec-bar { width: 10px; height: 18px; border-radius: 3px; border: 1.5px solid var(--line); flex: none; }
+.osec-cnt { margin-left: auto; font-size: 11px; opacity: .75; font-variant-numeric: tabular-nums; }
+.on-rail .quickadd input { max-width: 150px; }
+.on-pages { display: flex; flex-direction: column; gap: 7px; }
+.opage {
+  font: inherit; text-align: left; width: 100%;
+  border: 2px solid var(--line); border-radius: 9px;
+  background: var(--surface); color: var(--ink);
+  padding: 8px 11px; cursor: pointer;
+}
+.opage:active { transform: translate(1px, 1px); }
+.opage.active { background: var(--brand-soft); box-shadow: 2px 2px 0 var(--line); }
+.opage-t { font-weight: 800; font-size: 14px; }
+.opage-d { font-size: 11px; color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.on-editor {
+  background: var(--surface); border: 2px solid var(--line); border-radius: 12px;
+  box-shadow: var(--shadow); padding: 14px 16px; min-height: 360px;
+  display: flex; flex-direction: column; gap: 6px;
+  position: relative; overflow: hidden;
+}
+.on-editor::after {
+  content: '';
+  position: absolute; top: 0; right: 0;
+  width: 16px; height: 16px;
+  background: linear-gradient(225deg, var(--ground) 0 50%, var(--fold) 50% 100%);
+  border-left: 2px solid var(--line);
+  border-bottom: 2px solid var(--line);
+  border-bottom-left-radius: 6px;
+  pointer-events: none;
+}
+.oe-title { font: inherit; font-size: 21px; font-weight: 900; border: 0; border-bottom: 2px solid var(--hairline); background: transparent; color: var(--ink); padding: 4px 2px; }
+.oe-date { font-size: 11.5px; color: var(--ink-soft); }
+.oe-body { flex: 1; min-height: 250px; font: inherit; font-size: 15px; line-height: 1.75; border: 0; background: transparent; color: var(--ink); resize: vertical; padding: 4px 2px; }

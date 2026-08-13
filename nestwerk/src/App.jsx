@@ -313,7 +313,8 @@ function EventSheet({ initial, members, me, onSave, onDelete, onClose }) {
 
 /* ================= Merkzeug (E2E-verschlüsselt, lokal) ================= */
 
-const EMPTY_MEMORY = { persons: [], docs: [] }
+const EMPTY_MEMORY = { persons: [], docs: [], sections: [] }
+const SEC_COLORS = ['#8B5CF6', '#FF5D73', '#FFB02E', '#2FBF71', '#00B8C4', '#FF7A3D']
 
 function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
   const [state, setState] = useState('locked')
@@ -325,9 +326,13 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
   const [isNew, setIsNew] = useState(false)
   const [q, setQ] = useState('')
   const [sel, setSel] = useState(null)
-  const [tab, setTab] = useState('personen')
+  const [sec, setSec] = useState('_personen')
+  const [pageId, setPageId] = useState(null)
+  const [addSec, setAddSec] = useState('')
   const [docSel, setDocSel] = useState(null)
   const docInput = useRef()
+  const flushTimer = useRef()
+  const pendingMem = useRef(null)
   const [addName, setAddName] = useState('')
   const [addCtx, setAddCtx] = useState('')
 
@@ -342,7 +347,7 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
         try {
           const obj = await decryptJson(k, blob.iv, blob.cipher)
           setKey(k); setSalt(blob.salt)
-          setMem({ persons: obj.persons || [], docs: obj.docs || [] })
+          setMem({ persons: obj.persons || [], docs: obj.docs || [], sections: obj.sections || [] })
           setIsNew(false); setState('open')
           toast('Entsperrt – nur auf diesem Gerät lesbar')
         } catch {
@@ -352,8 +357,9 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
       } else {
         const s = newSalt()
         const k = await deriveKey(pw, s)
-        setKey(k); setSalt(s); setMem(EMPTY_MEMORY); setIsNew(true); setState('open')
-        const enc = await encryptJson(k, EMPTY_MEMORY)
+        const starter = { ...EMPTY_MEMORY, sections: [{ id: uid(), name: 'Notizen', color: SEC_COLORS[0], pages: [] }] }
+        setKey(k); setSalt(s); setMem(starter); setIsNew(true); setState('open')
+        const enc = await encryptJson(k, starter)
         onSaveBlob({ salt: s, ...enc })
         toast('Neues Gedächtnis angelegt – merk dir dieses Passwort gut!')
       }
@@ -370,8 +376,23 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
     onSaveBlob({ salt, ...enc })
   }
 
+  // Tipp-Änderungen sammeln und gebündelt verschlüsselt speichern
+  function schedulePersist(next) {
+    setMem(next)
+    pendingMem.current = next
+    clearTimeout(flushTimer.current)
+    flushTimer.current = setTimeout(flushPersist, 600)
+  }
+  function flushPersist() {
+    if (pendingMem.current) {
+      persist(pendingMem.current)
+      pendingMem.current = null
+    }
+  }
+
   function lock() {
-    setKey(null); setMem(EMPTY_MEMORY); setSel(null); setDocSel(null); setState('locked'); setQ('')
+    flushPersist()
+    setKey(null); setMem(EMPTY_MEMORY); setSel(null); setDocSel(null); setPageId(null); setState('locked'); setQ('')
     toast('Gesperrt 🔒')
   }
 
@@ -482,15 +503,42 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
   }
 
   const ql = q.trim().toLowerCase()
-  const hits = mem.persons.filter((p) =>
-    !ql || [p.name, p.ctx, p.familie, p.themen, p.faden, p.geb, (p.notizen || []).join(' ')].join(' ').toLowerCase().includes(ql))
+  const sections = mem.sections || []
+  const curSec = sections.find((s) => s.id === sec)
+  const curPage = curSec?.pages.find((p) => p.id === pageId)
+  const stamp = () => { const d = new Date(); return `${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()}` }
+  const updSections = (fn) => schedulePersist({ ...mem, sections: fn(sections) })
+
+  const updPage = (patch) => updSections((ss) => ss.map((s) =>
+    s.id === curSec.id ? { ...s, pages: s.pages.map((p) => (p.id === pageId ? { ...p, ...patch, updated: stamp() } : p)) } : s))
+
+  const addPage = () => {
+    const np = { id: uid(), title: '', text: '', updated: stamp() }
+    updSections((ss) => ss.map((s) => (s.id === curSec.id ? { ...s, pages: [np, ...s.pages] } : s)))
+    setPageId(np.id)
+  }
+
+  const addSection = () => {
+    const name = addSec.trim()
+    if (!name) return
+    const ns = { id: uid(), name, color: SEC_COLORS[sections.length % SEC_COLORS.length], pages: [] }
+    updSections((ss) => [...ss, ns])
+    setSec(ns.id); setPageId(null); setAddSec('')
+    toast(`Abschnitt „${name}“ angelegt ✓`)
+  }
+
+  const search = ql ? {
+    persons: mem.persons.filter((p) => [p.name, p.ctx, p.familie, p.themen, p.faden, p.geb, (p.notizen || []).join(' ')].join(' ').toLowerCase().includes(ql)),
+    pages: sections.flatMap((s) => s.pages.filter((p) => (p.title + ' ' + p.text).toLowerCase().includes(ql)).map((p) => ({ s, p }))),
+    docs: (mem.docs || []).filter((d) => d.name.toLowerCase().includes(ql)),
+  } : null
 
   return (
     <section className="screen">
       <div className="title-row">
         <div>
           <h2 className="screen-title">Merkzeug</h2>
-          <p className="screen-sub">{mem.persons.length} Person{mem.persons.length === 1 ? '' : 'en'} · verschlüsselt gespeichert</p>
+          <p className="screen-sub">{mem.persons.length} Personen · {sections.reduce((a, s) => a + s.pages.length, 0)} Seiten · {(mem.docs || []).length} Dokumente · alles verschlüsselt</p>
         </div>
         <button className="btn ghost sm" onClick={lock}>🔒 Sperren</button>
       </div>
@@ -499,20 +547,72 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
           <h4>Wichtig</h4>
           <ul>
             <li>Dein Gedächtnis-Passwort lässt sich <b>nicht zurücksetzen</b>. Schreib es auf und leg es sicher ab.</li>
-            <li>Leg gleich die erste Person an – z. B. jemanden, dessen Namen du dir nie merken kannst. 😉</li>
+            <li>Abschnitte wie in OneNote: 👥 Personen und 📄 Dokumente sind fest – eigene Abschnitte legst du unten links an.</li>
           </ul>
         </div>
       )}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-        <button className={'btn sm ' + (tab === 'personen' ? '' : 'ghost')} onClick={() => setTab('personen')}>👥 Personen</button>
-        <button className={'btn sm ' + (tab === 'dokumente' ? '' : 'ghost')} onClick={() => setTab('dokumente')}>📄 Dokumente</button>
-      </div>
-      {tab === 'personen' && (
-        <>
-          <input className="search" value={q} onChange={(e) => setQ(e.target.value)}
-            placeholder="Suchen: Name, Thema, Notiz …" aria-label="Im Gedächtnis suchen" />
-          <div className="card">
-            {hits.map((p) => (
+      <input className="search" value={q} onChange={(e) => setQ(e.target.value)}
+        placeholder="Alles durchsuchen: Personen, Seiten, Dokumente …" aria-label="Im Gedächtnis suchen" />
+      {ql ? (
+        <div className="card">
+          {search.persons.map((p) => (
+            <button className="row" key={p.id} onClick={() => { setQ(''); setSel(p.id) }}>
+              <span className="avatar">{(p.name || '?')[0].toUpperCase()}</span>
+              <div className="row-main"><div className="row-title">{p.name}</div><div className="row-meta">Person · {p.ctx || '—'}</div></div>
+              <span className="chev">›</span>
+            </button>
+          ))}
+          {search.pages.map(({ s, p }) => (
+            <button className="row" key={p.id} onClick={() => { setQ(''); setSec(s.id); setPageId(p.id) }}>
+              <span className="osec-bar" style={{ background: s.color }} />
+              <div className="row-main"><div className="row-title">{p.title || 'Unbenannte Seite'}</div><div className="row-meta">Seite in „{s.name}“ · {p.text.slice(0, 60)}</div></div>
+              <span className="chev">›</span>
+            </button>
+          ))}
+          {search.docs.map((d) => (
+            <button className="row" key={d.id} onClick={() => { setQ(''); setSec('_dokumente'); setDocSel(d.id) }}>
+              <span style={{ fontSize: 20 }}>{d.mime.startsWith('image/') ? '🖼️' : '📄'}</span>
+              <div className="row-main"><div className="row-title">{d.name}</div><div className="row-meta">Dokument</div></div>
+              <span className="chev">›</span>
+            </button>
+          ))}
+          {!search.persons.length && !search.pages.length && !search.docs.length && (
+            <div className="empty">Kein Treffer für „{q}“.</div>
+          )}
+        </div>
+      ) : (
+      <div className="on-grid">
+        <div className="on-rail">
+          <button className={'osec' + (sec === '_personen' ? ' active' : '')} onClick={() => { setSec('_personen'); setPageId(null) }}>
+            <span className="osec-bar" style={{ background: '#2FBF71' }} />👥 Personen<span className="osec-cnt">{mem.persons.length}</span>
+          </button>
+          <button className={'osec' + (sec === '_dokumente' ? ' active' : '')} onClick={() => { setSec('_dokumente'); setPageId(null) }}>
+            <span className="osec-bar" style={{ background: '#3D7BFF' }} />📄 Dokumente<span className="osec-cnt">{(mem.docs || []).length}</span>
+          </button>
+          {sections.map((s) => (
+            <button key={s.id} className={'osec' + (sec === s.id ? ' active' : '')}
+              onClick={() => { setSec(s.id); setPageId(s.pages[0]?.id || null) }}>
+              <span className="osec-bar" style={{ background: s.color }} />{s.name}<span className="osec-cnt">{s.pages.length}</span>
+              {sec === s.id && !s.pages.length && (
+                <span className="xdel" role="button" aria-label="Abschnitt löschen" onClick={(e) => {
+                  e.stopPropagation()
+                  updSections((ss) => ss.filter((x) => x.id !== s.id))
+                  setSec('_personen')
+                  toast('Abschnitt gelöscht')
+                }}>✕</span>
+              )}
+            </button>
+          ))}
+          <div className="quickadd" style={{ padding: '6px 0 0', borderTop: 0, background: 'transparent' }}>
+            <input value={addSec} onChange={(e) => setAddSec(e.target.value)} placeholder="+ Neuer Abschnitt" aria-label="Neuer Abschnitt"
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSection() } }} />
+            <button type="button" className="btn sm" onClick={addSection}>+</button>
+          </div>
+        </div>
+
+        {sec === '_personen' && (
+          <div className="on-wide card">
+            {mem.persons.map((p) => (
               <button className="row" key={p.id} onClick={() => setSel(p.id)}>
                 <span className="avatar">{(p.name || '?')[0].toUpperCase()}</span>
                 <div className="row-main">
@@ -522,7 +622,7 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
                 <span className="chev">›</span>
               </button>
             ))}
-            {!hits.length && <div className="empty">{q ? `Kein Treffer für „${q}“.` : 'Noch keine Personen – leg unten die erste an.'}</div>}
+            {!mem.persons.length && <div className="empty">Noch keine Personen – leg unten die erste an.</div>}
             <div className="quickadd">
               <input value={addName} onChange={(e) => setAddName(e.target.value)} placeholder="Name" aria-label="Name" style={{ maxWidth: 130 }} />
               <input value={addCtx} onChange={(e) => setAddCtx(e.target.value)} placeholder="Woher? (z. B. Nachbar)" aria-label="Kontext" />
@@ -534,32 +634,69 @@ function Merkzeug({ blob, onSaveBlob, ownerName, toast }) {
               }}>+</button>
             </div>
           </div>
-        </>
-      )}
-      {tab === 'dokumente' && (
-        <div className="card">
-          {(mem.docs || []).map((d) => (
-            <button className="row" key={d.id} onClick={() => setDocSel(d.id)}>
-              <span style={{ fontSize: 20 }}>{d.mime.startsWith('image/') ? '🖼️' : '📄'}</span>
+        )}
+
+        {sec === '_dokumente' && (
+          <div className="on-wide card">
+            {(mem.docs || []).map((d) => (
+              <button className="row" key={d.id} onClick={() => setDocSel(d.id)}>
+                <span style={{ fontSize: 20 }}>{d.mime.startsWith('image/') ? '🖼️' : '📄'}</span>
+                <div className="row-main">
+                  <div className="row-title">{d.name}</div>
+                  <div className="row-meta">{Math.round(d.size / 1024)} KB · {d.added} · 🔒 verschlüsselt gespeichert</div>
+                </div>
+                <span className="chev">›</span>
+              </button>
+            ))}
+            {!(mem.docs || []).length && <div className="empty">Noch keine Dokumente. Scans und PDFs werden vor dem Speichern verschlüsselt – ohne dein Passwort sind sie unlesbar.</div>}
+            <button className="row" onClick={() => docInput.current?.click()}>
+              <span style={{ fontSize: 20 }}>⬆️</span>
               <div className="row-main">
-                <div className="row-title">{d.name}</div>
-                <div className="row-meta">{Math.round(d.size / 1024)} KB · {d.added} · 🔒 verschlüsselt gespeichert</div>
+                <div className="row-title">Dokument hinzufügen</div>
+                <div className="row-meta">Foto, Scan oder PDF (max. 1,5 MB in dieser Stufe)</div>
               </div>
               <span className="chev">›</span>
             </button>
-          ))}
-          {!(mem.docs || []).length && <div className="empty">Noch keine Dokumente. Scans und PDFs werden vor dem Speichern verschlüsselt – ohne dein Passwort sind sie unlesbar.</div>}
-          <button className="row" onClick={() => docInput.current?.click()}>
-            <span style={{ fontSize: 20 }}>⬆️</span>
-            <div className="row-main">
-              <div className="row-title">Dokument hinzufügen</div>
-              <div className="row-meta">Foto, Scan oder PDF (max. 1,5 MB in dieser Stufe)</div>
+            <input ref={docInput} type="file" accept="image/*,application/pdf" style={{ display: 'none' }}
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) addDoc(f); e.target.value = '' }} />
+          </div>
+        )}
+
+        {curSec && (
+          <>
+            <div className="on-pages">
+              <button className="btn ghost sm" style={{ width: '100%' }} onClick={addPage}>+ Seite</button>
+              {curSec.pages.map((p) => (
+                <button key={p.id} className={'opage' + (p.id === pageId ? ' active' : '')} onClick={() => setPageId(p.id)}>
+                  <div className="opage-t">{p.title || 'Unbenannte Seite'}</div>
+                  <div className="opage-d">{p.updated}{p.text ? ' · ' + p.text.slice(0, 34) : ''}</div>
+                </button>
+              ))}
+              {!curSec.pages.length && <div className="empty" style={{ borderBottom: 0 }}>Noch keine Seiten.</div>}
             </div>
-            <span className="chev">›</span>
-          </button>
-          <input ref={docInput} type="file" accept="image/*,application/pdf" style={{ display: 'none' }}
-            onChange={(e) => { const f = e.target.files?.[0]; if (f) addDoc(f); e.target.value = '' }} />
-        </div>
+            <div className="on-editor">
+              {curPage ? (
+                <>
+                  <input className="oe-title" value={curPage.title} placeholder="Seitentitel"
+                    onChange={(e) => updPage({ title: e.target.value })} aria-label="Seitentitel" />
+                  <div className="oe-date">zuletzt {curPage.updated} · verschlüsselt gespeichert 🔒</div>
+                  <textarea className="oe-body" value={curPage.text} placeholder="Einfach lostippen – gespeichert wird automatisch …"
+                    onChange={(e) => updPage({ text: e.target.value })} aria-label="Seiteninhalt" />
+                  <div>
+                    <button className="btn danger sm" onClick={() => {
+                      updSections((ss) => ss.map((s) => (s.id === curSec.id ? { ...s, pages: s.pages.filter((p) => p.id !== pageId) } : s)))
+                      setPageId(null)
+                      toast('Seite gelöscht')
+                    }}>Seite löschen</button>
+                  </div>
+                </>
+              ) : (
+                <div className="empty" style={{ borderBottom: 0 }}>Wähle eine Seite – oder leg mit „+ Seite“ eine neue an.</div>
+              )}
+            </div>
+          </>
+        )}
+      </div>
       )}
       {docSel && (() => {
         const d = (mem.docs || []).find((x) => x.id === docSel)
