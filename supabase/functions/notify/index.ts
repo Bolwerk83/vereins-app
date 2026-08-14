@@ -292,13 +292,22 @@ async function runTest(endpoint?: string): Promise<Response> {
 }
 
 // --- HTTP ---------------------------------------------------
+// CORS: Der Testpush kommt direkt aus dem Browser (App-Domain) - ohne diese
+// Header blockt der Browser die Antwort ("Failed to fetch"), obwohl die
+// Funktion laeuft. Die OPTIONS-Vorabfrage muss ebenfalls beantwortet werden.
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
 function json(obj: unknown, status = 200) {
   return new Response(JSON.stringify(obj), {
-    status, headers: { "Content-Type": "application/json" },
+    status, headers: { "Content-Type": "application/json", ...CORS },
   });
 }
 
 Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return json({ error: "POST only" }, 405);
   let body: any;
   try { body = await req.json(); } catch { body = {}; }
