@@ -4,8 +4,11 @@
 //   POST { "mode": "chat", "message": {...} }-> neue Chat-Nachricht
 //   POST { "mode": "test", "endpoint": "..." } -> Testpush
 //
-// Benoetigte Secrets (Supabase -> Edge Functions -> Secrets):
-//   VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_EMAIL
+// VAPID-Schluessel: aus den Secrets (Supabase -> Edge Functions -> Secrets) ODER,
+// wenn dort nichts gesetzt ist, aus den eingebauten Fallback-Schluesseln unten.
+// WICHTIG: Der Public-Key muss zu VAPID_PUBLIC_KEY in src/notifications.jsx passen.
+// Vorher stuerzte die Funktion beim Start ab (Fehler 500), weil die Secrets nie
+// gesetzt wurden und Deno.env.get(...)! undefined lieferte.
 //   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (von Supabase automatisch gesetzt)
 //   APP_DATA_KEY  (Default "vereinsapp_v14")
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -13,13 +16,17 @@ import webpush from "npm:web-push@3";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const VAPID_PUB    = Deno.env.get("VAPID_PUBLIC_KEY")!;
-const VAPID_PRIV   = Deno.env.get("VAPID_PRIVATE_KEY")!;
-const VAPID_EMAIL  = Deno.env.get("VAPID_EMAIL") || "mailto:admin@example.com";
+const VAPID_PUB    = Deno.env.get("VAPID_PUBLIC_KEY")  || "BEKKty76NlQ2Wqea_GRrJjhF9I89FGSJrOZkHD3eVa0bR86esYU0TJT3muqD-hwyniNOfsrXmfGT-d0_BQjIqkA";
+const VAPID_PRIV   = Deno.env.get("VAPID_PRIVATE_KEY") || "HeUHycpZhUpn3O39KJ9HGNUxFnfZMmRU9bcgpQQ1glA";
+const VAPID_EMAIL  = Deno.env.get("VAPID_EMAIL") || "mailto:bolwerk@outlook.de";
 const SK           = Deno.env.get("APP_DATA_KEY") || "vereinsapp_v14";
 const STAFF_LEAD_HOURS = Number(Deno.env.get("STAFF_LEAD_HOURS") || "8"); // Helfer-Anfrage so viele Stunden vor Trainingsbeginn
 
-webpush.setVapidDetails(VAPID_EMAIL, VAPID_PUB, VAPID_PRIV);
+// Kein Boot-Absturz mehr: schlagen die Schluessel fehl, antwortet die Funktion
+// sauber (sent:0, pushReady:false) statt mit einem 500.
+let pushReady = false;
+try { webpush.setVapidDetails(VAPID_EMAIL, VAPID_PUB, VAPID_PRIV); pushReady = true; }
+catch (e) { console.error("VAPID-Setup fehlgeschlagen:", e); }
 const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 
 // --- Spruchpool (deterministisch pro Termin) ----------------
@@ -74,6 +81,7 @@ function daysBetween(aISO: string, bISO: string): number {
 }
 
 async function send(sub: any, payload: any): Promise<{ok:boolean, gone:boolean}> {
+  if (!pushReady) return { ok: false, gone: false };
   try {
     await webpush.sendNotification(
       { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },

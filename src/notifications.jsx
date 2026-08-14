@@ -6,9 +6,11 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 
-// VAPID Public Key (zu dem privaten Schluessel in den Supabase Edge Function Secrets).
+// VAPID Public Key - muss zum privaten Schluessel der notify-Edge-Function passen
+// (Secrets bzw. deren eingebauter Fallback). Der alte Schluessel hatte nie ein
+// serverseitiges Gegenstueck, daher scheiterte jeder Push mit Fehler 500.
 export const VAPID_PUBLIC_KEY =
-  "BI5eJY_Tbc7-ylbYvr9TfcXwB9Fnhls2EWeL0Sx8VXTK5VsGvKlyMgn7V5QtfMFfnKMrkR5yRkG4JMMjOHvN6LY";
+  "BEKKty76NlQ2Wqea_GRrJjhF9I89FGSJrOZkHD3eVa0bR86esYU0TJT3muqD-hwyniNOfsrXmfGT-d0_BQjIqkA";
 
 const DATA_KEY = "vereinsapp_v14";
 const SESS_KEY = "vereinsapp_v12_session"; // muss zur App passen (SS in App.jsx)
@@ -192,11 +194,31 @@ export async function subscribePush() {
   }
   const reg = await navigator.serviceWorker.ready;
   let sub = await reg.pushManager.getSubscription();
+  // Bestehendes Abo mit ANDEREM Server-Schluessel (z.B. dem alten, kaputten)?
+  // Dann abmelden und mit dem aktuellen Schluessel neu anmelden.
+  if (sub) {
+    try {
+      const cur = sub.options?.applicationServerKey
+        ? btoa(String.fromCharCode(...new Uint8Array(sub.options.applicationServerKey))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"")
+        : null;
+      if (cur && cur !== VAPID_PUBLIC_KEY) { await sub.unsubscribe(); sub = null; }
+    } catch { /* options nicht lesbar -> Abo behalten */ }
+  }
   if (!sub) {
-    sub = await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-    });
+    try {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      });
+    } catch (e) {
+      // InvalidStateError: altes Abo haengt noch am anderen Schluessel -> loesen + neu
+      const old = await reg.pushManager.getSubscription();
+      if (old) await old.unsubscribe();
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      });
+    }
   }
   const j = sub.toJSON();
   const s = getSession();
