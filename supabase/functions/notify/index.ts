@@ -288,7 +288,7 @@ async function runTest(endpoint?: string): Promise<Response> {
     if (ok) sent++; if (g) gone.push(sub.endpoint);
   }
   await reapGone(gone);
-  return json({ sent, gone: gone.length });
+  return json({ sent, gone: gone.length, pushReady });
 }
 
 // --- HTTP ---------------------------------------------------
