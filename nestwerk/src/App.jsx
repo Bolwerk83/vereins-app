@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { loadState, saveState, storageWorks } from './store.js'
 import { newSalt, deriveKey, encryptJson, decryptJson } from './crypto.js'
 import { fetchVereinData, mapTeamEvents, teamInfo } from './verein.js'
+import { loadSyncMeta, saveSyncMeta, newSyncCode, esCreate, esPull, esPush, stripLocal, mergeDb } from './sync.js'
 
 /* ================= Helfer ================= */
 
@@ -214,10 +215,38 @@ function QuickAdd({ placeholder, onAdd, autoFocus }) {
 
 /* ================= Onboarding: Familie gründen ================= */
 
-function Onboarding({ onCreate, onDemo }) {
+function Onboarding({ onCreate, onDemo, onJoin }) {
   const [famName, setFamName] = useState('')
   const [myName, setMyName] = useState('')
   const [color, setColor] = useState(COLORS[0])
+  const [joinOpen, setJoinOpen] = useState(false)
+  const [joinCode, setJoinCode] = useState('')
+  const [joinBusy, setJoinBusy] = useState(false)
+  const [joinErr, setJoinErr] = useState(null)
+  if (joinOpen) {
+    return (
+      <div className="auth-wrap">
+        <form className="auth-card" onSubmit={async (e) => {
+          e.preventDefault()
+          if (!joinCode.trim() || joinBusy) return
+          setJoinBusy(true); setJoinErr(null)
+          try { await onJoin(joinCode) } catch (err) { setJoinErr(err.message); setJoinBusy(false) }
+        }}>
+          <h1 className="serif" style={{ display: 'flex', alignItems: 'center', gap: 10 }}><LogoMark size={36} />Esels<span className="nest">ohr</span></h1>
+          <p className="sub">Deine Familie nutzt Eselsohr schon? Dann hol dir hier den gemeinsamen Stand.</p>
+          <div className="field">
+            <label htmlFor="joincode">Familien-Code</label>
+            <input id="joincode" autoFocus required value={joinCode} onChange={(e) => setJoinCode(e.target.value)}
+              placeholder="ESEL-XXXXX-XXXXX-XXXXX-XXXXX" autoCapitalize="characters" autoComplete="off" />
+          </div>
+          {joinErr && <p className="hint" style={{ color: 'var(--danger, #E5484D)' }}>{joinErr}</p>}
+          <button className="btn" style={{ width: '100%' }} disabled={joinBusy}>{joinBusy ? 'Lade …' : 'Familie beitreten'}</button>
+          <button type="button" className="btn ghost" style={{ width: '100%', marginTop: 8 }} onClick={() => setJoinOpen(false)}>Zurück</button>
+          <p className="hint">Den Code findet deine Familie unter „Familie → Familien-Sync“. Danach wählst du nur noch dein Profil.</p>
+        </form>
+      </div>
+    )
+  }
   return (
     <div className="auth-wrap">
       <form className="auth-card" onSubmit={(e) => { e.preventDefault(); if (famName.trim() && myName.trim()) onCreate(famName.trim(), myName.trim(), color) }}>
@@ -241,6 +270,7 @@ function Onboarding({ onCreate, onDemo }) {
           </div>
         </div>
         <button className="btn" style={{ width: '100%' }}>Familie anlegen</button>
+        <button type="button" className="btn ghost" style={{ width: '100%', marginTop: 8 }} onClick={() => setJoinOpen(true)}>🔗 Familie beitreten (mit Sync-Code)</button>
         <button type="button" className="btn ghost" style={{ width: '100%', marginTop: 8 }} onClick={onDemo}>🎬 Erst mal die Demo ansehen</button>
         <p className="hint">Alles bleibt auf diesem Gerät – keine Datenbank, kein Server. Backup gibt’s unter „Familie“. Die Demo füllt Eselsohr mit einer Beispielfamilie zum Ausprobieren – Beenden geht jederzeit unter „Familie“.</p>
       </form>
@@ -1238,9 +1268,102 @@ export default function App() {
 
   const persistent = storageWorks()
 
+  /* ---------- 🔗 Familien-Sync (Stufe 2): alle Geräte, ein Stand ---------- */
+
+  const [cloud, setCloud] = useState(() => loadSyncMeta())
+  const cloudRef = useRef(cloud)
+  const dbRef = useRef(db)
+  const dirtyRef = useRef(false)
+  const syncBusy = useRef(false)
+  const pushTimer = useRef(null)
+  dbRef.current = db
+
+  function setCloudMeta(m) {
+    cloudRef.current = m
+    setCloud(m)
+    saveSyncMeta(m)
+  }
+
   function saveAll(next) {
     setDb(next)
     saveState(next)
+    dbRef.current = next
+    if (cloudRef.current.on && !next?.demo) {
+      dirtyRef.current = true
+      clearTimeout(pushTimer.current)
+      pushTimer.current = setTimeout(syncNow, 1200)
+    }
+  }
+
+  async function syncNow() {
+    const meta = cloudRef.current
+    if (!meta.on || syncBusy.current || !dbRef.current) return
+    syncBusy.current = true
+    try {
+      if (dirtyRef.current) {
+        dirtyRef.current = false
+        let res = await esPush(meta.code, stripLocal(dbRef.current), meta.version || 1)
+        if (!res.ok && res.error === 'conflict') {
+          // Anderes Gerät war schneller: Stände zusammenführen, erneut senden
+          const merged = mergeDb(dbRef.current, res.data)
+          setDb(merged); saveState(merged); dbRef.current = merged
+          res = await esPush(meta.code, stripLocal(merged), res.version)
+        }
+        if (res.ok) setCloudMeta({ ...meta, version: res.version, last: Date.now(), error: null })
+        else { dirtyRef.current = true; setCloudMeta({ ...meta, error: res.error || 'unbekannt' }) }
+      } else {
+        const res = await esPull(meta.code)
+        if (res.ok && res.version !== meta.version) {
+          const merged = mergeDb(dbRef.current, res.data)
+          setDb(merged); saveState(merged); dbRef.current = merged
+          setCloudMeta({ ...meta, version: res.version, last: Date.now(), error: null })
+        } else if (res.ok) {
+          if (meta.error || Date.now() - (meta.last || 0) > 120000) setCloudMeta({ ...meta, last: Date.now(), error: null })
+        } else {
+          setCloudMeta({ ...meta, error: res.error })
+        }
+      }
+    } catch (e) {
+      setCloudMeta({ ...cloudRef.current, error: e.message })
+    } finally {
+      syncBusy.current = false
+    }
+  }
+
+  useEffect(() => {
+    if (!cloud.on) return
+    syncNow()
+    const t = setInterval(syncNow, 30000)
+    const onVis = () => { if (!document.hidden) syncNow() }
+    document.addEventListener('visibilitychange', onVis)
+    return () => { clearInterval(t); document.removeEventListener('visibilitychange', onVis) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cloud.on])
+
+  async function enableCloud() {
+    if (db.demo) { toast('Im Demo-Modus bleibt der Sync aus – erst eine eigene Familie anlegen'); return }
+    const code = newSyncCode()
+    try {
+      const res = await esCreate(code, stripLocal(db))
+      if (!res.ok) throw new Error(res.error)
+      setCloudMeta({ on: true, code, version: 1, last: Date.now(), error: null })
+      toast('🔗 Familien-Sync ist an – teile den Code mit deiner Familie')
+    } catch (e) {
+      toast('Sync-Start nicht möglich: ' + e.message + '. Läuft die Datenbank? (supabase/sync.sql einmal ausführen)')
+    }
+  }
+
+  function disableCloud() {
+    setCloudMeta({ on: false })
+    toast('Sync ist aus – Daten bleiben nur auf diesem Gerät')
+  }
+
+  async function joinCloud(code) {
+    const res = await esPull(code.trim())
+    if (!res.ok) throw new Error(res.error === 'not_found' ? 'Code nicht gefunden – Tippfehler?' : res.error)
+    setCloudMeta({ on: true, code: code.trim(), version: res.version, last: Date.now(), error: null })
+    saveAll({ ...res.data, active: null })
+    toast('🔗 Familie geladen – wer bist du?')
   }
 
   // Das gesamte Design folgt der Farbe des aktiven Profils
@@ -1280,6 +1403,16 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Nach 30 Tagen räumt der Papierkorb sich selbst auf
+  useEffect(() => {
+    if (!db?.trash?.length) return
+    const limit = addDays(today, -30)
+    if (db.trash.some((x) => x.delAt < limit)) {
+      saveAll({ ...db, trash: db.trash.filter((x) => x.delAt >= limit) })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   if (!db) {
     return (
       <>
@@ -1294,7 +1427,7 @@ export default function App() {
         }} onDemo={() => {
           saveAll(demoData())
           toast('🎬 Demo geladen – du bist Jan. Profilwechsel lohnt sich: Anne hat die Praxis.')
-        }} />
+        }} onJoin={joinCloud} />
         {toastEl}
       </>
     )
@@ -1350,10 +1483,33 @@ export default function App() {
   }
 
   function deleteEvent() {
-    saveAll({ ...db, events: db.events.filter((e) => e.id !== sheet.event.id) })
+    const e = sheet.event
+    saveAll({
+      ...db,
+      events: db.events.filter((x) => x.id !== e.id),
+      trash: [{ id: e.id, kind: 'event', delAt: today, row: e }, ...(db.trash || [])],
+    })
     setSheet(null)
-    toast('Termin gelöscht')
+    toast('🗑️ In den Papierkorb – 30 Tage wiederherstellbar (unter Familie)')
   }
+
+  /* ---------- 🗑️ Papierkorb: nichts geht aus Versehen verloren ---------- */
+
+  function restoreTrash(t) {
+    const next = { ...db, trash: (db.trash || []).filter((x) => x.id !== t.id) }
+    if (t.kind === 'event') next.events = [...db.events, t.row]
+    else if (t.kind === 'item') next.items = [t.row, ...db.items]
+    else if (t.kind === 'zettel') next.inbox = [...(db.inbox || []), t.row]
+    else if (t.kind === 'geb') next.geburtstage = [...(db.geburtstage || []), t.row]
+    saveAll(next)
+    toast('Wiederhergestellt ✓')
+  }
+
+  function emptyTrash() {
+    saveAll({ ...db, trash: [] })
+    toast('Papierkorb geleert')
+  }
+
 
   function answerInvite(ev, accept) {
     if (accept) {
@@ -1495,7 +1651,11 @@ export default function App() {
   /* ---------- Blitzzettel: ansehen, sortieren, umwandeln ---------- */
 
   const myInbox = (db.inbox || []).filter((i) => i.member_id === me.id)
-  const deleteZettel = (z) => saveAll({ ...db, inbox: (db.inbox || []).filter((x) => x.id !== z.id) })
+  const deleteZettel = (z) => saveAll({
+    ...db,
+    inbox: (db.inbox || []).filter((x) => x.id !== z.id),
+    trash: [{ id: z.id, kind: 'zettel', delAt: today, row: z }, ...(db.trash || [])],
+  })
   function zettelToTodo(z) {
     saveAll({
       ...db,
@@ -1560,7 +1720,11 @@ export default function App() {
 
   const addItem = (list, text) => saveAll({ ...db, items: [{ id: uid(), list, text, done: false, created_by: me.id }, ...db.items] })
   const toggleItem = (it) => saveAll({ ...db, items: db.items.map((x) => (x.id === it.id ? { ...x, done: !x.done } : x)) })
-  const deleteItem = (it) => saveAll({ ...db, items: db.items.filter((x) => x.id !== it.id) })
+  const deleteItem = (it) => saveAll({
+    ...db,
+    items: db.items.filter((x) => x.id !== it.id),
+    trash: [{ id: it.id, kind: 'item', delAt: today, row: it }, ...(db.trash || [])],
+  })
 
   function addMember(name, color, kind) {
     saveAll({ ...db, members: [...db.members, { id: uid(), name, color, kind, is_admin: false, can_direct: false }] })
@@ -1611,7 +1775,9 @@ export default function App() {
   }
 
   async function exportBackup() {
-    const json = JSON.stringify(db, null, 2)
+    const next = { ...db, lastBackup: today }
+    saveAll(next)
+    const json = JSON.stringify(next, null, 2)
     try {
       await navigator.clipboard?.writeText(json)
     } catch { /* Zwischenablage gesperrt */ }
@@ -1707,7 +1873,11 @@ export default function App() {
   }
 
   const addGeb = (name, date, tel) => { saveAll({ ...db, geburtstage: [...gebs, { id: uid(), name, date, tel }] }); toast(`🎂 ${name} gemerkt – Eselsohr erinnert rechtzeitig`) }
-  const deleteGeb = (g) => saveAll({ ...db, geburtstage: gebs.filter((x) => x.id !== g.id) })
+  const deleteGeb = (g) => saveAll({
+    ...db,
+    geburtstage: gebs.filter((x) => x.id !== g.id),
+    trash: [{ id: g.id, kind: 'geb', delAt: today, row: g }, ...(db.trash || [])],
+  })
 
   /* ---------- ✨ Assistent: Vorschläge & Vervollständigung aus vorhandenen Daten ---------- */
 
@@ -1724,6 +1894,12 @@ export default function App() {
     })
     return map
   })()
+
+  function extendSerie(last) {
+    const rows = Array.from({ length: 8 }, (_, k) => ({ ...last, id: uid(), on_date: addDays(last.on_date, (k + 1) * 7), created_by: me.id }))
+    saveAll({ ...db, events: [...db.events, ...rows] })
+    toast(`↻ „${last.title}“ um 8 Wochen verlängert – bis ${fmtShort(addDays(last.on_date, 56))}`)
+  }
 
   function continueSerie(base, weeks) {
     const have = new Set(db.events.filter((x) => x.title.toLowerCase() === base.title.toLowerCase() && x.member_id === base.member_id).map((x) => x.on_date))
@@ -1790,6 +1966,24 @@ export default function App() {
       meta: `${mySportWeek.length} von ${sportGoal} Einheiten geplant. Blocke dir feste Zeit – der Termin gehört dir.`,
       actLabel: 'Einplanen', act: () => setWiz({ type: 'sport' }),
     })
+    // Serie läuft bald aus – nichts soll still enden
+    const sgroups = {}
+    db.events.filter((e) => e.serie && e.status === 'fix' && !e.src).forEach((e) => {
+      const k = e.member_id + '|' + e.title.toLowerCase()
+      ;(sgroups[k] = sgroups[k] || []).push(e)
+    })
+    Object.values(sgroups).forEach((g) => {
+      const maxD = g.reduce((m, e) => (e.on_date > m ? e.on_date : m), '0000')
+      if (maxD >= addDays(today, -7) && maxD <= addDays(today, 14)) {
+        const last = g.find((e) => e.on_date === maxD)
+        out.push({
+          id: 'sext' + last.id, ico: '↻',
+          title: `Serie „${last.title}“ endet am ${fmtShort(maxD)}`,
+          meta: 'Danach wäre der Kalender dort leer – und niemand merkt es. Verlängern?',
+          actLabel: '+ 8 Wochen', act: () => extendSerie(last),
+        })
+      }
+    })
     // Überschneidungen in den nächsten 14 Tagen
     const upcoming = db.events.filter((e) => e.status === 'fix' && e.on_date >= today && e.on_date <= addDays(today, 14))
     outer: for (let i = 0; i < upcoming.length; i++) {
@@ -1806,6 +2000,13 @@ export default function App() {
         }
       }
     }
+    // Backup fällig – Daten müssen unkaputtbar sein
+    if (!db.demo && db.events.length + db.items.length > 8 && (!db.lastBackup || db.lastBackup < addDays(today, -30))) out.push({
+      id: 'backup', ico: '🛟',
+      title: db.lastBackup ? 'Deine letzte Sicherung ist über einen Monat her' : 'Noch nie gesichert – ein Klick reicht',
+      meta: cloud.on ? 'Der Familien-Sync läuft, aber ein Backup zusätzlich schadet nie.' : 'Eure Daten leben nur in diesem Browser. Ein Backup macht sie unkaputtbar.',
+      actLabel: '🛟 Backup', act: exportBackup,
+    })
     // Blitzzettel sammeln sich
     if (myInbox.length >= 3) out.push({
       id: 'blitz', ico: '⚡',
@@ -2478,6 +2679,60 @@ export default function App() {
           </button>
         )}
       </div>
+      <p className="label">🔗 Familien-Sync · alle Geräte, ein Stand</p>
+      <div className="card">
+        {cloud.on ? (
+          <>
+            <div className="row">
+              <span style={{ fontSize: 20, width: 28, textAlign: 'center', flexShrink: 0 }}>{cloud.error ? '⚠️' : '🔗'}</span>
+              <div className="row-main">
+                <div className="row-title">{cloud.error ? 'Sync gestört – Daten bleiben lokal sicher' : 'Sync läuft'}</div>
+                <div className="row-meta">
+                  {cloud.error
+                    ? String(cloud.error)
+                    : 'Änderungen wandern automatisch auf alle Geräte mit diesem Code. Gedächtnispalast bleibt verschlüsselt.'}
+                </div>
+              </div>
+              <button className="btn sm ghost" onClick={disableCloud}>Aus</button>
+            </div>
+            <div className="row">
+              <div className="row-main">
+                <div className="row-title" style={{ fontFamily: 'monospace', fontSize: 14, letterSpacing: '0.5px' }}>{cloud.code}</div>
+                <div className="row-meta">Diesen Code am anderen Gerät bei „Familie beitreten“ eingeben. Er ist der Schlüssel – nur mündlich oder persönlich teilen.</div>
+              </div>
+              <button className="btn sm" onClick={async () => {
+                try { await navigator.clipboard?.writeText(cloud.code); toast('Code kopiert ✓') } catch { toast('Bitte Code abschreiben – Zwischenablage gesperrt') }
+              }}>Kopieren</button>
+            </div>
+          </>
+        ) : (
+          <button className="row" onClick={enableCloud}>
+            <span style={{ fontSize: 20, width: 28, textAlign: 'center', flexShrink: 0 }}>🔗</span>
+            <div className="row-main">
+              <div className="row-title">Familien-Sync einschalten</div>
+              <div className="row-meta">Damit sehen alle in der Familie denselben Stand – auf jedem Handy. Du bekommst einen Familien-Code zum Teilen.</div>
+            </div>
+            <span className="chev">›</span>
+          </button>
+        )}
+      </div>
+      {(db.trash || []).length > 0 && (
+        <>
+          <p className="label">🗑️ Papierkorb <span className="lact"><button className="btn ghost sm" onClick={emptyTrash}>Leeren</button></span></p>
+          <div className="card">
+            {(db.trash || []).map((t) => (
+              <div className="row" key={t.id}>
+                <span style={{ fontSize: 18, width: 28, textAlign: 'center', flexShrink: 0 }}>{{ event: '📅', item: '✅', zettel: '⚡', geb: '🎂' }[t.kind] || '🗑️'}</span>
+                <div className="row-main">
+                  <div className="row-title">{t.row.title || t.row.text || t.row.name || '—'}</div>
+                  <div className="row-meta">gelöscht am {fmtShort(t.delAt)} · verschwindet nach 30 Tagen endgültig</div>
+                </div>
+                <button className="btn sm" onClick={() => restoreTrash(t)}>Wiederherstellen</button>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
       <p className="label">Sicherung</p>
       <div className="card">
         <button className="row" onClick={exportBackup}>

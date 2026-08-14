@@ -12,11 +12,37 @@ Keine Einrichtung nötig: Alle Daten liegen im Browser (localStorage), der
 Gedächtnispalast darin ausschließlich als AES-256-Chiffretext – ohne das richtige
 Passwort unkenntlich, ein „Passwort vergessen“ gibt es bewusst nicht.
 Unter *Familie → Sicherung* gibt es Backup-Export und -Import (der Export
-enthält den Gedächtnispalast weiterhin nur verschlüsselt).
+enthält den Gedächtnispalast weiterhin nur verschlüsselt). Gelöschtes landet
+30 Tage im 🗑️ Papierkorb (*Familie*), nichts geht aus Versehen verloren.
 
-Die Cloud-Synchronisierung über Supabase ist **Stufe 2** und liegt fertig
-vorbereitet in [`supabase/schema.sql`](supabase/schema.sql) – sie ersetzt dann
-nur `src/store.js`, der Rest der App bleibt gleich.
+## Stufe 2: 🔗 Familien-Sync (alle Geräte, ein Stand)
+
+Der Sync ist fertig eingebaut. Einmalig aktivieren:
+
+1. [`supabase/sync.sql`](supabase/sync.sql) im Supabase-SQL-Editor ausführen
+   (Projekt der Vereins-App, ~2 Minuten – Anleitung steht in der Datei).
+2. In der App: *Familie → Familien-Sync einschalten* → Familien-Code teilen.
+3. Andere Geräte: Startseite → *Familie beitreten (mit Sync-Code)*.
+
+Danach wandern Änderungen automatisch auf alle Geräte (Push nach jeder
+Änderung, Pull alle 30 s und beim App-Wechsel, Konflikte werden gemerged –
+Löschungen setzen sich über den Papierkorb durch). Der Gedächtnispalast
+bleibt dabei Ende-zu-Ende-verschlüsselt: Der Server sieht nur salt/iv/cipher.
+Zugriff schützt der unerratbare Familien-Code (gleiche Idee wie der
+Vereinscode der Vereins-App); direkter Tabellenzugriff ist per RLS zu.
+Das ausführlichere Zeilen-Schema für später liegt in
+[`supabase/schema.sql`](supabase/schema.sql).
+
+## 📲 Als App aufs Handy (PWA)
+
+Auf einer echten Domain (z. B. Vercel) ist Eselsohr installierbar: Safari/Chrome
+→ „Zum Home-Bildschirm“. Eigenes Icon, Vollbild, funktioniert nach dem ersten
+Besuch auch offline (Service Worker, Netz-zuerst-Strategie).
+
+## Tests
+
+Siehe [`tests/`](tests/) – drei End-zu-End-Suiten (Playwright) für
+Betreuungszeiten, Assistent/Demo/Geburtstage und Sync/Papierkorb/Serien.
 
 ## Lokal starten
 
