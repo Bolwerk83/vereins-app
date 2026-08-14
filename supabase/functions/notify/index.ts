@@ -80,8 +80,8 @@ function daysBetween(aISO: string, bISO: string): number {
   return Math.round((b - a) / (1000 * 60 * 60 * 24));
 }
 
-async function send(sub: any, payload: any): Promise<{ok:boolean, gone:boolean}> {
-  if (!pushReady) return { ok: false, gone: false };
+async function send(sub: any, payload: any): Promise<{ok:boolean, gone:boolean, err?:string}> {
+  if (!pushReady) return { ok: false, gone: false, err: "VAPID nicht geladen" };
   try {
     await webpush.sendNotification(
       { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
@@ -91,7 +91,9 @@ async function send(sub: any, payload: any): Promise<{ok:boolean, gone:boolean}>
     return { ok: true, gone: false };
   } catch (err: any) {
     const code = err?.statusCode || 0;
-    return { ok: false, gone: code === 404 || code === 410 }; // Subscription weg
+    // Grund mitgeben: sonst ist "0 gesendet" nicht von "kein Empfaenger" zu
+    // unterscheiden (403 = Schluessel passt nicht zum Abo, 404/410 = Abo weg).
+    return { ok: false, gone: code === 404 || code === 410, err: (code ? code + ": " : "") + String(err?.body || err?.message || err).slice(0, 120) };
   }
 }
 async function reapGone(endpoints: string[]) {
@@ -278,17 +280,19 @@ async function runChat(msg: ChatPayload): Promise<Response> {
 // --- Modus "test" -------------------------------------------
 async function runTest(endpoint?: string): Promise<Response> {
   const q = admin.from("push_subscriptions").select("*").eq("enabled", true);
-  const { data: subs } = endpoint ? await q.eq("endpoint", endpoint) : await q.limit(50);
-  let sent = 0; const gone: string[] = [];
+  const { data: subs, error } = endpoint ? await q.eq("endpoint", endpoint) : await q.limit(50);
+  const found = (subs || []).length;   // 0 = dieses Geraet steht nicht in der Tabelle
+  let sent = 0; const gone: string[] = []; let lastErr: string | null = null;
   for (const sub of subs || []) {
-    const { ok, gone: g } = await send(sub, {
+    const r = await send(sub, {
       title: "Vereins-App", body: "Push funktioniert!", tag: "test",
       icon: "/icon-192.png",
     });
-    if (ok) sent++; if (g) gone.push(sub.endpoint);
+    if (r.ok) sent++;
+    else { if (r.gone) gone.push(sub.endpoint); if (r.err) lastErr = r.err; }
   }
   await reapGone(gone);
-  return json({ sent, gone: gone.length, pushReady });
+  return json({ sent, found, gone: gone.length, pushReady, error: error?.message || lastErr || null });
 }
 
 // --- HTTP ---------------------------------------------------

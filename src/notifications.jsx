@@ -256,7 +256,14 @@ export async function unsubscribePush() {
 export async function testPush() {
   const c = getConfig();
   if (!c.url || !c.key) throw new Error("Supabase ist nicht verbunden.");
-  let { endpoint } = getLocalPref();
+  // Vor dem Test die Anmeldung dieses Geraets erneuern. Das deckt beide
+  // Faelle ab, die sonst zu "0 Empfaenger" fuehren: (a) im Browser existiert
+  // ein Abo, aber die Zeile in der Datenbank fehlt (frueherer Fehlschlag),
+  // (b) das Abo haengt noch am alten Server-Schluessel und laesst sich nicht
+  // mehr beliefern. subscribePush() loest beides und liefert den Endpoint.
+  let endpoint = null;
+  try { endpoint = await subscribePush(); } catch {}
+  if (!endpoint) endpoint = getLocalPref().endpoint;
   if (!endpoint && "serviceWorker" in navigator) {
     try { const reg = await navigator.serviceWorker.ready; const sub = await reg.pushManager.getSubscription(); endpoint = sub?.endpoint; } catch {}
   }
@@ -360,7 +367,15 @@ export function NotifMount() {
   };
   const onTest = async () => {
     setBusy(true);
-    try { const j = await testPush(); fire(j?.sent ? tr("testSent") : tr("testNoRecip")); }
+    try {
+      const j = await testPush();
+      if (j?.sent) { fire(tr("testSent")); }
+      // Kein Versand: Grund mitgeben, sonst bleibt "0 Empfaenger" raetselhaft.
+      // found=0 -> Geraet steht nicht in der Datenbank; found>0 -> Push-Dienst
+      // hat abgelehnt (Details stehen in j.error).
+      else if (j && j.found === 0) fire(tr("testNoRecip"));
+      else fire(tr("testNoRecip") + (j?.error ? " (" + String(j.error).slice(0, 60) + ")" : ""));
+    }
     catch (e) { fire(String(e.message || e)); }
     finally { setBusy(false); }
   };
