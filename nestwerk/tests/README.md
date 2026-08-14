@@ -6,6 +6,7 @@ End-zu-End-Tests mit Playwright gegen den Produktions-Build.
 npm run build
 npx vite preview --port 4173 &   # Testserver
 npm i -D playwright-core          # einmalig (nutzt vorhandenes Chromium)
+node tests/palast.test.mjs        # 🏛️ Gedächtnispalast (E2E-Verschlüsselung)
 node tests/betreuung.test.mjs     # 🏫 Betreuungszeiten
 node tests/assistent.test.mjs     # ✨ Assistent, Wizards, Demo, 🎂 Geburtstage
 node tests/sync.test.mjs          # 🔗 Familien-Sync, 🗑️ Papierkorb, ↻ Serien-Wächter

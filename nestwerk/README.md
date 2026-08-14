@@ -41,7 +41,7 @@ Besuch auch offline (Service Worker, Netz-zuerst-Strategie).
 
 ## Tests
 
-Siehe [`tests/`](tests/) – drei End-zu-End-Suiten (Playwright) für
+Siehe [`tests/`](tests/) – vier End-zu-End-Suiten (Playwright) für
 Betreuungszeiten, Assistent/Demo/Geburtstage und Sync/Papierkorb/Serien.
 
 ## Lokal starten
