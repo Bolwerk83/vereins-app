@@ -55,14 +55,26 @@ function Icon({ name, size = 19 }) {
 const RowIcon = ({ name }) => <span style={{ color: 'var(--ink-soft)', flex: 'none', display: 'flex' }}><Icon name={name} size={21} /></span>
 
 /* Das Logo: eine Seite mit umgeknickter Ecke – das Eselsohr, wörtlich */
+// Der Eselsohr-Esel: Comic-Esel, dessen rechte Ohrspitze wie eine Buchecke
+// nach vorn geknickt ist (Innenseite markergelb – das „Eselsohr“).
 const LogoMark = ({ size = 26 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true"
-    style={{ flex: 'none', transform: 'rotate(-5deg)' }}>
-    <path d="M6 2.5h8.2l5.3 5.3v11.7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-15a2 2 0 0 1 2-2Z"
-      fill="var(--surface)" stroke="var(--ink)" strokeWidth="2" strokeLinejoin="round" />
-    <path d="M14.2 2.5v5.3h5.3Z"
-      fill="var(--marker)" stroke="var(--ink)" strokeWidth="2" strokeLinejoin="round" />
-    <path d="M8 12.5h8M8 16h5.5" stroke="var(--ink-soft)" strokeWidth="1.8" strokeLinecap="round" />
+    style={{ flex: 'none', transform: 'rotate(-4deg)' }}>
+    <g stroke="var(--ink)" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round">
+      <path d="M8.3 8.6 C5.9 7.8 4.1 4.9 4.8 1.9 C7.7 2.1 9.9 4.8 10.2 7.8 Z" fill="#BDB6B0" />
+      <path d="M8.4 7.1 C7.2 6.5 6.3 5.1 6.2 3.7" fill="none" strokeWidth="1" opacity=".5" />
+      <path d="M15.7 8.6 C18.1 7.8 19.9 4.9 19.2 1.9 C16.3 2.1 14.1 4.8 13.8 7.8 Z" fill="#BDB6B0" />
+      <path d="M15.7 4.4 L19.3 2.4 C20.9 3.9 21.1 6.6 19.8 8.3 C17.9 7.9 16 6.3 15.7 4.4 Z" fill="var(--marker)" />
+      <path d="M15.7 4.4 C16.9 4.2 18.3 3.5 19.3 2.4" fill="none" strokeWidth="1.2" />
+      <path d="M12 5.8 C16.6 5.8 19.9 9 19.9 13.3 C19.9 17.9 16.5 21.3 12 21.3 C7.5 21.3 4.1 17.9 4.1 13.3 C4.1 9 7.4 5.8 12 5.8 Z" fill="#CFC9C3" />
+      <path d="M9.9 6.6 C10.8 5 13.2 5 14.1 6.6 C12.8 7.6 11.2 7.6 9.9 6.6 Z" fill="var(--ink)" strokeWidth="1.2" />
+      <path d="M12 13.2 C15 13.2 17 14.8 17 17 C17 19.2 14.9 20.7 12 20.7 C9.1 20.7 7 19.2 7 17 C7 14.8 9 13.2 12 13.2 Z" fill="var(--surface)" />
+      <circle cx="10" cy="16.9" r=".75" fill="var(--ink)" stroke="none" />
+      <circle cx="14" cy="16.9" r=".75" fill="var(--ink)" stroke="none" />
+      <path d="M10.7 19 C11.6 19.7 12.4 19.7 13.3 19" fill="none" strokeWidth="1.1" />
+      <circle cx="8.6" cy="10.9" r="1.05" fill="var(--ink)" stroke="none" />
+      <circle cx="15.4" cy="10.9" r="1.05" fill="var(--ink)" stroke="none" />
+    </g>
   </svg>
 )
 
