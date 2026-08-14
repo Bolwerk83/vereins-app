@@ -214,7 +214,7 @@ function QuickAdd({ placeholder, onAdd, autoFocus }) {
 
 /* ================= Onboarding: Familie gründen ================= */
 
-function Onboarding({ onCreate }) {
+function Onboarding({ onCreate, onDemo }) {
   const [famName, setFamName] = useState('')
   const [myName, setMyName] = useState('')
   const [color, setColor] = useState(COLORS[0])
@@ -241,10 +241,64 @@ function Onboarding({ onCreate }) {
           </div>
         </div>
         <button className="btn" style={{ width: '100%' }}>Familie anlegen</button>
-        <p className="hint">Alles bleibt auf diesem Gerät – keine Datenbank, kein Server. Backup gibt’s unter „Familie“.</p>
+        <button type="button" className="btn ghost" style={{ width: '100%', marginTop: 8 }} onClick={onDemo}>🎬 Erst mal die Demo ansehen</button>
+        <p className="hint">Alles bleibt auf diesem Gerät – keine Datenbank, kein Server. Backup gibt’s unter „Familie“. Die Demo füllt Eselsohr mit einer Beispielfamilie zum Ausprobieren – Beenden geht jederzeit unter „Familie“.</p>
       </form>
     </div>
   )
+}
+
+/* ================= Demo-Familie (Beispieldaten, jederzeit löschbar) ================= */
+
+function demoData() {
+  const t = iso(new Date())
+  const jan = uid(), anne = uid(), emma = uid(), ben = uid(), julia = uid(), sarah = uid()
+  const wd = wdIdx(fromIso(t))
+  const nextFr = ((4 - wd + 7) % 7) || 7
+  const ev = (o) => ({ id: uid(), status: 'fix', meta: '', created_by: jan, ...o })
+  return {
+    demo: true,
+    family: { name: 'Familie Muster' },
+    members: [
+      { id: jan, name: 'Jan', color: '#3D7BFF', kind: 'adult', is_admin: true, can_direct: true, modules: { sport: true }, sportGoal: 2 },
+      { id: anne, name: 'Anne', color: '#FF5D73', kind: 'adult', is_admin: false, can_direct: true, modules: { praxis: true } },
+      { id: emma, name: 'Emma', color: '#8B5CF6', kind: 'kid', care: [{ id: uid(), label: 'Schule', days: [0, 1, 2, 3, 4], from: '07:45', to: '13:15' }] },
+      { id: ben, name: 'Ben', color: '#2FBF71', kind: 'kid' },
+    ],
+    events: [
+      ev({ member_id: emma, on_date: addDays(t, -14), at_time: '15:30', title: 'Klavierstunde' }),
+      ev({ member_id: emma, on_date: addDays(t, -7), at_time: '15:30', title: 'Klavierstunde' }),
+      ev({ member_id: emma, on_date: t, at_time: '15:30', title: 'Klavierstunde', zust: anne }),
+      ev({ member_id: anne, created_by: anne, on_date: addDays(t, -1), at_time: '09:00', title: '🩺 Nachsorge Julia M.', klid: julia, ptype: 'Nachsorge', soll: 60 }),
+      ev({ member_id: anne, created_by: anne, on_date: addDays(t, 1), at_time: '10:00', title: '🩺 Nachsorge Julia M.', klid: julia, ptype: 'Nachsorge', soll: 60 }),
+      ev({ member_id: ben, on_date: addDays(t, 2), at_time: '16:00', title: 'Kinderarzt Vorsorge', meta: 'U-Heft mitnehmen' }),
+      ev({ member_id: ben, on_date: addDays(t, nextFr), at_time: '17:00', title: 'Fußballtraining', serie: true }),
+      ev({ member_id: ben, on_date: addDays(t, nextFr + 7), at_time: '17:00', title: 'Fußballtraining', serie: true }),
+      ev({ member_id: jan, created_by: anne, on_date: addDays(t, 4), at_time: '19:30', title: 'Elternabend Emma', status: 'pending', meta: 'Einer von uns sollte hin' }),
+    ],
+    items: [
+      { id: uid(), list: 'einkauf', text: 'Milch & Brot', done: false, created_by: anne },
+      { id: uid(), list: 'einkauf', text: 'Geschenkpapier', done: false, created_by: jan },
+      { id: uid(), list: 'todo', text: 'Fahrrad von Emma zur Werkstatt', done: false, created_by: jan },
+    ],
+    praxis: {
+      klienten: [
+        { id: julia, name: 'Julia Müller', telefon: '0170 1234567', adresse: 'Gartenweg 12, 48231 Warendorf', notiz: '2. Kind, Geburt 28.7.' },
+        { id: sarah, name: 'Sarah Klein', telefon: '0151 7654321', adresse: 'Lindenstr. 4, 48231 Warendorf', notiz: 'ET 12.9.' },
+      ],
+    },
+    inbox: [
+      { id: uid(), member_id: jan, text: 'Geschenk für Oma besorgen – Idee: Fotobuch', ts: 1, date: 'gestern' },
+      { id: uid(), member_id: jan, text: 'Zoo am Wochenende?', ts: 2, date: 'gestern' },
+      { id: uid(), member_id: jan, text: 'Reifenwechsel-Termin machen', ts: 3, date: 'heute' },
+    ],
+    geburtstage: [
+      { id: uid(), name: 'Oma Helga', date: `${+addDays(t, 2).slice(8, 10)}.${+addDays(t, 2).slice(5, 7)}.1949`, tel: '0171 2223344' },
+      { id: uid(), name: 'Tante Mia', date: '03.11.1985', tel: '' },
+    ],
+    memories: {},
+    active: jan,
+  }
 }
 
 /* ================= Profilwahl ================= */
@@ -272,7 +326,7 @@ function ProfilePicker({ members, onPick }) {
 
 /* ================= Termin-Formular ================= */
 
-function EventSheet({ initial, members, me, onSave, onDelete, onClose }) {
+function EventSheet({ initial, members, me, stats, onSave, onDelete, onClose }) {
   const e = initial.event
   if (e && ((e.klid && e.created_by !== me.id) || (e.src === 'work' && e.member_id !== me.id))) {
     const isPraxis = !!e.klid
@@ -319,6 +373,20 @@ function EventSheet({ initial, members, me, onSave, onDelete, onClose }) {
   const [meta, setMeta] = useState(e ? e.meta : '')
   const [zust, setZust] = useState(e?.zust || '')
   const [serie, setSerie] = useState(false)
+  const [autoFilled, setAutoFilled] = useState(false)
+
+  const changeTitle = (v) => {
+    setTitle(v)
+    if (!e && stats) {
+      const s = stats[v.trim().toLowerCase()]
+      if (s && s.count >= 2) {
+        setTime(s.time)
+        if (s.member) setMemberId(s.member)
+        if (s.zust) setZust(s.zust)
+        setAutoFilled(true)
+      }
+    }
+  }
 
   return (
     <div className="overlay" onClick={(ev) => { if (ev.target === ev.currentTarget) onClose() }}>
@@ -329,7 +397,13 @@ function EventSheet({ initial, members, me, onSave, onDelete, onClose }) {
         <h3>{e ? 'Termin bearbeiten' : 'Neuer Termin'}<button type="button" className="x" onClick={onClose} aria-label="Schließen">✕</button></h3>
         <div className="field">
           <label htmlFor="f-title">Titel</label>
-          <input id="f-title" autoFocus required value={title} onChange={(ev) => setTitle(ev.target.value)} placeholder="z. B. Fußballtraining" />
+          <input id="f-title" autoFocus required value={title} onChange={(ev) => changeTitle(ev.target.value)}
+            placeholder="z. B. Fußballtraining" list="f-title-suggest" autoComplete="off" />
+          <datalist id="f-title-suggest">
+            {stats && Object.values(stats).filter((s) => s.count >= 2).sort((a, b) => b.count - a.count).slice(0, 8)
+              .map((s) => <option key={s.title} value={s.title} />)}
+          </datalist>
+          {autoFilled && <p className="hint" style={{ margin: '4px 0 0' }}>✨ Assistent: Uhrzeit & Person aus früheren Terminen vorausgefüllt – anpassen jederzeit möglich.</p>}
         </div>
         <div className="grid2">
           <div className="field">
@@ -1149,6 +1223,8 @@ export default function App() {
   const [memberSheet, setMemberSheet] = useState(false)
   const [careSheet, setCareSheet] = useState(null) // member_id des Kindes
   const [blitz, setBlitz] = useState(false)
+  const [blitzList, setBlitzList] = useState(false)
+  const [wiz, setWiz] = useState(null) // ✨ Assistent-Wizard: {type: 'serie'|'ist'|'sport', ...}
   const [vereinSheet, setVereinSheet] = useState(false)
   const [syncing, setSyncing] = useState(false)
   const [calQ, setCalQ] = useState('')
@@ -1215,6 +1291,9 @@ export default function App() {
             events: [], items: [], memories: {}, active: meId,
           })
           toast('Familie angelegt ✓')
+        }} onDemo={() => {
+          saveAll(demoData())
+          toast('🎬 Demo geladen – du bist Jan. Profilwechsel lohnt sich: Anne hat die Praxis.')
         }} />
         {toastEl}
       </>
@@ -1413,6 +1492,24 @@ export default function App() {
     toast('✋ Übernommen – steht für alle sichtbar im Kalender')
   }
 
+  /* ---------- Blitzzettel: ansehen, sortieren, umwandeln ---------- */
+
+  const myInbox = (db.inbox || []).filter((i) => i.member_id === me.id)
+  const deleteZettel = (z) => saveAll({ ...db, inbox: (db.inbox || []).filter((x) => x.id !== z.id) })
+  function zettelToTodo(z) {
+    saveAll({
+      ...db,
+      items: [{ id: uid(), list: 'todo', text: z.text.split('\n')[0], done: false, created_by: me.id }, ...db.items],
+      inbox: (db.inbox || []).filter((x) => x.id !== z.id),
+    })
+    toast('→ Als To-do übernommen ✓')
+  }
+
+  function endDemo() {
+    try { localStorage.removeItem('eselsohr-v1') } catch { /* egal */ }
+    location.reload()
+  }
+
   /* ---------- Betreuungszeiten: Wann sind die Kinder versorgt? ---------- */
 
   const kids = db.members.filter((m) => m.kind === 'kid')
@@ -1588,12 +1685,143 @@ export default function App() {
     )
   }
 
+  /* ---------- 🎂 Geburtstage & WhatsApp-Vorlage ---------- */
+
+  const gebs = db.geburtstage || []
+  const gebSorted = gebs.map((g) => ({ g, info: gebInfo(g.date) })).sort((a, b) => (a.info?.days ?? 999) - (b.info?.days ?? 999))
+
+  function waMsg(g) {
+    const info = gebInfo(g.date)
+    return (db.waTemplate || WA_DEFAULT)
+      .replaceAll('{name}', g.name)
+      .replaceAll('{alter}', info?.age != null ? String(info.age) : '')
+      .replaceAll('{familie}', db.family.name)
+      .replace(/ {2,}/g, ' ')
+  }
+
+  function openWa(g) {
+    const digits = (g.tel || '').replace(/\D/g, '').replace(/^0/, '49')
+    try { navigator.clipboard?.writeText(waMsg(g)) } catch { /* Zwischenablage gesperrt */ }
+    try { window.open('https://wa.me/' + digits + '?text=' + encodeURIComponent(waMsg(g)), '_blank', 'noopener') } catch { /* Popup gesperrt */ }
+    toast('💬 WhatsApp öffnet sich – Nachricht ist fertig eingesetzt' + (g.tel ? '' : ' (Kontakt selbst auswählen)'))
+  }
+
+  const addGeb = (name, date, tel) => { saveAll({ ...db, geburtstage: [...gebs, { id: uid(), name, date, tel }] }); toast(`🎂 ${name} gemerkt – Eselsohr erinnert rechtzeitig`) }
+  const deleteGeb = (g) => saveAll({ ...db, geburtstage: gebs.filter((x) => x.id !== g.id) })
+
+  /* ---------- ✨ Assistent: Vorschläge & Vervollständigung aus vorhandenen Daten ---------- */
+
+  const titleStats = (() => {
+    const map = {}
+    db.events.forEach((e) => {
+      if (e.status !== 'fix') return
+      if (e.klid && e.created_by !== me.id) return // fremde Praxis-Titel bleiben privat
+      if (e.src === 'work' && e.member_id !== me.id) return // fremde Arbeits-Titel auch
+      const k = e.title.toLowerCase()
+      const m = map[k] || (map[k] = { title: e.title, count: 0, time: e.at_time, zust: e.zust, member: e.member_id, last: e.on_date })
+      m.count++
+      if (e.on_date >= m.last) { m.last = e.on_date; m.time = e.at_time; m.zust = e.zust; m.member = e.member_id }
+    })
+    return map
+  })()
+
+  function continueSerie(base, weeks) {
+    const have = new Set(db.events.filter((x) => x.title.toLowerCase() === base.title.toLowerCase() && x.member_id === base.member_id).map((x) => x.on_date))
+    const rows = []
+    let d = base.on_date
+    while (d <= today) d = addDays(d, 7)
+    for (let k = 0; k < weeks; k++) {
+      if (!have.has(d)) rows.push({ id: uid(), member_id: base.member_id, on_date: d, at_time: base.at_time, title: base.title, meta: base.meta || '', zust: base.zust || null, serie: true, status: 'fix', created_by: me.id })
+      d = addDays(d, 7)
+    }
+    saveAll({ ...db, events: [...db.events, ...rows] })
+    toast(`↻ ${rows.length}× „${base.title}“ eingeplant – als Serie`)
+  }
+
+  const suggestions = (() => {
+    if (isKid) return []
+    const out = []
+    // Geburtstag steht an – zuerst, weil zeitkritisch
+    const nextGeb = gebSorted.filter((x) => x.info && x.info.days <= 3)[0]
+    if (nextGeb) out.push({
+      id: 'geb' + nextGeb.g.id, ico: '🎂',
+      title: `${nextGeb.g.name} hat ${nextGeb.info.days === 0 ? 'heute' : nextGeb.info.days === 1 ? 'morgen' : `in ${nextGeb.info.days} Tagen`} Geburtstag`,
+      meta: (nextGeb.info.age != null ? `Wird ${nextGeb.info.age}. ` : '') + 'Deine WhatsApp-Vorlage ist fertig – Name & Familie schon eingesetzt.',
+      actLabel: '💬 Glückwunsch', act: () => openWa(nextGeb.g),
+    })
+    // Betreuungszeiten fehlen
+    kids.filter((k) => !(k.care || []).length).forEach((k) => out.push({
+      id: 'care' + k.id, ico: '🏫',
+      title: `Betreuungszeiten für ${k.name} anlegen`,
+      meta: `Dann steht auf der Heute-Karte, wann ${k.name} versorgt ist – und ab wann jemand da sein muss.`,
+      actLabel: 'Anlegen', act: () => setCareSheet(k.id),
+    }))
+    // Praxis: Ist-Zeiten nachtragen
+    if (hasMod(me, 'praxis')) {
+      const open = db.events.filter((e) => e.klid && e.created_by === me.id && e.status === 'fix' && e.on_date < today && e.ist == null)
+      if (open.length) out.push({
+        id: 'ist', ico: '🩺',
+        title: `${open.length} Praxis-Termin${open.length > 1 ? 'e' : ''} ohne Ist-Zeit`,
+        meta: 'Der Assistent geht sie Schritt für Schritt mit dir durch – wichtig für die Abrechnung.',
+        actLabel: 'Wizard starten', act: () => setWiz({ type: 'ist', list: open.sort((a, b) => a.on_date.localeCompare(b.on_date)) }),
+      })
+    }
+    // Wiederkehrende Termine → Serie vorschlagen
+    const groups = {}
+    db.events.filter((e) => e.status === 'fix' && !e.serie && !e.klid && !e.src && !e.sport).forEach((e) => {
+      const k = e.member_id + '|' + e.title.toLowerCase()
+      ;(groups[k] = groups[k] || []).push(e)
+    })
+    Object.values(groups).filter((g) => g.length >= 3).forEach((g) => {
+      const last = [...g].sort((a, b) => a.on_date.localeCompare(b.on_date))[g.length - 1]
+      const covered = db.events.some((e) => e.member_id === last.member_id && e.title.toLowerCase() === last.title.toLowerCase() && e.on_date > addDays(today, 7))
+      if (covered) return
+      out.push({
+        id: 'serie' + last.id, ico: '↻',
+        title: `„${last.title}“ wiederholt sich – als Serie fortsetzen?`,
+        meta: `${g.length}× erkannt bei ${mname(last.member_id)}, ${WD_LONG[wdIdx(fromIso(last.on_date))]}s um ${last.at_time} Uhr.`,
+        actLabel: 'Wizard starten', act: () => setWiz({ type: 'serie', base: last, count: g.length }),
+      })
+    })
+    // Sport unter Wochenziel
+    if (hasMod(me, 'sport') && mySportWeek.length < sportGoal) out.push({
+      id: 'sport', ico: '🏃',
+      title: 'Dein Sport kommt diese Woche zu kurz',
+      meta: `${mySportWeek.length} von ${sportGoal} Einheiten geplant. Blocke dir feste Zeit – der Termin gehört dir.`,
+      actLabel: 'Einplanen', act: () => setWiz({ type: 'sport' }),
+    })
+    // Überschneidungen in den nächsten 14 Tagen
+    const upcoming = db.events.filter((e) => e.status === 'fix' && e.on_date >= today && e.on_date <= addDays(today, 14))
+    outer: for (let i = 0; i < upcoming.length; i++) {
+      for (let j = i + 1; j < upcoming.length; j++) {
+        const a = upcoming[i], b = upcoming[j]
+        if (a.member_id === b.member_id && a.on_date === b.on_date && a.id !== b.id && Math.abs(mins(a.at_time) - mins(b.at_time)) < 60) {
+          out.push({
+            id: 'konflikt' + a.id, ico: '⚠️',
+            title: `Überschneidung bei ${mname(a.member_id)} am ${fmtShort(a.on_date)}`,
+            meta: `„${viewEvent(a).title}“ und „${viewEvent(b).title}“ liegen keine Stunde auseinander.`,
+            actLabel: 'Ansehen', act: () => setSheet({ event: a }),
+          })
+          break outer
+        }
+      }
+    }
+    // Blitzzettel sammeln sich
+    if (myInbox.length >= 3) out.push({
+      id: 'blitz', ico: '⚡',
+      title: `${myInbox.length} Blitzzettel warten auf dich`,
+      meta: 'Ansehen, sortieren, als To-do übernehmen – oder liegen lassen, auch okay.',
+      actLabel: 'Ansehen', act: () => setBlitzList(true),
+    })
+    return out.slice(0, 3) // nie mehr als 3 auf einmal – Kopf schonen
+  })()
+
   /* ---------- Bildschirme ---------- */
 
   const screenHeute = (
     <section className="screen">
       <h2 className="screen-title">Hallo {me.name}! 👋</h2>
-      <p className="screen-sub">{fmtDate(today)} · {db.family.name}</p>
+      <p className="screen-sub">{fmtDate(today)} · {db.family.name}{db.demo ? ' · 🎬 Demo-Modus (Beispieldaten – Beenden unter „Familie“)' : ''}</p>
       <div className="kpis">
         <div className="kpi accent"><div className="num">{db.events.filter((e) => e.on_date === today && e.status === 'fix').length}</div><div className="cap">Termine heute</div></div>
         <div className={'kpi' + (invites.length ? ' alert' : '')}><div className="num">{invites.length}</div><div className="cap">Anfragen an dich</div></div>
@@ -1605,6 +1833,25 @@ export default function App() {
           </div>
         )}
       </div>
+
+      {suggestions.length > 0 && (
+        <>
+          <p className="label">✨ Assistent · schlägt vor, du entscheidest</p>
+          <div className="card">
+            {suggestions.map((s) => (
+              <div className="row" key={s.id}>
+                <span style={{ fontSize: 20, width: 28, textAlign: 'center', flexShrink: 0 }}>{s.ico}</span>
+                <div className="row-main">
+                  <div className="row-title">{s.title}</div>
+                  <div className="row-meta">{s.meta}</div>
+                </div>
+                <button className="btn sm" onClick={s.act}>{s.actLabel}</button>
+              </div>
+            ))}
+            <div className="row"><span className="row-meta">Nutzt nur Daten, die schon in Eselsohr sind – nichts verlässt dein Gerät. Und nie mehr als 3 Vorschläge auf einmal.</span></div>
+          </div>
+        </>
+      )}
 
       {!isKid && kids.length > 0 && (
         <>
@@ -1811,6 +2058,28 @@ export default function App() {
       <div className="cols two">
         {listCard('einkauf', '🛒 Einkaufen', 'Was fehlt? (Enter)')}
         {listCard('todo', '✅ Zu erledigen', 'Was ist zu tun? (Enter)')}
+      </div>
+      <p className="label">🎂 Geburtstage · nie wieder vergessen</p>
+      <div className="card">
+        {gebSorted.map(({ g, info }) => (
+          <div className="row" key={g.id}>
+            <span style={{ fontSize: 20, width: 28, textAlign: 'center', flexShrink: 0 }}>🎂</span>
+            <div className="row-main">
+              <div className="row-title">{g.name}</div>
+              <div className="row-meta">
+                {g.date}
+                {info && ' · ' + (info.days === 0 ? 'heute! 🎉' : info.days === 1 ? 'morgen' : `in ${info.days} Tagen`)}
+                {info?.age != null && ` · wird ${info.age}`}
+              </div>
+            </div>
+            <button className="btn sm" onClick={() => openWa(g)}>💬 WhatsApp</button>
+            {!isKid && <button className="xdel" onClick={() => deleteGeb(g)} aria-label={g.name + ' löschen'}>✕</button>}
+          </div>
+        ))}
+        {!gebs.length && <div className="empty">Noch keine Geburtstage gemerkt – unten eintragen, Eselsohr erinnert rechtzeitig.</div>}
+        {!isKid && <GebForm onAdd={addGeb} />}
+        {!isKid && <WaTemplateRow key={db.waTemplate || 'std'} value={db.waTemplate || WA_DEFAULT}
+          onSave={(v) => { saveAll({ ...db, waTemplate: v }); toast('💬 Vorlage gespeichert ✓') }} />}
       </div>
     </section>
   )
@@ -2161,6 +2430,18 @@ export default function App() {
     <section className="screen">
       <h2 className="screen-title">{db.family.name}</h2>
       <p className="screen-sub">Mitglieder, Rechte und Sicherung</p>
+      {db.demo && (
+        <div className="card" style={{ marginBottom: 4 }}>
+          <div className="row">
+            <span style={{ fontSize: 20, width: 28, textAlign: 'center', flexShrink: 0 }}>🎬</span>
+            <div className="row-main">
+              <div className="row-title">Demo-Modus</div>
+              <div className="row-meta">Alles hier sind Beispieldaten. Profil wechseln lohnt sich: Anne hat das Praxis-Modul, die Kinder sehen nur ihren Teil.</div>
+            </div>
+            <button className="btn sm danger" onClick={endDemo}>Demo beenden</button>
+          </div>
+        </div>
+      )}
       <p className="label">Mitglieder</p>
       <div className="card">
         {db.members.map((m) => (
@@ -2301,11 +2582,12 @@ export default function App() {
         </nav>
       </div>
       {sheet && (
-        <EventSheet initial={sheet} members={db.members} me={me}
+        <EventSheet initial={sheet} members={db.members} me={me} stats={titleStats}
           onSave={saveEvent} onDelete={deleteEvent} onClose={() => setSheet(null)} />
       )}
       {blitz && (
-        <BlitzSheet onClose={() => setBlitz(false)} onSave={(text) => {
+        <BlitzSheet count={myInbox.length} onList={() => { setBlitz(false); setBlitzList(true) }}
+          onClose={() => setBlitz(false)} onSave={(text) => {
           const d = new Date()
           saveAll({
             ...db,
@@ -2314,6 +2596,28 @@ export default function App() {
           setBlitz(false)
           toast('⚡ Festgehalten – ist sicher. Weiter im Alltag.')
         }} />
+      )}
+      {blitzList && (
+        <BlitzListe items={myInbox} onDelete={deleteZettel} onTodo={zettelToTodo} onClose={() => setBlitzList(false)} />
+      )}
+      {wiz?.type === 'serie' && (
+        <SerieWizard base={wiz.base} count={wiz.count} memberName={mname(wiz.base.member_id)}
+          onCreate={(weeks) => { continueSerie(wiz.base, weeks); setWiz(null) }} onClose={() => setWiz(null)} />
+      )}
+      {wiz?.type === 'ist' && (
+        <IstWizard list={wiz.list} klientById={klientById}
+          onSaveIst={(id, ist) => saveAll({ ...db, events: db.events.map((e) => (e.id === id ? { ...e, ist } : e)) })}
+          onDone={(n) => { setWiz(null); toast(n ? `✓ ${n} Ist-Zeit${n > 1 ? 'en' : ''} nachgetragen` : 'Alles klar – später weitermachen geht immer') }}
+          onClose={() => setWiz(null)} />
+      )}
+      {wiz?.type === 'sport' && (
+        <div className="overlay" onClick={(e) => { if (e.target === e.currentTarget) setWiz(null) }}>
+          <div className="sheet">
+            <h3>🏃 Sport einplanen<button type="button" className="x" onClick={() => setWiz(null)} aria-label="Schließen">✕</button></h3>
+            <p className="hint" style={{ marginTop: 0 }}>Fester Wochentermin, 8 Wochen lang – der Termin gehört dir, wie jeder andere auch.</p>
+            <SportPlanForm onPlan={(a, w, t) => { planSport(a, w, t); setWiz(null) }} />
+          </div>
+        </div>
       )}
       {memberSheet && (
         <MemberSheet onAdd={addMember} onClose={() => setMemberSheet(false)}
@@ -2645,7 +2949,7 @@ function VereinSheet({ members, me, onLink, onClose }) {
 }
 
 /* Blitzzettel: null Hürde – festhalten, bevor der Gedanke weg ist */
-function BlitzSheet({ onSave, onClose }) {
+function BlitzSheet({ onSave, onClose, count = 0, onList }) {
   const [text, setText] = useState('')
   return (
     <div className="overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
@@ -2657,7 +2961,158 @@ function BlitzSheet({ onSave, onClose }) {
             aria-label="Blitzzettel" />
         </div>
         <button className="btn" style={{ width: '100%' }}>Festhalten</button>
+        {count > 0 && (
+          <button type="button" className="btn ghost" style={{ width: '100%', marginTop: 8 }} onClick={onList}>
+            Deine Zettel ansehen & sortieren ({count})
+          </button>
+        )}
         <p className="hint">Wandert beim nächsten Entsperren automatisch verschlüsselt in deinen Gedächtnispalast (📥 Eingang). Bis dahin liegt der Zettel unverschlüsselt nur auf diesem Gerät.</p>
+      </form>
+    </div>
+  )
+}
+
+function BlitzListe({ items, onDelete, onTodo, onClose }) {
+  const [sort, setSort] = useState('neu')
+  const sorted = [...items].sort((a, b) =>
+    sort === 'neu' ? (b.ts || 0) - (a.ts || 0) : sort === 'alt' ? (a.ts || 0) - (b.ts || 0) : a.text.localeCompare(b.text, 'de'))
+  return (
+    <div className="overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="sheet">
+        <h3>⚡ Deine Blitzzettel ({items.length})<button type="button" className="x" onClick={onClose} aria-label="Schließen">✕</button></h3>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+          {[['neu', 'Neueste zuerst'], ['alt', 'Älteste zuerst'], ['az', 'A–Z']].map(([k, l]) => (
+            <button type="button" key={k} className={'btn sm ' + (sort === k ? '' : 'ghost')} onClick={() => setSort(k)}>{l}</button>
+          ))}
+        </div>
+        {sorted.map((z) => (
+          <div className="row" key={z.id}>
+            <div className="row-main">
+              <div className="row-title" style={{ fontWeight: 500, whiteSpace: 'pre-wrap' }}>{z.text}</div>
+              <div className="row-meta">vom {z.date}</div>
+            </div>
+            <button type="button" className="btn sm ghost" onClick={() => onTodo(z)} title="In die Familienliste „Zu erledigen“ übernehmen">→ To-do</button>
+            <button type="button" className="xdel" onClick={() => onDelete(z)} aria-label="Zettel löschen">✕</button>
+          </div>
+        ))}
+        {!items.length && <div className="empty">Keine Zettel – Kopf frei 🎉</div>}
+        <p className="hint">Beim nächsten Entsperren des Gedächtnispalasts wandern alle Zettel automatisch verschlüsselt in den 📥 Eingang. Sortieren ist optional – nie Pflicht.</p>
+      </div>
+    </div>
+  )
+}
+
+/* ================= 🎂 Geburtstage ================= */
+
+const WA_DEFAULT = 'Alles Gute zum Geburtstag, {name}! 🎂🎉 Wir wünschen dir von Herzen einen wunderschönen Tag. Liebe Grüße von {familie}'
+
+function GebForm({ onAdd }) {
+  const [name, setName] = useState('')
+  const [date, setDate] = useState('')
+  const [tel, setTel] = useState('')
+  const valid = name.trim() && gebInfo(date)
+  const submit = () => {
+    if (!valid) return
+    onAdd(name.trim(), date.trim(), tel.trim())
+    setName(''); setDate(''); setTel('')
+  }
+  return (
+    <div className="quickadd" style={{ flexWrap: 'wrap' }}>
+      <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name (z. B. Oma Helga)" aria-label="Name"
+        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); submit() } }} style={{ flex: '2 1 140px' }} />
+      <input value={date} onChange={(e) => setDate(e.target.value)} placeholder="16.08. oder 16.08.1949" aria-label="Geburtstag"
+        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); submit() } }} style={{ flex: '1 1 130px' }} />
+      <input value={tel} onChange={(e) => setTel(e.target.value)} placeholder="Handy (optional)" aria-label="Handynummer für WhatsApp"
+        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); submit() } }} style={{ flex: '1 1 120px' }} />
+      <button type="button" className="btn sm" disabled={!valid} onClick={submit}>Merken</button>
+    </div>
+  )
+}
+
+function WaTemplateRow({ value, onSave }) {
+  const [open, setOpen] = useState(false)
+  const [v, setV] = useState(value)
+  if (!open) {
+    return (
+      <button className="row" onClick={() => { setV(value); setOpen(true) }}>
+        <span style={{ fontSize: 20, width: 28, textAlign: 'center', flexShrink: 0 }}>💬</span>
+        <div className="row-main">
+          <div className="row-title">WhatsApp-Vorlage bearbeiten</div>
+          <div className="row-meta">„{value.length > 64 ? value.slice(0, 64) + '…' : value}“</div>
+        </div>
+        <span className="chev">›</span>
+      </button>
+    )
+  }
+  return (
+    <div className="row" style={{ alignItems: 'stretch', flexDirection: 'column', gap: 8 }}>
+      <textarea value={v} onChange={(e) => setV(e.target.value)} rows={3} aria-label="WhatsApp-Vorlage"
+        style={{ font: 'inherit', fontSize: 13, borderRadius: 10, border: '1px solid var(--hairline)', background: 'var(--ground)', color: 'var(--ink)', padding: 10, width: '100%' }} />
+      <p className="hint" style={{ margin: 0 }}>Platzhalter: <b>{'{name}'}</b> = Name, <b>{'{alter}'}</b> = neues Alter, <b>{'{familie}'}</b> = euer Familienname.</p>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button className="btn sm" onClick={() => { onSave(v); setOpen(false) }}>Speichern</button>
+        <button className="btn ghost sm" onClick={() => setOpen(false)}>Abbrechen</button>
+      </div>
+    </div>
+  )
+}
+
+/* ================= ✨ Assistent-Wizards ================= */
+
+function SerieWizard({ base, count, memberName, onCreate, onClose }) {
+  const [weeks, setWeeks] = useState(8)
+  return (
+    <div className="overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="sheet">
+        <h3>↻ Serie anlegen<button type="button" className="x" onClick={onClose} aria-label="Schließen">✕</button></h3>
+        <div className="card" style={{ marginBottom: 12 }}>
+          <div className="fact"><b>Muster</b><span>„{base.title}“ gab es schon {count}×</span></div>
+          <div className="fact"><b>Wann</b><span>{WD_LONG[wdIdx(fromIso(base.on_date))]}s um {base.at_time} Uhr</span></div>
+          <div className="fact"><b>Für</b><span>{memberName}</span></div>
+        </div>
+        <div className="field">
+          <label>Wie weit vorausplanen?</label>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {[4, 8, 12].map((w) => (
+              <button type="button" key={w} className={'btn sm ' + (weeks === w ? '' : 'ghost')} onClick={() => setWeeks(w)}>{w} Wochen</button>
+            ))}
+          </div>
+        </div>
+        <button className="btn" style={{ width: '100%' }} onClick={() => onCreate(weeks)}>↻ Ab nächster Woche eintragen</button>
+        <p className="hint">Bereits vorhandene Termine bleiben unberührt – der Assistent füllt nur die Lücken. Einzelne Ausnahmen löschst du einfach im Kalender.</p>
+      </div>
+    </div>
+  )
+}
+
+function IstWizard({ list, klientById, onSaveIst, onDone, onClose }) {
+  const [i, setI] = useState(0)
+  const [saved, setSaved] = useState(0)
+  const [ist, setIst] = useState(() => String(list[0].soll || 60))
+  const e = list[i]
+  const next = (didSave) => {
+    const n = saved + (didSave ? 1 : 0)
+    if (i + 1 >= list.length) { onDone(n); return }
+    setSaved(n)
+    setI(i + 1)
+    setIst(String(list[i + 1].soll || 60))
+  }
+  return (
+    <div className="overlay" onClick={(ev) => { if (ev.target === ev.currentTarget) onClose() }}>
+      <form className="sheet" onSubmit={(ev) => { ev.preventDefault(); onSaveIst(e.id, +ist || 0); next(true) }}>
+        <h3>🩺 Ist-Zeiten · {i + 1} von {list.length}<button type="button" className="x" onClick={onClose} aria-label="Schließen">✕</button></h3>
+        <div className="card" style={{ marginBottom: 12 }}>
+          <div className="fact"><b>Klientin</b><span>{klientById(e.klid)?.name || '—'}</span></div>
+          <div className="fact"><b>Termin</b><span>{fmtDate(e.on_date)} · {e.at_time} Uhr · {e.ptype}</span></div>
+          <div className="fact"><b>Soll</b><span>{e.soll ? e.soll + ' Min.' : '—'}</span></div>
+        </div>
+        <div className="field">
+          <label htmlFor="w-ist">Wie lange hat es wirklich gedauert? (Minuten)</label>
+          <input id="w-ist" type="number" min="0" step="5" autoFocus value={ist} onChange={(ev) => setIst(ev.target.value)} />
+        </div>
+        <button className="btn" style={{ width: '100%' }}>Speichern & weiter</button>
+        <button type="button" className="btn ghost" style={{ width: '100%', marginTop: 8 }} onClick={() => next(false)}>Überspringen</button>
+        <p className="hint">Der Assistent geht alle offenen Termine durch – abbrechen jederzeit mit ✕, nichts geht verloren.</p>
       </form>
     </div>
   )
