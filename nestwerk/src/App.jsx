@@ -19,7 +19,7 @@ export default function App() {
   const [sheet, setSheet] = useState(null)
   const [calCursor, setCalCursor] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() } })
   const [selDate, setSelDate] = useState(iso(new Date()))
-  const [filterWho, setFilterWho] = useState(null)
+  const [filterWho, setFilterWho] = useState([]) // Mehrfachauswahl: leer = alle
   const [memberSheet, setMemberSheet] = useState(false)
   const [careSheet, setCareSheet] = useState(null) // member_id des Kindes
   const [blitz, setBlitz] = useState(false)
@@ -217,7 +217,8 @@ export default function App() {
   const byId = Object.fromEntries(db.members.map((m) => [m.id, m]))
   const mname = (id) => byId[id]?.name || '?'
   const mcolor = (id) => byId[id]?.color || '#888'
-  const visible = filterWho ? db.events.filter((e) => e.member_id === filterWho) : db.events
+  const visible = filterWho.length ? db.events.filter((e) => filterWho.includes(e.member_id)) : db.events
+  const toggleWho = (id) => setFilterWho((f) => (f.includes(id) ? f.filter((x) => x !== id) : [...f, id]))
   const eventsOn = (dateStr) => visible.filter((e) => e.on_date === dateStr).sort((a, b) => a.at_time.localeCompare(b.at_time))
   const invites = db.events.filter((e) => e.status === 'pending' && e.member_id === me.id)
 
@@ -600,7 +601,9 @@ export default function App() {
   }
 
   const dayList = (dateStr) => {
-    const care = kids.flatMap((k) => careOn(k, dateStr).map((b) => ({ k, b })))
+    const care = kids
+      .filter((k) => !filterWho.length || filterWho.includes(k.id))
+      .flatMap((k) => careOn(k, dateStr).map((b) => ({ k, b })))
     const list = eventsOn(dateStr)
     return (
       <>
@@ -944,7 +947,7 @@ export default function App() {
       <div className="title-row">
         <div>
           <h2 className="screen-title">Gemeinschaftskalender</h2>
-          <p className="screen-sub">Termine antippen zum Bearbeiten</p>
+          <p className="screen-sub">Termine antippen zum Bearbeiten · Namen antippen zum Filtern, auch mehrere</p>
         </div>
         <button className="btn" onClick={() => setSheet({ date: selDate })}>+ Termin</button>
       </div>
@@ -954,12 +957,26 @@ export default function App() {
         <button className="btn ghost sm" onClick={() => setCalCursor(({ y, m }) => (m < 11 ? { y, m: m + 1 } : { y: y + 1, m: 0 }))} aria-label="Nächster Monat">›</button>
         <span style={{ flex: 1 }} />
         <div className="legend" style={{ margin: 0 }}>
+          {!isKid && kids.length > 0 && (() => {
+            const fam = [me.id, ...kids.map((k) => k.id)]
+            const active = filterWho.length === fam.length && fam.every((id) => filterWho.includes(id))
+            return (
+              <button className={'chip' + (active ? ' brand' : '')}
+                title="Deine Termine und die der Kinder – ohne den Rest"
+                onClick={() => setFilterWho(active ? [] : fam)}>
+                ✋ Ich + Kinder
+              </button>
+            )
+          })()}
           {db.members.map((mm) => (
-            <button key={mm.id} className={'chip' + (filterWho && filterWho !== mm.id ? ' off' : '')}
-              onClick={() => setFilterWho(filterWho === mm.id ? null : mm.id)}>
+            <button key={mm.id} className={'chip' + (filterWho.length && !filterWho.includes(mm.id) ? ' off' : '')}
+              onClick={() => toggleWho(mm.id)}>
               <i className="dot" style={{ background: mm.color }} />{mm.name}
             </button>
           ))}
+          {filterWho.length > 0 && (
+            <button className="chip" onClick={() => setFilterWho([])}>✕ Alle zeigen</button>
+          )}
         </div>
       </div>
       <input className="search" value={calQ} onChange={(e) => setCalQ(e.target.value)}
