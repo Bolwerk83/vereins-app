@@ -51,6 +51,14 @@ if(b.includes("Push-Info ist bereits raus")) ok("Push wurde automatisch ausgelö
 await page.locator('button:has-text("Fertig")').click(); await page.waitForTimeout(600);
 b=await body();
 if(b.includes("⚡ Kurzfristig")) ok("Trainer-Terminliste markiert den Termin (⚡ Kurzfristig)"); else fail("Trainer-Markierung fehlt");
+// Nachfass-Karte: erreicht auch Eltern ohne Push / mit seltenem App-Besuch
+if(b.includes("Kurzfristig – Rückmeldungen fehlen")) ok("Nachfass-Karte für den Trainer sichtbar"); else fail("Nachfass-Karte fehlt");
+if(b.includes("Es fehlt noch von:")) ok("Nachfass-Karte nennt die Namen der Offenen"); else fail("Namen der Offenen fehlen");
+if(b.includes("📤 In die Eltern-Gruppe")&&b.includes("🔔 Push erneut")) ok("Beide Kanäle anklickbar (Gruppe + Push)"); else fail("Nachfass-Knöpfe fehlen");
+await page.evaluate(()=>{ const b2=[...document.querySelectorAll("button")].find(x=>x.innerText.includes("Push erneut")); b2&&b2.click(); });
+await page.waitForTimeout(800);
+b=await body();
+if(b.includes("Zuletzt erinnert:")) ok("Erinnerungs-Zeitpunkt wird festgehalten"); else fail("lastNudge nicht gespeichert");
 
 // ===== 2) Normaler Termin (in 30 Tagen) darf NICHT markiert werden =====
 const in30=await page.evaluate(()=>{ const d=new Date(); d.setDate(d.getDate()+30); const p=x=>String(x).padStart(2,"0"); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; });

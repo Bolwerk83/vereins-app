@@ -15196,6 +15196,9 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           {!isAdmin&&modOn("saison")&&<SeasonSurveyReminder data={local} cid={cid} session={session} onOpen={()=>setSurveyOpen(true)}/>}
           {/* Vertretungs-Gesuche: Trainer helfen sich bei Krankheit & Co. gegenseitig aus */}
           {!isHelper&&<VertretungsBoard data={local} cid={cid} session={session} save={save} fire={fire}/>}
+          {/* ⚡ Kurzfristige Termine mit fehlenden Rueckmeldungen nachfassen */}
+          {!isHelper&&<KurzfristigNachfassen data={local} myTids={myTids} cid={cid} cl={myClub} save={save} fire={fire}
+            selfName={selfName} onOpen={ev=>setViewEv(ev)}/>}
           {/* Helfer mit mehreren Jugenden: einfacher Wechsel ohne Neu-Login */}
           {isHelper&&myTids.length>1&&(
             <div style={{display:"flex",gap:6,marginBottom:12,overflowX:"auto",paddingBottom:2}}>
@@ -17166,6 +17169,85 @@ async function pushTeamInfo({cid,tid,title,text,from}){
     if(!r.ok) r=await post({mode:"chat",message:{cid,tid,title,text,from}});
     return r.ok;
   }catch{ return false; }
+}
+
+// ⚡ Nachfassen bei kurzfristigen Terminen.
+// Push erreicht nur Geraete mit aktivierten Benachrichtigungen - wer selten
+// in die App schaut, bekommt die Info sonst gar nicht. Deshalb bleibt der
+// Termin beim Trainer sichtbar, solange Rueckmeldungen fehlen: mit Namen der
+// Offenen, fertigem Text fuer die Eltern-Gruppe (erreicht ALLE) und einem
+// zweiten Push-Anlauf. Verschwindet automatisch, wenn alle geantwortet haben.
+function KurzfristigNachfassen({data,myTids,cid,cl,save,fire,onOpen,selfName}){
+  const tod=now();
+  const rows=(data.events||[])
+    .filter(e=>myTids.includes(e.tid)&&e.cid===cid&&(e.pt==="att"||!e.pt)&&shortNoticeOpen(e,cl,tod))
+    .map(ev=>{
+      const roster=(data.playerProfiles||[]).filter(p=>p.mainTid===ev.tid&&!p.archived&&!isPausedP(p)).map(p=>p.name);
+      const voted=new Set(Object.keys(ev.votes||{}));
+      return { ev, roster, missing: roster.filter(n=>!voted.has(n)) };
+    })
+    .filter(r=>r.roster.length>0 && r.missing.length>0)
+    .sort((a,b)=>String(a.ev.date).localeCompare(String(b.ev.date)))
+    .slice(0,3);
+  if(!rows.length) return null;
+
+  const linkFor=ev=>(typeof window!=="undefined"?window.location.origin:"")+"/?club="+(cl?.slug||cid)+"&event="+ev.id;
+  const textFor=(ev,missing)=>[
+    `⚡ Kurzfristiger Termin – bitte kurz abstimmen`,
+    `${ev.title} · ${fmtD(ev.date)}${ev.time?" um "+ev.time+" Uhr":""}${ev.loc?"\n📍 "+ev.loc:""}`,
+    ``,
+    `Es fehlt noch von: ${missing.join(", ")}`,
+    ``,
+    linkFor(ev),
+  ].join("\n");
+  const stamp=ev=>save({...data,events:(data.events||[]).map(e=>e.id===ev.id?{...e,lastNudge:new Date().toISOString()}:e)});
+  const share=(ev,missing)=>{
+    const txt=textFor(ev,missing);
+    if(navigator.share){ navigator.share({title:ev.title,text:txt}).catch(()=>{}); }
+    else { navigator.clipboard?.writeText(txt); fire&&fire("Text kopiert – in die Eltern-Gruppe einfügen"); }
+    stamp(ev);
+  };
+  const pushAgain=(ev,missing)=>{
+    pushTeamInfo({ cid, tid:ev.tid, from:selfName,
+      title:`⚡ Erinnerung: ${ev.title}`,
+      text:`${fmtD(ev.date)}${ev.time?" um "+ev.time+" Uhr":""} – ${missing.length} Rückmeldung${missing.length===1?"":"en"} fehlen noch.` });
+    stamp(ev); fire&&fire("Push-Erinnerung raus – für alle ohne Push bitte zusätzlich teilen");
+  };
+  const seit=iso=>{ const h=Math.round((Date.now()-new Date(iso).getTime())/3600000);
+    return h<1?"gerade eben":h<24?`vor ${h} Std.`:`vor ${Math.round(h/24)} Tg.`; };
+
+  return (
+    <div style={{background:"#fff7ed",border:"1.5px solid #fed7aa",borderRadius:14,padding:"12px 14px",marginBottom:12}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
+        <span style={{fontSize:17}}>⚡</span>
+        <span style={{fontWeight:800,fontSize:13.5,color:"#9a3412",flex:1}}>Kurzfristig – Rückmeldungen fehlen</span>
+      </div>
+      <div style={{fontSize:11.5,color:"#b45309",marginBottom:9,lineHeight:1.45}}>
+        Nicht alle haben Benachrichtigungen an oder schauen täglich rein. Der Text unten erreicht auch sie – einmal in die Eltern-Gruppe, fertig.
+      </div>
+      {rows.map(({ev,missing,roster})=>{
+        const tage=Math.max(0,Math.round((new Date(ev.date+"T12:00:00")-new Date(tod+"T12:00:00"))/86400000));
+        return (
+          <div key={ev.id} style={{background:"#fff",border:"1.5px solid #fed7aa",borderRadius:12,padding:"10px 12px",marginBottom:7}}>
+            <div onClick={()=>onOpen&&onOpen(ev)} style={{cursor:"pointer"}}>
+              <div style={{fontWeight:800,fontSize:13.5,color:"#0f172a"}}>{ev.title}</div>
+              <div style={{fontSize:11.5,color:"#9a3412",marginTop:2,fontWeight:700}}>
+                {tage===0?"HEUTE":tage===1?"MORGEN":`in ${tage} Tagen`} · {fmtD(ev.date)}{ev.time?` · ${ev.time} Uhr`:""} · {roster.length-missing.length}/{roster.length} geantwortet
+              </div>
+            </div>
+            <div style={{fontSize:11.5,color:"#7c2d12",background:"#fff7ed",borderRadius:8,padding:"6px 9px",marginTop:7,lineHeight:1.45}}>
+              Es fehlt noch von: <b>{missing.slice(0,8).join(", ")}</b>{missing.length>8?` +${missing.length-8} weitere`:""}
+            </div>
+            <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
+              <button onClick={()=>share(ev,missing)} style={{flex:"1 1 150px",padding:"9px",borderRadius:10,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>📤 In die Eltern-Gruppe</button>
+              <button onClick={()=>pushAgain(ev,missing)} style={{flex:"1 1 120px",padding:"9px",borderRadius:10,border:"1.5px solid #fdba74",background:"#fff",color:"#b45309",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>🔔 Push erneut</button>
+            </div>
+            {ev.lastNudge&&<div style={{fontSize:10.5,color:"#a16207",marginTop:6}}>Zuletzt erinnert: {seit(ev.lastNudge)}</div>}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 function FerienHinweis({hols,from,to}){
