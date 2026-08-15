@@ -794,14 +794,32 @@ export default function App() {
       <h2 className="screen-title">Hallo {me.name}! 👋</h2>
       <p className="screen-sub">{fmtDate(today)} · {db.family.name}{db.demo ? ' · 🎬 Demo-Modus (Beispieldaten – Beenden unter „Familie“)' : ''}</p>
       <div className="kpis">
-        <div className="kpi accent"><div className="num">{db.events.filter((e) => e.on_date === today && e.status === 'fix').length}</div><div className="cap">Termine heute</div></div>
-        <div className={'kpi' + (invites.length ? ' alert' : '')}><div className="num">{invites.length}</div><div className="cap">Anfragen an dich</div></div>
-        <div className="kpi"><div className="num">{db.items.filter((i) => !i.done).length}</div><div className="cap">Offene Listenpunkte</div></div>
+        <button className="kpi accent" onClick={() => {
+          const d = fromIso(today)
+          setSelDate(today); setCalCursor({ y: d.getFullYear(), m: d.getMonth() }); setCalQ(''); setNav('kalender')
+        }} aria-label="Zum heutigen Tag im Kalender">
+          <div className="num">{db.events.filter((e) => e.on_date === today && e.status === 'fix').length}</div>
+          <div className="cap">Termine heute ›</div>
+        </button>
+        <button className={'kpi' + (invites.length ? ' alert' : '')} onClick={() => {
+          if (invites.length) document.getElementById('anfragen-karte')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          else toast('Keine offenen Anfragen – alles beantwortet 🎉')
+        }} aria-label="Zu deinen Anfragen">
+          <div className="num">{invites.length}</div>
+          <div className="cap">Anfragen an dich ›</div>
+        </button>
+        <button className="kpi" onClick={() => setNav('listen')} aria-label="Zu den Familienlisten">
+          <div className="num">{db.items.filter((i) => !i.done).length}</div>
+          <div className="cap">Offene Listenpunkte ›</div>
+        </button>
         {hasMod(me, 'sport') && (
-          <div className={'kpi' + (mySportWeek.filter((e) => e.done).length >= sportGoal ? ' accent' : '')}>
+          <button className={'kpi' + (mySportWeek.filter((e) => e.done).length >= sportGoal ? ' accent' : '')} onClick={() => {
+            setNav('profil')
+            setTimeout(() => document.getElementById('sport-bereich')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120)
+          }} aria-label="Zu deinem Sport-Bereich">
             <div className="num">{mySportWeek.filter((e) => e.done).length}/{sportGoal}</div>
-            <div className="cap">🏃 Sport diese Woche</div>
-          </div>
+            <div className="cap">🏃 Sport diese Woche ›</div>
+          </button>
         )}
       </div>
 
@@ -880,7 +898,7 @@ export default function App() {
       )}
       {invites.length > 0 && (
         <>
-          <p className="label">📩 Anfragen an dich</p>
+          <p className="label" id="anfragen-karte">📩 Anfragen an dich</p>
           <div className="card">
             {invites.map((e) => (
               <div className="row" key={e.id}>
@@ -1241,7 +1259,7 @@ export default function App() {
 
           {hasMod(me, 'sport') && (
             <>
-              <p className="label">🏃 Sport · dein Ausgleich, fest eingeplant</p>
+              <p className="label" id="sport-bereich">🏃 Sport · dein Ausgleich, fest eingeplant</p>
               <div className="card">
                 <div className="row">
                   <RowIcon name="activity" />

@@ -229,6 +229,9 @@ a.btn { text-decoration: none; display: inline-flex; align-items: center; }
 /* ================= Kennzahlen ================= */
 .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-top: 4px; }
 .kpi { background: var(--surface); border: 2px solid var(--line); border-radius: 12px; padding: 10px 13px; box-shadow: var(--shadow-sm); }
+button.kpi { font: inherit; text-align: left; color: var(--ink); cursor: pointer; transition: transform .06s ease, box-shadow .06s ease; }
+button.kpi:hover { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 var(--line); }
+button.kpi:active { transform: translate(2px, 2px); box-shadow: none; }
 .kpi .num { font-size: 22px; font-weight: 900; font-variant-numeric: tabular-nums; }
 .kpi .cap { font-size: 11.5px; color: var(--ink-soft); font-weight: 600; }
 .kpi.accent { background: var(--brand); }
