@@ -277,6 +277,41 @@ async function runChat(msg: ChatPayload): Promise<Response> {
   return json({ sent, gone: gone.length });
 }
 
+// --- Modus "event": Info ueber einen neuen (kurzfristigen) Termin ---------
+// Geht an alle Team-Mitglieder, die Termin-Erinnerungen anhaben - unabhaengig
+// von der Chat-Einstellung. Faellt die Funktion auf einen aelteren Stand
+// zurueck, nutzt die App automatisch den Modus "chat".
+type EventPayload = { cid?:string, tid?:string, from?:string, text?:string, title?:string };
+async function runEvent(msg: EventPayload): Promise<Response> {
+  if (!msg) return json({ error: "no message" }, 400);
+  let q = admin.from("push_subscriptions").select("*").eq("enabled", true).eq("reminders_vote", true);
+  if (msg.cid) q = q.eq("cid", msg.cid);
+  const { data: all } = await q;
+  // Team-Filter in JS: Abos koennen mehrere Teams haben (Spalte tids).
+  const subs = (all || []).filter(s => {
+    if (!msg.tid) return true;
+    const t: string[] = (Array.isArray(s.tids) && s.tids.length ? s.tids : (s.tid ? [s.tid] : []));
+    return t.includes(msg.tid);
+  });
+  if (!subs.length) return json({ sent: 0, found: 0 });
+
+  let sent = 0; const gone: string[] = []; let lastErr: string | null = null;
+  for (const sub of subs) {
+    if (msg.from && sub.player_name === msg.from) continue;   // nicht an den Anleger
+    const r = await send(sub, {
+      title: msg.title || "Neuer Termin",
+      body: (msg.text || "").slice(0, 160),
+      tag: `newev_${msg.cid || ""}_${msg.tid || ""}`, renotify: true,
+      url: `/?club=${msg.cid || ""}`, icon: "/icon-192.png",
+      requireInteraction: true,
+    });
+    if (r.ok) sent++;
+    else { if (r.gone) gone.push(sub.endpoint); if (r.err) lastErr = r.err; }
+  }
+  await reapGone(gone);
+  return json({ sent, found: subs.length, gone: gone.length, error: lastErr });
+}
+
 // --- Modus "test" -------------------------------------------
 async function runTest(endpoint?: string): Promise<Response> {
   const q = admin.from("push_subscriptions").select("*").eq("enabled", true);
@@ -319,6 +354,7 @@ Deno.serve(async (req) => {
   try {
     if (mode === "cron") return await runCron();
     if (mode === "chat") return await runChat(body?.message || body);
+    if (mode === "event") return await runEvent(body?.message || body);
     if (mode === "test") return await runTest(body?.endpoint);
     return json({ error: "unknown mode" }, 400);
   } catch (e) {

@@ -14966,6 +14966,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const [trainerWelcomeOpen, setTrainerWelcomeOpen] = useState(()=>!!(meTrainer && meTrainer.onboarded!==true));
   const [modWizardManual,setModWizardManual]=useState(false);
   useEffect(()=>{ if(tab==="module"){ setModWizardManual(true); setTab("events"); } },[tab]);
+  const [shortInfo,setShortInfo]=useState(null);      // ⚡ kurzfristiger Termin angelegt -> Info-Blatt
   const [surveyOpen,setSurveyOpen]=useState(false);   // Saison-Fragebogen (Mehr -> Saison-Check oder Erinnerung)
   useEffect(()=>{ if(tab==="saisoncheck"){ setSurveyOpen(true); setTab("events"); } },[tab]);
   const [helperWelcomeOpen,  setHelperWelcomeOpen]  = useState(()=>!!(meHelper  && meHelper.onboarded!==true));
@@ -15076,9 +15077,24 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       }
     } else {
       const _sid = activeSid(local, cid);
-      const evsWithSeason = evs.map(e=>({...e, cid: e.cid || (local.teams||[]).find(t=>t.id===e.tid)?.cid || cid, seasonId: e.seasonId || _sid}));
+      const _now = new Date().toISOString();
+      const evsWithSeason = evs.map(e=>({...e, cid: e.cid || (local.teams||[]).find(t=>t.id===e.tid)?.cid || cid, seasonId: e.seasonId || _sid, createdAt: e.createdAt || _now}));
       save({...local,events:[...(local.events||[]),...evsWithSeason]});
-      fire(`${evs.length>1?evs.length+" Termine":"Termin"} erstellt - Eltern werden benachrichtigt`);
+      // Kurzfristige Termine (Standard: in <=7 Tagen) duerfen nicht untergehen:
+      // sofort Push ans Team + dem Trainer einen fertigen Teilen-Text anbieten.
+      const kurz = evsWithSeason.filter(e=>shortNoticeOpen(e,myClub,now()));   // now() statt tod: tod wird erst nach dem Wizard-Return deklariert
+      if(kurz.length){
+        const ev0=kurz[0];
+        kurz.forEach(e=>{
+          const tm=(local.teams||[]).find(t=>t.id===e.tid);
+          pushTeamInfo({ cid, tid:e.tid, from:selfName,
+            title:`⚡ Neuer Termin: ${e.title}`,
+            text:`${fmtD(e.date)}${e.time?" um "+e.time+" Uhr":""}${e.loc?" · "+e.loc:""}${tm?" · "+tm.name:""} – bitte kurz abstimmen.` });
+        });
+        setShortInfo({evs:kurz, ev:ev0});
+      } else {
+        fire(`${evs.length>1?evs.length+" Termine":"Termin"} erstellt - Eltern werden benachrichtigt`);
+      }
     }
     setWizard(false);setEditEv(null);
   }} onClose={()=>{setWizard(false);setEditEv(null);}}/>;
@@ -15993,6 +16009,43 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         <ModuleWizard data={local} session={session} myTids={myTids} cl={myClub} save={save} onClose={()=>setModWizardManual(false)}/>
       )}
       {surveyOpen&&<SeasonSurveyModal data={local} cid={cid} session={session} cl={myClub} save={save} fire={fire} onClose={()=>setSurveyOpen(false)}/>}
+      {/* ⚡ Kurzfristiger Termin angelegt: Push ist raus - zusaetzlich einen
+          fertigen Text zum Teilen anbieten (Push allein wird oft weggewischt). */}
+      {shortInfo&&(()=>{
+        const evs=shortInfo.evs||[]; const ev0=shortInfo.ev||evs[0]; if(!ev0) return null;
+        const tm=(local.teams||[]).find(t=>t.id===ev0.tid);
+        const link=(typeof window!=="undefined"?window.location.origin:"")+"/?club="+(myClub?.slug||cid)+"&event="+ev0.id;
+        const txt=[
+          `⚡ Kurzfristiger Termin${tm?" – "+tm.name:""}`,
+          `${ev0.title}`,
+          `${fmtD(ev0.date)}${ev0.time?" um "+ev0.time+" Uhr":""}${ev0.loc?"\n📍 "+ev0.loc:""}`,
+          ``,
+          `Bitte kurz abstimmen – es ist kurzfristig, daher zählt jede Rückmeldung:`,
+          link,
+        ].join("\n");
+        const share=()=>{ if(navigator.share){ navigator.share({title:ev0.title,text:txt}).catch(()=>{}); } else { navigator.clipboard?.writeText(txt); fire("Text kopiert – in die Eltern-Gruppe einfügen"); } };
+        return (
+          <div onClick={()=>setShortInfo(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:830,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(8px)"}}>
+            <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,animation:"down .24s ease"}}>
+              <div style={{display:"flex",justifyContent:"center",padding:"12px 0 4px"}}><div style={{width:44,height:4,borderRadius:99,background:"#e2e8f0"}}/></div>
+              <div style={{padding:"8px 22px 40px"}}>
+                <h3 style={{fontWeight:900,fontSize:18,color:"#0f172a",marginBottom:2}}>⚡ Kurzfristiger Termin angelegt</h3>
+                <p style={{fontSize:12.5,color:"#64748b",lineHeight:1.55,marginBottom:12}}>
+                  {evs.length>1?`${evs.length} Termine sind`:"Der Termin ist"} in weniger als {shortNoticeDaysOf(myClub)} Tagen – damit ihn niemand übersieht, ist er in der App auffällig markiert (⚡) und bleibt es, bis abgestimmt wurde. Eine Push-Info ist bereits raus.
+                </p>
+                <div style={{background:"#fff1f2",border:"1.5px solid #fecdd3",borderRadius:12,padding:"11px 13px",marginBottom:12}}>
+                  <div style={{fontWeight:800,fontSize:13.5,color:"#0f172a"}}>{ev0.title}</div>
+                  <div style={{fontSize:12,color:"#9f1239",marginTop:2}}>{fmtD(ev0.date)}{ev0.time?` · ${ev0.time} Uhr`:""}{tm?` · ${tm.name}`:""}</div>
+                  {evs.length>1&&<div style={{fontSize:11.5,color:"#be123c",marginTop:4}}>+ {evs.length-1} weitere kurzfristige {evs.length-1===1?"Termin":"Termine"}</div>}
+                </div>
+                <button onClick={share} style={{width:"100%",padding:"13px",borderRadius:13,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:14.5,cursor:"pointer",fontFamily:"inherit"}}>📤 Zusätzlich in die Eltern-Gruppe teilen</button>
+                <button onClick={()=>{ remindNonVoters(ev0); }} style={{width:"100%",marginTop:8,padding:"11px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>🔔 Später: an Offene erinnern</button>
+                <button onClick={()=>setShortInfo(null)} style={{width:"100%",marginTop:8,padding:"10px",borderRadius:12,border:"none",background:"none",color:"#64748b",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Fertig</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
       {/* Vertretungs-Gesuch anlegen (aus dem ⋯-Menue der Terminkarte) */}
       {subReqEv&&(
         <div onClick={()=>setSubReqEv(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:820,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(8px)"}}>
@@ -17083,6 +17136,38 @@ function ContactConsentPublic({contactId,clubParam}){
   );
 }
 
+// ⚡ Kurzfristige Termine ------------------------------------------------
+// Ein Termin, der erst kurz vor knapp angelegt wurde, geht in der Liste
+// leicht unter. Er wird deshalb ueberall auffaellig markiert - und zwar
+// so lange, bis der Nutzer abgestimmt hat. Schwelle: 7 Tage, je Verein
+// aenderbar ueber clubSettings.shortNoticeDays.
+const SHORT_NOTICE_DAYS = 7;
+const shortNoticeDaysOf = cl => Number(cl?.clubSettings?.shortNoticeDays) || SHORT_NOTICE_DAYS;
+const daysUntilD = (from,to) => Math.round((new Date(to+"T12:00:00")-new Date(from+"T12:00:00"))/86400000);
+// Kurzfristig = zwischen Anlage und Termin liegen hoechstens X Tage.
+// Ohne createdAt (Alt-Termine) gilt ein Termin nie als kurzfristig.
+function isShortNoticeEv(ev,cl){
+  if(!ev?.createdAt||!ev?.date) return false;
+  const d=daysUntilD(String(ev.createdAt).slice(0,10), ev.date);
+  return d>=0 && d<=shortNoticeDaysOf(cl);
+}
+// Anzeige-Regel: nur solange der Termin noch bevorsteht.
+const shortNoticeOpen = (ev,cl,tod) => isShortNoticeEv(ev,cl) && String(ev.date)>=tod;
+
+// Info-Push an ein Team ueber die notify-Function. Neuer Modus "event";
+// aeltere Funktionsstaende kennen ihn nicht - dann automatisch als "chat".
+async function pushTeamInfo({cid,tid,title,text,from}){
+  try{
+    const cfg=getConfig(); if(!cfg?.url||!cfg?.key) return false;
+    const post=body=>fetch(`${cfg.url}/functions/v1/notify`,{method:"POST",
+      headers:{"Content-Type":"application/json","apikey":cfg.key,"Authorization":"Bearer "+cfg.key},
+      body:JSON.stringify(body)});
+    let r=await post({mode:"event",message:{cid,tid,title,text,from}});
+    if(!r.ok) r=await post({mode:"chat",message:{cid,tid,title,text,from}});
+    return r.ok;
+  }catch{ return false; }
+}
+
 function FerienHinweis({hols,from,to}){
   const list=(hols||[]).filter(h=>h.end>=from&&h.start<=to);
   if(!list.length) return null;
@@ -17141,7 +17226,7 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
       <div style={{padding:"12px 14px",display:"flex",gap:10,alignItems:"center"}}>
         <div style={{width:42,height:42,borderRadius:13,background:eT.bg,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><EventIcon type={EVENT_TYPE_ALIAS[ev.type]||ev.type} size={22} color={eT.col}/></div>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}><span style={{fontWeight:800,fontSize:14,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ev.title}</span>{tF&&<Tag c={p} bg={p+"20"} ch="Heute"/>}{ev.open&&<Tag c="#7c3aed" bg="#ede9fe" ch="🌐 Offen"/>}{ev.sid&&<Tag c="#64748b" bg="#f1f5f9" ch="🔁 Serie"/>}</div>
+          <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}><span style={{fontWeight:800,fontSize:14,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ev.title}</span>{shortNoticeOpen(ev,cl,tod)&&<Tag c="#dc2626" bg="#fee2e2" ch="⚡ Kurzfristig"/>}{tF&&<Tag c={p} bg={p+"20"} ch="Heute"/>}{ev.open&&<Tag c="#7c3aed" bg="#ede9fe" ch="🌐 Offen"/>}{ev.sid&&<Tag c="#64748b" bg="#f1f5f9" ch="🔁 Serie"/>}</div>
           <div style={{fontSize:12.5,color:"#475569",marginTop:3,fontWeight:600}}>{wd(ev.date)}{fmtDShort(ev.date)}{ev.time?" · "+ev.time+" Uhr":""}{ev.loc?" · 📍 "+ev.loc:""}{wx?.[ev.date]&&<span style={{marginLeft:6,fontSize:11.5,fontWeight:700,color:(wx[ev.date].r??0)>=50?"#0369a1":"#64748b"}}>{wxIcon(wx[ev.date].c)} {wx[ev.date].t}°{(wx[ev.date].r??0)>=30?` · 💧${wx[ev.date].r}%`:""}</span>}</div>
           {(()=>{ const hn=publicHolidayName(ev.date,cl?.clubSettings?.holidayState); const sf=schoolHolidayFor(_ferien,ev.date); if(!hn&&!sf) return null; return <div style={{marginTop:5,display:"flex",gap:5,flexWrap:"wrap"}}>
             {hn&&<span style={{fontSize:11,fontWeight:800,color:"#92400e",background:"#fef3c7",border:"1px solid #fde68a",borderRadius:6,padding:"2px 8px"}}>🎉 Feiertag: {hn}</span>}
@@ -19402,15 +19487,23 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user",allEven
     else if(!isPast)status={icon:"⏳",label:tr("evStCpOpen"),color:"#d97706",bg:"#fef3c7",urgent:true};
   }
   const yesN=Object.values(ev.votes||{}).filter(v=>(typeof v==="object"?v.val:v)==="yes").length;
+  // ⚡ Kurzfristig angelegt? Dann auffaellig markieren, bis abgestimmt wurde.
+  const shortN = shortNoticeOpen(ev,cl,now());
+  const shortOpen = shortN && !uvVal;   // noch keine Antwort -> volle Warnfarbe
   return (
-    <div style={{background:"#fff",borderRadius:20,boxShadow:expanded?"0 8px 32px rgba(0,0,0,.11)":"0 2px 10px rgba(0,0,0,.05)",border:`2px solid ${expanded?p:status?.urgent?"#fde68a":"#e2e8f0"}`,overflow:"hidden",transition:"all .2s",opacity:isPast&&!expanded?.7:1}}>
-      {status?.urgent&&!expanded&&!isPast&&<div style={{background:"#fffbeb",borderBottom:"1px solid #fde68a",padding:"6px 17px",display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:13}}>⏰</span><span style={{fontSize:12,fontWeight:700,color:"#d97706"}}>{tr("evAnswerMissing")}</span></div>}
+    <div style={{background:"#fff",borderRadius:20,boxShadow:expanded?"0 8px 32px rgba(0,0,0,.11)":"0 2px 10px rgba(0,0,0,.05)",border:`2px solid ${expanded?p:shortOpen?"#fca5a5":status?.urgent?"#fde68a":"#e2e8f0"}`,overflow:"hidden",transition:"all .2s",opacity:isPast&&!expanded?.7:1}}>
+      {shortOpen&&!isPast&&<div style={{background:"#fef2f2",borderBottom:"1px solid #fecaca",padding:"7px 17px",display:"flex",alignItems:"center",gap:7}}>
+        <span style={{fontSize:14}}>⚡</span>
+        <span style={{fontSize:12,fontWeight:800,color:"#dc2626",lineHeight:1.35}}>Kurzfristiger Termin – bitte kurz abstimmen{ev.createdAt?` (erst am ${fmtDShort(String(ev.createdAt).slice(0,10))} angelegt)`:""}</span>
+      </div>}
+      {status?.urgent&&!expanded&&!isPast&&!shortOpen&&<div style={{background:"#fffbeb",borderBottom:"1px solid #fde68a",padding:"6px 17px",display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:13}}>⏰</span><span style={{fontSize:12,fontWeight:700,color:"#d97706"}}>{tr("evAnswerMissing")}</span></div>}
       <div onClick={onToggle} style={{padding:"14px 17px",cursor:"pointer",display:"flex",alignItems:"center",gap:12}}>
         <div style={{width:48,height:48,borderRadius:15,background:eT.bg,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><EventIcon type={EVENT_TYPE_ALIAS[ev.type]||ev.type} size={26} color={eT.col}/></div>
         <div style={{flex:1,minWidth:0}}>
           <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
             <span style={{fontWeight:900,fontSize:17,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{evDisplayTitle(ev,tr)}</span>
             {isToday&&<Tag c={p} bg={p+"20"} ch={"⚡ "+tr("evTagToday")}/>}
+            {shortN&&!isPast&&<Tag c="#dc2626" bg="#fee2e2" ch="⚡ Kurzfristig"/>}
             {ev.open&&<Tag c="#7c3aed" bg="#ede9fe" ch={tr("evTagOpen")}/>}
             {ev.sid&&<Tag c="#94a3b8" bg="#f1f5f9" ch="🔁" sm/>}
           </div>
@@ -20341,6 +20434,29 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{},onSwitc
             <span style={{color:"#fff",fontSize:20}}>›</span>
           </button>
         )}
+        {/* ⚡ Kurzfristige Termine ganz oben: nur die, bei denen die Antwort
+            noch fehlt. Antippen klappt den ersten davon direkt auf. */}
+        {(()=>{
+          const vv=v=>(typeof v==="object"&&v)?v.val:v;
+          const kurz=up.filter(e=>shortNoticeOpen(e,cl,tod)&&!vv((e.votes||{})[user]));
+          if(!kurz.length) return null;
+          const first=kurz[0];
+          return (
+            <div onClick={()=>{ setExp(first.id); if(first.date>_in10) setShowLater(true); }}
+              style={{background:"#fef2f2",border:"2px solid #fca5a5",borderRadius:14,padding:"12px 15px",marginBottom:12,cursor:"pointer",display:"flex",alignItems:"center",gap:11}}>
+              <span style={{fontSize:22}}>⚡</span>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontWeight:900,fontSize:14,color:"#dc2626"}}>
+                  {kurz.length===1?"Kurzfristiger Termin – deine Antwort fehlt":`${kurz.length} kurzfristige Termine – Antwort fehlt`}
+                </div>
+                <div style={{fontSize:12,color:"#9f1239",marginTop:2,lineHeight:1.4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                  {first.title} · {fmtD(first.date)}{first.time?" um "+first.time+" Uhr":""}
+                </div>
+              </div>
+              <span style={{fontSize:12.5,fontWeight:800,color:"#dc2626",flexShrink:0}}>Ansehen →</span>
+            </div>
+          );
+        })()}
         <FerienHinweis hols={_ferienUH} from={tod} to={_in10}/>
         {up.length>0&&<>
           <Divider label={tr("uhNext10")}/>
