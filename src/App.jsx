@@ -15358,10 +15358,10 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             );
           })()}
           <FerienHinweis hols={_ferienDash} from={tod} to={_in10}/>
-          {up.length>0&&<><Divider label={`NÄCHSTE 21 TAGE (${soon.length})`}/>{soon.length>0?soon.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={selfName} onSelfVote={selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}}/>):<p style={{textAlign:"center",color:"#64748b",fontSize:13.5,padding:"14px 10px"}}>Keine Termine in den nächsten 21 Tagen.</p>}
+          {up.length>0&&<><Divider label={`NÄCHSTE 21 TAGE (${soon.length})`}/>{soon.length>0?soon.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}}/>):<p style={{textAlign:"center",color:"#64748b",fontSize:13.5,padding:"14px 10px"}}>Keine Termine in den nächsten 21 Tagen.</p>}
             {later.length>0&&<>
               <button onClick={()=>setShowLater(s=>!s)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",background:showLater?"#f1f5f9":"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,cursor:"pointer",margin:"6px 0 12px",padding:"11px 14px",fontWeight:800,fontSize:13,color:"#475569",fontFamily:"inherit"}}>{showLater?"▲ Weitere Termine ausblenden":"▼ Weitere "+later.length+" Termine anzeigen"}</button>
-              {showLater&&later.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={selfName} onSelfVote={selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}}/>)}
+              {showLater&&later.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}}/>)}
             </>}
           </>}
           {up.length===0&&<div style={{textAlign:"center",padding:"30px",background:"#fff",borderRadius:18,border:"1.5px dashed #e2e8f0",color:"#64748b"}}><Logo cl={myClub} sz={50} sx={{margin:"0 auto 12px"}}/><p style={{fontWeight:800,fontSize:15}}>Noch keine Termine</p><p style={{fontSize:13,marginTop:3}}>Klicke oben auf "Neuen Termin anlegen"</p></div>}
@@ -15675,8 +15675,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           ? <StaffingBoard mode="helfer" ev={viewEv} team={(local.teams||[]).find(tm=>tm.id===viewEv.tid)} session={session} isHelper={isHelper}
               onPatch={patch=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,...patch}:e)}); setViewEv(prev=>({...prev,...patch})); }}
               fire={fire}/>
-          : (!isHelper&&<button onClick={()=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,helferOpen:true}:e)}); setViewEv(prev=>({...prev,helferOpen:true})); fire("Helfer-Anmeldung freigegeben"); }}
-              style={{width:"100%",marginTop:14,padding:"11px",borderRadius:11,border:"1.5px dashed #d97706",background:"#fffbeb",color:"#b45309",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>🙋 Helfer-Anmeldung für diesen Termin freigeben</button>)
+          : <HelferInteresse ev={viewEv} isHelper={isHelper} session={session} fire={fire}
+              onPatch={patch=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,...patch}:e)}); setViewEv(prev=>({...prev,...patch})); }}/>
         )}
         {/* Orga & Verkauf: Kuchen, Getraenke, Material & Schichten - Trainer UND Helfer pflegen gemeinsam */}
         {viewEv.type!=="training"&&<OrgaBoard ev={viewEv} user={session.name||(isHelper?"Helfer":"Trainer")} canEdit={!isHelper||helperEinsatz}
@@ -17316,7 +17316,7 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
           </div>; })()}
           {ev.type==="training"&&planTitle&&<div style={{marginTop:5}}><span style={{fontSize:11,fontWeight:700,color:"#4f46e5",background:"#eef2ff",borderRadius:6,padding:"2px 8px"}}>📋 {planTitle}</span></div>}
           {warns.length>0&&<div style={{display:"flex",gap:5,marginTop:5,flexWrap:"wrap"}}>{warns.map((w,i)=><span key={i} style={{fontSize:11,fontWeight:800,color:w.col,background:w.bg,borderRadius:6,padding:"2px 8px"}}>⚠ {w.label}</span>)}</div>}
-          {vc>0&&<div style={{display:"flex",gap:5,marginTop:4,flexWrap:"wrap"}}>{ev.pt==="att"?<><Tag c="#16a34a" ch={`✓ ${yes} Spieler`}/><Tag c="#dc2626" bg="#fee2e2" ch={`✕ ${no}`}/>{trYesN>0&&<Tag c="#4f46e5" bg="#eef2ff" ch={`🧑‍🏫 ${trYesN} Trainer`}/>}</>:<Tag c="#2563eb" ch={`📝 ${vc} Einträge`}/>}</div>}
+          {vc>0&&<div style={{display:"flex",gap:5,marginTop:4,flexWrap:"wrap"}}>{ev.pt==="att"?<><Tag c="#16a34a" ch={`✓ ${yes} Spieler`}/><Tag c="#dc2626" bg="#fee2e2" ch={`✕ ${no}`}/>{trYesN>0&&<Tag c="#4f46e5" bg="#eef2ff" ch={`🧑‍🏫 ${trYesN} Trainer`}/>}{(ev.helperInterest||[]).length>0&&!ev.helferOpen&&<Tag c="#b45309" bg="#fef3c7" ch={`🙋 ${(ev.helperInterest||[]).length} bereit`}/>}</>:<Tag c="#2563eb" ch={`📝 ${vc} Einträge`}/>}</div>}
           {ev.deadline&&<div style={{marginTop:4}}><span style={{fontSize:11,fontWeight:700,color:dlPassed?"#dc2626":"#d97706",background:dlPassed?"#fee2e2":"#fef3c7",borderRadius:6,padding:"2px 8px"}}>⏳ {dlPassed?"Frist abgelaufen":"Frist "+fmtDShort(ev.deadline.date)+(ev.deadline.time?" "+ev.deadline.time:"")}</span></div>}
           {upcoming5 && !votingLocked && msToStart>0 && (
             <div style={{marginTop:4,display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
@@ -18985,6 +18985,79 @@ function OrgaBoard({ ev, user, canEdit, onPatch, fire }){
           <button onClick={()=>addShift(newShift)} style={{padding:"9px 14px",borderRadius:10,border:"none",background:"#0f172a",color:"#fff",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Anlegen</button>
         </div>
       )}
+    </div>
+  );
+}
+
+// Helfer-Bereitschaft VOR der Freigabe.
+// Frueher sah ein Helfer einen Spieltag/ein Turnier zwar in der Liste, konnte
+// aber nichts tun, solange der Trainer die Helfer-Anmeldung nicht freigegeben
+// hatte - und der Trainer wusste nicht, dass jemand bereitsteht. Jetzt kann
+// sich der Helfer jederzeit melden; bei der Freigabe werden alle Interessenten
+// automatisch (in der Reihenfolge ihrer Meldung) uebernommen.
+function HelferInteresse({ ev, isHelper, session, onPatch, fire }){
+  const list = Array.isArray(ev.helperInterest) ? ev.helperInterest : [];
+  const myId = session?.id || session?.helperId || session?.name;
+  const mine = list.find(x=>x.id===myId);
+  const join = () => {
+    onPatch({ helperInterest:[...list, {id:myId, name:session?.name||"Helfer", ts:new Date().toISOString()}] });
+    fire&&fire("Danke! Der Trainer sieht deine Bereitschaft ✓");
+  };
+  const leave = () => { onPatch({ helperInterest:list.filter(x=>x.id!==myId) }); fire&&fire("Bereitschaft zurückgezogen"); };
+  const release = () => {
+    // Interessenten in der Reihenfolge ihrer Meldung als Zusagen uebernehmen -
+    // niemand muss ein zweites Mal tippen.
+    const offers = Array.isArray(ev.helperOffers) ? ev.helperOffers : [];
+    const have = new Set(offers.map(o=>o.id));
+    const add = [...list].sort((a,b)=>String(a.ts).localeCompare(String(b.ts))).filter(x=>!have.has(x.id));
+    onPatch({ helferOpen:true, helperOffers:[...offers, ...add], helperInterest:[] });
+    fire&&fire(add.length?`Freigegeben – ${add.length} bereite Helfer direkt übernommen ✓`:"Helfer-Anmeldung freigegeben");
+  };
+
+  if (isHelper) return (
+    <div style={{marginTop:14,background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:13,padding:"12px 14px"}}>
+      <div style={{fontWeight:800,fontSize:14,color:"#92400e",marginBottom:3}}>🙋 Helfer-Einsatz</div>
+      <div style={{fontSize:12,color:"#a16207",lineHeight:1.5,marginBottom:10}}>
+        {mine
+          ? "Deine Bereitschaft ist notiert. Sobald der Trainer den Einsatz freigibt, bist du automatisch dabei – du musst nichts weiter tun."
+          : "Der Trainer hat den Einsatz noch nicht freigegeben. Du kannst trotzdem schon melden, dass du kannst – dann bist du bei der Freigabe automatisch dabei."}
+      </div>
+      {list.length>0&&(
+        <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:10}}>
+          {list.map(o=>(
+            <span key={o.id} style={{display:"inline-flex",alignItems:"center",gap:5,background:"#fff",border:"1.5px solid #fde68a",borderRadius:99,padding:"3px 9px 3px 3px",fontSize:11.5,fontWeight:700,color:"#0f172a"}}>
+              <Av name={o.name} sz={18}/>{o.name}{o.id===myId?" (du)":""}
+            </span>
+          ))}
+        </div>
+      )}
+      <button onClick={mine?leave:join}
+        style={{width:"100%",padding:"11px",borderRadius:11,border:mine?"1.5px solid #fecaca":"none",background:mine?"#fff":"#d97706",color:mine?"#dc2626":"#fff",fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>
+        {mine?"Doch nicht – Bereitschaft zurückziehen":"🙋 Ich kann helfen"}
+      </button>
+    </div>
+  );
+
+  // Trainer / Admin
+  return (
+    <div style={{marginTop:14}}>
+      {list.length>0&&(
+        <div style={{background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:12,padding:"11px 13px",marginBottom:8}}>
+          <div style={{fontWeight:800,fontSize:13,color:"#166534",marginBottom:5}}>🙋 {list.length} {list.length===1?"Helfer ist":"Helfer sind"} schon bereit</div>
+          <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+            {list.map(o=>(
+              <span key={o.id} style={{display:"inline-flex",alignItems:"center",gap:5,background:"#fff",border:"1.5px solid #bbf7d0",borderRadius:99,padding:"3px 9px 3px 3px",fontSize:11.5,fontWeight:700,color:"#0f172a"}}>
+                <Av name={o.name} sz={18}/>{o.name}
+              </span>
+            ))}
+          </div>
+          <div style={{fontSize:11.5,color:"#4d7c0f",marginTop:6,lineHeight:1.45}}>Mit der Freigabe werden sie automatisch als Zusage übernommen – in der Reihenfolge ihrer Meldung.</div>
+        </div>
+      )}
+      <button onClick={release}
+        style={{width:"100%",padding:"11px",borderRadius:11,border:list.length?"none":"1.5px dashed #d97706",background:list.length?"#d97706":"#fffbeb",color:list.length?"#fff":"#b45309",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+        🙋 Helfer-Anmeldung für diesen Termin freigeben
+      </button>
     </div>
   );
 }
