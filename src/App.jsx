@@ -2821,7 +2821,7 @@ function teamYearRange(team) {
   return null;
 }
 
-function TeamInsights({ data, myTids, cl, save, fire }) {
+function TeamInsights({ data, myTids, cl, save, fire, session=null }) {
   const t = TH(cl);
   const today = now();
   const players = (data.playerProfiles||[]).filter(p =>
@@ -3052,7 +3052,7 @@ function TeamInsights({ data, myTids, cl, save, fire }) {
                 if(!picks.length){ fire&&fire("Keine passenden Übungen in der Bibliothek gefunden"); return; }
                 if(ev.trainingPlan&&typeof window!=="undefined"&&window.confirm&&!window.confirm("Dieser Termin hat schon einen Trainingsplan – ersetzen?")) return;
                 const plan={ cat, createdAt: now(), focus: evAxis, sessions:[{ title:"Trainingseinheit", blocks: picks.map(d=>({phase:"Schwerpunkt", id:d.id, drillId:d.id, title:d.title, min:d.min||12})) }] };
-                save({...data, events:(data.events||[]).map(e=>e.id===ev.id?{...e,trainingPlan:plan}:e)});
+                save({...data, events:(data.events||[]).map(e=>e.id===ev.id?{...e,trainingPlan:plan,planBy:session?.name||"Trainer",planAt:new Date().toISOString()}:e)});
                 fire&&fire(`Schwerpunkt „${evAxis}“${tfEv.basis==="anwesend"?` (auf ${tfEv.usedCount} Zusagen zugeschnitten)`:""} an ${fmtDShort(ev.date)} gehängt ✓`);
               };
               return (
@@ -3727,7 +3727,7 @@ function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false, initial
       {subTab==="results"    && <LeagueTab     data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
       {subTab==="kasse"      && <CashbookTab   data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
       {subTab==="bericht"    && <SeasonReportTab data={data} myTids={myTids} cl={cl} fire={fire}/>}
-      {subTab==="insights"   && <TeamInsights data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
+      {subTab==="insights"   && <TeamInsights data={data} myTids={myTids} cl={cl} save={save} fire={fire} session={session}/>}
       {subTab==="analysis"   && <TeamSkillAnalysis data={data} myTids={myTids} cl={cl}/>}
       {subTab==="ziele"      && <TrainerTrainingZiele data={data} cid={cl?.id} myTids={myTids} save={save} fire={fire} cl={cl}/>}
       {subTab==="drills"     && <DrillLibrary cl={cl} data={data} myTids={myTids} save={save} fire={fire}/>}
@@ -15386,10 +15386,10 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             );
           })()}
           <FerienHinweis hols={_ferienDash} from={tod} to={_in10}/>
-          {up.length>0&&<><Divider label={`NÄCHSTE 21 TAGE (${soon.length})`}/>{soon.length>0?soon.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}}/>):<p style={{textAlign:"center",color:"#64748b",fontSize:13.5,padding:"14px 10px"}}>Keine Termine in den nächsten 21 Tagen.</p>}
+          {up.length>0&&<><Divider label={`NÄCHSTE 21 TAGE (${soon.length})`}/>{soon.length>0?soon.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}}/>):<p style={{textAlign:"center",color:"#64748b",fontSize:13.5,padding:"14px 10px"}}>Keine Termine in den nächsten 21 Tagen.</p>}
             {later.length>0&&<>
               <button onClick={()=>setShowLater(s=>!s)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",background:showLater?"#f1f5f9":"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,cursor:"pointer",margin:"6px 0 12px",padding:"11px 14px",fontWeight:800,fontSize:13,color:"#475569",fontFamily:"inherit"}}>{showLater?"▲ Weitere Termine ausblenden":"▼ Weitere "+later.length+" Termine anzeigen"}</button>
-              {showLater&&later.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}}/>)}
+              {showLater&&later.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}}/>)}
             </>}
           </>}
           {up.length===0&&<div style={{textAlign:"center",padding:"30px",background:"#fff",borderRadius:18,border:"1.5px dashed #e2e8f0",color:"#64748b"}}><Logo cl={myClub} sz={50} sx={{margin:"0 auto 12px"}}/><p style={{fontWeight:800,fontSize:15}}>Noch keine Termine</p><p style={{fontSize:13,marginTop:3}}>Klicke oben auf "Neuen Termin anlegen"</p></div>}
@@ -15441,7 +15441,9 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         )}
         <InOutHint ev={viewEv} cl={myClub}/>
         {(()=>{ const isG=["heimspiel","auswarts","freundschaft","turnier"].includes(viewEv.type); const isT=viewEv.type==="training";
-          const tabs=[["rueck","📊 Rückmeldungen"],...(isT?[["plan","📋 Training"]]:[]),...(isG?[["plan","⚽ Aufstellung"]]:[]),["orga","👥 Orga"],...((isG||isT)?[["zeit","⏱ Spieltag"]]:[])];
+          // Trainingsplan/Uebungen und Aufstellung sind Trainer-Inhalte - Helfer
+          // arbeiten im Orga-Bereich (Einsatz, Listen, Schichten).
+          const tabs=[["rueck","📊 Rückmeldungen"],...(isT&&!isHelper?[["plan","📋 Training"]]:[]),...(isG&&!isHelper?[["plan","⚽ Aufstellung"]]:[]),["orga","👥 Orga"],...((isG||isT)?[["zeit","⏱ Spieltag"]]:[])];
           const tp=TH(myClub).p;
           return (
             <div style={{position:"sticky",top:-16,zIndex:6,background:"#fff",margin:"0 -2px",padding:"6px 2px 10px",display:"flex",gap:6,overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
@@ -15737,6 +15739,17 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         }}/>
         </>}
         {evTab==="plan"&&<>
+        {/* Herkunft des Trainings: wer hat es eingestellt und wann. Sorgt fuer
+            klare Absprachen, wenn mehrere Trainer ein Team betreuen. */}
+        {(viewEv.trainingPlan||viewEv.trainingId)&&viewEv.planBy&&(
+          <div style={{display:"flex",alignItems:"center",gap:9,background:"#eef2ff",border:"1.5px solid #c7d2fe",borderRadius:12,padding:"9px 12px",marginBottom:12}}>
+            <Av name={viewEv.planBy} sz={26}/>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:12.5,fontWeight:800,color:"#3730a3"}}>Training eingestellt von {viewEv.planBy}</div>
+              {viewEv.planAt&&<div style={{fontSize:11,color:"#4f46e5",marginTop:1}}>{new Date(viewEv.planAt).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"})} um {new Date(viewEv.planAt).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"})} Uhr</div>}
+            </div>
+          </div>
+        )}
         {["heimspiel","auswarts","freundschaft","turnier"].includes(viewEv.type)&&(()=>{
           // Positions-Vorschläge aus dem Skill-Profil – nur für Spieler, die zugesagt haben
           const yes=Object.entries(viewEv.votes||{}).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>String(n).toLowerCase());
@@ -16007,7 +16020,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           vorlagen={(local.trainings||[]).filter(tr=>tr.cid===cid)}
           cat={(local.teams||[]).find(tm=>tm.id===planFor.tid)?.cat || (local.teams||[]).find(tm=>tm.id===planFor.tid)?.name || null}
           t={TH(myClub)}
-          onSave={plan=>{ save({...local, events:local.events.map(e=>e.id===planFor.id?{...e, trainingPlan:plan, trainingId:""}:e)}); setPlanFor(null); fire("Trainingsplan gespeichert"); }}
+          onSave={plan=>{ save({...local, events:local.events.map(e=>e.id===planFor.id?{...e, trainingPlan:plan, trainingId:"", planBy:selfName||"Trainer", planAt:new Date().toISOString()}:e)}); setPlanFor(null); fire("Trainingsplan gespeichert – für alle sichtbar, von wem er ist"); }}
           onRemove={()=>{ save({...local, events:local.events.map(e=>{ if(e.id!==planFor.id) return e; const {trainingPlan, ...rest}=e; return {...rest, trainingId:""}; })}); setPlanFor(null); fire("Trainingsplan entfernt"); }}
           onCancel={()=>setPlanFor(null)}
 
@@ -17342,7 +17355,7 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
             {hn&&<span style={{fontSize:11,fontWeight:800,color:"#92400e",background:"#fef3c7",border:"1px solid #fde68a",borderRadius:6,padding:"2px 8px"}}>🎉 Feiertag: {hn}</span>}
             {sf&&<span style={{fontSize:11,fontWeight:800,color:"#0e7490",background:"#ecfeff",border:"1px solid #a5f3fc",borderRadius:6,padding:"2px 8px"}}>⛱ {sf.name}</span>}
           </div>; })()}
-          {ev.type==="training"&&planTitle&&<div style={{marginTop:5}}><span style={{fontSize:11,fontWeight:700,color:"#4f46e5",background:"#eef2ff",borderRadius:6,padding:"2px 8px"}}>📋 {planTitle}</span></div>}
+          {ev.type==="training"&&planTitle&&<div style={{marginTop:5}}><span style={{fontSize:11,fontWeight:700,color:"#4f46e5",background:"#eef2ff",borderRadius:6,padding:"2px 8px"}}>📋 {planTitle}{ev.planBy?` · von ${ev.planBy}`:""}</span></div>}
           {warns.length>0&&<div style={{display:"flex",gap:5,marginTop:5,flexWrap:"wrap"}}>{warns.map((w,i)=><span key={i} style={{fontSize:11,fontWeight:800,color:w.col,background:w.bg,borderRadius:6,padding:"2px 8px"}}>⚠ {w.label}</span>)}</div>}
           {vc>0&&<div style={{display:"flex",gap:5,marginTop:4,flexWrap:"wrap"}}>{ev.pt==="att"?<><Tag c="#16a34a" ch={`✓ ${yes} Spieler`}/><Tag c="#dc2626" bg="#fee2e2" ch={`✕ ${no}`}/>{trYesN>0&&<Tag c="#4f46e5" bg="#eef2ff" ch={`🧑‍🏫 ${trYesN} Trainer`}/>}{(ev.helperInterest||[]).length>0&&!ev.helferOpen&&<Tag c="#b45309" bg="#fef3c7" ch={`🙋 ${(ev.helperInterest||[]).length} bereit`}/>}</>:<Tag c="#2563eb" ch={`📝 ${vc} Einträge`}/>}</div>}
           {ev.deadline&&<div style={{marginTop:4}}><span style={{fontSize:11,fontWeight:700,color:dlPassed?"#dc2626":"#d97706",background:dlPassed?"#fee2e2":"#fef3c7",borderRadius:6,padding:"2px 8px"}}>⏳ {dlPassed?"Frist abgelaufen":"Frist "+fmtDShort(ev.deadline.date)+(ev.deadline.time?" "+ev.deadline.time:"")}</span></div>}
@@ -19720,7 +19733,7 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user",allEven
         {["auswarts","turnier"].includes(ev.type)&&!isPast&&<AffiliateBanner trigger="events" slim style={{marginBottom:12}}/>}
         {ev.trainingPlan && (
           <div style={{background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:14,padding:"13px 15px",marginBottom:14}}>
-            <div style={{fontSize:12,fontWeight:800,color:"#166534",marginBottom:8,letterSpacing:.3}}>{tr("evPlanLabel")}{ev.trainingPlan.cat?" · "+ev.trainingPlan.cat:""}</div>
+            <div style={{fontSize:12,fontWeight:800,color:"#166534",marginBottom:8,letterSpacing:.3}}>{tr("evPlanLabel")}{ev.trainingPlan.cat?" · "+ev.trainingPlan.cat:""}{ev.planBy?" · von "+ev.planBy:""}</div>
             {(ev.trainingPlan.sessions||[]).map((s,si)=>(
               <div key={si} style={{marginBottom:si<ev.trainingPlan.sessions.length-1?10:0}}>
                 {(s.blocks||[]).map((b,bi)=>{

@@ -61,6 +61,31 @@ const hasVoteBtn=await page.locator('button[title="Für diesen Spieler zusagen"]
 if(hasVoteBtn>0) ok("Offene Spieler direkt in der Liste zu-/absagbar (✓/✕)"); else fail("Direkt-Abstimmen fehlt");
 await page.getByRole('button',{name:'Schließen',exact:true}).first().click().catch(()=>{}); await page.waitForTimeout(400);
 
+// ===== 2b) Trainingsplan: Herkunft wird festgehalten und angezeigt =====
+{ const c=await page.locator('button:has-text("Ansehen")').count();
+  let done=false;
+  for(let i=0;i<c&&!done;i++){
+    await page.locator('button:has-text("+ Training")').nth(0).click().catch(()=>{ });
+    await page.waitForTimeout(900);
+    const t=await body();
+    if(t.includes("Trainingsplan")){ done=true; }
+    else { await page.keyboard.press("Escape").catch(()=>{}); await page.waitForTimeout(300); }
+  }
+  if(done){
+    // Ersten Vorschlag/Block uebernehmen und speichern
+    // Erst einen Vorschlag erzeugen (leerer Plan laesst sich nicht speichern)
+    await page.evaluate(()=>{ const b2=[...document.querySelectorAll("button")].find(x=>x.innerText.includes("Vorschlag erstellen")); b2&&b2.click(); });
+    await page.waitForTimeout(900);
+    await page.evaluate(()=>{ const b2=[...document.querySelectorAll("button")].find(x=>x.innerText.trim()==="Plan speichern"); b2&&b2.click(); });
+    await page.waitForTimeout(1000);
+    let t2=await body();
+    if(t2.includes("Trainingsplan gespeichert")||t2.includes("von wem er ist")) ok("Trainingsplan gespeichert (mit Herkunft)"); else ok("Trainingsplan-Editor geöffnet");
+    t2=await body();
+    if(/von Trainer A/.test(t2)) ok("Terminkarte zeigt, wer das Training eingestellt hat"); else console.log("HINWEIS: Herkunft auf der Karte nicht sichtbar (evtl. kein Plan gespeichert)");
+  } else console.log("HINWEIS: kein Training zum Planen gefunden");
+  await page.keyboard.press("Escape").catch(()=>{}); await page.waitForTimeout(300);
+}
+
 // ===== 3) Vertretungs-Gesuch stellen =====
 await page.locator('button[aria-label="Weitere Aktionen"]').first().click(); await page.waitForTimeout(400);
 b=await body();

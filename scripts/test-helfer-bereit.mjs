@@ -81,6 +81,17 @@ if(!b.includes("Spielplan von fussball.de importieren")) ok("Helfer sieht keinen
 if(!b.includes("Zu erledigen")) ok("Helfer sieht keine Trainer-Aufgaben (Skills, No-Shows)"); else fail("Todo-Liste beim Helfer sichtbar");
 if(!/Saison/.test(b.split("Termine")[0]||"")) ok("Helfer hat keine Saison-Auswahl im Kopfbereich"); else fail("Saison-Knopf beim Helfer sichtbar");
 
+// ===== 2c) Helfer sieht keine Trainingsuebungen / kann keine hinterlegen =====
+if(!b.includes("+ Training")&&!b.includes("✓ Training")) ok("Helfer hat keinen Training-Knopf am Termin"); else fail("Training-Knopf beim Helfer sichtbar");
+{ const c=await page.locator('button:has-text("Ansehen")').count();
+  let sawPlanTab=false;
+  for(let i=0;i<Math.min(c,3);i++){
+    await page.locator('button:has-text("Ansehen")').nth(i).click().catch(()=>{}); await page.waitForTimeout(700);
+    const t=await body(); if(t.includes("📋 Training")||t.includes("⚽ Aufstellung")) sawPlanTab=true;
+    await closeEv();
+  }
+  if(!sawPlanTab) ok("Helfer sieht die Reiter Training/Aufstellung nicht"); else fail("Trainings-Reiter beim Helfer sichtbar"); }
+
 // ===== 3) Helfer meldet Bereitschaft VOR der Freigabe =====
 if(await openHelferEv()){
   b=await body();
