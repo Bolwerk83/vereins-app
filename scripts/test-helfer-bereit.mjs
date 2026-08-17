@@ -72,6 +72,15 @@ if(b.includes("Ansehen")) ok("Helfer sieht die bereits angelegten Termine"); els
 // "Bin dabei" steht auch im Erklaertext der Seite und taugt nicht als Marker.
 if(!/(^|\n)Ich:/.test(b)) ok("Keine Spieler-Schnellabstimmung für Helfer (verfälscht die Zusagen nicht)"); else fail("Helfer kann als Spieler abstimmen");
 
+// ===== 2b) Helfer darf keine Trainer-Funktionen sehen =====
+// Auf den Knopf-Untertitel pruefen - "Neuen Termin anlegen" stand frueher
+// auch im Erklaertext (der fuer Helfer jetzt durch einen eigenen ersetzt ist).
+if(!b.includes("Schritt-für-Schritt Assistent")) ok("Helfer kann keine Termine anlegen"); else fail("Termin-Anlage beim Helfer sichtbar");
+if(b.includes("🙋 Deine Einsätze")) ok("Helfer bekommt einen passenden Einstiegstext"); else fail("Helfer-Einstiegstext fehlt");
+if(!b.includes("Spielplan von fussball.de importieren")) ok("Helfer sieht keinen Spielplan-Import"); else fail("Import beim Helfer sichtbar");
+if(!b.includes("Zu erledigen")) ok("Helfer sieht keine Trainer-Aufgaben (Skills, No-Shows)"); else fail("Todo-Liste beim Helfer sichtbar");
+if(!/Saison/.test(b.split("Termine")[0]||"")) ok("Helfer hat keine Saison-Auswahl im Kopfbereich"); else fail("Saison-Knopf beim Helfer sichtbar");
+
 // ===== 3) Helfer meldet Bereitschaft VOR der Freigabe =====
 if(await openHelferEv()){
   b=await body();

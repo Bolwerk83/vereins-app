@@ -190,9 +190,35 @@ if(lbl&&b.includes("Planung")) ok("Neue Saison angelegt ("+lbl+", Status Planung
 await page.locator('button:has-text("Archiv")').first().click().catch(()=>{}); await page.waitForTimeout(600);
 b=await body();
 if(b.includes("↩ Wiederherstellen")) ok("Archiviert bleibt sichtbar + Wiederherstellen-Knopf"); else fail("Wiederherstellen fehlt: "+b.slice(0,150));
+// Eine Saison MIT Spielern darf nicht entfernbar sein (Schutz vor Datenverlust)
+b=await body();
+if(!b.includes("🗑 Entfernen")) ok("Saison mit Spielern ist nicht entfernbar (Schutz)"); else fail("Entfernen bei befüllter Saison angeboten");
 await page.locator('button:has-text("↩ Wiederherstellen")').click(); await page.waitForTimeout(900);
 b=await body();
 if(b.includes("Planung")&&!b.includes("↩ Wiederherstellen")) ok("Saison wiederhergestellt (zurück in Planung)"); else fail("Wiederherstellen wirkt nicht");
+// Leere Karteileiche: Saison OHNE Mannschaften anlegen -> 0 Spieler -> entfernbar
+await page.locator('button:has-text("+ Neue Saison planen")').click(); await page.waitForTimeout(700);
+await page.locator('input[placeholder*="z.B."]').first().fill("2019/20"); await page.waitForTimeout(300);
+await page.locator('button:has-text("Weiter")').last().click(); await page.waitForTimeout(600);
+// Schritt 2: alle Mannschaften abwaehlen, damit keine Spieler kopiert werden
+await page.evaluate(()=>{ [...document.querySelectorAll("button")].filter(x=>x.innerText.includes("wird übernommen")).forEach(x=>x.click()); });
+await page.waitForTimeout(400);
+for(let k=0;k<3;k++){ const t2=await body(); if(t2.includes("Saison anlegen")&&!/SCHRITT [12]\//.test(t2)) break;
+  await page.locator('button:has-text("Weiter")').last().click().catch(()=>{}); await page.waitForTimeout(400); }
+await page.locator('button:has-text("Saison anlegen")').last().click(); await page.waitForTimeout(1000);
+b=await body();
+if(b.includes("2019/20")&&/2019\/20[\s\S]{0,40}0 Spieler/.test(b)) ok("Leere Saison angelegt (0 Spieler)"); else fail("Leere Saison fehlt: "+(b.match(/2019[\s\S]{0,80}/)||["?"])[0].replace(/\n/g," | "));
+// Der Assistent macht die neue Saison zur laufenden -> erst archivieren,
+// dann ist sie (leer) entfernbar. Genau der Fall aus der Praxis.
+await page.evaluate(()=>{ const btn=[...document.querySelectorAll("button")].filter(x=>x.innerText.trim()==="Archiv")
+    .find(x=>{ let n=x; for(let i=0;i<5&&n;i++){ if(n.innerText&&n.innerText.includes("2019/20")) return true; n=n.parentElement; } return false; });
+  btn&&btn.click(); });
+await page.waitForTimeout(900);
+b=await body();
+if(b.includes("🗑 Entfernen")) ok("Leere Saison kann entfernt werden"); else fail("Entfernen-Knopf fehlt");
+await page.locator('button:has-text("🗑 Entfernen")').first().click(); await page.waitForTimeout(900);
+b=await body();
+if(!b.includes("2019/20")) ok("Leere Saison entfernt – Karteileiche weg"); else fail("Saison nach Entfernen noch da");
 
 if(errors.length){ console.log("JS-FEHLER:"); [...new Set(errors)].forEach(e=>console.log(" -",e.slice(0,150))); }
 console.log(errors.length||fails.length?`ERGEBNIS: ${fails.length} Fehlschläge, ${errors.length} JS-Fehler`:"ERGEBNIS: ALLES OK");

@@ -12823,6 +12823,25 @@ function SeasonPicker({ data,save,fire,onSelect,t }) {
     save({...data,seasons:seasons.map(s=>s.id===sid?{...s,status:"archived"}:s)}); fire&&fire("Archiviert – über „Wiederherstellen“ jederzeit zurückholbar");
   };
   const restoreSeason = sid => { save({...data,seasons:seasons.map(s=>s.id===sid?{...s,status:s.id===active?"active":"planning"}:s)}); fire&&fire("Saison wiederhergestellt – wieder in Planung"); };
+  // Leere Saison ganz entfernen: nur wenn sie NICHT aktiv ist und weder Spieler
+  // noch Termine daran haengen - so bleibt eine versehentlich (doppelt)
+  // angelegte Saison nicht als leere Karteileiche stehen.
+  const seasonEmpty = sid => (data.playerProfiles||[]).filter(p=>p.seasonId===sid).length===0
+                          && (data.events||[]).filter(e=>e.seasonId===sid).length===0;
+  // Entfernbar ist eine leere Saison, wenn sie nicht die laufende ist ODER
+  // bereits archiviert wurde (typischer Fall: versehentlich doppelt angelegt).
+  const canDeleteSeason = s => seasons.length>1 && seasonEmpty(s.id) && (s.id!==active || s.status==="archived");
+  const deleteSeason = sid => {
+    const lb=seasons.find(x=>x.id===sid)?.label||"";
+    if(!window.confirm(`Saison ${seasonLbl(lb)} entfernen?\n\nSie enthält keine Spieler und keine Termine – es geht nichts verloren.`)) return;
+    const rest=seasons.filter(s=>s.id!==sid);
+    // Zeigte der Verein auf genau diese Saison, auf eine verbliebene umhaengen.
+    const nextActive = active===sid ? (rest.find(s=>s.status==="active")?.id || rest[rest.length-1]?.id || null) : active;
+    save({...data, seasons:rest,
+      ...(nextActive?{activeSeason:nextActive}:{}),
+      clubs:(data.clubs||[]).map(c=>c.activeSeason===sid?{...c,activeSeason:nextActive}:c)});
+    fire&&fire("Leere Saison entfernt");
+  };
   // Wenn der Parent (SeasonModal) das Aktivieren uebernimmt: kein lokaler Save,
   // sonst greift die Migration in activateAndMigrate nicht (active waere schon
   // umgesetzt). Ohne Parent-Handler: Default-Verhalten (nur Activeseason setzen).
@@ -12854,6 +12873,7 @@ function SeasonPicker({ data,save,fire,onSelect,t }) {
               {s.status!=="archived"&&<button onClick={()=>switchActive(s.id)} style={{padding:"7px 14px",borderRadius:10,border:`2px solid ${t.p}`,background:isActive?t.p:"#fff",color:isActive?"#fff":t.p,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{isActive?"Aktiv":"Öffnen"}</button>}
               {s.status==="planning"&&<button onClick={()=>archiveSeason(s.id)} style={{padding:"7px 12px",borderRadius:10,border:"1.5px solid #e2e8f0",background:"#f8fafc",color:"#64748b",fontWeight:600,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Archiv</button>}
               {s.status==="archived"&&<button onClick={()=>restoreSeason(s.id)} style={{padding:"7px 12px",borderRadius:10,border:"1.5px solid #bbf7d0",background:"#f0fdf4",color:"#15803d",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>↩ Wiederherstellen</button>}
+              {canDeleteSeason(s)&&<button onClick={()=>deleteSeason(s.id)} title="Leere Saison entfernen (keine Spieler, keine Termine)" style={{padding:"7px 11px",borderRadius:10,border:"1.5px solid #fecaca",background:"#fff7f7",color:"#dc2626",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>🗑 Entfernen</button>}
             </div>
           </div>
         );
@@ -15121,7 +15141,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             <button onClick={()=>{setShowSearch(true);setSearchQ("");}} aria-label="Suche"
               style={{width:34,height:34,borderRadius:10,border:"1.5px solid rgba(255,255,255,.3)",background:"rgba(255,255,255,.14)",color:"#fff",fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>🔍</button>
             {}
-            {(()=>{
+            {!isHelper&&(()=>{
               const seasons=local.seasons||[];
               const curSeason=seasons.find(s=>s.id===activeSid(local,cid))||seasons[0];
               const hasPlan=seasons.some(s=>s.status==="planning");
@@ -15190,7 +15210,14 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         {tabs.map(([id,label])=><button key={id} onClick={()=>setTab(id)} style={{background:"none",border:"none",padding:"12px 13px",fontSize:12,fontWeight:800,cursor:"pointer",whiteSpace:"nowrap",color:tab===id?t.p:"#94a3b8",borderBottom:tab===id?`3px solid ${t.p}`:"3px solid transparent",marginBottom:-2,flexShrink:0}}>{label}</button>)}
       </div>
       <div style={{maxWidth:560,margin:"0 auto",padding:"14px"}}>
-        <AreaIntro id={tab} cl={myClub}/>
+        {/* Helfer: eigener Kurz-Einstieg. Der Trainer-Text verweist auf Knoepfe
+            (Termin anlegen, Import), die Helfer bewusst nicht haben. */}
+        {isHelper&&tab==="events"
+          ? <div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:13,padding:"11px 14px",marginBottom:14}}>
+              <div style={{fontWeight:800,fontSize:13.5,color:"#92400e"}}>🙋 Deine Einsätze</div>
+              <div style={{fontSize:12,color:"#a16207",lineHeight:1.5,marginTop:3}}>Hier siehst du die Termine deiner Jugend{myTids.length>1?"en":""}. Termin antippen → „👥 Orga“ → dort meldest du dich für den Einsatz und trägst dich in Listen und Schichten ein.</div>
+            </div>
+          : <AreaIntro id={tab} cl={myClub}/>}
         {tab==="events"&&<>
           {/* Saison-Check: Erinnerung ab 3 Monate vor Saisonende, bis der Fragebogen abgegeben ist */}
           {!isAdmin&&modOn("saison")&&<SeasonSurveyReminder data={local} cid={cid} session={session} onOpen={()=>setSurveyOpen(true)}/>}
@@ -15209,7 +15236,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             </div>
           )}
           {}
-          {(local.seasons||[]).some(s=>s.status==="planning")&&(
+          {!isHelper&&(local.seasons||[]).some(s=>s.status==="planning")&&(
             <div onClick={()=>setShowSeasonModal(true)} style={{background:"#eff6ff",border:"1.5px solid #bfdbfe",borderRadius:13,padding:"11px 16px",marginBottom:14,cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
               <span style={{fontSize:20}}></span>
               <div style={{flex:1}}>
@@ -15222,6 +15249,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           )}
           {/* Zu-erledigen-Hub: offene Aufgaben über alle Teams */}
           {(()=>{
+            if(isHelper) return null;   // Helfer sehen keine Trainer-Aufgaben (Skills, No-Shows, ...)
             const todos=[];
             const trainingOn=(myClub?.clubSettings?.mod_training)!==false;
             if(isAdmin){
@@ -15323,22 +15351,22 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             );
           })()}
           {}
-          <div onClick={()=>setWizard(true)} style={{background:t.p,borderRadius:20,padding:"18px 20px",cursor:"pointer",marginBottom:18,display:"flex",alignItems:"center",gap:14,boxShadow:`0 6px 24px ${t.p}66,0 2px 8px rgba(0,0,0,.15)`,transition:"all .2s"}}>
+          {!isHelper&&<div onClick={()=>setWizard(true)} style={{background:t.p,borderRadius:20,padding:"18px 20px",cursor:"pointer",marginBottom:18,display:"flex",alignItems:"center",gap:14,boxShadow:`0 6px 24px ${t.p}66,0 2px 8px rgba(0,0,0,.15)`,transition:"all .2s"}}>
             <div style={{width:52,height:52,borderRadius:16,background:"rgba(0,0,0,.15)",border:`2px solid ${t.ct==="#fff"?"rgba(255,255,255,.35)":"rgba(0,0,0,.18)"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,fontWeight:900,color:t.ct,flexShrink:0}}>+</div>
             <div style={{flex:1}}>
               <div style={{color:t.ct,fontWeight:900,fontSize:18,letterSpacing:"-.3px",textShadow:t.ct==="#fff"?"0 1px 3px rgba(0,0,0,.25)":"none"}}>Neuen Termin anlegen</div>
               <div style={{color:t.ct,opacity:.82,fontSize:13,marginTop:3,fontWeight:500}}>Schritt-für-Schritt Assistent</div>
             </div>
             <div style={{width:32,height:32,borderRadius:10,background:"rgba(0,0,0,.15)",display:"flex",alignItems:"center",justifyContent:"center",color:t.ct,fontSize:18,fontWeight:700,flexShrink:0}}>{">"}</div>
-          </div>
-          <button onClick={()=>setShowImport(true)} style={{display:"flex",alignItems:"center",gap:10,width:"100%",background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:14,padding:"11px 15px",marginBottom:18,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
+          </div>}
+          {!isHelper&&<button onClick={()=>setShowImport(true)} style={{display:"flex",alignItems:"center",gap:10,width:"100%",background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:14,padding:"11px 15px",marginBottom:18,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
             <span style={{fontSize:18,flexShrink:0}}>📥</span>
             <span style={{flex:1,minWidth:0}}>
               <span style={{display:"block",fontSize:13.5,fontWeight:800,color:"#0f172a"}}>Spielplan von fussball.de importieren</span>
               <span style={{display:"block",fontSize:11.5,color:"#64748b",marginTop:1}}>Kopieren & einfügen – erneuter Import aktualisiert verlegte Spiele</span>
             </span>
             <span style={{color:"#94a3b8",fontSize:16,flexShrink:0}}>›</span>
-          </button>
+          </button>}
           {/* Ferien-Check: anstehende Termine in Schulferien schnell erkennen + rausnehmen */}
           {(()=>{
             if(!_ferienDash?.length) return null;
