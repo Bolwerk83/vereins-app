@@ -217,7 +217,12 @@ export const clubSeasons = (data, cid) => {
 export const activeSid = (data, cid) => {
   const ss = clubSeasons(data, cid);
   const cl = MULTI_TENANT ? ((data && data.clubs)||[]).find(c=>c.id===cid) : null;
-  return (cl && cl.activeSeason) || (data && data.activeSeason) || ss[0]?.id || null;
+  const wish = (cl && cl.activeSeason) || (data && data.activeSeason) || null;
+  // WICHTIG: Nur eine Saison akzeptieren, die es wirklich (noch) gibt.
+  // Zeigt der Verein auf eine geloeschte/umbenannte Saison, wuerde der
+  // Saison-Filter sonst ALLE Termine ausblenden (Liste bleibt leer).
+  if (wish && ss.some(s=>s.id===wish)) return wish;
+  return ss.find(s=>s.status==="active")?.id || ss[0]?.id || null;
 };
 // bequemer Filter: aktive Teams eines Vereins in der aktiven Saison
 export const activeTeamsFor = (data, cid) => {

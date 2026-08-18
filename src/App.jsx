@@ -15032,7 +15032,13 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const save=next=>{setLocal(next);onSave(next);};
   const myClub=local.clubs.find(c=>c.id===cid);
   const _activeSid = activeSid(local, cid);
-  const myEvs=local.events.filter(e=>myTids.includes(e.tid)&&e.cid===cid&&(!e.seasonId||e.seasonId===_activeSid)&&(!isHelper||!helperTid||e.tid===helperTid)).sort((a,b)=>a.date.localeCompare(b.date));
+  // Saison-Filter bewusst tolerant: ohne bestimmbare Saison (oder wenn kein
+  // einziger Termin zur aktiven Saison passt) werden ALLE Termine gezeigt -
+  // eine leere Liste durch einen kaputten Saison-Zeiger waere schlimmer.
+  const _seasonOk = e => !e.seasonId || !_activeSid || e.seasonId===_activeSid;
+  const _mine = local.events.filter(e=>myTids.includes(e.tid)&&e.cid===cid&&(!isHelper||!helperTid||e.tid===helperTid));
+  const _inSeason = _mine.filter(_seasonOk);
+  const myEvs=(_inSeason.length?_inSeason:_mine).sort((a,b)=>a.date.localeCompare(b.date));
   // Reiner Kassenhelfer: direkt in die Kasse, alles andere bleibt zu.
   useEffect(()=>{ if(helperOnlyKasse&&tab!=="treasury") setTab("treasury"); },[helperOnlyKasse,tab]);
   // Trainer/Admin kann selbst zu-/absagen (stimmt unter eigenem Namen ab)
@@ -15392,7 +15398,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               {showLater&&later.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}}/>)}
             </>}
           </>}
-          {up.length===0&&<div style={{textAlign:"center",padding:"30px",background:"#fff",borderRadius:18,border:"1.5px dashed #e2e8f0",color:"#64748b"}}><Logo cl={myClub} sz={50} sx={{margin:"0 auto 12px"}}/><p style={{fontWeight:800,fontSize:15}}>Noch keine Termine</p><p style={{fontSize:13,marginTop:3}}>Klicke oben auf "Neuen Termin anlegen"</p></div>}
+          {up.length===0&&<div style={{textAlign:"center",padding:"30px",background:"#fff",borderRadius:18,border:"1.5px dashed #e2e8f0",color:"#64748b"}}><Logo cl={myClub} sz={50} sx={{margin:"0 auto 12px"}}/><p style={{fontWeight:800,fontSize:15}}>Noch keine Termine</p><p style={{fontSize:13,marginTop:3}}>{isHelper?"Sobald die Trainer Termine anlegen, erscheinen sie hier.":'Klicke oben auf "Neuen Termin anlegen"'}</p></div>}
           {past.length>0&&<><Divider label={`VERGANGENE (${past.length})`} light/><div style={{opacity:.72}}>{past.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{}} onCopyLink={()=>{}} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames}/>)}</div></>}
           <AffiliateBanner trigger="events" style={{marginTop:14}}/>
           <div style={{marginTop:14}}><DFBFormatsCard cl={myClub} cats={(local.teams||[]).filter(tm=>myTids.includes(tm.id)).map(tm=>tm.cat||tm.name)}/></div>
