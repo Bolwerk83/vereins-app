@@ -58,12 +58,17 @@ if(/SO LÄUFT ES AB/.test(b)) ok("Ablauf in Schritten erklärt"); else fail("Abl
 if(/Warum das wirkt/.test(b)) ok("Erklärung, warum es den Gegner überrascht"); else fail("Warum-Block fehlt");
 if(/Beispiel:/.test(b)&&/F-Jugend/.test(b)) ok("Beispiel aus dem Spiel (F-Jugend)"); else fail("Beispiel fehlt");
 if(/▶ Spielzug abspielen/.test(b)) ok("Spielzug lässt sich abspielen"); else fail("Abspielen fehlt");
+// Wirklich abspielen - hier ist frueher der Absturz aufgetreten
+await clickTxt("Spielzug abspielen"); await page.waitForTimeout(1600);
+b=await body();
+if(!/schiefgelaufen/.test(b)&&/⏸ Stopp/.test(b)) ok("Animation läuft ohne Absturz"); else fail("Absturz beim Abspielen: "+b.slice(0,160).replace(/\n/g," | "));
 const svgs=await page.evaluate(()=>[...document.querySelectorAll("svg")].length);
 if(svgs>0) ok("Gezeichnete Spielzug-Skizze vorhanden"); else fail("Skizze fehlt");
 // Vollbild fuer die Kinder
-if(await clickTxt("Den Spielern zeigen")){ await page.waitForTimeout(800);
+if(await clickTxt("Den Spielern zeigen")){ await page.waitForTimeout(1600);
   b=await body();
-  if(/Fertig/.test(b)&&/Hinterlaufen/.test(b)) ok("Vollbild zum Vorzeigen für die Spieler"); else fail("Vollbild fehlt");
+  if(/Fertig/.test(b)&&/Hinterlaufen/.test(b)) ok("Vollbild zum Vorzeigen für die Spieler"); else fail("Vollbild fehlt: "+b.slice(0,160).replace(/\n/g," | "));
+  if(!/schiefgelaufen/.test(b)) ok("Vollbild läuft ohne Absturz (Animation startet von selbst)"); else fail("Absturz im Vollbild");
   await clickTxt("^Fertig$"); await page.waitForTimeout(500);
 } else fail("Knopf „Den Spielern zeigen“ fehlt");
 await clickTxt("^Schließen$"); await page.waitForTimeout(500);

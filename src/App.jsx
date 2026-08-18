@@ -15592,7 +15592,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           </div>
           <AufbauPlan ev={setupEv} data={local} cl={myClub} user={session.name||(isHelper?"Helfer":"Trainer")} isHelper={isHelper}
             onPatch={patch=>{ save({...local,events:local.events.map(e=>e.id===setupEv.id?{...e,...patch}:e)}); setSetupEv(prev=>({...prev,...patch})); }}
-            fire={fire}/>
+            fire={fire}
+            saveTeam={isHelper?null:pref=>{ save({...local,teams:local.teams.map(tm=>tm.id===setupEv.tid?{...tm,aufbauPref:pref}:tm)}); fire(pref?"Als Standard für die Mannschaft gemerkt":"Standard entfernt"); }}/>
         </Drawer>
       )}
       {briefEv&&<SpickzettelModal ev={briefEv} data={local} cl={myClub} save={save} fire={fire} onClose={()=>setBriefEv(null)}/>}
@@ -15885,7 +15886,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               onPatch={patch=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,...patch}:e)}); setViewEv(prev=>({...prev,...patch})); }}/>
         )}
         {!isHelper&&<AufbauPlan ev={viewEv} data={local} cl={myClub} user={session.name||(isHelper?"Helfer":"Trainer")} isHelper={isHelper}
-          onPatch={patch=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,...patch}:e)}); setViewEv(prev=>({...prev,...patch})); }} fire={fire}/>}
+          onPatch={patch=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,...patch}:e)}); setViewEv(prev=>({...prev,...patch})); }} fire={fire}
+          saveTeam={isHelper?null:pref=>{ save({...local,teams:local.teams.map(tm=>tm.id===viewEv.tid?{...tm,aufbauPref:pref}:tm)}); fire(pref?"Als Standard für die Mannschaft gemerkt":"Standard entfernt"); }}/>}
         {/* Orga & Verkauf: Kuchen, Getraenke, Material & Schichten - Trainer UND Helfer pflegen gemeinsam */}
         {viewEv.type!=="training"&&<OrgaBoard ev={viewEv} user={session.name||(isHelper?"Helfer":"Trainer")} canEdit={!isHelper||helperEinsatz}
           onPatch={patch=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,...patch}:e)}); setViewEv(prev=>({...prev,...patch})); }} fire={fire}/>}
@@ -16962,7 +16964,7 @@ function SpickzettelModal({ev,data,cl,save,fire,onClose}){
           <div style={{background:"#fff7ed",border:"1.5px solid #fed7aa",borderRadius:12,padding:"11px 13px",marginBottom:10}}>
             <div style={{fontSize:10.5,fontWeight:800,color:"#c2410c",letterSpacing:.4,marginBottom:5}}>AUFBAU {fertig>0?`· ${fertig}/${a.steps} ERLEDIGT`:""}</div>
             <div style={{fontSize:12.5,color:"#9a3412",lineHeight:1.55}}>
-              {a.fields} Feld{a.fields>1?"er":""} à {a.dim.l} × {a.dim.w} m ({a.dim.label}) · {a.goals}× {a.dim.goal} · {a.cones} Hütchen · {a.bibs} Leibchen · ca. {a.minutes} Min{a.kidsPer.length>1?` · Kinder je Feld: ${a.kidsPer.join("/")}`:""}
+              {a.felder.map((f,i)=>`Feld ${i+1}: ${f.perTeam}:${f.perTeam} · ${f.l}×${f.w} m · ${f.gps*2} Tore${a.kidsPer[i]?` · ${a.kidsPer[i]} Kinder`:""}`).join(" | ")} · {a.cones} Hütchen · {a.bibs} Leibchen · ca. {a.minutes} Min
             </div>
             <div style={{fontSize:11,color:"#c2410c",marginTop:4}}>Schritt-für-Schritt-Anleitung: Termin öffnen → Reiter 👥 Orga → 🏗 Aufbau-Plan</div>
           </div>); })()}
@@ -19260,19 +19262,87 @@ const aufbauIndoor = ev => ev?.setup?.venue ? ev.setup.venue==="in" : /halle|spo
 
 // Alles, was fuer den Aufbau gebraucht wird - einmal berechnet, von der
 // Aufbaukarte und vom Spickzettel gemeinsam genutzt.
-// Richtwert: so viele Kinder sollen auf einem Feld sein. Das klappt nicht
-// immer auf - es ist die Orientierung fuer die Anzahl der Felder.
+// Kinder pro Feld ergeben sich aus der Spielform: 5:5 braucht 10 Kinder,
+// Funino 3:3 nur 6. Fuer die kleinen Formen bleibt 6-8 der Richtwert.
 const KIDS_PER_FIELD_MIN = 6, KIDS_PER_FIELD_MAX = 8;
-// Kinder moeglichst gleichmaessig auf die Felder verteilen: 17 auf 3 -> 6/6/5
-const splitKids = (n,f) => { const b=Math.floor(n/f), r=n%f; return Array.from({length:f},(_,i)=>b+(i<r?1:0)); };
-// Standard-Spielform: Sind die grossen Jugendtore (E-Jugend-Tore) da, wird
-// darauf gespielt. Sonst Funino mit Minitoren.
+const formKids = f => (f?.perTeam||3)*2;
+// Kinder auf die Felder verteilen - nach Kapazitaet, der Rest wandert auf die
+// kleineren Felder. 16 Kinder auf 5:5 + Funino -> 10 / 6
+const verteileKinder = (n,felder) => {
+  const cap=felder.map(formKids); const sum=cap.reduce((a,b)=>a+b,0)||1;
+  if(!n) return cap;
+  const out=cap.map(c=>Math.floor(n*c/sum)); let rest=n-out.reduce((a,b)=>a+b,0);
+  for(let i=0;rest>0;i=(i+1)%out.length){ out[i]++; rest--; }
+  return out;
+};
+// Standard-Spielform, wenn nichts gewaehlt ist: sind mindestens zwei
+// Jugendtore (E-Jugend-Tore) da, wird darauf gespielt, sonst Funino.
 const pickForm = (forms,have,indoor) => {
   if(indoor) return AUFBAU_HALLE;
   const jug = forms.find(f=>f.goalKey==="torJugend");
   const mini= forms.find(f=>f.goalKey==="torMini");
   if(jug && (Number(have?.torJugend)||0)>=2) return jug;
   return mini || forms[0];
+};
+// Braucht eine Feld-Liste mehr Tore, als die Mannschaft hat?
+const torBedarf = felder => felder.reduce((acc,f)=>{ const k=f.goalKey; acc[k]=(acc[k]||0)+f.gps*2; return acc; },{});
+const materialOk = (felder,have) => {
+  const gepflegt=Object.values(have||{}).some(v=>Number(v)>0);
+  if(!gepflegt) return {ok:true, unbekannt:true, fehlt:[]};
+  const need=torBedarf(felder);
+  const fehlt=Object.entries(need).map(([k,n])=>({k,n,have:Number(have[k])||0}))
+    .filter(x=>x.have<x.n)
+    .map(x=>`${x.n-x.have}× ${(RES_ITEMS.find(r=>r.k===x.k)||{l:"Tore"}).l.replace(/ \(.*\)/,"")}`);
+  return {ok:fehlt.length===0, unbekannt:false, fehlt};
+};
+// Mehrere sinnvolle Aufbau-Varianten vorschlagen. Die erste ist der Vorschlag.
+const aufbauVarianten = (kids,forms,have,indoor) => {
+  if(indoor) return [{id:"halle",kind:"halle",label:"Hallenfeld",sub:"Drinnen wird klein gespielt",felder:[AUFBAU_HALLE]}];
+  const K=kids||KIDS_PER_FIELD_MAX;
+  const feld=forms.filter(f=>f.id!=="halle");
+  const gross=feld.find(f=>f.goalKey==="torJugend");            // Spielform wie im Spiel
+  const funino=feld.find(f=>f.gps===2) || feld.find(f=>f.goalKey==="torMini");
+  const klein=feld.filter(f=>f.goalKey==="torMini").sort((a,b)=>a.perTeam-b.perTeam)[0];
+  const out=[];
+  const add=(kind,label,sub,felder)=>{ if(!felder||!felder.length) return;
+    const sig=felder.map(f=>f.id).join("+");
+    if(!out.some(v=>v.id===sig)) out.push({id:sig,kind,label,sub,felder}); };
+  const many=(f,n)=>Array.from({length:Math.max(0,n)},()=>f);
+  // 1) Wie im Spiel: so viele grosse Felder wie Kinder und Tore hergeben, Rest klein
+  const hasJug=(Number(have?.torJugend)||0)>=2;
+  if(gross){
+    const proGross=formKids(gross);
+    const maxTore=Math.max(1,Math.floor(((Number(have?.torJugend)||2))/(gross.gps*2)));
+    const nGross=Math.max(1,Math.min(maxTore,Math.floor(K/proGross)||1));
+    const rest=Math.max(0,K-nGross*proGross);
+    const nKlein=funino&&rest>=4?Math.ceil(rest/formKids(funino)):0;
+    add("spiel",`Wie im Spiel · ${gross.perTeam}:${gross.perTeam}`,
+        `${nGross}× ${gross.perTeam}:${gross.perTeam} auf ${(RES_ITEMS.find(r=>r.k===gross.goalKey)||{l:"Tore"}).l.replace(/ \(.*\)/,"")}${nKlein?` + ${nKlein}× ${funino.perTeam}:${funino.perTeam}`:""}`,
+        [...many(gross,nGross),...many(funino,nKlein)]);
+  }
+  // 2) Viele kleine Felder (Funino): maximal viele Ballkontakte
+  if(funino) add("klein",`Nur klein · ${funino.perTeam}:${funino.perTeam}`,
+    `${Math.max(1,Math.ceil(K/formKids(funino)))} Felder – viele Ballkontakte, viele Tore`,
+    many(funino,Math.max(1,Math.ceil(K/formKids(funino)))));
+  // 3) Gemischt: ein grosses Feld, der Rest ganz klein
+  if(gross&&klein&&K>formKids(gross)){
+    const rest=K-formKids(gross);
+    add("mix","Gemischt","1 großes Feld + kleine Felder daneben",
+      [gross,...many(klein,Math.max(1,Math.ceil(rest/formKids(klein))))]);
+  }
+  // 4) Ein Feld fuer alle - wenn die Gruppe klein ist
+  if(K<=formKids(gross||funino)+2){
+    const f=(gross&&K>=formKids(gross)-2)?gross:funino;
+    if(f) add("eins","Ein Feld für alle",`Alle ${K} Kinder auf einem Feld`,[f]);
+  }
+  // Ohne die grossen Jugendtore steht Funino oben - der Vorschlag soll mit dem
+  // Material aufgebaut werden koennen, das die Mannschaft wirklich hat.
+  // "Wie im Spiel" steht oben, wenn die grossen Tore da sind UND genug Kinder
+  // fuer eine volle Mannschaft. Sonst zuerst die kleinen Felder.
+  const spielZuerst = hasJug && gross && K>=formKids(gross)-2;
+  const sortiert = spielZuerst ? out
+    : [...out.filter(v=>v.kind!=="spiel"&&v.kind!=="mix"), ...out.filter(v=>v.kind==="spiel"||v.kind==="mix")];
+  return sortiert.slice(0,4);
 };
 const aufbauCalc = (ev,data,cl) => {
   const team=(data.teams||[]).find(tm=>tm.id===ev.tid);
@@ -19282,22 +19352,34 @@ const aufbauCalc = (ev,data,cl) => {
   const indoor=aufbauIndoor(ev);
   const forms=[...(AUFBAU_FORMS[i>=0?i:2]||AUFBAU_FORMS[2]), AUFBAU_HALLE];
   const have=teamRes(team,cl,indoor);
-  const gewaehlt=forms.find(f=>f.id===ev?.setup?.form);
-  const dim=gewaehlt || pickForm(forms,have,indoor);
-  const autoForm=!gewaehlt;                     // Spielform automatisch gesetzt?
-  const hasJug=(Number(have?.torJugend)||0)>=2;
   const vv=v=>typeof v==="object"&&v!==null?v.val:v;
   const kids=Object.values(ev.votes||{}).filter(v=>vv(v)==="yes"||vv(v)==="late").length;
-  const auto = ev.type==="training"
-    ? Math.max(1, Math.ceil((kids||KIDS_PER_FIELD_MAX)/KIDS_PER_FIELD_MAX))
-    : 1;
-  const fields=Math.max(1,Math.min(8, Number(ev.setup?.fields)||auto));
-  const kidsPer=kids?splitKids(kids,fields):[];
-  const goals=fields*dim.gps*2, cones=fields*8, bibs=fields*dim.perTeam, balls=Math.max(dim.perTeam*2,kids||0);
-  return { team, cat, fmt, dim, forms, indoor, kids, fields, auto, have, autoForm, hasJug, kidsPer,
-    goals, cones, bibs, balls,
-    perFieldGoals: dim.gps*2, perFieldCones: 8, perFieldBibs: dim.perTeam,
-    need: [ {k:dim.goalKey, n:goals}, {k:"huetchen", n:cones}, {k:"leibchen", n:bibs}, {k:"baelle", n:balls} ],
+  const varianten=aufbauVarianten(kids,forms,have,indoor);
+  // Merkt sich die Mannschaft eine bevorzugte Aufbau-Art (z. B. immer ein
+  // 5:5-Feld), wird sie fuer jeden Termin neu auf die Kinderzahl gerechnet.
+  const pref=team?.aufbauPref||null;
+  const vorschlag=(pref&&varianten.find(v=>v.kind===pref))||varianten[0];
+  // Gewaehlter Aufbau: eigene Feld-Liste, sonst der KI-Vorschlag.
+  // Aeltere Termine (feste Spielform + Anzahl) werden weiter unterstuetzt.
+  const eigen=Array.isArray(ev.setup?.plan)&&ev.setup.plan.length
+    ? ev.setup.plan.map(x=>forms.find(f=>f.id===(x&&x.f||x))||forms[0])
+    : (ev.setup?.form
+        ? Array.from({length:Math.max(1,Number(ev.setup?.fields)||1)},()=>forms.find(f=>f.id===ev.setup.form)||forms[0])
+        : null);
+  const felder=eigen||(vorschlag?.felder)||[pickForm(forms,have,indoor)];
+  const fields=felder.length;
+  const dim=felder[0];
+  const kidsPer=verteileKinder(kids,felder);
+  const mat=materialOk(felder,have);
+  const goals=felder.reduce((a,f)=>a+f.gps*2,0);
+  const cones=fields*8, bibs=felder.reduce((a,f)=>a+f.perTeam,0), balls=Math.max(6,kids||0);
+  const need=Object.entries(torBedarf(felder)).map(([k,n])=>({k,n}))
+    .concat([{k:"huetchen",n:cones},{k:"leibchen",n:bibs},{k:"baelle",n:balls}]);
+  return { team, cat, fmt, dim, forms, felder, indoor, kids, fields, have, kidsPer, varianten, mat,
+    autoForm: !eigen, hasJug:(Number(have?.torJugend)||0)>=2,
+    pref, variantId: ev.setup?.variant || (eigen?null:vorschlag?.id),
+    variantKind: (varianten.find(v=>v.id===(ev.setup?.variant||(eigen?null:vorschlag?.id)))||{}).kind||null,
+    goals, cones, bibs, balls, need,
     steps: fields*4+3,
     minutes: 5+fields*5 };
 };
@@ -19342,35 +19424,38 @@ function PitchSketch({dim,fields}){
   );
 }
 
-function AufbauPlan({ ev, data, cl, user, isHelper, onPatch, fire }){
+function AufbauPlan({ ev, data, cl, user, isHelper, onPatch, fire, saveTeam=null }){
   const c=aufbauCalc(ev,data,cl);
-  const { dim, fmt, fields } = c;
+  const { felder, fields } = c;
   const setup=ev.setup||{};
   const done=setup.done||{};
   const [howto,setHowto]=useState(0);              // Feld, dessen Anleitung offen ist
-  const patch=next=>onPatch({setup:{...setup,fields,...next}});
+  const [edit,setEdit]=useState(0);                // Feld, dessen Spielform gerade geaendert wird
+  const [showVar,setShowVar]=useState(false);      // weitere Varianten sichtbar
+  const patch=next=>onPatch({setup:{...setup,...next}});
+  const savePlan=(list,variant)=>onPatch({setup:{...setup,plan:list.map(f=>({f:f.id})),variant:variant||null,form:"",fields:list.length,done}});
   const toggle=k=>{ const nd={...done};
     const was=!!nd[k];
     if(was) delete nd[k]; else nd[k]={by:user||"Team",ts:new Date().toISOString()};
     patch({done:nd}); fire&&fire(was?"Wieder offen":"Erledigt – danke! 🙌"); };
-  const setFields=d=>{ const n=Math.max(1,Math.min(8,fields+d)); onPatch({setup:{...setup,fields:n,done}}); };
-  const dia=Math.round(Math.sqrt(dim.w*dim.w+dim.l*dim.l));
-  const torName=(RES_ITEMS.find(r=>r.k===dim.goalKey)||{l:"Tore"}).l.replace(/ \(.*\)/,"");
+  const setzeFeld=(idx,form)=>{ const l=felder.slice(); l[idx]=form; savePlan(l); setEdit(0); fire&&fire("Feld "+(idx+1)+": "+form.label); };
+  const feldWeg=idx=>{ if(felder.length<2) return; savePlan(felder.filter((_,i)=>i!==idx)); };
+  const feldDazu=()=>{ if(felder.length>=8) return; savePlan([...felder,felder[felder.length-1]]); };
+  const torName=f=>(RES_ITEMS.find(r=>r.k===f.goalKey)||{l:"Tore"}).l.replace(/ \(.*\)/,"");
   // Was muss auf dieses Feld? Eine einfache Liste zum Abhaken.
-  const feldListe = n => { const kinder=c.kidsPer[n-1]||KIDS_PER_FIELD_MAX; return [
-    {k:`f${n}:tore`,     icon:"🥅", t:`${c.perFieldGoals} ${torName}`,     sub:dim.goal},
-    {k:`f${n}:huetchen`, icon:"🔶", t:`${c.perFieldCones} Hütchen`,        sub:`Platzumrandung: 4 Ecken, Seitenmitten und Mittellinie`},
-    {k:`f${n}:baelle`,   icon:"⚽", t:`${kinder} Bälle`,                    sub:`Ein Ball pro Kind (${dim.ball})`},
-    {k:`f${n}:leibchen`, icon:"🦺", t:`${c.perFieldBibs} Leibchen`,        sub:`Für eine der beiden Mannschaften`},
-  ];};
+  const feldListe=(n,f,kinder)=>[
+    {k:`f${n}:tore`,     icon:"🥅", t:`${f.gps*2} ${torName(f)}`,  sub:f.goal},
+    {k:`f${n}:huetchen`, icon:"🔶", t:`8 Hütchen`,                 sub:`Platzumrandung: 4 Ecken, Seitenmitten und Mittellinie`},
+    {k:`f${n}:baelle`,   icon:"⚽", t:`${kinder||f.perTeam*2} Bälle`, sub:`Ein Ball pro Kind (${f.ball})`},
+    {k:`f${n}:leibchen`, icon:"🦺", t:`${f.perTeam} Leibchen`,     sub:`Für eine der beiden Mannschaften`},
+  ];
   const alleListe=[
-    {k:"all:ballsack", icon:"🎒", t:"1 Ballsack",                 sub:"Für alle Felder zusammen"},
+    {k:"all:ballsack", icon:"🎒", t:"1 Ballsack",                  sub:"Für alle Felder zusammen"},
     {k:"all:wasser",   icon:"🚑", t:"Wasser & Erste-Hilfe-Tasche", sub:"Gut sichtbar an den Rand stellen"},
     {k:"all:abbau",    icon:"📦", t:"Nach dem Training: alles zurück", sub:"Tore sichern, Hütchen und Leibchen einsammeln"},
   ];
   const fertig=Object.keys(done).filter(k=>k.startsWith("f")||k.startsWith("all:")).length;
   const pct=Math.round(Math.min(1,fertig/c.steps)*100);
-  // Eine Zeile der Liste: antippen = abgehakt
   const Zeile=({it})=>{ const d=done[it.k]; return (
     <div onClick={()=>toggle(it.k)} style={{display:"flex",gap:10,alignItems:"center",padding:"9px 4px",borderBottom:"1px solid #f1f5f9",cursor:"pointer"}}>
       <div style={{width:24,height:24,borderRadius:7,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",
@@ -19382,6 +19467,7 @@ function AufbauPlan({ ev, data, cl, user, isHelper, onPatch, fire }){
       </div>
     </div>
   );};
+  const kurz=felder.map(f=>`${f.perTeam}:${f.perTeam}`).join(" + ");
   return (
     <div style={{marginTop:16,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
@@ -19390,46 +19476,97 @@ function AufbauPlan({ ev, data, cl, user, isHelper, onPatch, fire }){
         <span style={{fontSize:11.5,fontWeight:800,color:fertig>=c.steps?"#15803d":"#c2410c",background:fertig>=c.steps?"#dcfce7":"#ffedd5",borderRadius:99,padding:"3px 9px"}}>{fertig}/{c.steps} erledigt</span>
       </div>
       <div style={{fontSize:11.5,color:"#64748b",lineHeight:1.5,marginBottom:8}}>
-        Einfach antippen, was schon steht. {fields>1?`${fields} Felder`:"Ein Feld"} · {dim.l} × {dim.w} m · {dim.label}
+        Einfach antippen, was schon steht. {fields>1?`${fields} Felder`:"Ein Feld"} · {kurz}{c.kids?` · ${c.kids} Kinder`:""}
       </div>
       <div style={{height:6,borderRadius:99,background:"#f1f5f9",overflow:"hidden",marginBottom:12}}>
         <div style={{height:"100%",width:pct+"%",background:pct===100?"#16a34a":"#f59e0b",transition:"width .25s"}}/>
       </div>
 
+      {/* Aufbau-Varianten: der Vorschlag steht oben, weitere per Tipp */}
+      {!isHelper&&c.varianten.length>0&&(
+        <div style={{background:"#f5f3ff",border:"1.5px solid #ddd6fe",borderRadius:14,padding:"11px 12px",marginBottom:12}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:7}}>
+            <span style={{fontSize:11,fontWeight:800,color:"#6d28d9",letterSpacing:.4,flex:1}}>✨ AUFBAU-VORSCHLÄGE {c.kids?`FÜR ${c.kids} KINDER`:""}</span>
+            {c.varianten.length>1&&<button onClick={()=>setShowVar(v=>!v)} style={{background:"none",border:"none",color:"#6d28d9",fontWeight:800,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>{showVar?"weniger":"andere zeigen"}</button>}
+          </div>
+          {(showVar?c.varianten:c.varianten.slice(0,1)).map((v,vi)=>{
+            const aktiv=(c.variantId===v.id)||(!c.variantId&&vi===0&&showVar===false&&c.autoForm);
+            const vm=materialOk(v.felder,c.have);
+            return (
+              <div key={v.id} onClick={()=>savePlan(v.felder,v.id)}
+                style={{display:"flex",gap:9,alignItems:"center",background:aktiv?"#6d28d9":"#fff",border:`1.5px solid ${aktiv?"#6d28d9":"#ddd6fe"}`,borderRadius:12,padding:"10px 11px",marginBottom:6,cursor:"pointer"}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontWeight:800,fontSize:13.5,color:aktiv?"#fff":"#0f172a"}}>{v.label}{vi===0&&!showVar?"  ✨":""}</div>
+                  <div style={{fontSize:11.5,color:aktiv?"#ede9fe":"#64748b",marginTop:2}}>{v.sub}</div>
+                  {!vm.ok&&!vm.unbekannt&&<div style={{fontSize:11,color:aktiv?"#fecaca":"#b91c1c",marginTop:2,fontWeight:700}}>Es fehlt: {vm.fehlt.join(", ")}</div>}
+                </div>
+                <span style={{fontSize:12,fontWeight:900,color:aktiv?"#fff":"#6d28d9",flexShrink:0}}>{aktiv?"✓":"wählen"}</span>
+              </div>
+            );
+          })}
+          {!showVar&&<div style={{fontSize:11,color:"#7c6ba8",lineHeight:1.5}}>Vorgeschlagen anhand der Zusagen und eures Materials. Jedes Feld lässt sich unten einzeln ändern.</div>}
+        </div>
+      )}
+
       {/* Je Feld eine einfache Liste */}
-      {Array.from({length:fields},(_,i)=>i+1).map(n=>{
-        const liste=feldListe(n);
+      {felder.map((f,i)=>{
+        const n=i+1;
+        const kinder=c.kidsPer[i];
+        const liste=feldListe(n,f,kinder);
         const offen=liste.filter(it=>!done[it.k]);
-        const kinder=c.kidsPer[n-1];
+        const dia=Math.round(Math.sqrt(f.w*f.w+f.l*f.l));
         return (
           <div key={n} style={{border:`1.5px solid ${offen.length?"#fed7aa":"#bbf7d0"}`,background:"#fff",borderRadius:14,padding:"10px 12px 4px",marginBottom:9}}>
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
               <div style={{width:28,height:28,borderRadius:9,background:offen.length?"#f97316":"#16a34a",color:"#fff",fontWeight:900,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{offen.length?n:"✓"}</div>
               <div style={{flex:1,minWidth:0}}>
-                <div style={{fontWeight:800,fontSize:15,color:"#0f172a"}}>Feld {n}</div>
-                <div style={{fontSize:11.5,color:"#64748b"}}>{dim.l} × {dim.w} m{kinder?` · ${kinder} Kinder`:""}</div>
+                <div style={{fontWeight:800,fontSize:15,color:"#0f172a"}}>Feld {n} · {f.perTeam}:{f.perTeam}</div>
+                <div style={{fontSize:11.5,color:"#64748b"}}>{f.l} × {f.w} m{kinder?` · ${kinder} Kinder`:""} · {f.label}</div>
               </div>
               <span style={{fontSize:11.5,fontWeight:800,color:offen.length?"#c2410c":"#15803d",whiteSpace:"nowrap"}}>{liste.length-offen.length}/{liste.length}</span>
             </div>
             {liste.map(it=><Zeile key={it.k} it={it}/>)}
-            <button onClick={()=>setHowto(howto===n?0:n)} style={{width:"100%",padding:"8px",marginTop:4,marginBottom:6,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#f8fafc",color:"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
-              {howto===n?"▾ Anleitung zu":`▸ Wie stecke ich das Feld ab? (${paces(dim.l)} × ${paces(dim.w)} Schritte)`}
-            </button>
+            <div style={{display:"flex",gap:6,marginTop:5,marginBottom:6,flexWrap:"wrap"}}>
+              <button onClick={()=>setHowto(howto===n?0:n)} style={{flex:1,minWidth:"48%",padding:"8px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#f8fafc",color:"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+                {howto===n?"▾ Anleitung zu":`▸ Wie abstecken? (${paces(f.l)} × ${paces(f.w)} Schritte)`}
+              </button>
+              {!isHelper&&<button onClick={()=>setEdit(edit===n?0:n)} style={{flex:1,minWidth:"44%",padding:"8px",borderRadius:9,border:"1.5px solid #c7d2fe",background:"#eef2ff",color:"#4f46e5",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+                {edit===n?"▾ Fertig":"⚙ Feld ändern"}
+              </button>}
+            </div>
+            {edit===n&&!isHelper&&(
+              <div style={{background:"#f8fafc",borderRadius:11,padding:"9px 10px",marginBottom:8}}>
+                <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6}}>SPIELFORM FÜR FELD {n}</div>
+                <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:7}}>
+                  {c.forms.map(x=>(
+                    <button key={x.id} onClick={()=>setzeFeld(i,x)}
+                      style={{padding:"6px 10px",borderRadius:99,border:`1.5px solid ${f.id===x.id?"#16a34a":"#e2e8f0"}`,background:f.id===x.id?"#16a34a":"#fff",color:f.id===x.id?"#fff":"#475569",fontWeight:800,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>
+                      {x.label} <span style={{opacity:.75,fontWeight:600}}>· {x.l}×{x.w} m · {formKids(x)} Kinder</span>
+                    </button>
+                  ))}
+                </div>
+                {felder.length>1&&<button onClick={()=>feldWeg(i)} style={{padding:"7px 11px",borderRadius:9,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>🗑 Feld {n} entfernen</button>}
+              </div>
+            )}
             {howto===n&&(
               <div style={{background:"#f8fafc",borderRadius:11,padding:"10px 12px",marginBottom:8,fontSize:12.5,color:"#475569",lineHeight:1.6}}>
                 <div>1. In eine Ecke ein Hütchen legen.</div>
-                <div>2. {dim.l} m an der langen Seite entlang gehen – ca. <b>{paces(dim.l)} große Schritte</b> – zweites Hütchen.</div>
-                <div>3. {dim.w} m quer (ca. <b>{paces(dim.w)} Schritte</b>) – drittes Hütchen, dann zurück zum Start für das vierte.</div>
+                <div>2. {f.l} m an der langen Seite entlang – ca. <b>{paces(f.l)} große Schritte</b> – zweites Hütchen.</div>
+                <div>3. {f.w} m quer (ca. <b>{paces(f.w)} Schritte</b>) – drittes Hütchen, dann zurück zum Start für das vierte.</div>
                 <div>4. Kontrolle über Kreuz: beide Male ca. {dia} m ({paces(dia)} Schritte).</div>
                 <div style={{marginTop:6,color:"#9a3412",fontWeight:700}}>
-                  ⚠️ Tore mittig auf die kurze Seite{dim.gps===2?" – je 2 pro Seite (Funino)":""} und immer sichern (Heringe oder Gewichte).
+                  ⚠️ Tore mittig auf die kurze Seite{f.gps===2?" – je 2 pro Seite (Funino)":""} und immer sichern (Heringe oder Gewichte).
                   {fields>1?" Zwischen den Feldern 3 m Abstand lassen.":""}
                 </div>
+                <div style={{marginTop:8}}><PitchSketch dim={f} fields={1}/></div>
               </div>
             )}
           </div>
         );
       })}
+      {!isHelper&&fields<8&&(
+        <button onClick={feldDazu} style={{width:"100%",padding:"10px",borderRadius:11,border:"1.5px dashed #cbd5e1",background:"#fff",color:"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",marginBottom:10}}>+ Feld hinzufügen</button>
+      )}
 
       {/* Für alle zusammen */}
       <div style={{border:"1.5px solid #e2e8f0",background:"#fff",borderRadius:14,padding:"10px 12px 4px",marginBottom:10}}>
@@ -19454,57 +19591,43 @@ function AufbauPlan({ ev, data, cl, user, isHelper, onPatch, fire }){
           </div>
         : (setup.note?<div style={{fontSize:12.5,color:"#3730a3",background:"#eef2ff",border:"1.5px solid #c7d2fe",borderRadius:11,padding:"9px 12px",marginBottom:12}}>💬 Hinweis vom Trainer: {setup.note}</div>:null)}
 
-      {/* Einstellungen: nur fuer Trainer, damit die Liste fuer Helfer schlank bleibt */}
+      {/* Ort und Material - nur fuer Trainer */}
       {!isHelper&&(
         <div style={{background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:14,padding:"11px 12px"}}>
           <div style={{fontSize:10.5,fontWeight:800,color:"#64748b",letterSpacing:.4,marginBottom:8}}>EINSTELLUNGEN FÜR DIESEN TERMIN</div>
           <div style={{display:"flex",gap:6,marginBottom:8}}>
             {[["out","🌳 Draußen"],["in","🏠 Halle"]].map(([v,l])=>(
-              <button key={v} onClick={()=>onPatch({setup:{...setup,venue:v,form:"",fields,done}})}
+              <button key={v} onClick={()=>onPatch({setup:{...setup,venue:v,form:"",plan:null,variant:null,done}})}
                 style={{flex:1,padding:"8px",borderRadius:10,border:`1.5px solid ${(c.indoor?"in":"out")===v?"#16a34a":"#e2e8f0"}`,background:(c.indoor?"in":"out")===v?"#f0fdf4":"#fff",color:(c.indoor?"in":"out")===v?"#15803d":"#64748b",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
             ))}
           </div>
-          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:13,fontWeight:800,color:"#0f172a"}}>{fields} Feld{fields>1?"er":""}</div>
-              <div style={{fontSize:11,color:"#64748b",marginTop:1}}>
-                {ev.type==="training"
-                  ? `Richtwert ${KIDS_PER_FIELD_MIN}–${KIDS_PER_FIELD_MAX} Kinder pro Feld${c.kids?` · ${c.kids} Zusagen`:""} · ca. ${c.minutes} Min Aufbau`
-                  : `Spielform ${fmt?fmt.form:dim.perTeam+":"+dim.perTeam} · ca. ${c.minutes} Min Aufbau`}
-              </div>
-            </div>
-            <button onClick={()=>setFields(-1)} aria-label="Ein Feld weniger" style={{width:30,height:30,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:900,cursor:"pointer",fontFamily:"inherit"}}>−</button>
-            <span style={{minWidth:20,textAlign:"center",fontWeight:900,fontSize:15}}>{fields}</span>
-            <button onClick={()=>setFields(1)} aria-label="Ein Feld mehr" style={{width:30,height:30,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:900,cursor:"pointer",fontFamily:"inherit"}}>+</button>
+          <div style={{fontSize:11.5,color:"#64748b",lineHeight:1.5,marginBottom:8}}>
+            {fields} Feld{fields>1?"er":""} · {kurz} · ca. {c.minutes} Min Aufbau · Richtwert: {KIDS_PER_FIELD_MIN}–{KIDS_PER_FIELD_MAX} Kinder pro kleinem Feld, {felder[0]?formKids(felder[0]):10} auf einem {felder[0]?`${felder[0].perTeam}:${felder[0].perTeam}`:"5:5"}.
           </div>
-          <PitchSketch dim={dim} fields={fields}/>
           {c.autoForm&&(
-            <div style={{fontSize:11.5,color:"#166534",background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:10,padding:"7px 10px",margin:"8px 0 6px",lineHeight:1.5}}>
+            <div style={{fontSize:11.5,color:"#166534",background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:10,padding:"7px 10px",marginBottom:8,lineHeight:1.5}}>
               <b>Automatisch gewählt:</b> {c.indoor
                 ? "In der Halle wird auf dem Hallenfeld gespielt."
                 : c.hasJug
-                  ? `Ihr habt ${Number(c.have.torJugend)||0} Jugendtore (E-Jugend-Tore) hinterlegt – damit wird darauf gespielt.`
+                  ? `Ihr habt ${Number(c.have.torJugend)||0} Jugendtore hinterlegt – deshalb steht das große Spielfeld im Vorschlag.`
                   : "Keine Jugendtore hinterlegt – deshalb Funino auf Minitore. Sobald die großen Tore im Material stehen, schlägt der Plan sie automatisch vor."}
             </div>
           )}
-          <div style={{fontSize:11,fontWeight:800,color:"#64748b",margin:"6px 0 5px"}}>ANDERE SPIELFORM</div>
-          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
-            {c.forms.map(f=>(
-              <button key={f.id} onClick={()=>onPatch({setup:{...setup,form:f.id,fields,done}})}
-                style={{padding:"6px 10px",borderRadius:99,border:`1.5px solid ${dim.id===f.id?"#16a34a":"#e2e8f0"}`,background:dim.id===f.id?"#16a34a":"#fff",color:dim.id===f.id?"#fff":"#475569",fontWeight:800,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>
-                {f.label} <span style={{opacity:.75,fontWeight:600}}>· {f.l}×{f.w} m</span>
-              </button>
-            ))}
-          </div>
-          {(()=>{
-            const rows=c.need.map(n=>({...n, item:RES_ITEMS.find(r=>r.k===n.k), have:Number(c.have[n.k])||0})).filter(r=>r.item);
-            const gepflegt=Object.values(c.have||{}).some(v=>Number(v)>0);
-            const fehlt=rows.filter(r=>gepflegt&&r.have<r.n);
-            if(!gepflegt) return <div style={{fontSize:11,color:"#94a3b8",lineHeight:1.5}}>Bestand noch nicht gepflegt – einmalig unter Mannschaft › 🧰 Material eintragen, dann warnt der Plan bei fehlendem Material.</div>;
-            return <div style={{fontSize:11.5,color:fehlt.length?"#9a3412":"#15803d",lineHeight:1.5}}>
-              {fehlt.length?`⚠ Es fehlt: ${fehlt.map(r=>`${r.n-r.have}× ${r.item.l}`).join(", ")} – ausleihen oder ein Feld weniger.`:"✓ Material der Mannschaft reicht für diesen Aufbau."}
-            </div>;
-          })()}
+          {saveTeam&&c.variantKind&&(
+            <div onClick={()=>saveTeam(c.pref===c.variantKind?null:c.variantKind)}
+              style={{display:"flex",alignItems:"center",gap:9,background:"#fff",border:`1.5px solid ${c.pref===c.variantKind?"#16a34a":"#e2e8f0"}`,borderRadius:11,padding:"9px 11px",marginBottom:8,cursor:"pointer"}}>
+              <div style={{width:22,height:22,borderRadius:7,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",background:c.pref===c.variantKind?"#16a34a":"#fff",border:`2px solid ${c.pref===c.variantKind?"#16a34a":"#cbd5e1"}`,color:"#fff",fontWeight:900,fontSize:12}}>{c.pref===c.variantKind?"✓":""}</div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:12.5,fontWeight:800,color:"#0f172a"}}>Diesen Aufbau als Standard merken</div>
+                <div style={{fontSize:11,color:"#64748b",marginTop:1}}>Gilt dann für jeden neuen Termin dieser Mannschaft – die Felder werden jedes Mal auf die aktuelle Zahl der Zusagen gerechnet.</div>
+              </div>
+            </div>
+          )}
+          {c.mat.unbekannt
+            ? <div style={{fontSize:11,color:"#94a3b8",lineHeight:1.5}}>Bestand noch nicht gepflegt – einmalig unter Mannschaft › 🧰 Material eintragen, dann warnt der Plan bei fehlendem Material.</div>
+            : <div style={{fontSize:11.5,color:c.mat.ok?"#15803d":"#9a3412",lineHeight:1.5}}>
+                {c.mat.ok?"✓ Material der Mannschaft reicht für diesen Aufbau.":`⚠ Es fehlt: ${c.mat.fehlt.join(", ")} – anderen Vorschlag wählen oder ausleihen.`}
+              </div>}
         </div>
       )}
     </div>

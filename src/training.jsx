@@ -252,6 +252,7 @@ export function DrillDiagram({ field="half", elements=[], color="#16a34a", width
   );
 
   const renderEl = (el, i) => {
+    if(!el || !el.type) return null;          // defensiv: leere Eintraege ueberspringen
     const c = el.color || "#fff";
     switch(el.type){
       case "player": return (
@@ -4807,9 +4808,9 @@ export function SpielzugAnim({ sz, color="#16a34a", width=330, auto=false }){
     return ()=>{ if(ref.current) cancelAnimationFrame(ref.current); };
   },[play,sz?.id]);
   const el = (play&&k!=null) ? (()=>{ const {balls,moved}=anim.posAt(k);
-      const base=(sz.el||[]).map(e=>{ if(e.type==="ball") return balls.length?null:e;
+      const base=(sz.el||[]).filter(e=>e&&e.type).map(e=>{ if(e.type==="ball") return balls.length?null:e;
         if(moved.has(e)){ const mv=moved.get(e); return {...e,x:mv.x,y:mv.y}; } return e; }).filter(Boolean);
-      return [...base, ...balls.map(b=>({type:"ball",x:b.x,y:b.y}))];
+      return [...base, ...(balls||[]).filter(b=>b&&Number.isFinite(b.x)&&Number.isFinite(b.y)).map(b=>({type:"ball",x:b.x,y:b.y}))];
     })() : sz.el;
   return (
     <div>
