@@ -16159,8 +16159,10 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
 function DrillPicker({ pool, onPick, onClose, t }){
   const c=t?.p||"#16a34a";
   const [q,setQ]=useState("");
+  const [open,setOpen]=useState(null);   // aufgeklappte Vorschau
+  const [full,setFull]=useState(null);   // ganze Uebungskarte (mit Animation)
   const list=(pool||[]).filter(d=>!q||d.title.toLowerCase().includes(q.toLowerCase())||(d.axes||[]).join(" ").toLowerCase().includes(q.toLowerCase()));
-  return (
+  return (<>
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:1350,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
       <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"85dvh",display:"flex",flexDirection:"column",animation:"down .22s ease"}}>
         <div style={{flexShrink:0,padding:"12px 16px 10px",borderBottom:"1px solid #f1f5f9"}}>
@@ -16168,26 +16170,52 @@ function DrillPicker({ pool, onPick, onClose, t }){
             <span style={{fontWeight:900,fontSize:16,color:"#0f172a",flex:1}}>Übung wählen</span>
             <button onClick={onClose} style={{width:30,height:30,borderRadius:9,background:"#f1f5f9",border:"none",fontWeight:800,cursor:"pointer",color:"#475569",fontFamily:"inherit"}}>✕</button>
           </div>
-          <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Übung suchen…" autoFocus
+          <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Übung suchen…"
             style={{width:"100%",padding:"10px 12px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
+          <div style={{fontSize:11.5,color:"#64748b",marginTop:7}}>Tippe eine Übung an – du siehst erst die Skizze und die Erklärung und entscheidest dann.</div>
         </div>
         <div style={{overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"10px 14px calc(20px + env(safe-area-inset-bottom))"}}>
           {list.length===0&&<p style={{fontSize:13,color:"#64748b",textAlign:"center",padding:"20px"}}>Keine Übung gefunden.</p>}
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
-            {list.map(d=>(
-              <button key={d.id} onClick={()=>onPick(d)} style={{textAlign:"left",background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"11px 13px",cursor:"pointer",fontFamily:"inherit"}}>
-                <div style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>{d.title}</div>
-                <div style={{display:"flex",gap:5,flexWrap:"wrap",marginTop:5,alignItems:"center"}}>
-                  {(d.axes||[]).map(a=><span key={a} style={{fontSize:10.5,fontWeight:800,color:c,background:c+"15",borderRadius:6,padding:"2px 7px"}}>{a}</span>)}
-                  <span style={{fontSize:11,color:"#64748b",marginLeft:"auto"}}>{d.min} Min{d.players?" · "+d.players:""}</span>
+            {list.map(d=>{
+              const op=open===d.id;
+              return (
+                <div key={d.id} style={{background:op?"#fff":"#f8fafc",border:`1.5px solid ${op?c:"#e2e8f0"}`,borderRadius:12,overflow:"hidden"}}>
+                  <div onClick={()=>setOpen(op?null:d.id)} style={{display:"flex",alignItems:"center",gap:8,padding:"11px 13px",cursor:"pointer"}}>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>{d.title}</div>
+                      <div style={{display:"flex",gap:5,flexWrap:"wrap",marginTop:5,alignItems:"center"}}>
+                        {(d.axes||[]).map(a=><span key={a} style={{fontSize:10.5,fontWeight:800,color:c,background:c+"15",borderRadius:6,padding:"2px 7px"}}>{a}</span>)}
+                        <span style={{fontSize:11,color:"#64748b"}}>{d.min} Min{d.players?" · "+d.players:""}</span>
+                      </div>
+                    </div>
+                    <span style={{fontSize:11.5,fontWeight:800,color:op?c:"#64748b",whiteSpace:"nowrap"}}>{op?"▾ Zuklappen":"👁 Ansehen"}</span>
+                  </div>
+                  {op&&(
+                    <div style={{padding:"0 13px 12px"}}>
+                      {(d.el||[]).length>0&&<div style={{background:"#f8fafc",borderRadius:11,padding:8,marginBottom:8,display:"flex",justifyContent:"center"}}>
+                        <DrillDiagram field={d.field||"half"} elements={d.el} color={c} width={250}/>
+                      </div>}
+                      {d.desc&&<div style={{fontSize:12.5,color:"#334155",lineHeight:1.55,marginBottom:7}}>{d.desc}</div>}
+                      {d.coach&&<div style={{fontSize:12,color:"#3730a3",background:"#eef2ff",border:"1px solid #c7d2fe",borderRadius:9,padding:"7px 10px",marginBottom:7,lineHeight:1.5}}>🎯 Darauf achten: {d.coach}</div>}
+                      {(d.cats||[]).length>0&&<div style={{fontSize:11,color:"#64748b",marginBottom:8}}>Passt zu: {(d.cats||[]).join(", ")}</div>}
+                      <div style={{display:"flex",gap:7}}>
+                        <button onClick={()=>onPick(d)} style={{flex:1,padding:"10px",borderRadius:10,border:"none",background:c,color:contrast(c),fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>✓ Diese Übung nehmen</button>
+                        <button onClick={()=>setFull(d)} style={{padding:"10px 12px",borderRadius:10,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>🔍 Ganze Karte</button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </button>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
     </div>
-  );
+    {full&&<div onClick={e=>e.stopPropagation()} style={{position:"relative",zIndex:1400}}>
+      <DrillInfoModal drill={full} t={t} onClose={()=>setFull(null)}/>
+    </div>}
+  </>);
 }
 function EventPlanEditor({ ev, vorlagen, cat=null, t, onSave, onRemove, onCancel, onOpenTaktik, data=null, cl=null }) {
   const PHASES=["Aufwärmen","Hauptteil","Abschluss","Spielform","Athletik"];
@@ -17397,7 +17425,29 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
           </div>; })()}
           {ev.type==="training"&&planTitle&&<div style={{marginTop:5}}><span style={{fontSize:11,fontWeight:700,color:"#4f46e5",background:"#eef2ff",borderRadius:6,padding:"2px 8px"}}>📋 {planTitle}{ev.planBy?` · von ${ev.planBy}`:""}</span></div>}
           {warns.length>0&&<div style={{display:"flex",gap:5,marginTop:5,flexWrap:"wrap"}}>{warns.map((w,i)=><span key={i} style={{fontSize:11,fontWeight:800,color:w.col,background:w.bg,borderRadius:6,padding:"2px 8px"}}>⚠ {w.label}</span>)}</div>}
-          {vc>0&&<div style={{display:"flex",gap:5,marginTop:4,flexWrap:"wrap"}}>{ev.pt==="att"?<><Tag c="#16a34a" ch={`✓ ${yes} Spieler`}/><Tag c="#dc2626" bg="#fee2e2" ch={`✕ ${no}`}/>{trYesN>0&&<Tag c="#4f46e5" bg="#eef2ff" ch={`🧑‍🏫 ${trYesN} Trainer`}/>}{(ev.helperInterest||[]).length>0&&!ev.helferOpen&&<Tag c="#b45309" bg="#fef3c7" ch={`🙋 ${(ev.helperInterest||[]).length} bereit`}/>}</>:<Tag c="#2563eb" ch={`📝 ${vc} Einträge`}/>}</div>}
+          {vc>0&&<div style={{display:"flex",gap:5,marginTop:4,flexWrap:"wrap"}}>{ev.pt==="att"?<><Tag c="#16a34a" ch={`✓ ${yes} Spieler`}/><Tag c="#dc2626" bg="#fee2e2" ch={`✕ ${no}`}/>{trYesN>0&&<Tag c="#4f46e5" bg="#eef2ff" ch={`🧑‍🏫 ${trYesN} Trainer`}/>}</>:<Tag c="#2563eb" ch={`📝 ${vc} Einträge`}/>}</div>}
+          {/* Helfer-Stand: immer sichtbar, auch wenn (noch) alle auf der Warteliste
+              stehen - der Trainer soll auf einen Blick wissen, wer mit anpackt. */}
+          {(()=>{
+            const off=(ev.helperOffers||[]), inter=(ev.helperInterest||[]);
+            if(!off.length&&!inter.length) return null;
+            const isTr=ev.type==="training";
+            const soll=isTr?0:(Number(ev.staffTarget)||2);
+            const fest=soll?Math.min(off.length,soll):off.length;
+            const wait=Math.max(0,off.length-fest);
+            const genug=soll?fest>=soll:off.length>0;
+            const namen=[...off,...inter].map(o=>o&&o.name).filter(Boolean);
+            return (
+              <div style={{marginTop:4}}>
+                <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+                  {off.length>0&&<Tag c={genug?"#15803d":"#b45309"} bg={genug?"#dcfce7":"#fef3c7"} ch={isTr?`🙋 ${off.length} Helfer dabei`:`🙋 ${fest}/${soll} Helfer`}/>}
+                  {wait>0&&<Tag c="#7c3aed" bg="#ede9fe" ch={`⏳ ${wait} auf Warteliste`}/>}
+                  {inter.length>0&&<Tag c="#b45309" bg="#fef3c7" ch={`🙋 ${inter.length} bereit${off.length?"":" (noch nicht freigegeben)"}`}/>}
+                </div>
+                {namen.length>0&&<div style={{fontSize:11,color:"#64748b",marginTop:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{namen.slice(0,3).join(", ")}{namen.length>3?` +${namen.length-3} weitere`:""}</div>}
+              </div>
+            );
+          })()}
           {ev.deadline&&<div style={{marginTop:4}}><span style={{fontSize:11,fontWeight:700,color:dlPassed?"#dc2626":"#d97706",background:dlPassed?"#fee2e2":"#fef3c7",borderRadius:6,padding:"2px 8px"}}>⏳ {dlPassed?"Frist abgelaufen":"Frist "+fmtDShort(ev.deadline.date)+(ev.deadline.time?" "+ev.deadline.time:"")}</span></div>}
           {upcoming5 && !votingLocked && msToStart>0 && (
             <div style={{marginTop:4,display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
