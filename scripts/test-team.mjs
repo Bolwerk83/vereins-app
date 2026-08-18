@@ -98,7 +98,7 @@ if(await openEvWith("Orga & Verkauf")){
   await page.locator('button:has-text("Anlegen")').click(); await page.waitForTimeout(500);
   b=await body();
   if(b.includes("⏱ Verkauf 10:00–11:30")) ok("Schicht angelegt"); else fail("Schicht fehlt");
-  await page.locator('button:has-text("Ich helfe")').first().click(); await page.waitForTimeout(500);
+  await page.locator('button:has-text("Schicht übernehmen")').first().click(); await page.waitForTimeout(500);
   b=await body();
   if(b.includes("Schicht übernommen")||b.includes("1/2")) ok("Schicht übernommen"); else fail("Schicht-Übernahme fehlt");
   // Spielteams einteilen
@@ -173,7 +173,7 @@ await page.locator('button:has-text("Termine")').last().click().catch(()=>{}); a
 if(await openEvWith("Orga & Verkauf")){
   b=await body();
   if(b.includes("🍰 Kuchen")) ok("Helfer sieht die Orga-Liste des Trainers"); else fail("Orga-Liste beim Helfer leer");
-  await page.locator('button:has-text("Ich helfe")').first().click().catch(()=>{}); await page.waitForTimeout(500);
+  await page.locator('button:has-text("Schicht übernehmen")').first().click().catch(()=>{}); await page.waitForTimeout(500);
   b=await body();
   if(b.includes("Schicht übernommen")||b.includes("2/2")) ok("Helfer übernimmt Schicht (gemeinsame Pflege)"); else fail("Helfer-Schicht klappt nicht");
 } else fail("Helfer findet Orga-Board nicht");

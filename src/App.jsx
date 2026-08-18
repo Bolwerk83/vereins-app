@@ -14986,6 +14986,26 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const [trainerWelcomeOpen, setTrainerWelcomeOpen] = useState(()=>!!(meTrainer && meTrainer.onboarded!==true));
   const [modWizardManual,setModWizardManual]=useState(false);
   useEffect(()=>{ if(tab==="module"){ setModWizardManual(true); setTab("events"); } },[tab]);
+  // Helfer-Schnellzusage von der Terminkarte: vor der Freigabe zaehlt sie als
+  // Bereitschaft, danach als echte Zusage (inkl. Wartelisten-Reihenfolge).
+  const helperQuick=(ev)=>{
+    const offen = ev.type==="training" || !!ev.helferOpen;
+    const key   = offen ? "helperOffers" : "helperInterest";
+    const liste = Array.isArray(ev[key]) ? ev[key] : [];
+    const myId  = session.id||session.helperId||session.name;
+    const drin  = liste.some(o=>o.id===myId);
+    const next  = drin ? liste.filter(o=>o.id!==myId)
+                       : [...liste,{id:myId,name:session.name||"Helfer",ts:new Date().toISOString()}];
+    save({...local,events:local.events.map(e=>e.id===ev.id?{...e,[key]:next}:e)});
+    if(drin){ fire("Eintrag zurückgezogen"); return; }
+    if(!offen){ fire("Bereitschaft gemeldet – der Trainer sieht sie ✓"); return; }
+    const sortiert=[...next].sort((a,b)=>String(a.ts||"").localeCompare(String(b.ts||"")));
+    const soll=Number(ev.staffTarget)||2;
+    const idx=sortiert.findIndex(o=>o.id===myId);
+    fire(ev.type==="training" ? "Danke! Du hilfst beim Training mit 🙌"
+        : idx<soll ? "Du bist fest eingeplant – danke! 🙌"
+        : `Auf der Warteliste (Platz ${idx-soll+1}) – du rückst bei Absage automatisch nach`);
+  };
   const [shortInfo,setShortInfo]=useState(null);      // ⚡ kurzfristiger Termin angelegt -> Info-Blatt
   const [surveyOpen,setSurveyOpen]=useState(false);   // Saison-Fragebogen (Mehr -> Saison-Check oder Erinnerung)
   useEffect(()=>{ if(tab==="saisoncheck"){ setSurveyOpen(true); setTab("events"); } },[tab]);
@@ -15392,10 +15412,10 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             );
           })()}
           <FerienHinweis hols={_ferienDash} from={tod} to={_in10}/>
-          {up.length>0&&<><Divider label={`NÄCHSTE 21 TAGE (${soon.length})`}/>{soon.length>0?soon.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}}/>):<p style={{textAlign:"center",color:"#64748b",fontSize:13.5,padding:"14px 10px"}}>Keine Termine in den nächsten 21 Tagen.</p>}
+          {up.length>0&&<><Divider label={`NÄCHSTE 21 TAGE (${soon.length})`}/>{soon.length>0?soon.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}} helperId={isHelper?(session.id||session.helperId||session.name):null} onHelperQuick={isHelper?helperQuick:null}/>):<p style={{textAlign:"center",color:"#64748b",fontSize:13.5,padding:"14px 10px"}}>Keine Termine in den nächsten 21 Tagen.</p>}
             {later.length>0&&<>
               <button onClick={()=>setShowLater(s=>!s)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",background:showLater?"#f1f5f9":"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,cursor:"pointer",margin:"6px 0 12px",padding:"11px 14px",fontWeight:800,fontSize:13,color:"#475569",fontFamily:"inherit"}}>{showLater?"▲ Weitere Termine ausblenden":"▼ Weitere "+later.length+" Termine anzeigen"}</button>
-              {showLater&&later.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}}/>)}
+              {showLater&&later.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}} helperId={isHelper?(session.id||session.helperId||session.name):null} onHelperQuick={isHelper?helperQuick:null}/>)}
             </>}
           </>}
           {up.length===0&&<div style={{textAlign:"center",padding:"30px",background:"#fff",borderRadius:18,border:"1.5px dashed #e2e8f0",color:"#64748b"}}><Logo cl={myClub} sz={50} sx={{margin:"0 auto 12px"}}/><p style={{fontWeight:800,fontSize:15}}>Noch keine Termine</p><p style={{fontSize:13,marginTop:3}}>{isHelper?"Sobald die Trainer Termine anlegen, erscheinen sie hier.":'Klicke oben auf "Neuen Termin anlegen"'}</p></div>}
@@ -17312,7 +17332,7 @@ function FerienHinweis({hols,from,to}){
   );
 }
 
-function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSelfVote,onRemind,onPlan,planTitle,onAttend,onBrief,modTraining=true,trainerNames=[],onSubReq=null}) {
+function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSelfVote,onRemind,onPlan,planTitle,onAttend,onBrief,modTraining=true,trainerNames=[],onSubReq=null,helperId=null,onHelperQuick=null}) {
   const _ferien=useSchoolHolidays(cl?.clubSettings?.holidayState);
   const [more,setMore]=useState(false);
   const wd=d=>{ try{ return new Date(d+"T12:00:00").toLocaleDateString("de-DE",{weekday:"short"})+", "; }catch{ return ""; } };
@@ -17402,6 +17422,31 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
           <button onClick={()=>onSelfVote(ev.id,"no")} style={{flex:1,padding:"7px",borderRadius:9,border:`1.5px solid ${myVote==="no"?"#dc2626":"#e2e8f0"}`,background:myVote==="no"?"#dc2626":"#fff",color:myVote==="no"?"#fff":"#475569",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{votingLocked?"✕ Späte Absage":"✕ Sage ab"}</button>
         </div>
       )}
+      {/* Helfer: Ein-Tipp-Zusage direkt auf der Karte - wie die Schnellwahl der
+          Trainer, aber auf den Helfer-Einsatz statt auf die Spieler-Zusagen. */}
+      {helperId&&onHelperQuick&&!isEventPast(ev)&&(()=>{
+        const offen = ev.type==="training" || !!ev.helferOpen;   // Einsatz laeuft schon
+        const liste = (offen ? ev.helperOffers : ev.helperInterest) || [];
+        const sortiert = [...liste].sort((a,b)=>String(a.ts||"").localeCompare(String(b.ts||"")));
+        const idx = sortiert.findIndex(o=>o.id===helperId);
+        const soll = Number(ev.staffTarget)||2;
+        const status = idx<0 ? null
+          : ev.type==="training" ? "✓ Du hilfst mit"
+          : !offen ? "✓ Bereitschaft gemeldet"
+          : idx<soll ? "✓ Fest eingeplant"
+          : `✓ Warteliste · Platz ${idx-soll+1}`;
+        return (
+          <div style={{display:"flex",gap:6,padding:"4px 12px 8px",alignItems:"center"}}>
+            <span style={{fontSize:11,fontWeight:700,color:"#64748b"}}>Ich:</span>
+            {idx<0
+              ? <button onClick={()=>onHelperQuick(ev)} style={{flex:1,padding:"7px",borderRadius:9,border:"1.5px solid #d97706",background:"#fffbeb",color:"#b45309",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{offen?"🙋 Ich helfe!":"🙋 Ich kann helfen"}</button>
+              : <>
+                  <span style={{flex:1,padding:"7px 9px",borderRadius:9,background:"#16a34a",color:"#fff",fontWeight:800,fontSize:12.5,textAlign:"center"}}>{status}</span>
+                  <button onClick={()=>onHelperQuick(ev)} style={{padding:"7px 11px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>Doch nicht</button>
+                </>}
+          </div>
+        );
+      })()}
       {}
       <div style={{display:"flex",gap:7,padding:"9px 12px 10px",borderTop:"1px solid #f1f5f9",alignItems:"center"}}>
         <button onClick={onView} style={{flex:1.2,padding:"9px",borderRadius:10,border:"none",background:p,color:contrast(p),fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Ansehen</button>
@@ -19015,7 +19060,7 @@ function OrgaBoard({ ev, user, canEdit, onPatch, fire }){
                   <button onClick={()=>bumpShiftNeed(s,1)} style={{width:22,height:22,borderRadius:6,border:"1px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:800,cursor:"pointer",fontSize:12}}>+</button>
                 </span>}
                 {!canEdit&&<span style={{fontSize:11.5,fontWeight:800,color:ok?"#15803d":"#b45309",flexShrink:0}}>{s.who.length}/{s.need||1}</span>}
-                <button onClick={()=>joinShift(s)} style={{flexShrink:0,padding:"5px 11px",borderRadius:9,border:"none",background:mine?"#fee2e2":"#d97706",color:mine?"#dc2626":"#fff",fontWeight:800,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>{mine?"Abgeben":"Ich helfe"}</button>
+                <button onClick={()=>joinShift(s)} style={{flexShrink:0,padding:"5px 11px",borderRadius:9,border:"none",background:mine?"#fee2e2":"#d97706",color:mine?"#dc2626":"#fff",fontWeight:800,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>{mine?"Abgeben":"Schicht übernehmen"}</button>
                 {canEdit&&<button onClick={()=>delShift(s)} style={{flexShrink:0,width:24,height:24,borderRadius:7,border:"none",background:"#fee2e2",color:"#dc2626",fontWeight:800,fontSize:12,cursor:"pointer"}}>✕</button>}
               </div>
               {s.who.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:6}}>

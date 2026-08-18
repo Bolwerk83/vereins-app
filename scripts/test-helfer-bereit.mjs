@@ -67,10 +67,10 @@ await page.locator('button:has-text("Passwort speichern & einloggen")').click();
 await dismissOverlays();
 let b=await body();
 if(b.includes("Ansehen")) ok("Helfer sieht die bereits angelegten Termine"); else fail("Helfer sieht keine Termine: "+b.slice(0,150));
-// Der Helfer darf NICHT als Spieler abstimmen (Schnellwahl 'Ich:' ist weg)
-// Die Schnellwahl auf der Karte beginnt mit dem Label "Ich:" - der Text
-// "Bin dabei" steht auch im Erklaertext der Seite und taugt nicht als Marker.
-if(!/(^|\n)Ich:/.test(b)) ok("Keine Spieler-Schnellabstimmung für Helfer (verfälscht die Zusagen nicht)"); else fail("Helfer kann als Spieler abstimmen");
+// Der Helfer hat zwar eine eigene "Ich:"-Schnellwahl (Einsatz), darf aber
+// NICHT als Spieler zu-/absagen - sonst verfaelscht er die Spieler-Zusagen.
+{ const spielerKnopf=await page.evaluate(()=>[...document.querySelectorAll("button")].some(x=>/Bin dabei|Sage ab/.test(x.innerText)));
+  if(!spielerKnopf) ok("Keine Spieler-Schnellabstimmung für Helfer (verfälscht die Zusagen nicht)"); else fail("Helfer kann als Spieler abstimmen"); }
 
 // ===== 2b) Helfer darf keine Trainer-Funktionen sehen =====
 // Auf den Knopf-Untertitel pruefen - "Neuen Termin anlegen" stand frueher
@@ -92,14 +92,24 @@ if(!b.includes("+ Training")&&!b.includes("✓ Training")) ok("Helfer hat keinen
   }
   if(!sawPlanTab) ok("Helfer sieht die Reiter Training/Aufstellung nicht"); else fail("Trainings-Reiter beim Helfer sichtbar"); }
 
+// ===== 2d) Schnellzusage direkt auf der Terminkarte (wie bei den Trainern) =====
+if(/(^|\n)Ich:/.test(b)&&(b.includes("🙋 Ich kann helfen")||b.includes("🙋 Ich helfe!"))) ok("Helfer hat eine Schnellwahl auf der Terminkarte"); else fail("Helfer-Schnellwahl auf der Karte fehlt");
+await page.evaluate(()=>{ const b2=[...document.querySelectorAll("button")].find(x=>/🙋 Ich (kann helfen|helfe!)/.test(x.innerText)); b2&&b2.click(); });
+await page.waitForTimeout(900);
+b=await body();
+if(/✓ (Bereitschaft gemeldet|Fest eingeplant|Du hilfst mit|Warteliste)/.test(b)) ok("Ein Tipp genügt – Status steht direkt auf der Karte"); else fail("Status nach Schnellzusage fehlt: "+(b.match(/Ich:[\s\S]{0,80}/)||["?"])[0].replace(/\n/g," | "));
+if(b.includes("Doch nicht")) ok("Rücknahme direkt auf der Karte möglich"); else fail("Rücknahme-Knopf fehlt");
+
 // ===== 3) Helfer meldet Bereitschaft VOR der Freigabe =====
 if(await openHelferEv()){
   b=await body();
   if(b.includes("Der Trainer hat den Einsatz noch nicht freigegeben")) ok("Helfer sieht den Status (noch nicht freigegeben)"); else fail("Status-Hinweis fehlt: "+(b.match(/Helfer-Einsatz[\s\S]{0,200}/)||["?"])[0].replace(/\n/g," | "));
-  if(b.includes("🙋 Ich kann helfen")) ok("Helfer kann sich trotzdem melden"); else fail("Melde-Knopf fehlt");
-  await page.locator('button:has-text("🙋 Ich kann helfen")').click(); await page.waitForTimeout(700);
-  b=await body();
-  if(b.includes("Deine Bereitschaft ist notiert")) ok("Bereitschaft gespeichert"); else fail("Bereitschaft nicht gespeichert");
+  if(b.includes("Deine Bereitschaft ist notiert")) ok("Bereitschaft (von der Karte) auch im Termin sichtbar");
+  else if(b.includes("🙋 Ich kann helfen")){
+    await page.locator('button:has-text("🙋 Ich kann helfen")').last().click(); await page.waitForTimeout(700);
+    b=await body();
+    if(b.includes("Deine Bereitschaft ist notiert")) ok("Bereitschaft gespeichert"); else fail("Bereitschaft nicht gespeichert");
+  } else fail("Weder Melde-Knopf noch Bestätigung im Termin");
   if(b.includes("Bereit Berta")) ok("Helfer steht mit Namen in der Liste"); else fail("Name fehlt in der Liste");
   await closeEv();
 } else fail("Kein Termin mit Helfer-Bereich gefunden");

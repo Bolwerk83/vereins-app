@@ -106,7 +106,7 @@ if(await helperLogin("Anna Helferin",pwA,"anna123")){
   }
   b=await body();
   if(b.includes("Grillstand-Test")) ok("Helfer sieht die Einsatz-Notiz"); else { fail("Notiz fehlt beim Helfer"); console.log("DEBUG Karte:", (b.match(/Helfer-Einsatz[\s\S]{0,260}/)||["?"])[0].replace(/\n+/g," | ")); }
-  await page.locator('button:has-text("🙋 Ich helfe!")').click(); await page.waitForTimeout(600);
+  await page.locator('button:has-text("🙋 Ich helfe!")').last().click(); await page.waitForTimeout(600);
   b=await body();
   if(b.includes("Du bist fest eingeplant")) ok("Helfer A fest eingeplant (1/1)"); else fail("Zusage A fehlgeschlagen: "+(b.match(/Helfer-Einsatz[\s\S]{0,120}/)||["?"])[0].replace(/\n/g," | "));
   await page.getByRole('button',{name:'Schließen',exact:true}).first().click().catch(()=>{}); await page.waitForTimeout(300);
@@ -125,7 +125,7 @@ if(await helperLogin("Bernd Helfer",pwB,"bernd123")){
   }
   b=await body();
   if(b.includes("🙋 Auf die Warteliste")) ok("B sieht Wartelisten-Knopf (Platz voll)"); else fail("Wartelisten-Knopf fehlt");
-  await page.locator('button:has-text("🙋 Auf die Warteliste")').click(); await page.waitForTimeout(600);
+  await page.locator('button:has-text("🙋 Auf die Warteliste")').last().click(); await page.waitForTimeout(600);
   b=await body();
   if(/Warteliste Platz 1/.test(b)) ok("B auf Warteliste Platz 1 (rückt automatisch nach)"); else fail("Wartelisten-Status fehlt: "+(b.match(/Warteliste[^\n]*/)||["?"])[0]);
 }
