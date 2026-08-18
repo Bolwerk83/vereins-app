@@ -12,7 +12,8 @@ import { LANG_SWITCHER_ENABLED, LangSwitcher, FloatingLangSwitcher, getFontScale
 import { DFB_FORMATS, dfbFormatForCat, CAT_YEARS, catYearsStr, CAT_ORDER, eligibleCats, playerFitType, playerFitsTeam, fitLabel } from "./dfb.js";
 import { CAT_RANK, defaultSoll, SOLL_PLAYERS_BY_CAT, _votedYes, isPausedP, drillScores, drillVoteOf, playerNoShowEvents, NO_SHOW_HINT_THRESHOLD, addAuditLog, suggestDrillsForSkill, generateTrainingPlan, SKILLS, SKILL_AXES, skillAxesFor, sollFor, trainingFocusFor, buildSession, playerArchetype, AXIS_TO_FOCUS, staffNeed } from "./domain.js";
 import { TRAINING_TEMPLATES, DRILL_LIB } from "./drills.js";
-import { DFBFormatsCard, TacticField, StyleToggle, DrillDiagram, DrillLibrary, TacticBoard, TrainingsLibrary, TrainingPlanner, TrainerGuide, TrainingPlanTab, DrillAutoAnim, DrillInfoModal, CAT_TO_AGEKEY, DRILL_FOCUS, TACTIC_TEMPLATES, drillsForPhase, eventDurationMin, WeeklySoloCard, WeeklyQuizCard, KidAchievements, calcInventory } from "./training.jsx";
+import { CHANGELOG, CL_TYPES, CL_AREAS } from "./changelog.js";
+import { DFBFormatsCard, TacticField, StyleToggle, DrillDiagram, DrillLibrary, TacticBoard, TrainingsLibrary, TrainingPlanner, TrainerGuide, TrainingPlanTab, DrillAutoAnim, DrillInfoModal, CAT_TO_AGEKEY, DRILL_FOCUS, TACTIC_TEMPLATES, drillsForPhase, eventDurationMin, WeeklySoloCard, WeeklyQuizCard, KidAchievements, calcInventory, SpielzugLibrary } from "./training.jsx";
 
 // Demo-Daten (nutzen DEMO_CLUBS/tournPubSnapshot weiter unten; Funktions-Hoisting)
 function seed() {
@@ -2419,6 +2420,7 @@ function BottomNav({ tab, setTab, isAdmin, isHelper, isParent=false, parentStats
         { id:"waitlist",   label:"Warteliste",         icon:"WL", hidden: isHelper },
         { id:"saisoncheck",label:"📝 Saison-Check",     icon:"SC", hidden: isHelper||isAdmin||mods.saison===false },
         { id:"module",     label:"🧩 Module",           icon:"MO", hidden: isHelper },
+        { id:"changelog",  label:"📈 Entwicklung",       icon:"CL" },
       ].filter(x=>!x.hidden),
     },
     isAdmin && {
@@ -3659,6 +3661,79 @@ function FriendNetCard({data,myTids}){
 // Material einer Mannschaft: einmal pflegen, getrennt nach draussen und Halle.
 // Der Aufbau-Plan und der Spickzettel rechnen damit - niemand muss am Termin
 // noch einmal eintragen, was der Verein hat.
+// Entwicklungs-Log: was neu ist, was besser wurde, was repariert wurde.
+// Bewusst positiv und in normaler Sprache - alle Rollen duerfen sehen, wie
+// sich das Werkzeug entwickelt. Filter nach Art und Bereich.
+function ChangelogView({ cl }){
+  const t=TH(cl);
+  const [typ,setTyp]=useState("alle");
+  const [ber,setBer]=useState("alle");
+  const [q,setQ]=useState("");
+  const list=CHANGELOG.filter(e=>{
+    if(typ!=="alle"&&e.t!==typ) return false;
+    if(ber!=="alle"&&e.a!==ber) return false;
+    if(!q) return true;
+    return (e.h+" "+e.x).toLowerCase().includes(q.toLowerCase());
+  });
+  const nType=k=>CHANGELOG.filter(e=>e.t===k).length;
+  const seit=CHANGELOG.map(e=>e.d).sort()[0];
+  const monat=d=>{ const [y,m]=String(d).split("-"); return ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"][Number(m)-1]+" "+y; };
+  const gruppen=[]; list.forEach(e=>{ const mk=monat(e.d); const g=gruppen.find(x=>x.k===mk); if(g) g.items.push(e); else gruppen.push({k:mk,items:[e]}); });
+  const typInfo=k=>CL_TYPES.find(x=>x.id===k)||CL_TYPES[0];
+  const berInfo=k=>CL_AREAS.find(x=>x.id===k);
+  return (
+    <div>
+      <PageHead icon="📈" title="So wächst eure App" sub={`${CHANGELOG.length} Verbesserungen seit ${fmtDShort(seit)} – jede einzelne kam aus dem Vereinsalltag.`}/>
+      <div style={{display:"flex",gap:8,marginBottom:12}}>
+        {CL_TYPES.map(x=>(
+          <div key={x.id} onClick={()=>setTyp(typ===x.id?"alle":x.id)}
+            style={{flex:1,background:typ===x.id?x.col:x.bg,borderRadius:14,padding:"12px 6px",textAlign:"center",cursor:"pointer",border:`1.5px solid ${x.col}33`}}>
+            <div style={{fontWeight:900,fontSize:21,color:typ===x.id?"#fff":x.col,lineHeight:1}}>{nType(x.id)}</div>
+            <div style={{fontSize:10,fontWeight:800,color:typ===x.id?"#fff":x.col,marginTop:3}}>{x.icon} {x.label}</div>
+          </div>
+        ))}
+      </div>
+      <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Suchen, z. B. Helfer oder Push…"
+        style={{width:"100%",padding:"10px 12px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",boxSizing:"border-box",fontFamily:"inherit",marginBottom:8}}/>
+      <div style={{display:"flex",gap:5,overflowX:"auto",paddingBottom:6,marginBottom:10}}>
+        {[{id:"alle",label:"Alle Bereiche",icon:"⭐"},...CL_AREAS].map(a=>(
+          <button key={a.id} onClick={()=>setBer(a.id)}
+            style={{padding:"6px 11px",borderRadius:99,border:`1.5px solid ${ber===a.id?t.p:"#e2e8f0"}`,background:ber===a.id?t.p:"#fff",color:ber===a.id?"#fff":"#475569",fontWeight:800,fontSize:12,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit",flexShrink:0}}>
+            {a.icon} {a.label}
+          </button>
+        ))}
+      </div>
+      {(typ!=="alle"||ber!=="alle"||q)&&(
+        <div style={{fontSize:12,color:"#64748b",marginBottom:8}}>
+          {list.length} Eintrag{list.length===1?"":"e"} · <span onClick={()=>{setTyp("alle");setBer("alle");setQ("");}} style={{color:t.p,fontWeight:700,cursor:"pointer"}}>Filter zurücksetzen</span>
+        </div>
+      )}
+      {gruppen.map(g=>(
+        <div key={g.k} style={{marginBottom:14}}>
+          <Divider label={g.k.toUpperCase()}/>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {g.items.map((e,i)=>{ const ti=typInfo(e.t), bi=berInfo(e.a); return (
+              <div key={i} style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:14,padding:"12px 14px"}}>
+                <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:5}}>
+                  <span style={{fontSize:10.5,fontWeight:800,color:ti.col,background:ti.bg,borderRadius:99,padding:"3px 9px"}}>{ti.icon} {ti.label}</span>
+                  {bi&&<span style={{fontSize:10.5,fontWeight:700,color:"#64748b",background:"#f1f5f9",borderRadius:99,padding:"3px 9px"}}>{bi.icon} {bi.label}</span>}
+                  <span style={{fontSize:10.5,color:"#94a3b8",marginLeft:"auto",fontWeight:700}}>{fmtDShort(e.d)}</span>
+                </div>
+                <div style={{fontWeight:800,fontSize:14.5,color:"#0f172a",marginBottom:3}}>{e.h}</div>
+                <div style={{fontSize:12.5,color:"#475569",lineHeight:1.6}}>{e.x}</div>
+              </div>
+            );})}
+          </div>
+        </div>
+      ))}
+      {list.length===0&&<EmptyBox icon="🔍" title="Nichts gefunden" sub="Andere Filter probieren – oder alles anzeigen."/>}
+      <div style={{background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:14,padding:"12px 14px",marginTop:6,fontSize:12.5,color:"#166534",lineHeight:1.6}}>
+        <b>Und weiter geht's.</b> Jede Rückmeldung aus dem Verein landet hier als nächster Eintrag – die App wächst mit dem, was ihr auf dem Platz wirklich braucht.
+      </div>
+    </div>
+  );
+}
+
 function TeamMaterial({ data, myTids, cl, save, fire, isAdmin=false }){
   const t=TH(cl);
   const teams=(data.teams||[]).filter(tm=>tm.cid===cl?.id&&(isAdmin||myTids.includes(tm.id)));
@@ -3733,6 +3808,7 @@ function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false, initial
     { id:"planner",    label:tr("subPlanner"),        icon:"W" },
     { id:"trainings",  label:tr("subTrainings"),      icon:"TP" },
     { id:"taktik",     label:tr("subTactics"),        icon:"TB" },
+    { id:"spielzuege", label:"⚡ Spielzüge",           icon:"SZ" },
     { id:"boerse",     label:"🌐 "+tr("subMarket"),   icon:"B" },
     { id:"material",   label:"🧰 Material",           icon:"MT" },
   ];
@@ -3741,7 +3817,7 @@ function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false, initial
   const GROUPS = [
     { id:"kader", label:"👥 Kader",        ids:["manage","players","attendance"] },
     { id:"ausw",  label:"📊 Auswertung",   ids: mods.skills===false?["results"]:["insights","analysis","results","bericht"] },
-    { id:"train", label:"⚽ Training",      ids: mods.training===false?(mods.taktik===false?[]:["taktik"]):(mods.taktik===false?["planner","trainings","drills","ziele"]:["planner","trainings","drills","taktik","ziele"]) },
+    { id:"train", label:"⚽ Training",      ids: mods.training===false?(mods.taktik===false?[]:["taktik","spielzuege"]):(mods.taktik===false?["planner","trainings","drills","ziele"]:["planner","trainings","drills","taktik","spielzuege","ziele"]) },
     { id:"org",   label:"🗂️ Organisation", ids: mods.kasse===false?["material","boerse"]:["kasse","material","boerse"] },
   ].map(g=>({ ...g, tabs:g.ids.map(id=>subTabs.find(s=>s.id===id)).filter(Boolean) })).filter(g=>g.tabs.length);
   const activeGroup = GROUPS.find(g=>g.tabs.some(s=>s.id===subTab)) || GROUPS[0];
@@ -3791,6 +3867,7 @@ function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false, initial
       {subTab==="taktik"     && <TacticBoard data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
       {subTab==="boerse"     && <TournBoerse data={data} cid={cl?.id} myTids={myTids} cl={cl} save={save} fire={fire}/>}
       {subTab==="material"   && <TeamMaterial data={data} myTids={myTids} cl={cl} save={save} fire={fire} isAdmin={isAdmin}/>}
+      {subTab==="spielzuege" && <SpielzugLibrary cl={cl} teamCat={((data.teams||[]).find(tm=>myTids.includes(tm.id))||{}).cat}/>}
       {subTab==="manage"     && <ManageTeams   data={data} save={save} fire={fire} cl={cl}/>}
     </div>
   );
@@ -15070,6 +15147,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const [delConf,setDelConf]=useState(null); const [viewEv,setViewEv]=useState(null); const [delConfVal,setDelConfVal]=useState(null);
   const [evTab,setEvTab]=useState("rueck");
   const [briefEv,setBriefEv]=useState(null);   // Spickzettel-Modal
+  const [setupEv,setSetupEv]=useState(null);   // eigenes Aufbau-Fenster (nur der Aufbau-Plan)
   // Module je Team: Trainer stimmen ab (Mehrheit); ohne abgegebene Stimmen ist
   // alles AN (Bestandsschutz). Bei Gleichstand bleibt das Modul aktiv.
   const teamModOn=(tm,key)=>{ const vs=Object.values(tm?.moduleVotes||{}).filter(v=>v&&(key in v)); if(!vs.length) return true; return vs.filter(v=>v[key]).length*2>=vs.length; };
@@ -15465,14 +15543,14 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             );
           })()}
           <FerienHinweis hols={_ferienDash} from={tod} to={_in10}/>
-          {up.length>0&&<><Divider label={`NÄCHSTE 21 TAGE (${soon.length})`}/>{soon.length>0?soon.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}} helperId={isHelper?(session.id||session.helperId||session.name):null} onHelperQuick={isHelper?helperQuick:null} onSetup={()=>{setEvTab("orga");setViewEv(ev);}}/>):<p style={{textAlign:"center",color:"#64748b",fontSize:13.5,padding:"14px 10px"}}>Keine Termine in den nächsten 21 Tagen.</p>}
+          {up.length>0&&<><Divider label={`NÄCHSTE 21 TAGE (${soon.length})`}/>{soon.length>0?soon.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>{setEvTab("rueck");setViewEv(ev);}} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}} helperId={isHelper?(session.id||session.helperId||session.name):null} onHelperQuick={isHelper?helperQuick:null} onSetup={()=>setSetupEv(ev)}/>):<p style={{textAlign:"center",color:"#64748b",fontSize:13.5,padding:"14px 10px"}}>Keine Termine in den nächsten 21 Tagen.</p>}
             {later.length>0&&<>
               <button onClick={()=>setShowLater(s=>!s)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",background:showLater?"#f1f5f9":"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,cursor:"pointer",margin:"6px 0 12px",padding:"11px 14px",fontWeight:800,fontSize:13,color:"#475569",fontFamily:"inherit"}}>{showLater?"▲ Weitere Termine ausblenden":"▼ Weitere "+later.length+" Termine anzeigen"}</button>
-              {showLater&&later.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}} helperId={isHelper?(session.id||session.helperId||session.name):null} onHelperQuick={isHelper?helperQuick:null} onSetup={()=>{setEvTab("orga");setViewEv(ev);}}/>)}
+              {showLater&&later.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>{setEvTab("rueck");setViewEv(ev);}} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}} helperId={isHelper?(session.id||session.helperId||session.name):null} onHelperQuick={isHelper?helperQuick:null} onSetup={()=>setSetupEv(ev)}/>)}
             </>}
           </>}
           {up.length===0&&<div style={{textAlign:"center",padding:"30px",background:"#fff",borderRadius:18,border:"1.5px dashed #e2e8f0",color:"#64748b"}}><Logo cl={myClub} sz={50} sx={{margin:"0 auto 12px"}}/><p style={{fontWeight:800,fontSize:15}}>Noch keine Termine</p><p style={{fontSize:13,marginTop:3}}>{isHelper?"Sobald die Trainer Termine anlegen, erscheinen sie hier.":'Klicke oben auf "Neuen Termin anlegen"'}</p></div>}
-          {past.length>0&&<><Divider label={`VERGANGENE (${past.length})`} light/><div style={{opacity:.72}}>{past.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{}} onCopyLink={()=>{}} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames}/>)}</div></>}
+          {past.length>0&&<><Divider label={`VERGANGENE (${past.length})`} light/><div style={{opacity:.72}}>{past.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>{setEvTab("rueck");setViewEv(ev);}} onEdit={()=>setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{}} onCopyLink={()=>{}} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames}/>)}</div></>}
           <AffiliateBanner trigger="events" style={{marginTop:14}}/>
           <div style={{marginTop:14}}><DFBFormatsCard cl={myClub} cats={(local.teams||[]).filter(tm=>myTids.includes(tm.id)).map(tm=>tm.cat||tm.name)}/></div>
           <div style={{marginTop:14}}><RecommendCard theme={t.p}/></div>
@@ -15491,6 +15569,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         {tab==="inbox"      &&<InboxTab data={local} cid={cid} save={save} fire={fire} cl={myClub}/>}
         {tab==="tinbox"     &&<TrainerInboxTab data={local} cid={cid} session={session} save={save} cl={myClub}/>}
         {tab==="chat"       &&<ChatTab data={local} cid={cid} myTids={myTids} session={session} save={save} fire={fire} cl={myClub}/>}
+        {tab==="changelog"  &&<ChangelogView cl={myClub}/>}
         {tab==="teams"      &&isAdmin&&<TeamHub data={local} myTids={myTids} save={save} fire={fire} cl={myClub} session={session} isAdmin={isAdmin} initialSubTab="manage"/>}
         {tab==="overview"  &&isAdmin&&<><VereinsCockpit data={local} cid={cid} cl={myClub} save={save} fire={fire} session={session}/><AllTeamsOverview data={local} cid={cid} cl={myClub} onSelectTeam={tid=>{ const team=(local.teams||[]).find(x=>x.id===tid); if(team) fire("Team: "+team.name); }}/></>}
         {tab==="news"      &&<NewsTab data={local} cid={cid} session={session} save={save} fire={fire} cl={myClub}/>}
@@ -15504,6 +15583,18 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       </div>
 
       {}
+      {/* Eigenes Aufbau-Fenster: nur der Aufbau-Plan, ohne Rueckmeldungen und Orga.
+          So ist der Unterschied zu "Ansehen" (ganzer Termin) eindeutig. */}
+      {setupEv&&(
+        <Drawer onClose={()=>setSetupEv(null)} title={"🏗 Aufbau – "+setupEv.title}>
+          <div style={{fontSize:12.5,color:"#64748b",lineHeight:1.55,marginBottom:4}}>
+            {fmtDShort(setupEv.date)}{setupEv.time?" · "+setupEv.time+" Uhr":""}{setupEv.loc?" · 📍 "+setupEv.loc:""}
+          </div>
+          <AufbauPlan ev={setupEv} data={local} cl={myClub} user={session.name||(isHelper?"Helfer":"Trainer")} isHelper={isHelper}
+            onPatch={patch=>{ save({...local,events:local.events.map(e=>e.id===setupEv.id?{...e,...patch}:e)}); setSetupEv(prev=>({...prev,...patch})); }}
+            fire={fire}/>
+        </Drawer>
+      )}
       {briefEv&&<SpickzettelModal ev={briefEv} data={local} cl={myClub} save={save} fire={fire} onClose={()=>setBriefEv(null)}/>}
       {viewEv&&<Drawer onClose={()=>setViewEv(null)} title={viewEv.title}>
         {(viewEv.venueAddr || (viewEv.loc && ["heimspiel","auswarts","freundschaft","turnier"].includes(viewEv.type))) && (

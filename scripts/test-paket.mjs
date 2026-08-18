@@ -64,21 +64,17 @@ await page.locator('button:has-text("Termine")').last().click(); await page.wait
 b=await body();
 if(b.includes("NÄCHSTE 21 TAGE")) ok("21-Tage-Fenster aktiv"); else fail("21-Tage-Label fehlt");
 if(b.includes("Test-Ferien")&&b.includes("Serientermine pausieren")) ok("Ferien-Hinweisbalken sichtbar"); else fail("Ferien-Hinweis fehlt");
-if(/[+✓] Training/.test(b)) ok("Training-Knopf statt Plan+ (Status sichtbar)"); else fail("Training-Knopf fehlt");
+if(/Training (planen|steht)/.test(b)) ok("Training-Knopf mit klarem Status (planen/steht)"); else fail("Training-Knopf fehlt");
 // Spickzettel ueber ⋯
 await page.locator('button[aria-label="Weitere Aktionen"]').first().click(); await page.waitForTimeout(400);
 await page.locator('button:has-text("📋 Spickzettel")').first().click(); await page.waitForTimeout(600);
 b=await body();
-if(b.includes("Spickzettel")&&b.includes("AM PLATZ VORHANDEN")&&b.includes("Zusagen")) ok("Spickzettel: Personen + Ressourcen"); else fail("Spickzettel unvollständig");
-await page.evaluate(()=>{ const sp=[...document.querySelectorAll("div")].find(d=>d.innerText.startsWith("📋 Spickzettel")); });
-// Ressource pflegen: Hütchen +
-await page.evaluate(()=>{ const rows=[...document.querySelectorAll("div")].filter(d=>d.innerText.startsWith("Hütchen")&&d.querySelector("button")); const r=rows.pop(); const plus=[...r.querySelectorAll("button")].find(x=>x.textContent==="+"); plus&&plus.click(); });
-await page.waitForTimeout(400);
-b=await body();
-await page.getByRole('button',{name:'Schließen',exact:true}).first().click(); await page.waitForTimeout(400);
-ok("Ressourcen-Bestand editierbar (Hütchen +1)");
+if(b.includes("Spickzettel")&&b.includes("MATERIAL DER MANNSCHAFT")&&b.includes("Zusagen")) ok("Spickzettel: Personen + Material der Mannschaft"); else fail("Spickzettel unvollständig");
+// Material wird nicht mehr am Termin gepflegt, sondern einmal je Mannschaft
+if(b.includes("Mannschaft › 🧰 Material")||/Einmal je Mannschaft gepflegt/.test(b)) ok("Spickzettel verweist auf das Material der Mannschaft"); else fail("Material-Hinweis im Spickzettel fehlt");
+await page.getByRole('button',{name:'Schließen',exact:true}).first().click().catch(()=>{}); await page.keyboard.press("Escape").catch(()=>{}); await page.waitForTimeout(400);
 // ✅ Anwesenheit oeffnet Orga
-await page.locator('button[title*="Anwesenheit erfassen"]').first().click(); await page.waitForTimeout(700);
+await page.locator('button:has-text("✅ Anwesenheit")').first().click(); await page.waitForTimeout(700);
 b=await body();
 if(b.includes("Orga")||b.includes("Anwesenheit")) ok("✅-Knopf öffnet Termin mit Orga/Anwesenheit"); else fail("Anwesenheits-Sprung fehlt");
 await page.getByRole('button',{name:'Schließen',exact:true}).first().click().catch(()=>{}); await page.keyboard.press("Escape").catch(()=>{}); await page.waitForTimeout(400);

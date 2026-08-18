@@ -111,6 +111,9 @@ if(b.includes("🏗 Aufbau")) ok("Helfer hat den Aufbau-Knopf direkt auf der Ter
 if(!b.includes("Bearbeiten")) ok("Helfer kann Termine nicht bearbeiten"); else fail("Bearbeiten-Knopf beim Helfer sichtbar");
 await page.evaluate(()=>{ const b2=[...document.querySelectorAll("button")].find(x=>x.innerText.trim()==="🏗 Aufbau"); b2&&b2.click(); });
 await page.waitForTimeout(1400);
+b=await body();
+// "Aufbau" ist ein eigenes Fenster - nicht der ganze Termin mit allen Reitern
+if(b.includes("🏗 Aufbau –")&&!/📊 Rückmeldungen/.test(b)) ok("„Aufbau“ öffnet ein eigenes Fenster (nicht den ganzen Termin)"); else fail("Aufbau-Fenster nicht eigenständig: "+b.slice(0,160).replace(/\n/g," | "));
 if(!(await body()).includes("Aufbau-Plan")){ await page.locator('button:has-text("👥 Orga")').first().click().catch(()=>{}); await page.waitForTimeout(700); }
 b=await body();
 if(b.includes("Aufbau-Plan")) ok("Ein Tipp führt zum Aufbau-Plan"); else fail("Aufbau-Plan beim Helfer nicht erreichbar: "+b.slice(0,150));
@@ -124,6 +127,11 @@ await page.waitForTimeout(800);
 b=await body();
 if(b.includes("erledigt von Aufbau Anton")) ok("Helfer kann abhaken – mit Namen"); else fail("Helfer-Häkchen ohne Namen/nicht möglich");
 if(b.includes("2/7 erledigt")) ok("Trainer- und Helfer-Häkchen laufen zusammen (2/7)"); else fail("Gemeinsamer Fortschritt fehlt: "+(b.match(/\d\/7[^\n]*/)||["?"])[0]);
+await closeEv();
+// Gegenprobe: "Ansehen" zeigt den ganzen Termin mit Reitern
+await page.locator('button:has-text("Ansehen")').first().click().catch(()=>{}); await page.waitForTimeout(900);
+b=await body();
+if(/📊 Rückmeldungen/.test(b)&&/👥 Orga/.test(b)) ok("„Ansehen“ zeigt dagegen den ganzen Termin mit Reitern"); else fail("„Ansehen“ unterscheidet sich nicht: "+b.slice(0,160).replace(/\n/g," | "));
 await closeEv();
 
 // ===== 8) Gegenprobe beim Trainer =====

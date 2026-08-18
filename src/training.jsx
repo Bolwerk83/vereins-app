@@ -13,6 +13,7 @@ import { trainingFocusFor, generateTrainingPlan, buildSession, suggestDrillsForS
 import { uid, now, addD, addW, fmtD, fmtDShort, TH, CSS, ET, etLabel, evDisplayTitle, activeSid, activeTeamsFor, isActive, Btn, Tag, Av, Drawer, PageHead, PillTabs, TeamPills, EmptyBox, Inp, Sel, Sw, Divider, InfoHint, SpiderChart, dimLabel } from "./ui.jsx";
 import { CAT_ORDER } from "./dfb.js";
 import { AffiliateBanner } from "./affiliates.jsx";
+import { SPIELZUEGE, SPIELZUG_CATS, SZ_AGES, catOfSpielzug, SZ_CAT_FOR_TEAM } from "./spielzuege.js";
 
 // ---- Trainings-Konstanten & -Helfer ----
 export function TacticLibrary({ onPick, onClose }) {
@@ -937,6 +938,12 @@ export function DrillLibrary({ cl, data, myTids, save, fire }) {
                     <>
                       <p style={{fontSize:13.5,color:"#334155",lineHeight:1.6,marginBottom:10}}>{d.desc}</p>
                       <DrillPrepCards d={d}/>
+                      {(d.aufstellung||[]).length>0&&(
+                        <div style={{background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:10,padding:"10px 12px",marginTop:10}}>
+                          <div style={{fontSize:11,fontWeight:800,color:"#1e40af",letterSpacing:.4,marginBottom:6}}>WER STEHT WO?</div>
+                          {d.aufstellung.map((a,ai)=>(<div key={ai} style={{fontSize:12.5,color:"#1e3a8a",lineHeight:1.55,padding:"1px 0"}}>• {a}</div>))}
+                        </div>
+                      )}
                     </>
                   )}
                   <div style={{fontSize:11.5,color:"#64748b",marginTop:8}}>Geeignet für: {d.cats.join(", ")}</div>
@@ -1238,6 +1245,29 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
   // sonst friert die Bedienung auf dem Handy ein.
   const [liveOn,setLiveOn]=useState(false);
   const [aiHint,setAiHint]=useState("");
+  // Spielzug-Bibliothek: echten Spielvorgang auswaehlen und auf die Tafel legen
+  const [szOpen,setSzOpen]=useState(false);
+  const loadSpielzug=(sz)=>{
+    const FF=TB_FIELDS[sport]||TB_FIELDS.generic;
+    const X=v=>Math.max(FF.r,Math.min(FF.vw-FF.r,(Number(v)||0)/100*FF.vw));
+    const Y=v=>Math.max(FF.r,Math.min(FF.vh-FF.r,(Number(v)||0)/100*FF.vh));
+    const own=[],opp=[],arrs=[]; let ball=null; let i=0,j=0,k=0;
+    (sz.el||[]).forEach(e=>{
+      if(e.type==="player") own.push({id:"sz"+(i++),x:X(e.x),y:Y(e.y),n:e.n||own.length+1});
+      else if(e.type==="opp") opp.push({id:"so"+(j++),x:X(e.x),y:Y(e.y),n:opp.length+1});
+      else if(e.type==="ball") ball={x:X(e.x),y:Y(e.y)};
+      else if(e.type==="passArrow"||e.type==="runArrow"||e.type==="dribbleArrow")
+        arrs.push({id:"sa"+(k++),type:e.type==="passArrow"?"pass":e.type==="runArrow"?"run":"dribble",par:false,
+                   x1:X(e.x1),y1:Y(e.y1),x2:X(e.x2),y2:Y(e.y2)});
+    });
+    resetAnim();
+    skipRebuildRef.current=true;
+    setTokens(own); setOppTokens(opp); setShowOpp(opp.length>0); setBallPos(ball); setArrows(arrs);
+    setTimeout(()=>{ skipRebuildRef.current=false; },50);
+    setSzOpen(false);
+    setAiHint(`„${sz.ruf}" liegt auf der Tafel – tippe auf ▶ Abspielen und erklär es den Kindern.`);
+    fire&&fire("Spielzug übernommen: "+sz.name);
+  };
   // Auswahl + Steuerkreuz (wie am Gameboy): angetippten Spieler mit Pfeilen steuern.
   const [selTok,setSelTok]=useState(null);   // {side:"own"|"opp", id}
   const [padOn,setPadOn]=useState(!!eventCtx);
@@ -2348,6 +2378,10 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
           <button onClick={aiPlay}
             style={{flex:1,padding:kidMode?"13px 8px":"10px 8px",borderRadius:11,border:"2px solid #7c3aed",background:"#fff",color:"#7c3aed",fontWeight:800,fontSize:kidMode?14.5:13,cursor:"pointer",fontFamily:"inherit"}}>🪄 Ganzer Spielzug</button>
         </div>
+        <button onClick={()=>setSzOpen(true)}
+          style={{width:"100%",marginTop:8,padding:kidMode?"13px 8px":"10px 8px",borderRadius:11,border:"2px solid #16a34a",background:"#f0fdf4",color:"#15803d",fontWeight:800,fontSize:kidMode?14.5:13,cursor:"pointer",fontFamily:"inherit"}}>
+          ⚡ Spielzüge aus der Bibliothek ({SPIELZUEGE.length})
+        </button>
         {aiHint&&<div style={{marginTop:9,background:"#fff",borderRadius:10,padding:"9px 12px",fontSize:kidMode?14:12.5,color:"#4c1d95",fontWeight:700,lineHeight:1.5}}>{aiHint}</div>}
         {!kidMode&&<div style={{marginTop:7,fontSize:10.5,color:"#7c7ba8",lineHeight:1.4}}>Die Vorschläge kommen aus einer eingebauten Spiellogik (freie Passwege, offene Räume, Torabschluss) und berücksichtigen das gewählte Werkzeug – komplett offline.</div>}
       </div>
@@ -2365,6 +2399,18 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
         <span><span style={{display:"inline-block",width:22,height:0,borderTop:"3px dotted #22d3ee",verticalAlign:"middle",marginRight:5}}/>Dribbling</span>
       </div>}
       {/* Gespeicherte Boards (vereinsweit, jederzeit aufrufbar) */}
+      {szOpen&&(
+        <div onClick={()=>setSzOpen(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:1340,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
+          <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"88dvh",overflowY:"auto",padding:"12px 16px calc(24px + env(safe-area-inset-bottom))",animation:"down .22s ease"}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+              <span style={{fontWeight:900,fontSize:16,color:"#0f172a",flex:1}}>⚡ Spielzüge</span>
+              <button onClick={()=>setSzOpen(false)} style={{width:30,height:30,borderRadius:9,background:"#f1f5f9",border:"none",fontWeight:800,cursor:"pointer",color:"#475569",fontFamily:"inherit"}}>✕</button>
+            </div>
+            <div style={{fontSize:12,color:"#64748b",lineHeight:1.5,marginBottom:10}}>Echte Spielvorgänge zum Anschauen, Abspielen und Erklären. „Auf die Taktiktafel legen“ stellt die Spieler automatisch auf.</div>
+            <SpielzugLibrary cl={cl} onUse={loadSpielzug} embedded/>
+          </div>
+        </div>
+      )}
       {eventCtx&&onAttachBoard&&(
         <div style={{background:"#eff6ff",border:"1.5px solid #bfdbfe",borderRadius:13,padding:"12px 14px"}}>
           <div style={{fontSize:12.5,color:"#1e40af",fontWeight:600,lineHeight:1.5,marginBottom:9}}>Dieses Board gehört zu <b>„{eventCtx.title}"</b>. Du kannst die aktuelle Aufstellung direkt an diesen Termin hängen – sie erscheint dann beim Termin.</div>
@@ -4724,6 +4770,12 @@ export function DrillInfoModal({ drill, t, onClose }){
           {drill.desc&&<p style={{fontSize:13.5,color:"#334155",lineHeight:1.6,marginBottom:10}}>{drill.desc}</p>}
           <DrillPrepCards d={drill}/>
           {drill.kids&&<div style={{background:"#fffbeb",border:"1px solid #fde68a",borderRadius:10,padding:"10px 12px",fontSize:13,color:"#78350f",lineHeight:1.6,marginBottom:10}}><strong>🧒 Für Kinder erklärt:</strong> {drill.kids}</div>}
+          {(drill.aufstellung||[]).length>0&&(
+            <div style={{background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:10,padding:"10px 12px",marginBottom:10}}>
+              <div style={{fontSize:11,fontWeight:800,color:"#1e40af",letterSpacing:.4,marginBottom:6}}>WER STEHT WO?</div>
+              {drill.aufstellung.map((a,i)=>(<div key={i} style={{fontSize:12.5,color:"#1e3a8a",lineHeight:1.55,padding:"1px 0"}}>• {a}</div>))}
+            </div>
+          )}
           {(drill.cats||[]).length>0&&<div style={{fontSize:11.5,color:"#64748b",marginBottom:14}}>Geeignet für: {drill.cats.join(", ")}</div>}
           <button onClick={onClose} style={{width:"100%",padding:"12px",borderRadius:12,border:"none",background:"#f1f5f9",color:"#475569",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Schließen</button>
         </div>
@@ -4732,3 +4784,148 @@ export function DrillInfoModal({ drill, t, onClose }){
   );
 }
 
+
+
+/* =================================================================
+   SPIELZUG-BIBLIOTHEK
+   Echte Spielvorgaenge zum Auswaehlen, Zeigen und Erklaeren.
+   Jeder Spielzug hat einen kurzen Zuruf ("Hinterlaufen!"), eine
+   Zeichnung mit Abspiel-Animation und ein Beispiel aus dem Spiel.
+================================================================= */
+// Animierte Ansicht eines Spielzugs (nutzt dieselbe Abspiel-Logik wie die Uebungen)
+export function SpielzugAnim({ sz, color="#16a34a", width=330, auto=false }){
+  const anim = useMemo(()=>buildDrillAnim(sz?.el||[], {title:sz?.name}), [sz]);
+  const [k,setK] = useState(null);
+  const [play,setPlay] = useState(!!auto);
+  const ref = useRef(null);
+  useEffect(()=>{ setPlay(!!auto); setK(null); },[sz?.id,auto]);
+  useEffect(()=>{
+    if(!play){ if(ref.current) cancelAnimationFrame(ref.current); return; }
+    const DUR=3200, t0=performance.now();
+    const loop=tt=>{ setK(((tt-t0)/DUR)%1); ref.current=requestAnimationFrame(loop); };
+    ref.current=requestAnimationFrame(loop);
+    return ()=>{ if(ref.current) cancelAnimationFrame(ref.current); };
+  },[play,sz?.id]);
+  const el = (play&&k!=null) ? (()=>{ const {balls,moved}=anim.posAt(k);
+      const base=(sz.el||[]).map(e=>{ if(e.type==="ball") return balls.length?null:e;
+        if(moved.has(e)){ const mv=moved.get(e); return {...e,x:mv.x,y:mv.y}; } return e; }).filter(Boolean);
+      return [...base, ...balls.map(b=>({type:"ball",x:b.x,y:b.y}))];
+    })() : sz.el;
+  return (
+    <div>
+      <DrillDiagram field="half" elements={el} color={color} width={width}/>
+      <button onClick={()=>setPlay(p=>!p)}
+        style={{marginTop:8,width:"100%",padding:"9px",borderRadius:10,border:`1.5px solid ${color}`,background:play?color:"#fff",color:play?"#fff":color,fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+        {play?"⏸ Stopp":"▶ Spielzug abspielen"}
+      </button>
+    </div>
+  );
+}
+
+// Einzelner Spielzug: Zuruf, Zeichnung, Ablauf, Warum, Beispiel
+export function SpielzugDetail({ sz, cl, onUse, onClose, onShow }){
+  const c = catOfSpielzug(sz.cat);
+  return (
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:1360,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"92dvh",overflowY:"auto",animation:"down .22s ease",padding:"12px 18px calc(28px + env(safe-area-inset-bottom))"}}>
+        <div style={{display:"flex",justifyContent:"center",marginBottom:10}}><div style={{width:44,height:4,borderRadius:99,background:"#e2e8f0"}}/></div>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
+          <span style={{fontSize:11,fontWeight:800,color:c.col,background:c.col+"15",borderRadius:99,padding:"3px 9px"}}>{c.icon} {c.label}</span>
+          <span style={{fontSize:11,color:"#94a3b8",fontWeight:700}}>{(sz.ages||[]).join(" · ")}</span>
+        </div>
+        <div style={{fontWeight:900,fontSize:20,color:"#0f172a",marginBottom:2}}>{sz.name}</div>
+        <div style={{display:"inline-block",fontSize:15,fontWeight:900,color:"#fff",background:c.col,borderRadius:10,padding:"5px 12px",marginBottom:10}}>📣 „{sz.ruf}“</div>
+        <div style={{fontSize:13.5,color:"#334155",lineHeight:1.55,marginBottom:12}}>{sz.kurz}</div>
+        <SpielzugAnim sz={sz} color={c.col}/>
+        <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.4,margin:"14px 0 6px"}}>SO LÄUFT ES AB</div>
+        {(sz.ablauf||[]).map((a,i)=>(
+          <div key={i} style={{display:"flex",gap:9,alignItems:"flex-start",marginBottom:6}}>
+            <div style={{width:22,height:22,borderRadius:7,background:c.col+"18",color:c.col,fontWeight:900,fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{i+1}</div>
+            <div style={{fontSize:13,color:"#334155",lineHeight:1.5}}>{a}</div>
+          </div>
+        ))}
+        <div style={{background:"#eef2ff",border:"1.5px solid #c7d2fe",borderRadius:12,padding:"10px 12px",marginTop:10,fontSize:12.5,color:"#3730a3",lineHeight:1.55}}>
+          <b>Warum das wirkt:</b> {sz.warum}
+        </div>
+        <div style={{background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:12,padding:"10px 12px",marginTop:8,fontSize:12.5,color:"#166534",lineHeight:1.55}}>
+          <b>Beispiel:</b> {sz.beispiel}
+        </div>
+        <div style={{display:"flex",gap:7,marginTop:14,flexWrap:"wrap"}}>
+          {onUse&&<button onClick={()=>onUse(sz)} style={{flex:"1 1 46%",padding:"12px",borderRadius:12,border:"none",background:c.col,color:"#fff",fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>📋 Auf die Taktiktafel legen</button>}
+          {onShow&&<button onClick={()=>onShow(sz)} style={{flex:"1 1 46%",padding:"12px",borderRadius:12,border:`1.5px solid ${c.col}`,background:"#fff",color:c.col,fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>👀 Den Spielern zeigen</button>}
+          <button onClick={onClose} style={{flex:"1 1 100%",padding:"11px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Schließen</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Vollbild zum Vorzeigen: nur Zuruf, Zeichnung und der eine Satz
+export function SpielzugShow({ sz, onClose }){
+  const c=catOfSpielzug(sz.cat);
+  return (
+    <div style={{position:"fixed",inset:0,background:"#0f172a",zIndex:1400,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"18px"}}>
+      <div style={{fontSize:13,fontWeight:800,color:"#94a3b8",marginBottom:4}}>{c.icon} {c.label}</div>
+      <div style={{fontSize:26,fontWeight:900,color:"#fff",textAlign:"center",lineHeight:1.15}}>{sz.name}</div>
+      <div style={{fontSize:19,fontWeight:900,color:c.col,margin:"6px 0 12px"}}>„{sz.ruf}“</div>
+      <div style={{width:"100%",maxWidth:420}}><SpielzugAnim sz={sz} color={c.col} width={420} auto/></div>
+      <div style={{fontSize:15,color:"#e2e8f0",textAlign:"center",lineHeight:1.5,marginTop:12,maxWidth:460}}>{sz.kurz}</div>
+      <button onClick={onClose} style={{marginTop:16,padding:"12px 24px",borderRadius:12,border:"none",background:"#fff",color:"#0f172a",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>Fertig</button>
+    </div>
+  );
+}
+
+export function SpielzugLibrary({ cl, teamCat=null, onUse=null, embedded=false }){
+  const t=TH(cl);
+  const [q,setQ]=useState("");
+  const [cat,setCat]=useState("alle");
+  const [age,setAge]=useState(teamCat?SZ_CAT_FOR_TEAM(teamCat):"alle");
+  const [sel,setSel]=useState(null);
+  const [show,setShow]=useState(null);
+  const list=SPIELZUEGE.filter(sz=>{
+    if(cat!=="alle"&&sz.cat!==cat) return false;
+    if(age!=="alle"&&!(sz.ages||[]).includes(age)) return false;
+    if(!q) return true;
+    const s=(sz.name+" "+sz.ruf+" "+sz.kurz+" "+sz.beispiel).toLowerCase();
+    return s.includes(q.toLowerCase());
+  });
+  return (
+    <div>
+      {!embedded&&<PageHead icon="⚡" title="Spielzüge" sub={`${SPIELZUEGE.length} echte Spielvorgänge – ansehen, abspielen und den Kindern mit einem Zuruf beibringen.`}/>}
+      <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Spielzug suchen, z. B. hinterlaufen…"
+        style={{width:"100%",padding:"10px 12px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",boxSizing:"border-box",fontFamily:"inherit",marginBottom:8}}/>
+      <div style={{display:"flex",gap:5,overflowX:"auto",paddingBottom:6,marginBottom:6}}>
+        {[{id:"alle",label:"Alle",icon:"⭐",col:t.p},...SPIELZUG_CATS].map(c=>(
+          <button key={c.id} onClick={()=>setCat(c.id)}
+            style={{padding:"6px 11px",borderRadius:99,border:`1.5px solid ${cat===c.id?c.col:"#e2e8f0"}`,background:cat===c.id?c.col:"#fff",color:cat===c.id?"#fff":"#475569",fontWeight:800,fontSize:12,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit",flexShrink:0}}>
+            {c.icon} {c.label}
+          </button>
+        ))}
+      </div>
+      <div style={{display:"flex",gap:5,overflowX:"auto",paddingBottom:6,marginBottom:10}}>
+        {[{id:"alle",label:"Alle Jugenden"},...SZ_AGES].map(a=>(
+          <button key={a.id} onClick={()=>setAge(a.id)}
+            style={{padding:"5px 10px",borderRadius:99,border:`1.5px solid ${age===a.id?"#0f172a":"#e2e8f0"}`,background:age===a.id?"#0f172a":"#fff",color:age===a.id?"#fff":"#64748b",fontWeight:700,fontSize:11.5,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit",flexShrink:0}}>{a.label}</button>
+        ))}
+      </div>
+      <div style={{fontSize:11.5,color:"#64748b",marginBottom:8}}>{list.length===1?"1 Spielzug gefunden":`${list.length} Spielzüge gefunden`}</div>
+      <div style={{display:"flex",flexDirection:"column",gap:7}}>
+        {list.map(sz=>{ const c=catOfSpielzug(sz.cat); return (
+          <button key={sz.id} onClick={()=>setSel(sz)}
+            style={{textAlign:"left",display:"flex",gap:10,alignItems:"center",background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:13,padding:"11px 13px",cursor:"pointer",fontFamily:"inherit"}}>
+            <div style={{width:36,height:36,borderRadius:11,background:c.col+"15",color:c.col,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,flexShrink:0}}>{c.icon}</div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>{sz.name}</div>
+              <div style={{fontSize:12,color:"#64748b",marginTop:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{sz.kurz}</div>
+            </div>
+            <span style={{fontSize:11.5,fontWeight:900,color:c.col,background:c.col+"12",borderRadius:8,padding:"4px 8px",whiteSpace:"nowrap",flexShrink:0}}>„{sz.ruf}“</span>
+          </button>
+        );})}
+        {list.length===0&&<div style={{fontSize:13,color:"#64748b",textAlign:"center",padding:"22px"}}>Kein Spielzug gefunden – such mal nach „Pass“ oder „Ecke“.</div>}
+      </div>
+      {sel&&!show&&<SpielzugDetail sz={sel} cl={cl} onClose={()=>setSel(null)} onShow={s2=>setShow(s2)}
+        onUse={onUse?(s2=>{ onUse(s2); setSel(null); }):null}/>}
+      {show&&<SpielzugShow sz={show} onClose={()=>setShow(null)}/>}
+    </div>
+  );
+}
