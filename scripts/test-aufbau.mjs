@@ -49,14 +49,23 @@ for(const [needle,label] of [["Tor","Tore"],["Hütchen","Hütchen"],["Leibchen",
 const steps=["Feld abstecken","Tore aufstellen","Tore sichern","Hütchen setzen","Material bereitlegen","Sicherheits-Check","abbauen"];
 const missing=steps.filter(x=>!b.includes(x));
 if(!missing.length) ok("7 Schritte für Laien erklärt (Abstecken → Tore → Sichern → … → Abbau)"); else fail("Schritte fehlen: "+missing.join(", "));
-if(b.includes("0/7 erledigt")) ok("Fortschritt startet bei 0/7"); else fail("Fortschritt-Anzeige fehlt: "+(b.match(/\d\/7[^\n]*/)||["?"])[0]);
+if(/0\/7 erledigt/.test(b)) ok("Fortschritt startet bei 0/7 (4 Schritte fürs Feld + 3 gemeinsame)"); else fail("Fortschritt-Anzeige fehlt: "+(b.match(/\d+\/\d+ erledigt/)||["?"])[0]);
 
 // ===== 2) Abhaken wird mit Namen festgehalten =====
 await page.evaluate(()=>{ const b2=[...document.querySelectorAll("button")].filter(x=>x.innerText.trim()==="✓ Erledigt"); b2[0]&&b2[0].click(); });
 await page.waitForTimeout(700);
 b=await body();
 if(b.includes("erledigt von Demo Trainer")) ok("Abgehakter Schritt zeigt, wer ihn erledigt hat"); else fail("Urheber des Häkchens fehlt");
-if(b.includes("1/7 erledigt")) ok("Fortschritt zählt mit (1/7)"); else fail("Fortschritt zählt nicht: "+(b.match(/\d\/7[^\n]*/)||["?"])[0]);
+if(/1\/7 erledigt/.test(b)) ok("Fortschritt zählt mit (1/7)"); else fail("Fortschritt zählt nicht: "+(b.match(/\d+\/\d+ erledigt/)||["?"])[0]);
+
+// ===== 2b) Uebersichtliche Feld-Karten =====
+b=await body();
+if(/Feld 1/.test(b)) ok("Jedes Feld hat eine eigene Karte (Feld 1)"); else fail("Feld-Karten fehlen");
+if(/Fehlt noch:/.test(b)) ok("Karte sagt direkt, was am Feld noch fehlt"); else fail("„Fehlt noch“ fehlt: "+(b.match(/Feld 1[\s\S]{0,120}/)||["?"])[0].replace(/\n/g," | "));
+if(/Für alle Felder zusammen/.test(b)) ok("Gemeinsame Schritte stehen getrennt darunter"); else fail("Gemeinsamer Block fehlt");
+if(/Richtwert 6–8 Kinder pro Feld/.test(b)) ok("Richtwert 6–8 Kinder pro Feld ausgewiesen"); else fail("Richtwert fehlt");
+if(/Automatisch gewählt/.test(b)) ok("Standard-Spielform wird begründet"); else fail("Begründung der Standard-Spielform fehlt");
+if(/Keine Jugendtore hinterlegt/.test(b)) ok("Ohne Jugendtore wird Funino vorgeschlagen"); else fail("Funino-Standard fehlt: "+(b.match(/Automatisch gewählt[\s\S]{0,160}/)||["?"])[0].replace(/\n/g," | "));
 
 // ===== 3) Anzahl Felder anpassbar =====
 b=await body();
@@ -64,6 +73,8 @@ if(/1 Feld aufbauen/.test(b)) ok("Feld-Anzahl automatisch vorgeschlagen"); else 
 await page.locator('button[aria-label="Ein Feld mehr"]').first().click(); await page.waitForTimeout(600);
 b=await body();
 if(/2 Felder aufbauen/.test(b)) ok("Feld-Anzahl anpassbar (+)"); else fail("Feld-Anzahl nicht anpassbar");
+if(/Feld 2/.test(b)) ok("Zweites Feld bekommt eine eigene Karte"); else fail("Feld 2 fehlt");
+if(/\d+\/11 erledigt/.test(b)) ok("Fortschritt rechnet je Feld (2 Felder = 11 Schritte)"); else fail("Fortschritt pro Feld falsch: "+(b.match(/\d+\/\d+ erledigt/)||["?"])[0]);
 if(/2 solche Felder nebeneinander/.test(await page.evaluate(()=>[...document.querySelectorAll("svg text")].map(t=>t.textContent).join(" ")))) ok("Skizze passt sich der Feld-Anzahl an"); else fail("Skizzen-Titel passt nicht");
 if(/3 m Abstand/.test(b)) ok("Hinweis auf Abstand zwischen den Feldern"); else fail("Abstands-Hinweis fehlt");
 
@@ -126,7 +137,7 @@ await page.evaluate(()=>{ const b2=[...document.querySelectorAll("button")].filt
 await page.waitForTimeout(800);
 b=await body();
 if(b.includes("erledigt von Aufbau Anton")) ok("Helfer kann abhaken – mit Namen"); else fail("Helfer-Häkchen ohne Namen/nicht möglich");
-if(b.includes("2/7 erledigt")) ok("Trainer- und Helfer-Häkchen laufen zusammen (2/7)"); else fail("Gemeinsamer Fortschritt fehlt: "+(b.match(/\d\/7[^\n]*/)||["?"])[0]);
+if(/2\/\d+ erledigt/.test(b)) ok("Trainer- und Helfer-Häkchen laufen zusammen ("+(b.match(/\d+\/\d+ erledigt/)||[""])[0]+")"); else fail("Gemeinsamer Fortschritt fehlt: "+(b.match(/\d+\/\d+ erledigt/)||["?"])[0]);
 await closeEv();
 // Gegenprobe: "Ansehen" zeigt den ganzen Termin mit Reitern
 await page.locator('button:has-text("Ansehen")').first().click().catch(()=>{}); await page.waitForTimeout(900);
@@ -143,6 +154,28 @@ await page.locator('button:has-text("Ansehen")').first().click(); await page.wai
 await page.locator('button:has-text("👥 Orga")').first().click(); await page.waitForTimeout(600);
 b=await body();
 if(b.includes("erledigt von Aufbau Anton")) ok("Trainer sieht, was der Helfer schon aufgebaut hat"); else fail("Helfer-Fortschritt beim Trainer unsichtbar");
+
+// ===== 9) Standard-Regel: sind Jugendtore da, wird darauf gespielt =====
+await page.keyboard.press("Escape").catch(()=>{});
+await page.evaluate(()=>{ const x=[...document.querySelectorAll("button")].find(y=>y.innerText.trim()==="Schließen"); x&&x.click(); });
+await page.waitForTimeout(400);
+const clickExact=lbl=>page.evaluate(l=>{ const x=[...document.querySelectorAll("button")].find(y=>y.innerText.trim()===l); if(!x) return false; x.click(); return true; },lbl);
+const clickTxt=re=>page.evaluate(r=>{ const x=[...document.querySelectorAll("button")].find(y=>new RegExp(r).test(y.innerText)); if(!x) return false; x.click(); return true; },re);
+await clickExact("Team"); await page.waitForTimeout(1400);
+for(let i=0;i<3;i++){ if(!(await clickExact("Überspringen"))) break; await page.waitForTimeout(500); }
+await clickTxt("🗂️ Organisation"); await page.waitForTimeout(500);
+if(await clickTxt("🧰 Material")){
+  await page.waitForTimeout(800);
+  for(let i=0;i<2;i++){ await page.evaluate(()=>{ const x=[...document.querySelectorAll("button")].find(y=>/Jugendtore .* mehr/.test(y.getAttribute("aria-label")||"")); x&&x.click(); }); await page.waitForTimeout(500); }
+  b=await body();
+  if(/Gespeichert/.test(b)) ok("2 Jugendtore im Material der Mannschaft eingetragen"); else fail("Material nicht gespeichert");
+  await clickExact("Termine"); await page.waitForTimeout(1400);
+  await page.evaluate(()=>{ const x=[...document.querySelectorAll("button")].find(y=>y.innerText.trim()==="🏗 Aufbau"); x&&x.click(); });
+  await page.waitForTimeout(1200);
+  b=await body();
+  if(/Ihr habt 2 Jugendtore/.test(b)) ok("Standard-Regel greift: vorhandene Jugendtore werden genutzt"); else fail("Standard-Regel greift nicht: "+(b.match(/Automatisch gewählt[\s\S]{0,160}/)||["?"])[0].replace(/\n/g," | "));
+  if(/5:5 Spielbetrieb/.test(b)&&/30 × 40 m|40 × 30 m|F-Jugend-Tore/.test(b)) ok("Es wird das 5:5-Spielfeld auf die großen Tore aufgebaut"); else fail("Spielform nicht umgestellt: "+b.slice(0,200).replace(/\n/g," | "));
+} else fail("Material-Bereich nicht erreichbar");
 
 if(errors.length){ console.log("JS-FEHLER:"); [...new Set(errors)].forEach(e=>console.log(" -",e.slice(0,150))); }
 console.log(errors.length||fails.length?`ERGEBNIS: ${fails.length} Fehlschläge, ${errors.length} JS-Fehler`:"ERGEBNIS: ALLES OK");

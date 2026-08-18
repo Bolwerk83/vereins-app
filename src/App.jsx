@@ -16958,9 +16958,9 @@ function SpickzettelModal({ev,data,cl,save,fire,onClose}){
         {/* Aufbau in einer Zeile - Details stehen im Aufbau-Plan unter Orga */}
         {(()=>{ const a=aufbauCalc(ev,data,cl); const fertig=Object.keys(ev.setup?.done||{}).length; return (
           <div style={{background:"#fff7ed",border:"1.5px solid #fed7aa",borderRadius:12,padding:"11px 13px",marginBottom:10}}>
-            <div style={{fontSize:10.5,fontWeight:800,color:"#c2410c",letterSpacing:.4,marginBottom:5}}>AUFBAU {fertig>0?`· ${fertig}/7 ERLEDIGT`:""}</div>
+            <div style={{fontSize:10.5,fontWeight:800,color:"#c2410c",letterSpacing:.4,marginBottom:5}}>AUFBAU {fertig>0?`· ${fertig}/${a.steps} ERLEDIGT`:""}</div>
             <div style={{fontSize:12.5,color:"#9a3412",lineHeight:1.55}}>
-              {a.fields} Feld{a.fields>1?"er":""} à {a.dim.l} × {a.dim.w} m · {a.goals}× {a.dim.goal} · {a.cones} Hütchen · {a.bibs} Leibchen · ca. {a.minutes} Min
+              {a.fields} Feld{a.fields>1?"er":""} à {a.dim.l} × {a.dim.w} m ({a.dim.label}) · {a.goals}× {a.dim.goal} · {a.cones} Hütchen · {a.bibs} Leibchen · ca. {a.minutes} Min{a.kidsPer.length>1?` · Kinder je Feld: ${a.kidsPer.join("/")}`:""}
             </div>
             <div style={{fontSize:11,color:"#c2410c",marginTop:4}}>Schritt-für-Schritt-Anleitung: Termin öffnen → Reiter 👥 Orga → 🏗 Aufbau-Plan</div>
           </div>); })()}
@@ -19251,6 +19251,20 @@ const aufbauIndoor = ev => ev?.setup?.venue ? ev.setup.venue==="in" : /halle|spo
 
 // Alles, was fuer den Aufbau gebraucht wird - einmal berechnet, von der
 // Aufbaukarte und vom Spickzettel gemeinsam genutzt.
+// Richtwert: so viele Kinder sollen auf einem Feld sein. Das klappt nicht
+// immer auf - es ist die Orientierung fuer die Anzahl der Felder.
+const KIDS_PER_FIELD_MIN = 6, KIDS_PER_FIELD_MAX = 8;
+// Kinder moeglichst gleichmaessig auf die Felder verteilen: 17 auf 3 -> 6/6/5
+const splitKids = (n,f) => { const b=Math.floor(n/f), r=n%f; return Array.from({length:f},(_,i)=>b+(i<r?1:0)); };
+// Standard-Spielform: Sind die grossen Jugendtore (E-Jugend-Tore) da, wird
+// darauf gespielt. Sonst Funino mit Minitoren.
+const pickForm = (forms,have,indoor) => {
+  if(indoor) return AUFBAU_HALLE;
+  const jug = forms.find(f=>f.goalKey==="torJugend");
+  const mini= forms.find(f=>f.goalKey==="torMini");
+  if(jug && (Number(have?.torJugend)||0)>=2) return jug;
+  return mini || forms[0];
+};
 const aufbauCalc = (ev,data,cl) => {
   const team=(data.teams||[]).find(tm=>tm.id===ev.tid);
   const cat=team?.cat||team?.name||"";
@@ -19258,20 +19272,24 @@ const aufbauCalc = (ev,data,cl) => {
   const i=fmt?DFB_FORMATS.indexOf(fmt):-1;
   const indoor=aufbauIndoor(ev);
   const forms=[...(AUFBAU_FORMS[i>=0?i:2]||AUFBAU_FORMS[2]), AUFBAU_HALLE];
-  const dim=forms.find(f=>f.id===ev?.setup?.form) || (indoor?AUFBAU_HALLE:forms[0]);
+  const have=teamRes(team,cl,indoor);
+  const gewaehlt=forms.find(f=>f.id===ev?.setup?.form);
+  const dim=gewaehlt || pickForm(forms,have,indoor);
+  const autoForm=!gewaehlt;                     // Spielform automatisch gesetzt?
+  const hasJug=(Number(have?.torJugend)||0)>=2;
   const vv=v=>typeof v==="object"&&v!==null?v.val:v;
   const kids=Object.values(ev.votes||{}).filter(v=>vv(v)==="yes"||vv(v)==="late").length;
-  const groups=(ev.groups?.list||[]).length;
-  const perField=dim.perTeam*2;
   const auto = ev.type==="training"
-    ? Math.max(1, groups?Math.ceil(groups/2):Math.ceil((kids||perField)/perField))
+    ? Math.max(1, Math.ceil((kids||KIDS_PER_FIELD_MAX)/KIDS_PER_FIELD_MAX))
     : 1;
   const fields=Math.max(1,Math.min(8, Number(ev.setup?.fields)||auto));
-  const have=teamRes(team,cl,indoor);
-  const goals=fields*dim.gps*2, cones=fields*8, bibs=fields*dim.perTeam, balls=Math.max(perField,kids||0);
-  return { team, cat, fmt, dim, forms, indoor, kids, groups, fields, auto, have,
+  const kidsPer=kids?splitKids(kids,fields):[];
+  const goals=fields*dim.gps*2, cones=fields*8, bibs=fields*dim.perTeam, balls=Math.max(dim.perTeam*2,kids||0);
+  return { team, cat, fmt, dim, forms, indoor, kids, fields, auto, have, autoForm, hasJug, kidsPer,
     goals, cones, bibs, balls,
+    perFieldGoals: dim.gps*2, perFieldCones: 8, perFieldBibs: dim.perTeam,
     need: [ {k:dim.goalKey, n:goals}, {k:"huetchen", n:cones}, {k:"leibchen", n:bibs}, {k:"baelle", n:balls} ],
+    steps: fields*4+3,
     minutes: 5+fields*5 };
 };
 
@@ -19316,11 +19334,11 @@ function PitchSketch({dim,fields}){
 }
 
 function AufbauPlan({ ev, data, cl, user, isHelper, onPatch, fire }){
-  const [open,setOpen]=useState(true);
   const c=aufbauCalc(ev,data,cl);
   const { dim, fmt, fields } = c;
   const setup=ev.setup||{};
   const done=setup.done||{};
+  const [openField,setOpenField]=useState(1);      // welches Feld ist aufgeklappt
   const patch=next=>onPatch({setup:{...setup,fields,...next}});
   const toggle=k=>{ const nd={...done};
     const was=!!nd[k];
@@ -19328,162 +19346,210 @@ function AufbauPlan({ ev, data, cl, user, isHelper, onPatch, fire }){
     patch({done:nd}); fire&&fire(was?"Wieder offen":"Erledigt – danke! 🙌"); };
   const setFields=d=>{ const n=Math.max(1,Math.min(8,fields+d)); onPatch({setup:{...setup,fields:n,done}}); };
   const dia=Math.round(Math.sqrt(dim.w*dim.w+dim.l*dim.l));
-  const STEPS=[
-    {k:"feld",  icon:"📐", t:"Feld abstecken",
+  // Schritte je Feld – jedes Feld wird einzeln abgehakt
+  const feldSteps = n => ([
+    {k:`f${n}:feld`, icon:"📐", t:"Feld abstecken",
      s:[`Startet in einer Ecke und legt dort ein Hütchen hin.`,
-        `Geht ${dim.l} m an der Längsseite entlang – das sind etwa ${paces(dim.l)} große Schritte – und legt das zweite Hütchen.`,
-        `Dann ${dim.w} m im rechten Winkel quer (ca. ${paces(dim.w)} Schritte) und das dritte Hütchen legen, danach zurück zum Start für das vierte.`,
-        `Kontrolle: Von Ecke zu Ecke über Kreuz sind es beide Male etwa ${dia} m (${paces(dia)} Schritte) – dann steht das Feld gerade.`]},
-    {k:"tore",  icon:"🥅", t:`Tore aufstellen (${c.goals} Stück)`,
+        `Geht ${dim.l} m an der Längsseite entlang – etwa ${paces(dim.l)} große Schritte – und legt das zweite Hütchen.`,
+        `Dann ${dim.w} m im rechten Winkel quer (ca. ${paces(dim.w)} Schritte), drittes Hütchen, danach zurück zum Start für das vierte.`,
+        `Kontrolle: über Kreuz von Ecke zu Ecke sind es beide Male ca. ${dia} m (${paces(dia)} Schritte) – dann steht das Feld gerade.`]},
+    {k:`f${n}:tore`, icon:"🥅", t:`Tore aufstellen (${c.perFieldGoals} Stück)`,
      s:[`Gebraucht werden: ${dim.goal}.`,
         dim.gps===2
-          ? `Pro kurzer Seite kommen 2 Tore – etwa auf ein Viertel und drei Viertel der Breite (Funino-Aufbau). So gibt es zwei Wege zum Tor.`
-          : `Pro kurzer Seite kommt 1 Tor, genau in die Mitte. Torlinie = Feldrand, das Tor steht also auf der Linie, nicht dahinter.`,
-        `Tipp: Tore immer zu zweit tragen, nie ziehen – das schont Rasen und Rücken.`]},
-    {k:"sicher",icon:"⚠️", t:"Tore sichern – wichtig!",
+          ? `Pro kurzer Seite kommen 2 Tore – etwa auf ein Viertel und drei Viertel der Breite (Funino).`
+          : `Pro kurzer Seite kommt 1 Tor, genau in die Mitte. Das Tor steht auf der Linie, nicht dahinter.`,
+        `Tore immer zu zweit tragen, nie ziehen.`]},
+    {k:`f${n}:sicher`, icon:"⚠️", t:"Tore sichern",
      s:[`Jedes Tor mit Bodenankern, Heringen oder Gegengewichten sichern.`,
-        `Kurz anlehnen und leicht wackeln: Kippt es? Dann nachsichern.`,
+        `Kurz anlehnen und wackeln: Kippt es? Dann nachsichern.`,
         `Nie ein ungesichertes Tor stehen lassen – auch nicht „nur kurz“.`]},
-    {k:"markieren",icon:"🔶", t:`Hütchen setzen (${c.cones} Stück)`,
-     s:[`4 Hütchen in die Ecken, je 1 in der Mitte der beiden Längsseiten – das ist die Seitenlinie.`,
-        dim.mid?`Zusätzlich 2 Hütchen für die Mittellinie gegenüberliegend setzen.`:`Bei den Kleinen reicht die Ecken-Markierung – je weniger Linien, desto mehr Spielfluss.`,
-        fields>1?`Zwischen zwei Feldern mindestens 3 m Abstand lassen, damit sich die Gruppen nicht in die Quere kommen.`:`Mindestens 3 m Abstand zu Zäunen, Bänken und Wegen einhalten.`]},
-    {k:"material",icon:"🎒", t:"Material bereitlegen",
-     s:[`${c.balls} Bälle (${dim.ball}) aufgepumpt bereitlegen – am besten in der Feldmitte am Rand.`,
-        `${c.bibs} Leibchen für eine Mannschaft je Feld.`,
-        `Wasser/Getränke und die Erste-Hilfe-Tasche gut sichtbar an den Rand stellen.`]},
-    {k:"check", icon:"👀", t:"Kurzer Sicherheits-Check",
-     s:[`Einmal über das Feld gehen: Steine, Scherben, Löcher, Hundekot?`,
-        `Tore fest, Hütchen sichtbar, nichts liegt im Laufweg?`,
-        `Fertig – Bescheid geben, dass aufgebaut ist. Der Trainer kann direkt loslegen. ⚽`]},
-    {k:"abbau", icon:"📦", t:"Nach dem Termin abbauen",
-     s:[`Tore an den vereinbarten Platz zurückstellen und wieder sichern.`,
-        `Hütchen zählen (${c.cones}) und Leibchen einsammeln – zum Trocknen aufhängen, nicht in den Sack stopfen.`,
+    {k:`f${n}:markieren`, icon:"🔶", t:`Hütchen setzen (${c.perFieldCones} Stück)`,
+     s:[`4 Hütchen in die Ecken, je 1 in der Mitte der Längsseiten.`,
+        dim.mid?`2 Hütchen gegenüberliegend für die Mittellinie.`:`Bei den Kleinen reicht die Ecken-Markierung.`,
+        fields>1?`Mindestens 3 m Abstand zum Nachbarfeld lassen.`:`Mindestens 3 m Abstand zu Zäunen, Bänken und Wegen.`]},
+  ]);
+  const alleSteps=[
+    {k:"all:material", icon:"🎒", t:"Material bereitlegen",
+     s:[`${c.balls} Bälle (${dim.ball}) aufgepumpt an den Rand legen.`,
+        `${c.bibs} Leibchen insgesamt – ${c.perFieldBibs} je Feld.`,
+        `Wasser und Erste-Hilfe-Tasche gut sichtbar an den Rand stellen.`]},
+    {k:"all:check", icon:"👀", t:"Kurzer Sicherheits-Check",
+     s:[`Einmal über alle Felder gehen: Steine, Scherben, Löcher?`,
+        `Tore fest, Hütchen sichtbar, nichts im Laufweg?`,
+        `Fertig – kurz Bescheid geben, dass aufgebaut ist. ⚽`]},
+    {k:"all:abbau", icon:"📦", t:"Nach dem Termin abbauen",
+     s:[`Tore zurückstellen und wieder sichern.`,
+        `Hütchen zählen (${c.cones}) und Leibchen einsammeln – zum Trocknen aufhängen.`,
         `Bälle zählen und Müll mitnehmen.`]},
   ];
-  const fertig=STEPS.filter(s=>done[s.k]).length;
-  const pct=Math.round(fertig/STEPS.length*100);
+  const fertig=Object.keys(done).filter(k=>k.startsWith("f")||k.startsWith("all:")).length;
+  const pct=Math.round(Math.min(1,fertig/c.steps)*100);
+  const Step=({st})=>{ const d=done[st.k]; return (
+    <div style={{display:"flex",gap:9,alignItems:"flex-start",background:d?"#f0fdf4":"#fff",border:`1.5px solid ${d?"#bbf7d0":"#e2e8f0"}`,borderRadius:12,padding:"9px 11px",marginBottom:6}}>
+      <div style={{width:26,height:26,borderRadius:8,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",background:d?"#16a34a":"#f1f5f9",color:d?"#fff":"#334155",fontWeight:900,fontSize:13}}>{d?"✓":st.icon}</div>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontWeight:800,fontSize:13,color:"#0f172a"}}>{st.t}</div>
+        <ul style={{margin:"4px 0 0",padding:"0 0 0 15px"}}>
+          {st.s.map((line,j)=><li key={j} style={{fontSize:12.5,color:"#475569",lineHeight:1.5,marginBottom:2}}>{line}</li>)}
+        </ul>
+        {d&&<div style={{display:"flex",alignItems:"center",gap:6,marginTop:5}}>
+          <Av name={d.by} sz={18}/>
+          <span style={{fontSize:11,fontWeight:700,color:"#15803d"}}>erledigt von {d.by}{d.ts?` · ${new Date(d.ts).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"})} Uhr`:""}</span>
+        </div>}
+      </div>
+      <button onClick={()=>toggle(st.k)} style={{padding:"6px 9px",borderRadius:9,border:`1.5px solid ${d?"#bbf7d0":"#e2e8f0"}`,background:d?"#fff":"#f8fafc",color:d?"#64748b":"#0f172a",fontWeight:800,fontSize:11.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",flexShrink:0}}>{d?"↺":"✓ Erledigt"}</button>
+    </div>
+  );};
   return (
     <div style={{marginTop:16,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
-      <div onClick={()=>setOpen(o=>!o)} style={{display:"flex",alignItems:"center",gap:8,marginBottom:4,cursor:"pointer"}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
         <span style={{fontSize:18}}>🏗</span>
         <span style={{fontWeight:800,fontSize:15,color:"#0f172a",flex:1}}>Aufbau-Plan</span>
-        <span style={{fontSize:11.5,fontWeight:800,color:fertig===STEPS.length?"#15803d":"#c2410c",background:fertig===STEPS.length?"#dcfce7":"#ffedd5",borderRadius:99,padding:"3px 9px"}}>{fertig}/{STEPS.length} erledigt</span>
-        <span style={{fontSize:13,color:"#94a3b8"}}>{open?"▾":"▸"}</span>
+        <span style={{fontSize:11.5,fontWeight:800,color:fertig>=c.steps?"#15803d":"#c2410c",background:fertig>=c.steps?"#dcfce7":"#ffedd5",borderRadius:99,padding:"3px 9px"}}>{fertig}/{c.steps} erledigt</span>
       </div>
-      <div style={{fontSize:11.5,color:"#64748b",lineHeight:1.5,marginBottom:10}}>
-        Für Trainer <b>und</b> Helfer: Was muss wo hin? Alle Maße auch in großen Schritten – Maßband nicht nötig. Abhaken, damit alle sehen, was schon steht.
+      <div style={{fontSize:11.5,color:"#64748b",lineHeight:1.5,marginBottom:8}}>
+        Für Trainer <b>und</b> Helfer: jedes Feld einzeln abhaken. Alle Maße auch in großen Schritten – Maßband nicht nötig.
       </div>
       <div style={{height:6,borderRadius:99,background:"#f1f5f9",overflow:"hidden",marginBottom:10}}>
         <div style={{height:"100%",width:pct+"%",background:pct===100?"#16a34a":"#f59e0b",transition:"width .25s"}}/>
       </div>
-      {open&&<>
-        {/* Ort und Spielform: die F-Jugend baut zum Spielen ein anderes Feld auf
-            als beim Funino-Training - beides ist hier waehlbar. */}
-        <div style={{display:"flex",gap:6,marginBottom:8}}>
-          {[["out","🌳 Draußen"],["in","🏠 Halle"]].map(([v,l])=>(
-            <button key={v} onClick={()=>onPatch({setup:{...setup,venue:v,form:"",fields,done}})}
-              style={{flex:1,padding:"8px",borderRadius:10,border:`1.5px solid ${(c.indoor?"in":"out")===v?"#16a34a":"#e2e8f0"}`,background:(c.indoor?"in":"out")===v?"#f0fdf4":"#fff",color:(c.indoor?"in":"out")===v?"#15803d":"#64748b",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
-          ))}
+
+      {/* Ort */}
+      <div style={{display:"flex",gap:6,marginBottom:8}}>
+        {[["out","🌳 Draußen"],["in","🏠 Halle"]].map(([v,l])=>(
+          <button key={v} onClick={()=>onPatch({setup:{...setup,venue:v,form:"",fields,done}})}
+            style={{flex:1,padding:"8px",borderRadius:10,border:`1.5px solid ${(c.indoor?"in":"out")===v?"#16a34a":"#e2e8f0"}`,background:(c.indoor?"in":"out")===v?"#f0fdf4":"#fff",color:(c.indoor?"in":"out")===v?"#15803d":"#64748b",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
+        ))}
+      </div>
+
+      {/* Was wird gespielt – mit Standard-Regel */}
+      <div style={{background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:14,padding:"11px 12px",marginBottom:10}}>
+        <div style={{fontSize:11,fontWeight:800,color:"#166534",letterSpacing:.4,marginBottom:6}}>
+          {fmt?fmt.age.toUpperCase():"SPIELFELD"} · {dim.label} · {dim.l} × {dim.w} m
         </div>
-        <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:5}}>WELCHES FELD WIRD GEBRAUCHT?</div>
-        <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
+        <PitchSketch dim={dim} fields={fields}/>
+        {c.autoForm&&(
+          <div style={{fontSize:11.5,color:"#166534",background:"#fff",border:"1px solid #bbf7d0",borderRadius:10,padding:"7px 10px",margin:"8px 0 6px",lineHeight:1.5}}>
+            <b>Automatisch gewählt:</b> {c.indoor
+              ? "In der Halle wird auf dem Hallenfeld gespielt."
+              : c.hasJug
+                ? `Ihr habt ${Number(c.have.torJugend)||0} Jugendtore (E-Jugend-Tore) hinterlegt – damit wird darauf gespielt.`
+                : "Keine Jugendtore hinterlegt – deshalb Funino auf Minitore. Sobald die großen Tore im Material stehen, schlägt der Plan sie automatisch vor."}
+          </div>
+        )}
+        <div style={{fontSize:11,fontWeight:800,color:"#64748b",margin:"6px 0 5px"}}>ANDERE SPIELFORM WÄHLEN</div>
+        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
           {c.forms.map(f=>(
             <button key={f.id} onClick={()=>onPatch({setup:{...setup,form:f.id,fields,done}})}
-              style={{padding:"7px 11px",borderRadius:99,border:`1.5px solid ${dim.id===f.id?"#16a34a":"#e2e8f0"}`,background:dim.id===f.id?"#16a34a":"#fff",color:dim.id===f.id?"#fff":"#475569",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+              style={{padding:"6px 10px",borderRadius:99,border:`1.5px solid ${dim.id===f.id?"#16a34a":"#e2e8f0"}`,background:dim.id===f.id?"#16a34a":"#fff",color:dim.id===f.id?"#fff":"#475569",fontWeight:800,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>
               {f.label} <span style={{opacity:.75,fontWeight:600}}>· {f.l}×{f.w} m</span>
             </button>
           ))}
         </div>
-        {/* Steckbrief */}
-        <div style={{background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:14,padding:"12px 12px 6px",marginBottom:10}}>
-          <div style={{fontSize:11,fontWeight:800,color:"#166534",letterSpacing:.4,marginBottom:2}}>
-            {fmt?fmt.age.toUpperCase():"SPIELFELD"}{fmt?` · ${fmt.form}`:""}
+      </div>
+
+      {/* Anzahl Felder – Richtwert 6–8 Kinder */}
+      <div style={{display:"flex",alignItems:"center",gap:8,background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"9px 12px",marginBottom:10}}>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:13,fontWeight:800,color:"#0f172a"}}>{fields} Feld{fields>1?"er":""} aufbauen</div>
+          <div style={{fontSize:11,color:"#64748b",marginTop:1}}>
+            {ev.type==="training"
+              ? `Richtwert ${KIDS_PER_FIELD_MIN}–${KIDS_PER_FIELD_MAX} Kinder pro Feld${c.kids?` · ${c.kids} Zusagen`:""} · ca. ${c.minutes} Min Aufbau`
+              : `Spielform ${fmt?fmt.form:dim.perTeam+":"+dim.perTeam} · ca. ${c.minutes} Min Aufbau`}
           </div>
-          <PitchSketch dim={dim} fields={fields}/>
-          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:6,marginBottom:6}}>
-            {[["🥅",`${c.goals}× Tor`],["🔶",`${c.cones} Hütchen`],["🦺",`${c.bibs} Leibchen`],["⚽",`${c.balls} Bälle (${dim.ball})`],["⏱",`ca. ${c.minutes} Min Aufbau`]].map(([e2,l],i)=>(
-              <span key={i} style={{fontSize:11.5,fontWeight:700,color:"#166534",background:"#fff",border:"1px solid #bbf7d0",borderRadius:99,padding:"4px 9px"}}>{e2} {l}</span>
+        </div>
+        <button onClick={()=>setFields(-1)} aria-label="Ein Feld weniger" style={{width:30,height:30,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:900,cursor:"pointer",fontFamily:"inherit"}}>−</button>
+        <span style={{minWidth:20,textAlign:"center",fontWeight:900,fontSize:15}}>{fields}</span>
+        <button onClick={()=>setFields(1)} aria-label="Ein Feld mehr" style={{width:30,height:30,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:900,cursor:"pointer",fontFamily:"inherit"}}>+</button>
+      </div>
+
+      {/* Material-Abgleich */}
+      {(()=>{
+        const rows=c.need.map(n=>({...n, item:RES_ITEMS.find(r=>r.k===n.k), have:Number(c.have[n.k])||0})).filter(r=>r.item);
+        const gepflegt=Object.values(c.have||{}).some(v=>Number(v)>0);
+        const fehlt=rows.filter(r=>gepflegt&&r.have<r.n);
+        return (
+          <div style={{background:fehlt.length?"#fff7ed":"#f8fafc",border:`1.5px solid ${fehlt.length?"#fed7aa":"#e2e8f0"}`,borderRadius:12,padding:"10px 12px",marginBottom:12}}>
+            <div style={{fontSize:10.5,fontWeight:800,color:fehlt.length?"#c2410c":"#64748b",letterSpacing:.4,marginBottom:6}}>
+              MATERIAL GESAMT · GEBRAUCHT / VORHANDEN {c.indoor?"· HALLE":"· DRAUSSEN"}
+            </div>
+            {rows.map(r=>(
+              <div key={r.k} style={{display:"flex",alignItems:"center",gap:8,fontSize:12.5,padding:"2px 0"}}>
+                <span style={{flex:1,color:"#334155"}}>{r.item.icon} {r.item.l}</span>
+                <b style={{color:"#0f172a"}}>{r.n}</b><span style={{color:"#94a3b8"}}>/</span>
+                <span style={{fontWeight:700,color:!gepflegt?"#94a3b8":r.have<r.n?"#dc2626":"#15803d"}}>{gepflegt?r.have:"?"}</span>
+              </div>
             ))}
-          </div>
-          <div style={{fontSize:11.5,color:"#166534",lineHeight:1.5,paddingBottom:6}}>
-            <b>{dim.goal}</b> · Feld {dim.l} × {dim.w} m (≈ {paces(dim.l)} × {paces(dim.w)} große Schritte)
-          </div>
-        </div>
-        {/* Ist das Material da? Abgleich mit dem Bestand der Mannschaft */}
-        {(()=>{
-          const rows=c.need.map(n=>({...n, item:RES_ITEMS.find(r=>r.k===n.k), have:Number(c.have[n.k])||0}))
-                           .filter(r=>r.item);
-          const gepflegt=Object.values(c.have||{}).some(v=>Number(v)>0);
-          const fehlt=rows.filter(r=>gepflegt&&r.have<r.n);
-          return (
-            <div style={{background:fehlt.length?"#fff7ed":"#f8fafc",border:`1.5px solid ${fehlt.length?"#fed7aa":"#e2e8f0"}`,borderRadius:12,padding:"10px 12px",marginBottom:10}}>
-              <div style={{fontSize:10.5,fontWeight:800,color:fehlt.length?"#c2410c":"#64748b",letterSpacing:.4,marginBottom:6}}>
-                GEBRAUCHT / VORHANDEN {c.indoor?"· HALLE":"· DRAUSSEN"}
-              </div>
-              {rows.map(r=>(
-                <div key={r.k} style={{display:"flex",alignItems:"center",gap:8,fontSize:12.5,padding:"2px 0"}}>
-                  <span style={{flex:1,color:"#334155"}}>{r.item.icon} {r.item.l}</span>
-                  <b style={{color:"#0f172a"}}>{r.n}</b>
-                  <span style={{color:"#94a3b8"}}>/</span>
-                  <span style={{fontWeight:700,color:!gepflegt?"#94a3b8":r.have<r.n?"#dc2626":"#15803d"}}>{gepflegt?r.have:"?"}</span>
-                </div>
-              ))}
-              <div style={{fontSize:11,color:fehlt.length?"#9a3412":"#94a3b8",marginTop:5,lineHeight:1.5}}>
-                {!gepflegt
-                  ? "Bestand noch nicht gepflegt – einmalig unter Mannschaft › 🧰 Material eintragen, dann rechnet der Plan automatisch mit."
-                  : fehlt.length
-                    ? `Es fehlt: ${fehlt.map(r=>`${r.n-r.have}× ${r.item.l}`).join(", ")} – ausleihen oder Felder reduzieren.`
-                    : "Alles vorhanden ✓ – Material ist einmal je Mannschaft hinterlegt (drinnen/draußen getrennt)."}
-              </div>
-            </div>
-          );
-        })()}
-        {/* Anzahl Felder */}
-        <div style={{display:"flex",alignItems:"center",gap:8,background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"9px 12px",marginBottom:10}}>
-          <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:13,fontWeight:800,color:"#0f172a"}}>{fields} Feld{fields>1?"er":""} aufbauen</div>
-            <div style={{fontSize:11,color:"#64748b",marginTop:1}}>
-              {ev.type==="training"
-                ? (c.groups?`Vorschlag aus ${c.groups} Trainingsgruppen`:`Vorschlag: ${c.kids||"–"} Zusagen ÷ ${dim.perTeam*2} Kinder pro Feld`)
-                : `Spielform ${fmt?fmt.form:dim.perTeam+":"+dim.perTeam}`}
+            <div style={{fontSize:11,color:fehlt.length?"#9a3412":"#94a3b8",marginTop:5,lineHeight:1.5}}>
+              {!gepflegt
+                ? "Bestand noch nicht gepflegt – einmalig unter Mannschaft › 🧰 Material eintragen."
+                : fehlt.length
+                  ? `Es fehlt: ${fehlt.map(r=>`${r.n-r.have}× ${r.item.l}`).join(", ")} – ausleihen oder ein Feld weniger.`
+                  : "Alles vorhanden ✓"}
             </div>
           </div>
-          <button onClick={()=>setFields(-1)} aria-label="Ein Feld weniger" style={{width:30,height:30,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:900,cursor:"pointer",fontFamily:"inherit"}}>−</button>
-          <span style={{minWidth:20,textAlign:"center",fontWeight:900,fontSize:15}}>{fields}</span>
-          <button onClick={()=>setFields(1)} aria-label="Ein Feld mehr" style={{width:30,height:30,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:900,cursor:"pointer",fontFamily:"inherit"}}>+</button>
-        </div>
-        {/* Schritte */}
-        {STEPS.map((st,i)=>{
-          const d=done[st.k];
-          return (
-            <div key={st.k} style={{display:"flex",gap:10,alignItems:"flex-start",background:d?"#f0fdf4":"#fff",border:`1.5px solid ${d?"#bbf7d0":"#e2e8f0"}`,borderRadius:13,padding:"10px 12px",marginBottom:7}}>
-              <div style={{width:28,height:28,borderRadius:9,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",background:d?"#16a34a":"#f1f5f9",color:d?"#fff":"#334155",fontWeight:900,fontSize:13}}>{d?"✓":i+1}</div>
+        );
+      })()}
+
+      {/* Je Feld eine Karte: was fehlt noch? */}
+      {Array.from({length:fields},(_,i)=>i+1).map(n=>{
+        const steps=feldSteps(n);
+        const offen=steps.filter(st=>!done[st.k]);
+        const auf=openField===n;
+        const kinder=c.kidsPer[n-1];
+        return (
+          <div key={n} style={{border:`1.5px solid ${offen.length?"#fed7aa":"#bbf7d0"}`,background:offen.length?"#fffbf5":"#f0fdf4",borderRadius:14,padding:"11px 12px",marginBottom:8}}>
+            <div onClick={()=>setOpenField(auf?0:n)} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
+              <div style={{width:30,height:30,borderRadius:10,background:offen.length?"#f97316":"#16a34a",color:"#fff",fontWeight:900,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{offen.length?n:"✓"}</div>
               <div style={{flex:1,minWidth:0}}>
-                <div style={{fontWeight:800,fontSize:13.5,color:"#0f172a"}}>{st.icon} {st.t}</div>
-                <ul style={{margin:"5px 0 0",padding:"0 0 0 16px"}}>
-                  {st.s.map((line,j)=><li key={j} style={{fontSize:12.5,color:"#475569",lineHeight:1.55,marginBottom:2}}>{line}</li>)}
-                </ul>
-                {d&&<div style={{display:"flex",alignItems:"center",gap:6,marginTop:6}}>
-                  <Av name={d.by} sz={20}/>
-                  <span style={{fontSize:11,fontWeight:700,color:"#15803d"}}>erledigt von {d.by}{d.ts?` · ${new Date(d.ts).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"})} Uhr`:""}</span>
-                </div>}
+                <div style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>Feld {n}</div>
+                <div style={{fontSize:11.5,color:"#64748b",marginTop:1}}>
+                  {kinder?`${kinder} Kinder`:`${KIDS_PER_FIELD_MIN}–${KIDS_PER_FIELD_MAX} Kinder`} · {c.perFieldGoals}× Tor · {c.perFieldCones} Hütchen · {c.perFieldBibs} Leibchen
+                </div>
               </div>
-              <button onClick={()=>toggle(st.k)} style={{padding:"7px 10px",borderRadius:9,border:`1.5px solid ${d?"#bbf7d0":"#e2e8f0"}`,background:d?"#fff":"#f8fafc",color:d?"#64748b":"#0f172a",fontWeight:800,fontSize:11.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",flexShrink:0}}>
-                {d?"↺":"✓ Erledigt"}
-              </button>
+              <span style={{fontSize:11,fontWeight:800,color:offen.length?"#c2410c":"#15803d",whiteSpace:"nowrap"}}>{steps.length-offen.length}/{steps.length}</span>
+              <span style={{fontSize:13,color:"#94a3b8"}}>{auf?"▾":"▸"}</span>
             </div>
-          );
-        })}
-        {/* Hinweis vom Trainer */}
-        {!isHelper
-          ? <div style={{marginTop:4}}>
-              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:4}}>HINWEIS FÜR DIE HELFER (optional)</div>
-              <input value={setup.note||""} onChange={e=>patch({note:e.target.value})} placeholder="z. B. Tore stehen hinter der Hütte, Platz B ist gesperrt…"
-                style={{width:"100%",padding:"9px 12px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",fontFamily:"inherit",boxSizing:"border-box"}}/>
+            <div style={{fontSize:12.5,fontWeight:700,color:offen.length?"#9a3412":"#15803d",marginTop:7,lineHeight:1.5}}>
+              {offen.length
+                ? <>Fehlt noch: {offen.map(o=>o.t.replace(/ \(.*\)$/,"")).join(" · ")}</>
+                : <>Steht komplett ✓</>}
             </div>
-          : (setup.note?<div style={{fontSize:12.5,color:"#3730a3",background:"#eef2ff",border:"1.5px solid #c7d2fe",borderRadius:11,padding:"9px 12px",marginTop:4}}>💬 Hinweis vom Trainer: {setup.note}</div>:null)}
-      </>}
+            {kinder!=null&&(kinder<KIDS_PER_FIELD_MIN||kinder>KIDS_PER_FIELD_MAX)&&(
+              <div style={{fontSize:11,color:"#64748b",marginTop:3}}>
+                {kinder>KIDS_PER_FIELD_MAX?`Etwas voll – ${KIDS_PER_FIELD_MIN}–${KIDS_PER_FIELD_MAX} wären ideal, geht aber.`:`Etwas wenig – ${KIDS_PER_FIELD_MIN}–${KIDS_PER_FIELD_MAX} wären ideal, geht aber.`}
+              </div>
+            )}
+            {auf&&<div style={{marginTop:9}}>{steps.map(st=><Step key={st.k} st={st}/>)}</div>}
+          </div>
+        );
+      })}
+
+      {/* Gemeinsame Schritte */}
+      {(()=>{ const offen=alleSteps.filter(st=>!done[st.k]);
+        return (
+          <div style={{border:`1.5px solid ${offen.length?"#e2e8f0":"#bbf7d0"}`,background:offen.length?"#fff":"#f0fdf4",borderRadius:14,padding:"11px 12px",marginBottom:8}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:7}}>
+              <div style={{width:30,height:30,borderRadius:10,background:offen.length?"#64748b":"#16a34a",color:"#fff",fontWeight:900,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{offen.length?"∑":"✓"}</div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>Für alle Felder zusammen</div>
+                <div style={{fontSize:11.5,color:"#64748b",marginTop:1}}>Material, Sicherheits-Check und Abbau</div>
+              </div>
+              <span style={{fontSize:11,fontWeight:800,color:offen.length?"#64748b":"#15803d"}}>{alleSteps.length-offen.length}/{alleSteps.length}</span>
+            </div>
+            {alleSteps.map(st=><Step key={st.k} st={st}/>)}
+          </div>
+        );
+      })()}
+
+      {/* Hinweis vom Trainer */}
+      {!isHelper
+        ? <div style={{marginTop:4}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:4}}>HINWEIS FÜR DIE HELFER (optional)</div>
+            <input value={setup.note||""} onChange={e=>patch({note:e.target.value})} placeholder="z. B. Tore stehen hinter der Hütte, Platz B ist gesperrt…"
+              style={{width:"100%",padding:"9px 12px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:10,outline:"none",fontFamily:"inherit",boxSizing:"border-box"}}/>
+          </div>
+        : (setup.note?<div style={{fontSize:12.5,color:"#3730a3",background:"#eef2ff",border:"1.5px solid #c7d2fe",borderRadius:11,padding:"9px 12px",marginTop:4}}>💬 Hinweis vom Trainer: {setup.note}</div>:null)}
     </div>
   );
 }
