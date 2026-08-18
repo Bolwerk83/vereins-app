@@ -65,7 +65,7 @@ await page.getByRole('button',{name:'Schließen',exact:true}).first().click().ca
 { const c=await page.locator('button:has-text("Ansehen")').count();
   let done=false;
   for(let i=0;i<c&&!done;i++){
-    await page.locator('button:has-text("+ Training")').nth(0).click().catch(()=>{ });
+    await page.locator('button:has-text("Training planen")').nth(0).click().catch(()=>{ });
     await page.waitForTimeout(900);
     const t=await body();
     if(t.includes("Trainingsplan")){ done=true; }

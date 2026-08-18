@@ -3656,6 +3656,60 @@ function FriendNetCard({data,myTids}){
   );
 }
 
+// Material einer Mannschaft: einmal pflegen, getrennt nach draussen und Halle.
+// Der Aufbau-Plan und der Spickzettel rechnen damit - niemand muss am Termin
+// noch einmal eintragen, was der Verein hat.
+function TeamMaterial({ data, myTids, cl, save, fire, isAdmin=false }){
+  const t=TH(cl);
+  const teams=(data.teams||[]).filter(tm=>tm.cid===cl?.id&&(isAdmin||myTids.includes(tm.id)));
+  const [tid,setTid]=useState(teams[0]?.id||"");
+  const [ort,setOrt]=useState("out");
+  const team=teams.find(x=>x.id===tid)||teams[0];
+  if(!team) return <EmptyBox icon="🧰" title="Keine Mannschaft" sub="Sobald du einer Mannschaft zugeordnet bist, kannst du hier das Material pflegen."/>;
+  const cur=(team.resources||{})[ort]||{};
+  const write=next=>save({...data, teams:(data.teams||[]).map(x=>x.id===team.id?{...x,resources:{...(x.resources||{}),[ort]:next}}:x)});
+  const bump=(k,d)=>write({...cur,[k]:Math.max(0,(Number(cur[k])||0)+d)});
+  const setVal=(k,v)=>write({...cur,[k]:Math.max(0,Number(String(v).replace(/[^0-9]/g,""))||0)});
+  const copyOut=()=>{ const src=(team.resources||{}).out||{}; write({...src}); fire&&fire("Werte von draußen übernommen"); };
+  const gepflegt=Object.values(cur).some(v=>Number(v)>0);
+  return (
+    <div>
+      <PageHead icon="🧰" title="Material der Mannschaft" sub="Einmal eintragen – Aufbau-Plan und Spickzettel rechnen automatisch damit."/>
+      {teams.length>1&&(
+        <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
+          {teams.map(x=>(
+            <button key={x.id} onClick={()=>setTid(x.id)}
+              style={{padding:"7px 12px",borderRadius:99,border:`1.5px solid ${x.id===team.id?t.p:"#e2e8f0"}`,background:x.id===team.id?t.p:"#fff",color:x.id===team.id?"#fff":"#475569",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{x.name}</button>
+          ))}
+        </div>
+      )}
+      <div style={{display:"flex",gap:6,marginBottom:12}}>
+        {[["out","🌳 Draußen"],["in","🏠 Halle"]].map(([v,l])=>(
+          <button key={v} onClick={()=>setOrt(v)}
+            style={{flex:1,padding:"10px",borderRadius:11,border:`1.5px solid ${ort===v?t.p:"#e2e8f0"}`,background:ort===v?t.p+"12":"#fff",color:ort===v?t.p:"#64748b",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
+        ))}
+      </div>
+      <div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:14,padding:"6px 14px 12px"}}>
+        {RES_ITEMS.map(r=>(
+          <div key={r.k} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 0",borderBottom:"1px solid #f8fafc"}}>
+            <span style={{flex:1,fontSize:13.5,color:"#334155",fontWeight:600}}>{r.icon} {r.l}</span>
+            <button onClick={()=>bump(r.k,-1)} aria-label={r.l+" weniger"} style={{width:30,height:30,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:900,cursor:"pointer",fontFamily:"inherit"}}>−</button>
+            <input value={Number(cur[r.k])||0} onChange={e=>setVal(r.k,e.target.value)} inputMode="numeric"
+              style={{width:46,padding:"6px",textAlign:"center",fontWeight:900,fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:9,fontFamily:"inherit",boxSizing:"border-box"}}/>
+            <button onClick={()=>bump(r.k,1)} aria-label={r.l+" mehr"} style={{width:30,height:30,borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:900,cursor:"pointer",fontFamily:"inherit"}}>+</button>
+          </div>
+        ))}
+        {ort==="in"&&<button onClick={copyOut} style={{marginTop:10,padding:"9px 12px",borderRadius:10,border:"1.5px solid #e2e8f0",background:"#f8fafc",color:"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>⧉ Werte von „Draußen“ übernehmen</button>}
+      </div>
+      <div style={{fontSize:12,color:gepflegt?"#15803d":"#b45309",background:gepflegt?"#f0fdf4":"#fffbeb",border:`1.5px solid ${gepflegt?"#bbf7d0":"#fde68a"}`,borderRadius:11,padding:"9px 12px",marginTop:10,lineHeight:1.5}}>
+        {gepflegt
+          ? "✓ Gespeichert. Der Aufbau-Plan zeigt beim Termin sofort, ob das Material für die geplanten Felder reicht."
+          : "Noch nichts eingetragen. Trag einmal ein, was ihr habt – danach warnt der Aufbau-Plan, wenn z. B. Tore fehlen."}
+      </div>
+    </div>
+  );
+}
+
 function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false, initialSubTab, mods={} }) {
   const [subTab, setSubTab] = useState(initialSubTab || "players"); // players | attendance | stats
   const t = TH(cl);
@@ -3680,6 +3734,7 @@ function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false, initial
     { id:"trainings",  label:tr("subTrainings"),      icon:"TP" },
     { id:"taktik",     label:tr("subTactics"),        icon:"TB" },
     { id:"boerse",     label:"🌐 "+tr("subMarket"),   icon:"B" },
+    { id:"material",   label:"🧰 Material",           icon:"MT" },
   ];
   // Reiter thematisch gruppieren, damit nichts in einer unsichtbaren Scroll-Leiste verschwindet.
   // Modul-Abwahl des Trainer-Teams blendet ganze Bereiche aus (Mehr -> Module)
@@ -3687,7 +3742,7 @@ function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false, initial
     { id:"kader", label:"👥 Kader",        ids:["manage","players","attendance"] },
     { id:"ausw",  label:"📊 Auswertung",   ids: mods.skills===false?["results"]:["insights","analysis","results","bericht"] },
     { id:"train", label:"⚽ Training",      ids: mods.training===false?(mods.taktik===false?[]:["taktik"]):(mods.taktik===false?["planner","trainings","drills","ziele"]:["planner","trainings","drills","taktik","ziele"]) },
-    { id:"org",   label:"🗂️ Organisation", ids: mods.kasse===false?["boerse"]:["kasse","boerse"] },
+    { id:"org",   label:"🗂️ Organisation", ids: mods.kasse===false?["material","boerse"]:["kasse","material","boerse"] },
   ].map(g=>({ ...g, tabs:g.ids.map(id=>subTabs.find(s=>s.id===id)).filter(Boolean) })).filter(g=>g.tabs.length);
   const activeGroup = GROUPS.find(g=>g.tabs.some(s=>s.id===subTab)) || GROUPS[0];
   return (
@@ -3735,6 +3790,7 @@ function TeamHub({ data, myTids, save, fire, cl, session, isAdmin=false, initial
       {subTab==="trainings"  && <TrainingsLibrary data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
       {subTab==="taktik"     && <TacticBoard data={data} myTids={myTids} cl={cl} save={save} fire={fire}/>}
       {subTab==="boerse"     && <TournBoerse data={data} cid={cl?.id} myTids={myTids} cl={cl} save={save} fire={fire}/>}
+      {subTab==="material"   && <TeamMaterial data={data} myTids={myTids} cl={cl} save={save} fire={fire} isAdmin={isAdmin}/>}
       {subTab==="manage"     && <ManageTeams   data={data} save={save} fire={fire} cl={cl}/>}
     </div>
   );
@@ -15238,12 +15294,9 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       <div style={{maxWidth:560,margin:"0 auto",padding:"14px"}}>
         {/* Helfer: eigener Kurz-Einstieg. Der Trainer-Text verweist auf Knoepfe
             (Termin anlegen, Import), die Helfer bewusst nicht haben. */}
-        {isHelper&&tab==="events"
-          ? <div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:13,padding:"11px 14px",marginBottom:14}}>
-              <div style={{fontWeight:800,fontSize:13.5,color:"#92400e"}}>🙋 Deine Einsätze</div>
-              <div style={{fontSize:12,color:"#a16207",lineHeight:1.5,marginTop:3}}>Hier siehst du die Termine deiner Jugend{myTids.length>1?"en":""}. Termin antippen → „👥 Orga“ → dort meldest du dich für den Einsatz und trägst dich in Listen und Schichten ein.</div>
-            </div>
-          : <AreaIntro id={tab} cl={myClub}/>}
+        {/* Helfer brauchen keinen Erklaerkasten - ihre Termine sprechen fuer sich.
+            Der Trainer-Text verweist auf Knoepfe, die Helfer gar nicht haben. */}
+        {!(isHelper&&tab==="events")&&<AreaIntro id={tab} cl={myClub}/>}
         {tab==="events"&&<>
           {/* Saison-Check: Erinnerung ab 3 Monate vor Saisonende, bis der Fragebogen abgegeben ist */}
           {!isAdmin&&modOn("saison")&&<SeasonSurveyReminder data={local} cid={cid} session={session} onOpen={()=>setSurveyOpen(true)}/>}
@@ -15412,14 +15465,14 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             );
           })()}
           <FerienHinweis hols={_ferienDash} from={tod} to={_in10}/>
-          {up.length>0&&<><Divider label={`NÄCHSTE 21 TAGE (${soon.length})`}/>{soon.length>0?soon.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}} helperId={isHelper?(session.id||session.helperId||session.name):null} onHelperQuick={isHelper?helperQuick:null} onSetup={()=>{setEvTab("orga");setViewEv(ev);}}/>):<p style={{textAlign:"center",color:"#64748b",fontSize:13.5,padding:"14px 10px"}}>Keine Termine in den nächsten 21 Tagen.</p>}
+          {up.length>0&&<><Divider label={`NÄCHSTE 21 TAGE (${soon.length})`}/>{soon.length>0?soon.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}} helperId={isHelper?(session.id||session.helperId||session.name):null} onHelperQuick={isHelper?helperQuick:null} onSetup={()=>{setEvTab("orga");setViewEv(ev);}}/>):<p style={{textAlign:"center",color:"#64748b",fontSize:13.5,padding:"14px 10px"}}>Keine Termine in den nächsten 21 Tagen.</p>}
             {later.length>0&&<>
               <button onClick={()=>setShowLater(s=>!s)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",background:showLater?"#f1f5f9":"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,cursor:"pointer",margin:"6px 0 12px",padding:"11px 14px",fontWeight:800,fontSize:13,color:"#475569",fontFamily:"inherit"}}>{showLater?"▲ Weitere Termine ausblenden":"▼ Weitere "+later.length+" Termine anzeigen"}</button>
-              {showLater&&later.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}} helperId={isHelper?(session.id||session.helperId||session.name):null} onHelperQuick={isHelper?helperQuick:null} onSetup={()=>{setEvTab("orga");setViewEv(ev);}}/>)}
+              {showLater&&later.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}} helperId={isHelper?(session.id||session.helperId||session.name):null} onHelperQuick={isHelper?helperQuick:null} onSetup={()=>{setEvTab("orga");setViewEv(ev);}}/>)}
             </>}
           </>}
           {up.length===0&&<div style={{textAlign:"center",padding:"30px",background:"#fff",borderRadius:18,border:"1.5px dashed #e2e8f0",color:"#64748b"}}><Logo cl={myClub} sz={50} sx={{margin:"0 auto 12px"}}/><p style={{fontWeight:800,fontSize:15}}>Noch keine Termine</p><p style={{fontSize:13,marginTop:3}}>{isHelper?"Sobald die Trainer Termine anlegen, erscheinen sie hier.":'Klicke oben auf "Neuen Termin anlegen"'}</p></div>}
-          {past.length>0&&<><Divider label={`VERGANGENE (${past.length})`} light/><div style={{opacity:.72}}>{past.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{}} onCopyLink={()=>{}} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames}/>)}</div></>}
+          {past.length>0&&<><Divider label={`VERGANGENE (${past.length})`} light/><div style={{opacity:.72}}>{past.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>setViewEv(ev)} onEdit={()=>setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{}} onCopyLink={()=>{}} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames}/>)}</div></>}
           <AffiliateBanner trigger="events" style={{marginTop:14}}/>
           <div style={{marginTop:14}}><DFBFormatsCard cl={myClub} cats={(local.teams||[]).filter(tm=>myTids.includes(tm.id)).map(tm=>tm.cat||tm.name)}/></div>
           <div style={{marginTop:14}}><RecommendCard theme={t.p}/></div>
@@ -15469,7 +15522,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         {(()=>{ const isG=["heimspiel","auswarts","freundschaft","turnier"].includes(viewEv.type); const isT=viewEv.type==="training";
           // Trainingsplan/Uebungen und Aufstellung sind Trainer-Inhalte - Helfer
           // arbeiten im Orga-Bereich (Einsatz, Listen, Schichten).
-          const tabs=[["rueck","📊 Rückmeldungen"],...(isT&&!isHelper?[["plan","📋 Training"]]:[]),...(isG&&!isHelper?[["plan","⚽ Aufstellung"]]:[]),["orga","👥 Orga"],...((isG||isT)?[["zeit","⏱ Spieltag"]]:[])];
+          const tabs=[["rueck","📊 Rückmeldungen"],...(isT&&!isHelper?[["plan","📋 Training"]]:[]),...(isG&&!isHelper?[["plan","⚽ Aufstellung"]]:[]),["orga","👥 Orga"],...(isG?[["zeit","⏱ Spieltag"]]:[])];   // Spieltag nur bei Spielen
           const tp=TH(myClub).p;
           return (
             <div style={{position:"sticky",top:-16,zIndex:6,background:"#fff",margin:"0 -2px",padding:"6px 2px 10px",display:"flex",gap:6,overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
@@ -15618,6 +15671,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             </div>
           : <VoteOverview ev={viewEv} players={local.players} playerProfiles={local.playerProfiles||[]} teams={local.teams} myTids={myTids} cl={myClub}
               readOnly={isHelper} trainerNames={trainerNames}
+              helperNames={(local.helpers||[]).filter(h=>(h.tids||[]).includes(viewEv.tid)).map(h=>h.name)}
               myKids={isHelper?[]:(((local.trainers||[]).find(x=>x.id===session?.id)?.childNames)||"").split(",").map(x=>x.trim()).filter(Boolean)}
               staff={staffNeed(viewEv,{ perStaff:myClub?.clubSettings?.playersPerStaff||6, trainers:(local.trainers||[]).filter(trn=>(trn.tids||[]).includes(viewEv.tid)&&isActive(trn)).length, squad:(local.playerProfiles||[]).filter(pp=>pp.mainTid===viewEv.tid&&!pp.archived).length })}
               onSetDeadline={deadline=>{
@@ -16466,7 +16520,7 @@ function AttendanceCheckoff({ ev, teamPlayers=[], onSetPresent=()=>{}, onSetGues
   );
 }
 
-function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadline,onSetPresent=()=>{},onSetGuests=()=>{},onSetVote=null,myKids=[],staff=null,readOnly=false,trainerNames=[]}) {
+function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadline,onSetPresent=()=>{},onSetGuests=()=>{},onSetVote=null,myKids=[],staff=null,readOnly=false,trainerNames=[],helperNames=[]}) {
   const p = cl?.pri||"#16a34a";
   const isGameEv = ["heimspiel","auswarts","freundschaft","turnier"].includes(ev.type);
   const present = ev.present||{};
@@ -16504,14 +16558,19 @@ function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadlin
   // Spieler und Trainer getrennt zaehlen: fuer "mindestens 6 Spieler" ist die
   // Trainer-Selbstzusage uninteressant - sie steht separat darunter.
   const _tnLow  = new Set(trainerNames.map(n=>String(n).toLowerCase()));
+  const _hnLow  = new Set((helperNames||[]).map(n=>String(n).toLowerCase()));
   const isTrainerName = n=>_tnLow.has(String(n).toLowerCase());
+  // Trainer UND Helfer bleiben in allen Spieler-Listen und -Zahlen aussen vor:
+  // sie stehen in ihren eigenen Bereichen (Trainer-Zeile bzw. Helfer-Einsatz).
+  const isStaffName   = n=>isTrainerName(n)||_hnLow.has(String(n).toLowerCase());
+  const votedP  = voted.filter(([n])=>!isStaffName(n));
   const yesAll  = voted.filter(([,v])=>getVal(v)==="yes").map(([n])=>n).sort(byName);
   const noAll   = voted.filter(([,v])=>getVal(v)==="no" ).map(([n])=>n).sort(byName);
-  const yes     = yesAll.filter(n=>!isTrainerName(n));
-  const no      = noAll.filter(n=>!isTrainerName(n));
+  const yes     = yesAll.filter(n=>!isStaffName(n));
+  const no      = noAll.filter(n=>!isStaffName(n));
   const trYes   = yesAll.filter(isTrainerName);
   const trNo    = noAll.filter(isTrainerName);
-  const missing = teamPlayers.filter(n=>!(ev.votes||{})[n]).sort(byName);
+  const missing = teamPlayers.filter(n=>!(ev.votes||{})[n]&&!isStaffName(n)).sort(byName);
   const lateVoters = voted.filter(([n])=>isLate(n)).map(([n])=>n);
   // Late arrivals: yes votes with .late field
   const lateArrivals = voted.filter(([,v])=>typeof v==="object"&&v!==null&&v.val==="yes"&&v.late)
@@ -16678,10 +16737,10 @@ function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadlin
 
       {/* Die Einzel-Auflistung der Abstimmungen erscheint nur noch, wenn es KEINE
           Abhak-Liste darunter gibt - dort stehen die Stimmen ja schon dran. */}
-      {readOnly&&voted.length>0&&<>
-        <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:8}}>ABSTIMMUNGEN ({voted.length})</div>
+      {readOnly&&votedP.length>0&&<>
+        <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:8}}>ABSTIMMUNGEN ({votedP.length})</div>
         <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:14,maxHeight:"35dvh",overflowY:"auto"}}>
-          {[...voted].sort((a,b)=>{
+          {[...votedP].sort((a,b)=>{
             const va=getVal(a[1])==="yes"?0:1,vb=getVal(b[1])==="yes"?0:1;
             return va-vb;
           }).map(([name,rawVal])=>{
@@ -16782,11 +16841,7 @@ function SpickzettelModal({ev,data,cl,save,fire,onClose}){
   const offers=(ev.helperOffers||[]);
   const blocks=ev.trainingPlan?(ev.trainingPlan.sessions?.[0]?.blocks||[]):((data.trainings||[]).find(x=>x.id===ev.trainingId)?.blocks||[]);
   const mat=calcInventory(blocks);
-  const res=cl?.clubSettings?.resources||{};
   const others=(data.events||[]).filter(e=>e.id!==ev.id&&e.date===ev.date&&(e.trainingPlan||e.trainingId||e.type==="training"));
-  const setRes=(k,d)=>{ const nr={...res,[k]:Math.max(0,(Number(res[k])||0)+d)};
-    save({...data,clubs:(data.clubs||[]).map(c=>c.id===cl.id?{...c,clubSettings:{...(c.clubSettings||{}),resources:nr}}:c)}); };
-  const RES=[["torKlein","Kleine Tore"],["torMittel","Mittlere Tore"],["torGross","Große Tore"],["huetchen","Hütchen"],["leibchen","Leibchen"]];
   const Row=({l,v})=>(<div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:"#334155",padding:"3px 0"}}><span>{l}</span><b>{v}</b></div>);
   return (
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:1350,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
@@ -16810,7 +16865,7 @@ function SpickzettelModal({ev,data,cl,save,fire,onClose}){
           </div>
         )}
         {/* Aufbau in einer Zeile - Details stehen im Aufbau-Plan unter Orga */}
-        {(()=>{ const a=aufbauCalc(ev,data); const fertig=Object.keys(ev.setup?.done||{}).length; return (
+        {(()=>{ const a=aufbauCalc(ev,data,cl); const fertig=Object.keys(ev.setup?.done||{}).length; return (
           <div style={{background:"#fff7ed",border:"1.5px solid #fed7aa",borderRadius:12,padding:"11px 13px",marginBottom:10}}>
             <div style={{fontSize:10.5,fontWeight:800,color:"#c2410c",letterSpacing:.4,marginBottom:5}}>AUFBAU {fertig>0?`· ${fertig}/7 ERLEDIGT`:""}</div>
             <div style={{fontSize:12.5,color:"#9a3412",lineHeight:1.55}}>
@@ -16823,18 +16878,16 @@ function SpickzettelModal({ev,data,cl,save,fire,onClose}){
           {mat.length?mat.map((m,i)=><Row key={i} l={(m.color?m.color+"e ":"")+m.label} v={m.total+" "+(m.unit||"")}/>):
             <div style={{fontSize:12.5,color:"#166534"}}>Kein Material im Plan hinterlegt – Faustregel: 1 Ball pro Kind, 8–10 Hütchen, 1 Leibchen-Satz.</div>}
         </div>
-        <div style={{background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"11px 13px",marginBottom:10}}>
-          <div style={{fontSize:10.5,fontWeight:800,color:"#64748b",letterSpacing:.4,marginBottom:6}}>AM PLATZ VORHANDEN (für alle Teams)</div>
-          {RES.map(([k,l])=>(
-            <div key={k} style={{display:"flex",alignItems:"center",gap:8,padding:"3px 0"}}>
-              <span style={{flex:1,fontSize:13,color:"#334155"}}>{l}</span>
-              <button onClick={()=>setRes(k,-1)} style={{width:26,height:26,borderRadius:8,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:900,cursor:"pointer"}}>−</button>
-              <span style={{minWidth:22,textAlign:"center",fontWeight:900}}>{Number(res[k])||0}</span>
-              <button onClick={()=>setRes(k,1)} style={{width:26,height:26,borderRadius:8,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:900,cursor:"pointer"}}>+</button>
+        {(()=>{ const a=aufbauCalc(ev,data,cl); const gepflegt=Object.values(a.have||{}).some(v=>Number(v)>0);
+          return (
+            <div style={{background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"11px 13px",marginBottom:10}}>
+              <div style={{fontSize:10.5,fontWeight:800,color:"#64748b",letterSpacing:.4,marginBottom:6}}>MATERIAL DER MANNSCHAFT {a.indoor?"· HALLE":"· DRAUSSEN"}</div>
+              {gepflegt
+                ? RES_ITEMS.filter(r=>Number(a.have[r.k])>0).map(r=><Row key={r.k} l={`${r.icon} ${r.l}`} v={Number(a.have[r.k])||0}/>)
+                : <div style={{fontSize:12.5,color:"#64748b",lineHeight:1.5}}>Noch nicht hinterlegt. Einmalig unter <b>Mannschaft › 🧰 Material</b> eintragen – danach steht der Bestand bei jedem Termin hier.</div>}
+              <div style={{fontSize:10.5,color:"#94a3b8",marginTop:4}}>Einmal je Mannschaft gepflegt – getrennt für draußen und Halle.</div>
             </div>
-          ))}
-          <div style={{fontSize:10.5,color:"#94a3b8",marginTop:4}}>Einmal pflegen – gilt vereinsweit für alle Einheiten.</div>
-        </div>
+          ); })()}
         {others.length>0&&(
           <div style={{background:"#fff7ed",border:"1.5px solid #fed7aa",borderRadius:12,padding:"10px 13px",marginBottom:10}}>
             <div style={{fontSize:12.5,color:"#9a3412",fontWeight:700,lineHeight:1.5}}>⚠ Am selben Tag: {others.map(o=>o.title+(o.time?" ("+o.time+")":"")).join(", ")} – Material ggf. absprechen/teilen.</div>
@@ -17407,6 +17460,9 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
   const msToStart = start ? start.getTime() - now2 : 0;
   const dl = eventDeadline(ev);
   const msToDeadline = dl ? dl.getTime() - now2 : 0;
+  const Chip=({onClick,label,title,bg,col,br})=>(
+    <button onClick={onClick} title={title} style={{flex:"1 1 auto",minWidth:"46%",padding:"9px 10px",borderRadius:11,border:`1.5px solid ${br}`,background:bg,color:col,fontSize:12.5,fontWeight:800,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{label}</button>
+  );
   const BtnSm=({onClick,label,icon,bg,col})=>(
     <button onClick={onClick} style={{display:"flex",alignItems:"center",gap:5,padding:"6px 11px",borderRadius:9,border:"none",background:bg,color:col,fontSize:12,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit"}}>
       {icon&&<span style={{fontSize:14}}>{icon}</span>}{label}
@@ -17512,24 +17568,30 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
         );
       })()}
       {}
-      <div style={{display:"flex",gap:7,padding:"9px 12px 10px",borderTop:"1px solid #f1f5f9",alignItems:"center"}}>
-        <button onClick={onView} style={{flex:1.2,padding:"9px",borderRadius:10,border:"none",background:p,color:contrast(p),fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Ansehen</button>
-        {!helperId&&<button onClick={onEdit} style={{flex:1,padding:"9px",borderRadius:10,border:"1.5px solid #e2e8f0",background:"#fff",color:"#334155",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Bearbeiten</button>}
-        {helperId&&onSetup&&<button onClick={onSetup} title="Aufbau-Plan: Feldgröße, Tore, Material – Schritt für Schritt" style={{flex:1,padding:"9px",borderRadius:10,border:"1.5px solid #fed7aa",background:"#fff7ed",color:"#c2410c",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>🏗 Aufbau</button>}
-        {ev.type==="training"&&onPlan&&modTraining&&<button onClick={onPlan} title={planTitle?("Training: "+planTitle):"Noch kein Training hinterlegt (optional)"} style={{flex:1,padding:"9px",borderRadius:10,border:`1.5px solid ${planTitle?"#bbf7d0":"#c7d2fe"}`,background:planTitle?"#f0fdf4":"#eef2ff",color:planTitle?"#15803d":"#4f46e5",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{planTitle?"✓ Training":"+ Training"}</button>}
-        {onAttend&&!helperId&&<button onClick={onAttend} title="Anwesenheit erfassen: wer ist da, wer verspätet, wer fehlt" style={{width:38,height:35,borderRadius:10,border:"1.5px solid #bbf7d0",background:"#f0fdf4",color:"#15803d",fontWeight:900,fontSize:15,cursor:"pointer",fontFamily:"inherit",lineHeight:1}}>✅</button>}
-        <button onClick={()=>setMore(m=>!m)} aria-label="Weitere Aktionen" style={{width:38,height:35,borderRadius:10,border:`1.5px solid ${more?"#94a3b8":"#e2e8f0"}`,background:more?"#f1f5f9":"#fff",color:"#475569",fontWeight:900,fontSize:16,cursor:"pointer",fontFamily:"inherit",lineHeight:1}}>⋯</button>
+      {/* Aktionen: eine klare Haupt-Taste, darunter die Schnellzugriffe als
+          beschriftete Chips - dadurch ist auf einen Blick klar, was jeder Knopf tut. */}
+      <div style={{padding:"9px 12px 11px",borderTop:"1px solid #f1f5f9",display:"flex",flexDirection:"column",gap:7}}>
+        <div style={{display:"flex",gap:7}}>
+          <button onClick={onView} style={{flex:1,padding:"11px",borderRadius:12,border:"none",background:p,color:contrast(p),fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>Ansehen</button>
+          <button onClick={()=>setMore(m=>!m)} aria-label="Weitere Aktionen" title="Weitere Aktionen" style={{width:44,borderRadius:12,border:`1.5px solid ${more?"#94a3b8":"#e2e8f0"}`,background:more?"#f1f5f9":"#fff",color:"#475569",fontWeight:900,fontSize:17,cursor:"pointer",fontFamily:"inherit",lineHeight:1}}>⋯</button>
+        </div>
+        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+          {ev.type==="training"&&onPlan&&modTraining&&
+            <Chip onClick={onPlan} title={planTitle?("Training: "+planTitle):"Trainingsplan anlegen (optional)"}
+              label={planTitle?"📋 Training steht":"📋 Training planen"} bg={planTitle?"#f0fdf4":"#eef2ff"} col={planTitle?"#15803d":"#4f46e5"} br={planTitle?"#bbf7d0":"#c7d2fe"}/>}
+          {onSetup&&<Chip onClick={onSetup} title="Aufbau-Plan: Feldgröße, Tore, Material – Schritt für Schritt" label="🏗 Aufbau" bg="#fff7ed" col="#c2410c" br="#fed7aa"/>}
+          {onAttend&&!helperId&&<Chip onClick={onAttend} title="Wer ist da, wer verspätet, wer fehlt" label="✅ Anwesenheit" bg="#f0fdf4" col="#15803d" br="#bbf7d0"/>}
+          {!helperId&&<Chip onClick={onEdit} title="Termin bearbeiten" label="✏️ Bearbeiten" bg="#f8fafc" col="#475569" br="#e2e8f0"/>}
+        </div>
       </div>
       {more&&(
-        <div style={{display:"flex",gap:6,padding:"0 12px 10px",flexWrap:"wrap"}}>
-          {onAttend&&!helperId&&<BtnSm onClick={onAttend} label="✅ Anwesenheit erfassen" bg="#dcfce7" col="#15803d"/>}
-          {onSetup&&!helperId&&<BtnSm onClick={onSetup} label="🏗 Aufbau-Plan" bg="#fff7ed" col="#c2410c"/>}
+        <div style={{display:"flex",gap:6,padding:"0 12px 11px",flexWrap:"wrap"}}>
           {onBrief&&<BtnSm onClick={onBrief} label="📋 Spickzettel" bg="#eef2ff" col="#4f46e5"/>}
           {onRemind&&(ev.pt==="att"||!ev.pt)&&ev.date>=tod&&<BtnSm onClick={onRemind} label="🔔 Erinnern" bg="#e0f2fe" col="#0369a1"/>}
           {onSubReq&&ev.date>=tod&&<BtnSm onClick={onSubReq} label="🆘 Vertretung suchen" bg="#fff1f2" col="#be123c"/>}
           {ev.open&&<BtnSm onClick={onCopyLink} label="🔗 Link kopieren" bg="#ede9fe" col="#7c3aed"/>}
           {!helperId&&<BtnSm onClick={onReset} label="↺ Stimmen zurücksetzen" bg="#fff7ed" col="#d97706"/>}
-          {!helperId&&<BtnSm onClick={onDel} label="Löschen" bg="#fee2e2" col="#dc2626"/>}
+          {!helperId&&<BtnSm onClick={onDel} label="🗑 Löschen" bg="#fee2e2" col="#dc2626"/>}
         </div>
       )}
     </div>
@@ -19049,23 +19111,63 @@ function TournamentPublic({ eid, clubParam, onBack }){
 // ---------------------------------------------------------------
 const AUFBAU_STEP_M = 0.75;                        // ein grosser Schritt ~ 75 cm
 const paces = m => Math.max(1, Math.round(Number(m||0)/AUFBAU_STEP_M));
-// Masse je DFB-Spielform (gleiche Reihenfolge wie DFB_FORMATS)
-const AUFBAU_DIMS=[
-  {w:20,l:25,gps:1,goalW:1.2,goal:"Minitore (ca. 1,20 × 0,80 m)",perTeam:3,ball:"Größe 3",mid:false},
-  {w:25,l:35,gps:2,goalW:1.2,goal:"Minitore (ca. 1,20 × 0,80 m) – 2 pro Seite (Funino)",perTeam:3,ball:"Größe 3/4",mid:false},
-  {w:35,l:55,gps:1,goalW:5,goal:"Jugendtore 5 × 2 m",perTeam:7,ball:"Größe 4",mid:true},
-  {w:50,l:70,gps:1,goalW:5,goal:"Jugendtore 5 × 2 m",perTeam:9,ball:"Größe 4",mid:true},
-  {w:68,l:105,gps:1,goalW:7.32,goal:"Großtore 7,32 × 2,44 m",perTeam:11,ball:"Größe 5",mid:true},
-  {w:68,l:105,gps:1,goalW:7.32,goal:"Großtore 7,32 × 2,44 m",perTeam:11,ball:"Größe 5",mid:true},
+// Material-Katalog: einmal je Mannschaft gepflegt (drinnen/draussen getrennt),
+// von Aufbau-Plan und Spickzettel gemeinsam genutzt.
+const RES_ITEMS=[
+  {k:"torMini",  l:"Minitore (ca. 1,20 m)", icon:"🥅"},
+  {k:"torJugend",l:"Jugendtore (5 × 2 m)",  icon:"🥅"},
+  {k:"torGross", l:"Großtore (7,32 m)",     icon:"🥅"},
+  {k:"huetchen", l:"Hütchen",               icon:"🔶"},
+  {k:"teller",   l:"Markierungsteller",     icon:"🟠"},
+  {k:"leibchen", l:"Leibchen",              icon:"🦺"},
+  {k:"baelle",   l:"Bälle",                 icon:"⚽"},
+  {k:"stangen",  l:"Slalomstangen",         icon:"🚩"},
+  {k:"leiter",   l:"Koordinationsleiter",   icon:"🪜"},
 ];
+// Material einer Mannschaft fuer den jeweiligen Ort. Faellt auf die alten
+// vereinsweiten Werte zurueck, damit nichts verloren geht.
+const teamRes = (team,cl,indoor) => {
+  const r=(team&&team.resources)||{};
+  const cur=r[indoor?"in":"out"];
+  if(cur&&Object.keys(cur).length) return cur;
+  if(indoor) return {};
+  const old=(cl&&cl.clubSettings&&cl.clubSettings.resources)||{};
+  return { torMini:Number(old.torKlein)||0, torJugend:Number(old.torMittel)||0, torGross:Number(old.torGross)||0,
+           huetchen:Number(old.huetchen)||0, leibchen:Number(old.leibchen)||0 };
+};
+// Spielformen je Jugend. Jede Jugend hat mehrere echte Varianten - die
+// Trainingsform UND die Form, in der auch gespielt wird (z. B. F-Jugend 5:5
+// auf die grossen F-Jugend-Tore).
+const AUFBAU_FORMS=[
+  [ {id:"g33",  label:"3:3 Mini",     w:20,l:25,gps:1,goalW:1.2,goalKey:"torMini",  goal:"Minitore (ca. 1,20 × 0,80 m)", perTeam:3,ball:"Größe 3",mid:false},
+    {id:"gfun", label:"Funino 2×2 Tore", w:20,l:30,gps:2,goalW:1.2,goalKey:"torMini", goal:"Minitore – 2 pro Seite (Funino)", perTeam:3,ball:"Größe 3",mid:false} ],
+  [ {id:"ffun", label:"Funino 3:3",   w:25,l:35,gps:2,goalW:1.2,goalKey:"torMini",  goal:"Minitore – 2 pro Seite (Funino)", perTeam:3,ball:"Größe 3/4",mid:false},
+    {id:"f55",  label:"5:5 Spielbetrieb", w:30,l:40,gps:1,goalW:5,goalKey:"torJugend", goal:"F-Jugend-Tore 5 × 2 m", perTeam:5,ball:"Größe 4",mid:true},
+    {id:"f22",  label:"2:2 Turnierfeld", w:15,l:20,gps:1,goalW:1.2,goalKey:"torMini", goal:"Minitore (ca. 1,20 m)", perTeam:2,ball:"Größe 3",mid:false} ],
+  [ {id:"e77",  label:"7:7 Spielbetrieb", w:35,l:55,gps:1,goalW:5,goalKey:"torJugend", goal:"Jugendtore 5 × 2 m", perTeam:7,ball:"Größe 4",mid:true},
+    {id:"e44",  label:"4:4 Trainingsfeld", w:25,l:35,gps:1,goalW:1.2,goalKey:"torMini", goal:"Minitore (ca. 1,20 m)", perTeam:4,ball:"Größe 4",mid:false} ],
+  [ {id:"d99",  label:"9:9 Spielbetrieb", w:50,l:70,gps:1,goalW:5,goalKey:"torJugend", goal:"Jugendtore 5 × 2 m", perTeam:9,ball:"Größe 4",mid:true},
+    {id:"d55",  label:"5:5 Trainingsfeld", w:30,l:45,gps:1,goalW:5,goalKey:"torJugend", goal:"Jugendtore 5 × 2 m", perTeam:5,ball:"Größe 4",mid:true} ],
+  [ {id:"c11",  label:"11:11 Großfeld", w:68,l:105,gps:1,goalW:7.32,goalKey:"torGross", goal:"Großtore 7,32 × 2,44 m", perTeam:11,ball:"Größe 5",mid:true},
+    {id:"c77",  label:"7:7 Trainingsfeld", w:40,l:60,gps:1,goalW:5,goalKey:"torJugend", goal:"Jugendtore 5 × 2 m", perTeam:7,ball:"Größe 5",mid:true} ],
+  [ {id:"b11",  label:"11:11 Großfeld", w:68,l:105,gps:1,goalW:7.32,goalKey:"torGross", goal:"Großtore 7,32 × 2,44 m", perTeam:11,ball:"Größe 5",mid:true},
+    {id:"b88",  label:"8:8 Trainingsfeld", w:45,l:65,gps:1,goalW:7.32,goalKey:"torGross", goal:"Großtore 7,32 × 2,44 m", perTeam:8,ball:"Größe 5",mid:true} ],
+];
+// In der Halle wird immer klein gespielt - eigene Variante fuer drinnen.
+const AUFBAU_HALLE={id:"halle",label:"Hallenfeld",w:20,l:40,gps:1,goalW:3,goalKey:"torMini",goal:"Hallen-/Minitore (ca. 3 × 2 m)",perTeam:4,ball:"Filz-/Hallenball",mid:true};
+// Drinnen oder draussen? Ort raten, der Trainer kann im Aufbau-Plan umschalten.
+const aufbauIndoor = ev => ev?.setup?.venue ? ev.setup.venue==="in" : /halle|sporthalle|turnhalle|indoor/i.test(String(ev?.loc||""));
+
 // Alles, was fuer den Aufbau gebraucht wird - einmal berechnet, von der
 // Aufbaukarte und vom Spickzettel gemeinsam genutzt.
-const aufbauCalc = (ev,data) => {
+const aufbauCalc = (ev,data,cl) => {
   const team=(data.teams||[]).find(tm=>tm.id===ev.tid);
   const cat=team?.cat||team?.name||"";
   const fmt=cat?dfbFormatForCat(cat):null;
   const i=fmt?DFB_FORMATS.indexOf(fmt):-1;
-  const dim=AUFBAU_DIMS[i>=0?i:2];
+  const indoor=aufbauIndoor(ev);
+  const forms=[...(AUFBAU_FORMS[i>=0?i:2]||AUFBAU_FORMS[2]), AUFBAU_HALLE];
+  const dim=forms.find(f=>f.id===ev?.setup?.form) || (indoor?AUFBAU_HALLE:forms[0]);
   const vv=v=>typeof v==="object"&&v!==null?v.val:v;
   const kids=Object.values(ev.votes||{}).filter(v=>vv(v)==="yes"||vv(v)==="late").length;
   const groups=(ev.groups?.list||[]).length;
@@ -19074,11 +19176,11 @@ const aufbauCalc = (ev,data) => {
     ? Math.max(1, groups?Math.ceil(groups/2):Math.ceil((kids||perField)/perField))
     : 1;
   const fields=Math.max(1,Math.min(8, Number(ev.setup?.fields)||auto));
-  return { team, cat, fmt, dim, kids, groups, fields, auto,
-    goals: fields*dim.gps*2,
-    cones: fields*8,
-    bibs:  fields*dim.perTeam,
-    balls: Math.max(perField, kids||0),
+  const have=teamRes(team,cl,indoor);
+  const goals=fields*dim.gps*2, cones=fields*8, bibs=fields*dim.perTeam, balls=Math.max(perField,kids||0);
+  return { team, cat, fmt, dim, forms, indoor, kids, groups, fields, auto, have,
+    goals, cones, bibs, balls,
+    need: [ {k:dim.goalKey, n:goals}, {k:"huetchen", n:cones}, {k:"leibchen", n:bibs}, {k:"baelle", n:balls} ],
     minutes: 5+fields*5 };
 };
 
@@ -19124,7 +19226,7 @@ function PitchSketch({dim,fields}){
 
 function AufbauPlan({ ev, data, cl, user, isHelper, onPatch, fire }){
   const [open,setOpen]=useState(true);
-  const c=aufbauCalc(ev,data);
+  const c=aufbauCalc(ev,data,cl);
   const { dim, fmt, fields } = c;
   const setup=ev.setup||{};
   const done=setup.done||{};
@@ -19185,6 +19287,23 @@ function AufbauPlan({ ev, data, cl, user, isHelper, onPatch, fire }){
         <div style={{height:"100%",width:pct+"%",background:pct===100?"#16a34a":"#f59e0b",transition:"width .25s"}}/>
       </div>
       {open&&<>
+        {/* Ort und Spielform: die F-Jugend baut zum Spielen ein anderes Feld auf
+            als beim Funino-Training - beides ist hier waehlbar. */}
+        <div style={{display:"flex",gap:6,marginBottom:8}}>
+          {[["out","🌳 Draußen"],["in","🏠 Halle"]].map(([v,l])=>(
+            <button key={v} onClick={()=>onPatch({setup:{...setup,venue:v,form:"",fields,done}})}
+              style={{flex:1,padding:"8px",borderRadius:10,border:`1.5px solid ${(c.indoor?"in":"out")===v?"#16a34a":"#e2e8f0"}`,background:(c.indoor?"in":"out")===v?"#f0fdf4":"#fff",color:(c.indoor?"in":"out")===v?"#15803d":"#64748b",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
+          ))}
+        </div>
+        <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:5}}>WELCHES FELD WIRD GEBRAUCHT?</div>
+        <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
+          {c.forms.map(f=>(
+            <button key={f.id} onClick={()=>onPatch({setup:{...setup,form:f.id,fields,done}})}
+              style={{padding:"7px 11px",borderRadius:99,border:`1.5px solid ${dim.id===f.id?"#16a34a":"#e2e8f0"}`,background:dim.id===f.id?"#16a34a":"#fff",color:dim.id===f.id?"#fff":"#475569",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+              {f.label} <span style={{opacity:.75,fontWeight:600}}>· {f.l}×{f.w} m</span>
+            </button>
+          ))}
+        </div>
         {/* Steckbrief */}
         <div style={{background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:14,padding:"12px 12px 6px",marginBottom:10}}>
           <div style={{fontSize:11,fontWeight:800,color:"#166534",letterSpacing:.4,marginBottom:2}}>
@@ -19200,6 +19319,35 @@ function AufbauPlan({ ev, data, cl, user, isHelper, onPatch, fire }){
             <b>{dim.goal}</b> · Feld {dim.l} × {dim.w} m (≈ {paces(dim.l)} × {paces(dim.w)} große Schritte)
           </div>
         </div>
+        {/* Ist das Material da? Abgleich mit dem Bestand der Mannschaft */}
+        {(()=>{
+          const rows=c.need.map(n=>({...n, item:RES_ITEMS.find(r=>r.k===n.k), have:Number(c.have[n.k])||0}))
+                           .filter(r=>r.item);
+          const gepflegt=Object.values(c.have||{}).some(v=>Number(v)>0);
+          const fehlt=rows.filter(r=>gepflegt&&r.have<r.n);
+          return (
+            <div style={{background:fehlt.length?"#fff7ed":"#f8fafc",border:`1.5px solid ${fehlt.length?"#fed7aa":"#e2e8f0"}`,borderRadius:12,padding:"10px 12px",marginBottom:10}}>
+              <div style={{fontSize:10.5,fontWeight:800,color:fehlt.length?"#c2410c":"#64748b",letterSpacing:.4,marginBottom:6}}>
+                GEBRAUCHT / VORHANDEN {c.indoor?"· HALLE":"· DRAUSSEN"}
+              </div>
+              {rows.map(r=>(
+                <div key={r.k} style={{display:"flex",alignItems:"center",gap:8,fontSize:12.5,padding:"2px 0"}}>
+                  <span style={{flex:1,color:"#334155"}}>{r.item.icon} {r.item.l}</span>
+                  <b style={{color:"#0f172a"}}>{r.n}</b>
+                  <span style={{color:"#94a3b8"}}>/</span>
+                  <span style={{fontWeight:700,color:!gepflegt?"#94a3b8":r.have<r.n?"#dc2626":"#15803d"}}>{gepflegt?r.have:"?"}</span>
+                </div>
+              ))}
+              <div style={{fontSize:11,color:fehlt.length?"#9a3412":"#94a3b8",marginTop:5,lineHeight:1.5}}>
+                {!gepflegt
+                  ? "Bestand noch nicht gepflegt – einmalig unter Mannschaft › 🧰 Material eintragen, dann rechnet der Plan automatisch mit."
+                  : fehlt.length
+                    ? `Es fehlt: ${fehlt.map(r=>`${r.n-r.have}× ${r.item.l}`).join(", ")} – ausleihen oder Felder reduzieren.`
+                    : "Alles vorhanden ✓ – Material ist einmal je Mannschaft hinterlegt (drinnen/draußen getrennt)."}
+              </div>
+            </div>
+          );
+        })()}
         {/* Anzahl Felder */}
         <div style={{display:"flex",alignItems:"center",gap:8,background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"9px 12px",marginBottom:10}}>
           <div style={{flex:1,minWidth:0}}>

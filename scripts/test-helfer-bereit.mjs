@@ -76,7 +76,7 @@ if(b.includes("Ansehen")) ok("Helfer sieht die bereits angelegten Termine"); els
 // Auf den Knopf-Untertitel pruefen - "Neuen Termin anlegen" stand frueher
 // auch im Erklaertext (der fuer Helfer jetzt durch einen eigenen ersetzt ist).
 if(!b.includes("Schritt-für-Schritt Assistent")) ok("Helfer kann keine Termine anlegen"); else fail("Termin-Anlage beim Helfer sichtbar");
-if(b.includes("🙋 Deine Einsätze")) ok("Helfer bekommt einen passenden Einstiegstext"); else fail("Helfer-Einstiegstext fehlt");
+if(!b.includes("🙋 Deine Einsätze")&&!b.includes("Plane Trainings, Spiele")) ok("Helfer bekommt keinen unnoetigen Erklaerkasten"); else fail("Erklaerkasten beim Helfer noch da");
 if(!b.includes("Spielplan von fussball.de importieren")) ok("Helfer sieht keinen Spielplan-Import"); else fail("Import beim Helfer sichtbar");
 if(!b.includes("Zu erledigen")) ok("Helfer sieht keine Trainer-Aufgaben (Skills, No-Shows)"); else fail("Todo-Liste beim Helfer sichtbar");
 if(!/Saison/.test(b.split("Termine")[0]||"")) ok("Helfer hat keine Saison-Auswahl im Kopfbereich"); else fail("Saison-Knopf beim Helfer sichtbar");
