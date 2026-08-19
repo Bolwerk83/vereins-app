@@ -19,6 +19,19 @@ export const contrast = hex => { const r=parseInt(hex.slice(1,3),16),g=parseInt(
 // ungueltiges Hex (z. B. "#-6...") und der Browser verwirft die Farbe.
 export const mix = (hex,p) => { let r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16); const m=c=>Math.min(255,Math.max(0,Math.floor(p>=0?c+(255-c)*(p/100):c*(1+p/100)))); return `#${m(r).toString(16).padStart(2,"0")}${m(g).toString(16).padStart(2,"0")}${m(b).toString(16).padStart(2,"0")}`; };
 
+// Farbe so weit abdunkeln, bis sie auf dem Untergrund gut lesbar ist (4.5:1).
+// So bleibt die Vereinsfarbe erkennbar, Text wird aber nicht blass.
+export const readable = (hex,bg="#ffffff") => {
+  try{
+    const L=h=>{ const c=[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)/255)
+      .map(v=>v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4)); return 0.2126*c[0]+0.7152*c[1]+0.0722*c[2]; };
+    const K=(a,b)=>{ const l1=L(a),l2=L(b); return (Math.max(l1,l2)+0.05)/(Math.min(l1,l2)+0.05); };
+    let c=hex, i=0;
+    while(K(c,bg)<4.5 && i++<14) c=mix(c,-12);
+    return c;
+  }catch{ return hex; }
+};
+
 // ---- Passwort-Hashing (synchron, auch von SuperAdmin/Storage genutzt) ----
 // Synchrone SHA-256-Implementierung (reines JS, kein async nötig – ersetzt 15+ synchrone Aufrufe ohne Umbau)
 export const _sha256 = (ascii) => {

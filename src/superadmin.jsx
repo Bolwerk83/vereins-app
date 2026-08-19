@@ -488,7 +488,7 @@ function SuperAdminOrphans({ data }) {
           </div>
           <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:10}}>
             {Object.entries(x.counts).map(([k,n])=>(
-              <span key={k} style={{fontSize:11,fontWeight:700,color:"#94a3b8",background:"#0f172a",border:"1px solid #334155",borderRadius:7,padding:"3px 8px"}}>{k}: {n}</span>
+              <span key={k} style={{fontSize:11,fontWeight:700,color:"#64748b",background:"#0f172a",border:"1px solid #334155",borderRadius:7,padding:"3px 8px"}}>{k}: {n}</span>
             ))}
           </div>
         </div>
@@ -2486,7 +2486,7 @@ function SuperAdminGeoAnalytics() {
       const max=rows[0][1]||1;
       return (
         <div style={{marginBottom:14}}>
-          <div style={{fontSize:11,fontWeight:800,color:"#94a3b8",letterSpacing:.5,marginBottom:6}}>{title}</div>
+          <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:6}}>{title}</div>
           {rows.map(([k,n])=>(
             <div key={k} style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
               <div style={{flex:1,minWidth:0,fontSize:12,color:"#e2e8f0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{fmt?fmt(k):k}</div>
@@ -2503,7 +2503,7 @@ function SuperAdminGeoAnalytics() {
       <div style={{background:"#1e293b",border:"1px solid #334155",borderRadius:14,padding:"16px",marginBottom:18}}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
           <div style={{flex:1,fontWeight:800,color:"#fff",fontSize:14}}>☁️ Vereinsweite Statistik</div>
-          <button onClick={loadCloud} style={{padding:"6px 12px",borderRadius:9,border:"1px solid #334155",background:"transparent",color:"#94a3b8",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>Neu laden</button>
+          <button onClick={loadCloud} style={{padding:"6px 12px",borderRadius:9,border:"1px solid #334155",background:"transparent",color:"#64748b",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>Neu laden</button>
         </div>
         <div style={{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap"}}>
           {[["Gerät-Tage",deviceDays],["Tage mit Nutzung",uniqueDays],["Werbeklicks gesamt",adTotal]].map(([l,v])=>(

@@ -4836,7 +4836,7 @@ export function SpielzugDetail({ sz, cl, onUse, onClose, onShow }){
         <div style={{display:"flex",justifyContent:"center",marginBottom:10}}><div style={{width:44,height:4,borderRadius:99,background:"#e2e8f0"}}/></div>
         <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
           <span style={{fontSize:11,fontWeight:800,color:c.col,background:c.col+"15",borderRadius:99,padding:"3px 9px"}}>{c.icon} {c.label}</span>
-          <span style={{fontSize:11,color:"#94a3b8",fontWeight:700}}>{(sz.ages||[]).join(" · ")}</span>
+          <span style={{fontSize:11,color:"#64748b",fontWeight:700}}>{(sz.ages||[]).join(" · ")}</span>
         </div>
         <div style={{fontWeight:900,fontSize:20,color:"#0f172a",marginBottom:2}}>{sz.name}</div>
         <div style={{display:"inline-block",fontSize:15,fontWeight:900,color:"#fff",background:c.col,borderRadius:10,padding:"5px 12px",marginBottom:10}}>📣 „{sz.ruf}“</div>
@@ -4870,7 +4870,7 @@ export function SpielzugShow({ sz, onClose }){
   const c=catOfSpielzug(sz.cat);
   return (
     <div style={{position:"fixed",inset:0,background:"#0f172a",zIndex:1400,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"18px"}}>
-      <div style={{fontSize:13,fontWeight:800,color:"#94a3b8",marginBottom:4}}>{c.icon} {c.label}</div>
+      <div style={{fontSize:13,fontWeight:800,color:"#64748b",marginBottom:4}}>{c.icon} {c.label}</div>
       <div style={{fontSize:26,fontWeight:900,color:"#fff",textAlign:"center",lineHeight:1.15}}>{sz.name}</div>
       <div style={{fontSize:19,fontWeight:900,color:c.col,margin:"6px 0 12px"}}>„{sz.ruf}“</div>
       <div style={{width:"100%",maxWidth:420}}><SpielzugAnim sz={sz} color={c.col} width={420} auto/></div>

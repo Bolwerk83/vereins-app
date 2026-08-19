@@ -7,7 +7,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { LANG_KEY, T, useT } from "./i18n.jsx";
 import { getConfig, setConfig, DEFAULT_CFG, sb, MULTI_TENANT } from "./storage.js";
-import { ACOLORS, acol, inits, contrast, mix, hashPw, checkPw } from "./util.js";
+import { readable, ACOLORS, acol, inits, contrast, mix, hashPw, checkPw } from "./util.js";
 
 export const LANG_SWITCHER_ENABLED = true;
 // Sprachwahl als Dropdown (5 Sprachen). Natives <select>, damit es auf dem
@@ -449,7 +449,7 @@ export function OnlineStatus() {
   if(online && !pending) return null;
   const offline=!online;
   return (
-    <div style={{position:"fixed",top:0,left:0,right:0,zIndex:9999,background:offline?"#dc2626":"#d97706",color:"#fff",
+    <div style={{position:"fixed",top:0,left:0,right:0,zIndex:9999,background:offline?"#b91c1c":"#b45309",color:"#fff",
       textAlign:"center",fontSize:12,fontWeight:700,padding:"6px"}}>
       {offline?"📴 Offline – Änderungen werden auf dem Gerät gesichert und automatisch nachgetragen":"📶 Verbindung wieder da – Änderungen werden nachgetragen …"}
     </div>
@@ -487,7 +487,8 @@ export function Av({name,sz=32,border=true}) {
   return <div style={{width:sz,height:sz,borderRadius:"50%",background:acol(name),color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:sz*.36,fontWeight:800,border:border?"2px solid rgba(255,255,255,.7)":"none",flexShrink:0,boxShadow:"0 1px 4px rgba(0,0,0,.15)"}}>{inits(name)}</div>;
 }
 export function Tag({c="#64748b",bg,ch,sm}) {
-  return <span style={{background:bg||(c+"20"),color:c,borderRadius:99,padding:sm?"2px 7px":"3px 10px",fontSize:sm?10:12,fontWeight:700,display:"inline-flex",alignItems:"center",whiteSpace:"nowrap"}}>{ch}</span>;
+  const _bg=bg||"#ffffff";
+  return <span style={{background:bg||(c+"20"),color:readable(c,_bg),borderRadius:99,padding:sm?"2px 7px":"3px 10px",fontSize:sm?10:12,fontWeight:700,display:"inline-flex",alignItems:"center",whiteSpace:"nowrap"}}>{ch}</span>;
 }
 export function Toast({msg}) {
   return msg?<div style={{position:"fixed",bottom:30,left:"50%",transform:"translateX(-50%)",background:"#0f172a",color:"#fff",borderRadius:99,padding:"11px 22px",fontSize:14,fontWeight:700,boxShadow:"0 8px 32px rgba(0,0,0,.35)",animation:"toast .26s ease",zIndex:9999,whiteSpace:"nowrap",pointerEvents:"none"}}>{msg}</div>:null;
@@ -689,7 +690,7 @@ export function ClubHeader({cl, sub, right, hide=false}) {
   </div>;
 }
 export function Divider({label,light}) {
-  return <div style={{display:"flex",alignItems:"center",gap:10,margin:"14px 0 10px"}}><div style={{flex:1,height:1,background:"#e2e8f0"}}/><span style={{fontSize:11,fontWeight:800,color:light?"#94a3b8":"#64748b",whiteSpace:"nowrap"}}>{label}</span><div style={{flex:1,height:1,background:"#e2e8f0"}}/></div>;
+  return <div style={{display:"flex",alignItems:"center",gap:10,margin:"14px 0 10px"}}><div style={{flex:1,height:1,background:"#e2e8f0"}}/><span style={{fontSize:11,fontWeight:800,color:light?"#64748b":"#475569",whiteSpace:"nowrap"}}>{label}</span><div style={{flex:1,height:1,background:"#e2e8f0"}}/></div>;
 }
 
 // Übersetztes Dimensions-Label (Skill-Achse); Datenschlüssel bleibt deutsch.
