@@ -2399,7 +2399,7 @@ function BottomNav({ tab, setTab, isAdmin, isHelper, isParent=false, parentStats
     { id:"events",  label:tr("tabEvents"),  icon:"K", hidden: helperOnlyKasse },
     { id:"treasury",label:tr("navTreasury"), icon:"€", hidden: !(isHelper&&helperKasse) },
     { id:"team",    label:tr("navTeam"),     icon:"P", hidden: isHelper },
-    { id:"taktik",  label:"Taktik",           icon:"TK", hidden: isHelper||mods.taktik===false },
+    { id:"taktik",  label:tr("subTactics"),   icon:"TK", hidden: isHelper||mods.taktik===false },
     { id:"fields",  label:tr("tabFields"),    icon:"F", hidden: isHelper||!feat("fields_booking")||!clubFeat("mod_fields") },
     { id:"chat",    label:tr("tabChat"),     icon:"C", badge: unread, hidden: !feat("chat_team")||helperOnlyKasse },
     { id:"more",    label:tr("navMore"),     icon:"=", badge: inboxUnread, hidden: helperOnlyKasse },
@@ -15114,6 +15114,9 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const helperKasse   = isHelper && !!meHelper?.roles?.kasse;
   const helperEinsatz = isHelper ? (meHelper?.roles?.einsatz!==false) : true;
   const helperOnlyKasse = helperKasse && !helperEinsatz;
+  // Wer NUR Kassenhelfer ist, startet direkt in der Kasse - die Terminliste
+  // (inkl. Aufbau) gehoert nicht zu seiner Aufgabe.
+  useEffect(()=>{ if(helperOnlyKasse&&tab==="events") setTab("treasury"); },[helperOnlyKasse,tab]);
   const [helperTid,setHelperTid]=useState(null);   // Jugend-Filter fuer Helfer mit mehreren Teams
   const [showRueck,setShowRueck]=useState(false);  // Kachel "Rueckmeldungen": Uebersicht je Termin
   const [trainerWelcomeOpen, setTrainerWelcomeOpen] = useState(()=>!!(meTrainer && meTrainer.onboarded!==true));
@@ -15307,13 +15310,13 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               const hasPlan=seasons.some(s=>s.status==="planning");
               return (
                 <button onClick={()=>setShowSeasonModal(true)}
-                  style={{display:"flex",alignItems:"center",gap:5,background:"rgba(255,255,255,.12)",border:hasPlan?"1.5px solid rgba(255,255,255,.5)":"none",borderRadius:11,padding:"6px 11px",color:"rgba(255,255,255,.85)",fontSize:12,fontWeight:700,cursor:"pointer",position:"relative"}}>
+                  style={{display:"flex",alignItems:"center",gap:5,background:"rgba(255,255,255,.12)",border:hasPlan?"1.5px solid rgba(255,255,255,.5)":"none",borderRadius:11,padding:"9px 12px",minHeight:38,color:"rgba(255,255,255,.85)",fontSize:12.5,fontWeight:700,cursor:"pointer",position:"relative"}}>
                   {hasPlan&&<span style={{position:"absolute",top:-3,right:-3,width:8,height:8,borderRadius:"50%",background:"#fbbf24",border:"1.5px solid #fff"}}/>}
                    {seasonLbl(curSeason?.label)||"Saison"}
                 </button>
               );
             })()}
-            <button onClick={onLogout} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"6px 14px",color:"rgba(255,255,255,.7)",fontSize:13,fontWeight:700,cursor:"pointer"}}>Logout</button>
+            <button onClick={onLogout} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"9px 14px",minHeight:38,color:"rgba(255,255,255,.7)",fontSize:13,fontWeight:700,cursor:"pointer"}}>Logout</button>
           </div>
         }/>
       {showSeasonModal&&<SeasonModal data={local} save={d=>{save(d);}} fire={fire} cl={myClub} myTids={myTids} onClose={()=>setShowSeasonModal(false)}/>}
@@ -17633,8 +17636,8 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
           <span style={{fontSize:11,fontWeight:700,color:"#64748b"}}>Ich:</span>
           <button onClick={()=>onSelfVote(ev.id,"yes")} disabled={votingLocked}
             title={votingLocked?"Anmeldung geschlossen":""}
-            style={{flex:1,padding:"7px",borderRadius:9,border:`1.5px solid ${myVote==="yes"?"#16a34a":"#e2e8f0"}`,background:myVote==="yes"?"#16a34a":(votingLocked?"#f1f5f9":"#fff"),color:myVote==="yes"?"#fff":(votingLocked?"#cbd5e1":"#475569"),fontWeight:800,fontSize:12.5,cursor:votingLocked?"not-allowed":"pointer",fontFamily:"inherit",opacity:votingLocked?.6:1}}>✓ Bin dabei</button>
-          <button onClick={()=>onSelfVote(ev.id,"no")} style={{flex:1,padding:"7px",borderRadius:9,border:`1.5px solid ${myVote==="no"?"#dc2626":"#e2e8f0"}`,background:myVote==="no"?"#dc2626":"#fff",color:myVote==="no"?"#fff":"#475569",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{votingLocked?"✕ Späte Absage":"✕ Sage ab"}</button>
+            style={{flex:1,padding:"11px 7px",minHeight:42,borderRadius:10,border:`1.5px solid ${myVote==="yes"?"#16a34a":"#e2e8f0"}`,background:myVote==="yes"?"#16a34a":(votingLocked?"#f1f5f9":"#fff"),color:myVote==="yes"?"#fff":(votingLocked?"#cbd5e1":"#475569"),fontWeight:800,fontSize:12.5,cursor:votingLocked?"not-allowed":"pointer",fontFamily:"inherit",opacity:votingLocked?.6:1}}>✓ Bin dabei</button>
+          <button onClick={()=>onSelfVote(ev.id,"no")} style={{flex:1,padding:"11px 7px",minHeight:42,borderRadius:10,border:`1.5px solid ${myVote==="no"?"#dc2626":"#e2e8f0"}`,background:myVote==="no"?"#dc2626":"#fff",color:myVote==="no"?"#fff":"#475569",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{votingLocked?"✕ Späte Absage":"✕ Sage ab"}</button>
         </div>
       )}
       {/* Helfer: Ein-Tipp-Zusage direkt auf der Karte - wie die Schnellwahl der
@@ -17654,10 +17657,10 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
           <div style={{display:"flex",gap:6,padding:"4px 12px 8px",alignItems:"center"}}>
             <span style={{fontSize:11,fontWeight:700,color:"#64748b"}}>Ich:</span>
             {idx<0
-              ? <button onClick={()=>onHelperQuick(ev)} style={{flex:1,padding:"7px",borderRadius:9,border:"1.5px solid #d97706",background:"#fffbeb",color:"#b45309",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{offen?"🙋 Ich helfe!":"🙋 Ich kann helfen"}</button>
+              ? <button onClick={()=>onHelperQuick(ev)} style={{flex:1,padding:"11px 7px",minHeight:42,borderRadius:10,border:"1.5px solid #d97706",background:"#fffbeb",color:"#b45309",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{offen?"🙋 Ich helfe!":"🙋 Ich kann helfen"}</button>
               : <>
-                  <span style={{flex:1,padding:"7px 9px",borderRadius:9,background:"#16a34a",color:"#fff",fontWeight:800,fontSize:12.5,textAlign:"center"}}>{status}</span>
-                  <button onClick={()=>onHelperQuick(ev)} style={{padding:"7px 11px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>Doch nicht</button>
+                  <span style={{flex:1,padding:"11px 9px",minHeight:42,boxSizing:"border-box",borderRadius:10,background:"#16a34a",color:"#fff",fontWeight:800,fontSize:13,textAlign:"center"}}>{status}</span>
+                  <button onClick={()=>onHelperQuick(ev)} style={{padding:"11px",minHeight:42,borderRadius:10,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>Doch nicht</button>
                 </>}
           </div>
         );

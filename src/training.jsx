@@ -756,7 +756,8 @@ export function buildDrillAnim(el, meta){
     const flee = players.filter(p=>p!==c);
     const fleers = flee.length?flee:players;
     const cx0=c.x, cy0=c.y;
-    const posAt=(k)=>{
+    const posAt=(k0)=>{
+      const k=Math.min(0.9999,Math.max(0,Number(k0)||0));
       const moved=new Map();
       // Fluechtende laufen in Schleifen, leicht vom Faenger weggebogen.
       const fp=fleers.map((p,i)=>{
@@ -782,8 +783,10 @@ export function buildDrillAnim(el, meta){
     segs.forEach(p=>{ if(used.has(p))return; const isHead=!segs.some(q=>q!==p&&near(q.x2,q.y2,p.x1,p.y1)); if(!isHead)return; const ch=[]; let cur=p,g=0; while(cur&&!used.has(cur)&&g++<24){ used.add(cur); ch.push(cur); cur=segs.find(q=>!used.has(q)&&near(q.x1,q.y1,cur.x2,cur.y2)); } chains.push(ch); });
     segs.forEach(p=>{ if(!used.has(p)){ used.add(p); chains.push([p]); } });
     const runAssign=runs.map(r=>{ let best=null,bd=10; players.forEach(pl=>{const d=Math.hypot(pl.x-r.x1,pl.y-r.y1); if(d<bd){bd=d;best=pl;}}); return {run:r,player:best}; });
-    const posAt=(k)=>{
-      const balls=chains.map(ch=>{ const N=ch.length||1; const seg=Math.min(N-1,Math.floor(k*N)); const lp=(k*N)-seg; const a=ch[seg]; return {x:a.x1+(a.x2-a.x1)*lp,y:a.y1+(a.y2-a.y1)*lp}; });
+    const posAt=(k0)=>{
+      const k=Math.min(0.9999,Math.max(0,Number(k0)||0));
+      const balls=chains.map(ch=>{ const N=ch.length||1; const seg=Math.min(N-1,Math.max(0,Math.floor(k*N))); const lp=(k*N)-seg; const a=ch[seg];
+        if(!a) return null; return {x:a.x1+(a.x2-a.x1)*lp,y:a.y1+(a.y2-a.y1)*lp}; }).filter(Boolean);
       const moved=new Map();
       runAssign.forEach(({run,player})=>{ if(!player)return; const sf=run.pace===3?2:run.pace===1?0.7:run.pace===2?1.35:1; const e=ease(Math.min(1,k*sf)); moved.set(player,{x:run.x1+(run.x2-run.x1)*e,y:run.y1+(run.y2-run.y1)*e}); });
       return {balls,moved};
@@ -793,11 +796,12 @@ export function buildDrillAnim(el, meta){
   // 2) Keine Pfeile: kindgerechte Bewegung. Spieler laufen in kleinen Schleifen;
   //    ein Ball wandert nur dann reihum, wenn die Uebung ueberhaupt einen Ball hat.
   if(players.length>=2){
-    const posAt=(k)=>{
+    const posAt=(k0)=>{
+      const k=Math.min(0.9999,Math.max(0,Number(k0)||0));
       const moved=new Map();
       players.forEach((p,i)=>{ const a=k*Math.PI*2+i*1.3; moved.set(p,{x:p.x+Math.cos(a)*6,y:p.y+Math.sin(a)*4}); });
       if(!hasBall) return {balls:[],moved};
-      const N=players.length; const seg=Math.min(N-1,Math.floor(k*N)); const lp=(k*N)-seg; const a=players[seg], b=players[(seg+1)%N];
+      const N=players.length; const seg=Math.min(N-1,Math.max(0,Math.floor(k*N))); const lp=(k*N)-seg; const a=players[seg]||players[0], b=players[(seg+1)%N]||players[0];
       return {balls:[{x:a.x+(b.x-a.x)*lp,y:a.y+(b.y-a.y)*lp}],moved};
     };
     return {hasAnim:true,posAt};
@@ -4730,7 +4734,7 @@ export function DrillInfoModal({ drill, t, onClose }){
   const playDrill=()=>{
     if(pd){ setPd(false); setAnimK(null); if(dref.current)cancelAnimationFrame(dref.current); return; }
     setPd(true); const DUR= pace.level===3?2000 : pace.level===1?4400 : 3200; const t0=performance.now();
-    const loop=(tt)=>{ const k=((tt-t0)/DUR)%1; setAnimK(k); dref.current=requestAnimationFrame(loop); };
+    const loop=(tt)=>{ const k=(Math.max(0,tt-t0)/DUR)%1; setAnimK(k); dref.current=requestAnimationFrame(loop); };
     dref.current=requestAnimationFrame(loop);
   };
   const drillEl = (pd&&animK!=null) ? (()=>{ const {balls,moved}=anim.posAt(animK);
@@ -4803,7 +4807,7 @@ export function SpielzugAnim({ sz, color="#16a34a", width=330, auto=false }){
   useEffect(()=>{
     if(!play){ if(ref.current) cancelAnimationFrame(ref.current); return; }
     const DUR=3200, t0=performance.now();
-    const loop=tt=>{ setK(((tt-t0)/DUR)%1); ref.current=requestAnimationFrame(loop); };
+    const loop=tt=>{ setK((Math.max(0,tt-t0)/DUR)%1); ref.current=requestAnimationFrame(loop); };
     ref.current=requestAnimationFrame(loop);
     return ()=>{ if(ref.current) cancelAnimationFrame(ref.current); };
   },[play,sz?.id]);

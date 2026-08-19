@@ -58,10 +58,28 @@ if(/SO LÄUFT ES AB/.test(b)) ok("Ablauf in Schritten erklärt"); else fail("Abl
 if(/Warum das wirkt/.test(b)) ok("Erklärung, warum es den Gegner überrascht"); else fail("Warum-Block fehlt");
 if(/Beispiel:/.test(b)&&/F-Jugend/.test(b)) ok("Beispiel aus dem Spiel (F-Jugend)"); else fail("Beispiel fehlt");
 if(/▶ Spielzug abspielen/.test(b)) ok("Spielzug lässt sich abspielen"); else fail("Abspielen fehlt");
-// Wirklich abspielen - hier ist frueher der Absturz aufgetreten
+// Wirklich abspielen - hier ist frueher der Absturz aufgetreten (Frame-Zeit)
 await clickTxt("Spielzug abspielen"); await page.waitForTimeout(1600);
 b=await body();
 if(!/schiefgelaufen/.test(b)&&/⏸ Stopp/.test(b)) ok("Animation läuft ohne Absturz"); else fail("Absturz beim Abspielen: "+b.slice(0,160).replace(/\n/g," | "));
+// Mehrere Spielzuege nacheinander abspielen - der Fehler trat nur manchmal auf
+{ await clickTxt("^Schließen$"); await page.waitForTimeout(400);
+  await page.locator('input[placeholder*="Spielzug suchen"]').fill(""); await page.waitForTimeout(500);
+  const namen=await page.evaluate(()=>[...document.querySelectorAll("button")].filter(x=>/„.+!“/.test(x.innerText)).slice(0,8).map(x=>x.innerText.split("\n")[0]));
+  let crash=null;
+  for(const n of namen){
+    await page.evaluate(x=>{ const b2=[...document.querySelectorAll("button")].find(y=>y.innerText.split("\n")[0]===x); b2&&b2.click(); },n);
+    await page.waitForTimeout(450);
+    await clickTxt("Spielzug abspielen"); await page.waitForTimeout(1100);
+    const t=await body();
+    if(/schiefgelaufen/.test(t)){ crash=n; break; }
+    await clickTxt("^Schließen$"); await page.waitForTimeout(350);
+  }
+  if(!crash) ok(namen.length+" Spielzüge nacheinander abgespielt – kein Absturz"); else fail("Absturz bei „"+crash+"“");
+  await clickTxt("^Schließen$"); await page.waitForTimeout(400);
+  await page.locator('input[placeholder*="Spielzug suchen"]').fill("hinterlaufen"); await page.waitForTimeout(500);
+  await clickTxt("Hinterlaufen"); await page.waitForTimeout(700);
+  b=await body(); }
 const svgs=await page.evaluate(()=>[...document.querySelectorAll("svg")].length);
 if(svgs>0) ok("Gezeichnete Spielzug-Skizze vorhanden"); else fail("Skizze fehlt");
 // Vollbild fuer die Kinder
