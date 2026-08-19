@@ -137,6 +137,29 @@ if(await clickTxt("Auf die Taktiktafel legen")){ await page.waitForTimeout(1200)
   if(/liegt auf der Tafel|Spielzug übernommen/.test(b)) ok("Spielzug landet auf der Taktiktafel"); else fail("Übernahme nicht bestätigt: "+b.slice(0,200).replace(/\n/g," | "));
 } else fail("Knopf „Auf die Taktiktafel legen“ fehlt");
 
+// ===== 4b) Spielzug direkt im Vollbild ("Taktik zeigen") wählen =====
+await page.keyboard.press("Escape").catch(()=>{});
+await clickTxt("Vorführen"); await page.waitForTimeout(1200);
+b=await body();
+if(/🎬 /.test(b)&&/Vollbild verlassen|⚡ Spielzug/.test(b+await page.evaluate(()=>[...document.querySelectorAll("button")].map(x=>x.getAttribute("aria-label")||"").join(" ")))) ok("Vollbild „Taktik zeigen“ geöffnet"); else fail("Vollbild nicht geöffnet: "+b.slice(0,150).replace(/\n/g," | "));
+if(/⚡ Spielzug/.test(b)) ok("Im Vollbild führt ein Knopf direkt zu den Spielzügen"); else fail("Kein Zugang zu den Spielzügen im Vollbild");
+await clickTxt("⚡ Spielzug"); await page.waitForTimeout(900);
+{ const feld=await page.locator('input[placeholder*="Spielzug suchen"]').count();
+  const sichtbar=feld>0&&await page.locator('input[placeholder*="Spielzug suchen"]').last().isVisible().catch(()=>false);
+  if(sichtbar) ok("Bibliothek öffnet sich über dem Vollbild"); else fail("Bibliothek im Vollbild nicht sichtbar (Suchfeld: "+feld+")"); }
+await page.locator('input[placeholder*="Spielzug suchen"]').last().fill("überlaufen"); await page.waitForTimeout(700);
+b=await body();
+{ const n=await page.evaluate(()=>[...document.querySelectorAll("button")].filter(x=>/„.+!“/.test(x.innerText)).map(x=>x.innerText.replace(/\n/g," ").slice(0,40)));
+  if(n.some(x=>/Überlappen|Hinterlaufen/.test(x))) ok("Suche mit dem Trainer-Wort „überlaufen“ findet: "+n.slice(0,3).join(", ")); else fail("Suche findet nichts: "+JSON.stringify(n.slice(0,4))); }
+await page.evaluate(()=>{ const x=[...document.querySelectorAll("button")].find(y=>/„.+!“/.test(y.innerText)&&/Überlappen|Hinterlaufen/.test(y.innerText)); x&&x.click(); });
+await page.waitForTimeout(800);
+await clickTxt("Auf die Taktiktafel legen"); await page.waitForTimeout(1200);
+b=await body();
+if(/Zuruf: „/.test(b)) ok("Vollbild zeigt Name und Zuruf des geladenen Spielzugs"); else fail("Kein Zuruf im Vollbild: "+b.slice(0,200).replace(/\n/g," | "));
+if(/Abspielen/.test(b)) ok("Direkt abspielbar"); else fail("Abspielen fehlt im Vollbild");
+await page.evaluate(()=>{ const x=[...document.querySelectorAll("button")].find(y=>y.getAttribute("aria-label")==="Vollbild verlassen"); x&&x.click(); });
+await page.waitForTimeout(700);
+
 // ===== 5) Entwicklungs-Log =====
 await clickExact("Mehr"); await page.waitForTimeout(900);
 if(await clickTxt("📈 Entwicklung")){ await page.waitForTimeout(900);

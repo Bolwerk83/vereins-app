@@ -13,7 +13,7 @@ import { trainingFocusFor, generateTrainingPlan, buildSession, suggestDrillsForS
 import { uid, now, addD, addW, fmtD, fmtDShort, TH, CSS, ET, etLabel, evDisplayTitle, activeSid, activeTeamsFor, isActive, Btn, Tag, Av, Drawer, PageHead, PillTabs, TeamPills, EmptyBox, Inp, Sel, Sw, Divider, InfoHint, SpiderChart, dimLabel } from "./ui.jsx";
 import { CAT_ORDER } from "./dfb.js";
 import { AffiliateBanner } from "./affiliates.jsx";
-import { SPIELZUEGE, SPIELZUG_CATS, SZ_AGES, catOfSpielzug, SZ_CAT_FOR_TEAM } from "./spielzuege.js";
+import { SPIELZUEGE, SPIELZUG_CATS, SZ_AGES, SZ_SYNONYME, catOfSpielzug, SZ_CAT_FOR_TEAM } from "./spielzuege.js";
 
 // ---- Trainings-Konstanten & -Helfer ----
 export function TacticLibrary({ onPick, onClose }) {
@@ -1252,6 +1252,7 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
   const [aiHint,setAiHint]=useState("");
   // Spielzug-Bibliothek: echten Spielvorgang auswaehlen und auf die Tafel legen
   const [szOpen,setSzOpen]=useState(false);
+  const [szAktiv,setSzAktiv]=useState(null);   // gerade geladener Spielzug
   const loadSpielzug=(sz)=>{
     const FF=TB_FIELDS[sport]||TB_FIELDS.generic;
     const X=v=>Math.max(FF.r,Math.min(FF.vw-FF.r,(Number(v)||0)/100*FF.vw));
@@ -1269,7 +1270,7 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
     skipRebuildRef.current=true;
     setTokens(own); setOppTokens(opp); setShowOpp(opp.length>0); setBallPos(ball); setArrows(arrs);
     setTimeout(()=>{ skipRebuildRef.current=false; },50);
-    setSzOpen(false);
+    setSzOpen(false); setSzAktiv(sz);
     setAiHint(`„${sz.ruf}" liegt auf der Tafel – tippe auf ▶ Abspielen und erklär es den Kindern.`);
     fire&&fire("Spielzug übernommen: "+sz.name);
   };
@@ -2100,11 +2101,19 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
       <div style={present?{position:"fixed",inset:0,zIndex:2000,background:"#07230f",display:"flex",flexDirection:"column",padding:"12px",gap:10,boxSizing:"border-box"}:{display:"contents"}}>
       {present&&(
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,flexShrink:0}}>
-          <span style={{color:"#fff",fontWeight:900,fontSize:17}}>🎬 Taktik zeigen</span>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{color:"#fff",fontWeight:900,fontSize:szAktiv?15:17,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+              🎬 {szAktiv?szAktiv.name:"Taktik zeigen"}
+            </div>
+            {szAktiv&&<div style={{color:"#4ade80",fontWeight:900,fontSize:13,marginTop:1}}>Zuruf: „{szAktiv.ruf}"</div>}
+          </div>
           <div style={{display:"flex",gap:8}}>
-            <button onClick={()=>setPadOn(v=>!v)} title="Steuerkreuz"
-              style={{width:40,height:40,borderRadius:12,border:padOn?"2px solid #4ade80":"2px solid transparent",background:padOn?"rgba(74,222,128,.22)":"rgba(255,255,255,.14)",color:"#fff",fontSize:18,cursor:"pointer"}}>🎮</button>
-            <button onClick={()=>setPresent(false)} style={{width:40,height:40,borderRadius:12,border:"none",background:"rgba(255,255,255,.14)",color:"#fff",fontWeight:900,fontSize:17,cursor:"pointer"}}>✕</button>
+            <button onClick={()=>setSzOpen(true)} title="Fertigen Spielzug aus der Bibliothek wählen" aria-label="Spielzug wählen"
+              style={{height:44,padding:"0 13px",borderRadius:12,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:13.5,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit"}}>⚡ Spielzug</button>
+            <button onClick={()=>setPadOn(v=>!v)} title="Steuerkreuz ein-/ausblenden" aria-label="Steuerkreuz"
+              style={{width:44,height:44,borderRadius:12,border:padOn?"2px solid #4ade80":"2px solid transparent",background:padOn?"rgba(74,222,128,.22)":"rgba(255,255,255,.14)",color:"#fff",fontSize:18,cursor:"pointer"}}>🎮</button>
+            <button onClick={()=>setPresent(false)} title="Vollbild verlassen – zurück zur Taktiktafel" aria-label="Vollbild verlassen"
+              style={{width:44,height:44,borderRadius:12,border:"none",background:"rgba(255,255,255,.14)",color:"#fff",fontWeight:900,fontSize:17,cursor:"pointer"}}>✕</button>
           </div>
         </div>
       )}
@@ -2405,7 +2414,7 @@ export function TacticBoard({ data, myTids, cl, save, fire, eventCtx=null, onAtt
       </div>}
       {/* Gespeicherte Boards (vereinsweit, jederzeit aufrufbar) */}
       {szOpen&&(
-        <div onClick={()=>setSzOpen(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:1340,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
+        <div onClick={()=>setSzOpen(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:2400,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
           <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"88dvh",overflowY:"auto",padding:"12px 16px calc(24px + env(safe-area-inset-bottom))",animation:"down .22s ease"}}>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
               <span style={{fontWeight:900,fontSize:16,color:"#0f172a",flex:1}}>⚡ Spielzüge</span>
@@ -4891,7 +4900,10 @@ export function SpielzugLibrary({ cl, teamCat=null, onUse=null, embedded=false }
     if(cat!=="alle"&&sz.cat!==cat) return false;
     if(age!=="alle"&&!(sz.ages||[]).includes(age)) return false;
     if(!q) return true;
-    const s=(sz.name+" "+sz.ruf+" "+sz.kurz+" "+sz.beispiel).toLowerCase();
+    // Auch Ablauf, Begruendung und gaengige Trainer-Woerter durchsuchen -
+    // wer "ueberlaufen" tippt, soll "Ueberlappen" finden.
+    const s=(sz.name+" "+sz.ruf+" "+sz.kurz+" "+sz.beispiel+" "+(sz.ablauf||[]).join(" ")+" "+(sz.warum||"")+" "
+      +catOfSpielzug(sz.cat).label+" "+(SZ_SYNONYME[sz.id]||"")).toLowerCase();
     return s.includes(q.toLowerCase());
   });
   return (
