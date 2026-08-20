@@ -23,7 +23,8 @@ const dismissOverlays=async()=>{ for(let k=0;k<14;k++){ const done=await page.ev
     const b2=[...f.querySelectorAll("button")].find(x=>/geht|Los|Verstanden|Alles klar|Start|Jetzt nicht|Speichern & loslegen|Weiter →/i.test(x.innerText)); if(b2){ b2.click(); return false; } }
   return true; }); await page.waitForTimeout(500); if(done) break; } };
 await page.addInitScript(()=>{
-  localStorage.setItem("vereinsapp_config", JSON.stringify({url:"https://127.0.0.1:1/x", key:"test"}));   // Fake-Cloud: Offline-Spiegel
+  localStorage.setItem("vereinsapp_config", JSON.stringify({url:"https://127.0.0.1:1/x", key:"test"}));
+  localStorage.setItem("va_simple","0");   // diese Tests pruefen die ausfuehrliche Ansicht   // Fake-Cloud: Offline-Spiegel
   if(!sessionStorage.getItem("va_sw")) sessionStorage.setItem("vereinsapp_v12_session", JSON.stringify({ role:"trainer", cid:"demo", tids:["demo_f1"], name:"Trainer A", id:"dt1" }));
 });
 await page.goto("http://127.0.0.1:4218/", { waitUntil:"networkidle" }); await page.waitForTimeout(2500);

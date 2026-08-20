@@ -15,7 +15,8 @@ const fail=m=>{ fails.push(m); console.log("FEHLGESCHLAGEN:", m); };
 const ok=m=>console.log("OK:", m);
 const body=()=>page.evaluate(()=>document.body.innerText);
 await page.addInitScript(()=>{
-  localStorage.setItem("vereinsapp_config", JSON.stringify({url:"https://127.0.0.1:1/x", key:"test"}));   // Fake-Cloud: Offline-Spiegel
+  localStorage.setItem("vereinsapp_config", JSON.stringify({url:"https://127.0.0.1:1/x", key:"test"}));
+  localStorage.setItem("va_simple","0");   // diese Tests pruefen die ausfuehrliche Ansicht   // Fake-Cloud: Offline-Spiegel
   if(!sessionStorage.getItem("va_sw")) sessionStorage.setItem("vereinsapp_v12_session", JSON.stringify({ role:"trainer", cid:"demo", tids:["demo_g","demo_f1"], name:"Trainer A", id:"dt1" }));
   const y=new Date().getFullYear();
   localStorage.setItem("va_ferien_DE-NW", JSON.stringify({ts:Date.now(),data:[{start:`${y}-01-01`,end:`${y+1}-12-31`,name:"Test-Ferien"}]}));

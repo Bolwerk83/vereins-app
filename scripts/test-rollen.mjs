@@ -29,6 +29,7 @@ const asUser = async sess => { await page.evaluate(s=>{ sessionStorage.setItem("
   await page.locator('button:has-text("Überspringen")').first().click({timeout:1200}).catch(()=>{}); await page.waitForTimeout(300); await dismiss(); };
 await page.addInitScript(()=>{
   localStorage.setItem("vereinsapp_config", JSON.stringify({url:"https://127.0.0.1:1/x", key:"test"}));
+  localStorage.setItem("va_simple","0");   // diese Tests pruefen die ausfuehrliche Ansicht
   if(!sessionStorage.getItem("va_role")) sessionStorage.setItem("vereinsapp_v12_session", JSON.stringify({ role:"trainer", cid:"demo", tids:["demo_f1"], name:"Demo Trainer", id:"demo_tr1" }));
 });
 await page.goto("http://127.0.0.1:4227/", { waitUntil:"networkidle" }); await page.waitForTimeout(2500);

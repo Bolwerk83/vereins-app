@@ -15144,6 +15144,16 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   useEffect(()=>{ if(tab==="module"){ setModWizardManual(true); setTab("events"); } },[tab]);
   // Helfer-Schnellzusage von der Terminkarte: vor der Freigabe zaehlt sie als
   // Bereitschaft, danach als echte Zusage (inkl. Wartelisten-Reihenfolge).
+  // "Kann nicht" merken, damit der Trainer sieht, dass gefragt wurde
+  const helperNein=(ev)=>{
+    const myId=session.id||session.helperId||session.name;
+    const drin=(ev.helperOffers||[]).some(o=>o.id===myId)||(ev.helperInterest||[]).some(o=>o.id===myId);
+    save({...local,events:local.events.map(e=>e.id===ev.id?{...e,
+      helperOffers:(e.helperOffers||[]).filter(o=>o.id!==myId),
+      helperInterest:(e.helperInterest||[]).filter(o=>o.id!==myId),
+      helperNo:[...new Set([...(e.helperNo||[]),myId])]}:e)});
+    fire(drin?"Abgemeldet – ist notiert":"Notiert: du kannst nicht");
+  };
   const helperQuick=(ev)=>{
     const offen = ev.type==="training" || !!ev.helferOpen;
     const key   = offen ? "helperOffers" : "helperInterest";
@@ -15152,7 +15162,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
     const drin  = liste.some(o=>o.id===myId);
     const next  = drin ? liste.filter(o=>o.id!==myId)
                        : [...liste,{id:myId,name:session.name||"Helfer",ts:new Date().toISOString()}];
-    save({...local,events:local.events.map(e=>e.id===ev.id?{...e,[key]:next}:e)});
+    save({...local,events:local.events.map(e=>e.id===ev.id?{...e,[key]:next,helperNo:(e.helperNo||[]).filter(x=>x!==myId)}:e)});
     if(drin){ fire("Eintrag zurückgezogen"); return; }
     if(!offen){ fire("Bereitschaft gemeldet – der Trainer sieht sie ✓"); return; }
     const sortiert=[...next].sort((a,b)=>String(a.ts||"").localeCompare(String(b.ts||"")));
@@ -15243,9 +15253,34 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
     })});
     fire(locked ? "Späte Anmeldung erfasst" : val==="yes"?"Du bist dabei":"Du hast abgesagt");
   };
+  const [simple,setSimple]=useState(()=>{ try{ return localStorage.getItem("va_simple")!=="0"; }catch{ return true; } });
+  const [simpleDrill,setSimpleDrill]=useState(null);
   const tod=now(); const up=myEvs.filter(e=>e.date>=tod); const past=myEvs.filter(e=>e.date<tod).reverse();
   const _in10=addD(now(),21); const soon=up.filter(e=>e.date<=_in10); const later=up.filter(e=>e.date>_in10);
   const [showLater,setShowLater]=useState(false);
+
+  // Helfer starten in der einfachen Ansicht: eine Frage pro Termin. Aufbau-Liste
+  // und Uebungskarte kommen als eigene Fenster darueber - mehr braucht es nicht.
+  if(isHelper&&simple) return (
+    <>
+      <EinfachHelfer cl={myClub} events={myEvs} toast={toast}
+        helperId={session.id||session.helperId||session.name} helperName={session.name||"Helfer"}
+        teams={(local.teams||[]).filter(tm=>myTids.includes(tm.id))}
+        onJa={helperQuick} onNein={helperNein}
+        onAufbau={ev=>setSetupEv(ev)}
+        onTraining={(ev,st)=>{ const d=DRILL_LIB.find(x=>x.id===st?.drillId); if(d) setSimpleDrill(d); else fire("Für diese Station ist noch keine Übung hinterlegt."); }}
+        onAbmelden={onLogout}
+        onMehr={()=>{ setSimple(false); try{ localStorage.setItem("va_simple","0"); }catch{} }}/>
+      {setupEv&&(
+        <Drawer onClose={()=>setSetupEv(null)} title={"🏗 Aufbau – "+setupEv.title}>
+          <AufbauPlan ev={setupEv} data={local} cl={myClub} user={session.name||"Helfer"} isHelper={true}
+            onPatch={patch=>{ save({...local,events:local.events.map(e=>e.id===setupEv.id?{...e,...patch}:e)}); setSetupEv(prev=>({...prev,...patch})); }}
+            fire={fire}/>
+        </Drawer>
+      )}
+      {simpleDrill&&<DrillInfoModal drill={simpleDrill} t={TH(myClub)} onClose={()=>setSimpleDrill(null)}/>}
+    </>
+  );
 
   if(wizard||editEv) return <Wizard teams={local.teams.filter(x=>myTids.includes(x.id))} cl={myClub} editEv={editEv}
     clubTeams={(local.teams||[]).filter(x=>x.cid===cid&&isActive(x))}
@@ -15401,6 +15436,12 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       <div style={{maxWidth:560,margin:"0 auto",padding:"14px"}}>
         {/* Helfer: eigener Kurz-Einstieg. Der Trainer-Text verweist auf Knoepfe
             (Termin anlegen, Import), die Helfer bewusst nicht haben. */}
+        {isHelper&&!simple&&(
+          <button onClick={()=>{ setSimple(true); try{ localStorage.setItem("va_simple","1"); }catch{} }}
+            style={{width:"100%",marginBottom:12,padding:"12px",borderRadius:12,border:"2px solid #bbf7d0",background:"#f0fdf4",color:"#15803d",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
+            ← Zurück zur einfachen Ansicht
+          </button>
+        )}
         {/* Helfer brauchen keinen Erklaerkasten - ihre Termine sprechen fuer sich.
             Der Trainer-Text verweist auf Knoepfe, die Helfer gar nicht haben. */}
         {!(isHelper&&tab==="events")&&<AreaIntro id={tab} cl={myClub}/>}
@@ -15646,7 +15687,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           // arbeiten im Orga-Bereich (Einsatz, Listen, Schichten).
           // Helfer bekommen keinen eigenen Orga-Reiter mehr - der Aufbau steckt im
           // eigenen "Aufbau"-Fenster, Einsatz und Schichten stehen direkt unten.
-          const tabs=[["rueck","📊 Rückmeldungen"],...(isT&&!isHelper?[["plan","📋 Training"]]:[]),...(isG&&!isHelper?[["plan","⚽ Aufstellung"]]:[]),...(isHelper?[]:[["orga","👥 Orga"]]),...(isG?[["zeit","⏱ Spieltag"]]:[])];
+          const tabs=[["rueck","📊 Rückmeldungen"],...(isT?[["plan","📋 Training"]]:[]),...(isG&&!isHelper?[["plan","⚽ Aufstellung"]]:[]),...(isHelper?[]:[["orga","👥 Orga"]]),...(isG?[["zeit","⏱ Spieltag"]]:[])];
           const tp=TH(myClub).p;
           return (
             <div style={{position:"sticky",top:-16,zIndex:6,background:"#fff",margin:"0 -2px",padding:"6px 2px 10px",display:"flex",gap:6,overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
@@ -15917,6 +15958,9 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         {!isHelper&&<AufbauPlan ev={viewEv} data={local} cl={myClub} user={session.name||(isHelper?"Helfer":"Trainer")} isHelper={isHelper}
           onPatch={patch=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,...patch}:e)}); setViewEv(prev=>({...prev,...patch})); }} fire={fire}
           saveTeam={isHelper?null:pref=>{ save({...local,teams:local.teams.map(tm=>tm.id===viewEv.tid?{...tm,aufbauPref:pref}:tm)}); fire(pref?"Als Standard für die Mannschaft gemerkt":"Standard entfernt"); }}/>}
+        {/* Stationen: Kinder aufteilen, je Station ein Trainer oder Helfer */}
+        {viewEv.type==="training"&&<StationenPlan ev={viewEv} data={local} cl={myClub} isHelper={isHelper} meName={session.name||""}
+          onPatch={patch=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,...patch}:e)}); setViewEv(prev=>({...prev,...patch})); }} fire={fire}/>}
         {/* Orga & Verkauf: Kuchen, Getraenke, Material & Schichten - Trainer UND Helfer pflegen gemeinsam */}
         {viewEv.type!=="training"&&<OrgaBoard ev={viewEv} user={session.name||(isHelper?"Helfer":"Trainer")} canEdit={!isHelper||helperEinsatz}
           onPatch={patch=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,...patch}:e)}); setViewEv(prev=>({...prev,...patch})); }} fire={fire}/>}
@@ -17711,7 +17755,7 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
           <span style={{fontSize:11,fontWeight:700,color:"#64748b"}}>Ich:</span>
           <button onClick={()=>onSelfVote(ev.id,"yes")} disabled={votingLocked}
             title={votingLocked?"Anmeldung geschlossen":""}
-            style={{flex:1,padding:"13px 7px",minHeight:46,borderRadius:10,border:`1.5px solid ${myVote==="yes"?"#16a34a":"#e2e8f0"}`,background:myVote==="yes"?"#16a34a":(votingLocked?"#f1f5f9":"#fff"),color:myVote==="yes"?"#fff":(votingLocked?"#cbd5e1":"#475569"),fontWeight:800,fontSize:12.5,cursor:votingLocked?"not-allowed":"pointer",fontFamily:"inherit",opacity:votingLocked?.6:1}}>✓ Bin dabei</button>
+            style={{flex:1,padding:"13px 7px",minHeight:46,borderRadius:10,border:`1.5px solid ${myVote==="yes"?"#16a34a":"#e2e8f0"}`,background:myVote==="yes"?"#16a34a":(votingLocked?"#f1f5f9":"#fff"),color:myVote==="yes"?"#fff":(votingLocked?"#64748b":"#475569"),fontWeight:800,fontSize:12.5,cursor:votingLocked?"not-allowed":"pointer",fontFamily:"inherit",opacity:votingLocked?.6:1}}>✓ Bin dabei</button>
           <button onClick={()=>onSelfVote(ev.id,"no")} style={{flex:1,padding:"13px 7px",minHeight:46,borderRadius:10,border:`1.5px solid ${myVote==="no"?"#dc2626":"#e2e8f0"}`,background:myVote==="no"?"#dc2626":"#fff",color:myVote==="no"?"#fff":"#475569",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{votingLocked?"✕ Späte Absage":"✕ Sage ab"}</button>
         </div>
       )}
@@ -19712,6 +19756,121 @@ function AufbauPlan({ ev, data, cl, user, isHelper, onPatch, fire, saveTeam=null
   );
 }
 
+// ================================================================
+// STATIONEN: 24 Kinder, 3 Gruppen, 3 Stationen - und an jeder steht
+// ein Trainer oder Helfer. Genau so, wie es auf dem Platz laeuft.
+// ================================================================
+function StationenPlan({ ev, data, cl, isHelper, meName, onPatch, fire }){
+  const t=TH(cl);
+  const stationen=ev.stations||[];
+  const [wahl,setWahl]=useState(null);        // Station, fuer die eine Uebung gesucht wird
+  const vv=v=>typeof v==="object"&&v!==null?v.val:v;
+  const kinder=Object.values(ev.votes||{}).filter(v=>vv(v)==="yes"||vv(v)==="late").length;
+  // Wer kann eine Station uebernehmen? Trainer und Helfer der Mannschaft.
+  const leute=[
+    ...(data.trainers||[]).filter(x=>(x.tids||[]).includes(ev.tid)&&isActive(x)).map(x=>({id:x.id,name:x.name,art:"Trainer"})),
+    ...(data.helpers||[]).filter(x=>(x.tids||[]).includes(ev.tid)&&x.active!==false).map(x=>({id:x.id,name:x.name,art:"Helfer"})),
+    ...((ev.helperOffers||[]).map(o=>({id:o.id,name:o.name,art:"Helfer"}))),
+  ].filter((x,i,a)=>x.name&&a.findIndex(y=>y.id===x.id)===i);
+  const setz=list=>onPatch({stations:list});
+  const bauen=(n)=>{
+    const proGruppe=Math.max(1,Math.round((kinder||24)/n));
+    const neu=Array.from({length:n},(_,i)=>({id:uid(),titel:`Station ${i+1}`,min:10,kinder:proGruppe,wer:[],drillId:""}));
+    setz(neu); fire&&fire(`${n} Stationen angelegt – jetzt Übung und Person zuordnen`);
+  };
+  const patchSt=(id,p)=>setz(stationen.map(s=>s.id===id?{...s,...p}:s));
+  const weg=id=>setz(stationen.filter(s=>s.id!==id));
+  const dazu=()=>setz([...stationen,{id:uid(),titel:`Station ${stationen.length+1}`,min:10,kinder:Math.max(1,Math.round((kinder||24)/(stationen.length+1))),wer:[],drillId:""}]);
+  const togglePerson=(st,p)=>{
+    const drin=(st.wer||[]).includes(p.id);
+    patchSt(st.id,{wer:drin?st.wer.filter(x=>x!==p.id):[...(st.wer||[]),p.id],
+      werNamen:{...(st.werNamen||{}),[p.id]:p.name}});
+  };
+  const nameVon=(st,id)=>(st.werNamen||{})[id]||(leute.find(l=>l.id===id)||{}).name||"?";
+  if(stationen.length===0){
+    if(isHelper) return null;
+    return (
+      <div style={{marginTop:16,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+          <span style={{fontSize:18}}>🔀</span>
+          <span style={{fontWeight:800,fontSize:15,color:"#0f172a",flex:1}}>Stationen</span>
+        </div>
+        <div style={{fontSize:12,color:"#64748b",lineHeight:1.5,marginBottom:10}}>
+          Kinder aufteilen und an jede Station einen Trainer oder Helfer stellen. {kinder>0?`${kinder} Kinder haben zugesagt.`:""}
+        </div>
+        <div style={{display:"flex",gap:8}}>
+          {[2,3,4].map(n=>(
+            <button key={n} onClick={()=>bauen(n)} style={{flex:1,padding:"14px 8px",borderRadius:13,border:`2px solid ${t.p}`,background:"#fff",color:t.p,fontWeight:900,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>
+              {n} Stationen<br/><span style={{fontSize:11.5,fontWeight:700,opacity:.75}}>je {Math.max(1,Math.round((kinder||24)/n))} Kinder</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div style={{marginTop:16,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+        <span style={{fontSize:18}}>🔀</span>
+        <span style={{fontWeight:800,fontSize:15,color:"#0f172a",flex:1}}>Stationen</span>
+        <span style={{fontSize:11.5,fontWeight:800,color:"#64748b"}}>{stationen.length} · {kinder||"–"} Kinder</span>
+      </div>
+      {stationen.map((st,i)=>{
+        const drill=DRILL_LIB.find(d=>d.id===st.drillId);
+        const ichHier=(st.wer||[]).some(w=>w===meName||nameVon(st,w)===meName);
+        return (
+          <div key={st.id} style={{background:ichHier?"#eef2ff":"#fff",border:`2px solid ${ichHier?"#c7d2fe":"#e2e8f0"}`,borderRadius:14,padding:"11px 12px",marginBottom:9}}>
+            <div style={{display:"flex",alignItems:"center",gap:9,marginBottom:6}}>
+              <div style={{width:30,height:30,borderRadius:10,background:t.p,color:contrast(t.p),fontWeight:900,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{i+1}</div>
+              {isHelper
+                ? <div style={{flex:1,fontWeight:800,fontSize:15,color:"#0f172a"}}>{st.titel}</div>
+                : <input value={st.titel} onChange={e=>patchSt(st.id,{titel:e.target.value})}
+                    style={{flex:1,padding:"7px 9px",fontSize:14.5,fontWeight:800,border:"1.5px solid #e2e8f0",borderRadius:9,outline:"none",fontFamily:"inherit",minWidth:0}}/>}
+              {!isHelper&&<button onClick={()=>weg(st.id)} style={{width:30,height:30,borderRadius:9,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:900,cursor:"pointer",fontFamily:"inherit"}}>✕</button>}
+            </div>
+            <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8,flexWrap:"wrap"}}>
+              <span style={{fontSize:12.5,color:"#475569",fontWeight:700}}>👦 {st.kinder||"?"} Kinder</span>
+              <span style={{fontSize:12.5,color:"#475569",fontWeight:700}}>⏱ {st.min||10} Min</span>
+              {!isHelper&&<>
+                <button onClick={()=>patchSt(st.id,{kinder:Math.max(1,(st.kinder||1)-1)})} style={{width:26,height:26,borderRadius:8,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:900,cursor:"pointer",fontFamily:"inherit"}}>−</button>
+                <button onClick={()=>patchSt(st.id,{kinder:(st.kinder||0)+1})} style={{width:26,height:26,borderRadius:8,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:900,cursor:"pointer",fontFamily:"inherit"}}>+</button>
+              </>}
+            </div>
+            {/* Übung */}
+            <button onClick={()=>{ if(isHelper&&!drill) return; setWahl(st.id); }}
+              style={{width:"100%",textAlign:"left",padding:"10px 12px",borderRadius:11,border:`1.5px solid ${drill?"#bbf7d0":"#e2e8f0"}`,background:drill?"#f0fdf4":"#f8fafc",color:drill?"#15803d":"#64748b",fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit",marginBottom:8}}>
+              {drill?`⚽ ${drill.title}`:"＋ Übung wählen"}
+            </button>
+            {/* Wer macht die Station? */}
+            <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:5}}>WER MACHT DIESE STATION?</div>
+            {isHelper
+              ? <div style={{fontSize:13.5,color:"#0f172a",fontWeight:700}}>{(st.wer||[]).length?(st.wer||[]).map(w=>nameVon(st,w)).join(", "):"noch offen"}</div>
+              : <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                  {leute.map(p=>{ const drin=(st.wer||[]).includes(p.id); return (
+                    <button key={p.id} onClick={()=>togglePerson(st,p)}
+                      style={{padding:"7px 11px",borderRadius:99,border:`1.5px solid ${drin?t.p:"#e2e8f0"}`,background:drin?t.p:"#fff",color:drin?contrast(t.p):"#475569",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
+                      {drin?"✓ ":""}{p.name} <span style={{opacity:.7,fontWeight:600}}>· {p.art}</span>
+                    </button>
+                  );})}
+                  {leute.length===0&&<span style={{fontSize:12.5,color:"#94a3b8"}}>Noch keine Trainer/Helfer für diese Mannschaft hinterlegt.</span>}
+                </div>}
+          </div>
+        );
+      })}
+      {!isHelper&&(
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={dazu} style={{flex:1,padding:"11px",borderRadius:12,border:"1.5px dashed #cbd5e1",background:"#fff",color:"#475569",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>+ Station</button>
+          <button onClick={()=>{ setz([]); fire&&fire("Stationen entfernt"); }} style={{padding:"11px 14px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#94a3b8",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Alle weg</button>
+        </div>
+      )}
+      {wahl&&(
+        <DrillPicker pool={DRILL_LIB} t={t} onClose={()=>setWahl(null)}
+          onPick={d=>{ patchSt(wahl,{drillId:d.id, titel:(stationen.find(s=>s.id===wahl)?.titel)||d.title, min:d.min||10}); setWahl(null); fire&&fire("Übung zugeordnet: "+d.title); }}/>
+      )}
+    </div>
+  );
+}
+
 // Orga & Verkauf pro Spiel/Turnier: Mitbring-Liste (Kuchen, Getraenke ...), Material
 // (Tische, Baenke ...) und Verkaufs-Schichten. Trainer UND Einsatz-Helfer pflegen die
 // Liste gemeinsam - so laeuft die Organisation im Hintergrund und die Trainer koennen
@@ -20880,6 +21039,206 @@ function SelfStats({ data, session, cl, lang="de" }){
   );
 }
 
+// ================================================================
+// EINFACHE ANSICHT
+// Fuer Eltern und Helfer die Standard-Ansicht: eine Frage pro Termin,
+// zwei grosse Knoepfe, sonst nichts. Wer mehr will, schaltet unten um.
+// ================================================================
+// Datum so, wie man es sagt: "Heute", "Morgen", "Samstag, 23. August"
+const WT=["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"];
+const MON=["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+const tagWort=(iso)=>{
+  try{
+    const d=new Date(iso+"T12:00:00"), h=new Date(now()+"T12:00:00");
+    const diff=Math.round((d-h)/86400000);
+    if(diff===0) return "Heute";
+    if(diff===1) return "Morgen";
+    if(diff===2) return "Übermorgen";
+    return `${WT[d.getDay()]}, ${d.getDate()}. ${MON[d.getMonth()]}`;
+  }catch{ return iso; }
+};
+const artWort=(ev)=>{
+  const t=EVENT_TYPE_ALIAS[ev.type]||ev.type;
+  if(t==="training") return "TRAINING";
+  if(t==="turnier")  return "TURNIER";
+  if(t==="fest"||t==="sonstiges") return (ev.title||"TERMIN").toUpperCase();
+  return "SPIEL";
+};
+// Ein grosser Knopf - so gross, dass man ihn nicht verfehlt
+const GrossKnopf=({children,onClick,bg,col,rand,aktiv})=>(
+  <button onClick={onClick} style={{flex:1,padding:"20px 10px",borderRadius:18,border:`3px solid ${rand}`,
+    background:bg,color:col,fontWeight:900,fontSize:19,lineHeight:1.2,cursor:"pointer",fontFamily:"inherit",
+    boxShadow:aktiv?`0 6px 18px ${rand}55`:"none",minHeight:76}}>{children}</button>
+);
+
+// ---------- HELFER ----------
+// Eine Frage pro Termin: kannst du? Danach steht da, was zu tun ist.
+function EinfachHelfer({ cl, events, helperId, helperName, teams, onJa, onNein, onAufbau, onTraining, onMehr, onAbmelden, toast }){
+  const t=TH(cl);
+  const tod=now();
+  const naechste=events.filter(e=>e.date>=tod).slice(0,5);
+  const standOf=ev=>{
+    const offen = ev.type==="training" || !!ev.helferOpen;
+    const liste = (offen ? ev.helperOffers : ev.helperInterest) || [];
+    const drin  = liste.some(o=>o.id===helperId);
+    const nein  = (ev.helperNo||[]).includes(helperId);
+    const soll  = Number(ev.staffTarget)||2;
+    const idx   = [...liste].sort((a,b)=>String(a.ts||"").localeCompare(String(b.ts||""))).findIndex(o=>o.id===helperId);
+    return { drin, nein, warte: drin && ev.type!=="training" && offen && idx>=soll };
+  };
+  const meineStation=ev=>((ev.stations||[]).find(st=>(st.wer||[]).some(w=>w===helperId||w===helperName)));
+  return (
+    <div style={{minHeight:"100dvh",background:"#f8fafc",paddingBottom:40}}>
+      <style>{CSS}</style>
+      <div style={{background:readable(t.p),padding:"18px 18px 22px",color:"#fff"}}>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <Logo cl={cl} sz={42}/>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontWeight:900,fontSize:19,lineHeight:1.15}}>{helperName}</div>
+            <div style={{fontSize:14,fontWeight:600}}>Helfer{teams?.length?" · "+teams.map(x=>x.name).join(", "):""}</div>
+          </div>
+        </div>
+      </div>
+      <div style={{maxWidth:520,margin:"0 auto",padding:"16px 14px"}}>
+        {naechste.length===0&&(
+          <div style={{background:"#fff",borderRadius:20,padding:"34px 20px",textAlign:"center",border:"2px solid #e2e8f0"}}>
+            <div style={{fontSize:44,marginBottom:10}}>☕</div>
+            <div style={{fontWeight:900,fontSize:20,color:"#0f172a"}}>Gerade nichts zu tun</div>
+            <div style={{fontSize:15,color:"#475569",marginTop:6,lineHeight:1.5}}>Sobald ein Termin ansteht, wirst du hier gefragt.</div>
+          </div>
+        )}
+        {naechste.map((ev,i)=>{
+          const st=standOf(ev);
+          const station=st.drin?meineStation(ev):null;
+          return (
+            <div key={ev.id} className="up" style={{background:"#fff",borderRadius:20,
+              border:`2.5px solid ${st.drin?"#16a34a":st.nein?"#e2e8f0":"#fed7aa"}`,
+              padding:"18px 16px 16px",marginBottom:14,animationDelay:`${i*.05}s`,opacity:st.nein?.7:1}}>
+              <div style={{fontSize:12.5,fontWeight:900,color:readable(t.p),letterSpacing:1.2}}>{artWort(ev)}</div>
+              <div style={{fontWeight:900,fontSize:26,color:"#0f172a",lineHeight:1.15,marginTop:2}}>{tagWort(ev.date)}</div>
+              <div style={{fontSize:19,color:"#334155",fontWeight:700,marginTop:2}}>{ev.time?ev.time+" Uhr":""}</div>
+              {ev.loc&&<div style={{fontSize:15.5,color:"#475569",marginTop:6}}>📍 {ev.loc}</div>}
+              {st.drin
+                ? <>
+                    <div style={{background:"#dcfce7",borderRadius:16,padding:"14px",textAlign:"center",marginTop:14}}>
+                      <div style={{fontSize:30,lineHeight:1}}>✅</div>
+                      <div style={{fontWeight:900,fontSize:18,color:"#15803d",marginTop:5}}>{st.warte?"Du bist auf der Warteliste":"Du bist dabei"}</div>
+                    </div>
+                    {station&&(
+                      <div style={{background:"#eef2ff",border:"2px solid #c7d2fe",borderRadius:16,padding:"14px",marginTop:10}}>
+                        <div style={{fontSize:12,fontWeight:900,color:"#4f46e5",letterSpacing:1}}>DEINE AUFGABE</div>
+                        <div style={{fontWeight:900,fontSize:19,color:"#312e81",marginTop:3}}>{station.titel}</div>
+                        {station.kinder>0&&<div style={{fontSize:15,color:"#3730a3",marginTop:2}}>{station.kinder} Kinder · {station.min||10} Minuten</div>}
+                        {onTraining&&<button onClick={()=>onTraining(ev,station)} style={{width:"100%",marginTop:10,padding:"14px",borderRadius:14,border:"none",background:"#4f46e5",color:"#fff",fontWeight:900,fontSize:16,cursor:"pointer",fontFamily:"inherit"}}>
+                          👀 Übung ansehen
+                        </button>}
+                      </div>
+                    )}
+                    <button onClick={()=>onAufbau(ev)} style={{width:"100%",marginTop:10,padding:"16px",borderRadius:14,border:"2px solid #fed7aa",background:"#fff7ed",color:"#c2410c",fontWeight:900,fontSize:16,cursor:"pointer",fontFamily:"inherit"}}>
+                      🏗 Was muss ich aufbauen?
+                    </button>
+                    <button onClick={()=>onNein(ev)} style={{width:"100%",marginTop:8,padding:"12px",borderRadius:14,border:"none",background:"transparent",color:"#64748b",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
+                      Doch nicht
+                    </button>
+                  </>
+                : st.nein
+                  ? <div style={{marginTop:14}}>
+                      <div style={{background:"#f1f5f9",borderRadius:16,padding:"14px",textAlign:"center",fontWeight:800,fontSize:17,color:"#64748b"}}>Du kannst nicht – ist notiert</div>
+                      <button onClick={()=>onJa(ev)} style={{width:"100%",marginTop:10,padding:"14px",borderRadius:14,border:"2px solid #cbd5e1",background:"#fff",color:"#334155",fontWeight:800,fontSize:16,cursor:"pointer",fontFamily:"inherit"}}>Doch, ich kann</button>
+                    </div>
+                  : <>
+                      <div style={{fontWeight:900,fontSize:20,color:"#0f172a",margin:"16px 0 10px"}}>Kannst du helfen?</div>
+                      <div style={{display:"flex",gap:10}}>
+                        <GrossKnopf onClick={()=>onJa(ev)} bg="#16a34a" col="#fff" rand="#15803d" aktiv>🙋<br/>JA</GrossKnopf>
+                        <GrossKnopf onClick={()=>onNein(ev)} bg="#fff" col="#475569" rand="#cbd5e1">—<br/>NEIN</GrossKnopf>
+                      </div>
+                    </>}
+            </div>
+          );
+        })}
+        <button onClick={onMehr} style={{width:"100%",marginTop:6,padding:"14px",borderRadius:14,border:"2px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>
+          Mehr anzeigen (Listen, Schichten, Chat)
+        </button>
+        <button onClick={onAbmelden} style={{width:"100%",marginTop:8,padding:"12px",borderRadius:14,border:"none",background:"transparent",color:"#64748b",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
+          Abmelden
+        </button>
+      </div>
+      <Toast msg={toast}/>
+    </div>
+  );
+}
+
+// ---------- ELTERN ----------
+function EinfachEltern({ cl, team, kind, events, onVote, onMehr, onAbmelden, toast }){
+  const t=TH(cl);
+  const tod=now();
+  const naechste=events.filter(e=>e.date>=tod&&(e.pt==="att"||!e.pt)).slice(0,4);
+  const val=ev=>{ const v=(ev.votes||{})[kind]; return typeof v==="object"&&v?v.val:v; };
+  return (
+    <div style={{minHeight:"100dvh",background:"#f8fafc",paddingBottom:40}}>
+      <style>{CSS}</style>
+      <div style={{background:readable(t.p),padding:"18px 18px 22px",color:"#fff"}}>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <Logo cl={cl} sz={42}/>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontWeight:900,fontSize:19,lineHeight:1.15}}>{kind}</div>
+            <div style={{fontSize:14,fontWeight:600}}>{team?.name||cl?.name}</div>
+          </div>
+        </div>
+      </div>
+      <div style={{maxWidth:520,margin:"0 auto",padding:"16px 14px"}}>
+        {naechste.length===0&&(
+          <div style={{background:"#fff",borderRadius:20,padding:"34px 20px",textAlign:"center",border:"2px solid #e2e8f0"}}>
+            <div style={{fontSize:44,marginBottom:10}}>😴</div>
+            <div style={{fontWeight:900,fontSize:20,color:"#0f172a"}}>Gerade nichts zu tun</div>
+            <div style={{fontSize:15,color:"#475569",marginTop:6,lineHeight:1.5}}>Sobald der Trainer einen Termin einträgt, steht er hier.</div>
+          </div>
+        )}
+        {naechste.map((ev,i)=>{
+          const v=val(ev);
+          return (
+            <div key={ev.id} className="up" style={{background:"#fff",borderRadius:20,border:`2.5px solid ${v==="yes"?"#16a34a":v==="no"?"#dc2626":"#e2e8f0"}`,
+              padding:"18px 16px 16px",marginBottom:14,animationDelay:`${i*.05}s`}}>
+              <div style={{fontSize:12.5,fontWeight:900,color:readable(t.p),letterSpacing:1.2}}>{artWort(ev)}</div>
+              <div style={{fontWeight:900,fontSize:26,color:"#0f172a",lineHeight:1.15,marginTop:2}}>{tagWort(ev.date)}</div>
+              <div style={{fontSize:19,color:"#334155",fontWeight:700,marginTop:2}}>{ev.time?ev.time+" Uhr":""}</div>
+              {ev.loc&&<div style={{fontSize:15.5,color:"#475569",marginTop:6}}>📍 {ev.loc}</div>}
+              {ev.note&&<div style={{fontSize:15,color:"#92400e",background:"#fffbeb",border:"2px solid #fde68a",borderRadius:12,padding:"10px 12px",marginTop:10,lineHeight:1.5}}>{ev.note}</div>}
+              {v
+                ? <div style={{marginTop:14}}>
+                    <div style={{background:v==="yes"?"#dcfce7":"#fee2e2",borderRadius:16,padding:"16px",textAlign:"center"}}>
+                      <div style={{fontSize:34,lineHeight:1}}>{v==="yes"?"✅":"❌"}</div>
+                      <div style={{fontWeight:900,fontSize:19,color:v==="yes"?"#15803d":"#b91c1c",marginTop:6}}>
+                        {v==="yes"?`${kind} kommt`:`${kind} kommt nicht`}
+                      </div>
+                    </div>
+                    <button onClick={()=>onVote(ev.id,"att",v==="yes"?"no":"yes")}
+                      style={{width:"100%",marginTop:10,padding:"14px",borderRadius:14,border:"2px solid #cbd5e1",background:"#fff",color:"#334155",fontWeight:800,fontSize:16,cursor:"pointer",fontFamily:"inherit"}}>
+                      Ändern
+                    </button>
+                  </div>
+                : <>
+                    <div style={{fontWeight:900,fontSize:20,color:"#0f172a",margin:"16px 0 10px"}}>Kommt {kind}?</div>
+                    <div style={{display:"flex",gap:10}}>
+                      <GrossKnopf onClick={()=>onVote(ev.id,"att","yes")} bg="#16a34a" col="#fff" rand="#15803d" aktiv>✅<br/>JA</GrossKnopf>
+                      <GrossKnopf onClick={()=>onVote(ev.id,"att","no")} bg="#fff" col="#b91c1c" rand="#fca5a5">❌<br/>NEIN</GrossKnopf>
+                    </div>
+                  </>}
+            </div>
+          );
+        })}
+        <button onClick={onMehr} style={{width:"100%",marginTop:6,padding:"14px",borderRadius:14,border:"2px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>
+          Mehr anzeigen (Chat, Fotos, Einstellungen)
+        </button>
+        <button onClick={onAbmelden} style={{width:"100%",marginTop:8,padding:"12px",borderRadius:14,border:"none",background:"transparent",color:"#64748b",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
+          Abmelden
+        </button>
+      </div>
+      <Toast msg={toast}/>
+    </div>
+  );
+}
+
 function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{},onSwitchChild}) {
   const tr = (k) => T[lang]?.[k] ?? T.de[k] ?? k;
   const {tid,user,cid}=session;
@@ -20922,6 +21281,9 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{},onSwitc
       .filter(m=>m&&!m.system&&m.author!==user&&new Date(m.ts).getTime()>lastRead).length;
   },[data.chats, tab]);
   const [showProfile,setShowProfile]=useState(false);
+  // Standard fuer Eltern: die einfache Ansicht
+  const [simple,setSimple]=useState(()=>{ try{ return localStorage.getItem("va_simple")!=="0"; }catch{ return true; } });
+  const [simpleDrill,setSimpleDrill]=useState(null);
   const [pwCur,setPwCur]=useState(""); const [pwNew,setPwNew]=useState("");
   const [pnDraft,setPnDraft]=useState(null); // Eltern-Vornamen (Entwurf)
   // "Mehr" in der Eltern-Leiste oeffnet das Profil/Einstellungen-Sheet (kein Trainer-Drawer).
@@ -21117,6 +21479,14 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{},onSwitc
     fire(lateCancel ? tr("uhLateCancel") : lateRejoin ? tr("uhLateJoin") : tr("uhSaved"));
   };
 
+  // Einfache Ansicht ist der Standard: eine Frage pro Termin, zwei grosse
+  // Knoepfe. Wer mehr braucht, schaltet um - die Wahl bleibt gespeichert.
+  if(simple) return (
+    <EinfachEltern cl={cl} team={myTeam} kind={user} events={evs} toast={toast}
+      onVote={vote} onAbmelden={onLogout}
+      onMehr={()=>{ setSimple(false); try{ localStorage.setItem("va_simple","0"); }catch{} }}/>
+  );
+
   return (
     <div style={{minHeight:"100dvh",background:"#f0f4f8",
       paddingBottom:isDesktop?0:"calc(64px + env(safe-area-inset-bottom))",
@@ -21189,6 +21559,10 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{},onSwitc
               {tr("uhLoggedInAs")} <strong style={{color:"#334155"}}>{user}</strong><br/>
               <span style={{fontSize:12}}>{myTeam?.name}</span>
             </div>
+            <button onClick={()=>{ setShowProfile(false); setSimple(true); try{ localStorage.setItem("va_simple","1"); }catch{} }}
+              style={{width:"100%",padding:"14px",borderRadius:13,border:"2px solid #bbf7d0",background:"#f0fdf4",color:"#15803d",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit",marginBottom:10}}>
+              ← Zurück zur einfachen Ansicht
+            </button>
             {onSwitchChild&&<button onClick={()=>{setShowProfile(false);onSwitchChild(tid);}} style={{width:"100%",padding:"13px",borderRadius:13,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:14.5,cursor:"pointer",fontFamily:"inherit",marginBottom:10}}>👧👦 Kind wechseln</button>}
             <button onClick={()=>{setShowProfile(false);onLogout();}} style={{width:"100%",padding:"13px",borderRadius:13,border:"none",background:"#334155",color:"#fff",fontWeight:800,fontSize:14.5,cursor:"pointer",fontFamily:"inherit",marginBottom:14}}>🚪 {tr("uhSwitchLogout")}</button>
             <div style={{background:"#fffbeb",borderRadius:11,padding:"10px 13px",marginBottom:16,fontSize:12,color:"#92400e",lineHeight:1.6}}>
