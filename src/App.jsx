@@ -7267,12 +7267,16 @@ function HelperLogin({cl,helpers,teams=[],onLogin,onSetHelperPw,onBack}) {
   const doLogin=(h)=>onLogin({id:h.id,role:"helper",cid:cl.id,name:h.name,helperId:h.id,tids:h.tids||[]});
   const go=()=>{
     const h=sel; if(!h) return;
-    const entered=pw.trim();
-    const okPw=h.pw&&checkPw(entered,h.pw);
+    // Einmal-Passwoerter bestehen aus Grossbuchstaben und Ziffern. Viele tippen
+    // sie klein ab oder kopieren Leerzeichen mit - beides darf nicht scheitern.
+    const entered=pw.trim().replace(/\s+/g,"");
+    const gross=entered.toUpperCase();
+    const okPw=h.pw&&(checkPw(entered,h.pw)||(h.mustChangePw&&checkPw(gross,h.pw)));
     // Alt-Codes aus der frueheren Code-Anmeldung funktionieren einmalig weiter -
     // danach wird ein eigenes Passwort gesetzt.
-    const okLegacy=!h.pw&&h.code&&(h.code===entered||(String(h.code).startsWith("s")&&hashPw(entered)===h.code)||(String(h.code).startsWith("h")&&checkPw(entered,h.code)));
-    if(!okPw&&!okLegacy){ setErr(true); setTimeout(()=>setErr(false),1800); return; }
+    const codeOk=c=>h.code===c||(String(h.code).startsWith("s")&&hashPw(c)===h.code)||(String(h.code).startsWith("h")&&checkPw(c,h.code));
+    const okLegacy=!h.pw&&h.code&&(codeOk(entered)||codeOk(gross));
+    if(!okPw&&!okLegacy){ setErr(true); setTimeout(()=>setErr(false),2600); return; }
     if(h.mustChangePw||okLegacy){ setNp1("");setNp2("");setPerr(""); setStep("setpw"); return; }
     doLogin(h);
   };
@@ -7378,7 +7382,11 @@ function HelperLogin({cl,helpers,teams=[],onLogin,onSetHelperPw,onBack}) {
         <div style={{background:"rgba(255,255,255,.1)",backdropFilter:"blur(16px)",borderRadius:22,padding:"22px",border:"1px solid rgba(255,255,255,.15)",display:"flex",flexDirection:"column",gap:10}}>
           <PwInput value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&go()} placeholder="Passwort…" autoFocus autoCapitalize="none" autoCorrect="off" spellCheck={false}
             style={{width:"100%",padding:"13px 16px",fontSize:16,background:"rgba(255,255,255,.12)",border:`2px solid ${err?"#ff6b6b":"rgba(255,255,255,.25)"}`,borderRadius:13,outline:"none",color:"#fff",boxSizing:"border-box"}}/>
-          {err&&<p style={{fontSize:12.5,color:"#fca5a5",fontWeight:700,margin:0}}>Passwort falsch. Bei Verlust kann der Trainer ein neues Einmal-Passwort erzeugen.</p>}
+          {err&&<p style={{fontSize:12.5,color:"#fca5a5",fontWeight:700,margin:0,lineHeight:1.5}}>
+            {(!sel?.pw&&!sel?.code)
+              ? "Für dich ist noch kein Zugang gespeichert. Der Trainer muss das Einmal-Passwort erzeugen UND auf „Speichern“ tippen – erst danach funktioniert die Anmeldung."
+              : "Passwort falsch. Groß- und Kleinschreibung ist beim Einmal-Passwort egal. Bei Verlust erzeugt der Trainer ein neues."}
+          </p>}
           <button onClick={go} disabled={!pw}
             style={{width:"100%",padding:"13px",fontSize:15,fontWeight:800,background:pw?cl.pri:"rgba(255,255,255,.15)",color:pw?"#fff":"rgba(255,255,255,.4)",border:"none",borderRadius:13,cursor:pw?"pointer":"not-allowed",fontFamily:"inherit"}}>
             Anmelden
@@ -12070,15 +12078,25 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
     fire("Zugänge zusammengeführt – ein Login für alle Jugenden ✓");
   };
 
-  const save2=()=>{
+  // Speichern ohne das Formular zu schliessen. Wird auch vom Teilen-Knopf
+  // benutzt: ein weitergegebenes Einmal-Passwort, das nie gespeichert wurde,
+  // funktioniert beim Helfer nicht - genau diese Falle faellt damit weg.
+  const persist=()=>{
     // Einmal-Passwort wie bei Trainern: gehasht speichern + Pflicht-Wechsel beim
     // ersten Login. Der Klartext ist nur bis zum Speichern sichtbar.
     const {tempPw,...base}=f;
-    const rec={...base,id:editH||uid(),cid,createdAt:editH?f.createdAt:new Date().toISOString(),
+    const id=editH||uid();
+    const rec={...base,id,cid,createdAt:editH?f.createdAt:new Date().toISOString(),
       ...(tempPw?{pw:hashPw(tempPw),mustChangePw:true,sharedAt:null}:{})};
-    const next=editH?allHelpers.map(x=>x.id===editH?rec:x):[...allHelpers,rec];
+    const next=editH?allHelpers.map(x=>x.id===id?rec:x):[...allHelpers,rec];
     save({...data,helpers:[...(data.helpers||[]).filter(h=>h.cid!==cid),...next]});
-    setShowForm(false);fire(editH?"Helfer aktualisiert *":"Helfer angelegt");
+    if(!editH){ setEditH(id); setF(prev=>({...prev,id,createdAt:rec.createdAt})); }
+    return rec;
+  };
+  const save2=()=>{
+    if(!(f.name||"").trim()){ fire("Bitte zuerst einen Namen eingeben – sonst findet sich der Helfer beim Login nicht."); return; }
+    persist();
+    setShowForm(false); fire(editH?"Helfer aktualisiert ✓":"Helfer angelegt – Zugang ist aktiv ✓");
   };
   const del=id=>{save({...data,helpers:(data.helpers||[]).filter(h=>h.id!==id)});fire("Helfer entfernt");};
   const toggle=id=>{
@@ -12173,13 +12191,15 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
                   <button onClick={()=>u({tempPw:genTempPw()})} style={{padding:"6px 12px",borderRadius:9,border:"1.5px solid #bfdbfe",background:"#fff",color:"#2563eb",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Neu erzeugen</button>
                 </div>
                 <button onClick={()=>{
+                  if(!(f.name||"").trim()){ fire("Bitte zuerst einen Namen eingeben."); return; }
+                  persist();          // erst sichern, dann weitergeben
                   const link=(typeof window!=="undefined"?window.location.origin:"")+"?club="+(cl?.slug||cl?.id||"");
                   const teams=(data.teams||[]).filter(tm=>(f.tids||[]).includes(tm.id)).map(tm=>tm.name).join(", ");
                   const txt=`Hallo ${f.name||""},\n\ndu bist als Helfer${teams?` für ${teams}`:""} bei ${cl?.name||"unserem Verein"} eingetragen.\n\nLink: ${link}\nDein Einmal-Passwort: ${f.tempPw}\n\nSo geht's: Link öffnen, Rolle „Helfer" antippen, deinen Namen wählen und das Einmal-Passwort eingeben. Danach legst du dein eigenes Passwort fest.`;
-                  if(navigator.share){ navigator.share({title:"Helfer-Zugang",text:txt}).catch(()=>{}); }
-                  else { navigator.clipboard?.writeText(txt); fire("Einladung kopiert"); }
+                  if(navigator.share){ navigator.share({title:"Helfer-Zugang",text:txt}).catch(()=>{}); fire("Zugang gespeichert – jetzt teilen ✓"); }
+                  else { navigator.clipboard?.writeText(txt); fire("Zugang gespeichert und Einladung kopiert ✓"); }
                 }} style={{width:"100%",marginTop:9,padding:"10px",borderRadius:10,border:"none",background:"#2563eb",color:"#fff",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>📤 Zugang teilen (Link + Einmal-Passwort)</button>
-                <p style={{fontSize:11,color:"#64748b",marginTop:6}}>Beim ersten Login muss {f.name||"der Helfer"} ein <b>eigenes Passwort</b> festlegen – das Einmal-Passwort gilt nur einmal. <b>Erst „Speichern", dann funktioniert der Login.</b></p>
+                <p style={{fontSize:11,color:"#64748b",marginTop:6,lineHeight:1.55}}>Groß-/Kleinschreibung spielt keine Rolle. Beim ersten Login legt {f.name||"der Helfer"} ein <b>eigenes Passwort</b> fest – das Einmal-Passwort gilt nur einmal. Teilen speichert den Zugang automatisch; sonst unten auf <b>Speichern</b> tippen.</p>
               </>):(<>
                 <div style={{fontSize:13,fontWeight:700,color:f.pw?(f.mustChangePw?"#b45309":"#15803d"):"#dc2626",marginBottom:8}}>
                   {f.pw?(f.mustChangePw?"🔑 Einmal-Passwort aktiv – noch nicht geändert":"✓ Eigenes Passwort gesetzt"):(f.code?"Alt-Code-Zugang (bitte auf Einmal-Passwort umstellen)":"Noch kein Zugang")}
