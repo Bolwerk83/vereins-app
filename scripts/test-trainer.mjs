@@ -38,13 +38,13 @@ let b=await body();
 if(/✓ \d+ Spieler/.test(b)) ok("Terminkarte zählt Spieler-Zusagen separat"); else fail("Spieler-Zähler fehlt: "+(b.match(/✓[^\n]{0,30}/)||["?"])[0]);
 await page.locator('button:has-text("✓ Bin dabei")').first().click(); await page.waitForTimeout(600);
 b=await body();
-if(b.includes("🧑‍🏫 1 Trainer")) ok("Trainer-Selbstzusage separat ausgewiesen (🧑‍🏫 1 Trainer)"); else fail("Trainer-Chip fehlt: "+(b.match(/Trainer[^\n]{0,40}/)||["?"])[0]);
+if(b.includes("🧑‍🏫 1 Betreuer")) ok("Trainer-Selbstzusage separat ausgewiesen (🧑‍🏫 1 Betreuer)"); else fail("Betreuer-Chip fehlt: "+(b.match(/🧑‍🏫[^\n]{0,40}/)||["?"])[0]);
 
 // ===== 2) Aufgeräumte Rückmeldungen-Ansicht =====
 await page.locator('button:has-text("Ansehen")').first().click(); await page.waitForTimeout(800);
 b=await body();
 if(b.includes("Spieler dabei")) ok("Kachel „Spieler dabei“ (Trainer zählen nicht mit)"); else fail("Spieler-Kachel fehlt");
-if(b.includes("🧑‍🏫 TRAINER:")&&b.includes("Trainer A ✓")) ok("Trainer-Zusagen als eigene Zeile"); else fail("Trainer-Zeile fehlt: "+(b.match(/TRAINER[^\n]{0,60}/)||["?"])[0]);
+if(b.includes("🧑‍🏫 BETREUER:")&&b.includes("Trainer A ✓")) ok("Betreuer-Zusagen als eigene Zeile"); else fail("Betreuer-Zeile fehlt: "+(b.match(/BETREUER[^\n]{0,60}/)||["?"])[0]);
 if(!b.includes("ABSTIMMUNGEN (")) ok("Doppelte Abstimmungs-Liste entfällt (Abhak-Liste reicht)"); else fail("Abstimmungs-Liste noch da");
 if(!b.includes("NOCH NICHT ABGESTIMMT")) ok("„Noch nicht abgestimmt“-Block entfällt"); else fail("Noch-nicht-abgestimmt noch da");
 if(b.includes("Anwesenheit abhaken")) ok("Abhak-Liste vorhanden"); else fail("Abhak-Liste fehlt");

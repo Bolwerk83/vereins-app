@@ -15177,6 +15177,10 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const modOn=key=>{ const tms=(local.teams||[]).filter(tm=>myTids.includes(tm.id)); return tms.length?tms.some(tm=>teamModOn(tm,key)):true; };                       // Termin-Ansicht als Tabs
   // Namen aller Vereins-Trainer: Zusagen werden in Spieler und Trainer getrennt gezaehlt
   const trainerNames=(local.trainers||[]).filter(x=>x.cid===cid).map(x=>x.name).filter(Boolean);
+  const helperNames=(local.helpers||[]).filter(x=>x.cid===cid).map(x=>x.name).filter(Boolean);
+  // Kader einer Mannschaft (Legacy-Liste + Spielerprofile) - Grundlage dafuer,
+  // wer als Spieler zaehlt.
+  const squadOf=tid=>[...new Set([...((local.players||{})[tid]||[]), ...((local.playerProfiles||[]).filter(pp=>pp.mainTid===tid&&!pp.archived).map(pp=>pp.name))])];
   const [subReqEv,setSubReqEv]=useState(null);   // Vertretungs-Gesuch anlegen (Modal)
   const [subNote,setSubNote]=useState("");
   useEffect(()=>{ setEvTab("rueck"); },[viewEv?.id]);
@@ -15232,7 +15236,9 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       const votes={...(e.votes||{})};
       const cur=typeof votes[selfName]==="object"?votes[selfName]?.val:votes[selfName];
       if(cur===val && !locked) delete votes[selfName]; // erneuter Klick = zurücknehmen (vor Frist)
-      else votes[selfName]= locked ? {val,ts,lateChange:true} : val;   // nach Frist als Änderung markieren
+      // Rolle mitschreiben: so bleibt die Zusage ueberall als Betreuer-Zusage
+      // erkennbar, auch wenn der Name spaeter anders geschrieben wird.
+      else votes[selfName]= {val,ts,role:isAdmin?"admin":"trainer",...(locked?{lateChange:true}:{})};
       return {...e,votes};
     })});
     fire(locked ? "Späte Anmeldung erfasst" : val==="yes"?"Du bist dabei":"Du hast abgesagt");
@@ -15566,14 +15572,14 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             );
           })()}
           <FerienHinweis hols={_ferienDash} from={tod} to={_in10}/>
-          {up.length>0&&<><Divider label={`NÄCHSTE 21 TAGE (${soon.length})`}/>{soon.length>0?soon.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>{setEvTab("rueck");setViewEv(ev);}} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}} helperId={isHelper?(session.id||session.helperId||session.name):null} onHelperQuick={isHelper?helperQuick:null} onSetup={()=>setSetupEv(ev)}/>):<p style={{textAlign:"center",color:"#64748b",fontSize:13.5,padding:"14px 10px"}}>Keine Termine in den nächsten 21 Tagen.</p>}
+          {up.length>0&&<><Divider label={`NÄCHSTE 21 TAGE (${soon.length})`}/>{soon.length>0?soon.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>{setEvTab("rueck");setViewEv(ev);}} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} helperNames={helperNames} squad={squadOf(ev.tid)} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}} helperId={isHelper?(session.id||session.helperId||session.name):null} onHelperQuick={isHelper?helperQuick:null} onSetup={()=>setSetupEv(ev)}/>):<p style={{textAlign:"center",color:"#64748b",fontSize:13.5,padding:"14px 10px"}}>Keine Termine in den nächsten 21 Tagen.</p>}
             {later.length>0&&<>
               <button onClick={()=>setShowLater(s=>!s)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",background:showLater?"#f1f5f9":"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,cursor:"pointer",margin:"6px 0 12px",padding:"11px 14px",fontWeight:800,fontSize:13,color:"#475569",fontFamily:"inherit"}}>{showLater?"▲ Weitere Termine ausblenden":"▼ Weitere "+later.length+" Termine anzeigen"}</button>
-              {showLater&&later.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>{setEvTab("rueck");setViewEv(ev);}} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}} helperId={isHelper?(session.id||session.helperId||session.name):null} onHelperQuick={isHelper?helperQuick:null} onSetup={()=>setSetupEv(ev)}/>)}
+              {showLater&&later.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>{setEvTab("rueck");setViewEv(ev);}} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} helperNames={helperNames} squad={squadOf(ev.tid)} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}} helperId={isHelper?(session.id||session.helperId||session.name):null} onHelperQuick={isHelper?helperQuick:null} onSetup={()=>setSetupEv(ev)}/>)}
             </>}
           </>}
           {up.length===0&&<div style={{textAlign:"center",padding:"30px",background:"#fff",borderRadius:18,border:"1.5px dashed #e2e8f0",color:"#64748b"}}><Logo cl={myClub} sz={50} sx={{margin:"0 auto 12px"}}/><p style={{fontWeight:800,fontSize:15}}>Noch keine Termine</p><p style={{fontSize:13,marginTop:3}}>{isHelper?"Sobald die Trainer Termine anlegen, erscheinen sie hier.":'Klicke oben auf "Neuen Termin anlegen"'}</p></div>}
-          {past.length>0&&<><Divider label={`VERGANGENE (${past.length})`} light/><div style={{opacity:.72}}>{past.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>{setEvTab("rueck");setViewEv(ev);}} onEdit={()=>setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{}} onCopyLink={()=>{}} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames}/>)}</div></>}
+          {past.length>0&&<><Divider label={`VERGANGENE (${past.length})`} light/><div style={{opacity:.72}}>{past.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>{setEvTab("rueck");setViewEv(ev);}} onEdit={()=>setEditEv(ev)} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{}} onCopyLink={()=>{}} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} helperNames={helperNames} squad={squadOf(ev.tid)}/>)}</div></>}
           <AffiliateBanner trigger="events" style={{marginTop:14}}/>
           {/* DFB-Spielformen sind Trainer-Fachwissen - Helfer brauchen sie nicht */}
           {!isHelper&&<div style={{marginTop:14}}><DFBFormatsCard cl={myClub} cats={(local.teams||[]).filter(tm=>myTids.includes(tm.id)).map(tm=>tm.cat||tm.name)}/></div>}
@@ -15788,8 +15794,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               <div style={{textAlign:"center",fontSize:12.5,color:"#64748b",padding:"6px"}}>Info-Termin – keine Abstimmung, keine Anwesenheits-Auswertung.</div>
             </div>
           : <VoteOverview ev={viewEv} players={local.players} playerProfiles={local.playerProfiles||[]} teams={local.teams} myTids={myTids} cl={myClub}
-              readOnly={isHelper} trainerNames={trainerNames}
-              helperNames={(local.helpers||[]).filter(h=>(h.tids||[]).includes(viewEv.tid)).map(h=>h.name)}
+              readOnly={isHelper} trainerNames={trainerNames} helperNames={helperNames}
               myKids={isHelper?[]:(((local.trainers||[]).find(x=>x.id===session?.id)?.childNames)||"").split(",").map(x=>x.trim()).filter(Boolean)}
               staff={staffNeed(viewEv,{ perStaff:myClub?.clubSettings?.playersPerStaff||6, trainers:(local.trainers||[]).filter(trn=>(trn.tids||[]).includes(viewEv.tid)&&isActive(trn)).length, squad:(local.playerProfiles||[]).filter(pp=>pp.mainTid===viewEv.tid&&!pp.archived).length })}
               onSetDeadline={deadline=>{
@@ -15886,7 +15891,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         {/* Checkliste direkt in der Orga: Zusagen sehen, ganzen Kader abhaken, Gaeste anlegen */}
         {!isHelper&&<AttendanceCheckoff ev={viewEv}
           teamPlayers={[...new Set([...((local.players||{})[viewEv.tid]||[]), ...((local.playerProfiles||[]).filter(pp=>pp.mainTid===viewEv.tid&&!pp.archived).map(pp=>pp.name))])]}
-          trainerNames={trainerNames}
+          trainerNames={trainerNames} helperNames={helperNames}
           onSetVote={(name,val)=>{
             const nv={...(viewEv.votes||{}),[name]:{val,ts:new Date().toISOString(),byTrainer:true}};
             save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,votes:nv}:e)});
@@ -16567,7 +16572,7 @@ function PlaytimeTracker({ ev, roster, onSave, t }){
 // Anwesenheits-Checkliste: kompletter Kader + alle Abstimmenden, Abhaken,
 // No-Show-Markierung und Gaeste (Probetraining). Haengt im Termin unter
 // "Rueckmeldungen" UND im Orga-Tab (Planung vor Ort).
-function AttendanceCheckoff({ ev, teamPlayers=[], onSetPresent=()=>{}, onSetGuests=()=>{}, trainerNames=[], onSetVote=null }){
+function AttendanceCheckoff({ ev, teamPlayers=[], onSetPresent=()=>{}, onSetGuests=()=>{}, trainerNames=[], helperNames=[], onSetVote=null }){
   const [guestName,setGuestName]=useState("");
   const present=ev.present||{};
   const guests=ev.guests||[];
@@ -16578,8 +16583,9 @@ function AttendanceCheckoff({ ev, teamPlayers=[], onSetPresent=()=>{}, onSetGues
   const removeGuest=(name)=>{ onSetGuests(guests.filter(x=>x!==name)); const np={...present}; delete np[name]; onSetPresent(np); };
   // Kader + selbst angemeldete Gäste (haben abgestimmt, sind aber nicht im Kader).
   // Trainer-Selbstzusagen gehoeren NICHT in die Spieler-Anwesenheit.
-  const _tn=new Set(trainerNames.map(n=>String(n).toLowerCase()));
-  const extraVoters=Object.keys(ev.votes||{}).filter(n=>!teamPlayers.includes(n)&&!_tn.has(String(n).toLowerCase()));
+  const _tn=staffSet(trainerNames,helperNames);
+  const _actx={staff:_tn, squad:squadSet(teamPlayers), guests:ev.guests||[], open:!!ev.open};
+  const extraVoters=Object.entries(ev.votes||{}).filter(([n,v])=>!teamPlayers.includes(n)&&isPlayerVote(n,v,_actx)).map(([n])=>n);
   // Sortierung: erst Zusagen (inkl. "komme später"), dann Offene, dann Absagen
   const rank=n=>{ const v=(ev.votes||{})[n]; const val=getVal(v); if(val==="yes") return (typeof v==="object"&&v?.late)?1:0; return val==="no"?3:2; };
   const roster=[...new Set([...teamPlayers,...extraVoters])].sort((a,b)=>rank(a)-rank(b)||byName(a,b));
@@ -16676,20 +16682,24 @@ function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadlin
   const voted   = Object.entries(ev.votes||{});
   // Spieler und Trainer getrennt zaehlen: fuer "mindestens 6 Spieler" ist die
   // Trainer-Selbstzusage uninteressant - sie steht separat darunter.
-  const _tnLow  = new Set(trainerNames.map(n=>String(n).toLowerCase()));
-  const _hnLow  = new Set((helperNames||[]).map(n=>String(n).toLowerCase()));
-  const isTrainerName = n=>_tnLow.has(String(n).toLowerCase());
+  const _tnSet = staffSet(trainerNames);
+  const _stSet = staffSet(trainerNames,helperNames);
+  const _pctx  = {staff:_stSet, squad:squadSet(teamPlayers), guests:ev.guests||[], open:!!ev.open};
+  const isTrainerName = (n,raw)=>isStaffVote(n,raw,_tnSet);
   // Trainer UND Helfer bleiben in allen Spieler-Listen und -Zahlen aussen vor:
   // sie stehen in ihren eigenen Bereichen (Trainer-Zeile bzw. Helfer-Einsatz).
-  const isStaffName   = n=>isTrainerName(n)||_hnLow.has(String(n).toLowerCase());
-  const votedP  = voted.filter(([n])=>!isStaffName(n));
-  const yesAll  = voted.filter(([,v])=>getVal(v)==="yes").map(([n])=>n).sort(byName);
-  const noAll   = voted.filter(([,v])=>getVal(v)==="no" ).map(([n])=>n).sort(byName);
-  const yes     = yesAll.filter(n=>!isStaffName(n));
-  const no      = noAll.filter(n=>!isStaffName(n));
-  const trYes   = yesAll.filter(isTrainerName);
-  const trNo    = noAll.filter(isTrainerName);
-  const missing = teamPlayers.filter(n=>!(ev.votes||{})[n]&&!isStaffName(n)).sort(byName);
+  // Wer nicht im Kader steht, zaehlt ebenfalls nicht als Spieler.
+  const isStaffName   = (n,raw)=>!isPlayerVote(n,raw,_pctx);
+  const votedP  = voted.filter(([n,v])=>!isStaffName(n,v));
+  const yesAll  = voted.filter(([,v])=>getVal(v)==="yes").sort((a,b)=>byName(a[0],b[0]));
+  const noAll   = voted.filter(([,v])=>getVal(v)==="no" ).sort((a,b)=>byName(a[0],b[0]));
+  const yes     = yesAll.filter(([n,v])=>!isStaffName(n,v)).map(([n])=>n);
+  const no      = noAll.filter(([n,v])=>!isStaffName(n,v)).map(([n])=>n);
+  // Betreuer-Zeile: alles, was nicht als Spieler zaehlt (Trainer, Helfer und
+  // Zusagen von Personen, die nicht im Kader stehen).
+  const trYes   = yesAll.filter(([n,v])=>isStaffName(n,v)).map(([n])=>n);
+  const trNo    = noAll.filter(([n,v])=>isStaffName(n,v)).map(([n])=>n);
+  const missing = teamPlayers.filter(n=>!(ev.votes||{})[n]&&!isStaffName(n,null)).sort(byName);
   const lateVoters = voted.filter(([n])=>isLate(n)).map(([n])=>n);
   // Late arrivals: yes votes with .late field
   const lateArrivals = voted.filter(([,v])=>typeof v==="object"&&v!==null&&v.val==="yes"&&v.late)
@@ -16716,7 +16726,7 @@ function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadlin
       {/* Trainer separat - fuer "mind. 6 Spieler" zaehlen nur die Spieler oben */}
       {(trYes.length>0||trNo.length>0)&&(
         <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap",marginBottom:lateArrivals.length>0?8:16,background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:11,padding:"7px 11px"}}>
-          <span style={{fontSize:11,fontWeight:800,color:"#64748b"}}>🧑‍🏫 TRAINER:</span>
+          <span style={{fontSize:11,fontWeight:800,color:"#64748b"}}>🧑‍🏫 BETREUER:</span>
           {trYes.map(n=><span key={n} style={{display:"inline-flex",alignItems:"center",gap:4,fontSize:11.5,fontWeight:700,color:"#15803d",background:"#dcfce7",borderRadius:99,padding:"2px 8px 2px 3px"}}><Av name={n} sz={16}/>{n} ✓</span>)}
           {trNo.map(n=><span key={n} style={{display:"inline-flex",alignItems:"center",gap:4,fontSize:11.5,fontWeight:700,color:"#dc2626",background:"#fee2e2",borderRadius:99,padding:"2px 8px 2px 3px"}}><Av name={n} sz={16}/>{n} ✕</span>)}
         </div>
@@ -16881,7 +16891,7 @@ function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadlin
         </div>
       </>}
 
-      {!readOnly&&<AttendanceCheckoff ev={ev} teamPlayers={teamPlayers} onSetPresent={onSetPresent} onSetGuests={onSetGuests} trainerNames={trainerNames} onSetVote={onSetVote}/>}
+      {!readOnly&&<AttendanceCheckoff ev={ev} teamPlayers={teamPlayers} onSetPresent={onSetPresent} onSetGuests={onSetGuests} trainerNames={trainerNames} helperNames={helperNames} onSetVote={onSetVote}/>}
 
       {/* "Noch nicht abgestimmt" nur ohne Abhak-Liste - dort stehen Offene mit ✓/✕ drin */}
       {readOnly&&missing.length>0&&<>
@@ -16911,8 +16921,8 @@ function eventWarnings(ev, tod, ctx={}){
   const days = ev.date ? Math.round((new Date(ev.date+"T12:00:00")-new Date(tod+"T12:00:00"))/86400000) : 99;
   const isGame = ["heimspiel","auswarts","freundschaft","turnier"].includes(ev.type);
   // Soll-Vergleich zaehlt nur SPIELER-Zusagen - Trainer-Selbstzusagen bleiben aussen vor
-  const _tn=new Set((ctx.trainerNames||[]).map(n=>String(n).toLowerCase()));
-  const yes = Object.entries(ev.votes||{}).filter(([n,v])=>(typeof v==="object"?v.val:v)==="yes"&&!_tn.has(String(n).toLowerCase())).length;
+  const _tn=staffSet(ctx.trainerNames||[],ctx.helperNames||[]);
+  const yes = Object.entries(ev.votes||{}).filter(([n,v])=>(typeof v==="object"?v.val:v)==="yes"&&!isStaffVote(n,v,_tn)).length;
   if(isGame && days<=3){
     const lu=ev.lineup||{}; const placed=[...(lu.T||[]),...(lu.A||[]),...(lu.M||[]),...(lu.S||[])].length;
     if(placed===0) w.push({label:"Aufstellung fehlt",col:"#7c3aed",bg:"#ede9fe"});
@@ -16953,8 +16963,10 @@ function SpickzettelModal({ev,data,cl,save,fire,onClose}){
   const vv=v=>typeof v==="object"&&v!==null?v.val:v;
   const votes=Object.entries(ev.votes||{});
   // Zusagen ohne Trainer-Selbstzusagen - Trainer stehen in der eigenen Kachel
-  const _tnSp=new Set((data.trainers||[]).filter(x=>!ev.cid||x.cid===ev.cid).map(x=>String(x.name||"").toLowerCase()));
-  const yes=votes.filter(([n,v])=>vv(v)==="yes"&&!_tnSp.has(String(n).toLowerCase())).map(([n])=>n);
+  const _tnSp=staffSet((data.trainers||[]).filter(x=>!ev.cid||x.cid===ev.cid).map(x=>x.name),
+                       (data.helpers||[]).filter(x=>!ev.cid||x.cid===ev.cid).map(x=>x.name));
+  const _kader=squadSet([...new Set([...((data.players||{})[ev.tid]||[]), ...((data.playerProfiles||[]).filter(pp=>pp.mainTid===ev.tid&&!pp.archived).map(pp=>pp.name))])]);
+  const yes=votes.filter(([n,v])=>vv(v)==="yes"&&isPlayerVote(n,v,{staff:_tnSp,squad:_kader,guests:ev.guests||[],open:!!ev.open})).map(([n])=>n);
   const late=votes.filter(([,v])=>vv(v)==="late").map(([n])=>n);
   const trainersN=(data.trainers||[]).filter(x=>(x.tids||[]).includes(ev.tid)&&isActive(x)).length;
   const offers=(ev.helperOffers||[]);
@@ -17425,6 +17437,45 @@ function ContactConsentPublic({contactId,clubParam}){
 // leicht unter. Er wird deshalb ueberall auffaellig markiert - und zwar
 // so lange, bis der Nutzer abgestimmt hat. Schwelle: 7 Tage, je Verein
 // aenderbar ueber clubSettings.shortNoticeDays.
+// ----------------------------------------------------------------
+// Wer zaehlt als Spieler, wer als Betreuer? Zusagen von Trainern und
+// Helfern duerfen nirgends in den Spieler-Zahlen landen. Zwei Wege:
+//   1. Neue Zusagen tragen ihre Rolle mit (votes[name] = {val, role}).
+//   2. Aeltere Zusagen ohne Rolle werden ueber den Namen erkannt -
+//      tolerant gegenueber Schreibweise und abgekuerztem Nachnamen
+//      ("Thorsten B." findet den Trainer "Thorsten Bolwerk").
+// ----------------------------------------------------------------
+const _nrmName = n => String(n||"").toLowerCase().replace(/\./g," ").replace(/\s+/g," ").trim();
+const _shortName = n => { const p=_nrmName(n).split(" "); return p.length>=2 ? p[0]+" "+p[p.length-1][0] : _nrmName(n); };
+const _isAbbrName = n => { const p=_nrmName(n).split(" "); return p.length>=2 && p[p.length-1].length===1; };
+const staffSet = (...listen) => {
+  const ex=new Set(), sh=new Set();
+  listen.flat().filter(Boolean).forEach(n=>{ ex.add(_nrmName(n)); sh.add(_shortName(n)); });
+  return {ex,sh};
+};
+// Zaehlt diese Zusage als Spieler? Verlassen kann man sich nur auf den Kader:
+// wer nicht im Kader steht und nicht als Gast eingetragen ist, ist kein Spieler
+// (typischerweise ein Trainer oder Helfer, dessen Name nirgends hinterlegt ist).
+// Ohne gepflegten Kader bleibt es bei der alten Zaehlung.
+const isPlayerVote = (name, raw, ctx={}) => {
+  if(isStaffVote(name, raw, ctx.staff)) return false;
+  if(ctx.open) return true;
+  const kader = ctx.squad;
+  if(!kader || !kader.size) return true;
+  const n=_nrmName(name);
+  return kader.has(n) || (ctx.guests||[]).some(g=>_nrmName(g)===n);
+};
+const squadSet = (namen=[]) => new Set(namen.filter(Boolean).map(_nrmName));
+
+const isStaffVote = (name, raw, set) => {
+  const r = (raw&&typeof raw==="object") ? raw.role : null;
+  if(r==="trainer"||r==="helper"||r==="admin") return true;
+  if(!set) return false;
+  const n=_nrmName(name);
+  if(set.ex.has(n)) return true;
+  return _isAbbrName(name) && set.sh.has(_shortName(name));
+};
+
 const SHORT_NOTICE_DAYS = 7;
 const shortNoticeDaysOf = cl => Number(cl?.clubSettings?.shortNoticeDays) || SHORT_NOTICE_DAYS;
 const daysUntilD = (from,to) => Math.round((new Date(to+"T12:00:00")-new Date(from+"T12:00:00"))/86400000);
@@ -17546,21 +17597,24 @@ function FerienHinweis({hols,from,to}){
   );
 }
 
-function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSelfVote,onRemind,onPlan,planTitle,onAttend,onBrief,modTraining=true,trainerNames=[],onSubReq=null,helperId=null,onHelperQuick=null,onSetup=null}) {
+function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSelfVote,onRemind,onPlan,planTitle,onAttend,onBrief,modTraining=true,trainerNames=[],helperNames=[],squad=[],onSubReq=null,helperId=null,onHelperQuick=null,onSetup=null}) {
   const _ferien=useSchoolHolidays(cl?.clubSettings?.holidayState);
   const [more,setMore]=useState(false);
   const wd=d=>{ try{ return new Date(d+"T12:00:00").toLocaleDateString("de-DE",{weekday:"short"})+", "; }catch{ return ""; } };
   const wx=useWeather(plzToGeo(cl?.plz));
   const eT=ET[ev.type]||ET.training; const tF=ev.date===tod; const p=cl?.pri||"#16a34a";
-  const warns=eventWarnings(ev,tod,{ perStaff:cl?.clubSettings?.playersPerStaff||6, trainerNames });
+  const warns=eventWarnings(ev,tod,{ perStaff:cl?.clubSettings?.playersPerStaff||6, trainerNames, helperNames });
   const _v=ev.votes||{};
   const vc=Object.keys(_v).length;
   // Spieler- und Trainer-Zusagen getrennt: "mind. 6 Spieler" braucht die Spieler-Zahl
-  const _tnd=new Set(trainerNames.map(n=>String(n).toLowerCase()));
+  const _staff=staffSet(trainerNames,helperNames);
+  const _tnOnly=staffSet(trainerNames);
+  const _ctx={staff:_staff, squad:squadSet(squad), guests:ev.guests||[], open:!!ev.open};
   const _vv=v=>(typeof v==="object"?v.val:v);
-  const yes=ev.pt==="att"?Object.entries(_v).filter(([n,v])=>_vv(v)==="yes"&&!_tnd.has(String(n).toLowerCase())).length:0;
-  const no =ev.pt==="att"?Object.entries(_v).filter(([n,v])=>_vv(v)==="no" &&!_tnd.has(String(n).toLowerCase())).length:0;
-  const trYesN=ev.pt==="att"?Object.entries(_v).filter(([n,v])=>_vv(v)==="yes"&&_tnd.has(String(n).toLowerCase())).length:0;
+  const yes=ev.pt==="att"?Object.entries(_v).filter(([n,v])=>_vv(v)==="yes"&&isPlayerVote(n,v,_ctx)).length:0;
+  const no =ev.pt==="att"?Object.entries(_v).filter(([n,v])=>_vv(v)==="no" &&isPlayerVote(n,v,_ctx)).length:0;
+  // Betreuer-Chip: erkannte Trainer plus alle, die nicht zum Kader gehoeren
+  const trYesN=ev.pt==="att"?Object.entries(_v).filter(([n,v])=>_vv(v)==="yes"&&!isPlayerVote(n,v,_ctx)).length:0;
   const dlPassed = isDeadlinePassed(ev);
   const myVoteRaw = selfName ? _v[selfName] : null;
   const myVote = typeof myVoteRaw==="object"&&myVoteRaw!==null ? myVoteRaw.val : myVoteRaw;
@@ -17600,7 +17654,7 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
           </div>; })()}
           {ev.type==="training"&&planTitle&&<div style={{marginTop:5}}><span style={{fontSize:11,fontWeight:700,color:"#4f46e5",background:"#eef2ff",borderRadius:6,padding:"2px 8px"}}>📋 {planTitle}{ev.planBy?` · von ${ev.planBy}`:""}</span></div>}
           {warns.length>0&&<div style={{display:"flex",gap:5,marginTop:5,flexWrap:"wrap"}}>{warns.map((w,i)=><span key={i} style={{fontSize:11,fontWeight:800,color:w.col,background:w.bg,borderRadius:6,padding:"2px 8px"}}>⚠ {w.label}</span>)}</div>}
-          {vc>0&&<div style={{display:"flex",gap:5,marginTop:4,flexWrap:"wrap"}}>{ev.pt==="att"?<><Tag c="#16a34a" ch={`✓ ${yes} Spieler`}/><Tag c="#dc2626" bg="#fee2e2" ch={`✕ ${no}`}/>{trYesN>0&&<Tag c="#4f46e5" bg="#eef2ff" ch={`🧑‍🏫 ${trYesN} Trainer`}/>}</>:<Tag c="#2563eb" ch={`📝 ${vc} Einträge`}/>}</div>}
+          {vc>0&&<div style={{display:"flex",gap:5,marginTop:4,flexWrap:"wrap"}}>{ev.pt==="att"?<><Tag c="#16a34a" ch={`✓ ${yes} Spieler`}/><Tag c="#dc2626" bg="#fee2e2" ch={`✕ ${no}`}/>{trYesN>0&&<Tag c="#4f46e5" bg="#eef2ff" ch={`🧑‍🏫 ${trYesN} Betreuer`}/>}</>:<Tag c="#2563eb" ch={`📝 ${vc} Einträge`}/>}</div>}
           {/* Helfer-Stand: immer sichtbar, auch wenn (noch) alle auf der Warteliste
               stehen - der Trainer soll auf einen Blick wissen, wer mit anpackt. */}
           {(()=>{
