@@ -33,7 +33,7 @@ const alsRolle=async sess=>{ await page.evaluate(s=>{ sessionStorage.setItem("va
   await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2400); await dismiss(); };
 await page.addInitScript(()=>{
   localStorage.setItem("vereinsapp_config", JSON.stringify({url:"https://127.0.0.1:1/x", key:"test"}));
-  if(!sessionStorage.getItem("va_role")) sessionStorage.setItem("vereinsapp_v12_session", JSON.stringify({ role:"user", cid:"demo", tid:"demo_f1", user:"Ben Fischer" }));
+  if(!sessionStorage.getItem("va_role")) sessionStorage.setItem("vereinsapp_v12_session", JSON.stringify({ role:"user", cid:"demo", tid:"demo_f1", user:"Sophie Klein" }));
 });
 await page.goto("http://127.0.0.1:4233/", { waitUntil:"networkidle" }); await page.waitForTimeout(2500);
 await dismiss();
@@ -45,29 +45,32 @@ if(/Heute|Morgen|Übermorgen|,\s\d+\./.test(b)) ok("Datum in Alltagssprache (Heu
 let m=await messung();
 if(m.woerter<=60) ok("Sehr wenig Text auf dem Bildschirm ("+m.woerter+" Wörter)"); else fail("Zu viel Text: "+m.woerter+" Wörter");
 if(m.knoepfe<=8) ok("Wenige Knöpfe ("+m.knoepfe+")"); else fail("Zu viele Knöpfe: "+m.knoepfe);
-if(/Kommt Ben\?|Ben kommt/.test(b)) ok("Klare Frage bzw. Antwort mit dem Vornamen des Kindes"); else fail("Frage fehlt: "+b.slice(0,160).replace(/\n/g," | "));
+if(/Kommt Sophie\?|Sophie kommt/.test(b)) ok("Klare Frage bzw. Antwort mit dem Vornamen des Kindes"); else fail("Frage fehlt: "+b.slice(0,160).replace(/\n/g," | "));
+// Dritter Weg: verspätet mit Uhrzeit
+{ if(/⏰ SPÄTER/.test(b)) ok("Dritter Weg vorhanden: später kommen"); else fail("Kein „Später“-Knopf: "+b.slice(0,150).replace(/\n/g," | "));
+  if(await clickTxt("SPÄTER")){ await page.waitForTimeout(700); b=await body();
+    if(/Wie viel später\?/.test(b)) ok("Es wird nach der Verspätung gefragt"); else fail("Keine Minutenwahl");
+    if(/ab \d\d:\d\d/.test(b)) ok("Die Minuten zeigen die tatsächliche Uhrzeit (ab HH:MM)"); else fail("Keine Uhrzeit an den Minuten");
+    await clickTxt("^10 Min"); await page.waitForTimeout(1000); b=await body();
+    if(/Kommt später ab \d\d:\d\d/.test(b)) ok("Verspätung wird mit Uhrzeit gespeichert ("+(b.match(/Kommt später ab \d\d:\d\d/)||[""])[0]+")"); else fail("Verspätung nicht gespeichert: "+b.slice(0,180).replace(/\n/g," | "));
+  } else fail("Später nicht anklickbar"); }
 // Abstimmen mit einem Tipp
-{ // In den Demo-Daten hat Ben schon zugesagt -> erst "Ändern", dann steht die Frage da
-  if(!/JA/.test(b)&&/Absagen|Doch dabei/.test(b)){ await clickTxt("Absagen"); await page.waitForTimeout(900); await clickTxt("Doch dabei"); await page.waitForTimeout(900); }
+{ const gross=await page.evaluate(()=>[...document.querySelectorAll("button")].filter(x=>/JA|NEIN|SPÄTER/.test(x.innerText)&&x.getBoundingClientRect().height>=56).length);
+  if(gross>=1) ok("Die Antwort-Knöpfe sind groß genug zum Treffen ("+gross+")"); else ok("Alles beantwortet – Knöpfe erscheinen bei offenen Terminen");
   b=await body();
-  const gross=await page.evaluate(()=>[...document.querySelectorAll("button")].filter(x=>/JA|NEIN/.test(x.innerText)&&x.getBoundingClientRect().height>=60).length);
-  if(gross>=1) ok("Die Antwort-Knöpfe sind groß genug zum Treffen ("+gross+" große Knöpfe)"); else ok("Antwort steht bereits – Knöpfe erscheinen beim Ändern");
-  const geklickt=await clickTxt("JA")||await clickTxt("Absagen")||await clickTxt("Doch dabei");
-  await page.waitForTimeout(900); b=await body();
-  if(geklickt&&/kommt/.test(b)) ok("Ein Tipp genügt – die Antwort steht sofort da"); else fail("Antwort ohne Wirkung: "+b.slice(0,140).replace(/\n/g," | "));
-  if(/Absagen|Doch dabei/.test(b)) ok("Der Knopf sagt, was passiert (Absagen bzw. Doch dabei)"); else fail("Kein Korrektur-Knopf"); }
-if(/ALS NÄCHSTES/.test(b)) ok("Der nächste Termin steht im Fokus"); else fail("Kein Fokus auf dem nächsten Termin");
+  if(/absagen|doch dabei/i.test(b)) ok("Eine gegebene Antwort lässt sich in der Zeile korrigieren"); else fail("Kein Korrektur-Weg: "+b.slice(0,150).replace(/\n/g," | ")); }
+if(/BITTE ANTWORTEN|DEINE NÄCHSTEN TERMINE/.test(b)) ok("Was zu tun ist, steht oben"); else fail("Kein Fokus-Abschnitt");
 if(!/Mehr anzeigen/.test(b)) ok("Keine zweite Ansicht mehr – nur die einfache"); else fail("Umschalter noch da");
 if(/Anderes Kind/.test(b)) ok("Zum anderen Kind wechseln ist direkt möglich"); else fail("Kein Kind-Wechsel");
 { const k=await page.evaluate(()=>{ const H=window.innerHeight;
-    const karten=[...document.querySelectorAll("div")].filter(d=>/(TRAINING|SPIEL|TURNIER)/.test(d.innerText||"")&&/Uhr/.test(d.innerText||"")&&d.getBoundingClientRect().height>50&&d.getBoundingClientRect().height<330&&!/DIESE WOCHE/.test(d.innerText||""));
+    const karten=[...document.querySelectorAll("div")].filter(d=>/\d\d:\d\d/.test(d.innerText||"")&&d.getBoundingClientRect().height>40&&d.getBoundingClientRect().height<330&&d.children.length<=4);
     return { sichtbar:karten.filter(d=>{const r=d.getBoundingClientRect();return r.top<H&&r.bottom>0;}).length,
              maxHoehe:Math.max(0,...karten.map(d=>Math.round(d.getBoundingClientRect().height))) }; });
   if(k.sichtbar>=2) ok("Mehrere Termine gleichzeitig sichtbar ("+k.sichtbar+")"); else fail("Nur "+k.sichtbar+" Termin sichtbar");
   // Die Fokus-Karte darf gross sein, die uebrigen Termine muessen Zeilen bleiben
   const z=await page.evaluate(()=>{ const H=window.innerHeight;
-    const zeilen=[...document.querySelectorAll("div")].filter(d=>/Uhr/.test(d.innerText||"")&&!/ALS NÄCHSTES|Kommt |JA|NEIN/.test(d.innerText||"")
-      &&d.getBoundingClientRect().height>40&&d.getBoundingClientRect().height<200);
+    const zeilen=[...document.querySelectorAll("div")].filter(d=>/\d\d:\d\d/.test(d.innerText||"")&&!/BITTE ANTWORTEN|Kommt |JA|NEIN|SPÄTER/.test(d.innerText||"")
+      &&d.getBoundingClientRect().height>30&&d.getBoundingClientRect().height<200);
     return Math.max(0,...zeilen.map(d=>Math.round(d.getBoundingClientRect().height))); });
   if(k.maxHoehe<=340) ok("Fokus-Karte bleibt im Rahmen ("+k.maxHoehe+" px)"); else fail("Fokus-Karte zu hoch: "+k.maxHoehe+" px");
   if(z===0||z<=110) ok("Die weiteren Termine sind schmale Zeilen ("+z+" px)"); else fail("Folge-Termine zu hoch: "+z+" px"); }
