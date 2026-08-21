@@ -79,6 +79,24 @@ if(/Anderes Kind/.test(b)) ok("Zum anderen Kind wechseln ist direkt möglich"); 
   if(k.maxHoehe<=340) ok("Fokus-Karte bleibt im Rahmen ("+k.maxHoehe+" px)"); else fail("Fokus-Karte zu hoch: "+k.maxHoehe+" px");
   if(z===0||z<=110) ok("Die weiteren Termine sind schmale Zeilen ("+z+" px)"); else fail("Folge-Termine zu hoch: "+z+" px"); }
 
+// ===== 1a2) Fenster: heute und die naechsten 6 Tage =====
+{ b=await body();
+  const wt=["SONNTAG","MONTAG","DIENSTAG","MITTWOCH","DONNERSTAG","FREITAG","SAMSTAG"];
+  const grenze=new Date(Date.now()+6*86400000);
+  const soll="BIS "+wt[grenze.getDay()];
+  if(b.includes(soll)||/SCHON BEANTWORTET|BITTE ANTWORTEN/.test(b)) ok("Liste reicht bis "+soll.toLowerCase().replace("bis ","")+" (heute + 6 Tage)");
+  else fail("Falsches Zeitfenster, erwartet „"+soll+"“: "+b.slice(0,200).replace(/\n/g," | "));
+  // Alles Spätere steckt hinter dem Später-Knopf
+  const spaeterKnopf=/▸ Später \(\d+\)/.test(b);
+  const datumInListe=await page.evaluate(()=>{
+    const g=new Date(Date.now()+6*86400000).toISOString().slice(0,10);
+    const t=document.body.innerText;
+    // Termine im Hauptbereich (vor dem Später-Knopf)
+    const vor=t.split("Später")[0];
+    return { vor:vor.length, hatSpaeter:/Später \(/.test(t) };
+  });
+  if(!datumInListe.hatSpaeter||spaeterKnopf) ok("Spätere Termine sind eingeklappt"); else fail("Spätere Termine stehen offen in der Liste"); }
+
 // ===== 1b) Anderen Termin antippen: der wird groß, mit allen drei Wegen =====
 { const vorher=(await body()).split("\n").slice(0,12).join(" ");
   const geklickt=await page.evaluate(()=>{ const z=[...document.querySelectorAll("div")].filter(d=>/\d\d:\d\d/.test(d.innerText||"")&&d.style.cursor==="pointer"); if(!z.length) return false; z[0].click(); return true; });

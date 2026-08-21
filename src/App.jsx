@@ -21230,7 +21230,7 @@ function EinfachHelfer({ cl, events, helperId, helperName, teams, onJa, onNein, 
   const [spaeterAuf,setSpaeterAuf]=useState(false);
   const alle=events.filter(e=>e.date>=tod);
   const naechster=alle[0]||null;
-  const woche=alle.slice(1).filter(e=>e.date<=sonntag);
+  const woche=alle.slice(1).filter(e=>e.date<=sonntag);      // heute + 6 Tage
   const spaeter=alle.slice(1).filter(e=>e.date>sonntag);
   const standOf=ev=>{
     const offen = ev.type==="training" || !!ev.helferOpen;
@@ -21321,7 +21321,7 @@ function EinfachHelfer({ cl, events, helperId, helperName, teams, onJa, onNein, 
           );
         })()}
         {woche.length>0&&<>
-          <div style={{fontSize:11,fontWeight:900,color:"#64748b",letterSpacing:.8,margin:"4px 2px 7px"}}>DIESE WOCHE</div>
+          <div style={{fontSize:11,fontWeight:900,color:"#475569",letterSpacing:.8,margin:"4px 2px 7px"}}>BIS {bisWochentag().toUpperCase()}</div>
           {woche.map(Zeile)}
         </>}
         {spaeter.length>0&&<>
@@ -21369,8 +21369,11 @@ const TerminKopf=({ev,col,gross})=>(
     {gross&&dauerText(ev)&&<div style={{fontSize:12.5,color:"#64748b",fontWeight:600,marginTop:2}}>{dauerText(ev)}</div>}
   </>
 );
-const bisSonntag=()=>{ try{ const d=new Date(now()+"T12:00:00"); const bis=(7-((d.getDay()||7)))||0;
-  d.setDate(d.getDate()+bis); return d.toISOString().slice(0,10); }catch{ return addD(now(),7); } };
+// Rollendes Fenster: heute und die naechsten 6 Tage. Ist heute Montag,
+// reicht es bis einschliesslich Sonntag.
+const WOCHE_TAGE=6;
+const bisSonntag=()=>addD(now(),WOCHE_TAGE);
+const bisWochentag=()=>{ try{ return WT[new Date(bisSonntag()+"T12:00:00").getDay()]; }catch{ return ""; } };
 // Kurzes Datum ohne Zeilenumbruch: "Di, 8. Sept · 17:00"
 const WTK=["So","Mo","Di","Mi","Do","Fr","Sa"];
 const MONK=["Jan.","Feb.","März","April","Mai","Juni","Juli","Aug.","Sept.","Okt.","Nov.","Dez."];
@@ -21500,8 +21503,10 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
   // Beantwortetes: die naechsten vier bleiben sichtbar, der Rest wandert unter
   // "Spaeter". So steht nie eine leere Seite da, nur weil die Woche endet.
   const fertigRest=fertig.filter(e=>e.id!==fokus?.id);
-  const wocheFertig=fertigRest.slice(0,4);
-  const spaeterFertig=fertigRest.slice(4);
+  const imFenster=e=>e.date<=sonntag;
+  const wocheFertig=fertigRest.filter(imFenster);
+  const spaeterFertig=fertigRest.filter(e=>!imFenster(e));
+  const spaeterOffen=restOffen.filter(e=>!imFenster(e)).length;
   const statusText=a=>a.art==="ja"?`${kurzName} kommt`:a.art==="spaet"?`Kommt später`:`${kurzName} kommt nicht`;
   // Erledigt: leise Zeile, kein Kasten - nur eine feine Trennung
   const FertigZeile=(ev)=>{
@@ -21611,18 +21616,21 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
                 </>}
           </div>
         ); })()}
-        {restOffen.length>0&&<>{Titel("AUCH NOCH OFFEN",restOffen.length)}{restOffen.map(OffenZeile)}</>}
+        {restOffen.filter(imFenster).length>0&&<>{Titel("AUCH NOCH OFFEN",restOffen.filter(imFenster).length)}{restOffen.filter(imFenster).map(OffenZeile)}</>}
         {/* 2. Erledigtes tritt zurueck */}
         {wocheFertig.length>0&&<>
-          {Titel(offen.length?"SCHON BEANTWORTET":"DEINE NÄCHSTEN TERMINE",0)}
+          {Titel(offen.length?"SCHON BEANTWORTET":`BIS ${bisWochentag().toUpperCase()}`,0)}
           <div style={{background:"#fff",borderRadius:14,border:"1.5px solid #e2e8f0",padding:"2px 10px"}}>{wocheFertig.map(FertigZeile)}</div>
         </>}
-        {spaeterFertig.length>0&&<>
+        {(spaeterFertig.length+spaeterOffen)>0&&<>
           <button onClick={()=>setSpaeterAuf(a=>!a)}
             style={{width:"100%",marginTop:10,padding:"12px",minHeight:44,borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>
-            {spaeterAuf?"▾ Später zuklappen":`▸ Später (${spaeterFertig.length})`}
+            {spaeterAuf?"▾ Später zuklappen":`▸ Später (${spaeterFertig.length+spaeterOffen})${spaeterOffen?` · ${spaeterOffen} offen`:""}`}
           </button>
-          {spaeterAuf&&<div style={{background:"#fff",borderRadius:14,border:"1.5px solid #e2e8f0",padding:"2px 10px",marginTop:8}}>{spaeterFertig.map(FertigZeile)}</div>}
+          {spaeterAuf&&<>
+            {restOffen.filter(e=>!imFenster(e)).map(OffenZeile)}
+            {spaeterFertig.length>0&&<div style={{background:"#fff",borderRadius:14,border:"1.5px solid #e2e8f0",padding:"2px 10px",marginTop:8}}>{spaeterFertig.map(FertigZeile)}</div>}
+          </>}
         </>}
         {alle.length>0&&!offen.length&&(
           <div style={{textAlign:"center",fontSize:13,color:"#15803d",fontWeight:800,marginTop:12}}>✓ Alles beantwortet – danke!</div>
