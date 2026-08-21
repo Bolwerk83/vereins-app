@@ -7397,6 +7397,24 @@ function HelperLogin({cl,helpers,teams=[],onLogin,onSetHelperPw,onBack}) {
   );
 }
 
+// Gemerkte Passwoerter laufen ab. Wer einmal richtig getippt hat, wird eine
+// Weile nicht mehr gefragt - aber nicht fuer immer. Aeltere Merker ohne
+// Zeitstempel gelten sofort als abgelaufen.
+const MERK_TAGE = 30;
+const merkSet = (key,val) => { try{ localStorage.setItem(key, JSON.stringify({v:val, ts:Date.now()})); }catch{} };
+const merkTageRest = (key,val) => {
+  try{
+    const raw=localStorage.getItem(key); if(!raw) return 0;
+    let o=null; try{ o=JSON.parse(raw); }catch{}
+    if(!o||typeof o!=="object"||!o.ts||o.v!==val){ localStorage.removeItem(key); return 0; }
+    const rest=MERK_TAGE-Math.floor((Date.now()-o.ts)/86400000);
+    if(rest<=0){ localStorage.removeItem(key); return 0; }
+    return rest;
+  }catch{ return 0; }
+};
+const merkOk  = (key,val) => merkTageRest(key,val)>0;
+const merkWeg = (key) => { try{ localStorage.removeItem(key); }catch{} };
+
 function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,preselectTid,onWaitlist,onConsent,onGuestConsent,onSetChildPw}) {
   const [showWait,setShowWait]=useState(false);
   const { tr } = useT();
@@ -7435,7 +7453,7 @@ function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,pre
     const prof=profileFor(tid2,name);
     if(prof?.childPw){
       // Geraet kennt das Kind-Passwort bereits (frueher korrekt eingegeben)? Dann durchwinken.
-      try{ if(localStorage.getItem("va_childok_"+prof.id)===prof.childPw){ startAfterPw(tid2,name); return; } }catch{}
+      if(merkOk("va_childok_"+prof.id, prof.childPw)){ startAfterPw(tid2,name); return; }
       setPwTry(""); setPwErr(false); setPwGate({tid:tid2,name}); return;
     }
     startAfterPw(tid2,name);
@@ -7476,7 +7494,7 @@ function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,pre
   React.useEffect(()=>{
     if(step!=="pwd"||!ctSkip||ctSkip.locked||!autoRef.current) return;
     try{
-      if(localStorage.getItem("va_teamok_"+ctSkip.id)===(ctSkip.pwd||"1")){
+      if(merkOk("va_teamok_"+ctSkip.id,(ctSkip.pwd||"1"))){
         const assigned=(playerProfiles||[]).some(p2=>p2.mainTid===ctSkip.id);
         setStep(assigned?"name":"locked");
       }
@@ -7555,7 +7573,7 @@ function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,pre
         </div>
         <div style={{background:"rgba(255,255,255,.1)",backdropFilter:"blur(16px)",borderRadius:22,padding:"24px 22px",border:"1px solid rgba(255,255,255,.15)"}}>
           <PwInput value={pwd} onChange={e=>{setPwd(e.target.value);setPwdErr(false);}}
-            onKeyDown={e=>{if(e.key==="Enter"){if(ct?.locked){setPwdErr(true);}else if(checkPw(pwd,ct?.pwd||"")){try{localStorage.setItem("va_teamok_"+ct.id,ct?.pwd||"1");}catch{} const assigned=(playerProfiles||[]).some(p=>p.mainTid===ct.id);if(assigned)setStep("name");else setStep("locked");}else{setPwdErr(true);setTimeout(()=>setPwdErr(false),1800);}}}}
+            onKeyDown={e=>{if(e.key==="Enter"){if(ct?.locked){setPwdErr(true);}else if(checkPw(pwd,ct?.pwd||"")){merkSet("va_teamok_"+ct.id, ct?.pwd||"1"); const assigned=(playerProfiles||[]).some(p=>p.mainTid===ct.id);if(assigned)setStep("name");else setStep("locked");}else{setPwdErr(true);setTimeout(()=>setPwdErr(false),1800);}}}}
             placeholder={tr("ufPwPh")} autoFocus autoCapitalize="none" autoCorrect="off" spellCheck={false}
             style={{width:"100%",padding:"13px 16px",fontSize:16,background:"rgba(255,255,255,.12)",border:`2px solid ${pwdErr?"#ff6b6b":pwd?"rgba(255,255,255,.4)":"rgba(255,255,255,.2)"}`,borderRadius:13,outline:"none",color:"#fff",marginBottom:10}}/>
           {pwdErr&&<FriendlyError type="wrongPassword"/>}
@@ -7570,7 +7588,7 @@ function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,pre
             {tr("ufPwForgot")}
           </button>
           <button onClick={()=>{if(ct?.locked){setPwdErr(true);}else if(checkPw(pwd,ct?.pwd||"")){
-            try{localStorage.setItem("va_teamok_"+ct.id,ct?.pwd||"1");}catch{}   // Geraet merkt sich das Team-Passwort
+            merkSet("va_teamok_"+ct.id, ct?.pwd||"1");   // Geraet merkt sich das Team-Passwort
             const assigned=(playerProfiles||[]).some(p=>p.mainTid===ct.id);
             if(assigned) setStep("name");
             else setStep("locked"); // team not yet released
@@ -7613,12 +7631,12 @@ function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,pre
             <div style={{fontWeight:900,fontSize:17,color:"#0f172a",marginBottom:4}}>{tr("pwGateT")} {maskName(pwGate.name)}</div>
             <p style={{fontSize:12.5,color:"#64748b",marginBottom:12}}>{tr("pwGateSub")}</p>
             <input type="password" autoFocus value={pwTry} onChange={e=>{setPwTry(e.target.value);setPwErr(false);}}
-              onKeyDown={e=>{ if(e.key==="Enter"){ const prof=profileFor(pwGate.tid,pwGate.name); if(prof&&checkPw(pwTry,prof.childPw)){ try{localStorage.setItem("va_childok_"+prof.id,prof.childPw);}catch{} const g=pwGate; setPwGate(null); startAfterPw(g.tid,g.name);} else { setPwErr(true);} } }}
+              onKeyDown={e=>{ if(e.key==="Enter"){ const prof=profileFor(pwGate.tid,pwGate.name); if(prof&&checkPw(pwTry,prof.childPw)){ merkSet("va_childok_"+prof.id, prof.childPw); const g=pwGate; setPwGate(null); startAfterPw(g.tid,g.name);} else { setPwErr(true);} } }}
               placeholder={tr("pwGatePh")} style={{width:"100%",padding:"12px 14px",fontSize:15,border:`1.5px solid ${pwErr?"#fca5a5":"#e2e8f0"}`,borderRadius:12,outline:"none",fontFamily:"inherit",boxSizing:"border-box",marginBottom:pwErr?6:12}}/>
             {pwErr&&<div style={{fontSize:12,color:"#dc2626",fontWeight:700,marginBottom:8}}>{tr("pwGateErr")}</div>}
             <div style={{display:"flex",gap:9}}>
               <button onClick={()=>setPwGate(null)} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",color:"#475569"}}>{tr("cgCancel")}</button>
-              <button onClick={()=>{ const prof=profileFor(pwGate.tid,pwGate.name); if(prof&&checkPw(pwTry,prof.childPw)){ try{localStorage.setItem("va_childok_"+prof.id,prof.childPw);}catch{} const g=pwGate; setPwGate(null); startAfterPw(g.tid,g.name);} else { setPwErr(true);} }}
+              <button onClick={()=>{ const prof=profileFor(pwGate.tid,pwGate.name); if(prof&&checkPw(pwTry,prof.childPw)){ merkSet("va_childok_"+prof.id, prof.childPw); const g=pwGate; setPwGate(null); startAfterPw(g.tid,g.name);} else { setPwErr(true);} }}
                 style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>{tr("pwGateBtn")}</button>
             </div>
             <div style={{fontSize:11,color:"#64748b",marginTop:10,textAlign:"center"}}>{tr("pwHintReset")}</div>
@@ -7695,14 +7713,14 @@ function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,pre
       </div>
       {/* Transparenz: Warum kam hier kein Passwort? Weil das Geraet es kennt -
           und man kann das mit einem Tipp wieder rueckgaengig machen. */}
-      {(()=>{ let gemerkt=false; try{ gemerkt=ct&&localStorage.getItem("va_teamok_"+ct.id)===(ct.pwd||"1"); }catch{}
+      {(()=>{ const restTage=ct?merkTageRest("va_teamok_"+ct.id,(ct.pwd||"1")):0; const gemerkt=restTage>0;
         if(!gemerkt) return null;
         return (
           <div style={{background:"#eff6ff",borderBottom:"1px solid #bfdbfe",padding:"10px 14px",display:"flex",alignItems:"center",gap:10}}>
             <div style={{flex:1,fontSize:12.5,color:"#1e40af",lineHeight:1.45}}>
-              Dieses Handy kennt das Passwort von <b>{ct?.name}</b> – deshalb kommt hier keine Abfrage.
+              Dieses Handy merkt sich das Passwort von <b>{ct?.name}</b> – noch {restTage} Tag{restTage===1?"":"e"}, dann wird wieder gefragt.
             </div>
-            <button onClick={()=>{ try{ localStorage.removeItem("va_teamok_"+ct.id); }catch{} autoRef.current=false; setStep("pwd"); }}
+            <button onClick={()=>{ merkWeg("va_teamok_"+ct.id); autoRef.current=false; setStep("pwd"); }}
               style={{flexShrink:0,padding:"10px 11px",minHeight:44,borderRadius:10,border:"1.5px solid #bfdbfe",background:"#fff",color:"#1e40af",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
               Wieder fragen
             </button>

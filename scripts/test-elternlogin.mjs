@@ -22,7 +22,7 @@ const dismiss=async()=>{ for(let k=0;k<10;k++){ const done=await page.evaluate((
   return true; }); await page.waitForTimeout(420); if(done) break; } };
 await page.addInitScript(()=>{
   localStorage.setItem("vereinsapp_config", JSON.stringify({url:"https://127.0.0.1:1/x", key:"test"}));
-  localStorage.setItem("va_teamok_demo_f1","h2h7");   // Geraet kennt das Team-Passwort schon
+  localStorage.setItem("va_teamok_demo_f1", JSON.stringify({v:"h2h7", ts:Date.now()}));   // frisch gemerkt
   sessionStorage.setItem("vereinsapp_v12_session", JSON.stringify({ role:"user", cid:"demo", tid:"demo_f1", user:"Ben Fischer" }));
 });
 await page.goto("http://127.0.0.1:4235/", { waitUntil:"networkidle" }); await page.waitForTimeout(2500);
@@ -35,7 +35,8 @@ await clickTxt("Anderes Kind"); await page.waitForTimeout(1400);
 b=await body();
 const nameListe=/Wer bist du|suchen|Ben|Leon|Lina|Sophie/i.test(b);
 if(nameListe) ok("Der Wechsel führt direkt zur Namensliste (Team-Passwort ist gemerkt)"); else ok("Passwort wird abgefragt (Merker nicht aktiv)");
-if(/Dieses Handy kennt das Passwort/.test(b)) ok("Die App erklärt, warum kein Passwort kommt"); else fail("Kein Hinweis auf das gemerkte Passwort");
+if(/Dieses Handy merkt sich das Passwort/.test(b)) ok("Die App erklärt, warum kein Passwort kommt"); else fail("Kein Hinweis auf das gemerkte Passwort");
+if(/noch \d+ Tage?, dann wird wieder gefragt/.test(b)) ok("Der Merker läuft sichtbar ab ("+(b.match(/noch \d+ Tage?/)||[""])[0]+")"); else fail("Kein Ablaufdatum sichtbar");
 if(/Wieder fragen/.test(b)) ok("Das Merken lässt sich mit einem Tipp rückgängig machen"); else fail("Kein Weg, das Passwort wieder abfragen zu lassen");
 
 // ===== 2) Zurück muss wirken – frühere Endlosschleife =====
@@ -60,6 +61,26 @@ if(/F-Jugend/.test(b)){
   const b2=await body();
   if(/Ben|Leon|Lina|Sophie|Passwort/i.test(b2)) ok("Nach dem Zurückgehen kommt man wieder vorwärts"); else fail("Vorwärts blockiert: "+b2.slice(0,150).replace(/\n/g," | "));
 } else console.log("HINWEIS: Jugend-Auswahl nicht sichtbar – Schritt übersprungen");
+
+// ===== 4) Alter Merker ohne Zeitstempel: sofort ungueltig =====
+await page.evaluate(()=>{ sessionStorage.setItem("vereinsapp_v12_session", JSON.stringify({ role:"user", cid:"demo", tid:"demo_f1", user:"Ben Fischer" })); });
+await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2400); await dismiss();
+// erst nach dem Laden ueberschreiben - sonst setzt das Start-Skript den Merker neu
+await page.evaluate(()=>{ localStorage.setItem("va_teamok_demo_f1","h2h7"); });
+await clickTxt("Anderes Kind"); await page.waitForTimeout(1400);
+b=await body();
+if(/Passwort|Passwort eingeben|Team-Passwort/i.test(b)&&!/Dieses Handy merkt sich/.test(b)) ok("Ein alter Merker ohne Ablaufdatum gilt nicht mehr – das Passwort wird gefragt");
+else fail("Alter Merker gilt weiter: "+b.slice(0,170).replace(/\n/g," | "));
+
+// ===== 5) Abgelaufener Merker (31 Tage alt) =====
+await page.evaluate(()=>{ sessionStorage.setItem("vereinsapp_v12_session", JSON.stringify({ role:"user", cid:"demo", tid:"demo_f1", user:"Ben Fischer" })); });
+await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2400); await dismiss();
+await page.evaluate(()=>{ localStorage.setItem("va_teamok_demo_f1", JSON.stringify({v:"h2h7", ts:Date.now()-31*86400000})); });
+await clickTxt("Anderes Kind"); await page.waitForTimeout(1400);
+b=await body();
+if(!/Dieses Handy merkt sich/.test(b)) ok("Nach 30 Tagen wird wieder nach dem Passwort gefragt"); else fail("Abgelaufener Merker gilt weiter");
+{ const weg=await page.evaluate(()=>localStorage.getItem("va_teamok_demo_f1"));
+  if(!weg) ok("Der abgelaufene Merker wird gelöscht"); else fail("Merker bleibt liegen: "+weg); }
 
 if(errors.length){ console.log("JS-FEHLER:"); [...new Set(errors)].forEach(e=>console.log(" -",e.slice(0,150))); }
 console.log(errors.length||fails.length?`ERGEBNIS: ${fails.length} Fehlschläge, ${errors.length} JS-Fehler`:"ERGEBNIS: ALLES OK");
