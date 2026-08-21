@@ -75,7 +75,12 @@ if(b.includes("Spickzettel")&&b.includes("MATERIAL DER MANNSCHAFT")&&b.includes(
 if(b.includes("Mannschaft › 🧰 Material")||/Einmal je Mannschaft gepflegt/.test(b)) ok("Spickzettel verweist auf das Material der Mannschaft"); else fail("Material-Hinweis im Spickzettel fehlt");
 await page.getByRole('button',{name:'Schließen',exact:true}).first().click().catch(()=>{}); await page.keyboard.press("Escape").catch(()=>{}); await page.waitForTimeout(400);
 // ✅ Anwesenheit oeffnet Orga
-await page.locator('button:has-text("✅ Anwesenheit")').first().click(); await page.waitForTimeout(700);
+// Kuenftige Termine: der Hauptknopf oeffnet den Termin, die Anwesenheit
+// steckt darin als Reiter (ab dem Termintag fuehrt der Knopf direkt hin).
+await page.evaluate(()=>{ const b=[...document.querySelectorAll("button")].find(x=>/^(✅ Anwesenheit|Ansehen)$/.test((x.innerText||"").trim())); b&&b.click(); });
+await page.waitForTimeout(1000);
+await page.evaluate(()=>{ const b=[...document.querySelectorAll("button")].find(x=>/^(Orga|Anwesenheit|✅ Anwesenheit)$/.test((x.innerText||"").trim())); b&&b.click(); });
+await page.waitForTimeout(800);
 b=await body();
 if(b.includes("Orga")||b.includes("Anwesenheit")) ok("✅-Knopf öffnet Termin mit Orga/Anwesenheit"); else fail("Anwesenheits-Sprung fehlt");
 await page.getByRole('button',{name:'Schließen',exact:true}).first().click().catch(()=>{}); await page.keyboard.press("Escape").catch(()=>{}); await page.waitForTimeout(400);

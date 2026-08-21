@@ -40,7 +40,10 @@ await dismiss();
 let b=await body();
 if(/🏗 Aufbau/.test(b)) ok("Trainer: Aufbau direkt auf der Terminkarte"); else fail("Trainer ohne Aufbau-Knopf");
 if(/Training (planen|steht)/.test(b)) ok("Trainer: Trainingsplan von der Karte"); else fail("Trainer ohne Trainings-Knopf");
-if(/✅ Anwesenheit/.test(b)) ok("Trainer: Anwesenheit von der Karte"); else fail("Trainer ohne Anwesenheits-Knopf");
+// "Ansehen" und "Anwesenheit" sind ein Knopf: vor dem Termin fuehrt er zu den
+// Rueckmeldungen, ab dem Termintag direkt zur Anwesenheit.
+if(/✅ Anwesenheit|Ansehen/.test(b)) ok("Trainer: ein Knopf öffnet Rückmeldungen bzw. Anwesenheit");
+else fail("Trainer ohne Ansehen-/Anwesenheits-Knopf");
 await page.locator('button[aria-label="Weitere Aktionen"]').first().click(); await page.waitForTimeout(400);
 b=await body();
 if(/📋 Spickzettel/.test(b)) ok("Trainer: Spickzettel im Menü"); else fail("Trainer ohne Spickzettel");
