@@ -21,6 +21,8 @@ export const CL_AREAS = [
   {id:"technik", label:"Technik & Sicherheit",icon:"🔒"},
 ];
 export const CHANGELOG = [
+  {d:"2026-08-21",t:"neu",a:"eltern",h:"Eigener Gast-Wizard fürs Probetraining",x:"„Neu hier? Gast anmelden“ öffnet ein eigenes Fenster mit genau einer Frage: Wie heißt das Kind? Danach kommt die Einwilligung – fertig. Die Namensliste bleibt dadurch aufgeräumt, und ein Name, den es schon gibt, wird freundlich abgefangen."},
+  {d:"2026-08-21",t:"neu",a:"trainer",h:"Link teilen direkt aus der Namensliste",x:"Ein Tipp auf 🔗 teilt entweder den Link zur ganzen Mannschaft oder den Link zu einem bestimmten Kind – ideal, um einer neuen Familie genau den richtigen Einstieg zu schicken."},
   {d:"2026-08-21",t:"neu",a:"eltern",h:"Eltern geben den Link selbst weiter",x:"Ein Tipp auf „Link weitergeben“ verschickt den fertigen Link zum eigenen Kind – an den anderen Elternteil, an Oma und Opa oder an die Fahrgemeinschaft. Der Text erklärt sich von selbst, ein Passwort steht nie im Link."},
   {d:"2026-08-21",t:"neu",a:"trainer",h:"Direktlink zum Kind verschicken",x:"Der Trainer teilt im Kader mit einem Tipp einen Link, der Verein, Mannschaft und Kind schon kennt. Die Eltern öffnen ihn, geben einmal das Mannschafts-Passwort ein und stehen sofort bei den Terminen ihres Kindes – ohne ein einziges Menü."},
   {d:"2026-08-18",t:"neu",a:"trainer",h:"Spielzug-Bibliothek mit 150 Spielvorgängen",x:"Hinterlaufen, Doppelpass, Steilpass, Pressing, Standards: jeder Spielzug hat einen kurzen Zuruf, eine gezeichnete Skizze zum Abspielen, eine Erklärung und ein Beispiel – direkt aus der Taktiktafel abrufbar und für die Kinder im Vollbild zeigbar."},

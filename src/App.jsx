@@ -22,15 +22,19 @@ import { DFBFormatsCard, TacticField, StyleToggle, DrillDiagram, DrillLibrary, T
 // ----------------------------------------------------------------
 const direktLink = (cl,tid,name) => {
   const basis=(typeof window!=="undefined"?window.location.origin+window.location.pathname:"");
-  return `${basis}?club=${encodeURIComponent(cl?.slug||cl?.id||"")}&team=${encodeURIComponent(tid||"")}&kind=${encodeURIComponent(name||"")}`;
+  const teile=[`club=${encodeURIComponent(cl?.slug||cl?.id||"")}`,`team=${encodeURIComponent(tid||"")}`];
+  if(name) teile.push(`kind=${encodeURIComponent(name)}`);   // ohne Kind: Link zur ganzen Mannschaft
+  return `${basis}?${teile.join("&")}`;
 };
-const direktLinkText = (cl,team,name) =>
-  `Hallo,\n\nhier der direkte Link für ${name}${team?` (${team.name})`:""} bei ${cl?.name||"unserem Verein"}:\n${direktLink(cl,team?.id,name)}\n\nLink öffnen, einmal das Mannschafts-Passwort eingeben (im Link steht keins) – danach seht ihr sofort die Termine von ${name} und könnt mit einem Tipp zusagen oder absagen.`;
+const direktLinkText = (cl,team,name) => name
+  ? `Hallo,\n\nhier der direkte Link für ${name}${team?` (${team.name})`:""} bei ${cl?.name||"unserem Verein"}:\n${direktLink(cl,team?.id,name)}\n\nLink öffnen, einmal das Mannschafts-Passwort eingeben (im Link steht keins) – danach seht ihr sofort die Termine von ${name} und könnt mit einem Tipp zusagen oder absagen.`
+  : `Hallo,\n\nhier der direkte Link zur ${team?.name||"Mannschaft"} bei ${cl?.name||"unserem Verein"}:\n${direktLink(cl,team?.id,"")}\n\nLink öffnen, einmal das Mannschafts-Passwort eingeben (im Link steht keins) – danach das eigene Kind antippen und bei den Terminen zusagen oder absagen.`;
 // Teilen ueber das Handy-Menue, sonst in die Zwischenablage.
 const teileKindLink = (cl,team,name,fire) => {
   const txt=direktLinkText(cl,team,name);
-  if(typeof navigator!=="undefined"&&navigator.share){ navigator.share({title:"Link für "+name,text:txt}).catch(()=>{}); fire&&fire("Link geteilt ✓"); }
-  else { try{ navigator.clipboard?.writeText(txt); }catch{} fire&&fire("Link für "+name+" kopiert ✓"); }
+  const was=name||team?.name||"die Mannschaft";
+  if(typeof navigator!=="undefined"&&navigator.share){ navigator.share({title:"Link für "+was,text:txt}).catch(()=>{}); fire&&fire("Link geteilt ✓"); }
+  else { try{ navigator.clipboard?.writeText(txt); }catch{} fire&&fire("Link für "+was+" kopiert ✓"); }
 };
 
 // Demo-Daten (nutzen DEMO_CLUBS/tournPubSnapshot weiter unten; Funktions-Hoisting)
@@ -7433,8 +7437,102 @@ const merkTageRest = (key,val) => {
 const merkOk  = (key,val) => merkTageRest(key,val)>0;
 const merkWeg = (key) => { try{ localStorage.removeItem(key); }catch{} };
 
+// ----------------------------------------------------------------
+// Gast-Wizard: Probetraining oder einmal mitspielen. Bewusst ein eigenes
+// Fenster mit EINER Frage - vorher stand das Formular dauerhaft unter der
+// Namensliste und hat den Bildschirm zugestellt. Danach uebernimmt die
+// normale Einwilligung (Schritt 2) und der Gast ist drin.
+// ----------------------------------------------------------------
+function GastWizard({cl,team,namen=[],voll=false,onClose,onWeiter,onWarteliste}){
+  const { tr } = useT();
+  const t=TH(cl);
+  const [name,setName]=useState("");
+  const sauber=name.trim();
+  const dup=sauber.length>1 && namen.some(n=>_nrmName(n)===_nrmName(sauber));
+  const bereit=sauber.length>1 && !dup;
+  const weiter=()=>{ if(bereit) onWeiter(sauber); };
+  return (
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(15,23,42,.55)",zIndex:2300,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"20px 20px 0 0",width:"100%",maxWidth:520,padding:"18px 16px 26px",maxHeight:"92vh",overflowY:"auto"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+          <div style={{fontSize:26,lineHeight:1}}>👋</div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontWeight:900,fontSize:18,color:"#0f172a"}}>{tr("gwName")}</div>
+            {team&&<div style={{fontSize:12.5,color:"#64748b",fontWeight:700,marginTop:2}}>{team.name}</div>}
+          </div>
+          <button onClick={onClose} aria-label="Schließen" style={{flexShrink:0,width:44,height:44,borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontSize:17,color:"#64748b",cursor:"pointer",fontFamily:"inherit"}}>✕</button>
+        </div>
+        <input autoFocus value={name} onChange={e=>setName(e.target.value)} onKeyDown={e=>{ if(e.key==="Enter"){ e.preventDefault(); weiter(); } }}
+          placeholder={tr("gstPh")}
+          style={{width:"100%",padding:"14px 15px",fontSize:16,border:`1.5px solid ${dup?"#fca5a5":"#e2e8f0"}`,borderRadius:13,outline:"none",fontFamily:"inherit",boxSizing:"border-box"}}/>
+        {dup
+          ? <p style={{fontSize:12.5,color:"#dc2626",fontWeight:800,lineHeight:1.45,marginTop:8}}>{tr("gstDup")}<br/><span style={{fontWeight:700,color:"#b91c1c"}}>{tr("gwFind")}</span></p>
+          : <p style={{fontSize:12.5,color:"#64748b",lineHeight:1.5,marginTop:8}}>{tr("gwHint")}</p>}
+        <PrivacyNote/>
+        <button disabled={!bereit} onClick={weiter}
+          style={{width:"100%",marginTop:14,padding:"15px",minHeight:52,borderRadius:14,border:"none",background:bereit?t.p:"#cbd5e1",color:bereit?contrast(t.p):"#fff",fontWeight:900,fontSize:15.5,cursor:bereit?"pointer":"default",fontFamily:"inherit"}}>
+          {bereit? "„"+sauber+"“ "+tr("gstBtn") : tr("gstBtn")}
+        </button>
+        {onWarteliste&&(
+          <div style={{marginTop:14,paddingTop:12,borderTop:"1px solid #f1f5f9"}}>
+            <p style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6}}>{voll?tr("wlHeadFull"):tr("wlHead")}</p>
+            <button onClick={onWarteliste} style={{width:"100%",padding:"12px",minHeight:46,borderRadius:12,border:`1.5px solid ${t.p}`,background:t.p+"12",color:readable(t.p),fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>{tr("wlBtn")}</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------
+// Link teilen: entweder zur ganzen Mannschaft oder direkt zu einem Kind
+// (dann steht der Name als Parameter im Link). Nie mit Passwort.
+// ----------------------------------------------------------------
+function LinkTeilen({cl,team,namen=[],onClose,onFire}){
+  const { tr } = useT();
+  const t=TH(cl);
+  const [such,setSuch]=useState("");
+  const liste=namen.filter(n=>n.toLowerCase().includes(such.toLowerCase().trim()));
+  const teile=name=>{ teileKindLink(cl,team,name||"",onFire); onClose(); };
+  return (
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(15,23,42,.55)",zIndex:2300,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"20px 20px 0 0",width:"100%",maxWidth:520,padding:"18px 16px 26px",maxHeight:"88vh",display:"flex",flexDirection:"column"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontWeight:900,fontSize:18,color:"#0f172a"}}>{tr("lnkT")}</div>
+            <div style={{fontSize:12.5,color:"#64748b",lineHeight:1.45,marginTop:2}}>{tr("lnkSub")}</div>
+          </div>
+          <button onClick={onClose} aria-label="Schließen" style={{flexShrink:0,width:44,height:44,borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontSize:17,color:"#64748b",cursor:"pointer",fontFamily:"inherit"}}>✕</button>
+        </div>
+        <button onClick={()=>teile("")} style={{width:"100%",marginTop:12,padding:"15px",minHeight:52,borderRadius:14,border:"none",background:t.p,color:contrast(t.p),fontWeight:900,fontSize:15.5,cursor:"pointer",fontFamily:"inherit"}}>
+          🏟 {tr("lnkTeam")}{team?" · "+team.name:""}
+        </button>
+        {namen.length>0&&<>
+          <p style={{fontSize:11,fontWeight:800,color:"#64748b",margin:"16px 0 8px"}}>{tr("lnkKidH")}</p>
+          {namen.length>6&&<input value={such} onChange={e=>setSuch(e.target.value)} placeholder="Suchen..."
+            style={{width:"100%",padding:"11px 14px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",fontFamily:"inherit",boxSizing:"border-box",marginBottom:8}}/>}
+          <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:7}}>
+            {liste.map(n=>(
+              <button key={n} onClick={()=>teile(n)}
+                style={{display:"flex",alignItems:"center",gap:11,padding:"11px 13px",minHeight:52,borderRadius:13,border:"1.5px solid #e2e8f0",background:"#fff",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
+                <Av name={n} sz={34}/>
+                <span style={{flex:1,minWidth:0,fontWeight:800,fontSize:15,color:"#0f172a",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{n}</span>
+                <span style={{fontSize:17,flexShrink:0}}>🔗</span>
+              </button>
+            ))}
+          </div>
+        </>}
+      </div>
+    </div>
+  );
+}
+
 function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,preselectTid,preselectName=null,onWaitlist,onConsent,onGuestConsent,onSetChildPw}) {
   const [showWait,setShowWait]=useState(false);
+  const [gastAuf,setGastAuf]=useState(false);      // Gast-Wizard (eigenes Fenster)
+  const [linkAuf,setLinkAuf]=useState(false);      // Link teilen (Team oder Kind)
+  const [flash,setFlash]=useState(null);           // kurze Rueckmeldung
+  const sagMal=m=>{ setFlash(m); setTimeout(()=>setFlash(null),2200); };
   const { tr } = useT();
   const [obStep,setObStep]=useState(1);            // Eltern-Onboarding: 1 Einwilligung, 2 Passwort, 3 Erklärung
   const [childPwNew,setChildPwNew]=useState("");
@@ -7753,7 +7851,12 @@ function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,pre
           </div>
         ); })()}
       <div style={{padding:"12px 14px 0",background:"#f0f4f8",position:"sticky",top:0,zIndex:10}}>
-        <div style={{position:"relative"}}><span style={{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",fontSize:16}}></span><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Suchen..." style={{width:"100%",padding:"12px 16px 12px 42px",fontSize:15,border:"2px solid #e2e8f0",borderRadius:14,outline:"none",background:"#fff"}}/></div>
+        <div style={{display:"flex",gap:8,alignItems:"stretch"}}>
+          <div style={{position:"relative",flex:1,minWidth:0}}><span style={{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",fontSize:16}}>🔍</span><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Suchen..." style={{width:"100%",padding:"12px 16px 12px 42px",fontSize:15,border:"2px solid #e2e8f0",borderRadius:14,outline:"none",background:"#fff",boxSizing:"border-box",fontFamily:"inherit"}}/></div>
+          {/* Link teilen: ganze Mannschaft oder ein bestimmtes Kind */}
+          <button onClick={()=>setLinkAuf(true)} title={tr("lnkT")} aria-label={tr("lnkBtn")}
+            style={{flexShrink:0,width:50,minHeight:46,borderRadius:14,border:"2px solid #e2e8f0",background:"#fff",fontSize:19,cursor:"pointer",fontFamily:"inherit"}}>🔗</button>
+        </div>
       </div>
       <div style={{flex:1,overflowY:"auto",padding:"10px 14px",display:"flex",flexDirection:"column",gap:8}}>
         {list.map((p,i)=>(
@@ -7764,31 +7867,33 @@ function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,pre
         ))}
         {list.length===0&&<div style={{textAlign:"center",padding:"32px",color:"#64748b"}}><div style={{fontSize:36,marginBottom:8}}></div><p style={{fontWeight:700}}>Niemanden gefunden</p></div>}
       </div>
-      {(()=>{
-        const allNames=(playerProfiles||[]).filter(p=>p.mainTid===tid&&!p.archived).map(p=>(p.name||"").toLowerCase());
-        const isDup=q.trim().length>1 && allNames.includes(q.trim().toLowerCase());
+      {/* Fuss: nur EIN Knopf. Alles Weitere steckt im Gast-Wizard. */}
+      {(()=>{ const curTeam=teams.find(x=>x.id===tid);
+        const kaderN=(playerProfiles||[]).filter(p=>p.mainTid===tid&&!p.archived).length;
+        const teamFull=!!(curTeam?.maxSize&&kaderN>=curTeam.maxSize);
         return (
-      <div style={{padding:"12px 14px 36px",background:"#fff",borderTop:"1px solid #e2e8f0"}}>
-        <p style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8}}>{tr("gstTitle")}</p>
-        <input value={q} onChange={e=>setQ(e.target.value)} placeholder={tr("gstPh")}
-          style={{width:"100%",padding:"11px 14px",fontSize:14,border:`1.5px solid ${isDup?"#fca5a5":"#e2e8f0"}`,borderRadius:12,outline:"none",marginBottom:8}}/>
-        {isDup&&<p style={{fontSize:12,color:"#dc2626",fontWeight:700,marginBottom:8}}>{tr("gstDup")}</p>}
-        <div style={{marginBottom:8}}><PrivacyNote/></div>
-        {q.trim().length>1&&!isDup&&<button onClick={()=>onDone(tid,q.trim())}
-          style={{width:"100%",padding:"11px",borderRadius:12,border:"none",background:cl.pri,color:contrast(cl.pri),fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
-           {"„"+q.trim()+"“ "+tr("gstBtn")}
-        </button>}
-        {onWaitlist&&(()=>{ const curTeam=teams.find(x=>x.id===tid); const kaderN=(playerProfiles||[]).filter(p=>p.mainTid===tid&&!p.archived).length; const teamFull=!!(curTeam?.maxSize&&kaderN>=curTeam.maxSize); return (
-          <div style={{marginTop:12,paddingTop:12,borderTop:"1px solid #f1f5f9"}}>
-            {teamFull&&<div style={{background:"#fef2f2",border:"1.5px solid #fecaca",borderRadius:11,padding:"9px 12px",marginBottom:8,fontSize:12.5,color:"#b91c1c",fontWeight:700,lineHeight:1.45}}>{tr("wlFullA")} <b>({kaderN}/{curTeam.maxSize})</b>. {tr("wlFullB")}</div>}
-            <p style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6}}>{teamFull?tr("wlHeadFull"):tr("wlHead")}</p>
-            {!teamFull&&<p style={{fontSize:11.5,color:"#64748b",lineHeight:1.45,marginBottom:8}}>{tr("wlTeaser")}</p>}
-            <button onClick={()=>setShowWait(true)} style={{width:"100%",padding:"11px",borderRadius:12,border:teamFull?"none":`1.5px solid ${cl.pri}`,background:teamFull?cl.pri:cl.pri+"12",color:teamFull?contrast(cl.pri):cl.pri,fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>{tr("wlBtn")}</button>
-          </div>
+        <div style={{padding:"12px 14px 30px",background:"#fff",borderTop:"1px solid #e2e8f0"}}>
+          {teamFull&&<div style={{background:"#fef2f2",border:"1.5px solid #fecaca",borderRadius:11,padding:"9px 12px",marginBottom:9,fontSize:12.5,color:"#b91c1c",fontWeight:700,lineHeight:1.45}}>{tr("wlFullA")} <b>({kaderN}/{curTeam.maxSize})</b>. {tr("wlFullB")}</div>}
+          <button onClick={()=>setGastAuf(true)}
+            style={{width:"100%",padding:"14px",minHeight:50,borderRadius:13,border:`1.5px solid ${t.p}`,background:t.p+"12",color:readable(t.p),fontWeight:800,fontSize:14.5,cursor:"pointer",fontFamily:"inherit"}}>
+            {tr("gwOpen")}
+          </button>
+        </div>
         ); })()}
-      </div>
-        );
-      })()}
+      {gastAuf&&(()=>{ const curTeam=teams.find(x=>x.id===tid);
+        const kaderN=(playerProfiles||[]).filter(p=>p.mainTid===tid&&!p.archived).length;
+        return (
+        <GastWizard cl={cl} team={curTeam} voll={!!(curTeam?.maxSize&&kaderN>=curTeam.maxSize)}
+          namen={(playerProfiles||[]).filter(p=>p.mainTid===tid&&!p.archived).map(p=>p.name||"")}
+          onClose={()=>setGastAuf(false)}
+          onWarteliste={onWaitlist?()=>{ setGastAuf(false); setShowWait(true); }:null}
+          onWeiter={n2=>{ setGastAuf(false); setConsentChk(false); setConsentRel(""); setConsentName("");
+            setChildPwNew(""); setObStep(1); setPendingName({tid,name:n2}); }}/>
+        ); })()}
+      {linkAuf&&<LinkTeilen cl={cl} team={teams.find(x=>x.id===tid)}
+        namen={(playerProfiles||[]).filter(p=>p.mainTid===tid&&!p.archived).map(p=>p.name||"").sort((a,b)=>a.localeCompare(b))}
+        onClose={()=>setLinkAuf(false)} onFire={sagMal}/>}
+      <Toast msg={flash}/>
       {showWait&&<WaitlistForm cl={cl} teams={teams} preCat={cat} preTid={tid} onClose={()=>setShowWait(false)}
         onSubmit={e=>{ onWaitlist&&onWaitlist(e); }}/>}
     </div>
