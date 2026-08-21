@@ -44,7 +44,7 @@ export function FloatingLangSwitcher({ lang,setLang }) {
   if(!LANG_SWITCHER_ENABLED) return null;
   return (
     <div style={{position:"fixed",top:"calc(env(safe-area-inset-top) + 10px)",right:10,zIndex:1200,
-      background:"rgba(15,23,42,.82)",backdropFilter:"blur(8px)",border:"1px solid rgba(255,255,255,.16)",
+      background:"rgba(15,23,42,.92)",border:"1px solid rgba(255,255,255,.16)",
       borderRadius:99,padding:"4px 6px",boxShadow:"0 4px 16px rgba(0,0,0,.28)"}}>
       <LangSwitcher lang={lang} setLang={setLang}/>
     </div>
@@ -547,7 +547,7 @@ export function AreaIntro({ id, cl }){
 }
 export function Drawer({ch,children,onClose,title,maxH="92dvh"}) {
   return (
-    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:900,backdropFilter:"blur(8px)"}}>
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(15,23,42,.62)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:900}}>
       <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:560,maxHeight:maxH,display:"flex",flexDirection:"column",boxShadow:"0 -16px 60px rgba(0,0,0,.2)",animation:"down .22s ease"}}>
         {/* Fixer Kopf mit immer erreichbarem Schliessen-X; nur der Inhalt scrollt. */}
         <div style={{flexShrink:0,position:"relative",paddingTop:10}}>
@@ -555,7 +555,10 @@ export function Drawer({ch,children,onClose,title,maxH="92dvh"}) {
           <button onClick={onClose} aria-label="Schließen" style={{position:"absolute",top:8,right:12,width:32,height:32,borderRadius:10,background:"#f1f5f9",border:"none",color:"#475569",fontWeight:800,fontSize:16,cursor:"pointer",fontFamily:"inherit",zIndex:2}}>✕</button>
           {title&&<div style={{padding:"6px 56px 12px 22px",fontSize:18,fontWeight:800,color:"#0f172a"}}>{title}</div>}
         </div>
-        <div style={{overflowY:"auto",WebkitOverflowScrolling:"touch",padding:title?"0 20px calc(28px + env(safe-area-inset-bottom))":"6px 20px calc(28px + env(safe-area-inset-bottom))"}}>{ch||children}</div>
+        {/* touchAction/overscroll: das senkrechte Wischen gehoert eindeutig
+            diesem Bereich - sonst blieb die Bewegung je nach Fingerposition
+            an einem inneren Element haengen. */}
+        <div style={{overflowY:"auto",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain",padding:title?"0 20px calc(28px + env(safe-area-inset-bottom))":"6px 20px calc(28px + env(safe-area-inset-bottom))"}}>{ch||children}</div>
       </div>
     </div>
   );
@@ -577,7 +580,7 @@ export function PageHead({icon,title,sub,right}) {
 }
 export function PillTabs({tabs,value,onChange,color="#16a34a"}) {
   return (
-    <div style={{display:"flex",gap:6,marginBottom:12,overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
+    <div style={{display:"flex",gap:6,marginBottom:12,overflowX:"auto",touchAction:"pan-x pan-y",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
       {tabs.map(([k,l])=>(
         <button key={k} onClick={()=>onChange(k)} style={{flexShrink:0,padding:"8px 14px",borderRadius:99,border:`1.5px solid ${value===k?color:"#e2e8f0"}`,background:value===k?color:"#fff",color:value===k?contrast(color):"#475569",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{l}</button>
       ))}
@@ -587,7 +590,7 @@ export function PillTabs({tabs,value,onChange,color="#16a34a"}) {
 export function TeamPills({teams,value,onChange}) {
   if(!teams||teams.length<2) return null;
   return (
-    <div style={{display:"flex",gap:6,marginBottom:12,overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
+    <div style={{display:"flex",gap:6,marginBottom:12,overflowX:"auto",touchAction:"pan-x pan-y",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
       {teams.map(tm=>(
         <button key={tm.id} onClick={()=>onChange(tm.id)} style={{padding:"7px 14px",borderRadius:99,border:`2px solid ${value===tm.id?tm.col:"#e2e8f0"}`,background:value===tm.id?tm.col:"#fff",color:value===tm.id?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit",flexShrink:0}}>{tm.name}</button>
       ))}

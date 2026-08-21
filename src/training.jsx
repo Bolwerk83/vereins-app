@@ -889,7 +889,7 @@ export function DrillLibrary({ cl, data, myTids, save, fire }) {
         <button onClick={()=>setStyle("chalk")} style={{padding:"5px 12px",borderRadius:99,border:`1.5px solid ${style==="chalk"?"#1c2530":"#e2e8f0"}`,background:style==="chalk"?"#1c2530":"#fff",color:style==="chalk"?"#fff":"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Taktiktafel</button>
         <button onClick={()=>setStyle("kids")} style={{padding:"5px 12px",borderRadius:99,border:`1.5px solid ${style==="kids"?"#f59e0b":"#e2e8f0"}`,background:style==="kids"?"#f59e0b":"#fff",color:style==="kids"?"#fff":"#475569",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Für Kinder</button>
       </div>
-      <div style={{display:"flex",gap:6,overflowX:"auto",marginBottom:8,scrollbarWidth:"none"}}>
+      <div style={{display:"flex",gap:6,overflowX:"auto",touchAction:"pan-x pan-y",marginBottom:8,scrollbarWidth:"none"}}>
         <button onClick={()=>setFocus("all")} style={{flex:"0 0 auto",padding:"7px 14px",borderRadius:99,border:`1.5px solid ${focus==="all"?t.p:"#e2e8f0"}`,background:focus==="all"?t.p:"#fff",color:focus==="all"?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>Alle ({DRILL_LIB.length})</button>
         <button onClick={()=>setKidsOnly(v=>!v)} style={{flex:"0 0 auto",padding:"7px 14px",borderRadius:99,border:`1.5px solid ${kidsOnly?"#f59e0b":"#e2e8f0"}`,background:kidsOnly?"#f59e0b":"#fff",color:kidsOnly?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>🧒 Kinder ({kidPool.length})</button>
         {DRILL_FOCUS.map(f=>{
@@ -900,7 +900,7 @@ export function DrillLibrary({ cl, data, myTids, save, fire }) {
         })}
       </div>
 
-      <div style={{display:"flex",gap:6,overflowX:"auto",marginBottom:10,scrollbarWidth:"none"}}>
+      <div style={{display:"flex",gap:6,overflowX:"auto",touchAction:"pan-x pan-y",marginBottom:10,scrollbarWidth:"none"}}>
         <button onClick={()=>setCat("all")} style={{flex:"0 0 auto",padding:"6px 12px",borderRadius:99,border:`1.5px solid ${cat==="all"?t.p:"#e2e8f0"}`,background:cat==="all"?"#f0fdf4":"#fff",color:cat==="all"?t.p:"#94a3b8",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>Alle Klassen</button>
         {allCats.map(c=>(
           <button key={c} onClick={()=>setCat(c)} style={{flex:"0 0 auto",padding:"6px 12px",borderRadius:99,border:`1.5px solid ${cat===c?t.p:"#e2e8f0"}`,background:cat===c?"#f0fdf4":"#fff",color:cat===c?t.p:"#94a3b8",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{c}</button>
@@ -2944,7 +2944,7 @@ export function FoerderAssistent({ data, myTids, cl, save, fire }){
         <div>
           <div style={{marginBottom:12}}>
             <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.3,marginBottom:8}}>SPIELER WÄHLEN</div>
-            <div style={{display:"flex",gap:7,overflowX:"auto",scrollbarWidth:"none",paddingBottom:2}}>
+            <div style={{display:"flex",gap:7,overflowX:"auto",touchAction:"pan-x pan-y",scrollbarWidth:"none",paddingBottom:2}}>
               {(two&&indGroup.length?indGroup:players).map(p=>(<button key={p.id} onClick={()=>{setSelPid(p.id);setSelSkills([]);setStation(null);}} style={{flexShrink:0,display:"flex",alignItems:"center",gap:6,padding:"7px 12px",borderRadius:99,border:`1.5px solid ${selPlayer?.id===p.id?t.p:"#e2e8f0"}`,background:selPlayer?.id===p.id?t.p+"12":"#fff",color:selPlayer?.id===p.id?t.p:"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}><Av name={p.name} sz={20}/>{p.name.split(" ")[0]}</button>))}
             </div>
           </div>
@@ -3446,7 +3446,7 @@ export function TrainingPlanTab({ data, myTids, save, fire, cl, session }) {
             })()}
             {/* Übungs-Kacheln */}
             {(plan.exercises||[]).length>0&&(
-              <div style={{display:"flex",gap:4,padding:"0 14px 12px",overflowX:"auto",scrollbarWidth:"none"}}>
+              <div style={{display:"flex",gap:4,padding:"0 14px 12px",overflowX:"auto",touchAction:"pan-x pan-y",scrollbarWidth:"none"}}>
                 {plan.exercises.map((ex,i)=>{
                   const cat = EXERCISE_CATS.find(c=>c.id===ex.cat)||EXERCISE_CATS[0];
                   return (
@@ -4167,7 +4167,7 @@ export function TemplateBrowser({ onSelect, cid, myTids, data, cl, onClose }) {
         </div>
 
         {/* Kategorie-Filter */}
-        <div style={{display:"flex",gap:5,padding:"12px 16px 8px",overflowX:"auto",
+        <div style={{display:"flex",gap:5,padding:"12px 16px 8px",overflowX:"auto",touchAction:"pan-x pan-y",
           scrollbarWidth:"none",flexShrink:0,borderBottom:"1px solid #f1f5f9"}}>
           {CATS.map(cat=>(
             <button key={cat.id} onClick={()=>setFilter(cat.id)}
@@ -4911,7 +4911,7 @@ export function SpielzugLibrary({ cl, teamCat=null, onUse=null, embedded=false }
       {!embedded&&<PageHead icon="⚡" title="Spielzüge" sub={`${SPIELZUEGE.length} echte Spielvorgänge – ansehen, abspielen und den Kindern mit einem Zuruf beibringen.`}/>}
       <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Spielzug suchen, z. B. hinterlaufen…"
         style={{width:"100%",padding:"10px 12px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",boxSizing:"border-box",fontFamily:"inherit",marginBottom:8}}/>
-      <div style={{display:"flex",gap:5,overflowX:"auto",paddingBottom:6,marginBottom:6}}>
+      <div style={{display:"flex",gap:5,overflowX:"auto",touchAction:"pan-x pan-y",paddingBottom:6,marginBottom:6}}>
         {[{id:"alle",label:"Alle",icon:"⭐",col:t.p},...SPIELZUG_CATS].map(c=>(
           <button key={c.id} onClick={()=>setCat(c.id)}
             style={{padding:"6px 11px",borderRadius:99,border:`1.5px solid ${cat===c.id?c.col:"#e2e8f0"}`,background:cat===c.id?c.col:"#fff",color:cat===c.id?"#fff":"#475569",fontWeight:800,fontSize:12,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit",flexShrink:0}}>
@@ -4919,7 +4919,7 @@ export function SpielzugLibrary({ cl, teamCat=null, onUse=null, embedded=false }
           </button>
         ))}
       </div>
-      <div style={{display:"flex",gap:5,overflowX:"auto",paddingBottom:6,marginBottom:10}}>
+      <div style={{display:"flex",gap:5,overflowX:"auto",touchAction:"pan-x pan-y",paddingBottom:6,marginBottom:10}}>
         {[{id:"alle",label:"Alle Jugenden"},...SZ_AGES].map(a=>(
           <button key={a.id} onClick={()=>setAge(a.id)}
             style={{padding:"5px 10px",borderRadius:99,border:`1.5px solid ${age===a.id?"#0f172a":"#e2e8f0"}`,background:age===a.id?"#0f172a":"#fff",color:age===a.id?"#fff":"#64748b",fontWeight:700,fontSize:11.5,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit",flexShrink:0}}>{a.label}</button>

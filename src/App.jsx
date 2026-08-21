@@ -1548,7 +1548,7 @@ function LeagueTab({ data, myTids, cl, save, fire }) {
     <div>
       <PageHead icon="🏆" title="Ergebnisse & Tabelle" sub="Spielberichte · Saison"/>
       {myTeams.length>1&&(
-        <div style={{display:"flex",gap:6,marginBottom:14,overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
+        <div style={{display:"flex",gap:6,marginBottom:14,overflowX:"auto",touchAction:"pan-x pan-y",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
           {myTeams.map(tm=>(
             <button key={tm.id} onClick={()=>setSelTid(tm.id)}
               style={{padding:"7px 14px",borderRadius:99,border:`2px solid ${selTid===tm.id?tm.col:"#e2e8f0"}`,background:selTid===tm.id?tm.col:"#fff",color:selTid===tm.id?"#fff":"#475569",fontWeight:700,fontSize:12,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit",flexShrink:0}}>
@@ -1792,7 +1792,7 @@ function AllTeamsOverview({ data, cid, cl, onSelectTeam }) {
             <span style={{fontSize:18,color:"#64748b",transform:showSeason?"rotate(90deg)":"none",transition:"transform .2s"}}>›</span>
           </button>
           {showSeason && (
-            <div style={{padding:"0 12px 12px",overflowX:"auto"}}>
+            <div style={{padding:"0 12px 12px",overflowX:"auto",touchAction:"pan-x pan-y"}}>
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:12.5,minWidth:380}}>
                 <thead><tr style={{color:"#64748b",fontWeight:800,textAlign:"center"}}>
                   <th style={{textAlign:"left",padding:"6px 6px"}}>Team</th>
@@ -1893,7 +1893,7 @@ function BroadcastModal({ data, cid, session, save, fire, onClose }) {
   };
 
   return (
-    <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:900,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
+    <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:900,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
       <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"92dvh",overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"22px 22px calc(44px + env(safe-area-inset-bottom))"}}>
         <h3 style={{fontWeight:900,fontSize:18,marginBottom:4}}>Rundschreiben an Trainer</h3>
         <p style={{fontSize:13,color:"#64748b",marginBottom:16,lineHeight:1.5}}>
@@ -1977,7 +1977,7 @@ function NewsTab({ data, cid, session, save, fire, cl }) {
       </>}
 
       {showForm&&(
-        <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:900,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
+        <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:900,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
           <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"92dvh",overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"22px 22px calc(44px + env(safe-area-inset-bottom))"}}>
             <h3 style={{fontWeight:900,fontSize:18,marginBottom:16}}>Neuigkeit veröffentlichen</h3>
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
@@ -2051,7 +2051,7 @@ function ImportData({ save, fire, onClose }) {
   };
 
   return (
-    <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:900,display:"flex",alignItems:"center",justifyContent:"center",padding:20,backdropFilter:"blur(6px)"}}>
+    <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:900,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
       <div style={{background:"#fff",borderRadius:20,padding:"24px",width:"100%",maxWidth:400}}>
         <h3 style={{fontWeight:900,fontSize:18,marginBottom:8}}>Daten importieren</h3>
         <p style={{fontSize:13,color:"#64748b",marginBottom:16,lineHeight:1.5}}>
@@ -2265,7 +2265,7 @@ function SecurityTab({ data, cid, save }) {
       )}
 
       {/* Filter */}
-      <div style={{display:"flex",gap:6,marginBottom:14,overflowX:"auto",scrollbarWidth:"none"}}>
+      <div style={{display:"flex",gap:6,marginBottom:14,overflowX:"auto",touchAction:"pan-x pan-y",scrollbarWidth:"none"}}>
         {[["all","Alles"],["logins","Logins"],["changes","Änderungen"],["suspicious","Verdaechtig"]].map(([v,l])=>(
           <button key={v} onClick={()=>setFilter(v)}
             style={{padding:"7px 14px",borderRadius:99,border:`2px solid ${filter===v?"#0f172a":"#e2e8f0"}`,
@@ -3267,7 +3267,7 @@ function TeamInsights({ data, myTids, cl, save, fire, session=null }) {
 
       {/* Anwesenheits-Übersicht */}
       <Card title="Anwesenheit letzte 8 Trainings" sub="Pro Spieler · grün = da, rot = nicht da, grau = nicht abgestimmt">
-        <div style={{overflowX:"auto"}}>
+        <div style={{overflowX:"auto",touchAction:"pan-x pan-y"}}>
           <table style={{width:"100%",fontSize:12,borderCollapse:"collapse"}}>
             <thead>
               <tr>
@@ -3717,7 +3717,7 @@ function ChangelogView({ cl }){
       </div>
       <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Suchen, z. B. Helfer oder Push…"
         style={{width:"100%",padding:"10px 12px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",boxSizing:"border-box",fontFamily:"inherit",marginBottom:8}}/>
-      <div style={{display:"flex",gap:5,overflowX:"auto",paddingBottom:6,marginBottom:10}}>
+      <div style={{display:"flex",gap:5,overflowX:"auto",touchAction:"pan-x pan-y",paddingBottom:6,marginBottom:10}}>
         {[{id:"alle",label:"Alle Bereiche",icon:"⭐"},...CL_AREAS].map(a=>(
           <button key={a.id} onClick={()=>setBer(a.id)}
             style={{padding:"6px 11px",borderRadius:99,border:`1.5px solid ${ber===a.id?t.p:"#e2e8f0"}`,background:ber===a.id?t.p:"#fff",color:ber===a.id?"#fff":"#475569",fontWeight:800,fontSize:12,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit",flexShrink:0}}>
@@ -5637,7 +5637,7 @@ function ClubAdminSettings({ data, cid, save, fire, cl }) {
     <div>
       <PageHead icon="⚙️" title="Einstellungen" sub="Verein · Module · Datenschutz"/>
       {/* Section Nav */}
-      <div style={{display:"flex",gap:5,overflowX:"auto",scrollbarWidth:"none",
+      <div style={{display:"flex",gap:5,overflowX:"auto",touchAction:"pan-x pan-y",scrollbarWidth:"none",
         marginBottom:16,paddingBottom:2}}>
         {SECTIONS.map(s=>(
           <button key={s.id} onClick={()=>setSection(s.id)}
@@ -6910,7 +6910,7 @@ function Directory({data,onPick,onNewClub,onVisitorOpen,lang,setLang,onLegal}) {
           <input value={search} onChange={e=>setSearch(e.target.value)} placeholder={tr("lpSearchPh")}
             style={{width:"100%",padding:"11px 13px 11px 40px",fontSize:14,background:"rgba(255,255,255,.08)",border:"1.5px solid rgba(255,255,255,.12)",borderRadius:13,outline:"none",color:"#fff",boxSizing:"border-box"}}/>
         </div>
-        <div style={{display:"flex",gap:7,overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch",paddingBottom:4,marginBottom:16}}>
+        <div style={{display:"flex",gap:7,overflowX:"auto",touchAction:"pan-x pan-y",scrollbarWidth:"none",WebkitOverflowScrolling:"touch",paddingBottom:4,marginBottom:16}}>
           {SPORTS.map(s=>(
             <button key={s} onClick={()=>setSportFilter(s)}
               style={{padding:"6px 12px",borderRadius:99,border:`1.5px solid ${sportFilter===s?(SPORT_COLS[s]||"#16a34a"):"rgba(255,255,255,.12)"}`,background:sportFilter===s?(SPORT_COLS[s]||"#16a34a")+"22":"transparent",color:sportFilter===s?"#fff":"rgba(255,255,255,.4)",fontWeight:700,fontSize:12,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit",flexShrink:0}}>
@@ -8769,7 +8769,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
   const totalTraining = statsRows.reduce((s,r)=>s+r.s.training,0);
 
   return (
-    <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:900,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(8px)"}}>
+    <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:900,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
       <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"95dvh",overflowY:"auto",animation:"down .26s cubic-bezier(.16,1,.3,1)"}}>
         <div style={{display:"flex",justifyContent:"center",padding:"12px 0 4px"}}>
           <div style={{width:44,height:4,borderRadius:99,background:"#e2e8f0"}}/>
@@ -8792,7 +8792,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
 
         <div style={{padding:"18px 20px 48px",display:"flex",flexDirection:"column",gap:16}}>
           {/* Tab-Leiste: Abschnitte wie Tabs, frei hin- und herspringen */}
-          <div style={{position:"sticky",top:-18,zIndex:6,background:"#fff",margin:"-6px -4px 0",padding:"8px 4px 10px",display:"flex",gap:6,overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
+          <div style={{position:"sticky",top:-18,zIndex:6,background:"#fff",margin:"-6px -4px 0",padding:"8px 4px 10px",display:"flex",gap:6,overflowX:"auto",touchAction:"pan-x pan-y",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
             {[["basis","👤 Basis"],["profil","🎯 Profil"],["skills","📈 Skill-Werte"],["freunde","🤝 Freunde"],["stats","📊 Statistik"],["schutz","🔒 Schutz"],["notizen","📝 Notizen"]].map(([k,l])=>(
               <button key={k} onClick={()=>setPTab(k)} style={{flexShrink:0,padding:"8px 14px",borderRadius:99,border:`1.5px solid ${pTab===k?(t.p||"#16a34a"):"#e2e8f0"}`,background:pTab===k?(t.p||"#16a34a"):"#fff",color:pTab===k?contrast(t.p||"#16a34a"):"#475569",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{l}</button>
             ))}
@@ -9488,7 +9488,7 @@ function PoolView({ allPlayers,myTeams,allTeams,defaultScopeTids,cid,onAssign,on
       )}
 
       {}
-      <div style={{overflowX:"auto",display:"flex",gap:6,marginBottom:12,scrollbarWidth:"none"}}>
+      <div style={{overflowX:"auto",touchAction:"pan-x pan-y",display:"flex",gap:6,marginBottom:12,scrollbarWidth:"none"}}>
         {[
           {id:"all",label:`Alle (${allPlayers.length})`},{id:"unassigned",label:`* Offen (${unassigned})`,urgent:unassigned>0},...scopeTeams.map(tm=>({id:tm.id,label:`${tm.name} (${countForTeam(tm.id)})`,col:tm.col}))
         ].map(f=>(
@@ -9552,7 +9552,7 @@ function PlayerAssignRow({ player: pl,teams,allTeams,t,onAssign,onOptToggle }) {
     <>
       {}
       {showProfile && (
-        <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:900,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(8px)"}}
+        <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:900,display:"flex",alignItems:"flex-end",justifyContent:"center"}}
           onClick={()=>setShowProfile(false)}>
           <div onClick={e=>e.stopPropagation()}
             style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"88dvh",overflowY:"auto",animation:"down .24s ease"}}>
@@ -10346,7 +10346,7 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
       {view==="list" && (
         <>
           <BirthdaysCard players={mainPlayers}/>
-          <div style={{overflowX:"auto",display:"flex",gap:7,marginBottom:14,scrollbarWidth:"none"}}>
+          <div style={{overflowX:"auto",touchAction:"pan-x pan-y",display:"flex",gap:7,marginBottom:14,scrollbarWidth:"none"}}>
             {myTeams.map(tm=>(
               <button key={tm.id} onClick={()=>setSelTid(tm.id)}
                 style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",borderRadius:99,border:`2px solid ${selTid===tm.id?tm.col:"#e2e8f0"}`,background:selTid===tm.id?tm.col+"15":"#fff",color:selTid===tm.id?tm.col:"#475569",fontWeight:700,fontSize:13,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit"}}>
@@ -11439,7 +11439,7 @@ function TemplatesTab({data,cid,save,fire,cl,myTids=[],teams=[]}) {
 
       {}
       {!mode&&clubTeams.length>0&&(
-        <div style={{overflowX:"auto",display:"flex",gap:7,marginBottom:14,scrollbarWidth:"none"}}>
+        <div style={{overflowX:"auto",touchAction:"pan-x pan-y",display:"flex",gap:7,marginBottom:14,scrollbarWidth:"none"}}>
           {(myTeams.length>0?myTeams:clubTeams).map(tm=>(
             <button key={tm.id} onClick={()=>setSelTid(tm.id)}
               style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",borderRadius:99,border:`2px solid ${selTid===tm.id?(tm.col||t.p):"#e2e8f0"}`,background:selTid===tm.id?(tm.col||t.p)+"15":"#fff",color:selTid===tm.id?(tm.col||t.p):"#475569",fontWeight:700,fontSize:13,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit"}}>
@@ -12618,7 +12618,7 @@ function ChatTab({data,cid,myTids,session,save,fire,cl,teamOnly=false}) {
   return (
     <div style={{display:"flex",flexDirection:"column",height:"calc(100dvh - 200px)"}}>
       {}
-      <div style={{overflowX:"auto",display:"flex",gap:8,marginBottom:12,scrollbarWidth:"none",paddingBottom:2}}>
+      <div style={{overflowX:"auto",touchAction:"pan-x pan-y",display:"flex",gap:8,marginBottom:12,scrollbarWidth:"none",paddingBottom:2}}>
         {scopes.map(s=>{const on=selScope===s.id;return (
           <button key={s.id} onClick={()=>setSelScope(s.id)}
             style={{display:"flex",alignItems:"center",gap:7,padding:"9px 15px",borderRadius:99,border:`1.5px solid ${on?s.col:"#e2e8f0"}`,background:on?s.col:"#fff",color:on?"#fff":"#334155",fontWeight:700,fontSize:13,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit",flexShrink:0}}>
@@ -12760,7 +12760,7 @@ function JerseysTab({ data,myTids,save,fire,cl }) {
   return (
     <div>
       <PageHead icon="👕" title="Trikots" sub="Bestand & Status je Spieler"/>
-      <div style={{overflowX:"auto",display:"flex",gap:7,marginBottom:14,scrollbarWidth:"none"}}>
+      <div style={{overflowX:"auto",touchAction:"pan-x pan-y",display:"flex",gap:7,marginBottom:14,scrollbarWidth:"none"}}>
         {myTeams.map(tm=>(
           <button key={tm.id} onClick={()=>setSelTid(tm.id)}
             style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",borderRadius:99,border:`2px solid ${selTid===tm.id?tm.col:"#e2e8f0"}`,background:selTid===tm.id?tm.col+"15":"#fff",color:selTid===tm.id?tm.col:"#475569",fontWeight:700,fontSize:13,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit"}}>
@@ -13425,7 +13425,7 @@ function SeasonModal({ data,save,fire,cl,myTids,onClose }) {
   const planningSeasons = seasons.filter(s=>s.status==="planning");
 
   return (
-    <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:900,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(8px)"}}>
+    <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:900,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
       <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"90dvh",overflowY:"auto",animation:"down .24s ease"}}>
         <div style={{display:"flex",justifyContent:"center",padding:"12px 0 4px"}}><div style={{width:44,height:4,borderRadius:99,background:"#e2e8f0"}}/></div>
         <div style={{padding:"8px 20px 48px"}}>
@@ -13633,7 +13633,7 @@ function BookingModal({ field,cellStart,date,data,save,fire,cl,myTids,session,on
   };
 
   return (
-    <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:910,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(8px)"}}>
+    <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:910,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
       <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:520,maxHeight:"80dvh",overflowY:"auto",animation:"down .24s ease"}}>
         <div style={{display:"flex",justifyContent:"center",padding:"12px 0 4px"}}><div style={{width:44,height:4,borderRadius:99,background:"#e2e8f0"}}/></div>
         <div style={{padding:"8px 20px 44px",display:"flex",flexDirection:"column",gap:14}}>
@@ -14058,7 +14058,7 @@ function WeekTimeline({ field, bookings, allTrainings, weekStart, dayStart=480, 
     return [...bk,...tr];
   };
   return (
-    <div style={{display:"flex",gap:4,overflowX:"auto",WebkitOverflowScrolling:"touch",paddingBottom:4}}>
+    <div style={{display:"flex",gap:4,overflowX:"auto",touchAction:"pan-x pan-y",WebkitOverflowScrolling:"touch",paddingBottom:4}}>
       {/* Zeitachse */}
       <div style={{position:"relative",width:30,flexShrink:0,height:H+18}}>
         <div style={{height:18}}/>
@@ -15728,7 +15728,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         </div>
       )}
       {}
-      <div style={{background:"#fff",borderBottom:"2px solid #f1f5f9",display:"flex",overflowX:"auto",boxShadow:"0 2px 8px rgba(0,0,0,.04)"}}>
+      <div style={{background:"#fff",borderBottom:"2px solid #f1f5f9",display:"flex",overflowX:"auto",touchAction:"pan-x pan-y",boxShadow:"0 2px 8px rgba(0,0,0,.04)"}}>
         {tabs.map(([id,label])=><button key={id} onClick={()=>setTab(id)} style={{background:"none",border:"none",padding:"12px 13px",fontSize:12,fontWeight:800,cursor:"pointer",whiteSpace:"nowrap",color:tab===id?t.p:"#94a3b8",borderBottom:tab===id?`3px solid ${t.p}`:"3px solid transparent",marginBottom:-2,flexShrink:0}}>{label}</button>)}
       </div>
       <div style={{maxWidth:560,margin:"0 auto",padding:"14px"}}>
@@ -15753,7 +15753,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             selfName={selfName} onOpen={ev=>setViewEv(ev)}/>}
           {/* Helfer mit mehreren Jugenden: einfacher Wechsel ohne Neu-Login */}
           {isHelper&&myTids.length>1&&(
-            <div style={{display:"flex",gap:6,marginBottom:12,overflowX:"auto",paddingBottom:2}}>
+            <div style={{display:"flex",gap:6,marginBottom:12,overflowX:"auto",touchAction:"pan-x pan-y",paddingBottom:2}}>
               {[[null,"Alle Jugenden"],...myTids.map(tid=>{const tm=(local.teams||[]).find(x=>x.id===tid);return [tid,`${tm?.icon||"⚽"} ${tm?.name||tid}`];})].map(([tid,l])=>(
                 <button key={tid||"all"} onClick={()=>setHelperTid(tid)}
                   style={{flexShrink:0,padding:"7px 13px",borderRadius:99,border:`1.5px solid ${helperTid===tid?t.p:"#e2e8f0"}`,background:helperTid===tid?t.p:"#fff",color:helperTid===tid?contrast(t.p):"#475569",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{l}</button>
@@ -15988,7 +15988,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           const tabs=[["rueck","📊 Rückmeldungen"],...(isT?[["plan","📋 Training"]]:[]),...(isG&&!isHelper?[["plan","⚽ Aufstellung"]]:[]),...(isHelper?[]:[["orga","👥 Orga"]]),...(isG?[["zeit","⏱ Spieltag"]]:[])];
           const tp=TH(myClub).p;
           return (
-            <div style={{position:"sticky",top:-16,zIndex:6,background:"#fff",margin:"0 -2px",padding:"6px 2px 10px",display:"flex",gap:6,overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
+            <div style={{position:"sticky",top:-16,zIndex:6,background:"#fff",margin:"0 -2px",padding:"6px 2px 10px",display:"flex",gap:6,overflowX:"auto",touchAction:"pan-x pan-y",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
               {tabs.map(([k,l])=>(
                 <button key={k} onClick={()=>setEvTab(k)} style={{flexShrink:0,padding:"8px 13px",borderRadius:99,border:`1.5px solid ${evTab===k?tp:"#e2e8f0"}`,background:evTab===k?tp:"#fff",color:evTab===k?contrast(tp):"#475569",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{l}</button>
               ))}
@@ -17642,7 +17642,7 @@ function VereinsCockpit({data,cid,cl,save=null,fire=null,session=null}){
         <span style={{fontWeight:900,fontSize:16,color:"#0f172a",flex:1}}>Vereins-Cockpit</span>
       </div>
       <div style={{fontSize:11.5,color:"#64748b",marginBottom:12}}>Schnellübersicht zum Steuern des Vereins – Spieler, Trainer und Helfer je Mannschaft.</div>
-      <div style={{overflowX:"auto"}}>
+      <div style={{overflowX:"auto",touchAction:"pan-x pan-y"}}>
         <table style={{width:"100%",borderCollapse:"collapse",fontSize:12.5}}>
           <thead><tr style={{textAlign:"left",color:"#64748b"}}>
             <th style={{padding:"6px 8px",fontSize:11,fontWeight:800}}>MANNSCHAFT</th>
@@ -18426,7 +18426,7 @@ function TournBoerse({ data, cid, myTids, cl, save, fire }){
             <input type="range" min="5" max="100" step="5" value={radius} onChange={e=>setRadius(Number(e.target.value))} style={{flex:1,accentColor:t.p}}/>
             <span style={{fontWeight:900,fontSize:14,color:t.p,minWidth:48,textAlign:"right"}}>{radius} km</span>
           </div>
-          <div style={{display:"flex",gap:6,overflowX:"auto",scrollbarWidth:"none",marginBottom:8}}>
+          <div style={{display:"flex",gap:6,overflowX:"auto",touchAction:"pan-x pan-y",scrollbarWidth:"none",marginBottom:8}}>
             <button onClick={()=>setFCat("all")} style={{flexShrink:0,padding:"5px 11px",borderRadius:99,border:`1.5px solid ${fCat==="all"?t.p:"#e2e8f0"}`,background:fCat==="all"?t.p:"#fff",color:fCat==="all"?"#fff":"#475569",fontWeight:700,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>Alle Klassen</button>
             {CATS.map(c=><button key={c} onClick={()=>setFCat(c)} style={{flexShrink:0,padding:"5px 11px",borderRadius:99,border:`1.5px solid ${fCat===c?t.p:"#e2e8f0"}`,background:fCat===c?t.p:"#fff",color:fCat===c?"#fff":"#475569",fontWeight:700,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>{c}</button>)}
           </div>
@@ -19044,7 +19044,7 @@ function TournStandings({ schedule, teams, t }){
   const table=Object.values(row).sort((a,b)=>b.pkt-a.pkt || (b.to-b.tg)-(a.to-a.tg) || b.to-a.to || a.n.localeCompare(b.n));
   if(table.length===0) return <p style={{fontSize:13,color:"#64748b"}}>Noch keine Teams.</p>;
   return (
-    <div style={{overflowX:"auto"}}>
+    <div style={{overflowX:"auto",touchAction:"pan-x pan-y"}}>
       <table style={{width:"100%",borderCollapse:"collapse",fontSize:12.5}}>
         <thead><tr style={{color:"#64748b",fontWeight:800,textAlign:"center"}}>
           <th style={{textAlign:"left",padding:"6px 6px"}}>#</th><th style={{textAlign:"left"}}>Team</th>
@@ -19355,7 +19355,7 @@ function TournView({ ev,user,onVote,onUpdate,cl,players,isHelper=false,fields=[]
     :[["info","Info"],["setup","Setup"],["plan","Plan"],["festival","Festival"],["timer","Timer"],...(onPublish?[["publish","Freigabe"]]:[]),["split","Split"],["stats","Stats"]];
   return (
     <div>
-      <div style={{display:"flex",gap:6,marginBottom:12,overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
+      <div style={{display:"flex",gap:6,marginBottom:12,overflowX:"auto",touchAction:"pan-x pan-y",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}}>
         {TABS.map(([id,lb])=>(
           <button key={id} onClick={()=>setStab(id)}
             style={{padding:"7px 13px",borderRadius:99,border:`2px solid ${stab===id?t.p:"#e2e8f0"}`,background:stab===id?t.p:"#fff",color:stab===id?"#fff":"#475569",fontWeight:700,fontSize:12,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit",flexShrink:0}}>
@@ -19662,7 +19662,7 @@ function TournamentPublic({ eid, clubParam, onBack }){
   const teams=(ev?.setup?.clubs||[]).filter(Boolean);
   return (
     <Shell>
-      <div style={{display:"flex",gap:6,marginBottom:14,overflowX:"auto",scrollbarWidth:"none"}}>
+      <div style={{display:"flex",gap:6,marginBottom:14,overflowX:"auto",touchAction:"pan-x pan-y",scrollbarWidth:"none"}}>
         {[["info","Info"],["plan","Spielplan"],...((ev?.lineupPublic&&(ev?.squad||[]).length)?[["squad","Mannschaft"]]:[]),["regeln","Regeln"],["timer","Live-Timer"]].map(([id,lb])=>(
           <button key={id} onClick={()=>setTab(id)} style={{padding:"8px 15px",borderRadius:99,border:`2px solid ${tab===id?t.p:"#e2e8f0"}`,background:tab===id?t.p:"#fff",color:tab===id?"#fff":"#475569",fontWeight:700,fontSize:13,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit"}}>{lb}</button>
         ))}
