@@ -16943,7 +16943,10 @@ function AttendanceCheckoff({ ev, teamPlayers=[], onSetPresent=()=>{}, onSetGues
             <span style={{fontSize:11.5,fontWeight:700,color:"#16a34a"}}>{presN} da{noShows.length>0?` · ${noShows.length} No-Show`:""}</span>
           </div>
           <div style={{fontSize:11,color:"#64748b",marginBottom:10,lineHeight:1.45}}>Hake ab, wer wirklich gekommen ist. „No-Show" = hat zugesagt, war aber nicht da.</div>
-          <div style={{display:"flex",flexDirection:"column",gap:6,maxHeight:"38dvh",overflowY:"auto"}}>
+          {/* Kein eigener Scrollkasten: auf dem Handy blieb der Finger darin
+              haengen und man kam nur an die ersten Namen. Der Termin scrollt
+              als Ganzes - die Liste steht komplett da. */}
+          <div style={{display:"flex",flexDirection:"column",gap:6}}>
             {roster.map(name=>{
               const raw=(ev.votes||{})[name];
               const val=getVal(raw);
@@ -17210,7 +17213,7 @@ function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadlin
           Abhak-Liste darunter gibt - dort stehen die Stimmen ja schon dran. */}
       {readOnly&&votedP.length>0&&<>
         <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:8}}>ABSTIMMUNGEN ({votedP.length})</div>
-        <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:14,maxHeight:"35dvh",overflowY:"auto"}}>
+        <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:14}}>
           {[...votedP].sort((a,b)=>{
             const va=getVal(a[1])==="yes"?0:1,vb=getVal(b[1])==="yes"?0:1;
             return va-vb;
@@ -20831,7 +20834,7 @@ function MatchReportCard({ ev, roster, onSave }){
         <span style={{fontSize:12,fontWeight:700,color:"#475569"}}>{home?"Gegner":"Wir"}</span>
       </div>
       <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6}}>TORSCHÜTZEN {totalScorer>0?`(${totalScorer})`:""}</div>
-      <div style={{display:"flex",flexDirection:"column",gap:5,maxHeight:210,overflowY:"auto",marginBottom:10}}>
+      <div style={{display:"flex",flexDirection:"column",gap:5,marginBottom:10}}>
         {roster.length===0&&<div style={{fontSize:12,color:"#64748b"}}>Keine Spieler zugeordnet.</div>}
         {roster.map(n=>{const g=scorers[n]||0;return (
           <div key={n} style={{display:"flex",alignItems:"center",gap:8,background:g?"#f0fdf4":"#f8fafc",border:`1px solid ${g?"#bbf7d0":"#e2e8f0"}`,borderRadius:9,padding:"6px 10px"}}>

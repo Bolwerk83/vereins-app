@@ -21,6 +21,7 @@ export const CL_AREAS = [
   {id:"technik", label:"Technik & Sicherheit",icon:"🔒"},
 ];
 export const CHANGELOG = [
+  {d:"2026-08-21",t:"fix",a:"trainer",h:"Anwesenheit: alle Namen abhaken, nicht nur die ersten fünf",x:"Die Abhak-Liste steckte in einem eigenen kleinen Scrollkasten – auf dem Handy blieb der Finger darin hängen und man kam nur an die ersten Namen. Jetzt steht die komplette Mannschaft untereinander und der Termin scrollt als Ganzes. Genauso bei der Abstimmungs- und der Torschützenliste."},
   {d:"2026-08-21",t:"besser",a:"eltern",h:"Sprachwahl liegt nicht mehr über den Karten",x:"Der Umschalter für Deutsch, Englisch, Niederländisch, Arabisch und Türkisch sitzt jetzt sauber im Kopf der Seite – vorher schwebte er über der ersten Karte und der Suchzeile."},
   {d:"2026-08-21",t:"besser",a:"trainer",h:"Ein Knopf statt zwei auf der Terminkarte",x:"„Ansehen“ und „Anwesenheit“ öffneten denselben Termin. Jetzt gibt es einen Knopf: vor dem Termin führt er zu den Rückmeldungen, ab dem Termintag direkt zur Anwesenheit. Das spart eine ganze Knopfreihe."},
   {d:"2026-08-21",t:"besser",a:"trainer",h:"Bearbeiten übernimmt alles aus dem Termin",x:"Verbund-Mannschaften stehen wieder angehakt da, und bei einer Serie zeigt der Wizard Rhythmus, Anzahl und Zeitraum statt „Einzel-Termin“. Ändert man die Abstimmungsfrist einer Serie, gilt sie ab sofort als Abstand vor jedem Termin – vorher bekamen alle Termine dasselbe Fristdatum."},
