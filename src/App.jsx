@@ -10130,6 +10130,34 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
         ))}
       </div>
 
+      {/* Passwort vergessen? Der Trainer setzt es zurueck, danach vergeben die
+          Eltern beim naechsten Anmelden selbst ein neues. */}
+      {view==="list"&&(()=>{
+        const mitPw=(data.playerProfiles||[]).filter(p=>myTids.includes(p.mainTid)&&!p.archived&&p.childPw);
+        if(!mitPw.length) return null;
+        return (
+          <div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:14,padding:"11px 13px",marginBottom:12}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:3}}>🔑 KINDER MIT PASSWORT ({mitPw.length})</div>
+            <div style={{fontSize:12,color:"#64748b",lineHeight:1.5,marginBottom:8}}>
+              Haben Eltern ihr Passwort vergessen? Hier zurücksetzen – danach können sie sich ohne Passwort anmelden und ein neues vergeben.
+            </div>
+            {mitPw.map(p=>(
+              <div key={p.id} style={{display:"flex",alignItems:"center",gap:9,padding:"7px 0",borderBottom:"1px solid #f1f5f9"}}>
+                <Av name={p.name} sz={26}/>
+                <span style={{flex:1,fontSize:13.5,fontWeight:700,color:"#0f172a",minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
+                <button onClick={()=>{
+                  if(typeof window!=="undefined"&&window.confirm&&!window.confirm(`Passwort von ${p.name} zurücksetzen?\n\nDie Eltern können sich danach ohne Passwort anmelden und ein neues vergeben.`)) return;
+                  save({...data, playerProfiles:(data.playerProfiles||[]).map(x=>x.id===p.id?{...x,childPw:"",childPwAt:""}:x)});
+                  fire("Passwort von "+p.name+" zurückgesetzt – die Eltern können ein neues vergeben");
+                }} style={{flexShrink:0,padding:"10px 12px",minHeight:44,borderRadius:10,border:"1.5px solid #fed7aa",background:"#fff7ed",color:"#c2410c",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
+                  Zurücksetzen
+                </button>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
+
       {}
       {view==="pool" && (
         <PoolView
@@ -21370,14 +21398,17 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
   const kurzName=String(kind||"").split(" ")[0]||kind;
   const [spaeterAuf,setSpaeterAuf]=useState(false);
   const alle=events.filter(e=>e.date>=tod&&(e.pt==="att"||!e.pt));
+  // Der naechste Termin steht IMMER gross oben - auch wenn schon geantwortet
+  // wurde. Er ist das, was als naechstes ansteht.
+  const fokus=alle[0]||null;
   const offen=alle.filter(e=>!antwortVon(e,kind));
   const fertig=alle.filter(e=>antwortVon(e,kind));
-  const fokus=offen[0]||null;
-  const restOffen=offen.slice(1);
+  const restOffen=offen.filter(e=>e.id!==fokus?.id);
   // Beantwortetes: die naechsten vier bleiben sichtbar, der Rest wandert unter
   // "Spaeter". So steht nie eine leere Seite da, nur weil die Woche endet.
-  const wocheFertig=fertig.slice(0,4);
-  const spaeterFertig=fertig.slice(4);
+  const fertigRest=fertig.filter(e=>e.id!==fokus?.id);
+  const wocheFertig=fertigRest.slice(0,4);
+  const spaeterFertig=fertigRest.slice(4);
   const statusText=a=>a.art==="ja"?`${kurzName} kommt`:a.art==="spaet"?`Kommt später`:`${kurzName} kommt nicht`;
   // Erledigt: leise Zeile, kein Kasten - nur eine feine Trennung
   const FertigZeile=(ev)=>{
@@ -21442,10 +21473,10 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
           </div>
         )}
         {/* 1. Was eine Antwort braucht */}
-        {fokus&&(
-          <div className="up" style={{background:"#fff",borderRadius:18,border:"2.5px solid #fdba74",padding:"14px 14px 13px",
-            marginBottom:10,boxShadow:"0 4px 16px rgba(249,115,22,.13)"}}>
-            <div style={{fontSize:10.5,fontWeight:900,color:"#c2410c",letterSpacing:1,marginBottom:4}}>BITTE ANTWORTEN</div>
+        {fokus&&(()=>{ const aF=antwortVon(fokus,kind); const sF=aF?ANT[aF.art]:null; return (
+          <div className="up" style={{background:"#fff",borderRadius:18,border:`2.5px solid ${sF?sF.rand:"#fdba74"}`,padding:"14px 14px 13px",
+            marginBottom:10,boxShadow:sF?"0 3px 14px rgba(15,23,42,.07)":"0 4px 16px rgba(249,115,22,.13)"}}>
+            <div style={{fontSize:10.5,fontWeight:900,color:sF?"#475569":"#c2410c",letterSpacing:1,marginBottom:4}}>{sF?"ALS NÄCHSTES":"BITTE ANTWORTEN"}</div>
             <div style={{display:"flex",alignItems:"baseline",gap:7,flexWrap:"wrap"}}>
               <span style={{fontSize:12,fontWeight:900,color:col,letterSpacing:.8}}>{artWort(fokus)}</span>
               {fokus.loc&&<span style={{fontSize:11.5,color:"#64748b",fontWeight:700}}>📍 {fokus.loc}</span>}
@@ -21455,10 +21486,24 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
             </div>
             {dauerText(fokus)&&<div style={{fontSize:12.5,color:"#64748b",fontWeight:600,marginTop:2}}>{dauerText(fokus)}</div>}
             <NoteKurz text={fokus.note}/>
-            <div style={{fontWeight:900,fontSize:17,color:"#0f172a",margin:"12px 0 9px"}}>Kommt {kurzName}?</div>
-            <AntwortKnoepfe ev={fokus} gross onVote={onVote}/>
+            {aF
+              ? <div style={{display:"flex",alignItems:"center",gap:11,marginTop:12,background:aF.art==="ja"?"#f0fdf4":aF.art==="spaet"?"#fffbeb":"#fff1f2",borderRadius:14,padding:"13px 13px"}}>
+                  <div style={{fontSize:28,lineHeight:1}}>{sF.icon}</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontWeight:900,fontSize:17,color:sF.col}}>{statusText(aF)}</div>
+                    {aF.late>0&&<div style={{fontSize:13.5,color:sF.col,fontWeight:700,marginTop:1}}>ab {zeitPlus(fokus.time,aF.late)} Uhr</div>}
+                  </div>
+                  <button onClick={()=>onVote(fokus.id,"att",aF.art==="nein"?"yes":"no")}
+                    style={{flexShrink:0,padding:"12px 13px",minHeight:46,borderRadius:11,border:"1.5px solid #cbd5e1",background:"#fff",color:"#334155",fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>
+                    {aF.art==="nein"?"Doch dabei":"Absagen"}
+                  </button>
+                </div>
+              : <>
+                  <div style={{fontWeight:900,fontSize:17,color:"#0f172a",margin:"12px 0 9px"}}>Kommt {kurzName}?</div>
+                  <AntwortKnoepfe ev={fokus} gross onVote={onVote}/>
+                </>}
           </div>
-        )}
+        ); })()}
         {restOffen.length>0&&<>{Titel("AUCH NOCH OFFEN",restOffen.length)}{restOffen.map(OffenZeile)}</>}
         {/* 2. Erledigtes tritt zurueck */}
         {wocheFertig.length>0&&<>

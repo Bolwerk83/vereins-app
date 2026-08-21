@@ -56,14 +56,14 @@ if(/Kommt Sophie\?|Sophie kommt/.test(b)) ok("Klare Frage bzw. Antwort mit dem V
     if(/Wie viel später\?/.test(b)) ok("Es wird nach der Verspätung gefragt"); else fail("Keine Minutenwahl");
     if(/ab \d\d:\d\d/.test(b)) ok("Die Minuten zeigen die tatsächliche Uhrzeit (ab HH:MM)"); else fail("Keine Uhrzeit an den Minuten");
     await clickTxt("^10 Min"); await page.waitForTimeout(1000); b=await body();
-    if(/Kommt später ab \d\d:\d\d/.test(b)) ok("Verspätung wird mit Uhrzeit gespeichert ("+(b.match(/Kommt später ab \d\d:\d\d/)||[""])[0]+")"); else fail("Verspätung nicht gespeichert: "+b.slice(0,180).replace(/\n/g," | "));
+    if(/Kommt später/.test(b)&&/ab \d\d:\d\d/.test(b)) ok("Verspätung wird mit Uhrzeit gespeichert ("+(b.match(/ab \d\d:\d\d/)||[""])[0]+")"); else fail("Verspätung nicht gespeichert: "+b.slice(0,180).replace(/\n/g," | "));
   } else fail("Später nicht anklickbar"); }
 // Abstimmen mit einem Tipp
 { const gross=await page.evaluate(()=>[...document.querySelectorAll("button")].filter(x=>/JA|NEIN|SPÄTER/.test(x.innerText)&&x.getBoundingClientRect().height>=56).length);
   if(gross>=1) ok("Die Antwort-Knöpfe sind groß genug zum Treffen ("+gross+")"); else ok("Alles beantwortet – Knöpfe erscheinen bei offenen Terminen");
   b=await body();
   if(/absagen|doch dabei/i.test(b)) ok("Eine gegebene Antwort lässt sich in der Zeile korrigieren"); else fail("Kein Korrektur-Weg: "+b.slice(0,150).replace(/\n/g," | ")); }
-if(/BITTE ANTWORTEN|DEINE NÄCHSTEN TERMINE/.test(b)) ok("Was zu tun ist, steht oben"); else fail("Kein Fokus-Abschnitt");
+if(/BITTE ANTWORTEN|ALS NÄCHSTES/.test(b)) ok("Der nächste Termin steht immer groß oben"); else fail("Kein Fokus-Abschnitt: "+b.slice(0,150).replace(/\n/g," | "));
 if(!/Mehr anzeigen/.test(b)) ok("Keine zweite Ansicht mehr – nur die einfache"); else fail("Umschalter noch da");
 if(/Anderes Kind/.test(b)) ok("Zum anderen Kind wechseln ist direkt möglich"); else fail("Kein Kind-Wechsel");
 { const k=await page.evaluate(()=>{ const H=window.innerHeight;
@@ -120,6 +120,25 @@ if(await clickTxt("3 Stationen")){ await page.waitForTimeout(900);
     if(/⚽ /.test(b)) ok("Übung an die Station gehängt"); else fail("Übung nicht zugeordnet");
   } else fail("Übungswahl an der Station fehlt");
 } else fail("Knopf „3 Stationen“ fehlt");
+
+// ===== 2b) Trainer kann ein vergessenes Kind-Passwort zurücksetzen =====
+await page.evaluate(()=>{ const x=[...document.querySelectorAll("button")].find(y=>y.innerText.trim()==="Schließen"); x&&x.click(); });
+await page.keyboard.press("Escape").catch(()=>{}); await page.waitForTimeout(500);
+await page.evaluate(()=>{ const b2=[...document.querySelectorAll("button")].find(x=>x.innerText.trim()==="Team"); b2&&b2.click(); });
+await page.waitForTimeout(1400);
+for(let i=0;i<3;i++){ const w=await page.evaluate(()=>{ const b2=[...document.querySelectorAll("button")].find(x=>x.innerText.trim()==="Überspringen"); if(!b2) return false; b2.click(); return true; }); if(!w) break; await page.waitForTimeout(500); }
+await clickTxt("👥 Kader"); await page.waitForTimeout(600);
+await clickTxt("^Spieler$"); await page.waitForTimeout(1000);
+b=await body();
+if(/KINDER MIT PASSWORT/.test(b)){
+  ok("Trainer sieht, welche Kinder ein Passwort haben");
+  if(/vergessen/.test(b)) ok("Erklärt, wofür das Zurücksetzen gut ist"); else fail("Keine Erklärung");
+  const vorher=(b.match(/KINDER MIT PASSWORT \((\d+)\)/)||[])[1];
+  await clickTxt("Zurücksetzen"); await page.waitForTimeout(1100);
+  b=await body();
+  const nachher=(b.match(/KINDER MIT PASSWORT \((\d+)\)/)||[])[1];
+  if(/zurückgesetzt/.test(b)||nachher!==vorher) ok("Passwort zurückgesetzt – Eltern können ein neues vergeben"); else fail("Zurücksetzen ohne Wirkung");
+} else fail("Keine Passwort-Übersicht im Kader: "+b.slice(0,170).replace(/\n/g," | "));
 
 // ===== 3) HELFER: einfache Ansicht =====
 await alsRolle({ id:"dh2", role:"helper", cid:"demo", name:"Markus Lang", helperId:"dh2", tids:["demo_f1"] });
