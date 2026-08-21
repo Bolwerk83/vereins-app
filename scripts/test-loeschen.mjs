@@ -110,6 +110,48 @@ if(/Ben Fischer/.test(b)){
   } else console.log("HINWEIS: Kein direkter Löschen-Knopf in der Kaderliste");
 } else console.log("HINWEIS: Kaderliste nicht sichtbar");
 
+// ===== 4) Altlast: Helfer-Eintrag ohne Konto wird still aufgeraeumt =====
+// Genau der gemeldete Fall: der Zugang wurde geloescht (frueher oder auf einem
+// anderen Geraet), der Name stand aber weiter im Termin.
+{ const gesetzt=await page.evaluate(()=>{
+    const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null"); if(!d||!d.events) return false;
+    const ev=d.events.find(e=>e.cid==="demo"&&e.tid==="demo_f1"); if(!ev) return false;
+    ev.helperOffers=[...(ev.helperOffers||[]),{id:"geloescht_1",name:"Geloeschter Helfer",ts:new Date().toISOString()}];
+    ev.helperInterest=[...(ev.helperInterest||[]),{id:"geloescht_2",name:"Auch Weg",ts:new Date().toISOString()}];
+    localStorage.setItem("vereinsapp_v14", JSON.stringify(d));
+    return true;
+  });
+  if(gesetzt) ok("Altlast angelegt: zwei Helfer-Einträge ohne Konto"); else fail("Konnte keine Altlast anlegen");
+  await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(3000); await dismiss(); await page.waitForTimeout(1200);
+  const rest=await page.evaluate(()=>{
+    const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null"); if(!d) return -1;
+    return JSON.stringify(d.events||[]).split("Geloeschter Helfer").length-1 + (JSON.stringify(d.events||[]).split("Auch Weg").length-1);
+  });
+  if(rest===0) ok("Beim nächsten Öffnen sind die verwaisten Einträge verschwunden");
+  else fail("Verwaiste Helfer-Einträge bleiben stehen: "+rest);
+  const b4=await body();
+  if(!/Geloeschter Helfer|Auch Weg/.test(b4)) ok("Und sie stehen auch nicht mehr auf der Terminkarte");
+  else fail("Name steht weiter auf der Terminkarte");
+  // Gegenprobe: ein echter Helfer bleibt selbstverstaendlich stehen
+  const echt=await page.evaluate(()=>{
+    const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null"); if(!d) return -1;
+    const h=(d.helpers||[]).find(x=>x.cid==="demo"&&x.active!==false); if(!h) return -1;
+    const ev=(d.events||[]).find(e=>e.cid==="demo"&&e.tid==="demo_f1"); if(!ev) return -1;
+    ev.helperOffers=[{id:h.id,name:h.name,ts:new Date().toISOString()}];
+    localStorage.setItem("vereinsapp_v14", JSON.stringify(d));
+    return 1;
+  });
+  if(echt===1){
+    await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(3000); await dismiss(); await page.waitForTimeout(1200);
+    const bleibt=await page.evaluate(()=>{
+      const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
+      const ev=(d.events||[]).find(e=>e.cid==="demo"&&e.tid==="demo_f1");
+      return (ev&&ev.helperOffers||[]).length;
+    });
+    if(bleibt===1) ok("Ein Helfer MIT Konto bleibt unangetastet"); else fail("Echter Helfer wurde mit weggeräumt: "+bleibt);
+  }
+}
+
 if(errors.length){ console.log("JS-FEHLER:"); [...new Set(errors)].forEach(e=>console.log(" -",e.slice(0,150))); }
 console.log(errors.length||fails.length?`ERGEBNIS: ${fails.length} Fehlschläge, ${errors.length} JS-Fehler`:"ERGEBNIS: ALLES OK");
 await browser.close(); srv.close();

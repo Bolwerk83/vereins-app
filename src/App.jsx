@@ -15450,6 +15450,17 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const toastRef=useRef(null);
   const fire=m=>{setToast(m);clearTimeout(toastRef.current);toastRef.current=setTimeout(()=>setToast(null),2500);};
   const save=next=>{setLocal(next);onSave(next);};
+  // Einmal je Sitzung aufraeumen: Helfer-Eintraege ohne Konto verschwinden aus
+  // den Terminen (z. B. nach dem Loeschen eines Zugangs auf einem anderen Geraet).
+  const putzRef=useRef(false);
+  useEffect(()=>{
+    if(putzRef.current||isHelper) return;
+    const {data:sauber,n}=verwaisteHelfer(local,cid);
+    if(!n) { if((local.trainers||[]).some(t=>t.cid===cid)) putzRef.current=true; return; }
+    putzRef.current=true;
+    save(sauber);
+    fire(n===1?"1 Eintrag eines gelöschten Helfers entfernt":`${n} Einträge gelöschter Helfer entfernt`);
+  },[local,cid,isHelper]);
   const myClub=local.clubs.find(c=>c.id===cid);
   const _activeSid = activeSid(local, cid);
   // Saison-Filter bewusst tolerant: ohne bestimmbare Saison (oder wenn kein
@@ -17787,6 +17798,35 @@ const purgePerson = (data, {id=null, name=""}={}) => {
   if(Array.isArray(data.subRequests))
     out.subRequests=data.subRequests.filter(r=>!raus(r&&r.by)&&!gleich(r&&r.byName)&&!raus(r&&r.takenBy)&&!gleich(r&&r.takenByName));
   return out;
+};
+
+// Ein Helfer-Eintrag im Termin gehoert immer zu einem Konto (Helfer oder
+// Trainer) - anders kann er gar nicht entstehen. Findet sich weder das Konto
+// noch der Name wieder, ist der Eintrag verwaist: das Konto wurde geloescht,
+// bevor es die Mitloeschung gab, oder ein zweites Geraet hat den alten Stand
+// zurueckgeschrieben. Solche Reste raeumt die App still weg.
+const verwaisteHelfer = (data, cid) => {
+  const ids=new Set(), namen=new Set();
+  const merk=x=>{ if(!x) return; if(x.id) ids.add(x.id); if(x.name) namen.add(_nrmName(x.name)); };
+  (data.helpers||[]).filter(h=>!cid||h.cid===cid).forEach(merk);
+  (data.trainers||[]).filter(t=>!cid||t.cid===cid).forEach(merk);
+  // Sicherheitsnetz: ohne bekannte Trainer sind die Daten (noch) nicht da -
+  // dann wird nichts angefasst, sonst raeumt ein halb geladener Stand alles weg.
+  if(!ids.size) return {data,n:0};
+  const lebt=o=>!!o&&((o.id&&ids.has(o.id))||(o.name&&namen.has(_nrmName(o.name))));
+  let n=0;
+  const events=(data.events||[]).map(e=>{
+    if(cid&&e.cid!==cid) return e;
+    const patch={};
+    for(const key of ["helperOffers","helperInterest"]){
+      const liste=e[key];
+      if(!Array.isArray(liste)||!liste.length) continue;
+      const rein=liste.filter(lebt);
+      if(rein.length!==liste.length){ patch[key]=rein; n+=liste.length-rein.length; }
+    }
+    return Object.keys(patch).length ? {...e,...patch} : e;
+  });
+  return n ? {data:{...data,events},n} : {data,n:0};
 };
 
 const isPlayerVote = (name, raw, ctx={}) => {
