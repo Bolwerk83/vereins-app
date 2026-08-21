@@ -21415,10 +21415,13 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
   const tod=now(), sonntag=bisSonntag();
   const kurzName=String(kind||"").split(" ")[0]||kind;
   const [spaeterAuf,setSpaeterAuf]=useState(false);
+  const [gewaehlt,setGewaehlt]=useState(null);   // angetippter Termin wird gross
+  const [aendern,setAendern]=useState(false);    // Antwort des grossen Termins aendern
   const alle=events.filter(e=>e.date>=tod&&(e.pt==="att"||!e.pt));
-  // Der naechste Termin steht IMMER gross oben - auch wenn schon geantwortet
-  // wurde. Er ist das, was als naechstes ansteht.
-  const fokus=alle[0]||null;
+  // Gross ist der naechste Termin - oder der, den man angetippt hat.
+  const fokus=(gewaehlt&&alle.find(e=>e.id===gewaehlt))||alle[0]||null;
+  const istGewaehlt=!!(gewaehlt&&fokus&&fokus.id===gewaehlt&&alle[0]&&alle[0].id!==fokus.id);
+  const waehle=id=>{ setGewaehlt(id); setAendern(false); try{ window.scrollTo({top:0,behavior:"smooth"}); }catch{} };
   const offen=alle.filter(e=>!antwortVon(e,kind));
   const fertig=alle.filter(e=>antwortVon(e,kind));
   const restOffen=offen.filter(e=>e.id!==fokus?.id);
@@ -21434,7 +21437,7 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
     return (
       <div key={ev.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 4px",borderBottom:"1px solid #e9eef5"}}>
         <div style={{fontSize:17,lineHeight:1,width:20,textAlign:"center",flexShrink:0}}>{s.icon}</div>
-        <div style={{flex:1,minWidth:0}}>
+        <div onClick={()=>waehle(ev.id)} style={{flex:1,minWidth:0,cursor:"pointer"}}>
           <div style={{fontWeight:800,fontSize:14.5,color:"#334155",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
             {tagKurz(ev.date)}{ev.time?` · ${ev.time}${ev.endTime?"–"+ev.endTime:""}`:""}
           </div>
@@ -21452,7 +21455,7 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
   // Offen, aber nicht der erste: kompakte Karte mit den drei Wegen
   const OffenZeile=(ev)=>(
     <div key={ev.id} style={{background:"#fff",borderRadius:14,border:"1.5px solid #fed7aa",padding:"11px 12px",marginBottom:8}}>
-      <div style={{display:"flex",alignItems:"baseline",gap:7,flexWrap:"wrap",marginBottom:8}}>
+      <div onClick={()=>waehle(ev.id)} style={{display:"flex",alignItems:"baseline",gap:7,flexWrap:"wrap",marginBottom:8,cursor:"pointer"}}>
         <span style={{fontSize:11,fontWeight:900,color:col,letterSpacing:.6}}>{artWort(ev)}</span>
         <span style={{fontWeight:900,fontSize:15.5,color:"#0f172a"}}>{tagKurz(ev.date)}{ev.time?` · ${ev.time}${ev.endTime?"–"+ev.endTime:""} Uhr`:""}</span>
         {ev.loc&&<span style={{fontSize:11.5,color:"#64748b",fontWeight:700}}>📍 {ev.loc}</span>}
@@ -21494,7 +21497,15 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
         {fokus&&(()=>{ const aF=antwortVon(fokus,kind); const sF=aF?ANT[aF.art]:null; return (
           <div className="up" style={{background:"#fff",borderRadius:18,border:`2.5px solid ${sF?sF.rand:"#fdba74"}`,padding:"14px 14px 13px",
             marginBottom:10,boxShadow:sF?"0 3px 14px rgba(15,23,42,.07)":"0 4px 16px rgba(249,115,22,.13)"}}>
-            <div style={{fontSize:10.5,fontWeight:900,color:sF?"#475569":"#c2410c",letterSpacing:1,marginBottom:4}}>{sF?"ALS NÄCHSTES":"BITTE ANTWORTEN"}</div>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+              <span style={{fontSize:10.5,fontWeight:900,color:istGewaehlt?"#4f46e5":(sF?"#475569":"#c2410c"),letterSpacing:1}}>
+                {istGewaehlt?"AUSGEWÄHLT":(sF?"ALS NÄCHSTES":"BITTE ANTWORTEN")}
+              </span>
+              {istGewaehlt&&<button onClick={()=>{ setGewaehlt(null); setAendern(false); }}
+                style={{marginLeft:"auto",padding:"8px 10px",minHeight:36,borderRadius:9,border:"none",background:"#eef2ff",color:"#4f46e5",fontWeight:800,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>
+                ← Nächster Termin
+              </button>}
+            </div>
             <div style={{display:"flex",alignItems:"baseline",gap:7,flexWrap:"wrap"}}>
               <span style={{fontSize:12,fontWeight:900,color:col,letterSpacing:.8}}>{artWort(fokus)}</span>
               {fokus.loc&&<span style={{fontSize:11.5,color:"#64748b",fontWeight:700}}>📍 {fokus.loc}</span>}
@@ -21505,17 +21516,23 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
             {dauerText(fokus)&&<div style={{fontSize:12.5,color:"#64748b",fontWeight:600,marginTop:2}}>{dauerText(fokus)}</div>}
             <NoteKurz text={fokus.note}/>
             {aF
-              ? <div style={{display:"flex",alignItems:"center",gap:11,marginTop:12,background:aF.art==="ja"?"#f0fdf4":aF.art==="spaet"?"#fffbeb":"#fff1f2",borderRadius:14,padding:"13px 13px"}}>
-                  <div style={{fontSize:28,lineHeight:1}}>{sF.icon}</div>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontWeight:900,fontSize:17,color:sF.col}}>{statusText(aF)}</div>
-                    {aF.late>0&&<div style={{fontSize:13.5,color:sF.col,fontWeight:700,marginTop:1}}>ab {zeitPlus(fokus.time,aF.late)} Uhr</div>}
+              ? (aendern
+                ? <div style={{marginTop:12}}>
+                    <div style={{fontWeight:900,fontSize:16,color:"#0f172a",marginBottom:9}}>Antwort ändern – kommt {kurzName}?</div>
+                    <AntwortKnoepfe ev={fokus} gross onVote={(id,pt,val)=>{ onVote(id,pt,val); setAendern(false); }}/>
+                    <button onClick={()=>setAendern(false)} style={{width:"100%",marginTop:9,padding:"12px",minHeight:44,borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
                   </div>
-                  <button onClick={()=>onVote(fokus.id,"att",aF.art==="nein"?"yes":"no")}
-                    style={{flexShrink:0,padding:"12px 13px",minHeight:46,borderRadius:11,border:"1.5px solid #cbd5e1",background:"#fff",color:"#334155",fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>
-                    {aF.art==="nein"?"Doch dabei":"Absagen"}
-                  </button>
-                </div>
+                : <div style={{display:"flex",alignItems:"center",gap:11,marginTop:12,background:aF.art==="ja"?"#f0fdf4":aF.art==="spaet"?"#fffbeb":"#fff1f2",borderRadius:14,padding:"13px 13px"}}>
+                    <div style={{fontSize:28,lineHeight:1}}>{sF.icon}</div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontWeight:900,fontSize:17,color:sF.col}}>{statusText(aF)}</div>
+                      {aF.late>0&&<div style={{fontSize:13.5,color:sF.col,fontWeight:700,marginTop:1}}>ab {zeitPlus(fokus.time,aF.late)} Uhr</div>}
+                    </div>
+                    <button onClick={()=>setAendern(true)}
+                      style={{flexShrink:0,padding:"12px 13px",minHeight:46,borderRadius:11,border:"1.5px solid #cbd5e1",background:"#fff",color:"#334155",fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>
+                      Ändern
+                    </button>
+                  </div>)
               : <>
                   <div style={{fontWeight:900,fontSize:17,color:"#0f172a",margin:"12px 0 9px"}}>Kommt {kurzName}?</div>
                   <AntwortKnoepfe ev={fokus} gross onVote={onVote}/>

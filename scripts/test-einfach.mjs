@@ -79,6 +79,28 @@ if(/Anderes Kind/.test(b)) ok("Zum anderen Kind wechseln ist direkt möglich"); 
   if(k.maxHoehe<=340) ok("Fokus-Karte bleibt im Rahmen ("+k.maxHoehe+" px)"); else fail("Fokus-Karte zu hoch: "+k.maxHoehe+" px");
   if(z===0||z<=110) ok("Die weiteren Termine sind schmale Zeilen ("+z+" px)"); else fail("Folge-Termine zu hoch: "+z+" px"); }
 
+// ===== 1b) Anderen Termin antippen: der wird groß, mit allen drei Wegen =====
+{ const vorher=(await body()).split("\n").slice(0,12).join(" ");
+  const geklickt=await page.evaluate(()=>{ const z=[...document.querySelectorAll("div")].filter(d=>/\d\d:\d\d/.test(d.innerText||"")&&d.style.cursor==="pointer"); if(!z.length) return false; z[0].click(); return true; });
+  if(geklickt){ await page.waitForTimeout(900); b=await body();
+    if(/AUSGEWÄHLT/.test(b)) ok("Angetippter Termin wird groß"); else fail("Kein Fokus-Wechsel: "+b.slice(0,170).replace(/\n/g," | "));
+    if(/← Nächster Termin/.test(b)) ok("Zurück zum nächsten Termin ist möglich"); else fail("Kein Weg zurück zum nächsten Termin");
+    const jetzt=(await body()).split("\n").slice(0,12).join(" ");
+    if(jetzt!==vorher) ok("Oben steht jetzt ein anderer Termin"); else fail("Fokus hat nicht gewechselt");
+    // Auch hier muss "später" gehen
+    if(/JA|SPÄTER|Ändern/.test(b)){
+      if(!/SPÄTER/.test(b)) { await clickTxt("^Ändern$"); await page.waitForTimeout(700); b=await body(); }
+      if(/⏰ SPÄTER/.test(b)) ok("Auch beim ausgewählten Termin gibt es „Später“"); else fail("Kein Später-Knopf im ausgewählten Termin: "+b.slice(0,170).replace(/\n/g," | "));
+      if(await clickTxt("SPÄTER")){ await page.waitForTimeout(700); b=await body();
+        if(/Wie viel später\?/.test(b)) ok("Die Minutenwahl erscheint auch hier"); else fail("Keine Minutenwahl");
+        await clickTxt("^15 Min"); await page.waitForTimeout(1000); b=await body();
+        if(/Kommt später/.test(b)&&/ab \d\d:\d\d/.test(b)) ok("Verspätung auch nachträglich änderbar ("+(b.match(/ab \d\d:\d\d/)||[""])[0]+")"); else fail("Nachträgliche Verspätung nicht gespeichert");
+      } else fail("Später nicht anklickbar");
+    }
+    await clickTxt("Nächster Termin"); await page.waitForTimeout(700);
+  } else console.log("HINWEIS: keine zweite Termin-Zeile vorhanden");
+}
+
 // ===== 1c) Passwort fürs eigene Kind – auch in der einfachen Ansicht =====
 b=await body();
 if(/Passwort für \w+ (einrichten|ändern)/.test(b)) ok("Passwort fürs Kind ist direkt erreichbar"); else fail("Kein Passwort-Knopf: "+b.slice(-200).replace(/\n/g," | "));
