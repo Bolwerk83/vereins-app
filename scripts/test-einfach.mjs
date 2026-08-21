@@ -56,13 +56,21 @@ if(/Kommt Ben\?|Ben kommt/.test(b)) ok("Klare Frage bzw. Antwort mit dem Vorname
   await page.waitForTimeout(900); b=await body();
   if(geklickt&&/kommt/.test(b)) ok("Ein Tipp genügt – die Antwort steht sofort da"); else fail("Antwort ohne Wirkung: "+b.slice(0,140).replace(/\n/g," | "));
   if(/Absagen|Doch dabei/.test(b)) ok("Der Knopf sagt, was passiert (Absagen bzw. Doch dabei)"); else fail("Kein Korrektur-Knopf"); }
-if(/Mehr anzeigen/.test(b)) ok("Wer mehr will, kann umschalten"); else fail("Kein Weg zur vollen Ansicht");
+if(/ALS NÄCHSTES/.test(b)) ok("Der nächste Termin steht im Fokus"); else fail("Kein Fokus auf dem nächsten Termin");
+if(!/Mehr anzeigen/.test(b)) ok("Keine zweite Ansicht mehr – nur die einfache"); else fail("Umschalter noch da");
+if(/Anderes Kind/.test(b)) ok("Zum anderen Kind wechseln ist direkt möglich"); else fail("Kein Kind-Wechsel");
 { const k=await page.evaluate(()=>{ const H=window.innerHeight;
-    const karten=[...document.querySelectorAll("div")].filter(d=>/^(TRAINING|SPIEL|TURNIER)/.test(d.innerText||"")&&d.getBoundingClientRect().height>50&&d.getBoundingClientRect().height<320);
+    const karten=[...document.querySelectorAll("div")].filter(d=>/(TRAINING|SPIEL|TURNIER)/.test(d.innerText||"")&&/Uhr/.test(d.innerText||"")&&d.getBoundingClientRect().height>50&&d.getBoundingClientRect().height<330&&!/DIESE WOCHE/.test(d.innerText||""));
     return { sichtbar:karten.filter(d=>{const r=d.getBoundingClientRect();return r.top<H&&r.bottom>0;}).length,
              maxHoehe:Math.max(0,...karten.map(d=>Math.round(d.getBoundingClientRect().height))) }; });
   if(k.sichtbar>=2) ok("Mehrere Termine gleichzeitig sichtbar ("+k.sichtbar+")"); else fail("Nur "+k.sichtbar+" Termin sichtbar");
-  if(k.maxHoehe<=200) ok("Karten bleiben kompakt (max "+k.maxHoehe+" px)"); else fail("Karte zu hoch: "+k.maxHoehe+" px"); }
+  // Die Fokus-Karte darf gross sein, die uebrigen Termine muessen Zeilen bleiben
+  const z=await page.evaluate(()=>{ const H=window.innerHeight;
+    const zeilen=[...document.querySelectorAll("div")].filter(d=>/Uhr/.test(d.innerText||"")&&!/ALS NÄCHSTES|Kommt |JA|NEIN/.test(d.innerText||"")
+      &&d.getBoundingClientRect().height>40&&d.getBoundingClientRect().height<200);
+    return Math.max(0,...zeilen.map(d=>Math.round(d.getBoundingClientRect().height))); });
+  if(k.maxHoehe<=340) ok("Fokus-Karte bleibt im Rahmen ("+k.maxHoehe+" px)"); else fail("Fokus-Karte zu hoch: "+k.maxHoehe+" px");
+  if(z===0||z<=110) ok("Die weiteren Termine sind schmale Zeilen ("+z+" px)"); else fail("Folge-Termine zu hoch: "+z+" px"); }
 
 // ===== 2) Trainer legt Stationen an =====
 await alsRolle({ role:"trainer", cid:"demo", tids:["demo_f1"], name:"Demo Trainer", id:"demo_tr1" });
@@ -107,8 +115,8 @@ if(await clickTxt("JA")){ await page.waitForTimeout(1000); b=await body();
   await page.waitForTimeout(600);
 } else fail("Helfer kann nicht zusagen");
 b=await body();
-if(/NEIN|Doch nicht/.test(b)) ok("Absagen ist genauso einfach"); else fail("Kein Nein-Weg");
-if(/Mehr anzeigen/.test(b)) ok("Umschalten in die volle Ansicht möglich"); else fail("Kein Umschalter beim Helfer");
+if(/NEIN|Absagen|Doch nicht/.test(b)) ok("Absagen ist genauso einfach"); else fail("Kein Nein-Weg");
+if(!/Mehr anzeigen/.test(b)) ok("Auch beim Helfer nur die einfache Ansicht"); else fail("Umschalter beim Helfer noch da");
 
 if(errors.length){ console.log("JS-FEHLER:"); [...new Set(errors)].forEach(e=>console.log(" -",e.slice(0,150))); }
 console.log(errors.length||fails.length?`ERGEBNIS: ${fails.length} Fehlschläge, ${errors.length} JS-Fehler`:"ERGEBNIS: ALLES OK");
