@@ -15,6 +15,24 @@ import { TRAINING_TEMPLATES, DRILL_LIB } from "./drills.js";
 import { CHANGELOG, CL_TYPES, CL_AREAS } from "./changelog.js";
 import { DFBFormatsCard, TacticField, StyleToggle, DrillDiagram, DrillLibrary, TacticBoard, TrainingsLibrary, TrainingPlanner, TrainerGuide, TrainingPlanTab, DrillAutoAnim, DrillInfoModal, CAT_TO_AGEKEY, DRILL_FOCUS, TACTIC_TEMPLATES, drillsForPhase, eventDurationMin, WeeklySoloCard, WeeklyQuizCard, KidAchievements, calcInventory, SpielzugLibrary } from "./training.jsx";
 
+// ----------------------------------------------------------------
+// Direktlink zu einem Kind (Verein + Mannschaft + Name). Trainer und Eltern
+// nutzen denselben Baustein. Im Link steht NIE ein Passwort - das Team- und
+// ein evtl. gesetztes Kind-Passwort werden weiterhin abgefragt.
+// ----------------------------------------------------------------
+const direktLink = (cl,tid,name) => {
+  const basis=(typeof window!=="undefined"?window.location.origin+window.location.pathname:"");
+  return `${basis}?club=${encodeURIComponent(cl?.slug||cl?.id||"")}&team=${encodeURIComponent(tid||"")}&kind=${encodeURIComponent(name||"")}`;
+};
+const direktLinkText = (cl,team,name) =>
+  `Hallo,\n\nhier der direkte Link für ${name}${team?` (${team.name})`:""} bei ${cl?.name||"unserem Verein"}:\n${direktLink(cl,team?.id,name)}\n\nLink öffnen, einmal das Mannschafts-Passwort eingeben (im Link steht keins) – danach seht ihr sofort die Termine von ${name} und könnt mit einem Tipp zusagen oder absagen.`;
+// Teilen ueber das Handy-Menue, sonst in die Zwischenablage.
+const teileKindLink = (cl,team,name,fire) => {
+  const txt=direktLinkText(cl,team,name);
+  if(typeof navigator!=="undefined"&&navigator.share){ navigator.share({title:"Link für "+name,text:txt}).catch(()=>{}); fire&&fire("Link geteilt ✓"); }
+  else { try{ navigator.clipboard?.writeText(txt); }catch{} fire&&fire("Link für "+name+" kopiert ✓"); }
+};
+
 // Demo-Daten (nutzen DEMO_CLUBS/tournPubSnapshot weiter unten; Funktions-Hoisting)
 function seed() {
   return {
@@ -10114,14 +10132,7 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
   // Direktlink fuer die Eltern: fuehrt nach dem Team-Passwort sofort zu
   // diesem Kind. Kein Passwort im Link - Team- und Kind-Passwort greifen
   // weiterhin.
-  const kindLink = pl => {
-    const basis=(typeof window!=="undefined"?window.location.origin+window.location.pathname:"");
-    const url=`${basis}?club=${encodeURIComponent(cl?.slug||cl?.id||"")}&team=${encodeURIComponent(pl.mainTid||"")}&kind=${encodeURIComponent(pl.name||"")}`;
-    const team=(data.teams||[]).find(t=>t.id===pl.mainTid);
-    const txt=`Hallo,\n\nhier der direkte Link für ${pl.name}${team?` (${team.name})`:""} bei ${cl?.name||"unserem Verein"}:\n${url}\n\nLink öffnen, einmal das Mannschafts-Passwort eingeben – danach seht ihr sofort die Termine von ${pl.name} und könnt mit einem Tipp zusagen oder absagen.`;
-    if(typeof navigator!=="undefined"&&navigator.share){ navigator.share({title:"Link für "+pl.name,text:txt}).catch(()=>{}); fire("Link geteilt ✓"); }
-    else { try{ navigator.clipboard?.writeText(txt); }catch{} fire("Link für "+pl.name+" kopiert ✓"); }
-  };
+  const kindLink = pl => teileKindLink(cl,(data.teams||[]).find(t=>t.id===pl.mainTid),pl.name,fire);
   const delPlayer = id => {
     const pl=allPlayers.find(p=>p.id===id);
     if(typeof window!=="undefined"&&window.confirm&&!window.confirm(`„${pl?.name||"Spieler"}“ endgültig löschen?\n\nProfil, Skills und Verlauf werden entfernt (DSGVO-Log wird erstellt). Das kann nicht rückgängig gemacht werden.`)) return;
@@ -21506,7 +21517,7 @@ function KindPasswort({ cl, kind, gesetzt, onSetzen, onEntfernen, onClose }){
     </div>
   );
 }
-function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat, unread=0, onAbmelden, onPasswort, pwGesetzt=false, toast }){
+function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat, unread=0, onAbmelden, onPasswort, onLink, pwGesetzt=false, toast }){
   const t=TH(cl);
   const col=readable(t.p);
   const tod=now(), sonntag=bisSonntag();
@@ -21660,6 +21671,15 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
         {onPasswort&&(
           <button onClick={onPasswort} style={{width:"100%",marginTop:14,padding:"13px",minHeight:46,borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#334155",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
             🔒 Passwort für {kurzName} {pwGesetzt?"ändern":"einrichten"}
+          </button>
+        )}
+        {/* Weitergeben: an den anderen Elternteil, Oma/Opa oder die
+            Fahrgemeinschaft. Der Link fuehrt direkt zu diesem Kind - ein
+            Passwort steht nie darin, die Erklaerung steckt im Nachrichtentext. */}
+        {onLink&&(
+          <button onClick={onLink} title={`Link für ${kurzName} weitergeben – z. B. an Papa, Mama oder Oma. Ohne Passwort im Link.`}
+            style={{width:"100%",marginTop:8,padding:"13px",minHeight:46,borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#334155",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
+            🔗 Link weitergeben
           </button>
         )}
         <div style={{display:"flex",gap:8,marginTop:8}}>
@@ -21925,6 +21945,7 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{},onSwitc
         onKindWechseln={onSwitchChild?()=>onSwitchChild(tid):null}
         onChat={()=>{ setSimple(false); setTab("chat"); }}
         pwGesetzt={!!myProfile?.childPw}
+        onLink={()=>teileKindLink(cl,myTeam,user,fire)}
         onPasswort={myProfile?()=>setPwOpen(true):null}/>
       {pwOpen&&myProfile&&(
         <KindPasswort cl={cl} kind={user} gesetzt={!!myProfile.childPw} onClose={()=>setPwOpen(false)}

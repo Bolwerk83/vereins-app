@@ -87,6 +87,28 @@ b=await body();
 if(/BITTE ANTWORTEN|ALS NÄCHSTES|Kommt Ben|Ben kommt/.test(b)) ok("Beim zweiten Mal geht es ohne jede Eingabe direkt zu den Terminen");
 else fail("Zweiter Aufruf nicht durchgereicht: "+b.slice(0,190).replace(/\n/g," | "));
 
+// ===== 4) Eltern geben den Link selbst weiter (an Papa, Oma, Fahrgemeinschaft) =====
+{ const hat=await page.evaluate(()=>!![...document.querySelectorAll("button")].find(x=>/Link weitergeben/.test(x.innerText||"")));
+  if(hat) ok("Eltern haben selbst einen Weitergeben-Knopf"); else fail("Kein Weitergeben-Knopf in der Elternansicht");
+  const titel=await page.evaluate(()=>{ const b=[...document.querySelectorAll("button")].find(x=>/Link weitergeben/.test(x.innerText||"")); return b?(b.getAttribute("title")||""):""; });
+  if(/Ohne Passwort im Link/i.test(titel)) ok("Der Knopf erklaert sich selbst (Titel)"); else fail("Kein erklaerender Titel: "+titel);
+  // Zwischenablage mitlesen: kein Passwort, aber Verein, Team und Kind im Link
+  await page.evaluate(()=>{ window.__kopiert=null;
+    try{ Object.defineProperty(navigator,"share",{value:undefined,configurable:true}); }catch{}
+    try{ Object.defineProperty(navigator,"clipboard",{value:{writeText:t=>{window.__kopiert=t;return Promise.resolve();}},configurable:true}); }catch{}
+  });
+  await clickTxt("Link weitergeben"); await page.waitForTimeout(900);
+  const txt=await page.evaluate(()=>window.__kopiert||"");
+  if(/club=demo-verein/.test(txt)&&/team=demo_f1/.test(txt)&&/kind=Ben(%20|\+)Fischer/.test(txt)) ok("Der geteilte Link enthaelt Verein, Mannschaft und Kind");
+  else fail("Link unvollstaendig: "+txt.slice(0,180).replace(/\n/g," | "));
+  if(!/passwort\s*[:=]/i.test(txt)&&!/[?&]pw=/.test(txt)) ok("Im Link steht kein Passwort");
+  else fail("Passwort im Link: "+txt.slice(0,180));
+  if(/im Link steht keins/i.test(txt)) ok("Die Nachricht sagt, dass kein Passwort im Link steht");
+  else fail("Hinweis im Nachrichtentext fehlt: "+txt.slice(0,200).replace(/\n/g," | "));
+  const b4=await body();
+  if(/kopiert|geteilt/i.test(b4)) ok("Die Eltern bekommen eine Rueckmeldung"); else fail("Keine Rueckmeldung beim Teilen (Eltern)");
+}
+
 if(errors.length){ console.log("JS-FEHLER:"); [...new Set(errors)].forEach(e=>console.log(" -",e.slice(0,150))); }
 console.log(errors.length||fails.length?`ERGEBNIS: ${fails.length} Fehlschläge, ${errors.length} JS-Fehler`:"ERGEBNIS: ALLES OK");
 await browser.close(); srv.close();

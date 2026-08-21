@@ -48,7 +48,10 @@ else if(/bis \d\d:\d\d Uhr/.test(b)) ok("Endzeit steht dabei");
 else fail("Keine Dauer/Endzeit: "+b.slice(0,160).replace(/\n/g," | "));
 let m=await messung();
 if(m.woerter<=60) ok("Sehr wenig Text auf dem Bildschirm ("+m.woerter+" Wörter)"); else fail("Zu viel Text: "+m.woerter+" Wörter");
-if(m.knoepfe<=8) ok("Wenige Knöpfe ("+m.knoepfe+")"); else fail("Zu viele Knöpfe: "+m.knoepfe);
+// 9 = 3 Antwortknoepfe + Termin-Zeilen + Passwort, Link weitergeben, Anderes
+// Kind, Abmelden. Der Link-Knopf ist bewusst dabei: Eltern sollen den anderen
+// Elternteil selbst einladen koennen, ohne den Trainer zu fragen.
+if(m.knoepfe<=9) ok("Wenige Knöpfe ("+m.knoepfe+")"); else fail("Zu viele Knöpfe: "+m.knoepfe);
 if(/Kommt Sophie\?|Sophie kommt/.test(b)) ok("Klare Frage bzw. Antwort mit dem Vornamen des Kindes"); else fail("Frage fehlt: "+b.slice(0,160).replace(/\n/g," | "));
 // Dritter Weg: verspätet mit Uhrzeit
 { if(/⏰ SPÄTER/.test(b)) ok("Dritter Weg vorhanden: später kommen"); else fail("Kein „Später“-Knopf: "+b.slice(0,150).replace(/\n/g," | "));
