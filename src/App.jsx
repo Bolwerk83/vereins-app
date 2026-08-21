@@ -7415,7 +7415,7 @@ const merkTageRest = (key,val) => {
 const merkOk  = (key,val) => merkTageRest(key,val)>0;
 const merkWeg = (key) => { try{ localStorage.removeItem(key); }catch{} };
 
-function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,preselectTid,onWaitlist,onConsent,onGuestConsent,onSetChildPw}) {
+function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,preselectTid,preselectName=null,onWaitlist,onConsent,onGuestConsent,onSetChildPw}) {
   const [showWait,setShowWait]=useState(false);
   const { tr } = useT();
   const [obStep,setObStep]=useState(1);            // Eltern-Onboarding: 1 Einwilligung, 2 Passwort, 3 Erklärung
@@ -7491,6 +7491,14 @@ function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,pre
   // Geraet kennt das Team-Passwort schon? Dann direkt zur Namensliste (Kind wechseln
   // ohne erneute Passwort-Eingabe). Bei geaendertem Team-Passwort greift es nicht mehr.
   const ctSkip=teams.find(x=>x.id===tid);
+  // Steht ein Kind im Link, wird die Namensliste uebersprungen - die Eltern
+  // landen direkt bei ihrem Kind (Passwort und Einwilligung greifen weiter).
+  const kindRef=React.useRef(false);
+  React.useEffect(()=>{
+    if(step!=="name"||!preselectName||kindRef.current||!autoRef.current) return;
+    const treffer=(playerProfiles||[]).find(p=>p.mainTid===tid&&!p.archived&&_nrmName(p.name)===_nrmName(preselectName));
+    if(treffer){ kindRef.current=true; pickName(tid,treffer.name); }
+  },[step,tid,preselectName]);
   React.useEffect(()=>{
     if(step!=="pwd"||!ctSkip||ctSkip.locked||!autoRef.current) return;
     try{
@@ -9143,7 +9151,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
   );
 }
 
-function PlayerCard({ player: pl,onEdit,onDel,isMain,allTeams,allEvents,onWizard,onMessage }) {
+function PlayerCard({ player: pl,onEdit,onDel,isMain,allTeams,allEvents,onWizard,onMessage,onLink }) {
   // Loeschen ist zweistufig: erster Tipp "scharfschalten" (Button wird breit
   // und rot), zweiter Tipp loescht. Nach 3 s automatisch wieder entschaerft.
   const [armDel,setArmDel]=useState(false);
@@ -9183,6 +9191,8 @@ function PlayerCard({ player: pl,onEdit,onDel,isMain,allTeams,allEvents,onWizard
         </div>
         <div style={{display:"flex",gap:5,flexShrink:0}}>
           {onWizard&&noSkills&&<button onClick={e=>{e.stopPropagation();onWizard();}} title="Skill-Wizard: Erstbewertung starten" style={{height:30,padding:"0 9px",borderRadius:9,background:"#eef2ff",border:"none",color:"#4f46e5",cursor:"pointer",display:"flex",alignItems:"center",gap:4,fontSize:12,fontWeight:800,fontFamily:"inherit"}}>🎯 Skills</button>}
+          {onLink&&<button onClick={e=>{e.stopPropagation();onLink();}} title="Direktlink für die Eltern teilen (führt direkt zu diesem Kind)" aria-label="Link für die Eltern"
+            style={{width:30,height:30,borderRadius:9,background:"#ecfeff",border:"none",color:"#0e7490",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,marginLeft:6}}>🔗</button>}
           {onMessage&&<button onClick={e=>{e.stopPropagation();onMessage();}} title="Nachricht an Eltern/Spieler (Pflicht-Lesebestätigung beim Login)" style={{width:30,height:30,borderRadius:9,background:"#eef2ff",border:"none",color:"#4f46e5",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>✉</button>}
           <button onClick={e=>{e.stopPropagation();onEdit();}} style={{width:30,height:30,borderRadius:9,background:"#eff6ff",border:"none",color:"#2563eb",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>✎</button>
           {onDel&&<button onClick={tapDel} title={armDel?"Nochmal tippen: endgültig löschen":"Spieler löschen (2× tippen)"}
@@ -10101,6 +10111,17 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
     setEditP(null); setShowNew(false);
     fire("Spielerprofil gespeichert");
   };
+  // Direktlink fuer die Eltern: fuehrt nach dem Team-Passwort sofort zu
+  // diesem Kind. Kein Passwort im Link - Team- und Kind-Passwort greifen
+  // weiterhin.
+  const kindLink = pl => {
+    const basis=(typeof window!=="undefined"?window.location.origin+window.location.pathname:"");
+    const url=`${basis}?club=${encodeURIComponent(cl?.slug||cl?.id||"")}&team=${encodeURIComponent(pl.mainTid||"")}&kind=${encodeURIComponent(pl.name||"")}`;
+    const team=(data.teams||[]).find(t=>t.id===pl.mainTid);
+    const txt=`Hallo,\n\nhier der direkte Link für ${pl.name}${team?` (${team.name})`:""} bei ${cl?.name||"unserem Verein"}:\n${url}\n\nLink öffnen, einmal das Mannschafts-Passwort eingeben – danach seht ihr sofort die Termine von ${pl.name} und könnt mit einem Tipp zusagen oder absagen.`;
+    if(typeof navigator!=="undefined"&&navigator.share){ navigator.share({title:"Link für "+pl.name,text:txt}).catch(()=>{}); fire("Link geteilt ✓"); }
+    else { try{ navigator.clipboard?.writeText(txt); }catch{} fire("Link für "+pl.name+" kopiert ✓"); }
+  };
   const delPlayer = id => {
     const pl=allPlayers.find(p=>p.id===id);
     if(typeof window!=="undefined"&&window.confirm&&!window.confirm(`„${pl?.name||"Spieler"}“ endgültig löschen?\n\nProfil, Skills und Verlauf werden entfernt (DSGVO-Log wird erstellt). Das kann nicht rückgängig gemacht werden.`)) return;
@@ -10456,6 +10477,7 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
           <div style={{display:"flex",flexDirection:"column",gap:7,marginBottom:16}}>
             {mainPlayers.map(pl=>(
               <PlayerCard key={pl.id} player={pl} allTeams={allTeams} allEvents={allEvents}
+                onLink={()=>kindLink(pl)}
                 onEdit={()=>setEditP(pl)} onDel={()=>delPlayer(pl.id)} isMain
                 onMessage={()=>{setMsgText("");setMsgPlayer(pl);}}
                 onWizard={selTeam?.skillCheckEnabled!==false?()=>setWizardChild(pl):null}/>
@@ -22562,6 +22584,7 @@ function AppInner({lang,setLang}) {
   const [visitor,setVisitor] = useState(null); // {eid,club} -> oeffentliche Veranstaltungs-Ansicht
   const [cid,setCid]      = useState(null);
   const [linkTeam,setLinkTeam] = useState(null);
+  const [linkKind,setLinkKind] = useState(null);   // Kind aus dem Direktlink
   const [session,setSess] = useState(null);
   const [showSetup,setShowSetup] = useState(false);
   const [showLegal,setShowLegal] = useState(false);
@@ -22665,6 +22688,8 @@ function AppInner({lang,setLang}) {
         if(club){
           setCid(club.id);
           const teamParam=params.get("team");
+          const kindParam=params.get("kind");
+          if(kindParam) setLinkKind(kindParam);
           if(MULTI_TENANT && club.id!=="demo" && !auth.isMemberOf(club.id)){ setData(refreshDemo(dir)); if(teamParam)setLinkTeam(teamParam); setScr("joincode"); return; }
           let cd=null; try { cd=await sb.getClub(club.id); } catch {}
           cd = cd||dir; if(club.id==="demo") cd=refreshDemo(cd);
@@ -22859,7 +22884,7 @@ function AppInner({lang,setLang}) {
         }}/>}
       {screen==="role"  &&activeCl&&<RolePicker cl={activeCl} onRole={r=>setScr(r==="user"?"flow":r==="trainer"?"tlogin":r==="helper"?"hlogin":"alogin")} onGuest={()=>setScr("guest")} onBack={()=>setScr("dir")}/>}
       {screen==="guest" &&activeCl&&<ClubGuestList cl={activeCl} liveEvents={data.liveEvents||[]} onOpen={(eid,club)=>setVisitor({eid,club})} onBack={()=>setScr("role")}/>}
-      {screen==="flow"  &&activeCl&&<UserFlow cl={activeCl} teams={clTeams} players={data.players} playerProfiles={data.playerProfiles||[]} trainers={(data.trainers||[]).filter(t=>t.cid===cid)} preselectTid={linkTeam} onDone={(tid,user)=>login("user",{tid,user})} onBack={()=>setScr(linkTeam?"role":"role")}
+      {screen==="flow"  &&activeCl&&<UserFlow preselectName={linkKind} cl={activeCl} teams={clTeams} players={data.players} playerProfiles={data.playerProfiles||[]} trainers={(data.trainers||[]).filter(t=>t.cid===cid)} preselectTid={linkTeam} onDone={(tid,user)=>login("user",{tid,user})} onBack={()=>setScr(linkTeam?"role":"role")}
         onWaitlist={entry=>{ save({...data, waitlist:[...(data.waitlist||[]), { ...entry, id:uid(), cid:activeCl.id, ts:new Date().toISOString(), status:"open" }]}); }}
         onConsent={(profId,by)=>{ const prof=(data.playerProfiles||[]).find(p=>p.id===profId);
           const next={...data, playerProfiles:(data.playerProfiles||[]).map(p=>p.id===profId?{...p, consentAt:new Date().toISOString(), consentBy:by||"Eltern (App-Anmeldung)"}:p)};

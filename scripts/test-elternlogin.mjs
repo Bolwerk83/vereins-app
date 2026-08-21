@@ -23,7 +23,8 @@ const dismiss=async()=>{ for(let k=0;k<10;k++){ const done=await page.evaluate((
 await page.addInitScript(()=>{
   localStorage.setItem("vereinsapp_config", JSON.stringify({url:"https://127.0.0.1:1/x", key:"test"}));
   localStorage.setItem("va_teamok_demo_f1", JSON.stringify({v:"h2h7", ts:Date.now()}));   // frisch gemerkt
-  sessionStorage.setItem("vereinsapp_v12_session", JSON.stringify({ role:"user", cid:"demo", tid:"demo_f1", user:"Ben Fischer" }));
+  if(!localStorage.getItem("va_nosession"))
+    sessionStorage.setItem("vereinsapp_v12_session", JSON.stringify({ role:"user", cid:"demo", tid:"demo_f1", user:"Ben Fischer" }));
 });
 await page.goto("http://127.0.0.1:4235/", { waitUntil:"networkidle" }); await page.waitForTimeout(2500);
 await dismiss();
