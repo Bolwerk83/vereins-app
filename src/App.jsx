@@ -7441,9 +7441,11 @@ function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,pre
     startAfterPw(tid2,name);
   };
   const confirmConsent = () => {
-    if(!consentChk||!pendingName||!consentRel||!consentName.trim()) return;
+    // Der Name ist freiwillig - die Rolle (Mutter/Vater/Andere) plus Zeitpunkt
+    // reichen als Nachweis. Ein Pflichtfeld hat hier zu viele abgeschreckt.
+    if(!pendingName||!consentRel) return;
     const pn=pendingName;
-    const by=`${consentName.trim()} (${consentRel})`;
+    const by=consentName.trim() ? `${consentName.trim()} (${consentRel})` : consentRel;
     const prof=profileFor(pn.tid,pn.name);
     if(prof && onConsent){ onConsent(prof.id, by); }                  // in die Vereinsdaten (synct auf alle Geräte)
     else {
@@ -7457,9 +7459,12 @@ function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,pre
   const finishOnboarding = () => { const pn=pendingName; setPendingName(null); onDone(pn.tid,pn.name); };
   const [pwd,setPwd]=useState(""); const [pwdErr,setPwdErr]=useState(false);
   const [showForgotParent,setShowForgotParent]=useState(false);
+  // Vorauswahl und der Merk-Sprung duerfen nur EINMAL greifen - sonst landet
+  // man beim Zurueckgehen sofort wieder auf demselben Schritt ("Zurueck tut nichts").
+  const autoRef=React.useRef(true);
   // Direktlink: Team vorauswählen und direkt zum Passwort-Schritt springen
   React.useEffect(()=>{
-    if(preselectTid){
+    if(preselectTid&&autoRef.current){
       const pt=teams.find(x=>x.id===preselectTid);
       if(pt){ setCat(pt.cat||pt.name); setTid(pt.id); setStep("pwd"); }
     }
@@ -7469,7 +7474,7 @@ function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,pre
   // ohne erneute Passwort-Eingabe). Bei geaendertem Team-Passwort greift es nicht mehr.
   const ctSkip=teams.find(x=>x.id===tid);
   React.useEffect(()=>{
-    if(step!=="pwd"||!ctSkip||ctSkip.locked) return;
+    if(step!=="pwd"||!ctSkip||ctSkip.locked||!autoRef.current) return;
     try{
       if(localStorage.getItem("va_teamok_"+ctSkip.id)===(ctSkip.pwd||"1")){
         const assigned=(playerProfiles||[]).some(p2=>p2.mainTid===ctSkip.id);
@@ -7486,9 +7491,11 @@ function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,pre
     : false;
 
   const goBack=()=>{
-    if(step==="name")setStep("pwd");
-    else if(step==="pwd")setStep(teamsInCat.length>1?"team":"cat");
-    else if(step==="team")setStep("cat");
+    autoRef.current=false;                       // ab jetzt keine automatischen Spruenge mehr
+    if(step==="name")      setStep(teamsInCat.length>1?"team":"cat");
+    else if(step==="pwd")  setStep(teamsInCat.length>1?"team":"cat");
+    else if(step==="team") setStep("cat");
+    else if(step==="locked") setStep("cat");
     else onBack();
   };
 
@@ -7626,24 +7633,35 @@ function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,pre
               <div style={{display:"flex",gap:4}}>{[1,2,3].map(n=><span key={n} style={{width:8,height:8,borderRadius:"50%",background:obStep>=n?t.p:"#e2e8f0"}}/>)}</div>
             </div>
             {obStep===1&&<>
-            <p style={{fontSize:13.5,color:"#334155",lineHeight:1.55,marginBottom:10}}>{tr("cgBody1")} <b>{maskName(pendingName.name)}</b>. {tr("cgBody2")}</p>
-            <label style={{display:"flex",gap:10,alignItems:"flex-start",background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"12px 13px",cursor:"pointer",marginBottom:12}}>
-              <input type="checkbox" checked={consentChk} onChange={e=>setConsentChk(e.target.checked)} style={{marginTop:2}}/>
-              <span style={{fontSize:12.5,color:"#334155",lineHeight:1.5}}>{tr("cgCheck")}</span>
-            </label>
-            <div style={{marginBottom:12}}>
-              <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.4,marginBottom:6}}>{tr("cgWho")}</div>
-              <div style={{display:"flex",gap:7,flexWrap:"wrap",marginBottom:8}}>
-                {[["m",tr("cgMother")],["v",tr("cgFather")],["e",tr("cgGuardian")]].map(([k,l])=>(
-                  <button key={k} onClick={()=>setConsentRel(l)} style={{padding:"8px 13px",borderRadius:10,border:`1.5px solid ${consentRel===l?t.p:"#e2e8f0"}`,background:consentRel===l?t.p:"#fff",color:consentRel===l?contrast(t.p):"#475569",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
-                ))}
-              </div>
-              <input value={consentName} onChange={e=>setConsentName(e.target.value)} placeholder={tr("cgWhoPh")} style={{width:"100%",padding:"11px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",fontFamily:"inherit",boxSizing:"border-box"}}/>
+            {/* So einfach wie moeglich: eine Frage, drei grosse Knoepfe, ein
+                Satz in klarer Sprache, ein grosser Knopf. Kein Pflichtfeld. */}
+            <p style={{fontSize:16,color:"#0f172a",lineHeight:1.5,marginBottom:14,fontWeight:700}}>
+              Du meldest <b>{maskName(pendingName.name)}</b> an.
+            </p>
+            <div style={{fontSize:15,fontWeight:800,color:"#0f172a",marginBottom:9}}>Wer bist du?</div>
+            <div style={{display:"flex",gap:8,marginBottom:14}}>
+              {[["Mutter","👩"],["Vater","👨"],["Andere","👤"]].map(([l,ic])=>(
+                <button key={l} onClick={()=>{ setConsentRel(l); setConsentChk(true); }}
+                  style={{flex:1,padding:"14px 6px",minHeight:64,borderRadius:14,border:`2px solid ${consentRel===l?t.p:"#e2e8f0"}`,
+                    background:consentRel===l?t.p:"#fff",color:consentRel===l?contrast(t.p):"#334155",fontWeight:900,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
+                  <div style={{fontSize:22,lineHeight:1.1}}>{ic}</div>{l}
+                </button>
+              ))}
             </div>
-            {(()=>{ const ok=consentChk&&!!consentRel&&consentName.trim().length>1; return (
+            <div style={{background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"12px 13px",marginBottom:12}}>
+              <div style={{fontSize:14,color:"#334155",lineHeight:1.55}}>
+                Der Verein darf den Namen von {maskName(pendingName.name)} für Termine und Listen nutzen.
+                Du kannst das jederzeit beim Trainer wieder zurücknehmen.
+              </div>
+              <input value={consentName} onChange={e=>setConsentName(e.target.value)} placeholder="Dein Name (freiwillig)"
+                style={{width:"100%",marginTop:10,padding:"12px 13px",fontSize:15,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",fontFamily:"inherit",boxSizing:"border-box"}}/>
+            </div>
+            {(()=>{ const ok=!!consentRel; return (
             <div style={{display:"flex",gap:9}}>
-              <button onClick={()=>setPendingName(null)} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",color:"#475569"}}>{tr("cgCancel")}</button>
-              <button disabled={!ok} onClick={confirmConsent} style={{flex:2,padding:"12px",borderRadius:12,border:"none",background:ok?t.p:"#cbd5e1",color:ok?contrast(t.p):"#fff",fontWeight:800,fontSize:14,cursor:ok?"pointer":"default",fontFamily:"inherit"}}>{tr("cgNext")} →</button>
+              <button onClick={()=>setPendingName(null)} style={{flex:1,padding:"15px",minHeight:52,borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontWeight:800,fontSize:15,color:"#475569",cursor:"pointer",fontFamily:"inherit"}}>Zurück</button>
+              <button disabled={!ok} onClick={confirmConsent} style={{flex:2,padding:"15px",minHeight:52,borderRadius:12,border:"none",background:ok?"#15803d":"#cbd5e1",color:"#fff",fontWeight:900,fontSize:16,cursor:ok?"pointer":"not-allowed",fontFamily:"inherit"}}>
+                ✅ Ja, einverstanden
+              </button>
             </div>
             ); })()}
             </>}
@@ -7675,6 +7693,21 @@ function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,pre
         <button onClick={goBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 14px",color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:14}}>← Zurück</button>
         <div style={{display:"flex",alignItems:"center",gap:12}}><Logo cl={cl} sz={40}/><div><div style={{color:"rgba(255,255,255,.6)",fontSize:12,fontWeight:700}}>{ct?.icon} {ct?.name}</div><div style={{color:"#fff",fontSize:20,fontWeight:900}}>Wer bist du?</div></div></div>
       </div>
+      {/* Transparenz: Warum kam hier kein Passwort? Weil das Geraet es kennt -
+          und man kann das mit einem Tipp wieder rueckgaengig machen. */}
+      {(()=>{ let gemerkt=false; try{ gemerkt=ct&&localStorage.getItem("va_teamok_"+ct.id)===(ct.pwd||"1"); }catch{}
+        if(!gemerkt) return null;
+        return (
+          <div style={{background:"#eff6ff",borderBottom:"1px solid #bfdbfe",padding:"10px 14px",display:"flex",alignItems:"center",gap:10}}>
+            <div style={{flex:1,fontSize:12.5,color:"#1e40af",lineHeight:1.45}}>
+              Dieses Handy kennt das Passwort von <b>{ct?.name}</b> – deshalb kommt hier keine Abfrage.
+            </div>
+            <button onClick={()=>{ try{ localStorage.removeItem("va_teamok_"+ct.id); }catch{} autoRef.current=false; setStep("pwd"); }}
+              style={{flexShrink:0,padding:"10px 11px",minHeight:44,borderRadius:10,border:"1.5px solid #bfdbfe",background:"#fff",color:"#1e40af",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+              Wieder fragen
+            </button>
+          </div>
+        ); })()}
       <div style={{padding:"12px 14px 0",background:"#f0f4f8",position:"sticky",top:0,zIndex:10}}>
         <div style={{position:"relative"}}><span style={{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",fontSize:16}}></span><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Suchen..." style={{width:"100%",padding:"12px 16px 12px 42px",fontSize:15,border:"2px solid #e2e8f0",borderRadius:14,outline:"none",background:"#fff"}}/></div>
       </div>
@@ -21283,7 +21316,54 @@ function AntwortKnoepfe({ ev, gross, onVote }){
     </div>
   );
 }
-function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat, unread=0, onAbmelden, toast }){
+// Passwort fuers eigene Kind - in klarer Sprache, ohne Fachbegriffe.
+function KindPasswort({ cl, kind, gesetzt, onSetzen, onEntfernen, onClose }){
+  const t=TH(cl);
+  const [pw1,setPw1]=useState(""); const [pw2,setPw2]=useState(""); const [alt,setAlt]=useState(""); const [hinweis,setHinweis]=useState("");
+  const kurz=String(kind||"").split(" ")[0]||kind;
+  return (
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:2100,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:480,padding:"18px 18px calc(26px + env(safe-area-inset-bottom))"}}>
+        <div style={{fontWeight:900,fontSize:19,color:"#0f172a",marginBottom:4}}>🔒 Passwort für {kurz}</div>
+        <div style={{fontSize:14.5,color:"#475569",lineHeight:1.55,marginBottom:14}}>
+          {gesetzt
+            ? `Nur wer das Passwort kennt, kann für ${kurz} zusagen oder absagen.`
+            : `Ohne Passwort kann jeder aus der Mannschaft für ${kurz} antworten. Mit Passwort nur du.`}
+        </div>
+        {gesetzt&&(
+          <input type="password" value={alt} onChange={e=>{setAlt(e.target.value);setHinweis("");}} placeholder="Altes Passwort"
+            style={{width:"100%",padding:"14px",fontSize:16,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",fontFamily:"inherit",boxSizing:"border-box",marginBottom:9}}/>
+        )}
+        <input type="password" value={pw1} onChange={e=>{setPw1(e.target.value);setHinweis("");}} placeholder={gesetzt?"Neues Passwort":"Passwort ausdenken"}
+          style={{width:"100%",padding:"14px",fontSize:16,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",fontFamily:"inherit",boxSizing:"border-box",marginBottom:9}}/>
+        <input type="password" value={pw2} onChange={e=>{setPw2(e.target.value);setHinweis("");}} placeholder="Noch einmal eingeben"
+          style={{width:"100%",padding:"14px",fontSize:16,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",fontFamily:"inherit",boxSizing:"border-box"}}/>
+        <div style={{fontSize:13,color:hinweis?"#b91c1c":"#64748b",marginTop:8,lineHeight:1.5,fontWeight:hinweis?700:500}}>
+          {hinweis||"Mindestens 4 Zeichen. Merk es dir gut – der Trainer kann es zurücksetzen."}
+        </div>
+        <div style={{display:"flex",gap:9,marginTop:14}}>
+          <button onClick={onClose} style={{flex:1,padding:"15px",minHeight:52,borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
+          <button onClick={()=>{
+            if(gesetzt&&!alt.trim()){ setHinweis("Bitte das alte Passwort eingeben."); return; }
+            if(pw1.trim().length<4){ setHinweis("Das Passwort ist zu kurz (mindestens 4 Zeichen)."); return; }
+            if(pw1!==pw2){ setHinweis("Die beiden Passwörter sind nicht gleich."); return; }
+            const fehler=onSetzen(pw1.trim(),alt.trim());
+            if(fehler) setHinweis(fehler); else onClose();
+          }} style={{flex:2,padding:"15px",minHeight:52,borderRadius:12,border:"none",background:"#15803d",color:"#fff",fontWeight:900,fontSize:16,cursor:"pointer",fontFamily:"inherit"}}>
+            ✅ Speichern
+          </button>
+        </div>
+        {gesetzt&&(
+          <button onClick={()=>{ const fehler=onEntfernen(alt.trim()); if(fehler) setHinweis(fehler); else onClose(); }}
+            style={{width:"100%",marginTop:10,padding:"13px",minHeight:46,borderRadius:12,border:"1.5px solid #fecaca",background:"#fff",color:"#b91c1c",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
+            Passwort wieder entfernen
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat, unread=0, onAbmelden, onPasswort, pwGesetzt=false, toast }){
   const t=TH(cl);
   const col=readable(t.p);
   const tod=now(), sonntag=bisSonntag();
@@ -21395,7 +21475,12 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
         {alle.length>0&&!offen.length&&(
           <div style={{textAlign:"center",fontSize:13,color:"#15803d",fontWeight:800,marginTop:12}}>✓ Alles beantwortet – danke!</div>
         )}
-        <div style={{display:"flex",gap:8,marginTop:14}}>
+        {onPasswort&&(
+          <button onClick={onPasswort} style={{width:"100%",marginTop:14,padding:"13px",minHeight:46,borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#334155",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
+            🔒 Passwort für {kurzName} {pwGesetzt?"ändern":"einrichten"}
+          </button>
+        )}
+        <div style={{display:"flex",gap:8,marginTop:8}}>
           {onKindWechseln&&<button onClick={onKindWechseln} style={{flex:1,padding:"13px",minHeight:46,borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#334155",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
             👧👦 Anderes Kind
           </button>}
@@ -21453,7 +21538,7 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{},onSwitc
   const [showProfile,setShowProfile]=useState(false);
   // Standard fuer Eltern: die einfache Ansicht
   const [simple,setSimple]=useState(()=>{ try{ return localStorage.getItem("va_simple")!=="0"; }catch{ return true; } });
-  const [simpleDrill,setSimpleDrill]=useState(null);
+  const [pwOpen,setPwOpen]=useState(false);   // Fenster: Passwort fuers Kind
   const [pwCur,setPwCur]=useState(""); const [pwNew,setPwNew]=useState("");
   const [pnDraft,setPnDraft]=useState(null); // Eltern-Vornamen (Entwurf)
   // "Mehr" in der Eltern-Leiste oeffnet das Profil/Einstellungen-Sheet (kein Trainer-Drawer).
@@ -21652,10 +21737,27 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{},onSwitc
   // Einfache Ansicht ist der Standard: eine Frage pro Termin, zwei grosse
   // Knoepfe. Wer mehr braucht, schaltet um - die Wahl bleibt gespeichert.
   if(simple) return (
-    <EinfachEltern cl={cl} team={myTeam} kind={user} events={evs} toast={toast}
-      onVote={vote} onAbmelden={onLogout} unread={unreadMsgs}
-      onKindWechseln={onSwitchChild?()=>onSwitchChild(tid):null}
-      onChat={()=>{ setSimple(false); setTab("chat"); }}/>
+    <>
+      <EinfachEltern cl={cl} team={myTeam} kind={user} events={evs} toast={toast}
+        onVote={vote} onAbmelden={onLogout} unread={unreadMsgs}
+        onKindWechseln={onSwitchChild?()=>onSwitchChild(tid):null}
+        onChat={()=>{ setSimple(false); setTab("chat"); }}
+        pwGesetzt={!!myProfile?.childPw}
+        onPasswort={myProfile?()=>setPwOpen(true):null}/>
+      {pwOpen&&myProfile&&(
+        <KindPasswort cl={cl} kind={user} gesetzt={!!myProfile.childPw} onClose={()=>setPwOpen(false)}
+          onSetzen={(neu,alt)=>{
+            if(myProfile.childPw&&!checkPw(alt,myProfile.childPw)) return "Das alte Passwort stimmt nicht.";
+            onSave({...data, playerProfiles:(data.playerProfiles||[]).map(p=>p.id===myProfile.id?{...p,childPw:hashPw(neu),childPwAt:new Date().toISOString()}:p)});
+            fire("Passwort gespeichert ✓"); return null;
+          }}
+          onEntfernen={(alt)=>{
+            if(!checkPw(alt,myProfile.childPw)) return "Das alte Passwort stimmt nicht.";
+            onSave({...data, playerProfiles:(data.playerProfiles||[]).map(p=>p.id===myProfile.id?{...p,childPw:"",childPwAt:""}:p)});
+            fire("Passwort entfernt"); return null;
+          }}/>
+      )}
+    </>
   );
 
   return (

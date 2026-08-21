@@ -79,6 +79,22 @@ if(/Anderes Kind/.test(b)) ok("Zum anderen Kind wechseln ist direkt möglich"); 
   if(k.maxHoehe<=340) ok("Fokus-Karte bleibt im Rahmen ("+k.maxHoehe+" px)"); else fail("Fokus-Karte zu hoch: "+k.maxHoehe+" px");
   if(z===0||z<=110) ok("Die weiteren Termine sind schmale Zeilen ("+z+" px)"); else fail("Folge-Termine zu hoch: "+z+" px"); }
 
+// ===== 1c) Passwort fürs eigene Kind – auch in der einfachen Ansicht =====
+b=await body();
+if(/Passwort für \w+ (einrichten|ändern)/.test(b)) ok("Passwort fürs Kind ist direkt erreichbar"); else fail("Kein Passwort-Knopf: "+b.slice(-200).replace(/\n/g," | "));
+if(await clickTxt("Passwort für")){ await page.waitForTimeout(800); b=await body();
+  if(/Ohne Passwort kann jeder|Nur wer das Passwort kennt/.test(b)) ok("Erklärt in klarer Sprache, wozu das Passwort gut ist"); else fail("Keine Erklärung");
+  const felder=await page.locator('input[type="password"]').count();
+  if(felder===2) ok("Zwei Felder: Passwort und Wiederholung"); else fail("Unerwartete Felderzahl: "+felder);
+  await page.locator('input[type="password"]').nth(0).fill("kurz");
+  await page.locator('input[type="password"]').nth(1).fill("anders");
+  await clickTxt("Speichern"); await page.waitForTimeout(600); b=await body();
+  if(/nicht gleich/.test(b)) ok("Verständliche Meldung, wenn die Passwörter nicht gleich sind"); else fail("Keine klare Meldung: "+b.slice(-160).replace(/\n/g," | "));
+  await page.locator('input[type="password"]').nth(1).fill("kurz");
+  await clickTxt("Speichern"); await page.waitForTimeout(1000); b=await body();
+  if(/Passwort gespeichert|Passwort für \w+ ändern/.test(b)) ok("Passwort wird gespeichert"); else fail("Passwort nicht gespeichert: "+b.slice(-160).replace(/\n/g," | "));
+} else fail("Passwort-Fenster öffnet nicht");
+
 // ===== 2) Trainer legt Stationen an =====
 await alsRolle({ role:"trainer", cid:"demo", tids:["demo_f1"], name:"Demo Trainer", id:"demo_tr1" });
 await page.evaluate(()=>{ const cs=[...document.querySelectorAll("div")].filter(d=>d.innerText.includes("Abschlusstraining")&&d.querySelector("button")&&d.innerText.length<1400); const c=cs[cs.length-1]; const x=[...c.querySelectorAll("button")].find(y=>y.innerText.trim()==="Ansehen"); x&&x.click(); });
