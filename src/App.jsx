@@ -21072,11 +21072,11 @@ const GrossKnopf=({children,onClick,bg,col,rand,aktiv})=>(
 );
 
 // ---------- HELFER ----------
-// Eine Frage pro Termin: kannst du? Danach steht da, was zu tun ist.
+// Gleiches Prinzip: erledigte Termine schrumpfen, offene bleiben gross.
 function EinfachHelfer({ cl, events, helperId, helperName, teams, onJa, onNein, onAufbau, onTraining, onMehr, onAbmelden, toast }){
   const t=TH(cl);
   const tod=now();
-  const naechste=events.filter(e=>e.date>=tod).slice(0,5);
+  const naechste=events.filter(e=>e.date>=tod).slice(0,6);
   const standOf=ev=>{
     const offen = ev.type==="training" || !!ev.helferOpen;
     const liste = (offen ? ev.helperOffers : ev.helperInterest) || [];
@@ -21088,78 +21088,84 @@ function EinfachHelfer({ cl, events, helperId, helperName, teams, onJa, onNein, 
   };
   const meineStation=ev=>((ev.stations||[]).find(st=>(st.wer||[]).some(w=>w===helperId||w===helperName)));
   return (
-    <div style={{minHeight:"100dvh",background:"#f8fafc",paddingBottom:40}}>
+    <div style={{minHeight:"100dvh",background:"#f1f5f9",paddingBottom:34}}>
       <style>{CSS}</style>
-      <div style={{background:readable(t.p),padding:"18px 18px 22px",color:"#fff"}}>
-        <div style={{display:"flex",alignItems:"center",gap:12}}>
-          <Logo cl={cl} sz={42}/>
-          <div style={{flex:1,minWidth:0}}>
-            <div style={{fontWeight:900,fontSize:19,lineHeight:1.15}}>{helperName}</div>
-            <div style={{fontSize:14,fontWeight:600}}>Helfer{teams?.length?" · "+teams.map(x=>x.name).join(", "):""}</div>
-          </div>
+      <div style={{background:readable(t.p),padding:"12px 14px",color:"#fff",display:"flex",alignItems:"center",gap:10}}>
+        <Logo cl={cl} sz={32}/>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontWeight:900,fontSize:16,lineHeight:1.15}}>{helperName}</div>
+          <div style={{fontSize:12.5,fontWeight:600,opacity:.95}}>Helfer{teams?.length?" · "+teams.map(x=>x.name).join(", "):""}</div>
         </div>
       </div>
-      <div style={{maxWidth:520,margin:"0 auto",padding:"16px 14px"}}>
+      <div style={{maxWidth:520,margin:"0 auto",padding:"10px 12px"}}>
         {naechste.length===0&&(
-          <div style={{background:"#fff",borderRadius:20,padding:"34px 20px",textAlign:"center",border:"2px solid #e2e8f0"}}>
-            <div style={{fontSize:44,marginBottom:10}}>☕</div>
-            <div style={{fontWeight:900,fontSize:20,color:"#0f172a"}}>Gerade nichts zu tun</div>
-            <div style={{fontSize:15,color:"#475569",marginTop:6,lineHeight:1.5}}>Sobald ein Termin ansteht, wirst du hier gefragt.</div>
+          <div style={{background:"#fff",borderRadius:16,padding:"26px 18px",textAlign:"center",border:"1.5px solid #e2e8f0"}}>
+            <div style={{fontSize:34,marginBottom:6}}>☕</div>
+            <div style={{fontWeight:900,fontSize:17,color:"#0f172a"}}>Gerade nichts zu tun</div>
+            <div style={{fontSize:13.5,color:"#475569",marginTop:4,lineHeight:1.5}}>Sobald ein Termin ansteht, wirst du hier gefragt.</div>
           </div>
         )}
         {naechste.map((ev,i)=>{
           const st=standOf(ev);
           const station=st.drin?meineStation(ev):null;
+          const kopf=(
+            <>
+              <div style={{display:"flex",alignItems:"baseline",gap:7,flexWrap:"wrap"}}>
+                <span style={{fontSize:11,fontWeight:900,color:readable(t.p),letterSpacing:.8}}>{artWort(ev)}</span>
+                <span style={{fontSize:11.5,color:"#64748b",fontWeight:700}}>{ev.loc?"📍 "+ev.loc:""}</span>
+              </div>
+              <div style={{fontWeight:900,fontSize:17.5,color:"#0f172a",lineHeight:1.2,marginTop:1}}>
+                {tagWort(ev.date)}{ev.time?<span style={{fontWeight:800,color:"#334155"}}> · {ev.time} Uhr</span>:null}
+              </div>
+            </>
+          );
+          if(st.drin) return (
+            <div key={ev.id} className="up" style={{background:"#fff",borderRadius:14,border:"1.5px solid #bbf7d0",padding:"10px 12px",marginBottom:8,animationDelay:`${i*.04}s`}}>
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <div style={{fontSize:22,lineHeight:1,flexShrink:0}}>✅</div>
+                <div style={{flex:1,minWidth:0}}>
+                  {kopf}
+                  <div style={{fontSize:12.5,fontWeight:800,color:"#15803d",marginTop:2}}>{st.warte?"Warteliste":"Du bist dabei"}</div>
+                </div>
+                <button onClick={()=>onNein(ev)} style={{flexShrink:0,padding:"12px 12px",minHeight:44,borderRadius:10,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Absagen</button>
+              </div>
+              {station&&(
+                <div style={{display:"flex",alignItems:"center",gap:9,background:"#eef2ff",border:"1.5px solid #c7d2fe",borderRadius:11,padding:"9px 10px",marginTop:8}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:10.5,fontWeight:900,color:"#4f46e5",letterSpacing:.6}}>DEINE AUFGABE</div>
+                    <div style={{fontWeight:800,fontSize:14,color:"#312e81"}}>{station.titel}{station.kinder>0?` · ${station.kinder} Kinder`:""}</div>
+                  </div>
+                  {onTraining&&<button onClick={()=>onTraining(ev,station)} style={{flexShrink:0,padding:"12px 12px",minHeight:44,borderRadius:10,border:"none",background:"#4f46e5",color:"#fff",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>👀 Übung</button>}
+                </div>
+              )}
+              <button onClick={()=>onAufbau(ev)} style={{width:"100%",marginTop:8,padding:"12px",borderRadius:12,border:"1.5px solid #fed7aa",background:"#fff7ed",color:"#c2410c",fontWeight:900,fontSize:14.5,cursor:"pointer",fontFamily:"inherit"}}>
+                🏗 Was muss ich aufbauen?
+              </button>
+            </div>
+          );
+          if(st.nein) return (
+            <div key={ev.id} className="up" style={{background:"#fff",borderRadius:14,border:"1.5px solid #e2e8f0",padding:"10px 12px",marginBottom:8,display:"flex",alignItems:"center",gap:10,opacity:.8,animationDelay:`${i*.04}s`}}>
+              <div style={{fontSize:20,lineHeight:1,flexShrink:0}}>—</div>
+              <div style={{flex:1,minWidth:0}}>{kopf}<div style={{fontSize:12.5,fontWeight:700,color:"#64748b",marginTop:2}}>Du kannst nicht</div></div>
+              <button onClick={()=>onJa(ev)} style={{flexShrink:0,padding:"12px 13px",minHeight:44,borderRadius:10,border:"1.5px solid #cbd5e1",background:"#fff",color:"#334155",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Doch</button>
+            </div>
+          );
           return (
-            <div key={ev.id} className="up" style={{background:"#fff",borderRadius:20,
-              border:`2.5px solid ${st.drin?"#16a34a":st.nein?"#e2e8f0":"#fed7aa"}`,
-              padding:"18px 16px 16px",marginBottom:14,animationDelay:`${i*.05}s`,opacity:st.nein?.7:1}}>
-              <div style={{fontSize:12.5,fontWeight:900,color:readable(t.p),letterSpacing:1.2}}>{artWort(ev)}</div>
-              <div style={{fontWeight:900,fontSize:26,color:"#0f172a",lineHeight:1.15,marginTop:2}}>{tagWort(ev.date)}</div>
-              <div style={{fontSize:19,color:"#334155",fontWeight:700,marginTop:2}}>{ev.time?ev.time+" Uhr":""}</div>
-              {ev.loc&&<div style={{fontSize:15.5,color:"#475569",marginTop:6}}>📍 {ev.loc}</div>}
-              {st.drin
-                ? <>
-                    <div style={{background:"#dcfce7",borderRadius:16,padding:"14px",textAlign:"center",marginTop:14}}>
-                      <div style={{fontSize:30,lineHeight:1}}>✅</div>
-                      <div style={{fontWeight:900,fontSize:18,color:"#15803d",marginTop:5}}>{st.warte?"Du bist auf der Warteliste":"Du bist dabei"}</div>
-                    </div>
-                    {station&&(
-                      <div style={{background:"#eef2ff",border:"2px solid #c7d2fe",borderRadius:16,padding:"14px",marginTop:10}}>
-                        <div style={{fontSize:12,fontWeight:900,color:"#4f46e5",letterSpacing:1}}>DEINE AUFGABE</div>
-                        <div style={{fontWeight:900,fontSize:19,color:"#312e81",marginTop:3}}>{station.titel}</div>
-                        {station.kinder>0&&<div style={{fontSize:15,color:"#3730a3",marginTop:2}}>{station.kinder} Kinder · {station.min||10} Minuten</div>}
-                        {onTraining&&<button onClick={()=>onTraining(ev,station)} style={{width:"100%",marginTop:10,padding:"14px",borderRadius:14,border:"none",background:"#4f46e5",color:"#fff",fontWeight:900,fontSize:16,cursor:"pointer",fontFamily:"inherit"}}>
-                          👀 Übung ansehen
-                        </button>}
-                      </div>
-                    )}
-                    <button onClick={()=>onAufbau(ev)} style={{width:"100%",marginTop:10,padding:"16px",borderRadius:14,border:"2px solid #fed7aa",background:"#fff7ed",color:"#c2410c",fontWeight:900,fontSize:16,cursor:"pointer",fontFamily:"inherit"}}>
-                      🏗 Was muss ich aufbauen?
-                    </button>
-                    <button onClick={()=>onNein(ev)} style={{width:"100%",marginTop:8,padding:"12px",borderRadius:14,border:"none",background:"transparent",color:"#64748b",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
-                      Doch nicht
-                    </button>
-                  </>
-                : st.nein
-                  ? <div style={{marginTop:14}}>
-                      <div style={{background:"#f1f5f9",borderRadius:16,padding:"14px",textAlign:"center",fontWeight:800,fontSize:17,color:"#64748b"}}>Du kannst nicht – ist notiert</div>
-                      <button onClick={()=>onJa(ev)} style={{width:"100%",marginTop:10,padding:"14px",borderRadius:14,border:"2px solid #cbd5e1",background:"#fff",color:"#334155",fontWeight:800,fontSize:16,cursor:"pointer",fontFamily:"inherit"}}>Doch, ich kann</button>
-                    </div>
-                  : <>
-                      <div style={{fontWeight:900,fontSize:20,color:"#0f172a",margin:"16px 0 10px"}}>Kannst du helfen?</div>
-                      <div style={{display:"flex",gap:10}}>
-                        <GrossKnopf onClick={()=>onJa(ev)} bg="#16a34a" col="#fff" rand="#15803d" aktiv>🙋<br/>JA</GrossKnopf>
-                        <GrossKnopf onClick={()=>onNein(ev)} bg="#fff" col="#475569" rand="#cbd5e1">—<br/>NEIN</GrossKnopf>
-                      </div>
-                    </>}
+            <div key={ev.id} className="up" style={{background:"#fff",borderRadius:16,border:"2px solid #fed7aa",padding:"13px 13px 12px",marginBottom:10,animationDelay:`${i*.04}s`}}>
+              {kopf}
+              <NoteKurz text={ev.note}/>
+              <div style={{fontWeight:900,fontSize:16,color:"#0f172a",margin:"11px 0 8px"}}>Kannst du helfen?</div>
+              <div style={{display:"flex",gap:9}}>
+                <button onClick={()=>onJa(ev)} style={{flex:1,padding:"15px 8px",borderRadius:14,border:"none",background:"#15803d",color:"#fff",fontWeight:900,fontSize:17,cursor:"pointer",fontFamily:"inherit",minHeight:56}}>🙋 JA</button>
+                <button onClick={()=>onNein(ev)} style={{flex:1,padding:"15px 8px",borderRadius:14,border:"2px solid #cbd5e1",background:"#fff",color:"#475569",fontWeight:900,fontSize:17,cursor:"pointer",fontFamily:"inherit",minHeight:56}}>— NEIN</button>
+              </div>
             </div>
           );
         })}
-        <button onClick={onMehr} style={{width:"100%",marginTop:6,padding:"14px",borderRadius:14,border:"2px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>
-          Mehr anzeigen (Listen, Schichten, Chat)
+        <button onClick={onMehr} style={{width:"100%",marginTop:4,padding:"13px",minHeight:46,borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
+          Mehr anzeigen
         </button>
-        <button onClick={onAbmelden} style={{width:"100%",marginTop:8,padding:"12px",borderRadius:14,border:"none",background:"transparent",color:"#64748b",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
+        <button onClick={onAbmelden} style={{width:"100%",marginTop:6,padding:"12px",minHeight:44,borderRadius:12,border:"none",background:"transparent",color:"#475569",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
           Abmelden
         </button>
       </div>
@@ -21169,68 +21175,97 @@ function EinfachHelfer({ cl, events, helperId, helperName, teams, onJa, onNein, 
 }
 
 // ---------- ELTERN ----------
+// Kompakt: mehrere Termine auf einen Blick. Beantwortete Termine schrumpfen
+// auf eine Zeile, offene bleiben gross - dort ist ja etwas zu tun.
+function NoteKurz({ text }){
+  const [auf,setAuf]=useState(false);
+  if(!text) return null;
+  const lang=text.length>90;
+  return (
+    <div onClick={()=>lang&&setAuf(a=>!a)}
+      style={{fontSize:12.5,color:"#92400e",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:9,
+        padding:"7px 9px",marginTop:7,lineHeight:1.45,cursor:lang?"pointer":"default"}}>
+      {auf||!lang ? text : text.slice(0,88).trim()+" …"}
+      {lang&&<span style={{fontWeight:800,marginLeft:5}}>{auf?"weniger":"mehr"}</span>}
+    </div>
+  );
+}
 function EinfachEltern({ cl, team, kind, events, onVote, onMehr, onAbmelden, toast }){
   const t=TH(cl);
   const tod=now();
-  const naechste=events.filter(e=>e.date>=tod&&(e.pt==="att"||!e.pt)).slice(0,4);
-  const val=ev=>{ const v=(ev.votes||{})[kind]; return typeof v==="object"&&v?v.val:v; };
+  const kurzName=String(kind||"").split(" ")[0]||kind;
+  const naechste=events.filter(e=>e.date>=tod&&(e.pt==="att"||!e.pt)).slice(0,6);
+  // Nur ein klares Ja oder Nein gilt als beantwortet - "vielleicht" aus alten
+  // Umfragen bleibt eine offene Frage und wird nicht als Absage dargestellt.
+  const val=ev=>{ const v=(ev.votes||{})[kind]; const x=typeof v==="object"&&v?v.val:v; return (x==="yes"||x==="no")?x:null; };
   return (
-    <div style={{minHeight:"100dvh",background:"#f8fafc",paddingBottom:40}}>
+    <div style={{minHeight:"100dvh",background:"#f1f5f9",paddingBottom:34}}>
       <style>{CSS}</style>
-      <div style={{background:readable(t.p),padding:"18px 18px 22px",color:"#fff"}}>
-        <div style={{display:"flex",alignItems:"center",gap:12}}>
-          <Logo cl={cl} sz={42}/>
-          <div style={{flex:1,minWidth:0}}>
-            <div style={{fontWeight:900,fontSize:19,lineHeight:1.15}}>{kind}</div>
-            <div style={{fontSize:14,fontWeight:600}}>{team?.name||cl?.name}</div>
-          </div>
+      <div style={{background:readable(t.p),padding:"12px 14px",color:"#fff",display:"flex",alignItems:"center",gap:10}}>
+        <Logo cl={cl} sz={32}/>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontWeight:900,fontSize:16,lineHeight:1.15}}>{kind}</div>
+          <div style={{fontSize:12.5,fontWeight:600,opacity:.95}}>{team?.name||cl?.name}</div>
         </div>
       </div>
-      <div style={{maxWidth:520,margin:"0 auto",padding:"16px 14px"}}>
+      <div style={{maxWidth:520,margin:"0 auto",padding:"10px 12px"}}>
         {naechste.length===0&&(
-          <div style={{background:"#fff",borderRadius:20,padding:"34px 20px",textAlign:"center",border:"2px solid #e2e8f0"}}>
-            <div style={{fontSize:44,marginBottom:10}}>😴</div>
-            <div style={{fontWeight:900,fontSize:20,color:"#0f172a"}}>Gerade nichts zu tun</div>
-            <div style={{fontSize:15,color:"#475569",marginTop:6,lineHeight:1.5}}>Sobald der Trainer einen Termin einträgt, steht er hier.</div>
+          <div style={{background:"#fff",borderRadius:16,padding:"26px 18px",textAlign:"center",border:"1.5px solid #e2e8f0"}}>
+            <div style={{fontSize:34,marginBottom:6}}>😴</div>
+            <div style={{fontWeight:900,fontSize:17,color:"#0f172a"}}>Gerade nichts zu tun</div>
+            <div style={{fontSize:13.5,color:"#475569",marginTop:4,lineHeight:1.5}}>Sobald der Trainer einen Termin einträgt, steht er hier.</div>
           </div>
         )}
         {naechste.map((ev,i)=>{
           const v=val(ev);
+          const kopf=(
+            <>
+              <div style={{display:"flex",alignItems:"baseline",gap:7,flexWrap:"wrap"}}>
+                <span style={{fontSize:11,fontWeight:900,color:readable(t.p),letterSpacing:.8}}>{artWort(ev)}</span>
+                <span style={{fontSize:11.5,color:"#64748b",fontWeight:700}}>{ev.loc?"📍 "+ev.loc:""}</span>
+              </div>
+              <div style={{fontWeight:900,fontSize:17.5,color:"#0f172a",lineHeight:1.2,marginTop:1}}>
+                {tagWort(ev.date)}{ev.time?<span style={{fontWeight:800,color:"#334155"}}> · {ev.time} Uhr</span>:null}
+              </div>
+            </>
+          );
+          // Schon beantwortet -> schmale Zeile
+          if(v) return (
+            <div key={ev.id} className="up" style={{background:"#fff",borderRadius:14,border:`1.5px solid ${v==="yes"?"#bbf7d0":"#fecaca"}`,
+              padding:"10px 12px",marginBottom:8,display:"flex",alignItems:"center",gap:10,animationDelay:`${i*.04}s`}}>
+              <div style={{fontSize:22,lineHeight:1,flexShrink:0}}>{v==="yes"?"✅":"❌"}</div>
+              <div style={{flex:1,minWidth:0}}>
+                {kopf}
+                <div style={{fontSize:12.5,fontWeight:800,color:v==="yes"?"#15803d":"#b91c1c",marginTop:2}}>
+                  {v==="yes"?`${kurzName} kommt`:`${kurzName} kommt nicht`}
+                </div>
+              </div>
+              <button onClick={()=>onVote(ev.id,"att",v==="yes"?"no":"yes")}
+                style={{flexShrink:0,padding:"12px 13px",minHeight:44,borderRadius:10,border:"1.5px solid #cbd5e1",background:"#fff",color:"#334155",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+                {v==="yes"?"Absagen":"Doch dabei"}
+              </button>
+            </div>
+          );
+          // Offen -> grosse Knoepfe, hier ist etwas zu tun
           return (
-            <div key={ev.id} className="up" style={{background:"#fff",borderRadius:20,border:`2.5px solid ${v==="yes"?"#16a34a":v==="no"?"#dc2626":"#e2e8f0"}`,
-              padding:"18px 16px 16px",marginBottom:14,animationDelay:`${i*.05}s`}}>
-              <div style={{fontSize:12.5,fontWeight:900,color:readable(t.p),letterSpacing:1.2}}>{artWort(ev)}</div>
-              <div style={{fontWeight:900,fontSize:26,color:"#0f172a",lineHeight:1.15,marginTop:2}}>{tagWort(ev.date)}</div>
-              <div style={{fontSize:19,color:"#334155",fontWeight:700,marginTop:2}}>{ev.time?ev.time+" Uhr":""}</div>
-              {ev.loc&&<div style={{fontSize:15.5,color:"#475569",marginTop:6}}>📍 {ev.loc}</div>}
-              {ev.note&&<div style={{fontSize:15,color:"#92400e",background:"#fffbeb",border:"2px solid #fde68a",borderRadius:12,padding:"10px 12px",marginTop:10,lineHeight:1.5}}>{ev.note}</div>}
-              {v
-                ? <div style={{marginTop:14}}>
-                    <div style={{background:v==="yes"?"#dcfce7":"#fee2e2",borderRadius:16,padding:"16px",textAlign:"center"}}>
-                      <div style={{fontSize:34,lineHeight:1}}>{v==="yes"?"✅":"❌"}</div>
-                      <div style={{fontWeight:900,fontSize:19,color:v==="yes"?"#15803d":"#b91c1c",marginTop:6}}>
-                        {v==="yes"?`${kind} kommt`:`${kind} kommt nicht`}
-                      </div>
-                    </div>
-                    <button onClick={()=>onVote(ev.id,"att",v==="yes"?"no":"yes")}
-                      style={{width:"100%",marginTop:10,padding:"14px",borderRadius:14,border:"2px solid #cbd5e1",background:"#fff",color:"#334155",fontWeight:800,fontSize:16,cursor:"pointer",fontFamily:"inherit"}}>
-                      Ändern
-                    </button>
-                  </div>
-                : <>
-                    <div style={{fontWeight:900,fontSize:20,color:"#0f172a",margin:"16px 0 10px"}}>Kommt {kind}?</div>
-                    <div style={{display:"flex",gap:10}}>
-                      <GrossKnopf onClick={()=>onVote(ev.id,"att","yes")} bg="#16a34a" col="#fff" rand="#15803d" aktiv>✅<br/>JA</GrossKnopf>
-                      <GrossKnopf onClick={()=>onVote(ev.id,"att","no")} bg="#fff" col="#b91c1c" rand="#fca5a5">❌<br/>NEIN</GrossKnopf>
-                    </div>
-                  </>}
+            <div key={ev.id} className="up" style={{background:"#fff",borderRadius:16,border:"2px solid #fed7aa",
+              padding:"13px 13px 12px",marginBottom:10,animationDelay:`${i*.04}s`}}>
+              {kopf}
+              <NoteKurz text={ev.note}/>
+              <div style={{fontWeight:900,fontSize:16,color:"#0f172a",margin:"11px 0 8px"}}>Kommt {kurzName}?</div>
+              <div style={{display:"flex",gap:9}}>
+                <button onClick={()=>onVote(ev.id,"att","yes")} style={{flex:1,padding:"15px 8px",borderRadius:14,border:"none",
+                  background:"#15803d",color:"#fff",fontWeight:900,fontSize:17,cursor:"pointer",fontFamily:"inherit",minHeight:56}}>✅ JA</button>
+                <button onClick={()=>onVote(ev.id,"att","no")} style={{flex:1,padding:"15px 8px",borderRadius:14,border:"2px solid #fca5a5",
+                  background:"#fff",color:"#b91c1c",fontWeight:900,fontSize:17,cursor:"pointer",fontFamily:"inherit",minHeight:56}}>❌ NEIN</button>
+              </div>
             </div>
           );
         })}
-        <button onClick={onMehr} style={{width:"100%",marginTop:6,padding:"14px",borderRadius:14,border:"2px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>
-          Mehr anzeigen (Chat, Fotos, Einstellungen)
+        <button onClick={onMehr} style={{width:"100%",marginTop:4,padding:"13px",minHeight:46,borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
+          Mehr anzeigen
         </button>
-        <button onClick={onAbmelden} style={{width:"100%",marginTop:8,padding:"12px",borderRadius:14,border:"none",background:"transparent",color:"#64748b",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
+        <button onClick={onAbmelden} style={{width:"100%",marginTop:6,padding:"12px",minHeight:44,borderRadius:12,border:"none",background:"transparent",color:"#475569",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
           Abmelden
         </button>
       </div>

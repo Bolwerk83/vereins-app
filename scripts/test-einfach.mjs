@@ -45,18 +45,24 @@ if(/Heute|Morgen|Übermorgen|,\s\d+\./.test(b)) ok("Datum in Alltagssprache (Heu
 let m=await messung();
 if(m.woerter<=60) ok("Sehr wenig Text auf dem Bildschirm ("+m.woerter+" Wörter)"); else fail("Zu viel Text: "+m.woerter+" Wörter");
 if(m.knoepfe<=8) ok("Wenige Knöpfe ("+m.knoepfe+")"); else fail("Zu viele Knöpfe: "+m.knoepfe);
-if(/Kommt Ben Fischer\?|Ben Fischer kommt/.test(b)) ok("Klare Frage bzw. klare Antwort zum eigenen Kind"); else fail("Frage fehlt: "+b.slice(0,160).replace(/\n/g," | "));
+if(/Kommt Ben\?|Ben kommt/.test(b)) ok("Klare Frage bzw. Antwort mit dem Vornamen des Kindes"); else fail("Frage fehlt: "+b.slice(0,160).replace(/\n/g," | "));
 // Abstimmen mit einem Tipp
 { // In den Demo-Daten hat Ben schon zugesagt -> erst "Ändern", dann steht die Frage da
-  if(!/JA/.test(b)&&/Ändern/.test(b)){ await clickTxt("Ändern"); await page.waitForTimeout(900); await clickTxt("Ändern"); await page.waitForTimeout(900); }
+  if(!/JA/.test(b)&&/Absagen|Doch dabei/.test(b)){ await clickTxt("Absagen"); await page.waitForTimeout(900); await clickTxt("Doch dabei"); await page.waitForTimeout(900); }
   b=await body();
   const gross=await page.evaluate(()=>[...document.querySelectorAll("button")].filter(x=>/JA|NEIN/.test(x.innerText)&&x.getBoundingClientRect().height>=60).length);
   if(gross>=1) ok("Die Antwort-Knöpfe sind groß genug zum Treffen ("+gross+" große Knöpfe)"); else ok("Antwort steht bereits – Knöpfe erscheinen beim Ändern");
-  const geklickt=await clickTxt("JA")||await clickTxt("Ändern");
+  const geklickt=await clickTxt("JA")||await clickTxt("Absagen")||await clickTxt("Doch dabei");
   await page.waitForTimeout(900); b=await body();
   if(geklickt&&/kommt/.test(b)) ok("Ein Tipp genügt – die Antwort steht sofort da"); else fail("Antwort ohne Wirkung: "+b.slice(0,140).replace(/\n/g," | "));
-  if(/Ändern/.test(b)) ok("Antwort lässt sich mit „Ändern“ korrigieren"); else fail("Kein Ändern-Knopf"); }
+  if(/Absagen|Doch dabei/.test(b)) ok("Der Knopf sagt, was passiert (Absagen bzw. Doch dabei)"); else fail("Kein Korrektur-Knopf"); }
 if(/Mehr anzeigen/.test(b)) ok("Wer mehr will, kann umschalten"); else fail("Kein Weg zur vollen Ansicht");
+{ const k=await page.evaluate(()=>{ const H=window.innerHeight;
+    const karten=[...document.querySelectorAll("div")].filter(d=>/^(TRAINING|SPIEL|TURNIER)/.test(d.innerText||"")&&d.getBoundingClientRect().height>50&&d.getBoundingClientRect().height<320);
+    return { sichtbar:karten.filter(d=>{const r=d.getBoundingClientRect();return r.top<H&&r.bottom>0;}).length,
+             maxHoehe:Math.max(0,...karten.map(d=>Math.round(d.getBoundingClientRect().height))) }; });
+  if(k.sichtbar>=2) ok("Mehrere Termine gleichzeitig sichtbar ("+k.sichtbar+")"); else fail("Nur "+k.sichtbar+" Termin sichtbar");
+  if(k.maxHoehe<=200) ok("Karten bleiben kompakt (max "+k.maxHoehe+" px)"); else fail("Karte zu hoch: "+k.maxHoehe+" px"); }
 
 // ===== 2) Trainer legt Stationen an =====
 await alsRolle({ role:"trainer", cid:"demo", tids:["demo_f1"], name:"Demo Trainer", id:"demo_tr1" });
