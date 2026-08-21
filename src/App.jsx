@@ -21213,8 +21213,9 @@ const TerminKopf=({ev,col,gross})=>(
       {ev.loc&&<span style={{fontSize:11.5,color:"#64748b",fontWeight:700}}>📍 {ev.loc}</span>}
     </div>
     <div style={{fontWeight:900,fontSize:gross?20:15.5,color:"#0f172a",lineHeight:1.2,marginTop:1}}>
-      {tagKurz(ev.date)}{ev.time?<span style={{fontWeight:800,color:"#334155"}}> · {ev.time} Uhr</span>:null}
+      {tagKurz(ev.date)}{ev.time?<span style={{fontWeight:800,color:"#334155"}}> · {ev.time}{!gross&&ev.endTime?"–"+ev.endTime:""} Uhr</span>:null}
     </div>
+    {gross&&dauerText(ev)&&<div style={{fontSize:12.5,color:"#64748b",fontWeight:600,marginTop:2}}>{dauerText(ev)}</div>}
   </>
 );
 const bisSonntag=()=>{ try{ const d=new Date(now()+"T12:00:00"); const bis=(7-((d.getDay()||7)))||0;
@@ -21230,6 +21231,15 @@ const tagKurz=(iso)=>{
     if(diff===1) return "Morgen";
     return `${WTK[d.getDay()]}, ${d.getDate()}. ${MONK[d.getMonth()]}`;
   }catch{ return iso; }
+};
+// Wie lange geht der Termin? Nur wenn eine Endzeit hinterlegt ist.
+const dauerText=(ev)=>{
+  if(!ev||!ev.endTime||!ev.time) return null;
+  const m=eventDurationMin(ev);
+  if(!m) return `bis ${ev.endTime} Uhr`;
+  const std=Math.floor(m/60), min=m%60;
+  const d = std ? (min ? `${std} Std ${min} Min` : (std===1?"1 Stunde":`${std} Stunden`)) : `${min} Min`;
+  return `bis ${ev.endTime} Uhr · ${d}`;
 };
 const zeitPlus=(hhmm,min)=>{ try{ const [h,m]=String(hhmm||"00:00").split(":").map(Number);
   const t=h*60+m+Number(min||0); return `${String(Math.floor(t/60)%24).padStart(2,"0")}:${String(t%60).padStart(2,"0")}`; }catch{ return ""; } };
@@ -21297,7 +21307,7 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
         <div style={{fontSize:17,lineHeight:1,width:20,textAlign:"center",flexShrink:0}}>{s.icon}</div>
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontWeight:800,fontSize:14.5,color:"#334155",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
-            {tagKurz(ev.date)}{ev.time?` · ${ev.time}`:""}
+            {tagKurz(ev.date)}{ev.time?` · ${ev.time}${ev.endTime?"–"+ev.endTime:""}`:""}
           </div>
           <div style={{fontSize:11.5,color:s.col,fontWeight:700,marginTop:1}}>
             {artWort(ev).charAt(0)+artWort(ev).slice(1).toLowerCase()} · {statusText(a)}{a.late?` ab ${zeitPlus(ev.time,a.late)}`:""}
@@ -21315,7 +21325,7 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
     <div key={ev.id} style={{background:"#fff",borderRadius:14,border:"1.5px solid #fed7aa",padding:"11px 12px",marginBottom:8}}>
       <div style={{display:"flex",alignItems:"baseline",gap:7,flexWrap:"wrap",marginBottom:8}}>
         <span style={{fontSize:11,fontWeight:900,color:col,letterSpacing:.6}}>{artWort(ev)}</span>
-        <span style={{fontWeight:900,fontSize:15.5,color:"#0f172a"}}>{tagKurz(ev.date)}{ev.time?` · ${ev.time} Uhr`:""}</span>
+        <span style={{fontWeight:900,fontSize:15.5,color:"#0f172a"}}>{tagKurz(ev.date)}{ev.time?` · ${ev.time}${ev.endTime?"–"+ev.endTime:""} Uhr`:""}</span>
         {ev.loc&&<span style={{fontSize:11.5,color:"#64748b",fontWeight:700}}>📍 {ev.loc}</span>}
       </div>
       <AntwortKnoepfe ev={ev} onVote={onVote}/>
@@ -21363,6 +21373,7 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
             <div style={{fontWeight:900,fontSize:20,color:"#0f172a",lineHeight:1.2,marginTop:1}}>
               {tagKurz(fokus.date)}{fokus.time?<span style={{fontWeight:800,color:"#334155"}}> · {fokus.time} Uhr</span>:null}
             </div>
+            {dauerText(fokus)&&<div style={{fontSize:12.5,color:"#64748b",fontWeight:600,marginTop:2}}>{dauerText(fokus)}</div>}
             <NoteKurz text={fokus.note}/>
             <div style={{fontWeight:900,fontSize:17,color:"#0f172a",margin:"12px 0 9px"}}>Kommt {kurzName}?</div>
             <AntwortKnoepfe ev={fokus} gross onVote={onVote}/>

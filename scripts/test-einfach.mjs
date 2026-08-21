@@ -42,6 +42,10 @@ await dismiss();
 let b=await body();
 if(/TRAINING|SPIEL/.test(b)) ok("Eltern sehen sofort den nächsten Termin"); else fail("Kein Termin sichtbar: "+b.slice(0,140).replace(/\n/g," | "));
 if(/Heute|Morgen|Übermorgen|,\s\d+\./.test(b)) ok("Datum in Alltagssprache (Heute/Morgen/Wochentag)"); else fail("Datum unverständlich");
+// Dauer dezent dazu, wenn eine Endzeit hinterlegt ist
+if(/bis \d\d:\d\d Uhr · \d+ (Std|Stunde|Stunden|Min)/.test(b)) ok("Dauer steht dezent dabei ("+(b.match(/bis \d\d:\d\d Uhr · [^\n]*/)||[""])[0]+")");
+else if(/bis \d\d:\d\d Uhr/.test(b)) ok("Endzeit steht dabei");
+else fail("Keine Dauer/Endzeit: "+b.slice(0,160).replace(/\n/g," | "));
 let m=await messung();
 if(m.woerter<=60) ok("Sehr wenig Text auf dem Bildschirm ("+m.woerter+" Wörter)"); else fail("Zu viel Text: "+m.woerter+" Wörter");
 if(m.knoepfe<=8) ok("Wenige Knöpfe ("+m.knoepfe+")"); else fail("Zu viele Knöpfe: "+m.knoepfe);
