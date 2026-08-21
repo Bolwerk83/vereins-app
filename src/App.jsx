@@ -10104,7 +10104,7 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
   const delPlayer = id => {
     const pl=allPlayers.find(p=>p.id===id);
     if(typeof window!=="undefined"&&window.confirm&&!window.confirm(`„${pl?.name||"Spieler"}“ endgültig löschen?\n\nProfil, Skills und Verlauf werden entfernt (DSGVO-Log wird erstellt). Das kann nicht rückgängig gemacht werden.`)) return;
-    save({...data,playerProfiles:(data.playerProfiles||[]).filter(p=>p.id!==id),securityLog:[...(data.securityLog||[]),{id:uid(),cid,type:"dsgvo_delete",ts:new Date().toISOString(),detail:"Spieler "+(pl?.name||id)+" auf Anfrage gelöscht",read:false}]});
+    save(purgePerson({...data,playerProfiles:(data.playerProfiles||[]).filter(p=>p.id!==id),securityLog:[...(data.securityLog||[]),{id:uid(),cid,type:"dsgvo_delete",ts:new Date().toISOString(),detail:"Spieler "+(pl?.name||id)+" geloescht (inkl. aller Eintraege)"}]},{id,name:pl?.name||""}));
     fire("Spieler entfernt + DSGVO-Log erstellt");
   };
 
@@ -10826,8 +10826,9 @@ function OnbStep3Trainers({ cl, data, cid, save, teams, trainers, onNext, onBack
     markShared(inv.id);
   };
   const del = async (id) => {
-    if (!window.confirm("Diesen Trainer entfernen?")) return;
-    await save({...data, trainers:(data.trainers||[]).filter(t=>t.id!==id)});
+    const tr0=(data.trainers||[]).find(t=>t.id===id);
+    if (!window.confirm(`„${tr0?.name||"Trainer"}" wirklich entfernen?\n\nAlle Einträge werden mitgelöscht: Zusagen, Anwesenheiten, Stationen und Vertretungs-Gesuche.`)) return;
+    await save(purgePerson({...data, trainers:(data.trainers||[]).filter(t=>t.id!==id)},{id,name:tr0?.name||""}));
   };
   return (
     <OnbCard
@@ -12177,7 +12178,13 @@ function HelpersTab({data,cid,myTids,session,save,fire,cl}) {
     persist();
     setShowForm(false); fire(editH?"Helfer aktualisiert ✓":"Helfer angelegt – Zugang ist aktiv ✓");
   };
-  const del=id=>{save({...data,helpers:(data.helpers||[]).filter(h=>h.id!==id)});fire("Helfer entfernt");};
+  const del=id=>{
+    const h=(data.helpers||[]).find(x=>x.id===id);
+    if(typeof window!=="undefined"&&window.confirm&&!window.confirm(`„${h?.name||"Helfer"}" wirklich entfernen?\n\nAlle Eintraege werden mitgeloescht: Zusagen, Einsaetze, Schichten, Listen und Stationen.`.replace("Eintraege","Einträge").replace("Einsaetze","Einsätze").replace("mitgeloescht","mitgelöscht"))) return;
+    const bereinigt=purgePerson({...data,helpers:(data.helpers||[]).filter(x=>x.id!==id)},{id,name:h?.name||""});
+    save(bereinigt);
+    fire("Helfer entfernt – auch alle seine Einträge");
+  };
   const toggle=id=>{
     const next=(data.helpers||[]).map(h=>h.id===id?{...h,active:!h.active}:h);
     save({...data,helpers:next});fire("Status geändert");
@@ -13695,7 +13702,12 @@ function TrainersTab({data,cid,save,fire,session}) {
 
   const openNew  = () => { setF({name:"",pw:"",tids:[],phone:"",email:""}); setEditId(null); setShowForm(true); };
   const openEdit = tr => { setF({...tr,pw:""}); setEditId(tr.id); setShowForm(true); };
-  const del      = id => { save({...data,trainers:(data.trainers||[]).filter(x=>x.id!==id)}); fire("Entfernt"); };
+  const del      = id => {
+    const tr0=(data.trainers||[]).find(x=>x.id===id);
+    if(typeof window!=="undefined"&&window.confirm&&!window.confirm(`„${tr0?.name||"Trainer"}" wirklich entfernen?\n\nAlle Einträge werden mitgelöscht: Zusagen, Anwesenheiten, Stationen und Vertretungs-Gesuche.`)) return;
+    save(purgePerson({...data,trainers:(data.trainers||[]).filter(x=>x.id!==id)},{id,name:tr0?.name||""}));
+    fire("Trainer entfernt – auch alle seine Einträge");
+  };
 
   const saveF = () => {
     if(!f.name.trim()) return;
@@ -17579,6 +17591,66 @@ const staffSet = (...listen) => {
 // wer nicht im Kader steht und nicht als Gast eingetragen ist, ist kein Spieler
 // (typischerweise ein Trainer oder Helfer, dessen Name nirgends hinterlegt ist).
 // Ohne gepflegten Kader bleibt es bei der alten Zaehlung.
+// ----------------------------------------------------------------
+// Wird eine Person entfernt, verschwinden auch ihre Eintraege: Zusagen,
+// Anwesenheiten, Helfer-Meldungen, Stationen, Dienste, Listen, Gruppen.
+// Beitraege im Chat bleiben stehen, aber ohne Namen - sonst reissen
+// Loecher in die Unterhaltungen.
+// ----------------------------------------------------------------
+const purgePerson = (data, {id=null, name=""}={}) => {
+  const nm=_nrmName(name);
+  const gleich=n=>!!n&&_nrmName(n)===nm;
+  const raus=x=>(x===id&&!!id)||gleich(x);
+  const ohneKeys=(obj)=>{ if(!obj||typeof obj!=="object") return obj;
+    const o={...obj}; Object.keys(o).forEach(k=>{ if(gleich(k)||(id&&k===id)) delete o[k]; }); return o; };
+  const events=(data.events||[]).map(e=>{
+    const ev={...e};
+    if(ev.votes)           ev.votes=ohneKeys(ev.votes);
+    if(ev.present)         ev.present=ohneKeys(ev.present);
+    if(ev.playtime)        ev.playtime=ohneKeys(ev.playtime);
+    if(ev.carpool)         ev.carpool=ohneKeys(ev.carpool);
+    if(ev.trainerPresence) ev.trainerPresence=ohneKeys(ev.trainerPresence);
+    if(Array.isArray(ev.guests))          ev.guests=ev.guests.filter(g=>!gleich(g));
+    if(Array.isArray(ev.helperOffers))    ev.helperOffers=ev.helperOffers.filter(o=>!raus(o&&o.id)&&!gleich(o&&o.name));
+    if(Array.isArray(ev.helperInterest))  ev.helperInterest=ev.helperInterest.filter(o=>!raus(o&&o.id)&&!gleich(o&&o.name));
+    if(Array.isArray(ev.helperNo))        ev.helperNo=ev.helperNo.filter(x=>!raus(x));
+    if(Array.isArray(ev.lateCancellations)) ev.lateCancellations=ev.lateCancellations.filter(x=>!gleich(x&&x.user));
+    if(Array.isArray(ev.sc))              ev.sc=ev.sc.filter(x=>!gleich(typeof x==="string"?x:(x&&x.name)));
+    if(Array.isArray(ev.stations))        ev.stations=ev.stations.map(st=>({...st,
+      wer:(st.wer||[]).filter(w=>!raus(w)), werNamen:ohneKeys(st.werNamen)}));
+    if(Array.isArray(ev.duties))          ev.duties=ev.duties.map(d=>gleich(d&&d.assignee)?{...d,assignee:""}:d);
+    if(ev.orga){
+      ev.orga={...ev.orga,
+        items:(ev.orga.items||[]).map(it=>({...it,who:(it.who||[]).filter(w=>!gleich(w))})),
+        shifts:(ev.orga.shifts||[]).map(sh=>({...sh,who:(sh.who||[]).filter(w=>!gleich(w))}))};
+    }
+    if(ev.groups&&Array.isArray(ev.groups.list)){
+      ev.groups={...ev.groups,list:ev.groups.list.map(g=>({...g,
+        members:(g.members||[]).filter(m=>!gleich(typeof m==="string"?m:(m&&m.name))),
+        leader:gleich(g.leader)?"":g.leader}))};
+    }
+    if(ev.setup&&ev.setup.done){
+      const d={...ev.setup.done};
+      Object.keys(d).forEach(k=>{ if(d[k]&&gleich(d[k].by)) d[k]={...d[k],by:"—"}; });
+      ev.setup={...ev.setup,done:d};
+    }
+    if(gleich(ev.planBy)) ev.planBy="";
+    if(Array.isArray(ev.lineup)) ev.lineup=ev.lineup.filter(x=>!gleich(typeof x==="string"?x:(x&&x.name)));
+    return ev;
+  });
+  const players={...(data.players||{})};
+  Object.keys(players).forEach(tid=>{ players[tid]=(players[tid]||[]).filter(n=>!gleich(n)); });
+  const playerProfiles=(data.playerProfiles||[]).map(p=>({...p,
+    friends:(p.friends||[]).filter(f=>!gleich(f)),
+    mustWith:(p.mustWith||[]).filter(f=>!gleich(f))}));
+  const chats=(data.chats||[]).map(c=>({...c,
+    messages:(c.messages||[]).map(m=>gleich(m&&m.author)?{...m,author:"Ehemaliges Mitglied"}:m)}));
+  const out={...data, events, players, playerProfiles, chats};
+  if(Array.isArray(data.subRequests))
+    out.subRequests=data.subRequests.filter(r=>!raus(r&&r.by)&&!gleich(r&&r.byName)&&!raus(r&&r.takenBy)&&!gleich(r&&r.takenByName));
+  return out;
+};
+
 const isPlayerVote = (name, raw, ctx={}) => {
   if(isStaffVote(name, raw, ctx.staff)) return false;
   if(ctx.open) return true;
