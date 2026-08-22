@@ -20,7 +20,7 @@ const body=()=>page.evaluate(()=>document.body.innerText);
 // auf eine Saison-ID, die es in der Liste gar nicht (mehr) gibt.
 await page.addInitScript(()=>{
   localStorage.setItem("vereinsapp_config", JSON.stringify({url:"https://127.0.0.1:1/x", key:"test"}));
-  localStorage.setItem("va_simple","0");   // diese Tests pruefen die ausfuehrliche Ansicht
+  localStorage.setItem("va_simple","0"); localStorage.setItem("va_tsimple","0");   // diese Tests pruefen die ausfuehrliche Ansicht
   sessionStorage.setItem("vereinsapp_v12_session", JSON.stringify({ role:"trainer", cid:"demo", tids:["demo_f1"], name:"Trainer A", id:"dt1" }));
   // Nach dem Boot (refreshDemo baut die Demo neu auf) den Zeiger kaputt machen
   window.__brechenNach = true;

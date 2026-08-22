@@ -23,7 +23,7 @@ const dismiss=async()=>{ for(let k=0;k<10;k++){ const done=await page.evaluate((
 await page.addInitScript(()=>{ localStorage.setItem("vereinsapp_config", JSON.stringify({url:"https://127.0.0.1:1/x", key:"test"})); });
 
 await page.goto("http://127.0.0.1:4245/", { waitUntil:"networkidle" }); await page.waitForTimeout(2500);
-await page.evaluate(()=>{ localStorage.setItem("va_simple","0"); sessionStorage.setItem("vereinsapp_v12_session", JSON.stringify({role:"trainer",cid:"demo",tids:["demo_f1"],name:"Demo Trainer",id:"demo_tr1"})); });
+await page.evaluate(()=>{ localStorage.setItem("va_simple","0"); localStorage.setItem("va_tsimple","0"); sessionStorage.setItem("vereinsapp_v12_session", JSON.stringify({role:"trainer",cid:"demo",tids:["demo_f1"],name:"Demo Trainer",id:"demo_tr1"})); });
 await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2500); await dismiss();
 await clickTxt("Bin dabei"); await page.waitForTimeout(1200);
 

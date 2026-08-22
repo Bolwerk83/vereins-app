@@ -15327,6 +15327,170 @@ function SpielplanImport({ local, save, fire, cl, cid, teams, defaultTid, onClos
   );
 }
 
+// ----------------------------------------------------------------
+// Einfache Trainer-Sicht: der naechste Termin gross, darunter die Woche.
+// Es faellt nichts weg - alles Weitere haengt am Termin selbst oder an
+// "Alles anzeigen". Gleiche Idee wie bei den Eltern, nur mit den Zahlen
+// und Werkzeugen, die ein Trainer vor dem Training braucht.
+// ----------------------------------------------------------------
+function EinfachTrainer({ cl, evs=[], tod, trainerNames=[], helperNames=[], squadOf=()=>[], planTitleOf=()=>null,
+  modTraining=true, selfName=null, onSelfVote=null,
+  onView, onAttend, onSetup, onPlan, onEdit, onRemind, onBrief, onSubReq, onDel, onReset, onCopyLink, onNew, onDetail }){
+  const t=TH(cl); const p=readable(t.p);
+  const [gewaehlt,setGewaehlt]=useState(null);
+  const [mehr,setMehr]=useState(false);
+  const [spaeterAuf,setSpaeterAuf]=useState(false);
+  const kommend=evs.filter(e=>e.date>=tod);
+  const fokus=(gewaehlt&&kommend.find(e=>e.id===gewaehlt))||kommend[0]||null;
+  const waehle=id=>{ setGewaehlt(id); setMehr(false); try{ window.scrollTo({top:0,behavior:"smooth"}); }catch{} };
+  const sonntag=bisSonntag();
+  const rest=kommend.filter(e=>e.id!==fokus?.id);
+  const woche=rest.filter(e=>e.date<=sonntag);
+  const spaeter=rest.filter(e=>e.date>sonntag);
+  // Zahlen eines Termins: Spieler und Betreuer sauber getrennt (wie auf der Karte)
+  const zahlen=ev=>{
+    const v=ev.votes||{};
+    const ctx={staff:staffSet(trainerNames,helperNames),squad:squadSet(squadOf(ev.tid)),guests:ev.guests||[],open:!!ev.open};
+    const val=x=>(typeof x==="object"&&x?x.val:x);
+    const spieler=Object.entries(v).filter(([n,x])=>isPlayerVote(n,x,ctx));
+    const ja=spieler.filter(([,x])=>val(x)==="yes").length;
+    const nein=spieler.filter(([,x])=>val(x)==="no").length;
+    const kader=squadOf(ev.tid)||[];
+    const offen=Math.max(0,kader.length-ja-nein);
+    const betreuer=Object.entries(v).filter(([n,x])=>val(x)==="yes"&&!isPlayerVote(n,x,ctx)).length;
+    const helfer=(ev.helperOffers||[]).length;
+    return {ja,nein,offen,betreuer,helfer,kader:kader.length};
+  };
+  const Zahl=({n,txt,col,bg})=>(
+    <div style={{flex:"1 1 0",minWidth:64,background:bg,borderRadius:11,padding:"8px 6px",textAlign:"center"}}>
+      <div style={{fontWeight:900,fontSize:19,color:col,lineHeight:1.1}}>{n}</div>
+      <div style={{fontSize:10.5,fontWeight:700,color:col,opacity:.85,marginTop:1}}>{txt}</div>
+    </div>
+  );
+  const Knopf=({onClick,ch,haupt,ton})=>(
+    <button onClick={onClick} style={{flex:1,padding:"13px 10px",minHeight:48,borderRadius:12,
+      border:haupt?"none":`1.5px solid ${ton?ton+"55":"#e2e8f0"}`,background:haupt?p:(ton?ton+"12":"#fff"),
+      color:haupt?"#fff":(ton?readable(ton):"#334155"),fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>{ch}</button>
+  );
+  const Klein=({onClick,ch,bg,col})=>(
+    <button onClick={onClick} style={{padding:"9px 12px",minHeight:40,borderRadius:10,border:"none",background:bg,color:col,fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{ch}</button>
+  );
+  const Zeile=(ev)=>{
+    const z=zahlen(ev); const eT=ET[ev.type]||ET.training;
+    return (
+      <div key={ev.id} onClick={()=>waehle(ev.id)}
+        style={{display:"flex",alignItems:"center",gap:10,padding:"11px 4px",borderBottom:"1px solid #e9eef5",cursor:"pointer"}}>
+        <div style={{width:30,height:30,borderRadius:10,background:eT.bg,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+          <EventIcon type={EVENT_TYPE_ALIAS[ev.type]||ev.type} size={16} color={eT.col}/>
+        </div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontWeight:800,fontSize:14,color:"#0f172a",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+            {tagKurz(ev.date)}{ev.time?" · "+ev.time:""}
+          </div>
+          <div style={{fontSize:11.5,color:"#64748b",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",marginTop:1}}>
+            {evDisplayTitle?evDisplayTitle(ev):ev.title}{z.kader?` · ${z.ja} von ${z.kader}`:""}{z.helfer?` · 🙋 ${z.helfer}`:""}
+          </div>
+        </div>
+        <span style={{color:"#94a3b8",fontSize:18,flexShrink:0}}>›</span>
+      </div>
+    );
+  };
+  if(!fokus) return (
+    <div style={{padding:"22px 4px",textAlign:"center"}}>
+      <div style={{fontSize:34,marginBottom:8}}>📅</div>
+      <p style={{fontWeight:800,fontSize:15,color:"#0f172a"}}>Keine Termine geplant</p>
+      <p style={{fontSize:13,color:"#64748b",marginTop:4,lineHeight:1.5}}>Lege den ersten Termin an – Training, Spiel oder Turnier.</p>
+      <button onClick={onNew} style={{marginTop:14,padding:"14px 22px",minHeight:48,borderRadius:13,border:"none",background:p,color:"#fff",fontWeight:900,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>+ Neuer Termin</button>
+      {onDetail&&<button onClick={onDetail} style={{display:"block",margin:"12px auto 0",padding:"10px 16px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Alles anzeigen</button>}
+    </div>
+  );
+  const z=zahlen(fokus); const eT=ET[fokus.type]||ET.training;
+  const heute=fokus.date===tod; const amTag=fokus.date<=tod;
+  const planT=planTitleOf(fokus);
+  const dauer=dauerText(fokus);
+  return (
+    <div>
+      {/* Der naechste Termin - alles Wichtige auf einen Blick */}
+      <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.6,marginBottom:7}}>
+        {gewaehlt&&fokus.id===gewaehlt&&evs[0]&&evs[0].id!==fokus.id?"AUSGEWÄHLTER TERMIN":"ALS NÄCHSTES"}
+      </div>
+      <div style={{background:"#fff",borderRadius:18,border:`2px solid ${heute?p:"#e2e8f0"}`,padding:"15px 16px 14px",boxShadow:"0 2px 10px rgba(0,0,0,.05)",marginBottom:14}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+          <div style={{width:34,height:34,borderRadius:11,background:eT.bg,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            <EventIcon type={EVENT_TYPE_ALIAS[fokus.type]||fokus.type} size={18} color={eT.col}/>
+          </div>
+          <span style={{fontWeight:800,fontSize:12.5,color:eT.col,letterSpacing:.3,textTransform:"uppercase"}}>{etLabel?etLabel(fokus.type):fokus.type}</span>
+          {fokus.loc&&<span style={{fontSize:12,color:"#64748b",fontWeight:600,flex:1,minWidth:0,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>📍 {fokus.loc}</span>}
+        </div>
+        <div style={{fontWeight:900,fontSize:21,color:"#0f172a",letterSpacing:"-.4px"}}>
+          {tagKurz(fokus.date)}{fokus.time?` · ${fokus.time} Uhr`:""}
+        </div>
+        {dauer&&<div style={{fontSize:12.5,color:"#64748b",fontWeight:600,marginTop:2}}>{dauer}</div>}
+        <div style={{fontSize:13,color:"#475569",fontWeight:700,marginTop:4}}>{evDisplayTitle?evDisplayTitle(fokus):fokus.title}</div>
+        {/* Zahlen: Spieler getrennt von Betreuern und Helfern */}
+        <div style={{display:"flex",gap:6,marginTop:12}}>
+          <Zahl n={z.ja} txt="dabei" col="#15803d" bg="#f0fdf4"/>
+          <Zahl n={z.nein} txt="abgesagt" col="#b91c1c" bg="#fef2f2"/>
+          <Zahl n={z.offen} txt="offen" col="#b45309" bg="#fffbeb"/>
+          <Zahl n={z.betreuer+z.helfer} txt="Betreuer" col="#4338ca" bg="#eef2ff"/>
+        </div>
+        {/* Sage ich selbst zu? Genau wie auf der ausfuehrlichen Karte. */}
+        {selfName&&onSelfVote&&(fokus.pt==="att"||!fokus.pt)&&fokus.date>=tod&&(()=>{
+          const roh=(fokus.votes||{})[selfName];
+          const meine=typeof roh==="object"&&roh?roh.val:roh;
+          return (
+            <div style={{display:"flex",alignItems:"center",gap:7,marginTop:12}}>
+              <span style={{fontSize:11.5,fontWeight:800,color:"#64748b",flexShrink:0}}>Ich:</span>
+              <button onClick={()=>onSelfVote(fokus.id,"yes")}
+                style={{flex:1,padding:"11px 8px",minHeight:44,borderRadius:11,border:meine==="yes"?"none":"1.5px solid #bbf7d0",background:meine==="yes"?"#15803d":"#f0fdf4",color:meine==="yes"?"#fff":"#15803d",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>✓ Bin dabei</button>
+              <button onClick={()=>onSelfVote(fokus.id,"no")}
+                style={{flex:1,padding:"11px 8px",minHeight:44,borderRadius:11,border:meine==="no"?"none":"1.5px solid #fecaca",background:meine==="no"?"#b91c1c":"#fff",color:meine==="no"?"#fff":"#b91c1c",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>✕ Sage ab</button>
+            </div>
+          ); })()}
+        {/* Hauptwege: Termin oeffnen und Aufbau */}
+        <div style={{display:"flex",gap:8,marginTop:12}}>
+          <Knopf haupt onClick={()=>(amTag&&onAttend?onAttend(fokus):onView&&onView(fokus))} ch={amTag&&onAttend?"✅ Anwesenheit":"Termin öffnen"}/>
+          {onSetup&&<Knopf onClick={()=>onSetup(fokus)} ton="#c2410c" ch="🏗 Aufbau"/>}
+        </div>
+        <div style={{display:"flex",gap:8,marginTop:8}}>
+          {fokus.type==="training"&&onPlan&&modTraining&&<Knopf onClick={()=>onPlan(fokus)} ton={planT?"#15803d":"#4f46e5"} ch={planT?"📋 Training steht":"📋 Training planen"}/>}
+          {onRemind&&z.offen>0&&<Knopf onClick={()=>onRemind(fokus)} ton="#0369a1" ch={`🔔 ${z.offen} erinnern`}/>}
+        </div>
+        <button onClick={()=>setMehr(m=>!m)} style={{width:"100%",marginTop:8,padding:"9px",minHeight:40,borderRadius:10,border:"none",background:"transparent",color:"#64748b",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
+          {mehr?"▲ weniger":"⋯ mehr zu diesem Termin"}
+        </button>
+        {mehr&&(
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",paddingTop:2}}>
+            {onView&&<Klein onClick={()=>onView(fokus)} ch="📊 Rückmeldungen" bg="#f0fdf4" col="#15803d"/>}
+            {onEdit&&<Klein onClick={()=>onEdit(fokus)} ch="✏️ Bearbeiten" bg="#f1f5f9" col="#475569"/>}
+            {onBrief&&<Klein onClick={()=>onBrief(fokus)} ch="📋 Spickzettel" bg="#eef2ff" col="#4338ca"/>}
+            {onSubReq&&<Klein onClick={()=>onSubReq(fokus)} ch="🆘 Vertretung" bg="#fff1f2" col="#be123c"/>}
+            {onCopyLink&&<Klein onClick={()=>onCopyLink(fokus)} ch="🔗 Link" bg="#ede9fe" col="#6d28d9"/>}
+            {onReset&&<Klein onClick={()=>onReset(fokus)} ch="↺ Stimmen zurücksetzen" bg="#fff7ed" col="#b45309"/>}
+            {onDel&&<Klein onClick={()=>onDel(fokus)} ch="🗑 Löschen" bg="#fee2e2" col="#b91c1c"/>}
+          </div>
+        )}
+      </div>
+      {/* Der Rest der Woche - antippen macht ihn gross */}
+      {woche.length>0&&<>
+        <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.6,marginBottom:4}}>BIS {bisWochentag().toUpperCase()} ({woche.length})</div>
+        <div style={{background:"#fff",borderRadius:14,border:"1.5px solid #e2e8f0",padding:"2px 12px",marginBottom:12}}>{woche.map(Zeile)}</div>
+      </>}
+      {spaeter.length>0&&<>
+        <button onClick={()=>setSpaeterAuf(a=>!a)}
+          style={{width:"100%",padding:"12px",minHeight:44,borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit",marginBottom:12}}>
+          {spaeterAuf?"▾ Später zuklappen":`▸ Später (${spaeter.length})`}
+        </button>
+        {spaeterAuf&&<div style={{background:"#fff",borderRadius:14,border:"1.5px solid #e2e8f0",padding:"2px 12px",marginBottom:12}}>{spaeter.map(Zeile)}</div>}
+      </>}
+      <div style={{display:"flex",gap:8}}>
+        <button onClick={onNew} style={{flex:1,padding:"14px",minHeight:48,borderRadius:13,border:"none",background:p,color:"#fff",fontWeight:900,fontSize:14.5,cursor:"pointer",fontFamily:"inherit"}}>+ Neuer Termin</button>
+        {onDetail&&<button onClick={onDetail} style={{flex:"0 0 42%",padding:"14px 8px",minHeight:48,borderRadius:13,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>Alles anzeigen</button>}
+      </div>
+    </div>
+  );
+}
+
 function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const { isDesktop, isTablet } = useBreakpoint();
   const isAdmin=session.role==="admin"; const isHelper=session.role==="helper"; const cid=session.cid; const cl=data.clubs.find(c=>c.id===cid);
@@ -15375,6 +15539,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       && (b.recipients==="all"||!b.recipients||(Array.isArray(b.recipients)&&b.recipients.includes(session.id)))
       && !(b.readBy||[]).includes(session.id)).length;
   },[local.broadcasts]); const [wizard,setWizard]=useState(false); const [editEv,setEditEv]=useState(null);
+  // Einfache Trainer-Sicht ist der Standard: Fokus auf den naechsten Termin.
+  const [tSimple,setTSimple]=useState(()=>{ try{ return localStorage.getItem("va_tsimple")!=="0"; }catch{ return true; } });
   const [showSeasonModal,setShowSeasonModal]=useState(false);
   const [showOnboarding,setShowOnboarding]=useState(false);
   // Welcome-Modal beim ersten Login für Trainer / Helfer (nur einmalig)
@@ -15742,7 +15908,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         )}
         {/* Helfer brauchen keinen Erklaerkasten - ihre Termine sprechen fuer sich.
             Der Trainer-Text verweist auf Knoepfe, die Helfer gar nicht haben. */}
-        {!(isHelper&&tab==="events")&&<AreaIntro id={tab} cl={myClub}/>}
+        {/* In der einfachen Sicht steht der Erklaerkasten nicht mehr vor dem Termin. */}
+        {!(isHelper&&tab==="events")&&!(tSimple&&tab==="events")&&<AreaIntro id={tab} cl={myClub}/>}
         {tab==="events"&&<>
           {/* Saison-Check: Erinnerung ab 3 Monate vor Saisonende, bis der Fragebogen abgegeben ist */}
           {!isAdmin&&modOn("saison")&&<SeasonSurveyReminder data={local} cid={cid} session={session} onOpen={()=>setSurveyOpen(true)}/>}
@@ -15876,6 +16043,26 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             );
           })()}
           {}
+          {/* Standard ist die einfache Sicht: naechster Termin gross, dann die
+              Woche. "Alles anzeigen" schaltet auf die vollstaendige Liste mit
+              allen Werkzeugen um - es faellt nichts weg. */}
+          {tSimple&&!isHelper ? (
+            <EinfachTrainer cl={myClub} evs={myEvs} tod={tod} trainerNames={trainerNames} helperNames={helperNames}
+              squadOf={squadOf} planTitleOf={planTitleOf} modTraining={modOn("training")}
+              selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote}
+              onView={ev=>{ setEvTab("rueck"); setViewEv(ev); }}
+              onAttend={ev=>{ setEvTab("orga"); setViewEv(ev); }}
+              onSetup={ev=>setSetupEv(ev)}
+              onPlan={ev=>openPlan(ev)}
+              onRemind={ev=>remindNonVoters(ev)}
+              onEdit={ev=>ev.sid?setEditConf(ev):setEditEv(editInfo(ev))}
+              onBrief={ev=>setBriefEv(ev)}
+              onSubReq={ev=>{ setSubNote(""); setSubReqEv(ev); }}
+              onCopyLink={ev=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)}
+              onReset={ev=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)}); fire("Stimmen zurückgesetzt"); }}
+              onDel={ev=>{ setDelConf(ev.id); setDelConfVal(ev.title); }}
+              onNew={()=>setWizard(true)} onDetail={()=>{ setTSimple(false); try{localStorage.setItem("va_tsimple","0");}catch{} }}/>
+          ) : (<>
           {!isHelper&&<div onClick={()=>setWizard(true)} style={{background:readable(t.p),borderRadius:20,padding:"18px 20px",cursor:"pointer",marginBottom:18,display:"flex",alignItems:"center",gap:14,boxShadow:`0 6px 24px ${t.p}66,0 2px 8px rgba(0,0,0,.15)`,transition:"all .2s"}}>
             <div style={{width:52,height:52,borderRadius:16,background:"rgba(0,0,0,.15)",border:`2px solid ${t.ct==="#fff"?"rgba(255,255,255,.35)":"rgba(0,0,0,.18)"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,fontWeight:900,color:t.ct,flexShrink:0}}>+</div>
             <div style={{flex:1}}>
@@ -15922,6 +16109,12 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           <AffiliateBanner trigger="events" style={{marginTop:14}}/>
           {/* DFB-Spielformen sind Trainer-Fachwissen - Helfer brauchen sie nicht */}
           {!isHelper&&<div style={{marginTop:14}}><DFBFormatsCard cl={myClub} cats={(local.teams||[]).filter(tm=>myTids.includes(tm.id)).map(tm=>tm.cat||tm.name)}/></div>}
+          {!isHelper&&<button onClick={()=>{ setTSimple(true); try{localStorage.setItem("va_tsimple","1");}catch{} }}
+            style={{width:"100%",marginTop:14,padding:"13px",minHeight:46,borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>
+            ↩ Zurück zur einfachen Sicht
+          </button>}
+          </>)}
+
           <div style={{marginTop:14}}><RecommendCard theme={t.p}/></div>
         </>}
         {tab==="players"    &&!isHelper&&<><PlayersTab data={local} myTids={myTids} save={save} fire={fire} cl={myClub} session={session}/><AffiliateBanner trigger="players" style={{marginTop:14}}/></> }

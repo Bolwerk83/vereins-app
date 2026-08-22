@@ -140,7 +140,12 @@ if(await clickTxt("Passwort für")){ await page.waitForTimeout(800); b=await bod
 
 // ===== 2) Trainer legt Stationen an =====
 await alsRolle({ role:"trainer", cid:"demo", tids:["demo_f1"], name:"Demo Trainer", id:"demo_tr1" });
-await page.evaluate(()=>{ const cs=[...document.querySelectorAll("div")].filter(d=>d.innerText.includes("Abschlusstraining")&&d.querySelector("button")&&d.innerText.length<1400); const c=cs[cs.length-1]; const x=[...c.querySelectorAll("button")].find(y=>y.innerText.trim()==="Ansehen"); x&&x.click(); });
+// In der einfachen Trainer-Sicht heisst der Hauptknopf "Termin öffnen"
+// (ab dem Termintag "✅ Anwesenheit"), in der vollen Liste "Ansehen".
+await page.evaluate(()=>{ const cs=[...document.querySelectorAll("div")].filter(d=>d.innerText.includes("Abschlusstraining")&&d.querySelector("button")&&d.innerText.length<1400); const c=cs[cs.length-1]||document;
+  const x=[...c.querySelectorAll("button")].find(y=>/^(Ansehen|Termin öffnen|✅ Anwesenheit)$/.test((y.innerText||"").trim()))
+       || [...document.querySelectorAll("button")].find(y=>/^(Ansehen|Termin öffnen|✅ Anwesenheit)$/.test((y.innerText||"").trim()));
+  x&&x.click(); });
 await page.waitForTimeout(1000);
 await clickTxt("👥 Orga"); await page.waitForTimeout(700);
 b=await body();

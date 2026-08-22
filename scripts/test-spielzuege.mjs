@@ -25,7 +25,7 @@ const dismissOverlays=async()=>{ for(let k=0;k<14;k++){ const done=await page.ev
   return true; }); await page.waitForTimeout(450); if(done) break; } };
 await page.addInitScript(()=>{
   localStorage.setItem("vereinsapp_config", JSON.stringify({url:"https://127.0.0.1:1/x", key:"test"}));
-  localStorage.setItem("va_simple","0");   // diese Tests pruefen die ausfuehrliche Ansicht
+  localStorage.setItem("va_simple","0"); localStorage.setItem("va_tsimple","0");   // diese Tests pruefen die ausfuehrliche Ansicht
   sessionStorage.setItem("vereinsapp_v12_session", JSON.stringify({ role:"trainer", cid:"demo", tids:["demo_f1"], name:"Demo Trainer", id:"demo_tr1" }));
 });
 await page.goto("http://127.0.0.1:4225/", { waitUntil:"networkidle" }); await page.waitForTimeout(2500);

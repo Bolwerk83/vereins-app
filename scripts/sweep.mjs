@@ -24,6 +24,8 @@ page.on("console", m=>{ if(m.type()==="error" && !/net::|Failed to load resource
 // Demo-Trainer-Session direkt setzen (App baut Demo-Daten offline selbst auf)
 await page.addInitScript(()=>{
   sessionStorage.setItem("vereinsapp_v12_session", JSON.stringify({ role:"trainer", cid:"demo", tids:["demo_f1"], name:"Demo Trainer", id:"demo_tr1" }));
+  // Der Rundgang prueft die vollstaendige Liste - die einfache Sicht hat einen eigenen Test.
+  localStorage.setItem("va_simple","0"); localStorage.setItem("va_tsimple","0");
   // Ferien-Cache: deckt Ferien-Chips + Ferien-Check ohne Netz ab (1 Jahr Spanne)
   const y=new Date().getFullYear();
   localStorage.setItem("va_ferien_DE-NW", JSON.stringify({ts:Date.now(),data:[

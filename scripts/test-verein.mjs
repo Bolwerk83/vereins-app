@@ -18,7 +18,7 @@ const ok=m=>console.log("OK:", m);
 const body=()=>page.evaluate(()=>document.body.innerText);
 await page.addInitScript(()=>{
   localStorage.setItem("vereinsapp_config", JSON.stringify({url:"https://127.0.0.1:1/x", key:"test"}));
-  localStorage.setItem("va_simple","0");   // diese Tests pruefen die ausfuehrliche Ansicht   // Fake-Cloud: Offline-Spiegel
+  localStorage.setItem("va_simple","0"); localStorage.setItem("va_tsimple","0");   // diese Tests pruefen die ausfuehrliche Ansicht   // Fake-Cloud: Offline-Spiegel
   if(!sessionStorage.getItem("va_sw")) sessionStorage.setItem("vereinsapp_v12_session", JSON.stringify({ role:"trainer", cid:"demo", tids:["demo_g","demo_f1"], name:"Trainer A", id:"dt1" }));
 });
 await page.goto("http://127.0.0.1:4214/", { waitUntil:"networkidle" }); await page.waitForTimeout(2500);

@@ -24,7 +24,7 @@ await page.addInitScript(()=>{ localStorage.setItem("vereinsapp_config", JSON.st
 
 // ===== 1) Trainer erzeugt den Link =====
 await page.goto("http://127.0.0.1:4239/", { waitUntil:"networkidle" }); await page.waitForTimeout(2500);
-await page.evaluate(()=>{ localStorage.setItem("va_simple","0"); sessionStorage.setItem("vereinsapp_v12_session", JSON.stringify({role:"trainer",cid:"demo",tids:["demo_f1"],name:"Demo Trainer",id:"demo_tr1"})); });
+await page.evaluate(()=>{ localStorage.setItem("va_simple","0"); localStorage.setItem("va_tsimple","0"); sessionStorage.setItem("vereinsapp_v12_session", JSON.stringify({role:"trainer",cid:"demo",tids:["demo_f1"],name:"Demo Trainer",id:"demo_tr1"})); });
 await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2500); await dismiss();
 await page.evaluate(()=>{ const b=[...document.querySelectorAll("button")].find(x=>/Bin dabei/.test(x.innerText)); b&&b.click(); });
 await page.waitForTimeout(1200);
