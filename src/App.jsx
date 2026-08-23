@@ -15361,131 +15361,152 @@ function EinfachTrainer({ cl, evs=[], tod, trainerNames=[], helperNames=[], squa
     const helfer=(ev.helperOffers||[]).length;
     return {ja,nein,offen,betreuer,helfer,kader:kader.length};
   };
-  const Zahl=({n,txt,col,bg})=>(
-    <div style={{flex:"1 1 0",minWidth:64,background:bg,borderRadius:11,padding:"8px 6px",textAlign:"center"}}>
-      <div style={{fontWeight:900,fontSize:19,color:col,lineHeight:1.1}}>{n}</div>
-      <div style={{fontSize:10.5,fontWeight:700,color:col,opacity:.85,marginTop:1}}>{txt}</div>
-    </div>
+  // Ruhige Bausteine: eine Akzentfarbe (Vereinsfarbe), sonst Grautoene.
+  const Haupt=({onClick,ch})=>(
+    <button onClick={onClick} style={{flex:1,padding:"12px 14px",minHeight:46,borderRadius:11,border:"none",background:p,color:"#fff",fontWeight:700,fontSize:14,letterSpacing:"-.1px",cursor:"pointer",fontFamily:"inherit"}}>{ch}</button>
   );
-  const Knopf=({onClick,ch,haupt,ton})=>(
-    <button onClick={onClick} style={{flex:1,padding:"13px 10px",minHeight:48,borderRadius:12,
-      border:haupt?"none":`1.5px solid ${ton?ton+"55":"#e2e8f0"}`,background:haupt?p:(ton?ton+"12":"#fff"),
-      color:haupt?"#fff":(ton?readable(ton):"#334155"),fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>{ch}</button>
+  const Neben=({onClick,ch,title})=>(
+    <button onClick={onClick} title={title} style={{flex:1,padding:"10px 8px",minHeight:42,borderRadius:10,border:"1px solid #e4e9f0",background:"#fff",color:"#475569",fontWeight:600,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{ch}</button>
   );
-  const Klein=({onClick,ch,bg,col})=>(
-    <button onClick={onClick} style={{padding:"9px 12px",minHeight:40,borderRadius:10,border:"none",background:bg,color:col,fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{ch}</button>
+  const Klein=({onClick,ch})=>(
+    <button onClick={onClick} style={{padding:"7px 11px",minHeight:34,borderRadius:8,border:"1px solid #e4e9f0",background:"#fff",color:"#475569",fontWeight:600,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>{ch}</button>
   );
   const Zeile=(ev)=>{
-    const z=zahlen(ev); const eT=ET[ev.type]||ET.training;
+    const zz=zahlen(ev); const eT2=ET[ev.type]||ET.training;
     return (
       <div key={ev.id} onClick={()=>waehle(ev.id)}
-        style={{display:"flex",alignItems:"center",gap:10,padding:"11px 4px",borderBottom:"1px solid #e9eef5",cursor:"pointer"}}>
-        <div style={{width:30,height:30,borderRadius:10,background:eT.bg,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-          <EventIcon type={EVENT_TYPE_ALIAS[ev.type]||ev.type} size={16} color={eT.col}/>
-        </div>
+        style={{display:"flex",alignItems:"center",gap:11,padding:"10px 2px",borderBottom:"1px solid #eef2f7",cursor:"pointer"}}>
+        <span style={{width:7,height:7,borderRadius:"50%",background:eT2.col,flexShrink:0}}/>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontWeight:800,fontSize:14,color:"#0f172a",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
-            {tagKurz(ev.date)}{ev.time?" · "+ev.time:""}
+          <div style={{fontWeight:700,fontSize:13,color:"#0f172a",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+            {tagKurz(ev.date)}{ev.time?` · ${ev.time}`:""}
           </div>
-          <div style={{fontSize:11.5,color:"#64748b",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",marginTop:1}}>
-            {evDisplayTitle?evDisplayTitle(ev):ev.title}{z.kader?` · ${z.ja} von ${z.kader}`:""}{z.helfer?` · 🙋 ${z.helfer}`:""}
+          <div style={{fontSize:11.5,color:"#8a97a8",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",marginTop:1}}>
+            {evDisplayTitle?evDisplayTitle(ev):ev.title}
           </div>
         </div>
-        <span style={{color:"#94a3b8",fontSize:18,flexShrink:0}}>›</span>
+        {zz.kader>0&&<span style={{fontSize:11.5,color:"#64748b",fontWeight:600,flexShrink:0}}>{zz.ja}/{zz.kader}</span>}
+        <span style={{color:"#c3ccd8",fontSize:15,flexShrink:0}}>›</span>
       </div>
     );
   };
   if(!fokus) return (
     <div style={{padding:"22px 4px",textAlign:"center"}}>
-      <div style={{fontSize:34,marginBottom:8}}>📅</div>
-      <p style={{fontWeight:800,fontSize:15,color:"#0f172a"}}>Keine Termine geplant</p>
-      <p style={{fontSize:13,color:"#64748b",marginTop:4,lineHeight:1.5}}>Lege den ersten Termin an – Training, Spiel oder Turnier.</p>
-      <button onClick={onNew} style={{marginTop:14,padding:"14px 22px",minHeight:48,borderRadius:13,border:"none",background:p,color:"#fff",fontWeight:900,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>+ Neuer Termin</button>
+      <div style={{fontSize:30,marginBottom:8}}>📅</div>
+      <p style={{fontWeight:700,fontSize:14.5,color:"#101828"}}>Keine Termine geplant</p>
+      <p style={{fontSize:12.5,color:"#98a2b3",marginTop:4,lineHeight:1.5}}>Lege den ersten Termin an – Training, Spiel oder Turnier.</p>
+      <button onClick={onNew} style={{marginTop:14,padding:"12px 20px",minHeight:44,borderRadius:11,border:"none",background:p,color:"#fff",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>+ Neuer Termin</button>
       {onDetail&&<button onClick={onDetail} style={{display:"block",margin:"12px auto 0",padding:"10px 16px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Alles anzeigen</button>}
     </div>
   );
   const z=zahlen(fokus); const eT=ET[fokus.type]||ET.training;
   const heute=fokus.date===tod; const amTag=fokus.date<=tod;
   const planT=planTitleOf(fokus);
-  const dauer=dauerText(fokus);
+  const zeitTxt=fokus.time ? (fokus.endTime ? `${fokus.time} – ${fokus.endTime} Uhr` : `${fokus.time} Uhr`) : "";
+  const dauerKurz=(()=>{ const m=eventDurationMin(fokus); if(!m) return ""; const h=Math.floor(m/60), mi=m%60;
+    return h ? (mi?`${h}:${String(mi).padStart(2,"0")} Std`:`${h} Std`) : `${mi} Min`; })();
+  const titel=evDisplayTitle?evDisplayTitle(fokus):fokus.title;
+  const artTxt=(etLabel?etLabel(fokus.type):fokus.type)||"";
+  const anteil=z.kader?Math.min(100,Math.round(z.ja/z.kader*100)):0;
+  const meineRoh=selfName?(fokus.votes||{})[selfName]:null;
+  const meine=typeof meineRoh==="object"&&meineRoh?meineRoh.val:meineRoh;
   return (
     <div>
-      {/* Der naechste Termin - alles Wichtige auf einen Blick */}
-      <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.6,marginBottom:7}}>
+      <div style={{fontSize:10.5,fontWeight:700,color:"#94a3b8",letterSpacing:1,marginBottom:6}}>
         {gewaehlt&&fokus.id===gewaehlt&&evs[0]&&evs[0].id!==fokus.id?"AUSGEWÄHLTER TERMIN":"ALS NÄCHSTES"}
       </div>
-      <div style={{background:"#fff",borderRadius:18,border:`2px solid ${heute?p:"#e2e8f0"}`,padding:"15px 16px 14px",boxShadow:"0 2px 10px rgba(0,0,0,.05)",marginBottom:14}}>
-        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-          <div style={{width:34,height:34,borderRadius:11,background:eT.bg,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-            <EventIcon type={EVENT_TYPE_ALIAS[fokus.type]||fokus.type} size={18} color={eT.col}/>
+      {/* Eine Karte, eine Akzentfarbe. Oben was und wann, dann der Stand,
+          unten die Knoepfe - vom wichtigsten zum seltensten. */}
+      <div style={{background:"#fff",borderRadius:16,border:"1px solid #e4e9f0",boxShadow:"0 1px 2px rgba(16,24,40,.04)",overflow:"hidden",marginBottom:14}}>
+        {heute&&<div style={{height:3,background:p}}/>}
+        <div style={{padding:"14px 16px 15px"}}>
+          <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:5}}>
+            <span style={{width:7,height:7,borderRadius:"50%",background:eT.col,flexShrink:0}}/>
+            <span style={{fontSize:10.5,fontWeight:700,color:"#8a97a8",letterSpacing:.9,textTransform:"uppercase"}}>{artTxt}</span>
+            <span style={{fontSize:10.5,color:"#c3ccd8"}}>·</span>
+            <span style={{fontSize:10.5,fontWeight:700,color:heute?readable(p):"#8a97a8",letterSpacing:.9,textTransform:"uppercase"}}>{tagKurz(fokus.date)}</span>
           </div>
-          <span style={{fontWeight:800,fontSize:12.5,color:eT.col,letterSpacing:.3,textTransform:"uppercase"}}>{etLabel?etLabel(fokus.type):fokus.type}</span>
-          {fokus.loc&&<span style={{fontSize:12,color:"#64748b",fontWeight:600,flex:1,minWidth:0,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>📍 {fokus.loc}</span>}
-        </div>
-        <div style={{fontWeight:900,fontSize:21,color:"#0f172a",letterSpacing:"-.4px"}}>
-          {tagKurz(fokus.date)}{fokus.time?` · ${fokus.time} Uhr`:""}
-        </div>
-        {dauer&&<div style={{fontSize:12.5,color:"#64748b",fontWeight:600,marginTop:2}}>{dauer}</div>}
-        <div style={{fontSize:13,color:"#475569",fontWeight:700,marginTop:4}}>{evDisplayTitle?evDisplayTitle(fokus):fokus.title}</div>
-        {/* Zahlen: Spieler getrennt von Betreuern und Helfern */}
-        <div style={{display:"flex",gap:6,marginTop:12}}>
-          <Zahl n={z.ja} txt="dabei" col="#15803d" bg="#f0fdf4"/>
-          <Zahl n={z.nein} txt="abgesagt" col="#b91c1c" bg="#fef2f2"/>
-          <Zahl n={z.offen} txt="offen" col="#b45309" bg="#fffbeb"/>
-          <Zahl n={z.betreuer+z.helfer} txt="Betreuer" col="#4338ca" bg="#eef2ff"/>
-        </div>
-        {/* Sage ich selbst zu? Genau wie auf der ausfuehrlichen Karte. */}
-        {selfName&&onSelfVote&&(fokus.pt==="att"||!fokus.pt)&&fokus.date>=tod&&(()=>{
-          const roh=(fokus.votes||{})[selfName];
-          const meine=typeof roh==="object"&&roh?roh.val:roh;
-          return (
-            <div style={{display:"flex",alignItems:"center",gap:7,marginTop:12}}>
-              <span style={{fontSize:11.5,fontWeight:800,color:"#64748b",flexShrink:0}}>Ich:</span>
-              <button onClick={()=>onSelfVote(fokus.id,"yes")}
-                style={{flex:1,padding:"11px 8px",minHeight:44,borderRadius:11,border:meine==="yes"?"none":"1.5px solid #bbf7d0",background:meine==="yes"?"#15803d":"#f0fdf4",color:meine==="yes"?"#fff":"#15803d",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>✓ Bin dabei</button>
-              <button onClick={()=>onSelfVote(fokus.id,"no")}
-                style={{flex:1,padding:"11px 8px",minHeight:44,borderRadius:11,border:meine==="no"?"none":"1.5px solid #fecaca",background:meine==="no"?"#b91c1c":"#fff",color:meine==="no"?"#fff":"#b91c1c",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>✕ Sage ab</button>
+          <div style={{fontWeight:700,fontSize:19,color:"#101828",letterSpacing:"-.3px",lineHeight:1.2}}>
+            {zeitTxt||titel}
+            {zeitTxt&&dauerKurz&&<span style={{fontSize:12.5,fontWeight:500,color:"#98a2b3",marginLeft:8}}>{dauerKurz}</span>}
+          </div>
+          {zeitTxt&&titel&&<div style={{fontSize:13.5,color:"#475467",marginTop:3,fontWeight:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{titel}</div>}
+          {fokus.loc&&<div style={{fontSize:12.5,color:"#98a2b3",marginTop:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>📍 {fokus.loc}</div>}
+
+          {/* Stand der Rueckmeldungen: ein Balken statt vier bunter Kacheln */}
+          {(fokus.pt==="att"||!fokus.pt)&&(
+            <div style={{marginTop:13}}>
+              <div style={{height:6,borderRadius:99,background:"#eef1f5",overflow:"hidden"}}>
+                <div style={{width:`${anteil}%`,height:"100%",background:p,borderRadius:99,transition:"width .25s"}}/>
+              </div>
+              <div style={{display:"flex",alignItems:"center",gap:6,marginTop:7,flexWrap:"wrap"}}>
+                <span style={{fontSize:12.5,color:"#344054",fontWeight:600}}>
+                  {z.kader?`${z.ja} von ${z.kader} zugesagt`:`${z.ja} zugesagt`}
+                </span>
+                {z.nein>0&&<span style={{fontSize:12.5,color:"#98a2b3"}}>· {z.nein} abgesagt</span>}
+                {z.offen>0&&<span style={{fontSize:12.5,color:"#98a2b3"}}>· {z.offen} offen</span>}
+                {(z.betreuer+z.helfer)>0&&<span style={{fontSize:12.5,color:"#98a2b3"}}>· {z.betreuer+z.helfer} Betreuer</span>}
+                {onRemind&&z.offen>0&&(
+                  <button onClick={()=>onRemind(fokus)} style={{marginLeft:"auto",background:"none",border:"none",padding:"2px 0",color:readable(p),fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
+                    🔔 {z.offen} erinnern
+                  </button>
+                )}
+              </div>
             </div>
-          ); })()}
-        {/* Hauptwege: Termin oeffnen und Aufbau */}
-        <div style={{display:"flex",gap:8,marginTop:12}}>
-          <Knopf haupt onClick={()=>(amTag&&onAttend?onAttend(fokus):onView&&onView(fokus))} ch={amTag&&onAttend?"✅ Anwesenheit":"Termin öffnen"}/>
-          {onSetup&&<Knopf onClick={()=>onSetup(fokus)} ton="#c2410c" ch="🏗 Aufbau"/>}
-        </div>
-        <div style={{display:"flex",gap:8,marginTop:8}}>
-          {fokus.type==="training"&&onPlan&&modTraining&&<Knopf onClick={()=>onPlan(fokus)} ton={planT?"#15803d":"#4f46e5"} ch={planT?"📋 Training steht":"📋 Training planen"}/>}
-          {onRemind&&z.offen>0&&<Knopf onClick={()=>onRemind(fokus)} ton="#0369a1" ch={`🔔 ${z.offen} erinnern`}/>}
-        </div>
-        <button onClick={()=>setMehr(m=>!m)} style={{width:"100%",marginTop:8,padding:"9px",minHeight:40,borderRadius:10,border:"none",background:"transparent",color:"#64748b",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
-          {mehr?"▲ weniger":"⋯ mehr zu diesem Termin"}
-        </button>
-        {mehr&&(
-          <div style={{display:"flex",gap:6,flexWrap:"wrap",paddingTop:2}}>
-            {onView&&<Klein onClick={()=>onView(fokus)} ch="📊 Rückmeldungen" bg="#f0fdf4" col="#15803d"/>}
-            {onEdit&&<Klein onClick={()=>onEdit(fokus)} ch="✏️ Bearbeiten" bg="#f1f5f9" col="#475569"/>}
-            {onBrief&&<Klein onClick={()=>onBrief(fokus)} ch="📋 Spickzettel" bg="#eef2ff" col="#4338ca"/>}
-            {onSubReq&&<Klein onClick={()=>onSubReq(fokus)} ch="🆘 Vertretung" bg="#fff1f2" col="#be123c"/>}
-            {onCopyLink&&<Klein onClick={()=>onCopyLink(fokus)} ch="🔗 Link" bg="#ede9fe" col="#6d28d9"/>}
-            {onReset&&<Klein onClick={()=>onReset(fokus)} ch="↺ Stimmen zurücksetzen" bg="#fff7ed" col="#b45309"/>}
-            {onDel&&<Klein onClick={()=>onDel(fokus)} ch="🗑 Löschen" bg="#fee2e2" col="#b91c1c"/>}
+          )}
+
+          {/* Der eine Weg in den Termin */}
+          <div style={{display:"flex",gap:8,marginTop:14}}>
+            <Haupt onClick={()=>(amTag&&onAttend?onAttend(fokus):onView&&onView(fokus))} ch={amTag&&onAttend?"Anwesenheit abhaken":"Termin öffnen"}/>
           </div>
-        )}
+          {/* Was man ab und zu braucht - gleich gross, ruhig, ohne Farbe */}
+          <div style={{display:"flex",gap:7,marginTop:8}}>
+            {onSetup&&<Neben onClick={()=>onSetup(fokus)} title="Aufbau-Liste: was muss auf welches Feld" ch="🏗 Aufbau"/>}
+            {fokus.type==="training"&&onPlan&&modTraining&&<Neben onClick={()=>onPlan(fokus)} title={planT||"Trainingsplan anlegen"} ch={planT?"📋 Training ✓":"📋 Training"}/>}
+            <Neben onClick={()=>setMehr(m=>!m)} title="Weitere Aktionen" ch={mehr?"⋯ weniger":"⋯ Mehr"}/>
+          </div>
+          {mehr&&(
+            <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:8}}>
+              {onView&&<Klein onClick={()=>onView(fokus)} ch="📊 Rückmeldungen"/>}
+              {onEdit&&<Klein onClick={()=>onEdit(fokus)} ch="✏️ Bearbeiten"/>}
+              {onBrief&&<Klein onClick={()=>onBrief(fokus)} ch="📋 Spickzettel"/>}
+              {onSubReq&&<Klein onClick={()=>onSubReq(fokus)} ch="🆘 Vertretung"/>}
+              {onCopyLink&&<Klein onClick={()=>onCopyLink(fokus)} ch="🔗 Link"/>}
+              {onReset&&<Klein onClick={()=>onReset(fokus)} ch="↺ Stimmen zurücksetzen"/>}
+              {onDel&&<Klein onClick={()=>onDel(fokus)} ch="🗑 Löschen"/>}
+            </div>
+          )}
+          {/* Eigene Rueckmeldung: leise Fusszeile, kein Knopfpaar in Signalfarbe */}
+          {selfName&&onSelfVote&&(fokus.pt==="att"||!fokus.pt)&&fokus.date>=tod&&(
+            <div style={{display:"flex",alignItems:"center",gap:7,marginTop:12,paddingTop:11,borderTop:"1px solid #f1f4f8"}}>
+              <span style={{fontSize:12,color:"#98a2b3",fontWeight:600,flexShrink:0}}>Ich:</span>
+              <button onClick={()=>onSelfVote(fokus.id,"yes")}
+                style={{padding:"7px 13px",minHeight:34,borderRadius:8,border:`1px solid ${meine==="yes"?"#12b76a":"#e4e9f0"}`,background:meine==="yes"?"#ecfdf3":"#fff",color:meine==="yes"?"#027a48":"#667085",fontWeight:600,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+                {meine==="yes"?"✓ Bin dabei":"Bin dabei"}
+              </button>
+              <button onClick={()=>onSelfVote(fokus.id,"no")}
+                style={{padding:"7px 13px",minHeight:34,borderRadius:8,border:`1px solid ${meine==="no"?"#f04438":"#e4e9f0"}`,background:meine==="no"?"#fef3f2":"#fff",color:meine==="no"?"#b42318":"#667085",fontWeight:600,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+                {meine==="no"?"✕ Sage ab":"Sage ab"}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
       {/* Der Rest der Woche - antippen macht ihn gross */}
       {woche.length>0&&<>
-        <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.6,marginBottom:4}}>BIS {bisWochentag().toUpperCase()} ({woche.length})</div>
-        <div style={{background:"#fff",borderRadius:14,border:"1.5px solid #e2e8f0",padding:"2px 12px",marginBottom:12}}>{woche.map(Zeile)}</div>
+        <div style={{fontSize:10.5,fontWeight:700,color:"#94a3b8",letterSpacing:1,marginBottom:4}}>BIS {bisWochentag().toUpperCase()} ({woche.length})</div>
+        <div style={{background:"#fff",borderRadius:14,border:"1px solid #e4e9f0",padding:"2px 13px",marginBottom:12}}>{woche.map(Zeile)}</div>
       </>}
       {spaeter.length>0&&<>
         <button onClick={()=>setSpaeterAuf(a=>!a)}
-          style={{width:"100%",padding:"12px",minHeight:44,borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit",marginBottom:12}}>
+          style={{width:"100%",padding:"11px",minHeight:42,borderRadius:11,border:"1px solid #e4e9f0",background:"#fff",color:"#667085",fontWeight:600,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",marginBottom:12}}>
           {spaeterAuf?"▾ Später zuklappen":`▸ Später (${spaeter.length})`}
         </button>
-        {spaeterAuf&&<div style={{background:"#fff",borderRadius:14,border:"1.5px solid #e2e8f0",padding:"2px 12px",marginBottom:12}}>{spaeter.map(Zeile)}</div>}
+        {spaeterAuf&&<div style={{background:"#fff",borderRadius:14,border:"1px solid #e4e9f0",padding:"2px 13px",marginBottom:12}}>{spaeter.map(Zeile)}</div>}
       </>}
       <div style={{display:"flex",gap:8}}>
-        <button onClick={onNew} style={{flex:1,padding:"14px",minHeight:48,borderRadius:13,border:"none",background:p,color:"#fff",fontWeight:900,fontSize:14.5,cursor:"pointer",fontFamily:"inherit"}}>+ Neuer Termin</button>
-        {onDetail&&<button onClick={onDetail} style={{flex:"0 0 42%",padding:"14px 8px",minHeight:48,borderRadius:13,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>Alles anzeigen</button>}
+        <button onClick={onNew} style={{flex:1,padding:"12px",minHeight:44,borderRadius:11,border:`1px solid ${p}`,background:"#fff",color:readable(p),fontWeight:700,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>+ Neuer Termin</button>
+        {onDetail&&<button onClick={onDetail} style={{flex:"0 0 40%",padding:"12px 8px",minHeight:44,borderRadius:11,border:"1px solid #e4e9f0",background:"#fff",color:"#667085",fontWeight:600,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Alles anzeigen</button>}
       </div>
     </div>
   );
@@ -15849,8 +15870,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       <div style={{background:`linear-gradient(90deg,${t.p},${mix(t.p,-20)})`,display:"grid",gridTemplateColumns:"repeat(3,1fr)"}}>
         {[[up.length,"Anstehende Termine",()=>{setViewEv(null);setTab("events");}],[myTids.length,"Mannschaften",()=>{setViewEv(null);setTab(isHelper?"events":"team");}],[myEvs.reduce((s,e)=>s+Object.keys(e.votes||{}).length,0),"Rückmeldungen",()=>setShowRueck(true)]].map(([v,l,go],i)=>(
           <div key={l} onClick={go} style={{padding:"12px 6px",textAlign:"center",cursor:"pointer",borderRight:i<2?`1px solid ${t.ct==="#fff"?"rgba(255,255,255,.2)":"rgba(0,0,0,.12)"}`:"none"}}>
-            <div style={{color:t.ct,fontWeight:900,fontSize:22,lineHeight:1}}>{v}</div>
-            <div style={{color:t.ct,opacity:.82,fontSize:10.5,fontWeight:600,marginTop:4,letterSpacing:.2,lineHeight:1.2}}>{l} ›</div>
+            <div style={{color:t.ct,fontWeight:800,fontSize:18,lineHeight:1}}>{v}</div>
+            <div style={{color:t.ct,opacity:.8,fontSize:10,fontWeight:600,marginTop:3,letterSpacing:.2,lineHeight:1.2}}>{l} ›</div>
           </div>
         ))}
       </div>
@@ -15985,7 +16006,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             }
             if(todos.length===0) return null;
             return (
-              <div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:18,padding:"14px 16px",marginBottom:14}}>
+              <div style={{background:"#fff",border:"1px solid #e4e9f0",borderRadius:16,padding:"13px 15px",marginBottom:14,boxShadow:"0 1px 2px rgba(16,24,40,.04)"}}>
                 {(()=>{ const reqs=(local.deletionRequests||[]).filter(r=>r.cid===cid&&r.status==="pending");
                   if(!reqs.length) return null;
                   const doDel=(r)=>{ if(!window.confirm(`ENDGÜLTIG löschen: Alle Daten von „${r.name}" werden entfernt. Das lässt sich nicht rückgängig machen. Fortfahren?`)) return;
@@ -16009,12 +16030,12 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
                       </div>}
                     </div>); });
                 })()}
-                <div style={{fontWeight:900,fontSize:15,color:"#0f172a",marginBottom:10}}>✅ Zu erledigen <span style={{color:"#64748b",fontWeight:700,fontSize:13}}>({todos.length})</span></div>
+                <div style={{fontWeight:700,fontSize:13,color:"#344054",marginBottom:9,letterSpacing:"-.1px"}}>✅ Zu erledigen <span style={{color:"#98a2b3",fontWeight:600,fontSize:12}}>({todos.length})</span></div>
                 <div style={{display:"flex",flexDirection:"column",gap:7}}>
                   {todos.slice(0,12).map((td,i)=>(
                     <button key={i} onClick={()=>td.ev?setViewEv(td.ev):(td.onClick&&td.onClick())} style={{display:"flex",alignItems:"center",gap:10,width:"100%",minHeight:46,boxSizing:"border-box",textAlign:"left",background:"#f8fafc",border:"1px solid #eef2f7",borderRadius:11,padding:"12px 11px",cursor:"pointer",fontFamily:"inherit"}}>
-                      <span style={{fontSize:10.5,fontWeight:800,color:readable(td.col,td.bg),background:td.bg,borderRadius:6,padding:"3px 8px",flexShrink:0,whiteSpace:"nowrap"}}>{td.label}</span>
-                      <span style={{flex:1,minWidth:0,fontSize:13,fontWeight:700,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{td.ev?td.ev.title:td.title}</span>
+                      <span style={{fontSize:10,fontWeight:700,color:readable(td.col,td.bg),background:td.bg,borderRadius:5,padding:"2px 7px",flexShrink:0,whiteSpace:"nowrap"}}>{td.label}</span>
+                      <span style={{flex:1,minWidth:0,fontSize:12.5,fontWeight:600,color:"#344054",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{td.ev?td.ev.title:td.title}</span>
                       <span style={{fontSize:11.5,color:"#64748b",flexShrink:0}}>{td.ev?fmtDShort(td.ev.date):(td.sub||"")}</span>
                     </button>
                   ))}

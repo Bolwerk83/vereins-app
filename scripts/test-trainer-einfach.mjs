@@ -32,29 +32,41 @@ await clickTxt("Bin dabei"); await page.waitForTimeout(1200); await dismiss();
 // ===== 1) Standard ist die einfache Sicht mit Fokus =====
 let b=await body();
 if(/ALS NÄCHSTES/.test(b)) ok("Der nächste Termin steht ganz oben und groß"); else fail("Kein Fokus-Termin: "+b.slice(0,200).replace(/\n/g," | "));
-if(/dabei/.test(b)&&/abgesagt/.test(b)&&/offen/.test(b)) ok("Die wichtigsten Zahlen stehen direkt darunter (dabei / abgesagt / offen)");
-else fail("Zahlen fehlen");
+if(/\d+ von \d+ zugesagt/.test(b)&&/\d+ offen/.test(b)) ok("Der Stand steht in einer Zeile: "+(b.match(/\d+ von \d+ zugesagt[^\n]*/)||[""])[0]);
+else fail("Stand der Rückmeldungen fehlt");
 if(/BIS [A-ZÄÖÜ]+ \(\d+\)/.test(b)) ok("Darunter die restliche Woche: "+(b.match(/BIS [A-ZÄÖÜ]+ \(\d+\)/)||[""])[0]);
 else console.log("HINWEIS: nur ein Termin in dieser Woche");
 if(!/Plane Trainings, Spiele & Turniere/.test(b)) ok("Der lange Erklärkasten ist weg"); else fail("Erklärkasten steht weiter vor dem Termin");
 { const n=await page.evaluate(()=>document.body.innerText.split(/\s+/).filter(Boolean).length);
   if(n<=180) ok("Wenig Text auf dem Bildschirm ("+n+" Wörter)"); else fail("Zu viel Text: "+n+" Wörter"); }
 
+{ const gross=await page.evaluate(()=>{
+    const raus=[];
+    for(const el of document.querySelectorAll("div,span,p,h1,h2,h3,button")){
+      if(!el.children.length&&(el.innerText||"").trim().length>1){
+        const fs=parseFloat(getComputedStyle(el).fontSize)||0;
+        const r=el.getBoundingClientRect();
+        if(fs>20&&r.height>0&&r.top<800) raus.push(Math.round(fs)+"px: "+el.innerText.trim().slice(0,24));
+      } }
+    return raus; });
+  if(!gross.length) ok("Keine überlaute Schrift mehr (alles ≤ 20 px)");
+  else fail("Zu große Schrift: "+gross.slice(0,3).join(" | ")); }
+
 // ===== 2) Alle Funktionen erreichbar =====
-for(const [was,re] of [["Termin öffnen","Termin öffnen|✅ Anwesenheit"],["Aufbau","🏗 Aufbau"],["Training planen","📋 Training"],["Erinnern","🔔 \\d+ erinnern"],["Neuer Termin","\\+ Neuer Termin"],["Alles anzeigen","Alles anzeigen"]]){
+for(const [was,re] of [["Termin öffnen","Termin öffnen|Anwesenheit abhaken"],["Aufbau","🏗 Aufbau"],["Trainingsplan","📋 Training"],["Erinnern","🔔 \\d+ erinnern"],["Neuer Termin","\\+ Neuer Termin"],["Alles anzeigen","Alles anzeigen"]]){
   if(await knopf(re)) ok("Direkt erreichbar: "+was); else fail("Fehlt im Fokus: "+was);
 }
 { const b2=await body();
   if(/Ich:/.test(b2)&&/Bin dabei/.test(b2)&&/Sage ab/.test(b2)) ok("Der Trainer kann direkt selbst zu- und absagen");
   else fail("Eigene Zu-/Absage fehlt auf der Fokus-Karte"); }
-await clickTxt("mehr zu diesem Termin"); await page.waitForTimeout(600);
+await clickTxt("⋯ Mehr"); await page.waitForTimeout(600);
 b=await body();
 for(const [was,re] of [["Rückmeldungen",/📊 Rückmeldungen/],["Bearbeiten",/✏️ Bearbeiten/],["Spickzettel",/📋 Spickzettel/],["Vertretung",/🆘 Vertretung/],["Stimmen zurücksetzen",/↺ Stimmen/],["Löschen",/🗑 Löschen/]]){
   if(re.test(b)) ok("Unter „mehr“ erreichbar: "+was); else fail("Fehlt unter „mehr“: "+was);
 }
 
 // ===== 3) Die Knöpfe tun auch etwas =====
-await clickTxt("^Termin öffnen$|^✅ Anwesenheit$"); await page.waitForTimeout(1200);
+await clickTxt("^Termin öffnen$|^Anwesenheit abhaken$"); await page.waitForTimeout(1200);
 b=await body();
 if(/Rückmeldungen|Anwesenheit abhaken/.test(b)) ok("„Termin öffnen“ öffnet den Termin"); else fail("Termin öffnet nicht: "+b.slice(0,160).replace(/\n/g," | "));
 await zurueck();
