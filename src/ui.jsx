@@ -521,7 +521,7 @@ export const AREA_INTROS = {
   team_analysis:   {icon:"🧠", title:"Skill-Analyse", text:"Stärken/Schwächen des Teams je Fähigkeit – Basis für gezielte Förderung."},
   team_ziele:      {icon:"🎯", title:"Trainingsziele", text:"Lege je Altersklasse die Schwerpunkte fest, an denen sich Übungsvorschläge orientieren."},
   team_boerse:     {icon:"🤝", title:"Turnier-Börse", text:"Finde Gegner für Freundschaftsspiele/Turniere auf Augenhöhe."},
-  team_manage:     {icon:"👥", title:"Mannschaften verwalten", text:"Anlegen, umbenennen, Stärke/Anmeldung/Bewertung und Aufteilung in mehrere Mannschaften einstellen."},
+  team_manage:     {icon:"👥", title:"Mannschaften verwalten", text:"Mannschaften anlegen (mit Anzahl der gemeldeten Teams), umbenennen, Altersklasse, Anmeldung, Kadergröße und Bewertung einstellen."},
   parent_home:     {icon:"👋", title:"Willkommen!", text:"Hier siehst du die Termine eures Teams. Tippe 'Bin dabei' oder 'Sage ab'. Unten findest du Chat und unter 'Mehr' dein Profil."},
 };
 export function AreaIntro({ id, cl }){

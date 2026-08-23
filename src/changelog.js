@@ -21,6 +21,7 @@ export const CL_AREAS = [
   {id:"technik", label:"Technik & Sicherheit",icon:"🔒"},
 ];
 export const CHANGELOG = [
+  {d:"2026-08-21",t:"neu",a:"vorstand",h:"Gemeldete Teams schon beim Anlegen angeben",x:"Im Formular „Neue Mannschaft“ steht direkt unter der Altersklasse „Gemeldete Teams“ mit − und +. Legt ihr die G-Jugend 1 mit zwei Teams an, entstehen beide sofort – benannt „G-Jugend 1 – Team 1/2“ und mit der Spielerzahl der Altersklasse vorbelegt. Umbenennen und Zahlen anpassen geht danach jederzeit in der Mannschaft unter „Gemeldete Teams“."},
   {d:"2026-08-21",t:"fix",a:"trainer",h:"Kader zeigt keine Skill-Knöpfe mehr, wenn Skills aus sind",x:"Der 🎯-Knopf am Kind und der Monats-Check standen im Kader auch dann da, wenn das Modul „Skills & Entwicklung“ nie eingeschaltet wurde. Beides folgt jetzt derselben Prüfung wie die Zu-erledigen-Liste – eine Stelle im Code, überall dasselbe Ergebnis."},
   {d:"2026-08-21",t:"besser",a:"trainer",h:"Spielername bricht nicht mehr um",x:"Bei vielen Knöpfen wurde „Pius v.Z.“ silbenweise umgebrochen. Der Name steht jetzt in einer Zeile und wird bei Bedarf gekürzt."},
   {d:"2026-08-21",t:"neu",a:"vorstand",h:"Neue Saison anlegen teilt die Kinder gleich ein",x:"Im Saison-Assistenten steht jetzt „Kinder gleich der neuen Jugend zuteilen“ – nach Jahrgang und Geschlecht, inklusive der neu angelegten Mannschaften. Vorher siehst du, wie viele Kinder je Mannschaft ankommen und wie viele (noch) ohne passendes Team bleiben. Der Haken lässt sich abwählen, wenn ihr lieber von Hand einteilt."},

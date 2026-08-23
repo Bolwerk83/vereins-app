@@ -2612,6 +2612,7 @@ function ManageTeams({ data, save, fire, cl }) {
   const [pwd,setPwd]   = useState("");
   const [strength,setStrength] = useState(1);
   const [loginMode,setLoginMode] = useState("auto");
+  const [teamsGemeldet,setTeamsGemeldet] = useState(1);   // wie viele Teams meldet die Mannschaft?
   const [editId,setEditId] = useState(null);
   const [editName,setEditName] = useState("");
   const [showFmt,setShowFmt] = useState(null);
@@ -2635,10 +2636,12 @@ function ManageTeams({ data, save, fire, cl }) {
       col: TEAM_COLORS[teams.length % TEAM_COLORS.length],
       pub: true, pwd: hashPw((pwd||"team").trim()),
       cat, years: CAT_YEARS[cat]||"", strength, loginMode,
+      // Gemeldete Teams gleich anlegen (1 = keine Aufteilung noetig)
+      ...(teamsGemeldet>1 ? {squads:Array.from({length:teamsGemeldet},(_,i)=>({label:`${nm} – Team ${i+1}`,need:defaultSollPlayers(cat)}))} : {}),
     };
     save({...data, teams:[...(data.teams||[]), team]});
     fire&&fire("Mannschaft \""+nm+"\" angelegt");
-    setName(""); setPwd(""); setNeuAuf(false);
+    setName(""); setPwd(""); setTeamsGemeldet(1); setNeuAuf(false);
   };
   const renameTeam = id => {
     const nm = editName.trim(); if(!nm) return;
@@ -2681,6 +2684,17 @@ function ManageTeams({ data, save, fire, cl }) {
             ))}
           </div>
         </TFeld>
+        <TFeld label="GEMELDETE TEAMS" hinweis={teamsGemeldet===1?"eine Mannschaft":`${teamsGemeldet} Teams`}
+          hint={"Wie viele Teams meldet ihr mit dieser Mannschaft im Spielbetrieb? Beispiel: G-Jugend 1 stellt zwei Teams. Die Namen und die nötige Spielerzahl kannst du danach jederzeit anpassen."}>
+          <div style={{display:"flex",alignItems:"center",gap:9}}>
+            <button type="button" onClick={()=>setTeamsGemeldet(n2=>Math.max(1,n2-1))} aria-label="weniger Teams"
+              style={{width:42,height:42,borderRadius:10,border:"1px solid #e4e9f0",background:"#fff",color:"#667085",fontWeight:700,fontSize:17,cursor:"pointer",fontFamily:"inherit"}}>−</button>
+            <span style={{minWidth:34,textAlign:"center",fontWeight:700,fontSize:16,color:"#101828"}}>{teamsGemeldet}</span>
+            <button type="button" onClick={()=>setTeamsGemeldet(n2=>Math.min(6,n2+1))} aria-label="mehr Teams"
+              style={{width:42,height:42,borderRadius:10,border:"1px solid #e4e9f0",background:"#fff",color:"#667085",fontWeight:700,fontSize:17,cursor:"pointer",fontFamily:"inherit"}}>+</button>
+            <span style={{fontSize:12,color:"#98a2b3",lineHeight:1.4}}>{teamsGemeldet===1?"Keine Aufteilung – ein Team am Spieltag.":"Werden gleich angelegt und sind danach frei benennbar."}</span>
+          </div>
+        </TFeld>
         <TFeld label="WER MELDET AN?" hint={"Wer stimmt bei Terminen ab? 'Eltern' = Eltern-Login (für Kinder), 'Spieler' = die Spieler selbst. 'Automatisch' richtet sich nach dem Alter."}>
           <TWahl t={t} opts={LOGIN_OPTS} val={loginMode} set={setLoginMode}/>
         </TFeld>
@@ -2720,7 +2734,7 @@ function ManageTeams({ data, save, fire, cl }) {
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontWeight:700,fontSize:14.5,color:"#101828",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{tm.name}</div>
                   <div style={{fontSize:12,color:"#98a2b3",marginTop:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
-                    {tm.cat||""}{tm.cat?" · ":""}{cnt} Spieler{tm.maxSize?` / ${tm.maxSize}`:""}{sq.length?` · ${sq.length} Mannschaft${sq.length===1?"":"en"}`:""}
+                    {tm.cat||""}{tm.cat?" · ":""}{cnt} Spieler{tm.maxSize?` / ${tm.maxSize}`:""}{sq.length>1?` · ${sq.length} Teams`:""}
                   </div>
                 </div>
                 <span style={{fontSize:15,color:"#98a2b3",flexShrink:0,transform:auf?"rotate(90deg)":"none",transition:"transform .15s"}}>›</span>
@@ -2761,12 +2775,12 @@ function ManageTeams({ data, save, fire, cl }) {
 
                   {/* Mannschaften am Spieltag: frei benennbar, keine Pflicht -
                       aber wenn die Aufteilung genutzt wird, bleibt mindestens eine. */}
-                  <TFeld label="MANNSCHAFTEN AM SPIELTAG" hinweis={sq.length?"":"nicht eingerichtet"}
-                    hint={"Wenn ihr je nach Anzahl mehrere Mannschaften stellt: gib jeder einen Namen (z. B. Großfeld, Kleinfeld) und die nötige Spielerzahl inklusive Torwart. Der Trainer sieht dann im Termin, für wie viele Mannschaften die Zusagen reichen."}>
+                  <TFeld label="GEMELDETE TEAMS" hinweis={sq.length?`${sq.length} Team${sq.length===1?"":"s"}`:"eins – keine Aufteilung"}
+                    hint={"Wie viele Teams meldet ihr mit dieser Mannschaft im Spielbetrieb? Jedes bekommt einen Namen (z. B. Großfeld, Kleinfeld) und die nötige Spielerzahl inklusive Torwart. Der Trainer sieht dann im Termin, für wie viele Teams die Zusagen reichen."}>
                     {sq.length===0 ? (
                       <button onClick={()=>setSq([{label:"",need:defaultSollPlayers(tmCat)}])}
                         style={{width:"100%",padding:"11px",minHeight:42,borderRadius:9,border:"1px dashed #cfd8e5",background:"#fff",color:"#667085",fontWeight:600,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
-                        + Aufteilung einrichten
+                        + Teams festlegen
                       </button>
                     ) : (
                       <div style={{display:"flex",flexDirection:"column",gap:7}}>
@@ -2783,22 +2797,22 @@ function ManageTeams({ data, save, fire, cl }) {
                             <button onClick={()=>setSq(withDrafts(sq).map((x,j)=>j===si?{...x,need:(Number(x.need)||0)+1}:x))} aria-label="mehr Spieler"
                               style={{width:34,height:38,borderRadius:9,border:"1px solid #e4e9f0",background:"#fff",color:"#667085",fontWeight:700,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>+</button>
                             <button onClick={()=>{ if(letzte) return; setSq(withDrafts(sq).filter((_,j)=>j!==si)); }}
-                              disabled={letzte} title={letzte?"Mindestens eine Mannschaft muss bleiben – sonst die Aufteilung ganz entfernen.":"Diese Mannschaft entfernen"}
-                              aria-label="Mannschaft entfernen"
+                              disabled={letzte} title={letzte?"Mindestens ein Team muss bleiben – sonst auf „Nur ein Team“ zurücksetzen.":"Dieses Team entfernen"}
+                              aria-label="Team entfernen"
                               style={{width:34,height:38,borderRadius:9,border:"1px solid #e4e9f0",background:"#fff",color:letzte?"#cfd8e5":"#b42318",fontWeight:700,fontSize:13,cursor:letzte?"default":"pointer",fontFamily:"inherit"}}>✕</button>
                           </div>
                         );})}
                         <div style={{display:"flex",gap:7,marginTop:1}}>
                           <button onClick={()=>setSq([...withDrafts(sq),{label:"",need:defaultSollPlayers(tmCat)}])}
                             style={{flex:1,padding:"10px",minHeight:40,borderRadius:9,border:"1px dashed #cfd8e5",background:"#fff",color:"#667085",fontWeight:600,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
-                            + Mannschaft hinzufügen
+                            + Weiteres Team
                           </button>
-                          <button onClick={()=>{ if(window.confirm("Aufteilung ganz entfernen? Die eingetragenen Mannschaften gehen verloren.")) setSq([]); }}
+                          <button onClick={()=>{ if(window.confirm("Auf ein Team zurücksetzen? Die eingetragenen Teams gehen verloren.")) setSq([]); }}
                             style={{flexShrink:0,padding:"10px 12px",minHeight:40,borderRadius:9,border:"1px solid #e4e9f0",background:"#fff",color:"#667085",fontWeight:600,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
-                            Aufteilung aus
+Nur ein Team
                           </button>
                         </div>
-                        <div style={{fontSize:11.5,color:"#98a2b3",lineHeight:1.45}}>Mindestens eine Mannschaft bleibt stehen. Zahl = benötigte Spieler inkl. Torwart.</div>
+                        <div style={{fontSize:11.5,color:"#98a2b3",lineHeight:1.45}}>Mindestens ein Team bleibt stehen. Zahl = benötigte Spieler inkl. Torwart.</div>
                       </div>
                     )}
                   </TFeld>

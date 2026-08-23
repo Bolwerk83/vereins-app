@@ -49,28 +49,28 @@ await page.evaluate(()=>{ const d=[...document.querySelectorAll("div")].find(x=>
   const kopf=d&&d.parentElement&&d.parentElement.parentElement; (kopf||d).click(); });
 await page.waitForTimeout(900);
 b=await body();
-for(const [was,re] of [["Name",/NAME/],["Anmeldung",/WER MELDET AN\?/],["Stärke",/SPIELSTÄRKE/],["Kadergröße",/KADERGRÖSSE/],["Aufteilung",/MANNSCHAFTEN AM SPIELTAG/],["Bewertung",/SPIELER-BEWERTUNG/],["Passwortrecht",/TEAM-PASSWORT ÄNDERN/],["fussball.de",/FUSSBALL\.DE/],["Löschen",/Mannschaft löschen/]]){
+for(const [was,re] of [["Name",/NAME/],["Anmeldung",/WER MELDET AN\?/],["Stärke",/SPIELSTÄRKE/],["Kadergröße",/KADERGRÖSSE/],["Gemeldete Teams",/GEMELDETE TEAMS/],["Bewertung",/SPIELER-BEWERTUNG/],["Passwortrecht",/TEAM-PASSWORT ÄNDERN/],["fussball.de",/FUSSBALL\.DE/],["Löschen",/Mannschaft löschen/]]){
   if(re.test(b)) ok("Aufgeklappt vorhanden: "+was); else fail("Fehlt nach dem Aufklappen: "+was);
 }
 
 // ===== 3) Aufteilung ist freiwillig – und mindestens eine bleibt =====
-if(/nicht eingerichtet/.test(b)&&/\+ Aufteilung einrichten/.test(b)) ok("Ohne Aufteilung: nichts wird erzwungen");
+if(/keine Aufteilung/.test(b)&&/\+ Teams festlegen/.test(b)) ok("Ohne Aufteilung: nichts wird erzwungen");
 else fail("Aufteilung wirkt weiterhin verpflichtend");
-await clickTxt("\\+ Aufteilung einrichten"); await page.waitForTimeout(900);
+await clickTxt("\\+ Teams festlegen"); await page.waitForTimeout(900);
 b=await body();
-if(/\+ Mannschaft hinzufügen/.test(b)) ok("Eine erste Mannschaft ist eingerichtet"); else fail("Einrichten hat nicht gegriffen");
+if(/\+ Weiteres Team/.test(b)) ok("Ein erstes Team ist eingerichtet"); else fail("Einrichten hat nicht gegriffen");
 { const zeilen=await page.evaluate(()=>[...document.querySelectorAll('input[placeholder^="z. B."]')].length);
   if(zeilen===1) ok("Genau eine Zeile – kein erzwungenes Großfeld/Kleinfeld"); else fail("Unerwartete Zeilenzahl: "+zeilen); }
 // Das ✕ der letzten Zeile ist gesperrt
 { const gesperrt=await page.evaluate(()=>{
-    const b2=[...document.querySelectorAll("button")].filter(x=>(x.getAttribute("aria-label")||"")==="Mannschaft entfernen");
+    const b2=[...document.querySelectorAll("button")].filter(x=>(x.getAttribute("aria-label")||"")==="Team entfernen");
     return b2.length===1 && b2[0].disabled; });
-  if(gesperrt) ok("Die letzte Mannschaft lässt sich nicht entfernen"); else fail("Letzte Mannschaft wäre löschbar"); }
+  if(gesperrt) ok("Das letzte Team lässt sich nicht entfernen"); else fail("Letztes Team wäre löschbar"); }
 // Zweite hinzufügen, benennen, wieder entfernen
-await clickTxt("\\+ Mannschaft hinzufügen"); await page.waitForTimeout(800);
+await clickTxt("\\+ Weiteres Team"); await page.waitForTimeout(800);
 { const felder=page.locator('input[placeholder^="z. B."]');
   const n=await felder.count();
-  if(n===2) ok("Eine zweite Mannschaft lässt sich hinzufügen"); else fail("Hinzufügen ging nicht: "+n);
+  if(n===2) ok("Ein zweites Team lässt sich hinzufügen"); else fail("Hinzufügen ging nicht: "+n);
   await felder.nth(0).fill("Großfeld"); await felder.nth(1).fill("Kleinfeld");
   await page.evaluate(()=>document.activeElement&&document.activeElement.blur()); await page.waitForTimeout(900);
   const frei=await page.evaluate(()=>{
@@ -79,21 +79,21 @@ await clickTxt("\\+ Mannschaft hinzufügen"); await page.waitForTimeout(800);
     return (tm&&tm.squads||[]).map(s=>s.label); });
   if(frei.includes("Kleinfeld")) ok("Frei benennbar – gespeichert: "+frei.join(", ")); else fail("Namen nicht gespeichert: "+JSON.stringify(frei)); }
 { const wieder=await page.evaluate(()=>{
-    const b2=[...document.querySelectorAll("button")].filter(x=>(x.getAttribute("aria-label")||"")==="Mannschaft entfernen");
+    const b2=[...document.querySelectorAll("button")].filter(x=>(x.getAttribute("aria-label")||"")==="Team entfernen");
     if(b2.length!==2) return "nur "+b2.length;
     if(b2[0].disabled||b2[1].disabled) return "gesperrt obwohl zwei";
     b2[1].click(); return "ok"; });
-  if(wieder==="ok") ok("Bei zwei Mannschaften ist Entfernen erlaubt"); else fail("Entfernen-Knopf falsch: "+wieder);
+  if(wieder==="ok") ok("Bei zwei Teams ist Entfernen erlaubt"); else fail("Entfernen-Knopf falsch: "+wieder);
   await page.waitForTimeout(900);
   const rest=await page.evaluate(()=>[...document.querySelectorAll('input[placeholder^="z. B."]')].length);
   if(rest===1) ok("Nach dem Entfernen bleibt genau eine übrig"); else fail("Unerwartet: "+rest+" Zeilen"); }
 // Ganz ausschalten
-await clickTxt("Aufteilung aus"); await page.waitForTimeout(1000);
+await clickTxt("Nur ein Team"); await page.waitForTimeout(1000);
 b=await body();
-if(/\+ Aufteilung einrichten/.test(b)) ok("Die Aufteilung lässt sich auch ganz ausschalten"); else fail("Ausschalten ging nicht");
+if(/\+ Teams festlegen/.test(b)) ok("Man kann auch auf ein Team zurück"); else fail("Zurücksetzen ging nicht");
 
 // ===== 3b) Beim Tippen darf der Fokus nicht wegspringen =====
-await clickTxt("\\+ Aufteilung einrichten"); await page.waitForTimeout(800);
+await clickTxt("\\+ Teams festlegen"); await page.waitForTimeout(800);
 { const feld=page.locator('input[placeholder^="z. B."]').first();
   await feld.click();
   await page.keyboard.type("Groß", {delay:60});
@@ -102,7 +102,7 @@ await clickTxt("\\+ Aufteilung einrichten"); await page.waitForTimeout(800);
     return { istFeld:!!(a&&a.tagName==="INPUT"&&/^z\. B\./.test(a.placeholder||"")), wert:a?a.value:"" }; });
   if(halt.istFeld&&halt.wert==="Groß") ok("Beim Tippen bleibt der Cursor im Feld („"+halt.wert+"“)");
   else fail("Fokus springt beim Tippen raus: "+JSON.stringify(halt));
-  await clickTxt("Aufteilung aus"); await page.waitForTimeout(900); }
+  await clickTxt("Nur ein Team"); await page.waitForTimeout(900); }
 
 // ===== 4) Umbenennen =====
 { const feld=page.locator('div:has-text("NAME")').locator('input').first();
@@ -116,6 +116,30 @@ await clickTxt("\\+ Aufteilung einrichten"); await page.waitForTimeout(800);
     const neu=await page.evaluate(()=>{ const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null"); return (d.teams||[]).some(x=>x.name==="F-Jugend I"); });
     if(neu) ok("Umbenennen funktioniert direkt im Namensfeld"); else fail("Umbenennen nicht gespeichert");
   } else fail("Kein Speichern-Knopf beim Umbenennen"); }
+
+// ===== 5) Beim Anlegen die Zahl der gemeldeten Teams mitgeben =====
+await page.evaluate(()=>{ const b=[...document.querySelectorAll("button")].find(x=>/\+ Neue Mannschaft/.test(x.innerText||"")); b&&b.click(); });
+await page.waitForTimeout(800);
+{ const b8=await body();
+  if(/GEMELDETE TEAMS/.test(b8)) ok("Im Anlege-Formular steht „Gemeldete Teams“");
+  else fail("Kein Feld für gemeldete Teams: "+b8.slice(0,220).replace(/\n/g," | "));
+  await page.evaluate(()=>{ const i=[...document.querySelectorAll("input")].find(x=>/E-Jugend 1/.test(x.placeholder||""));
+    if(i){ const setter=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,"value").set;
+      setter.call(i,"G-Jugend 1"); i.dispatchEvent(new Event("input",{bubbles:true})); } });
+  await page.waitForTimeout(400);
+  await page.evaluate(()=>{ const b2=[...document.querySelectorAll("button")].find(x=>(x.getAttribute("aria-label")||"")==="mehr Teams"); b2&&b2.click(); });
+  await page.waitForTimeout(500);
+  const zahl=await body();
+  if(/2 Teams/.test(zahl)) ok("Anzahl lässt sich hochzählen (2 Teams)"); else fail("Zähler reagiert nicht");
+  await page.evaluate(()=>{ const b2=[...document.querySelectorAll("button")].find(x=>/^Mannschaft anlegen$/.test((x.innerText||"").trim())); b2&&b2.click(); });
+  await page.waitForTimeout(1400);
+  const erg=await page.evaluate(()=>{
+    const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
+    const tm=(d.teams||[]).find(x=>x.name==="G-Jugend 1"&&x.cid==="demo");
+    return tm?{n:(tm.squads||[]).length,labels:(tm.squads||[]).map(s2=>s2.label),need:(tm.squads||[])[0]?.need}:null; });
+  if(erg&&erg.n===2) ok("Die Mannschaft wird mit 2 gemeldeten Teams angelegt: "+erg.labels.join(" / "));
+  else fail("Teams nicht mit angelegt: "+JSON.stringify(erg));
+  if(erg&&erg.need>0) ok("Spielerzahl je Team ist sinnvoll vorbelegt ("+erg.need+")"); }
 
 if(errors.length){ console.log("JS-FEHLER:"); [...new Set(errors)].forEach(e=>console.log(" -",e.slice(0,150))); }
 console.log(errors.length||fails.length?`ERGEBNIS: ${fails.length} Fehlschläge, ${errors.length} JS-Fehler`:"ERGEBNIS: ALLES OK");
