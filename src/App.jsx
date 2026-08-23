@@ -13135,6 +13135,22 @@ function useShareTrigger(data,session,myTids) {
   return { trigger,dismiss };
 }
 
+// ----------------------------------------------------------------
+// Wer spielt in der neuen Saison wo? Aus dem Saison-Label ("2027/28") kommt
+// das Startjahr; damit rueckt jeder Jahrgang eine Stufe auf. Die Maedchen-
+// Regel (zwei Jahre juenger spielen erlaubt) steckt in eligibleCats.
+// ----------------------------------------------------------------
+const saisonStartJahr = lbl => { const m=String(lbl||"").match(/(20\d\d)/); return m?Number(m[1]):_fbSeasonStart; };
+const katInSaison = (by,gender,jahr) => {
+  if(!by) return null;
+  const eff = Number(by) - (jahr - _fbSeasonStart);
+  const eigene = Object.entries(CAT_YEARS).find(([,ys])=>(ys||[]).includes(eff));
+  if(eigene) return eigene[0];
+  const auch = eligibleCats(eff, gender||"m");
+  return auch[0]||null;
+};
+const teamFuerKategorie = (teams,kat) => kat ? ((teams||[]).find(tm=>(tm.cat||tm.name)===kat)||{}).id||"" : "";
+
 function NewSeasonWizard({ data,save,fire,cl,myTids,onClose,onDone }) {
   const t=TH(cl||(data.clubs||[])[0]);
   const clubId=(cl||(data.clubs||[])[0])?.id;
@@ -13145,6 +13161,7 @@ function NewSeasonWizard({ data,save,fire,cl,myTids,onClose,onDone }) {
   const [keep,setKeep]=useState(()=>{const o={};curTeams.forEach(tm=>o[tm.id]=true);return o;});
   const [newTeams,setNewTeams]=useState([]); // {name,cat}
   const [ntName,setNtName]=useState(""); const [ntCat,setNtCat]=useState((Object.keys(CAT_YEARS)[0])||"E-Jugend");
+  const [autoZu,setAutoZu]=useState(true);   // Kinder gleich der passenden Mannschaft zuteilen
   const u=p=>setF(prev=>({...prev,...p}));
   const ok=()=>step===1?f.label.trim().length>=6:true;
   const addNewTeam=()=>{ const nm=ntName.trim(); if(!nm)return; setNewTeams(a=>[...a,{name:nm,cat:ntCat}]); setNtName(""); };
@@ -13178,11 +13195,16 @@ function NewSeasonWizard({ data,save,fire,cl,myTids,onClose,onDone }) {
       (!p.seasonId || p.seasonId===curSid) &&
       (keptTids.includes(p.mainTid) || !p.mainTid)
     );
+    // Zuteilung: Jugend nach Jahrgang/Geschlecht, Mannschaft nur wenn es sie
+    // in der neuen Saison auch gibt - sonst bleibt das Kind ohne Team.
+    const jahrNeu = saisonStartJahr(label);
+    const teamsNeu = teamsOut.filter(tm=>tm.cid===clubId&&tm.endedSid!==sid&&!tm.endedSid);
     const copied = activePlayers.map(p=>({
       ...p, id:uid(), seasonId:sid,
       lastTeam: (data.teams||[]).find(x=>x.id===p.mainTid)?.name||"",
       lastTeamId: p.mainTid,
-      mainTid:"", optTids:[], jerseyNr:"", jerseyStatus:"none",
+      mainTid: autoZu ? teamFuerKategorie(teamsNeu, katInSaison(p.by,p.gender,jahrNeu)) : "",
+      optTids:[], jerseyNr:"", jerseyStatus:"none",
       recommend:"", goals:0, assists:0, yellowCards:0, redCards:0,
     }));
     const nextData = {
@@ -13196,7 +13218,8 @@ function NewSeasonWizard({ data,save,fire,cl,myTids,onClose,onDone }) {
     };
     save(nextData);
     const droppedN=curTeams.filter(tm=>keep[tm.id]===false).length;
-    fire&&fire("Saison "+label+" angelegt – "+copied.length+" Spieler, "+createdTeams.length+" neue, "+droppedN+" abgemeldet");
+    const zugeteilt=copied.filter(p=>p.mainTid).length;
+    fire&&fire("Saison "+label+" angelegt – "+copied.length+" Spieler"+(autoZu?`, ${zugeteilt} direkt zugeteilt`:"")+", "+createdTeams.length+" neue Mannschaften, "+droppedN+" abgemeldet");
     onDone&&onDone(sid);
     onClose();
   };
@@ -13255,13 +13278,55 @@ function NewSeasonWizard({ data,save,fire,cl,myTids,onClose,onDone }) {
               <button onClick={addNewTeam} disabled={!ntName.trim()} style={{width:"100%",padding:"10px",borderRadius:10,border:"none",background:ntName.trim()?t.p:"#e2e8f0",color:ntName.trim()?"#fff":"#64748b",fontWeight:800,fontSize:13,cursor:ntName.trim()?"pointer":"default",fontFamily:"inherit"}}>+ Hinzufügen</button>
             </div>
           </>}
-          {step===3&&<>
+          {step===3&&(()=>{
+            // Vorschau: wie viele Kinder bekommen gleich eine Mannschaft?
+            const label=f.label.trim()||"";
+            const jahrNeu=saisonStartJahr(label);
+            const TEAM_COLORS2=["#16a34a","#2563eb","#d97706","#7c3aed","#dc2626","#0891b2","#059669","#ea580c"];
+            const teamsNeu=[...curTeams.filter(tm=>keep[tm.id]!==false), ...newTeams.map((nt,i)=>({id:"neu"+i,cat:nt.cat,name:nt.name}))];
+            const curSid2=activeSid(data, clubId)||"";
+            const kinder=(data.playerProfiles||[]).filter(p=>!p.archived&&(!p.seasonId||p.seasonId===curSid2)&&(teamsNeu.some(tm=>tm.id===p.mainTid)||!p.mainTid||curTeams.some(tm=>tm.id===p.mainTid)));
+            const treffer=kinder.map(p=>({p, tid:teamFuerKategorie(teamsNeu, katInSaison(p.by,p.gender,jahrNeu))}));
+            const mitTeam=treffer.filter(x=>x.tid);
+            const ohne=treffer.length-mitTeam.length;
+            const proTeam=new Map();
+            mitTeam.forEach(x=>proTeam.set(x.tid,(proTeam.get(x.tid)||0)+1));
+            return (
+            <>
             <h3 style={{fontWeight:900,fontSize:18,margin:"0 0 8px"}}>Bereit?</h3>
             <p style={{fontSize:14,color:"#64748b",lineHeight:1.6}}>Die Spieler der übernommenen Mannschaften werden in die neue Saison {f.label} kopiert. Zuteilungen werden zurückgesetzt – du kannst neu einteilen.</p>
             <div style={{background:"#f0fdf4",borderRadius:12,padding:"12px",border:"1.5px solid #bbf7d0",marginTop:12,fontSize:13,color:"#166534",lineHeight:1.7}}>
               {curTeams.filter(tm=>keep[tm.id]).length} Mannschaften übernommen{newTeams.length>0?`, ${newTeams.length} neu`:""}{curTeams.filter(tm=>!keep[tm.id]).length>0?`, ${curTeams.filter(tm=>!keep[tm.id]).length} abgemeldet`:""}
             </div>
-          </>}
+            {/* Jugend + Mannschaft gleich zuteilen - nach Jahrgang und
+                Geschlecht. Gibt es die passende Mannschaft (noch) nicht,
+                bleibt das Kind ohne Team; das ist ausdruecklich erlaubt. */}
+            <div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,padding:"12px 14px",marginTop:10}}>
+              <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+                <button onClick={()=>setAutoZu(a=>!a)} aria-label="Kinder zuteilen"
+                  style={{width:24,height:24,borderRadius:7,border:`1.5px solid ${autoZu?t.p:"#cbd5e1"}`,background:autoZu?t.p:"#fff",color:"#fff",fontWeight:900,fontSize:14,cursor:"pointer",flexShrink:0,lineHeight:1,fontFamily:"inherit",marginTop:1}}>{autoZu?"✓":""}</button>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontWeight:800,fontSize:13.5,color:"#0f172a"}}>Kinder gleich der neuen Jugend zuteilen</div>
+                  <div style={{fontSize:12,color:"#64748b",lineHeight:1.5,marginTop:2}}>
+                    Nach Jahrgang und Geschlecht – jeder rückt eine Stufe auf. Gibt es die passende Mannschaft nicht, bleibt das Kind ohne Team und du teilst es später ein.
+                  </div>
+                </div>
+              </div>
+              {autoZu&&(
+                <div style={{marginTop:10,paddingTop:10,borderTop:"1px solid #f1f5f9"}}>
+                  <div style={{fontSize:12.5,fontWeight:800,color:"#15803d",marginBottom:5}}>{mitTeam.length} von {treffer.length} Kindern bekommen direkt eine Mannschaft</div>
+                  <div style={{display:"flex",flexDirection:"column",gap:3}}>
+                    {[...proTeam.entries()].map(([tid,n2])=>{
+                      const tm=teamsNeu.find(x=>x.id===tid);
+                      return <div key={tid} style={{fontSize:12.5,color:"#334155"}}>· {tm?tm.name:"Mannschaft"} <span style={{color:"#64748b"}}>{n2} Kinder</span></div>;
+                    })}
+                    {ohne>0&&<div style={{fontSize:12.5,color:"#b45309",marginTop:2}}>· {ohne} ohne passende Mannschaft – bleiben im Pool</div>}
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
+            ); })()}
           {step===4&&<>
             <h3 style={{fontWeight:900,fontSize:18,margin:"0 0 8px"}}>Saison anlegen</h3>
             <p style={{fontSize:14,color:"#64748b"}}>Saison {f.label} wird als Planungs-Saison angelegt.</p>
@@ -13494,20 +13559,9 @@ function SeasonModal({ data,save,fire,cl,myTids,onClose }) {
   // ("2027/28") lesen wir das Startjahr und verschieben die Altersklassen
   // entsprechend. Maedchen duerfen zwei Jahre juenger spielen - das steckt
   // bereits in eligibleCats().
-  const startJahr = lbl => { const m=String(lbl||"").match(/(20\d\d)/); return m?Number(m[1]):_fbSeasonStart; };
-  const katFuer = (by,gender,jahr) => {
-    if(!by) return null;
-    const eff = Number(by) - (jahr - _fbSeasonStart);
-    const eigene = Object.entries(CAT_YEARS).find(([,ys])=>(ys||[]).includes(eff));
-    if(eigene) return eigene[0];
-    const auch = eligibleCats(eff, gender||"m");     // Maedchen-Regel als Rueckfall
-    return auch[0]||null;
-  };
-  const teamFuerKat = kat => {
-    if(!kat) return "";
-    const passend = myTeams.filter(tm=>(tm.cat||tm.name)===kat);
-    return passend[0]?.id || "";
-  };
+  const startJahr = saisonStartJahr;
+  const katFuer = katInSaison;
+  const teamFuerKat = kat => teamFuerKategorie(myTeams, kat);
   const [sel,setSel]     = useState(null);   // Set der ausgewaehlten Spieler-Ids
   const [zuord,setZuord] = useState({});     // Spieler-Id -> Team-Id in der neuen Saison
   const quelle = React.useMemo(()=> allPlayers

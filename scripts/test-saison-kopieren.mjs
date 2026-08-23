@@ -110,6 +110,32 @@ await clickTxt("Spieler jetzt kopieren"); await page.waitForTimeout(1600);
   if(erg.mitTeam>0) ok(erg.mitTeam+" davon direkt einer Mannschaft zugeordnet – keine Handarbeit mehr");
   else fail("Zuordnung nicht übernommen (alle ohne Team)"); }
 
+// ===== 4) Auch beim Anlegen einer neuen Saison wird zugeteilt =====
+await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2600); await dismiss();
+await clickTxt("^\\d{4}/\\d{2}$|Saison"); await page.waitForTimeout(1300);
+await clickTxt("Neue Saison planen"); await page.waitForTimeout(1200);
+{ const j3=new Date().getFullYear()+2;
+  await page.evaluate(l=>{ const i=[...document.querySelectorAll("input")].find(x=>/2026\/27/.test(x.placeholder||""));
+    if(i){ const setter=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,"value").set;
+      setter.call(i,l); i.dispatchEvent(new Event("input",{bubbles:true})); } }, `${j3}/${String(j3+1).slice(2)}`);
+  await page.waitForTimeout(500);
+  await clickTxt("^Weiter"); await page.waitForTimeout(900);
+  await clickTxt("^Weiter"); await page.waitForTimeout(900);
+  const b5=await body();
+  if(/Kinder gleich der neuen Jugend zuteilen/.test(b5)) ok("Der Saison-Assistent bietet die Zuteilung an");
+  else fail("Keine Zuteilung im Assistenten: "+b5.slice(0,220).replace(/\n/g," | "));
+  if(/\d+ von \d+ Kindern bekommen direkt eine Mannschaft/.test(b5)) ok("Und zeigt vorab, wie viele es trifft: "+(b5.match(/\d+ von \d+ Kindern[^\n]*/)||[""])[0]);
+  else fail("Keine Vorschau der Zuteilung");
+  await clickTxt("^Weiter"); await page.waitForTimeout(800);
+  await clickTxt("Saison anlegen|^Anlegen|Fertig"); await page.waitForTimeout(1800);
+  const erg=await page.evaluate(()=>{
+    const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
+    const neu=(d.seasons||[]).filter(x=>x.status==="planning"||x.status==="active").sort((a,b)=>String(b.label).localeCompare(String(a.label)))[0];
+    const sp=(d.playerProfiles||[]).filter(p=>neu&&p.seasonId===neu.id);
+    return { saison:neu&&neu.label, n:sp.length, mitTeam:sp.filter(p=>p.mainTid).length }; });
+  if(erg.n>0&&erg.mitTeam>0) ok("Neue Saison "+erg.saison+": "+erg.mitTeam+" von "+erg.n+" Kindern schon zugeteilt");
+  else fail("Beim Anlegen wurde nicht zugeteilt: "+JSON.stringify(erg)); }
+
 if(errors.length){ console.log("JS-FEHLER:"); [...new Set(errors)].forEach(e=>console.log(" -",e.slice(0,150))); }
 console.log(errors.length||fails.length?`ERGEBNIS: ${fails.length} Fehlschläge, ${errors.length} JS-Fehler`:"ERGEBNIS: ALLES OK");
 await browser.close(); srv.close();
