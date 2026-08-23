@@ -56,6 +56,15 @@ if(!/Plane Trainings, Spiele & Turniere/.test(b)) ok("Der lange Erklärkasten is
 for(const [was,re] of [["Termin öffnen","Termin öffnen|Anwesenheit abhaken"],["Aufbau","🏗 Aufbau"],["Trainingsplan","📋 Training"],["Erinnern","🔔 \\d+ erinnern"],["Neuer Termin","\\+ Neuer Termin"],["Alles anzeigen","Alles anzeigen"]]){
   if(await knopf(re)) ok("Direkt erreichbar: "+was); else fail("Fehlt im Fokus: "+was);
 }
+// "+ Neuer Termin" steht ueber dem naechsten Termin
+{ const oben=await page.evaluate(()=>{
+    const b=[...document.querySelectorAll("button")].find(x=>/\+ Neuer Termin/.test(x.innerText||""));
+    const l=[...document.querySelectorAll("div")].find(d=>/^ALS NÄCHSTES|^AUSGEWÄHLTER TERMIN/.test((d.innerText||"").trim()));
+    if(!b||!l) return null;
+    return b.getBoundingClientRect().top < l.getBoundingClientRect().top;
+  });
+  if(oben===true) ok("„+ Neuer Termin“ steht über dem nächsten Termin");
+  else fail("Neuer Termin steht nicht oben: "+oben); }
 { const b2=await body();
   if(/Ich:/.test(b2)&&/Bin dabei/.test(b2)&&/Sage ab/.test(b2)) ok("Der Trainer kann direkt selbst zu- und absagen");
   else fail("Eigene Zu-/Absage fehlt auf der Fokus-Karte"); }

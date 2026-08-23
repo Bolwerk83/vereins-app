@@ -15412,6 +15412,8 @@ function EinfachTrainer({ cl, evs=[], tod, trainerNames=[], helperNames=[], squa
   const meine=typeof meineRoh==="object"&&meineRoh?meineRoh.val:meineRoh;
   return (
     <div>
+      {/* Neuen Termin anlegen steht oben - das ist der haeufigste Start. */}
+      <button onClick={onNew} style={{width:"100%",marginBottom:12,padding:"12px",minHeight:44,borderRadius:11,border:`1px solid ${p}`,background:"#fff",color:readable(p),fontWeight:700,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>+ Neuer Termin</button>
       <div style={{fontSize:10.5,fontWeight:700,color:"#94a3b8",letterSpacing:1,marginBottom:6}}>
         {gewaehlt&&fokus.id===gewaehlt&&evs[0]&&evs[0].id!==fokus.id?"AUSGEWÄHLTER TERMIN":"ALS NÄCHSTES"}
       </div>
@@ -15504,10 +15506,7 @@ function EinfachTrainer({ cl, evs=[], tod, trainerNames=[], helperNames=[], squa
         </button>
         {spaeterAuf&&<div style={{background:"#fff",borderRadius:14,border:"1px solid #e4e9f0",padding:"2px 13px",marginBottom:12}}>{spaeter.map(Zeile)}</div>}
       </>}
-      <div style={{display:"flex",gap:8}}>
-        <button onClick={onNew} style={{flex:1,padding:"12px",minHeight:44,borderRadius:11,border:`1px solid ${p}`,background:"#fff",color:readable(p),fontWeight:700,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>+ Neuer Termin</button>
-        {onDetail&&<button onClick={onDetail} style={{flex:"0 0 40%",padding:"12px 8px",minHeight:44,borderRadius:11,border:"1px solid #e4e9f0",background:"#fff",color:"#667085",fontWeight:600,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Alles anzeigen</button>}
-      </div>
+      {onDetail&&<button onClick={onDetail} style={{width:"100%",padding:"12px 8px",minHeight:44,borderRadius:11,border:"1px solid #e4e9f0",background:"#fff",color:"#667085",fontWeight:600,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Alles anzeigen</button>}
     </div>
   );
 }
@@ -22019,6 +22018,11 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
           <div style={{fontWeight:900,fontSize:16,lineHeight:1.15}}>{kind}</div>
           <div style={{fontSize:12.5,fontWeight:600,opacity:.95}}>{team?.name||cl?.name}</div>
         </div>
+        {/* Abmelden dort, wo man es erwartet: oben rechts. Bewusst zurueckhaltend,
+            damit niemand versehentlich rausfliegt - "Anderes Kind" bleibt unten. */}
+        <button onClick={onAbmelden} title="Abmelden" style={{flexShrink:0,padding:"8px 12px",minHeight:40,borderRadius:10,border:"1px solid rgba(255,255,255,.35)",background:"rgba(255,255,255,.14)",color:"#fff",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
+          Abmelden
+        </button>
       </div>
       <div style={{maxWidth:520,margin:"0 auto",padding:"10px 12px"}}>
         {unread>0&&onChat&&(
@@ -22112,14 +22116,9 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
             🔗 Link weitergeben
           </button>
         )}
-        <div style={{display:"flex",gap:8,marginTop:8}}>
-          {onKindWechseln&&<button onClick={onKindWechseln} style={{flex:1,padding:"13px",minHeight:46,borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#334155",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
-            👧👦 Anderes Kind
-          </button>}
-          <button onClick={onAbmelden} style={{flex:onKindWechseln?"0 0 40%":1,padding:"13px",minHeight:46,borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
-            Abmelden
-          </button>
-        </div>
+        {onKindWechseln&&<button onClick={onKindWechseln} style={{width:"100%",marginTop:8,padding:"13px",minHeight:46,borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#334155",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
+          👧👦 Anderes Kind
+        </button>}
       </div>
       <Toast msg={toast}/>
     </div>

@@ -125,6 +125,17 @@ if(/Anderes Kind/.test(b)) ok("Zum anderen Kind wechseln ist direkt möglich"); 
 // ===== 1c) Passwort fürs eigene Kind – auch in der einfachen Ansicht =====
 b=await body();
 if(/Passwort für \w+ (einrichten|ändern)/.test(b)) ok("Passwort fürs Kind ist direkt erreichbar"); else fail("Kein Passwort-Knopf: "+b.slice(-200).replace(/\n/g," | "));
+// Abmelden sitzt oben rechts im Kopf, nicht mehr unten neben "Anderes Kind"
+{ const wo=await page.evaluate(()=>{
+    const b2=[...document.querySelectorAll("button")].find(x=>(x.innerText||"").trim()==="Abmelden");
+    if(!b2) return null;
+    const r=b2.getBoundingClientRect();
+    return { oben:r.top<120, rechts:r.left>window.innerWidth/2 };
+  });
+  if(wo&&wo.oben&&wo.rechts) ok("Abmelden steht oben rechts im Kopf");
+  else fail("Abmelden nicht oben rechts: "+JSON.stringify(wo));
+  const kind=await page.evaluate(()=>!![...document.querySelectorAll("button")].find(x=>/Anderes Kind/.test(x.innerText||"")));
+  if(kind) ok("„Anderes Kind“ bleibt unten – das braucht man öfter"); else fail("Anderes Kind fehlt"); }
 if(await clickTxt("Passwort für")){ await page.waitForTimeout(800); b=await body();
   if(/Ohne Passwort kann jeder|Nur wer das Passwort kennt/.test(b)) ok("Erklärt in klarer Sprache, wozu das Passwort gut ist"); else fail("Keine Erklärung");
   const felder=await page.locator('input[type="password"]').count();
