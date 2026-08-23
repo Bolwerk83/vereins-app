@@ -124,7 +124,7 @@ await page.waitForTimeout(700);
 await page.evaluate(()=>{ sessionStorage.setItem("vereinsapp_v12_session", JSON.stringify({role:"trainer",cid:"demo",tids:["demo_f1"],name:"F1 Trainer",id:"demo_tr2"})); });
 await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2800); await dismiss();
 b=await body();
-if(/Aushilfe-Anfrage/.test(b)) ok("Der eigene Trainer sieht den Hinweis");
+if(/🔁 Aushilfe/.test(b)) ok("Der eigene Trainer sieht den Hinweis");
 else fail("Kein Hinweis beim eigenen Trainer: "+b.slice(0,240).replace(/\n/g," | "));
 if(/Du musst nichts tun/.test(b)) ok("Mit dem Hinweis, dass er nichts tun muss");
 if(/Passt so/.test(b)&&/Absagen mit Grund/.test(b)) ok("Beide Wege stehen bereit: passt so / absagen mit Grund");
@@ -141,7 +141,56 @@ await clickTxt("Absage senden"); await page.waitForTimeout(1500);
   if(st.s==="no"&&/gleichen Zeit/.test(st.g||"")) ok("Absage mit Grund gespeichert: „"+st.g+"“");
   else fail("Absage nicht gespeichert: "+JSON.stringify(st)); }
 b=await body();
-if(!/Aushilfe-Anfrage/.test(b)) ok("Der Hinweis verschwindet nach der Entscheidung"); else fail("Hinweis bleibt stehen");
+if(!/🔁 Aushilfe/.test(b)) ok("Der Hinweis verschwindet nach der Entscheidung"); else fail("Hinweis bleibt stehen");
+
+// ===== 5) Eltern bieten ihr Kind selbst an =====
+await page.evaluate(()=>{ sessionStorage.clear(); localStorage.removeItem("vereinsapp_v12_session_persist"); localStorage.removeItem("va_teamok_demo_g"); localStorage.setItem("va_simple","0"); });
+await page.goto("http://127.0.0.1:4259/?club=demo-verein&team=demo_g", { waitUntil:"networkidle" });
+await page.waitForTimeout(2800); await dismiss();
+if(await page.locator('input[type="password"]').count()){
+  await page.locator('input[type="password"]').first().fill("g1");
+  await page.evaluate(()=>{ const x=[...document.querySelectorAll("button")].find(y=>/Team öffnen|Öffnen|Weiter/i.test(y.innerText)); x&&x.click(); });
+  await page.waitForTimeout(1900); }
+b=await body();
+if(/Mitspielen oder mittrainieren/.test(b)) ok("Eltern finden den Knopf „Mitspielen oder mittrainieren?“");
+else fail("Kein Mitmachen-Knopf: "+b.slice(-260).replace(/\n/g," | "));
+await clickTxt("Mitspielen oder mittrainieren"); await page.waitForTimeout(800);
+b=await body();
+if(/Wer möchte mitmachen\?/.test(b)) ok("Das Fenster fragt, wer mitmachen möchte"); else fail("Fenster fehlt");
+if(/Dauerhaft merken/.test(b)) ok("„Dauerhaft merken“ steht zur Auswahl"); else fail("Kein Dauerhaft-Haken");
+if(/Mitspielen/.test(b)&&/Mittrainieren/.test(b)&&/Aushelfen/.test(b)) ok("Und man kann sagen, worum es geht");
+{ const feld=page.locator('div[style*="fixed"] input').first();
+  await feld.fill("Ben Fischer"); await page.waitForTimeout(600); }
+await clickTxt("Anfrage an den Trainer senden"); await page.waitForTimeout(1500);
+b=await body();
+if(/Anfrage ist beim Trainer/.test(b)) ok("Die Eltern bekommen eine klare Rückmeldung"); else fail("Keine Bestätigung: "+b.slice(0,200).replace(/\n/g," | "));
+{ const r=await page.evaluate(()=>{
+    const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
+    return (d.aushilfeReqs||[]).find(x=>x.art==="angebot")||null; });
+  if(r&&r.playerName==="Ben Fischer") ok("Die Anfrage ist gespeichert (dauerhaft: "+r.dauerhaft+", Wunsch: "+r.wunsch+")");
+  else fail("Angebot nicht gespeichert: "+JSON.stringify(r));
+  if(r&&r.homeTid==="demo_f1") ok("Das Kind wurde der richtigen Heim-Mannschaft zugeordnet"); }
+
+// Trainer der G-Jugend entscheidet
+await page.evaluate(()=>{ sessionStorage.setItem("vereinsapp_v12_session", JSON.stringify({role:"trainer",cid:"demo",tids:["demo_g"],name:"G Trainer",id:"demo_tr3"})); });
+await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2800); await dismiss();
+b=await body();
+if(/Anfrage(n)? von Eltern/.test(b)) ok("Der Trainer sieht die Eltern-Anfrage"); else fail("Keine Eltern-Anfrage beim Trainer: "+b.slice(0,260).replace(/\n/g," | "));
+if(/dauerhaft merken gewünscht/.test(b)) ok("Mit dem Wunsch „dauerhaft merken“");
+if(/Annehmen & dauerhaft merken/.test(b)&&/Ablehnen/.test(b)) ok("Annehmen und Ablehnen stehen bereit");
+else fail("Knöpfe fehlen beim Angebot");
+await clickTxt("Annehmen & dauerhaft merken"); await page.waitForTimeout(1600);
+{ const erg=await page.evaluate(()=>{
+    const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
+    const r=(d.aushilfeReqs||[]).find(x=>x.art==="angebot")||{};
+    const p=(d.playerProfiles||[]).find(x=>x.name==="Ben Fischer")||{};
+    return { status:r.status, opt:p.optTids||[] }; });
+  if(erg.status==="ok") ok("Die Anfrage ist angenommen");
+  else fail("Status falsch: "+erg.status);
+  if(erg.opt.includes("demo_g")) ok("Und das Kind ist dauerhaft als Aushilfe hinterlegt ("+erg.opt.join(", ")+")");
+  else fail("optTids nicht gesetzt: "+JSON.stringify(erg.opt)); }
+b=await body();
+if(!/Anfrage(n)? von Eltern/.test(b)) ok("Der Hinweis verschwindet nach der Entscheidung");
 
 if(errors.length){ console.log("JS-FEHLER:"); [...new Set(errors)].forEach(e=>console.log(" -",e.slice(0,150))); }
 console.log(errors.length||fails.length?`ERGEBNIS: ${fails.length} Fehlschläge, ${errors.length} JS-Fehler`:"ERGEBNIS: ALLES OK");

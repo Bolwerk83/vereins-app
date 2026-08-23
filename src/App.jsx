@@ -7564,6 +7564,71 @@ function GastWizard({cl,team,namen=[],voll=false,onClose,onWeiter,onWarteliste})
 }
 
 // ----------------------------------------------------------------
+// Mitmachen-Anfrage der Eltern: Das Kind spielt woanders und moechte hier
+// aushelfen, mitspielen oder mittrainieren. Der Trainer entscheidet - auf
+// Wunsch dauerhaft ("darf hier immer aushelfen").
+// ----------------------------------------------------------------
+function MitmachenWizard({cl,team,namen=[],onClose,onSenden}){
+  const { tr } = useT();
+  const t=TH(cl);
+  const [name,setName]=useState("");
+  const [wunsch,setWunsch]=useState("spielen");
+  const [dauer,setDauer]=useState(true);
+  const [notiz,setNotiz]=useState("");
+  const [fertig,setFertig]=useState(false);
+  const sauber=name.trim();
+  const bereit=sauber.length>1;
+  const schon=namen.some(n=>_nrmName(n)===_nrmName(sauber));
+  const senden=()=>{ if(!bereit) return; onSenden({name:sauber,wunsch,dauerhaft:dauer,notiz:notiz.trim()}); setFertig(true); };
+  return (
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(15,23,42,.55)",zIndex:2300,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"20px 20px 0 0",width:"100%",maxWidth:520,padding:"18px 16px 26px",maxHeight:"92vh",overflowY:"auto"}}>
+        {fertig ? (
+          <div style={{textAlign:"center",padding:"14px 6px 6px"}}>
+            <div style={{fontSize:34,marginBottom:8}}>✅</div>
+            <div style={{fontWeight:900,fontSize:17,color:"#0f172a"}}>{tr("mitDone")}</div>
+            <button onClick={onClose} style={{width:"100%",marginTop:16,padding:"13px",minHeight:46,borderRadius:12,border:"none",background:t.p,color:contrast(t.p),fontWeight:800,fontSize:14.5,cursor:"pointer",fontFamily:"inherit"}}>Schließen</button>
+          </div>
+        ) : (<>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+            <div style={{fontSize:26,lineHeight:1}}>🤝</div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontWeight:900,fontSize:18,color:"#0f172a"}}>{tr("mitT")}</div>
+              {team&&<div style={{fontSize:12.5,color:"#64748b",fontWeight:700,marginTop:2}}>{team.name}</div>}
+            </div>
+            <button onClick={onClose} aria-label="Schließen" style={{flexShrink:0,width:44,height:44,borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",fontSize:17,color:"#64748b",cursor:"pointer",fontFamily:"inherit"}}>✕</button>
+          </div>
+          <input autoFocus value={name} onChange={e=>setName(e.target.value)} placeholder={tr("gstPh")}
+            style={{width:"100%",padding:"14px 15px",fontSize:16,border:"1.5px solid #e2e8f0",borderRadius:13,outline:"none",fontFamily:"inherit",boxSizing:"border-box"}}/>
+          {schon&&<p style={{fontSize:12.5,color:"#15803d",fontWeight:700,marginTop:7}}>Dieses Kind steht schon in der Liste – dann einfach oben antippen.</p>}
+          <p style={{fontSize:12.5,color:"#64748b",lineHeight:1.5,marginTop:8}}>{tr("mitHint")}</p>
+          <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.4,margin:"14px 0 7px"}}>{tr("mitWish")}</div>
+          <div style={{display:"flex",gap:7}}>
+            {[["spielen",tr("mitW1")],["trainieren",tr("mitW2")],["aushelfen",tr("mitW3")]].map(([k,l])=>{
+              const on=wunsch===k; return (
+                <button key={k} onClick={()=>setWunsch(k)}
+                  style={{flex:1,padding:"11px 6px",minHeight:44,borderRadius:11,border:`1.5px solid ${on?t.p:"#e2e8f0"}`,background:on?t.p+"14":"#fff",color:on?readable(t.p):"#64748b",fontWeight:on?800:600,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
+              );})}
+          </div>
+          <button onClick={()=>setDauer(d=>!d)}
+            style={{display:"flex",alignItems:"center",gap:10,width:"100%",marginTop:12,padding:"12px 13px",borderRadius:12,border:`1.5px solid ${dauer?t.p:"#e2e8f0"}`,background:dauer?t.p+"0d":"#fff",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
+            <span style={{width:24,height:24,borderRadius:7,border:`1.5px solid ${dauer?t.p:"#cbd5e1"}`,background:dauer?t.p:"#fff",color:"#fff",fontWeight:900,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{dauer?"✓":""}</span>
+            <span style={{flex:1,minWidth:0,fontSize:13,fontWeight:700,color:"#334155",lineHeight:1.4}}>{tr("mitDauer")}</span>
+          </button>
+          <input value={notiz} onChange={e=>setNotiz(e.target.value)} placeholder="Nachricht an den Trainer (optional)"
+            style={{width:"100%",marginTop:10,padding:"12px 13px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:12,outline:"none",fontFamily:"inherit",boxSizing:"border-box"}}/>
+          <div style={{marginTop:10}}><PrivacyNote/></div>
+          <button disabled={!bereit} onClick={senden}
+            style={{width:"100%",marginTop:14,padding:"15px",minHeight:52,borderRadius:14,border:"none",background:bereit?t.p:"#cbd5e1",color:bereit?contrast(t.p):"#fff",fontWeight:900,fontSize:15,cursor:bereit?"pointer":"default",fontFamily:"inherit"}}>
+            {tr("mitSend")}
+          </button>
+        </>)}
+      </div>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------
 // Link teilen: entweder zur ganzen Mannschaft oder direkt zu einem Kind
 // (dann steht der Name als Parameter im Link). Nie mit Passwort.
 // ----------------------------------------------------------------
@@ -7606,9 +7671,10 @@ function LinkTeilen({cl,team,namen=[],onClose,onFire}){
   );
 }
 
-function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,preselectTid,preselectName=null,onWaitlist,onConsent,onGuestConsent,onSetChildPw,lang="de",setLang=()=>{}}) {
+function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,preselectTid,preselectName=null,onWaitlist,onOffer,onConsent,onGuestConsent,onSetChildPw,lang="de",setLang=()=>{}}) {
   const [showWait,setShowWait]=useState(false);
   const [gastAuf,setGastAuf]=useState(false);      // Gast-Wizard (eigenes Fenster)
+  const [mitAuf,setMitAuf]=useState(false);        // "Mitspielen / mittrainieren"-Anfrage
   const [linkAuf,setLinkAuf]=useState(false);      // Link teilen (Team oder Kind)
   const [flash,setFlash]=useState(null);           // kurze Rueckmeldung
   const sagMal=m=>{ setFlash(m); setTimeout(()=>setFlash(null),2200); };
@@ -7965,6 +8031,11 @@ function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,pre
             style={{width:"100%",padding:"14px",minHeight:50,borderRadius:13,border:`1.5px solid ${t.p}`,background:t.p+"12",color:readable(t.p),fontWeight:800,fontSize:14.5,cursor:"pointer",fontFamily:"inherit"}}>
             {tr("gwOpen")}
           </button>
+          {/* Kinder aus anderen Mannschaften: mitspielen, mittrainieren, aushelfen */}
+          {onOffer&&<button onClick={()=>setMitAuf(true)}
+            style={{width:"100%",marginTop:8,padding:"13px",minHeight:46,borderRadius:13,border:"1.5px solid #e2e8f0",background:"#fff",color:"#334155",fontWeight:700,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>
+            {tr("mitOpen")}
+          </button>}
         </div>
         ); })()}
       {gastAuf&&(()=>{ const curTeam=teams.find(x=>x.id===tid);
@@ -7977,6 +8048,10 @@ function UserFlow({cl,teams,players,playerProfiles,trainers=[],onDone,onBack,pre
           onWeiter={n2=>{ setGastAuf(false); setConsentChk(false); setConsentRel(""); setConsentName("");
             setChildPwNew(""); setObStep(1); setPendingName({tid,name:n2}); }}/>
         ); })()}
+      {mitAuf&&<MitmachenWizard cl={cl} team={teams.find(x=>x.id===tid)}
+        namen={(playerProfiles||[]).filter(p=>p.mainTid===tid&&!p.archived).map(p=>p.name||"")}
+        onClose={()=>setMitAuf(false)}
+        onSenden={angebot=>{ onOffer&&onOffer({...angebot, tid}); }}/>}
       {linkAuf&&<LinkTeilen cl={cl} team={teams.find(x=>x.id===tid)}
         namen={(playerProfiles||[]).filter(p=>p.mainTid===tid&&!p.archived).map(p=>p.name||"").sort((a,b)=>a.localeCompare(b))}
         onClose={()=>setLinkAuf(false)} onFire={sagMal}/>}
@@ -17428,22 +17503,78 @@ function AushilfeAnfragen({ data, cid, session, myTids=[], save, fire, cl }){
   const t=TH(cl);
   const [grundZu,setGrundZu]=useState(null);   // Anfrage-Id, zu der ein Grund getippt wird
   const [grund,setGrund]=useState("");
-  const reqs=((data.aushilfeReqs)||[]).filter(r=>r.cid===cid&&r.status==="open"&&myTids.includes(r.homeTid)&&!myTids.includes(r.tid));
-  if(!reqs.length) return null;
+  const alle=((data.aushilfeReqs)||[]).filter(r=>r.cid===cid&&r.status==="open");
+  // 1) Andere Mannschaft fragt MEIN Kind an -> Hinweis, Absage moeglich
+  const hinweise=alle.filter(r=>(r.art||"anfrage")==="anfrage"&&myTids.includes(r.homeTid)&&!myTids.includes(r.tid));
+  // 2) Eltern bieten ihr Kind FUER MEINE Mannschaft an -> ich entscheide
+  const angebote=alle.filter(r=>r.art==="angebot"&&myTids.includes(r.tid));
+  if(!hinweise.length&&!angebote.length) return null;
   const setzen=(r,status,text)=>{
-    save({...data, aushilfeReqs:(data.aushilfeReqs||[]).map(x=>x.id===r.id
-      ? {...x,status,reason:text||"",decidedBy:session?.name||"Trainer",decidedAt:new Date().toISOString()} : x)});
-    fire(status==="no"?"Abgesagt – die andere Mannschaft sieht den Grund":"Notiert – die Anfrage läuft weiter");
+    let next={...data, aushilfeReqs:(data.aushilfeReqs||[]).map(x=>x.id===r.id
+      ? {...x,status,reason:text||"",decidedBy:session?.name||"Trainer",decidedAt:new Date().toISOString()} : x)};
+    // Angebot angenommen + "dauerhaft merken" -> Kind wird Aushilfe dieser Mannschaft
+    if(status==="ok"&&r.art==="angebot"&&r.dauerhaft&&r.playerId){
+      next={...next, playerProfiles:(next.playerProfiles||[]).map(p=>p.id===r.playerId
+        ? {...p, optTids:[...new Set([...(p.optTids||[]), r.tid])]} : p)};
+    }
+    save(next);
+    fire(status==="no" ? "Abgelehnt – die Eltern bzw. die andere Mannschaft sehen den Grund"
+       : (r.art==="angebot" ? (r.dauerhaft&&r.playerId ? "Angenommen – das Kind ist jetzt dauerhaft als Aushilfe hinterlegt" : "Angenommen") : "Notiert – die Anfrage läuft weiter"));
     setGrundZu(null); setGrund("");
   };
+  const wunschText=w=>w==="trainieren"?"mittrainieren":w==="aushelfen"?"aushelfen":"mitspielen";
   return (
     <div style={{background:"#fff",border:"1.5px solid #fde68a",borderRadius:14,padding:"13px 15px",marginBottom:14}}>
-      <div style={{fontWeight:800,fontSize:13.5,color:"#92400e",marginBottom:3}}>🔁 Aushilfe-Anfrage ({reqs.length})</div>
-      <div style={{fontSize:12,color:"#b45309",lineHeight:1.5,marginBottom:10}}>
-        Eine andere Mannschaft hat eines deiner Kinder direkt angefragt. Du musst nichts tun – melde dich nur, wenn es nicht passt.
-      </div>
+      <div style={{fontWeight:800,fontSize:13.5,color:"#92400e",marginBottom:3}}>🔁 Aushilfe ({hinweise.length+angebote.length})</div>
+      {angebote.length>0&&(
+        <div style={{fontSize:12,color:"#b45309",lineHeight:1.5,marginBottom:10}}>
+          <b>{angebote.length} Anfrage{angebote.length===1?"":"n"} von Eltern:</b> Ein Kind aus einer anderen Mannschaft möchte bei dir mitmachen. Du entscheidest.
+        </div>
+      )}
+      {hinweise.length>0&&(
+        <div style={{fontSize:12,color:"#b45309",lineHeight:1.5,marginBottom:10}}>
+          Eine andere Mannschaft hat eines deiner Kinder direkt angefragt. Du musst nichts tun – melde dich nur, wenn es nicht passt.
+        </div>
+      )}
       <div style={{display:"flex",flexDirection:"column",gap:9}}>
-        {reqs.map(r=>(
+        {angebote.map(r=>(
+          <div key={r.id} style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:12,padding:"10px 12px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:9}}>
+              <Av name={r.playerName} sz={28}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontWeight:800,fontSize:13,color:"#101828",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{r.playerName}</div>
+                <div style={{fontSize:11.5,color:"#166534",lineHeight:1.45}}>
+                  möchte bei {r.teamName||"deiner Mannschaft"} {wunschText(r.wunsch)}
+                  {r.homeTeam?` · spielt in ${r.homeTeam}`:(r.playerId?"":" · noch kein Profil im Verein")}
+                </div>
+                {r.dauerhaft&&<div style={{fontSize:11,color:"#15803d",fontWeight:700,marginTop:1}}>✓ dauerhaft merken gewünscht</div>}
+                {r.notiz&&<div style={{fontSize:11.5,color:"#334155",marginTop:3,fontStyle:"italic"}}>„{r.notiz}"</div>}
+              </div>
+            </div>
+            {grundZu===r.id ? (
+              <div style={{marginTop:9}}>
+                <input value={grund} onChange={e=>setGrund(e.target.value)} autoFocus
+                  placeholder="Grund, z. B. Kader ist schon voll"
+                  style={{width:"100%",padding:"10px 12px",fontSize:13,border:"1px solid #e4e9f0",borderRadius:9,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
+                <div style={{display:"flex",gap:7,marginTop:7}}>
+                  <button onClick={()=>setGrundZu(null)} style={{flex:1,padding:"10px",minHeight:40,borderRadius:9,border:"1px solid #e4e9f0",background:"#fff",color:"#667085",fontWeight:600,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Zurück</button>
+                  <button onClick={()=>setzen(r,"no",grund.trim())} disabled={!grund.trim()}
+                    style={{flex:2,padding:"10px",minHeight:40,borderRadius:9,border:"none",background:grund.trim()?"#b42318":"#e4e9f0",color:grund.trim()?"#fff":"#98a2b3",fontWeight:700,fontSize:12.5,cursor:grund.trim()?"pointer":"default",fontFamily:"inherit"}}>Ablehnen</button>
+                </div>
+              </div>
+            ) : (
+              <div style={{display:"flex",gap:7,marginTop:9}}>
+                <button onClick={()=>setzen(r,"ok","")}
+                  style={{flex:2,padding:"10px",minHeight:40,borderRadius:9,border:"none",background:readable(t.p),color:"#fff",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
+                  {r.dauerhaft?"Annehmen & dauerhaft merken":"Annehmen"}
+                </button>
+                <button onClick={()=>{ setGrundZu(r.id); setGrund(""); }}
+                  style={{flex:1,padding:"10px",minHeight:40,borderRadius:9,border:"1px solid #fecaca",background:"#fff",color:"#b42318",fontWeight:600,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Ablehnen</button>
+              </div>
+            )}
+          </div>
+        ))}
+        {hinweise.map(r=>(
           <div key={r.id} style={{background:"#fffbeb",border:"1px solid #fde68a",borderRadius:12,padding:"10px 12px"}}>
             <div style={{display:"flex",alignItems:"center",gap:9}}>
               <Av name={r.playerName} sz={28}/>
@@ -23871,6 +24002,17 @@ function AppInner({lang,setLang}) {
       {screen==="guest" &&activeCl&&<ClubGuestList cl={activeCl} liveEvents={data.liveEvents||[]} onOpen={(eid,club)=>setVisitor({eid,club})} onBack={()=>setScr("role")}/>}
       {screen==="flow"  &&activeCl&&<UserFlow lang={lang} setLang={setLang} preselectName={linkKind} cl={activeCl} teams={clTeams} players={data.players} playerProfiles={data.playerProfiles||[]} trainers={(data.trainers||[]).filter(t=>t.cid===cid)} preselectTid={linkTeam} onDone={(tid,user)=>login("user",{tid,user})} onBack={()=>setScr(linkTeam?"role":"role")}
         onWaitlist={entry=>{ save({...data, waitlist:[...(data.waitlist||[]), { ...entry, id:uid(), cid:activeCl.id, ts:new Date().toISOString(), status:"open" }]}); }}
+        onOffer={angebot=>{
+          // Eltern bieten ihr Kind als Aushilfe an - der Trainer entscheidet.
+          const treffer=(data.playerProfiles||[]).find(p=>p.cid===activeCl.id&&!p.archived&&_nrmName(p.name)===_nrmName(angebot.name));
+          const tmName=(data.teams||[]).find(x=>x.id===angebot.tid)?.name||"";
+          save({...data, aushilfeReqs:[...(data.aushilfeReqs||[]), {
+            id:uid(), cid:activeCl.id, art:"angebot", tid:angebot.tid, teamName:tmName,
+            playerId:treffer?.id||"", playerName:angebot.name, homeTid:treffer?.mainTid||"",
+            homeTeam:(data.teams||[]).find(x=>x.id===treffer?.mainTid)?.name||"",
+            wunsch:angebot.wunsch||"spielen", dauerhaft:!!angebot.dauerhaft, notiz:angebot.notiz||"",
+            byName:"Eltern", ts:new Date().toISOString(), status:"open" }]});
+        }}
         onConsent={(profId,by)=>{ const prof=(data.playerProfiles||[]).find(p=>p.id===profId);
           const next={...data, playerProfiles:(data.playerProfiles||[]).map(p=>p.id===profId?{...p, consentAt:new Date().toISOString(), consentBy:by||"Eltern (App-Anmeldung)"}:p)};
           addAuditLog(next, save, {id:uid(), cid, ts:new Date().toISOString(), type:"consent", device:"Eltern-Gerät", msg:`Einwilligung für ${prof?.name||profId} erteilt durch ${by||"Eltern (App-Anmeldung)"}`}); }}
