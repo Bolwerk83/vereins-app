@@ -2560,6 +2560,31 @@ function BottomNav({ tab, setTab, isAdmin, isHelper, isParent=false, parentStats
 /* =================================================================
    TEAM HUB (Spieler + Anwesenheit + Statistik in einem Tab)
 ================================================================= */
+// Bausteine der Vereinsansicht - bewusst auf Modulebene, damit die Eingabe-
+// felder beim Tippen nicht neu aufgebaut werden (sonst springt der Fokus raus).
+function TFeld({label,hint,children,hinweis}){
+  return (
+    <div style={{padding:"11px 0",borderTop:"1px solid #f1f4f8"}}>
+      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:7}}>
+        <span style={{fontSize:11,fontWeight:700,color:"#667085",letterSpacing:.4}}>{label}</span>
+        {hint&&<InfoHint text={hint}/>}
+        {hinweis&&<span style={{marginLeft:"auto",fontSize:11.5,color:"#98a2b3",fontWeight:600}}>{hinweis}</span>}
+      </div>
+      {children}
+    </div>
+  );
+}
+function TWahl({opts,val,set,col,t}){
+  return (
+    <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+      {opts.map(([k,l,c])=>{ const on=val===k; const farbe=c||col||t?.p||"#16a34a"; return (
+        <button key={k} onClick={()=>set(k)}
+          style={{flex:"1 1 auto",minWidth:66,padding:"9px 6px",minHeight:40,borderRadius:9,border:`1px solid ${on?farbe:"#e4e9f0"}`,
+            background:on?farbe+"14":"#fff",color:on?readable(farbe):"#667085",fontWeight:on?700:600,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
+      );})}
+    </div>
+  );
+}
 // Mannschaften anlegen/umbenennen/löschen (nur Admin)
 function ManageTeams({ data, save, fire, cl }) {
   const t = TH(cl);
@@ -2583,6 +2608,8 @@ function ManageTeams({ data, save, fire, cl }) {
   const setTeamSquads = (id,squads) => save({...data, teams:(data.teams||[]).map(tm=>tm.id===id?{...tm,squads}:tm)});
   const setTeamTrainerPwd = (id,v) => save({...data, teams:(data.teams||[]).map(tm=>tm.id===id?{...tm,trainerEditPwd:v}:tm)});
   const LOGIN_OPTS=[["auto","Automatisch"],["parents","Eltern"],["players","Spieler"]];
+  const [offen,setOffen]=useState(null);     // aufgeklappte Mannschaft (immer nur eine)
+  const [neuAuf,setNeuAuf]=useState(false);  // Formular "Neue Mannschaft"
 
   const addTeam = () => {
     const nm = name.trim(); if(!nm) return;
@@ -2595,7 +2622,7 @@ function ManageTeams({ data, save, fire, cl }) {
     };
     save({...data, teams:[...(data.teams||[]), team]});
     fire&&fire("Mannschaft \""+nm+"\" angelegt");
-    setName(""); setPwd("");
+    setName(""); setPwd(""); setNeuAuf(false);
   };
   const renameTeam = id => {
     const nm = editName.trim(); if(!nm) return;
@@ -2615,168 +2642,190 @@ function ManageTeams({ data, save, fire, cl }) {
 
   return (
     <div>
-      <div style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",padding:"16px",marginBottom:16}}>
-        <div style={{fontWeight:800,fontSize:15,marginBottom:12,color:"#0f172a"}}>Neue Mannschaft anlegen</div>
-        <input value={name} onChange={e=>setName(e.target.value)} placeholder="Name, z.B. E-Jugend 1"
-          style={{width:"100%",padding:"12px 14px",fontSize:15,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",marginBottom:10,boxSizing:"border-box"}}/>
-        <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.4}}>ALTERSKLASSE</div>
-        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
-          {CATS.map(c=>(
-            <button key={c} type="button" onClick={()=>setCat(c)}
-              style={{padding:"6px 12px",borderRadius:99,border:`1.5px solid ${cat===c?t.p:"#e2e8f0"}`,background:cat===c?t.p:"#fff",color:cat===c?"#fff":"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{c}</button>
-          ))}
+      {/* Anlegen liegt hinter einem Knopf - sonst steht das Formular staendig
+          ueber der Liste und man sucht seine Mannschaften. */}
+      {!neuAuf ? (
+        <button onClick={()=>setNeuAuf(true)}
+          style={{width:"100%",marginBottom:14,padding:"13px",minHeight:46,borderRadius:12,border:`1px solid ${t.p}`,background:"#fff",color:readable(t.p),fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
+          + Neue Mannschaft
+        </button>
+      ) : (
+      <div style={{background:"#fff",borderRadius:16,border:"1px solid #e4e9f0",padding:"15px",marginBottom:16,boxShadow:"0 1px 2px rgba(16,24,40,.04)"}}>
+        <div style={{display:"flex",alignItems:"center",marginBottom:12}}>
+          <div style={{flex:1,fontWeight:700,fontSize:14.5,color:"#101828"}}>Neue Mannschaft</div>
+          <button onClick={()=>setNeuAuf(false)} aria-label="Schließen" style={{width:32,height:32,borderRadius:8,border:"1px solid #e4e9f0",background:"#fff",color:"#667085",fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>✕</button>
         </div>
-        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
-          <span style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.4}}>SPIELSTÄRKE</span>
-          <InfoHint text={strengthInfoText("Für faire Turniere: Gegner auf Augenhöhe finden. ")}/>
-        </div>
-        <div style={{display:"flex",gap:6,marginBottom:12}}>
-          {TEAM_STRENGTHS.map(s=>(
-            <button key={s.id} type="button" onClick={()=>setStrength(s.id)} title={s.desc}
-              style={{flex:1,padding:"9px 6px",borderRadius:10,border:`2px solid ${strength===s.id?s.col:"#e2e8f0"}`,background:strength===s.id?s.col+"15":"#fff",color:strength===s.id?s.col:"#475569",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{s.label}</button>
-          ))}
-        </div>
-        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
-          <span style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.4}}>ANMELDUNG</span>
-          <InfoHint text={"Wer meldet sich an / stimmt ab? 'Eltern' = Eltern-Login (für Kinder), 'Spieler' = die Spieler selbst. 'Automatisch' richtet sich nach dem Alter (ältere Jugend/Erwachsene = Spieler selbst)."}/>
-        </div>
-        <div style={{display:"flex",gap:6,marginBottom:12}}>
-          {LOGIN_OPTS.map(([k,l])=>(
-            <button key={k} type="button" onClick={()=>setLoginMode(k)}
-              style={{flex:1,padding:"9px 6px",borderRadius:10,border:`2px solid ${loginMode===k?t.p:"#e2e8f0"}`,background:loginMode===k?t.p+"15":"#fff",color:loginMode===k?t.p:"#475569",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
-          ))}
-        </div>
-        <input value={pwd} onChange={e=>setPwd(e.target.value)} placeholder="Team-Passwort (optional, Standard: team)"
-          autoCapitalize="none" autoCorrect="off" spellCheck={false}
-          style={{width:"100%",padding:"12px 14px",fontSize:15,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",marginBottom:12,boxSizing:"border-box"}}/>
+        <input value={name} onChange={e=>setName(e.target.value)} placeholder="Name, z. B. E-Jugend 1" autoFocus
+          style={{width:"100%",padding:"12px 14px",fontSize:15,border:"1px solid #e4e9f0",borderRadius:10,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
+        <TFeld label="ALTERSKLASSE">
+          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+            {CATS.map(c=>(
+              <button key={c} type="button" onClick={()=>setCat(c)}
+                style={{padding:"7px 12px",minHeight:36,borderRadius:99,border:`1px solid ${cat===c?t.p:"#e4e9f0"}`,background:cat===c?t.p:"#fff",color:cat===c?contrast(t.p):"#667085",fontWeight:600,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{c}</button>
+            ))}
+          </div>
+        </TFeld>
+        <TFeld label="WER MELDET AN?" hint={"Wer stimmt bei Terminen ab? 'Eltern' = Eltern-Login (für Kinder), 'Spieler' = die Spieler selbst. 'Automatisch' richtet sich nach dem Alter."}>
+          <TWahl t={t} opts={LOGIN_OPTS} val={loginMode} set={setLoginMode}/>
+        </TFeld>
+        <TFeld label="SPIELSTÄRKE" hint={strengthInfoText("Für faire Turniere: Gegner auf Augenhöhe finden. ")}>
+          <TWahl t={t} opts={TEAM_STRENGTHS.map(x=>[x.id,x.label,x.col])} val={strength} set={setStrength}/>
+        </TFeld>
+        <TFeld label="TEAM-PASSWORT" hinweis="optional">
+          <input value={pwd} onChange={e=>setPwd(e.target.value)} placeholder="Standard: team"
+            autoCapitalize="none" autoCorrect="off" spellCheck={false}
+            style={{width:"100%",padding:"11px 13px",fontSize:14,border:"1px solid #e4e9f0",borderRadius:10,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
+        </TFeld>
         <button onClick={addTeam} disabled={!name.trim()}
-          style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:name.trim()?t.p:"#e2e8f0",color:name.trim()?"#fff":"#64748b",fontWeight:800,fontSize:15,cursor:name.trim()?"pointer":"default",fontFamily:"inherit"}}>
-          + Mannschaft anlegen
+          style={{width:"100%",marginTop:12,padding:"13px",minHeight:46,borderRadius:11,border:"none",background:name.trim()?t.p:"#e4e9f0",color:name.trim()?contrast(t.p):"#98a2b3",fontWeight:700,fontSize:14.5,cursor:name.trim()?"pointer":"default",fontFamily:"inherit"}}>
+          Mannschaft anlegen
         </button>
       </div>
+      )}
 
-      <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.4}}>BESTEHENDE MANNSCHAFTEN ({teams.length})</div>
-      <div style={{display:"flex",flexDirection:"column",gap:8}}>
-        {teams.length===0&&<div style={{color:"#64748b",fontSize:14,padding:"16px",textAlign:"center"}}>Noch keine Mannschaften.</div>}
+      <div style={{fontSize:10.5,fontWeight:700,color:"#94a3b8",marginBottom:7,letterSpacing:1}}>MANNSCHAFTEN ({teams.length})</div>
+      <div style={{display:"flex",flexDirection:"column",gap:8,paddingBottom:76}}>
+        {teams.length===0&&<div style={{color:"#98a2b3",fontSize:13.5,padding:"18px",textAlign:"center",background:"#fff",borderRadius:14,border:"1px solid #e4e9f0"}}>Noch keine Mannschaft angelegt.</div>}
         {teams.map(tm=>{
           const cnt=(data.playerProfiles||[]).filter(p=>p.mainTid===tm.id&&!p.archived).length;
           const tmCat = tm.cat || tm.name;
           const isFootball = (cl?.sport||"fussball")==="fussball";
+          const auf = offen===tm.id;
+          const sq = tm.squads||[];
+          const setSq = liste => setTeamSquads(tm.id, liste);
+          const withDrafts = arr => arr.map((x,j)=>({...x,label:(labelDraft[tm.id+":"+j]!==undefined?labelDraft[tm.id+":"+j]:x.label)}));
+          const strengthObj = TEAM_STRENGTHS.find(x=>x.id===(tm.strength||1));
           return (
-            <div key={tm.id}>
-            <div style={{background:"#fff",borderRadius:13,border:"1.5px solid #e2e8f0",padding:"12px 14px",display:"flex",alignItems:"center",gap:11}}>
-              <div style={{width:38,height:38,borderRadius:10,background:tm.col||t.p,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:14,flexShrink:0}}>{tm.icon||tm.name?.slice(0,2).toUpperCase()}</div>
-              <div style={{flex:1,minWidth:0}}>
-                {editId===tm.id ? (
-                  <input value={editName} onChange={e=>setEditName(e.target.value)} autoFocus
-                    onKeyDown={e=>{if(e.key==="Enter")renameTeam(tm.id);}}
-                    style={{width:"100%",padding:"7px 10px",fontSize:14,border:`1.5px solid ${t.p}`,borderRadius:8,outline:"none",boxSizing:"border-box"}}/>
-                ) : (
-                  <>
-                    <div style={{fontWeight:700,fontSize:14,color:"#0f172a",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{tm.name}{tm.endedSid&&<span style={{marginLeft:7,fontSize:10.5,fontWeight:800,color:"#b45309",background:"#fef3c7",borderRadius:5,padding:"1px 6px",verticalAlign:"middle"}}>abgemeldet</span>}</div>
-                    <div style={{fontSize:12,color:"#64748b"}}>{tm.cat||""}{tm.cat?" · ":""}{cnt} Spieler</div>
-                  </>
-                )}
+            <div key={tm.id} style={{background:"#fff",borderRadius:14,border:`1px solid ${auf?"#cfd8e5":"#e4e9f0"}`,overflow:"hidden",boxShadow:"0 1px 2px rgba(16,24,40,.04)"}}>
+              {/* Kopfzeile: Name hat Platz, rechts nur ein Knopf */}
+              <div onClick={()=>{ setOffen(auf?null:tm.id); setEditId(null); }}
+                style={{padding:"12px 14px",display:"flex",alignItems:"center",gap:11,cursor:"pointer"}}>
+                <div style={{width:36,height:36,borderRadius:10,background:tm.col||t.p,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:13,flexShrink:0}}>{tm.icon||tm.name.slice(0,2).toUpperCase()}</div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontWeight:700,fontSize:14.5,color:"#101828",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{tm.name}</div>
+                  <div style={{fontSize:12,color:"#98a2b3",marginTop:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+                    {tm.cat||""}{tm.cat?" · ":""}{cnt} Spieler{tm.maxSize?` / ${tm.maxSize}`:""}{sq.length?` · ${sq.length} Mannschaft${sq.length===1?"":"en"}`:""}
+                  </div>
+                </div>
+                <span style={{fontSize:15,color:"#98a2b3",flexShrink:0,transform:auf?"rotate(90deg)":"none",transition:"transform .15s"}}>›</span>
               </div>
-              {editId===tm.id ? (
-                <button onClick={()=>renameTeam(tm.id)} style={{padding:"7px 12px",borderRadius:9,border:"none",background:t.p,color:"#fff",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>OK</button>
-              ) : (
-                <div style={{display:"flex",gap:6}}>
-                  {isFootball && tmCat && <button onClick={()=>setShowFmt(showFmt===tm.id?null:tm.id)} style={{padding:"7px 11px",borderRadius:9,border:`1.5px solid ${showFmt===tm.id?t.p:"#e2e8f0"}`,background:showFmt===tm.id?t.p+"12":"#f8fafc",color:showFmt===tm.id?t.p:"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Spielform</button>}
-                  <button onClick={()=>{setEditId(tm.id);setEditName(tm.name);}} style={{padding:"7px 11px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#f8fafc",color:"#475569",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Umbenennen</button>
-                  <button onClick={()=>delTeam(tm.id)} style={{padding:"7px 11px",borderRadius:9,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Löschen</button>
+
+              {auf&&(
+                <div style={{padding:"0 14px 14px"}}>
+                  <TFeld label="NAME">
+                    <div style={{display:"flex",gap:7}}>
+                      <input value={editId===tm.id?editName:tm.name}
+                        onFocus={()=>{ if(editId!==tm.id){ setEditId(tm.id); setEditName(tm.name); } }}
+                        onChange={e=>{ setEditId(tm.id); setEditName(e.target.value); }}
+                        onKeyDown={e=>{ if(e.key==="Enter") renameTeam(tm.id); }}
+                        style={{flex:1,minWidth:0,padding:"10px 12px",fontSize:14,border:"1px solid #e4e9f0",borderRadius:9,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
+                      {editId===tm.id&&editName.trim()&&editName.trim()!==tm.name&&(
+                        <button onClick={()=>renameTeam(tm.id)} style={{flexShrink:0,padding:"10px 14px",borderRadius:9,border:"none",background:t.p,color:contrast(t.p),fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Speichern</button>
+                      )}
+                    </div>
+                  </TFeld>
+
+                  <TFeld label="WER MELDET AN?" hinweis={teamSelfLogin(tm,cl?.clubSettings)?"aktuell: Spieler":"aktuell: Eltern"}
+                    hint={"Wer stimmt bei Terminen ab? 'Automatisch' richtet sich nach dem Alter der Jugend."}>
+                    <TWahl t={t} opts={LOGIN_OPTS} val={tm.loginMode||"auto"} set={k=>setTeamLogin(tm.id,k)}/>
+                  </TFeld>
+
+                  <TFeld label="SPIELSTÄRKE" hinweis={strengthObj?strengthObj.label:""} hint={strengthInfoText()}>
+                    <TWahl t={t} opts={TEAM_STRENGTHS.map(x=>[x.id,x.label,x.col])} val={tm.strength||1} set={k=>setTeamStrength(tm.id,k)}/>
+                  </TFeld>
+
+                  <TFeld label="KADERGRÖSSE" hinweis={`aktuell ${cnt}${tm.maxSize?` von ${tm.maxSize}`:""}`}
+                    hint={"Maximale Kadergröße. Ist sie erreicht, landen neue Interessenten auf der Warteliste."}>
+                    <div style={{display:"flex",alignItems:"center",gap:9}}>
+                      <input type="number" min="0" value={tm.maxSize||""} onChange={e=>setTeamMax(tm.id, Math.max(0,parseInt(e.target.value)||0))} placeholder="ohne Grenze"
+                        style={{width:130,padding:"10px 12px",fontSize:14,border:"1px solid #e4e9f0",borderRadius:9,outline:"none",fontFamily:"inherit"}}/>
+                      {tm.maxSize&&cnt>=tm.maxSize?<span style={{fontSize:12,fontWeight:700,color:"#b42318"}}>voll</span>:null}
+                    </div>
+                  </TFeld>
+
+                  {/* Mannschaften am Spieltag: frei benennbar, keine Pflicht -
+                      aber wenn die Aufteilung genutzt wird, bleibt mindestens eine. */}
+                  <TFeld label="MANNSCHAFTEN AM SPIELTAG" hinweis={sq.length?"":"nicht eingerichtet"}
+                    hint={"Wenn ihr je nach Anzahl mehrere Mannschaften stellt: gib jeder einen Namen (z. B. Großfeld, Kleinfeld) und die nötige Spielerzahl inklusive Torwart. Der Trainer sieht dann im Termin, für wie viele Mannschaften die Zusagen reichen."}>
+                    {sq.length===0 ? (
+                      <button onClick={()=>setSq([{label:"",need:defaultSollPlayers(tmCat)}])}
+                        style={{width:"100%",padding:"11px",minHeight:42,borderRadius:9,border:"1px dashed #cfd8e5",background:"#fff",color:"#667085",fontWeight:600,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
+                        + Aufteilung einrichten
+                      </button>
+                    ) : (
+                      <div style={{display:"flex",flexDirection:"column",gap:7}}>
+                        {sq.map((s2,si)=>{ const key=tm.id+":"+si; const letzte=sq.length===1; return (
+                          <div key={si} style={{display:"flex",gap:6,alignItems:"center"}}>
+                            <input value={labelDraft[key]!==undefined?labelDraft[key]:(s2.label||"")}
+                              onChange={e=>setLabelDraft(d=>({...d,[key]:e.target.value}))}
+                              onBlur={()=>{ setSq(sq.map((x,j)=>j===si?{...x,label:(labelDraft[key]!==undefined?labelDraft[key]:x.label)}:x)); setLabelDraft(d=>{const n2={...d}; delete n2[key]; return n2;}); }}
+                              placeholder={si===0?"z. B. Großfeld":"z. B. Kleinfeld"}
+                              style={{flex:1,minWidth:0,padding:"9px 11px",fontSize:13.5,border:"1px solid #e4e9f0",borderRadius:9,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
+                            <button onClick={()=>setSq(withDrafts(sq).map((x,j)=>j===si?{...x,need:Math.max(1,(Number(x.need)||0)-1)}:x))} aria-label="weniger Spieler"
+                              style={{width:34,height:38,borderRadius:9,border:"1px solid #e4e9f0",background:"#fff",color:"#667085",fontWeight:700,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>−</button>
+                            <span style={{minWidth:34,textAlign:"center",fontWeight:700,fontSize:14,color:"#101828"}}>{Number(s2.need)||0}</span>
+                            <button onClick={()=>setSq(withDrafts(sq).map((x,j)=>j===si?{...x,need:(Number(x.need)||0)+1}:x))} aria-label="mehr Spieler"
+                              style={{width:34,height:38,borderRadius:9,border:"1px solid #e4e9f0",background:"#fff",color:"#667085",fontWeight:700,fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>+</button>
+                            <button onClick={()=>{ if(letzte) return; setSq(withDrafts(sq).filter((_,j)=>j!==si)); }}
+                              disabled={letzte} title={letzte?"Mindestens eine Mannschaft muss bleiben – sonst die Aufteilung ganz entfernen.":"Diese Mannschaft entfernen"}
+                              aria-label="Mannschaft entfernen"
+                              style={{width:34,height:38,borderRadius:9,border:"1px solid #e4e9f0",background:"#fff",color:letzte?"#cfd8e5":"#b42318",fontWeight:700,fontSize:13,cursor:letzte?"default":"pointer",fontFamily:"inherit"}}>✕</button>
+                          </div>
+                        );})}
+                        <div style={{display:"flex",gap:7,marginTop:1}}>
+                          <button onClick={()=>setSq([...withDrafts(sq),{label:"",need:defaultSollPlayers(tmCat)}])}
+                            style={{flex:1,padding:"10px",minHeight:40,borderRadius:9,border:"1px dashed #cfd8e5",background:"#fff",color:"#667085",fontWeight:600,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
+                            + Mannschaft hinzufügen
+                          </button>
+                          <button onClick={()=>{ if(window.confirm("Aufteilung ganz entfernen? Die eingetragenen Mannschaften gehen verloren.")) setSq([]); }}
+                            style={{flexShrink:0,padding:"10px 12px",minHeight:40,borderRadius:9,border:"1px solid #e4e9f0",background:"#fff",color:"#667085",fontWeight:600,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
+                            Aufteilung aus
+                          </button>
+                        </div>
+                        <div style={{fontSize:11.5,color:"#98a2b3",lineHeight:1.45}}>Mindestens eine Mannschaft bleibt stehen. Zahl = benötigte Spieler inkl. Torwart.</div>
+                      </div>
+                    )}
+                  </TFeld>
+
+                  <TFeld label="SPIELER-BEWERTUNG" hinweis={tm.skillCheckEnabled!==false?"an":"aus"}
+                    hint={"Monatlicher Skill-Check: Trainer beantworten 1×/Monat je Kind kurze Fragen pro Fähigkeit (ca. 1–2 Min pro Kind). Daraus entstehen Entwicklungskurven und Trainingsvorschläge."}>
+                    <TWahl t={t} opts={[["on","An"],["off","Aus"]]} val={tm.skillCheckEnabled!==false?"on":"off"} set={k=>setTeamSkillCheck(tm.id,k==="on")}/>
+                  </TFeld>
+
+                  <TFeld label="TRAINER DARF TEAM-PASSWORT ÄNDERN"
+                    hint={"'Standard' übernimmt die Vereins-Einstellung (Einstellungen → Team)."}>
+                    <TWahl t={t} opts={[["std","Standard"],["yes","Ja"],["no","Nein"]]}
+                      val={tm.trainerEditPwd===true?"yes":tm.trainerEditPwd===false?"no":"std"}
+                      set={k=>setTeamTrainerPwd(tm.id, k==="yes"?true:k==="no"?false:undefined)}/>
+                  </TFeld>
+
+                  <TFeld label="FUSSBALL.DE" hinweis="optional"
+                    hint={"Link eures Teams auf fussball.de (Spielplan/Tabelle). Erscheint als Schnellzugriff im Kader und bei den Eltern."}>
+                    <div style={{display:"flex",gap:7,alignItems:"center"}}>
+                      <input value={tm.fussballUrl||""} onChange={e=>setTeamFussball(tm.id,e.target.value)} placeholder="Link zu Spielplan/Tabelle"
+                        style={{flex:1,minWidth:0,padding:"10px 12px",fontSize:13.5,border:"1px solid #e4e9f0",borderRadius:9,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
+                      {tm.fussballUrl&&<a href={tm.fussballUrl} target="_blank" rel="noreferrer" style={{flexShrink:0,fontSize:12.5,fontWeight:700,color:readable(t.p),textDecoration:"none",padding:"10px 8px"}}>öffnen ↗</a>}
+                    </div>
+                  </TFeld>
+
+                  {isFootball&&tmCat&&(
+                    <TFeld label="DFB-SPIELFORM">
+                      <button onClick={()=>setShowFmt(showFmt===tm.id?null:tm.id)}
+                        style={{width:"100%",padding:"10px",minHeight:40,borderRadius:9,border:"1px solid #e4e9f0",background:"#fff",color:"#667085",fontWeight:600,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
+                        {showFmt===tm.id?"▲ Spielform ausblenden":"▾ Spielform & Feldmaße anzeigen"}
+                      </button>
+                      {showFmt===tm.id&&<div style={{marginTop:8}}><PlayFormatCard cat={tmCat} sport={cl?.sport||"fussball"} cl={cl} compact/></div>}
+                    </TFeld>
+                  )}
+
+                  <div style={{borderTop:"1px solid #f1f4f8",paddingTop:12,marginTop:2}}>
+                    <button onClick={()=>delTeam(tm.id)}
+                      style={{width:"100%",padding:"11px",minHeight:42,borderRadius:9,border:"1px solid #fecaca",background:"#fff",color:"#b42318",fontWeight:600,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
+                      🗑 Mannschaft löschen
+                    </button>
+                  </div>
                 </div>
               )}
-            </div>
-            {editId!==tm.id && (
-              <div style={{display:"flex",alignItems:"center",gap:6,marginTop:8,flexWrap:"wrap"}}>
-                <span style={{fontSize:10.5,fontWeight:800,color:"#64748b",letterSpacing:.3}}>STÄRKE</span>
-                {TEAM_STRENGTHS.map(s=>{const on=(tm.strength||1)===s.id;return (
-                  <button key={s.id} onClick={()=>setTeamStrength(tm.id,s.id)} title={s.desc}
-                    style={{padding:"4px 10px",borderRadius:8,border:`1.5px solid ${on?s.col:"#e2e8f0"}`,background:on?s.col+"15":"#fff",color:on?s.col:"#94a3b8",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>{s.label}</button>
-                );})}
-                <InfoHint text={strengthInfoText()}/>
-              </div>
-            )}
-            {editId!==tm.id && (
-              <div style={{display:"flex",alignItems:"center",gap:6,marginTop:6,flexWrap:"wrap"}}>
-                <span style={{fontSize:10.5,fontWeight:800,color:"#64748b",letterSpacing:.3}}>ANMELDUNG</span>
-                {LOGIN_OPTS.map(([k,l])=>{const on=(tm.loginMode||"auto")===k;return (
-                  <button key={k} onClick={()=>setTeamLogin(tm.id,k)} style={{padding:"4px 10px",borderRadius:8,border:`1.5px solid ${on?t.p:"#e2e8f0"}`,background:on?t.p+"15":"#fff",color:on?t.p:"#94a3b8",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
-                );})}
-                <span style={{fontSize:10.5,color:"#64748b"}}>{teamSelfLogin(tm,cl?.clubSettings)?"→ Spieler":"→ Eltern"}</span>
-              </div>
-            )}
-            {editId!==tm.id && (
-              <div style={{display:"flex",alignItems:"center",gap:6,marginTop:6,flexWrap:"wrap"}}>
-                <span style={{fontSize:10.5,fontWeight:800,color:"#64748b",letterSpacing:.3}}>BEWERTUNG</span>
-                {[["on","An"],["off","Aus"]].map(([k,l])=>{const on=(tm.skillCheckEnabled!==false)===(k==="on");return (
-                  <button key={k} onClick={()=>setTeamSkillCheck(tm.id,k==="on")} style={{padding:"4px 10px",borderRadius:8,border:`1.5px solid ${on?t.p:"#e2e8f0"}`,background:on?t.p+"15":"#fff",color:on?t.p:"#94a3b8",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
-                );})}
-                <InfoHint text={"Monatlicher Skill-Check: Trainer beantworten 1×/Monat je Kind kurze Fragen pro Fähigkeit (ca. 1–2 Min pro Kind). Daraus entstehen Entwicklung & Förderhinweise. Aufwand lohnt sich v.a. im Leistungsbereich – im reinen Breitensport ruhig 'Aus'."}/>
-              </div>
-            )}
-            {editId!==tm.id && (()=>{ const kaderN=(data.playerProfiles||[]).filter(p=>p.mainTid===tm.id&&!p.archived).length; const full=tm.maxSize&&kaderN>=tm.maxSize; return (
-              <div style={{display:"flex",alignItems:"center",gap:6,marginTop:6,flexWrap:"wrap"}}>
-                <span style={{fontSize:10.5,fontWeight:800,color:"#64748b",letterSpacing:.3}}>MAX KADER</span>
-                <input type="number" min="0" value={tm.maxSize||""} onChange={e=>setTeamMax(tm.id, Math.max(0,parseInt(e.target.value)||0))} placeholder="—"
-                  style={{width:60,padding:"5px 8px",fontSize:12,border:"1.5px solid #e2e8f0",borderRadius:8,outline:"none",fontFamily:"inherit"}}/>
-                <span style={{fontSize:11,color:full?"#dc2626":"#64748b",fontWeight:full?800:600}}>aktuell {kaderN}{tm.maxSize?`/${tm.maxSize}`:""}{full?" · VOLL":""}</span>
-                <InfoHint text={"Maximale Kadergröße. Bei erreichtem Max sollen neue Interessenten auf die Warteliste – der Hinweis erscheint im Team-Login."}/>
-              </div>
-            ); })()}
-            {editId!==tm.id && (
-              <div style={{display:"flex",alignItems:"center",gap:6,marginTop:6,flexWrap:"wrap"}}>
-                <span style={{fontSize:10.5,fontWeight:800,color:"#64748b",letterSpacing:.3}}>FUSSBALL.DE</span>
-                <input value={tm.fussballUrl||""} onChange={e=>setTeamFussball(tm.id,e.target.value)} placeholder="Link zu Spielplan/Tabelle einfügen…"
-                  style={{flex:1,minWidth:150,padding:"5px 9px",fontSize:12,border:"1.5px solid #e2e8f0",borderRadius:8,outline:"none",fontFamily:"inherit"}}/>
-                {tm.fussballUrl&&<a href={tm.fussballUrl} target="_blank" rel="noreferrer" style={{fontSize:11.5,fontWeight:800,color:"#16a34a",textDecoration:"none",padding:"5px 9px",border:"1.5px solid #bbf7d0",borderRadius:8,background:"#f0fdf4"}}>öffnen ↗</a>}
-                <InfoHint text={"Link eures Teams auf fussball.de (Spielplan/Tabelle). Erscheint als Schnellzugriff im Kader und bei den Eltern."}/>
-              </div>
-            )}
-            {editId!==tm.id && (
-              <div style={{display:"flex",alignItems:"center",gap:6,marginTop:6,flexWrap:"wrap"}}>
-                <span style={{fontSize:10.5,fontWeight:800,color:"#64748b",letterSpacing:.3}}>PASSWORT (TRAINER)</span>
-                {[["std","Standard",undefined],["yes","Ja",true],["no","Nein",false]].map(([k,l,v])=>{const cur=tm.trainerEditPwd===true?"yes":tm.trainerEditPwd===false?"no":"std";const on=cur===k;return (
-                  <button key={k} onClick={()=>setTeamTrainerPwd(tm.id,v)} style={{padding:"4px 10px",borderRadius:8,border:`1.5px solid ${on?t.p:"#e2e8f0"}`,background:on?t.p+"15":"#fff",color:on?t.p:"#94a3b8",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
-                );})}
-                <InfoHint text={"Darf der Trainer dieser Mannschaft das Team-Passwort selbst ändern? 'Standard' übernimmt die Vereins-Einstellung (Einstellungen → Team)."}/>
-              </div>
-            )}
-            {editId!==tm.id && (
-              <div style={{marginTop:6}}>
-                <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-                  <span style={{fontSize:10.5,fontWeight:800,color:"#64748b",letterSpacing:.3}}>AUFTEILUNG</span>
-                  {[1,2,3].map(n=>{ const cur=tm.squads?.length||1; const on=cur===n; return (
-                    <button key={n} onClick={()=>{
-                      if(n===1){ if((tm.squads?.length||0)>0 && typeof window!=="undefined" && window.confirm && !window.confirm("Aufteilung entfernen? Die konfigurierten Mannschaften gehen verloren.")) return; setTeamSquads(tm.id,[]); return; }
-                      const def=[{label:"Großfeld",need:5},{label:"Kleinfeld",need:3},{label:"3. Mannschaft",need:5}];
-                      const c=(tm.squads&&tm.squads.length)?tm.squads:[];
-                      setTeamSquads(tm.id, Array.from({length:n},(_,i)=>c[i]||def[i]));
-                    }} style={{padding:"4px 10px",borderRadius:8,border:`1.5px solid ${on?t.p:"#e2e8f0"}`,background:on?t.p+"15":"#fff",color:on?t.p:"#94a3b8",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>{n===1?"1 Team":n+" Teams"}</button>
-                  );})}
-                  <InfoHint text={"Wenn ihr je nach Anzahl mehrere Mannschaften stellt: lege je Mannschaft fest, wie viele Spieler nötig sind (inkl. Torwart, z.B. Großfeld 4+1=5). Beim Termin wird anhand der Zusagen angezeigt, wie viele Mannschaften ihr stellen könnt."}/>
-                </div>
-                {(tm.squads?.length>=2)&&(()=>{ const withDrafts=arr=>arr.map((x,j)=>({...x,label:(labelDraft[tm.id+":"+j]!==undefined?labelDraft[tm.id+":"+j]:x.label)})); return (
-                  <div style={{display:"flex",flexDirection:"column",gap:6,marginTop:7}}>
-                    {tm.squads.map((sq,si)=>{ const key=tm.id+":"+si; return (
-                      <div key={si} style={{display:"flex",gap:7,alignItems:"center"}}>
-                        <input value={labelDraft[key]!==undefined?labelDraft[key]:(sq.label||"")}
-                          onChange={e=>setLabelDraft(d=>({...d,[key]:e.target.value}))}
-                          onBlur={()=>{ setTeamSquads(tm.id,tm.squads.map((x,j)=>j===si?{...x,label:(labelDraft[key]!==undefined?labelDraft[key]:x.label)}:x)); setLabelDraft(d=>{const n2={...d};delete n2[key];return n2;}); }}
-                          placeholder={"Mannschaft "+(si+1)}
-                          style={{flex:1,padding:"7px 10px",fontSize:13,border:"1.5px solid #e2e8f0",borderRadius:8,outline:"none",boxSizing:"border-box"}}/>
-                        <button onClick={()=>setTeamSquads(tm.id,withDrafts(tm.squads).map((x,j)=>j===si?{...x,need:Math.max(1,(Number(x.need)||0)-1)}:x))} style={{width:30,height:32,borderRadius:8,border:"1.5px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontWeight:800,fontSize:15}}>–</button>
-                        <span style={{minWidth:22,textAlign:"center",fontWeight:800,fontSize:14,color:"#0f172a"}}>{Number(sq.need)||0}</span>
-                        <button onClick={()=>setTeamSquads(tm.id,withDrafts(tm.squads).map((x,j)=>j===si?{...x,need:(Number(x.need)||0)+1}:x))} style={{width:30,height:32,borderRadius:8,border:"1.5px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontWeight:800,fontSize:15}}>+</button>
-                        <span style={{fontSize:11,color:"#64748b",whiteSpace:"nowrap"}}>Sp.</span>
-                      </div>
-                    );})}
-                  </div>
-                ); })()}
-              </div>
-            )}
-            {showFmt===tm.id && <div style={{marginTop:8}}><PlayFormatCard cat={tmCat} sport={cl?.sport||"fussball"} cl={cl} compact/></div>}
             </div>
           );
         })}
@@ -7937,7 +7986,7 @@ function PollAttend({ev,user,onVote,cl,session=null,save=()=>{},data=null,fire=(
       {ev.note&&<div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:12,padding:"10px 13px",fontSize:13,color:"#92400e",fontWeight:500}}>{ev.note}</div>}
       {ev.deadline&&<div style={{background:dlPassed?"#fee2e2":"#fffbeb",border:`1.5px solid ${dlPassed?"#fca5a5":"#fde68a"}`,borderRadius:12,padding:"9px 13px",fontSize:13,fontWeight:700,color:dlPassed?"#dc2626":"#d97706"}}>{dlPassed?tr("vDeadlinePassed"):tr("vDeadline")+" "+ev.deadline.date+(ev.deadline.time?" "+ev.deadline.time+" Uhr":"")}</div>}
 
-      {(()=>{ const squads=_team?.squads||[]; if(squads.length<2) return null;
+      {(()=>{ const squads=_team?.squads||[]; if(squads.length<1) return null;
         const yesN=yes.length; let rem=yesN,filled=0,nextNeed=null,nextLabel=null;
         for(let i=0;i<squads.length;i++){ const need=Number(squads[i].need)||0; if(need>0&&rem>=need){filled++;rem-=need;} else {nextNeed=Math.max(0,need-rem); nextLabel=squads[i].label||tr("sqTeamN").replace("{i}",i+1); break;} }
         const allOk=filled===squads.length;
