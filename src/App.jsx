@@ -9,7 +9,7 @@ import { _sha256, hashPw, checkPw } from "./util.js";
 import { LANG_KEY, LangCtx, T, useT } from "./i18n.jsx";
 
 import { LANG_SWITCHER_ENABLED, LangSwitcher, FloatingLangSwitcher, getFontScale, applyFontScale, FontScaleControl, SupabaseSetup, uid, addMins, activeSid, activeTeamsFor, genTempPw, validTrainerPw, now, addD, fmtD, plzToGeo, wxIcon, useWeather, geoDistanceKm, TEAM_STRENGTHS, strengthInfoText, strengthOf, InfoHint, isActive, teamSelfLogin, fmtDShort, ET, etLabel, evDisplayTitle,  CSS, TH, OnlineStatus, Logo, Av, Tag, Toast, AreaIntro, Drawer, PageHead, PillTabs, TeamPills, EmptyBox, Btn, PwInput, Inp, Sel, Sw, ClubHeader, Divider , SpiderChart, dimLabel } from "./ui.jsx";
-import { DFB_FORMATS, dfbFormatForCat, CAT_YEARS, catYearsStr, CAT_ORDER, eligibleCats, playerFitType, playerFitsTeam, fitLabel } from "./dfb.js";
+import { DFB_FORMATS, dfbFormatForCat, CAT_YEARS, catYearsStr, CAT_ORDER, eligibleCats, playerFitType, playerFitsTeam, fitLabel, _fbSeasonStart } from "./dfb.js";
 import { CAT_RANK, defaultSoll, SOLL_PLAYERS_BY_CAT, _votedYes, isPausedP, drillScores, drillVoteOf, playerNoShowEvents, NO_SHOW_HINT_THRESHOLD, addAuditLog, suggestDrillsForSkill, generateTrainingPlan, SKILLS, SKILL_AXES, skillAxesFor, sollFor, trainingFocusFor, buildSession, playerArchetype, AXIS_TO_FOCUS, staffNeed } from "./domain.js";
 import { TRAINING_TEMPLATES, DRILL_LIB } from "./drills.js";
 import { CHANGELOG, CL_TYPES, CL_AREAS } from "./changelog.js";
@@ -13424,8 +13424,8 @@ function SeasonModal({ data,save,fire,cl,myTids,onClose }) {
     fire(`${removeCount} Duplikate entfernt`);
   };
 
-  const buildCopy = (fromId, toId, base) => {
-    const fromPlayers = base.filter(p => p.seasonId===fromId && myTids.includes(p.mainTid));
+  const buildCopy = (fromId, toId, base, wahl=null, zuordnung={}) => {
+    const fromPlayers = base.filter(p => p.seasonId===fromId && myTids.includes(p.mainTid) && (!wahl||wahl.has(p.id)));
     const toExisting  = base.filter(p => p.seasonId===toId);
     const existingKeys = new Set(toExisting.map(dupKey));
     const copied = fromPlayers
@@ -13433,13 +13433,13 @@ function SeasonModal({ data,save,fire,cl,myTids,onClose }) {
       .map(p => ({
         ...p, id: uid(), seasonId: toId,
         lastTeam:   (allTeams.find(tm=>tm.id===p.mainTid)?.name||"") + " " + (seasons.find(s=>s.id===fromId)?.label||""),
-        lastTeamId: p.mainTid, mainTid:"", optTids:[], jerseyNr:"", jerseyStatus:"none",
+        lastTeamId: p.mainTid, mainTid:(zuordnung[p.id]||""), optTids:[], jerseyNr:"", jerseyStatus:"none",
         goals:0, assists:0, yellowCards:0, redCards:0,
       }));
     return { next:{...data, playerProfiles:[...base, ...copied]}, count:copied.length, skipped:fromPlayers.length-copied.length };
   };
   const copyToSeason = (fromId,toId) => {
-    const { next, count, skipped } = buildCopy(fromId,toId,allPlayers);
+    const { next, count, skipped } = buildCopy(fromId,toId,allPlayers,sel,zuord);
     save(next);
     fire(`${count} Spieler in ${seasons.find(s=>s.id===toId)?.label||toId} kopiert${skipped?` · ${skipped} bereits vorhanden, übersprungen`:""}`);
     onClose();
@@ -13477,7 +13477,7 @@ function SeasonModal({ data,save,fire,cl,myTids,onClose }) {
       const { next, count } = buildActivate(pending.toId, base);
       save(next); fire(`Saison ${seasons.find(s=>s.id===pending.toId)?.label||""} aktiv · ${count} Spieler übernommen`);
     } else {
-      const { next, count, skipped } = buildCopy(pending.fromId, pending.toId, base);
+      const { next, count, skipped } = buildCopy(pending.fromId, pending.toId, base, sel, zuord);
       save(next); fire(`${count} Spieler kopiert${skipped?` · ${skipped} übersprungen`:""}`);
     }
     setPending(null); onClose();
@@ -13488,6 +13488,51 @@ function SeasonModal({ data,save,fire,cl,myTids,onClose }) {
   const [copyFrom,setCopyFrom] = useState(active);
   const [copyTo,setCopyTo]   = useState(seasons.find(s=>s.status==="planning")?.id||"");
   const planningSeasons = seasons.filter(s=>s.status==="planning");
+
+  // --- Vorschlag fuer die neue Saison: Jahrgang + Geschlecht ---------------
+  // In der neuen Saison rueckt jeder Jahrgang eine Stufe auf. Aus dem Label
+  // ("2027/28") lesen wir das Startjahr und verschieben die Altersklassen
+  // entsprechend. Maedchen duerfen zwei Jahre juenger spielen - das steckt
+  // bereits in eligibleCats().
+  const startJahr = lbl => { const m=String(lbl||"").match(/(20\d\d)/); return m?Number(m[1]):_fbSeasonStart; };
+  const katFuer = (by,gender,jahr) => {
+    if(!by) return null;
+    const eff = Number(by) - (jahr - _fbSeasonStart);
+    const eigene = Object.entries(CAT_YEARS).find(([,ys])=>(ys||[]).includes(eff));
+    if(eigene) return eigene[0];
+    const auch = eligibleCats(eff, gender||"m");     // Maedchen-Regel als Rueckfall
+    return auch[0]||null;
+  };
+  const teamFuerKat = kat => {
+    if(!kat) return "";
+    const passend = myTeams.filter(tm=>(tm.cat||tm.name)===kat);
+    return passend[0]?.id || "";
+  };
+  const [sel,setSel]     = useState(null);   // Set der ausgewaehlten Spieler-Ids
+  const [zuord,setZuord] = useState({});     // Spieler-Id -> Team-Id in der neuen Saison
+  const quelle = React.useMemo(()=> allPlayers
+      .filter(p=>p.seasonId===copyFrom && !p.archived && myTids.includes(p.mainTid))
+      .sort((a,b)=>String(a.by||"").localeCompare(String(b.by||""))||(a.name||"").localeCompare(b.name||"")),
+    [allPlayers,copyFrom,myTids.join(",")]);
+  const zielJahr = startJahr(seasons.find(x=>x.id===copyTo)?.label);
+  React.useEffect(()=>{
+    if(!copyFrom||!copyTo){ setSel(null); return; }
+    const z={}; quelle.forEach(p=>{ z[p.id]=teamFuerKat(katFuer(p.by,p.gender,zielJahr)); });
+    setZuord(z);
+    setSel(new Set(quelle.map(p=>p.id)));
+  },[copyFrom,copyTo,quelle.length]);
+  const anAus = id => setSel(prev=>{ const n2=new Set(prev||[]); n2.has(id)?n2.delete(id):n2.add(id); return n2; });
+  const gruppeAnAus = (ids,an) => setSel(prev=>{ const n2=new Set(prev||[]); ids.forEach(i=>an?n2.add(i):n2.delete(i)); return n2; });
+  // Nach Vorschlag gruppieren, damit man Mannschaft fuer Mannschaft durchgeht
+  const gruppen = React.useMemo(()=>{
+    const g=new Map();
+    quelle.forEach(p=>{ const tid=zuord[p.id]||""; if(!g.has(tid)) g.set(tid,[]); g.get(tid).push(p); });
+    return [...g.entries()].sort((a,b)=>{
+      if(!a[0]) return 1; if(!b[0]) return -1;
+      return (myTeams.find(x=>x.id===a[0])?.name||"").localeCompare(myTeams.find(x=>x.id===b[0])?.name||"");
+    });
+  },[quelle,zuord]);
+  const gewaehlt = quelle.filter(p=>sel&&sel.has(p.id));
 
   return (
     <div style={{position:"fixed",inset:0,overflowY:"auto",WebkitOverflowScrolling:"touch",background:"rgba(0,0,0,.6)",zIndex:900,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
@@ -13528,8 +13573,8 @@ function SeasonModal({ data,save,fire,cl,myTids,onClose }) {
           {tab==="copy"&&(
             <div style={{display:"flex",flexDirection:"column",gap:14}}>
               <div style={{background:"#eff6ff",borderRadius:13,padding:"13px 15px",border:"1.5px solid #bfdbfe",fontSize:13,color:"#1d4ed8",lineHeight:1.6}}>
-                 <strong>Spieler in neue Saison kopieren</strong><br/>
-                Alle Spieler werden übernommen. Ihr letztes Team wird automatisch als "Letzte Saison" eingetragen. Trikotnummern,Statistiken und Zuteilungen werden zurückgesetzt - so kannst du neu einteilen.
+                <strong>Spieler in die neue Saison übernehmen</strong><br/>
+                Die App schlägt für jedes Kind die neue Mannschaft vor – nach Jahrgang und Geschlecht. Du hakst ab, wer mitkommt, und änderst die Mannschaft, wo es anders sein soll. Trikotnummern und Statistiken starten frisch, das letzte Team bleibt als Vermerk erhalten.
               </div>
 
               <div>
@@ -13559,17 +13604,66 @@ function SeasonModal({ data,save,fire,cl,myTids,onClose }) {
                 )}
               </div>
 
-              {copyFrom&&copyTo&&(
-                <div style={{background:"#f8fafc",borderRadius:12,padding:"12px 14px",border:"1.5px solid #e2e8f0",fontSize:13,color:"#64748b"}}>
-                  <strong style={{color:"#334155"}}>{allPlayers.filter(p=>p.seasonId===copyFrom&&myTids.includes(p.mainTid)).length} Spieler</strong> werden kopiert
-                  {" -> "}letztes Team vorausgefuellt,Positionen+Stärken übernommen,Zuteilung zurückgesetzt
+              {/* Vorschlag je Kind: Jahrgang + Geschlecht bestimmen die neue
+                  Mannschaft. Alles anpassbar - abwaehlen oder Team wechseln. */}
+              {copyFrom&&copyTo&&quelle.length>0&&(
+                <div>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:7}}>
+                    <span style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5}}>VORSCHLAG FÜR {seasonLbl(seasons.find(x=>x.id===copyTo)?.label||"")}</span>
+                    <span style={{marginLeft:"auto",fontSize:12,fontWeight:800,color:t.p}}>{gewaehlt.length}/{quelle.length}</span>
+                  </div>
+                  <div style={{fontSize:11.5,color:"#64748b",lineHeight:1.5,marginBottom:9}}>
+                    Jeder Jahrgang rückt eine Stufe auf. Mädchen dürfen zwei Jahre jünger spielen – das ist berücksichtigt. Haken entfernen oder Mannschaft ändern, wenn es anders sein soll.
+                  </div>
+                  <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                    {gruppen.map(([tid,liste])=>{
+                      const tm=myTeams.find(x=>x.id===tid);
+                      const ids=liste.map(p=>p.id);
+                      const alleAn=ids.every(i=>sel&&sel.has(i));
+                      return (
+                        <div key={tid||"ohne"} style={{border:`1px solid ${tid?"#e4e9f0":"#fed7aa"}`,borderRadius:12,overflow:"hidden",background:tid?"#fff":"#fffbf5"}}>
+                          <div style={{display:"flex",alignItems:"center",gap:9,padding:"9px 12px",background:tid?"#f8fafc":"#fff7ed",borderBottom:`1px solid ${tid?"#eef2f7":"#fed7aa"}`}}>
+                            <button onClick={()=>gruppeAnAus(ids,!alleAn)} aria-label={alleAn?"Gruppe abwählen":"Gruppe auswählen"}
+                              style={{width:22,height:22,borderRadius:6,border:`1.5px solid ${alleAn?t.p:"#cbd5e1"}`,background:alleAn?t.p:"#fff",color:"#fff",fontSize:13,fontWeight:900,cursor:"pointer",flexShrink:0,lineHeight:1,fontFamily:"inherit"}}>{alleAn?"✓":""}</button>
+                            <span style={{flex:1,minWidth:0,fontWeight:800,fontSize:13.5,color:tid?"#0f172a":"#9a3412",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+                              {tm?tm.name:"Kein passendes Team"}
+                            </span>
+                            <span style={{fontSize:11.5,color:"#64748b",fontWeight:700,flexShrink:0}}>{liste.length}</span>
+                          </div>
+                          <div style={{padding:"4px 12px 8px"}}>
+                            {liste.map(pl=>{ const an=!!(sel&&sel.has(pl.id)); const w=(pl.gender||"m")==="w";
+                              return (
+                                <div key={pl.id} style={{display:"flex",alignItems:"center",gap:9,padding:"7px 0",borderBottom:"1px solid #f4f7fa"}}>
+                                  <button onClick={()=>anAus(pl.id)} aria-label={an?"abwählen":"auswählen"}
+                                    style={{width:22,height:22,borderRadius:6,border:`1.5px solid ${an?t.p:"#cbd5e1"}`,background:an?t.p:"#fff",color:"#fff",fontSize:13,fontWeight:900,cursor:"pointer",flexShrink:0,lineHeight:1,fontFamily:"inherit"}}>{an?"✓":""}</button>
+                                  <div style={{flex:1,minWidth:0}}>
+                                    <div style={{fontSize:13,fontWeight:600,color:an?"#0f172a":"#94a3b8",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{pl.name}</div>
+                                    <div style={{fontSize:11,color:"#94a3b8"}}>{pl.by?`Jg. ${pl.by}`:"ohne Jahrgang"} · {w?"♀ Mädchen":"♂ Junge"}{pl.mainTid?` · aus ${(myTeams.find(x=>x.id===pl.mainTid)||{}).name||""}`:""}</div>
+                                  </div>
+                                  <select value={zuord[pl.id]||""} onChange={e=>setZuord(z=>({...z,[pl.id]:e.target.value}))}
+                                    style={{flexShrink:0,maxWidth:132,padding:"7px 8px",fontSize:12,border:"1px solid #e4e9f0",borderRadius:8,outline:"none",background:"#fff",fontFamily:"inherit"}}>
+                                    <option value="">— ohne Team —</option>
+                                    {myTeams.map(tm2=><option key={tm2.id} value={tm2.id}>{tm2.name}</option>)}
+                                  </select>
+                                </div>
+                              ); })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {copyFrom&&copyTo&&quelle.length===0&&(
+                <div style={{background:"#fff7ed",borderRadius:11,padding:"12px 14px",border:"1.5px solid #fed7aa",fontSize:13,color:"#c2410c"}}>
+                  In dieser Saison sind keine Spieler zugeordnet, die kopiert werden könnten.
                 </div>
               )}
 
               <button onClick={()=>copyFrom&&copyTo&&requestCopy(copyFrom,copyTo)}
-                disabled={!copyFrom||!copyTo}
-                style={{width:"100%",padding:"14px",borderRadius:14,border:"none",background:copyFrom&&copyTo?t.p:"#e2e8f0",color:copyFrom&&copyTo?"#fff":"#64748b",fontWeight:800,fontSize:15,cursor:copyFrom&&copyTo?"pointer":"default",fontFamily:"inherit"}}>
-                 Spieler jetzt kopieren
+                disabled={!copyFrom||!copyTo||!gewaehlt.length}
+                style={{width:"100%",padding:"14px",borderRadius:14,border:"none",background:(copyFrom&&copyTo&&gewaehlt.length)?t.p:"#e2e8f0",color:(copyFrom&&copyTo&&gewaehlt.length)?"#fff":"#64748b",fontWeight:800,fontSize:15,cursor:copyFrom&&copyTo?"pointer":"default",fontFamily:"inherit"}}>
+                {gewaehlt.length?`${gewaehlt.length} Spieler jetzt kopieren`:"Spieler jetzt kopieren"}
               </button>
             </div>
           )}
