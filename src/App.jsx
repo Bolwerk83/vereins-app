@@ -9555,16 +9555,26 @@ function PoolView({ allPlayers,myTeams,allTeams,defaultScopeTids,cid,onAssign,on
       {}
       {scopeTeams.length>0&&(
         <div style={{display:"grid",gridTemplateColumns:`repeat(${Math.min(scopeTeams.length+1,4)},1fr)`,gap:8,marginBottom:14}}>
-          {scopeTeams.map(tm=>(
-            <div key={tm.id} style={{background:tm.col+"12",borderRadius:12,padding:"10px 8px",textAlign:"center",border:`2px solid ${tm.col}30`}}>
-              <div style={{fontWeight:900,fontSize:22,color:tm.col,lineHeight:1}}>{countForTeam(tm.id)}</div>
-              <div style={{fontSize:11,fontWeight:700,color:tm.col,marginTop:3,opacity:.8}}>{tm.name}</div>
-            </div>
-          ))}
-          <div style={{background:"#fef3c7",borderRadius:12,padding:"10px 8px",textAlign:"center",border:"2px solid #fde68a"}}>
-            <div style={{fontWeight:900,fontSize:22,color:"#d97706",lineHeight:1}}>{unassigned}</div>
-            <div style={{fontSize:11,fontWeight:700,color:"#d97706",marginTop:3,opacity:.8}}> Offen</div>
-          </div>
+          {/* Die Kacheln sind der Filter: antippen zeigt nur diese Gruppe,
+              nochmal antippen zeigt wieder alle. */}
+          {scopeTeams.map(tm=>{ const an=filter===tm.id; return (
+            <button key={tm.id} onClick={()=>setFilter(an?"all":tm.id)}
+              title={an?"Filter aufheben – wieder alle zeigen":`Nur ${tm.name} zeigen`}
+              aria-pressed={an}
+              style={{background:an?tm.col:tm.col+"12",borderRadius:12,padding:"10px 8px",textAlign:"center",border:`2px solid ${an?tm.col:tm.col+"30"}`,cursor:"pointer",fontFamily:"inherit",minHeight:58}}>
+              <div style={{fontWeight:900,fontSize:22,color:an?"#fff":tm.col,lineHeight:1}}>{countForTeam(tm.id)}</div>
+              <div style={{fontSize:11,fontWeight:700,color:an?"#fff":tm.col,marginTop:3,opacity:an?.95:.8,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{tm.name}</div>
+            </button>
+          );})}
+          {(()=>{ const an=filter==="unassigned"; return (
+            <button onClick={()=>setFilter(an?"all":"unassigned")}
+              title={an?"Filter aufheben – wieder alle zeigen":"Nur noch nicht zugeteilte Kinder zeigen"}
+              aria-pressed={an}
+              style={{background:an?"#d97706":"#fef3c7",borderRadius:12,padding:"10px 8px",textAlign:"center",border:`2px solid ${an?"#d97706":"#fde68a"}`,cursor:"pointer",fontFamily:"inherit",minHeight:58}}>
+              <div style={{fontWeight:900,fontSize:22,color:an?"#fff":"#d97706",lineHeight:1}}>{unassigned}</div>
+              <div style={{fontSize:11,fontWeight:700,color:an?"#fff":"#d97706",marginTop:3,opacity:an?.95:.8}}>Offen</div>
+            </button>
+          ); })()}
         </div>
       )}
 
