@@ -16195,6 +16195,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           {!isAdmin&&modOn("saison")&&<SeasonSurveyReminder data={local} cid={cid} session={session} onOpen={()=>setSurveyOpen(true)}/>}
           {/* Vertretungs-Gesuche: Trainer helfen sich bei Krankheit & Co. gegenseitig aus */}
           {!isHelper&&<VertretungsBoard data={local} cid={cid} session={session} save={save} fire={fire}/>}
+          {/* Andere Mannschaft fragt eines meiner Kinder als Aushilfe an */}
+          {!isHelper&&<AushilfeAnfragen data={local} cid={cid} session={session} myTids={myTids} save={save} fire={fire} cl={myClub}/>}
           {/* ⚡ Kurzfristige Termine mit fehlenden Rueckmeldungen nachfassen */}
           {!isHelper&&<KurzfristigNachfassen data={local} myTids={myTids} cid={cid} cl={myClub} save={save} fire={fire}
             selfName={selfName} onOpen={ev=>setViewEv(ev)}/>}
@@ -16705,6 +16707,17 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,votes:nv}:e)});
             setViewEv(prev=>({...prev,votes:nv}));
             fire(name+": als Aushilfe eingetragen");
+          }}
+          onAnfrage={(pl,text)=>{
+            const tmName=(local.teams||[]).find(x=>x.id===viewEv.tid)?.name||"";
+            const req={ id:uid(), cid, evId:viewEv.id, evTitle:evDisplayTitle?evDisplayTitle(viewEv):viewEv.title,
+              evDate:viewEv.date, evTime:viewEv.time||"", tid:viewEv.tid, teamName:tmName,
+              byId:session?.id||"", byName:session?.name||"Trainer",
+              playerId:pl.id, playerName:pl.name, homeTid:pl.mainTid||"", ts:new Date().toISOString(), status:"open" };
+            const msg={ id:uid(), cid, tid:pl.mainTid||viewEv.tid, to:pl.name, from:session?.name||"Trainer",
+              text, ts:new Date().toISOString(), reads:{} };
+            save({...local, aushilfeReqs:[...(local.aushilfeReqs||[]), req], trainerMsgs:[...(local.trainerMsgs||[]), msg]});
+            fire("Anfrage an die Eltern gesendet – der eigene Trainer wurde informiert");
           }}
           onIgnorieren={(name,an)=>{
             const liste=an ? [...new Set([...(viewEv.conflictOk||[]),name])] : (viewEv.conflictOk||[]).filter(x=>x!==name);
@@ -17406,9 +17419,73 @@ function PlaytimeTracker({ ev, roster, onSave, t }){
 // laesst sich bewusst ignorieren - manchmal hilft ein Kind beim selben
 // Turnier in zwei Mannschaften aus.
 // ----------------------------------------------------------------
-function AushilfenBoard({ ev, data, cl, onSetVote, onIgnorieren }){
+// ----------------------------------------------------------------
+// Hinweis fuer den eigenen Trainer: Eine andere Mannschaft hat sein Kind als
+// Aushilfe angefragt. Er kann absagen (mit Grund) oder es einfach stehen
+// lassen - dann laeuft die Anfrage ganz normal weiter.
+// ----------------------------------------------------------------
+function AushilfeAnfragen({ data, cid, session, myTids=[], save, fire, cl }){
+  const t=TH(cl);
+  const [grundZu,setGrundZu]=useState(null);   // Anfrage-Id, zu der ein Grund getippt wird
+  const [grund,setGrund]=useState("");
+  const reqs=((data.aushilfeReqs)||[]).filter(r=>r.cid===cid&&r.status==="open"&&myTids.includes(r.homeTid)&&!myTids.includes(r.tid));
+  if(!reqs.length) return null;
+  const setzen=(r,status,text)=>{
+    save({...data, aushilfeReqs:(data.aushilfeReqs||[]).map(x=>x.id===r.id
+      ? {...x,status,reason:text||"",decidedBy:session?.name||"Trainer",decidedAt:new Date().toISOString()} : x)});
+    fire(status==="no"?"Abgesagt – die andere Mannschaft sieht den Grund":"Notiert – die Anfrage läuft weiter");
+    setGrundZu(null); setGrund("");
+  };
+  return (
+    <div style={{background:"#fff",border:"1.5px solid #fde68a",borderRadius:14,padding:"13px 15px",marginBottom:14}}>
+      <div style={{fontWeight:800,fontSize:13.5,color:"#92400e",marginBottom:3}}>🔁 Aushilfe-Anfrage ({reqs.length})</div>
+      <div style={{fontSize:12,color:"#b45309",lineHeight:1.5,marginBottom:10}}>
+        Eine andere Mannschaft hat eines deiner Kinder direkt angefragt. Du musst nichts tun – melde dich nur, wenn es nicht passt.
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:9}}>
+        {reqs.map(r=>(
+          <div key={r.id} style={{background:"#fffbeb",border:"1px solid #fde68a",borderRadius:12,padding:"10px 12px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:9}}>
+              <Av name={r.playerName} sz={28}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontWeight:800,fontSize:13,color:"#101828",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{r.playerName}</div>
+                <div style={{fontSize:11.5,color:"#92400e",lineHeight:1.45}}>
+                  {r.teamName||"Andere Mannschaft"} fragt für {r.evTitle}{r.evDate?` · ${fmtDShort(r.evDate)}`:""}{r.evTime?` · ${r.evTime}`:""}
+                </div>
+                <div style={{fontSize:11,color:"#b45309",marginTop:1}}>angefragt von {r.byName||"Trainer"}</div>
+              </div>
+            </div>
+            {grundZu===r.id ? (
+              <div style={{marginTop:9}}>
+                <input value={grund} onChange={e=>setGrund(e.target.value)} autoFocus
+                  placeholder="Grund, z. B. wir spielen zur gleichen Zeit"
+                  style={{width:"100%",padding:"10px 12px",fontSize:13,border:"1px solid #e4e9f0",borderRadius:9,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
+                <div style={{display:"flex",gap:7,marginTop:7}}>
+                  <button onClick={()=>setGrundZu(null)} style={{flex:1,padding:"10px",minHeight:40,borderRadius:9,border:"1px solid #e4e9f0",background:"#fff",color:"#667085",fontWeight:600,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Zurück</button>
+                  <button onClick={()=>setzen(r,"no",grund.trim())} disabled={!grund.trim()}
+                    style={{flex:2,padding:"10px",minHeight:40,borderRadius:9,border:"none",background:grund.trim()?"#b42318":"#e4e9f0",color:grund.trim()?"#fff":"#98a2b3",fontWeight:700,fontSize:12.5,cursor:grund.trim()?"pointer":"default",fontFamily:"inherit"}}>Absage senden</button>
+                </div>
+              </div>
+            ) : (
+              <div style={{display:"flex",gap:7,marginTop:9}}>
+                <button onClick={()=>setzen(r,"ok","")}
+                  style={{flex:1,padding:"10px",minHeight:40,borderRadius:9,border:"1px solid #e4e9f0",background:"#fff",color:"#344054",fontWeight:600,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Passt so</button>
+                <button onClick={()=>{ setGrundZu(r.id); setGrund(""); }}
+                  style={{flex:1,padding:"10px",minHeight:40,borderRadius:9,border:"1px solid #fecaca",background:"#fff",color:"#b42318",fontWeight:600,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Absagen mit Grund</button>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AushilfenBoard({ ev, data, cl, onSetVote, onIgnorieren, onAnfrage }){
   const t=TH(cl);
   const [auf,setAuf]=useState(false);
+  const [frage,setFrage]=useState(null);   // {p} - Anfrage-Fenster
+  const [text,setText]=useState("");
   const alleEvents=(data?.events)||[];
   const teams=(data?.teams)||[];
   const ok=ev.conflictOk||[];
@@ -17425,6 +17502,9 @@ function AushilfenBoard({ ev, data, cl, onSetVote, onIgnorieren }){
   const dabei=kandidaten.filter(k=>k.stimme==="yes");
   if(!konflikte.length && !kandidaten.length) return null;
   const teamName=tid=>teams.find(tm=>tm.id===tid)?.name||"";
+  // Vorformulierte Anfrage an die Eltern - der Trainer kann sie anpassen.
+  const anfrageText=p=>`Hallo! Wir suchen für ${teamName(ev.tid)||"unsere Mannschaft"} noch Unterstützung: ${evDisplayTitle?evDisplayTitle(ev):ev.title} am ${fmtDShort(ev.date)}${ev.time?` um ${ev.time} Uhr`:""}${ev.loc?` in ${ev.loc}`:""}. Kann ${String(p.name||"").split(" ")[0]} aushelfen? Antwort einfach im Termin – danke!`;
+  const anfrageZu=p=>((data?.aushilfeReqs)||[]).filter(r=>r.evId===ev.id&&r.playerId===p.id).sort((a,b)=>String(b.ts).localeCompare(String(a.ts)))[0]||null;
   const wann=e2=>`${fmtDShort(e2.date)}${e2.time?` · ${e2.time}`:""}${e2.endTime?`–${e2.endTime}`:""}`;
   return (
     <div style={{marginBottom:16,display:"flex",flexDirection:"column",gap:10}}>
@@ -17464,6 +17544,31 @@ function AushilfenBoard({ ev, data, cl, onSetVote, onIgnorieren }){
             style={{background:"none",border:"none",padding:0,color:readable(t.p),fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Warnung wieder zeigen</button>
         </div>
       )}
+      {/* Anfrage-Fenster: Text anpassen und abschicken */}
+      {frage&&(
+        <div onClick={()=>setFrage(null)} style={{position:"fixed",inset:0,background:"rgba(15,23,42,.55)",zIndex:2300,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+          <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:"20px 20px 0 0",width:"100%",maxWidth:520,padding:"18px 16px 26px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+              <Av name={frage.name} sz={30}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontWeight:800,fontSize:15.5,color:"#101828"}}>{frage.name} anfragen</div>
+                <div style={{fontSize:12,color:"#98a2b3"}}>Geht an die Eltern · {teamName(frage.mainTid)} wird informiert</div>
+              </div>
+              <button onClick={()=>setFrage(null)} aria-label="Schließen" style={{width:36,height:36,borderRadius:10,border:"1px solid #e4e9f0",background:"#fff",color:"#667085",fontSize:15,cursor:"pointer",fontFamily:"inherit"}}>✕</button>
+            </div>
+            <textarea value={text} onChange={e=>setText(e.target.value)} rows={5}
+              style={{width:"100%",padding:"11px 13px",fontSize:13.5,border:"1px solid #e4e9f0",borderRadius:11,outline:"none",boxSizing:"border-box",fontFamily:"inherit",lineHeight:1.5,resize:"vertical"}}/>
+            <div style={{fontSize:11.5,color:"#98a2b3",lineHeight:1.5,margin:"8px 0 12px"}}>
+              Die Eltern sehen die Nachricht beim nächsten Öffnen. Der eigene Trainer bekommt nur einen Hinweis und kann absagen – oder ihn einfach stehen lassen.
+            </div>
+            <button onClick={()=>{ onAnfrage&&onAnfrage(frage,text.trim()); setFrage(null); }}
+              disabled={!text.trim()}
+              style={{width:"100%",padding:"13px",minHeight:46,borderRadius:11,border:"none",background:text.trim()?readable(t.p):"#e4e9f0",color:text.trim()?"#fff":"#98a2b3",fontWeight:700,fontSize:14.5,cursor:text.trim()?"pointer":"default",fontFamily:"inherit"}}>
+              Anfrage senden
+            </button>
+          </div>
+        </div>
+      )}
       {/* 2. Wer darf aushelfen? */}
       {kandidaten.length>0&&(
         <div style={{background:"#fff",border:"1px solid #e4e9f0",borderRadius:14,overflow:"hidden"}}>
@@ -17490,13 +17595,22 @@ function AushilfenBoard({ ev, data, cl, onSetVote, onIgnorieren }){
                         aus {teamName(k.p.mainTid)||"anderer Mannschaft"}{k.p.position?` · ${k.p.position}`:""}
                       </div>
                       {konflikt&&<div style={{fontSize:11,color:"#b42318",fontWeight:600,marginTop:1}}>⚠ zur gleichen Zeit bei {k.andere.map(a=>a.team||a.ev.title).join(", ")}</div>}
+                      {(()=>{ const r=anfrageZu(k.p); if(!r) return null;
+                        const farbe=r.status==="no"?"#b42318":r.status==="ok"?"#15803d":"#667085";
+                        const txt=r.status==="no"?`✖ Trainer hat abgesagt${r.reason?": "+r.reason:""}`:r.status==="ok"?"✓ Trainer ist einverstanden":"✉ angefragt – Trainer informiert";
+                        return <div style={{fontSize:11,color:farbe,fontWeight:600,marginTop:1}}>{txt}</div>; })()}
                     </div>
                     {k.stimme==="yes"
                       ? <span style={{flexShrink:0,fontSize:11.5,fontWeight:800,color:"#15803d",background:"#ecfdf3",borderRadius:8,padding:"6px 10px"}}>✓ dabei</span>
-                      : <button onClick={()=>onSetVote&&onSetVote(k.p.name,"yes")}
-                          style={{flexShrink:0,padding:"8px 12px",minHeight:38,borderRadius:9,border:`1px solid ${konflikt?"#fecaca":"#e4e9f0"}`,background:"#fff",color:konflikt?"#b42318":"#344054",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
-                          {konflikt?"Trotzdem eintragen":"Eintragen"}
-                        </button>}
+                      : <div style={{display:"flex",gap:6,flexShrink:0}}>
+                          {onAnfrage&&<button onClick={()=>{ setFrage(k.p); setText(anfrageText(k.p)); }}
+                            title="Eltern direkt anschreiben – der eigene Trainer bekommt nur einen Hinweis"
+                            style={{padding:"8px 10px",minHeight:38,borderRadius:9,border:"1px solid #e4e9f0",background:"#fff",color:"#344054",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>✉ Anfragen</button>}
+                          <button onClick={()=>onSetVote&&onSetVote(k.p.name,"yes")}
+                            style={{padding:"8px 12px",minHeight:38,borderRadius:9,border:`1px solid ${konflikt?"#fecaca":"#e4e9f0"}`,background:"#fff",color:konflikt?"#b42318":"#344054",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+                            {konflikt?"Trotzdem eintragen":"Eintragen"}
+                          </button>
+                        </div>}
                   </div>
                 );
               })}

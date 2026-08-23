@@ -185,7 +185,7 @@ export const _DATA_ARRAYS = [
   "playerProfiles","trainings","fields","bookings",
   "contactRequests","securityLog","seasons","pollTemplates",
   "clubs","news","newsItems","photos","broadcasts","treasuries","liveEvents",
-  "trainerMsgs","cashbook","waitlist","drillFeedback",
+  "trainerMsgs","cashbook","waitlist","drillFeedback","aushilfeReqs",
   "tacticBoards","trainingPlans","venues"
 ];
 export const normData = (d) => {

@@ -86,6 +86,63 @@ await clickTxt("Warnung wieder zeigen"); await page.waitForTimeout(1200);
 b=await body();
 if(/Zur gleichen Zeit woanders gemeldet/.test(b)) ok("Und lässt sich wieder einschalten"); else fail("Warnung kommt nicht zurück");
 
+// ===== 4) Direkt anschreiben + Hinweis beim eigenen Trainer =====
+await page.keyboard.press("Escape").catch(()=>{});
+await page.evaluate(()=>{ const b2=[...document.querySelectorAll("button")].find(x=>(x.getAttribute("aria-label")||"")==="Schließen"||(x.innerText||"").trim()==="✕"); b2&&b2.click(); });
+await page.waitForTimeout(900);
+// Zweites Aushilfe-Kind ohne Zusage vorbereiten
+await page.evaluate(()=>{
+  const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null"); if(!d) return;
+  const p=(d.playerProfiles||[]).find(x=>x.name==="Paul Becker"); if(p) p.optTids=["demo_g"];
+  localStorage.setItem("vereinsapp_v14", JSON.stringify(d));
+});
+await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2800); await dismiss();
+b=await oeffne("Training G-Jugend");
+await clickTxt("Aushilfe möglich"); await page.waitForTimeout(700);
+b=await body();
+if(/✉ Anfragen/.test(b)) ok("Es gibt einen Knopf zum direkten Anschreiben"); else fail("Kein Anfragen-Knopf");
+await clickTxt("✉ Anfragen"); await page.waitForTimeout(800);
+b=await body();
+if(/anfragen/i.test(b)&&/Anfrage senden/.test(b)) ok("Das Anfrage-Fenster ist offen");
+else fail("Kein Anfrage-Fenster: "+b.slice(0,200).replace(/\n/g," | "));
+{ const txt=await page.evaluate(()=>{ const t2=document.querySelector("textarea"); return t2?t2.value:""; });
+  if(/aushelfen|Unterstützung/.test(txt)) ok("Der Text ist vorformuliert und anpassbar"); else fail("Kein vorformulierter Text: "+txt.slice(0,80));
+  if(/Der eigene Trainer bekommt nur einen Hinweis/.test(b)) ok("Es steht dabei, dass der eigene Trainer nur informiert wird"); }
+await clickTxt("Anfrage senden"); await page.waitForTimeout(1500);
+{ const gespeichert=await page.evaluate(()=>{
+    const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
+    return { reqs:(d.aushilfeReqs||[]).length, msgs:(d.trainerMsgs||[]).length,
+             r:(d.aushilfeReqs||[])[0]||null }; });
+  if(gespeichert.reqs>0) ok("Die Anfrage ist gespeichert (Status: "+(gespeichert.r?.status)+")"); else fail("Keine Anfrage gespeichert");
+  if(gespeichert.msgs>0) ok("Und die Eltern bekommen eine Nachricht"); else fail("Keine Elternnachricht"); }
+b=await body();
+if(/angefragt – Trainer informiert/.test(b)) ok("Der anfragende Trainer sieht den Status");
+
+// Jetzt als Trainer der Heim-Mannschaft: Hinweis + Absage mit Grund
+await page.evaluate(()=>{ const b2=[...document.querySelectorAll("button")].find(x=>(x.getAttribute("aria-label")||"")==="Schließen"||(x.innerText||"").trim()==="✕"); b2&&b2.click(); });
+await page.waitForTimeout(700);
+await page.evaluate(()=>{ sessionStorage.setItem("vereinsapp_v12_session", JSON.stringify({role:"trainer",cid:"demo",tids:["demo_f1"],name:"F1 Trainer",id:"demo_tr2"})); });
+await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2800); await dismiss();
+b=await body();
+if(/Aushilfe-Anfrage/.test(b)) ok("Der eigene Trainer sieht den Hinweis");
+else fail("Kein Hinweis beim eigenen Trainer: "+b.slice(0,240).replace(/\n/g," | "));
+if(/Du musst nichts tun/.test(b)) ok("Mit dem Hinweis, dass er nichts tun muss");
+if(/Passt so/.test(b)&&/Absagen mit Grund/.test(b)) ok("Beide Wege stehen bereit: passt so / absagen mit Grund");
+else fail("Knöpfe fehlen");
+await clickTxt("Absagen mit Grund"); await page.waitForTimeout(700);
+await page.evaluate(()=>{ const i=[...document.querySelectorAll("input")].find(x=>/Grund/.test(x.placeholder||""));
+  if(i){ const setter=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,"value").set;
+    setter.call(i,"Wir spielen zur gleichen Zeit"); i.dispatchEvent(new Event("input",{bubbles:true})); } });
+await page.waitForTimeout(500);
+await clickTxt("Absage senden"); await page.waitForTimeout(1500);
+{ const st=await page.evaluate(()=>{
+    const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
+    const r=(d.aushilfeReqs||[])[0]||{}; return {s:r.status,g:r.reason}; });
+  if(st.s==="no"&&/gleichen Zeit/.test(st.g||"")) ok("Absage mit Grund gespeichert: „"+st.g+"“");
+  else fail("Absage nicht gespeichert: "+JSON.stringify(st)); }
+b=await body();
+if(!/Aushilfe-Anfrage/.test(b)) ok("Der Hinweis verschwindet nach der Entscheidung"); else fail("Hinweis bleibt stehen");
+
 if(errors.length){ console.log("JS-FEHLER:"); [...new Set(errors)].forEach(e=>console.log(" -",e.slice(0,150))); }
 console.log(errors.length||fails.length?`ERGEBNIS: ${fails.length} Fehlschläge, ${errors.length} JS-Fehler`:"ERGEBNIS: ALLES OK");
 await browser.close(); srv.close();
