@@ -16232,7 +16232,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               if(sec>0) todos.push({label:"Sicherheit",col:"#dc2626",bg:"#fee2e2",title:`${sec} Sicherheits-Hinweis${sec>1?"e":""}`,sub:"prüfen",onClick:()=>setTab("security")});
             } else {
             (local.events||[]).filter(e=>myTids.includes(e.tid)).forEach(e=>{
-              eventWarnings(e,tod,{ perStaff:myClub?.clubSettings?.playersPerStaff||6, trainers:(local.trainers||[]).filter(trn=>(trn.tids||[]).includes(e.tid)&&isActive(trn)).length, squad:(local.playerProfiles||[]).filter(pp=>pp.mainTid===e.tid&&!pp.archived).length }).forEach(x=>todos.push({ev:e,label:x.label,col:x.col,bg:x.bg}));
+              eventWarnings(e,tod,{ events:local.events, teams:local.teams, perStaff:myClub?.clubSettings?.playersPerStaff||6, trainers:(local.trainers||[]).filter(trn=>(trn.tids||[]).includes(e.tid)&&isActive(trn)).length, squad:(local.playerProfiles||[]).filter(pp=>pp.mainTid===e.tid&&!pp.archived).length }).forEach(x=>todos.push({ev:e,label:x.label,col:x.col,bg:x.bg}));
               if(["heimspiel","auswarts","freundschaft"].includes(e.type)&&e.date<tod&&e.date>=addD(tod,-21)&&!(e.report&&e.report.ts)) todos.push({ev:e,label:"Spielbericht eintragen",col:"#2563eb",bg:"#eff6ff"});
               if(trainingOn&&e.type==="training"&&e.date>=tod&&e.date<=addD(tod,10)&&!e.trainingId&&!e.trainingPlan) todos.push({ev:e,label:"Trainingsplan fehlt",col:"#7c3aed",bg:"#ede9fe"});
             });
@@ -16332,7 +16332,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               Woche. "Alles anzeigen" schaltet auf die vollstaendige Liste mit
               allen Werkzeugen um - es faellt nichts weg. */}
           {tSimple&&!isHelper ? (
-            <EinfachTrainer cl={myClub} evs={myEvs} tod={tod} trainerNames={trainerNames} helperNames={helperNames}
+            <EinfachTrainer cl={myClub} evs={myEvs} tod={tod} trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams}
               squadOf={squadOf} planTitleOf={planTitleOf} modTraining={modOn("training")}
               selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote}
               onView={ev=>{ setEvTab("rueck"); setViewEv(ev); }}
@@ -16376,14 +16376,14 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             );
           })()}
           <FerienHinweis hols={_ferienDash} from={tod} to={_in10}/>
-          {up.length>0&&<><Divider label={`NÄCHSTE 21 TAGE (${soon.length})`}/>{soon.length>0?soon.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>{setEvTab("rueck");setViewEv(ev);}} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(editInfo(ev))} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} helperNames={helperNames} squad={squadOf(ev.tid)} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}} helperId={isHelper?(session.id||session.helperId||session.name):null} onHelperQuick={isHelper?helperQuick:null} onSetup={()=>setSetupEv(ev)}/>):<p style={{textAlign:"center",color:"#64748b",fontSize:13.5,padding:"14px 10px"}}>Keine Termine in den nächsten 21 Tagen.</p>}
+          {up.length>0&&<><Divider label={`NÄCHSTE 21 TAGE (${soon.length})`}/>{soon.length>0?soon.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>{setEvTab("rueck");setViewEv(ev);}} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(editInfo(ev))} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams} squad={squadOf(ev.tid)} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}} helperId={isHelper?(session.id||session.helperId||session.name):null} onHelperQuick={isHelper?helperQuick:null} onSetup={()=>setSetupEv(ev)}/>):<p style={{textAlign:"center",color:"#64748b",fontSize:13.5,padding:"14px 10px"}}>Keine Termine in den nächsten 21 Tagen.</p>}
             {later.length>0&&<>
               <button onClick={()=>setShowLater(s=>!s)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",background:showLater?"#f1f5f9":"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,cursor:"pointer",margin:"6px 0 12px",padding:"11px 14px",fontWeight:800,fontSize:13,color:"#475569",fontFamily:"inherit"}}>{showLater?"▲ Weitere Termine ausblenden":"▼ Weitere "+later.length+" Termine anzeigen"}</button>
-              {showLater&&later.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>{setEvTab("rueck");setViewEv(ev);}} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(editInfo(ev))} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} helperNames={helperNames} squad={squadOf(ev.tid)} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}} helperId={isHelper?(session.id||session.helperId||session.name):null} onHelperQuick={isHelper?helperQuick:null} onSetup={()=>setSetupEv(ev)}/>)}
+              {showLater&&later.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>{setEvTab("rueck");setViewEv(ev);}} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(editInfo(ev))} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams} squad={squadOf(ev.tid)} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}} helperId={isHelper?(session.id||session.helperId||session.name):null} onHelperQuick={isHelper?helperQuick:null} onSetup={()=>setSetupEv(ev)}/>)}
             </>}
           </>}
           {up.length===0&&<div style={{textAlign:"center",padding:"30px",background:"#fff",borderRadius:18,border:"1.5px dashed #e2e8f0",color:"#64748b"}}><Logo cl={myClub} sz={50} sx={{margin:"0 auto 12px"}}/><p style={{fontWeight:800,fontSize:15}}>Noch keine Termine</p><p style={{fontSize:13,marginTop:3}}>{isHelper?"Sobald die Trainer Termine anlegen, erscheinen sie hier.":'Klicke oben auf "Neuen Termin anlegen"'}</p></div>}
-          {past.length>0&&<><Divider label={`VERGANGENE (${past.length})`} light/><div style={{opacity:.72}}>{past.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>{setEvTab("rueck");setViewEv(ev);}} onEdit={()=>setEditEv(editInfo(ev))} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{}} onCopyLink={()=>{}} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} helperNames={helperNames} squad={squadOf(ev.tid)}/>)}</div></>}
+          {past.length>0&&<><Divider label={`VERGANGENE (${past.length})`} light/><div style={{opacity:.72}}>{past.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>{setEvTab("rueck");setViewEv(ev);}} onEdit={()=>setEditEv(editInfo(ev))} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{}} onCopyLink={()=>{}} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams} squad={squadOf(ev.tid)}/>)}</div></>}
           <AffiliateBanner trigger="events" style={{marginTop:14}}/>
           {/* DFB-Spielformen sind Trainer-Fachwissen - Helfer brauchen sie nicht */}
           {!isHelper&&<div style={{marginTop:14}}><DFBFormatsCard cl={myClub} cats={(local.teams||[]).filter(tm=>myTids.includes(tm.id)).map(tm=>tm.cat||tm.name)}/></div>}
@@ -16604,7 +16604,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               <div style={{textAlign:"center",fontSize:12.5,color:"#64748b",padding:"6px"}}>Info-Termin – keine Abstimmung, keine Anwesenheits-Auswertung.</div>
             </div>
           : <VoteOverview ev={viewEv} players={local.players} playerProfiles={local.playerProfiles||[]} teams={local.teams} myTids={myTids} cl={myClub}
-              readOnly={isHelper} trainerNames={trainerNames} helperNames={helperNames}
+              readOnly={isHelper} trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams}
               myKids={isHelper?[]:(((local.trainers||[]).find(x=>x.id===session?.id)?.childNames)||"").split(",").map(x=>x.trim()).filter(Boolean)}
               staff={staffNeed(viewEv,{ perStaff:myClub?.clubSettings?.playersPerStaff||6, trainers:(local.trainers||[]).filter(trn=>(trn.tids||[]).includes(viewEv.tid)&&isActive(trn)).length, squad:(local.playerProfiles||[]).filter(pp=>pp.mainTid===viewEv.tid&&!pp.archived).length })}
               onSetDeadline={deadline=>{
@@ -16698,10 +16698,24 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             haengen bei ihnen direkt unter den Rueckmeldungen. Der Aufbau steckt
             im eigenen "Aufbau"-Fenster und taucht hier nicht noch einmal auf. */}
         {(evTab==="orga"||(isHelper&&evTab==="rueck"))&&<>
+        {/* Aushilfen aus anderen Mannschaften + Warnung bei Doppelmeldung */}
+        {!isHelper&&<AushilfenBoard ev={viewEv} data={local} cl={myClub}
+          onSetVote={(name,val)=>{
+            const nv={...(viewEv.votes||{}),[name]:{val,ts:new Date().toISOString(),byTrainer:true}};
+            save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,votes:nv}:e)});
+            setViewEv(prev=>({...prev,votes:nv}));
+            fire(name+": als Aushilfe eingetragen");
+          }}
+          onIgnorieren={(name,an)=>{
+            const liste=an ? [...new Set([...(viewEv.conflictOk||[]),name])] : (viewEv.conflictOk||[]).filter(x=>x!==name);
+            save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,conflictOk:liste}:e)});
+            setViewEv(prev=>({...prev,conflictOk:liste}));
+            fire(an?"Warnung ausgeblendet – bewusst doppelt eingeplant":"Warnung wird wieder gezeigt");
+          }}/>}
         {/* Checkliste direkt in der Orga: Zusagen sehen, ganzen Kader abhaken, Gaeste anlegen */}
         {!isHelper&&<AttendanceCheckoff ev={viewEv}
           teamPlayers={[...new Set([...((local.players||{})[viewEv.tid]||[]), ...((local.playerProfiles||[]).filter(pp=>pp.mainTid===viewEv.tid&&!pp.archived).map(pp=>pp.name))])]}
-          trainerNames={trainerNames} helperNames={helperNames}
+          trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams}
           onSetVote={(name,val)=>{
             const nv={...(viewEv.votes||{}),[name]:{val,ts:new Date().toISOString(),byTrainer:true}};
             save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,votes:nv}:e)});
@@ -17385,6 +17399,115 @@ function PlaytimeTracker({ ev, roster, onSave, t }){
 // Anwesenheits-Checkliste: kompletter Kader + alle Abstimmenden, Abhaken,
 // No-Show-Markierung und Gaeste (Probetraining). Haengt im Termin unter
 // "Rueckmeldungen" UND im Orga-Tab (Planung vor Ort).
+// ----------------------------------------------------------------
+// Aushilfen und Doppelmeldungen an einem Termin. Zeigt, wer aus anderen
+// Mannschaften hier mitspielen darf (Kader-Eintrag "Aushilfe"), und warnt,
+// wenn ein Kind zur gleichen Zeit schon woanders zugesagt hat. Die Warnung
+// laesst sich bewusst ignorieren - manchmal hilft ein Kind beim selben
+// Turnier in zwei Mannschaften aus.
+// ----------------------------------------------------------------
+function AushilfenBoard({ ev, data, cl, onSetVote, onIgnorieren }){
+  const t=TH(cl);
+  const [auf,setAuf]=useState(false);
+  const alleEvents=(data?.events)||[];
+  const teams=(data?.teams)||[];
+  const ok=ev.conflictOk||[];
+  const konflikte=konfliktNamen(ev, alleEvents, teams);
+  const offen=konflikte.filter(k=>!ok.includes(k.name));
+  const ignoriert=konflikte.filter(k=>ok.includes(k.name));
+  // Wer darf hier aushelfen? Kinder anderer Mannschaften mit diesem Team als Option.
+  const kandidaten=((data?.playerProfiles)||[])
+    .filter(p=>!p.archived && p.mainTid!==ev.tid && (p.optTids||[]).includes(ev.tid))
+    .map(p=>({ p, stimme:(()=>{ const v=(ev.votes||{})[p.name]; return typeof v==="object"&&v?v.val:v; })(),
+               andere:doppelMeldungen(ev,p.name,alleEvents,teams) }))
+    .sort((a,b)=>(a.p.name||"").localeCompare(b.p.name||""));
+  const frei=kandidaten.filter(k=>k.stimme!=="yes");
+  const dabei=kandidaten.filter(k=>k.stimme==="yes");
+  if(!konflikte.length && !kandidaten.length) return null;
+  const teamName=tid=>teams.find(tm=>tm.id===tid)?.name||"";
+  const wann=e2=>`${fmtDShort(e2.date)}${e2.time?` · ${e2.time}`:""}${e2.endTime?`–${e2.endTime}`:""}`;
+  return (
+    <div style={{marginBottom:16,display:"flex",flexDirection:"column",gap:10}}>
+      {/* 1. Doppelmeldungen zuerst - das ist die Warnung */}
+      {offen.length>0&&(
+        <div style={{background:"#fef2f2",border:"1.5px solid #fecaca",borderRadius:14,padding:"12px 14px"}}>
+          <div style={{fontWeight:800,fontSize:13.5,color:"#b42318",marginBottom:4}}>⚠️ Zur gleichen Zeit woanders gemeldet ({offen.length})</div>
+          <div style={{fontSize:12,color:"#912018",lineHeight:1.5,marginBottom:9}}>
+            Ein Kind kann nicht gleichzeitig in zwei Mannschaften spielen. Prüfe das bitte – wenn es doch passt (z. B. Aushilfe beim selben Turnier), kannst du die Warnung ausblenden.
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:7}}>
+            {offen.map(k=>(
+              <div key={k.name} style={{background:"#fff",border:"1px solid #fecaca",borderRadius:11,padding:"9px 11px"}}>
+                <div style={{display:"flex",alignItems:"center",gap:9}}>
+                  <Av name={k.name} sz={26}/>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontWeight:800,fontSize:13,color:"#101828",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{k.name}</div>
+                    {k.andere.map((a,i)=>(
+                      <div key={i} style={{fontSize:11.5,color:"#912018",lineHeight:1.45}}>auch bei <b>{a.team||a.ev.title}</b> · {wann(a.ev)}</div>
+                    ))}
+                  </div>
+                </div>
+                <button onClick={()=>onIgnorieren&&onIgnorieren(k.name,true)}
+                  style={{width:"100%",marginTop:8,padding:"9px",minHeight:40,borderRadius:9,border:"1px solid #e4e9f0",background:"#fff",color:"#667085",fontWeight:600,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+                  Warnung ignorieren – hilft hier bewusst aus
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {ignoriert.length>0&&(
+        <div style={{background:"#f8fafc",border:"1px solid #e4e9f0",borderRadius:12,padding:"9px 12px",fontSize:12,color:"#667085",lineHeight:1.5}}>
+          ✓ Bewusst doppelt eingeplant: {ignoriert.map(k=>k.name).join(", ")}
+          {" · "}
+          <button onClick={()=>ignoriert.forEach(k=>onIgnorieren&&onIgnorieren(k.name,false))}
+            style={{background:"none",border:"none",padding:0,color:readable(t.p),fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Warnung wieder zeigen</button>
+        </div>
+      )}
+      {/* 2. Wer darf aushelfen? */}
+      {kandidaten.length>0&&(
+        <div style={{background:"#fff",border:"1px solid #e4e9f0",borderRadius:14,overflow:"hidden"}}>
+          <button onClick={()=>setAuf(a=>!a)}
+            style={{width:"100%",display:"flex",alignItems:"center",gap:9,padding:"11px 13px",background:"#f8fafc",border:"none",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
+            <span style={{fontSize:15}}>🔁</span>
+            <span style={{flex:1,minWidth:0,fontWeight:800,fontSize:13,color:"#101828"}}>Aushilfe möglich <span style={{color:"#98a2b3",fontWeight:600}}>({kandidaten.length})</span></span>
+            {dabei.length>0&&<span style={{fontSize:11.5,fontWeight:700,color:"#15803d"}}>{dabei.length} dabei</span>}
+            <span style={{fontSize:14,color:"#98a2b3",transform:auf?"rotate(90deg)":"none",transition:"transform .15s"}}>›</span>
+          </button>
+          {auf&&(
+            <div style={{padding:"4px 13px 12px"}}>
+              <div style={{fontSize:11.5,color:"#98a2b3",lineHeight:1.5,margin:"6px 0 8px"}}>
+                Diese Kinder sind im Kader als Aushilfe für {teamName(ev.tid)||"diese Mannschaft"} hinterlegt. Eintragen setzt eine Zusage – die Eltern sehen den Termin danach ebenfalls.
+              </div>
+              {[...frei,...dabei].map(k=>{
+                const konflikt=k.andere.length>0;
+                return (
+                  <div key={k.p.id} style={{display:"flex",alignItems:"center",gap:9,padding:"8px 0",borderBottom:"1px solid #f4f7fa"}}>
+                    <Av name={k.p.name} sz={28}/>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontWeight:700,fontSize:13,color:"#101828",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{k.p.name}</div>
+                      <div style={{fontSize:11,color:"#98a2b3",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+                        aus {teamName(k.p.mainTid)||"anderer Mannschaft"}{k.p.position?` · ${k.p.position}`:""}
+                      </div>
+                      {konflikt&&<div style={{fontSize:11,color:"#b42318",fontWeight:600,marginTop:1}}>⚠ zur gleichen Zeit bei {k.andere.map(a=>a.team||a.ev.title).join(", ")}</div>}
+                    </div>
+                    {k.stimme==="yes"
+                      ? <span style={{flexShrink:0,fontSize:11.5,fontWeight:800,color:"#15803d",background:"#ecfdf3",borderRadius:8,padding:"6px 10px"}}>✓ dabei</span>
+                      : <button onClick={()=>onSetVote&&onSetVote(k.p.name,"yes")}
+                          style={{flexShrink:0,padding:"8px 12px",minHeight:38,borderRadius:9,border:`1px solid ${konflikt?"#fecaca":"#e4e9f0"}`,background:"#fff",color:konflikt?"#b42318":"#344054",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+                          {konflikt?"Trotzdem eintragen":"Eintragen"}
+                        </button>}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AttendanceCheckoff({ ev, teamPlayers=[], onSetPresent=()=>{}, onSetGuests=()=>{}, trainerNames=[], helperNames=[], onSetVote=null }){
   const [guestName,setGuestName]=useState("");
   const present=ev.present||{};
@@ -17731,6 +17854,35 @@ function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadlin
   );
 }
 
+// ----------------------------------------------------------------
+// Doppelmeldungen: ein Kind kann nicht zur gleichen Zeit in zwei
+// Mannschaften spielen. Wir vergleichen die Zeitfenster (ohne Endzeit
+// rechnen wir 90 Minuten; fehlt die Uhrzeit ganz, zaehlt der ganze Tag).
+// ----------------------------------------------------------------
+const evFenster = (ev) => {
+  const s = eventStart(ev);
+  if(!s) return null;
+  const min = eventDurationMin(ev) || 90;
+  return [s.getTime(), s.getTime()+min*60000];
+};
+const evUeberschneidet = (a,b) => {
+  if(!a||!b||a.date!==b.date) return false;
+  const fa=evFenster(a), fb=evFenster(b);
+  if(!fa||!fb) return true;                       // ohne Uhrzeit: gleicher Tag reicht als Verdacht
+  return fa[0] < fb[1] && fb[0] < fa[1];
+};
+const _jaStimme = v => (typeof v==="object"&&v?v.val:v)==="yes";
+// Alle Termine, bei denen dieses Kind zur gleichen Zeit ebenfalls zugesagt hat
+const doppelMeldungen = (ev, name, alleEvents=[], teams=[]) =>
+  (alleEvents||[])
+    .filter(e2=>e2.id!==ev.id && e2.cid===ev.cid && evUeberschneidet(ev,e2) && _jaStimme((e2.votes||{})[name]))
+    .map(e2=>({ ev:e2, team:(teams||[]).find(tm=>tm.id===e2.tid)?.name || "" }));
+const konfliktNamen = (ev, alleEvents=[], teams=[]) =>
+  Object.entries(ev.votes||{})
+    .filter(([,v])=>_jaStimme(v))
+    .map(([n])=>({ name:n, andere:doppelMeldungen(ev,n,alleEvents,teams) }))
+    .filter(x=>x.andere.length>0);
+
 function eventWarnings(ev, tod, ctx={}){
   const w=[];
   if(!ev || isEventPast(ev)) return w;
@@ -17754,6 +17906,11 @@ function eventWarnings(ev, tod, ctx={}){
   // Nach Ablauf der Frist hat sich noch jemand ab-/angemeldet -> Trainer informieren.
   { const lateN=(ev.lateCancellations||[]).length + Object.values(ev.votes||{}).filter(v=>typeof v==="object"&&v&&v.lateChange&&v.val!=="no").length;
     if(lateN>0) w.push({label:`Nach Frist: ${lateN} Änderung${lateN>1?"en":""}`,col:"#b45309",bg:"#ffedd5"}); }
+  // Doppelmeldung: Kind ist zur gleichen Zeit noch woanders zugesagt.
+  if(ctx.events&&ctx.events.length){
+    const offen=konfliktNamen(ev,ctx.events,ctx.teams||[]).filter(x=>!(ev.conflictOk||[]).includes(x.name));
+    if(offen.length) w.push({label:`${offen.length}× zur gleichen Zeit woanders`,col:"#b91c1c",bg:"#fee2e2"});
+  }
   // Betreuer reichen? (Training + Spiele) – nötige Trainer aus Spielerzahl/Betreuer-Schlüssel.
   // Nur wenn die Trainer-Anzahl bekannt ist (ctx.trainers) – sonst kein Fehlalarm auf der Event-Zeile.
   if((ev.type==="training"||isGame) && days<=10 && ctx.trainers!=null){
@@ -18502,13 +18659,13 @@ function FerienHinweis({hols,from,to}){
   );
 }
 
-function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSelfVote,onRemind,onPlan,planTitle,onAttend,onBrief,modTraining=true,trainerNames=[],helperNames=[],squad=[],onSubReq=null,helperId=null,onHelperQuick=null,onSetup=null}) {
+function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSelfVote,onRemind,onPlan,planTitle,onAttend,onBrief,modTraining=true,trainerNames=[],helperNames=[],allEvents=[],allTeams=[],squad=[],onSubReq=null,helperId=null,onHelperQuick=null,onSetup=null}) {
   const _ferien=useSchoolHolidays(cl?.clubSettings?.holidayState);
   const [more,setMore]=useState(false);
   const wd=d=>{ try{ return new Date(d+"T12:00:00").toLocaleDateString("de-DE",{weekday:"short"})+", "; }catch{ return ""; } };
   const wx=useWeather(plzToGeo(cl?.plz));
   const eT=ET[ev.type]||ET.training; const tF=ev.date===tod; const p=cl?.pri||"#16a34a";
-  const warns=eventWarnings(ev,tod,{ perStaff:cl?.clubSettings?.playersPerStaff||6, trainerNames, helperNames });
+  const warns=eventWarnings(ev,tod,{ perStaff:cl?.clubSettings?.playersPerStaff||6, trainerNames, helperNames, events:allEvents, teams:allTeams });
   const _v=ev.votes||{};
   const vc=Object.keys(_v).length;
   // Spieler- und Trainer-Zusagen getrennt: "mind. 6 Spieler" braucht die Spieler-Zahl
