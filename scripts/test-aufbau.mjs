@@ -122,7 +122,7 @@ const pw=await page.evaluate(()=>{ const sp=[...document.querySelectorAll("span"
 await page.locator('button:has-text("Speichern")').last().click(); await page.waitForTimeout(700);
 if(pw) ok("Helfer angelegt (Einmal-Passwort "+pw+")"); else fail("Kein Einmal-Passwort");
 await page.keyboard.press("Escape").catch(()=>{}); await page.waitForTimeout(300);
-await page.evaluate(()=>{ const b2=[...document.querySelectorAll("button")].find(x=>x.innerText.trim()==="Logout"); b2&&b2.click(); });
+await page.evaluate(()=>{ const b2=[...document.querySelectorAll("button")].find(x=>/^(Abmelden|Logout)$/.test(x.innerText.trim())); b2&&b2.click(); });
 await page.waitForTimeout(1000);
 await page.getByText("Turnier & Spieltag unterstützen").click(); await page.waitForTimeout(900);
 await page.evaluate(()=>{ const cards=[...document.querySelectorAll("div")].filter(d=>String(d.className).includes("up")&&/\d+ Helfer/.test(d.innerText)&&d.innerText.length<120); cards[0]&&cards[0].click(); });

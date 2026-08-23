@@ -41,7 +41,7 @@ const legeHelferAn = async (name, teilenStattSpeichern) => {
 };
 // Helfer-Login mit einem beliebig geschriebenen Passwort
 const helferLogin = async (name, pwEingabe) => {
-  await page.evaluate(()=>{ const b=[...document.querySelectorAll("button")].find(x=>x.innerText.trim()==="Logout"); b&&b.click(); });
+  await page.evaluate(()=>{ const b=[...document.querySelectorAll("button")].find(x=>/^(Abmelden|Logout)$/.test(x.innerText.trim())); b&&b.click(); });
   await page.waitForTimeout(1200);
   await page.getByText("Turnier & Spieltag unterstützen").click(); await page.waitForTimeout(900);
   await page.evaluate(()=>{ const cards=[...document.querySelectorAll("div")].filter(d=>String(d.className).includes("up")&&/\d+ Helfer/.test(d.innerText)&&d.innerText.length<120); cards[0]&&cards[0].click(); });

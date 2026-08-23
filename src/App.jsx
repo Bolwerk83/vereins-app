@@ -16049,7 +16049,18 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             });
             // Skill-Check fällig (pro Mannschaft, pro Trainer) + Kinder ohne Skill-Profil
             const mk=monthKey(); const raterId=session?.id||session?.role||"trainer";
-            const myEvalTeams=(local.teams||[]).filter(tm=>myTids.includes(tm.id)&&tm.skillCheckEnabled!==false);
+            // Skills sind ein Modul, das bewusst eingeschaltet wird ("startet
+            // ausgeschaltet"). Nur dann gehoeren Skill-Aufgaben in die Todo-Liste.
+            // Ausnahme: im Team stehen schon Bewertungen - dann ist es offensichtlich
+            // in Benutzung und die Erinnerung bleibt.
+            const skillsAktiv = tm => {
+              if(tm?.skillCheckEnabled===false) return false;                       // im Verein je Mannschaft abgeschaltet
+              if((myClub?.clubSettings?.mod_skills)===false) return false;          // vereinsweit abgeschaltet
+              const vs=Object.values(tm?.moduleVotes||{}).filter(v=>v&&("skills" in v));
+              if(vs.length) return vs.filter(v=>v.skills).length*2>=vs.length;      // Modul-Wahl der Trainer
+              return (local.playerProfiles||[]).some(p=>p.mainTid===tm.id&&!p.archived&&Object.values(p.skills||{}).some(v=>(Number(v)||0)>0));
+            };
+            const myEvalTeams=(local.teams||[]).filter(tm=>myTids.includes(tm.id)&&skillsAktiv(tm));
             myEvalTeams.forEach(tm=>{ const ratedBy=tm.skillCheckBy?.[mk]||[]; const skipped=!!(tm.skillCheckSkip?.[mk]); const paused=!!tm.skillCheckPauseUntil&&mk<=tm.skillCheckPauseUntil; if(!ratedBy.includes(raterId)&&!skipped&&!paused) todos.push({label:"Skill-Check fällig",col:"#4f46e5",bg:"#eef2ff",title:`${tm.name} · Monats-Bewertung`,sub:monthLabel(mk),onClick:()=>setTab("players")}); });
             if(myEvalTeams.length>0){
               const evalTids=new Set(myEvalTeams.map(tm=>tm.id));

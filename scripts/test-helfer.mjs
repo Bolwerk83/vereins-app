@@ -68,7 +68,7 @@ const dismissOverlays=async()=>{ for(let k=0;k<3;k++){ const done=await page.eva
 const helperLogin=async(name,tempPw,newPw)=>{
   // In-App-Logout -> Rollen-Auswahl (Daten bleiben im Speicher)
   await page.keyboard.press("Escape").catch(()=>{}); await page.waitForTimeout(400);
-  await page.evaluate(()=>{ const b2=[...document.querySelectorAll("button")].find(x=>x.innerText.trim()==="Logout"); b2&&b2.click(); });
+  await page.evaluate(()=>{ const b2=[...document.querySelectorAll("button")].find(x=>/^(Abmelden|Logout)$/.test(x.innerText.trim())); b2&&b2.click(); });
   await page.waitForTimeout(1000);
   await page.getByText("Turnier & Spieltag unterstützen").click(); await page.waitForTimeout(900);
   let t2=await body();

@@ -96,7 +96,8 @@ if(await openEvWith("Orga & Verkauf")){
   if(b.includes("1/1")) ok("Trainer übernimmt Kuchen (1/1, grün)"); else fail("Übernahme klappt nicht");
   // Schicht anlegen + uebernehmen
   await page.locator('input[placeholder*="Verkauf 10:00"]').fill("Verkauf 10:00–11:30");
-  await page.locator('button:has-text("Anlegen")').click(); await page.waitForTimeout(500);
+  // exakt, sonst trifft es auch "Neuen Termin anlegen" im Hintergrund
+await page.locator('button:text-is("Anlegen")').click(); await page.waitForTimeout(500);
   b=await body();
   if(b.includes("⏱ Verkauf 10:00–11:30")) ok("Schicht angelegt"); else fail("Schicht fehlt");
   await page.locator('button:has-text("Schicht übernehmen")').first().click(); await page.waitForTimeout(500);
@@ -140,7 +141,7 @@ if(!b.includes("2 Zugänge für")) ok("Zusammengeführt: EIN Login für alle Jug
 
 // ===== 5) Neuer Helfer-Login: Jugend-Auswahl im Trainer-Design + Kasse-Zugriff =====
 await page.keyboard.press("Escape").catch(()=>{}); await page.waitForTimeout(400);
-await page.evaluate(()=>{ const b2=[...document.querySelectorAll("button")].find(x=>x.innerText.trim()==="Logout"); b2&&b2.click(); });
+await page.evaluate(()=>{ const b2=[...document.querySelectorAll("button")].find(x=>/^(Abmelden|Logout)$/.test(x.innerText.trim())); b2&&b2.click(); });
 await page.waitForTimeout(1000);
 await page.getByText("Turnier & Spieltag unterstützen").click(); await page.waitForTimeout(900);
 b=await body();
