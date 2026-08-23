@@ -53,18 +53,18 @@ if(!/Plane Trainings, Spiele & Turniere/.test(b)) ok("Der lange Erklärkasten is
   else fail("Zu große Schrift: "+gross.slice(0,3).join(" | ")); }
 
 // ===== 2) Alle Funktionen erreichbar =====
-for(const [was,re] of [["Termin öffnen","Termin öffnen|Anwesenheit abhaken"],["Aufbau","🏗 Aufbau"],["Trainingsplan","📋 Training"],["Erinnern","🔔 \\d+ erinnern"],["Neuer Termin","\\+ Neuer Termin"],["Alles anzeigen","Alles anzeigen"]]){
+for(const [was,re] of [["Termin ansehen","^Ansehen$|✅ Anwesenheit"],["Aufbau","🏗 Aufbau"],["Trainingsplan","📋 Training"],["Erinnern","🔔 Erinnern \\(\\d+\\)"],["Neuer Termin","Neuen Termin anlegen"],["Alles anzeigen","Alles anzeigen"]]){
   if(await knopf(re)) ok("Direkt erreichbar: "+was); else fail("Fehlt im Fokus: "+was);
 }
-// "+ Neuer Termin" steht ueber dem naechsten Termin
+// Die Karte "Neuen Termin anlegen" steht ueber dem naechsten Termin
 { const oben=await page.evaluate(()=>{
-    const b=[...document.querySelectorAll("button")].find(x=>/\+ Neuer Termin/.test(x.innerText||""));
+    const b=[...document.querySelectorAll("button")].find(x=>/Neuen Termin anlegen/.test(x.innerText||""));
     const l=[...document.querySelectorAll("div")].find(d=>/^ALS NÄCHSTES|^AUSGEWÄHLTER TERMIN/.test((d.innerText||"").trim()));
-    if(!b||!l) return null;
+    if(!b||!l) return {fehler:(!b?"kein Knopf":"")+(!l?" kein Label":"")};
     return b.getBoundingClientRect().top < l.getBoundingClientRect().top;
   });
-  if(oben===true) ok("„+ Neuer Termin“ steht über dem nächsten Termin");
-  else fail("Neuer Termin steht nicht oben: "+oben); }
+  if(oben===true) ok("„Neuen Termin anlegen“ steht über dem nächsten Termin");
+  else fail("Neuer Termin steht nicht oben: "+JSON.stringify(oben)); }
 { const b2=await body();
   if(/Ich:/.test(b2)&&/Bin dabei/.test(b2)&&/Sage ab/.test(b2)) ok("Der Trainer kann direkt selbst zu- und absagen");
   else fail("Eigene Zu-/Absage fehlt auf der Fokus-Karte"); }
@@ -75,9 +75,9 @@ for(const [was,re] of [["Rückmeldungen",/📊 Rückmeldungen/],["Bearbeiten",/�
 }
 
 // ===== 3) Die Knöpfe tun auch etwas =====
-await clickTxt("^Termin öffnen$|^Anwesenheit abhaken$"); await page.waitForTimeout(1200);
+await clickTxt("^Ansehen$|^✅ Anwesenheit$"); await page.waitForTimeout(1200);
 b=await body();
-if(/Rückmeldungen|Anwesenheit abhaken/.test(b)) ok("„Termin öffnen“ öffnet den Termin"); else fail("Termin öffnet nicht: "+b.slice(0,160).replace(/\n/g," | "));
+if(/Rückmeldungen|Anwesenheit abhaken/.test(b)) ok("„Ansehen“ öffnet den Termin"); else fail("Termin öffnet nicht: "+b.slice(0,160).replace(/\n/g," | "));
 await zurueck();
 await clickTxt("🏗 Aufbau"); await page.waitForTimeout(1200);
 b=await body();

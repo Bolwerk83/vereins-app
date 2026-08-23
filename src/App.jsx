@@ -2560,6 +2560,22 @@ function BottomNav({ tab, setTab, isAdmin, isHelper, isParent=false, parentStats
 /* =================================================================
    TEAM HUB (Spieler + Anwesenheit + Statistik in einem Tab)
 ================================================================= */
+// Ein und dieselbe Karte "Neuen Termin anlegen" - in der einfachen wie in der
+// vollstaendigen Ansicht. Wer die App einmal kennt, findet sie ueberall gleich.
+function NeuerTerminCard({ t, onClick }){
+  return (
+    <button onClick={onClick} style={{width:"100%",textAlign:"left",fontFamily:"inherit",border:"none",background:readable(t.p),borderRadius:20,padding:"18px 20px",cursor:"pointer",marginBottom:18,display:"flex",alignItems:"center",gap:14,boxShadow:`0 6px 24px ${t.p}66,0 2px 8px rgba(0,0,0,.15)`,transition:"all .2s"}}>
+      <div style={{width:52,height:52,borderRadius:16,background:"rgba(0,0,0,.15)",border:`2px solid ${t.ct==="#fff"?"rgba(255,255,255,.35)":"rgba(0,0,0,.2)"}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+        <span style={{fontSize:26,lineHeight:1,color:t.ct}}>＋</span>
+      </div>
+      <div style={{flex:1}}>
+        <div style={{color:t.ct,fontWeight:900,fontSize:18,letterSpacing:"-.3px",textShadow:t.ct==="#fff"?"0 1px 3px rgba(0,0,0,.25)":"none"}}>Neuen Termin anlegen</div>
+        <div style={{color:t.ct,opacity:.95,fontSize:13,marginTop:3,fontWeight:600}}>Schritt-für-Schritt Assistent</div>
+      </div>
+      <div style={{width:32,height:32,borderRadius:10,background:"rgba(0,0,0,.15)",display:"flex",alignItems:"center",justifyContent:"center",color:t.ct,fontSize:18,flexShrink:0}}>›</div>
+    </button>
+  );
+}
 // Bausteine der Vereinsansicht - bewusst auf Modulebene, damit die Eingabe-
 // felder beim Tippen nicht neu aufgebaut werden (sonst springt der Fokus raus).
 function TFeld({label,hint,children,hinweis}){
@@ -15414,8 +15430,10 @@ function EinfachTrainer({ cl, evs=[], tod, trainerNames=[], helperNames=[], squa
   const Haupt=({onClick,ch})=>(
     <button onClick={onClick} style={{flex:1,padding:"12px 14px",minHeight:46,borderRadius:11,border:"none",background:p,color:"#fff",fontWeight:700,fontSize:14,letterSpacing:"-.1px",cursor:"pointer",fontFamily:"inherit"}}>{ch}</button>
   );
+  // Umbruch wie bei den Chips in der vollstaendigen Ansicht: zwei pro Zeile,
+  // damit auch "Training planen" ungekuerzt lesbar bleibt.
   const Neben=({onClick,ch,title})=>(
-    <button onClick={onClick} title={title} style={{flex:1,padding:"10px 8px",minHeight:42,borderRadius:10,border:"1px solid #e4e9f0",background:"#fff",color:"#475569",fontWeight:600,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{ch}</button>
+    <button onClick={onClick} title={title} style={{flex:"1 1 auto",minWidth:"46%",padding:"11px 8px",minHeight:44,borderRadius:10,border:"1px solid #e4e9f0",background:"#fff",color:"#475569",fontWeight:600,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{ch}</button>
   );
   const Klein=({onClick,ch})=>(
     <button onClick={onClick} style={{padding:"7px 11px",minHeight:34,borderRadius:8,border:"1px solid #e4e9f0",background:"#fff",color:"#475569",fontWeight:600,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>{ch}</button>
@@ -15444,7 +15462,7 @@ function EinfachTrainer({ cl, evs=[], tod, trainerNames=[], helperNames=[], squa
       <div style={{fontSize:30,marginBottom:8}}>📅</div>
       <p style={{fontWeight:700,fontSize:14.5,color:"#101828"}}>Keine Termine geplant</p>
       <p style={{fontSize:12.5,color:"#98a2b3",marginTop:4,lineHeight:1.5}}>Lege den ersten Termin an – Training, Spiel oder Turnier.</p>
-      <button onClick={onNew} style={{marginTop:14,padding:"12px 20px",minHeight:44,borderRadius:11,border:"none",background:p,color:"#fff",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>+ Neuer Termin</button>
+      <div style={{marginTop:16,textAlign:"left"}}><NeuerTerminCard t={TH(cl)} onClick={onNew}/></div>
       {onDetail&&<button onClick={onDetail} style={{display:"block",margin:"12px auto 0",padding:"10px 16px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Alles anzeigen</button>}
     </div>
   );
@@ -15461,8 +15479,8 @@ function EinfachTrainer({ cl, evs=[], tod, trainerNames=[], helperNames=[], squa
   const meine=typeof meineRoh==="object"&&meineRoh?meineRoh.val:meineRoh;
   return (
     <div>
-      {/* Neuen Termin anlegen steht oben - das ist der haeufigste Start. */}
-      <button onClick={onNew} style={{width:"100%",marginBottom:12,padding:"12px",minHeight:44,borderRadius:11,border:`1px solid ${p}`,background:"#fff",color:readable(p),fontWeight:700,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>+ Neuer Termin</button>
+      {/* Dieselbe Karte wie in der vollstaendigen Ansicht - keine Umgewoehnung. */}
+      <NeuerTerminCard t={TH(cl)} onClick={onNew}/>
       <div style={{fontSize:10.5,fontWeight:700,color:"#94a3b8",letterSpacing:1,marginBottom:6}}>
         {gewaehlt&&fokus.id===gewaehlt&&evs[0]&&evs[0].id!==fokus.id?"AUSGEWÄHLTER TERMIN":"ALS NÄCHSTES"}
       </div>
@@ -15499,7 +15517,7 @@ function EinfachTrainer({ cl, evs=[], tod, trainerNames=[], helperNames=[], squa
                 {(z.betreuer+z.helfer)>0&&<span style={{fontSize:12.5,color:"#98a2b3"}}>· {z.betreuer+z.helfer} Betreuer</span>}
                 {onRemind&&z.offen>0&&(
                   <button onClick={()=>onRemind(fokus)} style={{marginLeft:"auto",background:"none",border:"none",padding:"2px 0",color:readable(p),fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
-                    🔔 {z.offen} erinnern
+                    🔔 Erinnern ({z.offen})
                   </button>
                 )}
               </div>
@@ -15508,12 +15526,12 @@ function EinfachTrainer({ cl, evs=[], tod, trainerNames=[], helperNames=[], squa
 
           {/* Der eine Weg in den Termin */}
           <div style={{display:"flex",gap:8,marginTop:14}}>
-            <Haupt onClick={()=>(amTag&&onAttend?onAttend(fokus):onView&&onView(fokus))} ch={amTag&&onAttend?"Anwesenheit abhaken":"Termin öffnen"}/>
+            <Haupt onClick={()=>(amTag&&onAttend?onAttend(fokus):onView&&onView(fokus))} ch={amTag&&onAttend?"✅ Anwesenheit":"Ansehen"}/>
           </div>
           {/* Was man ab und zu braucht - gleich gross, ruhig, ohne Farbe */}
-          <div style={{display:"flex",gap:7,marginTop:8}}>
+          <div style={{display:"flex",gap:7,marginTop:8,flexWrap:"wrap"}}>
             {onSetup&&<Neben onClick={()=>onSetup(fokus)} title="Aufbau-Liste: was muss auf welches Feld" ch="🏗 Aufbau"/>}
-            {fokus.type==="training"&&onPlan&&modTraining&&<Neben onClick={()=>onPlan(fokus)} title={planT||"Trainingsplan anlegen"} ch={planT?"📋 Training ✓":"📋 Training"}/>}
+            {fokus.type==="training"&&onPlan&&modTraining&&<Neben onClick={()=>onPlan(fokus)} title={planT||"Trainingsplan anlegen"} ch={planT?"📋 Training steht":"📋 Training planen"}/>}
             <Neben onClick={()=>setMehr(m=>!m)} title="Weitere Aktionen" ch={mehr?"⋯ weniger":"⋯ Mehr"}/>
           </div>
           {mehr&&(
@@ -15521,8 +15539,8 @@ function EinfachTrainer({ cl, evs=[], tod, trainerNames=[], helperNames=[], squa
               {onView&&<Klein onClick={()=>onView(fokus)} ch="📊 Rückmeldungen"/>}
               {onEdit&&<Klein onClick={()=>onEdit(fokus)} ch="✏️ Bearbeiten"/>}
               {onBrief&&<Klein onClick={()=>onBrief(fokus)} ch="📋 Spickzettel"/>}
-              {onSubReq&&<Klein onClick={()=>onSubReq(fokus)} ch="🆘 Vertretung"/>}
-              {onCopyLink&&<Klein onClick={()=>onCopyLink(fokus)} ch="🔗 Link"/>}
+              {onSubReq&&<Klein onClick={()=>onSubReq(fokus)} ch="🆘 Vertretung suchen"/>}
+              {onCopyLink&&<Klein onClick={()=>onCopyLink(fokus)} ch="🔗 Link kopieren"/>}
               {onReset&&<Klein onClick={()=>onReset(fokus)} ch="↺ Stimmen zurücksetzen"/>}
               {onDel&&<Klein onClick={()=>onDel(fokus)} ch="🗑 Löschen"/>}
             </div>
@@ -15910,7 +15928,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
                 </button>
               );
             })()}
-            <button onClick={onLogout} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"12px 14px",minHeight:44,color:"rgba(255,255,255,.7)",fontSize:13,fontWeight:700,cursor:"pointer"}}>Logout</button>
+            <button onClick={onLogout} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"12px 14px",minHeight:44,color:"rgba(255,255,255,.7)",fontSize:13,fontWeight:700,cursor:"pointer"}}>Abmelden</button>
           </div>
         }/>
       {showSeasonModal&&<SeasonModal data={local} save={d=>{save(d);}} fire={fire} cl={myClub} myTids={myTids} onClose={()=>setShowSeasonModal(false)}/>}
@@ -16132,14 +16150,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               onDel={ev=>{ setDelConf(ev.id); setDelConfVal(ev.title); }}
               onNew={()=>setWizard(true)} onDetail={()=>{ setTSimple(false); try{localStorage.setItem("va_tsimple","0");}catch{} }}/>
           ) : (<>
-          {!isHelper&&<div onClick={()=>setWizard(true)} style={{background:readable(t.p),borderRadius:20,padding:"18px 20px",cursor:"pointer",marginBottom:18,display:"flex",alignItems:"center",gap:14,boxShadow:`0 6px 24px ${t.p}66,0 2px 8px rgba(0,0,0,.15)`,transition:"all .2s"}}>
-            <div style={{width:52,height:52,borderRadius:16,background:"rgba(0,0,0,.15)",border:`2px solid ${t.ct==="#fff"?"rgba(255,255,255,.35)":"rgba(0,0,0,.18)"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,fontWeight:900,color:t.ct,flexShrink:0}}>+</div>
-            <div style={{flex:1}}>
-              <div style={{color:t.ct,fontWeight:900,fontSize:18,letterSpacing:"-.3px",textShadow:t.ct==="#fff"?"0 1px 3px rgba(0,0,0,.25)":"none"}}>Neuen Termin anlegen</div>
-              <div style={{color:t.ct,opacity:.95,fontSize:13,marginTop:3,fontWeight:600}}>Schritt-für-Schritt Assistent</div>
-            </div>
-            <div style={{width:32,height:32,borderRadius:10,background:"rgba(0,0,0,.15)",display:"flex",alignItems:"center",justifyContent:"center",color:t.ct,fontSize:18,fontWeight:700,flexShrink:0}}>{">"}</div>
-          </div>}
+          {!isHelper&&<NeuerTerminCard t={t} onClick={()=>setWizard(true)}/>}
           {!isHelper&&<button onClick={()=>setShowImport(true)} style={{display:"flex",alignItems:"center",gap:10,width:"100%",background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:14,padding:"11px 15px",marginBottom:18,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
             <span style={{fontSize:18,flexShrink:0}}>📥</span>
             <span style={{flex:1,minWidth:0}}>
@@ -18472,7 +18483,7 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
       {more&&!helperId&&(
         <div style={{display:"flex",gap:6,padding:"0 12px 11px",flexWrap:"wrap"}}>
           {onBrief&&<BtnSm onClick={onBrief} label="📋 Spickzettel" bg="#eef2ff" col="#4f46e5"/>}
-          {onRemind&&(ev.pt==="att"||!ev.pt)&&ev.date>=tod&&<BtnSm onClick={onRemind} label="🔔 Erinnern" bg="#e0f2fe" col="#0369a1"/>}
+          {onRemind&&(ev.pt==="att"||!ev.pt)&&ev.date>=tod&&<BtnSm onClick={onRemind} label={"🔔 Erinnern"+((squad&&squad.length&&(squad.length-yes-no)>0)?` (${squad.length-yes-no})`:"")} bg="#e0f2fe" col="#0369a1"/>}
           {onSubReq&&ev.date>=tod&&<BtnSm onClick={onSubReq} label="🆘 Vertretung suchen" bg="#fff1f2" col="#be123c"/>}
           {ev.open&&<BtnSm onClick={onCopyLink} label="🔗 Link kopieren" bg="#ede9fe" col="#7c3aed"/>}
           {!helperId&&<BtnSm onClick={onReset} label="↺ Stimmen zurücksetzen" bg="#fff7ed" col="#d97706"/>}
