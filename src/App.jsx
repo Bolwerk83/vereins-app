@@ -15457,13 +15457,17 @@ function EinfachTrainer({ cl, evs=[], tod, trainerNames=[], helperNames=[], squa
       </div>
     );
   };
+  // Auch ohne Termine steht die Anlege-Karte oben - an genau derselben Stelle
+  // wie sonst, damit man sie immer am gleichen Fleck sucht.
   if(!fokus) return (
-    <div style={{padding:"22px 4px",textAlign:"center"}}>
-      <div style={{fontSize:30,marginBottom:8}}>📅</div>
-      <p style={{fontWeight:700,fontSize:14.5,color:"#101828"}}>Keine Termine geplant</p>
-      <p style={{fontSize:12.5,color:"#98a2b3",marginTop:4,lineHeight:1.5}}>Lege den ersten Termin an – Training, Spiel oder Turnier.</p>
-      <div style={{marginTop:16,textAlign:"left"}}><NeuerTerminCard t={TH(cl)} onClick={onNew}/></div>
-      {onDetail&&<button onClick={onDetail} style={{display:"block",margin:"12px auto 0",padding:"10px 16px",borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Alles anzeigen</button>}
+    <div>
+      <NeuerTerminCard t={TH(cl)} onClick={onNew}/>
+      <div style={{padding:"18px 4px 4px",textAlign:"center"}}>
+        <div style={{fontSize:30,marginBottom:8}}>📅</div>
+        <p style={{fontWeight:700,fontSize:14.5,color:"#101828"}}>Keine Termine geplant</p>
+        <p style={{fontSize:12.5,color:"#98a2b3",marginTop:4,lineHeight:1.5}}>Lege den ersten Termin an – Training, Spiel oder Turnier.</p>
+        {onDetail&&<button onClick={onDetail} style={{display:"block",margin:"14px auto 0",padding:"12px 16px",minHeight:44,borderRadius:11,border:"1px solid #e4e9f0",background:"#fff",color:"#667085",fontWeight:600,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>Alles anzeigen</button>}
+      </div>
     </div>
   );
   const z=zahlen(fokus); const eT=ET[fokus.type]||ET.training;

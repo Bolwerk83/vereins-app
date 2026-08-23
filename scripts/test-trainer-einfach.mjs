@@ -105,6 +105,27 @@ await clickTxt("Zurück zur einfachen Sicht"); await page.waitForTimeout(1000);
 b=await body();
 if(/ALS NÄCHSTES/.test(b)) ok("Und zurück zur einfachen Sicht"); else fail("Rückweg fehlt");
 
+// ===== 6) Ohne Termine steht die Anlege-Karte trotzdem ganz oben =====
+await page.evaluate(()=>{
+  const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null"); if(!d) return;
+  d.events=(d.events||[]).filter(e=>e.tid!=="demo_f1");
+  localStorage.setItem("vereinsapp_v14", JSON.stringify(d));
+});
+await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2600); await dismiss();
+{ const b3=await body();
+  if(/Keine Termine geplant/.test(b3)) ok("Leerzustand wird gezeigt");
+  else console.log("HINWEIS: Demo baut Termine neu auf – Leerzustand nicht prüfbar");
+  if(/Keine Termine geplant/.test(b3)){
+    const lage=await page.evaluate(()=>{
+      const b4=[...document.querySelectorAll("button")].find(x=>/Neuen Termin anlegen/.test(x.innerText||""));
+      const leer=[...document.querySelectorAll("p")].find(x=>/Keine Termine geplant/.test(x.innerText||""));
+      if(!b4||!leer) return {fehler:(!b4?"keine Karte":"")+(!leer?" kein Text":"")};
+      return b4.getBoundingClientRect().top < leer.getBoundingClientRect().top;
+    });
+    if(lage===true) ok("Auch ohne Termine steht die Karte über „Keine Termine geplant“");
+    else fail("Karte steht nicht oben: "+JSON.stringify(lage));
+  } }
+
 if(errors.length){ console.log("JS-FEHLER:"); [...new Set(errors)].forEach(e=>console.log(" -",e.slice(0,150))); }
 console.log(errors.length||fails.length?`ERGEBNIS: ${fails.length} Fehlschläge, ${errors.length} JS-Fehler`:"ERGEBNIS: ALLES OK");
 await browser.close(); srv.close();
