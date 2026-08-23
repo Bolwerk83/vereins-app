@@ -21798,7 +21798,7 @@ function EinfachHelfer({ cl, events, helperId, helperName, teams, onJa, onNein, 
   return (
     <div style={{minHeight:"100dvh",background:"#f1f5f9",paddingBottom:34}}>
       <style>{CSS}</style>
-      <div style={{background:col,padding:"12px 14px",color:"#fff",display:"flex",alignItems:"center",gap:10}}>
+      <div style={{background:col,padding:"12px 12px",color:"#fff",display:"flex",alignItems:"center",gap:8}}>
         <Logo cl={cl} sz={32}/>
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontWeight:900,fontSize:16,lineHeight:1.15}}>{helperName}</div>
@@ -22093,8 +22093,15 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
           <div style={{fontWeight:900,fontSize:16,lineHeight:1.15}}>{kind}</div>
           <div style={{fontSize:12.5,fontWeight:600,opacity:.95}}>{team?.name||cl?.name}</div>
         </div>
-        {/* Abmelden dort, wo man es erwartet: oben rechts. Bewusst zurueckhaltend,
-            damit niemand versehentlich rausfliegt - "Anderes Kind" bleibt unten. */}
+        {/* Oben rechts liegen beide Wege: zum Geschwisterkind wechseln und
+            abmelden. Bewusst zurueckhaltend, damit niemand versehentlich
+            rausfliegt - unten steht "Anderes Kind" zusaetzlich in gross. */}
+        {onKindWechseln&&(
+          <button onClick={onKindWechseln} title="Anderes Kind" aria-label="Anderes Kind"
+            style={{flexShrink:0,padding:"8px 10px",minHeight:40,borderRadius:10,border:"1px solid rgba(255,255,255,.35)",background:"rgba(255,255,255,.14)",color:"#fff",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>
+            👧👦 Kind
+          </button>
+        )}
         <button onClick={onAbmelden} title="Abmelden" style={{flexShrink:0,padding:"8px 12px",minHeight:40,borderRadius:10,border:"1px solid rgba(255,255,255,.35)",background:"rgba(255,255,255,.14)",color:"#fff",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
           Abmelden
         </button>
@@ -22191,9 +22198,8 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
             🔗 Link weitergeben
           </button>
         )}
-        {onKindWechseln&&<button onClick={onKindWechseln} style={{width:"100%",marginTop:8,padding:"13px",minHeight:46,borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#334155",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
-          👧👦 Anderes Kind
-        </button>}
+        {/* "Anderes Kind" liegt oben im Kopf neben "Abmelden" - hier unten
+            wuerde derselbe Knopf nur doppelt stehen. */}
       </div>
       <Toast msg={toast}/>
     </div>

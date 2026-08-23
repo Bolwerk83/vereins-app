@@ -68,7 +68,8 @@ if(/Kommt Sophie\?|Sophie kommt/.test(b)) ok("Klare Frage bzw. Antwort mit dem V
   if(/absagen|doch dabei/i.test(b)) ok("Eine gegebene Antwort lässt sich in der Zeile korrigieren"); else fail("Kein Korrektur-Weg: "+b.slice(0,150).replace(/\n/g," | ")); }
 if(/BITTE ANTWORTEN|ALS NÄCHSTES/.test(b)) ok("Der nächste Termin steht immer groß oben"); else fail("Kein Fokus-Abschnitt: "+b.slice(0,150).replace(/\n/g," | "));
 if(!/Mehr anzeigen/.test(b)) ok("Keine zweite Ansicht mehr – nur die einfache"); else fail("Umschalter noch da");
-if(/Anderes Kind/.test(b)) ok("Zum anderen Kind wechseln ist direkt möglich"); else fail("Kein Kind-Wechsel");
+// Der Wechsel sitzt oben im Kopf (Knopf "👧👦 Kind"), nicht mehr im Text unten
+if(/👧👦 Kind/.test(b)) ok("Zum anderen Kind wechseln ist direkt möglich"); else fail("Kein Kind-Wechsel");
 { const k=await page.evaluate(()=>{ const H=window.innerHeight;
     const karten=[...document.querySelectorAll("div")].filter(d=>/\d\d:\d\d/.test(d.innerText||"")&&d.getBoundingClientRect().height>40&&d.getBoundingClientRect().height<330&&d.children.length<=4);
     return { sichtbar:karten.filter(d=>{const r=d.getBoundingClientRect();return r.top<H&&r.bottom>0;}).length,
@@ -134,8 +135,16 @@ if(/Passwort für \w+ (einrichten|ändern)/.test(b)) ok("Passwort fürs Kind ist
   });
   if(wo&&wo.oben&&wo.rechts) ok("Abmelden steht oben rechts im Kopf");
   else fail("Abmelden nicht oben rechts: "+JSON.stringify(wo));
-  const kind=await page.evaluate(()=>!![...document.querySelectorAll("button")].find(x=>/Anderes Kind/.test(x.innerText||"")));
-  if(kind) ok("„Anderes Kind“ bleibt unten – das braucht man öfter"); else fail("Anderes Kind fehlt"); }
+  // Der Kind-Wechsel steht oben neben Abmelden - und nur dort, nicht doppelt
+  const obenKind=await page.evaluate(()=>{
+    const b2=[...document.querySelectorAll("button")].find(x=>(x.getAttribute("aria-label")||"")==="Anderes Kind");
+    if(!b2) return null;
+    const r=b2.getBoundingClientRect();
+    return { oben:r.top<120, rechts:r.left>window.innerWidth/2, gross:r.width>=40&&r.height>=38 }; });
+  if(obenKind&&obenKind.oben&&obenKind.rechts&&obenKind.gross) ok("Der Kind-Wechsel sitzt oben neben Abmelden");
+  else fail("Kind-Wechsel fehlt oben: "+JSON.stringify(obenKind));
+  const doppelt=await page.evaluate(()=>[...document.querySelectorAll("button")].filter(x=>/Anderes Kind|👧👦/.test((x.innerText||"")+(x.getAttribute("aria-label")||""))).length);
+  if(doppelt===1) ok("Und steht nicht doppelt auf der Seite"); else fail("Kind-Wechsel "+doppelt+"× vorhanden"); }
 if(await clickTxt("Passwort für")){ await page.waitForTimeout(800); b=await body();
   if(/Ohne Passwort kann jeder|Nur wer das Passwort kennt/.test(b)) ok("Erklärt in klarer Sprache, wozu das Passwort gut ist"); else fail("Keine Erklärung");
   const felder=await page.locator('input[type="password"]').count();

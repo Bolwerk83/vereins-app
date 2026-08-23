@@ -31,8 +31,9 @@ await dismiss();
 
 // ===== 1) Zum anderen Kind wechseln =====
 let b=await body();
-if(/Anderes Kind/.test(b)) ok("„Anderes Kind“ steht in der einfachen Ansicht"); else fail("Kein Kind-Wechsel: "+b.slice(-160).replace(/\n/g," | "));
-await clickTxt("Anderes Kind"); await page.waitForTimeout(1400);
+// Der Wechsel sitzt oben im Kopf neben "Abmelden"
+if(/👧👦 Kind/.test(b)) ok("Der Kind-Wechsel steht oben im Kopf"); else fail("Kein Kind-Wechsel: "+b.slice(-160).replace(/\n/g," | "));
+await clickTxt("👧👦 Kind"); await page.waitForTimeout(1400);
 b=await body();
 const nameListe=/Wer bist du|suchen|Ben|Leon|Lina|Sophie/i.test(b);
 if(nameListe) ok("Der Wechsel führt direkt zur Namensliste (Team-Passwort ist gemerkt)"); else ok("Passwort wird abgefragt (Merker nicht aktiv)");
@@ -68,7 +69,7 @@ await page.evaluate(()=>{ sessionStorage.setItem("vereinsapp_v12_session", JSON.
 await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2400); await dismiss();
 // erst nach dem Laden ueberschreiben - sonst setzt das Start-Skript den Merker neu
 await page.evaluate(()=>{ localStorage.setItem("va_teamok_demo_f1","h2h7"); });
-await clickTxt("Anderes Kind"); await page.waitForTimeout(1400);
+await clickTxt("👧👦 Kind"); await page.waitForTimeout(1400);
 b=await body();
 if(/Passwort|Passwort eingeben|Team-Passwort/i.test(b)&&!/Dieses Handy merkt sich/.test(b)) ok("Ein alter Merker ohne Ablaufdatum gilt nicht mehr – das Passwort wird gefragt");
 else fail("Alter Merker gilt weiter: "+b.slice(0,170).replace(/\n/g," | "));
@@ -77,7 +78,7 @@ else fail("Alter Merker gilt weiter: "+b.slice(0,170).replace(/\n/g," | "));
 await page.evaluate(()=>{ sessionStorage.setItem("vereinsapp_v12_session", JSON.stringify({ role:"user", cid:"demo", tid:"demo_f1", user:"Ben Fischer" })); });
 await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2400); await dismiss();
 await page.evaluate(()=>{ localStorage.setItem("va_teamok_demo_f1", JSON.stringify({v:"h2h7", ts:Date.now()-31*86400000})); });
-await clickTxt("Anderes Kind"); await page.waitForTimeout(1400);
+await clickTxt("👧👦 Kind"); await page.waitForTimeout(1400);
 b=await body();
 if(!/Dieses Handy merkt sich/.test(b)) ok("Nach 30 Tagen wird wieder nach dem Passwort gefragt"); else fail("Abgelaufener Merker gilt weiter");
 { const weg=await page.evaluate(()=>localStorage.getItem("va_teamok_demo_f1"));
