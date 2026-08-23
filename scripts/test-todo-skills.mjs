@@ -72,6 +72,29 @@ b=await body();
 if(/Skill-Check fällig/.test(b)) ok("Wer Skills schon nutzt, verliert die Erinnerung nicht");
 else fail("Erinnerung fehlt, obwohl Bewertungen vorhanden sind");
 
+// ===== 6) Auch im Kader verschwinden die Skill-Sachen =====
+const kaderAuf=async()=>{
+  await page.evaluate(()=>{ const b=[...document.querySelectorAll("button")].find(x=>(x.innerText||"").trim()==="Team"); b&&b.click(); });
+  await page.waitForTimeout(1300);
+  await page.evaluate(()=>{ const b=[...document.querySelectorAll("button")].find(x=>/👥 Kader|^Spieler$/.test((x.innerText||"").trim())); b&&b.click(); });
+  await page.waitForTimeout(900);
+  await page.evaluate(()=>{ const b=[...document.querySelectorAll("button")].find(x=>(x.innerText||"").trim()==="Spieler"); b&&b.click(); });
+  await page.waitForTimeout(1100);
+  return body();
+};
+await setz(`(d.teams||[]).forEach(t=>{ if(t.id==="demo_f1") t.moduleVotes={demo_tr1:{skills:false}}; });
+  (d.playerProfiles||[]).forEach(p=>{ if(p.mainTid==="demo_f1") p.skills={}; });`);
+await neuLaden();
+{ const b6=await kaderAuf();
+  if(!/🎯 Skills/.test(b6)) ok("Kader: kein Skills-Knopf, wenn Skills aus sind");
+  else fail("Skills-Knopf trotz ausgeschalteter Skills im Kader");
+  if(!/Skill-Check/.test(b6)) ok("Auch der Monats-Check bleibt weg"); else fail("Monats-Check trotzdem da"); }
+await setz(`(d.teams||[]).forEach(t=>{ if(t.id==="demo_f1") t.moduleVotes={demo_tr1:{skills:true}}; });`);
+await neuLaden();
+{ const b7=await kaderAuf();
+  if(/🎯 Skills|Skill-Check/.test(b7)) ok("Mit eingeschalteten Skills ist beides wieder da");
+  else fail("Skills-Bereiche fehlen trotz eingeschalteter Skills"); }
+
 if(errors.length){ console.log("JS-FEHLER:"); [...new Set(errors)].forEach(e=>console.log(" -",e.slice(0,150))); }
 console.log(errors.length||fails.length?`ERGEBNIS: ${fails.length} Fehlschläge, ${errors.length} JS-Fehler`:"ERGEBNIS: ALLES OK");
 await browser.close(); srv.close();

@@ -9368,11 +9368,13 @@ function PlayerCard({ player: pl,onEdit,onDel,isMain,allTeams,allEvents,onWizard
       <div style={{padding:"11px 14px",display:"flex",alignItems:"center",gap:11,cursor:"pointer"}} onClick={()=>setExp(s=>!s)}>
         <Av name={pl.name} sz={40}/>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontWeight:800,fontSize:15,color:"#0f172a",display:"flex",alignItems:"center",gap:7}}>
-            {pl.jerseyNr&&<span style={{background:"#0f172a",color:"#fff",borderRadius:7,padding:"2px 7px",fontSize:13,fontWeight:900}}>#{pl.jerseyNr}</span>}
-            {pl.name}
+          {/* Name in einer Zeile: bei vielen Knoepfen wurde er sonst
+              silbenweise umgebrochen ("Pius / v.Z."). */}
+          <div style={{fontWeight:800,fontSize:15,color:"#0f172a",display:"flex",alignItems:"center",gap:7,minWidth:0}}>
+            {pl.jerseyNr&&<span style={{background:"#0f172a",color:"#fff",borderRadius:7,padding:"2px 7px",fontSize:13,fontWeight:900,flexShrink:0}}>#{pl.jerseyNr}</span>}
+            <span style={{minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{pl.name}</span>
           </div>
-          <div style={{fontSize:12,color:"#64748b",marginTop:2,display:"flex",gap:6,flexWrap:"wrap"}}>
+          <div style={{fontSize:12,color:"#64748b",marginTop:2,display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
             {pl.by && <span>Jg. {pl.by}</span>}
             <span>{pl.gender==="w"?"W":"M"}</span>
             {pl.position && <span>. {pl.position}</span>}
@@ -10532,7 +10534,7 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
           {showBulk && <BulkAddPlayers cid={cid} cl={cl} selTid={selTid} selTeam={selTeam} clubTeams={clubTeams} activeSeason={activeSeason} allPlayers={allPlayers} data={data} save={save} fire={fire} onClose={()=>setShowBulk(false)}/>}
 
           {}
-          {selTeam&&selTeam.skillCheckEnabled!==false&&mainPlayers.length>0&&(()=>{
+          {selTeam&&skillsAktivFuer(data,cl,selTeam)&&mainPlayers.length>0&&(()=>{
             const m=monthKey();
             const ratedBy=(selTeam.skillCheckBy?.[m])||[];
             const iDid=ratedBy.includes(raterId);
@@ -10669,7 +10671,7 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
                 onLink={()=>kindLink(pl)}
                 onEdit={()=>setEditP(pl)} onDel={()=>delPlayer(pl.id)} isMain
                 onMessage={()=>{setMsgText("");setMsgPlayer(pl);}}
-                onWizard={selTeam?.skillCheckEnabled!==false?()=>setWizardChild(pl):null}/>
+                onWizard={skillsAktivFuer(data,cl,selTeam)?()=>setWizardChild(pl):null}/>
             ))}
           </div>
 
@@ -13134,6 +13136,21 @@ function useShareTrigger(data,session,myTids) {
 
   return { trigger,dismiss };
 }
+
+// ----------------------------------------------------------------
+// Sind Skills fuer diese Mannschaft eingeschaltet? Das Modul "Skills &
+// Entwicklung" startet bewusst AUS. Es gilt als aktiv, wenn die Trainer es
+// in der Modul-Wahl eingeschaltet haben oder im Team schon Bewertungen
+// stehen (dann ist es offensichtlich in Benutzung).
+// ----------------------------------------------------------------
+const skillsAktivFuer = (data, cl, tm) => {
+  if(!tm) return false;
+  if(tm.skillCheckEnabled===false) return false;                        // je Mannschaft abgeschaltet
+  if((cl?.clubSettings?.mod_skills)===false) return false;              // vereinsweit abgeschaltet
+  const vs=Object.values(tm.moduleVotes||{}).filter(v=>v&&("skills" in v));
+  if(vs.length) return vs.filter(v=>v.skills).length*2>=vs.length;      // Mehrheit der Trainer
+  return ((data&&data.playerProfiles)||[]).some(p=>p.mainTid===tm.id&&!p.archived&&Object.values(p.skills||{}).some(v=>(Number(v)||0)>0));
+};
 
 // ----------------------------------------------------------------
 // Wer spielt in der neuen Saison wo? Aus dem Saison-Label ("2027/28") kommt
@@ -16201,13 +16218,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             // ausgeschaltet"). Nur dann gehoeren Skill-Aufgaben in die Todo-Liste.
             // Ausnahme: im Team stehen schon Bewertungen - dann ist es offensichtlich
             // in Benutzung und die Erinnerung bleibt.
-            const skillsAktiv = tm => {
-              if(tm?.skillCheckEnabled===false) return false;                       // im Verein je Mannschaft abgeschaltet
-              if((myClub?.clubSettings?.mod_skills)===false) return false;          // vereinsweit abgeschaltet
-              const vs=Object.values(tm?.moduleVotes||{}).filter(v=>v&&("skills" in v));
-              if(vs.length) return vs.filter(v=>v.skills).length*2>=vs.length;      // Modul-Wahl der Trainer
-              return (local.playerProfiles||[]).some(p=>p.mainTid===tm.id&&!p.archived&&Object.values(p.skills||{}).some(v=>(Number(v)||0)>0));
-            };
+            const skillsAktiv = tm => skillsAktivFuer(local, myClub, tm);
             const myEvalTeams=(local.teams||[]).filter(tm=>myTids.includes(tm.id)&&skillsAktiv(tm));
             myEvalTeams.forEach(tm=>{ const ratedBy=tm.skillCheckBy?.[mk]||[]; const skipped=!!(tm.skillCheckSkip?.[mk]); const paused=!!tm.skillCheckPauseUntil&&mk<=tm.skillCheckPauseUntil; if(!ratedBy.includes(raterId)&&!skipped&&!paused) todos.push({label:"Skill-Check fällig",col:"#4f46e5",bg:"#eef2ff",title:`${tm.name} · Monats-Bewertung`,sub:monthLabel(mk),onClick:()=>setTab("players")}); });
             if(myEvalTeams.length>0){
