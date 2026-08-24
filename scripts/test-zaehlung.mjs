@@ -74,7 +74,8 @@ if(!modal){ const alles=await body();
   console.log("FIXED-Container:", JSON.stringify(fixed)); }
 { const vor=(modal.split("Spieler dabei")[0]||"").trim().split(/\s+/).pop();
   if(vor==="3") ok("Kachel „Spieler dabei“ zeigt 3"); else fail("Kachel falsch: "+vor+" statt 3"); }
-if(/BETREUER:/.test(modal)) ok("Betreuer stehen in ihrer eigenen Zeile"); else fail("Betreuer-Zeile fehlt: "+modal.slice(0,160).replace(/\n/g," | "));
+// Betreuer stehen jetzt als eigene Liste mit Zeitpunkt (frueher eine Chip-Zeile)
+if(/BETREUER \(/.test(modal)) ok("Betreuer stehen in ihrem eigenen Block"); else fail("Betreuer-Block fehlt: "+modal.slice(0,160).replace(/\n/g," | "));
 const liste=await page.evaluate(()=>{ const h=[...document.querySelectorAll("span")].find(x=>x.innerText==="Anwesenheit abhaken");
   const box=h?.closest("div")?.parentElement; return box?box.innerText:""; });
 if(liste&&!/Demo T\./.test(liste)) ok("Abgekürzter Trainer-Name („Demo T.“) fehlt in der Anwesenheitsliste"); else fail("Trainer in der Anwesenheitsliste: "+liste.slice(0,140).replace(/\n/g," | "));

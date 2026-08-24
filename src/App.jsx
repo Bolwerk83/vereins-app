@@ -17907,14 +17907,27 @@ function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadlin
           </div>
         ))}
       </div>
-      {/* Trainer separat - fuer "mind. 6 Spieler" zaehlen nur die Spieler oben */}
-      {(trYes.length>0||trNo.length>0)&&(
-        <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap",marginBottom:lateArrivals.length>0?8:16,background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:11,padding:"7px 11px"}}>
-          <span style={{fontSize:11,fontWeight:800,color:"#64748b"}}>🧑‍🏫 BETREUER:</span>
-          {trYes.map(n=><span key={n} style={{display:"inline-flex",alignItems:"center",gap:4,fontSize:11.5,fontWeight:700,color:"#15803d",background:"#dcfce7",borderRadius:99,padding:"2px 8px 2px 3px"}}><Av name={n} sz={16}/>{n} ✓</span>)}
-          {trNo.map(n=><span key={n} style={{display:"inline-flex",alignItems:"center",gap:4,fontSize:11.5,fontWeight:700,color:"#dc2626",background:"#fee2e2",borderRadius:99,padding:"2px 8px 2px 3px"}}><Av name={n} sz={16}/>{n} ✕</span>)}
+      {/* Trainer separat - fuer "mind. 6 Spieler" zaehlen nur die Spieler oben.
+          Mit Zeitpunkt: der Trainer sieht, wann wer zu- oder abgesagt hat. */}
+      {(trYes.length>0||trNo.length>0)&&(()=>{
+        const zeit=n=>{ const v=(ev.votes||{})[n]; const ts=(typeof v==="object"&&v)?v.ts:null;
+          if(!ts) return ""; try{ const d=new Date(ts); const p2=x=>String(x).padStart(2,"0");
+            return `${WTK[d.getDay()]}, ${p2(d.getDate())}.${p2(d.getMonth()+1)}. · ${p2(d.getHours())}:${p2(d.getMinutes())} Uhr`; }catch{ return ""; } };
+        const zeile=(n,ja)=>(
+          <div key={(ja?"j":"n")+n} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderTop:"1px solid #eef2f7"}}>
+            <Av name={n} sz={22}/>
+            <span style={{flex:1,minWidth:0,fontWeight:700,fontSize:12.5,color:"#101828",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{n}</span>
+            <span style={{flexShrink:0,fontSize:11,fontWeight:700,color:ja?"#15803d":"#b42318"}}>{ja?"✓ zugesagt":"✕ abgesagt"}</span>
+            {zeit(n)&&<span style={{flexShrink:0,fontSize:10.5,color:"#98a2b3",whiteSpace:"nowrap"}}>{zeit(n)}</span>}
+          </div>
+        );
+        return (
+        <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:11,padding:"9px 12px",marginBottom:lateArrivals.length>0?8:16}}>
+          <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.3}}>🧑‍🏫 BETREUER ({trYes.length}{trNo.length?` · ${trNo.length} abgesagt`:""})</div>
+          {trYes.map(n=>zeile(n,true))}
+          {trNo.map(n=>zeile(n,false))}
         </div>
-      )}
+        ); })()}
 
       {/* Meine Kinder: Trainer-Kinder angepinnt – Zu-/Absage ohne Umloggen */}
       {onSetVote&&myKids.length>0&&(()=>{ const kids=myKids.filter(n=>teamPlayers.includes(n)); if(!kids.length) return null; return (
