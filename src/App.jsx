@@ -17799,7 +17799,11 @@ function AttendanceCheckoff({ ev, teamPlayers=[], onSetPresent=()=>{}, onSetGues
                 <div key={name} onClick={()=>togglePresent(name)} style={{display:"flex",alignItems:"center",gap:10,background:here?"#f0fdf4":noShow?"#fff7ed":"#f8fafc",borderRadius:11,padding:"9px 11px",border:`1.5px solid ${here?"#bbf7d0":noShow?"#fed7aa":"#e2e8f0"}`,cursor:"pointer"}}>
                   <div style={{width:22,height:22,borderRadius:7,border:`2px solid ${here?"#16a34a":"#cbd5e1"}`,background:here?"#16a34a":"#fff",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:13,fontWeight:900}}>{here?"✓":""}</div>
                   <Av name={name} sz={30}/>
-                  <span style={{flex:1,minWidth:0,fontWeight:700,fontSize:13.5,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</span>
+                  <span style={{flex:1,minWidth:0}}>
+                    <span style={{display:"block",fontWeight:700,fontSize:13.5,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</span>
+                    {/* Wann kam die Antwort? Hilft bei kurzfristigen Absagen. */}
+                    {stimmZeit(raw)&&<span style={{display:"block",fontSize:10.5,color:"#98a2b3",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{stimmZeit(raw)}</span>}
+                  </span>
                   {val==="yes"&&!lateMin&&<span style={{fontSize:10.5,fontWeight:700,color:"#16a34a",background:"#dcfce7",borderRadius:6,padding:"2px 7px"}}>zugesagt</span>}
                   {val==="yes"&&lateMin&&<span style={{fontSize:10.5,fontWeight:800,color:"#b45309",background:"#fef3c7",borderRadius:6,padding:"2px 7px"}}>+{lateMin} Min später</span>}
                   {val==="no"&&<span style={{fontSize:10.5,fontWeight:700,color:"#dc2626",background:"#fee2e2",borderRadius:6,padding:"2px 7px"}}>abgesagt</span>}
@@ -17913,9 +17917,7 @@ function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadlin
       {/* Trainer separat - fuer "mind. 6 Spieler" zaehlen nur die Spieler oben.
           Mit Zeitpunkt: der Trainer sieht, wann wer zu- oder abgesagt hat. */}
       {(trYes.length>0||trNo.length>0)&&(()=>{
-        const zeit=n=>{ const v=(ev.votes||{})[n]; const ts=(typeof v==="object"&&v)?v.ts:null;
-          if(!ts) return ""; try{ const d=new Date(ts); const p2=x=>String(x).padStart(2,"0");
-            return `${WTK[d.getDay()]}, ${p2(d.getDate())}.${p2(d.getMonth()+1)}. · ${p2(d.getHours())}:${p2(d.getMinutes())} Uhr`; }catch{ return ""; } };
+        const zeit=n=>stimmZeit((ev.votes||{})[n]);
         const zeile=(n,ja)=>(
           <div key={(ja?"j":"n")+n} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderTop:"1px solid #eef2f7"}}>
             <Av name={n} sz={22}/>
@@ -18079,7 +18081,7 @@ function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadlin
                 <Av name={name} sz={34}/>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontWeight:700,fontSize:14,color:"#0f172a"}}>{name}</div>
-                  {ts&&<div style={{fontSize:11,color:"#64748b",marginTop:1}}>{new Date(ts).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"})} {new Date(ts).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"})}</div>}
+                  {ts&&<div style={{fontSize:11,color:"#64748b",marginTop:1}}>{antwortZeit(ts)}</div>}
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:6}}>
                   {typeof rawVal==="object"&&rawVal?.byTrainer&&<span style={{fontSize:10.5,fontWeight:700,color:"#4f46e5",background:"#eef2ff",borderRadius:6,padding:"2px 7px"}}>Trainer</span>}{late&&<span style={{fontSize:11,fontWeight:700,color:"#d97706",background:"#fef3c7",borderRadius:6,padding:"2px 7px"}}> Zu spät</span>}
@@ -18114,6 +18116,17 @@ function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadlin
     </div>
   );
 }
+
+// Wann kam die Antwort? Kurzform "Mo, 24.08. · 13:19 Uhr" aus einem
+// Zeitstempel (Stimme, Helfer-Meldung, ...). Ohne Zeitstempel: leer.
+const antwortZeit = (ts) => {
+  if(!ts) return "";
+  try{ const d=new Date(ts); if(isNaN(d.getTime())) return "";
+    const p2=x=>String(x).padStart(2,"0");
+    return `${WTK[d.getDay()]}, ${p2(d.getDate())}.${p2(d.getMonth()+1)}. · ${p2(d.getHours())}:${p2(d.getMinutes())} Uhr`;
+  }catch{ return ""; }
+};
+const stimmZeit = (v) => antwortZeit((typeof v==="object"&&v)?v.ts:null);
 
 // ----------------------------------------------------------------
 // Doppelmeldungen: ein Kind kann nicht zur gleichen Zeit in zwei
@@ -21327,6 +21340,7 @@ function HelferInteresse({ ev, isHelper, session, onPatch, fire }){
             {list.map(o=>(
               <span key={o.id} style={{display:"inline-flex",alignItems:"center",gap:5,background:"#fff",border:"1.5px solid #bbf7d0",borderRadius:99,padding:"3px 9px 3px 3px",fontSize:11.5,fontWeight:700,color:"#0f172a"}}>
                 <Av name={o.name} sz={18}/>{o.name}
+                {antwortZeit(o.ts)&&<span style={{fontWeight:600,color:"#98a2b3",fontSize:10.5,whiteSpace:"nowrap"}}>{antwortZeit(o.ts)}</span>}
               </span>
             ))}
           </div>
@@ -21432,9 +21446,16 @@ function StaffingBoard({ ev, team, session, isHelper, onPatch, fire, onRequestHe
         <div style={{fontSize:12.5,color:"#475569",background:"#f8fafc",borderRadius:10,padding:"8px 11px",marginBottom:8}}>📋 {ev.helferNote}</div>
       )}
       <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:8}}>
-        {trainers.map((tr,i)=><Chip key={"t"+i} name={tr.name||"Trainer"} sub="Trainer" col="#16a34a"/>)}
+        {trainers.map((tr,i)=><Chip key={"t"+i} name={tr.name||"Trainer"} sub={antwortZeit(tr.ts)||"Trainer"} col="#16a34a"/>)}
         {assignedTrainers>checkinCount&&<span style={{display:"flex",alignItems:"center",gap:5,background:"#f0fdf4",borderRadius:99,padding:"3px 11px",border:"1.5px solid #bbf7d0",fontSize:12.5,fontWeight:700,color:"#166534"}}>👥 {assignedTrainers} Trainer im Team</span>}
-        {confirmed.map(o=><span key={o.id} style={{display:"flex",alignItems:"center",gap:5,background:"#fff",borderRadius:99,padding:"3px 9px 3px 3px",border:"1.5px solid #d97706"}}><Av name={o.name} sz={20}/><span style={{fontSize:12.5,fontWeight:700,color:"#0f172a"}}>{o.name} <span style={{fontWeight:600,color:"#64748b"}}>· Helfer</span></span>{isManager&&<span onClick={()=>removeOffer(o.id)} style={{color:"#dc2626",fontWeight:800,fontSize:12,cursor:"pointer"}}>×</span>}</span>)}
+        {confirmed.map(o=>(
+          <span key={o.id} style={{display:"flex",alignItems:"center",gap:6,background:"#fff",borderRadius:12,padding:"5px 10px 5px 5px",border:"1.5px solid #d97706"}}>
+            <Av name={o.name} sz={20}/>
+            <span style={{fontSize:12.5,fontWeight:700,color:"#0f172a"}}>{o.name} <span style={{fontWeight:600,color:"#64748b"}}>· Helfer</span></span>
+            {antwortZeit(o.ts)&&<span style={{fontSize:10.5,color:"#98a2b3",whiteSpace:"nowrap"}}>{antwortZeit(o.ts)}</span>}
+            {isManager&&<span onClick={()=>removeOffer(o.id)} style={{color:"#dc2626",fontWeight:800,fontSize:12,cursor:"pointer"}}>×</span>}
+          </span>
+        ))}
         {trainerCount+confirmed.length===0&&<span style={{fontSize:12.5,color:"#64748b"}}>Noch niemand eingeteilt.</span>}
       </div>
       {!enough&&<div style={{fontSize:12.5,color:"#b45309",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:10,padding:"8px 11px",marginBottom:8,fontWeight:600}}>{hm?`Noch ${target-ist} Helfer gesucht – wer zuerst zusagt, ist fest dabei.`:`Noch ${target-ist} Betreuer gesucht. Trainer haben Vorrang – Helfer rücken nur nach, wenn Trainer fehlen.`}</div>}
@@ -21442,7 +21463,14 @@ function StaffingBoard({ ev, team, session, isHelper, onPatch, fire, onRequestHe
         <div style={{marginBottom:8}}>
           <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.3,marginBottom:5}}>WARTELISTE ({waitlist.length}) – springt bei Absage ein</div>
           <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-            {waitlist.map(o=><span key={o.id} style={{display:"flex",alignItems:"center",gap:5,background:"#f8fafc",borderRadius:99,padding:"3px 9px 3px 3px",border:"1.5px dashed #cbd5e1"}}><Av name={o.name} sz={18}/><span style={{fontSize:12,fontWeight:600,color:"#475569"}}>{o.name}</span>{isManager&&<span onClick={()=>removeOffer(o.id)} style={{color:"#dc2626",fontWeight:800,fontSize:12,cursor:"pointer"}}>×</span>}</span>)}
+            {waitlist.map(o=>(
+              <span key={o.id} style={{display:"flex",alignItems:"center",gap:6,background:"#f8fafc",borderRadius:12,padding:"5px 10px 5px 5px",border:"1.5px dashed #cbd5e1"}}>
+                <Av name={o.name} sz={18}/>
+                <span style={{fontSize:12,fontWeight:600,color:"#475569"}}>{o.name}</span>
+                {antwortZeit(o.ts)&&<span style={{fontSize:10.5,color:"#98a2b3",whiteSpace:"nowrap"}}>{antwortZeit(o.ts)}</span>}
+                {isManager&&<span onClick={()=>removeOffer(o.id)} style={{color:"#dc2626",fontWeight:800,fontSize:12,cursor:"pointer"}}>×</span>}
+              </span>
+            ))}
           </div>
         </div>
       )}

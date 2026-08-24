@@ -30,7 +30,10 @@ await page.waitForTimeout(1400);
 await page.evaluate(()=>{
   const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null"); if(!d) return;
   const ev=(d.events||[]).find(e=>e.cid==="demo"&&e.tid==="demo_f1"&&(e.pt==="att"||!e.pt)); if(!ev) return;
-  ev.votes={...(ev.votes||{}),
+  const jetzt=new Date().toISOString();
+  const mitTs={}; Object.entries(ev.votes||{}).forEach(([k,v])=>{
+    mitTs[k]=(typeof v==="object"&&v)?{...v,ts:v.ts||jetzt}:{val:v,ts:jetzt}; });
+  ev.votes={...mitTs,
     "Demo Trainer":{val:"yes",ts:"2026-08-20T14:12:00.000Z"},
     "Trainer B":{val:"no",ts:"2026-08-21T09:03:00.000Z"}};
   localStorage.setItem("vereinsapp_v14", JSON.stringify(d));
@@ -57,6 +60,58 @@ if(/✕ abgesagt/.test(b)) ok("Auch Absagen werden gezeigt"); else console.log("
     return [...box.children].slice(1).map(r=>(r.innerText||"").replace(/\n/g," ").trim()); });
   if(paar&&paar.length>=1&&/zugesagt|abgesagt/.test(paar[0])) ok("Jede Zeile: Name · Status · Zeitpunkt („"+paar[0]+"“)");
   else fail("Zeilenaufbau unerwartet: "+JSON.stringify(paar)); }
+
+// ===== 2) Auch bei den Spielern steht, wann die Antwort kam =====
+await page.evaluate(()=>{ const b2=[...document.querySelectorAll("button")].find(x=>/^(👥 Orga|Orga)$/.test((x.innerText||"").trim())); b2&&b2.click(); });
+await page.waitForTimeout(1000);
+// Fuer ein Kind ohne Stimme zusagen - die App schreibt den Zeitstempel selbst
+{ const geklickt=await page.evaluate(()=>{
+    const b2=[...document.querySelectorAll("button")].find(x=>(x.getAttribute("title")||"")==="Für diesen Spieler zusagen");
+    if(!b2) return false; b2.click(); return true; });
+  if(!geklickt) console.log("HINWEIS: kein Kind ohne Stimme im Termin");
+  await page.waitForTimeout(1400);
+  const zeilen=await page.evaluate(()=>{
+    const hint=[...document.querySelectorAll("div")].find(d=>/^Hake ab, wer wirklich gekommen ist/.test((d.innerText||"").trim()));
+    const liste=hint&&hint.nextElementSibling;
+    if(!liste) return null;
+    return [...liste.children].map(r=>(r.innerText||"").replace(/\n/g," | ").trim()); });
+  if(!zeilen) fail("Abhak-Liste nicht gefunden");
+  else {
+    const mitZeit=zeilen.filter(z=>/\d\d\.\d\d\. · \d\d:\d\d Uhr/.test(z));
+    if(mitZeit.length) ok("Bei den Spielern steht die Antwortzeit: „"+mitZeit[0]+"“");
+    else fail("Keine Zeit bei den Spielern: "+JSON.stringify(zeilen.slice(0,4))); } }
+
+// ===== 3) Und beim Helfer, sobald er sich meldet =====
+await page.evaluate(()=>{ const b2=[...document.querySelectorAll("button")].find(x=>(x.getAttribute("aria-label")||"")==="Schließen"); b2&&b2.click(); });
+await page.waitForTimeout(700);
+await page.evaluate(()=>{ sessionStorage.setItem("vereinsapp_v12_session", JSON.stringify({role:"helper",cid:"demo",id:"dh2",helperId:"dh2",name:"Markus Lang",tids:["demo_f1"]})); });
+await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2800); await dismiss();
+{ const gemeldet=await page.evaluate(()=>{
+    const b2=[...document.querySelectorAll("button")].find(x=>/Ich helfe|Ich kann helfen|Ich leite mit/.test(x.innerText||""));
+    if(!b2) return false; b2.click(); return true; });
+  if(!gemeldet) console.log("HINWEIS: Helfer konnte sich nicht melden");
+  await page.waitForTimeout(1600); }
+await page.evaluate(()=>{ sessionStorage.setItem("vereinsapp_v12_session", JSON.stringify({role:"trainer",cid:"demo",tids:["demo_f1"],name:"Demo Trainer",id:"demo_tr1"})); });
+await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2800); await dismiss();
+{ const auf=await page.evaluate(()=>{
+    const b3=[...document.querySelectorAll("button")].find(x=>/^(Ansehen|✅ Anwesenheit)$/.test((x.innerText||"").trim()));
+    if(!b3) return false; b3.click(); return true; });
+  if(auf){
+    await page.waitForTimeout(1400);
+    await page.evaluate(()=>{ const b2=[...document.querySelectorAll("button")].find(x=>/^(👥 Orga|Orga)$/.test((x.innerText||"").trim())); b2&&b2.click(); });
+    await page.waitForTimeout(1100);
+    // Im Termin-Fenster suchen (der Hintergrund zaehlt nicht mit)
+    const treffer=await page.evaluate(()=>{
+      const dr=[...document.querySelectorAll("div")].find(d=>getComputedStyle(d).position==="fixed"&&/Rückmeldungen|Anwesenheit abhaken|Helfer/.test(d.innerText||"")&&d.innerText.length>200);
+      if(!dr) return null;
+      const t2=dr.innerText;
+      const i2=t2.indexOf("Markus Lang");
+      return { umfeld:i2>=0?t2.slice(Math.max(0,i2-160),i2+160).replace(/\n/g," | "):null,
+               zeit:i2>=0&&/\d\d\.\d\d\. · \d\d:\d\d Uhr/.test(t2.slice(i2,i2+90)) };
+    });
+    if(treffer&&treffer.zeit) ok("Auch beim Helfer steht, wann er sich gemeldet hat");
+    else fail("Keine Zeit beim Helfer: "+(treffer?treffer.umfeld:"kein Fenster"));
+  } else console.log("HINWEIS: Termin mit Helfer nicht gefunden"); }
 
 if(errors.length){ console.log("JS-FEHLER:"); [...new Set(errors)].forEach(e=>console.log(" -",e.slice(0,150))); }
 console.log(errors.length||fails.length?`ERGEBNIS: ${fails.length} Fehlschläge, ${errors.length} JS-Fehler`:"ERGEBNIS: ALLES OK");
