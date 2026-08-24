@@ -9454,41 +9454,44 @@ function PlayerCard({ player: pl,onEdit,onDel,isMain,allTeams,allEvents,onWizard
 
   return (
     <div style={{background:"#fff",borderRadius:14,border:`1.5px solid ${isMain?"#e2e8f0":"#fde68a"}`,overflow:"hidden"}}>
-      <div style={{padding:"11px 14px",display:"flex",alignItems:"center",gap:11,cursor:"pointer"}} onClick={()=>setExp(s=>!s)}>
+      {/* Kopf: der Name bekommt die volle Breite. Die Knoepfe stehen in einer
+          eigenen Zeile darunter - vorher wurde jeder Name abgeschnitten. */}
+      <div style={{padding:"11px 14px 9px",display:"flex",alignItems:"center",gap:11,cursor:"pointer"}} onClick={()=>setExp(s=>!s)}>
         <Av name={pl.name} sz={40}/>
         <div style={{flex:1,minWidth:0}}>
-          {/* Name in einer Zeile: bei vielen Knoepfen wurde er sonst
-              silbenweise umgebrochen ("Pius / v.Z."). */}
-          <div style={{fontWeight:800,fontSize:15,color:"#0f172a",display:"flex",alignItems:"center",gap:7,minWidth:0}}>
-            {pl.jerseyNr&&<span style={{background:"#0f172a",color:"#fff",borderRadius:7,padding:"2px 7px",fontSize:13,fontWeight:900,flexShrink:0}}>#{pl.jerseyNr}</span>}
-            <span style={{minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{pl.name}</span>
+          <div style={{display:"flex",alignItems:"center",gap:7,minWidth:0}}>
+            {pl.jerseyNr&&<span style={{background:"#0f172a",color:"#fff",borderRadius:7,padding:"2px 7px",fontSize:12.5,fontWeight:900,flexShrink:0}}>#{pl.jerseyNr}</span>}
+            <span style={{minWidth:0,fontWeight:800,fontSize:15,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{pl.name}</span>
           </div>
           <div style={{fontSize:12,color:"#64748b",marginTop:2,display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
             {pl.by && <span>Jg. {pl.by}</span>}
             <span>{pl.gender==="w"?"W":"M"}</span>
-            {pl.position && <span>. {pl.position}</span>}
+            {pl.position && <span>· {pl.position}</span>}
+            {totalGames>0 && <Tag c="#16a34a" bg="#dcfce7" ch={`${totalGames} Spiele`} sm/>}
             {!isMain && <Tag c="#d97706" bg="#fef3c7" ch="Aushilfe" sm/>}
             {!pl.consentAt && <Tag c="#b45309" bg="#fef3c7" ch="Einwilligung fehlt" sm/>}
             {isPausedP(pl) && <Tag c="#9a3412" bg="#ffedd5" ch={`⏸ bis ${fmtDShort(pl.pausedUntil)}`} sm/>}
           </div>
         </div>
-        <div style={{display:"flex",gap:5,flexShrink:0,alignItems:"center"}}>
-          {totalGames > 0 && <Tag c="#16a34a" bg="#dcfce7" ch={`*${totalGames}`} sm/>}
-          {(pl.rating||0) > 0 && <span style={{fontSize:14}}>{pl.rating ? pl.rating+"/5" : "-"}</span>}
-        </div>
-        <div style={{display:"flex",gap:5,flexShrink:0}}>
-          {onWizard&&noSkills&&<button onClick={e=>{e.stopPropagation();onWizard();}} title="Skill-Wizard: Erstbewertung starten" style={{height:30,padding:"0 9px",borderRadius:9,background:"#eef2ff",border:"none",color:"#4f46e5",cursor:"pointer",display:"flex",alignItems:"center",gap:4,fontSize:12,fontWeight:800,fontFamily:"inherit"}}>🎯 Skills</button>}
-          {onLink&&<button onClick={e=>{e.stopPropagation();onLink();}} title="Direktlink für die Eltern teilen (führt direkt zu diesem Kind)" aria-label="Link für die Eltern"
-            style={{width:30,height:30,borderRadius:9,background:"#ecfeff",border:"none",color:"#0e7490",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,marginLeft:6}}>🔗</button>}
-          {onMessage&&<button onClick={e=>{e.stopPropagation();onMessage();}} title="Nachricht an Eltern/Spieler (Pflicht-Lesebestätigung beim Login)" style={{width:30,height:30,borderRadius:9,background:"#eef2ff",border:"none",color:"#4f46e5",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>✉</button>}
-          <button onClick={e=>{e.stopPropagation();onEdit();}} style={{width:30,height:30,borderRadius:9,background:"#eff6ff",border:"none",color:"#2563eb",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>✎</button>
-          {onDel&&<button onClick={tapDel} title={armDel?"Nochmal tippen: endgültig löschen":"Spieler löschen (2× tippen)"}
-            style={{height:30,minWidth:armDel?undefined:30,padding:armDel?"0 10px":0,marginLeft:10,borderRadius:9,
-              background:armDel?"#dc2626":"#fff",border:armDel?"none":"1.5px solid #fecaca",color:armDel?"#fff":"#dc2626",
-              cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:5,fontSize:armDel?11.5:13,fontWeight:800,fontFamily:"inherit",transition:"all .15s"}}>
-            {armDel?"Sicher löschen?":"✕"}
-          </button>}
-        </div>
+        <span style={{flexShrink:0,fontSize:16,color:"#cbd5e1",transform:exp?"rotate(90deg)":"none",transition:"transform .15s"}}>›</span>
+      </div>
+      {/* Aktionen: eigene Zeile, gleich grosse Ziele, Loeschen abgesetzt */}
+      <div style={{display:"flex",alignItems:"center",gap:6,padding:"0 14px 11px"}}>
+        {onWizard&&noSkills&&<button onClick={e=>{e.stopPropagation();onWizard();}} title="Skill-Wizard: Erstbewertung starten"
+          style={{height:34,padding:"0 11px",borderRadius:9,background:"#eef2ff",border:"none",color:"#4f46e5",cursor:"pointer",fontSize:12,fontWeight:800,fontFamily:"inherit"}}>🎯 Skills</button>}
+        {onLink&&<button onClick={e=>{e.stopPropagation();onLink();}} title="Direktlink für die Eltern teilen (führt direkt zu diesem Kind)" aria-label="Link für die Eltern"
+          style={{width:34,height:34,borderRadius:9,background:"#ecfeff",border:"none",color:"#0e7490",cursor:"pointer",fontSize:14,fontFamily:"inherit"}}>🔗</button>}
+        {onMessage&&<button onClick={e=>{e.stopPropagation();onMessage();}} title="Nachricht an Eltern/Spieler (Pflicht-Lesebestätigung beim Login)" aria-label="Nachricht"
+          style={{width:34,height:34,borderRadius:9,background:"#f5f3ff",border:"none",color:"#7c3aed",cursor:"pointer",fontSize:14,fontFamily:"inherit"}}>✉️</button>}
+        <button onClick={e=>{e.stopPropagation();onEdit();}} title="Profil bearbeiten" aria-label="Bearbeiten"
+          style={{width:34,height:34,borderRadius:9,background:"#eff6ff",border:"none",color:"#2563eb",cursor:"pointer",fontSize:14,fontFamily:"inherit"}}>✏️</button>
+        <div style={{flex:1}}/>
+        {onDel&&<button onClick={tapDel} title={armDel?"Nochmal tippen: endgültig löschen":"Spieler löschen (2× tippen)"} aria-label="Löschen"
+          style={{height:34,minWidth:armDel?undefined:34,padding:armDel?"0 12px":0,borderRadius:9,
+            background:armDel?"#dc2626":"#fff",border:armDel?"none":"1.5px solid #fecaca",color:armDel?"#fff":"#dc2626",
+            cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:armDel?11.5:13,fontWeight:800,fontFamily:"inherit",transition:"all .15s"}}>
+          {armDel?"Sicher löschen?":"✕"}
+        </button>}
       </div>
       {exp && (
         <div style={{padding:"0 14px 12px",borderTop:"1px solid #f1f5f9"}}>
