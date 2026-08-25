@@ -3,7 +3,7 @@ import { splitData, mergeData, merge3Obj } from "./data.js";
 import { eventStart, eventDeadline, isVotingLocked, isDeadlinePassed, isEventPast, daysUntil, isUpcoming5, formatCountdown, round2, clampSkill, monthKey, skillsMean, blendSkill, germanPublicHolidays, publicHolidayName, DE_STATES, parseRosterText, parseSpielplan } from "./logic.js";
 import { ACOLORS, acol, inits, contrast, mix, readable } from "./util.js";
 import { feat } from "./features.js";
-import { SK, SS, CFG, DEFAULT_CFG, JOIN_CODE, getConfig, setConfig, MULTI_TENANT, auth, _DATA_ARRAYS, normData, sb, localGet, localSet, sess } from "./storage.js";
+import { SK, SS, CFG, DEFAULT_CFG, JOIN_CODE, getConfig, setConfig, MULTI_TENANT, auth, _DATA_ARRAYS, normData, sb, localGet, localSet, sess, dbHealth } from "./storage.js";
 import { _sha256, hashPw, checkPw } from "./util.js";
 
 import { LANG_KEY, LangCtx, T, useT } from "./i18n.jsx";
@@ -7001,6 +7001,33 @@ function Directory({data,onPick,onNewClub,onVisitorOpen,lang,setLang,onLegal}) {
 
       {}
       <div style={{maxWidth:isDesktop?1180:460,margin:"0 auto",padding:isDesktop?"4px 28px 30px":"0 16px 60px"}}>
+        {/* Leere Liste ohne Suche: bisher stand hier GAR NICHTS - man konnte
+            nicht unterscheiden, ob nichts geladen wurde oder ob einfach kein
+            Verein gelistet ist. */}
+        {filtered.length===0&&!search&&(()=>{
+          const gestoert=dbHealth.state==="cache"||dbHealth.state==="blocked";
+          const versteckt=(data.clubs||[]).filter(c=>c&&(c.dir===false||c.pub===false)).length;
+          return (
+          <div style={{textAlign:"center",padding:"26px 18px",color:"rgba(255,255,255,.75)",background:"rgba(255,255,255,.06)",border:"1.5px solid rgba(255,255,255,.14)",borderRadius:16}}>
+            <div style={{fontSize:30,marginBottom:8}}>{gestoert?"⚠️":"🔍"}</div>
+            <p style={{fontWeight:800,fontSize:15,color:"#fff"}}>
+              {gestoert?"Vereinsliste konnte nicht geladen werden":"Noch kein Verein in der Liste"}
+            </p>
+            <p style={{fontSize:13,marginTop:6,lineHeight:1.55,color:"rgba(255,255,255,.7)"}}>
+              {gestoert
+                ? "Die App erreicht die Datenbank gerade nicht. Deine Vereinsdaten sind davon nicht betroffen – bitte später erneut versuchen."
+                : versteckt>0
+                  ? `Es ${versteckt===1?"ist ein Verein":"sind "+versteckt+" Vereine"} angelegt, aber nicht öffentlich sichtbar. Der Verein erscheint hier erst, wenn ein Admin unter Einstellungen → Verein „Im Verzeichnis sichtbar“ einschaltet. Mit eurem eigenen Link kommt ihr trotzdem direkt rein.`
+                  : "Hier erscheinen nur Vereine, die sich öffentlich zeigen möchten. Mit eurem eigenen Link kommt ihr immer direkt in euren Verein."}
+            </p>
+            <div style={{display:"flex",gap:8,justifyContent:"center",marginTop:14,flexWrap:"wrap"}}>
+              {gestoert&&<button onClick={()=>{ try{ window.location.reload(); }catch{} }}
+                style={{padding:"11px 18px",minHeight:44,borderRadius:12,border:"1px solid rgba(255,255,255,.35)",background:"rgba(255,255,255,.14)",color:"#fff",fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>Neu laden</button>}
+              <button onClick={()=>setMode("setup")}
+                style={{padding:"11px 18px",minHeight:44,borderRadius:12,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>Verein anlegen</button>
+            </div>
+          </div>
+          ); })()}
         {filtered.length===0&&search&&(
           <div style={{textAlign:"center",padding:"32px",color:"rgba(255,255,255,.3)"}}>
             <p style={{fontWeight:700,fontSize:15}}>{tr("lpNone")}</p>
