@@ -8,7 +8,7 @@ import { _sha256, hashPw, checkPw } from "./util.js";
 
 import { LANG_KEY, LangCtx, T, useT } from "./i18n.jsx";
 
-import { LANG_SWITCHER_ENABLED, LangSwitcher, FloatingLangSwitcher, getFontScale, applyFontScale, FontScaleControl, SupabaseSetup, uid, addMins, activeSid, activeTeamsFor, genTempPw, validTrainerPw, now, addD, fmtD, plzToGeo, wxIcon, useWeather, geoDistanceKm, TEAM_STRENGTHS, strengthInfoText, strengthOf, InfoHint, isActive, teamSelfLogin, fmtDShort, ET, etLabel, evDisplayTitle,  CSS, TH, OnlineStatus, Logo, Av, Tag, Toast, AreaIntro, Drawer, PageHead, PillTabs, TeamPills, EmptyBox, Btn, PwInput, Inp, Sel, Sw, ClubHeader, Divider , SpiderChart, dimLabel } from "./ui.jsx";
+import { LANG_SWITCHER_ENABLED, LangSwitcher, FloatingLangSwitcher, getFontScale, applyFontScale, FontScaleControl, SupabaseSetup, uid, addMins, activeSid, clubSeasons, activeTeamsFor, genTempPw, validTrainerPw, now, addD, fmtD, plzToGeo, wxIcon, useWeather, geoDistanceKm, TEAM_STRENGTHS, strengthInfoText, strengthOf, InfoHint, isActive, teamSelfLogin, fmtDShort, ET, etLabel, evDisplayTitle,  CSS, TH, OnlineStatus, Logo, Av, Tag, Toast, AreaIntro, Drawer, PageHead, PillTabs, TeamPills, EmptyBox, Btn, PwInput, Inp, Sel, Sw, ClubHeader, Divider , SpiderChart, dimLabel } from "./ui.jsx";
 import { DFB_FORMATS, dfbFormatForCat, CAT_YEARS, catYearsStr, CAT_ORDER, eligibleCats, playerFitType, playerFitsTeam, fitLabel, _fbSeasonStart } from "./dfb.js";
 import { CAT_RANK, defaultSoll, SOLL_PLAYERS_BY_CAT, _votedYes, isPausedP, drillScores, drillVoteOf, playerNoShowEvents, NO_SHOW_HINT_THRESHOLD, addAuditLog, suggestDrillsForSkill, generateTrainingPlan, SKILLS, SKILL_AXES, skillAxesFor, sollFor, trainingFocusFor, buildSession, playerArchetype, AXIS_TO_FOCUS, staffNeed } from "./domain.js";
 import { TRAINING_TEMPLATES, DRILL_LIB } from "./drills.js";
@@ -16268,6 +16268,37 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             Der Trainer-Text verweist auf Knoepfe, die Helfer gar nicht haben. */}
         {/* In der einfachen Sicht steht der Erklaerkasten nicht mehr vor dem Termin. */}
         {!(isHelper&&tab==="events")&&!(tSimple&&tab==="events")&&<AreaIntro id={tab} cl={myClub}/>}
+        {/* Rettungsanker: Die aktive Saison ist leer, eine andere hat Daten.
+            Dann sieht die App "leer" aus, obwohl nichts verloren ist. */}
+        {(()=>{
+          const sid=activeSid(local,cid);
+          const zaehl=s2=>({
+            sp:(local.playerProfiles||[]).filter(p=>p.cid===cid&&!p.archived&&(p.seasonId||sid)===s2).length,
+            ev:(local.events||[]).filter(e=>e.cid===cid&&(e.seasonId||sid)===s2).length });
+        const jetzt=zaehl(sid);
+          if(jetzt.sp>0||jetzt.ev>0) return null;
+          const andere=clubSeasons(local,cid).filter(x=>x.id!==sid)
+            .map(x=>({x,...zaehl(x.id)})).filter(y=>y.sp>0||y.ev>0)
+            .sort((a,b)=>(b.sp+b.ev)-(a.sp+a.ev))[0];
+          if(!andere) return null;
+          const lbl=String(andere.x.label||"").replace(/(\d{4})\/(\d{4})/,(m,a2,b2)=>`${a2}/${b2.slice(2)}`);
+          return (
+            <div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:14,padding:"13px 15px",marginBottom:14}}>
+              <div style={{fontWeight:800,fontSize:14,color:"#92400e",marginBottom:4}}>Diese Saison ist noch leer</div>
+              <div style={{fontSize:12.5,color:"#b45309",lineHeight:1.55,marginBottom:10}}>
+                Aktiv ist gerade eine Saison ohne Spieler und Termine. Deine Daten sind <b>nicht weg</b> – sie liegen in <b>{lbl}</b> ({andere.sp} Spieler, {andere.ev} Termine).
+              </div>
+              <button onClick={()=>{
+                  save({...local, activeSeason:andere.x.id,
+                    ...(MULTI_TENANT?{clubs:(local.clubs||[]).map(c=>c.id===cid?{...c,activeSeason:andere.x.id}:c)}:{})});
+                  fire("Zurück in Saison "+lbl);
+                }}
+                style={{width:"100%",padding:"12px",minHeight:46,borderRadius:11,border:"none",background:"#b45309",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
+                Zurück zu {lbl}
+              </button>
+            </div>
+          );
+        })()}
         {tab==="events"&&<>
           {/* Saison-Check: Erinnerung ab 3 Monate vor Saisonende, bis der Fragebogen abgegeben ist */}
           {!isAdmin&&modOn("saison")&&<SeasonSurveyReminder data={local} cid={cid} session={session} onOpen={()=>setSurveyOpen(true)}/>}
