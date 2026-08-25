@@ -10894,7 +10894,9 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
 }
 function BrandingTab({cl,onSave}) {
   const [c,setC]=useState({...cl}); const ref=useRef(null);
-  const up=e=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=ev=>setC(p=>({...p,logo:ev.target.result}));r.readAsDataURL(f);};
+  const up=e=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();
+    r.onload=async ev=>{ const klein=await logoKleinRechnen(ev.target.result); setC(p=>({...p,logo:klein})); };
+    r.readAsDataURL(f);};
   return (
     <div>
       <PageHead icon="🎨" title="Design & Branding" sub="Farben · Logo · Auftritt"/>
@@ -11000,6 +11002,37 @@ function OnbBtnRow({back,nextLabel,onNext,nextDisabled,skipLabel}) {
   );
 }
 
+// ----------------------------------------------------------------
+// Logos klein rechnen. Ein Wappen aus der Handy-Galerie hat schnell mehrere
+// hundert kB - das laedt danach JEDER Besucher der Startseite mit. Wir
+// verkleinern auf 256 px Kantenlaenge und speichern als JPEG (bzw. PNG,
+// wenn das Bild durchsichtig ist). Sichtbar identisch, aber ein Bruchteil.
+// ----------------------------------------------------------------
+const LOGO_MAX_PX = 256;
+const logoKleinRechnen = (dataUrl, maxPx=LOGO_MAX_PX) => new Promise(fertig=>{
+  try{
+    if(typeof dataUrl!=="string"||!dataUrl.startsWith("data:image")) return fertig(dataUrl);
+    const img=new Image();
+    img.onload=()=>{
+      try{
+        const k=Math.min(1, maxPx/Math.max(img.width||1, img.height||1));
+        const b=Math.max(1,Math.round((img.width||1)*k)), h=Math.max(1,Math.round((img.height||1)*k));
+        const c=document.createElement("canvas"); c.width=b; c.height=h;
+        const ctx=c.getContext("2d"); if(!ctx) return fertig(dataUrl);
+        ctx.drawImage(img,0,0,b,h);
+        // Durchsichtige Ecken (typisch bei Wappen) nur mit PNG erhalten
+        let transparent=false;
+        try{ const px=ctx.getImageData(0,0,b,h).data;
+          for(let i=3;i<px.length;i+=4){ if(px[i]<250){ transparent=true; break; } } }catch{}
+        const klein = transparent ? c.toDataURL("image/png") : c.toDataURL("image/jpeg",0.85);
+        fertig(klein.length < dataUrl.length ? klein : dataUrl);   // nie groesser machen
+      }catch{ fertig(dataUrl); }
+    };
+    img.onerror=()=>fertig(dataUrl);
+    img.src=dataUrl;
+  }catch{ fertig(dataUrl); }
+});
+
 function OnbStep1Logo({ cl, data, cid, save, onNext }) {
   const [logo, setLogo] = useState(cl?.logo || null);
   const [saving, setSaving] = useState(false);
@@ -11007,7 +11040,8 @@ function OnbStep1Logo({ cl, data, cid, save, onNext }) {
   const onFile = e => {
     const f = e.target.files?.[0]; if (!f) return;
     if (f.size > 3 * 1024 * 1024) { window.alert("Bild zu groß (max. 3 MB)."); return; }
-    const r = new FileReader(); r.onload = ev => setLogo(ev.target.result);
+    const r = new FileReader();
+    r.onload = async ev => setLogo(await logoKleinRechnen(ev.target.result));
     r.readAsDataURL(f);
   };
   const saveAndNext = async () => {
@@ -16068,6 +16102,20 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
     fire(n===1?"1 Eintrag eines gelöschten Helfers entfernt":`${n} Einträge gelöschter Helfer entfernt`);
   },[local,cid,isHelper]);
   const myClub=local.clubs.find(c=>c.id===cid);
+  // Grosse Wappen einmalig verkleinern: ein 400-kB-Logo laedt sonst jeder
+  // Besucher der Startseite mit. Bild bleibt sichtbar gleich.
+  const logoRef=useRef(false);
+  useEffect(()=>{
+    if(logoRef.current||!isAdmin) return;
+    const gross=String(myClub?.logo||"");
+    if(gross.length<100000){ if(myClub) logoRef.current=true; return; }
+    logoRef.current=true;
+    logoKleinRechnen(gross).then(klein=>{
+      if(!klein||klein.length>=gross.length) return;
+      save({...local, clubs:(local.clubs||[]).map(c=>c.id===cid?{...c,logo:klein}:c)});
+      fire(`Vereinswappen optimiert: ${Math.round(gross.length/1024)} kB → ${Math.round(klein.length/1024)} kB`);
+    });
+  },[isAdmin,myClub?.logo]);
   const _activeSid = activeSid(local, cid);
   // Saison-Filter bewusst tolerant: ohne bestimmbare Saison (oder wenn kein
   // einziger Termin zur aktiven Saison passt) werden ALLE Termine gezeigt -
