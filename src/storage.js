@@ -198,6 +198,22 @@ export const normData = (d) => {
   return o;
 };
 
+// ----------------------------------------------------------------
+// Zustand der Datenbank-Verbindung. Damit kann die App SOFORT sagen, wenn
+// sie die Cloud nicht erreicht oder die Cloud den Zugriff sperrt - statt
+// stillschweigend den lokalen Stand zu zeigen (der aelter oder leer sein kann).
+//   ok        = frisch aus der Cloud geladen/gespeichert
+//   cache     = Cloud nicht erreichbar, lokaler Stand wird gezeigt
+//   blocked   = Cloud antwortet, verweigert aber (Rechte/Schluessel)
+//   saveerror = Speichern in die Cloud ist fehlgeschlagen
+// ----------------------------------------------------------------
+export const dbHealth = { state:"unknown", ts:null, detail:"" };
+export const setDbHealth = (state, detail="") => {
+  if(dbHealth.state===state && dbHealth.detail===detail && state==="ok") { dbHealth.ts=Date.now(); return; }
+  dbHealth.state=state; dbHealth.detail=detail; dbHealth.ts=Date.now();
+  try{ window.dispatchEvent(new CustomEvent("va-db-health",{detail:{...dbHealth}})); }catch{}
+};
+
 export const sb = {
   _url: () => getConfig()?.url,
   _key: () => getConfig()?.key,
@@ -261,14 +277,17 @@ export const sb = {
           const shardRows = rows.filter(x=>x.key!==sb._glKey).map(x=>x.value);
           const merged = normData(mergeData(gl, shardRows));
           localSet(merged);
+          setDbHealth("ok");
           return merged;
         }
         const m = await sb._migrate();
         if (m) return normData(m);
         return null;
       }
+      setDbHealth("blocked","Antwort "+(r&&r.status||"?"));
       return null; // Cloud antwortet, sperrt aber (401/403) - kein Local-Cache zeigen
-    } catch {
+    } catch (e) {
+      setDbHealth("cache", (e&&e.message)||"Netzwerk");
       return normData(localGet()); // Netzwerk-Aus - Offline-Cache
     }
   },
@@ -277,14 +296,17 @@ export const sb = {
       const r = await sb._fetch(`/rest/v1/app_data?key=eq.${sb._glKey}&select=value`);
       if (r.ok) {
         const rows = await r.json();
-        if (rows[0]?.value) { sb._snap[sb._glKey]=rows[0].value; return normData(rows[0].value); }
+        if (rows[0]?.value) { sb._snap[sb._glKey]=rows[0].value; setDbHealth("ok"); return normData(rows[0].value); }
         const m = await sb._migrate();
         if (m) { const { global } = splitData(m); return normData(global); }
         // Cloud ist erreichbar, aber wirklich leer - das Init darf seedn.
+        setDbHealth("ok");
         return { __cloudEmpty: true };
       }
+      setDbHealth("blocked","Antwort "+(r&&r.status||"?"));
       return null; // Cloud erreichbar, aber RLS/Auth blockt -> NICHT seeden, sonst Datenverlust
-    } catch {
+    } catch (e) {
+      setDbHealth("cache", (e&&e.message)||"Netzwerk");
       return normData(localGet());
     }
   },
@@ -297,14 +319,17 @@ export const sb = {
           rows.forEach(x=>{ sb._snap[x.key]=x.value; });
           const gl = rows.find(x=>x.key===sb._glKey)?.value || {};
           const shard = rows.find(x=>x.key===sb._clubKey(cid))?.value || {};
+          setDbHealth("ok");
           return normData(mergeData(gl, [shard]));
         }
         const m = await sb._migrate();
         if (m) { const { global, shards } = splitData(m); return normData(mergeData(global, [shards[cid]||{}])); }
         return null;
       }
+      setDbHealth("blocked","Antwort "+(r&&r.status||"?"));
       return null;
-    } catch {
+    } catch (e) {
+      setDbHealth("cache", (e&&e.message)||"Netzwerk");
       return normData(localGet());
     }
   },
@@ -313,8 +338,8 @@ export const sb = {
   // vom 10s-Sync erneut geschrieben (3-Wege-Merge verhindert Ueberschreiben).
   _pendKey: SK + "_pendingSync",
   hasPending: () => { try { return !!localStorage.getItem(sb._pendKey); } catch { return false; } },
-  _markPending: (d) => { try { localSet(d); localStorage.setItem(sb._pendKey, new Date().toISOString()); } catch {} },
-  clearPending: () => { try { localStorage.removeItem(sb._pendKey); } catch {} },
+  _markPending: (d) => { try { localSet(d); localStorage.setItem(sb._pendKey, new Date().toISOString()); } catch {} setDbHealth("saveerror","Speichern haengt"); },
+  clearPending: () => { try { localStorage.removeItem(sb._pendKey); } catch {} setDbHealth("ok"); },
   set: async (d, cid=null) => {
     const cfg = getConfig();
     if (!cfg?.url || !cfg?.key) {

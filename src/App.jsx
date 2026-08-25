@@ -8,7 +8,7 @@ import { _sha256, hashPw, checkPw } from "./util.js";
 
 import { LANG_KEY, LangCtx, T, useT } from "./i18n.jsx";
 
-import { LANG_SWITCHER_ENABLED, LangSwitcher, FloatingLangSwitcher, getFontScale, applyFontScale, FontScaleControl, SupabaseSetup, uid, addMins, activeSid, clubSeasons, activeTeamsFor, genTempPw, validTrainerPw, now, addD, fmtD, plzToGeo, wxIcon, useWeather, geoDistanceKm, TEAM_STRENGTHS, strengthInfoText, strengthOf, InfoHint, isActive, teamSelfLogin, fmtDShort, ET, etLabel, evDisplayTitle,  CSS, TH, OnlineStatus, Logo, Av, Tag, Toast, AreaIntro, Drawer, PageHead, PillTabs, TeamPills, EmptyBox, Btn, PwInput, Inp, Sel, Sw, ClubHeader, Divider , SpiderChart, dimLabel } from "./ui.jsx";
+import { LANG_SWITCHER_ENABLED, LangSwitcher, FloatingLangSwitcher, getFontScale, applyFontScale, FontScaleControl, SupabaseSetup, uid, addMins, activeSid, clubSeasons, activeTeamsFor, genTempPw, validTrainerPw, now, addD, fmtD, plzToGeo, wxIcon, useWeather, geoDistanceKm, TEAM_STRENGTHS, strengthInfoText, strengthOf, InfoHint, isActive, teamSelfLogin, fmtDShort, ET, etLabel, evDisplayTitle,  CSS, TH, OnlineStatus, DbStatus, Logo, Av, Tag, Toast, AreaIntro, Drawer, PageHead, PillTabs, TeamPills, EmptyBox, Btn, PwInput, Inp, Sel, Sw, ClubHeader, Divider , SpiderChart, dimLabel } from "./ui.jsx";
 import { DFB_FORMATS, dfbFormatForCat, CAT_YEARS, catYearsStr, CAT_ORDER, eligibleCats, playerFitType, playerFitsTeam, fitLabel, _fbSeasonStart } from "./dfb.js";
 import { CAT_RANK, defaultSoll, SOLL_PLAYERS_BY_CAT, _votedYes, isPausedP, drillScores, drillVoteOf, playerNoShowEvents, NO_SHOW_HINT_THRESHOLD, addAuditLog, suggestDrillsForSkill, generateTrainingPlan, SKILLS, SKILL_AXES, skillAxesFor, sollFor, trainingFocusFor, buildSession, playerArchetype, AXIS_TO_FOCUS, staffNeed } from "./domain.js";
 import { TRAINING_TEMPLATES, DRILL_LIB } from "./drills.js";
@@ -270,7 +270,7 @@ function ContactForm({ cl, onSend, onClose }) {
   if(sent) return <div style={{minHeight:"100dvh",background:"#f0fdf4",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:14,padding:24}}><div style={{fontSize:48}}>✓</div><p style={{fontWeight:800,fontSize:18}}>Anfrage gesendet!</p><button onClick={onClose} style={{padding:"12px 24px",borderRadius:12,border:"none",background:t.p,color:"#fff",fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Schließen</button></div>;
   return (
     <div style={{minHeight:"100dvh",background:"#f0f4f8",padding:"24px 20px"}}>
-      <style>{CSS}</style><OnlineStatus/>
+      <style>{CSS}</style><OnlineStatus/><DbStatus/>
       <div style={{maxWidth:560,margin:"0 auto"}}>
         <button onClick={onClose} style={{background:"none",border:"none",color:"#64748b",fontWeight:700,fontSize:14,cursor:"pointer",marginBottom:16}}>← Zurück</button>
         <div style={{background:"#fff",borderRadius:18,padding:"22px"}}>
@@ -16174,7 +16174,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       paddingBottom:isDesktop?0:52,
       display:isDesktop?"grid":"block",
       gridTemplateColumns:isDesktop?"260px 1fr":"none"}}>
-      <OnlineStatus/>
+      <OnlineStatus/><DbStatus/>
       {isDesktop&&<DesktopSidebar tab={tab} setTab={setTab}
         isAdmin={isAdmin} isHelper={isHelper} helperKasse={helperKasse} helperOnlyKasse={helperOnlyKasse}
         unread={unreadMsgs} inboxUnread={unreadInbox} cl={myClub}
@@ -23169,7 +23169,7 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{},onSwitc
           </div>
         </div>
       )}
-      <OnlineStatus/>
+      <OnlineStatus/><DbStatus/>
       {isDesktop&&<DesktopSidebar tab={tab} setTab={setTab}
         isAdmin={isAdmin} isHelper={isHelper}
         unread={unreadMsgs} cl={myClub}

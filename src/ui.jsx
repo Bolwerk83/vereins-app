@@ -6,7 +6,7 @@
 // ----------------------------------------------------------------
 import React, { useState, useEffect, useRef } from "react";
 import { LANG_KEY, T, useT } from "./i18n.jsx";
-import { getConfig, setConfig, DEFAULT_CFG, sb, MULTI_TENANT } from "./storage.js";
+import { getConfig, setConfig, DEFAULT_CFG, sb, MULTI_TENANT, dbHealth} from "./storage.js";
 import { readable, ACOLORS, acol, inits, contrast, mix, hashPw, checkPw } from "./util.js";
 
 export const LANG_SWITCHER_ENABLED = true;
@@ -437,6 +437,41 @@ export function ChangePasswordModal({ cl, onSave, onClose }) {
     </div>
   );
 }
+// Zustand der Datenbank sichtbar machen: Wenn die App die Cloud nicht
+// erreicht oder abgewiesen wird, MUSS das sofort oben stehen - sonst haelt
+// man den lokalen (evtl. alten oder leeren) Stand fuer die Wahrheit.
+export function DbStatus(){
+  const [h,setH]=useState(()=>({...dbHealth}));
+  useEffect(()=>{
+    const on=e=>setH({...(e.detail||dbHealth)});
+    window.addEventListener("va-db-health",on);
+    const iv=setInterval(()=>setH({...dbHealth}),5000);
+    return ()=>{ window.removeEventListener("va-db-health",on); clearInterval(iv); };
+  },[]);
+  if(!h||h.state==="ok"||h.state==="unknown") return null;
+  const txt = h.state==="blocked"
+    ? "Die Datenbank verweigert gerade den Zugriff. Es werden keine Daten geladen oder gespeichert."
+    : h.state==="saveerror"
+      ? "Änderungen konnten nicht in die Datenbank geschrieben werden – sie liegen auf diesem Gerät und werden automatisch nachgetragen."
+      : "Keine Verbindung zur Datenbank – du siehst den zuletzt geladenen Stand von diesem Gerät.";
+  const wann = h.ts ? new Date(h.ts).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"}) : "";
+  return (
+    <div style={{position:"fixed",top:0,left:0,right:0,zIndex:9998,background:h.state==="blocked"?"#7f1d1d":"#b45309",color:"#fff",
+      padding:"9px 12px calc(9px + env(safe-area-inset-top))",fontSize:12.5,fontWeight:700,lineHeight:1.4,
+      display:"flex",alignItems:"center",gap:9,boxShadow:"0 2px 10px rgba(0,0,0,.25)"}}>
+      <span style={{fontSize:15,flexShrink:0}}>⚠️</span>
+      <span style={{flex:1,minWidth:0}}>
+        {txt}{wann?` (${wann} Uhr)`:""}
+        {h.detail?<span style={{fontWeight:500,opacity:.85}}> · {h.detail}</span>:null}
+      </span>
+      <button onClick={()=>{ try{ window.location.reload(); }catch{} }}
+        style={{flexShrink:0,padding:"7px 11px",minHeight:36,borderRadius:9,border:"1px solid rgba(255,255,255,.45)",background:"rgba(255,255,255,.14)",color:"#fff",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+        Neu laden
+      </button>
+    </div>
+  );
+}
+
 export function OnlineStatus() {
   const [online, setOnline] = React.useState(navigator.onLine);
   const [pending, setPending] = React.useState(()=>sb.hasPending());
