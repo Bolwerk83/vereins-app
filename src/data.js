@@ -36,6 +36,22 @@ export const splitData = (data) => {
   return { global, shards };
 };
 
+// Beim Zusammenfuehren darf NICHTS doppelt entstehen: liegt derselbe
+// Datensatz (gleiche id) sowohl in der globalen Zeile als auch in einer
+// Vereins-Zeile, gewinnt der zuletzt gelesene - er ersetzt den frueheren an
+// dessen Stelle. Ohne diese Sicherung standen Trainer, Spieler und Termine
+// doppelt in der App, sobald eine alte globale Zeile dieselben Daten hielt.
+const _dedupeById = (arr) => {
+  if(!Array.isArray(arr)) return arr;
+  const pos = new Map(); const out = [];
+  for(const rec of arr){
+    const id = rec && typeof rec==="object" ? rec.id : undefined;
+    if(id===undefined || id===null || id===""){ out.push(rec); continue; }
+    if(pos.has(id)) out[pos.get(id)] = rec;      // spaeterer Stand ersetzt den frueheren
+    else { pos.set(id, out.length); out.push(rec); }
+  }
+  return out;
+};
 export const mergeData = (global, shardList) => {
   const out = global ? JSON.parse(JSON.stringify(global)) : {};
   for(const shard of (shardList||[])){
@@ -44,12 +60,14 @@ export const mergeData = (global, shardList) => {
       if(key==="players" && val && typeof val==="object" && !Array.isArray(val)){
         out.players = { ...(out.players||{}), ...val };
       } else if(Array.isArray(val)){
-        out[key] = [ ...(out[key]||[]), ...val ];
+        out[key] = _dedupeById([ ...(out[key]||[]), ...val ]);
       } else {
         out[key]=val;
       }
     }
   }
+  // Auch Listen, die es nur in der globalen Zeile gibt, sauber halten.
+  for(const [key,val] of Object.entries(out)) if(Array.isArray(val)) out[key]=_dedupeById(val);
   return out;
 };
 
