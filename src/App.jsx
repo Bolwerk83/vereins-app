@@ -8133,6 +8133,24 @@ function PollAttend({ev,user,onVote,cl,session=null,save=()=>{},data=null,fire=(
       {(Object.values(ev.trainerPresence||{}).length>0&&session?.role==="user"&&data)&&<TrainerCheckin ev={ev} session={session} save={save} data={data} fire={fire}/>}
       {ev.note&&<div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:12,padding:"10px 13px",fontSize:13,color:"#92400e",fontWeight:500}}>{ev.note}</div>}
       {ev.deadline&&<div style={{background:dlPassed?"#fee2e2":"#fffbeb",border:`1.5px solid ${dlPassed?"#fca5a5":"#fde68a"}`,borderRadius:12,padding:"9px 13px",fontSize:13,fontWeight:700,color:dlPassed?"#dc2626":"#d97706"}}>{dlPassed?tr("vDeadlinePassed"):tr("vDeadline")+" "+ev.deadline.date+(ev.deadline.time?" "+ev.deadline.time+" Uhr":"")}</div>}
+      {/* Späte Anmeldung: Stand der Trainer-Freigabe - offen, frei oder abgelehnt */}
+      {(()=>{
+        const mv=typeof rawUv==="object"&&rawUv!==null?rawUv:null;
+        if(!mv||!mv.lateChange) return null;
+        if(mv.needsOk) return (
+          <div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:12,padding:"9px 13px",fontSize:12.5,fontWeight:700,color:"#92400e"}}>
+            ⏳ {tr("vJoinPending")}
+          </div>);
+        if(mv.declined) return (
+          <div style={{background:"#fef2f2",border:"1.5px solid #fca5a5",borderRadius:12,padding:"9px 13px",fontSize:12.5,fontWeight:700,color:"#b42318"}}>
+            ✕ {tr("vJoinDeclined")}
+          </div>);
+        if(mv.okAt&&mv.val!=="no") return (
+          <div style={{background:"#f0fdf4",border:"1.5px solid #86efac",borderRadius:12,padding:"9px 13px",fontSize:12.5,fontWeight:700,color:"#166534"}}>
+            ✓ {tr("vJoinApproved")}
+          </div>);
+        return null;
+      })()}
 
       {(()=>{ const squads=_team?.squads||[]; if(squads.length<1) return null;
         const yesN=yes.length; let rem=yesN,filled=0,nextNeed=null,nextLabel=null;
@@ -9781,6 +9799,12 @@ function PlayerAssignRow({ player: pl,teams,allTeams,t,onAssign,onOptToggle }) {
   // Hauptmannschafts-Auswahl. Aushelfen = alle passenden außer der Hauptmannschaft.
   const fitElig = allTeams.filter(tm => playerFitsTeam(pl,tm));
   const helpElig = fitElig.filter(tm => tm.id !== pl.mainTid);
+  // Aushilfe-Optionen aus frueheren Saisons: das Kind ist inzwischen aus der
+  // Altersklasse herausgewachsen. Sonst waeren sie unsichtbar - und damit
+  // auch nicht mehr wegzubekommen.
+  const veraltetOpt = allTeams.filter(tm =>
+    (pl.optTids||[]).includes(tm.id) && tm.id !== pl.mainTid && !playerFitsTeam(pl,tm)
+      && !!CAT_YEARS[tm.cat||tm.name] && !!(CAT_YEARS[tm.cat||tm.name]||[]).length);
 
   return (
     <>
@@ -9980,6 +10004,23 @@ function PlayerAssignRow({ player: pl,teams,allTeams,t,onAssign,onOptToggle }) {
       </div>
 
       {}
+      {veraltetOpt.length>0 && (
+        <div style={{padding:"10px 14px 12px",marginTop:6,borderTop:"1px solid #f1f5f9"}}>
+          <div style={{fontSize:10,fontWeight:800,color:"#b42318",letterSpacing:.5,marginBottom:5}}>NICHT MEHR ERLAUBT <span style={{color:"#912018",fontWeight:600}}>(Jahrgang zu alt für diese Jugend)</span></div>
+          <div style={{fontSize:11.5,color:"#912018",lineHeight:1.45,marginBottom:7}}>
+            Diese Aushilfe-Option stammt aus einer früheren Saison. In {saisonLabel()} darf {String(pl.name||"").split(" ")[0]||"das Kind"} dort nicht mehr mitspielen – nach unten aushelfen ist nach DFB-Schema nicht erlaubt.
+          </div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+            {veraltetOpt.map(tm=>(
+              <button key={tm.id} onClick={()=>onOptToggle(tm.id,false)}
+                style={{display:"flex",alignItems:"center",gap:5,padding:"6px 12px",borderRadius:9,border:"2px solid #fecaca",background:"#fef2f2",color:"#b42318",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+                ✕ {tm.name} entfernen
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {mainTeam && helpElig.length>0 && (
         <div style={{padding:"10px 14px 12px",marginTop:6,borderTop:"1px solid #f1f5f9"}}>
           <div style={{fontSize:10,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:6}}>KANN AUSHELFEN IN <span style={{color:"#64748b",fontWeight:600}}>(zusätzlich, optional)</span></div>
@@ -16850,6 +16891,14 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
                 setViewEv(prev=>({...prev,votes:nv}));
                 fire(val==="yes"?name+": zugesagt (vom Trainer eingetragen)":name+": abgesagt (vom Trainer eingetragen)");
               }}
+              onVotePatch={isHelper?null:(name,patch)=>{
+                const alt=(viewEv.votes||{})[name];
+                const basis=(typeof alt==="object"&&alt!==null)?alt:{val:alt,ts:new Date().toISOString()};
+                const nv={...(viewEv.votes||{}),[name]:{...basis,...patch,okAt:new Date().toISOString(),okBy:session?.name||"Trainer"}};
+                save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,votes:nv}:e)});
+                setViewEv(prev=>({...prev,votes:nv}));
+                fire(patch&&patch.declined?name+": späte Anmeldung abgelehnt":name+": freigegeben – du kannst mit ihm planen");
+              }}
             />}
         </>}
         {evTab==="plan"&&<>
@@ -16940,6 +16989,12 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               text, ts:new Date().toISOString(), reads:{} };
             save({...local, aushilfeReqs:[...(local.aushilfeReqs||[]), req], trainerMsgs:[...(local.trainerMsgs||[]), msg]});
             fire("Anfrage an die Eltern gesendet – der eigene Trainer wurde informiert");
+          }}
+          onAustragen={name=>{
+            const nv={...(viewEv.votes||{})}; delete nv[name];
+            save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,votes:nv}:e)});
+            setViewEv(prev=>({...prev,votes:nv}));
+            fire(name+": aus dem Termin genommen");
           }}
           onIgnorieren={(name,an)=>{
             const liste=an ? [...new Set([...(viewEv.conflictOk||[]),name])] : (viewEv.conflictOk||[]).filter(x=>x!==name);
@@ -17759,7 +17814,18 @@ function AushilfeAnfragen({ data, cid, session, myTids=[], save, fire, cl }){
   );
 }
 
-function AushilfenBoard({ ev, data, cl, onSetVote, onIgnorieren, onAnfrage }){
+// Saison-Label aus dem Saisonstart, z. B. 2026 -> "2026/27".
+const saisonLabel = (jahr=_fbSeasonStart) => `${jahr}/${String(jahr+1).slice(2)}`;
+// In welche Jugend gehoert ein Jahrgang in der laufenden Saison?
+const natuerlicheKat = (by,gender) => eligibleCats(Number(by)||0, gender||"m")[0]||null;
+// Hat die Mannschaft ueberhaupt feste Jahrgaenge? (Senioren, Damen ... haben keine)
+const hatJahrgaenge = tm => { const c=tm&&(tm.cat||tm.name); const y=c?CAT_YEARS[c]:null; return !!(y&&y.length); };
+// Darf dieses Kind in dieser Mannschaft aushelfen? Runterspielen in eine
+// juengere Jugend ist nach DFB-Schema nicht erlaubt - eine einmal gesetzte
+// Aushilfe-Option laeuft daher mit dem Saisonwechsel aus.
+const darfAushelfen = (pl,tm) => !hatJahrgaenge(tm) || playerFitsTeam(pl,tm);
+
+function AushilfenBoard({ ev, data, cl, onSetVote, onIgnorieren, onAnfrage, onAustragen }){
   const t=TH(cl);
   const [auf,setAuf]=useState(false);
   const [frage,setFrage]=useState(null);   // {p} - Anfrage-Fenster
@@ -17771,14 +17837,20 @@ function AushilfenBoard({ ev, data, cl, onSetVote, onIgnorieren, onAnfrage }){
   const offen=konflikte.filter(k=>!ok.includes(k.name));
   const ignoriert=konflikte.filter(k=>ok.includes(k.name));
   // Wer darf hier aushelfen? Kinder anderer Mannschaften mit diesem Team als Option.
-  const kandidaten=((data?.playerProfiles)||[])
+  const evTeam=teams.find(tm=>tm.id===ev.tid)||null;
+  const alleOpt=((data?.playerProfiles)||[])
     .filter(p=>!p.archived && p.mainTid!==ev.tid && (p.optTids||[]).includes(ev.tid))
     .map(p=>({ p, stimme:(()=>{ const v=(ev.votes||{})[p.name]; return typeof v==="object"&&v?v.val:v; })(),
                andere:doppelMeldungen(ev,p.name,alleEvents,teams) }))
     .sort((a,b)=>(a.p.name||"").localeCompare(b.p.name||""));
+  // Jahrgang zaehlt: wer aus der Altersklasse herausgewachsen ist, darf hier
+  // nicht mehr aushelfen - auch wenn die Option von frueher noch gesetzt ist.
+  const erlaubt=evTeam?alleOpt.filter(k=>darfAushelfen(k.p,evTeam)):alleOpt;
+  const gesperrt=evTeam?alleOpt.filter(k=>!darfAushelfen(k.p,evTeam)):[];
+  const kandidaten=erlaubt;
   const frei=kandidaten.filter(k=>k.stimme!=="yes");
   const dabei=kandidaten.filter(k=>k.stimme==="yes");
-  if(!konflikte.length && !kandidaten.length) return null;
+  if(!konflikte.length && !kandidaten.length && !gesperrt.length) return null;
   const teamName=tid=>teams.find(tm=>tm.id===tid)?.name||"";
   // Vorformulierte Anfrage an die Eltern - der Trainer kann sie anpassen.
   const anfrageText=p=>`Hallo! Wir suchen für ${teamName(ev.tid)||"unsere Mannschaft"} noch Unterstützung: ${evDisplayTitle?evDisplayTitle(ev):ev.title} am ${fmtDShort(ev.date)}${ev.time?` um ${ev.time} Uhr`:""}${ev.loc?` in ${ev.loc}`:""}. Kann ${String(p.name||"").split(" ")[0]} aushelfen? Antwort einfach im Termin – danke!`;
@@ -17786,6 +17858,40 @@ function AushilfenBoard({ ev, data, cl, onSetVote, onIgnorieren, onAnfrage }){
   const wann=e2=>`${fmtDShort(e2.date)}${e2.time?` · ${e2.time}`:""}${e2.endTime?`–${e2.endTime}`:""}`;
   return (
     <div style={{marginBottom:16,display:"flex",flexDirection:"column",gap:10}}>
+      {/* 0. Aus der Altersklasse herausgewachsen - das geht gar nicht mehr */}
+      {gesperrt.length>0&&(
+        <div style={{background:"#fef2f2",border:"1.5px solid #fecaca",borderRadius:14,padding:"12px 14px"}}>
+          <div style={{fontWeight:800,fontSize:13.5,color:"#b42318",marginBottom:4}}>⛔ Nicht mehr spielberechtigt ({gesperrt.length})</div>
+          <div style={{fontSize:12,color:"#912018",lineHeight:1.5,marginBottom:9}}>
+            In der Saison {saisonLabel()} gehören diese Kinder nach DFB-Schema in eine ältere Jugend – nach unten aushelfen ist nicht erlaubt.
+            Die Aushilfe-Option stammt noch aus einer früheren Saison: bitte im Kader unter „Kann aushelfen in“ entfernen.
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:7}}>
+            {gesperrt.map(k=>{
+              const kat=natuerlicheKat(k.p.by,k.p.gender);
+              return (
+              <div key={k.p.id||k.p.name} style={{background:"#fff",border:"1px solid #fecaca",borderRadius:11,padding:"9px 11px"}}>
+                <div style={{display:"flex",alignItems:"center",gap:9}}>
+                  <Av name={k.p.name} sz={26}/>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontWeight:800,fontSize:13,color:"#0f172a",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{k.p.name}</div>
+                    <div style={{fontSize:11.5,color:"#912018",fontWeight:600,marginTop:1}}>
+                      Jahrgang {k.p.by||"?"}{k.p.gender==="w"?" · weiblich":k.p.gender==="m"?" · männlich":""}{kat?` · gehört in die ${kat}`:""}
+                    </div>
+                  </div>
+                  {k.stimme==="yes"&&<span style={{flexShrink:0,fontSize:10.5,fontWeight:800,color:"#b42318",background:"#fee2e2",borderRadius:6,padding:"2px 7px"}}>steht im Termin</span>}
+                </div>
+                {k.stimme==="yes"&&onAustragen&&(
+                  <button onClick={()=>onAustragen(k.p.name)}
+                    style={{marginTop:8,width:"100%",padding:"9px",borderRadius:10,border:"1.5px solid #fecaca",background:"#fff",color:"#b42318",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
+                    Aus dem Termin nehmen
+                  </button>
+                )}
+              </div>
+            );})}
+          </div>
+        </div>
+      )}
       {/* 1. Doppelmeldungen zuerst - das ist die Warnung */}
       {offen.length>0&&(
         <div style={{background:"#fef2f2",border:"1.5px solid #fecaca",borderRadius:14,padding:"12px 14px"}}>
@@ -17980,7 +18086,7 @@ function AttendanceCheckoff({ ev, teamPlayers=[], onSetPresent=()=>{}, onSetGues
   );
 }
 
-function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadline,onSetPresent=()=>{},onSetGuests=()=>{},onSetVote=null,myKids=[],staff=null,readOnly=false,trainerNames=[],helperNames=[]}) {
+function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadline,onSetPresent=()=>{},onSetGuests=()=>{},onSetVote=null,onVotePatch=null,myKids=[],staff=null,readOnly=false,trainerNames=[],helperNames=[]}) {
   const p = cl?.pri||"#16a34a";
   const isGameEv = ["heimspiel","auswarts","freundschaft","turnier"].includes(ev.type);
   const present = ev.present||{};
@@ -18163,12 +18269,14 @@ function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadlin
       {(()=>{
         const spaet=Object.entries(ev.votes||{})
           .filter(([,v])=>typeof v==="object"&&v!==null&&v.lateChange)
-          .map(([n,v])=>({name:n,val:v.val,reason:String(v.reason||""),ts:v.ts}))
+          .map(([n,v])=>({name:n,val:v.val,reason:String(v.reason||""),ts:v.ts,offen:!!v.needsOk,okAt:v.okAt||null,okBy:v.okBy||"",abgelehnt:!!v.declined}))
           .sort((a,b)=>String(b.ts||"").localeCompare(String(a.ts||"")));
         if(!spaet.length) return null;
+        const wartend=spaet.filter(x=>x.offen).length;
         return (
-        <div style={{background:"#fff7ed",borderRadius:13,padding:"11px 14px",border:"1.5px solid #fdba74",marginBottom:16}}>
-          <div style={{fontWeight:800,fontSize:12.5,color:"#9a3412",marginBottom:7}}>⏰ NACH FRIST GEÄNDERT ({spaet.length})</div>
+        <div style={{background:"#fff7ed",borderRadius:13,padding:"11px 14px",border:`1.5px solid ${wartend?"#f97316":"#fdba74"}`,marginBottom:16}}>
+          <div style={{fontWeight:800,fontSize:12.5,color:"#9a3412",marginBottom:wartend?4:7}}>⏰ NACH FRIST GEÄNDERT ({spaet.length}{wartend?` · ${wartend} freizugeben`:""})</div>
+          {wartend>0&&<div style={{fontSize:11.5,color:"#9a3412",marginBottom:7,lineHeight:1.45}}>Bitte kurz freigeben – dann ist festgehalten, dass du die späte Anmeldung gesehen hast und mit dem Kind planen kannst.</div>}
           <div style={{display:"flex",flexDirection:"column",gap:6}}>
             {spaet.map(x=>(
               <div key={x.name} style={{display:"flex",alignItems:"center",gap:9,background:"rgba(255,255,255,.75)",borderRadius:9,padding:"7px 10px"}}>
@@ -18176,10 +18284,25 @@ function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadlin
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontWeight:800,fontSize:13,color:"#0f172a",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{x.name}</div>
                   <div style={{fontSize:11.5,color:"#7c2d12",fontWeight:600,marginTop:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
-                    {x.val==="no"?"✕ abgesagt":"✓ nachgemeldet"}{x.reason?` · ${x.reason}`:" · ohne Grund"}
+                    {x.abgelehnt?"✕ abgelehnt":x.val==="no"?"✕ abgesagt":"✓ nachgemeldet"}{x.reason?` · ${x.reason}`:" · ohne Grund"}
                   </div>
+                  {x.offen
+                    ? <div style={{fontSize:10.5,color:"#b45309",fontWeight:800,marginTop:2}}>⏳ wartet auf deine Freigabe</div>
+                    : x.okAt&&<div style={{fontSize:10.5,color:"#15803d",fontWeight:700,marginTop:2}}>{x.abgelehnt?"✕ abgelehnt":"✓ freigegeben"}{x.okBy?` von ${x.okBy}`:""} · {antwortZeit(x.okAt)}</div>}
                 </div>
                 {antwortZeit(x.ts)&&<span style={{flexShrink:0,fontSize:10.5,color:"#9a3412",whiteSpace:"nowrap"}}>{antwortZeit(x.ts)}</span>}
+              </div>
+            ))}
+            {onVotePatch&&!readOnly&&spaet.filter(x=>x.offen).map(x=>(
+              <div key={"ok"+x.name} style={{display:"flex",gap:7}}>
+                <button onClick={()=>onVotePatch(x.name,{needsOk:false})}
+                  style={{flex:1,padding:"10px",borderRadius:10,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
+                  ✓ {String(x.name).split(" ")[0]} freigeben
+                </button>
+                <button onClick={()=>onVotePatch(x.name,{needsOk:false,declined:true,val:"no"})}
+                  style={{padding:"10px 13px",borderRadius:10,border:"1.5px solid #fecaca",background:"#fff",color:"#b42318",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
+                  ✕ Ablehnen
+                </button>
               </div>
             ))}
           </div>
@@ -18380,6 +18503,9 @@ function eventWarnings(ev, tod, ctx={}){
   // Nach Ablauf der Frist hat sich noch jemand ab-/angemeldet -> Trainer informieren.
   { const lateN=(ev.lateCancellations||[]).length + Object.values(ev.votes||{}).filter(v=>typeof v==="object"&&v&&v.lateChange&&v.val!=="no").length;
     if(lateN>0) w.push({label:`Nach Frist: ${lateN} Änderung${lateN>1?"en":""}`,col:"#b45309",bg:"#ffedd5"}); }
+  // Späte Anmeldungen, die der Trainer noch freigeben muss.
+  { const okN=Object.values(ev.votes||{}).filter(v=>typeof v==="object"&&v&&v.needsOk).length;
+    if(okN>0) w.push({label:`${okN} Anmeldung${okN>1?"en":""} freigeben`,col:"#c2410c",bg:"#ffedd5"}); }
   // Doppelmeldung: Kind ist zur gleichen Zeit noch woanders zugesagt.
   if(ctx.events&&ctx.events.length){
     const offen=konfliktNamen(ev,ctx.events,ctx.teams||[]).filter(x=>!(ev.conflictOk||[]).includes(x.name));
@@ -22768,13 +22894,16 @@ const antwortVon=(ev,wer)=>{
   const v=(ev.votes||{})[wer];
   const val=typeof v==="object"&&v?v.val:v;
   const late=typeof v==="object"&&v?Number(v.late)||0:0;
-  if(val==="yes") return {art:late?"spaet":"ja", late};
-  if(val==="no")  return {art:"nein", late:0};
+  // Spaete Anmeldung: wartet sie noch auf die Freigabe des Trainers?
+  const wartet=!!(typeof v==="object"&&v&&v.needsOk);
+  const abgelehnt=!!(typeof v==="object"&&v&&v.declined);
+  if(val==="yes") return {art:late?"spaet":"ja", late, wartet, abgelehnt};
+  if(val==="no")  return {art:"nein", late:0, wartet:false, abgelehnt};
   return null;
 };
 const ANT={ ja:{icon:"✅",col:"#15803d",rand:"#bbf7d0"}, spaet:{icon:"⏰",col:"#b45309",rand:"#fde68a"}, nein:{icon:"❌",col:"#b91c1c",rand:"#fecaca"} };
 // Drei Wege zu antworten - inklusive "komme später" mit Uhrzeit
-const GRUND_JA=["Wieder gesund","Termin abgesagt","Zu spät gesehen","Doch Zeit"];
+const GRUND_JA=["War krank","Erst jetzt erfahren","Nachricht zu spät gesehen","Anderer Termin abgesagt"];
 const GRUND_NEIN=["Krank","Urlaub","Schulpflicht","Wettkampf"];
 function AntwortKnoepfe({ ev, gross, onVote, wer=null }){
   const [spaetAuf,setSpaetAuf]=useState(false);
@@ -22804,7 +22933,7 @@ function AntwortKnoepfe({ ev, gross, onVote, wer=null }){
     return (
       <div style={{background:bg,border:`1.5px solid ${rand}`,borderRadius:13,padding:"12px 13px"}}>
         <div style={{fontWeight:800,fontSize:13.5,color:farbe,marginBottom:8}}>
-          {ja?"Die Frist ist um – warum jetzt noch anmelden?":"Die Frist ist um – warum absagen?"}
+          {ja?"Die Frist ist um – warum war eine frühere Anmeldung nicht möglich?":"Die Frist ist um – warum absagen?"}
         </div>
         <div style={{display:"flex",flexWrap:"wrap",gap:7,marginBottom:9}}>
           {(ja?GRUND_JA:GRUND_NEIN).concat(["Sonstiges"]).map(g=>(
@@ -22930,6 +23059,8 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
           <div style={{fontSize:11.5,color:s.col,fontWeight:700,marginTop:1}}>
             {artWort(ev).charAt(0)+artWort(ev).slice(1).toLowerCase()} · {statusText(a)}{a.late?` ab ${zeitPlus(ev.time,a.late)}`:""}
           </div>
+          {a.wartet&&<div style={{fontSize:11,color:"#b45309",fontWeight:700,marginTop:1}}>⏳ Trainer muss noch freigeben</div>}
+          {a.abgelehnt&&<div style={{fontSize:11,color:"#b42318",fontWeight:700,marginTop:1}}>✕ Trainer konnte nicht mehr einplanen</div>}
         </div>
         {/* Nach der Frist braucht die Änderung einen Grund - dafür den Termin
             gross aufmachen, statt hier still zu scheitern. */}
@@ -23026,6 +23157,8 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
                     <div style={{fontSize:28,lineHeight:1}}>{sF.icon}</div>
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{fontWeight:900,fontSize:17,color:sF.col}}>{statusText(aF)}</div>
+                      {aF.wartet&&<div style={{fontSize:12,color:"#b45309",fontWeight:700,marginTop:2}}>⏳ Der Trainer muss die späte Anmeldung noch freigeben</div>}
+                      {aF.abgelehnt&&<div style={{fontSize:12,color:"#b42318",fontWeight:700,marginTop:2}}>✕ Der Trainer konnte die späte Anmeldung nicht mehr einplanen</div>}
                       {aF.late>0&&<div style={{fontSize:13.5,color:sF.col,fontWeight:700,marginTop:1}}>ab {zeitPlus(fokus.time,aF.late)} Uhr</div>}
                     </div>
                     <button onClick={()=>setAendern(true)}
@@ -23300,7 +23433,10 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{},onSwitc
             nv[user] = { ...rest, val:newVal, ts };
             if(grund) nv[user].reason = grund; else delete nv[user].reason;
             // Nur eine echte Neu-/Wieder-Anmeldung ist eine "Änderung nach Frist"
-            if(!warJa){ nv[user].lateChange = true; lateJoin = { user, prev:prevVal||null, ts, reason:grund }; }
+            // Der Trainer muss die spaete Anmeldung noch freigeben - erst dann
+            // weiss er, dass er mit dem Kind planen kann.
+            if(!warJa){ nv[user].lateChange = true; nv[user].needsOk = true; delete nv[user].okAt;
+              lateJoin = { user, prev:prevVal||null, ts, reason:grund }; }
             else if(typeof prev==="object"&&prev!==null&&prev.lateChange) nv[user].lateChange = true;
             else lateRejoin = false;
           }

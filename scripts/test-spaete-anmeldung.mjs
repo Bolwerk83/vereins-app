@@ -110,7 +110,7 @@ await page.evaluate(()=>{ const d=[...document.querySelectorAll("div")].find(x=>
   const s=[...document.querySelectorAll("span")].find(x=>/ist dabei|Ich bin dabei/.test((x.innerText||"").trim())); s&&s.parentElement&&s.parentElement.parentElement&&s.parentElement.parentElement.click(); });
 await page.waitForTimeout(1100);
 b=await body();
-if(/Warum meldest du dich erst jetzt an/.test(b)) ok("Vor dem Anmelden wird nach dem Grund gefragt");
+if(/Warum war eine frühere Anmeldung nicht möglich/.test(b)) ok("Vor dem Anmelden wird gefragt, warum es früher nicht ging");
 else fail("Es wird nicht nach dem Grund gefragt: "+b.slice(0,300).replace(/\n/g," | "));
 { const gespeichert=await page.evaluate(k=>{
     const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
@@ -118,7 +118,7 @@ else fail("Es wird nicht nach dem Grund gefragt: "+b.slice(0,300).replace(/\n/g,
       .sort((a,b)=>String(a.date||"").localeCompare(String(b.date||"")))[0];
     return !!(ev&&(ev.votes||{})[k]); }, kindName);
   if(!gespeichert) ok("Ohne Grund wird noch nichts gespeichert"); else fail("Zusage wurde ohne Grund gespeichert"); }
-await clickTxt("Wieder gesund"); await page.waitForTimeout(1400);
+await clickTxt("War krank"); await page.waitForTimeout(1400);
 { const eintrag=await page.evaluate(k=>{
     const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
     const ev=(d.events||[]).filter(e=>e.cid==="demo"&&e.tid==="demo_f1"&&(e.pt==="att"||!e.pt))
@@ -126,9 +126,13 @@ await clickTxt("Wieder gesund"); await page.waitForTimeout(1400);
     return ev?((ev.votes||{})[k]||null):null; }, kindName);
   if(eintrag&&eintrag.val==="yes") ok("Mit Grund klappt die Anmeldung nach der Frist");
   else fail("Anmeldung nicht gespeichert: "+JSON.stringify(eintrag));
-  if(eintrag&&eintrag.reason==="Wieder gesund") ok("Der Grund wird mitgespeichert: "+eintrag.reason);
+  if(eintrag&&eintrag.reason==="War krank") ok("Der Grund wird mitgespeichert: "+eintrag.reason);
   else fail("Kein Grund gespeichert: "+JSON.stringify(eintrag));
-  if(eintrag&&eintrag.lateChange) ok("Und ist als Änderung nach Frist markiert"); else fail("Nicht als späte Änderung markiert"); }
+  if(eintrag&&eintrag.lateChange) ok("Und ist als Änderung nach Frist markiert"); else fail("Nicht als späte Änderung markiert");
+  if(eintrag&&eintrag.needsOk) ok("Die Anmeldung wartet auf die Freigabe des Trainers"); else fail("Kein Freigabe-Bedarf gesetzt"); }
+b=await body();
+if(/liegt beim Trainer/.test(b)) ok("Die Eltern sehen, dass der Trainer noch freigeben muss");
+else fail("Kein Hinweis auf die ausstehende Freigabe: "+b.slice(0,240).replace(/\n/g," | "));
 b=await body();
 if(/Späte Anmeldung erfasst/.test(b)) ok("Die Eltern bekommen eine klare Rückmeldung"); else console.log("HINWEIS: Toast schon wieder weg");
 
@@ -140,8 +144,25 @@ b=await body();
 if(/NACH FRIST GEÄNDERT/.test(b)) ok("Der Trainer hat einen eigenen Block dafür");
 else fail("Kein Block „Nach Frist geändert“: "+b.slice(0,260).replace(/\n/g," | "));
 if(new RegExp(String(kindName||"").replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).test(b)) ok("Das Kind steht namentlich drin"); else fail("Kind fehlt im Block");
-if(/nachgemeldet/.test(b)&&/Wieder gesund/.test(b)) ok("Mit Grund und Status: "+(b.match(/nachgemeldet[^\n]*/)||[""])[0]);
+if(/nachgemeldet/.test(b)&&/War krank/.test(b)) ok("Mit Grund und Status: "+(b.match(/nachgemeldet[^\n]*/)||[""])[0]);
 else fail("Grund fehlt beim Trainer: "+b.slice(b.indexOf("NACH FRIST"), b.indexOf("NACH FRIST")+220).replace(/\n/g," | "));
+if(/wartet auf deine Freigabe/.test(b)) ok("Und der Trainer sieht, dass er noch freigeben muss");
+else fail("Kein Freigabe-Hinweis beim Trainer");
+if(/freizugeben/.test(b)) ok("Die Überschrift zählt die offenen Freigaben mit: "+(b.match(/NACH FRIST GEÄNDERT[^\n]*/)||[""])[0]);
+else fail("Zähler für offene Freigaben fehlt");
+// Freigeben
+{ const geklickt=await page.evaluate(()=>{ const b=[...document.querySelectorAll("button")].find(x=>/^✓ .+ freigeben$/.test((x.innerText||"").trim())); if(!b) return false; b.click(); return true; });
+  if(geklickt) ok("Der Trainer hat einen Freigabe-Knopf"); else fail("Kein Freigabe-Knopf im Block"); }
+await page.waitForTimeout(1400);
+{ const eintrag=await page.evaluate(k=>{
+    const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
+    const ev=(d.events||[]).filter(e=>e.cid==="demo"&&e.tid==="demo_f1"&&(e.pt==="att"||!e.pt))
+      .sort((a,b)=>String(a.date||"").localeCompare(String(b.date||"")))[0];
+    return ev?((ev.votes||{})[k]||null):null; }, kindName);
+  if(eintrag&&!eintrag.needsOk&&eintrag.okAt) ok("Nach der Freigabe ist vermerkt, wer wann freigegeben hat: "+eintrag.okBy);
+  else fail("Freigabe nicht gespeichert: "+JSON.stringify(eintrag)); }
+b=await body();
+if(/✓ freigegeben/.test(b)) ok("Der Block zeigt die Freigabe an"); else fail("Freigabe wird nicht angezeigt");
 
 // ===== 4) Auch in der einfachen Eltern-Ansicht wird nach dem Grund gefragt =====
 await page.evaluate(k=>{
@@ -158,15 +179,15 @@ b=await body();
 if(/JA/.test(b)) ok("Die einfache Ansicht ist offen"); else fail("Einfache Ansicht fehlt: "+b.slice(0,220).replace(/\n/g," | "));
 await clickTxt("✅ JA"); await page.waitForTimeout(1000);
 b=await body();
-if(/warum jetzt noch anmelden/i.test(b)) ok("Auch hier wird zuerst nach dem Grund gefragt");
+if(/warum war eine frühere Anmeldung nicht möglich/i.test(b)) ok("Auch hier wird zuerst nach dem Grund gefragt");
 else fail("Einfache Ansicht fragt nicht nach dem Grund: "+b.slice(0,260).replace(/\n/g," | "));
-await clickTxt("Doch Zeit"); await page.waitForTimeout(1300);
+await clickTxt("Anderer Termin abgesagt"); await page.waitForTimeout(1300);
 { const eintrag=await page.evaluate(k=>{
     const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
     const ev=(d.events||[]).filter(e=>e.cid==="demo"&&e.tid==="demo_f1"&&(e.pt==="att"||!e.pt))
       .sort((a,b)=>String(a.date||"").localeCompare(String(b.date||"")))[0];
     return ev?((ev.votes||{})[k]||null):null; }, kindName);
-  if(eintrag&&eintrag.val==="yes"&&eintrag.reason==="Doch Zeit") ok("Mit Grund wird auch hier gespeichert: "+eintrag.reason);
+  if(eintrag&&eintrag.val==="yes"&&eintrag.reason==="Anderer Termin abgesagt") ok("Mit Grund wird auch hier gespeichert: "+eintrag.reason);
   else fail("Einfache Ansicht speichert nicht richtig: "+JSON.stringify(eintrag)); }
 
 if(errors.length){ console.log("JS-FEHLER:"); [...new Set(errors)].forEach(e=>console.log(" -",e.slice(0,150))); }

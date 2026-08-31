@@ -33,7 +33,9 @@ await page.evaluate(()=>{
   const f1=(d.events||[]).find(e=>e.id==="de5");     // F-Jugend 1, 17:30-19:00
   const g =(d.events||[]).find(e=>e.id==="de1");     // G-Jugend
   if(f1&&g){ g.date=f1.date; g.time="17:00"; g.endTime="19:30"; g.title="Training G-Jugend"; }
-  const p=(d.playerProfiles||[]).find(x=>x.name==="Leon Weber"); if(p) p.optTids=["demo_g"];
+  // Jahrgang passend zur G-Jugend setzen: nach unten aushelfen ist nach
+  // DFB-Schema nicht erlaubt, ein hochgeholtes Kind darf dagegen zurueck.
+  const p=(d.playerProfiles||[]).find(x=>x.name==="Leon Weber"); if(p){ p.by=2020; p.optTids=["demo_g"]; }
   localStorage.setItem("vereinsapp_v14", JSON.stringify(d));
 });
 await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2800); await dismiss();
@@ -93,7 +95,7 @@ await page.waitForTimeout(900);
 // Zweites Aushilfe-Kind ohne Zusage vorbereiten
 await page.evaluate(()=>{
   const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null"); if(!d) return;
-  const p=(d.playerProfiles||[]).find(x=>x.name==="Paul Becker"); if(p) p.optTids=["demo_g"];
+  const p=(d.playerProfiles||[]).find(x=>x.name==="Paul Becker"); if(p){ p.by=2020; p.optTids=["demo_g"]; }
   localStorage.setItem("vereinsapp_v14", JSON.stringify(d));
 });
 await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2800); await dismiss();
