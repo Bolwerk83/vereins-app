@@ -8104,12 +8104,28 @@ function PollAttend({ev,user,onVote,cl,session=null,save=()=>{},data=null,fire=(
   const tot=yes.length+no.length; const p=cl?.pri||"#16a34a";
   const dlPassed=isDeadlinePassed(ev);
 
-  const voteYes = () => onVote(ev.id,"att","yes");
-  const voteLate = () => { onVote(ev.id,"att",{val:"yes",late:lateMins}); setShowLate(false); };
   const [showReason, setShowReason] = useState(false);
   const [noReason, setNoReason] = useState("");
   const REASONS = ["rKrank","rUrlaub","rSchule","rWettkampf","rSonstiges"];
+  const JOIN_REASONS = ["rjGesund","rjFrei","rjSpaetGesehen","rjDochZeit","rSonstiges"];
   const voteNo = (reason="") => { onVote(ev.id,"att",{val:"no",reason}); setShowReason(false); };
+  // Nach Ablauf der Frist darf man sich weiter anmelden - aber nur mit Grund.
+  // Wer schon zugesagt hat, muss nichts erneut begründen.
+  const warJa = uv==="yes"||uv==="maybe"||uv==="late";
+  const [showJoin, setShowJoin] = useState(false);
+  const [joinReason, setJoinReason] = useState("");
+  const [joinLate, setJoinLate] = useState(0);          // 0 = pünktlich, sonst Minuten
+  const braucheGrund = dlPassed && !warJa;
+  const sendJoin = (reason) => {
+    const grund=String(reason||"").trim(); if(!grund) return;
+    onVote(ev.id,"att", joinLate ? {val:"yes",late:joinLate,reason:grund} : {val:"yes",reason:grund});
+    setShowJoin(false); setJoinReason(""); setJoinLate(0);
+  };
+  const voteYes = () => { if(braucheGrund){ setJoinLate(0); setShowReason(false); setShowJoin(true); return; } onVote(ev.id,"att","yes"); };
+  const voteLate = () => {
+    if(braucheGrund){ setJoinLate(lateMins); setShowLate(false); setShowReason(false); setShowJoin(true); return; }
+    onVote(ev.id,"att",{val:"yes",late:lateMins}); setShowLate(false);
+  };
 
   return (
     <div style={{display:"flex",flexDirection:"column",gap:10}}>
@@ -8241,6 +8257,28 @@ function PollAttend({ev,user,onVote,cl,session=null,save=()=>{},data=null,fire=(
           {dlPassed
             ? <div style={{fontSize:11.5,color:"#991b1b",fontWeight:600}}>{tr("vLateNeedsReason")}</div>
             : <button onClick={()=>voteNo("")} style={{fontSize:12,color:"#64748b",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit"}}>{tr("vNoReason")}</button>}
+        </div>
+      )}
+      {/* Späte Anmeldung: möglich, aber nur mit Grund - der Trainer sieht ihn */}
+      {showJoin&&(
+        <div style={{background:"#f0fdf4",borderRadius:13,padding:"12px 14px",border:"1.5px solid #86efac"}}>
+          <div style={{fontWeight:700,fontSize:13,color:"#166534",marginBottom:8}}>{tr("vWhyLate")}{joinLate?` (+${joinLate} ${tr("vMin")})`:""}</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:7,marginBottom:10}}>
+            {JOIN_REASONS.map(r=>(
+              <button key={r} onClick={()=>sendJoin(tr(r))}
+                style={{padding:"7px 14px",borderRadius:99,border:"1.5px solid #86efac",background:"#fff",color:"#15803d",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+                {tr(r)}
+              </button>
+            ))}
+          </div>
+          <div style={{display:"flex",gap:6,marginBottom:8}}>
+            <input value={joinReason} onChange={e=>setJoinReason(e.target.value)} placeholder={tr("vReasonPh")}
+              onKeyDown={e=>{if(e.key==="Enter"&&joinReason.trim())sendJoin(joinReason.trim());}}
+              style={{flex:1,padding:"8px 11px",fontSize:13,border:"1.5px solid #86efac",borderRadius:9,outline:"none",fontFamily:"inherit",boxSizing:"border-box"}}/>
+            <button disabled={!joinReason.trim()} onClick={()=>sendJoin(joinReason.trim())}
+              style={{padding:"8px 14px",borderRadius:9,border:"none",background:joinReason.trim()?"#16a34a":"#bbf7d0",color:"#fff",fontWeight:800,fontSize:13,cursor:joinReason.trim()?"pointer":"default",fontFamily:"inherit"}}>{tr("vJoinSend")}</button>
+          </div>
+          <div style={{fontSize:11.5,color:"#166534",fontWeight:600}}>{tr("vLateJoinHint")}</div>
         </div>
       )}
       {/* Verspätungs-Übersicht für Trainer */}
@@ -18040,6 +18078,34 @@ function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadlin
         </div>
         ); })()}
 
+      {/* Helfer: wer beim Termin mit anpackt - mit Zeitpunkt der Zusage.
+          Fest eingeplant, Warteliste und "waere bereit" sauber getrennt. */}
+      {(()=>{
+        const fest=((ev.helperOffers||[]).slice()).sort((a,b)=>String(a.ts||"").localeCompare(String(b.ts||"")));
+        const bereit=(ev.helperInterest||[]).slice();
+        if(!fest.length&&!bereit.length) return null;
+        const soll=Math.max(1,Number(ev.staffTarget)||fest.length||1);
+        const geplant=fest.slice(0,soll), warte=fest.slice(soll);
+        const zeileH=(o,art)=>(
+          <div key={art+(o.id||o.name)} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderTop:"1px solid #eef2f7"}}>
+            <Av name={o.name} sz={22}/>
+            <span style={{flex:1,minWidth:0,fontWeight:700,fontSize:12.5,color:"#101828",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{o.name}</span>
+            <span style={{flexShrink:0,fontSize:11,fontWeight:700,color:art==="fest"?"#b45309":art==="warte"?"#64748b":"#7c3aed"}}>
+              {art==="fest"?"✓ hilft mit":art==="warte"?"⏳ Warteliste":"🙋 wäre bereit"}
+            </span>
+            {antwortZeit(o.ts)&&<span style={{flexShrink:0,fontSize:10.5,color:"#98a2b3",whiteSpace:"nowrap"}}>{antwortZeit(o.ts)}</span>}
+          </div>
+        );
+        return (
+        <div style={{background:"#fffbeb",border:"1px solid #fde68a",borderRadius:11,padding:"9px 12px",marginBottom:16}}>
+          <div style={{fontSize:11,fontWeight:800,color:"#92400e",letterSpacing:.3}}>🙋 HELFER ({geplant.length}{warte.length?` · ${warte.length} Warteliste`:""}{bereit.length?` · ${bereit.length} bereit`:""})</div>
+          {ev.helferNote&&<div style={{fontSize:11.5,color:"#92400e",marginTop:4,fontWeight:600}}>📋 {ev.helferNote}</div>}
+          {geplant.map(o=>zeileH(o,"fest"))}
+          {warte.map(o=>zeileH(o,"warte"))}
+          {bereit.map(o=>zeileH(o,"bereit"))}
+        </div>
+        ); })()}
+
       {/* Meine Kinder: Trainer-Kinder angepinnt – Zu-/Absage ohne Umloggen */}
       {onSetVote&&myKids.length>0&&(()=>{ const kids=myKids.filter(n=>teamPlayers.includes(n)); if(!kids.length) return null; return (
         <div style={{background:"#eef2ff",border:"1.5px solid #c7d2fe",borderRadius:13,padding:"11px 14px",marginBottom:16}}>
@@ -18091,6 +18157,34 @@ function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadlin
           </div>
         </div>
       )}
+
+      {/* Nach der Frist geändert: An- und Absagen mit Begründung - der Trainer
+          soll sehen, wer sich wann und warum noch umentschieden hat. */}
+      {(()=>{
+        const spaet=Object.entries(ev.votes||{})
+          .filter(([,v])=>typeof v==="object"&&v!==null&&v.lateChange)
+          .map(([n,v])=>({name:n,val:v.val,reason:String(v.reason||""),ts:v.ts}))
+          .sort((a,b)=>String(b.ts||"").localeCompare(String(a.ts||"")));
+        if(!spaet.length) return null;
+        return (
+        <div style={{background:"#fff7ed",borderRadius:13,padding:"11px 14px",border:"1.5px solid #fdba74",marginBottom:16}}>
+          <div style={{fontWeight:800,fontSize:12.5,color:"#9a3412",marginBottom:7}}>⏰ NACH FRIST GEÄNDERT ({spaet.length})</div>
+          <div style={{display:"flex",flexDirection:"column",gap:6}}>
+            {spaet.map(x=>(
+              <div key={x.name} style={{display:"flex",alignItems:"center",gap:9,background:"rgba(255,255,255,.75)",borderRadius:9,padding:"7px 10px"}}>
+                <Av name={x.name} sz={26}/>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontWeight:800,fontSize:13,color:"#0f172a",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{x.name}</div>
+                  <div style={{fontSize:11.5,color:"#7c2d12",fontWeight:600,marginTop:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+                    {x.val==="no"?"✕ abgesagt":"✓ nachgemeldet"}{x.reason?` · ${x.reason}`:" · ohne Grund"}
+                  </div>
+                </div>
+                {antwortZeit(x.ts)&&<span style={{flexShrink:0,fontSize:10.5,color:"#9a3412",whiteSpace:"nowrap"}}>{antwortZeit(x.ts)}</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+        ); })()}
 
       {}
       <div style={{marginBottom:16}}>
@@ -22680,18 +22774,61 @@ const antwortVon=(ev,wer)=>{
 };
 const ANT={ ja:{icon:"✅",col:"#15803d",rand:"#bbf7d0"}, spaet:{icon:"⏰",col:"#b45309",rand:"#fde68a"}, nein:{icon:"❌",col:"#b91c1c",rand:"#fecaca"} };
 // Drei Wege zu antworten - inklusive "komme später" mit Uhrzeit
-function AntwortKnoepfe({ ev, gross, onVote }){
+const GRUND_JA=["Wieder gesund","Termin abgesagt","Zu spät gesehen","Doch Zeit"];
+const GRUND_NEIN=["Krank","Urlaub","Schulpflicht","Wettkampf"];
+function AntwortKnoepfe({ ev, gross, onVote, wer=null }){
   const [spaetAuf,setSpaetAuf]=useState(false);
+  // Nach der Frist geht die Antwort weiter - aber nur mit Begründung.
+  const fristAb=isDeadlinePassed(ev);
+  const [grundFuer,setGrundFuer]=useState(null);   // {val,late} oder null
+  const [eigen,setEigen]=useState("");
   const B=(txt,bg,col,rand,onClick)=>(
     <button onClick={onClick} style={{flex:1,padding:gross?"15px 6px":"12px 6px",borderRadius:13,border:rand?`2px solid ${rand}`:"none",
       background:bg,color:col,fontWeight:900,fontSize:gross?17:14,cursor:"pointer",fontFamily:"inherit",minHeight:gross?56:46,whiteSpace:"nowrap"}}>{txt}</button>
   );
+  const senden=(val,late,grund)=>{
+    const g=String(grund||"").trim(); if(!g) return;
+    onVote(ev.id,"att", val==="no" ? {val:"no",reason:g} : (late?{val:"yes",late,reason:g}:{val:"yes",reason:g}));
+    setGrundFuer(null); setEigen("");
+  };
+  const antworte=(val,late)=>{
+    const jetzt=wer?antwortVon(ev,wer):null;
+    const schonJa=!!jetzt&&(jetzt.art==="ja"||jetzt.art==="spaet");
+    // Wer schon zugesagt hat, muss beim Bestätigen nichts erneut begründen.
+    if(fristAb&&!(val==="yes"&&schonJa)){ setSpaetAuf(false); setGrundFuer({val,late:late||0}); return; }
+    onVote(ev.id,"att", late?{val:"yes",late}:val);
+  };
+  if(grundFuer){
+    const ja=grundFuer.val!=="no";
+    const farbe=ja?"#15803d":"#b91c1c", rand=ja?"#86efac":"#fca5a5", bg=ja?"#f0fdf4":"#fef2f2";
+    return (
+      <div style={{background:bg,border:`1.5px solid ${rand}`,borderRadius:13,padding:"12px 13px"}}>
+        <div style={{fontWeight:800,fontSize:13.5,color:farbe,marginBottom:8}}>
+          {ja?"Die Frist ist um – warum jetzt noch anmelden?":"Die Frist ist um – warum absagen?"}
+        </div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:7,marginBottom:9}}>
+          {(ja?GRUND_JA:GRUND_NEIN).concat(["Sonstiges"]).map(g=>(
+            <button key={g} onClick={()=>senden(grundFuer.val,grundFuer.late,g)}
+              style={{padding:"9px 14px",minHeight:42,borderRadius:99,border:`1.5px solid ${rand}`,background:"#fff",color:farbe,fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>{g}</button>
+          ))}
+        </div>
+        <div style={{display:"flex",gap:6}}>
+          <input value={eigen} onChange={e=>setEigen(e.target.value)} placeholder="Eigener Grund …"
+            onKeyDown={e=>{ if(e.key==="Enter"&&eigen.trim()) senden(grundFuer.val,grundFuer.late,eigen.trim()); }}
+            style={{flex:1,padding:"10px 11px",fontSize:13.5,border:`1.5px solid ${rand}`,borderRadius:10,outline:"none",fontFamily:"inherit",boxSizing:"border-box"}}/>
+          <button disabled={!eigen.trim()} onClick={()=>senden(grundFuer.val,grundFuer.late,eigen.trim())}
+            style={{padding:"10px 15px",borderRadius:10,border:"none",background:eigen.trim()?farbe:"#e2e8f0",color:"#fff",fontWeight:800,fontSize:13.5,cursor:eigen.trim()?"pointer":"default",fontFamily:"inherit"}}>Senden</button>
+        </div>
+        <button onClick={()=>{setGrundFuer(null);setEigen("");}} style={{marginTop:8,fontSize:12.5,color:"#64748b",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit"}}>Zurück</button>
+      </div>
+    );
+  }
   if(spaetAuf) return (
     <div>
       <div style={{fontSize:12.5,fontWeight:800,color:"#92400e",marginBottom:7}}>Wie viel später?</div>
       <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
         {[5,10,15,20,30].map(m=>(
-          <button key={m} onClick={()=>{ onVote(ev.id,"att",{val:"yes",late:m}); setSpaetAuf(false); }}
+          <button key={m} onClick={()=>{ antworte("yes",m); setSpaetAuf(false); }}
             style={{flex:"1 1 28%",padding:"12px 6px",minHeight:48,borderRadius:12,border:"2px solid #fde68a",background:"#fffbeb",
               color:"#92400e",fontWeight:900,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
             {m} Min{ev.time?<div style={{fontSize:11,fontWeight:700,opacity:.85}}>ab {zeitPlus(ev.time,m)}</div>:null}
@@ -22703,9 +22840,9 @@ function AntwortKnoepfe({ ev, gross, onVote }){
   );
   return (
     <div style={{display:"flex",gap:7}}>
-      {B("✅ JA","#15803d","#fff",null,()=>onVote(ev.id,"att","yes"))}
+      {B("✅ JA","#15803d","#fff",null,()=>antworte("yes",0))}
       {B("⏰ SPÄTER","#fffbeb","#92400e","#fde68a",()=>setSpaetAuf(true))}
-      {B("❌ NEIN","#fff","#b91c1c","#fca5a5",()=>onVote(ev.id,"att","no"))}
+      {B("❌ NEIN","#fff","#b91c1c","#fca5a5",()=>antworte("no",0))}
     </div>
   );
 }
@@ -22794,7 +22931,9 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
             {artWort(ev).charAt(0)+artWort(ev).slice(1).toLowerCase()} · {statusText(a)}{a.late?` ab ${zeitPlus(ev.time,a.late)}`:""}
           </div>
         </div>
-        <button onClick={()=>onVote(ev.id,"att",a.art==="nein"?"yes":"no")}
+        {/* Nach der Frist braucht die Änderung einen Grund - dafür den Termin
+            gross aufmachen, statt hier still zu scheitern. */}
+        <button onClick={()=>{ if(isDeadlinePassed(ev)){ waehle(ev.id); setAendern(true); return; } onVote(ev.id,"att",a.art==="nein"?"yes":"no"); }}
           style={{flexShrink:0,padding:"11px 10px",minHeight:44,borderRadius:9,border:"none",background:"transparent",color:"#64748b",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",textDecoration:"underline"}}>
           {a.art==="nein"?"doch dabei":"absagen"}
         </button>
@@ -22809,7 +22948,7 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
         <span style={{fontWeight:900,fontSize:15.5,color:"#0f172a"}}>{tagKurz(ev.date)}{ev.time?` · ${ev.time}${ev.endTime?"–"+ev.endTime:""} Uhr`:""}</span>
         {ev.loc&&<span style={{fontSize:11.5,color:"#64748b",fontWeight:700}}>📍 {ev.loc}</span>}
       </div>
-      <AntwortKnoepfe ev={ev} onVote={onVote}/>
+      <AntwortKnoepfe ev={ev} onVote={onVote} wer={kind}/>
     </div>
   );
   const Titel=(txt,n)=>(
@@ -22880,7 +23019,7 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
               ? (aendern
                 ? <div style={{marginTop:12}}>
                     <div style={{fontWeight:900,fontSize:16,color:"#0f172a",marginBottom:9}}>Antwort ändern – kommt {kurzName}?</div>
-                    <AntwortKnoepfe ev={fokus} gross onVote={(id,pt,val)=>{ onVote(id,pt,val); setAendern(false); }}/>
+                    <AntwortKnoepfe ev={fokus} gross wer={kind} onVote={(id,pt,val)=>{ onVote(id,pt,val); setAendern(false); }}/>
                     <button onClick={()=>setAendern(false)} style={{width:"100%",marginTop:9,padding:"12px",minHeight:44,borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
                   </div>
                 : <div style={{display:"flex",alignItems:"center",gap:11,marginTop:12,background:aF.art==="ja"?"#f0fdf4":aF.art==="spaet"?"#fffbeb":"#fff1f2",borderRadius:14,padding:"13px 13px"}}>
@@ -22896,7 +23035,7 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
                   </div>)
               : <>
                   <div style={{fontWeight:900,fontSize:17,color:"#0f172a",margin:"12px 0 9px"}}>Kommt {kurzName}?</div>
-                  <AntwortKnoepfe ev={fokus} gross onVote={onVote}/>
+                  <AntwortKnoepfe ev={fokus} gross wer={kind} onVote={onVote}/>
                 </>}
           </div>
         ); })()}
@@ -23123,8 +23262,10 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{},onSwitc
 
   const vote=(eid,pt,val)=>{
     let lateCancel = null;
+    let lateJoin = null;
     let blocked = false;
     let needReason = false;
+    let needJoinReason = false;
     let lateRejoin = false;
     const next={...data,events:data.events.map(e=>{
       if(e.id!==eid)return e;
@@ -23149,9 +23290,19 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{},onSwitc
             if (prevVal==="yes"||prevVal==="maybe"||prevVal==="late") lateCancel = { user, prev:prevVal, ts, reason:reason.trim() };
             nv[user] = { val:"no", ts, reason:reason.trim(), lateChange:true };
           } else {
-            // späte (Wieder-)Anmeldung erlauben und als Änderung markieren (Trainer wird informiert)
+            // Späte Anmeldung bleibt möglich - aber nur mit Begründung, damit
+            // der Trainer sieht, warum sich jemand nach der Frist noch meldet.
+            const warJa = prevVal==="yes"||prevVal==="maybe"||prevVal==="late";
+            if(!warJa && !reason.trim()){ needJoinReason=true; return e; }
             lateRejoin = true;
-            nv[user] = { val:newVal, ts, lateChange:true };
+            const rest = (typeof val==="object"&&val!==null) ? {...val} : {};
+            const grund = reason.trim() || (typeof prev==="object"&&prev!==null ? String(prev.reason||"") : "");
+            nv[user] = { ...rest, val:newVal, ts };
+            if(grund) nv[user].reason = grund; else delete nv[user].reason;
+            // Nur eine echte Neu-/Wieder-Anmeldung ist eine "Änderung nach Frist"
+            if(!warJa){ nv[user].lateChange = true; lateJoin = { user, prev:prevVal||null, ts, reason:grund }; }
+            else if(typeof prev==="object"&&prev!==null&&prev.lateChange) nv[user].lateChange = true;
+            else lateRejoin = false;
           }
         } else {
           const isObj = typeof val==="object" && val!==null;
@@ -23164,6 +23315,7 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{},onSwitc
         }
         const updated = {...e,votes:nv};
         if (lateCancel) updated.lateCancellations = [...(e.lateCancellations||[]), lateCancel];
+        if (lateJoin)   updated.lateJoins        = [...(e.lateJoins||[]), lateJoin];
         return updated;
       }
       const nvX={...e.votes}; nvX[user]=val;
@@ -23171,6 +23323,10 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{},onSwitc
     })};
     if (needReason) {
       fire(tr("uhNeedReason"));
+      return;
+    }
+    if (needJoinReason) {
+      fire(tr("uhNeedJoinReason"));
       return;
     }
     if (blocked) {
