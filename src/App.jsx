@@ -16497,7 +16497,10 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           {(()=>{
             if(isHelper) return null;   // Helfer sehen keine Trainer-Aufgaben (Skills, No-Shows, ...)
             const todos=[];
-            const trainingOn=(myClub?.clubSettings?.mod_training)!==false;
+            // Die Aufgabenliste blickt bewusst nur eine Woche voraus. Was
+            // weiter weg ist, steht ohnehin in der Terminliste und macht hier
+            // nur Laerm.
+            const todoBis=addD(tod,7);
             if(isAdmin){
               // Admin sieht nur vereinsweite Aufgaben – nicht die Team-Aufgaben der Trainer.
               const inbox=(local.contactRequests||[]).filter(r=>r.cid===cid&&!r.read&&!r.blocked).length;
@@ -16506,9 +16509,13 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               if(sec>0) todos.push({label:"Sicherheit",col:"#dc2626",bg:"#fee2e2",title:`${sec} Sicherheits-Hinweis${sec>1?"e":""}`,sub:"prüfen",onClick:()=>setTab("security")});
             } else {
             (local.events||[]).filter(e=>myTids.includes(e.tid)).forEach(e=>{
-              eventWarnings(e,tod,{ events:local.events, teams:local.teams, perStaff:myClub?.clubSettings?.playersPerStaff||6, trainers:(local.trainers||[]).filter(trn=>(trn.tids||[]).includes(e.tid)&&isActive(trn)).length, squad:(local.playerProfiles||[]).filter(pp=>pp.mainTid===e.tid&&!pp.archived).length }).forEach(x=>todos.push({ev:e,label:x.label,col:x.col,bg:x.bg}));
+              if(e.date>=tod&&e.date<=todoBis)
+                eventWarnings(e,tod,{ events:local.events, teams:local.teams, perStaff:myClub?.clubSettings?.playersPerStaff||6, trainers:(local.trainers||[]).filter(trn=>(trn.tids||[]).includes(e.tid)&&isActive(trn)).length, squad:(local.playerProfiles||[]).filter(pp=>pp.mainTid===e.tid&&!pp.archived).length }).forEach(x=>todos.push({ev:e,label:x.label,col:x.col,bg:x.bg}));
+              // Der Spielbericht schaut zurueck statt voraus - er bleibt, bis er
+              // geschrieben ist (sonst geht er einfach verloren).
               if(["heimspiel","auswarts","freundschaft"].includes(e.type)&&e.date<tod&&e.date>=addD(tod,-21)&&!(e.report&&e.report.ts)) todos.push({ev:e,label:"Spielbericht eintragen",col:"#2563eb",bg:"#eff6ff"});
-              if(trainingOn&&e.type==="training"&&e.date>=tod&&e.date<=addD(tod,10)&&!e.trainingId&&!e.trainingPlan) todos.push({ev:e,label:"Trainingsplan fehlt",col:"#7c3aed",bg:"#ede9fe"});
+              // Der Trainingsplan ist freiwillig - er gehoert nicht in die
+              // Aufgabenliste. Planen geht weiter ueber den Termin selbst.
             });
             // Skill-Check fällig (pro Mannschaft, pro Trainer) + Kinder ohne Skill-Profil
             const mk=monthKey(); const raterId=session?.id||session?.role||"trainer";
@@ -16542,10 +16549,14 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               });
             }
             }
-            if(todos.length===0) return null;
+            // Loeschantraege haengen an einer gesetzlichen Frist (2 Tage) und
+            // duerfen deshalb NIE verschwinden - auch nicht, wenn sonst nichts
+            // zu tun ist.
+            const delReqs=(local.deletionRequests||[]).filter(r=>r.cid===cid&&r.status==="pending");
+            if(todos.length===0&&delReqs.length===0) return null;
             return (
               <div style={{background:"#fff",border:"1px solid #e4e9f0",borderRadius:16,padding:"13px 15px",marginBottom:14,boxShadow:"0 1px 2px rgba(16,24,40,.04)"}}>
-                {(()=>{ const reqs=(local.deletionRequests||[]).filter(r=>r.cid===cid&&r.status==="pending");
+                {(()=>{ const reqs=delReqs;
                   if(!reqs.length) return null;
                   const doDel=(r)=>{ if(!window.confirm(`ENDGÜLTIG löschen: Alle Daten von „${r.name}" werden entfernt. Das lässt sich nicht rückgängig machen. Fortfahren?`)) return;
                     save({...local,
@@ -16568,7 +16579,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
                       </div>}
                     </div>); });
                 })()}
-                <div style={{fontWeight:700,fontSize:13,color:"#344054",marginBottom:9,letterSpacing:"-.1px"}}>✅ Zu erledigen <span style={{color:"#98a2b3",fontWeight:600,fontSize:12}}>({todos.length})</span></div>
+                <div style={{fontWeight:700,fontSize:13,color:"#344054",marginBottom:9,letterSpacing:"-.1px"}}>✅ Zu erledigen <span style={{color:"#98a2b3",fontWeight:600,fontSize:12}}>({todos.length+delReqs.length})</span></div>
                 <div style={{display:"flex",flexDirection:"column",gap:7}}>
                   {todos.slice(0,12).map((td,i)=>(
                     <button key={i} onClick={()=>td.ev?setViewEv(td.ev):(td.onClick&&td.onClick())} style={{display:"flex",alignItems:"center",gap:10,width:"100%",minHeight:46,boxSizing:"border-box",textAlign:"left",background:"#f8fafc",border:"1px solid #eef2f7",borderRadius:11,padding:"12px 11px",cursor:"pointer",fontFamily:"inherit"}}>
