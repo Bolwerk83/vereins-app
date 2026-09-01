@@ -222,6 +222,65 @@ await clickTxt("Anderer Termin abgesagt"); await page.waitForTimeout(1300);
   if(eintrag&&eintrag.val==="yes"&&eintrag.reason==="Anderer Termin abgesagt") ok("Mit Grund wird auch hier gespeichert: "+eintrag.reason);
   else fail("Einfache Ansicht speichert nicht richtig: "+JSON.stringify(eintrag)); }
 
+// ===== 5) Auch der Trainer kann sich nach der Frist noch selbst anmelden =====
+await page.evaluate(()=>{
+  const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
+  const ev=(d.events||[]).filter(e=>e.cid==="demo"&&e.tid==="demo_f1"&&(e.pt==="att"||!e.pt))
+    .sort((a,b)=>String(a.date||"").localeCompare(String(b.date||"")))[0];
+  const v={...(ev.votes||{})}; delete v["Demo Trainer"]; ev.votes=v;   // eigene Antwort zurücksetzen
+  localStorage.setItem("vereinsapp_v14", JSON.stringify(d));
+  localStorage.setItem("va_simple","0");
+  sessionStorage.setItem("vereinsapp_v12_session", JSON.stringify({role:"trainer",cid:"demo",tids:["demo_f1"],name:"Demo Trainer",id:"demo_tr1"}));
+});
+await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2800); await dismiss();
+b=await body();
+if(!/nur noch Absage möglich/.test(b)) ok("Der Hinweis „nur noch Absage möglich“ ist weg");
+else fail("Es steht immer noch „nur noch Absage möglich“ da");
+if(/Anmeldung noch möglich/.test(b)) ok("Stattdessen: „Anmeldung noch möglich – wird als späte Änderung vermerkt“");
+else fail("Kein Hinweis, dass die Anmeldung noch geht: "+b.slice(0,260).replace(/\n/g," | "));
+{ const knopf=await page.evaluate(()=>{
+    const b=[...document.querySelectorAll("button")].find(x=>/^(✓ Bin dabei|✓ Späte Anmeldung)$/.test((x.innerText||"").trim()));
+    if(!b) return null; return {txt:(b.innerText||"").trim(), aus:b.disabled}; });
+  if(knopf&&!knopf.aus) ok("Der eigene Knopf ist bedienbar: „"+knopf.txt+"“");
+  else fail("Eigener Knopf fehlt oder ist gesperrt: "+JSON.stringify(knopf)); }
+await page.evaluate(()=>{ const b=[...document.querySelectorAll("button")].find(x=>/^(✓ Bin dabei|✓ Späte Anmeldung)$/.test((x.innerText||"").trim())); b&&b.click(); });
+await page.waitForTimeout(1500);
+{ const eintrag=await page.evaluate(()=>{
+    const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
+    const ev=(d.events||[]).filter(e=>e.cid==="demo"&&e.tid==="demo_f1"&&(e.pt==="att"||!e.pt))
+      .sort((a,b)=>String(a.date||"").localeCompare(String(b.date||"")))[0];
+    return ev?((ev.votes||{})["Demo Trainer"]||null):null; });
+  if(eintrag&&eintrag.val==="yes") ok("Die späte Selbst-Anmeldung ist gespeichert");
+  else fail("Nicht gespeichert: "+JSON.stringify(eintrag));
+  if(eintrag&&eintrag.lateChange) ok("Und als späte Änderung vermerkt"); else fail("Nicht als späte Änderung vermerkt");
+  if(eintrag&&eintrag.okAt) ok("Der Trainer muss sich nicht selbst freigeben");
+  else fail("Eigene Zusage wartet auf die eigene Freigabe: "+JSON.stringify(eintrag)); }
+
+// ===== 6) Und der Helfer kann sich nach der Frist noch melden =====
+await page.evaluate(()=>{
+  const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
+  const ev=(d.events||[]).filter(e=>e.cid==="demo"&&e.tid==="demo_f1"&&(e.pt==="att"||!e.pt))
+    .sort((a,b)=>String(a.date||"").localeCompare(String(b.date||"")))[0];
+  ev.helperOffers=(ev.helperOffers||[]).filter(o=>o.id!=="h4");
+  ev.helperInterest=(ev.helperInterest||[]).filter(o=>o.id!=="h4");
+  localStorage.setItem("vereinsapp_v14", JSON.stringify(d));
+  sessionStorage.setItem("vereinsapp_v12_session", JSON.stringify({role:"helper",cid:"demo",id:"h4",helperId:"h4",name:"Bea Bereit",tids:["demo_f1"]}));
+});
+await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2800); await dismiss();
+{ const knopf=await page.evaluate(()=>{
+    const b=[...document.querySelectorAll("button")].find(x=>/helfe mit|Ich helfe|mithelfen|Helfen/i.test((x.innerText||"").trim())&&(x.innerText||"").length<40);
+    if(!b) return null; return {txt:(b.innerText||"").trim(), aus:b.disabled}; });
+  if(knopf&&!knopf.aus){ ok("Auch nach der Frist kann sich der Helfer melden: „"+knopf.txt+"“");
+    await page.evaluate(()=>{ const b=[...document.querySelectorAll("button")].find(x=>/helfe mit|Ich helfe|mithelfen|Helfen/i.test((x.innerText||"").trim())&&(x.innerText||"").length<40); b&&b.click(); });
+    await page.waitForTimeout(1500);
+    const drin=await page.evaluate(()=>{
+      const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
+      const ev=(d.events||[]).filter(e=>e.cid==="demo"&&e.tid==="demo_f1"&&(e.pt==="att"||!e.pt))
+        .sort((a,b)=>String(a.date||"").localeCompare(String(b.date||"")))[0];
+      return [...(ev.helperOffers||[]),...(ev.helperInterest||[])].some(o=>o.id==="h4"); });
+    if(drin) ok("Die Helfer-Zusage nach der Frist ist gespeichert"); else fail("Helfer-Zusage nicht gespeichert");
+  } else fail("Kein bedienbarer Helfer-Knopf nach der Frist: "+JSON.stringify(knopf)); }
+
 if(errors.length){ console.log("JS-FEHLER:"); [...new Set(errors)].forEach(e=>console.log(" -",e.slice(0,150))); }
 console.log(errors.length||fails.length?`ERGEBNIS: ${fails.length} Fehlschläge, ${errors.length} JS-Fehler`:"ERGEBNIS: ALLES OK");
 await browser.close(); srv.close();

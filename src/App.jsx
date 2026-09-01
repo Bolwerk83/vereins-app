@@ -16224,10 +16224,12 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
       if(cur===val && !locked) delete votes[selfName]; // erneuter Klick = zurücknehmen (vor Frist)
       // Rolle mitschreiben: so bleibt die Zusage ueberall als Betreuer-Zusage
       // erkennbar, auch wenn der Name spaeter anders geschrieben wird.
-      else votes[selfName]= {val,ts,role:isAdmin?"admin":"trainer",...(locked?{lateChange:true}:{})};
+      // Die eigene späte Zusage muss sich der Trainer nicht selbst freigeben -
+      // sie gilt sofort als gesehen und eingeplant.
+      else votes[selfName]= {val,ts,role:isAdmin?"admin":"trainer",...(locked?{lateChange:true,okAt:ts,okBy:selfName}:{})};
       return {...e,votes};
     })});
-    fire(locked ? "Späte Anmeldung erfasst" : val==="yes"?"Du bist dabei":"Du hast abgesagt");
+    fire(locked ? "Späte Anmeldung erfasst – im Termin vermerkt" : val==="yes"?"Du bist dabei":"Du hast abgesagt");
   };
   const [simple,setSimple]=useState(()=>{ try{ return localStorage.getItem("va_simple")!=="0"; }catch{ return true; } });
   const [simpleDrill,setSimpleDrill]=useState(null);
@@ -19321,7 +19323,9 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
   const myVoteRaw = selfName ? _v[selfName] : null;
   const myVote = typeof myVoteRaw==="object"&&myVoteRaw!==null ? myVoteRaw.val : myVoteRaw;
   const upcoming5 = isUpcoming5(ev);
-  const votingLocked = isVotingLocked(ev) && !isEventPast(ev);
+  // "Zu spaet dran" gilt fuer beide Fristen: die automatische 24-Stunden-Sperre
+  // UND eine vom Trainer gesetzte Abstimmungs-Frist.
+  const votingLocked = (isVotingLocked(ev)||isDeadlinePassed(ev)) && !isEventPast(ev);
   const lateCount = (ev.lateCancellations||[]).length;
   const canSelfVote = selfName && onSelfVote && (ev.pt==="att"||!ev.pt) && ev.date>=tod;
   // Live-Countdown nur bei anstehenden Events innerhalb der nächsten 5 Tage
@@ -19395,7 +19399,7 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
           {votingLocked && (
             <div style={{marginTop:4}}>
               <span style={{fontSize:11,fontWeight:800,color:"#7f1d1d",background:"#fee2e2",borderRadius:6,padding:"2px 8px"}}>
-                Anmeldung geschlossen – nur noch Absage möglich
+                Anmeldung noch möglich – wird als späte Änderung vermerkt
               </span>
             </div>
           )}
@@ -19411,9 +19415,11 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
       {canSelfVote&&(
         <div style={{display:"flex",gap:6,padding:"4px 12px 8px",alignItems:"center"}}>
           <span style={{fontSize:11,fontWeight:700,color:"#64748b"}}>Ich:</span>
-          <button onClick={()=>onSelfVote(ev.id,"yes")} disabled={votingLocked}
-            title={votingLocked?"Anmeldung geschlossen":""}
-            style={{flex:1,padding:"13px 7px",minHeight:46,borderRadius:10,border:`1.5px solid ${myVote==="yes"?"#16a34a":"#e2e8f0"}`,background:myVote==="yes"?"#16a34a":(votingLocked?"#f1f5f9":"#fff"),color:myVote==="yes"?"#fff":(votingLocked?"#64748b":"#475569"),fontWeight:800,fontSize:12.5,cursor:votingLocked?"not-allowed":"pointer",fontFamily:"inherit",opacity:votingLocked?.6:1}}>✓ Bin dabei</button>
+          {/* Auch nach der Frist muss man sich noch anmelden koennen - die
+              Zusage wird dann als spaete Aenderung vermerkt. */}
+          <button onClick={()=>onSelfVote(ev.id,"yes")}
+            title={votingLocked?"Frist abgelaufen – wird als späte Anmeldung vermerkt":""}
+            style={{flex:1,padding:"13px 7px",minHeight:46,borderRadius:10,border:`1.5px solid ${myVote==="yes"?"#16a34a":"#e2e8f0"}`,background:myVote==="yes"?"#16a34a":"#fff",color:myVote==="yes"?"#fff":"#475569",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{votingLocked&&myVote!=="yes"?"✓ Späte Anmeldung":"✓ Bin dabei"}</button>
           <button onClick={()=>onSelfVote(ev.id,"no")} style={{flex:1,padding:"13px 7px",minHeight:46,borderRadius:10,border:`1.5px solid ${myVote==="no"?"#dc2626":"#e2e8f0"}`,background:myVote==="no"?"#dc2626":"#fff",color:myVote==="no"?"#fff":"#475569",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>{votingLocked?"✕ Späte Absage":"✕ Sage ab"}</button>
         </div>
       )}
