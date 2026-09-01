@@ -146,23 +146,55 @@ else fail("Kein Block „Nach Frist geändert“: "+b.slice(0,260).replace(/\n/g
 if(new RegExp(String(kindName||"").replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).test(b)) ok("Das Kind steht namentlich drin"); else fail("Kind fehlt im Block");
 if(/nachgemeldet/.test(b)&&/War krank/.test(b)) ok("Mit Grund und Status: "+(b.match(/nachgemeldet[^\n]*/)||[""])[0]);
 else fail("Grund fehlt beim Trainer: "+b.slice(b.indexOf("NACH FRIST"), b.indexOf("NACH FRIST")+220).replace(/\n/g," | "));
-if(/wartet auf deine Freigabe/.test(b)) ok("Und der Trainer sieht, dass er noch freigeben muss");
-else fail("Kein Freigabe-Hinweis beim Trainer");
-if(/freizugeben/.test(b)) ok("Die Überschrift zählt die offenen Freigaben mit: "+(b.match(/NACH FRIST GEÄNDERT[^\n]*/)||[""])[0]);
-else fail("Zähler für offene Freigaben fehlt");
+if(/bestätigen oder ablehnen/.test(b)) ok("Der Trainer wird zum Bestätigen aufgefordert");
+else fail("Kein Hinweis zum Bestätigen beim Trainer");
+if(/1 offen/.test(b)) ok("Die Überschrift zählt die offenen Punkte mit: "+(b.match(/NACH FRIST GEÄNDERT[^\n]*/)||[""])[0]);
+else fail("Zähler für offene Punkte fehlt");
 // Freigeben
-{ const geklickt=await page.evaluate(()=>{ const b=[...document.querySelectorAll("button")].find(x=>/^✓ .+ freigeben$/.test((x.innerText||"").trim())); if(!b) return false; b.click(); return true; });
-  if(geklickt) ok("Der Trainer hat einen Freigabe-Knopf"); else fail("Kein Freigabe-Knopf im Block"); }
+{ const knoepfe=await page.evaluate(()=>{
+    const alle=[...document.querySelectorAll("div")].filter(d=>/^⏰ NACH FRIST/.test((d.innerText||"").trim()));
+    const box=alle[alle.length-1]; if(!box) return null;
+    return [...box.parentElement.querySelectorAll("button")].map(x=>(x.innerText||"").trim()); });
+  if(knoepfe&&knoepfe.includes("✓ Bestätigen")&&knoepfe.includes("✕ Ablehnen")) ok("Bestätigen und Ablehnen stehen direkt am Eintrag");
+  else fail("Knöpfe fehlen am Eintrag: "+JSON.stringify(knoepfe)); }
+{ const geklickt=await page.evaluate(()=>{ const b=[...document.querySelectorAll("button")].find(x=>(x.innerText||"").trim()==="✓ Bestätigen"); if(!b) return false; b.click(); return true; });
+  if(geklickt) ok("Der Trainer kann bestätigen"); else fail("Kein Bestätigen-Knopf im Block"); }
 await page.waitForTimeout(1400);
 { const eintrag=await page.evaluate(k=>{
     const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
     const ev=(d.events||[]).filter(e=>e.cid==="demo"&&e.tid==="demo_f1"&&(e.pt==="att"||!e.pt))
       .sort((a,b)=>String(a.date||"").localeCompare(String(b.date||"")))[0];
     return ev?((ev.votes||{})[k]||null):null; }, kindName);
-  if(eintrag&&!eintrag.needsOk&&eintrag.okAt) ok("Nach der Freigabe ist vermerkt, wer wann freigegeben hat: "+eintrag.okBy);
-  else fail("Freigabe nicht gespeichert: "+JSON.stringify(eintrag)); }
+  if(eintrag&&!eintrag.needsOk&&eintrag.okAt) ok("Nach dem Bestätigen ist vermerkt, wer wann entschieden hat: "+eintrag.okBy);
+  else fail("Bestätigung nicht gespeichert: "+JSON.stringify(eintrag)); }
 b=await body();
-if(/✓ freigegeben/.test(b)) ok("Der Block zeigt die Freigabe an"); else fail("Freigabe wird nicht angezeigt");
+if(/✓ bestätigt/.test(b)) ok("Der Block zeigt die Bestätigung an"); else fail("Bestätigung wird nicht angezeigt");
+if(!/1 offen/.test(b)) ok("Und der Zähler ist wieder auf null"); else fail("Zähler bleibt offen");
+
+// ===== 3b) Alte Einträge ohne Freigabe-Merker lassen sich auch entscheiden =====
+// Vor der Freigabe-Funktion angelegte Änderungen haben kein needsOk. Auch die
+// muss der Trainer bestätigen oder ablehnen können.
+await page.evaluate(()=>{
+  const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
+  const ev=(d.events||[]).filter(e=>e.cid==="demo"&&e.tid==="demo_f1"&&(e.pt==="att"||!e.pt))
+    .sort((a,b)=>String(a.date||"").localeCompare(String(b.date||"")))[0];
+  ev.votes={...(ev.votes||{}), "Zinedin S.":{val:"yes",ts:"2026-08-31T18:08:00.000Z",lateChange:true}};
+  localStorage.setItem("vereinsapp_v14", JSON.stringify(d));
+});
+await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2800); await dismiss();
+await zumTermin();
+b=await body();
+if(/Zinedin S\./.test(b)&&/1 offen/.test(b)) ok("Auch ein alter Eintrag ohne Merker gilt als offen");
+else fail("Alter Eintrag nicht als offen erkannt: "+(b.match(/NACH FRIST GEÄNDERT[^\n]*/)||[""])[0]);
+{ const geklickt=await page.evaluate(()=>{ const b=[...document.querySelectorAll("button")].find(x=>(x.innerText||"").trim()==="✓ Bestätigen"); if(!b) return false; b.click(); return true; });
+  if(geklickt) ok("Und lässt sich genauso bestätigen"); else fail("Kein Bestätigen-Knopf beim alten Eintrag"); }
+await page.waitForTimeout(1400);
+{ const eintrag=await page.evaluate(()=>{
+    const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
+    const ev=(d.events||[]).filter(e=>e.cid==="demo"&&e.tid==="demo_f1"&&(e.pt==="att"||!e.pt))
+      .sort((a,b)=>String(a.date||"").localeCompare(String(b.date||"")))[0];
+    return ev?((ev.votes||{})["Zinedin S."]||null):null; });
+  if(eintrag&&eintrag.okAt) ok("Die Entscheidung ist gespeichert"); else fail("Alter Eintrag nicht bestätigt: "+JSON.stringify(eintrag)); }
 
 // ===== 4) Auch in der einfachen Eltern-Ansicht wird nach dem Grund gefragt =====
 await page.evaluate(k=>{

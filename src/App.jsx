@@ -8137,7 +8137,7 @@ function PollAttend({ev,user,onVote,cl,session=null,save=()=>{},data=null,fire=(
       {(()=>{
         const mv=typeof rawUv==="object"&&rawUv!==null?rawUv:null;
         if(!mv||!mv.lateChange) return null;
-        if(mv.needsOk) return (
+        if(!mv.okAt&&!mv.declined) return (
           <div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:12,padding:"9px 13px",fontSize:12.5,fontWeight:700,color:"#92400e"}}>
             ⏳ {tr("vJoinPending")}
           </div>);
@@ -18265,46 +18265,62 @@ function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadlin
       )}
 
       {/* Nach der Frist geändert: An- und Absagen mit Begründung - der Trainer
-          soll sehen, wer sich wann und warum noch umentschieden hat. */}
+          soll sehen, wer sich wann und warum noch umentschieden hat, und jede
+          Änderung selbst bestätigen oder ablehnen können. */}
       {(()=>{
         const spaet=Object.entries(ev.votes||{})
           .filter(([,v])=>typeof v==="object"&&v!==null&&v.lateChange)
-          .map(([n,v])=>({name:n,val:v.val,reason:String(v.reason||""),ts:v.ts,offen:!!v.needsOk,okAt:v.okAt||null,okBy:v.okBy||"",abgelehnt:!!v.declined}))
+          .map(([n,v])=>({name:n,val:v.val,reason:String(v.reason||""),ts:v.ts,okAt:v.okAt||null,okBy:v.okBy||"",abgelehnt:!!v.declined}))
           .sort((a,b)=>String(b.ts||"").localeCompare(String(a.ts||"")));
         if(!spaet.length) return null;
-        const wartend=spaet.filter(x=>x.offen).length;
+        // Offen ist alles, worüber der Trainer noch nicht entschieden hat -
+        // auch ältere Einträge, die es vor der Freigabe schon gab.
+        const istOffen=x=>!x.okAt;
+        const wartend=spaet.filter(istOffen).length;
+        const darfEntscheiden=!!onVotePatch&&!readOnly;
         return (
         <div style={{background:"#fff7ed",borderRadius:13,padding:"11px 14px",border:`1.5px solid ${wartend?"#f97316":"#fdba74"}`,marginBottom:16}}>
-          <div style={{fontWeight:800,fontSize:12.5,color:"#9a3412",marginBottom:wartend?4:7}}>⏰ NACH FRIST GEÄNDERT ({spaet.length}{wartend?` · ${wartend} freizugeben`:""})</div>
-          {wartend>0&&<div style={{fontSize:11.5,color:"#9a3412",marginBottom:7,lineHeight:1.45}}>Bitte kurz freigeben – dann ist festgehalten, dass du die späte Anmeldung gesehen hast und mit dem Kind planen kannst.</div>}
-          <div style={{display:"flex",flexDirection:"column",gap:6}}>
-            {spaet.map(x=>(
-              <div key={x.name} style={{display:"flex",alignItems:"center",gap:9,background:"rgba(255,255,255,.75)",borderRadius:9,padding:"7px 10px"}}>
-                <Av name={x.name} sz={26}/>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontWeight:800,fontSize:13,color:"#0f172a",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{x.name}</div>
-                  <div style={{fontSize:11.5,color:"#7c2d12",fontWeight:600,marginTop:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
-                    {x.abgelehnt?"✕ abgelehnt":x.val==="no"?"✕ abgesagt":"✓ nachgemeldet"}{x.reason?` · ${x.reason}`:" · ohne Grund"}
+          <div style={{fontWeight:800,fontSize:12.5,color:"#9a3412",marginBottom:wartend?4:7}}>⏰ NACH FRIST GEÄNDERT ({spaet.length}{wartend?` · ${wartend} offen`:""})</div>
+          {wartend>0&&darfEntscheiden&&<div style={{fontSize:11.5,color:"#9a3412",marginBottom:8,lineHeight:1.45}}>Bitte kurz bestätigen oder ablehnen – dann ist festgehalten, dass du es gesehen hast und einplanen kannst.</div>}
+          <div style={{display:"flex",flexDirection:"column",gap:7}}>
+            {spaet.map(x=>{
+              const offen=istOffen(x);
+              const abgesagt=x.val==="no";
+              return (
+              <div key={x.name} style={{background:"rgba(255,255,255,.8)",borderRadius:10,padding:"8px 10px",border:offen&&darfEntscheiden?"1px solid #fed7aa":"1px solid transparent"}}>
+                <div style={{display:"flex",alignItems:"flex-start",gap:9}}>
+                  <Av name={x.name} sz={26}/>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",alignItems:"baseline",gap:8}}>
+                      <span style={{flex:1,minWidth:0,fontWeight:800,fontSize:13,color:"#0f172a",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{x.name}</span>
+                      {antwortZeit(x.ts)&&<span style={{flexShrink:0,fontSize:10.5,color:"#9a3412",whiteSpace:"nowrap"}}>{antwortZeit(x.ts)}</span>}
+                    </div>
+                    {/* Der Grund darf umbrechen - abgeschnitten nützt er niemandem */}
+                    <div style={{fontSize:11.5,color:"#7c2d12",fontWeight:600,marginTop:2,lineHeight:1.4,overflowWrap:"anywhere"}}>
+                      {x.abgelehnt?"✕ abgelehnt":abgesagt?"✕ abgesagt":"✓ nachgemeldet"}{x.reason?` · ${x.reason}`:" · ohne Grund"}
+                    </div>
+                    {!offen&&<div style={{fontSize:10.5,color:x.abgelehnt?"#b42318":"#15803d",fontWeight:700,marginTop:3}}>
+                      {x.abgelehnt?"✕ abgelehnt":"✓ bestätigt"}{x.okBy?` von ${x.okBy}`:""} · {antwortZeit(x.okAt)}
+                    </div>}
+                    {offen&&!darfEntscheiden&&<div style={{fontSize:10.5,color:"#b45309",fontWeight:800,marginTop:3}}>⏳ wartet auf die Freigabe des Trainers</div>}
                   </div>
-                  {x.offen
-                    ? <div style={{fontSize:10.5,color:"#b45309",fontWeight:800,marginTop:2}}>⏳ wartet auf deine Freigabe</div>
-                    : x.okAt&&<div style={{fontSize:10.5,color:"#15803d",fontWeight:700,marginTop:2}}>{x.abgelehnt?"✕ abgelehnt":"✓ freigegeben"}{x.okBy?` von ${x.okBy}`:""} · {antwortZeit(x.okAt)}</div>}
                 </div>
-                {antwortZeit(x.ts)&&<span style={{flexShrink:0,fontSize:10.5,color:"#9a3412",whiteSpace:"nowrap"}}>{antwortZeit(x.ts)}</span>}
+                {offen&&darfEntscheiden&&(
+                  <div style={{display:"flex",gap:7,marginTop:8}}>
+                    <button onClick={()=>onVotePatch(x.name,{needsOk:false,declined:false})}
+                      style={{flex:1,padding:"10px",borderRadius:10,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
+                      ✓ Bestätigen
+                    </button>
+                    {!abgesagt&&(
+                      <button onClick={()=>onVotePatch(x.name,{needsOk:false,declined:true,val:"no"})}
+                        style={{flex:1,padding:"10px",borderRadius:10,border:"1.5px solid #fecaca",background:"#fff",color:"#b42318",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
+                        ✕ Ablehnen
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
-            ))}
-            {onVotePatch&&!readOnly&&spaet.filter(x=>x.offen).map(x=>(
-              <div key={"ok"+x.name} style={{display:"flex",gap:7}}>
-                <button onClick={()=>onVotePatch(x.name,{needsOk:false})}
-                  style={{flex:1,padding:"10px",borderRadius:10,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
-                  ✓ {String(x.name).split(" ")[0]} freigeben
-                </button>
-                <button onClick={()=>onVotePatch(x.name,{needsOk:false,declined:true,val:"no"})}
-                  style={{padding:"10px 13px",borderRadius:10,border:"1.5px solid #fecaca",background:"#fff",color:"#b42318",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
-                  ✕ Ablehnen
-                </button>
-              </div>
-            ))}
+            );})}
           </div>
         </div>
         ); })()}
@@ -18503,9 +18519,9 @@ function eventWarnings(ev, tod, ctx={}){
   // Nach Ablauf der Frist hat sich noch jemand ab-/angemeldet -> Trainer informieren.
   { const lateN=(ev.lateCancellations||[]).length + Object.values(ev.votes||{}).filter(v=>typeof v==="object"&&v&&v.lateChange&&v.val!=="no").length;
     if(lateN>0) w.push({label:`Nach Frist: ${lateN} Änderung${lateN>1?"en":""}`,col:"#b45309",bg:"#ffedd5"}); }
-  // Späte Anmeldungen, die der Trainer noch freigeben muss.
-  { const okN=Object.values(ev.votes||{}).filter(v=>typeof v==="object"&&v&&v.needsOk).length;
-    if(okN>0) w.push({label:`${okN} Anmeldung${okN>1?"en":""} freigeben`,col:"#c2410c",bg:"#ffedd5"}); }
+  // Änderungen nach Frist, über die der Trainer noch nicht entschieden hat.
+  { const okN=Object.values(ev.votes||{}).filter(v=>typeof v==="object"&&v&&v.lateChange&&!v.okAt).length;
+    if(okN>0) w.push({label:`${okN} Änderung${okN>1?"en":""} bestätigen`,col:"#c2410c",bg:"#ffedd5"}); }
   // Doppelmeldung: Kind ist zur gleichen Zeit noch woanders zugesagt.
   if(ctx.events&&ctx.events.length){
     const offen=konfliktNamen(ev,ctx.events,ctx.teams||[]).filter(x=>!(ev.conflictOk||[]).includes(x.name));
@@ -22895,7 +22911,7 @@ const antwortVon=(ev,wer)=>{
   const val=typeof v==="object"&&v?v.val:v;
   const late=typeof v==="object"&&v?Number(v.late)||0:0;
   // Spaete Anmeldung: wartet sie noch auf die Freigabe des Trainers?
-  const wartet=!!(typeof v==="object"&&v&&v.needsOk);
+  const wartet=!!(typeof v==="object"&&v&&v.lateChange&&!v.okAt&&!v.declined);
   const abgelehnt=!!(typeof v==="object"&&v&&v.declined);
   if(val==="yes") return {art:late?"spaet":"ja", late, wartet, abgelehnt};
   if(val==="no")  return {art:"nein", late:0, wartet:false, abgelehnt};
