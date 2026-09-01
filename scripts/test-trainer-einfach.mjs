@@ -37,8 +37,18 @@ else fail("Stand der Rückmeldungen fehlt");
 if(/BIS [A-ZÄÖÜ]+ \(\d+\)/.test(b)) ok("Darunter die restliche Woche: "+(b.match(/BIS [A-ZÄÖÜ]+ \(\d+\)/)||[""])[0]);
 else console.log("HINWEIS: nur ein Termin in dieser Woche");
 if(!/Plane Trainings, Spiele & Turniere/.test(b)) ok("Der lange Erklärkasten ist weg"); else fail("Erklärkasten steht weiter vor dem Termin");
-{ const n=await page.evaluate(()=>document.body.innerText.split(/\s+/).filter(Boolean).length);
-  if(n<=180) ok("Wenig Text auf dem Bildschirm ("+n+" Wörter)"); else fail("Zu viel Text: "+n+" Wörter"); }
+{ const {n,mitBanner,banner}=await page.evaluate(()=>{
+    // Der Datenbank-Status-Balken haengt nur an der Testumgebung (tote Cloud)
+    // und gehoert nicht zum Bildschirm, den der Trainer normalerweise sieht.
+    const balken=[...document.querySelectorAll("div")].filter(d=>getComputedStyle(d).position==="fixed"
+      && /Datenbank|Verbindung wieder da|Speichern haengt/.test(d.innerText||""));
+    const raus=new Set(); balken.forEach(d=>{ let t=d; while(t&&t.parentElement&&getComputedStyle(t.parentElement).position==="fixed") t=t.parentElement; raus.add(t); });
+    let bTxt=""; [...raus].forEach(d=>{ bTxt+=" "+(d.innerText||""); });
+    const w=t=>String(t||"").split(/\s+/).filter(Boolean).length;
+    return { n:w(document.body.innerText)-w(bTxt), mitBanner:w(document.body.innerText), banner:w(bTxt) };
+  });
+  if(banner>0) console.log("HINWEIS: "+banner+" Wörter Datenbank-Hinweis (nur in der Testumgebung) nicht mitgezählt");
+  if(n<=180) ok("Wenig Text auf dem Bildschirm ("+n+" Wörter)"); else fail("Zu viel Text: "+n+" Wörter (mit Balken "+mitBanner+")"); }
 
 { const gross=await page.evaluate(()=>{
     const raus=[];

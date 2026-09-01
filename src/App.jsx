@@ -15957,19 +15957,23 @@ function EinfachTrainer({ cl, evs=[], tod, trainerNames=[], helperNames=[], squa
             </div>
           )}
           {/* Eigene Rueckmeldung: leise Fusszeile, kein Knopfpaar in Signalfarbe */}
-          {selfName&&onSelfVote&&(fokus.pt==="att"||!fokus.pt)&&fokus.date>=tod&&(
+          {selfName&&onSelfVote&&(fokus.pt==="att"||!fokus.pt)&&fokus.date>=tod&&(()=>{
+            // Gleiche Sprache wie in der vollstaendigen Liste: nach der Frist
+            // heissen die Knoepfe "Spaete Anmeldung" / "Spaete Absage".
+            const spaet=(isVotingLocked(fokus)||isDeadlinePassed(fokus))&&!isEventPast(fokus);
+            return (
             <div style={{display:"flex",alignItems:"center",gap:7,marginTop:12,paddingTop:11,borderTop:"1px solid #f1f4f8"}}>
               <span style={{fontSize:12,color:"#98a2b3",fontWeight:600,flexShrink:0}}>Ich:</span>
               <button onClick={()=>onSelfVote(fokus.id,"yes")}
                 style={{padding:"7px 13px",minHeight:34,borderRadius:8,border:`1px solid ${meine==="yes"?"#12b76a":"#e4e9f0"}`,background:meine==="yes"?"#ecfdf3":"#fff",color:meine==="yes"?"#027a48":"#667085",fontWeight:600,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
-                {meine==="yes"?"✓ Bin dabei":"Bin dabei"}
+                {meine==="yes"?"✓ Bin dabei":(spaet?"Späte Anmeldung":"Bin dabei")}
               </button>
               <button onClick={()=>onSelfVote(fokus.id,"no")}
                 style={{padding:"7px 13px",minHeight:34,borderRadius:8,border:`1px solid ${meine==="no"?"#f04438":"#e4e9f0"}`,background:meine==="no"?"#fef3f2":"#fff",color:meine==="no"?"#b42318":"#667085",fontWeight:600,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
-                {meine==="no"?"✕ Sage ab":"Sage ab"}
+                {meine==="no"?"✕ Sage ab":(spaet?"Späte Absage":"Sage ab")}
               </button>
             </div>
-          )}
+            ); })()}
         </div>
       </div>
       {/* Der Rest der Woche - antippen macht ihn gross */}
