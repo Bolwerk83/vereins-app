@@ -15846,13 +15846,21 @@ function EinfachTrainer({ cl, evs=[], tod, trainerNames=[], helperNames=[], squa
   onView, onAttend, onSetup, onPlan, onEdit, onRemind, onBrief, onSubReq, onDel, onReset, onCopyLink, onNew, onDetail }){
   const t=TH(cl); const p=readable(t.p);
   const [gewaehlt,setGewaehlt]=useState(null);
-  const [mehr,setMehr]=useState(false);
+  const [mehr,setMehr]=useState(null);   // welche Karte hat "Mehr" offen?
   const [spaeterAuf,setSpaeterAuf]=useState(false);
   const kommend=evs.filter(e=>e.date>=tod);
-  const fokus=(gewaehlt&&kommend.find(e=>e.id===gewaehlt))||kommend[0]||null;
-  const waehle=id=>{ setGewaehlt(id); setMehr(false); try{ window.scrollTo({top:0,behavior:"smooth"}); }catch{} };
+  // Gross steht je Terminart einer: das naechste Training UND das naechste
+  // Spiel - so sieht der Trainer beides sofort, ohne umzuschalten.
+  const gewaehltEv=gewaehlt?kommend.find(e=>e.id===gewaehlt):null;
+  const fokusListe=(()=>{
+    const proArt=naechsteJeArt(kommend).map(x=>x.ev).slice(0,3);
+    return gewaehltEv&&!proArt.some(e=>e.id===gewaehltEv.id) ? [gewaehltEv,...proArt].slice(0,4) : proArt;
+  })();
+  const fokusIds=new Set(fokusListe.map(e=>e.id));
+  const fokus=fokusListe[0]||null;
+  const waehle=id=>{ setGewaehlt(id); setMehr(null); try{ window.scrollTo({top:0,behavior:"smooth"}); }catch{} };
   const sonntag=bisSonntag();
-  const rest=kommend.filter(e=>e.id!==fokus?.id);
+  const rest=kommend.filter(e=>!fokusIds.has(e.id));
   const woche=rest.filter(e=>e.date<=sonntag);
   const spaeter=rest.filter(e=>e.date>sonntag);
   // Zahlen eines Termins: Spieler und Betreuer sauber getrennt (wie auf der Karte)
@@ -15913,6 +15921,8 @@ function EinfachTrainer({ cl, evs=[], tod, trainerNames=[], helperNames=[], squa
       </div>
     </div>
   );
+  // Eine grosse Karte je Terminart - alles Weitere haengt daran.
+  const GrosseKarte=(fokus,ix)=>{
   const z=zahlen(fokus); const eT=ET[fokus.type]||ET.training;
   const heute=fokus.date===tod; const amTag=fokus.date<=tod;
   const planT=planTitleOf(fokus);
@@ -15924,14 +15934,12 @@ function EinfachTrainer({ cl, evs=[], tod, trainerNames=[], helperNames=[], squa
   const anteil=z.kader?Math.min(100,Math.round(z.ja/z.kader*100)):0;
   const meineRoh=selfName?(fokus.votes||{})[selfName]:null;
   const meine=typeof meineRoh==="object"&&meineRoh?meineRoh.val:meineRoh;
+  const istGewaehlt=!!(gewaehltEv&&fokus.id===gewaehltEv.id&&ix===0&&fokusListe.length>1);
+  const mehrAuf=mehr===fokus.id;
   return (
-    <div>
-      {/* Dieselbe Karte wie in der vollstaendigen Ansicht - keine Umgewoehnung. */}
-      <NeuerTerminCard t={TH(cl)} onClick={onNew}/>
-      <NaechsteArten evs={kommend} tod={tod} aktivId={fokus.id} onWahl={waehle}
-        offen={e=>{ const z=zahlen(e); return z.offen>0; }}/>
+    <div key={fokus.id}>
       <div style={{fontSize:10.5,fontWeight:700,color:"#94a3b8",letterSpacing:1,marginBottom:6}}>
-        {gewaehlt&&fokus.id===gewaehlt&&evs[0]&&evs[0].id!==fokus.id?"AUSGEWÄHLTER TERMIN":"ALS NÄCHSTES"}
+        {istGewaehlt?"AUSGEWÄHLTER TERMIN":`NÄCHSTES ${(ART_INFO[ART_GRUPPE(fokus)]||ART_INFO.sonst).wort.toUpperCase()}`}
       </div>
       {/* Eine Karte, eine Akzentfarbe. Oben was und wann, dann der Stand,
           unten die Knoepfe - vom wichtigsten zum seltensten. */}
@@ -15985,9 +15993,9 @@ function EinfachTrainer({ cl, evs=[], tod, trainerNames=[], helperNames=[], squa
           <div style={{display:"flex",gap:7,marginTop:8,flexWrap:"wrap"}}>
             {onSetup&&<Neben onClick={()=>onSetup(fokus)} title="Aufbau-Liste: was muss auf welches Feld" ch="🏗 Aufbau"/>}
             {fokus.type==="training"&&onPlan&&modTraining&&<Neben onClick={()=>onPlan(fokus)} title={planT||"Trainingsplan anlegen"} ch={planT?"📋 Training steht":"📋 Training planen"}/>}
-            <Neben onClick={()=>setMehr(m=>!m)} title="Weitere Aktionen" ch={mehr?"⋯ weniger":"⋯ Mehr"}/>
+            <Neben onClick={()=>setMehr(m=>m===fokus.id?null:fokus.id)} title="Weitere Aktionen" ch={mehrAuf?"⋯ weniger":"⋯ Mehr"}/>
           </div>
-          {mehr&&(
+          {mehrAuf&&(
             <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:8}}>
               {onView&&<Klein onClick={()=>onView(fokus)} ch="📊 Rückmeldungen"/>}
               {onEdit&&<Klein onClick={()=>onEdit(fokus)} ch="✏️ Bearbeiten"/>}
@@ -16018,6 +16026,14 @@ function EinfachTrainer({ cl, evs=[], tod, trainerNames=[], helperNames=[], squa
             ); })()}
         </div>
       </div>
+    </div>
+  );
+  };
+  return (
+    <div>
+      {/* Dieselbe Karte wie in der vollstaendigen Ansicht - keine Umgewoehnung. */}
+      <NeuerTerminCard t={TH(cl)} onClick={onNew}/>
+      {fokusListe.map(GrosseKarte)}
       {/* Der Rest der Woche - antippen macht ihn gross */}
       {woche.length>0&&<>
         <div style={{fontSize:10.5,fontWeight:700,color:"#94a3b8",letterSpacing:1,marginBottom:4}}>BIS {bisWochentag().toUpperCase()} ({woche.length})</div>
@@ -22816,10 +22832,10 @@ const tagWort=(iso)=>{
   }catch{ return iso; }
 };
 // ----------------------------------------------------------------
-// Schnellwahl "Nächstes Training / Nächstes Spiel".
-// Wer nur wissen will, wann das nächste Spiel ist, soll nicht durch die
-// Liste scrollen muessen: je Terminart eine Kachel mit Tag, Uhrzeit und
-// Countdown - antippen macht den Termin gross, abstimmen geht sofort.
+// "Nächstes Training / Nächstes Spiel" nebeneinander.
+// Wer wissen will, wann das nächste Spiel ist, soll nicht durch die Liste
+// scrollen muessen: je Terminart steht eine grosse Karte da - beides sofort
+// sichtbar und sofort beantwortbar.
 // ----------------------------------------------------------------
 const ART_GRUPPE = ev => {
   const t=EVENT_TYPE_ALIAS[ev?.type]||ev?.type;
@@ -22855,41 +22871,6 @@ const naechsteJeArt = (evs=[]) => {
   return Object.entries(proArt).map(([g,ev])=>({g,ev}))
     .sort((a,b)=>String(a.ev.date||"").localeCompare(String(b.ev.date||"")));
 };
-function NaechsteArten({ evs=[], tod, aktivId, offen=()=>false, onWahl }){
-  const liste=naechsteJeArt(evs);
-  // Nur zeigen, wenn sie wirklich hilft: mindestens zwei Terminarten UND eine
-  // Liste, die man sonst scrollen muesste. Bei zwei Terminen sieht man ohnehin
-  // alles auf einen Blick - dann waeren die Kacheln nur zusaetzliches Rauschen.
-  if(liste.length<2 || (evs||[]).length<3) return null;
-  return (
-    <div style={{marginBottom:12}}>
-      <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:2,WebkitOverflowScrolling:"touch"}}>
-        {liste.map(({g,ev})=>{
-          const i=ART_INFO[g]||ART_INFO.sonst;
-          const an=ev.id===aktivId;
-          const nochOffen=offen(ev);
-          return (
-            <button key={g} onClick={()=>onWahl&&onWahl(ev.id)}
-              style={{flex:"1 1 0",minWidth:104,textAlign:"left",padding:"9px 11px",borderRadius:13,cursor:"pointer",fontFamily:"inherit",
-                border:`2px solid ${an?i.col:i.rand}`, background:an?i.bg:"#fff",
-                boxShadow:an?`0 2px 8px ${i.col}22`:"none", transition:"all .15s"}}>
-              <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:2}}>
-                <span style={{fontSize:13,lineHeight:1}}>{i.icon}</span>
-                <span style={{fontSize:10.5,fontWeight:900,color:i.col,letterSpacing:.4,textTransform:"uppercase",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{i.wort}</span>
-                {nochOffen&&<span title="Antwort fehlt noch" style={{width:7,height:7,borderRadius:"50%",background:"#f97316",flexShrink:0,marginLeft:"auto"}}/>}
-              </div>
-              <div style={{fontSize:12.5,fontWeight:800,color:"#0f172a",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
-                {tagKurz(ev.date).replace(/,.*$/,"")}{ev.time?` · ${ev.time}`:""}
-                <span style={{fontWeight:600,color:"#94a3b8"}}> · {inTagen(ev.date,tod)}</span>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 // Zeit-Zeile in einer Form, ueberall gleich: "10:30–12:00 Uhr".
 const zeitZeile = ev => ev?.time ? (ev.endTime?`${ev.time}–${ev.endTime} Uhr`:`${ev.time} Uhr`) : "";
 // Titel nur zeigen, wenn er mehr sagt als die Terminart ("SV Adler" ja,
@@ -23315,20 +23296,27 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
   const kurzName=String(kind||"").split(" ")[0]||kind;
   const [spaeterAuf,setSpaeterAuf]=useState(false);
   const [gewaehlt,setGewaehlt]=useState(null);   // angetippter Termin wird gross
-  const [aendern,setAendern]=useState(false);    // Antwort des grossen Termins aendern
+  const [aendernId,setAendernId]=useState(null); // Antwort welcher Karte wird gerade geaendert?
   const alle=events.filter(e=>e.date>=tod&&(e.pt==="att"||!e.pt));
-  // Gross ist der naechste Termin - oder der, den man angetippt hat.
-  const fokus=(gewaehlt&&alle.find(e=>e.id===gewaehlt))||alle[0]||null;
-  const istGewaehlt=!!(gewaehlt&&fokus&&fokus.id===gewaehlt&&alle[0]&&alle[0].id!==fokus.id);
-  const waehle=id=>{ setGewaehlt(id); setAendern(false); try{ window.scrollTo({top:0,behavior:"smooth"}); }catch{} };
+  // Gross steht nicht nur der zeitlich naechste Termin, sondern JE TERMINART
+  // einer: das naechste Training UND das naechste Spiel sind sofort da und
+  // beide direkt beantwortbar - ohne Umschalten.
+  const gewaehltEv=gewaehlt?alle.find(e=>e.id===gewaehlt):null;
+  const fokusListe=(()=>{
+    const proArt=naechsteJeArt(alle).map(x=>x.ev).slice(0,3);
+    return gewaehltEv&&!proArt.some(e=>e.id===gewaehltEv.id) ? [gewaehltEv,...proArt].slice(0,4) : proArt;
+  })();
+  const fokusIds=new Set(fokusListe.map(e=>e.id));
+  const fokus=fokusListe[0]||null;
+  const waehle=id=>{ setGewaehlt(id); setAendernId(null); try{ window.scrollTo({top:0,behavior:"smooth"}); }catch{} };
   // Offen ist ein Termin, solange die Hauptfrage ODER eine Pflicht-Abstimmung
   // (Fahrgemeinschaft, Auswahlliste) noch keine Antwort hat.
   const offen=alle.filter(e=>!terminErledigt(e,kind));
   const fertig=alle.filter(e=>terminErledigt(e,kind));
-  const restOffen=offen.filter(e=>e.id!==fokus?.id);
+  const restOffen=offen.filter(e=>!fokusIds.has(e.id));
   // Beantwortetes: die naechsten vier bleiben sichtbar, der Rest wandert unter
   // "Spaeter". So steht nie eine leere Seite da, nur weil die Woche endet.
-  const fertigRest=fertig.filter(e=>e.id!==fokus?.id);
+  const fertigRest=fertig.filter(e=>!fokusIds.has(e.id));
   const imFenster=e=>e.date<=sonntag;
   const wocheFertig=fertigRest.filter(imFenster);
   const spaeterFertig=fertigRest.filter(e=>!imFenster(e));
@@ -23422,43 +23410,45 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
             <div style={{fontSize:13.5,color:"#475569",marginTop:4,lineHeight:1.5}}>Sobald der Trainer einen Termin einträgt, steht er hier.</div>
           </div>
         )}
-        {/* Schnellwahl: nächstes Training, nächstes Spiel, nächstes Turnier */}
-        <NaechsteArten evs={alle} tod={tod} aktivId={fokus?.id} onWahl={waehle}
-          offen={e=>!terminErledigt(e,kind)}/>
-        {/* 1. Was eine Antwort braucht */}
-        {fokus&&(()=>{ const aF=antwortVon(fokus,kind); const sF=aF?ANT[aF.art]:null; return (
-          <div className="up" style={{background:"#fff",borderRadius:18,border:`2.5px solid ${sF?sF.rand:"#fdba74"}`,padding:"14px 14px 13px",
+        {/* Je Terminart eine grosse Karte: das naechste Training UND das
+            naechste Spiel stehen direkt da - beides sofort beantwortbar. */}
+        {fokusListe.map((ev,ix)=>(()=>{ const aF=antwortVon(ev,kind);
+          const istGewaehlt=!!(gewaehltEv&&ev.id===gewaehltEv.id&&ix===0&&fokusListe.length>1);
+          const aendern=aendernId===ev.id; const sF=aF?ANT[aF.art]:null; return (
+          <div key={ev.id} className="up" style={{background:"#fff",borderRadius:18,border:`2.5px solid ${sF?sF.rand:"#fdba74"}`,padding:"14px 14px 13px",
             marginBottom:10,boxShadow:sF?"0 3px 14px rgba(15,23,42,.07)":"0 4px 16px rgba(249,115,22,.13)"}}>
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+              {/* Die Ueberschrift sagt, WAS hier steht - bei mehreren Karten
+                  ist "ALS NÄCHSTES" sonst zweimal dasselbe Wort. */}
               <span style={{fontSize:10.5,fontWeight:900,color:istGewaehlt?"#4f46e5":(sF?"#475569":"#c2410c"),letterSpacing:1}}>
-                {istGewaehlt?"AUSGEWÄHLT":(sF?"ALS NÄCHSTES":"BITTE ANTWORTEN")}
+                {istGewaehlt?"AUSGEWÄHLT":`NÄCHSTES ${(ART_INFO[ART_GRUPPE(ev)]||ART_INFO.sonst).wort.toUpperCase()}${sF?"":" · BITTE ANTWORTEN"}`}
               </span>
-              {istGewaehlt&&<button onClick={()=>{ setGewaehlt(null); setAendern(false); }}
+              {istGewaehlt&&<button onClick={()=>{ setGewaehlt(null); setAendernId(null); }}
                 style={{marginLeft:"auto",padding:"8px 10px",minHeight:36,borderRadius:9,border:"none",background:"#eef2ff",color:"#4f46e5",fontWeight:800,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>
                 ← Nächster Termin
               </button>}
             </div>
-            {(()=>{ const i=ART_INFO[ART_GRUPPE(fokus)]||ART_INFO.sonst; const gegen=eigenerTitel(fokus); return (<>
+            {(()=>{ const i=ART_INFO[ART_GRUPPE(ev)]||ART_INFO.sonst; const gegen=eigenerTitel(ev); return (<>
               <div style={{display:"flex",alignItems:"center",gap:6}}>
                 <span style={{fontSize:14,lineHeight:1}}>{i.icon}</span>
                 <span style={{fontSize:11.5,fontWeight:900,color:i.col,letterSpacing:.8,textTransform:"uppercase"}}>{i.wort}</span>
-                <span style={{marginLeft:"auto",fontSize:11,fontWeight:800,color:"#94a3b8",whiteSpace:"nowrap"}}>{inTagen(fokus.date,tod)}</span>
+                <span style={{marginLeft:"auto",fontSize:11,fontWeight:800,color:"#94a3b8",whiteSpace:"nowrap"}}>{inTagen(ev.date,tod)}</span>
               </div>
               {gegen&&<div style={{fontWeight:900,fontSize:19,color:"#0f172a",lineHeight:1.2,marginTop:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{gegen}</div>}
               <div style={{fontWeight:900,fontSize:gegen?16.5:20,color:"#0f172a",lineHeight:1.25,marginTop:gegen?1:3}}>
-                {tagKurz(fokus.date)}{zeitZeile(fokus)?<span style={{fontWeight:800,color:"#334155"}}> · {zeitZeile(fokus)}</span>:null}
+                {tagKurz(ev.date)}{zeitZeile(ev)?<span style={{fontWeight:800,color:"#334155"}}> · {zeitZeile(ev)}</span>:null}
               </div>
               <div style={{fontSize:12.5,color:"#64748b",fontWeight:600,marginTop:2}}>
-                {[dauerMin(fokus), fokus.loc?`📍 ${fokus.loc}`:""].filter(Boolean).join(" · ")}
+                {[dauerMin(ev), ev.loc?`📍 ${ev.loc}`:""].filter(Boolean).join(" · ")}
               </div>
             </>); })()}
-            <NoteKurz text={fokus.note} voll/>
+            <NoteKurz text={ev.note} voll/>
             {aF
               ? (aendern
                 ? <div style={{marginTop:12}}>
                     <div style={{fontWeight:900,fontSize:16,color:"#0f172a",marginBottom:9}}>Antwort ändern – kommt {kurzName}?</div>
-                    <AntwortKnoepfe ev={fokus} gross wer={kind} onVote={(id,pt,val)=>{ onVote(id,pt,val); setAendern(false); }}/>
-                    <button onClick={()=>setAendern(false)} style={{width:"100%",marginTop:9,padding:"12px",minHeight:44,borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
+                    <AntwortKnoepfe ev={ev} gross wer={kind} onVote={(id,pt,val)=>{ onVote(id,pt,val); setAendernId(null); }}/>
+                    <button onClick={()=>setAendernId(null)} style={{width:"100%",marginTop:9,padding:"12px",minHeight:44,borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>Abbrechen</button>
                   </div>
                 : <div style={{display:"flex",alignItems:"center",gap:11,marginTop:12,background:aF.art==="ja"?"#f0fdf4":aF.art==="spaet"?"#fffbeb":"#fff1f2",borderRadius:14,padding:"13px 13px"}}>
                     <div style={{fontSize:28,lineHeight:1}}>{sF.icon}</div>
@@ -23466,22 +23456,22 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
                       <div style={{fontWeight:900,fontSize:17,color:sF.col}}>{statusText(aF)}</div>
                       {aF.wartet&&<div style={{fontSize:12,color:"#b45309",fontWeight:700,marginTop:2}}>⏳ Der Trainer muss die späte Anmeldung noch freigeben</div>}
                       {aF.abgelehnt&&<div style={{fontSize:12,color:"#b42318",fontWeight:700,marginTop:2}}>✕ Der Trainer konnte die späte Anmeldung nicht mehr einplanen</div>}
-                      {aF.late>0&&<div style={{fontSize:13.5,color:sF.col,fontWeight:700,marginTop:1}}>ab {zeitPlus(fokus.time,aF.late)} Uhr</div>}
+                      {aF.late>0&&<div style={{fontSize:13.5,color:sF.col,fontWeight:700,marginTop:1}}>ab {zeitPlus(ev.time,aF.late)} Uhr</div>}
                     </div>
-                    <button onClick={()=>setAendern(true)}
+                    <button onClick={()=>setAendernId(ev.id)}
                       style={{flexShrink:0,padding:"12px 13px",minHeight:46,borderRadius:11,border:"1.5px solid #cbd5e1",background:"#fff",color:"#334155",fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>
                       Ändern
                     </button>
                   </div>)
               : <>
                   <div style={{fontWeight:900,fontSize:17,color:"#0f172a",margin:"12px 0 9px"}}>Kommt {kurzName}?</div>
-                  <AntwortKnoepfe ev={fokus} gross wer={kind} onVote={onVote}/>
+                  <AntwortKnoepfe ev={ev} gross wer={kind} onVote={onVote}/>
                 </>}
             {/* Weitere Abstimmungen des Termins - Fahrgemeinschaft, Auswahl-
                 listen. Sie standen bisher nur in der ausfuehrlichen Ansicht. */}
-            <WeitereFragen ev={fokus} wer={kind} cl={cl} onVote={onVote}/>
+            <WeitereFragen ev={ev} wer={kind} cl={cl} onVote={onVote}/>
           </div>
-        ); })()}
+        ); })())}
         {restOffen.filter(imFenster).length>0&&<>{Titel("NOCH OFFEN",restOffen.filter(imFenster).length)}{restOffen.filter(imFenster).map(OffenZeile)}</>}
         {/* 2. Erledigtes tritt zurueck */}
         {wocheFertig.length>0&&<>

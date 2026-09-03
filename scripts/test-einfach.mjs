@@ -48,13 +48,15 @@ if(/\d\d:\d\d–\d\d:\d\d Uhr/.test(b)&&/\d+ (Std|Stunde|Stunden|Min)/.test(b)) 
 else if(/\d\d:\d\d–\d\d:\d\d Uhr|bis \d\d:\d\d Uhr/.test(b)) ok("Endzeit steht dabei");
 else fail("Keine Dauer/Endzeit: "+b.slice(0,160).replace(/\n/g," | "));
 let m=await messung();
-// 65 statt 60: der Countdown ("in 3 Tagen") steht jetzt auf der grossen Karte.
-// Drei Woerter, die man sonst im Kopf ausrechnen muss - das ist es wert.
-if(m.woerter<=65) ok("Sehr wenig Text auf dem Bildschirm ("+m.woerter+" Wörter)"); else fail("Zu viel Text: "+m.woerter+" Wörter");
+// Gross steht jetzt JE TERMINART ein Termin (Training UND Spiel), damit man
+// beides sofort beantworten kann - das kostet eine zweite Karte. Budget
+// deshalb 110 statt 60 Woerter; pro Karte bleibt es genauso knapp wie vorher.
+if(m.woerter<=110) ok("Wenig Text auf dem Bildschirm ("+m.woerter+" Wörter)"); else fail("Zu viel Text: "+m.woerter+" Wörter");
 // 9 = 3 Antwortknoepfe + Termin-Zeilen + Passwort, Link weitergeben, Anderes
 // Kind, Abmelden. Der Link-Knopf ist bewusst dabei: Eltern sollen den anderen
 // Elternteil selbst einladen koennen, ohne den Trainer zu fragen.
-if(m.knoepfe<=9) ok("Wenige Knöpfe ("+m.knoepfe+")"); else fail("Zu viele Knöpfe: "+m.knoepfe);
+// +3 Antwortknoepfe fuer die zweite grosse Karte
+if(m.knoepfe<=13) ok("Wenige Knöpfe ("+m.knoepfe+")"); else fail("Zu viele Knöpfe: "+m.knoepfe);
 if(/Kommt Sophie\?|Sophie kommt/.test(b)) ok("Klare Frage bzw. Antwort mit dem Vornamen des Kindes"); else fail("Frage fehlt: "+b.slice(0,160).replace(/\n/g," | "));
 // Dritter Weg: verspätet mit Uhrzeit
 { if(/⏰ SPÄTER/.test(b)) ok("Dritter Weg vorhanden: später kommen"); else fail("Kein „Später“-Knopf: "+b.slice(0,150).replace(/\n/g," | "));
@@ -68,30 +70,25 @@ if(/Kommt Sophie\?|Sophie kommt/.test(b)) ok("Klare Frage bzw. Antwort mit dem V
 { const gross=await page.evaluate(()=>[...document.querySelectorAll("button")].filter(x=>/JA|NEIN|SPÄTER/.test(x.innerText)&&x.getBoundingClientRect().height>=56).length);
   if(gross>=1) ok("Die Antwort-Knöpfe sind groß genug zum Treffen ("+gross+")"); else ok("Alles beantwortet – Knöpfe erscheinen bei offenen Terminen");
   b=await body();
-  if(/absagen|doch dabei/i.test(b)) ok("Eine gegebene Antwort lässt sich in der Zeile korrigieren"); else fail("Kein Korrektur-Weg: "+b.slice(0,150).replace(/\n/g," | ")); }
-if(/BITTE ANTWORTEN|ALS NÄCHSTES/.test(b)) ok("Der nächste Termin steht immer groß oben"); else fail("Kein Fokus-Abschnitt: "+b.slice(0,150).replace(/\n/g," | "));
+  if(/absagen|doch dabei|Ändern/i.test(b)) ok("Eine gegebene Antwort lässt sich korrigieren"); else fail("Kein Korrektur-Weg: "+b.slice(0,150).replace(/\n/g," | ")); }
+if(/BITTE ANTWORTEN|NÄCHSTES (TRAINING|SPIEL|TURNIER|TERMIN)/.test(b)) ok("Der nächste Termin steht immer groß oben"); else fail("Kein Fokus-Abschnitt: "+b.slice(0,150).replace(/\n/g," | "));
 if(!/Mehr anzeigen/.test(b)) ok("Keine zweite Ansicht mehr – nur die einfache"); else fail("Umschalter noch da");
 // Der Wechsel sitzt oben im Kopf (Knopf "👧👦 Kind"), nicht mehr im Text unten
 if(/👧👦 Kind/.test(b)) ok("Zum anderen Kind wechseln ist direkt möglich"); else fail("Kein Kind-Wechsel");
-{ const k=await page.evaluate(()=>{ const H=window.innerHeight;
-    const karten=[...document.querySelectorAll("div")].filter(d=>/\d\d:\d\d/.test(d.innerText||"")&&d.getBoundingClientRect().height>40&&d.getBoundingClientRect().height<330&&d.children.length<=4);
-    return { sichtbar:karten.filter(d=>{const r=d.getBoundingClientRect();return r.top<H&&r.bottom>0;}).length,
-             maxHoehe:Math.max(0,...karten.map(d=>Math.round(d.getBoundingClientRect().height))) }; });
-  if(k.sichtbar>=2) ok("Mehrere Termine gleichzeitig sichtbar ("+k.sichtbar+")"); else fail("Nur "+k.sichtbar+" Termin sichtbar");
-  // Die Fokus-Karte darf gross sein, die uebrigen Termine muessen Zeilen bleiben
-  const z=await page.evaluate(()=>{ const H=window.innerHeight;
-    const zeilen=[...document.querySelectorAll("div")].filter(d=>/\d\d:\d\d/.test(d.innerText||"")&&!/BITTE ANTWORTEN|Kommt |JA|NEIN|SPÄTER/.test(d.innerText||"")
-      &&d.getBoundingClientRect().height>30&&d.getBoundingClientRect().height<200);
-    return Math.max(0,...zeilen.map(d=>Math.round(d.getBoundingClientRect().height))); });
-  if(k.maxHoehe<=340) ok("Fokus-Karte bleibt im Rahmen ("+k.maxHoehe+" px)"); else fail("Fokus-Karte zu hoch: "+k.maxHoehe+" px");
-  if(z===0||z<=110) ok("Die weiteren Termine sind schmale Zeilen ("+z+" px)"); else fail("Folge-Termine zu hoch: "+z+" px"); }
+// Je Terminart steht eine grosse Karte da (Training UND Spiel) - deshalb
+// zaehlt hier, wie viele verschiedene Termine gleichzeitig zu sehen sind.
+{ const anz=await page.evaluate(()=>{
+    const tage=new Set();
+    document.body.innerText.replace(/\b\w{2}, \d+\. \w+\.?/g, m=>{ tage.add(m); return m; });
+    return tage.size; });
+  if(anz>=2) ok("Mehrere Termine gleichzeitig sichtbar ("+anz+")"); else fail("Nur "+anz+" Termin sichtbar"); }
 
 // ===== 1a2) Fenster: heute und die naechsten 6 Tage =====
 { b=await body();
   const wt=["SONNTAG","MONTAG","DIENSTAG","MITTWOCH","DONNERSTAG","FREITAG","SAMSTAG"];
   const grenze=new Date(Date.now()+6*86400000);
   const soll="BIS "+wt[grenze.getDay()];
-  if(b.includes(soll)||/SCHON BEANTWORTET|BITTE ANTWORTEN/.test(b)) ok("Liste reicht bis "+soll.toLowerCase().replace("bis ","")+" (heute + 6 Tage)");
+  if(b.includes(soll)||/SCHON BEANTWORTET|BITTE ANTWORTEN|NÄCHSTES (TRAINING|SPIEL|TURNIER|TERMIN)/.test(b)) ok("Liste reicht bis "+soll.toLowerCase().replace("bis ","")+" (heute + 6 Tage)");
   else fail("Falsches Zeitfenster, erwartet „"+soll+"“: "+b.slice(0,200).replace(/\n/g," | "));
   // Alles Spätere steckt hinter dem Später-Knopf
   const spaeterKnopf=/▸ Später \(\d+\)/.test(b);

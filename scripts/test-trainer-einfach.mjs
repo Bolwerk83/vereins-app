@@ -31,7 +31,7 @@ await clickTxt("Bin dabei"); await page.waitForTimeout(1200); await dismiss();
 
 // ===== 1) Standard ist die einfache Sicht mit Fokus =====
 let b=await body();
-if(/ALS NÄCHSTES/.test(b)) ok("Der nächste Termin steht ganz oben und groß"); else fail("Kein Fokus-Termin: "+b.slice(0,200).replace(/\n/g," | "));
+if(/NÄCHSTES (TRAINING|SPIEL|TURNIER|TERMIN)/.test(b)) ok("Der nächste Termin steht ganz oben und groß"); else fail("Kein Fokus-Termin: "+b.slice(0,200).replace(/\n/g," | "));
 if(/\d+ von \d+ zugesagt/.test(b)&&/\d+ offen/.test(b)) ok("Der Stand steht in einer Zeile: "+(b.match(/\d+ von \d+ zugesagt[^\n]*/)||[""])[0]);
 else fail("Stand der Rückmeldungen fehlt");
 if(/BIS [A-ZÄÖÜ]+ \(\d+\)/.test(b)) ok("Darunter die restliche Woche: "+(b.match(/BIS [A-ZÄÖÜ]+ \(\d+\)/)||[""])[0]);
@@ -48,7 +48,9 @@ if(!/Plane Trainings, Spiele & Turniere/.test(b)) ok("Der lange Erklärkasten is
     return { n:w(document.body.innerText)-w(bTxt), mitBanner:w(document.body.innerText), banner:w(bTxt) };
   });
   if(banner>0) console.log("HINWEIS: "+banner+" Wörter Datenbank-Hinweis (nur in der Testumgebung) nicht mitgezählt");
-  if(n<=180) ok("Wenig Text auf dem Bildschirm ("+n+" Wörter)"); else fail("Zu viel Text: "+n+" Wörter (mit Balken "+mitBanner+")"); }
+  // Gross steht jetzt je Terminart ein Termin (Training UND Spiel) - die
+  // zweite Karte kostet rund 20 Woerter, dafuer entfaellt das Umschalten.
+  if(n<=205) ok("Wenig Text auf dem Bildschirm ("+n+" Wörter)"); else fail("Zu viel Text: "+n+" Wörter (mit Balken "+mitBanner+")"); }
 
 { const gross=await page.evaluate(()=>{
     const raus=[];
@@ -69,7 +71,7 @@ for(const [was,re] of [["Termin ansehen","^Ansehen$|✅ Anwesenheit"],["Aufbau",
 // Die Karte "Neuen Termin anlegen" steht ueber dem naechsten Termin
 { const oben=await page.evaluate(()=>{
     const b=[...document.querySelectorAll("button")].find(x=>/Neuen Termin anlegen/.test(x.innerText||""));
-    const l=[...document.querySelectorAll("div")].find(d=>/^ALS NÄCHSTES|^AUSGEWÄHLTER TERMIN/.test((d.innerText||"").trim()));
+    const l=[...document.querySelectorAll("div")].find(d=>/^NÄCHSTES (TRAINING|SPIEL|TURNIER|TERMIN)|^AUSGEWÄHLTER TERMIN/.test((d.innerText||"").trim()));
     if(!b||!l) return {fehler:(!b?"kein Knopf":"")+(!l?" kein Label":"")};
     return b.getBoundingClientRect().top < l.getBoundingClientRect().top;
   });
@@ -97,7 +99,7 @@ await zurueck();
 // ===== 4) Anderen Termin antippen macht ihn groß =====
 b=await body();
 if(/BIS [A-ZÄÖÜ]+/.test(b)){
-  const vorher=(b.match(/ALS NÄCHSTES[\s\S]{0,120}/)||[""])[0];
+  const vorher=(b.match(/NÄCHSTES (?:TRAINING|SPIEL|TURNIER|TERMIN)[\s\S]{0,120}/)||[""])[0];
   await page.evaluate(()=>{ const kopf=[...document.querySelectorAll("div")].find(d=>/^BIS [A-ZÄÖÜ]+/.test((d.innerText||"").trim()));
     const liste=kopf&&kopf.nextElementSibling; const zeile=liste&&liste.children[0]; zeile&&zeile.click(); });
   await page.waitForTimeout(900); b=await body();
@@ -113,7 +115,7 @@ else fail("Vollansicht fehlt: "+b.slice(0,200).replace(/\n/g," | "));
   if(merk==="0") ok("Die Wahl wird gemerkt"); else fail("Wahl nicht gemerkt: "+merk); }
 await clickTxt("Zurück zur einfachen Sicht"); await page.waitForTimeout(1000);
 b=await body();
-if(/ALS NÄCHSTES/.test(b)) ok("Und zurück zur einfachen Sicht"); else fail("Rückweg fehlt");
+if(/NÄCHSTES (TRAINING|SPIEL|TURNIER|TERMIN)/.test(b)) ok("Und zurück zur einfachen Sicht"); else fail("Rückweg fehlt");
 
 // ===== 6) Ohne Termine steht die Anlege-Karte trotzdem ganz oben =====
 await page.evaluate(()=>{

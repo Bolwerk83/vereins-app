@@ -1,7 +1,6 @@
-// E2E-Test: Schnellwahl "nächstes Training / nächstes Spiel" und die
-// überarbeitete Termin-Darstellung.
-//   1. Über der großen Karte steht je Terminart eine Kachel mit Tag, Uhrzeit
-//      und Countdown – ein Tipp macht den Termin groß, abstimmen geht sofort.
+// E2E-Test: "Nächstes Training" UND "Nächstes Spiel" stehen beide direkt da.
+//   1. Je Terminart eine große Karte – ohne Umschalten, beide sofort
+//      beantwortbar.
 //   2. Die Karte liest sich in einer Reihenfolge: Art → gegen wen → wann → wo.
 //   3. Eltern- und Trainer-Ansicht zeigen dasselbe Muster.
 // Aufruf: npm run build && node scripts/test-schnellwahl.mjs
@@ -22,13 +21,9 @@ const dismiss=async()=>{ for(let k=0;k<12;k++){ const done=await page.evaluate((
   const fx=[...document.querySelectorAll("div")].filter(d=>getComputedStyle(d).position==="fixed"&&d.querySelector("button")&&d.innerText.length>30);
   for(const f of fx){ const b=[...f.querySelectorAll("button")].find(x=>/geht|Los|Verstanden|Alles klar|Fertig|Jetzt nicht|Weiter →|Überspringen|Start/i.test(x.innerText)); if(b){ b.click(); return false; } }
   return true; }); await page.waitForTimeout(400); if(done) break; } };
-// Die Kacheln der Schnellwahl (Knöpfe, die mit einer Terminart beginnen)
-const kacheln = () => page.evaluate(()=>[...document.querySelectorAll("button")]
-  .map(b=>(b.innerText||"").replace(/\n/g," · ").trim())
-  .filter(t=>/^(🏃|⚽|🏆|📅)/.test(t)));
-const kachelKlick = (wort) => page.evaluate(w=>{
-  const b=[...document.querySelectorAll("button")].find(x=>/^(🏃|⚽|🏆|📅)/.test((x.innerText||"").trim())&&new RegExp(w,"i").test(x.innerText||""));
-  if(!b) return false; b.click(); return true; }, wort);
+// Die Überschriften der großen Karten ("NÄCHSTES TRAINING", "NÄCHSTES SPIEL")
+const karten = () => page.evaluate(()=>
+  (document.body.innerText.match(/NÄCHSTES (?:TRAINING|SPIEL|TURNIER|TERMIN)/g)||[]));
 
 await page.addInitScript(()=>{ if(!localStorage.getItem("vereinsapp_config")) localStorage.setItem("vereinsapp_config", JSON.stringify({url:"https://127.0.0.1:1/x", key:"test"})); });
 await page.goto("http://127.0.0.1:4285/", { waitUntil:"networkidle" }); await page.waitForTimeout(2500);
@@ -61,33 +56,32 @@ const kind = await page.evaluate(()=>{
 if(kind) ok("Ausgangslage: Training in 2 Tagen, Spiel gegen SV Adler in 5 Tagen");
 else fail("Konnte die Ausgangslage nicht setzen");
 
-// ===== 1) Eltern, einfache Ansicht =====
+// ===== 1) Eltern, einfache Ansicht: beides steht direkt da =====
 await page.evaluate(k=>{ localStorage.setItem("va_simple","1");
   sessionStorage.setItem("vereinsapp_v12_session", JSON.stringify({role:"user",cid:"demo",tid:"demo_f1",name:k,user:k})); }, kind);
 await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2800); await dismiss();
-let ks=await kacheln();
-if(ks.length>=2) ok("Über der Karte stehen die nächsten Termine je Art: "+ks.join(" | "));
-else fail("Keine Schnellwahl-Kacheln: "+JSON.stringify(ks));
-if(ks.some(t=>/TRAINING/i.test(t))&&ks.some(t=>/SPIEL/i.test(t))) ok("Training und Spiel sind beide dabei");
-else fail("Training oder Spiel fehlt: "+JSON.stringify(ks));
-if(ks.some(t=>/in \d+ Tagen|morgen|heute/i.test(t))) ok("Mit Countdown: "+(ks.find(t=>/in \d+ Tagen/.test(t))||""));
-else fail("Kein Countdown auf den Kacheln");
+let ks=await karten();
+if(ks.includes("NÄCHSTES TRAINING")&&ks.includes("NÄCHSTES SPIEL")) ok("Training UND Spiel stehen beide groß da: "+ks.join(" | "));
+else fail("Nicht beides zu sehen: "+JSON.stringify(ks));
 let b=await body();
-if(/in 2 Tagen/.test(b)) ok("Auch die große Karte sagt, wie lange es noch dauert"); else fail("Kein Countdown auf der großen Karte");
-// Die große Karte zeigt zuerst das Training
-if(/BITTE ANTWORTEN/.test(b)&&/TRAINING/.test(b)) ok("Groß steht der nächste Termin – das Training");
-else fail("Kein Fokus-Termin: "+b.slice(0,240).replace(/\n/g," | "));
-
-// Auf "Spiel" tippen -> das Spiel wird groß und ist sofort abstimmbar
-{ const geklickt=await kachelKlick("SPIEL");
-  if(geklickt) ok("Die Spiel-Kachel ist antippbar"); else fail("Spiel-Kachel nicht gefunden"); }
-await page.waitForTimeout(1200);
-b=await body();
-if(/AUSGEWÄHLT/.test(b)&&/SV Adler/.test(b)) ok("Ein Tipp – und das Spiel steht groß da (mit Gegner)");
-else fail("Spiel wurde nicht groß: "+b.slice(0,300).replace(/\n/g," | "));
-if(/Kommt /.test(b)&&/✅ JA/.test(b)) ok("Und lässt sich sofort beantworten");
-else fail("Keine Abstimmung am ausgewählten Spiel");
-{ const geklickt=await page.evaluate(()=>{ const x=[...document.querySelectorAll("button")].find(y=>(y.innerText||"").trim()==="✅ JA"); if(!x) return false; x.click(); return true; });
+if(/SV Adler/.test(b)) ok("Beim Spiel steht, gegen wen es geht"); else fail("Gegner fehlt");
+if(/in 2 Tagen/.test(b)&&/in 5 Tagen/.test(b)) ok("Beide mit Countdown"); else fail("Countdown fehlt bei einem der beiden");
+// Ohne einen einzigen Klick muss das Spiel abstimmbar sein
+{ const knoepfe=await page.evaluate(()=>{
+    const alle=[...document.querySelectorAll("div")].filter(d=>/^NÄCHSTES SPIEL/.test((d.innerText||"").trim()));
+    const kopf=alle[alle.length-1]; if(!kopf) return null;
+    // von der Ueberschrift aus die zugehoerige Karte suchen
+    let karte=kopf.parentElement; for(let i=0;i<3&&karte;i++){ if(/✅ JA/.test(karte.innerText||"")) break; karte=karte.parentElement; }
+    return karte?[...karte.querySelectorAll("button")].map(x=>(x.innerText||"").trim()).filter(t=>/^(✅ JA|❌ NEIN|⏰ SPÄTER)$/.test(t)):null; });
+  if(knoepfe&&knoepfe.length>=3) ok("Und ist sofort abstimmbar – ohne Umweg ("+knoepfe.join(", ")+")");
+  else fail("Keine Antwort-Knöpfe am Spiel: "+JSON.stringify(knoepfe)); }
+// Zusage am Spiel geben
+{ const geklickt=await page.evaluate(()=>{
+    const alle=[...document.querySelectorAll("div")].filter(d=>/^NÄCHSTES SPIEL/.test((d.innerText||"").trim()));
+    const kopf=alle[alle.length-1]; if(!kopf) return false;
+    let karte=kopf.parentElement; for(let i=0;i<3&&karte;i++){ if(/✅ JA/.test(karte.innerText||"")) break; karte=karte.parentElement; }
+    const b=karte&&[...karte.querySelectorAll("button")].find(x=>(x.innerText||"").trim()==="✅ JA");
+    if(!b) return false; b.click(); return true; });
   await page.waitForTimeout(1500);
   const st=await page.evaluate(k=>{
     const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
@@ -95,9 +89,12 @@ else fail("Keine Abstimmung am ausgewählten Spiel");
     const v=ev&&(ev.votes||{})[k]; return v==null?null:(typeof v==="object"?v.val:v); }, kind);
   if(geklickt&&st==="yes") ok("Die Zusage zum Spiel ist gespeichert");
   else fail("Zusage nicht gespeichert: "+st); }
+// Und das Training bleibt daneben offen
+b=await body();
+if(/NÄCHSTES TRAINING/.test(b)&&/Kommt /.test(b)) ok("Das Training steht weiter offen daneben");
+else fail("Training verschwunden: "+b.slice(0,240).replace(/\n/g," | "));
 
 // ===== 2) Reihenfolge der Angaben: Art → Gegner → wann → wo =====
-b=await body();
 { const iSpiel=b.indexOf("SPIEL"), iGegner=b.indexOf("SV Adler"), iOrt=b.indexOf("Adler-Arena");
   if(iSpiel>=0&&iGegner>iSpiel&&iOrt>iGegner) ok("Die Karte liest sich von oben nach unten: Art → Gegner → wann → wo");
   else fail(`Reihenfolge stimmt nicht (Art ${iSpiel}, Gegner ${iGegner}, Ort ${iOrt})`); }
@@ -108,27 +105,16 @@ else fail("Titel steht doppelt da");
 await page.evaluate(()=>{ localStorage.setItem("va_tsimple","1");
   sessionStorage.setItem("vereinsapp_v12_session", JSON.stringify({role:"trainer",cid:"demo",tids:["demo_f1"],name:"Demo Trainer",id:"demo_tr1"})); });
 await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2800); await dismiss();
-ks=await kacheln();
-if(ks.length>=2) ok("Auch der Trainer hat die Schnellwahl: "+ks.join(" | "));
-else fail("Keine Schnellwahl beim Trainer: "+JSON.stringify(ks));
-{ const geklickt=await kachelKlick("SPIEL"); await page.waitForTimeout(1200);
-  b=await body();
-  if(geklickt&&/SV Adler/.test(b)) ok("Ein Tipp bringt den Trainer zum Spiel");
-  else fail("Trainer kommt nicht zum Spiel: "+b.slice(0,240).replace(/\n/g," | ")); }
+ks=await karten();
+if(ks.includes("NÄCHSTES TRAINING")&&ks.includes("NÄCHSTES SPIEL")) ok("Auch der Trainer sieht beides direkt: "+ks.join(" | "));
+else fail("Beim Trainer fehlt eine der beiden Karten: "+JSON.stringify(ks));
+b=await body();
+if(/SV Adler/.test(b)) ok("Mit Gegner"); else fail("Gegner fehlt beim Trainer");
 if(/in \d+ Tagen|morgen|heute/.test(b)) ok("Mit demselben Countdown wie bei den Eltern");
 else fail("Kein Countdown in der Trainer-Ansicht");
-
-// ===== 4) Bei nur zwei Terminen bleibt die Schnellwahl weg =====
-await page.evaluate(()=>{
-  const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
-  d.events=(d.events||[]).filter(e=>e.id!=="ev_drittes");
-  localStorage.setItem("vereinsapp_v14", JSON.stringify(d));
-  localStorage.setItem("va_tsimple","1");
-});
-await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2800); await dismiss();
-{ const ks2=await kacheln();
-  if(ks2.length===0) ok("Bei zwei Terminen bleibt die Schnellwahl weg – dann sieht man ohnehin alles");
-  else fail("Schnellwahl steht trotzdem da: "+JSON.stringify(ks2)); }
+// Der Trainer kann bei beiden direkt selbst zusagen
+{ const n=await page.evaluate(()=>[...document.querySelectorAll("button")].filter(x=>/^(✓ )?Bin dabei$|^Späte Anmeldung$/.test((x.innerText||"").trim())).length);
+  if(n>=2) ok("Und kann bei beiden direkt selbst zusagen ("+n+"×)"); else fail("Eigene Zusage fehlt an einer Karte: "+n); }
 
 if(errors.length){ console.log("JS-FEHLER:"); [...new Set(errors)].forEach(e=>console.log(" -",e.slice(0,150))); }
 console.log(errors.length||fails.length?`ERGEBNIS: ${fails.length} Fehlschläge, ${errors.length} JS-Fehler`:"ERGEBNIS: ALLES OK");

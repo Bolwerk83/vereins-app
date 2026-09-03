@@ -239,8 +239,10 @@ const zweiter = await page.evaluate(k=>{
 await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2800); await dismiss();
 if(!zweiter) fail("Kein zweiter Termin für die Gegenprobe");
 else {
+  // In der Liste heisst der Weg "absagen", auf einer grossen Karte "Ändern" -
+  // beide muessen in dieselbe Grund-Abfrage fuehren.
   const geklickt=await page.evaluate(()=>{
-    const b=[...document.querySelectorAll("button")].find(x=>(x.innerText||"").trim()==="absagen");
+    const b=[...document.querySelectorAll("button")].find(x=>["absagen","Ändern"].includes((x.innerText||"").trim()));
     if(!b) return false; b.click(); return true; });
   await page.waitForTimeout(1400);
   const txt=await body();
@@ -248,9 +250,9 @@ else {
     const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
     const ev=(d.events||[]).find(e=>e.id===id); const v=ev&&(ev.votes||{})[k];
     return v==null?null:(typeof v==="object"?{...v}:{val:v}); }, {k:kind,id:zweiter});
-  if(!geklickt) fail("Kein „absagen“-Link in der einfachen Liste");
-  else if(/Antwort ändern/.test(txt)&&/❌ NEIN/.test(txt)) ok("Der „absagen“-Link öffnet den Termin mit den Antwort-Knöpfen");
-  else fail("„absagen“ öffnet den Termin nicht: "+txt.slice(0,220).replace(/\n/g," | "));
+  if(!geklickt) fail("Kein Weg zum Ändern der Antwort");
+  else if(/Antwort ändern/.test(txt)&&/❌ NEIN/.test(txt)) ok("Der Änderungs-Weg öffnet die Antwort-Knöpfe");
+  else fail("Antwort lässt sich nicht ändern: "+txt.slice(0,220).replace(/\n/g," | "));
   if(st&&st.val==="yes") ok("Die Zusage bleibt dabei erst einmal bestehen");
   else fail("Zusage wurde ohne Grund verworfen: "+JSON.stringify(st));
   await klick("^❌ NEIN$"); await page.waitForTimeout(1300);
