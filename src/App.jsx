@@ -20027,7 +20027,79 @@ function RegisterOfferModalInline({ offer, register }){
 }
 
 const PICKUP_SUGGEST = ["Sportplatz","Marktplatz","Schule","Kirche","Zuhause","Bahnhof","Rewe","Aldi"];
-function PollCarpool({ entries={}, onSet, user, cl, labels={} }) {
+// ----------------------------------------------------------------
+// Mitfahr-Angebot: Ein Fahrer hat jemanden gefragt, ob er ihn mitnehmen
+// darf. Beim naechsten Oeffnen der App poppt die Frage auf - zusagen oder
+// absagen, eine Begruendung ist freiwillig. Danach sehen es alle im Termin.
+// ----------------------------------------------------------------
+const offenesAngebot = (evs=[], wer) => {
+  for(const ev of evs){
+    const e=(ev.carpool||{})[wer];
+    if(e&&typeof e==="object"&&e.angebot&&e.angebot.status==="offen") return {ev,eintrag:e,angebot:e.angebot};
+  }
+  return null;
+};
+function MitfahrtAngebot({ ev, eintrag, angebot, wer, cl, onAntwort, onZu }){
+  const [grund,setGrund]=useState("");
+  const [nein,setNein]=useState(false);
+  const i=ART_INFO[ART_GRUPPE(ev)]||ART_INFO.sonst;
+  const kurz=String(wer||"").split(" ")[0]||wer;
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(15,23,42,.62)",zIndex:2300,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+      <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:480,padding:"20px 18px calc(24px + env(safe-area-inset-bottom))"}}>
+        <div style={{fontSize:34,textAlign:"center",lineHeight:1,marginBottom:8}}>🚗</div>
+        <div style={{fontWeight:900,fontSize:20,color:"#0f172a",textAlign:"center",lineHeight:1.25}}>
+          {angebot.von} nimmt {kurz} mit
+        </div>
+        <div style={{fontSize:13.5,color:"#475569",textAlign:"center",marginTop:6,lineHeight:1.5}}>
+          {i.icon} {i.wort} · {tagKurz(ev.date)}{zeitZeile(ev)?` · ${zeitZeile(ev)}`:""}
+          {ev.loc?<><br/>📍 {ev.loc}</>:null}
+        </div>
+        {!nein ? (
+          <>
+            <div style={{display:"flex",gap:9,marginTop:18}}>
+              <button onClick={()=>onAntwort(true,"")}
+                style={{flex:1,padding:"15px 8px",minHeight:56,borderRadius:14,border:"none",background:"#15803d",color:"#fff",fontWeight:900,fontSize:16,cursor:"pointer",fontFamily:"inherit"}}>
+                ✅ Ja, gerne
+              </button>
+              <button onClick={()=>setNein(true)}
+                style={{flex:1,padding:"15px 8px",minHeight:56,borderRadius:14,border:"2px solid #fecaca",background:"#fff",color:"#b91c1c",fontWeight:900,fontSize:16,cursor:"pointer",fontFamily:"inherit"}}>
+                ❌ Passt nicht
+              </button>
+            </div>
+            <button onClick={onZu}
+              style={{width:"100%",marginTop:10,padding:"11px",minHeight:42,borderRadius:11,border:"none",background:"transparent",color:"#94a3b8",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
+              Später entscheiden
+            </button>
+          </>
+        ) : (
+          <div style={{marginTop:16}}>
+            <div style={{fontWeight:800,fontSize:14,color:"#0f172a",marginBottom:8}}>Warum passt es nicht? <span style={{fontWeight:600,color:"#94a3b8"}}>(freiwillig)</span></div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:7,marginBottom:10}}>
+              {["Wir fahren selbst","Kommt nicht mit","Anderer Weg","Zu früh"].map(g=>(
+                <button key={g} onClick={()=>onAntwort(false,g)}
+                  style={{padding:"9px 14px",minHeight:42,borderRadius:99,border:"1.5px solid #fecaca",background:"#fff",color:"#b91c1c",fontWeight:700,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>{g}</button>
+              ))}
+            </div>
+            <div style={{display:"flex",gap:7}}>
+              <input value={grund} onChange={e=>setGrund(e.target.value)} placeholder="Eigener Grund …"
+                onKeyDown={e=>{ if(e.key==="Enter") onAntwort(false,grund.trim()); }}
+                style={{flex:1,padding:"11px 12px",fontSize:14,border:"1.5px solid #e2e8f0",borderRadius:11,outline:"none",fontFamily:"inherit",boxSizing:"border-box"}}/>
+              <button onClick={()=>onAntwort(false,grund.trim())}
+                style={{padding:"11px 16px",borderRadius:11,border:"none",background:"#b91c1c",color:"#fff",fontWeight:800,fontSize:13.5,cursor:"pointer",fontFamily:"inherit"}}>Absagen</button>
+            </div>
+            <button onClick={()=>onAntwort(false,"")}
+              style={{width:"100%",marginTop:9,padding:"11px",minHeight:42,borderRadius:11,border:"1px solid #e4e9f0",background:"#fff",color:"#667085",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
+              Ohne Angabe absagen
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PollCarpool({ entries={}, onSet, onSetFor=null, user, cl, labels={} }) {
   const t=TH(cl);
   const { tr } = useT();
   const L={drive:tr("cpDrive"),need:tr("cpNeed"),self:tr("cpSelf"),...(labels||{})};
@@ -20043,6 +20115,8 @@ function PollCarpool({ entries={}, onSet, user, cl, labels={} }) {
   const passengersOf = d => needers.filter(n=>entryOf(n)?.car===d);
   const seatsTotal = drivers.reduce((s,n)=>s+(Number(entryOf(n).seats)||0),0);
   const unassigned = needers.filter(n=>{ const c=entryOf(n)?.car; return !c || !drivers.includes(c); });
+  // Freie Plaetze im eigenen Auto - nur dann kann man jemanden mitnehmen.
+  const freiBeiMir = myMode==="drive" ? (Number(mine?.seats)||0)-passengersOf(user).length : 0;
 
   const saveDriver = (s=seats,nt=note)=> onSet&&onSet({mode:"drive",seats:s,note:nt,ts:new Date().toISOString()});
   const saveNeed   = (car=mine?.car||null,pk=pickup)=> onSet&&onSet({mode:"need",car,pickup:pk,ts:new Date().toISOString()});
@@ -20141,20 +20215,64 @@ function PollCarpool({ entries={}, onSet, user, cl, labels={} }) {
         })}
       </div>
 
-      {/* Wer sucht noch */}
+      {/* Wer sucht noch - und wen der Fahrer mitnehmen moechte */}
       {unassigned.length>0 && (
         <div style={{background:"#fff7ed",border:"1.5px solid #fed7aa",borderRadius:13,padding:"11px 14px"}}>
           <div style={{fontSize:11,fontWeight:800,color:"#9a3412",marginBottom:8}}>{tr("cpSeeking")} ({unassigned.length})</div>
-          <div style={{display:"flex",flexDirection:"column",gap:5}}>
-            {unassigned.map(n=>{const e=entryOf(n);return (
-              <div key={n} style={{display:"flex",alignItems:"center",gap:8,fontSize:12.5}}>
-                <Av name={n} sz={22}/>
-                <span style={{flex:1,fontWeight:700,color:"#0f172a"}}>{n}{n===user?" "+tr("cpYou"):""}</span>
-                {e?.pickup && <span style={{color:"#9a3412",fontWeight:600}}>📍 {e.pickup}</span>}
+          <div style={{display:"flex",flexDirection:"column",gap:7}}>
+            {unassigned.map(n=>{
+              const e=entryOf(n);
+              const ang=e&&e.angebot;
+              const vonMir=ang&&ang.von===user;
+              const kannFragen=!!onSetFor && myMode==="drive" && n!==user && freiBeiMir>0;
+              return (
+              <div key={n} style={{fontSize:12.5}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <Av name={n} sz={22}/>
+                  <span style={{flex:1,fontWeight:700,color:"#0f172a",minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{n}{n===user?" "+tr("cpYou"):""}</span>
+                  {e?.pickup && <span style={{color:"#9a3412",fontWeight:600,whiteSpace:"nowrap"}}>📍 {e.pickup}</span>}
+                </div>
+                {/* Angebot des Fahrers: gefragt / abgelehnt */}
+                {ang&&ang.status==="offen"&&n!==user&&(
+                  <div style={{fontSize:11.5,color:"#92400e",fontWeight:700,marginTop:3,marginLeft:30}}>
+                    ⏳ {vonMir?"Du hast gefragt":`${ang.von} hat gefragt`} – wartet auf Antwort
+                  </div>
+                )}
+                {/* Wer gefragt wurde, kann auch hier direkt antworten - nicht
+                    nur in der Meldung beim Oeffnen der App. */}
+                {ang&&ang.status==="offen"&&n===user&&(
+                  <div style={{marginTop:5,marginLeft:30}}>
+                    <div style={{fontSize:11.5,color:"#92400e",fontWeight:700,marginBottom:5}}>🚗 {ang.von} nimmt dich mit – passt das?</div>
+                    <div style={{display:"flex",gap:7}}>
+                      <button onClick={()=>onSet&&onSet({...e,mode:"need",car:ang.von,angebot:{...ang,status:"ok",ts2:new Date().toISOString()}})}
+                        style={{padding:"9px 14px",minHeight:40,borderRadius:10,border:"none",background:"#15803d",color:"#fff",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>✅ Ja, gerne</button>
+                      <button onClick={()=>onSet&&onSet({...e,mode:"need",car:null,angebot:{...ang,status:"nein",ts2:new Date().toISOString()}})}
+                        style={{padding:"9px 14px",minHeight:40,borderRadius:10,border:"1.5px solid #fecaca",background:"#fff",color:"#b91c1c",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>❌ Passt nicht</button>
+                    </div>
+                  </div>
+                )}
+                {ang&&ang.status==="nein"&&(
+                  <div style={{fontSize:11.5,color:"#b42318",fontWeight:700,marginTop:3,marginLeft:30}}>
+                    ✕ hat abgesagt{ang.grund?`: ${ang.grund}`:""}
+                  </div>
+                )}
+                {kannFragen&&(!ang||ang.status!=="offen")&&(
+                  <button onClick={()=>onSetFor(n,{...(e||{mode:"need"}),mode:"need",car:null,angebot:{von:user,ts:new Date().toISOString(),status:"offen"}})}
+                    style={{marginTop:5,marginLeft:30,padding:"8px 12px",minHeight:38,borderRadius:10,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
+                    🚗 Ich nehme {String(n).split(" ")[0]} mit
+                  </button>
+                )}
+                {vonMir&&ang&&ang.status==="offen"&&(
+                  <button onClick={()=>onSetFor(n,{...(e||{mode:"need"}),angebot:null})}
+                    style={{marginTop:5,marginLeft:30,padding:"7px 11px",minHeight:34,borderRadius:9,border:"1px solid #e4e9f0",background:"#fff",color:"#667085",fontWeight:600,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>
+                    Anfrage zurückziehen
+                  </button>
+                )}
               </div>
             );})}
           </div>
-          {drivers.length>0 && <p style={{fontSize:11,color:"#9a3412",marginTop:8}}>{tr("cpTip")}</p>}
+          {drivers.length>0 && !onSetFor && <p style={{fontSize:11,color:"#9a3412",marginTop:8}}>{tr("cpTip")}</p>}
+          {drivers.length>0 && onSetFor && myMode!=="drive" && <p style={{fontSize:11,color:"#9a3412",marginTop:8}}>{tr("cpTip")}</p>}
         </div>
       )}
 
@@ -22504,7 +22622,7 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user",allEven
               <span style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>🚗 {tr("evCarpoolT")}</span>
               <PflichtTag pflicht={ev.carpoolExtra===true&&ev.carpoolOpt!==true}/>
             </div>
-            <PollCarpool entries={ev.carpool||{}} onSet={v=>onVote(ev.id,"carpoolmap",v)} user={user} cl={cl} labels={carpoolLabelsFor(ev,cl)}/>
+            <PollCarpool entries={ev.carpool||{}} onSet={v=>onVote(ev.id,"carpoolmap",v)} onSetFor={(n,v)=>onVote(ev.id,"carpoolfor:"+n,v)} user={user} cl={cl} labels={carpoolLabelsFor(ev,cl)}/>
           </div>
         )}
         <DutyBoard ev={ev} user={user} canManage={isTrainerOrHelper} onChange={arr=>onVote(ev.id,"duty",arr)}/>
@@ -23052,7 +23170,7 @@ function WeitereFragen({ ev, wer, cl, onVote, klein=false }){
               : f.pflicht&&<span style={{fontSize:11,fontWeight:800,color:"#c2410c"}}>❗ noch offen</span>}
           </div>
           {f.art==="carpool"
-            ? <PollCarpool entries={ev.carpool||{}} onSet={v=>onVote(ev.id,"carpoolmap",v)} user={wer} cl={cl} labels={carpoolLabelsFor(ev,cl)}/>
+            ? <PollCarpool entries={ev.carpool||{}} onSet={v=>onVote(ev.id,"carpoolmap",v)} onSetFor={(n,v)=>onVote(ev.id,"carpoolfor:"+n,v)} user={wer} cl={cl} labels={carpoolLabelsFor(ev,cl)}/>
             : <ExtraListPoll poll={f.poll} user={wer} onChange={arr=>onVote(ev.id,f.key,arr)}/>}
         </div>
       ))}
@@ -23708,6 +23826,12 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{},onSwitc
       if(e.id!==eid)return e;
       if(pt==="carpool")return {...e, votes:{...(e.votes||{}), [user]: val}};
       if(pt==="carpoolmap")return {...e, carpool:{...(e.carpool||{}), [user]: val}};
+      // Der Fahrer traegt jemanden fuer eine Mitfahrt ein - der Angefragte
+      // bekommt beim naechsten Oeffnen eine Meldung und antwortet selbst.
+      if(typeof pt==="string"&&pt.startsWith("carpoolfor:")){
+        const wer=pt.slice(11);
+        return {...e, carpool:{...(e.carpool||{}), [wer]: val}};
+      }
       if(pt==="duty")return {...e, duties: val};
       if(pt==="lineup")return {...e, lineup: val};
       if(typeof pt==="string"&&pt.startsWith("extra:")){
@@ -23779,8 +23903,27 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{},onSwitc
 
   // Einfache Ansicht ist der Standard: eine Frage pro Termin, zwei grosse
   // Knoepfe. Wer mehr braucht, schaltet um - die Wahl bleibt gespeichert.
+  // Mitfahr-Angebot eines Fahrers: kommt beim Oeffnen als Meldung hoch.
+  // "Später entscheiden" blendet sie nur fuer diese Sitzung aus.
+  const [angebotZu,setAngebotZu]=useState(false);
+  const mitfahrt=angebotZu?null:offenesAngebot(evs.filter(e=>e.date>=now()),user);
+  const beantworteAngebot=(ja,grund)=>{
+    if(!mitfahrt) return;
+    const {ev,eintrag,angebot}=mitfahrt;
+    const neu = ja
+      ? {...eintrag, mode:"need", car:angebot.von, angebot:{...angebot,status:"ok",ts2:new Date().toISOString()}}
+      : {...eintrag, mode:"need", car:null,        angebot:{...angebot,status:"nein",grund:String(grund||"").trim(),ts2:new Date().toISOString()}};
+    vote(ev.id,"carpoolmap",neu);
+    fire(ja?`Super – ${angebot.von} nimmt dich mit 🚗`:"Abgesagt – der Fahrer sieht es");
+  };
+  const MitfahrtFenster = mitfahrt ? (
+    <MitfahrtAngebot ev={mitfahrt.ev} eintrag={mitfahrt.eintrag} angebot={mitfahrt.angebot}
+      wer={user} cl={cl} onAntwort={beantworteAngebot} onZu={()=>setAngebotZu(true)}/>
+  ) : null;
+
   if(simple) return (
     <>
+      {MitfahrtFenster}
       <EinfachEltern cl={cl} team={myTeam} kind={user} events={evs} toast={toast}
         onVote={vote} onAbmelden={onLogout} unread={unreadMsgs}
         onKindWechseln={onSwitchChild?()=>onSwitchChild(tid):null}
@@ -23809,6 +23952,7 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{},onSwitc
       paddingBottom:isDesktop?0:"calc(64px + env(safe-area-inset-bottom))",
       display:isDesktop?"grid":"block",
       gridTemplateColumns:isDesktop?"260px 1fr":"none"}}>
+      {!gate&&MitfahrtFenster}
       {gate&&(
         <div style={{position:"fixed",inset:0,background:"rgba(15,23,42,.72)",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:20,backdropFilter:"blur(6px)"}}>
           <div style={{background:"#fff",borderRadius:20,width:"100%",maxWidth:440,padding:"22px 22px 20px",fontFamily:"inherit",boxShadow:"0 20px 60px rgba(0,0,0,.4)"}}>
