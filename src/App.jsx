@@ -20123,12 +20123,19 @@ function PollCarpool({ entries={}, onSet, onSetFor=null, user, cl, labels={} }) 
   const saveSelf   = ()=> onSet&&onSet({mode:"self",ts:new Date().toISOString()});
   const joinCar = d => { const free=(Number(entryOf(d)?.seats)||0)-passengersOf(d).length; const inThis=mine?.car===d; if(!inThis&&free<=0) return; saveNeed(inThis?null:d, pickup); };
 
-  const ModeBtn=({mode,label,col,onClick})=>(
+  // Gleiche Sprache wie bei den Antwort-Knoepfen: leerer Kreis = noch nicht
+  // gewaehlt, Haken = das ist die Antwort.
+  const ModeBtn=({mode,label,col,onClick})=>{
+    const an=myMode===mode;
+    return (
     <button onClick={onClick}
-      style={{flex:1,padding:"12px 6px",borderRadius:13,border:`2px solid ${myMode===mode?col:"#e2e8f0"}`,background:myMode===mode?col+"15":"#fff",cursor:"pointer",fontFamily:"inherit",textAlign:"center"}}>
-      <div style={{fontWeight:800,fontSize:13.5,color:myMode===mode?col:"#334155"}}>{label}</div>
+      style={{flex:1,padding:"12px 6px",borderRadius:13,border:`2px solid ${an?col:"#e2e8f0"}`,background:an?col+"15":"#fff",cursor:"pointer",fontFamily:"inherit",textAlign:"center"}}>
+      <div style={{fontWeight:800,fontSize:13.5,color:an?col:"#334155",display:"flex",alignItems:"center",justifyContent:"center"}}>
+        <Radio an={an} col={col} hell={false}/>{label}
+      </div>
     </button>
-  );
+    );
+  };
   const Seats=({total,taken})=>(
     <div style={{display:"flex",gap:3,alignItems:"center"}}>
       {Array.from({length:Math.max(total,taken)},(_,i)=>(
@@ -20153,6 +20160,9 @@ function PollCarpool({ entries={}, onSet, onSetFor=null, user, cl, labels={} }) 
 
   return (
     <div style={{display:"flex",flexDirection:"column",gap:13}}>
+      {!myMode&&(
+        <div style={{fontSize:11.5,fontWeight:800,color:"#c2410c"}}>❗ Noch keine Antwort – bitte auswählen</div>
+      )}
       <div style={{display:"flex",gap:8}}>
         <ModeBtn mode="drive" label={L.drive} col="#16a34a" onClick={()=>saveDriver()}/>
         <ModeBtn mode="need" label={L.need} col="#d97706" onClick={()=>saveNeed(mine?.car||null,pickup)}/>
@@ -23287,6 +23297,18 @@ const offeneUmfragen = (ev, wer) => umfragenVon(ev,wer).filter(u=>!u.beantwortet
 const offenePflicht  = (ev, wer) => offeneUmfragen(ev,wer).filter(u=>u.pflicht);
 // Fertig heisst: Hauptfrage beantwortet UND keine Pflicht-Abstimmung mehr offen.
 const terminErledigt = (ev, wer) => !!antwortVon(ev,wer) && offenePflicht(ev,wer).length===0;
+// Auswahl-Punkt wie bei einem Radioknopf: leerer Kreis = noch nicht gewaehlt,
+// Haken = das ist die Antwort. Bewusst als Form statt als Zeichen - so bleibt
+// der Knopftext sauber ("JA" statt "✓ JA") und Vorlesehilfen stolpern nicht.
+const Radio=({an,col,hell=true})=>(
+  <span aria-hidden="true" style={{display:"inline-flex",width:16,height:16,borderRadius:"50%",flexShrink:0,
+    border:`2px solid ${an&&hell?"#fff":col}`, background:an?(hell?"#fff":col):"transparent",
+    alignItems:"center",justifyContent:"center",marginRight:7,verticalAlign:"-3px"}}>
+    {an&&<span style={{display:"block",width:3.5,height:7,marginTop:-2,
+      borderRight:`2.5px solid ${hell?col:"#fff"}`,borderBottom:`2.5px solid ${hell?col:"#fff"}`,transform:"rotate(42deg)"}}/>}
+  </span>
+);
+
 // Drei Wege zu antworten - inklusive "komme später" mit Uhrzeit
 const GRUND_JA=["War krank","Erst jetzt erfahren","Nachricht zu spät gesehen","Anderer Termin abgesagt"];
 const GRUND_NEIN=["Krank","Urlaub","Schulpflicht","Wettkampf"];
@@ -23296,10 +23318,29 @@ function AntwortKnoepfe({ ev, gross, onVote, wer=null }){
   const fristAb=isDeadlinePassed(ev);
   const [grundFuer,setGrundFuer]=useState(null);   // {val,late} oder null
   const [eigen,setEigen]=useState("");
-  const B=(txt,bg,col,rand,onClick)=>(
-    <button onClick={onClick} style={{flex:1,padding:gross?"15px 6px":"12px 6px",borderRadius:13,border:rand?`2px solid ${rand}`:"none",
-      background:bg,color:col,fontWeight:900,fontSize:gross?17:14,cursor:"pointer",fontFamily:"inherit",minHeight:gross?56:46,whiteSpace:"nowrap"}}>{txt}</button>
-  );
+  // Solange nichts gewaehlt ist, sind ALLE drei Knoepfe nur umrandet - so
+  // sieht man sofort, dass noch keine Antwort da ist. Die gegebene Antwort
+  // ist als einzige ausgefuellt und traegt einen Haken.
+  const jetztAnt = wer?antwortVon(ev,wer):null;
+  const aktiv = jetztAnt ? jetztAnt.art : null;   // "ja" | "spaet" | "nein"
+  const B=(txt,art,farbe,onClick)=>{
+    const an = aktiv===art;
+    return (
+    <button onClick={onClick} style={{flex:1,padding:gross?"15px 6px":"12px 6px",borderRadius:13,
+      border:`2px solid ${an?farbe.voll:farbe.rand}`,
+      background:an?farbe.voll:"#fff", color:an?"#fff":farbe.text,
+      fontWeight:900,fontSize:gross?17:14,cursor:"pointer",fontFamily:"inherit",
+      minHeight:gross?56:46,whiteSpace:"nowrap",
+      boxShadow:an?`0 2px 10px ${farbe.voll}44`:"none", transition:"all .15s"}}>
+      <Radio an={an} col={an?farbe.voll:farbe.text}/>{txt}
+    </button>
+    );
+  };
+  const FARBE={
+    ja:   { voll:"#15803d", rand:"#bbf7d0", text:"#15803d" },
+    spaet:{ voll:"#d97706", rand:"#fde68a", text:"#b45309" },
+    nein: { voll:"#b91c1c", rand:"#fecaca", text:"#b91c1c" },
+  };
   const senden=(val,late,grund)=>{
     const g=String(grund||"").trim(); if(!g) return;
     onVote(ev.id,"att", val==="no" ? {val:"no",reason:g} : (late?{val:"yes",late,reason:g}:{val:"yes",reason:g}));
@@ -23353,10 +23394,17 @@ function AntwortKnoepfe({ ev, gross, onVote, wer=null }){
     </div>
   );
   return (
-    <div style={{display:"flex",gap:7}}>
-      {B("✅ JA","#15803d","#fff",null,()=>antworte("yes",0))}
-      {B("⏰ SPÄTER","#fffbeb","#92400e","#fde68a",()=>setSpaetAuf(true))}
-      {B("❌ NEIN","#fff","#b91c1c","#fca5a5",()=>antworte("no",0))}
+    <div>
+      {!aktiv&&(
+        <div style={{fontSize:11.5,fontWeight:800,color:"#c2410c",marginBottom:6}}>
+          ❗ Noch keine Antwort – bitte auswählen
+        </div>
+      )}
+      <div style={{display:"flex",gap:7}}>
+        {B("JA","ja",FARBE.ja,()=>antworte("yes",0))}
+        {B(aktiv==="spaet"&&jetztAnt?.late?`SPÄTER +${jetztAnt.late}`:"SPÄTER","spaet",FARBE.spaet,()=>setSpaetAuf(true))}
+        {B("NEIN","nein",FARBE.nein,()=>antworte("no",0))}
+      </div>
     </div>
   );
 }

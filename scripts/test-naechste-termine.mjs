@@ -71,16 +71,16 @@ if(/in 2 Tagen/.test(b)&&/in 5 Tagen/.test(b)) ok("Beide mit Countdown"); else f
     const alle=[...document.querySelectorAll("div")].filter(d=>/^NÄCHSTES SPIEL/.test((d.innerText||"").trim()));
     const kopf=alle[alle.length-1]; if(!kopf) return null;
     // von der Ueberschrift aus die zugehoerige Karte suchen
-    let karte=kopf.parentElement; for(let i=0;i<3&&karte;i++){ if(/✅ JA/.test(karte.innerText||"")) break; karte=karte.parentElement; }
-    return karte?[...karte.querySelectorAll("button")].map(x=>(x.innerText||"").trim()).filter(t=>/^(✅ JA|❌ NEIN|⏰ SPÄTER)$/.test(t)):null; });
+    let karte=kopf.parentElement; for(let i=0;i<3&&karte;i++){ if(/\bJA\b/.test(karte.innerText||"")) break; karte=karte.parentElement; }
+    return karte?[...karte.querySelectorAll("button")].map(x=>(x.innerText||"").trim()).filter(t=>/^(JA|NEIN|SPÄTER)$/.test(t)):null; });
   if(knoepfe&&knoepfe.length>=3) ok("Und ist sofort abstimmbar – ohne Umweg ("+knoepfe.join(", ")+")");
   else fail("Keine Antwort-Knöpfe am Spiel: "+JSON.stringify(knoepfe)); }
 // Zusage am Spiel geben
 { const geklickt=await page.evaluate(()=>{
     const alle=[...document.querySelectorAll("div")].filter(d=>/^NÄCHSTES SPIEL/.test((d.innerText||"").trim()));
     const kopf=alle[alle.length-1]; if(!kopf) return false;
-    let karte=kopf.parentElement; for(let i=0;i<3&&karte;i++){ if(/✅ JA/.test(karte.innerText||"")) break; karte=karte.parentElement; }
-    const b=karte&&[...karte.querySelectorAll("button")].find(x=>(x.innerText||"").trim()==="✅ JA");
+    let karte=kopf.parentElement; for(let i=0;i<3&&karte;i++){ if(/\bJA\b/.test(karte.innerText||"")) break; karte=karte.parentElement; }
+    const b=karte&&[...karte.querySelectorAll("button")].find(x=>(x.innerText||"").trim()==="JA");
     if(!b) return false; b.click(); return true; });
   await page.waitForTimeout(1500);
   const st=await page.evaluate(k=>{

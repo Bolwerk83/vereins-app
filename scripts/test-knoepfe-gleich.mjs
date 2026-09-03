@@ -136,7 +136,7 @@ const elternLauf = async (einfach) => {
     sessionStorage.setItem("vereinsapp_v12_session", JSON.stringify({role:"user",cid:"demo",tid:"demo_f1",name:k,user:k})); }, {e:einfach,k:kind});
   await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2800); await dismiss();
   // "dabei" antippen (Karte in der vollen Ansicht, JA in der einfachen)
-  if(einfach) await klick("^✅ JA$");
+  if(einfach) await klick("^JA$");
   else await page.evaluate(()=>{ const s=[...document.querySelectorAll("span")].find(x=>/ist dabei|Ich bin dabei/.test((x.innerText||"").trim()));
     s&&s.parentElement&&s.parentElement.parentElement&&s.parentElement.parentElement.click(); });
   await page.waitForTimeout(1200);
@@ -251,11 +251,11 @@ else {
     const ev=(d.events||[]).find(e=>e.id===id); const v=ev&&(ev.votes||{})[k];
     return v==null?null:(typeof v==="object"?{...v}:{val:v}); }, {k:kind,id:zweiter});
   if(!geklickt) fail("Kein Weg zum Ändern der Antwort");
-  else if(/Antwort ändern/.test(txt)&&/❌ NEIN/.test(txt)) ok("Der Änderungs-Weg öffnet die Antwort-Knöpfe");
+  else if(/Antwort ändern/.test(txt)&&/NEIN/.test(txt)) ok("Der Änderungs-Weg öffnet die Antwort-Knöpfe");
   else fail("Antwort lässt sich nicht ändern: "+txt.slice(0,220).replace(/\n/g," | "));
   if(st&&st.val==="yes") ok("Die Zusage bleibt dabei erst einmal bestehen");
   else fail("Zusage wurde ohne Grund verworfen: "+JSON.stringify(st));
-  await klick("^❌ NEIN$"); await page.waitForTimeout(1300);
+  await klick("^NEIN$"); await page.waitForTimeout(1300);
   const txt2=await body();
   if(/warum absagen/i.test(txt2)) ok("Und dort wird wie überall nach dem Grund gefragt");
   else fail("Keine Grund-Abfrage nach „NEIN“: "+txt2.slice(0,220).replace(/\n/g," | "));

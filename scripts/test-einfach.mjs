@@ -59,7 +59,7 @@ if(m.woerter<=110) ok("Wenig Text auf dem Bildschirm ("+m.woerter+" Wörter)"); 
 if(m.knoepfe<=13) ok("Wenige Knöpfe ("+m.knoepfe+")"); else fail("Zu viele Knöpfe: "+m.knoepfe);
 if(/Kommt Sophie\?|Sophie kommt/.test(b)) ok("Klare Frage bzw. Antwort mit dem Vornamen des Kindes"); else fail("Frage fehlt: "+b.slice(0,160).replace(/\n/g," | "));
 // Dritter Weg: verspätet mit Uhrzeit
-{ if(/⏰ SPÄTER/.test(b)) ok("Dritter Weg vorhanden: später kommen"); else fail("Kein „Später“-Knopf: "+b.slice(0,150).replace(/\n/g," | "));
+{ if(/SPÄTER/.test(b)) ok("Dritter Weg vorhanden: später kommen"); else fail("Kein „Später“-Knopf: "+b.slice(0,150).replace(/\n/g," | "));
   if(await clickTxt("SPÄTER")){ await page.waitForTimeout(700); b=await body();
     if(/Wie viel später\?/.test(b)) ok("Es wird nach der Verspätung gefragt"); else fail("Keine Minutenwahl");
     if(/ab \d\d:\d\d/.test(b)) ok("Die Minuten zeigen die tatsächliche Uhrzeit (ab HH:MM)"); else fail("Keine Uhrzeit an den Minuten");
@@ -112,7 +112,7 @@ if(/👧👦 Kind/.test(b)) ok("Zum anderen Kind wechseln ist direkt möglich");
     // Auch hier muss "später" gehen
     if(/JA|SPÄTER|Ändern/.test(b)){
       if(!/SPÄTER/.test(b)) { await clickTxt("^Ändern$"); await page.waitForTimeout(700); b=await body(); }
-      if(/⏰ SPÄTER/.test(b)) ok("Auch beim ausgewählten Termin gibt es „Später“"); else fail("Kein Später-Knopf im ausgewählten Termin: "+b.slice(0,170).replace(/\n/g," | "));
+      if(/SPÄTER/.test(b)) ok("Auch beim ausgewählten Termin gibt es „Später“"); else fail("Kein Später-Knopf im ausgewählten Termin: "+b.slice(0,170).replace(/\n/g," | "));
       if(await clickTxt("SPÄTER")){ await page.waitForTimeout(700); b=await body();
         if(/Wie viel später\?/.test(b)) ok("Die Minutenwahl erscheint auch hier"); else fail("Keine Minutenwahl");
         await clickTxt("^15 Min"); await page.waitForTimeout(1000); b=await body();

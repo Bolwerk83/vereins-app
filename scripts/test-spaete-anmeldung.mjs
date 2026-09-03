@@ -209,7 +209,7 @@ await page.evaluate(k=>{
 await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2800); await dismiss();
 b=await body();
 if(/JA/.test(b)) ok("Die einfache Ansicht ist offen"); else fail("Einfache Ansicht fehlt: "+b.slice(0,220).replace(/\n/g," | "));
-await clickTxt("✅ JA"); await page.waitForTimeout(1000);
+await clickTxt("^JA$"); await page.waitForTimeout(1000);
 b=await body();
 if(/warum war eine frühere Anmeldung nicht möglich/i.test(b)) ok("Auch hier wird zuerst nach dem Grund gefragt");
 else fail("Einfache Ansicht fragt nicht nach dem Grund: "+b.slice(0,260).replace(/\n/g," | "));

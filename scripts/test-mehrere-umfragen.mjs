@@ -82,7 +82,7 @@ if(b.includes("wir brauchen genug Autos")) ok("Die Nachricht des Trainers steht 
 else fail("Nachricht ist abgeschnitten: "+(b.match(/Unser erstes Spiel[^\n]*/)||[""])[0]);
 
 // Nur die Anwesenheit beantworten -> Termin bleibt offen
-await klick("^✅ JA$"); await page.waitForTimeout(1500);
+await klick("^JA$"); await page.waitForTimeout(1500);
 b=await body();
 { const st=await evLesen(kind);
   if(st&&st.stimme) ok("Die Zusage ist gespeichert"); else fail("Zusage nicht gespeichert: "+JSON.stringify(st)); }
