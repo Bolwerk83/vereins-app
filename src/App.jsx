@@ -8388,6 +8388,14 @@ function PollList({ev,user,onVote,session=null,save=null,data=null,fire=null}) {
 
 // Zusatz-Auswahlliste an einem Termin (eigene Stimmen je Liste). Mehrere
 // solcher Listen koennen an einem Termin haengen, z.B. "Wer bringt was mit?".
+// Kennzeichnung einer Abstimmung: muss sie beantwortet werden oder nicht?
+const PflichtTag = ({pflicht}) => (
+  <span style={{fontSize:10.5,fontWeight:900,letterSpacing:.3,borderRadius:6,padding:"2px 7px",
+    color:pflicht?"#c2410c":"#64748b",background:pflicht?"#ffedd5":"#f1f5f9"}}>
+    {pflicht?"PFLICHT":"freiwillig"}
+  </span>
+);
+
 function ExtraListPoll({poll, user, onChange, readOnly=false}) {
   const votes = poll.votes||{};
   const single = poll.selType==="single";
@@ -8454,6 +8462,16 @@ function ExtraPollEditor({poll, onChange, onRemove, t, templates=[]}) {
           <button key={k} onClick={()=>up({selType:k})}
             style={{flex:1,padding:"7px",borderRadius:9,border:`1.5px solid ${(poll.selType||"multi")===k?t.p:"#e2e8f0"}`,background:(poll.selType||"multi")===k?t.p+"12":"#fff",color:(poll.selType||"multi")===k?t.p:"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{label}auswahl</button>
         ))}
+      </div>
+      {/* Pflicht oder freiwillig: "Wer bringt Kuchen mit?" muss niemanden
+          blockieren, die Fahrgemeinschaft zum Auswaertsspiel dagegen schon. */}
+      <div style={{display:"flex",gap:7,marginBottom:8}}>
+        {[[false,"Pflicht"],[true,"Freiwillig"]].map(([val,label])=>{
+          const on=(!!poll.opt)===val;
+          return (
+          <button key={String(val)} onClick={()=>up({opt:val})}
+            style={{flex:1,padding:"7px",borderRadius:9,border:`1.5px solid ${on?t.p:"#e2e8f0"}`,background:on?t.p+"12":"#fff",color:on?t.p:"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{label}</button>
+        );})}
       </div>
       {(poll.items||[]).length>0&&<div style={{display:"flex",flexDirection:"column",gap:5,marginBottom:8}}>
         {(poll.items||[]).map((it,i)=>(
@@ -12223,7 +12241,7 @@ const CARPOOL_DEFAULTS = { drive:"Ich fahre", need:"Brauche Mitfahrt", self:"Kom
 const carpoolLabelsFor = (ev, cl) => ({ ...(cl?.clubSettings?.carpoolLabels||{}), ...(ev?.carpoolLabels||{}) }); // Defaults kommen sprachabhängig aus dem Dictionary
 function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTemplate=null,fields=[],venues=[],onAddVenue,clubTeams=null}) {
   const t=TH(cl); const isEdit=!!editEv; const STEPS=5; const { tr } = useT();
-  const blank={tid:teams[0]?.id||"",coTids:[],type:"training",title:"",date:now(),time:"",endTime:"",loc:"",note:"",sollPlayers:null,maxPlayers:null,pt:"att",pts:["att"],inOut:false,recMode:"none",recDays:[],recStart:now(),recUntil:"",recDates:[],li:[],fi:[],sc:[],extraPolls:[],selType:"multi",open:false,_li:{txt:"",max:""},_fi:{name:"",col:"#16a34a"},_sc:{fid:"",time:"",a:"",b:"",ref:""}};
+  const blank={tid:teams[0]?.id||"",coTids:[],type:"training",title:"",date:now(),time:"",endTime:"",loc:"",note:"",sollPlayers:null,maxPlayers:null,pt:"att",pts:["att"],inOut:false,recMode:"none",recDays:[],recStart:now(),recUntil:"",recDates:[],li:[],fi:[],sc:[],extraPolls:[],selType:"multi",carpoolOpt:false,open:false,_li:{txt:"",max:""},_fi:{name:"",col:"#16a34a"},_sc:{fid:"",time:"",a:"",b:"",ref:""}};
   const [step,setStep]=useState(1);
   // Beim Bearbeiten wird ALLES aus dem Termin uebernommen - auch die
   // Verbund-Mannschaften (_coTids) und die Serien-Info (_serie), die das
@@ -12499,6 +12517,24 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
               <div style={{width:22,height:22,borderRadius:7,border:`2px solid ${on?t.p:"#cbd5e1"}`,background:on?t.p:"#fff",color:contrast(t.p),display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:900,transition:"all .18s"}}>{on?"✓":""}</div>
             </div>
           );})}
+          {/* Zusaetzlich angehakte Abstimmungen sind Pflicht - der Trainer kann
+              sie aber einzeln auf "freiwillig" stellen (z.B. "Wer bringt Kuchen"). */}
+          {(f.pts||[f.pt]).includes("carpool")&&(f.pts||[f.pt]).includes("att")&&(
+            <div style={{background:"#fff",borderRadius:14,border:"1.5px solid #e2e8f0",padding:"11px 13px"}}>
+              <div style={{fontSize:12.5,fontWeight:800,color:"#334155",marginBottom:8}}>🚗 Fahrtgemeinschaft – muss geantwortet werden?</div>
+              <div style={{display:"flex",gap:8}}>
+                {[[false,"Pflicht","Termin gilt erst als erledigt, wenn beantwortet"],[true,"Freiwillig","Nur ein Angebot, blockiert nichts"]].map(([val,label,sub])=>{
+                  const on=(!!f.carpoolOpt)===val;
+                  return (
+                  <div key={String(val)} onClick={()=>u({carpoolOpt:val})}
+                    style={{flex:1,borderRadius:12,border:`2px solid ${on?t.p:"#e2e8f0"}`,background:on?t.p+"10":"#fff",padding:"9px 8px",cursor:"pointer",textAlign:"center"}}>
+                    <div style={{fontWeight:800,fontSize:12.5,color:on?t.p:"#334155"}}>{label}</div>
+                    <div style={{fontSize:10.5,color:"#64748b",marginTop:2,lineHeight:1.3}}>{sub}</div>
+                  </div>
+                );})}
+              </div>
+            </div>
+          )}
           {(f.pts||[f.pt]).includes("list")&&<div>
             {}
             <div style={{display:"flex",gap:8,marginBottom:14}}>
@@ -22405,6 +22441,15 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user",allEven
         )}
         {infoDrill&&<DrillInfoModal drill={infoDrill} t={TH(cl)} onClose={()=>setInfoDrill(null)}/>}
         <InOutHint ev={ev} cl={cl}/>
+        {/* Mehrere Abstimmungen: oben steht, was noch fehlt - sonst uebersieht
+            man die Fahrgemeinschaft unter der Anwesenheitsfrage. */}
+        {!isTrainerOrHelper&&(()=>{ const o=offenePflicht(ev,user); if(!o.length) return null;
+          return (
+          <div style={{background:"#fff7ed",border:"1.5px solid #fdba74",borderRadius:12,padding:"10px 13px",marginBottom:12}}>
+            <div style={{fontSize:12.5,fontWeight:800,color:"#c2410c"}}>❗ Noch zu beantworten: {o.map(x=>x.icon+" "+x.titel).join(" · ")}</div>
+            <div style={{fontSize:11.5,color:"#9a3412",marginTop:2,lineHeight:1.4}}>Dieser Termin hat mehrere Fragen – erst wenn alle Pflicht-Fragen beantwortet sind, gilt er als erledigt.</div>
+          </div>);
+        })()}
         {ev.type==="turnier"&&isTrainerOrHelper?<TournView ev={ev} user={user} onVote={onVote} cl={cl} players={players} isHelper={role==="helper"}/>
           :ev.type==="turnier"?<PollAttend ev={ev} user={user} onVote={onVote} cl={cl}/>
           :ev.pt==="none"?(
@@ -22421,9 +22466,10 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user",allEven
           :<PollAttend ev={ev} user={user} onVote={onVote} cl={cl}/>}
         {(ev.extraPolls||[]).map(p=>(
           <div key={p.id} style={{marginTop:16,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
-            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,flexWrap:"wrap"}}>
               <span style={{fontSize:18}}>{p.icon||"📋"}</span>
               <span style={{fontWeight:800,fontSize:15,color:"#0f172a"}}>{p.title||"Auswahl"}</span>
+              <PflichtTag pflicht={p.opt!==true}/>
             </div>
             <ExtraListPoll poll={p} user={user} onChange={arr=>onVote(ev.id,"extra:"+p.id,arr)}/>
           </div>
@@ -22432,7 +22478,10 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user",allEven
             carpoolExtra: im Wizard zusaetzlich zur Anwesenheit angehakt (Mehrfachauswahl). */}
         {ev.pt!=="carpool" && (ev.carpoolExtra===true || (ev.carpoolEnabled!==false && ["heimspiel","auswarts","freundschaft","turnier"].includes(ev.type))) && (
           <div style={{marginTop:16,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
-            <div style={{fontWeight:800,fontSize:14,color:"#0f172a",marginBottom:10}}>🚗 {tr("evCarpoolT")}</div>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,flexWrap:"wrap"}}>
+              <span style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>🚗 {tr("evCarpoolT")}</span>
+              <PflichtTag pflicht={ev.carpoolExtra===true&&ev.carpoolOpt!==true}/>
+            </div>
             <PollCarpool entries={ev.carpool||{}} onSet={v=>onVote(ev.id,"carpoolmap",v)} user={user} cl={cl} labels={carpoolLabelsFor(ev,cl)}/>
           </div>
         )}
@@ -22896,10 +22945,57 @@ function EinfachHelfer({ cl, events, helperId, helperName, teams, onJa, onNein, 
 // ---------- ELTERN ----------
 // Aufbau nach einer Regel: Was noch eine Antwort braucht, steht oben und ist
 // gross. Was erledigt ist, tritt zurueck - schmale Zeile, leiser Ton.
-function NoteKurz({ text }){
+// Alle weiteren Abstimmungen eines Termins in der einfachen Eltern-Ansicht.
+// Pflicht steht oben und aufgeklappt, Freiwilliges tritt zurueck.
+function WeitereFragen({ ev, wer, cl, onVote, klein=false }){
+  const fragen=umfragenVon(ev,wer);
+  const [auf,setAuf]=useState(false);
+  if(!fragen.length) return null;
+  const offenPflicht=fragen.filter(f=>f.pflicht&&!f.beantwortet);
+  const zeigen=klein&&!auf ? [] : fragen;
+  if(klein&&!auf) return (
+    <button onClick={()=>setAuf(true)}
+      style={{width:"100%",marginTop:8,padding:"11px",minHeight:44,borderRadius:11,
+        border:`1.5px solid ${offenPflicht.length?"#fdba74":"#e2e8f0"}`,
+        background:offenPflicht.length?"#fff7ed":"#fff",
+        color:offenPflicht.length?"#c2410c":"#475569",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+      {offenPflicht.length
+        ? `❗ Noch ${offenPflicht.length} Frage${offenPflicht.length>1?"n":""}: ${offenPflicht.map(f=>f.icon+" "+f.titel).join(", ")}`
+        : `＋ ${fragen.length} weitere Frage${fragen.length>1?"n":""} anzeigen`}
+    </button>
+  );
+  return (
+    <div style={{marginTop:12}}>
+      {zeigen.map(f=>(
+        <div key={f.key} style={{marginTop:12,paddingTop:12,borderTop:"1px solid #eef2f7"}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,flexWrap:"wrap"}}>
+            <span style={{fontSize:17}}>{f.icon}</span>
+            <span style={{fontWeight:900,fontSize:15,color:"#0f172a"}}>{f.titel}</span>
+            <span style={{fontSize:10.5,fontWeight:900,letterSpacing:.3,borderRadius:6,padding:"2px 7px",
+              color:f.pflicht?"#c2410c":"#64748b",background:f.pflicht?"#ffedd5":"#f1f5f9"}}>
+              {f.pflicht?"PFLICHT":"freiwillig"}
+            </span>
+            {f.beantwortet
+              ? <span style={{fontSize:11,fontWeight:800,color:"#15803d"}}>✓ beantwortet</span>
+              : f.pflicht&&<span style={{fontSize:11,fontWeight:800,color:"#c2410c"}}>❗ noch offen</span>}
+          </div>
+          {f.art==="carpool"
+            ? <PollCarpool entries={ev.carpool||{}} onSet={v=>onVote(ev.id,"carpoolmap",v)} user={wer} cl={cl} labels={carpoolLabelsFor(ev,cl)}/>
+            : <ExtraListPoll poll={f.poll} user={wer} onChange={arr=>onVote(ev.id,f.key,arr)}/>}
+        </div>
+      ))}
+      {klein&&<button onClick={()=>setAuf(false)}
+        style={{width:"100%",marginTop:10,padding:"10px",minHeight:42,borderRadius:11,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>▴ Zuklappen</button>}
+    </div>
+  );
+}
+
+function NoteKurz({ text, voll=false }){
   const [auf,setAuf]=useState(false);
   if(!text) return null;
-  const lang=text.length>90;
+  // Auf der grossen Karte steht die Nachricht des Trainers vollstaendig da -
+  // abgeschnitten hilft sie niemandem.
+  const lang=!voll&&text.length>90;
   return (
     <div onClick={()=>lang&&setAuf(a=>!a)}
       style={{fontSize:12.5,color:"#92400e",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:9,
@@ -22963,6 +23059,38 @@ const antwortVon=(ev,wer)=>{
   return null;
 };
 const ANT={ ja:{icon:"✅",col:"#15803d",rand:"#bbf7d0"}, spaet:{icon:"⏰",col:"#b45309",rand:"#fde68a"}, nein:{icon:"❌",col:"#b91c1c",rand:"#fecaca"} };
+// ----------------------------------------------------------------
+// Ein Termin kann mehrere Abstimmungen haben: die Hauptfrage (kommt das
+// Kind?) und alles, was der Trainer zusaetzlich angehakt hat - Fahrgemein-
+// schaft und beliebige Auswahllisten ("Wer bringt Kuchen mit?").
+// Erledigt ist ein Termin erst, wenn ALLE Pflicht-Abstimmungen beantwortet
+// sind. Was freiwillig ist, blockiert nichts.
+//   - ausdruecklich im Wizard angehakt  -> Pflicht (abwaehlbar)
+//   - automatisch bei Spielen angeboten -> freiwillig
+// ----------------------------------------------------------------
+const carpoolDazu = ev => !!ev && ev.pt!=="carpool" && (ev.carpoolExtra===true ||
+  (ev.carpoolEnabled!==false && ["heimspiel","auswarts","freundschaft","turnier"].includes(ev.type)));
+const umfragenVon = (ev, wer) => {
+  const raus=[];
+  if(!ev) return raus;
+  if(carpoolDazu(ev)) raus.push({
+    key:"carpool", art:"carpool", titel:"Fahrgemeinschaft", icon:"🚗",
+    pflicht: ev.carpoolExtra===true && ev.carpoolOpt!==true,
+    beantwortet: !!((ev.carpool||{})[wer]),
+  });
+  (ev.extraPolls||[]).forEach(pl=>{
+    const v=(pl.votes||{})[wer];
+    raus.push({ key:"extra:"+pl.id, art:"extra", poll:pl,
+      titel: pl.title||"Auswahl", icon: pl.icon||"📋",
+      pflicht: pl.opt!==true,
+      beantwortet: Array.isArray(v) && v.length>0 });
+  });
+  return raus;
+};
+const offeneUmfragen = (ev, wer) => umfragenVon(ev,wer).filter(u=>!u.beantwortet);
+const offenePflicht  = (ev, wer) => offeneUmfragen(ev,wer).filter(u=>u.pflicht);
+// Fertig heisst: Hauptfrage beantwortet UND keine Pflicht-Abstimmung mehr offen.
+const terminErledigt = (ev, wer) => !!antwortVon(ev,wer) && offenePflicht(ev,wer).length===0;
 // Drei Wege zu antworten - inklusive "komme später" mit Uhrzeit
 const GRUND_JA=["War krank","Erst jetzt erfahren","Nachricht zu spät gesehen","Anderer Termin abgesagt"];
 const GRUND_NEIN=["Krank","Urlaub","Schulpflicht","Wettkampf"];
@@ -23096,8 +23224,10 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
   const fokus=(gewaehlt&&alle.find(e=>e.id===gewaehlt))||alle[0]||null;
   const istGewaehlt=!!(gewaehlt&&fokus&&fokus.id===gewaehlt&&alle[0]&&alle[0].id!==fokus.id);
   const waehle=id=>{ setGewaehlt(id); setAendern(false); try{ window.scrollTo({top:0,behavior:"smooth"}); }catch{} };
-  const offen=alle.filter(e=>!antwortVon(e,kind));
-  const fertig=alle.filter(e=>antwortVon(e,kind));
+  // Offen ist ein Termin, solange die Hauptfrage ODER eine Pflicht-Abstimmung
+  // (Fahrgemeinschaft, Auswahlliste) noch keine Antwort hat.
+  const offen=alle.filter(e=>!terminErledigt(e,kind));
+  const fertig=alle.filter(e=>terminErledigt(e,kind));
   const restOffen=offen.filter(e=>e.id!==fokus?.id);
   // Beantwortetes: die naechsten vier bleiben sichtbar, der Rest wandert unter
   // "Spaeter". So steht nie eine leere Seite da, nur weil die Woche endet.
@@ -23122,6 +23252,8 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
           </div>
           {a.wartet&&<div style={{fontSize:11,color:"#b45309",fontWeight:700,marginTop:1}}>⏳ Trainer muss noch freigeben</div>}
           {a.abgelehnt&&<div style={{fontSize:11,color:"#b42318",fontWeight:700,marginTop:1}}>✕ Trainer konnte nicht mehr einplanen</div>}
+          {(()=>{ const o=offenePflicht(ev,kind); if(!o.length) return null;
+            return <div style={{fontSize:11,color:"#c2410c",fontWeight:800,marginTop:1}}>❗ Noch offen: {o.map(x=>x.icon+" "+x.titel).join(", ")}</div>; })()}
         </div>
         {/* Nach der Frist braucht die Änderung einen Grund - dafür den Termin
             gross aufmachen, statt hier still zu scheitern. */}
@@ -23141,6 +23273,7 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
         {ev.loc&&<span style={{fontSize:11.5,color:"#64748b",fontWeight:700}}>📍 {ev.loc}</span>}
       </div>
       <AntwortKnoepfe ev={ev} onVote={onVote} wer={kind}/>
+      <WeitereFragen ev={ev} wer={kind} cl={cl} onVote={onVote} klein/>
     </div>
   );
   const Titel=(txt,n)=>(
@@ -23206,7 +23339,7 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
               {tagKurz(fokus.date)}{fokus.time?<span style={{fontWeight:800,color:"#334155"}}> · {fokus.time} Uhr</span>:null}
             </div>
             {dauerText(fokus)&&<div style={{fontSize:12.5,color:"#64748b",fontWeight:600,marginTop:2}}>{dauerText(fokus)}</div>}
-            <NoteKurz text={fokus.note}/>
+            <NoteKurz text={fokus.note} voll/>
             {aF
               ? (aendern
                 ? <div style={{marginTop:12}}>
@@ -23231,6 +23364,9 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
                   <div style={{fontWeight:900,fontSize:17,color:"#0f172a",margin:"12px 0 9px"}}>Kommt {kurzName}?</div>
                   <AntwortKnoepfe ev={fokus} gross wer={kind} onVote={onVote}/>
                 </>}
+            {/* Weitere Abstimmungen des Termins - Fahrgemeinschaft, Auswahl-
+                listen. Sie standen bisher nur in der ausfuehrlichen Ansicht. */}
+            <WeitereFragen ev={fokus} wer={kind} cl={cl} onVote={onVote}/>
           </div>
         ); })()}
         {restOffen.filter(imFenster).length>0&&<>{Titel("AUCH NOCH OFFEN",restOffen.filter(imFenster).length)}{restOffen.filter(imFenster).map(OffenZeile)}</>}
