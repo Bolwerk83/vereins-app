@@ -15882,17 +15882,17 @@ function EinfachTrainer({ cl, evs=[], tod, trainerNames=[], helperNames=[], squa
     <button onClick={onClick} style={{padding:"7px 11px",minHeight:34,borderRadius:8,border:"1px solid #e4e9f0",background:"#fff",color:"#475569",fontWeight:600,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>{ch}</button>
   );
   const Zeile=(ev)=>{
-    const zz=zahlen(ev); const eT2=ET[ev.type]||ET.training;
+    const zz=zahlen(ev); const i2=ART_INFO[ART_GRUPPE(ev)]||ART_INFO.sonst; const gegen2=eigenerTitel(ev);
     return (
       <div key={ev.id} onClick={()=>waehle(ev.id)}
         style={{display:"flex",alignItems:"center",gap:11,padding:"10px 2px",borderBottom:"1px solid #eef2f7",cursor:"pointer"}}>
-        <span style={{width:7,height:7,borderRadius:"50%",background:eT2.col,flexShrink:0}}/>
+        <span style={{fontSize:15,flexShrink:0,width:18,textAlign:"center"}}>{i2.icon}</span>
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontWeight:700,fontSize:13,color:"#0f172a",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
             {tagKurz(ev.date)}{ev.time?` · ${ev.time}`:""}
           </div>
           <div style={{fontSize:11.5,color:"#8a97a8",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",marginTop:1}}>
-            {evDisplayTitle?evDisplayTitle(ev):ev.title}
+            <span style={{fontWeight:800,color:i2.col}}>{i2.wort}</span>{gegen2?` · ${gegen2}`:""}
           </div>
         </div>
         {zz.kader>0&&<span style={{fontSize:11.5,color:"#64748b",fontWeight:600,flexShrink:0}}>{zz.ja}/{zz.kader}</span>}
@@ -15928,6 +15928,8 @@ function EinfachTrainer({ cl, evs=[], tod, trainerNames=[], helperNames=[], squa
     <div>
       {/* Dieselbe Karte wie in der vollstaendigen Ansicht - keine Umgewoehnung. */}
       <NeuerTerminCard t={TH(cl)} onClick={onNew}/>
+      <NaechsteArten evs={kommend} tod={tod} aktivId={fokus.id} onWahl={waehle}
+        offen={e=>{ const z=zahlen(e); return z.offen>0; }}/>
       <div style={{fontSize:10.5,fontWeight:700,color:"#94a3b8",letterSpacing:1,marginBottom:6}}>
         {gewaehlt&&fokus.id===gewaehlt&&evs[0]&&evs[0].id!==fokus.id?"AUSGEWÄHLTER TERMIN":"ALS NÄCHSTES"}
       </div>
@@ -15936,18 +15938,22 @@ function EinfachTrainer({ cl, evs=[], tod, trainerNames=[], helperNames=[], squa
       <div style={{background:"#fff",borderRadius:16,border:"1px solid #e4e9f0",boxShadow:"0 1px 2px rgba(16,24,40,.04)",overflow:"hidden",marginBottom:14}}>
         {heute&&<div style={{height:3,background:p}}/>}
         <div style={{padding:"14px 16px 15px"}}>
-          <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:5}}>
-            <span style={{width:7,height:7,borderRadius:"50%",background:eT.col,flexShrink:0}}/>
-            <span style={{fontSize:10.5,fontWeight:700,color:"#8a97a8",letterSpacing:.9,textTransform:"uppercase"}}>{artTxt}</span>
-            <span style={{fontSize:10.5,color:"#c3ccd8"}}>·</span>
-            <span style={{fontSize:10.5,fontWeight:700,color:heute?readable(p):"#8a97a8",letterSpacing:.9,textTransform:"uppercase"}}>{tagKurz(fokus.date)}</span>
-          </div>
-          <div style={{fontWeight:700,fontSize:19,color:"#101828",letterSpacing:"-.3px",lineHeight:1.2}}>
-            {zeitTxt||titel}
-            {zeitTxt&&dauerKurz&&<span style={{fontSize:12.5,fontWeight:500,color:"#98a2b3",marginLeft:8}}>{dauerKurz}</span>}
-          </div>
-          {zeitTxt&&titel&&<div style={{fontSize:13.5,color:"#475467",marginTop:3,fontWeight:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{titel}</div>}
-          {fokus.loc&&<div style={{fontSize:12.5,color:"#98a2b3",marginTop:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>📍 {fokus.loc}</div>}
+          {/* Gleiche Reihenfolge wie bei den Eltern: was - gegen wen -
+              wann - wo. Keine Umgewoehnung zwischen den Ansichten. */}
+          {(()=>{ const i=ART_INFO[ART_GRUPPE(fokus)]||ART_INFO.sonst; const gegen=eigenerTitel(fokus); return (<>
+            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
+              <span style={{fontSize:13,lineHeight:1}}>{i.icon}</span>
+              <span style={{fontSize:10.5,fontWeight:900,color:i.col,letterSpacing:.9,textTransform:"uppercase"}}>{i.wort}</span>
+              <span style={{marginLeft:"auto",fontSize:10.5,fontWeight:800,color:heute?readable(p):"#94a3b8",whiteSpace:"nowrap"}}>{inTagen(fokus.date,tod)}</span>
+            </div>
+            {gegen&&<div style={{fontWeight:800,fontSize:17,color:"#101828",lineHeight:1.2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{gegen}</div>}
+            <div style={{fontWeight:700,fontSize:gegen?15:19,color:"#101828",letterSpacing:"-.3px",lineHeight:1.25,marginTop:gegen?1:0}}>
+              {tagKurz(fokus.date)}{zeitTxt?` · ${zeitTxt}`:""}
+            </div>
+            <div style={{fontSize:12.5,color:"#98a2b3",marginTop:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+              {[dauerKurz, fokus.loc?`📍 ${fokus.loc}`:""].filter(Boolean).join(" · ")}
+            </div>
+          </>); })()}
 
           {/* Stand der Rueckmeldungen: ein Balken statt vier bunter Kacheln */}
           {(fokus.pt==="att"||!fokus.pt)&&(
@@ -22809,6 +22815,91 @@ const tagWort=(iso)=>{
     return `${WT[d.getDay()]}, ${d.getDate()}. ${MON[d.getMonth()]}`;
   }catch{ return iso; }
 };
+// ----------------------------------------------------------------
+// Schnellwahl "Nächstes Training / Nächstes Spiel".
+// Wer nur wissen will, wann das nächste Spiel ist, soll nicht durch die
+// Liste scrollen muessen: je Terminart eine Kachel mit Tag, Uhrzeit und
+// Countdown - antippen macht den Termin gross, abstimmen geht sofort.
+// ----------------------------------------------------------------
+const ART_GRUPPE = ev => {
+  const t=EVENT_TYPE_ALIAS[ev?.type]||ev?.type;
+  if(t==="training") return "training";
+  if(t==="turnier")  return "turnier";
+  if(t==="fest"||t==="sonstiges"||t==="event") return "sonst";
+  return "spiel";
+};
+const ART_INFO = {
+  training:{ wort:"Training", icon:"🏃", col:"#16a34a", bg:"#f0fdf4", rand:"#bbf7d0" },
+  spiel:   { wort:"Spiel",    icon:"⚽", col:"#2563eb", bg:"#eff6ff", rand:"#bfdbfe" },
+  turnier: { wort:"Turnier",  icon:"🏆", col:"#dc2626", bg:"#fef2f2", rand:"#fecaca" },
+  sonst:   { wort:"Termin",   icon:"📅", col:"#0891b2", bg:"#ecfeff", rand:"#a5f3fc" },
+};
+// "heute", "morgen", "in 3 Tagen" - der Countdown, den man im Kopf hat.
+const inTagen = (datum, tod) => {
+  try{
+    const a=new Date(datum+"T12:00:00"), b=new Date((tod||now())+"T12:00:00");
+    const n=Math.round((a-b)/86400000);
+    if(n<=0) return "heute";
+    if(n===1) return "morgen";
+    if(n<7)  return `in ${n} Tagen`;
+    if(n<14) return "nächste Woche";
+    return `in ${Math.round(n/7)} Wochen`;
+  }catch{ return ""; }
+};
+// Je Terminart der naechste anstehende Termin - nach Datum sortiert, damit
+// das zeitlich Naechste immer links steht.
+const naechsteJeArt = (evs=[]) => {
+  const proArt={};
+  [...evs].sort((a,b)=>String(a.date||"").localeCompare(String(b.date||"")))
+    .forEach(ev=>{ const g=ART_GRUPPE(ev); if(!proArt[g]) proArt[g]=ev; });
+  return Object.entries(proArt).map(([g,ev])=>({g,ev}))
+    .sort((a,b)=>String(a.ev.date||"").localeCompare(String(b.ev.date||"")));
+};
+function NaechsteArten({ evs=[], tod, aktivId, offen=()=>false, onWahl }){
+  const liste=naechsteJeArt(evs);
+  // Nur zeigen, wenn sie wirklich hilft: mindestens zwei Terminarten UND eine
+  // Liste, die man sonst scrollen muesste. Bei zwei Terminen sieht man ohnehin
+  // alles auf einen Blick - dann waeren die Kacheln nur zusaetzliches Rauschen.
+  if(liste.length<2 || (evs||[]).length<3) return null;
+  return (
+    <div style={{marginBottom:12}}>
+      <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:2,WebkitOverflowScrolling:"touch"}}>
+        {liste.map(({g,ev})=>{
+          const i=ART_INFO[g]||ART_INFO.sonst;
+          const an=ev.id===aktivId;
+          const nochOffen=offen(ev);
+          return (
+            <button key={g} onClick={()=>onWahl&&onWahl(ev.id)}
+              style={{flex:"1 1 0",minWidth:104,textAlign:"left",padding:"9px 11px",borderRadius:13,cursor:"pointer",fontFamily:"inherit",
+                border:`2px solid ${an?i.col:i.rand}`, background:an?i.bg:"#fff",
+                boxShadow:an?`0 2px 8px ${i.col}22`:"none", transition:"all .15s"}}>
+              <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:2}}>
+                <span style={{fontSize:13,lineHeight:1}}>{i.icon}</span>
+                <span style={{fontSize:10.5,fontWeight:900,color:i.col,letterSpacing:.4,textTransform:"uppercase",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{i.wort}</span>
+                {nochOffen&&<span title="Antwort fehlt noch" style={{width:7,height:7,borderRadius:"50%",background:"#f97316",flexShrink:0,marginLeft:"auto"}}/>}
+              </div>
+              <div style={{fontSize:12.5,fontWeight:800,color:"#0f172a",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+                {tagKurz(ev.date).replace(/,.*$/,"")}{ev.time?` · ${ev.time}`:""}
+                <span style={{fontWeight:600,color:"#94a3b8"}}> · {inTagen(ev.date,tod)}</span>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// Zeit-Zeile in einer Form, ueberall gleich: "10:30–12:00 Uhr".
+const zeitZeile = ev => ev?.time ? (ev.endTime?`${ev.time}–${ev.endTime} Uhr`:`${ev.time} Uhr`) : "";
+// Titel nur zeigen, wenn er mehr sagt als die Terminart ("SV Adler" ja,
+// "Training" unter der Ueberschrift TRAINING nein).
+const eigenerTitel = ev => {
+  const t=(evDisplayTitle?evDisplayTitle(ev):ev?.title)||"";
+  const art=(ART_INFO[ART_GRUPPE(ev)]||{}).wort||"";
+  return t && t.toLowerCase()!==art.toLowerCase() && t.toLowerCase()!==String(ev?.type||"").toLowerCase() ? t : "";
+};
+
 const artWort=(ev)=>{
   const t=EVENT_TYPE_ALIAS[ev.type]||ev.type;
   if(t==="training") return "TRAINING";
@@ -23036,6 +23127,12 @@ const tagKurz=(iso)=>{
   }catch{ return iso; }
 };
 // Wie lange geht der Termin? Nur wenn eine Endzeit hinterlegt ist.
+// Reine Dauer ohne "bis ..." - die Endzeit steht schon in der Zeit-Zeile.
+const dauerMin=(ev)=>{
+  const m=eventDurationMin(ev); if(!m) return "";
+  const std=Math.floor(m/60), min=m%60;
+  return std ? (min?`${std} Std ${min} Min`:`${std} Std`) : `${min} Min`;
+};
 const dauerText=(ev)=>{
   if(!ev||!ev.endTime||!ev.time) return null;
   const m=eventDurationMin(ev);
@@ -23267,11 +23364,18 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
   // Offen, aber nicht der erste: kompakte Karte mit den drei Wegen
   const OffenZeile=(ev)=>(
     <div key={ev.id} style={{background:"#fff",borderRadius:14,border:"1.5px solid #fed7aa",padding:"11px 12px",marginBottom:8}}>
-      <div onClick={()=>waehle(ev.id)} style={{display:"flex",alignItems:"baseline",gap:7,flexWrap:"wrap",marginBottom:8,cursor:"pointer"}}>
-        <span style={{fontSize:11,fontWeight:900,color:col,letterSpacing:.6}}>{artWort(ev)}</span>
-        <span style={{fontWeight:900,fontSize:15.5,color:"#0f172a"}}>{tagKurz(ev.date)}{ev.time?` · ${ev.time}${ev.endTime?"–"+ev.endTime:""} Uhr`:""}</span>
-        {ev.loc&&<span style={{fontSize:11.5,color:"#64748b",fontWeight:700}}>📍 {ev.loc}</span>}
+      {(()=>{ const i=ART_INFO[ART_GRUPPE(ev)]||ART_INFO.sonst; const gegen=eigenerTitel(ev); return (
+      <div onClick={()=>waehle(ev.id)} style={{marginBottom:9,cursor:"pointer"}}>
+        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
+          <span style={{fontSize:12,lineHeight:1}}>{i.icon}</span>
+          <span style={{fontSize:10.5,fontWeight:900,color:i.col,letterSpacing:.6,textTransform:"uppercase"}}>{i.wort}</span>
+          {gegen&&<span style={{fontSize:13,fontWeight:800,color:"#0f172a",minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{gegen}</span>}
+          <span style={{marginLeft:"auto",fontSize:10.5,fontWeight:800,color:"#94a3b8",whiteSpace:"nowrap"}}>{inTagen(ev.date,tod)}</span>
+        </div>
+        <div style={{fontWeight:900,fontSize:15.5,color:"#0f172a"}}>{tagKurz(ev.date)}{zeitZeile(ev)?` · ${zeitZeile(ev)}`:""}</div>
+        {ev.loc&&<div style={{fontSize:11.5,color:"#64748b",fontWeight:700,marginTop:1}}>📍 {ev.loc}</div>}
       </div>
+      ); })()}
       <AntwortKnoepfe ev={ev} onVote={onVote} wer={kind}/>
       <WeitereFragen ev={ev} wer={kind} cl={cl} onVote={onVote} klein/>
     </div>
@@ -23318,6 +23422,9 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
             <div style={{fontSize:13.5,color:"#475569",marginTop:4,lineHeight:1.5}}>Sobald der Trainer einen Termin einträgt, steht er hier.</div>
           </div>
         )}
+        {/* Schnellwahl: nächstes Training, nächstes Spiel, nächstes Turnier */}
+        <NaechsteArten evs={alle} tod={tod} aktivId={fokus?.id} onWahl={waehle}
+          offen={e=>!terminErledigt(e,kind)}/>
         {/* 1. Was eine Antwort braucht */}
         {fokus&&(()=>{ const aF=antwortVon(fokus,kind); const sF=aF?ANT[aF.art]:null; return (
           <div className="up" style={{background:"#fff",borderRadius:18,border:`2.5px solid ${sF?sF.rand:"#fdba74"}`,padding:"14px 14px 13px",
@@ -23331,14 +23438,20 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
                 ← Nächster Termin
               </button>}
             </div>
-            <div style={{display:"flex",alignItems:"baseline",gap:7,flexWrap:"wrap"}}>
-              <span style={{fontSize:12,fontWeight:900,color:col,letterSpacing:.8}}>{artWort(fokus)}</span>
-              {fokus.loc&&<span style={{fontSize:11.5,color:"#64748b",fontWeight:700}}>📍 {fokus.loc}</span>}
-            </div>
-            <div style={{fontWeight:900,fontSize:20,color:"#0f172a",lineHeight:1.2,marginTop:1}}>
-              {tagKurz(fokus.date)}{fokus.time?<span style={{fontWeight:800,color:"#334155"}}> · {fokus.time} Uhr</span>:null}
-            </div>
-            {dauerText(fokus)&&<div style={{fontSize:12.5,color:"#64748b",fontWeight:600,marginTop:2}}>{dauerText(fokus)}</div>}
+            {(()=>{ const i=ART_INFO[ART_GRUPPE(fokus)]||ART_INFO.sonst; const gegen=eigenerTitel(fokus); return (<>
+              <div style={{display:"flex",alignItems:"center",gap:6}}>
+                <span style={{fontSize:14,lineHeight:1}}>{i.icon}</span>
+                <span style={{fontSize:11.5,fontWeight:900,color:i.col,letterSpacing:.8,textTransform:"uppercase"}}>{i.wort}</span>
+                <span style={{marginLeft:"auto",fontSize:11,fontWeight:800,color:"#94a3b8",whiteSpace:"nowrap"}}>{inTagen(fokus.date,tod)}</span>
+              </div>
+              {gegen&&<div style={{fontWeight:900,fontSize:19,color:"#0f172a",lineHeight:1.2,marginTop:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{gegen}</div>}
+              <div style={{fontWeight:900,fontSize:gegen?16.5:20,color:"#0f172a",lineHeight:1.25,marginTop:gegen?1:3}}>
+                {tagKurz(fokus.date)}{zeitZeile(fokus)?<span style={{fontWeight:800,color:"#334155"}}> · {zeitZeile(fokus)}</span>:null}
+              </div>
+              <div style={{fontSize:12.5,color:"#64748b",fontWeight:600,marginTop:2}}>
+                {[dauerMin(fokus), fokus.loc?`📍 ${fokus.loc}`:""].filter(Boolean).join(" · ")}
+              </div>
+            </>); })()}
             <NoteKurz text={fokus.note} voll/>
             {aF
               ? (aendern
@@ -23369,7 +23482,7 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
             <WeitereFragen ev={fokus} wer={kind} cl={cl} onVote={onVote}/>
           </div>
         ); })()}
-        {restOffen.filter(imFenster).length>0&&<>{Titel("AUCH NOCH OFFEN",restOffen.filter(imFenster).length)}{restOffen.filter(imFenster).map(OffenZeile)}</>}
+        {restOffen.filter(imFenster).length>0&&<>{Titel("NOCH OFFEN",restOffen.filter(imFenster).length)}{restOffen.filter(imFenster).map(OffenZeile)}</>}
         {/* 2. Erledigtes tritt zurueck */}
         {wocheFertig.length>0&&<>
           {Titel(offen.length?"SCHON BEANTWORTET":`BIS ${bisWochentag().toUpperCase()}`,0)}
@@ -23388,19 +23501,23 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
         {alle.length>0&&!offen.length&&(
           <div style={{textAlign:"center",fontSize:13,color:"#15803d",fontWeight:800,marginTop:12}}>✓ Alles beantwortet – danke!</div>
         )}
-        {onPasswort&&(
-          <button onClick={onPasswort} style={{width:"100%",marginTop:14,padding:"13px",minHeight:46,borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#334155",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
-            🔒 Passwort für {kurzName} {pwGesetzt?"ändern":"einrichten"}
-          </button>
-        )}
-        {/* Weitergeben: an den anderen Elternteil, Oma/Opa oder die
-            Fahrgemeinschaft. Der Link fuehrt direkt zu diesem Kind - ein
-            Passwort steht nie darin, die Erklaerung steckt im Nachrichtentext. */}
-        {onLink&&(
-          <button onClick={onLink} title={`Link für ${kurzName} weitergeben – z. B. an Papa, Mama oder Oma. Ohne Passwort im Link.`}
-            style={{width:"100%",marginTop:8,padding:"13px",minHeight:46,borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#334155",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>
-            🔗 Link weitergeben
-          </button>
+        {/* Nebensachen bleiben Nebensachen: eine ruhige Zeile statt zwei
+            Knoepfe in Terminkarten-Groesse. Weitergeben fuehrt direkt zu
+            diesem Kind - ein Passwort steht nie im Link. */}
+        {(onPasswort||onLink)&&(
+          <div style={{display:"flex",gap:8,marginTop:16}}>
+            {onPasswort&&(
+              <button onClick={onPasswort} style={{flex:1,padding:"10px 8px",minHeight:42,borderRadius:11,border:"1px solid #e4e9f0",background:"#fff",color:"#667085",fontWeight:600,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
+                🔒 Passwort {pwGesetzt?"ändern":"einrichten"}
+              </button>
+            )}
+            {onLink&&(
+              <button onClick={onLink} title={`Link für ${kurzName} weitergeben – z. B. an Papa, Mama oder Oma. Ohne Passwort im Link.`}
+                style={{flex:1,padding:"10px 8px",minHeight:42,borderRadius:11,border:"1px solid #e4e9f0",background:"#fff",color:"#667085",fontWeight:600,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
+                🔗 Link weitergeben
+              </button>
+            )}
+          </div>
         )}
         {/* "Anderes Kind" liegt oben im Kopf neben "Abmelden" - hier unten
             wuerde derselbe Knopf nur doppelt stehen. */}

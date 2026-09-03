@@ -43,11 +43,14 @@ let b=await body();
 if(/TRAINING|SPIEL/.test(b)) ok("Eltern sehen sofort den nächsten Termin"); else fail("Kein Termin sichtbar: "+b.slice(0,140).replace(/\n/g," | "));
 if(/Heute|Morgen|Übermorgen|,\s\d+\./.test(b)) ok("Datum in Alltagssprache (Heute/Morgen/Wochentag)"); else fail("Datum unverständlich");
 // Dauer dezent dazu, wenn eine Endzeit hinterlegt ist
-if(/bis \d\d:\d\d Uhr · \d+ (Std|Stunde|Stunden|Min)/.test(b)) ok("Dauer steht dezent dabei ("+(b.match(/bis \d\d:\d\d Uhr · [^\n]*/)||[""])[0]+")");
-else if(/bis \d\d:\d\d Uhr/.test(b)) ok("Endzeit steht dabei");
+// Endzeit steht in der Zeitspanne ("17:30–19:00 Uhr"), die Dauer eine Zeile darunter
+if(/\d\d:\d\d–\d\d:\d\d Uhr/.test(b)&&/\d+ (Std|Stunde|Stunden|Min)/.test(b)) ok("Zeitspanne und Dauer stehen dabei ("+(b.match(/\d\d:\d\d–\d\d:\d\d Uhr/)||[""])[0]+" · "+(b.match(/\d+ Std[^\n·]*/)||[""])[0].trim()+")");
+else if(/\d\d:\d\d–\d\d:\d\d Uhr|bis \d\d:\d\d Uhr/.test(b)) ok("Endzeit steht dabei");
 else fail("Keine Dauer/Endzeit: "+b.slice(0,160).replace(/\n/g," | "));
 let m=await messung();
-if(m.woerter<=60) ok("Sehr wenig Text auf dem Bildschirm ("+m.woerter+" Wörter)"); else fail("Zu viel Text: "+m.woerter+" Wörter");
+// 65 statt 60: der Countdown ("in 3 Tagen") steht jetzt auf der grossen Karte.
+// Drei Woerter, die man sonst im Kopf ausrechnen muss - das ist es wert.
+if(m.woerter<=65) ok("Sehr wenig Text auf dem Bildschirm ("+m.woerter+" Wörter)"); else fail("Zu viel Text: "+m.woerter+" Wörter");
 // 9 = 3 Antwortknoepfe + Termin-Zeilen + Passwort, Link weitergeben, Anderes
 // Kind, Abmelden. Der Link-Knopf ist bewusst dabei: Eltern sollen den anderen
 // Elternteil selbst einladen koennen, ohne den Trainer zu fragen.
@@ -125,7 +128,7 @@ if(/👧👦 Kind/.test(b)) ok("Zum anderen Kind wechseln ist direkt möglich");
 
 // ===== 1c) Passwort fürs eigene Kind – auch in der einfachen Ansicht =====
 b=await body();
-if(/Passwort für \w+ (einrichten|ändern)/.test(b)) ok("Passwort fürs Kind ist direkt erreichbar"); else fail("Kein Passwort-Knopf: "+b.slice(-200).replace(/\n/g," | "));
+if(/🔒 Passwort (einrichten|ändern)/.test(b)) ok("Passwort fürs Kind ist direkt erreichbar"); else fail("Kein Passwort-Knopf: "+b.slice(-200).replace(/\n/g," | "));
 // Abmelden sitzt oben rechts im Kopf, nicht mehr unten neben "Anderes Kind"
 { const wo=await page.evaluate(()=>{
     const b2=[...document.querySelectorAll("button")].find(x=>(x.innerText||"").trim()==="Abmelden");
@@ -145,7 +148,7 @@ if(/Passwort für \w+ (einrichten|ändern)/.test(b)) ok("Passwort fürs Kind ist
   else fail("Kind-Wechsel fehlt oben: "+JSON.stringify(obenKind));
   const doppelt=await page.evaluate(()=>[...document.querySelectorAll("button")].filter(x=>/Anderes Kind|👧👦/.test((x.innerText||"")+(x.getAttribute("aria-label")||""))).length);
   if(doppelt===1) ok("Und steht nicht doppelt auf der Seite"); else fail("Kind-Wechsel "+doppelt+"× vorhanden"); }
-if(await clickTxt("Passwort für")){ await page.waitForTimeout(800); b=await body();
+if(await clickTxt("🔒 Passwort")){ await page.waitForTimeout(800); b=await body();
   if(/Ohne Passwort kann jeder|Nur wer das Passwort kennt/.test(b)) ok("Erklärt in klarer Sprache, wozu das Passwort gut ist"); else fail("Keine Erklärung");
   const felder=await page.locator('input[type="password"]').count();
   if(felder===2) ok("Zwei Felder: Passwort und Wiederholung"); else fail("Unerwartete Felderzahl: "+felder);
@@ -155,7 +158,7 @@ if(await clickTxt("Passwort für")){ await page.waitForTimeout(800); b=await bod
   if(/nicht gleich/.test(b)) ok("Verständliche Meldung, wenn die Passwörter nicht gleich sind"); else fail("Keine klare Meldung: "+b.slice(-160).replace(/\n/g," | "));
   await page.locator('input[type="password"]').nth(1).fill("kurz");
   await clickTxt("Speichern"); await page.waitForTimeout(1000); b=await body();
-  if(/Passwort gespeichert|Passwort für \w+ ändern/.test(b)) ok("Passwort wird gespeichert"); else fail("Passwort nicht gespeichert: "+b.slice(-160).replace(/\n/g," | "));
+  if(/Passwort gespeichert|🔒 Passwort ändern/.test(b)) ok("Passwort wird gespeichert"); else fail("Passwort nicht gespeichert: "+b.slice(-160).replace(/\n/g," | "));
 } else fail("Passwort-Fenster öffnet nicht");
 
 // ===== 2) Trainer legt Stationen an =====
