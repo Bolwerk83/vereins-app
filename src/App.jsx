@@ -17285,14 +17285,18 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             setViewEv(prev=>({...prev,lineupPublic:val}));
             fire(val?"Aufstellung für Gäste sichtbar":"Aufstellung für Gäste verborgen");
           }):undefined}
-          onChange={lu=>{
-            const ev2={...viewEv,lineup:lu};
+          onChange={lus=>{
+            const liste=Array.isArray(lus)?lus:[{id:"t1",name:"Team 1",...lus}];
+            const erste=liste[0]||{T:[],A:[],M:[],S:[]};
+            // ev.lineup bleibt die erste Mannschaft - daran haengen Spieltag-Zettel,
+            // Gaeste-Ansicht und die Vorschlaege aus vergangenen Terminen.
+            const ev2={...viewEv,lineups:liste,lineup:{T:erste.T||[],A:erste.A||[],M:erste.M||[],S:erste.S||[]}};
             const events=local.events.map(e=>e.id===viewEv.id?ev2:e);
             // Falls veroeffentlicht + fuer Gaeste freigegeben: Spiegel mitziehen.
             const isPub=viewEv.type==="turnier"&&(local.liveEvents||[]).some(x=>x.eid===viewEv.id);
             const liveEvents=isPub?(local.liveEvents||[]).map(x=>x.eid===viewEv.id?{...x,pub:tournPubSnapshot(ev2,local.playerProfiles||[])}:x):local.liveEvents;
             save({...local,events,...(isPub?{liveEvents}:{})});
-            setViewEv(prev=>({...prev,lineup:lu}));
+            setViewEv(prev=>({...prev,lineups:ev2.lineups,lineup:ev2.lineup}));
           }}/>}
         </>}
         <div style={{height:14}}/><Btn full ch="Schließen" v="gst" onClick={()=>setViewEv(null)}/>
@@ -22600,18 +22604,51 @@ function recommendLineup(present, profiles, pastLineups, friendWeight=1){
 function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChange=undefined, profiles=[], pastLineups=[] }){
   const { tr } = useT();
   const LINE_LABELS = {T:tr("lnTor"),A:tr("lnAbwehr"),M:tr("lnMittelfeld"),S:tr("lnAngriff")};
-  const lu = ev.lineup || {T:[],A:[],M:[],S:[]};
-  const placed = [...(lu.T||[]),...(lu.A||[]),...(lu.M||[]),...(lu.S||[])];
+  // Mehrere Mannschaften je Termin (Turnier: G1, G2 ...). Alt gespeicherte
+  // Termine haben nur ev.lineup - das ist dann schlicht die erste Mannschaft.
+  const leer=()=>({T:[],A:[],M:[],S:[]});
+  const teams = (Array.isArray(ev.lineups)&&ev.lineups.length)
+    ? ev.lineups
+    : [{ id:"t1", name:"Team 1", ...leer(), ...(ev.lineup||{}) }];
+  const spielerVon = t => [...(t.T||[]),...(t.A||[]),...(t.M||[]),...(t.S||[])];
+  const placed = teams.flatMap(spielerVon);
   const bench = (present||[]).filter(n=>!placed.includes(n));
   const [tip,setTip]=useState(null);
   const [friendW,setFriendW]=useState(1);   // 0=aus, 1=normal, 2=stark – pro Aufstellung wählbar
+  // Immer genau eine Mannschaft offen: so ist klar, wohin die Bank einsortiert.
+  const [offen,setOffen]=useState(teams[0]?.id||"t1");
+  const [umbenennen,setUmbenennen]=useState(null);
+  const offenT = teams.find(t=>t.id===offen) || teams[0];
+  const sichern = (neu) => onChange&&onChange(neu);
   const topStrength=name=>{const p=lineupProfByName(name,profiles);if(!p?.skills)return"";const e=Object.entries(p.skills).filter(([,v])=>typeof v==="number"&&v>0).sort((a,b)=>b[1]-a[1])[0];return e?`Stärke: ${e[0]} ${e[1]}/5`:"";};
   if(placed.length===0 && !canEdit) return null;
-  const place = (name, line) => { const next={T:[...(lu.T||[])],A:[...(lu.A||[])],M:[...(lu.M||[])],S:[...(lu.S||[])]}; for(const k of ["T","A","M","S"]) next[k]=next[k].filter(x=>x!==name); next[line]=[...next[line],name]; onChange&&onChange(next); };
-  const remove = (name) => { const next={T:(lu.T||[]).filter(x=>x!==name),A:(lu.A||[]).filter(x=>x!==name),M:(lu.M||[]).filter(x=>x!==name),S:(lu.S||[]).filter(x=>x!==name)}; onChange&&onChange(next); };
+  // Ein Name steht immer nur in EINER Mannschaft - beim Einsortieren wird er
+  // ueberall sonst entfernt.
+  const ohne = (t,name) => ({...t, T:(t.T||[]).filter(x=>x!==name), A:(t.A||[]).filter(x=>x!==name), M:(t.M||[]).filter(x=>x!==name), S:(t.S||[]).filter(x=>x!==name)});
+  const place = (name, line, tid=offen) => {
+    sichern(teams.map(t=>{ const c=ohne(t,name); return t.id===tid ? {...c,[line]:[...(c[line]||[]),name]} : c; }));
+  };
+  const remove = (name) => sichern(teams.map(t=>ohne(t,name)));
+  const teamAdd = () => {
+    const id="t"+(Date.now().toString(36));
+    sichern([...teams, {id, name:`Team ${teams.length+1}`, ...leer()}]);
+    setOffen(id);
+  };
+  const teamDel = (tid) => {
+    if(teams.length<2) return;
+    const rest=teams.filter(t=>t.id!==tid);
+    sichern(rest); if(offen===tid) setOffen(rest[0].id);
+  };
+  const teamName = (tid,name) => sichern(teams.map(t=>t.id===tid?{...t,name}:t));
   const lineColors={T:"#d97706",A:"#2563eb",M:"#16a34a",S:"#dc2626"};
   // KI-Vorschlag: Formation nach Teilnehmerzahl + Besetzung nach Position/Stärken.
-  const autoFill = () => { const rec=recommendLineup(present,profiles,pastLineups,friendW); onChange&&onChange(rec.lineup); setTip({...rec,friendW}); };
+  // Vorschlag fuellt die OFFENE Mannschaft - aus allen, die noch frei sind.
+  const autoFill = () => {
+    const frei=(present||[]).filter(n=>!teams.some(t=>t.id!==offen&&spielerVon(t).includes(n)));
+    const rec=recommendLineup(frei,profiles,pastLineups,friendW);
+    sichern(teams.map(t=>t.id===offen?{...t,...rec.lineup}:t));
+    setTip({...rec,friendW});
+  };
   return (
     <div style={{marginTop:14,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
@@ -22645,31 +22682,78 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
           </div>
         </div>
       )}
-      <div style={{background:"linear-gradient(#16a34a22,#16a34a11)",borderRadius:14,border:"1.5px solid #bbf7d0",padding:"10px 12px",display:"flex",flexDirection:"column",gap:8}}>
-        {LINEUP_LINES.map(([k,label])=>(
-          <div key={k} style={{display:"flex",alignItems:"center",gap:8,minHeight:34}}>
-            <span style={{fontSize:10,fontWeight:800,color:lineColors[k],width:74,flexShrink:0,letterSpacing:.3}}>{(LINE_LABELS[k]||label).toUpperCase()}</span>
-            <div style={{flex:1,display:"flex",flexWrap:"wrap",gap:5}}>
-              {(lu[k]||[]).length===0 && <span style={{fontSize:12,color:"#64748b"}}>–</span>}
-              {(lu[k]||[]).map(n=>(
-                <span key={n} title={topStrength(n)} onClick={()=>canEdit&&remove(n)} style={{display:"flex",alignItems:"center",gap:5,background:"#fff",borderRadius:99,padding:"3px 9px 3px 3px",border:`1.5px solid ${lineColors[k]}`,cursor:canEdit?"pointer":"default"}}>
-                  <Av name={n} sz={20}/><span style={{fontSize:12.5,fontWeight:700,color:"#0f172a"}}>{n}</span>{canEdit&&<span style={{color:"#dc2626",fontWeight:800,fontSize:12}}>×</span>}
-                </span>
-              ))}
+      {/* Je Mannschaft ein auf- und zuklappbarer Block. Immer genau einer
+          offen - dorthin sortiert die Bank ein. */}
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {teams.map((t,ti)=>{
+          const drin=spielerVon(t);
+          const auf=t.id===offen;
+          return (
+          <div key={t.id} style={{background:auf?"linear-gradient(#16a34a22,#16a34a11)":"#f8fafc",borderRadius:14,border:`1.5px solid ${auf?"#bbf7d0":"#e2e8f0"}`,overflow:"hidden"}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,padding:"9px 12px",cursor:"pointer"}}
+              onClick={()=>{ setOffen(auf&&teams.length>1?null:t.id); setUmbenennen(null); }}>
+              <span style={{fontSize:12,color:"#64748b",width:12,flexShrink:0}}>{auf?"▾":"▸"}</span>
+              {umbenennen===t.id&&canEdit
+                ? <input autoFocus defaultValue={t.name} onClick={e=>e.stopPropagation()}
+                    onBlur={e=>{ teamName(t.id,e.target.value.trim()||`Team ${ti+1}`); setUmbenennen(null); }}
+                    onKeyDown={e=>{ if(e.key==="Enter"){ teamName(t.id,e.target.value.trim()||`Team ${ti+1}`); setUmbenennen(null); } }}
+                    style={{flex:1,minWidth:0,padding:"5px 9px",fontSize:13.5,fontWeight:800,border:"1.5px solid #bbf7d0",borderRadius:8,outline:"none",fontFamily:"inherit"}}/>
+                : <span style={{flex:1,minWidth:0,fontWeight:800,fontSize:13.5,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                    {t.name||`Team ${ti+1}`} <span style={{fontWeight:600,fontSize:12,color:"#64748b"}}>({drin.length})</span>
+                  </span>}
+              {canEdit&&umbenennen!==t.id&&(
+                <button onClick={e=>{ e.stopPropagation(); setUmbenennen(t.id); }} title="Umbenennen"
+                  style={{padding:"4px 7px",borderRadius:7,border:"none",background:"transparent",color:"#94a3b8",fontSize:12,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>✎</button>
+              )}
+              {canEdit&&teams.length>1&&(
+                <button onClick={e=>{ e.stopPropagation(); teamDel(t.id); }} title="Mannschaft entfernen"
+                  style={{padding:"4px 7px",borderRadius:7,border:"none",background:"transparent",color:"#dc2626",fontSize:12,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>🗑</button>
+              )}
+              {!auf&&drin.length>0&&(
+                <span style={{display:"flex",flexShrink:0}}>{drin.slice(0,4).map((n,i)=><span key={n} style={{marginLeft:i?-7:0,zIndex:4-i}}><Av name={n} sz={20}/></span>)}</span>
+              )}
             </div>
+            {auf&&(
+              <div style={{padding:"0 12px 10px",display:"flex",flexDirection:"column",gap:8}}>
+                {LINEUP_LINES.map(([k,label])=>(
+                  <div key={k} style={{display:"flex",alignItems:"center",gap:8,minHeight:34}}>
+                    <span style={{fontSize:10,fontWeight:800,color:lineColors[k],width:74,flexShrink:0,letterSpacing:.3}}>{(LINE_LABELS[k]||label).toUpperCase()}</span>
+                    <div style={{flex:1,display:"flex",flexWrap:"wrap",gap:5}}>
+                      {(t[k]||[]).length===0 && <span style={{fontSize:12,color:"#64748b"}}>–</span>}
+                      {(t[k]||[]).map(n=>(
+                        <span key={n} title={topStrength(n)} onClick={()=>canEdit&&remove(n)} style={{display:"flex",alignItems:"center",gap:5,background:"#fff",borderRadius:99,padding:"3px 9px 3px 3px",border:`1.5px solid ${lineColors[k]}`,cursor:canEdit?"pointer":"default"}}>
+                          <Av name={n} sz={20}/><span style={{fontSize:12.5,fontWeight:700,color:"#0f172a"}}>{n}</span>{canEdit&&<span style={{color:"#dc2626",fontWeight:800,fontSize:12}}>×</span>}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        ))}
+          );
+        })}
+        {canEdit&&(
+          <button onClick={teamAdd}
+            style={{padding:"9px",borderRadius:12,border:"1.5px dashed #bbf7d0",background:"#f0fdf4",color:"#15803d",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
+            ＋ Weitere Mannschaft
+          </button>
+        )}
       </div>
       {canEdit&&(
         <div style={{marginTop:10}}>
-          <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.4}}>{tr("luBench").toUpperCase()} ({bench.length})</div>
+          <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.4}}>
+            {tr("luBench").toUpperCase()} ({bench.length})
+            {teams.length>1&&offenT&&<span style={{fontWeight:600,color:"#15803d",marginLeft:6,textTransform:"none",letterSpacing:0}}>→ in „{offenT.name}“</span>}
+          </div>
+          {teams.length>1&&!offen&&<p style={{fontSize:12,color:"#c2410c",fontWeight:700,marginBottom:6}}>Mannschaft aufklappen, um einzusortieren.</p>}
           {bench.length===0 ? <p style={{fontSize:12,color:"#64748b"}}>{tr("luAllPlaced")}</p>
             : <div style={{display:"flex",flexDirection:"column",gap:6}}>
                 {bench.map(n=>(
                   <div key={n} style={{display:"flex",alignItems:"center",gap:8,background:"#f8fafc",borderRadius:10,padding:"6px 9px",border:"1px solid #e2e8f0"}}>
                     <Av name={n} sz={22}/><span style={{flex:1,minWidth:0,fontSize:13,fontWeight:700,color:"#334155"}}>{n}</span>
-                    {LINEUP_LINES.map(([k,label])=>(
-                      <button key={k} onClick={()=>place(n,k)} title={LINE_LABELS[k]||label} style={{width:26,height:26,borderRadius:7,border:`1.5px solid ${lineColors[k]}`,background:lineColors[k]+"15",color:lineColors[k],fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>{k}</button>
+                    {offen&&LINEUP_LINES.map(([k,label])=>(
+                      <button key={k} onClick={()=>place(n,k,offen)} title={`${LINE_LABELS[k]||label}${teams.length>1&&offenT?` · ${offenT.name}`:""}`} style={{width:26,height:26,borderRadius:7,border:`1.5px solid ${lineColors[k]}`,background:lineColors[k]+"15",color:lineColors[k],fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>{k}</button>
                     ))}
                   </div>
                 ))}
