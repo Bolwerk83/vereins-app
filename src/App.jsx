@@ -16951,8 +16951,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             onSetDeadline={deadline=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,deadline}:e)}); setViewEv(prev=>({...prev,deadline})); fire("Frist gesetzt"); }}
             onSetPresent={present=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,present}:e)}); setViewEv(prev=>({...prev,present})); }}
             onSetGuests={guests=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,guests}:e)}); setViewEv(prev=>({...prev,guests})); }}
-            onSetVote={isHelper?null:(name,val)=>{
-              const nv={...(viewEv.votes||{}),[name]:{val,ts:new Date().toISOString(),byTrainer:true,role:"player"}};
+            onSetVote={isHelper?null:(name,val,grund)=>{
+              const nv={...(viewEv.votes||{}),[name]:{val,ts:new Date().toISOString(),byTrainer:true,role:"player",...(String(grund||"").trim()?{reason:String(grund).trim()}:{})}};
               save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,votes:nv}:e)});
               setViewEv(prev=>({...prev,votes:nv}));
               fire(val==="yes"?name+": zugesagt (vom Trainer eingetragen)":name+": abgesagt (vom Trainer eingetragen)");
@@ -17028,8 +17028,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
                 save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,guests}:e)});
                 setViewEv(prev=>({...prev,guests}));
               }}
-              onSetVote={isHelper?null:(name,val)=>{
-                const nv={...(viewEv.votes||{}),[name]:{val,ts:new Date().toISOString(),byTrainer:true,role:"player"}};
+              onSetVote={isHelper?null:(name,val,grund)=>{
+                const nv={...(viewEv.votes||{}),[name]:{val,ts:new Date().toISOString(),byTrainer:true,role:"player",...(String(grund||"").trim()?{reason:String(grund).trim()}:{})}};
                 save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,votes:nv}:e)});
                 setViewEv(prev=>({...prev,votes:nv}));
                 fire(val==="yes"?name+": zugesagt (vom Trainer eingetragen)":name+": abgesagt (vom Trainer eingetragen)");
@@ -17116,8 +17116,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         {(evTab==="orga"||(isHelper&&evTab==="rueck"))&&<>
         {/* Aushilfen aus anderen Mannschaften + Warnung bei Doppelmeldung */}
         {!isHelper&&<AushilfenBoard ev={viewEv} data={local} cl={myClub}
-          onSetVote={(name,val)=>{
-            const nv={...(viewEv.votes||{}),[name]:{val,ts:new Date().toISOString(),byTrainer:true,role:"player"}};
+          onSetVote={(name,val,grund)=>{
+            const nv={...(viewEv.votes||{}),[name]:{val,ts:new Date().toISOString(),byTrainer:true,role:"player",...(String(grund||"").trim()?{reason:String(grund).trim()}:{})}};
             save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,votes:nv}:e)});
             setViewEv(prev=>({...prev,votes:nv}));
             fire(name+": als Aushilfe eingetragen");
@@ -17149,8 +17149,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         {!isHelper&&<AttendanceCheckoff ev={viewEv}
           teamPlayers={squadOf(viewEv.tid)} teamPlusAus={squadPlusOf(viewEv.tid)}
           trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams}
-          onSetVote={(name,val)=>{
-            const nv={...(viewEv.votes||{}),[name]:{val,ts:new Date().toISOString(),byTrainer:true,role:"player"}};
+          onSetVote={(name,val,grund)=>{
+            const nv={...(viewEv.votes||{}),[name]:{val,ts:new Date().toISOString(),byTrainer:true,role:"player",...(String(grund||"").trim()?{reason:String(grund).trim()}:{})}};
             save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,votes:nv}:e)});
             setViewEv(prev=>({...prev,votes:nv}));
             fire(val==="yes"?name+": zugesagt (vom Trainer eingetragen)":name+": abgesagt (vom Trainer eingetragen)");
@@ -18193,6 +18193,10 @@ const bringtMit = (ev, name) => {
 
 function AttendanceCheckoff({ ev, teamPlayers=[], teamPlusAus=null, onSetPresent=()=>{}, onSetGuests=()=>{}, trainerNames=[], helperNames=[], onSetVote=null }){
   const [guestName,setGuestName]=useState("");
+  // Absage-Grund nachtragen: die Eltern haben angerufen, aber nichts eingetragen.
+  const [grundFuer,setGrundFuer]=useState(null);   // Name oder null
+  const [grundText,setGrundText]=useState("");
+  const ABSAGE_GRUND=["Krank","Urlaub","Schule","Verletzt","Wettkampf","Familie"];
   const present=ev.present||{};
   const guests=ev.guests||[];
   const getVal=v=>(typeof v==="object"&&v)?v.val:v;
@@ -18258,26 +18262,65 @@ function AttendanceCheckoff({ ev, teamPlayers=[], teamPlusAus=null, onSetPresent
                   </span>
                   {val==="yes"&&!lateMin&&<span style={{fontSize:10.5,fontWeight:700,color:"#16a34a",background:"#dcfce7",borderRadius:6,padding:"2px 7px"}}>zugesagt</span>}
                   {val==="yes"&&lateMin&&<span style={{fontSize:10.5,fontWeight:800,color:"#b45309",background:"#fef3c7",borderRadius:6,padding:"2px 7px"}}>+{lateMin} Min später</span>}
-                  {val==="no"&&<span style={{fontSize:10.5,fontWeight:700,color:"#dc2626",background:"#fee2e2",borderRadius:6,padding:"2px 7px"}}>abgesagt</span>}
+                  {val==="no"&&(onSetVote
+                    ? <button onClick={e=>{ e.stopPropagation(); setGrundFuer(name); setGrundText((typeof raw==="object"&&raw?.reason)||""); }}
+                        title="Absage-Grund eintragen oder ändern"
+                        style={{fontSize:10.5,fontWeight:700,color:"#dc2626",background:"#fee2e2",border:"none",borderRadius:6,padding:"3px 7px",cursor:"pointer",fontFamily:"inherit"}}>abgesagt{(typeof raw==="object"&&raw?.reason)?"":" ✎"}</button>
+                    : <span style={{fontSize:10.5,fontWeight:700,color:"#dc2626",background:"#fee2e2",borderRadius:6,padding:"2px 7px"}}>abgesagt</span>)}
                   {noShow&&<span style={{fontSize:10.5,fontWeight:800,color:"#9a3412",background:"#ffedd5",borderRadius:6,padding:"2px 7px"}}>No-Show</span>}
                   {/* Ohne Stimme: Trainer kann direkt zu-/absagen (z.B. nach Telefonat) */}
                   {onSetVote&&!val&&(
                     <span style={{display:"flex",gap:4,flexShrink:0}} onClick={e=>e.stopPropagation()}>
                       <button onClick={()=>onSetVote(name,"yes")} title="Für diesen Spieler zusagen" style={{width:28,height:26,borderRadius:8,border:"none",background:"#16a34a",color:"#fff",fontWeight:900,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>✓</button>
-                      <button onClick={()=>onSetVote(name,"no")} title="Für diesen Spieler absagen" style={{width:28,height:26,borderRadius:8,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:900,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>✕</button>
+                      <button onClick={()=>{ setGrundFuer(name); setGrundText(""); }} title="Für diesen Spieler absagen – mit Grund" style={{width:28,height:26,borderRadius:8,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:900,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>✕</button>
                     </span>
                   )}
                 </div>
                 {/* Wie kommt das Kind hin? Eigene Zeile ueber die volle Breite -
                     sonst wird der Text abgeschnitten. Nur bei Terminen mit
                     Fahrgemeinschaft und nur bei Zusagen. */}
-                {(anr||bringt)&&(
+                {/* Absage-Grund nachtragen: Eltern haben angerufen, aber nichts
+                    eingetragen. Der Grund ist freiwillig. */}
+                {grundFuer===name&&onSetVote&&(
+                  <div onClick={e=>e.stopPropagation()} style={{marginTop:8,paddingTop:8,borderTop:"1px dashed #fecaca"}}>
+                    <div style={{fontSize:11.5,fontWeight:800,color:"#b42318",marginBottom:7}}>
+                      Warum ist {String(name).split(" ")[0]} nicht dabei? <span style={{fontWeight:600,color:"#98a2b3"}}>(freiwillig)</span>
+                    </div>
+                    <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:8}}>
+                      {ABSAGE_GRUND.map(g=>(
+                        <button key={g} onClick={()=>{ onSetVote(name,"no",g); setGrundFuer(null); }}
+                          style={{padding:"7px 12px",minHeight:36,borderRadius:99,border:"1.5px solid #fecaca",background:"#fff",color:"#b42318",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{g}</button>
+                      ))}
+                    </div>
+                    <div style={{display:"flex",gap:6}}>
+                      <input value={grundText} onChange={e=>setGrundText(e.target.value)} placeholder="Eigener Grund …"
+                        onKeyDown={e=>{ if(e.key==="Enter"){ e.preventDefault(); onSetVote(name,"no",grundText.trim()); setGrundFuer(null); } }}
+                        style={{flex:1,minWidth:0,padding:"9px 11px",fontSize:13,border:"1.5px solid #fecaca",borderRadius:9,outline:"none",fontFamily:"inherit",boxSizing:"border-box"}}/>
+                      <button onClick={()=>{ onSetVote(name,"no",grundText.trim()); setGrundFuer(null); }}
+                        style={{padding:"9px 13px",borderRadius:9,border:"none",background:"#b42318",color:"#fff",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>Speichern</button>
+                    </div>
+                    <div style={{display:"flex",gap:8,marginTop:7}}>
+                      <button onClick={()=>{ onSetVote(name,"no",""); setGrundFuer(null); }}
+                        style={{fontSize:11.5,color:"#667085",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontWeight:700,padding:"4px 0"}}>Ohne Angabe absagen</button>
+                      <button onClick={()=>setGrundFuer(null)}
+                        style={{marginLeft:"auto",fontSize:11.5,color:"#98a2b3",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontWeight:700,padding:"4px 0"}}>Abbrechen</button>
+                    </div>
+                  </div>
+                )}
+                {(anr||bringt||(val==="no"&&typeof raw==="object"&&raw?.reason))&&(
                   <div style={{marginTop:6,paddingTop:5,borderTop:"1px dashed #e2e8f0"}}>
                     {anr&&(
                       <div style={{fontSize:11,fontWeight:700,color:anr.col,display:"flex",alignItems:"center",gap:5}}>
                         <span>{anr.icon}</span>
                         <span style={{flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{anr.text}</span>
                         {anr.tag&&<span style={{fontWeight:600,color:"#98a2b3",whiteSpace:"nowrap"}}>{anr.tag}</span>}
+                      </div>
+                    )}
+                    {/* Der Absage-Grund - wichtig genug fuer eine eigene Zeile,
+                        aber ohne Signalfarbe. */}
+                    {val==="no"&&typeof raw==="object"&&raw?.reason&&(
+                      <div style={{fontSize:10.5,fontWeight:700,color:"#b42318",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                        Grund: {raw.reason}{raw.byTrainer?<span style={{fontWeight:600,color:"#98a2b3"}}> · vom Trainer</span>:null}
                       </div>
                     )}
                     {/* Ganz leise: nur Grautoene, keine Signalfarbe. */}
