@@ -29,6 +29,22 @@ const direktLink = (cl,tid,name) => {
 const direktLinkText = (cl,team,name) => name
   ? `Hallo,\n\nhier der direkte Link für ${name}${team?` (${team.name})`:""} bei ${cl?.name||"unserem Verein"}:\n${direktLink(cl,team?.id,name)}\n\nLink öffnen, einmal das Mannschafts-Passwort eingeben (im Link steht keins) – danach seht ihr sofort die Termine von ${name} und könnt mit einem Tipp zusagen oder absagen.`
   : `Hallo,\n\nhier der direkte Link zur ${team?.name||"Mannschaft"} bei ${cl?.name||"unserem Verein"}:\n${direktLink(cl,team?.id,"")}\n\nLink öffnen, einmal das Mannschafts-Passwort eingeben (im Link steht keins) – danach das eigene Kind antippen und bei den Terminen zusagen oder absagen.`;
+// Jeder geteilte Link geht ueber die Mannschaft: Team-Passwort abfragen -
+// oder, wenn das Geraet es gemerkt hat, direkt in die Spielerliste. Optional
+// haengt der Termin dran, dann oeffnet er sich gleich mit.
+const terminLink = (cl,tid,evId) => direktLink(cl,tid,"")+(evId?`&event=${encodeURIComponent(evId)}`:"");
+// Stand einer Abstimmung in Zahlen - fuer geteilte Texte. Namen von Kindern
+// gehoeren NICHT in eine WhatsApp-Gruppe, die Zahlen schon.
+const standZahlen = (ev, kaderListe=[]) => {
+  const vv=v=>(typeof v==="object"&&v)?v.val:v;
+  const v=ev?.votes||{};
+  const kader=[...new Set(kaderListe.filter(Boolean))];
+  const ja=kader.filter(n=>vv(v[n])==="yes").length;
+  const nein=kader.filter(n=>vv(v[n])==="no").length;
+  const offen=Math.max(0,kader.length-ja-nein);
+  return {ja,nein,offen,kader:kader.length};
+};
+
 // Teilen ueber das Handy-Menue, sonst in die Zwischenablage.
 const teileKindLink = (cl,team,name,fire) => {
   const txt=direktLinkText(cl,team,name);
@@ -16069,14 +16085,23 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const [tab,setTab]=useState("events"); // BottomNav manages this
   const [teamSub,setTeamSub]=useState(null); // Sprungziel im Team-Bereich (z.B. Turnier-Börse)
   const goBoerse=()=>{ setTeamSub("boerse"); setTab("team"); };
+  // Ein Link fuer alles: fuehrt zur Mannschaft (Passwort bzw. gemerkte
+  // Spielerliste) und oeffnet direkt diesen Termin.
+  const kopiereTerminLink=(ev)=>{
+    const link=terminLink(myClub, ev.tid, ev.id);
+    const txt=`${evDisplayTitle(ev)} am ${fmtD(ev.date)}${ev.time?` um ${ev.time} Uhr`:""}\n\n👉 Link antippen, Kind wählen, zu- oder absagen:\n${link}`;
+    try{ navigator.clipboard?.writeText(txt); }catch{}
+    fire("Termin-Link kopiert ✓");
+  };
   const remindNonVoters=(ev)=>{
     const roster=(local.playerProfiles||[]).filter(p=>p.mainTid===ev.tid && !p.archived).map(p=>p.name);
     if(roster.length===0){ fire("Keine Spieler zugeordnet"); return; }
     const voted=new Set(Object.keys(ev.votes||{}));
     const missing=roster.filter(n=>!voted.has(n));
     if(missing.length===0){ fire("Alle haben abgestimmt 🎉"); return; }
-    const link=(typeof window!=="undefined"?window.location.origin:"")+"/?club="+(myClub?.slug||cid);
-    const txt=`Erinnerung – bitte abstimmen für „${ev.title}" am ${fmtD(ev.date)}${ev.time?" "+ev.time+" Uhr":""}.\n\nEs fehlt noch von: ${missing.join(", ")}\n\n${link}`;
+    // Ohne Namen: der Text landet in einer WhatsApp-Gruppe. Die Zahl reicht.
+    const link=terminLink(myClub, ev.tid, ev.id);
+    const txt=`⏰ Erinnerung – bitte abstimmen für „${ev.title}" am ${fmtD(ev.date)}${ev.time?" "+ev.time+" Uhr":""}.\n\nEs fehlen noch ${missing.length} Rückmeldung${missing.length===1?"":"en"}.\n\n👉 Link antippen, Kind wählen, zu- oder absagen:\n${link}`;
     if(navigator.share){ navigator.share({title:ev.title,text:txt}).catch(()=>{}); } else { navigator.clipboard?.writeText(txt); }
     fire(`${missing.length} noch offen – Erinnerung erstellt`);
   };
@@ -16686,7 +16711,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
               onEdit={ev=>ev.sid?setEditConf(ev):setEditEv(editInfo(ev))}
               onBrief={ev=>setBriefEv(ev)}
               onSubReq={ev=>{ setSubNote(""); setSubReqEv(ev); }}
-              onCopyLink={ev=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)}
+              onCopyLink={ev=>kopiereTerminLink(ev)}
               onReset={ev=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)}); fire("Stimmen zurückgesetzt"); }}
               onDel={ev=>{ setDelConf(ev.id); setDelConfVal(ev.title); }}
               onNew={()=>setWizard(true)} onDetail={()=>{ setTSimple(false); try{localStorage.setItem("va_tsimple","0");}catch{} }}/>
@@ -16719,10 +16744,10 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             );
           })()}
           <FerienHinweis hols={_ferienDash} from={tod} to={_in10}/>
-          {up.length>0&&<><Divider label={`NÄCHSTE 21 TAGE (${soon.length})`}/>{soon.length>0?soon.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>{setEvTab("rueck");setViewEv(ev);}} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(editInfo(ev))} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams} squad={squadPlusOf(ev.tid)} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}} helperId={isHelper?(session.id||session.helperId||session.name):null} onHelperQuick={isHelper?helperQuick:null} onSetup={()=>setSetupEv(ev)}/>):<p style={{textAlign:"center",color:"#64748b",fontSize:13.5,padding:"14px 10px"}}>Keine Termine in den nächsten 21 Tagen.</p>}
+          {up.length>0&&<><Divider label={`NÄCHSTE 21 TAGE (${soon.length})`}/>{soon.length>0?soon.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>{setEvTab("rueck");setViewEv(ev);}} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(editInfo(ev))} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>kopiereTerminLink(ev)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams} squad={squadPlusOf(ev.tid)} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}} helperId={isHelper?(session.id||session.helperId||session.name):null} onHelperQuick={isHelper?helperQuick:null} onSetup={()=>setSetupEv(ev)}/>):<p style={{textAlign:"center",color:"#64748b",fontSize:13.5,padding:"14px 10px"}}>Keine Termine in den nächsten 21 Tagen.</p>}
             {later.length>0&&<>
               <button onClick={()=>setShowLater(s=>!s)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",background:showLater?"#f1f5f9":"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,cursor:"pointer",margin:"6px 0 12px",padding:"11px 14px",fontWeight:800,fontSize:13,color:"#475569",fontFamily:"inherit"}}>{showLater?"▲ Weitere Termine ausblenden":"▼ Weitere "+later.length+" Termine anzeigen"}</button>
-              {showLater&&later.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>{setEvTab("rueck");setViewEv(ev);}} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(editInfo(ev))} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>fire("* Einladungslink: ?club="+myClub.slug+"&join="+ev.id)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams} squad={squadPlusOf(ev.tid)} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}} helperId={isHelper?(session.id||session.helperId||session.name):null} onHelperQuick={isHelper?helperQuick:null} onSetup={()=>setSetupEv(ev)}/>)}
+              {showLater&&later.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>{setEvTab("rueck");setViewEv(ev);}} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(editInfo(ev))} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>kopiereTerminLink(ev)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams} squad={squadPlusOf(ev.tid)} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}} helperId={isHelper?(session.id||session.helperId||session.name):null} onHelperQuick={isHelper?helperQuick:null} onSetup={()=>setSetupEv(ev)}/>)}
             </>}
           </>}
           {up.length===0&&<div style={{textAlign:"center",padding:"30px",background:"#fff",borderRadius:18,border:"1.5px dashed #e2e8f0",color:"#64748b"}}><Logo cl={myClub} sz={50} sx={{margin:"0 auto 12px"}}/><p style={{fontWeight:800,fontSize:15}}>Noch keine Termine</p><p style={{fontSize:13,marginTop:3}}>{isHelper?"Sobald die Trainer Termine anlegen, erscheinen sie hier.":'Klicke oben auf "Neuen Termin anlegen"'}</p></div>}
@@ -16810,8 +16835,11 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           ); })()}
         {evTab==="rueck"&&<>
         {!isHelper&&(()=>{
-          const link=`${window.location.origin}${window.location.pathname}?club=${encodeURIComponent(myClub?.slug||cid)}&team=${encodeURIComponent(viewEv.tid)}&event=${encodeURIComponent(viewEv.id)}`;
-          const txt=`⏰ Erinnerung: ${viewEv.title} am ${fmtD(viewEv.date)}${viewEv.time?` um ${viewEv.time} Uhr`:""}${viewEv.loc?` (${viewEv.loc})`:""}\n\n👉 Link antippen, Kind wählen, zu-/absagen:\n${link}`;
+          const link=terminLink(myClub, viewEv.tid, viewEv.id);
+          const st=standZahlen(viewEv, squadOf(viewEv.tid));
+          const txt=`⏰ Erinnerung: ${viewEv.title} am ${fmtD(viewEv.date)}${viewEv.time?` um ${viewEv.time} Uhr`:""}${viewEv.loc?` (${viewEv.loc})`:""}`
+            +(st.kader?`\n\n✅ ${st.ja} dabei · ❌ ${st.nein} abgesagt · ⏳ ${st.offen} noch offen`:"")
+            +`\n\n👉 Link antippen, Kind wählen, zu-/absagen:\n${link}`;
           const doShare=()=>{ if(navigator.share){ navigator.share({title:viewEv.title,text:txt}).catch(()=>{}); } else { navigator.clipboard?.writeText(txt); fire("Erinnerungs-Text kopiert"); } };
           return (
             <button onClick={doShare} style={{display:"flex",alignItems:"center",gap:9,width:"100%",background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:12,padding:"10px 13px",marginBottom:12,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
@@ -16839,7 +16867,13 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           const paxOf=d=>Object.keys(cp).filter(n=>cpe(n)?.mode==="need"&&cpe(n)?.car===d);
           const seeking=Object.keys(cp).filter(n=>cpe(n)?.mode==="need"&&!cpe(n)?.car);
           const duties=(viewEv.duties||[]).filter(d=>d.title);
-          const link=`${window.location.origin}${window.location.pathname}?club=${encodeURIComponent(myClub?.slug||cid)}&team=${encodeURIComponent(viewEv.tid)}&event=${encodeURIComponent(viewEv.id)}`;
+          const link=terminLink(myClub, viewEv.tid, viewEv.id);
+          // Keine Kindernamen im geteilten Text - der landet in Gruppen und
+          // wird weitergeleitet. Zahlen sagen dasselbe, ohne jemanden zu nennen.
+          const st=standZahlen(viewEv, squadOf(viewEv.tid));
+          const plaetze=drivers.reduce((n,d)=>n+(Number(cpe(d)?.seats)||0),0);
+          const belegt=drivers.reduce((n,d)=>n+paxOf(d).length,0);
+          const dienstOffen=duties.filter(d=>!d.assignee).length;
           const L=[
             `🏆 Spieltag-Zettel – ${evDisplayTitle(viewEv)}`,
             `📅 ${fmtD(viewEv.date)}${viewEv.time?` · ${viewEv.time} Uhr`:""}`,
@@ -16847,13 +16881,13 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             wxc&&`${wxIcon(wxc.c)} ${wxc.t}°C${(wxc.r??0)>=30?` · ${wxc.r}% Regen – Regenjacke einpacken!`:""}`,
             viewEv.note&&`📝 ${viewEv.note}`,
             ``,
-            `👥 Dabei (${yes.length}): ${yes.join(", ")||"noch keine Zusagen"}`,
-            hasLu&&`⭐ Aufstellung:\n   ${luTxt}`,
-            drivers.length&&`🚗 Es fahren: ${drivers.map(d=>{const e=cpe(d);const px=paxOf(d);return `${d}${e?.seats?` (${e.seats} Plätze${px.length?`: ${px.join(", ")}`:""})`:""}`;}).join(" · ")}`,
-            seeking.length&&`🙋 Suchen noch Mitfahrt: ${seeking.join(", ")}`,
-            duties.length&&`🤝 Dienste: ${duties.map(d=>`${d.title}${d.assignee?` – ${d.assignee}`:" – noch offen"}`).join(" · ")}`,
+            `✅ ${yes.length} dabei${st.kader?` · ❌ ${st.nein} abgesagt · ⏳ ${st.offen} noch offen`:""}`,
+            hasLu&&`⭐ Aufstellung steht – in der App ansehen`,
+            drivers.length&&`🚗 ${drivers.length} ${drivers.length===1?"Fahrer":"Fahrer"} · ${Math.max(0,plaetze-belegt)} freie Plätze`,
+            seeking.length&&`🙋 ${seeking.length} ${seeking.length===1?"sucht":"suchen"} noch eine Mitfahrt`,
+            duties.length&&`🤝 Dienste: ${duties.length-dienstOffen}/${duties.length} vergeben${dienstOffen?` · ${dienstOffen} offen`:""}`,
             ``,
-            `👉 Alles live in der App: ${link}`,
+            `👉 Alles live in der App – Namen, Fahrer und Aufstellung:\n${link}`,
           ].filter(x=>x!==false&&x!==undefined&&x!==null);
           const txt=L.join("\n");
           const doShare=()=>{ if(navigator.share){ navigator.share({title:"Spieltag-Zettel",text:txt}).catch(()=>{}); } else { navigator.clipboard?.writeText(txt); fire("Spieltag-Zettel kopiert"); } };
@@ -16938,7 +16972,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           </div>
         )}
         {viewEv.type==="turnier"
-          ? <TournView ev={viewEv} user={session.name||"Admin"} onVote={()=>{}} cl={myClub} players={local.players} isHelper={isHelper} teamCat={(local.teams||[]).find(tm=>tm.id===viewEv.tid)?.cat||null} fields={(data.fields||[]).filter(f=>f.cid===cid)}
+          ? <TournView ev={viewEv} user={session.name||"Admin"} onVote={()=>{}} istTrainerAnsicht cl={myClub} players={local.players} isHelper={isHelper} teamCat={(local.teams||[]).find(tm=>tm.id===viewEv.tid)?.cat||null} fields={(data.fields||[]).filter(f=>f.cid===cid)}
               onUpdate={patch=>{
                 const events=local.events.map(e=>e.id===viewEv.id?{...e,...patch}:e);
                 const updatedEv=events.find(e=>e.id===viewEv.id);
@@ -20852,7 +20886,7 @@ function FestivalPanel({ ev, setup, t, onUpdate, isHelper }){
     </div>
   );
 }
-function TournView({ ev,user,onVote,onUpdate,cl,players,isHelper=false,fields=[],onPublish,onUnpublish,teamCat=null }) {
+function TournView({ ev,user,onVote,onUpdate,cl,players,isHelper=false,fields=[],onPublish,onUnpublish,teamCat=null,istTrainerAnsicht=false }) {
   const t=TH(cl);
   const setup=ev.setup||{};
   const [stab,setStab]=useState("info");
@@ -20869,7 +20903,13 @@ function TournView({ ev,user,onVote,onUpdate,cl,players,isHelper=false,fields=[]
           </button>
         ))}
       </div>
-      {stab==="info"&&<PollAttend ev={ev} user={user} onVote={onVote} cl={cl}/>}
+      {/* Der Trainer braucht hier nicht "Mein Kind ist dabei" - die
+          Rueckmeldungen des ganzen Teams stehen ueber dieser Ansicht. */}
+      {stab==="info"&&(!istTrainerAnsicht
+        ? <PollAttend ev={ev} user={user} onVote={onVote} cl={cl}/>
+        : <div style={{background:"#f8fafc",border:"1px solid #e4e9f0",borderRadius:12,padding:"12px 14px",fontSize:12.5,color:"#667085",lineHeight:1.5}}>
+            Wer zu- oder abgesagt hat und wie viele noch fehlen, steht oben unter „Rückmeldungen“.
+          </div>)}
       {stab==="setup"&&!isHelper&&<>
         <TournSetup setup={setup} cl={cl} t={t} onUpdate={onUpdate} fields={fields} ev={ev}/>
         {(()=>{
@@ -22631,7 +22671,7 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user",allEven
             <div style={{fontSize:11.5,color:"#9a3412",marginTop:2,lineHeight:1.4}}>Dieser Termin hat mehrere Fragen – erst wenn alle Pflicht-Fragen beantwortet sind, gilt er als erledigt.</div>
           </div>);
         })()}
-        {ev.type==="turnier"&&isTrainerOrHelper?<TournView ev={ev} user={user} onVote={onVote} cl={cl} players={players} isHelper={role==="helper"}/>
+        {ev.type==="turnier"&&isTrainerOrHelper?<TournView ev={ev} user={user} onVote={onVote} istTrainerAnsicht cl={cl} players={players} isHelper={role==="helper"}/>
           :ev.type==="turnier"?<PollAttend ev={ev} user={user} onVote={onVote} cl={cl}/>
           :ev.pt==="none"?(
             <div style={{display:"flex",flexDirection:"column",gap:10}}>

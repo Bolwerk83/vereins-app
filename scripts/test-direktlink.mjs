@@ -75,7 +75,7 @@ if(/F-Jugend 1/.test(b)&&/Team-Passwort/.test(b)) ok("Der Link führt sofort zur
       await clickTxt("Los geht"); await page.waitForTimeout(1800);
       await dismiss(); b=await body();
     }
-    if(/BITTE ANTWORTEN|ALS NÄCHSTES|Kommt Ben/.test(b)) ok("Die Eltern landen direkt bei den Terminen ihres Kindes");
+    if(/BITTE ANTWORTEN|NÄCHSTES (TRAINING|SPIEL|TURNIER|TERMIN)|Kommt Ben/.test(b)) ok("Die Eltern landen direkt bei den Terminen ihres Kindes");
     else fail("Nicht bei den Terminen gelandet: "+b.slice(0,190).replace(/\n/g," | "));
   } else fail("Kein Passwort-Feld im Direktlink"); }
 
@@ -84,7 +84,7 @@ await page.evaluate(()=>sessionStorage.clear());
 await page.goto("http://127.0.0.1:4239/?club=demo-verein&team=demo_f1&kind=Ben%20Fischer", { waitUntil:"networkidle" });
 await page.waitForTimeout(3000); await dismiss();
 b=await body();
-if(/BITTE ANTWORTEN|ALS NÄCHSTES|Kommt Ben|Ben kommt/.test(b)) ok("Beim zweiten Mal geht es ohne jede Eingabe direkt zu den Terminen");
+if(/BITTE ANTWORTEN|NÄCHSTES (TRAINING|SPIEL|TURNIER|TERMIN)|Kommt Ben|Ben kommt/.test(b)) ok("Beim zweiten Mal geht es ohne jede Eingabe direkt zu den Terminen");
 else fail("Zweiter Aufruf nicht durchgereicht: "+b.slice(0,190).replace(/\n/g," | "));
 
 // ===== 4) Eltern geben den Link selbst weiter (an Papa, Oma, Fahrgemeinschaft) =====
