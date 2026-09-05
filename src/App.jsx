@@ -18149,6 +18149,29 @@ function AushilfenBoard({ ev, data, cl, onSetVote, onIgnorieren, onAnfrage, onAu
   );
 }
 
+// Wie kommt das Kind hin? Eine kurze Zeile fuer die Abhak-Liste des Trainers:
+// wer faehrt, wer mitfaehrt, wer selbst kommt - und wer noch eine Mitfahrt
+// braucht. Mit dem Tag, an dem es eingetragen wurde.
+const anreiseVon = (ev, name) => {
+  if(!carpoolDazu(ev)) return null;
+  const cp=ev.carpool||{};
+  const e=cp[name];
+  const tag=ts=>{ const t=antwortZeit(ts); return t?t.split(" · ")[0]:""; };
+  if(!e||typeof e!=="object"||!e.mode) return { icon:"❔", text:"Anreise offen", col:"#b45309", bg:"#fffbeb", offen:true };
+  if(e.mode==="drive"){
+    const plaetze=Number(e.seats)||0;
+    const mit=Object.entries(cp).filter(([,v])=>v&&typeof v==="object"&&v.mode==="need"&&v.car===name).length;
+    return { icon:"🚗", text:(()=>{ const frei=Math.max(0,plaetze-mit); return `fährt selbst${plaetze?` · ${frei} ${frei===1?"Platz":"Plätze"} frei`:""}`; })(), col:"#15803d", bg:"#f0fdf4", tag:tag(e.ts) };
+  }
+  if(e.mode==="need"){
+    if(e.car) return { icon:"🚗", text:`fährt mit ${String(e.car).split(" ")[0]}`, col:"#15803d", bg:"#f0fdf4", tag:tag(e.ts) };
+    const ang=e.angebot&&e.angebot.status==="offen"?e.angebot:null;
+    if(ang) return { icon:"⏳", text:`gefragt von ${String(ang.von).split(" ")[0]}`, col:"#b45309", bg:"#fffbeb", tag:tag(ang.ts) };
+    return { icon:"🙋", text:"braucht Mitfahrt", col:"#c2410c", bg:"#fff7ed", suche:true, tag:tag(e.ts) };
+  }
+  return { icon:"🚶", text:"kommt selbst", col:"#667085", bg:"#f8fafc", tag:tag(e.ts) };
+};
+
 function AttendanceCheckoff({ ev, teamPlayers=[], teamPlusAus=null, onSetPresent=()=>{}, onSetGuests=()=>{}, trainerNames=[], helperNames=[], onSetVote=null }){
   const [guestName,setGuestName]=useState("");
   const present=ev.present||{};
@@ -18177,7 +18200,21 @@ function AttendanceCheckoff({ ev, teamPlayers=[], teamPlusAus=null, onSetPresent
             <span style={{fontWeight:800,fontSize:13.5,color:"#0f172a",flex:1}}>Anwesenheit abhaken</span>
             <span style={{fontSize:11.5,fontWeight:700,color:"#16a34a"}}>{presN} da{noShows.length>0?` · ${noShows.length} No-Show`:""}</span>
           </div>
-          <div style={{fontSize:11,color:"#64748b",marginBottom:10,lineHeight:1.45}}>Hake ab, wer wirklich gekommen ist. „No-Show" = hat zugesagt, war aber nicht da.</div>
+          <div style={{fontSize:11,color:"#64748b",marginBottom:8,lineHeight:1.45}}>Hake ab, wer wirklich gekommen ist. „No-Show" = hat zugesagt, war aber nicht da.</div>
+          {/* Anreise auf einen Blick - damit man nicht jede Zeile lesen muss */}
+          {carpoolDazu(ev)&&(()=>{
+            const an=yesish.map(n=>anreiseVon(ev,n)).filter(Boolean);
+            const sucht=an.filter(x=>x.suche).length, offen=an.filter(x=>x.offen).length;
+            const faehrt=an.filter(x=>x.icon==="🚗").length;
+            if(!an.length) return null;
+            return (
+              <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:9}}>
+                <span style={{fontSize:10.5,fontWeight:800,color:"#15803d",background:"#dcfce7",borderRadius:6,padding:"2px 7px"}}>🚗 {faehrt} versorgt</span>
+                {sucht>0&&<span style={{fontSize:10.5,fontWeight:800,color:"#c2410c",background:"#ffedd5",borderRadius:6,padding:"2px 7px"}}>🙋 {sucht} braucht Mitfahrt</span>}
+                {offen>0&&<span style={{fontSize:10.5,fontWeight:800,color:"#b45309",background:"#fffbeb",borderRadius:6,padding:"2px 7px"}}>❔ {offen} ohne Angabe</span>}
+              </div>
+            );
+          })()}
           {/* Kein eigener Scrollkasten: auf dem Handy blieb der Finger darin
               haengen und man kam nur an die ersten Namen. Der Termin scrollt
               als Ganzes - die Liste steht komplett da. */}
@@ -18188,8 +18225,10 @@ function AttendanceCheckoff({ ev, teamPlayers=[], teamPlusAus=null, onSetPresent
               const lateMin=(typeof raw==="object"&&raw)?raw.late:null;
               const here=!!present[name];
               const noShow=val==="yes"&&!here;
+              const anr=val==="yes"?anreiseVon(ev,name):null;
               return (
-                <div key={name} onClick={()=>togglePresent(name)} style={{display:"flex",alignItems:"center",gap:10,background:here?"#f0fdf4":noShow?"#fff7ed":"#f8fafc",borderRadius:11,padding:"9px 11px",border:`1.5px solid ${here?"#bbf7d0":noShow?"#fed7aa":"#e2e8f0"}`,cursor:"pointer"}}>
+                <div key={name} onClick={()=>togglePresent(name)} style={{background:here?"#f0fdf4":noShow?"#fff7ed":"#f8fafc",borderRadius:11,padding:"9px 11px",border:`1.5px solid ${here?"#bbf7d0":noShow?"#fed7aa":"#e2e8f0"}`,cursor:"pointer"}}>
+                <div style={{display:"flex",alignItems:"center",gap:10}}>
                   <div style={{width:22,height:22,borderRadius:7,border:`2px solid ${here?"#16a34a":"#cbd5e1"}`,background:here?"#16a34a":"#fff",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:13,fontWeight:900}}>{here?"✓":""}</div>
                   <Av name={name} sz={30}/>
                   <span style={{flex:1,minWidth:0}}>
@@ -18208,6 +18247,17 @@ function AttendanceCheckoff({ ev, teamPlayers=[], teamPlusAus=null, onSetPresent
                       <button onClick={()=>onSetVote(name,"no")} title="Für diesen Spieler absagen" style={{width:28,height:26,borderRadius:8,border:"1.5px solid #fecaca",background:"#fff",color:"#dc2626",fontWeight:900,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>✕</button>
                     </span>
                   )}
+                </div>
+                {/* Wie kommt das Kind hin? Eigene Zeile ueber die volle Breite -
+                    sonst wird der Text abgeschnitten. Nur bei Terminen mit
+                    Fahrgemeinschaft und nur bei Zusagen. */}
+                {anr&&(
+                  <div style={{marginTop:6,paddingTop:5,borderTop:"1px dashed #e2e8f0",fontSize:11,fontWeight:700,color:anr.col,display:"flex",alignItems:"center",gap:5}}>
+                    <span>{anr.icon}</span>
+                    <span style={{flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{anr.text}</span>
+                    {anr.tag&&<span style={{fontWeight:600,color:"#98a2b3",whiteSpace:"nowrap"}}>{anr.tag}</span>}
+                  </div>
+                )}
                 </div>
               );
             })}
