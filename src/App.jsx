@@ -16906,6 +16906,37 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             </div>
           );
         })()}
+        {/* Bei Turnieren stand hier bisher NUR die Turnier-Ansicht - der Trainer
+            sah nicht, wer zu- oder abgesagt hat. Die Rueckmeldungen kommen
+            deshalb immer zuerst, die Turnier-Planung schliesst darunter an. */}
+        {viewEv.type==="turnier"&&(
+          <VoteOverview ev={viewEv} players={local.players} playerProfiles={local.playerProfiles||[]} teams={local.teams} myTids={myTids} cl={myClub}
+            readOnly={isHelper} trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams}
+            myKids={isHelper?[]:(((local.trainers||[]).find(x=>x.id===session?.id)?.childNames)||"").split(",").map(x=>x.trim()).filter(Boolean)}
+            staff={staffNeed(viewEv,{ perStaff:myClub?.clubSettings?.playersPerStaff||6, trainers:(local.trainers||[]).filter(trn=>(trn.tids||[]).includes(viewEv.tid)&&isActive(trn)).length, squad:(local.playerProfiles||[]).filter(pp=>pp.mainTid===viewEv.tid&&!pp.archived).length })}
+            onSetDeadline={deadline=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,deadline}:e)}); setViewEv(prev=>({...prev,deadline})); fire("Frist gesetzt"); }}
+            onSetPresent={present=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,present}:e)}); setViewEv(prev=>({...prev,present})); }}
+            onSetGuests={guests=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,guests}:e)}); setViewEv(prev=>({...prev,guests})); }}
+            onSetVote={isHelper?null:(name,val)=>{
+              const nv={...(viewEv.votes||{}),[name]:{val,ts:new Date().toISOString(),byTrainer:true,role:"player"}};
+              save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,votes:nv}:e)});
+              setViewEv(prev=>({...prev,votes:nv}));
+              fire(val==="yes"?name+": zugesagt (vom Trainer eingetragen)":name+": abgesagt (vom Trainer eingetragen)");
+            }}
+            onVotePatch={isHelper?null:(name,patch)=>{
+              const alt=(viewEv.votes||{})[name];
+              const basis=(typeof alt==="object"&&alt!==null)?alt:{val:alt,ts:new Date().toISOString()};
+              const nv={...(viewEv.votes||{}),[name]:{...basis,...patch,okAt:new Date().toISOString(),okBy:session?.name||"Trainer"}};
+              save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,votes:nv}:e)});
+              setViewEv(prev=>({...prev,votes:nv}));
+              fire(patch&&patch.declined?name+": späte Anmeldung abgelehnt":name+": freigegeben – du kannst mit ihm planen");
+            }}/>
+        )}
+        {viewEv.type==="turnier"&&(
+          <div style={{marginTop:18,paddingTop:14,borderTop:"1px solid #e2e8f0"}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#94a3b8",letterSpacing:1,marginBottom:8}}>🏆 TURNIER-PLANUNG</div>
+          </div>
+        )}
         {viewEv.type==="turnier"
           ? <TournView ev={viewEv} user={session.name||"Admin"} onVote={()=>{}} cl={myClub} players={local.players} isHelper={isHelper} teamCat={(local.teams||[]).find(tm=>tm.id===viewEv.tid)?.cat||null} fields={(data.fields||[]).filter(f=>f.cid===cid)}
               onUpdate={patch=>{
