@@ -289,9 +289,14 @@ export const AXIS_TO_FOCUS = {
 // Betreuer-Bedarf: benötigte Trainer/Betreuer aus der erwarteten Spielerzahl.
 // Standard 6 Spieler je Betreuer (einstellbar, sinnvoll 6–8). Verfügbar = zugeteilte
 // Trainer bzw. eingecheckte Trainer (das Größere) + zugesagte Helfer.
-export const staffNeed = (ev, { perStaff=6, trainers=0, squad=0 }={}) => {
+// yesPlayers: Zusagen OHNE Betreuer. Wer sie kennt (die App unterscheidet
+// Spieler und Betreuer ueber Kader und Rolle), gibt sie mit - sonst wuerden
+// die Zusagen der Trainer und Helfer als Spieler in den Betreuer-Schluessel
+// wandern ("~13 Spieler" bei 11 Kinder-Zusagen und 2 Betreuern).
+export const staffNeed = (ev, { perStaff=6, trainers=0, squad=0, yesPlayers=null }={}) => {
   const ps = Math.max(1, Number(perStaff)||6);
-  const yes = Object.values(ev.votes||{}).filter(v=>(typeof v==="object"?v.val:v)==="yes").length;
+  const yes = yesPlayers!=null ? Number(yesPlayers)||0
+    : Object.values(ev.votes||{}).filter(v=>(typeof v==="object"?v.val:v)==="yes").length;
   const expected = yes>0 ? yes : (ev.sollPlayers||squad||0);
   const required = expected>0 ? Math.max(1, Math.ceil(expected/ps)) : 0;
   const avail = Math.max(Object.keys(ev.trainerPresence||{}).length, trainers||0) + (ev.helperOffers||[]).length;

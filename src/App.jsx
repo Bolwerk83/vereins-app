@@ -16195,6 +16195,11 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   // Fuer die Spieler/Betreuer-Unterscheidung zaehlen auch die Aushilfen aus
   // anderen Mannschaften als Spieler - sonst stehen sie bei den Betreuern.
   const squadPlusOf=tid=>kaderNamen(local.players,local.playerProfiles,tid,true);
+  // Zusagen OHNE Betreuer - der Betreuer-Schluessel rechnet nur mit Kindern.
+  const jaSpieler=(ev)=>{
+    const ctx={staff:staffSet(trainerNames,helperNames),squad:squadSet(squadPlusOf(ev.tid)),guests:ev.guests||[],open:!!ev.open};
+    return Object.entries(ev.votes||{}).filter(([n,v])=>((typeof v==="object"&&v)?v.val:v)==="yes"&&isPlayerVote(n,v,ctx)).length;
+  };
   const [subReqEv,setSubReqEv]=useState(null);   // Vertretungs-Gesuch anlegen (Modal)
   const [subNote,setSubNote]=useState("");
   useEffect(()=>{ setEvTab("rueck"); },[viewEv?.id]);
@@ -16593,7 +16598,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             } else {
             (local.events||[]).filter(e=>myTids.includes(e.tid)).forEach(e=>{
               if(e.date>=tod&&e.date<=todoBis)
-                eventWarnings(e,tod,{ events:local.events, teams:local.teams, perStaff:myClub?.clubSettings?.playersPerStaff||6, trainers:(local.trainers||[]).filter(trn=>(trn.tids||[]).includes(e.tid)&&isActive(trn)).length, squad:(local.playerProfiles||[]).filter(pp=>pp.mainTid===e.tid&&!pp.archived).length }).forEach(x=>todos.push({ev:e,label:x.label,col:x.col,bg:x.bg}));
+                eventWarnings(e,tod,{ events:local.events, teams:local.teams, perStaff:myClub?.clubSettings?.playersPerStaff||6, trainers:(local.trainers||[]).filter(trn=>(trn.tids||[]).includes(e.tid)&&isActive(trn)).length, squad:(local.playerProfiles||[]).filter(pp=>pp.mainTid===e.tid&&!pp.archived).length, trainerNames, helperNames, squadNames:squadPlusOf(e.tid) }).forEach(x=>todos.push({ev:e,label:x.label,col:x.col,bg:x.bg}));
               // Der Spielbericht schaut zurueck statt voraus - er bleibt, bis er
               // geschrieben ist (sonst geht er einfach verloren).
               if(["heimspiel","auswarts","freundschaft"].includes(e.type)&&e.date<tod&&e.date>=addD(tod,-21)&&!(e.report&&e.report.ts)) todos.push({ev:e,label:"Spielbericht eintragen",col:"#2563eb",bg:"#eff6ff"});
@@ -16947,7 +16952,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           <VoteOverview ev={viewEv} players={local.players} playerProfiles={local.playerProfiles||[]} teams={local.teams} myTids={myTids} cl={myClub}
             readOnly={isHelper} trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams}
             myKids={isHelper?[]:(((local.trainers||[]).find(x=>x.id===session?.id)?.childNames)||"").split(",").map(x=>x.trim()).filter(Boolean)}
-            staff={staffNeed(viewEv,{ perStaff:myClub?.clubSettings?.playersPerStaff||6, trainers:(local.trainers||[]).filter(trn=>(trn.tids||[]).includes(viewEv.tid)&&isActive(trn)).length, squad:(local.playerProfiles||[]).filter(pp=>pp.mainTid===viewEv.tid&&!pp.archived).length })}
+            staff={staffNeed(viewEv,{ perStaff:myClub?.clubSettings?.playersPerStaff||6, trainers:(local.trainers||[]).filter(trn=>(trn.tids||[]).includes(viewEv.tid)&&isActive(trn)).length, squad:(local.playerProfiles||[]).filter(pp=>pp.mainTid===viewEv.tid&&!pp.archived).length, yesPlayers:jaSpieler(viewEv) })}
             onSetDeadline={deadline=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,deadline}:e)}); setViewEv(prev=>({...prev,deadline})); fire("Frist gesetzt"); }}
             onSetPresent={present=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,present}:e)}); setViewEv(prev=>({...prev,present})); }}
             onSetGuests={guests=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,guests}:e)}); setViewEv(prev=>({...prev,guests})); }}
@@ -17014,7 +17019,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           : <VoteOverview ev={viewEv} players={local.players} playerProfiles={local.playerProfiles||[]} teams={local.teams} myTids={myTids} cl={myClub}
               readOnly={isHelper} trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams}
               myKids={isHelper?[]:(((local.trainers||[]).find(x=>x.id===session?.id)?.childNames)||"").split(",").map(x=>x.trim()).filter(Boolean)}
-              staff={staffNeed(viewEv,{ perStaff:myClub?.clubSettings?.playersPerStaff||6, trainers:(local.trainers||[]).filter(trn=>(trn.tids||[]).includes(viewEv.tid)&&isActive(trn)).length, squad:(local.playerProfiles||[]).filter(pp=>pp.mainTid===viewEv.tid&&!pp.archived).length })}
+              staff={staffNeed(viewEv,{ perStaff:myClub?.clubSettings?.playersPerStaff||6, trainers:(local.trainers||[]).filter(trn=>(trn.tids||[]).includes(viewEv.tid)&&isActive(trn)).length, squad:(local.playerProfiles||[]).filter(pp=>pp.mainTid===viewEv.tid&&!pp.archived).length, yesPlayers:jaSpieler(viewEv) })}
               onSetDeadline={deadline=>{
                 save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,deadline}:e)});
                 setViewEv(prev=>({...prev,deadline}));
@@ -17159,6 +17164,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           onSetGuests={guests=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,guests}:e)}); setViewEv(prev=>({...prev,guests})); }}/>}
         {viewEv.type==="training"&&(
           <StaffingBoard ev={viewEv} team={(local.teams||[]).find(tm=>tm.id===viewEv.tid)} session={session} isHelper={isHelper}
+            trainerNames={trainerNames} helperNames={helperNames} squadNames={squadPlusOf(viewEv.tid)}
             assignedTrainers={(local.trainers||[]).filter(trn=>(trn.tids||[]).includes(viewEv.tid)&&isActive(trn)).length}
             perStaff={myClub?.clubSettings?.playersPerStaff||6}
             onPatch={patch=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,...patch}:e)}); setViewEv(prev=>({...prev,...patch})); }}
@@ -17166,6 +17172,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         )}
         {viewEv.type!=="training"&&(viewEv.helferOpen
           ? <StaffingBoard mode="helfer" ev={viewEv} team={(local.teams||[]).find(tm=>tm.id===viewEv.tid)} session={session} isHelper={isHelper}
+            trainerNames={trainerNames} helperNames={helperNames} squadNames={squadPlusOf(viewEv.tid)}
               onPatch={patch=>{ save({...local,events:local.events.map(e=>e.id===viewEv.id?{...e,...patch}:e)}); setViewEv(prev=>({...prev,...patch})); }}
               fire={fire}/>
           : <HelferInteresse ev={viewEv} isHelper={isHelper} session={session} fire={fire}
@@ -18799,7 +18806,11 @@ function eventWarnings(ev, tod, ctx={}){
   // Betreuer reichen? (Training + Spiele) – nötige Trainer aus Spielerzahl/Betreuer-Schlüssel.
   // Nur wenn die Trainer-Anzahl bekannt ist (ctx.trainers) – sonst kein Fehlalarm auf der Event-Zeile.
   if((ev.type==="training"||isGame) && days<=10 && ctx.trainers!=null){
-    const sn=staffNeed(ev, ctx);
+    const sn=staffNeed(ev, {...ctx, yesPlayers:(()=>{
+      if(!ctx.trainerNames&&!ctx.helperNames) return null;   // ohne Namen: alte Zaehlung
+      const c={staff:staffSet(ctx.trainerNames||[],ctx.helperNames||[]),squad:squadSet(ctx.squadNames||[]),guests:ev.guests||[],open:!!ev.open};
+      return Object.entries(ev.votes||{}).filter(([n,v])=>((typeof v==="object"&&v)?v.val:v)==="yes"&&isPlayerVote(n,v,c)).length;
+    })()});
     if(sn.required>0 && !sn.ok) w.push({label:`Betreuer ${sn.avail}/${sn.required}`,col:"#d97706",bg:"#fef3c7"});
   }
   if(ev.type==="auswarts" && days<=4){
@@ -19568,7 +19579,7 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
   const wd=d=>{ try{ return new Date(d+"T12:00:00").toLocaleDateString("de-DE",{weekday:"short"})+", "; }catch{ return ""; } };
   const wx=useWeather(plzToGeo(cl?.plz));
   const eT=ET[ev.type]||ET.training; const tF=ev.date===tod; const p=cl?.pri||"#16a34a";
-  const warns=eventWarnings(ev,tod,{ perStaff:cl?.clubSettings?.playersPerStaff||6, trainerNames, helperNames, events:allEvents, teams:allTeams });
+  const warns=eventWarnings(ev,tod,{ perStaff:cl?.clubSettings?.playersPerStaff||6, trainerNames, helperNames, squadNames:squad, events:allEvents, teams:allTeams });
   const _v=ev.votes||{};
   const vc=Object.keys(_v).length;
   // Spieler- und Trainer-Zusagen getrennt: "mind. 6 Spieler" braucht die Spieler-Zahl
@@ -22162,11 +22173,14 @@ const LINEUP_LINES = [["T","Tor"],["A","Abwehr"],["M","Mittelfeld"],["S","Angrif
 // Schnell-Spielbericht: Ergebnis + Torschützen + Notiz, in Sekunden nach dem Spiel.
 // Betreuung/Staffing fürs Training: Soll 2–3 je nach Größe, Trainer haben Vorrang,
 // Helfer füllen nur die Lücke (wer zuerst kommt) – Rest auf die Warteliste.
-function StaffingBoard({ ev, team, session, isHelper, onPatch, fire, onRequestHelpers, assignedTrainers=0, perStaff=6, mode="betreuung" }){
+function StaffingBoard({ ev, team, session, isHelper, onPatch, fire, onRequestHelpers, assignedTrainers=0, perStaff=6, mode="betreuung", trainerNames=[], helperNames=[], squadNames=[] }){
   const { tr } = useT();
   const hm=mode==="helfer";   // Helfer-Einsatz: vom Trainer freigegebener Termin (Spieltag, Turnier, Fest ...)
   const role=session?.role; const isManager=role==="trainer"||role==="admin";
-  const yes=Object.entries(ev.votes||{}).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").length;
+  // Nur Kinder zaehlen fuer den Betreuer-Schluessel - die Zusage eines
+  // Trainers macht keine zusaetzliche Aufsicht noetig.
+  const _sbCtx={staff:staffSet(trainerNames,helperNames),squad:squadSet(squadNames),guests:ev.guests||[],open:!!ev.open};
+  const yes=Object.entries(ev.votes||{}).filter(([n,v])=>((typeof v==="object"&&v)?v.val:v)==="yes"&&isPlayerVote(n,v,_sbCtx)).length;
   const size=yes||ev.sollPlayers||defaultSollPlayers(team?.cat)||7;
   const ps=Math.max(1,Number(perStaff)||6);
   const reqDefault=Math.max(1,Math.ceil(size/ps));         // Standard-Soll aus Spielerzahl/Schlüssel
