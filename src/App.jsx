@@ -18172,6 +18172,25 @@ const anreiseVon = (ev, name) => {
   return { icon:"🚶", text:"kommt selbst", col:"#667085", bg:"#f8fafc", tag:tag(e.ts) };
 };
 
+// Was bringt jemand mit? Aus den Zusatz-Listen des Termins ("Wer bringt
+// Kuchen mit?") und den uebernommenen Diensten. Beim eigenen Turnier steht
+// so neben der Anreise auch die Verpflegung - bewusst ganz leise, eine
+// graue Zeile ohne Signalfarbe.
+const bringtMit = (ev, name) => {
+  const raus=[];
+  (ev?.extraPolls||[]).forEach(pl=>{
+    const v=(pl.votes||{})[name];
+    if(Array.isArray(v)&&v.length) v.forEach(id=>{
+      const it=(pl.items||[]).find(x=>x.id===id);
+      if(it&&it.txt) raus.push(it.txt);
+    });
+  });
+  (ev?.duties||[]).forEach(d=>{ if(d&&d.assignee===name&&d.title) raus.push(d.title); });
+  const uniq=[...new Set(raus)];
+  if(!uniq.length) return "";
+  return uniq.length>3 ? uniq.slice(0,3).join(", ")+" +"+(uniq.length-3) : uniq.join(", ");
+};
+
 function AttendanceCheckoff({ ev, teamPlayers=[], teamPlusAus=null, onSetPresent=()=>{}, onSetGuests=()=>{}, trainerNames=[], helperNames=[], onSetVote=null }){
   const [guestName,setGuestName]=useState("");
   const present=ev.present||{};
@@ -18226,6 +18245,7 @@ function AttendanceCheckoff({ ev, teamPlayers=[], teamPlusAus=null, onSetPresent
               const here=!!present[name];
               const noShow=val==="yes"&&!here;
               const anr=val==="yes"?anreiseVon(ev,name):null;
+              const bringt=val==="yes"?bringtMit(ev,name):"";
               return (
                 <div key={name} onClick={()=>togglePresent(name)} style={{background:here?"#f0fdf4":noShow?"#fff7ed":"#f8fafc",borderRadius:11,padding:"9px 11px",border:`1.5px solid ${here?"#bbf7d0":noShow?"#fed7aa":"#e2e8f0"}`,cursor:"pointer"}}>
                 <div style={{display:"flex",alignItems:"center",gap:10}}>
@@ -18251,11 +18271,21 @@ function AttendanceCheckoff({ ev, teamPlayers=[], teamPlusAus=null, onSetPresent
                 {/* Wie kommt das Kind hin? Eigene Zeile ueber die volle Breite -
                     sonst wird der Text abgeschnitten. Nur bei Terminen mit
                     Fahrgemeinschaft und nur bei Zusagen. */}
-                {anr&&(
-                  <div style={{marginTop:6,paddingTop:5,borderTop:"1px dashed #e2e8f0",fontSize:11,fontWeight:700,color:anr.col,display:"flex",alignItems:"center",gap:5}}>
-                    <span>{anr.icon}</span>
-                    <span style={{flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{anr.text}</span>
-                    {anr.tag&&<span style={{fontWeight:600,color:"#98a2b3",whiteSpace:"nowrap"}}>{anr.tag}</span>}
+                {(anr||bringt)&&(
+                  <div style={{marginTop:6,paddingTop:5,borderTop:"1px dashed #e2e8f0"}}>
+                    {anr&&(
+                      <div style={{fontSize:11,fontWeight:700,color:anr.col,display:"flex",alignItems:"center",gap:5}}>
+                        <span>{anr.icon}</span>
+                        <span style={{flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{anr.text}</span>
+                        {anr.tag&&<span style={{fontWeight:600,color:"#98a2b3",whiteSpace:"nowrap"}}>{anr.tag}</span>}
+                      </div>
+                    )}
+                    {/* Ganz leise: nur Grautoene, keine Signalfarbe. */}
+                    {bringt&&(
+                      <div style={{fontSize:10.5,fontWeight:600,color:"#98a2b3",marginTop:anr?2:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                        bringt mit: {bringt}
+                      </div>
+                    )}
                   </div>
                 )}
                 </div>

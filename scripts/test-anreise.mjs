@@ -1,7 +1,8 @@
 // E2E-Test: In der Abhak-Liste des Trainers steht bei jedem Kind, wie es
 // zum Termin kommt – wer selbst fährt, wer mitfährt, wer noch eine
 // Mitfahrgelegenheit braucht – jeweils mit dem Tag, an dem es eingetragen
-// wurde. Oben zusätzlich der Stand in Zahlen.
+// wurde. Oben zusätzlich der Stand in Zahlen. Beim eigenen Turnier steht
+// dezent darunter, wer was mitbringt.
 // Aufruf: npm run build && node scripts/test-anreise.mjs
 import { chromium } from "playwright-core";
 import http from "http"; import fs from "fs"; import path from "path";
@@ -51,7 +52,11 @@ const k = await page.evaluate(()=>{
     carpool:{ [fahrer]:{mode:"drive",seats:3,ts:alt},
               [mit]:{mode:"need",car:fahrer,ts:alt},
               [sucht]:{mode:"need",car:null,ts:alt},
-              [selbst]:{mode:"self",ts:alt} } });
+              [selbst]:{mode:"self",ts:alt} },
+    extraPolls:[{id:"ep_k",title:"Wer bringt was mit?",selType:"multi",opt:true,
+      items:[{id:"i1",txt:"Kuchen"},{id:"i2",txt:"Getränke"},{id:"i3",txt:"Obst"}],
+      votes:{ [fahrer]:["i1","i2"], [mit]:["i3"] } }],
+    duties:[{id:"d1",title:"Kuchentheke",assignee:mit}] });
   evs.slice(1).forEach(e=>{ e.date=tg(12); });
   localStorage.setItem("vereinsapp_v14", JSON.stringify(d));
   return {fahrer,mit,sucht,selbst};
@@ -91,20 +96,37 @@ else fail("„Kommt selbst“ fehlt: "+zeile(k.selbst));
   if(tage.length>=4) ok("Bei jeder Anreise steht der Tag dabei ("+tage.slice(0,2).join(" / ")+" …)");
   else fail("Kein Datum an der Anreise: "+JSON.stringify(tage)); }
 
+// 3b) Wer was mitbringt – dezent, ohne Signalfarbe
+if(new RegExp("bringt mit: Kuchen, Getränke").test(zeile(k.fahrer)))
+  ok("Beim Kuchenbäcker steht, was er mitbringt: „bringt mit: Kuchen, Getränke“");
+else fail("„bringt mit“ fehlt: "+zeile(k.fahrer));
+if(/bringt mit: Obst, Kuchentheke/.test(zeile(k.mit)))
+  ok("Auch übernommene Dienste stehen dabei: „Obst, Kuchentheke“");
+else fail("Dienst fehlt in „bringt mit“: "+zeile(k.mit));
+if(!/bringt mit/.test(zeile(k.sucht))) ok("Wer nichts mitbringt, bekommt auch keine Zeile");
+else fail("„bringt mit“ ohne Eintrag: "+zeile(k.sucht));
+{ const grau=await page.evaluate(()=>{
+    const el=[...document.querySelectorAll("div")].find(d=>/^bringt mit:/.test((d.innerText||"").trim()));
+    if(!el) return null; const cs=getComputedStyle(el);
+    return { farbe:cs.color, groesse:parseFloat(cs.fontSize) }; });
+  if(grau&&grau.groesse<=11&&/148|152|154|167/.test(grau.farbe))
+    ok("Und bleibt dezent: "+grau.groesse+"px in Grau ("+grau.farbe+")");
+  else fail("Nicht dezent genug: "+JSON.stringify(grau)); }
+
 // 4) Ohne Fahrgemeinschaft keine Anreise-Zeile
 await page.evaluate(()=>{ const b=[...document.querySelectorAll("button")].find(x=>(x.getAttribute("aria-label")||"")==="Schließen"||(x.innerText||"").trim()==="✕"); b&&b.click(); });
 await page.waitForTimeout(700);
 await page.evaluate(()=>{
   const d=JSON.parse(localStorage.getItem("vereinsapp_v14"));
   const ev=(d.events||[]).filter(e=>e.cid==="demo"&&e.tid==="demo_f1").sort((a,b)=>String(a.date).localeCompare(String(b.date)))[0];
-  ev.type="training"; ev.carpoolExtra=false; ev.carpoolEnabled=false;
+  ev.type="training"; ev.carpoolExtra=false; ev.carpoolEnabled=false; ev.extraPolls=[]; ev.duties=[];
   localStorage.setItem("vereinsapp_v14", JSON.stringify(d));
 });
 await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2800); await dismiss();
 await page.evaluate(()=>{ const b=[...document.querySelectorAll("button")].find(x=>/^(Ansehen|✅ Anwesenheit)$/.test((x.innerText||"").trim())); b&&b.click(); });
 await page.waitForTimeout(1500);
 { const L2=await liste();
-  if(L2&&!/versorgt|braucht Mitfahrt|fährt selbst/.test(L2)) ok("Ohne Fahrgemeinschaft bleibt die Liste schlank – keine Anreise-Zeilen");
+  if(L2&&!/versorgt|braucht Mitfahrt|fährt selbst|bringt mit/.test(L2)) ok("Ohne Fahrgemeinschaft und Listen bleibt die Liste schlank");
   else fail("Anreise-Zeilen auch ohne Fahrgemeinschaft: "+String(L2).slice(0,240).replace(/\n/g," | ")); }
 
 if(errors.length){ console.log("JS-FEHLER:"); [...new Set(errors)].forEach(e=>console.log(" -",e.slice(0,150))); }
