@@ -16196,6 +16196,10 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   // anderen Mannschaften als Spieler - sonst stehen sie bei den Betreuern.
   const squadPlusOf=tid=>kaderNamen(local.players,local.playerProfiles,tid,true);
   // Zusagen OHNE Betreuer - der Betreuer-Schluessel rechnet nur mit Kindern.
+  const jaSpielerNamen=(ev)=>{
+    const ctx={staff:staffSet(trainerNames,helperNames),squad:squadSet(squadPlusOf(ev.tid)),guests:ev.guests||[],open:!!ev.open};
+    return Object.entries(ev.votes||{}).filter(([n,v])=>((typeof v==="object"&&v)?v.val:v)==="yes"&&isPlayerVote(n,v,ctx)).map(([n])=>n);
+  };
   const jaSpieler=(ev)=>{
     const ctx={staff:staffSet(trainerNames,helperNames),squad:squadSet(squadPlusOf(ev.tid)),guests:ev.guests||[],open:!!ev.open};
     return Object.entries(ev.votes||{}).filter(([n,v])=>((typeof v==="object"&&v)?v.val:v)==="yes"&&isPlayerVote(n,v,ctx)).length;
@@ -17271,7 +17275,16 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           );
         })()}
         {["heimspiel","auswarts","freundschaft","turnier"].includes(viewEv.type)&&<LineupBoard ev={viewEv}
-          present={Object.entries(viewEv.votes||{}).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>n)}
+          present={jaSpielerNamen(viewEv)}
+          betreuer={(()=>{
+            // Wer als Betreuer zur Verfuegung steht: Trainer und Helfer der
+            // Mannschaft, zuerst die, die zugesagt haben.
+            const vv=v=>(typeof v==="object"&&v)?v.val:v;
+            const zugesagt=new Set(Object.entries(viewEv.votes||{}).filter(([,v])=>vv(v)==="yes").map(([n])=>n));
+            const helferDa=(viewEv.helperOffers||[]).map(o=>o.name).filter(Boolean);
+            const alle=[...new Set([...trainerNames,...helperNames,...helferDa])].filter(Boolean);
+            return alle.sort((a,b)=>(zugesagt.has(b)?1:0)-(zugesagt.has(a)?1:0)||String(a).localeCompare(String(b),"de"));
+          })()}
           canEdit={!isHelper}
           profiles={local.playerProfiles||[]}
           pastLineups={(local.events||[]).filter(e=>e.tid===viewEv.tid&&e.id!==viewEv.id&&e.lineup&&[...(e.lineup.T||[]),...(e.lineup.A||[]),...(e.lineup.M||[]),...(e.lineup.S||[])].length>0).map(e=>e.lineup)}
@@ -22601,7 +22614,7 @@ function recommendLineup(present, profiles, pastLineups, friendWeight=1){
   const friends=fp.sort((x,y)=>(y.must-x.must)).slice(0,4);
   return {lineup,bench,formation,pairs,friends,count:n};
 }
-function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChange=undefined, profiles=[], pastLineups=[] }){
+function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChange=undefined, profiles=[], pastLineups=[], betreuer=[] }){
   const { tr } = useT();
   const LINE_LABELS = {T:tr("lnTor"),A:tr("lnAbwehr"),M:tr("lnMittelfeld"),S:tr("lnAngriff")};
   // Mehrere Mannschaften je Termin (Turnier: G1, G2 ...). Alt gespeicherte
@@ -22612,7 +22625,10 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
     : [{ id:"t1", name:"Team 1", ...leer(), ...(ev.lineup||{}) }];
   const spielerVon = t => [...(t.T||[]),...(t.A||[]),...(t.M||[]),...(t.S||[])];
   const placed = teams.flatMap(spielerVon);
-  const bench = (present||[]).filter(n=>!placed.includes(n));
+  // Betreuer gehoeren nicht auf die Spielerbank - sie werden den Mannschaften
+  // getrennt zugewiesen.
+  const _beSet=new Set((betreuer||[]).map(n=>String(n).toLowerCase().trim()));
+  const bench = (present||[]).filter(n=>!placed.includes(n)&&!_beSet.has(String(n).toLowerCase().trim()));
   const [tip,setTip]=useState(null);
   const [friendW,setFriendW]=useState(1);   // 0=aus, 1=normal, 2=stark – pro Aufstellung wählbar
   // Immer genau eine Mannschaft offen: so ist klar, wohin die Bank einsortiert.
@@ -22640,6 +22656,13 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
     sichern(rest); if(offen===tid) setOffen(rest[0].id);
   };
   const teamName = (tid,name) => sichern(teams.map(t=>t.id===tid?{...t,name}:t));
+  // Wer betreut welche Mannschaft? Eine Person kann auch zwei betreuen -
+  // deshalb hier bewusst keine Aussortierung ueber die Mannschaften hinweg.
+  const staffTog = (tid,name) => sichern(teams.map(t=>{
+    if(t.id!==tid) return t;
+    const cur=t.staff||[];
+    return {...t, staff: cur.includes(name) ? cur.filter(x=>x!==name) : [...cur,name]};
+  }));
   const lineColors={T:"#d97706",A:"#2563eb",M:"#16a34a",S:"#dc2626"};
   // KI-Vorschlag: Formation nach Teilnehmerzahl + Besetzung nach Position/Stärken.
   // Vorschlag fuellt die OFFENE Mannschaft - aus allen, die noch frei sind.
@@ -22709,12 +22732,35 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
                 <button onClick={e=>{ e.stopPropagation(); teamDel(t.id); }} title="Mannschaft entfernen"
                   style={{padding:"4px 7px",borderRadius:7,border:"none",background:"transparent",color:"#dc2626",fontSize:12,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>🗑</button>
               )}
+              {!auf&&(t.staff||[]).length>0&&(
+                <span style={{fontSize:10.5,fontWeight:700,color:"#7c3aed",whiteSpace:"nowrap",flexShrink:0}}>{(t.staff||[]).map(n=>String(n).split(" ")[0]).join(", ")}</span>
+              )}
               {!auf&&drin.length>0&&(
                 <span style={{display:"flex",flexShrink:0}}>{drin.slice(0,4).map((n,i)=><span key={n} style={{marginLeft:i?-7:0,zIndex:4-i}}><Av name={n} sz={20}/></span>)}</span>
               )}
             </div>
             {auf&&(
               <div style={{padding:"0 12px 10px",display:"flex",flexDirection:"column",gap:8}}>
+                {/* Wer betreut diese Mannschaft? */}
+                {(canEdit||(t.staff||[]).length>0)&&(betreuer||[]).length>0&&(
+                  <div style={{display:"flex",alignItems:"flex-start",gap:8,minHeight:30,paddingBottom:4,borderBottom:"1px dashed #bbf7d0"}}>
+                    <span style={{fontSize:10,fontWeight:800,color:"#7c3aed",width:74,flexShrink:0,letterSpacing:.3,paddingTop:5}}>BETREUUNG</span>
+                    <div style={{flex:1,display:"flex",flexWrap:"wrap",gap:5}}>
+                      {(t.staff||[]).length===0&&!canEdit&&<span style={{fontSize:12,color:"#64748b"}}>–</span>}
+                      {(t.staff||[]).map(n=>(
+                        <span key={n} onClick={()=>canEdit&&staffTog(t.id,n)} style={{display:"flex",alignItems:"center",gap:5,background:"#fff",borderRadius:99,padding:"3px 9px 3px 3px",border:"1.5px solid #7c3aed",cursor:canEdit?"pointer":"default"}}>
+                          <Av name={n} sz={20}/><span style={{fontSize:12.5,fontWeight:700,color:"#0f172a"}}>{n}</span>{canEdit&&<span style={{color:"#dc2626",fontWeight:800,fontSize:12}}>×</span>}
+                        </span>
+                      ))}
+                      {canEdit&&(betreuer||[]).filter(n=>!(t.staff||[]).includes(n)).map(n=>(
+                        <button key={"add"+n} onClick={()=>staffTog(t.id,n)} title={`${n} dieser Mannschaft zuweisen`}
+                          style={{display:"flex",alignItems:"center",gap:4,background:"#faf5ff",borderRadius:99,padding:"3px 9px 3px 3px",border:"1.5px dashed #ddd6fe",cursor:"pointer",fontFamily:"inherit"}}>
+                          <Av name={n} sz={18}/><span style={{fontSize:12,fontWeight:600,color:"#7c3aed"}}>+ {String(n).split(" ")[0]}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {LINEUP_LINES.map(([k,label])=>(
                   <div key={k} style={{display:"flex",alignItems:"center",gap:8,minHeight:34}}>
                     <span style={{fontSize:10,fontWeight:800,color:lineColors[k],width:74,flexShrink:0,letterSpacing:.3}}>{(LINE_LABELS[k]||label).toUpperCase()}</span>
