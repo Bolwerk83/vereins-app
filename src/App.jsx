@@ -17583,6 +17583,37 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           </div>
         );
       })()}
+      {/* Jemand übernimmt dein Gesuch: beim nächsten Öffnen kommt die frohe
+          Botschaft hoch - einmal bestätigen, dann ist Ruhe. */}
+      {(()=>{
+        if(isHelper) return null;
+        const meins=(local.subRequests||[]).filter(r=>r.cid===cid&&r.by===session?.id&&r.status==="taken"&&!r.ack);
+        const r=meins[0]; if(!r) return null;
+        const ev=(local.events||[]).find(e=>e.id===r.evId);
+        if(!ev||ev.date<tod) return null;
+        const zurKenntnis=()=>save({...local,subRequests:(local.subRequests||[]).map(x=>x.id===r.id?{...x,ack:true}:x)});
+        return (
+        <div style={{position:"fixed",inset:0,background:"rgba(15,23,42,.62)",zIndex:2300,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+          <div style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:480,padding:"20px 18px calc(24px + env(safe-area-inset-bottom))"}}>
+            <div style={{fontSize:34,textAlign:"center",lineHeight:1,marginBottom:8}}>🤝</div>
+            <div style={{fontWeight:900,fontSize:20,color:"#0f172a",textAlign:"center",lineHeight:1.25}}>
+              {r.takenBy} übernimmt für dich
+            </div>
+            <div style={{fontSize:13.5,color:"#475569",textAlign:"center",marginTop:6,lineHeight:1.5}}>
+              {evDisplayTitle?evDisplayTitle(ev):ev.title} · {tagKurz(ev.date)}{zeitZeile(ev)?` · ${zeitZeile(ev)}`:""}
+              {ev.loc?<><br/>📍 {ev.loc}</>:null}
+            </div>
+            <div style={{fontSize:12.5,color:"#15803d",background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:12,padding:"10px 13px",marginTop:14,lineHeight:1.45,textAlign:"center"}}>
+              ✓ {String(r.takenBy).split(" ")[0]} steht jetzt als Betreuer im Termin – die Zahlen stimmen wieder.
+            </div>
+            <button onClick={zurKenntnis}
+              style={{width:"100%",marginTop:16,padding:"15px",minHeight:54,borderRadius:14,border:"none",background:"#15803d",color:"#fff",fontWeight:900,fontSize:16,cursor:"pointer",fontFamily:"inherit"}}>
+              Alles klar – danke!
+            </button>
+          </div>
+        </div>
+        );
+      })()}
       {/* Vertretungs-Gesuch anlegen (aus dem ⋯-Menue der Terminkarte) */}
       {subReqEv&&(
         <div onClick={()=>setSubReqEv(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:820,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(8px)"}}>
@@ -19126,8 +19157,36 @@ function VertretungsBoard({data,cid,session,save,fire}){
   const others=reqs.filter(r=>r.by!==session.id&&(r.status==="open"||r.takenById===session.id));
   if(!mine.length&&!others.length) return null;
   const tmOf=ev=>(data.teams||[]).find(t=>t.id===ev?.tid);
-  const accept=r=>{ save({...data,subRequests:(data.subRequests||[]).map(x=>x.id===r.id?{...x,status:"taken",takenBy:session.name,takenById:session.id,takenAt:new Date().toISOString()}:x)}); fire&&fire("Stark! Du übernimmst den Termin 🙌"); };
+  // Übernehmen heißt: im Termin eintragen. Sonst bliebe es eine Absprache,
+  // von der die Betreuer-Zahlen nichts wissen.
+  const accept=r=>{
+    const ts=new Date().toISOString();
+    const myId=session?.id||session?.name;
+    const name=session?.name||"Trainer";
+    const events=(data.events||[]).map(e=>{
+      if(e.id!==r.evId) return e;
+      const pres={...(e.trainerPresence||{}), [myId]:{ name, ts, trainerId:myId, sub:true }};
+      const votes={...(e.votes||{}), [name]:{ val:"yes", ts, role:"trainer", sub:true }};
+      return {...e, trainerPresence:pres, votes};
+    });
+    save({...data, events,
+      subRequests:(data.subRequests||[]).map(x=>x.id===r.id?{...x,status:"taken",takenBy:name,takenById:myId,takenAt:ts}:x)});
+    fire&&fire("Stark! Du übernimmst – du stehst jetzt als Betreuer im Termin 🙌");
+  };
   const withdraw=r=>{ save({...data,subRequests:(data.subRequests||[]).filter(x=>x.id!==r.id)}); fire&&fire("Gesuch zurückgezogen"); };
+  // Doch nicht können: Eintrag im Termin wieder entfernen, Gesuch ist offen.
+  const undo=r=>{
+    const events=(data.events||[]).map(e=>{
+      if(e.id!==r.evId) return e;
+      const pres={...(e.trainerPresence||{})}; delete pres[r.takenById];
+      const votes={...(e.votes||{})};
+      const v=votes[r.takenBy]; if(v&&typeof v==="object"&&v.sub) delete votes[r.takenBy];
+      return {...e, trainerPresence:pres, votes};
+    });
+    save({...data, events,
+      subRequests:(data.subRequests||[]).map(x=>x.id===r.id?{...x,status:"open",takenBy:null,takenById:null,takenAt:null,ack:false}:x)});
+    fire&&fire("Übernahme zurückgenommen – das Gesuch ist wieder offen");
+  };
   const Row=({r,own})=>{ const ev=evOf(r); const tm=tmOf(ev); return (
     <div style={{background:"#fff",border:"1.5px solid #fecdd3",borderRadius:12,padding:"10px 12px",marginBottom:7}}>
       <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
@@ -19137,7 +19196,10 @@ function VertretungsBoard({data,cid,session,save,fire}){
           <div style={{fontSize:11.5,color:"#64748b",marginTop:1}}>{fmtDShort(ev?.date)}{ev?.time?` · ${ev.time} Uhr`:""}{tm?` · ${tm.icon} ${tm.name}`:""}</div>
         </div>
         {r.status==="taken"
-          ? <span style={{fontSize:11.5,fontWeight:800,color:"#15803d",background:"#dcfce7",borderRadius:99,padding:"4px 10px",flexShrink:0}}>✓ {r.takenById===session.id?"Du übernimmst":`${r.takenBy} übernimmt`}</span>
+          ? <span style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
+              <span style={{fontSize:11.5,fontWeight:800,color:"#15803d",background:"#dcfce7",borderRadius:99,padding:"4px 10px"}}>✓ {r.takenById===session.id?"Du übernimmst":`${r.takenBy} übernimmt`}</span>
+              {r.takenById===session.id&&<button onClick={()=>undo(r)} title="Doch nicht können" style={{padding:"5px 9px",borderRadius:8,border:"1px solid #e4e9f0",background:"#fff",color:"#667085",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>Doch nicht</button>}
+            </span>
           : own
             ? <button onClick={()=>withdraw(r)} style={{flexShrink:0,padding:"6px 11px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:700,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>Zurückziehen</button>
             : <button onClick={()=>accept(r)} style={{flexShrink:0,padding:"7px 13px",borderRadius:10,border:"none",background:"#be123c",color:"#fff",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>🤝 Ich übernehme</button>}
