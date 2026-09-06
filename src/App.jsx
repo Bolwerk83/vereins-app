@@ -12258,7 +12258,9 @@ const carpoolLabelsFor = (ev, cl) => ({ ...(cl?.clubSettings?.carpoolLabels||{})
 function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTemplate=null,fields=[],venues=[],onAddVenue,clubTeams=null}) {
   const t=TH(cl); const isEdit=!!editEv; const STEPS=5; const { tr } = useT();
   const blank={tid:teams[0]?.id||"",coTids:[],type:"training",title:"",date:now(),time:"",endTime:"",loc:"",note:"",sollPlayers:null,maxPlayers:null,pt:"att",pts:["att"],inOut:false,recMode:"none",recDays:[],recStart:now(),recUntil:"",recDates:[],li:[],fi:[],sc:[],extraPolls:[],selType:"multi",carpoolOpt:false,open:false,_li:{txt:"",max:""},_fi:{name:"",col:"#16a34a"},_sc:{fid:"",time:"",a:"",b:"",ref:""}};
-  const [step,setStep]=useState(1);
+  // Beim Bearbeiten startet der Assistent auf einer Uebersicht: alles, was
+  // eingestellt ist, auf einen Blick - jede Zeile springt zu ihrem Schritt.
+  const [step,setStep]=useState(editEv?0:1);
   // Beim Bearbeiten wird ALLES aus dem Termin uebernommen - auch die
   // Verbund-Mannschaften (_coTids) und die Serien-Info (_serie), die das
   // Dashboard mitgibt. Beide sind reine Anzeige-Helfer und fliegen beim
@@ -12311,12 +12313,55 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
       <div style={{background:`linear-gradient(135deg,${t.s},${t.p}aa)`,padding:"16px 18px 20px"}}>
         <div style={{display:"flex",alignItems:"center",gap:11,marginBottom:14}}>
           <button onClick={onClose} style={{width:34,height:34,borderRadius:11,background:"rgba(255,255,255,.15)",border:"none",color:"rgba(255,255,255,.8)",fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
-          <div style={{flex:1}}><div style={{color:"rgba(255,255,255,.55)",fontSize:11,fontWeight:700}}>SCHRITT {step} / {STEPS} . {SL[step-1].toUpperCase()}</div><div style={{color:"#fff",fontWeight:900,fontSize:18,marginTop:2}}>{isEdit?"Termin bearbeiten":"Neuer Termin"}</div></div>
+          <div style={{flex:1}}><div style={{color:"rgba(255,255,255,.55)",fontSize:11,fontWeight:700}}>{step===0?"ÜBERSICHT":`SCHRITT ${step} / ${STEPS} . ${SL[step-1].toUpperCase()}`}</div><div style={{color:"#fff",fontWeight:900,fontSize:18,marginTop:2}}>{isEdit?"Termin bearbeiten":"Neuer Termin"}</div></div>
         </div>
-        <div style={{height:4,borderRadius:99,background:"rgba(255,255,255,.2)"}}><div style={{height:"100%",borderRadius:99,background:"rgba(255,255,255,.9)",width:`${(step/STEPS)*100}%`,transition:"width .3s ease"}}/></div>
+        <div style={{height:4,borderRadius:99,background:"rgba(255,255,255,.2)"}}><div style={{height:"100%",borderRadius:99,background:"rgba(255,255,255,.9)",width:`${step===0?100:(step/STEPS)*100}%`,transition:"width .3s ease"}}/></div>
       </div>
       <div style={{flex:1,overflowY:"auto",padding:"18px 16px"}}>
         {}
+        {step===0&&(()=>{
+          const sel=f.pts&&f.pts.length?f.pts:[f.pt||"att"];
+          const L={att:"Anwesenheit",list:"Auswahlliste",carpool:"Fahrtgemeinschaft",none:"Keine Abstimmung"};
+          const Zeile=({label,wert,zu,leer})=>(
+            <button onClick={()=>setStep(zu)} style={{display:"flex",alignItems:"flex-start",gap:10,width:"100%",textAlign:"left",background:"#fff",border:"1.5px solid #e4e9f0",borderRadius:12,padding:"11px 13px",cursor:"pointer",fontFamily:"inherit"}}>
+              <span style={{flex:1,minWidth:0}}>
+                <span style={{display:"block",fontSize:11,fontWeight:800,color:"#94a3b8",letterSpacing:.3,textTransform:"uppercase"}}>{label}</span>
+                <span style={{display:"block",fontSize:13.5,fontWeight:700,color:wert?"#0f172a":"#c3ccd8",marginTop:2,lineHeight:1.45,wordBreak:"break-word"}}>{wert||leer||"– nicht gesetzt –"}</span>
+              </span>
+              <span style={{fontSize:12,fontWeight:800,color:t.p,flexShrink:0,paddingTop:12,whiteSpace:"nowrap"}}>Ändern ›</span>
+            </button>
+          );
+          return (
+          <div className="in" style={{display:"flex",flexDirection:"column",gap:9}}>
+            <div style={{background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:12,padding:"11px 13px",fontSize:12.5,color:"#166534",lineHeight:1.5}}>
+              ✓ <b>Zu- und Absagen bleiben erhalten.</b> Du änderst hier nur den Termin – niemand muss neu abstimmen.
+            </div>
+            <Zeile label="Mannschaft" zu={1} wert={`${teamsSel?.icon||""} ${teamsSel?.name||""}`.trim()+((f.coTids||[]).length?` + ${(f.coTids||[]).length} weitere`:"")}/>
+            <Zeile label="Art" zu={2} wert={`${ET[f.type]?.icon||""} ${etLabel(f.type,tr)}`.trim()}/>
+            <Zeile label="Titel" zu={3} wert={f.title}/>
+            <Zeile label="Datum & Uhrzeit" zu={3} wert={`${fmtD(f.date)}${f.time?` · ${f.time}${f.endTime?`–${f.endTime}`:""} Uhr`:""}`}/>
+            <Zeile label="Ort" zu={3} wert={f.loc} leer="– kein Ort –"/>
+            <Zeile label="Nachricht an Eltern" zu={3} wert={f.note} leer="– keine Nachricht –"/>
+            <Zeile label="Spieler (Soll / Max)" zu={3} wert={[f.sollPlayers?`Soll ${f.sollPlayers}`:"",f.maxPlayers?`Max ${f.maxPlayers}`:""].filter(Boolean).join(" · ")} leer="– offen –"/>
+            {f.inOut&&<Zeile label="Wetter" zu={3} wert="🌤 Drinnen/Draußen je nach Wetter"/>}
+            <Zeile label="Abstimmung" zu={4}
+              wert={sel.map(k=>L[k]).filter(Boolean).join(" + ")+((f.extraPolls||[]).length?` + ${f.extraPolls.length} Zusatzliste${f.extraPolls.length>1?"n":""}`:"")}/>
+            {/* Die Frist wird im Termin selbst gepflegt - hier nur zur Info. */}
+            <div style={{background:"#f8fafc",border:"1.5px solid #e4e9f0",borderRadius:12,padding:"11px 13px"}}>
+              <div style={{fontSize:11,fontWeight:800,color:"#94a3b8",letterSpacing:.3}}>ABSTIMMUNGS-FRIST</div>
+              <div style={{fontSize:13.5,fontWeight:700,color:f.deadline&&f.deadline.date?"#0f172a":"#c3ccd8",marginTop:2}}>
+                {f.deadline&&f.deadline.date ? `${fmtD(f.deadline.date)}${f.deadline.time?` · ${f.deadline.time} Uhr`:""}` : "– keine Frist –"}
+              </div>
+              <div style={{fontSize:11,color:"#98a2b3",marginTop:3,lineHeight:1.4}}>Änderbar im Termin unter „Rückmeldungen“.</div>
+            </div>
+            {f._serie&&(
+              <div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:12,padding:"11px 13px",fontSize:12,color:"#92400e",lineHeight:1.5}}>
+                🔁 Teil einer Serie ({f._serie.anzahl} Termine bis {fmtD(f._serie.bis)}). Hier änderst du <b>nur diesen einen Termin</b>.
+              </div>
+            )}
+          </div>
+          );
+        })()}
         {step===1&&<div className="in" style={{display:"flex",flexDirection:"column",gap:11}}>
           {teams.map(tm=>(
             <div key={tm.id} onClick={()=>u({tid:tm.id,coTids:(f.coTids||[]).filter(x=>x!==tm.id)})} style={{background:"#fff",borderRadius:17,padding:"15px 16px",border:`2px solid ${f.tid===tm.id?t.p:"#e2e8f0"}`,cursor:"pointer",display:"flex",alignItems:"center",gap:13,transition:"all .18s"}}>
@@ -12642,8 +12687,16 @@ function Wizard({teams,cl,onSave,onClose,editEv=null,onTemplates=[],onSaveTempla
       </div>
       {}
       <div style={{padding:"12px 16px calc(12px + env(safe-area-inset-bottom))",background:"#fff",borderTop:"1px solid #f1f5f9",display:"flex",gap:10,position:"sticky",bottom:0,zIndex:100}}>
-        {step>1?<Btn ch={"<- "+tr("wBack")} onClick={()=>setStep(s=>s-1)} v="gst" sx={{flex:1}}/>:<Btn ch={tr("vCancel")} onClick={onClose} v="gst" sx={{flex:1}}/>}
-        {step<STEPS?<Btn ch={tr("wNext")+" ->"} onClick={()=>setStep(s=>s+1)} dis={!ok()} cl={cl} sx={{flex:2}}/>:<Btn ch={isEdit?tr("wSave"):f.recMode==="weekly"?tr("wCreateSeries"):f.recMode==="custom"?tr("wCreateN").replace("{n}",(f.recDates||[]).length):tr("wCreateEvent")} onClick={finish} cl={cl} sx={{flex:2}}/>}
+        {step===0
+          ? <><Btn ch={tr("vCancel")} onClick={onClose} v="gst" sx={{flex:1}}/><Btn ch={tr("wSave")} onClick={finish} cl={cl} sx={{flex:2}}/></>
+          : <>
+            {/* Beim Bearbeiten geht es aus jedem Schritt zurueck zur Uebersicht -
+                man muss sich nicht durch den ganzen Assistenten klicken. */}
+            {isEdit
+              ? <Btn ch={"<- Übersicht"} onClick={()=>setStep(0)} v="gst" sx={{flex:1}}/>
+              : (step>1?<Btn ch={"<- "+tr("wBack")} onClick={()=>setStep(s=>s-1)} v="gst" sx={{flex:1}}/>:<Btn ch={tr("vCancel")} onClick={onClose} v="gst" sx={{flex:1}}/>)}
+            {step<STEPS?<Btn ch={tr("wNext")+" ->"} onClick={()=>setStep(s=>s+1)} dis={!ok()} cl={cl} sx={{flex:2}}/>:<Btn ch={isEdit?tr("wSave"):f.recMode==="weekly"?tr("wCreateSeries"):f.recMode==="custom"?tr("wCreateN").replace("{n}",(f.recDates||[]).length):tr("wCreateEvent")} onClick={finish} cl={cl} sx={{flex:2}}/>}
+          </>}
       </div>
     </div>
   );
