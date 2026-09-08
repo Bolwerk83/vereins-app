@@ -20441,6 +20441,9 @@ function PollCarpool({ entries={}, onSet, onSetFor=null, user, cl, labels={} }) 
   const [seats,setSeats]=useState(()=> (mine?.mode==="drive" && mine?.seats) ? mine.seats : 3);
   const [note,setNote]=useState(mine?.note||"");
   const [pickup,setPickup]=useState(mine?.pickup||"");
+  // Wer schon geantwortet hat, sieht beim naechsten Oeffnen nur noch eine
+  // Zeile: die Liste der Autos macht den Termin sonst sehr lang.
+  const [zu,setZu]=useState(!!(mine&&mine.mode));
   const drivers = Object.keys(votes).filter(n=>entryOf(n)?.mode==="drive");
   const needers = Object.keys(votes).filter(n=>entryOf(n)?.mode==="need");
   const passengersOf = d => needers.filter(n=>entryOf(n)?.car===d);
@@ -20448,6 +20451,9 @@ function PollCarpool({ entries={}, onSet, onSetFor=null, user, cl, labels={} }) 
   const unassigned = needers.filter(n=>{ const c=entryOf(n)?.car; return !c || !drivers.includes(c); });
   // Freie Plaetze im eigenen Auto - nur dann kann man jemanden mitnehmen.
   const freiBeiMir = myMode==="drive" ? (Number(mine?.seats)||0)-passengersOf(user).length : 0;
+  // Solange eine Anfrage an mich offen ist, bleibt alles aufgeklappt -
+  // die muss ich beantworten koennen.
+  const offenesFuerMich = mine?.angebot?.status==="offen";
 
   const saveDriver = (s=seats,nt=note)=> onSet&&onSet({mode:"drive",seats:s,note:nt,ts:new Date().toISOString()});
   const saveNeed   = (car=mine?.car||null,pk=pickup)=> onSet&&onSet({mode:"need",car,pickup:pk,ts:new Date().toISOString()});
@@ -20487,6 +20493,34 @@ function PollCarpool({ entries={}, onSet, onSetFor=null, user, cl, labels={} }) 
         placeholder="z.B. Sportplatz, 9:15 Uhr"
         style={{width:"100%",padding:"9px 12px",fontSize:13.5,border:"1.5px solid #fde68a",borderRadius:10,outline:"none",boxSizing:"border-box",background:"#fff"}}/>
     </div>
+  );
+
+  const meinIcon = myMode==="drive"?"🚗":myMode==="need"?"🙋":"🚶";
+  const meinCol  = myMode==="drive"?"#16a34a":myMode==="need"?"#d97706":"#475569";
+  const meineZeile = myMode==="drive"
+    ? `${L.drive} · ${freiBeiMir>0?`${freiBeiMir} von ${Number(mine?.seats)||0} Plätzen frei`:"voll besetzt"}`
+    : myMode==="need"
+      ? (mine?.car ? `Mitfahrt bei ${mine.car}` : `${L.need} – noch kein Platz`)
+      : L.self;
+  const fehlt = Math.max(0, needers.length-seatsTotal);
+
+  // Zugeklappt: eine Zeile mit der eigenen Antwort und dem Stand.
+  if(myMode && zu && !offenesFuerMich) return (
+    <button onClick={()=>setZu(false)} aria-expanded="false"
+      style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"11px 13px",minHeight:52,
+        borderRadius:13,border:`1.5px solid ${meinCol}55`,background:meinCol+"12",cursor:"pointer",
+        fontFamily:"inherit",textAlign:"left",boxSizing:"border-box"}}>
+      <span style={{fontSize:19,lineHeight:1}}>{meinIcon}</span>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontWeight:800,fontSize:13.5,color:meinCol}}>{meineZeile}</div>
+        <div style={{fontSize:11.5,color:"#64748b",fontWeight:600,marginTop:2}}>
+          {drivers.length} Auto{drivers.length===1?"":"s"} · {seatsTotal} Plätze · {needers.length} suchen
+          {fehlt>0?` · ❗ ${fehlt} ohne Platz`:""}
+          {myMode==="drive"&&freiBeiMir>0&&unassigned.length>0?" · 🙋 jemanden mitnehmen?":""}
+        </div>
+      </div>
+      <span style={{fontSize:12,fontWeight:800,color:"#475569",whiteSpace:"nowrap"}}>Ändern ▾</span>
+    </button>
   );
 
   return (
@@ -20621,6 +20655,14 @@ function PollCarpool({ entries={}, onSet, onSetFor=null, user, cl, labels={} }) 
         {tr("cpSummary").replace("{d}",drivers.length).replace("{s}",seatsTotal).replace("{m}",needers.length)}
         {needers.length>seatsTotal?" · "+tr("cpMissing").replace("{n}",needers.length-seatsTotal):""}
       </div>
+
+      {myMode&&!offenesFuerMich&&(
+        <button onClick={()=>setZu(true)}
+          style={{width:"100%",padding:"10px",minHeight:42,borderRadius:11,border:"1.5px solid #e2e8f0",
+            background:"#fff",color:"#64748b",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
+          ▴ Fahrgemeinschaft zuklappen
+        </button>
+      )}
     </div>
   );
 }

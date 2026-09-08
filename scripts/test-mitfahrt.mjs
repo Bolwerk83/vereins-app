@@ -33,6 +33,10 @@ const alsEltern = async (kind) => {
   await page.evaluate(k=>{ localStorage.setItem("va_simple","1");
     sessionStorage.setItem("vereinsapp_v12_session", JSON.stringify({role:"user",cid:"demo",tid:"demo_f1",name:k,user:k})); }, kind);
   await page.goto("http://127.0.0.1:4287/", { waitUntil:"networkidle" }); await page.waitForTimeout(2800); await dismiss();
+  // Wer schon geantwortet hat, sieht die Fahrgemeinschaft zugeklappt -
+  // fuer diesen Test wird sie aufgeklappt (eigener Test: test-fahrgemeinschaft-zu).
+  await page.evaluate(()=>{ const b=[...document.querySelectorAll("button")].find(x=>/Ändern ▾/.test(x.innerText||"")); b&&b.click(); });
+  await page.waitForTimeout(600);
 };
 
 await page.addInitScript(()=>{ if(!localStorage.getItem("vereinsapp_config")) localStorage.setItem("vereinsapp_config", JSON.stringify({url:"https://127.0.0.1:1/x", key:"test"})); });
