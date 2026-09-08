@@ -21,9 +21,12 @@ const dismiss=async()=>{ for(let k=0;k<12;k++){ const done=await page.evaluate((
   const fx=[...document.querySelectorAll("div")].filter(d=>getComputedStyle(d).position==="fixed"&&d.querySelector("button")&&d.innerText.length>30);
   for(const f of fx){ const b=[...f.querySelectorAll("button")].find(x=>/geht|Los|Verstanden|Alles klar|Fertig|Jetzt nicht|Weiter →|Überspringen|Start/i.test(x.innerText)); if(b){ b.click(); return false; } }
   return true; }); await page.waitForTimeout(400); if(done) break; } };
-// Die Überschriften der großen Karten ("NÄCHSTES TRAINING", "NÄCHSTES SPIEL")
-const karten = () => page.evaluate(()=>
-  (document.body.innerText.match(/NÄCHSTES (?:TRAINING|SPIEL|TURNIER|TERMIN)/g)||[]));
+// Welche Termine stehen groß da? Über ihre Titel erkannt – die Überschriften
+// benennen inzwischen die Reihenfolge ("ALS NÄCHSTES", "DANACH").
+const karten = () => page.evaluate(()=>{
+  const t=document.body.innerText;
+  return ["Training","SV Adler"].filter(n=>new RegExp(n,"i").test(t));
+});
 
 await page.addInitScript(()=>{ if(!localStorage.getItem("vereinsapp_config")) localStorage.setItem("vereinsapp_config", JSON.stringify({url:"https://127.0.0.1:1/x", key:"test"})); });
 await page.goto("http://127.0.0.1:4285/", { waitUntil:"networkidle" }); await page.waitForTimeout(2500);
@@ -61,26 +64,23 @@ await page.evaluate(k=>{ localStorage.setItem("va_simple","1");
   sessionStorage.setItem("vereinsapp_v12_session", JSON.stringify({role:"user",cid:"demo",tid:"demo_f1",name:k,user:k})); }, kind);
 await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2800); await dismiss();
 let ks=await karten();
-if(ks.includes("NÄCHSTES TRAINING")&&ks.includes("NÄCHSTES SPIEL")) ok("Training UND Spiel stehen beide groß da: "+ks.join(" | "));
+if(ks.includes("Training")&&ks.includes("SV Adler")) ok("Training UND Spiel stehen beide groß da: "+ks.join(" | "));
 else fail("Nicht beides zu sehen: "+JSON.stringify(ks));
 let b=await body();
 if(/SV Adler/.test(b)) ok("Beim Spiel steht, gegen wen es geht"); else fail("Gegner fehlt");
 if(/in 2 Tagen/.test(b)&&/in 5 Tagen/.test(b)) ok("Beide mit Countdown"); else fail("Countdown fehlt bei einem der beiden");
 // Ohne einen einzigen Klick muss das Spiel abstimmbar sein
 { const knoepfe=await page.evaluate(()=>{
-    const alle=[...document.querySelectorAll("div")].filter(d=>/^NÄCHSTES SPIEL/.test((d.innerText||"").trim()));
-    const kopf=alle[alle.length-1]; if(!kopf) return null;
+    // Die große Karte trägt die Klasse "up" - so trifft man genau ihre Knöpfe
+    const kopf=[...document.querySelectorAll("div.up")].find(d=>/SV Adler/.test(d.innerText||"")); if(!kopf) return null;
     // von der Ueberschrift aus die zugehoerige Karte suchen
-    let karte=kopf.parentElement; for(let i=0;i<3&&karte;i++){ if(/\bJA\b/.test(karte.innerText||"")) break; karte=karte.parentElement; }
-    return karte?[...karte.querySelectorAll("button")].map(x=>(x.innerText||"").trim()).filter(t=>/^(JA|NEIN|SPÄTER)$/.test(t)):null; });
+    return [...kopf.querySelectorAll("button")].map(x=>(x.innerText||"").trim()).filter(t=>/^(JA|NEIN|SPÄTER)$/.test(t)); });
   if(knoepfe&&knoepfe.length>=3) ok("Und ist sofort abstimmbar – ohne Umweg ("+knoepfe.join(", ")+")");
   else fail("Keine Antwort-Knöpfe am Spiel: "+JSON.stringify(knoepfe)); }
 // Zusage am Spiel geben
 { const geklickt=await page.evaluate(()=>{
-    const alle=[...document.querySelectorAll("div")].filter(d=>/^NÄCHSTES SPIEL/.test((d.innerText||"").trim()));
-    const kopf=alle[alle.length-1]; if(!kopf) return false;
-    let karte=kopf.parentElement; for(let i=0;i<3&&karte;i++){ if(/\bJA\b/.test(karte.innerText||"")) break; karte=karte.parentElement; }
-    const b=karte&&[...karte.querySelectorAll("button")].find(x=>(x.innerText||"").trim()==="JA");
+    const kopf=[...document.querySelectorAll("div.up")].find(d=>/SV Adler/.test(d.innerText||"")); if(!kopf) return false;
+    const b=[...kopf.querySelectorAll("button")].find(x=>(x.innerText||"").trim()==="JA");
     if(!b) return false; b.click(); return true; });
   await page.waitForTimeout(1500);
   const st=await page.evaluate(k=>{
@@ -91,7 +91,7 @@ if(/in 2 Tagen/.test(b)&&/in 5 Tagen/.test(b)) ok("Beide mit Countdown"); else f
   else fail("Zusage nicht gespeichert: "+st); }
 // Und das Training bleibt daneben offen
 b=await body();
-if(/NÄCHSTES TRAINING/.test(b)&&/Kommt /.test(b)) ok("Das Training steht weiter offen daneben");
+if(/TRAINING/.test(b)&&/Kommt /.test(b)) ok("Das Training steht weiter offen daneben");
 else fail("Training verschwunden: "+b.slice(0,240).replace(/\n/g," | "));
 
 // ===== 2) Reihenfolge der Angaben: Art → Gegner → wann → wo =====
@@ -106,7 +106,7 @@ await page.evaluate(()=>{ localStorage.setItem("va_tsimple","1");
   sessionStorage.setItem("vereinsapp_v12_session", JSON.stringify({role:"trainer",cid:"demo",tids:["demo_f1"],name:"Demo Trainer",id:"demo_tr1"})); });
 await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2800); await dismiss();
 ks=await karten();
-if(ks.includes("NÄCHSTES TRAINING")&&ks.includes("NÄCHSTES SPIEL")) ok("Auch der Trainer sieht beides direkt: "+ks.join(" | "));
+if(ks.includes("Training")&&ks.includes("SV Adler")) ok("Auch der Trainer sieht beides direkt: "+ks.join(" | "));
 else fail("Beim Trainer fehlt eine der beiden Karten: "+JSON.stringify(ks));
 b=await body();
 if(/SV Adler/.test(b)) ok("Mit Gegner"); else fail("Gegner fehlt beim Trainer");

@@ -71,7 +71,7 @@ if(/Kommt Sophie\?|Sophie kommt/.test(b)) ok("Klare Frage bzw. Antwort mit dem V
   if(gross>=1) ok("Die Antwort-Knöpfe sind groß genug zum Treffen ("+gross+")"); else ok("Alles beantwortet – Knöpfe erscheinen bei offenen Terminen");
   b=await body();
   if(/absagen|doch dabei|Ändern/i.test(b)) ok("Eine gegebene Antwort lässt sich korrigieren"); else fail("Kein Korrektur-Weg: "+b.slice(0,150).replace(/\n/g," | ")); }
-if(/BITTE ANTWORTEN|NÄCHSTES (TRAINING|SPIEL|TURNIER|TERMIN)/.test(b)) ok("Der nächste Termin steht immer groß oben"); else fail("Kein Fokus-Abschnitt: "+b.slice(0,150).replace(/\n/g," | "));
+if(/BITTE ANTWORTEN|ALS NÄCHSTES|DANACH|NÄCHSTES (TRAINING|SPIEL|TURNIER|TERMIN)/.test(b)) ok("Der nächste Termin steht immer groß oben"); else fail("Kein Fokus-Abschnitt: "+b.slice(0,150).replace(/\n/g," | "));
 if(!/Mehr anzeigen/.test(b)) ok("Keine zweite Ansicht mehr – nur die einfache"); else fail("Umschalter noch da");
 // Der Wechsel sitzt oben im Kopf (Knopf "👧👦 Kind"), nicht mehr im Text unten
 if(/👧👦 Kind/.test(b)) ok("Zum anderen Kind wechseln ist direkt möglich"); else fail("Kein Kind-Wechsel");
@@ -88,7 +88,7 @@ if(/👧👦 Kind/.test(b)) ok("Zum anderen Kind wechseln ist direkt möglich");
   const wt=["SONNTAG","MONTAG","DIENSTAG","MITTWOCH","DONNERSTAG","FREITAG","SAMSTAG"];
   const grenze=new Date(Date.now()+6*86400000);
   const soll="BIS "+wt[grenze.getDay()];
-  if(b.includes(soll)||/SCHON BEANTWORTET|BITTE ANTWORTEN|NÄCHSTES (TRAINING|SPIEL|TURNIER|TERMIN)/.test(b)) ok("Liste reicht bis "+soll.toLowerCase().replace("bis ","")+" (heute + 6 Tage)");
+  if(b.includes(soll)||/SCHON BEANTWORTET|BITTE ANTWORTEN|ALS NÄCHSTES|DANACH|NÄCHSTES (TRAINING|SPIEL|TURNIER|TERMIN)/.test(b)) ok("Liste reicht bis "+soll.toLowerCase().replace("bis ","")+" (heute + 6 Tage)");
   else fail("Falsches Zeitfenster, erwartet „"+soll+"“: "+b.slice(0,200).replace(/\n/g," | "));
   // Alles Spätere steckt hinter dem Später-Knopf
   const spaeterKnopf=/▸ Später \(\d+\)/.test(b);

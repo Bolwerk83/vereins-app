@@ -15917,14 +15917,14 @@ function EinfachTrainer({ cl, evs=[], tod, trainerNames=[], helperNames=[], squa
   const [gewaehlt,setGewaehlt]=useState(null);
   const [mehr,setMehr]=useState(null);   // welche Karte hat "Mehr" offen?
   const [spaeterAuf,setSpaeterAuf]=useState(false);
-  const kommend=evs.filter(e=>e.date>=tod);
-  // Gross steht je Terminart einer: das naechste Training UND das naechste
-  // Spiel - so sieht der Trainer beides sofort, ohne umzuschalten.
+  const kommend=evs.filter(e=>e.date>=tod&&!terminVorbei(e))
+    .sort((a,b)=>String(a.date||"").localeCompare(String(b.date||""))||String(a.time||"").localeCompare(String(b.time||"")));
+  // Gross stehen die naechsten Termine in ZEITLICHER Reihenfolge - und dazu
+  // das naechste Spiel, falls davor noch mehrere Trainings liegen.
   const gewaehltEv=gewaehlt?kommend.find(e=>e.id===gewaehlt):null;
-  const fokusListe=(()=>{
-    const proArt=naechsteJeArt(kommend).map(x=>x.ev).slice(0,3);
-    return gewaehltEv&&!proArt.some(e=>e.id===gewaehltEv.id) ? [gewaehltEv,...proArt].slice(0,4) : proArt;
-  })();
+  const chrono=grosseTermine(kommend,3);
+  const vorgezogenId=chrono.length>3?chrono[chrono.length-1].id:null;
+  const fokusListe=gewaehltEv&&!chrono.some(e=>e.id===gewaehltEv.id) ? [gewaehltEv,...chrono] : chrono;
   const fokusIds=new Set(fokusListe.map(e=>e.id));
   const fokus=fokusListe[0]||null;
   const waehle=id=>{ setGewaehlt(id); setMehr(null); try{ window.scrollTo({top:0,behavior:"smooth"}); }catch{} };
@@ -16008,7 +16008,7 @@ function EinfachTrainer({ cl, evs=[], tod, trainerNames=[], helperNames=[], squa
   return (
     <div key={fokus.id}>
       <div style={{fontSize:10.5,fontWeight:700,color:"#94a3b8",letterSpacing:1,marginBottom:6}}>
-        {istGewaehlt?"AUSGEWÄHLTER TERMIN":`NÄCHSTES ${(ART_INFO[ART_GRUPPE(fokus)]||ART_INFO.sonst).wort.toUpperCase()}`}
+        {istGewaehlt?"AUSGEWÄHLTER TERMIN":kartenTitel(fokus,gewaehltEv&&fokusListe[0]===gewaehltEv?ix-1:ix,fokus.id===vorgezogenId)}
       </div>
       {/* Eine Karte, eine Akzentfarbe. Oben was und wann, dann der Stand,
           unten die Knoepfe - vom wichtigsten zum seltensten. */}
@@ -23443,15 +23443,29 @@ const inTagen = (datum, tod) => {
     return `in ${Math.round(n/7)} Wochen`;
   }catch{ return ""; }
 };
-// Je Terminart der naechste anstehende Termin - nach Datum sortiert, damit
-// das zeitlich Naechste immer links steht.
-const naechsteJeArt = (evs=[]) => {
-  const proArt={};
-  [...evs].sort((a,b)=>String(a.date||"").localeCompare(String(b.date||"")))
-    .forEach(ev=>{ const g=ART_GRUPPE(ev); if(!proArt[g]) proArt[g]=ev; });
-  return Object.entries(proArt).map(([g,ev])=>({g,ev}))
-    .sort((a,b)=>String(a.ev.date||"").localeCompare(String(b.ev.date||"")));
+// Ein Termin ist erst durch, wenn er auch zu Ende ist - das Training von
+// heute Nachmittag verschwindet also erst am Abend, nicht schon morgens.
+const terminVorbei = ev => {
+  const s=eventStart(ev); if(!s) return false;
+  const min=eventDurationMin(ev)||90;
+  return Date.now() > s.getTime()+min*60000;
 };
+const istSpielArt = ev => ["spiel","turnier"].includes(ART_GRUPPE(ev));
+// Welche Termine stehen vorne gross? Die naechsten drei in ZEITLICHER
+// Reihenfolge - und dazu das naechste Spiel bzw. Turnier, falls es weiter
+// hinten liegt. Weil es dann spaeter ist als die drei, bleibt die Liste
+// chronologisch: kein Spiel steht vor einem Training, das vorher stattfindet.
+const grosseTermine = (evs=[], anzahl=3) => {
+  const sortiert=[...evs].sort((a,b)=>String(a.date||"").localeCompare(String(b.date||""))||String(a.time||"").localeCompare(String(b.time||"")));
+  const liste=sortiert.slice(0,anzahl);
+  const spiel=sortiert.find(istSpielArt);
+  if(spiel && !liste.some(e=>e.id===spiel.id)) liste.push(spiel);
+  return liste;
+};
+// Ueberschrift einer grossen Karte: sagt, wo der Termin in der Reihe steht.
+const kartenTitel = (ev, ix, vorgezogen) => vorgezogen
+  ? `NÄCHSTES ${(ART_INFO[ART_GRUPPE(ev)]||ART_INFO.sonst).wort.toUpperCase()}`
+  : (ix===0 ? "ALS NÄCHSTES" : "DANACH");
 // Zeit-Zeile in einer Form, ueberall gleich: "10:30–12:00 Uhr".
 const zeitZeile = ev => ev?.time ? (ev.endTime?`${ev.time}–${ev.endTime} Uhr`:`${ev.time} Uhr`) : "";
 // Titel nur zeigen, wenn er mehr sagt als die Terminart ("SV Adler" ja,
@@ -23916,15 +23930,16 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
   const [spaeterAuf,setSpaeterAuf]=useState(false);
   const [gewaehlt,setGewaehlt]=useState(null);   // angetippter Termin wird gross
   const [aendernId,setAendernId]=useState(null); // Antwort welcher Karte wird gerade geaendert?
-  const alle=events.filter(e=>e.date>=tod&&(e.pt==="att"||!e.pt));
-  // Gross steht nicht nur der zeitlich naechste Termin, sondern JE TERMINART
-  // einer: das naechste Training UND das naechste Spiel sind sofort da und
-  // beide direkt beantwortbar - ohne Umschalten.
+  // Was schon gelaufen ist, steht nicht mehr vorne: das Training von heute
+  // Nachmittag verschwindet am Abend, dann ist das naechste dran.
+  const alle=events.filter(e=>e.date>=tod&&(e.pt==="att"||!e.pt)&&!terminVorbei(e))
+    .sort((a,b)=>String(a.date||"").localeCompare(String(b.date||""))||String(a.time||"").localeCompare(String(b.time||"")));
+  // Gross stehen die naechsten Termine in ZEITLICHER Reihenfolge - und dazu
+  // das naechste Spiel, falls davor noch mehrere Trainings liegen.
   const gewaehltEv=gewaehlt?alle.find(e=>e.id===gewaehlt):null;
-  const fokusListe=(()=>{
-    const proArt=naechsteJeArt(alle).map(x=>x.ev).slice(0,3);
-    return gewaehltEv&&!proArt.some(e=>e.id===gewaehltEv.id) ? [gewaehltEv,...proArt].slice(0,4) : proArt;
-  })();
+  const chrono=grosseTermine(alle,3);
+  const vorgezogenId=chrono.length>3?chrono[chrono.length-1].id:null;
+  const fokusListe=gewaehltEv&&!chrono.some(e=>e.id===gewaehltEv.id) ? [gewaehltEv,...chrono] : chrono;
   const fokusIds=new Set(fokusListe.map(e=>e.id));
   const fokus=fokusListe[0]||null;
   const waehle=id=>{ setGewaehlt(id); setAendernId(null); try{ window.scrollTo({top:0,behavior:"smooth"}); }catch{} };
@@ -24039,8 +24054,11 @@ function EinfachEltern({ cl, team, kind, events, onVote, onKindWechseln, onChat,
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
               {/* Die Ueberschrift sagt, WAS hier steht - bei mehreren Karten
                   ist "ALS NÄCHSTES" sonst zweimal dasselbe Wort. */}
+              {/* Die Ueberschrift sagt, wo der Termin in der Reihe steht -
+                  "ALS NÄCHSTES", dann "DANACH". Ein vorgezogenes Spiel wird
+                  ausdruecklich als solches benannt. */}
               <span style={{fontSize:10.5,fontWeight:900,color:istGewaehlt?"#4f46e5":(sF?"#475569":"#c2410c"),letterSpacing:1}}>
-                {istGewaehlt?"AUSGEWÄHLT":`NÄCHSTES ${(ART_INFO[ART_GRUPPE(ev)]||ART_INFO.sonst).wort.toUpperCase()}${sF?"":" · BITTE ANTWORTEN"}`}
+                {istGewaehlt?"AUSGEWÄHLT":`${kartenTitel(ev,gewaehltEv&&fokusListe[0]===gewaehltEv?ix-1:ix,ev.id===vorgezogenId)}${sF?"":" · BITTE ANTWORTEN"}`}
               </span>
               {istGewaehlt&&<button onClick={()=>{ setGewaehlt(null); setAendernId(null); }}
                 style={{marginLeft:"auto",padding:"8px 10px",minHeight:36,borderRadius:9,border:"none",background:"#eef2ff",color:"#4f46e5",fontWeight:800,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>
