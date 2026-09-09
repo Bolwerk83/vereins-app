@@ -16389,6 +16389,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
   const tod=now(); const up=myEvs.filter(e=>e.date>=tod); const past=myEvs.filter(e=>e.date<tod).reverse();
   const _in10=addD(now(),21); const soon=up.filter(e=>e.date<=_in10); const later=up.filter(e=>e.date>_in10);
   const [showLater,setShowLater]=useState(false);
+  // Vergangene Termine stehen zugeklappt - sie kosten sonst den meisten Platz.
+  const [showPast,setShowPast]=useState(false);
 
   // Helfer starten in der einfachen Ansicht: eine Frage pro Termin. Aufbau-Liste
   // und Uebungskarte kommen als eigene Fenster darueber - mehr braucht es nicht.
@@ -16817,7 +16819,10 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             </>}
           </>}
           {up.length===0&&<div style={{textAlign:"center",padding:"30px",background:"#fff",borderRadius:18,border:"1.5px dashed #e2e8f0",color:"#64748b"}}><Logo cl={myClub} sz={50} sx={{margin:"0 auto 12px"}}/><p style={{fontWeight:800,fontSize:15}}>Noch keine Termine</p><p style={{fontSize:13,marginTop:3}}>{isHelper?"Sobald die Trainer Termine anlegen, erscheinen sie hier.":'Klicke oben auf "Neuen Termin anlegen"'}</p></div>}
-          {past.length>0&&<><Divider label={`VERGANGENE (${past.length})`} light/><div style={{opacity:.72}}>{past.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>{setEvTab("rueck");setViewEv(ev);}} onEdit={()=>setEditEv(editInfo(ev))} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{}} onCopyLink={()=>{}} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams} squad={squadPlusOf(ev.tid)}/>)}</div></>}
+          {past.length>0&&<>
+            <button onClick={()=>setShowPast(v=>!v)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",background:showPast?"#f1f5f9":"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,cursor:"pointer",margin:"6px 0 12px",padding:"11px 14px",fontWeight:800,fontSize:13,color:"#64748b",fontFamily:"inherit"}}>{showPast?"▲ Vergangene Termine ausblenden":"▼ "+past.length+" vergangene Termine anzeigen"}</button>
+            {showPast&&<div style={{opacity:.72}}>{past.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>{setEvTab("rueck");setViewEv(ev);}} onEdit={()=>setEditEv(editInfo(ev))} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{}} onCopyLink={()=>{}} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams} squad={squadPlusOf(ev.tid)}/>)}</div>}
+          </>}
           <AffiliateBanner trigger="events" style={{marginTop:14}}/>
           {/* DFB-Spielformen sind Trainer-Fachwissen - Helfer brauchen sie nicht */}
           {!isHelper&&<div style={{marginTop:14}}><DFBFormatsCard cl={myClub} cats={(local.teams||[]).filter(tm=>myTids.includes(tm.id)).map(tm=>tm.cat||tm.name)}/></div>}
