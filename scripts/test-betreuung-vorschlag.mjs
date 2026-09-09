@@ -2,8 +2,7 @@
 // vorgeschlagen werden, die bei DIESEM Termin dabei sind – nicht alle
 // Trainer und Helfer des Vereins.
 //   1. Wer als Betreuer zugesagt hat, steht als Vorschlag da.
-//   2. Wer nicht zugesagt hat (und in einer anderen Mannschaft ist),
-//      steht nicht dabei – erst hinter „＋ weitere“.
+//   2. Wer nicht zugesagt hat, steht gar nicht zur Auswahl.
 //   3. Eingecheckte Trainer (Vertretung) zählen als dabei.
 //   4. Ohne jede Zusage steht ein Hinweis statt einer langen Namensliste.
 // Aufruf: npm run build && node scripts/test-betreuung-vorschlag.mjs
@@ -96,18 +95,9 @@ else fail("Fremder Trainer wird vorgeschlagen: "+z.namen.join(", "));
 if(z.namen.length===1) ok("Genau ein Vorschlag statt der ganzen Betreuer-Liste");
 else fail("Zu viele Vorschläge: "+z.namen.join(", "));
 
-// ===== 2) Hinter „＋ weitere“ ist er erreichbar =====
-if(/weitere \(\d+\)/.test(z.text)) ok("Es gibt „＋ weitere“ – niemand ist ausgesperrt");
-else fail("Kein Knopf „＋ weitere“: "+z.text);
-if(await klick("weitere \\(")) ok("„＋ weitere“ lässt sich öffnen"); else fail("„＋ weitere“ nicht klickbar");
-await page.waitForTimeout(700);
-z=await betreuung();
-if(z.namen.includes("Trainer B")) ok("Danach steht auch „Trainer B“ zur Auswahl");
-else fail("Nach dem Aufklappen fehlt der übrige Trainer: "+z.namen.join(", "));
-if(await klick("weniger")) ok("Und „▴ weniger“ klappt wieder zu"); else fail("Kein „weniger“");
-await page.waitForTimeout(700);
-z=await betreuung();
-if(!z.namen.includes("Trainer B")) ok("Die Liste ist wieder kurz"); else fail("Bleibt lang: "+z.namen.join(", "));
+// ===== 2) Es gibt keinen Umweg zu den übrigen =====
+if(!/weitere/.test(z.text)) ok("Es gibt keinen Knopf, der die übrigen Trainer und Helfer nachlädt");
+else fail("Es lassen sich doch weitere einblenden: "+z.text);
 
 // ===== 3) Eingecheckter Trainer (Vertretung) zählt als dabei =====
 await page.evaluate(id=>{ const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
@@ -133,8 +123,8 @@ if(/Noch keine Betreuer-Zusage/.test(z.text)) ok("Ohne Zusage steht dort ein Hin
 else fail("Kein Hinweis bei fehlender Zusage: "+z.text);
 if(z.namen.length===0) ok("Und es wird niemand vorgeschlagen, der gar nicht zugesagt hat");
 else fail("Trotzdem Vorschläge: "+z.namen.join(", "));
-if(/weitere \(\d+\)/.test(z.text)) ok("Über „＋ weitere“ kommt man trotzdem an alle heran");
-else fail("Kein Zugang zu den übrigen Betreuern: "+z.text);
+if(!/weitere/.test(z.text)) ok("Auch dann wird niemand nachgeladen – die Zeile bleibt leer bis zur ersten Zusage");
+else fail("Doch ein Nachlade-Knopf: "+z.text);
 
 if(errors.length){ console.log("JS-FEHLER:"); [...new Set(errors)].forEach(e=>console.log(" -",e.slice(0,150))); }
 console.log(errors.length||fails.length?`ERGEBNIS: ${fails.length} Fehlschläge, ${errors.length} JS-Fehler`:"ERGEBNIS: ALLES OK");

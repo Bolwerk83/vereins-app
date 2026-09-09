@@ -17339,16 +17339,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         {["heimspiel","auswarts","freundschaft","turnier"].includes(viewEv.type)&&<LineupBoard ev={viewEv}
           present={jaSpielerNamen(viewEv)}
           betreuer={betreuerDabei(viewEv, staffSet(trainerNames,helperNames))}
-          betreuerMehr={(()=>{
-            // Hinter "＋ weitere": erst die Trainer und Helfer dieser
-            // Mannschaft, dann der Rest des Vereins. Wer noch nicht
-            // geantwortet hat, ist so trotzdem erreichbar.
-            const dabei=new Set(betreuerDabei(viewEv, staffSet(trainerNames,helperNames)));
-            const ausTeam=[...(local.trainers||[]),...(local.helpers||[])]
-              .filter(x=>x.cid===cid&&(x.tids||[]).includes(viewEv.tid)).map(x=>x.name);
-            return [...new Set([...ausTeam,...trainerNames,...helperNames])]
-              .filter(n=>n&&!dabei.has(n));
-          })()}
+          staffNamen={[...trainerNames,...helperNames]}
           canEdit={!isHelper}
           profiles={local.playerProfiles||[]}
           pastLineups={(local.events||[]).filter(e=>e.tid===viewEv.tid&&e.id!==viewEv.id&&e.lineup&&[...(e.lineup.T||[]),...(e.lineup.A||[]),...(e.lineup.M||[]),...(e.lineup.S||[])].length>0).map(e=>e.lineup)}
@@ -22907,7 +22898,7 @@ function recommendLineup(present, profiles, pastLineups, friendWeight=1){
   const friends=fp.sort((x,y)=>(y.must-x.must)).slice(0,4);
   return {lineup,bench,formation,pairs,friends,count:n};
 }
-function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChange=undefined, profiles=[], pastLineups=[], betreuer=[], betreuerMehr=[] }){
+function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChange=undefined, profiles=[], pastLineups=[], betreuer=[], staffNamen=[] }){
   const { tr } = useT();
   const LINE_LABELS = {T:tr("lnTor"),A:tr("lnAbwehr"),M:tr("lnMittelfeld"),S:tr("lnAngriff")};
   // Mehrere Mannschaften je Termin (Turnier: G1, G2 ...). Alt gespeicherte
@@ -22920,16 +22911,13 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
   const placed = teams.flatMap(spielerVon);
   // Betreuer gehoeren nicht auf die Spielerbank - sie werden den Mannschaften
   // getrennt zugewiesen.
-  const _beSet=new Set([...(betreuer||[]),...(betreuerMehr||[])].map(n=>String(n).toLowerCase().trim()));
+  const _beSet=new Set([...(betreuer||[]),...(staffNamen||[])].map(n=>String(n).toLowerCase().trim()));
   const bench = (present||[]).filter(n=>!placed.includes(n)&&!_beSet.has(String(n).toLowerCase().trim()));
   const [tip,setTip]=useState(null);
   const [friendW,setFriendW]=useState(1);   // 0=aus, 1=normal, 2=stark – pro Aufstellung wählbar
   // Immer genau eine Mannschaft offen: so ist klar, wohin die Bank einsortiert.
   const [offen,setOffen]=useState(teams[0]?.id||"t1");
   const [umbenennen,setUmbenennen]=useState(null);
-  // Standardmaessig stehen nur die Betreuer zur Wahl, die bei diesem Termin
-  // dabei sind. Alle uebrigen kommen erst auf Wunsch dazu.
-  const [alleBetreuer,setAlleBetreuer]=useState(false);
   const offenT = teams.find(t=>t.id===offen) || teams[0];
   const sichern = (neu) => onChange&&onChange(neu);
   const topStrength=name=>{const p=lineupProfByName(name,profiles);if(!p?.skills)return"";const e=Object.entries(p.skills).filter(([,v])=>typeof v==="number"&&v>0).sort((a,b)=>b[1]-a[1])[0];return e?`Stärke: ${e[0]} ${e[1]}/5`:"";};
@@ -23038,7 +23026,7 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
             {auf&&(
               <div style={{padding:"0 12px 10px",display:"flex",flexDirection:"column",gap:8}}>
                 {/* Wer betreut diese Mannschaft? */}
-                {(canEdit||(t.staff||[]).length>0)&&((betreuer||[]).length>0||(betreuerMehr||[]).length>0||(t.staff||[]).length>0)&&(
+                {(canEdit||(t.staff||[]).length>0)&&(
                   <div style={{display:"flex",alignItems:"flex-start",gap:8,minHeight:30,paddingBottom:4,borderBottom:"1px dashed #bbf7d0"}}>
                     <span style={{fontSize:10,fontWeight:800,color:"#7c3aed",width:74,flexShrink:0,letterSpacing:.3,paddingTop:5}}>BETREUUNG</span>
                     <div style={{flex:1,display:"flex",flexWrap:"wrap",gap:5}}>
@@ -23048,21 +23036,14 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
                           <Av name={n} sz={20}/><span style={{fontSize:12.5,fontWeight:700,color:"#0f172a"}}>{n}</span>{canEdit&&<span style={{color:"#dc2626",fontWeight:800,fontSize:12}}>×</span>}
                         </span>
                       ))}
-                      {canEdit&&[...(betreuer||[]),...(alleBetreuer?(betreuerMehr||[]):[])].filter(n=>!(t.staff||[]).includes(n)).map(n=>(
+                      {canEdit&&(betreuer||[]).filter(n=>!(t.staff||[]).includes(n)).map(n=>(
                         <button key={"add"+n} onClick={()=>staffTog(t.id,n)} title={`${n} dieser Mannschaft zuweisen`}
                           style={{display:"flex",alignItems:"center",gap:4,background:"#faf5ff",borderRadius:99,padding:"3px 9px 3px 3px",border:"1.5px dashed #ddd6fe",cursor:"pointer",fontFamily:"inherit"}}>
                           <Av name={n} sz={18}/><span style={{fontSize:12,fontWeight:600,color:"#7c3aed"}}>+ {String(n).split(" ")[0]}</span>
                         </button>
                       ))}
-                      {canEdit&&(betreuer||[]).length===0&&!alleBetreuer&&(
-                        <span style={{fontSize:11.5,color:"#94a3b8",alignSelf:"center"}}>Noch keine Betreuer-Zusage</span>
-                      )}
-                      {canEdit&&(betreuerMehr||[]).length>0&&(
-                        <button onClick={()=>setAlleBetreuer(a=>!a)}
-                          title={alleBetreuer?"Nur die zeigen, die bei diesem Termin dabei sind":"Auch Trainer und Helfer zeigen, die noch nicht zugesagt haben"}
-                          style={{background:"transparent",border:"none",color:"#7c3aed",fontSize:11.5,fontWeight:700,cursor:"pointer",fontFamily:"inherit",padding:"3px 4px"}}>
-                          {alleBetreuer?"▴ weniger":`＋ weitere (${(betreuerMehr||[]).length})`}
-                        </button>
+                      {canEdit&&(betreuer||[]).length===0&&(t.staff||[]).length===0&&(
+                        <span style={{fontSize:11.5,color:"#94a3b8",alignSelf:"center"}}>Noch keine Betreuer-Zusage für diesen Termin</span>
                       )}
                     </div>
                   </div>
