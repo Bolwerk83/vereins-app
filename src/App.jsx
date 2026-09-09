@@ -16257,6 +16257,18 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
     const ctx={staff:staffSet(trainerNames,helperNames),squad:squadSet(squadPlusOf(ev.tid)),guests:ev.guests||[],open:!!ev.open};
     return Object.entries(ev.votes||{}).filter(([n,v])=>((typeof v==="object"&&v)?v.val:v)==="yes"&&isPlayerVote(n,v,ctx)).map(([n])=>n);
   };
+  // Kinder aus dem Kader, die noch gar nicht geantwortet haben - sie lassen
+  // sich trotzdem aufstellen (dann "noch offen").
+  const offeneSpielerNamen=(ev)=>{
+    const beantwortet=new Set(Object.keys(ev.votes||{}).map(n=>String(n).toLowerCase().trim()));
+    return squadPlusOf(ev.tid).filter(n=>!beantwortet.has(String(n).toLowerCase().trim()));
+  };
+  // Absagen - wer schon aufgestellt war und dann absagt, faellt nicht still
+  // aus der Mannschaft, sondern wird rot markiert.
+  const neinSpielerNamen=(ev)=>{
+    const ctx={staff:staffSet(trainerNames,helperNames),squad:squadSet(squadPlusOf(ev.tid)),guests:ev.guests||[],open:!!ev.open};
+    return Object.entries(ev.votes||{}).filter(([n,v])=>((typeof v==="object"&&v)?v.val:v)==="no"&&isPlayerVote(n,v,ctx)).map(([n])=>n);
+  };
   const jaSpieler=(ev)=>{
     const ctx={staff:staffSet(trainerNames,helperNames),squad:squadSet(squadPlusOf(ev.tid)),guests:ev.guests||[],open:!!ev.open};
     return Object.entries(ev.votes||{}).filter(([n,v])=>((typeof v==="object"&&v)?v.val:v)==="yes"&&isPlayerVote(n,v,ctx)).length;
@@ -17340,6 +17352,8 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           present={jaSpielerNamen(viewEv)}
           betreuer={betreuerDabei(viewEv, staffSet(trainerNames,helperNames))}
           staffNamen={[...trainerNames,...helperNames]}
+          ohneZusage={offeneSpielerNamen(viewEv)}
+          abgesagt={neinSpielerNamen(viewEv)}
           canEdit={!isHelper}
           profiles={local.playerProfiles||[]}
           pastLineups={(local.events||[]).filter(e=>e.tid===viewEv.tid&&e.id!==viewEv.id&&e.lineup&&[...(e.lineup.T||[]),...(e.lineup.A||[]),...(e.lineup.M||[]),...(e.lineup.S||[])].length>0).map(e=>e.lineup)}
@@ -22898,7 +22912,7 @@ function recommendLineup(present, profiles, pastLineups, friendWeight=1){
   const friends=fp.sort((x,y)=>(y.must-x.must)).slice(0,4);
   return {lineup,bench,formation,pairs,friends,count:n};
 }
-function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChange=undefined, profiles=[], pastLineups=[], betreuer=[], staffNamen=[] }){
+function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChange=undefined, profiles=[], pastLineups=[], betreuer=[], staffNamen=[], ohneZusage=[], abgesagt=[] }){
   const { tr } = useT();
   const LINE_LABELS = {T:tr("lnTor"),A:tr("lnAbwehr"),M:tr("lnMittelfeld"),S:tr("lnAngriff")};
   // Mehrere Mannschaften je Termin (Turnier: G1, G2 ...). Alt gespeicherte
@@ -22912,7 +22926,20 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
   // Betreuer gehoeren nicht auf die Spielerbank - sie werden den Mannschaften
   // getrennt zugewiesen.
   const _beSet=new Set([...(betreuer||[]),...(staffNamen||[])].map(n=>String(n).toLowerCase().trim()));
-  const bench = (present||[]).filter(n=>!placed.includes(n)&&!_beSet.has(String(n).toLowerCase().trim()));
+  // Aufstellen darf man auch Kinder, die noch nicht geantwortet haben - sie
+  // stehen dann als "noch offen" drin, farblich abgesetzt, bis die Zusage da
+  // ist. Wer abgesagt hat, faellt nicht heraus, sondern wird rot markiert.
+  const _kl=n=>String(n).toLowerCase().trim();
+  const _offenSet=new Set((ohneZusage||[]).map(_kl));
+  const _neinSet=new Set((abgesagt||[]).map(_kl));
+  const statusVon=n=>_neinSet.has(_kl(n))?"nein":(_offenSet.has(_kl(n))?"offen":"ja");
+  const STAT={ ja:{rand:null, bg:"#fff", txt:"#0f172a", tag:"" },
+               offen:{rand:"#f59e0b", bg:"#fffbeb", txt:"#92400e", tag:"noch offen"},
+               nein:{rand:"#f87171", bg:"#fef2f2", txt:"#b91c1c", tag:"abgesagt"} };
+  const bench = [...(present||[]), ...(ohneZusage||[])]
+    .filter((n,i,arr)=>arr.indexOf(n)===i)
+    .filter(n=>!placed.includes(n)&&!_beSet.has(_kl(n)))
+    .sort((x,y)=>(statusVon(x)==="ja"?0:1)-(statusVon(y)==="ja"?0:1)||String(x).localeCompare(String(y),"de"));
   const [tip,setTip]=useState(null);
   const [friendW,setFriendW]=useState(1);   // 0=aus, 1=normal, 2=stark – pro Aufstellung wählbar
   // Immer genau eine Mannschaft offen: so ist klar, wohin die Bank einsortiert.
@@ -23007,6 +23034,7 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
                     style={{flex:1,minWidth:0,padding:"5px 9px",fontSize:13.5,fontWeight:800,border:"1.5px solid #bbf7d0",borderRadius:8,outline:"none",fontFamily:"inherit"}}/>
                 : <span style={{flex:1,minWidth:0,fontWeight:800,fontSize:13.5,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                     {t.name||`Team ${ti+1}`} <span style={{fontWeight:600,fontSize:12,color:"#64748b"}}>({drin.length})</span>
+                    {drin.filter(n=>statusVon(n)!=="ja").length>0&&<span style={{fontWeight:700,fontSize:11,color:"#b45309",marginLeft:5}}>· {drin.filter(n=>statusVon(n)!=="ja").length} ohne Zusage</span>}
                   </span>}
               {canEdit&&umbenennen!==t.id&&(
                 <button onClick={e=>{ e.stopPropagation(); setUmbenennen(t.id); }} title="Umbenennen"
@@ -23053,11 +23081,17 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
                     <span style={{fontSize:10,fontWeight:800,color:lineColors[k],width:74,flexShrink:0,letterSpacing:.3}}>{(LINE_LABELS[k]||label).toUpperCase()}</span>
                     <div style={{flex:1,display:"flex",flexWrap:"wrap",gap:5}}>
                       {(t[k]||[]).length===0 && <span style={{fontSize:12,color:"#64748b"}}>–</span>}
-                      {(t[k]||[]).map(n=>(
-                        <span key={n} title={topStrength(n)} onClick={()=>canEdit&&remove(n)} style={{display:"flex",alignItems:"center",gap:5,background:"#fff",borderRadius:99,padding:"3px 9px 3px 3px",border:`1.5px solid ${lineColors[k]}`,cursor:canEdit?"pointer":"default"}}>
-                          <Av name={n} sz={20}/><span style={{fontSize:12.5,fontWeight:700,color:"#0f172a"}}>{n}</span>{canEdit&&<span style={{color:"#dc2626",fontWeight:800,fontSize:12}}>×</span>}
+                      {(t[k]||[]).map(n=>{ const st=statusVon(n); const sv=STAT[st];
+                        return (
+                        <span key={n} title={st==="ja"?topStrength(n):(st==="offen"?`${n} hat noch nicht geantwortet`:`${n} hat abgesagt`)}
+                          onClick={()=>canEdit&&remove(n)}
+                          style={{display:"flex",alignItems:"center",gap:5,background:sv.bg,borderRadius:99,padding:"3px 9px 3px 3px",
+                            border:st==="ja"?`1.5px solid ${lineColors[k]}`:`1.5px dashed ${sv.rand}`,cursor:canEdit?"pointer":"default"}}>
+                          <Av name={n} sz={20}/><span style={{fontSize:12.5,fontWeight:700,color:sv.txt}}>{n}</span>
+                          {st!=="ja"&&<span style={{fontSize:10,fontWeight:800,color:sv.txt,background:"#fff",borderRadius:6,padding:"1px 5px"}}>{sv.tag}</span>}
+                          {canEdit&&<span style={{color:"#dc2626",fontWeight:800,fontSize:12}}>×</span>}
                         </span>
-                      ))}
+                        ); })}
                     </div>
                   </div>
                 ))}
@@ -23080,16 +23114,26 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
             {teams.length>1&&offenT&&<span style={{fontWeight:600,color:"#15803d",marginLeft:6,textTransform:"none",letterSpacing:0}}>→ in „{offenT.name}“</span>}
           </div>
           {teams.length>1&&!offen&&<p style={{fontSize:12,color:"#c2410c",fontWeight:700,marginBottom:6}}>Mannschaft aufklappen, um einzusortieren.</p>}
+          {bench.some(n=>statusVon(n)==="offen")&&(
+            <p style={{fontSize:11.5,color:"#92400e",background:"#fffbeb",border:"1px dashed #fcd34d",borderRadius:9,padding:"6px 9px",marginBottom:7,lineHeight:1.45}}>
+              Kinder ohne Zusage kannst du trotzdem aufstellen – sie stehen dann orange als „noch offen“, bis die Rückmeldung da ist.
+            </p>
+          )}
           {bench.length===0 ? <p style={{fontSize:12,color:"#64748b"}}>{tr("luAllPlaced")}</p>
             : <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                {bench.map(n=>(
-                  <div key={n} style={{display:"flex",alignItems:"center",gap:8,background:"#f8fafc",borderRadius:10,padding:"6px 9px",border:"1px solid #e2e8f0"}}>
-                    <Av name={n} sz={22}/><span style={{flex:1,minWidth:0,fontSize:13,fontWeight:700,color:"#334155"}}>{n}</span>
+                {bench.map(n=>{ const st=statusVon(n); const sv=STAT[st];
+                  return (
+                  <div key={n} style={{display:"flex",alignItems:"center",gap:8,background:st==="ja"?"#f8fafc":sv.bg,borderRadius:10,padding:"6px 9px",
+                    border:st==="ja"?"1px solid #e2e8f0":`1px dashed ${sv.rand}`}}>
+                    <Av name={n} sz={22}/>
+                    <span style={{flex:1,minWidth:0,fontSize:13,fontWeight:700,color:st==="ja"?"#334155":sv.txt}}>{n}
+                      {st!=="ja"&&<span style={{fontSize:10,fontWeight:800,marginLeft:6,color:sv.txt,background:"#fff",borderRadius:6,padding:"1px 5px"}}>{sv.tag}</span>}
+                    </span>
                     {offen&&LINEUP_LINES.map(([k,label])=>(
                       <button key={k} onClick={()=>place(n,k,offen)} title={`${LINE_LABELS[k]||label}${teams.length>1&&offenT?` · ${offenT.name}`:""}`} style={{width:26,height:26,borderRadius:7,border:`1.5px solid ${lineColors[k]}`,background:lineColors[k]+"15",color:lineColors[k],fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>{k}</button>
                     ))}
                   </div>
-                ))}
+                  ); })}
               </div>}
         </div>
       )}
@@ -23263,6 +23307,7 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user",allEven
         <DutyBoard ev={ev} user={user} canManage={isTrainerOrHelper} onChange={arr=>onVote(ev.id,"duty",arr)}/>
         {["heimspiel","auswarts","freundschaft","turnier"].includes(ev.type)&&<LineupBoard ev={ev}
           present={Object.entries(ev.votes||{}).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>n)}
+          abgesagt={Object.entries(ev.votes||{}).filter(([,v])=>(typeof v==="object"?v.val:v)==="no").map(([n])=>n)}
           canEdit={false}/>}
       </div>}
     </div>
