@@ -10547,9 +10547,13 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
     const full   = data.playerProfiles||[];
     const exists = full.find(x=>x.id===p.id);
     const next   = exists ? full.map(x=>x.id===p.id?p:x) : [...full,p];
-    save({...data,playerProfiles:next});
+    // Umbenannt? Dann ziehen die bisherigen Antworten mit. Sonst blieben sie
+    // unter dem alten Namen stehen und tauchten im Termin als fremder Name auf.
+    const umbenannt = !!exists && !!String(p.name||"").trim() && _nrmName(exists.name)!==_nrmName(p.name);
+    const basis = {...data, playerProfiles:next};
+    save(umbenannt ? renamePerson(basis, exists.name, p.name) : basis);
     setEditP(null); setShowNew(false);
-    fire("Spielerprofil gespeichert");
+    fire(umbenannt ? "Name geändert – bisherige Antworten übernommen" : "Spielerprofil gespeichert");
   };
   // Direktlink fuer die Eltern: fuehrt nach dem Team-Passwort sofort zu
   // diesem Kind. Kein Passwort im Link - Team- und Kind-Passwort greifen
@@ -15942,7 +15946,7 @@ function EinfachTrainer({ cl, evs=[], tod, trainerNames=[], helperNames=[], squa
     const nein=spieler.filter(([,x])=>val(x)==="no").length;
     const kader=squadOf(ev.tid)||[];
     const offen=Math.max(0,kader.length-ja-nein);
-    const betreuer=Object.entries(v).filter(([n,x])=>val(x)==="yes"&&!isPlayerVote(n,x,ctx)).length;
+    const betreuer=Object.entries(v).filter(([n,x])=>val(x)==="yes"&&istBetreuerStimme(n,x,ctx)).length;
     const helfer=(ev.helperOffers||[]).length;
     return {ja,nein,offen,betreuer,helfer,kader:kader.length};
   };
@@ -18513,10 +18517,13 @@ function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadlin
   const noAll   = voted.filter(([,v])=>getVal(v)==="no" ).sort((a,b)=>byName(a[0],b[0]));
   const yes     = yesAll.filter(([n,v])=>!isStaffName(n,v)).map(([n])=>n);
   const no      = noAll.filter(([n,v])=>!isStaffName(n,v)).map(([n])=>n);
-  // Betreuer-Zeile: alles, was nicht als Spieler zaehlt (Trainer, Helfer und
-  // Zusagen von Personen, die nicht im Kader stehen).
-  const trYes   = yesAll.filter(([n,v])=>isStaffName(n,v)).map(([n])=>n);
-  const trNo    = noAll.filter(([n,v])=>isStaffName(n,v)).map(([n])=>n);
+  // Betreuer-Zeile: nur erkannte Trainer und Helfer. Ein Name, den es weder im
+  // Kader noch bei den Betreuern gibt, steht unten gesondert - sonst wuerde ein
+  // alter Kindername als dritter Trainer erscheinen.
+  const trYes   = yesAll.filter(([n,v])=>istBetreuerStimme(n,v,_pctx)).map(([n])=>n);
+  const trNo    = noAll.filter(([n,v])=>istBetreuerStimme(n,v,_pctx)).map(([n])=>n);
+  const fremd   = [...yesAll,...noAll].filter(([n,v])=>istFremdeStimme(n,v,_pctx))
+                    .map(([n,v])=>({name:n, ja:getVal(v)==="yes"}));
   const missing = teamPlayers.filter(n=>!(ev.votes||{})[n]&&!isStaffName(n,null)).sort(byName);
   const lateVoters = voted.filter(([n])=>isLate(n)).map(([n])=>n);
   // Late arrivals: yes votes with .late field
@@ -18560,6 +18567,26 @@ function VoteOverview({ev,players,playerProfiles=[],teams,myTids,cl,onSetDeadlin
           {trNo.map(n=>zeile(n,false))}
         </div>
         ); })()}
+
+      {/* Antworten, die zu niemandem mehr passen: weder ein Kind aus dem Kader
+          noch ein Trainer oder Helfer. Meist ein Name, der spaeter geaendert
+          wurde. Sie zaehlen nirgends mit, bleiben aber sichtbar. */}
+      {fremd.length>0&&(
+        <div style={{background:"#fff",border:"1px dashed #e2e8f0",borderRadius:11,padding:"9px 12px",marginBottom:16}}>
+          <div style={{fontSize:11,fontWeight:800,color:"#94a3b8",letterSpacing:.3}}>❓ NICHT IM KADER ({fremd.length})</div>
+          {fremd.map(f=>(
+            <div key={"x"+f.name} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderTop:"1px solid #f1f5f9"}}>
+              <span style={{flex:1,minWidth:0,fontWeight:700,fontSize:12.5,color:"#64748b",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{f.name}</span>
+              <span style={{flexShrink:0,fontSize:11,fontWeight:700,color:"#94a3b8"}}>{f.ja?"✓ zugesagt":"✕ abgesagt"}</span>
+              {stimmZeit((ev.votes||{})[f.name])&&<span style={{flexShrink:0,fontSize:10.5,color:"#cbd5e1",whiteSpace:"nowrap"}}>{stimmZeit((ev.votes||{})[f.name])}</span>}
+            </div>
+          ))}
+          <div style={{fontSize:10.5,color:"#94a3b8",marginTop:6,lineHeight:1.4}}>
+            {fremd.length===1?"Diese Antwort gehört":"Diese Antworten gehören"} zu keinem Kind im Kader und zu keinem Betreuer –
+            meist ein Name, der später geändert wurde. Zählt nirgends mit.
+          </div>
+        </div>
+      )}
 
       {/* Helfer: wer beim Termin mit anpackt - mit Zeitpunkt der Zusage.
           Fest eingeplant, Warteliste und "waere bereit" sauber getrennt. */}
@@ -19518,6 +19545,86 @@ const purgePerson = (data, {id=null, name=""}={}) => {
   return out;
 };
 
+// Wird eine Person umbenannt, ziehen ihre Eintraege mit: Zu- und Absagen,
+// Anwesenheit, Spielzeit, Fahrgemeinschaft, Helfer-Meldungen, Aufstellung,
+// Dienste, Stationen und Gruppen. Ohne das bleiben die alten Antworten unter
+// dem alten Namen stehen - und tauchen im Termin als fremder Name auf.
+// Steht unter dem neuen Namen schon etwas, gewinnt der juengere Eintrag.
+const renamePerson = (data, alt, neu) => {
+  const a=_nrmName(alt); const n=String(neu||"").trim();
+  if(!a || !n || a===_nrmName(n)) return data;
+  const gleich = x => !!x && _nrmName(x)===a;
+  const um = x => gleich(x) ? n : x;
+  const ts = x => (x&&typeof x==="object"&&x.ts) ? String(x.ts) : "";
+  const juenger = (da, alt2) => da===undefined ? alt2 : (ts(alt2)>ts(da) ? alt2 : da);
+  const umKeys = obj => {
+    if(!obj || typeof obj!=="object" || Array.isArray(obj)) return obj;
+    const treffer=Object.keys(obj).filter(gleich);
+    if(!treffer.length) return obj;
+    const o={...obj};
+    treffer.forEach(k=>{ const wert=o[k]; delete o[k]; o[n]=juenger(o[n], wert); });
+    return o;
+  };
+  const umListe = arr => Array.isArray(arr)
+    ? [...new Set(arr.map(x=>typeof x==="string"?um(x):x))]
+    : arr;
+  const umNamen = arr => Array.isArray(arr)
+    ? arr.map(x=>(x&&typeof x==="object"&&gleich(x.name))?{...x,name:n}:x)
+    : arr;
+  const events=(data.events||[]).map(e=>{
+    const ev={...e};
+    if(ev.votes)           ev.votes=umKeys(ev.votes);
+    if(ev.present)         ev.present=umKeys(ev.present);
+    if(ev.playtime)        ev.playtime=umKeys(ev.playtime);
+    if(ev.trainerPresence) ev.trainerPresence=umKeys(ev.trainerPresence);
+    if(ev.carpool){
+      const cp=umKeys(ev.carpool); const o={};
+      Object.entries(cp).forEach(([k,v])=>{ o[k]=(v&&typeof v==="object")
+        ? {...v, ...(gleich(v.car)?{car:n}:{}) ,
+           ...(v.angebot&&gleich(v.angebot.von)?{angebot:{...v.angebot,von:n}}:{})}
+        : v; });
+      ev.carpool=o;
+    }
+    if(Array.isArray(ev.guests))            ev.guests=umListe(ev.guests);
+    if(Array.isArray(ev.helperOffers))      ev.helperOffers=umNamen(ev.helperOffers);
+    if(Array.isArray(ev.helperInterest))    ev.helperInterest=umNamen(ev.helperInterest);
+    if(Array.isArray(ev.lateCancellations)) ev.lateCancellations=ev.lateCancellations.map(x=>gleich(x&&x.user)?{...x,user:n}:x);
+    if(Array.isArray(ev.sc))                ev.sc=ev.sc.map(x=>typeof x==="string"?um(x):(gleich(x&&x.name)?{...x,name:n}:x));
+    if(Array.isArray(ev.stations))          ev.stations=ev.stations.map(st=>({...st, werNamen:umKeys(st.werNamen)}));
+    if(Array.isArray(ev.duties))            ev.duties=ev.duties.map(d=>gleich(d&&d.assignee)?{...d,assignee:n}:d);
+    if(Array.isArray(ev.lineup))            ev.lineup=ev.lineup.map(x=>typeof x==="string"?um(x):(gleich(x&&x.name)?{...x,name:n}:x));
+    if(Array.isArray(ev.lineups))           ev.lineups=ev.lineups.map(l=>{
+      const o={...l};
+      ["T","A","M","S","staff"].forEach(k=>{ if(Array.isArray(o[k])) o[k]=umListe(o[k]); });
+      return o;
+    });
+    if(ev.orga){
+      ev.orga={...ev.orga,
+        items:(ev.orga.items||[]).map(it=>({...it,who:umListe(it.who)})),
+        shifts:(ev.orga.shifts||[]).map(sh=>({...sh,who:umListe(sh.who)}))};
+    }
+    if(ev.groups&&Array.isArray(ev.groups.list)){
+      ev.groups={...ev.groups,list:ev.groups.list.map(g=>({...g,
+        members:(g.members||[]).map(m=>typeof m==="string"?um(m):(gleich(m&&m.name)?{...m,name:n}:m)),
+        leader:um(g.leader)}))};
+    }
+    if(ev.setup&&ev.setup.done){
+      const d={...ev.setup.done};
+      Object.keys(d).forEach(k=>{ if(d[k]&&gleich(d[k].by)) d[k]={...d[k],by:n}; });
+      ev.setup={...ev.setup,done:d};
+    }
+    if(gleich(ev.planBy)) ev.planBy=n;
+    return ev;
+  });
+  const players={...(data.players||{})};
+  Object.keys(players).forEach(tid=>{ players[tid]=umListe(players[tid]||[]); });
+  const playerProfiles=(data.playerProfiles||[]).map(pp=>({...pp,
+    name: gleich(pp.name) ? n : pp.name,
+    friends: umListe(pp.friends),
+    mustWith: umListe(pp.mustWith)}));
+  return {...data, events, players, playerProfiles};
+};
+
 // Ein Helfer-Eintrag im Termin gehoert immer zu einem Konto (Helfer oder
 // Trainer) - anders kann er gar nicht entstehen. Findet sich weder das Konto
 // noch der Name wieder, ist der Eintrag verwaist: das Konto wurde geloescht,
@@ -19583,6 +19690,15 @@ const isStaffVote = (name, raw, set) => {
   if(set.ex.has(n)) return true;
   return _isAbbrName(name) && set.sh.has(_shortName(name));
 };
+// Betreuer ist nur, wer wirklich als Trainer oder Helfer bekannt ist. Frueher
+// galt "kein Spieler" schon als Betreuer - dann landete jeder Name, den es
+// nirgends mehr gibt, im Betreuer-Kasten. Das passiert, wenn ein Kind spaeter
+// umbenannt wird: die alten Antworten stehen weiter unter dem alten Namen.
+const istBetreuerStimme = (name, raw, ctx={}) => isStaffVote(name, raw, ctx.staff);
+// Weder Kind im Kader noch Betreuer: eine Karteileiche. Zaehlt in keiner
+// Richtung mit, wird aber eigens ausgewiesen - sonst verschwindet sie still.
+const istFremdeStimme = (name, raw, ctx={}) =>
+  !isPlayerVote(name, raw, ctx) && !istBetreuerStimme(name, raw, ctx);
 
 const SHORT_NOTICE_DAYS = 7;
 const shortNoticeDaysOf = cl => Number(cl?.clubSettings?.shortNoticeDays) || SHORT_NOTICE_DAYS;
@@ -19721,8 +19837,8 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
   const _vv=v=>(typeof v==="object"?v.val:v);
   const yes=ev.pt==="att"?Object.entries(_v).filter(([n,v])=>_vv(v)==="yes"&&isPlayerVote(n,v,_ctx)).length:0;
   const no =ev.pt==="att"?Object.entries(_v).filter(([n,v])=>_vv(v)==="no" &&isPlayerVote(n,v,_ctx)).length:0;
-  // Betreuer-Chip: erkannte Trainer plus alle, die nicht zum Kader gehoeren
-  const trYesN=ev.pt==="att"?Object.entries(_v).filter(([n,v])=>_vv(v)==="yes"&&!isPlayerVote(n,v,_ctx)).length:0;
+  // Betreuer-Chip: nur erkannte Trainer und Helfer
+  const trYesN=ev.pt==="att"?Object.entries(_v).filter(([n,v])=>_vv(v)==="yes"&&istBetreuerStimme(n,v,_ctx)).length:0;
   const dlPassed = isDeadlinePassed(ev);
   const myVoteRaw = selfName ? _v[selfName] : null;
   const myVote = typeof myVoteRaw==="object"&&myVoteRaw!==null ? myVoteRaw.val : myVoteRaw;
