@@ -16985,6 +16985,57 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             </button>
           );
         })()}
+        {/* Mitfahr-Aufruf: nur wenn wirklich noch jemand ohne Platz dasteht.
+            Hier stehen bewusst die Vornamen und der Treffpunkt - ohne die
+            weiss niemand, wen er mitnehmen soll. Nachnamen bleiben draussen. */}
+        {!isHelper&&carpoolDazu(viewEv)&&(()=>{
+          const cp=viewEv.carpool||{};
+          const cpe=n=>{const v=cp[n];return v&&typeof v==="object"&&v.mode?v:null;};
+          const fahrer=Object.keys(cp).filter(n=>cpe(n)?.mode==="drive");
+          const paxOf=d=>Object.keys(cp).filter(n=>cpe(n)?.mode==="need"&&cpe(n)?.car===d);
+          const suchen=Object.keys(cp).filter(n=>cpe(n)?.mode==="need"&&!fahrer.includes(cpe(n)?.car||""));
+          if(suchen.length===0) return null;
+          const frei=fahrer.reduce((n,d)=>n+Math.max(0,(Number(cpe(d)?.seats)||0)-paxOf(d).length),0);
+          const link=terminLink(myClub, viewEv.tid, viewEv.id);
+          const vor=n=>String(n).split(" ")[0];
+          const liste=suchen.map(n=>{ const e=cpe(n);
+            return `• ${vor(n)}${e&&e.pickup?` – ${e.pickup}`:""}`; }).join("\n");
+          const lage = fahrer.length===0
+            ? "Bisher hat sich noch niemand als Fahrer eingetragen."
+            : frei>0
+              ? `Aktuell ${frei===1?"ist noch 1 Platz":`sind noch ${frei} Plätze`} frei – ${Math.min(frei,suchen.length)} von ${suchen.length} ${Math.min(frei,suchen.length)===1?"wäre":"wären"} damit schon versorgt.`
+              : "Alle Plätze sind belegt – es fehlt noch ein Auto.";
+          const txt=[
+            `🚗 Wer hat noch einen Platz frei?`,
+            ``,
+            `${evDisplayTitle(viewEv)} · ${fmtD(viewEv.date)}${viewEv.time?` · ${viewEv.time} Uhr`:""}`,
+            (viewEv.loc||viewEv.venueAddr)&&`📍 ${[viewEv.loc,viewEv.venueAddr].filter(Boolean).join(", ")}`,
+            ``,
+            `${suchen.length===1?"Ein Kind sucht":`Diese ${suchen.length} Kinder suchen`} noch eine Mitfahrt:`,
+            liste,
+            ``,
+            lage,
+            ``,
+            `Ein freier Platz im Auto reicht, damit ein Kind mitspielen kann. Wenn ihr jemanden mitnehmen könnt: in der App den Termin öffnen, „Ich fahre“ antippen und das Kind auswählen – dauert 10 Sekunden.`,
+            ``,
+            `Danke euch – zusammen kriegen wir alle an den Platz! 🙌`,
+            link,
+          ].filter(x=>x!==false&&x!==undefined&&x!==null).join("\n");
+          const doShare=()=>{ if(navigator.share){ navigator.share({title:"Mitfahrgelegenheit",text:txt}).catch(()=>{}); fire("Aufruf geteilt ✓"); }
+            else { navigator.clipboard?.writeText(txt); fire("Aufruf kopiert ✓"); } };
+          return (
+            <button onClick={doShare} style={{display:"flex",alignItems:"center",gap:9,width:"100%",background:"#fff7ed",border:"1.5px solid #fed7aa",borderRadius:12,padding:"11px 13px",cursor:"pointer",fontFamily:"inherit",textAlign:"left",marginBottom:10}}>
+              <span style={{fontSize:16,flexShrink:0}}>🚗</span>
+              <span style={{flex:1,minWidth:0}}>
+                <span style={{display:"block",fontSize:13,fontWeight:800,color:"#9a3412"}}>Mitfahr-Aufruf teilen</span>
+                <span style={{display:"block",fontSize:11.5,color:"#c2410c",marginTop:1,lineHeight:1.35}}>
+                  {suchen.length===1?"1 Kind sucht":`${suchen.length} Kinder suchen`} noch eine Mitfahrt{frei>0?` · ${frei} ${frei===1?"Platz":"Plätze"} frei`:""} – fertiger Text für die Gruppe
+                </span>
+              </span>
+              <span style={{fontSize:12.5,fontWeight:800,color:"#ea580c",flexShrink:0}}>Teilen →</span>
+            </button>
+          );
+        })()}
         {/* Verbund-Anzeige: dieser Termin existiert fuer mehrere Teams */}
         {viewEv.groupId&&(()=>{
           const sibs=(local.events||[]).filter(e=>e.groupId===viewEv.groupId);
