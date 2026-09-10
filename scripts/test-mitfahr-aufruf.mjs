@@ -74,9 +74,23 @@ const daten = await page.evaluate(()=>{
 if(daten) ok(`Ausgangslage: ${daten.fahrer} fährt (2 Plätze, 1 belegt), ${daten.sucht1} und ${daten.sucht2} suchen noch`);
 else { fail("Konnte die Ausgangslage nicht setzen"); process.exit(1); }
 await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2800); await dismiss();
+
+// ===== 0) In der Terminliste neben „Erinnern“ =====
+{ const auf=await page.evaluate(()=>{
+    const b=[...document.querySelectorAll("button")].find(x=>(x.innerText||"").trim()==="⋯");
+    if(!b) return false; b.click(); return true; });
+  await page.waitForTimeout(700);
+  const zeile=await page.evaluate(()=>{
+    const b=[...document.querySelectorAll("button")].filter(x=>/Erinnern|Mitfahrt suchen/.test(x.innerText||""));
+    return b.map(x=>(x.innerText||"").replace(/\s+/g," ").trim()); });
+  if(auf&&zeile.some(x=>/Erinnern/.test(x))) ok("Im ⋯-Menü des Termins steht „Erinnern“");
+  else fail("Menü nicht geöffnet: "+JSON.stringify(zeile));
+  if(zeile.some(x=>/🚗 Mitfahrt suchen \(2\)/.test(x))) ok("Und direkt daneben „🚗 Mitfahrt suchen (2)“");
+  else fail("Kein Mitfahrt-Knopf neben Erinnern: "+JSON.stringify(zeile)); }
+
 await oeffneTermin();
 
-// ===== 1) Der Knopf ist da und nennt die Lage =====
+// ===== 1) Auch im Termin selbst =====
 { const k=await knopf();
   if(k) ok("Es gibt den Knopf „Mitfahr-Aufruf teilen“: "+k);
   else fail("Kein Knopf: "+(await body()).slice(0,300).replace(/\n/g," | "));

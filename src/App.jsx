@@ -16162,6 +16162,15 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
     if(navigator.share){ navigator.share({title:ev.title,text:txt}).catch(()=>{}); } else { navigator.clipboard?.writeText(txt); }
     fire(`${missing.length} noch offen – Erinnerung erstellt`);
   };
+  // Mitfahr-Aufruf fuer die Eltern-Gruppe - erreichbar vom Termin und aus
+  // der Terminliste (neben "Erinnern").
+  const teileMitfahrAufruf=(ev)=>{
+    const {suchen}=mitfahrOffen(ev);
+    if(!suchen.length){ fire("Alle haben eine Mitfahrt 🎉"); return; }
+    const txt=mitfahrText(ev, myClub, evDisplayTitle(ev));
+    if(navigator.share){ navigator.share({title:"Mitfahrgelegenheit",text:txt}).catch(()=>{}); fire("Aufruf geteilt ✓"); }
+    else { navigator.clipboard?.writeText(txt); fire("Aufruf kopiert ✓"); }
+  };
   const [local,setLocal]=useState(()=>JSON.parse(JSON.stringify(data)));
   // Cloud-Updates (10s-Poll) uebernehmen: local darf nicht auf dem Mount-Stand
   // einfrieren, sonst fehlen fremde Aenderungen in der Ansicht und der
@@ -16824,10 +16833,10 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             );
           })()}
           <FerienHinweis hols={_ferienDash} from={tod} to={_in10}/>
-          {up.length>0&&<><Divider label={`NÄCHSTE 21 TAGE (${soon.length})`}/>{soon.length>0?soon.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>{setEvTab("rueck");setViewEv(ev);}} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(editInfo(ev))} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>kopiereTerminLink(ev)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams} squad={squadPlusOf(ev.tid)} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}} helperId={isHelper?(session.id||session.helperId||session.name):null} onHelperQuick={isHelper?helperQuick:null} onSetup={()=>setSetupEv(ev)}/>):<p style={{textAlign:"center",color:"#64748b",fontSize:13.5,padding:"14px 10px"}}>Keine Termine in den nächsten 21 Tagen.</p>}
+          {up.length>0&&<><Divider label={`NÄCHSTE 21 TAGE (${soon.length})`}/>{soon.length>0?soon.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>{setEvTab("rueck");setViewEv(ev);}} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(editInfo(ev))} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>kopiereTerminLink(ev)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onMitfahr={isHelper?null:()=>teileMitfahrAufruf(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams} squad={squadPlusOf(ev.tid)} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}} helperId={isHelper?(session.id||session.helperId||session.name):null} onHelperQuick={isHelper?helperQuick:null} onSetup={()=>setSetupEv(ev)}/>):<p style={{textAlign:"center",color:"#64748b",fontSize:13.5,padding:"14px 10px"}}>Keine Termine in den nächsten 21 Tagen.</p>}
             {later.length>0&&<>
               <button onClick={()=>setShowLater(s=>!s)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",background:showLater?"#f1f5f9":"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,cursor:"pointer",margin:"6px 0 12px",padding:"11px 14px",fontWeight:800,fontSize:13,color:"#475569",fontFamily:"inherit"}}>{showLater?"▲ Weitere Termine ausblenden":"▼ Weitere "+later.length+" Termine anzeigen"}</button>
-              {showLater&&later.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>{setEvTab("rueck");setViewEv(ev);}} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(editInfo(ev))} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>kopiereTerminLink(ev)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams} squad={squadPlusOf(ev.tid)} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}} helperId={isHelper?(session.id||session.helperId||session.name):null} onHelperQuick={isHelper?helperQuick:null} onSetup={()=>setSetupEv(ev)}/>)}
+              {showLater&&later.map(ev=><DashRow key={ev.id} ev={ev} cl={myClub} tod={tod} onView={()=>{setEvTab("rueck");setViewEv(ev);}} onEdit={()=>ev.sid?setEditConf(ev):setEditEv(editInfo(ev))} onDel={()=>{setDelConf(ev.id);setDelConfVal(ev.title);}} onReset={()=>{ if(!window.confirm(`Alle Zu- und Absagen für „${ev.title}" wirklich zurücksetzen?\n\nDie Antworten aller Teilnehmer gehen verloren. Das lässt sich nicht rückgängig machen.`)) return; save({...local,events:local.events.map(e=>e.id===ev.id?{...e,votes:{}}:e)});fire("Stimmen zurückgesetzt");}} onCopyLink={()=>kopiereTerminLink(ev)} selfName={isHelper?null:selfName} onSelfVote={isHelper?null:selfVote} onRemind={()=>remindNonVoters(ev)} onMitfahr={isHelper?null:()=>teileMitfahrAufruf(ev)} onPlan={isHelper?null:()=>openPlan(ev)} planTitle={planTitleOf(ev)} onAttend={()=>{setEvTab("orga");setViewEv(ev);}} onBrief={isHelper?null:()=>setBriefEv(ev)} modTraining={modOn("training")} trainerNames={trainerNames} helperNames={helperNames} allEvents={local.events} allTeams={local.teams} squad={squadPlusOf(ev.tid)} onSubReq={isHelper?null:()=>{setSubNote("");setSubReqEv(ev);}} helperId={isHelper?(session.id||session.helperId||session.name):null} onHelperQuick={isHelper?helperQuick:null} onSetup={()=>setSetupEv(ev)}/>)}
             </>}
           </>}
           {up.length===0&&<div style={{textAlign:"center",padding:"30px",background:"#fff",borderRadius:18,border:"1.5px dashed #e2e8f0",color:"#64748b"}}><Logo cl={myClub} sz={50} sx={{margin:"0 auto 12px"}}/><p style={{fontWeight:800,fontSize:15}}>Noch keine Termine</p><p style={{fontSize:13,marginTop:3}}>{isHelper?"Sobald die Trainer Termine anlegen, erscheinen sie hier.":'Klicke oben auf "Neuen Termin anlegen"'}</p></div>}
@@ -16989,40 +16998,9 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             Hier stehen bewusst die Vornamen und der Treffpunkt - ohne die
             weiss niemand, wen er mitnehmen soll. Nachnamen bleiben draussen. */}
         {!isHelper&&carpoolDazu(viewEv)&&(()=>{
-          const cp=viewEv.carpool||{};
-          const cpe=n=>{const v=cp[n];return v&&typeof v==="object"&&v.mode?v:null;};
-          const fahrer=Object.keys(cp).filter(n=>cpe(n)?.mode==="drive");
-          const paxOf=d=>Object.keys(cp).filter(n=>cpe(n)?.mode==="need"&&cpe(n)?.car===d);
-          const suchen=Object.keys(cp).filter(n=>cpe(n)?.mode==="need"&&!fahrer.includes(cpe(n)?.car||""));
+          const {suchen,frei}=mitfahrOffen(viewEv);
           if(suchen.length===0) return null;
-          const frei=fahrer.reduce((n,d)=>n+Math.max(0,(Number(cpe(d)?.seats)||0)-paxOf(d).length),0);
-          const link=terminLink(myClub, viewEv.tid, viewEv.id);
-          const vor=n=>String(n).split(" ")[0];
-          const liste=suchen.map(n=>{ const e=cpe(n);
-            return `• ${vor(n)}${e&&e.pickup?` – ${e.pickup}`:""}`; }).join("\n");
-          const lage = fahrer.length===0
-            ? "Bisher hat sich noch niemand als Fahrer eingetragen."
-            : frei>0
-              ? `Aktuell ${frei===1?"ist noch 1 Platz":`sind noch ${frei} Plätze`} frei – ${Math.min(frei,suchen.length)} von ${suchen.length} ${Math.min(frei,suchen.length)===1?"wäre":"wären"} damit schon versorgt.`
-              : "Alle Plätze sind belegt – es fehlt noch ein Auto.";
-          const txt=[
-            `🚗 Wer hat noch einen Platz frei?`,
-            ``,
-            `${evDisplayTitle(viewEv)} · ${fmtD(viewEv.date)}${viewEv.time?` · ${viewEv.time} Uhr`:""}`,
-            (viewEv.loc||viewEv.venueAddr)&&`📍 ${[viewEv.loc,viewEv.venueAddr].filter(Boolean).join(", ")}`,
-            ``,
-            `${suchen.length===1?"Ein Kind sucht":`Diese ${suchen.length} Kinder suchen`} noch eine Mitfahrt:`,
-            liste,
-            ``,
-            lage,
-            ``,
-            `Ein freier Platz im Auto reicht, damit ein Kind mitspielen kann. Wenn ihr jemanden mitnehmen könnt: in der App den Termin öffnen, „Ich fahre“ antippen und das Kind auswählen – dauert 10 Sekunden.`,
-            ``,
-            `Danke euch – zusammen kriegen wir alle an den Platz! 🙌`,
-            link,
-          ].filter(x=>x!==false&&x!==undefined&&x!==null).join("\n");
-          const doShare=()=>{ if(navigator.share){ navigator.share({title:"Mitfahrgelegenheit",text:txt}).catch(()=>{}); fire("Aufruf geteilt ✓"); }
-            else { navigator.clipboard?.writeText(txt); fire("Aufruf kopiert ✓"); } };
+          const doShare=()=>teileMitfahrAufruf(viewEv);
           return (
             <button onClick={doShare} style={{display:"flex",alignItems:"center",gap:9,width:"100%",background:"#fff7ed",border:"1.5px solid #fed7aa",borderRadius:12,padding:"11px 13px",cursor:"pointer",fontFamily:"inherit",textAlign:"left",marginBottom:10}}>
               <span style={{fontSize:16,flexShrink:0}}>🚗</span>
@@ -19897,7 +19875,7 @@ function FerienHinweis({hols,from,to}){
   );
 }
 
-function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSelfVote,onRemind,onPlan,planTitle,onAttend,onBrief,modTraining=true,trainerNames=[],helperNames=[],allEvents=[],allTeams=[],squad=[],onSubReq=null,helperId=null,onHelperQuick=null,onSetup=null}) {
+function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSelfVote,onRemind,onPlan,planTitle,onAttend,onBrief,modTraining=true,trainerNames=[],helperNames=[],allEvents=[],allTeams=[],squad=[],onSubReq=null,helperId=null,onHelperQuick=null,onSetup=null,onMitfahr=null}) {
   const _ferien=useSchoolHolidays(cl?.clubSettings?.holidayState);
   const [more,setMore]=useState(false);
   const wd=d=>{ try{ return new Date(d+"T12:00:00").toLocaleDateString("de-DE",{weekday:"short"})+", "; }catch{ return ""; } };
@@ -20081,6 +20059,8 @@ function DashRow({ev,cl,tod,onView,onEdit,onDel,onReset,onCopyLink,selfName,onSe
         <div style={{display:"flex",gap:6,padding:"0 12px 11px",flexWrap:"wrap"}}>
           {onBrief&&<BtnSm onClick={onBrief} label="📋 Spickzettel" bg="#eef2ff" col="#4f46e5"/>}
           {onRemind&&(ev.pt==="att"||!ev.pt)&&ev.date>=tod&&<BtnSm onClick={onRemind} label={"🔔 Erinnern"+((squad&&squad.length&&(squad.length-yes-no)>0)?` (${squad.length-yes-no})`:"")} bg="#e0f2fe" col="#0369a1"/>}
+          {onMitfahr&&ev.date>=tod&&(()=>{ const n=mitfahrOffen(ev).suchen.length;
+            return n>0 ? <BtnSm onClick={onMitfahr} label={`🚗 Mitfahrt suchen (${n})`} bg="#fff7ed" col="#c2410c"/> : null; })()}
           {onSubReq&&ev.date>=tod&&<BtnSm onClick={onSubReq} label="🆘 Vertretung suchen" bg="#fff1f2" col="#be123c"/>}
           {ev.open&&<BtnSm onClick={onCopyLink} label="🔗 Link kopieren" bg="#ede9fe" col="#7c3aed"/>}
           {!helperId&&<BtnSm onClick={onReset} label="↺ Stimmen zurücksetzen" bg="#fff7ed" col="#d97706"/>}
@@ -24009,6 +23989,47 @@ const ANT={ ja:{icon:"✅",col:"#15803d",rand:"#bbf7d0"}, spaet:{icon:"⏰",col:
 //   - ausdruecklich im Wizard angehakt  -> Pflicht (abwaehlbar)
 //   - automatisch bei Spielen angeboten -> freiwillig
 // ----------------------------------------------------------------
+// Wer sucht bei diesem Termin noch eine Mitfahrt - und wie viele Plaetze
+// sind in den eingetragenen Autos noch frei?
+const mitfahrOffen = (ev) => {
+  const cp=(ev&&ev.carpool)||{};
+  const eintrag=n=>{ const v=cp[n]; return v&&typeof v==="object"&&v.mode?v:null; };
+  const fahrer=Object.keys(cp).filter(n=>eintrag(n)&&eintrag(n).mode==="drive");
+  const paxOf=d=>Object.keys(cp).filter(n=>eintrag(n)&&eintrag(n).mode==="need"&&eintrag(n).car===d);
+  const suchen=Object.keys(cp).filter(n=>eintrag(n)&&eintrag(n).mode==="need"&&!fahrer.includes(eintrag(n).car||""));
+  const frei=fahrer.reduce((s,d)=>s+Math.max(0,(Number(eintrag(d).seats)||0)-paxOf(d).length),0);
+  return { fahrer, suchen, frei, eintrag };
+};
+// Fertiger Aufruf fuer die Eltern-Gruppe. Vornamen und Treffpunkt stehen
+// bewusst drin - ohne sie weiss niemand, wen er mitnehmen soll. Nachnamen
+// bleiben draussen, versorgte Kinder tauchen gar nicht auf.
+const mitfahrText = (ev, cl, titel) => {
+  const { fahrer, suchen, frei, eintrag } = mitfahrOffen(ev);
+  if(!suchen.length) return "";
+  const vor=n=>String(n).split(" ")[0];
+  const liste=suchen.map(n=>{ const e=eintrag(n); return `• ${vor(n)}${e&&e.pickup?` – ${e.pickup}`:""}`; }).join("\n");
+  const lage = fahrer.length===0
+    ? "Bisher hat sich noch niemand als Fahrer eingetragen."
+    : frei>0
+      ? `Aktuell ${frei===1?"ist noch 1 Platz":`sind noch ${frei} Plätze`} frei – ${Math.min(frei,suchen.length)} von ${suchen.length} ${Math.min(frei,suchen.length)===1?"wäre":"wären"} damit schon versorgt.`
+      : "Alle Plätze sind belegt – es fehlt noch ein Auto.";
+  return [
+    `🚗 Wer hat noch einen Platz frei?`,
+    ``,
+    `${titel} · ${fmtD(ev.date)}${ev.time?` · ${ev.time} Uhr`:""}`,
+    (ev.loc||ev.venueAddr)&&`📍 ${[ev.loc,ev.venueAddr].filter(Boolean).join(", ")}`,
+    ``,
+    `${suchen.length===1?"Ein Kind sucht":`Diese ${suchen.length} Kinder suchen`} noch eine Mitfahrt:`,
+    liste,
+    ``,
+    lage,
+    ``,
+    `Ein freier Platz im Auto reicht, damit ein Kind mitspielen kann. Wenn ihr jemanden mitnehmen könnt: in der App den Termin öffnen, „Ich fahre“ antippen und das Kind auswählen – dauert 10 Sekunden.`,
+    ``,
+    `Danke euch – zusammen kriegen wir alle an den Platz! 🙌`,
+    terminLink(cl, ev.tid, ev.id),
+  ].filter(x=>x!==false&&x!==undefined&&x!==null).join("\n");
+};
 const carpoolDazu = ev => !!ev && ev.pt!=="carpool" && (ev.carpoolExtra===true ||
   (ev.carpoolEnabled!==false && ["heimspiel","auswarts","freundschaft","turnier"].includes(ev.type)));
 const umfragenVon = (ev, wer) => {
