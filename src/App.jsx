@@ -22992,6 +22992,13 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
   const [umbenennen,setUmbenennen]=useState(null);
   const offenT = teams.find(t=>t.id===offen) || teams[0];
   const sichern = (neu) => onChange&&onChange(neu);
+  // Trikotnummer aus dem Spielerprofil - auf dem Platz ruft man die Nummer,
+  // nicht den Namen.
+  const nrVon=name=>{ const p=lineupProfByName(name,profiles); const n=String(p&&p.jerseyNr||"").trim(); return n||null; };
+  const NrChip=({n,col})=>(
+    <span style={{flexShrink:0,minWidth:19,height:19,padding:"0 4px",borderRadius:6,background:col,color:"#fff",
+      fontSize:10.5,fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}>{n}</span>
+  );
   const topStrength=name=>{const p=lineupProfByName(name,profiles);if(!p?.skills)return"";const e=Object.entries(p.skills).filter(([,v])=>typeof v==="number"&&v>0).sort((a,b)=>b[1]-a[1])[0];return e?`Stärke: ${e[0]} ${e[1]}/5`:"";};
   if(placed.length===0 && !canEdit) return null;
   // Ein Name steht immer nur in EINER Mannschaft - beim Einsortieren wird er
@@ -23132,7 +23139,9 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
                           onClick={()=>canEdit&&remove(n)}
                           style={{display:"flex",alignItems:"center",gap:5,background:sv.bg,borderRadius:99,padding:"3px 9px 3px 3px",
                             border:st==="ja"?`1.5px solid ${lineColors[k]}`:`1.5px dashed ${sv.rand}`,cursor:canEdit?"pointer":"default"}}>
-                          <Av name={n} sz={20}/><span style={{fontSize:12.5,fontWeight:700,color:sv.txt}}>{n}</span>
+                          <Av name={n} sz={20}/>
+                          {nrVon(n)&&<NrChip n={nrVon(n)} col={st==="ja"?lineColors[k]:sv.rand}/>}
+                          <span style={{fontSize:12.5,fontWeight:700,color:sv.txt}}>{n}</span>
                           {st!=="ja"&&<span style={{fontSize:10,fontWeight:800,color:sv.txt,background:"#fff",borderRadius:6,padding:"1px 5px"}}>{sv.tag}</span>}
                           {canEdit&&<span style={{color:"#dc2626",fontWeight:800,fontSize:12}}>×</span>}
                         </span>
@@ -23171,6 +23180,7 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
                   <div key={n} style={{display:"flex",alignItems:"center",gap:8,background:st==="ja"?"#f8fafc":sv.bg,borderRadius:10,padding:"6px 9px",
                     border:st==="ja"?"1px solid #e2e8f0":`1px dashed ${sv.rand}`}}>
                     <Av name={n} sz={22}/>
+                    {nrVon(n)&&<NrChip n={nrVon(n)} col={st==="ja"?"#94a3b8":sv.rand}/>}
                     <span style={{flex:1,minWidth:0,fontSize:13,fontWeight:700,color:st==="ja"?"#334155":sv.txt}}>{n}
                       {st!=="ja"&&<span style={{fontSize:10,fontWeight:800,marginLeft:6,color:sv.txt,background:"#fff",borderRadius:6,padding:"1px 5px"}}>{sv.tag}</span>}
                     </span>
@@ -23209,7 +23219,7 @@ function InOutHint({ev,cl}){
     </div>
   );
 }
-function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user",allEvents=[]}) {
+function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user",allEvents=[],profiles=[]}) {
   const { tr } = useT();
   const wx=useWeather(plzToGeo(cl?.plz));
   const isTrainerOrHelper = role==="trainer"||role==="helper"||role==="admin";
@@ -23353,7 +23363,7 @@ function EvCard({ev,user,expanded,onToggle,onVote,cl,players,role="user",allEven
         {["heimspiel","auswarts","freundschaft","turnier"].includes(ev.type)&&<LineupBoard ev={ev}
           present={Object.entries(ev.votes||{}).filter(([,v])=>(typeof v==="object"?v.val:v)==="yes").map(([n])=>n)}
           abgesagt={Object.entries(ev.votes||{}).filter(([,v])=>(typeof v==="object"?v.val:v)==="no").map(([n])=>n)}
-          canEdit={false}/>}
+          profiles={profiles} canEdit={false}/>}
       </div>}
     </div>
   );
@@ -25105,13 +25115,13 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{},onSwitc
         {up.length>0&&<>
           <Divider label={tr("uhNext10")}/>
           {soon.length>0
-            ? soon.map((ev,i)=><div key={ev.id} className="up" style={{marginBottom:10,animationDelay:`${i*.05}s`}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user" allEvents={data.events||[]}/></div>)
+            ? soon.map((ev,i)=><div key={ev.id} className="up" style={{marginBottom:10,animationDelay:`${i*.05}s`}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user" allEvents={data.events||[]} profiles={data.playerProfiles||[]}/></div>)
             : <p style={{textAlign:"center",color:"#64748b",fontSize:13.5,padding:"16px 10px"}}>{tr("uhNoNext10")}</p>}
           {later.length>0&&<>
             <button onClick={()=>setShowLater(s=>!s)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",background:showLater?"#f1f5f9":"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,cursor:"pointer",margin:"6px 0 10px",padding:"11px 14px",fontWeight:800,fontSize:13,color:"#475569",fontFamily:"inherit"}}>
               <span>{showLater?"▲ "+tr("uhHideMore"):"▼ "+tr("uhShowMoreA")+" "+later.length+" "+tr("uhShowMoreB")}</span>
             </button>
-            {showLater&&later.map((ev,i)=><div key={ev.id} style={{marginBottom:10}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user" allEvents={data.events||[]}/></div>)}
+            {showLater&&later.map((ev,i)=><div key={ev.id} style={{marginBottom:10}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user" allEvents={data.events||[]} profiles={data.playerProfiles||[]}/></div>)}
           </>}
         </>}
         {up.length===0&&<div style={{textAlign:"center",padding:"52px 20px"}}><Logo cl={cl} sz={64} sx={{margin:"0 auto 16px"}}/><p style={{fontWeight:800,fontSize:18,color:"#334155"}}>{tr("uhNoUpcoming")}</p><p style={{color:"#64748b",fontSize:14,marginTop:6}}>{tr("uhNoUpcomingSub")}</p><div style={{marginTop:20}}><AdBanner/></div></div>}
@@ -25119,7 +25129,7 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{},onSwitc
           <button onClick={()=>setSP(s=>!s)} style={{display:"flex",alignItems:"center",gap:10,width:"100%",background:"none",border:"none",cursor:"pointer",margin:"18px 0 10px",padding:"4px 0"}}>
             <div style={{flex:1,height:1,background:"#e2e8f0"}}/><span style={{fontSize:11,fontWeight:800,color:"#64748b",whiteSpace:"nowrap"}}>{showPast?"▲":"▼"} {tr("uhPast")} ({past.length})</span><div style={{flex:1,height:1,background:"#e2e8f0"}}/>
           </button>
-          {showPast&&past.map(ev=><div key={ev.id} style={{marginBottom:10}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user" allEvents={data.events||[]}/></div>)}
+          {showPast&&past.map(ev=><div key={ev.id} style={{marginBottom:10}}><EvCard ev={ev} user={user} expanded={exp===ev.id} onToggle={()=>setExp(exp===ev.id?null:ev.id)} onVote={vote} cl={cl} players={data.players?.[tid]||[]} role="user" allEvents={data.events||[]} profiles={data.playerProfiles||[]}/></div>)}
         </>}
         {/* Kinder-Bereich: Wochen-Übungen (nur mit Eltern-Freigabe) + Bundesliga-Quiz */}
         {myProfile&&(ext.ach||soloOk||ext.quiz)&&<div style={{marginTop:16}}>

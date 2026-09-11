@@ -198,13 +198,16 @@ for(let i=0;i<3;i++){ const w=await page.evaluate(()=>{ const b2=[...document.qu
 await clickTxt("👥 Kader"); await page.waitForTimeout(600);
 await clickTxt("^Spieler$"); await page.waitForTimeout(1000);
 b=await body();
-if(/KINDER MIT PASSWORT/.test(b)){
-  ok("Trainer sieht, welche Kinder ein Passwort haben");
-  if(/vergessen/.test(b)) ok("Erklärt, wofür das Zurücksetzen gut ist"); else fail("Keine Erklärung");
-  const vorher=(b.match(/KINDER MIT PASSWORT \((\d+)\)/)||[])[1];
+// Die Liste steht ganz unten und zugeklappt (eigener Test: test-kinder-passwort)
+if(/Kinder mit Passwort \(\d+\)/i.test(b)){
+  ok("Trainer sieht unten, wie viele Kinder ein Passwort haben");
+  const vorher=(b.match(/Kinder mit Passwort \((\d+)\)/i)||[])[1];
+  await clickTxt("Kinder mit Passwort"); await page.waitForTimeout(800);
+  b=await body();
+  if(/vergessen/.test(b)) ok("Aufgeklappt erklärt sie, wofür das Zurücksetzen gut ist"); else fail("Keine Erklärung");
   await clickTxt("Zurücksetzen"); await page.waitForTimeout(1100);
   b=await body();
-  const nachher=(b.match(/KINDER MIT PASSWORT \((\d+)\)/)||[])[1];
+  const nachher=(b.match(/Kinder mit Passwort \((\d+)\)/i)||[])[1];
   if(/zurückgesetzt/.test(b)||nachher!==vorher) ok("Passwort zurückgesetzt – Eltern können ein neues vergeben"); else fail("Zurücksetzen ohne Wirkung");
 } else fail("Keine Passwort-Übersicht im Kader: "+b.slice(0,170).replace(/\n/g," | "));
 

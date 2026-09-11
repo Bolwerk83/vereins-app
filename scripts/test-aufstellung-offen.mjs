@@ -146,6 +146,20 @@ await zurAufstellung();
   if(drin) ok("Und die Aufstellung selbst bleibt unangetastet – der Trainer entscheidet");
   else fail("Kind wurde still aus der Mannschaft geworfen"); }
 
+// ===== 5) Trikotnummern stehen dabei =====
+{ const nrVon=(n)=>page.evaluate(x=>{ const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
+    const p=(d.playerProfiles||[]).find(y=>y.name===x); return p?String(p.jerseyNr||""):""; }, n);
+  const nrPlatz=await nrVon(daten.offen);
+  const nrBank=await nrVon(daten.ja);
+  if(nrPlatz){ const c=await chip(daten.offen);
+    if(c&&c.text.includes(nrPlatz)) ok(`In der Mannschaft steht die Trikotnummer am Namen (${daten.offen} = ${nrPlatz})`);
+    else fail(`Keine Trikotnummer am Chip (erwartet ${nrPlatz}): `+JSON.stringify(c)); }
+  else console.log("HINWEIS: aufgestelltes Kind hat keine Trikotnummer");
+  if(nrBank){ const z=await bankZeile(daten.ja);
+    if(z&&z.text.includes(nrBank)) ok(`Und auf der Bank ebenso (${daten.ja} = ${nrBank})`);
+    else fail(`Keine Trikotnummer auf der Bank (erwartet ${nrBank}): `+JSON.stringify(z)); }
+  else console.log("HINWEIS: Bank-Kind hat keine Trikotnummer"); }
+
 if(errors.length){ console.log("JS-FEHLER:"); [...new Set(errors)].forEach(e=>console.log(" -",e.slice(0,150))); }
 console.log(errors.length||fails.length?`ERGEBNIS: ${fails.length} Fehlschläge, ${errors.length} JS-Fehler`:"ERGEBNIS: ALLES OK");
 await browser.close(); srv.close();
