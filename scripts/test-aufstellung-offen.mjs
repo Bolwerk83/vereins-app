@@ -33,7 +33,7 @@ const zurAufstellung = async () => {
 // Die Bank-Zeile eines Kindes: Text + Rahmenfarbe
 const bankZeile = (name) => page.evaluate(n=>{
   const t=document.body.innerText; const i=t.indexOf("BANK");
-  const zeilen=[...document.querySelectorAll("div")].filter(d=>(d.innerText||"").includes(n)&&d.querySelectorAll("button").length===4);
+  const zeilen=[...document.querySelectorAll("div")].filter(d=>(d.innerText||"").includes(n)&&d.querySelectorAll("button").length===5);
   const z=zeilen[zeilen.length-1]; if(!z) return null;
   const st=getComputedStyle(z);
   return { text:(z.innerText||"").replace(/\n/g," "), rahmen:st.borderColor, stil:st.borderStyle, bg:st.backgroundColor }; }, name);
@@ -45,7 +45,7 @@ const chip = (name) => page.evaluate(n=>{
   return { text:(el.innerText||"").replace(/\n/g," "), stil:st.borderStyle, rahmen:st.borderColor }; }, name);
 // Bank-Knopf "A" (Abwehr) bei einem Kind
 const bankKlick=(name)=>page.evaluate(n=>{
-  const zeilen=[...document.querySelectorAll("div")].filter(d=>(d.innerText||"").includes(n)&&d.querySelectorAll("button").length===4);
+  const zeilen=[...document.querySelectorAll("div")].filter(d=>(d.innerText||"").includes(n)&&d.querySelectorAll("button").length===5);
   const z=zeilen[zeilen.length-1]; if(!z) return false;
   const b=[...z.querySelectorAll("button")].find(x=>(x.innerText||"").trim()==="A"); if(!b) return false; b.click(); return true; }, name);
 const evLesen=(id)=>page.evaluate(x=>{ const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");

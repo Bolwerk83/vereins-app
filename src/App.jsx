@@ -16964,9 +16964,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           const yes=Object.entries(viewEv.votes||{}).filter(([,v])=>vv(v)==="yes").map(([n])=>n).sort((a,b)=>a.localeCompare(b,"de"));
           const wxc=(()=>{ try{ const c=JSON.parse(localStorage.getItem("va_wx")||"null"); return c?.data?.[viewEv.date]||null; }catch{ return null; } })();
           const lu=viewEv.lineup||{};
-          const LU_NAMES={T:"Tor",A:"Abwehr",M:"Mittelfeld",S:"Sturm"};
-          const luTxt=["T","A","M","S"].map(k=>LU_NAMES[k]+": "+((lu[k]||[]).join(", ")||"–")).join("\n   ");
-          const hasLu=[...(lu.T||[]),...(lu.A||[]),...(lu.M||[]),...(lu.S||[])].length>0;
+          const hasLu=[...(lu.T||[]),...(lu.A||[]),...(lu.M||[]),...(lu.S||[]),...(lu.E||[])].length>0;
           const cp=viewEv.carpool||{};
           const cpe=n=>{const v=cp[n];return v&&typeof v==="object"&&v.mode?v:null;};
           const drivers=Object.keys(cp).filter(n=>cpe(n)?.mode==="drive");
@@ -17399,7 +17397,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           abgesagt={neinSpielerNamen(viewEv)}
           canEdit={!isHelper}
           profiles={local.playerProfiles||[]}
-          pastLineups={(local.events||[]).filter(e=>e.tid===viewEv.tid&&e.id!==viewEv.id&&e.lineup&&[...(e.lineup.T||[]),...(e.lineup.A||[]),...(e.lineup.M||[]),...(e.lineup.S||[])].length>0).map(e=>e.lineup)}
+          pastLineups={(local.events||[]).filter(e=>e.tid===viewEv.tid&&e.id!==viewEv.id&&e.lineup&&[...(e.lineup.T||[]),...(e.lineup.A||[]),...(e.lineup.M||[]),...(e.lineup.S||[]),...(e.lineup.E||[])].length>0).map(e=>e.lineup)}
           pub={viewEv.type==="turnier"?!!viewEv.lineupPublic:undefined}
           onPubChange={viewEv.type==="turnier"&&!isHelper?(val=>{
             const ev2={...viewEv,lineupPublic:val};
@@ -17415,7 +17413,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             const erste=liste[0]||{T:[],A:[],M:[],S:[]};
             // ev.lineup bleibt die erste Mannschaft - daran haengen Spieltag-Zettel,
             // Gaeste-Ansicht und die Vorschlaege aus vergangenen Terminen.
-            const ev2={...viewEv,lineups:liste,lineup:{T:erste.T||[],A:erste.A||[],M:erste.M||[],S:erste.S||[]}};
+            const ev2={...viewEv,lineups:liste,lineup:{T:erste.T||[],A:erste.A||[],M:erste.M||[],S:erste.S||[],E:erste.E||[]}};
             const events=local.events.map(e=>e.id===viewEv.id?ev2:e);
             // Falls veroeffentlicht + fuer Gaeste freigegeben: Spiegel mitziehen.
             const isPub=viewEv.type==="turnier"&&(local.liveEvents||[]).some(x=>x.eid===viewEv.id);
@@ -18964,7 +18962,7 @@ function eventWarnings(ev, tod, ctx={}){
   const _tn=staffSet(ctx.trainerNames||[],ctx.helperNames||[]);
   const yes = Object.entries(ev.votes||{}).filter(([n,v])=>(typeof v==="object"?v.val:v)==="yes"&&!isStaffVote(n,v,_tn)).length;
   if(isGame && days<=3){
-    const lu=ev.lineup||{}; const placed=[...(lu.T||[]),...(lu.A||[]),...(lu.M||[]),...(lu.S||[])].length;
+    const lu=ev.lineup||{}; const placed=[...(lu.T||[]),...(lu.A||[]),...(lu.M||[]),...(lu.S||[]),...(lu.E||[])].length;
     if(placed===0) w.push({label:"Aufstellung fehlt",col:"#7c3aed",bg:"#ede9fe"});
   }
   if((ev.pt==="att"||!ev.pt) && days<=4 && ev.sollPlayers>0 && yes<ev.sollPlayers){
@@ -21180,7 +21178,7 @@ function buildPublicSquad(ev, profiles=[]){
   const num = n => { const p=byName[String(n||"").toLowerCase()]; return p&&p.jerseyNr?String(p.jerseyNr):""; };
   const ok  = n => { const p=byName[String(n||"").toLowerCase()]; return !!(p&&p.pubOk); };
   const lu = ev.lineup||{};
-  const placed = [...(lu.T||[]),...(lu.A||[]),...(lu.M||[]),...(lu.S||[])];
+  const placed = [...(lu.T||[]),...(lu.A||[]),...(lu.M||[]),...(lu.S||[]),...(lu.E||[])];
   let entries;
   if(placed.length){
     entries = LINEUP_LINES.flatMap(([k])=>(lu[k]||[]).map(n=>({n,line:k})));
@@ -22529,7 +22527,9 @@ function DutyBoard({ ev, user, canManage, onChange }){
 // Aufstellung fuer ein Spiel: zugesagte Spieler auf Linien (Tor/Abwehr/
 // Mittelfeld/Angriff) stellen; Rest = Bank. Editierbar (Trainer/Admin) bzw.
 // read-only (Eltern sehen, ob sie in der Startelf stehen).
-const LINEUP_LINES = [["T","Tor"],["A","Abwehr"],["M","Mittelfeld"],["S","Angriff"]];
+// "E" ist die Ersatzbank der Mannschaft - anders als die allgemeine Bank
+// unten ("verfuegbar") gehoert sie schon zum Team.
+const LINEUP_LINES = [["T","Tor"],["A","Abwehr"],["M","Mittelfeld"],["S","Angriff"],["E","Ersatzbank"]];
 // Schnell-Spielbericht: Ergebnis + Torschützen + Notiz, in Sekunden nach dem Spiel.
 // Betreuung/Staffing fürs Training: Soll 2–3 je nach Größe, Trainer haben Vorrang,
 // Helfer füllen nur die Lücke (wer zuerst kommt) – Rest auf die Warteliste.
@@ -22959,14 +22959,14 @@ function recommendLineup(present, profiles, pastLineups, friendWeight=1){
 }
 function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChange=undefined, profiles=[], pastLineups=[], betreuer=[], staffNamen=[], ohneZusage=[], abgesagt=[] }){
   const { tr } = useT();
-  const LINE_LABELS = {T:tr("lnTor"),A:tr("lnAbwehr"),M:tr("lnMittelfeld"),S:tr("lnAngriff")};
+  const LINE_LABELS = {T:tr("lnTor"),A:tr("lnAbwehr"),M:tr("lnMittelfeld"),S:tr("lnAngriff"),E:tr("lnErsatz")};
   // Mehrere Mannschaften je Termin (Turnier: G1, G2 ...). Alt gespeicherte
   // Termine haben nur ev.lineup - das ist dann schlicht die erste Mannschaft.
-  const leer=()=>({T:[],A:[],M:[],S:[]});
+  const leer=()=>({T:[],A:[],M:[],S:[],E:[]});
   const teams = (Array.isArray(ev.lineups)&&ev.lineups.length)
     ? ev.lineups
     : [{ id:"t1", name:"Team 1", ...leer(), ...(ev.lineup||{}) }];
-  const spielerVon = t => [...(t.T||[]),...(t.A||[]),...(t.M||[]),...(t.S||[])];
+  const spielerVon = t => [...(t.T||[]),...(t.A||[]),...(t.M||[]),...(t.S||[]),...(t.E||[])];
   const placed = teams.flatMap(spielerVon);
   // Betreuer gehoeren nicht auf die Spielerbank - sie werden den Mannschaften
   // getrennt zugewiesen.
@@ -23003,7 +23003,7 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
   if(placed.length===0 && !canEdit) return null;
   // Ein Name steht immer nur in EINER Mannschaft - beim Einsortieren wird er
   // ueberall sonst entfernt.
-  const ohne = (t,name) => ({...t, T:(t.T||[]).filter(x=>x!==name), A:(t.A||[]).filter(x=>x!==name), M:(t.M||[]).filter(x=>x!==name), S:(t.S||[]).filter(x=>x!==name)});
+  const ohne = (t,name) => ({...t, T:(t.T||[]).filter(x=>x!==name), A:(t.A||[]).filter(x=>x!==name), M:(t.M||[]).filter(x=>x!==name), S:(t.S||[]).filter(x=>x!==name), E:(t.E||[]).filter(x=>x!==name)});
   const place = (name, line, tid=offen) => {
     sichern(teams.map(t=>{ const c=ohne(t,name); return t.id===tid ? {...c,[line]:[...(c[line]||[]),name]} : c; }));
   };
@@ -23026,7 +23026,7 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
     const cur=t.staff||[];
     return {...t, staff: cur.includes(name) ? cur.filter(x=>x!==name) : [...cur,name]};
   }));
-  const lineColors={T:"#d97706",A:"#2563eb",M:"#16a34a",S:"#dc2626"};
+  const lineColors={T:"#d97706",A:"#2563eb",M:"#16a34a",S:"#dc2626",E:"#64748b"};
   // KI-Vorschlag: Formation nach Teilnehmerzahl + Besetzung nach Position/Stärken.
   // Vorschlag fuellt die OFFENE Mannschaft - aus allen, die noch frei sind.
   const autoFill = () => {
