@@ -10476,6 +10476,8 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
   const [view,setView] = useState(hasUnassigned ? "pool" : "list");
   const [selTid,setSelTid]  = useState(myTids[0]||"");
   const [editP,setEditP]   = useState(null);
+  // Kinder mit Passwort: selten gebraucht - steht ganz unten und zugeklappt.
+  const [pwListe,setPwListe]=useState(false);
   const [showNew,setShowNew] = useState(false);
   const [showBulk,setShowBulk] = useState(false);
   const [quickNew,setQuickNew] = useState(null); // saubere Anlege-Maske {name,by,gender}
@@ -10606,32 +10608,6 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
         ))}
       </div>
 
-      {/* Passwort vergessen? Der Trainer setzt es zurueck, danach vergeben die
-          Eltern beim naechsten Anmelden selbst ein neues. */}
-      {view==="list"&&(()=>{
-        const mitPw=(data.playerProfiles||[]).filter(p=>myTids.includes(p.mainTid)&&!p.archived&&p.childPw);
-        if(!mitPw.length) return null;
-        return (
-          <div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:14,padding:"11px 13px",marginBottom:12}}>
-            <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:.5,marginBottom:3}}>🔑 KINDER MIT PASSWORT ({mitPw.length})</div>
-            <div style={{fontSize:12,color:"#64748b",lineHeight:1.5,marginBottom:8}}>
-              Haben Eltern ihr Passwort vergessen? Hier zurücksetzen – danach können sie sich ohne Passwort anmelden und ein neues vergeben.
-            </div>
-            {mitPw.map(p=>(
-              <div key={p.id} style={{display:"flex",alignItems:"center",gap:9,padding:"7px 0",borderBottom:"1px solid #f1f5f9"}}>
-                <Av name={p.name} sz={26}/>
-                <span style={{flex:1,fontSize:13.5,fontWeight:700,color:"#0f172a",minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
-                <button onClick={()=>{
-                  if(typeof window!=="undefined"&&window.confirm&&!window.confirm(`Passwort von ${p.name} zurücksetzen?\n\nDie Eltern können sich danach ohne Passwort anmelden und ein neues vergeben.`)) return;
-                  save({...data, playerProfiles:(data.playerProfiles||[]).map(x=>x.id===p.id?{...x,childPw:"",childPwAt:""}:x)});
-                  fire("Passwort von "+p.name+" zurückgesetzt – die Eltern können ein neues vergeben");
-                }} style={{flexShrink:0,padding:"10px 12px",minHeight:44,borderRadius:10,border:"1.5px solid #fed7aa",background:"#fff7ed",color:"#c2410c",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
-                  Zurücksetzen
-                </button>
-              </div>
-            ))}
-          </div>
-        );
       })()}
 
       {}
@@ -10947,6 +10923,44 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
       {view==="list"&&selTeam&&(selTeam.trainerEditPwd ?? cl?.clubSettings?.trainerEditTeamPwd ?? false) && (
         <TeamPwdChanger team={selTeam} data={data} save={save} fire={fire} cl={cl}/>
       )}
+
+      {/* Passwort vergessen? Der Trainer setzt es zurueck, danach vergeben die
+          Eltern beim naechsten Anmelden selbst ein neues. Steht bewusst ganz
+          unten und zugeklappt - man braucht es selten. */}
+      {view==="list"&&(()=>{
+        const mitPw=(data.playerProfiles||[]).filter(p=>myTids.includes(p.mainTid)&&!p.archived&&p.childPw);
+        if(!mitPw.length) return null;
+        return (
+          <div style={{marginTop:16}}>
+            <button onClick={()=>setPwListe(v=>!v)}
+              style={{display:"flex",alignItems:"center",gap:8,width:"100%",background:pwListe?"#f1f5f9":"#fff",
+                border:"1.5px solid #e2e8f0",borderRadius:12,padding:"11px 13px",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
+              <span style={{fontSize:13,fontWeight:800,color:"#475569",flex:1}}>🔑 Kinder mit Passwort ({mitPw.length})</span>
+              <span style={{fontSize:12,fontWeight:800,color:"#64748b",flexShrink:0}}>{pwListe?"▲ Zuklappen":"▼ Passwort zurücksetzen"}</span>
+            </button>
+            {pwListe&&(
+              <div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderTop:"none",borderRadius:"0 0 14px 14px",padding:"11px 13px"}}>
+                <div style={{fontSize:12,color:"#64748b",lineHeight:1.5,marginBottom:8}}>
+                  Haben Eltern ihr Passwort vergessen? Hier zurücksetzen – danach können sie sich ohne Passwort anmelden und ein neues vergeben.
+                </div>
+                {mitPw.map(p=>(
+                  <div key={p.id} style={{display:"flex",alignItems:"center",gap:9,padding:"7px 0",borderBottom:"1px solid #f1f5f9"}}>
+                    <Av name={p.name} sz={26}/>
+                    <span style={{flex:1,fontSize:13.5,fontWeight:700,color:"#0f172a",minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
+                    <button onClick={()=>{
+                      if(typeof window!=="undefined"&&window.confirm&&!window.confirm(`Passwort von ${p.name} zurücksetzen?\n\nDie Eltern können sich danach ohne Passwort anmelden und ein neues vergeben.`)) return;
+                      save({...data, playerProfiles:(data.playerProfiles||[]).map(x=>x.id===p.id?{...x,childPw:"",childPwAt:""}:x)});
+                      fire("Passwort von "+p.name+" zurückgesetzt – die Eltern können ein neues vergeben");
+                    }} style={{flexShrink:0,padding:"10px 12px",minHeight:44,borderRadius:10,border:"1.5px solid #fed7aa",background:"#fff7ed",color:"#c2410c",fontWeight:800,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>
+                      Zurücksetzen
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {}
       {(editP||showNew) && (
