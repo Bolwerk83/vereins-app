@@ -63,15 +63,15 @@ const kader = await page.evaluate(()=>{
   const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
   const vorhanden=(d.playerProfiles||[]).filter(p=>p.mainTid==="demo_f1"&&!p.archived);
   let i=1; const namen=vorhanden.map(p=>p.name);
-  while(namen.length<9){ const n="Kind "+i;
+  while(namen.length<13){ const n="Kind "+i;
     d.playerProfiles.push({id:"pp_lb"+i,cid:"demo",seasonId:vorhanden[0]&&vorhanden[0].seasonId,archived:false,name:n,
       by:2017,gender:"m",mainTid:"demo_f1",optTids:[],friends:[],mustWith:[]});
     namen.push(n); i++; }
   (d.playerProfiles||[]).filter(p=>p.mainTid==="demo_f1").forEach(p=>{ p.intGrp=""; });
   localStorage.setItem("vereinsapp_v14", JSON.stringify(d));
-  return namen.slice(0,9);
+  return namen.slice(0,13);
 });
-if(kader&&kader.length===9) ok("Kader mit neun Kindern steht");
+if(kader&&kader.length===13) ok("Kader mit 13 Kindern steht");
 else { fail("Kader nicht vorbereitet"); process.exit(1); }
 await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2800); await dismiss();
 await zumKader();
@@ -107,7 +107,7 @@ if(/Zuteilen kannst du oben an der Spielerkarte/.test(b)) ok("Sie erklärt, dass
 else fail("Kein Hinweis auf die Karte: "+b.slice(-500).replace(/\n/g," | "));
 if(/LEIBCHEN/.test(b)) ok("Jede Gruppe hat eine Leibchenfarbe");
 else fail("Kein Leibchen");
-if(/OHNE GRUPPE \(8\)/.test(b)) ok("Und sie zeigt, wer noch keiner Gruppe zugeteilt ist (8)");
+if(/OHNE GRUPPE \(12\)/.test(b)) ok("Und sie zeigt, wer noch keiner Gruppe zugeteilt ist (12)");
 else fail("Keine Ohne-Gruppe-Liste: "+(b.match(/OHNE GRUPPE[^\n]*/)||[""])[0]);
 { const geklickt=await page.evaluate(()=>{ const b2=[...document.querySelectorAll('button[aria-label="Leibchen Gelb"]')][0];
     if(!b2) return false; b2.click(); return true; });
@@ -118,17 +118,20 @@ else fail("Keine Ohne-Gruppe-Liste: "+(b.match(/OHNE GRUPPE[^\n]*/)||[""])[0]);
   else fail("Leibchen nicht gespeichert: "+JSON.stringify(g)); }
 
 // ===== 4+5) Mannschaften im Training =====
+// 13 Zusagen: Leistung 5, Reserve 6, Entwicklung 2.
+// Erwartung bei 5+1: Leistung holt sich EINEN aus der Reserve nach oben,
+// steht dann bei 6. Reserve hat danach 5 und holt aus Entwicklung auf 6.
+// Entwicklung bleibt übrig -> keine dritte Mannschaft mit 6.
+// Vor allem: KEIN Leistungsspieler darf in der Reserve auftauchen.
 const trId = await page.evaluate(k=>{
   const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
   const p=v=>String(v).padStart(2,"0"); const x=new Date(Date.now()+2*86400000);
-  // 3 Leistung, 4 Reserve, 2 Entwicklung -> Entwicklung ist zu klein,
-  // es muss aus der Reserve nachrücken.
-  const zu={}; k.slice(0,3).forEach(n=>zu[n]="g1"); k.slice(3,7).forEach(n=>zu[n]="g2"); k.slice(7,9).forEach(n=>zu[n]="g3");
-  (d.playerProfiles||[]).filter(q=>q.mainTid==="demo_f1").forEach(q=>{ if(zu[q.name]) q.intGrp=zu[q.name]; });
+  const zu={}; k.slice(0,5).forEach(n=>zu[n]="g1"); k.slice(5,11).forEach(n=>zu[n]="g2"); k.slice(11,13).forEach(n=>zu[n]="g3");
+  (d.playerProfiles||[]).filter(q=>q.mainTid==="demo_f1").forEach(q=>{ q.intGrp=zu[q.name]||""; });
   const ev=(d.events||[]).filter(e=>e.cid==="demo"&&e.tid==="demo_f1")[0];
   const ts=new Date().toISOString();
   Object.assign(ev,{ type:"training", date:`${x.getFullYear()}-${p(x.getMonth()+1)}-${p(x.getDate())}`, time:"17:30",
-    endTime:"19:00", title:"Training", loc:"Platz", note:"", deadline:null, extraPolls:[], duties:[],
+    endTime:"19:00", title:"Training", loc:"Platz", note:"", deadline:null, extraPolls:[], duties:[], spielGr:6,
     votes:Object.fromEntries(k.map(n=>[n,{val:"yes",ts,role:"player"}])) });
   (d.events||[]).filter(e=>e.cid==="demo"&&e.id!==ev.id).forEach(e=>{
     const y=new Date(Date.now()+12*86400000); e.date=`${y.getFullYear()}-${p(y.getMonth()+1)}-${p(y.getDate())}`; });
@@ -140,18 +143,50 @@ await page.waitForTimeout(1700);
 b=await body();
 if(/Mannschaften fürs Spielchen/.test(b)) ok("Im Training stehen die Mannschaften");
 else fail("Keine Mannschaften: "+b.slice(0,400).replace(/\n/g," | "));
-if(/Aus den 9 Zusagen/.test(b)) ok("Aus den Zusagen gebildet (9)");
+if(/SPIELFORM/.test(b)&&/5\+1/.test(b)) ok("Die Spielform lässt sich wählen (4+1 bis 7+1)");
+else fail("Keine Spielform-Auswahl");
+if(/Aus den 13 Zusagen/.test(b)) ok("Aus den 13 Zusagen gebildet");
 else fail("Zusagen nicht Grundlage");
-if(/nachgerückt/.test(b)) ok("Ein Kind ist nachgerückt – die Mannschaften sind ausgeglichen");
-else fail("Niemand nachgerückt: "+b.slice(0,500).replace(/\n/g," | "));
-{ const hin=await page.evaluate(()=>{ const t=document.body.innerText; const i=t.indexOf("rückt aus");
-    return i<0?"":t.slice(Math.max(0,i-40), i+60).replace(/\n/g," "); });
-  if(/rückt aus Reserve nach/.test(hin)) ok("Und zwar aus der Reserve: "+hin.trim().slice(0,60));
-  else fail("Nicht aus der Reserve: "+hin); }
-{ const zahlen=await page.evaluate(()=>{ const t=document.body.innerText; const i=t.indexOf("Mannschaften fürs Spielchen");
-    return t.slice(i,i+700); });
-  if(/Leistung/.test(zahlen)&&/Reserve/.test(zahlen)&&/Entwicklung/.test(zahlen)) ok("Alle drei Mannschaften stehen da");
-  else fail("Nicht alle Mannschaften"); }
+if(/Nach unten wird niemand geschoben/.test(b)) ok("Die Regel steht dabei: es wird nur aufgerückt");
+else fail("Regel nicht erklärt");
+
+// Der Block als Text - daraus lesen wir die Mannschaften
+const block=()=>page.evaluate(()=>{ const t=document.body.innerText; const i=t.indexOf("Mannschaften fürs Spielchen");
+  return i<0?"":t.slice(i,i+900); });
+{ const bl=await block();
+  const teil=(name)=>{ const i=bl.indexOf(name); if(i<0) return ""; 
+    const rest=bl.slice(i+name.length); const e=rest.search(/\n(Leistung|Reserve|Entwicklung)\n/);
+    return e<0?rest.slice(0,300):rest.slice(0,e); };
+  const leistung=teil("Leistung"), reserve=teil("Reserve");
+  // Kein Kind aus der Leistungsgruppe darf im Reserve-Block stehen
+  const leistungsKinder=kader.slice(0,5);
+  const abgestiegen=leistungsKinder.filter(n=>reserve.includes(n));
+  if(abgestiegen.length===0) ok("Kein Kind aus der Leistungsgruppe steht bei der Reserve – kein Abstieg");
+  else fail("Abstieg passiert: "+abgestiegen.join(", "));
+  // Genau einer rückt aus der Reserve in die Leistung auf
+  const reserveKinder=kader.slice(5,11);
+  const aufgerueckt=reserveKinder.filter(n=>leistung.includes(n));
+  if(aufgerueckt.length===1) ok(`Genau einer rückt aus der Reserve auf: ${aufgerueckt[0]}`);
+  else fail("Falsche Zahl aufgerückt: "+aufgerueckt.length);
+  if(/rückt auf/.test(bl)) ok("Und ist als „rückt auf“ gekennzeichnet");
+  else fail("Keine Kennzeichnung"); }
+{ const bl=await block();
+  if(/AUSWECHSEL/.test(bl)) ok("Wer übrig ist, steht als Auswechselspieler dabei");
+  else fail("Keine Auswechselspieler: "+bl.slice(0,400).replace(/\n/g," | "));
+  if(/zum Auswechseln/.test(bl)) ok("Und unten steht, wie viele es sind");
+  else fail("Keine Zusammenfassung"); }
+
+// Spielform wechseln: 4+1 ergibt kleinere Mannschaften
+{ if(await klick("^4\\+1$")) ok("Die Spielform lässt sich umstellen"); else fail("4+1 nicht klickbar");
+  await page.waitForTimeout(1300);
+  const ev=await page.evaluate(x=>{ const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
+    return (d.events||[]).find(e=>e.id===x)||null; }, trId);
+  if(ev&&ev.spielGr===5) ok("Die Wahl ist am Termin gespeichert");
+  else fail("Spielform nicht gespeichert: "+(ev&&ev.spielGr));
+  const bl=await block();
+  // 13 Kinder bei 4+1 (5 je Mannschaft): zwei volle Mannschaften, 3 wechseln ein
+  if(/2 × 4\+1/.test(bl)&&/3 zum Auswechseln/.test(bl)) ok("Bei 4+1: zwei volle Mannschaften und drei zum Auswechseln");
+  else fail("Falsche Aufteilung bei 4+1: "+(bl.match(/\d+ × \d\+1[^\n]*/)||[""])[0]); }
 
 if(errors.length){ console.log("JS-FEHLER:"); [...new Set(errors)].forEach(e=>console.log(" -",e.slice(0,150))); }
 console.log(errors.length||fails.length?`ERGEBNIS: ${fails.length} Fehlschläge, ${errors.length} JS-Fehler`:"ERGEBNIS: ALLES OK");
