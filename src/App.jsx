@@ -8,6 +8,7 @@ import { _sha256, hashPw, checkPw } from "./util.js";
 
 import { LANG_KEY, LangCtx, T, useT } from "./i18n.jsx";
 
+import TrainerAssistent from "./assistent.jsx";
 import { LANG_SWITCHER_ENABLED, LangSwitcher, FloatingLangSwitcher, getFontScale, applyFontScale, FontScaleControl, SupabaseSetup, uid, addMins, activeSid, clubSeasons, activeTeamsFor, genTempPw, validTrainerPw, now, addD, fmtD, plzToGeo, wxIcon, useWeather, geoDistanceKm, TEAM_STRENGTHS, strengthInfoText, strengthOf, InfoHint, isActive, teamSelfLogin, fmtDShort, ET, etLabel, evDisplayTitle,  CSS, TH, OnlineStatus, DbStatus, Logo, Av, Tag, Toast, AreaIntro, Drawer, PageHead, PillTabs, TeamPills, EmptyBox, Btn, PwInput, Inp, Sel, Sw, ClubHeader, Divider , SpiderChart, dimLabel } from "./ui.jsx";
 import { DFB_FORMATS, dfbFormatForCat, CAT_YEARS, catYearsStr, CAT_ORDER, eligibleCats, playerFitType, playerFitsTeam, fitLabel, _fbSeasonStart } from "./dfb.js";
 import { CAT_RANK, defaultSoll, SOLL_PLAYERS_BY_CAT, _votedYes, isPausedP, drillScores, drillVoteOf, playerNoShowEvents, NO_SHOW_HINT_THRESHOLD, addAuditLog, suggestDrillsForSkill, generateTrainingPlan, SKILLS, SKILL_AXES, skillAxesFor, sollFor, trainingFocusFor, buildSession, playerArchetype, AXIS_TO_FOCUS, staffNeed } from "./domain.js";
@@ -2458,6 +2459,7 @@ function BottomNav({ tab, setTab, isAdmin, isHelper, isParent=false, parentStats
         { id:"waitlist",   label:"Warteliste",         icon:"WL", hidden: isHelper },
         { id:"saisoncheck",label:"📝 Saison-Check",     icon:"SC", hidden: isHelper||isAdmin||mods.saison===false },
         { id:"module",     label:"🧩 Module",           icon:"MO", hidden: isHelper },
+        { id:"assistent",  label:"🧠 Trainer-Assistent", icon:"KI", hidden: isHelper },
         { id:"changelog",  label:"📈 Entwicklung",       icon:"CL" },
       ].filter(x=>!x.hidden),
     },
@@ -17010,6 +17012,10 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
         {tab==="tinbox"     &&<TrainerInboxTab data={local} cid={cid} session={session} save={save} cl={myClub}/>}
         {tab==="chat"       &&<ChatTab data={local} cid={cid} myTids={myTids} session={session} save={save} fire={fire} cl={myClub}/>}
         {tab==="changelog"  &&<ChangelogView cl={myClub}/>}
+        {tab==="assistent"&&!isHelper&&(
+          <TrainerAssistent data={local} save={save} fire={fire} cl={myClub} session={session}
+            myTids={myTids} onClose={()=>setTab("events")}/>
+        )}
         {tab==="teams"      &&isAdmin&&<TeamHub data={local} myTids={myTids} save={save} fire={fire} cl={myClub} session={session} isAdmin={isAdmin} initialSubTab="manage"/>}
         {tab==="overview"  &&isAdmin&&<><VereinsCockpit data={local} cid={cid} cl={myClub} save={save} fire={fire} session={session}/><AllTeamsOverview data={local} cid={cid} cl={myClub} onSelectTeam={tid=>{ const team=(local.teams||[]).find(x=>x.id===tid); if(team) fire("Team: "+team.name); }}/></>}
         {tab==="news"      &&<NewsTab data={local} cid={cid} session={session} save={save} fire={fire} cl={myClub}/>}
