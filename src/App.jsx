@@ -10478,6 +10478,9 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
   const [editP,setEditP]   = useState(null);
   // Kinder mit Passwort: selten gebraucht - steht ganz unten und zugeklappt.
   const [pwListe,setPwListe]=useState(false);
+  // Interne Leistungsgruppen (nur Trainerteam)
+  const [grpAuf,setGrpAuf]=useState(false);
+  const [grpEdit,setGrpEdit]=useState(null);   // id der Gruppe, die gerade umbenannt wird
   const [showNew,setShowNew] = useState(false);
   const [showBulk,setShowBulk] = useState(false);
   const [quickNew,setQuickNew] = useState(null); // saubere Anlege-Maske {name,by,gender}
@@ -10927,6 +10930,93 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
       {/* Passwort vergessen? Der Trainer setzt es zurueck, danach vergeben die
           Eltern beim naechsten Anmelden selbst ein neues. Steht bewusst ganz
           unten und zugeklappt - man braucht es selten. */}
+      {/* Interne Leistungsgruppen: nur fuer das Trainerteam. Damit lassen sich
+          bei zwei gemeldeten Mannschaften gleich starke Teams stellen. */}
+      {view==="list"&&selTeam&&(()=>{
+        const kader=(data.playerProfiles||[]).filter(p=>p.mainTid===selTid&&!p.archived&&(!p.seasonId||p.seasonId===activeSeason))
+          .sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"de"));
+        if(kader.length<4) return null;   // lohnt sich erst ab einem echten Kader
+        const gruppen=intGruppenVon(selTeam);
+        const zahl=g=>kader.filter(p=>p.intGrp===g.id).length;
+        const ohne=kader.filter(p=>!p.intGrp||!gruppen.some(g=>g.id===p.intGrp)).length;
+        const setGrp=(pid,gid)=>save({...data, playerProfiles:(data.playerProfiles||[]).map(x=>
+          x.id===pid ? {...x, intGrp: x.intGrp===gid ? "" : gid} : x)});
+        const setGruppen=liste=>save({...data, teams:(data.teams||[]).map(tm=>tm.id===selTid?{...tm,intGroups:liste}:tm)});
+        const umbenennen=(gid,name)=>setGruppen(gruppen.map(g=>g.id===gid?{...g,name:String(name||"").trim()||g.name}:g));
+        const dazu=()=>{ const farben=["#7c3aed","#0891b2","#db2777","#65a30d"];
+          setGruppen([...gruppen,{id:"g"+Date.now().toString(36),name:`Gruppe ${gruppen.length+1}`,col:farben[gruppen.length%farben.length]}]); };
+        const weg=g=>{ if(zahl(g)>0&&typeof window!=="undefined"&&window.confirm&&
+            !window.confirm(`„${g.name}“ entfernen?\n\n${zahl(g)} Kinder sind dieser Gruppe zugeteilt – die Zuteilung geht verloren.`)) return;
+          save({...data,
+            teams:(data.teams||[]).map(tm=>tm.id===selTid?{...tm,intGroups:gruppen.filter(x=>x.id!==g.id)}:tm),
+            playerProfiles:(data.playerProfiles||[]).map(x=>x.intGrp===g.id?{...x,intGrp:""}:x)}); };
+        return (
+          <div style={{marginTop:16}}>
+            <button onClick={()=>setGrpAuf(v=>!v)}
+              style={{display:"flex",alignItems:"center",gap:8,width:"100%",background:grpAuf?"#f1f5f9":"#fff",
+                border:"1.5px solid #e2e8f0",borderRadius:12,padding:"11px 13px",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
+              <span style={{fontSize:13,fontWeight:800,color:"#475569",flex:1,minWidth:0}}>🎯 Leistungsgruppen
+                <span style={{fontWeight:600,color:"#94a3b8"}}> · nur Trainer</span>
+              </span>
+              <span style={{display:"flex",gap:4,flexShrink:0}}>
+                {gruppen.map(g=>(
+                  <span key={g.id} style={{fontSize:11,fontWeight:800,color:"#fff",background:g.col,borderRadius:6,padding:"2px 6px"}}>{zahl(g)}</span>
+                ))}
+                {ohne>0&&<span style={{fontSize:11,fontWeight:800,color:"#64748b",background:"#e2e8f0",borderRadius:6,padding:"2px 6px"}}>{ohne}</span>}
+              </span>
+              <span style={{fontSize:12,fontWeight:800,color:"#64748b",flexShrink:0}}>{grpAuf?"▲":"▼"}</span>
+            </button>
+            {grpAuf&&(
+              <div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderTop:"none",borderRadius:"0 0 14px 14px",padding:"11px 13px"}}>
+                <div style={{fontSize:11.5,color:"#3730a3",background:"#eef2ff",border:"1px solid #c7d2fe",borderRadius:10,padding:"8px 10px",lineHeight:1.5,marginBottom:10}}>
+                  🔒 <b>Nur für das Trainerteam.</b> Kinder und Eltern sehen die Einteilung nirgends – weder in der App noch in geteilten Texten oder im Datenexport.
+                  Gedacht ist sie für die Aufstellung: Bei zwei gemeldeten Mannschaften spielt Gruppe 1 gegen starke Gegner, Gruppe 2 in ihrem Tempo – trainiert wird weiter gemeinsam.
+                </div>
+                <div style={{fontSize:11.5,color:"#92400e",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:10,padding:"8px 10px",lineHeight:1.5,marginBottom:12}}>
+                  Bitte als Momentaufnahme behandeln: Kinder entwickeln sich in Sprüngen. Schaut die Einteilung alle paar Wochen neu an und achtet darauf, dass jedes Kind Spielzeit
+                  und Erfolgserlebnisse bekommt – auch in der Entwicklungsgruppe.
+                </div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:10}}>
+                  {gruppen.map(g=>(
+                    <span key={g.id} style={{display:"flex",alignItems:"center",gap:5,background:g.col+"14",border:`1.5px solid ${g.col}`,borderRadius:99,padding:"4px 9px"}}>
+                      {grpEdit===g.id
+                        ? <input autoFocus defaultValue={g.name}
+                            onBlur={e=>{ umbenennen(g.id,e.target.value); setGrpEdit(null); }}
+                            onKeyDown={e=>{ if(e.key==="Enter"){ umbenennen(g.id,e.target.value); setGrpEdit(null); } }}
+                            style={{width:104,padding:"2px 6px",fontSize:12.5,fontWeight:700,border:`1.5px solid ${g.col}`,borderRadius:7,outline:"none",fontFamily:"inherit"}}/>
+                        : <span onClick={()=>setGrpEdit(g.id)} style={{fontSize:12.5,fontWeight:800,color:g.col,cursor:"pointer"}}>{g.name}</span>}
+                      <span style={{fontSize:11,fontWeight:800,color:"#fff",background:g.col,borderRadius:99,padding:"1px 6px"}}>{zahl(g)}</span>
+                      {gruppen.length>1&&<span onClick={()=>weg(g)} title="Gruppe entfernen" style={{color:"#dc2626",fontWeight:800,fontSize:12,cursor:"pointer"}}>×</span>}
+                    </span>
+                  ))}
+                  {gruppen.length<5&&(
+                    <button onClick={dazu} style={{padding:"4px 10px",borderRadius:99,border:"1.5px dashed #cbd5e1",background:"#fff",color:"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>＋ Gruppe</button>
+                  )}
+                </div>
+                <div style={{fontSize:10.5,color:"#94a3b8",marginBottom:6}}>Name antippen zum Umbenennen · Kind antippen, um die Gruppe zu setzen oder wieder zu lösen</div>
+                {kader.map(p=>(
+                  <div key={p.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderTop:"1px solid #f1f5f9"}}>
+                    <Av name={p.name} sz={24}/>
+                    <span style={{flex:1,minWidth:0,fontSize:13,fontWeight:700,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
+                    <span style={{display:"flex",gap:4,flexShrink:0}}>
+                      {gruppen.map(g=>{ const an=p.intGrp===g.id;
+                        return (
+                        <button key={g.id} onClick={()=>setGrp(p.id,g.id)} title={`${p.name}: ${g.name}`}
+                          style={{minWidth:34,minHeight:34,padding:"0 8px",borderRadius:9,border:`1.5px solid ${an?g.col:"#e2e8f0"}`,
+                            background:an?g.col:"#fff",color:an?"#fff":"#94a3b8",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+                          {String(g.name).slice(0,2)}
+                        </button>
+                        ); })}
+                    </span>
+                  </div>
+                ))}
+                {ohne>0&&<div style={{fontSize:11.5,color:"#64748b",marginTop:9}}>{ohne} {ohne===1?"Kind ist":"Kinder sind"} noch keiner Gruppe zugeteilt – sie bleiben in der Aufstellung ganz normal wählbar.</div>}
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
       {view==="list"&&(()=>{
         const mitPw=(data.playerProfiles||[]).filter(p=>myTids.includes(p.mainTid)&&!p.archived&&p.childPw);
         if(!mitPw.length) return null;
@@ -17395,6 +17485,7 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
           staffNamen={[...trainerNames,...helperNames]}
           ohneZusage={offeneSpielerNamen(viewEv)}
           abgesagt={neinSpielerNamen(viewEv)}
+          intGroups={isHelper?[]:intGruppenVon((local.teams||[]).find(tm=>tm.id===viewEv.tid))}
           canEdit={!isHelper}
           profiles={local.playerProfiles||[]}
           pastLineups={(local.events||[]).filter(e=>e.tid===viewEv.tid&&e.id!==viewEv.id&&e.lineup&&[...(e.lineup.T||[]),...(e.lineup.A||[]),...(e.lineup.M||[]),...(e.lineup.S||[]),...(e.lineup.E||[])].length>0).map(e=>e.lineup)}
@@ -22911,6 +23002,23 @@ function MatchReportCard({ ev, roster, onSave }){
 
 // Formation je Teilnehmerzahl (inkl. Torwart). Summe = Anzahl, also spielen alle.
 const LINEUP_SHAPE={3:{T:0,A:1,M:1,S:1},4:{T:1,A:1,M:1,S:1},5:{T:1,A:2,M:1,S:1},6:{T:1,A:2,M:2,S:1},7:{T:1,A:2,M:3,S:1},8:{T:1,A:3,M:3,S:1},9:{T:1,A:3,M:3,S:2},10:{T:1,A:4,M:3,S:2},11:{T:1,A:4,M:4,S:2}};
+// Interne Leistungsgruppen: Der Trainer teilt den Kader in Gruppen (z. B.
+// Leistung / Reserve / Entwicklung), damit bei zwei gemeldeten Mannschaften
+// gleich starke Teams entstehen - statt einmal alle zu mischen und beide
+// Spiele zu verlieren. AUSDRUECKLICH nur fuer das Trainerteam: Kinder und
+// Eltern sehen die Einteilung nirgends, auch nicht in geteilten Texten oder
+// im Datenexport.
+const INT_GRUPPEN_STD = [
+  {id:"g1",name:"Leistung",   col:"#16a34a"},
+  {id:"g2",name:"Reserve",    col:"#2563eb"},
+  {id:"g3",name:"Entwicklung",col:"#d97706"},
+];
+const intGruppenVon = team => (Array.isArray(team&&team.intGroups)&&team.intGroups.length) ? team.intGroups : INT_GRUPPEN_STD;
+const intGruppeDesKindes = (name, profiles, gruppen) => {
+  const p=(profiles||[]).find(x=>(x.name||"").toLowerCase()===String(name).toLowerCase());
+  if(!p||!p.intGrp) return null;
+  return (gruppen||[]).find(g=>g.id===p.intGrp)||null;
+};
 const lineupProfByName=(name,profiles)=>(profiles||[]).find(x=>(x.name||"").toLowerCase()===String(name).toLowerCase())||null;
 // KI-Vorschlag: Formation aus der Teilnehmerzahl, Besetzung nach Position + Stärken,
 // Bank für Überzählige, Chemie-Auswertung (wer spielt oft zusammen) aus der Historie.
@@ -22957,7 +23065,7 @@ function recommendLineup(present, profiles, pastLineups, friendWeight=1){
   const friends=fp.sort((x,y)=>(y.must-x.must)).slice(0,4);
   return {lineup,bench,formation,pairs,friends,count:n};
 }
-function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChange=undefined, profiles=[], pastLineups=[], betreuer=[], staffNamen=[], ohneZusage=[], abgesagt=[] }){
+function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChange=undefined, profiles=[], pastLineups=[], betreuer=[], staffNamen=[], ohneZusage=[], abgesagt=[], intGroups=[] }){
   const { tr } = useT();
   const LINE_LABELS = {T:tr("lnTor"),A:tr("lnAbwehr"),M:tr("lnMittelfeld"),S:tr("lnAngriff"),E:tr("lnErsatz")};
   // Mehrere Mannschaften je Termin (Turnier: G1, G2 ...). Alt gespeicherte
@@ -22986,6 +23094,7 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
     .filter(n=>!placed.includes(n)&&!_beSet.has(_kl(n)))
     .sort((x,y)=>(statusVon(x)==="ja"?0:1)-(statusVon(y)==="ja"?0:1)||String(x).localeCompare(String(y),"de"));
   const [tip,setTip]=useState(null);
+  const [hinweis,setHinweis]=useState("");
   const [friendW,setFriendW]=useState(1);   // 0=aus, 1=normal, 2=stark – pro Aufstellung wählbar
   // Immer genau eine Mannschaft offen: so ist klar, wohin die Bank einsortiert.
   const [offen,setOffen]=useState(teams[0]?.id||"t1");
@@ -22994,6 +23103,10 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
   const sichern = (neu) => onChange&&onChange(neu);
   // Trikotnummer aus dem Spielerprofil - auf dem Platz ruft man die Nummer,
   // nicht den Namen.
+  // Interne Leistungsgruppe des Kindes - nur fuer den Trainer sichtbar.
+  const grpVon=name=>canEdit?intGruppeDesKindes(name,profiles,intGroups):null;
+  const GrpPunkt=({name})=>{ const g=grpVon(name); if(!g) return null;
+    return <span title={"Gruppe: "+g.name} style={{flexShrink:0,width:8,height:8,borderRadius:99,background:g.col,display:"inline-block"}}/>; };
   const nrVon=name=>{ const p=lineupProfByName(name,profiles); const n=String(p&&p.jerseyNr||"").trim(); return n||null; };
   const NrChip=({n,col})=>(
     <span style={{flexShrink:0,minWidth:19,height:19,padding:"0 4px",borderRadius:6,background:col,color:"#fff",
@@ -23029,6 +23142,29 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
   const lineColors={T:"#d97706",A:"#2563eb",M:"#16a34a",S:"#dc2626",E:"#64748b"};
   // KI-Vorschlag: Formation nach Teilnehmerzahl + Besetzung nach Position/Stärken.
   // Vorschlag fuellt die OFFENE Mannschaft - aus allen, die noch frei sind.
+  // Mannschaften nach den internen Leistungsgruppen bilden: je Gruppe eine
+  // Mannschaft, Besetzung wie beim 🤖-Vorschlag, der Rest auf deren
+  // Ersatzbank. Die Mannschaften heissen bewusst neutral ("Mannschaft 1") -
+  // der Gruppenname steht nur beim Trainer daneben.
+  const nachGruppen = () => {
+    const verfuegbar=[...(present||[]),...(ohneZusage||[])]
+      .filter((n,i,a)=>a.indexOf(n)===i&&!_beSet.has(_kl(n)));
+    const proGruppe=(intGroups||[])
+      .map(g=>({g, leute:verfuegbar.filter(n=>{ const x=intGruppeDesKindes(n,profiles,intGroups); return x&&x.id===g.id; })}))
+      .filter(x=>x.leute.length>0);
+    if(proGruppe.length<2){ setHinweis("Dafür braucht es Kinder aus mindestens zwei Gruppen. Die Einteilung machst du im Team-Bereich unter „🎯 Leistungsgruppen“."); return; }
+    const rest=verfuegbar.filter(n=>!intGruppeDesKindes(n,profiles,intGroups));
+    if(typeof window!=="undefined"&&window.confirm&&!window.confirm(
+      `Mannschaften nach Leistungsgruppen bilden?\n\n${proGruppe.map(x=>`${x.g.name}: ${x.leute.length} Kinder`).join("\n")}`+
+      (rest.length?`\n\nOhne Gruppe: ${rest.length} – bleiben auf der Bank.`:"")+
+      `\n\nEine bestehende Aufstellung wird überschrieben.`)) return;
+    const neu=proGruppe.map((x,i)=>{
+      const rec=recommendLineup(x.leute, profiles, pastLineups, friendW);
+      return { id:"tg"+i+Date.now().toString(36), name:`Mannschaft ${i+1}`, grp:x.g.id,
+               T:rec.lineup.T||[], A:rec.lineup.A||[], M:rec.lineup.M||[], S:rec.lineup.S||[], E:rec.bench||[], staff:[] };
+    });
+    sichern(neu); setOffen(neu[0].id); setTip(null);
+  };
   const autoFill = () => {
     const frei=(present||[]).filter(n=>!teams.some(t=>t.id!==offen&&spielerVon(t).includes(n)));
     const rec=recommendLineup(frei,profiles,pastLineups,friendW);
@@ -23039,6 +23175,8 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
     <div style={{marginTop:14,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
         <span style={{fontWeight:800,fontSize:14,color:"#0f172a"}}>{tr("luTitle")} <span style={{fontWeight:600,fontSize:12,color:"#64748b"}}>({placed.length})</span></span>
+        {canEdit&&(intGroups||[]).length>1&&<button onClick={nachGruppen} title="Je Leistungsgruppe eine Mannschaft aufstellen"
+          style={{marginLeft:"auto",padding:"6px 12px",borderRadius:9,border:"1.5px solid #c7d2fe",background:"#eef2ff",color:"#4338ca",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>🎯 Nach Gruppen</button>}
         {canEdit&&(present||[]).length>0&&<button onClick={autoFill} style={{marginLeft:"auto",padding:"6px 12px",borderRadius:9,border:"none",background:"#16a34a",color:"#fff",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>🤖 {tr("luSuggest")}</button>}
       </div>
       {canEdit&&(present||[]).length>0&&(
@@ -23048,6 +23186,9 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
             <button key={v} onClick={()=>setFriendW(v)} style={{padding:"4px 11px",borderRadius:99,border:`1.5px solid ${friendW===v?"#16a34a":"#e2e8f0"}`,background:friendW===v?"#16a34a14":"#fff",color:friendW===v?"#15803d":"#64748b",fontWeight:700,fontSize:11.5,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
           ))}
         </div>
+      )}
+      {canEdit&&hinweis&&(
+        <div onClick={()=>setHinweis("")} style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:12,padding:"9px 12px",marginBottom:10,fontSize:12,color:"#92400e",lineHeight:1.5,cursor:"pointer"}}>{hinweis}</div>
       )}
       {canEdit&&tip&&(
         <div style={{background:"#eef2ff",border:"1.5px solid #c7d2fe",borderRadius:12,padding:"9px 12px",marginBottom:10,fontSize:12,color:"#3730a3",lineHeight:1.5}}>
@@ -23087,6 +23228,8 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
                 : <span style={{flex:1,minWidth:0,fontWeight:800,fontSize:13.5,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                     {t.name||`Team ${ti+1}`} <span style={{fontWeight:600,fontSize:12,color:"#64748b"}}>({drin.length})</span>
                     {drin.filter(n=>statusVon(n)!=="ja").length>0&&<span style={{fontWeight:700,fontSize:11,color:"#b45309",marginLeft:5}}>· {drin.filter(n=>statusVon(n)!=="ja").length} ohne Zusage</span>}
+                    {canEdit&&t.grp&&(intGroups||[]).some(g=>g.id===t.grp)&&(()=>{ const g=(intGroups||[]).find(x=>x.id===t.grp);
+                      return <span title="Interne Leistungsgruppe – nur für Trainer" style={{fontWeight:700,fontSize:11,color:g.col,marginLeft:5}}>· {g.name}</span>; })()}
                   </span>}
               {canEdit&&umbenennen!==t.id&&(
                 <button onClick={e=>{ e.stopPropagation(); setUmbenennen(t.id); }} title="Umbenennen"
@@ -23140,6 +23283,7 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
                           style={{display:"flex",alignItems:"center",gap:5,background:sv.bg,borderRadius:99,padding:"3px 9px 3px 3px",
                             border:st==="ja"?`1.5px solid ${lineColors[k]}`:`1.5px dashed ${sv.rand}`,cursor:canEdit?"pointer":"default"}}>
                           <Av name={n} sz={20}/>
+                          <GrpPunkt name={n}/>
                           {nrVon(n)&&<NrChip n={nrVon(n)} col={st==="ja"?lineColors[k]:sv.rand}/>}
                           <span style={{fontSize:12.5,fontWeight:700,color:sv.txt}}>{n}</span>
                           {st!=="ja"&&<span style={{fontSize:10,fontWeight:800,color:sv.txt,background:"#fff",borderRadius:6,padding:"1px 5px"}}>{sv.tag}</span>}
@@ -23180,6 +23324,7 @@ function LineupBoard({ ev, present, canEdit, onChange, pub=undefined, onPubChang
                   <div key={n} style={{display:"flex",alignItems:"center",gap:8,background:st==="ja"?"#f8fafc":sv.bg,borderRadius:10,padding:"6px 9px",
                     border:st==="ja"?"1px solid #e2e8f0":`1px dashed ${sv.rand}`}}>
                     <Av name={n} sz={22}/>
+                    <GrpPunkt name={n}/>
                     {nrVon(n)&&<NrChip n={nrVon(n)} col={st==="ja"?"#94a3b8":sv.rand}/>}
                     <span style={{flex:1,minWidth:0,fontSize:13,fontWeight:700,color:st==="ja"?"#334155":sv.txt}}>{n}
                       {st!=="ja"&&<span style={{fontSize:10,fontWeight:800,marginLeft:6,color:sv.txt,background:"#fff",borderRadius:6,padding:"1px 5px"}}>{sv.tag}</span>}
@@ -24563,7 +24708,7 @@ function UserHome({data,session,onSave,onLogout,lang="de",setLang=()=>{},onSwitc
     // Trainer-Einschaetzungen (Skills, Empfehlungen, Notizen, Bewertungen) bleiben
     // beim Trainerteam und werden NICHT exportiert - nur freigegebene Basisdaten.
     const profil=(data.playerProfiles||[]).filter(p=>p.cid===cid && (p.name||"").toLowerCase()===String(user).toLowerCase())
-      .map(({skills,recommend,rating,notes,nsTriggerCount,noShowAckCount,...rest})=>rest);
+      .map(({skills,skillHistory,skillPending,recommend,rating,notes,intGrp,nsTriggerCount,noShowAckCount,...rest})=>rest);
     const abstimmungen=(data.events||[]).filter(e=>e.cid===cid && e.votes && (user in e.votes)).map(e=>({termin:e.title,datum:e.date,antwort:e.votes[user]}));
     const payload={ exportiertAm:new Date().toISOString(), verein:cl?.name||cid, person:user, team:myTeam?.name||"", hinweis:"Trainer-Einschätzungen (Skills, Empfehlungen, interne Notizen) sind nicht enthalten – sie verbleiben beim Trainerteam.", profil, abstimmungen };
     try{
