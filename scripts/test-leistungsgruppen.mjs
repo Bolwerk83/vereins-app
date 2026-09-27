@@ -34,12 +34,25 @@ const zumKader = async () => {
   await page.waitForTimeout(1400); await dismiss();
   await klick("^Spieler$"); await page.waitForTimeout(1400);
 };
-// Gruppen-Knopf in der Zeile eines Kindes
-const grpKlick=(name,kurz)=>page.evaluate(({n,k})=>{
-  const z=[...document.querySelectorAll("div")].filter(d=>(d.innerText||"").includes(n)&&d.querySelectorAll("button").length>=3
-    &&(d.innerText||"").replace(/\s+/g," ").trim().length<60);
-  const el=z[z.length-1]; if(!el) return false;
-  const b=[...el.querySelectorAll("button")].find(x=>(x.innerText||"").trim()===k); if(!b) return false; b.click(); return true; },{n:name,k:kurz});
+// Zugeteilt wird am Punkt neben dem Namen in der Kaderliste: jeder Tipp
+// schaltet eine Gruppe weiter (Leistung → Reserve → Entwicklung → keine).
+const punktKlick=(name)=>page.evaluate(n=>{
+  const karten=[...document.querySelectorAll("div")].filter(d=>(d.innerText||"").includes(n)&&(d.innerText||"").length<200);
+  for(const k of karten.reverse()){
+    const sp=[...k.querySelectorAll("span")].find(x=>{ const st=getComputedStyle(x);
+      return st.borderRadius==="99px"&&x.offsetWidth<=16&&x.offsetWidth>=10&&!x.innerText.trim(); });
+    if(sp){ sp.click(); return true; }
+  }
+  return false; }, name);
+const setzeGruppe=async(name,gid)=>{
+  for(let i=0;i<5;i++){
+    const ist=await page.evaluate(n=>{ const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
+      const p=(d.playerProfiles||[]).find(x=>x.name===n); return p?(p.intGrp||""):""; }, name);
+    if(ist===gid) return true;
+    if(!await punktKlick(name)) return false;
+    await page.waitForTimeout(700);
+  }
+  return false; };
 const profilVon=(name)=>page.evaluate(n=>{ const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
   const p=(d.playerProfiles||[]).find(x=>x.name===n); return p?{intGrp:p.intGrp||""}:null; }, name);
 
@@ -78,14 +91,14 @@ if(/🎯 Leistungsgruppen/.test(b)) ok("Auf der Team-Seite gibt es „🎯 Leist
 else fail("Kein Abschnitt: "+b.slice(-400).replace(/\n/g," | "));
 if(/nur Trainer/.test(b)) ok("Schon in der Kopfzeile steht „nur Trainer“");
 else fail("Kein Hinweis in der Kopfzeile");
-if(!/Entwicklung/.test(b)) ok("Zugeklappt sind die Gruppen nicht ausgeschrieben");
+if(!/LEIBCHEN/.test(b)) ok("Zugeklappt ist die Übersicht nicht ausgeschrieben");
 else fail("Steht offen da");
 
 // ===== 2) Aufklappen =====
 if(await klick("Leistungsgruppen")) ok("Der Abschnitt lässt sich aufklappen"); else fail("Nicht aufklappbar");
 await page.waitForTimeout(800);
 b=await body();
-if(/Nur für das Trainerteam/.test(b)&&/weder in der App noch in geteilten Texten/.test(b))
+if(/Nur fürs Trainerteam/.test(b)&&/Kinder und Eltern sehen davon nichts/.test(b))
   ok("Oben steht unmissverständlich, dass niemand sonst das sieht");
 else fail("Kein Datenschutz-Hinweis: "+b.slice(-500).replace(/\n/g," | "));
 if(/Momentaufnahme/.test(b)&&/Spielzeit/.test(b)) ok("Und ein Hinweis zur Fairness – Momentaufnahme, Spielzeit für alle");
@@ -94,26 +107,25 @@ if(/Leistung/.test(b)&&/Reserve/.test(b)&&/Entwicklung/.test(b)) ok("Drei Gruppe
 else fail("Gruppen fehlen: "+b.slice(-500).replace(/\n/g," | "));
 
 // ===== 3) Zuteilen und wieder lösen =====
-if(await grpKlick(kader[0],"Le")) ok(`${kader[0]} lässt sich der Gruppe „Leistung“ zuteilen`);
+if(await setzeGruppe(kader[0],"g1")) ok(`${kader[0]} lässt sich am Punkt der Gruppe „Leistung“ zuteilen`);
 else fail("Zuteilen nicht möglich");
-await page.waitForTimeout(1200);
+await page.waitForTimeout(600);
 { const p=await profilVon(kader[0]);
   if(p&&p.intGrp==="g1") ok("Die Zuteilung ist gespeichert");
   else fail("Nicht gespeichert: "+JSON.stringify(p)); }
-await grpKlick(kader[1],"Le"); await page.waitForTimeout(900);
-await grpKlick(kader[2],"Le"); await page.waitForTimeout(900);
-await grpKlick(kader[3],"En"); await page.waitForTimeout(900);
-await grpKlick(kader[4],"En"); await page.waitForTimeout(900);
-await grpKlick(kader[5],"En"); await page.waitForTimeout(1100);
+await setzeGruppe(kader[1],"g1");
+await setzeGruppe(kader[2],"g1");
+await setzeGruppe(kader[3],"g3");
+await setzeGruppe(kader[4],"g3");
+await setzeGruppe(kader[5],"g3");
 { const z=await page.evaluate(()=>{ const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
     const k=(d.playerProfiles||[]).filter(p=>p.mainTid==="demo_f1"&&!p.archived);
     return {g1:k.filter(p=>p.intGrp==="g1").length, g3:k.filter(p=>p.intGrp==="g3").length}; });
   if(z.g1===3&&z.g3===3) ok("Drei Kinder in „Leistung“, drei in „Entwicklung“");
   else fail("Falsche Verteilung: "+JSON.stringify(z)); }
-await grpKlick(kader[0],"Le"); await page.waitForTimeout(1100);
-{ const p=await profilVon(kader[0]);
-  if(p&&!p.intGrp) ok("Ein zweiter Tipp löst die Zuteilung wieder"); else fail("Lösen klappt nicht: "+JSON.stringify(p)); }
-await grpKlick(kader[0],"Le"); await page.waitForTimeout(1000);
+if(await setzeGruppe(kader[0],"")) ok("Weitertippen löst die Zuteilung wieder");
+else fail("Lösen klappt nicht");
+await setzeGruppe(kader[0],"g1");
 
 // ===== 4) Umbenennen =====
 { const geht=await page.evaluate(()=>{

@@ -9590,7 +9590,7 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
   );
 }
 
-function PlayerCard({ player: pl,onEdit,onDel,isMain,allTeams,allEvents,onWizard,onMessage,onLink }) {
+function PlayerCard({ player: pl,onEdit,onDel,isMain,allTeams,allEvents,onWizard,onMessage,onLink,gruppen=[],onGrp=null }) {
   // Loeschen ist zweistufig: erster Tipp "scharfschalten" (Button wird breit
   // und rot), zweiter Tipp loescht. Nach 3 s automatisch wieder entschaerft.
   const [armDel,setArmDel]=useState(false);
@@ -9614,6 +9614,15 @@ function PlayerCard({ player: pl,onEdit,onDel,isMain,allTeams,allEvents,onWizard
         <Av name={pl.name} sz={40}/>
         <div style={{flex:1,minWidth:0}}>
           <div style={{display:"flex",alignItems:"center",gap:7,minWidth:0}}>
+            {onGrp&&gruppen.length>0&&(()=>{ const g=gruppen.find(x=>x.id===pl.intGrp);
+              return (
+              <span onClick={e=>{ e.stopPropagation();
+                  const ix=gruppen.findIndex(x=>x.id===pl.intGrp);
+                  onGrp(pl.id, ix<0 ? gruppen[0].id : (ix+1<gruppen.length ? gruppen[ix+1].id : "")); }}
+                title={g?`Leistungsgruppe: ${g.name} (antippen zum Wechseln)`:"Keiner Leistungsgruppe zugeteilt (antippen)"}
+                style={{flexShrink:0,width:14,height:14,borderRadius:99,cursor:"pointer",
+                  background:g?g.col:"#fff",border:`2px solid ${g?g.col:"#cbd5e1"}`}}/>
+              ); })()}
             {pl.jerseyNr&&<span style={{background:"#0f172a",color:"#fff",borderRadius:7,padding:"2px 7px",fontSize:12.5,fontWeight:900,flexShrink:0}}>#{pl.jerseyNr}</span>}
             <span style={{minWidth:0,fontWeight:800,fontSize:15,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{pl.name}</span>
           </div>
@@ -10516,7 +10525,10 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
   const [editP,setEditP]   = useState(null);
   // Kinder mit Passwort: selten gebraucht - steht ganz unten und zugeklappt.
   const [pwListe,setPwListe]=useState(false);
-  // Interne Leistungsgruppen (nur Trainerteam)
+  // Interne Leistungsgruppen (nur Trainerteam): zugeteilt wird direkt an
+  // der Spielerkarte, unten steht nur noch die Übersicht.
+  const setSpielerGrp=(pid,gid)=>save({...data, playerProfiles:(data.playerProfiles||[]).map(x=>
+    x.id===pid ? {...x, intGrp:gid} : x)});
   const [grpAuf,setGrpAuf]=useState(false);
   const [grpEdit,setGrpEdit]=useState(null);   // id der Gruppe, die gerade umbenannt wird
   const [showNew,setShowNew] = useState(false);
@@ -10932,6 +10944,7 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
             {mainPlayers.map(pl=>(
               <PlayerCard key={pl.id} player={pl} allTeams={allTeams} allEvents={allEvents}
                 onLink={()=>kindLink(pl)}
+                gruppen={selTeam?intGruppenVon(selTeam):[]} onGrp={setSpielerGrp}
                 onEdit={()=>setEditP(pl)} onDel={()=>delPlayer(pl.id)} isMain
                 onMessage={()=>{setMsgText("");setMsgPlayer(pl);}}
                 onWizard={skillsAktivFuer(data,cl,selTeam)?()=>setWizardChild(pl):null}/>
@@ -10968,23 +10981,22 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
       {/* Passwort vergessen? Der Trainer setzt es zurueck, danach vergeben die
           Eltern beim naechsten Anmelden selbst ein neues. Steht bewusst ganz
           unten und zugeklappt - man braucht es selten. */}
-      {/* Interne Leistungsgruppen: nur fuer das Trainerteam. Damit lassen sich
-          bei zwei gemeldeten Mannschaften gleich starke Teams stellen. */}
+      {/* Leistungsgruppen: zugeteilt wird an der Spielerkarte, hier steht die
+          Übersicht - wer gehört wohin, und welches Leibchen traegt die Gruppe. */}
       {view==="list"&&selTeam&&(()=>{
         const kader=(data.playerProfiles||[]).filter(p=>p.mainTid===selTid&&!p.archived&&(!p.seasonId||p.seasonId===activeSeason))
           .sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"de"));
-        if(kader.length<4) return null;   // lohnt sich erst ab einem echten Kader
+        if(kader.length<4) return null;
         const gruppen=intGruppenVon(selTeam);
-        const zahl=g=>kader.filter(p=>p.intGrp===g.id).length;
-        const ohne=kader.filter(p=>!p.intGrp||!gruppen.some(g=>g.id===p.intGrp)).length;
-        const setGrp=(pid,gid)=>save({...data, playerProfiles:(data.playerProfiles||[]).map(x=>
-          x.id===pid ? {...x, intGrp: x.intGrp===gid ? "" : gid} : x)});
+        const inGrp=g=>kader.filter(p=>p.intGrp===g.id);
+        const ohne=kader.filter(p=>!p.intGrp||!gruppen.some(g=>g.id===p.intGrp));
         const setGruppen=liste=>save({...data, teams:(data.teams||[]).map(tm=>tm.id===selTid?{...tm,intGroups:liste}:tm)});
         const umbenennen=(gid,name)=>setGruppen(gruppen.map(g=>g.id===gid?{...g,name:String(name||"").trim()||g.name}:g));
-        const dazu=()=>{ const farben=["#7c3aed","#0891b2","#db2777","#65a30d"];
-          setGruppen([...gruppen,{id:"g"+Date.now().toString(36),name:`Gruppe ${gruppen.length+1}`,col:farben[gruppen.length%farben.length]}]); };
-        const weg=g=>{ if(zahl(g)>0&&typeof window!=="undefined"&&window.confirm&&
-            !window.confirm(`„${g.name}“ entfernen?\n\n${zahl(g)} Kinder sind dieser Gruppe zugeteilt – die Zuteilung geht verloren.`)) return;
+        const setLeibchen=(gid,l)=>setGruppen(gruppen.map(g=>g.id===gid?{...g,leib:l.id,col:l.col}:g));
+        const dazu=()=>{ const l=LEIBCHEN[gruppen.length%LEIBCHEN.length];
+          setGruppen([...gruppen,{id:"g"+Date.now().toString(36),name:`Gruppe ${gruppen.length+1}`,leib:l.id,col:l.col}]); };
+        const weg=g=>{ if(inGrp(g).length>0&&typeof window!=="undefined"&&window.confirm&&
+            !window.confirm(`„${g.name}“ entfernen?\n\n${inGrp(g).length} Kinder sind zugeteilt – die Zuteilung geht verloren.`)) return;
           save({...data,
             teams:(data.teams||[]).map(tm=>tm.id===selTid?{...tm,intGroups:gruppen.filter(x=>x.id!==g.id)}:tm),
             playerProfiles:(data.playerProfiles||[]).map(x=>x.intGrp===g.id?{...x,intGrp:""}:x)}); };
@@ -10998,57 +11010,70 @@ function PlayersTab({ data,myTids,save,fire,cl,session }) {
               </span>
               <span style={{display:"flex",gap:4,flexShrink:0}}>
                 {gruppen.map(g=>(
-                  <span key={g.id} style={{fontSize:11,fontWeight:800,color:"#fff",background:g.col,borderRadius:6,padding:"2px 6px"}}>{zahl(g)}</span>
+                  <span key={g.id} style={{fontSize:11,fontWeight:800,color:"#fff",background:g.col,borderRadius:6,padding:"2px 6px"}}>{inGrp(g).length}</span>
                 ))}
-                {ohne>0&&<span style={{fontSize:11,fontWeight:800,color:"#64748b",background:"#e2e8f0",borderRadius:6,padding:"2px 6px"}}>{ohne}</span>}
+                {ohne.length>0&&<span style={{fontSize:11,fontWeight:800,color:"#64748b",background:"#e2e8f0",borderRadius:6,padding:"2px 6px"}}>{ohne.length}</span>}
               </span>
               <span style={{fontSize:12,fontWeight:800,color:"#64748b",flexShrink:0}}>{grpAuf?"▲":"▼"}</span>
             </button>
             {grpAuf&&(
               <div style={{background:"#fff",border:"1.5px solid #e2e8f0",borderTop:"none",borderRadius:"0 0 14px 14px",padding:"11px 13px"}}>
                 <div style={{fontSize:11.5,color:"#3730a3",background:"#eef2ff",border:"1px solid #c7d2fe",borderRadius:10,padding:"8px 10px",lineHeight:1.5,marginBottom:10}}>
-                  🔒 <b>Nur für das Trainerteam.</b> Kinder und Eltern sehen die Einteilung nirgends – weder in der App noch in geteilten Texten oder im Datenexport.
-                  Gedacht ist sie für die Aufstellung: Bei zwei gemeldeten Mannschaften spielt Gruppe 1 gegen starke Gegner, Gruppe 2 in ihrem Tempo – trainiert wird weiter gemeinsam.
+                  🔒 Nur fürs Trainerteam – Kinder und Eltern sehen davon nichts. <b>Zuteilen kannst du oben an der Spielerkarte:</b> auf den farbigen Punkt neben dem Namen tippen.
+                  Die Farbe ist zugleich das Leibchen – dann stehen die Mannschaften beim Spielchen ohne Absprache.
                 </div>
-                <div style={{fontSize:11.5,color:"#92400e",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:10,padding:"8px 10px",lineHeight:1.5,marginBottom:12}}>
-                  Bitte als Momentaufnahme behandeln: Kinder entwickeln sich in Sprüngen. Schaut die Einteilung alle paar Wochen neu an und achtet darauf, dass jedes Kind Spielzeit
-                  und Erfolgserlebnisse bekommt – auch in der Entwicklungsgruppe.
-                </div>
-                <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:10}}>
-                  {gruppen.map(g=>(
-                    <span key={g.id} style={{display:"flex",alignItems:"center",gap:5,background:g.col+"14",border:`1.5px solid ${g.col}`,borderRadius:99,padding:"4px 9px"}}>
+                {gruppen.map(g=>{
+                  const leute=inGrp(g);
+                  return (
+                  <div key={g.id} style={{border:`1.5px solid ${g.col}`,borderRadius:12,padding:"9px 11px",marginBottom:8,background:g.col+"0c"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:7}}>
                       {grpEdit===g.id
                         ? <input autoFocus defaultValue={g.name}
                             onBlur={e=>{ umbenennen(g.id,e.target.value); setGrpEdit(null); }}
                             onKeyDown={e=>{ if(e.key==="Enter"){ umbenennen(g.id,e.target.value); setGrpEdit(null); } }}
-                            style={{width:104,padding:"2px 6px",fontSize:12.5,fontWeight:700,border:`1.5px solid ${g.col}`,borderRadius:7,outline:"none",fontFamily:"inherit"}}/>
-                        : <span onClick={()=>setGrpEdit(g.id)} style={{fontSize:12.5,fontWeight:800,color:g.col,cursor:"pointer"}}>{g.name}</span>}
-                      <span style={{fontSize:11,fontWeight:800,color:"#fff",background:g.col,borderRadius:99,padding:"1px 6px"}}>{zahl(g)}</span>
-                      {gruppen.length>1&&<span onClick={()=>weg(g)} title="Gruppe entfernen" style={{color:"#dc2626",fontWeight:800,fontSize:12,cursor:"pointer"}}>×</span>}
-                    </span>
-                  ))}
-                  {gruppen.length<5&&(
-                    <button onClick={dazu} style={{padding:"4px 10px",borderRadius:99,border:"1.5px dashed #cbd5e1",background:"#fff",color:"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>＋ Gruppe</button>
-                  )}
-                </div>
-                <div style={{fontSize:10.5,color:"#94a3b8",marginBottom:6}}>Name antippen zum Umbenennen · Kind antippen, um die Gruppe zu setzen oder wieder zu lösen</div>
-                {kader.map(p=>(
-                  <div key={p.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderTop:"1px solid #f1f5f9"}}>
-                    <Av name={p.name} sz={24}/>
-                    <span style={{flex:1,minWidth:0,fontSize:13,fontWeight:700,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
-                    <span style={{display:"flex",gap:4,flexShrink:0}}>
-                      {gruppen.map(g=>{ const an=p.intGrp===g.id;
-                        return (
-                        <button key={g.id} onClick={()=>setGrp(p.id,g.id)} title={`${p.name}: ${g.name}`}
-                          style={{minWidth:34,minHeight:34,padding:"0 8px",borderRadius:9,border:`1.5px solid ${an?g.col:"#e2e8f0"}`,
-                            background:an?g.col:"#fff",color:an?"#fff":"#94a3b8",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
-                          {String(g.name).slice(0,2)}
-                        </button>
-                        ); })}
-                    </span>
+                            style={{flex:1,minWidth:0,padding:"3px 7px",fontSize:13,fontWeight:800,border:`1.5px solid ${g.col}`,borderRadius:8,outline:"none",fontFamily:"inherit"}}/>
+                        : <span onClick={()=>setGrpEdit(g.id)} style={{flex:1,minWidth:0,fontSize:13.5,fontWeight:900,color:g.col,cursor:"pointer"}}>{g.name}</span>}
+                      <span style={{fontSize:11,fontWeight:800,color:"#fff",background:g.col,borderRadius:99,padding:"1px 7px"}}>{leute.length}</span>
+                      {gruppen.length>1&&<span onClick={()=>weg(g)} title="Gruppe entfernen" style={{color:"#dc2626",fontWeight:800,fontSize:13,cursor:"pointer"}}>×</span>}
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:7,flexWrap:"wrap"}}>
+                      <span style={{fontSize:10.5,fontWeight:800,color:"#64748b",letterSpacing:.3}}>LEIBCHEN</span>
+                      {LEIBCHEN.map(l=>(
+                        <button key={l.id} onClick={()=>setLeibchen(g.id,l)} title={l.name} aria-label={"Leibchen "+l.name}
+                          style={{width:22,height:22,borderRadius:99,cursor:"pointer",background:l.col,
+                            border:g.leib===l.id?"3px solid #0f172a":"1.5px solid #e2e8f0",fontFamily:"inherit"}}/>
+                      ))}
+                      <span style={{fontSize:11.5,fontWeight:700,color:g.col}}>{(LEIBCHEN.find(l=>l.id===g.leib)||{}).name||""}</span>
+                    </div>
+                    <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+                      {leute.length===0
+                        ? <span style={{fontSize:11.5,color:"#94a3b8"}}>noch niemand zugeteilt</span>
+                        : leute.map(p=>(
+                            <span key={p.id} style={{display:"flex",alignItems:"center",gap:4,background:"#fff",border:"1px solid #e2e8f0",borderRadius:99,padding:"3px 9px 3px 3px"}}>
+                              <Av name={p.name} sz={18}/>
+                              <span style={{fontSize:11.5,fontWeight:700,color:"#0f172a"}}>{p.name}</span>
+                              {p.position&&<span style={{fontSize:10,color:"#94a3b8"}}>{String(p.position).slice(0,3)}</span>}
+                            </span>
+                          ))}
+                    </div>
                   </div>
-                ))}
-                {ohne>0&&<div style={{fontSize:11.5,color:"#64748b",marginTop:9}}>{ohne} {ohne===1?"Kind ist":"Kinder sind"} noch keiner Gruppe zugeteilt – sie bleiben in der Aufstellung ganz normal wählbar.</div>}
+                  ); })}
+                {gruppen.length<6&&(
+                  <button onClick={dazu} style={{padding:"7px 12px",borderRadius:10,border:"1.5px dashed #cbd5e1",background:"#fff",color:"#64748b",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit"}}>＋ Gruppe</button>
+                )}
+                {ohne.length>0&&(
+                  <div style={{marginTop:10,paddingTop:9,borderTop:"1px solid #f1f5f9"}}>
+                    <div style={{fontSize:10.5,fontWeight:800,color:"#94a3b8",letterSpacing:.3,marginBottom:5}}>OHNE GRUPPE ({ohne.length})</div>
+                    <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+                      {ohne.map(p=>(
+                        <span key={p.id} style={{fontSize:11.5,color:"#64748b",background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:99,padding:"3px 9px"}}>{p.name}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div style={{fontSize:10.5,color:"#94a3b8",marginTop:9,lineHeight:1.45}}>
+                  Momentaufnahme – schaut die Einteilung alle paar Wochen neu an und achtet darauf, dass jedes Kind Spielzeit und Erfolgserlebnisse bekommt.
+                </div>
               </div>
             )}
           </div>
@@ -17139,6 +17164,57 @@ function Dashboard({data,session,onSave,onLogout,lang="de",setLang=()=>{}}) {
             </button>
           );
         })()}
+        {/* Mannschaften fuers Spielchen: die Leistungsgruppen sind die Teams,
+            gespielt wird mit den Zusagen. Luecken fuellt die mittlere Gruppe. */}
+        {!isHelper&&viewEv.type==="training"&&(()=>{
+          const gruppen=intGruppenVon((local.teams||[]).find(tm=>tm.id===viewEv.tid));
+          const ja=jaSpielerNamen(viewEv);
+          if(!gruppen.length||ja.length<4) return null;
+          const {teams,hinweise}=leibchenTeams(gruppen, local.playerProfiles||[], ja);
+          const txt=[`🎽 Mannschaften – ${evDisplayTitle(viewEv)}`,``,
+            ...teams.map(t=>`${t.gruppe.name}: ${t.spieler.map(x=>String(x.name).split(" ")[0]).join(", ")}`)].join("\n");
+          return (
+            <div style={{marginTop:16,paddingTop:14,borderTop:"1px solid #f1f5f9"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                <span style={{fontSize:18}}>🎽</span>
+                <span style={{fontWeight:800,fontSize:15,color:"#0f172a",flex:1}}>Mannschaften fürs Spielchen</span>
+                <button onClick={()=>{ if(navigator.share){ navigator.share({title:"Mannschaften",text:txt}).catch(()=>{}); }
+                    else { navigator.clipboard?.writeText(txt); fire("Kopiert ✓"); } }}
+                  style={{padding:"6px 11px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Teilen</button>
+              </div>
+              <div style={{fontSize:11.5,color:"#64748b",lineHeight:1.5,marginBottom:9}}>
+                Aus den {ja.length} Zusagen, nach Leistungsgruppen. Wer fehlt, wird ausgeglichen – bevorzugt aus der mittleren Gruppe und mit passender Position.
+              </div>
+              <div style={{display:"flex",flexDirection:"column",gap:7}}>
+                {teams.map(t=>(
+                  <div key={t.gruppe.id} style={{border:`1.5px solid ${t.gruppe.col}`,background:t.gruppe.col+"0c",borderRadius:12,padding:"8px 10px"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:6}}>
+                      <span style={{width:13,height:13,borderRadius:99,background:t.gruppe.col,flexShrink:0}}/>
+                      <span style={{fontWeight:900,fontSize:13,color:t.gruppe.col,flex:1}}>{t.gruppe.name}</span>
+                      <span style={{fontSize:11,fontWeight:800,color:"#fff",background:t.gruppe.col,borderRadius:99,padding:"1px 7px"}}>{t.spieler.length}</span>
+                    </div>
+                    <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+                      {t.spieler.map(x=>(
+                        <span key={x.name} style={{display:"flex",alignItems:"center",gap:4,background:"#fff",
+                          border:x.nachgerueckt?`1.5px dashed ${t.gruppe.col}`:"1px solid #e2e8f0",borderRadius:99,padding:"3px 9px 3px 3px"}}>
+                          <Av name={x.name} sz={18}/>
+                          <span style={{fontSize:11.5,fontWeight:700,color:"#0f172a"}}>{x.name}</span>
+                          {x.nachgerueckt&&<span style={{fontSize:9.5,fontWeight:800,color:t.gruppe.col}}>nachgerückt</span>}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {hinweise.length>0&&(
+                <div style={{fontSize:11,color:"#64748b",marginTop:8,lineHeight:1.5}}>
+                  {hinweise.slice(0,4).map((h,j)=><div key={j}>• {h}</div>)}
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
         {/* Mitfahr-Aufruf: nur wenn wirklich noch jemand ohne Platz dasteht.
             Hier stehen bewusst die Vornamen und der Treffpunkt - ohne die
             weiss niemand, wen er mitnehmen soll. Nachnamen bleiben draussen. */}
@@ -23056,12 +23132,93 @@ const LINEUP_SHAPE={3:{T:0,A:1,M:1,S:1},4:{T:1,A:1,M:1,S:1},5:{T:1,A:2,M:1,S:1},
 // Spiele zu verlieren. AUSDRUECKLICH nur fuer das Trainerteam: Kinder und
 // Eltern sehen die Einteilung nirgends, auch nicht in geteilten Texten oder
 // im Datenexport.
+// Leibchenfarben: jede Gruppe traegt im Training dieselbe Farbe - dann
+// stehen die Mannschaften beim Spielchen ohne Absprache.
+const LEIBCHEN = [
+  {id:"rot",    name:"Rot",    col:"#dc2626"},
+  {id:"blau",   name:"Blau",   col:"#2563eb"},
+  {id:"gruen",  name:"Grün",   col:"#16a34a"},
+  {id:"gelb",   name:"Gelb",   col:"#ca8a04"},
+  {id:"orange", name:"Orange", col:"#ea580c"},
+  {id:"schwarz",name:"Schwarz",col:"#334155"},
+];
 const INT_GRUPPEN_STD = [
-  {id:"g1",name:"Leistung",   col:"#16a34a"},
-  {id:"g2",name:"Reserve",    col:"#2563eb"},
-  {id:"g3",name:"Entwicklung",col:"#d97706"},
+  {id:"g1",name:"Leistung",   col:"#dc2626", leib:"rot"},
+  {id:"g2",name:"Reserve",    col:"#2563eb", leib:"blau"},
+  {id:"g3",name:"Entwicklung",col:"#16a34a", leib:"gruen"},
 ];
 const intGruppenVon = team => (Array.isArray(team&&team.intGroups)&&team.intGroups.length) ? team.intGroups : INT_GRUPPEN_STD;
+// Mannschaften fuers Spielchen: Grundlage sind die Leistungsgruppen, gespielt
+// wird aber mit denen, die zugesagt haben. Fehlt jemand, rueckt aus einer
+// anderen Gruppe jemand mit aehnlicher Position nach - bevorzugt aus der
+// mittleren Gruppe (Reserve), weil sie zu beiden Seiten am besten passt.
+const leibchenTeams = (gruppen=[], profiles=[], jaNamen=[]) => {
+  const prof = n => (profiles||[]).find(p=>(p.name||"").toLowerCase()===String(n).toLowerCase())||null;
+  const grpVon = n => { const p=prof(n); return p&&p.intGrp ? p.intGrp : null; };
+  const posVon = n => { const p=prof(n); return [p&&p.position, ...((p&&p.posAlt)||[])].filter(Boolean); };
+  const passt = (n, gesucht) => { if(!gesucht) return 0;
+    const liste=posVon(n); const ix=liste.findIndex(x=>x===gesucht);
+    return ix<0 ? 0 : (ix===0 ? 3 : 2); };
+
+  const teams = gruppen.map(g=>({ gruppe:g, spieler:jaNamen.filter(n=>grpVon(n)===g.id).map(n=>({name:n})) }));
+  const ohne  = jaNamen.filter(n=>!grpVon(n)||!gruppen.some(g=>g.id===grpVon(n)));
+  if(!teams.length) return { teams:[], ohne, hinweise:[] };
+
+  // Zielgröße: möglichst gleich viele je Mannschaft.
+  const gesamt = jaNamen.length - ohne.length;
+  const ziel = Math.floor(gesamt/teams.length);
+  // Spender-Reihenfolge: die mittlere Gruppe zuerst, dann von der Mitte nach außen.
+  const mitte = Math.floor((gruppen.length-1)/2);
+  const spenderOrder = gruppen.map((g,i)=>({i, d:Math.abs(i-mitte)}))
+    .sort((a,b)=>a.d-b.d || a.i-b.i).map(x=>x.i);
+
+  const hinweise = [];
+  let schutz = 0;
+  while(schutz++ < 30){
+    const kurz = teams.map((t,i)=>({i, fehlt:ziel-t.spieler.length})).filter(x=>x.fehlt>0)
+      .sort((a,b)=>b.fehlt-a.fehlt)[0];
+    if(!kurz) break;
+    // Welche Position fehlt dieser Mannschaft am meisten?
+    const habe = teams[kurz.i].spieler.map(x=>x.name);
+    const gesuchtePos = (()=>{
+      const hatTor = habe.some(n=>posVon(n).some(p=>/tor|keeper/i.test(p)));
+      if(!hatTor) return "Torwart";
+      const zaehl = {};
+      habe.forEach(n=>{ const p=posVon(n)[0]; if(p) zaehl[p]=(zaehl[p]||0)+1; });
+      const alle = ["Innenverteidiger","Zentrales Mittelfeld","Stürmer"];
+      return alle.sort((a,b)=>(zaehl[a]||0)-(zaehl[b]||0))[0];
+    })();
+    // Kandidaten aus den Gruppen, die über dem Ziel liegen - Mitte zuerst.
+    let bester = null;
+    for(const gi of spenderOrder){
+      if(gi===kurz.i) continue;
+      if(teams[gi].spieler.length<=ziel) continue;
+      const kand = teams[gi].spieler.filter(x=>!x.nachgerueckt)
+        .map(x=>({...x, gi, score:passt(x.name,gesuchtePos)}))
+        .sort((a,b)=>b.score-a.score || String(a.name).localeCompare(String(b.name),"de"))[0];
+      if(kand && (!bester || kand.score>bester.score)) bester = kand;
+      if(bester && bester.score===3) break;   // Hauptposition passt - fertig
+    }
+    if(!bester){
+      // Niemand zum Nachrücken - dann aus "ohne Gruppe" auffüllen.
+      if(ohne.length){ const n=ohne.shift();
+        teams[kurz.i].spieler.push({name:n, nachgerueckt:true, von:null});
+        hinweise.push(`${n} füllt ${teams[kurz.i].gruppe.name} auf (keiner Gruppe zugeteilt)`);
+        continue;
+      }
+      break;
+    }
+    teams[bester.gi].spieler = teams[bester.gi].spieler.filter(x=>x.name!==bester.name);
+    teams[kurz.i].spieler.push({name:bester.name, nachgerueckt:true, von:gruppen[bester.gi].id});
+    hinweise.push(`${bester.name} rückt aus ${gruppen[bester.gi].name} nach${bester.score?` (${gesuchtePos})`:""}`);
+  }
+  // Wer ohne Gruppe übrig ist, wird gleichmäßig verteilt.
+  let ix=0;
+  while(ohne.length){ const n=ohne.shift();
+    const t=teams.slice().sort((a,b)=>a.spieler.length-b.spieler.length)[0];
+    t.spieler.push({name:n, nachgerueckt:true, von:null}); ix++; }
+  return { teams, ohne:[], hinweise };
+};
 const intGruppeDesKindes = (name, profiles, gruppen) => {
   const p=(profiles||[]).find(x=>(x.name||"").toLowerCase()===String(name).toLowerCase());
   if(!p||!p.intGrp) return null;
