@@ -9178,8 +9178,43 @@ function PlayerProfile({ player,teams,allEvents,allPlayers,cid,sport="fussball",
           {pTab==="profil"&&<>
           <Section title="* Position, Fuß & Stärken (nur Trainer)">
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-              <Sel label="Position" val={p.position||""} set={v=>up({position:v})} opts={[["","- wählen -"],...POSITIONS_LIST.map(x=>[x,x])]}/>
+              <Sel label="Hauptposition" val={p.position||""} set={v=>up({position:v, posAlt:(p.posAlt||[]).filter(x=>x!==v)})} opts={[["","- wählen -"],...POSITIONS_LIST.map(x=>[x,x])]}/>
               <Sel label="Starker Fuss" val={p.foot||""} set={v=>up({foot:v})} opts={[["","- wählen -"],...FOOT_LIST.map(x=>[x,x])]}/>
+            </div>
+            {/* Nebenpositionen in der Reihenfolge, in der sie angetippt werden -
+                die erste ist die liebste Ausweichposition. Der Aufstellungs-
+                Vorschlag gewichtet sie entsprechend. */}
+            <div>
+              <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:6,letterSpacing:.5}}>NEBENPOSITIONEN <span style={{fontWeight:600,letterSpacing:0}}>· nach Priorität, antippen zum Hinzufügen</span></div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                {POSITIONS_LIST.filter(x=>x!==p.position).map(x=>{
+                  const ix=(p.posAlt||[]).indexOf(x); const an=ix>=0;
+                  return (
+                  <button key={x} type="button"
+                    onClick={()=>up({posAlt: an ? (p.posAlt||[]).filter(y=>y!==x) : [...(p.posAlt||[]),x]})}
+                    style={{display:"flex",alignItems:"center",gap:4,padding:"5px 10px",borderRadius:99,
+                      border:`1.5px solid ${an?"#2563eb":"#e2e8f0"}`,background:an?"#eff6ff":"#fff",
+                      color:an?"#1d4ed8":"#64748b",fontWeight:an?800:600,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+                    {an&&<span style={{fontSize:10,fontWeight:900,color:"#fff",background:"#2563eb",borderRadius:99,minWidth:15,padding:"0 4px"}}>{ix+1}</span>}
+                    {x}
+                  </button>
+                  ); })}
+              </div>
+              {(p.posAlt||[]).length>1&&(
+                <div style={{display:"flex",flexWrap:"wrap",gap:5,marginTop:7,alignItems:"center"}}>
+                  <span style={{fontSize:11,color:"#64748b",fontWeight:700}}>Reihenfolge:</span>
+                  {(p.posAlt||[]).map((x,i)=>(
+                    <span key={x} style={{display:"flex",alignItems:"center",gap:4,fontSize:11.5,color:"#334155",background:"#f1f5f9",borderRadius:99,padding:"3px 8px"}}>
+                      {i+1}. {x}
+                      {i>0&&<button type="button" title="nach vorn" onClick={()=>{ const a=[...(p.posAlt||[])]; [a[i-1],a[i]]=[a[i],a[i-1]]; up({posAlt:a}); }}
+                        style={{border:"none",background:"transparent",color:"#2563eb",fontWeight:900,fontSize:12,cursor:"pointer",fontFamily:"inherit",padding:0}}>↑</button>}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {!p.position&&(p.posAlt||[]).length>0&&(
+                <div style={{fontSize:11,color:"#b45309",marginTop:6}}>Ohne Hauptposition zählen die Nebenpositionen wie eine Reihenfolge von Vorlieben.</div>
+              )}
             </div>
             <div>
               <div style={{fontSize:11,fontWeight:800,color:"#64748b",marginBottom:8,letterSpacing:.5}}>STÄRKEN</div>
@@ -9584,6 +9619,7 @@ function PlayerCard({ player: pl,onEdit,onDel,isMain,allTeams,allEvents,onWizard
             {pl.by && <span>Jg. {pl.by}</span>}
             <span>{pl.gender==="w"?"W":"M"}</span>
             {pl.position && <span>· {pl.position}</span>}
+            {(pl.posAlt||[]).length>0 && <span style={{color:"#94a3b8"}}>· auch {(pl.posAlt||[]).slice(0,2).join(", ")}{(pl.posAlt||[]).length>2?" +"+((pl.posAlt||[]).length-2):""}</span>}
             {totalGames>0 && <Tag c="#16a34a" bg="#dcfce7" ch={`${totalGames} Spiele`} sm/>}
             {!isMain && <Tag c="#d97706" bg="#fef3c7" ch="Aushilfe" sm/>}
             {!pl.consentAt && <Tag c="#b45309" bg="#fef3c7" ch="Einwilligung fehlt" sm/>}
@@ -23037,6 +23073,18 @@ function recommendLineup(present, profiles, pastLineups, friendWeight=1){
   const posRe={T:/tor|keeper|tw|reflex/,A:/abwehr|vert|innen|aussen|defen|libero/,M:/mittel|\bmf\b|sechs|acht|zehn|spielmach/,S:/sturm|stürm|stuerm|angriff|fluegel|flügel|spitze|stoss/};
   const pr=name=>lineupProfByName(name,profiles);
   const posOf=name=>String(pr(name)?.position||"").toLowerCase();
+  // Hauptposition wiegt am schwersten, danach die Nebenpositionen in der
+  // Reihenfolge, die der Trainer gesetzt hat (1. Wahl vor 2. Wahl ...).
+  const posBonus=(name,line)=>{
+    const p=pr(name); if(!p) return 0;
+    if(posRe[line].test(String(p.position||"").toLowerCase())) return 6;
+    const alt=Array.isArray(p.posAlt)?p.posAlt:[];
+    for(let i=0;i<alt.length;i++){ if(posRe[line].test(String(alt[i]).toLowerCase())) return Math.max(2,5-i); }
+    return 0;
+  };
+  const kannTor=name=>{ const p=pr(name); if(!p) return false;
+    if(posRe.T.test(String(p.position||"").toLowerCase())) return true;
+    return (Array.isArray(p.posAlt)?p.posAlt:[]).some(x=>posRe.T.test(String(x).toLowerCase())); };
   const inSq=new Set(names);
   // "Gute Freunde" / "muss zusammen spielen": IDs -> Namen (nur anwesende zählen).
   const nameById={}; (profiles||[]).forEach(p=>{ if(p?.id&&p?.name) nameById[p.id]=p.name; });
@@ -23047,13 +23095,13 @@ function recommendLineup(present, profiles, pastLineups, friendWeight=1){
     (lineup[line]||[]).forEach(o=>{ if(r.must.has(o))b+=4; else if(r.friends.has(o))b+=2; const ro=relOf(o); if(ro.must.has(name))b+=4; else if(ro.friends.has(name))b+=2; });
     return b; };
   const assigned=new Set(); const lineup={T:[],A:[],M:[],S:[]};
-  if(shape.T){ let gk=names.find(nm=>posRe.T.test(posOf(nm)));
+  if(shape.T){ let gk=names.find(nm=>posRe.T.test(posOf(nm))) || names.find(kannTor);
     if(!gk) gk=[...names].sort((a,b)=>(fit.S(pr(a))+fit.A(pr(a)))-(fit.S(pr(b))+fit.A(pr(b))))[0];
     if(gk){lineup.T.push(gk);assigned.add(gk);} }
   // Linien Slot für Slot füllen: natürliche Position (Bonus) + Stärken-Fit + Freundes-Bonus.
   const fillLine=line=>{ let need=shape[line]||0;
     while(need-->0){
-      const best=names.filter(nm=>!assigned.has(nm)).map(nm=>({nm, s:fit[line](pr(nm)) + (posRe[line].test(posOf(nm))?6:0) + friendBonus(nm,line)*friendWeight}))
+      const best=names.filter(nm=>!assigned.has(nm)).map(nm=>({nm, s:fit[line](pr(nm)) + posBonus(nm,line) + friendBonus(nm,line)*friendWeight}))
         .sort((a,b)=>b.s-a.s)[0];
       if(!best) break; lineup[line].push(best.nm); assigned.add(best.nm);
     } };
