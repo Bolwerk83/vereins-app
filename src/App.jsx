@@ -9601,6 +9601,7 @@ function PlayerCard({ player: pl,onEdit,onDel,isMain,allTeams,allEvents,onWizard
   };
   const noSkills = !Object.values(pl.skills||{}).some(v=>(Number(v)||0)>0);
   const [exp,setExp] = useState(false);
+  const [grpWahl,setGrpWahl] = useState(false);   // Leistungsgruppe direkt hier wählen
   const allTids = [pl.mainTid,...(pl.optTids||[])].filter(Boolean).filter(x=>!x.hidden);
   const rawStats = playerStats(pl.name,allTids,allEvents||[]);
   const totalGames    = Object.values(rawStats).reduce((s,r)=>s+r.games,0);
@@ -9608,21 +9609,12 @@ function PlayerCard({ player: pl,onEdit,onDel,isMain,allTeams,allEvents,onWizard
 
   return (
     <div style={{background:"#fff",borderRadius:14,border:`1.5px solid ${isMain?"#e2e8f0":"#fde68a"}`,overflow:"hidden"}}>
-      {/* Kopf: der Name bekommt die volle Breite. Die Knoepfe stehen in einer
-          eigenen Zeile darunter - vorher wurde jeder Name abgeschnitten. */}
+      {/* Leistungsgruppe direkt hier setzen: ein Tipp auf den Chip oeffnet die
+          Auswahl, ein zweiter waehlt. Kein blindes Durchschalten. */}
       <div style={{padding:"11px 14px 9px",display:"flex",alignItems:"center",gap:11,cursor:"pointer"}} onClick={()=>setExp(s=>!s)}>
         <Av name={pl.name} sz={40}/>
         <div style={{flex:1,minWidth:0}}>
           <div style={{display:"flex",alignItems:"center",gap:7,minWidth:0}}>
-            {onGrp&&gruppen.length>0&&(()=>{ const g=gruppen.find(x=>x.id===pl.intGrp);
-              return (
-              <span onClick={e=>{ e.stopPropagation();
-                  const ix=gruppen.findIndex(x=>x.id===pl.intGrp);
-                  onGrp(pl.id, ix<0 ? gruppen[0].id : (ix+1<gruppen.length ? gruppen[ix+1].id : "")); }}
-                title={g?`Leistungsgruppe: ${g.name} (antippen zum Wechseln)`:"Keiner Leistungsgruppe zugeteilt (antippen)"}
-                style={{flexShrink:0,width:14,height:14,borderRadius:99,cursor:"pointer",
-                  background:g?g.col:"#fff",border:`2px solid ${g?g.col:"#cbd5e1"}`}}/>
-              ); })()}
             {pl.jerseyNr&&<span style={{background:"#0f172a",color:"#fff",borderRadius:7,padding:"2px 7px",fontSize:12.5,fontWeight:900,flexShrink:0}}>#{pl.jerseyNr}</span>}
             <span style={{minWidth:0,fontWeight:800,fontSize:15,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{pl.name}</span>
           </div>
@@ -9639,8 +9631,39 @@ function PlayerCard({ player: pl,onEdit,onDel,isMain,allTeams,allEvents,onWizard
         </div>
         <span style={{flexShrink:0,fontSize:16,color:"#cbd5e1",transform:exp?"rotate(90deg)":"none",transition:"transform .15s"}}>›</span>
       </div>
+      {onGrp&&gruppen.length>0&&grpWahl&&(
+        <div style={{padding:"0 14px 10px",display:"flex",flexWrap:"wrap",gap:5,alignItems:"center"}}>
+          <span style={{fontSize:10.5,fontWeight:800,color:"#94a3b8",letterSpacing:.3,marginRight:2}}>GRUPPE</span>
+          {gruppen.map(g=>{ const an=pl.intGrp===g.id;
+            return (
+            <button key={g.id} onClick={e=>{ e.stopPropagation(); onGrp(pl.id,g.id); setGrpWahl(false); }}
+              style={{minHeight:36,padding:"0 12px",borderRadius:99,cursor:"pointer",fontFamily:"inherit",
+                fontSize:12,fontWeight:800,border:`1.5px solid ${an?g.col:"#e2e8f0"}`,
+                background:an?g.col:"#fff", color:an?"#fff":"#475569"}}>
+              {g.name}
+            </button>
+            ); })}
+          <button onClick={e=>{ e.stopPropagation(); onGrp(pl.id,""); setGrpWahl(false); }}
+            style={{minHeight:36,padding:"0 12px",borderRadius:99,cursor:"pointer",fontFamily:"inherit",
+              fontSize:12,fontWeight:700,border:"1.5px solid #e2e8f0",background:"#fff",color:"#94a3b8"}}>
+            keine
+          </button>
+        </div>
+      )}
       {/* Aktionen: eigene Zeile, gleich grosse Ziele, Loeschen abgesetzt */}
       <div style={{display:"flex",alignItems:"center",gap:6,padding:"0 14px 11px"}}>
+        {onGrp&&gruppen.length>0&&(()=>{ const g=gruppen.find(x=>x.id===pl.intGrp);
+          return (
+          <button onClick={e=>{ e.stopPropagation(); setGrpWahl(v=>!v); }}
+            title={g?`Leistungsgruppe: ${g.name} – antippen zum Ändern`:"Leistungsgruppe wählen"}
+            style={{flexShrink:0,display:"flex",alignItems:"center",gap:5,height:36,padding:"0 12px",
+              borderRadius:99,cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:800,
+              background:g?g.col:"#fff", color:g?"#fff":"#64748b",
+              border:g?`1.5px solid ${g.col}`:"1.5px dashed #cbd5e1"}}>
+            <span style={{width:9,height:9,borderRadius:99,background:g?"#fff":"#cbd5e1",flexShrink:0}}/>
+            {g ? g.name : "Gruppe?"}
+          </button>
+          ); })()}
         {onWizard&&noSkills&&<button onClick={e=>{e.stopPropagation();onWizard();}} title="Skill-Wizard: Erstbewertung starten"
           style={{height:34,padding:"0 11px",borderRadius:9,background:"#eef2ff",border:"none",color:"#4f46e5",cursor:"pointer",fontSize:12,fontWeight:800,fontFamily:"inherit"}}>🎯 Skills</button>}
         {onLink&&<button onClick={e=>{e.stopPropagation();onLink();}} title="Direktlink für die Eltern teilen (führt direkt zu diesem Kind)" aria-label="Link für die Eltern"

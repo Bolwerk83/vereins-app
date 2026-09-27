@@ -36,23 +36,24 @@ const zumKader = async () => {
 };
 // Zugeteilt wird am Punkt neben dem Namen in der Kaderliste: jeder Tipp
 // schaltet eine Gruppe weiter (Leistung → Reserve → Entwicklung → keine).
-const punktKlick=(name)=>page.evaluate(n=>{
-  const karten=[...document.querySelectorAll("div")].filter(d=>(d.innerText||"").includes(n)&&(d.innerText||"").length<200);
+const chipKlick=(name)=>page.evaluate(n=>{
+  const karten=[...document.querySelectorAll("div")].filter(d=>(d.innerText||"").includes(n)&&(d.innerText||"").length<300);
   for(const k of karten.reverse()){
-    const sp=[...k.querySelectorAll("span")].find(x=>{ const st=getComputedStyle(x);
-      return st.borderRadius==="99px"&&x.offsetWidth<=16&&x.offsetWidth>=10&&!x.innerText.trim(); });
-    if(sp){ sp.click(); return true; }
+    const b=[...k.querySelectorAll("button")].find(x=>/^(Gruppe\?|Leistung|Reserve|Entwicklung|Aufbau)$/.test((x.innerText||"").trim()));
+    if(b){ b.click(); return true; }
   }
   return false; }, name);
-const setzeGruppe=async(name,gid)=>{
-  for(let i=0;i<5;i++){
-    const ist=await page.evaluate(n=>{ const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
-      const p=(d.playerProfiles||[]).find(x=>x.name===n); return p?(p.intGrp||""):""; }, name);
-    if(ist===gid) return true;
-    if(!await punktKlick(name)) return false;
-    await page.waitForTimeout(700);
-  }
-  return false; };
+// Gruppe über den Chip und die Auswahl darunter setzen ("" = keine)
+const setzeGruppe=async(name,label)=>{
+  if(!await chipKlick(name)) return false;
+  await page.waitForTimeout(600);
+  const ok2=await page.evaluate(({n,g})=>{
+    const karten=[...document.querySelectorAll("div")].filter(d=>(d.innerText||"").trim().startsWith("GRUPPE"));
+    const k=karten[karten.length-1]; if(!k) return false;
+    const b=[...k.querySelectorAll("button")].filter(x=>(x.innerText||"").trim()===g).pop();
+    if(!b) return false; b.click(); return true; },{n:name,g:label||"keine"});
+  await page.waitForTimeout(800);
+  return ok2; };
 const profilVon=(name)=>page.evaluate(n=>{ const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
   const p=(d.playerProfiles||[]).find(x=>x.name===n); return p?{intGrp:p.intGrp||""}:null; }, name);
 
@@ -107,25 +108,25 @@ if(/Leistung/.test(b)&&/Reserve/.test(b)&&/Entwicklung/.test(b)) ok("Drei Gruppe
 else fail("Gruppen fehlen: "+b.slice(-500).replace(/\n/g," | "));
 
 // ===== 3) Zuteilen und wieder lösen =====
-if(await setzeGruppe(kader[0],"g1")) ok(`${kader[0]} lässt sich am Punkt der Gruppe „Leistung“ zuteilen`);
+if(await setzeGruppe(kader[0],"Leistung")) ok(`${kader[0]} lässt sich am Chip der Gruppe „Leistung“ zuteilen`);
 else fail("Zuteilen nicht möglich");
 await page.waitForTimeout(600);
 { const p=await profilVon(kader[0]);
   if(p&&p.intGrp==="g1") ok("Die Zuteilung ist gespeichert");
   else fail("Nicht gespeichert: "+JSON.stringify(p)); }
-await setzeGruppe(kader[1],"g1");
-await setzeGruppe(kader[2],"g1");
-await setzeGruppe(kader[3],"g3");
-await setzeGruppe(kader[4],"g3");
-await setzeGruppe(kader[5],"g3");
+await setzeGruppe(kader[1],"Leistung");
+await setzeGruppe(kader[2],"Leistung");
+await setzeGruppe(kader[3],"Entwicklung");
+await setzeGruppe(kader[4],"Entwicklung");
+await setzeGruppe(kader[5],"Entwicklung");
 { const z=await page.evaluate(()=>{ const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
     const k=(d.playerProfiles||[]).filter(p=>p.mainTid==="demo_f1"&&!p.archived);
     return {g1:k.filter(p=>p.intGrp==="g1").length, g3:k.filter(p=>p.intGrp==="g3").length}; });
   if(z.g1===3&&z.g3===3) ok("Drei Kinder in „Leistung“, drei in „Entwicklung“");
   else fail("Falsche Verteilung: "+JSON.stringify(z)); }
-if(await setzeGruppe(kader[0],"")) ok("Weitertippen löst die Zuteilung wieder");
+if(await setzeGruppe(kader[0],"keine")) ok("Über „keine“ löst sich die Zuteilung wieder");
 else fail("Lösen klappt nicht");
-await setzeGruppe(kader[0],"g1");
+await setzeGruppe(kader[0],"Leistung");
 
 // ===== 4) Umbenennen =====
 { const geht=await page.evaluate(()=>{

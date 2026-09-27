@@ -33,15 +33,20 @@ const zumKader = async () => {
 };
 const grpVon=(name)=>page.evaluate(n=>{ const d=JSON.parse(localStorage.getItem("vereinsapp_v14")||"null");
   const p=(d.playerProfiles||[]).find(x=>x.name===n); return p?(p.intGrp||""):null; }, name);
-// Punkt in der Zeile eines Kindes anklicken
-const punktKlick=(name)=>page.evaluate(n=>{
-  const karten=[...document.querySelectorAll("div")].filter(d=>(d.innerText||"").includes(n)&&(d.innerText||"").length<200);
+// Der Gruppen-Chip in der Zeile eines Kindes
+const chipKlick=(name)=>page.evaluate(n=>{
+  const karten=[...document.querySelectorAll("div")].filter(d=>(d.innerText||"").includes(n)&&(d.innerText||"").length<300);
   for(const k of karten.reverse()){
-    const sp=[...k.querySelectorAll("span")].find(x=>{ const st=getComputedStyle(x);
-      return st.borderRadius==="99px"&&x.offsetWidth<=16&&x.offsetWidth>=10&&!x.innerText.trim(); });
-    if(sp){ sp.click(); return true; }
+    const b=[...k.querySelectorAll("button")].find(x=>/^(Gruppe\?|Leistung|Reserve|Entwicklung|Aufbau)$/.test((x.innerText||"").trim()));
+    if(b){ b.click(); return (b.innerText||"").trim(); }
   }
-  return false; }, name);
+  return null; }, name);
+// Aus der geöffneten Auswahl eine Gruppe wählen
+const wahlKlick=(name,gruppe)=>page.evaluate(({n,g})=>{
+  const karten=[...document.querySelectorAll("div")].filter(d=>(d.innerText||"").trim().startsWith("GRUPPE"));
+  const k=karten[karten.length-1]; if(!k) return false;
+  const b=[...k.querySelectorAll("button")].filter(x=>(x.innerText||"").trim()===g).pop();
+  if(!b) return false; b.click(); return true; },{n:name,g:gruppe});
 
 await page.addInitScript(()=>{
   if(!localStorage.getItem("vereinsapp_config")) localStorage.setItem("vereinsapp_config", JSON.stringify({url:"https://127.0.0.1:1/x", key:"test"}));
@@ -71,17 +76,28 @@ else { fail("Kader nicht vorbereitet"); process.exit(1); }
 await page.reload({waitUntil:"networkidle"}); await page.waitForTimeout(2800); await dismiss();
 await zumKader();
 
-// ===== 1) Punkt an der Spielerkarte =====
-if(await punktKlick(kader[0])) ok("An der Spielerkarte sitzt ein Punkt für die Leistungsgruppe");
-else fail("Kein Punkt an der Karte");
+// ===== 1) Gruppen-Chip an der Spielerkarte =====
+{ const beschriftung=await chipKlick(kader[0]);
+  if(beschriftung==="Gruppe?") ok("An der Spielerkarte steht „Gruppe?“ – man sieht, dass hier etwas einzustellen ist");
+  else fail("Kein beschrifteter Chip: "+beschriftung);
+  await page.waitForTimeout(700);
+  const b2=await body();
+  if(/GRUPPE/.test(b2)&&/Leistung/.test(b2)&&/keine/.test(b2))
+    ok("Ein Tipp öffnet die Auswahl mit allen Gruppen und „keine“");
+  else fail("Keine Auswahl: "+b2.slice(0,400).replace(/\n/g," | ")); }
+if(await wahlKlick(kader[0],"Reserve")) ok("Die Gruppe lässt sich direkt auswählen"); else fail("Auswahl nicht klickbar");
 await page.waitForTimeout(1100);
 { const g=await grpVon(kader[0]);
-  if(g==="g1") ok(`Ein Tipp setzt die erste Gruppe (${kader[0]} → Leistung)`);
-  else fail("Gruppe nicht gesetzt: "+g); }
-await punktKlick(kader[0]); await page.waitForTimeout(1000);
-{ const g=await grpVon(kader[0]);
-  if(g==="g2") ok("Der nächste Tipp schaltet weiter zur zweiten Gruppe");
-  else fail("Kein Weiterschalten: "+g); }
+  if(g==="g2") ok(`Gewählt ist genau die angetippte Gruppe (${kader[0]} → Reserve)`);
+  else fail("Falsche Gruppe: "+g); }
+{ const beschriftung=await page.evaluate(n=>{
+    const karten=[...document.querySelectorAll("div")].filter(d=>(d.innerText||"").includes(n)&&(d.innerText||"").length<300);
+    for(const k of karten.reverse()){
+      const b=[...k.querySelectorAll("button")].find(x=>/^(Gruppe\?|Leistung|Reserve|Entwicklung)$/.test((x.innerText||"").trim()));
+      if(b) return (b.innerText||"").trim(); }
+    return null; }, kader[0]);
+  if(beschriftung==="Reserve") ok("Danach steht die Gruppe am Chip – ohne die Karte zu öffnen");
+  else fail("Chip zeigt die Gruppe nicht: "+beschriftung); }
 
 // ===== 2+3) Übersicht mit Leibchen =====
 if(await klick("🎯 Leistungsgruppen")) ok("Unten gibt es die Übersicht"); else fail("Keine Übersicht");
