@@ -136,14 +136,14 @@ await page.waitForTimeout(1200);
   else fail("Kein Knopf zur Einheit");
   await page.waitForTimeout(1300);
   b=await body();
-  if(/Vorschlag für eine Einheit/.test(b)) ok("Und sie kommt");
+  if(/das hätte ich für euch/.test(b)) ok("Und sie kommt");
   else fail("Keine Einheit aus dem Ergebnis"); }
 
 // ===== 3) Training bauen =====
 if(await klick("⚽ Training vorschlagen")) ok("„Training vorschlagen“ ist anklickbar"); else fail("Kein Trainings-Knopf");
 await page.waitForTimeout(1200);
 b=await body();
-if(/Vorschlag für eine Einheit/.test(b)&&/Minuten/.test(b)) ok("Es kommt eine komplette Einheit mit Minutenangaben");
+if(/das hätte ich für euch/.test(b)&&/Minuten/.test(b)) ok("Es kommt eine komplette Einheit mit Minutenangaben");
 else fail("Kein Trainingsvorschlag: "+b.slice(-500).replace(/\n/g," | "));
 if(/Aufwärmen|Technik|Spielform/.test(b)) ok("Mit Übungen aus der vorhandenen Sammlung");
 else fail("Keine Übungen erkennbar");
@@ -165,9 +165,19 @@ await page.waitForTimeout(1300);
   if(pl&&pl.sessions&&pl.sessions[0].blocks.length>2) ok(`Der Plan hängt am Trainingstermin (${pl.sessions[0].blocks.length} Blöcke)`);
   else fail("Nicht am Termin: "+JSON.stringify(pl)); }
 
+// ===== 6b) Der Ton: direkt, anpackend, ohne Vortrag =====
+{ await fragen("wir kriegen zu viele gegentore");
+  const b3=await body();
+  if(/Verteidigen ist Kopfsache/.test(b3)) ok("Co steigt mit einem klaren Satz ein statt mit einem Vortrag");
+  else fail("Kein Einstiegssatz: "+b3.slice(-400).replace(/\n/g," | "));
+  if(/Kinder verteidigen mit dem Fuß statt mit dem Körper/.test(b3)) ok("Die Substanz bleibt dieselbe");
+  else fail("Inhalt verloren gegangen"); }
+
 // ===== 7) Tricks =====
 await fragen("zeig mir tricks");
 b=await body();
+if(/Tricks, ja!/.test(b)) ok("Auch bei den Tricks stimmt der Ton");
+else fail("Trick-Einstieg tonlos");
 if(/Übersteiger/.test(b)&&/Cruyff/.test(b)) ok("Auf „zeig mir Tricks“ kommen die Moves");
 else fail("Keine Tricks: "+b.slice(-400).replace(/\n/g," | "));
 if(/Häufiger Fehler/.test(b)) ok("Jeweils mit dem häufigsten Fehler dazu");

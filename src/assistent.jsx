@@ -6,7 +6,7 @@
 // sehen davon nichts.
 // ----------------------------------------------------------------
 import React, { useState, useRef, useEffect } from "react";
-import { THEMEN, TRICKS, antwortAuf, taktText, naechsteFaelligkeit, fragenZu, rechneErgebnis, EINTEILUNG_FRAGEN, rechneEinteilung } from "./assistent.js";
+import { THEMEN, TRICKS, antwortAuf, taktText, naechsteFaelligkeit, fragenZu, rechneErgebnis, EINTEILUNG_FRAGEN, rechneEinteilung, rausSpruch } from "./assistent.js";
 import { generateTrainingPlan, skillAxesFor } from "./domain.js";
 import { skillsMean } from "./logic.js";
 import { uid, TH, now } from "./ui.jsx";
@@ -43,7 +43,7 @@ export default function TrainerAssistent({ data, save, fire, cl, session, myTids
     : String(team?.cat||"").toLowerCase().includes("bambini") ? "bambini" : "all";
 
   const [verlauf,setVerlauf] = useState([{ von:"assi", art:"hallo",
-    text:"Moin, ich bin Co – euer Co-Trainer. Schreib mir, woran es gerade hakt – zum Beispiel „wir müssen das Zusammenspiel verbessern“, „wir kriegen zu viele Gegentore“ oder „zeig mir Tricks“." }]);
+    text:"Moin! Ich bin Co, euer Co-Trainer. Erzähl mir, woran es gerade hakt – und red nicht drumrum. „Wir müssen das Zusammenspiel verbessern“, „wir kriegen zu viele Gegentore“, „zeig mir Tricks“. Ich hör zu, und dann machen wir einen Plan." }]);
   const [frage,setFrage] = useState("");
   const [tab,setTab] = useState("chat");
   const [eAnt,setEAnt] = useState({});        // Antworten zur Einteilung
@@ -68,7 +68,7 @@ export default function TrainerAssistent({ data, save, fire, cl, session, myTids
       targetMin: param?.targetMin || 75,
       focus: param?.focus || thema.focus || "auto" });
     setVerlauf(v=>[...v, { von:"assi", art:"training", thema, uebungen, param,
-      text:`Vorschlag für eine Einheit mit Schwerpunkt „${thema.titel}“ (${uebungen.reduce((s,e)=>s+(e.duration||0),0)} Minuten):` }]);
+      text:`So, das hätte ich für euch – Schwerpunkt „${thema.titel}“, ${uebungen.reduce((s,e)=>s+(e.duration||0),0)} Minuten:` }]);
   };
 
   // Geführter Teil: Fragen mit Antwortknöpfen, daraus wird gerechnet.
@@ -223,6 +223,9 @@ export default function TrainerAssistent({ data, save, fire, cl, session, myTids
               <div style={{background:m.von==="ich"?"#4338ca":"#f8fafc",color:m.von==="ich"?"#fff":"#0f172a",
                 border:m.von==="ich"?"none":"1.5px solid #e2e8f0",borderRadius:14,padding:"10px 12px",fontSize:13,lineHeight:1.55}}>
                 {m.art==="thema"&&<div style={{fontWeight:900,marginBottom:4}}>{m.thema.icon} {m.thema.titel}</div>}
+                {m.art==="thema"&&m.thema.spruch&&(
+                  <div style={{fontWeight:700,marginBottom:6,lineHeight:1.5}}>{m.thema.spruch}</div>
+                )}
                 <div>{m.text}</div>
 
                 {m.art==="thema"&&(
@@ -258,6 +261,7 @@ export default function TrainerAssistent({ data, save, fire, cl, session, myTids
                       <Knopf haupt onClick={()=>insTraining(m.thema,m.uebungen)}>⚽ Ins nächste Training</Knopf>
                       <Knopf onClick={()=>trainingBauen(m.thema)}>🔄 Anderer Vorschlag</Knopf>
                     </div>
+                    <div style={{fontSize:11.5,color:"#64748b",marginTop:9,fontStyle:"italic",lineHeight:1.5}}>{rausSpruch(i)}</div>
                   </>
                 )}
 
@@ -310,6 +314,7 @@ export default function TrainerAssistent({ data, save, fire, cl, session, myTids
                       {(e.thema||{}).aufgabe&&<Knopf onClick={()=>aufgabeAnlegen(e.thema)}>🔁 {taktText(e.thema.aufgabe)}</Knopf>}
                       <Knopf onClick={()=>alsWhatsApp(e.thema||THEMEN.find(t=>t.id===e.themaId))}>📤 Eltern-Text</Knopf>
                     </div>
+                    <div style={{fontSize:11.5,color:"#64748b",marginTop:9,fontStyle:"italic",lineHeight:1.5}}>{rausSpruch(i+2)}</div>
                   </div>
                 ); })()}
 

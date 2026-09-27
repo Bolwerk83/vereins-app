@@ -8,11 +8,15 @@
 
 // Ein Thema bündelt: woran man es erkennt, was der Trainer wissen sollte,
 // welcher Trainings-Schwerpunkt dazugehört und welche Aufgabe sich lohnt.
+// "spruch" ist der emotionale Einstieg - erst anpacken, dann Substanz.
+// Bewusst kurz: Wer bei jedem Satz brüllt, dem hört nach zwei Wochen
+// niemand mehr zu.
 export const THEMEN = [
   {
     id:"zusammenspiel", titel:"Zusammenspiel & Passspiel", icon:"🤝", focus:"spielform",
     worte:["zusammenspiel","zusammen spielen","zusammenspielen","passspiel","pässe","paesse","pass","passen","kombination","kombinieren","miteinander","abspiel","anspiel","mannschaftsspiel","teamplay","abstimmung","füreinander","einzelkämpfer","alleine","eigensinnig"],
-    kern:"Kinder spielen nicht ab, weil sie den Mitspieler nicht sehen – nicht, weil sie egoistisch sind. Das Ziel ist also nicht „spiel ab!“, sondern „schau vor dem Ball hin“.",
+    spruch:"Ah, das Thema! Und ich sag dir gleich was: Deine Jungs und Mädels sind keine Egoisten.",
+    kern:"Sie spielen nicht ab, weil sie den Mitspieler nicht sehen – nicht, weil sie nicht wollen. Das Ziel ist also nicht „spiel ab!“, sondern „schau vor dem Ball hin“. Das ist ein Riesenunterschied.",
     tipps:[
       "Vor dem Zuspiel schauen: Lass sie vor der Ballannahme über die Schulter blicken. Ruf im Training nur ein Wort: „Schulter!“ – das genügt.",
       "Spielt kleine Felder (4 gegen 4) mit der Regel „Tor zählt doppelt nach drei Pässen“. Das erzwingt Zusammenspiel, ohne dass ihr es fordern müsst.",
@@ -26,7 +30,8 @@ export const THEMEN = [
   {
     id:"abschluss", titel:"Torabschluss", icon:"🥅", focus:"torschuss",
     worte:["abschluss","tore","torschuss","schuss","schiessen","schießen","treffer","chancenverwertung","vergeben","abschlussschwäche","vor dem tor","kaltschnäuzig"],
-    kern:"Vor dem Tor entscheidet nicht die Schusstechnik, sondern die Ruhe. Wer im Training nie unter Druck abschließt, verliert sie im Spiel.",
+    spruch:"Tore! Darum geht\u2019s doch. Aber pass auf, das Problem liegt selten da, wo alle gucken.",
+    kern:"Vor dem Tor entscheidet nicht die Schusstechnik, sondern die Ruhe. Wer im Training nie unter Druck abschließt, hat sie im Spiel auch nicht.",
     tipps:[
       "Immer mit Torwart abschließen lassen. Schüsse ins leere Tor trainieren ein Gefühl, das es im Spiel nicht gibt.",
       "Kurze Wege: Abschluss nach 2–3 Sekunden Handlung, nicht nach langem Aufbau. So sieht es im Spiel auch aus.",
@@ -40,7 +45,8 @@ export const THEMEN = [
   {
     id:"technik", titel:"Technik & Dribbling", icon:"⚡", focus:"technik",
     worte:["technik","dribbling","dribbeln","ballführung","ballkontrolle","ball halten","eins gegen eins","1 gegen 1","zweikampf offensiv","finten","trick","tricks","beweglichkeit am ball"],
-    kern:"Ballgefühl entsteht durch Wiederholungen mit eigenem Ball – nicht durch Warteschlangen. Faustregel: jedes Kind einen Ball, niemand steht länger als zehn Sekunden.",
+    spruch:"Technik ist keine Begabung, Technik sind Wiederholungen. Tausende davon.",
+    kern:"Ballgefühl entsteht mit eigenem Ball am Fuß – nicht in der Warteschlange. Faustregel: jedes Kind einen Ball, niemand steht länger als zehn Sekunden.",
     tipps:[
       "Jedes Kind einen Ball. Übungen mit einem Ball für acht Kinder sind vergeudete Trainingszeit.",
       "Dribbel-Aufgaben mit Kopfarbeit verbinden: auf Zuruf Richtung wechseln, Farbe nennen, Hütchen umkurven. Das fordert Blick heben und Ballführung zugleich.",
@@ -54,7 +60,8 @@ export const THEMEN = [
   {
     id:"verteidigen", titel:"Verteidigen & Zweikampf", icon:"🛡", focus:"taktik",
     worte:["verteidigen","abwehr","defensive","zweikampf","gegentore","hinten","tore bekommen","kassiert","pressing","stören","zweikämpfe"],
-    kern:"Kinder verteidigen mit dem Fuß statt mit dem Körper. Zuerst Stellung und Abstand, erst danach die Grätsche – die meist ohnehin unnötig ist.",
+    spruch:"Verteidigen ist Kopfsache, nicht Kampfsache. Ehrlich.",
+    kern:"Kinder verteidigen mit dem Fuß statt mit dem Körper. Zuerst Stellung und Abstand, dann erst die Grätsche – die meistens gar nicht nötig ist.",
     tipps:[
       "Abstand statt Attacke: eine Armlänge, seitlich stehen, den Gegner zur Außenlinie lenken. Das ist die halbe Miete.",
       "Nicht hinterherlaufen lassen: Wer einmal überlaufen wurde, soll den Weg abkürzen statt den Rücken zu zeigen.",
@@ -68,7 +75,8 @@ export const THEMEN = [
   {
     id:"kondition", titel:"Kondition & Athletik", icon:"🏃", focus:"kondition",
     worte:["kondition","ausdauer","kraft","athletik","schnelligkeit","fitness","müde","puste","laufen","koordination"],
-    kern:"Im Kinderfußball wird Ausdauer nicht gelaufen, sondern gespielt. Runden um den Platz bringen nichts außer Langeweile.",
+    spruch:"Runden um den Platz? Bitte nicht. Das hat noch keinem Kind Spaß gemacht.",
+    kern:"Im Kinderfußball wird Ausdauer nicht gelaufen, sondern gespielt. Kondition kommt aus vielen kleinen Spielen, nicht aus Dauerläufen.",
     tipps:[
       "Kondition kommt aus kleinen Spielformen mit vielen Wiederholungen – nicht aus Dauerläufen.",
       "Koordination vor Kraft: Hüpfen, Landen, Richtungswechsel. Das schützt Knie und Sprunggelenk mehr als jedes Krafttraining.",
@@ -82,7 +90,8 @@ export const THEMEN = [
   {
     id:"torwart", titel:"Torwartspiel", icon:"🧤", focus:"technik",
     worte:["torwart","keeper","tw","torhüter","torfrau","im tor","abschlag","fangen"],
-    kern:"In der F- und G-Jugend gibt es keine Torwarte, sondern Kinder, die auch mal im Tor stehen. Jede und jeder sollte reihum ran.",
+    spruch:"In dem Alter gibt es keine Torhüter. Es gibt Kinder, die auch mal im Tor stehen.",
+    kern:"Deshalb sollte reihum jede und jeder ran. Wer früh festgelegt wird, verliert die Feldspieler-Ausbildung – und das holt keiner mehr auf.",
     tipps:[
       "Reihum ins Tor – jede Einheit ein anderes Kind. Wer festgelegt wird, verliert die Feldspieler-Ausbildung.",
       "Fangen vor Abwehren: erst sicher fangen, dann abklatschen, dann hechten.",
@@ -96,7 +105,8 @@ export const THEMEN = [
   {
     id:"teamgeist", titel:"Teamgeist nach Niederlagen", icon:"💛", focus:"spielform",
     worte:["verlieren","niederlage","verloren","stimmung","motivation","teamgeist","frust","streit","köpfe hängen","aufgeben","lustlos","kein bock","spaß"],
-    kern:"Eine Serie von Niederlagen frisst zuerst die Stärksten, dann alle anderen. Dagegen hilft kein Vortrag, sondern ein zweites Erfolgsmaß neben dem Ergebnis.",
+    spruch:"Okay. Das ist der Moment, wo sich entscheidet, was für ein Trainer du bist. Kein Vortrag jetzt – ein Plan.",
+    kern:"Eine Serie von Niederlagen frisst zuerst die Stärksten, dann alle anderen. Dagegen hilft ein zweites Erfolgsmaß neben dem Ergebnis – eines, das ihr auch bei 0:6 erreichen könnt.",
     tipps:[
       "Setzt ein eigenes Ziel pro Spiel, das nichts mit dem Ergebnis zu tun hat: „drei Kombinationen über drei Stationen“. Das ist erreichbar, auch bei 0:6.",
       "Nach dem Spiel zuerst drei Dinge, die gut waren – erst danach das andere. Und nie am Spieltag selbst analysieren.",
@@ -110,7 +120,8 @@ export const THEMEN = [
   {
     id:"eltern", titel:"Eltern & Kommunikation", icon:"👪", focus:null,
     worte:["eltern","kommunikation","whatsapp","elterngespräch","väter","mütter","meckern","coachen von außen","zuschauer","beschwerde"],
-    kern:"Die meisten Elternkonflikte entstehen aus fehlender Information, nicht aus Böswilligkeit. Wer früh und regelmäßig erklärt, muss selten diskutieren.",
+    spruch:"Die Eltern sind nicht dein Gegner. Wirklich nicht, auch wenn es sich manchmal so anfühlt.",
+    kern:"Die meisten Konflikte kommen aus fehlender Information, nicht aus Böswilligkeit. Wer früh und regelmäßig erklärt, muss später selten diskutieren.",
     tipps:[
       "Einmal pro Saison Elternabend mit einer klaren Aussage zur Spielzeit. Danach bezieht ihr euch nur noch darauf.",
       "Vom Spielfeldrand coacht nur das Trainerteam. Das lässt sich freundlich, aber verbindlich vereinbaren.",
@@ -512,14 +523,25 @@ export const naechsteFaelligkeit = (takt, vonISO) => {
   return d.toISOString().slice(0,10);
 };
 
+// Ein kurzer Rausschmeißer zum Schluss. Rotierend, damit es nicht nach
+// Textbaustein klingt.
+export const RAUS = [
+  "Und jetzt raus und machen. Reden kann man hinterher.",
+  "Nicht perfekt machen – anfangen. Der Rest kommt beim Tun.",
+  "Wenn du nur eine Sache davon umsetzt, nimm die erste. Die reicht schon.",
+  "Vier Wochen dranbleiben, dann reden wir wieder. Vorher passiert nichts, das ist normal.",
+  "Und denk dran: Die Kinder merken, ob du daran glaubst. Alles andere ist zweitrangig.",
+];
+export const rausSpruch = (n=0) => RAUS[Math.abs(n)%RAUS.length];
+
 // Die EINE Schnittstelle der Oberfläche. Später kann hier eine echte KI
 // antworten, ohne dass sich sonst etwas ändert.
 export const antwortAuf = (frage, ctx={}) => {
   const tricks = findeTricks(frage);
   if(tricks.length) return { art:"tricks", tricks, text:tricks.length===1
-    ? `So geht der ${tricks[0].name}:`
-    : "Diese Tricks lohnen sich im Kinderfußball – vom einfachsten zum schwersten:" };
+    ? `Der ${tricks[0].name}! Gute Wahl. So geht er:`
+    : "Tricks, ja! Die hier lohnen sich im Kinderfußball – vom einfachsten zum schwersten:" };
   const th = findeThema(frage);
-  if(!th) return { art:"unklar", text:"Das habe ich nicht sicher zuordnen können. Frag mich z. B. nach Zusammenspiel, Torabschluss, Verteidigen, Kondition, Technik und Tricks, Torwartspiel, Stimmung nach Niederlagen oder Elternkommunikation." };
+  if(!th) return { art:"unklar", text:"Da komme ich nicht mit, ehrlich gesagt. Sag’s mir nochmal anders – Zusammenspiel, Torabschluss, Verteidigen, Kondition, Technik und Tricks, Torwartspiel, Stimmung nach Niederlagen oder Eltern. Eins davon passt bestimmt." };
   return { art:"thema", thema:th, text:th.kern };
 };
